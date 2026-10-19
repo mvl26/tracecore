@@ -1,0 +1,10 @@
+{
+	"name": "TraceCore",
+	"short_name": "TraceCore",
+	"start_url": "/app/station",
+	"scope": "/app/station",
+	"display": "fullscreen",
+	"lang": "vi",
+	"background_color": "{{ background_color }}",
+	"theme_color": "{{ theme_color }}"
+}

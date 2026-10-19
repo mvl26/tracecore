@@ -1,0 +1,305 @@
+/* Page station (surface STN) — chỉ dùng biến --tc-* sinh từ docs/tokens.json (design.md §4). */
+
+body.tc-kiosk {
+	background: var(--tc-bg);
+}
+
+body.tc-kiosk .navbar,
+body.tc-kiosk .page-head,
+body.tc-kiosk .web-footer {
+	display: none !important;
+}
+
+body.tc-kiosk .main-section > .container,
+body.tc-kiosk .page-container,
+body.tc-kiosk .page-body,
+body.tc-kiosk .layout-main-section {
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+
+.tc-station {
+	min-height: 100vh;
+	background: var(--tc-bg);
+	color: var(--tc-text);
+	font-family: var(--tc-font-sans);
+	font-size: var(--tc-fs-base);
+	line-height: var(--tc-lh-base);
+}
+
+.tc-zonebar {
+	height: var(--tc-zonebar-h);
+	background: var(--tc-zone-web);
+}
+
+.tc-zone-dirty {
+	background: var(--tc-zone-dirty);
+}
+
+.tc-zone-clean {
+	background: var(--tc-zone-clean);
+}
+
+.tc-zone-sterile {
+	background: var(--tc-zone-sterile);
+}
+
+.tc-zone-dept {
+	background: var(--tc-zone-dept);
+}
+
+.tc-zone-waste {
+	background: var(--tc-zone-waste);
+}
+
+.tc-offline-banner {
+	padding: var(--tc-sp-2) var(--tc-sp-6-5);
+	background: var(--tc-info-tint);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-info);
+	color: var(--tc-info-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-offline-banner[hidden] {
+	display: none;
+}
+
+.tc-main {
+	padding: var(--tc-sp-5) var(--tc-sp-6-5) var(--tc-sp-22);
+}
+
+.tc-title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-title h2 {
+	margin: 0;
+	color: var(--tc-text-heading);
+	font-size: var(--tc-fs-3xl);
+	font-weight: var(--tc-fw-bold);
+	line-height: var(--tc-lh-snug);
+}
+
+.tc-tag {
+	padding: var(--tc-sp-0-5) var(--tc-sp-1-5);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-xs);
+	color: var(--tc-text-muted);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-tag:empty {
+	display: none;
+}
+
+.tc-card {
+	margin-bottom: var(--tc-sp-3);
+	padding: var(--tc-sp-3-5) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-scan {
+	display: flex;
+	align-items: stretch;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-3);
+	background: var(--tc-primary-soft);
+	border: var(--tc-bw-thick) dashed var(--tc-border-strong);
+	border-radius: var(--tc-r-xl);
+}
+
+.tc-scan.is-error {
+	background: var(--tc-fail-tint);
+	border: var(--tc-bw-thick) solid var(--tc-fail);
+}
+
+.tc-scan-input {
+	flex: 1;
+	min-height: var(--tc-touch-station);
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-primary);
+	border-radius: var(--tc-r-md);
+	color: var(--tc-text);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xl);
+}
+
+.tc-btn {
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2-5) var(--tc-sp-4-5);
+	border: 0;
+	border-radius: var(--tc-r-md);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+	cursor: pointer;
+	transition: background var(--tc-dur-fast) var(--tc-ease);
+}
+
+.tc-btn:active {
+	transform: translateY(var(--tc-bw-hair));
+}
+
+.tc-btn-primary {
+	min-width: var(--tc-scan-btn-min);
+	min-height: var(--tc-touch-station);
+	background: var(--tc-primary);
+	color: var(--tc-on-primary);
+}
+
+.tc-btn-primary:hover {
+	background: var(--tc-primary-hover);
+}
+
+.tc-btn-secondary {
+	background: var(--tc-card);
+	border: var(--tc-bw-med) solid var(--tc-primary);
+	color: var(--tc-primary);
+}
+
+.tc-btn-secondary:hover {
+	background: var(--tc-primary-soft);
+}
+
+.tc-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-sp-3);
+}
+
+.tc-alert {
+	padding: var(--tc-sp-2-5) var(--tc-sp-3);
+	border-left: var(--tc-bw-alert) solid var(--tc-info);
+	border-radius: 0 var(--tc-r-sm) var(--tc-r-sm) 0;
+	color: var(--tc-text);
+}
+
+.tc-alert p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-alert-error {
+	background: var(--tc-fail-tint);
+	border-left-color: var(--tc-fail);
+}
+
+.tc-alert-info {
+	background: var(--tc-info-tint);
+	border-left-color: var(--tc-info);
+	color: var(--tc-info-text);
+}
+
+.tc-alert-title {
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-alert-error .tc-alert-title {
+	color: var(--tc-fail-text);
+}
+
+.tc-help {
+	margin-top: var(--tc-sp-2);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-empty {
+	margin: 0;
+	color: var(--tc-text-2);
+}
+
+.tc-skeleton span {
+	display: block;
+	height: var(--tc-sp-4);
+	margin: var(--tc-sp-2) 0;
+	background: var(--tc-track);
+	border-radius: var(--tc-r-sm);
+}
+
+.tc-skeleton span:nth-child(2) {
+	width: 75%;
+}
+
+.tc-skeleton span:nth-child(3) {
+	width: 50%;
+}
+
+.tc-res-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+}
+
+.tc-code {
+	color: var(--tc-text-heading);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xl);
+	letter-spacing: var(--tc-ls-code);
+}
+
+.tc-badge {
+	display: inline-block;
+	padding: var(--tc-sp-1) var(--tc-sp-3);
+	background: var(--tc-primary);
+	border-radius: var(--tc-r-badge);
+	color: var(--tc-text-inverse);
+	font-size: var(--tc-fs-2xs);
+	font-weight: var(--tc-fw-bold);
+	white-space: nowrap;
+}
+
+.tc-badge-g {
+	background: var(--tc-pass);
+}
+
+.tc-badge-o {
+	background: var(--tc-warn-fill);
+}
+
+.tc-badge-r {
+	background: var(--tc-fail);
+}
+
+.tc-badge-x {
+	background: var(--tc-neutral-fill);
+}
+
+.tc-res-grid {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: var(--tc-sp-2) var(--tc-sp-4);
+	margin: var(--tc-sp-3) 0 0;
+}
+
+.tc-res-grid dt {
+	color: var(--tc-text-2);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-res-grid dd {
+	margin: 0;
+}
+
+.tc-mono {
+	font-family: var(--tc-font-mono);
+}
+
+.tc-sr-only {
+	position: absolute;
+	width: var(--tc-bw-hair);
+	height: var(--tc-bw-hair);
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
