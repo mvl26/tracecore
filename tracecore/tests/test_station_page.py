@@ -2,6 +2,8 @@ import csv
 import json
 import os
 import re
+import unicodedata
+from collections import defaultdict
 
 import frappe
 from frappe import _
@@ -59,10 +61,34 @@ def vi_translations():
 	return {(f"{row[0]}:{row[2]}" if len(row) > 2 and row[2] else row[0]): row[1] for row in vi_rows()}
 
 
-def other_app_translations():
-	from frappe.translate import get_translations_from_apps
+def _nfc(text):
+	return unicodedata.normalize("NFC", text.strip())
 
-	return get_translations_from_apps("vi", apps=["frappe", "erpnext", "hrms"])
+
+def other_app_translations():
+	"""{nguồn: {bản dịch}} đọc thẳng từ translations/vi.csv và locale/vi.po của frappe/erpnext/hrms.
+
+	Không dùng get_translations_from_apps: kết quả của nó đổi theo việc .mo đã biên dịch hay chưa
+	(CI không `bench build` nên dùng CSV cũ, máy dev dùng .mo) → test phải ổn định ở mọi môi trường.
+	"""
+	from babel.messages.pofile import read_po
+
+	found = defaultdict(set)
+	for app in ("frappe", "erpnext", "hrms"):
+		base = frappe.get_app_path(app)
+		csv_path = os.path.join(base, "translations", "vi.csv")
+		if os.path.exists(csv_path):
+			with open(csv_path, encoding="utf-8", newline="") as handle:
+				for row in csv.reader(handle):
+					if len(row) >= 2 and row[1] and not (len(row) > 2 and row[2]):
+						found[row[0]].add(_nfc(row[1]))
+		po_path = os.path.join(base, "locale", "vi.po")
+		if os.path.exists(po_path):
+			with open(po_path, "rb") as handle:
+				for message in read_po(handle):
+					if isinstance(message.id, str) and message.id and message.string and not message.context:
+						found[message.id].add(_nfc(message.string))
+	return found
 
 
 class TestStationPage(FrappeTestCase):
@@ -117,10 +143,11 @@ class TestStationPage(FrappeTestCase):
 	def test_vi_translations_do_not_override_other_apps(self):
 		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms."""
 		others = other_app_translations()
+		# hợp lệ chỉ khi bản dịch của mình trùng (NFC) với MỌI bản dịch sẵn có (CSV cũ và .po)
 		overrides = sorted(
-			f"{row[0]!r}: {others[row[0]]!r} -> {row[1]!r}"
+			f"{row[0]!r}: {sorted(others[row[0]])!r} -> {row[1]!r}"
 			for row in vi_rows()
-			if not (len(row) > 2 and row[2]) and row[0] in others and others[row[0]].strip() != row[1].strip()
+			if not (len(row) > 2 and row[2]) and others.get(row[0]) and others[row[0]] != {_nfc(row[1])}
 		)
 		self.assertFalse(overrides, msg="Dùng cột context (tên DocType) cho:\n" + "\n".join(overrides))
 

@@ -82,7 +82,7 @@ Is Loaner,Bộ mượn,
 Status,Trạng thái,
 New,Mới tạo,Set Unit
 In Circulation,Đang lưu hành,
-Processing,Đang xử lý,
+Processing,Đang xử lý,Set Unit
 Reprocess,Xử lý lại,
 Sterile,Vô khuẩn,
 At Department,Tại khoa,
@@ -131,7 +131,7 @@ Create,Tạo,
 Update,Cập nhật,
 Submit,Ghi sổ,Audit Log
 Cancel,Hủy,Audit Log
-Delete,Xóa,
+Delete,Xóa,Audit Log
 Login,Đăng nhập,
 Reject,Từ chối,
 Override,Ghi đè,
