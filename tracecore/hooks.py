@@ -162,13 +162,17 @@ after_install = "tracecore.setup.install.after_install"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+_AUDIT_EVENTS = {
+	"after_insert": "tracecore.core.audit.on_document_event",
+	"on_update": "tracecore.core.audit.on_document_event",
+	"on_submit": "tracecore.core.audit.on_document_event",
+	"on_cancel": "tracecore.core.audit.on_document_event",
+	"on_trash": "tracecore.core.audit.block_delete",
+}
+
+doc_events = {
+	"Set Unit": dict(_AUDIT_EVENTS),
+}
 
 # Scheduled Tasks
 # ---------------

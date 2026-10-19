@@ -22,6 +22,13 @@ def make_user(email, roles=()):
 	return user.name
 
 
+def make_set_unit(set_type=None, max_cycles=300, **kwargs):
+	set_type = set_type or make_set_type().name
+	return frappe.get_doc(
+		{"doctype": "Set Unit", "set_type": set_type, "max_cycles": max_cycles, **kwargs}
+	).insert()
+
+
 def make_set_type(type_code="TST", method="Steam", set_type_name=None):
 	if frappe.db.exists("Instrument Set Type", type_code):
 		return frappe.get_doc("Instrument Set Type", type_code)
