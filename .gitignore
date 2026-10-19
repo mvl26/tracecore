@@ -5,3 +5,49 @@
 tags
 node_modules
 __pycache__
+
+# Secrets & cấu hình site — không bao giờ commit (chỉ commit bản *.example)
+site_config.json
+common_site_config.json
+*.env
+.env
+.env.*
+!*.env.example
+!.env.example
+.tracecore-dev-secrets
+*secrets*
+!**/*secrets*.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+agent.ini
+!agent.ini.example
+
+# Dữ liệu thật / sao lưu
+*.sql
+*.sql.gz
+*.tar
+*.tgz
+backups/
+
+# Kết quả test, coverage, e2e
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+test-results/
+playwright-report/
+
+# Station Agent: hàng đợi và nhãn sinh ra lúc chạy
+*.sqlite
+*.sqlite3
+*.db
+tracecore_agent/out/
+labels_out/
+
+# Assets build
+tracecore/public/dist/
