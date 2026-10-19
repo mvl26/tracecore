@@ -83,7 +83,7 @@ app_license = "gpl-3.0"
 # ------------
 
 # before_install = "tracecore.install.before_install"
-# after_install = "tracecore.install.after_install"
+after_install = "tracecore.setup.install.after_install"
 
 # Uninstallation
 # ------------
