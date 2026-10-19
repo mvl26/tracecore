@@ -177,6 +177,12 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
+scheduler_events = {
+	"daily": [
+		"tracecore.core.idempotency.purge_expired",
+	],
+}
+
 # scheduler_events = {
 # 	"all": [
 # 		"tracecore.tasks.all"
