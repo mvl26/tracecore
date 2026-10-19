@@ -99,9 +99,11 @@ class TestCheckArchitecture(FrappeTestCase):
 		)
 		self.repo.write(
 			"tracecore/core/step_gate.py",
-			'import frappe\nfrappe.db.set_value("Set Unit", name, "status", "Sterile")\n',
+			'import frappe\nfrappe.db.set_value("Set Unit", name, "status", "Sterile")\n'
+			"doc.flags.tc_step_gate = True\n",
 		)
-		self.assertEqual(self.rules(), ["R2", "R2"])
+		self.repo.write("tracecore/waste/y.py", "def g(doc):\n\tdoc.flags.tc_step_gate = True\n")
+		self.assertEqual(self.rules(), ["R2", "R2", "R2"])
 
 	def test_vietnamese_literal_detected_but_docstring_allowed(self):
 		self.repo.write(

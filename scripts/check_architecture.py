@@ -28,7 +28,7 @@ BUSINESS = (
 )
 SCAN_DIRS = ("tracecore", "tracecore_agent")
 SKIP_DIRS = {"node_modules", "__pycache__", "dist", "tests", "translations", "fixtures"}
-GENERATED_CSS = {"tokens.css", "tracecore-theme.css"}
+GENERATED_CSS = {"tokens.css", "tracecore-theme.css", "tracecore.bundle.css"}
 STEP_GATE = os.path.join("tracecore", "core", "step_gate.py")
 
 _VI_LOWER = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ"
@@ -38,6 +38,7 @@ SET_UNIT_STATUS = re.compile(
 	r"set_value\(\s*[\"']Set Unit[\"'](?:[^()]|\([^()]*\))*?[\"']status[\"']", re.DOTALL
 )
 DB_SET_STATUS = re.compile(r"db_set\(\s*[\"']status[\"']")
+STEP_GATE_FLAG = re.compile(r"flags\.tc_step_gate\s*=(?!=)")
 CSS_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|(?<![\w-])\d+(?:\.\d+)?px\b")
 
 
@@ -85,6 +86,7 @@ def _check_status_writes(rel, text):
 	if rel == STEP_GATE:
 		return []
 	hits = [m.start() for m in SET_UNIT_STATUS.finditer(text)]
+	hits += [m.start() for m in STEP_GATE_FLAG.finditer(text)]
 	if rel.startswith(os.path.join("tracecore", "instrument", "doctype", "set_unit")):
 		hits += [m.start() for m in DB_SET_STATUS.finditer(text)]
 	return [

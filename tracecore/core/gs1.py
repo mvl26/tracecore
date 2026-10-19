@@ -87,7 +87,8 @@ def parse_scan(raw, company_prefix=None):
 	Trả ``{"type": ..., "id": ..., "raw": ...}``; không nhận ra → ``type = "unknown"``.
 	"""
 	value = _clean(raw)
-	unknown = {"type": "unknown", "id": None, "raw": value}
+	# raw bị cắt: chuỗi quét đi vào Audit Log (append-only) nên không được dài tùy ý
+	unknown = {"type": "unknown", "id": None, "raw": value[:MAX_SCAN_LENGTH]}
 	if not value or len(value) > MAX_SCAN_LENGTH:
 		return unknown
 

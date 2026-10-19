@@ -69,6 +69,9 @@ class TestParseScan(FrappeTestCase):
 			self.assertEqual(result["type"], "unknown", msg=repr(raw))
 			self.assertIsNone(result["id"])
 
+	def test_parse_scan_truncates_raw(self):
+		self.assertEqual(len(gs1.parse_scan("A" * 500)["raw"]), gs1.MAX_SCAN_LENGTH)
+
 	def test_parse_scan_default_prefix_from_config(self):
 		self.assertEqual(gs1.parse_scan(GIAI)["type"], "set")
 

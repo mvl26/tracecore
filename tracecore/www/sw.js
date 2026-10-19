@@ -1,9 +1,21 @@
 /* TraceCore station shell service worker (FEAT-001 skeleton).
- * Precache tài sản shell của trạm; điều hướng /app/station network-first.
- * Chưa có outbox IndexedDB (FEAT-009). */
+ * Precache bundle CSS có hash; điều hướng /app/station network-first; tài sản stale-while-revalidate.
+ * Chỉ cache response thành công. Chưa có outbox IndexedDB (FEAT-009). */
 const CACHE_PREFIX = "tracecore-shell-";
 const CACHE_NAME = CACHE_PREFIX + "{{ version }}";
-const PRECACHE = ["/assets/tracecore/css/tokens.css", "/assets/tracecore/css/tracecore-theme.css"];
+const PRECACHE = ["{{ bundle }}"];
+
+function cacheable(response) {
+	return response && response.ok && !response.redirected && response.type === "basic";
+}
+
+function remember(request, response) {
+	if (cacheable(response)) {
+		const copy = response.clone();
+		caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+	}
+	return response;
+}
 
 self.addEventListener("install", (event) => {
 	event.waitUntil(
@@ -38,17 +50,18 @@ self.addEventListener("fetch", (event) => {
 	if (request.mode === "navigate" && url.pathname.startsWith("/app/station")) {
 		event.respondWith(
 			fetch(request)
-				.then((response) => {
-					const copy = response.clone();
-					caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-					return response;
-				})
+				.then((response) => remember(request, response))
 				.catch(() => caches.match(request))
 		);
 		return;
 	}
 
 	if (url.pathname.startsWith("/assets/tracecore/")) {
-		event.respondWith(caches.match(request).then((hit) => hit || fetch(request)));
+		event.respondWith(
+			caches.match(request).then((hit) => {
+				const network = fetch(request).then((response) => remember(request, response));
+				return hit || network;
+			})
+		);
 	}
 });

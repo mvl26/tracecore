@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore import v1
+from tracecore.core import print as core_print
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import request_headers
 from tracecore.v1 import agent as agent_api
@@ -20,11 +21,25 @@ def call(fn, **kwargs):
 
 class TestAgentApi(FrappeTestCase):
 	def setUp(self):
-		frappe.set_user(make_user("agent-test@example.com", roles=["TC Agent"]))
+		# user agent của trạm TR-004 theo quy ước provision: agent-<trạm>@tracecore.local
+		frappe.set_user(make_user("agent-tr-004@tracecore.local", roles=["TC Agent"]))
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.cache.hdel(v1.AGENT_HEARTBEAT_CACHE, "TR-004")
+
+	def test_agent_bound_to_its_station(self):
+		for fn in (agent_api.heartbeat, print_api.test_label):
+			with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
+				call(fn, station="TR-003")
+
+	def test_ack_rejects_job_of_other_station(self):
+		frappe.set_user("Administrator")
+		job = core_print.create_job("TR-003", "^XA^XZ")
+		frappe.set_user("agent-tr-004@tracecore.local")
+		with self.assertRaises(frappe.PermissionError):
+			call(print_api.ack, print_job=job, status="Printed", output_mode="File")
+		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Queued")
 
 	def test_test_label_creates_queued_job(self):
 		result = call(print_api.test_label, station="TR-004")

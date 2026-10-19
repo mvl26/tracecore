@@ -45,9 +45,13 @@ def _station():
 	return station if station and frappe.db.exists("Zone Station", station) else None
 
 
-def _stored_response(key, endpoint, request_hash):
+def _stored_response(key, endpoint, request_hash, for_update=False):
 	row = frappe.db.get_value(
-		"Idempotency Key", key, ["user", "endpoint", "request_hash", "response"], as_dict=True
+		"Idempotency Key",
+		key,
+		["user", "endpoint", "request_hash", "response"],
+		as_dict=True,
+		for_update=for_update,
 	)
 	if not row:
 		return False, None
@@ -90,14 +94,19 @@ def idempotent(fn):
 					"client_ts": client_ts,
 				}
 			).insert(ignore_permissions=True)
+		except frappe.DuplicateEntryError:
+			# Request song song cùng key đã commit trước (insert chờ khóa unique tới khi bên kia commit)
+			frappe.db.rollback(save_point=savepoint)
+			if frappe.local.message_log and key in str(frappe.local.message_log[-1]):
+				frappe.clear_last_message()  # msgprint "... already exists" do db_insert thêm
+			# REPEATABLE READ: đọc có khóa để thấy dòng vừa commit, không đọc snapshot cũ
+			return _stored_response(key, endpoint, request_hash, for_update=True)[1]
+
+		try:
 			result = frappe.call(fn, *args, **kwargs)
 			frappe.db.set_value(
 				"Idempotency Key", key, "response", frappe.as_json(result), update_modified=False
 			)
-		except frappe.DuplicateEntryError:
-			# Request song song cùng key đã ghi trước (khóa unique chờ transaction kia commit)
-			frappe.db.rollback(save_point=savepoint)
-			return _stored_response(key, endpoint, request_hash)[1]
 		except Exception:
 			frappe.db.rollback(save_point=savepoint)
 			raise

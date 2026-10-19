@@ -69,7 +69,8 @@ for pkg in git curl mariadb-server mariadb-client redis-server nginx supervisor 
 done
 unless "command -v node" sudo bash -c "curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && apt-get install -y nodejs"
 unless "command -v yarn" sudo npm install -g yarn
-unless "command -v bench" pip3 install --user "frappe-bench==$BENCH_VERSION"
+# cài toàn cục (/usr/local/bin): có ngay trong PATH và trong secure_path của sudo (bench setup production)
+unless "command -v bench" sudo -H pip3 install "frappe-bench==$BENCH_VERSION"
 
 log "3/8 MariaDB utf8mb4 + binlog ROW (RPO 15 phút, NFR-BACKUP-01)"
 unless "test -f /etc/mysql/mariadb.conf.d/90-tracecore.cnf" sudo cp "$HERE/deploy/mariadb/90-tracecore.cnf" /etc/mysql/mariadb.conf.d/
@@ -101,9 +102,10 @@ run bench use "$SITE_NAME"
 log "6/8 build + production (nginx + supervisor)"
 run bench build --production
 run sudo bench setup production "$FRAPPE_USER" --yes
-run bench setup nginx --yes
 run sudo systemctl reload nginx
 
+# Lưu ý: bench backup không ghi tọa độ binlog → chưa đủ cho replay tới điểm thời gian (scripts/restore.sh).
+# Initial-deployment bổ sung dump `mariadb-dump --single-transaction --master-data=2` để đạt RPO <= 15 phút.
 log "7/8 sao lưu hằng ngày 02:00 (bench backup --with-files) vào $BACKUP_DIR"
 run sudo mkdir -p "$BACKUP_DIR"
 run sudo chown "$FRAPPE_USER" "$BACKUP_DIR"

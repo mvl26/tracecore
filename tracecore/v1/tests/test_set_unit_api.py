@@ -57,6 +57,29 @@ class TestSetUnitApi(FrappeTestCase):
 		self.assertEqual(log.station, "TR-004")
 		self.assertEqual(frappe.parse_json(log.new_value)["raw"], "XYZ-123")
 
+	def test_get_without_read_permission_writes_nothing(self):
+		before = frappe.db.count("Audit Log", {"action": "Reject"})
+		frappe.set_user(make_user("api-nobody@example.com"))
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				scan("XYZ-123")
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.count("Audit Log", {"action": "Reject"}), before)
+
+	def test_get_long_garbage_is_truncated(self):
+		result = scan("X" * 5000)
+		self.assertEqual(result["error"]["code"], "SCAN_INVALID")
+		self.assertLess(len(result["error"]["reason"]), 300)
+		log = frappe.get_all(
+			"Audit Log",
+			filters={"action": "Reject", "reason": "SCAN_INVALID"},
+			fields=["new_value"],
+			order_by="timestamp desc, name desc",
+			limit=1,
+		)[0]
+		self.assertLessEqual(len(frappe.parse_json(log.new_value)["raw"]), 120)
+
 	def test_get_wrong_type(self):
 		result = scan("TR-004")
 		self.assertEqual(result["error"]["code"], "SCAN_WRONG_TYPE")

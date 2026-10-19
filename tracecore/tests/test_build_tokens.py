@@ -97,9 +97,17 @@ class TestBuildTokens(FrappeTestCase):
 
 	def test_committed_css_up_to_date(self):
 		css_dir = os.path.join(APP_ROOT, "tracecore", "public", "css")
-		for filename, content in (("tokens.css", self.css), ("tracecore-theme.css", self.theme)):
+		for filename, content in self.bt.outputs(self.css, self.theme).items():
 			with open(os.path.join(css_dir, filename), encoding="utf-8") as handle:
 				self.assertEqual(handle.read(), content, msg=f"{filename}: chạy scripts/build_tokens.py")
+
+	def test_bundle_concatenates_tokens_and_theme(self):
+		outputs = self.bt.outputs(self.css, self.theme)
+		self.assertEqual(set(outputs), {"tokens.css", "tracecore-theme.css", "tracecore.bundle.css"})
+		bundle = outputs["tracecore.bundle.css"]
+		self.assertNotIn("@import", bundle)
+		self.assertIn(self.css.split("\n", 1)[1], bundle)
+		self.assertIn(self.theme.split("\n", 1)[1], bundle)
 
 	def test_check_mode_detects_drift(self):
 		out_dir = tempfile.mkdtemp()

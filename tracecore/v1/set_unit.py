@@ -29,6 +29,8 @@ def _reject(code, title, reason, action, raw):
 @idempotent
 def get(set_id, client_ts=None):
 	"""Tra cứu Set Unit theo chuỗi quét (Set ID GIAI); mã lạ → từ chối và ghi Audit Log (FR-M9-07.3)."""
+	# kiểm quyền trước mọi thao tác ghi (Audit Log Reject) — user không có quyền không để lại dấu vết
+	frappe.has_permission("Set Unit", "read", throw=True)
 	scanned = gs1.parse_scan(set_id)
 	if scanned["type"] == "unknown":
 		return _reject(
@@ -47,7 +49,6 @@ def get(set_id, client_ts=None):
 			scanned["raw"],
 		)
 
-	frappe.has_permission("Set Unit", "read", throw=True)
 	row = frappe.db.get_value("Set Unit", scanned["id"], FIELDS, as_dict=True)
 	if not row:
 		return _reject(

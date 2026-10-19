@@ -23,13 +23,14 @@ def _source_files(extensions):
 
 
 def source_strings():
+	"""{(chuỗi nguồn, context)}: context = tên DocType cho nhãn/option (Desk dịch bằng __(label, null, doctype))."""
 	strings = set()
 	for path in _source_files((".py",)):
 		with open(path, encoding="utf-8") as handle:
-			strings.update(PY_STRING.findall(handle.read()))
+			strings.update((s, None) for s in PY_STRING.findall(handle.read()))
 	for path in _source_files((".js", ".html")):
 		with open(path, encoding="utf-8") as handle:
-			strings.update(match[1] for match in JS_STRING.findall(handle.read()))
+			strings.update((match[1], None) for match in JS_STRING.findall(handle.read()))
 	for path in _source_files((".json",)):
 		if os.sep + "doctype" + os.sep not in path:
 			continue
@@ -37,18 +38,31 @@ def source_strings():
 			meta = json.load(handle)
 		if meta.get("doctype") != "DocType":
 			continue
-		strings.add(meta["name"])
+		doctype = meta["name"]
+		strings.add((doctype, None))
 		for field in meta.get("fields", []):
 			if field.get("label"):
-				strings.add(field["label"])
+				strings.add((field["label"], doctype))
 			if field.get("fieldtype") == "Select":
-				strings.update(option for option in (field.get("options") or "").split("\n") if option)
+				options = (field.get("options") or "").split("\n")
+				strings.update((option, doctype) for option in options if option)
 	return strings
 
 
-def vi_translations():
+def vi_rows():
 	with open(os.path.join(APP_PATH, "translations", "vi.csv"), encoding="utf-8", newline="") as handle:
-		return {row[0]: row[1] for row in csv.reader(handle) if row}
+		return [row for row in csv.reader(handle) if row]
+
+
+def vi_translations():
+	"""Khóa giống Frappe: "nguồn" hoặc "nguồn:context"."""
+	return {(f"{row[0]}:{row[2]}" if len(row) > 2 and row[2] else row[0]): row[1] for row in vi_rows()}
+
+
+def other_app_translations():
+	from frappe.translate import get_translations_from_apps
+
+	return get_translations_from_apps("vi", apps=["frappe", "erpnext", "hrms"])
 
 
 class TestStationPage(FrappeTestCase):
@@ -65,7 +79,19 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("javascript", response.mimetype)
 		body = response.get_data(as_text=True)
 		self.assertIn("CACHE_NAME", body)
-		self.assertIn("/assets/tracecore/css/tokens.css", body)
+		# precache đúng bundle có hash (đổi mỗi lần build), không phải file CSS URL cố định
+		self.assertIn("tracecore.bundle", body)
+		self.assertNotIn("/assets/tracecore/css/tokens.css", body)
+		self.assertIn("response.ok", body)
+
+	def test_desk_loads_hashed_token_bundle(self):
+		self.assertEqual(frappe.get_hooks("app_include_css", app_name="tracecore"), ["tracecore.bundle.css"])
+		with open(
+			os.path.join(APP_PATH, "public", "css", "tracecore.bundle.css"), encoding="utf-8"
+		) as handle:
+			bundle = handle.read()
+		self.assertIn("--tc-primary:", bundle)
+		self.assertIn("--primary-color:var(--tc-primary)", bundle)
 
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
@@ -78,9 +104,25 @@ class TestStationPage(FrappeTestCase):
 		self.assertEqual(manifest["background_color"], "#F4F6F9")
 
 	def test_vi_translations_cover_source_strings(self):
-		translations = vi_translations()
-		missing = sorted(s for s in source_strings() if not translations.get(s))
-		self.assertFalse(missing, msg=f"Thiếu bản dịch vi.csv: {missing}")
+		ours, others = vi_translations(), other_app_translations()
+
+		def translated(source, context):
+			return (context and ours.get(f"{source}:{context}")) or ours.get(source) or others.get(source)
+
+		missing = sorted(
+			f"{s}" + (f" [{c}]" if c else "") for s, c in source_strings() if not translated(s, c)
+		)
+		self.assertFalse(missing, msg=f"Thiếu bản dịch vi: {missing}")
+
+	def test_vi_translations_do_not_override_other_apps(self):
+		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms."""
+		others = other_app_translations()
+		overrides = sorted(
+			f"{row[0]!r}: {others[row[0]]!r} -> {row[1]!r}"
+			for row in vi_rows()
+			if not (len(row) > 2 and row[2]) and row[0] in others and others[row[0]].strip() != row[1].strip()
+		)
+		self.assertFalse(overrides, msg="Dùng cột context (tên DocType) cho:\n" + "\n".join(overrides))
 
 	def test_vi_translation_examples(self):
 		frappe.local.lang = "vi"

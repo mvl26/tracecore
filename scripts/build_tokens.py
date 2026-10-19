@@ -274,6 +274,17 @@ def build(tokens):
 	return "".join(parts), theme
 
 
+def outputs(tokens_css, theme_css):
+	"""Các file sinh ra. ``tracecore.bundle.css`` ghép sẵn (không @import: plugin postcss của Frappe
+	chép file ra thư mục tạm nên import tương đối hỏng); esbuild gắn hash → hết cache cũ khi deploy."""
+	body = lambda css: css.split("\n", 1)[1]  # noqa: E731 — bỏ dòng HEADER trùng
+	return {
+		"tokens.css": tokens_css,
+		"tracecore-theme.css": theme_css,
+		"tracecore.bundle.css": HEADER + body(tokens_css) + body(theme_css),
+	}
+
+
 def main(argv=None):
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	parser.add_argument("--tokens", default=DEFAULT_TOKENS)
@@ -285,7 +296,7 @@ def main(argv=None):
 		tokens_css, theme_css = build(json.load(handle))
 
 	status = 0
-	for filename, content in (("tokens.css", tokens_css), ("tracecore-theme.css", theme_css)):
+	for filename, content in outputs(tokens_css, theme_css).items():
 		path = os.path.join(args.out_dir, filename)
 		current = None
 		if os.path.exists(path):

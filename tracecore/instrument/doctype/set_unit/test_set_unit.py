@@ -72,6 +72,25 @@ class TestSetUnit(FrappeTestCase):
 			frappe.db.get_value("Code Registry", su.name, ["ref_doctype", "ref_name"]), ("Set Unit", su.name)
 		)
 
+	def test_lifecycle_fields_locked_without_step_gate(self):
+		su = make_set_unit()
+		for field, value in (("status", "Sterile"), ("cycles_used", 5), ("current_station", "TR-004")):
+			doc = frappe.get_doc("Set Unit", su.name)
+			doc.set(field, value)
+			with self.assertRaises(frappe.ValidationError, msg=field):
+				doc.save()
+
+	def test_step_gate_flag_allows_lifecycle_change(self):
+		su = make_set_unit()
+		su.status = "Sterile"
+		su.flags.tc_step_gate = True
+		su.save()
+		self.assertEqual(frappe.db.get_value("Set Unit", su.name, "status"), "Sterile")
+
+	def test_insert_ignores_supplied_lifecycle_values(self):
+		su = make_set_unit(status="Sterile", cycles_used=7, active_cycle_id="CY-261019-0001")
+		self.assertEqual((su.status, su.cycles_used, su.active_cycle_id), ("New", 0, None))
+
 	def test_max_cycles_must_be_positive(self):
 		with self.assertRaises(frappe.ValidationError):
 			make_set_unit(max_cycles=0)

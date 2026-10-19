@@ -34,10 +34,24 @@ def make_server(cfg, queue):
 			self.end_headers()
 			self.wfile.write(body)
 
+		def _host_ok(self):
+			# chống DNS rebinding: chỉ nhận Host là loopback đúng cổng đang nghe
+			port = self.server.server_address[1]
+			host = (self.headers.get("Host") or "").lower()
+			return host in {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
+
+		def _origin_ok(self):
+			# CLI/curl không gửi Origin; trình duyệt luôn gửi → chỉ chấp nhận đúng origin server TraceCore
+			origin = self.headers.get("Origin")
+			return origin is None or origin == allowed_origin
+
 		def do_OPTIONS(self):
-			self._send(204 if self.headers.get("Origin") == allowed_origin else 403, {})
+			ok = self._host_ok() and self.headers.get("Origin") == allowed_origin
+			self._send(204 if ok else 403, {})
 
 		def do_GET(self):
+			if not self._host_ok():
+				return self._send(403, {"error": "forbidden host"})
 			if self.path != "/health":
 				return self._send(404, {"error": "not found"})
 			self._send(
@@ -52,8 +66,13 @@ def make_server(cfg, queue):
 			)
 
 		def do_POST(self):
+			if not (self._host_ok() and self._origin_ok()):
+				return self._send(403, {"error": "forbidden origin"})
 			if self.path != "/print":
 				return self._send(404, {"error": "not found"})
+			# bắt buộc JSON: trình duyệt phải preflight (OPTIONS) nên trang lạ không gửi "no-cors" được
+			if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+				return self._send(415, {"error": "Content-Type must be application/json"})
 			length = int(self.headers.get("Content-Length") or 0)
 			if not 0 < length <= MAX_BODY:
 				return self._send(400, {"error": "invalid body size"})

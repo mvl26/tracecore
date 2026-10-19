@@ -29,3 +29,14 @@ def require_role(role):
 def require_station(station):
 	if not station or not frappe.db.exists("Zone Station", {"name": station, "is_zone": 0}):
 		frappe.throw(_("Station {0} does not exist.").format(station))
+
+
+def require_agent_for(station):
+	"""Agent chỉ được thao tác cho trạm của mình (user agent-<trạm>@…); System Manager được mọi trạm."""
+	from tracecore.setup.provision import agent_user_email
+
+	require_role(AGENT_ROLE)
+	if "System Manager" in frappe.get_roles():
+		return
+	if frappe.session.user != agent_user_email(station):
+		raise frappe.PermissionError(_("This agent is not registered for station {0}.").format(station))

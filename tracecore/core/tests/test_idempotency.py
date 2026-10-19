@@ -1,3 +1,5 @@
+import threading
+import time
 import uuid
 from datetime import datetime
 
@@ -28,9 +30,53 @@ def failing_write(value, client_ts=None):
 	raise frappe.ValidationError("boom")
 
 
+@idempotency.idempotent
+def slow_write(value, client_ts=None):
+	CALLS.append(value)
+	time.sleep(1.5)
+	return {"echo": value}
+
+
 def call(func, key, **kwargs):
 	with request_headers({"X-Idempotency-Key": key}):
 		return func(**kwargs)
+
+
+class TestIdempotencyConcurrency(FrappeTestCase):
+	"""Hai request cùng key chạy song song trên hai kết nối DB (REPEATABLE READ của MariaDB)."""
+
+	def test_concurrent_same_key_returns_stored_response(self):
+		CALLS.clear()
+		key = str(uuid.uuid4())
+		site, sites_path = frappe.local.site, frappe.local.sites_path
+		# mở snapshot của transaction chính trước khi request kia commit
+		frappe.db.sql("select count(*) from `tabIdempotency Key`")
+		frappe.local.message_log = []
+
+		def other_request():
+			frappe.init(site=site, sites_path=sites_path)
+			frappe.connect()
+			frappe.set_user("Administrator")
+			try:
+				call(slow_write, key, value="a", client_ts=TS)
+				frappe.db.commit()
+			finally:
+				frappe.destroy()
+
+		thread = threading.Thread(target=other_request)
+		thread.start()
+		time.sleep(0.5)  # request kia đã giữ khóa dòng Idempotency Key
+		try:
+			result = call(slow_write, key, value="a", client_ts=TS)
+		finally:
+			thread.join()
+			frappe.db.rollback()
+			frappe.db.delete("Idempotency Key", {"name": key})
+			frappe.db.commit()
+
+		self.assertEqual(result, {"echo": "a"})
+		self.assertEqual(CALLS, ["a"])
+		self.assertFalse([m for m in frappe.local.message_log if "already exists" in str(m)])
 
 
 class TestClientTime(FrappeTestCase):

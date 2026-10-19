@@ -61,7 +61,8 @@ class TraceCoreStation {
 		this.wrapper = wrapper;
 		this.station = new URLSearchParams(window.location.search).get("station");
 		this.stationInfo = null;
-		this.pending = null; // lần quét chưa có phản hồi server: {raw, key}
+		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
+		this.pending = null;
 		this.lastRaw = null;
 		this.manualOffline = false;
 		this.visible = false;
@@ -223,7 +224,7 @@ class TraceCoreStation {
 		this.input.value = "";
 		if (!raw) return this.focus();
 		if (!retry || !this.pending || this.pending.raw !== raw)
-			this.pending = { raw, key: uuid4() };
+			this.pending = { raw, key: uuid4(), ts: clientTs() };
 		this.lastRaw = raw;
 		if (this.isOffline()) return this.setOffline(true);
 
@@ -232,7 +233,7 @@ class TraceCoreStation {
 		try {
 			const result = await this.rpc(
 				"tracecore.v1.set_unit.get",
-				{ set_id: raw, client_ts: clientTs() },
+				{ set_id: raw, client_ts: this.pending.ts },
 				this.pending.key
 			);
 			this.pending = null;
@@ -251,6 +252,8 @@ class TraceCoreStation {
 
 	handleFailure(error) {
 		if (error.offline) return this.setOffline(true);
+		// 4xx là câu trả lời dứt khoát của server: lần quét sau phải dùng key mới
+		if (error.status >= 400 && error.status < 500) this.pending = null;
 		if (error.status === 403) {
 			return this.renderError({
 				title: __("Not permitted"),
@@ -313,7 +316,7 @@ class TraceCoreStation {
 		this.setState(
 			"offline",
 			`<div class="tc-alert tc-alert-info" role="status">
-				<p class="tc-alert-title">${esc(__("Offline"))}</p>
+				<p class="tc-alert-title">${esc(__("Station offline"))}</p>
 				<p>${esc(__("Set lookup needs the server. Scanning resumes when the connection returns."))}</p>
 				<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
@@ -337,14 +340,16 @@ class TraceCoreStation {
 			`<div class="tc-res">
 				<div class="tc-res-head">
 					<b class="tc-code">${esc(unit.set_id)}</b>
-					<span class="tc-badge${variant ? " tc-badge-" + variant : ""}">${esc(__(unit.status))}</span>
+					<span class="tc-badge${variant ? " tc-badge-" + variant : ""}">${esc(
+				__(unit.status, null, "Set Unit")
+			)}</span>
 					${unit.is_loaner ? `<span class="tc-badge tc-badge-o">${esc(__("Loaner"))}</span>` : ""}
 				</div>
 				<dl class="tc-res-grid">
 					<dt>${esc(__("Set Type"))}</dt>
 					<dd>${esc(unit.set_type_name)} <span class="tc-tag">${esc(unit.set_type)}</span></dd>
 					<dt>${esc(__("Sterilization Method"))}</dt>
-					<dd>${esc(__(unit.method))}</dd>
+					<dd>${esc(__(unit.method, null, "Instrument Set Type"))}</dd>
 					<dt>${esc(__("Cycles"))}</dt>
 					<dd>${esc(__("{0}/{1} cycles ({2}%)", [unit.cycles_used, unit.max_cycles, percent]))}</dd>
 					<dt>${esc(__("Current Station"))}</dt>

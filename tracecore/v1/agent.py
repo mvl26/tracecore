@@ -4,7 +4,7 @@ import frappe
 from frappe.utils import cint
 
 from tracecore.v1 import AGENT_HEARTBEAT_CACHE
-from tracecore.v1._common import AGENT_ROLE, require_role, require_station, server_time
+from tracecore.v1._common import AGENT_ROLE, require_agent_for, require_role, require_station, server_time
 
 
 @frappe.whitelist(methods=["POST"])
@@ -15,6 +15,7 @@ def heartbeat(station, client_ts=None, agent_version=None, queue_depth=None, pri
 	"""
 	require_role(AGENT_ROLE)
 	require_station(station)
+	require_agent_for(station)
 	now = server_time()
 	frappe.cache.hset(
 		AGENT_HEARTBEAT_CACHE,

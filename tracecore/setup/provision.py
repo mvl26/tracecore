@@ -17,6 +17,11 @@ USER_DOMAIN = "tracecore.local"
 STATION_ROLE_BY_ZONE = {"Dirty": "TC R03", "Clean": "TC R04", "Sterile": "TC R06"}
 
 
+def agent_user_email(station):
+	"""User kỹ thuật của agent một trạm — mỗi agent chỉ được thao tác cho đúng trạm này."""
+	return f"agent-{station.lower()}@{USER_DOMAIN}"
+
+
 def _station(station):
 	row = frappe.db.get_value(
 		"Zone Station", {"name": station, "is_zone": 0}, ["name", "station_step", "zone_type"], as_dict=True
@@ -49,7 +54,7 @@ def _write_private(path, config):
 def agent_user(station, config_path, server_url="http://127.0.0.1:8000"):
 	"""User agent-<trạm> (role TC Agent) + API key/secret ghi vào INI của agent."""
 	row = _station(station)
-	user = _ensure_user(f"agent-{row.name.lower()}@{USER_DOMAIN}", f"Agent {row.name}", ["TC Agent"])
+	user = _ensure_user(agent_user_email(row.name), f"Agent {row.name}", ["TC Agent"])
 	keys = generate_keys(user)
 
 	config = configparser.ConfigParser()

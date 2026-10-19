@@ -49,6 +49,29 @@ def test_offline_state(station_page, context, set_id):
 	expect(page.locator(".tc-result")).to_have_attribute("data-state", "empty", timeout=10000)
 
 
+def test_retry_after_timeout_gets_stored_result(station_page, set_id):
+	"""Server đã xử lý nhưng phản hồi tới trễ quá timeout 8 s → Thử lại phải nhận đúng kết quả đã lưu."""
+	page = station_page
+	first = {"pending": True}
+
+	def delay_first_response(route):
+		if not first["pending"]:
+			return route.continue_()
+		first["pending"] = False
+		response = route.fetch()  # server xử lý xong và lưu Idempotency Key
+		time.sleep(9)  # client hủy request sau RPC_TIMEOUT_MS = 8000
+		try:
+			route.fulfill(response=response)
+		except Exception:
+			pass  # request đã bị client hủy
+
+	page.route("**/api/method/tracecore.v1.set_unit.get", delay_first_response)
+	scan(page, set_id)
+	expect(page.locator(".tc-result")).to_have_attribute("data-state", "offline", timeout=15000)
+	page.locator(".tc-result [data-action='retry']").click()
+	expect(page.locator(".tc-result[data-state='result'] .tc-code")).to_have_text(set_id, timeout=5000)
+
+
 def test_missing_station_shows_error(logged_in_page):
 	page = logged_in_page
 	page.goto("/app/station")

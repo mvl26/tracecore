@@ -29,17 +29,15 @@ T6 Sterile storage,T6 Kho vô khuẩn,
 T7 Issuing,T7 Cấp phát,
 Ask R02 (zone supervisor) at this station for help.,Gọi R02 (giám sát khu) tại trạm để được hỗ trợ.,
 The kiosk address has no station code (?station=TR-...).,Địa chỉ kiosk thiếu mã trạm (?station=TR-...).,
-Not permitted,Không có quyền,
 This account cannot read set records.,Tài khoản này không được xem bộ dụng cụ.,
 Log in with the station account or call R10.,Đăng nhập bằng tài khoản trạm hoặc gọi R10.,
 Server error,Lỗi máy chủ,
 The server could not process the request ({0}).,Máy chủ không xử lý được yêu cầu ({0}).,
 "Retry, or call R02 if it happens again.","Thử lại, nếu vẫn lỗi thì gọi R02.",
-Loading...,Đang tải…,
 Retry,Thử lại,
 Switch to offline,Chuyển offline,
 Call R02,Gọi R02,
-Offline,Ngoại tuyến,
+Station offline,Ngoại tuyến,
 Set lookup needs the server. Scanning resumes when the connection returns.,Tra cứu bộ cần máy chủ. Quét lại khi có kết nối.,
 Loaner,Bộ mượn,
 {0}/{1} cycles ({2}%),{0}/{1} chu trình ({2}%),
@@ -55,11 +53,13 @@ Audit Log entries cannot be modified.,Không được sửa nhật ký thao tác
 Set ID is issued by the system and cannot be changed.,Set ID do hệ thống cấp và không được sửa.,
 Set Type {0} not found.,Không tìm thấy loại bộ {0}.,
 Max Cycles must be greater than zero.,Số chu trình tối đa phải lớn hơn 0.,
+Status and cycle fields are changed only by the step gate: {0},Trạng thái và số chu trình chỉ do cổng kiểm soát bước thay đổi: {0},
 Missing or invalid X-Idempotency-Key header.,Thiếu hoặc sai header X-Idempotency-Key.,
 X-Idempotency-Key {0} was already used for a different request.,X-Idempotency-Key {0} đã dùng cho một yêu cầu khác.,
 client_ts is required (ISO 8601 with offset).,Thiếu client_ts (ISO 8601 có múi giờ).,
 client_ts must be ISO 8601 with a UTC offset: {0},client_ts phải theo ISO 8601 có múi giờ: {0},
 This method requires the role {0}.,Thao tác này cần vai trò {0}.,
+This agent is not registered for station {0}.,Agent này không được đăng ký cho trạm {0}.,
 Invalid print status: {0},Trạng thái in không hợp lệ: {0},
 Invalid print output mode: {0},Nơi xuất bản in không hợp lệ: {0},
 No station role is defined for zone type {0}.,Chưa định nghĩa vai trò trạm cho loại khu {0}.,
@@ -77,16 +77,16 @@ Type Code,Mã loại bộ,
 Sterilization Method,Phương pháp tiệt khuẩn,
 Steam,Hấp hơi nước,
 Plasma,Plasma H2O2,
-Department,Khoa,
+Department,Khoa,Set Unit
 Is Loaner,Bộ mượn,
 Status,Trạng thái,
-New,Mới tạo,
+New,Mới tạo,Set Unit
 In Circulation,Đang lưu hành,
 Processing,Đang xử lý,
 Reprocess,Xử lý lại,
 Sterile,Vô khuẩn,
 At Department,Tại khoa,
-End of Life,Hết vòng đời,
+End of Life,Hết vòng đời,Set Unit
 Disposed,Thanh lý,
 Current Station,Trạm hiện tại,
 Active Cycle ID,Cycle ID hiện hành,
@@ -111,49 +111,51 @@ T5b,T5b,
 T6,T6,
 T7,T7,
 T8,T8,
-Code,Mã,
+Code,Mã,Code Registry
 Prefix,Tiền tố,
-Reference DocType,Loại chứng từ tham chiếu,
-Reference Name,Mã tham chiếu,
+Reference DocType,Loại chứng từ tham chiếu,Audit Log
+Reference DocType,Loại chứng từ tham chiếu,Code Registry
+Reference Name,Mã tham chiếu,Audit Log
+Reference Name,Mã tham chiếu,Code Registry
 Issued On,Ngày cấp,
 Issued At Station,Trạm cấp,
-Active,Đang hiệu lực,
-Disabled,Đã vô hiệu,
+Active,Đang hiệu lực,Code Registry
+Disabled,Đã vô hiệu,Code Registry
 Disabled On,Ngày vô hiệu,
 Disabled Reason,Lý do vô hiệu,
-Timestamp,Thời điểm,
+Timestamp,Thời điểm,Audit Log
 User,Người dùng,
 Device,Thiết bị,
-Action,Hành động,
+Action,Hành động,Audit Log
 Create,Tạo,
 Update,Cập nhật,
-Submit,Ghi sổ,
-Cancel,Hủy,
+Submit,Ghi sổ,Audit Log
+Cancel,Hủy,Audit Log
 Delete,Xóa,
 Login,Đăng nhập,
 Reject,Từ chối,
 Override,Ghi đè,
 View Patient Code,Xem mã BN,
-Sync,Đồng bộ,
+Sync,Đồng bộ,Audit Log
 Values,Giá trị,
 Old Value,Giá trị cũ,
 New Value,Giá trị mới,
-Context,Ngữ cảnh,
-Reason,Lý do,
-Request ID,Mã yêu cầu,
+Context,Ngữ cảnh,Audit Log
+Reason,Lý do,Audit Log
+Request ID,Mã yêu cầu,Audit Log
 Client Time (UTC),Giờ thiết bị (UTC),
-Key,Khóa,
-Endpoint,Endpoint,
-Created At,Thời điểm tạo,
+Key,Khóa,Idempotency Key
+Endpoint,Endpoint,Idempotency Key
+Created At,Thời điểm tạo,Idempotency Key
 Request Hash,Mã băm yêu cầu,
 Response,Phản hồi,
 Printer,Máy in,
-Template,Mẫu nhãn,
-Queued,Chờ in,
+Template,Mẫu nhãn,Print Job
+Queued,Chờ in,Print Job
 Printed,Đã in,
 Failed,Thất bại,
 Output Mode,Nơi xuất,
-File,Tệp,
+File,Tệp,Print Job
 Output Reference,Tham chiếu đầu ra,
 Attempts,Số lần thử,
 Printed At,Thời điểm in,
