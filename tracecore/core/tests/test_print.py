@@ -44,7 +44,9 @@ class TestCorePrint(FrappeTestCase):
 		result = core_print.ack(job, "Printed", "File", output_ref="/tmp/1.zpl")
 		self.assertEqual(result, {"ok": True, "status": "Printed"})
 		doc.reload()
-		self.assertEqual((doc.status, doc.output_mode, doc.output_ref, doc.attempts), ("Printed", "File", "/tmp/1.zpl", 1))
+		self.assertEqual(
+			(doc.status, doc.output_mode, doc.output_ref, doc.attempts), ("Printed", "File", "/tmp/1.zpl", 1)
+		)
 		self.assertIsNotNone(doc.printed_at)
 
 	def test_ack_failed_records_error(self):

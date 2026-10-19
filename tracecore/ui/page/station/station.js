@@ -35,7 +35,10 @@ function uuid4() {
 	bytes[6] = (bytes[6] & 0x0f) | 0x40;
 	bytes[8] = (bytes[8] & 0x3f) | 0x80;
 	const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(
+		16,
+		20
+	)}-${hex.slice(20)}`;
 }
 
 function clientTs(date = new Date()) {
@@ -132,7 +135,9 @@ class TraceCoreStation {
 			if (alert && !alert.querySelector(".tc-help")) {
 				alert.insertAdjacentHTML(
 					"beforeend",
-					`<p class="tc-help">${esc(__("Ask R02 (zone supervisor) at this station for help."))}</p>`
+					`<p class="tc-help">${esc(
+						__("Ask R02 (zone supervisor) at this station for help.")
+					)}</p>`
 				);
 			}
 		}
@@ -207,7 +212,9 @@ class TraceCoreStation {
 		this.stationInfo = station;
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
-		this.root.querySelector(".tc-zone-label").textContent = __(ZONE_LABEL[station.zone_type] || "Station");
+		this.root.querySelector(".tc-zone-label").textContent = __(
+			ZONE_LABEL[station.zone_type] || "Station"
+		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
 	}
 
@@ -215,7 +222,8 @@ class TraceCoreStation {
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.focus();
-		if (!retry || !this.pending || this.pending.raw !== raw) this.pending = { raw, key: uuid4() };
+		if (!retry || !this.pending || this.pending.raw !== raw)
+			this.pending = { raw, key: uuid4() };
 		this.lastRaw = raw;
 		if (this.isOffline()) return this.setOffline(true);
 
@@ -273,7 +281,10 @@ class TraceCoreStation {
 	}
 
 	renderEmpty() {
-		this.setState("empty", `<p class="tc-empty">${esc(__("Scan the Set ID on the set tag."))}</p>`);
+		this.setState(
+			"empty",
+			`<p class="tc-empty">${esc(__("Scan the Set ID on the set tag."))}</p>`
+		);
 	}
 
 	renderError(error) {
@@ -284,9 +295,15 @@ class TraceCoreStation {
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
 				<p class="tc-alert-action">${esc(error.action)}</p>
 				<div class="tc-actions">
-					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(__("Retry"))}</button>
-					<button type="button" class="tc-btn tc-btn-secondary" data-action="offline">${esc(__("Switch to offline"))}</button>
-					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(__("Call R02"))}</button>
+					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
+						__("Retry")
+					)}</button>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="offline">${esc(
+						__("Switch to offline")
+					)}</button>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
+						__("Call R02")
+					)}</button>
 				</div>
 			</div>`
 		);
@@ -299,8 +316,12 @@ class TraceCoreStation {
 				<p class="tc-alert-title">${esc(__("Offline"))}</p>
 				<p>${esc(__("Set lookup needs the server. Scanning resumes when the connection returns."))}</p>
 				<div class="tc-actions">
-					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(__("Retry"))}</button>
-					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(__("Call R02"))}</button>
+					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
+						__("Retry")
+					)}</button>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
+						__("Call R02")
+					)}</button>
 				</div>
 			</div>`
 		);
@@ -308,7 +329,9 @@ class TraceCoreStation {
 
 	renderResult(unit) {
 		const variant = STATUS_BADGE[unit.status] || "";
-		const percent = unit.max_cycles ? Math.round((100 * unit.cycles_used) / unit.max_cycles) : 0;
+		const percent = unit.max_cycles
+			? Math.round((100 * unit.cycles_used) / unit.max_cycles)
+			: 0;
 		this.setState(
 			"result",
 			`<div class="tc-res">
@@ -334,7 +357,10 @@ class TraceCoreStation {
 	// ---- PWA shell ----
 	addManifestLink() {
 		if (!document.querySelector('link[rel="manifest"]')) {
-			document.head.insertAdjacentHTML("beforeend", '<link rel="manifest" href="/manifest.json">');
+			document.head.insertAdjacentHTML(
+				"beforeend",
+				'<link rel="manifest" href="/manifest.json">'
+			);
 		}
 	}
 

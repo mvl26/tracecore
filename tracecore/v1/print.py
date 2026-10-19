@@ -16,7 +16,9 @@ def test_label(station, client_ts=None):
 	require_role(AGENT_ROLE)
 	require_station(station)
 	label = core_print.render_test_label(station)
-	job = core_print.create_job(station, label["zpl"], {"giai": label["giai"], "hri": label["hri"]}, "test-label")
+	job = core_print.create_job(
+		station, label["zpl"], {"giai": label["giai"], "hri": label["hri"]}, "test-label"
+	)
 	return {
 		"print_job": job,
 		"giai": label["giai"],

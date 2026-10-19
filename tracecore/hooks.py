@@ -1,7 +1,7 @@
 app_name = "tracecore"
 app_title = "TraceCore"
 app_publisher = "Miyano Vietnam"
-app_description = "Truy xuất dụng cụ và quản lý khoa KSNK/CSSD trên Frappe v15"
+app_description = "Instrument traceability and CSSD / infection control management on Frappe v15"
 app_email = "info@miyano.com.vn"
 app_license = "gpl-3.0"
 
@@ -285,4 +285,3 @@ scheduler_events = {
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

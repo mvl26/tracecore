@@ -26,7 +26,9 @@ def test_hello_file_mode_end_to_end(ini, stub, tmp_path, capsys):
 
 
 def test_hello_printer_mode(stub, printer, tmp_path):
-	ini = write_ini(tmp_path / "agent.ini", stub.url, tmp_path, printer_host="127.0.0.1", printer_port=printer.port)
+	ini = write_ini(
+		tmp_path / "agent.ini", stub.url, tmp_path, printer_host="127.0.0.1", printer_port=printer.port
+	)
 	assert cli.main(["--config", str(ini), "hello"]) == 0
 	for _ in range(50):
 		if printer.received:

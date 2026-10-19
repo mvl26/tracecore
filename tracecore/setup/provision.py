@@ -74,7 +74,9 @@ def station_user(station, password):
 	if not role:
 		frappe.throw(_("No station role is defined for zone type {0}.").format(row.zone_type))
 	user = _ensure_user(
-		f"station-{(row.station_step or row.name).lower()}@{USER_DOMAIN}", f"Station {row.station_step}", [role]
+		f"station-{(row.station_step or row.name).lower()}@{USER_DOMAIN}",
+		f"Station {row.station_step}",
+		[role],
 	)
 	update_password(user, password)
 	return user

@@ -55,6 +55,9 @@ ignore = [
 ]
 typing-modules = ["frappe.types.DF"]
 
+[tool.bandit]
+exclude_dirs = ["tests", "tests_e2e", "tracecore_agent/tests", "node_modules"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "tab"

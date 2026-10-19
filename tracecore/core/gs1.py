@@ -71,9 +71,7 @@ def giai_payload(giai):
 
 def _is_valid_giai(value):
 	return (
-		5 <= len(value) <= MAX_GIAI_LENGTH
-		and re.match(r"\d{4}", value) is not None
-		and set(value) <= CSET82
+		5 <= len(value) <= MAX_GIAI_LENGTH and re.match(r"\d{4}", value) is not None and set(value) <= CSET82
 	)
 
 

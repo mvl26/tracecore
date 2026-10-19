@@ -59,7 +59,9 @@ def get(set_id, client_ts=None):
 		)
 	frappe.has_permission("Set Unit", "read", doc=row.name, throw=True)
 
-	set_type = frappe.db.get_value("Instrument Set Type", row.set_type, ["set_type_name", "method"], as_dict=True)
+	set_type = frappe.db.get_value(
+		"Instrument Set Type", row.set_type, ["set_type_name", "method"], as_dict=True
+	)
 	data = {key: row[key] for key in FIELDS if key != "name"}
 	data.update(
 		set_id=row.name,

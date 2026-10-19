@@ -49,7 +49,7 @@ def _preview_png(payload, layout):
 
 
 def render_test_label(station):
-	"""Nhãn thử 50×30 mm: DataMatrix GIAI test (không ghi Code Registry) + chữ ASCII."""
+	"""Nhãn thử 50x30 mm: DataMatrix GIAI test (không ghi Code Registry) + chữ ASCII."""
 	giai = gs1.make_giai(gs1.configured_company_prefix(), "TEST" + now_datetime().strftime("%y%m%d%H%M%S"))
 	payload = gs1.giai_payload(giai)
 	layout = label_layout(giai, station)

@@ -22,7 +22,9 @@ def sample_write(value, client_ts=None):
 
 @idempotency.idempotent
 def failing_write(value, client_ts=None):
-	frappe.get_doc({"doctype": "Instrument Set Type", "type_code": "IDF", "set_type_name": "x", "method": "Steam"}).insert()
+	frappe.get_doc(
+		{"doctype": "Instrument Set Type", "type_code": "IDF", "set_type_name": "x", "method": "Steam"}
+	).insert()
 	raise frappe.ValidationError("boom")
 
 

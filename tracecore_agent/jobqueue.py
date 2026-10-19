@@ -71,7 +71,8 @@ class PrintQueue:
 	def mark_done(self, job_id, output_ref):
 		with self._lock, self._connect() as db:
 			db.execute(
-				"update jobs set status = 'done', output_ref = ?, error = null where id = ?", (output_ref, job_id)
+				"update jobs set status = 'done', output_ref = ?, error = null where id = ?",
+				(output_ref, job_id),
 			)
 
 	def mark_failed(self, job_id, error):
@@ -96,4 +97,6 @@ class PrintQueue:
 
 	def depth(self):
 		with self._connect() as db:
-			return db.execute("select count(*) from jobs where status in ('pending', 'printing')").fetchone()[0]
+			return db.execute("select count(*) from jobs where status in ('pending', 'printing')").fetchone()[
+				0
+			]

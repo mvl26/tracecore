@@ -35,7 +35,9 @@ class TestAgentApi(FrappeTestCase):
 
 	def test_ack_marks_printed(self):
 		job = call(print_api.test_label, station="TR-004")["print_job"]
-		result = call(print_api.ack, print_job=job, status="Printed", output_mode="File", output_ref="/x/1.zpl")
+		result = call(
+			print_api.ack, print_job=job, status="Printed", output_mode="File", output_ref="/x/1.zpl"
+		)
 		self.assertEqual(result, {"ok": True, "status": "Printed"})
 		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Printed")
 
@@ -51,9 +53,13 @@ class TestAgentApi(FrappeTestCase):
 				call(fn, station="TR-999")
 
 	def test_heartbeat_visible_in_ping(self):
-		result = call(agent_api.heartbeat, station="TR-004", agent_version="0.1.0", queue_depth=2, printer="file")
+		result = call(
+			agent_api.heartbeat, station="TR-004", agent_version="0.1.0", queue_depth=2, printer="file"
+		)
 		self.assertTrue(result["ok"])
 		frappe.set_user("Administrator")
 		agent = v1.ping(station="TR-004")["agent"]
-		self.assertEqual((agent["agent_version"], agent["queue_depth"], agent["printer"]), ("0.1.0", 2, "file"))
+		self.assertEqual(
+			(agent["agent_version"], agent["queue_depth"], agent["printer"]), ("0.1.0", 2, "file")
+		)
 		self.assertTrue(agent["last_seen"])

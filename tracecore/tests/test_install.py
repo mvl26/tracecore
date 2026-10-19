@@ -19,9 +19,7 @@ EXPECTED_MODULES = (
 class TestInstall(FrappeTestCase):
 	def test_module_defs_registered(self):
 		for module in EXPECTED_MODULES:
-			self.assertEqual(
-				frappe.db.get_value("Module Def", module, "app_name"), "tracecore", msg=module
-			)
+			self.assertEqual(frappe.db.get_value("Module Def", module, "app_name"), "tracecore", msg=module)
 		# "Core" thuộc frappe, "HR" thuộc hrms — tracecore không được chiếm (amendment 2026-10-19)
 		self.assertEqual(frappe.db.get_value("Module Def", "Core", "app_name"), "frappe")
 		self.assertNotEqual(frappe.db.get_value("Module Def", "HR", "app_name"), "tracecore")

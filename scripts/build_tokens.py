@@ -113,7 +113,12 @@ GROUP_VARS = [
 	(
 		"motion",
 		"--tc-",
-		{"duration-fast": "dur-fast", "duration-base": "dur-base", "duration-toast": "dur-toast", "easing": "ease"},
+		{
+			"duration-fast": "dur-fast",
+			"duration-base": "dur-base",
+			"duration-toast": "dur-toast",
+			"easing": "ease",
+		},
 	),
 	("z-index", "--tc-z-", {}),
 ]
@@ -213,7 +218,9 @@ def root_vars(tokens):
 	if missing:
 		raise ValueError(f"Color tokens without a --tc-* name in COLOR_VARS: {missing}")
 
-	result = [(name, css_value(resolve(tokens, path), _node(tokens, path)["$type"])) for name, path in COLOR_VARS]
+	result = [
+		(name, css_value(resolve(tokens, path), _node(tokens, path)["$type"])) for name, path in COLOR_VARS
+	]
 	for group, prefix, renames in GROUP_VARS:
 		for key, leaf in _leaves(_node(tokens, group)):
 			value = resolve(tokens, f"{group}.{key}")

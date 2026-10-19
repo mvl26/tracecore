@@ -15,7 +15,9 @@ def _token(css, name):
 
 
 def get_context(context):
-	with open(os.path.join(frappe.get_app_path("tracecore"), "public", "css", "tokens.css"), encoding="utf-8") as handle:
+	with open(
+		os.path.join(frappe.get_app_path("tracecore"), "public", "css", "tokens.css"), encoding="utf-8"
+	) as handle:
 		css = handle.read()
 	context.background_color = _token(css, "--tc-bg")
 	context.theme_color = _token(css, "--tc-primary")

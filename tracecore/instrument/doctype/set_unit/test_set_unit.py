@@ -43,7 +43,12 @@ class TestSetUnit(FrappeTestCase):
 		frappe.flags.in_import = True
 		try:
 			su = frappe.get_doc(
-				{"doctype": "Set Unit", "name": "MY-IMPORT-ID", "set_type": make_set_type("SUT").name, "max_cycles": 100}
+				{
+					"doctype": "Set Unit",
+					"name": "MY-IMPORT-ID",
+					"set_type": make_set_type("SUT").name,
+					"max_cycles": 100,
+				}
 			).insert()
 		finally:
 			frappe.flags.in_import = False
