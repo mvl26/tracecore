@@ -5,6 +5,9 @@ from tracecore.core import audit
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import request_headers
 
+# User -> Email Account -> Company (ERPNext) cần Setup Wizard; test tự tạo user qua factory.
+test_ignore = ["User"]
+
 
 class TestAuditLog(FrappeTestCase):
 	def test_log_inserts_row(self):

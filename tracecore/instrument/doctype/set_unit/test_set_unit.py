@@ -5,6 +5,10 @@ from tracecore.core import code_registry, gs1
 from tracecore.tests.factories import make_set_type, make_set_unit
 from tracecore.tests.utils import bru
 
+# Department (ERPNext) kéo theo test record Company → Warehouse, cần ERPNext đã chạy Setup Wizard;
+# test Set Unit không dùng department nên bỏ phụ thuộc này (site CI mới chưa có wizard).
+test_ignore = ["Department"]
+
 
 def _audit_rows(set_unit, action):
 	return frappe.get_all(
