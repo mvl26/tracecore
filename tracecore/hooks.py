@@ -33,7 +33,11 @@ fixtures = [
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/tracecore/css/tracecore.css"
+# Biến --tc-* sinh từ docs/tokens.json (scripts/build_tokens.py) + ánh xạ biến Frappe Desk
+app_include_css = [
+	"/assets/tracecore/css/tokens.css",
+	"/assets/tracecore/css/tracecore-theme.css",
+]
 # app_include_js = "/assets/tracecore/js/tracecore.js"
 
 # include js, css files in header of web template
