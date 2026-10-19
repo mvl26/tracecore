@@ -1,0 +1,17 @@
+{
+ "_comment": "Mẫu sites/<site>/site_config.json cho TraceCore. File thật nằm ngoài repo (F-8). bench new-site tự sinh db_* và encryption_key; sao lưu encryption_key và tc_patient_key riêng, mất khóa = mất dữ liệu mã hóa.",
+ "db_name": "<sinh bởi bench new-site>",
+ "db_password": "<sinh bởi bench new-site>",
+ "db_type": "mariadb",
+ "encryption_key": "<sinh bởi Frappe lần đầu chạy>",
+ "host_name": "https://tracecore.example.internal",
+ "tc_gs1_company_prefix": "9520000",
+ "tc_patient_key": "<openssl rand -base64 32 - khóa AES-256-GCM mã bệnh nhân (ADR-010)>",
+ "mail_server": "<smtp nội bộ bệnh viện>",
+ "mail_port": 587,
+ "use_tls": 1,
+ "mail_login": "<tài khoản gửi thư>",
+ "mail_password": "<mật khẩu>",
+ "auto_email_id": "tracecore@example.internal",
+ "maintenance_mode": 0
+}

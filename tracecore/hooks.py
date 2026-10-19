@@ -1,14 +1,22 @@
 app_name = "tracecore"
 app_title = "TraceCore"
 app_publisher = "Miyano Vietnam"
-app_description = "Truy xuất dụng cụ và quản lý khoa KSNK/CSSD trên Frappe v15"
+app_description = "Instrument traceability and CSSD / infection control management on Frappe v15"
 app_email = "info@miyano.com.vn"
 app_license = "gpl-3.0"
 
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext", "hrms"]
+
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu)
+# ------------------
+fixtures = [
+	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	{"dt": "Zone Station", "filters": [["name", "like", "ZONE-%"]]},
+	{"dt": "Zone Station", "filters": [["name", "in", [f"TR-00{n}" for n in range(1, 8)]]]},
+]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -25,7 +33,8 @@ app_license = "gpl-3.0"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/tracecore/css/tracecore.css"
+# Biến --tc-* sinh từ docs/tokens.json (scripts/build_tokens.py) + ánh xạ biến Frappe Desk
+app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + tracecore-theme.css
 # app_include_js = "/assets/tracecore/js/tracecore.js"
 
 # include js, css files in header of web template
@@ -83,7 +92,7 @@ app_license = "gpl-3.0"
 # ------------
 
 # before_install = "tracecore.install.before_install"
-# after_install = "tracecore.install.after_install"
+after_install = "tracecore.setup.install.after_install"
 
 # Uninstallation
 # ------------
@@ -154,16 +163,26 @@ app_license = "gpl-3.0"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+_AUDIT_EVENTS = {
+	"after_insert": "tracecore.core.audit.on_document_event",
+	"on_update": "tracecore.core.audit.on_document_event",
+	"on_submit": "tracecore.core.audit.on_document_event",
+	"on_cancel": "tracecore.core.audit.on_document_event",
+	"on_trash": "tracecore.core.audit.block_delete",
+}
+
+doc_events = {
+	"Set Unit": dict(_AUDIT_EVENTS),
+}
 
 # Scheduled Tasks
 # ---------------
+
+scheduler_events = {
+	"daily": [
+		"tracecore.core.idempotency.purge_expired",
+	],
+}
 
 # scheduler_events = {
 # 	"all": [
@@ -263,4 +282,3 @@ app_license = "gpl-3.0"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

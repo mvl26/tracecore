@@ -4,6 +4,12 @@
 > Nguồn yêu cầu: `docs/srs.md` v1.11 Finalized (90 FR, 35 NFR) · `docs/use-cases.md` (39 UC) · BA v1.10 #08 DM, #11 API, #12 ARCH, #13 SEC, #16 WSS · `docs/.architecture-inputs.md` (quyết định chủ đầu tư 2026-10-17)
 > Quy ước: tiếng Việt, thuật ngữ kỹ thuật tiếng Anh; ADR inline (§9); Mermaid dùng `flowchart`/`sequenceDiagram`/`erDiagram`. Kế thừa #12 ARCH v1.10 với hai đổi tên: app `cssd` → `tracecore`, RPC namespace `cssd.v1.*` → `tracecore.v1.*` (xem ADR-001). Mọi ID FR/NFR/UC trong tài liệu này trỏ về `docs/srs.md` và `docs/use-cases.md`.
 
+## Revision History
+
+| Ngày | Phiên bản | Người thực hiện | Thay đổi |
+| --- | --- | --- | --- |
+| 2026-10-19 | Amendment A-01 | Miyano (dev) + Claude Code, chủ đầu tư duyệt | Tên module Frappe: `Core` (frappe) và `HR` (hrms) đã là Module Def có sẵn, không đăng ký trùng được. Dịch vụ `core` ở package Python `tracecore/core/`; DocType nền (Audit Log, Code Registry, Idempotency Key, Print Job) ở module `TraceCore`; Zone Station ở `Admin Reports`; Page `station` ở `UI`; M4 chưa đăng ký Module Def. Xem ghi chú ở §5.2 và §5.3. |
+
 ---
 
 ## 1. Introduction and Goals
@@ -238,6 +244,12 @@ flowchart TB
 
 App `tracecore` tổ chức theo **module Frappe = phân hệ**. Tên module (thư mục) và DocType nằm trong `tracecore/tracecore/<module>/doctype/...`; module `core` chứa dịch vụ xuyên suốt mà mọi module khác gọi; không module nghiệp vụ nào import chéo trực tiếp ngoài qua `core` hoặc qua Link/hook.
 
+> **Amendment A-01 (2026-10-19).** Frappe yêu cầu tên Module Def duy nhất trên toàn bench; `Core` thuộc frappe và `HR` thuộc hrms nên không đăng ký được hai module `core`/`hr` đúng tên trên. Hiện thực:
+> - `core`: dịch vụ ở package Python thường `tracecore/core/` (đường dẫn trong các ADR giữ nguyên: `tracecore.core.gs1`, `tracecore.core.audit`, `tracecore.core.idempotency`, `tracecore.core.step_gate`…). DocType nền xuyên suốt nằm trong module Frappe `TraceCore` (thư mục `tracecore/tracecore/doctype/...`).
+> - `ui`: module Frappe `UI` chứa Page `station` (`tracecore/ui/page/station/`).
+> - `hr` (M4): hiện chỉ là package `tracecore/hr/`, chưa đăng ký Module Def. Khi M4 có DocType đầu tiên, đặt tên module khác `HR` qua amendment.
+> - Module Def đăng ký: `TraceCore, Instrument, Reprocessing, Linen, Equipment, Inventory, Costing, Par, Admin Reports, Waste, UI`.
+
 ```mermaid
 flowchart TB
     subgraph app["app tracecore"]
@@ -403,6 +415,8 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 | Par Override | DT-OVERRIDE | Ghi đè có phê duyệt; WF-08; số chu trình thêm, thời hạn | — | FR-M8-03, FR-M8-04 |
 
 **M9 — Quản trị, báo cáo (2 gốc + 9 mới)**
+
+> **Amendment A-01 (2026-10-19), vị trí module Frappe:** Zone Station đặt ở module `Admin Reports`. Audit Log, Code Registry, Idempotency Key, Print Job (cùng các DocType nền xuyên suốt khác do `core.*` sở hữu) đặt ở module `TraceCore`, không ở `Admin Reports`. Bảng dưới vẫn nhóm theo FR (M9) như cũ. ADR-008 ghi "Audit Log (M9)" nên đọc là "Audit Log thuộc nhóm FR M9, nằm ở module Frappe `TraceCore`".
 
 | DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
 | --- | --- | --- | --- | --- |

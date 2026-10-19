@@ -1,0 +1,29 @@
+<div class="tc-station" data-surface="STN">
+	<div class="tc-zonebar tc-zone-web" role="presentation"></div>
+	<div class="tc-offline-banner" role="status" hidden>
+		{%= __("Offline - transactions are kept on this device") %}
+	</div>
+	<main class="tc-main">
+		<header class="tc-title">
+			<h2 class="tc-station-name">{%= __("Station") %}</h2>
+			<span class="tc-tag tc-zone-label"></span>
+			<span class="tc-tag tc-station-code"></span>
+		</header>
+		<form class="tc-card tc-scan" autocomplete="off" novalidate>
+			<label class="tc-sr-only" for="tc-scan-input">{%= __("Scan Set ID") %}</label>
+			<input
+				id="tc-scan-input"
+				class="tc-scan-input"
+				type="text"
+				inputmode="none"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				placeholder="{%= __("Scan Set ID...") %}"
+				aria-label="{%= __("Scan Set ID") %}"
+			/>
+			<button type="submit" class="tc-btn tc-btn-primary tc-scan-button">{%= __("Scan") %}</button>
+		</form>
+		<section class="tc-card tc-result" aria-live="polite" data-state="loading"></section>
+	</main>
+</div>

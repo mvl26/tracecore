@@ -63,6 +63,35 @@ repos:
                 tracecore/public/js/lib/.*
             )$
 
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml", "-q"]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: (^|/)(tests|tests_e2e)/|(^|/)test_[^/]*\.py$
+
+  - repo: local
+    hooks:
+      - id: check-architecture
+        name: TraceCore architecture rules (R1-R4)
+        entry: python3 scripts/check_architecture.py
+        language: system
+        pass_filenames: false
+        types_or: [python, javascript, html, css]
+      - id: check-bru-coverage
+        name: BRU markers match docs/srs.md
+        entry: python3 scripts/check_bru_coverage.py
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: build-tokens-check
+        name: tokens.css up to date with docs/tokens.json
+        entry: python3 scripts/build_tokens.py --check
+        language: system
+        pass_filenames: false
+        files: ^(docs/tokens\.json|scripts/build_tokens\.py|tracecore/public/css/.*)$
+
 ci:
     autoupdate_schedule: weekly
     skip: []

@@ -60,6 +60,12 @@ pre-commit run --all-files
 ## Quy tắc kiến trúc — không được vi phạm
 
 - Module Frappe = phân hệ: `core`, `instrument` (M1), `reprocessing` (M2), `linen` (M3), `hr` (M4), `equipment` (M5), `inventory` (M6), `costing` (M7), `par` (M8), `admin_reports` (M9), `waste` (M10), `ui`.
+- **Amendment 2026-10-19 (tên module, architecture §5.2):** Module Def `Core` đã thuộc frappe, `HR` đã thuộc hrms, nên không đăng ký trùng tên. Thực tế trong repo:
+  - Dịch vụ `core` ở package Python thường `tracecore/core/` (giữ đường dẫn ADR: `tracecore.core.gs1`, `tracecore.core.audit`, `tracecore.core.idempotency.idempotent`, `tracecore.core.step_gate`…).
+  - DocType nền xuyên suốt (Audit Log, Code Registry, Idempotency Key, Print Job…) ở module Frappe `TraceCore` (thư mục `tracecore/tracecore/`).
+  - Zone Station ở `Admin Reports` (M9); Page `station` ở `UI`.
+  - M4 `hr` hiện chỉ là package `tracecore/hr/`, chưa đăng ký Module Def; khi M4 có DocType đầu tiên phải đặt tên module khác `HR` qua amendment.
+  - Module Def đã đăng ký: `TraceCore, Instrument, Reprocessing, Linen, Equipment, Inventory, Costing, Par, Admin Reports, Waste, UI`.
 - Không import chéo giữa M1–M10; chỉ đi qua `core` hoặc Link/hook.
 - **Chỉ `core.step_gate` được đổi trạng thái Set Unit / chuyển bước.** Không `set_value('Set Unit', …, 'status')` ở nơi khác. Frappe Workflow chỉ để hiển thị.
 - Chứng từ đi Nháp → Ghi sổ → Hủy, không xóa (`is_submittable=1`). `Audit Log` append-only, cấm delete ở permission và hook.
