@@ -14,26 +14,35 @@ from tracecore.core import gs1
 LABEL_WIDTH_DOTS = 590  # 50 mm ở 300 dpi
 LABEL_HEIGHT_DOTS = 354  # 30 mm ở 300 dpi
 DM_ORIGIN = (30, 40)
-TEXT_X = 240
-TEXT_ROWS = (60, 130, 200)
 ACK_STATUSES = ("Printed", "Failed")
 OUTPUT_MODES = ("Printer", "File")
+
+
+def label_layout(giai, station):
+	"""Các dòng chữ của nhãn thử: (x, y, cỡ chữ theo dot, nội dung ASCII).
+
+	Cột phải cạnh DataMatrix cho tiêu đề/trạm; chuỗi người đọc (8004)… chạy hết bề ngang ở đáy nhãn.
+	"""
+	return [
+		(200, 50, 34, "TraceCore TEST"),
+		(200, 110, 28, f"Station {station}"),
+		(30, 290, 24, gs1.giai_hri(giai)),
+	]
 
 
 def _zpl_text(value):
 	return value.replace("^", "").replace("~", "")
 
 
-def _preview_png(payload, lines):
+def _preview_png(payload, layout):
 	from PIL import Image, ImageDraw, ImageFont
 
 	canvas = Image.new("RGB", (LABEL_WIDTH_DOTS, LABEL_HEIGHT_DOTS), "white")
 	symbol = Image.open(io.BytesIO(gs1.encode_datamatrix_png(payload, module_px=6, margin_px=12)))
 	canvas.paste(symbol, DM_ORIGIN)
 	draw = ImageDraw.Draw(canvas)
-	font = ImageFont.load_default(size=26)
-	for y, line in zip(TEXT_ROWS, lines, strict=False):
-		draw.text((TEXT_X, y), line, fill="black", font=font)
+	for x, y, size, text in layout:
+		draw.text((x, y), text, fill="black", font=ImageFont.load_default(size=size))
 	buffer = io.BytesIO()
 	canvas.save(buffer, format="PNG")
 	return buffer.getvalue()
@@ -42,14 +51,18 @@ def _preview_png(payload, lines):
 def render_test_label(station):
 	"""Nhãn thử 50×30 mm: DataMatrix GIAI test (không ghi Code Registry) + chữ ASCII."""
 	giai = gs1.make_giai(gs1.configured_company_prefix(), "TEST" + now_datetime().strftime("%y%m%d%H%M%S"))
-	hri = gs1.giai_hri(giai)
 	payload = gs1.giai_payload(giai)
-	lines = ["TraceCore TEST", hri, f"Station {station}"]
+	layout = label_layout(giai, station)
 	parts = ["^XA", "^CI28", f"^PW{LABEL_WIDTH_DOTS}", f"^LL{LABEL_HEIGHT_DOTS}"]
 	parts.append(gs1.zpl_datamatrix(payload, *DM_ORIGIN))
-	parts += [f"^FO{TEXT_X},{y}^A0N,30,30^FD{_zpl_text(line)}^FS" for y, line in zip(TEXT_ROWS, lines, strict=False)]
+	parts += [f"^FO{x},{y}^A0N,{size},{size}^FD{_zpl_text(text)}^FS" for x, y, size, text in layout]
 	parts.append("^XZ")
-	return {"giai": giai, "hri": hri, "zpl": "".join(parts), "preview_png": _preview_png(payload, lines)}
+	return {
+		"giai": giai,
+		"hri": gs1.giai_hri(giai),
+		"zpl": "".join(parts),
+		"preview_png": _preview_png(payload, layout),
+	}
 
 
 def create_job(station, zpl, data=None, template="test-label", printer=None):

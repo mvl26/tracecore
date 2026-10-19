@@ -23,6 +23,15 @@ class TestCorePrint(FrappeTestCase):
 		self.assertEqual(image.size, (590, 354))
 		self.assertEqual(gs1.decode_datamatrix_png(label["preview_png"]), "\x1d8004" + giai)
 
+	def test_label_text_fits_inside_label(self):
+		from PIL import ImageFont
+
+		giai = gs1.make_giai(gs1.configured_company_prefix(), "TEST" + "9" * 12)
+		for x, y, size, text in core_print.label_layout(giai, "TR-004"):
+			width = ImageFont.load_default(size=size).getlength(text)
+			self.assertLessEqual(x + width, core_print.LABEL_WIDTH_DOTS, msg=text)
+			self.assertLessEqual(y + size, core_print.LABEL_HEIGHT_DOTS, msg=text)
+
 	def test_test_label_does_not_consume_codes(self):
 		label = core_print.render_test_label("TR-004")
 		self.assertFalse(code_registry.is_issued(label["giai"]))

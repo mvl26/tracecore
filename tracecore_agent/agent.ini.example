@@ -1,0 +1,23 @@
+; Cấu hình TraceCore Station Agent — chép thành ~/.tracecore-agent/agent.ini (chmod 600).
+; Không commit file thật: api_key/api_secret là bí mật. Tạo tự động bằng:
+;   bench --site <SITE> execute tracecore.setup.provision.agent_user \
+;     --kwargs "{'station': 'TR-004', 'config_path': '~/.tracecore-agent/agent.ini', 'server_url': 'https://<site>'}"
+
+[server]
+url = https://tracecore.example.internal
+api_key = <api-key>
+api_secret = <api-secret>
+
+[station]
+id = TR-004
+
+[printer]
+; Để trống host = chế độ File: ghi <job>.zpl + <job>.png vào output_dir (khi trạm chưa có máy in)
+host =
+port = 9100
+
+[agent]
+listen_host = 127.0.0.1
+listen_port = 8765
+output_dir = ~/.tracecore-agent/labels
+db_path = ~/.tracecore-agent/queue.sqlite3
