@@ -26,6 +26,11 @@ class TestInstall(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Module Def", "Core", "app_name"), "frappe")
 		self.assertNotEqual(frappe.db.get_value("Module Def", "HR", "app_name"), "tracecore")
 
+	def test_roles_exist(self):
+		expected = [f"TC R{n:02d}" for n in range(1, 11)] + ["TC Agent"]
+		for role in expected:
+			self.assertTrue(frappe.db.exists("Role", role), msg=role)
+
 	def test_system_settings_localized(self):
 		settings = frappe.get_single("System Settings")
 		self.assertEqual(settings.language, "vi")

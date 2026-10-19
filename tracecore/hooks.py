@@ -8,7 +8,15 @@ app_license = "gpl-3.0"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext", "hrms"]
+
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu)
+# ------------------
+fixtures = [
+	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	{"dt": "Zone Station", "filters": [["name", "like", "ZONE-%"]]},
+	{"dt": "Zone Station", "filters": [["name", "in", [f"TR-00{n}" for n in range(1, 8)]]]},
+]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

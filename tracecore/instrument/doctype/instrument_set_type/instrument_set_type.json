@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "autoname": "field:type_code",
+ "creation": "2026-10-19 10:00:00.000000",
+ "description": "Instrument set type skeleton (FEAT-001): code, name and sterilization method.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "type_code",
+  "set_type_name",
+  "method"
+ ],
+ "fields": [
+  {
+   "description": "2-8 uppercase letters or digits, used inside the GS1 GIAI Set ID.",
+   "fieldname": "type_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Type Code",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "set_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Type Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sterilization Method",
+   "options": "Steam\nPlasma",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-19 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instrument",
+ "name": "Instrument Set Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R07"
+  },
+  {
+   "read": 1,
+   "role": "TC R08"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  },
+  {
+   "read": 1,
+   "role": "TC R10"
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "set_type_name",
+ "track_changes": 1
+}
