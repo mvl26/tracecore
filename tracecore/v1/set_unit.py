@@ -5,7 +5,7 @@ from frappe import _
 
 from tracecore.core import audit, gs1
 from tracecore.core.idempotency import idempotent
-from tracecore.v1._payload import rejection
+from tracecore.v1._common import rejection
 
 FIELDS = (
 	"name",

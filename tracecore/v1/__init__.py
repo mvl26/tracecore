@@ -1,13 +1,11 @@
 """RPC namespace ``tracecore.v1.<domain>.<action>`` (ADR-001). Logic nghiệp vụ nằm ở ``tracecore.core``."""
 
-from zoneinfo import ZoneInfo
-
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
 from frappe.utils.data import get_system_timezone
 
 import tracecore
+from tracecore.v1._common import server_time
 
 AGENT_HEARTBEAT_CACHE = "tc_agent_heartbeat"
 
@@ -37,15 +35,14 @@ def _station_info(station):
 @frappe.whitelist()
 def ping(station=None):
 	"""Bắt tay của kiosk/agent: phiên bản, site, múi giờ, giờ server, thông tin trạm, trạng thái agent."""
-	time_zone = get_system_timezone()
 	info, error = _station_info(station) if station else (None, None)
 	agent = frappe.cache.hget(AGENT_HEARTBEAT_CACHE, station) if station else None
 	return {
 		"app": "tracecore",
 		"version": tracecore.__version__,
 		"site": frappe.local.site,
-		"time_zone": time_zone,
-		"server_time": now_datetime().replace(tzinfo=ZoneInfo(time_zone)).isoformat(),
+		"time_zone": get_system_timezone(),
+		"server_time": server_time(),
 		"station": info,
 		"station_error": error,
 		"agent": agent,

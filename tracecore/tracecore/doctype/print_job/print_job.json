@@ -1,0 +1,140 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-10-19 10:00:00.000000",
+ "description": "Label print queue entry; printed by the Station Agent (ADR-006).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "station",
+  "printer",
+  "template",
+  "status",
+  "column_break_result",
+  "output_mode",
+  "output_ref",
+  "attempts",
+  "printed_at",
+  "error",
+  "reprint_reason",
+  "section_payload",
+  "payload",
+  "data"
+ ],
+ "fields": [
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Station",
+   "options": "Zone Station",
+   "reqd": 1
+  },
+  {
+   "description": "IP:port of the printer; empty while printers are configured in FEAT-002.",
+   "fieldname": "printer",
+   "fieldtype": "Data",
+   "label": "Printer"
+  },
+  {
+   "fieldname": "template",
+   "fieldtype": "Data",
+   "label": "Template"
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Queued\nPrinted\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "output_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Output Mode",
+   "options": "\nPrinter\nFile",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_ref",
+   "fieldtype": "Data",
+   "label": "Output Reference",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "printed_at",
+   "fieldtype": "Datetime",
+   "label": "Printed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reprint_reason",
+   "fieldtype": "Small Text",
+   "label": "Reprint Reason"
+  },
+  {
+   "fieldname": "section_payload",
+   "fieldtype": "Section Break",
+   "label": "Payload"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "ZPL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "JSON",
+   "label": "Data",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-19 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Print Job",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC Agent"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
