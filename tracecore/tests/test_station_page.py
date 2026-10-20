@@ -137,6 +137,11 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("--tc-primary:", bundle)
 		self.assertIn("--primary-color:var(--tc-primary)", bundle)
 
+	def test_station_page_includes_t4_script(self):
+		# màn T4 (SCR-08) ở file riêng; Frappe nối nó vào script của Page station qua hook page_js
+		self.assertIn("public/js/station_t4.js", frappe.get_hooks("page_js").get("station", []))
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t4.js")))
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()

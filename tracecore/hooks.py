@@ -51,7 +51,8 @@ app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + trac
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+# Màn T4 đóng gói (SCR-08, FEAT-018): Frappe nối file này sau station.js trong script của Page station
+page_js = {"station": "public/js/station_t4.js"}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
