@@ -406,3 +406,7 @@ Code {0} is not a pack label or Cycle ID.,Mã {0} không phải nhãn gói hay C
 Scan the DataMatrix or the Cycle ID on the pack label.,Quét DataMatrix hoặc Cycle ID trên nhãn gói.,
 Code {0} has not been issued.,Mã {0} chưa được cấp.,
 "Pack status, void and print count fields are changed only by the packing service: {0}","Trạng thái gói, thông tin hủy và số lần in chỉ được đổi qua dịch vụ đóng gói: {0}",
+Set type has no BOM,Loại bộ chưa có BOM,
+Set type {0} has no BOM for version {1}.,Loại bộ {0} chưa có BOM cho phiên bản {1}.,
+Ask R02 to define the BOM of this set type.,Nhờ R02 khai báo BOM cho loại bộ này.,
+Not printed: Cycle ID {0} was voided ({1}).,Không in: Cycle ID {0} đã bị hủy ({1}).,

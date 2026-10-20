@@ -1,14 +1,14 @@
 """Đóng gói tại T4 (M2, FEAT-018, UC-08): quy tắc hạn dùng, lô chỉ thị, BOM; sinh Cycle ID, in lại, hủy, tra cứu.
 
 - Quy tắc (hàm thuần, không ghi): `compute_expiry`, `pack_types`, `resolve_ci_batch`, `missing_lines`.
-- Dịch vụ trạm T4 (Task 9 bọc thành RPC): `get_context`, `generate`, `reprint`, `void`, `lookup`, `label_context`.
+- Dịch vụ trạm T4 (Task 9 bọc thành RPC): `get_context`, `generate`, `reprint`, `void`, `lookup`;
+  nhãn và lệnh in ở `tracecore.reprocessing.pack_label`.
 
 M2 không import `tracecore.instrument`/`tracecore.par` (lint R1): dữ liệu của M1/M8 đi qua hook
 (`tracecore.core.extension`, D9) hoặc đọc DocType theo tên. Trạng thái Set Unit chỉ đổi qua `core.step_gate`;
 trạng thái gói/số lần in chỉ đổi ở đây (cờ ``flags.tc_packing`` của Pack). Từ chối nghiệp vụ là `BlockedError`.
 """
 
-import base64
 import contextlib
 import math
 from datetime import timedelta, timezone
@@ -16,54 +16,30 @@ from zoneinfo import ZoneInfo
 
 import frappe
 from frappe import _
-from frappe.utils import cint, formatdate, get_datetime, get_fullname, getdate, now_datetime
+from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import code_registry, extension, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
+from tracecore.reprocessing import pack_label
 
 CI_CLASSES = ("5", "6")  # FR-M2-07.2: lô chỉ thị loại 5/6 theo phương pháp
 SOURCE_PACK_TYPE = "Pack Type"
 SOURCE_SET_TYPE = "Set Type"
 STEP = "T4"
 MAINT_ACTIONS = ("Done", "Deferred")  # option của Pack Maintenance Done.action
-REPRINT_WINDOW_SECONDS = 600  # FR-M2-08.5: 10 phút theo giờ server, đếm số giây nguyên (R3)
+# FR-M2-08.5: 10 phút kể từ khi sinh Cycle ID, đo bằng giờ server (D13) từ Pack.creation, số giây nguyên (R3)
+REPRINT_WINDOW_SECONDS = 600
 SAVEPOINT = "tc_pack_generate"
 # ctx["set_unit"] của hook (D9) là các trường này trừ department
-SET_FIELDS = (
-	"name",
-	"set_type",
-	"status",
-	"cycles_used",
-	"max_cycles",
-	"active_cycle_id",
-	"current_cycle_no",
-	"is_loaner",
-	"department",
+SET_FIELDS = tuple(
+	"name set_type status cycles_used max_cycles active_cycle_id current_cycle_no is_loaner department".split()
 )
-SET_TYPE_FIELDS = (
-	"name",
-	"set_type_name",
-	"method",
-	"gtin",
-	"department",
-	"default_pack_type",
-	"shelf_life_days",
-	"tray_image",
-	"current_bom_version",
+SET_TYPE_FIELDS = tuple(
+	"name set_type_name method gtin department default_pack_type shelf_life_days tray_image current_bom_version".split()
 )
-LOOKUP_KEYS = (
-	"cycle_id",
-	"set_id",
-	"set_name",
-	"packed_at",
-	"packer",
-	"expiry",
-	"method",
-	"pack_type",
-	"ci_batch",
-)
+LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
 
 def _blocked(code, title, reason, action, items=None):
@@ -213,6 +189,16 @@ def missing_lines(bom, confirmed):
 	return [line for line in bom if line["instrument"] not in ticked]
 
 
+def _no_bom(set_type, version):
+	"""Loại bộ chưa có dòng BOM ở phiên bản hiện hành: không có gì để đối chiếu nên không sinh Cycle ID."""
+	return _blocked(
+		"BOM_INCOMPLETE",
+		_("Set type has no BOM"),
+		_("Set type {0} has no BOM for version {1}.").format(set_type, version),
+		_("Ask R02 to define the BOM of this set type."),
+	)
+
+
 def _bom_incomplete(missing):
 	return _blocked(
 		"BOM_INCOMPLETE",
@@ -326,16 +312,6 @@ def _raise_first(hook, ctx):
 			raise BlockedError(block)
 
 
-def _label_items(method):
-	"""Item nhãn (nhóm Label) còn dùng của phương pháp `method`, theo mã."""
-	return frappe.get_all(
-		"Item",
-		filters={"tc_item_group_cssd": "Label", "tc_compatible_method": method, "disabled": 0},
-		fields=["name", "item_name"],
-		order_by="name asc",
-	)
-
-
 def get_context(set_id, station):
 	"""Ngữ cảnh màn T4 (SCR-08) cho bộ `set_id` tại `station`; chỉ đọc, không khóa.
 
@@ -345,7 +321,7 @@ def get_context(set_id, station):
 	"""
 	unit, set_type, ctx = _open(set_id, station)
 	printer = core_print.select_printer(station, set_type.method)
-	labels = _label_items(set_type.method)
+	labels = pack_label.label_items(set_type.method)
 	return {
 		"set": {
 			"set_id": unit.name,
@@ -382,7 +358,7 @@ def generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cli
 	quyết định ngày trong Cycle ID, AI (11) và hạn dùng. Khóa Set Unit trước mọi kiểm tra (hai lần sinh cùng bộ
 	chạy lần lượt: lần sau gặp ACTIVE_CYCLE_EXISTS). Mọi lỗi (BlockedError hay khác) hoàn tác về savepoint rồi
 	ném lại: không còn Pack, dòng Code Registry, số series, cổng T4 hay thay đổi bảo dưỡng nào; Audit Log Reject
-	do RPC ghi sau đó. In không bao giờ làm mất Cycle ID (FR-M2-08.8): xem `_queue_label`.
+	do RPC ghi sau đó. In không bao giờ làm mất Cycle ID (FR-M2-08.8): xem `pack_label.queue_label`.
 
 	Trả ``{"pack": {...}, "hri", "datamatrix_png_b64", "print": {"print_job", "status", "printer", "zpl",
 	"warning"}}``; ngày/giờ trong ``pack`` dạng ISO (``YYYY-MM-DD``, ``YYYY-MM-DD HH:MM:SS``), chữ giữ dấu.
@@ -401,6 +377,8 @@ def _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cl
 	unit, set_type, ctx = _open(set_id, station, for_update=True, maint_actions=maint_actions)
 	_raise_first("tracecore_pack_checks", ctx)
 	bom = ctx.get("bom") or []
+	if not bom:
+		raise _no_bom(set_type.name, cint(ctx.get("bom_version")))
 	missing = missing_lines(bom, confirmed)
 	if missing:
 		raise _bom_incomplete(missing)
@@ -446,7 +424,7 @@ def _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cl
 	step_gate.record(unit.name, STEP, "Pass", "Pack", cycle_id, station)
 	step_gate.bind_cycle(unit.name, cycle_id, station)
 	extension.run("tracecore_after_cycle_id", pack, ctx)
-	return _result(pack, _queue_label(pack, station, printer))
+	return pack_label.pack_result(pack, pack_label.queue_label(pack, station, printer))
 
 
 def _system_time(client_ts):
@@ -496,152 +474,6 @@ def _maint_rows(ctx):
 	return rows
 
 
-# --- Nhãn và lệnh in (D7, BRU-REP-011, FR-M2-08.8) ---------------------------------------------------
-
-
-def label_context(pack):
-	"""`doc` của mẫu nhãn gói, đúng bộ khóa của `sample_pack_context`; dùng cho Print Job và khi in lại.
-
-	Ngày ``dd/mm/yyyy``, giờ ``dd/mm/yyyy HH:mm``; chữ giữ tiếng Việt có dấu (chỉ `core.print.render` bỏ dấu cho
-	máy in không hỗ trợ Unicode). `dept` = tên khoa (trống nếu không có), `packer` = họ tên người đóng gói.
-	"""
-	packed_at, expiry = get_datetime(pack.packed_at), getdate(pack.expiry)
-	department = pack.department and frappe.db.get_value("Department", pack.department, "department_name")
-	return {
-		"set_id": pack.set_unit,
-		"cycle_id": pack.name,
-		"set_name": pack.set_name or "",
-		"dept": department or pack.department or "",
-		"packer": get_fullname(pack.packed_by_user),
-		"packed_at": f"{packed_at:%d/%m/%Y %H:%M}",
-		"expiry": f"{expiry:%d/%m/%Y}",
-		"method_label": _(pack.method),
-		"pack_type": frappe.db.get_value("Item", pack.pack_type, "item_name") or pack.pack_type,
-		"ci_lot": pack.ci_batch or "",
-		"bom_version": cint(pack.bom_version),
-		"is_loaner": _is_loaner(pack),
-		"is_test": gs1.is_test_gtin(pack.gtin),
-		"warning": "",
-		"payload": pack.barcode_payload,
-		"hri": _hri(pack),
-	}
-
-
-def _hri(pack):
-	return gs1.cycle_hri(pack.gtin, get_datetime(pack.packed_at).date(), getdate(pack.expiry), pack.name)
-
-
-def _is_loaner(pack):
-	return bool(cint(frappe.db.get_value("Set Unit", pack.set_unit, "is_loaner")))
-
-
-def _warning(code, title, reason, action):
-	return {"code": code, "title": title, "reason": reason, "action": action}
-
-
-def _queue_label(pack, station, printer, reprint_reason=None):
-	"""Tạo Print Job cho nhãn gói tại `station`; trả ``{"print_job", "status", "printer", "zpl", "warning"}``.
-
-	Có máy in đúng loại nhãn (`printer`, từ `select_printer`) và mẫu active theo phương pháp + ngôn ngữ máy in →
-	render với cờ Unicode của máy in, job ``Queued``. Không có máy in (``NO_PRINTER_FOR_METHOD``), không có mẫu
-	(``LABEL_TEMPLATE_MISSING``) hay mẫu lỗi (``LABEL_RENDER_FAILED``) → job ``Waiting`` giữ ``label_context`` trong
-	``data`` để `core.print.set_roll` dựng lại, kèm cảnh báo; Cycle ID vẫn giữ.
-	"""
-	context = label_context(pack)
-	job = {
-		"station": station,
-		"data": {"method": pack.method, "label_object": "Pack", "label_context": context},
-		"ref_doctype": "Pack",
-		"ref_name": pack.name,
-		"reprint_reason": reprint_reason,
-	}
-	template = core_print.active_template("Pack", pack.method, printer["language"]) if printer else None
-	zpl, warning = None, None
-	if not printer:
-		labels = ", ".join(row.item_name or row.name for row in _label_items(pack.method))
-		warning = _warning(
-			"NO_PRINTER_FOR_METHOD",
-			_("No printer has the right labels"),
-			_(
-				"No active printer at station {0} has {1} labels loaded. Cycle ID {2} is kept; its label is waiting."
-			).format(station, _(pack.method), pack.name),
-			_(
-				"Load a roll of {0} into a printer at this station, then scan the roll code (CN-#####) to print the waiting label."
-			).format(labels or _(pack.method)),
-		)
-	elif not template:
-		warning = _warning(
-			"LABEL_TEMPLATE_MISSING",
-			_("No label template"),
-			_(
-				"There is no active {0} label template for {1} packs. Cycle ID {2} is kept; its label is waiting."
-			).format(printer["language"], _(pack.method), pack.name),
-			_(
-				"Ask R10 to activate a label template, then scan the roll code on the printer to print the waiting label."
-			),
-		)
-	else:
-		logged = len(frappe.local.message_log)
-		try:
-			zpl = core_print.render(
-				template.body,
-				context,
-				bool(printer["supports_unicode"]),
-				dpi=template.dpi,
-				width_mm=template.width_mm,
-				height_mm=template.height_mm,
-				language=template.language,
-				name=template.name,
-			)
-		except frappe.ValidationError as error:
-			del frappe.local.message_log[logged:]  # lỗi đã thành cảnh báo, không để msgprint lên kiosk
-			warning = _warning(
-				"LABEL_RENDER_FAILED",
-				_("Label could not be prepared"),
-				_("{0} Cycle ID {1} is kept; its label is waiting.").format(error, pack.name),
-				_(
-					"Ask R10 to fix the label template, then scan the roll code on the printer to print the waiting label."
-				),
-			)
-	if zpl is None:
-		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
-		return {"print_job": name, "status": "Waiting", "printer": None, "zpl": None, "warning": warning}
-	name = core_print.create_job(
-		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
-	)
-	return {"print_job": name, "status": "Queued", "printer": printer["name"], "zpl": zpl, "warning": None}
-
-
-def _pack_summary(pack):
-	return {
-		"cycle_id": pack.name,
-		"set_id": pack.set_unit,
-		"set_name": pack.set_name,
-		"method": pack.method,
-		"pack_type": pack.pack_type,
-		"pack_type_name": frappe.db.get_value("Item", pack.pack_type, "item_name"),
-		"expiry": str(getdate(pack.expiry)),
-		"shelf_life_days_applied": cint(pack.shelf_life_days_applied),
-		"packed_at": f"{get_datetime(pack.packed_at):%Y-%m-%d %H:%M:%S}",
-		"packer": get_fullname(pack.packed_by_user),
-		"ci_batch": pack.ci_batch,
-		"bom_version": cint(pack.bom_version),
-		"label_type": pack.label_type,
-		"is_loaner": _is_loaner(pack),
-		"is_test": gs1.is_test_gtin(pack.gtin),
-	}
-
-
-def _result(pack, printed):
-	png = gs1.encode_datamatrix_png(pack.barcode_payload)
-	return {
-		"pack": _pack_summary(pack),
-		"hri": _hri(pack),
-		"datamatrix_png_b64": base64.b64encode(png).decode("ascii"),
-		"print": printed,
-	}
-
-
 # --- In lại, hủy, tra cứu (FR-M2-08.5/.6, FR-M2-07.9, BRU-ID-005, AC-10, AC-14) ----------------------
 
 
@@ -664,10 +496,11 @@ def _save_packing(pack):
 
 
 def reprint(cycle_id, reason, station):
-	"""In lại nhãn cùng Cycle ID trong 10 phút từ `packed_at` theo giờ server (AC-10); trả cùng dạng `generate`.
+	"""In lại nhãn cùng Cycle ID trong 10 phút kể từ khi sinh (AC-10); trả cùng dạng `generate`.
 
-	Lý do trống → REASON_REQUIRED; gói không còn Packed → STATUS_INVALID_FOR_STATION; quá 600 s (số giây nguyên,
-	R3) → REPRINT_WINDOW_EXPIRED. `label_print_count + 1`; Print Job mới mang `reprint_reason`.
+	Cửa sổ đo bằng giờ server từ `Pack.creation` (lúc server sinh Cycle ID), không từ `packed_at` (giờ client, có
+	thể lệch). Lý do trống → REASON_REQUIRED; gói không còn Packed → STATUS_INVALID_FOR_STATION; quá 600 s (số
+	giây nguyên, R3) → REPRINT_WINDOW_EXPIRED. `label_print_count + 1`; Print Job mới mang `reprint_reason`.
 	"""
 	_require_station(station)
 	reason = (reason or "").strip()
@@ -688,7 +521,7 @@ def reprint(cycle_id, reason, station):
 			),
 			_("Scan the label of a pack that is still packed, or call R02."),
 		)
-	elapsed = math.floor((now_datetime() - get_datetime(pack.packed_at)).total_seconds())
+	elapsed = math.floor((now_datetime() - get_datetime(pack.creation)).total_seconds())
 	if elapsed > REPRINT_WINDOW_SECONDS:
 		raise _blocked(
 			"REPRINT_WINDOW_EXPIRED",
@@ -701,13 +534,14 @@ def reprint(cycle_id, reason, station):
 	pack.label_print_count = cint(pack.label_print_count) + 1
 	_save_packing(pack)
 	printer = core_print.select_printer(station, pack.method)
-	return _result(pack, _queue_label(pack, station, printer, reprint_reason=reason))
+	return pack_label.pack_result(pack, pack_label.queue_label(pack, station, printer, reprint_reason=reason))
 
 
 def void(cycle_id, reason, station, note=None):
 	"""Hủy hiệu lực Cycle ID tại T4 (D12): gói Void, mã bị vô hiệu trong Code Registry, cổng T4 Không đạt.
 
 	`reason` phải là một option `void_reason` của Pack (REASON_REQUIRED); chỉ gói Packed (PACK_NOT_VOIDABLE).
+	Nhãn còn chờ in (Print Job Waiting) của gói chuyển Failed để `set_roll` không bao giờ in mã đã hủy.
 	T4 Fail (``redo_count + 1``, Set Unit → Reprocess) khi gói thuộc chu trình hiện hành của bộ; bỏ Cycle ID hiện
 	hành của bộ khi đó chính là mã bị hủy. Trả ``{"cycle_id", "set_id", "status", "void_reason"}``.
 	"""
@@ -745,6 +579,7 @@ def void(cycle_id, reason, station, note=None):
 	pack.update({"status": "Void", "void_reason": reason, "void_note": note})
 	_save_packing(pack)
 	code_registry.disable(pack.name, f"{reason}: {note}" if note else reason)
+	pack_label.cancel_waiting_jobs(pack, reason)
 	if cint(unit.current_cycle_no) == cint(pack.cycle_no):
 		step_gate.record(unit.name, STEP, "Fail", "Pack", pack.name, station)
 	if unit.active_cycle_id == pack.name:
@@ -766,7 +601,7 @@ def lookup(raw):
 			_("Scan the DataMatrix or the Cycle ID on the pack label."),
 		)
 	pack = frappe.get_doc("Pack", _pack_name(scanned["id"]))
-	summary = _pack_summary(pack)
+	summary = pack_label.pack_summary(pack)
 	return {
 		**{key: summary[key] for key in LOOKUP_KEYS},
 		"status": pack.status,

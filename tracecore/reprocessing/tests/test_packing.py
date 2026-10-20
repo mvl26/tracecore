@@ -10,7 +10,7 @@ from tracecore.core import extension, gs1
 from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import packing
+from tracecore.reprocessing import pack_label, packing
 from tracecore.setup.label_templates import sample_pack_context
 from tracecore.tests.factories import (
 	make_assembly_record,
@@ -20,6 +20,7 @@ from tracecore.tests.factories import (
 	make_maintenance,
 	make_pack_type,
 	make_printer,
+	make_roll,
 	make_set_unit,
 	make_t4_ready_set,
 	next_free_test_cycle_id,
@@ -89,15 +90,33 @@ def _series(key):
 	return rows[0][0] if rows else None
 
 
-def _latest_job(cycle_id):
-	name = frappe.get_all(
+def _jobs_of(cycle_id):
+	"""{tên Print Job: (status, error)} của nhãn gói `cycle_id`."""
+	rows = frappe.get_all(
 		"Print Job",
 		filters={"ref_doctype": "Pack", "ref_name": cycle_id},
-		pluck="name",
-		order_by="creation desc, name desc",
-		limit=1,
-	)[0]
-	return frappe.get_doc("Print Job", name)
+		fields=["name", "status", "error"],
+	)
+	return {str(row.name): (row.status, row.error) for row in rows}
+
+
+def _capture_sql(fn, *args, **kwargs):
+	"""Chạy `fn` và trả mọi câu SQL đã phát (chữ thường, gộp khoảng trắng)."""
+	queries = []
+	real_sql = frappe.db.sql
+
+	def spy(query, *a, **kw):
+		queries.append(" ".join(str(query).split()).lower())
+		return real_sql(query, *a, **kw)
+
+	with patch.object(frappe.db, "sql", spy):
+		fn(*args, **kwargs)
+	return queries
+
+
+def _selects_on(queries, doctype):
+	table = f"`tab{doctype}`".lower()
+	return [q for q in queries if q.startswith("select") and table in q]
 
 
 class TestGetContext(IsolatedTestCase):
@@ -177,6 +196,14 @@ class TestGetContext(IsolatedTestCase):
 			block = _block(self, call)
 			self.assertEqual((block.code, block.http_status), ("STATUS_INVALID_FOR_STATION", 409))
 		self.assertEqual(_packs_of(fresh.set_id), [])
+
+	def test_get_context_issues_no_locking_reads(self):
+		# màn T4 chỉ hiển thị: không khóa Set Unit hay dòng cổng (chỉ generate khóa)
+		ready = make_t4_ready_set()
+		queries = _capture_sql(packing.get_context, ready.set_id, STATION)
+		self.assertTrue(_selects_on(queries, "Set Unit"))
+		self.assertTrue(_selects_on(queries, "Step Gate Result"))
+		self.assertFalse([q for q in queries if "for update" in q])
 
 	@bru("BRU-PAR-002")
 	def test_get_context_runs_prechecks(self):
@@ -326,6 +353,17 @@ class TestGenerate(IsolatedTestCase):
 		self.assertEqual(_cycle_codes(), codes)
 		self.assertEqual(_series(series_key), series)
 		self.assertIsNone(_gate(ready.set_id, "T4"))
+
+	@bru("BRU-REP-013")
+	def test_empty_bom_blocks_generate(self):
+		# loại bộ chưa khai báo BOM cho phiên bản hiện hành: không có gì để đối chiếu thì không sinh Cycle ID
+		ready = make_t4_ready_set(bom=())
+		block = _block(self, _generate, ready)
+		self.assertEqual((block.code, block.http_status), ("BOM_INCOMPLETE", 422))
+		self.assertIn(ready.set_type, block.reason)
+		self.assertIn("1", block.reason)
+		self.assertIn("R02", block.action)
+		self.assertEqual(_packs_of(ready.set_id), [])
 
 	@bru("BRU-REP-013")
 	def test_failure_after_writes_rolls_back_everything(self):
@@ -525,17 +563,9 @@ class TestGenerate(IsolatedTestCase):
 
 	def test_generate_locks_set_unit_before_reading_gates(self):
 		ready = make_t4_ready_set()
-		queries = []
-		real_sql = frappe.db.sql
-
-		def spy(query, *args, **kwargs):
-			queries.append(" ".join(str(query).split()).lower())
-			return real_sql(query, *args, **kwargs)
-
-		with patch.object(frappe.db, "sql", spy):
-			_generate(ready)
-		unit_reads = [q for q in queries if q.startswith("select") and "`tabset unit`" in q]
-		gate_reads = [q for q in queries if q.startswith("select") and "`tabstep gate result`" in q]
+		queries = _capture_sql(_generate, ready)
+		unit_reads = _selects_on(queries, "Set Unit")
+		gate_reads = _selects_on(queries, "Step Gate Result")
 		self.assertIn("for update", unit_reads[0])
 		self.assertTrue(gate_reads)
 		self.assertFalse([q for q in gate_reads if "for update" not in q])
@@ -567,11 +597,15 @@ class TestReprintVoidLookup(IsolatedTestCase):
 
 	@bru("BRU-ID-005")
 	def test_reprint_window_boundary(self):
-		ready, cycle_id = self._packed()
+		_ready, cycle_id = self._packed()
 		self.assertEqual(_block(self, packing.reprint, cycle_id, "  ", STATION).code, "REASON_REQUIRED")
+		# cửa sổ đo bằng giờ server từ lúc sinh Cycle ID (Pack.creation); giờ client (packed_at) lệch bao nhiêu
+		# cũng không ảnh hưởng
+		created = frappe.utils.get_datetime(frappe.db.get_value("Pack", cycle_id, "creation"))
+		frappe.db.set_value("Pack", cycle_id, "packed_at", created - timedelta(days=1))
 
-		frappe.db.set_value("Pack", cycle_id, "packed_at", now_datetime() - timedelta(seconds=600))
-		result = packing.reprint(cycle_id, "Nhãn bị nhòe", STATION)
+		with patch.object(packing, "now_datetime", return_value=created + timedelta(seconds=600)):
+			result = packing.reprint(cycle_id, "Nhãn bị nhòe", STATION)
 		self.assertEqual(result["pack"]["cycle_id"], cycle_id)
 		self.assertEqual(result["print"]["status"], "Queued")
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
@@ -579,8 +613,9 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		self.assertEqual((job.reprint_reason, job.ref_name), ("Nhãn bị nhòe", cycle_id))
 		self.assertEqual(result["print"]["zpl"], job.payload)
 
-		frappe.db.set_value("Pack", cycle_id, "packed_at", now_datetime() - timedelta(seconds=601))
-		block = _block(self, packing.reprint, cycle_id, "Nhãn bị nhòe", STATION)
+		frappe.db.set_value("Pack", cycle_id, "packed_at", created + timedelta(days=1))
+		with patch.object(packing, "now_datetime", return_value=created + timedelta(seconds=601)):
+			block = _block(self, packing.reprint, cycle_id, "Nhãn bị nhòe", STATION)
 		self.assertEqual((block.code, block.http_status), ("REPRINT_WINDOW_EXPIRED", 409))
 		self.assertIn(cycle_id, block.reason)
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
@@ -634,6 +669,32 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		self.assertEqual((gate.result, gate.redo_count, gate.ref_name), ("Pass", 1, second))
 		unit = _unit(ready.set_id)
 		self.assertEqual((unit.status, unit.active_cycle_id), ("Processing", second))
+
+	@bru("BRU-ID-005")
+	def test_void_cancels_waiting_labels_but_not_queued_ones(self):
+		# chưa có máy in đúng loại nhãn: nhãn của gói chờ (Waiting); hủy gói thì nhãn chờ không bao giờ được in
+		ready, first = self._packed(method="Plasma", with_printer=False)
+		steam_label, plasma_label = make_label_items()
+		printer = make_printer(STATION, steam_label)
+		[(old_job, (status, _error))] = _jobs_of(first).items()
+		self.assertEqual(status, "Waiting")
+
+		packing.void(first, "Label Damaged", STATION)
+		status, error = _jobs_of(first)[old_job]
+		self.assertEqual(status, "Failed")
+		self.assertIn(first, error)
+		self.assertIn("Label Damaged", error)
+
+		second = _generate(ready)["pack"]["cycle_id"]
+		[new_job] = _jobs_of(second)
+		released = core_print.set_roll(printer, make_roll(plasma_label))["released_jobs"]
+		self.assertEqual([job["print_job"] for job in released], [new_job])
+		self.assertEqual(_jobs_of(first)[old_job][0], "Failed")
+		self.assertEqual(_jobs_of(second)[new_job][0], "Queued")
+
+		# nhãn đã vào hàng in (Queued) giữ nguyên khi hủy: agent có thể đang in
+		packing.void(second, "Torn", STATION)
+		self.assertEqual(_jobs_of(second)[new_job], ("Queued", None))
 
 	def test_void_only_packed(self):
 		ready, cycle_id = self._packed()
@@ -690,7 +751,7 @@ class TestLabelContext(IsolatedTestCase):
 		ready = make_t4_ready_set(set_type_name="Bộ phẫu thuật", is_loaner=1)
 		result = _generate(ready, client_ts=parse_client_ts("2026-10-21T00:30:00+07:00"))
 		pack = frappe.get_doc("Pack", result["pack"]["cycle_id"])
-		context = packing.label_context(pack)
+		context = pack_label.label_context(pack)
 		self.assertEqual(set(context), set(sample_pack_context()))
 		self.assertEqual(
 			{key: context[key] for key in ("set_id", "cycle_id", "set_name", "packed_at", "expiry", "dept")},
