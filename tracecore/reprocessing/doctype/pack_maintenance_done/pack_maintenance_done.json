@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "creation": "2026-10-20 15:00:00.000000",
+ "description": "Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason (FR-M1-09, BRU-REP-014).",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "instrument",
+  "action",
+  "oil_batch",
+  "reason",
+  "cycles_at_action"
+ ],
+ "fields": [
+  {
+   "fieldname": "instrument",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Instrument",
+   "options": "Instrument",
+   "reqd": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Action",
+   "options": "Done\nDeferred",
+   "reqd": 1
+  },
+  {
+   "description": "Lubricant lot used when the maintenance type is lubrication.",
+   "fieldname": "oil_batch",
+   "fieldtype": "Link",
+   "label": "Lubricant Lot",
+   "options": "Batch"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Reason"
+  },
+  {
+   "description": "Cycles since the last maintenance at the moment of the action.",
+   "fieldname": "cycles_at_action",
+   "fieldtype": "Int",
+   "label": "Cycles At Action",
+   "non_negative": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-20 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Pack Maintenance Done",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

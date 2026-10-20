@@ -283,3 +283,65 @@ The template body has a syntax error on line {0}: {1},Nội dung mẫu có lỗi
 {0} is not a label item. Choose an Item of group Label that has a compatible method.,{0} không phải vật tư nhãn. Hãy chọn vật tư thuộc nhóm Nhãn có phương pháp tương thích.,
 The label has no DataMatrix payload.,Nhãn không có dữ liệu DataMatrix.,
 Label template {0} could not be rendered: {1},Không dựng được nhãn từ mẫu {0}: {1},
+Pack,Gói,
+Pack Instrument Confirmed,Dụng cụ đã xác nhận trong gói,
+Pack Maintenance Done,Bảo dưỡng đã xử lý khi đóng gói,
+Pack Type,Loại gói,Pack
+Set Name,Tên bộ,Pack
+Chemical Indicator Lot,Lô chỉ thị hóa học,Pack
+Shelf Life Applied (Days),Hạn lưu áp dụng (ngày),Pack
+Shelf Life Source,Nguồn hạn lưu,Pack
+Packer,Người đóng gói,Pack
+Packed By (User),Tài khoản đóng gói,Pack
+Packed By (Employee),Nhân viên đóng gói,Pack
+Packed At,Thời điểm đóng gói,Pack
+Packing,Đóng gói,Pack
+Label Type,Loại nhãn,Pack
+Label Print Count,Số lần in nhãn,Pack
+Barcode Payload,Nội dung mã vạch,Pack
+Void Reason,Lý do hủy hiệu lực,Pack
+Void Note,Ghi chú hủy hiệu lực,Pack
+Confirmation,Xác nhận,Pack
+Instruments Confirmed,Dụng cụ đã xác nhận,Pack
+Maintenance Done,Bảo dưỡng đã xử lý,Pack
+Lubricant Lot,Lô dầu bôi trơn,Pack Maintenance Done
+Cycles At Action,Số chu trình khi xử lý,Pack Maintenance Done
+Packed,Đã đóng gói,Pack
+In Load,Trong mẻ,Pack
+Quarantine,Cách ly chờ BI,Pack
+Released,Đã giải phóng,Pack
+In Sterile Stock,Trong kho vô khuẩn,Pack
+Issued,Đã cấp phát,Pack
+Used,Đã sử dụng,Pack
+Recalled,Đã thu hồi,Pack
+Void,Đã hủy hiệu lực,Pack
+Expired,Hết hạn,Pack
+Torn,Rách bao,Pack
+Load Failed,Mẻ không đạt,Pack
+Returned Unused,Trả lại chưa dùng,Pack
+Label Damaged,Nhãn hỏng,Pack
+Done,Đã bảo dưỡng,Pack Maintenance Done
+Deferred,Hoãn,Pack Maintenance Done
+A Pack is named by its Cycle ID and can only be created by the packing service.,Gói được đặt tên theo Cycle ID và chỉ do dịch vụ đóng gói tạo.,
+A Pack cannot be cancelled; void it instead.,Không hủy chứng từ Gói được; hãy hủy hiệu lực gói.,
+Void Reason is required to void a pack.,Cần có lý do để hủy hiệu lực gói.,
+GTIN-14 of Set Type {0} cannot be changed because packs have already been issued for it.,Không sửa được GTIN-14 của loại bộ {0} vì đã có gói được cấp Cycle ID.,
+Pack type cannot be used,Không dùng được loại gói này,
+No pack type was chosen.,Chưa chọn loại gói.,
+{0} is not a packaging item.,{0} không phải vật tư bao gói.,
+Pack type {0} is disabled.,Loại gói {0} đã ngừng dùng.,
+"Pack type {0} has no shelf life, so the expiry date cannot be calculated.",Loại gói {0} chưa có hạn lưu nên không tính được hạn dùng.,
+"Choose another pack type, or ask R10 to set the shelf life of this one.","Chọn loại gói khác, hoặc nhờ R10 khai báo hạn lưu cho loại gói này.",
+Indicator lot is not valid,Lô chỉ thị không hợp lệ,
+No lot code was scanned.,Chưa quét mã lô.,
+Lot {0} does not exist.,Lô {0} không tồn tại.,
+Lot {0} is not a chemical indicator lot.,Lô {0} không phải lô chỉ thị hóa học.,
+Lot {0} is a class {1} indicator; only class 5 or 6 can be used.,Lô {0} là chỉ thị loại {1}; chỉ dùng được loại 5 hoặc 6.,
+The indicator item of lot {0} has no sterilization method set.,Vật tư chỉ thị của lô {0} chưa khai báo phương pháp tiệt khuẩn.,
+"Lot {0} is for {1} sterilization, not {2}.","Lô {0} dùng cho tiệt khuẩn {1}, không phải {2}.",
+Lot {0} has been disabled.,Lô {0} đã bị vô hiệu.,
+"Lot {0} has no expiry date, so it cannot be checked.",Lô {0} chưa có hạn dùng nên không kiểm tra được.,
+Scan the lot code on a chemical indicator of class 5 or 6 for this sterilization method.,Quét mã lô trên chỉ thị hóa học loại 5 hoặc 6 đúng phương pháp tiệt khuẩn của bộ.,
+Indicator lot has expired,Lô chỉ thị đã hết hạn,
+Lot {0} expired on {1}.,Lô {0} đã hết hạn ngày {1}.,
+Scan another indicator lot that is still valid.,Quét lô chỉ thị khác còn hạn.,

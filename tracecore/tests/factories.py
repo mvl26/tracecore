@@ -1,7 +1,11 @@
 """Factory dữ liệu test (F-5)."""
 
+import re
+import unicodedata
+
 import frappe
 from frappe.model.naming import getseries
+from frappe.utils import add_days, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
 
@@ -265,3 +269,77 @@ def make_roll(label_item):
 		if not code_registry.is_issued(code):
 			code_registry.register(code, code_registry.ROLL_PREFIX, "Item", label_item)
 			return code
+
+
+def make_ci_batch(method="Steam", ci_class="5", expiry_days=30, batch_id=None):
+	"""Lô chỉ thị hóa học (Batch ERPNext) của Item `CI<lớp>-<PHƯƠNG PHÁP>`; trả tên Batch.
+
+	expiry_days: hạn dùng = hôm nay + expiry_days (âm = đã hết hạn). Không truyền batch_id thì mã lô
+	suy ra từ (phương pháp, lớp, expiry_days) nên gọi lại cùng tham số trả lại đúng lô đó.
+	"""
+	item_code = f"CI{ci_class}-{method.upper()}"
+	make_item(item_code, "Chemical Indicator", method=method, ci_class=ci_class)
+	sign = "P" if expiry_days >= 0 else "M"
+	batch_id = batch_id or f"LOT-{item_code}-{sign}{abs(expiry_days)}"
+	return make_batch(item_code, batch_id, expiry_date=add_days(today(), expiry_days)).name
+
+
+def _slug(text):
+	"""ASCII IN HOA, gạch nối: "Giấy crepe" -> "GIAY-CREPE" (mã Item không dấu, an toàn)."""
+	text = text.replace("đ", "d").replace("Đ", "D")
+	ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+	return re.sub(r"[^A-Z0-9]+", "-", ascii_text.upper()).strip("-") or "GOI"
+
+
+def make_pack_type(name="Giấy crepe", shelf_life_days=30):
+	"""Item loại gói (nhóm Packaging) có hạn lưu `shelf_life_days`; trả mã Item `VT-GOI-<tên không dấu>`.
+
+	Gọi lại với hạn lưu khác thì cập nhật hạn lưu của Item đó (không giữ giá trị cũ một cách âm thầm).
+	"""
+	item = make_item(f"VT-GOI-{_slug(name)}", "Packaging", shelf_life_days=shelf_life_days)
+	if item.tc_shelf_life_days != shelf_life_days:
+		item.tc_shelf_life_days = shelf_life_days
+		item.save(ignore_permissions=True)
+	return item.name
+
+
+def next_free_test_cycle_id(day=None):
+	"""Cycle ID thử `CY-YYMMDD-9NNN` chưa có Pack nào dùng, đếm lùi từ 9999.
+
+	Dãy 9xxx tách khỏi dãy thật (0001 trở đi) mà `packing.generate` cấp trong cùng ngày.
+	"""
+	prefix = f"CY-{getdate(day or today()):%y%m%d}-"
+	for serial in range(9999, 0, -1):
+		cycle_id = f"{prefix}{serial:04d}"
+		if not frappe.db.exists("Pack", cycle_id):
+			return cycle_id
+	frappe.throw("No free test Cycle ID left")
+
+
+def make_pack(set_unit, cycle_id=None, submit=True, **fields):
+	"""Tạo Pack cho bộ `set_unit` (như `packing.generate` sẽ làm): đặt tên bằng `insert(set_name=…)`.
+
+	Mặc định: loại gói `make_pack_type()`, hạn 30 ngày từ hôm nay (nguồn Pack Type), người đóng gói là
+	user đang đăng nhập, trạng thái Packed, đã ghi sổ. `fields` ghi đè bất kỳ trường nào của Pack.
+	"""
+	set_unit = frappe.get_doc("Set Unit", _ref_name(set_unit))
+	set_type = frappe.get_doc("Instrument Set Type", set_unit.set_type)
+	packed_at = fields.pop("packed_at", None) or now_datetime()
+	values = {
+		"doctype": "Pack",
+		"set_unit": set_unit.name,
+		"cycle_no": set_unit.current_cycle_no or 1,
+		"method": set_type.method,
+		"pack_type": make_pack_type(),
+		"packed_by_user": frappe.session.user,
+		"packed_at": packed_at,
+		"expiry": add_days(getdate(packed_at), 30),
+		"shelf_life_days_applied": 30,
+		"shelf_life_source": "Pack Type",
+		"gtin": set_type.gtin,
+		**fields,
+	}
+	doc = frappe.get_doc(values).insert(set_name=cycle_id or next_free_test_cycle_id(packed_at))
+	if submit:
+		doc.submit()
+	return doc

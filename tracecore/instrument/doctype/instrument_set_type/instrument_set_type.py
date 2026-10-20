@@ -28,6 +28,7 @@ class InstrumentSetType(Document):
 		# Trống được (loại bộ chưa có GTIN thì chưa sinh được Cycle ID); lưu NULL để chỉ mục unique
 		# không coi nhiều dòng "" là trùng nhau.
 		self.gtin = (self.gtin or "").strip() or None
+		self._guard_gtin_after_pack()
 		if self.gtin is None:
 			return
 		if not gs1.is_valid_gtin14(self.gtin):
@@ -37,3 +38,15 @@ class InstrumentSetType(Document):
 		)
 		if used_by:
 			frappe.throw(_("GTIN-14 {0} is already used by Set Type {1}.").format(self.gtin, used_by))
+
+	def _guard_gtin_after_pack(self):
+		# GTIN đã in vào Cycle ID của gói thì không đổi nữa (D6). Đọc Pack theo tên DocType, không import M2.
+		if self.is_new():
+			return
+		current = frappe.db.get_value("Instrument Set Type", self.name, "gtin") or None
+		if self.gtin != current and frappe.db.exists("Pack", {"set_type": self.name}):
+			frappe.throw(
+				_(
+					"GTIN-14 of Set Type {0} cannot be changed because packs have already been issued for it."
+				).format(self.name)
+			)

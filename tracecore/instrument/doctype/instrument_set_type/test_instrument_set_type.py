@@ -2,7 +2,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import gs1
-from tracecore.tests.factories import make_item, make_set_type
+from tracecore.tests.factories import make_item, make_pack, make_set_type, make_set_unit
 
 # Department/Item (ERPNext) kéo theo test record Company → Warehouse… cần Setup Wizard;
 # site CI mới chưa chạy wizard nên bỏ phụ thuộc này (dữ liệu tạo qua tracecore/tests/factories.py).
@@ -114,3 +114,33 @@ class TestInstrumentSetType(FrappeTestCase):
 		self.assertEqual(row.tray_image, "/files/tray-pkf.png")
 		self.assertEqual(row.current_bom_version, 1)
 		self.assertFalse(row.department)
+
+	def test_gtin_locked_after_pack(self):
+		set_type = make_set_type("GLK", gtin=GTIN_OK)
+		make_pack(make_set_unit(set_type.name))
+
+		set_type.gtin = "09520000000028"
+		with self.assertRaises(frappe.ValidationError):
+			set_type.save()
+		set_type.gtin = None
+		with self.assertRaises(frappe.ValidationError):
+			set_type.save()
+		self.assertEqual(frappe.db.get_value("Instrument Set Type", "GLK", "gtin"), GTIN_OK)
+
+		# trường khác vẫn sửa được, và lưu lại đúng GTIN cũ (kể cả có khoảng trắng) không bị chặn
+		set_type = frappe.get_doc("Instrument Set Type", "GLK")
+		set_type.set_type_name = "Renamed after pack"
+		set_type.gtin = f" {GTIN_OK} "
+		set_type.save()
+		self.assertEqual(
+			frappe.db.get_value("Instrument Set Type", "GLK", "set_type_name"), "Renamed after pack"
+		)
+
+	def test_gtin_still_editable_for_other_set_types_without_pack(self):
+		locked = make_set_type("GLA", gtin=GTIN_OK)
+		make_pack(make_set_unit(locked.name))
+		free = make_set_type("GLB", gtin="09520000000028")
+		free.gtin = "09520000000035"
+		self.assertTrue(gs1.is_valid_gtin14(free.gtin))
+		free.save()
+		self.assertEqual(frappe.db.get_value("Instrument Set Type", "GLB", "gtin"), "09520000000035")

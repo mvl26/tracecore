@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "creation": "2026-10-20 15:00:00.000000",
+ "description": "One BOM line the packer ticked as present in the tray (FR-M2-07, BRU-REP-013).",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "instrument",
+  "qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "instrument",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Instrument",
+   "options": "Instrument",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "Quantity of this instrument in the BOM line that was confirmed.",
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Quantity",
+   "non_negative": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-20 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Pack Instrument Confirmed",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

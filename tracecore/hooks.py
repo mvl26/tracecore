@@ -180,6 +180,8 @@ doc_events = {
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
 	"Assembly Record": dict(_AUDIT_EVENTS),
+	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
+	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 }
