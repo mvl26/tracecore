@@ -505,13 +505,49 @@ class TestSetRoll(IsolatedTestCase):
 		self.assertEqual([row["print_job"] for row in released], [job])
 		self.assertEqual(frappe.db.get_value("Print Job", job, ["status", "printer"]), ("Queued", active))
 
-	def test_set_roll_with_broken_template_raises_validation_error_naming_it(self):
+	def test_set_roll_with_broken_template_records_roll_and_keeps_jobs_waiting(self):
+		# F2 (FR-M2-08.8): mẫu lỗi không được hoàn tác việc đổi cuộn, nếu không label_type_loaded lệch cuộn thật
 		frappe.db.set_value("Label Template", "Pack label - Plasma", "body", "^XA{{ 1/0 }}^XZ")
 		job = self._waiting_job("Plasma")
-		with self.assertRaises(frappe.ValidationError) as ctx:
-			core_print.set_roll(self.p1, make_roll(self.plasma))
-		self.assertIn("Pack label - Plasma", str(ctx.exception))
-		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Waiting")
+		roll = make_roll(self.plasma)
+		frappe.clear_messages()
+		result = core_print.set_roll(self.p1, roll)
+		self.assertEqual(result["released_jobs"], [])
+		[failed] = result["failed_jobs"]
+		self.assertEqual(failed["print_job"], job)
+		self.assertIn("Pack label - Plasma", failed["error"])
+		self.assertEqual(
+			frappe.db.get_value("Printer", self.p1, ["label_type_loaded", "roll_code"]), (self.plasma, roll)
+		)
+		status, error = frappe.db.get_value("Print Job", job, ["status", "error"])
+		self.assertEqual(status, "Waiting")
+		self.assertIn("Pack label - Plasma", error)
+		self.assertFalse(frappe.local.message_log)
+
+	@bru("BRU-REP-011")
+	def test_set_roll_releases_good_jobs_when_one_job_fails_to_render(self):
+		good = self._waiting_job("Plasma")
+		broken = self._waiting_job("Plasma", context={**sample_pack_context(), "payload": ""})
+		logs_before = frappe.db.count("Error Log")
+		roll = make_roll(self.plasma)
+		frappe.clear_messages()
+		result = core_print.set_roll(self.p1, roll)
+
+		self.assertEqual(frappe.db.get_value("Printer", self.p1, "label_type_loaded"), self.plasma)
+		self.assertEqual([row["print_job"] for row in result["released_jobs"]], [good])
+		self.assertEqual(frappe.db.get_value("Print Job", good, "status"), "Queued")
+		self.assertEqual([row["print_job"] for row in result["failed_jobs"]], [broken])
+		self.assertIn("Pack label - Plasma", result["failed_jobs"][0]["error"])
+		row = frappe.db.get_value("Print Job", broken, ["status", "error", "payload"], as_dict=True)
+		self.assertEqual((row.status, row.payload), ("Waiting", None))
+		self.assertIn("Pack label - Plasma", row.error)
+		self.assertIn("DataMatrix", row.error)
+		self.assertEqual(frappe.db.count("Error Log"), logs_before + 1)
+		self.assertFalse(frappe.local.message_log)
+
+	def test_set_roll_reports_no_failed_jobs_when_all_render(self):
+		self._waiting_job("Plasma")
+		self.assertEqual(core_print.set_roll(self.p1, make_roll(self.plasma))["failed_jobs"], [])
 
 	def test_set_roll_unknown_printer(self):
 		with self.assertRaises(frappe.DoesNotExistError):

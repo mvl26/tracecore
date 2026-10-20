@@ -55,8 +55,8 @@ def change_roll(roll_code, station, printer=None):
 def set_roll(roll_code, station, printer=None, client_ts=None):
 	"""Ghi nhận đổi cuộn nhãn (mã ``CN-#####``) và phát hành nhãn đang chờ đúng loại nhãn (AC-9).
 
-	Trả ``{"ok": true, "roll": {"printer", "label_type", "method", "released_jobs"}}``; kiosk gửi từng
-	``released_jobs`` tới Station Agent. Từ chối nghiệp vụ: ``ROLL_NOT_FOUND`` (404), ``ROLL_NOT_LABEL`` (422),
+	Trả ``{"ok": true, "roll": {"printer", "label_type", "method", "released_jobs", "failed_jobs"}}``; kiosk gửi
+	từng ``released_jobs`` tới Station Agent và báo ``failed_jobs`` (nhãn chờ không dựng được, vẫn Waiting). Từ chối nghiệp vụ: ``ROLL_NOT_FOUND`` (404), ``ROLL_NOT_LABEL`` (422),
 	``ROLL_PRINTER_AMBIGUOUS`` (409), ``STATION_WRONG_STEP`` (422).
 	"""
 	require_any_role(*PACKING_ROLES)

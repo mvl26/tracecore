@@ -232,36 +232,56 @@ class T4Packing {
 			this.ctx.label_type = roll.label_type;
 		}
 		const jobs = roll.released_jobs || [];
+		const broken = roll.failed_jobs || []; // nhãn chờ không dựng được: vẫn Waiting, cuộn đã ghi nhận
 		const title = __("Loaded roll {0} into printer {1}.", [raw, roll.printer]);
-		this.notice = {
-			variant: "info",
-			title,
-			reason: jobs.length
-				? __("Sending {0} waiting label(s) to the printer...", [jobs.length])
-				: "",
-		};
+		this.notice = jobs.length
+			? {
+					variant: "info",
+					title,
+					reason: __("Sending {0} waiting label(s) to the printer...", [jobs.length]),
+			  }
+			: this.rollNotice(title, 0, 0, broken);
 		this.show();
 		if (!jobs.length) return;
 		const results = await Promise.all(jobs.map((job) => this.sendToAgent(job)));
 		const failed = results.filter((ok) => !ok).length;
-		this.notice = failed
-			? {
-					variant: "warn",
-					title,
-					reason: __("{0} waiting label(s) could not be sent to the printer.", [failed]),
-					action: __("Check the Station Agent, then reprint."),
-			  }
-			: {
-					variant: "info",
-					title,
-					reason: __("Sent {0} waiting label(s) to the printer.", [jobs.length]),
-			  };
+		this.notice = this.rollNotice(title, jobs.length, failed, broken);
 		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
 		if (mine) {
 			this.done.print = { ...this.done.print, ...mine, status: "Queued", warning: null };
 			this.printNote = { kind: results[jobs.indexOf(mine)] ? "sent" : "agent-failed" };
 		}
 		this.show();
+	}
+
+	rollNotice(title, sent, failed, broken) {
+		const reasons = [];
+		const actions = [];
+		if (failed) {
+			reasons.push(__("{0} waiting label(s) could not be sent to the printer.", [failed]));
+			actions.push(__("Check the Station Agent, then reprint."));
+		} else if (sent) {
+			reasons.push(__("Sent {0} waiting label(s) to the printer.", [sent]));
+		}
+		if (broken.length) {
+			reasons.push(
+				__("{0} waiting label(s) could not be prepared and are still waiting.", [
+					broken.length,
+				])
+			);
+			actions.push(
+				__(
+					"Ask R10 to fix the label template, then scan the roll code on the printer to print the waiting label."
+				)
+			);
+		}
+		return {
+			variant: failed || broken.length ? "warn" : "info",
+			title,
+			reason: reasons.join(" "),
+			items: broken.map((job) => __("Print job {0}: {1}", [job.print_job, job.error])),
+			action: actions.join(" "),
+		};
 	}
 
 	// ---- in qua Station Agent (D11) ----

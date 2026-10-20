@@ -357,28 +357,50 @@ def _job_data(job):
 	return data if isinstance(data, dict) else {}
 
 
+def _job_render_error(template, error):
+	"""Lý do (đã dịch) một job không dựng được nhãn, luôn có tên mẫu."""
+	text = str(error)
+	if template.name in text:
+		return text
+	return _("Label template {0} could not be rendered: {1}").format(template.name, text)
+
+
 def _release_waiting_jobs(printer, method):
-	"""Render các Print Job `Waiting` cùng trạm khớp `method` bằng mẫu active + cờ Unicode của máy in, chuyển Queued."""
+	"""Render các Print Job `Waiting` cùng trạm khớp `method` bằng mẫu active + cờ Unicode của máy in, chuyển Queued.
+
+	Trả ``(released, failed)``. Job nào render lỗi (ValidationError) thì giữ ``Waiting``, ghi `error` và Error Log,
+	rồi làm tiếp các job khác: một nhãn lỗi không được hoàn tác việc đổi cuộn (FR-M2-08.8, BRU-REP-011).
+	"""
 	template = active_template("Pack", method, printer.language)
 	if template is None:
-		return []
+		return [], []
 	names = frappe.get_all(
 		"Print Job",
 		filters={"station": printer.station, "status": "Waiting"},
 		pluck="name",
 		order_by="creation asc, name asc",
 	)
-	released = []
+	released, failed = [], []
 	for name in names:
 		job = frappe.get_doc("Print Job", name, for_update=True)
 		data = _job_data(job)
 		if job.status != "Waiting" or data.get("method") != method or data.get("label_object") != "Pack":
 			continue
-		zpl = _render_template_row(template, data.get("label_context"), bool(printer.supports_unicode))
+		logged = len(frappe.local.message_log)
+		try:
+			zpl = _render_template_row(template, data.get("label_context"), bool(printer.supports_unicode))
+		except frappe.ValidationError as error:
+			del frappe.local.message_log[logged:]  # lỗi đi vào failed_jobs, không để msgprint lên kiosk
+			reason = _job_render_error(template, error)
+			job.update({"error": reason})
+			job.save(ignore_permissions=True)
+			frappe.log_error(title=_("Waiting label could not be rendered"), message=f"{job.name}: {reason}")
+			failed.append({"print_job": str(job.name), "error": reason})
+			continue
 		job.update({"payload": zpl, "printer": printer.name, "template": template.name, "status": "Queued"})
 		job.save(ignore_permissions=True)
 		released.append({"print_job": str(job.name), "zpl": zpl, "printer": printer.name})
-	return released
+	return released, failed
 
 
 def set_roll(printer, roll_code):
@@ -386,7 +408,8 @@ def set_roll(printer, roll_code):
 
 	Loại nhãn đang lắp = Item nhãn của cuộn. Mã chưa cấp/đã vô hiệu → `BlockedError(ROLL_NOT_FOUND)`; mã của Item
 	không phải nhãn → `ROLL_NOT_LABEL`. Trả `{"printer", "label_type", "method", "released_jobs": [{"print_job",
-	"zpl", "printer"}]}`; job `Waiting` khác phương pháp hoặc khác trạm giữ nguyên.
+	"zpl", "printer"}], "failed_jobs": [{"print_job", "error"}]}`; job `Waiting` khác phương pháp hoặc khác trạm giữ
+	nguyên. Job render lỗi nằm trong `failed_jobs` và vẫn `Waiting`; việc đổi cuộn luôn được ghi nhận.
 
 	Máy in không active vẫn ghi nhận đổi cuộn (có Audit Log) nhưng KHÔNG phát hành job: agent chỉ in tới máy in
 	có trong `station_printers` (active), job đã `Queued` cho máy in ngoài danh sách sẽ bị từ chối và không bao giờ
@@ -404,11 +427,13 @@ def set_roll(printer, roll_code):
 	)
 	doc.flags.tc_roll_change = True
 	doc.save(ignore_permissions=True)
+	released, failed = _release_waiting_jobs(doc, method) if doc.is_active else ([], [])
 	return {
 		"printer": doc.name,
 		"label_type": item,
 		"method": method,
-		"released_jobs": _release_waiting_jobs(doc, method) if doc.is_active else [],
+		"released_jobs": released,
+		"failed_jobs": failed,
 	}
 
 
