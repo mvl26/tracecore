@@ -556,3 +556,14 @@ Quantity,Số lượng,Set BOM Item
 Action,Xử lý,Pack Maintenance Done
 Reason,Lý do,Pack Maintenance Done
 DataMatrix {0},DataMatrix {0},
+Dirty,Bẩn,Zone Station
+Clean,Sạch,Zone Station
+Sterile,Vô khuẩn,Zone Station
+Department,Khoa,Zone Station
+Linen,Đồ vải,Zone Station
+Waste,Chất thải,Zone Station
+"Zone {0} has no station functions yet, so step {1} cannot be set.","Khu {0} chưa có chức năng trạm nào nên không thể đặt bước {1}.",
+"Zone {0} only has these functions: {1}. Step {2} cannot be set.","Khu {0} chỉ có các chức năng: {1}. Không thể đặt bước {2}.",
+{0} is not a zone.,{0} không phải là một khu.,
+(empty),(trống),
+"A two-door machine must go from zone {0} to the next zone in the order Dirty, Clean, Sterile, not to zone {1}.","Máy hai cửa phải đi từ khu {0} sang khu kế tiếp theo chiều Bẩn → Sạch → Vô khuẩn, không phải khu {1}.",

@@ -39,6 +39,7 @@ HTTP_STATUS: dict[str, int] = {
 			"REPRINT_WINDOW_EXPIRED",
 			"PACK_NOT_VOIDABLE",
 			"ROLL_PRINTER_AMBIGUOUS",
+			"STATION_INACTIVE",
 		),
 		409,
 	),

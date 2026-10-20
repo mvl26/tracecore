@@ -40,6 +40,7 @@ class TestErrors(FrappeTestCase):
 				"REPRINT_WINDOW_EXPIRED",
 				"PACK_NOT_VOIDABLE",
 				"ROLL_PRINTER_AMBIGUOUS",
+				"STATION_INACTIVE",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
