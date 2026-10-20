@@ -28,6 +28,7 @@ class TestErrors(FrappeTestCase):
 				"MAINT_ACTION_REQUIRED",
 				"MAINT_OIL_LOT_REQUIRED",
 				"ROLL_NOT_LABEL",
+				"LABEL_RENDER_FAILED",
 			),
 			404: ("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND"),
 			409: (

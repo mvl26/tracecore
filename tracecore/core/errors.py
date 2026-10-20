@@ -24,6 +24,7 @@ HTTP_STATUS: dict[str, int] = {
 			"MAINT_ACTION_REQUIRED",
 			"MAINT_OIL_LOT_REQUIRED",
 			"ROLL_NOT_LABEL",
+			"LABEL_RENDER_FAILED",
 		),
 		422,
 	),

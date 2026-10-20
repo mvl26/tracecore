@@ -153,6 +153,17 @@ class TestScan(PackApiCase):
 		self.assertEqual(frappe.parse_json(row.new_value)["raw"], ready.set_id)
 		self.assertIsNotNone(row.client_ts)
 
+	@bru("BRU-FLOW-001")
+	def test_t4_scan_rejected_at_inactive_station(self):
+		ready = make_t4_ready_set()
+		frappe.db.set_value("Zone Station", STATION, "is_active", 0)
+		before = reject_count()
+		result = call(pack_api.scan, raw=ready.set_id, station=STATION)
+		assert_rejection(self, result, "STATION_INACTIVE", 409)
+		self.assertIn(STATION, result["error"]["reason"])
+		[row] = rejects_since(before)
+		self.assertEqual((row.reason, row.station), ("STATION_INACTIVE", STATION))
+
 	def test_http_status_by_error_code(self):
 		steam = make_t4_ready_set()
 		plasma = make_t4_ready_set("Plasma", with_printer=False)
