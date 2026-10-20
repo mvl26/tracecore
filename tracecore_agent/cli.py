@@ -1,4 +1,4 @@
-"""Dòng lệnh agent: ``python3 -m tracecore_agent [--config PATH] serve|health|hello``."""
+"""Dòng lệnh agent: ``python3 -m tracecore_agent [--config PATH] serve|health|hello|config``."""
 
 import argparse
 import base64
@@ -11,12 +11,14 @@ import time
 from tracecore_agent import __version__, config
 from tracecore_agent.client import ServerClient
 from tracecore_agent.jobqueue import PrintQueue
+from tracecore_agent.printers import PrinterDirectory
 from tracecore_agent.server import make_server
 from tracecore_agent.service import process_one
 
 log = logging.getLogger("tracecore_agent")
 HEARTBEAT_SECONDS = 30
 POLL_SECONDS = 1.0
+CONFIG_REFRESH_BEATS = 10
 
 
 def cmd_health(cfg, queue):
@@ -49,11 +51,25 @@ def cmd_hello(cfg, queue):
 	return 0 if status == "Printed" else 1
 
 
+def cmd_config(cfg, queue):
+	"""In cấu hình trạm (máy in) lấy từ server."""
+	try:
+		station = ServerClient(cfg).station_config()
+	except Exception as error:  # ServerError, mất mạng, JSON hỏng
+		print(f"tracecore_agent: cannot read station config: {error}", file=sys.stderr)
+		return 1
+	print(json.dumps(station, indent=1, ensure_ascii=False))
+	return 0
+
+
 def cmd_serve(cfg, queue):
 	server = make_server(cfg, queue)
 	threading.Thread(target=server.serve_forever, daemon=True).start()
 	log.info("agent %s listening on %s:%s", __version__, *server.server_address)
 	client = ServerClient(cfg)
+	directory = PrinterDirectory(cfg, client)
+	directory.refresh()
+	beats = 0
 	next_heartbeat = 0.0
 	try:
 		while True:
@@ -63,7 +79,10 @@ def cmd_serve(cfg, queue):
 				except Exception as error:  # mất mạng không được dừng agent
 					log.warning("heartbeat failed: %s", error)
 				next_heartbeat = time.monotonic() + HEARTBEAT_SECONDS
-			if not process_one(cfg, queue, client):
+				beats += 1
+				if beats % CONFIG_REFRESH_BEATS == 0:
+					directory.refresh()
+			if not process_one(cfg, queue, client, directory):
 				time.sleep(POLL_SECONDS)
 	except KeyboardInterrupt:
 		return 0
@@ -71,7 +90,7 @@ def cmd_serve(cfg, queue):
 		server.shutdown()
 
 
-COMMANDS = {"health": cmd_health, "hello": cmd_hello, "serve": cmd_serve}
+COMMANDS = {"config": cmd_config, "health": cmd_health, "hello": cmd_hello, "serve": cmd_serve}
 
 
 def main(argv=None):

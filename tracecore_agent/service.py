@@ -7,16 +7,32 @@ from tracecore_agent import printer
 log = logging.getLogger("tracecore_agent")
 
 
-def process_one(cfg, queue, client=None):
+class UnknownPrinter(OSError):
+	"""Tên Printer không có trong cấu hình trạm (D11: agent chỉ in tới máy in của trạm)."""
+
+
+def _target(cfg, job, directory):
+	"""(host, port) đích của lệnh in; host rỗng = chế độ file. Lệnh không có tên → máy in trong INI."""
+	if not job.printer:
+		return cfg.printer_host, cfg.printer_port
+	target = directory.resolve(job.printer) if directory else None
+	if target is None:
+		raise UnknownPrinter(f"Unknown printer {job.printer}")
+	return target
+
+
+def process_one(cfg, queue, client=None, directory=None):
 	"""In lệnh kế tiếp trong hàng đợi; trả Job đã xử lý (hoặc None nếu hàng đợi rỗng)."""
 	job = queue.claim_next()
 	if not job:
 		return None
-	mode = "Printer" if cfg.printer_mode == "printer" else "File"
+	mode = "Printer" if job.printer or cfg.printer_mode == "printer" else "File"
 	try:
-		if mode == "Printer":
-			printer.send_tcp(cfg.printer_host, cfg.printer_port, job.zpl)
-			output_ref = f"{cfg.printer_host}:{cfg.printer_port}"
+		host, port = _target(cfg, job, directory)
+		mode = "Printer" if host else "File"
+		if host:
+			printer.send_tcp(host, port, job.zpl)
+			output_ref = f"{host}:{port}"
 		else:
 			output_ref = printer.write_file(cfg.output_dir, job.id, job.zpl, job.preview_png)
 	except OSError as error:

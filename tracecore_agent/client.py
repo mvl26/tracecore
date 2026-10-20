@@ -58,6 +58,10 @@ class ServerClient:
 			printer=printer or self.cfg.printer_mode,
 		)
 
+	def station_config(self):
+		"""Cấu hình trạm (danh sách máy in đang dùng) — RPC tracecore.v1.station.config."""
+		return self.call("tracecore.v1.station.config", station=self.cfg.station)
+
 	def test_label(self):
 		return self.call("tracecore.v1.print.test_label", station=self.cfg.station)
 

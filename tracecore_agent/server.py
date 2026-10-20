@@ -11,6 +11,7 @@ from tracecore_agent import __version__
 
 log = logging.getLogger("tracecore_agent")
 MAX_BODY = 1024 * 1024
+MAX_PRINTER_NAME = 140
 
 
 def make_server(cfg, queue):
@@ -85,7 +86,17 @@ def make_server(cfg, queue):
 				return self._send(400, {"error": "invalid JSON payload"})
 			if not (isinstance(zpl, str) and zpl.lstrip().startswith("^XA") and zpl.rstrip().endswith("^XZ")):
 				return self._send(400, {"error": "zpl must be a ^XA...^XZ label"})
-			job_id = queue.enqueue(zpl, preview_png=preview_png, print_job=data.get("print_job"))
+			printer = data.get("printer")
+			if printer is not None and not (
+				isinstance(printer, str)
+				and 0 < len(printer) <= MAX_PRINTER_NAME
+				and printer.isprintable()
+				and printer.strip()
+			):
+				return self._send(400, {"error": "printer must be a printable name up to 140 chars"})
+			job_id = queue.enqueue(
+				zpl, preview_png=preview_png, print_job=data.get("print_job"), printer=printer
+			)
 			self._send(202, {"job_id": job_id})
 
 	return ThreadingHTTPServer((cfg.listen_host, cfg.listen_port), Handler)
