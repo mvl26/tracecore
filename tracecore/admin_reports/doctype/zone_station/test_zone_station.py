@@ -157,6 +157,7 @@ class TestZoneStation(IsolatedTestCase):
 		zone.reload()
 		zone.zone_type = "Dirty"
 		zone.save()
+		self.assertEqual(frappe.db.get_value("Zone Station", station.name, "zone_type"), "Dirty")
 		# kích hoạt lại: bước phải được kiểm lại
 		station.reload()
 		station.is_active = 1
@@ -173,6 +174,14 @@ class TestZoneStation(IsolatedTestCase):
 		make_station(empty.name)  # trạm chưa có bước
 		empty.zone_type = "Sterile"
 		empty.save()
+		children = frappe.get_all("Zone Station", filters={"parent_zone": empty.name}, pluck="zone_type")
+		self.assertEqual(children, ["Sterile"])
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log",
+				{"ref_doctype": "Zone Station", "action": "Update", "new_value": ("like", "%Sterile%")},
+			)
+		)
 
 	@bru("BRU-ID-006")
 	def test_zone_station_cannot_be_deleted(self):

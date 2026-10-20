@@ -34,6 +34,11 @@ class ZoneStation(Document):
 		if not self.is_zone and not code_registry.is_issued(self.name):
 			code_registry.register(self.name, STATION_PREFIX, "Zone Station", self.name)
 
+	def on_update(self):
+		before = self.get_doc_before_save()
+		if self.is_zone and before and before.zone_type != self.zone_type:
+			self._propagate_zone_type()
+
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")
 
@@ -45,6 +50,17 @@ class ZoneStation(Document):
 		before = self.get_doc_before_save()
 		if before and before.zone_type != self.zone_type:
 			self._check_active_stations_fit_new_type()
+
+	def _propagate_zone_type(self):
+		"""Chép loại khu mới xuống mọi trạm con (hoạt động hay không); db.set_value bỏ qua doc_events nên ghi Audit Log tay."""
+		for station in frappe.get_all(
+			"Zone Station", filters={"parent_zone": self.name, "is_zone": 0}, pluck="name"
+		):
+			old = frappe.db.get_value("Zone Station", station, "zone_type")
+			frappe.db.set_value("Zone Station", station, "zone_type", self.zone_type)
+			audit.log(
+				"Update", "Zone Station", station, old={"zone_type": old}, new={"zone_type": self.zone_type}
+			)
 
 	def _check_active_stations_fit_new_type(self):
 		stations = frappe.get_all(
