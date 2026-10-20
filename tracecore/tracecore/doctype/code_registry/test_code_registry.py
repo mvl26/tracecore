@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -57,3 +59,41 @@ class TestCodeRegistry(FrappeTestCase):
 		code_registry.register(taken, "manual")
 		second = code_registry.next_set_id("CRS")
 		self.assertEqual(int(second[-6:]), serial + 2)
+
+	@bru("BRU-ID-002")
+	def test_next_cycle_id_counts_per_packed_day_and_registers(self):
+		# ngày xa (2031) để không chạm series thật của hôm nay
+		first = code_registry.next_cycle_id(datetime(2031, 1, 2, 23, 59), station="TR-004")
+		second = code_registry.next_cycle_id(datetime(2031, 1, 2, 0, 1))
+		next_day = code_registry.next_cycle_id(datetime(2031, 1, 3, 0, 0))
+		self.assertEqual((first, second, next_day), ("CY-310102-0001", "CY-310102-0002", "CY-310103-0001"))
+		row = frappe.db.get_value(
+			"Code Registry", first, ["prefix", "ref_doctype", "ref_name", "issued_at", "status"], as_dict=True
+		)
+		self.assertEqual(
+			row,
+			{
+				"prefix": "CY",
+				"ref_doctype": "Pack",
+				"ref_name": first,
+				"issued_at": "TR-004",
+				"status": "Active",
+			},
+		)
+
+	@bru("BRU-ID-006")
+	def test_next_cycle_id_skips_issued_code(self):
+		code_registry.register("CY-310104-0001", "CY", "Pack", "CY-310104-0001")
+		self.assertEqual(code_registry.next_cycle_id(datetime(2031, 1, 4, 8, 0)), "CY-310104-0002")
+
+	def test_disable_keeps_code_issued_with_reason(self):
+		code_registry.register("TR-905", "TR-")
+		code_registry.disable("TR-905", "Label Damaged")
+		row = frappe.db.get_value(
+			"Code Registry", "TR-905", ["status", "disabled_on", "disabled_reason"], as_dict=True
+		)
+		self.assertEqual((row.status, row.disabled_reason), ("Disabled", "Label Damaged"))
+		self.assertIsNotNone(row.disabled_on)
+		self.assertTrue(code_registry.is_issued("TR-905"))
+		with self.assertRaises(frappe.DoesNotExistError):
+			code_registry.disable("TR-906", "Label Damaged")

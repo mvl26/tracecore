@@ -31,6 +31,19 @@ def failing_write(value, client_ts=None):
 
 
 @idempotency.idempotent
+def rejecting_write(value, client_ts=None):
+	CALLS.append(value)
+	return {"ok": False, "error": {"code": "SAMPLE_BLOCK", "http_status": value}}
+
+
+@idempotency.idempotent
+def status_less_rejection(value, client_ts=None):
+	# như _common.rejection của FEAT-001: không có error.http_status
+	CALLS.append(value)
+	return {"ok": False, "error": {"code": "OLD_STYLE"}}
+
+
+@idempotency.idempotent
 def slow_write(value, client_ts=None):
 	CALLS.append(value)
 	time.sleep(1.5)
@@ -149,3 +162,55 @@ class TestIdempotency(FrappeTestCase):
 		self.assertGreaterEqual(idempotency.purge_expired(30), 1)
 		self.assertFalse(frappe.db.exists("Idempotency Key", old_key))
 		self.assertTrue(frappe.db.exists("Idempotency Key", new_key))
+
+
+class TestReplayHttpStatus(FrappeTestCase):
+	"""Trả lời lặp lại của một từ chối nghiệp vụ mang lại mã HTTP của lần đầu (FEAT-018 D3)."""
+
+	def setUp(self):
+		CALLS.clear()
+		frappe.local.response.pop("http_status_code", None)
+		self.addCleanup(frappe.local.response.pop, "http_status_code", None)
+
+	def status(self):
+		return frappe.local.response.get("http_status_code")
+
+	def replay(self, fn, value):
+		"""Gọi `fn` hai lần cùng khóa; trả (lần đầu, lần replay) và để lại mã HTTP của lần replay."""
+		key = str(uuid.uuid4())
+		first = call(fn, key, value=value, client_ts=TS)
+		frappe.local.response.pop("http_status_code", None)  # request mới chưa có mã HTTP
+		return first, call(fn, key, value=value, client_ts=TS)
+
+	def test_replay_of_rejection_restores_http_status(self):
+		first, second = self.replay(rejecting_write, 409)
+		self.assertEqual(second, first)
+		self.assertEqual(CALLS, [409])  # replay không chạy lại hàm
+		self.assertEqual(self.status(), 409)
+
+	def test_replay_of_success_or_old_style_rejection_leaves_status_alone(self):
+		for fn, value in ((sample_write, "a"), (status_less_rejection, "b")):
+			with self.subTest(fn=fn.__name__):
+				first, second = self.replay(fn, value)
+				self.assertEqual(second, first)
+				self.assertIsNone(self.status())
+
+	def test_no_request_context_sets_nothing(self):
+		idempotency._apply_stored_status({"ok": False, "error": {"http_status": 409}})
+		self.assertIsNone(self.status())
+
+	def test_malformed_stored_status_is_ignored(self):
+		with request_headers({}):
+			for stored in (
+				{"ok": False, "error": {"http_status": None}},
+				{"ok": False, "error": {"http_status": "409"}},
+				{"ok": False, "error": {"http_status": True}},
+				{"ok": False, "error": {"http_status": 200}},
+				{"ok": False, "error": "text"},
+				{"ok": True, "error": {"http_status": 409}},
+				["not", "a", "dict"],
+				None,
+			):
+				with self.subTest(stored=stored):
+					idempotency._apply_stored_status(stored)
+					self.assertIsNone(self.status())

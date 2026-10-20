@@ -1,6 +1,7 @@
 """Set Unit: bộ dụng cụ vật lý; Set ID GIAI do hệ thống cấp, không sửa (FR-M1-05, BRU-ID-001).
 
-Trạng thái (`status`) chỉ được đổi bởi `tracecore.core.step_gate` (ADR-005).
+Trạng thái (`status`) và các trường vòng đời (`cycles_used`, `current_station`, `active_cycle_id`,
+`current_cycle_no`) chỉ được đổi bởi `tracecore.core.step_gate` (ADR-005).
 """
 
 import frappe
@@ -12,7 +13,13 @@ from tracecore.core import code_registry
 
 # Trường vòng đời: read_only trên form không được Frappe kiểm ở server, nên chặn tại đây.
 # Chỉ core.step_gate được đổi, bằng cờ flags.tc_step_gate — ADR-005.
-LIFECYCLE_DEFAULTS = {"status": "New", "cycles_used": 0, "current_station": None, "active_cycle_id": None}
+LIFECYCLE_DEFAULTS = {
+	"status": "New",
+	"cycles_used": 0,
+	"current_station": None,
+	"active_cycle_id": None,
+	"current_cycle_no": 0,
+}
 
 
 class SetUnit(Document):

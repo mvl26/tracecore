@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-20 10:00:00.000000",
+ "description": "One BOM line of a set type for one BOM version (FEAT-018 stub). Versioned as separate rows; comparison and UI in FEAT-015.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_type",
+  "bom_version",
+  "instrument",
+  "column_break_qty",
+  "qty",
+  "position",
+  "effective_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "bom_version",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "BOM Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "instrument",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Instrument",
+   "options": "Instrument",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_qty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Quantity",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Order of the line on the tray (ascending).",
+   "fieldname": "position",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Position"
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-20 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instrument",
+ "name": "Set BOM Item",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R07"
+  },
+  {
+   "read": 1,
+   "role": "TC R08"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  },
+  {
+   "read": 1,
+   "role": "TC R10"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

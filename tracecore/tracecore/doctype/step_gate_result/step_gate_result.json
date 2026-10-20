@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "autoname": "format:{set_unit}-C{cycle_no}-{step}",
+ "creation": "2026-10-20 12:00:00.000000",
+ "description": "Result of one step gate (T1..T5) of one reprocessing cycle of one set unit. Written only by core.step_gate (DT-STEPGATE, FR-M2-25, BRU-FLOW-004).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "cycle_no",
+  "step",
+  "column_break_result",
+  "result",
+  "redo_count",
+  "section_source",
+  "ref_doctype",
+  "ref_name",
+  "station",
+  "column_break_actor",
+  "recorded_by",
+  "recorded_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "cycle_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cycle No",
+   "non_negative": 1,
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "step",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Step",
+   "options": "\nT1\nT2\nT3\nT4\nT5",
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Result",
+   "options": "Pending\nPass\nFail",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Number of times this step failed in this cycle.",
+   "fieldname": "redo_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Redo Count",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_source",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ref_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "ref_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_actor",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recorded_by",
+   "fieldtype": "Link",
+   "label": "Recorded By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recorded_at",
+   "fieldtype": "Datetime",
+   "label": "Recorded At",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Step Gate Result",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

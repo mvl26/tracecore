@@ -48,6 +48,24 @@ def source_strings():
 			if field.get("fieldtype") == "Select":
 				options = (field.get("options") or "").split("\n")
 				strings.update((option, doctype) for option in options if option)
+	strings.update(_custom_field_strings())
+	return strings
+
+
+def _custom_field_strings():
+	"""Nhãn và option Select của Custom Field fixtures (Desk dịch bằng __(label, null, dt)); bỏ option số thuần."""
+	path = os.path.join(APP_PATH, "fixtures", "custom_field.json")
+	if not os.path.exists(path):
+		return set()
+	with open(path, encoding="utf-8") as handle:
+		fields = json.load(handle)
+	strings = set()
+	for field in fields:
+		if field.get("label"):
+			strings.add((field["label"], field["dt"]))
+		if field.get("fieldtype") == "Select":
+			options = (field.get("options") or "").split("\n")
+			strings.update((option, field["dt"]) for option in options if option and not option.isdigit())
 	return strings
 
 
@@ -119,6 +137,11 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("--tc-primary:", bundle)
 		self.assertIn("--primary-color:var(--tc-primary)", bundle)
 
+	def test_station_page_includes_t4_script(self):
+		# màn T4 (SCR-08) ở file riêng; Frappe nối nó vào script của Page station qua hook page_js
+		self.assertIn("public/js/station_t4.js", frappe.get_hooks("page_js").get("station", []))
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t4.js")))
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()
@@ -139,6 +162,25 @@ class TestStationPage(FrappeTestCase):
 			f"{s}" + (f" [{c}]" if c else "") for s, c in source_strings() if not translated(s, c)
 		)
 		self.assertFalse(missing, msg=f"Thiếu bản dịch vi: {missing}")
+
+	def test_vi_generic_labels_of_feat018_doctypes_have_context_rows(self):
+		"""Nhãn chung chung (Expiry Date, Label, Quantity…) trên DocType FEAT-018 dịch bằng dòng có context riêng,
+		không dựa vào bản dịch toàn site của ERPNext/HRMS (có thể là thuật ngữ khác)."""
+		ours = vi_translations()
+		expected = [
+			("Expiry Date", "Pack"),
+			("Label", "Pack"),
+			("Department", "Pack"),
+			("Quantity", "Pack Instrument Confirmed"),
+			("Quantity", "Set BOM Item"),
+			("Action", "Pack Maintenance Done"),
+			("Reason", "Pack Maintenance Done"),
+		]
+		sources = source_strings()
+		for label, doctype in expected:
+			with self.subTest(label=label, doctype=doctype):
+				self.assertIn((label, doctype), sources)
+				self.assertTrue(ours.get(f"{label}:{doctype}"))
 
 	def test_vi_translations_do_not_override_other_apps(self):
 		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms."""

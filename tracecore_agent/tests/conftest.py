@@ -16,6 +16,7 @@ class StubFrappe:
 	def __init__(self):
 		self.requests = []
 		self.fail_status = None
+		self.printers = []
 		self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
 		self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}"
 		threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
@@ -51,6 +52,8 @@ class StubFrappe:
 						"zpl": ZPL,
 						"preview_png_b64": base64.b64encode(PNG).decode(),
 					}
+				elif method.endswith("station.config"):
+					message = {"station": body.get("station"), "printers": stub.printers}
 				elif method.endswith("ack"):
 					message = {"ok": True, "status": body.get("status")}
 				else:

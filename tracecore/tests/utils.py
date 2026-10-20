@@ -3,6 +3,21 @@
 from contextlib import contextmanager
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
+
+TEST_SAVEPOINT = "tc_isolated_test"
+
+
+class IsolatedTestCase(FrappeTestCase):
+	"""FrappeTestCase hoàn tác dữ liệu sau MỖI test (savepoint), không chỉ sau cả class.
+
+	Dùng khi test sửa dữ liệu dùng chung với test khác trong class (mẫu nhãn mẫu, máy in của trạm…).
+	"""
+
+	def setUp(self):
+		super().setUp()
+		frappe.db.savepoint(TEST_SAVEPOINT)
+		self.addCleanup(frappe.db.rollback, save_point=TEST_SAVEPOINT)
 
 
 def bru(*ids):

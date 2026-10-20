@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "autoname": "field:template_name",
+ "creation": "2026-10-20 14:00:00.000000",
+ "description": "Label layout (Jinja) per label object, sterilization method and printer language. R10 edits it without code changes (FR-M2-08.4).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "is_active",
+  "column_break_main",
+  "label_object",
+  "method",
+  "language",
+  "section_size",
+  "width_mm",
+  "height_mm",
+  "column_break_size",
+  "dpi",
+  "section_body",
+  "body"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "description": "Only one template can be active for each label object, method and language.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pack",
+   "fieldname": "label_object",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Label Object",
+   "options": "Pack",
+   "reqd": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sterilization Method",
+   "options": "Steam\nPlasma",
+   "reqd": 1
+  },
+  {
+   "default": "ZPL",
+   "fieldname": "language",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Printer Language",
+   "options": "ZPL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_size",
+   "fieldtype": "Section Break",
+   "label": "Label Size"
+  },
+  {
+   "default": "60",
+   "fieldname": "width_mm",
+   "fieldtype": "Float",
+   "label": "Width (mm)",
+   "reqd": 1
+  },
+  {
+   "default": "40",
+   "fieldname": "height_mm",
+   "fieldtype": "Float",
+   "label": "Height (mm)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_size",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "300",
+   "fieldname": "dpi",
+   "fieldtype": "Int",
+   "label": "DPI",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Template"
+  },
+  {
+   "description": "Jinja template in the printer language. Variables: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module).",
+   "fieldname": "body",
+   "fieldtype": "Code",
+   "label": "Template Body",
+   "options": "Jinja",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-20 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Label Template",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TC R10",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -10,10 +10,12 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "hrms"]
 
-# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu)
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu;
+# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói)
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
 	{"dt": "Zone Station", "filters": [["name", "like", "ZONE-%"]]},
 	{"dt": "Zone Station", "filters": [["name", "in", [f"TR-00{n}" for n in range(1, 8)]]]},
 ]
@@ -49,7 +51,8 @@ app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + trac
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+# Màn T4 đóng gói (SCR-08, FEAT-018): Frappe nối file này sau station.js trong script của Page station
+page_js = {"station": "public/js/station_t4.js"}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -173,7 +176,33 @@ _AUDIT_EVENTS = {
 
 doc_events = {
 	"Set Unit": dict(_AUDIT_EVENTS),
+	"Instrument": dict(_AUDIT_EVENTS),
+	"Set BOM Item": dict(_AUDIT_EVENTS),
+	"Instrument Maintenance": dict(_AUDIT_EVENTS),
+	"Step Gate Result": dict(_AUDIT_EVENTS),
+	"Assembly Record": dict(_AUDIT_EVENTS),
+	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
+	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	"Printer": dict(_AUDIT_EVENTS),
+	"Label Template": dict(_AUDIT_EVENTS),
 }
+
+# Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
+# ---------------
+# M2 đóng gói gọi tracecore.core.extension.run("<hook>", …) và không import M1/M8:
+#  - context:   (ctx) -> dict gộp vào ngữ cảnh T4 (BOM, nhắc bảo dưỡng, mức dùng cơ số)
+#  - prechecks: (ctx) -> Block | None, chạy trước kiểm tra bảo dưỡng (cơ số)
+#  - checks:    (ctx) -> Block | None (bảo dưỡng)
+#  - after:     (pack_doc, ctx) -> None, chạy sau khi sinh Cycle ID (cập nhật bộ đếm bảo dưỡng)
+
+tracecore_pack_context = [
+	"tracecore.instrument.bom.pack_context",
+	"tracecore.instrument.maintenance.pack_context",
+	"tracecore.par.check.pack_context",
+]
+tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
+tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
+tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
 
 # Scheduled Tasks
 # ---------------

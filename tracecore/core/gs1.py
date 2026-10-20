@@ -1,6 +1,7 @@
 """Sinh và phân tích mã GS1 cho TraceCore (ADR-004).
 
-Nơi duy nhất tạo Set ID GIAI (AI 8004), phân tích chuỗi quét từ máy quét HID
+Nơi duy nhất tạo Set ID GIAI (AI 8004) và payload Cycle ID (AI 01, 11, 17, 21),
+kiểm GTIN-14, phân tích chuỗi quét từ máy quét HID
 và mã hóa DataMatrix (ảnh PNG qua libdmtx, lệnh ZPL ``^BXN`` cho máy in).
 Hàm ở đây thuần Python, không đọc/ghi DB.
 """
@@ -10,17 +11,29 @@ import io
 import re
 import string
 from ctypes import byref, cast
+from datetime import date, datetime
 
 GS = "\x1d"  # FNC1 trong chuỗi dữ liệu (GS1 dùng GS làm FNC1 / phân cách AI)
 AI_GIAI = "8004"
+AI_GTIN = "01"
+AI_PACKED = "11"
+AI_EXPIRY = "17"
+AI_SERIAL = "21"
 DEFAULT_COMPANY_PREFIX = "9520000"  # prefix GS1 "952" dành cho demo — chỉ dev/staging (OQ-05)
+TEST_GTIN_PREFIX = "0952"  # chỉ thị 0 + prefix demo 952: GTIN-14 do make_test_gtin14 sinh
 MAX_GIAI_LENGTH = 30
+MAX_SERIAL_LENGTH = 20  # độ dài tối đa của AI (21)
 MAX_SCAN_LENGTH = 120
 
 # GS1 AI encodable character set 82 (GS1 General Specifications, Figure 7.11-1)
 CSET82 = frozenset(string.ascii_letters + string.digits + "!\"%&'()*+,-./:;<=>?_")
 
 _AIM_PREFIX = re.compile(r"^\][A-Za-z][0-9A-Za-z]")
+_GTIN14 = re.compile(r"[0-9]{14}")
+_GTIN_BODY = re.compile(r"[0-9]{13}")
+# Cycle ID: thứ tự AI cố định 01 → 11 → 17 → 21, (21) cuối nên chạy tới hết dữ liệu (không cần GS)
+_PACK_HRI = re.compile(r"\(01\)([0-9]{14})\(11\)([0-9]{6})\(17\)([0-9]{6})\(21\)(.+)")
+_PACK_PLAIN = re.compile(r"01([0-9]{14})11([0-9]{6})17([0-9]{6})21(.+)")
 _INTERNAL_CODES = (
 	("employee", re.compile(r"NV-\d{5}")),
 	("equipment", re.compile(r"TB-\d{4}")),
@@ -75,22 +88,128 @@ def _is_valid_giai(value):
 	)
 
 
-def _clean(raw):
+def gtin_check_digit(body13):
+	"""Chữ số kiểm tra GTIN-14 từ 13 chữ số đầu (trọng số 3,1,3,… từ trái qua)."""
+	if not isinstance(body13, str) or not _GTIN_BODY.fullmatch(body13):
+		raise GS1Error("GS1_GTIN", f"GTIN-14 body must be 13 digits: {body13!r}")
+	total = sum(int(digit) * (3 if index % 2 == 0 else 1) for index, digit in enumerate(body13))
+	return str((10 - total % 10) % 10)
+
+
+def is_valid_gtin14(value):
+	"""``True`` nếu ``value`` là chuỗi đúng 14 chữ số và chữ số cuối là check digit đúng."""
+	return (
+		isinstance(value, str)
+		and _GTIN14.fullmatch(value) is not None
+		and gtin_check_digit(value[:13]) == value[13]
+	)
+
+
+def make_test_gtin14(serial):
+	"""GTIN-14 TEST: ``0`` + prefix demo + serial 5 chữ số + check digit.
+
+	Chỉ devdata/test gọi (D6): GTIN thật do R10 nhập, luôn dùng prefix demo
+	``DEFAULT_COMPANY_PREFIX`` bất kể cấu hình site để không lẫn với GTIN thật.
+	"""
+	if isinstance(serial, bool) or not isinstance(serial, int) or not 1 <= serial <= 99999:
+		raise GS1Error("GS1_ITEM_REF", f"Test GTIN serial must be an integer 1..99999: {serial!r}")
+	body = "0" + DEFAULT_COMPANY_PREFIX + f"{serial:05d}"
+	return body + gtin_check_digit(body)
+
+
+def is_test_gtin(gtin):
+	"""``True`` nếu GTIN thuộc dải TEST (``0952…``) — nhãn phải in dòng ``TEST``."""
+	return isinstance(gtin, str) and gtin.startswith(TEST_GTIN_PREFIX)
+
+
+def _is_valid_serial(value):
+	return isinstance(value, str) and 1 <= len(value) <= MAX_SERIAL_LENGTH and set(value) <= CSET82
+
+
+def _as_date(value):
+	if isinstance(value, datetime):
+		value = value.date()
+	if not isinstance(value, date) or not 2000 <= value.year <= 2099:
+		raise GS1Error("GS1_DATES", f"Date must be a date within 2000..2099: {value!r}")
+	return value
+
+
+def _yymmdd(value):
+	return f"{value.year % 100:02d}{value.month:02d}{value.day:02d}"
+
+
+def _parse_yymmdd(text):
+	try:
+		return date(2000 + int(text[:2]), int(text[2:4]), int(text[4:]))
+	except ValueError:
+		return None
+
+
+def _cycle_elements(gtin, packed, expiry, cycle_id):
+	"""Kiểm dữ liệu Cycle ID và trả ``(gtin, YYMMDD đóng gói, YYMMDD hạn, cycle_id)``."""
+	if not is_valid_gtin14(gtin):
+		raise GS1Error("GS1_GTIN", f"Invalid GTIN-14: {gtin!r}")
+	if not _is_valid_serial(cycle_id):
+		raise GS1Error(
+			"GS1_SERIAL", f"Cycle ID must be 1-{MAX_SERIAL_LENGTH} characters of GS1 CSET 82: {cycle_id!r}"
+		)
+	packed, expiry = _as_date(packed), _as_date(expiry)
+	if expiry < packed:
+		raise GS1Error("GS1_DATES", f"Expiry {expiry} is before packed date {packed}")
+	return gtin, _yymmdd(packed), _yymmdd(expiry), cycle_id
+
+
+def make_cycle_payload(gtin, packed, expiry, cycle_id):
+	"""Dữ liệu DataMatrix Cycle ID: FNC1 + (01) GTIN-14 + (11) đóng gói + (17) hạn + (21) Cycle ID.
+
+	(21) là AI cuối nên không có GS phía sau.
+	"""
+	gtin, packed, expiry, cycle_id = _cycle_elements(gtin, packed, expiry, cycle_id)
+	return f"{GS}{AI_GTIN}{gtin}{AI_PACKED}{packed}{AI_EXPIRY}{expiry}{AI_SERIAL}{cycle_id}"
+
+
+def cycle_hri(gtin, packed, expiry, cycle_id):
+	"""Chuỗi người đọc in dưới DataMatrix Cycle ID."""
+	gtin, packed, expiry, cycle_id = _cycle_elements(gtin, packed, expiry, cycle_id)
+	return f"({AI_GTIN}){gtin}({AI_PACKED}){packed}({AI_EXPIRY}){expiry}({AI_SERIAL}){cycle_id}"
+
+
+def clean_scan(raw):
+	"""Bỏ khoảng trắng/CR/LF/Tab hai đầu, tiền tố AIM (``]d2``…) và FNC1 (GS) đầu/cuối."""
 	value = (raw or "").strip(" \t\r\n")
 	value = _AIM_PREFIX.sub("", value)
 	return value.strip(GS + " \t\r\n")
 
 
+def _parse_pack_payload(value):
+	"""Nhận dạng payload Cycle ID đã làm sạch (dạng HRI hoặc dạng liền); sai cấu trúc → ``None``."""
+	match = _PACK_HRI.fullmatch(value) or _PACK_PLAIN.fullmatch(value)
+	if match is None:
+		return None
+	gtin, packed_text, expiry_text, cycle_id = match.groups()
+	packed, expiry = _parse_yymmdd(packed_text), _parse_yymmdd(expiry_text)
+	if not is_valid_gtin14(gtin) or not _is_valid_serial(cycle_id):
+		return None
+	if packed is None or expiry is None or expiry < packed:
+		return None
+	return {"type": "pack", "id": cycle_id, "raw": value, "gtin": gtin, "packed": packed, "expiry": expiry}
+
+
 def parse_scan(raw, company_prefix=None):
-	"""Nhận dạng chuỗi quét: Set ID GIAI hoặc mã QR nội bộ (§5.3.3).
+	"""Nhận dạng chuỗi quét: Set ID GIAI, Cycle ID (GS1 hoặc ``CY-…``) hoặc mã QR nội bộ (§5.3.3).
 
 	Trả ``{"type": ..., "id": ..., "raw": ...}``; không nhận ra → ``type = "unknown"``.
+	Nhãn gói dạng GS1 (01)(11)(17)(21) trả thêm ``gtin``, ``packed``, ``expiry`` (``datetime.date``).
 	"""
-	value = _clean(raw)
+	value = clean_scan(raw)
 	# raw bị cắt: chuỗi quét đi vào Audit Log (append-only) nên không được dài tùy ý
 	unknown = {"type": "unknown", "id": None, "raw": value[:MAX_SCAN_LENGTH]}
 	if not value or len(value) > MAX_SCAN_LENGTH:
 		return unknown
+
+	pack = _parse_pack_payload(value)
+	if pack is not None:
+		return pack
 
 	giai = None
 	if value.startswith(f"({AI_GIAI})"):

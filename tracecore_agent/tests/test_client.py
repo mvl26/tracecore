@@ -40,3 +40,11 @@ def test_client_rejects_non_http_url(cfg):
 	cfg.server_url = "file:///etc/passwd"
 	with pytest.raises(ValueError):
 		ServerClient(cfg)
+
+
+def test_client_station_config(cfg, stub):
+	stub.printers = [{"name": "PRN-001", "host": "10.0.0.5", "port": 9100}]
+	result = ServerClient(cfg).station_config()
+	assert result["printers"][0]["name"] == "PRN-001"
+	sent = stub.last("tracecore.v1.station.config")
+	assert sent["body"]["station"] == "TR-004"

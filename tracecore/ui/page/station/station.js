@@ -1,6 +1,8 @@
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
+// Trạm bước T4 giao cho T4Packing (public/js/station_t4.js, nối sau file này qua hook page_js).
+/* global T4Packing */
 
 const RPC_TIMEOUT_MS = 8000;
 const ZONE_CLASS = {
@@ -96,6 +98,8 @@ class TraceCoreStation {
 	}
 
 	focus() {
+		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
+		if (this.t4 && this.t4.dialogOpen) return;
 		if (this.visible && document.activeElement !== this.input) {
 			this.input.focus({ preventScroll: true });
 		}
@@ -108,7 +112,7 @@ class TraceCoreStation {
 		});
 		this.root.addEventListener("click", (event) => {
 			const button = event.target.closest("[data-action]");
-			if (button) this.onAction(button.dataset.action);
+			if (button) this.onAction(button.dataset.action, button);
 			setTimeout(() => this.focus(), 0);
 		});
 		this.input.addEventListener("blur", () => setTimeout(() => this.focus(), 150));
@@ -121,7 +125,8 @@ class TraceCoreStation {
 		});
 	}
 
-	onAction(action) {
+	onAction(action, button) {
+		if (this.t4 && this.t4.onAction(action, button)) return;
 		if (action === "retry") {
 			this.manualOffline = false;
 			if (!navigator.onLine) return this.setOffline(true);
@@ -152,6 +157,7 @@ class TraceCoreStation {
 	setOffline(offline) {
 		this.banner.hidden = !offline;
 		this.root.dataset.offline = offline ? "1" : "0";
+		if (this.t4) return this.t4.setOffline(offline);
 		if (offline) this.renderOffline();
 	}
 
@@ -175,6 +181,10 @@ class TraceCoreStation {
 			});
 			const data = await response.json().catch(() => ({}));
 			if (!response.ok) {
+				// Từ chối nghiệp vụ (404/409/422) vẫn mang body {ok: false, error}: trả để màn hình hiện alert,
+				// không coi là lỗi máy chủ (lỗi khác như 403, 5xx, khóa idempotent sai giữ nguyên đường ném lỗi)
+				const rejected = response.status >= 400 && response.status < 500;
+				if (rejected && data.message && data.message.ok === false) return data.message;
 				const error = new Error(`HTTP ${response.status}`);
 				error.status = response.status;
 				throw error;
@@ -211,6 +221,9 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
+		if (station.step === "T4" && !this.t4 && typeof T4Packing !== "undefined") {
+			this.t4 = new T4Packing(this);
+		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
 		this.root.querySelector(".tc-zone-label").textContent = __(
@@ -220,6 +233,7 @@ class TraceCoreStation {
 	}
 
 	async scan(raw, retry = false) {
+		if (this.t4) return this.t4.scan(raw);
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.focus();
@@ -284,6 +298,7 @@ class TraceCoreStation {
 	}
 
 	renderEmpty() {
+		if (this.t4) return this.t4.show();
 		this.setState(
 			"empty",
 			`<p class="tc-empty">${esc(__("Scan the Set ID on the set tag."))}</p>`

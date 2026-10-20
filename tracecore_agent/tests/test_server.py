@@ -91,3 +91,15 @@ def test_print_endpoint_rejects_bad_payload(agent):
 def test_unknown_path_404(agent):
 	base, _ = agent
 	assert request(f"{base}/nope")[0] == 404
+
+
+def test_print_endpoint_accepts_printer(agent):
+	base, queue = agent
+	status, _, _ = request(f"{base}/print", {"zpl": "^XA^FDx^FS^XZ", "printer": "PRN-001"})
+	assert status == 202
+	assert queue.claim_next().printer == "PRN-001"
+	assert request(f"{base}/print", {"zpl": "^XA^FDx^FS^XZ", "printer": "P" * 200})[0] == 400
+	assert request(f"{base}/print", {"zpl": "^XA^FDx^FS^XZ", "printer": ""})[0] == 400
+	assert request(f"{base}/print", {"zpl": "^XA^FDx^FS^XZ", "printer": 5})[0] == 400
+	assert request(f"{base}/print", {"zpl": "^XA^FDx^FS^XZ", "printer": "a\nb"})[0] == 400
+	assert queue.depth() == 1  # chỉ lệnh hợp lệ đầu tiên (đang in)

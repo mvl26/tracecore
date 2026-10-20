@@ -19,7 +19,8 @@ create table if not exists jobs (
 	status text not null default 'pending',
 	attempts integer not null default 0,
 	output_ref text,
-	error text
+	error text,
+	printer text
 )
 """
 
@@ -34,6 +35,7 @@ class Job:
 	attempts: int
 	output_ref: str | None
 	error: str | None
+	printer: str | None = None
 
 
 class PrintQueue:
@@ -43,18 +45,22 @@ class PrintQueue:
 		self._lock = threading.Lock()
 		with self._connect() as db:
 			db.execute(_SCHEMA)
+			# DB tạo bởi bản agent cũ chưa có cột printer
+			columns = {row[1] for row in db.execute("pragma table_info(jobs)")}
+			if "printer" not in columns:
+				db.execute("alter table jobs add column printer text")
 			# lệnh đang in dở khi agent dừng đột ngột → trả về hàng đợi
 			db.execute("update jobs set status = 'pending' where status = 'printing'")
 
 	def _connect(self):
 		return sqlite3.connect(self.db_path, timeout=10)
 
-	def enqueue(self, zpl, preview_png=None, print_job=None):
+	def enqueue(self, zpl, preview_png=None, print_job=None, printer=None):
 		job_id = str(uuid.uuid4())
 		with self._lock, self._connect() as db:
 			db.execute(
-				"insert into jobs (id, created, zpl, preview_png, print_job) values (?, ?, ?, ?, ?)",
-				(job_id, time.time(), zpl, preview_png, print_job),
+				"insert into jobs (id, created, zpl, preview_png, print_job, printer) values (?, ?, ?, ?, ?, ?)",
+				(job_id, time.time(), zpl, preview_png, print_job, printer),
 			)
 		return job_id
 
@@ -90,7 +96,8 @@ class PrintQueue:
 	def get(self, job_id):
 		with self._connect() as db:
 			row = db.execute(
-				"select id, zpl, preview_png, print_job, status, attempts, output_ref, error from jobs where id = ?",
+				"select id, zpl, preview_png, print_job, status, attempts, output_ref, error, printer "
+				"from jobs where id = ?",
 				(job_id,),
 			).fetchone()
 		return Job(*row) if row else None
