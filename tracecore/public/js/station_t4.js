@@ -138,6 +138,7 @@ class T4Packing {
 			failure = error;
 		}
 		this.busy = null;
+		if (!failure) this.markOnline();
 		if (failure) this.failure(failure);
 		else if (response && response.ok === false) this.reject(response.error, method);
 		else onOk(response);
@@ -155,24 +156,45 @@ class T4Packing {
 		this.show();
 	}
 
+	markOnline() {
+		// server đã trả lời: chắc chắn có mạng, bỏ trạng thái offline cũ (không có sự kiện "online" nào báo)
+		if (!this.offline) return;
+		this.offline = false;
+		this.station.manualOffline = false;
+		this.station.banner.hidden = true;
+		this.station.root.dataset.offline = "0";
+	}
+
 	failure(error) {
-		if (error.offline) return this.station.setOffline(true);
+		// chỉ coi là offline khi trình duyệt báo mất mạng; hết thời gian chờ khi vẫn có mạng là lỗi kỹ thuật
+		// có nút Thử lại (gửi lại y nguyên key: server có thể đã ghi, ví dụ đã sinh Cycle ID)
+		if (error.offline && navigator.onLine === false) return this.station.setOffline(true);
 		// 4xx là câu trả lời dứt khoát của server: lần sau phải dùng key mới
 		if (error.status >= 400 && error.status < 500) this.pending = null;
-		const notice =
-			error.status === 403
-				? {
-						title: __("Not permitted"),
-						reason: __("This account cannot pack sets at this station."),
-						action: __("Log in with the station account or call R10."),
-				  }
-				: {
-						title: __("Server error"),
-						reason: __("The server could not process the request ({0}).", [
-							error.status || "?",
-						]),
-						action: __("Retry, or call R02 if it happens again."),
-				  };
+		let notice;
+		if (error.offline) {
+			notice = {
+				title: __("No answer from the server"),
+				reason: __(
+					"The request got no answer in time; the server may already have recorded it."
+				),
+				action: __("Retry: the same request is sent again and is never recorded twice."),
+			};
+		} else if (error.status === 403) {
+			notice = {
+				title: __("Not permitted"),
+				reason: __("This account cannot pack sets at this station."),
+				action: __("Log in with the station account or call R10."),
+			};
+		} else {
+			notice = {
+				title: __("Server error"),
+				reason: __("The server could not process the request ({0}).", [
+					error.status || "?",
+				]),
+				action: __("Retry, or call R02 if it happens again."),
+			};
+		}
 		this.notice = { variant: "error", technical: true, ...notice };
 		this.show();
 	}
@@ -189,7 +211,9 @@ class T4Packing {
 		this.notice = null;
 		this.lookup = null;
 		if (res.kind === "context") {
+			// ngữ cảnh mới (kể cả quét lại đúng bộ đang mở): vẽ lại toàn bộ để DOM, D1 và khối bộ khớp state
 			this.reset();
+			this.viewKey = null;
 			this.ctx = res.context;
 			this.packType = (this.ctx.pack_types[0] || {}).item || null;
 		} else if (res.kind === "ci") {
@@ -633,10 +657,11 @@ class T4Packing {
 	}
 
 	markScanBox() {
-		this.station.form.classList.toggle(
-			"is-error",
-			Boolean(this.notice && this.notice.variant === "error")
-		);
+		const error = Boolean(this.notice && this.notice.variant === "error");
+		this.station.form.classList.toggle("is-error", error);
+		// lỗi mới (vd bấm Xác nhận ở cuối trang): cuộn về đầu để thấy ô quét và alert-error ngay dưới
+		if (error && this.shownNotice !== this.notice) window.scrollTo({ top: 0 });
+		this.shownNotice = this.notice;
 	}
 
 	updatePlaceholder() {
@@ -749,7 +774,8 @@ class T4Packing {
 
 	noticeHtml() {
 		let html = "";
-		if (this.offline) html += this.alertHtml(this.offlineAlert());
+		// trong mọi view (ngữ cảnh, kết quả, thông báo) alert offline luôn có Thử lại: gửi lại `pending` cùng key
+		if (this.offline) html += this.offlineHtml();
 		if (this.busy) {
 			html += `<p class="tc-loading" role="status" aria-busy="true">${esc(
 				__("Loading...")
