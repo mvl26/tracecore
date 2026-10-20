@@ -455,8 +455,13 @@ class T4Packing {
 		});
 	}
 
+	labelWaiting() {
+		// F3: nhãn còn chờ máy in (Waiting) thì chưa in lại được, nếu không đổi cuộn sẽ in hai nhãn cùng Cycle ID
+		return Boolean(this.done && this.done.print && this.done.print.status === "Waiting");
+	}
+
 	reprint() {
-		if (!this.done || this.busy || this.offline) return;
+		if (!this.done || this.busy || this.offline || this.labelWaiting()) return;
 		const cycleId = this.done.pack.cycle_id;
 		this.openDialog({
 			title: __("Reprint label"),
@@ -1097,14 +1102,21 @@ class T4Packing {
 
 	barHtml() {
 		if (this.done) {
-			const disabled = t4Disabled(Boolean(this.busy) || this.offline);
+			const blocked = Boolean(this.busy) || this.offline;
+			const waiting = this.labelWaiting();
+			const waitingHint = waiting
+				? `<span class="tc-hint">${esc(
+						__("Reprint opens once the waiting label has been printed.")
+				  )}</span>`
+				: "";
 			return `<div class="tc-actionsbar">
-				<button type="button" class="tc-btn tc-btn-secondary" data-action="reprint"${disabled}>${esc(
-				__("Reprint (reason)")
-			)}</button>
-				<button type="button" class="tc-btn tc-btn-danger" data-action="void"${disabled}>${esc(
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="reprint"${t4Disabled(
+					blocked || waiting
+				)}>${esc(__("Reprint (reason)"))}</button>
+				<button type="button" class="tc-btn tc-btn-danger" data-action="void"${t4Disabled(blocked)}>${esc(
 				__("Void Cycle ID")
 			)}</button>
+				${waitingHint}
 				<span class="tc-hint">${esc(__("Scan the Set ID of the next set to pack"))}</span>
 			</div>`;
 		}

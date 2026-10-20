@@ -501,8 +501,10 @@ def reprint(cycle_id, reason, station):
 	"""In lại nhãn cùng Cycle ID trong 10 phút kể từ khi sinh (AC-10); trả cùng dạng `generate`.
 
 	Cửa sổ đo bằng giờ server từ `Pack.creation` (lúc server sinh Cycle ID), không từ `packed_at` (giờ client, có
-	thể lệch). Lý do trống → REASON_REQUIRED; gói không còn Packed → STATUS_INVALID_FOR_STATION; quá 600 s (số
-	giây nguyên, R3) → REPRINT_WINDOW_EXPIRED. `label_print_count + 1`; Print Job mới mang `reprint_reason`.
+	thể lệch). Lý do trống → REASON_REQUIRED; gói không còn Packed → STATUS_INVALID_FOR_STATION; nhãn còn chờ in
+	(Print Job Waiting) → trả lại job đó kèm cảnh báo ``LABEL_ALREADY_WAITING``, không tạo job, không tăng số lần in;
+	quá 600 s (số giây nguyên, R3) → REPRINT_WINDOW_EXPIRED. `label_print_count + 1`; Print Job mới mang
+	`reprint_reason`.
 	"""
 	_require_station(station)
 	reason = (reason or "").strip()
@@ -523,6 +525,9 @@ def reprint(cycle_id, reason, station):
 			),
 			_("Scan the label of a pack that is still packed, or call R02."),
 		)
+	waiting = pack_label.waiting_label(pack)
+	if waiting:
+		return pack_label.pack_result(pack, waiting)
 	elapsed = math.floor((now_datetime() - get_datetime(pack.creation)).total_seconds())
 	if elapsed > REPRINT_WINDOW_SECONDS:
 		raise _blocked(

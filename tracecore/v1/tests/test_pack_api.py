@@ -557,6 +557,23 @@ class TestReprintAndVoid(PackApiCase):
 			],
 		)
 
+	def test_reprint_while_label_waiting_keeps_one_job(self):
+		# F3: cảnh báo LABEL_ALREADY_WAITING (200, ok), không tạo Print Job mới, không tăng số lần in
+		_ready, cycle_id = self.packed(method="Plasma", with_printer=False)
+		jobs = frappe.get_all(
+			"Print Job", filters={"ref_doctype": "Pack", "ref_name": cycle_id}, pluck="name"
+		)
+		result = call(pack_api.reprint_label, cycle_id=cycle_id, reason="Kẹt giấy", station=STATION)
+		self.assertIs(result["ok"], True)
+		self.assertIsNone(http_status())
+		self.assertEqual(result["print"]["print_job"], str(jobs[0]))
+		self.assertEqual(result["print"]["warning"]["code"], "LABEL_ALREADY_WAITING")
+		self.assertEqual(
+			frappe.get_all("Print Job", filters={"ref_doctype": "Pack", "ref_name": cycle_id}, pluck="name"),
+			jobs,
+		)
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 1)
+
 	def test_reprint_window_expired_is_409(self):
 		_ready, cycle_id = self.packed()
 		created = frappe.utils.get_datetime(frappe.db.get_value("Pack", cycle_id, "creation"))

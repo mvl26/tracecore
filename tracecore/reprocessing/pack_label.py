@@ -4,6 +4,7 @@ Tách khỏi `packing` (dịch vụ sinh/in lại/hủy/tra cứu gọi các hà
 
 - `label_context(pack)`: `doc` của mẫu nhãn gói (đúng bộ khóa `sample_pack_context`), dùng lúc sinh và in lại.
 - `queue_label(pack, station, printer, reprint_reason=None)`: tạo Print Job ``Queued`` hoặc ``Waiting`` + cảnh báo.
+- `waiting_label(pack)`: nhãn còn chờ in của gói (cảnh báo ``LABEL_ALREADY_WAITING``), để in lại không tạo job thứ hai.
 - `pack_summary(pack)`, `pack_result(pack, printed)`: dữ liệu gói trả về cho trạm.
 - `label_items(method)`: Item nhãn của phương pháp.
 - `cancel_waiting_jobs(pack, reason)`: hủy nhãn còn chờ in của gói vừa hủy hiệu lực.
@@ -142,6 +143,35 @@ def queue_label(pack, station, printer, reprint_reason=None):
 		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
 	)
 	return {"print_job": name, "status": "Queued", "printer": printer["name"], "zpl": zpl, "warning": None}
+
+
+def waiting_label(pack):
+	"""Print Job ``Waiting`` mới nhất của gói, cùng dạng `queue_label` kèm cảnh báo ``LABEL_ALREADY_WAITING``; không có → None.
+
+	In lại khi nhãn còn chờ máy in thì trả lại job đó thay vì tạo job mới: nếu không, đổi cuộn sẽ in hai nhãn hợp lệ
+	cùng một Cycle ID trong khi `label_print_count` đã tăng mà chưa có nhãn nào được in.
+	"""
+	names = frappe.get_all(
+		"Print Job",
+		filters={"ref_doctype": "Pack", "ref_name": pack.name, "status": "Waiting"},
+		pluck="name",
+		order_by="creation desc, name desc",
+		limit=1,
+	)
+	if not names:
+		return None
+	job = str(names[0])
+	warning = _warning(
+		"LABEL_ALREADY_WAITING",
+		_("Label not printed yet"),
+		_(
+			"The label of Cycle ID {0} has not been printed yet: print job {1} is still waiting for a printer. No new label was created."
+		).format(pack.name, job),
+		_(
+			"Load the right label roll into the printer, then scan the roll code (CN-#####) to print the waiting label."
+		),
+	)
+	return {"print_job": job, "status": "Waiting", "printer": None, "zpl": None, "warning": warning}
 
 
 def pack_summary(pack):

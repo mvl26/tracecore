@@ -666,12 +666,43 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 1)
 
 	def test_reprint_without_printer_waits_with_warning(self):
-		_ready, cycle_id = self._packed(method="Plasma", with_printer=False)
+		# nhãn đầu đã vào hàng in; sau đó trạm không còn máy in đúng loại nhãn → nhãn in lại chờ (Waiting)
+		ready, cycle_id = self._packed(method="Plasma")
+		frappe.db.set_value("Printer", ready.printer, "is_active", 0)
 		result = packing.reprint(cycle_id, "Kẹt giấy", STATION)
 		self.assertEqual(result["print"]["status"], "Waiting")
 		self.assertEqual(result["print"]["warning"]["code"], "NO_PRINTER_FOR_METHOD")
 		job = frappe.get_doc("Print Job", result["print"]["print_job"])
 		self.assertEqual((job.status, job.reprint_reason), ("Waiting", "Kẹt giấy"))
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
+
+	@bru("BRU-ID-005")
+	def test_reprint_while_label_waiting_returns_the_waiting_job(self):
+		# F3: nhãn chưa in (Waiting) thì in lại không tạo job thứ hai, nếu không đổi cuộn sẽ in hai nhãn cùng Cycle ID
+		_ready, cycle_id = self._packed(method="Plasma", with_printer=False)
+		[waiting] = _jobs_of(cycle_id)
+		result = packing.reprint(cycle_id, "Kẹt giấy", STATION)
+		self.assertEqual(result["pack"]["cycle_id"], cycle_id)
+		printed = result["print"]
+		self.assertEqual(
+			{key: printed[key] for key in ("print_job", "status", "printer", "zpl")},
+			{"print_job": waiting, "status": "Waiting", "printer": None, "zpl": None},
+		)
+		warning = printed["warning"]
+		self.assertEqual(warning["code"], "LABEL_ALREADY_WAITING")
+		for key in ("title", "reason", "action"):
+			self.assertTrue(warning[key], msg=key)
+		self.assertIn(cycle_id, warning["reason"])
+		self.assertIn("CN-", warning["action"])
+		self.assertEqual(list(_jobs_of(cycle_id)), [waiting])
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 1)
+		self.assertIsNone(frappe.db.get_value("Print Job", waiting, "reprint_reason"))
+
+		# nhãn chờ đã in (không còn Waiting) thì in lại như thường
+		frappe.db.set_value("Print Job", waiting, "status", "Printed")
+		again = packing.reprint(cycle_id, "Kẹt giấy", STATION)["print"]
+		self.assertNotEqual(again["print_job"], waiting)
+		self.assertEqual(again["warning"]["code"], "NO_PRINTER_FOR_METHOD")
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
 
 	@bru("BRU-ID-005")
