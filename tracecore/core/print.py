@@ -1,21 +1,389 @@
-"""In nhãn: render ZPL + ảnh xem trước, hàng đợi Print Job (core.print, ADR-006).
+"""In nhãn: dialect máy in, render mẫu nhãn, chọn máy in theo loại nhãn, đổi cuộn, hàng đợi Print Job (core.print, ADR-006).
 
-Skeleton chỉ có nhãn thử (GIAI test + chữ); Label Template/Printer đến FEAT-002.
+- **Dialect** (D7): mỗi ngôn ngữ máy in là một lớp trong `DIALECTS` (hiện chỉ ZPL). Thêm TSPL (máy TSC) = thêm một
+  lớp + option `language` của Printer/Label Template, không đổi dữ liệu hay nơi gọi.
+- **Render**: mẫu Jinja do R10 sửa (Label Template) chạy trong sandbox riêng, không có API `frappe`; mọi chuỗi đưa
+  vào đã bỏ ký tự điều khiển của dialect; chữ in qua `text()` giữ dấu hoặc bỏ dấu theo `Printer.supports_unicode`.
+- **Chọn máy in** (BRU-REP-011): theo trạm và phương pháp của cuộn nhãn đang lắp (`Printer.label_type_loaded`).
+- **Đổi cuộn** (`set_roll`): cập nhật loại nhãn đang lắp và đưa các Print Job `Waiting` khớp phương pháp vào hàng đợi.
 """
 
 import io
+import unicodedata
 
 import frappe
 from frappe import _
-from frappe.utils import cint, now_datetime
+from frappe.utils import cint, flt, now_datetime
+from jinja2 import TemplateError, TemplateSyntaxError
+from jinja2.sandbox import SandboxedEnvironment
 
-from tracecore.core import gs1
+from tracecore.core import code_registry, gs1
+from tracecore.core.errors import Block, BlockedError
 
 LABEL_WIDTH_DOTS = 590  # 50 mm ở 300 dpi
 LABEL_HEIGHT_DOTS = 354  # 30 mm ở 300 dpi
 DM_ORIGIN = (30, 40)
 ACK_STATUSES = ("Printed", "Failed")
 OUTPUT_MODES = ("Printer", "File")
+NEW_JOB_STATUSES = ("Queued", "Waiting")
+
+MM_PER_INCH = 25.4
+DEFAULT_DPI = 300
+DEFAULT_WIDTH_MM = 60
+DEFAULT_HEIGHT_MM = 40
+DEFAULT_LANGUAGE = "ZPL"
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Dialect máy in
+# ---------------------------------------------------------------------------------------------------------
+
+
+class Dialect:
+	"""Một ngôn ngữ máy in: sinh DataMatrix, bỏ ký tự điều khiển trong dữ liệu, kiểm đầu ra."""
+
+	name = ""
+
+	def datamatrix(self, payload, x, y, module=6):
+		raise NotImplementedError
+
+	def sanitize(self, text):
+		raise NotImplementedError
+
+	def validate(self, output):
+		raise NotImplementedError
+
+
+class ZplDialect(Dialect):
+	name = "ZPL"
+	# ^ và ~ mở lệnh ZPL; CR/LF/Tab đổi thành dấu cách để một chuỗi không tách thành nhiều dòng lệnh
+	_STRIP = str.maketrans({"^": None, "~": None, "\r": " ", "\n": " ", "\t": " "})
+
+	def datamatrix(self, payload, x, y, module=6):
+		if not payload:
+			frappe.throw(_("The label has no DataMatrix payload."))
+		try:
+			return gs1.zpl_datamatrix(payload, x, y, module)
+		except gs1.GS1Error as error:
+			frappe.throw(_("The label data cannot be encoded as DataMatrix: {0}").format(error))
+
+	def sanitize(self, text):
+		return ("" if text is None else str(text)).translate(self._STRIP)
+
+	def validate(self, output):
+		output = output.strip()
+		if not (output.startswith("^XA") and output.endswith("^XZ")):
+			frappe.throw(
+				_("The rendered label is not valid {0}: it must start with ^XA and end with ^XZ.").format(
+					self.name
+				)
+			)
+
+
+DIALECTS: dict[str, Dialect] = {dialect.name: dialect for dialect in (ZplDialect(),)}
+
+
+def get_dialect(language):
+	dialect = DIALECTS.get(language)
+	if dialect is None:
+		frappe.throw(_("Printer language {0} is not supported.").format(language))
+	return dialect
+
+
+# đ (U+0111) và Đ (U+0110) không phân rã khi NFKD; viết bằng mã điểm để không có chữ Việt ngoài _() (lint R3)
+_FOLD_MAP = str.maketrans({0x0111: "d", 0x0110: "D"})
+
+
+def fold(text):
+	"""Bỏ dấu tiếng Việt cho máy in không hỗ trợ Unicode: NFKD bỏ dấu, đ/Đ → d/D, bỏ ký tự ngoài ASCII in được."""
+	decomposed = unicodedata.normalize("NFKD", "" if text is None else str(text)).translate(_FOLD_MAP)
+	return "".join(char for char in decomposed if " " <= char <= "~")
+
+
+def mm_to_dots(mm, dpi):
+	"""Milimét → dot ở độ phân giải `dpi` (làm tròn): 60 mm ở 300 dpi = 709 dot."""
+	return int(flt(mm) * cint(dpi) / MM_PER_INCH + 0.5)
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Render mẫu nhãn
+# ---------------------------------------------------------------------------------------------------------
+
+# Môi trường Jinja riêng thay cho jenv của Frappe: mẫu do R10 sửa không được gọi API `frappe` (DB, request…),
+# và biến thiếu phải ra chuỗi rỗng chứ không in "{{ no such element }}" (DebugUndefined của Frappe) vào ZPL.
+_JINJA = SandboxedEnvironment(autoescape=False)
+
+
+class _Doc(dict):
+	"""`doc` của mẫu: khóa thiếu trả chuỗi rỗng để nhãn không in "None"/lỗi."""
+
+	def __missing__(self, key):
+		return ""
+
+
+def _clean(value, dialect):
+	"""Bỏ ký tự điều khiển của dialect trong mọi chuỗi (kể cả lồng nhau); None → chuỗi rỗng."""
+	if value is None:
+		return ""
+	if isinstance(value, str):
+		return dialect.sanitize(value)
+	if isinstance(value, dict):
+		return _Doc({key: _clean(item, dialect) for key, item in value.items()})
+	if isinstance(value, list | tuple):
+		return [_clean(item, dialect) for item in value]
+	return value
+
+
+def check_template_syntax(body):
+	"""Mẫu Jinja phải biên dịch được; lỗi cú pháp → ValidationError."""
+	try:
+		_JINJA.parse(body or "")
+	except TemplateSyntaxError as error:
+		frappe.throw(
+			_("The template body has a syntax error on line {0}: {1}").format(error.lineno, error.message)
+		)
+
+
+def render(
+	template,
+	doc,
+	unicode=False,
+	*,
+	dpi=DEFAULT_DPI,
+	width_mm=DEFAULT_WIDTH_MM,
+	height_mm=DEFAULT_HEIGHT_MM,
+	language=DEFAULT_LANGUAGE,
+):
+	"""Render mẫu `template` (Jinja) với `doc` thành lệnh máy in của `language`.
+
+	Ngữ cảnh mẫu: ``doc`` (mọi chuỗi đã `sanitize`), ``text(giá trị)`` (giữ dấu nếu `unicode`, ngược lại `fold`),
+	``datamatrix(payload, x, y, module)`` của dialect, ``dpi``, ``width_dots``, ``height_dots`` (từ mm và dpi).
+	Kết quả là một dòng (bỏ xuống dòng giữa các lệnh) và phải qua `Dialect.validate`, sai → ValidationError.
+	"""
+	dialect = get_dialect(language)
+
+	def text(value=None):
+		clean = dialect.sanitize(value)
+		return unicodedata.normalize("NFC", clean) if unicode else fold(clean)
+
+	context = {
+		"doc": _clean(doc or {}, dialect),
+		"text": text,
+		"datamatrix": dialect.datamatrix,
+		"dpi": cint(dpi),
+		"width_dots": mm_to_dots(width_mm, dpi),
+		"height_dots": mm_to_dots(height_mm, dpi),
+	}
+	try:
+		rendered = _JINJA.from_string(template or "").render(context)
+	except TemplateError as error:
+		frappe.throw(_("The label template could not be rendered: {0}").format(error))
+	output = "".join(line.strip() for line in rendered.splitlines())
+	dialect.validate(output)
+	return output
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Mẫu nhãn và chọn máy in
+# ---------------------------------------------------------------------------------------------------------
+
+TEMPLATE_FIELDS = ["name", "body", "width_mm", "height_mm", "dpi", "language"]
+PRINTER_FIELDS = ["name", "host", "port", "language", "supports_unicode", "label_type_loaded"]
+
+
+def active_template(label_object, method, language=DEFAULT_LANGUAGE):
+	"""Label Template active của (đối tượng, phương pháp, ngôn ngữ) hoặc None."""
+	return (
+		frappe.db.get_value(
+			"Label Template",
+			{"label_object": label_object, "method": method, "language": language, "is_active": 1},
+			TEMPLATE_FIELDS,
+			as_dict=True,
+		)
+		or None
+	)
+
+
+def pack_template(method, language=DEFAULT_LANGUAGE):
+	"""Nội dung mẫu nhãn gói active theo phương pháp, hoặc None nếu chưa có mẫu."""
+	template = active_template("Pack", method, language)
+	return template.body if template else None
+
+
+def _render_template_row(template, doc, unicode):
+	return render(
+		template.body,
+		doc,
+		unicode,
+		dpi=template.dpi,
+		width_mm=template.width_mm,
+		height_mm=template.height_mm,
+		language=template.language,
+	)
+
+
+def render_pack(method, doc, language=DEFAULT_LANGUAGE, unicode=False):
+	"""Render nhãn gói bằng mẫu active (kích thước và dpi lấy từ chính mẫu); chưa có mẫu → None."""
+	template = active_template("Pack", method, language)
+	return _render_template_row(template, doc, unicode) if template else None
+
+
+def _active_printers(station):
+	"""Máy in active của trạm theo tên Printer, kèm `method` của loại nhãn đang lắp."""
+	printers = frappe.get_all(
+		"Printer", filters={"station": station, "is_active": 1}, fields=PRINTER_FIELDS, order_by="name asc"
+	)
+	label_types = {printer.label_type_loaded for printer in printers if printer.label_type_loaded}
+	methods = (
+		dict(
+			frappe.get_all(
+				"Item",
+				filters={"name": ["in", list(label_types)]},
+				fields=["name", "tc_compatible_method"],
+				as_list=True,
+			)
+		)
+		if label_types
+		else {}
+	)
+	for printer in printers:
+		printer["method"] = methods.get(printer.label_type_loaded)
+	return printers
+
+
+def select_printer(station, method):
+	"""Máy in active của trạm đang lắp nhãn đúng `method` (BRU-REP-011); nhiều máy → theo tên Printer.
+
+	Trả `{"name", "host", "port", "language", "supports_unicode", "label_type"}` hoặc None.
+	"""
+	for printer in _active_printers(station):
+		if printer.method == method:
+			return {
+				"name": printer.name,
+				"host": printer.host or "",
+				"port": cint(printer.port),
+				"language": printer.language,
+				"supports_unicode": cint(printer.supports_unicode),
+				"label_type": printer.label_type_loaded,
+			}
+	return None
+
+
+def station_printers(station):
+	"""Máy in active của trạm cho cấu hình Station Agent: `name, host, port, language, label_type, method`."""
+	return [
+		{
+			"name": printer.name,
+			"host": printer.host or "",
+			"port": cint(printer.port),
+			"language": printer.language,
+			"label_type": printer.label_type_loaded,
+			"method": printer.method,
+		}
+		for printer in _active_printers(station)
+	]
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Đổi cuộn nhãn
+# ---------------------------------------------------------------------------------------------------------
+
+
+def _roll_not_found(roll_code):
+	return BlockedError(
+		Block(
+			"ROLL_NOT_FOUND",
+			_("Label roll not found"),
+			_("Roll code {0} has not been issued or has been disabled.").format(roll_code),
+			_("Rescan the code on the label roll or call R02."),
+		)
+	)
+
+
+def _roll_not_label(roll_code):
+	return BlockedError(
+		Block(
+			"ROLL_NOT_LABEL",
+			_("Not a label roll"),
+			_("Roll code {0} does not belong to a label item with a compatible method.").format(roll_code),
+			_("Scan the code on a label roll or call R02."),
+		)
+	)
+
+
+def _roll_label(roll_code):
+	"""(Item nhãn, phương pháp) của cuộn; mã chưa cấp/đã vô hiệu → ROLL_NOT_FOUND; không phải nhãn → ROLL_NOT_LABEL."""
+	if not roll_code or frappe.db.get_value("Code Registry", roll_code, "status") != "Active":
+		raise _roll_not_found(roll_code)
+	item = code_registry.roll_label_item(roll_code)
+	group, method = (
+		frappe.db.get_value("Item", item, ["tc_item_group_cssd", "tc_compatible_method"]) if item else None
+	) or (None, None)
+	if group != "Label" or not method:
+		raise _roll_not_label(roll_code)
+	return item, method
+
+
+def _job_data(job):
+	# cột `data` là JSON hợp lệ (MariaDB kiểm), nhưng không chắc là object
+	data = frappe.parse_json(job.data) if job.data else {}
+	return data if isinstance(data, dict) else {}
+
+
+def _release_waiting_jobs(printer, method):
+	"""Render các Print Job `Waiting` cùng trạm khớp `method` bằng mẫu active + cờ Unicode của máy in, chuyển Queued."""
+	template = active_template("Pack", method, printer.language)
+	if template is None:
+		return []
+	names = frappe.get_all(
+		"Print Job",
+		filters={"station": printer.station, "status": "Waiting"},
+		pluck="name",
+		order_by="creation asc, name asc",
+	)
+	released = []
+	for name in names:
+		job = frappe.get_doc("Print Job", name, for_update=True)
+		data = _job_data(job)
+		if job.status != "Waiting" or data.get("method") != method or data.get("label_object") != "Pack":
+			continue
+		zpl = _render_template_row(template, data.get("label_context"), bool(printer.supports_unicode))
+		job.update({"payload": zpl, "printer": printer.name, "template": template.name, "status": "Queued"})
+		job.save(ignore_permissions=True)
+		released.append({"print_job": str(job.name), "zpl": zpl, "printer": printer.name})
+	return released
+
+
+def set_roll(printer, roll_code):
+	"""Đổi cuộn nhãn của máy in (FR-M2-08.2, AC-9) và phát hành các Print Job đang chờ đúng loại nhãn.
+
+	Loại nhãn đang lắp = Item nhãn của cuộn. Mã chưa cấp/đã vô hiệu → `BlockedError(ROLL_NOT_FOUND)`; mã của Item
+	không phải nhãn → `ROLL_NOT_LABEL`. Trả `{"printer", "label_type", "method", "released_jobs": [{"print_job",
+	"zpl", "printer"}]}`; job `Waiting` khác phương pháp hoặc khác trạm giữ nguyên.
+	"""
+	doc = frappe.get_doc("Printer", printer, for_update=True)
+	item, method = _roll_label(roll_code)
+	doc.update(
+		{
+			"label_type_loaded": item,
+			"roll_code": roll_code,
+			"roll_loaded_on": now_datetime(),
+			"roll_loaded_by": frappe.session.user,
+		}
+	)
+	doc.flags.tc_roll_change = True
+	doc.save(ignore_permissions=True)
+	return {
+		"printer": doc.name,
+		"label_type": item,
+		"method": method,
+		"released_jobs": _release_waiting_jobs(doc, method),
+	}
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Nhãn thử và hàng đợi Print Job
+# ---------------------------------------------------------------------------------------------------------
 
 
 def label_layout(giai, station):
@@ -28,10 +396,6 @@ def label_layout(giai, station):
 		(200, 110, 28, f"Station {station}"),
 		(30, 290, 24, gs1.giai_hri(giai)),
 	]
-
-
-def _zpl_text(value):
-	return value.replace("^", "").replace("~", "")
 
 
 def _preview_png(payload, layout):
@@ -50,12 +414,15 @@ def _preview_png(payload, layout):
 
 def render_test_label(station):
 	"""Nhãn thử 50x30 mm: DataMatrix GIAI test (không ghi Code Registry) + chữ ASCII."""
+	zpl_dialect = DIALECTS[DEFAULT_LANGUAGE]
 	giai = gs1.make_giai(gs1.configured_company_prefix(), "TEST" + now_datetime().strftime("%y%m%d%H%M%S"))
 	payload = gs1.giai_payload(giai)
 	layout = label_layout(giai, station)
 	parts = ["^XA", "^CI28", f"^PW{LABEL_WIDTH_DOTS}", f"^LL{LABEL_HEIGHT_DOTS}"]
-	parts.append(gs1.zpl_datamatrix(payload, *DM_ORIGIN))
-	parts += [f"^FO{x},{y}^A0N,{size},{size}^FD{_zpl_text(text)}^FS" for x, y, size, text in layout]
+	parts.append(zpl_dialect.datamatrix(payload, *DM_ORIGIN))
+	parts += [
+		f"^FO{x},{y}^A0N,{size},{size}^FD{zpl_dialect.sanitize(text)}^FS" for x, y, size, text in layout
+	]
 	parts.append("^XZ")
 	return {
 		"giai": giai,
@@ -65,7 +432,24 @@ def render_test_label(station):
 	}
 
 
-def create_job(station, zpl, data=None, template="test-label", printer=None):
+def create_job(
+	station,
+	zpl,
+	data=None,
+	template="test-label",
+	printer=None,
+	status="Queued",
+	ref_doctype=None,
+	ref_name=None,
+	reprint_reason=None,
+):
+	"""Tạo Print Job: `Queued` (có `zpl`) hoặc `Waiting` (chưa có máy in đúng loại nhãn, `zpl` = None).
+
+	Job `Waiting` mang `data = {"method", "label_object", "label_context"}` để `set_roll` render khi có máy in.
+	Trả tên job (chuỗi).
+	"""
+	if status not in NEW_JOB_STATUSES:
+		frappe.throw(_("Invalid print status: {0}").format(status))
 	doc = frappe.get_doc(
 		{
 			"doctype": "Print Job",
@@ -74,8 +458,11 @@ def create_job(station, zpl, data=None, template="test-label", printer=None):
 			"template": template,
 			"payload": zpl,
 			"data": frappe.as_json(data) if data is not None else None,
-			"status": "Queued",
+			"status": status,
 			"attempts": 0,
+			"ref_doctype": ref_doctype,
+			"ref_name": ref_name,
+			"reprint_reason": reprint_reason,
 		}
 	).insert(ignore_permissions=True)
 	return str(doc.name)

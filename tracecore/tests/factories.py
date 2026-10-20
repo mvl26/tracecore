@@ -1,8 +1,9 @@
 """Factory dữ liệu test (F-5)."""
 
 import frappe
+from frappe.model.naming import getseries
 
-from tracecore.core import gs1, step_gate
+from tracecore.core import code_registry, gs1, step_gate
 
 
 def make_user(email, roles=()):
@@ -225,3 +226,42 @@ def make_batch(item_code, batch_id, expiry_date=None):
 	return frappe.get_doc(
 		{"doctype": "Batch", "batch_id": batch_id, "item": item_code, "expiry_date": expiry_date}
 	).insert(ignore_permissions=True)
+
+
+LABEL_ITEMS = (("VT-NHAN-HAP", "Steam"), ("VT-NHAN-PLASMA", "Plasma"))
+
+
+def make_label_items():
+	"""Item nhãn hấp (`VT-NHAN-HAP`, Steam) và nhãn plasma (`VT-NHAN-PLASMA`, Plasma).
+
+	Trả `(tên Item nhãn hấp, tên Item nhãn plasma)`.
+	"""
+	return tuple(make_item(code, "Label", method=method).name for code, method in LABEL_ITEMS)
+
+
+def make_printer(station, label_item, host="", name="Test printer", supports_unicode=0):
+	"""Tạo Printer ZPL 300 dpi tại trạm với loại nhãn đang lắp `label_item`; trả tên Printer (PRN-###)."""
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Printer",
+				"printer_name": name,
+				"station": station,
+				"host": host,
+				"label_type_loaded": _ref_name(label_item),
+				"supports_unicode": supports_unicode,
+			}
+		)
+		.insert()
+		.name
+	)
+
+
+def make_roll(label_item):
+	"""Cấp mã cuộn nhãn `CN-#####` cho Item nhãn và ghi Code Registry (D2: FEAT-005 cấp mã thật); trả mã cuộn."""
+	label_item = _ref_name(label_item)
+	while True:
+		code = f"CN-{getseries('CN-', 5)}"
+		if not code_registry.is_issued(code):
+			code_registry.register(code, code_registry.ROLL_PREFIX, "Item", label_item)
+			return code

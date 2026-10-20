@@ -8,6 +8,7 @@ from frappe.utils import now_datetime
 from tracecore.core import gs1
 
 SET_SERIAL_DIGITS = 6
+ROLL_PREFIX = "CN"  # cuộn nhãn `CN-#####` do FEAT-005 cấp, ref_doctype = Item nhãn (D2)
 
 
 class CodeAlreadyIssuedError(frappe.ValidationError):
@@ -20,6 +21,22 @@ def company_prefix():
 
 def is_issued(code):
 	return bool(frappe.db.exists("Code Registry", code))
+
+
+def roll_label_item(roll_code):
+	"""Item nhãn của cuộn `CN-#####`, hoặc None.
+
+	Chỉ nhận dòng sổ có prefix ``CN``, ``ref_doctype = Item`` và còn Active; Item đó có phải nhãn hay không
+	do nơi gọi kiểm (`core.print.set_roll`).
+	"""
+	if not roll_code:
+		return None
+	row = frappe.db.get_value(
+		"Code Registry", roll_code, ["prefix", "ref_doctype", "ref_name", "status"], as_dict=True
+	)
+	if row and (row.prefix, row.ref_doctype, row.status) == (ROLL_PREFIX, "Item", "Active"):
+		return row.ref_name or None
+	return None
 
 
 def register(code, prefix, ref_doctype=None, ref_name=None, station=None):

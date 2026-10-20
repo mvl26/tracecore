@@ -180,6 +180,8 @@ doc_events = {
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
 	"Assembly Record": dict(_AUDIT_EVENTS),
+	"Printer": dict(_AUDIT_EVENTS),
+	"Label Template": dict(_AUDIT_EVENTS),
 }
 
 # Scheduled Tasks

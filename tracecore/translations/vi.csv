@@ -238,3 +238,47 @@ Invalid gate result: {0},Kết quả cổng không hợp lệ: {0},
 Cycle ID is required.,Cần có Cycle ID.,
 Set Unit {0} is no longer in cycle {1}; create a new Assembly Record.,Bộ {0} không còn ở chu trình {1}; hãy lập phiếu lắp ráp mới.,
 Assembly Record cannot be cancelled in this version.,Phiên bản này chưa hỗ trợ hủy phiếu lắp ráp.,
+Label Template,Mẫu nhãn,
+Connection,Kết nối,Printer
+DPI,DPI,
+Height (mm),Chiều cao (mm),Label Template
+Width (mm),Chiều rộng (mm),Label Template
+Label Object,Đối tượng nhãn,Label Template
+Label Size,Kích thước nhãn,Label Template
+Pack,Gói,Label Template
+Template Body,Nội dung mẫu,Label Template
+Label Roll,Cuộn nhãn,Printer
+Label Type Loaded,Loại nhãn đang lắp,Printer
+Printer Language,Ngôn ngữ máy in,
+Roll Code,Mã cuộn nhãn,Printer
+Roll Loaded By,Người lắp cuộn,Printer
+Roll Loaded On,Thời điểm lắp cuộn,Printer
+Supports Unicode,Hỗ trợ Unicode,Printer
+Waiting,Chờ máy in,Print Job
+Printer command language; the label template must use the same language.,Ngôn ngữ lệnh của máy in; mẫu nhãn phải cùng ngôn ngữ.,
+Tick only when the printer prints Vietnamese diacritics (Unicode font loaded); otherwise labels are printed without diacritics.,"Chỉ tick khi máy in in được tiếng Việt có dấu (đã nạp phông Unicode); nếu không, nhãn được in không dấu.",
+Leave empty when the Station Agent writes a file instead of printing.,Để trống khi Station Agent ghi tệp thay vì in.,
+Label item currently loaded; set by changing the roll at the station.,Vật tư nhãn đang lắp; đổi khi thay cuộn tại trạm.,
+"Only one template can be active for each label object, method and language.","Mỗi đối tượng nhãn, phương pháp và ngôn ngữ chỉ có một mẫu hiệu lực.",
+"Jinja template in the printer language. Variables: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module).","Mẫu Jinja theo ngôn ngữ máy in. Biến: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Hàm: text(giá trị) chỉ in dấu trên máy in hỗ trợ Unicode; datamatrix(payload, x, y, module).",
+Waiting: the label is kept until a printer with the right label roll is ready.,Chờ máy in: nhãn được giữ lại cho tới khi có máy in lắp đúng cuộn nhãn.,
+A queued print job needs label content.,Lệnh in đang chờ in phải có nội dung nhãn.,
+DPI must be greater than zero.,DPI phải lớn hơn 0.,
+"Label width, height and DPI must be greater than zero.","Chiều rộng, chiều cao và DPI của nhãn phải lớn hơn 0.",
+Port must be between 1 and 65535.,Cổng phải nằm trong khoảng 1–65535.,
+Printer language {0} is not supported.,Chưa hỗ trợ ngôn ngữ máy in {0}.,
+Label roll not found,Không tìm thấy cuộn nhãn,
+Roll code {0} has not been issued or has been disabled.,Mã cuộn {0} chưa được cấp hoặc đã bị vô hiệu.,
+Rescan the code on the label roll or call R02.,Quét lại mã trên cuộn nhãn hoặc gọi R02.,
+Not a label roll,Không phải cuộn nhãn,
+Roll code {0} does not belong to a label item with a compatible method.,Mã cuộn {0} không thuộc vật tư nhãn có phương pháp tương thích.,
+Scan the code on a label roll or call R02.,Quét mã trên cuộn nhãn hoặc gọi R02.,
+Template {3} is already active for {0} / {1} / {2}. Deactivate it first.,Mẫu {3} đang hiệu lực cho {0} / {1} / {2}. Hãy tắt mẫu đó trước.,
+The label data cannot be encoded as DataMatrix: {0},Dữ liệu nhãn không mã hóa được thành DataMatrix: {0},
+The label template could not be rendered: {0},Không dựng được nhãn từ mẫu: {0},
+The rendered label is not valid {0}: it must start with ^XA and end with ^XZ.,Nhãn dựng ra không phải lệnh {0} hợp lệ: phải bắt đầu bằng ^XA và kết thúc bằng ^XZ.,
+The roll is changed only by scanning the label roll at the station: {0},Cuộn nhãn chỉ đổi khi quét cuộn nhãn tại trạm: {0},
+The template body has a syntax error on line {0}: {1},Nội dung mẫu có lỗi cú pháp ở dòng {0}: {1},
+"{0} is a zone, not a station. Choose a station.","{0} là khu, không phải trạm. Hãy chọn một trạm.",
+{0} is not a label item. Choose an Item of group Label that has a compatible method.,{0} không phải vật tư nhãn. Hãy chọn vật tư thuộc nhóm Nhãn có phương pháp tương thích.,
+The label has no DataMatrix payload.,Nhãn không có dữ liệu DataMatrix.,
