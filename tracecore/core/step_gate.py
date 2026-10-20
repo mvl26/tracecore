@@ -6,6 +6,13 @@ Mỗi chu trình tái xử lý của một bộ (`Set Unit.current_cycle_no`) c�
 
 Trường vòng đời (`status`, `cycles_used`, `current_station`, `active_cycle_id`, `current_cycle_no`) được Set Unit
 chặn ghi trừ khi có cờ ``doc.flags.tc_step_gate`` — cờ này chỉ được đặt trong file này (lint R2).
+
+Đồng thời: các hàm ghi khóa dòng Set Unit (``FOR UPDATE``) nên request song song cùng bộ chạy lần lượt. MariaDB
+chạy REPEATABLE READ: đọc thường dùng snapshot mở từ lần đọc đầu của transaction (trên đường RPC là
+``@idempotent``), không thấy dòng request kia vừa commit. Vì vậy mọi thứ ``record`` dựa vào để quyết định (Set Unit,
+dòng cổng, kết quả cả chu trình) đều đọc có khóa. Đọc có khóa theo TỪNG khóa chính (``name = …``), không dùng
+``IN (…)`` hay lọc theo cột không chỉ mục: các dạng đó khóa khoảng hoặc cả bảng và làm hai bộ khác nhau chặn hoặc
+deadlock lẫn nhau. ``check`` và ``gates`` chỉ để hiển thị/kiểm nhanh nên đọc thường.
 """
 
 import frappe
@@ -58,8 +65,23 @@ def _save_lifecycle(unit, **fields):
 	unit.save(ignore_permissions=True)
 
 
-def _results(set_unit, cycle_no):
-	"""{bước: (result, redo_count)} của chu trình; bước chưa có dòng thì vắng mặt."""
+def _results(set_unit, cycle_no, for_update=False):
+	"""{bước: (result, redo_count)} của chu trình; bước chưa có dòng thì vắng mặt.
+
+	for_update: đọc có khóa từng dòng theo khóa chính (xem docstring module) để thấy bản mới nhất đã commit.
+	"""
+	if for_update:
+		results = {}
+		for step in STEPS:
+			row = frappe.db.get_value(
+				"Step Gate Result",
+				result_name(set_unit, cycle_no, step),
+				["result", "redo_count"],
+				for_update=True,
+			)
+			if row:
+				results[step] = (row[0], cint(row[1]))
+		return results
 	rows = frappe.get_all(
 		"Step Gate Result",
 		filters={"set_unit": set_unit, "cycle_no": cycle_no},
@@ -126,9 +148,10 @@ def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None
 	cycle_no = _require_cycle(unit.name, cint(unit.current_cycle_no))
 
 	name = result_name(unit.name, cycle_no, step)
-	exists = frappe.db.exists("Step Gate Result", name)
+	# Đọc có khóa: request song song cùng bộ có thể vừa commit dòng này mà snapshot của ta chưa thấy
+	exists = frappe.db.get_value("Step Gate Result", name, "name", for_update=True)
 	row = (
-		frappe.get_doc("Step Gate Result", name)
+		frappe.get_doc("Step Gate Result", name, for_update=True)
 		if exists
 		else frappe.get_doc(
 			{
@@ -157,33 +180,29 @@ def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None
 	else:
 		row.insert(ignore_permissions=True)
 
+	# Đọc có khóa cả năm dòng SAU khi đã ghi dòng của mình: sau điểm này chỉ còn UPDATE dòng đã khóa, không còn
+	# INSERT nào có thể phải chờ khóa khoảng của request khác
+	results = _results(unit.name, cycle_no, for_update=True)
 	if result == "Fail":
-		_reset_later_steps(unit.name, cycle_no, step)
-	_update_status(unit, cycle_no, result)
+		_reset_later_steps(unit.name, cycle_no, step, results)
+	_update_status(unit, results, result)
 	return row.name
 
 
-def _reset_later_steps(set_unit, cycle_no, step):
-	later = STEPS[STEPS.index(step) + 1 :]
-	names = frappe.get_all(
-		"Step Gate Result",
-		filters={
-			"set_unit": set_unit,
-			"cycle_no": cycle_no,
-			"step": ("in", later),
-			"result": ("!=", PENDING),
-		},
-		pluck="name",
-		order_by="step",
-	)
-	for name in names:
-		stale = frappe.get_doc("Step Gate Result", name)
-		stale.result = PENDING
-		stale.save(ignore_permissions=True)
+def _reset_later_steps(set_unit, cycle_no, step, results):
+	"""Đưa các bước sau `step` đã có kết quả về Pending; cập nhật luôn `results` (đã đọc có khóa)."""
+	for later in STEPS[STEPS.index(step) + 1 :]:
+		current = results.get(later)
+		if current and current[0] != PENDING:
+			stale = frappe.get_doc(
+				"Step Gate Result", result_name(set_unit, cycle_no, later), for_update=True
+			)
+			stale.result = PENDING
+			stale.save(ignore_permissions=True)
+			results[later] = (PENDING, current[1])
 
 
-def _update_status(unit, cycle_no, result):
-	results = _results(unit.name, cycle_no)
+def _update_status(unit, results, result):
 	if all(results.get(step, (PENDING, 0))[0] == "Pass" for step in STEPS):
 		status = "Sterile"
 	elif result == "Fail":

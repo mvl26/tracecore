@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -283,3 +285,77 @@ class TestStepGate(FrappeTestCase):
 		make_assembly_record(su, "Fail")
 		self.assertEqual(step_gate.gates(su)[2], {"step": "T3", "result": "Fail", "redo_count": 1})
 		self.assertEqual(_lifecycle(su).status, "Reprocess")
+
+
+class TestStepGateLocking(FrappeTestCase):
+	"""record() chạy dưới REPEATABLE READ: sau khi khóa Set Unit, mọi thứ nó quyết định phải đọc có khóa.
+
+	Đọc thường dùng snapshot cũ (đã mở bởi @idempotent trước khi gọi hàm), không thấy dòng vừa commit của request
+	song song cùng bộ. Không cần kết nối thứ hai: kiểm tra các câu SQL thực sự phát ra.
+	"""
+
+	def _capture(self, fn, *args):
+		queries = []
+		real_sql = frappe.db.sql
+
+		def spy(query, *a, **kw):
+			queries.append(" ".join(str(query).split()) + f" {a} {kw}")
+			return real_sql(query, *a, **kw)
+
+		with patch.object(frappe.db, "sql", spy):
+			fn(*args)
+		return queries
+
+	def _selects_on(self, queries, doctype):
+		table = f"`tab{doctype}`".lower()
+		return [q for q in queries if q.lower().startswith("select") and table in q.lower()]
+
+	def _assert_gate_reads_are_locking(self, queries):
+		reads = self._selects_on(queries, "Step Gate Result")
+		self.assertTrue(reads, msg="record() không đọc Step Gate Result nào?")
+		plain = [q for q in reads if "for update" not in q.lower()]
+		self.assertFalse(plain, msg=f"Đọc thường trên Step Gate Result: {plain}")
+		# khóa theo khóa chính từng dòng: IN(...)/lọc theo cột không chỉ mục khóa khoảng hoặc cả bảng,
+		# khiến hai bộ khác nhau chặn hoặc deadlock lẫn nhau
+		ranged = [q for q in reads if " in (" in q.lower() or "set_unit" in q.lower()]
+		self.assertFalse(ranged, msg=f"Đọc có khóa theo khoảng/cột: {ranged}")
+
+	def test_record_locks_set_unit_before_reading_gate_rows(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		queries = self._capture(step_gate.record, su, "T4", "Pass")
+		unit_reads = self._selects_on(queries, "Set Unit")
+		self.assertIn("for update", unit_reads[0].lower())
+		first_gate_read = next(
+			i for i, q in enumerate(queries) if q in self._selects_on(queries, "Step Gate Result")
+		)
+		self.assertLess(queries.index(unit_reads[0]), first_gate_read)
+
+	def test_record_new_row_reads_gate_state_with_locking_reads(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		step_gate.record(su, "T3", "Pass")
+		queries = self._capture(step_gate.record, su, "T4", "Pass")
+		self._assert_gate_reads_are_locking(queries)
+		# đủ năm bước của chu trình đều được đọc có khóa (quyết định Sterile/đặt lại cần cả năm)
+		locked = " ".join(self._selects_on(queries, "Step Gate Result"))
+		for step in step_gate.STEPS:
+			self.assertIn(f"{su}-C1-{step}", locked)
+
+	@bru("BRU-FLOW-004")
+	def test_record_existing_row_and_reset_read_gate_state_with_locking_reads(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		for step in ("T3", "T4", "T5"):
+			step_gate.record(su, step, "Pass")
+		queries = self._capture(step_gate.record, su, "T4", "Fail")
+		self._assert_gate_reads_are_locking(queries)
+		self.assertEqual(_gate(su, "T5"), {"result": "Pending", "redo_count": 0})
+
+	def test_gates_display_keeps_plain_reads(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		step_gate.record(su, "T3", "Pass")
+		queries = self._capture(step_gate.gates, su)
+		self.assertTrue(self._selects_on(queries, "Step Gate Result"))
+		self.assertFalse([q for q in queries if "for update" in q.lower()])
