@@ -10,10 +10,12 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "hrms"]
 
-# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu)
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu;
+# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói)
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
 	{"dt": "Zone Station", "filters": [["name", "like", "ZONE-%"]]},
 	{"dt": "Zone Station", "filters": [["name", "in", [f"TR-00{n}" for n in range(1, 8)]]]},
 ]

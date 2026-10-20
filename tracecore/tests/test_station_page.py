@@ -48,6 +48,24 @@ def source_strings():
 			if field.get("fieldtype") == "Select":
 				options = (field.get("options") or "").split("\n")
 				strings.update((option, doctype) for option in options if option)
+	strings.update(_custom_field_strings())
+	return strings
+
+
+def _custom_field_strings():
+	"""Nhãn và option Select của Custom Field fixtures (Desk dịch bằng __(label, null, dt)); bỏ option số thuần."""
+	path = os.path.join(APP_PATH, "fixtures", "custom_field.json")
+	if not os.path.exists(path):
+		return set()
+	with open(path, encoding="utf-8") as handle:
+		fields = json.load(handle)
+	strings = set()
+	for field in fields:
+		if field.get("label"):
+			strings.add((field["label"], field["dt"]))
+		if field.get("fieldtype") == "Select":
+			options = (field.get("options") or "").split("\n")
+			strings.update((option, field["dt"]) for option in options if option and not option.isdigit())
 	return strings
 
 
