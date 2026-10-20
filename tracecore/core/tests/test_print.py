@@ -3,6 +3,7 @@ import json
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from jinja2.exceptions import SecurityError, UndefinedError
 from PIL import Image
 
 from tracecore.core import code_registry, gs1
@@ -192,6 +193,46 @@ class TestRender(IsolatedTestCase):
 			core_print.render("^XA{{ doc.x }", {})
 		with self.assertRaises(frappe.ValidationError):
 			core_print.render("^XA^XZ", {}, language="TSPL")
+
+	def test_render_turns_runtime_errors_into_validation_errors_naming_the_template(self):
+		for body, cause in (
+			("^XA{{ 1/0 }}^XZ", ZeroDivisionError),
+			("^XA{{ doc.bom_version + 1 }}^XZ", TypeError),
+			("^XA{{ text(1, 2) }}^XZ", TypeError),
+			("^XA{{ nope.attr }}^XZ", UndefinedError),
+			("^XA{{ doc.__class__() }}^XZ", SecurityError),
+		):
+			with self.assertRaises(frappe.ValidationError, msg=body) as ctx:
+				core_print.render(body, {}, name="Pack label - X")
+			self.assertIsInstance(ctx.exception.__cause__, cause, msg=body)
+			self.assertIn("Pack label - X", str(ctx.exception), msg=body)
+			self.assertIn(cause.__name__, str(ctx.exception), msg=body)
+
+	def test_render_runtime_error_without_template_name_still_explains(self):
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render("^XA{{ 1/0 }}^XZ", {})
+		self.assertIn("ZeroDivisionError", str(ctx.exception))
+		self.assertIsInstance(ctx.exception.__cause__, ZeroDivisionError)
+
+	def test_render_names_the_template_when_output_is_not_a_frame(self):
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render("hello", {}, name="Pack label - X")
+		self.assertIn("Pack label - X", str(ctx.exception))
+		self.assertIn("^XA", str(ctx.exception))
+		self.assertIsNone(ctx.exception.__cause__)
+
+	def test_render_keeps_validation_errors_from_the_template_unwrapped(self):
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render("^XA{{ datamatrix('', 1, 2) }}^XZ", {}, name="Pack label - X")
+		self.assertIn("DataMatrix", str(ctx.exception))
+		self.assertNotIn("Pack label - X", str(ctx.exception))
+		self.assertIsNone(ctx.exception.__cause__)
+
+	def test_render_pack_with_a_broken_stored_template_names_it(self):
+		frappe.db.set_value("Label Template", "Pack label - Steam", "body", "^XA{{ 1/0 }}^XZ")
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render_pack("Steam", sample_pack_context())
+		self.assertIn("Pack label - Steam", str(ctx.exception))
 
 	def test_pack_template_is_none_without_active_template(self):
 		self.assertIsNone(core_print.pack_template("Steam", "TSPL"))
@@ -438,6 +479,38 @@ class TestSetRoll(IsolatedTestCase):
 		frappe.db.set_value("Print Job", job, "data", "[1, 2]")
 		result = core_print.set_roll(self.p1, make_roll(self.plasma))
 		self.assertEqual(result["released_jobs"], [])
+		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Waiting")
+
+	def test_set_roll_on_inactive_printer_records_roll_but_releases_nothing(self):
+		frappe.db.set_value("Printer", self.p1, "is_active", 0)
+		job = self._waiting_job("Plasma")
+		roll = make_roll(self.plasma)
+		result = core_print.set_roll(self.p1, roll)
+		self.assertEqual(result["released_jobs"], [])
+		self.assertEqual(
+			(result["printer"], result["label_type"], result["method"]), (self.p1, self.plasma, "Plasma")
+		)
+		self.assertEqual(
+			frappe.db.get_value("Printer", self.p1, ["label_type_loaded", "roll_code"]), (self.plasma, roll)
+		)
+		self.assertTrue(
+			frappe.db.exists("Audit Log", {"ref_doctype": "Printer", "ref_name": self.p1, "action": "Update"})
+		)
+		self.assertEqual(
+			frappe.db.get_value("Print Job", job, ["status", "printer", "payload"]), ("Waiting", None, None)
+		)
+		# job vẫn Waiting nên máy in active đổi cuộn đúng loại sau đó nhận được nó
+		active = make_printer("TR-004", self.steam, name="Active printer")
+		released = core_print.set_roll(active, make_roll(self.plasma))["released_jobs"]
+		self.assertEqual([row["print_job"] for row in released], [job])
+		self.assertEqual(frappe.db.get_value("Print Job", job, ["status", "printer"]), ("Queued", active))
+
+	def test_set_roll_with_broken_template_raises_validation_error_naming_it(self):
+		frappe.db.set_value("Label Template", "Pack label - Plasma", "body", "^XA{{ 1/0 }}^XZ")
+		job = self._waiting_job("Plasma")
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.set_roll(self.p1, make_roll(self.plasma))
+		self.assertIn("Pack label - Plasma", str(ctx.exception))
 		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Waiting")
 
 	def test_set_roll_unknown_printer(self):

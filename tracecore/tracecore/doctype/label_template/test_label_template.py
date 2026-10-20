@@ -83,6 +83,39 @@ class TestLabelTemplate(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			_template("Broken template", is_active=0, body="^XA{% if %}^XZ").insert()
 
+	def test_template_that_cannot_render_is_rejected(self):
+		for body in (
+			"hello",
+			"^XA{{ 1/0 }}^XZ",
+			"^XA{{ doc.bom_version + 1 }}^XZ",  # chỉ lỗi khi giá trị thiếu: lượt thử với dữ liệu để trống
+			"^XA{{ doc.set_name.nope.attr }}^XZ",
+			"^XA{{ doc.__class__() }}^XZ",
+		):
+			with self.assertRaises(frappe.ValidationError, msg=body) as ctx:
+				_template("Cannot render", is_active=0, body=body).insert()
+			self.assertIn("Cannot render", str(ctx.exception), msg=body)
+		self.assertFalse(frappe.db.exists("Label Template", "Cannot render"))
+
+	def test_edit_that_breaks_an_existing_template_is_rejected(self):
+		doc = frappe.get_doc("Label Template", "Pack label - Steam")
+		original = doc.body
+		doc.body = "^XA{{ 1/0 }}^XZ"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+		self.assertEqual(frappe.db.get_value("Label Template", doc.name, "body"), original)
+
+	def test_trial_render_uses_own_size_dpi_language_in_both_unicode_modes(self):
+		with patch.object(core_print, "render", wraps=core_print.render) as render:
+			_template("Small label", is_active=0, width_mm=50, height_mm=30, dpi=203).insert()
+		unicode_modes = [call.args[2] for call in render.call_args_list]
+		self.assertIn(False, unicode_modes)
+		self.assertIn(True, unicode_modes)
+		for call in render.call_args_list:
+			self.assertEqual(
+				call.kwargs,
+				{"dpi": 203, "width_mm": 50, "height_mm": 30, "language": "ZPL", "name": "Small label"},
+			)
+
 	def test_size_and_dpi_must_be_positive(self):
 		for field in ("width_mm", "height_mm", "dpi"):
 			with self.assertRaises(frappe.ValidationError, msg=field):

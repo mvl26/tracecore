@@ -282,3 +282,4 @@ The template body has a syntax error on line {0}: {1},Nội dung mẫu có lỗi
 "{0} is a zone, not a station. Choose a station.","{0} là khu, không phải trạm. Hãy chọn một trạm.",
 {0} is not a label item. Choose an Item of group Label that has a compatible method.,{0} không phải vật tư nhãn. Hãy chọn vật tư thuộc nhóm Nhãn có phương pháp tương thích.,
 The label has no DataMatrix payload.,Nhãn không có dữ liệu DataMatrix.,
+Label template {0} could not be rendered: {1},Không dựng được nhãn từ mẫu {0}: {1},

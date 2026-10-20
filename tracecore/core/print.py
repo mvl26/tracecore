@@ -14,7 +14,7 @@ import unicodedata
 import frappe
 from frappe import _
 from frappe.utils import cint, flt, now_datetime
-from jinja2 import TemplateError, TemplateSyntaxError
+from jinja2 import TemplateSyntaxError
 from jinja2.sandbox import SandboxedEnvironment
 
 from tracecore.core import code_registry, gs1
@@ -50,8 +50,14 @@ class Dialect:
 	def sanitize(self, text):
 		raise NotImplementedError
 
-	def validate(self, output):
+	def problem(self, output):
+		"""Lý do `output` không phải lệnh hợp lệ của dialect (đã qua `_()`), hoặc None nếu hợp lệ."""
 		raise NotImplementedError
+
+	def validate(self, output):
+		reason = self.problem(output)
+		if reason:
+			frappe.throw(reason)
 
 
 class ZplDialect(Dialect):
@@ -70,14 +76,13 @@ class ZplDialect(Dialect):
 	def sanitize(self, text):
 		return ("" if text is None else str(text)).translate(self._STRIP)
 
-	def validate(self, output):
+	def problem(self, output):
 		output = output.strip()
 		if not (output.startswith("^XA") and output.endswith("^XZ")):
-			frappe.throw(
-				_("The rendered label is not valid {0}: it must start with ^XA and end with ^XZ.").format(
-					self.name
-				)
+			return _("The rendered label is not valid {0}: it must start with ^XA and end with ^XZ.").format(
+				self.name
 			)
+		return None
 
 
 DIALECTS: dict[str, Dialect] = {dialect.name: dialect for dialect in (ZplDialect(),)}
@@ -144,6 +149,18 @@ def check_template_syntax(body):
 		)
 
 
+def _render_failed(name, reason, cause=None):
+	"""Ném ValidationError nói mẫu nào không dựng được và vì sao; `cause` (lỗi gốc) giữ làm __cause__."""
+	if name:
+		message = _("Label template {0} could not be rendered: {1}").format(name, reason)
+	else:
+		message = _("The label template could not be rendered: {0}").format(reason)
+	try:
+		frappe.throw(message)
+	except frappe.ValidationError as error:
+		raise error from cause
+
+
 def render(
 	template,
 	doc,
@@ -153,12 +170,17 @@ def render(
 	width_mm=DEFAULT_WIDTH_MM,
 	height_mm=DEFAULT_HEIGHT_MM,
 	language=DEFAULT_LANGUAGE,
+	name=None,
 ):
 	"""Render mẫu `template` (Jinja) với `doc` thành lệnh máy in của `language`.
 
 	Ngữ cảnh mẫu: ``doc`` (mọi chuỗi đã `sanitize`), ``text(giá trị)`` (giữ dấu nếu `unicode`, ngược lại `fold`),
 	``datamatrix(payload, x, y, module)`` của dialect, ``dpi``, ``width_dots``, ``height_dots`` (từ mm và dpi).
-	Kết quả là một dòng (bỏ xuống dòng giữa các lệnh) và phải qua `Dialect.validate`, sai → ValidationError.
+	Kết quả là một dòng (bỏ xuống dòng giữa các lệnh) và phải hợp lệ theo `Dialect.problem`.
+
+	Mọi lỗi đều là ValidationError (không bao giờ lỗi thô của Jinja/Python): lỗi lúc chạy mẫu (chia cho 0, cộng
+	chuỗi với số, thiếu thuộc tính…) và đầu ra sai khung được bọc kèm tên mẫu `name` và lý do, lỗi gốc là __cause__;
+	ValidationError sẵn có (dữ liệu DataMatrix sai…) giữ nguyên.
 	"""
 	dialect = get_dialect(language)
 
@@ -176,10 +198,14 @@ def render(
 	}
 	try:
 		rendered = _JINJA.from_string(template or "").render(context)
-	except TemplateError as error:
-		frappe.throw(_("The label template could not be rendered: {0}").format(error))
+	except frappe.ValidationError:
+		raise
+	except Exception as error:
+		_render_failed(name, f"{type(error).__name__}: {error}", cause=error)
 	output = "".join(line.strip() for line in rendered.splitlines())
-	dialect.validate(output)
+	reason = dialect.problem(output)
+	if reason:
+		_render_failed(name, reason)
 	return output
 
 
@@ -219,6 +245,7 @@ def _render_template_row(template, doc, unicode):
 		width_mm=template.width_mm,
 		height_mm=template.height_mm,
 		language=template.language,
+		name=template.name,
 	)
 
 
@@ -360,6 +387,10 @@ def set_roll(printer, roll_code):
 	Loại nhãn đang lắp = Item nhãn của cuộn. Mã chưa cấp/đã vô hiệu → `BlockedError(ROLL_NOT_FOUND)`; mã của Item
 	không phải nhãn → `ROLL_NOT_LABEL`. Trả `{"printer", "label_type", "method", "released_jobs": [{"print_job",
 	"zpl", "printer"}]}`; job `Waiting` khác phương pháp hoặc khác trạm giữ nguyên.
+
+	Máy in không active vẫn ghi nhận đổi cuộn (có Audit Log) nhưng KHÔNG phát hành job: agent chỉ in tới máy in
+	có trong `station_printers` (active), job đã `Queued` cho máy in ngoài danh sách sẽ bị từ chối và không bao giờ
+	quay lại `Waiting`. `released_jobs` là `[]`; job còn `Waiting` chờ máy in active đổi cuộn đúng loại nhãn.
 	"""
 	doc = frappe.get_doc("Printer", printer, for_update=True)
 	item, method = _roll_label(roll_code)
@@ -377,7 +408,7 @@ def set_roll(printer, roll_code):
 		"printer": doc.name,
 		"label_type": item,
 		"method": method,
-		"released_jobs": _release_waiting_jobs(doc, method),
+		"released_jobs": _release_waiting_jobs(doc, method) if doc.is_active else [],
 	}
 
 
