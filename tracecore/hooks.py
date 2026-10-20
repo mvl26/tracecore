@@ -185,6 +185,7 @@ doc_events = {
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
+	"Zone Station": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)

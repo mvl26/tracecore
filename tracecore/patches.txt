@@ -5,3 +5,5 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 tracecore.patches.v0_1.create_sample_label_templates
+tracecore.patches.v0_1.register_station_codes
+tracecore.patches.v0_1.activate_existing_stations

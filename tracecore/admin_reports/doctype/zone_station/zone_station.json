@@ -1,15 +1,17 @@
 {
  "actions": [],
  "creation": "2026-10-19 10:00:00.000000",
- "description": "Zone and station skeleton (FEAT-001). Full configuration in FEAT-002.",
+ "description": "Zone and station configuration (FEAT-002): zone type, station function by zone, active flag.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "zone_station_name",
   "is_zone",
+  "is_active",
   "zone_type",
   "parent_zone",
-  "station_step"
+  "station_step",
+  "description"
  ],
  "fields": [
   {
@@ -25,6 +27,16 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Zone"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:!doc.is_zone",
+   "description": "A station without a zone cannot be active.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Active"
   },
   {
    "fieldname": "zone_type",
@@ -50,26 +62,46 @@
    "in_list_view": 1,
    "label": "Station Step",
    "options": "\nT1\nT2\nT3\nT4\nT5\nT5b\nT6\nT7\nT8"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-19 10:00:00.000000",
+ "modified": "2026-10-20 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Zone Station",
  "owner": "Administrator",
  "permissions": [
   {
+   "role": "System Manager",
    "create": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
    "write": 1
   },
   {
+   "role": "TC R10",
+   "create": 1,
    "read": 1,
-   "role": "TC R10"
+   "report": 1,
+   "write": 1
+  },
+  {
+   "role": "TC R01",
+   "read": 1
+  },
+  {
+   "role": "TC R02",
+   "read": 1
+  },
+  {
+   "role": "TC R09",
+   "read": 1
   }
  ],
  "show_title_field_in_link": 1,

@@ -1,12 +1,12 @@
 [
- {"doctype": "Zone Station", "name": "ZONE-DIRTY", "zone_station_name": "Dirty zone", "is_zone": 1, "zone_type": "Dirty"},
- {"doctype": "Zone Station", "name": "ZONE-CLEAN", "zone_station_name": "Clean zone", "is_zone": 1, "zone_type": "Clean"},
- {"doctype": "Zone Station", "name": "ZONE-STERILE", "zone_station_name": "Sterile zone", "is_zone": 1, "zone_type": "Sterile"},
- {"doctype": "Zone Station", "name": "TR-001", "zone_station_name": "T1 Receiving", "is_zone": 0, "parent_zone": "ZONE-DIRTY", "zone_type": "Dirty", "station_step": "T1"},
- {"doctype": "Zone Station", "name": "TR-002", "zone_station_name": "T2 Washing", "is_zone": 0, "parent_zone": "ZONE-DIRTY", "zone_type": "Dirty", "station_step": "T2"},
- {"doctype": "Zone Station", "name": "TR-003", "zone_station_name": "T3 Assembly", "is_zone": 0, "parent_zone": "ZONE-CLEAN", "zone_type": "Clean", "station_step": "T3"},
- {"doctype": "Zone Station", "name": "TR-004", "zone_station_name": "T4 Packing", "is_zone": 0, "parent_zone": "ZONE-CLEAN", "zone_type": "Clean", "station_step": "T4"},
- {"doctype": "Zone Station", "name": "TR-005", "zone_station_name": "T5 Sterilization", "is_zone": 0, "parent_zone": "ZONE-CLEAN", "zone_type": "Clean", "station_step": "T5"},
- {"doctype": "Zone Station", "name": "TR-006", "zone_station_name": "T6 Sterile storage", "is_zone": 0, "parent_zone": "ZONE-STERILE", "zone_type": "Sterile", "station_step": "T6"},
- {"doctype": "Zone Station", "name": "TR-007", "zone_station_name": "T7 Issuing", "is_zone": 0, "parent_zone": "ZONE-STERILE", "zone_type": "Sterile", "station_step": "T7"}
+ {"doctype": "Zone Station", "name": "ZONE-DIRTY", "zone_station_name": "Dirty zone", "is_zone": 1, "is_active": 1, "zone_type": "Dirty"},
+ {"doctype": "Zone Station", "name": "ZONE-CLEAN", "zone_station_name": "Clean zone", "is_zone": 1, "is_active": 1, "zone_type": "Clean"},
+ {"doctype": "Zone Station", "name": "ZONE-STERILE", "zone_station_name": "Sterile zone", "is_zone": 1, "is_active": 1, "zone_type": "Sterile"},
+ {"doctype": "Zone Station", "name": "TR-001", "zone_station_name": "T1 Receiving", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-DIRTY", "zone_type": "Dirty", "station_step": "T1"},
+ {"doctype": "Zone Station", "name": "TR-002", "zone_station_name": "T2 Washing", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-DIRTY", "zone_type": "Dirty", "station_step": "T2"},
+ {"doctype": "Zone Station", "name": "TR-003", "zone_station_name": "T3 Assembly", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-CLEAN", "zone_type": "Clean", "station_step": "T3"},
+ {"doctype": "Zone Station", "name": "TR-004", "zone_station_name": "T4 Packing", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-CLEAN", "zone_type": "Clean", "station_step": "T4"},
+ {"doctype": "Zone Station", "name": "TR-005", "zone_station_name": "T5 Sterilization", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-CLEAN", "zone_type": "Clean", "station_step": "T5"},
+ {"doctype": "Zone Station", "name": "TR-006", "zone_station_name": "T6 Sterile storage", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-STERILE", "zone_type": "Sterile", "station_step": "T6"},
+ {"doctype": "Zone Station", "name": "TR-007", "zone_station_name": "T7 Issuing", "is_zone": 0, "is_active": 1, "parent_zone": "ZONE-STERILE", "zone_type": "Sterile", "station_step": "T7"}
 ]
