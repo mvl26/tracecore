@@ -87,9 +87,28 @@ class TestSetUnit(FrappeTestCase):
 		su.save()
 		self.assertEqual(frappe.db.get_value("Set Unit", su.name, "status"), "Sterile")
 
+	def test_current_cycle_no_guarded(self):
+		su = make_set_unit()
+		self.assertEqual(su.current_cycle_no, 0)
+		su.current_cycle_no = 3
+		with self.assertRaises(frappe.ValidationError):
+			su.save()
+		self.assertEqual(frappe.db.get_value("Set Unit", su.name, "current_cycle_no"), 0)
+
+	def test_step_gate_flag_allows_current_cycle_no(self):
+		su = make_set_unit()
+		su.current_cycle_no = 2
+		su.flags.tc_step_gate = True
+		su.save()
+		self.assertEqual(frappe.db.get_value("Set Unit", su.name, "current_cycle_no"), 2)
+
 	def test_insert_ignores_supplied_lifecycle_values(self):
-		su = make_set_unit(status="Sterile", cycles_used=7, active_cycle_id="CY-261019-0001")
-		self.assertEqual((su.status, su.cycles_used, su.active_cycle_id), ("New", 0, None))
+		su = make_set_unit(
+			status="Sterile", cycles_used=7, active_cycle_id="CY-261019-0001", current_cycle_no=9
+		)
+		self.assertEqual(
+			(su.status, su.cycles_used, su.active_cycle_id, su.current_cycle_no), ("New", 0, None, 0)
+		)
 
 	def test_max_cycles_must_be_positive(self):
 		with self.assertRaises(frappe.ValidationError):

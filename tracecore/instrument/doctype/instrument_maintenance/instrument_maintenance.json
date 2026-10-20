@@ -1,0 +1,163 @@
+{
+ "actions": [],
+ "autoname": "format:{set_unit}-{instrument}",
+ "creation": "2026-10-20 10:00:00.000000",
+ "description": "Cycles since the last maintenance and deferral history of one instrument in one set unit (FEAT-018 stub). One row per set unit and instrument; logic in FEAT-018 T4 and FEAT-014.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "instrument",
+  "section_counters",
+  "cycles_since_maint",
+  "deferred_count",
+  "section_last_maint",
+  "last_maint_on",
+  "last_maint_by",
+  "last_oil_batch",
+  "section_last_defer",
+  "last_defer_on",
+  "last_defer_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "instrument",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Instrument",
+   "options": "Instrument",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_counters",
+   "fieldtype": "Section Break",
+   "label": "Counters"
+  },
+  {
+   "default": "0",
+   "fieldname": "cycles_since_maint",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Cycles Since Maintenance",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "deferred_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Deferred Count",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "section_last_maint",
+   "fieldtype": "Section Break",
+   "label": "Last Maintenance"
+  },
+  {
+   "fieldname": "last_maint_on",
+   "fieldtype": "Datetime",
+   "label": "Last Maintained On"
+  },
+  {
+   "fieldname": "last_maint_by",
+   "fieldtype": "Link",
+   "label": "Last Maintained By",
+   "options": "User"
+  },
+  {
+   "fieldname": "last_oil_batch",
+   "fieldtype": "Link",
+   "label": "Last Lubricant Batch",
+   "options": "Batch"
+  },
+  {
+   "fieldname": "section_last_defer",
+   "fieldtype": "Section Break",
+   "label": "Last Deferral"
+  },
+  {
+   "fieldname": "last_defer_on",
+   "fieldtype": "Datetime",
+   "label": "Last Deferred On"
+  },
+  {
+   "fieldname": "last_defer_reason",
+   "fieldtype": "Small Text",
+   "label": "Last Deferral Reason"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-20 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instrument",
+ "name": "Instrument Maintenance",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R07"
+  },
+  {
+   "read": 1,
+   "role": "TC R08"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  },
+  {
+   "read": 1,
+   "role": "TC R10"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

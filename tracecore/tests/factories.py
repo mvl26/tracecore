@@ -2,6 +2,8 @@
 
 import frappe
 
+from tracecore.core import gs1
+
 
 def make_user(email, roles=()):
 	"""Tạo (hoặc lấy) System User với các role cho trước; trả email."""
@@ -29,7 +31,42 @@ def make_set_unit(set_type=None, max_cycles=300, **kwargs):
 	).insert()
 
 
-def make_set_type(type_code="TST", method="Steam", set_type_name=None):
+def _ref_name(ref):
+	"""Tên bản ghi từ Document hoặc chuỗi tên."""
+	return getattr(ref, "name", ref)
+
+
+def next_free_test_gtin():
+	"""GTIN-14 TEST (`gs1.make_test_gtin14`) nhỏ nhất chưa loại bộ nào dùng (D6).
+
+	Xác định, không va chạm giữa các lần chạy test trên cùng site: tra các GTIN test đã có trong DB.
+	"""
+	used = set(
+		frappe.get_all(
+			"Instrument Set Type", filters={"gtin": ["like", f"{gs1.TEST_GTIN_PREFIX}%"]}, pluck="gtin"
+		)
+	)
+	for serial in range(1, 100000):
+		gtin = gs1.make_test_gtin14(serial)
+		if gtin not in used:
+			return gtin
+	frappe.throw("No free test GTIN-14 left")
+
+
+def make_set_type(
+	type_code="TST",
+	method="Steam",
+	set_type_name=None,
+	gtin="auto",
+	default_pack_type=None,
+	shelf_life_days=0,
+	tray_image=None,
+):
+	"""Tạo (hoặc lấy) loại bộ.
+
+	gtin: "auto" → GTIN test chưa dùng (mặc định); None → không có GTIN; chuỗi → dùng nguyên văn.
+	Loại bộ đã có thì trả nguyên trạng.
+	"""
 	if frappe.db.exists("Instrument Set Type", type_code):
 		return frappe.get_doc("Instrument Set Type", type_code)
 	return frappe.get_doc(
@@ -38,6 +75,64 @@ def make_set_type(type_code="TST", method="Steam", set_type_name=None):
 			"type_code": type_code,
 			"set_type_name": set_type_name or f"Test set {type_code}",
 			"method": method,
+			"gtin": next_free_test_gtin() if gtin == "auto" else gtin,
+			"default_pack_type": default_pack_type,
+			"shelf_life_days": shelf_life_days,
+			"tray_image": tray_image,
+		}
+	).insert()
+
+
+def make_instrument(code, name=None, interval=None, maint_type=None, image=None):
+	"""Tạo (hoặc lấy) Instrument. interval: ngưỡng bảo dưỡng theo chu trình (None/0 = không nhắc)."""
+	if frappe.db.exists("Instrument", code):
+		return frappe.get_doc("Instrument", code)
+	return frappe.get_doc(
+		{
+			"doctype": "Instrument",
+			"instrument_code": code,
+			"instrument_name": name or f"Test instrument {code}",
+			"maint_interval_cycles": interval or 0,
+			"maint_type": maint_type,
+			"image": image,
+		}
+	).insert()
+
+
+def make_bom(set_type, lines, version=1):
+	"""Tạo các dòng Set BOM Item cho một phiên bản BOM; trả list Document theo thứ tự `lines`.
+
+	lines: [(mã dụng cụ, số lượng), …]; position = thứ tự trong list (từ 1). Dụng cụ chưa có được tạo.
+	"""
+	set_type = _ref_name(set_type)
+	rows = []
+	for position, (instrument, qty) in enumerate(lines, 1):
+		make_instrument(instrument)
+		rows.append(
+			frappe.get_doc(
+				{
+					"doctype": "Set BOM Item",
+					"set_type": set_type,
+					"bom_version": version,
+					"instrument": instrument,
+					"qty": qty,
+					"position": position,
+				}
+			).insert()
+		)
+	return rows
+
+
+def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
+	"""Tạo Instrument Maintenance cho cặp (set_unit, instrument); trùng cặp thì DuplicateEntryError."""
+	instrument = _ref_name(make_instrument(_ref_name(instrument)))
+	return frappe.get_doc(
+		{
+			"doctype": "Instrument Maintenance",
+			"set_unit": _ref_name(set_unit),
+			"instrument": instrument,
+			"cycles_since_maint": cycles_since,
+			"deferred_count": deferred_count,
 		}
 	).insert()
 

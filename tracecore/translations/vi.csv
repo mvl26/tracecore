@@ -173,3 +173,39 @@ Chemical Indicator,Chỉ thị hóa học,
 Lubricant,Dầu bôi trơn,
 Instrument traceability and CSSD / infection control management on Frappe v15,Truy xuất dụng cụ và quản lý khoa KSNK/CSSD trên Frappe v15,
 Demo data can only be created on a developer or test site.,Chỉ tạo được dữ liệu demo trên site dev hoặc site test.,
+Instrument,Dụng cụ,
+Set BOM Item,Dòng BOM của loại bộ,
+Instrument Maintenance,Bảo dưỡng dụng cụ,
+Department,Khoa,Instrument Set Type
+Packing,Đóng gói,Instrument Set Type
+GTIN-14,GTIN-14,
+Default Pack Type,Loại gói mặc định,
+Shelf Life Override (Days),Hạn lưu riêng của loại bộ (ngày),
+Tray Image,Ảnh bộ đã xếp,
+Current BOM Version,Phiên bản BOM hiện hành,
+Instrument Code,Mã dụng cụ,
+Instrument Name,Tên dụng cụ,
+Maintenance,Bảo dưỡng,Instrument
+Maintenance Interval (Cycles),Chu kỳ bảo dưỡng (chu trình),
+Maintenance Type,Loại bảo dưỡng,Instrument
+Lubrication,Tra dầu,Instrument
+Blade Check,Kiểm tra lưỡi,Instrument
+Screw Tightening,Siết vít,Instrument
+Battery Replacement,Thay pin,Instrument
+BOM Version,Phiên bản BOM,
+Effective From,Có hiệu lực từ,Set BOM Item
+Counters,Bộ đếm,Instrument Maintenance
+Cycles Since Maintenance,Số chu trình từ lần bảo dưỡng,
+Deferred Count,Số lần hoãn,
+Last Maintenance,Bảo dưỡng gần nhất,
+Last Maintained On,Thời điểm bảo dưỡng gần nhất,
+Last Maintained By,Người bảo dưỡng gần nhất,
+Last Lubricant Batch,Lô dầu bôi trơn gần nhất,
+Last Deferral,Hoãn gần nhất,
+Last Deferred On,Thời điểm hoãn gần nhất,
+Last Deferral Reason,Lý do hoãn gần nhất,
+Current Cycle No,Số thứ tự chu trình hiện hành,
+GTIN-14 must be 14 digits with a valid check digit.,GTIN-14 phải gồm 14 chữ số và đúng chữ số kiểm tra.,
+GTIN-14 {0} is already used by Set Type {1}.,GTIN-14 {0} đã được loại bộ {1} sử dụng.,
+"Instrument Code may contain only uppercase letters, digits and hyphens.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
+Quantity must be at least 1.,Số lượng phải từ 1 trở lên.,

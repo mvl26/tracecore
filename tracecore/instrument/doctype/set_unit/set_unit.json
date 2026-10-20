@@ -13,6 +13,7 @@
   "status",
   "current_station",
   "active_cycle_id",
+  "current_cycle_no",
   "section_cycles",
   "cycles_used",
   "max_cycles"
@@ -77,6 +78,14 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Sequence number of the current reprocessing cycle; the key shared by the step gate results. Changed only by the step gate.",
+   "fieldname": "current_cycle_no",
+   "fieldtype": "Int",
+   "label": "Current Cycle No",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_cycles",
    "fieldtype": "Section Break",
    "label": "Cycles"
@@ -97,7 +106,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-19 10:00:00.000000",
+ "modified": "2026-10-20 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",

@@ -2,13 +2,21 @@
  "actions": [],
  "autoname": "field:type_code",
  "creation": "2026-10-19 10:00:00.000000",
- "description": "Instrument set type skeleton (FEAT-001): code, name and sterilization method.",
+ "description": "Instrument set type (FEAT-001 skeleton, FEAT-018 packing data): code, name, sterilization method, owner department, GTIN-14, default pack type, shelf-life override, tray photo and current BOM version.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "type_code",
   "set_type_name",
-  "method"
+  "method",
+  "department",
+  "section_packing",
+  "gtin",
+  "default_pack_type",
+  "column_break_packing",
+  "shelf_life_days",
+  "current_bom_version",
+  "tray_image"
  ],
  "fields": [
   {
@@ -35,11 +43,60 @@
    "label": "Sterilization Method",
    "options": "Steam\nPlasma",
    "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "section_packing",
+   "fieldtype": "Section Break",
+   "label": "Packing"
+  },
+  {
+   "description": "Entered by R10: 14 digits with a valid check digit, unique. Blank until a real GS1 prefix is assigned; a pack cannot be issued without it.",
+   "fieldname": "gtin",
+   "fieldtype": "Data",
+   "label": "GTIN-14",
+   "unique": 1
+  },
+  {
+   "fieldname": "default_pack_type",
+   "fieldtype": "Link",
+   "label": "Default Pack Type",
+   "options": "Item"
+  },
+  {
+   "fieldname": "column_break_packing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Shelf life of this set type in days. 0 = no override (the pack type shelf life applies).",
+   "fieldname": "shelf_life_days",
+   "fieldtype": "Int",
+   "label": "Shelf Life Override (Days)",
+   "non_negative": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "current_bom_version",
+   "fieldtype": "Int",
+   "label": "Current BOM Version"
+  },
+  {
+   "fieldname": "tray_image",
+   "fieldtype": "Attach Image",
+   "label": "Tray Image"
   }
  ],
+ "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-19 10:00:00.000000",
+ "modified": "2026-10-20 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",

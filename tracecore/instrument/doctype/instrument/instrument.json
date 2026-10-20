@@ -1,0 +1,136 @@
+{
+ "actions": [],
+ "autoname": "field:instrument_code",
+ "creation": "2026-10-20 10:00:00.000000",
+ "description": "Single instrument (FEAT-018 stub): code, name, photo and maintenance threshold. Validation and UI in FEAT-014.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "instrument_code",
+  "instrument_name",
+  "image",
+  "section_maintenance",
+  "maint_interval_cycles",
+  "maint_type",
+  "column_break_life",
+  "max_cycles"
+ ],
+ "fields": [
+  {
+   "description": "Uppercase letters, digits and hyphen only.",
+   "fieldname": "instrument_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instrument Code",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instrument Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
+  },
+  {
+   "fieldname": "section_maintenance",
+   "fieldtype": "Section Break",
+   "label": "Maintenance"
+  },
+  {
+   "description": "Reminder after this many cycles since the last maintenance. Blank or 0 = no reminder.",
+   "fieldname": "maint_interval_cycles",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Maintenance Interval (Cycles)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "maint_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Maintenance Type",
+   "options": "\nLubrication\nBlade Check\nScrew Tightening\nBattery Replacement"
+  },
+  {
+   "fieldname": "column_break_life",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_cycles",
+   "fieldtype": "Int",
+   "label": "Max Cycles",
+   "non_negative": 1
+  }
+ ],
+ "image_field": "image",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-20 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instrument",
+ "name": "Instrument",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R07"
+  },
+  {
+   "read": 1,
+   "role": "TC R08"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  },
+  {
+   "read": 1,
+   "role": "TC R10"
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "instrument_name",
+ "track_changes": 1
+}

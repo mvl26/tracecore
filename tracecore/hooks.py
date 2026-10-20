@@ -175,6 +175,9 @@ _AUDIT_EVENTS = {
 
 doc_events = {
 	"Set Unit": dict(_AUDIT_EVENTS),
+	"Instrument": dict(_AUDIT_EVENTS),
+	"Set BOM Item": dict(_AUDIT_EVENTS),
+	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 }
 
 # Scheduled Tasks
