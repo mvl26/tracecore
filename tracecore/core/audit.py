@@ -2,7 +2,7 @@
 
 import frappe
 from frappe import _
-from frappe.model import default_fields, no_value_fields
+from frappe.model import default_fields, no_value_fields, table_fields
 from frappe.utils import cstr, now_datetime
 
 SKIP_FIELDTYPES = (*no_value_fields, "Password")
@@ -32,12 +32,19 @@ def _as_json(value):
 
 
 def snapshot(doc):
-	"""Giá trị các trường dữ liệu của doc; bỏ trường Password và trường meta chuẩn."""
-	return {
-		df.fieldname: doc.get(df.fieldname)
-		for df in doc.meta.fields
-		if df.fieldtype not in SKIP_FIELDTYPES and df.fieldname not in SKIP_FIELDNAMES
-	}
+	"""Giá trị các trường dữ liệu của doc; bỏ trường Password và trường meta chuẩn.
+
+	Trường bảng con chụp thành danh sách dòng (cùng quy tắc), để Update ghi được thay đổi của bảng con.
+	"""
+	result = {}
+	for df in doc.meta.fields:
+		if df.fieldname in SKIP_FIELDNAMES:
+			continue
+		if df.fieldtype in table_fields:
+			result[df.fieldname] = [snapshot(row) for row in doc.get(df.fieldname) or []]
+		elif df.fieldtype not in SKIP_FIELDTYPES:
+			result[df.fieldname] = doc.get(df.fieldname)
+	return result
 
 
 def log(

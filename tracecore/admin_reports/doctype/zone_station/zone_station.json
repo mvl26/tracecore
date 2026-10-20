@@ -11,7 +11,9 @@
   "zone_type",
   "parent_zone",
   "station_step",
-  "description"
+  "description",
+  "peripherals_section",
+  "peripherals"
  ],
  "fields": [
   {
@@ -67,6 +69,19 @@
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "depends_on": "eval:!doc.is_zone",
+   "fieldname": "peripherals_section",
+   "fieldtype": "Section Break",
+   "label": "Peripherals"
+  },
+  {
+   "depends_on": "eval:!doc.is_zone",
+   "fieldname": "peripherals",
+   "fieldtype": "Table",
+   "label": "Peripherals",
+   "options": "Station Peripheral"
   }
  ],
  "index_web_pages_for_search": 0,

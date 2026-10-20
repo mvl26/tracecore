@@ -12,6 +12,7 @@ from frappe.model.naming import make_autoname
 from tracecore.core import audit, code_registry, zones
 
 STATION_PREFIX = "TR"
+DEFAULT_BAUD_RATE = 9600
 
 
 class ZoneStation(Document):
@@ -29,6 +30,7 @@ class ZoneStation(Document):
 			self._validate_zone()
 		else:
 			self._validate_station()
+		self._validate_peripherals()
 
 	def after_insert(self):
 		if not self.is_zone and not code_registry.is_issued(self.name):
@@ -75,6 +77,51 @@ class ZoneStation(Document):
 						"Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow."
 					).format(station.name, station.station_step, _(self.zone_type, context="Zone Station"))
 				)
+
+	def _validate_peripherals(self):
+		"""Thiết bị ngoại vi (E4): chỉ trạm có; TCP cần host:port, Serial cần cổng; không trùng điểm kết nối."""
+		rows = self.get("peripherals") or []
+		if self.is_zone:
+			if rows:
+				frappe.throw(_("A zone cannot have peripherals."))
+			return
+		endpoints = set()
+		for row in rows:
+			self._validate_peripheral_row(row)
+			key = self._peripheral_endpoint(row)
+			if not row.is_active or not key:
+				continue
+			if key in endpoints:
+				frappe.throw(
+					_(
+						"Row {0}: endpoint {1} is already used by another active peripheral of this station."
+					).format(row.idx, key[1])
+				)
+			endpoints.add(key)
+
+	def _validate_peripheral_row(self, row):
+		if row.peripheral_type == "Scale" and row.connection == "USB HID":
+			frappe.throw(_("Row {0}: a scale cannot use USB HID.").format(row.idx))
+		if row.connection == "TCP":
+			row.host = (row.host or "").strip()
+			if not row.host:
+				frappe.throw(_("Row {0}: Host is required for a TCP connection.").format(row.idx))
+			if not 1 <= (row.port or 0) <= 65535:
+				frappe.throw(_("Row {0}: Port must be between 1 and 65535.").format(row.idx))
+		elif row.connection == "Serial":
+			row.serial_port = (row.serial_port or "").strip()
+			if not row.serial_port:
+				frappe.throw(_("Row {0}: Serial Port is required for a Serial connection.").format(row.idx))
+			if not row.baud_rate:
+				row.baud_rate = DEFAULT_BAUD_RATE
+
+	@staticmethod
+	def _peripheral_endpoint(row):
+		if row.connection == "TCP":
+			return ("TCP", f"{row.host.lower()}:{row.port}")
+		if row.connection == "Serial":
+			return ("Serial", row.serial_port.lower())
+		return None
 
 	def _validate_station(self):
 		if not self.parent_zone:

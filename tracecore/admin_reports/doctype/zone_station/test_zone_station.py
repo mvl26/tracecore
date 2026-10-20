@@ -223,3 +223,95 @@ class TestZoneStation(IsolatedTestCase):
 		self.assertEqual(frappe.db.get_value("Zone Station", "TR-004", "is_active"), 1)
 		self.assertEqual(frappe.db.get_value("Zone Station", "ZONE-CLEAN", "is_active"), 1)
 		self.assertEqual(frappe.db.get_value("Zone Station", orphan.name, "is_active"), 0)
+
+
+def peripheral(**kwargs):
+	row = {"peripheral_type": "Scanner", "connection": "USB HID", "is_active": 1}
+	row.update(kwargs)
+	return row
+
+
+class TestStationPeripheral(IsolatedTestCase):
+	def _station(self, *rows):
+		station = make_station("ZONE-CLEAN", "T4")
+		for row in rows:
+			station.append("peripherals", row)
+		return station
+
+	def test_hid_scanner_needs_nothing_else(self):
+		station = self._station(peripheral())
+		station.save()
+		self.assertEqual(len(station.peripherals), 1)
+
+	def test_tcp_requires_host_and_port(self):
+		for row in (
+			peripheral(connection="TCP", port=9100),
+			peripheral(connection="TCP", host="  ", port=9100),
+			peripheral(connection="TCP", host="10.0.0.5"),
+			peripheral(connection="TCP", host="10.0.0.5", port=0),
+			peripheral(connection="TCP", host="10.0.0.5", port=65536),
+		):
+			with self.subTest(row=row), self.assertRaises(frappe.ValidationError):
+				self._station(row).save()
+		station = self._station(peripheral(connection="TCP", host=" 10.0.0.5 ", port=65535))
+		station.save()
+		self.assertEqual(station.peripherals[0].host, "10.0.0.5")
+
+	def test_serial_requires_port_and_defaults_baud(self):
+		with self.assertRaises(frappe.ValidationError):
+			self._station(peripheral(connection="Serial")).save()
+		station = self._station(peripheral(connection="Serial", serial_port="COM3"))
+		station.save()
+		self.assertEqual(station.peripherals[0].baud_rate, 9600)
+		station.peripherals[0].baud_rate = 115200
+		station.save()
+		self.assertEqual(station.peripherals[0].baud_rate, 115200)
+
+	def test_duplicate_endpoint_rejected(self):
+		tcp = {"connection": "TCP", "host": "10.0.0.5", "port": 9100}
+		with self.assertRaises(frappe.ValidationError):
+			self._station(peripheral(**tcp), peripheral(**{**tcp, "host": "10.0.0.5 "})).save()
+		with self.assertRaises(frappe.ValidationError):
+			self._station(
+				peripheral(**{**tcp, "host": "Scale.Local"}), peripheral(**{**tcp, "host": "scale.local"})
+			).save()
+		com = {"connection": "Serial", "serial_port": "COM3"}
+		with self.assertRaises(frappe.ValidationError):
+			self._station(peripheral(**com), peripheral(**{**com, "serial_port": "com3"})).save()
+		# khác cổng, hoặc dòng không hoạt động: hợp lệ
+		self._station(peripheral(**tcp), peripheral(**{**tcp, "port": 9101})).save()
+		self._station(peripheral(**tcp), peripheral(**tcp, is_active=0)).save()
+
+	def test_zone_cannot_have_peripherals(self):
+		zone = make_zone("Clean")
+		zone.append("peripherals", peripheral())
+		with self.assertRaises(frappe.ValidationError):
+			zone.save()
+
+	def test_scale_cannot_be_hid(self):
+		with self.assertRaises(frappe.ValidationError):
+			self._station(peripheral(peripheral_type="Scale")).save()
+		self._station(peripheral(peripheral_type="Scale", connection="Serial", serial_port="COM4")).save()
+
+	def test_peripheral_change_audited(self):
+		station = make_station("ZONE-CLEAN", "T4")
+		station.append("peripherals", peripheral(model="Zebra DS2208"))
+		station.save()
+		logs = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Zone Station", "ref_name": station.name, "action": "Update"},
+			fields=["old_value", "new_value"],
+		)
+		self.assertEqual(len(logs), 1)
+		new = json.loads(logs[0].new_value)
+		self.assertEqual(json.loads(logs[0].old_value), {"peripherals": []})
+		self.assertEqual(new["peripherals"][0]["model"], "Zebra DS2208")
+		self.assertEqual(new["peripherals"][0]["connection"], "USB HID")
+		station.reload()
+		station.save()
+		self.assertEqual(
+			frappe.db.count(
+				"Audit Log", {"ref_doctype": "Zone Station", "ref_name": station.name, "action": "Update"}
+			),
+			1,
+		)

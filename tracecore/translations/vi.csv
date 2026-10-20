@@ -573,3 +573,29 @@ A station without a zone cannot be activated.,Trạm chưa gán khu không kích
 Station {0} has no zone: it was deactivated.,Trạm {0} chưa gán khu nên đã chuyển sang không hoạt động.,
 "Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm {0} đang hoạt động có bước {1}, loại khu {2} không cho phép.",
 Zone and station configuration (FEAT-002): zone type\, station function by zone\, active flag.,"Cấu hình khu và trạm (FEAT-002): loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
+Station Peripheral,Thiết bị ngoại vi của trạm,
+Peripherals,Thiết bị ngoại vi,Zone Station
+Peripheral Type,Loại thiết bị,Station Peripheral
+Scanner,Máy quét,Station Peripheral
+Scale,Cân,Station Peripheral
+Model,Model,Station Peripheral
+Connection,Kết nối,Station Peripheral
+USB HID,USB HID,Station Peripheral
+Serial,Cổng nối tiếp (Serial),Station Peripheral
+TCP,TCP,Station Peripheral
+Host,Địa chỉ máy (host),Station Peripheral
+Port,Cổng (port),Station Peripheral
+Serial Port,Cổng nối tiếp,Station Peripheral
+Baud Rate,Tốc độ baud,Station Peripheral
+Is Active,Đang dùng,Station Peripheral
+Notes,Ghi chú,Station Peripheral
+Scanner or scale attached to a station (FEAT-002): connection USB HID\, Serial or TCP.,"Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, Serial hoặc TCP.",
+1 to 65535.,1 đến 65535.,
+For example COM3 or /dev/ttyUSB0.,Ví dụ COM3 hoặc /dev/ttyUSB0.,
+Default 9600.,Mặc định 9600.,
+A zone cannot have peripherals.,Khu không được có thiết bị ngoại vi.,
+"Row {0}: endpoint {1} is already used by another active peripheral of this station.","Dòng {0}: điểm kết nối {1} đã được thiết bị ngoại vi đang dùng khác của trạm này sử dụng.",
+Row {0}: a scale cannot use USB HID.,Dòng {0}: cân không được dùng USB HID.,
+Row {0}: Host is required for a TCP connection.,Dòng {0}: kết nối TCP bắt buộc có địa chỉ máy (host).,
+Row {0}: Port must be between 1 and 65535.,Dòng {0}: cổng (port) phải từ 1 đến 65535.,
+Row {0}: Serial Port is required for a Serial connection.,Dòng {0}: kết nối Serial bắt buộc có cổng nối tiếp.,
