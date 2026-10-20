@@ -163,6 +163,25 @@ class TestStationPage(FrappeTestCase):
 		)
 		self.assertFalse(missing, msg=f"Thiếu bản dịch vi: {missing}")
 
+	def test_vi_generic_labels_of_feat018_doctypes_have_context_rows(self):
+		"""Nhãn chung chung (Expiry Date, Label, Quantity…) trên DocType FEAT-018 dịch bằng dòng có context riêng,
+		không dựa vào bản dịch toàn site của ERPNext/HRMS (có thể là thuật ngữ khác)."""
+		ours = vi_translations()
+		expected = [
+			("Expiry Date", "Pack"),
+			("Label", "Pack"),
+			("Department", "Pack"),
+			("Quantity", "Pack Instrument Confirmed"),
+			("Quantity", "Set BOM Item"),
+			("Action", "Pack Maintenance Done"),
+			("Reason", "Pack Maintenance Done"),
+		]
+		sources = source_strings()
+		for label, doctype in expected:
+			with self.subTest(label=label, doctype=doctype):
+				self.assertIn((label, doctype), sources)
+				self.assertTrue(ours.get(f"{label}:{doctype}"))
+
 	def test_vi_translations_do_not_override_other_apps(self):
 		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms."""
 		others = other_app_translations()

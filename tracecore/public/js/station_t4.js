@@ -27,10 +27,6 @@ const T4_KEEP_CONTEXT_CODES = [
 const T4_PACK_BADGE = { Packed: "", Void: "x", Recalled: "r", Quarantine: "o", Released: "g" };
 const T4_GENERATE = "tracecore.v1.pack.generate_cycle_id";
 
-function t4Pad(n) {
-	return String(n).padStart(2, "0");
-}
-
 function t4Date(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
 	return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
@@ -39,12 +35,6 @@ function t4Date(iso) {
 function t4DateTime(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(iso || "");
 	return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : t4Date(iso);
-}
-
-function t4DateAfter(days) {
-	const date = new Date();
-	date.setDate(date.getDate() + days);
-	return `${t4Pad(date.getDate())}/${t4Pad(date.getMonth() + 1)}/${date.getFullYear()}`;
 }
 
 function t4GateLabel(step) {
@@ -1073,7 +1063,7 @@ class T4Packing {
 			.join("");
 		const expiry = chosen
 			? `<p>${esc(__("Expected expiry date"))}: <b>${esc(
-					t4DateAfter(chosen.shelf_life_days)
+					t4Date(chosen.expected_expiry)
 			  )}</b></p>`
 			: "";
 		return `${heading}
@@ -1190,7 +1180,7 @@ class T4Packing {
 		)}">
 			<img class="tc-label-dm" src="data:image/png;base64,${esc(
 				this.done.datamatrix_png_b64
-			)}" alt="DataMatrix ${esc(pack.cycle_id)}">
+			)}" alt="${esc(__("DataMatrix {0}", [pack.cycle_id]))}">
 			${lines.join("")}
 		</figure>`;
 	}

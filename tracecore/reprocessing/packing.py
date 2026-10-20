@@ -317,7 +317,8 @@ def get_context(set_id, station):
 
 	Chặn (BlockedError) như `generate` tới hết precheck cơ số: trạm, mã quét, trạng thái, Cycle ID hiệu lực,
 	cổng T3, GTIN loại bộ, cơ số. `label_type` là loại nhãn của máy in sẽ dùng, hoặc loại nhãn cần lắp khi chưa
-	có máy in đúng phương pháp (`printer` None).
+	có máy in đúng phương pháp (`printer` None). Mỗi loại gói mang thêm `expected_expiry` (ISO) và `days` do server
+	tính theo `compute_expiry(hôm nay, loại gói, loại bộ)` để màn T4 không tự tính theo ngày của trình duyệt.
 	"""
 	unit, set_type, ctx = _open(set_id, station)
 	printer = core_print.select_printer(station, set_type.method)
@@ -341,11 +342,17 @@ def get_context(set_id, station):
 		"tray_image": ctx.get("tray_image"),
 		"maintenance": ctx.get("maintenance", []),
 		"par": ctx.get("par"),
-		"pack_types": pack_types(set_type.name),
+		"pack_types": [_with_expected_expiry(row, set_type.name) for row in pack_types(set_type.name)],
 		"ci": {"method": set_type.method, "classes": list(CI_CLASSES)},
 		"label_type": printer["label_type"] if printer else (labels[0].name if labels else None),
 		"printer": printer,
 	}
+
+
+def _with_expected_expiry(row, set_type):
+	"""Loại gói kèm hạn dùng dự kiến nếu đóng gói hôm nay (giờ server, D4)."""
+	expiry = compute_expiry(getdate(), row["item"], set_type)
+	return {**row, "expected_expiry": str(expiry["expiry"]), "days": expiry["days"]}
 
 
 # --- Sinh Cycle ID (FR-M2-07/08, BRU-ID-002/004, D13) ------------------------------------------------

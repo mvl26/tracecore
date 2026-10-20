@@ -154,6 +154,21 @@ class TestGetContext(IsolatedTestCase):
 			},
 		)
 
+	@bru("BRU-REP-009")
+	def test_get_context_pack_types_carry_server_expected_expiry(self):
+		# T4 hiển thị hạn dùng dự kiến do server tính (D4), không tính theo ngày của trình duyệt
+		ready = make_t4_ready_set(shelf_life_days=10)  # loại bộ ghi đè ngắn hơn hạn loại gói (30 ngày)
+		types = packing.get_context(ready.set_id, STATION)["pack_types"]
+		self.assertTrue(types)
+		for row in types:
+			expected = packing.compute_expiry(getdate(), row["item"], ready.set_type)
+			self.assertEqual(row["expected_expiry"], str(expected["expiry"]), msg=row["item"])
+			self.assertEqual(row["days"], expected["days"], msg=row["item"])
+		default = types[0]
+		self.assertEqual(default["item"], ready.pack_type)
+		self.assertEqual((default["shelf_life_days"], default["days"]), (30, 10))
+		self.assertEqual(default["expected_expiry"], str(getdate() + timedelta(days=10)))
+
 	def test_get_context_without_printer_names_the_label_type_to_load(self):
 		ready = make_t4_ready_set("Plasma", with_printer=False)
 		make_label_items()

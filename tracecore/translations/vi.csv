@@ -548,3 +548,11 @@ Reprint opens once the waiting label has been printed.,Chỉ in lại được s
 Label not printed yet,Nhãn chưa được in,
 The label of Cycle ID {0} has not been printed yet: print job {1} is still waiting for a printer. No new label was created.,Nhãn của Cycle ID {0} chưa được in: lệnh in {1} vẫn đang chờ máy in. Không tạo nhãn mới.,
 "Load the right label roll into the printer, then scan the roll code (CN-#####) to print the waiting label.","Lắp đúng cuộn nhãn vào máy in, rồi quét mã cuộn (CN-#####) để in nhãn đang chờ.",
+Expiry Date,Hạn sử dụng,Pack
+Label,Nhãn,Pack
+Department,Khoa,Pack
+Quantity,Số lượng,Pack Instrument Confirmed
+Quantity,Số lượng,Set BOM Item
+Action,Xử lý,Pack Maintenance Done
+Reason,Lý do,Pack Maintenance Done
+DataMatrix {0},DataMatrix {0},
