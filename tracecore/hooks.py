@@ -186,6 +186,23 @@ doc_events = {
 	"Label Template": dict(_AUDIT_EVENTS),
 }
 
+# Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
+# ---------------
+# M2 đóng gói gọi tracecore.core.extension.run("<hook>", …) và không import M1/M8:
+#  - context:   (ctx) -> dict gộp vào ngữ cảnh T4 (BOM, nhắc bảo dưỡng, mức dùng cơ số)
+#  - prechecks: (ctx) -> Block | None, chạy trước kiểm tra bảo dưỡng (cơ số)
+#  - checks:    (ctx) -> Block | None (bảo dưỡng)
+#  - after:     (pack_doc, ctx) -> None, chạy sau khi sinh Cycle ID (cập nhật bộ đếm bảo dưỡng)
+
+tracecore_pack_context = [
+	"tracecore.instrument.bom.pack_context",
+	"tracecore.instrument.maintenance.pack_context",
+	"tracecore.par.check.pack_context",
+]
+tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
+tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
+tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
+
 # Scheduled Tasks
 # ---------------
 

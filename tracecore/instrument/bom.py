@@ -35,3 +35,18 @@ def lines(set_type, version):
 		}
 		for row in rows
 	]
+
+
+def pack_context(ctx):
+	"""Hook ``tracecore_pack_context`` (FEAT-018 D9): BOM hiện hành và ảnh khay của loại bộ cho màn T4.
+
+	Đọc ``ctx["set_type"]`` (``name``, ``current_bom_version``, ``tray_image``); chỉ đọc, không ghi.
+	Trả ``{"bom": [dòng của lines()], "bom_version": int, "tray_image": str | None}``.
+	"""
+	set_type = ctx["set_type"]
+	version = cint(set_type.get("current_bom_version"))
+	return {
+		"bom": lines(set_type["name"], version),
+		"bom_version": version,
+		"tray_image": set_type.get("tray_image") or None,
+	}

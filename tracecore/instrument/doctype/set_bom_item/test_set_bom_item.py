@@ -63,6 +63,26 @@ class TestSetBOMItem(FrappeTestCase):
 		expected = ["BM-O1", *(by_name[n] for n in tied_names), "BM-O3"]
 		self.assertEqual([r["instrument"] for r in bom.lines(st.name, 1)], expected)
 
+	def test_pack_context_gives_current_bom_and_tray_image(self):
+		st = make_set_type("BMP", tray_image="/files/bmp-tray.png")
+		make_bom(st.name, [("BM-P1", 2)], version=1)
+		make_bom(st.name, [("BM-P2", 1), ("BM-P1", 3)], version=2)
+		set_type = {"name": st.name, "current_bom_version": 2, "tray_image": "/files/bmp-tray.png"}
+
+		result = bom.pack_context({"set_type": set_type, "station": "T4"})
+
+		self.assertEqual(set(result), {"bom", "bom_version", "tray_image"})
+		self.assertEqual(result["bom_version"], 2)
+		self.assertEqual(result["tray_image"], "/files/bmp-tray.png")
+		self.assertEqual([(r["instrument"], r["qty"]) for r in result["bom"]], [("BM-P2", 1), ("BM-P1", 3)])
+		self.assertEqual(result["bom"], bom.lines(st.name, 2))
+
+		# phiên bản cũ vẫn dựng được; loại bộ chưa có phiên bản BOM thì BOM rỗng
+		older = bom.pack_context({"set_type": {**set_type, "current_bom_version": 1}})
+		self.assertEqual((older["bom_version"], [r["instrument"] for r in older["bom"]]), (1, ["BM-P1"]))
+		empty = bom.pack_context({"set_type": {"name": st.name, "current_bom_version": None}})
+		self.assertEqual((empty["bom"], empty["bom_version"], empty["tray_image"]), ([], 0, None))
+
 	def test_quantity_at_least_one(self):
 		st = make_set_type("BMQ")
 		make_instrument("BM-Q")
