@@ -209,3 +209,32 @@ GTIN-14 must be 14 digits with a valid check digit.,GTIN-14 phải gồm 14 ch�
 GTIN-14 {0} is already used by Set Type {1}.,GTIN-14 {0} đã được loại bộ {1} sử dụng.,
 "Instrument Code may contain only uppercase letters, digits and hyphens.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
 Quantity must be at least 1.,Số lượng phải từ 1 trở lên.,
+Step Gate Result,Kết quả cổng bước,
+Assembly Record,Phiếu lắp ráp,
+Cycle No,Số thứ tự chu trình,
+Step,Bước,Step Gate Result
+Pending,Chưa,Step Gate Result
+Pass,Đạt,Step Gate Result
+Pass,Đạt,Assembly Record
+Fail,Không đạt,Step Gate Result
+Fail,Không đạt,Assembly Record
+Redo Count,Số lần xử lý lại,
+Source,Nguồn kết quả,Step Gate Result
+Reference DocType,Loại chứng từ tham chiếu,Step Gate Result
+Reference Name,Mã tham chiếu,Step Gate Result
+Recorded By,Người ghi,
+Recorded At,Thời điểm ghi,
+Notes,Ghi chú,Assembly Record
+Unknown step {0}.,Bước {0} không tồn tại.,
+Set Unit {0} not found.,Không tìm thấy bộ {0}.,
+No cycle has been started for Set Unit {0}.,Bộ {0} chưa bắt đầu chu trình nào.,
+Set status does not match this station,Trạng thái bộ không phù hợp với trạm này,
+Set {0} is {1}; station {2} accepts only sets that are {3}.,Bộ {0} đang ở trạng thái {1}; trạm {2} chỉ nhận bộ ở trạng thái {3}.,
+"Check the set status, then take the set to the station that matches it.","Kiểm tra trạng thái bộ, rồi đưa bộ tới đúng trạm tương ứng.",
+Previous step has not passed,Bước liền trước chưa đạt,
+Step {0} has not passed in cycle {1}.,Bước {0} chưa đạt trong chu trình {1}.,
+Send the set back to step {0} and complete it before continuing.,Đưa bộ quay lại bước {0} và hoàn thành bước đó trước khi tiếp tục.,
+Invalid gate result: {0},Kết quả cổng không hợp lệ: {0},
+Cycle ID is required.,Cần có Cycle ID.,
+Set Unit {0} is no longer in cycle {1}; create a new Assembly Record.,Bộ {0} không còn ở chu trình {1}; hãy lập phiếu lắp ráp mới.,
+Assembly Record cannot be cancelled in this version.,Phiên bản này chưa hỗ trợ hủy phiếu lắp ráp.,

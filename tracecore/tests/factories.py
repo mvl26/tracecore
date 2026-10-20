@@ -2,7 +2,7 @@
 
 import frappe
 
-from tracecore.core import gs1
+from tracecore.core import gs1, step_gate
 
 
 def make_user(email, roles=()):
@@ -135,6 +135,31 @@ def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
 			"deferred_count": deferred_count,
 		}
 	).insert()
+
+
+def make_assembly_record(set_unit, result="Pass", submit=True, notes=None):
+	"""Tạo Assembly Record (stub T3) cho chu trình hiện hành của bộ; ghi sổ mặc định → ghi cổng T3."""
+	doc = frappe.get_doc(
+		{"doctype": "Assembly Record", "set_unit": _ref_name(set_unit), "result": result, "notes": notes}
+	).insert()
+	if submit:
+		doc.submit()
+	return doc
+
+
+def make_cycle(set_unit, passed=("T1", "T2", "T3")):
+	"""Mở chu trình mới cho bộ rồi ghi các bước `passed` Pass; trả cycle_no.
+
+	T3 đi qua Assembly Record ghi sổ (đúng đường chứng từ); bước khác ghi thẳng bằng step_gate.record.
+	"""
+	set_unit = _ref_name(set_unit)
+	cycle_no = step_gate.start_cycle(set_unit)
+	for step in passed:
+		if step == "T3":
+			make_assembly_record(set_unit)
+		else:
+			step_gate.record(set_unit, step, "Pass")
+	return cycle_no
 
 
 ITEM_GROUP_ROOT = "All Item Groups"
