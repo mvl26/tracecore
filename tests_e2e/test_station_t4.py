@@ -93,23 +93,16 @@ def assert_touch_and_font(page):
 
 def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	page = t4_page
+	sent = mock_agent(page)  # không bao giờ chạm agent thật ở 127.0.0.1:8765
 	taps = Taps()
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 
 	scan_set_and_wait_context(page, t4_demo["set_steam"])
+	expect(page.locator("[data-region='maint'] [data-action='maint-done']")).to_have_count(
+		0
+	)  # bộ sạch, không nhắc
 	confirm_all = page.locator("[data-action='confirm-all']")
 	expect(confirm_all).to_be_enabled(timeout=20000)  # D1: bật khi lưới BOM đã hiển thị đủ và ảnh đã tải
-
-	# Bộ hấp demo có một nhắc tra dầu đến hạn (AC-12): xử lý trước khi sinh, đếm riêng ngoài đường chính.
-	maintenance_taps = 0
-	done_button = page.locator("[data-action='maint-done']")
-	if done_button.count():
-		done_button.first.click()
-		page.locator("#tc-dlg-oil_batch").fill("DEMO-T4-DAU-01")
-		page.locator(".tc-modal-form button[type='submit']").click()
-		maintenance_taps = 2
-		expect(page.locator(".tc-modal")).to_have_count(0)
-		expect(page.locator(SCAN_INPUT)).to_be_focused()
 
 	taps.tap(confirm_all)
 	scan(page, t4_demo["ci_steam"])
@@ -122,14 +115,51 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expect(label).to_contain_text("HẠN SỬ DỤNG")
 	expect(label).to_contain_text("TEST")
 	expect(label.locator(".tc-label-dm")).to_be_visible()
-	# Agent không chạy trên CI: cảnh báo "chưa gửi được" là chấp nhận được; có agent thì báo đã gửi.
-	print_note = page.locator("[data-region='print'] .tc-alert-warn, [data-region='print'] .tc-alert-ok")
-	expect(print_note.first).to_be_visible(timeout=15000)
+	# Agent giả nhận đúng 1 job (không phụ thuộc agent trên CI)
+	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_be_visible(timeout=15000)
+	assert len(sent) == 1
 	assert page.locator("[data-region='print'] .tc-alert-error").count() == 0
 
+	# AC-15: đường chính sau quét <= 3 chạm; thực tế 2 (xác nhận tất cả + xác nhận hoàn thành)
 	assert taps.count == 2, f"đường chính cần 2 chạm, thực tế {taps.count}"
-	print(f"T4 taps: main={taps.count} maintenance={maintenance_taps}")
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
+
+
+def test_t4_maintenance_reminder_flow(t4_page, t4_demo):
+	"""AC-12 (luồng thay thế, không tính vào 3 chạm của AC-15): nhắc tra dầu phải được xử lý trước khi sinh."""
+	page = t4_page
+	mock_agent(page)
+	taps = Taps()
+
+	scan_set_and_wait_context(page, t4_demo["set_maint"])
+	reminder = page.locator("[data-region='maint'] .tc-maint")
+	expect(reminder).to_have_count(1)
+	expect(reminder).to_contain_text("Đến hạn")
+	done_button = reminder.locator("[data-action='maint-done']")
+	expect(done_button).to_have_count(1)
+	taps.tap(page.locator("[data-action='confirm-all']"))
+	scan(page, t4_demo["ci_steam"])
+	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_steam"])
+	# chưa xử lý nhắc: nút chính khóa và nêu lý do
+	expect(page.locator("[data-action='confirm-pack']")).to_be_disabled()
+	expect(page.locator(".tc-missing")).to_contain_text("bảo dưỡng")
+
+	done_button.click()
+	dialog = page.locator(".tc-modal [role='dialog']")
+	expect(dialog).to_be_visible()
+	oil_lot = dialog.locator("#tc-dlg-oil_batch")
+	expect(oil_lot).to_be_visible()
+	dialog.locator("button[type='submit']").click()  # để trống: bắt buộc nhập lô dầu
+	expect(dialog.locator("#tc-dlg-oil_batch-err")).to_be_visible()
+	oil_lot.fill("DEMO-T4-DAU-01")
+	dialog.locator("button[type='submit']").click()
+	expect(page.locator(".tc-modal")).to_have_count(0)
+	expect(page.locator(SCAN_INPUT)).to_be_focused()
+	expect(page.locator("[data-region='maint']")).to_contain_text("DEMO-T4-DAU-01")
+
+	taps.tap(page.locator("[data-action='confirm-pack']"))
+	expect(page.locator(".tc-cycle")).to_have_text(re.compile(r"^CY-\d{6}-\d{4}$"), timeout=15000)
+	expect(page.locator(".tc-alert-error")).to_have_count(0)
 
 
 def test_t4_gate_not_passed_shows_full_alert(t4_page, t4_demo):

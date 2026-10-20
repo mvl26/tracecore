@@ -54,7 +54,16 @@ def set_id():
 @pytest.fixture
 def t4_demo():
 	"""Mã demo T4 từ scripts/e2e_prepare.sh (TC_E2E_T4_SET_STEAM, ...)."""
-	keys = ("set_steam", "set_plasma", "set_gate_fail", "ci_steam", "ci_plasma", "roll_steam", "roll_plasma")
+	keys = (
+		"set_steam",
+		"set_maint",
+		"set_plasma",
+		"set_gate_fail",
+		"ci_steam",
+		"ci_plasma",
+		"roll_steam",
+		"roll_plasma",
+	)
 	return {key: require_env(f"TC_E2E_T4_{key.upper()}") for key in keys}
 
 

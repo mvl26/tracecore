@@ -35,6 +35,7 @@ class TestDevData(FrappeTestCase):
 
 T4_KEYS = {
 	"set_steam",
+	"set_maint",
 	"set_plasma",
 	"set_gate_fail",
 	"ci_steam",
@@ -59,7 +60,10 @@ class TestT4DemoData(FrappeTestCase):
 		self.assertEqual(_gates(first["set_steam"])["T3"], "Pass")
 		self.assertEqual(_gates(first["set_plasma"])["T3"], "Pass")
 		self.assertNotEqual(_gates(first["set_gate_fail"])["T3"], "Pass")
-		self.assertEqual(len({first["set_steam"], first["set_plasma"], first["set_gate_fail"]}), 3)
+		self.assertEqual(_gates(first["set_maint"])["T3"], "Pass")
+		self.assertEqual(
+			len({first["set_steam"], first["set_maint"], first["set_plasma"], first["set_gate_fail"]}), 4
+		)
 
 		methods = {}
 		for key in ("set_steam", "set_plasma", "set_gate_fail"):
@@ -85,10 +89,12 @@ class TestT4DemoData(FrappeTestCase):
 		demo = devdata.ensure_t4_demo()
 		steam = packing.get_context(demo["set_steam"], "TR-004")
 		plasma = packing.get_context(demo["set_plasma"], "TR-004")
-		# một nhắc tra dầu đến hạn ở bộ hấp, bộ plasma không có nhắc
+		maint = packing.get_context(demo["set_maint"], "TR-004")
+		# chỉ set_maint có nhắc tra dầu đến hạn; bộ hấp sạch và bộ plasma không có nhắc
 		self.assertEqual(
-			[(row["maint_type"], row["state"]) for row in steam["maintenance"]], [("Lubrication", "due")]
+			[(row["maint_type"], row["state"]) for row in maint["maintenance"]], [("Lubrication", "due")]
 		)
+		self.assertEqual(steam["maintenance"], [])
 		self.assertEqual(plasma["maintenance"], [])
 		self.assertGreaterEqual(len(steam["bom"]), 3)
 		self.assertTrue(all(line["image"] for line in steam["bom"] + plasma["bom"]))
@@ -105,6 +111,7 @@ class TestT4DemoData(FrappeTestCase):
 		second = devdata.ensure_t4_demo()
 		self.assertNotEqual(second["set_steam"], first["set_steam"])
 		self.assertEqual(_gates(second["set_steam"])["T3"], "Pass")
+		self.assertEqual(second["set_maint"], first["set_maint"])
 		self.assertEqual(second["set_plasma"], first["set_plasma"])
 		self.assertEqual(second["set_gate_fail"], first["set_gate_fail"])
 

@@ -180,8 +180,16 @@ def _matches(results, passed):
 	)
 
 
-def _ensure_set(set_type, passed):
+def _has_lube_reminder(set_id):
+	return bool(
+		frappe.db.exists("Instrument Maintenance", {"set_unit": set_id, "instrument": T4_LUBE_INSTRUMENT})
+	)
+
+
+def _ensure_set(set_type, passed, reminder=False):
 	"""Set Unit đầu tiên của `set_type` có đúng các cổng `passed` Đạt (còn lại Chưa) và chưa có Cycle ID.
+
+	`reminder` chọn bộ có (True, kèm nhắc tra dầu đến hạn) hoặc không có (False) bản ghi bảo dưỡng tra dầu.
 
 	Không có (vd bộ cũ đã được đóng gói) thì tạo bộ mới và mở chu trình. Trả Set ID.
 	"""
@@ -192,12 +200,14 @@ def _ensure_set(set_type, passed):
 		order_by="creation asc",
 	)
 	for row in rows:
-		if _matches(_gate_results(row), passed):
+		if _matches(_gate_results(row), passed) and _has_lube_reminder(row.name) == reminder:
 			return row.name
 	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
 		ignore_permissions=True
 	)
 	factories.make_cycle(unit.name, passed=passed)
+	if reminder:
+		_ensure_lube_reminder(unit.name)
 	return unit.name
 
 
@@ -240,7 +250,8 @@ def ensure_t4_demo():
 
 	Tạo nếu thiếu: mẫu nhãn mẫu, loại bộ hấp/plasma có GTIN test và BOM 3-4 dụng cụ (ảnh PNG "DEMO"), loại gói,
 	lô chỉ thị loại 5 cho từng phương pháp, lô dầu ``DEMO_OIL_LOT``, Item nhãn và mã cuộn ``CN-`` cho hai loại nhãn,
-	máy in tại TR-004 nạp nhãn hấp. Bộ hấp và bộ plasma đã qua T1-T3 (bộ hấp có một nhắc tra dầu đến hạn); một bộ
+	máy in tại TR-004 nạp nhãn hấp. Bộ hấp, bộ plasma đã qua T1-T3 và không có nhắc bảo dưỡng; `set_maint` là bộ hấp
+	qua T1-T3 có một nhắc tra dầu đến hạn (luồng thay thế của AC-12); một bộ
 	hấp khác mới qua T1-T2 (thiếu cổng T3). Bộ đã được đóng gói được thay bằng bộ mới khi gọi lại.
 	"""
 	_require_dev_site()
@@ -258,10 +269,9 @@ def ensure_t4_demo():
 	}
 	rolls = {label: _ensure_roll(label) for label in (STEAM_LABEL, PLASMA_LABEL)}
 
-	set_steam = _ensure_set(set_types["Steam"], T4_GATES_READY)
-	_ensure_lube_reminder(set_steam)
 	result = {
-		"set_steam": set_steam,
+		"set_steam": _ensure_set(set_types["Steam"], T4_GATES_READY),
+		"set_maint": _ensure_set(set_types["Steam"], T4_GATES_READY, reminder=True),
 		"set_plasma": _ensure_set(set_types["Plasma"], T4_GATES_READY),
 		"set_gate_fail": _ensure_set(set_types["Steam"], T4_GATES_FAIL),
 		"ci_steam": ci["Steam"],
