@@ -1,4 +1,5 @@
 import frappe
+from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 from frappe.utils import add_days, today
 
 from tracecore.tests.factories import (
@@ -261,7 +262,7 @@ class TestPack(IsolatedTestCase):
 
 	def test_station_role_r04_can_create_and_submit_others_only_read(self):
 		author = make_user("pack-r04@example.com", roles=["TC R04"])
-		for ptype in ("create", "read", "submit"):
+		for ptype in ("create", "read", "write", "submit"):
 			self.assertTrue(frappe.has_permission("Pack", ptype, user=author), ptype)
 		for ptype in ("delete", "cancel", "amend"):
 			self.assertFalse(frappe.has_permission("Pack", ptype, user=author), ptype)
@@ -276,3 +277,36 @@ class TestPack(IsolatedTestCase):
 			fields=["create", "write", "submit", "read"],
 		)
 		self.assertEqual([(p["read"], p["write"], p["create"], p["submit"]) for p in manager], [(1, 1, 1, 1)])
+
+	def test_permission_rows_pass_frappe_validation(self):
+		# Cùng kiểm tra mà Customize Form / Role Permission Manager chạy khi lưu DocType: migrate bỏ qua
+		# bước này nên một dòng quyền sai (ví dụ submit mà thiếu write) chỉ lộ ra ở lần lưu sau.
+		validate_permissions_for_doctype("Pack")
+		for perm in frappe.get_all(
+			"DocPerm", filters={"parent": "Pack"}, fields=["role", "write", "create", "submit"]
+		):
+			if perm["submit"] or perm["create"]:
+				self.assertTrue(perm["write"], msg=f"{perm['role']} needs write to create/submit")
+
+	def test_r04_user_can_create_submit_and_update_after_submit_but_not_cancel_or_delete(self):
+		su = _set_unit("PKR")
+		author = make_user("pack-r04-flow@example.com", roles=["TC R04"])
+		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.set_user(author)
+
+		# đi qua đường quyền thật (không ignore_permissions): insert → submit → sửa trường allow_on_submit
+		doc = make_pack(su, submit=False)
+		self.assertEqual(frappe.db.get_value("Pack", doc.name, "docstatus"), 0)
+		doc.submit()
+		self.assertEqual(frappe.db.get_value("Pack", doc.name, "docstatus"), 1)
+		doc.reload()
+		doc.label_print_count = 1
+		doc.save()
+		self.assertEqual(frappe.db.get_value("Pack", doc.name, "label_print_count"), 1)
+
+		doc.reload()
+		with self.assertRaises(frappe.PermissionError):
+			doc.cancel()
+		with self.assertRaises(frappe.PermissionError):
+			frappe.delete_doc("Pack", doc.name)
+		self.assertEqual(frappe.db.get_value("Pack", doc.name, "docstatus"), 1)

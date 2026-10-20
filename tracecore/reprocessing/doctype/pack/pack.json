@@ -316,7 +316,8 @@
    "create": 1,
    "read": 1,
    "role": "TC R04",
-   "submit": 1
+   "submit": 1,
+   "write": 1
   },
   {
    "read": 1,
