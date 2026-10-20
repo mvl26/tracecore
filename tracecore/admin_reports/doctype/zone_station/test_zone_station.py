@@ -1,3 +1,5 @@
+import json
+
 import frappe
 from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
@@ -171,17 +173,18 @@ class TestZoneStation(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			zone.save()
 		empty = make_zone("Dirty")
-		make_station(empty.name)  # trạm chưa có bước
+		child = make_station(empty.name)  # trạm chưa có bước
 		empty.zone_type = "Sterile"
 		empty.save()
-		children = frappe.get_all("Zone Station", filters={"parent_zone": empty.name}, pluck="zone_type")
-		self.assertEqual(children, ["Sterile"])
-		self.assertTrue(
-			frappe.db.exists(
-				"Audit Log",
-				{"ref_doctype": "Zone Station", "action": "Update", "new_value": ("like", "%Sterile%")},
-			)
+		self.assertEqual(frappe.db.get_value("Zone Station", child.name, "zone_type"), "Sterile")
+		log = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Zone Station", "ref_name": child.name, "action": "Update"},
+			fields=["old_value", "new_value"],
 		)
+		self.assertEqual(len(log), 1)
+		self.assertEqual(json.loads(log[0].old_value), {"zone_type": "Dirty"})
+		self.assertEqual(json.loads(log[0].new_value), {"zone_type": "Sterile"})
 
 	@bru("BRU-ID-006")
 	def test_zone_station_cannot_be_deleted(self):
