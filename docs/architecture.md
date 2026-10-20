@@ -9,6 +9,7 @@
 | Ngày | Phiên bản | Người thực hiện | Thay đổi |
 | --- | --- | --- | --- |
 | 2026-10-19 | Amendment A-01 | Miyano (dev) + Claude Code, chủ đầu tư duyệt | Tên module Frappe: `Core` (frappe) và `HR` (hrms) đã là Module Def có sẵn, không đăng ký trùng được. Dịch vụ `core` ở package Python `tracecore/core/`; DocType nền (Audit Log, Code Registry, Idempotency Key, Print Job) ở module `TraceCore`; Zone Station ở `Admin Reports`; Page `station` ở `UI`; M4 chưa đăng ký Module Def. Xem ghi chú ở §5.2 và §5.3. |
+| 2026-10-20 | Amendment A-02 | Miyano (dev lead) + Claude Code; D1–D5, D7 tạm chờ chủ đầu tư duyệt; D6 còn mở | Ghi quyết định thiết kế FEAT-018 (T4 đóng gói → Cycle ID → in nhãn) trước khi code; mã D1–D14 theo `docs/superpowers/plans/FEAT-018-t4-packing-cycle-id.md`. **Trạng thái duyệt:** dev lead duyệt toàn bộ kế hoạch và bảng mã HTTP (D3) ngày 2026-10-20. D1 (nút "Xác nhận tất cả thành phần"), D2 (mã cuộn `CN-` do FEAT-005 cấp), D3 (mã HTTP theo loại lỗi), D4 (hạn dùng), D5 (ngưỡng chặn bảo dưỡng), D7 (nhãn 60 × 40 mm, ZPL trước) ghi **tạm — trình CĐT 20/10/2026**; đổi thành "đã duyệt" khi chủ đầu tư phê duyệt, chủ đầu tư đổi ý thì sửa kế hoạch và mục tương ứng. D6 (GTIN-14 loại bộ) **còn mở** (OQ-05): FEAT-018 dùng GTIN test; phải có GS1 Company Prefix thật và quy tắc cấp GTIN-14 trước UAT và trước khi in nhãn thật. D8–D14 dev lead xác nhận. **Nội dung:** (a) Custom Field Item `tc_ci_class`, `tc_shelf_life_days`; (b) `Pack.packed_by_user`, `Pack.shelf_life_days_applied`, `Pack.shelf_life_source`, `Set Unit.current_cycle_no`, `Printer.supports_unicode`; (c) `Step Gate Result`, `Printer`, `Label Template` ở module `TraceCore`, `Pack` và `Assembly Record` (stub) ở `Reprocessing`; (d) bốn hook tùy biến M1/M8 → M2: `tracecore_pack_context`, `tracecore_pack_prechecks`, `tracecore_pack_checks`, `tracecore_after_cycle_id`; (e) bảng ánh xạ `error.code` → HTTP (ADR-003, nơi duy nhất); (f) công thức hạn dùng và ngưỡng chặn bảo dưỡng; (g) lớp dialect máy in (ZPL trước, TSPL sau). Xem ghi chú A-02 ở §5.3.1 (M1, M2, M6, M9), §6.3 và ADR-003. |
 
 ---
 
@@ -343,6 +344,12 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 | Loaner Set | DT-LOANER | Bộ mượn; child `Loaner BOM Item`; biên bản nhận/trả | — | FR-M1-07, FR-M1-08 |
 | Instrument Maintenance | DT-INSTRMAINT | Ngưỡng và lịch sử tra dầu/bảo dưỡng theo dụng cụ × set_unit; bộ đếm kể từ lần bảo dưỡng | — | FR-M1-09, FR-M2-07.4 |
 
+> **Amendment A-02 (2026-10-20), M1 (FEAT-018; D4–D6, D9):**
+> - `Set Unit.current_cycle_no` (Int, chỉ đổi qua `core.step_gate`, cùng nhóm `status`, `cycles_used`, `current_station`, `active_cycle_id`): số thứ tự chu trình hiện hành, là khóa chung của `Step Gate Result` (ADR-005 đã dùng tên này).
+> - `Instrument Set Type.gtin` (D6, **còn mở**, OQ-05): GTIN-14 do R10 nhập tay (14 chữ số, check digit đúng, duy nhất), khóa sửa khi loại bộ đã có Pack; thiếu GTIN thì không sinh Cycle ID. Cách cấp GTIN-14 từ GS1 Company Prefix thật và mã loại bộ (đoạn "cấp từ Company Prefix + mã loại bộ" ở ADR-004) chưa chốt nên FEAT-018 không hiện thực công thức đó. Dev/staging dùng GTIN test (tiền tố demo `952`) do devdata/factory gán; nhãn mang GTIN test in thêm dòng `TEST`.
+> - `Instrument Set Type.shelf_life_days` (Int; 0 hoặc trống = không ghi đè): hạn lưu riêng của loại bộ, kết hợp với hạn loại gói theo công thức ở ghi chú M2 (D4).
+> - **Ngưỡng bảo dưỡng (D5, tạm — trình CĐT 20/10/2026):** `Instrument Maintenance` đến hạn khi bộ đếm ≥ ngưỡng; **chặn** sinh Cycle ID khi bộ đếm > ngưỡng × 1,2 **hoặc** số lần hoãn ≥ 3, trừ khi lần đóng gói này chọn Đã bảo dưỡng. So sánh bằng số nguyên `bộ đếm × 10 > ngưỡng × 12` để tránh lệch do số thực. Mỗi nhắc đến hạn phải được xử lý (Đã bảo dưỡng hoặc Hoãn có lý do) trước khi sinh. Yêu cầu PIN R02 khi hoãn thêm bổ sung ở FEAT-003.
+
 **M2 — Chuỗi tái xử lý (12 gốc + 1 mới)**
 
 | DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
@@ -360,6 +367,16 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 | Step Gate Result | DT-STEPGATE | Cổng bước T1..T5 theo (set_unit, cycle_no, step); redo_count; batch_ref Dynamic Link | — | FR-M2-25 |
 | Incident CAPA | DT-INCIDENT | Sự cố/NC/CAPA; child `CAPA Action`; WF-06; dùng chung cho M10 | Link Non Conformance / Quality Action (đồng bộ một chiều, tùy chọn) | FR-M2-21, FR-M2-22, FR-M10-06 |
 | **Sterile Putaway** *(mới)* | — | Chứng từ nhập kho vô khuẩn (quét gói + vị trí) để có bản ghi submittable cho cổng T6 và audit; Pack giữ location hiện hành | — | FR-M2-13 |
+
+> **Amendment A-02 (2026-10-20), M2 (FEAT-018; D1, D4, D8, D9, D12, D13):**
+> - **Vị trí module (D9):** `Pack` (+ child `Pack Instrument Confirmed`, `Pack Maintenance Done`) và `Assembly Record` (stub T3 của FEAT-018) ở module `Reprocessing`. `Step Gate Result` do `core.step_gate` sở hữu nên đặt ở module `TraceCore` (cùng tinh thần A-01), dù bảng trên nhóm theo FR (M2). `Instrument`, `Set BOM Item`, `Instrument Maintenance` ở module `Instrument`.
+> - **Pack (D8, D12):** thêm `packed_by_user` (Link User, bắt buộc: user trạm đang đăng nhập) trong khi `packed_by` (Link Employee) để trống đến khi FEAT-003 điền. Thêm `shelf_life_days_applied` (Int) và `shelf_life_source` (Select `Pack Type`/`Set Type`): snapshot số ngày hạn lưu đã áp dụng và nguồn của nó. `status` có đủ 9 trạng thái WF-02 (`Packed, In Load, Quarantine, Released, In Sterile Stock, Issued, Used, Recalled, Void`); FEAT-018 chỉ dùng `Packed` và `Void`. Pack là chứng từ submittable, `docstatus = 1` ngay khi sinh; hủy bằng `status = Void`, không cancel, không xóa. Hủy tại T4 ghi cổng T4 Không đạt (`redo_count++`, Set Unit → `Reprocess`) và vô hiệu mã trong Code Registry.
+> - **Thời điểm đóng gói (D13):** `packed_at` = `client_ts` đổi sang giờ hệ thống (ADR-003: thời điểm nghiệp vụ = `client_ts`). Ngày trong Cycle ID `CY-YYMMDD-NNNN`, trong AI (11) và hạn dùng đều lấy từ `packed_at`; series đếm theo ngày `packed_at`. Cửa sổ in lại 10 phút đo bằng giờ server.
+> - **Hạn dùng (D4, tạm — trình CĐT 20/10/2026; trả lời điểm rà soát #5 ở SRS §3.1.11):** `expiry = ngày đóng gói + min(hạn loại gói, hạn ghi đè của loại bộ)`. Hạn loại gói là `Item.tc_shelf_life_days` của Item nhóm `Packaging`; loại gói chưa có hạn lưu thì không chọn được. Loại bộ không ghi đè (0 hoặc trống) thì dùng hạn loại gói. Số ngày áp dụng và nguồn được snapshot vào Pack, nên đổi danh mục sau đó không ảnh hưởng gói cũ.
+> - **Hook tùy biến (D9):** M2 không import M1/M8 mà gọi `tracecore.core.extension.run("<hook>", …)`; M1/M8 khai báo hàm trong `hooks.py`: `tracecore_pack_context` (góp BOM + ảnh, nhắc bảo dưỡng, par bar vào ngữ cảnh màn T4), `tracecore_pack_prechecks` (kiểm cơ số, M8), `tracecore_pack_checks` (kiểm bảo dưỡng, M1), `tracecore_after_cycle_id` (sau khi sinh: M1 ghi kết quả bảo dưỡng; FEAT-042 nghe để trừ tiêu hao nhãn/bao gói/chỉ thị).
+> - **Thứ tự kiểm khi sinh Cycle ID (trả lỗi đầu tiên gặp):** trạm đúng T4 → mã quét → trạng thái Set Unit → Cycle ID hiệu lực → cổng T3 → GTIN loại bộ → cơ số (precheck) → bảo dưỡng → BOM → lô chỉ thị → loại gói.
+> - **Nút "Xác nhận tất cả thành phần" (D1, tạm — trình CĐT 20/10/2026):** T4 có nút này như T1 (FR-M2-01). Nút chỉ bật khi lưới BOM đã hiển thị đủ (mọi dòng đã render, mọi ảnh đã tải xong hoặc báo lỗi); một chạm tick mọi dòng, vẫn lưu từng dòng `Pack Instrument Confirmed`; người dùng bỏ chọn được từng dòng.
+> - **Ngoài phạm vi FEAT-018 (D14):** sinh Cycle ID offline (FEAT-009); nhắc dán chỉ thị trong/ngoài cho gói đôi cấy ghép (UC-08 A2); trừ tiêu hao (FEAT-042); chuyển Set Unit sang Hết vòng đời khi vượt cơ số (FEAT-032); đếm chu trình (FEAT-023); dialect TSPL.
 
 **M3 — Đồ vải (4 gốc)**
 
@@ -399,6 +416,8 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 
 Đề nghị mua từ cảnh báo: ERPNext `Material Request` (FR-M6-06.2).
 
+> **Amendment A-02 (2026-10-20), M6 (FEAT-018; D4, D9):** Custom Field của Item (fixtures, tên `Item-tc_*`) cho nhóm CSSD gồm `tc_item_group_cssd` (Select `Packaging`/`Chemical Indicator`/`Label`/`Lubricant`), `tc_compatible_method` (Select `Steam`/`Plasma`) và hai trường mới **`tc_ci_class`** (Select `1`/`2`/`4`/`5`/`6`: lớp chỉ thị hóa học; lô chỉ thị khi đóng gói phải lớp 5 hoặc 6 và đúng phương pháp) và **`tc_shelf_life_days`** (Int: hạn lưu của loại gói, chỉ áp dụng cho Item nhóm `Packaging`; loại gói chưa có hạn lưu thì không chọn được ở T4). Lô = ERPNext `Batch` (`expiry_date`). Các Custom Field khác trong bảng trên không đổi.
+
 **M7 — Chi phí (3 gốc)**
 
 | DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
@@ -434,6 +453,13 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 | **Environment Log** *(mới)* | — | Nhật ký T/RH/dP theo khu và nhiệt độ kho lạnh chất thải (nhập tay/cảm biến) | Link Zone Station | FR-M9-04, FR-M10-03.2 |
 | **Import Template** *(mới)* | — | Mẫu import theo danh mục (cột, giá trị hợp lệ, mapping) + `Import Batch` log lỗi theo dòng; bọc Frappe Data Import | Frappe Data Import | FR-M9-11 |
 | **Archive Export** *(mới)* | — | Gói xuất hồ sơ theo kỳ: phạm vi, file PDF/CSV, checksum, dấu thời gian, người xuất | — | FR-M9-12 |
+
+> **Amendment A-02 (2026-10-20), M9 (FEAT-018; D2, D7, D9, D11):**
+> - **Vị trí module (D9):** `Printer` và `Label Template` do `core.print` sở hữu nên đặt ở module `TraceCore` (cùng `Print Job` theo A-01), không ở `Admin Reports`; bảng trên vẫn nhóm theo FR (M9).
+> - `Printer.supports_unicode` (Check, mặc định 0): máy in có hiển thị được Unicode hay không. Dữ liệu lưu trên Pack và label preview luôn giữ tiếng Việt có dấu; chỉ output gửi máy in bỏ dấu khi `supports_unicode = 0`.
+> - **Dialect máy in (D7, tạm — trình CĐT 20/10/2026):** mẫu nhãn đầu 60 × 40 mm, 300 dpi, có dòng tiếng Anh phụ. `core.print` tách lớp "dialect" theo ngôn ngữ máy in (`core.print.DIALECTS`; hiện chỉ `ZPL`). Thêm TSPL (máy TSC) là thêm một dialect, không đổi dữ liệu hay nơi gọi; option `TSPL` chỉ mở khi có dialect TSPL đã thử trên máy thật (D-03).
+> - **Mã cuộn nhãn (D2, tạm — trình CĐT 20/10/2026):** `CN-#####` do FEAT-005 cấp và ghi `Code Registry` (prefix `CN`, `ref_doctype = Item`, `ref_name` = Item nhãn `VT-NHAN-HAP`/`VT-NHAN-PLASMA`); FEAT-018 chỉ đọc và kiểm tra. Trước FEAT-005, devdata/test đăng ký mã cuộn trực tiếp vào Code Registry.
+> - **Đường in an toàn (D11):** kiosk gửi `{print_job, zpl, printer}` (tên Printer) tới agent `127.0.0.1:8765/print`; agent chỉ in tới máy in có trong cấu hình trạm lấy từ RPC `tracecore.v1.station.config` (FEAT-018 trả danh sách máy in; FEAT-002 bổ sung ngoại vi khác). Đây là cách hiện thực câu "cấu hình kéo từ `Zone Station.peripherals`" ở ADR-006.
 
 **M10 — Chất thải y tế (7 mới)**
 
@@ -754,6 +780,8 @@ sequenceDiagram
 ```
 
 In lại trong 10 phút: `pack.reprint_label(cycle_id, reason)` → Print Job mới, `label_print_count++` (FR-M2-08.5); quá 10 phút → `pack.void` + sinh mới.
+
+> **Amendment A-02 (2026-10-20):** sơ đồ trên ở mức khái quát. Công thức hạn dùng, ngưỡng chặn bảo dưỡng (thay cho "hoãn > 3 chu trình hoặc vượt 20 %"), thứ tự kiểm và hook M1/M8 → M2 xem ghi chú M1/M2 ở §5.3.1; mã HTTP của các từ chối ("409" trong sơ đồ là loại xung đột trạng thái) xem bảng ở ADR-003.
 
 ### 6.4 UC-10 Giải phóng mẻ → cổng 5 bước → tiêu hao M6 → chi phí M7 → bộ đếm M8
 
@@ -1159,6 +1187,20 @@ Wi-Fi khu bẩn/phòng mổ không ổn định; NFR-AVAIL-02 yêu cầu ≥ 4 g
 - Dải mã: `Code Range` cấp theo trạm (prefix `CY-YYMMDD-T04-`, 200 mã/ca; `CT-` cho chất thải); client lấy khi online, dùng khi offline; server kiểm dải khi sync.
 - Xung đột: 409 từ RPC trong khi replay → `Sync Conflict` + Incident CAPA; giữ bản server (FR-M9-06.3); R02 xử lý trên Desk.
 - Dữ liệu đọc offline: Service Worker cache danh mục cần cho trạm (BOM + thumbnail của Set Unit đang ở khu, Pack đã cấp cho khoa của PDA, Equipment/Program) làm mới mỗi 10 phút khi online.
+
+**Amendment A-02 (2026-10-20) — mã HTTP của từ chối nghiệp vụ (D3; dev lead duyệt 2026-10-20, tạm — trình CĐT 20/10/2026).** Bảng dưới là **nơi duy nhất** định nghĩa ánh xạ `error.code` → mã HTTP cho RPC `tracecore.v1.*` (từ FEAT-018); hiện thực ở `core.errors.HTTP_STATUS`, các tài liệu khác chỉ trỏ về đây. Từ chối nghiệp vụ là `core.errors.Block`, body giữ dạng `{"ok": false, "error": {code, title, reason, action, http_status, items?, redo_step?}}`, không dùng một mã chung cho mọi lỗi.
+
+| HTTP | Ý nghĩa | `error.code` |
+| --- | --- | --- |
+| 400 | Sai định dạng yêu cầu (thiếu tham số, `client_ts`, key) | `IdempotencyKeyError`, `ClientTimestampError`, thiếu tham số (hành vi sẵn có của FEAT-001) |
+| 403 | Thiếu quyền | `frappe.PermissionError` |
+| 404 | Không tìm thấy | `SET_NOT_FOUND`, `PACK_NOT_FOUND`, `ROLL_NOT_FOUND` |
+| 409 | Xung đột trạng thái nghiệp vụ | `STATUS_INVALID_FOR_STATION`, `ACTIVE_CYCLE_EXISTS`, `GATE_PREV_NOT_PASSED`, `SET_TYPE_GTIN_MISSING`, `PAR_EXCEEDED`, `MAINT_OVERDUE`, `REPRINT_WINDOW_EXPIRED`, `PACK_NOT_VOIDABLE`, `ROLL_PRINTER_AMBIGUOUS` |
+| 422 | Đúng cú pháp nhưng dữ liệu sai | `STATION_WRONG_STEP`, `SCAN_INVALID`, `BOM_INCOMPLETE`, `CI_LOT_INVALID`, `CI_LOT_EXPIRED`, `PACK_TYPE_INVALID`, `REASON_REQUIRED`, `MAINT_ACTION_REQUIRED`, `MAINT_OIL_LOT_REQUIRED`, `ROLL_NOT_LABEL` |
+
+- `NO_PRINTER_FOR_METHOD` là **cảnh báo** đi kèm kết quả thành công (Cycle ID vẫn giữ, Print Job `Waiting`), không phải lỗi nên không có mã HTTP.
+- **Không đổi** contract FEAT-001: `set_unit.get` vẫn trả 200 + `ok: false` (`_common.rejection`) cho đến khi có amendment riêng và test migration.
+- Mã "409" ở các câu ADR-003 phía trên (phát lại → `Sync Conflict`) và trong sơ đồ §6.1/§6.3/§6.5 đọc theo nghĩa xung đột trạng thái. Việc 422/404 khi phát lại offline có tạo `Sync Conflict` + Incident CAPA hay không (quy tắc hiện hành: dừng ở 5xx/mạng, tiếp tục ở 4xx) chốt khi làm FEAT-009 (offline).
 
 **Options considered**
 - **IndexedDB outbox + idempotency key server (chọn)** — chuẩn PWA, không hạ tầng thêm. Con: tự xây, phải test kỹ thứ tự/conflict.
