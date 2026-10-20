@@ -488,6 +488,18 @@ class TestGenerate(PackApiCase):
 			pack_api.generate_cycle_id(**generate_args(ready, client_ts=now_ts()))
 		self.assertEqual(frappe.db.count("Pack", {"set_unit": ready.set_id}), 0)
 
+	def test_generate_with_station_clock_skew_is_400_and_writes_nothing(self):
+		# F1: giờ trạm lệch giờ server > 5 phút → 400 (ClientTimestampError), không Pack/Audit Log/Idempotency Key
+		from tracecore.core.client_time import ClientTimestampError
+
+		ready = make_t4_ready_set()
+		before = totals()
+		skewed = (datetime.now(TIME_ZONE) + timedelta(minutes=6)).isoformat(timespec="seconds")
+		with self.assertRaises(ClientTimestampError) as raised:
+			call(pack_api.generate_cycle_id, **generate_args(ready, client_ts=skewed))
+		self.assertEqual(raised.exception.http_status_code, 400)
+		self.assertEqual(totals(), before)
+
 	def test_wrong_station_rejects_before_writing(self):
 		ready = make_t4_ready_set()
 		result = call(pack_api.generate_cycle_id, **generate_args(ready, station="TR-003"))

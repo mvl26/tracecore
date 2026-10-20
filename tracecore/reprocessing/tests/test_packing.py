@@ -6,9 +6,9 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import get_fullname, getdate, now_datetime
 
-from tracecore.core import extension, gs1
+from tracecore.core import client_time, extension, gs1
 from tracecore.core import print as core_print
-from tracecore.core.client_time import parse_client_ts
+from tracecore.core.client_time import ClientTimestampError, parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label, packing
 from tracecore.setup.label_templates import sample_pack_context
@@ -551,7 +551,9 @@ class TestGenerate(IsolatedTestCase):
 
 	def test_generate_uses_local_date_from_client_ts(self):
 		ready = make_t4_ready_set()
-		result = _generate(ready, client_ts=parse_client_ts("2026-10-21T00:30:00+07:00"))
+		client_ts = parse_client_ts("2026-10-21T00:30:00+07:00")
+		with patch.object(client_time, "utc_now", return_value=client_ts):  # giờ server = giờ trạm (F1)
+			result = _generate(ready, client_ts=client_ts)
 		cycle_id = result["pack"]["cycle_id"]
 		self.assertTrue(cycle_id.startswith("CY-261021-"), cycle_id)
 		pack = frappe.get_doc("Pack", cycle_id)
@@ -560,6 +562,39 @@ class TestGenerate(IsolatedTestCase):
 		self.assertEqual(frappe.utils.get_datetime(pack.client_ts), datetime(2026, 10, 20, 17, 30))
 		self.assertEqual(getdate(pack.expiry), getdate("2026-11-20"))
 		self.assertEqual(result["pack"]["packed_at"], "2026-10-21 00:30:00")
+
+	def test_generate_rejects_station_clock_skew(self):
+		# F1 (ADR-003): ngày trong Cycle ID, (11)/(17), hạn dùng và kiểm lô chỉ thị lấy từ client_ts, nên giờ trạm
+		# lệch giờ server quá tc_client_ts_max_skew_seconds (mặc định 300 s) thì không sinh (400, không ghi gì)
+		ready = make_t4_ready_set()
+		server = _utc_now()
+		for minutes in (6, -6):
+			with self.subTest(minutes=minutes):
+				with (
+					patch.object(client_time, "utc_now", return_value=server),
+					self.assertRaises(ClientTimestampError) as raised,
+				):
+					_generate(ready, client_ts=server + timedelta(minutes=minutes))
+				self.assertEqual(raised.exception.http_status_code, 400)
+				self.assertIn("6", str(raised.exception))
+				self.assertIn("R10", str(raised.exception))
+				self.assertEqual(_packs_of(ready.set_id), [])
+				self.assertIsNone(_unit(ready.set_id).active_cycle_id)
+				self.assertIsNone(_gate(ready.set_id, "T4"))
+		with patch.object(client_time, "utc_now", return_value=server):
+			result = _generate(ready, client_ts=server + timedelta(minutes=4))
+		self.assertRegex(result["pack"]["cycle_id"], CYCLE_ID)
+
+	def test_station_clock_skew_limit_from_site_config(self):
+		ready = make_t4_ready_set()
+		server = _utc_now()
+		with (
+			patch.dict(frappe.conf, {"tc_client_ts_max_skew_seconds": 60}),
+			patch.object(client_time, "utc_now", return_value=server),
+			self.assertRaises(ClientTimestampError),
+		):
+			_generate(ready, client_ts=server - timedelta(minutes=2))
+		self.assertEqual(_packs_of(ready.set_id), [])
 
 	def test_generate_locks_set_unit_before_reading_gates(self):
 		ready = make_t4_ready_set()
@@ -749,7 +784,9 @@ class TestReprintVoidLookup(IsolatedTestCase):
 class TestLabelContext(IsolatedTestCase):
 	def test_label_context_has_template_keys_and_display_formats(self):
 		ready = make_t4_ready_set(set_type_name="Bộ phẫu thuật", is_loaner=1)
-		result = _generate(ready, client_ts=parse_client_ts("2026-10-21T00:30:00+07:00"))
+		client_ts = parse_client_ts("2026-10-21T00:30:00+07:00")
+		with patch.object(client_time, "utc_now", return_value=client_ts):
+			result = _generate(ready, client_ts=client_ts)
 		pack = frappe.get_doc("Pack", result["pack"]["cycle_id"])
 		context = pack_label.label_context(pack)
 		self.assertEqual(set(context), set(sample_pack_context()))

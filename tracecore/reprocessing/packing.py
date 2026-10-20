@@ -19,7 +19,7 @@ from frappe import _
 from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import code_registry, extension, gs1, step_gate
+from tracecore.core import client_time, code_registry, extension, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -355,7 +355,8 @@ def generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cli
 	"""Sinh Cycle ID cho bộ tại T4 trong MỘT transaction; trả gói, HRI, ảnh DataMatrix và lệnh in.
 
 	`client_ts` là kết quả `parse_client_ts` (UTC, không múi giờ); `packed_at` = giờ hệ thống của nó (D13) và
-	quyết định ngày trong Cycle ID, AI (11) và hạn dùng. Khóa Set Unit trước mọi kiểm tra (hai lần sinh cùng bộ
+	quyết định ngày trong Cycle ID, AI (11) và hạn dùng, nên lệch giờ server quá `client_time.max_skew_seconds()`
+	→ ClientTimestampError (400) trước khi ghi gì (F1). Khóa Set Unit trước mọi kiểm tra (hai lần sinh cùng bộ
 	chạy lần lượt: lần sau gặp ACTIVE_CYCLE_EXISTS). Mọi lỗi (BlockedError hay khác) hoàn tác về savepoint rồi
 	ném lại: không còn Pack, dòng Code Registry, số series, cổng T4 hay thay đổi bảo dưỡng nào; Audit Log Reject
 	do RPC ghi sau đó. In không bao giờ làm mất Cycle ID (FR-M2-08.8): xem `pack_label.queue_label`.
@@ -363,6 +364,7 @@ def generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cli
 	Trả ``{"pack": {...}, "hri", "datamatrix_png_b64", "print": {"print_job", "status", "printer", "zpl",
 	"warning"}}``; ngày/giờ trong ``pack`` dạng ISO (``YYYY-MM-DD``, ``YYYY-MM-DD HH:MM:SS``), chữ giữ dấu.
 	"""
+	client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		return _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts)

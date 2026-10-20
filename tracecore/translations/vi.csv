@@ -58,6 +58,7 @@ Missing or invalid X-Idempotency-Key header.,Thiếu hoặc sai header X-Idempot
 X-Idempotency-Key {0} was already used for a different request.,X-Idempotency-Key {0} đã dùng cho một yêu cầu khác.,
 client_ts is required (ISO 8601 with offset).,Thiếu client_ts (ISO 8601 có múi giờ).,
 client_ts must be ISO 8601 with a UTC offset: {0},client_ts phải theo ISO 8601 có múi giờ: {0},
+"The station clock differs from the server clock by {0} minutes. Call R10 to check the station time (NTP), then try again.","Đồng hồ của trạm lệch đồng hồ máy chủ {0} phút. Gọi R10 kiểm tra giờ của trạm (NTP), rồi thử lại.",
 This method requires the role {0}.,Thao tác này cần vai trò {0}.,
 This agent is not registered for station {0}.,Agent này không được đăng ký cho trạm {0}.,
 Invalid print status: {0},Trạng thái in không hợp lệ: {0},
