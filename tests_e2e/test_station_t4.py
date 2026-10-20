@@ -103,6 +103,10 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	)  # bộ sạch, không nhắc
 	confirm_all = page.locator("[data-action='confirm-all']")
 	expect(confirm_all).to_be_enabled(timeout=20000)  # D1: bật khi lưới BOM đã hiển thị đủ và ảnh đã tải
+	# hạn dùng dự kiến do server tính (get_context), không theo ngày của trình duyệt
+	expected_expiry = page.locator("[data-region='pack'] p b")
+	expect(expected_expiry).to_have_text(re.compile(r"^\d{2}/\d{2}/\d{4}$"))
+	expected_text = expected_expiry.inner_text()
 
 	taps.tap(confirm_all)
 	scan(page, t4_demo["ci_steam"])
@@ -115,6 +119,8 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expect(label).to_contain_text("HẠN SỬ DỤNG")
 	expect(label).to_contain_text("TEST")
 	expect(label.locator(".tc-label-dm")).to_be_visible()
+	expect(label.locator(".tc-label-dm")).to_have_attribute("alt", re.compile(r"^DataMatrix CY-"))
+	expect(page.locator(".tc-res-grid")).to_contain_text(expected_text)
 	# Agent giả nhận đúng 1 job (không phụ thuộc agent trên CI)
 	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_be_visible(timeout=15000)
 	assert len(sent) == 1
@@ -204,6 +210,10 @@ def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
 	expect(waiting).to_contain_text("VT-NHAN-PLASMA")
 	expect(waiting).to_contain_text("CN-")
 	assert sent == [], "không được in tạm nhãn plasma trên cuộn nhãn hấp"
+	# nhãn còn chờ máy in thì chưa in lại được: nút khóa kèm lý do (không tạo nhãn thứ hai cùng Cycle ID)
+	reprint = page.locator("[data-action='reprint']")
+	expect(reprint).to_be_disabled()
+	expect(page.locator(".tc-actionsbar")).to_contain_text("Chỉ in lại được sau khi nhãn đang chờ đã được in")
 	assert_touch_and_font(page)
 
 	# Đổi cuộn: quét mã cuộn plasma -> alert-info, đúng 1 job chờ được giải phóng và gửi tới agent (AC-9)
@@ -212,4 +222,5 @@ def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
 	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_be_visible(timeout=15000)
 	assert len(sent) == 1, f"phải giải phóng đúng 1 job, thực tế {len(sent)}"
 	assert sent[0].get("print_job") and sent[0].get("zpl")
+	expect(reprint).to_be_enabled()
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
