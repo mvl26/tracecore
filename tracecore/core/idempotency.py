@@ -62,6 +62,19 @@ def _stored_response(key, endpoint, request_hash, for_update=False):
 	return True, frappe.parse_json(row.response) if row.response else None
 
 
+def _apply_stored_status(response):
+	"""Response đã lưu là từ chối nghiệp vụ mang ``error.http_status`` (4xx/5xx) thì đặt lại mã HTTP đó.
+
+	Lần đầu RPC tự đặt mã (`reject_block`); trả lời lặp lại không chạy hàm nên phải đặt lại, nếu không kiosk gửi
+	lại sẽ thấy 200 cho cùng một từ chối. Response khác (thành công, `ok: false` kiểu FEAT-001 không có mã) giữ 200.
+	"""
+	error = response.get("error") if isinstance(response, dict) and response.get("ok") is False else None
+	status = error.get("http_status") if isinstance(error, dict) else None
+	is_http_error = isinstance(status, int) and not isinstance(status, bool) and 400 <= status <= 599
+	if is_http_error and getattr(frappe.local, "request", None):
+		frappe.local.response["http_status_code"] = status
+
+
 def idempotent(fn):
 	"""Decorator cho whitelisted method: ``@frappe.whitelist()`` đặt bên ngoài."""
 	endpoint = f"{fn.__module__}.{fn.__qualname__}"
@@ -77,6 +90,7 @@ def idempotent(fn):
 
 		found, response = _stored_response(key, endpoint, request_hash)
 		if found:
+			_apply_stored_status(response)
 			return response
 
 		savepoint = "tc_idem_" + key.replace("-", "")[:16]
@@ -100,7 +114,9 @@ def idempotent(fn):
 			if frappe.local.message_log and key in str(frappe.local.message_log[-1]):
 				frappe.clear_last_message()  # msgprint "... already exists" do db_insert thêm
 			# REPEATABLE READ: đọc có khóa để thấy dòng vừa commit, không đọc snapshot cũ
-			return _stored_response(key, endpoint, request_hash, for_update=True)[1]
+			response = _stored_response(key, endpoint, request_hash, for_update=True)[1]
+			_apply_stored_status(response)
+			return response
 
 		try:
 			result = frappe.call(fn, *args, **kwargs)

@@ -261,6 +261,14 @@ def make_printer(station, label_item, host="", name="Test printer", supports_uni
 	)
 
 
+def deactivate_printers(station):
+	"""Tắt mọi máy in đang hoạt động của `station`: site test có thể còn máy in từ lần chạy/dữ liệu mẫu khác.
+
+	Gọi trước khi tạo máy in của test để biết chính xác trạm có bao nhiêu máy in hoạt động.
+	"""
+	frappe.db.set_value("Printer", {"station": station}, "is_active", 0)
+
+
 def make_roll(label_item):
 	"""Cấp mã cuộn nhãn `CN-#####` cho Item nhãn và ghi Code Registry (D2: FEAT-005 cấp mã thật); trả mã cuộn."""
 	label_item = _ref_name(label_item)

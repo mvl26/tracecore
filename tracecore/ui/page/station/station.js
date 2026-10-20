@@ -175,6 +175,10 @@ class TraceCoreStation {
 			});
 			const data = await response.json().catch(() => ({}));
 			if (!response.ok) {
+				// Từ chối nghiệp vụ (404/409/422) vẫn mang body {ok: false, error}: trả để màn hình hiện alert,
+				// không coi là lỗi máy chủ (lỗi khác như 403, 5xx, khóa idempotent sai giữ nguyên đường ném lỗi)
+				const rejected = response.status >= 400 && response.status < 500;
+				if (rejected && data.message && data.message.ok === false) return data.message;
 				const error = new Error(`HTTP ${response.status}`);
 				error.status = response.status;
 				throw error;
