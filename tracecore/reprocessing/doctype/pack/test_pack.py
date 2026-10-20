@@ -38,6 +38,12 @@ def _set_unit(code="PKT"):
 	return make_set_unit(make_set_type(code).name)
 
 
+def _packing_save(doc):
+	"""Lưu như dịch vụ đóng gói (`packing.reprint/void`): cờ tc_packing mở khóa 4 trường sau ghi sổ."""
+	doc.flags.tc_packing = True
+	doc.save()
+
+
 class TestPack(IsolatedTestCase):
 	def test_pack_status_options_wf02(self):
 		field = frappe.get_meta("Pack").get_field("status")
@@ -173,7 +179,7 @@ class TestPack(IsolatedTestCase):
 		doc.status = "Void"
 		doc.void_reason = "Label Damaged"
 		doc.void_note = "Nhãn bị nhòe"
-		doc.save()
+		_packing_save(doc)
 		row = frappe.db.get_value(
 			"Pack",
 			doc.name,
@@ -191,12 +197,56 @@ class TestPack(IsolatedTestCase):
 			},
 		)
 
+	def test_packing_fields_change_only_through_the_packing_service(self):
+		# Desk (System Manager/R04 có quyền write) không được tự đổi trạng thái gói, lý do hủy hay số lần in
+		doc = make_pack(_set_unit())
+		doc.reload()
+		doc.status = "Void"
+		doc.void_reason = "Torn"
+		_packing_save(doc)
+
+		for fieldname, value in (
+			("status", "Packed"),
+			("void_reason", "Expired"),
+			("void_note", "sửa tay"),
+			("label_print_count", 5),
+		):
+			doc = frappe.get_doc("Pack", doc.name)
+			doc.set(fieldname, value)
+			with self.assertRaises(frappe.ValidationError, msg=fieldname) as raised:
+				doc.save()
+			self.assertIn(fieldname, str(raised.exception))
+		row = frappe.db.get_value(
+			"Pack", doc.name, ["status", "void_reason", "void_note", "label_print_count"], as_dict=True
+		)
+		self.assertEqual(
+			row, {"status": "Void", "void_reason": "Torn", "void_note": None, "label_print_count": 0}
+		)
+		# lưu không đổi gì vẫn được
+		frappe.get_doc("Pack", doc.name).save()
+
+	def test_r04_desk_save_cannot_reopen_a_void_pack(self):
+		doc = make_pack(_set_unit("PKV"))
+		doc.reload()
+		doc.status = "Void"
+		doc.void_reason = "Label Damaged"
+		_packing_save(doc)
+		author = make_user("pack-r04-desk@example.com", roles=["TC R04"])
+		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.set_user(author)
+		doc = frappe.get_doc("Pack", doc.name)
+		doc.status = "Packed"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+		frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.get_value("Pack", doc.name, "status"), "Void")
+
 	def test_void_needs_a_reason(self):
 		doc = make_pack(_set_unit())
 		doc.reload()
 		doc.status = "Void"
 		with self.assertRaises(frappe.ValidationError):
-			doc.save()
+			_packing_save(doc)
 		self.assertEqual(frappe.db.get_value("Pack", doc.name, "status"), "Packed")
 
 	def test_status_and_void_reason_reject_unknown_values(self):
@@ -204,12 +254,12 @@ class TestPack(IsolatedTestCase):
 		doc.reload()
 		doc.status = "Lost"
 		with self.assertRaises(frappe.ValidationError):
-			doc.save()
+			_packing_save(doc)
 		doc.reload()
 		doc.status = "Void"
 		doc.void_reason = "Dropped"
 		with self.assertRaises(frappe.ValidationError):
-			doc.save()
+			_packing_save(doc)
 
 	def test_child_tables_are_saved_with_the_pack(self):
 		su = _set_unit()
@@ -247,7 +297,7 @@ class TestPack(IsolatedTestCase):
 		doc.reload()
 		doc.status = "Void"
 		doc.void_reason = "Torn"
-		doc.save()
+		_packing_save(doc)
 		actions = frappe.get_all(
 			"Audit Log",
 			filters={"ref_doctype": "Pack", "ref_name": doc.name},
@@ -301,7 +351,7 @@ class TestPack(IsolatedTestCase):
 		self.assertEqual(frappe.db.get_value("Pack", doc.name, "docstatus"), 1)
 		doc.reload()
 		doc.label_print_count = 1
-		doc.save()
+		_packing_save(doc)
 		self.assertEqual(frappe.db.get_value("Pack", doc.name, "label_print_count"), 1)
 
 		doc.reload()

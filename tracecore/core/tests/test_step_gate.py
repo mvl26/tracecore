@@ -1,3 +1,4 @@
+from functools import partial
 from unittest.mock import patch
 
 import frappe
@@ -351,6 +352,39 @@ class TestStepGateLocking(FrappeTestCase):
 		queries = self._capture(step_gate.record, su, "T4", "Fail")
 		self._assert_gate_reads_are_locking(queries)
 		self.assertEqual(_gate(su, "T5"), {"result": "Pending", "redo_count": 0})
+
+	def test_check_for_update_reads_state_and_gates_with_locking_reads(self):
+		# packing.generate gọi check(for_update=True) sau khi khóa Set Unit: snapshot REPEATABLE READ có thể cũ
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		step_gate.record(su, "T3", "Pass")
+		queries = self._capture(partial(step_gate.check, for_update=True), su, "T4")
+		unit_reads = self._selects_on(queries, "Set Unit")
+		self.assertTrue(unit_reads)
+		self.assertFalse([q for q in unit_reads if "for update" not in q.lower()])
+		self._assert_gate_reads_are_locking(queries)
+		self.assertIn(f"{su}-C1-T3", " ".join(self._selects_on(queries, "Step Gate Result")))
+
+	@bru("BRU-FLOW-004")
+	def test_check_for_update_gives_the_same_answers(self):
+		su = make_set_unit().name
+		self.assertEqual(step_gate.check(su, "T4", for_update=True).code, "STATUS_INVALID_FOR_STATION")
+		step_gate.start_cycle(su)
+		self.assertEqual(step_gate.check(su, "T4", for_update=True).code, "GATE_PREV_NOT_PASSED")
+		step_gate.record(su, "T3", "Pass")
+		self.assertIsNone(step_gate.check(su, "T4", for_update=True))
+		self.assertIsNone(step_gate.check(su, "T1", for_update=True))
+		with self.assertRaises(frappe.DoesNotExistError):
+			step_gate.check("NO-SUCH-SET", "T4", for_update=True)
+
+	def test_check_default_keeps_plain_reads(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		step_gate.record(su, "T3", "Pass")
+		queries = self._capture(step_gate.check, su, "T4")
+		self.assertTrue(self._selects_on(queries, "Set Unit"))
+		self.assertTrue(self._selects_on(queries, "Step Gate Result"))
+		self.assertFalse([q for q in queries if "for update" in q.lower()])
 
 	def test_gates_display_keeps_plain_reads(self):
 		su = make_set_unit().name

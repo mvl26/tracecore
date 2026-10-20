@@ -316,6 +316,54 @@ def next_free_test_cycle_id(day=None):
 	frappe.throw("No free test Cycle ID left")
 
 
+T4_STATION = "TR-004"
+_SET_TYPE_KWARGS = ("type_code", "set_type_name", "gtin", "shelf_life_days", "tray_image")
+
+
+def _free_type_code(prefix="T4"):
+	"""Mã loại bộ chưa dùng `T4NNNN`: mỗi bộ sẵn sàng T4 có loại bộ (và BOM) riêng."""
+	for serial in range(1, 10000):
+		code = f"{prefix}{serial:04d}"
+		if not frappe.db.exists("Instrument Set Type", code):
+			return code
+	frappe.throw("No free set type code left")
+
+
+def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_printer=True, **set_kwargs):
+	"""Bộ sẵn sàng đóng gói tại T4 (TR-004): đã qua T1..T3 Đạt trong chu trình 1.
+
+	Loại bộ mới (mã `T4NNNN`, GTIN test, BOM phiên bản 1 = `bom`, loại gói mặc định `make_pack_type()`
+	30 ngày), lô chỉ thị loại 5 đúng phương pháp, và (nếu `with_printer`) máy in tại TR-004 đang lắp nhãn
+	đúng phương pháp. `set_kwargs`: khóa của loại bộ (`type_code, set_type_name, gtin, shelf_life_days,
+	tray_image`) đi vào `make_set_type`, còn lại (`max_cycles, is_loaner, department`…) vào `make_set_unit`.
+	Trả `frappe._dict(set_id, set_type, gtin, pack_type, ci_batch, printer, instruments)`.
+	"""
+	type_kwargs = {key: set_kwargs.pop(key) for key in _SET_TYPE_KWARGS if key in set_kwargs}
+	pack_type = make_pack_type()
+	set_type = make_set_type(
+		type_kwargs.pop("type_code", None) or _free_type_code(),
+		method=method,
+		default_pack_type=pack_type,
+		**type_kwargs,
+	)
+	make_bom(set_type, bom)
+	set_unit = make_set_unit(set_type.name, **set_kwargs)
+	make_cycle(set_unit)
+	printer = None
+	if with_printer:
+		steam_label, plasma_label = make_label_items()
+		printer = make_printer(T4_STATION, steam_label if method == "Steam" else plasma_label)
+	return frappe._dict(
+		set_id=set_unit.name,
+		set_type=set_type.name,
+		gtin=set_type.gtin,
+		pack_type=pack_type,
+		ci_batch=make_ci_batch(method),
+		printer=printer,
+		instruments=[code for code, _qty in bom],
+	)
+
+
 def make_pack(set_unit, cycle_id=None, submit=True, **fields):
 	"""Tạo Pack cho bộ `set_unit` (như `packing.generate` sẽ làm): đặt tên bằng `insert(set_name=…)`.
 

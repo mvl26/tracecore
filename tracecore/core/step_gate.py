@@ -12,7 +12,8 @@ chạy REPEATABLE READ: đọc thường dùng snapshot mở từ lần đọc �
 ``@idempotent``), không thấy dòng request kia vừa commit. Vì vậy mọi thứ ``record`` dựa vào để quyết định (Set Unit,
 dòng cổng, kết quả cả chu trình) đều đọc có khóa. Đọc có khóa theo TỪNG khóa chính (``name = …``), không dùng
 ``IN (…)`` hay lọc theo cột không chỉ mục: các dạng đó khóa khoảng hoặc cả bảng và làm hai bộ khác nhau chặn hoặc
-deadlock lẫn nhau. ``check`` và ``gates`` chỉ để hiển thị/kiểm nhanh nên đọc thường.
+deadlock lẫn nhau. ``gates`` và ``check`` mặc định chỉ để hiển thị/kiểm nhanh nên đọc thường; nơi kiểm rồi ghi ngay
+trong cùng transaction (``packing.generate``) gọi ``check(…, for_update=True)`` sau khi đã khóa Set Unit.
 """
 
 import frappe
@@ -44,9 +45,9 @@ def _set_unit(set_unit, for_update=False):
 	return frappe.get_doc("Set Unit", set_unit, for_update=for_update)
 
 
-def _state(set_unit):
-	"""(status, current_cycle_no) của bộ; bộ không có → DoesNotExistError."""
-	row = frappe.db.get_value("Set Unit", set_unit, ["status", "current_cycle_no"])
+def _state(set_unit, for_update=False):
+	"""(status, current_cycle_no) của bộ; bộ không có → DoesNotExistError. for_update: đọc có khóa."""
+	row = frappe.db.get_value("Set Unit", set_unit, ["status", "current_cycle_no"], for_update=for_update)
 	if not row:
 		frappe.throw(_("Set Unit {0} not found.").format(set_unit), frappe.DoesNotExistError)
 	return row[0], cint(row[1])
@@ -98,13 +99,15 @@ def start_cycle(set_unit):
 	return cycle_no
 
 
-def check(set_unit, step):
+def check(set_unit, step, for_update=False):
 	"""Lý do chặn bộ vào bước `step`, hoặc None nếu được vào (FR-M2-00.1, FR-M2-25, BRU-FLOW-002/004).
 
 	Thứ tự: trạng thái Set Unit hợp với trạm → cổng liền trước của chu trình hiện hành phải Đạt.
+	for_update: đọc Set Unit và các dòng cổng có khóa (theo khóa chính) để thấy bản mới nhất đã commit — dùng khi
+	nơi gọi đã khóa Set Unit và sẽ ghi ngay sau đó (snapshot REPEATABLE READ có thể cũ, xem docstring module).
 	"""
 	_check_step(step)
-	status, cycle_no = _state(set_unit)
+	status, cycle_no = _state(set_unit, for_update)
 	allowed = STATION_STATUSES.get(step)
 	if allowed and status not in allowed:
 		return Block(
@@ -122,7 +125,7 @@ def check(set_unit, step):
 	if index == 0:
 		return None
 	previous = STEPS[index - 1]
-	result = _results(set_unit, cycle_no).get(previous, (PENDING, 0))[0]
+	result = _results(set_unit, cycle_no, for_update).get(previous, (PENDING, 0))[0]
 	if result != "Pass":
 		return Block(
 			"GATE_PREV_NOT_PASSED",
