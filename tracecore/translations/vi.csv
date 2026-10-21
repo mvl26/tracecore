@@ -634,3 +634,52 @@ The roll could not be loaded.,Không nạp được cuộn nhãn.,
 "Check the roll code and your permissions, then try again.",Kiểm tra mã cuộn và quyền của bạn rồi thử lại.,
 {0}: Is Zone cannot be changed after the record is created.,{0}: không đổi được ô Là khu sau khi đã tạo.,
 Label printers,Máy in nhãn,
+Equipment,Thiết bị,
+Equipment Name,Tên thiết bị,Equipment
+Equipment Type,Loại thiết bị,Equipment
+Status,Trạng thái,Equipment
+Manufacturer,Hãng sản xuất,Equipment
+Model,Model,Equipment
+Serial No,Số sê-ri,Equipment
+Capacity,Dung tích / công suất,Equipment
+Entry Zone,Khu cửa vào,Equipment
+Exit Zone,Khu cửa ra,Equipment
+Is Connected,Có kết nối dữ liệu,Equipment
+Has Printout,Có bản in kết quả,Equipment
+Commissioned On,Ngày đưa vào sử dụng,Equipment
+Inspection Due,Hạn kiểm định,Equipment
+Asset,Tài sản,Equipment
+Depreciation,Khấu hao,Equipment
+Purchase Value,Nguyên giá,Equipment
+Depreciation Years,Số năm khấu hao,Equipment
+Planned Loads per Year,Số mẻ kế hoạch mỗi năm,Equipment
+Depreciation per Load,Khấu hao mỗi mẻ,Equipment
+Safe Range,Dải an toàn,Equipment
+Safe Temperature Min (°C),Nhiệt độ an toàn tối thiểu (°C),Equipment
+Safe Temperature Max (°C),Nhiệt độ an toàn tối đa (°C),Equipment
+Safe Pressure Max (bar),Áp suất an toàn tối đa (bar),Equipment
+Retirement,Ngừng sử dụng,Equipment
+Retired On,Ngày ngừng sử dụng,Equipment
+Retired Reason,Lý do ngừng sử dụng,Equipment
+Steam Sterilizer,Máy hấp hơi nước,Equipment
+Washer-Disinfector,Máy rửa khử khuẩn,Equipment
+Plasma Sterilizer,Máy tiệt khuẩn plasma,Equipment
+Sealer,Máy hàn túi,Equipment
+Laundry Washer,Máy giặt,Equipment
+Dryer,Máy sấy,Equipment
+Ultrasonic Cleaner,Máy rửa siêu âm,Equipment
+Ready,Sẵn sàng,Equipment
+Locked,Đã khóa,Equipment
+Repair,Đang sửa chữa,Equipment
+Retired,Ngừng sử dụng,Equipment
+Serial No is required.,Cần nhập số sê-ri.,
+Serial No {0} is already used by equipment {1}.,Số sê-ri {0} đã được dùng cho thiết bị {1}.,
+Purchase Value cannot be negative.,Nguyên giá không được âm.,
+Depreciation Years must be at least 1.,Số năm khấu hao phải từ 1 trở lên.,
+Planned Loads per Year must be at least 1.,Số mẻ kế hoạch mỗi năm phải từ 1 trở lên.,
+Safe Temperature Min cannot be above Safe Temperature Max.,Nhiệt độ an toàn tối thiểu không được lớn hơn tối đa.,
+A reason is required to retire equipment.,Cần nhập lý do khi cho thiết bị ngừng sử dụng.,
+Retired On cannot be in the future.,Ngày ngừng sử dụng không được ở tương lai.,
+Retired equipment cannot be put back into use.,Thiết bị đã ngừng sử dụng không dùng lại được.,
+Equipment status and retirement fields are changed only by the equipment service.,Trạng thái và thông tin ngừng sử dụng của thiết bị chỉ do dịch vụ thiết bị đổi.,
+Invalid equipment status {0}.,Trạng thái thiết bị {0} không hợp lệ.,

@@ -152,6 +152,35 @@ def make_assembly_record(set_unit, result="Pass", submit=True, notes=None):
 	return doc
 
 
+def make_equipment(
+	name="Máy hấp test",
+	equipment_type="Steam Sterilizer",
+	serial="SN-001",
+	zone_in="ZONE-CLEAN",
+	zone_out="ZONE-STERILE",
+	purchase_value=600000000,
+	years=10,
+	loads=3000,
+	**kwargs,
+):
+	"""Tạo Equipment (mã TB-#### do hệ thống sinh). `kwargs` ghi đè bất kỳ trường nào."""
+	values = {
+		"doctype": "Equipment",
+		"equipment_name": name,
+		"equipment_type": equipment_type,
+		"manufacturer": "Test Maker",
+		"model": "TM-1",
+		"serial_no": serial,
+		"zone_in": zone_in,
+		"zone_out": zone_out,
+		"purchase_value": purchase_value,
+		"depreciation_years": years,
+		"planned_loads_year": loads,
+		**kwargs,
+	}
+	return frappe.get_doc(values).insert()
+
+
 def make_cycle(set_unit, passed=("T1", "T2", "T3")):
 	"""Mở chu trình mới cho bộ rồi ghi các bước `passed` Pass; trả cycle_no.
 
