@@ -1027,3 +1027,5 @@ A retired instrument cannot be returned to use. Declare a new instrument if need
 Instrument is in a current BOM,Dụng cụ đang có trong BOM hiện hành,
 Instrument {0} is in the current BOM of: {1}.,Dụng cụ {0} có trong BOM hiện hành của: {1}.,
 Confirm to retire it anyway; review these BOMs afterwards.,"Xác nhận để vẫn ngừng sử dụng; sau đó rà soát các BOM này.",
+Last Counted Release (Cycle ID),Lần giải phóng đã đếm (Cycle ID),
+Cycle ID of the last release counted in Cycles Since Maintenance; a repeated release of the same Cycle ID is not counted again.,Cycle ID của lần giải phóng gần nhất đã cộng vào số chu trình từ lần bảo dưỡng; giải phóng lặp lại cùng Cycle ID không được đếm thêm.,

@@ -329,6 +329,79 @@ class TestInitCounter(IsolatedTestCase):
 		maintenance.init_counter(set_unit.name, "TH-HIST", "9999", today(), "x")
 		self.assertEqual(_counter(set_unit, "TH-HIST"), (9999, 0))
 
+	def test_init_counter_rejects_odd_numbers_without_crashing(self):
+		# '²', '①' qua được str.isdigit() nhưng int() lỗi; chuỗi > 4300 chữ số làm int() lỗi → phải là 422, không 500
+		set_unit, _set_type = self._setup("TH-ODD", "THO")
+		for value in (
+			"²",
+			"①",
+			"٣",
+			"1" * 5000,
+			10**5000,
+			-1,
+			"-1",
+			" -5 ",
+			True,
+			False,
+			chr(0xFF11) + chr(0xFF12),  # chữ số toàn độ rộng: isdecimal() nhưng không ASCII
+			"0000001",
+		):
+			self.assertEqual(
+				self._code(
+					lambda value=value: maintenance.init_counter(set_unit.name, "TH-ODD", value, None, "x")
+				),
+				"COUNTER_INIT_INVALID",
+				type(value).__name__ if isinstance(value, int) else value[:40],
+			)
+		self.assertIsNone(_counter(set_unit, "TH-ODD"))
+		maintenance.init_counter(set_unit.name, "TH-ODD", " 0042 ", None, "x")
+		self.assertEqual(_counter(set_unit, "TH-ODD"), (42, 0))
+
+	def test_init_counter_concurrent_first_insert(self):
+		# request song song vừa tạo dòng (chưa có lịch sử T4) giữa lúc kiểm và lúc insert → không DuplicateEntryError
+		from unittest.mock import patch
+
+		set_unit, _set_type = self._setup("TH-RACE", "THQ")
+		real = maintenance._counter_name
+		calls = []
+
+		def racing(unit, instrument, for_update=False):
+			if not calls:
+				calls.append(1)
+				make_maintenance(set_unit, "TH-RACE", cycles_since=3)
+				return None
+			return real(unit, instrument, for_update=for_update)
+
+		with patch.object(maintenance, "_counter_name", side_effect=racing):
+			name = maintenance.init_counter(set_unit.name, "TH-RACE", 7, None, "x")
+		self.assertEqual(name, f"{set_unit.name}-TH-RACE")
+		self.assertEqual(_counter(set_unit, "TH-RACE"), (7, 0))
+
+		# dòng song song đã có lịch sử T4 → vẫn bị chặn như bình thường
+		other = make_set_unit(_set_type.name)
+		calls.clear()
+
+		def racing_history(unit, instrument, for_update=False):
+			if not calls:
+				calls.append(1)
+				make_maintenance(other, "TH-RACE", cycles_since=3, deferred_count=1)
+				return None
+			return real(unit, instrument, for_update=for_update)
+
+		with patch.object(maintenance, "_counter_name", side_effect=racing_history):
+			code = self._code(lambda: maintenance.init_counter(other.name, "TH-RACE", 7, None, "x"))
+		self.assertEqual(code, "COUNTER_INIT_INVALID")
+		self.assertEqual(_counter(other, "TH-RACE"), (3, 1))
+
+	def test_init_counter_allowed_on_retired_instrument(self):
+		# quyết định: dụng cụ Ngừng sử dụng vẫn khởi tạo được (bộ còn chứa nó trong BOM hiện hành, nhập bù sổ giấy)
+		from tracecore.instrument import catalog
+
+		set_unit, _set_type = self._setup("TH-RET", "THT")
+		catalog.retire("TH-RET", "Hỏng", confirm=1)
+		maintenance.init_counter(set_unit.name, "TH-RET", 6, None, "Sổ cũ")
+		self.assertEqual(_counter(set_unit, "TH-RET"), (6, 0))
+
 
 class TestSetReleased(IsolatedTestCase):
 	@bru("BRU-REP-014")
@@ -375,3 +448,84 @@ class TestSetReleased(IsolatedTestCase):
 			{"set_unit": set_unit.name, "set_type": set_type.name, "bom_version": 1},
 		)
 		self.assertEqual(_counter(set_unit, "TH-HK"), (1, 0))
+
+	@bru("BRU-REP-014")
+	def test_on_set_released_same_cycle_counts_once(self):
+		# FEAT-023 gọi lại bước giải phóng cho cùng Cycle ID → mỗi dụng cụ chỉ +1 một lần
+		make_instrument("TH-C1", interval=5)
+		make_instrument("TH-C2", interval=8)
+		set_unit, set_type = _scene("THC", [("TH-C1", 1), ("TH-C2", 1)], {"TH-C1": (2, 1)})
+		release = {
+			"set_unit": set_unit.name,
+			"set_type": set_type.name,
+			"bom_version": 1,
+			"cycle_id": "CY-0001",
+		}
+
+		maintenance.on_set_released(release)
+		maintenance.on_set_released(dict(release))
+
+		self.assertEqual(_counter(set_unit, "TH-C1"), (3, 1))
+		self.assertEqual(_counter(set_unit, "TH-C2"), (1, 0))  # dòng mới cũng ghi Cycle ID
+		self.assertEqual(
+			frappe.db.get_value(
+				"Instrument Maintenance",
+				{"set_unit": set_unit.name, "instrument": "TH-C2"},
+				"last_release_cycle",
+			),
+			"CY-0001",
+		)
+
+		# Cycle ID khác → tăng tiếp, rồi gọi lại Cycle ID mới đó cũng chỉ đếm một lần
+		maintenance.on_set_released({**release, "cycle_id": "CY-0002"})
+		maintenance.on_set_released({**release, "cycle_id": "CY-0002"})
+		self.assertEqual(_counter(set_unit, "TH-C1"), (4, 1))
+		self.assertEqual(_counter(set_unit, "TH-C2"), (2, 0))
+
+	def test_on_set_released_concurrent_same_cycle_counts_once(self):
+		# request song song cùng Cycle ID vừa tạo dòng giữa lúc kiểm và lúc insert → không cộng lần hai
+		from unittest.mock import patch
+
+		make_instrument("TH-CR", interval=5)
+		set_unit, set_type = _scene("THW", [("TH-CR", 1)])
+		real = maintenance._counter_name
+		calls = []
+
+		def racing(unit, instrument, for_update=False):
+			if not calls:
+				calls.append(1)
+				row = make_maintenance(set_unit, "TH-CR", cycles_since=1)
+				row.last_release_cycle = "CY-0300"
+				row.flags.tc_maintenance = True
+				row.save()
+				return None
+			return real(unit, instrument, for_update=for_update)
+
+		release = {
+			"set_unit": set_unit.name,
+			"set_type": set_type.name,
+			"bom_version": 1,
+			"cycle_id": "CY-0300",
+		}
+		with patch.object(maintenance, "_counter_name", side_effect=racing):
+			maintenance.on_set_released(release)
+		self.assertEqual(_counter(set_unit, "TH-CR"), (1, 0))
+
+	def test_on_set_released_without_cycle_id_is_not_deduplicated(self):
+		# hợp đồng: ctx phải có cycle_id; thiếu thì giữ hành vi cũ (+1 mỗi lần gọi) và không đổi last_release_cycle
+		make_instrument("TH-N1", interval=5)
+		set_unit, set_type = _scene("THN", [("TH-N1", 1)])
+		release = {"set_unit": set_unit.name, "set_type": set_type.name, "bom_version": 1}
+		maintenance.on_set_released({**release, "cycle_id": "CY-0100"})
+		for missing in ({}, {"cycle_id": None}, {"cycle_id": "  "}):
+			maintenance.on_set_released({**release, **missing})
+		self.assertEqual(_counter(set_unit, "TH-N1"), (4, 0))
+		self.assertEqual(
+			frappe.db.get_value(
+				"Instrument Maintenance",
+				{"set_unit": set_unit.name, "instrument": "TH-N1"},
+				"last_release_cycle",
+			),
+			"CY-0100",
+		)
+		self.assertIn("cycle_id", maintenance.on_set_released.__doc__)

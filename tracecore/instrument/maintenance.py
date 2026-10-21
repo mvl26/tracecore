@@ -19,7 +19,7 @@ Quy tắc ngưỡng (D5), so sánh bằng số nguyên để không lệch do s�
 
 import frappe
 from frappe import _
-from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime, today
+from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, now_datetime, today
 
 from tracecore.core import gs1
 from tracecore.core.errors import Block, BlockedError
@@ -288,6 +288,7 @@ def apply_pack(pack_doc, ctx):
 # --- Khởi tạo bộ đếm và tăng khi giải phóng (FEAT-014 A-06 I6, I16) ------------------------------
 
 MAX_INIT_CYCLES = 9999
+MAX_INIT_CYCLES_CHARS = 6  # chuỗi số chu trình dài hơn (kể cả số 0 đầu) bị từ chối trước khi gọi int()
 INIT_SAVEPOINT = "tc_maint_init"
 
 
@@ -303,13 +304,20 @@ def init_block(reason):
 
 
 def _init_cycles(value):
-	"""Số chu trình 0 đến 9999 (int hoặc chuỗi chữ số); khác đi → None."""
+	"""Số chu trình 0 đến 9999 (int hoặc chuỗi chữ số ASCII 0-9, tối đa 6 ký tự); khác đi → None.
+
+	Không dùng ``str.isdigit()``: ``'²'``, ``'①'`` qua được nhưng ``int()`` lỗi; chuỗi rất dài làm ``int()`` lỗi
+	(giới hạn 4300 chữ số của Python). Mọi giá trị lạ phải thành ``COUNTER_INIT_INVALID`` (422), không 500.
+	"""
 	if isinstance(value, bool):
 		return None
 	if isinstance(value, int):
 		number = value
-	elif isinstance(value, str) and value.strip().isdigit():
-		number = int(value.strip())
+	elif isinstance(value, str):
+		text = value.strip()
+		if not (text and len(text) <= MAX_INIT_CYCLES_CHARS and text.isascii() and text.isdecimal()):
+			return None
+		number = int(text)
 	else:
 		return None
 	return number if 0 <= number <= MAX_INIT_CYCLES else None
@@ -400,22 +408,33 @@ def init_counter(set_unit: str, instrument: str, cycles_since, last_maint_on, re
 				_("Set {0} does not contain instrument {1} in its current BOM.").format(unit.name, instrument)
 			)
 		)
-	name = frappe.db.get_value(
-		"Instrument Maintenance", {"set_unit": unit.name, "instrument": instrument}, "name"
-	)
-	if name:
-		row = frappe.get_doc("Instrument Maintenance", name, for_update=True)
-		if _has_t4_history(row):
-			raise BlockedError(
-				init_block(
-					_(
-						"Instrument {0} in set {1} already has maintenance history at packing (T4); its counter can no longer be initialized."
-					).format(instrument, unit.name)
-				)
-			)
-	else:
+	# Dụng cụ Ngừng sử dụng (status Retired) vẫn khởi tạo được: bộ còn chứa nó trong BOM hiện hành thì bộ đếm vẫn có
+	# nghĩa ở T4 (FEAT-014 Task 4 fix, quyết định của dev lead; I6 không đặt điều kiện trạng thái dụng cụ).
+	name = _counter_name(unit.name, instrument, for_update=True)
+	if not name:
 		row = frappe.get_doc(
-			{"doctype": "Instrument Maintenance", "set_unit": unit.name, "instrument": instrument}
+			{
+				"doctype": "Instrument Maintenance",
+				"set_unit": unit.name,
+				"instrument": instrument,
+				"cycles_since_maint": cycles,
+				"last_maint_on": maint_on,
+			}
+		)
+		row.flags.tc_maintenance = True
+		row.flags.tc_audit_reason = reason
+		if _try_insert(row):
+			return row.name
+		# request song song vừa tạo dòng: khóa dòng đó rồi kiểm lịch sử T4 như dòng có sẵn
+		name = _counter_name(unit.name, instrument, for_update=True)
+	row = frappe.get_doc("Instrument Maintenance", name, for_update=True)
+	if _has_t4_history(row):
+		raise BlockedError(
+			init_block(
+				_(
+					"Instrument {0} in set {1} already has maintenance history at packing (T4); its counter can no longer be initialized."
+				).format(instrument, unit.name)
+			)
 		)
 	row.cycles_since_maint = cycles
 	row.last_maint_on = maint_on
@@ -425,15 +444,42 @@ def init_counter(set_unit: str, instrument: str, cycles_since, last_maint_on, re
 	return row.name
 
 
+def _counter_name(set_unit, instrument, for_update=False):
+	return frappe.db.get_value(
+		"Instrument Maintenance",
+		{"set_unit": set_unit, "instrument": instrument},
+		"name",
+		for_update=for_update,
+	)
+
+
+def _try_insert(row) -> bool:
+	"""Insert dòng Instrument Maintenance mới trong savepoint; trùng (request song song vừa tạo) → hoàn tác, ``False``."""
+	frappe.db.savepoint(INIT_SAVEPOINT)
+	try:
+		row.insert(ignore_permissions=True)
+		return True
+	except frappe.DuplicateEntryError:
+		frappe.db.rollback(save_point=INIT_SAVEPOINT)
+		frappe.clear_last_message()
+		return False
+
+
 def on_set_released(ctx: dict) -> None:
 	"""Hook ``tracecore_after_release`` (FR-M1-09.2, A-06 I16): mẻ giải phóng Đạt → +1 chu trình cho bộ.
 
-	``ctx = {"set_unit", "set_type", "bom_version"}`` (BOM áp dụng của gói; thiếu ``bom_version`` thì lấy BOM hiện
-	hành). Mỗi dụng cụ khác nhau có ngưỡng hiệu lực được +1 ``cycles_since_maint`` đúng một lần (số lượng trong BOM
-	không tính); chưa có dòng thì tạo với 1. Dụng cụ không ngưỡng không tạo dòng. Khóa dòng ``for_update``.
-	FEAT-023 gọi qua ``tracecore.core.extension.run``.
+	Hợp đồng: ``ctx = {"set_unit", "set_type", "bom_version", "cycle_id"}``; ``cycle_id`` (Cycle ID của gói được giải
+	phóng) là **bắt buộc**. ``bom_version`` = BOM áp dụng của gói; thiếu thì lấy BOM hiện hành. Mỗi dụng cụ khác nhau có
+	ngưỡng hiệu lực được +1 ``cycles_since_maint`` đúng một lần (số lượng trong BOM không tính); chưa có dòng thì tạo với
+	1. Dụng cụ không ngưỡng không tạo dòng. Khóa dòng ``for_update``. FEAT-023 gọi qua ``tracecore.core.extension.run``.
+
+	Chống đếm hai lần: dòng đã đếm ``cycle_id`` này (``last_release_cycle``) thì bỏ qua, nên FEAT-023 thử lại bước giải
+	phóng của cùng Cycle ID không cộng thêm. Chỉ so với lần giải phóng **gần nhất** của bộ (một bộ chỉ có một chu trình
+	đang chạy, nên gọi lại Cycle ID cũ sau khi Cycle ID mới đã được đếm là lỗi của nơi gọi). Thiếu ``cycle_id`` (rỗng):
+	giữ hành vi cũ, +1 mỗi lần gọi, không chống trùng — nơi gọi phải gọi đúng một lần cho mỗi lần giải phóng.
 	"""
 	set_unit, set_type = ctx["set_unit"], ctx["set_type"]
+	cycle_id = cstr(ctx.get("cycle_id")).strip() or None
 	version = ctx.get("bom_version")
 	if version is None:
 		version = frappe.db.get_value("Instrument Set Type", set_type, "current_bom_version")
@@ -445,25 +491,31 @@ def on_set_released(ctx: dict) -> None:
 	for code in codes:
 		if code not in rules:
 			continue
-		_increment(set_unit, code)
+		_increment(set_unit, code, cycle_id)
 
 
-def _increment(set_unit, instrument):
-	filters = {"set_unit": set_unit, "instrument": instrument}
-	name = frappe.db.get_value("Instrument Maintenance", filters, "name", for_update=True)
+def _increment(set_unit, instrument, cycle_id=None):
+	name = _counter_name(set_unit, instrument, for_update=True)
 	if not name:
-		row = frappe.get_doc({"doctype": "Instrument Maintenance", **filters, "cycles_since_maint": 1})
+		row = frappe.get_doc(
+			{
+				"doctype": "Instrument Maintenance",
+				"set_unit": set_unit,
+				"instrument": instrument,
+				"cycles_since_maint": 1,
+				"last_release_cycle": cycle_id,
+			}
+		)
 		row.flags.tc_maintenance = True
-		frappe.db.savepoint(INIT_SAVEPOINT)
-		try:
-			row.insert(ignore_permissions=True)
+		if _try_insert(row):
 			return
-		except frappe.DuplicateEntryError:
-			# request song song vừa tạo dòng: khóa dòng đó rồi cộng như bình thường
-			frappe.db.rollback(save_point=INIT_SAVEPOINT)
-			frappe.clear_last_message()
-			name = frappe.db.get_value("Instrument Maintenance", filters, "name", for_update=True)
+		# request song song vừa tạo dòng: khóa dòng đó rồi cộng như bình thường (kể cả kiểm Cycle ID)
+		name = _counter_name(set_unit, instrument, for_update=True)
 	row = frappe.get_doc("Instrument Maintenance", name, for_update=True)
+	if cycle_id and row.last_release_cycle == cycle_id:
+		return  # lần giải phóng này đã được đếm
 	row.cycles_since_maint = cint(row.cycles_since_maint) + 1
+	if cycle_id:
+		row.last_release_cycle = cycle_id
 	row.flags.tc_maintenance = True
 	row.save(ignore_permissions=True)

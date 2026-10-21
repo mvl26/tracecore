@@ -132,6 +132,7 @@ class TestInstrumentMaintenance(FrappeTestCase):
 			("last_maint_by", "Administrator"),
 			("last_defer_on", "2026-10-02 09:00:00"),
 			("last_defer_reason", "Edited by hand"),
+			("last_release_cycle", "CY-HAND"),
 		)
 		for field, value in changes:
 			doc = frappe.get_doc("Instrument Maintenance", row.name)

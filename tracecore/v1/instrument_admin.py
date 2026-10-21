@@ -45,6 +45,10 @@ def _rows(rows):
 		raise BadRequestError(
 			_("rows must be a list of objects with set_unit, cycles_since and last_maint_on.")
 		)
+	# set_unit phải là chuỗi trước khi kiểm trùng (list/dict không băm được → 500 nếu không chặn ở đây)
+	for row in rows:
+		if not isinstance(row.get("set_unit"), str):
+			raise BadRequestError(_("{0} must be text.").format("set_unit"))
 	return rows
 
 

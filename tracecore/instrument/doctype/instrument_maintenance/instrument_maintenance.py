@@ -15,7 +15,7 @@ from frappe.utils import cint, cstr, get_datetime
 
 COUNTER_FIELDS = ("cycles_since_maint", "deferred_count")
 DATETIME_FIELDS = ("last_maint_on", "last_defer_on")
-TEXT_FIELDS = ("last_maint_by", "last_oil_batch", "last_defer_reason")
+TEXT_FIELDS = ("last_maint_by", "last_oil_batch", "last_defer_reason", "last_release_cycle")
 
 
 def _comparable(field, value):

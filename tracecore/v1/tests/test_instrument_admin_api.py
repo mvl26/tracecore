@@ -194,6 +194,39 @@ class TestInitCountersRpc(IsolatedTestCase):
 			with self.assertRaises(frappe.ValidationError):
 				call(admin_api.init_counters, instrument="IA-CNT", rows=rows, reason="x")
 
+	def test_init_counters_bad_row_types_are_400(self):
+		# set_unit không phải chuỗi (list/dict không băm được) → 400 trước khi kiểm trùng, không 500
+		bad_rows = (
+			[{"set_unit": [self.units[1]], "cycles_since": 1}],
+			[{"set_unit": {"name": self.units[1]}, "cycles_since": 1}],
+			[{"set_unit": self.units[1], "cycles_since": 1}, {"set_unit": ["x"], "cycles_since": 1}],
+			[{"set_unit": 12, "cycles_since": 1}],
+			[{"cycles_since": 1}],
+			'[{"set_unit": ["a"], "cycles_since": 1}]',
+		)
+		for rows in bad_rows:
+			with self.assertRaises(frappe.ValidationError, msg=repr(rows)):
+				call(admin_api.init_counters, instrument="IA-CNT", rows=rows, reason="x")
+		for instrument in (["IA-CNT"], {"a": 1}, 5):
+			with self.assertRaises(frappe.ValidationError, msg=repr(instrument)):
+				call(
+					admin_api.init_counters,
+					instrument=instrument,
+					rows=[{"set_unit": self.units[1], "cycles_since": 1}],
+					reason="x",
+				)
+		self.assertIsNone(_counter(self.units[1], "IA-CNT"))
+		# số chu trình lạ qua RPC → 422, không 500
+		for value in ("²", "1" * 5000):
+			result = call(
+				admin_api.init_counters,
+				instrument="IA-CNT",
+				rows=[{"set_unit": self.units[1], "cycles_since": value}],
+				reason="x",
+			)
+			self.assertEqual(result["error"]["code"], "COUNTER_INIT_INVALID")
+			self.assertEqual(http_status(), 422)
+
 	def test_whitelisted_post_only(self):
 		for fn in (admin_api.init_counters, admin_api.retire):
 			self.assertIn(fn, frappe.whitelisted)

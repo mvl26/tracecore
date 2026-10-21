@@ -215,7 +215,9 @@ tracecore_pack_context = [
 tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
 tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
 tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
-# M2 (FEAT-023) gọi khi mẻ giải phóng Đạt: (ctx {set_unit, set_type, bom_version}) -> None, +1 bộ đếm bảo dưỡng
+# M2 (FEAT-023) gọi ĐÚNG MỘT LẦN cho mỗi lần giải phóng Đạt: (ctx {set_unit, set_type, bom_version, cycle_id}) -> None,
+# +1 bộ đếm bảo dưỡng. cycle_id bắt buộc theo hợp đồng: cùng cycle_id gọi lại không đếm thêm (last_release_cycle);
+# thiếu cycle_id thì không chống trùng.
 tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
 
 # Scheduled Tasks

@@ -11,6 +11,7 @@
   "section_counters",
   "cycles_since_maint",
   "deferred_count",
+  "last_release_cycle",
   "section_last_maint",
   "last_maint_on",
   "last_maint_by",
@@ -64,6 +65,13 @@
    "read_only": 1
   },
   {
+   "description": "Cycle ID of the last release counted in Cycles Since Maintenance; a repeated release of the same Cycle ID is not counted again.",
+   "fieldname": "last_release_cycle",
+   "fieldtype": "Data",
+   "label": "Last Counted Release (Cycle ID)",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_last_maint",
    "fieldtype": "Section Break",
    "label": "Last Maintenance"
@@ -108,7 +116,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 16:00:00.000000",
+ "modified": "2026-10-21 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Maintenance",
