@@ -4,7 +4,9 @@ frappe.listview_settings["Zone Station"] = {
 	add_fields: ["is_zone", "is_active"],
 	onload(listview) {
 		// thao tác hàng loạt "In nhãn QR" (FEAT-005, tối đa 50 mã, gửi tuần tự)
-		tracecore.codes.add_bulk_print(listview, "Station");
+		if (window.tracecore && tracecore.codes) {
+			tracecore.codes.add_bulk_print(listview, "Station");
+		}
 	},
 	get_indicator(doc) {
 		if (doc.is_zone) {

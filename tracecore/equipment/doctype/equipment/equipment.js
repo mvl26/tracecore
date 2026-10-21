@@ -133,6 +133,9 @@ function equipment_open_retire_dialog(frm) {
 // Nút "In nhãn QR" (FEAT-005, hàm dùng chung ở tc_codes.js): thiết bị Retired không in được (A-05 R4) → không có nút,
 // kèm dòng giải thích; mã Disabled do tracecore.codes.add_print_button tra sổ mã.
 function equipment_print_button(frm) {
+	if (!(window.tracecore && tracecore.codes)) {
+		return; // tc_codes.js (bundle Desk) chưa nạp: form vẫn dùng được, chỉ thiếu nút in
+	}
 	const retired =
 		frm.doc.status === "Retired"
 			? __(

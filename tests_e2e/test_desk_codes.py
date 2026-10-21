@@ -56,9 +56,9 @@ def test_print_equipment_qr_label_reaches_printer(codes_page, codes_demo, fake_p
 	choose_printer(dialog, codes_demo["printer"])
 	dialog.get_by_role("button", name="In", exact=True).click()
 	row = result_row(dialog, code)
-	expect(row).to_contain_text("Đã xếp hàng", timeout=30000)
-	expect(row).to_contain_text("Server gửi nhãn tới máy in")
-	expect(dialog.get_by_role("button", name="Đóng", exact=True)).to_be_visible()
+	expect(dialog.get_by_role("button", name="Đóng", exact=True)).to_be_visible(timeout=30000)
+	# hộp thoại hỏi job_status tới khi worker ghi kết quả: "Đã in", không dừng ở "Đã xếp hàng"
+	expect(row).to_contain_text("Đã in", timeout=30000)
 
 	zpl = fake_printer.wait_for([code])[code][0]
 	assert "^BQN" in zpl, zpl
@@ -104,9 +104,9 @@ def test_issue_rolls_then_print_all(codes_page, codes_demo, fake_printer):
 	dialog = open_print_dialog(codes_page, issued.get_by_role("button", name="In tất cả").click)
 	choose_printer(dialog, codes_demo["printer"])
 	dialog.get_by_role("button", name="In 3 nhãn", exact=True).click()
-	expect(dialog).to_contain_text("Đã gửi 3/3 nhãn tới máy in; 0 nhãn không in được.", timeout=60000)
+	expect(dialog).to_contain_text("Đã in 3/3 nhãn; 0 nhãn chờ agent; 0 nhãn không in được.", timeout=60000)
 	for code in codes:
-		expect(result_row(dialog, code)).to_contain_text("Đã xếp hàng")
+		expect(result_row(dialog, code)).to_contain_text("Đã in")
 
 	received = fake_printer.wait_for(codes)
 	# mã mới cấp: mỗi mã đúng một lệnh in
@@ -130,10 +130,39 @@ def test_bulk_print_from_list(codes_page, codes_demo, fake_printer):
 	choose_printer(dialog, codes_demo["printer"])
 	dialog.get_by_role("button", name="In 3 nhãn", exact=True).click()
 
-	expect(dialog).to_contain_text("Đã gửi 2/3 nhãn tới máy in; 1 nhãn không in được.", timeout=60000)
+	expect(dialog).to_contain_text("Đã in 2/3 nhãn; 0 nhãn chờ agent; 1 nhãn không in được.", timeout=60000)
 	for code in ready:
-		expect(result_row(dialog, code)).to_contain_text("Đã xếp hàng")
+		expect(result_row(dialog, code)).to_contain_text("Đã in")
 	expect(result_row(dialog, retired)).to_contain_text("Không in được")
 
 	fake_printer.wait_for(ready)
 	assert fake_printer.labels_for(retired) == []
+
+
+def test_reprint_issued_roll_label_from_item(codes_page, codes_demo, fake_printer):
+	"""Mã cuộn đã cấp (vd lần in trước lỗi) in lại được từ nút "In nhãn cuộn" trên form Item."""
+	open_form(codes_page, "item", codes_demo["label_item"])
+	codes_page.get_by_role("button", name="Cấp mã cuộn").click()
+	issue = codes_page.locator(LABEL_OBJECT_DIALOG, has=codes_page.locator("input[data-fieldname='count']"))
+	issue.locator("input[data-fieldname='count']").fill("1")
+	issue.get_by_role("button", name="Cấp mã", exact=True).click()
+	issued = codes_page.locator(LABEL_OBJECT_DIALOG, has_text="Đã cấp 1 mã cuộn cho")
+	expect(issued).to_be_visible(timeout=30000)
+	code = re.findall(r"CN-\d{5}", issued.inner_text())[0]
+	issued.locator(".btn-modal-close").click()  # không in ngay: giả lập lần in trước bị bỏ dở
+	expect(issued).to_be_hidden()
+
+	codes_page.get_by_role("button", name="In nhãn cuộn").click()
+	picker = codes_page.locator(LABEL_OBJECT_DIALOG, has_text="Đánh dấu mã cuộn cần in")
+	expect(picker).to_be_visible(timeout=30000)
+	# chưa chọn gì: báo lỗi inline, không mở hộp thoại in
+	picker.get_by_role("button", name="In mã đã chọn", exact=True).click()
+	expect(picker).to_contain_text("Chưa chọn mã cuộn nào.")
+	picker.locator(f"input[type='checkbox'][data-unit='{code}']").check()
+	dialog = open_print_dialog(
+		codes_page, picker.get_by_role("button", name="In mã đã chọn", exact=True).click
+	)
+	choose_printer(dialog, codes_demo["printer"])
+	dialog.get_by_role("button", name="In", exact=True).click()
+	expect(result_row(dialog, code)).to_contain_text("Đã in", timeout=60000)
+	assert len(fake_printer.wait_for([code])[code]) == 1

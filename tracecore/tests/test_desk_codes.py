@@ -27,3 +27,25 @@ class TestDeskCodes(FrappeTestCase):
 		self.assertIn("tracecore.v1.print.object_preview", helper)
 		self.assertIn("tracecore.v1.codes.issue_rolls", helper)
 		self.assertIn("X-Idempotency-Key", helper)
+
+	def test_item_form_prints_issued_roll_labels_and_dialog_polls_job_status(self):
+		# mã cuộn đã cấp mà lần in trước lỗi vẫn in lại được từ form Item (list_rolls → print_dialog)
+		item_js = _read("public", "js", "item.js")
+		self.assertIn("tracecore.codes.roll_labels_dialog(frm)", item_js)
+		helper = _read("public", "js", "tc_codes.js")
+		self.assertIn("tracecore.v1.codes.list_rolls", helper)
+		self.assertIn("tracecore.codes.roll_labels_dialog = ", helper)
+		# kết quả thật của lệnh in (Đã in / Không in được / Đang chờ agent) thay vì dừng ở "Đã xếp hàng"
+		self.assertIn("tracecore.v1.print.job_status", helper)
+		# một thao tác = một khóa idempotent, gửi lại dùng đúng request cũ
+		self.assertIn("tracecore.codes.new_request = ", helper)
+
+	def test_doctype_scripts_guard_missing_shared_helper(self):
+		# tc_codes.js nạp qua bundle; trang cũ/bundle lỗi không được làm hỏng form và list view
+		for parts in (
+			("equipment", "doctype", "equipment", "equipment.js"),
+			("equipment", "doctype", "equipment", "equipment_list.js"),
+			("admin_reports", "doctype", "zone_station", "zone_station.js"),
+			("admin_reports", "doctype", "zone_station", "zone_station_list.js"),
+		):
+			self.assertIn("window.tracecore && tracecore.codes", _read(*parts), parts)

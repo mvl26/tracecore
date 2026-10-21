@@ -14,7 +14,7 @@ frappe.ui.form.on("Zone Station", {
 		zone_station_indicator(frm);
 		zone_station_load_steps(frm);
 		// "In nhãn QR" cho trạm (FEAT-005, tc_codes.js); khu không có mã QR. Trạm tắt vẫn in được (A-05 R4).
-		if (!frm.doc.is_zone) {
+		if (!frm.doc.is_zone && window.tracecore && tracecore.codes) {
 			tracecore.codes.add_print_button(
 				frm,
 				"Station",

@@ -6,19 +6,26 @@
 // fetch thay frappe.call: Frappe tự hiện "Không tìm thấy" cho HTTP 404 và bỏ mất body, trong khi CODE_DISABLED (409),
 // EQUIPMENT_NOT_FOUND (404), ROLL_NOT_LABEL (422)… mang body {message: {ok: false, error}} cần hiện cho người dùng.
 // Mọi kiểm tra nghiệp vụ (mã Active, thiết bị Retired, số lượng cuộn, máy in hoạt động) nằm ở server.
+// Sau khi gửi, hộp thoại hỏi tracecore.v1.print.job_status vài giây một lần để hiện "Đã in" / "Không in được: lý do"
+// thay vì dừng ở "Đã xếp hàng" (đường in server là at-least-once, kết quả thật do worker ghi).
 
 frappe.provide("tracecore.codes");
 
 const TC_CODES_LABEL = "tracecore.v1.print.object_label";
 const TC_CODES_PREVIEW = "tracecore.v1.print.object_preview";
+const TC_CODES_JOB_STATUS = "tracecore.v1.print.job_status";
 const TC_CODES_ISSUE_ROLLS = "tracecore.v1.codes.issue_rolls";
+const TC_CODES_LIST_ROLLS = "tracecore.v1.codes.list_rolls";
 
 // In nhãn đối tượng và cấp mã cuộn: R10 và System Manager (A-05 R8)
 tracecore.codes.PRINT_ROLES = ["TC R10", "System Manager"];
-// Giới hạn của thao tác hàng loạt trên list view (gửi tuần tự từng mã)
+// Giới hạn của thao tác hàng loạt (list view, in lại nhãn cuộn): gửi tuần tự từng mã
 tracecore.codes.MAX_BULK = 50;
 // Chỉ để hiển thị trong hộp thoại; server (v1.codes.issue_rolls) mới là nơi kiểm tra
 tracecore.codes.MAX_ROLLS = 200;
+// Hỏi kết quả lệnh in: mỗi 2 giây, tối đa 10 lần (~20 giây) rồi để server tự thử lại
+tracecore.codes.POLL_INTERVAL_MS = 2000;
+tracecore.codes.POLL_ROUNDS = 10;
 
 tracecore.codes.can_print = function () {
 	return frappe.user.has_role(tracecore.codes.PRINT_ROLES);
@@ -46,6 +53,15 @@ tracecore.codes.client_ts = function () {
 	)}`;
 };
 
+// Một thao tác ghi của người dùng = một khóa X-Idempotency-Key + một body (kèm client_ts) cố định. Gửi lại sau lỗi
+// mạng dùng NGUYÊN request này (cùng khóa, cùng body) nên server không làm hai lần; thao tác mới mới tạo request mới.
+tracecore.codes.new_request = function (args) {
+	return {
+		key: tracecore.codes.uuid(),
+		payload: Object.assign({}, args, { client_ts: tracecore.codes.client_ts() }),
+	};
+};
+
 function tc_codes_server_message(body) {
 	try {
 		return JSON.parse(JSON.parse(body._server_messages || "[]")[0] || "{}").message || "";
@@ -54,24 +70,22 @@ function tc_codes_server_message(body) {
 	}
 }
 
-// POST một RPC; trả {ok: true, data} hoặc {ok: false, error: {title, reason, action}}.
-// `write`: RPC ghi → khóa X-Idempotency-Key mới cho mỗi lần gửi và client_ts có offset.
-tracecore.codes.post = async function (method, args, write = true) {
+// POST một RPC; trả {ok: true, data} hoặc {ok: false, error: {title, reason, action}, network?}.
+// `request`: {key, payload} của tracecore.codes.new_request (RPC ghi) hoặc null (RPC chỉ đọc, body = `args`).
+tracecore.codes.send = async function (method, request, args) {
 	const headers = {
 		"Content-Type": "application/json",
 		Accept: "application/json",
 		"X-Frappe-CSRF-Token": frappe.csrf_token,
 	};
-	const payload = Object.assign({}, args);
-	if (write) {
-		headers["X-Idempotency-Key"] = tracecore.codes.uuid();
-		payload.client_ts = tracecore.codes.client_ts();
+	if (request) {
+		headers["X-Idempotency-Key"] = request.key;
 	}
 	try {
 		const response = await fetch(`/api/method/${method}`, {
 			method: "POST",
 			headers,
-			body: JSON.stringify(payload),
+			body: JSON.stringify(request ? request.payload : args || {}),
 		});
 		const body = await response.json().catch(() => ({}));
 		const result = body.message || {};
@@ -93,8 +107,10 @@ tracecore.codes.post = async function (method, args, write = true) {
 			},
 		};
 	} catch (e) {
+		// không có phản hồi: có thể server đã làm rồi → chỉ gửi lại bằng đúng request cũ
 		return {
 			ok: false,
+			network: true,
 			error: {
 				title: __("Server not reachable"),
 				reason: __("The server could not be reached."),
@@ -102,6 +118,13 @@ tracecore.codes.post = async function (method, args, write = true) {
 			},
 		};
 	}
+};
+
+// Gọi nhanh: RPC ghi → request mới (khóa mới) cho lần gọi này; RPC chỉ đọc → không khóa.
+tracecore.codes.post = function (method, args, write = true) {
+	return write
+		? tracecore.codes.send(method, tracecore.codes.new_request(args))
+		: tracecore.codes.send(method, null, args);
 };
 
 function tc_codes_escape(text) {
@@ -129,48 +152,77 @@ tracecore.codes.show_block = function (error) {
 	});
 };
 
+// Trạng thái hiện tại của một dòng: rejected (server từ chối / không gửi được) hoặc Queued/Waiting/Printed/Failed
+function tc_codes_state(row) {
+	if (!row.result.ok) {
+		return "rejected";
+	}
+	return (row.job && row.job.status) || row.result.data.status;
+}
+
 // Kết quả một lệnh in, luôn có chữ (không chỉ màu)
-function tc_codes_status(result) {
-	if (!result.ok) {
+function tc_codes_status(row) {
+	const state = tc_codes_state(row);
+	if (state === "rejected") {
 		return {
 			indicator: "red",
 			label: __("Not printed"),
-			detail: [result.error.title, result.error.reason, result.error.action],
+			detail: [row.result.error.title, row.result.error.reason, row.result.error.action],
 		};
 	}
-	const data = result.data;
-	if (data.status === "Queued") {
+	const job = row.result.data.print_job;
+	if (state === "Printed") {
+		return { indicator: "green", label: __("Printed"), detail: [__("Print job {0}.", [job])] };
+	}
+	if (state === "Failed") {
 		return {
-			indicator: "green",
-			label: __("Queued for printing"),
+			indicator: "red",
+			label: __("Not printed: {0}", [
+				(row.job && row.job.error) || __("the printer did not respond"),
+			]),
 			detail: [
-				__("The server sends the label to the printer (print job {0}).", [data.print_job]),
+				__("Print job {0}.", [job]),
+				__("Check that the printer is on and connected, then print the label again."),
 			],
 		};
 	}
-	const warning = data.warning || {};
+	if (state === "Waiting") {
+		const warning = row.result.data.warning || {};
+		return {
+			indicator: "orange",
+			label: __("Waiting for the Station Agent"),
+			detail: [warning.title, warning.reason, warning.action, __("Print job {0}.", [job])],
+		};
+	}
+	if (row.poll_done) {
+		return {
+			indicator: "orange",
+			label: __("No result yet"),
+			detail: [
+				__(
+					"The server keeps retrying print job {0} for a few minutes; check the printer.",
+					[job]
+				),
+			],
+		};
+	}
 	return {
-		indicator: "orange",
-		label: __("Waiting for the Station Agent"),
-		detail: [
-			warning.title,
-			warning.reason,
-			warning.action,
-			__("Print job {0}.", [data.print_job]),
-		],
+		indicator: "blue",
+		label: __("Queued for printing"),
+		detail: [__("The server sends the label to the printer (print job {0}).", [job])],
 	};
 }
 
-function tc_codes_result_rows(results) {
-	return results
-		.map(({ code, result }) => {
-			const status = tc_codes_status(result);
+function tc_codes_result_rows(rows) {
+	return rows
+		.map((row) => {
+			const status = tc_codes_status(row);
 			const detail = status.detail
 				.filter(Boolean)
 				.map((line) => tc_codes_escape(line))
 				.join("<br>");
 			return `<tr>
-				<td>${tc_codes_mono(code)}</td>
+				<td>${tc_codes_mono(row.code)}</td>
 				<td><span class="indicator-pill ${status.indicator}">${tc_codes_escape(status.label)}</span></td>
 				<td>${detail}</td>
 			</tr>`;
@@ -178,19 +230,29 @@ function tc_codes_result_rows(results) {
 		.join("");
 }
 
-function tc_codes_render_results(dialog, results) {
-	const sent = results.filter(({ result }) => result.ok).length;
-	const failed = results.length - sent;
-	const summary =
-		results.length > 1
-			? `<p>${tc_codes_escape(
-					__("{0} of {1} labels sent to the printer; {2} not printed.", [
-						sent,
-						results.length,
-						failed,
-					])
-			  )}</p>`
-			: "";
+// Tổng kết cả loạt: nhãn chờ agent KHÔNG tính là đã in
+function tc_codes_summary(rows) {
+	const count = (states) => rows.filter((row) => states.includes(tc_codes_state(row))).length;
+	const printed = count(["Printed"]);
+	const waiting = count(["Waiting"]);
+	const failed = count(["rejected", "Failed"]);
+	const pending = count(["Queued"]);
+	const parts = [
+		__("{0} of {1} labels printed; {2} waiting for the Station Agent; {3} not printed.", [
+			printed,
+			rows.length,
+			waiting,
+			failed,
+		]),
+	];
+	if (pending) {
+		parts.push(__("{0} labels still being sent to the printer.", [pending]));
+	}
+	return parts.join(" ");
+}
+
+function tc_codes_render_results(dialog, rows) {
+	const summary = rows.length > 1 ? `<p>${tc_codes_escape(tc_codes_summary(rows))}</p>` : "";
 	dialog.fields_dict.result.$wrapper.html(`${summary}
 		<table class="table table-bordered">
 			<thead><tr>
@@ -198,8 +260,38 @@ function tc_codes_render_results(dialog, results) {
 				<th>${tc_codes_escape(__("Result"))}</th>
 				<th>${tc_codes_escape(__("Details"))}</th>
 			</tr></thead>
-			<tbody>${tc_codes_result_rows(results)}</tbody>
+			<tbody>${tc_codes_result_rows(rows)}</tbody>
 		</table>`);
+}
+
+const tc_codes_sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Hỏi kết quả các lệnh in còn Queued (đường server) tới khi xong hoặc hết số lần; hộp thoại đóng thì thôi hỏi.
+async function tc_codes_poll(dialog, rows) {
+	for (let round = 0; round < tracecore.codes.POLL_ROUNDS; round++) {
+		const queued = rows.filter((row) => tc_codes_state(row) === "Queued");
+		if (!queued.length || !dialog.display) {
+			break;
+		}
+		await tc_codes_sleep(tracecore.codes.POLL_INTERVAL_MS);
+		const response = await tracecore.codes.send(TC_CODES_JOB_STATUS, null, {
+			names: queued.map((row) => row.result.data.print_job),
+		});
+		if (!response.ok) {
+			break; // không hỏi được: dòng còn Queued hiện "Chưa có kết quả"
+		}
+		for (const row of queued) {
+			const job = response.data.jobs[String(row.result.data.print_job)];
+			if (job) {
+				row.job = job;
+			}
+		}
+		tc_codes_render_results(dialog, rows);
+	}
+	rows.forEach((row) => {
+		row.poll_done = true;
+	});
+	tc_codes_render_results(dialog, rows);
 }
 
 async function tc_codes_load_preview(dialog, label_object, code) {
@@ -225,9 +317,7 @@ function tc_codes_describe_printer(dialog) {
 	const field = dialog.fields_dict.printer;
 	if (!printer) {
 		field.set_description(
-			__(
-				"Printers with a network address print straight from Desk; others wait for the Station Agent."
-			)
+			__("Only network printers are listed: the server sends the label straight to them.")
 		);
 		return;
 	}
@@ -244,10 +334,13 @@ function tc_codes_describe_printer(dialog) {
 	});
 }
 
+// In từ Desk đi đường server: chỉ gợi ý và liệt kê máy in đang hoạt động có địa chỉ mạng (A-05 R1)
+const TC_CODES_PRINTER_FILTERS = { is_active: 1, host: ["is", "set"] };
+
 function tc_codes_suggest_printer(dialog) {
 	frappe.db
 		.get_list("Printer", {
-			filters: { is_active: 1, host: ["is", "set"] },
+			filters: TC_CODES_PRINTER_FILTERS,
 			fields: ["name"],
 			order_by: "name asc",
 			limit: 1,
@@ -257,6 +350,20 @@ function tc_codes_suggest_printer(dialog) {
 				dialog.set_value("printer", rows[0].name);
 			}
 		});
+}
+
+// Gửi tuần tự các dòng `rows` (mỗi dòng giữ request riêng: gửi lại sau lỗi mạng dùng đúng khóa cũ)
+async function tc_codes_send_rows(dialog, label_object, rows) {
+	for (const [index, row] of rows.entries()) {
+		dialog.fields_dict.result.$wrapper.html(
+			`<p>${tc_codes_escape(
+				__("Sending label {0} of {1}...", [index + 1, rows.length])
+			)}</p>`
+		);
+		row.result = await tracecore.codes.send(TC_CODES_LABEL, row.request);
+		row.job = null;
+		row.poll_done = false;
+	}
 }
 
 async function tc_codes_send_all(dialog, label_object, codes) {
@@ -273,23 +380,33 @@ async function tc_codes_send_all(dialog, label_object, codes) {
 	}
 	const button = dialog.get_primary_btn();
 	button.prop("disabled", true);
-	const results = [];
-	for (const [index, code] of codes.entries()) {
-		dialog.fields_dict.result.$wrapper.html(
-			`<p>${tc_codes_escape(
-				__("Sending label {0} of {1}...", [index + 1, codes.length])
-			)}</p>`
-		);
-		// tuần tự: mỗi mã một lệnh in, mỗi lần gửi một khóa idempotent mới
-		results.push({
-			code,
-			result: await tracecore.codes.post(TC_CODES_LABEL, { label_object, code, printer }),
-		});
-	}
-	tc_codes_render_results(dialog, results);
-	// đã gửi: nút chính thành "Đóng" để không in trùng khi bấm lại
-	dialog.set_primary_action(__("Close"), () => dialog.hide());
+	// một lần bấm In = một thao tác: mỗi mã một request (khóa idempotent) cố định cho mọi lần gửi lại
+	const rows = codes.map((code) => ({
+		code,
+		request: tracecore.codes.new_request({ label_object, code, printer }),
+	}));
+	await tc_codes_send_rows(dialog, label_object, rows);
+	tc_codes_finish(dialog, label_object, rows);
 	button.prop("disabled", false);
+}
+
+// Sau khi gửi: còn mã chưa tới được server (lỗi mạng) → nút "Gửi lại" dùng đúng request cũ; hết thì nút "Đóng"
+function tc_codes_finish(dialog, label_object, rows) {
+	tc_codes_render_results(dialog, rows);
+	const unsent = rows.filter((row) => row.result.network);
+	if (unsent.length) {
+		dialog.set_primary_action(__("Resend unsent labels"), async () => {
+			const button = dialog.get_primary_btn();
+			button.prop("disabled", true);
+			await tc_codes_send_rows(dialog, label_object, unsent);
+			tc_codes_finish(dialog, label_object, rows);
+			button.prop("disabled", false);
+		});
+	} else {
+		// đã gửi: nút chính thành "Đóng" để không in trùng khi bấm lại
+		dialog.set_primary_action(__("Close"), () => dialog.hide());
+	}
+	tc_codes_poll(dialog, rows);
 }
 
 // Hộp thoại in nhãn QR: `code` là một mã (có xem trước) hoặc mảng mã (in cả loạt, không xem trước).
@@ -320,7 +437,7 @@ tracecore.codes.print_dialog = function (frm, label_object, code, title, subtitl
 				options: "Printer",
 				label: __("Printer"),
 				reqd: 1,
-				get_query: () => ({ filters: { is_active: 1 } }),
+				get_query: () => ({ filters: TC_CODES_PRINTER_FILTERS }),
 				onchange: () => tc_codes_describe_printer(dialog),
 			},
 			{ fieldname: "result", fieldtype: "HTML" },
@@ -376,6 +493,17 @@ tracecore.codes.add_print_button = function (frm, label_object, title, subtitle,
 	});
 };
 
+function tc_codes_too_many(count) {
+	return {
+		title: __("Too many records"),
+		reason: __("{0} records are selected; at most {1} labels can be printed at once.", [
+			count,
+			tracecore.codes.MAX_BULK,
+		]),
+		action: __("Select at most {0} records and try again.", [tracecore.codes.MAX_BULK]),
+	};
+}
+
 // Thao tác hàng loạt "In nhãn QR" trên list view (tối đa MAX_BULK bản ghi, gửi tuần tự)
 tracecore.codes.add_bulk_print = function (listview, label_object) {
 	if (!tracecore.codes.can_print()) {
@@ -394,16 +522,7 @@ tracecore.codes.add_bulk_print = function (listview, label_object) {
 				return;
 			}
 			if (names.length > tracecore.codes.MAX_BULK) {
-				tracecore.codes.show_block({
-					title: __("Too many records"),
-					reason: __(
-						"{0} records are selected; at most {1} labels can be printed at once.",
-						[names.length, tracecore.codes.MAX_BULK]
-					),
-					action: __("Select at most {0} records and try again.", [
-						tracecore.codes.MAX_BULK,
-					]),
-				});
+				tracecore.codes.show_block(tc_codes_too_many(names.length));
 				return;
 			}
 			tracecore.codes.print_dialog(null, label_object, names);
@@ -444,6 +563,8 @@ function tc_codes_show_rolls(frm, codes) {
 
 // Cấp mã cuộn nhãn CN-##### cho Item nhóm Nhãn (A-05 R3)
 tracecore.codes.issue_rolls_dialog = function (frm) {
+	// request của thao tác đang dở (lỗi mạng): bấm lại với cùng số lượng → gửi lại đúng khóa cũ, không cấp hai lần
+	let pending = null;
 	const dialog = new frappe.ui.Dialog({
 		title: __("Issue roll codes"),
 		fields: [
@@ -458,22 +579,108 @@ tracecore.codes.issue_rolls_dialog = function (frm) {
 					[tracecore.codes.MAX_ROLLS]
 				),
 			},
+			{ fieldname: "result", fieldtype: "HTML" },
 		],
 		primary_action_label: __("Issue codes"),
 		async primary_action(values) {
+			const args = { item: frm.doc.name, count: values.count };
+			if (!pending || pending.count !== values.count) {
+				pending = { count: values.count, request: tracecore.codes.new_request(args) };
+			}
 			dialog.get_primary_btn().prop("disabled", true);
 			frappe.dom.freeze();
-			const result = await tracecore.codes.post(TC_CODES_ISSUE_ROLLS, {
-				item: frm.doc.name,
-				count: values.count,
-			});
+			const result = await tracecore.codes.send(TC_CODES_ISSUE_ROLLS, pending.request);
 			frappe.dom.unfreeze();
+			dialog.get_primary_btn().prop("disabled", false);
+			if (result.network) {
+				// chưa biết server đã cấp chưa: giữ hộp thoại và request để gửi lại an toàn
+				dialog.fields_dict.result.$wrapper.html(tracecore.codes.block_html(result.error));
+				return;
+			}
+			pending = null;
 			dialog.hide();
 			if (result.ok) {
 				tc_codes_show_rolls(frm, result.data.codes);
 			} else {
 				tracecore.codes.show_block(result.error);
 			}
+		},
+	});
+	dialog.show();
+};
+
+// In lại nhãn cuộn đã cấp (lần in trước lỗi, nhãn hỏng/mất): chọn trong các mã CN- còn Active của Item nhãn
+tracecore.codes.roll_labels_dialog = async function (frm) {
+	const result = await tracecore.codes.post(TC_CODES_LIST_ROLLS, { item: frm.doc.name }, false);
+	if (!result.ok) {
+		tracecore.codes.show_block(result.error);
+		return;
+	}
+	const codes = result.data.codes;
+	if (!codes.length) {
+		frappe.msgprint({
+			title: __("No roll codes"),
+			indicator: "orange",
+			message: __("{0} has no active roll codes. Issue roll codes first.", [
+				frm.doc.item_name || frm.doc.name,
+			]),
+		});
+		return;
+	}
+	const notes = [
+		__("Tick the roll codes to print; at most {0} labels at a time.", [
+			tracecore.codes.MAX_BULK,
+		]),
+	];
+	if (result.data.truncated) {
+		notes.push(__("Only the first {0} active roll codes are listed.", [codes.length]));
+	}
+	const dialog = new frappe.ui.Dialog({
+		title: __("Print roll labels"),
+		size: "large",
+		fields: [
+			{
+				fieldname: "info",
+				fieldtype: "HTML",
+				options: notes.map((note) => `<p>${tc_codes_escape(note)}</p>`).join(""),
+			},
+			{
+				fieldname: "codes",
+				fieldtype: "MultiCheck",
+				label: __("Roll codes"),
+				select_all: true,
+				columns: 4,
+				options: codes.map((code) => ({ label: code, value: code, checked: 0 })),
+			},
+			{ fieldname: "result", fieldtype: "HTML" },
+		],
+		primary_action_label: __("Print selected"),
+		primary_action() {
+			const selected = dialog.get_value("codes") || [];
+			if (!selected.length) {
+				dialog.fields_dict.result.$wrapper.html(
+					tracecore.codes.block_html({
+						title: __("Nothing selected"),
+						reason: __("No roll code is selected."),
+						action: __("Tick the roll codes whose labels you want to print."),
+					})
+				);
+				return;
+			}
+			if (selected.length > tracecore.codes.MAX_BULK) {
+				dialog.fields_dict.result.$wrapper.html(
+					tracecore.codes.block_html(tc_codes_too_many(selected.length))
+				);
+				return;
+			}
+			dialog.hide();
+			tracecore.codes.print_dialog(
+				frm,
+				"Roll",
+				selected,
+				frm.doc.item_name,
+				__("{0} roll codes", [selected.length])
+			);
 		},
 	});
 	dialog.show();
