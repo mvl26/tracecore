@@ -1050,6 +1050,8 @@ GIAI Code,Mã GIAI,Instrument
 GIAI already assigned,Đã cấp mã GIAI,
 GIAI code {0} is already assigned and cannot be changed or removed.,"Mã GIAI {0} đã cấp, không được sửa hoặc xóa.",
 GIAI code {0} is disabled because the instrument is retired.,Mã GIAI {0} đã vô hiệu vì dụng cụ đã ngừng sử dụng.,
+GIAI code {0} is not in the TraceCore code registry.,Mã GIAI {0} không có trong sổ mã của TraceCore.,
+Do not etch this code. Call R10 to check the instrument record.,Không khắc mã này. Gọi R10 kiểm tra bản ghi dụng cụ.,
 GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits.,Không dùng được tiền tố doanh nghiệp GS1 {0} cho mã dụng cụ trên hệ thống này: đây là tiền tố demo hoặc không gồm 4–12 chữ số.,
 GS1 prefix not configured,Chưa cấu hình tiền tố GS1,
 Instrument GIAI is turned off,Mã GIAI dụng cụ đang tắt,

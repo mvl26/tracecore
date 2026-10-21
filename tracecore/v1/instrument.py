@@ -13,7 +13,7 @@ from frappe.utils import cint, get_datetime, get_fullname
 from tracecore.core import code_registry, gs1
 from tracecore.core.errors import Block
 from tracecore.instrument import catalog, maintenance, media, thresholds, versions
-from tracecore.v1._common import reject_block
+from tracecore.v1._common import reject_block, require_any_role
 from tracecore.v1.instrument_admin import ADMIN_ROLES, GIAI_ROLES
 
 
@@ -50,14 +50,29 @@ def _code_disabled_block(code):
 	)
 
 
+def _code_not_found_block(code):
+	return Block(
+		"CODE_NOT_FOUND",
+		_("Code not found"),
+		_("GIAI code {0} is not in the TraceCore code registry.").format(code),
+		_("Do not etch this code. Call R10 to check the instrument record."),
+	)
+
+
 @frappe.whitelist(methods=["GET"])
 def giai_preview(instrument=None):
 	"""Ảnh DataMatrix GS1 (AI 8004) của mã GIAI đã cấp, để đơn vị khắc laser đối chiếu trước khi khắc.
 
 	Trả ``{"ok": True, instrument, giai, png_b64, hri, payload}`` (``payload`` có FNC1 dạng GS). Từ chối:
-	``INSTRUMENT_NOT_FOUND`` (404), ``GIAI_NOT_ASSIGNED`` (409), ``CODE_DISABLED`` (409, dụng cụ đã ngừng sử dụng),
-	``GS1_PREFIX_NOT_CONFIGURED`` (409, mã mang tiền tố demo trên site không phải dev/test: không được khắc).
+	``INSTRUMENT_NOT_FOUND`` (404), ``GIAI_NOT_ASSIGNED`` (409), ``CODE_NOT_FOUND`` (404, mã không có trong sổ
+	``Code Registry``), ``CODE_DISABLED`` (409, dụng cụ đã ngừng sử dụng), ``GS1_PREFIX_NOT_CONFIGURED`` (409, mã mang
+	tiền tố demo trên site không phải dev/test: không được khắc).
+
+	Chỉ TC R10 / System Manager (như nút trên form và các RPC ghi mã GIAI); thiếu role → PermissionError trước mọi ghi.
+	Cờ ``enable_instrument_giai`` tắt **vẫn** xem trước được mã đã cấp (để đối chiếu dụng cụ đã khắc); cờ tắt chỉ chặn
+	cấp mã mới và ghi nhận khắc (``FEATURE_DISABLED``).
 	"""
+	require_any_role(*GIAI_ROLES)
 	frappe.has_permission("Instrument", "read", throw=True)
 	code = instrument.strip()[: gs1.MAX_SCAN_LENGTH] if isinstance(instrument, str) else ""
 	giai = frappe.db.get_value("Instrument", code, "giai_code") if code else None
@@ -71,7 +86,9 @@ def giai_preview(instrument=None):
 		)
 	elif not giai:
 		block = catalog.not_assigned_block(code)
-	elif frappe.db.get_value("Code Registry", giai, "status") != "Active":
+	elif not (status := frappe.db.get_value("Code Registry", giai, "status")):
+		block = _code_not_found_block(giai)
+	elif status != "Active":
 		block = _code_disabled_block(giai)
 	else:
 		block = code_registry.instrument_giai_block(giai)
@@ -152,11 +169,12 @@ def _permissions(row, enabled):
 	admin = bool(roles & set(ADMIN_ROLES))
 	giai = bool(roles & set(GIAI_ROLES)) and enabled and row.status == "Active"
 	return {
-		"can_write": bool(frappe.has_permission("Instrument", "write", doc=row.name)),
 		"can_retire": admin and row.status == "Active",
 		"can_init_counters": admin,
 		"can_assign_giai": giai and not row.giai_code,
 		"can_record_etching": giai and bool(row.giai_code),
+		# xem trước DataMatrix: như giai_preview (R10/SM, mã đã cấp, kể cả khi cờ tắt)
+		"can_preview_giai": bool(roles & set(GIAI_ROLES)) and bool(row.giai_code),
 	}
 
 

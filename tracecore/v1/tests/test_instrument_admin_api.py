@@ -6,11 +6,13 @@ Quyền R02/R10/System Manager kiểm trước mọi ghi; từ chối nghiệp v
 
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import frappe
 
 from tracecore.core.errors import HTTP_STATUS
+from tracecore.instrument import catalog
 from tracecore.tests.factories import (
 	make_bom,
 	make_instrument,
@@ -273,6 +275,30 @@ class TestRetireRpc(IsolatedTestCase):
 		result = as_user(["TC R10"], admin_api.retire, instrument="IA-RFREE", reason="Mất", confirm="0")
 		self.assertTrue(result["ok"])
 		self.assertEqual(result["boms"], [])
+
+	def test_retire_race_returns_409_block(self):
+		# request song song đã ngừng sử dụng dụng cụ sau lúc RPC đọc trạng thái (Active) nhưng trước khi
+		# catalog.retire khóa bản ghi: trả body INSTRUMENT_RETIRED 409 + Audit Log Reject, không ValidationError (417)
+		make_instrument("IA-RACE")
+		catalog.retire("IA-RACE", "Request khác")
+		original = frappe.db.get_value
+
+		def stale_status(*args, **kwargs):
+			# chỉ lần RPC đọc trạng thái (trước khi khóa) thấy giá trị cũ
+			if args[:3] == ("Instrument", "IA-RACE", "status") and not kwargs:
+				return "Active"
+			return original(*args, **kwargs)
+
+		rejects = frappe.db.count("Audit Log", {"action": "Reject", "reason": "INSTRUMENT_RETIRED"})
+		with patch.object(frappe.db, "get_value", side_effect=stale_status):
+			result = call(admin_api.retire, instrument="IA-RACE", reason="Gãy", confirm=1)
+		self.assertIs(result["ok"], False, msg=result)
+		self.assertEqual(result["error"]["code"], "INSTRUMENT_RETIRED")
+		self.assertEqual(http_status(), 409)
+		self.assertEqual(
+			frappe.db.count("Audit Log", {"action": "Reject", "reason": "INSTRUMENT_RETIRED"}), rejects + 1
+		)
+		self.assertEqual(frappe.db.get_value("Instrument", "IA-RACE", "retired_reason"), "Request khác")
 
 
 class TestHttpStatus(IsolatedTestCase):

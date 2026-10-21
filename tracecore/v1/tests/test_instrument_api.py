@@ -318,11 +318,11 @@ class TestInstrumentFormApi(IsolatedTestCase):
 		self.assertEqual(counters[units[2]]["deferred_count"], 1)
 
 		admin = {
-			"can_write": True,
 			"can_retire": True,
 			"can_init_counters": True,
 			"can_assign_giai": False,
 			"can_record_etching": False,
+			"can_preview_giai": False,
 		}
 		self.assertEqual(result["permissions"], admin)
 		r02 = as_user("fc-r02@example.com", ("TC R02",), form_context, "FC-KEO")

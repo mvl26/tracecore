@@ -143,7 +143,11 @@ def retire(instrument, reason, confirm=0, client_ts=None):
 		)
 	if status == "Retired":
 		return reject(catalog.retired_block(instrument))
-	result = catalog.retire(instrument, reason, confirm)
+	try:
+		result = catalog.retire(instrument, reason, confirm)
+	except BlockedError as error:
+		# request song song vừa ngừng sử dụng dụng cụ sau lần đọc trạng thái ở trên: 409 như đường thường
+		return reject(error.block)
 	if not result["retired"]:
 		boms = result["boms"]
 		body = reject(

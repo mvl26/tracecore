@@ -43,7 +43,7 @@ def now_ts():
 
 def call(fn, key=None, station_header=None, **kwargs):
 	frappe.local.response.pop("http_status_code", None)
-	if fn is not instrument_api.giai_preview:
+	if fn not in (instrument_api.giai_preview, instrument_api.form_context):
 		kwargs.setdefault("client_ts", now_ts())
 	headers = {"X-Idempotency-Key": key or str(uuid.uuid4())}
 	if station_header:
@@ -518,13 +518,46 @@ class TestGiaiPreview(GiaiCase):
 		set_flag(True)
 		make_instrument("GI-PV")
 		code = assign("GI-PV")["giai"]
-		result = as_user(["TC R02"], instrument_api.giai_preview, instrument="GI-PV")
+		result = as_user(["TC R10"], instrument_api.giai_preview, instrument="GI-PV")
 		self.assertTrue(result["ok"], msg=result)
 		self.assertEqual(result["giai"], code)
 		self.assertEqual(result["payload"], gs1.giai_payload(code))
 		self.assertEqual(result["hri"], gs1.giai_hri(code))
 		png = base64.b64decode(result["png_b64"])
 		self.assertEqual(gs1.decode_datamatrix_png(png), result["payload"])
+
+	def test_giai_preview_roles_and_flag_off(self):
+		# Quyết định (final fix wave, Minor 5): xem trước DataMatrix chỉ TC R10/System Manager (như nút trên form),
+		# kể cả khi cờ tắt: mã đã cấp vẫn xem được để đối chiếu; cờ tắt chỉ chặn cấp mới/ghi khắc (FEATURE_DISABLED).
+		set_flag(True)
+		make_instrument("GI-PVROLE")
+		code = assign("GI-PVROLE")["giai"]
+		before = frappe.db.count("Audit Log", {"action": "Reject"})
+		for roles in (["TC R02"], ["TC R04"], ["TC R01"]):
+			with self.subTest(roles=roles), self.assertRaises(frappe.PermissionError):
+				as_user(roles, instrument_api.giai_preview, instrument="GI-PVROLE")
+		# thiếu role: từ chối trước mọi ghi, kể cả với dụng cụ không có
+		with self.assertRaises(frappe.PermissionError):
+			as_user(["TC R02"], instrument_api.giai_preview, instrument="GI-PV-NONE")
+		self.assertEqual(frappe.db.count("Audit Log", {"action": "Reject"}), before)
+		set_flag(False)
+		off = as_user(["TC R10"], instrument_api.giai_preview, instrument="GI-PVROLE")
+		self.assertTrue(off["ok"], msg=off)
+		self.assertEqual(off["giai"], code)
+		# form_context: nút xem trước theo cùng quy tắc
+		context = as_user(["TC R10"], instrument_api.form_context, instrument="GI-PVROLE")
+		self.assertTrue(context["permissions"]["can_preview_giai"])
+		self.assertFalse(context["permissions"]["can_record_etching"])
+		context = as_user(["TC R02"], instrument_api.form_context, instrument="GI-PVROLE")
+		self.assertFalse(context["permissions"]["can_preview_giai"])
+
+	def test_giai_preview_registry_row_missing_is_not_found(self):
+		make_instrument("GI-PVREG")
+		frappe.db.set_value("Instrument", "GI-PVREG", "giai_code", "9520000I-99999999")
+		self.assertFalse(frappe.db.exists("Code Registry", "9520000I-99999999"))
+		result = call(instrument_api.giai_preview, instrument="GI-PVREG")
+		self.assertRejected(result, "CODE_NOT_FOUND", 404)
+		self.assertIn("9520000I-99999999", result["error"]["reason"])
 
 	def test_giai_preview_rejections_and_get_only(self):
 		make_instrument("GI-PV0")

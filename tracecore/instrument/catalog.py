@@ -174,14 +174,15 @@ def retire(instrument: str, reason: str, confirm: bool = False) -> dict:
 	"""Ngừng sử dụng dụng cụ (UC-01 E3, A-06 I13); một chiều, bắt buộc lý do.
 
 	Dụng cụ còn trong BOM hiện hành mà chưa ``confirm`` → ``{"retired": False, "boms": [...]}``, không ghi gì;
-	xong → ``{"retired": True, "boms": [...]}`` (Audit Log Update qua doc_events). Đã ngừng → ValidationError.
+	xong → ``{"retired": True, "boms": [...]}`` (Audit Log Update qua doc_events). Đã ngừng (kể cả request song song
+	vừa ngừng trước lúc khóa bản ghi) → ``BlockedError`` ``INSTRUMENT_RETIRED`` (409), chưa ghi gì.
 	"""
 	reason = (reason or "").strip()
 	if not reason:
 		frappe.throw(_("A reason is required to retire an instrument."))
 	doc = frappe.get_doc("Instrument", instrument, for_update=True)
 	if doc.status == "Retired":
-		frappe.throw(_("Instrument {0} is already retired.").format(doc.name))
+		raise BlockedError(retired_block(doc.name))
 	boms = bom_usage(doc.name)
 	if boms and not cint(confirm):
 		return {"retired": False, "boms": boms}
