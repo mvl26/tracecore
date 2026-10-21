@@ -159,9 +159,11 @@ class TestAssignGiai(GiaiCase):
 		key = str(uuid.uuid4())
 		email = make_user("giai-replay@example.com", ["TC R10"])
 		frappe.set_user(email)
+		# cùng client_ts: lần gửi lại giống hệt (gọi now_ts() hai lần có thể lệch sang giây kế tiếp → khác request)
+		ts = now_ts()
 		try:
-			first = call(admin_api.assign_giai, key=key, instrument="GI-RP")
-			replay = call(admin_api.assign_giai, key=key, instrument="GI-RP")
+			first = call(admin_api.assign_giai, key=key, instrument="GI-RP", client_ts=ts)
+			replay = call(admin_api.assign_giai, key=key, instrument="GI-RP", client_ts=ts)
 		finally:
 			frappe.set_user("Administrator")
 		self.assertTrue(first["ok"])
