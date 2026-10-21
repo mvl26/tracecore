@@ -534,3 +534,120 @@ class TestNewErrorCodes(IsolatedTestCase):
 		self.assertEqual(HTTP_STATUS["CODE_DISABLED"], 409)
 		self.assertEqual(HTTP_STATUS["COUNT_OUT_OF_RANGE"], 422)
 		self.assertEqual(HTTP_STATUS["CODE_NOT_FOUND"], 404)
+
+
+class TestListRolls(IsolatedTestCase):
+	"""`v1.codes.list_rolls`: mã cuộn Active của một Item nhãn, để in lại nhãn cuộn đã cấp (in lỗi, mất nhãn)."""
+
+	def setUp(self):
+		super().setUp()
+		self.steam_item, self.plasma_item = make_label_items()
+
+	def test_list_rolls_returns_active_rolls_of_the_item_in_order(self):
+		issued = call(codes_api.issue_rolls, item=self.steam_item, count=3)["codes"]
+		other = call(codes_api.issue_rolls, item=self.plasma_item, count=1)["codes"]
+		code_registry.disable(issued[1], "Cuộn hỏng")
+		result = read(codes_api.list_rolls, item=self.steam_item)
+		self.assertTrue(result["ok"], result)
+		self.assertEqual(result["item"], self.steam_item)
+		codes = result["codes"]
+		self.assertIn(issued[0], codes)
+		self.assertIn(issued[2], codes)
+		self.assertNotIn(issued[1], codes)  # Disabled không in lại được
+		self.assertNotIn(other[0], codes)
+		self.assertEqual(codes, sorted(codes))
+		self.assertEqual(set(codes), set(batch_codes(self.steam_item)) - {issued[1]})
+		self.assertFalse(result["truncated"])
+
+	def test_list_rolls_caps_the_list(self):
+		call(codes_api.issue_rolls, item=self.steam_item, count=3)
+		with patch.object(codes_api, "MAX_LIST_ROLLS", 2):
+			result = read(codes_api.list_rolls, item=self.steam_item)
+		self.assertEqual(len(result["codes"]), 2)
+		self.assertTrue(result["truncated"])
+
+	def test_list_rolls_requires_roles_first(self):
+		audit_rows = frappe.db.count("Audit Log")
+		for roles in (["TC R02"], ["TC R04"], []):
+			with self.assertRaises(frappe.PermissionError, msg=roles):
+				as_user(roles, codes_api.list_rolls, caller=read, item=self.steam_item)
+		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		for roles in (["TC R10"], ["System Manager"]):
+			self.assertTrue(as_user(roles, codes_api.list_rolls, caller=read, item=self.steam_item)["ok"])
+
+	def test_list_rolls_rejects_non_label_item(self):
+		packaging = make_item("VT-BAO-GOI-LIST", "Packaging").name
+		for item in (packaging, "KHONG-CO", None):
+			result = read(codes_api.list_rolls, item=item)
+			self.assertEqual(result["error"]["code"], "ROLL_NOT_LABEL", item)
+			self.assertEqual(http_status(), 422)
+
+	def test_list_rolls_is_whitelisted_read(self):
+		self.assertEqual(frappe.get_attr("tracecore.v1.codes.list_rolls"), codes_api.list_rolls)
+		self.assertIn("GET", frappe.allowed_http_methods_for_whitelisted_func[codes_api.list_rolls])
+
+
+class TestJobStatus(ObjectLabelCase):
+	"""`v1.print.job_status`: R10 theo dõi lệnh in đã gửi từ Desk (Đã in / Không in được / Đang chờ agent)."""
+
+	def _job(self, printer):
+		tag = uuid.uuid4().hex[:8]
+		equipment = make_equipment(name=f"Máy theo dõi {tag}", serial=f"SN-JS-{tag}")
+		result = call(print_api.object_label, label_object="Equipment", code=equipment.name, printer=printer)
+		return str(result["print_job"])
+
+	def test_job_status_reports_status_attempts_error_printed_at(self):
+		from tracecore.core import print as core_print
+
+		queued = self._job(self.host_printer)
+		waiting = self._job(self.agent_printer)
+		failed = self._job(self.host_printer)
+		printed = self._job(self.host_printer)
+		core_print.ack(failed, "Failed", "Printer", output_ref="10.0.0.50:9100", error="Máy in tắt")
+		core_print.ack(printed, "Printed", "Printer", output_ref="10.0.0.50:9100")
+
+		result = read(print_api.job_status, names=json.dumps([queued, waiting, failed, printed, "PJ-NONE"]))
+		self.assertTrue(result["ok"], result)
+		jobs = result["jobs"]
+		self.assertEqual(set(jobs), {queued, waiting, failed, printed})  # tên không có: bỏ qua
+		self.assertEqual(set(jobs[queued]), {"status", "attempts", "error", "printed_at"})
+		self.assertEqual((jobs[queued]["status"], jobs[queued]["printed_at"]), ("Queued", None))
+		self.assertEqual(jobs[waiting]["status"], "Waiting")
+		self.assertEqual((jobs[failed]["status"], jobs[failed]["error"]), ("Failed", "Máy in tắt"))
+		self.assertEqual(jobs[printed]["status"], "Printed")
+		self.assertEqual(jobs[printed]["attempts"], 1)
+		self.assertIsInstance(jobs[printed]["printed_at"], str)
+		self.assertTrue(jobs[printed]["printed_at"])
+		# danh sách Python, tên dạng số (Print Job tự tăng, JSON của Desk gửi số) cũng được
+		self.assertEqual(read(print_api.job_status, names=[queued])["jobs"][queued]["status"], "Queued")
+		self.assertEqual(read(print_api.job_status, names=[int(queued)])["jobs"][queued]["status"], "Queued")
+
+	def test_job_status_requires_roles_first(self):
+		job = self._job(self.host_printer)
+		for roles in (["TC R02"], ["TC R04"], ["TC Agent"], []):
+			with self.assertRaises(frappe.PermissionError, msg=roles):
+				as_user(roles, print_api.job_status, caller=read, names=[job])
+		for roles in (["TC R10"], ["System Manager"]):
+			result = as_user(roles, print_api.job_status, caller=read, names=[job])
+			self.assertEqual(result["jobs"][job]["status"], "Queued", roles)
+
+	def test_job_status_bad_names_are_400(self):
+		too_many = [f"PJ-{index}" for index in range(print_api.MAX_STATUS_JOBS + 1)]
+		for names in (
+			None,
+			"",
+			"not json",
+			json.dumps({"a": 1}),
+			[None],
+			[True],
+			[0],
+			["  "],
+			too_many,
+			json.dumps(too_many),
+		):
+			with self.assertRaises(frappe.ValidationError, msg=names) as ctx:
+				read(print_api.job_status, names=names)
+			self.assertEqual(ctx.exception.http_status_code, 400, names)
+
+	def test_job_status_is_whitelisted_read(self):
+		self.assertEqual(frappe.get_attr("tracecore.v1.print.job_status"), print_api.job_status)

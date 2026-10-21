@@ -2,6 +2,8 @@
 
 - `issue_rolls`: R10/System Manager cấp hàng loạt mã cuộn nhãn ``CN-#####`` cho một Item nhóm Nhãn (1-200 mã), cả loạt
   trong một transaction qua `core.code_registry.next_code`: lỗi giữa chừng hoàn tác hết, kể cả bộ đếm (không thủng số).
+- `list_rolls`: R10/System Manager liệt kê mã cuộn ``CN-`` còn ``Active`` của một Item nhãn (chỉ đọc) để in lại nhãn
+  cuộn đã cấp (lần in trước lỗi, nhãn mất/hỏng) bằng nút "In nhãn cuộn" trên form Item.
 - `resolve_object`: tra đối tượng của một mã để in nhãn QR (`v1.print.object_label`, `object_preview`): mã phải đúng
   định dạng của loại đối tượng, có trong Code Registry và còn ``Active``; thiết bị ``Retired`` bị chặn (R4).
 
@@ -21,6 +23,7 @@ from tracecore.v1._common import reject_block, require_any_role
 
 ROLL_ROLES = ("TC R10", "System Manager")
 MAX_ROLLS = 200
+MAX_LIST_ROLLS = 500  # danh sách in lại: cỡ hộp thoại chọn mã; quá thì báo `truncated`
 SAVEPOINT = "tc_issue_rolls"
 # Đối tượng có DocType riêng: mã trong sổ phải trỏ tới đúng DocType này
 OBJECT_DOCTYPES = {"Equipment": "Equipment", "Station": "Zone Station", "Roll": "Item"}
@@ -96,6 +99,49 @@ def issue_rolls(item, count, client_ts=None):
 		frappe.db.rollback(save_point=SAVEPOINT)  # cả loạt hoặc không mã nào (Review Focus 1)
 		raise
 	return {"ok": True, "codes": codes, "item": item}
+
+
+@frappe.whitelist()
+def list_rolls(item):
+	"""Mã cuộn ``CN-`` còn ``Active`` của Item nhãn `item`, tăng dần: ``{"ok": true, "item", "codes", "truncated"}``.
+
+	Chỉ đọc; quyền kiểm trước. Item không có hoặc không phải nhãn có phương pháp → ``ROLL_NOT_LABEL`` (422). Tối đa
+	`MAX_LIST_ROLLS` mã (``truncated`` = còn nữa); in vẫn theo lô tối đa 50 mã mỗi lần ở Desk.
+	"""
+	require_any_role(*ROLL_ROLES)
+	if not _is_label_item(item):
+		return reject_block(
+			Block(
+				"ROLL_NOT_LABEL",
+				_("Not a label item"),
+				_("Item {0} is not a label item with a compatible method.").format(
+					item if isinstance(item, str) and item else "-"
+				),
+				_(
+					"Open a label item (group Label, with a compatible method) and print its roll labels there."
+				),
+			),
+			"Item",
+			item if isinstance(item, str) else None,
+		)
+	codes = frappe.get_all(
+		"Code Registry",
+		filters={
+			"prefix": code_registry.ROLL_PREFIX,
+			"ref_doctype": "Item",
+			"ref_name": item,
+			"status": "Active",
+		},
+		pluck="name",
+		order_by="name asc",
+		limit_page_length=MAX_LIST_ROLLS + 1,
+	)
+	return {
+		"ok": True,
+		"item": item,
+		"codes": codes[:MAX_LIST_ROLLS],
+		"truncated": len(codes) > MAX_LIST_ROLLS,
+	}
 
 
 def _not_found(label_object, code):

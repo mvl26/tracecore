@@ -24,6 +24,8 @@ from tracecore.v1._common import (
 
 LABEL_ROLES = ("TC R10", "System Manager")  # in nhãn đối tượng (A-05 R8)
 PREVIEW_ROLES = ("TC R10", "TC R02", "System Manager")  # R02 chỉ xem trước
+MAX_STATUS_JOBS = 50  # cùng giới hạn lô in của Desk (tracecore.codes.MAX_BULK)
+STATUS_FIELDS = ["name", "status", "attempts", "error", "printed_at"]
 
 
 @frappe.whitelist(methods=["POST"])
@@ -186,4 +188,53 @@ def object_preview(label_object, code):
 		"png_b64": base64.b64encode(png).decode("ascii"),
 		"zpl": zpl,
 		"hri": target["code"],
+	}
+
+
+def _job_names(names):
+	"""Tên Print Job (list hoặc chuỗi JSON của list; tên là số tự tăng, nhận số hoặc chuỗi), 1..MAX_STATUS_JOBS; sai → 400."""
+	if isinstance(names, str):
+		try:
+			names = frappe.parse_json(names)
+		except ValueError:
+			names = None
+	if (
+		not isinstance(names, list)
+		or not 0 < len(names) <= MAX_STATUS_JOBS
+		or not all(_job_name(name) for name in names)
+	):
+		raise BadRequestError(_("names must be a list of 1 to {0} print job names.").format(MAX_STATUS_JOBS))
+	return [_job_name(name) for name in names]
+
+
+def _job_name(value):
+	if isinstance(value, bool):
+		return None
+	if isinstance(value, int):
+		return str(value) if value > 0 else None
+	return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+@frappe.whitelist()
+def job_status(names):
+	"""Kết quả các Print Job mà Desk vừa tạo (chỉ đọc; R10/System Manager, kiểm quyền trước).
+
+	Trả ``{"ok": true, "jobs": {tên: {"status", "attempts", "error", "printed_at"}}}``; tên không có thì bỏ qua.
+	`printed_at` là chuỗi ``YYYY-MM-DD HH:MM:SS`` (giờ hệ thống) hoặc None. Hộp thoại in của Desk hỏi lại vài giây một
+	lần tới khi job ``Printed``/``Failed`` để R10 thấy "Đã in" hay "Không in được: lý do" thay vì dừng ở "Đã xếp hàng".
+	"""
+	require_any_role(*LABEL_ROLES)
+	names = _job_names(names)
+	rows = frappe.get_all("Print Job", filters={"name": ["in", names]}, fields=STATUS_FIELDS)
+	return {
+		"ok": True,
+		"jobs": {
+			str(row.name): {
+				"status": row.status,
+				"attempts": cint(row.attempts),
+				"error": row.error or None,
+				"printed_at": str(row.printed_at) if row.printed_at else None,
+			}
+			for row in rows
+		},
 	}
