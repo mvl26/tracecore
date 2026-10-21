@@ -67,6 +67,26 @@ class TestProcessProgram(IsolatedTestCase):
 		doc = make_program(self.equipment.name, code="P-4", parameters=params(("Nhiệt", 0, 0), ("Áp", 1, 2)))
 		self.assertEqual(len(doc.parameters), 2)
 
+	def test_parameter_range_may_be_one_sided(self):
+		# Float chưa nhập đọc là 0: chỉ kiểm min <= max khi cả hai > 0
+		doc = make_program(
+			self.equipment.name,
+			code="P-5",
+			parameters=[
+				{"parameter_name": "Chỉ tối thiểu", "min_value": 121},
+				{"parameter_name": "Chỉ tối đa", "max_value": 3},
+				{"parameter_name": "Không dải"},
+			],
+		)
+		doc.reload()
+		self.assertEqual([(r.min_value, r.max_value) for r in doc.parameters], [(121, 0), (0, 3), (0, 0)])
+		with self.assertRaisesRegex(frappe.ValidationError, "Minimum cannot be above Maximum"):
+			make_program(
+				self.equipment.name,
+				code="P-6",
+				parameters=[{"parameter_name": "Cả hai", "min_value": 5, "max_value": 4}],
+			)
+
 	def test_duplicate_pack_type_rejected(self):
 		pack = make_item("PP-PACK-1", "Packaging")
 		with self.assertRaises(frappe.ValidationError):

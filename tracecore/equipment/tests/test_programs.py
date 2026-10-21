@@ -39,6 +39,14 @@ class TestPrograms(IsolatedTestCase):
 		self.assertEqual(result[0]["compatible_pack_types"], [])
 		self.assertEqual([r["program_code"] for r in programs.active_programs(second.name)], ["PB-1"])
 
+	@bru("BRU-EQP-003")
+	def test_active_programs_empty_for_retired_equipment(self):
+		equipment = make_equipment(name="Máy ngừng", serial="SN-PR")
+		make_program(equipment.name, code="PR-1")
+		self.assertEqual(len(programs.active_programs(equipment.name)), 1)
+		set_status(equipment.name, "Retired", "Hỏng không sửa được")
+		self.assertEqual(programs.active_programs(equipment.name), [])
+
 	def test_active_programs_lists_pack_types(self):
 		equipment = make_equipment(name="Máy C", serial="SN-PC")
 		pack = make_item("PRG-PACK-1", "Packaging")

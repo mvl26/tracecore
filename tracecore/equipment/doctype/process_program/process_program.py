@@ -124,9 +124,9 @@ class ProcessProgram(Document):
 			if key in seen:
 				frappe.throw(_("Row {0}: parameter {1} is listed twice.").format(row.idx, row.parameter_name))
 			seen.add(key)
-			# Float chưa nhập đọc lại là 0: cả hai bằng 0 nghĩa là "không đặt dải"
+			# Float chưa nhập đọc lại là 0 = "không đặt" đầu đó: chỉ kiểm khi đặt cả hai (dải một phía hợp lệ)
 			low, high = flt(row.min_value), flt(row.max_value)
-			if (low or high) and low > high:
+			if low > 0 and high > 0 and low > high:
 				frappe.throw(
 					_("Row {0}: Minimum cannot be above Maximum for parameter {1}.").format(
 						row.idx, row.parameter_name

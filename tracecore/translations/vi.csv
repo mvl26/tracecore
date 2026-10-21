@@ -734,7 +734,8 @@ Untick to stop using the program. All its data is kept.,Bỏ chọn để ngừn
 Use the default norms of the equipment type when this program has no norms.,Dùng định mức mặc định của loại máy khi chương trình chưa có định mức.,Process Program
 Quantity used by one load (cycle).,Số lượng dùng cho một mẻ (chu trình).,Program Consumable
 Quantity used by one pack.,Số lượng dùng cho một gói.,Program Consumable
-Leave Min and Max both at 0 for no range.,Để tối thiểu và tối đa cùng bằng 0 nếu không đặt dải.,Program Parameter
+Leave at 0 for no lower limit.,Để 0 nếu không đặt giới hạn dưới.,Program Parameter
+Leave at 0 for no upper limit.,Để 0 nếu không đặt giới hạn trên.,Program Parameter
 Equipment Type Norm,Định mức mặc định theo loại máy,
 Equipment Type,Loại thiết bị,Equipment Type Norm
 Notes,Ghi chú,Equipment Type Norm

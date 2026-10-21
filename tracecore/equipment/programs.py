@@ -43,7 +43,12 @@ CHILD_FIELDS = {
 
 
 def active_programs(equipment: str) -> list[dict]:
-	"""Chương trình đang dùng (``is_active = 1``) của đúng máy `equipment`, theo tên chương trình."""
+	"""Chương trình đang dùng (``is_active = 1``) của đúng máy `equipment`, theo tên chương trình.
+
+	Máy đã ngừng sử dụng (``Retired``) trả danh sách rỗng: FEAT-021/022 không chọn được chương trình của máy đó.
+	"""
+	if frappe.db.get_value("Equipment", equipment, "status") == "Retired":
+		return []
 	rows = frappe.get_all(
 		"Process Program",
 		filters={"equipment": equipment, "is_active": 1},

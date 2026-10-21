@@ -27,13 +27,14 @@
    "label": "Unit"
   },
   {
-   "description": "Leave Min and Max both at 0 for no range.",
+   "description": "Leave at 0 for no lower limit.",
    "fieldname": "min_value",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Minimum"
   },
   {
+   "description": "Leave at 0 for no upper limit.",
    "fieldname": "max_value",
    "fieldtype": "Float",
    "in_list_view": 1,
