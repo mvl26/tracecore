@@ -1,8 +1,8 @@
 """Process Program: chương trình xử lý của một máy (FR-M5-02, FEAT-038).
 
 Mã chương trình viết hoa, chỉ ``[A-Z0-9-]``, là tên bản ghi. Không xóa: ngừng dùng bằng ``is_active = 0``
-và mọi dữ liệu được giữ (FR-M5-02.3, BRU-EQP-003). ``norm_status`` / ``outside_safe_range`` chỉ là trường
-chỉ đọc ở đây; logic tính định mức và dải an toàn nằm ở Task 3.
+và mọi dữ liệu được giữ (FR-M5-02.3, BRU-EQP-003). ``norm_status`` / ``outside_safe_range`` là trường chỉ
+đọc do ``validate`` tính qua ``tracecore.equipment.norms``; thiếu định mức hay ngoài dải chỉ cảnh báo, không chặn.
 """
 
 import re
@@ -10,9 +10,10 @@ import re
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 from tracecore.core import audit
+from tracecore.equipment import norms
 
 PROGRAM_CODE_PATTERN = re.compile(r"[A-Z0-9-]+")
 NON_NEGATIVE_FIELDS = (
@@ -39,24 +40,59 @@ class ProcessProgram(Document):
 		self.program_code = _normalize_code(self.program_code)
 		self._validate_equipment()
 		self._validate_norms()
+		self._apply_norms()
 		self._validate_consumables()
 		self._validate_pack_types()
 		self._validate_parameters()
+		self._warn_safe_range()
 
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")
 
 	def _validate_equipment(self):
-		# chỉ chặn khi tạo mới; chương trình có sẵn của máy đã ngừng vẫn sửa/ngừng dùng được
-		if self.is_new() and frappe.db.get_value("Equipment", self.equipment, "status") == "Retired":
+		# chặn tạo mới và bật lại chương trình trên máy đã ngừng; chương trình có sẵn vẫn sửa/ngừng dùng được
+		reactivated = self.is_active and self.has_value_changed("is_active")
+		if not (self.is_new() or reactivated):
+			return
+		if frappe.db.get_value("Equipment", self.equipment, "status") == "Retired":
+			if self.is_new():
+				frappe.throw(
+					_("Equipment {0} is retired and cannot get a new process program.").format(self.equipment)
+				)
 			frappe.throw(
-				_("Equipment {0} is retired and cannot get a new process program.").format(self.equipment)
+				_("Equipment {0} is retired: its process programs cannot be activated again.").format(
+					self.equipment
+				)
 			)
 
 	def _validate_norms(self):
 		for fieldname, label in NON_NEGATIVE_FIELDS:
 			if flt(self.get(fieldname)) < 0:
 				frappe.throw(_("{0} cannot be negative.").format(_(label)))
+
+	def _apply_norms(self):
+		if cint(self.use_default_norms) and not norms.default_norm(norms.equipment_type_of(self)):
+			frappe.throw(
+				_("Equipment type {0} has no default norms: add an Equipment Type Norm first.").format(
+					_(norms.equipment_type_of(self), context="Equipment")
+				)
+			)
+		status = norms.norm_status(self)
+		if status == "Default":
+			norms.apply_default(self)
+		self.norm_status = status
+		if status == "Missing":
+			warning = _("Program {0} has incomplete norms: costing is not calculated until the norms are complete or default norms are used.")  # fmt: skip
+			frappe.msgprint(warning.format(self.program_code), indicator="orange")
+
+	def _warn_safe_range(self):
+		equipment = frappe.db.get_value(
+			"Equipment", self.equipment, ["safe_temp_min", "safe_temp_max", "safe_pressure_max"], as_dict=True
+		)
+		warnings = norms.range_warnings(self, equipment) if equipment else []
+		self.outside_safe_range = 1 if warnings else 0
+		for message in warnings:
+			frappe.msgprint(message, indicator="orange")
 
 	def _validate_consumables(self):
 		seen = set()

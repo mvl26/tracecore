@@ -187,6 +187,7 @@ doc_events = {
 	"Zone Station": dict(_AUDIT_EVENTS),
 	"Equipment": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
+	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)

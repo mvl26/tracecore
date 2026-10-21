@@ -735,3 +735,25 @@ Use the default norms of the equipment type when this program has no norms.,Dùn
 Quantity used by one load (cycle).,Số lượng dùng cho một mẻ (chu trình).,Program Consumable
 Quantity used by one pack.,Số lượng dùng cho một gói.,Program Consumable
 Leave Min and Max both at 0 for no range.,Để tối thiểu và tối đa cùng bằng 0 nếu không đặt dải.,Program Parameter
+Equipment Type Norm,Định mức mặc định theo loại máy,
+Equipment Type,Loại thiết bị,Equipment Type Norm
+Notes,Ghi chú,Equipment Type Norm
+Default Norms per Cycle,Định mức mặc định mỗi chu trình,Equipment Type Norm
+Duration (min),Thời gian (phút),Equipment Type Norm
+Electricity per Cycle (kWh),Điện mỗi chu trình (kWh),Equipment Type Norm
+Water per Cycle (L),Nước mỗi chu trình (L),Equipment Type Norm
+Steam per Cycle (kg),Hơi mỗi chu trình (kg),Equipment Type Norm
+Steam Sterilizer,Máy hấp hơi nước,Equipment Type Norm
+Washer-Disinfector,Máy rửa khử khuẩn,Equipment Type Norm
+Plasma Sterilizer,Máy tiệt khuẩn plasma,Equipment Type Norm
+Sealer,Máy hàn túi,Equipment Type Norm
+Laundry Washer,Máy giặt,Equipment Type Norm
+Dryer,Máy sấy,Equipment Type Norm
+Ultrasonic Cleaner,Máy rửa siêu âm,Equipment Type Norm
+Default norms of the equipment type; one row per type.,Định mức mặc định của loại máy; mỗi loại một dòng.,Equipment Type Norm
+Equipment type {0} has no default norms: add an Equipment Type Norm first.,Loại máy {0} chưa có định mức mặc định: hãy thêm Định mức mặc định theo loại máy trước.,
+Program {0} has incomplete norms: costing is not calculated until the norms are complete or default norms are used.,Chương trình {0} chưa đủ định mức: chưa tính giá thành cho đến khi đủ định mức hoặc dùng định mức mặc định.,
+Program {0}: temperature {1} °C is below the safe minimum {2} °C of equipment {3}.,Chương trình {0}: nhiệt độ {1} °C thấp hơn mức tối thiểu an toàn {2} °C của thiết bị {3}.,
+Program {0}: temperature {1} °C is above the safe maximum {2} °C of equipment {3}.,Chương trình {0}: nhiệt độ {1} °C cao hơn mức tối đa an toàn {2} °C của thiết bị {3}.,
+Program {0}: pressure {1} bar is above the safe maximum {2} bar of equipment {3}.,Chương trình {0}: áp suất {1} bar cao hơn mức tối đa an toàn {2} bar của thiết bị {3}.,
+Equipment {0} is retired: its process programs cannot be activated again.,Thiết bị {0} đã ngừng sử dụng: không bật lại chương trình xử lý của thiết bị này.,

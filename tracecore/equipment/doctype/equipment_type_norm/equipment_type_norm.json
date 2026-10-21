@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:equipment_type",
+ "creation": "2026-10-21 14:00:00.000000",
+ "description": "Default norms of the equipment type; one row per type.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "equipment_type",
+  "notes",
+  "norms_section",
+  "duration_min",
+  "kwh_per_cycle",
+  "column_break_norms",
+  "water_l_per_cycle",
+  "steam_kg_per_cycle"
+ ],
+ "fields": [
+  {
+   "fieldname": "equipment_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Equipment Type",
+   "options": "\nSteam Sterilizer\nWasher-Disinfector\nPlasma Sterilizer\nSealer\nLaundry Washer\nDryer\nUltrasonic Cleaner",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "norms_section",
+   "fieldtype": "Section Break",
+   "label": "Default Norms per Cycle"
+  },
+  {
+   "fieldname": "duration_min",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Duration (min)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "kwh_per_cycle",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Electricity per Cycle (kWh)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_norms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "water_l_per_cycle",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Water per Cycle (L)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "steam_kg_per_cycle",
+   "fieldtype": "Float",
+   "label": "Steam per Cycle (kg)",
+   "non_negative": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-21 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Equipment",
+ "name": "Equipment Type Norm",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "read": 1, "report": 1, "role": "System Manager", "write": 1},
+  {"create": 1, "read": 1, "report": 1, "role": "TC R10", "write": 1},
+  {"read": 1, "role": "TC R01"},
+  {"read": 1, "role": "TC R02"},
+  {"read": 1, "role": "TC R09"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "equipment_type",
+ "track_changes": 1
+}
