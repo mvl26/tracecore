@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import frappe
+from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import code_registry, gs1
@@ -81,6 +82,22 @@ class TestNextCode(FrappeTestCase):
 		numbers = [int(code.split("-")[1]) for code in codes]
 		self.assertEqual(numbers, list(range(numbers[0], numbers[0] + 200)))
 		self.assertTrue(all(code_registry.is_issued(code) for code in codes))
+
+	@bru("BRU-ID-006")
+	def test_next_code_shares_series_with_doctype_naming_and_rollback_does_not_burn(self):
+		# next_code("TB") và naming series `TB-.####` của Equipment dùng chung một bộ đếm
+		first = code_registry.next_code("TB")
+		number = int(first.split("-")[1])
+		self.assertEqual(make_autoname("TB-.####"), f"TB-{number + 1:04d}")
+		self.assertEqual(code_registry.next_code("TB"), f"TB-{number + 2:04d}")
+		# số cấp trong một savepoint bị hoàn tác thì bộ đếm cũng lùi: không thủng số
+		frappe.db.savepoint("tc_code_burn")
+		burned = code_registry.next_code("TB")
+		self.assertEqual(burned, f"TB-{number + 3:04d}")
+		frappe.db.rollback(save_point="tc_code_burn")
+		self.assertFalse(code_registry.is_issued(burned))
+		self.assertEqual(code_registry.next_code("TB"), burned)
+		self.assertEqual(make_autoname("TB-.####"), f"TB-{number + 4:04d}")
 
 
 class TestRegisterCard(FrappeTestCase):

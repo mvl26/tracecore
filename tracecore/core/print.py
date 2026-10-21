@@ -4,6 +4,8 @@
   lớp + option `language` của Printer/Label Template, không đổi dữ liệu hay nơi gọi.
 - **Render**: mẫu Jinja do R10 sửa (Label Template) chạy trong sandbox riêng, không có API `frappe`; mọi chuỗi đưa
   vào đã bỏ ký tự điều khiển của dialect; chữ in qua `text()` giữ dấu hoặc bỏ dấu theo `Printer.supports_unicode`.
+- **Nhãn đối tượng** (FEAT-005, A-05 R2): `render_object` in nhãn QR mã trần cho thiết bị, trạm, cuộn nhãn, thẻ
+  nhân viên, kệ bằng mẫu active của loại đối tượng (`OBJECT_LABELS`); QR qua hàm `qr()` của dialect.
 - **Chọn máy in** (BRU-REP-011): theo trạm và phương pháp của cuộn nhãn đang lắp (`Printer.label_type_loaded`).
 - **Đổi cuộn** (`set_roll`): cập nhật loại nhãn đang lắp và đưa các Print Job `Waiting` khớp phương pháp vào hàng đợi.
 """
@@ -17,7 +19,7 @@ from frappe.utils import cint, flt, now_datetime
 from jinja2 import TemplateSyntaxError
 from jinja2.sandbox import SandboxedEnvironment
 
-from tracecore.core import code_registry, gs1
+from tracecore.core import code_registry, gs1, qr
 from tracecore.core.errors import Block, BlockedError
 
 LABEL_WIDTH_DOTS = 590  # 50 mm ở 300 dpi
@@ -32,6 +34,8 @@ DEFAULT_DPI = 300
 DEFAULT_WIDTH_MM = 60
 DEFAULT_HEIGHT_MM = 40
 DEFAULT_LANGUAGE = "ZPL"
+# Đối tượng có nhãn QR mã trần (A-05 R2); nhãn gói ("Pack") đi đường `render_pack`
+OBJECT_LABELS = ("Equipment", "Station", "Roll", "Employee Card", "Location")
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -45,6 +49,9 @@ class Dialect:
 	name = ""
 
 	def datamatrix(self, payload, x, y, module=6):
+		raise NotImplementedError
+
+	def qr(self, payload, x, y, magnification=6):
 		raise NotImplementedError
 
 	def sanitize(self, text):
@@ -72,6 +79,12 @@ class ZplDialect(Dialect):
 			return gs1.zpl_datamatrix(payload, x, y, module)
 		except gs1.GS1Error as error:
 			frappe.throw(_("The label data cannot be encoded as DataMatrix: {0}").format(error))
+
+	def qr(self, payload, x, y, magnification=6):
+		try:
+			return qr.zpl_qr(payload, x, y, magnification)
+		except qr.QRError as error:
+			frappe.throw(_("The label data cannot be encoded as QR: {0}").format(error))
 
 	def sanitize(self, text):
 		return ("" if text is None else str(text)).translate(self._STRIP)
@@ -175,7 +188,8 @@ def render(
 	"""Render mẫu `template` (Jinja) với `doc` thành lệnh máy in của `language`.
 
 	Ngữ cảnh mẫu: ``doc`` (mọi chuỗi đã `sanitize`), ``text(giá trị)`` (giữ dấu nếu `unicode`, ngược lại `fold`),
-	``datamatrix(payload, x, y, module)`` của dialect, ``dpi``, ``width_dots``, ``height_dots`` (từ mm và dpi).
+	``datamatrix(payload, x, y, module)`` và ``qr(payload, x, y, magnification)`` của dialect, ``dpi``,
+	``width_dots``, ``height_dots`` (từ mm và dpi).
 	Kết quả là một dòng (bỏ xuống dòng giữa các lệnh) và phải hợp lệ theo `Dialect.problem`.
 
 	Mọi lỗi đều là ValidationError (không bao giờ lỗi thô của Jinja/Python): lỗi lúc chạy mẫu (chia cho 0, cộng
@@ -192,6 +206,7 @@ def render(
 		"doc": _clean(doc or {}, dialect),
 		"text": text,
 		"datamatrix": dialect.datamatrix,
+		"qr": dialect.qr,
 		"dpi": cint(dpi),
 		"width_dots": mm_to_dots(width_mm, dpi),
 		"height_dots": mm_to_dots(height_mm, dpi),
@@ -213,16 +228,26 @@ def render(
 # Mẫu nhãn và chọn máy in
 # ---------------------------------------------------------------------------------------------------------
 
-TEMPLATE_FIELDS = ["name", "body", "width_mm", "height_mm", "dpi", "language"]
+TEMPLATE_FIELDS = ["name", "label_object", "body", "width_mm", "height_mm", "dpi", "language"]
 PRINTER_FIELDS = ["name", "host", "port", "language", "supports_unicode", "label_type_loaded"]
 
 
+def method_filter(method):
+	"""Bộ lọc cột `method`: nhãn đối tượng không có phương pháp (NULL hoặc chuỗi rỗng)."""
+	return method if method else ["is", "not set"]
+
+
 def active_template(label_object, method, language=DEFAULT_LANGUAGE):
-	"""Label Template active của (đối tượng, phương pháp, ngôn ngữ) hoặc None."""
+	"""Label Template active của (đối tượng, phương pháp, ngôn ngữ) hoặc None; nhãn đối tượng: `method` = None."""
 	return (
 		frappe.db.get_value(
 			"Label Template",
-			{"label_object": label_object, "method": method, "language": language, "is_active": 1},
+			{
+				"label_object": label_object,
+				"method": method_filter(method),
+				"language": language,
+				"is_active": 1,
+			},
 			TEMPLATE_FIELDS,
 			as_dict=True,
 		)
@@ -253,6 +278,45 @@ def render_pack(method, doc, language=DEFAULT_LANGUAGE, unicode=False):
 	"""Render nhãn gói bằng mẫu active (kích thước và dpi lấy từ chính mẫu); chưa có mẫu → None."""
 	template = active_template("Pack", method, language)
 	return _render_template_row(template, doc, unicode) if template else None
+
+
+def _check_object_label(label_object):
+	if label_object not in OBJECT_LABELS:
+		frappe.throw(_("Label object {0} has no QR label.").format(label_object))
+
+
+def object_context(label_object, code, title, subtitle=""):
+	"""`doc` của mẫu nhãn QR đối tượng: ``code, title, subtitle, payload, is_test``; payload QR = mã trần.
+
+	Mã đi nguyên vào QR nên phải là ASCII in được, không khoảng trắng, không ``^``/``~``: mã sai bị từ chối thay vì
+	lặng lẽ bỏ ký tự (QR sẽ không quét ra đúng mã). Tên/dòng phụ được làm sạch và bỏ dấu lúc render.
+	"""
+	_check_object_label(label_object)
+	if not isinstance(code, str) or not code or not all("!" <= char <= "}" and char != "^" for char in code):
+		frappe.throw(_("Code {0} cannot be printed on a QR label.").format(repr(code)))
+	return {
+		"code": code,
+		"title": "" if title is None else str(title),
+		"subtitle": "" if subtitle is None else str(subtitle),
+		"payload": code,
+		"is_test": False,
+	}
+
+
+def render_object(label_object, code, title, subtitle="", printer=None):
+	"""Render nhãn QR của một đối tượng bằng mẫu active của `label_object` theo ngôn ngữ máy in.
+
+	`printer` (dict như `select_printer`, hoặc None) cho ``language`` (mặc định ZPL) và ``supports_unicode``
+	(không có → bỏ dấu). Chưa có mẫu active → ValidationError đã dịch; mẫu lỗi → ValidationError nêu tên mẫu.
+	"""
+	doc = object_context(label_object, code, title, subtitle)
+	printer = printer or {}
+	language = printer.get("language") or DEFAULT_LANGUAGE
+	get_dialect(language)
+	template = active_template(label_object, None, language)
+	if template is None:
+		frappe.throw(_("No active label template for {0} ({1}).").format(_(label_object), language))
+	return _render_template_row(template, doc, bool(cint(printer.get("supports_unicode"))))
 
 
 def _active_printers(station):

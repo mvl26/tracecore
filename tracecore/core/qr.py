@@ -61,10 +61,19 @@ def qr_png(payload, module_px=8, margin_px=16):
 
 
 def zpl_qr(payload, x, y, magnification=6):
-	"""Lệnh ZPL in QR model 2 (máy in tự mã hóa), mức sửa lỗi ``ERROR_LEVEL``, nhập dữ liệu tự động."""
+	"""Lệnh ZPL in QR model 2 (máy in tự mã hóa), mức sửa lỗi ``ERROR_LEVEL``, nhập dữ liệu tự động.
+
+	Mọi tham số đi thẳng vào lệnh ZPL nên được kiểm chặt: payload là ASCII in được, không có ``^``/``~``
+	(mã đối tượng luôn là ASCII); ``x``, ``y`` là số nguyên không âm; ``magnification`` 1-10.
+	"""
 	_check_payload(payload)
 	if "^" in payload or "~" in payload:
 		raise QRError("ZPL_CHAR", "Payload must not contain ZPL control characters")
+	if not all(" " <= char <= "}" for char in payload):
+		raise QRError("ZPL_CHAR", f"Payload must be printable ASCII: {payload!r}")
+	for axis, value in (("x", x), ("y", y)):
+		if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+			raise QRError("QR_POSITION", f"{axis} must be a non-negative integer: {value!r}")
 	if isinstance(magnification, bool) or not isinstance(magnification, int):
 		raise QRError("QR_SIZE", f"Magnification must be an integer: {magnification!r}")
 	if not 1 <= magnification <= MAX_MAGNIFICATION:

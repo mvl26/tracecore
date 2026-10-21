@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:template_name",
  "creation": "2026-10-20 14:00:00.000000",
- "description": "Label layout (Jinja) per label object, sterilization method and printer language. R10 edits it without code changes (FR-M2-08.4).",
+ "description": "Label layout (Jinja) per label object (pack or QR object label), sterilization method and printer language. R10 edits it without code changes (FR-M2-08.4).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -49,17 +49,19 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Label Object",
-   "options": "Pack",
+   "options": "Pack\nEquipment\nStation\nRoll\nEmployee Card\nLocation",
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.label_object==='Pack'",
+   "description": "Pack labels only. Object labels have no sterilization method.",
    "fieldname": "method",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Sterilization Method",
-   "options": "Steam\nPlasma",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.label_object==='Pack'",
+   "options": "\nSteam\nPlasma"
   },
   {
    "default": "ZPL",
@@ -106,7 +108,7 @@
    "label": "Template"
   },
   {
-   "description": "Jinja template in the printer language. Variables: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module).",
+   "description": "Jinja template in the printer language. Pack: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Object label: doc (code, title, subtitle, payload, is_test). Also width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).",
    "fieldname": "body",
    "fieldtype": "Code",
    "label": "Template Body",
@@ -116,7 +118,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 14:00:00.000000",
+ "modified": "2026-10-21 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Label Template",

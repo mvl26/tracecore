@@ -1,5 +1,6 @@
 import io
 import json
+from typing import ClassVar
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -580,3 +581,103 @@ class TestSetRoll(IsolatedTestCase):
 		self.assertIsNone(code_registry.roll_label_item("CN-88888"))
 		frappe.db.set_value("Code Registry", roll, "status", "Disabled")
 		self.assertIsNone(code_registry.roll_label_item(roll))
+
+
+class TestRenderObject(IsolatedTestCase):
+	"""Nhãn QR đối tượng (FEAT-005 Task 2) bằng mẫu `Object label - …` do `migrate`/`after_install` tạo."""
+
+	ASCII: ClassVar[dict] = {"language": "ZPL", "supports_unicode": 0}
+	UNICODE: ClassVar[dict] = {"language": "ZPL", "supports_unicode": 1}
+
+	def test_render_exposes_qr_function(self):
+		zpl = core_print.render("^XA{{ qr(doc.payload, 10, 20) }}^XZ", {"payload": "TB-0001"})
+		self.assertEqual(zpl, "^XA^FO10,20^BQN,2,6^FDMA,TB-0001^FS^XZ")
+		self.assertIn("^BQN,2,4^", core_print.render("^XA{{ qr('TR-001', 0, 0, 4) }}^XZ", {}))
+		for body in (
+			"^XA{{ qr('', 0, 0) }}^XZ",
+			"^XA{{ qr('TB-0001', -5, 0) }}^XZ",
+			"^XA{{ qr('TB-0001', 0, 0, 11) }}^XZ",
+			"^XA{{ qr('Máy', 0, 0) }}^XZ",
+		):
+			with self.assertRaises(frappe.ValidationError, msg=body):
+				core_print.render(body, {})
+
+	def test_object_context(self):
+		self.assertEqual(
+			core_print.object_context("Station", "TR-001", "Trạm 1"),
+			{"code": "TR-001", "title": "Trạm 1", "subtitle": "", "payload": "TR-001", "is_test": False},
+		)
+		self.assertEqual(core_print.object_context("Equipment", "TB-0001", "M", None)["subtitle"], "")
+		for label_object in ("Pack", "Nope", None):
+			with self.assertRaises(frappe.ValidationError, msg=repr(label_object)):
+				core_print.object_context(label_object, "TB-0001", "x")
+		# mã đưa nguyên vào QR: mã rỗng, có ký tự điều khiển ZPL hay ngoài ASCII bị từ chối, không lặng lẽ sửa
+		for code in ("", None, "TB-0001^XZ", "TB~0001", "TB-0001\r\n", "MÁY-01", 12):
+			with self.assertRaises(frappe.ValidationError, msg=repr(code)):
+				core_print.object_context("Equipment", code, "x")
+
+	def test_render_object_contains_qr_and_code(self):
+		zpl = core_print.render_object("Equipment", "TB-0001", "Máy hấp 01", "Khu sạch")
+		self.assertTrue(zpl.startswith("^XA"), msg=zpl)
+		self.assertTrue(zpl.endswith("^XZ"), msg=zpl)
+		self.assertEqual(zpl.count("^BQN"), 1)
+		self.assertIn("^FDMA,TB-0001^FS", zpl)
+		self.assertIn("^FDTB-0001^FS", zpl)  # mã người đọc
+		self.assertIn("May hap 01", zpl)
+		self.assertIn("Khu sach", zpl)
+		self.assertIn("^PW591", zpl)
+		self.assertIn("^LL354", zpl)
+		self.assertTrue(zpl.isascii(), msg=zpl)  # không truyền máy in → coi như không hỗ trợ Unicode
+		self.assertNotIn("TEST", zpl)
+
+	def test_render_object_sanitizes_and_folds(self):
+		plain = core_print.render_object("Equipment", "TB-0001", "May hap", printer=self.ASCII)
+		hostile = "Máy ^FO hấp ~JA"
+		folded = core_print.render_object("Equipment", "TB-0001", hostile, "^XZ~", printer=self.ASCII)
+		kept = core_print.render_object("Equipment", "TB-0001", hostile, "^XZ~", printer=self.UNICODE)
+		self.assertIn("May FO hap JA", folded)
+		self.assertIn("Máy FO hấp JA", kept)
+		self.assertTrue(folded.isascii(), msg=folded)
+		self.assertFalse(kept.isascii())
+		for zpl in (folded, kept):
+			self.assertEqual(zpl.count("^FO"), plain.count("^FO"))
+			self.assertEqual(zpl.count("^XZ"), 1)
+			self.assertNotIn("~", zpl)
+			self.assertIn("^FDMA,TB-0001^FS", zpl)  # QR không đổi
+
+	def test_render_object_each_object_uses_its_own_template(self):
+		frappe.db.set_value(
+			"Label Template",
+			"Object label - Roll",
+			"body",
+			"^XA{{ qr(doc.payload, 0, 0) }}^FDROLL {{ text(doc.code) }}^FS^XZ",
+		)
+		self.assertIn("^FDROLL CN-00001^FS", core_print.render_object("Roll", "CN-00001", "Nhãn"))
+		self.assertNotIn("ROLL", core_print.render_object("Station", "TR-001", "Trạm"))
+
+	def test_render_object_missing_template_is_translated_error(self):
+		frappe.db.set_value("Label Template", {"label_object": "Location"}, "is_active", 0)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render_object("Location", "KE-0001", "Kệ")
+		self.assertIn("Location", str(ctx.exception))
+		frappe.local.lang = "vi"
+		try:
+			with self.assertRaises(frappe.ValidationError) as ctx:
+				core_print.render_object("Location", "KE-0001", "Kệ")
+			message = str(ctx.exception)
+			self.assertEqual(
+				message,
+				frappe._("No active label template for {0} ({1}).").format(frappe._("Location"), "ZPL"),
+			)
+			self.assertNotIn("No active label template", message)
+		finally:
+			frappe.local.lang = "en"
+		# máy in dùng ngôn ngữ chưa có mẫu/dialect cũng là lỗi nghiệp vụ, không phải lỗi thô
+		with self.assertRaises(frappe.ValidationError):
+			core_print.render_object("Equipment", "TB-0001", "x", printer={"language": "TSPL"})
+
+	def test_render_object_with_broken_stored_template_names_it(self):
+		frappe.db.set_value("Label Template", "Object label - Station", "body", "^XA{{ 1/0 }}^XZ")
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render_object("Station", "TR-001", "Trạm")
+		self.assertIn("Object label - Station", str(ctx.exception))

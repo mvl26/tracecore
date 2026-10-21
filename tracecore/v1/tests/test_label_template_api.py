@@ -41,6 +41,13 @@ class TestLabelTemplatePreview(IsolatedTestCase):
 		self.assertTrue(result["zpl"].startswith("^XA") and result["zpl"].endswith("^XZ"))
 		self.assertIsNone(frappe.local.response.get("http_status_code"))
 
+	def test_preview_object_template_uses_object_sample(self):
+		# mẫu nhãn QR đối tượng (FEAT-005) xem trước bằng dữ liệu mẫu của chính loại đối tượng đó
+		result = label_template_api.preview("Object label - Equipment", unicode=1)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertIn("^FDMA,TB-0001^FS", result["zpl"])
+		self.assertIn("^PW591", result["zpl"])
+
 	def test_preview_unicode_flag_keeps_diacritics(self):
 		folded = label_template_api.preview(SAMPLE, unicode=0)["zpl"]
 		unicode_zpl = label_template_api.preview(SAMPLE, unicode="1")["zpl"]

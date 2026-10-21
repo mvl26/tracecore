@@ -64,3 +64,19 @@ class TestZplQr(FrappeTestCase):
 		for magnification in [0, 11]:
 			with self.assertRaises(qr.QRError):
 				qr.zpl_qr("TB-0001", 0, 0, magnification=magnification)
+
+	def test_zpl_qr_rejects_bad_coordinates(self):
+		# x, y có thể đến từ dữ liệu request/mẫu: chỉ nhận số nguyên không âm, không để chèn lệnh ZPL
+		for bad in [-1, True, False, 1.5, "10", "0^XZ", None]:
+			with self.assertRaises(qr.QRError, msg=f"x={bad!r}"):
+				qr.zpl_qr("TB-0001", bad, 0)
+			with self.assertRaises(qr.QRError, msg=f"y={bad!r}"):
+				qr.zpl_qr("TB-0001", 0, bad)
+		self.assertTrue(qr.zpl_qr("TB-0001", 0, 0).startswith("^FO0,0^BQN"))
+
+	def test_zpl_qr_payload_is_printable_ascii(self):
+		# mã đối tượng là ASCII; chữ có dấu, xuống dòng hay ký tự điều khiển không được vào ^FD của QR
+		for payload in ["TB-0001é", "Máy", "TB\n0001", "TB\r0001", "TB\x000001", "TB\x1d0001", "TB\x7f"]:
+			with self.assertRaises(qr.QRError, msg=repr(payload)):
+				qr.zpl_qr(payload, 0, 0)
+		self.assertIn("^FDMA,CARD 12/34^FS", qr.zpl_qr("CARD 12/34", 0, 0))

@@ -248,6 +248,18 @@ Label Object,Đối tượng nhãn,Label Template
 Label Size,Kích thước nhãn,Label Template
 Pack,Gói,Label Template
 Template Body,Nội dung mẫu,Label Template
+Equipment,Thiết bị,Label Template
+Station,Trạm,Label Template
+Roll,Cuộn nhãn,Label Template
+Employee Card,Thẻ nhân viên,Label Template
+Location,Kệ / vị trí lưu,Label Template
+Pack labels only. Object labels have no sterilization method.,Chỉ dùng cho nhãn gói. Nhãn đối tượng không có phương pháp tiệt khuẩn.,Label Template
+Sterilization Method is required for pack labels.,Nhãn gói bắt buộc chọn phương pháp tiệt khuẩn.,
+Template {2} is already active for {0} / {1}. Deactivate it first.,Mẫu {2} đang hiệu lực cho {0} / {1}. Hãy tắt mẫu đó trước.,
+The label data cannot be encoded as QR: {0},Dữ liệu nhãn không mã hóa được thành QR: {0},
+Label object {0} has no QR label.,Đối tượng nhãn {0} không có nhãn QR.,
+Code {0} cannot be printed on a QR label.,Mã {0} không in được lên nhãn QR.,
+No active label template for {0} ({1}).,Chưa có mẫu nhãn hiệu lực cho {0} ({1}).,
 Label Roll,Cuộn nhãn,Printer
 Label Type Loaded,Loại nhãn đang lắp,Printer
 Printer Language,Ngôn ngữ máy in,
@@ -261,7 +273,7 @@ Tick only when the printer prints Vietnamese diacritics (Unicode font loaded); o
 Leave empty when the Station Agent writes a file instead of printing.,Để trống khi Station Agent ghi tệp thay vì in.,
 Label item currently loaded; set by changing the roll at the station.,Vật tư nhãn đang lắp; đổi khi thay cuộn tại trạm.,
 "Only one template can be active for each label object, method and language.","Mỗi đối tượng nhãn, phương pháp và ngôn ngữ chỉ có một mẫu hiệu lực.",
-"Jinja template in the printer language. Variables: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module).","Mẫu Jinja theo ngôn ngữ máy in. Biến: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Hàm: text(giá trị) chỉ in dấu trên máy in hỗ trợ Unicode; datamatrix(payload, x, y, module).",
+"Jinja template in the printer language. Pack: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Object label: doc (code, title, subtitle, payload, is_test). Also width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).","Mẫu Jinja theo ngôn ngữ máy in. Nhãn gói: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Nhãn đối tượng: doc (code, title, subtitle, payload, is_test). Thêm width_dots, height_dots, dpi. Hàm: text(giá trị) chỉ in dấu trên máy in hỗ trợ Unicode; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).",
 Waiting: the label is kept until a printer with the right label roll is ready.,Chờ máy in: nhãn được giữ lại cho tới khi có máy in lắp đúng cuộn nhãn.,
 A queued print job needs label content.,Lệnh in đang chờ in phải có nội dung nhãn.,
 DPI must be greater than zero.,DPI phải lớn hơn 0.,
