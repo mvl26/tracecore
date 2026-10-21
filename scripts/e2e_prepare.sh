@@ -8,7 +8,10 @@
 #   4. Set Unit demo để quét (smoke) và dữ liệu demo T4 (devdata.ensure_t4_demo: bộ hấp/plasma/gate-fail,
 #      lô chỉ thị, mã cuộn nhãn, máy in)
 # Kết quả ghi vào $TC_E2E_ENV (mặc định ~/.tracecore-e2e.env): TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID,
-# TC_E2E_STATION (smoke) TC_E2E_R10_USER/PASSWORD và TC_E2E_T4_USER/PASSWORD/STATION + TC_E2E_T4_<khóa của ensure_t4_demo>.
+# TC_E2E_STATION/CARD_ID/EMPLOYEE (smoke), TC_E2E_R10_USER/PASSWORD và TC_E2E_T4_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE
+# + TC_E2E_T4_SECOND_STATION và TC_E2E_T4_<khóa của ensure_t4_demo>.
+# Employee/card/competency demo được dùng lại; không tạo PIN cố định. Site phải bật developer_mode hoặc allow_tests.
+# OTP App seed ngẫu nhiên riêng cho mỗi user demo chỉ ghi vào file env quyền 600; browser hoàn tất 2FA thật.
 #   5. Máy và chương trình demo thiết bị (devdata.ensure_equipment_demo, FEAT-038) → TC_E2E_EQ_<khóa> cho tests_e2e/test_desk_equipment.py
 #   6. In nhãn QR đối tượng (devdata.ensure_codes_demo, FEAT-005): máy in mạng demo tại TR-001, host 127.0.0.1, cổng
 #      $TC_E2E_CODES_PRINTER_PORT (mặc định 19101; tests_e2e dựng socket TCP giả ở cổng này, worker của bench gửi ZPL tới)
@@ -43,6 +46,7 @@ ENV_FILE="${TC_E2E_ENV:-$HOME/.tracecore-e2e.env}"
 STATION="${TC_E2E_STATION:-TR-003}"
 T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
 CODES_PORT="${TC_E2E_CODES_PRINTER_PORT:-19101}"
+SECOND_STATION="${TC_E2E_T4_SECOND_STATION:-TR-005}"
 
 # Từ chối site test: tên test_site hoặc site_config.json / common_site_config.json có allow_tests bật (1/true/"1").
 allow_tests_in() {
@@ -96,19 +100,22 @@ fi
 if [ -z "$r10_password" ] || [ "$r10_password" = "$password" ]; then
 	r10_password=$(random_password)
 fi
-user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station': '$STATION', 'password': '$password'}" | tr -d '"')
-t4_user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station': '$T4_STATION', 'password': '$password'}" | tr -d '"')
-r10_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R10', 'name': 'r10-e2e', 'password': '$r10_password'}" | tr -d '"')
-codes_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R10', 'name': 'r10-codes-e2e', 'password': '$r10_password'}" | tr -d '"')
-bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'Stock User', 'name': 'r10-codes-e2e', 'password': '$r10_password'}" > /dev/null
+users=$(bench_exec tracecore.setup.devdata.ensure_e2e_users --kwargs "{'station': '$STATION', 't4_station': '$T4_STATION', 'password': '$password', 'r10_password': '$r10_password'}")
+user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["user"])')
+t4_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t4_user"])')
+r10_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["r10_user"])')
+station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$STATION', 'user': '$user'}")
+t4_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T4_STATION', 'user': '$t4_user', 'second_station': '$SECOND_STATION'}")
+desk_users=$(bench_exec tracecore.setup.devdata.ensure_desk_users --kwargs "{'password': '$r10_password', 'specs': [{'key': 'codes', 'role': 'TC R10', 'name': 'r10-codes-e2e', 'extra_roles': ['Stock User']}, {'key': 'instr', 'role': 'TC R02', 'name': 'r02-instr-e2e'}, {'key': 'inv', 'role': 'TC R09', 'name': 'r09-inv-e2e'}]}")
+codes_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["codes_user"])')
+instr_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["instr_user"])')
+inv_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["inv_user"])')
 set_id=$(bench_exec tracecore.setup.devdata.ensure_demo_set | tr -d '"')
 t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
 eq_demo=$(bench_exec tracecore.setup.devdata.ensure_equipment_demo)
 bench --site "$SITE" set-config tracecore_allow_local_printers 1 > /dev/null
 codes_demo=$(bench_exec tracecore.setup.devdata.ensure_codes_demo --kwargs "{'port': '$CODES_PORT'}")
-instr_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R02', 'name': 'r02-instr-e2e', 'password': '$r10_password'}" | tr -d '"')
 instr_demo=$(bench_exec tracecore.setup.devdata.ensure_instrument_demo)
-inv_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R09', 'name': 'r09-inv-e2e', 'password': '$r10_password'}" | tr -d '"')
 inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
 
 {
@@ -116,6 +123,11 @@ inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
 		"$user" "$password" "$set_id" "$STATION"
 	printf 'TC_E2E_R10_USER=%s\nTC_E2E_R10_PASSWORD=%s\n' "$r10_user" "$r10_password"
 	printf 'TC_E2E_T4_USER=%s\nTC_E2E_T4_PASSWORD=%s\nTC_E2E_T4_STATION=%s\n' "$t4_user" "$password" "$T4_STATION"
+	printf 'TC_E2E_T4_SECOND_STATION=%s\n' "$SECOND_STATION"
+	printf '%s' "$desk_users" | python3 -c 'import json, sys; [print("TC_E2E_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items() if k.endswith("otp_secret")]'
+	printf '%s' "$users" | python3 -c 'import json, sys; [print("TC_E2E_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items() if k.endswith("otp_secret")]'
+	printf '%s' "$station_demo" | python3 -c 'import json, sys; [print("TC_E2E_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf '%s' "$t4_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T4_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf '%s' "$t4_demo" | python3 -c 'import json, sys; [print("TC_E2E_T4_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf '%s' "$eq_demo" | python3 -c 'import json, sys; [print("TC_E2E_EQ_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf 'TC_E2E_CODES_USER=%s\nTC_E2E_CODES_PASSWORD=%s\n' "$codes_user" "$r10_password"

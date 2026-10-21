@@ -8,25 +8,27 @@ from frappe.model.naming import getseries
 from frappe.utils import add_days, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
+from tracecore.tests.utils import fixture_r10
 
 
 def make_user(email, roles=()):
 	"""Tạo (hoặc lấy) System User với các role cho trước; trả email."""
-	if frappe.db.exists("User", email):
-		user = frappe.get_doc("User", email)
-	else:
-		user = frappe.get_doc(
-			{
-				"doctype": "User",
-				"email": email,
-				"first_name": email.split("@")[0],
-				"send_welcome_email": 0,
-				"user_type": "System User",
-			}
-		).insert(ignore_permissions=True)
-	if roles:
-		user.add_roles(*roles)
-	return user.name
+	with fixture_r10():
+		if frappe.db.exists("User", email):
+			user = frappe.get_doc("User", email)
+		else:
+			user = frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": email,
+					"first_name": email.split("@")[0],
+					"send_welcome_email": 0,
+					"user_type": "System User",
+				}
+			).insert(ignore_permissions=True)
+		if roles:
+			user.add_roles(*roles)
+		return user.name
 
 
 def make_set_unit(set_type=None, max_cycles=300, **kwargs):

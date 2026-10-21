@@ -15,7 +15,7 @@ from werkzeug.wrappers import Request
 from tracecore.core import station_auth
 from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import make_user
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, local_context
 from tracecore.v1 import station as station_api
 
 test_dependencies = ["Company"]
@@ -297,6 +297,8 @@ class TestAccount(IsolatedTestCase):
 	def test_recovery_keeps_guest_session_until_password_and_real_otp_login(self):
 		from frappe.twofactor import get_otpsecret_for_, set_default
 
+		original_response = frappe.local.response
+
 		frappe.set_user(self.r10)
 		self.account.reset_password(self.r02, OLD_PASSWORD)
 		url = frappe.get_doc("User", self.r02)._reset_password(send_email=False, password_expired=True)
@@ -314,17 +316,14 @@ class TestAccount(IsolatedTestCase):
 		manager.user_type = None
 		manager.resume = False
 		with (
-			patch.object(frappe.local, "request", request, create=True),
-			patch.object(frappe.local, "cookie_manager", CookieManager(), create=True),
-			patch.object(frappe.local, "login_manager", manager, create=True),
-			patch.object(frappe.local, "request_ip", "127.0.0.1", create=True),
-			patch.object(frappe.local, "form_dict", frappe._dict(), create=True),
-			patch.object(frappe.local, "response", frappe._dict(), create=True),
-			patch.object(
-				frappe.local,
-				"session",
-				frappe._dict(user="Guest", sid="Guest", data=frappe._dict()),
-				create=True,
+			local_context(
+				request=request,
+				cookie_manager=CookieManager(),
+				login_manager=manager,
+				request_ip="127.0.0.1",
+				form_dict=frappe._dict(),
+				response=frappe._dict(),
+				session=frappe._dict(user="Guest", sid="Guest", data=frappe._dict()),
 			),
 			patch("frappe.database.database.Database.commit", return_value=None),
 		):
@@ -343,6 +342,7 @@ class TestAccount(IsolatedTestCase):
 			self.assertEqual(frappe.session.user, self.r02)
 			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before + 1)
 			frappe.cache.hdel("session", frappe.session.sid)
+		self.assertIs(frappe.local.response, original_response)
 
 	def test_r02_cannot_unlink_or_reassign_employee_user(self):
 		frappe.set_user(self.r02)
@@ -374,9 +374,7 @@ class TestAccount(IsolatedTestCase):
 			).get_environ()
 		)
 		with (
-			patch.object(frappe.local, "request", request, create=True),
-			patch.object(frappe.local, "form_dict", frappe._dict(user=self.user), create=True),
-			patch.object(frappe.local, "request_ip", "127.0.0.1", create=True),
+			local_context(request=request, form_dict=frappe._dict(user=self.user), request_ip="127.0.0.1"),
 			patch("frappe.core.doctype.user.user.User.password_reset_mail"),
 		):
 			with self.assertRaises(frappe.PermissionError):

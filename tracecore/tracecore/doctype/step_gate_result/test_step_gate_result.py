@@ -2,7 +2,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import step_gate
+from tracecore.setup.permissions import ROLE_CODES, build_custom_docperms
 from tracecore.tests.factories import make_set_unit, make_user
+from tracecore.tests.utils import assert_permission_matrix
 
 # recorded_by → User → Email Account → Company (ERPNext) cần Setup Wizard; test tự tạo user qua factory.
 test_ignore = ["User"]
@@ -29,33 +31,34 @@ class TestStepGateResult(FrappeTestCase):
 		with self.assertRaises(frappe.DuplicateEntryError):
 			duplicate.insert(ignore_permissions=True)
 
-	def test_no_role_can_write_or_delete(self):
+	def test_native_rows_are_read_only_and_effective_matrix_matches(self):
 		perms = frappe.get_all(
 			"DocPerm", filters={"parent": "Step Gate Result"}, fields=["role", "read", *WRITE_PTYPES]
 		)
 		self.assertTrue(perms)
+		assert_permission_matrix(self, "Step Gate Result")
 		for perm in perms:
 			for ptype in WRITE_PTYPES:
 				self.assertFalse(perm[ptype], msg=f"{perm.role} has {ptype}")
 		self.assertEqual({p.role for p in perms if p.read}, {"System Manager", "TC R01", "TC R02"})
 
-	def test_only_manager_r01_r02_can_read(self):
+	def test_generated_step_gate_read_permissions_and_no_delete(self):
+		generated = {row["role"]: row for row in build_custom_docperms({"Step Gate Result"})}
 		su = make_set_unit().name
 		step_gate.start_cycle(su)
 		name = step_gate.record(su, "T4", "Pass")
-		for role, can_read in (
-			("System Manager", True),
-			("TC R01", True),
-			("TC R02", True),
-			("TC R04", False),
-			("TC R10", False),
-		):
-			user = make_user(f"sgr-{role.lower().replace(' ', '-')}@example.com", roles=[role])
+		for code in ROLE_CODES:
+			role = f"TC {code}"
+			user = make_user(f"sgr-{code.lower()}@example.com", roles=[role])
 			self.assertEqual(
-				bool(frappe.has_permission("Step Gate Result", "read", doc=name, user=user)), can_read, role
+				bool(frappe.has_permission("Step Gate Result", "read", doc=name, user=user)),
+				bool(generated.get(role, {}).get("read", 0)),
+				role,
 			)
-			self.assertFalse(frappe.has_permission("Step Gate Result", "write", doc=name, user=user), role)
 			self.assertFalse(frappe.has_permission("Step Gate Result", "delete", doc=name, user=user), role)
+		manager = make_user("sgr-system-manager@example.com", roles=["System Manager"])
+		self.assertFalse(frappe.has_permission("Step Gate Result", "read", doc=name, user=manager))
+		self.assertFalse(frappe.has_permission("Step Gate Result", "delete", doc=name, user=manager))
 
 	def test_cannot_be_deleted_even_by_administrator(self):
 		su = make_set_unit().name

@@ -3,7 +3,7 @@ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
 from tracecore.equipment.status import set_status
 from tracecore.tests.factories import make_equipment
-from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
 
 test_ignore = ["Asset", "Item", "User"]
 
@@ -212,8 +212,9 @@ class TestEquipment(IsolatedTestCase):
 
 	def test_permissions_match_q7(self):
 		validate_permissions_for_doctype("Equipment")
+		assert_permission_matrix(self, "Equipment")
 		perms = {row.role: row for row in frappe.get_meta("Equipment").permissions}
-		for role in ("System Manager", "TC R10"):
+		for role in ("TC R10",):
 			for right in ("read", "write", "create", "report"):
 				self.assertEqual(perms[role].get(right), 1, msg=(role, right))
 		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
