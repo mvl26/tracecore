@@ -209,7 +209,7 @@ CODES_KEYS = {"equipment", "equipment_2", "retired", "printer", "printer_port", 
 class TestCodesDemoData(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
-		allow_local_printers(self)  # máy in mạng demo ở 127.0.0.1: server chỉ gửi tới khi site bật cờ (dev/e2e)
+		allow_local_printers(self)  # máy in demo 127.0.0.1: server chỉ gửi tới khi bật cờ
 
 	def test_ensure_codes_demo_idempotent(self):
 		first = devdata.ensure_codes_demo(port=19101)
