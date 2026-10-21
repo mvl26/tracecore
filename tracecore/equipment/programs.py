@@ -72,8 +72,19 @@ def _model_key(equipment):
 	return row, ((row.manufacturer or "").strip().casefold(), (row.model or "").strip().casefold())
 
 
-def copy_program(program: str, equipment: str, new_code: str) -> str:
-	"""Sao chép `program` sang máy `equipment` cùng hãng và model với mã mới; trả tên chương trình mới."""
+def copy_program(
+	program: str,
+	equipment: str,
+	new_code: str,
+	keep_default_norms: bool = False,
+	ignore_permissions: bool = False,
+) -> str:
+	"""Sao chép `program` sang máy `equipment` cùng hãng và model với mã mới; trả tên chương trình mới.
+
+	Mặc định bản sao KHÔNG mang cờ ``use_default_norms`` (chỉ R10/System Manager đặt cờ này, Q7) và insert có kiểm
+	quyền. Tầng RPC quyết định sau khi kiểm role: ``keep_default_norms`` giữ cờ của chương trình nguồn,
+	``ignore_permissions`` cho role không có quyền tạo trực tiếp (R02).
+	"""
 	source = frappe.get_doc("Process Program", program)
 	if source.equipment == equipment:
 		frappe.throw(_("Choose a different equipment to copy program {0} to.").format(program))
@@ -102,5 +113,6 @@ def copy_program(program: str, equipment: str, new_code: str) -> str:
 	values.update({field: source.get(field) for field in SCALAR_FIELDS})
 	for table, fields in CHILD_FIELDS.items():
 		values[table] = [{field: row.get(field) for field in fields} for row in source.get(table)]
-	# quyền do tầng RPC kiểm (R10, R02, System Manager); R02 không có quyền tạo trực tiếp trên DocType
-	return frappe.get_doc(values).insert(ignore_permissions=True).name
+	if not keep_default_norms:
+		values["use_default_norms"] = 0
+	return frappe.get_doc(values).insert(ignore_permissions=ignore_permissions).name

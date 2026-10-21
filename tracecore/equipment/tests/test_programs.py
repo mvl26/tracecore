@@ -93,3 +93,23 @@ class TestPrograms(IsolatedTestCase):
 		set_status(target.name, "Retired", "Hỏng")
 		with self.assertRaises(frappe.ValidationError):
 			programs.copy_program(source.name, target.name, "CPY-R")
+
+	def test_copy_program_defaults_are_permission_checked_and_drop_default_flag(self):
+		from tracecore.equipment.tests.test_norms import make_type_norm
+		from tracecore.tests.factories import make_user
+
+		make_type_norm()
+		source_eq = make_equipment(name="Máy nguồn 3", serial="SN-S3")
+		target = make_equipment(name="Máy đích 3", serial="SN-T3")
+		source = make_program(source_eq.name, code="SRC-3", use_default_norms=1)
+		frappe.set_user(make_user("prog-r04@example.com", ["TC R04"]))
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				programs.copy_program(source.name, target.name, "CPY-NP")
+		finally:
+			frappe.set_user("Administrator")
+		self.assertFalse(frappe.db.exists("Process Program", "CPY-NP"))
+		name = programs.copy_program(source.name, target.name, "CPY-DF")
+		self.assertEqual(frappe.db.get_value("Process Program", name, "use_default_norms"), 0)
+		name = programs.copy_program(source.name, target.name, "CPY-KEEP", keep_default_norms=True)
+		self.assertEqual(frappe.db.get_value("Process Program", name, "use_default_norms"), 1)

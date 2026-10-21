@@ -40,12 +40,13 @@ function program_indicator(frm) {
 	if (entry) {
 		frm.page.set_indicator(entry[1], entry[0]);
 	}
-	if (frm.doc.outside_safe_range) {
-		frm.set_intro(
-			__("This program has settings outside the safe range of the equipment."),
-			"orange"
-		);
-	}
+	// intro rỗng xóa cảnh báo cũ khi chương trình không còn ngoài dải
+	frm.set_intro(
+		frm.doc.outside_safe_range
+			? __("This program has settings outside the safe range of the equipment.")
+			: "",
+		"orange"
+	);
 }
 
 function program_show_block(error) {
@@ -121,7 +122,9 @@ function program_open_copy_dialog(frm, source) {
 				fieldtype: "Link",
 				options: "Equipment",
 				label: __("Target equipment"),
-				description: __("Only equipment of the same manufacturer and model that is not retired."),
+				description: __(
+					"Only equipment of the same manufacturer and model that is not retired."
+				),
 				reqd: 1,
 				get_query: () => ({
 					filters: {

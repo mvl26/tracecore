@@ -132,7 +132,14 @@ def copy_program(program, equipment, new_code, client_ts=None):
 	new_code = _text(new_code, "new_code")
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		name = programs.copy_program(program, equipment, new_code)
+		# R02 chỉ đọc Process Program (Q7): được sao chép nhưng bản sao không mang cờ use_default_norms
+		name = programs.copy_program(
+			program,
+			equipment,
+			new_code,
+			keep_default_norms=bool(set(frappe.get_roles()) & {"TC R10", "System Manager"}),
+			ignore_permissions=True,  # chỉ sau require_any_role ở đầu hàm
+		)
 	except (frappe.ValidationError, frappe.DuplicateEntryError) as error:
 		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.clear_messages()

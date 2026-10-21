@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import frappe
 
 from tracecore.equipment.status import set_status
+from tracecore.equipment.tests.test_norms import consumable, make_type_norm
 from tracecore.tests.factories import make_equipment, make_program, make_user
 from tracecore.tests.utils import IsolatedTestCase, bru, request_headers
 from tracecore.v1 import equipment_admin as admin_api
@@ -33,7 +34,9 @@ def http_status():
 
 
 def as_user(roles, fn, **kwargs):
-	email = make_user(f"eq-admin-{'-'.join(r.lower().replace(' ', '') for r in roles) or 'none'}@example.com", roles)
+	email = make_user(
+		f"eq-admin-{'-'.join(r.lower().replace(' ', '') for r in roles) or 'none'}@example.com", roles
+	)
 	frappe.set_user(email)
 	try:
 		return call(fn, **kwargs)
@@ -86,7 +89,9 @@ class TestRetireRpc(IsolatedTestCase):
 			result = call(admin_api.retire, equipment=equipment.name, reason=reason)
 			self.assertFalse(result["ok"])
 			self.assertEqual(result["error"]["code"], "REASON_REQUIRED")
-			self.assertTrue(result["error"]["title"] and result["error"]["reason"] and result["error"]["action"])
+			self.assertTrue(
+				result["error"]["title"] and result["error"]["reason"] and result["error"]["action"]
+			)
 			self.assertEqual(http_status(), 422)
 		self.assertEqual(rejects("REASON_REQUIRED"), before + 3)
 		self.assertEqual(frappe.db.get_value("Equipment", equipment.name, "status"), "Ready")
@@ -168,7 +173,9 @@ class TestCopyProgramRpc(IsolatedTestCase):
 	def test_copy_model_mismatch(self):
 		other = make_equipment(name="Máy khác model", serial="SN-CP-O", model="TM-2")
 		before = rejects("PROGRAM_MODEL_MISMATCH")
-		result = call(admin_api.copy_program, program=self.source.name, equipment=other.name, new_code="CP-MM")
+		result = call(
+			admin_api.copy_program, program=self.source.name, equipment=other.name, new_code="CP-MM"
+		)
 		self.assertEqual(result["error"]["code"], "PROGRAM_MODEL_MISMATCH")
 		self.assertTrue(result["error"]["title"] and result["error"]["reason"] and result["error"]["action"])
 		self.assertEqual(http_status(), 422)
@@ -208,3 +215,46 @@ class TestCopyProgramRpc(IsolatedTestCase):
 	def test_copy_is_whitelisted_post_only(self):
 		self.assertIn(admin_api.copy_program, frappe.whitelisted)
 		self.assertEqual(frappe.allowed_http_methods_for_whitelisted_func[admin_api.copy_program], ["POST"])
+
+	@bru("BRU-EQP-003")
+	def test_copy_default_norms_flag_only_kept_for_r10_and_system_manager(self):
+		make_type_norm()
+		source = make_program(
+			self.source_eq.name,
+			code="CP-DEF",
+			minutes=0,
+			consumables=consumable("CP-CI-A"),
+			use_default_norms=1,
+		)
+		self.assertEqual((source.use_default_norms, source.norm_status), (1, "Default"))
+		for index, roles in enumerate((["TC R10"], ["System Manager"])):
+			result = as_user(
+				roles,
+				admin_api.copy_program,
+				program=source.name,
+				equipment=self.target_eq.name,
+				new_code=f"cp-keep-{index}",
+			)
+			copy = frappe.get_doc("Process Program", result["program"])
+			self.assertEqual(copy.use_default_norms, 1, roles)
+
+	@bru("BRU-EQP-003")
+	def test_copy_by_r02_resets_default_norms_flag(self):
+		make_type_norm()
+		source = make_program(
+			self.source_eq.name,
+			code="CP-DEF2",
+			minutes=0,
+			consumables=consumable("CP-CI-B"),
+			use_default_norms=1,
+		)
+		result = as_user(
+			["TC R02"],
+			admin_api.copy_program,
+			program=source.name,
+			equipment=self.target_eq.name,
+			new_code="cp-r02",
+		)
+		copy = frappe.get_doc("Process Program", result["program"])
+		# cờ bị bỏ: định mức của bản sao theo dữ liệu của chính nó (định mức mặc định đã điền vào bản nguồn nên đủ)
+		self.assertEqual((copy.use_default_norms, copy.norm_status), (0, "Complete"))
