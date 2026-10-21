@@ -94,6 +94,7 @@ def require_step(station, step):
 	"""Block nếu `station` không phải trạm đang hoạt động của bước `step`; đúng thì None.
 
 	Thứ tự kiểm: tồn tại → `is_active` (STATION_INACTIVE) → bước (STATION_WRONG_STEP).
+	`step=None` bỏ qua kiểm bước (đường Desk của R10: chỉ cần trạm tồn tại và đang hoạt động).
 	"""
 	row = None
 	if isinstance(station, str) and station:
@@ -103,7 +104,7 @@ def require_step(station, step):
 	if row and not cint(row.is_zone):
 		if not cint(row.is_active):
 			return station_inactive_block(station)
-		if row.station_step == step:
+		if step is None or row.station_step == step:
 			return None
 	return Block(
 		"STATION_WRONG_STEP",

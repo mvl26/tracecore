@@ -11,6 +11,8 @@ from tracecore.core.idempotency import idempotent
 from tracecore.v1._common import PACKING_ROLES, BadRequestError, require_any_role, run_at_step
 
 STEP = "T4"
+# Đường Desk (có `printer`): R10 nạp cuộn từ form Máy in, không cần đứng ở trạm T4 (ruling P1)
+DESK_ROLES = ("TC R10", *PACKING_ROLES)
 
 
 def _printer_unknown(reason, action):
@@ -57,12 +59,15 @@ def set_roll(roll_code, station, printer=None, client_ts=None):
 
 	Trả ``{"ok": true, "roll": {"printer", "label_type", "method", "released_jobs", "failed_jobs"}}``; kiosk gửi
 	từng ``released_jobs`` tới Station Agent và báo ``failed_jobs`` (nhãn chờ không dựng được, vẫn Waiting). Từ chối nghiệp vụ: ``ROLL_NOT_FOUND`` (404), ``ROLL_NOT_LABEL`` (422),
-	``ROLL_PRINTER_AMBIGUOUS`` (409), ``STATION_WRONG_STEP`` (422).
+	``ROLL_PRINTER_AMBIGUOUS`` (409), ``STATION_WRONG_STEP`` (422), ``STATION_INACTIVE`` (409).
+
+	Có ``printer`` là đường Desk (R10, R04 hoặc System Manager): máy in phải thuộc ``station`` và trạm phải đang hoạt
+	động nhưng không cần là trạm T4. Không có ``printer`` là đường kiosk: trạm phải là T4, role R04 hoặc System Manager.
 	"""
-	require_any_role(*PACKING_ROLES)
+	require_any_role(*(DESK_ROLES if printer else PACKING_ROLES))
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		None if printer else STEP,
 		station,
 		timestamp,
 		lambda: {"ok": True, "roll": change_roll(roll_code, station, printer)},

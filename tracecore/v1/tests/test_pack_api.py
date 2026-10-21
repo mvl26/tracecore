@@ -700,6 +700,98 @@ class TestSetRoll(PackApiCase):
 		self.assertEqual(totals(), before)
 
 
+class TestSetRollFromDesk(PackApiCase):
+	"""Ruling P1: có `printer` là đường Desk của R10 (không cần trạm T4); không có là đường kiosk."""
+
+	DESK_STATION = "TR-003"  # trạm bước T3, không phải T4
+
+	def desk_printer(self):
+		steam_label, plasma_label = make_label_items()
+		return make_printer(self.DESK_STATION, steam_label), plasma_label
+
+	@bru("BRU-REP-011")
+	def test_r10_desk_path_works_at_a_non_t4_station(self):
+		printer, plasma_label = self.desk_printer()
+		self.as_user("pack-api-r10@example.com", roles=("TC R10",))
+		result = call(
+			printer_api.set_roll,
+			roll_code=make_roll(plasma_label),
+			station=self.DESK_STATION,
+			printer=printer,
+			station_header=self.DESK_STATION,
+		)
+		self.assertIs(result["ok"], True)
+		self.assertEqual(result["roll"]["printer"], printer)
+		self.assertEqual(frappe.db.get_value("Printer", printer, "label_type_loaded"), plasma_label)
+		self.assertIsNone(http_status())
+
+	def test_r10_without_printer_is_rejected_by_role(self):
+		printer, plasma_label = self.desk_printer()
+		roll = make_roll(plasma_label)
+		before = totals()
+		self.as_user("pack-api-r10b@example.com", roles=("TC R10",))
+		with self.assertRaises(frappe.PermissionError):
+			call(printer_api.set_roll, roll_code=roll, station="TR-004")
+		frappe.set_user("Administrator")
+		self.assertEqual(totals(), before)
+		self.assertNotEqual(frappe.db.get_value("Printer", printer, "label_type_loaded"), plasma_label)
+
+	def test_desk_path_rejects_user_without_desk_role(self):
+		printer, plasma_label = self.desk_printer()
+		self.as_user("pack-api-norole4@example.com")
+		with self.assertRaises(frappe.PermissionError):
+			call(
+				printer_api.set_roll,
+				roll_code=make_roll(plasma_label),
+				station=self.DESK_STATION,
+				printer=printer,
+			)
+
+	def test_desk_path_rejects_printer_of_another_station(self):
+		steam_label, plasma_label = make_label_items()
+		elsewhere = make_printer("TR-005", steam_label, name="Máy trạm khác")
+		before = reject_count()
+		result = call(
+			printer_api.set_roll,
+			roll_code=make_roll(plasma_label),
+			station=self.DESK_STATION,
+			printer=elsewhere,
+		)
+		assert_rejection(self, result, "ROLL_PRINTER_AMBIGUOUS", 409)
+		self.assertEqual(frappe.db.get_value("Printer", elsewhere, "label_type_loaded"), steam_label)
+		self.assertEqual(len(rejects_since(before)), 1)
+
+	def test_desk_path_rejects_unknown_printer(self):
+		_printer, plasma_label = self.desk_printer()
+		result = call(
+			printer_api.set_roll,
+			roll_code=make_roll(plasma_label),
+			station=self.DESK_STATION,
+			printer="PRN-999999",
+		)
+		assert_rejection(self, result, "ROLL_PRINTER_AMBIGUOUS", 409)
+
+	def test_desk_path_rejects_inactive_station(self):
+		printer, plasma_label = self.desk_printer()
+		frappe.db.set_value("Zone Station", self.DESK_STATION, "is_active", 0)
+		before = reject_count()
+		result = call(
+			printer_api.set_roll,
+			roll_code=make_roll(plasma_label),
+			station=self.DESK_STATION,
+			printer=printer,
+		)
+		assert_rejection(self, result, "STATION_INACTIVE", 409)
+		self.assertNotEqual(frappe.db.get_value("Printer", printer, "label_type_loaded"), plasma_label)
+		self.assertEqual(len(rejects_since(before)), 1)
+
+	def test_kiosk_path_still_needs_t4_for_system_manager(self):
+		"""Không truyền `printer` thì giữ luật FEAT-018: trạm phải là T4, kể cả khi người gọi là Administrator."""
+		_printer, plasma_label = self.desk_printer()
+		result = call(printer_api.set_roll, roll_code=make_roll(plasma_label), station=self.DESK_STATION)
+		assert_rejection(self, result, "STATION_WRONG_STEP", 422)
+
+
 class TestContractUnchanged(PackApiCase):
 	def test_set_unit_get_contract_unchanged(self):
 		"""FEAT-001 vẫn trả 200 + ok:false (D3: chưa amendment thì không đổi contract)."""
