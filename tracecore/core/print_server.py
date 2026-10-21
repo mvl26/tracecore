@@ -5,6 +5,10 @@ Dùng khi lệnh in không đi qua kiosk/Station Agent (in nhãn đối tượng
 - **Địa chỉ chỉ từ Printer**: host/port lấy từ DocType Printer của job, máy in phải đang hoạt động, host không rỗng,
   port trong 1..65535. Không hàm công khai nào nhận host/port; `data` của job không bao giờ được đọc làm địa chỉ.
   Máy in chỉ-qua-agent (host rỗng) → server không gửi, job giữ nguyên.
+- **Không gửi tới chính server**: host là địa chỉ IP dạng chữ thuộc dải loopback, link-local (gồm metadata
+  169.254.169.254), multicast hay unspecified bị `Printer.validate` từ chối và `printer_address` bỏ qua, trừ khi
+  site_config bật `tracecore_allow_local_printers` (chỉ site dev/e2e, nơi máy in giả nghe trên 127.0.0.1). Tên máy
+  (hostname) vẫn được phép: R10 chịu trách nhiệm cấu hình máy in thật.
 - **Thử tối đa 3 lần**: mỗi lần mở kết nối với timeout `SEND_TIMEOUT_S`; lỗi mạng (`OSError`, gồm timeout/từ chối)
   → `attempts + 1` và ghi `error`, còn dưới `MAX_ATTEMPTS` thì giữ `Queued`, đủ thì `ack(..., "Failed")`.
   Lỗi bất ngờ khác (vd `UnicodeEncodeError`) trong lần quét định kỳ cũng tính một lần thử — không thử lại vô hạn.
@@ -22,6 +26,7 @@ kết nối mới bị timeout/reset, server ghi lần thử lỗi và gửi l�
 R10 bỏ nhãn thừa. Ngược lại không bao giờ có chuyện job `Printed` mà không gửi byte nào.
 """
 
+import ipaddress
 import socket
 from datetime import timedelta
 
@@ -43,6 +48,7 @@ PENDING_SCAN_FACTOR = (
 )
 # chuỗi đúng như `frappe.as_json` ghi khóa đánh dấu (indent=1, separators ", " / ": ") — lọc trước bằng SQL LIKE
 SERVER_MARK = f'"dispatch": "{SERVER_ROUTE}"'
+LOCAL_PRINTERS_FLAG = "tracecore_allow_local_printers"  # site_config: cho máy in IP cục bộ (dev/e2e)
 
 
 def _result(doc):
@@ -54,6 +60,40 @@ def _data(value):
 	return data if isinstance(data, dict) else {}
 
 
+def _ip_literal(host):
+	"""`ipaddress` của `host` nếu là địa chỉ IP dạng chữ (kể cả dạng socket hiểu như ``127.1``), ngược lại None."""
+	text = host.strip().removeprefix("[").removesuffix("]").split("%", 1)[0]
+	try:
+		return ipaddress.ip_address(text)
+	except ValueError:
+		pass
+	try:
+		return ipaddress.IPv4Address(socket.inet_aton(text))  # 127.1, 2130706433, 0x7f.1 ...
+	except (OSError, ValueError):
+		return None
+
+
+def _is_local(ip):
+	mapped = getattr(ip, "ipv4_mapped", None)
+	if mapped is not None:
+		return _is_local(mapped)
+	return ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified
+
+
+def local_printers_allowed():
+	"""Cờ site_config `tracecore_allow_local_printers` bật (1/true): chỉ dùng ở site dev/e2e."""
+	value = frappe.conf.get(LOCAL_PRINTERS_FLAG)
+	return str(value).strip().lower() in ("1", "true", "yes") if value is not None else False
+
+
+def blocked_host(host):
+	"""True nếu `host` là IP dạng chữ loopback/link-local/multicast/unspecified và site không bật cờ máy in cục bộ."""
+	if not host or not isinstance(host, str):
+		return False
+	ip = _ip_literal(host)
+	return ip is not None and _is_local(ip) and not local_printers_allowed()
+
+
 def printer_address(printer):
 	"""`(host, port)` của Printer đang hoạt động có host và port hợp lệ, hoặc None (không gửi từ server được)."""
 	if not printer:
@@ -63,7 +103,7 @@ def printer_address(printer):
 		return None
 	host = (row.host or "").strip()
 	port = cint(row.port)
-	if not host or any(char.isspace() for char in host) or not 1 <= port <= 65535:
+	if not host or any(char.isspace() for char in host) or not 1 <= port <= 65535 or blocked_host(host):
 		return None
 	return host, port
 

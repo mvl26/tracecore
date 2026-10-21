@@ -8,6 +8,7 @@ from tracecore.core import print as core_print
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing
 from tracecore.setup import devdata
+from tracecore.tests.utils import allow_local_printers
 
 
 class TestDevData(FrappeTestCase):
@@ -206,6 +207,10 @@ CODES_KEYS = {"equipment", "equipment_2", "retired", "printer", "printer_port", 
 
 
 class TestCodesDemoData(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		allow_local_printers(self)  # máy in mạng demo ở 127.0.0.1 (site dev/e2e bật cờ này)
+
 	def test_ensure_codes_demo_idempotent(self):
 		first = devdata.ensure_codes_demo(port=19101)
 		printers = frappe.db.count("Printer")

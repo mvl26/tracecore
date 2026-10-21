@@ -122,3 +122,50 @@ class TestPrinter(IsolatedTestCase):
 		for role in ("TC R01", "TC R02"):
 			self.assertTrue(perms[role].read and not perms[role].write, msg=role)
 		self.assertFalse(any(p.delete for p in perms.values()))
+
+
+# Địa chỉ IP dạng chữ thuộc dải cục bộ/không định tuyến: server không được gửi ZPL tới (A-05, chống SSRF nội bộ)
+LOCAL_HOSTS = (
+	"127.0.0.1",
+	"127.1",  # socket hiểu là 127.0.0.1
+	"2130706433",  # 127.0.0.1 dạng số nguyên
+	"::1",
+	"[::1]",
+	"::ffff:127.0.0.1",
+	"169.254.169.254",
+	"fe80::1",
+	"224.0.0.1",
+	"ff02::1",
+	"0.0.0.0",
+	"::",
+)
+
+
+class TestPrinterHost(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		frappe.conf.pop("tracecore_allow_local_printers", None)
+
+	def test_local_ip_literal_host_rejected(self):
+		for host in LOCAL_HOSTS:
+			with self.assertRaises(frappe.ValidationError, msg=host):
+				_printer_doc(host=host).insert()
+			with self.assertRaises(frappe.ValidationError, msg=host):
+				_printer_doc(host=f" {host} ").insert()
+
+	def test_lan_ip_and_hostnames_allowed(self):
+		for host in ("10.0.0.9", "192.168.1.50", "172.16.4.2", "printer.local", "zebra-t4", "localhost"):
+			self.assertTrue(_printer_doc(host=host).insert(), msg=host)
+
+	def test_existing_printer_cannot_be_moved_to_local_ip(self):
+		doc = _printer_doc(host="10.0.0.9").insert()
+		doc.host = "127.0.0.1"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+	def test_site_flag_allows_local_printers(self):
+		from tracecore.tests.utils import allow_local_printers
+
+		allow_local_printers(self)
+		for host in LOCAL_HOSTS:
+			self.assertTrue(_printer_doc(host=host).insert(), msg=host)

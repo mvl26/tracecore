@@ -17,7 +17,7 @@ from tracecore import hooks
 from tracecore.core import print as core_print
 from tracecore.core import print_server
 from tracecore.tests.factories import deactivate_printers, make_label_items, make_printer
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, allow_local_printers
 
 STATION = "TR-004"
 ZPL = "^XA^FO30,40^BQN,2,6^FDMA,TB-0001^FS^XZ"
@@ -96,6 +96,7 @@ class TestServerDispatch(IsolatedTestCase):
 		deactivate_printers(STATION)
 		self.label_item = make_label_items()[0]
 		self.tx = FakeTransactions(self)
+		allow_local_printers(self)  # máy in giả nghe trên 127.0.0.1
 
 	def printer(self, host="127.0.0.1", port=9100, is_active=1):
 		name = make_printer(STATION, self.label_item, host=host)
@@ -234,6 +235,23 @@ class TestServerDispatch(IsolatedTestCase):
 			doc = frappe.get_doc("Print Job", job)
 			self.assertEqual((doc.status, doc.attempts, doc.error), ("Queued", 0, None))
 
+	def test_local_ip_printer_needs_site_flag(self):
+		# máy in ghi thẳng vào DB (bỏ qua Printer.validate) với IP loopback: không cờ site thì server không gửi tới
+		job = self.job(self.printer(host="10.0.0.5"))
+		printer = frappe.db.get_value("Print Job", job, "printer")
+		for host in ("127.0.0.1", "127.1", "::1", "169.254.169.254", "0.0.0.0"):
+			frappe.db.set_value("Printer", printer, "host", host)
+			frappe.conf.pop("tracecore_allow_local_printers", None)
+			self.assertIsNone(print_server.printer_address(printer), host)
+			with patch.object(print_server.socket, "create_connection") as connect:
+				self.assertEqual(print_server.dispatch_job(job), {"status": "Queued", "attempts": 0})
+			connect.assert_not_called()
+			frappe.conf["tracecore_allow_local_printers"] = 1
+			self.assertEqual(print_server.printer_address(printer), (host, 9100), host)
+		frappe.db.set_value("Printer", printer, "host", "printer.local")
+		frappe.conf.pop("tracecore_allow_local_printers", None)
+		self.assertEqual(print_server.printer_address(printer), ("printer.local", 9100))
+
 	def test_dispatch_inactive_printer_does_nothing(self):
 		fake = self.fake_printer()
 		job = self.job(self.printer(port=fake.port, is_active=0))
@@ -303,6 +321,7 @@ class TestServerDispatchQueue(IsolatedTestCase):
 		deactivate_printers(STATION)
 		self.label_item = make_label_items()[0]
 		self.tx = FakeTransactions(self)
+		allow_local_printers(self)  # máy in giả nghe trên 127.0.0.1
 
 	def printer(self, host="127.0.0.1", port=9100):
 		name = make_printer(STATION, self.label_item, host=host)

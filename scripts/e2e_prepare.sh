@@ -15,6 +15,8 @@
 #      và user r10-codes-e2e@… (TC R10 + Stock User: R10 không đọc được Item của ERPNext nên người cấp mã cuộn cần thêm
 #      một role kho; cùng mật khẩu với user R10) → TC_E2E_CODES_USER/PASSWORD + TC_E2E_CODES_<khóa> cho
 #      tests_e2e/test_desk_codes.py. Lệnh in đi đường server: cần worker (bench start / bench worker) đang chạy.
+#      Bật `tracecore_allow_local_printers` trong site_config của site này (sau chốt chặn site test): Printer.validate
+#      và core.print_server từ chối máy in IP loopback nếu không có cờ này. CI dùng chính script này nên cũng có cờ.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -93,6 +95,7 @@ bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'Stock User', 
 set_id=$(bench_exec tracecore.setup.devdata.ensure_demo_set | tr -d '"')
 t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
 eq_demo=$(bench_exec tracecore.setup.devdata.ensure_equipment_demo)
+bench --site "$SITE" set-config tracecore_allow_local_printers 1 > /dev/null
 codes_demo=$(bench_exec tracecore.setup.devdata.ensure_codes_demo --kwargs "{'port': '$CODES_PORT'}")
 
 {
