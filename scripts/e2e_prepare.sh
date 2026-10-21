@@ -13,7 +13,7 @@
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
-# `test_site` hoặc site có `allow_tests` bật trong site_config.json (in lỗi, thoát mã 2): site test là nơi chạy
+# `test_site` hoặc site có `allow_tests` bật trong site_config.json hoặc sites/common_site_config.json (in lỗi, thoát mã 2): site test là nơi chạy
 # `bench run-tests`, dữ liệu e2e rò vào đó làm hỏng test. Dùng site dev (vd tracecore-dev.local). Riêng CI, nơi site
 # test_site được dựng mới và bỏ đi sau job, đặt TC_E2E_ALLOW_TEST_SITE=1 để bỏ qua kiểm tra.
 # TC_E2E_CHECK_ONLY=1 chỉ chạy kiểm tra rồi thoát (dùng cho tracecore/tests/test_e2e_prepare_guard.py).
@@ -27,16 +27,23 @@ ENV_FILE="${TC_E2E_ENV:-$HOME/.tracecore-e2e.env}"
 STATION="${TC_E2E_STATION:-TR-003}"
 T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
 
-# Từ chối site test: tên test_site hoặc site_config.json có allow_tests bật (1/true/"1").
+# Từ chối site test: tên test_site hoặc site_config.json / common_site_config.json có allow_tests bật (1/true/"1").
+allow_tests_in() {
+	[ -f "$1" ] && python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1])).get("allow_tests") in (1, True, "1", "true") else 1)' "$1"
+}
 refuse_test_site() {
-	local site="$1" config="$BENCH_DIR/sites/$1/site_config.json"
+	local site="$1" config="$BENCH_DIR/sites/$1/site_config.json" common="$BENCH_DIR/sites/common_site_config.json"
 	[ "${TC_E2E_ALLOW_TEST_SITE:-0}" = "1" ] && return 0
 	if [ "$site" = "test_site" ]; then
 		echo "error: e2e_prepare.sh refuses to run on test_site (it would leak e2e data into the unit-test site); use a dev site" >&2
 		return 2
 	fi
-	if [ -f "$config" ] && python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1])).get("allow_tests") in (1, True, "1", "true") else 1)' "$config"; then
+	if allow_tests_in "$config"; then
 		echo "error: e2e_prepare.sh refuses to run on $site: allow_tests is enabled in its site_config.json (test site)" >&2
+		return 2
+	fi
+	if allow_tests_in "$common"; then
+		echo "error: e2e_prepare.sh refuses to run on $site: allow_tests is enabled in sites/common_site_config.json (applies to every site)" >&2
 		return 2
 	fi
 }
