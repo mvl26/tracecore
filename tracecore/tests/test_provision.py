@@ -36,6 +36,14 @@ class TestProvision(FrappeTestCase):
 		self.assertIn("TC R04", frappe.get_roles(user))
 		self.assertEqual(check_password(user, "Kiosk-Test-2026!"), user)
 
+	def test_provision_desk_user_r10(self):
+		user = provision.desk_user("TC R10", "r10-e2e", password="Desk-Test-2026!")
+		self.assertEqual(user, "r10-e2e@tracecore.local")
+		self.assertIn("TC R10", frappe.get_roles(user))
+		self.assertEqual(frappe.db.get_value("User", user, "user_type"), "System User")
+		self.assertEqual(check_password(user, "Desk-Test-2026!"), user)
+		self.assertEqual(provision.desk_user("TC R10", "r10-e2e", password="Desk-Test-2026!"), user)
+
 	def test_provision_rejects_zone(self):
 		with self.assertRaises(frappe.ValidationError):
 			provision.station_user("ZONE-CLEAN", password="x")
