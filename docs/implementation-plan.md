@@ -1,6 +1,6 @@
 # Implementation Plan: TraceCore
 
-> Status: Draft · Last updated: 2026-10-17
+> Status: Draft · Last updated: 2026-10-21
 > Inputs: docs/srs.md (v1.11, 90 FR / 35 NFR) · docs/use-cases.md (39 UC) · docs/architecture.md (14 ADR, 63 DocType) · docs/ux-foundations.md (43 SCR) · docs/design.md + docs/tokens.json · docs/.architecture-inputs.md · input/ba_md/cover.md ("Thứ tự phát triển đề xuất") · input/ba_md/d01.md §6 (GĐ1–8).
 > Fidelity: đủ 4 tài liệu đầu vào chính. SCR-44..46 (ux-foundations §B5.2) là **đề xuất chưa duyệt**, không tính vào inventory và không được slice. Không có FR/SCR tombstoned.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
@@ -334,6 +334,8 @@ graph LR
 ## 5. First Vertical Slice — FEAT-018 "T4 Đóng gói → Cycle ID GS1 + in nhãn theo phương pháp + cổng T3→T4"
 
 > **Amendment A-02 (2026-10-20):** quyết định thiết kế FEAT-018 (D1–D14, xem `docs/superpowers/plans/FEAT-018-t4-packing-cycle-id.md`) được ghi ở `docs/architecture.md`, Revision History A-02; D1–D5, D7 **tạm — trình CĐT 20/10/2026**, D6 còn mở (FEAT-018 dùng GTIN test). Nếu đoạn dưới lệch với A-02 thì A-02 thắng, cụ thể: §5.3 AC-5 (hạn dùng = ngày đóng gói + min(hạn loại gói, hạn ghi đè của loại bộ), D4), §5.3 AC-12 (ngưỡng chặn bảo dưỡng: bộ đếm > ngưỡng × 1,2 hoặc số lần hoãn ≥ 3, D5), §5.4 ("scan-box thứ hai" → một ô quét duy nhất ở đầu màn, lô chỉ thị chỉ hiển thị kết quả, D10; thêm nút "Xác nhận tất cả thành phần", D1), §5.5 (RPC và mã lỗi đã cập nhật bên dưới).
+
+> **Amendment A-03 (2026-10-20, cập nhật 2026-10-21):** quyết định thiết kế FEAT-002 (E1–E8 và ruling P1, xem `docs/superpowers/plans/FEAT-002-zone-station-peripherals.md`) được ghi ở `docs/architecture.md`, Revision History A-03 và ghi chú A-03 ở §5.3.1 (M9); E1–E3 **tạm — chờ chủ đầu tư duyệt**. Điểm chạm slice FEAT-018: nạp cuộn nhãn từ form Máy in trên Desk (`tracecore.v1.printer.set_roll` kèm `printer`) chỉ cho TC R10 và System Manager, không cần là trạm T4, ghi nhận cuộn nhưng không phát hành nhãn chờ (nhãn chờ in khi quét cuộn ở màn T4, AC-9 vẫn đạt qua đường kiosk); trạm không hoạt động bị từ chối `STATION_INACTIVE` (409). Khung 3 khu + 7 trạm mặc định tạo nếu chưa có (`tracecore.setup.seed`), không còn là fixtures như ghi ở §2.
 
 ### 5.1 Lựa chọn và lý do
 
