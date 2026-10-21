@@ -37,8 +37,12 @@ def preview(template, unicode=0):
 			language=row.language,
 			name=row.name,
 		)
-	except frappe.ValidationError as error:
+	except Exception as error:  # mẫu lỗi bất kỳ kiểu nào: 422 có body, không phải 500
 		del frappe.local.message_log[logged:]  # lỗi thành body, không để msgprint lên Desk
+		if not isinstance(error, frappe.ValidationError):
+			frappe.log_error(
+				title=_("Label template could not be rendered"), message=f"{row.name}: {error!r}"
+			)
 		block = Block(
 			"LABEL_RENDER_FAILED",
 			_("Label template could not be rendered"),

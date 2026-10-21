@@ -14,8 +14,8 @@ def heartbeat(station, client_ts=None, agent_version=None, queue_depth=None, pri
 	Không dùng @idempotent: ghi đè cache vốn idempotent, tránh ~3.000 dòng Idempotency Key/trạm/ngày.
 	"""
 	require_role(AGENT_ROLE)
+	require_agent_for(station)  # trước require_station: agent không dò được trạm khác (tồn tại, đang tắt)
 	require_station(station)
-	require_agent_for(station)
 	now = server_time()
 	frappe.cache.hset(
 		AGENT_HEARTBEAT_CACHE,

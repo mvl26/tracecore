@@ -1,5 +1,7 @@
 """RPC tracecore.v1.label_template.preview (FEAT-002 Task 4, E7): xem trước mẫu nhãn bằng dữ liệu mẫu trên Desk."""
 
+from unittest.mock import patch
+
 import frappe
 
 from tracecore.core import print as core_print
@@ -57,6 +59,16 @@ class TestLabelTemplatePreview(IsolatedTestCase):
 			self.assertTrue(result["error"][key], msg=key)
 		self.assertEqual(frappe.local.response.http_status_code, 422)
 		self.assertEqual(frappe.db.count("Audit Log"), before)
+
+	def test_preview_unexpected_error_is_422_and_logged(self):
+		"""F5: lỗi không phải ValidationError khi dựng mẫu vẫn là 422 LABEL_RENDER_FAILED và có Error Log."""
+		before = frappe.db.count("Error Log")
+		with patch.object(core_print, "render", side_effect=TypeError("boom")), request_headers({}):
+			result = label_template_api.preview(SAMPLE)
+		self.assertIs(result["ok"], False)
+		self.assertEqual(result["error"]["code"], "LABEL_RENDER_FAILED")
+		self.assertEqual(frappe.local.response.http_status_code, 422)
+		self.assertEqual(frappe.db.count("Error Log"), before + 1)
 
 	def test_preview_unknown_template_is_not_found(self):
 		with self.assertRaises(frappe.DoesNotExistError):

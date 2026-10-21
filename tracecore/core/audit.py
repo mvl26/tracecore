@@ -1,5 +1,7 @@
 """Ghi Audit Log cho mọi thao tác nghiệp vụ (ADR-008, NFR-SEC-03, F-6)."""
 
+from decimal import Decimal
+
 import frappe
 from frappe import _
 from frappe.model import default_fields, no_value_fields, table_fields
@@ -85,8 +87,20 @@ def log(
 	return doc.name
 
 
+def _comparable(value):
+	"""Dạng so sánh của một giá trị snapshot: số nguyên dạng float thành int, mọi giá trị thành chuỗi (``None`` → "");
+	dòng bảng con chuẩn hóa từng giá trị, khóa theo thứ tự cố định. Tránh ghi cả bảng con chỉ vì đổi kiểu (1 với 1.0)."""
+	if isinstance(value, list):
+		return [_comparable(row) for row in value]
+	if isinstance(value, dict):
+		return {key: _comparable(value[key]) for key in sorted(value)}
+	if isinstance(value, float | Decimal) and value == int(value):
+		value = int(value)
+	return cstr(value)
+
+
 def _diff(before, after):
-	keys = [k for k in after if cstr(before.get(k)) != cstr(after.get(k))]
+	keys = [k for k in after if _comparable(before.get(k)) != _comparable(after.get(k))]
 	return {k: before.get(k) for k in keys}, {k: after.get(k) for k in keys}
 
 

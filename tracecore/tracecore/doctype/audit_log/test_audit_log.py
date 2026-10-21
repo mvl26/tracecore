@@ -10,6 +10,15 @@ test_ignore = ["User"]
 
 
 class TestAuditLog(FrappeTestCase):
+	def test_diff_ignores_type_drift_in_child_rows(self):
+		"""F5: `1` với `1.0`, `'9100'` với `9100` trong bảng con không làm ghi lại cả bảng."""
+		before = {"peripherals": [{"port": "9100", "baud_rate": 9600.0, "is_active": 1, "host": None}]}
+		after = {"peripherals": [{"host": "", "is_active": 1.0, "baud_rate": 9600, "port": 9100}]}
+		self.assertEqual(audit._diff(before, after), ({}, {}))
+		changed = {"peripherals": [{"port": 9101, "baud_rate": 9600, "is_active": 1, "host": ""}]}
+		old, new = audit._diff(before, changed)
+		self.assertEqual((old, new), (before, changed))
+
 	def test_log_inserts_row(self):
 		name = audit.log(
 			"Reject", ref_doctype="Zone Station", ref_name="TR-004", reason="SCAN_INVALID", new={"raw": "XYZ"}

@@ -112,6 +112,11 @@ class ZoneStation(Document):
 	def _validate_peripheral_row(self, row):
 		if row.peripheral_type == "Scale" and row.connection == "USB HID":
 			frappe.throw(_("Row {0}: a scale cannot use USB HID.").format(row.idx))
+		# bỏ thông số của kiểu kết nối khác, để không lưu host/cổng cũ sau khi đổi kết nối
+		if row.connection != "TCP":
+			row.host, row.port = None, 0
+		if row.connection != "Serial":
+			row.serial_port, row.baud_rate = None, 0
 		if row.connection == "TCP":
 			row.host = (row.host or "").strip()
 			if not row.host:

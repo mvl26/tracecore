@@ -308,6 +308,21 @@ class TestStationPeripheral(IsolatedTestCase):
 		self._station(peripheral(**tcp), peripheral(**{**tcp, "port": 9101})).save()
 		self._station(peripheral(**tcp), peripheral(**tcp, is_active=0)).save()
 
+	def test_fields_of_other_connections_are_cleared(self):
+		"""F5: đổi kiểu kết nối thì bỏ host/port (không phải TCP) và cổng serial/baud (không phải Serial)."""
+		station = self._station(
+			peripheral(connection="TCP", host="10.0.0.5", port=9100, serial_port="COM3", baud_rate=9600),
+			peripheral(connection="Serial", serial_port="COM4", baud_rate=19200, host="10.0.0.6", port=9101),
+			peripheral(host="10.0.0.7", port=9102, serial_port="COM5", baud_rate=4800),
+		)
+		station.save()
+		tcp, serial, hid = station.peripherals
+		self.assertEqual((tcp.host, tcp.port, tcp.serial_port, tcp.baud_rate), ("10.0.0.5", 9100, None, 0))
+		self.assertEqual(
+			(serial.host, serial.port, serial.serial_port, serial.baud_rate), (None, 0, "COM4", 19200)
+		)
+		self.assertEqual((hid.host, hid.port, hid.serial_port, hid.baud_rate), (None, 0, None, 0))
+
 	def test_zone_cannot_have_peripherals(self):
 		zone = make_zone("Clean")
 		zone.append("peripherals", peripheral())
