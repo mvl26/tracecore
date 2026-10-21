@@ -91,7 +91,7 @@ jobs:
             agent-coverage.xml
 
   e2e:
-    name: e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002 + thiết bị FEAT-038)
+    name: "e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002 + thiết bị FEAT-038 + nhãn QR FEAT-005)"
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     services:
@@ -128,10 +128,11 @@ jobs:
           TC_E2E_ALLOW_TEST_SITE: "1" # site CI dựng mới cho job này, bỏ đi sau job
         run: bash scripts/e2e_prepare.sh test_site
 
-      - name: Start server
+      - name: Start server và worker (nhãn QR đối tượng đi đường server, worker gửi ZPL tới socket giả của test)
         working-directory: /home/runner/frappe-bench
         run: |
           nohup bench --site test_site serve --port 8000 --noreload > /tmp/serve.log 2>&1 &
+          nohup bench worker --queue short,default > /tmp/worker.log 2>&1 &
           for i in $(seq 1 60); do
             curl -sf http://127.0.0.1:8000/api/method/ping > /dev/null && exit 0
             sleep 2
@@ -157,3 +158,4 @@ jobs:
           path: |
             tests_e2e/test-results
             /tmp/serve.log
+            /tmp/worker.log
