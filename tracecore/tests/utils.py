@@ -47,3 +47,20 @@ def request_headers(headers):
 			del frappe.local.request
 		else:
 			frappe.local.request = previous
+
+
+LOCAL_PRINTERS_FLAG = "tracecore_allow_local_printers"
+
+
+def allow_local_printers(testcase):
+	"""Bật cờ site_config ``tracecore_allow_local_printers`` cho một test (máy in giả trên 127.0.0.1); tự tắt sau test."""
+	had, before = LOCAL_PRINTERS_FLAG in frappe.conf, frappe.conf.get(LOCAL_PRINTERS_FLAG)
+	frappe.conf[LOCAL_PRINTERS_FLAG] = 1
+
+	def restore():
+		if had:
+			frappe.conf[LOCAL_PRINTERS_FLAG] = before
+		else:
+			frappe.conf.pop(LOCAL_PRINTERS_FLAG, None)
+
+	testcase.addCleanup(restore)

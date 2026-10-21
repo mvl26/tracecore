@@ -10,6 +10,7 @@ dynamic = ["version"]
 dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
     "pylibdmtx~=0.1.10",  # DataMatrix GS1 (cần libdmtx0b trên hệ điều hành)
+    "PyQRCode~=1.2.1",  # QR nội bộ mã đối tượng (đã có sẵn qua Frappe, A-05 R5)
 ]
 
 [build-system]

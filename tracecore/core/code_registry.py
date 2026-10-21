@@ -11,9 +11,21 @@ SET_SERIAL_DIGITS = 6
 ROLL_PREFIX = "CN"  # cuộn nhãn `CN-#####` do FEAT-005 cấp, ref_doctype = Item nhãn (D2)
 CYCLE_PREFIX = "CY"  # Cycle ID `CY-YYMMDD-NNNN` của gói, ref_doctype = Pack (§5.3.3)
 CYCLE_SERIAL_DIGITS = 4
+# Mã đối tượng QR nội bộ (§5.3.3): prefix sổ → (khóa series, số chữ số). Khóa series trùng naming series
+# của DocType (vd Equipment `TB-.####`) nên hai đường cấp dùng chung một bộ đếm.
+CODE_FORMATS = {"NV": ("NV-", 5), "TB": ("TB-", 4), "KE": ("KE-", 4), "TR": ("TR-", 3), "CN": ("CN-", 5)}
+CARD_PREFIX = "CARD"  # thẻ có sẵn của bệnh viện đăng ký làm mã thẻ (FR-M9-07.4)
+CARD_MIN_LENGTH = 4
+CARD_MAX_LENGTH = 40
+# Tiền tố mã hệ thống: thẻ bệnh viện không được bắt đầu bằng các tiền tố này (dễ lẫn với mã do hệ thống sinh)
+SYSTEM_CODE_PREFIXES = ("NV-", "TB-", "KE-", "TR-", "CN-", "CT-", "CY-", "LR-", "ME-")
 
 
 class CodeAlreadyIssuedError(frappe.ValidationError):
+	pass
+
+
+class InvalidCardCodeError(frappe.ValidationError):
 	pass
 
 
@@ -73,6 +85,51 @@ def disable(code, reason):
 	doc = frappe.get_doc("Code Registry", code, for_update=True)
 	doc.update({"status": "Disabled", "disabled_reason": reason, "disabled_on": now_datetime()})
 	doc.save(ignore_permissions=True)
+
+
+def next_code(prefix, ref_doctype=None, ref_name=None, station=None):
+	"""Cấp mã đối tượng `NV-#####`, `TB-####`, `KE-####`, `TR-###`, `CN-#####` và ghi sổ trong cùng transaction.
+
+	Bộ đếm qua `getseries` (khóa dòng ``tabSeries`` FOR UPDATE nên hai request đồng thời không ra trùng);
+	số đã có trong sổ (đăng ký tay, patch) thì bỏ qua. Hết dải số theo độ rộng → lỗi, không cấp mã dài hơn.
+	"""
+	if prefix not in CODE_FORMATS:
+		frappe.throw(_("Unknown code prefix: {0}.").format(prefix), frappe.ValidationError)
+	series_key, digits = CODE_FORMATS[prefix]
+	while True:
+		serial = getseries(series_key, digits)
+		if len(serial) > digits:
+			frappe.throw(
+				_("Code series {0} is exhausted.").format(series_key + "#" * digits), frappe.ValidationError
+			)
+		code = series_key + serial
+		if not is_issued(code):
+			register(code, prefix, ref_doctype, ref_name, station)
+			return code
+
+
+def register_card(code, ref_doctype, ref_name):
+	"""Đăng ký thẻ có sẵn của bệnh viện làm mã thẻ (FR-M9-07.4), prefix sổ ``CARD``; trả mã đã làm sạch.
+
+	Chỉ nhận mã quét được: sau `gs1.clean_scan` dài 4-40 ký tự GS1 CSET 82, không bắt đầu bằng tiền tố
+	mã hệ thống, không phải Set ID GIAI hay mã khác mà `parse_scan` nhận ra, và chưa có trong sổ.
+	"""
+	if not ref_doctype or not ref_name:
+		frappe.throw(_("A hospital card must be registered to a record."), InvalidCardCodeError)
+	value = gs1.clean_scan(code)
+	if not CARD_MIN_LENGTH <= len(value) <= CARD_MAX_LENGTH or not set(value) <= gs1.CSET82:
+		frappe.throw(
+			_("Card code {0} must be {1}-{2} characters without spaces or accented letters.").format(
+				value, CARD_MIN_LENGTH, CARD_MAX_LENGTH
+			),
+			InvalidCardCodeError,
+		)
+	if value.upper().startswith(SYSTEM_CODE_PREFIXES) or gs1.parse_scan(value)["type"] != "unknown":
+		frappe.throw(
+			_("Card code {0} looks like a system-generated code and cannot be registered.").format(value),
+			InvalidCardCodeError,
+		)
+	return register(value, CARD_PREFIX, ref_doctype, ref_name)
 
 
 def next_cycle_id(packed_at, station=None):

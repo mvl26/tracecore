@@ -6,7 +6,7 @@ from frappe.utils import cint
 
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block
-from tracecore.setup.label_templates import sample_pack_context
+from tracecore.setup.label_templates import sample_context
 from tracecore.v1._common import BadRequestError, require_any_role
 
 PREVIEW_ROLES = ("System Manager", "TC R10")
@@ -14,7 +14,7 @@ PREVIEW_ROLES = ("System Manager", "TC R10")
 
 @frappe.whitelist(methods=["GET", "POST"])
 def preview(template, unicode=0):
-	"""Dựng mẫu `template` bằng dữ liệu mẫu theo kích thước, dpi, ngôn ngữ của chính mẫu; trả `{"ok", "zpl"}`.
+	"""Dựng mẫu `template` bằng dữ liệu mẫu của loại đối tượng nhãn, theo kích thước, dpi, ngôn ngữ của chính mẫu; trả `{"ok", "zpl"}`.
 
 	Chỉ đọc (không ghi Audit Log, không gọi dịch vụ ngoài). Mẫu lỗi → ``ok: false`` + `LABEL_RENDER_FAILED` (422),
 	không phải 500. `unicode` bật thì giữ dấu tiếng Việt, như máy in có phông Unicode.
@@ -29,7 +29,7 @@ def preview(template, unicode=0):
 	try:
 		zpl = core_print.render(
 			row.body,
-			sample_pack_context(),
+			sample_context(row.label_object),
 			bool(cint(unicode)),
 			dpi=row.dpi,
 			width_mm=row.width_mm,

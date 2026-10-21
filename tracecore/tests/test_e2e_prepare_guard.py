@@ -63,3 +63,10 @@ class TestE2ePrepareGuard(unittest.TestCase):
 		self.assertEqual(
 			run_guard("fake.local", {}, allow_override=True, common_config={"allow_tests": 1}).returncode, 0
 		)
+
+	def test_sets_local_printer_flag_after_guard_before_codes_demo(self):
+		# server chỉ gửi tới máy in mạng demo ở 127.0.0.1 khi site bật cờ (print_server.printer_address, lúc gửi)
+		script = SCRIPT.read_text()
+		flag = script.index("set-config tracecore_allow_local_printers 1")
+		self.assertGreater(flag, script.index('refuse_test_site "$SITE" || exit 2'))
+		self.assertLess(flag, script.index("tracecore.setup.devdata.ensure_codes_demo --kwargs"))

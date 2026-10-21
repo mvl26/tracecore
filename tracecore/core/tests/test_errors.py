@@ -31,8 +31,15 @@ class TestErrors(FrappeTestCase):
 				"LABEL_RENDER_FAILED",
 				"PROGRAM_MODEL_MISMATCH",
 				"PROGRAM_COPY_INVALID",
+				"COUNT_OUT_OF_RANGE",
 			),
-			404: ("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND", "EQUIPMENT_NOT_FOUND"),
+			404: (
+				"SET_NOT_FOUND",
+				"PACK_NOT_FOUND",
+				"ROLL_NOT_FOUND",
+				"EQUIPMENT_NOT_FOUND",
+				"CODE_NOT_FOUND",
+			),
 			409: (
 				"STATUS_INVALID_FOR_STATION",
 				"ACTIVE_CYCLE_EXISTS",
@@ -47,6 +54,7 @@ class TestErrors(FrappeTestCase):
 				"EQUIPMENT_NOT_RETIRABLE",
 				"EQUIPMENT_RETIRED",
 				"PROGRAM_CODE_EXISTS",
+				"CODE_DISABLED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

@@ -1,5 +1,7 @@
+/* global tracecore */
 // Desk: form Equipment (SCR-21, FEAT-038 Task 5).
 // Khu cửa ra (khi còn trống) gợi ý lấy từ tracecore.v1.zone.next_zone (luồng Bẩn → Sạch → Vô khuẩn nằm ở core.zones, JS không giữ bản sao).
+// "In nhãn QR": tracecore.codes.add_print_button / print_dialog (tc_codes.js, FEAT-005).
 // "Ngừng sử dụng" gọi tracecore.v1.equipment_admin.retire; fetch thay frappe.call vì Frappe bỏ mất body của HTTP 404/409/422.
 
 const EQUIPMENT_NEXT_ZONE = "tracecore.v1.zone.next_zone";
@@ -128,6 +130,28 @@ function equipment_open_retire_dialog(frm) {
 	dialog.show();
 }
 
+// Nút "In nhãn QR" (FEAT-005, hàm dùng chung ở tc_codes.js): thiết bị Retired không in được (A-05 R4) → không có nút,
+// kèm dòng giải thích; mã Disabled do tracecore.codes.add_print_button tra sổ mã.
+function equipment_print_button(frm) {
+	if (!(window.tracecore && tracecore.codes)) {
+		return; // tc_codes.js (bundle Desk) chưa nạp: form vẫn dùng được, chỉ thiếu nút in
+	}
+	const retired =
+		frm.doc.status === "Retired"
+			? __(
+					"QR label not available: equipment {0} is retired; its history can still be looked up.",
+					[frm.doc.name]
+			  )
+			: null;
+	tracecore.codes.add_print_button(
+		frm,
+		"Equipment",
+		frm.doc.equipment_name,
+		__(frm.doc.equipment_type, null, "Equipment"),
+		retired
+	);
+}
+
 frappe.ui.form.on("Equipment", {
 	setup(frm) {
 		frm.set_query("zone_in", () => ({ filters: { is_zone: 1 } }));
@@ -143,6 +167,7 @@ frappe.ui.form.on("Equipment", {
 		) {
 			frm.add_custom_button(__("Retire equipment"), () => equipment_open_retire_dialog(frm));
 		}
+		equipment_print_button(frm);
 	},
 
 	zone_in(frm) {

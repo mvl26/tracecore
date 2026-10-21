@@ -1,0 +1,21 @@
+{# Nhãn QR đối tượng (Label Template "Object label - Equipment/Station/Roll/Employee Card/Location"),
+   50 x 30 mm, 300 dpi, ZPL (A-05 R2). Gốc tọa độ ở góc trên trái; 1 mm = 11,8 dot ở 300 dpi.
+
+   QR bên trái: payload = mã trần (vd TB-0001), magnification 6, mức sửa lỗi M; mã dài nhất (thẻ có sẵn
+   40 ký tự, QR phiên bản 3 = 29 module) rộng 174 dot nên cột chữ bắt đầu ở x = 210. Cột phải 3 dòng:
+   mã (to, đậm), tên đối tượng (tối đa 3 dòng), loại/khu (tối đa 2 dòng). Không in dòng "TEST".
+
+   Mọi chữ in qua text(): giữ dấu khi Printer.supports_unicode = 1, bỏ dấu khi = 0. ^CI28 chọn UTF-8;
+   ^FB giới hạn bề rộng và số dòng nên chuỗi dài không tràn nhãn.
+
+   Biến: doc.code, doc.title, doc.subtitle, doc.payload, doc.is_test; width_dots, height_dots, dpi.
+   Hàm: text(giá trị), qr(payload, x, y, magnification). #}
+^XA
+^CI28
+^PW{{ width_dots }}
+^LL{{ height_dots }}
+{{ qr(doc.payload, 20, 30, 6) }}
+^FO210,36^A0N,40,40^FB365,1,0,L,0^FD{{ text(doc.code) }}^FS
+^FO210,96^A0N,28,28^FB365,3,4,L,0^FD{{ text(doc.title) }}^FS
+^FO210,212^A0N,24,24^FB365,2,4,L,0^FD{{ text(doc.subtitle) }}^FS
+^XZ
