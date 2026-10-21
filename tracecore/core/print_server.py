@@ -14,6 +14,12 @@ Dùng khi lệnh in không đi qua kiosk/Station Agent (in nhãn đối tượng
   hay rollback sau đó hoàn tác, nên không in lại.
 - **Quét định kỳ** (`dispatch_pending`, cron mỗi phút): chỉ job đã đánh dấu đi đường server
   (`enqueue_server_dispatch`) và không đổi trong 1 phút — job của kiosk/Station Agent không bao giờ bị server gửi.
+
+**Ngữ nghĩa giao nhận: ít nhất một lần (at-least-once), không phải đúng một lần.** Raw TCP 9100 không có ack ở tầng
+ứng dụng: `sendall` thành công chỉ nghĩa là byte đã vào bộ đệm TCP. Nếu máy in nhận một phần (hoặc toàn bộ) ZPL rồi
+kết nối mới bị timeout/reset, server ghi lần thử lỗi và gửi lại ở lần sau → máy in có thể ra **hai nhãn giống hệt**
+(cùng mã, cùng QR). Chấp nhận được vì nhãn QR đối tượng chỉ mang mã trần, in trùng không sinh mã mới hay đổi dữ liệu;
+R10 bỏ nhãn thừa. Ngược lại không bao giờ có chuyện job `Printed` mà không gửi byte nào.
 """
 
 import socket
