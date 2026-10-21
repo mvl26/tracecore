@@ -1,6 +1,6 @@
 """Sinh và phân tích mã GS1 cho TraceCore (ADR-004).
 
-Nơi duy nhất tạo Set ID GIAI (AI 8004) và payload Cycle ID (AI 01, 11, 17, 21),
+Nơi duy nhất tạo Set ID GIAI và mã GIAI dụng cụ (AI 8004) và payload Cycle ID (AI 01, 11, 17, 21),
 kiểm GTIN-14, phân tích chuỗi quét từ máy quét HID
 và mã hóa DataMatrix (ảnh PNG qua libdmtx, lệnh ZPL ``^BXN`` cho máy in).
 Hàm ở đây thuần Python, không đọc/ghi DB.
@@ -24,6 +24,11 @@ TEST_GTIN_PREFIX = "0952"  # chỉ thị 0 + prefix demo 952: GTIN-14 do make_te
 MAX_GIAI_LENGTH = 30
 MAX_SERIAL_LENGTH = 20  # độ dài tối đa của AI (21)
 MAX_SCAN_LENGTH = 120
+DEMO_PREFIX_RANGE = "952"  # GS1 dành dải 952 cho demo/thử nghiệm: không bao giờ là tiền tố thật của bệnh viện
+# Mã GIAI khắc laser của dụng cụ (FEAT-014 A-06 I8): <prefix>I-<8 số>. Dấu "-" làm dạng này không bao giờ trùng
+# Set ID <prefix><mã loại bộ [A-Z0-9]{2,8}><6 số>.
+INSTRUMENT_ASSET_PREFIX = "I-"
+INSTRUMENT_SERIAL_DIGITS = 8
 
 # GS1 AI encodable character set 82 (GS1 General Specifications, Figure 7.11-1)
 CSET82 = frozenset(string.ascii_letters + string.digits + "!\"%&'()*+,-./:;<=>?_")
@@ -34,6 +39,8 @@ _GTIN_BODY = re.compile(r"[0-9]{13}")
 # Cycle ID: thứ tự AI cố định 01 → 11 → 17 → 21, (21) cuối nên chạy tới hết dữ liệu (không cần GS)
 _PACK_HRI = re.compile(r"\(01\)([0-9]{14})\(11\)([0-9]{6})\(17\)([0-9]{6})\(21\)(.+)")
 _PACK_PLAIN = re.compile(r"01([0-9]{14})11([0-9]{6})17([0-9]{6})21(.+)")
+_INSTRUMENT_ASSET = re.compile(r"I-[0-9]{8}")
+_INSTRUMENT_GIAI = re.compile(r"[0-9]{4,12}I-[0-9]{8}")
 _INTERNAL_CODES = (
 	("employee", re.compile(r"NV-\d{5}")),
 	("equipment", re.compile(r"TB-\d{4}")),
@@ -70,6 +77,19 @@ def make_giai(prefix, asset_ref):
 	if len(giai) > MAX_GIAI_LENGTH:
 		raise GS1Error("GS1_LENGTH", f"GIAI longer than {MAX_GIAI_LENGTH} characters: {giai!r}")
 	return giai
+
+
+def make_instrument_giai(prefix, serial):
+	"""GIAI khắc laser của dụng cụ = tiền tố GS1 + ``I-`` + số thứ tự 8 chữ số (A-06 I8)."""
+	limit = 10**INSTRUMENT_SERIAL_DIGITS
+	if isinstance(serial, bool) or not isinstance(serial, int) or not 1 <= serial < limit:
+		raise GS1Error("GS1_ASSET_REF", f"Instrument serial must be an integer 1..{limit - 1}: {serial!r}")
+	return make_giai(prefix, f"{INSTRUMENT_ASSET_PREFIX}{serial:0{INSTRUMENT_SERIAL_DIGITS}d}")
+
+
+def is_demo_prefix(prefix):
+	"""``True`` nếu tiền tố (hoặc mã bắt đầu bằng tiền tố) thuộc dải demo GS1 ``952`` (OQ-05, D6)."""
+	return isinstance(prefix, str) and prefix.startswith(DEMO_PREFIX_RANGE)
 
 
 def giai_hri(giai):
@@ -199,9 +219,11 @@ def _parse_pack_payload(value):
 
 
 def parse_scan(raw, company_prefix=None):
-	"""Nhận dạng chuỗi quét: Set ID GIAI, Cycle ID (GS1 hoặc ``CY-…``) hoặc mã QR nội bộ (§5.3.3).
+	"""Nhận dạng chuỗi quét: Set ID GIAI, mã GIAI dụng cụ, Cycle ID (GS1 hoặc ``CY-…``) hoặc mã QR nội bộ (§5.3.3).
 
-	Trả ``{"type": ..., "id": ..., "raw": ...}``; không nhận ra → ``type = "unknown"``.
+	Trả ``{"type": ..., "id": ..., "raw": ...}``; không nhận ra → ``type = "unknown"``. Mã dụng cụ
+	``<prefix>I-<8 số>`` → ``type = "instrument"`` (có AI 8004 thì nhận theo dạng; không AI thì phần sau tiền tố
+	cấu hình phải đúng ``I-<8 số>``). Các loại mã cũ giữ nguyên kết quả.
 	Nhãn gói dạng GS1 (01)(11)(17)(21) trả thêm ``gtin``, ``packed``, ``expiry`` (``datetime.date``).
 	"""
 	value = clean_scan(raw)
@@ -220,6 +242,8 @@ def parse_scan(raw, company_prefix=None):
 	elif value.startswith(AI_GIAI):
 		giai = value[len(AI_GIAI) :].split(GS, 1)[0]
 	if giai is not None:
+		if _INSTRUMENT_GIAI.fullmatch(giai):
+			return {"type": "instrument", "id": giai, "raw": value}
 		return {"type": "set", "id": giai, "raw": value} if _is_valid_giai(giai) else unknown
 
 	for kind, pattern in _INTERNAL_CODES:
@@ -227,6 +251,8 @@ def parse_scan(raw, company_prefix=None):
 			return {"type": kind, "id": value, "raw": value}
 
 	prefix = configured_company_prefix() if company_prefix is None else company_prefix
+	if prefix and value.startswith(prefix) and _INSTRUMENT_ASSET.fullmatch(value[len(prefix) :]):
+		return {"type": "instrument", "id": value, "raw": value}
 	if prefix and value.startswith(prefix) and _is_valid_giai(value):
 		return {"type": "set", "id": value, "raw": value}
 	return unknown

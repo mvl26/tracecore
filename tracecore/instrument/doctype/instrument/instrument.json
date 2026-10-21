@@ -32,6 +32,11 @@
   "value",
   "column_break_value",
   "item",
+  "section_giai",
+  "giai_code",
+  "column_break_giai",
+  "giai_etched_on",
+  "giai_position",
   "section_retirement",
   "retired_on",
   "column_break_retirement",
@@ -204,6 +209,42 @@
   },
   {
    "collapsible": 1,
+   "depends_on": "eval:doc.giai_code || (doc.__onload && doc.__onload.giai_enabled)",
+   "fieldname": "section_giai",
+   "fieldtype": "Section Break",
+   "label": "Laser-etched GIAI"
+  },
+  {
+   "description": "GS1 GIAI assigned by TraceCore (Assign GIAI). Never typed in, changed or reissued.",
+   "fieldname": "giai_code",
+   "fieldtype": "Data",
+   "label": "GIAI Code",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_giai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "giai_etched_on",
+   "fieldtype": "Date",
+   "label": "Etched On",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "giai_position",
+   "fieldtype": "Data",
+   "label": "Etching Position",
+   "length": 140,
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "depends_on": "eval:doc.status==\"Retired\"",
    "fieldname": "section_retirement",
    "fieldtype": "Section Break",
@@ -229,7 +270,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 10:00:00.000000",
+ "modified": "2026-10-21 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument",

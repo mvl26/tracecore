@@ -5,7 +5,9 @@ pháp) nêu trong một thông báo; chuỗi chỉ toàn khoảng trắng coi nh
 ``retired_reason``, ``version_no`` chỉ đổi qua dịch vụ danh mục (cờ ``flags.tc_instrument``): ngừng sử dụng qua
 ``catalog.retire`` (một chiều), phiên bản tăng khi tập phương pháp đổi (``versions``, A-06 I1/I3).
 Ảnh/IFU phải là File riêng tư đính vào chính dụng cụ; ``image_thumbnail`` do ``media.refresh_thumbnail`` sinh từ ảnh,
-không sửa tay được (A-06 I11).
+không sửa tay được (A-06 I11). Mã GIAI khắc laser (``giai_code``, ``giai_etched_on``, ``giai_position``) chỉ ghi qua
+``catalog.assign_giai``/``catalog.record_etching`` (cờ ``flags.tc_giai``); mã đã cấp không đổi, không xóa; cờ tính năng
+tắt vẫn lưu được dụng cụ có mã cũ (A-06 I7/I8, FR-M1-02.3).
 """
 
 from decimal import ROUND_HALF_UP, Decimal
@@ -22,6 +24,8 @@ TEXT_FIELDS = ("instrument_name", "manufacturer", "model")
 CONTROLLED_DEFAULTS = {"status": "Active", "retired_on": None, "retired_reason": None, "version_no": 1}
 # trường dẫn xuất từ file (A-06 I11): chỉ media.refresh_thumbnail ghi, kể cả khi lưu qua cờ của danh mục
 DERIVED_FIELDS = ("image_thumbnail",)
+# mã GIAI khắc laser và bản ghi khắc (A-06 I8): chỉ dịch vụ danh mục ghi (flags.tc_giai)
+GIAI_FIELDS = ("giai_code", "giai_etched_on", "giai_position")
 
 
 def _round_vnd(value) -> int:
@@ -29,6 +33,10 @@ def _round_vnd(value) -> int:
 
 
 class Instrument(Document):
+	def onload(self):
+		# form ẩn/hiện khối GIAI theo cờ TraceCore Settings (depends_on đọc __onload)
+		self.set_onload("giai_enabled", catalog.giai_enabled())
+
 	def before_insert(self):
 		self._prepare()
 		if catalog.code_exists(self.instrument_code):
@@ -41,11 +49,12 @@ class Instrument(Document):
 		self._guard_retirement()
 		self._guard_controlled_fields()
 		self._guard_derived_fields()
+		self._guard_giai_fields()
 		media.validate_fields(self)
 		self._validate_methods()
 		versions.bump_if_methods_changed(self)
 		self._validate_value()
-		if not self._is_retiring():
+		if not self._is_service_update():
 			self._validate_item()
 		self.max_cycles_status = "Defined" if cint(self.max_cycles) > 0 else "Undefined"
 		media.refresh_thumbnail(self)
@@ -68,7 +77,7 @@ class Instrument(Document):
 			if self.get(field) is not None:
 				self.set(field, str(self.get(field)).strip())
 		code = (self.instrument_code or "").strip()
-		if not self._is_retiring():
+		if not self._is_service_update():
 			self._check_required(code)
 		self.instrument_code = catalog.normalize_code(code)
 
@@ -94,6 +103,27 @@ class Instrument(Document):
 			return False
 		before = self.get_doc_before_save()
 		return bool(before) and before.status != "Retired"
+
+	def _is_service_update(self):
+		# ngừng sử dụng và ghi mã GIAI chỉ đổi trường của dịch vụ: dụng cụ cũ thiếu trường bắt buộc vẫn đi qua
+		return self._is_retiring() or bool(self.flags.tc_giai and not self.is_new())
+
+	def _guard_giai_fields(self):
+		before = None if self.is_new() else self.get_doc_before_save()
+		for field in GIAI_FIELDS:
+			old = before.get(field) if before else None
+			if str(self.get(field) or "") == str(old or ""):
+				continue
+			if not self.flags.tc_giai:
+				frappe.throw(
+					_(
+						"The GIAI code and etching record are set only by TraceCore (Assign GIAI, Record Etching)."
+					)
+				)
+			if field == "giai_code" and old:
+				frappe.throw(
+					_("GIAI code {0} is already assigned and cannot be changed or removed.").format(old)
+				)
 
 	def _guard_retirement(self):
 		# Ngừng sử dụng là một chiều (I13), kể cả khi lưu qua cờ của danh mục

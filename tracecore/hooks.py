@@ -191,6 +191,8 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
+	"TraceCore Settings": dict(_AUDIT_EVENTS),
 	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
 	"File": {
 		"before_insert": "tracecore.instrument.media.check_upload",

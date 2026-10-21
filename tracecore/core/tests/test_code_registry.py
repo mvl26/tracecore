@@ -157,3 +157,59 @@ class TestRegisterCard(FrappeTestCase):
 			with self.assertRaises(frappe.ValidationError):
 				code_registry.register_card("BV7777777", ref_doctype, ref_name)
 		self.assertFalse(code_registry.is_issued("BV7777777"))
+
+
+class TestNextInstrumentGiai(FrappeTestCase):
+	"""Mã GIAI dụng cụ (FEAT-014 Task 5, A-06 I8): series riêng, ghi sổ prefix ``GI`` ref Instrument."""
+
+	@bru("BRU-ID-001")
+	def test_next_instrument_giai_registers_and_skips_taken_numbers(self):
+		self.assertEqual(code_registry.INSTRUMENT_GIAI_PREFIX, "GI")
+		prefix = gs1.configured_company_prefix()
+		first = code_registry.next_instrument_giai("CR-GIAI-1")
+		self.assertRegex(first, rf"^{prefix}I-\d{{8}}$")
+		row = frappe.db.get_value(
+			"Code Registry", first, ["prefix", "ref_doctype", "ref_name", "status"], as_dict=True
+		)
+		self.assertEqual(
+			row, {"prefix": "GI", "ref_doctype": "Instrument", "ref_name": "CR-GIAI-1", "status": "Active"}
+		)
+		serial = int(first[-8:])
+		# số kế tiếp đã có trong sổ (đăng ký tay) → bỏ qua
+		taken = gs1.make_instrument_giai(prefix, serial + 1)
+		code_registry.register(taken, "GI", "Instrument", "OTHER")
+		second = code_registry.next_instrument_giai("CR-GIAI-2")
+		self.assertEqual(second, gs1.make_instrument_giai(prefix, serial + 2))
+		# series riêng: không đụng series Set ID
+		set_id = code_registry.next_set_id("CRG")
+		self.assertEqual(gs1.parse_scan(set_id)["type"], "set")
+		self.assertEqual(gs1.parse_scan(second)["type"], "instrument")
+
+	def test_next_instrument_giai_series_exhausted(self):
+		with patch.object(code_registry, "getseries", return_value="100000000"):
+			with self.assertRaises(frappe.ValidationError):
+				code_registry.next_instrument_giai("CR-GIAI-X")
+
+	def test_demo_prefix_blocked_outside_dev_or_test(self):
+		from tracecore.core.errors import BlockedError
+
+		production = {"developer_mode": 0, "allow_tests": 0, "tc_gs1_company_prefix": "9520000"}
+		with patch.dict(frappe.conf, production), patch.dict(frappe.flags, {"in_test": False}):
+			self.assertFalse(code_registry.demo_prefix_allowed())
+			with self.assertRaises(BlockedError) as raised:
+				code_registry.next_instrument_giai("CR-GIAI-P")
+			self.assertEqual(raised.exception.block.code, "GS1_PREFIX_NOT_CONFIGURED")
+			# chưa cấu hình tiền tố (rơi về tiền tố demo) cũng bị chặn
+			with patch.dict(frappe.conf, {"tc_gs1_company_prefix": None}):
+				with self.assertRaises(BlockedError):
+					code_registry.next_instrument_giai("CR-GIAI-P")
+			# tiền tố sai định dạng → chặn, không 500
+			with patch.dict(frappe.conf, {"tc_gs1_company_prefix": "89A"}):
+				with self.assertRaises(BlockedError):
+					code_registry.next_instrument_giai("CR-GIAI-P")
+			# tiền tố thật → cấp được
+			with patch.dict(frappe.conf, {"tc_gs1_company_prefix": "8930001"}):
+				code = code_registry.next_instrument_giai("CR-GIAI-R")
+			self.assertTrue(code.startswith("8930001I-"))
+		self.assertEqual(frappe.db.count("Code Registry", {"ref_name": "CR-GIAI-P"}), 0)
+		self.assertTrue(code_registry.demo_prefix_allowed())

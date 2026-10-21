@@ -3,16 +3,22 @@
 Mã dụng cụ chuẩn hóa NFKC → bỏ khoảng trắng đầu/cuối → viết hoa → ``[A-Z0-9-]{1,40}``. Trùng mã (kể cả dụng cụ đã
 Ngừng sử dụng) báo kèm mã kế tiếp còn trống. Phương pháp tương thích lưu ở bảng con ``Instrument Compatible Method``;
 họ phương pháp (``Steam``/``Plasma``/``EO``) dùng để so với ``Instrument Set Type.method``.
+Mã GIAI khắc laser (A-06 I7/I8, FR-M1-02): bật/tắt bằng ``TraceCore Settings.enable_instrument_giai``; mã do
+``core.code_registry`` cấp, không cấp lại; dụng cụ Ngừng sử dụng → mã ``Disabled``.
 """
 
 import re
 import unicodedata
 from collections.abc import Iterable
+from datetime import date
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, today
+from frappe.utils import cint, formatdate, getdate, today
+
+from tracecore.core import code_registry
+from tracecore.core.errors import Block, BlockedError
 
 METHODS: tuple[str, ...] = ("Steam 121", "Steam 134", "Plasma", "EO")
 METHOD_FAMILY: dict[str, str] = {"Steam 121": "Steam", "Steam 134": "Steam", "Plasma": "Plasma", "EO": "EO"}
@@ -21,6 +27,9 @@ CODE_MAX_LENGTH = 40
 CODE_PATTERN = re.compile(rf"[A-Z0-9-]{{1,{CODE_MAX_LENGTH}}}")
 SUGGEST_ATTEMPTS = 1000
 _TRAILING_DIGITS = re.compile(r"^(.*?)([0-9]+)$")
+SETTINGS_DOCTYPE = "TraceCore Settings"
+ETCH_POSITION_MAX = 140
+_ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def normalize_code(code: str) -> str:
@@ -174,4 +183,137 @@ def retire(instrument: str, reason: str, confirm: bool = False) -> dict:
 	# dụng cụ cũ thiếu trường bắt buộc vẫn ngừng sử dụng được (chỉ đổi trạng thái)
 	doc.flags.ignore_mandatory = True
 	doc.save()
+	# mã GIAI của dụng cụ ngừng sử dụng bị vô hiệu, vẫn nằm trong sổ nên không bao giờ cấp lại (I13, BRU-ID-001)
+	if doc.giai_code and frappe.db.get_value("Code Registry", doc.giai_code, "status") == "Active":
+		code_registry.disable(doc.giai_code, _("Instrument {0} retired: {1}").format(doc.name, reason))
 	return {"retired": True, "boms": boms}
+
+
+# --- Mã GIAI khắc laser (FR-M1-02, A-06 I7/I8) -------------------------------------------------------------
+
+
+def giai_enabled() -> bool:
+	"""Cờ ``TraceCore Settings.enable_instrument_giai`` (đọc qua cache của request, xóa khi lưu Settings)."""
+	return bool(cint(frappe.db.get_single_value(SETTINGS_DOCTYPE, "enable_instrument_giai")))
+
+
+def feature_disabled_block() -> Block:
+	return Block(
+		"FEATURE_DISABLED",
+		_("Instrument GIAI is turned off"),
+		_("Laser-etched instrument codes are turned off in TraceCore Settings."),
+		_("Ask TC R10 to turn on Enable Instrument GIAI. Existing codes are kept."),
+	)
+
+
+def retired_block(instrument: str) -> Block:
+	return Block(
+		"INSTRUMENT_RETIRED",
+		_("Instrument already retired"),
+		_("Instrument {0} is already retired.").format(instrument),
+		_("A retired instrument cannot be returned to use. Declare a new instrument if needed."),
+	)
+
+
+def not_assigned_block(instrument: str) -> Block:
+	return Block(
+		"GIAI_NOT_ASSIGNED",
+		_("No GIAI code"),
+		_("Instrument {0} has no GIAI code yet.").format(instrument),
+		_("Assign a GIAI code first."),
+	)
+
+
+def etching_block(reason: str) -> Block:
+	return Block(
+		"ETCHING_INVALID",
+		_("Etching record not saved"),
+		reason,
+		_(
+			"Enter the etching date (today or earlier) and where the code is etched, at most {0} characters."
+		).format(ETCH_POSITION_MAX),
+	)
+
+
+def _giai_doc(instrument: str):
+	doc = frappe.get_doc("Instrument", instrument, for_update=True)
+	if not giai_enabled():
+		raise BlockedError(feature_disabled_block())
+	if doc.status == "Retired":
+		raise BlockedError(retired_block(doc.name))
+	return doc
+
+
+def _save_giai(doc, reason=None):
+	doc.flags.tc_giai = True
+	doc.flags.tc_audit_reason = reason or None
+	# dụng cụ cũ thiếu trường bắt buộc vẫn ghi được mã (chỉ đổi trường GIAI)
+	doc.flags.ignore_mandatory = True
+	doc.save()
+
+
+def assign_giai(instrument: str) -> str:
+	"""Cấp mã GIAI khắc laser cho dụng cụ (FR-M1-02.1); trả mã.
+
+	Từ chối (`BlockedError`, chưa ghi gì): cờ tắt ``FEATURE_DISABLED``, Ngừng sử dụng ``INSTRUMENT_RETIRED``, đã có
+	mã ``GIAI_ALREADY_ASSIGNED``, tiền tố demo ngoài dev/test ``GS1_PREFIX_NOT_CONFIGURED``.
+	"""
+	doc = _giai_doc(instrument)
+	if doc.giai_code:
+		raise BlockedError(
+			Block(
+				"GIAI_ALREADY_ASSIGNED",
+				_("GIAI already assigned"),
+				_("Instrument {0} already has GIAI code {1}.").format(doc.name, doc.giai_code),
+				_("A GIAI code is never reissued or replaced. Use the existing code."),
+			)
+		)
+	doc.giai_code = code_registry.next_instrument_giai(doc.name)
+	_save_giai(doc)
+	return doc.giai_code
+
+
+def _etched_date(value):
+	if isinstance(value, date):
+		return getdate(value)
+	if isinstance(value, str) and _ISO_DATE.fullmatch(value.strip()):
+		try:
+			return date.fromisoformat(value.strip())
+		except ValueError:
+			return None
+	return None
+
+
+def record_etching(instrument: str, etched_on, position: str, reason: str | None = None):
+	"""Ghi ngày khắc và vị trí khắc mã GIAI (ghi một lần; ghi lại cần lý do, lý do vào Audit Log).
+
+	Từ chối (`BlockedError`): ``FEATURE_DISABLED``, ``INSTRUMENT_RETIRED``, chưa có mã ``GIAI_NOT_ASSIGNED``, ngày
+	sai/tương lai hoặc vị trí trống/quá 140 ký tự ``ETCHING_INVALID``, ghi lại không lý do ``REASON_REQUIRED``.
+	"""
+	doc = _giai_doc(instrument)
+	if not doc.giai_code:
+		raise BlockedError(not_assigned_block(doc.name))
+	day = _etched_date(etched_on)
+	if day is None:
+		raise BlockedError(etching_block(_("Etching date {0} is not a valid date.").format(etched_on or "-")))
+	if day > getdate(today()):
+		raise BlockedError(etching_block(_("Etching date {0} is in the future.").format(formatdate(day))))
+	position = (position or "").strip()
+	if not position or len(position) > ETCH_POSITION_MAX:
+		raise BlockedError(
+			etching_block(_("Etching position must be 1-{0} characters.").format(ETCH_POSITION_MAX))
+		)
+	reason = (reason or "").strip()
+	if doc.giai_etched_on and not reason:
+		raise BlockedError(
+			Block(
+				"REASON_REQUIRED",
+				_("Reason is required"),
+				_("The etching of instrument {0} is already recorded.").format(doc.name),
+				_("Enter a reason to correct the etching record."),
+			)
+		)
+	doc.giai_etched_on = day
+	doc.giai_position = position
+	_save_giai(doc, reason)
+	return doc

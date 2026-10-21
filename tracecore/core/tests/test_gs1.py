@@ -332,3 +332,83 @@ class TestEncoders(FrappeTestCase):
 	def test_zpl_datamatrix_cycle(self):
 		zpl = gs1.zpl_datamatrix(gs1.make_cycle_payload(GTIN, PACKED, EXPIRY, CYCLE_ID), 0, 0)
 		self.assertIn("^FD_10109520000000011112610201726111921CY-261020-0001^FS", zpl)
+
+
+INSTRUMENT_GIAI = "9520000I-00000001"
+
+
+class TestInstrumentGiai(FrappeTestCase):
+	"""Mã GIAI khắc laser của dụng cụ (FEAT-014 Task 5, A-06 I8): ``<prefix>I-<8 số>``."""
+
+	def test_make_instrument_giai(self):
+		self.assertEqual(gs1.INSTRUMENT_ASSET_PREFIX, "I-")
+		self.assertEqual(gs1.INSTRUMENT_SERIAL_DIGITS, 8)
+		self.assertEqual(gs1.make_instrument_giai("9520000", 1), INSTRUMENT_GIAI)
+		self.assertEqual(gs1.make_instrument_giai("893123456789", 99999999), "893123456789I-99999999")
+		for serial in (0, -1, 100000000, True, "1", 1.0, None):
+			with self.assertRaises(gs1.GS1Error, msg=repr(serial)):
+				gs1.make_instrument_giai("9520000", serial)
+		for prefix in ("", "952", "95200001234567", "952A000"):
+			with self.assertRaises(gs1.GS1Error, msg=repr(prefix)):
+				gs1.make_instrument_giai(prefix, 1)
+
+	def test_is_demo_prefix(self):
+		for prefix in ("9520000", "952", "9521234"):
+			self.assertTrue(gs1.is_demo_prefix(prefix), msg=prefix)
+		for prefix in ("8930000", "0952000", "", None):
+			self.assertFalse(gs1.is_demo_prefix(prefix), msg=repr(prefix))
+
+	def test_instrument_giai_never_parses_as_set(self):
+		variants = [
+			INSTRUMENT_GIAI,  # gõ/quét mã trần
+			"  " + INSTRUMENT_GIAI + "\r\n",
+			"(8004)" + INSTRUMENT_GIAI,  # chuỗi người đọc
+			"8004" + INSTRUMENT_GIAI,  # máy quét không truyền FNC1
+			"\x1d8004" + INSTRUMENT_GIAI,  # FNC1 dạng GS
+			"]d2\x1d8004" + INSTRUMENT_GIAI + "\x1d",  # AIM GS1 DataMatrix + GS thừa
+			"]d28004" + INSTRUMENT_GIAI,
+		]
+		for raw in variants:
+			result = gs1.parse_scan(raw, company_prefix="9520000")
+			self.assertEqual(
+				result, {"type": "instrument", "id": INSTRUMENT_GIAI, "raw": result["raw"]}, msg=repr(raw)
+			)
+		# có AI (8004) thì nhận theo dạng, không phụ thuộc tiền tố cấu hình
+		self.assertEqual(
+			gs1.parse_scan("(8004)8930000I-00000042", company_prefix="9520000")["type"], "instrument"
+		)
+		# không AI: phần sau tiền tố cấu hình phải đúng I-<8 số>
+		self.assertEqual(gs1.parse_scan("8930000I-00000042", company_prefix="9520000")["type"], "unknown")
+		self.assertEqual(gs1.parse_scan("8930000I-00000042", company_prefix="8930000")["type"], "instrument")
+		for raw in ("9520000I-0000001", "9520000I-000000001", "9520000I00000001", "9520000i-00000001"):
+			result = gs1.parse_scan(raw, company_prefix="9520000")
+			self.assertNotEqual(result["type"], "instrument", msg=raw)
+
+	def test_legacy_codes_keep_their_parse_result(self):
+		# loại mã cũ không đổi kết quả khi có nhánh mã dụng cụ (A-06 I8)
+		cases = {
+			GIAI: ("set", GIAI),
+			"(8004)" + GIAI: ("set", GIAI),
+			"]d2\x1d8004" + GIAI: ("set", GIAI),
+			"9520000T4000100000001": ("set", "9520000T4000100000001"),
+			"9520000I1000001": ("set", "9520000I1000001"),  # loại bộ mã "I1"
+			"(8004)9520000II000001": ("set", "9520000II000001"),
+			CYCLE_HRI: ("pack", CYCLE_ID),
+			CYCLE_PAYLOAD: ("pack", CYCLE_ID),
+			"CY-261019-0001": ("pack", "CY-261019-0001"),
+			"NV-00012": ("employee", "NV-00012"),
+			"TB-0003": ("equipment", "TB-0003"),
+			"KE-0001": ("location", "KE-0001"),
+			"TR-004": ("station", "TR-004"),
+			"CN-00001": ("roll", "CN-00001"),
+			"CT-261019-00001": ("container", "CT-261019-00001"),
+			"ABC": ("unknown", None),
+		}
+		for raw, expected in cases.items():
+			result = gs1.parse_scan(raw, company_prefix="9520000")
+			self.assertEqual((result["type"], result["id"]), expected, msg=repr(raw))
+
+	def test_instrument_giai_datamatrix_roundtrip(self):
+		png = gs1.encode_datamatrix_png(gs1.giai_payload(INSTRUMENT_GIAI))
+		self.assertEqual(gs1.decode_datamatrix_png(png), "\x1d8004" + INSTRUMENT_GIAI)
+		self.assertEqual(gs1.parse_scan(gs1.decode_datamatrix_png(png))["type"], "instrument")

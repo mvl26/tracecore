@@ -33,6 +33,7 @@ class TestErrors(FrappeTestCase):
 				"PROGRAM_COPY_INVALID",
 				"COUNT_OUT_OF_RANGE",
 				"COUNTER_INIT_INVALID",
+				"ETCHING_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -59,6 +60,10 @@ class TestErrors(FrappeTestCase):
 				"CODE_DISABLED",
 				"INSTRUMENT_RETIRED",
 				"INSTRUMENT_IN_BOM",
+				"FEATURE_DISABLED",
+				"GIAI_ALREADY_ASSIGNED",
+				"GIAI_NOT_ASSIGNED",
+				"GS1_PREFIX_NOT_CONFIGURED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

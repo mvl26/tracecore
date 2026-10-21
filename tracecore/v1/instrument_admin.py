@@ -1,13 +1,15 @@
 """RPC tracecore.v1.instrument_admin.*: thao tác quản trị dụng cụ từ Desk (FEAT-014 Task 4; A-06 I6, I13, I15).
 
 `init_counters` (khởi tạo bộ đếm bảo dưỡng từ lần bảo dưỡng gần nhất, FR-M1-09) và `retire` (ngừng sử dụng,
-UC-01 E3). Chỉ TC R02, TC R10 và System Manager; quyền kiểm TRƯỚC mọi thao tác ghi (bộ đếm lưu bằng
+UC-01 E3): TC R02, TC R10 và System Manager. `assign_giai` và `record_etching` (mã GIAI khắc laser, FR-M1-02,
+FEAT-014 Task 5): chỉ TC R10 và System Manager (A-06 I15). Quyền kiểm TRƯỚC mọi thao tác ghi (bộ đếm lưu bằng
 ignore_permissions). Từ chối nghiệp vụ: body chuẩn ``{"ok": false, "error"}`` + mã HTTP + Audit Log `Reject`.
 """
 
 import frappe
 from frappe import _
 
+from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
@@ -15,6 +17,8 @@ from tracecore.instrument import catalog, maintenance
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
 ADMIN_ROLES = ("TC R02", "TC R10", "System Manager")
+GIAI_ROLES = ("TC R10", "System Manager")
+ETCHING_FIELDS = ("name", "giai_code", "giai_etched_on", "giai_position")
 INIT_SAVEPOINT = "tc_instrument_init_counters"
 RETIRE_FIELDS = ("name", "status", "retired_on", "retired_reason")
 
@@ -138,14 +142,7 @@ def retire(instrument, reason, confirm=0, client_ts=None):
 			)
 		)
 	if status == "Retired":
-		return reject(
-			Block(
-				"INSTRUMENT_RETIRED",
-				_("Instrument already retired"),
-				_("Instrument {0} is already retired.").format(instrument),
-				_("A retired instrument cannot be returned to use. Declare a new instrument if needed."),
-			)
-		)
+		return reject(catalog.retired_block(instrument))
 	result = catalog.retire(instrument, reason, confirm)
 	if not result["retired"]:
 		boms = result["boms"]
@@ -168,4 +165,54 @@ def retire(instrument, reason, confirm=0, client_ts=None):
 		"ok": True,
 		"instrument": {key: None if value is None else str(value) for key, value in values.items()},
 		"boms": result["boms"],
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def assign_giai(instrument, client_ts=None):
+	"""Cấp mã GIAI khắc laser cho dụng cụ (FR-M1-02.1; server sinh, không nhập tay).
+
+	Thành công: ``{"ok": true, "instrument", "giai", "hri"}``. Từ chối (Audit Log `Reject`, không ghi sổ mã):
+	``INSTRUMENT_NOT_FOUND`` (404), ``FEATURE_DISABLED`` (409, cờ TraceCore Settings tắt), ``INSTRUMENT_RETIRED`` (409),
+	``GIAI_ALREADY_ASSIGNED`` (409), ``GS1_PREFIX_NOT_CONFIGURED`` (409, tiền tố demo ngoài site dev/test).
+	"""
+	require_any_role(*GIAI_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	instrument = _text(instrument, "instrument")
+	if not instrument or not frappe.db.exists("Instrument", instrument):
+		return reject_block(_not_found(instrument), "Instrument", instrument, client_ts=timestamp)
+	try:
+		code = catalog.assign_giai(instrument)
+	except BlockedError as error:
+		return reject_block(error.block, "Instrument", instrument, client_ts=timestamp)
+	return {"ok": True, "instrument": instrument, "giai": code, "hri": gs1.giai_hri(code)}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def record_etching(instrument, etched_on, position, reason=None, client_ts=None):
+	"""Ghi ngày khắc (``YYYY-MM-DD``, không ở tương lai) và vị trí khắc (≤ 140 ký tự) của mã GIAI.
+
+	Ghi một lần; ghi lại phải có ``reason`` (vào Audit Log). Thành công: ``{"ok": true, "instrument": {name,
+	giai_code, giai_etched_on, giai_position}}``. Từ chối: ``INSTRUMENT_NOT_FOUND`` (404), ``FEATURE_DISABLED``,
+	``INSTRUMENT_RETIRED``, ``GIAI_NOT_ASSIGNED`` (409), ``ETCHING_INVALID``, ``REASON_REQUIRED`` (422).
+	"""
+	require_any_role(*GIAI_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	instrument = _text(instrument, "instrument")
+	etched_on = _text(etched_on, "etched_on")
+	position = _text(position, "position")
+	reason = _text(reason, "reason")
+	if not instrument or not frappe.db.exists("Instrument", instrument):
+		return reject_block(_not_found(instrument), "Instrument", instrument, client_ts=timestamp)
+	try:
+		catalog.record_etching(instrument, etched_on, position, reason)
+	except BlockedError as error:
+		return reject_block(error.block, "Instrument", instrument, client_ts=timestamp)
+	values = frappe.db.get_value("Instrument", instrument, list(ETCHING_FIELDS), as_dict=True)
+	# chuỗi thuần để response lưu (JSON) và response trả lần đầu giống nhau
+	return {
+		"ok": True,
+		"instrument": {key: None if value is None else str(value) for key, value in values.items()},
 	}

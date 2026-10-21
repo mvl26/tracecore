@@ -1029,3 +1029,37 @@ Instrument {0} is in the current BOM of: {1}.,Dụng cụ {0} có trong BOM hi�
 Confirm to retire it anyway; review these BOMs afterwards.,"Xác nhận để vẫn ngừng sử dụng; sau đó rà soát các BOM này.",
 Last Counted Release (Cycle ID),Lần giải phóng đã đếm (Cycle ID),
 Cycle ID of the last release counted in Cycles Since Maintenance; a repeated release of the same Cycle ID is not counted again.,Cycle ID của lần giải phóng gần nhất đã cộng vào số chu trình từ lần bảo dưỡng; giải phóng lặp lại cùng Cycle ID không được đếm thêm.,
+A GIAI code is never reissued or replaced. Use the existing code.,Mã GIAI không bao giờ được cấp lại hay thay thế. Dùng mã đã có.,
+Ask TC R10 to turn on Enable Instrument GIAI. Existing codes are kept.,Đề nghị TC R10 bật Mã GIAI dụng cụ. Các mã đã cấp vẫn giữ nguyên.,
+Ask the administrator to set the hospital's real GS1 Company Prefix before assigning or etching instrument codes.,Đề nghị quản trị hệ thống cấu hình tiền tố doanh nghiệp GS1 thật của bệnh viện trước khi cấp hoặc khắc mã dụng cụ.,
+Assign a GIAI code first.,Cấp mã GIAI trước.,
+Do not etch this code. A retired instrument cannot be returned to use.,Không khắc mã này. Dụng cụ đã ngừng sử dụng không thể dùng lại.,
+Enable Instrument GIAI,Mã GIAI dụng cụ (khắc laser),TraceCore Settings
+Allow assigning laser-etched GS1 GIAI codes to single instruments (FR-M1-02). Turning it off keeps existing codes and does not affect T1-T7.,Cho phép cấp mã GS1 GIAI khắc laser cho dụng cụ đơn lẻ (FR-M1-02). Tắt cờ thì các mã đã cấp vẫn giữ nguyên và không ảnh hưởng T1–T7.,
+Site-wide TraceCore feature switches (A-06 I7). Only TC R10 and System Manager can change them; every change is written to the Audit Log.,Bật/tắt tính năng TraceCore cho toàn hệ thống (A-06 I7). Chỉ TC R10 và System Manager được đổi; mọi thay đổi ghi vào Nhật ký kiểm tra.,
+Enter a reason to correct the etching record.,Nhập lý do để sửa thông tin khắc.,
+"Enter the etching date (today or earlier) and where the code is etched, at most {0} characters.","Nhập ngày khắc (hôm nay hoặc trước đó) và vị trí khắc mã, tối đa {0} ký tự.",
+Etched On,Ngày khắc,Instrument
+Etching Position,Vị trí khắc,Instrument
+Etching date {0} is in the future.,Ngày khắc {0} ở tương lai.,
+Etching date {0} is not a valid date.,Ngày khắc {0} không phải ngày hợp lệ.,
+Etching position must be 1-{0} characters.,Vị trí khắc phải dài 1–{0} ký tự.,
+Etching record not saved,Chưa lưu được thông tin khắc,
+GIAI Code,Mã GIAI,Instrument
+"GS1 GIAI assigned by TraceCore (Assign GIAI). Never typed in, changed or reissued.","Mã GS1 GIAI do TraceCore cấp (Cấp mã GIAI). Không nhập tay, không sửa, không cấp lại.",
+GIAI already assigned,Đã cấp mã GIAI,
+GIAI code {0} is already assigned and cannot be changed or removed.,"Mã GIAI {0} đã cấp, không được sửa hoặc xóa.",
+GIAI code {0} is disabled because the instrument is retired.,Mã GIAI {0} đã vô hiệu vì dụng cụ đã ngừng sử dụng.,
+GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits.,Không dùng được tiền tố doanh nghiệp GS1 {0} cho mã dụng cụ trên hệ thống này: đây là tiền tố demo hoặc không gồm 4–12 chữ số.,
+GS1 prefix not configured,Chưa cấu hình tiền tố GS1,
+Instrument GIAI is turned off,Mã GIAI dụng cụ đang tắt,
+Instrument {0} already has GIAI code {1}.,Dụng cụ {0} đã có mã GIAI {1}.,
+Instrument {0} has no GIAI code yet.,Dụng cụ {0} chưa có mã GIAI.,
+Instrument {0} retired: {1},Dụng cụ {0} ngừng sử dụng: {1},
+Instruments,Dụng cụ,TraceCore Settings
+Laser-etched GIAI,Mã GIAI khắc laser,Instrument
+Laser-etched instrument codes are turned off in TraceCore Settings.,Mã dụng cụ khắc laser đang tắt trong Cài đặt TraceCore.,
+No GIAI code,Chưa có mã GIAI,
+"The GIAI code and etching record are set only by TraceCore (Assign GIAI, Record Etching).","Mã GIAI và thông tin khắc chỉ do TraceCore ghi (Cấp mã GIAI, Ghi nhận khắc).",
+The etching of instrument {0} is already recorded.,Thông tin khắc của dụng cụ {0} đã được ghi.,
+TraceCore Settings,Cài đặt TraceCore,
