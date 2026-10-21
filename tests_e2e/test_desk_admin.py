@@ -10,10 +10,7 @@ import os
 import re
 
 import pytest
-
 from playwright.sync_api import expect
-
-
 
 
 def require_env(name):
@@ -95,7 +92,8 @@ def test_load_roll_dialog_updates_printer(r10_page):
 		page = r10_page
 		dialog = load_roll(page, printer, plasma)
 		expect(page.locator(label_field)).not_to_have_value("")
-		before = page.locator(label_field).input_value()  # máy in demo nạp nhãn hấp, hoặc plasma nếu test T4 vừa chạy
+		# máy in demo nạp nhãn hấp, hoặc plasma nếu test T4 vừa chạy
+		before = page.locator(label_field).input_value()
 
 		# chưa tick xác nhận: cảnh báo, chưa nạp
 		dialog.get_by_role("button", name="Nạp cuộn", exact=True).click()

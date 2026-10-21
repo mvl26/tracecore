@@ -99,7 +99,10 @@ async function printer_set_roll(frm, values, dialog) {
 		}
 	} catch (e) {
 		dialog.hide();
-		printer_show_block({ reason: __("The server could not be reached."), action: __("Try again.") });
+		printer_show_block({
+			reason: __("The server could not be reached."),
+			action: __("Try again."),
+		});
 	} finally {
 		frappe.dom.unfreeze();
 	}
