@@ -241,3 +241,44 @@ test("retired page cleanup cannot erase another owner's stored token", () => {
 	station.clearSession();
 	assert.equal(store.get(station.storageKey()), "new-owner-token");
 });
+
+test("explicit end revokes the visible owner's saved token without an active restore candidate", async () => {
+	const { station, store, calls } = harness();
+	station.session = null;
+	station.restoreCandidate = null;
+	store.set(station.storageKey(), "saved-token");
+	await station.endSession();
+	assert.equal(store.has(station.storageKey()), false);
+	assert.equal(calls.length, 1);
+	assert.equal(JSON.parse(calls[0].body).token, "saved-token");
+});
+
+test("retired explicit end cannot capture a replacement's saved token", async () => {
+	const { station, sandbox, store, calls } = harness();
+	station.session = null;
+	station.restoreCandidate = null;
+	sandbox.frappe.tc_station = {};
+	store.set(station.storageKey(), "replacement-token");
+	await station.endSession();
+	assert.equal(store.get(station.storageKey()), "replacement-token");
+	assert.equal(calls.length, 0);
+});
+
+test("hide-style end preserves an unvalidated saved token", async () => {
+	const { station, store, calls } = harness();
+	station.session = null;
+	station.restoreCandidate = null;
+	store.set(station.storageKey(), "saved-token");
+	await station.endSession(undefined, { keepStoredCandidate: true });
+	assert.equal(store.get(station.storageKey()), "saved-token");
+	assert.equal(calls.length, 0);
+});
+
+test("retired instance cannot erase replacement storage even when its old token matches", async () => {
+	const { station, sandbox, store, calls } = harness();
+	store.set(station.storageKey(), "private-bearer");
+	sandbox.frappe.tc_station = {};
+	await station.endSession();
+	assert.equal(store.get(station.storageKey()), "private-bearer");
+	assert.equal(calls.length, 0);
+});
