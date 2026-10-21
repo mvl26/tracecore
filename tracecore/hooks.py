@@ -18,6 +18,7 @@ fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
 	{"dt": "Custom DocPerm", "filters": [["role", "like", "TC R%"]]},
 	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
+	{"dt": "Custom Field", "filters": [["name", "like", "Employee-tc_%"]]},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -189,6 +190,7 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	"Station Competency": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)

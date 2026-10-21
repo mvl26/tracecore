@@ -2,5 +2,8 @@
  {"doctype": "Custom Field", "dt": "Item", "name": "Item-tc_item_group_cssd", "fieldname": "tc_item_group_cssd", "fieldtype": "Select", "label": "CSSD Item Group", "options": "\nPackaging\nChemical Indicator\nLabel\nLubricant", "insert_after": "item_group"},
  {"doctype": "Custom Field", "dt": "Item", "name": "Item-tc_compatible_method", "fieldname": "tc_compatible_method", "fieldtype": "Select", "label": "Compatible Method", "options": "\nSteam\nPlasma", "insert_after": "tc_item_group_cssd"},
  {"doctype": "Custom Field", "dt": "Item", "name": "Item-tc_ci_class", "fieldname": "tc_ci_class", "fieldtype": "Select", "label": "Chemical Indicator Class", "options": "\n1\n2\n4\n5\n6", "insert_after": "tc_compatible_method"},
- {"doctype": "Custom Field", "dt": "Item", "name": "Item-tc_shelf_life_days", "fieldname": "tc_shelf_life_days", "fieldtype": "Int", "label": "Shelf Life (Days)", "depends_on": "eval:doc.tc_item_group_cssd=='Packaging'", "insert_after": "tc_ci_class"}
+ {"doctype": "Custom Field", "dt": "Item", "name": "Item-tc_shelf_life_days", "fieldname": "tc_shelf_life_days", "fieldtype": "Int", "label": "Shelf Life (Days)", "depends_on": "eval:doc.tc_item_group_cssd=='Packaging'", "insert_after": "tc_ci_class"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_card_id", "fieldname": "tc_card_id", "fieldtype": "Data", "label": "Station Card ID", "unique": 1, "no_copy": 1, "insert_after": "user_id"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_card_enabled", "fieldname": "tc_card_enabled", "fieldtype": "Check", "label": "Station Card Enabled", "default": "1", "no_copy": 1, "insert_after": "tc_card_id"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_pin_hash", "fieldname": "tc_pin_hash", "fieldtype": "Password", "label": "Station PIN Hash", "hidden": 1, "no_copy": 1, "insert_after": "tc_card_enabled"}
 ]
