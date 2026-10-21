@@ -403,7 +403,17 @@ def _release_waiting_jobs(printer, method):
 	return released, failed
 
 
-def set_roll(printer, roll_code):
+def _count_waiting_jobs(station, method):
+	"""Số Print Job `Waiting` của trạm chờ đúng loại nhãn `method` (nhãn gói)."""
+	count = 0
+	for name in frappe.get_all("Print Job", filters={"station": station, "status": "Waiting"}, pluck="name"):
+		data = _job_data(frappe.get_doc("Print Job", name))
+		if data.get("method") == method and data.get("label_object") == "Pack":
+			count += 1
+	return count
+
+
+def set_roll(printer, roll_code, release=True):
 	"""Đổi cuộn nhãn của máy in (FR-M2-08.2, AC-9) và phát hành các Print Job đang chờ đúng loại nhãn.
 
 	Loại nhãn đang lắp = Item nhãn của cuộn. Mã chưa cấp/đã vô hiệu → `BlockedError(ROLL_NOT_FOUND)`; mã của Item
@@ -414,6 +424,10 @@ def set_roll(printer, roll_code):
 	Máy in không active vẫn ghi nhận đổi cuộn (có Audit Log) nhưng KHÔNG phát hành job: agent chỉ in tới máy in
 	có trong `station_printers` (active), job đã `Queued` cho máy in ngoài danh sách sẽ bị từ chối và không bao giờ
 	quay lại `Waiting`. `released_jobs` là `[]`; job còn `Waiting` chờ máy in active đổi cuộn đúng loại nhãn.
+
+	``release=False`` (đường Desk, ruling F2): ghi nhận cuộn nhưng KHÔNG phát hành job, vì chỉ kiosk gửi được
+	`released_jobs` tới Station Agent; job khớp giữ `Waiting` tới khi cuộn được quét ở màn T4. `jobs_waiting` luôn là
+	số job `Waiting` của trạm khớp loại nhãn còn lại sau lần đổi cuộn.
 	"""
 	doc = frappe.get_doc("Printer", printer, for_update=True)
 	item, method = _roll_label(roll_code)
@@ -427,13 +441,14 @@ def set_roll(printer, roll_code):
 	)
 	doc.flags.tc_roll_change = True
 	doc.save(ignore_permissions=True)
-	released, failed = _release_waiting_jobs(doc, method) if doc.is_active else ([], [])
+	released, failed = _release_waiting_jobs(doc, method) if release and doc.is_active else ([], [])
 	return {
 		"printer": doc.name,
 		"label_type": item,
 		"method": method,
 		"released_jobs": released,
 		"failed_jobs": failed,
+		"jobs_waiting": _count_waiting_jobs(doc.station, method),
 	}
 
 

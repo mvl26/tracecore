@@ -74,6 +74,10 @@ def generate_args(ready, **overrides):
 	}
 
 
+def roll_code_of(printer):
+	return frappe.db.get_value("Printer", printer, "roll_code")
+
+
 def reject_count():
 	return frappe.db.count("Audit Log", {"action": "Reject"})
 
@@ -641,6 +645,7 @@ class TestSetRoll(PackApiCase):
 		)
 		[released] = roll["released_jobs"]
 		self.assertEqual(released["print_job"], generated["print"]["print_job"])
+		self.assertEqual(roll["jobs_waiting"], 0)
 		self.assertEqual(released["printer"], printer)
 		self.assertTrue(released["zpl"].startswith("^XA"))
 		self.assertIsNone(http_status())
@@ -701,7 +706,8 @@ class TestSetRoll(PackApiCase):
 
 
 class TestSetRollFromDesk(PackApiCase):
-	"""Ruling P1: có `printer` là đường Desk của R10 (không cần trạm T4); không có là đường kiosk."""
+	"""Ruling P1/F2: có `printer` là đường Desk (R10, System Manager; không cần trạm T4, không phát hành nhãn chờ);
+	không có là đường kiosk."""
 
 	DESK_STATION = "TR-003"  # trạm bước T3, không phải T4
 
@@ -724,6 +730,42 @@ class TestSetRollFromDesk(PackApiCase):
 		self.assertEqual(result["roll"]["printer"], printer)
 		self.assertEqual(frappe.db.get_value("Printer", printer, "label_type_loaded"), plasma_label)
 		self.assertIsNone(http_status())
+
+	def test_desk_path_records_roll_but_leaves_waiting_labels(self):
+		"""Ruling F2: Desk không gửi được job tới Station Agent nên không phát hành; nhãn chờ in khi quét cuộn ở T4."""
+		ready = make_t4_ready_set("Plasma", with_printer=False)
+		steam_label, plasma_label = make_label_items()
+		printer = make_printer(STATION, steam_label)
+		generated = call(pack_api.generate_cycle_id, **generate_args(ready))
+		job = generated["print"]["print_job"]
+		self.as_user("pack-api-r10c@example.com", roles=("TC R10",))
+		result = call(
+			printer_api.set_roll, roll_code=make_roll(plasma_label), station=STATION, printer=printer
+		)
+		roll = result["roll"]
+		self.assertEqual((roll["printer"], roll["label_type"]), (printer, plasma_label))
+		self.assertEqual((roll["released_jobs"], roll["jobs_waiting"]), ([], 1))
+		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Waiting")
+		# quét cùng cuộn ở màn T4 (đường kiosk) thì nhãn chờ được phát hành
+		frappe.set_user("Administrator")
+		kiosk = call(printer_api.set_roll, roll_code=roll_code_of(printer), station=STATION)
+		self.assertEqual([row["print_job"] for row in kiosk["roll"]["released_jobs"]], [job])
+
+	def test_r04_cannot_use_the_desk_path(self):
+		"""Ruling F2: đường Desk (có `printer`) chỉ cho TC R10 và System Manager; R04 dùng đường kiosk."""
+		printer, plasma_label = self.desk_printer()
+		roll = make_roll(plasma_label)
+		self.as_user("pack-api-r04d@example.com", roles=("TC R04",))
+		with self.assertRaises(frappe.PermissionError):
+			call(
+				printer_api.set_roll,
+				roll_code=roll,
+				station=self.DESK_STATION,
+				printer=printer,
+				station_header=self.DESK_STATION,
+			)
+		frappe.set_user("Administrator")
+		self.assertNotEqual(frappe.db.get_value("Printer", printer, "label_type_loaded"), plasma_label)
 
 	def test_r10_without_printer_is_rejected_by_role(self):
 		printer, plasma_label = self.desk_printer()

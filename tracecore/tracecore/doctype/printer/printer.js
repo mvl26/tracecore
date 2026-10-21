@@ -1,6 +1,7 @@
 // Desk: form Printer — nạp cuộn nhãn (SCR-33, FEAT-002 Task 5, ruling P1).
 // Gọi tracecore.v1.printer.set_roll kèm `printer` (đường Desk của R10). Desk không phải màn trạm nên kết quả và lỗi
-// hiện bằng frappe.msgprint (tiêu đề / lý do / hành động).
+// hiện bằng frappe.msgprint (tiêu đề / lý do / hành động). Desk chỉ ghi nhận cuộn: nhãn đang chờ không in từ đây
+// (trình duyệt không gửi được tới Station Agent) mà in khi cuộn được quét ở màn T4 của trạm (ruling F2).
 
 const PRINTER_SET_ROLL = "tracecore.v1.printer.set_roll";
 
@@ -37,13 +38,11 @@ function printer_show_block(error) {
 }
 
 function printer_show_result(frm, roll) {
-	const released = (roll.released_jobs || []).length;
-	const failed = roll.failed_jobs || [];
+	const waiting = roll.jobs_waiting || 0;
 	const rows = [
 		[__("Printer"), roll.printer],
 		[__("Label type"), roll.label_type],
-		[__("Waiting labels released"), released],
-		[__("Waiting labels with errors"), failed.length],
+		[__("Labels still waiting"), waiting],
 	];
 	const table = rows
 		.map(
@@ -53,15 +52,18 @@ function printer_show_result(frm, roll) {
 				)}</td></tr>`
 		)
 		.join("");
-	const errors = failed
-		.map((job) => `<li>${frappe.utils.escape_html(`${job.print_job}: ${job.error}`)}</li>`)
-		.join("");
+	const note = waiting
+		? `<p>${frappe.utils.escape_html(
+				__(
+					"Waiting labels are printed when this roll is scanned on the T4 screen of station {0}.",
+					[frm.doc.station]
+				)
+		  )}</p>`
+		: "";
 	frappe.msgprint({
 		title: __("Label roll loaded"),
-		indicator: failed.length ? "orange" : "green",
-		message: `<table class="table table-bordered"><tbody>${table}</tbody></table>${
-			errors ? `<ul>${errors}</ul>` : ""
-		}`,
+		indicator: waiting ? "orange" : "green",
+		message: `<table class="table table-bordered"><tbody>${table}</tbody></table>${note}`,
 	});
 	frm.reload_doc();
 }
@@ -129,7 +131,9 @@ function printer_open_roll_dialog(frm) {
 				fieldname: "roll_code",
 				fieldtype: "Data",
 				label: __("Roll code"),
-				description: __("Scan or type the roll code CN-#####."),
+				description: __(
+					"Scan or type the roll code CN-#####. Waiting labels print only when the roll is scanned on the station's T4 screen."
+				),
 				reqd: 1,
 			},
 			{

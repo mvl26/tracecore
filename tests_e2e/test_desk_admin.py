@@ -105,7 +105,9 @@ def test_load_roll_dialog_updates_printer(r10_page):
 		dialog = page.locator(".modal.show", has=page.locator("input[data-fieldname='roll_code']"))
 		dialog.locator("input[data-fieldname='confirmed']").check()
 		dialog.get_by_role("button", name="Nạp cuộn", exact=True).click()
-		expect(page.locator(".modal.show", has_text="Đã nạp cuộn nhãn")).to_be_visible(timeout=15000)
+		loaded = page.locator(".modal.show", has_text="Đã nạp cuộn nhãn")
+		expect(loaded).to_be_visible(timeout=15000)
+		expect(loaded).to_contain_text("Nhãn còn chờ in")  # Desk không phát hành nhãn chờ (ruling F2)
 		expect(page.locator(label_field)).to_have_value("VT-NHAN-PLASMA", timeout=15000)
 	finally:
 		# trả cuộn hấp để các test T4 dùng tiếp (máy in demo nạp nhãn hấp)
