@@ -19,9 +19,20 @@ PROOF_SECONDS = 120
 WEB_ROLES = frozenset(("TC R01", "TC R02", "TC R09", "TC R10"))
 
 
-def require_r10():
-	# Administrator is the framework bootstrap/recovery identity, never a business role.
-	if frappe.session.user != "Administrator" and "TC R10" not in frappe.get_roles():
+def _has_role(role, user=None):
+	# frappe.get_roles("Administrator") synthesizes every role. Business authority
+	# must instead be explicitly assigned, including for the framework superuser.
+	return bool(
+		frappe.db.exists(
+			"Has Role", {"parent": user or frappe.session.user, "parenttype": "User", "role": role}
+		)
+	)
+
+
+def require_r10(install_creation=False):
+	if install_creation and frappe.flags.in_install and frappe.session.user == "Administrator":
+		return
+	if not _has_role("TC R10"):
 		frappe.throw(_("Only R10 can create or disable accounts."), frappe.PermissionError)
 
 
@@ -41,10 +52,6 @@ def password_is_expired(user):
 
 
 def on_login(login_manager):
-	# Native password recovery authenticates before refreshing its reset date. This
-	# local marker is set only after the old password / recovery key is validated.
-	if getattr(frappe.local, "tc_password_update_user", None) == login_manager.user:
-		return
 	if password_is_expired(login_manager.user):
 		frappe.throw(
 			_("Password expired. Change your password before signing in."), frappe.AuthenticationError
@@ -53,7 +60,9 @@ def on_login(login_manager):
 
 def validate_user(doc, method=None):
 	before = doc.get_doc_before_save()
-	if doc.is_new() or (before and cint(doc.enabled) != cint(before.enabled)):
+	if doc.is_new():
+		require_r10(install_creation=True)
+	elif before and cint(doc.enabled) != cint(before.enabled):
 		require_r10()
 	if before and str(doc.last_password_reset_date) != str(before.last_password_reset_date):
 		frappe.throw(
@@ -80,6 +89,10 @@ def user_updated(doc, method=None):
 
 def validate_employee(doc, method=None):
 	before = doc.get_doc_before_save()
+	if before:
+		station_auth.lock_employee(doc.name)
+		if (doc.user_id or "") != (before.user_id or ""):
+			require_r10()
 	if before and (
 		cint(doc.tc_pin_reset_required) != cint(before.tc_pin_reset_required)
 		or doc.tc_pin_hash != before.tc_pin_hash
@@ -91,20 +104,24 @@ def validate_employee(doc, method=None):
 	):
 		frappe.throw(_("Station card ID must be unique."))
 	if doc.status == "Left":
-		if doc.user_id and frappe.db.get_value("User", doc.user_id, "enabled"):
+		if doc.user_id or (before and before.user_id):
 			require_r10()
+		doc.tc_card_enabled = 0
+	elif before and before.user_id and not doc.user_id:
 		doc.tc_card_enabled = 0
 
 
 def employee_updated(doc, method=None):
-	if doc.status == "Left" or not doc.tc_card_enabled:
-		station_auth.close_employee_sessions(doc.name)
-	if doc.status == "Left" and doc.user_id:
-		user = frappe.get_doc("User", doc.user_id)
-		if user.enabled:
-			user.enabled = 0
-			user.save(ignore_permissions=True)
 	before = doc.get_doc_before_save()
+	link_changed = before and (doc.user_id or "") != (before.user_id or "")
+	if doc.status == "Left" or not doc.tc_card_enabled or link_changed:
+		station_auth.close_employee_sessions(doc.name)
+	if doc.status == "Left":
+		for user_id in {doc.user_id, before.user_id if before else None} - {None, ""}:
+			user = frappe.get_doc("User", user_id)
+			if user.enabled:
+				user.enabled = 0
+				user.save(ignore_permissions=True)
 	if before and (doc.status != before.status or doc.tc_card_enabled != before.tc_card_enabled):
 		audit.log(
 			"Update",
@@ -141,27 +158,32 @@ def change_password(old_password, new_password):
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def update_web_password(new_password, logout_all_sessions=0, key=None, old_password=None):
-	"""Enforce length on Frappe's recovery form without bypassing native key checks."""
+	"""Change credentials without creating a session; normal login still requires OTP."""
 	from frappe.core.doctype.user.user import _get_user_for_update_password
-	from frappe.core.doctype.user.user import update_password as native_update_password
 
 	validate_password(new_password)
-	resolved = _get_user_for_update_password(key, old_password)
+	if key:
+		resolved = _get_user_for_update_password(key, None)
+	elif old_password and frappe.session.user not in frappe.STANDARD_USERS:
+		resolved = frappe._dict(user=check_password(frappe.session.user, old_password))
+	else:
+		resolved = frappe._dict()
 	if resolved.get("message"):
 		frappe.local.response.http_status_code = 410
 		return resolved.message
-	if not resolved.get("user"):
+	if (
+		not resolved.get("user")
+		or resolved.user in frappe.STANDARD_USERS
+		or not frappe.db.get_value("User", resolved.user, "enabled")
+	):
 		frappe.throw(_("Current password or a valid recovery key is required."), frappe.AuthenticationError)
-	previous = getattr(frappe.local, "tc_password_update_user", None)
-	frappe.local.tc_password_update_user = resolved.user
-	try:
-		result = native_update_password(
-			new_password, logout_all_sessions=1, key=key, old_password=old_password
-		)
-	finally:
-		frappe.local.tc_password_update_user = previous
-	audit.log("Update", "User", resolved.user, new={"event": "Password Changed"})
-	return result
+	_record_password(resolved.user, new_password)
+	return "/login"
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def reject_email_reset(user=None):
+	frappe.throw(_("Ask R10 or a PIN-verified R02 to reset your account."), frappe.PermissionError)
 
 
 def require_pin_changed(employee):
@@ -194,7 +216,7 @@ def _proof_key(proof):
 @frappe.whitelist(methods=["POST"])
 def issue_reset_proof(token, pin):
 	session = station_auth.authenticate_session(token)
-	if session.user != frappe.session.user or "TC R02" not in frappe.get_roles(session.user):
+	if session.user != frappe.session.user or not _has_role("TC R02", session.user):
 		frappe.throw(_("A supervisor station PIN proof is required."), frappe.PermissionError)
 	employee = frappe.db.get_value("Employee", session.employee, ["status", "tc_card_enabled"], as_dict=True)
 	if not employee or employee.status != "Active" or not employee.tc_card_enabled:
@@ -209,9 +231,9 @@ def issue_reset_proof(token, pin):
 
 
 def _authorize_reset(proof):
-	if frappe.session.user == "Administrator" or "TC R10" in frappe.get_roles():
+	if _has_role("TC R10"):
 		return
-	if "TC R02" not in frappe.get_roles() or not isinstance(proof, str) or not proof:
+	if not _has_role("TC R02") or not isinstance(proof, str) or not proof:
 		frappe.throw(_("A supervisor station PIN proof is required."), frappe.PermissionError)
 	# MULTI/EXEC keeps read-and-delete atomic without requiring Redis 6.2 GETDEL.
 	with frappe.cache.pipeline(transaction=True) as pipeline:
@@ -222,15 +244,15 @@ def _authorize_reset(proof):
 	row = frappe.parse_json(stored.decode()) if stored else None
 	if row and row.user == frappe.session.user:
 		session = frappe.get_doc("Station Session", row.session)
-		employee = frappe.db.get_value(
-			"Employee", session.employee, ["status", "tc_card_enabled", "tc_pin_reset_required"], as_dict=True
-		)
+		employee = station_auth.lock_employee(session.employee)
+		session = frappe.get_doc("Station Session", row.session, for_update=True)
 		if (
 			session.is_open
 			and session.user == frappe.session.user
 			and employee
 			and employee.status == "Active"
 			and employee.tc_card_enabled
+			and employee.user_id == session.user
 			and not employee.tc_pin_reset_required
 			and frappe.db.get_value("User", session.user, "enabled")
 			and session.absolute_expires_at > now_datetime()

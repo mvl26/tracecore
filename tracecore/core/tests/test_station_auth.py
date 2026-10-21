@@ -15,6 +15,7 @@ test_dependencies = ["Company"]
 class TestStationAuth(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
 		self.user = make_user("station.operator@example.test", ("TC R04",))
 		self.employee = frappe.get_doc(
 			{

@@ -234,6 +234,7 @@ on_login = "tracecore.core.account.on_login"
 after_migrate = "tracecore.setup.install.apply_system_settings"
 override_whitelisted_methods = {
 	"frappe.core.doctype.user.user.update_password": "tracecore.core.account.update_web_password",
+	"frappe.core.doctype.user.user.reset_password": "tracecore.core.account.reject_email_reset",
 }
 
 # scheduler_events = {
