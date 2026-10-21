@@ -5,10 +5,13 @@ Dùng khi lệnh in không đi qua kiosk/Station Agent (in nhãn đối tượng
 - **Địa chỉ chỉ từ Printer**: host/port lấy từ DocType Printer của job, máy in phải đang hoạt động, host không rỗng,
   port trong 1..65535. Không hàm công khai nào nhận host/port; `data` của job không bao giờ được đọc làm địa chỉ.
   Máy in chỉ-qua-agent (host rỗng) → server không gửi, job giữ nguyên.
-- **Không gửi tới chính server**: host là địa chỉ IP dạng chữ thuộc dải loopback, link-local (gồm metadata
-  169.254.169.254), multicast hay unspecified bị `Printer.validate` từ chối và `printer_address` bỏ qua, trừ khi
-  site_config bật `tracecore_allow_local_printers` (chỉ site dev/e2e, nơi máy in giả nghe trên 127.0.0.1). Tên máy
-  (hostname) vẫn được phép: R10 chịu trách nhiệm cấu hình máy in thật.
+- **Không gửi tới chính server (chặn lúc gửi)**: host là địa chỉ IP dạng chữ thuộc dải loopback, link-local (gồm
+  metadata 169.254.169.254), multicast hay unspecified bị `printer_address` bỏ qua, trừ khi site_config bật
+  `tracecore_allow_local_printers` (chỉ site dev/e2e, nơi máy in giả nghe trên 127.0.0.1). `Printer.validate` KHÔNG
+  chặn các host này: Station Agent trên máy kiosk dùng chính `Printer.host` (cầu nối 127.0.0.1 tới máy in USB, máy in
+  APIPA 169.254.x.x), nên lưu Printer và `set_roll` vẫn chạy. Job đường server của máy in như vậy (hoặc host có
+  khoảng trắng) không nằm im `Queued`: `dispatch_job` ghi `Failed` kèm lý do. Tên máy (hostname) vẫn được phép:
+  R10 chịu trách nhiệm cấu hình máy in thật.
 - **Thử tối đa 3 lần**: mỗi lần mở kết nối với timeout `SEND_TIMEOUT_S`; lỗi mạng (`OSError`, gồm timeout/từ chối)
   → `attempts + 1` và ghi `error`, còn dưới `MAX_ATTEMPTS` thì giữ `Queued`, đủ thì `ack(..., "Failed")`.
   Lỗi bất ngờ khác (vd `UnicodeEncodeError`) trong lần quét định kỳ cũng tính một lần thử — không thử lại vô hạn.
@@ -62,7 +65,8 @@ def _data(value):
 
 def _ip_literal(host):
 	"""`ipaddress` của `host` nếu là địa chỉ IP dạng chữ (kể cả dạng socket hiểu như ``127.1``), ngược lại None."""
-	text = host.strip().removeprefix("[").removesuffix("]").split("%", 1)[0]
+	# dấu chấm cuối (FQDN gốc, "127.0.0.1.") vẫn được getaddrinfo phân giải về cùng địa chỉ → bỏ trước khi đọc
+	text = host.strip().removeprefix("[").removesuffix("]").split("%", 1)[0].rstrip(".")
 	try:
 		return ipaddress.ip_address(text)
 	except ValueError:
@@ -94,18 +98,44 @@ def blocked_host(host):
 	return ip is not None and _is_local(ip) and not local_printers_allowed()
 
 
-def printer_address(printer):
-	"""`(host, port)` của Printer đang hoạt động có host và port hợp lệ, hoặc None (không gửi từ server được)."""
+def _host_refused(host):
+	"""Host không rỗng nhưng server không được gửi tới: có khoảng trắng bên trong, hoặc IP cục bộ bị chặn."""
+	return bool(host) and (any(char.isspace() for char in host) or blocked_host(host))
+
+
+def _printer_target(printer):
+	"""`(host, port, refused)` của Printer đang hoạt động có host; None nếu không có/không hoạt động/host rỗng (agent).
+
+	`refused` = True khi host bị chặn hoặc sai dạng: job đường server của máy in đó phải `Failed`, không nằm im.
+	"""
 	if not printer:
 		return None
 	row = frappe.db.get_value("Printer", printer, ["host", "port", "is_active"], as_dict=True)
 	if not row or not cint(row.is_active):
 		return None
 	host = (row.host or "").strip()
-	port = cint(row.port)
-	if not host or any(char.isspace() for char in host) or not 1 <= port <= 65535 or blocked_host(host):
+	if not host:
+		return None
+	return host, cint(row.port), _host_refused(host)
+
+
+def printer_address(printer):
+	"""`(host, port)` của Printer đang hoạt động có host và port hợp lệ, hoặc None (không gửi từ server được)."""
+	target = _printer_target(printer)
+	if target is None:
+		return None
+	host, port, refused = target
+	if refused or not 1 <= port <= 65535:
 		return None
 	return host, port
+
+
+def _host_refused_reason(printer):
+	"""Lý do (đã dịch) nếu máy in của job có host bị chặn/sai dạng cho đường in từ server, ngược lại None."""
+	target = _printer_target(printer)
+	if target is None or not target[2]:
+		return None
+	return _("Printer {0} ({1}): printer host not allowed for server printing").format(printer, target[0])
 
 
 def _send(host, port, payload):
@@ -144,7 +174,8 @@ def dispatch_job(job):
 	"""Gửi ZPL của Print Job `Queued` tới máy in của job; trả `{"status", "attempts"}` sau lần gửi.
 
 	Job không `Queued`, không có payload, hoặc máy in không gửi được từ server (không có, không hoạt động, host rỗng,
-	port sai) → không gửi, trả trạng thái hiện tại. Thành công → `Printed` với `output_ref = "host:port"`.
+	port sai) → không gửi, trả trạng thái hiện tại. Host bị chặn (IP cục bộ khi site không bật cờ) hoặc có khoảng trắng
+	→ không gửi, ghi `Failed` qua `ack` kèm lý do đã dịch. Thành công → `Printed` với `output_ref = "host:port"`.
 	Chỉ chạy trong background job/scheduler: kết quả lần gửi được `frappe.db.commit()` ngay.
 	"""
 	doc = frappe.get_doc("Print Job", job, for_update=True)
@@ -152,6 +183,11 @@ def dispatch_job(job):
 		return _result(doc)
 	address = printer_address(doc.printer)
 	if address is None:
+		reason = _host_refused_reason(doc.printer)
+		if reason:  # máy in bị chặn (vd đổi host sau khi job Queued): báo Failed, không để job nằm im Queued
+			core_print.ack(doc.name, "Failed", "Printer", error=reason)
+			frappe.db.commit()  # nosemgrep: worker path — kết quả lần xử lý phải bền như các nhánh khác
+			return _result(frappe.get_doc("Print Job", doc.name))
 		return _result(doc)
 	host, port = address
 	output_ref = f"{host}:{port}"
@@ -217,9 +253,11 @@ def _pending_jobs(limit):
 		for row in rows:
 			if _data(row.data).get("dispatch") != SERVER_ROUTE:
 				continue
-			if row.printer not in addresses:
-				addresses[row.printer] = printer_address(row.printer)
-			if addresses[row.printer] is not None:
+			if row.printer not in addresses:  # gửi được, hoặc host bị chặn (dispatch_job ghi Failed)
+				addresses[row.printer] = (
+					printer_address(row.printer) is not None or _host_refused_reason(row.printer) is not None
+				)
+			if addresses[row.printer]:
 				names.append(str(row.name))
 				if len(names) >= limit:
 					return names

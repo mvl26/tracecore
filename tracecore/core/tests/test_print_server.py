@@ -237,20 +237,46 @@ class TestServerDispatch(IsolatedTestCase):
 
 	def test_local_ip_printer_needs_site_flag(self):
 		# máy in có host IP loopback/link-local (máy in của agent, lưu được): không cờ site thì server không gửi tới
-		job = self.job(self.printer(host="10.0.0.5"))
-		printer = frappe.db.get_value("Print Job", job, "printer")
-		for host in ("127.0.0.1", "127.1", "::1", "169.254.169.254", "0.0.0.0"):
+		printer = self.printer(host="10.0.0.5")
+		hosts = ("127.0.0.1", "127.1", "::1", "169.254.169.254", "0.0.0.0", "127.0.0.1.", "169.254.169.254.")
+		for host in hosts:
 			frappe.db.set_value("Printer", printer, "host", host)
 			frappe.conf.pop("tracecore_allow_local_printers", None)
+			self.assertTrue(print_server.blocked_host(host), host)
 			self.assertIsNone(print_server.printer_address(printer), host)
-			with patch.object(print_server.socket, "create_connection") as connect:
-				self.assertEqual(print_server.dispatch_job(job), {"status": "Queued", "attempts": 0})
-			connect.assert_not_called()
 			frappe.conf["tracecore_allow_local_printers"] = 1
 			self.assertEqual(print_server.printer_address(printer), (host, 9100), host)
 		frappe.db.set_value("Printer", printer, "host", "printer.local")
 		frappe.conf.pop("tracecore_allow_local_printers", None)
 		self.assertEqual(print_server.printer_address(printer), ("printer.local", 9100))
+
+	def test_ip_literal_ignores_trailing_dot(self):
+		for host, expected in (
+			("127.0.0.1.", "127.0.0.1"),
+			("169.254.169.254.", "169.254.169.254"),
+			(" 10.0.0.5. ", "10.0.0.5"),
+		):
+			self.assertEqual(str(print_server._ip_literal(host)), expected, host)
+		self.assertIsNone(print_server._ip_literal("printer.local."))
+
+	def test_dispatch_blocked_or_invalid_host_fails_job_with_reason(self):
+		printer = self.printer(host="10.0.0.5")
+		for host in ("127.0.0.1", "169.254.169.254.", "10.0.0.5 extra"):
+			job = self.job(printer)
+			frappe.db.set_value("Printer", printer, "host", host)  # máy in bị chặn sau khi job đã Queued
+			frappe.conf.pop("tracecore_allow_local_printers", None)
+			with patch.object(print_server.socket, "create_connection") as connect:
+				result = print_server.dispatch_job(job)
+			connect.assert_not_called()
+			self.assertEqual(result, {"status": "Failed", "attempts": 1}, host)
+			doc = frappe.get_doc("Print Job", job)
+			self.assertEqual(
+				(doc.status, doc.output_mode, bool(doc.printed_at)), ("Failed", "Printer", False)
+			)
+			self.assertIn("printer host not allowed for server printing", doc.error)
+			self.assertIn(printer, doc.error)
+			self.tx.crash()  # kết quả Failed đã commit ngay
+			self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Failed", host)
 
 	def test_dispatch_inactive_printer_does_nothing(self):
 		fake = self.fake_printer()
@@ -380,6 +406,21 @@ class TestServerDispatchQueue(IsolatedTestCase):
 			job: frappe.db.get_value("Print Job", job, "status") for job in (old, fresh, agent_only, kiosk)
 		}
 		self.assertEqual(statuses, {old: "Printed", fresh: "Queued", agent_only: "Queued", kiosk: "Queued"})
+
+	def test_dispatch_pending_fails_queued_job_of_later_blocked_printer(self):
+		printer = self.printer(host="10.0.0.5")
+		job = self.server_job(printer)
+		frappe.db.set_value("Printer", printer, "host", "169.254.169.254")
+		frappe.conf.pop("tracecore_allow_local_printers", None)
+		self.tx.commit()
+
+		with patch.object(print_server.socket, "create_connection") as connect:
+			self.assertEqual(print_server.dispatch_pending(), 1)
+		connect.assert_not_called()
+		row = frappe.db.get_value("Print Job", job, ["status", "error"], as_dict=True)
+		self.assertEqual(row.status, "Failed")
+		self.assertIn("printer host not allowed for server printing", row.error)
+		self.assertEqual(print_server.dispatch_pending(), 0)
 
 	def test_dispatch_pending_retries_failed_attempts_and_respects_limit(self):
 		printer = self.printer(port=closed_port())
