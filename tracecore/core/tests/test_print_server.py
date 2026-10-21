@@ -8,7 +8,7 @@ import socket
 import threading
 import time
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import frappe
 from frappe.utils import now_datetime
@@ -21,6 +21,7 @@ from tracecore.tests.utils import IsolatedTestCase
 
 STATION = "TR-004"
 ZPL = "^XA^FO30,40^BQN,2,6^FDMA,TB-0001^FS^XZ"
+COMMITTED = "tc_print_committed"
 
 
 class FakePrinter:
@@ -58,6 +59,31 @@ class FakePrinter:
 		self.thread.join(timeout=3)
 
 
+class FakeTransactions:
+	"""Giả `frappe.db.commit/rollback` bằng savepoint để test không commit thật (giữ cách ly IsolatedTestCase).
+
+	`commit()` dời savepoint `COMMITTED` tới hiện tại; `rollback()` không tham số quay về commit gần nhất;
+	`crash()` mô phỏng worker chết/transaction bị hủy sau đó: mọi thứ chưa commit mất, cái đã commit còn.
+	"""
+
+	def __init__(self, case):
+		self.real_rollback = frappe.db.rollback
+		frappe.db.savepoint(COMMITTED)
+		for name, fake in (("commit", self.commit), ("rollback", self.rollback)):
+			patcher = patch.object(frappe.db, name, side_effect=fake)
+			patcher.start()
+			case.addCleanup(patcher.stop)
+
+	def commit(self):
+		frappe.db.savepoint(COMMITTED)
+
+	def rollback(self, *, save_point=None):
+		self.real_rollback(save_point=save_point or COMMITTED)
+
+	def crash(self):
+		self.real_rollback(save_point=COMMITTED)
+
+
 def closed_port():
 	"""Một cổng TCP cục bộ không có ai nghe (kết nối bị từ chối ngay)."""
 	with socket.create_server(("127.0.0.1", 0)) as probe:
@@ -69,6 +95,7 @@ class TestServerDispatch(IsolatedTestCase):
 		super().setUp()
 		deactivate_printers(STATION)
 		self.label_item = make_label_items()[0]
+		self.tx = FakeTransactions(self)
 
 	def printer(self, host="127.0.0.1", port=9100, is_active=1):
 		name = make_printer(STATION, self.label_item, host=host)
@@ -76,7 +103,9 @@ class TestServerDispatch(IsolatedTestCase):
 		return name
 
 	def job(self, printer, data=None, zpl=ZPL):
-		return core_print.create_job(STATION, zpl, data, "object-label", printer=printer)
+		job = core_print.create_job(STATION, zpl, data, "object-label", printer=printer)
+		self.tx.commit()  # dữ liệu chuẩn bị coi như đã commit trước khi worker chạy
+		return job
 
 	def fake_printer(self):
 		fake = FakePrinter()
@@ -137,10 +166,63 @@ class TestServerDispatch(IsolatedTestCase):
 			print_server.socket, "create_connection", side_effect=TimeoutError("timed out")
 		) as connect:
 			result = print_server.dispatch_job(job)
-		connect.assert_called_once_with(("printer.local", 9100), timeout=print_server.SEND_TIMEOUT_S)
-		self.assertEqual(print_server.SEND_TIMEOUT_S, 5)
+		connect.assert_called_once()
+		args, kwargs = connect.call_args
+		self.assertEqual(args, (("printer.local", 9100),))
+		# kết nối luôn có timeout hữu hạn: không có timeout (None) thì worker treo khi máy in im lặng
+		self.assertIsInstance(kwargs.get("timeout"), int | float)
+		self.assertTrue(0 < kwargs["timeout"] <= 10, kwargs["timeout"])
 		self.assertEqual(result, {"status": "Queued", "attempts": 1})
 		self.assertIn("timed out", frappe.db.get_value("Print Job", job, "error"))
+
+	def test_dispatch_locks_job_row_while_sending(self):
+		job = self.job(self.printer(port=closed_port()))
+		with patch.object(print_server.frappe, "get_doc", wraps=frappe.get_doc) as get_doc:
+			print_server.dispatch_job(job)
+		self.assertEqual(get_doc.call_args_list[0], call("Print Job", job, for_update=True))
+
+	def test_dispatch_commits_printed_result_right_after_sending(self):
+		fake = self.fake_printer()
+		job = self.job(self.printer(port=fake.port))
+
+		print_server.dispatch_job(job)
+		self.tx.crash()  # lỗi/rollback sau đó không được đưa job về Queued (nhãn đã ra giấy)
+
+		doc = frappe.get_doc("Print Job", job)
+		self.assertEqual((doc.status, doc.attempts), ("Printed", 1))
+
+	def test_dispatch_commits_failed_attempt(self):
+		job = self.job(self.printer(port=closed_port()))
+
+		print_server.dispatch_job(job)
+		self.tx.crash()
+
+		self.assertEqual(frappe.db.get_value("Print Job", job, ["status", "attempts"]), ("Queued", 1))
+
+	def test_dispatch_keeps_printed_when_ack_save_fails_after_sending(self):
+		fake = self.fake_printer()
+		job = self.job(self.printer(port=fake.port))
+
+		with (
+			patch.object(print_server.core_print, "ack", side_effect=RuntimeError("save failed")),
+			patch.object(print_server.frappe, "log_error") as log_error,
+		):
+			result = print_server.dispatch_job(job)
+		self.tx.crash()
+
+		fake.thread.join(timeout=3)
+		self.assertEqual(fake.received, [ZPL.encode("utf-8")])
+		self.assertEqual(result, {"status": "Printed", "attempts": 1})
+		log_error.assert_called_once()
+		doc = frappe.get_doc("Print Job", job)
+		self.assertEqual(
+			(doc.status, doc.output_mode, doc.output_ref, doc.attempts, bool(doc.printed_at), doc.error),
+			("Printed", "Printer", f"127.0.0.1:{fake.port}", 1, True, None),
+		)
+		# đã in rồi thì không bao giờ gửi lại
+		with patch.object(print_server.socket, "create_connection") as connect:
+			print_server.dispatch_job(job)
+		connect.assert_not_called()
 
 	def test_dispatch_ignores_agent_only_printer(self):
 		for host in ("", "   "):
@@ -220,6 +302,7 @@ class TestServerDispatchQueue(IsolatedTestCase):
 		super().setUp()
 		deactivate_printers(STATION)
 		self.label_item = make_label_items()[0]
+		self.tx = FakeTransactions(self)
 
 	def printer(self, host="127.0.0.1", port=9100):
 		name = make_printer(STATION, self.label_item, host=host)
@@ -239,6 +322,7 @@ class TestServerDispatchQueue(IsolatedTestCase):
 		frappe.db.set_value(
 			"Print Job", job, "modified", now_datetime() - timedelta(seconds=seconds), update_modified=False
 		)
+		self.tx.commit()  # dữ liệu chuẩn bị coi như đã commit trước khi worker chạy
 
 	def test_enqueue_server_dispatch_marks_job_and_enqueues_after_commit(self):
 		job = core_print.create_job(
@@ -252,6 +336,9 @@ class TestServerDispatchQueue(IsolatedTestCase):
 		self.assertEqual(kwargs["job"], job)
 		self.assertEqual(kwargs["queue"], "short")
 		self.assertTrue(kwargs["enqueue_after_commit"])
+		# một job id cố định + deduplicate: bấm in hai lần không xếp hai worker cho cùng lệnh in
+		self.assertEqual(kwargs["job_id"], f"tc-print-job-{job}")
+		self.assertTrue(kwargs["deduplicate"])
 		data = json.loads(frappe.db.get_value("Print Job", job, "data"))
 		self.assertEqual(data, {"label_object": "Equipment", "dispatch": "server"})
 
@@ -307,7 +394,77 @@ class TestServerDispatchQueue(IsolatedTestCase):
 			self.assertEqual(print_server.dispatch_pending(), 1)
 		log_error.assert_called_once()
 		self.assertEqual(frappe.db.get_value("Print Job", second, "attempts"), 1)
-		self.assertEqual(frappe.db.get_value("Print Job", first, "attempts"), 0)
+		# lỗi bất ngờ vẫn tính một lần thử (không thử lại vô hạn) và ghi lý do
+		first_row = frappe.db.get_value("Print Job", first, ["status", "attempts", "error"], as_dict=True)
+		self.assertEqual((first_row.status, first_row.attempts), ("Queued", 1))
+		self.assertIn("boom", first_row.error)
+
+	def test_dispatch_pending_fails_job_after_three_unexpected_errors(self):
+		job = self.server_job(self.printer(port=closed_port()))
+		encode_error = UnicodeEncodeError("utf-8", "\ud800", 0, 1, "surrogates not allowed")
+
+		with (
+			patch.object(print_server, "_send", side_effect=encode_error),
+			patch.object(print_server.frappe, "log_error"),
+		):
+			for attempt in (1, 2, 3):
+				print_server.dispatch_pending()
+				self.tx.crash()
+				row = frappe.db.get_value("Print Job", job, ["status", "attempts", "error"], as_dict=True)
+				self.assertEqual(row.attempts, attempt)
+				self.assertIn("surrogates not allowed", row.error)
+				self.age(job, 120)
+			self.assertEqual(row.status, "Failed")
+			self.assertEqual(frappe.db.get_value("Print Job", job, "output_mode"), "Printer")
+			# job Failed không còn được quét
+			self.assertEqual(print_server.dispatch_pending(), 0)
+
+	def test_dispatch_pending_commits_each_job_before_the_next(self):
+		fake = FakePrinter()
+		self.addCleanup(fake.close)
+		first = self.server_job(self.printer(port=fake.port), 180)
+		second = self.server_job(self.printer(port=closed_port()), 120)
+		real = print_server.dispatch_job
+		crashing = []
+
+		def crash_on_second(job):
+			if job == second:
+				crashing.append(job)
+				self.tx.crash()  # transaction của lần quét bị hủy khi đang làm job sau
+				raise RuntimeError("worker lost")
+			return real(job)
+
+		with (
+			patch.object(print_server, "dispatch_job", side_effect=crash_on_second),
+			patch.object(print_server.frappe, "log_error"),
+		):
+			print_server.dispatch_pending()
+
+		fake.thread.join(timeout=3)
+		self.assertEqual(crashing, [second])
+		self.assertEqual(fake.received, [ZPL.encode("utf-8")])
+		# nhãn job trước đã ra giấy: kết quả Printed phải còn, không bị in lại ở lần quét sau
+		self.assertEqual(frappe.db.get_value("Print Job", first, ["status", "attempts"]), ("Printed", 1))
+
+	def test_dispatch_pending_is_not_starved_by_non_server_jobs(self):
+		fake = FakePrinter()
+		self.addCleanup(fake.close)
+		printer = self.printer(port=fake.port)
+		window = print_server.PENDING_SCAN_FACTOR + 1  # nhiều hơn cửa sổ đọc của limit=1
+		for _ in range(window):
+			kiosk = core_print.create_job(
+				STATION, ZPL, {"label_object": "Pack"}, "pack-label", printer=printer
+			)
+			self.age(kiosk, 600)
+		agent_only = self.printer(host="")
+		for _ in range(window):
+			self.server_job(agent_only, 500)
+		server = self.server_job(printer, 120)
+
+		self.assertEqual(print_server.dispatch_pending(limit=1), 1)
+
+		fake.thread.join(timeout=3)
+		self.assertEqual(frappe.db.get_value("Print Job", server, "status"), "Printed")
 
 	def test_scheduler_runs_dispatch_pending_every_minute(self):
 		self.assertIn(

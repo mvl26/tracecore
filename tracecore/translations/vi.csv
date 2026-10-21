@@ -824,6 +824,7 @@ Card code {0} must be {1}-{2} characters without spaces or accented letters.,"M�
 Card code {0} looks like a system-generated code and cannot be registered.,Mã thẻ {0} trùng dạng mã do hệ thống sinh nên không đăng ký được.,
 Printer {0} at {1} could not be reached: {2},Không kết nối được máy in {0} tại {1}: {2},
 Print job {0} could not be dispatched,Không gửi được lệnh in {0},
+Print job {0} was printed but its result could not be saved normally,Lệnh in {0} đã in nhưng không lưu được kết quả theo cách thông thường,
 Code {0} is not a code of {1}.,Mã {0} không phải mã của {1}.,
 Not a label item,Không phải vật tư nhãn,
 Item {0} is not a label item with a compatible method.,Vật tư {0} không phải nhãn có phương pháp tương thích.,
