@@ -308,7 +308,8 @@ class TraceCoreStation {
 		this.sessionVersion++;
 		this.session = null;
 		// A retired instance may share this storage key with its replacement.
-		if (token && this.storedToken() === token) this.storedToken(null);
+		if (!this.disposed && frappe.tc_station === this && token && this.storedToken() === token)
+			this.storedToken(null);
 		this.pending = null;
 		this.lastRaw = null;
 		this.input.value = "";
@@ -328,10 +329,23 @@ class TraceCoreStation {
 	}
 
 	async endSession(error, options = {}) {
-		const token =
-			(this.session && this.session.token) ||
-			(!options.keepStoredCandidate && this.restoreCandidate && this.restoreCandidate.token);
+		const owner = !this.disposed && frappe.tc_station === this;
+		const token = owner
+			? (this.session && this.session.token) ||
+			  (!options.keepStoredCandidate &&
+					((this.restoreCandidate && this.restoreCandidate.token) ||
+						(this.ownsPage() && this.storedToken())))
+			: null;
 		this.clearSession(error, options);
+		// Explicit removal also ends a saved credential before/after candidate validation.
+		// Hide/dispose preserve unvalidated storage; a retired owner cannot remove a replacement's token.
+		if (
+			!options.keepStoredCandidate &&
+			this.ownsPage() &&
+			token &&
+			this.storedToken() === token
+		)
+			this.storedToken(null);
 		return this.revokeToken(token);
 	}
 

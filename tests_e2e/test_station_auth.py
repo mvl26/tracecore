@@ -531,3 +531,66 @@ def test_hiding_pending_restore_preserves_candidate_storage_and_ignores_its_late
 		"releaseRestore({status:200,body:{ok:true,employee:'EMP-1',employee_name:'Restored operator',station:'TR-004',roles:['TC R04']}})"
 	)
 	expect(page.locator(".tc-session")).to_contain_text("Restored operator")
+
+
+def test_card_removal_before_initial_restore_clears_and_revokes_saved_token(page, auth_shell):
+	auth_shell(page)
+	login(page)
+	token = page.evaluate("frappe.tc_station.session.token")
+	auth_shell(
+		page,
+		bootstrap="""() => {
+		const real = window.fetch;
+		let first = true;
+		window.fetch = (...args) => {
+			if (String(args[0]).endsWith('tracecore.v1.ping') && first) {
+				first = false;
+				return new Promise(resolve => window.releaseInitialPing = () => resolve(real(...args)));
+			}
+			return real(...args);
+		};
+	}""",
+	)
+	page.wait_for_function("typeof releaseInitialPing === 'function'")
+	assert page.evaluate("frappe.tc_station.session === null && frappe.tc_station.restoreCandidate === null")
+	page.evaluate("window.dispatchEvent(new Event('tc-card-removed'))")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") is None
+	page.evaluate("releaseInitialPing(); frappe.tc_station.handshake()")
+	expect(page.locator(".tc-work")).to_be_hidden()
+	assert any(
+		method.endswith("station.logout") and args["token"] == token
+		for method, args, _ in auth_shell.requests
+	)
+	assert "token" not in auth_shell.active
+
+
+def test_card_removal_after_failed_restore_clears_and_revokes_preserved_token(page, auth_shell):
+	auth_shell(page)
+	login(page)
+	token = page.evaluate("frappe.tc_station.session.token")
+	auth_shell(
+		page,
+		bootstrap="""() => {
+		const real = window.fetch;
+		let first = true;
+		window.fetch = (...args) => {
+			if (String(args[0]).endsWith('station.heartbeat') && first) {
+				first = false;
+				return Promise.reject(new TypeError('Synthetic restore transport failure'));
+			}
+			return real(...args);
+		};
+	}""",
+	)
+	expect(page.locator(".tc-auth-result")).to_contain_text("Card login needs the server")
+	assert page.evaluate("frappe.tc_station.session === null && frappe.tc_station.restoreCandidate === null")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") == token
+	page.evaluate("window.dispatchEvent(new Event('tc-card-removed'))")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") is None
+	page.evaluate("frappe.tc_station.handshake()")
+	expect(page.locator(".tc-work")).to_be_hidden()
+	assert any(
+		method.endswith("station.logout") and args["token"] == token
+		for method, args, _ in auth_shell.requests
+	)
+	assert "token" not in auth_shell.active
