@@ -17,6 +17,8 @@ from tracecore.core import audit, code_registry, zones
 
 CODE_PREFIX = "TB"
 CONTROLLED_FIELDS = ("status", "retired_on", "retired_reason")
+SAFE_RANGE_FIELDS = ("safe_temp_min", "safe_temp_max", "safe_pressure_max")
+RECOMPUTE_SAVEPOINT = "tc_equipment_programs"
 DEFAULT_STATUS = "Ready"
 
 
@@ -40,6 +42,7 @@ class Equipment(Document):
 
 	def validate(self):
 		self._guard_controlled_fields()
+		self._guard_equipment_type()
 		self.serial_no = (self.serial_no or "").strip()
 		self._validate_serial()
 		self._validate_cost()
@@ -54,8 +57,41 @@ class Equipment(Document):
 		if not code_registry.is_issued(self.name):
 			code_registry.register(self.name, CODE_PREFIX, "Equipment", self.name)
 
+	def on_update(self):
+		if not self.flags.in_insert and any(self.has_value_changed(f) for f in SAFE_RANGE_FIELDS):
+			self._recompute_programs()
+
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")
+
+	def _guard_equipment_type(self):
+		# norm_status / outside_safe_range của chương trình tính theo loại máy: máy không đổi loại (set_only_once)
+		before = None if self.is_new() else self.get_doc_before_save()
+		if before and before.equipment_type != self.equipment_type:
+			frappe.throw(_("Equipment Type cannot be changed after the equipment is created."))
+
+	def _recompute_programs(self):
+		"""Dải an toàn đổi: lưu lại mọi chương trình của máy qua validate để cờ ngoài dải và định mức tính lại, có audit.
+
+		Chương trình không lưu lại được thì ghi Error Log và bỏ qua; không bao giờ chặn việc lưu thiết bị.
+		"""
+		for name in frappe.get_all(
+			"Process Program", filters={"equipment": self.name}, pluck="name", order_by="name asc"
+		):
+			messages = len(frappe.local.message_log)
+			frappe.db.savepoint(RECOMPUTE_SAVEPOINT)
+			try:
+				frappe.get_doc("Process Program", name).save(ignore_permissions=True)
+			except Exception:
+				frappe.db.rollback(save_point=RECOMPUTE_SAVEPOINT)
+				del frappe.local.message_log[messages:]
+				frappe.log_error(
+					title=_("Process program {0} was not recalculated after the safe range changed").format(
+						name
+					),
+					reference_doctype="Process Program",
+					reference_name=name,
+				)
 
 	def _guard_controlled_fields(self):
 		if self.flags.tc_equipment:

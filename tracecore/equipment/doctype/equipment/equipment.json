@@ -49,7 +49,8 @@
    "in_standard_filter": 1,
    "label": "Equipment Type",
    "options": "\nSteam Sterilizer\nWasher-Disinfector\nPlasma Sterilizer\nSealer\nLaundry Washer\nDryer\nUltrasonic Cleaner",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "default": "Ready",

@@ -102,6 +102,65 @@ class TestEquipment(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			make_equipment(serial="R3", safe_temp_min=135, safe_temp_max=134)
 
+	def test_equipment_type_cannot_change_after_creation(self):
+		# norm_status / outside_safe_range lưu trên chương trình tính theo loại máy: máy không đổi loại
+		self.assertEqual(frappe.get_meta("Equipment").get_field("equipment_type").set_only_once, 1)
+		doc = make_equipment(serial="SN-TYPE")
+		doc.equipment_type = "Dryer"
+		with self.assertRaisesRegex(frappe.ValidationError, "Equipment Type cannot be changed"):
+			doc.save()
+		self.assertEqual(frappe.db.get_value("Equipment", doc.name, "equipment_type"), "Steam Sterilizer")
+
+	@bru("BRU-EQP-003")
+	def test_safe_range_change_recomputes_programs(self):
+		from tracecore.tests.factories import make_program
+
+		doc = make_equipment(serial="SN-RESAVE", safe_temp_min=105, safe_temp_max=140)
+		program = make_program(doc.name, code="RS-137", temperature=137)
+		other = make_program(doc.name, code="RS-121", temperature=121)
+		self.assertEqual(program.outside_safe_range, 0)
+		modified = frappe.db.get_value("Process Program", other.name, "modified")
+
+		doc.reload()
+		doc.equipment_name = "Đổi tên không đổi dải"
+		doc.save()
+		self.assertEqual(frappe.db.get_value("Process Program", other.name, "modified"), modified)
+
+		audits = frappe.db.count("Audit Log", {"ref_doctype": "Process Program", "ref_name": program.name})
+		doc.reload()
+		doc.safe_temp_max = 135
+		doc.save()
+		self.assertEqual(frappe.db.get_value("Process Program", program.name, "outside_safe_range"), 1)
+		self.assertEqual(frappe.db.get_value("Process Program", other.name, "outside_safe_range"), 0)
+		self.assertGreater(
+			frappe.db.count("Audit Log", {"ref_doctype": "Process Program", "ref_name": program.name}), audits
+		)
+
+		doc.reload()
+		doc.safe_temp_max = 0
+		doc.save()
+		self.assertEqual(frappe.db.get_value("Process Program", program.name, "outside_safe_range"), 0)
+
+	def test_safe_range_change_skips_program_that_cannot_be_saved(self):
+		# chương trình không lưu lại được (ở đây: dòng định mức mặc định đã mất) → ghi Error Log, máy vẫn lưu
+		from tracecore.equipment.tests.test_norms import make_type_norm
+		from tracecore.tests.factories import make_program
+
+		make_type_norm()
+		doc = make_equipment(serial="SN-SKIP", safe_temp_max=140)
+		broken = make_program(doc.name, code="SK-DEF", temperature=137, use_default_norms=1)
+		program = make_program(doc.name, code="SK-137", temperature=137)
+		frappe.db.delete("Equipment Type Norm", {"name": "Steam Sterilizer"})
+		errors = frappe.db.count("Error Log")
+
+		doc.reload()
+		doc.safe_temp_max = 135
+		doc.save()
+		self.assertEqual(frappe.db.get_value("Equipment", doc.name, "safe_temp_max"), 135)
+		self.assertEqual(frappe.db.get_value("Process Program", program.name, "outside_safe_range"), 1)
+		self.assertEqual(frappe.db.get_value("Process Program", broken.name, "outside_safe_range"), 0)
+		self.assertEqual(frappe.db.count("Error Log"), errors + 1)
+
 	def test_status_defaults_ready_and_cannot_be_edited_directly(self):
 		doc = make_equipment()
 		self.assertEqual(doc.status, "Ready")
