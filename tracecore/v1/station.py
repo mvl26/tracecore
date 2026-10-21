@@ -74,6 +74,9 @@ def verify_pin(token, pin, client_ts=None):
 
 	def call():
 		doc = station_auth.authenticate_session(token, touch=True)
+		from tracecore.core.account import require_pin_changed
+
+		require_pin_changed(doc.employee)
 		station_auth.verify_pin(doc.employee, pin)
 		return {"ok": True, "verified": True, "employee": doc.employee}
 

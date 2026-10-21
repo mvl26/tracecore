@@ -176,6 +176,17 @@ _AUDIT_EVENTS = {
 }
 
 doc_events = {
+	"User": {
+		"before_validate": "tracecore.core.account.validate_user",
+		"after_insert": "tracecore.core.account.user_updated",
+		"on_update": "tracecore.core.account.user_updated",
+		"on_trash": "tracecore.core.audit.block_delete",
+	},
+	"Employee": {
+		"before_validate": "tracecore.core.account.validate_employee",
+		"on_update": "tracecore.core.account.employee_updated",
+		"on_trash": "tracecore.core.audit.block_delete",
+	},
 	"Set Unit": dict(_AUDIT_EVENTS),
 	"Instrument": dict(_AUDIT_EVENTS),
 	"Set BOM Item": dict(_AUDIT_EVENTS),
@@ -217,6 +228,12 @@ scheduler_events = {
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
 	],
+}
+
+on_login = "tracecore.core.account.on_login"
+after_migrate = "tracecore.setup.install.apply_system_settings"
+override_whitelisted_methods = {
+	"frappe.core.doctype.user.user.update_password": "tracecore.core.account.update_web_password",
 }
 
 # scheduler_events = {

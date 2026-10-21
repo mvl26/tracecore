@@ -5,5 +5,6 @@
  {"doctype": "Custom Field", "dt": "Item", "name": "Item-tc_shelf_life_days", "fieldname": "tc_shelf_life_days", "fieldtype": "Int", "label": "Shelf Life (Days)", "depends_on": "eval:doc.tc_item_group_cssd=='Packaging'", "insert_after": "tc_ci_class"},
  {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_card_id", "fieldname": "tc_card_id", "fieldtype": "Data", "label": "Station Card ID", "unique": 1, "no_copy": 1, "insert_after": "user_id"},
  {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_card_enabled", "fieldname": "tc_card_enabled", "fieldtype": "Check", "label": "Station Card Enabled", "default": "1", "no_copy": 1, "insert_after": "tc_card_id"},
- {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_pin_hash", "fieldname": "tc_pin_hash", "fieldtype": "Password", "label": "Station PIN Hash", "hidden": 1, "no_copy": 1, "insert_after": "tc_card_enabled"}
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_pin_hash", "fieldname": "tc_pin_hash", "fieldtype": "Password", "label": "Station PIN Hash", "hidden": 1, "no_copy": 1, "insert_after": "tc_card_enabled"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_pin_reset_required", "fieldname": "tc_pin_reset_required", "fieldtype": "Check", "label": "Station PIN Change Required", "default": "0", "read_only": 1, "no_copy": 1, "insert_after": "tc_pin_hash"}
 ]
