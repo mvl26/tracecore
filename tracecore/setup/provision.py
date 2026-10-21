@@ -32,6 +32,9 @@ def _station(station):
 
 
 def _ensure_user(email, first_name, roles):
+	from tracecore.core.account import require_r10
+
+	require_r10()
 	if not frappe.db.exists("User", email):
 		frappe.get_doc(
 			{"doctype": "User", "email": email, "first_name": first_name, "send_welcome_email": 0}
@@ -74,6 +77,9 @@ def agent_user(station, config_path, server_url="http://127.0.0.1:8000"):
 
 def station_user(station, password):
 	"""User station-<bước>@… cho kiosk (role theo khu của trạm)."""
+	from tracecore.core.account import validate_password
+
+	validate_password(password)
 	row = _station(station)
 	role = STATION_ROLE_BY_ZONE.get(row.zone_type)
 	if not role:
@@ -84,11 +90,16 @@ def station_user(station, password):
 		[role],
 	)
 	update_password(user, password)
+	frappe.db.set_value("User", user, "last_password_reset_date", frappe.utils.today())
 	return user
 
 
 def desk_user(role, name, password):
 	"""User Desk (System User) cho e2e cấu hình: <name>@tracecore.local với một role TC; idempotent."""
+	from tracecore.core.account import validate_password
+
+	validate_password(password)
 	user = _ensure_user(f"{name}@{USER_DOMAIN}", name, [role])
 	update_password(user, password)
+	frappe.db.set_value("User", user, "last_password_reset_date", frappe.utils.today())
 	return user
