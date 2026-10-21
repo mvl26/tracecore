@@ -2,6 +2,8 @@
 
 import inspect
 import io
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -130,6 +132,48 @@ class TestInstrumentApi(FrappeTestCase):
 		self.assertEqual(frappe.allowed_http_methods_for_whitelisted_func[instrument_api.get_image], ["GET"])
 		# đọc thuần: không bọc @idempotent
 		self.assertNotIn("core.idempotency", inspect.getsource(instrument_api))
+
+	def test_get_rejection_audit_survives_request_end(self):
+		# Frappe v15 app.sync_database: request GET (không thuộc UNSAFE_HTTP_METHODS) bị rollback khi kết thúc, trừ
+		# khi frappe.local.flags.commit. Dòng Audit Log `Reject` của RPC GET phải được commit, không mất ở production.
+		from frappe import app
+
+		def end_of_request(fn, method="GET", **kwargs):
+			frappe.local.response.pop("http_status_code", None)
+			frappe.local.flags.pop("commit", None)
+			previous = getattr(frappe.local, "request", None)
+			frappe.local.request = SimpleNamespace(method=method, headers={})
+			try:
+				result = fn(**kwargs)
+				with (
+					patch.object(frappe.db, "commit") as commit,
+					patch.object(frappe.db, "rollback") as rollback,
+				):
+					app.sync_database(True)
+			finally:
+				frappe.local.flags.pop("commit", None)
+				if previous is None:
+					del frappe.local.request
+				else:
+					frappe.local.request = previous
+			return result, commit.called, rollback.called
+
+		make_instrument("API-SYNC")
+		for fn in (instrument_api.get_image, instrument_api.giai_preview, instrument_api.form_context):
+			with self.subTest(fn=fn.__name__):
+				result, committed, rolled_back = end_of_request(fn, instrument="API-SYNC-404")
+				self.assertEqual(result["error"]["code"], "INSTRUMENT_NOT_FOUND")
+				self.assertTrue(committed, msg="Reject row must be committed")
+				self.assertFalse(rolled_back)
+		# GET thành công không ghi gì: vẫn rollback như Frappe mặc định (không commit thừa)
+		result, committed, rolled_back = end_of_request(instrument_api.get_image, instrument="API-SYNC")
+		self.assertTrue(result["ok"])
+		self.assertFalse(committed)
+		self.assertTrue(rolled_back)
+		# không có request (gọi từ console/job): không đụng tới cờ commit
+		frappe.local.flags.pop("commit", None)
+		get_image("API-SYNC-404")
+		self.assertFalse(frappe.local.flags.get("commit"))
 
 
 # --- SCR-01 Desk (FEAT-014 Task 6): check_code, form_context -------------------------------------------------
