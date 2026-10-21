@@ -23,6 +23,8 @@ def call(station, **kwargs):
 class TestStationConfig(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		frappe.set_user("Administrator")
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
 		deactivate_printers("TR-004")
 		deactivate_printers("TR-005")
 		self.steam_label, self.plasma_label = make_label_items()

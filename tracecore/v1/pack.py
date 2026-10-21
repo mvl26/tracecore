@@ -16,7 +16,13 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import packing
-from tracecore.v1._common import PACKING_ROLES, BadRequestError, require_any_role, run_at_step
+from tracecore.v1._common import (
+	PACKING_ROLES,
+	BadRequestError,
+	require_any_role,
+	run_at_step,
+	station_session,
+)
 from tracecore.v1.printer import change_roll
 
 STEP = packing.STEP  # màn đóng gói chỉ chạy ở trạm bước T4
@@ -115,9 +121,10 @@ def _route(scanned, raw, station, open_set):
 	raise _scan_invalid(scanned)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
-def scan(raw, station, open_set=None, client_ts=None):
+def scan(raw, station, open_set=None, client_ts=None, token=None):
 	"""Xử lý một lần quét ở màn T4. Trả ``{"ok": true, "kind": ..., <kind>: ...}``:
 
 	- ``context`` (Set ID): ngữ cảnh đóng gói của bộ (BOM, cổng, bảo dưỡng, cơ số, loại gói, máy in);
@@ -149,10 +156,11 @@ def scan(raw, station, open_set=None, client_ts=None):
 # --- Sinh Cycle ID, in lại, hủy -------------------------------------------------------------------------
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
 def generate_cycle_id(
-	set_id, station, confirmed_lines, ci_batch, pack_type, maint_actions=None, client_ts=None
+	set_id, station, confirmed_lines, ci_batch, pack_type, maint_actions=None, client_ts=None, token=None
 ):
 	"""Sinh Cycle ID cho bộ tại T4 (FR-M2-07/08) trong một transaction; trả gói, HRI, DataMatrix và lệnh in.
 
@@ -182,9 +190,10 @@ def generate_cycle_id(
 	)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
-def reprint_label(cycle_id, reason, station, client_ts=None):
+def reprint_label(cycle_id, reason, station, client_ts=None, token=None):
 	"""In lại nhãn cùng Cycle ID trong 10 phút kể từ khi sinh (AC-10); cần lý do."""
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
@@ -198,9 +207,10 @@ def reprint_label(cycle_id, reason, station, client_ts=None):
 	)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
-def void(cycle_id, reason, station, note=None, client_ts=None):
+def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
 	"""Hủy Cycle ID tại T4 (D12): `reason` là một lý do hủy của Pack; bộ về Reprocess để đóng gói lại."""
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)

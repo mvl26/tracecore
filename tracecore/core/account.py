@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-import hashlib
-import secrets
-from datetime import timedelta
-
 import frappe
 from frappe import _
 from frappe.utils import cint, date_diff, getdate, now_datetime, today
 from frappe.utils.password import check_password, update_password
 
 from tracecore.core import audit, station_auth
+from tracecore.core.errors import BlockedError
 
 PASSWORD_MIN_LENGTH = 10
 PASSWORD_EXPIRY_DAYS = 90
-PROOF_SECONDS = 120
 WEB_ROLES = frozenset(("TC R01", "TC R02", "TC R09", "TC R10"))
 
 
@@ -187,7 +183,9 @@ def reject_email_reset(user=None):
 
 
 def require_pin_changed(employee):
-	if frappe.db.get_value("Employee", employee, "tc_pin_reset_required"):
+	# Use the current locked row, not a transaction snapshot from before revocation.
+	row = station_auth.lock_employee(employee)
+	if row and row.tc_pin_reset_required:
 		raise station_auth._block(
 			"PIN_CHANGE_REQUIRED",
 			"PIN change required",
@@ -209,71 +207,32 @@ def change_pin(token, old_pin, new_pin):
 		)
 
 
-def _proof_key(proof):
-	return "tracecore:account-proof:" + hashlib.sha256(proof.encode()).hexdigest()
-
-
-@frappe.whitelist(methods=["POST"])
-def issue_reset_proof(token, pin):
-	session = station_auth.authenticate_session(token)
-	if session.user != frappe.session.user or not _has_role("TC R02", session.user):
-		frappe.throw(_("A supervisor station PIN proof is required."), frappe.PermissionError)
-	employee = frappe.db.get_value("Employee", session.employee, ["status", "tc_card_enabled"], as_dict=True)
-	if not employee or employee.status != "Active" or not employee.tc_card_enabled:
-		frappe.throw(_("A supervisor station PIN proof is required."), frappe.PermissionError)
-	require_pin_changed(session.employee)
-	station_auth.verify_pin(session.employee, pin)
-	proof = secrets.token_urlsafe(32)
-	# No local Redis-wrapper cache: the transaction below consumes this exactly once.
-	value = frappe.as_json({"user": session.user, "session": session.name})
-	frappe.cache.set(frappe.cache.make_key(_proof_key(proof)), value, ex=PROOF_SECONDS)
-	return proof
-
-
-def _authorize_reset(proof):
+def _authorize_reset(proof, token=None):
 	if _has_role("TC R10"):
 		return
 	if not _has_role("TC R02") or not isinstance(proof, str) or not proof:
 		frappe.throw(_("A supervisor station PIN proof is required."), frappe.PermissionError)
-	# MULTI/EXEC keeps read-and-delete atomic without requiring Redis 6.2 GETDEL.
-	with frappe.cache.pipeline(transaction=True) as pipeline:
-		key = frappe.cache.make_key(_proof_key(proof))
-		pipeline.get(key)
-		pipeline.delete(key)
-		stored = pipeline.execute()[0]
-	row = frappe.parse_json(stored.decode()) if stored else None
-	if row and row.user == frappe.session.user:
-		session = frappe.get_doc("Station Session", row.session)
-		employee = station_auth.lock_employee(session.employee)
-		session = frappe.get_doc("Station Session", row.session, for_update=True)
-		if (
-			session.is_open
-			and session.user == frappe.session.user
-			and employee
-			and employee.status == "Active"
-			and employee.tc_card_enabled
-			and employee.user_id == session.user
-			and not employee.tc_pin_reset_required
-			and frappe.db.get_value("User", session.user, "enabled")
-			and session.absolute_expires_at > now_datetime()
-			and session.last_activity_at > now_datetime() - timedelta(minutes=station_auth.IDLE_MINUTES)
-		):
+	try:
+		session = station_auth.consume_pin_proof(token, proof)
+		if session.user == frappe.session.user:
 			return
+	except BlockedError:
+		pass
 	frappe.throw(_("A supervisor station PIN proof is required."), frappe.PermissionError)
 
 
 @frappe.whitelist(methods=["POST"])
-def reset_password(user, new_password, proof=None):
+def reset_password(user, new_password, proof=None, token=None):
 	validate_password(new_password)
-	_authorize_reset(proof)
+	_authorize_reset(proof, token)
 	if user in frappe.STANDARD_USERS or not frappe.db.exists("User", user):
 		frappe.throw(_("Choose an employee account."))
 	_record_password(user, new_password, reset=True)
 
 
 @frappe.whitelist(methods=["POST"])
-def reset_pin(employee, new_pin, proof=None):
-	_authorize_reset(proof)
+def reset_pin(employee, new_pin, proof=None, token=None):
+	_authorize_reset(proof, token)
 	station_auth.set_pin(employee, new_pin)
 	frappe.db.set_value("Employee", employee, "tc_pin_reset_required", 1)
 	audit.log("Update", "Employee", employee, new={"event": "PIN Reset"})

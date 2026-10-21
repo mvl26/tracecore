@@ -13,7 +13,16 @@ import frappe
 # thiếu tham số và frappe.PermissionError đảm nhiệm.
 HTTP_STATUS: dict[str, int] = {
 	**dict.fromkeys(("SESSION_INVALID", "SESSION_EXPIRED", "SESSION_IDLE"), 401),
-	**dict.fromkeys(("CARD_INVALID", "COMPETENCY_REQUIRED", "PIN_INVALID"), 403),
+	**dict.fromkeys(
+		(
+			"CARD_INVALID",
+			"COMPETENCY_REQUIRED",
+			"PIN_INVALID",
+			"PIN_PROOF_INVALID",
+			"SESSION_STATION_MISMATCH",
+		),
+		403,
+	),
 	"PIN_LOCKED": 429,
 	**dict.fromkeys(
 		(
