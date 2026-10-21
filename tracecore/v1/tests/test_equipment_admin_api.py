@@ -239,8 +239,8 @@ class TestCopyProgramRpc(IsolatedTestCase):
 			self.assertEqual((copy.use_default_norms, copy.norm_status), (1, "Default"), roles)
 
 	@bru("BRU-EQP-003")
-	def test_copy_by_r02_of_default_program_stays_default(self):
-		# nguồn Default: bản sao Default với mọi role, cờ chỉ phản chiếu nguồn (R02 không quyết định gì mới)
+	def test_copy_by_r02_of_default_program_drops_protected_flag(self):
+		# R02 chỉ đọc Process Program: RPC được sao chép dữ liệu nhưng không được mang use_default_norms sang bản sao.
 		make_type_norm()
 		source = make_program(
 			self.source_eq.name,
@@ -257,7 +257,7 @@ class TestCopyProgramRpc(IsolatedTestCase):
 			new_code="cp-r02",
 		)
 		copy = frappe.get_doc("Process Program", result["program"])
-		self.assertEqual((copy.use_default_norms, copy.norm_status), (1, "Default"))
+		self.assertEqual((copy.use_default_norms, copy.norm_status), (0, "Complete"))
 
 	@bru("BRU-EQP-003")
 	def test_copy_by_r02_of_complete_program_drops_default_flag(self):

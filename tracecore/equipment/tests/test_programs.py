@@ -139,9 +139,10 @@ class TestPrograms(IsolatedTestCase):
 				source.name, target.name, f"CPY-D{int(keep)}", keep_default_norms=keep
 			)
 			copy = frappe.get_doc("Process Program", name)
-			self.assertEqual((copy.use_default_norms, copy.norm_status), (1, "Default"), keep)
+			expected = (1, "Default") if keep else (0, "Complete")
+			self.assertEqual((copy.use_default_norms, copy.norm_status), expected, keep)
 			copy.save()
-			self.assertEqual(copy.norm_status, "Default", keep)
+			self.assertEqual(copy.norm_status, expected[1], keep)
 
 	@bru("BRU-EQP-003")
 	def test_copy_of_complete_program_keeps_existing_flag_rule(self):
@@ -161,8 +162,8 @@ class TestPrograms(IsolatedTestCase):
 			copy = frappe.get_doc("Process Program", name)
 			self.assertEqual((copy.use_default_norms, copy.norm_status), (flag, "Complete"), keep)
 
-	def test_copy_of_default_program_refused_when_type_norm_is_gone(self):
-		# nguồn Default mà dòng Equipment Type Norm đã mất (chỉ xóa thẳng DB được): không sao chép, báo thiếu định mức
+	def test_copy_of_default_program_without_type_norm_only_requires_norm_when_flag_is_kept(self):
+		# Bỏ cờ thì các số đã áp vào nguồn trở thành số thường; giữ cờ thì vẫn phải có Equipment Type Norm.
 		from tracecore.equipment.tests.test_norms import consumable, make_type_norm
 
 		make_type_norm()
@@ -172,6 +173,9 @@ class TestPrograms(IsolatedTestCase):
 			source_eq.name, code="SRC-6", minutes=0, consumables=consumable("CPG-CI"), use_default_norms=1
 		)
 		frappe.db.delete("Equipment Type Norm", {"name": "Steam Sterilizer"})
+		name = programs.copy_program(source.name, target.name, "CPY-GONE-DROP")
+		copy = frappe.get_doc("Process Program", name)
+		self.assertEqual((copy.use_default_norms, copy.norm_status), (0, "Complete"))
 		with self.assertRaisesRegex(frappe.ValidationError, "no default norms"):
-			programs.copy_program(source.name, target.name, "CPY-GONE")
-		self.assertFalse(frappe.db.exists("Process Program", "CPY-GONE"))
+			programs.copy_program(source.name, target.name, "CPY-GONE-KEEP", keep_default_norms=True)
+		self.assertFalse(frappe.db.exists("Process Program", "CPY-GONE-KEEP"))

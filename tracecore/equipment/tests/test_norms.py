@@ -167,7 +167,7 @@ class TestNorms(IsolatedTestCase):
 		for role in ("System Manager", "TC R10"):
 			for right in ("read", "write", "create", "report"):
 				self.assertEqual(perms[role].get(right), 1, msg=(role, right))
-		for role in ("TC R01", "TC R02", "TC R09"):
+		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
 			self.assertEqual(perms[role].read, 1, msg=role)
 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
 		self.assertFalse(any(row.delete for row in perms.values()))

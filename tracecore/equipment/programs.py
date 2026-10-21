@@ -89,9 +89,10 @@ def copy_program(
 	Mặc định bản sao KHÔNG mang cờ ``use_default_norms`` (chỉ R10/System Manager đặt cờ này, Q7) và insert có kiểm
 	quyền. Tầng RPC quyết định sau khi kiểm role: ``keep_default_norms`` giữ cờ của chương trình nguồn,
 	``ignore_permissions`` cho role không có quyền tạo trực tiếp (R02).
-	Ngoại lệ: nguồn ``Default`` thì bản sao luôn ``Default`` và giữ cờ (cờ phản chiếu nguồn, người sao chép không quyết
-	định gì mới), qua ``flags.tc_copied_norm_status`` mà ``norms.norm_status`` đọc khi chưa có bản lưu trước. Dòng
-	``Equipment Type Norm`` của loại máy đã mất thì việc sao chép bị từ chối như khi lưu chính chương trình nguồn.
+	Khi được phép giữ cờ và nguồn là ``Default``, bản sao giữ trạng thái này qua ``flags.tc_copied_norm_status`` mà
+	``norms.norm_status`` đọc khi chưa có bản lưu trước. Nếu không được giữ cờ (đặc biệt RPC của R02), bản sao dùng
+	các số đã sao chép nhưng ``use_default_norms = 0`` và được tính lại như chương trình thường. Dòng ``Equipment Type
+	Norm`` của loại máy đã mất thì việc sao chép có giữ cờ bị từ chối như khi lưu chính chương trình nguồn.
 	"""
 	source = frappe.get_doc("Process Program", program)
 	if source.equipment == equipment:
@@ -122,9 +123,9 @@ def copy_program(
 	for table, fields in CHILD_FIELDS.items():
 		values[table] = [{field: row.get(field) for field in fields} for row in source.get(table)]
 	copy = frappe.get_doc(values)
-	if source.norm_status == "Default":
+	if not keep_default_norms:
+		copy.use_default_norms = 0
+	elif source.norm_status == "Default":
 		# bản sao không đủ hơn bản nguồn: số mặc định đã điền vào nguồn vẫn là mặc định, cờ chỉ phản chiếu nguồn
 		copy.flags.tc_copied_norm_status = "Default"
-	elif not keep_default_norms:
-		copy.use_default_norms = 0
 	return copy.insert(ignore_permissions=ignore_permissions).name

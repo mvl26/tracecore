@@ -82,6 +82,10 @@
   {"create": 1, "read": 1, "report": 1, "role": "TC R10", "write": 1},
   {"read": 1, "role": "TC R01"},
   {"read": 1, "role": "TC R02"},
+  {"read": 1, "role": "TC R03"},
+  {"read": 1, "role": "TC R04"},
+  {"read": 1, "role": "TC R05"},
+  {"read": 1, "role": "TC R06"},
   {"read": 1, "role": "TC R09"}
  ],
  "sort_field": "modified",
