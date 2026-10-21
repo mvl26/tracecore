@@ -2,6 +2,11 @@
 
 Kiểm hai lớp:
 
+0. Lớp File của TraceCore (``InstrumentMediaFile``, ``override_doctype_class``): ``before_insert`` của Frappe đọc nội
+   dung **trước** mọi hook (bỏ EXIF của ``.jpg``/``.jpeg`` bằng Pillow, đọc ``.pdf`` bằng pypdf); file giả mạo (SVG
+   đổi đuôi ``.jpg``, HTML đổi đuôi ``.pdf``) làm lỗi đó thành HTTP 500. ``precheck_upload`` kiểm nội dung trong bộ
+   nhớ theo đúng luật của lớp 1 trước khi Frappe xử lý: từ chối sạch (ValidationError, thông báo dịch), chưa có blob
+   nào được ghi.
 1. Hook ``File.before_insert`` (``check_upload``): File đính vào trường ``ifu``/``image`` của Instrument được kiểm
    bằng **nội dung** (magic bytes, Pillow ``verify`` + giới hạn điểm ảnh, PDF không có nội dung chủ động), không tin
    đuôi file hay Content-Type; quá cỡ/sai định dạng thì xóa blob vừa ghi (nếu không dùng chung) và báo lỗi; Frappe
@@ -26,6 +31,8 @@ import warnings
 
 import frappe
 from frappe import _
+from frappe.core.doctype.file.file import File
+from frappe.core.doctype.file.utils import decode_file_content
 from frappe.utils import cint
 from PIL import Image, ImageOps
 
@@ -61,6 +68,42 @@ def sniff(content: bytes) -> str | None:
 	if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
 		return "webp"
 	return None
+
+
+# --- Lớp 0: kiểm trước khi Frappe đọc nội dung ---------------------------------------------------------------
+
+
+class InstrumentMediaFile(File):
+	"""File của Frappe, thêm ``precheck_upload`` chạy trước ``File.before_insert`` gốc (xem lớp 0 ở docstring module)."""
+
+	def before_insert(self):
+		precheck_upload(self)
+		super().before_insert()
+
+
+def precheck_upload(file_doc) -> None:
+	"""Kiểm nội dung tải lên (trong bộ nhớ) của File đính vào ``ifu``/``image`` của Instrument, trước khi Frappe ghi đĩa.
+
+	Chỉ áp dụng khi File mang nội dung (``content``, kể cả base64 ``decode``); File trỏ ``file_url`` có sẵn, File ngoài
+	(``http…``), bản sao đính kèm (``copy_from_existing_file``) và thumbnail để ``check_upload`` xử lý như cũ. Không đổi
+	``content``/``decode`` của File: Frappe tự giải mã lại khi ghi.
+	"""
+	field = _media_field(file_doc)
+	if field not in MEDIA_FIELDS or file_doc.flags.copy_from_existing_file:
+		return
+	content = file_doc.get("content")
+	if not content:
+		return
+	if file_doc.get("decode"):
+		try:
+			content = decode_file_content(content)
+		except Exception:
+			frappe.throw(_unreadable_message(), title=_("File not accepted"))
+	if isinstance(content, str):
+		content = content.encode()
+	problem = inspect_content(content, field)[1]
+	if problem:
+		frappe.throw(problem, title=_("File not accepted"))
 
 
 # --- Lớp 1: File.before_insert / File.validate --------------------------------------------------------------
@@ -132,11 +175,17 @@ def inspect_blob(path, field) -> tuple[bytes | None, str | None]:
 	Cỡ file kiểm bằng ``getsize`` trước khi đọc; định dạng theo magic bytes; PDF không có nội dung chủ động; ảnh mở
 	được trong giới hạn điểm ảnh.
 	"""
-	kinds, max_bytes = RULES[field]
+	max_bytes = RULES[field][1]
 	if os.path.getsize(path) > max_bytes:
 		return None, _too_big_message(field)
 	with open(path, "rb") as handle:
 		content = handle.read(max_bytes + 1)
+	return inspect_content(content, field)
+
+
+def inspect_content(content: bytes, field) -> tuple[bytes | None, str | None]:
+	"""Như ``inspect_blob`` nhưng trên bytes đã có trong bộ nhớ (lớp 0 và lớp 1 dùng chung một luật)."""
+	kinds, max_bytes = RULES[field]
 	if len(content) > max_bytes:
 		return None, _too_big_message(field)
 	kind = sniff(content)

@@ -185,6 +185,25 @@ class TestStationPage(FrappeTestCase):
 				self.assertIn((label, doctype), sources)
 				self.assertTrue(ours.get(f"{label}:{doctype}"))
 
+	def test_vi_csv_parses_without_frappe_warnings(self):
+		"""Mọi dòng vi.csv có 2 hoặc 3 cột như Frappe đọc; dòng sai cột ghi "Bad translation" vào Error Log mỗi lần
+		nạp bản dịch (dấu phẩy trong chuỗi nguồn phải nằm trong ngoặc kép, không dùng ``\\,``)."""
+		from frappe.translate import get_translation_dict_from_file
+
+		path = os.path.join(APP_PATH, "translations", "vi.csv")
+		bad = [row for row in vi_rows() if len(row) not in (2, 3)]
+		self.assertFalse(bad, msg=f"Dòng vi.csv sai số cột: {bad}")
+		with open(path, encoding="utf-8") as handle:
+			self.assertNotIn("\\,", handle.read())
+		before = frappe.db.count("Error Log", {"method": "Error in translation file"})
+		translations = get_translation_dict_from_file(path, "vi", "tracecore", throw=True)
+		self.assertEqual(frappe.db.count("Error Log", {"method": "Error in translation file"}), before)
+		for source in (
+			"Zone and station configuration (FEAT-002): zone type, station function by zone, active flag.",
+			"Scanner or scale attached to a station (FEAT-002): connection USB HID, Serial or TCP.",
+		):
+			self.assertTrue(translations.get(source), msg=source)
+
 	def test_vi_translations_do_not_override_other_apps(self):
 		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms."""
 		others = other_app_translations()

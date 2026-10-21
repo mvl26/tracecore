@@ -74,9 +74,7 @@ def giai_preview(instrument=None):
 	elif frappe.db.get_value("Code Registry", giai, "status") != "Active":
 		block = _code_disabled_block(giai)
 	else:
-		block = code_registry.etching_prefix_block(
-			giai[: -len(gs1.INSTRUMENT_ASSET_PREFIX) - gs1.INSTRUMENT_SERIAL_DIGITS]
-		)
+		block = code_registry.instrument_giai_block(giai)
 	if block:
 		return reject_block(block, "Instrument", code or None, raw=code or None)
 	payload = gs1.giai_payload(giai)

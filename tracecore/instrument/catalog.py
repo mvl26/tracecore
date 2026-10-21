@@ -203,8 +203,11 @@ def retire(instrument: str, reason: str, confirm: bool = False) -> dict:
 
 
 def giai_enabled() -> bool:
-	"""Cờ ``TraceCore Settings.enable_instrument_giai`` (đọc qua cache của request, xóa khi lưu Settings)."""
-	return bool(cint(frappe.db.get_single_value(SETTINGS_DOCTYPE, "enable_instrument_giai")))
+	"""Cờ ``TraceCore Settings.enable_instrument_giai``, đọc mới từ DB mỗi lần gọi (không cache theo request).
+
+	Bật/tắt cờ có hiệu lực ngay ở lần gọi kế tiếp, kể cả trong cùng request.
+	"""
+	return bool(cint(frappe.db.get_single_value(SETTINGS_DOCTYPE, "enable_instrument_giai", cache=False)))
 
 
 def feature_disabled_block() -> Block:
@@ -297,12 +300,16 @@ def _etched_date(value):
 def record_etching(instrument: str, etched_on, position: str, reason: str | None = None):
 	"""Ghi ngày khắc và vị trí khắc mã GIAI (ghi một lần; ghi lại cần lý do, lý do vào Audit Log).
 
-	Từ chối (`BlockedError`): ``FEATURE_DISABLED``, ``INSTRUMENT_RETIRED``, chưa có mã ``GIAI_NOT_ASSIGNED``, ngày
+	Từ chối (`BlockedError`): ``FEATURE_DISABLED``, ``INSTRUMENT_RETIRED``, chưa có mã ``GIAI_NOT_ASSIGNED``, mã mang
+	tiền tố demo trên site không phải dev/test ``GS1_PREFIX_NOT_CONFIGURED`` (cùng chặn như cấp mã và xem trước), ngày
 	sai/tương lai hoặc vị trí trống/quá 140 ký tự ``ETCHING_INVALID``, ghi lại không lý do ``REASON_REQUIRED``.
 	"""
 	doc = _giai_doc(instrument)
 	if not doc.giai_code:
 		raise BlockedError(not_assigned_block(doc.name))
+	prefix_block = code_registry.instrument_giai_block(doc.giai_code)
+	if prefix_block:
+		raise BlockedError(prefix_block)
 	day = _etched_date(etched_on)
 	if day is None:
 		raise BlockedError(etching_block(_("Etching date {0} is not a valid date.").format(etched_on or "-")))

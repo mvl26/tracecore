@@ -245,12 +245,14 @@ class TestInstrumentMedia(FrappeTestCase):
 		svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.cookie)</script></svg>'
 		exe = b"MZ\x90\x00\x03\x00\x00\x00\x04\x00\x00\x00\xff\xff\x00\x00" + b"\x00" * 64 + b"This program"
 		heic = b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic" + b"\x00" * 64
-		# đuôi .pdf / .jpg: Frappe tự đọc nội dung trước khi ghi đĩa (pypdf, bỏ EXIF) và đã ném lỗi riêng;
-		# đuôi khác: hook media.check_upload đọc magic bytes và từ chối có hướng dẫn
-		self.assertRejected("MD-SNIFF", "ifu", html, "manual.pdf", error=Exception)
+		# đuôi .pdf / .jpg: Frappe đọc nội dung trước khi ghi đĩa (pypdf, bỏ EXIF) nên media.precheck_upload kiểm
+		# trước (lớp File của TraceCore); đuôi khác: hook media.check_upload đọc magic bytes. Cả hai từ chối có hướng dẫn
+		self.assertRejected("MD-SNIFF", "ifu", html, "manual.pdf", "PDF")
 		self.assertRejected("MD-SNIFF", "ifu", html, "manual.txt", "PDF")
 		self.assertRejected("MD-SNIFF", "ifu", exe, "manual.png", "PDF")
-		self.assertRejected("MD-SNIFF", "image", svg, "photo.jpg", error=Exception)
+		self.assertRejected("MD-SNIFF", "image", svg, "photo.jpg", "JPEG")
+		self.assertRejected("MD-SNIFF", "image", svg, "photo.jpeg", "JPEG")
+		self.assertRejected("MD-SNIFF", "ifu", svg, "manual.jpg", "PDF")
 		self.assertRejected("MD-SNIFF", "image", svg, "photo.webp", "JPEG")
 		self.assertRejected("MD-SNIFF", "image", exe, "photo.png", "JPEG")
 		self.assertRejected("MD-SNIFF", "image", heic, "photo.heic", "HEIC")
@@ -263,6 +265,74 @@ class TestInstrumentMedia(FrappeTestCase):
 		self.assertEqual(media.sniff(open(accepted.get_full_path(), "rb").read()), "jpeg")
 		# ảnh JPEG/PNG cũng nhận được làm IFU
 		self.assertTrue(attach_instrument_file("MD-SNIFF", "ifu", _image("PNG"), "ifu-scan.png").file_url)
+
+	def test_fake_jpg_and_pdf_via_upload_handler_rejected_cleanly(self):
+		# Desk tải lên qua frappe.handler.upload_file: SVG đổi đuôi .jpg / HTML đổi đuôi .pdf trước đây ra HTTP 500
+		# (Frappe bỏ EXIF / đọc PDF trước hook). Nay: ValidationError (HTTP 417) có thông báo dịch, không File, không blob
+		from frappe import handler
+		from werkzeug.datastructures import FileStorage
+
+		make_instrument("MD-HANDLER")
+		svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.cookie)</script></svg>'
+		html = b"<!DOCTYPE html><html><body>not a pdf</body></html>"
+		private_dir = frappe.get_site_path("private", "files")
+		public_dir = frappe.get_site_path("public", "files")
+
+		def upload(field, content, file_name, optimize=0, is_private=1):
+			storage = FileStorage(stream=io.BytesIO(content), filename=file_name)
+			request = type("Request", (), {"files": {"file": storage}})()
+			frappe.local.form_dict = frappe._dict(
+				doctype="Instrument",
+				docname="MD-HANDLER",
+				fieldname=field,
+				is_private=is_private,
+				optimize=optimize,
+			)
+			try:
+				with patch.object(frappe, "request", request, create=True):
+					return handler.upload_file()
+			finally:
+				frappe.local.form_dict = frappe._dict()
+
+		for field, content, file_name, optimize, fragment in (
+			("image", svg, "photo.jpg", 1, "JPEG"),
+			("image", svg, "photo.jpg", 0, "JPEG"),
+			("ifu", html, "manual.pdf", 0, "PDF"),
+			("ifu", svg, "scan.jpg", 0, "PDF"),
+		):
+			with self.subTest(file_name=file_name, optimize=optimize):
+				before = (set(os.listdir(private_dir)), set(os.listdir(public_dir)))
+				count = frappe.db.count("File", {"attached_to_name": "MD-HANDLER"})
+				with self.assertRaises(frappe.ValidationError) as raised:
+					upload(field, content, file_name, optimize)
+				self.assertIn(fragment, str(raised.exception))
+				self.assertEqual(frappe.db.count("File", {"attached_to_name": "MD-HANDLER"}), count)
+				self.assertEqual((set(os.listdir(private_dir)), set(os.listdir(public_dir))), before)
+		frappe.clear_messages()
+		# ảnh JPEG thật qua cùng đường: vẫn nhận, luôn riêng tư
+		saved = upload("image", _image("JPEG", color=(9, 99, 199)), "real.jpg", is_private=0)
+		self.assertEqual(saved.is_private, 1)
+		self.assertEqual(media.sniff(open(saved.get_full_path(), "rb").read()), "jpeg")
+
+	def test_precheck_reads_base64_content_without_breaking_save(self):
+		# content base64 (decode=True, như frappe.client.attach_file): kiểm trước trên nội dung đã giải mã, rồi Frappe
+		# vẫn ghi đúng bytes ảnh
+		import base64
+
+		make_instrument("MD-B64")
+		good = _file_doc(
+			"MD-B64", "image", base64.b64encode(_image("JPEG", color=(7, 77, 177))).decode(), "b64.jpg"
+		)
+		good.decode = True
+		good.insert()
+		self.assertEqual(media.sniff(open(good.get_full_path(), "rb").read()), "jpeg")
+		svg = b'<svg xmlns="http://www.w3.org/2000/svg"></svg>'
+		bad = _file_doc("MD-B64", "image", base64.b64encode(svg).decode(), "b64-bad.jpg")
+		bad.decode = True
+		with self.assertRaises(frappe.ValidationError) as raised:
+			bad.insert()
+		self.assertIn("JPEG", str(raised.exception))
+		self.assertIsInstance(frappe.get_doc({"doctype": "File"}), media.InstrumentMediaFile)
 
 	def test_image_limits(self):
 		make_instrument("MD-LIMIT")

@@ -196,7 +196,8 @@ def record_etching(instrument, etched_on, position, reason=None, client_ts=None)
 
 	Ghi một lần; ghi lại phải có ``reason`` (vào Audit Log). Thành công: ``{"ok": true, "instrument": {name,
 	giai_code, giai_etched_on, giai_position}}``. Từ chối: ``INSTRUMENT_NOT_FOUND`` (404), ``FEATURE_DISABLED``,
-	``INSTRUMENT_RETIRED``, ``GIAI_NOT_ASSIGNED`` (409), ``ETCHING_INVALID``, ``REASON_REQUIRED`` (422).
+	``INSTRUMENT_RETIRED``, ``GIAI_NOT_ASSIGNED``, ``GS1_PREFIX_NOT_CONFIGURED`` (409, mã mang tiền tố demo trên site
+	không phải dev/test), ``ETCHING_INVALID``, ``REASON_REQUIRED`` (422).
 	"""
 	require_any_role(*GIAI_ROLES)
 	timestamp = parse_client_ts(client_ts)

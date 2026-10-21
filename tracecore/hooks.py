@@ -159,9 +159,9 @@ after_install = "tracecore.setup.install.after_install"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+# File: kiểm ảnh/IFU của dụng cụ trước khi Frappe đọc nội dung (SVG đổi đuôi .jpg, HTML đổi đuôi .pdf → lỗi
+# sạch thay vì HTTP 500; FEAT-014 A-06 I11). Chưa app nào khác trong bench ghi đè File.
+override_doctype_class = {"File": "tracecore.instrument.media.InstrumentMediaFile"}
 
 # Document Events
 # ---------------

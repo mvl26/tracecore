@@ -314,6 +314,16 @@ class TestGiaiFields(GiaiCase):
 		self.assertRejected(assign("GI-TG"), "GIAI_ALREADY_ASSIGNED", 409)
 		self.assertEqual(frappe.db.count("Code Registry", {"ref_name": "GI-TG", "prefix": "GI"}), 1)
 
+	def test_giai_enabled_reads_fresh_each_call(self):
+		# không dựa vào frappe.db.value_cache: giá trị đổi thẳng ở DB (process khác) thấy ngay ở lần gọi kế tiếp
+		set_flag(False)
+		self.assertFalse(catalog.giai_enabled())
+		frappe.db.sql(
+			"update `tabSingles` set value = 1 where doctype = %s and field = 'enable_instrument_giai'",
+			SETTINGS,
+		)
+		self.assertTrue(catalog.giai_enabled())
+
 	def test_form_onload_reports_flag(self):
 		make_instrument("GI-ONL")
 		doc = frappe.get_doc("Instrument", "GI-ONL")
@@ -372,8 +382,24 @@ class TestPrefixGuard(GiaiCase):
 		self.assertRejected(result, "GS1_PREFIX_NOT_CONFIGURED", 409)
 		self.assertEqual(frappe.db.count("Code Registry"), before)
 		self.assertFalse(frappe.db.get_value("Instrument", "GI-DEMO", "giai_code"))
-		# mã demo cấp trên dev/test không được đưa ra khắc trên site thật
+		# mã demo cấp trên dev/test không được đưa ra khắc, cũng không được ghi nhận đã khắc trên site thật
 		self.assertRejected(preview, "GS1_PREFIX_NOT_CONFIGURED", 409)
+		with patch.dict(frappe.conf, {**PRODUCTION, "tc_gs1_company_prefix": "8930001"}):
+			with patch.dict(frappe.flags, {"in_test": False}):
+				etched = as_user(
+					["TC R10"],
+					admin_api.record_etching,
+					instrument="GI-DEMO2",
+					etched_on=today(),
+					position="Cán",
+				)
+		self.assertRejected(etched, "GS1_PREFIX_NOT_CONFIGURED", 409)
+		self.assertIsNone(giai_fields("GI-DEMO2").giai_etched_on)
+		# trở lại site test: ghi nhận được
+		ok = as_user(
+			["TC R10"], admin_api.record_etching, instrument="GI-DEMO2", etched_on=today(), position="Cán"
+		)
+		self.assertTrue(ok["ok"], msg=ok)
 
 
 class TestRetireDisablesGiai(GiaiCase):

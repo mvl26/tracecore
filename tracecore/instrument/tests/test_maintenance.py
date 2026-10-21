@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.utils import get_datetime, now_datetime
+from frappe.utils import get_datetime
 
 from tracecore.core import extension
 from tracecore.core.errors import BlockedError
@@ -23,6 +23,9 @@ from tracecore.tests.utils import IsolatedTestCase, bru
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
 OIL = "DAU-MNT-001"
+
+
+STAMP = "2026-10-21 08:30:00"
 
 
 def _scene(*rows, type_code="MNT", bom_version=1):
@@ -364,16 +367,18 @@ class TestMaintenanceApply(IsolatedTestCase):
 			("MP-1", 10, 12, 2, "Lubrication"),
 			("MP-2", 10, 5, 1, "Blade Check"),  # chưa đến hạn: giữ nguyên
 		)
-		before = now_datetime()
+		# thời điểm cố định: không so với đồng hồ thật (đồng hồ WSL có thể lùi khi đồng bộ, test từng fail ngẫu nhiên)
+		stamp = get_datetime(STAMP)
 		ctx["maint_actions"] = [_done("MP-1", _oil_lot())]
 
-		self.assertIsNone(maintenance.apply_pack(None, ctx))
+		with patch.object(maintenance, "now_datetime", return_value=stamp):
+			self.assertIsNone(maintenance.apply_pack(None, ctx))
 
 		row = _row(unit, "MP-1")
 		self.assertEqual((row.cycles_since_maint, row.deferred_count), (0, 0))
 		self.assertEqual(row.last_maint_by, frappe.session.user)
 		self.assertEqual(row.last_oil_batch, OIL)
-		self.assertGreaterEqual(get_datetime(row.last_maint_on), before.replace(microsecond=0))
+		self.assertEqual(get_datetime(row.last_maint_on), stamp)
 		self.assertFalse(row.last_defer_on)
 		untouched = _row(unit, "MP-2")
 		self.assertEqual((untouched.cycles_since_maint, untouched.deferred_count), (5, 1))
@@ -398,15 +403,16 @@ class TestMaintenanceApply(IsolatedTestCase):
 	@bru("BRU-REP-014")
 	def test_apply_deferred_increments(self):
 		unit, ctx = _scene(("MI-1", 10, 11, 1, "Blade Check"))
-		before = now_datetime()
+		stamp = get_datetime(STAMP)
 		ctx["maint_actions"] = [_deferred("MI-1", reason="  Urgent surgery  ")]
 
-		maintenance.apply_pack(None, ctx)
+		with patch.object(maintenance, "now_datetime", return_value=stamp):
+			maintenance.apply_pack(None, ctx)
 
 		row = _row(unit, "MI-1")
 		self.assertEqual((row.cycles_since_maint, row.deferred_count), (11, 2))
 		self.assertEqual(row.last_defer_reason, "Urgent surgery")
-		self.assertGreaterEqual(get_datetime(row.last_defer_on), before.replace(microsecond=0))
+		self.assertEqual(get_datetime(row.last_defer_on), stamp)
 		self.assertFalse(row.last_maint_on)
 		# hoãn lần 3 rồi thì chặn hoãn tiếp
 		ctx["maint_actions"] = [_deferred("MI-1")]

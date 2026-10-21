@@ -188,6 +188,16 @@ def etching_prefix_block(prefix):
 	)
 
 
+def instrument_giai_block(giai):
+	"""``etching_prefix_block`` theo tiền tố **chứa trong** mã GIAI dụng cụ đã cấp (``<prefix>I-########``).
+
+	Mã cấp trên dev/test (tiền tố demo) rồi DB được chép sang site thật thì không được xem trước để khắc hay ghi nhận
+	đã khắc, dù tiền tố cấu hình hiện tại là thật.
+	"""
+	suffix = len(gs1.INSTRUMENT_ASSET_PREFIX) + gs1.INSTRUMENT_SERIAL_DIGITS
+	return etching_prefix_block(str(giai or "")[:-suffix])
+
+
 def next_instrument_giai(instrument):
 	"""Cấp mã GIAI khắc laser cho dụng cụ `instrument` (`<prefix>I-########`) và ghi sổ (prefix ``GI``, A-06 I8).
 
