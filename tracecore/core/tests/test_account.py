@@ -4,11 +4,16 @@ from datetime import timedelta
 from unittest.mock import patch
 
 import frappe
-from frappe.auth import LoginAttemptTracker
+import pyotp
+from frappe.auth import CookieManager, LoginAttemptTracker, LoginManager
+from frappe.handler import execute_cmd
 from frappe.utils import add_days, now_datetime, today
 from frappe.utils.password import check_password, update_password
+from werkzeug.test import EnvironBuilder
+from werkzeug.wrappers import Request
 
 from tracecore.core import station_auth
+from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import IsolatedTestCase
 
@@ -26,6 +31,7 @@ class TestAccount(IsolatedTestCase):
 		self.account = importlib.import_module("tracecore.core.account")
 		frappe.set_user("Administrator")
 		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
 		self.user = make_user("account.employee@example.test", ("TC R04",))
 		self.r02 = make_user("account.supervisor@example.test", ("TC R02",))
 		self.r10 = make_user("account.admin@example.test", ("TC R10",))
@@ -39,6 +45,13 @@ class TestAccount(IsolatedTestCase):
 		self.addCleanup(station_auth.clear_pin_rate_limit, self.supervisor.name)
 
 	def make_employee(self, user, card):
+		name = frappe.db.get_value("Employee", {"user_id": user}, "name")
+		if name:
+			employee = frappe.get_doc("Employee", name)
+			employee.tc_card_id = card
+			employee.tc_card_enabled = 1
+			employee.status = "Active"
+			return employee.save(ignore_permissions=True)
 		return frappe.get_doc(
 			{
 				"doctype": "Employee",
@@ -266,15 +279,187 @@ class TestAccount(IsolatedTestCase):
 		frappe.set_user(self.r10)
 		self.account.reset_password(self.user, OLD_PASSWORD)
 		frappe.set_user(self.user)
-		manager = frappe._dict(
-			check_password=check_password,
-			login_as=lambda user: self.account.on_login(frappe._dict(user=user)),
-		)
-		with patch.object(frappe.local, "login_manager", manager, create=True):
-			self.account.update_web_password(NEW_PASSWORD, old_password=OLD_PASSWORD)
+		before = frappe.db.count("Sessions", {"user": self.user})
+		self.assertEqual(self.account.update_web_password(NEW_PASSWORD, old_password=OLD_PASSWORD), "/login")
 		self.assertEqual(check_password(self.user, NEW_PASSWORD), self.user)
 		self.assertFalse(self.account.password_is_expired(self.user))
-		self.assertIsNone(getattr(frappe.local, "tc_password_update_user", None))
+		self.assertEqual(frappe.session.user, self.user)
+		self.assertEqual(frappe.db.count("Sessions", {"user": self.user}), before)
+
+	def test_recovery_keeps_guest_session_until_password_and_real_otp_login(self):
+		from frappe.twofactor import get_otpsecret_for_, set_default
+
+		frappe.set_user(self.r10)
+		self.account.reset_password(self.r02, OLD_PASSWORD)
+		url = frappe.get_doc("User", self.r02)._reset_password(send_email=False, password_expired=True)
+		key = url.split("key=", 1)[1].split("&", 1)[0]
+		set_default(self.r02 + "_otplogin", 1)
+		secret = get_otpsecret_for_(self.r02)
+		frappe.set_user("Guest")
+		previous_session = frappe.local.session
+		self.addCleanup(setattr, frappe.local, "session", previous_session)
+		request = Request(EnvironBuilder(path="/api/method/login", method="POST").get_environ())
+		manager = object.__new__(LoginManager)
+		manager.user = None
+		manager.info = None
+		manager.full_name = None
+		manager.user_type = None
+		manager.resume = False
+		with (
+			patch.object(frappe.local, "request", request, create=True),
+			patch.object(frappe.local, "cookie_manager", CookieManager(), create=True),
+			patch.object(frappe.local, "login_manager", manager, create=True),
+			patch.object(frappe.local, "request_ip", "127.0.0.1", create=True),
+			patch.object(frappe.local, "form_dict", frappe._dict(), create=True),
+			patch.object(frappe.local, "response", frappe._dict(), create=True),
+			patch.object(
+				frappe.local,
+				"session",
+				frappe._dict(user="Guest", sid="Guest", data=frappe._dict()),
+				create=True,
+			),
+			patch("frappe.database.database.Database.commit", return_value=None),
+		):
+			before = frappe.db.count("Sessions", {"user": self.r02})
+			self.account.update_web_password(NEW_PASSWORD, key=key)
+			self.assertEqual(frappe.session.user, "Guest")
+			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before)
+			self.assertNotIn("sid", frappe.local.cookie_manager.cookies)
+			frappe.form_dict.update(usr=self.r02, pwd=NEW_PASSWORD)
+			self.assertFalse(manager.login())
+			self.assertEqual(frappe.session.user, "Guest")
+			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before)
+			frappe.form_dict.otp = pyotp.TOTP(secret).now()
+			frappe.form_dict.tmp_id = frappe.local.response.tmp_id
+			manager.login()
+			self.assertEqual(frappe.session.user, self.r02)
+			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before + 1)
+			frappe.cache.hdel("session", frappe.session.sid)
+
+	def test_r02_cannot_unlink_or_reassign_employee_user(self):
+		frappe.set_user(self.r02)
+		for target in (None, self.r10):
+			employee = frappe.get_doc("Employee", self.employee.name)
+			employee.user_id = target
+			if target is None:
+				employee.status = "Left"
+				employee.relieving_date = today()
+			with self.assertRaises(frappe.PermissionError):
+				employee.save(ignore_permissions=True)
+
+	def test_simultaneous_unlink_and_left_disables_previous_user(self):
+		session = self.make_session()
+		frappe.set_user(self.r10)
+		self.employee.user_id = None
+		self.employee.status = "Left"
+		self.employee.relieving_date = today()
+		self.employee.save(ignore_permissions=True)
+		self.assertEqual(frappe.db.get_value("User", self.user, "enabled"), 0)
+		self.assertEqual(frappe.db.get_value("Employee", self.employee.name, "tc_card_enabled"), 0)
+		self.assertEqual(frappe.db.get_value("Station Session", session["session"], "is_open"), 0)
+
+	def test_guest_cannot_invoke_native_email_reset_endpoint(self):
+		frappe.set_user("Guest")
+		request = Request(
+			EnvironBuilder(
+				path="/api/method/frappe.core.doctype.user.user.reset_password", method="POST"
+			).get_environ()
+		)
+		with (
+			patch.object(frappe.local, "request", request, create=True),
+			patch.object(frappe.local, "form_dict", frappe._dict(user=self.user), create=True),
+			patch.object(frappe.local, "request_ip", "127.0.0.1", create=True),
+			patch("frappe.core.doctype.user.user.User.password_reset_mail"),
+		):
+			with self.assertRaises(frappe.PermissionError):
+				execute_cmd("frappe.core.doctype.user.user.reset_password")
+		self.assertFalse(frappe.db.get_value("User", self.user, "reset_password_key"))
+
+	def test_administrator_without_explicit_r10_cannot_reset_or_disable(self):
+		frappe.db.delete("Has Role", {"parent": "Administrator", "role": "TC R10"})
+		frappe.set_user("Administrator")
+		with self.assertRaises(frappe.PermissionError):
+			self.account.reset_password(self.user, NEW_PASSWORD)
+		with self.assertRaises(frappe.PermissionError):
+			self.account.reset_pin(self.employee.name, "112233")
+		user = frappe.get_doc("User", self.user)
+		user.enabled = 0
+		with self.assertRaises(frappe.PermissionError):
+			user.save(ignore_permissions=True)
+
+	def test_install_bootstrap_allows_creation_but_not_account_reset(self):
+		frappe.db.delete("Has Role", {"parent": "Administrator", "role": "TC R10"})
+		frappe.set_user("Administrator")
+		with patch.dict(frappe.local.flags, {"in_install": True}):
+			self.assertTrue(make_user("installation-bootstrap@example.test"))
+			with self.assertRaises(frappe.PermissionError):
+				self.account.reset_password(self.user, NEW_PASSWORD)
+
+	def test_session_rechecks_card_status_link_and_user_enablement(self):
+		session = self.make_session()
+		for doctype, name, field, value, original in (
+			("Employee", self.employee.name, "tc_card_enabled", 0, 1),
+			("Employee", self.employee.name, "status", "Left", "Active"),
+			("Employee", self.employee.name, "user_id", self.r02, self.user),
+			("User", self.user, "enabled", 0, 1),
+		):
+			frappe.db.set_value(doctype, name, field, value)
+			with self.assertRaises(BlockedError) as caught:
+				station_auth.authenticate_session(session["token"])
+			self.assertEqual(caught.exception.block.code, "SESSION_INVALID")
+			self.assertEqual(frappe.db.get_value("Station Session", session["session"], "is_open"), 0)
+			frappe.db.set_value(doctype, name, field, original)
+			frappe.db.set_value(
+				"Station Session", session["session"], {"is_open": 1, "ended_at": None, "end_reason": None}
+			)
+
+	def test_station_login_locks_employee_before_checking_active_card(self):
+		self.make_session()
+		sql = frappe.db.sql
+		locked = []
+
+		def interleave(query, values=(), *args, **kwargs):
+			if "tabEmployee" in str(query) and "for update" in str(query).lower():
+				locked.append("Employee")
+				# Deterministically model revocation completing before lock acquisition.
+				sql("update `tabEmployee` set tc_card_enabled=0 where name=%s", self.employee.name)
+			return sql(query, values, *args, **kwargs)
+
+		with patch.object(frappe.db, "sql", side_effect=interleave):
+			with self.assertRaises(BlockedError) as caught:
+				station_auth.login("ACCOUNT-CARD", "TR-004")
+			self.assertEqual(caught.exception.block.code, "CARD_INVALID")
+		self.assertTrue(locked)
+
+	def test_card_disable_locks_employee_before_session_closure(self):
+		session = self.make_session()
+		sql = frappe.db.sql
+		queries = []
+
+		def record(query, values=(), *args, **kwargs):
+			queries.append(str(query).lower())
+			return sql(query, values, *args, **kwargs)
+
+		self.employee.tc_card_enabled = 0
+		with patch.object(frappe.db, "sql", side_effect=record):
+			self.employee.save(ignore_permissions=True)
+		lock = next(i for i, query in enumerate(queries) if "tabemployee" in query and "for update" in query)
+		close = next(i for i, query in enumerate(queries) if "tabstation session" in query)
+		self.assertLess(lock, close)
+		self.assertEqual(frappe.db.get_value("Station Session", session["session"], "is_open"), 0)
+
+	def test_session_closure_uses_current_read_after_waiting_on_employee(self):
+		session = self.make_session()
+		get_all = frappe.get_all
+
+		def earlier_snapshot(doctype, *args, **kwargs):
+			if doctype == "Station Session":
+				return []
+			return get_all(doctype, *args, **kwargs)
+
+		with patch.object(frappe, "get_all", side_effect=earlier_snapshot):
+			self.assertEqual(station_auth.close_employee_sessions(self.employee.name), 1)
+		self.assertEqual(frappe.db.get_value("Station Session", session["session"], "is_open"), 0)
 
 	def assert_safe_audit(self, name, event, *secrets):
 		rows = frappe.get_all(

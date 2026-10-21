@@ -12,6 +12,10 @@ from tracecore.setup import provision
 
 
 class TestProvision(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
+
 	def test_provision_agent_user_writes_config(self):
 		path = os.path.join(tempfile.mkdtemp(), "agent.ini")
 		out = io.StringIO()

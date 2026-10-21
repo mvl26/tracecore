@@ -97,15 +97,33 @@ def verify_pin(employee: str, pin: str) -> bool:
 	raise _block("PIN_INVALID", "PIN is incorrect", "The PIN did not match.", "Check the PIN and try again.")
 
 
-def _active_employee(card_id: str):
-	card_id = normalize_card_id(card_id)
-	employee = frappe.db.get_value(
-		"Employee",
-		{"tc_card_id": card_id, "tc_card_enabled": 1, "status": "Active"},
-		["name", "user_id", "employee_name"],
+def lock_employee(employee):
+	"""Serialize login, revocation and session use on the same authoritative row."""
+	rows = frappe.db.sql(
+		"select name, user_id, employee_name, status, tc_card_id, tc_card_enabled, tc_pin_reset_required from `tabEmployee` where name=%s for update",
+		employee,
 		as_dict=True,
 	)
-	if not employee or not employee.user_id or not frappe.db.get_value("User", employee.user_id, "enabled"):
+	return rows[0] if rows else None
+
+
+def _employee_is_active(employee, user=None):
+	return bool(
+		employee
+		and employee.status == "Active"
+		and employee.tc_card_enabled
+		and employee.user_id
+		and (not user or employee.user_id == user)
+		and frappe.db.get_value("User", employee.user_id, "enabled")
+	)
+
+
+def _active_employee(card_id: str):
+	card_id = normalize_card_id(card_id)
+	name = frappe.db.get_value("Employee", {"tc_card_id": card_id}, "name")
+	employee = lock_employee(name) if name else None
+	# The locking read above sees revocations committed while waiting for the lock.
+	if not _employee_is_active(employee) or employee.tc_card_id != card_id:
 		_audit("Login Reject", code="CARD_INVALID")
 		raise _block(
 			"CARD_INVALID",
@@ -161,9 +179,16 @@ def _close_session(doc, reason: str) -> None:
 
 
 def close_employee_sessions(employee: str, reason: str = "Employee Disabled") -> int:
-	names = frappe.get_all("Station Session", filters={"employee": employee, "is_open": 1}, pluck="name")
+	lock_employee(employee)
+	# Use a current read: a transaction may have started a snapshot before it
+	# waited for a concurrent login to release the Employee row.
+	names = frappe.db.sql(
+		"select name from `tabStation Session` where employee=%s and is_open=1 for update",
+		employee,
+		pluck=True,
+	)
 	for name in names:
-		_close_session(frappe.get_doc("Station Session", name), reason)
+		_close_session(frappe.get_doc("Station Session", name, for_update=True), reason)
 	return len(names)
 
 
@@ -209,15 +234,29 @@ def authenticate_session(token: str, touch: bool = False):
 			"The session token is missing or invalid.",
 			"Scan your employee card again.",
 		)
-	name = frappe.db.get_value("Station Session", {"token_hash": _token_hash(token), "is_open": 1}, "name")
-	if not name:
+	row = frappe.db.get_value(
+		"Station Session",
+		{"token_hash": _token_hash(token), "is_open": 1},
+		["name", "employee"],
+		as_dict=True,
+	)
+	if not row:
 		raise _block(
 			"SESSION_INVALID",
 			"Station session is invalid",
 			"The session has ended or the token is invalid.",
 			"Scan your employee card again.",
 		)
-	doc = frappe.get_doc("Station Session", name)
+	employee = lock_employee(row.employee)
+	doc = frappe.get_doc("Station Session", row.name, for_update=True)
+	if not doc.is_open or not _employee_is_active(employee, doc.user):
+		_close_session(doc, "Employee Disabled")
+		raise _block(
+			"SESSION_INVALID",
+			"Station session is invalid",
+			"The session has ended or the token is invalid.",
+			"Scan your employee card again.",
+		)
 	now = now_datetime()
 	if get_datetime(doc.absolute_expires_at) <= now:
 		_close_session(doc, "Expired")
