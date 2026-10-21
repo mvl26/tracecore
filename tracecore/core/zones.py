@@ -24,15 +24,15 @@ def allowed_steps(zone_type: str) -> tuple[str, ...]:
 	return STEPS_BY_ZONE_TYPE.get(zone_type, ())
 
 
-def _zone_type_label(zone_type: str) -> str:
-	return _(zone_type, context="Zone Station")
+def _zone_type_label(zone_type: str | None) -> str:
+	return _(zone_type, context="Zone Station") if zone_type else ""
 
 
-def check_step(zone_type: str, step: str | None) -> None:
-	"""Chặn bước nằm ngoài chức năng của khu; ``None``/rỗng luôn hợp lệ."""
+def check_step(zone_type: str | None, step: str | None) -> None:
+	"""Chặn bước nằm ngoài chức năng của khu; bước ``None``/rỗng luôn hợp lệ, khu chưa có loại không có chức năng."""
 	if not step:
 		return
-	steps = allowed_steps(zone_type)
+	steps = allowed_steps(zone_type or "")
 	if step in steps:
 		return
 	zone_label = _zone_type_label(zone_type)

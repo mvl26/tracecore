@@ -8,6 +8,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils import cint
 
 from tracecore.core import audit, code_registry, zones
 
@@ -26,6 +27,7 @@ class ZoneStation(Document):
 				return
 
 	def validate(self):
+		self._validate_is_zone_unchanged()
 		if self.is_zone:
 			self._validate_zone()
 		else:
@@ -43,6 +45,14 @@ class ZoneStation(Document):
 
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")
+
+	def _validate_is_zone_unchanged(self):
+		"""Khu không thành trạm và ngược lại (``is_zone`` set_only_once; chặn cả ở server, F3)."""
+		if self.is_new():
+			return
+		stored = frappe.db.get_value("Zone Station", self.name, "is_zone")
+		if stored is not None and cint(stored) != cint(self.is_zone):
+			frappe.throw(_("{0}: Is Zone cannot be changed after the record is created.").format(self.name))
 
 	def _validate_zone(self):
 		self.parent_zone = None

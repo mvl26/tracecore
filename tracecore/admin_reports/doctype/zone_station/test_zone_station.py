@@ -55,6 +55,32 @@ class TestZoneStation(IsolatedTestCase):
 		self.assertEqual(station.station_step, "T4")
 		self.assertEqual(station.is_active, 1)
 
+	def test_is_zone_cannot_change_after_creation(self):
+		"""F3: khu không thành trạm và ngược lại (set_only_once + chặn ở server)."""
+		self.assertEqual(frappe.get_meta("Zone Station").get_field("is_zone").set_only_once, 1)
+		zone = make_zone("Clean")
+		station = make_station(zone.name, "T4")
+		for doc, value in ((zone, 0), (station, 1)):
+			with self.subTest(doc=doc.name):
+				doc.reload()
+				doc.is_zone = value
+				with self.assertRaises(frappe.ValidationError):
+					doc.save()
+				self.assertEqual(frappe.db.get_value("Zone Station", doc.name, "is_zone"), 1 - value)
+
+	def test_is_zone_guard_in_controller(self):
+		"""Chặn ở validate kể cả khi set_only_once của Frappe bị bỏ qua (ví dụ đổi meta)."""
+		station = make_station("ZONE-CLEAN", "T4")
+		station.is_zone = 1
+		with self.assertRaises(frappe.ValidationError) as raised:
+			station.run_method("validate")
+		self.assertIn(station.name, str(raised.exception))
+
+	def test_station_form_links_printers(self):
+		"""F4: form trạm hiện máy in của trạm (Printer.station)."""
+		links = [(row.link_doctype, row.link_fieldname) for row in frappe.get_meta("Zone Station").links]
+		self.assertIn(("Printer", "station"), links)
+
 	def test_station_takes_zone_type_from_parent(self):
 		doc = make_station("ZONE-STERILE", "T6", zone_type="Dirty")
 		self.assertTrue(doc.name.startswith("TR-"))

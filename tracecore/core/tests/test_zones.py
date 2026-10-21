@@ -29,6 +29,13 @@ class TestZones(FrappeTestCase):
 		self.assertIsNone(zones.check_step("Clean", None))
 		self.assertIsNone(zones.check_step("Clean", ""))
 
+	def test_check_step_with_empty_zone_type_gives_validation_error(self):
+		"""Khu chưa có loại (None/rỗng): báo lỗi nghiệp vụ, không lỗi lập trình."""
+		for zone_type in (None, ""):
+			with self.subTest(zone_type=zone_type), self.assertRaises(frappe.ValidationError):
+				zones.check_step(zone_type, "T4")
+		self.assertEqual(zones._zone_type_label(None), "")
+
 	@bru("BRU-FLOW-001")
 	def test_pass_through_must_go_to_next_zone(self):
 		self.assertIsNone(zones.check_pass_through("ZONE-DIRTY", "ZONE-CLEAN"))
