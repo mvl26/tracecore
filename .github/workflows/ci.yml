@@ -91,7 +91,7 @@ jobs:
             agent-coverage.xml
 
   e2e:
-    name: e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002)
+    name: e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002 + thiết bị FEAT-038)
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     services:
@@ -125,6 +125,7 @@ jobs:
         env:
           BENCH_DIR: /home/runner/frappe-bench
           TC_E2E_ENV: ${{ runner.temp }}/e2e.env
+          TC_E2E_ALLOW_TEST_SITE: "1" # site CI dựng mới cho job này, bỏ đi sau job
         run: bash scripts/e2e_prepare.sh test_site
 
       - name: Start server

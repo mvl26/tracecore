@@ -3,6 +3,8 @@
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_demo_set`` in Set ID GIAI thử để quét ở /app/station.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t4_demo`` chuẩn bị màn T4 đóng gói (SCR-08) tại
   TR-004 và in JSON các mã để quét (bộ hấp, bộ plasma, bộ chưa qua cổng T3, lô chỉ thị, mã cuộn nhãn, máy in).
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_equipment_demo`` chuẩn bị máy và chương trình xử lý
+  cho e2e Desk SCR-21 (FEAT-038) và in JSON các mã (tên máy, mã chương trình).
 """
 
 import io
@@ -14,6 +16,7 @@ from frappe.utils import add_days, today
 
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.core import print as core_print
+from tracecore.equipment import status as equipment_status
 from tracecore.setup.label_templates import ensure_sample_templates
 from tracecore.tests import factories
 
@@ -279,6 +282,105 @@ def ensure_t4_demo():
 		"roll_steam": rolls[STEAM_LABEL],
 		"roll_plasma": rolls[PLASMA_LABEL],
 		"printer": _ensure_printer(rolls[STEAM_LABEL]),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo thiết bị và chương trình xử lý (FEAT-038) ---------------------------------------------------
+EQ_MANUFACTURER, EQ_MODEL = "E2E Maker", "E2E-1"
+EQ_CONSUMABLE = "DEMO-EQ-HOA-CHAT"
+EQ_SERIALS = {
+	"steam": "E2E-STEAM-001",
+	"steam_copy_target": "E2E-STEAM-002",
+	"washer": "E2E-WASH-001",
+	"retired": "E2E-RETIRED-001",
+}
+EQ_PROGRAMS = {
+	"program_complete": "E2E-STEAM-134",
+	"program_missing": "E2E-STEAM-MISS",
+	"program_inactive": "E2E-STEAM-OLD",
+	"program_outside": "E2E-STEAM-HOT",
+}
+EQ_STEAM_SAFE_RANGE = {"safe_temp_min": 105, "safe_temp_max": 140, "safe_pressure_max": 3.5}
+EQ_WASHER_NORM = {"duration_min": 45, "kwh_per_cycle": 3, "water_l_per_cycle": 60}
+
+
+def _ensure_equipment(key, **fields):
+	"""Máy theo serial cố định (Equipment không xóa được nên dùng lại); trả tên TB-####."""
+	serial = EQ_SERIALS[key]
+	name = frappe.db.get_value("Equipment", {"serial_no": serial}, "name")
+	if name:
+		return name
+	values = {"manufacturer": EQ_MANUFACTURER, "model": EQ_MODEL, **fields}
+	return factories.make_equipment(serial=serial, **values).name
+
+
+def _ensure_program(key, equipment, **fields):
+	code = EQ_PROGRAMS[key]
+	if frappe.db.exists("Process Program", code):
+		return code
+	factories.make_program(equipment, code=code, **fields)
+	return code
+
+
+def ensure_equipment_demo():
+	"""Máy và chương trình demo cho e2e Desk thiết bị (SCR-21) trên site dev/test; idempotent, trả và in JSON.
+
+	- ``steam``: máy hấp 2 cửa Sạch → Vô khuẩn (``E2E-STEAM-001``) có dải an toàn 105-140 °C, 3,5 bar và bốn chương
+	  trình: đủ định mức, thiếu định mức (không kWh), ngừng dùng, và một chương trình 150 °C (ngoài dải).
+	- ``steam_copy_target``: máy hấp cùng hãng + model để thử "Sao chép sang máy khác"; ``retired``: máy cùng model đã
+	  ngừng sử dụng (không được hiện trong hộp thoại sao chép); ``washer``: máy rửa 2 cửa Bẩn → Sạch.
+	- Một ``Equipment Type Norm`` cho ``Washer-Disinfector``.
+	Equipment không xóa được và ``Retired`` là một chiều nên bản ghi được tìm lại theo serial.
+	"""
+	_require_dev_site()
+	consumable = factories.make_item(EQ_CONSUMABLE, "Lubricant").name
+	steam = _ensure_equipment("steam", name="E2E steam sterilizer", **EQ_STEAM_SAFE_RANGE)
+	target = _ensure_equipment("steam_copy_target", name="E2E steam sterilizer 2")
+	washer = _ensure_equipment(
+		"washer",
+		name="E2E washer",
+		equipment_type="Washer-Disinfector",
+		manufacturer="E2E Wash Maker",
+		model="E2E-W1",
+		zone_in="ZONE-DIRTY",
+		zone_out="ZONE-CLEAN",
+	)
+	retired = _ensure_equipment("retired", name="E2E retired steam sterilizer")
+	if frappe.db.get_value("Equipment", retired, "status") != "Retired":
+		equipment_status.set_status(retired, "Retired", "E2E: demo equipment retired")
+
+	if not frappe.db.exists("Equipment Type Norm", "Washer-Disinfector"):
+		frappe.get_doc(
+			{"doctype": "Equipment Type Norm", "equipment_type": "Washer-Disinfector", **EQ_WASHER_NORM}
+		).insert(ignore_permissions=True)
+
+	line = [{"item": consumable, "qty_per_load": 1}]
+	programs = {
+		"program_complete": _ensure_program(
+			"program_complete", steam, minutes=30, water=20, consumables=line, temperature=134, pressure=3
+		),
+		"program_missing": _ensure_program(
+			"program_missing", steam, minutes=30, kwh=0, water=20, consumables=line, temperature=121
+		),
+		"program_outside": _ensure_program(
+			"program_outside", steam, minutes=30, water=20, consumables=line, temperature=150, pressure=3
+		),
+	}
+	inactive = _ensure_program(
+		"program_inactive", steam, minutes=30, water=20, consumables=line, temperature=134, pressure=3
+	)
+	if frappe.db.get_value("Process Program", inactive, "is_active"):
+		frappe.db.set_value("Process Program", inactive, "is_active", 0)
+	programs["program_inactive"] = inactive
+
+	result = {
+		"steam": steam,
+		"steam_copy_target": target,
+		"washer": washer,
+		"retired": retired,
+		**programs,
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

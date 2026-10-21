@@ -9,7 +9,14 @@
 #      lô chỉ thị, mã cuộn nhãn, máy in)
 # Kết quả ghi vào $TC_E2E_ENV (mặc định ~/.tracecore-e2e.env): TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID,
 # TC_E2E_STATION (smoke) TC_E2E_R10_USER/PASSWORD và TC_E2E_T4_USER/PASSWORD/STATION + TC_E2E_T4_<khóa của ensure_t4_demo>.
+#   5. Máy và chương trình demo thiết bị (devdata.ensure_equipment_demo, FEAT-038) → TC_E2E_EQ_<khóa> cho tests_e2e/test_desk_equipment.py
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
+#
+# AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
+# `test_site` hoặc site có `allow_tests` bật trong site_config.json (in lỗi, thoát mã 2): site test là nơi chạy
+# `bench run-tests`, dữ liệu e2e rò vào đó làm hỏng test. Dùng site dev (vd tracecore-dev.local). Riêng CI, nơi site
+# test_site được dựng mới và bỏ đi sau job, đặt TC_E2E_ALLOW_TEST_SITE=1 để bỏ qua kiểm tra.
+# TC_E2E_CHECK_ONLY=1 chỉ chạy kiểm tra rồi thoát (dùng cho tracecore/tests/test_e2e_prepare_guard.py).
 #
 # Dùng: scripts/e2e_prepare.sh <site>    (BENCH_DIR mặc định ~/tracecore-dev)
 set -euo pipefail
@@ -19,6 +26,22 @@ BENCH_DIR="${BENCH_DIR:-$HOME/tracecore-dev}"
 ENV_FILE="${TC_E2E_ENV:-$HOME/.tracecore-e2e.env}"
 STATION="${TC_E2E_STATION:-TR-003}"
 T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
+
+# Từ chối site test: tên test_site hoặc site_config.json có allow_tests bật (1/true/"1").
+refuse_test_site() {
+	local site="$1" config="$BENCH_DIR/sites/$1/site_config.json"
+	[ "${TC_E2E_ALLOW_TEST_SITE:-0}" = "1" ] && return 0
+	if [ "$site" = "test_site" ]; then
+		echo "error: e2e_prepare.sh refuses to run on test_site (it would leak e2e data into the unit-test site); use a dev site" >&2
+		return 2
+	fi
+	if [ -f "$config" ] && python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1])).get("allow_tests") in (1, True, "1", "true") else 1)' "$config"; then
+		echo "error: e2e_prepare.sh refuses to run on $site: allow_tests is enabled in its site_config.json (test site)" >&2
+		return 2
+	fi
+}
+refuse_test_site "$SITE" || exit 2
+[ "${TC_E2E_CHECK_ONLY:-0}" = "1" ] && exit 0
 
 cd "$BENCH_DIR"
 bench_exec() { bench --site "$SITE" execute "$@" | tail -n 1; }
@@ -54,6 +77,7 @@ t4_user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station'
 r10_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R10', 'name': 'r10-e2e', 'password': '$r10_password'}" | tr -d '"')
 set_id=$(bench_exec tracecore.setup.devdata.ensure_demo_set | tr -d '"')
 t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
+eq_demo=$(bench_exec tracecore.setup.devdata.ensure_equipment_demo)
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
@@ -61,6 +85,7 @@ t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
 	printf 'TC_E2E_R10_USER=%s\nTC_E2E_R10_PASSWORD=%s\n' "$r10_user" "$r10_password"
 	printf 'TC_E2E_T4_USER=%s\nTC_E2E_T4_PASSWORD=%s\nTC_E2E_T4_STATION=%s\n' "$t4_user" "$password" "$T4_STATION"
 	printf '%s' "$t4_demo" | python3 -c 'import json, sys; [print("TC_E2E_T4_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf '%s' "$eq_demo" | python3 -c 'import json, sys; [print("TC_E2E_EQ_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"

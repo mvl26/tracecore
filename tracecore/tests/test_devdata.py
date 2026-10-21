@@ -125,3 +125,75 @@ class TestT4DemoData(FrappeTestCase):
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True
+
+
+EQUIPMENT_KEYS = {
+	"steam",
+	"steam_copy_target",
+	"washer",
+	"retired",
+	"program_complete",
+	"program_missing",
+	"program_inactive",
+	"program_outside",
+}
+
+
+class TestEquipmentDemoData(FrappeTestCase):
+	def test_ensure_equipment_demo_idempotent(self):
+		first = devdata.ensure_equipment_demo()
+		equipment_count = frappe.db.count("Equipment")
+		program_count = frappe.db.count("Process Program")
+		second = devdata.ensure_equipment_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), EQUIPMENT_KEYS)
+		self.assertEqual(frappe.db.count("Equipment"), equipment_count)
+		self.assertEqual(frappe.db.count("Process Program"), program_count)
+		self.assertEqual(frappe.db.count("Equipment Type Norm", {"equipment_type": "Washer-Disinfector"}), 1)
+
+	def test_equipment_demo_machines(self):
+		demo = devdata.ensure_equipment_demo()
+		steam = frappe.get_doc("Equipment", demo["steam"])
+		self.assertEqual(
+			(steam.equipment_type, steam.serial_no, steam.zone_in, steam.zone_out, steam.status),
+			("Steam Sterilizer", "E2E-STEAM-001", "ZONE-CLEAN", "ZONE-STERILE", "Ready"),
+		)
+		self.assertEqual((steam.safe_temp_min, steam.safe_temp_max, steam.safe_pressure_max), (105, 140, 3.5))
+		washer = frappe.get_doc("Equipment", demo["washer"])
+		self.assertEqual(
+			(washer.equipment_type, washer.serial_no, washer.zone_in, washer.zone_out),
+			("Washer-Disinfector", "E2E-WASH-001", "ZONE-DIRTY", "ZONE-CLEAN"),
+		)
+		# máy đích sao chép: cùng hãng + model với máy hấp; máy ngừng sử dụng cũng cùng model nhưng đã Retired
+		target = frappe.get_doc("Equipment", demo["steam_copy_target"])
+		self.assertEqual((target.manufacturer, target.model), (steam.manufacturer, steam.model))
+		retired = frappe.get_doc("Equipment", demo["retired"])
+		self.assertEqual(
+			(retired.manufacturer, retired.model, retired.status),
+			(steam.manufacturer, steam.model, "Retired"),
+		)
+
+	def test_equipment_demo_programs(self):
+		demo = devdata.ensure_equipment_demo()
+		status = lambda key, *fields: frappe.db.get_value("Process Program", demo[key], list(fields))  # noqa: E731
+		self.assertEqual(
+			status("program_complete", "norm_status", "outside_safe_range", "is_active"), ("Complete", 0, 1)
+		)
+		self.assertEqual(status("program_missing", "norm_status", "is_active"), ("Missing", 1))
+		self.assertEqual(status("program_outside", "norm_status", "outside_safe_range"), ("Complete", 1))
+		self.assertEqual(frappe.db.get_value("Process Program", demo["program_inactive"], "is_active"), 0)
+		self.assertEqual(
+			frappe.db.get_value("Process Program", demo["program_complete"], "equipment"), demo["steam"]
+		)
+		self.assertTrue(frappe.db.exists("Equipment Type Norm", "Washer-Disinfector"))
+
+	def test_equipment_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_equipment_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
