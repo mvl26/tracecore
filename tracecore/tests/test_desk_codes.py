@@ -49,3 +49,25 @@ class TestDeskCodes(FrappeTestCase):
 			("admin_reports", "doctype", "zone_station", "zone_station_list.js"),
 		):
 			self.assertIn("window.tracecore && tracecore.codes", _read(*parts), parts)
+
+	def test_gateway_error_is_unknown_outcome_like_network_error(self):
+		# 502/503/504 hay 5xx không phải JSON (proxy/gateway): chưa biết server đã làm chưa → như lỗi mạng
+		# (network: true), gửi lại đúng request cũ; hộp thoại cấp mã cuộn giữ pending và không đóng
+		helper = _read("public", "js", "tc_codes.js")
+		self.assertIn("TC_CODES_GATEWAY_STATUSES = [502, 503, 504]", helper)
+		self.assertIn("response.status >= 500", helper)
+		self.assertIn("return tc_codes_unknown_outcome(", helper)
+		self.assertIn("if (result.network) {", helper)
+
+	def test_dialog_has_single_poll_token(self):
+		# lần hỏi mới thay lần cũ; poll_done chỉ đặt cho dòng mà chính vòng hỏi đó đã hỏi
+		helper = _read("public", "js", "tc_codes.js")
+		self.assertIn("dialog.tc_poll_token", helper)
+		self.assertIn("polled.forEach((row) => {", helper)
+		self.assertNotIn("rows.forEach((row) => {\n\t\trow.poll_done = true;", helper)
+
+	def test_user_text_is_escaped_in_html(self):
+		helper = _read("public", "js", "tc_codes.js")
+		self.assertIn("label: frappe.utils.escape_html(code)", helper)
+		self.assertIn("tc_codes_escape(frm.doc.item_name || frm.doc.name)", helper)
+		self.assertNotIn("[\n\t\t\t\tfrm.doc.item_name || frm.doc.name,\n\t\t\t]", helper)

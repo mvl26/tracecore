@@ -70,6 +70,34 @@ function tc_codes_server_message(body) {
 	}
 }
 
+// Phản hồi của proxy/gateway (nginx 502/503/504, trang lỗi HTML): request có thể đã tới Frappe và đã làm xong
+const TC_CODES_GATEWAY_STATUSES = [502, 503, 504];
+
+// Không biết server đã làm hay chưa (không có phản hồi, hoặc gateway trả lỗi): `network: true` để người gọi chỉ gửi
+// lại bằng đúng request cũ (cùng khóa idempotent, cùng body), không tạo thao tác mới
+function tc_codes_unknown_outcome(status) {
+	return {
+		ok: false,
+		network: true,
+		error: status
+			? {
+					title: __("No answer from the server"),
+					reason: __(
+						"The server did not answer (HTTP {0}); the request may or may not have been done.",
+						[status]
+					),
+					action: __(
+						"Try again: the same request is sent again, so it is not done twice."
+					),
+			  }
+			: {
+					title: __("Server not reachable"),
+					reason: __("The server could not be reached."),
+					action: __("Try again."),
+			  },
+	};
+}
+
 // POST một RPC; trả {ok: true, data} hoặc {ok: false, error: {title, reason, action}, network?}.
 // `request`: {key, payload} của tracecore.codes.new_request (RPC ghi) hoặc null (RPC chỉ đọc, body = `args`).
 tracecore.codes.send = async function (method, request, args) {
@@ -81,43 +109,44 @@ tracecore.codes.send = async function (method, request, args) {
 	if (request) {
 		headers["X-Idempotency-Key"] = request.key;
 	}
+	let response;
 	try {
-		const response = await fetch(`/api/method/${method}`, {
+		response = await fetch(`/api/method/${method}`, {
 			method: "POST",
 			headers,
 			body: JSON.stringify(request ? request.payload : args || {}),
 		});
-		const body = await response.json().catch(() => ({}));
-		const result = body.message || {};
-		if (result.ok) {
-			return { ok: true, data: result };
-		}
-		if (result.error) {
-			return { ok: false, error: result.error };
-		}
-		// lỗi hệ thống (quyền, tham số sai…): Frappe đóng gói thông báo trong _server_messages
-		return {
-			ok: false,
-			error: {
-				title: __("Request refused"),
-				reason:
-					tc_codes_server_message(body) ||
-					__("The server refused the request (HTTP {0}).", [response.status]),
-				action: __("Check your permissions and the selected printer, then try again."),
-			},
-		};
 	} catch (e) {
 		// không có phản hồi: có thể server đã làm rồi → chỉ gửi lại bằng đúng request cũ
-		return {
-			ok: false,
-			network: true,
-			error: {
-				title: __("Server not reachable"),
-				reason: __("The server could not be reached."),
-				action: __("Try again."),
-			},
-		};
+		return tc_codes_unknown_outcome();
 	}
+	const body = await response.json().catch(() => null);
+	if (
+		TC_CODES_GATEWAY_STATUSES.includes(response.status) ||
+		(body === null && (response.status >= 500 || response.ok))
+	) {
+		// lỗi của proxy/gateway (hoặc phản hồi 2xx đứt giữa chừng), không phải câu trả lời của Frappe:
+		// kết quả chưa biết, như lỗi mạng
+		return tc_codes_unknown_outcome(response.status);
+	}
+	const result = (body && body.message) || {};
+	if (result.ok) {
+		return { ok: true, data: result };
+	}
+	if (result.error) {
+		return { ok: false, error: result.error };
+	}
+	// lỗi hệ thống (quyền, tham số sai…): Frappe đóng gói thông báo trong _server_messages
+	return {
+		ok: false,
+		error: {
+			title: __("Request refused"),
+			reason:
+				tc_codes_server_message(body || {}) ||
+				__("The server refused the request (HTTP {0}).", [response.status]),
+			action: __("Check your permissions and the selected printer, then try again."),
+		},
+	};
 };
 
 // Gọi nhanh: RPC ghi → request mới (khóa mới) cho lần gọi này; RPC chỉ đọc → không khóa.
@@ -266,17 +295,34 @@ function tc_codes_render_results(dialog, rows) {
 
 const tc_codes_sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Mỗi hộp thoại chỉ có một vòng hỏi kết quả: vòng mới (hoặc lần gửi lại) đổi token, vòng cũ thấy token khác thì
+// dừng ngay, không vẽ đè và không đánh dấu dòng nào.
+function tc_codes_new_poll_token(dialog) {
+	dialog.tc_poll_token = (dialog.tc_poll_token || 0) + 1;
+	return dialog.tc_poll_token;
+}
+
 // Hỏi kết quả các lệnh in còn Queued (đường server) tới khi xong hoặc hết số lần; hộp thoại đóng thì thôi hỏi.
 async function tc_codes_poll(dialog, rows) {
+	const token = tc_codes_new_poll_token(dialog);
+	const superseded = () => dialog.tc_poll_token !== token;
+	const polled = new Set(); // dòng mà chính vòng này đã hỏi: chỉ các dòng này được đánh dấu poll_done
 	for (let round = 0; round < tracecore.codes.POLL_ROUNDS; round++) {
 		const queued = rows.filter((row) => tc_codes_state(row) === "Queued");
 		if (!queued.length || !dialog.display) {
 			break;
 		}
+		queued.forEach((row) => polled.add(row));
 		await tc_codes_sleep(tracecore.codes.POLL_INTERVAL_MS);
+		if (superseded()) {
+			return;
+		}
 		const response = await tracecore.codes.send(TC_CODES_JOB_STATUS, null, {
 			names: queued.map((row) => row.result.data.print_job),
 		});
+		if (superseded()) {
+			return;
+		}
 		if (!response.ok) {
 			break; // không hỏi được: dòng còn Queued hiện "Chưa có kết quả"
 		}
@@ -288,7 +334,7 @@ async function tc_codes_poll(dialog, rows) {
 		}
 		tc_codes_render_results(dialog, rows);
 	}
-	rows.forEach((row) => {
+	polled.forEach((row) => {
 		row.poll_done = true;
 	});
 	tc_codes_render_results(dialog, rows);
@@ -354,6 +400,7 @@ function tc_codes_suggest_printer(dialog) {
 
 // Gửi tuần tự các dòng `rows` (mỗi dòng giữ request riêng: gửi lại sau lỗi mạng dùng đúng khóa cũ)
 async function tc_codes_send_rows(dialog, label_object, rows) {
+	tc_codes_new_poll_token(dialog); // vòng hỏi đang chạy (nếu có) dừng: không vẽ đè lên tiến độ gửi
 	for (const [index, row] of rows.entries()) {
 		dialog.fields_dict.result.$wrapper.html(
 			`<p>${tc_codes_escape(
@@ -621,8 +668,9 @@ tracecore.codes.roll_labels_dialog = async function (frm) {
 		frappe.msgprint({
 			title: __("No roll codes"),
 			indicator: "orange",
+			// msgprint hiển thị HTML: tên vật tư do người dùng nhập phải được escape
 			message: __("{0} has no active roll codes. Issue roll codes first.", [
-				frm.doc.item_name || frm.doc.name,
+				tc_codes_escape(frm.doc.item_name || frm.doc.name),
 			]),
 		});
 		return;
@@ -650,7 +698,12 @@ tracecore.codes.roll_labels_dialog = async function (frm) {
 				label: __("Roll codes"),
 				select_all: true,
 				columns: 4,
-				options: codes.map((code) => ({ label: code, value: code, checked: 0 })),
+				// MultiCheck chèn label dạng HTML: escape (mã CN- do server sinh, nhưng không tin dữ liệu hiển thị)
+				options: codes.map((code) => ({
+					label: frappe.utils.escape_html(code),
+					value: code,
+					checked: 0,
+				})),
 			},
 			{ fieldname: "result", fieldtype: "HTML" },
 		],

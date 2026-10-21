@@ -166,3 +166,59 @@ def test_reprint_issued_roll_label_from_item(codes_page, codes_demo, fake_printe
 	dialog.get_by_role("button", name="In", exact=True).click()
 	expect(result_row(dialog, code)).to_contain_text("Đã in", timeout=60000)
 	assert len(fake_printer.wait_for([code])[code]) == 1
+
+
+def gateway_error_once(page, method, status):
+	"""Lần gọi đầu tới `method` nhận trang lỗi HTML của proxy (`status`), các lần sau đi tới server thật.
+
+	Trả danh sách `(X-Idempotency-Key, body)` của mọi lần gọi để test so khóa/body giữa lần đầu và lần gửi lại.
+	"""
+	calls = []
+
+	def handle(route, request):
+		calls.append((request.headers.get("x-idempotency-key"), request.post_data))
+		if len(calls) == 1:
+			route.fulfill(status=status, content_type="text/html", body="<html><h1>Bad Gateway</h1></html>")
+		else:
+			route.continue_()
+
+	page.route(f"**/api/method/{method}", handle)
+	return calls
+
+
+def test_issue_rolls_gateway_error_keeps_dialog_and_request(codes_page, codes_demo):
+	"""502 của proxy = chưa biết đã cấp chưa: hộp thoại không đóng, bấm lại gửi đúng khóa + body cũ (không cấp hai lần)."""
+	calls = gateway_error_once(codes_page, "tracecore.v1.codes.issue_rolls", 502)
+	open_form(codes_page, "item", codes_demo["label_item"])
+	codes_page.get_by_role("button", name="Cấp mã cuộn").click()
+	issue = codes_page.locator(LABEL_OBJECT_DIALOG, has=codes_page.locator("input[data-fieldname=count]"))
+	issue.locator("input[data-fieldname=count]").fill("2")
+	issue.get_by_role("button", name="Cấp mã", exact=True).click()
+
+	expect(issue).to_contain_text("Server không trả lời", timeout=30000)
+	expect(issue).to_contain_text("HTTP 502")
+	expect(issue).to_be_visible()
+
+	issue.get_by_role("button", name="Cấp mã", exact=True).click()
+	issued = codes_page.locator(LABEL_OBJECT_DIALOG, has_text="Đã cấp 2 mã cuộn cho")
+	expect(issued).to_be_visible(timeout=30000)
+	assert len(calls) == 2, calls
+	assert calls[0][0] and calls[0] == calls[1], calls  # cùng X-Idempotency-Key, cùng body (kể cả client_ts)
+
+
+def test_print_gateway_error_offers_resend_with_same_request(codes_page, codes_demo, fake_printer):
+	code = codes_demo["equipment_2"]
+	calls = gateway_error_once(codes_page, "tracecore.v1.print.object_label", 503)
+	open_form(codes_page, "equipment", code)
+	dialog = open_print_dialog(codes_page, codes_page.get_by_role("button", name="In nhãn QR").click)
+	choose_printer(dialog, codes_demo["printer"])
+	dialog.get_by_role("button", name="In", exact=True).click()
+
+	resend = dialog.get_by_role("button", name="Gửi lại nhãn chưa gửi được", exact=True)
+	expect(resend).to_be_visible(timeout=30000)
+	expect(result_row(dialog, code)).to_contain_text("HTTP 503")
+	resend.click()
+	expect(result_row(dialog, code)).to_contain_text("Đã in", timeout=60000)
+	assert len(calls) == 2, calls
+	assert calls[0][0] and calls[0] == calls[1], calls
+	assert fake_printer.wait_for([code])[code]
