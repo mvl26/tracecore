@@ -16,7 +16,7 @@ def auth_shell():
 	requests = []
 	serial = 0
 
-	def open_shell(page, station="TR-004"):
+	def open_shell(page, station="TR-004", bootstrap=None):
 		nonlocal serial
 		template = (ROOT / "tracecore/ui/page/station/station.html").read_text()
 		template = re.sub(r'\{%= __\("([^"]*)"\) %\}', lambda match: match[1], template)
@@ -38,7 +38,8 @@ def auth_shell():
 					"session": {
 						"token": token,
 						"employee": "EMP-1",
-						"employee_name": "Operator",
+						"employee_name": "Operator " + args["card_id"],
+						"roles": ["TC R04"],
 						"station": station,
 						"expires_at": "2099-10-21 17:00:00",
 					},
@@ -61,6 +62,8 @@ def auth_shell():
 				body = {
 					"ok": True,
 					"employee": "EMP-1",
+					"employee_name": "Restored operator",
+					"roles": ["TC R04"],
 					"station": station,
 					"expires_at": "2099-10-21 17:00:00",
 				}
@@ -87,7 +90,10 @@ def auth_shell():
 		page.goto(f"http://station.test/app/station?station={station}")
 		page.evaluate(
 			r"""template => {
-			window.__ = (s, args) => args ? s.replace(/\{(\d+)\}/g, (_, n) => args[n]) : s;
+			window.__ = (s, args) => {
+				const translated = s === 'TC R04' ? 'Translated packing role' : s;
+				return args ? translated.replace(/\{(\d+)\}/g, (_, n) => args[n]) : translated;
+			};
 			window.frappe = {pages:{station:{}},csrf_token:'test',
 				utils:{escape_html: value => String(value).replace(/[&<>\"']/g,
 					c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))},
@@ -100,6 +106,8 @@ def auth_shell():
 			page.add_script_tag(path=str(ROOT / path))
 		for path in ("tracecore/public/css/tokens.css", "tracecore/ui/page/station/station.css"):
 			page.add_style_tag(path=str(ROOT / path))
+		if bootstrap:
+			page.evaluate(bootstrap)
 		page.evaluate(
 			"frappe.pages.station.on_page_load(document.querySelector('#wrapper')); frappe.pages.station.on_page_show()"
 		)
@@ -218,7 +226,7 @@ def test_tab_restore_validates_token_before_exposing_work(page, auth_shell):
 	login(page)
 	auth_shell(page)
 	expect(page.locator(".tc-work")).to_be_visible()
-	expect(page.locator(".tc-session")).to_contain_text("EMP-1")
+	expect(page.locator(".tc-session")).to_contain_text("Restored operator")
 	assert any(method.endswith("station.heartbeat") for method, _, _ in auth_shell.requests)
 	auth_shell.active.clear()
 	auth_shell(page)
@@ -324,3 +332,202 @@ def test_reader_card_scan_event_logs_in_and_replaces_current_session(page, auth_
 			if row[0].endswith("station.login") and row[1]["card_id"] == "SYNTHETIC-NEXT-CARD"
 		)
 		assert logout_index < login_index
+
+
+def reader_scan(page, card):
+	page.evaluate(
+		"card => window.dispatchEvent(new CustomEvent('tc-card-scanned', {detail:{card_id:card}}))", card
+	)
+
+
+def test_reader_latest_scan_wins_while_first_login_is_pending(page, auth_shell):
+	auth_shell(page)
+	page.evaluate("""() => {
+		const real = window.fetch;
+		let first = true;
+		window.fetch = (...args) => {
+			if (String(args[0]).endsWith('station.login') && first) {
+				first = false;
+				return new Promise(resolve => window.releaseFirstLogin = () => resolve(real(...args)));
+			}
+			return real(...args);
+		};
+	}""")
+	reader_scan(page, "CARD-A")
+	page.wait_for_function("typeof releaseFirstLogin === 'function'")
+	reader_scan(page, "CARD-B")
+	page.evaluate("releaseFirstLogin()")
+	expect(page.locator(".tc-session")).to_contain_text("Operator CARD-B")
+	logins = [args["card_id"] for method, args, _ in auth_shell.requests if method.endswith("station.login")]
+	assert logins == ["CARD-A", "CARD-B"]
+	assert any(method.endswith("station.logout") for method, _, _ in auth_shell.requests)
+
+
+DELAY_RESTORE = """() => {
+	const real = window.fetch;
+	window.fetch = (...args) => {
+		if (String(args[0]).endsWith('station.heartbeat'))
+			return new Promise(resolve => window.releaseRestore = reply => resolve(new Response(
+				JSON.stringify({message:reply.body}), {status:reply.status, headers:{'Content-Type':'application/json'}})));
+		return real(...args);
+	};
+}"""
+
+
+def test_restore_candidate_is_not_active_before_server_validation(page, auth_shell):
+	auth_shell(page)
+	login(page)
+	auth_shell(page, bootstrap=DELAY_RESTORE)
+	page.wait_for_function("typeof releaseRestore === 'function'")
+	assert page.evaluate("frappe.tc_station.session === null")
+	expect(page.locator(".tc-work")).to_be_hidden()
+
+
+@pytest.mark.parametrize("status", [200, 401])
+def test_late_restore_cannot_overwrite_or_clear_new_card_session(page, auth_shell, status):
+	auth_shell(page)
+	login(page)
+	auth_shell(page, bootstrap=DELAY_RESTORE)
+	page.wait_for_function("typeof releaseRestore === 'function'")
+	reader_scan(page, "CARD-B")
+	expect(page.locator(".tc-session")).to_contain_text("Operator CARD-B")
+	new_token = page.evaluate("frappe.tc_station.session.token")
+	body = (
+		{
+			"ok": True,
+			"employee": "OLD-EMP",
+			"employee_name": "Old operator",
+			"station": "TR-004",
+			"expires_at": "2099-10-21 17:00:00",
+			"roles": ["TC R04"],
+		}
+		if status == 200
+		else {
+			"ok": False,
+			"error": {
+				"code": "SESSION_INVALID",
+				"title": "Old restore rejected",
+				"reason": "Old token",
+				"action": "Scan card",
+			},
+		}
+	)
+	page.evaluate("reply => releaseRestore(reply)", {"status": status, "body": body})
+	page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+	expect(page.locator(".tc-work")).to_be_visible()
+	expect(page.locator(".tc-session")).to_contain_text("Operator CARD-B")
+	assert page.evaluate("frappe.tc_station.session.token") == new_token
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") == new_token
+
+
+def test_hidden_page_ignores_reader_events(page, auth_shell):
+	auth_shell(page)
+	login(page)
+	page.evaluate("frappe.pages.station.on_page_hide()")
+	before = sum(method.endswith("station.login") for method, _, _ in auth_shell.requests)
+	reader_scan(page, "HIDDEN-CARD")
+	page.wait_for_function("!frappe.tc_station.authBusy")
+	page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+	after = sum(method.endswith("station.login") for method, _, _ in auth_shell.requests)
+	assert after == before
+	assert page.evaluate("frappe.tc_station.session === null && frappe.tc_station.sessionTimer === null")
+
+
+def test_replaced_page_disposes_old_reader_listeners_and_timer(page, auth_shell):
+	auth_shell(page)
+	page.evaluate("""() => {
+		window.oldStation = frappe.tc_station;
+		frappe.pages.station.on_page_load(document.querySelector('#wrapper'));
+		frappe.pages.station.on_page_show();
+	}""")
+	reader_scan(page, "NEW-MOUNT-CARD")
+	expect(page.locator(".tc-session")).to_contain_text("Operator NEW-MOUNT-CARD")
+	logins = [args["card_id"] for method, args, _ in auth_shell.requests if method.endswith("station.login")]
+	assert logins == ["NEW-MOUNT-CARD"]
+	assert page.evaluate("oldStation.disposed && !oldStation.visible && oldStation.sessionTimer === null")
+
+
+def test_roles_are_translated_on_login_restore_and_cleared_at_logout(page, auth_shell):
+	auth_shell(page)
+	login(page)
+	expect(page.locator(".tc-session-roles")).to_have_text("Roles: Translated packing role")
+	auth_shell(page)
+	expect(page.locator(".tc-session-roles")).to_have_text("Roles: Translated packing role")
+	page.locator("[data-action='logout']").click()
+	expect(page.locator(".tc-session-roles")).to_have_text("")
+
+
+@pytest.mark.parametrize("action", ["logout", "rescan-card"])
+def test_keyboard_tab_can_reach_and_activate_session_controls(page, auth_shell, action):
+	auth_shell(page)
+	login(page)
+	page.locator("#tc-scan-input").focus()
+	page.keyboard.press("Shift+Tab")
+	page.wait_for_timeout(200)  # exceed the previous 150ms forced-refocus timer
+	expect(page.locator("[data-action='logout']")).to_be_focused()
+	if action == "rescan-card":
+		page.keyboard.press("Shift+Tab")
+		page.wait_for_timeout(200)
+		expect(page.locator("[data-action='rescan-card']")).to_be_focused()
+	page.keyboard.press("Enter")
+	expect(page.locator(".tc-work")).to_be_hidden()
+	expect(page.locator("#tc-card-input")).to_be_focused()
+
+
+def test_repeated_replacements_keep_the_original_pending_login_barrier(page, auth_shell):
+	auth_shell(page)
+	page.evaluate("""() => {
+		const real = window.fetch;
+		let first = true;
+		window.fetch = (...args) => {
+			if (String(args[0]).endsWith('station.login') && first) {
+				first = false;
+				return new Promise(resolve => window.releaseOriginalLogin = () => resolve(real(...args)));
+			}
+			return real(...args);
+		};
+	}""")
+	reader_scan(page, "CARD-A")
+	page.wait_for_function("typeof releaseOriginalLogin === 'function'")
+	page.evaluate("""() => {
+		window.retiredStations = [];
+		for (let i = 0; i < 2; i++) {
+			retiredStations.push(frappe.tc_station);
+			frappe.pages.station.on_page_load(document.querySelector('#wrapper'));
+			frappe.pages.station.on_page_show();
+		}
+	}""")
+	reader_scan(page, "CARD-C")
+	page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+	assert not any(method.endswith("station.login") for method, _, _ in auth_shell.requests)
+	page.evaluate("releaseOriginalLogin()")
+	expect(page.locator(".tc-session")).to_contain_text("Operator CARD-C")
+	logins = [args["card_id"] for method, args, _ in auth_shell.requests if method.endswith("station.login")]
+	assert logins == ["CARD-A", "CARD-C"]
+	assert page.evaluate(
+		"retiredStations.every(s => s.disposed && s.listeners.length === 0 && s.globalListeners.length === 0 && s.sessionTimer === null)"
+	)
+	page.evaluate("frappe.tc_station.heartbeat()")
+	expect(page.locator(".tc-work")).to_be_visible()
+
+
+def test_hiding_pending_restore_preserves_candidate_storage_and_ignores_its_late_denial(page, auth_shell):
+	auth_shell(page)
+	login(page)
+	token = page.evaluate("frappe.tc_station.session.token")
+	auth_shell(page, bootstrap=DELAY_RESTORE)
+	page.wait_for_function("typeof releaseRestore === 'function'")
+	page.evaluate("window.releaseOldRestore = releaseRestore; frappe.pages.station.on_page_hide()")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") == token
+	page.evaluate("frappe.pages.station.on_page_show()")
+	page.wait_for_function("releaseRestore !== releaseOldRestore")
+	page.evaluate(
+		"releaseOldRestore({status:401,body:{ok:false,error:{code:'SESSION_INVALID',title:'Old response'}}})"
+	)
+	page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") == token
+	assert page.evaluate("frappe.tc_station.session === null && frappe.tc_station.restoreCandidate !== null")
+	page.evaluate(
+		"releaseRestore({status:200,body:{ok:true,employee:'EMP-1',employee_name:'Restored operator',station:'TR-004',roles:['TC R04']}})"
+	)
+	expect(page.locator(".tc-session")).to_contain_text("Restored operator")

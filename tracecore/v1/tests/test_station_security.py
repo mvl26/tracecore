@@ -240,6 +240,8 @@ class TestStationSecurity(IsolatedTestCase):
 		result = self.rpc(station_api.heartbeat, token=self.session["token"])
 		self.assertEqual(result["session"], self.session["session"])
 		self.assertNotIn("token", result)
+		self.assertEqual(result.get("employee_name"), self.employee.employee_name)
+		self.assertEqual(result.get("roles"), ["TC R04"])
 		self.assertTrue(self.rpc(station_api.logout, token=self.session["token"])["ok"])
 		self.assert_block(
 			self.rpc(station_api.heartbeat, token=self.session["token"]), "SESSION_INVALID", 401

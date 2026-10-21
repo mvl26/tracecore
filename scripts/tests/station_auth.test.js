@@ -42,6 +42,11 @@ function harness() {
 		station: "TR-004",
 		session: { token: "private-bearer", employee: "EMP-1" },
 		sessionVersion: 1,
+		authGeneration: 0,
+		visible: true,
+		disposed: false,
+		listeners: [],
+		controllers: new Set(),
 		lastActivity: Date.now(),
 		heartbeatActivity: 0,
 		pending: { raw: "SET" },
@@ -58,6 +63,7 @@ function harness() {
 		form: { classList: { remove() {}, toggle() {} } },
 		focus() {},
 	});
+	sandbox.frappe.tc_station = station;
 	return { station, sandbox, calls, store };
 }
 
@@ -194,4 +200,44 @@ test("card arriving during station handshake waits instead of being discarded", 
 	ready();
 	await login;
 	assert.equal(logins, 1);
+});
+
+test("latest card is processed after an earlier pending login and the stale token is revoked", async () => {
+	const { station } = harness();
+	station.session = null;
+	station.stationInfo = { name: "TR-004" };
+	station.isOffline = () => false;
+	let release;
+	const cards = [];
+	const revoked = [];
+	station.rpc = async (method, args) => {
+		if (method.endsWith("logout")) {
+			revoked.push(args.token);
+			return { ok: true };
+		}
+		cards.push(args.card_id);
+		if (args.card_id === "A")
+			await new Promise((resolve) => {
+				release = resolve;
+			});
+		return { ok: true, session: { token: args.card_id } };
+	};
+	station.activateSession = (session) => {
+		station.session = session;
+	};
+	const first = station.login("A");
+	await new Promise(setImmediate);
+	const second = station.login("B");
+	release();
+	await Promise.all([first, second]);
+	assert.deepEqual(cards, ["A", "B"]);
+	assert.equal(station.session.token, "B");
+	assert.deepEqual(revoked, ["A"]);
+});
+
+test("retired page cleanup cannot erase another owner's stored token", () => {
+	const { station, store } = harness();
+	store.set(station.storageKey(), "new-owner-token");
+	station.clearSession();
+	assert.equal(store.get(station.storageKey()), "new-owner-token");
 });

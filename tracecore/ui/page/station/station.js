@@ -61,7 +61,7 @@ function esc(value) {
 }
 
 class TraceCoreStation {
-	constructor(wrapper) {
+	constructor(wrapper, authBarrier = Promise.resolve()) {
 		this.wrapper = wrapper;
 		this.station = new URLSearchParams(window.location.search).get("station");
 		this.stationInfo = null;
@@ -72,6 +72,16 @@ class TraceCoreStation {
 		this.visible = false;
 		this.session = null;
 		this.sessionVersion = 0;
+		this.authGeneration = 0;
+		this.restoreCandidate = null;
+		this.queuedLogin = null;
+		this.authWorker = null;
+		this.authBarrier = authBarrier;
+		this.disposed = false;
+		this.listeners = [];
+		this.globalListeners = [];
+		this.controllers = new Set();
+		this.sessionTimer = null;
 		this.authBusy = false;
 		this.heartbeatBusy = false;
 		this.lastActivity = Date.now();
@@ -96,33 +106,74 @@ class TraceCoreStation {
 		this.addManifestLink();
 		this.registerServiceWorker();
 		this.renderLogin();
-		this.initialHandshake = this.handshake();
-		this.sessionTimer = setInterval(() => this.checkSession(), 1000);
+		this.initialHandshake = Promise.resolve();
 	}
 
 	// ---- vòng đời Page ----
 	show() {
+		if (this.disposed || frappe.tc_station !== this || this.visible) return;
 		this.visible = true;
 		document.body.classList.add("tc-kiosk");
-		this.focus();
-		if (this.session) this.heartbeat();
+		this.bindGlobal();
+		this.sessionTimer = setInterval(() => {
+			if (this.ownsPage()) this.checkSession();
+		}, 1000);
+		this.initialHandshake = this.handshake();
+		this.focus(true);
 	}
 
 	hide() {
 		this.visible = false;
-		this.endSession();
-		document.body.classList.remove("tc-kiosk");
+		for (const [target, name, handler] of this.globalListeners)
+			target.removeEventListener(name, handler);
+		this.globalListeners = [];
+		clearInterval(this.sessionTimer);
+		this.sessionTimer = null;
+		for (const controller of this.controllers) {
+			// A login may already have committed server-side: receive and revoke its stale token.
+			if (
+				!controller.stationMethod.endsWith("station.login") &&
+				!controller.stationMethod.endsWith("station.logout")
+			)
+				controller.abort();
+		}
+		const ending = this.endSession(undefined, { keepStoredCandidate: true });
+		if (frappe.tc_station === this) document.body.classList.remove("tc-kiosk");
+		return ending;
+	}
+
+	dispose() {
+		const ending = this.hide();
+		this.disposed = true;
+		for (const [target, name, handler, options] of this.listeners)
+			target.removeEventListener(name, handler, options);
+		this.listeners = [];
+		return Promise.all([this.authBarrier, ending, this.authWorker]);
+	}
+
+	ownsPage() {
+		return !this.disposed && this.visible && frappe.tc_station === this;
+	}
+
+	listen(target, name, handler, options) {
+		const owned = (event) => {
+			if (this.ownsPage()) handler(event);
+		};
+		target.addEventListener(name, owned, options);
+		this.listeners.push([target, name, owned, options]);
 	}
 
 	focus(force = false) {
+		if (!this.ownsPage()) return;
 		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
 		if (this.t4 && this.t4.dialogOpen) return;
-		// Dedicated lot input owns focus until submitted; scanner must not steal it.
+		// Preserve keyboard navigation and deliberate focus on every interactive control.
 		if (
 			!force &&
-			this.session &&
 			document.activeElement &&
-			document.activeElement.matches("#tc-ci-input")
+			document.activeElement.offsetParent !== null &&
+			this.root.contains(document.activeElement) &&
+			document.activeElement.matches("button, input, textarea, select, a, [tabindex]")
 		)
 			return;
 		const input = this.session ? this.input : this.cardInput;
@@ -132,23 +183,24 @@ class TraceCoreStation {
 	}
 
 	bind() {
-		this.authForm.addEventListener("submit", (event) => {
+		this.listen(this.authForm, "submit", (event) => {
 			event.preventDefault();
 			this.login(this.cardInput.value);
 		});
-		this.form.addEventListener("submit", (event) => {
+		this.listen(this.form, "submit", (event) => {
 			event.preventDefault();
 			this.scan(this.input.value);
 		});
-		this.root.addEventListener("click", (event) => {
+		this.listen(this.root, "click", (event) => {
 			const button = event.target.closest("[data-action]");
 			if (button) this.onAction(button.dataset.action, button);
 			setTimeout(() => this.focus(), 0);
 		});
-		this.input.addEventListener("blur", () => setTimeout(() => this.focus(), 150));
-		this.cardInput.addEventListener("blur", () => setTimeout(() => this.focus(), 150));
+		this.listen(this.input, "blur", () => setTimeout(() => this.focus(), 150));
+		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
-			this.root.addEventListener(
+			this.listen(
+				this.root,
 				name,
 				() => {
 					if (!this.session) return;
@@ -159,27 +211,28 @@ class TraceCoreStation {
 				true
 			);
 		}
-		// Reader adapters dispatch this event when a contact card is removed.
-		window.addEventListener("tc-card-removed", () => this.endSession());
-		// Reader adapter contract: CustomEvent("tc-card-scanned", {detail: {card_id: string}}).
-		// Card events are separate from the Set/Cycle/roll scanner and never render credentials.
-		window.addEventListener("tc-card-scanned", async (event) => {
-			const card = event.detail && event.detail.card_id;
-			if (typeof card !== "string" || !card.trim()) return;
-			const sequence = (this.cardScanVersion = (this.cardScanVersion || 0) + 1);
-			const closing = this.session ? this.endSession() : Promise.resolve();
-			const version = this.sessionVersion;
-			await closing;
-			if (sequence === this.cardScanVersion && version === this.sessionVersion)
-				this.login(card);
-		});
-		window.addEventListener("offline", () => this.setOffline(true));
-		window.addEventListener("online", () => {
-			if (!this.manualOffline) {
-				this.setOffline(false);
-				this.handshake();
-			}
-		});
+	}
+
+	bindGlobal() {
+		const handlers = {
+			"tc-card-removed": () => this.endSession(),
+			// CustomEvent("tc-card-scanned", {detail: {card_id: string}}) stays separate from T4 scans.
+			"tc-card-scanned": (event) => this.login(event.detail && event.detail.card_id),
+			offline: () => this.setOffline(true),
+			online: () => {
+				if (!this.manualOffline) {
+					this.setOffline(false);
+					this.handshake();
+				}
+			},
+		};
+		for (const [name, handler] of Object.entries(handlers)) {
+			const owned = (event) => {
+				if (this.ownsPage()) handler(event);
+			};
+			window.addEventListener(name, owned);
+			this.globalListeners.push([window, name, owned]);
+		}
 	}
 
 	onAction(action, button) {
@@ -243,10 +296,19 @@ class TraceCoreStation {
 		this.focus();
 	}
 
-	clearSession(error) {
+	clearSession(error, { invalidateAuth = true, keepStoredCandidate = false } = {}) {
+		const token =
+			(this.session && this.session.token) ||
+			(!keepStoredCandidate && this.restoreCandidate && this.restoreCandidate.token);
+		if (invalidateAuth) {
+			this.authGeneration++;
+			this.queuedLogin = null;
+		}
+		this.restoreCandidate = null;
 		this.sessionVersion++;
 		this.session = null;
-		this.storedToken(null);
+		// A retired instance may share this storage key with its replacement.
+		if (token && this.storedToken() === token) this.storedToken(null);
 		this.pending = null;
 		this.lastRaw = null;
 		this.input.value = "";
@@ -255,14 +317,25 @@ class TraceCoreStation {
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
-		for (const selector of [".tc-session-person", ".tc-session-station", ".tc-session-expiry"])
+		for (const selector of [
+			".tc-session-person",
+			".tc-session-station",
+			".tc-session-expiry",
+			".tc-session-roles",
+		])
 			this.root.querySelector(selector).textContent = "";
 		this.renderLogin(error);
 	}
 
-	async endSession(error) {
-		const token = this.session && this.session.token;
-		this.clearSession(error);
+	async endSession(error, options = {}) {
+		const token =
+			(this.session && this.session.token) ||
+			(!options.keepStoredCandidate && this.restoreCandidate && this.restoreCandidate.token);
+		this.clearSession(error, options);
+		return this.revokeToken(token);
+	}
+
+	async revokeToken(token) {
 		if (!token) return;
 		try {
 			await this.rpc("tracecore.v1.station.logout", { token, client_ts: clientTs() });
@@ -284,12 +357,15 @@ class TraceCoreStation {
 		this.root.querySelector(".tc-session-person").textContent =
 			session.employee_name || session.employee;
 		this.root.querySelector(".tc-session-station").textContent = session.station;
+		this.root.querySelector(".tc-session-roles").textContent = __("Roles: {0}", [
+			(session.roles || []).map((role) => __(role)).join(", "),
+		]);
 		this.root.querySelector(".tc-session-expiry").textContent = __("Session expires: {0}", [
 			this.formatExpiry(session.expires_at),
 		]);
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
-		this.focus();
+		this.focus(true);
 	}
 
 	formatExpiry(value) {
@@ -299,41 +375,98 @@ class TraceCoreStation {
 			: value || "-";
 	}
 
-	async login(raw) {
+	login(raw) {
 		this.cardInput.value = "";
-		if (this.authBusy || !this.station || !(raw || "").trim()) return;
-		if (this.isOffline()) return this.setOffline(true);
+		if (!this.ownsPage() || !this.station || typeof raw !== "string" || !raw.trim())
+			return Promise.resolve();
+		const token =
+			(this.session && this.session.token) ||
+			(this.restoreCandidate && this.restoreCandidate.token);
+		this.clearSession();
+		const attempt = this.authGeneration;
+		this.queuedLogin = { card: raw.trim(), attempt, closing: this.revokeToken(token) };
+		if (this.authWorker) return this.authWorker;
 		this.authBusy = true;
-		const version = this.sessionVersion;
-		try {
-			if (!this.stationInfo) await this.initialHandshake;
-			if (!this.stationInfo || version !== this.sessionVersion) return;
-			if (this.isOffline()) return this.setOffline(true);
-			const result = await this.rpc("tracecore.v1.station.login", {
-				card_id: raw.trim(),
-				station: this.station,
-				client_ts: clientTs(),
-			});
-			if (version !== this.sessionVersion) {
-				if (result.ok)
-					this.rpc("tracecore.v1.station.logout", {
-						token: result.session.token,
-						client_ts: clientTs(),
-					}).catch(() => {});
-				return;
-			}
-			if (result.ok) this.activateSession(result.session);
-			else this.renderLogin(result.error);
-		} catch (error) {
-			if (version === this.sessionVersion) this.handleFailure(error);
-		} finally {
+		this.authWorker = this.processLogins().finally(() => {
+			this.authWorker = null;
 			this.authBusy = false;
 			this.focus();
+		});
+		return this.authWorker;
+	}
+
+	async processLogins() {
+		await this.authBarrier;
+		while (this.queuedLogin && this.ownsPage()) {
+			const intent = this.queuedLogin;
+			this.queuedLogin = null;
+			await intent.closing;
+			if (!this.stationInfo) await this.initialHandshake;
+			if (!this.isCurrentAuth(intent.attempt) || !this.stationInfo) continue;
+			if (this.isOffline()) {
+				this.setOffline(true);
+				continue;
+			}
+			try {
+				const result = await this.rpc("tracecore.v1.station.login", {
+					card_id: intent.card,
+					station: this.station,
+					client_ts: clientTs(),
+				});
+				if (!this.isCurrentAuth(intent.attempt)) {
+					if (result.ok) await this.revokeToken(result.session.token);
+					continue;
+				}
+				if (result.ok) this.activateSession(result.session);
+				else this.renderLogin(result.error);
+			} catch (error) {
+				if (this.isCurrentAuth(intent.attempt)) this.handleFailure(error);
+			}
 		}
 	}
 
+	isCurrentAuth(attempt) {
+		return this.ownsPage() && attempt === this.authGeneration;
+	}
+
+	async restoreSession(token) {
+		const candidate = { token, attempt: ++this.authGeneration };
+		this.restoreCandidate = candidate;
+		try {
+			const result = await this.rpc(
+				"tracecore.v1.station.heartbeat",
+				{
+					token,
+					client_ts: clientTs(),
+				},
+				undefined,
+				candidate
+			);
+			if (!this.isCurrentCandidate(candidate)) return;
+			if (result.ok && result.station === this.station) {
+				this.restoreCandidate = null;
+				this.activateSession({ ...result, token });
+			} else this.clearSession(result.error);
+		} catch (error) {
+			if (this.isCurrentCandidate(candidate)) {
+				// A transport failure proves nothing about the stored token's validity.
+				this.clearSession(undefined, { keepStoredCandidate: true });
+				this.handleFailure(error);
+			}
+		}
+	}
+
+	isCurrentCandidate(candidate) {
+		return (
+			this.isCurrentAuth(candidate.attempt) &&
+			this.restoreCandidate === candidate &&
+			this.storedToken() === candidate.token
+		);
+	}
+
 	async heartbeat() {
-		if (!this.session || this.heartbeatBusy || this.isOffline()) return false;
+		if (!this.ownsPage() || !this.session || this.heartbeatBusy || this.isOffline())
+			return false;
 		this.heartbeatBusy = true;
 		const version = this.sessionVersion;
 		const activity = this.lastActivity;
@@ -343,11 +476,12 @@ class TraceCoreStation {
 				token: this.session.token,
 				client_ts: clientTs(),
 			});
-			if (version !== this.sessionVersion) return false;
+			if (!this.ownsPage() || version !== this.sessionVersion) return false;
 			this.heartbeatActivity = activity;
 			return result;
 		} catch (error) {
-			if (!error.sessionEnded && version === this.sessionVersion) this.handleFailure(error);
+			if (!error.sessionEnded && this.ownsPage() && version === this.sessionVersion)
+				this.handleFailure(error);
 			return false;
 		} finally {
 			this.heartbeatBusy = false;
@@ -355,7 +489,7 @@ class TraceCoreStation {
 	}
 
 	async checkSession() {
-		if (!this.session) return;
+		if (!this.ownsPage() || !this.session) return;
 		if (Date.now() - this.lastActivity >= STATION_IDLE_MS) {
 			return this.endSession({
 				title: __("Station session was locked"),
@@ -392,21 +526,25 @@ class TraceCoreStation {
 		if (offline) this.renderOffline();
 	}
 
-	async rpc(method, args, idempotencyKey) {
+	async rpc(method, args, idempotencyKey, candidate = null) {
 		const protectedCall =
 			method.startsWith("tracecore.v1.pack.") || method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =
-			protectedCall ||
-			method === "tracecore.v1.station.heartbeat" ||
-			method === "tracecore.v1.set_unit.get";
+			!candidate &&
+			(protectedCall ||
+				method === "tracecore.v1.station.heartbeat" ||
+				method === "tracecore.v1.set_unit.get");
+		const activeToken = this.session && this.session.token;
 		const ended = () =>
 			Object.assign(new Error("Station session ended"), { sessionEnded: true });
 		if (protectedCall) {
-			if (!this.session) throw ended();
+			if (!this.ownsPage() || !this.session) throw ended();
 			args = { ...args, token: this.session.token };
 		}
 		const controller = new AbortController();
+		controller.stationMethod = method;
+		this.controllers.add(controller);
 		const timer = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
 		const headers = {
 			Accept: "application/json",
@@ -424,7 +562,14 @@ class TraceCoreStation {
 				signal: controller.signal,
 			});
 			const data = await response.json().catch(() => ({}));
-			if (sessionCall && version !== this.sessionVersion) throw ended();
+			if (candidate && !this.isCurrentCandidate(candidate)) throw ended();
+			if (
+				sessionCall &&
+				(!this.ownsPage() ||
+					version !== this.sessionVersion ||
+					activeToken !== (this.session && this.session.token))
+			)
+				throw ended();
 			const block = data.message && data.message.error;
 			if (
 				sessionCall &&
@@ -455,10 +600,13 @@ class TraceCoreStation {
 			throw error;
 		} finally {
 			clearTimeout(timer);
+			this.controllers.delete(controller);
 		}
 	}
 
 	async handshake() {
+		if (!this.ownsPage()) return;
+		const generation = this.authGeneration;
 		if (!this.station) {
 			return this.renderError({
 				title: __("Station not configured"),
@@ -469,24 +617,22 @@ class TraceCoreStation {
 		if (this.isOffline()) return this.setOffline(true);
 		try {
 			const info = await this.rpc("tracecore.v1.ping", { station: this.station });
+			if (!this.ownsPage()) return;
 			if (this.isOffline()) return this.setOffline(true);
 			if (info.station_error) return this.renderError(info.station_error);
 			this.applyStation(info.station);
+			if (generation !== this.authGeneration) return;
 			if (!this.session) {
 				const token = this.storedToken();
-				if (token) {
-					this.session = { token };
-					const result = await this.heartbeat();
-					if (result && this.session && result.station === this.station)
-						this.activateSession({ ...result, token });
-					else if (this.session) this.clearSession();
-				} else this.renderLogin();
+				if (token && !this.authBusy) await this.restoreSession(token);
+				else if (!this.authBusy) this.renderLogin();
 			} else {
+				const session = this.session;
 				await this.heartbeat();
-				if (this.session) this.renderEmpty();
+				if (this.ownsPage() && this.session === session) this.renderEmpty();
 			}
 		} catch (error) {
-			this.handleFailure(error);
+			if (generation === this.authGeneration) this.handleFailure(error);
 		} finally {
 			this.root.dataset.readyMs = String(Math.round(performance.now()));
 		}
@@ -544,6 +690,7 @@ class TraceCoreStation {
 	}
 
 	handleFailure(error) {
+		if (!this.ownsPage()) return;
 		if (error.sessionEnded) return;
 		if (error.offline) return this.setOffline(true);
 		// 4xx là câu trả lời dứt khoát của server: lần quét sau phải dùng key mới
@@ -674,7 +821,9 @@ class TraceCoreStation {
 }
 
 frappe.pages["station"].on_page_load = function (wrapper) {
-	frappe.tc_station = new TraceCoreStation(wrapper);
+	const previous = frappe.tc_station;
+	const barrier = previous ? previous.dispose() : Promise.resolve();
+	frappe.tc_station = new TraceCoreStation(wrapper, barrier);
 };
 
 frappe.pages["station"].on_page_show = function () {
