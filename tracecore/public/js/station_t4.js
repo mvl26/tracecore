@@ -1,8 +1,8 @@
 /* global uuid4, clientTs, esc, STATUS_BADGE */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
-// TraceCoreStation giao cho T4Packing khi trạm là bước T4: một ô quét duy nhất (D10), mọi lần quét đi qua
-// tracecore.v1.pack.scan kèm open_set; "kind" của kết quả quyết định việc tiếp theo. Lỗi chặn = alert-error inline.
+// Ô chính quét Set/Cycle/cuộn nhãn; lô chỉ thị dùng ô riêng và RPC resolve_ci.
+// Lỗi chặn = alert-error inline; mọi RPC người dùng do shell gắn bearer trong body.
 
 const T4_AGENT_URL = "http://127.0.0.1:8765/print";
 const T4_AGENT_TIMEOUT_MS = 5000;
@@ -67,6 +67,14 @@ class T4Packing {
 		this.result.addEventListener("change", (event) => {
 			if (event.target.matches(".tc-check")) this.toggleLine(event.target);
 		});
+		this.result.addEventListener("submit", (event) => {
+			if (!event.target.matches(".tc-ci-form")) return;
+			event.preventDefault();
+			const input = event.target.querySelector("#tc-ci-input");
+			const raw = input.value;
+			input.value = "";
+			this.scanIndicator(raw);
+		});
 	}
 
 	get dialogOpen() {
@@ -86,6 +94,18 @@ class T4Packing {
 		this.lookup = null;
 	}
 
+	clearSession() {
+		if (this.dialog) this.dialog.remove();
+		this.dialog = null;
+		this.pending = null;
+		this.busy = null;
+		this.viewKey = null;
+		this.offline = false;
+		this.reset();
+		this.input.placeholder = __("Scan Set ID...");
+		this.input.setAttribute("aria-label", __("Scan Set ID"));
+	}
+
 	openSet() {
 		return this.ctx && !this.done ? this.ctx.set.set_id : null;
 	}
@@ -103,8 +123,24 @@ class T4Packing {
 		);
 	}
 
+	async scanIndicator(raw) {
+		raw = (raw || "").trim();
+		if (!raw || !this.openSet() || !this.station.session) return;
+		if (this.station.isOffline()) return this.station.setOffline(true);
+		await this.request(
+			"tracecore.v1.pack.resolve_ci",
+			{
+				raw,
+				station: this.station.station,
+				open_set: this.openSet(),
+			},
+			(res) => this.onScan(res, raw)
+		);
+	}
+
 	async request(method, args, onOk) {
-		if (this.busy) return;
+		if (this.busy || !this.station.session) return;
+		const version = this.station.sessionVersion;
 		const sig = method + JSON.stringify(args);
 		if (!this.pending || this.pending.sig !== sig) {
 			this.pending = { sig, method, args, onOk, key: uuid4(), ts: clientTs() };
@@ -122,17 +158,20 @@ class T4Packing {
 				{ ...args, client_ts: pending.ts },
 				pending.key
 			);
-			this.pending = null;
-			this.result.dataset.ms = String(Math.round(performance.now() - started));
 		} catch (error) {
 			failure = error;
+		}
+		if (version !== this.station.sessionVersion || (failure && failure.sessionEnded)) return;
+		if (!failure) {
+			this.pending = null;
+			this.result.dataset.ms = String(Math.round(performance.now() - started));
 		}
 		this.busy = null;
 		if (!failure) this.markOnline();
 		if (failure) this.failure(failure);
 		else if (response && response.ok === false) this.reject(response.error, method);
 		else onOk(response);
-		this.station.focus();
+		this.station.focus(true);
 	}
 
 	retry() {
@@ -217,6 +256,7 @@ class T4Packing {
 	}
 
 	async onRoll(roll, raw) {
+		const version = this.station.sessionVersion;
 		if (this.ctx && this.ctx.set.method === roll.method) {
 			this.ctx.printer = { name: roll.printer, label_type: roll.label_type };
 			this.ctx.label_type = roll.label_type;
@@ -234,6 +274,7 @@ class T4Packing {
 		this.show();
 		if (!jobs.length) return;
 		const results = await Promise.all(jobs.map((job) => this.sendToAgent(job)));
+		if (version !== this.station.sessionVersion) return;
 		const failed = results.filter((ok) => !ok).length;
 		this.notice = this.rollNotice(title, jobs.length, failed, broken);
 		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
@@ -276,6 +317,7 @@ class T4Packing {
 
 	// ---- in qua Station Agent (D11) ----
 	async sendToAgent(job) {
+		if (!this.station.session) return false;
 		const controller = new AbortController();
 		const timer = setTimeout(() => controller.abort(), T4_AGENT_TIMEOUT_MS);
 		try {
@@ -298,11 +340,13 @@ class T4Packing {
 	}
 
 	async handlePrint(print) {
+		const version = this.station.sessionVersion;
 		this.done.print = print;
 		if (print.status === "Queued" && print.zpl) {
 			this.printNote = { kind: "sending" };
 			this.show();
 			const ok = await this.sendToAgent(print);
+			if (version !== this.station.sessionVersion) return;
 			this.printNote = { kind: ok ? "sent" : "agent-failed" };
 		} else {
 			this.printNote = { kind: "waiting" };
@@ -621,6 +665,7 @@ class T4Packing {
 	}
 
 	show() {
+		if (!this.station.session) return;
 		let key = null;
 		if (this.done) key = `done:${this.done.pack.cycle_id}`;
 		else if (this.ctx) key = `ctx:${this.ctx.set.set_id}`;
@@ -681,7 +726,7 @@ class T4Packing {
 
 	updatePlaceholder() {
 		const text = this.openSet()
-			? __("Scan indicator lot, next Set ID, Cycle ID or roll code...")
+			? __("Scan next Set ID, Cycle ID or roll code...")
 			: __("Scan Set ID...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
@@ -690,8 +735,10 @@ class T4Packing {
 	watchImages() {
 		// D1: "Xác nhận tất cả" chỉ bật khi mọi ảnh của lưới BOM đã tải xong hoặc báo lỗi
 		const images = [...this.result.querySelectorAll(".tc-inst img")];
+		const context = this.ctx;
 		const check = () => {
-			if (this.imagesReady || !this.ctx || !this.ctx.bom.length) return;
+			if (this.imagesReady || this.ctx !== context || !this.ctx || !this.ctx.bom.length)
+				return;
 			if (images.every((img) => img.complete)) {
 				this.imagesReady = true;
 				this.refresh();
@@ -1027,16 +1074,24 @@ class T4Packing {
 	ciHtml() {
 		if (!this.ctx) return "";
 		const heading = `<h3>${esc(__("Indicator Lot"))}</h3>`;
+		const field = `<form class="tc-ci-form" autocomplete="off">
+			<label for="tc-ci-input">${esc(__("Scan indicator lot"))}</label>
+			<input id="tc-ci-input" class="tc-scan-input" type="text" inputmode="none"
+				autocomplete="off" autocapitalize="off" spellcheck="false"${t4Disabled(Boolean(this.busy))} />
+			<button type="submit" class="tc-btn tc-btn-secondary"${t4Disabled(Boolean(this.busy))}>${esc(
+			__("Scan")
+		)}</button>
+		</form>`;
 		if (!this.ci) {
 			const prompt = __("Scan indicator lot class {0} – {1}", [
 				this.ctx.ci.classes.join("/"),
 				__(this.ctx.ci.method),
 			]);
-			return `${heading}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
+			return `${heading}${field}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
 				prompt
 			)}</p>`;
 		}
-		return `${heading}
+		return `${heading}${field}
 			<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span>
 				<b class="tc-mono">${esc(this.ci.batch)}</b> · ${esc(__("class {0}", [this.ci.ci_class]))}</p>
 			<p>${esc(__("Expiry: {0}", [t4Date(this.ci.expiry_date)]))}</p>`;
