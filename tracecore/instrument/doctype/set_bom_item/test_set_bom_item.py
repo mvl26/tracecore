@@ -1,7 +1,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.instrument import bom
+from tracecore.instrument import bom, catalog
 from tracecore.tests.factories import make_bom, make_instrument, make_set_type
 
 
@@ -111,3 +111,29 @@ class TestSetBOMItem(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			frappe.delete_doc("Set BOM Item", line.name)
 		self.assertTrue(frappe.db.exists("Set BOM Item", line.name))
+
+	def test_new_bom_line_rejects_retired_instrument(self):
+		# FR-M1-01 "danh sách chọn khi lập BOM", A-06 I13: dòng cũ giữ nguyên, dòng mới không nhận dụng cụ đã ngừng
+		st = make_set_type("BMR")
+		old_line = make_bom(st.name, [("BM-RET", 2)], version=1)[0]
+		make_instrument("BM-ACT")
+		catalog.retire("BM-RET", "Broken", confirm=True)
+
+		self.assertTrue(frappe.db.exists("Set BOM Item", old_line.name))
+		old_line.reload()
+		old_line.qty = 3
+		old_line.save()
+		self.assertEqual(frappe.db.get_value("Set BOM Item", old_line.name, "qty"), 3)
+
+		frappe.local.lang = "vi"
+		try:
+			with self.assertRaises(frappe.ValidationError) as raised:
+				_bom_line(st.name, 2, "BM-RET", 1, 1)
+			self.assertIn("BM-RET", str(raised.exception))
+			self.assertIn("ngừng sử dụng", str(raised.exception))
+		finally:
+			frappe.local.lang = "en"
+		line = _bom_line(st.name, 2, "BM-ACT", 1, 1)
+		line.instrument = "BM-RET"
+		with self.assertRaises(frappe.ValidationError):
+			line.save()

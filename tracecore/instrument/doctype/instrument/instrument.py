@@ -2,7 +2,8 @@
 
 Mã chuẩn hóa và gợi ý mã trùng ở ``instrument.catalog``. Trường bắt buộc (mã, tên, Spaulding, ít nhất một phương
 pháp) nêu trong một thông báo; chuỗi chỉ toàn khoảng trắng coi như thiếu. ``status``, ``retired_on``,
-``retired_reason``, ``version_no`` chỉ đổi qua dịch vụ danh mục (cờ ``flags.tc_instrument``).
+``retired_reason``, ``version_no`` chỉ đổi qua dịch vụ danh mục (cờ ``flags.tc_instrument``): ngừng sử dụng qua
+``catalog.retire`` (một chiều), phiên bản tăng khi tập phương pháp đổi (``versions``, A-06 I1/I3).
 """
 
 from decimal import ROUND_HALF_UP, Decimal
@@ -12,7 +13,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, flt
 
-from tracecore.instrument import catalog
+from tracecore.instrument import catalog, versions
 
 REQUIRED_FIELDS = ("instrument_code", "instrument_name", "spaulding_class", "compatible_methods")
 TEXT_FIELDS = ("instrument_name", "manufacturer", "model")
@@ -33,11 +34,17 @@ class Instrument(Document):
 		self._prepare()
 		if not self.is_new() and self.instrument_code != self.name:
 			frappe.throw(_("Instrument Code cannot be changed after the instrument is created."))
+		self._guard_retirement()
 		self._guard_controlled_fields()
 		self._validate_methods()
+		versions.bump_if_methods_changed(self)
 		self._validate_value()
 		self._validate_item()
 		self.max_cycles_status = "Defined" if cint(self.max_cycles) > 0 else "Undefined"
+
+	def on_update(self):
+		if self.flags.tc_version_bumped:
+			versions.notify_boms(self)
 
 	def db_insert(self, *args, **kwargs):
 		# hai request cùng mã vượt qua kiểm tra trước: khóa chính chặn bản ghi thứ hai, báo kèm mã gợi ý
@@ -68,6 +75,12 @@ class Instrument(Document):
 				frappe.MandatoryError,
 				title=_("Missing Values Required"),
 			)
+
+	def _guard_retirement(self):
+		# Ngừng sử dụng là một chiều (I13), kể cả khi lưu qua cờ của danh mục
+		before = None if self.is_new() else self.get_doc_before_save()
+		if before and before.status == "Retired" and self.status != "Retired":
+			frappe.throw(_("A retired instrument cannot be returned to use."))
 
 	def _guard_controlled_fields(self):
 		if self.flags.tc_instrument:

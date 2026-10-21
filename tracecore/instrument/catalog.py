@@ -12,6 +12,7 @@ from collections.abc import Iterable
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cint, today
 
 METHODS: tuple[str, ...] = ("Steam 121", "Steam 134", "Plasma", "EO")
 METHOD_FAMILY: dict[str, str] = {"Steam 121": "Steam", "Steam 134": "Steam", "Plasma": "Plasma", "EO": "EO"}
@@ -97,3 +98,77 @@ def method_set(doc_or_rows) -> frozenset[str]:
 def families(methods: Iterable[str]) -> frozenset[str]:
 	"""Họ phương pháp (``Steam``/``Plasma``/``EO``) của các phương pháp tương thích."""
 	return frozenset(METHOD_FAMILY[method] for method in methods if method in METHOD_FAMILY)
+
+
+def ordered_methods(methods: Iterable[str]) -> list[str]:
+	"""Phương pháp theo thứ tự danh mục ``METHODS`` (phương pháp lạ, nếu có, xếp sau theo tên)."""
+	methods = set(methods)
+	known = [method for method in METHODS if method in methods]
+	return known + sorted(methods.difference(METHODS))
+
+
+def _current_methods(instrument: str) -> frozenset[str]:
+	return frozenset(
+		frappe.get_all(
+			"Instrument Compatible Method",
+			filters={"parent": instrument, "parenttype": "Instrument", "parentfield": "compatible_methods"},
+			pluck="method",
+		)
+	)
+
+
+def bom_usage(instrument: str) -> list[dict]:
+	"""Loại bộ có BOM **hiện hành** chứa dụng cụ (A-06 I3, I13), sắp theo mã loại bộ.
+
+	Mỗi dòng: ``{set_type, set_type_name, method, bom_version, compatible}``; ``compatible`` = họ phương pháp của
+	loại bộ nằm trong họ phương pháp tương thích hiện tại của dụng cụ (loại bộ chưa khai phương pháp coi như
+	tương thích). Phiên bản BOM cũ không tính. Đọc Set BOM Item/Instrument Set Type (cùng M1), chỉ đọc.
+	"""
+	rows = frappe.db.sql(
+		"""
+		select distinct st.name as set_type, st.set_type_name, st.method, st.current_bom_version as bom_version
+		from `tabInstrument Set Type` st
+		join `tabSet BOM Item` line
+			on line.set_type = st.name and line.bom_version = st.current_bom_version
+		where line.instrument = %s
+		order by st.name
+		""",
+		(instrument,),
+		as_dict=True,
+	)
+	if not rows:
+		return []
+	usable = families(_current_methods(instrument))
+	return [
+		{
+			"set_type": row.set_type,
+			"set_type_name": row.set_type_name,
+			"method": row.method,
+			"bom_version": cint(row.bom_version),
+			"compatible": not row.method or row.method in usable,
+		}
+		for row in rows
+	]
+
+
+def retire(instrument: str, reason: str, confirm: bool = False) -> dict:
+	"""Ngừng sử dụng dụng cụ (UC-01 E3, A-06 I13); một chiều, bắt buộc lý do.
+
+	Dụng cụ còn trong BOM hiện hành mà chưa ``confirm`` → ``{"retired": False, "boms": [...]}``, không ghi gì;
+	xong → ``{"retired": True, "boms": [...]}`` (Audit Log Update qua doc_events). Đã ngừng → ValidationError.
+	"""
+	reason = (reason or "").strip()
+	if not reason:
+		frappe.throw(_("A reason is required to retire an instrument."))
+	doc = frappe.get_doc("Instrument", instrument, for_update=True)
+	if doc.status == "Retired":
+		frappe.throw(_("Instrument {0} is already retired.").format(doc.name))
+	boms = bom_usage(doc.name)
+	if boms and not cint(confirm):
+		return {"retired": False, "boms": boms}
+	doc.status = "Retired"
+	doc.retired_on = today()
+	doc.retired_reason = reason
+	doc.flags.tc_instrument = True
+	doc.save()
+	return {"retired": True, "boms": boms}
