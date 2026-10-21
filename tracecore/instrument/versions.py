@@ -50,7 +50,7 @@ def bump_if_methods_changed(doc) -> bool:
 def _set_type_line(row) -> str:
 	text = f"{escape_html(row['set_type'])}: {escape_html(row['set_type_name'] or '')}"
 	if not row["compatible"]:
-		text += " - " + escape_html(_("no longer compatible (set type method {0})").format(_(row["method"])))
+		text += " - " + escape_html(_("not compatible (set type method {0})").format(_(row["method"])))
 	return f"<li>{text}</li>"
 
 
@@ -72,7 +72,7 @@ def notify_boms(doc) -> list[dict]:
 		note = (
 			_("The set type remains compatible with the instrument.")
 			if row["compatible"]
-			else _("The set type (method {0}) is no longer compatible with the instrument.").format(
+			else _("The set type (method {0}) is not compatible with the instrument.").format(
 				_(row["method"])
 			)
 		)

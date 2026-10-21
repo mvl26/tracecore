@@ -32,6 +32,7 @@ class TestErrors(FrappeTestCase):
 				"PROGRAM_MODEL_MISMATCH",
 				"PROGRAM_COPY_INVALID",
 				"COUNT_OUT_OF_RANGE",
+				"COUNTER_INIT_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -56,6 +57,8 @@ class TestErrors(FrappeTestCase):
 				"EQUIPMENT_RETIRED",
 				"PROGRAM_CODE_EXISTS",
 				"CODE_DISABLED",
+				"INSTRUMENT_RETIRED",
+				"INSTRUMENT_IN_BOM",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

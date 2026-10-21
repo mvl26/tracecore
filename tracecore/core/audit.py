@@ -105,17 +105,21 @@ def _diff(before, after):
 
 
 def on_document_event(doc, method):
-	"""Handler doc_events: after_insert/on_update/on_submit/on_cancel → Audit Log."""
+	"""Handler doc_events: after_insert/on_update/on_submit/on_cancel → Audit Log.
+
+	Lý do (cột ``reason``) lấy từ ``doc.flags.tc_audit_reason`` nếu dịch vụ ghi đặt (vd. khởi tạo bộ đếm bảo dưỡng).
+	"""
 	action = EVENT_ACTIONS.get(method)
 	if not action or (method == "on_update" and doc.flags.in_insert):
 		return
+	reason = doc.flags.tc_audit_reason or None
 	if action == "Create":
-		log("Create", doc.doctype, doc.name, new=snapshot(doc))
+		log("Create", doc.doctype, doc.name, new=snapshot(doc), reason=reason)
 	elif action == "Update":
 		before = doc.get_doc_before_save()
 		old, new = _diff(snapshot(before) if before else {}, snapshot(doc))
 		if new:
-			log("Update", doc.doctype, doc.name, old=old, new=new)
+			log("Update", doc.doctype, doc.name, old=old, new=new, reason=reason)
 	else:
 		log(action, doc.doctype, doc.name, new={"docstatus": doc.docstatus})
 

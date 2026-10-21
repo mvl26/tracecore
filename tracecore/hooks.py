@@ -205,6 +205,7 @@ doc_events = {
 #  - prechecks: (ctx) -> Block | None, chạy trước kiểm tra bảo dưỡng (cơ số)
 #  - checks:    (ctx) -> Block | None (bảo dưỡng)
 #  - after:     (pack_doc, ctx) -> None, chạy sau khi sinh Cycle ID (cập nhật bộ đếm bảo dưỡng)
+#  - release:   (ctx) -> None, sau khi mẻ giải phóng Đạt (FEAT-014 I16; +1 chu trình kể từ lần bảo dưỡng)
 
 tracecore_pack_context = [
 	"tracecore.instrument.bom.pack_context",
@@ -214,6 +215,8 @@ tracecore_pack_context = [
 tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
 tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
 tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
+# M2 (FEAT-023) gọi khi mẻ giải phóng Đạt: (ctx {set_unit, set_type, bom_version}) -> None, +1 bộ đếm bảo dưỡng
+tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
 
 # Scheduled Tasks
 # ---------------

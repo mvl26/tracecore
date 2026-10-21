@@ -42,15 +42,17 @@ class TestInstrumentMaintenance(FrappeTestCase):
 		su = make_set_unit()
 		make_instrument("KC-M5")
 		for field in ("cycles_since_maint", "deferred_count"):
+			doc = frappe.get_doc(
+				{
+					"doctype": "Instrument Maintenance",
+					"set_unit": su.name,
+					"instrument": "KC-M5",
+					field: -1,
+				}
+			)
+			doc.flags.tc_maintenance = True  # đường của M1: chỉ còn kiểm non_negative
 			with self.assertRaises(frappe.ValidationError, msg=field):
-				frappe.get_doc(
-					{
-						"doctype": "Instrument Maintenance",
-						"set_unit": su.name,
-						"instrument": "KC-M5",
-						field: -1,
-					}
-				).insert()
+				doc.insert()
 
 	def test_last_maintenance_and_deferral_fields(self):
 		su = make_set_unit()
@@ -67,6 +69,7 @@ class TestInstrumentMaintenance(FrappeTestCase):
 				"last_defer_reason": "Urgent surgery",
 			}
 		)
+		row.flags.tc_maintenance = True
 		row.save()
 		stored = frappe.db.get_value(
 			"Instrument Maintenance",
@@ -96,6 +99,7 @@ class TestInstrumentMaintenance(FrappeTestCase):
 			1,
 		)
 		row.cycles_since_maint = 4
+		row.flags.tc_maintenance = True
 		row.save()
 		updated = frappe.get_all(
 			"Audit Log",
@@ -108,3 +112,55 @@ class TestInstrumentMaintenance(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			frappe.delete_doc("Instrument Maintenance", row.name)
 		self.assertTrue(frappe.db.exists("Instrument Maintenance", row.name))
+
+	def test_counter_fields_not_editable_directly(self):
+		# Review Focus 4: bộ đếm chỉ đổi qua M1 (T4, giải phóng, khởi tạo), kể cả System Manager trên form
+		from tracecore.instrument import maintenance
+		from tracecore.instrument.tests.test_maintenance import _ctx, _done
+		from tracecore.tests.factories import make_bom, make_set_type
+
+		set_type = make_set_type("IMG")
+		su = make_set_unit(set_type.name)
+		make_instrument("KC-LOCK", interval=5, maint_type="Blade Check")
+		make_bom(set_type, [("KC-LOCK", 1)])
+		row = make_maintenance(su.name, "KC-LOCK", cycles_since=5)
+		self.assertIn("System Manager", frappe.get_roles())
+		changes = (
+			("cycles_since_maint", 0),
+			("deferred_count", 2),
+			("last_maint_on", "2026-10-01 08:00:00"),
+			("last_maint_by", "Administrator"),
+			("last_defer_on", "2026-10-02 09:00:00"),
+			("last_defer_reason", "Edited by hand"),
+		)
+		for field, value in changes:
+			doc = frappe.get_doc("Instrument Maintenance", row.name)
+			doc.set(field, value)
+			with self.assertRaises(frappe.ValidationError, msg=field):
+				doc.save()
+		self.assertEqual(
+			frappe.db.get_value("Instrument Maintenance", row.name, ["cycles_since_maint", "deferred_count"]),
+			(5, 0),
+		)
+		# tạo dòng mới với bộ đếm khác 0 trên Desk cũng bị chặn; dòng mặc định thì được
+		make_instrument("KC-LOCK2")
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_doc(
+				{
+					"doctype": "Instrument Maintenance",
+					"set_unit": su.name,
+					"instrument": "KC-LOCK2",
+					"cycles_since_maint": 40,
+				}
+			).insert()
+		frappe.get_doc(
+			{"doctype": "Instrument Maintenance", "set_unit": su.name, "instrument": "KC-LOCK2"}
+		).insert()
+
+		# T4 (apply_pack) vẫn ghi được; lưu lại form không đổi gì (ngày giờ dạng chuỗi như Desk gửi) thì được
+		maintenance.apply_pack(None, _ctx(su, set_type, [_done("KC-LOCK")]))
+		doc = frappe.get_doc("Instrument Maintenance", row.name)
+		self.assertEqual((doc.cycles_since_maint, doc.last_maint_by), (0, "Administrator"))
+		doc.last_maint_on = str(doc.last_maint_on)
+		doc.cycles_since_maint = "0"
+		doc.save()

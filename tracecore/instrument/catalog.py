@@ -170,5 +170,8 @@ def retire(instrument: str, reason: str, confirm: bool = False) -> dict:
 	doc.retired_on = today()
 	doc.retired_reason = reason
 	doc.flags.tc_instrument = True
+	doc.flags.tc_audit_reason = reason
+	# dụng cụ cũ thiếu trường bắt buộc vẫn ngừng sử dụng được (chỉ đổi trạng thái)
+	doc.flags.ignore_mandatory = True
 	doc.save()
 	return {"retired": True, "boms": boms}

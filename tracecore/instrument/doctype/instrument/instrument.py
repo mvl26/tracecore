@@ -15,7 +15,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, flt
 
-from tracecore.instrument import catalog, media, versions
+from tracecore.instrument import catalog, media, thresholds, versions
 
 REQUIRED_FIELDS = ("instrument_code", "instrument_name", "spaulding_class", "compatible_methods")
 TEXT_FIELDS = ("instrument_name", "manufacturer", "model")
@@ -45,13 +45,16 @@ class Instrument(Document):
 		self._validate_methods()
 		versions.bump_if_methods_changed(self)
 		self._validate_value()
-		self._validate_item()
+		if not self._is_retiring():
+			self._validate_item()
 		self.max_cycles_status = "Defined" if cint(self.max_cycles) > 0 else "Undefined"
 		media.refresh_thumbnail(self)
 
 	def on_update(self):
 		if self.flags.tc_version_bumped:
 			versions.notify_boms(self)
+		# đổi ngưỡng/nhóm: cảnh báo bộ sẽ đến hạn, không đụng bộ đếm (A-06 I5, Review Focus 4)
+		thresholds.warn_rule_change(self)
 
 	def db_insert(self, *args, **kwargs):
 		# hai request cùng mã vượt qua kiểm tra trước: khóa chính chặn bản ghi thứ hai, báo kèm mã gợi ý
@@ -65,7 +68,8 @@ class Instrument(Document):
 			if self.get(field) is not None:
 				self.set(field, str(self.get(field)).strip())
 		code = (self.instrument_code or "").strip()
-		self._check_required(code)
+		if not self._is_retiring():
+			self._check_required(code)
 		self.instrument_code = catalog.normalize_code(code)
 
 	def _check_required(self, code):
@@ -82,6 +86,14 @@ class Instrument(Document):
 				frappe.MandatoryError,
 				title=_("Missing Values Required"),
 			)
+
+	def _is_retiring(self):
+		# catalog.retire chỉ đổi trạng thái: dụng cụ cũ thiếu Spaulding/phương pháp hoặc Item đã bị vô hiệu sau này
+		# vẫn phải ngừng sử dụng được (FEAT-014 Task 2 review)
+		if not self.flags.tc_instrument or self.is_new() or self.status != "Retired":
+			return False
+		before = self.get_doc_before_save()
+		return bool(before) and before.status != "Retired"
 
 	def _guard_retirement(self):
 		# Ngừng sử dụng là một chiều (I13), kể cả khi lưu qua cờ của danh mục

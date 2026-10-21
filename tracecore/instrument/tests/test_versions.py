@@ -5,6 +5,7 @@ hành chứa dụng cụ nhận cảnh báo; gói và bộ đang giữa chu trì
 """
 
 import frappe
+from frappe import _
 
 from tracecore.core import step_gate
 from tracecore.core.audit import AuditLogImmutableError
@@ -68,6 +69,29 @@ class TestVersions(IsolatedTestCase):
 		# lưu lại không đổi gì: không tăng
 		frappe.get_doc("Instrument", "VR-BMP").save()
 		self.assertEqual(frappe.db.get_value("Instrument", "VR-BMP", "version_no"), 3)
+
+	def test_first_method_fill_on_legacy_instrument_keeps_version(self):
+		# dụng cụ cũ chưa có phương pháp: điền lần đầu là nhập liệu ban đầu, không phải đổi phiên bản
+		make_instrument("VR-LEG", methods=("Steam 134",))
+		frappe.db.delete("Instrument Compatible Method", {"parent": "VR-LEG"})
+		doc = _set_methods("VR-LEG", ("Steam 134", "Plasma"))
+		self.assertEqual(doc.version_no, 1)
+		self.assertFalse(doc.flags.tc_version_bumped)
+		self.assertEqual(frappe.db.get_value("Instrument", "VR-LEG", "version_no"), 1)
+
+	def test_stale_second_save_does_not_bump_version(self):
+		make_instrument("VR-STALE", methods=("Steam 134",))
+		first = frappe.get_doc("Instrument", "VR-STALE")
+		second = frappe.get_doc("Instrument", "VR-STALE")
+		first.set("compatible_methods", [{"method": "Plasma"}])
+		first.save()
+		self.assertEqual(first.version_no, 2)
+
+		second.set("compatible_methods", [{"method": "EO"}])
+		with self.assertRaises(frappe.TimestampMismatchError):
+			second.save()
+		self.assertEqual(frappe.db.get_value("Instrument", "VR-STALE", "version_no"), 2)
+		self.assertEqual(catalog.method_set(frappe.get_doc("Instrument", "VR-STALE")), {"Plasma"})
 
 	def test_bump_helper_ignores_new_documents(self):
 		doc = frappe.get_doc(
@@ -154,6 +178,11 @@ class TestVersions(IsolatedTestCase):
 			self.assertIn("VR-WRN", comments[0])
 			self.assertIn("2", comments[0])
 		self.assertEqual(_set_type_comments("VRWO"), [])
+		# trạng thái sau khi đổi: "không tương thích" (Task 2 review)
+		self.assertIn(
+			_("The set type (method {0}) is not compatible with the instrument.").format(_("Steam")),
+			_set_type_comments("VRWS")[0],
+		)
 
 		notes = [m for m in _messages() if "VR-WRN" in str(m.get("message"))]
 		self.assertEqual(len(notes), 1, msg=_messages())
@@ -161,6 +190,7 @@ class TestVersions(IsolatedTestCase):
 		self.assertIn("Steam tray", notes[0]["message"])
 		self.assertIn("Plasma tray", notes[0]["message"])
 		self.assertNotIn("Old BOM only", notes[0]["message"])
+		self.assertIn(_("not compatible (set type method {0})").format(_("Steam")), notes[0]["message"])
 
 		result = {row["set_type"]: row["compatible"] for row in doc.flags.tc_bom_usage}
 		self.assertEqual(result, {"VRWS": False, "VRWP": True})

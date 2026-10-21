@@ -88,10 +88,22 @@ def make_set_type(
 	).insert()
 
 
-def make_instrument_group(group_name):
-	"""Tạo (hoặc lấy) Instrument Group; trả tên nhóm."""
+def make_instrument_group(group_name, interval=None, maint_type=None, description=None):
+	"""Tạo (hoặc lấy) Instrument Group; trả tên nhóm.
+
+	interval: ngưỡng bảo dưỡng của nhóm theo chu trình (None/0 = không có); nhóm đã có thì trả nguyên trạng.
+	"""
+	group_name = group_name.strip()
 	if not frappe.db.exists("Instrument Group", group_name):
-		frappe.get_doc({"doctype": "Instrument Group", "group_name": group_name}).insert()
+		frappe.get_doc(
+			{
+				"doctype": "Instrument Group",
+				"group_name": group_name,
+				"maint_interval_cycles": interval or 0,
+				"maint_type": maint_type,
+				"description": description,
+			}
+		).insert()
 	return group_name
 
 
@@ -181,9 +193,12 @@ def make_bom(set_type, lines, version=1):
 
 
 def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
-	"""Tạo Instrument Maintenance cho cặp (set_unit, instrument); trùng cặp thì DuplicateEntryError."""
+	"""Tạo Instrument Maintenance cho cặp (set_unit, instrument); trùng cặp thì DuplicateEntryError.
+
+	Dựng sẵn bộ đếm như dữ liệu có từ trước: đặt cờ ``flags.tc_maintenance`` của M1 (sửa tay bị chặn).
+	"""
 	instrument = _ref_name(make_instrument(_ref_name(instrument)))
-	return frappe.get_doc(
+	doc = frappe.get_doc(
 		{
 			"doctype": "Instrument Maintenance",
 			"set_unit": _ref_name(set_unit),
@@ -191,7 +206,9 @@ def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
 			"cycles_since_maint": cycles_since,
 			"deferred_count": deferred_count,
 		}
-	).insert()
+	)
+	doc.flags.tc_maintenance = True
+	return doc.insert()
 
 
 def make_assembly_record(set_unit, result="Pass", submit=True, notes=None):

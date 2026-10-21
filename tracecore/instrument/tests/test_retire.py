@@ -4,7 +4,7 @@ import frappe
 from frappe.utils import getdate, today
 
 from tracecore.instrument import catalog
-from tracecore.tests.factories import make_bom, make_instrument, make_set_type
+from tracecore.tests.factories import make_bom, make_instrument, make_item, make_set_type
 from tracecore.tests.utils import IsolatedTestCase
 
 # Instrument liên kết Item (ERPNext), loại bộ liên kết Department; site CI chưa chạy Setup Wizard
@@ -94,3 +94,39 @@ class TestRetire(IsolatedTestCase):
 	def test_retire_unknown_instrument(self):
 		with self.assertRaises(frappe.DoesNotExistError):
 			catalog.retire("RT-NONE", "Lost", confirm=True)
+
+	def test_retire_accepts_confirm_as_text(self):
+		make_instrument("RT-TXT")
+		set_type = make_set_type("RTT")
+		make_bom(set_type, [("RT-TXT", 1)])
+		self.assertFalse(catalog.retire("RT-TXT", "Worn", confirm="0")["retired"])
+		self.assertTrue(catalog.retire("RT-TXT", "Worn", confirm="1")["retired"])
+		self.assertEqual(frappe.db.get_value("Instrument", "RT-TXT", "status"), "Retired")
+
+	def test_retire_legacy_stub_without_spaulding_or_methods(self):
+		# dụng cụ có trước FEAT-014: thiếu Spaulding và phương pháp vẫn ngừng sử dụng được (Task 2 review)
+		make_instrument("RT-STUB")
+		frappe.db.set_value("Instrument", "RT-STUB", "spaulding_class", None, update_modified=False)
+		frappe.db.delete("Instrument Compatible Method", {"parent": "RT-STUB"})
+
+		self.assertTrue(catalog.retire("RT-STUB", "Legacy stub", confirm=True)["retired"])
+		row = frappe.db.get_value("Instrument", "RT-STUB", ["status", "spaulding_class"], as_dict=True)
+		self.assertEqual((row.status, row.spaulding_class), ("Retired", None))
+		self.assertEqual(_audit_updates("RT-STUB")[-1]["status"], "Retired")
+		# lưu thường (không phải ngừng sử dụng) vẫn đòi đủ trường bắt buộc
+		doc = frappe.get_doc("Instrument", "RT-STUB")
+		doc.manufacturer = "Aesculap"
+		with self.assertRaises(frappe.MandatoryError):
+			doc.save()
+
+	def test_retire_instrument_whose_item_was_disabled_later(self):
+		make_item("VT-RT-ITEM", "Lubricant")
+		make_instrument("RT-ITEM", item="VT-RT-ITEM")
+		frappe.db.set_value("Item", "VT-RT-ITEM", "disabled", 1)
+
+		self.assertTrue(catalog.retire("RT-ITEM", "Replaced", confirm=True)["retired"])
+		self.assertEqual(frappe.db.get_value("Instrument", "RT-ITEM", "status"), "Retired")
+		doc = frappe.get_doc("Instrument", "RT-ITEM")
+		doc.manufacturer = "Aesculap"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
