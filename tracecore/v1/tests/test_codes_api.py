@@ -463,6 +463,25 @@ class TestObjectLabel(ObjectLabelCase):
 		self.assertEqual(call(print_api.object_label, key=key, **kwargs), first)
 		self.assertEqual(frappe.db.count("Print Job"), jobs)
 
+	def test_object_label_uses_the_rendered_template_without_requery(self):
+		# mẫu bị tắt giữa lúc render và lúc tạo job không được làm lỗi 500 (None.name): chỉ tra mẫu một lần
+		from tracecore.core import print as core_print
+
+		equipment = make_equipment(name="Máy một lần tra mẫu", serial="SN-LBL-ONCE")
+		real = core_print.active_template
+		with patch.object(core_print, "active_template", side_effect=real) as lookup:
+			result = call(
+				print_api.object_label,
+				label_object="Equipment",
+				code=equipment.name,
+				printer=self.host_printer,
+			)
+		self.assertTrue(result["ok"], result)
+		self.assertEqual(lookup.call_count, 1)
+		self.assertEqual(
+			frappe.db.get_value("Print Job", result["print_job"], "template"), "Object label - Equipment"
+		)
+
 	def test_object_label_is_whitelisted_post_only(self):
 		self.assertEqual(frappe.allowed_http_methods_for_whitelisted_func[print_api.object_label], ["POST"])
 		self.assertEqual(frappe.get_attr("tracecore.v1.print.object_label"), print_api.object_label)

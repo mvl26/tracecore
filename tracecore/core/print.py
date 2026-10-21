@@ -327,11 +327,12 @@ def object_context(label_object, code, title, subtitle=""):
 	}
 
 
-def render_object(label_object, code, title, subtitle="", printer=None):
+def render_object(label_object, code, title, subtitle="", printer=None, with_template=False):
 	"""Render nhãn QR của một đối tượng bằng mẫu active của `label_object` theo ngôn ngữ máy in.
 
 	`printer` (dict như `select_printer`, hoặc None) cho ``language`` (mặc định ZPL) và ``supports_unicode``
 	(không có → bỏ dấu). Chưa có mẫu active → ValidationError đã dịch; mẫu lỗi → ValidationError nêu tên mẫu.
+	`with_template` → trả ``(zpl, dòng mẫu đã dùng)`` để người gọi ghi Print Job mà không tra lại mẫu.
 	"""
 	doc = object_context(label_object, code, title, subtitle)
 	printer = printer or {}
@@ -341,7 +342,8 @@ def render_object(label_object, code, title, subtitle="", printer=None):
 	if template is None:
 		label = _(label_object, context="Label Template")
 		frappe.throw(_("No active label template for {0} ({1}).").format(label, language))
-	return _render_template_row(template, doc, bool(cint(printer.get("supports_unicode"))))
+	zpl = _render_template_row(template, doc, bool(cint(printer.get("supports_unicode"))))
+	return (zpl, template) if with_template else zpl
 
 
 def _active_printers(station):

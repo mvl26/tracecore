@@ -710,3 +710,11 @@ class TestRenderObject(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError) as ctx:
 			core_print.render_object("Station", "TR-001", "Trạm")
 		self.assertIn("Object label - Station", str(ctx.exception))
+
+	def test_render_object_can_return_the_template_row_it_used(self):
+		# người gọi (v1.print.object_label) ghi Print Job.template từ đúng mẫu đã render, không tra lại
+		zpl, template = core_print.render_object("Station", "TR-001", "Trạm", with_template=True)
+		self.assertEqual(template.name, "Object label - Station")
+		self.assertEqual(template.label_object, "Station")
+		self.assertIn("^FDMA,TR-001^FS", zpl)
+		self.assertEqual(core_print.render_object("Station", "TR-001", "Trạm"), zpl)

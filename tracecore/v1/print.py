@@ -82,11 +82,16 @@ def _desk_printer(name):
 
 
 def _render_object(label_object, target, printer=None):
-	"""ZPL của nhãn hoặc `Block` LABEL_RENDER_FAILED (chưa có mẫu active, mẫu lỗi) — không để msgprint lên Desk."""
+	"""`((zpl, mẫu đã dùng), None)` hoặc `(None, Block LABEL_RENDER_FAILED)` (chưa có mẫu active, mẫu lỗi), không msgprint."""
 	logged = len(frappe.local.message_log)
 	try:
 		return core_print.render_object(
-			label_object, target["code"], target["title"], target["subtitle"], printer=printer
+			label_object,
+			target["code"],
+			target["title"],
+			target["subtitle"],
+			printer=printer,
+			with_template=True,
 		), None
 	except frappe.ValidationError as error:
 		del frappe.local.message_log[logged:]
@@ -99,16 +104,16 @@ def _render_object(label_object, target, printer=None):
 
 
 def _resolve_and_render(label_object, code, printer=None, client_ts=None):
-	"""``(target, zpl, None)`` hoặc ``(None, None, body từ chối)`` (Audit Log `Reject` + mã HTTP)."""
+	"""``(target, (zpl, mẫu), None)`` hoặc ``(None, None, body từ chối)`` (Audit Log `Reject` + mã HTTP)."""
 	try:
 		target = codes.resolve_object(label_object, code)
 	except BlockedError as error:
 		raw = code if isinstance(code, str) else None
 		return None, None, reject_block(error.block, raw=raw, client_ts=client_ts)
-	zpl, block = _render_object(label_object, target, printer)
+	rendered, block = _render_object(label_object, target, printer)
 	if block:
 		return None, None, reject_block(block, target["ref_doctype"], target["ref_name"], client_ts=client_ts)
-	return target, zpl, None
+	return target, rendered, None
 
 
 @frappe.whitelist(methods=["POST"])
@@ -125,10 +130,10 @@ def object_label(label_object, code, printer=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
 	label_object = _label_object(label_object)
 	row = _desk_printer(printer)
-	target, zpl, rejected = _resolve_and_render(label_object, code, row, timestamp)
+	target, rendered, rejected = _resolve_and_render(label_object, code, row, timestamp)
 	if rejected:
 		return rejected
-	template = core_print.active_template(label_object, None, row.language)
+	zpl, template = rendered  # đúng mẫu đã render, không tra lại (mẫu có thể vừa bị tắt → None.name)
 	job = {
 		"station": row.station,
 		"data": {"label_object": label_object, "code": target["code"]},
@@ -164,9 +169,10 @@ def object_preview(label_object, code):
 	"""
 	require_any_role(*PREVIEW_ROLES)
 	label_object = _label_object(label_object)
-	target, zpl, rejected = _resolve_and_render(label_object, code)
+	target, rendered, rejected = _resolve_and_render(label_object, code)
 	if rejected:
 		return rejected
+	zpl = rendered[0]
 	png = qr.label_preview_png(
 		target["code"],
 		[
