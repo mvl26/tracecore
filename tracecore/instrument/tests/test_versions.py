@@ -190,6 +190,9 @@ class TestVersions(IsolatedTestCase):
 		self.assertIn("Steam tray", notes[0]["message"])
 		self.assertIn("Plasma tray", notes[0]["message"])
 		self.assertNotIn("Old BOM only", notes[0]["message"])
+		# SCR-01: mỗi loại bộ là link mở form loại bộ
+		self.assertIn('href="/app/instrument-set-type/VRWS"', notes[0]["message"])
+		self.assertIn('href="/app/instrument-set-type/VRWP"', notes[0]["message"])
 		self.assertIn(_("not compatible (set type method {0})").format(_("Steam")), notes[0]["message"])
 
 		result = {row["set_type"]: row["compatible"] for row in doc.flags.tc_bom_usage}

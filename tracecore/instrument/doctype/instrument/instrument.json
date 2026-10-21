@@ -47,7 +47,6 @@
    "description": "Uppercase letters, digits and hyphen only, at most 40 characters.",
    "fieldname": "instrument_code",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Instrument Code",
    "reqd": 1,
    "set_only_once": 1,
@@ -154,14 +153,12 @@
    "description": "Reminder after this many cycles since the last maintenance. Blank or 0 = no reminder.",
    "fieldname": "maint_interval_cycles",
    "fieldtype": "Int",
-   "in_list_view": 1,
    "label": "Maintenance Interval (Cycles)",
    "non_negative": 1
   },
   {
    "fieldname": "maint_type",
    "fieldtype": "Select",
-   "in_list_view": 1,
    "label": "Maintenance Type",
    "options": "\nLubrication\nBlade Check\nScrew Tightening\nBattery Replacement"
   },
@@ -180,6 +177,8 @@
    "default": "Undefined",
    "fieldname": "max_cycles_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Max Cycles Status",
    "options": "Defined\nUndefined",
    "read_only": 1
@@ -270,7 +269,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 12:00:00.000000",
+ "modified": "2026-10-21 18:30:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument",

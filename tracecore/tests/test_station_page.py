@@ -45,6 +45,9 @@ def source_strings():
 		for field in meta.get("fields", []):
 			if field.get("label"):
 				strings.add((field["label"], doctype))
+			# mô tả dưới trường: Desk dịch bằng __(description, null, doctype)
+			if field.get("description"):
+				strings.add((field["description"], doctype))
 			if field.get("fieldtype") == "Select":
 				options = (field.get("options") or "").split("\n")
 				strings.update((option, doctype) for option in options if option)

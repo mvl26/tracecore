@@ -32,15 +32,25 @@ ETCH_POSITION_MAX = 140
 _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
+def clean_code(code) -> str | None:
+	"""Mã dụng cụ chuẩn, hoặc None khi sai định dạng (không phải chuỗi, rỗng, ký tự lạ, quá 40 ký tự); không throw."""
+	if not isinstance(code, str):
+		return None
+	text = unicodedata.normalize("NFKC", code).strip().upper()
+	return text if CODE_PATTERN.fullmatch(text) else None
+
+
+def code_rule_message() -> str:
+	return _(
+		"Instrument Code may contain only uppercase letters, digits and hyphens, at most {0} characters."
+	).format(CODE_MAX_LENGTH)
+
+
 def normalize_code(code: str) -> str:
 	"""Mã dụng cụ chuẩn; mã rỗng, có ký tự ngoài ``A-Z 0-9 -`` hoặc dài quá 40 ký tự → ValidationError."""
-	text = unicodedata.normalize("NFKC", code or "").strip().upper()
-	if not CODE_PATTERN.fullmatch(text):
-		frappe.throw(
-			_(
-				"Instrument Code may contain only uppercase letters, digits and hyphens, at most {0} characters."
-			).format(CODE_MAX_LENGTH)
-		)
+	text = clean_code(code or "")
+	if text is None:
+		frappe.throw(code_rule_message())
 	return text
 
 

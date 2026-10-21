@@ -8,6 +8,8 @@ Khi phiên bản tăng: msgprint cam + một Comment (Info) trên timeline mỗi
 Chỉ cảnh báo, không chặn; gói và bộ đang giữa chu trình không bị đụng tới.
 """
 
+from urllib.parse import quote
+
 import frappe
 from frappe import _
 from frappe.utils import cint, escape_html
@@ -48,7 +50,12 @@ def bump_if_methods_changed(doc) -> bool:
 
 
 def _set_type_line(row) -> str:
-	text = f"{escape_html(row['set_type'])}: {escape_html(row['set_type_name'] or '')}"
+	# link mở form loại bộ (SCR-01 → SCR-02) để xem lại BOM
+	href = f"/app/instrument-set-type/{quote(row['set_type'], safe='')}"
+	text = (
+		f'<a href="{escape_html(href)}">{escape_html(row["set_type"])}</a>: '
+		f"{escape_html(row['set_type_name'] or '')}"
+	)
 	if not row["compatible"]:
 		text += " - " + escape_html(_("not compatible (set type method {0})").format(_(row["method"])))
 	return f"<li>{text}</li>"

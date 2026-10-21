@@ -444,6 +444,76 @@ def init_counter(set_unit: str, instrument: str, cycles_since, last_maint_on, re
 	return row.name
 
 
+STATE_NOT_DUE = "not_due"
+STATE_NO_RULE = "no_rule"
+
+
+def instrument_counters(instrument: str, rule: dict | None = None) -> list[dict]:
+	"""Bộ đếm bảo dưỡng của một dụng cụ theo từng bộ (form SCR-01, FEAT-014 Task 6); chỉ đọc.
+
+	Gồm mọi dòng ``Instrument Maintenance`` của dụng cụ và mọi bộ chứa dụng cụ trong BOM hiện hành chưa có dòng
+	(0 chu trình). Mỗi dòng: ``{set_unit, set_type, cycles_since, deferred_count, state, has_counter, can_init}``;
+	``state`` theo quy tắc D5 với ngưỡng hiệu lực `rule` (``no_rule`` / ``not_due`` / ``due`` / ``overdue``);
+	``can_init`` = bộ chứa dụng cụ trong BOM hiện hành và chưa có lịch sử T4 (điều kiện của ``init_counter``).
+	"""
+	interval = cint((rule or {}).get("interval"))
+	in_bom = {
+		row.name: row.set_type
+		for row in frappe.db.sql(
+			"""
+			select distinct su.name, su.set_type
+			from `tabSet Unit` su
+			join `tabInstrument Set Type` st on st.name = su.set_type
+			join `tabSet BOM Item` line
+				on line.set_type = st.name and line.bom_version = st.current_bom_version
+			where line.instrument = %s
+			""",
+			(instrument,),
+			as_dict=True,
+		)
+	}
+	rows = {
+		row.set_unit: row
+		for row in frappe.get_all(
+			"Instrument Maintenance",
+			filters={"instrument": instrument},
+			fields=["set_unit", "cycles_since_maint", "deferred_count", "last_maint_by", "last_defer_on"],
+		)
+	}
+	units = set(in_bom) | set(rows)
+	set_types = dict(
+		frappe.get_all(
+			"Set Unit",
+			filters={"name": ["in", list(units - set(in_bom))]},
+			fields=["name", "set_type"],
+			as_list=True,
+		)
+		if units - set(in_bom)
+		else []
+	)
+	result = []
+	for unit in sorted(units):
+		row = rows.get(unit)
+		cycles = cint(row.cycles_since_maint) if row else 0
+		deferred = cint(row.deferred_count) if row else 0
+		if interval <= 0:
+			state = STATE_NO_RULE
+		else:
+			state = _state(interval, cycles, deferred) or STATE_NOT_DUE
+		result.append(
+			{
+				"set_unit": unit,
+				"set_type": in_bom.get(unit) or set_types.get(unit),
+				"cycles_since": cycles,
+				"deferred_count": deferred,
+				"state": state,
+				"has_counter": bool(row),
+				"can_init": unit in in_bom and not (row and _has_t4_history(row)),
+			}
+		)
+	return result
+
+
 def _counter_name(set_unit, instrument, for_update=False):
 	return frappe.db.get_value(
 		"Instrument Maintenance",
