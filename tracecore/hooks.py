@@ -16,6 +16,7 @@ required_apps = ["erpnext", "hrms"]
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	{"dt": "Custom DocPerm", "filters": [["role", "like", "TC R%"]]},
 	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
 ]
 
