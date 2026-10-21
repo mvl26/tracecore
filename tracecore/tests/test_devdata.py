@@ -1,7 +1,10 @@
+import os
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.core import code_registry, gs1, step_gate
+from tracecore.core import code_registry, gs1, print_server, step_gate
+from tracecore.core import print as core_print
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing
 from tracecore.setup import devdata
@@ -194,6 +197,80 @@ class TestEquipmentDemoData(FrappeTestCase):
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				devdata.ensure_equipment_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+CODES_KEYS = {"equipment", "equipment_2", "retired", "printer", "printer_port", "label_item"}
+
+
+class TestCodesDemoData(FrappeTestCase):
+	def test_ensure_codes_demo_idempotent(self):
+		first = devdata.ensure_codes_demo(port=19101)
+		printers = frappe.db.count("Printer")
+		equipment = frappe.db.count("Equipment")
+		second = devdata.ensure_codes_demo(port=19101)
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), CODES_KEYS)
+		self.assertEqual(frappe.db.count("Printer"), printers)
+		self.assertEqual(frappe.db.count("Equipment"), equipment)
+
+	def test_codes_demo_printer_is_a_network_printer_on_the_given_port(self):
+		demo = devdata.ensure_codes_demo(port=19101)
+		printer = frappe.get_doc("Printer", demo["printer"])
+		self.assertEqual(
+			(printer.station, printer.host, printer.port, printer.is_active, printer.supports_unicode),
+			("TR-001", "127.0.0.1", 19101, 1, 0),
+		)
+		self.assertEqual(demo["printer_port"], 19101)
+		self.assertEqual(print_server.printer_address(demo["printer"]), ("127.0.0.1", 19101))
+		# đổi cổng: cùng máy in demo, cổng mới (máy in đã bị tắt cũng được bật lại)
+		frappe.db.set_value("Printer", demo["printer"], "is_active", 0)
+		moved = devdata.ensure_codes_demo(port=19102)
+		self.assertEqual(moved["printer"], demo["printer"])
+		self.assertEqual(print_server.printer_address(demo["printer"]), ("127.0.0.1", 19102))
+
+	def test_codes_demo_port_defaults_to_environment(self):
+		original = os.environ.get("TC_E2E_CODES_PRINTER_PORT")
+		os.environ["TC_E2E_CODES_PRINTER_PORT"] = "19103"
+		try:
+			demo = devdata.ensure_codes_demo()
+		finally:
+			if original is None:
+				os.environ.pop("TC_E2E_CODES_PRINTER_PORT")
+			else:
+				os.environ["TC_E2E_CODES_PRINTER_PORT"] = original
+		self.assertEqual(demo["printer_port"], 19103)
+		self.assertEqual(frappe.db.get_value("Printer", demo["printer"], "port"), 19103)
+
+	def test_codes_demo_rejects_invalid_port(self):
+		for port in (0, 70000, "abc"):
+			with self.subTest(port=port), self.assertRaises(frappe.ValidationError):
+				devdata.ensure_codes_demo(port=port)
+
+	def test_codes_demo_objects_are_printable(self):
+		demo = devdata.ensure_codes_demo(port=19101)
+		equipment = devdata.ensure_equipment_demo()
+		self.assertEqual(demo["equipment"], equipment["steam"])
+		self.assertEqual(demo["equipment_2"], equipment["steam_copy_target"])
+		self.assertEqual(demo["retired"], equipment["retired"])
+		for key in ("equipment", "equipment_2"):
+			self.assertEqual(frappe.db.get_value("Equipment", demo[key], "status"), "Ready")
+			self.assertEqual(frappe.db.get_value("Code Registry", demo[key], "status"), "Active")
+		self.assertEqual(frappe.db.get_value("Equipment", demo["retired"], "status"), "Retired")
+		self.assertEqual(demo["label_item"], "VT-NHAN-HAP")
+		self.assertEqual(frappe.db.get_value("Item", demo["label_item"], "tc_item_group_cssd"), "Label")
+		for label_object in ("Equipment", "Roll"):
+			self.assertIsNotNone(core_print.active_template(label_object, None), msg=label_object)
+
+	def test_codes_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_codes_demo(port=19101)
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True

@@ -5,10 +5,13 @@
   TR-004 và in JSON các mã để quét (bộ hấp, bộ plasma, bộ chưa qua cổng T3, lô chỉ thị, mã cuộn nhãn, máy in).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_equipment_demo`` chuẩn bị máy và chương trình xử lý
   cho e2e Desk SCR-21 (FEAT-038) và in JSON các mã (tên máy, mã chương trình).
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_codes_demo`` chuẩn bị máy in mạng demo và đối tượng
+  để e2e Desk in nhãn QR (SCR-33, FEAT-005) và in JSON các mã.
 """
 
 import io
 import json
+import os
 
 import frappe
 from frappe import _
@@ -17,7 +20,7 @@ from frappe.utils import add_days, today
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
-from tracecore.setup.label_templates import ensure_sample_templates
+from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
 
 DEMO_SET_TYPE = "DEMO"
@@ -381,6 +384,67 @@ def ensure_equipment_demo():
 		"washer": washer,
 		"retired": retired,
 		**programs,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo in nhãn QR đối tượng (FEAT-005) ---------------------------------------------------------------
+CODES_STATION = "TR-001"
+CODES_PRINTER_NAME = "DEMO-CODES network printer"
+CODES_PRINTER_HOST = "127.0.0.1"
+CODES_PRINTER_PORT = 19101
+CODES_PORT_ENV = "TC_E2E_CODES_PRINTER_PORT"
+
+
+def _codes_port(port):
+	value = port if port not in (None, "") else os.environ.get(CODES_PORT_ENV) or CODES_PRINTER_PORT
+	text = str(value).strip()
+	if not text.isdigit() or not 1 <= int(text) <= 65535:
+		frappe.throw(_("Demo printer port must be a number from 1 to 65535."))
+	return int(text)
+
+
+def _ensure_codes_printer(port):
+	"""Máy in mạng demo tại TR-001 (host 127.0.0.1, cổng `port`): đường server gửi ZPL tới socket giả của e2e."""
+	name = frappe.db.get_value(
+		"Printer", {"station": CODES_STATION, "printer_name": CODES_PRINTER_NAME}, "name"
+	)
+	if not name:
+		name = factories.make_printer(
+			CODES_STATION, STEAM_LABEL, host=CODES_PRINTER_HOST, name=CODES_PRINTER_NAME
+		)
+	frappe.db.set_value(
+		"Printer",
+		name,
+		{"is_active": 1, "host": CODES_PRINTER_HOST, "port": port, "supports_unicode": 0},
+	)
+	return name
+
+
+def ensure_codes_demo(port=None):
+	"""Dữ liệu demo cho e2e Desk in nhãn QR đối tượng (SCR-33, FEAT-005) trên site dev/test; idempotent, trả và in JSON.
+
+	- ``printer``: máy in mạng ``DEMO-CODES network printer`` tại TR-001, host ``127.0.0.1``, cổng `port` (mặc định
+	  biến môi trường ``TC_E2E_CODES_PRINTER_PORT``, rồi 19101), không hỗ trợ Unicode; e2e dựng socket TCP giả ở cổng
+	  này để nhận ZPL do worker gửi. Gọi lại thì bật lại máy in và cập nhật cổng.
+	- ``equipment`` / ``equipment_2``: máy hấp demo đang Sẵn sàng của ``ensure_equipment_demo`` (mã TB- Active);
+	  ``retired``: máy demo đã ngừng sử dụng (không in được nhãn).
+	- ``label_item``: Item nhãn hấp ``VT-NHAN-HAP`` để cấp mã cuộn ``CN-``; mẫu nhãn đối tượng mẫu.
+	"""
+	_require_dev_site()
+	port = _codes_port(port)
+	ensure_sample_templates()
+	ensure_object_templates()
+	factories.make_label_items()
+	equipment = ensure_equipment_demo()
+	result = {
+		"equipment": equipment["steam"],
+		"equipment_2": equipment["steam_copy_target"],
+		"retired": equipment["retired"],
+		"printer": _ensure_codes_printer(port),
+		"printer_port": port,
+		"label_item": STEAM_LABEL,
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result
