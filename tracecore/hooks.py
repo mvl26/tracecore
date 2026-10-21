@@ -211,6 +211,12 @@ tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
 # ---------------
 
 scheduler_events = {
+	"cron": {
+		# đường in từ server (A-05 R1): gửi lại Print Job còn Queued của máy in có host
+		"* * * * *": [
+			"tracecore.core.print_server.dispatch_pending",
+		],
+	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
 	],
