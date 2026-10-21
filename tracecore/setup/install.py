@@ -1,8 +1,9 @@
-"""Cài đặt app: đặt định dạng Việt Nam cho site (F-13, NFR-L10N-01) và tạo mẫu nhãn gói mẫu (FR-M2-08.4)."""
+"""Cài đặt app: định dạng Việt Nam (F-13, NFR-L10N-01), mẫu nhãn gói mẫu (FR-M2-08.4), khung khu-trạm (FR-M9-03)."""
 
 import frappe
 
 from tracecore.setup.label_templates import ensure_sample_templates
+from tracecore.setup.seed import ensure_zone_stations
 
 SYSTEM_SETTINGS = {
 	"language": "vi",
@@ -17,6 +18,7 @@ SYSTEM_SETTINGS = {
 def after_install():
 	apply_system_settings()
 	ensure_sample_templates()
+	ensure_zone_stations()
 
 
 def apply_system_settings():
