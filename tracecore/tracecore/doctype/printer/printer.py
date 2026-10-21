@@ -10,7 +10,6 @@ from frappe.model.document import Document
 from frappe.utils import cint, cstr, get_datetime
 
 from tracecore.core import print as core_print
-from tracecore.core import print_server
 
 # read_only trên form không được Frappe kiểm ở server nên chặn tại đây; chỉ set_roll được đổi.
 ROLL_FIELDS = ("roll_code", "roll_loaded_on", "roll_loaded_by")
@@ -28,7 +27,6 @@ class Printer(Document):
 		core_print.get_dialect(self.language)
 		self._validate_station()
 		self._validate_numbers()
-		self._validate_host()
 		self._validate_label_type()
 		if not self.flags.tc_roll_change:
 			self._guard_roll_fields()
@@ -45,15 +43,6 @@ class Printer(Document):
 			frappe.throw(_("Port must be between 1 and 65535."))
 		if cint(self.dpi) <= 0:
 			frappe.throw(_("DPI must be greater than zero."))
-
-	def _validate_host(self):
-		# server gửi ZPL tới host này (đường in từ Desk): không cho trỏ về chính server/dải nội bộ (A-05)
-		if print_server.blocked_host(self.host):
-			frappe.throw(
-				_(
-					"Host {0} is a loopback, link-local, multicast or unspecified address; enter the network address of the printer."
-				).format(self.host.strip())
-			)
 
 	def _validate_label_type(self):
 		if not self.label_type_loaded:

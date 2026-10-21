@@ -236,7 +236,7 @@ class TestServerDispatch(IsolatedTestCase):
 			self.assertEqual((doc.status, doc.attempts, doc.error), ("Queued", 0, None))
 
 	def test_local_ip_printer_needs_site_flag(self):
-		# máy in ghi thẳng vào DB (bỏ qua Printer.validate) với IP loopback: không cờ site thì server không gửi tới
+		# máy in có host IP loopback/link-local (máy in của agent, lưu được): không cờ site thì server không gửi tới
 		job = self.job(self.printer(host="10.0.0.5"))
 		printer = frappe.db.get_value("Print Job", job, "printer")
 		for host in ("127.0.0.1", "127.1", "::1", "169.254.169.254", "0.0.0.0"):

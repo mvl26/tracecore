@@ -124,7 +124,9 @@ class TestPrinter(IsolatedTestCase):
 		self.assertFalse(any(p.delete for p in perms.values()))
 
 
-# Địa chỉ IP dạng chữ thuộc dải cục bộ/không định tuyến: server không được gửi ZPL tới (A-05, chống SSRF nội bộ)
+# Địa chỉ IP dạng chữ thuộc dải cục bộ/không định tuyến. Printer.host còn được Station Agent trên máy kiosk dùng
+# (cầu nối 127.0.0.1 tới máy in USB, máy in APIPA 169.254.x.x), nên lưu Printer KHÔNG chặn các host này; chỉ đường
+# in từ server (core.print_server, lúc gửi) từ chối gửi tới chúng khi site không bật cờ (A-05).
 LOCAL_HOSTS = (
 	"127.0.0.1",
 	"127.1",  # socket hiểu là 127.0.0.1
@@ -133,39 +135,47 @@ LOCAL_HOSTS = (
 	"[::1]",
 	"::ffff:127.0.0.1",
 	"169.254.169.254",
+	"169.254.10.20",
 	"fe80::1",
-	"224.0.0.1",
-	"ff02::1",
 	"0.0.0.0",
-	"::",
 )
 
 
 class TestPrinterHost(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		self.steam, self.plasma = make_label_items()
 		frappe.conf.pop("tracecore_allow_local_printers", None)
 
-	def test_local_ip_literal_host_rejected(self):
+	def test_agent_local_hosts_saved_without_site_flag(self):
 		for host in LOCAL_HOSTS:
-			with self.assertRaises(frappe.ValidationError, msg=host):
-				_printer_doc(host=host).insert()
-			with self.assertRaises(frappe.ValidationError, msg=host):
-				_printer_doc(host=f" {host} ").insert()
+			self.assertTrue(_printer_doc(host=host).insert(), msg=host)
+		doc = _printer_doc(host="10.0.0.9").insert()
+		doc.host = "127.0.0.1"
+		doc.save()
+		self.assertEqual(frappe.db.get_value("Printer", doc.name, "host"), "127.0.0.1")
 
 	def test_lan_ip_and_hostnames_allowed(self):
 		for host in ("10.0.0.9", "192.168.1.50", "172.16.4.2", "printer.local", "zebra-t4", "localhost"):
 			self.assertTrue(_printer_doc(host=host).insert(), msg=host)
 
-	def test_existing_printer_cannot_be_moved_to_local_ip(self):
-		doc = _printer_doc(host="10.0.0.9").insert()
-		doc.host = "127.0.0.1"
-		with self.assertRaises(frappe.ValidationError):
-			doc.save()
+	def test_existing_loopback_printer_set_roll_works_but_server_refuses_to_send(self):
+		from unittest.mock import patch
 
-	def test_site_flag_allows_local_printers(self):
-		from tracecore.tests.utils import allow_local_printers
+		from tracecore.core import print_server
 
-		allow_local_printers(self)
-		for host in LOCAL_HOSTS:
-			self.assertTrue(_printer_doc(host=host).insert(), msg=host)
+		printer = make_printer("TR-004", self.steam)
+		frappe.db.set_value("Printer", printer, "host", "127.0.0.1")  # máy in của agent đã có từ trước
+
+		result = core_print.set_roll(printer, make_roll(self.plasma))
+		self.assertEqual(result["label_type"], self.plasma)
+		self.assertEqual(frappe.db.get_value("Printer", printer, "label_type_loaded"), self.plasma)
+
+		self.assertIsNone(print_server.printer_address(printer))
+		job = core_print.create_job("TR-004", "^XA^XZ", None, "object-label", printer=printer)
+		with (
+			patch.object(print_server.socket, "create_connection") as connect,
+			patch.object(print_server.frappe.db, "commit"),
+		):
+			print_server.dispatch_job(job)
+		connect.assert_not_called()

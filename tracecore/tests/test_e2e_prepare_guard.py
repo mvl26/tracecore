@@ -65,7 +65,7 @@ class TestE2ePrepareGuard(unittest.TestCase):
 		)
 
 	def test_sets_local_printer_flag_after_guard_before_codes_demo(self):
-		# máy in mạng demo ở 127.0.0.1 chỉ được phép khi site bật cờ (Printer.validate, print_server.printer_address)
+		# server chỉ gửi tới máy in mạng demo ở 127.0.0.1 khi site bật cờ (print_server.printer_address, lúc gửi)
 		script = SCRIPT.read_text()
 		flag = script.index("set-config tracecore_allow_local_printers 1")
 		self.assertGreater(flag, script.index('refuse_test_site "$SITE" || exit 2'))
