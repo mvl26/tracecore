@@ -4,8 +4,11 @@ Hành vi trên trình duyệt kiểm bằng Playwright (Task 7); ở đây kiể
 khóa idempotent mới mỗi thao tác ghi, không chép hằng số nghiệp vụ (danh sách phương pháp, ngưỡng D5) vào JS.
 """
 
+import json
 import os
 import re
+import shutil
+import subprocess
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -80,3 +83,42 @@ class TestDeskInstrument(FrappeTestCase):
 			for number, line in enumerate(_read(*DOCTYPE_DIR, "instrument", name).splitlines(), 1):
 				code = line.split("//", 1)[0]
 				self.assertFalse(vietnamese.search(code), f"{name}:{number}: {line}")
+
+	def test_media_urls_rendered_only_from_site_files(self):
+		# Minor 6: URL ảnh/thumbnail/IFU chỉ vào href/src khi là /private/files/ hoặc /files/ (không javascript:,
+		# data:, http… ); helper tc_instr_safe_url là đường duy nhất
+		script = _form_js()
+		self.assertIn("function tc_instr_safe_url(", script)
+		for expr in ("image.image_url", "image.thumbnail_url", "frm.doc.ifu"):
+			for match in re.finditer(re.escape(expr), script):
+				before = script[max(0, match.start() - 200) : match.start()]
+				self.assertIn("tc_instr_safe_url(", before, f"{expr} at {match.start()}")
+		node = shutil.which("node")
+		if not node:
+			self.skipTest("node not installed")
+		source = re.search(r"function tc_instr_safe_url\(.*?\n}\n", script, re.S).group(0)
+		cases = {
+			"/private/files/a-thumb.jpg": "/private/files/a-thumb.jpg",
+			"/files/manual.pdf": "/files/manual.pdf",
+			"javascript:alert(1)": "",
+			" /private/files/x.jpg": "",
+			"https://evil.example/x.jpg": "",
+			"//evil.example/files/x.jpg": "",
+			"data:image/png;base64,AAAA": "",
+			"/private/filesx/a.jpg": "",
+			"/app/instrument": "",
+		}
+		program = source + "\nconst cases = " + json.dumps(list(cases)) + ";\n"
+		program += "console.log(JSON.stringify(cases.map((c) => tc_instr_safe_url(c))));\n"
+		program += "console.log(JSON.stringify([tc_instr_safe_url(null), tc_instr_safe_url(undefined), tc_instr_safe_url(5)]));\n"
+		output = subprocess.run([node, "-e", program], capture_output=True, text=True, check=True).stdout
+		mapped, odd = (json.loads(line) for line in output.splitlines())
+		self.assertEqual(dict(zip(cases, mapped, strict=True)), cases)
+		self.assertEqual(odd, ["", "", ""])
+
+	def test_form_buttons_removed_by_name_not_cleared(self):
+		# Minor 9: không xóa nút của Client Script khác (frm.clear_custom_buttons); chỉ gỡ nút script này đã thêm
+		script = _form_js()
+		self.assertNotIn("clear_custom_buttons", script)
+		self.assertIn("remove_custom_button(", script)
+		self.assertIn("perms.can_preview_giai", script)

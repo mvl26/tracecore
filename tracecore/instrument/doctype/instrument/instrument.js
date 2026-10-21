@@ -26,6 +26,15 @@ function tc_instr_escape(text) {
 	return frappe.utils.escape_html(text === undefined || text === null ? "" : String(text));
 }
 
+// URL file của chính site (/private/files/, /files/) mới được vào href/src; khác (javascript:, data:, http…, //host)
+// → chuỗi rỗng, nơi gọi hiện chữ thay cho link/ảnh
+function tc_instr_safe_url(url) {
+	if (typeof url !== "string") {
+		return "";
+	}
+	return url.startsWith("/private/files/") || url.startsWith("/files/") ? url : "";
+}
+
 function tc_instr_mono(text) {
 	return `<span style="font-family: var(--tc-font-mono)">${tc_instr_escape(text)}</span>`;
 }
@@ -248,21 +257,24 @@ function tc_instr_panels(frm) {
 
 function tc_instr_render_media(panel, frm, ctx) {
 	const image = ctx.image || {};
+	const photo = tc_instr_safe_url(image.image_url);
+	const thumb = tc_instr_safe_url(image.thumbnail_url);
+	const ifu = tc_instr_safe_url(frm.doc.ifu);
 	let html = "";
-	if (image.thumbnail_url || image.image_url) {
+	if (thumb || photo) {
 		html += `<p><a href="${tc_instr_escape(
-			image.image_url || image.thumbnail_url
+			photo || thumb
 		)}" target="_blank" rel="noopener"><img src="${tc_instr_escape(
-			image.thumbnail_url || image.image_url
+			thumb || photo
 		)}" alt="${tc_instr_escape(
 			__("Photo of instrument {0}", [frm.doc.name])
 		)}" class="img-thumbnail"></a></p>`;
 	} else {
 		html += `<p class="text-muted">${tc_instr_escape(__("No photo yet."))}</p>`;
 	}
-	if (frm.doc.ifu) {
+	if (ifu) {
 		html += `<p><a href="${tc_instr_escape(
-			frm.doc.ifu
+			ifu
 		)}" target="_blank" rel="noopener">${tc_instr_escape(__("Open IFU"))}</a></p>`;
 	} else {
 		html += `<p class="text-muted">${tc_instr_escape(__("No IFU attached."))}</p>`;
@@ -718,35 +730,52 @@ async function tc_instr_preview_dialog(frm) {
 
 // --- Nút theo quyền do server trả -----------------------------------------------------------------------
 
+// Chỉ gỡ nút do script này thêm: xóa toàn bộ nút của form sẽ xóa cả nút của Client Script khác
+function tc_instr_add_button(frm, label, action, group) {
+	frm.add_custom_button(label, action, group);
+	(frm.tc_instr_buttons || (frm.tc_instr_buttons = [])).push([label, group]);
+}
+
+function tc_instr_remove_buttons(frm) {
+	(frm.tc_instr_buttons || []).forEach(([label, group]) =>
+		frm.remove_custom_button(label, group)
+	);
+	frm.tc_instr_buttons = [];
+}
+
 function tc_instr_buttons(frm, ctx) {
 	const perms = ctx.permissions;
 	const history = __("Version history");
-	frm.add_custom_button(history, () => tc_instr_history_dialog(frm, ctx));
+	tc_instr_add_button(frm, history, () => tc_instr_history_dialog(frm, ctx));
 	if (!tc_instr_ready()) {
 		return; // tc_codes.js (bundle Desk) chưa nạp: chỉ đọc, không gửi được thao tác ghi
 	}
 	if (perms.can_init_counters) {
-		frm.add_custom_button(
+		tc_instr_add_button(
+			frm,
 			__("Initialize counters"),
 			() => tc_instr_init_dialog(frm, ctx),
 			__("Maintenance", null, "Instrument")
 		);
 	}
 	if (perms.can_retire) {
-		frm.add_custom_button(__("Retire instrument"), () => tc_instr_retire_dialog(frm));
+		tc_instr_add_button(frm, __("Retire instrument"), () => tc_instr_retire_dialog(frm));
 	}
 	if (perms.can_assign_giai) {
-		frm.add_custom_button(__("Assign GIAI"), () => tc_instr_assign_giai(frm), __("GIAI"));
+		tc_instr_add_button(frm, __("Assign GIAI"), () => tc_instr_assign_giai(frm), __("GIAI"));
 	}
 	if (perms.can_record_etching) {
-		frm.add_custom_button(
+		tc_instr_add_button(
+			frm,
 			__("Record etching"),
 			() => tc_instr_etching_dialog(frm),
 			__("GIAI")
 		);
 	}
-	if (ctx.giai && frappe.user.has_role(["TC R10", "System Manager"])) {
-		frm.add_custom_button(
+	// server quyết (R10/SM, đã có mã, kể cả khi cờ tắt) như v1.instrument.giai_preview
+	if (perms.can_preview_giai) {
+		tc_instr_add_button(
+			frm,
 			__("Preview DataMatrix"),
 			() => tc_instr_preview_dialog(frm),
 			__("GIAI")
@@ -767,7 +796,7 @@ async function tc_instr_load(frm) {
 	}
 	frm.tc_ctx = result.data;
 	tc_instr_render(frm, result.data);
-	frm.clear_custom_buttons();
+	tc_instr_remove_buttons(frm);
 	tc_instr_buttons(frm, result.data);
 }
 

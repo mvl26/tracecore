@@ -7,6 +7,7 @@ theo lần chạy); dụng cụ ``retire`` và ``giai`` bị dùng hết và đ�
 Form mới (``/app/instrument/new``) không bao giờ được lưu. File IFU quá cỡ tạo tạm trong ``tmp_path`` của pytest.
 """
 
+import json
 import re
 import uuid
 
@@ -173,6 +174,70 @@ def test_photo_thumbnail_visible_on_form_and_t4(instr_page, instr_demo, other_us
 	assert photo.evaluate("img => img.naturalWidth") > 0
 
 
+def test_get_rejection_audit_log_survives_request(instr_page):
+	# Final fix I-1: RPC GET từ chối (404) ghi Audit Log `Reject`; Frappe v15 rollback request GET trừ khi
+	# flags.commit → dòng phải còn sau khi request kết thúc (đọc lại ở request khác)
+	page = instr_page
+	code = f"E2E-NOPE-{uuid.uuid4().hex[:8].upper()}"
+	for method in ("get_image", "form_context"):
+		response = page.request.get(
+			f"/api/method/tracecore.v1.instrument.{method}", params={"instrument": f"{code}-{method}"}
+		)
+		assert response.status == 404, response.text()
+		assert response.json()["message"]["error"]["code"] == "INSTRUMENT_NOT_FOUND"
+	rows = page.request.get(
+		"/api/resource/Audit Log",
+		params={
+			"filters": json.dumps([["action", "=", "Reject"], ["ref_name", "like", f"{code}-%"]]),
+			"fields": json.dumps(["ref_name", "reason"]),
+			"limit_page_length": 10,
+		},
+	)
+	assert rows.ok, rows.text()
+	found = sorted((row["ref_name"], row["reason"]) for row in rows.json()["data"])
+	assert found == [
+		(f"{code}-form_context", "INSTRUMENT_NOT_FOUND"),
+		(f"{code}-get_image", "INSTRUMENT_NOT_FOUND"),
+	], found
+
+
+def test_form_keeps_other_buttons_and_renders_only_site_files(instr_page, instr_demo):
+	# Final fix Minor 6/9: URL ảnh/thumbnail/IFU chỉ vào href/src khi là file của site (/private/files/, /files/);
+	# tải lại form_context không xóa nút do Client Script khác thêm
+	page = instr_page
+	context_url = "**/api/method/tracecore.v1.instrument.form_context*"
+
+	def poison(route):
+		response = route.fetch()
+		body = response.json()
+		body["message"]["image"].update(
+			image_url="javascript:alert(1)", thumbnail_url="https://evil.example/x.jpg", has_image=True
+		)
+		route.fulfill(response=response, json=body)
+
+	page.route(context_url, poison)
+	open_form(page, instr_demo["full"])
+	media = panel(page, "media")
+	expect(media).to_contain_text("Chưa có ảnh.")
+	expect(media.locator("img")).to_have_count(0)
+	page.unroute(context_url)
+
+	# Client Script khác thêm nút ở refresh; IFU trỏ ra ngoài (chỉ trên trình duyệt, không lưu) → chỉ hiện chữ
+	page.evaluate(
+		"""() => frappe.ui.form.on("Instrument", {
+			refresh(frm) { frm.add_custom_button("E2E other script", () => {}); },
+		})"""
+	)
+	with page.expect_response(lambda response: "tracecore.v1.instrument.form_context" in response.url):
+		page.evaluate("() => { cur_frm.doc.ifu = 'javascript:alert(1)'; cur_frm.refresh(); }")
+	buttons = page.locator(".page-actions .custom-actions button")
+	expect(buttons.filter(has_text="Lịch sử phiên bản")).to_have_count(1)
+	expect(buttons.filter(has_text="E2E other script")).to_have_count(1)
+	expect(media).to_contain_text("Chưa đính kèm IFU.")
+	expect(media.locator("a[href^='javascript'], a[href^='http'], img[src^='http']")).to_have_count(0)
+	expect(media.locator("img")).to_have_count(1)  # thumbnail thật (form_context không còn bị sửa)
+
+
 def _drop_eo(page):
 	"""Trả phương pháp về như dữ liệu demo (bỏ EO) nếu lần chạy trước để lại; lưu → thêm một phiên bản."""
 	if page.evaluate("() => cur_frm.doc.compatible_methods.some((row) => row.method === 'EO')"):
@@ -317,3 +382,9 @@ def test_giai_section_follows_feature_flag(r10_page, instr_demo):
 	expect(giai).to_contain_text(assigned)
 	for label in ("Cấp mã GIAI", "Ghi nhận khắc"):
 		expect(page.locator(".inner-group-button .dropdown-menu a", has_text=label)).to_have_count(0)
+	# quyết định Minor 5: cờ tắt vẫn xem trước được mã đã cấp (R10/SM) để đối chiếu
+	custom_button(page, "Xem trước DataMatrix", group="GIAI")
+	preview = modal(page, "DataMatrix")
+	expect(preview.locator("img")).to_be_visible(timeout=15000)
+	expect(preview).to_contain_text(assigned)
+	close_modals(page)
