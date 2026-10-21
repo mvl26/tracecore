@@ -337,8 +337,17 @@ def _init_date(value):
 
 
 def _has_t4_history(row) -> bool:
-	"""Đã có xác nhận bảo dưỡng tại T4 (người xác nhận), lần hoãn hoặc số lần hoãn > 0."""
-	return bool(row.last_maint_by or row.last_defer_on or cint(row.deferred_count) > 0)
+	"""Bộ đếm đã có lịch sử: xác nhận bảo dưỡng tại T4 (người xác nhận), lần hoãn, số lần hoãn > 0, hoặc đã đếm một lần
+	giải phóng có Cycle ID (``last_release_cycle``, ``on_set_released``): khởi tạo (I6) không được ghi đè số đã đếm.
+
+	Lần giải phóng thiếu ``cycle_id`` (ngoài hợp đồng) không để lại dấu nên không chặn được ở đây.
+	"""
+	return bool(
+		row.last_maint_by
+		or row.last_defer_on
+		or cint(row.deferred_count) > 0
+		or row.get("last_release_cycle")
+	)
 
 
 def _in_current_bom(set_unit_row, instrument) -> bool:
@@ -355,8 +364,8 @@ def init_counter(set_unit: str, instrument: str, cycles_since, last_maint_on, re
 	"""Khởi tạo bộ đếm của (bộ, dụng cụ) từ lần bảo dưỡng gần nhất (A-06 I6); trả tên dòng Instrument Maintenance.
 
 	`cycles_since` 0 đến 9999; `last_maint_on` tùy chọn, không ở tương lai; `reason` bắt buộc (ghi vào Audit Log). Bộ phải
-	chứa dụng cụ trong BOM hiện hành; dòng đã có lịch sử T4 (đã xác nhận bảo dưỡng tại T4, đã hoãn) → không khởi tạo
-	được. Lỗi → ``BlockedError`` (``REASON_REQUIRED``, ``SET_NOT_FOUND``, ``INSTRUMENT_NOT_FOUND``,
+	chứa dụng cụ trong BOM hiện hành; dòng đã có lịch sử (đã xác nhận bảo dưỡng tại T4, đã hoãn, đã đếm lần giải
+	phóng có Cycle ID) → không khởi tạo được. Lỗi → ``BlockedError`` (``REASON_REQUIRED``, ``SET_NOT_FOUND``, ``INSTRUMENT_NOT_FOUND``,
 	``COUNTER_INIT_INVALID``), chưa ghi gì. Không kiểm quyền: RPC ``v1.instrument_admin`` kiểm R02/R10/SM.
 	"""
 	reason = (reason or "").strip() if isinstance(reason, str) or reason is None else ""
@@ -477,7 +486,14 @@ def instrument_counters(instrument: str, rule: dict | None = None) -> list[dict]
 		for row in frappe.get_all(
 			"Instrument Maintenance",
 			filters={"instrument": instrument},
-			fields=["set_unit", "cycles_since_maint", "deferred_count", "last_maint_by", "last_defer_on"],
+			fields=[
+				"set_unit",
+				"cycles_since_maint",
+				"deferred_count",
+				"last_maint_by",
+				"last_defer_on",
+				"last_release_cycle",
+			],
 		)
 	}
 	units = set(in_bom) | set(rows)

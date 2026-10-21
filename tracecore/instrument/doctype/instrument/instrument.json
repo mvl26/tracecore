@@ -66,6 +66,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
+   "no_copy": 1,
    "options": "Active\nRetired",
    "read_only": 1
   },
@@ -75,6 +76,7 @@
    "fieldname": "version_no",
    "fieldtype": "Int",
    "label": "Version",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -126,13 +128,15 @@
   {
    "fieldname": "image",
    "fieldtype": "Attach Image",
-   "label": "Image"
+   "label": "Image",
+   "no_copy": 1
   },
   {
    "fieldname": "image_thumbnail",
    "fieldtype": "Attach Image",
    "hidden": 1,
    "label": "Image Thumbnail",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -142,7 +146,8 @@
   {
    "fieldname": "ifu",
    "fieldtype": "Attach",
-   "label": "IFU"
+   "label": "IFU",
+   "no_copy": 1
   },
   {
    "fieldname": "section_maintenance",
@@ -253,6 +258,7 @@
    "fieldname": "retired_on",
    "fieldtype": "Date",
    "label": "Retired On",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -263,13 +269,14 @@
    "fieldname": "retired_reason",
    "fieldtype": "Small Text",
    "label": "Retired Reason",
+   "no_copy": 1,
    "read_only": 1
   }
  ],
  "image_field": "image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 18:30:00.000000",
+ "modified": "2026-10-21 23:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument",

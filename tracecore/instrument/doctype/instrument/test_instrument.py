@@ -367,3 +367,48 @@ class TestInstrument(FrappeTestCase):
 		self.assertTrue(rows[legacy.name]["spaulding_class"])
 		self.assertTrue(rows[legacy.name]["compatible_methods"])
 		self.assertTrue(rows[legacy.name]["max_cycles"])
+
+	def test_desk_duplicate_saves_with_new_code(self):
+		# Desk "Duplicate" (frappe.copy_doc): ảnh/IFU/thumbnail là File của bản gốc, trạng thái/phiên bản/ngừng sử dụng
+		# là của bản gốc → no_copy; bản sao lưu được với mã mới, Đang dùng, phiên bản 1, không kèm file
+		import io
+
+		from PIL import Image
+
+		from tracecore.instrument import catalog
+		from tracecore.tests.factories import attach_instrument_file
+
+		make_instrument("KC-DUPSRC", methods=("Steam 134",))
+		buffer = io.BytesIO()
+		Image.new("RGB", (64, 48), (200, 30, 30)).save(buffer, format="PNG")
+		photo = attach_instrument_file("KC-DUPSRC", "image", buffer.getvalue(), "kc-dupsrc.png")
+		source = frappe.get_doc("Instrument", "KC-DUPSRC")
+		source.image = photo.file_url
+		source.compatible_methods = []
+		source.append("compatible_methods", {"method": "Plasma"})
+		source.save()
+		catalog.retire("KC-DUPSRC", "Gãy")
+		source.reload()
+		self.assertTrue(source.image_thumbnail)
+		self.assertEqual((source.version_no, source.status), (2, "Retired"))
+
+		copy = frappe.copy_doc(source, ignore_no_copy=False)  # như Desk Duplicate (frappe.model.copy_doc)
+		copy.instrument_code = "KC-DUPNEW"
+		copy.insert()
+		self.assertEqual(copy.name, "KC-DUPNEW")
+		self.assertEqual((copy.status, copy.version_no), ("Active", 1))
+		for field in ("image", "image_thumbnail", "ifu", "retired_on", "retired_reason", "giai_code"):
+			self.assertFalse(copy.get(field), field)
+		self.assertEqual([row.method for row in copy.compatible_methods], ["Plasma"])
+		self.assertEqual(copy.spaulding_class, source.spaulding_class)
+		meta = frappe.get_meta("Instrument")
+		for field in (
+			"image",
+			"ifu",
+			"image_thumbnail",
+			"status",
+			"version_no",
+			"retired_on",
+			"retired_reason",
+		):
+			self.assertTrue(meta.get_field(field).no_copy, field)

@@ -393,6 +393,38 @@ class TestInitCounter(IsolatedTestCase):
 		self.assertEqual(code, "COUNTER_INIT_INVALID")
 		self.assertEqual(_counter(other, "TH-RACE"), (3, 1))
 
+	@bru("BRU-REP-014")
+	def test_init_counter_rejected_after_counted_release(self):
+		# lần giải phóng đã đếm (last_release_cycle) là lịch sử: khởi tạo không được ghi đè số đã đếm (I6)
+		set_unit, set_type = self._setup("TH-REL", "THL")
+		# trước mọi lần giải phóng: khởi tạo được (luồng I6 không đổi)
+		maintenance.init_counter(set_unit.name, "TH-REL", 10, None, "Sổ giấy")
+		release = {
+			"set_unit": set_unit.name,
+			"set_type": set_type.name,
+			"bom_version": 1,
+			"cycle_id": "CY-REL-1",
+		}
+		maintenance.on_set_released(release)
+		self.assertEqual(_counter(set_unit, "TH-REL"), (11, 0))
+		self.assertEqual(
+			self._code(lambda: maintenance.init_counter(set_unit.name, "TH-REL", 2, None, "x")),
+			"COUNTER_INIT_INVALID",
+		)
+		self.assertEqual(_counter(set_unit, "TH-REL"), (11, 0))
+		# dòng do lần giải phóng tạo (chưa khởi tạo) cũng vậy; form không mời khởi tạo
+		other = make_set_unit(set_type.name)
+		maintenance.on_set_released({**release, "set_unit": other.name, "cycle_id": "CY-REL-2"})
+		self.assertEqual(
+			self._code(lambda: maintenance.init_counter(other.name, "TH-REL", 0, None, "x")),
+			"COUNTER_INIT_INVALID",
+		)
+		rule = thresholds.effective_rules(["TH-REL"]).get("TH-REL")
+		can_init = {
+			row["set_unit"]: row["can_init"] for row in maintenance.instrument_counters("TH-REL", rule)
+		}
+		self.assertEqual(can_init, {set_unit.name: False, other.name: False})
+
 	def test_init_counter_allowed_on_retired_instrument(self):
 		# quyết định: dụng cụ Ngừng sử dụng vẫn khởi tạo được (bộ còn chứa nó trong BOM hiện hành, nhập bù sổ giấy)
 		from tracecore.instrument import catalog

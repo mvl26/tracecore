@@ -389,13 +389,19 @@ class TestInstrumentMedia(FrappeTestCase):
 		self.assertFalse(media.pdf_has_active_content(_pdf()))
 		with self.assertRaises(Exception):
 			media.pdf_has_active_content(b"%PDF-1.4\n" + b"0" * 64)
-		# blob Frappe dùng lại theo content_hash của bản ghi khác: từ chối không được xóa blob đó
+		# cùng nội dung với blob của bản ghi khác: từ chối (thumbnail tải lên bị chặn ở lớp 0, trước khi Frappe dùng lại
+		# blob theo content_hash) không được xóa blob đó
 		content = _image("PNG", color=BLUE)
 		kept = attach_instrument_file("MD-SHARE", "image", content, "shared.png")
-		rejected = self.assertRejected(
-			"MD-SHARE", "image_thumbnail", content, "shared-again.png", shared=True
-		)
-		self.assertEqual(rejected.file_url, kept.file_url)
+		rejected = self.assertRejected("MD-SHARE", "image_thumbnail", content, "shared-again.png")
+		self.assertFalse(rejected.file_url)
+		self.assertTrue(os.path.exists(kept.get_full_path()))
+		# lớp 1 (blob đã ghi, dùng chung với bản ghi khác) vẫn giữ blob khi từ chối
+		again = _file_doc("MD-SHARE", "image", content, "shared-again.png")
+		again.flags.new_file = True
+		again.file_url = kept.file_url
+		with self.assertRaises(frappe.ValidationError):
+			media._reject(again, "x")
 		self.assertTrue(os.path.exists(kept.get_full_path()))
 		# File đính vào dụng cụ ngoài trường ảnh/IFU (đính kèm ở sidebar): không thuộc kiểm tra này
 		sidebar = _file_doc("MD-SHARE", None, b"ghi chu", "note.txt").insert()
@@ -623,6 +629,58 @@ class TestInstrumentMedia(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.save()
 		self.assertEqual(frappe.db.get_value("File", good.name, "file_url"), good.file_url)
+
+	def test_library_pick_and_thumbnail_rejected_before_frappe_reads(self):
+		# Minor 2: File mới trỏ file_url có sẵn (chọn từ Library) và File thumbnail tải lên bị từ chối ở lớp 0, trước
+		# khi Frappe đọc blob (bỏ EXIF .jpg / đọc .pdf): ValidationError có thông báo dịch, không phải lỗi 500
+		make_instrument("MD-LIB")
+		svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+		html = b"<!DOCTYPE html><html><body>not a pdf</body></html>"
+		for field, content, file_name, fragment in (
+			("image", svg, "md-lib-legacy.jpg", "JPEG"),
+			("ifu", html, "md-lib-legacy.pdf", "PDF"),
+		):
+			with self.subTest(file_name=file_name):
+				# blob có sẵn trên đĩa (dữ liệu cũ, không qua hook): không có bản ghi File nào được tạo
+				path = frappe.get_site_path("private", "files", file_name)
+				with open(path, "wb") as handle:
+					handle.write(content)
+				self.addCleanup(lambda path=path: os.path.exists(path) and os.remove(path))
+				count = frappe.db.count("File", {"attached_to_name": "MD-LIB"})
+				pick = frappe.get_doc(
+					{
+						"doctype": "File",
+						"file_url": f"/private/files/{file_name}",
+						"is_private": 1,
+						"attached_to_doctype": "Instrument",
+						"attached_to_name": "MD-LIB",
+						"attached_to_field": field,
+					}
+				)
+				with self.assertRaises(frappe.ValidationError) as raised:
+					pick.insert()
+				self.assertIn(fragment, str(raised.exception))
+				self.assertEqual(frappe.db.count("File", {"attached_to_name": "MD-LIB"}), count)
+				self.assertTrue(
+					os.path.exists(path)
+				)  # blob của Library không phải của lần tải này: giữ nguyên
+		# thumbnail chỉ server sinh: tải lên (kể cả SVG đổi đuôi .jpg) bị từ chối trước khi ghi blob
+		for content in (svg, _image("JPEG", color=(3, 33, 133))):
+			with self.subTest(thumbnail=content[:4]):
+				rejected = self.assertRejected("MD-LIB", "image_thumbnail", content, "thumb.jpg", "thumbnail")
+				self.assertFalse(rejected.file_url)
+		# chọn ảnh hợp lệ từ Library vẫn được
+		photo = _loose_file(_image("PNG", color=(5, 55, 155)), "md-lib-ok.png")
+		picked = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_url": photo.file_url,
+				"is_private": 1,
+				**ATTACH_IMAGE,
+				"attached_to_name": "MD-LIB",
+			}
+		).insert()
+		self.assertEqual(picked.file_url, photo.file_url)
 
 	def test_reattach_valid_file_still_accepted(self):
 		# luồng hợp lệ: File rời đúng định dạng đính lại vào ảnh/IFU rồi gán vào dụng cụ được
