@@ -943,7 +943,7 @@ class T4Packing {
 		const cards = rows
 			.map(
 				(row) => `<div class="tc-maint${this.maint[row.instrument] ? " is-done" : ""}">
-				${this.photoHtml(row.image, row.instrument_name)}
+				${this.photoHtml(row.thumbnail || row.image, row.instrument_name)}
 				<div class="tc-maint-text">
 					<b>${esc(row.instrument_name)}</b> <span class="tc-tag">${esc(row.instrument)}</span>
 					<p>${esc(__(row.maint_type || "Maintenance", null, "Instrument"))} · ${esc(
@@ -976,7 +976,7 @@ class T4Packing {
 					line.position,
 				]);
 				return `<label class="tc-ins${checked ? " is-done" : ""}">
-					${this.photoHtml(line.image, line.instrument_name)}
+					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
 					<span class="tc-ins-text">
 						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
 						<span class="tc-ins-pos">${esc(

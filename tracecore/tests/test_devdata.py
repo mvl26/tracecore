@@ -102,6 +102,10 @@ class TestT4DemoData(FrappeTestCase):
 		self.assertEqual(plasma["maintenance"], [])
 		self.assertGreaterEqual(len(steam["bom"]), 3)
 		self.assertTrue(all(line["image"] for line in steam["bom"] + plasma["bom"]))
+		# FEAT-014 I11/I12: ảnh demo riêng tư, trạm T4 dùng thumbnail
+		for line in steam["bom"] + plasma["bom"]:
+			self.assertTrue(line["image"].startswith("/private/files/"), msg=line)
+			self.assertTrue(line["thumbnail"].startswith("/private/files/"), msg=line)
 		self.assertEqual(steam["printer"]["name"], demo["printer"])
 		self.assertIsNone(plasma["printer"])  # máy in đang lắp nhãn hấp: nhãn plasma chờ đổi cuộn
 		self.assertTrue(steam["pack_types"])

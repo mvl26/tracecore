@@ -32,7 +32,15 @@ HTTP_STATUS: dict[str, int] = {
 		422,
 	),
 	**dict.fromkeys(
-		("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND", "EQUIPMENT_NOT_FOUND", "CODE_NOT_FOUND"), 404
+		(
+			"SET_NOT_FOUND",
+			"PACK_NOT_FOUND",
+			"ROLL_NOT_FOUND",
+			"EQUIPMENT_NOT_FOUND",
+			"CODE_NOT_FOUND",
+			"INSTRUMENT_NOT_FOUND",
+		),
+		404,
 	),
 	**dict.fromkeys(
 		(

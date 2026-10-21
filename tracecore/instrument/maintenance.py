@@ -82,6 +82,7 @@ def _reminders_from_db(ctx):
 				"instrument": code,
 				"instrument_name": line["instrument_name"],
 				"image": line["image"],
+				"thumbnail": line.get("thumbnail"),
 				"maint_type": instruments[code].maint_type or None,
 				"interval": interval,
 				"cycles_since": cycles_since,
@@ -111,7 +112,7 @@ def _actions(ctx):
 def pack_context(ctx):
 	"""Hook ``tracecore_pack_context``: các nhắc bảo dưỡng đến hạn của bộ để T4 hiển thị kèm ảnh và loại việc.
 
-	Chỉ đọc. Trả ``{"maintenance": [{instrument, instrument_name, image, maint_type, interval,
+	Chỉ đọc. Trả ``{"maintenance": [{instrument, instrument_name, image, thumbnail, maint_type, interval,
 	cycles_since, deferred_count, state, can_defer}, …]}``; rỗng khi không có gì đến hạn.
 	"""
 	return {"maintenance": _reminders_from_db(ctx)}

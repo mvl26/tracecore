@@ -95,6 +95,24 @@ def make_instrument_group(group_name):
 	return group_name
 
 
+def attach_instrument_file(instrument, field, content, file_name, is_private=1):
+	"""Tải `content` lên làm File đính vào trường `field` (``image``/``ifu``) của dụng cụ; trả File.
+
+	Đi qua kiểm tra ``media.check_upload`` như khi tải lên từ Desk; gán URL vào trường rồi lưu dụng cụ để dùng.
+	"""
+	return frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": file_name,
+			"content": content,
+			"is_private": is_private,
+			"attached_to_doctype": "Instrument",
+			"attached_to_name": instrument,
+			"attached_to_field": field,
+		}
+	).insert()
+
+
 def make_instrument(
 	code,
 	name=None,
@@ -110,18 +128,20 @@ def make_instrument(
 	"""Tạo (hoặc lấy) Instrument đủ trường bắt buộc (FEAT-014).
 
 	interval: ngưỡng bảo dưỡng theo chu trình (None/0 = không nhắc); max_cycles None/0 = cơ số Chưa xác định;
-	group: tên Instrument Group (tạo nếu chưa có); kwargs: trường khác (manufacturer, model, ifu, value, item…).
+	group: tên Instrument Group (tạo nếu chưa có); kwargs: trường khác (manufacturer, model, value, item…).
+	image/ifu: URL ghi thẳng vào DB sau khi tạo, như dữ liệu có trước FEAT-014 (không qua kiểm file của
+	``media``); ảnh/IFU thật thì dùng ``attach_instrument_file`` rồi gán URL và lưu.
 	"""
 	if frappe.db.exists("Instrument", code):
 		return frappe.get_doc("Instrument", code)
-	return frappe.get_doc(
+	media = {"image": image, "ifu": kwargs.pop("ifu", None)}
+	doc = frappe.get_doc(
 		{
 			"doctype": "Instrument",
 			"instrument_code": code,
 			"instrument_name": name or f"Test instrument {code}",
 			"maint_interval_cycles": interval or 0,
 			"maint_type": maint_type,
-			"image": image,
 			"spaulding_class": spaulding,
 			"compatible_methods": [{"method": method} for method in methods],
 			"max_cycles": max_cycles or 0,
@@ -129,6 +149,11 @@ def make_instrument(
 			**kwargs,
 		}
 	).insert()
+	media = {field: url for field, url in media.items() if url}
+	if media:
+		frappe.db.set_value("Instrument", doc.name, media, update_modified=False)
+		doc.reload()
+	return doc
 
 
 def make_bom(set_type, lines, version=1):

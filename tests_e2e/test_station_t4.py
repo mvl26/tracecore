@@ -103,6 +103,15 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	)  # bộ sạch, không nhắc
 	confirm_all = page.locator("[data-action='confirm-all']")
 	expect(confirm_all).to_be_enabled(timeout=20000)  # D1: bật khi lưới BOM đã hiển thị đủ và ảnh đã tải
+	# FEAT-014 FR-M1-01.6: lưới BOM dùng thumbnail riêng tư (không tải ảnh gốc), ảnh tải được với quyền R04
+	photos = page.evaluate(
+		"""() => Array.from(document.querySelectorAll('.tc-ins img'))
+			.map((img) => ({src: img.getAttribute('src'), width: img.naturalWidth, height: img.naturalHeight}))"""
+	)
+	assert photos, "lưới BOM không có ảnh"
+	for photo in photos:
+		assert re.search(r"^/private/files/.*-thumb.*\.jpg$", photo["src"]), photo
+		assert 0 < max(photo["width"], photo["height"]) <= 320, photo
 	# hạn dùng dự kiến do server tính (get_context), không theo ngày của trình duyệt
 	expected_expiry = page.locator("[data-region='pack'] p b")
 	expect(expected_expiry).to_have_text(re.compile(r"^\d{2}/\d{2}/\d{4}$"))

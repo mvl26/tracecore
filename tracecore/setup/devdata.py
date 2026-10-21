@@ -146,13 +146,11 @@ def _ensure_instrument(code, name, method):
 			name,
 			interval=T4_LUBE_INTERVAL if lube else None,
 			maint_type="Lubrication" if lube else None,
-			image=_demo_image(code),
 			spaulding=T4_INSTRUMENT_SPAULDING,
 			methods=methods,
 		)
+		_ensure_instrument_photo(code)
 		return
-	if not frappe.db.get_value("Instrument", code, "image"):
-		frappe.db.set_value("Instrument", code, "image", _demo_image(code))
 	doc = frappe.get_doc("Instrument", code)
 	if not doc.spaulding_class or not doc.compatible_methods:
 		# dụng cụ demo tạo trước FEAT-014: bổ sung dữ liệu demo (không áp cho dữ liệu thật, xem patch)
@@ -160,6 +158,30 @@ def _ensure_instrument(code, name, method):
 		if not doc.compatible_methods:
 			doc.set("compatible_methods", [{"method": m} for m in methods])
 		doc.save(ignore_permissions=True)
+	_ensure_instrument_photo(code)
+
+
+def _ensure_instrument_photo(code):
+	"""Ảnh demo của dụng cụ: File riêng tư đính vào trường ảnh (qua kiểm file) và thumbnail cho T4 (FEAT-014 I11).
+
+	Dụng cụ demo cũ có ảnh công khai (trước FEAT-014) hoặc chưa có thumbnail thì được thay ảnh mới.
+	"""
+	doc = frappe.get_doc("Instrument", code)
+	if doc.image and doc.image_thumbnail:
+		return
+	photo = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": f"{code.lower()}-photo.png",
+			"content": _demo_png(code),
+			"is_private": 1,
+			"attached_to_doctype": "Instrument",
+			"attached_to_name": code,
+			"attached_to_field": "image",
+		}
+	).insert(ignore_permissions=True)
+	doc.image = photo.file_url
+	doc.save(ignore_permissions=True)
 
 
 def _ensure_set_type(method, spec):

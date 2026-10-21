@@ -103,11 +103,12 @@ class TestInstrument(FrappeTestCase):
 		self.assertEqual(custom.manufacturer, "Aesculap")
 
 	def test_create_writes_audit_log_and_delete_blocked(self):
-		doc = make_instrument("KC-AUD", name="Audit scissors", image="/files/kc-aud.png")
+		doc = make_instrument("KC-AUD", name="Audit scissors", manufacturer="Aesculap")
 		created = _audit_rows(doc.name, "Create")
 		self.assertEqual(len(created), 1)
 		snapshot = frappe.parse_json(created[0].new_value)
-		self.assertEqual(snapshot["image"], "/files/kc-aud.png")
+		self.assertEqual(snapshot["instrument_name"], "Audit scissors")
+		self.assertEqual(snapshot["manufacturer"], "Aesculap")
 		self.assertEqual(snapshot["spaulding_class"], "Critical")
 		self.assertEqual([row["method"] for row in snapshot["compatible_methods"]], ["Steam 134"])
 		with self.assertRaises(frappe.ValidationError):

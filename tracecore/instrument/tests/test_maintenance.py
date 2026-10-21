@@ -116,6 +116,7 @@ class TestMaintenanceContext(IsolatedTestCase):
 				"instrument": "MN-B",
 				"instrument_name": "Mayo scissors",
 				"image": "/files/mn-b.png",
+				"thumbnail": None,
 				"maint_type": "Lubrication",
 				"interval": 10,
 				"cycles_since": 10,

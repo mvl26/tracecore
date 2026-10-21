@@ -191,6 +191,11 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư (FEAT-014 A-06 I11)
+	"File": {
+		"before_insert": "tracecore.instrument.media.check_upload",
+		"validate": "tracecore.instrument.media.keep_private",
+	},
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)

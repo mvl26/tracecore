@@ -31,7 +31,9 @@ class TestSetBOMItem(FrappeTestCase):
 			[("BM-KEL", 6, 1), ("BM-SCI", 2, 2), ("BM-NEE", 1, 3)],
 		)
 		self.assertEqual(
-			set(rows[0]), {"instrument", "instrument_name", "image", "qty", "position"}, msg=rows[0]
+			set(rows[0]),
+			{"instrument", "instrument_name", "image", "thumbnail", "qty", "position"},
+			msg=rows[0],
 		)
 		self.assertEqual(rows[0]["instrument_name"], "Kelly forceps")
 		self.assertEqual(rows[0]["image"], "/files/bm-kel.png")
