@@ -413,6 +413,23 @@ class TestSetRoll(IsolatedTestCase):
 		self.assertEqual((old["label_type_loaded"], new["label_type_loaded"]), (self.steam, self.plasma))
 		self.assertEqual(new["roll_code"], roll)
 
+	def test_set_roll_without_release_keeps_waiting_jobs(self):
+		"""Đường Desk (F2): ghi nhận cuộn nhưng không phát hành; `jobs_waiting` đếm job khớp còn chờ."""
+		job = self._waiting_job("Plasma")
+		self._waiting_job("Steam")
+		self._waiting_job("Plasma", station="TR-005")
+		roll = make_roll(self.plasma)
+		result = core_print.set_roll(self.p1, roll, release=False)
+		self.assertEqual(frappe.db.get_value("Printer", self.p1, "roll_code"), roll)
+		self.assertEqual((result["released_jobs"], result["failed_jobs"]), ([], []))
+		self.assertEqual(result["jobs_waiting"], 1)
+		self.assertEqual(frappe.db.get_value("Print Job", job, ["status", "printer"]), ("Waiting", None))
+
+	def test_set_roll_with_release_reports_no_jobs_waiting(self):
+		self._waiting_job("Plasma")
+		result = core_print.set_roll(self.p1, make_roll(self.plasma))
+		self.assertEqual((len(result["released_jobs"]), result["jobs_waiting"]), (1, 0))
+
 	def test_set_roll_releases_jobs_in_creation_order(self):
 		first, second = self._waiting_job(), self._waiting_job()
 		result = core_print.set_roll(self.p1, make_roll(self.plasma))

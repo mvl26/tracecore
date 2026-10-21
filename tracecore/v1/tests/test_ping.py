@@ -5,6 +5,7 @@ from frappe.tests.utils import FrappeTestCase
 
 import tracecore
 from tracecore import v1
+from tracecore.tests.utils import IsolatedTestCase
 
 
 class TestPing(FrappeTestCase):
@@ -33,3 +34,15 @@ class TestPing(FrappeTestCase):
 			self.assertIsNone(result["station"], msg=station)
 			self.assertEqual(result["station_error"]["code"], "STATION_NOT_FOUND", msg=station)
 			self.assertIn(station, result["station_error"]["reason"])
+
+
+class TestPingInactiveStation(IsolatedTestCase):
+	def test_ping_inactive_station(self):
+		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)
+		result = v1.ping(station="TR-004")
+		self.assertIsNone(result["station"])
+		error = result["station_error"]
+		self.assertEqual(error["code"], "STATION_INACTIVE")
+		for key in ("title", "reason", "action"):
+			self.assertTrue(error[key], msg=key)
+		self.assertIn("TR-004", error["reason"])

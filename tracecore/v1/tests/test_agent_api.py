@@ -2,12 +2,11 @@ import base64
 import uuid
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
 
 from tracecore import v1
 from tracecore.core import print as core_print
 from tracecore.tests.factories import make_user
-from tracecore.tests.utils import request_headers
+from tracecore.tests.utils import IsolatedTestCase, request_headers
 from tracecore.v1 import agent as agent_api
 from tracecore.v1 import print as print_api
 
@@ -19,14 +18,31 @@ def call(fn, **kwargs):
 		return fn(client_ts=TS, **kwargs)
 
 
-class TestAgentApi(FrappeTestCase):
+class TestAgentApi(IsolatedTestCase):
 	def setUp(self):
+		super().setUp()
 		# user agent của trạm TR-004 theo quy ước provision: agent-<trạm>@tracecore.local
 		frappe.set_user(make_user("agent-tr-004@tracecore.local", roles=["TC Agent"]))
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.cache.hdel(v1.AGENT_HEARTBEAT_CACHE, "TR-004")
+
+	def test_agent_heartbeat_rejected_for_inactive_station(self):
+		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)
+		for fn in (agent_api.heartbeat, print_api.test_label):
+			with self.assertRaises(frappe.ValidationError, msg=fn.__name__) as raised:
+				call(fn, station="TR-004")
+			self.assertEqual(raised.exception.http_status_code, 409, msg=fn.__name__)
+			self.assertIn("TR-004", str(raised.exception))
+		self.assertIsNone(frappe.cache.hget(v1.AGENT_HEARTBEAT_CACHE, "TR-004"))
+
+	def test_agent_cannot_probe_another_inactive_station(self):
+		"""F5: agent TR-004 hỏi trạm khác đang tắt → PermissionError, không lộ STATION_INACTIVE."""
+		frappe.db.set_value("Zone Station", "TR-003", "is_active", 0)
+		for fn in (agent_api.heartbeat, print_api.test_label):
+			with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
+				call(fn, station="TR-003")
 
 	def test_agent_bound_to_its_station(self):
 		for fn in (agent_api.heartbeat, print_api.test_label):
@@ -63,6 +79,12 @@ class TestAgentApi(FrappeTestCase):
 				call(fn, station="TR-004")
 
 	def test_unknown_station_rejected(self):
+		# agent thường: không phải trạm của mình nên bị từ chối quyền (không dò được trạm có tồn tại không)
+		for fn in (agent_api.heartbeat, print_api.test_label):
+			with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
+				call(fn, station="TR-999")
+		# agent có System Manager: trạm không tồn tại → ValidationError
+		frappe.set_user(make_user("agent-sm@example.com", roles=["TC Agent", "System Manager"]))
 		for fn in (agent_api.heartbeat, print_api.test_label):
 			with self.assertRaises(frappe.ValidationError, msg=fn.__name__):
 				call(fn, station="TR-999")

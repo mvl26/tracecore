@@ -53,7 +53,19 @@ class StubFrappe:
 						"preview_png_b64": base64.b64encode(PNG).decode(),
 					}
 				elif method.endswith("station.config"):
-					message = {"station": body.get("station"), "printers": stub.printers}
+					# như tracecore.v1.station.config: `station` là dict thông tin trạm
+					message = {
+						"station": {
+							"name": body.get("station"),
+							"label": "T4 Packing",
+							"zone": "ZONE-CLEAN",
+							"zone_type": "Clean",
+							"step": "T4",
+							"is_active": 1,
+						},
+						"printers": stub.printers,
+						"peripherals": [],
+					}
 				elif method.endswith("ack"):
 					message = {"ok": True, "status": body.get("status")}
 				else:

@@ -85,3 +85,10 @@ def station_user(station, password):
 	)
 	update_password(user, password)
 	return user
+
+
+def desk_user(role, name, password):
+	"""User Desk (System User) cho e2e cấu hình: <name>@tracecore.local với một role TC; idempotent."""
+	user = _ensure_user(f"{name}@{USER_DOMAIN}", name, [role])
+	update_password(user, password)
+	return user

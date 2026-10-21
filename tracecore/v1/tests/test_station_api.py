@@ -35,7 +35,7 @@ class TestStationConfig(IsolatedTestCase):
 		make_printer("TR-005", self.plasma_label, name="Máy trạm khác")
 		frappe.set_user(self.agent)
 		result = call("TR-004")
-		self.assertEqual(result["station"], "TR-004")
+		self.assertEqual(result["station"]["name"], "TR-004")
 		self.assertEqual(
 			result["printers"],
 			[
@@ -59,7 +59,7 @@ class TestStationConfig(IsolatedTestCase):
 
 	def test_station_config_without_printers_is_empty(self):
 		frappe.set_user(self.agent)
-		self.assertEqual(call("TR-004"), {"station": "TR-004", "printers": []})
+		self.assertEqual(call("TR-004")["printers"], [])
 
 	def test_agent_of_another_station_is_forbidden(self):
 		frappe.set_user(self.agent)
@@ -78,4 +78,68 @@ class TestStationConfig(IsolatedTestCase):
 
 	def test_system_manager_may_read_any_station(self):
 		frappe.set_user("Administrator")
-		self.assertEqual(call("TR-005")["station"], "TR-005")
+		self.assertEqual(call("TR-005")["station"]["name"], "TR-005")
+
+	def test_station_config_includes_station_and_active_peripherals(self):
+		station = frappe.get_doc("Zone Station", "TR-004")
+		station.peripherals = []
+		station.append(
+			"peripherals", {"peripheral_type": "Scanner", "model": "Zebra DS2208", "connection": "USB HID"}
+		)
+		station.append(
+			"peripherals",
+			{
+				"peripheral_type": "Scale",
+				"model": "Ohaus",
+				"connection": "Serial",
+				"serial_port": "COM3",
+				"baud_rate": 9600,
+			},
+		)
+		station.append(
+			"peripherals",
+			{
+				"peripheral_type": "Scanner",
+				"model": "Old",
+				"connection": "TCP",
+				"host": "10.0.0.9",
+				"port": 23,
+				"is_active": 0,
+			},
+		)
+		station.save()
+		frappe.set_user(self.agent)
+		result = call("TR-004")
+		self.assertEqual(
+			result["station"],
+			{
+				"name": "TR-004",
+				"label": "T4 Packing",
+				"zone": station.parent_zone,
+				"zone_type": "Clean",
+				"step": "T4",
+				"is_active": 1,
+			},
+		)
+		self.assertEqual(
+			[(row["peripheral_type"], row["model"], row["connection"]) for row in result["peripherals"]],
+			[("Scanner", "Zebra DS2208", "USB HID"), ("Scale", "Ohaus", "Serial")],
+		)
+		scale = result["peripherals"][1]
+		self.assertEqual((scale["serial_port"], scale["baud_rate"]), ("COM3", 9600))
+		self.assertEqual(
+			set(scale), {"peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"}
+		)
+
+	def test_station_config_of_inactive_station_is_409_rejection(self):
+		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)
+		frappe.local.response.pop("http_status_code", None)
+		self.addCleanup(frappe.local.response.pop, "http_status_code", None)
+		frappe.set_user(self.agent)
+		result = call("TR-004")
+		self.assertIs(result["ok"], False)
+		self.assertEqual(result["error"]["code"], "STATION_INACTIVE")
+		self.assertEqual(result["error"]["http_status"], 409)
+		self.assertIn("TR-004", result["error"]["reason"])
+		self.assertEqual(frappe.local.response.get("http_status_code"), 409)
+		self.assertNotIn("printers", result)

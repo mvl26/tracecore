@@ -91,7 +91,7 @@ jobs:
             agent-coverage.xml
 
   e2e:
-    name: e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018)
+    name: e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002)
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     services:
@@ -121,7 +121,7 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: bench build
 
-      - name: Prepare site (setup wizard, user trạm TR-003 + TR-004, Set Unit demo, dữ liệu demo T4)
+      - name: Prepare site (setup wizard, user trạm TR-003 + TR-004 + R10, Set Unit demo, dữ liệu demo T4)
         env:
           BENCH_DIR: /home/runner/frappe-bench
           TC_E2E_ENV: ${{ runner.temp }}/e2e.env
@@ -138,7 +138,7 @@ jobs:
           cat /tmp/serve.log
           exit 1
 
-      - name: Playwright (smoke + T4)
+      - name: Playwright (smoke + T4 + Desk)
         working-directory: tests_e2e
         env:
           TC_BASE_URL: http://127.0.0.1:8000

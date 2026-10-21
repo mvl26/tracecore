@@ -4,11 +4,12 @@
 #   2. Định dạng Việt Nam (System Settings)
 #   3. User trạm cho smoke FEAT-001 (TR-003, không phải T4) và user trạm T4 (TR-004); mật khẩu ngẫu nhiên
 #      lưu trong file quyền 600
+#      và user Desk TC R10 (r10-e2e@…, mật khẩu ngẫu nhiên riêng, khác mật khẩu kiosk) cho tests_e2e/test_desk_admin.py
 #   4. Set Unit demo để quét (smoke) và dữ liệu demo T4 (devdata.ensure_t4_demo: bộ hấp/plasma/gate-fail,
 #      lô chỉ thị, mã cuộn nhãn, máy in)
 # Kết quả ghi vào $TC_E2E_ENV (mặc định ~/.tracecore-e2e.env): TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID,
-# TC_E2E_STATION (smoke) và TC_E2E_T4_USER/PASSWORD/STATION + TC_E2E_T4_<khóa của ensure_t4_demo>.
-# Bộ demo T4 bị tiêu thụ khi test đóng gói chạy: chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
+# TC_E2E_STATION (smoke) TC_E2E_R10_USER/PASSWORD và TC_E2E_T4_USER/PASSWORD/STATION + TC_E2E_T4_<khóa của ensure_t4_demo>.
+# Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # Dùng: scripts/e2e_prepare.sh <site>    (BENCH_DIR mặc định ~/tracecore-dev)
 set -euo pipefail
@@ -34,21 +35,30 @@ fi
 bench_exec tracecore.setup.install.apply_system_settings > /dev/null
 
 umask 077
+random_password() { echo "Tc-$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16)-9!"; }
 password=""
+r10_password=""
 if [ -s "$ENV_FILE" ]; then
 	password=$(sed -n 's/^TC_E2E_PASSWORD=//p' "$ENV_FILE")
+	r10_password=$(sed -n 's/^TC_E2E_R10_PASSWORD=//p' "$ENV_FILE")
 fi
 if [ -z "$password" ]; then
-	password="Tc-$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16)-9!"
+	password=$(random_password)
+fi
+# user Desk R10 có mật khẩu riêng (file env cũ dùng chung mật khẩu kiosk thì tạo mới)
+if [ -z "$r10_password" ] || [ "$r10_password" = "$password" ]; then
+	r10_password=$(random_password)
 fi
 user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station': '$STATION', 'password': '$password'}" | tr -d '"')
 t4_user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station': '$T4_STATION', 'password': '$password'}" | tr -d '"')
+r10_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R10', 'name': 'r10-e2e', 'password': '$r10_password'}" | tr -d '"')
 set_id=$(bench_exec tracecore.setup.devdata.ensure_demo_set | tr -d '"')
 t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
 		"$user" "$password" "$set_id" "$STATION"
+	printf 'TC_E2E_R10_USER=%s\nTC_E2E_R10_PASSWORD=%s\n' "$r10_user" "$r10_password"
 	printf 'TC_E2E_T4_USER=%s\nTC_E2E_T4_PASSWORD=%s\nTC_E2E_T4_STATION=%s\n' "$t4_user" "$password" "$T4_STATION"
 	printf '%s' "$t4_demo" | python3 -c 'import json, sys; [print("TC_E2E_T4_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"

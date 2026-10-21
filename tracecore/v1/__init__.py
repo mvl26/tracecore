@@ -5,7 +5,7 @@ from frappe import _
 from frappe.utils.data import get_system_timezone
 
 import tracecore
-from tracecore.v1._common import server_time
+from tracecore.v1._common import server_time, station_inactive_block
 
 AGENT_HEARTBEAT_CACHE = "tc_agent_heartbeat"
 
@@ -14,7 +14,7 @@ def _station_info(station):
 	row = frappe.db.get_value(
 		"Zone Station",
 		{"name": station, "is_zone": 0},
-		["name", "zone_station_name", "station_step", "zone_type"],
+		["name", "zone_station_name", "station_step", "zone_type", "is_active"],
 		as_dict=True,
 	)
 	if not row:
@@ -23,6 +23,14 @@ def _station_info(station):
 			"title": _("Station not configured"),
 			"reason": _("Station {0} does not exist.").format(station),
 			"action": _("Check the kiosk address or call R10."),
+		}
+	if not row.is_active:
+		block = station_inactive_block(station)
+		return None, {
+			"code": block.code,
+			"title": block.title,
+			"reason": block.reason,
+			"action": block.action,
 		}
 	return {
 		"name": row.name,

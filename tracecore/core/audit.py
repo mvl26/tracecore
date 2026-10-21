@@ -1,8 +1,10 @@
 """Ghi Audit Log cho mọi thao tác nghiệp vụ (ADR-008, NFR-SEC-03, F-6)."""
 
+from decimal import Decimal
+
 import frappe
 from frappe import _
-from frappe.model import default_fields, no_value_fields
+from frappe.model import default_fields, no_value_fields, table_fields
 from frappe.utils import cstr, now_datetime
 
 SKIP_FIELDTYPES = (*no_value_fields, "Password")
@@ -32,12 +34,19 @@ def _as_json(value):
 
 
 def snapshot(doc):
-	"""Giá trị các trường dữ liệu của doc; bỏ trường Password và trường meta chuẩn."""
-	return {
-		df.fieldname: doc.get(df.fieldname)
-		for df in doc.meta.fields
-		if df.fieldtype not in SKIP_FIELDTYPES and df.fieldname not in SKIP_FIELDNAMES
-	}
+	"""Giá trị các trường dữ liệu của doc; bỏ trường Password và trường meta chuẩn.
+
+	Trường bảng con chụp thành danh sách dòng (cùng quy tắc), để Update ghi được thay đổi của bảng con.
+	"""
+	result = {}
+	for df in doc.meta.fields:
+		if df.fieldname in SKIP_FIELDNAMES:
+			continue
+		if df.fieldtype in table_fields:
+			result[df.fieldname] = [snapshot(row) for row in doc.get(df.fieldname) or []]
+		elif df.fieldtype not in SKIP_FIELDTYPES:
+			result[df.fieldname] = doc.get(df.fieldname)
+	return result
 
 
 def log(
@@ -78,8 +87,20 @@ def log(
 	return doc.name
 
 
+def _comparable(value):
+	"""Dạng so sánh của một giá trị snapshot: số nguyên dạng float thành int, mọi giá trị thành chuỗi (``None`` → "");
+	dòng bảng con chuẩn hóa từng giá trị, khóa theo thứ tự cố định. Tránh ghi cả bảng con chỉ vì đổi kiểu (1 với 1.0)."""
+	if isinstance(value, list):
+		return [_comparable(row) for row in value]
+	if isinstance(value, dict):
+		return {key: _comparable(value[key]) for key in sorted(value)}
+	if isinstance(value, float | Decimal) and value == int(value):
+		value = int(value)
+	return cstr(value)
+
+
 def _diff(before, after):
-	keys = [k for k in after if cstr(before.get(k)) != cstr(after.get(k))]
+	keys = [k for k in after if _comparable(before.get(k)) != _comparable(after.get(k))]
 	return {k: before.get(k) for k in keys}, {k: after.get(k) for k in keys}
 
 

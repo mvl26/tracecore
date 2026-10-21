@@ -14,8 +14,8 @@ from tracecore.v1._common import AGENT_ROLE, require_agent_for, require_role, re
 def test_label(station, client_ts=None):
 	"""Tạo Print Job nhãn thử cho trạm; trả ZPL và ảnh xem trước (base64)."""
 	require_role(AGENT_ROLE)
+	require_agent_for(station)  # trước require_station: agent không dò được trạm khác (tồn tại, đang tắt)
 	require_station(station)
-	require_agent_for(station)
 	label = core_print.render_test_label(station)
 	job = core_print.create_job(
 		station, label["zpl"], {"giai": label["giai"], "hri": label["hri"]}, "test-label"

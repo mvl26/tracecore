@@ -48,3 +48,12 @@ def test_client_station_config(cfg, stub):
 	assert result["printers"][0]["name"] == "PRN-001"
 	sent = stub.last("tracecore.v1.station.config")
 	assert sent["body"]["station"] == "TR-004"
+
+
+def test_station_config_returns_station_dict_like_the_server(cfg, stub):
+	"""`station.config` thật trả `station` là dict (name, zone, step…), kèm máy in và thiết bị ngoại vi."""
+	config = ServerClient(cfg).station_config()
+	assert config["station"]["name"] == "TR-004"
+	assert config["station"]["is_active"] == 1
+	assert config["printers"] == stub.printers
+	assert config["peripherals"] == []

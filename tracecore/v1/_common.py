@@ -25,6 +25,22 @@ class BadRequestError(frappe.ValidationError):
 	http_status_code = 400
 
 
+class StationInactiveError(frappe.ValidationError):
+	"""Trạm đã ngừng hoạt động (409): agent thấy lỗi rõ ràng thay vì 417/500."""
+
+	http_status_code = 409
+
+
+def station_inactive_block(station):
+	"""Block STATION_INACTIVE (E2): trạm bị vô hiệu hoặc chưa gán khu; chỉ R10 bật lại được (UC-33)."""
+	return Block(
+		"STATION_INACTIVE",
+		_("Station deactivated"),
+		_("Station {0} is deactivated.").format(station),
+		_("Call R10 to activate the station."),
+	)
+
+
 def rejection(code, title, reason, action):
 	"""Lỗi nghiệp vụ cho trạm: kết quả → lý do → hành động (design.md §6)."""
 	return {"ok": False, "error": {"code": code, "title": title, "reason": reason, "action": action}}
@@ -47,9 +63,20 @@ def require_any_role(*roles):
 		raise frappe.PermissionError(_("This method requires one of the roles {0}.").format(", ".join(roles)))
 
 
-def require_station(station):
-	if not station or not frappe.db.exists("Zone Station", {"name": station, "is_zone": 0}):
+def require_station(station, allow_inactive=False):
+	"""Trạm phải tồn tại (không phải khu) và đang hoạt động; trạm tắt → `StationInactiveError` (409).
+
+	`allow_inactive` cho RPC muốn tự trả body từ chối (`station.config`) sau khi đã kiểm quyền.
+	"""
+	row = (
+		frappe.db.get_value("Zone Station", {"name": station, "is_zone": 0}, "is_active", as_dict=True)
+		if station
+		else None
+	)
+	if not row:
 		frappe.throw(_("Station {0} does not exist.").format(station))
+	if not allow_inactive and not cint(row.is_active):
+		raise StationInactiveError(station_inactive_block(station).reason)
 
 
 def require_agent_for(station):
@@ -64,12 +91,21 @@ def require_agent_for(station):
 
 
 def require_step(station, step):
-	"""Block STATION_WRONG_STEP nếu `station` không phải trạm (không phải khu) của bước `step`; đúng thì None."""
+	"""Block nếu `station` không phải trạm đang hoạt động của bước `step`; đúng thì None.
+
+	Thứ tự kiểm: tồn tại → `is_active` (STATION_INACTIVE) → bước (STATION_WRONG_STEP).
+	`step=None` bỏ qua kiểm bước (đường Desk của R10: chỉ cần trạm tồn tại và đang hoạt động).
+	"""
 	row = None
 	if isinstance(station, str) and station:
-		row = frappe.db.get_value("Zone Station", station, ["is_zone", "station_step"], as_dict=True)
-	if row and not cint(row.is_zone) and row.station_step == step:
-		return None
+		row = frappe.db.get_value(
+			"Zone Station", station, ["is_zone", "is_active", "station_step"], as_dict=True
+		)
+	if row and not cint(row.is_zone):
+		if not cint(row.is_active):
+			return station_inactive_block(station)
+		if step is None or row.station_step == step:
+			return None
 	return Block(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),

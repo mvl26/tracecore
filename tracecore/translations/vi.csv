@@ -556,3 +556,81 @@ Quantity,Số lượng,Set BOM Item
 Action,Xử lý,Pack Maintenance Done
 Reason,Lý do,Pack Maintenance Done
 DataMatrix {0},DataMatrix {0},
+Dirty,Bẩn,Zone Station
+Clean,Sạch,Zone Station
+Sterile,Vô khuẩn,Zone Station
+Department,Khoa,Zone Station
+Linen,Đồ vải,Zone Station
+Waste,Chất thải,Zone Station
+"Zone {0} has no station functions yet, so step {1} cannot be set.","Khu {0} chưa có chức năng trạm nào nên không thể đặt bước {1}.",
+"Zone {0} only has these functions: {1}. Step {2} cannot be set.","Khu {0} chỉ có các chức năng: {1}. Không thể đặt bước {2}.",
+{0} is not a zone.,{0} không phải là một khu.,
+(empty),(trống),
+"A two-door machine must go from zone {0} to the next zone in the order Dirty, Clean, Sterile, not to zone {1}.","Máy hai cửa phải đi từ khu {0} sang khu kế tiếp theo chiều Bẩn → Sạch → Vô khuẩn, không phải khu {1}.",
+Description,Mô tả,
+A station without a zone cannot be active.,Trạm chưa gán khu thì không thể hoạt động.,
+A station without a zone cannot be activated.,Trạm chưa gán khu không kích hoạt được.,
+Station {0} has no zone: it was deactivated.,Trạm {0} chưa gán khu nên đã chuyển sang không hoạt động.,
+"Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm {0} đang hoạt động có bước {1}, loại khu {2} không cho phép.",
+Zone and station configuration (FEAT-002): zone type\, station function by zone\, active flag.,"Cấu hình khu và trạm (FEAT-002): loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
+Station Peripheral,Thiết bị ngoại vi của trạm,
+Peripherals,Thiết bị ngoại vi,Zone Station
+Peripheral Type,Loại thiết bị,Station Peripheral
+Scanner,Máy quét,Station Peripheral
+Scale,Cân,Station Peripheral
+Model,Model,Station Peripheral
+Connection,Kết nối,Station Peripheral
+USB HID,USB HID,Station Peripheral
+Serial,Cổng nối tiếp (Serial),Station Peripheral
+TCP,TCP,Station Peripheral
+Host,Địa chỉ máy (host),Station Peripheral
+Port,Cổng (port),Station Peripheral
+Serial Port,Cổng nối tiếp,Station Peripheral
+Baud Rate,Tốc độ baud,Station Peripheral
+Is Active,Đang dùng,Station Peripheral
+Notes,Ghi chú,Station Peripheral
+Scanner or scale attached to a station (FEAT-002): connection USB HID\, Serial or TCP.,"Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, Serial hoặc TCP.",
+1 to 65535.,1 đến 65535.,
+For example COM3 or /dev/ttyUSB0.,Ví dụ COM3 hoặc /dev/ttyUSB0.,
+Default 9600.,Mặc định 9600.,
+A zone cannot have peripherals.,Khu không được có thiết bị ngoại vi.,
+"Row {0}: endpoint {1} is already used by another active peripheral of this station.","Dòng {0}: điểm kết nối {1} đã được thiết bị ngoại vi đang dùng khác của trạm này sử dụng.",
+Row {0}: a scale cannot use USB HID.,Dòng {0}: cân không được dùng USB HID.,
+Row {0}: Host is required for a TCP connection.,Dòng {0}: kết nối TCP bắt buộc có địa chỉ máy (host).,
+Row {0}: Port must be between 1 and 65535.,Dòng {0}: cổng (port) phải từ 1 đến 65535.,
+Row {0}: Serial Port is required for a Serial connection.,Dòng {0}: kết nối Serial bắt buộc có cổng nối tiếp.,
+Station deactivated,Trạm đã ngừng hoạt động,
+Station {0} is deactivated.,Trạm {0} đang bị vô hiệu hóa.,
+Call R10 to activate the station.,Gọi R10 để bật lại trạm.,
+Label template could not be rendered,Không dựng được mẫu nhãn,
+"Fix the template body, then preview it again.",Sửa nội dung mẫu rồi xem trước lại.,
+template must be a label template name.,template phải là tên mẫu nhãn.,
+Label template {0} does not exist.,Không có mẫu nhãn {0}.,
+Active,Đang hoạt động,Zone Station
+Inactive,Không hoạt động,Zone Station
+Zone,Khu,
+Roll could not be loaded,Không nạp được cuộn nhãn,
+Roll code,Mã cuộn,
+I have loaded this roll into the printer,Tôi đã lắp cuộn này vào máy in,
+Load label roll,Nạp cuộn nhãn,
+Load roll,Nạp cuộn,
+Confirmation needed,Cần xác nhận,
+Tick the confirmation after the roll is in the printer.,Hãy đánh dấu xác nhận sau khi cuộn đã được lắp vào máy in.,
+Label roll loaded,Đã nạp cuộn nhãn,
+Labels still waiting,Nhãn còn chờ in,
+"Waiting labels are printed when this roll is scanned on the T4 screen of station {0}.",Nhãn đang chờ sẽ được in khi quét cuộn này tại màn T4 của trạm {0}.,
+"Scan or type the roll code CN-#####. Waiting labels print only when the roll is scanned on the station's T4 screen.",Quét hoặc nhập mã cuộn CN-#####. Nhãn đang chờ chỉ in khi quét cuộn tại màn T4 của trạm.,
+Preview,Xem trước,
+Preview with diacritics,Xem trước có dấu,
+Preview without diacritics,Xem trước bỏ dấu,
+with diacritics,có dấu,
+without diacritics,bỏ dấu,
+"Sample data, {0}. The saved version of the template is rendered.","Dữ liệu mẫu, {0}. Hệ thống dựng bản mẫu đã lưu.",
+ZPL code,Mã ZPL,
+Copy,Sao chép,
+The server could not be reached.,Không kết nối được máy chủ.,
+Try again.,Hãy thử lại.,
+The roll could not be loaded.,Không nạp được cuộn nhãn.,
+"Check the roll code and your permissions, then try again.",Kiểm tra mã cuộn và quyền của bạn rồi thử lại.,
+{0}: Is Zone cannot be changed after the record is created.,{0}: không đổi được ô Là khu sau khi đã tạo.,
+Label printers,Máy in nhãn,

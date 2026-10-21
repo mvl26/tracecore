@@ -78,3 +78,16 @@ def t4_page(page):
 	page.goto(f"/app/station?station={station}")
 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	return page
+
+
+# --- Desk cấu hình (SCR-33, FEAT-002): user TC R10, viewport WEB 1366x768 ---
+
+
+@pytest.fixture
+def r10_page(page):
+	response = page.request.post(
+		"/api/method/login",
+		form={"usr": require_env("TC_E2E_R10_USER"), "pwd": require_env("TC_E2E_R10_PASSWORD")},
+	)
+	assert response.ok, response.text()
+	return page

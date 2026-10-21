@@ -10,14 +10,13 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "hrms"]
 
-# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; Zone Station khung 3 khu;
-# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói)
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
+# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói).
+# Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
 	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
-	{"dt": "Zone Station", "filters": [["name", "like", "ZONE-%"]]},
-	{"dt": "Zone Station", "filters": [["name", "in", [f"TR-00{n}" for n in range(1, 8)]]]},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -185,6 +184,7 @@ doc_events = {
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
+	"Zone Station": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
