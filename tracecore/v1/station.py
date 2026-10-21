@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.station.* — cấu hình trạm cho Station Agent (role TC Agent, API key)."""
+"""Station bearer-session RPCs and TC Agent/API-key station configuration."""
 
 import frappe
 from frappe import _
@@ -10,6 +10,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.v1._common import (
 	AGENT_ROLE,
+	BadRequestError,
 	require_agent_for,
 	require_role,
 	require_station,
@@ -28,35 +29,32 @@ def _session_response(call):
 		return {"ok": False, "error": error.block.as_dict()}
 
 
-def _validate_client_ts(client_ts):
-	# Giữ tương thích tạm với shell FEAT-018 chưa gửi client_ts cho auth; FEAT-003 UI luôn gửi.
-	if client_ts is not None:
-		parse_client_ts(client_ts)
-
-
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 def login(card_id, station, client_ts=None):
-	_validate_client_ts(client_ts)
-	return _session_response(lambda: {"ok": True, "session": station_auth.login(card_id, station)})
+	# Do not persist bearer tokens in Idempotency Key responses; each login replaces the old session.
+	timestamp = parse_client_ts(client_ts)
+	if not isinstance(card_id, str) or not isinstance(station, str):
+		raise BadRequestError(_("card_id and station must be strings."))
+	return _session_response(lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)})
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 def logout(token, client_ts=None):
-	_validate_client_ts(client_ts)
+	timestamp = parse_client_ts(client_ts)
 
 	def call():
-		station_auth.logout(token)
+		station_auth.logout(token, timestamp)
 		return {"ok": True}
 
 	return _session_response(call)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 def heartbeat(token, client_ts=None):
-	_validate_client_ts(client_ts)
+	timestamp = parse_client_ts(client_ts)
 
 	def call():
-		doc = station_auth.heartbeat(token)
+		doc = station_auth.heartbeat(token, timestamp)
 		return {
 			"ok": True,
 			"session": doc.name,
@@ -68,19 +66,12 @@ def heartbeat(token, client_ts=None):
 	return _session_response(call)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 def verify_pin(token, pin, client_ts=None):
-	_validate_client_ts(client_ts)
-
-	def call():
-		doc = station_auth.authenticate_session(token, touch=True)
-		from tracecore.core.account import require_pin_changed
-
-		require_pin_changed(doc.employee)
-		station_auth.verify_pin(doc.employee, pin)
-		return {"ok": True, "verified": True, "employee": doc.employee}
-
-	return _session_response(call)
+	timestamp = parse_client_ts(client_ts)
+	if not isinstance(pin, str):
+		raise BadRequestError(_("pin must be a string."))
+	return _session_response(lambda: {"ok": True, **station_auth.create_pin_proof(token, pin, timestamp)})
 
 
 def _station_row(station):

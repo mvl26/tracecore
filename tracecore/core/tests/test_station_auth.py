@@ -114,14 +114,15 @@ class TestStationAuth(IsolatedTestCase):
 		self.assertEqual(caught.exception.block.code, "SESSION_INVALID")
 
 	def test_v1_station_session_endpoints_return_stable_bodies(self):
-		login = station_api.login(card_id="NV-AUTH-001", station="TR-004")
+		ts = "2026-10-21T09:00:00+07:00"
+		login = station_api.login(card_id="NV-AUTH-001", station="TR-004", client_ts=ts)
 		self.assertTrue(login["ok"])
 		self.assertTrue(login["session"]["token"])
-		heartbeat = station_api.heartbeat(token=login["session"]["token"])
+		heartbeat = station_api.heartbeat(token=login["session"]["token"], client_ts=ts)
 		self.assertEqual(heartbeat["session"], login["session"]["session"])
-		verified = station_api.verify_pin(token=login["session"]["token"], pin="123456")
-		self.assertTrue(verified["verified"])
-		self.assertTrue(station_api.logout(token=login["session"]["token"])["ok"])
-		failed = station_api.heartbeat(token=login["session"]["token"])
+		verified = station_api.verify_pin(token=login["session"]["token"], pin="123456", client_ts=ts)
+		self.assertTrue(verified["proof"])
+		self.assertTrue(station_api.logout(token=login["session"]["token"], client_ts=ts)["ok"])
+		failed = station_api.heartbeat(token=login["session"]["token"], client_ts=ts)
 		self.assertFalse(failed["ok"])
 		self.assertEqual(failed["error"]["code"], "SESSION_INVALID")

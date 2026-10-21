@@ -16,10 +16,12 @@ from tracecore.core import station_auth
 from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import IsolatedTestCase
+from tracecore.v1 import station as station_api
 
 test_dependencies = ["Company"]
 OLD_PASSWORD = "Old-Credential-2026!"
 NEW_PASSWORD = "New-Credential-2026!"
+CLIENT_TS = "2026-10-21T09:00:00+07:00"
 
 
 class TestAccount(IsolatedTestCase):
@@ -157,30 +159,33 @@ class TestAccount(IsolatedTestCase):
 		frappe.set_user(self.r02)
 		for proof in (None, self.r02, self.supervisor.name, session["token"]):
 			with self.assertRaises(frappe.PermissionError):
-				self.account.reset_password(self.user, NEW_PASSWORD, proof=proof)
-		proof = self.account.issue_reset_proof(session["token"], "654321")
-		self.account.reset_password(self.user, NEW_PASSWORD, proof=proof)
+				self.account.reset_password(self.user, NEW_PASSWORD, proof=proof, token=session["token"])
+		proof = station_api.verify_pin(session["token"], "654321", client_ts=CLIENT_TS)["proof"]
+		self.account.reset_password(self.user, NEW_PASSWORD, proof=proof, token=session["token"])
 		with self.assertRaises(frappe.PermissionError):
-			self.account.reset_password(self.user, OLD_PASSWORD, proof=proof)
+			self.account.reset_password(self.user, OLD_PASSWORD, proof=proof, token=session["token"])
+
+	def test_station_verify_pin_is_the_only_public_proof_producer(self):
+		self.assertFalse(hasattr(self.account, "issue_reset_proof"))
 
 	def test_proof_expires_and_is_bound_to_actor_and_open_session(self):
 		session = self.make_session(self.supervisor)
 		frappe.set_user(self.r02)
-		proof = self.account.issue_reset_proof(session["token"], "654321")
-		key = frappe.cache.make_key(self.account._proof_key(proof))
+		proof = station_api.verify_pin(session["token"], "654321", client_ts=CLIENT_TS)["proof"]
+		key = frappe.cache.make_key(station_auth._proof_key(proof))
 		self.assertGreater(frappe.cache.ttl(key), 0)
 		self.assertLessEqual(frappe.cache.ttl(key), 120)
 		frappe.cache.expire(key, 0)
 		with self.assertRaises(frappe.PermissionError):
-			self.account.reset_password(self.user, NEW_PASSWORD, proof=proof)
-		proof = self.account.issue_reset_proof(session["token"], "654321")
+			self.account.reset_password(self.user, NEW_PASSWORD, proof=proof, token=session["token"])
+		proof = station_api.verify_pin(session["token"], "654321", client_ts=CLIENT_TS)["proof"]
 		frappe.set_user(self.user)
 		with self.assertRaises(frappe.PermissionError):
-			self.account.reset_password(self.user, NEW_PASSWORD, proof=proof)
+			self.account.reset_password(self.user, NEW_PASSWORD, proof=proof, token=session["token"])
 		frappe.set_user(self.r02)
 		station_auth.logout(session["token"])
 		with self.assertRaises(frappe.PermissionError):
-			self.account.reset_password(self.user, NEW_PASSWORD, proof=proof)
+			self.account.reset_password(self.user, NEW_PASSWORD, proof=proof, token=session["token"])
 
 	def test_pin_reset_requires_change_before_privileged_verification(self):
 		session = self.make_session()
@@ -189,9 +194,12 @@ class TestAccount(IsolatedTestCase):
 		self.assertEqual(frappe.db.get_value("Employee", self.employee.name, "tc_pin_reset_required"), 1)
 		from tracecore.v1.station import verify_pin
 
-		self.assertEqual(verify_pin(session["token"], "112233")["error"]["code"], "PIN_CHANGE_REQUIRED")
+		self.assertEqual(
+			verify_pin(session["token"], "112233", client_ts=CLIENT_TS)["error"]["code"],
+			"PIN_CHANGE_REQUIRED",
+		)
 		self.account.change_pin(session["token"], "112233", "223344")
-		self.assertTrue(verify_pin(session["token"], "223344")["ok"])
+		self.assertTrue(verify_pin(session["token"], "223344", client_ts=CLIENT_TS)["ok"])
 
 	def test_card_normalized_and_duplicate_rejected(self):
 		self.employee.tc_card_id = "  account-normalized  "

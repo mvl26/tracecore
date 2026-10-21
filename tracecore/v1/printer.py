@@ -8,7 +8,13 @@ from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.v1._common import PACKING_ROLES, BadRequestError, require_any_role, run_at_step
+from tracecore.v1._common import (
+	PACKING_ROLES,
+	BadRequestError,
+	require_any_role,
+	run_at_step,
+	station_session,
+)
 
 STEP = "T4"
 # Đường Desk (có `printer`): R10 nạp cuộn từ form Máy in, không cần đứng ở trạm T4 (ruling P1); chỉ R10 và
@@ -53,9 +59,10 @@ def change_roll(roll_code, station, printer=None, release=True):
 	return core_print.set_roll(printer, gs1.clean_scan(roll_code), release=release)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES, desk_roles=DESK_ROLES)
 @idempotent
-def set_roll(roll_code, station, printer=None, client_ts=None):
+def set_roll(roll_code, station, printer=None, client_ts=None, token=None):
 	"""Ghi nhận đổi cuộn nhãn (mã ``CN-#####``) và phát hành nhãn đang chờ đúng loại nhãn (AC-9).
 
 	Trả ``{"ok": true, "roll": {"printer", "label_type", "method", "released_jobs", "failed_jobs", "jobs_waiting"}}``; kiosk gửi
@@ -65,7 +72,7 @@ def set_roll(roll_code, station, printer=None, client_ts=None):
 	Có ``printer`` là đường Desk (R10 hoặc System Manager): máy in phải thuộc ``station`` và trạm phải đang hoạt
 	động nhưng không cần là trạm T4; cuộn được ghi nhận nhưng nhãn chờ KHÔNG phát hành (``released_jobs`` rỗng,
 	``jobs_waiting`` là số nhãn còn chờ; chúng in khi cuộn được quét ở màn T4). Không có ``printer`` là đường kiosk:
-	trạm phải là T4, role R04 hoặc System Manager.
+	trạm phải là T4, token phiên trạm còn hiệu lực và role R04 hoặc System Manager của phiên.
 	"""
 	require_any_role(*(DESK_ROLES if printer else PACKING_ROLES))
 	timestamp = parse_client_ts(client_ts)

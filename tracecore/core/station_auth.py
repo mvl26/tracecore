@@ -20,6 +20,7 @@ SESSION_HOURS = 8
 IDLE_MINUTES = 10
 PIN_LOCK_SECONDS = 300
 PIN_FAILURE_LIMIT = 3
+PROOF_SECONDS = 120
 PIN_PATTERN = re.compile(r"^\d{6}$")
 
 
@@ -35,13 +36,14 @@ def _block(code: str, title: str, reason: str, action: str) -> BlockedError:
 	return BlockedError(Block(code, _(title), _(reason), _(action)))
 
 
-def _audit(action: str, employee=None, station=None, code=None, session=None):
+def _audit(action: str, employee=None, station=None, code=None, session=None, client_ts=None):
 	audit.log(
 		"Reject" if "Reject" in action else "Login",
 		ref_doctype="Employee" if employee else "Station Session",
 		ref_name=employee or session,
 		new={"event": action, "station": station, "code": code, "session": session},
 		station=station,
+		client_ts=client_ts,
 	)
 
 
@@ -66,7 +68,7 @@ def clear_pin_rate_limit(employee: str) -> None:
 	frappe.cache.delete_value(_pin_key(employee, "locked"))
 
 
-def verify_pin(employee: str, pin: str) -> bool:
+def verify_pin(employee: str, pin: str, client_ts=None) -> bool:
 	cache = frappe.cache
 	if cache.get_value(_pin_key(employee, "locked"), expires=True):
 		raise _block(
@@ -79,13 +81,13 @@ def verify_pin(employee: str, pin: str) -> bool:
 	valid = bool(PIN_PATTERN.fullmatch(pin or "") and stored and bcrypt.verify(pin, stored))
 	if valid:
 		clear_pin_rate_limit(employee)
-		_audit("PIN Verify", employee=employee, code="PIN_OK")
+		_audit("PIN Verify", employee=employee, code="PIN_OK", client_ts=client_ts)
 		return True
 	failures = int(cache.get_value(_pin_key(employee, "failures"), expires=True) or 0) + 1
 	if failures >= PIN_FAILURE_LIMIT:
 		cache.delete_value(_pin_key(employee, "failures"))
 		cache.set_value(_pin_key(employee, "locked"), 1, expires_in_sec=PIN_LOCK_SECONDS)
-		_audit("PIN Reject", employee=employee, code="PIN_LOCKED")
+		_audit("PIN Reject", employee=employee, code="PIN_LOCKED", client_ts=client_ts)
 		raise _block(
 			"PIN_LOCKED",
 			"PIN is temporarily locked",
@@ -93,7 +95,7 @@ def verify_pin(employee: str, pin: str) -> bool:
 			"Wait 5 minutes and try again.",
 		)
 	cache.set_value(_pin_key(employee, "failures"), failures, expires_in_sec=PIN_LOCK_SECONDS)
-	_audit("PIN Reject", employee=employee, code="PIN_INVALID")
+	_audit("PIN Reject", employee=employee, code="PIN_INVALID", client_ts=client_ts)
 	raise _block("PIN_INVALID", "PIN is incorrect", "The PIN did not match.", "Check the PIN and try again.")
 
 
@@ -118,13 +120,13 @@ def _employee_is_active(employee, user=None):
 	)
 
 
-def _active_employee(card_id: str):
+def _active_employee(card_id: str, client_ts=None):
 	card_id = normalize_card_id(card_id)
 	name = frappe.db.get_value("Employee", {"tc_card_id": card_id}, "name")
 	employee = lock_employee(name) if name else None
 	# The locking read above sees revocations committed while waiting for the lock.
 	if not _employee_is_active(employee) or employee.tc_card_id != card_id:
-		_audit("Login Reject", code="CARD_INVALID")
+		_audit("Login Reject", code="CARD_INVALID", client_ts=client_ts)
 		raise _block(
 			"CARD_INVALID",
 			"Card login was rejected",
@@ -145,7 +147,7 @@ def _require_station(station: str) -> None:
 		)
 
 
-def _require_competency(employee: str, station: str) -> None:
+def _require_competency(employee: str, station: str, client_ts=None) -> None:
 	now = now_datetime()
 	name = frappe.db.get_value(
 		"Station Competency",
@@ -159,7 +161,13 @@ def _require_competency(employee: str, station: str) -> None:
 		"name",
 	)
 	if not name:
-		_audit("Login Reject", employee=employee, station=station, code="COMPETENCY_REQUIRED")
+		_audit(
+			"Login Reject",
+			employee=employee,
+			station=station,
+			code="COMPETENCY_REQUIRED",
+			client_ts=client_ts,
+		)
 		raise _block(
 			"COMPETENCY_REQUIRED",
 			"Card login was rejected",
@@ -168,17 +176,24 @@ def _require_competency(employee: str, station: str) -> None:
 		)
 
 
-def _close_session(doc, reason: str) -> None:
+def _close_session(doc, reason: str, client_ts=None) -> None:
 	if not doc.is_open:
 		return
 	doc.is_open = 0
 	doc.ended_at = now_datetime()
 	doc.end_reason = reason
 	doc.save(ignore_permissions=True)
-	_audit("Logout", employee=doc.employee, station=doc.station, code=reason, session=doc.name)
+	_audit(
+		"Logout",
+		employee=doc.employee,
+		station=doc.station,
+		code=reason,
+		session=doc.name,
+		client_ts=client_ts,
+	)
 
 
-def close_employee_sessions(employee: str, reason: str = "Employee Disabled") -> int:
+def close_employee_sessions(employee: str, reason: str = "Employee Disabled", client_ts=None) -> int:
 	lock_employee(employee)
 	# Use a current read: a transaction may have started a snapshot before it
 	# waited for a concurrent login to release the Employee row.
@@ -188,18 +203,18 @@ def close_employee_sessions(employee: str, reason: str = "Employee Disabled") ->
 		pluck=True,
 	)
 	for name in names:
-		_close_session(frappe.get_doc("Station Session", name, for_update=True), reason)
+		_close_session(frappe.get_doc("Station Session", name, for_update=True), reason, client_ts)
 	return len(names)
 
 
-def login(card_id: str, station: str) -> dict:
+def login(card_id: str, station: str, client_ts=None) -> dict:
 	_require_station(station)
-	employee = _active_employee(card_id)
-	_require_competency(employee.name, station)
+	employee = _active_employee(card_id, client_ts)
+	_require_competency(employee.name, station, client_ts)
 	frappe.db.sql(
 		"select name from `tabStation Session` where employee=%s and is_open=1 for update", employee.name
 	)
-	close_employee_sessions(employee.name, "Replaced")
+	close_employee_sessions(employee.name, "Replaced", client_ts)
 	token = secrets.token_urlsafe(32)
 	started = now_datetime()
 	doc = frappe.get_doc(
@@ -214,7 +229,14 @@ def login(card_id: str, station: str) -> dict:
 			"absolute_expires_at": add_to_date(started, hours=SESSION_HOURS),
 		}
 	).insert(ignore_permissions=True)
-	_audit("Login", employee=employee.name, station=station, code="LOGIN_OK", session=doc.name)
+	_audit(
+		"Login",
+		employee=employee.name,
+		station=station,
+		code="LOGIN_OK",
+		session=doc.name,
+		client_ts=client_ts,
+	)
 	return {
 		"session": doc.name,
 		"token": token,
@@ -223,11 +245,12 @@ def login(card_id: str, station: str) -> dict:
 		"user": employee.user_id,
 		"station": station,
 		"expires_at": doc.absolute_expires_at,
+		"roles": sorted(role for role in frappe.get_roles(employee.user_id) if role.startswith("TC R")),
 	}
 
 
-def authenticate_session(token: str, touch: bool = False):
-	if not token:
+def authenticate_session(token: str, touch: bool = False, client_ts=None):
+	if not isinstance(token, str) or not token:
 		raise _block(
 			"SESSION_INVALID",
 			"Station session is invalid",
@@ -250,7 +273,7 @@ def authenticate_session(token: str, touch: bool = False):
 	employee = lock_employee(row.employee)
 	doc = frappe.get_doc("Station Session", row.name, for_update=True)
 	if not doc.is_open or not _employee_is_active(employee, doc.user):
-		_close_session(doc, "Employee Disabled")
+		_close_session(doc, "Employee Disabled", client_ts)
 		raise _block(
 			"SESSION_INVALID",
 			"Station session is invalid",
@@ -259,7 +282,7 @@ def authenticate_session(token: str, touch: bool = False):
 		)
 	now = now_datetime()
 	if get_datetime(doc.absolute_expires_at) <= now:
-		_close_session(doc, "Expired")
+		_close_session(doc, "Expired", client_ts)
 		raise _block(
 			"SESSION_EXPIRED",
 			"Station session expired",
@@ -267,7 +290,7 @@ def authenticate_session(token: str, touch: bool = False):
 			"Scan your employee card again.",
 		)
 	if get_datetime(doc.last_activity_at) <= add_to_date(now, minutes=-IDLE_MINUTES):
-		_close_session(doc, "Idle")
+		_close_session(doc, "Idle", client_ts)
 		raise _block(
 			"SESSION_IDLE",
 			"Station session was locked",
@@ -280,18 +303,59 @@ def authenticate_session(token: str, touch: bool = False):
 	return doc
 
 
-def heartbeat(token: str):
-	return authenticate_session(token, touch=True)
+def heartbeat(token: str, client_ts=None):
+	return authenticate_session(token, touch=True, client_ts=client_ts)
 
 
-def logout(token: str) -> None:
+def logout(token: str, client_ts=None) -> None:
+	doc = authenticate_session(token, client_ts=client_ts)
+	_close_session(doc, "Logout", client_ts)
+
+
+def _proof_key(proof):
+	return "tracecore:station-pin-proof:" + _token_hash(proof)
+
+
+def create_pin_proof(token: str, pin: str, client_ts=None) -> dict:
+	"""Issue an opaque proof once; neither secrets nor proof values enter the database."""
+	from tracecore.core.account import require_pin_changed
+
+	with as_session_user(token, client_ts=client_ts) as doc:
+		require_pin_changed(doc.employee)
+		verify_pin(doc.employee, pin, client_ts=client_ts)
+		proof = secrets.token_urlsafe(32)
+		value = frappe.as_json({"session": doc.name, "employee": doc.employee, "user": doc.user})
+		frappe.cache.set(frappe.cache.make_key(_proof_key(proof)), value, ex=PROOF_SECONDS)
+		return {"proof": proof, "expires_in": PROOF_SECONDS}
+
+
+def consume_pin_proof(token: str, proof: str):
+	"""Atomically consume a proof bound to this current live session, employee and user."""
+	from tracecore.core.account import require_pin_changed
+
 	doc = authenticate_session(token)
-	_close_session(doc, "Logout")
+	require_pin_changed(doc.employee)
+	stored = None
+	if isinstance(proof, str) and proof:
+		with frappe.cache.pipeline(transaction=True) as pipeline:
+			key = frappe.cache.make_key(_proof_key(proof))
+			pipeline.get(key)
+			pipeline.delete(key)
+			stored = pipeline.execute()[0]
+	row = frappe.parse_json(stored.decode()) if stored else None
+	if not row or (row.session, row.employee, row.user) != (doc.name, doc.employee, doc.user):
+		raise _block(
+			"PIN_PROOF_INVALID",
+			"PIN proof is invalid",
+			"The PIN proof expired or was already used.",
+			"Verify your PIN again.",
+		)
+	return doc
 
 
 @contextmanager
-def as_session_user(token: str, touch: bool = True):
-	doc = authenticate_session(token, touch=touch)
+def as_session_user(token: str, touch: bool = True, client_ts=None):
+	doc = authenticate_session(token, touch=touch, client_ts=client_ts)
 	previous = frappe.session.user
 	frappe.set_user(doc.user)
 	try:

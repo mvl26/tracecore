@@ -32,6 +32,7 @@ from tracecore.v1 import pack as pack_api
 from tracecore.v1 import printer as printer_api
 from tracecore.v1 import set_unit as set_unit_api
 from tracecore.v1._common import BadRequestError
+from tracecore.v1.tests.station_fixtures import make_station_session
 
 # Pack, Set Unit, Printer liên kết Item, Batch, Department, User, Employee của ERPNext/HRMS; site CI mới chưa chạy
 # Setup Wizard nên bỏ phụ thuộc này (dữ liệu tạo qua tracecore/tests/factories.py).
@@ -41,6 +42,7 @@ STATION = "TR-004"
 CYCLE_ID = re.compile(r"^CY-\d{6}-\d{4}$")
 TIME_ZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 AUDIT_FIELDS = ["name", "reason", "ref_doctype", "ref_name", "station", "user", "new_value", "client_ts"]
+SESSION_TOKENS = {}
 
 
 def now_ts():
@@ -54,6 +56,14 @@ def call(fn, key=None, station_header=STATION, **kwargs):
 	"""
 	frappe.local.response.pop("http_status_code", None)
 	kwargs.setdefault("client_ts", now_ts())
+	if fn in (
+		pack_api.scan,
+		pack_api.generate_cycle_id,
+		pack_api.reprint_label,
+		pack_api.void,
+		printer_api.set_roll,
+	):
+		kwargs.setdefault("token", SESSION_TOKENS.get(frappe.session.user))
 	with request_headers({"X-Idempotency-Key": key or str(uuid.uuid4()), "X-TC-Station": station_header}):
 		return fn(**kwargs)
 
@@ -115,12 +125,19 @@ def assert_rejection(case, result, code, status):
 class PackApiCase(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		frappe.set_user("Administrator")
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
+		SESSION_TOKENS.clear()
+		SESSION_TOKENS["Administrator"] = make_station_session("Administrator")["token"]
+		self.addCleanup(SESSION_TOKENS.clear)
 		frappe.local.response.pop("http_status_code", None)
 		self.addCleanup(frappe.local.response.pop, "http_status_code", None)
 		deactivate_printers(STATION)
 
 	def as_user(self, email, roles=()):
-		frappe.set_user(make_user(email, roles=roles))
+		user = make_user(email, roles=roles)
+		SESSION_TOKENS[user] = make_station_session(user)["token"]
+		frappe.set_user(user)
 		self.addCleanup(frappe.set_user, "Administrator")
 
 
@@ -185,16 +202,16 @@ class TestScan(PackApiCase):
 				"station is not T4",
 				pack_api.scan,
 				{"raw": steam.set_id, "station": "TR-003"},
-				"STATION_WRONG_STEP",
-				422,
+				"SESSION_STATION_MISMATCH",
+				403,
 			),
 			*[
 				(
 					f"station {station!r}",
 					pack_api.scan,
 					{"raw": steam.set_id, "station": station},
-					"STATION_WRONG_STEP",
-					422,
+					"SESSION_STATION_MISMATCH",
+					403,
 				)
 				for station in ("TR-999", "ZONE-CLEAN", None, {"station_step": "T4"})
 			],
@@ -336,8 +353,8 @@ class TestScan(PackApiCase):
 
 	def test_scan_requires_the_station_role(self):
 		ready = make_t4_ready_set()
-		before = totals()
 		self.as_user("pack-api-norole@example.com")
+		before = totals()
 		with self.assertRaises(frappe.PermissionError):
 			call(pack_api.scan, raw=ready.set_id, station=STATION)
 		frappe.set_user("Administrator")
@@ -421,8 +438,8 @@ class TestGenerate(PackApiCase):
 
 	def test_generate_requires_create_permission(self):
 		ready = make_t4_ready_set()
-		before = totals()
 		self.as_user("pack-api-nobody@example.com")
+		before = totals()
 		with self.assertRaises(frappe.PermissionError):
 			call(pack_api.generate_cycle_id, **generate_args(ready))
 		frappe.set_user("Administrator")
@@ -430,6 +447,7 @@ class TestGenerate(PackApiCase):
 
 		# role chỉ đọc Pack (TC R01) cũng không sinh được
 		self.as_user("pack-api-reader@example.com", roles=["TC R01"])
+		before = totals()
 		with self.assertRaises(frappe.PermissionError):
 			call(pack_api.generate_cycle_id, **generate_args(ready))
 		frappe.set_user("Administrator")
@@ -500,7 +518,9 @@ class TestGenerate(PackApiCase):
 		with self.assertRaises(ClientTimestampError):
 			call(pack_api.generate_cycle_id, **generate_args(ready, client_ts="2026-10-20T09:00:00"))
 		with request_headers({}), self.assertRaises(IdempotencyKeyError):
-			pack_api.generate_cycle_id(**generate_args(ready, client_ts=now_ts()))
+			pack_api.generate_cycle_id(
+				**generate_args(ready, client_ts=now_ts(), token=SESSION_TOKENS["Administrator"])
+			)
 		self.assertEqual(frappe.db.count("Pack", {"set_unit": ready.set_id}), 0)
 
 	def test_generate_with_station_clock_skew_is_400_and_writes_nothing(self):
@@ -517,7 +537,8 @@ class TestGenerate(PackApiCase):
 
 	def test_wrong_station_rejects_before_writing(self):
 		ready = make_t4_ready_set()
-		result = call(pack_api.generate_cycle_id, **generate_args(ready, station="TR-003"))
+		token = make_station_session("Administrator", "TR-003")["token"]
+		result = call(pack_api.generate_cycle_id, **generate_args(ready, station="TR-003", token=token))
 		assert_rejection(self, result, "STATION_WRONG_STEP", 422)
 		self.assertEqual(frappe.db.count("Pack", {"set_unit": ready.set_id}), 0)
 
@@ -614,8 +635,8 @@ class TestReprintAndVoid(PackApiCase):
 
 	def test_reprint_and_void_require_the_station_role(self):
 		_ready, cycle_id = self.packed()
-		before = totals()
 		self.as_user("pack-api-norole2@example.com")
+		before = totals()
 		for fn, args in (
 			(pack_api.reprint_label, {"cycle_id": cycle_id, "reason": "x"}),
 			(pack_api.void, {"cycle_id": cycle_id, "reason": "Torn"}),
@@ -683,7 +704,8 @@ class TestSetRoll(PackApiCase):
 			with self.subTest(label):
 				assert_rejection(self, call(printer_api.set_roll, station=STATION, **args), code, status)
 		with self.subTest("station is not T4"):
-			result = call(printer_api.set_roll, roll_code="CN-99999", station="TR-003")
+			token = make_station_session("Administrator", "TR-003")["token"]
+			result = call(printer_api.set_roll, roll_code="CN-99999", station="TR-003", token=token)
 			assert_rejection(self, result, "STATION_WRONG_STEP", 422)
 
 	def test_set_roll_printer_must_be_a_name(self):
@@ -697,8 +719,8 @@ class TestSetRoll(PackApiCase):
 		steam_label, _plasma_label = make_label_items()
 		make_printer(STATION, steam_label)
 		roll = make_roll(steam_label)
-		before = totals()
 		self.as_user("pack-api-norole3@example.com")
+		before = totals()
 		with self.assertRaises(frappe.PermissionError):
 			call(printer_api.set_roll, roll_code=roll, station=STATION)
 		frappe.set_user("Administrator")
@@ -770,8 +792,8 @@ class TestSetRollFromDesk(PackApiCase):
 	def test_r10_without_printer_is_rejected_by_role(self):
 		printer, plasma_label = self.desk_printer()
 		roll = make_roll(plasma_label)
-		before = totals()
 		self.as_user("pack-api-r10b@example.com", roles=("TC R10",))
+		before = totals()
 		with self.assertRaises(frappe.PermissionError):
 			call(printer_api.set_roll, roll_code=roll, station="TR-004")
 		frappe.set_user("Administrator")
@@ -830,7 +852,10 @@ class TestSetRollFromDesk(PackApiCase):
 	def test_kiosk_path_still_needs_t4_for_system_manager(self):
 		"""Không truyền `printer` thì giữ luật FEAT-018: trạm phải là T4, kể cả khi người gọi là Administrator."""
 		_printer, plasma_label = self.desk_printer()
-		result = call(printer_api.set_roll, roll_code=make_roll(plasma_label), station=self.DESK_STATION)
+		token = make_station_session("Administrator", self.DESK_STATION)["token"]
+		result = call(
+			printer_api.set_roll, roll_code=make_roll(plasma_label), station=self.DESK_STATION, token=token
+		)
 		assert_rejection(self, result, "STATION_WRONG_STEP", 422)
 
 
