@@ -41,18 +41,34 @@ def pick_link(page, fieldname, value, title):
 	expect(field).to_have_value(title)
 
 
+def pick_zone_in_and_wait_suggestion(page, value, title):
+	with page.expect_response(lambda r: "tracecore.v1.zone.next_zone" in r.url):
+		pick_link(page, "zone_in", value, title)
+
+
+def clear_zone_out(page):
+	page.evaluate("cur_frm.set_value('zone_out', '')")
+	page.wait_for_function("!cur_frm.doc.zone_out")
+
+
 def test_equipment_form_zone_out_follows_zone_in(r10_page):
 	r10_page.goto("/app/equipment/new")
 	zone_out = r10_page.locator("input[data-fieldname='zone_out']")
 	expect(r10_page.locator("input[data-fieldname='zone_in']")).to_be_visible(timeout=30000)
 
-	pick_link(r10_page, "zone_in", "ZONE-DIRTY", "Dirty zone")
+	pick_zone_in_and_wait_suggestion(r10_page, "ZONE-DIRTY", "Dirty zone")
 	expect(zone_out).to_have_value("Clean zone", timeout=15000)
+	# khu cửa ra đã có giá trị: đổi khu cửa vào không ghi đè (chỉ gợi ý khi còn trống)
 	pick_link(r10_page, "zone_in", "ZONE-CLEAN", "Clean zone")
-	expect(zone_out).to_have_value("Sterile zone", timeout=15000)
+	r10_page.wait_for_timeout(1500)
+	expect(zone_out).to_have_value("Clean zone")
+	clear_zone_out(r10_page)
+	pick_zone_in_and_wait_suggestion(r10_page, "ZONE-DIRTY", "Dirty zone")
+	expect(zone_out).to_have_value("Clean zone", timeout=15000)
 	# khu cuối của luồng: máy một cửa, khu cửa ra để trống
-	pick_link(r10_page, "zone_in", "ZONE-STERILE", "Sterile zone")
-	expect(zone_out).to_have_value("", timeout=15000)
+	clear_zone_out(r10_page)
+	pick_zone_in_and_wait_suggestion(r10_page, "ZONE-STERILE", "Sterile zone")
+	expect(zone_out).to_have_value("")
 
 
 def test_equipment_status_and_depreciation_shown(r10_page):

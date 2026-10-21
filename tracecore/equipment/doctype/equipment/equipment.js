@@ -1,5 +1,5 @@
 // Desk: form Equipment (SCR-21, FEAT-038 Task 5).
-// Khu cửa ra gợi ý lấy từ tracecore.v1.zone.next_zone (luồng Bẩn → Sạch → Vô khuẩn nằm ở core.zones, JS không giữ bản sao).
+// Khu cửa ra (khi còn trống) gợi ý lấy từ tracecore.v1.zone.next_zone (luồng Bẩn → Sạch → Vô khuẩn nằm ở core.zones, JS không giữ bản sao).
 // "Ngừng sử dụng" gọi tracecore.v1.equipment_admin.retire; fetch thay frappe.call vì Frappe bỏ mất body của HTTP 404/409/422.
 
 const EQUIPMENT_NEXT_ZONE = "tracecore.v1.zone.next_zone";
@@ -147,18 +147,21 @@ frappe.ui.form.on("Equipment", {
 
 	zone_in(frm) {
 		const zone = frm.doc.zone_in;
-		if (!zone) {
+		// chỉ gợi ý khi khu cửa ra còn trống: không bao giờ ghi đè giá trị người dùng đã đặt
+		if (!zone || frm.doc.zone_out) {
 			return;
 		}
 		frappe.call({
 			method: EQUIPMENT_NEXT_ZONE,
 			args: { zone },
 			callback(r) {
-				if (frm.doc.zone_in !== zone) {
-					return; // người dùng đã đổi khu cửa vào trong lúc chờ
+				if (frm.doc.zone_in !== zone || frm.doc.zone_out) {
+					return; // người dùng đã đổi khu cửa vào hoặc tự đặt khu cửa ra trong lúc chờ
 				}
-				// khu cuối hoặc không phải khu: "" = máy một cửa
-				frm.set_value("zone_out", r.message || null);
+				// khu cuối hoặc không phải khu: không gợi ý, để trống = máy một cửa
+				if (r.message) {
+					frm.set_value("zone_out", r.message);
+				}
 			},
 		});
 	},
