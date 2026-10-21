@@ -333,6 +333,17 @@ class TestInstrumentMedia(FrappeTestCase):
 			bad.insert()
 		self.assertIn("JPEG", str(raised.exception))
 		self.assertIsInstance(frappe.get_doc({"doctype": "File"}), media.InstrumentMediaFile)
+		# base64 hỏng → "file hỏng"; nội dung dạng chuỗi (SVG text) đổi đuôi .jpg → từ chối, không 500
+		broken = _file_doc("MD-B64", "image", "abc", "b64-broken.jpg")
+		broken.decode = True
+		with patch.object(media, "decode_file_content", side_effect=ValueError("bad base64")):
+			with self.assertRaises(frappe.ValidationError) as raised:
+				broken.insert()
+		self.assertIn(media._unreadable_message(), str(raised.exception))
+		text = _file_doc("MD-B64", "image", svg.decode(), "text.jpg")
+		with self.assertRaises(frappe.ValidationError) as raised:
+			text.insert()
+		self.assertIn("JPEG", str(raised.exception))
 
 	def test_image_limits(self):
 		make_instrument("MD-LIMIT")
