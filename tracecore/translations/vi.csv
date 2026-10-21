@@ -1308,3 +1308,10 @@ Import from Excel,Nhập từ Excel,
 Draft,Nháp,Stock Entry
 Posted,Đã ghi sổ,Stock Entry
 Cancelled,Đã hủy,Stock Entry
+Valid until must be after valid from.,Thời điểm hết hiệu lực phải sau thời điểm bắt đầu.,
+Competency must be assigned to a station, not a zone.,Năng lực phải gán cho một trạm chứ không phải một khu.,
+Temporary competency requires a reason and approver.,Quyền trạm tạm thời phải có lý do và người phê duyệt.,
+Temporary competency cannot exceed 24 hours.,Quyền trạm tạm thời không được vượt quá 24 giờ.,
+Station Competency {0} cannot be deleted.,Không thể xóa năng lực trạm {0}.,
+A closed station session requires an end timestamp.,Phiên trạm đã đóng phải có thời điểm kết thúc.,
+Station Session {0} cannot be deleted.,Không thể xóa phiên trạm {0}.,

@@ -24,6 +24,7 @@ fixtures = [
 			["name", "like", "Item-tc_%"],
 			["name", "like", "Stock Entry-tc_%"],
 			["name", "like", "Stock Entry Detail-tc_%"],
+			["name", "like", "Employee-tc_%"],
 		],
 	},
 ]
@@ -230,6 +231,7 @@ doc_events = {
 		"before_insert": "tracecore.instrument.media.check_upload",
 		"validate": "tracecore.instrument.media.validate_file",
 	},
+	"Station Competency": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)

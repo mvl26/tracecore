@@ -7,5 +7,8 @@
  {"doctype": "Custom Field", "dt": "Stock Entry", "name": "Stock Entry-tc_supplier", "fieldname": "tc_supplier", "fieldtype": "Link", "label": "Supplier", "options": "Supplier", "insert_after": "to_warehouse"},
  {"doctype": "Custom Field", "dt": "Stock Entry", "name": "Stock Entry-tc_document_no", "fieldname": "tc_document_no", "fieldtype": "Data", "label": "Document No", "insert_after": "tc_supplier"},
  {"doctype": "Custom Field", "dt": "Stock Entry Detail", "name": "Stock Entry Detail-tc_batch_id", "fieldname": "tc_batch_id", "fieldtype": "Data", "label": "Lot Code", "in_list_view": 1, "insert_after": "t_warehouse"},
- {"doctype": "Custom Field", "dt": "Stock Entry Detail", "name": "Stock Entry Detail-tc_expiry_date", "fieldname": "tc_expiry_date", "fieldtype": "Date", "label": "Expiry Date", "in_list_view": 1, "insert_after": "tc_batch_id"}
+ {"doctype": "Custom Field", "dt": "Stock Entry Detail", "name": "Stock Entry Detail-tc_expiry_date", "fieldname": "tc_expiry_date", "fieldtype": "Date", "label": "Expiry Date", "in_list_view": 1, "insert_after": "tc_batch_id"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_card_id", "fieldname": "tc_card_id", "fieldtype": "Data", "label": "Station Card ID", "unique": 1, "no_copy": 1, "insert_after": "user_id"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_card_enabled", "fieldname": "tc_card_enabled", "fieldtype": "Check", "label": "Station Card Enabled", "default": "1", "no_copy": 1, "insert_after": "tc_card_id"},
+ {"doctype": "Custom Field", "dt": "Employee", "name": "Employee-tc_pin_hash", "fieldname": "tc_pin_hash", "fieldtype": "Password", "label": "Station PIN Hash", "hidden": 1, "no_copy": 1, "insert_after": "tc_card_enabled"}
 ]
