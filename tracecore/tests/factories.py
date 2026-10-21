@@ -181,6 +181,22 @@ def make_equipment(
 	return frappe.get_doc(values).insert()
 
 
+def make_program(equipment, code="MH-01-134", minutes=4, kwh=3.5, water=0, consumables=None, **kwargs):
+	"""Tạo Process Program cho máy `equipment`. `kwargs` ghi đè bất kỳ trường nào (parameters, ...)."""
+	values = {
+		"doctype": "Process Program",
+		"program_code": code,
+		"program_name": f"Chương trình {code}",
+		"equipment": equipment,
+		"duration_min": minutes,
+		"kwh_per_cycle": kwh,
+		"water_l_per_cycle": water,
+		"consumables": consumables or [],
+		**kwargs,
+	}
+	return frappe.get_doc(values).insert()
+
+
 def make_cycle(set_unit, passed=("T1", "T2", "T3")):
 	"""Mở chu trình mới cho bộ rồi ghi các bước `passed` Pass; trả cycle_no.
 

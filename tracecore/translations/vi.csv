@@ -683,3 +683,55 @@ Retired On cannot be in the future.,Ngày ngừng sử dụng không được �
 Retired equipment cannot be put back into use.,Thiết bị đã ngừng sử dụng không dùng lại được.,
 Equipment status and retirement fields are changed only by the equipment service.,Trạng thái và thông tin ngừng sử dụng của thiết bị chỉ do dịch vụ thiết bị đổi.,
 Invalid equipment status {0}.,Trạng thái thiết bị {0} không hợp lệ.,
+Process Program,Chương trình xử lý,
+Program Consumable,Vật tư tiêu hao của chương trình,
+Program Compatible Pack Type,Loại gói tương thích của chương trình,
+Program Parameter,Tham số của chương trình,
+Program Code,Mã chương trình,Process Program
+Program Name,Tên chương trình,Process Program
+Equipment,Thiết bị,Process Program
+Active,Đang dùng,Process Program
+Requires Biological Indicator,Cần chỉ thị sinh học,Process Program
+Temperature (°C),Nhiệt độ (°C),Process Program
+Pressure (bar),Áp suất (bar),Process Program
+Duration (min),Thời gian (phút),Process Program
+Chemical,Hóa chất,Process Program
+Norms per Cycle,Định mức mỗi chu trình,Process Program
+Electricity per Cycle (kWh),Điện mỗi chu trình (kWh),Process Program
+Water per Cycle (L),Nước mỗi chu trình (L),Process Program
+Steam per Cycle (kg),Hơi mỗi chu trình (kg),Process Program
+Use Default Norms,Dùng định mức mặc định,Process Program
+Norm Status,Tình trạng định mức,Process Program
+Complete,Đủ định mức,Process Program
+Default,Định mức mặc định,Process Program
+Missing,Thiếu định mức,Process Program
+Outside Safe Range,Ngoài dải an toàn,Process Program
+Consumables,Vật tư tiêu hao,Process Program
+Compatible Pack Types,Loại gói tương thích,Process Program
+Manual-entry Parameters,Tham số nhập tay,Process Program
+Parameters,Tham số,Process Program
+Item,Mặt hàng,Program Consumable
+Quantity per Load,Số lượng mỗi mẻ,Program Consumable
+Quantity per Pack,Số lượng mỗi gói,Program Consumable
+Pack Type,Loại gói,Program Compatible Pack Type
+Parameter,Tham số,Program Parameter
+Unit,Đơn vị,Program Parameter
+Minimum,Tối thiểu,Program Parameter
+Maximum,Tối đa,Program Parameter
+Required,Bắt buộc,Program Parameter
+"Program Code may contain only uppercase letters, digits and hyphens.","Mã chương trình chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
+Equipment {0} is retired and cannot get a new process program.,"Thiết bị {0} đã ngừng sử dụng, không thêm chương trình mới được.",
+{0} cannot be negative.,{0} không được âm.,
+Row {0}: consumable {1} is listed twice.,Dòng {0}: vật tư {1} bị trùng.,
+Row {0}: quantities cannot be negative.,Dòng {0}: số lượng không được âm.,
+Row {0}: enter a quantity per load or per pack greater than zero.,Dòng {0}: cần nhập số lượng mỗi mẻ hoặc mỗi gói lớn hơn 0.,
+Row {0}: pack type {1} is listed twice.,Dòng {0}: loại gói {1} bị trùng.,
+Row {0}: parameter name is required.,Dòng {0}: cần nhập tên tham số.,
+Row {0}: parameter {1} is listed twice.,Dòng {0}: tham số {1} bị trùng.,
+Row {0}: Minimum cannot be above Maximum for parameter {1}.,Dòng {0}: tối thiểu không được lớn hơn tối đa của tham số {1}.,
+"Uppercase letters, digits and hyphens only. Cannot change after saving.","Chỉ chữ in hoa, chữ số và dấu gạch ngang. Không đổi được sau khi lưu.",Process Program
+Untick to stop using the program. All its data is kept.,Bỏ chọn để ngừng dùng chương trình. Mọi dữ liệu được giữ nguyên.,Process Program
+Use the default norms of the equipment type when this program has no norms.,Dùng định mức mặc định của loại máy khi chương trình chưa có định mức.,Process Program
+Quantity used by one load (cycle).,Số lượng dùng cho một mẻ (chu trình).,Program Consumable
+Quantity used by one pack.,Số lượng dùng cho một gói.,Program Consumable
+Leave Min and Max both at 0 for no range.,Để tối thiểu và tối đa cùng bằng 0 nếu không đặt dải.,Program Parameter
