@@ -236,10 +236,11 @@ class TestCopyProgramRpc(IsolatedTestCase):
 				new_code=f"cp-keep-{index}",
 			)
 			copy = frappe.get_doc("Process Program", result["program"])
-			self.assertEqual(copy.use_default_norms, 1, roles)
+			self.assertEqual((copy.use_default_norms, copy.norm_status), (1, "Default"), roles)
 
 	@bru("BRU-EQP-003")
-	def test_copy_by_r02_resets_default_norms_flag(self):
+	def test_copy_by_r02_of_default_program_stays_default(self):
+		# nguồn Default: bản sao Default với mọi role, cờ chỉ phản chiếu nguồn (R02 không quyết định gì mới)
 		make_type_norm()
 		source = make_program(
 			self.source_eq.name,
@@ -256,5 +257,42 @@ class TestCopyProgramRpc(IsolatedTestCase):
 			new_code="cp-r02",
 		)
 		copy = frappe.get_doc("Process Program", result["program"])
-		# cờ bị bỏ: định mức của bản sao theo dữ liệu của chính nó (định mức mặc định đã điền vào bản nguồn nên đủ)
+		self.assertEqual((copy.use_default_norms, copy.norm_status), (1, "Default"))
+
+	@bru("BRU-EQP-003")
+	def test_copy_by_r02_of_complete_program_drops_default_flag(self):
+		make_type_norm()
+		source = make_program(
+			self.source_eq.name,
+			code="CP-CMP",
+			water=40,
+			consumables=consumable("CP-CI-C"),
+			use_default_norms=1,
+		)
+		self.assertEqual(source.norm_status, "Complete")
+		result = as_user(
+			["TC R02"],
+			admin_api.copy_program,
+			program=source.name,
+			equipment=self.target_eq.name,
+			new_code="cp-r02-c",
+		)
+		copy = frappe.get_doc("Process Program", result["program"])
 		self.assertEqual((copy.use_default_norms, copy.norm_status), (0, "Complete"))
+
+	def test_copy_of_default_program_without_type_norm_is_invalid(self):
+		make_type_norm()
+		source = make_program(
+			self.source_eq.name,
+			code="CP-GONE",
+			minutes=0,
+			consumables=consumable("CP-CI-D"),
+			use_default_norms=1,
+		)
+		frappe.db.delete("Equipment Type Norm", {"name": "Steam Sterilizer"})
+		result = call(
+			admin_api.copy_program, program=source.name, equipment=self.target_eq.name, new_code="cp-gone-1"
+		)
+		self.assertEqual(result["error"]["code"], "PROGRAM_COPY_INVALID")
+		self.assertEqual(http_status(), 422)
+		self.assertFalse(frappe.db.exists("Process Program", "CP-GONE-1"))

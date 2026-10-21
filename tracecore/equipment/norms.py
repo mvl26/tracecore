@@ -6,7 +6,8 @@ Hàm thuần trên tài liệu và đọc DB; không import phân hệ nghiệp 
 * ``Default``: chưa đủ nhưng ``use_default_norms`` bật, loại máy có dòng ``Equipment Type Norm`` và sau khi
   điền số thiếu từ dòng đó thì đủ điều kiện trên (tiêu hao không bao giờ được mặc định). Chương trình đã
   ``Default`` ở lần lưu trước và còn đủ thì giữ ``Default`` để trạng thái không nhảy sang ``Complete``
-  chỉ vì số mặc định đã được điền vào.
+  chỉ vì số mặc định đã được điền vào; bản sao mới của chương trình ``Default`` cũng vậy
+  (``flags.tc_copied_norm_status``, đặt bởi ``programs.copy_program``).
 * ``Missing``: còn lại. FEAT-046 không tính giá thành cho chương trình ``Missing``.
 """
 
@@ -58,7 +59,9 @@ def norm_status(program) -> str:
 	norm = default_norm(equipment_type) if cint(program.get("use_default_norms")) else None
 	if _meets(values, count, equipment_type):
 		before = program.get_doc_before_save() if hasattr(program, "get_doc_before_save") else None
-		if norm and before and before.norm_status == "Default":
+		# chưa có bản lưu trước: bản sao của chương trình Default mang trạng thái nguồn qua cờ tài liệu
+		previous = before.norm_status if before else program.flags.get("tc_copied_norm_status")
+		if norm and previous == "Default":
 			return "Default"
 		return "Complete"
 	if norm and _meets(_filled(values, norm), count, equipment_type):

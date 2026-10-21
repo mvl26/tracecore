@@ -113,3 +113,57 @@ class TestPrograms(IsolatedTestCase):
 		self.assertEqual(frappe.db.get_value("Process Program", name, "use_default_norms"), 0)
 		name = programs.copy_program(source.name, target.name, "CPY-KEEP", keep_default_norms=True)
 		self.assertEqual(frappe.db.get_value("Process Program", name, "use_default_norms"), 1)
+
+	@bru("BRU-EQP-003")
+	def test_copy_of_default_program_stays_default_and_mirrors_flag(self):
+		# bản sao không bao giờ đủ hơn bản nguồn: số mặc định đã điền vào nguồn không thành số đo
+		from tracecore.equipment.tests.test_norms import consumable, make_type_norm
+
+		make_type_norm()
+		source_eq = make_equipment(name="Máy nguồn 4", serial="SN-S4")
+		target = make_equipment(name="Máy đích 4", serial="SN-T4")
+		source = make_program(
+			source_eq.name, code="SRC-4", minutes=0, consumables=consumable("CPD-CI"), use_default_norms=1
+		)
+		self.assertEqual(source.norm_status, "Default")
+		for keep in (False, True):
+			name = programs.copy_program(
+				source.name, target.name, f"CPY-D{int(keep)}", keep_default_norms=keep
+			)
+			copy = frappe.get_doc("Process Program", name)
+			self.assertEqual((copy.use_default_norms, copy.norm_status), (1, "Default"), keep)
+			copy.save()
+			self.assertEqual(copy.norm_status, "Default", keep)
+
+	@bru("BRU-EQP-003")
+	def test_copy_of_complete_program_keeps_existing_flag_rule(self):
+		from tracecore.equipment.tests.test_norms import consumable, make_type_norm
+
+		make_type_norm()
+		source_eq = make_equipment(name="Máy nguồn 5", serial="SN-S5")
+		target = make_equipment(name="Máy đích 5", serial="SN-T5")
+		source = make_program(
+			source_eq.name, code="SRC-5", water=40, consumables=consumable("CPC-CI"), use_default_norms=1
+		)
+		self.assertEqual(source.norm_status, "Complete")
+		for keep, flag in ((False, 0), (True, 1)):
+			name = programs.copy_program(
+				source.name, target.name, f"CPY-C{int(keep)}", keep_default_norms=keep
+			)
+			copy = frappe.get_doc("Process Program", name)
+			self.assertEqual((copy.use_default_norms, copy.norm_status), (flag, "Complete"), keep)
+
+	def test_copy_of_default_program_refused_when_type_norm_is_gone(self):
+		# nguồn Default mà dòng Equipment Type Norm đã mất (chỉ xóa thẳng DB được): không sao chép, báo thiếu định mức
+		from tracecore.equipment.tests.test_norms import consumable, make_type_norm
+
+		make_type_norm()
+		source_eq = make_equipment(name="Máy nguồn 6", serial="SN-S6")
+		target = make_equipment(name="Máy đích 6", serial="SN-T6")
+		source = make_program(
+			source_eq.name, code="SRC-6", minutes=0, consumables=consumable("CPG-CI"), use_default_norms=1
+		)
+		frappe.db.delete("Equipment Type Norm", {"name": "Steam Sterilizer"})
+		with self.assertRaisesRegex(frappe.ValidationError, "no default norms"):
+			programs.copy_program(source.name, target.name, "CPY-GONE")
+		self.assertFalse(frappe.db.exists("Process Program", "CPY-GONE"))
