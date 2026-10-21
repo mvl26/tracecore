@@ -1,13 +1,17 @@
 """FEAT-003: Guest station RPCs, bearer authorization, PIN proof and replay boundaries."""
 
+import ast
 import hashlib
 import uuid
+from contextlib import contextmanager
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import frappe
 from frappe.auth import validate_auth
 from frappe.handler import execute_cmd
+from frappe.sessions import Session
 from frappe.utils import now_datetime
 from werkzeug.test import EnvironBuilder
 from werkzeug.wrappers import Request
@@ -20,11 +24,28 @@ from tracecore.tests.utils import IsolatedTestCase, request_headers
 from tracecore.v1 import pack as pack_api
 from tracecore.v1 import printer as printer_api
 from tracecore.v1 import station as station_api
-from tracecore.v1._common import BadRequestError
+from tracecore.v1._common import BadRequestError, station_session
 from tracecore.v1.tests.station_fixtures import make_station_employee, make_station_session
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 TS = "2026-10-21T09:00:00+07:00"
+
+
+@contextmanager
+def local_context(**values):
+	missing = object()
+	previous = {field: getattr(frappe.local, field, missing) for field in values}
+	try:
+		for field, value in values.items():
+			setattr(frappe.local, field, value)
+		yield
+	finally:
+		for field, value in previous.items():
+			if value is missing:
+				if hasattr(frappe.local, field):
+					delattr(frappe.local, field)
+			else:
+				setattr(frappe.local, field, value)
 
 
 class TestStationSecurity(IsolatedTestCase):
@@ -81,6 +102,116 @@ class TestStationSecurity(IsolatedTestCase):
 			self.assertNotIn("sensitive", str(error.exception))
 		with self.assertRaises(BadRequestError):
 			self.rpc(station_api.verify_pin, token=self.session["token"], pin={"pin": "sensitive"})
+
+	def test_native_dispatch_controls_every_omitted_auth_field(self):
+		frappe.set_user("Guest")
+		calls = (
+			("login", {"card_id": self.employee.tc_card_id, "station": "TR-004", "client_ts": TS}),
+			("logout", {"token": self.session["token"], "client_ts": TS}),
+			("heartbeat", {"token": self.session["token"], "client_ts": TS}),
+			("verify_pin", {"token": self.session["token"], "pin": "123456", "client_ts": TS}),
+		)
+		for method, complete in calls:
+			for omitted in complete:
+				with self.subTest(method=method, omitted=omitted):
+					args = frappe._dict({key: value for key, value in complete.items() if key != omitted})
+					request = Request(
+						EnvironBuilder(
+							path=f"/api/method/tracecore.v1.station.{method}", method="POST"
+						).get_environ()
+					)
+					with local_context(request=request, form_dict=args):
+						if omitted == "token":
+							self.assert_block(
+								execute_cmd(f"tracecore.v1.station.{method}"), "SESSION_INVALID", 401
+							)
+						else:
+							with self.assertRaises(
+								ClientTimestampError if omitted == "client_ts" else BadRequestError
+							) as error:
+								execute_cmd(f"tracecore.v1.station.{method}")
+							self.assertEqual(error.exception.http_status_code, 400)
+
+	def assert_cookie_context_restored(self, fails):
+		"""Exercise the real guard, then native Session.update on the original Desk cookie."""
+		sid = "desk-cookie-" + uuid.uuid4().hex
+		original = frappe._dict(
+			user="Administrator",
+			sid=sid,
+			data=frappe._dict(user="Administrator", marker={"nested": ["desk"]}),
+		)
+		form = frappe._dict(cmd="desk-request", marker={"nested": ["original"]})
+		cookie = object.__new__(Session)
+		cookie.user, cookie.sid, cookie.data = "Administrator", sid, original
+		context = {
+			"session": original,
+			"session_obj": cookie,
+			"form_dict": form,
+			"cache": {"desk-only": {"nested": [1]}},
+			"role_permissions": {"desk-only": {"read": 1}},
+			"user_perms": object(),
+			"new_doc_templates": {"desk-only": "template"},
+			"jenv_restricted": object(),
+			"jenv_unrestricted": object(),
+		}
+		expected_session, expected_form = deepcopy(original), deepcopy(form)
+		request = Request(EnvironBuilder(path="/api/method/guarded", method="POST").get_environ())
+		context["request"] = request
+		self.addCleanup(frappe.cache.hdel, "session", sid)
+		self.addCleanup(frappe.cache.hdel, "last_db_session_update", sid)
+
+		@station_session("TC R04")
+		def guarded(station, client_ts, token=None):
+			self.assertEqual(frappe.session.user, self.user)
+			self.assertIsNot(frappe.local.session, original)
+			self.assertIsNone(frappe.local.session_obj)
+			self.assertNotIn("desk-only", frappe.local.cache)
+			self.assertNotIn("desk-only", frappe.local.role_permissions)
+			self.assertIsNone(frappe.local.user_perms)
+			self.assertEqual(frappe.form_dict.cmd, "desk-request")
+			frappe.form_dict.marker["nested"].append("actor")
+			frappe.session.data["actor-only"] = True
+			frappe.local.cache["actor-only"] = True
+			frappe.local.role_permissions["actor-only"] = True
+			frappe.local.new_doc_templates["actor-only"] = True
+			if fails:
+				raise RuntimeError("guarded failure")
+			return {"ok": True, "actor": frappe.session.user}
+
+		with local_context(**context):
+			cookie.insert_session_record()
+			if fails:
+				with self.assertRaisesRegex(RuntimeError, "guarded failure"):
+					guarded(station="TR-004", client_ts=TS, token=self.session["token"])
+			else:
+				self.assertEqual(
+					guarded(station="TR-004", client_ts=TS, token=self.session["token"]),
+					{"ok": True, "actor": self.user},
+				)
+			for field, value in context.items():
+				self.assertIs(getattr(frappe.local, field), value, field)
+			self.assertEqual(original, expected_session)
+			self.assertEqual(form, expected_form)
+			self.assertNotIn("actor-only", frappe.local.cache)
+			self.assertNotIn("actor-only", frappe.local.role_permissions)
+			self.assertNotIn("actor-only", frappe.local.new_doc_templates)
+			with patch("frappe.database.database.Database.commit", return_value=None):
+				self.assertTrue(cookie.update(force=True))
+			persisted = ast.literal_eval(
+				frappe.db.get_value("Sessions", {"sid": sid}, "sessiondata", order_by="sid")
+			)
+			self.assertEqual(persisted["user"], "Administrator")
+			self.assertEqual(persisted["marker"], {"nested": ["desk"]})
+			self.assertNotIn("actor-only", persisted)
+			cached = frappe.cache.hget("session", sid)
+			self.assertEqual((cached.user, cached.sid), ("Administrator", sid))
+			self.assertEqual(cached.data["user"], "Administrator")
+
+	def test_guard_success_preserves_cookie_session_request_and_permission_context(self):
+		self.assert_cookie_context_restored(fails=False)
+
+	def test_guard_exception_preserves_cookie_session_request_and_permission_context(self):
+		self.assert_cookie_context_restored(fails=True)
 
 	def test_login_schema_secrets_and_no_idempotency_token_storage(self):
 		frappe.set_user("Guest")

@@ -6,6 +6,7 @@ import hashlib
 import re
 import secrets
 from contextlib import contextmanager
+from copy import deepcopy
 
 import frappe
 from frappe import _
@@ -355,10 +356,36 @@ def consume_pin_proof(token: str, proof: str):
 
 @contextmanager
 def as_session_user(token: str, touch: bool = True, client_ts=None):
+	"""Run as the station actor without altering or persisting the caller's web session."""
 	doc = authenticate_session(token, touch=touch, client_ts=client_ts)
-	previous = frappe.session.user
-	frappe.set_user(doc.user)
+	# set_user mutates session in place and replaces these user-scoped local caches.
+	# Keep the actual Desk session object untouched for native after-request persistence.
+	fields = (
+		"session",
+		"session_obj",
+		"form_dict",
+		"request",
+		"cache",
+		"role_permissions",
+		"user_perms",
+		"new_doc_templates",
+		"jenv_restricted",
+		"jenv_unrestricted",
+	)
+	missing = object()
+	previous = {field: getattr(frappe.local, field, missing) for field in fields}
 	try:
+		frappe.local.session = deepcopy(previous["session"])
+		frappe.set_user(doc.user)
+		# Station identity has no native cookie session to update while impersonating.
+		frappe.local.session_obj = None
+		form = previous["form_dict"]
+		frappe.local.form_dict = deepcopy(form) if form is not missing else frappe._dict()
 		yield doc
 	finally:
-		frappe.set_user(previous)
+		for field, value in previous.items():
+			if value is missing:
+				if hasattr(frappe.local, field):
+					delattr(frappe.local, field)
+			else:
+				setattr(frappe.local, field, value)

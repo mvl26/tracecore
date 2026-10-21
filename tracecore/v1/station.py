@@ -30,7 +30,7 @@ def _session_response(call):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def login(card_id, station, client_ts=None):
+def login(card_id=None, station=None, client_ts=None):
 	# Do not persist bearer tokens in Idempotency Key responses; each login replaces the old session.
 	timestamp = parse_client_ts(client_ts)
 	if not isinstance(card_id, str) or not isinstance(station, str):
@@ -39,7 +39,7 @@ def login(card_id, station, client_ts=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def logout(token, client_ts=None):
+def logout(token=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
 
 	def call():
@@ -50,7 +50,7 @@ def logout(token, client_ts=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def heartbeat(token, client_ts=None):
+def heartbeat(token=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
 
 	def call():
@@ -67,11 +67,17 @@ def heartbeat(token, client_ts=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def verify_pin(token, pin, client_ts=None):
+def verify_pin(token=None, pin=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
-	if not isinstance(pin, str):
-		raise BadRequestError(_("pin must be a string."))
-	return _session_response(lambda: {"ok": True, **station_auth.create_pin_proof(token, pin, timestamp)})
+
+	def call():
+		if not isinstance(token, str) or not token:
+			station_auth.authenticate_session(token)  # stable SESSION_INVALID, before PIN validation
+		if not isinstance(pin, str):
+			raise BadRequestError(_("pin must be a string."))
+		return {"ok": True, **station_auth.create_pin_proof(token, pin, timestamp)}
+
+	return _session_response(call)
 
 
 def _station_row(station):
