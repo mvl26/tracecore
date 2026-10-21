@@ -59,6 +59,8 @@ def heartbeat(token=None, client_ts=None):
 			"ok": True,
 			"session": doc.name,
 			"employee": doc.employee,
+			"employee_name": frappe.db.get_value("Employee", doc.employee, "employee_name"),
+			"roles": sorted(role for role in frappe.get_roles(doc.user) if role.startswith("TC R")),
 			"station": doc.station,
 			"expires_at": doc.absolute_expires_at,
 		}
