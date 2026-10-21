@@ -2,8 +2,8 @@ import frappe
 from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
 from tracecore.equipment.status import set_status
-from tracecore.tests.factories import make_equipment, make_item, make_program
-from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.tests.factories import make_equipment, make_item, make_program, make_user
+from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
 
 test_ignore = ["Asset", "Item", "User"]
 
@@ -135,8 +135,9 @@ class TestProcessProgram(IsolatedTestCase):
 
 	def test_permissions_match_q7(self):
 		validate_permissions_for_doctype("Process Program")
+		assert_permission_matrix(self, "Process Program")
 		perms = {row.role: row for row in frappe.get_meta("Process Program").permissions}
-		for role in ("System Manager", "TC R10"):
+		for role in ("TC R10",):
 			for right in ("read", "write", "create", "report"):
 				self.assertEqual(perms[role].get(right), 1, msg=(role, right))
 		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
@@ -146,11 +147,7 @@ class TestProcessProgram(IsolatedTestCase):
 
 	def test_r02_cannot_write_process_program(self):
 		doc = make_program(self.equipment.name, code="R02-1")
-		user = "r02.program@test.local"
-		if not frappe.db.exists("User", user):
-			frappe.get_doc(
-				{"doctype": "User", "email": user, "first_name": "R02", "roles": [{"role": "TC R02"}]}
-			).insert(ignore_permissions=True)
+		user = make_user("r02.program@test.local", ("TC R02",))
 		self.assertTrue(frappe.has_permission("Process Program", "read", doc=doc, user=user))
 		self.assertFalse(frappe.has_permission("Process Program", "write", doc=doc, user=user))
 		self.assertFalse(frappe.has_permission("Process Program", "create", user=user))

@@ -3,7 +3,7 @@ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
 from tracecore.equipment import norms
 from tracecore.equipment.status import set_status
-from tracecore.tests.factories import make_equipment, make_item, make_program
+from tracecore.tests.factories import make_equipment, make_item, make_program, make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
 
 test_ignore = ["Asset", "Item", "User"]
@@ -175,11 +175,7 @@ class TestNorms(IsolatedTestCase):
 	def test_r02_cannot_set_use_default_norms(self):
 		make_type_norm()
 		doc = make_program(self.steam.name, code="P1-1", consumables=consumable())
-		user = "r02.norms@test.local"
-		if not frappe.db.exists("User", user):
-			frappe.get_doc(
-				{"doctype": "User", "email": user, "first_name": "R02", "roles": [{"role": "TC R02"}]}
-			).insert(ignore_permissions=True)
+		user = make_user("r02.norms@test.local", ("TC R02",))
 		doc.reload()
 		doc.use_default_norms = 1
 		frappe.set_user(user)

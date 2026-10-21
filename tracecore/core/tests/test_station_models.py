@@ -15,7 +15,12 @@ class TestStationAuthModels(FrappeTestCase):
 			for row in json.loads((FIXTURES / "custom_field.json").read_text(encoding="utf-8"))
 			if row["dt"] == "Employee"
 		}
-		self.assertEqual(set(fields), {"tc_card_id", "tc_card_enabled", "tc_pin_hash"})
+		self.assertEqual(
+			set(fields), {"tc_card_id", "tc_card_enabled", "tc_pin_hash", "tc_pin_reset_required"}
+		)
+		self.assertEqual(fields["tc_pin_reset_required"]["fieldtype"], "Check")
+		self.assertEqual(fields["tc_pin_reset_required"]["read_only"], 1)
+		self.assertEqual(fields["tc_pin_reset_required"]["no_copy"], 1)
 		self.assertEqual(fields["tc_card_id"]["unique"], 1)
 		self.assertEqual(fields["tc_pin_hash"]["fieldtype"], "Password")
 		self.assertEqual(fields["tc_pin_hash"]["hidden"], 1)

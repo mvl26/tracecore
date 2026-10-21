@@ -20,6 +20,33 @@ def require_env(name):
 	return value
 
 
+def desk_login(page, prefix="TC_E2E"):
+	"""Complete the native password + OTP challenge when enabled; never bypass 2FA."""
+	user, password = require_env(prefix + "_USER"), require_env(prefix + "_PASSWORD")
+	response = page.request.post("/api/method/login", form={"usr": user, "pwd": password})
+	assert response.ok, response.text()
+	challenge = response.json()
+	if challenge.get("tmp_id"):
+		import pyotp
+
+		totp = pyotp.TOTP(require_env(prefix + "_OTP_SECRET"))
+		code = totp.now()
+		response = page.request.post(
+			"/api/method/login",
+			form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": code},
+		)
+		# Native Frappe verifies the current 30-second window. Retry only if it rolled
+		# during the request; other authentication failures remain failures.
+		if response.status == 401 and totp.now() != code:
+			response = page.request.post(
+				"/api/method/login",
+				form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": totp.now()},
+			)
+		assert response.ok, response.text()
+	logged_in = page.request.get("/api/method/frappe.auth.get_logged_user")
+	assert logged_in.ok and logged_in.json().get("message") == user
+
+
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
 	return {**browser_context_args, "viewport": KIOSK_VIEWPORT, "base_url": BASE_URL}
@@ -27,11 +54,7 @@ def browser_context_args(browser_context_args):
 
 @pytest.fixture
 def logged_in_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_USER"), "pwd": require_env("TC_E2E_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page)
 	return page
 
 
@@ -73,11 +96,7 @@ def t4_demo():
 @pytest.fixture
 def t4_page(page):
 	card = require_env("TC_E2E_T4_CARD_ID")
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_T4_USER"), "pwd": require_env("TC_E2E_T4_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_T4")
 	station = os.environ.get("TC_E2E_T4_STATION", "TR-004")
 	page.goto(f"/app/station?station={station}")
 	page.locator("#tc-card-input").fill(card)
@@ -91,9 +110,5 @@ def t4_page(page):
 
 @pytest.fixture
 def r10_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_R10_USER"), "pwd": require_env("TC_E2E_R10_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_R10")
 	return page

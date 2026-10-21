@@ -1,4 +1,8 @@
 Invalid code,Mã không hợp lệ,
+An active station is required for demo data.,Cần trạm đang hoạt động để tạo dữ liệu demo.,
+An enabled user is required for demo data.,Cần người dùng đang hoạt động để tạo dữ liệu demo.,
+Complete company setup before creating demo employees.,Hoàn tất thiết lập công ty trước khi tạo nhân viên demo.,
+Only Administrator can prepare demo accounts.,Chỉ Administrator được chuẩn bị tài khoản demo.,
 Code {0} was not issued by TraceCore.,Mã {0} không do TraceCore cấp.,
 Rescan the set tag or call R02.,Quét lại thẻ bộ hoặc gọi R02.,
 Not a set code,Không phải mã bộ,

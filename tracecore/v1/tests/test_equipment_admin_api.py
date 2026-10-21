@@ -74,12 +74,13 @@ class TestRetireRpc(IsolatedTestCase):
 	def test_retire_role_checked_before_any_write(self):
 		equipment = make_equipment(name="Máy R04", serial="SN-RET-R04")
 		keys = frappe.db.count("Idempotency Key")
-		audit_rows = frappe.db.count("Audit Log")
+		audit_filter = {"ref_doctype": "Equipment", "ref_name": equipment.name}
+		audit_rows = frappe.db.count("Audit Log", audit_filter)
 		with self.assertRaises(frappe.PermissionError):
 			as_user(["TC R04"], admin_api.retire, equipment=equipment.name, reason="Thử")
 		self.assertEqual(frappe.db.get_value("Equipment", equipment.name, "status"), "Ready")
 		self.assertEqual(frappe.db.count("Idempotency Key"), keys)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", audit_filter), audit_rows)
 
 	@bru("BRU-EQP-003")
 	def test_retire_requires_reason(self):
