@@ -193,6 +193,23 @@ class TestParseScan(FrappeTestCase):
 			self.assertEqual(result["id"], raw)
 		self.assertEqual(gs1.parse_scan("]Q3TR-004\r")["id"], "TR-004")
 
+	def test_parse_scan_internal_codes_with_aim_prefix_and_noise(self):
+		# máy quét HID đọc QR: tiền tố AIM ]Q1, CR LF, Tab, khoảng trắng, GS thừa (Review Focus 2)
+		cases = {
+			" ]Q1TB-0001\r\n": ("equipment", "TB-0001"),
+			"]d1NV-00012\t": ("employee", "NV-00012"),
+			"\x1dKE-0001": ("location", "KE-0001"),
+			"]Q1TR-004\n": ("station", "TR-004"),
+			"\t]Q1CN-00001\r": ("roll", "CN-00001"),
+			"]Q1KE-0001\x1d": ("location", "KE-0001"),
+			"\x1d]Q1TB-0001": ("equipment", "TB-0001"),
+		}
+		for raw, (kind, code) in cases.items():
+			result = gs1.parse_scan(raw, company_prefix="9520000")
+			self.assertEqual((result["type"], result["id"]), (kind, code), msg=repr(raw))
+		for raw in [" ]Q1TB-001\r\n", "]Q1XX-0001", "]Q1", "TB 0001", "]Q1TB-0001X"]:
+			self.assertEqual(gs1.parse_scan(raw, company_prefix="9520000")["type"], "unknown", msg=repr(raw))
+
 	@bru("BRU-ID-006")
 	def test_parse_scan_unknown(self):
 		for raw in ["ABC", "", "8004", "8004 X", "X" * 200, "(01)09520000000013", "TR-04", "NV-1"]:

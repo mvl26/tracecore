@@ -175,8 +175,11 @@ def cycle_hri(gtin, packed, expiry, cycle_id):
 
 
 def clean_scan(raw):
-	"""Bỏ khoảng trắng/CR/LF/Tab hai đầu, tiền tố AIM (``]d2``…) và FNC1 (GS) đầu/cuối."""
-	value = (raw or "").strip(" \t\r\n")
+	"""Bỏ khoảng trắng/CR/LF/Tab hai đầu, tiền tố AIM (``]d2``, ``]Q1``…) và FNC1 (GS) đầu/cuối.
+
+	GS đứng trước tiền tố AIM (máy quét chèn FNC1 trước khi truyền) cũng được bỏ.
+	"""
+	value = (raw or "").strip(GS + " \t\r\n")
 	value = _AIM_PREFIX.sub("", value)
 	return value.strip(GS + " \t\r\n")
 
