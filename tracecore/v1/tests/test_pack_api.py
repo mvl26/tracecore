@@ -83,7 +83,7 @@ def reject_count():
 
 
 def rejects_since(count_before):
-	"""Audit Log Reject ghi sau khi có `count_before` dòng, mới nhất trước."""
+	"""Audit Log Reject ghi sau khi có `count_before` dòng, mới nhất trước (cùng thời điểm: tên tự tăng phân định)."""
 	added = reject_count() - count_before
 	if added <= 0:
 		return []
@@ -91,7 +91,7 @@ def rejects_since(count_before):
 		"Audit Log",
 		filters={"action": "Reject"},
 		fields=AUDIT_FIELDS,
-		order_by="creation desc",
+		order_by="creation desc, name desc",
 		limit=added,
 	)
 
@@ -564,8 +564,9 @@ class TestReprintAndVoid(PackApiCase):
 		again = call(pack_api.void, cycle_id=cycle_id, reason="Torn", station=STATION)
 		assert_rejection(self, again, "PACK_NOT_VOIDABLE", 409)
 		rows = rejects_since(before)
+		# so như tập hợp: hai lần từ chối có thể cùng thời điểm, thứ tự không phải điều cần kiểm
 		self.assertEqual(
-			[(row.reason, row.ref_doctype, row.ref_name) for row in rows],
+			sorted((row.reason, row.ref_doctype, row.ref_name) for row in rows),
 			[
 				("PACK_NOT_VOIDABLE", "Pack", cycle_id),
 				("STATUS_INVALID_FOR_STATION", "Pack", cycle_id),

@@ -29,8 +29,10 @@ class TestErrors(FrappeTestCase):
 				"MAINT_OIL_LOT_REQUIRED",
 				"ROLL_NOT_LABEL",
 				"LABEL_RENDER_FAILED",
+				"PROGRAM_MODEL_MISMATCH",
+				"PROGRAM_COPY_INVALID",
 			),
-			404: ("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND"),
+			404: ("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND", "EQUIPMENT_NOT_FOUND"),
 			409: (
 				"STATUS_INVALID_FOR_STATION",
 				"ACTIVE_CYCLE_EXISTS",
@@ -42,6 +44,9 @@ class TestErrors(FrappeTestCase):
 				"PACK_NOT_VOIDABLE",
 				"ROLL_PRINTER_AMBIGUOUS",
 				"STATION_INACTIVE",
+				"EQUIPMENT_NOT_RETIRABLE",
+				"EQUIPMENT_RETIRED",
+				"PROGRAM_CODE_EXISTS",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

@@ -25,3 +25,21 @@ class TestAllowedSteps(IsolatedTestCase):
 	def test_zone_without_functions_gives_empty_list(self):
 		frappe.db.set_value("Zone Station", "ZONE-CLEAN", "zone_type", "Linen")
 		self.assertEqual(zone_api.allowed_steps("ZONE-CLEAN"), [])
+
+
+class TestNextZone(IsolatedTestCase):
+	@bru("BRU-FLOW-001")
+	def test_next_zone_follows_flow(self):
+		self.assertEqual(zone_api.next_zone("ZONE-DIRTY"), "ZONE-CLEAN")
+		self.assertEqual(zone_api.next_zone("ZONE-CLEAN"), "ZONE-STERILE")
+
+	def test_last_zone_station_and_unknown_give_empty(self):
+		self.assertEqual(zone_api.next_zone("ZONE-STERILE"), "")
+		self.assertEqual(zone_api.next_zone("TR-004"), "")
+		self.assertEqual(zone_api.next_zone("ZONE-NOPE"), "")
+		self.assertEqual(zone_api.next_zone(None), "")
+		self.assertEqual(zone_api.next_zone(["ZONE-CLEAN"]), "")
+
+	def test_zone_outside_flow_gives_empty(self):
+		frappe.db.set_value("Zone Station", "ZONE-CLEAN", "zone_type", "Linen")
+		self.assertEqual(zone_api.next_zone("ZONE-CLEAN"), "")

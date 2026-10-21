@@ -634,3 +634,174 @@ The roll could not be loaded.,Không nạp được cuộn nhãn.,
 "Check the roll code and your permissions, then try again.",Kiểm tra mã cuộn và quyền của bạn rồi thử lại.,
 {0}: Is Zone cannot be changed after the record is created.,{0}: không đổi được ô Là khu sau khi đã tạo.,
 Label printers,Máy in nhãn,
+Equipment,Thiết bị,
+Equipment Name,Tên thiết bị,Equipment
+Equipment Type,Loại thiết bị,Equipment
+Status,Trạng thái,Equipment
+Manufacturer,Hãng sản xuất,Equipment
+Model,Model,Equipment
+Serial No,Số sê-ri,Equipment
+Capacity,Dung tích / công suất,Equipment
+Entry Zone,Khu cửa vào,Equipment
+Exit Zone,Khu cửa ra,Equipment
+Is Connected,Có kết nối dữ liệu,Equipment
+Has Printout,Có bản in kết quả,Equipment
+Commissioned On,Ngày đưa vào sử dụng,Equipment
+Inspection Due,Hạn kiểm định,Equipment
+Asset,Tài sản,Equipment
+Depreciation,Khấu hao,Equipment
+Purchase Value,Nguyên giá,Equipment
+Depreciation Years,Số năm khấu hao,Equipment
+Planned Loads per Year,Số mẻ kế hoạch mỗi năm,Equipment
+Depreciation per Load,Khấu hao mỗi mẻ,Equipment
+Safe Range,Dải an toàn,Equipment
+Safe Temperature Min (°C),Nhiệt độ an toàn tối thiểu (°C),Equipment
+Safe Temperature Max (°C),Nhiệt độ an toàn tối đa (°C),Equipment
+Safe Pressure Max (bar),Áp suất an toàn tối đa (bar),Equipment
+Retirement,Ngừng sử dụng,Equipment
+Retired On,Ngày ngừng sử dụng,Equipment
+Retired Reason,Lý do ngừng sử dụng,Equipment
+Steam Sterilizer,Máy hấp hơi nước,Equipment
+Washer-Disinfector,Máy rửa khử khuẩn,Equipment
+Plasma Sterilizer,Máy tiệt khuẩn plasma,Equipment
+Sealer,Máy hàn túi,Equipment
+Laundry Washer,Máy giặt,Equipment
+Dryer,Máy sấy,Equipment
+Ultrasonic Cleaner,Máy rửa siêu âm,Equipment
+Ready,Sẵn sàng,Equipment
+Locked,Đã khóa,Equipment
+Repair,Đang sửa chữa,Equipment
+Retired,Ngừng sử dụng,Equipment
+Serial No is required.,Cần nhập số sê-ri.,
+Serial No {0} is already used by equipment {1}.,Số sê-ri {0} đã được dùng cho thiết bị {1}.,
+Purchase Value cannot be negative.,Nguyên giá không được âm.,
+Depreciation Years must be at least 1.,Số năm khấu hao phải từ 1 trở lên.,
+Planned Loads per Year must be at least 1.,Số mẻ kế hoạch mỗi năm phải từ 1 trở lên.,
+Safe Temperature Min cannot be above Safe Temperature Max.,Nhiệt độ an toàn tối thiểu không được lớn hơn tối đa.,
+A reason is required to retire equipment.,Cần nhập lý do khi cho thiết bị ngừng sử dụng.,
+Retired On cannot be in the future.,Ngày ngừng sử dụng không được ở tương lai.,
+Retired equipment cannot be put back into use.,Thiết bị đã ngừng sử dụng không dùng lại được.,
+Equipment status and retirement fields are changed only by the equipment service.,Trạng thái và thông tin ngừng sử dụng của thiết bị chỉ do dịch vụ thiết bị đổi.,
+Invalid equipment status {0}.,Trạng thái thiết bị {0} không hợp lệ.,
+Process Program,Chương trình xử lý,
+Program Consumable,Vật tư tiêu hao của chương trình,
+Program Compatible Pack Type,Loại gói tương thích của chương trình,
+Program Parameter,Tham số của chương trình,
+Program Code,Mã chương trình,Process Program
+Program Name,Tên chương trình,Process Program
+Equipment,Thiết bị,Process Program
+Active,Đang dùng,Process Program
+Requires Biological Indicator,Cần chỉ thị sinh học,Process Program
+Temperature (°C),Nhiệt độ (°C),Process Program
+Pressure (bar),Áp suất (bar),Process Program
+Duration (min),Thời gian (phút),Process Program
+Chemical,Hóa chất,Process Program
+Norms per Cycle,Định mức mỗi chu trình,Process Program
+Electricity per Cycle (kWh),Điện mỗi chu trình (kWh),Process Program
+Water per Cycle (L),Nước mỗi chu trình (L),Process Program
+Steam per Cycle (kg),Hơi mỗi chu trình (kg),Process Program
+Use Default Norms,Dùng định mức mặc định,Process Program
+Norm Status,Tình trạng định mức,Process Program
+Complete,Đủ định mức,Process Program
+Default,Định mức mặc định,Process Program
+Missing,Thiếu định mức,Process Program
+Outside Safe Range,Ngoài dải an toàn,Process Program
+Consumables,Vật tư tiêu hao,Process Program
+Compatible Pack Types,Loại gói tương thích,Process Program
+Manual-entry Parameters,Tham số nhập tay,Process Program
+Parameters,Tham số,Process Program
+Item,Mặt hàng,Program Consumable
+Quantity per Load,Số lượng mỗi mẻ,Program Consumable
+Quantity per Pack,Số lượng mỗi gói,Program Consumable
+Pack Type,Loại gói,Program Compatible Pack Type
+Parameter,Tham số,Program Parameter
+Unit,Đơn vị,Program Parameter
+Minimum,Tối thiểu,Program Parameter
+Maximum,Tối đa,Program Parameter
+Required,Bắt buộc,Program Parameter
+"Program Code may contain only uppercase letters, digits and hyphens.","Mã chương trình chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
+Equipment {0} is retired and cannot get a new process program.,"Thiết bị {0} đã ngừng sử dụng, không thêm chương trình mới được.",
+{0} cannot be negative.,{0} không được âm.,
+Row {0}: consumable {1} is listed twice.,Dòng {0}: vật tư {1} bị trùng.,
+Row {0}: quantities cannot be negative.,Dòng {0}: số lượng không được âm.,
+Row {0}: enter a quantity per load or per pack greater than zero.,Dòng {0}: cần nhập số lượng mỗi mẻ hoặc mỗi gói lớn hơn 0.,
+Row {0}: pack type {1} is listed twice.,Dòng {0}: loại gói {1} bị trùng.,
+Row {0}: parameter name is required.,Dòng {0}: cần nhập tên tham số.,
+Row {0}: parameter {1} is listed twice.,Dòng {0}: tham số {1} bị trùng.,
+Row {0}: Minimum cannot be above Maximum for parameter {1}.,Dòng {0}: tối thiểu không được lớn hơn tối đa của tham số {1}.,
+"Uppercase letters, digits and hyphens only. Cannot change after saving.","Chỉ chữ in hoa, chữ số và dấu gạch ngang. Không đổi được sau khi lưu.",Process Program
+Untick to stop using the program. All its data is kept.,Bỏ chọn để ngừng dùng chương trình. Mọi dữ liệu được giữ nguyên.,Process Program
+Use the default norms of the equipment type when this program has no norms.,Dùng định mức mặc định của loại máy khi chương trình chưa có định mức.,Process Program
+Quantity used by one load (cycle).,Số lượng dùng cho một mẻ (chu trình).,Program Consumable
+Quantity used by one pack.,Số lượng dùng cho một gói.,Program Consumable
+Leave at 0 for no lower limit.,Để 0 nếu không đặt giới hạn dưới.,Program Parameter
+Leave at 0 for no upper limit.,Để 0 nếu không đặt giới hạn trên.,Program Parameter
+Equipment Type Norm,Định mức mặc định theo loại máy,
+Equipment Type,Loại thiết bị,Equipment Type Norm
+Notes,Ghi chú,Equipment Type Norm
+Default Norms per Cycle,Định mức mặc định mỗi chu trình,Equipment Type Norm
+Duration (min),Thời gian (phút),Equipment Type Norm
+Electricity per Cycle (kWh),Điện mỗi chu trình (kWh),Equipment Type Norm
+Water per Cycle (L),Nước mỗi chu trình (L),Equipment Type Norm
+Steam per Cycle (kg),Hơi mỗi chu trình (kg),Equipment Type Norm
+Steam Sterilizer,Máy hấp hơi nước,Equipment Type Norm
+Washer-Disinfector,Máy rửa khử khuẩn,Equipment Type Norm
+Plasma Sterilizer,Máy tiệt khuẩn plasma,Equipment Type Norm
+Sealer,Máy hàn túi,Equipment Type Norm
+Laundry Washer,Máy giặt,Equipment Type Norm
+Dryer,Máy sấy,Equipment Type Norm
+Ultrasonic Cleaner,Máy rửa siêu âm,Equipment Type Norm
+Default norms of the equipment type; one row per type.,Định mức mặc định của loại máy; mỗi loại một dòng.,Equipment Type Norm
+Equipment type {0} has no default norms: add an Equipment Type Norm first.,Loại máy {0} chưa có định mức mặc định: hãy thêm Định mức mặc định theo loại máy trước.,
+Program {0} has incomplete norms: costing is not calculated until the norms are complete or default norms are used.,Chương trình {0} chưa đủ định mức: chưa tính giá thành cho đến khi đủ định mức hoặc dùng định mức mặc định.,
+Program {0}: temperature {1} °C is below the safe minimum {2} °C of equipment {3}.,Chương trình {0}: nhiệt độ {1} °C thấp hơn mức tối thiểu an toàn {2} °C của thiết bị {3}.,
+Program {0}: temperature {1} °C is above the safe maximum {2} °C of equipment {3}.,Chương trình {0}: nhiệt độ {1} °C cao hơn mức tối đa an toàn {2} °C của thiết bị {3}.,
+Program {0}: pressure {1} bar is above the safe maximum {2} bar of equipment {3}.,Chương trình {0}: áp suất {1} bar cao hơn mức tối đa an toàn {2} bar của thiết bị {3}.,
+Equipment {0} is retired: its process programs cannot be activated again.,Thiết bị {0} đã ngừng sử dụng: không bật lại chương trình xử lý của thiết bị này.,
+Code {0} is not an equipment code.,Mã {0} không phải mã thiết bị.,
+Scan the QR code on the equipment.,Quét mã QR dán trên thiết bị.,
+Equipment not found,Không tìm thấy thiết bị,
+Equipment {0} does not exist in TraceCore.,Thiết bị {0} chưa có trong TraceCore.,
+Check the QR code on the equipment or call R10.,Kiểm tra mã QR trên thiết bị hoặc gọi R10.,
+Equipment retired,Thiết bị đã ngừng sử dụng,
+Equipment {0} is retired and has no process programs in use.,Thiết bị {0} đã ngừng sử dụng và không có chương trình xử lý đang dùng.,
+Choose another machine or call R10.,Chọn máy khác hoặc gọi R10.,
+Equipment {0} does not exist.,Thiết bị {0} không tồn tại.,
+Choose a different equipment to copy program {0} to.,Chọn thiết bị khác để sao chép chương trình {0} sang.,
+Program {0} can only be copied to equipment of the same manufacturer and model.,Chương trình {0} chỉ sao chép được sang thiết bị cùng hãng và model.,
+Retire equipment,Ngừng sử dụng,
+Retire equipment {0},Ngừng sử dụng thiết bị {0},
+Reason for retiring,Lý do ngừng sử dụng,
+Retiring is permanent: the equipment can no longer be used or get new programs.,Ngừng sử dụng là một chiều: thiết bị không dùng được nữa và không nhận chương trình mới.,
+Equipment retired.,Đã cho thiết bị ngừng sử dụng.,
+Equipment could not be retired.,Không cho thiết bị ngừng sử dụng được.,
+Check your permissions and try again.,Kiểm tra quyền của bạn rồi thử lại.,
+This program has settings outside the safe range of the equipment.,Chương trình này có thông số nằm ngoài dải an toàn của thiết bị.,
+Copy to another equipment,Sao chép sang máy khác,
+Copy program {0},Sao chép chương trình {0},
+Target equipment,Thiết bị đích,
+Only equipment of the same manufacturer and model that is not retired.,Chỉ thiết bị cùng hãng và model chưa ngừng sử dụng.,
+New program code,Mã chương trình mới,
+"Uppercase letters, digits and hyphens only.","Chỉ chữ in hoa, chữ số và dấu gạch ngang.",
+Program copied to {0}.,Đã sao chép chương trình sang {0}.,
+Program could not be copied,Không sao chép được chương trình,
+{0} must be text.,{0} phải là chuỗi ký tự.,
+Equipment cannot be retired,Không cho thiết bị ngừng sử dụng được,
+Equipment {0} is {1}; only equipment that is Ready can be retired.,"Thiết bị {0} đang ở trạng thái {1}; chỉ thiết bị Sẵn sàng mới ngừng sử dụng được.",
+"Release or finish the current state first, or call R10.","Hãy xử lý xong trạng thái hiện tại trước, hoặc gọi R10.",
+Enter the reason for retiring this equipment.,Nhập lý do ngừng sử dụng thiết bị này.,
+Different model,Khác model,
+Choose equipment of the same manufacturer and model.,Chọn thiết bị cùng hãng và model.,
+Program code already used,Mã chương trình đã được dùng,
+Enter a different program code.,Nhập mã chương trình khác.,
+Program code {0} is already used.,Mã chương trình {0} đã được dùng.,
+"Check the target equipment and the new program code, then try again.","Kiểm tra thiết bị đích và mã chương trình mới rồi thử lại.",
+Equipment ready,Sẵn sàng,
+Equipment locked,Đã khóa,
+Equipment under repair,Đang sửa chữa,
+Equipment out of service,Ngừng sử dụng,
+Norms complete,Đủ định mức,
+Default norms,Dùng định mức mặc định,
+Norms missing,Thiếu định mức,
+Equipment Type cannot be changed after the equipment is created.,Không đổi được loại thiết bị sau khi đã tạo.,
+Process program {0} was not recalculated after the safe range changed,Chương trình xử lý {0} chưa được tính lại sau khi đổi dải an toàn,

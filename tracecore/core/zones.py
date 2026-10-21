@@ -19,6 +19,14 @@ STEPS_BY_ZONE_TYPE: dict[str, tuple[str, ...]] = {
 ZONE_FLOW: tuple[str, ...] = ("Dirty", "Clean", "Sterile")
 
 
+def next_zone_type(zone_type: str | None) -> str | None:
+	"""Loại khu kế tiếp theo ``ZONE_FLOW``; khu cuối hoặc loại ngoài luồng → ``None``."""
+	if zone_type not in ZONE_FLOW:
+		return None
+	index = ZONE_FLOW.index(zone_type) + 1
+	return ZONE_FLOW[index] if index < len(ZONE_FLOW) else None
+
+
 def allowed_steps(zone_type: str) -> tuple[str, ...]:
 	"""Các bước trạm được phép đặt trong khu loại ``zone_type``; loại lạ → ``()``."""
 	return STEPS_BY_ZONE_TYPE.get(zone_type, ())
