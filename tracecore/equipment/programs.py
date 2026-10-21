@@ -6,6 +6,15 @@ Hàm thuần trên DB; bọc whitelist và kiểm quyền ở tầng RPC. Không
 import frappe
 from frappe import _
 
+
+class ProgramModelMismatchError(frappe.ValidationError):
+	"""Sao chép chương trình sang máy khác hãng hoặc model."""
+
+
+class EquipmentRetiredError(frappe.ValidationError):
+	"""Máy đích đã ngừng sử dụng, không nhận chương trình mới."""
+
+
 LIST_FIELDS = (
 	"program_code",
 	"program_name",
@@ -74,10 +83,14 @@ def copy_program(program: str, equipment: str, new_code: str) -> str:
 		frappe.throw(
 			_("Program {0} can only be copied to equipment of the same manufacturer and model.").format(
 				program
-			)
+			),
+			ProgramModelMismatchError,
 		)
 	if target.status == "Retired":
-		frappe.throw(_("Equipment {0} is retired and cannot get a new process program.").format(equipment))
+		frappe.throw(
+			_("Equipment {0} is retired and cannot get a new process program.").format(equipment),
+			EquipmentRetiredError,
+		)
 
 	values = {
 		"doctype": "Process Program",
@@ -89,4 +102,5 @@ def copy_program(program: str, equipment: str, new_code: str) -> str:
 	values.update({field: source.get(field) for field in SCALAR_FIELDS})
 	for table, fields in CHILD_FIELDS.items():
 		values[table] = [{field: row.get(field) for field in fields} for row in source.get(table)]
-	return frappe.get_doc(values).insert().name
+	# quyền do tầng RPC kiểm (R10, R02, System Manager); R02 không có quyền tạo trực tiếp trên DocType
+	return frappe.get_doc(values).insert(ignore_permissions=True).name
