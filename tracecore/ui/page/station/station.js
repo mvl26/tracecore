@@ -393,12 +393,9 @@ class TraceCoreStation {
 		this.cardInput.value = "";
 		if (!this.ownsPage() || !this.station || typeof raw !== "string" || !raw.trim())
 			return Promise.resolve();
-		const token =
-			(this.session && this.session.token) ||
-			(this.restoreCandidate && this.restoreCandidate.token);
-		this.clearSession();
+		const closing = this.endSession();
 		const attempt = this.authGeneration;
-		this.queuedLogin = { card: raw.trim(), attempt, closing: this.revokeToken(token) };
+		this.queuedLogin = { card: raw.trim(), attempt, closing };
 		if (this.authWorker) return this.authWorker;
 		this.authBusy = true;
 		this.authWorker = this.processLogins().finally(() => {

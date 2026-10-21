@@ -594,3 +594,42 @@ def test_card_removal_after_failed_restore_clears_and_revokes_preserved_token(pa
 		for method, args, _ in auth_shell.requests
 	)
 	assert "token" not in auth_shell.active
+
+
+def test_offline_new_card_after_failed_restore_cannot_restore_previous_operator_on_reconnect(
+	page, context, auth_shell
+):
+	auth_shell(page)
+	login(page)
+	token = page.evaluate("frappe.tc_station.session.token")
+	auth_shell(
+		page,
+		bootstrap="""() => {
+		const real = window.fetch;
+		let first = true;
+		window.fetch = (...args) => {
+			if (String(args[0]).endsWith('station.heartbeat') && first) {
+				first = false;
+				return Promise.reject(new TypeError('Synthetic restore transport failure'));
+			}
+			return real(...args);
+		};
+	}""",
+	)
+	expect(page.locator(".tc-auth-result")).to_contain_text("Card login needs the server")
+	assert page.evaluate("frappe.tc_station.session === null && frappe.tc_station.restoreCandidate === null")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") == token
+	context.set_offline(True)
+	reader_scan(page, "OFFLINE-NEW-CARD")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") is None
+	page.wait_for_function("!frappe.tc_station.authBusy")
+	expect(page.locator(".tc-work")).to_be_hidden()
+	context.set_offline(False)
+	page.evaluate("frappe.tc_station.handshake()")
+	expect(page.locator(".tc-work")).to_be_hidden()
+	assert page.evaluate("frappe.tc_station.session === null")
+	assert page.evaluate("sessionStorage.getItem(frappe.tc_station.storageKey())") is None
+	assert not any(
+		method.endswith("station.login") and args["card_id"] == "OFFLINE-NEW-CARD"
+		for method, args, _ in auth_shell.requests
+	)
