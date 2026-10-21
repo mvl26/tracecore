@@ -25,3 +25,9 @@ class TestStatus(IsolatedTestCase):
 
 	def test_statuses_constant(self):
 		self.assertEqual(status.STATUSES, ("Ready", "Locked", "Repair", "Retired"))
+
+	def test_retired_disables_equipment_code_with_reason(self):
+		doc = make_equipment(serial="SN-STATUS-CODE")
+		status.set_status(doc.name, "Retired", "  Thanh lý  ")
+		row = frappe.db.get_value("Code Registry", doc.name, ["status", "disabled_reason"], as_dict=True)
+		self.assertEqual((row.status, row.disabled_reason), ("Disabled", "Thanh lý"))

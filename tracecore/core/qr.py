@@ -13,6 +13,11 @@ ERROR_LEVEL = "M"  # mức sửa lỗi QR (~15 %), dùng chung cho PNG và ZPL
 MAX_MAGNIFICATION = 10  # ^BQ cho phép phóng đại 1-10
 _ALNUM = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"
 _MODE_NUMERIC, _MODE_ALNUM, _MODE_BYTE = 0b0001, 0b0010, 0b0100
+# Ảnh xem trước nhãn QR đối tượng: 50 x 30 mm ở 300 dpi, bố cục như mẫu mặc định `object_qr.zpl.jinja`
+PREVIEW_SIZE = (590, 354)
+PREVIEW_QR_ORIGIN = (20, 30)
+PREVIEW_QR_MODULE_PX = 6
+PREVIEW_TEXT_X = 210
 
 
 class QRError(ValueError):
@@ -57,6 +62,24 @@ def qr_png(payload, module_px=8, margin_px=16):
 				draw.rectangle((x, y, x + module_px - 1, y + module_px - 1), fill=0)
 	buffer = io.BytesIO()
 	image.save(buffer, format="PNG")
+	return buffer.getvalue()
+
+
+def label_preview_png(payload, lines):
+	"""Ảnh PNG xem trước nhãn QR đối tượng: QR của `payload` bên trái, `lines` = [(y, cỡ chữ, nội dung)] bên phải.
+
+	Chữ vẽ bằng phông mặc định của Pillow nên nơi gọi truyền chữ đã bỏ dấu; ảnh chỉ để xem, máy in dùng ZPL.
+	"""
+	from PIL import Image, ImageDraw, ImageFont
+
+	canvas = Image.new("RGB", PREVIEW_SIZE, "white")
+	symbol = Image.open(io.BytesIO(qr_png(payload, module_px=PREVIEW_QR_MODULE_PX, margin_px=0)))
+	canvas.paste(symbol, PREVIEW_QR_ORIGIN)
+	draw = ImageDraw.Draw(canvas)
+	for y, size, text in lines:
+		draw.text((PREVIEW_TEXT_X, y), text, fill="black", font=ImageFont.load_default(size=size))
+	buffer = io.BytesIO()
+	canvas.save(buffer, format="PNG")
 	return buffer.getvalue()
 
 

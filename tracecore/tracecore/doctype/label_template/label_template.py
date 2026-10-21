@@ -70,12 +70,12 @@ class LabelTemplate(Document):
 		if other and self.label_object != "Pack":
 			frappe.throw(
 				_("Template {2} is already active for {0} / {1}. Deactivate it first.").format(
-					_(self.label_object), self.language, other
+					_(self.label_object, context="Label Template"), self.language, other
 				)
 			)
 		if other:
 			frappe.throw(
 				_("Template {3} is already active for {0} / {1} / {2}. Deactivate it first.").format(
-					_(self.label_object), _(self.method), self.language, other
+					_(self.label_object, context="Label Template"), _(self.method), self.language, other
 				)
 			)

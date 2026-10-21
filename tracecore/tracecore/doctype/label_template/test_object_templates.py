@@ -99,6 +99,16 @@ class TestObjectTemplates(IsolatedTestCase):
 		self.assertTrue(frappe.db.get_value("Label Template", "Pack label - Steam", "is_active"))
 		self.assertTrue(frappe.db.get_value("Label Template", _name("Station"), "is_active"))
 
+	def test_one_active_message_names_object_in_vietnamese(self):
+		frappe.local.lang = "vi"
+		try:
+			with self.assertRaises(frappe.ValidationError) as ctx:
+				_template("Second roll template", label_object="Roll").insert()
+		finally:
+			frappe.local.lang = "en"
+		self.assertIn("Cuộn nhãn", str(ctx.exception))
+		self.assertNotIn("Roll /", str(ctx.exception))
+
 	def test_method_required_only_for_pack(self):
 		with self.assertRaises(frappe.ValidationError):
 			frappe.get_doc(

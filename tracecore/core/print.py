@@ -36,6 +36,11 @@ DEFAULT_HEIGHT_MM = 40
 DEFAULT_LANGUAGE = "ZPL"
 # Đối tượng có nhãn QR mã trần (A-05 R2); nhãn gói ("Pack") đi đường `render_pack`
 OBJECT_LABELS = ("Equipment", "Station", "Roll", "Employee Card", "Location")
+# Loại mã (`gs1.parse_scan`) in được cho từng đối tượng; thẻ nhân viên còn nhận thẻ có sẵn đã đăng ký (sổ CARD)
+OBJECT_SCAN_TYPES = dict(
+	zip(OBJECT_LABELS, ("equipment", "station", "roll", "employee", "location"), strict=True)
+)
+OBJECT_CODE_MAX_LENGTH = 40
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -285,15 +290,34 @@ def _check_object_label(label_object):
 		frappe.throw(_("Label object {0} has no QR label.").format(label_object))
 
 
-def object_context(label_object, code, title, subtitle=""):
-	"""`doc` của mẫu nhãn QR đối tượng: ``code, title, subtitle, payload, is_test``; payload QR = mã trần.
+def object_code_problem(label_object, code):
+	"""Lý do (đã dịch) `code` không in được thành nhãn QR của `label_object`, hoặc None nếu in được.
 
-	Mã đi nguyên vào QR nên phải là ASCII in được, không khoảng trắng, không ``^``/``~``: mã sai bị từ chối thay vì
-	lặng lẽ bỏ ký tự (QR sẽ không quét ra đúng mã). Tên/dòng phụ được làm sạch và bỏ dấu lúc render.
+	Mã đi nguyên vào QR nên phải là ASCII in được, 1-40 ký tự, không khoảng trắng, không ``^``/``~``, và đúng định
+	dạng của loại đối tượng (thiết bị ``TB-``, trạm ``TR-``…; thẻ nhân viên ``NV-`` hoặc thẻ bệnh viện đã đăng ký) để
+	mã của loại này không bị in thành nhãn loại khác. Mã sai bị từ chối thay vì lặng lẽ sửa.
 	"""
 	_check_object_label(label_object)
-	if not isinstance(code, str) or not code or not all("!" <= char <= "}" and char != "^" for char in code):
-		frappe.throw(_("Code {0} cannot be printed on a QR label.").format(repr(code)))
+	if (
+		not isinstance(code, str)
+		or not 0 < len(code) <= OBJECT_CODE_MAX_LENGTH
+		or not all("!" <= char <= "}" and char != "^" for char in code)
+	):
+		return _("Code {0} cannot be printed on a QR label.").format(repr(code))
+	scanned = gs1.parse_scan(code)
+	if scanned["raw"] == code and scanned["type"] == OBJECT_SCAN_TYPES[label_object]:
+		return None
+	card = {"name": code, "prefix": code_registry.CARD_PREFIX}
+	if label_object == "Employee Card" and frappe.db.exists("Code Registry", card):
+		return None
+	return _("Code {0} is not a code of {1}.").format(code, _(label_object, context="Label Template"))
+
+
+def object_context(label_object, code, title, subtitle=""):
+	"""`doc` của mẫu nhãn QR đối tượng (``code, title, subtitle, payload, is_test``); mã qua `object_code_problem`."""
+	problem = object_code_problem(label_object, code)
+	if problem:
+		frappe.throw(problem)
 	return {
 		"code": code,
 		"title": "" if title is None else str(title),
@@ -315,7 +339,8 @@ def render_object(label_object, code, title, subtitle="", printer=None):
 	get_dialect(language)
 	template = active_template(label_object, None, language)
 	if template is None:
-		frappe.throw(_("No active label template for {0} ({1}).").format(_(label_object), language))
+		label = _(label_object, context="Label Template")
+		frappe.throw(_("No active label template for {0} ({1}).").format(label, language))
 	return _render_template_row(template, doc, bool(cint(printer.get("supports_unicode"))))
 
 

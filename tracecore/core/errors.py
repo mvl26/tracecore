@@ -27,10 +27,13 @@ HTTP_STATUS: dict[str, int] = {
 			"LABEL_RENDER_FAILED",
 			"PROGRAM_MODEL_MISMATCH",
 			"PROGRAM_COPY_INVALID",
+			"COUNT_OUT_OF_RANGE",
 		),
 		422,
 	),
-	**dict.fromkeys(("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND", "EQUIPMENT_NOT_FOUND"), 404),
+	**dict.fromkeys(
+		("SET_NOT_FOUND", "PACK_NOT_FOUND", "ROLL_NOT_FOUND", "EQUIPMENT_NOT_FOUND", "CODE_NOT_FOUND"), 404
+	),
 	**dict.fromkeys(
 		(
 			"STATUS_INVALID_FOR_STATION",
@@ -46,6 +49,7 @@ HTTP_STATUS: dict[str, int] = {
 			"EQUIPMENT_NOT_RETIRABLE",
 			"EQUIPMENT_RETIRED",
 			"PROGRAM_CODE_EXISTS",
+			"CODE_DISABLED",
 		),
 		409,
 	),

@@ -1,11 +1,14 @@
 """Trạng thái thiết bị (WF-07, Q5): nơi duy nhất đổi ``Equipment.status``.
 
 ``Locked``/``Repair`` do FEAT-039/040 dùng; FEAT-038 dùng ``Retired`` (ngừng sử dụng, một chiều).
-Audit Log Update (old/new ``status``) do hook doc_events của Equipment ghi.
+Audit Log Update (old/new ``status``) do hook doc_events của Equipment ghi. Chuyển ``Retired`` vô hiệu mã ``TB-`` trong
+Code Registry (A-05 R4, FR-M9-07.2) cùng transaction: mã vẫn tra được lịch sử nhưng không in nhãn, không cấp lại.
 """
 
 import frappe
 from frappe import _
+
+from tracecore.core import code_registry
 
 STATUSES = ("Ready", "Locked", "Repair", "Retired")
 
@@ -28,3 +31,5 @@ def set_status(equipment: str, status: str, reason: str | None = None) -> None:
 	doc.status = status
 	doc.flags.tc_equipment = True
 	doc.save(ignore_permissions=True)
+	if status == "Retired" and code_registry.is_issued(doc.name):
+		code_registry.disable(doc.name, reason)
