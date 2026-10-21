@@ -1,3 +1,4 @@
+/* global tracecore */
 // Desk: form Zone Station (SCR-33, FEAT-002 Task 5).
 // Chức năng trạm theo khu lấy từ tracecore.v1.zone.allowed_steps; JS không giữ bảng bước (core.zones là nguồn duy nhất).
 // Ẩn/hiện khu cha, chức năng, thiết bị ngoại vi khi chọn "Là khu" do depends_on trong DocType lo.
@@ -12,6 +13,15 @@ frappe.ui.form.on("Zone Station", {
 	refresh(frm) {
 		zone_station_indicator(frm);
 		zone_station_load_steps(frm);
+		// "In nhãn QR" cho trạm (FEAT-005, tc_codes.js); khu không có mã QR. Trạm tắt vẫn in được (A-05 R4).
+		if (!frm.doc.is_zone) {
+			tracecore.codes.add_print_button(
+				frm,
+				"Station",
+				frm.doc.zone_station_name,
+				[frm.doc.parent_zone, frm.doc.station_step].filter(Boolean).join(" - ")
+			);
+		}
 	},
 
 	is_active(frm) {

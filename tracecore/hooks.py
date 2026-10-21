@@ -36,7 +36,8 @@ fixtures = [
 # include js, css files in header of desk.html
 # Biến --tc-* sinh từ docs/tokens.json (scripts/build_tokens.py) + ánh xạ biến Frappe Desk
 app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + tracecore-theme.css
-# app_include_js = "/assets/tracecore/js/tracecore.js"
+# Hàm dùng chung tracecore.codes.* (in nhãn QR đối tượng, cấp mã cuộn — FEAT-005): bundle có hash nhập tc_codes.js
+app_include_js = ["tracecore.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/tracecore/css/tracecore.css"
@@ -54,7 +55,8 @@ app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + trac
 page_js = {"station": "public/js/station_t4.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3)
+doctype_js = {"Item": "public/js/item.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
