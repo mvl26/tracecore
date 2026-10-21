@@ -9,3 +9,4 @@ tracecore.patches.v0_1.register_station_codes
 tracecore.patches.v0_1.activate_existing_stations
 tracecore.patches.v0_1.seed_zone_stations
 tracecore.patches.v0_1.create_object_label_templates
+tracecore.patches.v0_1.disable_retired_equipment_codes
