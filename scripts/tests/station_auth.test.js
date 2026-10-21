@@ -282,3 +282,29 @@ test("retired instance cannot erase replacement storage even when its old token 
 	assert.equal(store.get(station.storageKey()), "private-bearer");
 	assert.equal(calls.length, 0);
 });
+
+test("offline new-card intent clears and attempts logout of a saved-only previous token", async () => {
+	const { station, store, calls } = harness();
+	station.session = null;
+	station.restoreCandidate = null;
+	station.stationInfo = { name: "TR-004" };
+	station.isOffline = () => true;
+	station.setOffline = () => {};
+	store.set(station.storageKey(), "saved-old-token");
+	const login = station.login("NEW-CARD");
+	assert.equal(store.has(station.storageKey()), false);
+	await login;
+	assert.equal(calls.length, 1);
+	assert.match(calls[0].url, /station.logout$/);
+	assert.equal(JSON.parse(calls[0].body).token, "saved-old-token");
+	assert.equal(station.session, null);
+});
+
+test("retired new-card intent cannot capture or revoke replacement's equal-valued token", async () => {
+	const { station, sandbox, store, calls } = harness();
+	store.set(station.storageKey(), "private-bearer");
+	sandbox.frappe.tc_station = {};
+	await station.login("NEW-CARD");
+	assert.equal(store.get(station.storageKey()), "private-bearer");
+	assert.equal(calls.length, 0);
+});
