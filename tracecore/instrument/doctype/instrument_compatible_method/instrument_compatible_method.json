@@ -1,0 +1,33 @@
+{
+ "actions": [],
+ "creation": "2026-10-21 10:00:00.000000",
+ "description": "One sterilization method an instrument tolerates (FR-M1-01, A-06 I2). A change of the method set raises the instrument version.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "method"
+ ],
+ "fields": [
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Method",
+   "options": "\nSteam 121\nSteam 134\nPlasma\nEO",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-21 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instrument",
+ "name": "Instrument Compatible Method",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

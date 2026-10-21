@@ -209,7 +209,6 @@ Last Deferral Reason,Lý do hoãn gần nhất,
 Current Cycle No,Số thứ tự chu trình hiện hành,
 GTIN-14 must be 14 digits with a valid check digit.,GTIN-14 phải gồm 14 chữ số và đúng chữ số kiểm tra.,
 GTIN-14 {0} is already used by Set Type {1}.,GTIN-14 {0} đã được loại bộ {1} sử dụng.,
-"Instrument Code may contain only uppercase letters, digits and hyphens.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
 Quantity must be at least 1.,Số lượng phải từ 1 trở lên.,
 Step Gate Result,Kết quả cổng bước,
 Assembly Record,Phiếu lắp ráp,
@@ -915,3 +914,54 @@ Printer {0} ({1}): printer host not allowed for server printing,Máy in {0} ({1}
 No answer from the server,Server không trả lời,
 The server did not answer (HTTP {0}); the request may or may not have been done.,Server không trả lời (HTTP {0}); yêu cầu có thể đã hoặc chưa được thực hiện.,
 "Try again: the same request is sent again, so it is not done twice.","Thử lại: hệ thống gửi lại đúng yêu cầu cũ, nên không bị thực hiện hai lần.",
+Instrument Compatible Method,Phương pháp tương thích của dụng cụ,
+Instrument Group,Nhóm dụng cụ,
+Instrument Group,Nhóm dụng cụ,Instrument
+Group Name,Tên nhóm,Instrument Group
+Compatible Methods,Phương pháp tiệt khuẩn tương thích,
+Compatible Methods,Phương pháp tiệt khuẩn tương thích,Instrument
+Spaulding Class,Phân loại Spaulding,
+Spaulding Class,Phân loại Spaulding,Instrument
+Critical,Thiết yếu,Instrument
+Semi-critical,Bán thiết yếu,Instrument
+Non-critical,Không thiết yếu,Instrument
+Method,Phương pháp,Instrument Compatible Method
+Steam 121,Hấp 121 °C,Instrument Compatible Method
+Steam 134,Hấp 134 °C,Instrument Compatible Method
+Plasma,Plasma H2O2,Instrument Compatible Method
+EO,EO,Instrument Compatible Method
+Status,Trạng thái,Instrument
+Active,Đang dùng,Instrument
+Retired,Ngừng sử dụng,Instrument
+Retired,Ngừng sử dụng,
+Version,Phiên bản,Instrument
+Manufacturer,Hãng sản xuất,Instrument
+Model,Model,Instrument
+Reprocessing,Tái xử lý,Instrument
+Photo and IFU,Ảnh và IFU,Instrument
+Image,Ảnh thực tế,Instrument
+Image Thumbnail,Ảnh thu nhỏ,Instrument
+IFU,IFU (hướng dẫn sử dụng của hãng),Instrument
+IFU,IFU,
+Max Cycles Status,Tình trạng cơ số,Instrument
+Defined,Đã xác định,Instrument
+Undefined,Chưa xác định,Instrument
+Undefined,Chưa xác định,
+Not provided,Chưa có,
+Value,Giá trị (VND),Instrument
+Item,Item ERPNext,Instrument
+Retirement,Ngừng sử dụng,Instrument
+Retired On,Ngày ngừng sử dụng,Instrument
+Retired Reason,Lý do ngừng sử dụng,Instrument
+"Instrument Code may contain only uppercase letters, digits and hyphens, at most {0} characters.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang, tối đa {0} ký tự.",
+Instrument Code {0} already exists. Next free code: {1},Mã dụng cụ {0} đã tồn tại. Mã kế tiếp còn trống: {1},
+Duplicate Instrument Code,Trùng mã dụng cụ,
+No free instrument code found after {0} attempts starting from {1}. Enter a different code.,Không tìm được mã dụng cụ còn trống sau {0} lần thử từ {1}. Hãy nhập mã khác.,
+Instrument Code cannot be changed after the instrument is created.,Không được đổi mã dụng cụ sau khi đã tạo.,
+Required fields are missing: {0}.,Thiếu trường bắt buộc: {0}.,
+"Instrument status, retirement and version are changed only by the instrument catalog.","Trạng thái, thông tin ngừng sử dụng và phiên bản của dụng cụ chỉ đổi qua chức năng danh mục dụng cụ.",
+Compatible method {0} is listed more than once.,Phương pháp tương thích {0} bị khai báo trùng.,
+Value cannot be negative.,Giá trị không được âm.,
+Item {0} is disabled and cannot be linked to an instrument.,"Item {0} đã bị vô hiệu, không gắn được với dụng cụ.",
+Instrument master defaults filled in by the FEAT-014 data patch,Bản vá dữ liệu FEAT-014 điền giá trị mặc định cho danh mục dụng cụ,
+Instrument Data Gaps,Dụng cụ cần bổ sung dữ liệu,

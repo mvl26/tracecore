@@ -88,8 +88,30 @@ def make_set_type(
 	).insert()
 
 
-def make_instrument(code, name=None, interval=None, maint_type=None, image=None):
-	"""Tạo (hoặc lấy) Instrument. interval: ngưỡng bảo dưỡng theo chu trình (None/0 = không nhắc)."""
+def make_instrument_group(group_name):
+	"""Tạo (hoặc lấy) Instrument Group; trả tên nhóm."""
+	if not frappe.db.exists("Instrument Group", group_name):
+		frappe.get_doc({"doctype": "Instrument Group", "group_name": group_name}).insert()
+	return group_name
+
+
+def make_instrument(
+	code,
+	name=None,
+	interval=None,
+	maint_type=None,
+	image=None,
+	spaulding="Critical",
+	methods=("Steam 134",),
+	max_cycles=None,
+	group=None,
+	**kwargs,
+):
+	"""Tạo (hoặc lấy) Instrument đủ trường bắt buộc (FEAT-014).
+
+	interval: ngưỡng bảo dưỡng theo chu trình (None/0 = không nhắc); max_cycles None/0 = cơ số Chưa xác định;
+	group: tên Instrument Group (tạo nếu chưa có); kwargs: trường khác (manufacturer, model, ifu, value, item…).
+	"""
 	if frappe.db.exists("Instrument", code):
 		return frappe.get_doc("Instrument", code)
 	return frappe.get_doc(
@@ -100,6 +122,11 @@ def make_instrument(code, name=None, interval=None, maint_type=None, image=None)
 			"maint_interval_cycles": interval or 0,
 			"maint_type": maint_type,
 			"image": image,
+			"spaulding_class": spaulding,
+			"compatible_methods": [{"method": method} for method in methods],
+			"max_cycles": max_cycles or 0,
+			"instrument_group": make_instrument_group(group) if group else None,
+			**kwargs,
 		}
 	).insert()
 

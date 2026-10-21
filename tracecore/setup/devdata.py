@@ -33,6 +33,8 @@ T4_SET_TYPES = {"Steam": "DEMOT4S", "Plasma": "DEMOT4P"}
 T4_GTIN_FIRST_SERIAL = 90001  # dải GTIN test riêng cho demo, không đụng serial cố định (1…) của test
 T4_LUBE_INSTRUMENT = "DEMO-T4-KC-02"
 T4_LUBE_INTERVAL = 50
+T4_INSTRUMENT_SPAULDING = "Critical"
+T4_INSTRUMENT_METHODS = {"Steam": ("Steam 134",), "Plasma": ("Plasma",)}
 DEMO_OIL_LOT = "DEMO-T4-DAU-01"  # lô dầu để xác nhận "Đã bảo dưỡng" cho nhắc tra dầu
 STEAM_LABEL, PLASMA_LABEL = (code for code, _method in factories.LABEL_ITEMS)
 T4_GATES_READY = ("T1", "T2", "T3")
@@ -134,7 +136,9 @@ def _free_demo_gtin():
 	frappe.throw("No free demo GTIN-14 left")
 
 
-def _ensure_instrument(code, name):
+def _ensure_instrument(code, name, method):
+	"""Dụng cụ demo: Spaulding Thiết yếu, phương pháp theo loại bộ (Steam → Hấp 134 °C, Plasma → Plasma)."""
+	methods = T4_INSTRUMENT_METHODS[method]
 	if not frappe.db.exists("Instrument", code):
 		lube = code == T4_LUBE_INSTRUMENT
 		factories.make_instrument(
@@ -143,9 +147,19 @@ def _ensure_instrument(code, name):
 			interval=T4_LUBE_INTERVAL if lube else None,
 			maint_type="Lubrication" if lube else None,
 			image=_demo_image(code),
+			spaulding=T4_INSTRUMENT_SPAULDING,
+			methods=methods,
 		)
-	elif not frappe.db.get_value("Instrument", code, "image"):
+		return
+	if not frappe.db.get_value("Instrument", code, "image"):
 		frappe.db.set_value("Instrument", code, "image", _demo_image(code))
+	doc = frappe.get_doc("Instrument", code)
+	if not doc.spaulding_class or not doc.compatible_methods:
+		# dụng cụ demo tạo trước FEAT-014: bổ sung dữ liệu demo (không áp cho dữ liệu thật, xem patch)
+		doc.spaulding_class = doc.spaulding_class or T4_INSTRUMENT_SPAULDING
+		if not doc.compatible_methods:
+			doc.set("compatible_methods", [{"method": m} for m in methods])
+		doc.save(ignore_permissions=True)
 
 
 def _ensure_set_type(method, spec):
@@ -156,7 +170,7 @@ def _ensure_set_type(method, spec):
 		factories.make_item(pack_code, "Packaging", shelf_life_days=days)
 		frappe.db.set_value("Item", pack_code, "item_name", pack_name)
 	for instrument, name, _qty in spec["bom"]:
-		_ensure_instrument(instrument, name)
+		_ensure_instrument(instrument, name, method)
 	if not frappe.db.exists("Instrument Set Type", code):
 		frappe.get_doc(
 			{
