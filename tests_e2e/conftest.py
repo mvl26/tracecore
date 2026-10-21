@@ -38,7 +38,10 @@ def logged_in_page(page):
 @pytest.fixture
 def station_page(logged_in_page):
 	station = os.environ.get("TC_E2E_STATION", "TR-003")
+	card = require_env("TC_E2E_CARD_ID")
 	logged_in_page.goto(f"/app/station?station={station}")
+	logged_in_page.locator("#tc-card-input").fill(card)
+	logged_in_page.locator("#tc-card-input").press("Enter")
 	logged_in_page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	return logged_in_page
 
@@ -69,6 +72,7 @@ def t4_demo():
 
 @pytest.fixture
 def t4_page(page):
+	card = require_env("TC_E2E_T4_CARD_ID")
 	response = page.request.post(
 		"/api/method/login",
 		form={"usr": require_env("TC_E2E_T4_USER"), "pwd": require_env("TC_E2E_T4_PASSWORD")},
@@ -76,6 +80,8 @@ def t4_page(page):
 	assert response.ok, response.text()
 	station = os.environ.get("TC_E2E_T4_STATION", "TR-004")
 	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	return page
 

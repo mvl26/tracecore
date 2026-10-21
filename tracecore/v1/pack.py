@@ -77,11 +77,11 @@ def _maint_actions(value):
 def _scan_invalid(scanned):
 	"""Mã không dùng được ở màn đóng gói: lạ (khi chưa mở bộ) hoặc mã nội bộ của loại khác (nhân viên, thiết bị…)."""
 	if scanned["type"] == "unknown":
-		reason = _("Code {0} is not a TraceCore code, and no set is open to take it as an indicator lot.")
-		action = _("Scan the Set ID on the set tag first, or call R02.")
+		reason = _("Code {0} is not a set, pack or label roll.")
+		action = _("Scan indicator lots in the separate indicator lot field.")
 	else:
-		reason = _("Code {0} is not a set, pack, label roll or indicator lot.")
-		action = _("Scan the Set ID, the Cycle ID, the label roll code or the indicator lot.")
+		reason = _("Code {0} is not a set, pack or label roll.")
+		action = _("Scan the Set ID, the Cycle ID or the label roll code.")
 	return BlockedError(
 		Block("SCAN_INVALID", _("Invalid code"), reason.format(scanned["raw"] or "-"), action)
 	)
@@ -107,7 +107,7 @@ def _open_set_method(open_set):
 
 
 def _route(scanned, raw, station, open_set):
-	"""Ô quét duy nhất của màn T4 (D10): phân loại bằng `gs1.parse_scan` rồi giao cho dịch vụ tương ứng."""
+	"""Ô chính T4: Set ID, Cycle ID hoặc cuộn nhãn; lô chỉ thị có endpoint riêng."""
 	kind = scanned["type"]
 	if kind == "set":
 		return {"ok": True, "kind": "context", "context": packing.get_context(raw, station)}
@@ -115,9 +115,6 @@ def _route(scanned, raw, station, open_set):
 		return {"ok": True, "kind": "pack", "pack": packing.lookup(raw)}
 	if kind == "roll":
 		return {"ok": True, "kind": "roll", "roll": change_roll(scanned["id"], station)}
-	if kind == "unknown" and open_set:
-		lot = packing.resolve_ci_batch(raw, _open_set_method(open_set), today())
-		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
 	raise _scan_invalid(scanned)
 
 
@@ -130,7 +127,7 @@ def scan(raw, station, open_set=None, client_ts=None, token=None):
 	- ``context`` (Set ID): ngữ cảnh đóng gói của bộ (BOM, cổng, bảo dưỡng, cơ số, loại gói, máy in);
 	- ``pack`` (Cycle ID hoặc DataMatrix nhãn gói): tra cứu gói (AC-14);
 	- ``roll`` (``CN-#####``): đổi cuộn của máy in duy nhất của trạm (AC-9);
-	- ``ci`` (mã khác, khi `open_set` là bộ đang mở): lô chỉ thị hóa học loại 5/6 đúng phương pháp của bộ.
+	Lô chỉ thị dùng endpoint ``resolve_ci`` của ô riêng, không phân loại từ ô chính.
 
 	Từ chối nghiệp vụ: xem `_common.run_at_step`; mã lạ khi chưa mở bộ và mã loại khác là ``SCAN_INVALID`` (422).
 	"""
@@ -150,6 +147,32 @@ def scan(raw, station, open_set=None, client_ts=None, token=None):
 		ref_doctype,
 		ref_name,
 		scanned["raw"],
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
+@idempotent
+def resolve_ci(raw, station, open_set, client_ts=None, token=None):
+	"""Ô lô chỉ thị riêng: giữ nguyên kiểm tra loại 5/6, phương pháp và hạn dùng FEAT-018."""
+	require_any_role(*PACKING_ROLES)
+	if not isinstance(raw, str) or not isinstance(open_set, str):
+		raise BadRequestError(_("raw and open_set must be strings."))
+	timestamp = parse_client_ts(client_ts)
+
+	def resolve():
+		lot = packing.resolve_ci_batch(raw.strip(), _open_set_method(open_set), today())
+		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
+
+	scanned = gs1.parse_scan(open_set)
+	return run_at_step(
+		STEP,
+		station,
+		timestamp,
+		resolve,
+		"Set Unit" if scanned["type"] == "set" else None,
+		scanned["id"],
+		raw.strip(),
 	)
 
 

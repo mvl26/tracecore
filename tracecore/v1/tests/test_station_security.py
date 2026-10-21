@@ -335,6 +335,7 @@ class TestStationSecurity(IsolatedTestCase):
 	def test_all_pack_rpcs_require_live_session_even_for_frappe_admin(self):
 		for fn, args in (
 			(pack_api.scan, {"raw": "CY-991231-9999"}),
+			(pack_api.resolve_ci, {"raw": "lot", "open_set": "missing"}),
 			(
 				pack_api.generate_cycle_id,
 				{"set_id": "missing", "confirmed_lines": [], "ci_batch": "missing", "pack_type": "missing"},
@@ -347,6 +348,19 @@ class TestStationSecurity(IsolatedTestCase):
 		self.assert_block(
 			self.rpc(printer_api.set_roll, station="TR-004", roll_code="CN-99999"), "SESSION_INVALID", 401
 		)
+
+	def test_second_station_login_rejects_old_kiosk_heartbeat(self):
+		make_station_session(self.user, "TR-005")  # valid competency at the second physical station
+		frappe.set_user("Guest")
+		first = self.rpc(station_api.login, card_id=self.employee.tc_card_id, station="TR-004")
+		second = self.rpc(station_api.login, card_id=self.employee.tc_card_id, station="TR-005")
+		self.assertTrue(first["ok"] and second["ok"])
+		self.assert_block(
+			self.rpc(station_api.heartbeat, token=first["session"]["token"]), "SESSION_INVALID", 401
+		)
+		live = self.rpc(station_api.heartbeat, token=second["session"]["token"])
+		self.assertTrue(live["ok"])
+		self.assertEqual(live["station"], "TR-005")
 
 	def test_guest_pack_actor_and_idempotent_replay_recheck_live_session(self):
 		ready = make_t4_ready_set()

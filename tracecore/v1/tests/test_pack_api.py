@@ -58,6 +58,7 @@ def call(fn, key=None, station_header=STATION, **kwargs):
 	kwargs.setdefault("client_ts", now_ts())
 	if fn in (
 		pack_api.scan,
+		pack_api.resolve_ci,
 		pack_api.generate_cycle_id,
 		pack_api.reprint_label,
 		pack_api.void,
@@ -142,6 +143,29 @@ class PackApiCase(IsolatedTestCase):
 
 
 class TestScan(PackApiCase):
+	def test_main_scan_never_resolves_indicator_lots_even_with_open_set(self):
+		ready = make_t4_ready_set()
+		with patch.object(packing, "resolve_ci_batch", wraps=packing.resolve_ci_batch) as resolver:
+			result = call(pack_api.scan, raw=ready.ci_batch, station=STATION, open_set=ready.set_id)
+			assert_rejection(self, result, "SCAN_INVALID", 422)
+			resolver.assert_not_called()
+
+	def test_dedicated_ci_endpoint_uses_existing_method_and_expiry_rules(self):
+		endpoint = getattr(pack_api, "resolve_ci", None)
+		self.assertTrue(callable(endpoint), "Dedicated indicator-lot RPC is missing")
+		ready = make_t4_ready_set()
+		args = dict(
+			raw=ready.ci_batch, station=STATION, open_set=ready.set_id, token=SESSION_TOKENS["Administrator"]
+		)
+		result = call(endpoint, **args)
+		self.assertTrue(result["ok"])
+		self.assertEqual(result["ci"]["batch"], ready.ci_batch)
+		self.assertEqual(result["kind"], "ci")
+		frappe.set_user("Guest")
+		self.addCleanup(frappe.set_user, "Administrator")
+		result = call(endpoint, **{**args, "token": "invalid"})
+		assert_rejection(self, result, "SESSION_INVALID", 401)
+
 	def test_scan_set_returns_context(self):
 		ready = make_t4_ready_set()
 		before = reject_count()
@@ -155,6 +179,21 @@ class TestScan(PackApiCase):
 		self.assertIn(ready.pack_type, [row["item"] for row in context["pack_types"]])
 		self.assertIsNone(http_status())
 		self.assertEqual(reject_count(), before)
+
+	def test_dedicated_ci_schema_and_replay_still_require_live_session(self):
+		ready = make_t4_ready_set()
+		for raw, open_set in (({}, ready.set_id), (ready.ci_batch, [])):
+			with self.subTest(raw=raw, open_set=open_set), self.assertRaises(BadRequestError):
+				call(pack_api.resolve_ci, raw=raw, station=STATION, open_set=open_set)
+		key, ts = str(uuid.uuid4()), now_ts()
+		args = dict(raw=ready.ci_batch, station=STATION, open_set=ready.set_id, client_ts=ts)
+		first = call(pack_api.resolve_ci, key=key, **args)
+		self.assertEqual(call(pack_api.resolve_ci, key=key, **args), first)
+		token = SESSION_TOKENS["Administrator"]
+		from tracecore.core import station_auth
+
+		station_auth.logout(token)
+		assert_rejection(self, call(pack_api.resolve_ci, key=key, **args), "SESSION_INVALID", 401)
 
 	@bru("BRU-FLOW-004")
 	def test_scan_gate_rejection_writes_audit_and_409(self):
@@ -193,7 +232,7 @@ class TestScan(PackApiCase):
 			("set not found", pack_api.scan, {"raw": missing_set, "station": STATION}, "SET_NOT_FOUND", 404),
 			(
 				"lot of another method",
-				pack_api.scan,
+				pack_api.resolve_ci,
 				{"raw": steam.ci_batch, "station": STATION, "open_set": plasma.set_id},
 				"CI_LOT_INVALID",
 				422,
@@ -262,7 +301,7 @@ class TestScan(PackApiCase):
 				self, call(pack_api.generate_cycle_id, **generate_args(steam)), "ACTIVE_CYCLE_EXISTS", 409
 			)
 
-	def test_scan_routes_pack_roll_and_ci(self):
+	def test_scan_routes_pack_roll_and_dedicated_ci(self):
 		ready = make_t4_ready_set()
 		cycle_id = call(pack_api.generate_cycle_id, **generate_args(ready))["pack"]["cycle_id"]
 		payload = frappe.db.get_value("Pack", cycle_id, "barcode_payload")
@@ -284,7 +323,7 @@ class TestScan(PackApiCase):
 
 		other = make_t4_ready_set(with_printer=False)
 		result = call(
-			pack_api.scan, raw=" " + other.ci_batch + "\r\n", station=STATION, open_set=other.set_id
+			pack_api.resolve_ci, raw=" " + other.ci_batch + "\r\n", station=STATION, open_set=other.set_id
 		)
 		self.assertIs(result["ok"], True)
 		self.assertEqual(result["kind"], "ci")
@@ -335,13 +374,13 @@ class TestScan(PackApiCase):
 		ready = make_t4_ready_set()
 		for open_set in ("not-a-set", gs1.make_giai(gs1.configured_company_prefix(), "ZZZ999998")):
 			with self.subTest(open_set=open_set):
-				result = call(pack_api.scan, raw=ready.ci_batch, station=STATION, open_set=open_set)
+				result = call(pack_api.resolve_ci, raw=ready.ci_batch, station=STATION, open_set=open_set)
 				assert_rejection(self, result, "SET_NOT_FOUND", 404)
 
 	def test_scan_expired_lot_is_422(self):
 		ready = make_t4_ready_set()
 		expired = make_ci_batch("Steam", expiry_days=-3)
-		result = call(pack_api.scan, raw=expired, station=STATION, open_set=ready.set_id)
+		result = call(pack_api.resolve_ci, raw=expired, station=STATION, open_set=ready.set_id)
 		assert_rejection(self, result, "CI_LOT_EXPIRED", 422)
 
 	def test_scan_replay_same_key_returns_same_result(self):

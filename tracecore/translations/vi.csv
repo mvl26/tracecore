@@ -853,3 +853,37 @@ Station PIN Change Required,Yêu cầu đổi PIN trạm,
 Use account credential actions to change or reset a password.,Dùng chức năng tài khoản để đổi hoặc đặt lại mật khẩu.,
 Use account credential actions to change or reset a PIN.,Dùng chức năng tài khoản để đổi hoặc đặt lại PIN.,
 Ask R10 or a PIN-verified R02 to reset your account.,Đề nghị R10 hoặc R02 đã xác thực PIN đặt lại tài khoản.,
+Scan employee card,Quét thẻ nhân viên,
+Scan employee card...,Quét thẻ nhân viên...,
+Scan another card,Quét thẻ khác,
+Session expires: {0},Phiên hết hạn: {0},
+Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy chủ.,
+"Reconnect, then scan your employee card again.",Kết nối lại rồi quét lại thẻ nhân viên.,
+"Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
+Scan indicator lot,Quét lô chỉ thị,
+"Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
+Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
+"Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
+raw and open_set must be strings.,raw và open_set phải là chuỗi.,
+Absolute Expires At,Hết hạn tuyệt đối lúc,Station Session
+Approved By,Người phê duyệt,Station Competency
+"Competency must be assigned to a station, not a zone.","Năng lực phải được gán cho trạm, không phải khu.",
+Employee Disabled,Nhân viên đã bị vô hiệu,Station Session
+End Reason,Lý do kết thúc,Station Session
+Idle,Không hoạt động,Station Session
+Is Open,Đang mở,Station Session
+Last Activity At,Hoạt động cuối lúc,Station Session
+Replaced,Được thay thế,Station Session
+Station Card Enabled,Bật thẻ trạm,Employee
+Station Card ID,Mã thẻ trạm,Employee
+Station Competency,Năng lực trạm,
+Station PIN Hash,Mã băm PIN trạm,Employee
+Station Session,Phiên trạm,
+Temporary Access,Truy cập tạm thời,Station Competency
+Temporary Reason,Lý do tạm thời,Station Competency
+The session belongs to another station.,Phiên thuộc về trạm khác.,
+Token Hash,Mã băm token,Station Session
+Use the station where you scanned your card.,Sử dụng trạm nơi bạn đã quét thẻ.,
+Valid Until,Có hiệu lực đến,Station Competency
+card_id and station must be strings.,card_id và station phải là chuỗi.,
+pin must be a string.,pin phải là chuỗi.,

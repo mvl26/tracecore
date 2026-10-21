@@ -19,6 +19,12 @@ def scan(page, raw):
 	page.keyboard.press("Enter")
 
 
+def scan_indicator(page, raw):
+	field = page.locator("#tc-ci-input")
+	field.fill(raw)
+	field.press("Enter")
+
+
 def mock_agent(page):
 	"""Agent giả trả 202 cho POST /print; trả về danh sách payload đã nhận (kể cả CORS preflight)."""
 	received = []
@@ -109,7 +115,7 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expected_text = expected_expiry.inner_text()
 
 	taps.tap(confirm_all)
-	scan(page, t4_demo["ci_steam"])
+	scan_indicator(page, t4_demo["ci_steam"])
 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_steam"])
 	expect(page.locator(".tc-missing")).to_have_count(0)
 	taps.tap(page.locator("[data-action='confirm-pack']"))
@@ -144,7 +150,7 @@ def test_t4_maintenance_reminder_flow(t4_page, t4_demo):
 	done_button = reminder.locator("[data-action='maint-done']")
 	expect(done_button).to_have_count(1)
 	taps.tap(page.locator("[data-action='confirm-all']"))
-	scan(page, t4_demo["ci_steam"])
+	scan_indicator(page, t4_demo["ci_steam"])
 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_steam"])
 	# chưa xử lý nhắc: nút chính khóa và nêu lý do
 	expect(page.locator("[data-action='confirm-pack']")).to_be_disabled()
@@ -198,7 +204,7 @@ def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
 
 	scan_set_and_wait_context(page, t4_demo["set_plasma"])
 	taps.tap(page.locator("[data-action='confirm-all']"))
-	scan(page, t4_demo["ci_plasma"])
+	scan_indicator(page, t4_demo["ci_plasma"])
 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_plasma"])
 	taps.tap(page.locator("[data-action='confirm-pack']"))
 
