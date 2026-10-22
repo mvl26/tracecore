@@ -35,6 +35,35 @@ class TestStepGate(FrappeTestCase):
 		state = _lifecycle(su)
 		self.assertEqual((state.current_cycle_no, state.status), (2, "Processing"))
 
+	def test_start_cycle_pins_bom_version_from_hook_in_same_save(self):
+		su = make_set_unit().name
+		with patch("tracecore.core.step_gate.extension.run", return_value=["x", True, 4, 9]) as run:
+			self.assertEqual(step_gate.start_cycle(su, on="2026-11-02"), 1)
+		run.assert_called_once()
+		hook, ctx = run.call_args.args
+		self.assertEqual(hook, "tracecore_cycle_bom_version")
+		set_type = frappe.db.get_value("Set Unit", su, "set_type")
+		self.assertEqual(ctx, {"set_unit": su, "set_type": set_type, "cycle_no": 1, "on": "2026-11-02"})
+		self.assertEqual(frappe.db.get_value("Set Unit", su, "cycle_bom_version"), 4)  # số nguyên đầu tiên
+		# một lần lưu vòng đời: cùng một Audit Update mang chu trình, trạng thái và phiên bản ghim
+		updates = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update"},
+			fields=["new_value"],
+		)
+		self.assertEqual(len(updates), 1)
+		new = frappe.parse_json(updates[0].new_value)
+		self.assertEqual(
+			(new.get("current_cycle_no"), new.get("status"), new.get("cycle_bom_version")),
+			(1, "Processing", 4),
+		)
+
+		# không có kết quả nguyên → 0 (bỏ ghim của chu trình trước); `on` mặc định = giờ server
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			self.assertEqual(step_gate.start_cycle(su), 2)
+		self.assertIsNotNone(run.call_args.args[1]["on"])
+		self.assertEqual(frappe.db.get_value("Set Unit", su, "cycle_bom_version"), 0)
+
 	def test_start_cycle_clears_active_cycle_id(self):
 		su = make_set_unit().name
 		step_gate.start_cycle(su)
@@ -292,6 +321,10 @@ class TestStepGate(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.save()
 		self.assertEqual(frappe.db.get_value("Set Unit", su.name, "current_cycle_no"), 1)
+		doc = frappe.get_doc("Set Unit", su.name)
+		doc.cycle_bom_version = 9
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
 
 	def test_assembly_submit_records_t3(self):
 		su = make_set_unit().name

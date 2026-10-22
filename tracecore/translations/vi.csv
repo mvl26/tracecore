@@ -1085,7 +1085,6 @@ Employee who badged in at the station (filled once badge sign-in exists).,Nhân 
 Lubricant lot used when the maintenance type is lubrication.,Lô dầu bôi trơn dùng khi loại bảo dưỡng là tra dầu.,Pack Maintenance Done
 Number of times this step failed in this cycle.,Số lần bước này không đạt trong chu trình.,Step Gate Result
 Optional ERPNext Item; stock is not synchronized.,Item ERPNext (tùy chọn); không đồng bộ tồn kho.,Instrument
-Order of the line on the tray (ascending).,Thứ tự dòng trên khay (tăng dần).,Set BOM Item
 Quantity of this instrument in the BOM line that was confirmed.,Số lượng dụng cụ này trong dòng BOM đã xác nhận.,Pack Instrument Confirmed
 Raised by one when the set of compatible methods changes.,Tăng thêm một khi tập phương pháp tiệt khuẩn tương thích thay đổi.,Instrument
 "Reminder after this many cycles since the last maintenance. Blank or 0 = no reminder.","Nhắc bảo dưỡng sau số chu trình này kể từ lần bảo dưỡng gần nhất. Để trống hoặc 0 = không nhắc.",Instrument
@@ -1409,6 +1408,293 @@ Employee {0} does not exist.,Nhân viên {0} không tồn tại.,
 "Use an active employee card, or ask R02 to check your station competency.","Dùng thẻ nhân viên đang hoạt động, hoặc nhờ R02 kiểm tra năng lực trạm của bạn.",
 Too many card attempts,Quét thẻ sai quá nhiều lần,
 Too many rejected card scans from this device.,Thiết bị này đã quét thẻ bị từ chối quá nhiều lần.,
+Implant Set,Bộ cấy ghép,Instrument Set Type
+Standard Assembly Time (Minutes),Thời gian lắp ráp chuẩn (phút),Instrument Set Type
+Tray Images,Ảnh bộ đã xếp,Instrument Set Type
+Tray Image 2,Ảnh bộ đã xếp 2,Instrument Set Type
+Tray Image 3,Ảnh bộ đã xếp 3,Instrument Set Type
+Tray Thumbnail 1,Ảnh thu nhỏ bộ đã xếp 1,Instrument Set Type
+Tray Thumbnail 2,Ảnh thu nhỏ bộ đã xếp 2,Instrument Set Type
+Tray Thumbnail 3,Ảnh thu nhỏ bộ đã xếp 3,Instrument Set Type
+Owner department of this set type.,Khoa sở hữu loại bộ này.,Instrument Set Type
+Packaging item in use with a shelf life; the set type shelf life defaults to it.,Vật tư gói đang dùng và đã có hạn lưu; hạn lưu của loại bộ mặc định lấy theo loại gói này.,Instrument Set Type
+"Override in days, only shorter than the default pack type shelf life. 0 = no override (the pack type shelf life applies).","Hạn lưu riêng theo ngày, chỉ được ngắn hơn hạn lưu của loại gói mặc định. 0 = không ghi đè (áp hạn lưu của loại gói).",Instrument Set Type
+BOM version in effect today; maintained by the system when BOM versions are saved.,Phiên bản BOM đang hiệu lực hôm nay; hệ thống tự cập nhật khi lưu phiên bản BOM.,Instrument Set Type
+"Standard assembly time in minutes, 0-600. 0 = not entered yet.","Thời gian lắp ráp chuẩn theo phút, 0-600. 0 = chưa nhập.",Instrument Set Type
+"Instrument set type (FEAT-001 skeleton, FEAT-018 packing data, FEAT-015 header): code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.","Loại bộ dụng cụ: mã, tên, phương pháp tiệt khuẩn, khoa sở hữu, cờ cấy ghép, thời gian lắp ráp chuẩn, GTIN-14, loại gói mặc định, hạn lưu riêng, ảnh bộ đã xếp và phiên bản BOM hiện hành.",Instrument Set Type
+"{0} is not a packaging item, so it cannot be chosen as the pack type.","{0} không phải vật tư gói, không chọn làm loại gói được.",
+Pack type {0} is disabled and cannot be chosen.,"Loại gói {0} đã ngừng dùng, không chọn được.",
+Pack type {0} has no shelf life yet and cannot be chosen.,"Loại gói {0} chưa có hạn lưu, không chọn được.",
+Shelf life override cannot be negative.,Hạn lưu riêng của loại bộ không được âm.,
+Pack type cannot be chosen,Không chọn được loại gói,
+"The set type can only override the shelf life with a value shorter than {0} days, the shelf life of pack type {1}. Enter 0 to use the pack type shelf life.","Loại bộ chỉ ghi đè hạn lưu bằng giá trị ngắn hơn {0} ngày (hạn lưu của loại gói {1}). Nhập 0 để dùng hạn lưu của loại gói.",
+Shelf life override not allowed,Không nhận hạn lưu riêng này,
+Standard assembly time must be between 0 and {0} minutes.,Thời gian lắp ráp chuẩn phải từ 0 đến {0} phút.,
+Current BOM Version is maintained by the system. Save a new BOM version to change the BOM of this set type.,Phiên bản BOM hiện hành do hệ thống cập nhật. Muốn đổi BOM của loại bộ này hãy lưu một phiên bản BOM mới.,
+BOM version {0}: {1},Phiên bản BOM {0}: {1},
+The sterilization method cannot be changed to {0}: these BOM lines are not compatible with it.,Không đổi được phương pháp tiệt khuẩn sang {0}: các dòng BOM sau không tương thích.,
+Incompatible BOM lines,Dòng BOM không tương thích,
+Set type header defaults filled in by the FEAT-015 data patch,Điền mặc định phần đầu loại bộ bằng patch dữ liệu FEAT-015,
+Demo operating theatre,Khoa phẫu thuật (demo),
+A reason is required to save a new BOM version.,Phải nhập lý do để lưu phiên bản BOM mới.,
+A saved BOM version cannot be changed. Create a new BOM version.,"Phiên bản BOM đã lưu không sửa được, hãy tạo phiên bản mới.",
+A set type can only be created together with its BOM version 1.,Loại bộ chỉ tạo được cùng BOM phiên bản 1.,
+A set type needs at least one BOM line.,Loại bộ phải có ít nhất một dòng BOM.,
+"Add the instruments of the set, then save.",Thêm các dụng cụ của bộ rồi lưu lại.,
+BOM changed meanwhile,BOM vừa được người khác thay đổi,
+BOM is empty,BOM rỗng,
+BOM lines can only be created through Edit BOM.,Dòng BOM chỉ tạo qua Sửa BOM.,
+"BOM lines must be a list of objects with instrument, qty and position.","Dòng BOM phải là danh sách gồm dụng cụ, số lượng và thứ tự xếp.",
+BOM not saved,Chưa lưu BOM,
+BOM too large,BOM quá lớn,
+BOM version data filled in by the FEAT-015 data patch,Điền dữ liệu phiên bản BOM bằng patch dữ liệu FEAT-015,
+"BOM version {0} saved by {1} (based on version {2}), effective from {3}. Reason: {4}","{1} lưu BOM phiên bản {0} (sửa từ phiên bản {2}), hiệu lực từ {3}. Lý do: {4}",
+Base version must be a whole number of at least 0.,Phiên bản cơ sở phải là số nguyên từ 0 trở lên.,
+Based On Version,Sửa từ phiên bản,Set BOM Item
+Change Reason,Lý do thay đổi,Set BOM Item
+"Change at least one line, or close without saving.","Hãy thay đổi ít nhất một dòng, hoặc đóng mà không lưu.",
+Check the set type code.,Kiểm tra lại mã loại bộ.,
+"Choose today or a later date, not earlier than the latest BOM version.","Chọn hôm nay hoặc ngày sau, không sớm hơn phiên bản BOM mới nhất.",
+"Copied from set type {0}, BOM version {1}","Sao chép từ loại bộ {0}, BOM phiên bản {1}",
+Demo data,Dữ liệu demo,
+Effective date not accepted,Ngày hiệu lực không hợp lệ,
+"Effective date {0} is earlier than BOM version {1}, effective from {2}.",Ngày hiệu lực {0} sớm hơn BOM phiên bản {1} (hiệu lực từ {2}).,
+Effective date {0} is in the past.,Ngày hiệu lực {0} đã qua.,
+Effective date {0} is not a valid date.,Ngày hiệu lực {0} không phải ngày hợp lệ.,
+Enter a different type code.,Nhập mã loại bộ khác.,
+"Enter why the BOM changes, at most {0} characters.","Nhập lý do thay đổi BOM, tối đa {0} ký tự.",
+"Fix the lines listed below, then save again.",Sửa các dòng liệt kê dưới đây rồi lưu lại.,
+Initial version,Phiên bản đầu tiên,
+Instrument {0} ({1}) is not compatible with the set type method {2}.,Dụng cụ {0} ({1}) không tương thích với phương pháp {2} của loại bộ.,
+Instrument {0} is already listed in row {1}. Combine the quantities in one line.,Dụng cụ {0} đã có ở dòng {1}. Gộp số lượng vào một dòng.,
+No changes,Không có thay đổi,
+"Order of the line on the tray (1..n, numbered by the system).","Thứ tự xếp của dòng trên khay (1..n, hệ thống đánh số).",Set BOM Item
+Position must be a whole number of at least 1.,Thứ tự xếp phải là số nguyên từ 1 trở lên.,
+Position {0} is already used in row {1}.,Thứ tự xếp {0} đã dùng ở dòng {1}.,
+Quantity must be a whole number from 1 to {0}.,Số lượng phải là số nguyên từ 1 đến {0}.,
+Recorded before BOM versioning,Ghi nhận trước khi có quản lý phiên bản BOM,
+Reload the BOM and make your change again.,Tải lại BOM rồi thực hiện lại thay đổi.,
+Set type code already used,Mã loại bộ đã được dùng,
+Set type not found,Không tìm thấy loại bộ,
+Set type {0} already exists.,Loại bộ {0} đã có.,
+Set type {0} not found.,Không tìm thấy loại bộ {0}.,
+Split the set into smaller set types.,Tách bộ thành các loại bộ nhỏ hơn.,
+The BOM has {0} lines; at most {1} are allowed.,BOM có {0} dòng; tối đa {1} dòng.,
+The BOM is the same as version {0}.,BOM giống hệt phiên bản {0}.,
+The reason has {0} characters; at most {1} are allowed.,Lý do dài {0} ký tự; tối đa {1} ký tự.,
+The version applies from 00:00 of this date (Asia/Ho_Chi_Minh). Same for every line of the version.,Phiên bản áp dụng từ 00:00 ngày này (giờ Việt Nam). Giống nhau cho mọi dòng của phiên bản.,Set BOM Item
+The version this one was edited from (0 for version 1).,Phiên bản được sửa thành phiên bản này (0 với phiên bản 1).,Set BOM Item
+Why this BOM version was created (at most 500 characters). Same for every line of the version.,Lý do tạo phiên bản BOM này (tối đa 500 ký tự). Giống nhau cho mọi dòng của phiên bản.,Set BOM Item
+"You edited BOM version {0}, but the latest version is now {1}.","Bạn sửa từ BOM phiên bản {0}, nhưng phiên bản mới nhất hiện là {1}.",
+base_version must be a whole number of at least 0.,base_version phải là số nguyên từ 0 trở lên.,
+header has fields that cannot be set: {0}.,header có trường không được đặt: {0}.,
+"lines must be a list of objects with instrument, qty and position.","lines phải là danh sách gồm instrument, qty và position.",
+scheduled BOM version {0},BOM phiên bản {0} đã lên lịch,
+{0} BOM lines have errors.,{0} dòng BOM có lỗi.,
+{0} has the wrong type.,{0} sai kiểu dữ liệu.,
+{0} must be valid JSON.,{0} phải là JSON hợp lệ.,
+Cycle BOM Version,Phiên bản BOM của chu trình,
+"BOM version of the set type pinned when the current cycle started (reception); the set keeps it, also after release, until the next reception starts a new cycle. 0 = not pinned (the effective version applies). Changed only by the step gate.","Phiên bản BOM của loại bộ được ghim khi mở chu trình hiện hành (tiếp nhận); bộ giữ phiên bản này, kể cả sau khi giải phóng, tới lần tiếp nhận kế tiếp mở chu trình mới. 0 = chưa ghim (dùng phiên bản đang hiệu lực). Chỉ cổng kiểm soát được đổi.",
+BOM version pinned for the running cycle by the FEAT-015 data patch,Ghim phiên bản BOM cho chu trình đang chạy bằng patch dữ liệu FEAT-015,
+Shelf life not changed,Chưa đổi hạn lưu,
+"{0} is not a packaging item, so it has no pack type shelf life.",{0} không phải vật tư gói nên không có hạn lưu loại gói.,
+Choose a packaging item.,Chọn một vật tư gói.,
+The shelf life must be a whole number of days from {0} to {1}.,Hạn lưu phải là số ngày nguyên từ {0} đến {1}.,
+Enter a whole number of days in that range.,Nhập số ngày nguyên trong khoảng này.,
+A reason of at most {0} characters is required to change a pack type shelf life.,Cần nhập lý do (tối đa {0} ký tự) để đổi hạn lưu loại gói.,
+Enter why the shelf life changes.,Nhập lý do đổi hạn lưu.,
+Pack type shelf life changed on the Item form,Đổi hạn lưu loại gói trên form Item,
+The set photo is larger than {0} MB and cannot be uploaded. Reduce the photo size and upload it again.,"Ảnh bộ đã xếp lớn hơn {0} MB, không được tải lên. Giảm dung lượng ảnh rồi tải lại.",
+"The set photo must be a JPEG, PNG or WebP image (checked by its content, not by its name). SVG, HTML and HEIC files are not accepted: convert the photo to JPEG and upload it again.","Ảnh bộ đã xếp phải là ảnh JPEG, PNG hoặc WebP (kiểm theo nội dung, không theo tên file). Không nhận file SVG, HTML và HEIC: chuyển ảnh sang JPEG rồi tải lại.",
+Set photos must be uploaded to TraceCore; links to other websites are not accepted.,Ảnh bộ đã xếp phải tải lên TraceCore; không nhận liên kết tới trang web khác.,
+Set photos must stay private.,Ảnh bộ đã xếp phải luôn là file riêng tư.,
+{0} must be a private file uploaded to this set type (no external links or files of other records).,{0} phải là file riêng tư tải lên cho chính loại bộ này (không nhận liên kết ngoài hay file của bản ghi khác).,
+The photo thumbnail is generated by TraceCore from the photo and cannot be edited.,"Ảnh thu nhỏ do TraceCore tạo từ ảnh gốc, không sửa tay được.",
+BOM version not found,Không tìm thấy phiên bản BOM,
+Set type {0} has no BOM version {1}.,Loại bộ {0} không có phiên bản BOM {1}.,
+Set type {0} has no effective BOM version.,Loại bộ {0} chưa có phiên bản BOM nào đang hiệu lực.,
+"Choose a BOM version from the version list, or ask R02 to save the BOM.","Chọn một phiên bản BOM trong danh sách phiên bản, hoặc báo R02 lưu BOM.",
+Line added,Thêm,
+Line removed,Bỏ,
+Quantity changed,Đổi số lượng,
+Position changed,Đổi thứ tự,
+Same BOM version,Cùng một phiên bản BOM,
+Both sides are BOM version {0}.,Cả hai bên đều là phiên bản BOM {0}.,
+Choose two different BOM versions to compare.,Chọn hai phiên bản BOM khác nhau để so sánh.,
+{0} must be a whole number.,{0} phải là số nguyên.,
+No photo of the assembled set yet. The count sheet will show an empty frame.,Chưa có ảnh bộ đã xếp. Phiếu kiểm đếm sẽ hiện khung trống.,
+Standard assembly time has not been entered.,Chưa nhập thời gian lắp ráp chuẩn.,
+Count sheet,Phiếu kiểm đếm,
+BOM in effect,Đang hiệu lực,
+BOM scheduled,Đã lên lịch,
+BOM superseded,Đã thay thế,
+BOM replaced before taking effect,Bị thay trước hiệu lực,
+Shelf life not set,Chưa có hạn lưu,
+{0} days (set type override),{0} ngày (ghi đè của loại bộ),
+{0} days (from pack type),{0} ngày (theo loại gói),
+(dd/mm/yyyy),(dd/mm/yyyy),TC Count Sheet
+"(signature, full name)","(ký, ghi rõ họ tên)",TC Count Sheet
+Assembled set photo {0},Ảnh bộ đã xếp {0},TC Count Sheet
+Assembly order,STT xếp,TC Count Sheet
+BOM qty,SL BOM,TC Count Sheet
+BOM version {0},BOM phiên bản {0},TC Count Sheet
+Code,Mã,TC Count Sheet
+Count sheet,Phiếu kiểm đếm,TC Count Sheet
+Counted by,Người kiểm,TC Count Sheet
+Counted qty,SL thực tế,TC Count Sheet
+Date,Ngày,TC Count Sheet
+Department,Khoa,TC Count Sheet
+Implant,Cấy ghép,TC Count Sheet
+Instrument name,Tên dụng cụ,TC Count Sheet
+No photo of the assembled set yet,Chưa có ảnh bộ đã xếp,TC Count Sheet
+No,Không,TC Count Sheet
+Not entered,Chưa nhập,TC Count Sheet
+Note,Ghi chú,TC Count Sheet
+Pack type,Loại gói,TC Count Sheet
+Packed by,Người đóng gói,TC Count Sheet
+Page {0}/{1},Trang {0}/{1},TC Count Sheet
+Printed {0} by {1},In lúc {0} bởi {1},TC Count Sheet
+Reason: {0},Lý do: {0},TC Count Sheet
+Shelf life applied,Hạn lưu áp dụng,TC Count Sheet
+Standard assembly time,Thời gian lắp ráp chuẩn,TC Count Sheet
+Sterilization method,Phương pháp tiệt khuẩn,TC Count Sheet
+"Total: {0} lines, {1} instruments","Tổng: {0} dòng, {1} dụng cụ",TC Count Sheet
+Yes,Có,TC Count Sheet
+effective from {0},hiệu lực từ {0},TC Count Sheet
+{0} minutes,{0} phút,TC Count Sheet
+Information,Thông tin,Instrument Set Type
+Details,Chi tiết,Instrument Set Type
+History,Lịch sử,Instrument Set Type
+Shelf Life Applied,Hạn lưu áp dụng,Instrument Set Type
+Tray Photos,Ảnh bộ đã xếp,Instrument Set Type
+BOM,BOM,Instrument Set Type
+BOM Version History,Lịch sử phiên bản BOM,Instrument Set Type
+effective from {0},hiệu lực từ {0},
+Not saved,Chưa lưu,
+The TraceCore Desk script is not loaded.,Script Desk của TraceCore chưa được nạp.,
+"Correct the data shown in the message, then try again.",Sửa dữ liệu nêu trong thông báo rồi thử lại.,
+Row {0},Hàng {0},
+Packing order,Thứ tự xếp,
+Instrument code,Mã dụng cụ,
+BOM quantity,SL BOM,
+Arrange,Sắp xếp,
+Add line,Thêm dòng,
+Move up,Lên,
+Move down,Xuống,
+Remove line,Bỏ dòng,
+Type or scan the instrument code,Gõ hoặc quét mã dụng cụ,
+Save and create BOM v1,Lưu và tạo BOM v1,
+List the instruments of the set in packing order. The set type and BOM version 1 are saved together; nothing is saved while a line has an error.,Liệt kê dụng cụ của bộ theo thứ tự xếp. Loại bộ và BOM phiên bản 1 được lưu cùng lúc; còn dòng lỗi thì không lưu gì.,
+Create set type,Tạo loại bộ,
+Set type not created,Chưa tạo loại bộ,
+Required fields are empty: {0}.,Còn trống trường bắt buộc: {0}.,
+"Close this dialog, fill them in on the form, then save again.","Đóng hộp thoại, điền các trường đó trên form rồi lưu lại.",
+Set type {0} created with BOM version 1.,Đã tạo loại bộ {0} cùng BOM phiên bản 1.,
+The default pack type has no usable shelf life. Choose a pack type from the suggestions.,Loại gói mặc định chưa có hạn lưu dùng được. Hãy chọn loại gói trong danh sách gợi ý.,
+override of this set type,ghi đè của loại bộ này,
+default pack type,loại gói mặc định,
+Default from pack type: {0} days · Applied: {1} days ({2}),Mặc định từ loại gói: {0} ngày · Áp dụng: {1} ngày ({2}),
+BOM in effect: v{0},BOM đang hiệu lực: v{0},
+No BOM version in effect,Chưa có phiên bản BOM hiệu lực,
+Set max cycles (derived): {0},Cơ số bộ (suy ra): {0},
+{0} instruments Undefined,{0} dụng cụ Chưa xác định,
+Photo {0},Ảnh {0},
+Photo {0} of set type {1},Ảnh {0} của loại bộ {1},
+Reorder photos,Đổi thứ tự ảnh,
+Save or discard your other changes before reordering photos.,Lưu hoặc bỏ các thay đổi khác trước khi đổi thứ tự ảnh.,
+New position of photo {0},Vị trí mới của ảnh {0},
+Save order,Lưu thứ tự,
+Order not saved,Chưa lưu thứ tự,
+Two photos have the same position.,Hai ảnh trùng vị trí.,
+Give each photo a different position.,Đặt mỗi ảnh một vị trí khác nhau.,
+Instrument photo,Ảnh dụng cụ,
+Shown above,Đang hiển thị,
+View version,Xem phiên bản,
+BOM versions,Các phiên bản BOM,
+BOM version,Phiên bản BOM,
+Effective from,Có hiệu lực từ,
+Version status,Trạng thái phiên bản,
+Line count,Số dòng,
+Instrument count,Số dụng cụ,
+No BOM version yet.,Chưa có phiên bản BOM nào.,
+Loading...,Đang tải...,
+Lines copied from BOM version {0}.,Các dòng chép từ BOM phiên bản {0}.,
+This set type has no BOM line yet.,Loại bộ này chưa có dòng BOM nào.,
+The latest version is {0}.,Phiên bản mới nhất là {0}.,
+Saving creates BOM version {0}; saved versions are never changed.,Lưu sẽ tạo BOM phiên bản {0}; phiên bản đã lưu không bao giờ bị sửa.,
+Edit BOM of {0},Sửa BOM của {0},
+Today applies at once; a later date schedules the version.,Hôm nay thì áp dụng ngay; ngày sau đó thì phiên bản được lên lịch.,
+Reason for the change,Lý do thay đổi,
+Required. Shown in the version history and on the count sheet.,Bắt buộc. Hiện trong lịch sử phiên bản và trên phiếu kiểm đếm.,
+Save new version,Lưu phiên bản mới,
+BOM version {0} saved: {1}.,Đã lưu BOM phiên bản {0}: {1}.,
+"A newer BOM version exists (v{0}). Reload, then make your change again.","Có phiên bản mới hơn (v{0}), tải lại rồi sửa.",
+Reload BOM,Tải lại BOM,
+Version {0} · {1} · {2},Phiên bản {0} · {1} · {2},
+"Position {0}, quantity {1}","Thứ tự {0}, số lượng {1}",
+Quantity {0} → {1},Số lượng {0} → {1},
+Position {0} → {1},Thứ tự {0} → {1},
+"version {0} ({1}, effective from {2})","phiên bản {0} ({1}, hiệu lực từ {2})",
+From {0} to {1}.,Từ {0} sang {1}.,
+Change type,Loại thay đổi,
+Change detail,Chi tiết thay đổi,
+No line differs.,Không có dòng nào khác nhau.,
+{0} instruments unchanged in both versions.,{0} dụng cụ giữ nguyên ở cả hai phiên bản.,
+Compare BOM versions of {0},So sánh phiên bản BOM của {0},
+From version,Từ phiên bản,
+To version,Đến phiên bản,
+Compare,So sánh,
+Print count sheet of {0},In phiếu kiểm đếm của {0},
+Open PDF,Mở PDF,
+Based on version,Sửa từ phiên bản,
+Saved by,Người lưu,
+Saved at,Thời điểm lưu,
+Copy set type {0},Sao chép loại bộ {0},
+"The new set type gets this header (without code, GTIN and photos) and the BOM in effect as its version 1.","Loại bộ mới nhận phần đầu này (trừ mã, GTIN và ảnh) và BOM đang hiệu lực làm phiên bản 1.",
+New type code,Mã loại bộ mới,
+New set type name,Tên loại bộ mới,
+Copy set type,Sao chép loại bộ,
+Set type {0} created as a copy of {1}.,Đã tạo loại bộ {0} sao chép từ {1}.,
+BOM,BOM,
+Edit BOM,Sửa BOM,
+Compare versions,So sánh phiên bản,
+Print count sheet,In phiếu kiểm đếm,
+The BOM is entered when you press Save and create BOM v1.,BOM được nhập khi bấm Lưu và tạo BOM v1.,
+Add tray photos after the set type is created.,Thêm ảnh bộ đã xếp sau khi tạo loại bộ.,
+Implant set · BOM v{0},Bộ cấy ghép · BOM v{0},
+BOM v{0},BOM v{0},
+Open set type,Mở loại bộ,
+Open set type {0},Mở loại bộ {0},
+Read only: edit the BOM on the set type,Chỉ đọc: sửa BOM trên loại bộ,
+Shelf life of {0}: {1} → {2} days. It applies to packs packed from now on.,Hạn lưu của {0}: {1} → {2} ngày. Áp dụng cho các gói đóng từ bây giờ.,
+"These set types override the shelf life with a value that is no longer shorter, so the pack type shelf life applies to them:","Các loại bộ sau ghi đè hạn lưu bằng giá trị không còn ngắn hơn, nên hạn lưu của loại gói được áp dụng:",
+override {0} days,ghi đè {0} ngày,
+Shelf life saved,Đã lưu hạn lưu,
+Set shelf life of {0},Đặt hạn lưu cho {0},
+Current shelf life: {0} days. A new value applies only to packs packed after saving.,Hạn lưu hiện tại: {0} ngày. Giá trị mới chỉ áp dụng cho gói đóng sau khi lưu.,
+Shelf life (days),Hạn lưu (ngày),
+Required. Recorded in the audit log.,Bắt buộc. Ghi vào nhật ký audit.,
+Save shelf life,Lưu hạn lưu,
+Set shelf life,Đặt hạn lưu,
+BOM version {0},BOM phiên bản {0},
+Instrument name,Tên dụng cụ,
+Reason: {0},Lý do: {0},
+"Total: {0} lines, {1} instruments","Tổng: {0} dòng, {1} dụng cụ",
+Set pack type shelf life,Đặt hạn lưu loại gói,
+Demo e2e crepe paper 30 days,Giấy crepe 30 ngày (demo e2e),
+Demo e2e pouch 180 days,Túi ép 180 ngày (demo e2e),
+Demo e2e wrap without shelf life,Vải gói chưa có hạn lưu (demo e2e),
+Demo e2e container for R10 shelf life,Hộp hấp để R10 sửa hạn lưu (demo e2e),
+Demo e2e dissecting scissors,Kéo phẫu tích (demo e2e),
+Demo e2e Kocher forceps,Kẹp Kocher (demo e2e),
+Demo e2e stainless bowl,Bát inox (demo e2e),
+Demo e2e plasma-only scope,Ống soi chỉ tiệt khuẩn plasma (demo e2e),
+Demo e2e retired forceps,Kẹp đã ngừng sử dụng (demo e2e),
+Demo e2e versioned steam set,Bộ hấp có nhiều phiên bản BOM (demo e2e),
+Demo e2e set with a set in its cycle,Loại bộ có bộ đang giữa chu trình (demo e2e),
+Demo e2e set for BOM editing,Loại bộ để sửa BOM (demo e2e),
+Demo scheduled BOM change,Thay đổi BOM đã lên lịch (demo),
+Demo BOM change during a cycle,Thay đổi BOM khi bộ đang giữa chu trình (demo),
 "A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).","Lô không đạt vẫn cần lập phiếu không phù hợp (NC); hệ thống sẽ tự tạo khi có tính năng sự cố (FEAT-030).","Wash Batch"
 "A recorded value is outside the program range; R02 should review it.","Có giá trị ghi nhận nằm ngoài dải của chương trình; R02 cần xem xét.","Wash Batch"
 "A set unit appears more than once in the wash batch.","Một bộ dụng cụ xuất hiện nhiều lần trong lô rửa.",

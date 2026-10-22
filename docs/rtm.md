@@ -11,8 +11,8 @@
 | :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
 | FR-M1-01 | Khai báo dụng cụ đơn lẻ | Must | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 | _TBD_ |
 | FR-M1-02 | Mã DataMatrix dụng cụ đơn lẻ (giai đoạn 2 sẵn sàng) | Should | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 (FR-M1-02, .1, .3); FEAT-020 (FR-M1-02.2, .4) | _TBD_ |
-| FR-M1-03 | Định nghĩa loại bộ dụng cụ (BOM) | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | _TBD_ |
-| FR-M1-04 | Phiên bản BOM và khoa sở hữu | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | _TBD_ |
+| FR-M1-03 | Định nghĩa loại bộ dụng cụ (BOM) | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | `tracecore/instrument/tests/test_set_type.py`, `test_shelf_life.py`, `test_set_type_photos.py`, `test_count_sheet.py`; `tracecore/instrument/doctype/instrument_set_type/test_instrument_set_type.py` (dự kiến, FEAT-015) |
+| FR-M1-04 | Phiên bản BOM và khoa sở hữu | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | `tracecore/instrument/tests/test_bom_versions.py`, `test_bom_compare.py`, `test_bom_pinning.py`; `tracecore/instrument/doctype/set_bom_item/test_set_bom_item.py` (dự kiến, FEAT-015) |
 | FR-M1-05 | Cấp Set ID vĩnh viễn (GS1) | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-004; ADR-006 | FEAT-016 | _TBD_ |
 | FR-M1-06 | Vòng đời bộ dụng cụ vật lý | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-003; ADR-005 | FEAT-009; FEAT-016; FEAT-023 | _TBD_ |
 | FR-M1-07 | Nhập và trả dụng cụ mượn | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
@@ -152,7 +152,7 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | FR-M1-01 | — | SCR-01 | API-M1-01, API-M1-06 | TC-01-01, TC-01-02 | US-01 | — |
 | FR-M1-02 | — | SCR-01 | API-M1-01, API-M1-06 | TC-01-01, TC-01-02 | US-01 | — |
-| FR-M1-03 | — | SCR-02 | API-M1-02 | TC-02-01, TC-02-02 | US-02 | — |
+| FR-M1-03 | BRU-REP-009 | SCR-02 | API-M1-02 | TC-02-01, TC-02-02 | US-02 | — |
 | FR-M1-04 | — | SCR-02 | API-M1-02 | TC-02-01, TC-02-02 | US-02 | — |
 | FR-M1-05 | BRU-ID-001, BRU-ID-006 | SCR-03 | API-M1-03, API-M1-04 | TC-03-01, TC-03-02 | US-03 | WF-01 |
 | FR-M1-06 | BRU-ID-001, BRU-ID-006 | SCR-03 | API-M1-03, API-M1-04 | TC-03-01, TC-03-02 | US-03 | WF-01 |

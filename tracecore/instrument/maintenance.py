@@ -5,6 +5,9 @@ M2 (đóng gói) không import module này (lint R1): các hàm được khai b�
 (``tracecore_pack_checks``) và ``apply_pack`` (``tracecore_after_cycle_id``). FEAT-014 thêm ``on_set_released``
 (``tracecore_after_release``, FEAT-023 gọi) và ``init_counter`` (RPC ``v1.instrument_admin.init_counters``).
 
+BOM của một bộ = phiên bản áp dụng ``bom_versions.version_for_set_unit`` (FEAT-015 S3): bộ đang trong chu trình dùng
+phiên bản đã ghim khi tiếp nhận (FR-M1-04.1), bộ chưa ghim dùng phiên bản hiệu lực.
+
 Ngưỡng là ngưỡng hiệu lực của ``thresholds.effective_rules`` (riêng của dụng cụ → của nhóm, A-06 I5). Bộ đếm
 (``Instrument Maintenance``) chỉ ghi qua module này (cờ ``flags.tc_maintenance``).
 
@@ -23,7 +26,7 @@ from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, now_date
 
 from tracecore.core import gs1
 from tracecore.core.errors import Block, BlockedError
-from tracecore.instrument import bom, thresholds
+from tracecore.instrument import bom, bom_versions, thresholds
 
 STATE_DUE = "due"
 STATE_OVERDUE = "overdue"
@@ -45,10 +48,10 @@ def _state(interval, cycles_since, deferred_count):
 
 
 def _reminders_from_db(ctx):
-	"""Nhắc bảo dưỡng của bộ trong ``ctx`` theo BOM hiện hành, theo thứ tự BOM (mỗi dụng cụ một lần)."""
+	"""Nhắc bảo dưỡng của bộ trong ``ctx`` theo BOM áp dụng của bộ (phiên bản ghim), theo thứ tự BOM, mỗi dụng cụ một lần."""
 	set_unit = ctx["set_unit"]["name"]
 	set_type = ctx["set_type"]
-	lines = bom.lines(set_type["name"], cint(set_type.get("current_bom_version")))
+	lines = bom.lines(set_type["name"], cint(bom_versions.version_for_set_unit(set_unit)))
 	if not lines:
 		return []
 	codes = list({line["instrument"] for line in lines})
@@ -351,7 +354,8 @@ def _has_t4_history(row) -> bool:
 
 
 def _in_current_bom(set_unit_row, instrument) -> bool:
-	version = frappe.db.get_value("Instrument Set Type", set_unit_row.set_type, "current_bom_version")
+	"""Bộ chứa dụng cụ trong BOM áp dụng của bộ (phiên bản ghim; không ghim → phiên bản hiệu lực)."""
+	version = bom_versions.version_for_set_unit(set_unit_row.name)
 	return bool(
 		frappe.db.exists(
 			"Set BOM Item",
@@ -364,7 +368,7 @@ def init_counter(set_unit: str, instrument: str, cycles_since, last_maint_on, re
 	"""Khởi tạo bộ đếm của (bộ, dụng cụ) từ lần bảo dưỡng gần nhất (A-06 I6); trả tên dòng Instrument Maintenance.
 
 	`cycles_since` 0 đến 9999; `last_maint_on` tùy chọn, không ở tương lai; `reason` bắt buộc (ghi vào Audit Log). Bộ phải
-	chứa dụng cụ trong BOM hiện hành; dòng đã có lịch sử (đã xác nhận bảo dưỡng tại T4, đã hoãn, đã đếm lần giải
+	chứa dụng cụ trong BOM áp dụng; dòng đã có lịch sử (đã xác nhận bảo dưỡng tại T4, đã hoãn, đã đếm lần giải
 	phóng có Cycle ID) → không khởi tạo được. Lỗi → ``BlockedError`` (``REASON_REQUIRED``, ``SET_NOT_FOUND``, ``INSTRUMENT_NOT_FOUND``,
 	``COUNTER_INIT_INVALID``), chưa ghi gì. Không kiểm quyền: RPC ``v1.instrument_admin`` kiểm R02/R10/SM.
 	"""
@@ -417,7 +421,7 @@ def init_counter(set_unit: str, instrument: str, cycles_since, last_maint_on, re
 				_("Set {0} does not contain instrument {1} in its current BOM.").format(unit.name, instrument)
 			)
 		)
-	# Dụng cụ Ngừng sử dụng (status Retired) vẫn khởi tạo được: bộ còn chứa nó trong BOM hiện hành thì bộ đếm vẫn có
+	# Dụng cụ Ngừng sử dụng (status Retired) vẫn khởi tạo được: bộ còn chứa nó trong BOM áp dụng thì bộ đếm vẫn có
 	# nghĩa ở T4 (FEAT-014 Task 4 fix, quyết định của dev lead; I6 không đặt điều kiện trạng thái dụng cụ).
 	name = _counter_name(unit.name, instrument, for_update=True)
 	if not name:
@@ -460,27 +464,13 @@ STATE_NO_RULE = "no_rule"
 def instrument_counters(instrument: str, rule: dict | None = None) -> list[dict]:
 	"""Bộ đếm bảo dưỡng của một dụng cụ theo từng bộ (form SCR-01, FEAT-014 Task 6); chỉ đọc.
 
-	Gồm mọi dòng ``Instrument Maintenance`` của dụng cụ và mọi bộ chứa dụng cụ trong BOM hiện hành chưa có dòng
+	Gồm mọi dòng ``Instrument Maintenance`` của dụng cụ và mọi bộ chứa dụng cụ trong BOM áp dụng chưa có dòng
 	(0 chu trình). Mỗi dòng: ``{set_unit, set_type, cycles_since, deferred_count, state, has_counter, can_init}``;
 	``state`` theo quy tắc D5 với ngưỡng hiệu lực `rule` (``no_rule`` / ``not_due`` / ``due`` / ``overdue``);
-	``can_init`` = bộ chứa dụng cụ trong BOM hiện hành và chưa có lịch sử T4 (điều kiện của ``init_counter``).
+	``can_init`` = bộ chứa dụng cụ trong BOM áp dụng và chưa có lịch sử T4 (điều kiện của ``init_counter``).
 	"""
 	interval = cint((rule or {}).get("interval"))
-	in_bom = {
-		row.name: row.set_type
-		for row in frappe.db.sql(
-			"""
-			select distinct su.name, su.set_type
-			from `tabSet Unit` su
-			join `tabInstrument Set Type` st on st.name = su.set_type
-			join `tabSet BOM Item` line
-				on line.set_type = st.name and line.bom_version = st.current_bom_version
-			where line.instrument = %s
-			""",
-			(instrument,),
-			as_dict=True,
-		)
-	}
+	in_bom = _units_with_instrument_in_bom(instrument)
 	rows = {
 		row.set_unit: row
 		for row in frappe.get_all(
@@ -530,6 +520,42 @@ def instrument_counters(instrument: str, rule: dict | None = None) -> list[dict]
 	return result
 
 
+def _units_with_instrument_in_bom(instrument: str) -> dict[str, str]:
+	"""``{bộ: loại bộ}`` của các bộ có `instrument` trong BOM áp dụng của bộ (3 truy vấn cố định).
+
+	Cùng chuỗi dự phòng với ``_in_current_bom`` / ``init_counter`` (``bom_versions.applied_version``: ghim > phiên bản
+	hiệu lực hôm nay > ``current_bom_version``), nên ``can_init`` khớp ``init_counter`` cả từ 00:00 tới khi scheduler
+	cập nhật ``current_bom_version``.
+	"""
+	versions_with = {}
+	for set_type, version in frappe.db.sql(
+		"select distinct set_type, bom_version from `tabSet BOM Item` where instrument = %s", (instrument,)
+	):
+		versions_with.setdefault(set_type, set()).add(cint(version))
+	if not versions_with:
+		return {}
+	effective = bom_versions.effective_versions(versions_with)
+	marks = ", ".join(["%s"] * len(versions_with))
+	units = frappe.db.sql(
+		f"""
+		select su.name, su.set_type, su.cycle_bom_version, st.current_bom_version
+		from `tabSet Unit` su
+		join `tabInstrument Set Type` st on st.name = su.set_type
+		where su.set_type in ({marks})
+		""",  # nosec B608 - chỉ chèn chuỗi giữ chỗ %s
+		sorted(versions_with),
+		as_dict=True,
+	)
+	return {
+		row.name: row.set_type
+		for row in units
+		if bom_versions.applied_version(
+			row.cycle_bom_version, effective.get(row.set_type), row.current_bom_version
+		)
+		in versions_with[row.set_type]
+	}
+
+
 def _counter_name(set_unit, instrument, for_update=False):
 	return frappe.db.get_value(
 		"Instrument Maintenance",
@@ -555,7 +581,7 @@ def on_set_released(ctx: dict) -> None:
 	"""Hook ``tracecore_after_release`` (FR-M1-09.2, A-06 I16): mẻ giải phóng Đạt → +1 chu trình cho bộ.
 
 	Hợp đồng: ``ctx = {"set_unit", "set_type", "bom_version", "cycle_id"}``; ``cycle_id`` (Cycle ID của gói được giải
-	phóng) là **bắt buộc**. ``bom_version`` = BOM áp dụng của gói; thiếu thì lấy BOM hiện hành. Mỗi dụng cụ khác nhau có
+	phóng) là **bắt buộc**. ``bom_version`` = BOM áp dụng của gói; thiếu thì lấy BOM áp dụng của bộ (phiên bản ghim). Mỗi dụng cụ khác nhau có
 	ngưỡng hiệu lực được +1 ``cycles_since_maint`` đúng một lần (số lượng trong BOM không tính); chưa có dòng thì tạo với
 	1. Dụng cụ không ngưỡng không tạo dòng. Khóa dòng ``for_update``. FEAT-023 gọi qua ``tracecore.core.extension.run``.
 
@@ -568,7 +594,7 @@ def on_set_released(ctx: dict) -> None:
 	cycle_id = cstr(ctx.get("cycle_id")).strip() or None
 	version = ctx.get("bom_version")
 	if version is None:
-		version = frappe.db.get_value("Instrument Set Type", set_type, "current_bom_version")
+		version = bom_versions.version_for_set_unit(set_unit)
 	codes = []
 	for line in bom.lines(set_type, cint(version)):
 		if line["instrument"] not in codes:

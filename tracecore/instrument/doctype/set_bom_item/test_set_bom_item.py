@@ -1,12 +1,19 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import nowdate
 
+from tracecore.core import step_gate
 from tracecore.instrument import bom, catalog
-from tracecore.tests.factories import make_bom, make_instrument, make_set_type
+from tracecore.tests.factories import make_bom, make_instrument, make_set_type, make_set_unit
+
+# Set BOM Item liên kết Instrument Set Type (→ Department, Item) và Instrument (→ Item); CI chưa có Setup Wizard
+test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
 
 def _bom_line(set_type, version, instrument, qty, position):
-	return frappe.get_doc(
+	"""Dòng BOM ghi như dịch vụ BOM (cờ ``flags.tc_bom``) nhưng bỏ luật dòng của ``bom_versions``: giả lập dữ liệu có
+	trước FEAT-015 (vd hai dòng cùng thứ tự xếp) để kiểm phần đọc và chốt chặn của chính DocType."""
+	doc = frappe.get_doc(
 		{
 			"doctype": "Set BOM Item",
 			"set_type": set_type,
@@ -14,8 +21,13 @@ def _bom_line(set_type, version, instrument, qty, position):
 			"instrument": instrument,
 			"qty": qty,
 			"position": position,
+			"effective_from": nowdate(),
+			"change_reason": "Legacy line",
+			"based_on_version": max(version - 1, 0),
 		}
-	).insert()
+	)
+	doc.flags.tc_bom = True
+	return doc.insert()
 
 
 class TestSetBOMItem(FrappeTestCase):
@@ -68,21 +80,29 @@ class TestSetBOMItem(FrappeTestCase):
 	def test_pack_context_gives_current_bom_and_tray_image(self):
 		st = make_set_type("BMP", tray_image="/files/bmp-tray.png")
 		make_bom(st.name, [("BM-P1", 2)], version=1)
+		older_unit = make_set_unit(st.name)
+		step_gate.start_cycle(older_unit.name)  # chu trình mở khi v1 hiệu lực → ghim v1 (FEAT-015 S3)
 		make_bom(st.name, [("BM-P2", 1), ("BM-P1", 3)], version=2)
 		set_type = {"name": st.name, "current_bom_version": 2, "tray_image": "/files/bmp-tray.png"}
+		unit = make_set_unit(st.name)
 
-		result = bom.pack_context({"set_type": set_type, "station": "T4"})
+		result = bom.pack_context({"set_unit": {"name": unit.name}, "set_type": set_type, "station": "T4"})
 
-		self.assertEqual(set(result), {"bom", "bom_version", "tray_image"})
+		self.assertEqual(set(result), {"bom", "bom_version", "tray_image", "tray_images"})
 		self.assertEqual(result["bom_version"], 2)
 		self.assertEqual(result["tray_image"], "/files/bmp-tray.png")
+		self.assertEqual(result["tray_images"], ["/files/bmp-tray.png"])
 		self.assertEqual([(r["instrument"], r["qty"]) for r in result["bom"]], [("BM-P2", 1), ("BM-P1", 3)])
 		self.assertEqual(result["bom"], bom.lines(st.name, 2))
 
-		# phiên bản cũ vẫn dựng được; loại bộ chưa có phiên bản BOM thì BOM rỗng
-		older = bom.pack_context({"set_type": {**set_type, "current_bom_version": 1}})
+		# phiên bản cũ (đã ghim cho bộ giữa chu trình) vẫn dựng được; loại bộ chưa có phiên bản BOM thì BOM rỗng
+		older = bom.pack_context({"set_unit": {"name": older_unit.name}, "set_type": set_type})
 		self.assertEqual((older["bom_version"], [r["instrument"] for r in older["bom"]]), (1, ["BM-P1"]))
-		empty = bom.pack_context({"set_type": {"name": st.name, "current_bom_version": None}})
+		bare = make_set_type("BMPE")
+		frappe.db.set_value("Instrument Set Type", bare.name, "current_bom_version", 0, update_modified=False)
+		empty = bom.pack_context(
+			{"set_unit": {"name": make_set_unit(bare.name).name}, "set_type": {"name": bare.name}}
+		)
 		self.assertEqual((empty["bom"], empty["bom_version"], empty["tray_image"]), ([], 0, None))
 
 	def test_quantity_at_least_one(self):
@@ -116,6 +136,7 @@ class TestSetBOMItem(FrappeTestCase):
 
 	def test_new_bom_line_rejects_retired_instrument(self):
 		# FR-M1-01 "danh sách chọn khi lập BOM", A-06 I13: dòng cũ giữ nguyên, dòng mới không nhận dụng cụ đã ngừng
+		# (chốt chặn của DocType, kể cả khi dịch vụ BOM ghi); FEAT-015: dòng đã lưu không sửa được nữa
 		st = make_set_type("BMR")
 		old_line = make_bom(st.name, [("BM-RET", 2)], version=1)[0]
 		make_instrument("BM-ACT")
@@ -124,8 +145,9 @@ class TestSetBOMItem(FrappeTestCase):
 		self.assertTrue(frappe.db.exists("Set BOM Item", old_line.name))
 		old_line.reload()
 		old_line.qty = 3
-		old_line.save()
-		self.assertEqual(frappe.db.get_value("Set BOM Item", old_line.name, "qty"), 3)
+		with self.assertRaises(frappe.ValidationError):
+			old_line.save()
+		self.assertEqual(frappe.db.get_value("Set BOM Item", old_line.name, "qty"), 2)
 
 		frappe.local.lang = "vi"
 		try:
@@ -135,7 +157,4 @@ class TestSetBOMItem(FrappeTestCase):
 			self.assertIn("ngừng sử dụng", str(raised.exception))
 		finally:
 			frappe.local.lang = "en"
-		line = _bom_line(st.name, 2, "BM-ACT", 1, 1)
-		line.instrument = "BM-RET"
-		with self.assertRaises(frappe.ValidationError):
-			line.save()
+		self.assertEqual(_bom_line(st.name, 2, "BM-ACT", 1, 1).instrument, "BM-ACT")

@@ -1,0 +1,141 @@
+{#- Count sheet of a set type for one BOM version (FEAT-015 S9; FR-M1-03, FR-M1-03.2, EI-HW-007).
+    Data: tracecore.instrument.count_sheet.context (render_html passes tc_sheet for any version; Desk Print calls
+    tc_count_sheet_context(doc.name) for the effective version). Every dynamic value goes through |e; colours and sizes
+    come from the generated tokens.css (tc.*); photos and DataMatrix are data: base64, no URL. Layout uses tables
+    (the WebKit of wkhtmltopdf has no flex/grid). -#}
+{%- set cs = tc_sheet if tc_sheet is defined else tc_count_sheet_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Count Sheet" -%}
+<style>
+.print-format { margin-bottom: 26mm; }
+.tc-cs { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-cs table { width: 100%; border-collapse: collapse; }
+.tc-cs td, .tc-cs th { vertical-align: top; }
+.tc-cs .tc-code, .tc-cs-footer .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-cs h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-cs .tc-name { font-size: {{ tc.fs_lg }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_2 }} 0; }
+.tc-cs .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-cs .tc-facts td.tc-label { color: {{ tc.muted }}; width: 46mm; white-space: nowrap; }
+.tc-cs .tc-dm { width: 34mm; text-align: center; padding-left: {{ tc.sp_3 }}; }
+.tc-cs .tc-dm img { width: 25mm; height: 25mm; }
+.tc-cs .tc-dm div { font-size: {{ tc.fs_xs }}; margin-top: {{ tc.sp_1 }}; }
+.tc-cs .tc-version { margin: {{ tc.sp_3 }} 0 {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-size: {{ tc.fs_md }}; }
+.tc-cs .tc-version strong { font-weight: {{ tc.fw_bold }}; }
+.tc-cs .tc-photos { margin: {{ tc.sp_2 }} 0 {{ tc.sp_3 }} 0; page-break-inside: avoid; }
+.tc-cs .tc-photos td { text-align: center; padding: 0 {{ tc.sp_1 }}; }
+.tc-cs .tc-photos img { max-width: 100%; max-height: 45mm; border: {{ tc.bw_hair }} solid {{ tc.photo_border }}; }
+.tc-cs .tc-no-photo { height: 28mm; text-align: center; vertical-align: middle; background: {{ tc.photo_bg }}; color: {{ tc.photo_text }}; border: {{ tc.bw_hair }} dashed {{ tc.photo_border }}; }
+.tc-cs table.tc-lines thead { display: table-header-group; }
+.tc-cs table.tc-lines tfoot { display: table-row-group; }
+.tc-cs table.tc-lines tr { page-break-inside: avoid; }
+.tc-cs table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; white-space: nowrap; }
+.tc-cs table.tc-lines th, .tc-cs table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-cs table.tc-lines .tc-num { text-align: right; width: 14mm; }
+.tc-cs table.tc-lines .tc-col-code { width: 26mm; }
+.tc-cs table.tc-lines .tc-actual { width: 20mm; }
+.tc-cs table.tc-lines .tc-note { width: 24mm; }
+.tc-cs .tc-total { margin-top: {{ tc.sp_2 }}; font-size: {{ tc.fs_md }}; font-weight: {{ tc.fw_bold }}; }
+.tc-cs .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-cs .tc-sign td { width: 33%; text-align: center; padding-bottom: 14mm; font-weight: {{ tc.fw_bold }}; }
+.tc-cs .tc-sign span { display: block; font-weight: normal; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
+.tc-cs .tc-error { padding: {{ tc.sp_3 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; }
+.tc-cs-footer, .tc-cs-footer span { font-family: {{ tc.font_sans }}; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
+</style>
+<div class="tc-cs">
+{%- if cs.error %}
+	<h1>{{ _("Count sheet", context=T) | e }}</h1>
+	<div class="tc-error">
+		<strong>{{ cs.error.title | e }}</strong>
+		<p>{{ cs.error.reason | e }}</p>
+		<p>{{ cs.error.action | e }}</p>
+	</div>
+{%- else %}
+	<table>
+		<tr>
+			<td>
+				<h1>{{ _("Count sheet", context=T) | e }}</h1>
+				<div class="tc-name"><span class="tc-code">{{ cs.set_type | e }}</span> — {{ cs.set_type_name | e }}</div>
+				<table class="tc-facts">
+					<tr><td class="tc-label">{{ _("Department", context=T) | e }}</td><td>{{ (cs.department_name or "—") | e }}</td></tr>
+					<tr><td class="tc-label">{{ _("Sterilization method", context=T) | e }}</td><td>{{ (cs.method_label or "—") | e }}</td></tr>
+					<tr>
+						<td class="tc-label">{{ _("Pack type", context=T) | e }}</td>
+						<td>{% if cs.default_pack_type %}<span class="tc-code">{{ cs.default_pack_type | e }}</span>{% if cs.pack_type_name and cs.pack_type_name != cs.default_pack_type %} — {{ cs.pack_type_name | e }}{% endif %}{% else %}—{% endif %}</td>
+					</tr>
+					<tr><td class="tc-label">{{ _("Shelf life applied", context=T) | e }}</td><td>{{ cs.shelf_life_text | e }}</td></tr>
+					<tr><td class="tc-label">{{ _("Implant", context=T) | e }}</td><td>{{ (_("Yes", context=T) if cs.is_implant else _("No", context=T)) | e }}</td></tr>
+					<tr>
+						<td class="tc-label">{{ _("Standard assembly time", context=T) | e }}</td>
+						<td>{{ (_("{0} minutes", context=T).format(cs.assembly_minutes) if cs.assembly_minutes else _("Not entered", context=T)) | e }}</td>
+					</tr>
+				</table>
+			</td>
+			<td class="tc-dm">
+				<img src="{{ cs.code_png | e }}" alt="{{ cs.code | e }}">
+				<div class="tc-code">{{ cs.code | e }}</div>
+			</td>
+		</tr>
+	</table>
+
+	<div class="tc-version">
+		<strong>{{ _("BOM version {0}", context=T).format(cs.bom_version) | e }}</strong>
+		— {{ _("effective from {0}", context=T).format(cs.effective_from_text or "—") | e }}
+		— {{ cs.status_label | e }}
+		{%- if cs.reason %}<br>{{ _("Reason: {0}", context=T).format(cs.reason) | e }}{% endif %}
+	</div>
+
+	<table class="tc-photos">
+		<tr>
+		{%- if cs.photos %}
+			{%- for photo in cs.photos %}
+			<td><img src="{{ photo | e }}" alt="{{ _('Assembled set photo {0}', context=T).format(loop.index) | e }}"></td>
+			{%- endfor %}
+		{%- else %}
+			<td class="tc-no-photo">{{ _("No photo of the assembled set yet", context=T) | e }}</td>
+		{%- endif %}
+		</tr>
+	</table>
+
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("Assembly order", context=T) | e }}</th>
+				<th class="tc-col-code">{{ _("Code", context=T) | e }}</th>
+				<th>{{ _("Instrument name", context=T) | e }}</th>
+				<th class="tc-num">{{ _("BOM qty", context=T) | e }}</th>
+				<th class="tc-actual">{{ _("Counted qty", context=T) | e }}</th>
+				<th class="tc-note">{{ _("Note", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for line in cs.lines %}
+			<tr>
+				<td class="tc-num">{{ line.position | e }}</td>
+				<td class="tc-code">{{ line.instrument | e }}</td>
+				<td>{{ (line.instrument_name or "") | e }}</td>
+				<td class="tc-num">{{ line.qty | e }}</td>
+				<td></td>
+				<td></td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<div class="tc-total">{{ _("Total: {0} lines, {1} instruments", context=T).format(cs.total_lines, cs.total_qty) | e }}</div>
+
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Counted by", context=T) | e }}<span>{{ _("(signature, full name)", context=T) | e }}</span></td>
+			<td>{{ _("Packed by", context=T) | e }}<span>{{ _("(signature, full name)", context=T) | e }}</span></td>
+			<td>{{ _("Date", context=T) | e }}<span>{{ _("(dd/mm/yyyy)", context=T) | e }}</span></td>
+		</tr>
+	</table>
+{%- endif %}
+</div>
+<div id="footer-html" class="visible-pdf">
+	{#- one left-aligned line: the wkhtmltopdf footer page clips overflow on the right -#}
+	<div class="tc-cs-footer">
+		{{ _("Page {0}/{1}", context=T).format('<span class="page"></span>', '<span class="topage"></span>') }}
+		{%- if cs.code %} · <span class="tc-code">{{ cs.code | e }}</span>{% endif %}
+		{%- if cs.printed_at %} · {{ _("Printed {0} by {1}", context=T).format(cs.printed_at, cs.printed_by or "") | e }}{% endif %}
+	</div>
+</div>

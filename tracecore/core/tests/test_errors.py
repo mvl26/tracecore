@@ -46,6 +46,11 @@ class TestErrors(FrappeTestCase):
 				"ETCHING_INVALID",
 				"IMPORT_ROWS_INVALID",
 				"IMPORT_FILE_INVALID",
+				"BOM_EMPTY",
+				"BOM_LINE_INVALID",
+				"BOM_TOO_LARGE",
+				"BOM_EFFECTIVE_DATE_INVALID",
+				"SHELF_LIFE_INVALID",
 				"EQUIPMENT_NOT_WASHER",
 				"PROGRAM_INVALID",
 				"CHEMICAL_LOT_INVALID",
@@ -61,6 +66,8 @@ class TestErrors(FrappeTestCase):
 				"EQUIPMENT_NOT_FOUND",
 				"CODE_NOT_FOUND",
 				"INSTRUMENT_NOT_FOUND",
+				"SET_TYPE_NOT_FOUND",
+				"BOM_VERSION_NOT_FOUND",
 				"WASH_BATCH_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
@@ -86,6 +93,8 @@ class TestErrors(FrappeTestCase):
 				"GIAI_NOT_ASSIGNED",
 				"GS1_PREFIX_NOT_CONFIGURED",
 				"COMPANY_NOT_CONFIGURED",
+				"BOM_VERSION_CONFLICT",
+				"SET_TYPE_CODE_EXISTS",
 				"STEP_ALREADY_PASSED",
 				"SET_IN_OTHER_BATCH",
 				"BATCH_NOT_RUNNING",
@@ -101,8 +110,22 @@ class TestErrors(FrappeTestCase):
 		self.assertEqual(errors.HTTP_STATUS["INSTRUMENT_NOT_FOUND"], 404)
 		self.assertEqual(Block("INSTRUMENT_NOT_FOUND", "t", "r", "a").http_status, 404)
 
+	def test_http_status_feat015_codes(self):
+		# FEAT-015 A-09 (S4, S5, S7, S11, S13): mã mới của loại bộ / phiên bản BOM, cùng bảng ADR-003
+		for code, status in {
+			"SET_TYPE_NOT_FOUND": 404,
+			"BOM_VERSION_NOT_FOUND": 404,
+			"BOM_EMPTY": 422,
+			"BOM_LINE_INVALID": 422,
+			"BOM_TOO_LARGE": 422,
+			"BOM_EFFECTIVE_DATE_INVALID": 422,
+			"SHELF_LIFE_INVALID": 422,
+			"BOM_VERSION_CONFLICT": 409,
+			"SET_TYPE_CODE_EXISTS": 409,
+		}.items():
+			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 	def test_http_status_wash_codes(self):
-		# FEAT-021 A-09: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
+		# FEAT-021 A-12: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
 		self.assertEqual(Block("EQUIPMENT_NOT_READY", "t", "r", "a").http_status, 423)
 		self.assertEqual(Block("WASH_BATCH_NOT_FOUND", "t", "r", "a").http_status, 404)
 		self.assertEqual(Block("BATCH_EMPTY", "t", "r", "a").http_status, 422)

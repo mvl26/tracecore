@@ -45,7 +45,13 @@ HTTP_STATUS: dict[str, int] = {
 			"IMPORT_ROWS_INVALID",
 			"IMPORT_FILE_INVALID",
 			"PIN_FORMAT_INVALID",
-			# FEAT-021 A-09: lô rửa T2
+			# FEAT-015 A-09 (S4, S5, S7): loại bộ / phiên bản BOM / hạn lưu loại gói
+			"BOM_EMPTY",
+			"BOM_LINE_INVALID",
+			"BOM_TOO_LARGE",
+			"BOM_EFFECTIVE_DATE_INVALID",
+			"SHELF_LIFE_INVALID",
+			# FEAT-021 A-12: lô rửa T2
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
 			"CHEMICAL_LOT_INVALID",
@@ -64,11 +70,13 @@ HTTP_STATUS: dict[str, int] = {
 			"EQUIPMENT_NOT_FOUND",
 			"CODE_NOT_FOUND",
 			"INSTRUMENT_NOT_FOUND",
+			"SET_TYPE_NOT_FOUND",
+			"BOM_VERSION_NOT_FOUND",
 			"WASH_BATCH_NOT_FOUND",
 		),
 		404,
 	),
-	# 423: máy rửa không Sẵn sàng (Khóa/Sửa chữa/Ngừng sử dụng), theo BA API-M2-02/03 (FEAT-021 A-09, Q21).
+	# 423: máy rửa không Sẵn sàng (Khóa/Sửa chữa/Ngừng sử dụng), theo BA API-M2-02/03 (FEAT-021 A-12, Q21).
 	"EQUIPMENT_NOT_READY": 423,
 	**dict.fromkeys(
 		(
@@ -93,6 +101,8 @@ HTTP_STATUS: dict[str, int] = {
 			"GIAI_NOT_ASSIGNED",
 			"GS1_PREFIX_NOT_CONFIGURED",
 			"COMPANY_NOT_CONFIGURED",
+			"BOM_VERSION_CONFLICT",
+			"SET_TYPE_CODE_EXISTS",
 			"STEP_ALREADY_PASSED",
 			"SET_IN_OTHER_BATCH",
 			"BATCH_NOT_RUNNING",

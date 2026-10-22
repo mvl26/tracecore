@@ -3,7 +3,8 @@
 Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi trường:
 TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
 và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
-TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py).
+TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py),
+TC_E2E_SETTYPE_* (test_desk_set_type.py).
 
 TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
 (vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
@@ -268,4 +269,45 @@ def inv_demo():
 def inv_page(page):
 	"""User Desk TC R09 (nhập kho vật tư, khai báo vật tư)."""
 	desk_login(page, "TC_E2E_INV")
+	return page
+
+
+# --- Loại bộ và BOM theo phiên bản Desk (SCR-02, FEAT-015): user TC R02, dữ liệu `devdata.ensure_set_type_demo` ---
+
+SETTYPE_KEYS = (
+	"set_type",
+	"set_type_inflight",
+	"set_type_edit",
+	"effective_version",
+	"scheduled_version",
+	"set_inflight",
+	"inflight_version",
+	"inflight_effective",
+	"pack_short",
+	"pack_long",
+	"pack_none",
+	"pack_r10",
+	"steam_1",
+	"steam_2",
+	"steam_3",
+	"plasma",
+	"retired",
+	"department",
+)
+
+
+@pytest.fixture
+def settype_demo():
+	"""Mã demo của `devdata.ensure_set_type_demo` (TC_E2E_SETTYPE_SET_TYPE, ..._PLASMA...)."""
+	return {key: require_env(f"TC_E2E_SETTYPE_{key.upper()}") for key in SETTYPE_KEYS}
+
+
+@pytest.fixture
+def settype_page(page):
+	"""User Desk TC R02 (khai báo loại bộ, sửa BOM, ảnh bộ, phiếu kiểm đếm)."""
+	response = page.request.post(
+		"/api/method/login",
+		form={"usr": require_env("TC_E2E_SETTYPE_USER"), "pwd": require_env("TC_E2E_SETTYPE_PASSWORD")},
+	)
+	assert response.ok, response.text()
 	return page

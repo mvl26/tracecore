@@ -540,6 +540,30 @@ class TestInstrumentDemoData(FrappeTestCase):
 			{k: v for k, v in first.items() if k not in ("retire", "giai")},
 		)
 
+	def test_ensure_bom_line_with_scheduled_version(self):
+		# review Task 2 (6): loại bộ có phiên bản đã lên lịch → thêm dòng không bị BOM_EFFECTIVE_DATE_INVALID
+		from frappe.utils import add_days, getdate, nowdate
+
+		from tracecore.instrument import bom_versions
+		from tracecore.tests import factories
+
+		set_type = factories.make_set_type("DDSCH", bom=[("DD-SCH-1", 1)])
+		tomorrow = getdate(add_days(nowdate(), 1))
+		factories.make_bom(set_type, [("DD-SCH-2", 1)], version=2, effective_from=tomorrow)
+		factories.make_instrument("DD-SCH-3", methods=("Steam 134",))
+
+		devdata._ensure_bom_line(set_type.name, "DD-SCH-3")
+		latest = bom_versions.versions(set_type.name)[0]
+		self.assertEqual((latest["bom_version"], latest["effective_from"]), (3, tomorrow))
+		self.assertIn(
+			"DD-SCH-3",
+			frappe.get_all(
+				"Set BOM Item", filters={"set_type": set_type.name, "bom_version": 3}, pluck="instrument"
+			),
+		)
+		devdata._ensure_bom_line(set_type.name, "DD-SCH-3")  # đã có ở phiên bản mới nhất: không tạo thêm
+		self.assertEqual(bom_versions.versions(set_type.name)[0]["bom_version"], 3)
+
 	def test_instrument_demo_refused_outside_developer_or_test_site(self):
 		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
 		frappe.flags.in_test = False
@@ -605,3 +629,139 @@ class TestInventoryDemoData(FrappeTestCase):
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True
+
+
+SET_TYPE_DEMO_KEYS = {
+	"set_type",
+	"set_type_inflight",
+	"set_type_edit",
+	"effective_version",
+	"scheduled_version",
+	"set_inflight",
+	"inflight_version",
+	"inflight_effective",
+	"pack_short",
+	"pack_long",
+	"pack_none",
+	"pack_r10",
+	"steam_1",
+	"steam_2",
+	"steam_3",
+	"plasma",
+	"retired",
+	"department",
+}
+
+
+class TestSetTypeDemoData(FrappeTestCase):
+	"""Dữ liệu demo e2e Desk SCR-02 (FEAT-015 Task 9): loại bộ/dòng BOM không xóa được nên dùng lại bản ghi cố định."""
+
+	def test_ensure_set_type_demo_idempotent(self):
+		first = devdata.ensure_set_type_demo()
+		counts = {
+			doctype: frappe.db.count(doctype)
+			for doctype in ("Instrument", "Instrument Set Type", "Set BOM Item", "Set Unit", "File")
+		}
+		second = devdata.ensure_set_type_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), SET_TYPE_DEMO_KEYS)
+		self.assertEqual(
+			{doctype: frappe.db.count(doctype) for doctype in counts}, counts, msg="gọi lại không tạo thêm"
+		)
+
+	def test_set_type_demo_records(self):
+		from frappe.utils import add_days, getdate, nowdate
+
+		from tracecore.instrument import bom_versions, shelf_life
+
+		demo = devdata.ensure_set_type_demo()
+		tomorrow = getdate(add_days(nowdate(), 1))
+		# loại gói: hai loại có hạn lưu được gợi ý, loại hạn 0 không
+		usable = {row["item"] for row in shelf_life.usable_pack_types()}
+		self.assertTrue({demo["pack_short"], demo["pack_long"], demo["pack_r10"]} <= usable)
+		self.assertNotIn(demo["pack_none"], usable)
+		self.assertFalse(frappe.db.get_value("Item", demo["pack_none"], "tc_shelf_life_days"))
+		# loại bộ hấp: phiên bản hiệu lực + phiên bản đã lên lịch ngày mai, ba ảnh bộ đã xếp có thumbnail riêng tư
+		statuses = {v["bom_version"]: v for v in bom_versions.versions(demo["set_type"])}
+		self.assertEqual(statuses[demo["effective_version"]]["status"], "Effective")
+		self.assertEqual(statuses[demo["scheduled_version"]]["status"], "Scheduled")
+		self.assertEqual(statuses[demo["scheduled_version"]]["effective_from"], tomorrow)
+		row = frappe.get_doc("Instrument Set Type", demo["set_type"])
+		self.assertEqual(row.method, "Steam")
+		for field in ("tray_image", "tray_image_2", "tray_image_3"):
+			self.assertTrue(row.get(field).startswith("/private/files/"), msg=field)
+			self.assertTrue(row.get(field.replace("image", "thumbnail")), msg=field)
+		# dụng cụ chỉ Plasma (lỗi tương thích ở loại bộ hấp) và dụng cụ đã Ngừng sử dụng
+		methods = {r.method for r in frappe.get_doc("Instrument", demo["plasma"]).compatible_methods}
+		self.assertEqual(methods, {"Plasma"})
+		self.assertEqual(frappe.db.get_value("Instrument", demo["retired"], "status"), "Retired")
+		for key in ("steam_1", "steam_2", "steam_3"):
+			self.assertEqual(frappe.db.get_value("Instrument", demo[key], "status"), "Active")
+		# bộ giữa chu trình: ghim phiên bản cũ hơn phiên bản hiệu lực, đã qua T1-T3, chưa có Cycle ID
+		self.assertLess(demo["inflight_version"], demo["inflight_effective"])
+		self.assertEqual(
+			bom_versions.effective_version(demo["set_type_inflight"]), demo["inflight_effective"]
+		)
+		unit = frappe.db.get_value(
+			"Set Unit",
+			demo["set_inflight"],
+			["set_type", "cycle_bom_version", "status", "active_cycle_id"],
+			as_dict=True,
+		)
+		self.assertEqual(
+			(unit.set_type, unit.cycle_bom_version, unit.status, unit.active_cycle_id),
+			(demo["set_type_inflight"], demo["inflight_version"], "Processing", None),
+		)
+		self.assertEqual(_gates(demo["set_inflight"])["T3"], "Pass")
+		context = packing.get_context(demo["set_inflight"], "TR-004")
+		self.assertEqual(context["bom_version"], demo["inflight_version"])
+		# loại bộ để sửa BOM: có phiên bản hiệu lực, không ghi đè hạn lưu
+		edit = frappe.db.get_value(
+			"Instrument Set Type",
+			demo["set_type_edit"],
+			["shelf_life_days", "default_pack_type"],
+			as_dict=True,
+		)
+		self.assertEqual((edit.shelf_life_days, edit.default_pack_type), (0, demo["pack_long"]))
+		self.assertTrue(bom_versions.effective_version(demo["set_type_edit"]))
+
+	def test_set_type_demo_recreates_consumed_inflight_set_and_scheduled_version(self):
+		from frappe.utils import add_days, nowdate
+
+		from tracecore.instrument import bom_versions
+
+		first = devdata.ensure_set_type_demo()
+		# bộ giữa chu trình đã được e2e đóng gói: bộ mới ghim phiên bản hiệu lực rồi có phiên bản mới hơn
+		frappe.db.set_value("Set Unit", first["set_inflight"], "active_cycle_id", "CY-DEMO-USED")
+		second = devdata.ensure_set_type_demo()
+		self.assertNotEqual(second["set_inflight"], first["set_inflight"])
+		self.assertLess(second["inflight_version"], second["inflight_effective"])
+		# ngày sau: phiên bản đã lên lịch thành hiệu lực → lần gọi sau lên lịch phiên bản mới cho ngày mai
+		later = add_days(nowdate(), 2)
+		with _clock_on(later):
+			third = devdata.ensure_set_type_demo()
+		self.assertGreater(third["scheduled_version"], second["scheduled_version"])
+		statuses = {v["bom_version"]: v["status"] for v in bom_versions.versions(third["set_type"])}
+		self.assertEqual(statuses[third["scheduled_version"]], "Scheduled")
+
+	def test_set_type_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_set_type_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+def _clock_on(day):
+	"""Đồng hồ hệ thống đứng ở 10:00 ngày `day` (giờ hệ thống) cho mọi ``nowdate``/``now_datetime`` của Frappe."""
+	from datetime import datetime, time
+	from unittest.mock import patch
+
+	from frappe.utils import data, getdate
+
+	instant = datetime.combine(getdate(day), time(10, 0))
+	return patch.object(data, "convert_utc_to_system_timezone", side_effect=lambda _now: instant)

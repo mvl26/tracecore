@@ -1,7 +1,8 @@
 """Sinh và phân tích mã GS1 cho TraceCore (ADR-004).
 
 Nơi duy nhất tạo Set ID GIAI và mã GIAI dụng cụ (AI 8004) và payload Cycle ID (AI 01, 11, 17, 21),
-kiểm GTIN-14, phân tích chuỗi quét từ máy quét HID
+mã phiên bản BOM trên phiếu kiểm đếm (``BOM-<mã loại bộ>-V<n>``, không phải GS1), kiểm GTIN-14, phân tích chuỗi quét
+từ máy quét HID
 và mã hóa DataMatrix (ảnh PNG qua libdmtx, lệnh ZPL ``^BXN`` cho máy in).
 Hàm ở đây thuần Python, không đọc/ghi DB.
 """
@@ -29,6 +30,10 @@ DEMO_PREFIX_RANGE = "952"  # GS1 dành dải 952 cho demo/thử nghiệm: không
 # Set ID <prefix><mã loại bộ [A-Z0-9]{2,8}><6 số>.
 INSTRUMENT_ASSET_PREFIX = "I-"
 INSTRUMENT_SERIAL_DIGITS = 8
+# Mã phiên bản BOM in trên phiếu kiểm đếm (FEAT-015 S8): tham chiếu bất biến tới (loại bộ, phiên bản), không phải GS1,
+# không ghi Code Registry. Tiền tố chữ "BOM-" làm mã không bao giờ trùng Set ID (bắt đầu bằng số) hay mã nội bộ.
+BOM_CODE_PREFIX = "BOM-"
+BOM_MAX_VERSION = 9999
 
 # GS1 AI encodable character set 82 (GS1 General Specifications, Figure 7.11-1)
 CSET82 = frozenset(string.ascii_letters + string.digits + "!\"%&'()*+,-./:;<=>?_")
@@ -41,6 +46,10 @@ _PACK_HRI = re.compile(r"\(01\)([0-9]{14})\(11\)([0-9]{6})\(17\)([0-9]{6})\(21\)
 _PACK_PLAIN = re.compile(r"01([0-9]{14})11([0-9]{6})17([0-9]{6})21(.+)")
 _INSTRUMENT_ASSET = re.compile(r"I-[0-9]{8}")
 _INSTRUMENT_GIAI = re.compile(r"[0-9]{4,12}I-[0-9]{8}")
+_SET_TYPE_CODE = re.compile(r"[A-Z0-9]{2,8}")
+_BOM_CODE = re.compile(
+	r"BOM-([A-Z0-9]{2,8})-V([1-9][0-9]{0,3})"
+)  # dạng chuẩn: số phiên bản không có số 0 đầu
 _INTERNAL_CODES = (
 	("employee", re.compile(r"NV-\d{5}")),
 	("equipment", re.compile(r"TB-\d{4}")),
@@ -86,6 +95,18 @@ def make_instrument_giai(prefix, serial):
 	if isinstance(serial, bool) or not isinstance(serial, int) or not 1 <= serial < limit:
 		raise GS1Error("GS1_ASSET_REF", f"Instrument serial must be an integer 1..{limit - 1}: {serial!r}")
 	return make_giai(prefix, f"{INSTRUMENT_ASSET_PREFIX}{serial:0{INSTRUMENT_SERIAL_DIGITS}d}")
+
+
+def make_bom_code(type_code, version):
+	"""Mã phiên bản BOM ``BOM-<TYPE_CODE>-V<n>`` (vd ``BOM-KHAM01-V3``) cho DataMatrix phiếu kiểm đếm (FEAT-015 S8).
+
+	`type_code` đúng ``[A-Z0-9]{2,8}`` (mã loại bộ), `version` số nguyên 1..9999; sai → ``GS1Error`` (``ValueError``).
+	"""
+	if not isinstance(type_code, str) or not _SET_TYPE_CODE.fullmatch(type_code):
+		raise GS1Error("BOM_CODE", f"Set type code must be 2-8 characters A-Z, 0-9: {type_code!r}")
+	if isinstance(version, bool) or not isinstance(version, int) or not 1 <= version <= BOM_MAX_VERSION:
+		raise GS1Error("BOM_CODE", f"BOM version must be an integer 1..{BOM_MAX_VERSION}: {version!r}")
+	return f"{BOM_CODE_PREFIX}{type_code}-V{version}"
 
 
 def is_demo_prefix(prefix):
@@ -226,6 +247,7 @@ def parse_scan(raw, company_prefix=None):
 	``<prefix>I-<8 số>`` → ``type = "instrument"`` (có AI 8004 thì nhận theo dạng; không AI thì phần sau tiền tố
 	cấu hình phải đúng ``I-<8 số>``). Các loại mã cũ giữ nguyên kết quả.
 	Nhãn gói dạng GS1 (01)(11)(17)(21) trả thêm ``gtin``, ``packed``, ``expiry`` (``datetime.date``).
+	Mã phiên bản BOM của phiếu kiểm đếm ``BOM-<TYPE_CODE>-V<n>`` → ``type = "bom"`` kèm ``set_type``, ``bom_version``.
 	"""
 	value = clean_scan(raw)
 	# raw bị cắt: chuỗi quét đi vào Audit Log (append-only) nên không được dài tùy ý
@@ -250,6 +272,16 @@ def parse_scan(raw, company_prefix=None):
 	for kind, pattern in _INTERNAL_CODES:
 		if pattern.fullmatch(value):
 			return {"type": kind, "id": value, "raw": value}
+
+	bom = _BOM_CODE.fullmatch(value)
+	if bom is not None:
+		return {
+			"type": "bom",
+			"id": value,
+			"set_type": bom.group(1),
+			"bom_version": int(bom.group(2)),
+			"raw": value,
+		}
 
 	prefix = configured_company_prefix() if company_prefix is None else company_prefix
 	if prefix and value.startswith(prefix) and _INSTRUMENT_ASSET.fullmatch(value[len(prefix) :]):

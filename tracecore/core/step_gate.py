@@ -4,8 +4,10 @@ Mỗi chu trình tái xử lý của một bộ (`Set Unit.current_cycle_no`) c�
 `Step Gate Result` tên ``{set_unit}-C{cycle_no}-{step}``. Cổng sau chỉ mở khi cổng liền trước Đạt; Không đạt
 đưa bộ về Xử lý lại và đặt các cổng sau của chu trình về Chưa; đủ năm cổng Đạt thì bộ Vô khuẩn.
 
-Trường vòng đời (`status`, `cycles_used`, `current_station`, `active_cycle_id`, `current_cycle_no`) được Set Unit
-chặn ghi trừ khi có cờ ``doc.flags.tc_step_gate`` — cờ này chỉ được đặt trong file này (lint R2).
+Trường vòng đời (`status`, `cycles_used`, `current_station`, `active_cycle_id`, `current_cycle_no`,
+`cycle_bom_version`) được Set Unit chặn ghi trừ khi có cờ ``doc.flags.tc_step_gate`` — cờ này chỉ được đặt trong file
+này (lint R2). `cycle_bom_version` (phiên bản BOM ghim cho chu trình, FEAT-015 S3) do ``start_cycle`` hỏi M1 qua hook
+``tracecore_cycle_bom_version`` (core không import M1, ADR-001).
 
 Đồng thời: các hàm ghi khóa dòng Set Unit (``FOR UPDATE``) nên request song song cùng bộ chạy lần lượt. MariaDB
 chạy REPEATABLE READ: đọc thường dùng snapshot mở từ lần đọc đầu của transaction (trên đường RPC là
@@ -20,6 +22,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
+from tracecore.core import extension
 from tracecore.core.errors import Block
 
 STEPS = ("T1", "T2", "T3", "T4", "T5")
@@ -91,11 +94,46 @@ def _results(set_unit, cycle_no, for_update=False):
 	return {row.step: (row.result, cint(row.redo_count)) for row in rows}
 
 
-def start_cycle(set_unit):
-	"""Mở chu trình mới (stub của T1): ``current_cycle_no + 1``, Set Unit sang Processing, bỏ Cycle ID cũ."""
+CYCLE_BOM_VERSION_HOOK = "tracecore_cycle_bom_version"
+
+
+def _first_int(results):
+	"""Số nguyên đầu tiên trong kết quả hook (bỏ bool và kiểu khác); không có → 0 (không ghim)."""
+	for value in results:
+		if isinstance(value, int) and not isinstance(value, bool):
+			return value
+	return 0
+
+
+def start_cycle(set_unit, on=None):
+	"""Mở chu trình mới (stub của T1): ``current_cycle_no + 1``, Set Unit sang Processing, bỏ Cycle ID cũ.
+
+	Ghim phiên bản BOM của chu trình (FR-M1-04.1, .2; FEAT-015 S3): hook ``tracecore_cycle_bom_version`` nhận
+	``{"set_unit", "set_type", "cycle_no", "on"}`` và trả phiên bản; số nguyên đầu tiên được ghi vào
+	``cycle_bom_version`` trong CÙNG lần lưu với ``current_cycle_no``/``status``. Ghim giữ nguyên sau khi bộ được giải
+	phóng, tới lần tiếp nhận kế tiếp. Không có hook hoặc hook trả None → 0 (không ghim; nơi đọc dùng phiên bản hiệu lực).
+
+	**Hợp đồng của `on`:** ngày/giờ tiếp nhận theo **giờ hệ thống** (``Asia/Ho_Chi_Minh``) không múi giờ, như
+	``now_datetime()`` (mặc định). Nơi gọi có ``client_ts`` (``client_time.parse_client_ts`` trả UTC không múi giờ) phải
+	đổi bằng ``client_time.to_system_time`` trước khi truyền (FEAT-019), nếu không bộ tiếp nhận từ 00:00 tới 06:59 giờ
+	Việt Nam bị ghim phiên bản của ngày hôm trước.
+	"""
 	unit = _set_unit(set_unit, for_update=True)
 	cycle_no = cint(unit.current_cycle_no) + 1
-	_save_lifecycle(unit, current_cycle_no=cycle_no, status="Processing", active_cycle_id=None)
+	ctx = {
+		"set_unit": unit.name,
+		"set_type": unit.set_type,
+		"cycle_no": cycle_no,
+		"on": on or now_datetime(),
+	}
+	version = _first_int(extension.run(CYCLE_BOM_VERSION_HOOK, ctx))
+	_save_lifecycle(
+		unit,
+		current_cycle_no=cycle_no,
+		status="Processing",
+		active_cycle_id=None,
+		cycle_bom_version=version,
+	)
 	return cycle_no
 
 

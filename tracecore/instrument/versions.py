@@ -56,6 +56,9 @@ def _set_type_line(row) -> str:
 		f'<a href="{escape_html(href)}">{escape_html(row["set_type"])}</a>: '
 		f"{escape_html(row['set_type_name'] or '')}"
 	)
+	if row.get("scheduled"):
+		# FEAT-015 S2: dụng cụ chỉ có ở phiên bản BOM đã lên lịch
+		text += " - " + escape_html(_("scheduled BOM version {0}").format(row["bom_version"]))
 	if not row["compatible"]:
 		text += " - " + escape_html(_("not compatible (set type method {0})").format(_(row["method"])))
 	return f"<li>{text}</li>"

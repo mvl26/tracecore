@@ -6,10 +6,12 @@ những nơi `client_ts` quyết định dữ liệu in ra (ngày trong Cycle ID
 
 import math
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import frappe
 from frappe import _
-from frappe.utils import cint
+from frappe.utils import cint, get_datetime
+from frappe.utils.data import get_system_timezone
 
 DEFAULT_MAX_SKEW_SECONDS = 300
 
@@ -32,6 +34,17 @@ def parse_client_ts(value):
 	if parsed is None or parsed.tzinfo is None:
 		raise ClientTimestampError(_("client_ts must be ISO 8601 with a UTC offset: {0}").format(value))
 	return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def to_system_time(utc_naive):
+	"""Giờ UTC không múi giờ (dạng `parse_client_ts` trả; datetime hoặc chuỗi) → giờ hệ thống không múi giờ.
+
+	Giờ hệ thống = múi giờ của site (``Asia/Ho_Chi_Minh``), cùng dạng ``now_datetime()``; dùng trước khi lấy NGÀY của
+	một thời điểm từ client (vd ``step_gate.start_cycle(on=…)`` ghim phiên bản BOM theo ngày tiếp nhận). Cùng phép đổi
+	với ``packing._system_time`` của T4 (D13).
+	"""
+	utc = get_datetime(utc_naive).replace(tzinfo=timezone.utc)
+	return utc.astimezone(ZoneInfo(get_system_timezone())).replace(tzinfo=None)
 
 
 def utc_now():
