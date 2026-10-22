@@ -712,7 +712,11 @@ class TestBomVersions(IsolatedTestCase):
 			st.name,
 		)
 		frappe.db.set_value(SET_TYPE, st.name, "current_bom_version", 1)
-		set_bom_item_version_meta.execute()
+		blank = make_set_type("BVPZ")
+		make_bom(blank, [("BV-M1", 1)])
+		frappe.db.set_value(SET_TYPE, blank.name, "current_bom_version", 0)  # chưa có phiên bản dùng → điền
+		with patch("builtins.print") as printed:
+			set_bom_item_version_meta.execute()
 		rows = frappe.get_all(
 			ITEM,
 			filters={"set_type": st.name},
@@ -723,9 +727,16 @@ class TestBomVersions(IsolatedTestCase):
 			[(r.bom_version, getdate(r.effective_from), r.change_reason, r.based_on_version) for r in rows],
 			[(1, _today(), "Initial version", 0), (2, _today(), "Recorded before BOM versioning", 1)],
 		)
-		self.assertEqual(frappe.db.get_value(SET_TYPE, st.name, "current_bom_version"), 2)
+		# review cuối I-1: current_bom_version (phiên bản T4 đang dùng) khác phiên bản hiệu lực theo dòng → giữ nguyên,
+		# chỉ in chênh lệch (không âm thầm đổi); scheduler 00:00 đồng bộ có Audit
+		self.assertEqual(frappe.db.get_value(SET_TYPE, st.name, "current_bom_version"), 1)
+		output = " ".join(str(arg) for call in printed.call_args_list for arg in call.args)
+		self.assertIn(f"Set type {st.name}: current BOM version 1 kept", output)
+		self.assertIn("effective version is 2", output)
+		self.assertEqual(frappe.db.get_value(SET_TYPE, blank.name, "current_bom_version"), 1)
 		count = frappe.db.count("Audit Log")
-		set_bom_item_version_meta.execute()  # idempotent
+		with patch("builtins.print"):
+			set_bom_item_version_meta.execute()  # idempotent
 		self.assertEqual(frappe.db.count("Audit Log"), count)
 
 		with open(frappe.get_app_path("tracecore", "patches.txt"), encoding="utf-8") as handle:

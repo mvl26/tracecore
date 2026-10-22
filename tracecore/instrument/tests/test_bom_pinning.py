@@ -288,6 +288,66 @@ class TestBomPinning(IsolatedTestCase):
 		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": "Set Unit", "action": "Update"}), count)
 		self.assertEqual(_pinned(running), 2)
 
+	def test_patches_pin_running_set_to_version_in_use_before_meta_sync(self):
+		# review cuối I-1 (FR-M1-04.1, AC-9): patch ghim chạy TRƯỚC set_bom_item_version_meta nên ghim đúng phiên bản T4
+		# đang dùng (current_bom_version cũ); patch meta không âm thầm đổi current_bom_version khi khác phiên bản hiệu lực
+		from tracecore.patches.v0_1 import set_bom_item_version_meta
+
+		set_type = make_set_type("PNO", bom=[("PN-O1", 1)])
+		make_bom(set_type, [("PN-O2", 1)], version=2)
+		unit = make_set_unit(set_type.name)
+		# dữ liệu có trước FEAT-015: dòng chưa có ngày hiệu lực/lý do/phiên bản cơ sở, T4 đang dùng v1 (current = 1)
+		# dù đã có dòng v2; bộ đang ở chu trình 4, chưa có trường ghim
+		frappe.db.sql(
+			"update `tabSet BOM Item` set effective_from = null, change_reason = null, based_on_version = 0 "
+			"where set_type = %s",
+			set_type.name,
+		)
+		frappe.db.set_value(
+			"Instrument Set Type", set_type.name, "current_bom_version", 1, update_modified=False
+		)
+		frappe.db.set_value(
+			"Set Unit", unit.name, {"current_cycle_no": 4, "cycle_bom_version": 0}, update_modified=False
+		)
+		modules = {
+			"tracecore.patches.v0_1.pin_cycle_bom_version": pin_cycle_bom_version,
+			"tracecore.patches.v0_1.set_bom_item_version_meta": set_bom_item_version_meta,
+		}
+		with open(APP_ROOT / "tracecore" / "patches.txt", encoding="utf-8") as handle:
+			order = [line.strip() for line in handle if line.strip() in modules]
+		self.assertEqual(
+			order,
+			[
+				"tracecore.patches.v0_1.pin_cycle_bom_version",
+				"tracecore.patches.v0_1.set_bom_item_version_meta",
+			],
+		)
+		with patch("builtins.print") as printed:
+			for name in order:
+				modules[name].execute()
+		self.assertEqual(_pinned(unit), 1)
+		self.assertEqual(frappe.db.get_value("Instrument Set Type", set_type.name, "current_bom_version"), 1)
+		output = " ".join(str(arg) for call in printed.call_args_list for arg in call.args)
+		self.assertIn(f"Set type {set_type.name}: current BOM version 1 kept", output)
+		self.assertNotIn(
+			{"current_bom_version": 2},
+			[
+				frappe.parse_json(row.new_value)
+				for row in frappe.get_all(
+					"Audit Log",
+					filters={
+						"ref_doctype": "Instrument Set Type",
+						"ref_name": set_type.name,
+						"action": "Update",
+					},
+					fields=["new_value"],
+				)
+			],
+		)
+		self.assertEqual(
+			bom.pack_context(_ctx(frappe.get_doc("Set Unit", unit.name), set_type))["bom_version"], 1
+		)
+
 	def test_start_cycle_with_client_ts_pins_version_of_local_reception_day(self):
 		# review Task 3 (Important): client_ts là UTC không múi giờ (parse_client_ts); start_cycle nhận giờ hệ thống.
 		# 17:30 UTC ngày D-1 = 00:30 ngày D giờ Asia/Ho_Chi_Minh → ghim phiên bản hiệu lực ngày D (FR-M1-04.2, AC-10)

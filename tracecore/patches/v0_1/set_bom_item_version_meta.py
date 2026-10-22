@@ -3,7 +3,11 @@
 - ``effective_from`` trống → ngày tạo sớm nhất của phiên bản (mọi dòng của một phiên bản cùng một ngày).
 - ``change_reason`` trống → "Initial version" (v1) / "Recorded before BOM versioning" (phiên bản sau).
 - ``based_on_version`` = phiên bản - 1 cho phiên bản > 1 còn 0.
-- ``current_bom_version`` của loại bộ = ``bom_versions.effective_version`` hôm nay nếu khác.
+- ``current_bom_version`` của loại bộ (phiên bản T4 dùng trước FEAT-015) **không bị đổi** (review cuối I-1): chỉ điền khi
+  đang trống/0; khác ``bom_versions.effective_version`` hôm nay thì in chênh lệch để người vận hành xem lại. Bộ đang giữa
+  chu trình đã được ghim phiên bản cũ bởi ``pin_cycle_bom_version`` (chạy trước patch này); scheduler 00:00
+  (``roll_effective_versions``) sau đó đưa ``current_bom_version`` về phiên bản hiệu lực theo ngày ghi trên dòng, có
+  Audit Log.
 - Nhóm dòng trùng dụng cụ / trùng thứ tự xếp trong một phiên bản cũ chỉ được **báo** (in ra), không sửa: phiên bản bất
   biến; trùng dụng cụ còn chặn tạo chỉ mục unique (patch ``set_bom_item_unique_index`` tạo khi hết trùng; sau khi gộp
   dòng bằng tay thì chạy lại patch đó, xem docstring của nó).
@@ -77,21 +81,35 @@ def _backfill_versions():
 
 
 def _sync_current_versions():
+	"""Không âm thầm đổi ``current_bom_version`` (review cuối I-1).
+
+	Trống/0 (không phiên bản nào được dùng) → phiên bản hiệu lực, có Audit. Khác phiên bản hiệu lực → giữ nguyên, in
+	chênh lệch: ngày hiệu lực của dòng cũ là ngày patch suy ra (ngày tạo), không đủ căn cứ để đổi phiên bản đang dùng.
+	"""
 	for name, current in frappe.db.sql(
 		"select name, current_bom_version from `tabInstrument Set Type` order by name"
 	):
 		effective = bom_versions.effective_version(name)
-		if effective and effective != cint(current):
-			frappe.db.set_value(SET_TYPE, name, "current_bom_version", effective, update_modified=False)
-			audit.log(
-				"Update",
-				SET_TYPE,
-				name,
-				old={"current_bom_version": cint(current)},
-				new={"current_bom_version": effective},
-				reason=_reason(),
+		current = cint(current)
+		if not effective or effective == current:
+			continue
+		if current > 0:
+			print(
+				f"Set type {name}: current BOM version {current} kept, but by the effective dates of its lines the "
+				f"effective version is {effective}. Sets in a running cycle stay on their pinned version; review the "
+				"BOM versions (the midnight scheduler applies the effective version)."
 			)
-			print(f"Set type {name}: current BOM version {cint(current)} -> {effective}")
+			continue
+		frappe.db.set_value(SET_TYPE, name, "current_bom_version", effective, update_modified=False)
+		audit.log(
+			"Update",
+			SET_TYPE,
+			name,
+			old={"current_bom_version": current},
+			new={"current_bom_version": effective},
+			reason=_reason(),
+		)
+		print(f"Set type {name}: current BOM version {current} -> {effective}")
 
 
 def _report_duplicates():

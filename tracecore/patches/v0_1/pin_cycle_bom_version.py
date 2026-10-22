@@ -1,7 +1,9 @@
 """Ghim phiên bản BOM cho bộ đang giữa chu trình khi lên FEAT-015 (S3, FR-M1-04.1); chạy lại không đổi gì thêm.
 
 Set Unit ``current_cycle_no > 0`` và ``cycle_bom_version = 0`` → ``cycle_bom_version`` = ``current_bom_version`` của loại
-bộ (phiên bản T4 đang dùng trước FEAT-015, đã đồng bộ với phiên bản hiệu lực bởi patch ``set_bom_item_version_meta``).
+bộ (phiên bản T4 đang dùng trước FEAT-015). Patch này chạy TRƯỚC ``set_bom_item_version_meta`` trong ``patches.txt``
+(review cuối I-1): đọc ``current_bom_version`` khi chưa có patch nào khác chạm vào. Cột ``cycle_bom_version`` có từ
+model sync (mục ``[post_model_sync]``).
 Bộ chưa có chu trình giữ 0 (chu trình đầu tiên sẽ ghim qua ``step_gate.start_cycle``). Ghi thẳng DB (không qua validate:
 trường vòng đời chỉ step_gate ghi qua Document), mỗi bộ đổi có một Audit Log Update.
 """
