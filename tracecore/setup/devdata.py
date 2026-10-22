@@ -7,6 +7,8 @@
   cho e2e Desk SCR-21 (FEAT-038) và in JSON các mã (tên máy, mã chương trình).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_codes_demo`` chuẩn bị máy in mạng demo và đối tượng
   để e2e Desk in nhãn QR (SCR-33, FEAT-005) và in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_instrument_demo`` chuẩn bị nhóm, dụng cụ, loại bộ và bộ
+  demo cho e2e Desk danh mục dụng cụ (SCR-01, FEAT-014) và in JSON các mã.
 """
 
 import io
@@ -33,6 +35,8 @@ T4_SET_TYPES = {"Steam": "DEMOT4S", "Plasma": "DEMOT4P"}
 T4_GTIN_FIRST_SERIAL = 90001  # dải GTIN test riêng cho demo, không đụng serial cố định (1…) của test
 T4_LUBE_INSTRUMENT = "DEMO-T4-KC-02"
 T4_LUBE_INTERVAL = 50
+T4_INSTRUMENT_SPAULDING = "Critical"
+T4_INSTRUMENT_METHODS = {"Steam": ("Steam 134",), "Plasma": ("Plasma",)}
 DEMO_OIL_LOT = "DEMO-T4-DAU-01"  # lô dầu để xác nhận "Đã bảo dưỡng" cho nhắc tra dầu
 STEAM_LABEL, PLASMA_LABEL = (code for code, _method in factories.LABEL_ITEMS)
 T4_GATES_READY = ("T1", "T2", "T3")
@@ -134,7 +138,9 @@ def _free_demo_gtin():
 	frappe.throw("No free demo GTIN-14 left")
 
 
-def _ensure_instrument(code, name):
+def _ensure_instrument(code, name, method):
+	"""Dụng cụ demo: Spaulding Thiết yếu, phương pháp theo loại bộ (Steam → Hấp 134 °C, Plasma → Plasma)."""
+	methods = T4_INSTRUMENT_METHODS[method]
 	if not frappe.db.exists("Instrument", code):
 		lube = code == T4_LUBE_INSTRUMENT
 		factories.make_instrument(
@@ -142,21 +148,57 @@ def _ensure_instrument(code, name):
 			name,
 			interval=T4_LUBE_INTERVAL if lube else None,
 			maint_type="Lubrication" if lube else None,
-			image=_demo_image(code),
+			spaulding=T4_INSTRUMENT_SPAULDING,
+			methods=methods,
 		)
-	elif not frappe.db.get_value("Instrument", code, "image"):
-		frappe.db.set_value("Instrument", code, "image", _demo_image(code))
+		_ensure_instrument_photo(code)
+		return
+	doc = frappe.get_doc("Instrument", code)
+	if not doc.spaulding_class or not doc.compatible_methods:
+		# dụng cụ demo tạo trước FEAT-014: bổ sung dữ liệu demo (không áp cho dữ liệu thật, xem patch)
+		doc.spaulding_class = doc.spaulding_class or T4_INSTRUMENT_SPAULDING
+		if not doc.compatible_methods:
+			doc.set("compatible_methods", [{"method": m} for m in methods])
+		doc.save(ignore_permissions=True)
+	_ensure_instrument_photo(code)
 
 
-def _ensure_set_type(method, spec):
-	"""Loại bộ demo (GTIN test, loại gói mặc định, ảnh khay) và BOM phiên bản 1; trả mã loại bộ."""
-	code = T4_SET_TYPES[method]
+def _ensure_instrument_photo(code):
+	"""Ảnh demo của dụng cụ: File riêng tư đính vào trường ảnh (qua kiểm file) và thumbnail cho T4 (FEAT-014 I11).
+
+	Dụng cụ demo cũ có ảnh công khai (trước FEAT-014) hoặc chưa có thumbnail thì được thay ảnh mới.
+	"""
+	doc = frappe.get_doc("Instrument", code)
+	if doc.image and doc.image_thumbnail:
+		return
+	photo = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": f"{code.lower()}-photo.png",
+			"content": _demo_png(code),
+			"is_private": 1,
+			"attached_to_doctype": "Instrument",
+			"attached_to_name": code,
+			"attached_to_field": "image",
+		}
+	).insert(ignore_permissions=True)
+	doc.image = photo.file_url
+	doc.save(ignore_permissions=True)
+
+
+def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
+	"""Loại bộ demo (GTIN test, loại gói mặc định, ảnh khay) và BOM phiên bản 1; trả mã loại bộ.
+
+	`code` mặc định là loại bộ demo T4 của `method`; `ensure_instruments` False khi dụng cụ của BOM đã được tạo sẵn.
+	"""
+	code = code or T4_SET_TYPES[method]
 	pack_code, pack_name, days = spec["pack_type"]
 	if not frappe.db.exists("Item", pack_code):
 		factories.make_item(pack_code, "Packaging", shelf_life_days=days)
 		frappe.db.set_value("Item", pack_code, "item_name", pack_name)
-	for instrument, name, _qty in spec["bom"]:
-		_ensure_instrument(instrument, name)
+	if ensure_instruments:
+		for instrument, name, _qty in spec["bom"]:
+			_ensure_instrument(instrument, name, method)
 	if not frappe.db.exists("Instrument Set Type", code):
 		frappe.get_doc(
 			{
@@ -445,6 +487,153 @@ def ensure_codes_demo(port=None):
 		"printer": _ensure_codes_printer(port),
 		"printer_port": port,
 		"label_item": STEAM_LABEL,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo danh mục dụng cụ Desk SCR-01 (FEAT-014) -------------------------------------------------------
+# Instrument không xóa được và Ngừng sử dụng / mã GIAI là một chiều: bản ghi cố định được dùng lại; dụng cụ để
+# ngừng sử dụng và dụng cụ để cấp mã GIAI được thay bằng dụng cụ mới (số thứ tự kế tiếp) khi đã bị e2e dùng.
+INSTR_GROUP = "DEMO-E2E-GROUP"
+INSTR_GROUP_INTERVAL = 40
+INSTR_GROUP_TYPE = "Blade Check"
+INSTR_FULL = "DEMO-E2E-FULL"
+INSTR_NO_MAX = "DEMO-E2E-NOMAX"
+INSTR_RETIRE_PREFIX = "DEMO-E2E-RET-"
+INSTR_GIAI_PREFIX = "DEMO-E2E-GIAI-"
+INSTR_FULL_MAX_CYCLES = 500
+INSTR_FULL_VALUE = 1_500_000
+# loại bộ riêng cho e2e SCR-01 (không đổi BOM của bộ demo T4 mà tests_e2e/test_station_t4.py dùng)
+INSTR_SET_TYPES = {"set_type_steam": "DEMOI4S", "set_type_plasma": "DEMOI4P", "set_type_retire": "DEMOI4R"}
+
+
+def _instrument_catalog():
+	"""Tên hiển thị demo (bản dịch tiếng Việt trong vi.csv)."""
+	t4 = _t4_catalog()
+	return {
+		"full": _("Demo e2e Metzenbaum scissors", lang="vi"),
+		"no_max": _("Demo e2e needle holder without max cycles", lang="vi"),
+		"retire": _("Demo e2e forceps to retire", lang="vi"),
+		"giai": _("Demo e2e retractor for laser GIAI", lang="vi"),
+		"set_type_steam": ("Steam", _("Demo e2e steam set", lang="vi"), t4["Steam"]["pack_type"]),
+		"set_type_plasma": ("Plasma", _("Demo e2e plasma set", lang="vi"), t4["Plasma"]["pack_type"]),
+		"set_type_retire": (
+			"Steam",
+			_("Demo e2e set with instrument to retire", lang="vi"),
+			t4["Steam"]["pack_type"],
+		),
+	}
+
+
+def _ensure_full_instrument(name):
+	if not frappe.db.exists("Instrument", INSTR_FULL):
+		factories.make_instrument(
+			INSTR_FULL,
+			name,
+			spaulding=T4_INSTRUMENT_SPAULDING,
+			methods=("Steam 134", "Plasma"),
+			max_cycles=INSTR_FULL_MAX_CYCLES,
+			group=INSTR_GROUP,
+			manufacturer="E2E Maker",
+			model="E2E-MZB-1",
+			value=INSTR_FULL_VALUE,
+		)
+	_ensure_instrument_photo(INSTR_FULL)
+	return INSTR_FULL
+
+
+def _next_candidate(prefix, name, usable):
+	"""Dụng cụ `<prefix>NN` đầu tiên còn `usable`; không còn thì tạo dụng cụ số kế tiếp. Trả mã."""
+	codes = sorted(frappe.get_all("Instrument", filters={"name": ["like", f"{prefix}%"]}, pluck="name"))
+	for code in codes:
+		if usable(code):
+			return code
+	code = f"{prefix}{len(codes) + 1:02d}"
+	while frappe.db.exists("Instrument", code):
+		code = f"{prefix}{int(code[len(prefix):]) + 1:02d}"
+	factories.make_instrument(code, name, spaulding=T4_INSTRUMENT_SPAULDING, methods=("Steam 134",))
+	return code
+
+
+def _giai_candidate(code):
+	row = frappe.db.get_value("Instrument", code, ["status", "giai_code"], as_dict=True)
+	return row.status == "Active" and not row.giai_code
+
+
+def _ensure_bom_line(set_type, instrument):
+	"""Thêm `instrument` vào BOM hiện hành của `set_type` (dòng cuối) nếu chưa có."""
+	version = frappe.db.get_value("Instrument Set Type", set_type, "current_bom_version") or 1
+	if frappe.db.exists(
+		"Set BOM Item", {"set_type": set_type, "bom_version": version, "instrument": instrument}
+	):
+		return
+	position = frappe.db.count("Set BOM Item", {"set_type": set_type, "bom_version": version}) + 1
+	frappe.get_doc(
+		{
+			"doctype": "Set BOM Item",
+			"set_type": set_type,
+			"bom_version": version,
+			"instrument": instrument,
+			"qty": 1,
+			"position": position,
+		}
+	).insert(ignore_permissions=True)
+
+
+def ensure_instrument_demo():
+	"""Dữ liệu demo cho e2e Desk danh mục dụng cụ (SCR-01, FEAT-014) trên site dev/test; idempotent, trả và in JSON.
+
+	- ``group``: nhóm ``DEMO-E2E-GROUP`` có ngưỡng 40 chu trình, Kiểm tra lưỡi.
+	- ``full``: dụng cụ đủ dữ liệu (Spaulding, Hấp 134 °C + Plasma, hãng, model, cơ số, giá trị, nhóm, ảnh riêng tư có
+	  thumbnail), nằm trong BOM hiện hành của hai loại bộ demo ``set_type_steam`` (hấp) và ``set_type_plasma``
+	  (plasma); ``set_steam``/``set_plasma``: một bộ của mỗi loại đã qua T1-T3, mở được ở T4 (TR-004).
+	- ``no_max``: dụng cụ thiếu cơ số (Chưa xác định).
+	- ``retire``: dụng cụ Đang dùng nằm trong BOM hiện hành của ``set_type_retire``; ``giai``: dụng cụ chưa có mã GIAI.
+	  Hai dụng cụ này bị e2e dùng hết (ngừng sử dụng, cấp mã là một chiều) nên lần gọi sau tạo dụng cụ mới.
+	File PDF quá cỡ cho e2e IFU do test tự tạo tạm (không lưu ở đây).
+	"""
+	_require_dev_site()
+	names = _instrument_catalog()
+	factories.make_instrument_group(
+		INSTR_GROUP,
+		interval=INSTR_GROUP_INTERVAL,
+		maint_type=INSTR_GROUP_TYPE,
+		description=_("Demo e2e group with a maintenance threshold", lang="vi"),
+	)
+	full = _ensure_full_instrument(names["full"])
+	if not frappe.db.exists("Instrument", INSTR_NO_MAX):
+		factories.make_instrument(
+			INSTR_NO_MAX, names["no_max"], spaulding=T4_INSTRUMENT_SPAULDING, methods=("Steam 134",)
+		)
+	retire = _next_candidate(
+		INSTR_RETIRE_PREFIX,
+		names["retire"],
+		lambda code: frappe.db.get_value("Instrument", code, "status") == "Active",
+	)
+	giai = _next_candidate(
+		INSTR_GIAI_PREFIX,
+		names["giai"],
+		lambda code: _giai_candidate(code),
+	)
+
+	set_types = {}
+	for key, code in INSTR_SET_TYPES.items():
+		method, set_name, pack_type = names[key]
+		line = retire if key == "set_type_retire" else full
+		spec = {"set_name": set_name, "pack_type": pack_type, "bom": ((line, set_name, 1),)}
+		set_types[key] = _ensure_set_type(method, spec, code=code, ensure_instruments=False)
+		_ensure_bom_line(code, line)
+
+	result = {
+		"group": INSTR_GROUP,
+		"full": full,
+		"no_max": INSTR_NO_MAX,
+		"retire": retire,
+		"giai": giai,
+		**set_types,
+		"set_steam": _ensure_set(set_types["set_type_steam"], T4_GATES_READY),
+		"set_plasma": _ensure_set(set_types["set_type_plasma"], T4_GATES_READY),
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

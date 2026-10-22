@@ -209,7 +209,6 @@ Last Deferral Reason,Lý do hoãn gần nhất,
 Current Cycle No,Số thứ tự chu trình hiện hành,
 GTIN-14 must be 14 digits with a valid check digit.,GTIN-14 phải gồm 14 chữ số và đúng chữ số kiểm tra.,
 GTIN-14 {0} is already used by Set Type {1}.,GTIN-14 {0} đã được loại bộ {1} sử dụng.,
-"Instrument Code may contain only uppercase letters, digits and hyphens.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
 Quantity must be at least 1.,Số lượng phải từ 1 trở lên.,
 Step Gate Result,Kết quả cổng bước,
 Assembly Record,Phiếu lắp ráp,
@@ -585,7 +584,7 @@ A station without a zone cannot be active.,Trạm chưa gán khu thì không th�
 A station without a zone cannot be activated.,Trạm chưa gán khu không kích hoạt được.,
 Station {0} has no zone: it was deactivated.,Trạm {0} chưa gán khu nên đã chuyển sang không hoạt động.,
 "Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm {0} đang hoạt động có bước {1}, loại khu {2} không cho phép.",
-Zone and station configuration (FEAT-002): zone type\, station function by zone\, active flag.,"Cấu hình khu và trạm (FEAT-002): loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
+"Zone and station configuration (FEAT-002): zone type, station function by zone, active flag.","Cấu hình khu và trạm (FEAT-002): loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
 Station Peripheral,Thiết bị ngoại vi của trạm,
 Peripherals,Thiết bị ngoại vi,Zone Station
 Peripheral Type,Loại thiết bị,Station Peripheral
@@ -602,7 +601,7 @@ Serial Port,Cổng nối tiếp,Station Peripheral
 Baud Rate,Tốc độ baud,Station Peripheral
 Is Active,Đang dùng,Station Peripheral
 Notes,Ghi chú,Station Peripheral
-Scanner or scale attached to a station (FEAT-002): connection USB HID\, Serial or TCP.,"Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, Serial hoặc TCP.",
+"Scanner or scale attached to a station (FEAT-002): connection USB HID, Serial or TCP.","Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, Serial hoặc TCP.",
 1 to 65535.,1 đến 65535.,
 For example COM3 or /dev/ttyUSB0.,Ví dụ COM3 hoặc /dev/ttyUSB0.,
 Default 9600.,Mặc định 9600.,
@@ -915,3 +914,259 @@ Printer {0} ({1}): printer host not allowed for server printing,Máy in {0} ({1}
 No answer from the server,Server không trả lời,
 The server did not answer (HTTP {0}); the request may or may not have been done.,Server không trả lời (HTTP {0}); yêu cầu có thể đã hoặc chưa được thực hiện.,
 "Try again: the same request is sent again, so it is not done twice.","Thử lại: hệ thống gửi lại đúng yêu cầu cũ, nên không bị thực hiện hai lần.",
+Instrument Compatible Method,Phương pháp tương thích của dụng cụ,
+Instrument Group,Nhóm dụng cụ,
+Instrument Group,Nhóm dụng cụ,Instrument
+Group Name,Tên nhóm,Instrument Group
+Compatible Methods,Phương pháp tiệt khuẩn tương thích,
+Compatible Methods,Phương pháp tiệt khuẩn tương thích,Instrument
+Spaulding Class,Phân loại Spaulding,
+Spaulding Class,Phân loại Spaulding,Instrument
+Critical,Thiết yếu,Instrument
+Semi-critical,Bán thiết yếu,Instrument
+Non-critical,Không thiết yếu,Instrument
+Method,Phương pháp,Instrument Compatible Method
+Steam 121,Hấp 121 °C,Instrument Compatible Method
+Steam 134,Hấp 134 °C,Instrument Compatible Method
+Plasma,Plasma H2O2,Instrument Compatible Method
+EO,EO,Instrument Compatible Method
+Status,Trạng thái,Instrument
+Active,Đang dùng,Instrument
+Retired,Ngừng sử dụng,Instrument
+Retired,Ngừng sử dụng,
+Version,Phiên bản,Instrument
+Manufacturer,Hãng sản xuất,Instrument
+Model,Model,Instrument
+Reprocessing,Tái xử lý,Instrument
+Photo and IFU,Ảnh và IFU,Instrument
+Image,Ảnh thực tế,Instrument
+Image Thumbnail,Ảnh thu nhỏ,Instrument
+IFU,IFU (hướng dẫn sử dụng của hãng),Instrument
+IFU,IFU,
+Max Cycles Status,Tình trạng cơ số,Instrument
+Defined,Đã xác định,Instrument
+Undefined,Chưa xác định,Instrument
+Undefined,Chưa xác định,
+Not provided,Chưa có,
+Value,Giá trị (VND),Instrument
+Item,Item ERPNext,Instrument
+Retirement,Ngừng sử dụng,Instrument
+Retired On,Ngày ngừng sử dụng,Instrument
+Retired Reason,Lý do ngừng sử dụng,Instrument
+"Instrument Code may contain only uppercase letters, digits and hyphens, at most {0} characters.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang, tối đa {0} ký tự.",
+Instrument Code {0} already exists. Next free code: {1},Mã dụng cụ {0} đã tồn tại. Mã kế tiếp còn trống: {1},
+Duplicate Instrument Code,Trùng mã dụng cụ,
+No free instrument code found after {0} attempts starting from {1}. Enter a different code.,Không tìm được mã dụng cụ còn trống sau {0} lần thử từ {1}. Hãy nhập mã khác.,
+Instrument Code cannot be changed after the instrument is created.,Không được đổi mã dụng cụ sau khi đã tạo.,
+Required fields are missing: {0}.,Thiếu trường bắt buộc: {0}.,
+"Instrument status, retirement and version are changed only by the instrument catalog.","Trạng thái, thông tin ngừng sử dụng và phiên bản của dụng cụ chỉ đổi qua chức năng danh mục dụng cụ.",
+Compatible method {0} is listed more than once.,Phương pháp tương thích {0} bị khai báo trùng.,
+Value cannot be negative.,Giá trị không được âm.,
+Item {0} is disabled and cannot be linked to an instrument.,"Item {0} đã bị vô hiệu, không gắn được với dụng cụ.",
+Instrument master defaults filled in by the FEAT-014 data patch,Bản vá dữ liệu FEAT-014 điền giá trị mặc định cho danh mục dụng cụ,
+Instrument Data Gaps,Dụng cụ cần bổ sung dữ liệu,
+A reason is required to retire an instrument.,Phải nhập lý do ngừng sử dụng dụng cụ.,
+Instrument {0} is already retired.,Dụng cụ {0} đã ngừng sử dụng.,
+A retired instrument cannot be returned to use.,"Dụng cụ đã ngừng sử dụng thì không đưa lại vào sử dụng được.",
+Instrument {0} is retired and cannot be added to a BOM.,"Dụng cụ {0} đã ngừng sử dụng, không thêm vào BOM được.",
+not compatible (set type method {0}),không tương thích (phương pháp của loại bộ: {0}),
+The set type remains compatible with the instrument.,Loại bộ vẫn tương thích với dụng cụ.,
+The set type (method {0}) is not compatible with the instrument.,Loại bộ (phương pháp {0}) không tương thích với dụng cụ.,
+Instrument {0} ({1}) changed from version {2} to {3} by {4}. Compatible methods: {5} → {6}. {7},Dụng cụ {0} ({1}) đổi từ phiên bản {2} sang {3} bởi {4}. Phương pháp tương thích: {5} → {6}. {7},
+Instrument {0} is now version {1} (compatible methods: {2}). The current BOM of these set types uses it:,Dụng cụ {0} đã lên phiên bản {1} (phương pháp tương thích: {2}). BOM hiện hành của các loại bộ sau có dụng cụ này:,
+Packs and sets already in process are not changed. Review these BOMs.,Gói và bộ đang trong quy trình không bị thay đổi. Hãy rà soát các BOM này.,
+Instrument version changed,Dụng cụ đã lên phiên bản mới,
+Instrument {0} not found.,Không tìm thấy dụng cụ {0}.,
+Instrument {0} has no version {1}.,Dụng cụ {0} không có phiên bản {1}.,
+The image thumbnail is generated by TraceCore and cannot be uploaded.,"Ảnh thu nhỏ do TraceCore tạo, không tải lên được.",
+Instrument photos and IFU files must be uploaded to TraceCore; links to other websites are not accepted.,Ảnh và IFU của dụng cụ phải tải lên TraceCore; không nhận liên kết tới trang web khác.,
+Instrument photos and IFU files must stay private.,Ảnh và IFU của dụng cụ phải luôn là file riêng tư.,
+The IFU file is larger than {0} MB and cannot be uploaded. You can save the instrument without an IFU.,"File IFU lớn hơn {0} MB, không được tải lên. Có thể lưu dụng cụ không kèm IFU.",
+The instrument photo is larger than {0} MB and cannot be uploaded. Reduce the photo size and upload it again.,"Ảnh dụng cụ lớn hơn {0} MB, không được tải lên. Giảm dung lượng ảnh rồi tải lại.",
+"The IFU file must be a PDF, JPEG or PNG file (checked by its content, not by its name). Convert the file and upload it again.","File IFU phải là PDF, JPEG hoặc PNG (kiểm theo nội dung, không theo tên file). Chuyển đổi file rồi tải lại.",
+"The instrument photo must be a JPEG, PNG or WebP image (checked by its content, not by its name). SVG, HTML and HEIC files are not accepted: convert the photo to JPEG and upload it again.","Ảnh dụng cụ phải là ảnh JPEG, PNG hoặc WebP (kiểm theo nội dung, không theo tên file). Không nhận file SVG, HTML và HEIC: chuyển ảnh sang JPEG rồi tải lại.",
+The image has more than {0} megapixels and cannot be uploaded. Reduce the resolution and upload it again.,"Ảnh có hơn {0} megapixel, không được tải lên. Giảm độ phân giải rồi tải lại.",
+The file is damaged or cannot be read. Upload another file.,File bị hỏng hoặc không đọc được. Tải lên file khác.,
+File not accepted,File không được chấp nhận,
+"This PDF contains scripts, embedded files or form actions and cannot be uploaded.","PDF này chứa mã script, file nhúng hoặc lệnh biểu mẫu, không được tải lên.",
+{0} must be a private file uploaded to this instrument (no external links or files of other records).,{0} phải là file riêng tư tải lên cho chính dụng cụ này (không nhận liên kết ngoài hay file của bản ghi khác).,
+The image thumbnail is generated by TraceCore from the instrument photo and cannot be edited.,"Ảnh thu nhỏ do TraceCore tạo từ ảnh dụng cụ, không sửa tay được.",
+Instrument not found,Không tìm thấy dụng cụ,
+Instrument {0} does not exist in TraceCore.,Dụng cụ {0} chưa có trong TraceCore.,
+Check the instrument code or call R02.,Kiểm tra mã dụng cụ hoặc gọi R02.,
+Maintenance,Bảo dưỡng,Instrument Group
+Maintenance Type,Loại bảo dưỡng,Instrument Group
+Lubrication,Tra dầu,Instrument Group
+Blade Check,Kiểm tra lưỡi,Instrument Group
+Screw Tightening,Siết vít,Instrument Group
+Battery Replacement,Thay pin,Instrument Group
+"Cycles between maintenance for instruments of this group that have no threshold of their own. 0 or blank = no reminder.","Số chu trình giữa hai lần bảo dưỡng cho dụng cụ của nhóm không có ngưỡng riêng. 0 hoặc để trống = không nhắc.",
+due for maintenance,đến hạn bảo dưỡng,
+overdue for maintenance,quá hạn bảo dưỡng,
+"Set {0}, instrument {1}: {2} cycles of {3}, {4}","Bộ {0}, dụng cụ {1}: {2}/{3} chu trình, {4}",
+"After this change, these sets need maintenance at the next packing (T4):","Sau thay đổi này, các bộ sau cần bảo dưỡng ở lần đóng gói tới (T4):",
+Cycle counters are kept; nothing was reset.,Bộ đếm chu trình giữ nguyên; không có gì bị đặt lại.,
+Maintenance threshold changed,Đã đổi ngưỡng bảo dưỡng,
+Counter cannot be initialized,Không khởi tạo được bộ đếm,
+"Check the set, the number of cycles (0 to {0}) and the date, then try again.","Kiểm tra bộ, số chu trình (0 đến {0}) và ngày, rồi thử lại.",
+{0} is not a valid date.,{0} không phải ngày hợp lệ.,
+The last maintenance date {0} is in the future.,Ngày bảo dưỡng gần nhất {0} ở tương lai.,
+A reason is required to initialize a maintenance counter.,Phải nhập lý do khởi tạo bộ đếm bảo dưỡng.,
+"Enter where the cycle count comes from, for example the paper maintenance log.","Nhập nguồn của số chu trình, ví dụ sổ bảo dưỡng giấy.",
+The number of cycles must be a whole number from 0 to {0}.,Số chu trình phải là số nguyên từ 0 đến {0}.,
+Set {0} does not contain instrument {1} in its current BOM.,Bộ {0} không có dụng cụ {1} trong BOM hiện hành.,
+Instrument {0} in set {1} already has maintenance history at packing (T4); its counter can no longer be initialized.,Dụng cụ {0} trong bộ {1} đã có lịch sử bảo dưỡng tại đóng gói (T4); không khởi tạo lại bộ đếm được nữa.,
+"Maintenance counters are changed only by packing (T4), set release and counter initialization.","Bộ đếm bảo dưỡng chỉ thay đổi qua đóng gói (T4), giải phóng bộ và khởi tạo bộ đếm.",
+rows must be a JSON list.,rows phải là danh sách JSON.,
+"rows must be a list of objects with set_unit, cycles_since and last_maint_on.","rows phải là danh sách đối tượng có set_unit, cycles_since và last_maint_on.",
+No set was given.,Chưa có bộ nào được chọn.,
+Set {0} is listed more than once.,Bộ {0} có trong danh sách nhiều lần.,
+Enter the reason for retiring this instrument.,Nhập lý do ngừng sử dụng dụng cụ này.,
+Instrument already retired,Dụng cụ đã ngừng sử dụng,
+A retired instrument cannot be returned to use. Declare a new instrument if needed.,"Dụng cụ đã ngừng sử dụng không đưa lại vào sử dụng được. Khai báo dụng cụ mới nếu cần.",
+Instrument is in a current BOM,Dụng cụ đang có trong BOM hiện hành,
+Instrument {0} is in the current BOM of: {1}.,Dụng cụ {0} có trong BOM hiện hành của: {1}.,
+Confirm to retire it anyway; review these BOMs afterwards.,"Xác nhận để vẫn ngừng sử dụng; sau đó rà soát các BOM này.",
+Last Counted Release (Cycle ID),Lần giải phóng đã đếm (Cycle ID),
+Cycle ID of the last release counted in Cycles Since Maintenance; a repeated release of the same Cycle ID is not counted again.,Cycle ID của lần giải phóng gần nhất đã cộng vào số chu trình từ lần bảo dưỡng; giải phóng lặp lại cùng Cycle ID không được đếm thêm.,
+A GIAI code is never reissued or replaced. Use the existing code.,Mã GIAI không bao giờ được cấp lại hay thay thế. Dùng mã đã có.,
+Ask TC R10 to turn on Enable Instrument GIAI. Existing codes are kept.,Đề nghị TC R10 bật Mã GIAI dụng cụ. Các mã đã cấp vẫn giữ nguyên.,
+Ask the administrator to set the hospital's real GS1 Company Prefix before assigning or etching instrument codes.,Đề nghị quản trị hệ thống cấu hình tiền tố doanh nghiệp GS1 thật của bệnh viện trước khi cấp hoặc khắc mã dụng cụ.,
+Assign a GIAI code first.,Cấp mã GIAI trước.,
+Do not etch this code. A retired instrument cannot be returned to use.,Không khắc mã này. Dụng cụ đã ngừng sử dụng không thể dùng lại.,
+Enable Instrument GIAI,Mã GIAI dụng cụ (khắc laser),TraceCore Settings
+Allow assigning laser-etched GS1 GIAI codes to single instruments (FR-M1-02). Turning it off keeps existing codes and does not affect T1-T7.,Cho phép cấp mã GS1 GIAI khắc laser cho dụng cụ đơn lẻ (FR-M1-02). Tắt cờ thì các mã đã cấp vẫn giữ nguyên và không ảnh hưởng T1–T7.,
+Site-wide TraceCore feature switches (A-06 I7). Only TC R10 and System Manager can change them; every change is written to the Audit Log.,Bật/tắt tính năng TraceCore cho toàn hệ thống (A-06 I7). Chỉ TC R10 và System Manager được đổi; mọi thay đổi ghi vào Nhật ký kiểm tra.,
+Enter a reason to correct the etching record.,Nhập lý do để sửa thông tin khắc.,
+"Enter the etching date (today or earlier) and where the code is etched, at most {0} characters.","Nhập ngày khắc (hôm nay hoặc trước đó) và vị trí khắc mã, tối đa {0} ký tự.",
+Etched On,Ngày khắc,Instrument
+Etching Position,Vị trí khắc,Instrument
+Etching date {0} is in the future.,Ngày khắc {0} ở tương lai.,
+Etching date {0} is not a valid date.,Ngày khắc {0} không phải ngày hợp lệ.,
+Etching position must be 1-{0} characters.,Vị trí khắc phải dài 1–{0} ký tự.,
+Etching record not saved,Chưa lưu được thông tin khắc,
+GIAI Code,Mã GIAI,Instrument
+"GS1 GIAI assigned by TraceCore (Assign GIAI). Never typed in, changed or reissued.","Mã GS1 GIAI do TraceCore cấp (Cấp mã GIAI). Không nhập tay, không sửa, không cấp lại.",
+GIAI already assigned,Đã cấp mã GIAI,
+GIAI code {0} is already assigned and cannot be changed or removed.,"Mã GIAI {0} đã cấp, không được sửa hoặc xóa.",
+GIAI code {0} is disabled because the instrument is retired.,Mã GIAI {0} đã vô hiệu vì dụng cụ đã ngừng sử dụng.,
+GIAI code {0} is not in the TraceCore code registry.,Mã GIAI {0} không có trong sổ mã của TraceCore.,
+Do not etch this code. Call R10 to check the instrument record.,Không khắc mã này. Gọi R10 kiểm tra bản ghi dụng cụ.,
+GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits.,Không dùng được tiền tố doanh nghiệp GS1 {0} cho mã dụng cụ trên hệ thống này: đây là tiền tố demo hoặc không gồm 4–12 chữ số.,
+GS1 prefix not configured,Chưa cấu hình tiền tố GS1,
+Instrument GIAI is turned off,Mã GIAI dụng cụ đang tắt,
+Instrument {0} already has GIAI code {1}.,Dụng cụ {0} đã có mã GIAI {1}.,
+Instrument {0} has no GIAI code yet.,Dụng cụ {0} chưa có mã GIAI.,
+Instrument {0} retired: {1},Dụng cụ {0} ngừng sử dụng: {1},
+Instruments,Dụng cụ,TraceCore Settings
+Laser-etched GIAI,Mã GIAI khắc laser,Instrument
+Laser-etched instrument codes are turned off in TraceCore Settings.,Mã dụng cụ khắc laser đang tắt trong Cài đặt TraceCore.,
+No GIAI code,Chưa có mã GIAI,
+"The GIAI code and etching record are set only by TraceCore (Assign GIAI, Record Etching).","Mã GIAI và thông tin khắc chỉ do TraceCore ghi (Cấp mã GIAI, Ghi nhận khắc).",
+The etching of instrument {0} is already recorded.,Thông tin khắc của dụng cụ {0} đã được ghi.,
+TraceCore Settings,Cài đặt TraceCore,
+"2-8 uppercase letters or digits, used inside the GS1 GIAI Set ID.","2-8 chữ hoa hoặc chữ số, nằm trong Set ID GS1 GIAI.",Instrument Set Type
+Always taken from the Set Unit.,Luôn lấy theo Bộ dụng cụ.,Pack
+BOM version the set was checked against when it was packed.,Phiên bản BOM dùng để kiểm bộ khi đóng gói.,Pack
+Blank or 0 = Undefined: listed in the Instrument Data Gaps report.,Để trống hoặc 0 = Chưa xác định: hiện trong báo cáo Dụng cụ thiếu dữ liệu.,Instrument
+Chemical indicator lot placed in the pack.,Lô chỉ thị hóa học đặt trong gói.,Pack
+Client event time converted to UTC.,"Thời điểm sự kiện trên thiết bị, đổi sang UTC.",Audit Log
+Cycles since the last maintenance at the moment of the action.,Số chu trình kể từ lần bảo dưỡng gần nhất tại thời điểm thao tác.,Pack Maintenance Done
+"Device time of the action, in UTC.","Giờ của thiết bị khi thao tác, theo UTC.",Pack
+Employee who badged in at the station (filled once badge sign-in exists).,Nhân viên quẹt thẻ tại trạm (điền khi có đăng nhập bằng thẻ).,Pack
+"Entered by R10: 14 digits with a valid check digit, unique. Blank until a real GS1 prefix is assigned; a pack cannot be issued without it.","R10 nhập: 14 chữ số, số kiểm tra đúng, không trùng. Để trống tới khi có tiền tố GS1 thật; thiếu GTIN thì không cấp được gói.",Instrument Set Type
+"Entry door zone. Must be a zone, not a station.","Khu của cửa vào. Phải là khu, không phải trạm.",Equipment
+"Leave empty for a one-door machine. A two-door machine exits to the next zone (Dirty, Clean, Sterile).","Để trống nếu máy một cửa. Máy hai cửa ra khu kế tiếp (Bẩn, Sạch, Vô khuẩn).",Equipment
+Lubricant lot used when the maintenance type is lubrication.,Lô dầu bôi trơn dùng khi loại bảo dưỡng là tra dầu.,Pack Maintenance Done
+Number of times this step failed in this cycle.,Số lần bước này không đạt trong chu trình.,Step Gate Result
+Optional ERPNext Item; stock is not synchronized.,Item ERPNext (tùy chọn); không đồng bộ tồn kho.,Instrument
+Order of the line on the tray (ascending).,Thứ tự dòng trên khay (tăng dần).,Set BOM Item
+Quantity of this instrument in the BOM line that was confirmed.,Số lượng dụng cụ này trong dòng BOM đã xác nhận.,Pack Instrument Confirmed
+Raised by one when the set of compatible methods changes.,Tăng thêm một khi tập phương pháp tiệt khuẩn tương thích thay đổi.,Instrument
+"Reminder after this many cycles since the last maintenance. Blank or 0 = no reminder.","Nhắc bảo dưỡng sau số chu trình này kể từ lần bảo dưỡng gần nhất. Để trống hoặc 0 = không nhắc.",Instrument
+Sequence number of the current reprocessing cycle; the key shared by the step gate results. Changed only by the step gate.,Số thứ tự chu trình tái xử lý hiện tại; khóa chung của các kết quả cổng kiểm soát. Chỉ cổng kiểm soát được đổi.,Set Unit
+Sequence number of the cycle this pack belongs to.,Số thứ tự chu trình của gói này.,Pack
+Shelf life of this set type in days. 0 = no override (the pack type shelf life applies).,Hạn dùng của loại bộ này theo ngày. 0 = không ghi đè (áp hạn dùng của loại gói).,Instrument Set Type
+Snapshot of the set type GTIN-14 used in the Cycle ID label.,Bản chụp GTIN-14 của loại bộ dùng trên nhãn Cycle ID.,Pack
+Snapshot: shelf life used when the pack was made. Later changes to the catalog do not alter it.,Bản chụp: hạn dùng áp dụng khi tạo gói. Sửa danh mục sau đó không làm đổi giá trị này.,Pack
+Snapshot: whether the pack type or the set type override decided the shelf life.,Bản chụp: hạn dùng lấy theo loại gói hay theo ghi đè của loại bộ.,Pack
+Station account that signed in when the pack was made.,Tài khoản trạm đăng nhập khi tạo gói.,Pack
+Taken from the Set Unit when the record is created.,Lấy từ Bộ dụng cụ khi tạo bản ghi.,Assembly Record
+"Uppercase letters, digits and hyphen only, at most 40 characters.","Chỉ gồm chữ hoa, chữ số và dấu gạch ngang, tối đa 40 ký tự.",Instrument
+Assign GIAI,Cấp mã GIAI,
+Assign a GIAI code to instrument {0}? The code is generated by TraceCore and is never reissued or replaced.,Cấp mã GIAI cho dụng cụ {0}? Mã do TraceCore sinh và không bao giờ được cấp lại hay thay thế.,
+Changed by,Người thay đổi,
+Changed on,Thời điểm thay đổi,
+Check the etched code against this preview before releasing the instrument.,Đối chiếu mã đã khắc với bản xem trước này trước khi đưa dụng cụ vào sử dụng.,
+Code {0} already exists.,Mã {0} đã tồn tại.,
+Code {0} is available.,Mã {0} chưa được dùng.,
+Counters now change only at packing (T4) and release.,Từ nay bộ đếm chỉ thay đổi khi đóng gói (T4) và khi giải phóng.,
+Cycles since maintenance,Số chu trình kể từ lần bảo dưỡng,
+DataMatrix of {0},DataMatrix của {0},
+"Effective threshold: {0} cycles, {1}. Source: {2}.","Ngưỡng hiệu lực: {0} chu trình, {1}. Nguồn: {2}.",
+Enter the cycles since the last maintenance for at least one set.,Nhập số chu trình kể từ lần bảo dưỡng gần nhất cho ít nhất một bộ.,
+Enter the cycles since the last maintenance for the sets you know; leave the others empty. Sets with maintenance history at T4 are not listed.,Nhập số chu trình kể từ lần bảo dưỡng gần nhất cho các bộ đã biết; để trống các bộ còn lại. Bộ đã có lịch sử bảo dưỡng tại T4 không có trong danh sách.,
+Etched On,Ngày khắc,
+Etched on {0} at: {1},Khắc ngày {0} tại vị trí: {1},
+Etching Position,Vị trí khắc,
+Etching not recorded yet.,Chưa ghi nhận khắc.,
+Etching recorded.,Đã ghi nhận khắc.,
+"Every set with this instrument already has maintenance history at T4, or no set contains it in its current BOM.","Mọi bộ chứa dụng cụ này đã có lịch sử bảo dưỡng tại T4, hoặc không bộ nào chứa dụng cụ trong BOM hiện hành.",
+Feature turned off,Tính năng đang tắt,
+GIAI,GIAI,
+GIAI Code,Mã GIAI,
+GIAI DataMatrix of {0},DataMatrix mã GIAI của {0},
+GIAI code {0} assigned.,Đã cấp mã GIAI {0}.,
+Human-readable code,Mã người đọc,
+Initialize counters,Khởi tạo bộ đếm,
+Initialize maintenance counters of {0},Khởi tạo bộ đếm bảo dưỡng của {0},
+Instrument retired.,Đã ngừng sử dụng dụng cụ.,
+Instrument {0} is in the current BOM of these set types:,Dụng cụ {0} nằm trong BOM hiện hành của các loại bộ sau:,
+Instruments in this group,Dụng cụ trong nhóm,
+Instruments of this group without their own maintenance threshold use this threshold. Changing it never resets cycle counters.,Dụng cụ trong nhóm không có ngưỡng bảo dưỡng riêng dùng ngưỡng này. Đổi ngưỡng không bao giờ đặt lại bộ đếm chu trình.,
+Last maintenance date,Ngày bảo dưỡng gần nhất,
+Maintenance state,Tình trạng bảo dưỡng,
+Max cycles undefined,Cơ số chưa xác định,
+Max cycles: {0},Cơ số: {0},
+No GIAI code yet.,Chưa có mã GIAI.,
+No IFU attached.,Chưa đính kèm IFU.,
+No cycle count was entered.,Chưa nhập số chu trình nào.,
+No maintenance threshold (instrument or group): no reminder at packing.,Không có ngưỡng bảo dưỡng (dụng cụ hoặc nhóm): không nhắc khi đóng gói.,
+No photo yet.,Chưa có ảnh.,
+No set contains this instrument in its current BOM.,Chưa bộ nào chứa dụng cụ này trong BOM hiện hành.,
+No threshold,Không có ngưỡng,
+Not compatible,Không tương thích,
+Not due,Chưa đến hạn,
+Not used in any current BOM.,Chưa nằm trong BOM hiện hành nào.,
+Open IFU,Mở IFU,
+Photo of instrument {0},Ảnh dụng cụ {0},
+Preview DataMatrix,Xem trước DataMatrix,
+Reason for correcting,Lý do sửa,
+Record etching,Ghi nhận khắc,
+Record etching of {0},Ghi nhận khắc mã {0},
+Reload the page and try again.,Tải lại trang rồi thử lại.,
+Retire anyway,Vẫn ngừng sử dụng,
+Retire instrument,Ngừng sử dụng,
+Retire instrument {0},Ngừng sử dụng dụng cụ {0},
+Retiring is permanent. The BOMs are not changed; review them after retiring.,Ngừng sử dụng là vĩnh viễn. BOM không bị thay đổi; hãy rà soát các BOM này sau khi ngừng sử dụng.,
+Retiring is permanent: the instrument can no longer be added to a BOM.,Ngừng sử dụng là vĩnh viễn: dụng cụ không thể thêm vào BOM nữa.,
+Sets,Bộ dụng cụ,
+Suggestion:,Gợi ý:,
+The code is kept and stays unique; it is read-only while the feature is off.,Mã được giữ nguyên và vẫn duy nhất; chỉ đọc trong khi tính năng tắt.,
+The etching is already recorded; a correction needs a reason.,Thông tin khắc đã được ghi; sửa lại cần có lý do.,
+Times deferred,Số lần hoãn,
+Use suggested code,Dùng mã gợi ý,
+Used in the current BOM of these set types:,Đang nằm trong BOM hiện hành của các loại bộ:,
+Version history,Lịch sử phiên bản,
+Version history of {0},Lịch sử phiên bản của {0},
+Version {0},Phiên bản {0},
+"Where the cycle count comes from, for example the paper log.","Nguồn của số chu trình, ví dụ sổ giấy.",
+{0} counters initialized.,Đã khởi tạo {0} bộ đếm.,
+Demo e2e Metzenbaum scissors,Kéo Metzenbaum (demo e2e),
+Demo e2e needle holder without max cycles,Kìm mang kim chưa có cơ số (demo e2e),
+Demo e2e forceps to retire,Kẹp để ngừng sử dụng (demo e2e),
+Demo e2e retractor for laser GIAI,Banh để khắc mã GIAI (demo e2e),
+Demo e2e steam set,Bộ hấp (demo e2e),
+Demo e2e plasma set,Bộ plasma (demo e2e),
+Demo e2e set with instrument to retire,Bộ có dụng cụ để ngừng sử dụng (demo e2e),
+Demo e2e group with a maintenance threshold,Nhóm có ngưỡng bảo dưỡng (demo e2e),

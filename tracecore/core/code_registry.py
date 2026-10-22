@@ -6,8 +6,12 @@ from frappe.model.naming import getseries
 from frappe.utils import now_datetime
 
 from tracecore.core import gs1
+from tracecore.core.errors import Block, BlockedError
 
 SET_SERIAL_DIGITS = 6
+INSTRUMENT_GIAI_PREFIX = (
+	"GI"  # mã GIAI khắc laser của dụng cụ `<prefix>I-########`, ref_doctype = Instrument (A-06 I8)
+)
 ROLL_PREFIX = "CN"  # cuộn nhãn `CN-#####` do FEAT-005 cấp, ref_doctype = Item nhãn (D2)
 CYCLE_PREFIX = "CY"  # Cycle ID `CY-YYMMDD-NNNN` của gói, ref_doctype = Pack (§5.3.3)
 CYCLE_SERIAL_DIGITS = 4
@@ -154,4 +158,66 @@ def next_set_id(type_code):
 		code = gs1.make_giai(prefix, f"{type_code}{serial}")
 		if not is_issued(code):
 			register(code, series_key, "Set Unit", code)
+			return code
+
+
+def demo_prefix_allowed():
+	"""Tiền tố demo chỉ dùng trên site dev/test (developer_mode, allow_tests hoặc đang chạy test), như devdata."""
+	return bool(frappe.conf.get("developer_mode") or frappe.conf.get("allow_tests") or frappe.flags.in_test)
+
+
+def etching_prefix_block(prefix):
+	"""Block ``GS1_PREFIX_NOT_CONFIGURED`` nếu tiền tố GS1 chưa dùng được cho mã khắc laser; dùng được → ``None``.
+
+	Khắc laser không xóa được (A-06 I8, OQ-05/D6): tiền tố phải là 4-12 chữ số; tiền tố thuộc dải demo ``952``
+	chỉ dùng trên site dev/test.
+	"""
+	prefix = str(prefix or "")
+	valid = prefix.isascii() and prefix.isdecimal() and 4 <= len(prefix) <= 12
+	if valid and (not gs1.is_demo_prefix(prefix) or demo_prefix_allowed()):
+		return None
+	return Block(
+		"GS1_PREFIX_NOT_CONFIGURED",
+		_("GS1 prefix not configured"),
+		_(
+			"GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits."
+		).format(prefix or "-"),
+		_(
+			"Ask the administrator to set the hospital's real GS1 Company Prefix before assigning or etching instrument codes."
+		),
+	)
+
+
+def instrument_giai_block(giai):
+	"""``etching_prefix_block`` theo tiền tố **chứa trong** mã GIAI dụng cụ đã cấp (``<prefix>I-########``).
+
+	Mã cấp trên dev/test (tiền tố demo) rồi DB được chép sang site thật thì không được xem trước để khắc hay ghi nhận
+	đã khắc, dù tiền tố cấu hình hiện tại là thật.
+	"""
+	suffix = len(gs1.INSTRUMENT_ASSET_PREFIX) + gs1.INSTRUMENT_SERIAL_DIGITS
+	return etching_prefix_block(str(giai or "")[:-suffix])
+
+
+def next_instrument_giai(instrument):
+	"""Cấp mã GIAI khắc laser cho dụng cụ `instrument` (`<prefix>I-########`) và ghi sổ (prefix ``GI``, A-06 I8).
+
+	Series riêng (khóa ``<prefix>I-``, khóa dòng ``tabSeries`` nên hai request đồng thời không ra trùng); số đã có
+	trong sổ (kể cả mã đã vô hiệu) thì bỏ qua, nên mã không bao giờ cấp lại (BRU-ID-001). Tiền tố demo ngoài site
+	dev/test hoặc tiền tố sai định dạng → `BlockedError` ``GS1_PREFIX_NOT_CONFIGURED`` trước mọi ghi.
+	"""
+	prefix = company_prefix()
+	block = etching_prefix_block(prefix)
+	if block:
+		raise BlockedError(block)
+	series_key = f"{prefix}{gs1.INSTRUMENT_ASSET_PREFIX}"
+	digits = gs1.INSTRUMENT_SERIAL_DIGITS
+	while True:
+		serial = getseries(series_key, digits)
+		if len(serial) > digits:
+			frappe.throw(
+				_("Code series {0} is exhausted.").format(series_key + "#" * digits), frappe.ValidationError
+			)
+		code = gs1.make_instrument_giai(prefix, int(serial))
+		if not is_issued(code):
+			register(code, INSTRUMENT_GIAI_PREFIX, "Instrument", instrument)
 			return code

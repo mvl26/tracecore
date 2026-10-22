@@ -88,20 +88,84 @@ def make_set_type(
 	).insert()
 
 
-def make_instrument(code, name=None, interval=None, maint_type=None, image=None):
-	"""Tạo (hoặc lấy) Instrument. interval: ngưỡng bảo dưỡng theo chu trình (None/0 = không nhắc)."""
+def make_instrument_group(group_name, interval=None, maint_type=None, description=None):
+	"""Tạo (hoặc lấy) Instrument Group; trả tên nhóm.
+
+	interval: ngưỡng bảo dưỡng của nhóm theo chu trình (None/0 = không có); nhóm đã có thì trả nguyên trạng.
+	"""
+	group_name = group_name.strip()
+	if not frappe.db.exists("Instrument Group", group_name):
+		frappe.get_doc(
+			{
+				"doctype": "Instrument Group",
+				"group_name": group_name,
+				"maint_interval_cycles": interval or 0,
+				"maint_type": maint_type,
+				"description": description,
+			}
+		).insert()
+	return group_name
+
+
+def attach_instrument_file(instrument, field, content, file_name, is_private=1):
+	"""Tải `content` lên làm File đính vào trường `field` (``image``/``ifu``) của dụng cụ; trả File.
+
+	Đi qua kiểm tra ``media.check_upload`` như khi tải lên từ Desk; gán URL vào trường rồi lưu dụng cụ để dùng.
+	"""
+	return frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": file_name,
+			"content": content,
+			"is_private": is_private,
+			"attached_to_doctype": "Instrument",
+			"attached_to_name": instrument,
+			"attached_to_field": field,
+		}
+	).insert()
+
+
+def make_instrument(
+	code,
+	name=None,
+	interval=None,
+	maint_type=None,
+	image=None,
+	spaulding="Critical",
+	methods=("Steam 134",),
+	max_cycles=None,
+	group=None,
+	**kwargs,
+):
+	"""Tạo (hoặc lấy) Instrument đủ trường bắt buộc (FEAT-014).
+
+	interval: ngưỡng bảo dưỡng theo chu trình (None/0 = không nhắc); max_cycles None/0 = cơ số Chưa xác định;
+	group: tên Instrument Group (tạo nếu chưa có); kwargs: trường khác (manufacturer, model, value, item…).
+	image/ifu: URL ghi thẳng vào DB sau khi tạo, như dữ liệu có trước FEAT-014 (không qua kiểm file của
+	``media``); ảnh/IFU thật thì dùng ``attach_instrument_file`` rồi gán URL và lưu.
+	"""
 	if frappe.db.exists("Instrument", code):
 		return frappe.get_doc("Instrument", code)
-	return frappe.get_doc(
+	media = {"image": image, "ifu": kwargs.pop("ifu", None)}
+	doc = frappe.get_doc(
 		{
 			"doctype": "Instrument",
 			"instrument_code": code,
 			"instrument_name": name or f"Test instrument {code}",
 			"maint_interval_cycles": interval or 0,
 			"maint_type": maint_type,
-			"image": image,
+			"spaulding_class": spaulding,
+			"compatible_methods": [{"method": method} for method in methods],
+			"max_cycles": max_cycles or 0,
+			"instrument_group": make_instrument_group(group) if group else None,
+			**kwargs,
 		}
 	).insert()
+	media = {field: url for field, url in media.items() if url}
+	if media:
+		frappe.db.set_value("Instrument", doc.name, media, update_modified=False)
+		doc.reload()
+	return doc
 
 
 def make_bom(set_type, lines, version=1):
@@ -129,9 +193,12 @@ def make_bom(set_type, lines, version=1):
 
 
 def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
-	"""Tạo Instrument Maintenance cho cặp (set_unit, instrument); trùng cặp thì DuplicateEntryError."""
+	"""Tạo Instrument Maintenance cho cặp (set_unit, instrument); trùng cặp thì DuplicateEntryError.
+
+	Dựng sẵn bộ đếm như dữ liệu có từ trước: đặt cờ ``flags.tc_maintenance`` của M1 (sửa tay bị chặn).
+	"""
 	instrument = _ref_name(make_instrument(_ref_name(instrument)))
-	return frappe.get_doc(
+	doc = frappe.get_doc(
 		{
 			"doctype": "Instrument Maintenance",
 			"set_unit": _ref_name(set_unit),
@@ -139,7 +206,9 @@ def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
 			"cycles_since_maint": cycles_since,
 			"deferred_count": deferred_count,
 		}
-	).insert()
+	)
+	doc.flags.tc_maintenance = True
+	return doc.insert()
 
 
 def make_assembly_record(set_unit, result="Pass", submit=True, notes=None):

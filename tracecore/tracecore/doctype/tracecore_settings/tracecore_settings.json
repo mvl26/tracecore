@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "creation": "2026-10-21 12:00:00.000000",
+ "description": "Site-wide TraceCore feature switches (A-06 I7). Only TC R10 and System Manager can change them; every change is written to the Audit Log.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_instrument",
+  "enable_instrument_giai"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_instrument",
+   "fieldtype": "Section Break",
+   "label": "Instruments"
+  },
+  {
+   "default": "0",
+   "description": "Allow assigning laser-etched GS1 GIAI codes to single instruments (FR-M1-02). Turning it off keeps existing codes and does not affect T1-T7.",
+   "fieldname": "enable_instrument_giai",
+   "fieldtype": "Check",
+   "label": "Enable Instrument GIAI"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-21 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "TraceCore Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "write": 1,
+   "role": "TC R10"
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R07"
+  },
+  {
+   "read": 1,
+   "role": "TC R08"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

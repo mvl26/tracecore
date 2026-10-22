@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 import frappe
 from frappe import _
+from frappe.auth import SAFE_HTTP_METHODS
 from frappe.utils import cint, now_datetime
 from frappe.utils.data import get_system_timezone
 
@@ -139,8 +140,15 @@ def reject_block(block, ref_doctype=None, ref_name=None, raw=None, *, station=No
 		station=station,
 		client_ts=client_ts,
 	)
-	if getattr(frappe.local, "request", None):
+	request = getattr(frappe.local, "request", None)
+	if request:
 		frappe.local.response["http_status_code"] = block.http_status
+		# Frappe v15 `app.sync_database` chỉ commit request POST/PUT/PATCH/DELETE (UNSAFE_HTTP_METHODS); request GET
+		# (RPC chỉ đọc: v1.instrument.get_image, giai_preview, form_context…) bị rollback khi kết thúc, trừ khi
+		# `frappe.local.flags.commit`. Không đặt cờ thì dòng Audit Log `Reject` vừa ghi mất ở production (test gọi hàm
+		# trực tiếp không thấy). RPC GET không ghi gì khác, nên commit ở đây chỉ giữ dòng Audit Log này.
+		if getattr(request, "method", None) in SAFE_HTTP_METHODS:
+			frappe.local.flags.commit = True
 	return {"ok": False, "error": block.as_dict()}
 
 

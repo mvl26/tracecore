@@ -159,9 +159,9 @@ after_install = "tracecore.setup.install.after_install"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+# File: kiểm ảnh/IFU của dụng cụ trước khi Frappe đọc nội dung (SVG đổi đuôi .jpg, HTML đổi đuôi .pdf → lỗi
+# sạch thay vì HTTP 500; FEAT-014 A-06 I11). Chưa app nào khác trong bench ghi đè File.
+override_doctype_class = {"File": "tracecore.instrument.media.InstrumentMediaFile"}
 
 # Document Events
 # ---------------
@@ -178,6 +178,7 @@ _AUDIT_EVENTS = {
 doc_events = {
 	"Set Unit": dict(_AUDIT_EVENTS),
 	"Instrument": dict(_AUDIT_EVENTS),
+	"Instrument Group": dict(_AUDIT_EVENTS),
 	"Set BOM Item": dict(_AUDIT_EVENTS),
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
@@ -190,6 +191,13 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
+	"TraceCore Settings": dict(_AUDIT_EVENTS),
+	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
+	"File": {
+		"before_insert": "tracecore.instrument.media.check_upload",
+		"validate": "tracecore.instrument.media.validate_file",
+	},
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
@@ -199,6 +207,7 @@ doc_events = {
 #  - prechecks: (ctx) -> Block | None, chạy trước kiểm tra bảo dưỡng (cơ số)
 #  - checks:    (ctx) -> Block | None (bảo dưỡng)
 #  - after:     (pack_doc, ctx) -> None, chạy sau khi sinh Cycle ID (cập nhật bộ đếm bảo dưỡng)
+#  - release:   (ctx) -> None, sau khi mẻ giải phóng Đạt (FEAT-014 I16; +1 chu trình kể từ lần bảo dưỡng)
 
 tracecore_pack_context = [
 	"tracecore.instrument.bom.pack_context",
@@ -208,6 +217,10 @@ tracecore_pack_context = [
 tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
 tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
 tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
+# M2 (FEAT-023) gọi ĐÚNG MỘT LẦN cho mỗi lần giải phóng Đạt: (ctx {set_unit, set_type, bom_version, cycle_id}) -> None,
+# +1 bộ đếm bảo dưỡng. cycle_id bắt buộc theo hợp đồng: cùng cycle_id gọi lại không đếm thêm (last_release_cycle);
+# thiếu cycle_id thì không chống trùng.
+tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
 
 # Scheduled Tasks
 # ---------------

@@ -11,6 +11,7 @@
   "section_counters",
   "cycles_since_maint",
   "deferred_count",
+  "last_release_cycle",
   "section_last_maint",
   "last_maint_on",
   "last_maint_by",
@@ -51,7 +52,8 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Cycles Since Maintenance",
-   "non_negative": 1
+   "non_negative": 1,
+   "read_only": 1
   },
   {
    "default": "0",
@@ -59,7 +61,15 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Deferred Count",
-   "non_negative": 1
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Cycle ID of the last release counted in Cycles Since Maintenance; a repeated release of the same Cycle ID is not counted again.",
+   "fieldname": "last_release_cycle",
+   "fieldtype": "Data",
+   "label": "Last Counted Release (Cycle ID)",
+   "read_only": 1
   },
   {
    "fieldname": "section_last_maint",
@@ -69,19 +79,22 @@
   {
    "fieldname": "last_maint_on",
    "fieldtype": "Datetime",
-   "label": "Last Maintained On"
+   "label": "Last Maintained On",
+   "read_only": 1
   },
   {
    "fieldname": "last_maint_by",
    "fieldtype": "Link",
    "label": "Last Maintained By",
-   "options": "User"
+   "options": "User",
+   "read_only": 1
   },
   {
    "fieldname": "last_oil_batch",
    "fieldtype": "Link",
    "label": "Last Lubricant Batch",
-   "options": "Batch"
+   "options": "Batch",
+   "read_only": 1
   },
   {
    "fieldname": "section_last_defer",
@@ -91,17 +104,19 @@
   {
    "fieldname": "last_defer_on",
    "fieldtype": "Datetime",
-   "label": "Last Deferred On"
+   "label": "Last Deferred On",
+   "read_only": 1
   },
   {
    "fieldname": "last_defer_reason",
    "fieldtype": "Small Text",
-   "label": "Last Deferral Reason"
+   "label": "Last Deferral Reason",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 10:00:00.000000",
+ "modified": "2026-10-21 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Maintenance",

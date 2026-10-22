@@ -83,11 +83,12 @@ def test_equipment_status_and_depreciation_shown(r10_page):
 	expect(indicator(r10_page)).to_have_text("Ngừng sử dụng", timeout=15000)
 	expect(r10_page.get_by_role("button", name="Ngừng sử dụng")).to_have_count(0)
 
-	# danh sách: cột trạng thái có chữ, không chỉ màu
-	r10_page.goto("/app/equipment")
-	row = r10_page.locator(".list-row", has_text=demo("steam")).first
-	expect(row).to_contain_text("Sẵn sàng", timeout=30000)
-	expect(r10_page.locator(".list-row", has_text=demo("retired")).first).to_contain_text("Ngừng sử dụng")
+	# danh sách: cột trạng thái có chữ, không chỉ màu. Lọc theo mã: mỗi lần chạy e2e thêm một máy "E2E ngừng" (không
+	# xóa được) nên quá 20 máy thì máy demo rơi khỏi trang đầu của danh sách
+	for key, status in (("steam", "Sẵn sàng"), ("retired", "Ngừng sử dụng")):
+		r10_page.goto(f"/app/equipment?name={demo(key)}")
+		row = r10_page.locator(".list-row", has_text=demo(key)).first
+		expect(row).to_contain_text(status, timeout=30000)
 
 
 def create_machine(page):

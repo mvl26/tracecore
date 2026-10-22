@@ -32,6 +32,8 @@ class TestErrors(FrappeTestCase):
 				"PROGRAM_MODEL_MISMATCH",
 				"PROGRAM_COPY_INVALID",
 				"COUNT_OUT_OF_RANGE",
+				"COUNTER_INIT_INVALID",
+				"ETCHING_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -39,6 +41,7 @@ class TestErrors(FrappeTestCase):
 				"ROLL_NOT_FOUND",
 				"EQUIPMENT_NOT_FOUND",
 				"CODE_NOT_FOUND",
+				"INSTRUMENT_NOT_FOUND",
 			),
 			409: (
 				"STATUS_INVALID_FOR_STATION",
@@ -55,10 +58,21 @@ class TestErrors(FrappeTestCase):
 				"EQUIPMENT_RETIRED",
 				"PROGRAM_CODE_EXISTS",
 				"CODE_DISABLED",
+				"INSTRUMENT_RETIRED",
+				"INSTRUMENT_IN_BOM",
+				"FEATURE_DISABLED",
+				"GIAI_ALREADY_ASSIGNED",
+				"GIAI_NOT_ASSIGNED",
+				"GS1_PREFIX_NOT_CONFIGURED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
 		self.assertEqual(errors.HTTP_STATUS, table)
+
+	def test_http_status_instrument_not_found(self):
+		# FEAT-014 A-06 I12: v1.instrument.get_image với mã dụng cụ không có
+		self.assertEqual(errors.HTTP_STATUS["INSTRUMENT_NOT_FOUND"], 404)
+		self.assertEqual(Block("INSTRUMENT_NOT_FOUND", "t", "r", "a").http_status, 404)
 
 	def test_block_as_dict(self):
 		self.assertEqual(

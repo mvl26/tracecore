@@ -2,7 +2,11 @@
 
 Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi trường:
 TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
-và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py).
+và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
+TC_E2E_INSTR_* (test_desk_instrument.py).
+
+TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
+(vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
 """
 
 import os
@@ -180,3 +184,59 @@ def fake_printer():
 	printer = FakePrinter(int(require_env("TC_E2E_CODES_PRINTER_PORT")))
 	yield printer
 	printer.close()
+
+
+# --- Danh mục dụng cụ Desk (SCR-01, FEAT-014): user TC R02, dữ liệu `devdata.ensure_instrument_demo` ---
+
+INSTR_KEYS = (
+	"group",
+	"full",
+	"no_max",
+	"retire",
+	"giai",
+	"set_type_steam",
+	"set_type_plasma",
+	"set_type_retire",
+	"set_steam",
+	"set_plasma",
+)
+
+
+@pytest.fixture
+def instr_demo():
+	"""Mã demo của `devdata.ensure_instrument_demo` (TC_E2E_INSTR_FULL, ..._SET_STEAM...)."""
+	return {key: require_env(f"TC_E2E_INSTR_{key.upper()}") for key in INSTR_KEYS}
+
+
+@pytest.fixture
+def instr_page(page):
+	"""User Desk TC R02 (khai báo và sửa danh mục dụng cụ)."""
+	response = page.request.post(
+		"/api/method/login",
+		form={"usr": require_env("TC_E2E_INSTR_USER"), "pwd": require_env("TC_E2E_INSTR_PASSWORD")},
+	)
+	assert response.ok, response.text()
+	return page
+
+
+@pytest.fixture
+def other_user_page(browser, browser_context_args):
+	"""Mở thêm trang của user khác trong cùng test (vd trạm T4 song song với Desk): `other_user_page(user_env, pwd_env)`.
+
+	Mỗi trang một context riêng (cookie phiên riêng); đóng khi test xong.
+	"""
+	contexts = []
+
+	def open_page(user_env, password_env):
+		context = browser.new_context(**browser_context_args)
+		contexts.append(context)
+		page = context.new_page()
+		response = page.request.post(
+			"/api/method/login", form={"usr": require_env(user_env), "pwd": require_env(password_env)}
+		)
+		assert response.ok, response.text()
+		return page
+
+	yield open_page
+	for context in contexts:
+		context.close()
