@@ -216,6 +216,8 @@ doc_events = {
 		"on_update": "tracecore.inventory.audit.on_cssd_event",
 	},
 	"Stock Entry": {
+		# nhập kho vật tư theo lô/hạn (FEAT-041, FR-M6-01): kiểm dòng, tạo Batch khi ghi sổ
+		"before_validate": "tracecore.inventory.receipt.prepare_receipt",
 		"after_insert": "tracecore.inventory.audit.on_cssd_event",
 		"on_update": "tracecore.inventory.audit.on_cssd_event",
 		"on_submit": "tracecore.inventory.audit.on_cssd_event",

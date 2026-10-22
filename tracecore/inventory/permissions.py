@@ -37,6 +37,15 @@ PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 		"TC R02": (*_READ, "report"),
 		"TC R01": (*_READ, "report"),
 	},
+	# ERPNext dựng Serial and Batch Bundle từ lô của dòng phiếu khi ghi sổ/hủy bằng quyền của người dùng, nên vai trò
+	# lập phiếu nhập cần quyền này (mở rộng V11, ghi ở A-07).
+	"Serial and Batch Bundle": {
+		"TC R09": (*_EDIT, "submit", "cancel"),
+		"TC R06": (*_EDIT, "submit"),
+		"System Manager": (*_EDIT, "submit", "cancel", "report"),
+		"TC R02": (*_READ, "cancel"),
+		"TC R01": (*_READ, "report"),
+	},
 	"Stock Entry": {
 		"TC R09": (*_EDIT, "submit", "cancel", "amend", "report"),
 		"TC R06": (*_EDIT, "submit", "report"),
@@ -49,8 +58,8 @@ PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 # DocType được Link tới từ form Item / phiếu nhập: các vai trò dưới đây đọc được để chọn trên Desk.
 LINK_TARGETS = ("Supplier", "Warehouse", "Item Group", "UOM", "Company", "Stock Entry Type")
 LINK_TARGET_ROLES = ("TC R09", "TC R06", "TC R10", "TC R02")
-# Cấp quyền đọc cho vai trò chuẩn ngoài ma trận cũng đủ: chỉ thêm, không bớt quyền nào của ERPNext.
-NO_DELETE_DOCTYPES = tuple(PERMISSION_MATRIX)
+# Chỉ ba DocType này bị gỡ quyền xóa (V11); Serial and Batch Bundle giữ quyền xóa chuẩn của ERPNext.
+NO_DELETE_DOCTYPES = ("Item", "Batch", "Stock Entry")
 
 
 def ensure_permissions() -> None:

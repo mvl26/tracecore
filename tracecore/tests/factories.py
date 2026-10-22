@@ -409,6 +409,76 @@ def make_warehouse(name, is_group=False):
 	return full_name
 
 
+def make_supplier(name="TraceCore NCC"):
+	"""Tạo (hoặc lấy) Supplier thử; trả tên."""
+	if frappe.db.exists("Supplier", name):
+		return name
+	if not frappe.db.exists("Supplier Group", "All Supplier Groups"):
+		frappe.get_doc(
+			{"doctype": "Supplier Group", "supplier_group_name": "All Supplier Groups", "is_group": 1}
+		).insert(ignore_permissions=True)
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Supplier",
+				"supplier_name": name,
+				"supplier_group": "All Supplier Groups",
+				"supplier_type": "Company",
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
+def build_receipt(lines, supplier, document_no, warehouse=None):
+	"""Stock Entry Material Receipt chưa lưu cho vật tư CSSD.
+
+	lines: danh sách dict {item_code, batch_id, expiry_date, qty, rate}. Chỉ điền các trường dòng cần khi
+	chèn từ code (trên Desk, client script điền uom, conversion_factor).
+	"""
+	masters = ensure_stock_masters()
+	warehouse = warehouse or masters["warehouse"]
+	items = []
+	for entry in lines:
+		stock_uom = frappe.db.get_value("Item", entry["item_code"], "stock_uom")
+		items.append(
+			{
+				"item_code": entry["item_code"],
+				"qty": entry.get("qty", 1),
+				"basic_rate": entry.get("rate", 0),
+				"uom": stock_uom,
+				"stock_uom": stock_uom,
+				"conversion_factor": 1,
+				"t_warehouse": warehouse,
+				"tc_batch_id": entry.get("batch_id"),
+				"tc_expiry_date": entry.get("expiry_date"),
+			}
+		)
+	return frappe.get_doc(
+		{
+			"doctype": "Stock Entry",
+			"stock_entry_type": "Material Receipt",
+			"purpose": "Material Receipt",
+			"company": masters["company"],
+			"posting_date": today(),
+			"to_warehouse": warehouse,
+			"tc_supplier": supplier,
+			"tc_document_no": document_no,
+			"items": items,
+		}
+	)
+
+
+def make_receipt(lines, supplier, document_no, warehouse=None, submit=True):
+	"""Lập (và mặc định ghi sổ) phiếu nhập kho vật tư: Stock Entry Material Receipt theo lô/hạn."""
+	doc = build_receipt(lines, supplier, document_no, warehouse)
+	doc.insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+	return doc
+
+
 def make_batch(item_code, batch_id, expiry_date=None):
 	"""Tạo (hoặc lấy) Batch ERPNext; bật has_batch_no của Item nếu chưa."""
 	if frappe.db.exists("Batch", batch_id):
