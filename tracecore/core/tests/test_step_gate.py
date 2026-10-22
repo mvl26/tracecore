@@ -1,3 +1,5 @@
+import subprocess  # nosec B404 - chạy lint kiến trúc của repo
+import sys
 from functools import partial
 from unittest.mock import patch
 
@@ -70,6 +72,80 @@ class TestStepGate(FrappeTestCase):
 		step_gate.bind_cycle(su, "CY-261020-0001", "TR-004")
 		step_gate.start_cycle(su)
 		self.assertIsNone(_lifecycle(su).active_cycle_id)
+
+	def test_init_unit_is_only_lifecycle_writer(self):
+		# FEAT-016 G4: khởi tạo trường vòng đời của bộ mới cũng chỉ ở step gate (ADR-005)
+		self.assertEqual(
+			step_gate.LIFECYCLE_DEFAULTS,
+			{
+				"status": "New",
+				"cycles_used": 0,
+				"current_station": None,
+				"active_cycle_id": None,
+				"current_cycle_no": 0,
+				"cycle_bom_version": 0,
+			},
+		)
+		doc = frappe.new_doc("Set Unit")
+		doc.update(
+			{"status": "Sterile", "current_cycle_no": 4, "active_cycle_id": "CY-1", "cycle_bom_version": 3}
+		)
+		step_gate.init_unit(doc, 7)
+		self.assertEqual(
+			{field: doc.get(field) for field in step_gate.LIFECYCLE_DEFAULTS},
+			{**step_gate.LIFECYCLE_DEFAULTS, "cycles_used": 7},
+		)
+		self.assertTrue(doc.flags.tc_step_gate)
+		self.assertEqual(doc.flags.tc_audit_reason, "issue")
+		existing = frappe.get_doc("Set Unit", make_set_unit().name)
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.init_unit(existing)
+		for bad in (-1, "3", True, None):
+			with self.assertRaises(frappe.ValidationError, msg=bad):
+				step_gate.init_unit(frappe.new_doc("Set Unit"), bad)
+
+		# doc mới qua đường cấp nhưng không qua init_unit: trường vòng đời về mặc định
+		set_type = frappe.db.get_value("Set Unit", existing.name, "set_type")
+		bare = frappe.get_doc(
+			{"doctype": "Set Unit", "set_type": set_type, "max_cycles": 10, "status": "Sterile"}
+		)
+		bare.flags.tc_set_issue = True
+		bare.insert()
+		self.assertEqual(_lifecycle(bare.name).status, "New")
+
+		lint = subprocess.run(  # nosec B603 - đối số cố định
+			[sys.executable, frappe.get_app_path("tracecore", "..", "scripts", "check_architecture.py")],
+			capture_output=True,
+			text=True,
+			check=False,
+		)
+		self.assertEqual(lint.returncode, 0, lint.stdout + lint.stderr)
+		self.assertNotIn("R2", lint.stdout)
+
+	def test_lifecycle_events_recorded_as_audit_reason(self):
+		# FEAT-016 G13: Audit Log của Set Unit thành lịch sử vòng đời (sự kiện ở cột reason)
+		su = make_set_unit().name
+
+		def reasons():
+			return frappe.get_all(
+				"Audit Log",
+				filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update"},
+				pluck="reason",
+				order_by="creation asc, name asc",
+			)
+
+		step_gate.start_cycle(su)
+		self.assertEqual(reasons(), ["start_cycle"])
+		step_gate.record(su, "T4", "Fail")
+		self.assertEqual(reasons()[-1], "gate T4 Fail")
+		step_gate.record(su, "T4", "Pass")
+		self.assertEqual(reasons()[-1], "gate T4 Pass")
+		step_gate.bind_cycle(su, "CY-261022-0001", "TR-004")
+		self.assertEqual(reasons()[-1], "bind_cycle")
+		step_gate.release_cycle(su)
+		self.assertEqual(
+			reasons(), ["start_cycle", "gate T4 Fail", "gate T4 Pass", "bind_cycle", "release_cycle"]
+		)
 
 	@bru("BRU-FLOW-004")
 	def test_check_requires_previous_step_pass(self):

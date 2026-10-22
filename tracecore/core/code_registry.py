@@ -1,5 +1,7 @@
 """Cấp mã đối tượng và ghi sổ Code Registry (FR-M9-07, BRU-ID-001, BRU-ID-006)."""
 
+import re
+
 import frappe
 from frappe import _
 from frappe.model.naming import getseries
@@ -28,8 +30,15 @@ CARD_MAX_LENGTH = 40
 SYSTEM_CODE_PREFIXES = ("NV-", "TB-", "KE-", "TR-", "CN-", "CT-", "CY-", "LR-", "ME-")
 
 
+SET_TYPE_CODE = re.compile(r"[A-Z0-9]{2,8}")  # mã loại bộ nằm trong Set ID (§5.3.3, A-02)
+
+
 class CodeAlreadyIssuedError(frappe.ValidationError):
 	pass
+
+
+class SeriesExhaustedError(frappe.ValidationError):
+	"""Bộ đếm series đã hết dải số theo độ rộng: không cấp mã dài hơn (nơi gọi đổi thành Block nếu cần)."""
 
 
 class InvalidCardCodeError(frappe.ValidationError):
@@ -158,8 +167,13 @@ def next_set_id(type_code):
 	Series riêng theo (tiền tố, mã loại bộ) qua `getseries` (khóa dòng ``tabSeries`` tới commit); số đã có trong sổ
 	(đăng ký tay, đã vô hiệu) thì bỏ qua nên không bao giờ cấp lại (BRU-ID-001). Tiền tố demo ngoài site dev/test hoặc
 	sai định dạng → `BlockedError` ``GS1_PREFIX_NOT_CONFIGURED`` trước `getseries`; quá ``SET_SERIES_MAX`` →
-	``ValidationError`` "series đã hết", không cấp mã 7 số.
+	`SeriesExhaustedError` (``ValidationError``) "series đã hết", không cấp mã 7 số. `type_code` không đúng
+	``[A-Z0-9]{2,8}`` → ``ValidationError`` trước mọi ghi (phòng thủ cho nơi gọi trực tiếp).
 	"""
+	if not isinstance(type_code, str) or not SET_TYPE_CODE.fullmatch(type_code):
+		frappe.throw(
+			_("Set type code {0} is not valid for a Set ID.").format(repr(type_code)), frappe.ValidationError
+		)
 	prefix = company_prefix()
 	block = gs1_prefix_block(prefix, "set")
 	if block:
@@ -170,7 +184,7 @@ def next_set_id(type_code):
 		if len(serial) > SET_SERIAL_DIGITS:
 			frappe.throw(
 				_("Code series {0} is exhausted.").format(series_key + "#" * SET_SERIAL_DIGITS),
-				frappe.ValidationError,
+				SeriesExhaustedError,
 			)
 		code = gs1.make_giai(prefix, f"{type_code}{serial}")
 		if not is_issued(code):

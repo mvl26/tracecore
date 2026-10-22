@@ -8,6 +8,8 @@ Trường vòng đời (`status`, `cycles_used`, `current_station`, `active_cycl
 `cycle_bom_version`) được Set Unit chặn ghi trừ khi có cờ ``doc.flags.tc_step_gate`` — cờ này chỉ được đặt trong file
 này (lint R2). `cycle_bom_version` (phiên bản BOM ghim cho chu trình, FEAT-015 S3) do ``start_cycle`` hỏi M1 qua hook
 ``tracecore_cycle_bom_version`` (core không import M1, ADR-001).
+Bộ mới khởi tạo trường vòng đời bằng ``init_unit`` (FEAT-016 G4, gọi từ ``set_units.issue_batch``); mỗi lần lưu ghi tên sự
+kiện (``issue``, ``start_cycle``, ``gate T4 Fail``, ``bind_cycle``, ``release_cycle``) vào cột lý do của Audit Log (G13).
 
 Đồng thời: các hàm ghi khóa dòng Set Unit (``FOR UPDATE``) nên request song song cùng bộ chạy lần lượt. MariaDB
 chạy REPEATABLE READ: đọc thường dùng snapshot mở từ lần đọc đầu của transaction (trên đường RPC là
@@ -31,6 +33,18 @@ STATION_STATUSES = {"T4": ("Processing", "Reprocess")}
 
 PENDING = "Pending"
 RESULTS = ("Pass", "Fail")
+
+# Giá trị khởi tạo trường vòng đời của bộ mới (FEAT-016 G4: Mới tạo, chưa có chu trình, chưa ghim BOM). Set Unit chặn ghi
+# các trường này trừ khi có cờ ``flags.tc_step_gate`` (chỉ đặt trong file này, lint R2).
+LIFECYCLE_DEFAULTS = {
+	"status": "New",
+	"cycles_used": 0,
+	"current_station": None,
+	"active_cycle_id": None,
+	"current_cycle_no": 0,
+	"cycle_bom_version": 0,
+}
+ISSUE_EVENT = "issue"
 
 
 def result_name(set_unit, cycle_no, step):
@@ -62,10 +76,32 @@ def _require_cycle(set_unit, cycle_no):
 	return cycle_no
 
 
-def _save_lifecycle(unit, **fields):
+def init_unit(doc, cycles_used=0) -> None:
+	"""Khởi tạo trường vòng đời của Set Unit **chưa insert** (FEAT-016 G4, G6; ADR-005).
+
+	Đặt ``LIFECYCLE_DEFAULTS`` (Mới tạo, chu trình 0, BOM chưa ghim — ghim ở ``start_cycle`` lần tiếp nhận đầu) và
+	``cycles_used`` (số chu trình đã dùng: 0 cho bộ mới, số ước tính cho bộ đang lưu hành), cờ ``flags.tc_step_gate``
+	và lý do Audit ``issue``. Doc đã có trong DB hoặc ``cycles_used`` không phải số nguyên ≥ 0 → ``ValidationError``.
+	"""
+	if not doc.is_new() and doc.name and frappe.db.exists(doc.doctype, doc.name):
+		frappe.throw(
+			_("Set Unit {0} already exists; its lifecycle cannot be initialised again.").format(doc.name)
+		)
+	if isinstance(cycles_used, bool) or not isinstance(cycles_used, int) or cycles_used < 0:
+		frappe.throw(_("Cycles used must be a whole number of at least 0."))
+	doc.update(LIFECYCLE_DEFAULTS)
+	doc.cycles_used = cycles_used
+	doc.flags.tc_step_gate = True
+	doc.flags.tc_audit_reason = ISSUE_EVENT
+
+
+def _save_lifecycle(unit, event=None, **fields):
+	"""Lưu trường vòng đời của bộ; `event` (vd ``start_cycle``, ``gate T4 Fail``) vào cột lý do của Audit Log Update
+	của Set Unit, để Audit Log thành lịch sử vòng đời (FEAT-016 G13)."""
 	for fieldname, value in fields.items():
 		unit.set(fieldname, value)
 	unit.flags.tc_step_gate = True
+	unit.flags.tc_audit_reason = event
 	unit.save(ignore_permissions=True)
 
 
@@ -129,6 +165,7 @@ def start_cycle(set_unit, on=None):
 	version = _first_int(extension.run(CYCLE_BOM_VERSION_HOOK, ctx))
 	_save_lifecycle(
 		unit,
+		"start_cycle",
 		current_cycle_no=cycle_no,
 		status="Processing",
 		active_cycle_id=None,
@@ -226,7 +263,7 @@ def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None
 	results = _results(unit.name, cycle_no, for_update=True)
 	if result == "Fail":
 		_reset_later_steps(unit.name, cycle_no, step, results)
-	_update_status(unit, results, result)
+	_update_status(unit, results, result, f"gate {step} {result}")
 	return row.name
 
 
@@ -243,7 +280,7 @@ def _reset_later_steps(set_unit, cycle_no, step, results):
 			results[later] = (PENDING, current[1])
 
 
-def _update_status(unit, results, result):
+def _update_status(unit, results, result, event=None):
 	if all(results.get(step, (PENDING, 0))[0] == "Pass" for step in STEPS):
 		status = "Sterile"
 	elif result == "Fail":
@@ -253,7 +290,7 @@ def _update_status(unit, results, result):
 	else:
 		status = unit.status
 	if status != unit.status:
-		_save_lifecycle(unit, status=status)
+		_save_lifecycle(unit, event, status=status)
 
 
 def gates(set_unit):
@@ -277,11 +314,11 @@ def bind_cycle(set_unit, cycle_id, station):
 	fields = {"active_cycle_id": cycle_id}
 	if station:
 		fields["current_station"] = station
-	_save_lifecycle(unit, **fields)
+	_save_lifecycle(unit, "bind_cycle", **fields)
 
 
 def release_cycle(set_unit):
 	"""Bỏ Cycle ID hiện hành của bộ (hủy mã); giữ trạm hiện tại. Không có Cycle ID thì không làm gì."""
 	unit = _set_unit(set_unit, for_update=True)
 	if unit.active_cycle_id:
-		_save_lifecycle(unit, active_cycle_id=None)
+		_save_lifecycle(unit, "release_cycle", active_cycle_id=None)

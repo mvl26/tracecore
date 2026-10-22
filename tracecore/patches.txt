@@ -15,3 +15,4 @@ tracecore.patches.v0_1.set_type_master_defaults
 tracecore.patches.v0_1.pin_cycle_bom_version
 tracecore.patches.v0_1.set_bom_item_version_meta
 tracecore.patches.v0_1.set_bom_item_unique_index
+tracecore.patches.v0_1.set_unit_issue_fields

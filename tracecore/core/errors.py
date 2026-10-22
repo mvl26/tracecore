@@ -36,6 +36,10 @@ HTTP_STATUS: dict[str, int] = {
 			"BOM_TOO_LARGE",
 			"BOM_EFFECTIVE_DATE_INVALID",
 			"SHELF_LIFE_INVALID",
+			# FEAT-016 A-09 (G5, G6, G16): điều kiện cấp Set ID hàng loạt
+			"SET_TYPE_BOM_INVALID",
+			"DEPARTMENT_INVALID",
+			"MAX_CYCLES_INVALID",
 		),
 		422,
 	),
@@ -76,6 +80,8 @@ HTTP_STATUS: dict[str, int] = {
 			"GS1_PREFIX_NOT_CONFIGURED",
 			"BOM_VERSION_CONFLICT",
 			"SET_TYPE_CODE_EXISTS",
+			# FEAT-016: series Set ID của loại bộ đã hết dải 999 999 (G2) — không cấp mã 7 số
+			"SET_SERIES_EXHAUSTED",
 		),
 		409,
 	),

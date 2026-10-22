@@ -1458,3 +1458,36 @@ Demo e2e set with a set in its cycle,Loại bộ có bộ đang giữa chu trìn
 Demo e2e set for BOM editing,Loại bộ để sửa BOM (demo e2e),
 Demo scheduled BOM change,Thay đổi BOM đã lên lịch (demo),
 Demo BOM change during a cycle,Thay đổi BOM khi bộ đang giữa chu trình (demo),
+A new set has used 0 cycles.,Bộ mới có số chu trình đã dùng bằng 0.,
+"Actual: counted by the system since issue. Estimated: a set already in circulation when its Set ID was issued; Cycles Used started from an estimate (UC-03 A1).","Thực tế: hệ thống đếm từ khi cấp mã. Ước tính: bộ đang lưu hành khi được cấp Set ID; số chu trình đã dùng bắt đầu từ số ước tính (UC-03 A1).",Set Unit
+All 999999 Set ID numbers of set type {0} have been issued; nothing was issued.,Đã cấp hết 999999 số Set ID của loại bộ {0}; không cấp mã nào.,
+Choose an enabled department that is not a group.,Chọn khoa đang hoạt động và không phải nhóm khoa.,
+Create a new set type code for further sets.,Tạo mã loại bộ mới cho các bộ tiếp theo.,
+Cycle numbers not valid,Số chu trình không hợp lệ,
+Cycles Source,Nguồn số chu trình,Set Unit
+Actual,Thực tế,Set Unit
+Estimated,Ước tính,Set Unit
+Cycles used must be a whole number of at least 0.,Số chu trình đã dùng phải là số nguyên từ 0 trở lên.,
+"Department {0} does not exist, is a group or is disabled.","Khoa {0} không tồn tại, là nhóm khoa hoặc đã ngừng hoạt động.",
+Enter a quantity from 1 to {0}; split larger orders into several batches.,Nhập số lượng từ 1 đến {0}; số lượng lớn hơn thì chia thành nhiều lô.,
+"Enter the max cycles as a whole number from 1 to {0}, and cycles used below the max cycles.","Nhập số chu trình tối đa là số nguyên từ 1 đến {0}, và số chu trình đã dùng nhỏ hơn số chu trình tối đa.",
+Estimated cycles used must be a whole number from 0 to {0}.,Số chu trình đã dùng ước tính phải là số nguyên từ 0 đến {0}.,
+Instrument {0} is retired and cannot be in an issued set.,Dụng cụ {0} đã ngừng sử dụng nên không thể có trong bộ được cấp mã.,
+Max cycles is required: it cannot be derived from the instruments of this set type.,Bắt buộc nhập số chu trình tối đa: không suy ra được từ dụng cụ của loại bộ này.,
+Max cycles must be a whole number from 1 to {0}.,Số chu trình tối đa phải là số nguyên từ 1 đến {0}.,
+"Max cycles {0} is higher than {1}, the lowest max cycles of the instruments in the BOM.","Số chu trình tối đa {0} lớn hơn {1}, là số chu trình tối đa thấp nhất của dụng cụ trong BOM.",
+Owning department not valid,Khoa sở hữu không hợp lệ,
+"Save a new BOM version effective today without retired or incompatible instruments, then issue again.","Lưu phiên bản BOM mới hiệu lực từ hôm nay, không có dụng cụ ngừng sử dụng hoặc không tương thích, rồi cấp lại.",
+Set ID numbers used up,Đã hết số Set ID,
+Set Unit {0} already exists; its lifecycle cannot be initialised again.,Bộ {0} đã tồn tại; không thể khởi tạo lại vòng đời.,
+Set Units are created only through Issue Set IDs.,Bộ dụng cụ chỉ được tạo qua chức năng Cấp Set ID.,
+Set origin must be one of: {0}.,Nguồn bộ phải là một trong: {0}.,
+Set type cannot be issued,Không cấp được mã cho loại bộ,
+Set type code {0} is not valid for a Set ID.,Mã loại bộ {0} không hợp lệ để cấp Set ID.,
+Set type {0} has no BOM version effective today.,Loại bộ {0} chưa có phiên bản BOM hiệu lực hôm nay.,
+Set type {0} has no usable BOM effective today.,Loại bộ {0} không có BOM dùng được hiệu lực hôm nay.,
+Tag,Thẻ,Set Unit
+Tag Verified By,Người kiểm tra thẻ,Set Unit
+Tag Verified On,Thời điểm kiểm tra thẻ,Set Unit
+The number of sets must be a whole number from 1 to {0}.,Số bộ phải là số nguyên từ 1 đến {0}.,
+These fields are set only by issuing or verifying Set ID tags: {0},Các trường này chỉ được ghi khi cấp Set ID hoặc quét kiểm tra thẻ: {0},

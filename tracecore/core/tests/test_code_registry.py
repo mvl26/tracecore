@@ -321,6 +321,31 @@ class TestNextSetId(FrappeTestCase):
 		self.assertFalse(code_registry.is_issued(f"{key}1000000"))
 		self.assertEqual(frappe.db.count("Code Registry", {"prefix": key}), 0)
 
+	def test_next_set_id_rejects_malformed_type_code(self):
+		# phòng thủ nhiều lớp (review Task 1): nơi gọi trực tiếp truyền mã không đúng [A-Z0-9]{2,8} bị từ chối trước getseries
+		with patch.object(code_registry, "getseries") as getseries:
+			for bad in (
+				"I-00",
+				"K",
+				"ABCDEFGHI",
+				"kham",
+				"",
+				None,
+				"KH M",
+				"KHAM\n",
+				chr(0xFF2B) + chr(0xFF21),
+			):
+				with self.subTest(type_code=bad):
+					with self.assertRaises(frappe.ValidationError):
+						code_registry.next_set_id(bad)
+			getseries.assert_not_called()
+
+	def test_next_set_id_exhaustion_error_type(self):
+		key = self.series_key("CRY")
+		self.set_series(key, code_registry.SET_SERIES_MAX)
+		with self.assertRaises(code_registry.SeriesExhaustedError):
+			code_registry.next_set_id("CRY")
+
 	def test_next_set_id_last_serial_still_issued(self):
 		key = self.series_key("CRL")
 		self.set_series(key, code_registry.SET_SERIES_MAX - 1)

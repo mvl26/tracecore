@@ -17,7 +17,11 @@
   "cycle_bom_version",
   "section_cycles",
   "cycles_used",
-  "max_cycles"
+  "max_cycles",
+  "cycles_source",
+  "section_tag",
+  "tag_verified_on",
+  "tag_verified_by"
  ],
  "fields": [
   {
@@ -111,18 +115,45 @@
    "fieldtype": "Int",
    "label": "Max Cycles",
    "reqd": 1
+  },
+  {
+   "default": "Actual",
+   "description": "Actual: counted by the system since issue. Estimated: a set already in circulation when its Set ID was issued; Cycles Used started from an estimate (UC-03 A1).",
+   "fieldname": "cycles_source",
+   "fieldtype": "Select",
+   "label": "Cycles Source",
+   "options": "Actual\nEstimated",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_tag",
+   "fieldtype": "Section Break",
+   "label": "Tag"
+  },
+  {
+   "fieldname": "tag_verified_on",
+   "fieldtype": "Datetime",
+   "label": "Tag Verified On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tag_verified_by",
+   "fieldtype": "Link",
+   "label": "Tag Verified By",
+   "options": "User",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 10:00:00.000000",
+ "modified": "2026-10-22 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
    "read": 1,
    "report": 1,
    "role": "System Manager",

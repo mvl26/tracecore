@@ -39,6 +39,9 @@ class TestErrors(FrappeTestCase):
 				"BOM_TOO_LARGE",
 				"BOM_EFFECTIVE_DATE_INVALID",
 				"SHELF_LIFE_INVALID",
+				"SET_TYPE_BOM_INVALID",
+				"DEPARTMENT_INVALID",
+				"MAX_CYCLES_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -73,6 +76,7 @@ class TestErrors(FrappeTestCase):
 				"GS1_PREFIX_NOT_CONFIGURED",
 				"BOM_VERSION_CONFLICT",
 				"SET_TYPE_CODE_EXISTS",
+				"SET_SERIES_EXHAUSTED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -97,6 +101,17 @@ class TestErrors(FrappeTestCase):
 			"SET_TYPE_CODE_EXISTS": 409,
 		}.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
+
+	def test_http_status_new_codes(self):
+		# FEAT-016 G16 (A-09): cấp Set ID hàng loạt; SET_SERIES_EXHAUSTED: hết dải 999 999 giữa lô (review Task 1)
+		for code, status in {
+			"SET_TYPE_BOM_INVALID": 422,
+			"DEPARTMENT_INVALID": 422,
+			"MAX_CYCLES_INVALID": 422,
+			"SET_SERIES_EXHAUSTED": 409,
+		}.items():
+			self.assertEqual(errors.HTTP_STATUS.get(code), status, msg=code)
+			self.assertEqual(BlockedError(Block(code, "t", "r", "a")).http_status_code, status, msg=code)
 
 	def test_block_as_dict(self):
 		self.assertEqual(

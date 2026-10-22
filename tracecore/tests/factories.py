@@ -8,7 +8,7 @@ from frappe.model.naming import getseries
 from frappe.utils import add_days, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
-from tracecore.instrument import bom_versions
+from tracecore.instrument import bom_versions, set_units
 
 
 def make_user(email, roles=()):
@@ -30,11 +30,16 @@ def make_user(email, roles=()):
 	return user.name
 
 
-def make_set_unit(set_type=None, max_cycles=300, **kwargs):
+def make_set_unit(set_type=None, max_cycles=300, department=None, **kwargs):
+	"""Một Set Unit Mới tạo qua đường cấp Set ID (FEAT-016 G4: cờ cấp + ``step_gate.init_unit``); trả Document.
+
+	Dùng đường ghi của ``set_units.issue_batch`` nhưng KHÔNG kiểm điều kiện cấp (``set_units._create_units``), để dựng
+	bộ như dữ liệu có trước FEAT-016: loại bộ chưa có BOM/khoa, bộ không có khoa (`department` None). `kwargs`: trường
+	khác (vd ``is_loaner``); trường vòng đời truyền vào bị đặt lại về mặc định như khi cấp. Không có Audit lô.
+	"""
 	set_type = set_type or make_set_type().name
-	return frappe.get_doc(
-		{"doctype": "Set Unit", "set_type": set_type, "max_cycles": max_cycles, **kwargs}
-	).insert()
+	name = set_units._create_units(set_type, 1, department, max_cycles, fields=kwargs)[0]
+	return frappe.get_doc("Set Unit", name)
 
 
 def _ref_name(ref):
