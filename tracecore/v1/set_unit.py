@@ -4,6 +4,7 @@
 - Ghi (POST + ``@idempotent``): `create_batch`, `print_tags`, `reprint_tag`, `cancel_print`, `verify_tag`. Role kiểm
   TRƯỚC mọi ghi, nên user thiếu quyền không để lại Idempotency Key/Audit (G7): cấp, in, in lại, hủy lệnh in kẹt —
   ``ISSUE_ROLES``; quét kiểm tra thẻ thêm TC R04 (``VERIFY_ROLES``).
+- Vòng đời (Task 6, hiện thực ở `set_unit_lifecycle`): `form_context`, `history` (GET), `dispose` (POST).
 - Đọc (GET): `tag_preview`, `print_status`, `batch_csv`. Từ chối và dòng Audit xuất CSV qua `keep_writes_on_get` để
   được commit (Frappe v15 không commit request GET).
 - Tham số sai kiểu → `BadRequestError` (400); từ chối nghiệp vụ → `reject_block` (Audit ``Reject`` + 404/409/422).
@@ -34,8 +35,16 @@ from tracecore.v1._common import (
 	require_any_role,
 )
 
-ISSUE_ROLES = ("TC R02", "TC R10", "System Manager")  # cấp, in, in lại, hủy lệnh in, xuất CSV (G7)
-VERIFY_ROLES = (*ISSUE_ROLES, "TC R04")  # quét kiểm tra thẻ (UC-03 bước 4)
+# Task 6: vòng đời (ngữ cảnh form, lịch sử, thanh lý) ở module riêng, công bố lại ở đây để giữ đường RPC
+# tracecore.v1.set_unit.<action> của plan; role cấp/in/quét kiểm tra dùng chung đặt ở đó
+from tracecore.v1.set_unit_lifecycle import (  # RPC công bố lại
+	ISSUE_ROLES,
+	VERIFY_ROLES,
+	dispose,
+	form_context,
+	history,
+)
+
 MAX_STATUS_JOBS = 200  # 100 bộ, mỗi bộ 2 loại bản in
 MAX_NUMBER_CHARS = (
 	6  # số lượng / cơ số / số chu trình gửi dạng chuỗi: dài hơn thì chắc chắn ngoài khoảng, không int()

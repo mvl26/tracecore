@@ -184,15 +184,19 @@ def _set_label_refusal(doc):
 	"""Lý do (đã dịch) không được gửi job thẻ kim loại / nhãn khay Set ID, ngược lại None (job khác → None).
 
 	ZPL của job dựng lúc xếp hàng; kiểm lại Set ID lúc gửi: tiền tố chứa trong mã phải dùng được trên site này
-	(`code_registry.set_id_block`, G3) và mã không `Disabled` trong Code Registry (bộ đã thanh lý).
+	(`code_registry.set_id_block`, G3), bộ chưa ``Disposed`` và mã không `Disabled` trong Code Registry (thanh lý sau
+	khi job đã xếp hàng: không ra thêm thẻ của bộ đã thanh lý, G14).
 	"""
 	data = _data(doc.data)
 	if data.get("label_object") not in core_print.SET_LABELS:
 		return None
 	set_id = doc.ref_name if doc.ref_doctype == "Set Unit" else None
-	set_type = frappe.db.get_value("Set Unit", set_id, "set_type") if set_id else None
-	if not set_type:
+	row = frappe.db.get_value("Set Unit", set_id, ["set_type", "status"]) if set_id else None
+	if not row:
 		return _("Set ID {0} of this print job does not exist.").format(set_id or "-")
+	set_type, status = row
+	if status == "Disposed":
+		return _("Set {0} has been disposed; its tag and tray label can no longer be printed.").format(set_id)
 	type_code = frappe.db.get_value("Instrument Set Type", set_type, "type_code")
 	block = code_registry.set_id_block(set_id, type_code)
 	if block:

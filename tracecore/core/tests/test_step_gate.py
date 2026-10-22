@@ -7,7 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import step_gate
-from tracecore.core.errors import Block
+from tracecore.core.errors import Block, BlockedError
 from tracecore.tests.factories import make_assembly_record, make_cycle, make_set_unit
 from tracecore.tests.utils import bru
 
@@ -502,3 +502,78 @@ class TestStepGateLocking(FrappeTestCase):
 		queries = self._capture(step_gate.gates, su)
 		self.assertTrue(self._selects_on(queries, "Step Gate Result"))
 		self.assertFalse([q for q in queries if "for update" in q.lower()])
+
+
+class TestStepGateDispose(FrappeTestCase):
+	"""FEAT-016 G14: thanh lý chỉ từ Mới tạo / Hết vòng đời, không có Cycle ID hiệu lực (FR-M1-06, FR-M1-05.2)."""
+
+	def _updates(self, su):
+		return frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update"},
+			fields=["old_value", "new_value", "reason"],
+			order_by="name desc",
+		)
+
+	def test_disposable_statuses(self):
+		self.assertEqual(step_gate.DISPOSABLE_STATUSES, ("New", "End of Life"))
+
+	def test_dispose_new_set_writes_status_and_reason(self):
+		su = make_set_unit().name
+		step_gate.dispose(su, "Issued by mistake")
+		self.assertEqual(_lifecycle(su).status, "Disposed")
+		log = self._updates(su)[0]
+		self.assertEqual(frappe.parse_json(log.new_value), {"status": "Disposed"})
+		self.assertEqual(frappe.parse_json(log.old_value), {"status": "New"})
+		self.assertEqual(log.reason, "dispose: Issued by mistake")
+		self.assertEqual(step_gate.split_event(log.reason), ("dispose", "Issued by mistake"))
+		self.assertEqual(step_gate.split_event("gate T2 Fail"), ("gate T2 Fail", None))
+		self.assertEqual(step_gate.split_event(None), (None, None))
+
+	def test_dispose_end_of_life_set(self):
+		su = make_set_unit().name
+		step_gate._save_lifecycle(frappe.get_doc("Set Unit", su), "end_of_life", status="End of Life")
+		step_gate.dispose(su, "Worn out")
+		self.assertEqual(_lifecycle(su).status, "Disposed")
+
+	def test_dispose_refused_outside_allowed_states(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)  # Processing
+		with self.assertRaises(BlockedError) as raised:
+			step_gate.dispose(su, "x")
+		self.assertEqual(raised.exception.block.code, "STATUS_INVALID_FOR_ACTION")
+		self.assertEqual(raised.exception.http_status_code, 409)
+		for step in step_gate.STEPS:
+			step_gate.record(su, step, "Pass")
+		self.assertEqual(_lifecycle(su).status, "Sterile")
+		with self.assertRaises(BlockedError):
+			step_gate.dispose(su, "x")
+		# End of Life nhưng còn Cycle ID hiệu lực (gói chưa dùng) → chặn
+		step_gate.bind_cycle(su, "CY-261019-0001", None)
+		step_gate._save_lifecycle(frappe.get_doc("Set Unit", su), "end_of_life", status="End of Life")
+		with self.assertRaises(BlockedError) as raised:
+			step_gate.dispose(su, "x")
+		self.assertEqual(raised.exception.block.code, "STATUS_INVALID_FOR_ACTION")
+		self.assertEqual(_lifecycle(su).status, "End of Life")
+		# đã thanh lý → không thanh lý lại
+		other = make_set_unit().name
+		step_gate.dispose(other, "x")
+		with self.assertRaises(BlockedError):
+			step_gate.dispose(other, "again")
+
+	def test_dispose_requires_reason_and_existing_set(self):
+		su = make_set_unit().name
+		for reason in ("", "   ", None):
+			with self.assertRaises(frappe.ValidationError):
+				step_gate.dispose(su, reason)
+		self.assertEqual(_lifecycle(su).status, "New")
+		with self.assertRaises(frappe.DoesNotExistError):
+			step_gate.dispose("NO-SUCH-SET", "x")
+
+	def test_dispose_locks_set_unit_row(self):
+		su = make_set_unit().name
+		with patch("tracecore.core.step_gate.frappe.get_doc", wraps=frappe.get_doc) as get_doc:
+			step_gate.dispose(su, "x")
+		self.assertTrue(
+			any(c.args[:2] == ("Set Unit", su) and c.kwargs.get("for_update") for c in get_doc.call_args_list)
+		)

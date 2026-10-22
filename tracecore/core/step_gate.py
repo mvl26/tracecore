@@ -9,7 +9,8 @@ Trường vòng đời (`status`, `cycles_used`, `current_station`, `active_cycl
 này (lint R2). `cycle_bom_version` (phiên bản BOM ghim cho chu trình, FEAT-015 S3) do ``start_cycle`` hỏi M1 qua hook
 ``tracecore_cycle_bom_version`` (core không import M1, ADR-001).
 Bộ mới khởi tạo trường vòng đời bằng ``init_unit`` (FEAT-016 G4, gọi từ ``set_units.issue_batch``); mỗi lần lưu ghi tên sự
-kiện (``issue``, ``start_cycle``, ``gate T4 Fail``, ``bind_cycle``, ``release_cycle``) vào cột lý do của Audit Log (G13).
+kiện (``issue``, ``start_cycle``, ``gate T4 Fail``, ``bind_cycle``, ``release_cycle``, ``dispose: <lý do>``) vào cột lý do
+của Audit Log (G13). ``dispose`` thanh lý bộ Mới tạo / Hết vòng đời (G14).
 
 Đồng thời: các hàm ghi khóa dòng Set Unit (``FOR UPDATE``) nên request song song cùng bộ chạy lần lượt. MariaDB
 chạy REPEATABLE READ: đọc thường dùng snapshot mở từ lần đọc đầu của transaction (trên đường RPC là
@@ -25,7 +26,7 @@ from frappe import _
 from frappe.utils import cint, now_datetime
 
 from tracecore.core import extension
-from tracecore.core.errors import Block
+from tracecore.core.errors import Block, BlockedError
 
 STEPS = ("T1", "T2", "T3", "T4", "T5")
 # Trạng thái Set Unit mà trạm chấp nhận; bước khác bổ sung ở FEAT của bước đó.
@@ -45,6 +46,11 @@ LIFECYCLE_DEFAULTS = {
 	"cycle_bom_version": 0,
 }
 ISSUE_EVENT = "issue"
+DISPOSE_EVENT = "dispose"
+# Thanh lý (FEAT-016 G14): chỉ bộ Mới tạo (cấp nhầm, thẻ chưa dùng) hoặc Hết vòng đời, không còn Cycle ID hiệu lực
+DISPOSABLE_STATUSES = ("New", "End of Life")
+# Cột lý do Audit của sự kiện có lý do người dùng: ``"<sự kiện>: <lý do>"`` (vd ``dispose: Cấp nhầm``)
+EVENT_SEPARATOR = ": "
 
 
 def result_name(set_unit, cycle_no, step):
@@ -93,6 +99,19 @@ def init_unit(doc, cycles_used=0) -> None:
 	doc.cycles_used = cycles_used
 	doc.flags.tc_step_gate = True
 	doc.flags.tc_audit_reason = ISSUE_EVENT
+
+
+def event_reason(event, reason=None):
+	"""Giá trị cột lý do Audit của một sự kiện vòng đời: tên sự kiện, kèm lý do người dùng nếu có."""
+	return f"{event}{EVENT_SEPARATOR}{reason}" if reason else event
+
+
+def split_event(value):
+	"""``(sự kiện, lý do người dùng | None)`` từ cột lý do Audit của Set Unit (ngược của ``event_reason``)."""
+	if not value:
+		return None, None
+	event, separator, reason = value.partition(EVENT_SEPARATOR)
+	return (event, reason) if separator else (value, None)
 
 
 def _save_lifecycle(unit, event=None, **fields):
@@ -322,3 +341,38 @@ def release_cycle(set_unit):
 	unit = _set_unit(set_unit, for_update=True)
 	if unit.active_cycle_id:
 		_save_lifecycle(unit, "release_cycle", active_cycle_id=None)
+
+
+def _status_block(unit) -> Block:
+	return Block(
+		"STATUS_INVALID_FOR_ACTION",
+		_("Set cannot be disposed now"),
+		_(
+			"Set {0} still has active Cycle ID {1}; only a set without an active Cycle ID can be disposed."
+		).format(unit.name, unit.active_cycle_id)
+		if unit.active_cycle_id
+		else _("Set {0} is {1}; only a set that is {2} can be disposed.").format(
+			unit.name,
+			_(unit.status, context="Set Unit"),
+			", ".join(_(s, context="Set Unit") for s in DISPOSABLE_STATUSES),
+		),
+		_("Finish the current cycle first; dispose a set only when it is new or at end of life."),
+	)
+
+
+def dispose(set_unit, reason):
+	"""Thanh lý bộ (FEAT-016 G14; FR-M1-06, FR-M1-05.2): trạng thái ``Disposed``, một chiều.
+
+	Khóa dòng Set Unit; chỉ từ ``DISPOSABLE_STATUSES`` và không có ``active_cycle_id``, ngược lại
+	``BlockedError(STATUS_INVALID_FOR_ACTION)`` (409), chưa ghi gì. Lý do người dùng bắt buộc (rỗng → ValidationError;
+	nơi gọi nghiệp vụ kiểm độ dài) và vào Audit ``Update`` dạng ``dispose: <lý do>``. Bộ không có → DoesNotExistError.
+	Vô hiệu mã Set ID trong Code Registry là việc của nơi gọi (M1 ``set_units.dispose``; core không import M1, ADR-001);
+	rẽ nhánh Thanh lý tại T3 (FEAT-020) và duyệt Hết vòng đời (FEAT-032) đi qua cùng đường đó.
+	"""
+	reason = reason.strip() if isinstance(reason, str) else ""
+	if not reason:
+		frappe.throw(_("A reason is required to dispose a set."))
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status not in DISPOSABLE_STATUSES or unit.active_cycle_id:
+		raise BlockedError(_status_block(unit))
+	_save_lifecycle(unit, event_reason(DISPOSE_EVENT, reason), status="Disposed")

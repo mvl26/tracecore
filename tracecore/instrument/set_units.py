@@ -8,6 +8,10 @@
   cùng loại bộ chạy lần lượt và serial trong một lô liên tiếp. Set Unit chỉ tạo qua đây (cờ ``flags.tc_set_issue``);
   trường vòng đời khởi tạo ở ``step_gate.init_unit`` (ADR-005). Không ghim BOM khi cấp (G4).
 
+- ``dispose``: thanh lý bộ Mới tạo / Hết vòng đời (G14) qua ``step_gate.dispose``, rồi vô hiệu mã Set ID trong Code
+  Registry (vẫn tra được, không in được, không bao giờ cấp lại; FR-M1-05.2, BRU-ID-001).
+- ``summary``, ``history``: tóm tắt form và lịch sử vòng đời (G13), hiện thực ở ``set_history``.
+
 Từ chối nghiệp vụ là ``BlockedError`` (mã trong ``core.errors.HTTP_STATUS``); tầng RPC (``v1.set_unit``) đổi thành body
 lỗi + Audit ``Reject``.
 """
@@ -18,8 +22,9 @@ from frappe.utils import cint
 
 from tracecore.core import audit, code_registry, step_gate
 from tracecore.core.errors import Block, BlockedError
-from tracecore.instrument import bom_versions, catalog
+from tracecore.instrument import bom_versions, catalog, set_tags
 from tracecore.instrument import set_type as set_type_service
+from tracecore.instrument.set_history import history, summary  # công bố lại: giao diện set_units của plan
 
 MAX_BATCH = 100
 MAX_CYCLES_LIMIT = 99999
@@ -27,6 +32,8 @@ ORIGINS = ("New", "Existing")
 SAVEPOINT = "tc_issue_set_units"
 CYCLES_SOURCE = {"New": "Actual", "Existing": "Estimated"}
 ISSUE_REASON = step_gate.ISSUE_EVENT  # cột reason của Audit Create (lô và từng bộ)
+REASON_MAX = set_tags.REASON_MAX
+DISPOSE_SAVEPOINT = "tc_dispose_set_unit"
 
 
 def _whole(value) -> int | None:
@@ -330,3 +337,39 @@ def issue_batch(
 		frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 	return names
+
+
+# --- Thanh lý (G14) ------------------------------------------------------------------------------------------------
+
+
+def _dispose_reason_block() -> Block:
+	return Block(
+		"REASON_REQUIRED",
+		_("Reason is required"),
+		_("A reason of 1 to {0} characters is required to dispose a set.").format(REASON_MAX),
+		_("Enter why the set is disposed, at most {0} characters.").format(REASON_MAX),
+	)
+
+
+def dispose(set_unit: str, reason: str) -> dict:
+	"""Thanh lý bộ (FR-M1-06, FR-M1-05.2; BRU-ID-001; G14); trả ``{set_unit, status}``.
+
+	Bộ không có → ``SET_NOT_FOUND``; lý do (bỏ khoảng trắng) rỗng hoặc quá ``REASON_MAX`` ký tự → ``REASON_REQUIRED``;
+	trạng thái ngoài Mới tạo / Hết vòng đời hoặc còn Cycle ID → ``STATUS_INVALID_FOR_ACTION`` (từ ``step_gate.dispose``).
+	Đổi trạng thái (``step_gate``) và vô hiệu mã Set ID (``code_registry.disable``, lý do = lý do thanh lý) trong một
+	savepoint: một bước lỗi thì không bước nào còn. Bộ cũ chưa có dòng Code Registry vẫn thanh lý được.
+	"""
+	if not isinstance(set_unit, str) or not set_unit or not frappe.db.exists("Set Unit", set_unit):
+		raise BlockedError(set_tags.not_found_block(set_unit))
+	text = reason.strip() if isinstance(reason, str) else ""
+	if not text or len(text) > REASON_MAX:
+		raise BlockedError(_dispose_reason_block())
+	frappe.db.savepoint(DISPOSE_SAVEPOINT)
+	try:
+		step_gate.dispose(set_unit, text)
+		if frappe.db.get_value("Code Registry", set_unit, "status") == "Active":
+			code_registry.disable(set_unit, text)
+	except Exception:
+		frappe.db.rollback(save_point=DISPOSE_SAVEPOINT)
+		raise
+	return {"set_unit": set_unit, "status": "Disposed"}

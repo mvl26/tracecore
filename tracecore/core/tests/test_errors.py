@@ -81,6 +81,7 @@ class TestErrors(FrappeTestCase):
 				"SET_DISPOSED",
 				"TAG_PRINT_PENDING",
 				"TAG_MISMATCH",
+				"STATUS_INVALID_FOR_ACTION",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -119,6 +120,8 @@ class TestErrors(FrappeTestCase):
 			"TAG_MISMATCH": 409,
 			"PRINTER_NOT_NETWORK": 422,
 			"GS1_PREFIX_NOT_CONFIGURED": 409,
+			# Task 6: thanh lý bộ ngoài Mới tạo / Hết vòng đời hoặc còn Cycle ID (G14)
+			"STATUS_INVALID_FOR_ACTION": 409,
 		}.items():
 			self.assertEqual(errors.HTTP_STATUS.get(code), status, msg=code)
 			self.assertEqual(BlockedError(Block(code, "t", "r", "a")).http_status_code, status, msg=code)

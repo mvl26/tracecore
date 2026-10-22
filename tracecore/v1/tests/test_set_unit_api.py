@@ -793,3 +793,112 @@ class TestVerifyPreviewStatusCsv(SetUnitRpcCase):
 		for bad in ([], "nope", [5], [f"9520000TFIVE{i:06d}" for i in range(101)]):
 			with self.assertRaises(BadRequestError, msg=repr(bad)):
 				get(api.batch_csv, set_units=bad)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# FEAT-016 Task 6: ngữ cảnh form, lịch sử vòng đời, thanh lý (FR-M1-06, FR-M1-06.2, FR-M1-05.2; BRU-ID-001; G7, G13, G14)
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+class TestLifecycleRpc(SetUnitRpcCase):
+	def test_lifecycle_rpcs_keep_set_unit_paths(self):
+		from tracecore.v1 import set_unit_lifecycle
+
+		for name in ("form_context", "history", "dispose"):
+			fn = frappe.get_attr(f"tracecore.v1.set_unit.{name}")
+			self.assertIs(fn, getattr(set_unit_lifecycle, name))
+			self.assertIn(fn, frappe.whitelisted, msg=name)
+		self.assertEqual(api.ISSUE_ROLES, set_unit_lifecycle.ISSUE_ROLES)
+		self.assertEqual(set_unit_lifecycle.DISPOSE_ROLES, ("TC R02", "System Manager"))
+
+	def test_dispose_rpc_roles(self):
+		unit = self.units(1)[0]
+		before = self.footprint()
+		for user in (self.r10, self.r04, self.r01):
+			frappe.set_user(user)
+			with self.assertRaises(frappe.PermissionError, msg=user):
+				post(api.dispose, set_unit=unit, reason="x", client_ts=TS)
+		frappe.set_user("Administrator")
+		self.assertEqual(self.footprint(), before)
+		self.assertEqual(frappe.db.get_value("Set Unit", unit, "status"), "New")
+
+		frappe.set_user(self.r02)
+		key = str(uuid.uuid4())
+		result, response = post(api.dispose, key, set_unit=unit, reason="Issued by mistake", client_ts=TS)
+		self.assertEqual(result, {"ok": True, "set_unit": unit, "status": "Disposed"})
+		replay, _response = post(api.dispose, key, set_unit=unit, reason="Issued by mistake", client_ts=TS)
+		self.assertEqual(replay, result)
+		frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.get_value("Code Registry", unit, "status"), "Disabled")
+
+		frappe.set_user(self.r02)
+		result, response = post(api.dispose, set_unit=unit, reason="again", client_ts=TS)
+		self.assert_reject(result, response, "STATUS_INVALID_FOR_ACTION", 409)
+		other = self.units(1)[0]
+		result, response = post(api.dispose, set_unit=other, reason="   ", client_ts=TS)
+		self.assert_reject(result, response, "REASON_REQUIRED", 422)
+		result, response = post(api.dispose, set_unit="9520000TFIVE999999", reason="x", client_ts=TS)
+		self.assert_reject(result, response, "SET_NOT_FOUND", 404)
+		with self.assertRaises(BadRequestError):
+			post(api.dispose, set_unit=["x"], reason="x", client_ts=TS)
+
+	def test_form_context_permissions_by_role(self):
+		unit = self.units(1)[0]
+		expected = {
+			self.r04: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_dispose"), False)
+			| {"can_verify": True},
+			self.r02: dict.fromkeys(
+				("can_issue", "can_print", "can_reprint", "can_verify", "can_dispose"), True
+			),
+			self.r10: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_verify"), True)
+			| {"can_dispose": False},
+			self.r01: dict.fromkeys(
+				("can_issue", "can_print", "can_reprint", "can_verify", "can_dispose"), False
+			),
+		}
+		for user, permissions in expected.items():
+			frappe.set_user(user)
+			result, _response = get(api.form_context, set_unit=unit)
+			self.assertTrue(result["ok"], msg=user)
+			self.assertEqual(result["permissions"], permissions, msg=user)
+			self.assertEqual(result["summary"]["set_id"], unit)
+			self.assertEqual(
+				result["limits"],
+				{"max_batch": 100, "reason_max": 500, "max_cycles_limit": 99999},
+			)
+			self.assertEqual([k["kind"] for k in result["kinds"]], ["tag", "tray"])
+			hint = [p["name"] for p in result["printers_hint"]]
+			if permissions["can_print"]:
+				self.assertIn(self.printer, hint)
+			else:
+				self.assertEqual(hint, [])
+		frappe.set_user(self.r02)
+		result, _response = get(api.form_context)
+		self.assertIsNone(result["summary"])  # form "Cấp Set ID" chưa có bộ
+		frappe.set_user(make_user("t6-nobody@example.com"))
+		with self.assertRaises(frappe.PermissionError):
+			get(api.form_context, set_unit=unit)
+		with self.assertRaises(frappe.PermissionError):
+			get(api.history, set_unit=unit)
+
+	def test_history_unknown_set_404_with_audit_commit(self):
+		for fn in (api.history, api.form_context):
+			result, response = get(fn, set_unit="9520000TFIVE999999")
+			self.assert_reject(result, response, "SET_NOT_FOUND", 404)
+			self.assertTrue(response["_commit"])  # GET: dòng Audit Reject phải được commit
+
+		unit = self.units(1)[0]
+		set_units.dispose(unit, "Issued by mistake")
+		result, response = get(api.history, set_unit=unit, limit="1")
+		self.assertTrue(result["ok"])
+		self.assertEqual([e["event"] for e in result["events"]], ["dispose"])
+		self.assertEqual(result["events"][0]["reason"], "Issued by mistake")
+		self.assertFalse(response["_commit"])  # đọc thành công không ghi gì
+		older, _response = get(api.history, set_unit=unit, before=result["next_before"], limit=50)
+		self.assertEqual([e["event"] for e in older["events"]], ["issue"])
+		self.assertIsNone(older["next_before"])
+		for bad in ({"limit": "0"}, {"limit": "abc"}, {"limit": 201}, {"limit": True}, {"before": "nope"}):
+			with self.assertRaises(BadRequestError, msg=repr(bad)):
+				get(api.history, set_unit=unit, **bad)
+		with self.assertRaises(BadRequestError):
+			get(api.history, set_unit=None)

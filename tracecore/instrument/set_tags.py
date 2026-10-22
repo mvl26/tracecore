@@ -173,7 +173,7 @@ def print_counts(set_unit: str) -> dict[str, dict]:
 	return _counts_for([set_unit])[set_unit]
 
 
-def _not_found_block(set_unit) -> Block:
+def not_found_block(set_unit) -> Block:
 	return Block(
 		"SET_NOT_FOUND",
 		_("Set not found"),
@@ -195,7 +195,7 @@ def check_printable(set_unit: str) -> Block | None:
 		else None
 	)
 	if not unit:
-		return _not_found_block(set_unit)
+		return not_found_block(set_unit)
 	if unit.status == "Disposed":
 		return Block(
 			"SET_DISPOSED",
@@ -437,7 +437,7 @@ def cancel_pending(set_unit: str, kind: str | None, reason: str) -> list[str]:
 	if kind is not None:
 		label_object(kind)
 	if not isinstance(set_unit, str) or not set_unit or not frappe.db.exists(REF_DOCTYPE, set_unit):
-		raise BlockedError(_not_found_block(set_unit))
+		raise BlockedError(not_found_block(set_unit))
 	reason = reason.strip() if isinstance(reason, str) else ""
 	if not reason or len(reason) > REASON_MAX:
 		raise BlockedError(
@@ -491,7 +491,7 @@ def verify(set_unit: str, raw: str) -> dict:
 	``SCAN_INVALID``; Set ID khác → ``TAG_MISMATCH`` (``items = [{expected, scanned}]``).
 	"""
 	if not isinstance(set_unit, str) or not set_unit or not frappe.db.exists(REF_DOCTYPE, set_unit):
-		raise BlockedError(_not_found_block(set_unit))
+		raise BlockedError(not_found_block(set_unit))
 	scanned = gs1.parse_scan(raw) if isinstance(raw, str) else {"type": "unknown", "id": None, "raw": ""}
 	if scanned["type"] != "set":
 		raise BlockedError(
