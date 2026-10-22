@@ -1278,3 +1278,32 @@ file_url must be the URL of an uploaded Excel file.,file_url phải là URL củ
 warehouse must be text.,warehouse phải là chuỗi văn bản.,
 Only Excel .xlsx files are accepted. Save the workbook as .xlsx and upload it again.,Chỉ nhận file Excel .xlsx. Lưu bảng tính dạng .xlsx rồi tải lên lại.,
 The file is larger than {0} MB. Split it into smaller files.,File lớn hơn {0} MB. Tách thành các file nhỏ hơn.,
+Label,Nhãn,Item
+Test,Thử nghiệm,Item
+Chemical,Hóa chất,Item
+Expiry Date,Hạn dùng,Stock Entry Detail
+Expired,Hết hạn,Stock Entry Detail
+Required for this group,Bắt buộc với nhóm này,
+Excel row,Dòng Excel,
+Problem,Vấn đề,
+"Warning",Cảnh báo,Stock Entry
+{0} row(s) are received with a warning. They are not blocked.,{0} dòng được nhập kèm cảnh báo. Các dòng này không bị chặn.,
+Import receipts from Excel,Nhập kho từ Excel,
+Download template,Tải mẫu,
+Default warehouse,Kho mặc định,
+Used for rows whose warehouse cell is empty.,Dùng cho các dòng để trống ô kho.,
+Choose Excel file,Chọn file Excel,
+Post receipts,Ghi sổ nhập kho,
+Check file,Kiểm tra file,
+No file chosen.,Chưa chọn file.,
+Checking the file...,Đang kiểm tra file...,
+The file is valid,File hợp lệ,
+{0} row(s) will be saved in {1} receipt(s).,{0} dòng sẽ được ghi vào {1} phiếu nhập.,
+Choose Post receipts to save them.,Chọn Ghi sổ nhập kho để lưu.,
+Receipts saved,Đã ghi sổ phiếu nhập,
+{0} row(s) saved in {1} receipt(s).,Đã ghi {0} dòng vào {1} phiếu nhập.,
+Receive supplies,Nhập kho vật tư,
+Import from Excel,Nhập từ Excel,
+Draft,Nháp,Stock Entry
+Posted,Đã ghi sổ,Stock Entry
+Cancelled,Đã hủy,Stock Entry

@@ -58,6 +58,11 @@ PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 # DocType được Link tới từ form Item / phiếu nhập: các vai trò dưới đây đọc được để chọn trên Desk.
 LINK_TARGETS = ("Supplier", "Warehouse", "Item Group", "UOM", "Company", "Stock Entry Type")
 LINK_TARGET_ROLES = ("TC R09", "TC R06", "TC R10", "TC R02")
+# Form Stock Entry của ERPNext đọc Stock Settings khi mở (frappe.client.get_single_value / get_value): thiếu quyền đọc
+# thì form báo "Không được phép" ngay khi mở phiếu. Chỉ các vai trò mở được phiếu nhập (Task 5, ghi ở A-07).
+SETTINGS_TARGETS: dict[str, tuple[str, ...]] = {
+	"Stock Settings": ("TC R09", "TC R06", "TC R02", "TC R01"),
+}
 # Chỉ ba DocType này bị gỡ quyền xóa (V11); Serial and Batch Bundle giữ quyền xóa chuẩn của ERPNext.
 NO_DELETE_DOCTYPES = ("Item", "Batch", "Stock Entry")
 
@@ -77,6 +82,13 @@ def ensure_permissions() -> None:
 			continue
 		setup_custom_perms(doctype)
 		for role in LINK_TARGET_ROLES:
+			_ensure_rule(doctype, role, ("read",), only_add=True)
+		frappe.clear_cache(doctype=doctype)
+	for doctype, roles in SETTINGS_TARGETS.items():
+		if not frappe.db.exists("DocType", doctype):
+			continue
+		setup_custom_perms(doctype)
+		for role in roles:
 			_ensure_rule(doctype, role, ("read",), only_add=True)
 		frappe.clear_cache(doctype=doctype)
 

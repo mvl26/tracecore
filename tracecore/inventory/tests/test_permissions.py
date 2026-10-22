@@ -90,6 +90,14 @@ class TestInventoryPermissions(IsolatedTestCase):
 			for doctype in LINK_TARGETS:
 				self.assertTrue(frappe.has_permission(doctype, "read", user=user), msg=f"{role} {doctype}")
 
+	def test_stock_settings_readable_for_roles_that_open_stock_entry(self):
+		# form Stock Entry của ERPNext đọc Stock Settings khi mở; thiếu quyền thì Desk báo "Không được phép"
+		for role in ("TC R09", "TC R06", "TC R02", "TC R01"):
+			user = user_for(role)
+			self.assertTrue(frappe.has_permission("Stock Settings", "read", user=user), msg=role)
+			self.assertFalse(frappe.has_permission("Stock Settings", "write", user=user), msg=role)
+		self.assertFalse(frappe.has_permission("Stock Settings", "read", user=user_for("TC R04")))
+
 	def test_ensure_permissions_idempotent(self):
 		permissions.ensure_permissions()
 		before = frappe.db.count("Custom DocPerm")

@@ -63,9 +63,10 @@ app_include_js = ["tracecore.bundle.js"]
 page_js = {"station": "public/js/station_t4.js"}
 
 # include js in doctype views
-# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3)
-doctype_js = {"Item": "public/js/item.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
+# Stock Entry: phiếu nhập kho vật tư theo lô/hạn và nhập từ Excel (FEAT-041, SCR-24)
+doctype_js = {"Item": "public/js/item.js", "Stock Entry": "public/js/stock_entry.js"}
+doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
