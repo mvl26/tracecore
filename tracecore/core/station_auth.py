@@ -377,9 +377,29 @@ def create_pin_proof(token: str, pin: str, client_ts=None) -> dict:
 
 def consume_pin_proof(token: str, proof: str):
 	"""Atomically consume a proof bound to this current live session, employee and user."""
+	return _consume_proof(authenticate_session(token), proof)
+
+
+def consume_session_pin_proof(session: str, proof: str):
+	"""Như `consume_pin_proof` cho phiên `session` (tên Station Session) mà RPC trạm đã xác thực bằng token.
+
+	`station_session` (v1) không chuyển token xuống hàm RPC; nơi cần proof (FEAT-021 Q7) dùng tên phiên của request.
+	"""
+	exists = isinstance(session, str) and session and frappe.db.exists("Station Session", session)
+	doc = frappe.get_doc("Station Session", session) if exists else None
+	if not doc or not doc.is_open:
+		raise _block(
+			"PIN_PROOF_INVALID",
+			"PIN proof is invalid",
+			"The PIN proof expired or was already used.",
+			"Verify your PIN again.",
+		)
+	return _consume_proof(doc, proof)
+
+
+def _consume_proof(doc, proof):
 	from tracecore.core.account import require_pin_changed
 
-	doc = authenticate_session(token)
 	require_pin_changed(doc.employee)
 	stored = None
 	if isinstance(proof, str) and proof:
