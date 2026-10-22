@@ -52,6 +52,10 @@ elif method.endswith("ensure_e2e_users"):
     print(json.dumps({"user": "station-tr-003@tracecore.local", "t4_user": "station-tr-004@tracecore.local", "r10_user": "r10-e2e@tracecore.local", "otp_secret": os.environ["TC_FAKE_OTP"], "t4_otp_secret": os.environ["TC_FAKE_OTP"], "r10_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_desk_users"):
     print(json.dumps({"codes_user": "r10-codes-e2e@tracecore.local", "codes_otp_secret": os.environ["TC_FAKE_OTP"], "instr_user": "r02-instr-e2e@tracecore.local", "instr_otp_secret": os.environ["TC_FAKE_OTP"], "inv_user": "r09-inv-e2e@tracecore.local", "inv_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t2_e2e_user"):
+    print(json.dumps({"t2_user": "station-tr-002@tracecore.local", "t2_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t2_demo"):
+    print(json.dumps({"machine": "TB-0001", "sets": ["S-1", "S-2", "S-3"]}))
 elif method.endswith("station_user"):
     print(json.dumps("station-" + kwargs["station"].lower() + "@tracecore.local"))
 elif method.endswith("desk_user"):
@@ -85,6 +89,11 @@ else:
 			self.assertEqual(values["TC_E2E_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_T4_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_R10_OTP_SECRET"], env["TC_FAKE_OTP"])
+			# FEAT-021: user kiosk T2 có thẻ, OTP riêng và mã demo T2 (danh sách bộ nối bằng dấu phẩy)
+			self.assertEqual(values["TC_E2E_T2_CARD_ID"], "CARD-TR-002")
+			self.assertEqual(values["TC_E2E_T2_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T2_STATION"], "TR-002")
+			self.assertEqual(values["TC_E2E_T2_SETS"], "S-1,S-2,S-3")
 			for key in ("CODES", "INSTR", "INV"):
 				self.assertEqual(values[f"TC_E2E_{key}_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertNotIn(env["TC_FAKE_OTP"], result.stdout + result.stderr)
