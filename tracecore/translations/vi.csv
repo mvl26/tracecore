@@ -1409,3 +1409,67 @@ Employee {0} does not exist.,Nhân viên {0} không tồn tại.,
 "Use an active employee card, or ask R02 to check your station competency.","Dùng thẻ nhân viên đang hoạt động, hoặc nhờ R02 kiểm tra năng lực trạm của bạn.",
 Too many card attempts,Quét thẻ sai quá nhiều lần,
 Too many rejected card scans from this device.,Thiết bị này đã quét thẻ bị từ chối quá nhiều lần.,
+"A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).","Lô không đạt vẫn cần lập phiếu không phù hợp (NC); hệ thống sẽ tự tạo khi có tính năng sự cố (FEAT-030).","Wash Batch"
+"A recorded value is outside the program range; R02 should review it.","Có giá trị ghi nhận nằm ngoài dải của chương trình; R02 cần xem xét.","Wash Batch"
+"A set unit appears more than once in the wash batch.","Một bộ dụng cụ xuất hiện nhiều lần trong lô rửa.",
+"A wash batch cannot be cancelled.","Không hủy được lô rửa.",
+"A wash batch is changed only by the wash screen service.","Lô rửa chỉ được đổi bởi dịch vụ của màn rửa.",
+"A wash batch is created only when loading is completed on the wash screen.","Lô rửa chỉ được tạo khi hoàn thành nạp trên màn rửa.",
+"Added At","Thời điểm thêm","Wash Batch Set Unit"
+"Batch Cost","Chi phí lô","Wash Batch"
+"Batch Type","Loại lô rửa","Wash Batch"
+"Chemical lot has expired","Lô hóa chất đã hết hạn",
+"Chemical lot is not valid","Lô hóa chất không hợp lệ",
+"Chemicals","Hóa chất","Wash Batch"
+"Choose a lot of the chemical that the wash program uses.","Chọn lô của hóa chất mà chương trình rửa sử dụng.",
+"Choose another lot that is still valid.","Chọn lô khác còn hạn dùng.",
+"Cleaning Test","Test làm sạch","Wash Batch"
+"Code {0} is not a set ID.","Mã {0} không phải Set ID.",
+"Code {0} is not a washer QR code.","Mã {0} không phải mã QR máy rửa.",
+"Cycle Data","Dữ liệu chu trình","Wash Batch"
+"Cycle Result","Kết quả chu trình","Wash Batch"
+"Data Complete","Dữ liệu đầy đủ","Wash Batch"
+"Data Source","Nguồn dữ liệu","Wash Batch"
+"Employee who completed loading, taken from the card session.","Nhân viên hoàn thành nạp, lấy từ phiên đăng nhập thẻ.","Wash Batch"
+"Equipment {0} is a {1}, not a washer-disinfector or ultrasonic cleaner.","Thiết bị {0} là {1}, không phải máy rửa khử khuẩn hoặc máy rửa siêu âm.",
+"Equipment {0} is {1}.","Thiết bị {0} đang {1}.",
+"Follow-up","Theo dõi tiếp","Wash Batch"
+"Loaded By Scan","Nạp bằng quét mã","Wash Batch"
+"Loading Completed At","Hoàn thành nạp lúc","Wash Batch"
+"Lot","Lô","Wash Batch Chemical"
+"Lot {0} is not a lot of chemical {1}.","Lô {0} không phải lô của hóa chất {1}.",
+"Machine Data","Dữ liệu máy","Wash Batch"
+"Machine Files","Tệp từ máy","Wash Batch"
+"Machine Scanned At Unloading","Máy quét khi dỡ","Wash Batch"
+"Manual Data Confirmed At","Thời điểm xác nhận dữ liệu nhập tay","Wash Batch"
+"Manual Data Confirmed By","Người xác nhận dữ liệu nhập tay","Wash Batch"
+"Needs Review","Cần xem xét","Wash Batch"
+"Nonconformity Pending","Chờ lập NC","Wash Batch"
+"Not a washer","Không phải máy rửa",
+"Parameters, alerts and the result the machine reported: [{parameter_name, unit, value, outside_range}] plus alerts and reported_result.","Tham số, cảnh báo và kết quả máy báo: [{parameter_name, unit, value, outside_range}] cùng alerts và reported_result.","Wash Batch"
+"Photo of the printout or chart of the machine.","Ảnh bản in hoặc biểu đồ của máy.","Wash Batch"
+"Quantity used; filled by the consumption feature (FEAT-042).","Số lượng đã dùng; do tính năng tiêu hao (FEAT-042) điền.","Wash Batch Chemical"
+"R02 who confirmed a pass for a machine without connection or printout.","R02 xác nhận kết quả Đạt cho máy không kết nối và không có bản in.","Wash Batch"
+"Result Note","Ghi chú kết quả","Wash Batch"
+"Result Source","Nguồn kết quả","Wash Batch"
+"Reviewed At","Xem xét lúc","Wash Batch"
+"Reviewer","Người xem xét","Wash Batch"
+"Running","Đang chạy","Wash Batch"
+"Scan the QR code of a washer.","Quét mã QR của máy rửa.",
+"Scan the QR code on the washer.","Quét mã QR trên máy rửa.",
+"Scan the Set ID on the tray or tag.","Quét Set ID trên khay hoặc thẻ.",
+"Set Units","Bộ dụng cụ","Wash Batch"
+"Set already washed","Bộ đã được rửa",
+"Set is in another wash batch","Bộ đang ở lô rửa khác",
+"Set {0} has already passed the wash step in this cycle.","Bộ {0} đã qua bước rửa trong chu trình này.",
+"Set {0} is in wash batch {1}, which is still running.","Bộ {0} đang ở lô rửa {1}, lô này còn đang chạy.",
+"Sets and Chemicals","Bộ và hóa chất","Wash Batch"
+"Take the set to the next step.","Chuyển bộ sang bước kế tiếp.",
+"Ultrasonic","Siêu âm","Wash Batch"
+"Unload Scanned At","Thời điểm quét dỡ","Wash Batch"
+"Unload batch {0} first, or take the set out of the washer.","Dỡ lô {0} trước, hoặc lấy bộ ra khỏi máy rửa.",
+"Use another washer, or call R02 to check the daily test and the inspection.","Dùng máy rửa khác, hoặc gọi R02 kiểm tra test hằng ngày và kiểm định.",
+"Wash Batch","Lô rửa",
+"Wash Batch Chemical","Hóa chất của lô rửa",
+"Wash Batch Set Unit","Bộ dụng cụ của lô rửa",
+"Washer is not ready","Máy rửa chưa sẵn sàng",
