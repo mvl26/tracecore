@@ -881,6 +881,22 @@ class TestLifecycleRpc(SetUnitRpcCase):
 		with self.assertRaises(frappe.PermissionError):
 			get(api.history, set_unit=unit)
 
+	def test_form_context_test_labels_flag(self):
+		"""Desk báo "nhãn có dòng TEST" (G3): theo tiền tố trong Set ID của bộ, hoặc tiền tố site khi chưa có bộ."""
+		unit = self.units(1)[0]
+		frappe.set_user(self.r02)
+		result, _response = get(api.form_context, set_unit=unit)
+		self.assertIs(result["test_labels"], gs1.is_demo_prefix(unit))
+		self.assertTrue(result["test_labels"])  # site test dùng dải demo 952
+		result, _response = get(api.form_context)
+		self.assertIs(result["test_labels"], True)
+		with patch.dict(frappe.conf, {"tc_gs1_company_prefix": REAL_PREFIX}):
+			result, _response = get(api.form_context)
+			self.assertIs(result["test_labels"], False)
+			# bộ đã cấp giữ tiền tố trong mã của nó
+			result, _response = get(api.form_context, set_unit=unit)
+			self.assertIs(result["test_labels"], True)
+
 	def test_history_unknown_set_404_with_audit_commit(self):
 		for fn in (api.history, api.form_context):
 			result, response = get(fn, set_unit="9520000TFIVE999999")

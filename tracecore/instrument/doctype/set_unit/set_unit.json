@@ -5,6 +5,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "tab_info",
+  "summary_html",
+  "section_identity",
   "set_id",
   "set_type",
   "department",
@@ -19,11 +22,30 @@
   "cycles_used",
   "max_cycles",
   "cycles_source",
+  "tab_details",
   "section_tag",
   "tag_verified_on",
-  "tag_verified_by"
+  "tag_verified_by",
+  "tag_html",
+  "tab_history",
+  "history_html"
  ],
  "fields": [
+  {
+   "fieldname": "tab_info",
+   "fieldtype": "Tab Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "summary_html",
+   "fieldtype": "HTML",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "section_identity",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
   {
    "fieldname": "set_id",
    "fieldtype": "Data",
@@ -127,6 +149,11 @@
    "set_only_once": 1
   },
   {
+   "fieldname": "tab_details",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
    "fieldname": "section_tag",
    "fieldtype": "Section Break",
    "label": "Tag"
@@ -143,11 +170,26 @@
    "label": "Tag Verified By",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "fieldname": "tag_html",
+   "fieldtype": "HTML",
+   "label": "Tag and Tray Label"
+  },
+  {
+   "fieldname": "tab_history",
+   "fieldtype": "Tab Break",
+   "label": "History"
+  },
+  {
+   "fieldname": "history_html",
+   "fieldtype": "HTML",
+   "label": "Lifecycle History"
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 12:00:00.000000",
+ "modified": "2026-10-22 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",

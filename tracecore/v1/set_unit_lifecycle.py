@@ -6,7 +6,7 @@ tra đường chấm bằng ``getattr`` trên module và so hàm với danh sác
 đường). Tách file để `set_unit.py` không vượt giới hạn độ dài; các tuple role của cả hai module đặt ở đây.
 
 - `form_context` (GET): tóm tắt bộ (`set_units.summary`), giới hạn nghiệp vụ cho JS (không chép hằng số), quyền theo
-  role, loại bản in, máy in gợi ý (đang hoạt động, có địa chỉ mạng).
+  role, loại bản in, máy in gợi ý (đang hoạt động, có địa chỉ mạng), cờ ``test_labels`` (nhãn in dòng TEST, Task 7).
 - `history` (GET): `set_units.history`, phân trang bằng ``next_before``.
 - `dispose` (POST, ``@idempotent``): TC R02 / System Manager, lý do bắt buộc (G14).
 """
@@ -14,7 +14,7 @@ tra đường chấm bằng ``getattr`` trên module và so hàm với danh sác
 import frappe
 from frappe import _
 
-from tracecore.core import print_server
+from tracecore.core import code_registry, gs1, print_server
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
@@ -93,6 +93,8 @@ def form_context(set_unit=None):
 			for kind, label in set_tags.KINDS.items()
 		],
 		"printers_hint": _printers_hint() if can_issue else [],
+		# thẻ/nhãn in thêm dòng TEST (G3): theo tiền tố trong Set ID của bộ, chưa có bộ thì theo tiền tố của site
+		"test_labels": gs1.is_demo_prefix(set_unit or code_registry.company_prefix()),
 	}
 
 

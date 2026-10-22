@@ -149,6 +149,47 @@ tracecore.codes.send = async function (method, request, args) {
 	};
 };
 
+// RPC chỉ đọc khai báo methods=["GET"] (FEAT-016: form_context, history, tag_preview, print_status…): tham số qua query
+// string, không khóa idempotent. Trả {ok: true, data} hoặc {ok: false, error: {title, reason, action}} như `send`.
+tracecore.codes.get = async function (method, args) {
+	const query = new URLSearchParams();
+	Object.entries(args || {}).forEach(([key, value]) => {
+		if (value !== undefined && value !== null) {
+			query.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
+		}
+	});
+	let response;
+	try {
+		response = await fetch(`/api/method/${method}?${query.toString()}`, {
+			method: "GET",
+			headers: { Accept: "application/json", "X-Frappe-CSRF-Token": frappe.csrf_token },
+		});
+	} catch (e) {
+		return tc_codes_unknown_outcome();
+	}
+	const body = await response.json().catch(() => null);
+	const result = (body && body.message) || {};
+	if (result.ok) {
+		return { ok: true, data: result };
+	}
+	if (result.error) {
+		return { ok: false, error: result.error };
+	}
+	if (body === null || TC_CODES_GATEWAY_STATUSES.includes(response.status)) {
+		return tc_codes_unknown_outcome(response.status);
+	}
+	return {
+		ok: false,
+		error: {
+			title: __("Request refused"),
+			reason:
+				tc_codes_server_message(body) ||
+				__("The server refused the request (HTTP {0}).", [response.status]),
+			action: __("Reload the page and try again."),
+		},
+	};
+};
+
 // Gọi nhanh: RPC ghi → request mới (khóa mới) cho lần gọi này; RPC chỉ đọc → không khóa.
 tracecore.codes.post = function (method, args, write = true) {
 	return write
