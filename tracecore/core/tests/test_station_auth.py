@@ -61,7 +61,28 @@ class TestStationAuth(IsolatedTestCase):
 		self.competency.save(ignore_permissions=True)
 		with self.assertRaises(BlockedError) as caught:
 			station_auth.login("NV-AUTH-001", "TR-004")
-		self.assertEqual(caught.exception.block.code, "COMPETENCY_REQUIRED")
+		# Public code and text must not reveal that the card itself exists; the audit keeps the cause.
+		self.assertEqual(caught.exception.block.code, "CARD_INVALID")
+		with self.assertRaises(BlockedError) as unknown:
+			station_auth.login("NV-NO-SUCH-CARD", "TR-004")
+		self.assertEqual(unknown.exception.block.as_dict(), caught.exception.block.as_dict())
+		reasons = frappe.get_all(
+			"Audit Log", filters={"ref_name": self.employee.name, "action": "Reject"}, pluck="new_value"
+		)
+		self.assertTrue(any("COMPETENCY_REQUIRED" in (value or "") for value in reasons))
+
+	def test_rejected_card_scans_are_throttled_per_client(self):
+		self.addCleanup(station_auth.clear_login_throttle)
+		station_auth.clear_login_throttle()
+		with patch.object(station_auth, "LOGIN_FAILURE_LIMIT", 3):
+			for _ in range(3):
+				with self.assertRaises(BlockedError) as caught:
+					station_auth.login("NV-NO-SUCH-CARD", "TR-004")
+				self.assertEqual(caught.exception.block.code, "CARD_INVALID")
+			with self.assertRaises(BlockedError) as throttled:
+				station_auth.login("NV-AUTH-001", "TR-004")
+		self.assertEqual(throttled.exception.block.code, "LOGIN_THROTTLED")
+		self.assertEqual(throttled.exception.block.http_status, 429)
 
 	def test_second_login_closes_previous_session(self):
 		first = station_auth.login("NV-AUTH-001", "TR-004")
