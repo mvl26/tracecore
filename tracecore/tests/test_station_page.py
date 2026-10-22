@@ -160,6 +160,14 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("public/js/station_t4.js", frappe.get_hooks("page_js").get("station", []))
 		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t4.js")))
 
+	def test_station_page_includes_t6_script(self):
+		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
+		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))
+		path = os.path.join(APP_PATH, "public", "js", "station_t6.js")
+		self.assertTrue(os.path.exists(path))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn("T6Storage", handle.read())
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()
