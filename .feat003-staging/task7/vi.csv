@@ -1,0 +1,904 @@
+Invalid code,Mã không hợp lệ,
+An active station is required for demo data.,Cần trạm đang hoạt động để tạo dữ liệu demo.,
+An enabled user is required for demo data.,Cần người dùng đang hoạt động để tạo dữ liệu demo.,
+Complete company setup before creating demo employees.,Hoàn tất thiết lập công ty trước khi tạo nhân viên demo.,
+Only Administrator can prepare demo accounts.,Chỉ Administrator được chuẩn bị tài khoản demo.,
+Code {0} was not issued by TraceCore.,Mã {0} không do TraceCore cấp.,
+Rescan the set tag or call R02.,Quét lại thẻ bộ hoặc gọi R02.,
+Not a set code,Không phải mã bộ,
+Code {0} is not a Set ID.,Mã {0} không phải Set ID.,
+Scan the Set ID on the set tag.,Quét Set ID trên thẻ bộ.,
+Set not found,Không tìm thấy bộ,
+Set ID {0} does not exist in TraceCore.,Set ID {0} chưa có trong TraceCore.,
+Check the set tag or call R02.,Kiểm tra thẻ bộ hoặc gọi R02.,
+Station not configured,Chưa cấu hình trạm,
+Station {0} does not exist.,Không có trạm {0}.,
+Check the kiosk address or call R10.,Kiểm tra địa chỉ kiosk hoặc gọi R10.,
+Offline - transactions are kept on this device,Đang ngoại tuyến — giao dịch được lưu cục bộ,
+Station,Trạm,
+Scan Set ID,Quét Set ID,
+Scan Set ID...,Quét Set ID…,
+Scan,Quét,
+Dirty zone,Khu bẩn,
+Clean zone,Khu sạch,
+Sterile zone,Khu vô khuẩn,
+Linen station,Trạm đồ vải,
+Waste station,Trạm chất thải,
+T1 Receiving,T1 Tiếp nhận,
+T2 Washing,T2 Rửa,
+T3 Assembly,T3 Lắp ráp,
+T4 Packing,T4 Đóng gói,
+T5 Sterilization,T5 Tiệt khuẩn,
+T6 Sterile storage,T6 Kho vô khuẩn,
+T7 Issuing,T7 Cấp phát,
+Ask R02 (zone supervisor) at this station for help.,Gọi R02 (giám sát khu) tại trạm để được hỗ trợ.,
+The kiosk address has no station code (?station=TR-...).,Địa chỉ kiosk thiếu mã trạm (?station=TR-...).,
+This account cannot read set records.,Tài khoản này không được xem bộ dụng cụ.,
+Log in with the station account or call R10.,Đăng nhập bằng tài khoản trạm hoặc gọi R10.,
+Server error,Lỗi máy chủ,
+The server could not process the request ({0}).,Máy chủ không xử lý được yêu cầu ({0}).,
+"Retry, or call R02 if it happens again.","Thử lại, nếu vẫn lỗi thì gọi R02.",
+Retry,Thử lại,
+Switch to offline,Chuyển offline,
+Call R02,Gọi R02,
+Station offline,Ngoại tuyến,
+Set lookup needs the server. Scanning resumes when the connection returns.,Tra cứu bộ cần máy chủ. Quét lại khi có kết nối.,
+Loaner,Bộ mượn,
+{0}/{1} cycles ({2}%),{0}/{1} chu trình ({2}%),
+A station must belong to a zone.,Trạm phải thuộc một khu.,
+Zone Type is required for a zone.,Khu phải có loại khu.,
+Type Code must be 2-8 uppercase letters or digits.,Mã loại bộ phải gồm 2–8 chữ in hoa hoặc chữ số.,
+An issued code cannot be changed.,Mã đã cấp không được sửa.,
+An issued code cannot be deleted; disable it instead.,Mã đã cấp không được xóa; hãy vô hiệu mã.,
+Code {0} has already been issued.,Mã {0} đã được cấp.,
+Audit Log entries cannot be deleted.,Không được xóa nhật ký thao tác.,
+Audit Log entries cannot be modified.,Không được sửa nhật ký thao tác.,
+{0} {1} cannot be deleted.,Không được xóa {0} {1}.,
+Set ID is issued by the system and cannot be changed.,Set ID do hệ thống cấp và không được sửa.,
+Set Type {0} not found.,Không tìm thấy loại bộ {0}.,
+Max Cycles must be greater than zero.,Số chu trình tối đa phải lớn hơn 0.,
+Status and cycle fields are changed only by the step gate: {0},Trạng thái và số chu trình chỉ do cổng kiểm soát bước thay đổi: {0},
+Missing or invalid X-Idempotency-Key header.,Thiếu hoặc sai header X-Idempotency-Key.,
+X-Idempotency-Key {0} was already used for a different request.,X-Idempotency-Key {0} đã dùng cho một yêu cầu khác.,
+client_ts is required (ISO 8601 with offset).,Thiếu client_ts (ISO 8601 có múi giờ).,
+client_ts must be ISO 8601 with a UTC offset: {0},client_ts phải theo ISO 8601 có múi giờ: {0},
+"The station clock differs from the server clock by {0} minutes. Call R10 to check the station time (NTP), then try again.","Đồng hồ của trạm lệch đồng hồ máy chủ {0} phút. Gọi R10 kiểm tra giờ của trạm (NTP), rồi thử lại.",
+This method requires the role {0}.,Thao tác này cần vai trò {0}.,
+This agent is not registered for station {0}.,Agent này không được đăng ký cho trạm {0}.,
+Invalid print status: {0},Trạng thái in không hợp lệ: {0},
+Invalid print output mode: {0},Nơi xuất bản in không hợp lệ: {0},
+No station role is defined for zone type {0}.,Chưa định nghĩa vai trò trạm cho loại khu {0}.,
+Set Unit,Bộ dụng cụ,
+Instrument Set Type,Loại bộ dụng cụ,
+Zone Station,Khu – trạm,
+Code Registry,Sổ đăng ký mã,
+Audit Log,Nhật ký thao tác,
+Idempotency Key,Khóa chống trùng,
+Print Job,Lệnh in,
+Set ID,Set ID,
+Set Type,Loại bộ,
+Set Type Name,Tên loại bộ,
+Type Code,Mã loại bộ,
+Sterilization Method,Phương pháp tiệt khuẩn,
+Steam,Hấp hơi nước,
+Plasma,Plasma H2O2,
+Department,Khoa,Set Unit
+Is Loaner,Bộ mượn,
+Status,Trạng thái,
+New,Mới tạo,Set Unit
+In Circulation,Đang lưu hành,
+Processing,Đang xử lý,Set Unit
+Reprocess,Xử lý lại,
+Sterile,Vô khuẩn,
+At Department,Tại khoa,
+End of Life,Hết vòng đời,Set Unit
+Disposed,Thanh lý,
+Current Station,Trạm hiện tại,
+Active Cycle ID,Cycle ID hiện hành,
+Cycles,Chu trình,
+Cycles Used,Số chu trình đã dùng,
+Max Cycles,Số chu trình tối đa,
+Name,Tên,
+Is Zone,Là khu,
+Zone Type,Loại khu,
+Dirty,Bẩn,
+Clean,Sạch,
+Linen,Đồ vải,
+Waste,Chất thải,
+Parent Zone,Khu cha,
+Station Step,Bước của trạm,
+T1,T1,
+T2,T2,
+T3,T3,
+T4,T4,
+T5,T5,
+T5b,T5b,
+T6,T6,
+T7,T7,
+T8,T8,
+Code,Mã,Code Registry
+Prefix,Tiền tố,
+Reference DocType,Loại chứng từ tham chiếu,Audit Log
+Reference DocType,Loại chứng từ tham chiếu,Code Registry
+Reference Name,Mã tham chiếu,Audit Log
+Reference Name,Mã tham chiếu,Code Registry
+Issued On,Ngày cấp,
+Issued At Station,Trạm cấp,
+Active,Đang hiệu lực,Code Registry
+Disabled,Đã vô hiệu,Code Registry
+Disabled On,Ngày vô hiệu,
+Disabled Reason,Lý do vô hiệu,
+Timestamp,Thời điểm,Audit Log
+User,Người dùng,
+Device,Thiết bị,
+Action,Hành động,Audit Log
+Create,Tạo,
+Update,Cập nhật,
+Submit,Ghi sổ,Audit Log
+Cancel,Hủy,Audit Log
+Delete,Xóa,Audit Log
+Login,Đăng nhập,
+Reject,Từ chối,
+Override,Ghi đè,
+View Patient Code,Xem mã BN,
+Sync,Đồng bộ,Audit Log
+Values,Giá trị,
+Old Value,Giá trị cũ,
+New Value,Giá trị mới,
+Context,Ngữ cảnh,Audit Log
+Reason,Lý do,Audit Log
+Request ID,Mã yêu cầu,Audit Log
+Client Time (UTC),Giờ thiết bị (UTC),
+Key,Khóa,Idempotency Key
+Endpoint,Endpoint,Idempotency Key
+Created At,Thời điểm tạo,Idempotency Key
+Request Hash,Mã băm yêu cầu,
+Response,Phản hồi,
+Printer,Máy in,
+Template,Mẫu nhãn,Print Job
+Queued,Chờ in,Print Job
+Printed,Đã in,
+Failed,Thất bại,
+Output Mode,Nơi xuất,
+File,Tệp,Print Job
+Output Reference,Tham chiếu đầu ra,
+Attempts,Số lần thử,
+Printed At,Thời điểm in,
+Error,Lỗi,
+Reprint Reason,Lý do in lại,
+Payload,Nội dung lệnh in,
+ZPL,ZPL,
+Data,Dữ liệu,
+CSSD Item Group,Nhóm vật tư CSSD,
+Compatible Method,Phương pháp tương thích,
+Chemical Indicator Class,Loại chỉ thị hóa học,
+Shelf Life (Days),Hạn lưu (ngày),
+Packaging,Bao gói,
+Chemical Indicator,Chỉ thị hóa học,
+Lubricant,Dầu bôi trơn,
+Instrument traceability and CSSD / infection control management on Frappe v15,Truy xuất dụng cụ và quản lý khoa KSNK/CSSD trên Frappe v15,
+Demo data can only be created on a developer or test site.,Chỉ tạo được dữ liệu demo trên site dev hoặc site test.,
+Instrument,Dụng cụ,
+Set BOM Item,Dòng BOM của loại bộ,
+Instrument Maintenance,Bảo dưỡng dụng cụ,
+Department,Khoa,Instrument Set Type
+Packing,Đóng gói,Instrument Set Type
+GTIN-14,GTIN-14,
+Default Pack Type,Loại gói mặc định,
+Shelf Life Override (Days),Hạn lưu riêng của loại bộ (ngày),
+Tray Image,Ảnh bộ đã xếp,
+Current BOM Version,Phiên bản BOM hiện hành,
+Instrument Code,Mã dụng cụ,
+Instrument Name,Tên dụng cụ,
+Maintenance,Bảo dưỡng,Instrument
+Maintenance Interval (Cycles),Chu kỳ bảo dưỡng (chu trình),
+Maintenance Type,Loại bảo dưỡng,Instrument
+Lubrication,Tra dầu,Instrument
+Blade Check,Kiểm tra lưỡi,Instrument
+Screw Tightening,Siết vít,Instrument
+Battery Replacement,Thay pin,Instrument
+BOM Version,Phiên bản BOM,
+Effective From,Có hiệu lực từ,Set BOM Item
+Counters,Bộ đếm,Instrument Maintenance
+Cycles Since Maintenance,Số chu trình từ lần bảo dưỡng,
+Deferred Count,Số lần hoãn,
+Last Maintenance,Bảo dưỡng gần nhất,
+Last Maintained On,Thời điểm bảo dưỡng gần nhất,
+Last Maintained By,Người bảo dưỡng gần nhất,
+Last Lubricant Batch,Lô dầu bôi trơn gần nhất,
+Last Deferral,Hoãn gần nhất,
+Last Deferred On,Thời điểm hoãn gần nhất,
+Last Deferral Reason,Lý do hoãn gần nhất,
+Current Cycle No,Số thứ tự chu trình hiện hành,
+GTIN-14 must be 14 digits with a valid check digit.,GTIN-14 phải gồm 14 chữ số và đúng chữ số kiểm tra.,
+GTIN-14 {0} is already used by Set Type {1}.,GTIN-14 {0} đã được loại bộ {1} sử dụng.,
+"Instrument Code may contain only uppercase letters, digits and hyphens.","Mã dụng cụ chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
+Quantity must be at least 1.,Số lượng phải từ 1 trở lên.,
+Step Gate Result,Kết quả cổng bước,
+Assembly Record,Phiếu lắp ráp,
+Cycle No,Số thứ tự chu trình,
+Step,Bước,Step Gate Result
+Pending,Chưa,Step Gate Result
+Pass,Đạt,Step Gate Result
+Pass,Đạt,Assembly Record
+Fail,Không đạt,Step Gate Result
+Fail,Không đạt,Assembly Record
+Redo Count,Số lần xử lý lại,
+Source,Nguồn kết quả,Step Gate Result
+Reference DocType,Loại chứng từ tham chiếu,Step Gate Result
+Reference Name,Mã tham chiếu,Step Gate Result
+Recorded By,Người ghi,
+Recorded At,Thời điểm ghi,
+Notes,Ghi chú,Assembly Record
+Unknown step {0}.,Bước {0} không tồn tại.,
+Set Unit {0} not found.,Không tìm thấy bộ {0}.,
+No cycle has been started for Set Unit {0}.,Bộ {0} chưa bắt đầu chu trình nào.,
+Set status does not match this station,Trạng thái bộ không phù hợp với trạm này,
+Set {0} is {1}; station {2} accepts only sets that are {3}.,Bộ {0} đang ở trạng thái {1}; trạm {2} chỉ nhận bộ ở trạng thái {3}.,
+"Check the set status, then take the set to the station that matches it.","Kiểm tra trạng thái bộ, rồi đưa bộ tới đúng trạm tương ứng.",
+Previous step has not passed,Bước liền trước chưa đạt,
+Step {0} has not passed in cycle {1}.,Bước {0} chưa đạt trong chu trình {1}.,
+Send the set back to step {0} and complete it before continuing.,Đưa bộ quay lại bước {0} và hoàn thành bước đó trước khi tiếp tục.,
+Invalid gate result: {0},Kết quả cổng không hợp lệ: {0},
+Cycle ID is required.,Cần có Cycle ID.,
+Set Unit {0} is no longer in cycle {1}; create a new Assembly Record.,Bộ {0} không còn ở chu trình {1}; hãy lập phiếu lắp ráp mới.,
+Assembly Record cannot be cancelled in this version.,Phiên bản này chưa hỗ trợ hủy phiếu lắp ráp.,
+Label Template,Mẫu nhãn,
+Connection,Kết nối,Printer
+DPI,DPI,
+Height (mm),Chiều cao (mm),Label Template
+Width (mm),Chiều rộng (mm),Label Template
+Label Object,Đối tượng nhãn,Label Template
+Label Size,Kích thước nhãn,Label Template
+Pack,Gói,Label Template
+Template Body,Nội dung mẫu,Label Template
+Label Roll,Cuộn nhãn,Printer
+Label Type Loaded,Loại nhãn đang lắp,Printer
+Printer Language,Ngôn ngữ máy in,
+Roll Code,Mã cuộn nhãn,Printer
+Roll Loaded By,Người lắp cuộn,Printer
+Roll Loaded On,Thời điểm lắp cuộn,Printer
+Supports Unicode,Hỗ trợ Unicode,Printer
+Waiting,Chờ máy in,Print Job
+Printer command language; the label template must use the same language.,Ngôn ngữ lệnh của máy in; mẫu nhãn phải cùng ngôn ngữ.,
+Tick only when the printer prints Vietnamese diacritics (Unicode font loaded); otherwise labels are printed without diacritics.,"Chỉ tick khi máy in in được tiếng Việt có dấu (đã nạp phông Unicode); nếu không, nhãn được in không dấu.",
+Leave empty when the Station Agent writes a file instead of printing.,Để trống khi Station Agent ghi tệp thay vì in.,
+Label item currently loaded; set by changing the roll at the station.,Vật tư nhãn đang lắp; đổi khi thay cuộn tại trạm.,
+"Only one template can be active for each label object, method and language.","Mỗi đối tượng nhãn, phương pháp và ngôn ngữ chỉ có một mẫu hiệu lực.",
+"Jinja template in the printer language. Variables: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module).","Mẫu Jinja theo ngôn ngữ máy in. Biến: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri), width_dots, height_dots, dpi. Hàm: text(giá trị) chỉ in dấu trên máy in hỗ trợ Unicode; datamatrix(payload, x, y, module).",
+Waiting: the label is kept until a printer with the right label roll is ready.,Chờ máy in: nhãn được giữ lại cho tới khi có máy in lắp đúng cuộn nhãn.,
+A queued print job needs label content.,Lệnh in đang chờ in phải có nội dung nhãn.,
+DPI must be greater than zero.,DPI phải lớn hơn 0.,
+"Label width, height and DPI must be greater than zero.","Chiều rộng, chiều cao và DPI của nhãn phải lớn hơn 0.",
+Port must be between 1 and 65535.,Cổng phải nằm trong khoảng 1–65535.,
+Printer language {0} is not supported.,Chưa hỗ trợ ngôn ngữ máy in {0}.,
+Label roll not found,Không tìm thấy cuộn nhãn,
+Roll code {0} has not been issued or has been disabled.,Mã cuộn {0} chưa được cấp hoặc đã bị vô hiệu.,
+Rescan the code on the label roll or call R02.,Quét lại mã trên cuộn nhãn hoặc gọi R02.,
+Not a label roll,Không phải cuộn nhãn,
+Roll code {0} does not belong to a label item with a compatible method.,Mã cuộn {0} không thuộc vật tư nhãn có phương pháp tương thích.,
+Scan the code on a label roll or call R02.,Quét mã trên cuộn nhãn hoặc gọi R02.,
+Template {3} is already active for {0} / {1} / {2}. Deactivate it first.,Mẫu {3} đang hiệu lực cho {0} / {1} / {2}. Hãy tắt mẫu đó trước.,
+The label data cannot be encoded as DataMatrix: {0},Dữ liệu nhãn không mã hóa được thành DataMatrix: {0},
+The label template could not be rendered: {0},Không dựng được nhãn từ mẫu: {0},
+The rendered label is not valid {0}: it must start with ^XA and end with ^XZ.,Nhãn dựng ra không phải lệnh {0} hợp lệ: phải bắt đầu bằng ^XA và kết thúc bằng ^XZ.,
+The roll is changed only by scanning the label roll at the station: {0},Cuộn nhãn chỉ đổi khi quét cuộn nhãn tại trạm: {0},
+The template body has a syntax error on line {0}: {1},Nội dung mẫu có lỗi cú pháp ở dòng {0}: {1},
+"{0} is a zone, not a station. Choose a station.","{0} là khu, không phải trạm. Hãy chọn một trạm.",
+{0} is not a label item. Choose an Item of group Label that has a compatible method.,{0} không phải vật tư nhãn. Hãy chọn vật tư thuộc nhóm Nhãn có phương pháp tương thích.,
+The label has no DataMatrix payload.,Nhãn không có dữ liệu DataMatrix.,
+Label template {0} could not be rendered: {1},Không dựng được nhãn từ mẫu {0}: {1},
+Pack,Gói,
+Pack Instrument Confirmed,Dụng cụ đã xác nhận trong gói,
+Pack Maintenance Done,Bảo dưỡng đã xử lý khi đóng gói,
+Pack Type,Loại gói,Pack
+Set Name,Tên bộ,Pack
+Chemical Indicator Lot,Lô chỉ thị hóa học,Pack
+Shelf Life Applied (Days),Hạn lưu áp dụng (ngày),Pack
+Shelf Life Source,Nguồn hạn lưu,Pack
+Packer,Người đóng gói,Pack
+Packed By (User),Tài khoản đóng gói,Pack
+Packed By (Employee),Nhân viên đóng gói,Pack
+Packed At,Thời điểm đóng gói,Pack
+Packing,Đóng gói,Pack
+Label Type,Loại nhãn,Pack
+Label Print Count,Số lần in nhãn,Pack
+Barcode Payload,Nội dung mã vạch,Pack
+Void Reason,Lý do hủy hiệu lực,Pack
+Void Note,Ghi chú hủy hiệu lực,Pack
+Confirmation,Xác nhận,Pack
+Instruments Confirmed,Dụng cụ đã xác nhận,Pack
+Maintenance Done,Bảo dưỡng đã xử lý,Pack
+Lubricant Lot,Lô dầu bôi trơn,Pack Maintenance Done
+Cycles At Action,Số chu trình khi xử lý,Pack Maintenance Done
+Packed,Đã đóng gói,Pack
+In Load,Trong mẻ,Pack
+Quarantine,Cách ly chờ BI,Pack
+Released,Đã giải phóng,Pack
+In Sterile Stock,Trong kho vô khuẩn,Pack
+Issued,Đã cấp phát,Pack
+Used,Đã sử dụng,Pack
+Recalled,Đã thu hồi,Pack
+Void,Đã hủy hiệu lực,Pack
+Expired,Hết hạn,Pack
+Torn,Rách bao,Pack
+Load Failed,Mẻ không đạt,Pack
+Returned Unused,Trả lại chưa dùng,Pack
+Label Damaged,Nhãn hỏng,Pack
+Done,Đã bảo dưỡng,Pack Maintenance Done
+Deferred,Hoãn,Pack Maintenance Done
+A Pack is named by its Cycle ID and can only be created by the packing service.,Gói được đặt tên theo Cycle ID và chỉ do dịch vụ đóng gói tạo.,
+A Pack cannot be cancelled; void it instead.,Không hủy chứng từ Gói được; hãy hủy hiệu lực gói.,
+Void Reason is required to void a pack.,Cần có lý do để hủy hiệu lực gói.,
+GTIN-14 of Set Type {0} cannot be changed because packs have already been issued for it.,Không sửa được GTIN-14 của loại bộ {0} vì đã có gói được cấp Cycle ID.,
+Pack type cannot be used,Không dùng được loại gói này,
+No pack type was chosen.,Chưa chọn loại gói.,
+{0} is not a packaging item.,{0} không phải vật tư bao gói.,
+Pack type {0} is disabled.,Loại gói {0} đã ngừng dùng.,
+"Pack type {0} has no shelf life, so the expiry date cannot be calculated.",Loại gói {0} chưa có hạn lưu nên không tính được hạn dùng.,
+"Choose another pack type, or ask R10 to set the shelf life of this one.","Chọn loại gói khác, hoặc nhờ R10 khai báo hạn lưu cho loại gói này.",
+Indicator lot is not valid,Lô chỉ thị không hợp lệ,
+No lot code was scanned.,Chưa quét mã lô.,
+Lot {0} does not exist.,Lô {0} không tồn tại.,
+Lot {0} is not a chemical indicator lot.,Lô {0} không phải lô chỉ thị hóa học.,
+Lot {0} is a class {1} indicator; only class 5 or 6 can be used.,Lô {0} là chỉ thị loại {1}; chỉ dùng được loại 5 hoặc 6.,
+The indicator item of lot {0} has no sterilization method set.,Vật tư chỉ thị của lô {0} chưa khai báo phương pháp tiệt khuẩn.,
+"Lot {0} is for {1} sterilization, not {2}.","Lô {0} dùng cho tiệt khuẩn {1}, không phải {2}.",
+Lot {0} has been disabled.,Lô {0} đã bị vô hiệu.,
+"Lot {0} has no expiry date, so it cannot be checked.",Lô {0} chưa có hạn dùng nên không kiểm tra được.,
+Scan the lot code on a chemical indicator of class 5 or 6 for this sterilization method.,Quét mã lô trên chỉ thị hóa học loại 5 hoặc 6 đúng phương pháp tiệt khuẩn của bộ.,
+Indicator lot has expired,Lô chỉ thị đã hết hạn,
+Lot {0} expired on {1}.,Lô {0} đã hết hạn ngày {1}.,
+Scan another indicator lot that is still valid.,Quét lô chỉ thị khác còn hạn.,
+Lubricant lot is required,Cần có lô dầu bôi trơn,
+Scan the lot code of the lubricant used on this instrument.,Quét mã lô dầu bôi trơn đã dùng cho dụng cụ này.,
+"Maintenance of {0} is lubrication, but no lubricant lot was entered.",Dụng cụ {0} bảo dưỡng bằng tra dầu nhưng chưa nhập lô dầu bôi trơn.,
+Lot {0} is not a lubricant lot.,Lô {0} không phải lô dầu bôi trơn.,
+Maintenance reminder needs an action,Nhắc bảo dưỡng cần được xử lý,
+Maintenance is due and has not been confirmed or deferred: {0}.,Đã đến hạn bảo dưỡng nhưng chưa xác nhận hoặc hoãn: {0}.,
+"For each reminder, confirm the maintenance as done, or defer it with a reason.",Với mỗi nhắc bảo dưỡng: xác nhận Đã bảo dưỡng hoặc Hoãn kèm lý do.,
+Maintenance is overdue,Đã quá hạn bảo dưỡng,
+Overdue for maintenance and cannot be deferred any more: {0}.,Đã quá hạn bảo dưỡng và không được hoãn thêm: {0}.,
+"Maintain the instrument, then confirm the maintenance as done.",Bảo dưỡng dụng cụ rồi xác nhận Đã bảo dưỡng.,
+Deferral reason is required,Cần có lý do hoãn,
+No reason was entered for deferring the maintenance of: {0}.,Chưa nhập lý do hoãn bảo dưỡng: {0}.,
+"Enter the reason for the deferral, or confirm the maintenance as done.","Nhập lý do hoãn, hoặc xác nhận Đã bảo dưỡng.",
+Set has reached its cycle limit,Bộ đã đạt cơ số chu trình,
+Set {0} has used {1} of {2} reprocessing cycles.,Bộ {0} đã dùng {1}/{2} chu trình tái xử lý.,
+Do not pack this set. The override request will be available from FEAT-032.,Không đóng gói bộ này. Đề nghị ghi đè có từ FEAT-032.,
+Wrong station,Sai trạm,
+{0} is not a {1} packing station.,{0} không phải trạm đóng gói {1}.,
+Open the packing screen on a T4 station.,Mở màn đóng gói trên trạm T4.,
+Set already has a Cycle ID,Bộ đã có Cycle ID,
+Set {0} already has Cycle ID {1} in this cycle.,Bộ {0} đã có Cycle ID {1} trong chu trình này.,
+"Reprint the label of {0} within 10 minutes, or void it before packing the set again.","In lại nhãn của {0} trong 10 phút, hoặc hủy Cycle ID đó rồi mới đóng gói lại bộ.",
+Set type has no GTIN,Loại bộ chưa có GTIN,
+"Set type {0} has no valid GTIN-14, so a Cycle ID cannot be issued.",Loại bộ {0} chưa có GTIN-14 hợp lệ nên không sinh được Cycle ID.,
+Ask R10 to enter the GTIN-14 of this set type.,Nhờ R10 nhập GTIN-14 cho loại bộ này.,
+Not all instruments are confirmed,Chưa xác nhận đủ dụng cụ,
+Instruments not confirmed yet: {0}.,Dụng cụ chưa xác nhận: {0}.,
+"Check each missing instrument in the tray and tick it, then confirm again.","Kiểm từng dụng cụ còn thiếu trong khay và tick, rồi xác nhận lại.",
+No printer has the right labels,Không có máy in lắp đúng loại nhãn,
+No active printer at station {0} has {1} labels loaded. Cycle ID {2} is kept; its label is waiting.,Không có máy in nào đang hoạt động tại trạm {0} lắp nhãn {1}. Cycle ID {2} vẫn được giữ; nhãn đang chờ in.,
+"Load a roll of {0} into a printer at this station, then scan the roll code (CN-#####) to print the waiting label.","Lắp cuộn {0} vào một máy in của trạm này, rồi quét mã cuộn (CN-#####) để in nhãn đang chờ.",
+No label template,Chưa có mẫu nhãn,
+There is no active {0} label template for {1} packs. Cycle ID {2} is kept; its label is waiting.,Chưa có mẫu nhãn {0} đang dùng cho gói {1}. Cycle ID {2} vẫn được giữ; nhãn đang chờ in.,
+"Ask R10 to activate a label template, then scan the roll code on the printer to print the waiting label.","Nhờ R10 bật mẫu nhãn, rồi quét mã cuộn trên máy in để in nhãn đang chờ.",
+Label could not be prepared,Không dựng được nhãn,
+{0} Cycle ID {1} is kept; its label is waiting.,{0} Cycle ID {1} vẫn được giữ; nhãn đang chờ in.,
+"Ask R10 to fix the label template, then scan the roll code on the printer to print the waiting label.","Nhờ R10 sửa mẫu nhãn, rồi quét mã cuộn trên máy in để in nhãn đang chờ.",
+Pack not found,Không tìm thấy gói,
+Cycle ID {0} does not exist in TraceCore.,Cycle ID {0} chưa có trong TraceCore.,
+Check the pack label or call R02.,Kiểm tra nhãn gói hoặc gọi R02.,
+Reason is required,Cần có lý do,
+No reason was entered for reprinting the label of {0}.,Chưa nhập lý do in lại nhãn của {0}.,
+Enter why the label must be printed again.,Nhập lý do cần in lại nhãn.,
+Label cannot be reprinted,Không in lại được nhãn,
+Pack {0} is {1}; only the label of a packed pack can be reprinted.,Gói {0} đang ở trạng thái {1}; chỉ in lại được nhãn của gói Đã đóng gói.,
+"Scan the label of a pack that is still packed, or call R02.","Quét nhãn của gói còn ở trạng thái Đã đóng gói, hoặc gọi R02.",
+Reprint window has passed,Đã quá thời gian in lại,
+Cycle ID {0} was issued {1} minutes ago; a label can be reprinted only within 10 minutes.,Cycle ID {0} đã sinh {1} phút trước; chỉ in lại được nhãn trong 10 phút.,
+Void the Cycle ID and pack the set again.,Hủy Cycle ID và đóng gói lại.,
+Void reason is required,Cần chọn lý do hủy,
+{0} is not a valid void reason.,{0} không phải lý do hủy hợp lệ.,
+No void reason was chosen.,Chưa chọn lý do hủy.,
+Choose why the Cycle ID is voided.,Chọn lý do hủy Cycle ID.,
+Pack cannot be voided,Không hủy được gói,
+Pack {0} is {1}; only a packed pack can be voided at T4.,Gói {0} đang ở trạng thái {1}; tại T4 chỉ hủy được gói Đã đóng gói.,
+"Check the pack status, or call R02.","Kiểm tra trạng thái gói, hoặc gọi R02.",
+Not a pack code,Không phải mã gói,
+Code {0} is not a pack label or Cycle ID.,Mã {0} không phải nhãn gói hay Cycle ID.,
+Scan the DataMatrix or the Cycle ID on the pack label.,Quét DataMatrix hoặc Cycle ID trên nhãn gói.,
+Code {0} has not been issued.,Mã {0} chưa được cấp.,
+"Pack status, void and print count fields are changed only by the packing service: {0}","Trạng thái gói, thông tin hủy và số lần in chỉ được đổi qua dịch vụ đóng gói: {0}",
+Set type has no BOM,Loại bộ chưa có BOM,
+Set type {0} has no BOM for version {1}.,Loại bộ {0} chưa có BOM cho phiên bản {1}.,
+Ask R02 to define the BOM of this set type.,Nhờ R02 khai báo BOM cho loại bộ này.,
+Not printed: Cycle ID {0} was voided ({1}).,Không in: Cycle ID {0} đã bị hủy ({1}).,
+This method requires one of the roles {0}.,Thao tác này cần một trong các vai trò {0}.,
+{0} is not a {1} station.,{0} không phải trạm {1}.,
+Open this screen on a {0} station.,Mở màn hình này trên trạm {0}.,
+Printer not identified,Chưa xác định được máy in,
+printer must be a printer name.,printer phải là tên máy in.,
+Printer {0} is not a printer of station {1}.,Máy in {0} không thuộc trạm {1}.,
+Choose a printer of this station.,Chọn một máy in của trạm này.,
+Station {0} has no active printer to load the roll into.,Trạm {0} không có máy in đang hoạt động để nạp cuộn.,
+Ask R10 to set up a printer for this station.,Nhờ R10 khai báo máy in cho trạm này.,
+"Station {0} has {1} active printers, so it is not clear which one got the roll.",Trạm {0} có {1} máy in đang hoạt động nên chưa rõ cuộn được nạp vào máy nào.,
+Ask R10 to choose the printer for this roll.,Nhờ R10 chọn máy in cho cuộn này.,
+confirmed_lines must be a list of instrument codes.,confirmed_lines phải là danh sách mã dụng cụ.,
+maint_actions must be a list of objects with an instrument and an action (Done or Deferred).,maint_actions phải là danh sách đối tượng có instrument và action (Done hoặc Deferred).,
+"Code {0} is not a TraceCore code, and no set is open to take it as an indicator lot.",Mã {0} không phải mã của TraceCore và chưa mở bộ nào để nhận làm lô chỉ thị.,
+"Scan the Set ID on the set tag first, or call R02.","Quét Set ID trên thẻ bộ trước, hoặc gọi R02.",
+"Code {0} is not a set, pack, label roll or indicator lot.","Mã {0} không phải bộ, gói, cuộn nhãn hay lô chỉ thị.",
+"Scan the Set ID, the Cycle ID, the label roll code or the indicator lot.","Quét Set ID, Cycle ID, mã cuộn nhãn hoặc lô chỉ thị.",
+Demo general surgery set,Bộ phẫu thuật tổng quát (demo),
+Demo crepe paper,Giấy crepe (demo),
+Demo straight forceps,Kẹp phẫu tích thẳng (demo),
+Demo surgical scissors,Kéo phẫu thuật (demo),
+Demo scalpel handle,Cán dao mổ (demo),
+Demo kidney dish,Khay quả đậu (demo),
+Demo laparoscopic set,Bộ phẫu thuật nội soi ổ bụng (demo),
+Demo Tyvek pouch,Túi Tyvek (demo),
+Demo laparoscopic grasper,Kẹp nội soi (demo),
+Demo laparoscopic scissors,Kéo nội soi (demo),
+Demo trocar,Trocar (demo),
+Arranged set photo,Ảnh bộ đã sắp xếp,
+Available from FEAT-032,Có từ FEAT-032,
+"Check the Station Agent, then reprint.",Kiểm tra Station Agent rồi In lại.,
+Close to the cycle limit,Sắp hết cơ số,
+Confirm all components,Xác nhận tất cả thành phần,
+Confirm maintenance done,Xác nhận đã bảo dưỡng,
+Confirm packing complete,Xác nhận hoàn thành đóng gói,
+Confirmed {0}/{1} lines,Đã xác nhận {0}/{1} dòng,
+Cycle ID generated,Đã sinh Cycle ID,
+Defer,Hoãn,
+Defer (reason),Hoãn (lý do),
+Defer maintenance,Hoãn bảo dưỡng,
+Deferred · reason: {0},Đã hoãn · lý do: {0},
+Department: {0},Khoa: {0},
+Due,Đến hạn,
+EXPIRY DATE / EXP: {0},HẠN SỬ DỤNG / EXP: {0},
+Expected expiry date,Hạn dùng dự kiến,
+Expiry: {0},Hạn: {0},
+Indicator Lot,Lô chỉ thị,
+Indicator: lot {0} · BOM v{1},Chỉ thị: lô {0} · BOM v{1},
+LOANER,MƯỢN/LOANER,
+Label and printer,Nhãn và máy in,
+Label is waiting for a printer,Nhãn đang chờ máy in,
+Label preview,Xem trước nhãn,
+Label roll to load: {0},Cần nạp cuộn nhãn: {0},
+Label sent to printer {0}.,Đã gửi nhãn tới máy in {0}.,
+Label type,Loại nhãn,
+Labels Printed,Số lần in nhãn,
+Loaded roll {0} into printer {1}.,Đã nạp cuộn {0} vào máy in {1}.,
+Loading instrument photos...,Đang tải ảnh dụng cụ…,
+Lubricant lot,Lô dầu tra,
+Maintenance done,Đã bảo dưỡng,
+Maintenance done · lubricant lot {0},Đã bảo dưỡng · lô dầu {0},
+Maintenance reminders ({0}),Nhắc bảo dưỡng ({0}),
+Method: {0},Phương pháp: {0},
+Missing: {0},Còn thiếu: {0},
+No photo,Chưa có ảnh,
+No printer has this label loaded,Chưa có máy in nạp loại nhãn này,
+No usable pack type. Call R10.,Chưa có loại gói dùng được. Gọi R10.,
+Not confirmed,Chưa xác nhận,
+"Not sent to the printer; the Cycle ID is kept. Check the Station Agent, then reprint.","Chưa gửi được tới máy in, Cycle ID vẫn giữ — kiểm tra Station Agent rồi In lại",
+"Overdue: cannot be deferred any more, do the maintenance now.","Quá hạn: không được hoãn nữa, phải bảo dưỡng ngay.",
+Pack Type,Loại gói,
+Pack lookup,Tra cứu gói,
+Pack type: {0},Loại gói: {0},
+Packed At,Thời điểm đóng gói,
+Packed: {0} · {1},Đóng gói: {0} · {1},
+Packing needs a network connection; offline Cycle ID generation comes with FEAT-009.,Đóng gói cần kết nối mạng; sinh Cycle ID offline có từ FEAT-009,
+Photo not available,Không tải được ảnh,
+Placed correctly,Đã đặt đúng vị trí,
+Placed correctly at position {0} as in the photo,Đã đặt đúng vị trí {0} theo ảnh thực tế,
+Plasma H2O2 label / Plasma label,Nhãn plasma H2O2 / Plasma label,
+Position {0} · × {1} · {2},Vị trí {0} · × {1} · {2},
+Print job {0},Lệnh in {0},
+Recording...,Đang ghi sổ…,
+Redone {0} time(s),Làm lại {0} lần,
+Reprint,In lại,
+Reprint (reason),In lại (lý do),
+Reprint label,In lại nhãn,
+Request override,Đề nghị ghi đè,
+Required,Bắt buộc,
+Scan indicator lot class {0} – {1},Quét lô chỉ thị loại {0} – {1},
+"Scan indicator lot, next Set ID, Cycle ID or roll code...","Quét lô chỉ thị, Set ID bộ tiếp theo, Cycle ID hoặc mã cuộn…",
+Scan the Set ID of the next set to pack,Quét Set ID của bộ tiếp theo cần đóng gói,
+Scan the Set ID of the set to pack,Quét Set ID của bộ cần đóng gói,
+Scan the roll code CN- after changing the roll.,Quét mã cuộn CN- sau khi đổi cuộn.,
+Sending the label to printer {0}...,Đang gửi nhãn tới máy in {0}…,
+Sending {0} waiting label(s) to the printer...,Đang gửi {0} nhãn chờ in tới máy in…,
+Sent {0} waiting label(s) to the printer.,Đã gửi {0} nhãn chờ in tới máy in.,
+Set Name,Tên bộ,
+Set components (BOM v{0}),Thành phần bộ (BOM v{0}),
+Set {0} goes back to reprocessing ({1}).,Bộ {0} chuyển về tái xử lý ({1}).,
+Steam 134°C label / Steam label,Nhãn hấp hơi nước 134°C / Steam label,
+Step gates,Cổng kiểm soát,
+T1 Reception · count,T1 Tiếp nhận · kiểm đếm,
+T2 Washing – disinfection,T2 Rửa – khử khuẩn,
+T5 Sterilization · release,T5 Tiệt khuẩn · giải phóng,
+TEST,TEST,
+The Cycle ID can still be generated; the label waits until the roll code CN- is scanned.,Vẫn sinh được Cycle ID; nhãn sẽ chờ tới khi quét mã cuộn CN-.,
+This account cannot pack sets at this station.,Tài khoản này không được đóng gói tại trạm này.,
+This set type has no BOM.,Loại bộ này chưa có BOM.,
+Void Cycle ID,Hủy Cycle ID,
+Void reason,Lý do hủy,
+Void {0}? The set goes back to reprocessing and must be packed again.,Hủy {0}? Bộ chuyển về tái xử lý và phải đóng gói lại.,
+Voided Cycle ID {0}.,Đã hủy Cycle ID {0}.,
+class {0},loại {0},
+deferred {0}/3,đã hoãn {0}/3,
+indicator lot,lô chỉ thị,
+maintenance action {0},xử lý bảo dưỡng {0},
+network connection,kết nối mạng,
+pack type,loại gói,
+position {0},vị trí {0},
+{0} days,{0} ngày,
+{0} instrument(s),{0} dụng cụ,
+{0} waiting label(s) could not be sent to the printer.,Không gửi được {0} nhãn chờ in tới máy in.,
+{0}/{1} cycles since maintenance,{0}/{1} chu trình từ lần bảo dưỡng trước,
+× {0},× {0},
+Overdue,Quá hạn,
+Use-by date,Hạn sử dụng,
+No answer from the server,Máy chủ không phản hồi,
+"The request got no answer in time; the server may already have recorded it.","Yêu cầu không có phản hồi kịp thời; máy chủ có thể đã ghi nhận.",
+"Retry: the same request is sent again and is never recorded twice.","Thử lại: gửi lại đúng yêu cầu này, không bao giờ ghi hai lần.",
+Waiting label could not be rendered,Không dựng được nhãn chờ in,
+{0} waiting label(s) could not be prepared and are still waiting.,Không dựng được {0} nhãn chờ in; các nhãn này vẫn đang chờ.,
+Print job {0}: {1},Lệnh in {0}: {1},
+Reprint opens once the waiting label has been printed.,Chỉ in lại được sau khi nhãn đang chờ đã được in.,
+Label not printed yet,Nhãn chưa được in,
+The label of Cycle ID {0} has not been printed yet: print job {1} is still waiting for a printer. No new label was created.,Nhãn của Cycle ID {0} chưa được in: lệnh in {1} vẫn đang chờ máy in. Không tạo nhãn mới.,
+"Load the right label roll into the printer, then scan the roll code (CN-#####) to print the waiting label.","Lắp đúng cuộn nhãn vào máy in, rồi quét mã cuộn (CN-#####) để in nhãn đang chờ.",
+Expiry Date,Hạn sử dụng,Pack
+Label,Nhãn,Pack
+Department,Khoa,Pack
+Quantity,Số lượng,Pack Instrument Confirmed
+Quantity,Số lượng,Set BOM Item
+Action,Xử lý,Pack Maintenance Done
+Reason,Lý do,Pack Maintenance Done
+DataMatrix {0},DataMatrix {0},
+Dirty,Bẩn,Zone Station
+Clean,Sạch,Zone Station
+Sterile,Vô khuẩn,Zone Station
+Department,Khoa,Zone Station
+Linen,Đồ vải,Zone Station
+Waste,Chất thải,Zone Station
+"Zone {0} has no station functions yet, so step {1} cannot be set.","Khu {0} chưa có chức năng trạm nào nên không thể đặt bước {1}.",
+"Zone {0} only has these functions: {1}. Step {2} cannot be set.","Khu {0} chỉ có các chức năng: {1}. Không thể đặt bước {2}.",
+{0} is not a zone.,{0} không phải là một khu.,
+(empty),(trống),
+"A two-door machine must go from zone {0} to the next zone in the order Dirty, Clean, Sterile, not to zone {1}.","Máy hai cửa phải đi từ khu {0} sang khu kế tiếp theo chiều Bẩn → Sạch → Vô khuẩn, không phải khu {1}.",
+Description,Mô tả,
+A station without a zone cannot be active.,Trạm chưa gán khu thì không thể hoạt động.,
+A station without a zone cannot be activated.,Trạm chưa gán khu không kích hoạt được.,
+Station {0} has no zone: it was deactivated.,Trạm {0} chưa gán khu nên đã chuyển sang không hoạt động.,
+"Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm {0} đang hoạt động có bước {1}, loại khu {2} không cho phép.",
+Zone and station configuration (FEAT-002): zone type\, station function by zone\, active flag.,"Cấu hình khu và trạm (FEAT-002): loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
+Station Peripheral,Thiết bị ngoại vi của trạm,
+Peripherals,Thiết bị ngoại vi,Zone Station
+Peripheral Type,Loại thiết bị,Station Peripheral
+Scanner,Máy quét,Station Peripheral
+Scale,Cân,Station Peripheral
+Model,Model,Station Peripheral
+Connection,Kết nối,Station Peripheral
+USB HID,USB HID,Station Peripheral
+Serial,Cổng nối tiếp (Serial),Station Peripheral
+TCP,TCP,Station Peripheral
+Host,Địa chỉ máy (host),Station Peripheral
+Port,Cổng (port),Station Peripheral
+Serial Port,Cổng nối tiếp,Station Peripheral
+Baud Rate,Tốc độ baud,Station Peripheral
+Is Active,Đang dùng,Station Peripheral
+Notes,Ghi chú,Station Peripheral
+Scanner or scale attached to a station (FEAT-002): connection USB HID\, Serial or TCP.,"Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, Serial hoặc TCP.",
+1 to 65535.,1 đến 65535.,
+For example COM3 or /dev/ttyUSB0.,Ví dụ COM3 hoặc /dev/ttyUSB0.,
+Default 9600.,Mặc định 9600.,
+A zone cannot have peripherals.,Khu không được có thiết bị ngoại vi.,
+"Row {0}: endpoint {1} is already used by another active peripheral of this station.","Dòng {0}: điểm kết nối {1} đã được thiết bị ngoại vi đang dùng khác của trạm này sử dụng.",
+Row {0}: a scale cannot use USB HID.,Dòng {0}: cân không được dùng USB HID.,
+Row {0}: Host is required for a TCP connection.,Dòng {0}: kết nối TCP bắt buộc có địa chỉ máy (host).,
+Row {0}: Port must be between 1 and 65535.,Dòng {0}: cổng (port) phải từ 1 đến 65535.,
+Row {0}: Serial Port is required for a Serial connection.,Dòng {0}: kết nối Serial bắt buộc có cổng nối tiếp.,
+Station deactivated,Trạm đã ngừng hoạt động,
+Station {0} is deactivated.,Trạm {0} đang bị vô hiệu hóa.,
+Call R10 to activate the station.,Gọi R10 để bật lại trạm.,
+Label template could not be rendered,Không dựng được mẫu nhãn,
+"Fix the template body, then preview it again.",Sửa nội dung mẫu rồi xem trước lại.,
+template must be a label template name.,template phải là tên mẫu nhãn.,
+Label template {0} does not exist.,Không có mẫu nhãn {0}.,
+Active,Đang hoạt động,Zone Station
+Inactive,Không hoạt động,Zone Station
+Zone,Khu,
+Roll could not be loaded,Không nạp được cuộn nhãn,
+Roll code,Mã cuộn,
+I have loaded this roll into the printer,Tôi đã lắp cuộn này vào máy in,
+Load label roll,Nạp cuộn nhãn,
+Load roll,Nạp cuộn,
+Confirmation needed,Cần xác nhận,
+Tick the confirmation after the roll is in the printer.,Hãy đánh dấu xác nhận sau khi cuộn đã được lắp vào máy in.,
+Label roll loaded,Đã nạp cuộn nhãn,
+Labels still waiting,Nhãn còn chờ in,
+"Waiting labels are printed when this roll is scanned on the T4 screen of station {0}.",Nhãn đang chờ sẽ được in khi quét cuộn này tại màn T4 của trạm {0}.,
+"Scan or type the roll code CN-#####. Waiting labels print only when the roll is scanned on the station's T4 screen.",Quét hoặc nhập mã cuộn CN-#####. Nhãn đang chờ chỉ in khi quét cuộn tại màn T4 của trạm.,
+Preview,Xem trước,
+Preview with diacritics,Xem trước có dấu,
+Preview without diacritics,Xem trước bỏ dấu,
+with diacritics,có dấu,
+without diacritics,bỏ dấu,
+"Sample data, {0}. The saved version of the template is rendered.","Dữ liệu mẫu, {0}. Hệ thống dựng bản mẫu đã lưu.",
+ZPL code,Mã ZPL,
+Copy,Sao chép,
+The server could not be reached.,Không kết nối được máy chủ.,
+Try again.,Hãy thử lại.,
+The roll could not be loaded.,Không nạp được cuộn nhãn.,
+"Check the roll code and your permissions, then try again.",Kiểm tra mã cuộn và quyền của bạn rồi thử lại.,
+{0}: Is Zone cannot be changed after the record is created.,{0}: không đổi được ô Là khu sau khi đã tạo.,
+Label printers,Máy in nhãn,
+Equipment,Thiết bị,
+Equipment Name,Tên thiết bị,Equipment
+Equipment Type,Loại thiết bị,Equipment
+Status,Trạng thái,Equipment
+Manufacturer,Hãng sản xuất,Equipment
+Model,Model,Equipment
+Serial No,Số sê-ri,Equipment
+Capacity,Dung tích / công suất,Equipment
+Entry Zone,Khu cửa vào,Equipment
+Exit Zone,Khu cửa ra,Equipment
+Is Connected,Có kết nối dữ liệu,Equipment
+Has Printout,Có bản in kết quả,Equipment
+Commissioned On,Ngày đưa vào sử dụng,Equipment
+Inspection Due,Hạn kiểm định,Equipment
+Asset,Tài sản,Equipment
+Depreciation,Khấu hao,Equipment
+Purchase Value,Nguyên giá,Equipment
+Depreciation Years,Số năm khấu hao,Equipment
+Planned Loads per Year,Số mẻ kế hoạch mỗi năm,Equipment
+Depreciation per Load,Khấu hao mỗi mẻ,Equipment
+Safe Range,Dải an toàn,Equipment
+Safe Temperature Min (°C),Nhiệt độ an toàn tối thiểu (°C),Equipment
+Safe Temperature Max (°C),Nhiệt độ an toàn tối đa (°C),Equipment
+Safe Pressure Max (bar),Áp suất an toàn tối đa (bar),Equipment
+Retirement,Ngừng sử dụng,Equipment
+Retired On,Ngày ngừng sử dụng,Equipment
+Retired Reason,Lý do ngừng sử dụng,Equipment
+Steam Sterilizer,Máy hấp hơi nước,Equipment
+Washer-Disinfector,Máy rửa khử khuẩn,Equipment
+Plasma Sterilizer,Máy tiệt khuẩn plasma,Equipment
+Sealer,Máy hàn túi,Equipment
+Laundry Washer,Máy giặt,Equipment
+Dryer,Máy sấy,Equipment
+Ultrasonic Cleaner,Máy rửa siêu âm,Equipment
+Ready,Sẵn sàng,Equipment
+Locked,Đã khóa,Equipment
+Repair,Đang sửa chữa,Equipment
+Retired,Ngừng sử dụng,Equipment
+Serial No is required.,Cần nhập số sê-ri.,
+Serial No {0} is already used by equipment {1}.,Số sê-ri {0} đã được dùng cho thiết bị {1}.,
+Purchase Value cannot be negative.,Nguyên giá không được âm.,
+Depreciation Years must be at least 1.,Số năm khấu hao phải từ 1 trở lên.,
+Planned Loads per Year must be at least 1.,Số mẻ kế hoạch mỗi năm phải từ 1 trở lên.,
+Safe Temperature Min cannot be above Safe Temperature Max.,Nhiệt độ an toàn tối thiểu không được lớn hơn tối đa.,
+A reason is required to retire equipment.,Cần nhập lý do khi cho thiết bị ngừng sử dụng.,
+Retired On cannot be in the future.,Ngày ngừng sử dụng không được ở tương lai.,
+Retired equipment cannot be put back into use.,Thiết bị đã ngừng sử dụng không dùng lại được.,
+Equipment status and retirement fields are changed only by the equipment service.,Trạng thái và thông tin ngừng sử dụng của thiết bị chỉ do dịch vụ thiết bị đổi.,
+Invalid equipment status {0}.,Trạng thái thiết bị {0} không hợp lệ.,
+Process Program,Chương trình xử lý,
+Program Consumable,Vật tư tiêu hao của chương trình,
+Program Compatible Pack Type,Loại gói tương thích của chương trình,
+Program Parameter,Tham số của chương trình,
+Program Code,Mã chương trình,Process Program
+Program Name,Tên chương trình,Process Program
+Equipment,Thiết bị,Process Program
+Active,Đang dùng,Process Program
+Requires Biological Indicator,Cần chỉ thị sinh học,Process Program
+Temperature (°C),Nhiệt độ (°C),Process Program
+Pressure (bar),Áp suất (bar),Process Program
+Duration (min),Thời gian (phút),Process Program
+Chemical,Hóa chất,Process Program
+Norms per Cycle,Định mức mỗi chu trình,Process Program
+Electricity per Cycle (kWh),Điện mỗi chu trình (kWh),Process Program
+Water per Cycle (L),Nước mỗi chu trình (L),Process Program
+Steam per Cycle (kg),Hơi mỗi chu trình (kg),Process Program
+Use Default Norms,Dùng định mức mặc định,Process Program
+Norm Status,Tình trạng định mức,Process Program
+Complete,Đủ định mức,Process Program
+Default,Định mức mặc định,Process Program
+Missing,Thiếu định mức,Process Program
+Outside Safe Range,Ngoài dải an toàn,Process Program
+Consumables,Vật tư tiêu hao,Process Program
+Compatible Pack Types,Loại gói tương thích,Process Program
+Manual-entry Parameters,Tham số nhập tay,Process Program
+Parameters,Tham số,Process Program
+Item,Mặt hàng,Program Consumable
+Quantity per Load,Số lượng mỗi mẻ,Program Consumable
+Quantity per Pack,Số lượng mỗi gói,Program Consumable
+Pack Type,Loại gói,Program Compatible Pack Type
+Parameter,Tham số,Program Parameter
+Unit,Đơn vị,Program Parameter
+Minimum,Tối thiểu,Program Parameter
+Maximum,Tối đa,Program Parameter
+Required,Bắt buộc,Program Parameter
+"Program Code may contain only uppercase letters, digits and hyphens.","Mã chương trình chỉ gồm chữ in hoa, chữ số và dấu gạch ngang.",
+Equipment {0} is retired and cannot get a new process program.,"Thiết bị {0} đã ngừng sử dụng, không thêm chương trình mới được.",
+{0} cannot be negative.,{0} không được âm.,
+Row {0}: consumable {1} is listed twice.,Dòng {0}: vật tư {1} bị trùng.,
+Row {0}: quantities cannot be negative.,Dòng {0}: số lượng không được âm.,
+Row {0}: enter a quantity per load or per pack greater than zero.,Dòng {0}: cần nhập số lượng mỗi mẻ hoặc mỗi gói lớn hơn 0.,
+Row {0}: pack type {1} is listed twice.,Dòng {0}: loại gói {1} bị trùng.,
+Row {0}: parameter name is required.,Dòng {0}: cần nhập tên tham số.,
+Row {0}: parameter {1} is listed twice.,Dòng {0}: tham số {1} bị trùng.,
+Row {0}: Minimum cannot be above Maximum for parameter {1}.,Dòng {0}: tối thiểu không được lớn hơn tối đa của tham số {1}.,
+"Uppercase letters, digits and hyphens only. Cannot change after saving.","Chỉ chữ in hoa, chữ số và dấu gạch ngang. Không đổi được sau khi lưu.",Process Program
+Untick to stop using the program. All its data is kept.,Bỏ chọn để ngừng dùng chương trình. Mọi dữ liệu được giữ nguyên.,Process Program
+Use the default norms of the equipment type when this program has no norms.,Dùng định mức mặc định của loại máy khi chương trình chưa có định mức.,Process Program
+Quantity used by one load (cycle).,Số lượng dùng cho một mẻ (chu trình).,Program Consumable
+Quantity used by one pack.,Số lượng dùng cho một gói.,Program Consumable
+Leave at 0 for no lower limit.,Để 0 nếu không đặt giới hạn dưới.,Program Parameter
+Leave at 0 for no upper limit.,Để 0 nếu không đặt giới hạn trên.,Program Parameter
+Equipment Type Norm,Định mức mặc định theo loại máy,
+Equipment Type,Loại thiết bị,Equipment Type Norm
+Notes,Ghi chú,Equipment Type Norm
+Default Norms per Cycle,Định mức mặc định mỗi chu trình,Equipment Type Norm
+Duration (min),Thời gian (phút),Equipment Type Norm
+Electricity per Cycle (kWh),Điện mỗi chu trình (kWh),Equipment Type Norm
+Water per Cycle (L),Nước mỗi chu trình (L),Equipment Type Norm
+Steam per Cycle (kg),Hơi mỗi chu trình (kg),Equipment Type Norm
+Steam Sterilizer,Máy hấp hơi nước,Equipment Type Norm
+Washer-Disinfector,Máy rửa khử khuẩn,Equipment Type Norm
+Plasma Sterilizer,Máy tiệt khuẩn plasma,Equipment Type Norm
+Sealer,Máy hàn túi,Equipment Type Norm
+Laundry Washer,Máy giặt,Equipment Type Norm
+Dryer,Máy sấy,Equipment Type Norm
+Ultrasonic Cleaner,Máy rửa siêu âm,Equipment Type Norm
+Default norms of the equipment type; one row per type.,Định mức mặc định của loại máy; mỗi loại một dòng.,Equipment Type Norm
+Equipment type {0} has no default norms: add an Equipment Type Norm first.,Loại máy {0} chưa có định mức mặc định: hãy thêm Định mức mặc định theo loại máy trước.,
+Program {0} has incomplete norms: costing is not calculated until the norms are complete or default norms are used.,Chương trình {0} chưa đủ định mức: chưa tính giá thành cho đến khi đủ định mức hoặc dùng định mức mặc định.,
+Program {0}: temperature {1} °C is below the safe minimum {2} °C of equipment {3}.,Chương trình {0}: nhiệt độ {1} °C thấp hơn mức tối thiểu an toàn {2} °C của thiết bị {3}.,
+Program {0}: temperature {1} °C is above the safe maximum {2} °C of equipment {3}.,Chương trình {0}: nhiệt độ {1} °C cao hơn mức tối đa an toàn {2} °C của thiết bị {3}.,
+Program {0}: pressure {1} bar is above the safe maximum {2} bar of equipment {3}.,Chương trình {0}: áp suất {1} bar cao hơn mức tối đa an toàn {2} bar của thiết bị {3}.,
+Equipment {0} is retired: its process programs cannot be activated again.,Thiết bị {0} đã ngừng sử dụng: không bật lại chương trình xử lý của thiết bị này.,
+Code {0} is not an equipment code.,Mã {0} không phải mã thiết bị.,
+Scan the QR code on the equipment.,Quét mã QR dán trên thiết bị.,
+Equipment not found,Không tìm thấy thiết bị,
+Equipment {0} does not exist in TraceCore.,Thiết bị {0} chưa có trong TraceCore.,
+Check the QR code on the equipment or call R10.,Kiểm tra mã QR trên thiết bị hoặc gọi R10.,
+Equipment retired,Thiết bị đã ngừng sử dụng,
+Equipment {0} is retired and has no process programs in use.,Thiết bị {0} đã ngừng sử dụng và không có chương trình xử lý đang dùng.,
+Choose another machine or call R10.,Chọn máy khác hoặc gọi R10.,
+Equipment {0} does not exist.,Thiết bị {0} không tồn tại.,
+Choose a different equipment to copy program {0} to.,Chọn thiết bị khác để sao chép chương trình {0} sang.,
+Program {0} can only be copied to equipment of the same manufacturer and model.,Chương trình {0} chỉ sao chép được sang thiết bị cùng hãng và model.,
+Retire equipment,Ngừng sử dụng,
+Retire equipment {0},Ngừng sử dụng thiết bị {0},
+Reason for retiring,Lý do ngừng sử dụng,
+Retiring is permanent: the equipment can no longer be used or get new programs.,Ngừng sử dụng là một chiều: thiết bị không dùng được nữa và không nhận chương trình mới.,
+Equipment retired.,Đã cho thiết bị ngừng sử dụng.,
+Equipment could not be retired.,Không cho thiết bị ngừng sử dụng được.,
+Check your permissions and try again.,Kiểm tra quyền của bạn rồi thử lại.,
+This program has settings outside the safe range of the equipment.,Chương trình này có thông số nằm ngoài dải an toàn của thiết bị.,
+Copy to another equipment,Sao chép sang máy khác,
+Copy program {0},Sao chép chương trình {0},
+Target equipment,Thiết bị đích,
+Only equipment of the same manufacturer and model that is not retired.,Chỉ thiết bị cùng hãng và model chưa ngừng sử dụng.,
+New program code,Mã chương trình mới,
+"Uppercase letters, digits and hyphens only.","Chỉ chữ in hoa, chữ số và dấu gạch ngang.",
+Program copied to {0}.,Đã sao chép chương trình sang {0}.,
+Program could not be copied,Không sao chép được chương trình,
+{0} must be text.,{0} phải là chuỗi ký tự.,
+Equipment cannot be retired,Không cho thiết bị ngừng sử dụng được,
+Equipment {0} is {1}; only equipment that is Ready can be retired.,"Thiết bị {0} đang ở trạng thái {1}; chỉ thiết bị Sẵn sàng mới ngừng sử dụng được.",
+"Release or finish the current state first, or call R10.","Hãy xử lý xong trạng thái hiện tại trước, hoặc gọi R10.",
+Enter the reason for retiring this equipment.,Nhập lý do ngừng sử dụng thiết bị này.,
+Different model,Khác model,
+Choose equipment of the same manufacturer and model.,Chọn thiết bị cùng hãng và model.,
+Program code already used,Mã chương trình đã được dùng,
+Enter a different program code.,Nhập mã chương trình khác.,
+Program code {0} is already used.,Mã chương trình {0} đã được dùng.,
+"Check the target equipment and the new program code, then try again.","Kiểm tra thiết bị đích và mã chương trình mới rồi thử lại.",
+Equipment ready,Sẵn sàng,
+Equipment locked,Đã khóa,
+Equipment under repair,Đang sửa chữa,
+Equipment out of service,Ngừng sử dụng,
+Norms complete,Đủ định mức,
+Default norms,Dùng định mức mặc định,
+Norms missing,Thiếu định mức,
+Equipment Type cannot be changed after the equipment is created.,Không đổi được loại thiết bị sau khi đã tạo.,
+Process program {0} was not recalculated after the safe range changed,Chương trình xử lý {0} chưa được tính lại sau khi đổi dải an toàn,
+Valid until must be after valid from.,Thời điểm hết hiệu lực phải sau thời điểm bắt đầu.,
+Competency must be assigned to a station, not a zone.,Năng lực phải gán cho một trạm chứ không phải một khu.,
+Temporary competency requires a reason and approver.,Quyền trạm tạm thời phải có lý do và người phê duyệt.,
+Temporary competency cannot exceed 24 hours.,Quyền trạm tạm thời không được vượt quá 24 giờ.,
+Station Competency {0} cannot be deleted.,Không thể xóa năng lực trạm {0}.,
+A closed station session requires an end timestamp.,Phiên trạm đã đóng phải có thời điểm kết thúc.,
+Station Session {0} cannot be deleted.,Không thể xóa phiên trạm {0}.,
+PIN is invalid,PIN không hợp lệ,
+PIN must contain exactly 6 digits.,PIN phải gồm đúng 6 chữ số.,
+Enter a 6-digit PIN.,Nhập PIN gồm 6 chữ số.,
+PIN is temporarily locked,PIN đang bị khóa tạm thời,
+PIN was entered incorrectly 3 times.,PIN đã được nhập sai 3 lần.,
+Wait 5 minutes and try again.,Chờ 5 phút rồi thử lại.,
+PIN is incorrect,PIN không đúng,
+The PIN did not match.,PIN không khớp.,
+Check the PIN and try again.,Kiểm tra PIN rồi thử lại.,
+Card login was rejected,Đăng nhập bằng thẻ bị từ chối,
+The card is invalid or inactive.,Thẻ không hợp lệ hoặc đã bị vô hiệu.,
+Use an active employee card or contact a supervisor.,Dùng thẻ nhân viên đang hoạt động hoặc liên hệ giám sát.,
+Station is unavailable,Trạm không khả dụng,
+The station is missing or inactive.,Trạm không tồn tại hoặc chưa hoạt động.,
+Choose an active station or contact R10.,Chọn trạm đang hoạt động hoặc liên hệ R10.,
+The employee has no valid competency for this station.,Nhân viên không có năng lực còn hiệu lực tại trạm này.,
+Ask R02 to check competency or temporary access.,Đề nghị R02 kiểm tra năng lực hoặc cấp quyền tạm thời.,
+Station session is invalid,Phiên trạm không hợp lệ,
+The session token is missing or invalid.,Thiếu mã phiên hoặc mã phiên không hợp lệ.,
+The session has ended or the token is invalid.,Phiên đã kết thúc hoặc mã phiên không hợp lệ.,
+Scan your employee card again.,Quét lại thẻ nhân viên.,
+Station session expired,Phiên trạm đã hết hạn,
+The 8-hour session has ended.,Phiên 8 giờ đã kết thúc.,
+Station session was locked,Phiên trạm đã bị khóa,
+There was no activity for 10 minutes.,Không có hoạt động trong 10 phút.,
+Only R10 can create or disable accounts.,Chỉ R10 được tạo hoặc vô hiệu tài khoản.,
+Password must contain at least 10 characters.,Mật khẩu phải có ít nhất 10 ký tự.,
+Password expired. Change your password before signing in.,Mật khẩu đã hết hạn. Đổi mật khẩu trước khi đăng nhập.,
+Station card ID must be unique.,Mã thẻ trạm không được trùng.,
+Sign in with an employee account.,Đăng nhập bằng tài khoản nhân viên.,
+Current password or a valid recovery key is required.,Cần mật khẩu hiện tại hoặc mã khôi phục hợp lệ.,
+PIN change required,Cần đổi PIN,
+A supervisor reset this PIN.,Người quản lý đã đặt lại PIN này.,
+Change your PIN before continuing.,Đổi PIN trước khi tiếp tục.,
+Choose a different PIN.,Chọn PIN khác.,
+A supervisor station PIN proof is required.,Cần bằng chứng PIN còn hiệu lực từ phiên trạm của R02.,
+Choose an employee account.,Chọn tài khoản nhân viên.,
+Station PIN Change Required,Yêu cầu đổi PIN trạm,
+Use account credential actions to change or reset a password.,Dùng chức năng tài khoản để đổi hoặc đặt lại mật khẩu.,
+Use account credential actions to change or reset a PIN.,Dùng chức năng tài khoản để đổi hoặc đặt lại PIN.,
+Ask R10 or a PIN-verified R02 to reset your account.,Đề nghị R10 hoặc R02 đã xác thực PIN đặt lại tài khoản.,
+Scan employee card,Quét thẻ nhân viên,
+Scan employee card...,Quét thẻ nhân viên...,
+Scan another card,Quét thẻ khác,
+Session expires: {0},Phiên hết hạn: {0},
+Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy chủ.,
+"Reconnect, then scan your employee card again.",Kết nối lại rồi quét lại thẻ nhân viên.,
+"Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
+Scan indicator lot,Quét lô chỉ thị,
+"Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
+Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
+"Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
+raw and open_set must be strings.,raw và open_set phải là chuỗi.,
+Absolute Expires At,Hết hạn tuyệt đối lúc,Station Session
+Approved By,Người phê duyệt,Station Competency
+"Competency must be assigned to a station, not a zone.","Năng lực phải được gán cho trạm, không phải khu.",
+Employee Disabled,Nhân viên đã bị vô hiệu,Station Session
+End Reason,Lý do kết thúc,Station Session
+Idle,Không hoạt động,Station Session
+Is Open,Đang mở,Station Session
+Last Activity At,Hoạt động cuối lúc,Station Session
+Replaced,Được thay thế,Station Session
+Station Card Enabled,Bật thẻ trạm,Employee
+Station Card ID,Mã thẻ trạm,Employee
+Station Competency,Năng lực trạm,
+Station PIN Hash,Mã băm PIN trạm,Employee
+Station Session,Phiên trạm,
+Temporary Access,Truy cập tạm thời,Station Competency
+Temporary Reason,Lý do tạm thời,Station Competency
+The session belongs to another station.,Phiên thuộc về trạm khác.,
+Token Hash,Mã băm token,Station Session
+Use the station where you scanned your card.,Sử dụng trạm nơi bạn đã quét thẻ.,
+Valid Until,Có hiệu lực đến,Station Competency
+card_id and station must be strings.,card_id và station phải là chuỗi.,
+pin must be a string.,pin phải là chuỗi.,
+Roles: {0},Vai trò: {0},
+TC R01,R01 · Trưởng khoa KSNK,
+TC R02,R02 · Điều dưỡng trưởng / Giám sát CSSD,
+TC R03,R03 · KTV khu bẩn,
+TC R04,R04 · KTV khu sạch,
+TC R05,R05 · KTV tiệt khuẩn,
+TC R06,R06 · KTV kho vô khuẩn / cấp phát,
+TC R07,R07 · Nhân viên đồ vải và chất thải,
+TC R08,R08 · Nhân viên khoa sử dụng,
+TC R09,R09 · Kế toán / Vật tư,
+TC R10,R10 · Quản trị hệ thống,

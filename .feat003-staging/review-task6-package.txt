@@ -1,0 +1,2195 @@
+2fd02f0 feat(station): add card session shell and dedicated indicator scan
+ scripts/tests/station_auth.test.js          | 197 +++++++++++++++++
+ tests_e2e/conftest.py                       |   6 +
+ tests_e2e/test_station_auth.py              | 326 ++++++++++++++++++++++++++++
+ tests_e2e/test_station_smoke.py             |   2 +-
+ tests_e2e/test_station_t4.py                |  12 +-
+ tracecore/public/js/station_t4.js           |  75 ++++++-
+ tracecore/tests/test_station_page.py        |  15 ++
+ tracecore/translations/vi.csv               |  34 +++
+ tracecore/ui/page/station/station.css       |  25 +++
+ tracecore/ui/page/station/station.html      |  17 ++
+ tracecore/ui/page/station/station.js        | 300 ++++++++++++++++++++++++-
+ tracecore/v1/pack.py                        |  41 +++-
+ tracecore/v1/tests/test_pack_api.py         |  49 ++++-
+ tracecore/v1/tests/test_station_security.py |  14 ++
+ 14 files changed, 1076 insertions(+), 37 deletions(-)
+diff --git a/scripts/tests/station_auth.test.js b/scripts/tests/station_auth.test.js
+new file mode 100644
+index 0000000..d5d13c6
+--- /dev/null
++++ b/scripts/tests/station_auth.test.js
+@@ -0,0 +1,197 @@
++const assert = require("node:assert/strict");
++const fs = require("node:fs");
++const path = require("node:path");
++const vm = require("node:vm");
++const { test } = require("node:test");
++
++function harness() {
++	const store = new Map();
++	const calls = [];
++	const sandbox = {
++		frappe: { pages: { station: {} }, utils: { escape_html: String }, csrf_token: "csrf" },
++		__: (s) => s,
++		AbortController,
++		URLSearchParams,
++		Uint8Array,
++		Date,
++		TypeError,
++		performance,
++		setTimeout: () => 1,
++		clearTimeout() {},
++		setInterval: () => 1,
++		clearInterval() {},
++		navigator: { onLine: true },
++		sessionStorage: {
++			getItem: (key) => store.get(key) || null,
++			setItem: (key, value) => store.set(key, value),
++			removeItem: (key) => store.delete(key),
++		},
++		fetch: async (url, options) => {
++			calls.push({ url, ...options });
++			return { ok: true, json: async () => ({ message: { ok: true } }) };
++		},
++	};
++	vm.createContext(sandbox);
++	for (const file of [
++		"tracecore/ui/page/station/station.js",
++		"tracecore/public/js/station_t4.js",
++	])
++		vm.runInContext(fs.readFileSync(path.resolve(__dirname, "../..", file), "utf8"), sandbox);
++	const station = vm.runInContext("Object.create(TraceCoreStation.prototype)", sandbox);
++	Object.assign(station, {
++		station: "TR-004",
++		session: { token: "private-bearer", employee: "EMP-1" },
++		sessionVersion: 1,
++		lastActivity: Date.now(),
++		heartbeatActivity: 0,
++		pending: { raw: "SET" },
++		lastRaw: "SET",
++		authBusy: false,
++		input: { value: "SET" },
++		cardInput: { value: "CARD" },
++		root: { dataset: {}, querySelector: () => ({ textContent: "" }) },
++		authForm: { hidden: true },
++		work: { hidden: false },
++		sessionBar: { hidden: false },
++		authResult: { innerHTML: "", dataset: {} },
++		result: { innerHTML: "SET", dataset: {} },
++		form: { classList: { remove() {}, toggle() {} } },
++		focus() {},
++	});
++	return { station, sandbox, calls, store };
++}
++
++test("protected RPC carries bearer in JSON only and preserves idempotency/timestamp", async () => {
++	const { station, calls } = harness();
++	await station.rpc("tracecore.v1.pack.scan", { raw: "SET", client_ts: "original" }, "same-key");
++	assert.equal(JSON.parse(calls[0].body).token, "private-bearer");
++	assert.equal(JSON.parse(calls[0].body).client_ts, "original");
++	assert.equal(calls[0].headers["X-Idempotency-Key"], "same-key");
++	assert.ok(!JSON.stringify(calls[0].headers).includes("private-bearer"));
++	assert.ok(!calls[0].url.includes("private-bearer"));
++});
++
++test("protected RPC without a session never reaches network", async () => {
++	const { station, calls } = harness();
++	station.session = null;
++	await assert.rejects(station.rpc("tracecore.v1.pack.scan", {}), (error) => error.sessionEnded);
++	assert.equal(calls.length, 0);
++});
++
++test("session rejection clears token, pending scans, packing state and dialogs", async () => {
++	const { station, sandbox, store } = harness();
++	let cleared = false;
++	station.t4 = {
++		clearSession() {
++			cleared = true;
++		},
++	};
++	assert.equal(typeof station.storageKey, "function", "session token storage is missing");
++	store.set(station.storageKey(), "private-bearer");
++	sandbox.fetch = async () => ({
++		ok: false,
++		status: 401,
++		json: async () => ({
++			message: {
++				ok: false,
++				error: {
++					code: "SESSION_EXPIRED",
++					title: "Expired",
++					reason: "Ended",
++					action: "Scan card",
++				},
++			},
++		}),
++	});
++	await assert.rejects(station.rpc("tracecore.v1.pack.scan", {}), (error) => error.sessionEnded);
++	assert.equal(station.session, null);
++	assert.equal(store.size, 0);
++	assert.equal(station.pending, null);
++	assert.equal(station.lastRaw, null);
++	assert.equal(station.result.innerHTML, "");
++	assert.equal(station.work.hidden, true);
++	assert.ok(cleared);
++	assert.match(station.authResult.innerHTML, /Expired[\s\S]*Ended[\s\S]*Scan card/);
++});
++
++test("late protected response cannot repopulate an ended session", async () => {
++	const { station, sandbox } = harness();
++	assert.equal(typeof station.clearSession, "function", "session clearing is missing");
++	let finish;
++	sandbox.fetch = () =>
++		new Promise((resolve) => {
++			finish = resolve;
++		});
++	const response = station.rpc("tracecore.v1.pack.scan", {});
++	station.clearSession();
++	finish({ ok: true, json: async () => ({ message: { ok: true, kind: "context" } }) });
++	await assert.rejects(response, (error) => error.sessionEnded);
++});
++
++test("ten minutes of local inactivity ends session; timer heartbeat does not manufacture activity", async () => {
++	const { station, calls } = harness();
++	assert.equal(typeof station.checkSession, "function", "idle session checking is missing");
++	station.heartbeatActivity = station.lastActivity;
++	await station.checkSession();
++	assert.equal(calls.length, 0);
++	station.lastActivity = Date.now() - 600000;
++	await station.checkSession();
++	assert.equal(station.session, null);
++	assert.equal(calls.length, 1);
++	assert.match(calls[0].url, /station.logout$/);
++});
++
++test("T4 drops a late response after auth state changes", async () => {
++	const { station, sandbox } = harness();
++	const t4 = vm.runInContext("Object.create(T4Packing.prototype)", sandbox);
++	let finish;
++	let applied = false;
++	Object.assign(t4, {
++		station,
++		result: station.result,
++		viewKey: null,
++		busy: null,
++		pending: null,
++	});
++	station.renderLoading = () => {};
++	station.rpc = () =>
++		new Promise((resolve) => {
++			finish = resolve;
++		});
++	sandbox.uuid4 = () => "key";
++	const request = t4.request("tracecore.v1.pack.scan", { raw: "SET" }, () => {
++		applied = true;
++	});
++	station.sessionVersion++;
++	finish({ ok: true });
++	await request;
++	assert.equal(applied, false);
++});
++
++test("card arriving during station handshake waits instead of being discarded", async () => {
++	const { station } = harness();
++	station.session = null;
++	station.stationInfo = null;
++	station.isOffline = () => false;
++	let ready;
++	let logins = 0;
++	station.initialHandshake = new Promise((resolve) => {
++		ready = () => {
++			station.stationInfo = { name: "TR-004" };
++			resolve();
++		};
++	});
++	station.rpc = async () => {
++		logins++;
++		return { ok: true, session: { token: "new" } };
++	};
++	station.activateSession = (session) => {
++		station.session = session;
++	};
++	const login = station.login("CARD");
++	await Promise.resolve();
++	assert.equal(logins, 0);
++	ready();
++	await login;
++	assert.equal(logins, 1);
++});
+diff --git a/tests_e2e/conftest.py b/tests_e2e/conftest.py
+index e9cc380..3e3b87a 100644
+--- a/tests_e2e/conftest.py
++++ b/tests_e2e/conftest.py
+@@ -31,21 +31,24 @@ def logged_in_page(page):
+ 		"/api/method/login",
+ 		form={"usr": require_env("TC_E2E_USER"), "pwd": require_env("TC_E2E_PASSWORD")},
+ 	)
+ 	assert response.ok, response.text()
+ 	return page
+ 
+ 
+ @pytest.fixture
+ def station_page(logged_in_page):
+ 	station = os.environ.get("TC_E2E_STATION", "TR-003")
++	card = require_env("TC_E2E_CARD_ID")
+ 	logged_in_page.goto(f"/app/station?station={station}")
++	logged_in_page.locator("#tc-card-input").fill(card)
++	logged_in_page.locator("#tc-card-input").press("Enter")
+ 	logged_in_page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
+ 	return logged_in_page
+ 
+ 
+ @pytest.fixture
+ def set_id():
+ 	return require_env("TC_E2E_SET_ID")
+ 
+ 
+ # --- T4 (SCR-08 đóng gói): user trạm TR-004 và dữ liệu demo `devdata.ensure_t4_demo` ---
+@@ -62,27 +65,30 @@ def t4_demo():
+ 		"ci_steam",
+ 		"ci_plasma",
+ 		"roll_steam",
+ 		"roll_plasma",
+ 	)
+ 	return {key: require_env(f"TC_E2E_T4_{key.upper()}") for key in keys}
+ 
+ 
+ @pytest.fixture
+ def t4_page(page):
++	card = require_env("TC_E2E_T4_CARD_ID")
+ 	response = page.request.post(
+ 		"/api/method/login",
+ 		form={"usr": require_env("TC_E2E_T4_USER"), "pwd": require_env("TC_E2E_T4_PASSWORD")},
+ 	)
+ 	assert response.ok, response.text()
+ 	station = os.environ.get("TC_E2E_T4_STATION", "TR-004")
+ 	page.goto(f"/app/station?station={station}")
++	page.locator("#tc-card-input").fill(card)
++	page.locator("#tc-card-input").press("Enter")
+ 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
+ 	return page
+ 
+ 
+ # --- Desk cấu hình (SCR-33, FEAT-002): user TC R10, viewport WEB 1366x768 ---
+ 
+ 
+ @pytest.fixture
+ def r10_page(page):
+ 	response = page.request.post(
+diff --git a/tests_e2e/test_station_auth.py b/tests_e2e/test_station_auth.py
+new file mode 100644
+index 0000000..0476a0a
+--- /dev/null
++++ b/tests_e2e/test_station_auth.py
+@@ -0,0 +1,326 @@
++"""Browser integration of real station scripts; deterministic RPC boundary, no demo credentials/site writes."""
++
++import json
++import re
++from pathlib import Path
++
++import pytest
++from playwright.sync_api import expect
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++@pytest.fixture
++def auth_shell():
++	active = {}
++	requests = []
++	serial = 0
++
++	def open_shell(page, station="TR-004"):
++		nonlocal serial
++		template = (ROOT / "tracecore/ui/page/station/station.html").read_text()
++		template = re.sub(r'\{%= __\("([^"]*)"\) %\}', lambda match: match[1], template)
++
++		def rpc(route):
++			nonlocal serial
++			method = route.request.url.rsplit("/", 1)[-1]
++			args = route.request.post_data_json
++			requests.append((method, args, route.request.headers))
++			status = 200
++			if method == "tracecore.v1.ping":
++				body = {"station": {"name": station, "label": "Packing", "step": "T4", "zone_type": "Clean"}}
++			elif method.endswith("station.login"):
++				serial += 1
++				token = f"browser-private-{serial}"
++				active["token"] = token
++				body = {
++					"ok": True,
++					"session": {
++						"token": token,
++						"employee": "EMP-1",
++						"employee_name": "Operator",
++						"station": station,
++						"expires_at": "2099-10-21 17:00:00",
++					},
++				}
++			elif args.get("token") != active.get("token"):
++				status = 401
++				body = {
++					"ok": False,
++					"error": {
++						"code": "SESSION_INVALID",
++						"title": "Session ended",
++						"reason": "Another station replaced this session.",
++						"action": "Scan your employee card again.",
++					},
++				}
++			elif method.endswith("station.logout"):
++				active.clear()
++				body = {"ok": True}
++			elif method.endswith("station.heartbeat"):
++				body = {
++					"ok": True,
++					"employee": "EMP-1",
++					"station": station,
++					"expires_at": "2099-10-21 17:00:00",
++				}
++			elif method.endswith("pack.resolve_ci"):
++				body = {
++					"ok": True,
++					"kind": "ci",
++					"ci": {"batch": args["raw"], "ci_class": "5", "expiry_date": "2099-12-31"},
++				}
++			else:
++				body = {
++					"ok": False,
++					"error": {
++						"code": "SCAN_INVALID",
++						"title": "Invalid code",
++						"reason": "Use the indicator lot field.",
++						"action": "Scan a Set ID.",
++					},
++				}
++			route.fulfill(status=status, content_type="application/json", body=json.dumps({"message": body}))
++
++		page.route("**/api/method/**", rpc)
++		page.route("**/app/station?*", lambda route: route.fulfill(body="<div id='wrapper'></div>"))
++		page.goto(f"http://station.test/app/station?station={station}")
++		page.evaluate(
++			r"""template => {
++			window.__ = (s, args) => args ? s.replace(/\{(\d+)\}/g, (_, n) => args[n]) : s;
++			window.frappe = {pages:{station:{}},csrf_token:'test',
++				utils:{escape_html: value => String(value).replace(/[&<>\"']/g,
++					c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))},
++				render_template: () => template};
++			window.$ = node => ({html: html => node.innerHTML = html});
++		} """,
++			template,
++		)
++		for path in ("tracecore/ui/page/station/station.js", "tracecore/public/js/station_t4.js"):
++			page.add_script_tag(path=str(ROOT / path))
++		for path in ("tracecore/public/css/tokens.css", "tracecore/ui/page/station/station.css"):
++			page.add_style_tag(path=str(ROOT / path))
++		page.evaluate(
++			"frappe.pages.station.on_page_load(document.querySelector('#wrapper')); frappe.pages.station.on_page_show()"
++		)
++		return page
++
++	open_shell.requests = requests
++	open_shell.active = active
++	return open_shell
++
++
++def login(page):
++	page.locator("#tc-card-input").fill("SYNTHETIC-CARD")
++	page.locator("#tc-card-input").press("Enter")
++	expect(page.locator(".tc-work")).to_be_visible()
++
++
++@pytest.mark.parametrize("viewport", [{"width": 1366, "height": 768}, {"width": 412, "height": 915}])
++def test_card_login_identity_body_token_and_logout(page, auth_shell, viewport):
++	page.set_viewport_size(viewport)
++	auth_shell(page)
++	expect(page.locator("#tc-card-input")).to_be_focused()
++	expect(page.locator(".tc-work")).to_be_hidden()
++	login(page)
++	expect(page.locator(".tc-session")).to_contain_text("Operator")
++	expect(page.locator(".tc-session")).to_contain_text("TR-004")
++	expect(page.locator(".tc-session")).to_contain_text("2099")
++	page.locator("#tc-scan-input").fill("SET-TEST")
++	page.locator("#tc-scan-input").press("Enter")
++	expect(page.locator(".tc-alert-reason")).to_contain_text("indicator lot")
++	method, args, headers = next(row for row in auth_shell.requests if row[0].endswith("pack.scan"))
++	assert args["token"].startswith("browser-private-")
++	assert args["client_ts"] and headers["x-idempotency-key"]
++	assert "browser-private-" not in json.dumps(headers)
++	assert "browser-private-" not in page.content()
++	assert page.evaluate("localStorage.length") == 0
++	assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
++	page.locator("[data-action='logout']").click()
++	expect(page.locator(".tc-work")).to_be_hidden()
++	expect(page.locator("#tc-card-input")).to_be_focused()
++	assert page.evaluate("sessionStorage.length") == 0
++
++
++def test_second_station_login_locks_old_kiosk_on_heartbeat(page, browser, auth_shell):
++	auth_shell(page)
++	login(page)
++	other_context = browser.new_context()
++	try:
++		other = other_context.new_page()
++		auth_shell(other, "TR-005")
++		login(other)
++		page.evaluate("frappe.tc_station.heartbeat()")
++		expect(page.locator(".tc-work")).to_be_hidden()
++		expect(page.locator(".tc-auth-result")).to_contain_text("Another station replaced")
++		expect(page.locator("#tc-card-input")).to_be_focused()
++		assert page.evaluate("sessionStorage.length") == 0
++		expect(other.locator(".tc-work")).to_be_visible()
++	finally:
++		other_context.close()
++
++
++@pytest.mark.parametrize("end", ["idle", "remove", "rescan", "expiry"])
++def test_session_end_clears_sensitive_work_and_pending_dialog(page, auth_shell, end):
++	auth_shell(page)
++	login(page)
++	page.evaluate("""() => {
++		const s = frappe.tc_station;
++		s.t4.ctx = {set:{set_id:'PRIVATE-SET'}};
++		s.t4.pending = {raw:'PRIVATE-SET'};
++		s.t4.dialog = document.createElement('div');
++		s.t4.dialog.className = 'tc-modal-overlay';
++		s.root.append(s.t4.dialog);
++		s.result.innerHTML = 'PRIVATE-SET';
++	}""")
++	if end == "idle":
++		page.evaluate("frappe.tc_station.lastActivity = Date.now()-600001; frappe.tc_station.checkSession()")
++	elif end == "remove":
++		page.evaluate("window.dispatchEvent(new Event('tc-card-removed'))")
++	elif end == "rescan":
++		page.locator("[data-action='rescan-card']").click()
++	else:
++		auth_shell.active.clear()
++		page.evaluate("frappe.tc_station.heartbeat()")
++	expect(page.locator(".tc-work")).to_be_hidden()
++	expect(page.locator(".tc-modal-overlay")).to_have_count(0)
++	assert "PRIVATE-SET" not in page.content()
++	assert page.evaluate("frappe.tc_station.t4.pending === null && frappe.tc_station.t4.ctx === null")
++	assert page.evaluate("sessionStorage.length") == 0
++
++
++@pytest.mark.parametrize("viewport", [{"width": 1366, "height": 768}, {"width": 412, "height": 915}])
++def test_indicator_lot_has_dedicated_form_and_restores_main_scan_focus(page, auth_shell, viewport):
++	page.set_viewport_size(viewport)
++	auth_shell(page)
++	login(page)
++	page.evaluate("""() => {
++		const t = frappe.tc_station.t4;
++		t.ctx = {set:{set_id:'SET',set_name:'Synthetic set',method:'Steam',status:'Processing',
++			cycles_used:0,max_cycles:100},bom:[],maintenance:[],pack_types:[],
++			ci:{classes:['5','6'],method:'Steam'}};
++		t.show();
++	}""")
++	lot = page.locator("#tc-ci-input")
++	expect(lot).to_be_visible()
++	lot.fill("SYNTHETIC-LOT")
++	lot.press("Enter")
++	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text("SYNTHETIC-LOT")
++	assert any(method.endswith("pack.resolve_ci") for method, _, _ in auth_shell.requests)
++	assert not any(method.endswith("pack.scan") for method, _, _ in auth_shell.requests)
++	expect(page.locator("#tc-scan-input")).to_be_focused()
++	assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
++	assert page.locator(".tc-ci-form button").bounding_box()["height"] >= 48
++
++
++def test_tab_restore_validates_token_before_exposing_work(page, auth_shell):
++	auth_shell(page)
++	login(page)
++	auth_shell(page)
++	expect(page.locator(".tc-work")).to_be_visible()
++	expect(page.locator(".tc-session")).to_contain_text("EMP-1")
++	assert any(method.endswith("station.heartbeat") for method, _, _ in auth_shell.requests)
++	auth_shell.active.clear()
++	auth_shell(page)
++	expect(page.locator(".tc-work")).to_be_hidden()
++	expect(page.locator(".tc-auth-result")).to_contain_text("Session ended")
++
++
++def test_card_rejection_displays_title_reason_action_inline(page, auth_shell):
++	auth_shell(page)
++	page.route(
++		"**/api/method/tracecore.v1.station.login",
++		lambda route: route.fulfill(
++			status=403,
++			content_type="application/json",
++			body=json.dumps(
++				{
++					"message": {
++						"ok": False,
++						"error": {
++							"code": "COMPETENCY_REQUIRED",
++							"title": "Card rejected",
++							"reason": "Competency expired",
++							"action": "Ask R02 to review competency",
++						},
++					}
++				}
++			),
++		),
++	)
++	page.locator("#tc-card-input").fill("SYNTHETIC-CARD")
++	page.locator("#tc-card-input").press("Enter")
++	alert = page.locator(".tc-auth-result .tc-alert-error")
++	expect(alert).to_contain_text("Card rejected")
++	expect(alert).to_contain_text("Competency expired")
++	expect(alert).to_contain_text("Ask R02")
++	expect(page.locator(".tc-work")).to_be_hidden()
++
++
++def test_offline_card_login_stays_locked_and_can_login_after_reconnect(page, context, auth_shell):
++	auth_shell(page)
++	context.set_offline(True)
++	expect(page.locator(".tc-offline-banner")).to_be_visible()
++	expect(page.locator(".tc-auth-result")).to_contain_text("Card login needs the server")
++	page.locator("#tc-card-input").fill("SYNTHETIC-CARD")
++	page.locator("#tc-card-input").press("Enter")
++	expect(page.locator(".tc-work")).to_be_hidden()
++	context.set_offline(False)
++	expect(page.locator(".tc-offline-banner")).to_be_hidden()
++	login(page)
++	context.set_offline(True)
++	expect(page.locator(".tc-result")).to_have_attribute("data-state", "offline")
++	expect(page.locator(".tc-result")).to_contain_text("Packing needs a network connection")
++	context.set_offline(False)
++	expect(page.locator(".tc-result")).to_have_attribute("data-state", "empty")
++
++
++def test_t4_transport_retry_preserves_timestamp_key_and_body_token(page, auth_shell):
++	auth_shell(page)
++	login(page)
++	attempts = []
++
++	def fail_once(route):
++		attempts.append((route.request.post_data_json, route.request.headers))
++		if len(attempts) == 1:
++			route.abort()
++		else:
++			route.fallback()
++
++	page.route("**/api/method/tracecore.v1.pack.scan", fail_once)
++	page.locator("#tc-scan-input").fill("SET-TEST")
++	page.locator("#tc-scan-input").press("Enter")
++	expect(page.locator(".tc-result")).to_contain_text("No answer from the server")
++	page.locator("[data-action='retry']").click()
++	expect(page.locator(".tc-result")).to_contain_text("Invalid code")
++	assert len(attempts) == 2
++	assert attempts[0][0] == attempts[1][0]
++	assert attempts[0][1]["x-idempotency-key"] == attempts[1][1]["x-idempotency-key"]
++
++
++@pytest.mark.parametrize("active", [False, True])
++def test_reader_card_scan_event_logs_in_and_replaces_current_session(page, auth_shell, active):
++	auth_shell(page)
++	if active:
++		login(page)
++	page.evaluate(
++		"window.dispatchEvent(new CustomEvent('tc-card-scanned', {detail:{card_id:'SYNTHETIC-NEXT-CARD'}}))"
++	)
++	if active:
++		page.wait_for_function(
++			"frappe.tc_station.sessionVersion > 0 && frappe.tc_station.session && !frappe.tc_station.authBusy",
++			timeout=5000,
++		)
++	expect(page.locator(".tc-work")).to_be_visible()
++	logins = [args for method, args, _ in auth_shell.requests if method.endswith("station.login")]
++	assert logins[-1]["card_id"] == "SYNTHETIC-NEXT-CARD"
++	if active:
++		logout_index = next(
++			i for i, row in enumerate(auth_shell.requests) if row[0].endswith("station.logout")
++		)
++		login_index = next(
++			i
++			for i, row in enumerate(auth_shell.requests)
++			if row[0].endswith("station.login") and row[1]["card_id"] == "SYNTHETIC-NEXT-CARD"
++		)
++		assert logout_index < login_index
+diff --git a/tests_e2e/test_station_smoke.py b/tests_e2e/test_station_smoke.py
+index 6873fd1..c221396 100644
+--- a/tests_e2e/test_station_smoke.py
++++ b/tests_e2e/test_station_smoke.py
+@@ -68,21 +68,21 @@ def test_retry_after_timeout_gets_stored_result(station_page, set_id):
+ 	page.route("**/api/method/tracecore.v1.set_unit.get", delay_first_response)
+ 	scan(page, set_id)
+ 	expect(page.locator(".tc-result")).to_have_attribute("data-state", "offline", timeout=15000)
+ 	page.locator(".tc-result [data-action='retry']").click()
+ 	expect(page.locator(".tc-result[data-state='result'] .tc-code")).to_have_text(set_id, timeout=5000)
+ 
+ 
+ def test_missing_station_shows_error(logged_in_page):
+ 	page = logged_in_page
+ 	page.goto("/app/station")
+-	alert = page.locator(".tc-result[data-state='error'] .tc-alert-error")
++	alert = page.locator(".tc-auth-result .tc-alert-error")
+ 	expect(alert).to_contain_text("Chưa cấu hình trạm")
+ 
+ 
+ def test_station_text_at_least_16px(station_page):
+ 	smallest = station_page.evaluate(
+ 		"""() => Math.min(...Array.from(document.querySelectorAll('.tc-station *'))
+ 			.filter((el) => el.offsetParent !== null && el.textContent.trim())
+ 			.map((el) => parseFloat(getComputedStyle(el).fontSize)))"""
+ 	)
+ 	assert smallest >= 16
+diff --git a/tests_e2e/test_station_t4.py b/tests_e2e/test_station_t4.py
+index 8dacf5e..848ad4c 100644
+--- a/tests_e2e/test_station_t4.py
++++ b/tests_e2e/test_station_t4.py
+@@ -12,20 +12,26 @@ from playwright.sync_api import expect
+ 
+ SCAN_INPUT = "#tc-scan-input"
+ AGENT_PRINT_URL = "http://127.0.0.1:8765/print"
+ 
+ 
+ def scan(page, raw):
+ 	page.keyboard.type(raw)
+ 	page.keyboard.press("Enter")
+ 
+ 
++def scan_indicator(page, raw):
++	field = page.locator("#tc-ci-input")
++	field.fill(raw)
++	field.press("Enter")
++
++
+ def mock_agent(page):
+ 	"""Agent giả trả 202 cho POST /print; trả về danh sách payload đã nhận (kể cả CORS preflight)."""
+ 	received = []
+ 	cors = {
+ 		"access-control-allow-origin": "*",
+ 		"access-control-allow-headers": "Content-Type",
+ 		"access-control-allow-methods": "POST, OPTIONS",
+ 	}
+ 
+ 	def handle(route):
+@@ -102,21 +108,21 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
+ 		0
+ 	)  # bộ sạch, không nhắc
+ 	confirm_all = page.locator("[data-action='confirm-all']")
+ 	expect(confirm_all).to_be_enabled(timeout=20000)  # D1: bật khi lưới BOM đã hiển thị đủ và ảnh đã tải
+ 	# hạn dùng dự kiến do server tính (get_context), không theo ngày của trình duyệt
+ 	expected_expiry = page.locator("[data-region='pack'] p b")
+ 	expect(expected_expiry).to_have_text(re.compile(r"^\d{2}/\d{2}/\d{4}$"))
+ 	expected_text = expected_expiry.inner_text()
+ 
+ 	taps.tap(confirm_all)
+-	scan(page, t4_demo["ci_steam"])
++	scan_indicator(page, t4_demo["ci_steam"])
+ 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_steam"])
+ 	expect(page.locator(".tc-missing")).to_have_count(0)
+ 	taps.tap(page.locator("[data-action='confirm-pack']"))
+ 
+ 	expect(page.locator(".tc-cycle")).to_have_text(re.compile(r"^CY-\d{6}-\d{4}$"), timeout=15000)
+ 	label = page.locator(".tc-label")
+ 	expect(label).to_contain_text("HẠN SỬ DỤNG")
+ 	expect(label).to_contain_text("TEST")
+ 	expect(label.locator(".tc-label-dm")).to_be_visible()
+ 	expect(label.locator(".tc-label-dm")).to_have_attribute("alt", re.compile(r"^DataMatrix CY-"))
+@@ -137,21 +143,21 @@ def test_t4_maintenance_reminder_flow(t4_page, t4_demo):
+ 	mock_agent(page)
+ 	taps = Taps()
+ 
+ 	scan_set_and_wait_context(page, t4_demo["set_maint"])
+ 	reminder = page.locator("[data-region='maint'] .tc-maint")
+ 	expect(reminder).to_have_count(1)
+ 	expect(reminder).to_contain_text("Đến hạn")
+ 	done_button = reminder.locator("[data-action='maint-done']")
+ 	expect(done_button).to_have_count(1)
+ 	taps.tap(page.locator("[data-action='confirm-all']"))
+-	scan(page, t4_demo["ci_steam"])
++	scan_indicator(page, t4_demo["ci_steam"])
+ 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_steam"])
+ 	# chưa xử lý nhắc: nút chính khóa và nêu lý do
+ 	expect(page.locator("[data-action='confirm-pack']")).to_be_disabled()
+ 	expect(page.locator(".tc-missing")).to_contain_text("bảo dưỡng")
+ 
+ 	done_button.click()
+ 	dialog = page.locator(".tc-modal [role='dialog']")
+ 	expect(dialog).to_be_visible()
+ 	oil_lot = dialog.locator("#tc-dlg-oil_batch")
+ 	expect(oil_lot).to_be_visible()
+@@ -191,21 +197,21 @@ def test_t4_touch_targets_and_font_sizes(t4_page, t4_demo):
+ 	assert_touch_and_font(page)
+ 
+ 
+ def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
+ 	page = t4_page
+ 	sent = mock_agent(page)
+ 	taps = Taps()
+ 
+ 	scan_set_and_wait_context(page, t4_demo["set_plasma"])
+ 	taps.tap(page.locator("[data-action='confirm-all']"))
+-	scan(page, t4_demo["ci_plasma"])
++	scan_indicator(page, t4_demo["ci_plasma"])
+ 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_plasma"])
+ 	taps.tap(page.locator("[data-action='confirm-pack']"))
+ 
+ 	# Cycle ID vẫn giữ nhưng máy in đang lắp nhãn hấp: nhãn chờ, alert-error có lý do và hành động (AC-8)
+ 	expect(page.locator(".tc-cycle")).to_have_text(re.compile(r"^CY-\d{6}-\d{4}$"), timeout=15000)
+ 	waiting = page.locator("[data-region='print'] .tc-alert-error")
+ 	expect(waiting).to_be_visible(timeout=15000)
+ 	expect(waiting.locator(".tc-alert-reason")).not_to_be_empty()
+ 	expect(waiting).to_contain_text("VT-NHAN-PLASMA")
+ 	expect(waiting).to_contain_text("CN-")
+diff --git a/tracecore/public/js/station_t4.js b/tracecore/public/js/station_t4.js
+index 86ee3d6..b135ed8 100644
+--- a/tracecore/public/js/station_t4.js
++++ b/tracecore/public/js/station_t4.js
+@@ -1,15 +1,15 @@
+ /* global uuid4, clientTs, esc, STATUS_BADGE */
+ // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
+ // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
+-// TraceCoreStation giao cho T4Packing khi trạm là bước T4: một ô quét duy nhất (D10), mọi lần quét đi qua
+-// tracecore.v1.pack.scan kèm open_set; "kind" của kết quả quyết định việc tiếp theo. Lỗi chặn = alert-error inline.
++// Ô chính quét Set/Cycle/cuộn nhãn; lô chỉ thị dùng ô riêng và RPC resolve_ci.
++// Lỗi chặn = alert-error inline; mọi RPC người dùng do shell gắn bearer trong body.
+ 
+ const T4_AGENT_URL = "http://127.0.0.1:8765/print";
+ const T4_AGENT_TIMEOUT_MS = 5000;
+ const T4_VOID_REASONS = [
+ 	"Used",
+ 	"Expired",
+ 	"Torn",
+ 	"Load Failed",
+ 	"Returned Unused",
+ 	"Label Damaged",
+@@ -60,86 +60,125 @@ class T4Packing {
+ 		this.input = station.input;
+ 		this.pending = null; // yêu cầu chưa có câu trả lời dứt khoát: Thử lại gửi lại y nguyên key + client_ts
+ 		this.offline = false;
+ 		this.busy = null; // tên RPC đang chạy
+ 		this.dialog = null;
+ 		this.viewKey = null;
+ 		this.reset();
+ 		this.result.addEventListener("change", (event) => {
+ 			if (event.target.matches(".tc-check")) this.toggleLine(event.target);
+ 		});
++		this.result.addEventListener("submit", (event) => {
++			if (!event.target.matches(".tc-ci-form")) return;
++			event.preventDefault();
++			const input = event.target.querySelector("#tc-ci-input");
++			const raw = input.value;
++			input.value = "";
++			this.scanIndicator(raw);
++		});
+ 	}
+ 
+ 	get dialogOpen() {
+ 		return Boolean(this.dialog);
+ 	}
+ 
+ 	reset() {
+ 		this.ctx = null; // ngữ cảnh của pack.scan kind=context
+ 		this.checked = new Set(); // chỉ số dòng BOM đã tick
+ 		this.imagesReady = false;
+ 		this.ci = null;
+ 		this.packType = null;
+ 		this.maint = {}; // {mã dụng cụ: {instrument, action, oil_batch?, reason?}}
+ 		this.done = null; // kết quả generate_cycle_id
+ 		this.printNote = null; // {kind: sending | sent | agent-failed | waiting}
+ 		this.notice = null; // {variant, title, reason, action, items, code, technical}
+ 		this.lookup = null;
+ 	}
+ 
++	clearSession() {
++		if (this.dialog) this.dialog.remove();
++		this.dialog = null;
++		this.pending = null;
++		this.busy = null;
++		this.viewKey = null;
++		this.offline = false;
++		this.reset();
++		this.input.placeholder = __("Scan Set ID...");
++		this.input.setAttribute("aria-label", __("Scan Set ID"));
++	}
++
+ 	openSet() {
+ 		return this.ctx && !this.done ? this.ctx.set.set_id : null;
+ 	}
+ 
+ 	// ---- quét và gọi RPC ----
+ 	async scan(raw) {
+ 		raw = (raw || "").trim();
+ 		this.input.value = "";
+ 		if (!raw) return this.station.focus();
+ 		if (this.station.isOffline()) return this.station.setOffline(true);
+ 		await this.request(
+ 			"tracecore.v1.pack.scan",
+ 			{ raw, station: this.station.station, open_set: this.openSet() },
+ 			(res) => this.onScan(res, raw)
+ 		);
+ 	}
+ 
++	async scanIndicator(raw) {
++		raw = (raw || "").trim();
++		if (!raw || !this.openSet() || !this.station.session) return;
++		if (this.station.isOffline()) return this.station.setOffline(true);
++		await this.request(
++			"tracecore.v1.pack.resolve_ci",
++			{
++				raw,
++				station: this.station.station,
++				open_set: this.openSet(),
++			},
++			(res) => this.onScan(res, raw)
++		);
++	}
++
+ 	async request(method, args, onOk) {
+-		if (this.busy) return;
++		if (this.busy || !this.station.session) return;
++		const version = this.station.sessionVersion;
+ 		const sig = method + JSON.stringify(args);
+ 		if (!this.pending || this.pending.sig !== sig) {
+ 			this.pending = { sig, method, args, onOk, key: uuid4(), ts: clientTs() };
+ 		}
+ 		const pending = this.pending;
+ 		this.busy = method;
+ 		if (this.viewKey) this.refresh();
+ 		else this.station.renderLoading();
+ 		const started = performance.now();
+ 		let response = null;
+ 		let failure = null;
+ 		try {
+ 			response = await this.station.rpc(
+ 				method,
+ 				{ ...args, client_ts: pending.ts },
+ 				pending.key
+ 			);
+-			this.pending = null;
+-			this.result.dataset.ms = String(Math.round(performance.now() - started));
+ 		} catch (error) {
+ 			failure = error;
+ 		}
++		if (version !== this.station.sessionVersion || (failure && failure.sessionEnded)) return;
++		if (!failure) {
++			this.pending = null;
++			this.result.dataset.ms = String(Math.round(performance.now() - started));
++		}
+ 		this.busy = null;
+ 		if (!failure) this.markOnline();
+ 		if (failure) this.failure(failure);
+ 		else if (response && response.ok === false) this.reject(response.error, method);
+ 		else onOk(response);
+-		this.station.focus();
++		this.station.focus(true);
+ 	}
+ 
+ 	retry() {
+ 		this.station.manualOffline = false;
+ 		if (!navigator.onLine) return this.station.setOffline(true);
+ 		this.station.setOffline(false);
+ 		const pending = this.pending;
+ 		if (pending) return this.request(pending.method, pending.args, pending.onOk);
+ 		if (!this.viewKey) return this.station.handshake();
+ 		this.notice = null;
+@@ -210,37 +249,39 @@ class T4Packing {
+ 			this.ci = res.ci;
+ 		} else if (res.kind === "pack") {
+ 			this.lookup = res.pack;
+ 		} else if (res.kind === "roll") {
+ 			return this.onRoll(res.roll, raw);
+ 		}
+ 		this.show();
+ 	}
+ 
+ 	async onRoll(roll, raw) {
++		const version = this.station.sessionVersion;
+ 		if (this.ctx && this.ctx.set.method === roll.method) {
+ 			this.ctx.printer = { name: roll.printer, label_type: roll.label_type };
+ 			this.ctx.label_type = roll.label_type;
+ 		}
+ 		const jobs = roll.released_jobs || [];
+ 		const broken = roll.failed_jobs || []; // nhãn chờ không dựng được: vẫn Waiting, cuộn đã ghi nhận
+ 		const title = __("Loaded roll {0} into printer {1}.", [raw, roll.printer]);
+ 		this.notice = jobs.length
+ 			? {
+ 					variant: "info",
+ 					title,
+ 					reason: __("Sending {0} waiting label(s) to the printer...", [jobs.length]),
+ 			  }
+ 			: this.rollNotice(title, 0, 0, broken);
+ 		this.show();
+ 		if (!jobs.length) return;
+ 		const results = await Promise.all(jobs.map((job) => this.sendToAgent(job)));
++		if (version !== this.station.sessionVersion) return;
+ 		const failed = results.filter((ok) => !ok).length;
+ 		this.notice = this.rollNotice(title, jobs.length, failed, broken);
+ 		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
+ 		if (mine) {
+ 			this.done.print = { ...this.done.print, ...mine, status: "Queued", warning: null };
+ 			this.printNote = { kind: results[jobs.indexOf(mine)] ? "sent" : "agent-failed" };
+ 		}
+ 		this.show();
+ 	}
+ 
+@@ -269,20 +310,21 @@ class T4Packing {
+ 			variant: failed || broken.length ? "warn" : "info",
+ 			title,
+ 			reason: reasons.join(" "),
+ 			items: broken.map((job) => __("Print job {0}: {1}", [job.print_job, job.error])),
+ 			action: actions.join(" "),
+ 		};
+ 	}
+ 
+ 	// ---- in qua Station Agent (D11) ----
+ 	async sendToAgent(job) {
++		if (!this.station.session) return false;
+ 		const controller = new AbortController();
+ 		const timer = setTimeout(() => controller.abort(), T4_AGENT_TIMEOUT_MS);
+ 		try {
+ 			const response = await fetch(T4_AGENT_URL, {
+ 				method: "POST",
+ 				headers: { "Content-Type": "application/json" },
+ 				body: JSON.stringify({
+ 					zpl: job.zpl,
+ 					print_job: job.print_job,
+ 					printer: job.printer,
+@@ -291,25 +333,27 @@ class T4Packing {
+ 			});
+ 			return response.ok;
+ 		} catch (error) {
+ 			return false;
+ 		} finally {
+ 			clearTimeout(timer);
+ 		}
+ 	}
+ 
+ 	async handlePrint(print) {
++		const version = this.station.sessionVersion;
+ 		this.done.print = print;
+ 		if (print.status === "Queued" && print.zpl) {
+ 			this.printNote = { kind: "sending" };
+ 			this.show();
+ 			const ok = await this.sendToAgent(print);
++			if (version !== this.station.sessionVersion) return;
+ 			this.printNote = { kind: ok ? "sent" : "agent-failed" };
+ 		} else {
+ 			this.printNote = { kind: "waiting" };
+ 		}
+ 		this.show();
+ 	}
+ 
+ 	onGenerated(res) {
+ 		this.notice = null;
+ 		this.done = res;
+@@ -614,20 +658,21 @@ class T4Packing {
+ 	}
+ 
+ 	// ---- render ----
+ 	viewState() {
+ 		return this.viewKey === "info" && this.notice && this.notice.variant === "error"
+ 			? "error"
+ 			: "result";
+ 	}
+ 
+ 	show() {
++		if (!this.station.session) return;
+ 		let key = null;
+ 		if (this.done) key = `done:${this.done.pack.cycle_id}`;
+ 		else if (this.ctx) key = `ctx:${this.ctx.set.set_id}`;
+ 		else if (this.notice || this.lookup) key = "info";
+ 		this.updatePlaceholder();
+ 		if (!key) {
+ 			this.viewKey = null;
+ 			if (this.offline) return this.station.setState("offline", this.offlineHtml());
+ 			return this.station.setState(
+ 				"empty",
+@@ -674,31 +719,33 @@ class T4Packing {
+ 	markScanBox() {
+ 		const error = Boolean(this.notice && this.notice.variant === "error");
+ 		this.station.form.classList.toggle("is-error", error);
+ 		// lỗi mới (vd bấm Xác nhận ở cuối trang): cuộn về đầu để thấy ô quét và alert-error ngay dưới
+ 		if (error && this.shownNotice !== this.notice) window.scrollTo({ top: 0 });
+ 		this.shownNotice = this.notice;
+ 	}
+ 
+ 	updatePlaceholder() {
+ 		const text = this.openSet()
+-			? __("Scan indicator lot, next Set ID, Cycle ID or roll code...")
++			? __("Scan next Set ID, Cycle ID or roll code...")
+ 			: __("Scan Set ID...");
+ 		this.input.placeholder = text;
+ 		this.input.setAttribute("aria-label", text);
+ 	}
+ 
+ 	watchImages() {
+ 		// D1: "Xác nhận tất cả" chỉ bật khi mọi ảnh của lưới BOM đã tải xong hoặc báo lỗi
+ 		const images = [...this.result.querySelectorAll(".tc-inst img")];
++		const context = this.ctx;
+ 		const check = () => {
+-			if (this.imagesReady || !this.ctx || !this.ctx.bom.length) return;
++			if (this.imagesReady || this.ctx !== context || !this.ctx || !this.ctx.bom.length)
++				return;
+ 			if (images.every((img) => img.complete)) {
+ 				this.imagesReady = true;
+ 				this.refresh();
+ 			}
+ 		};
+ 		images.forEach((img) => {
+ 			img.addEventListener("load", check);
+ 			img.addEventListener("error", () => {
+ 				img.classList.add("is-broken");
+ 				img.alt = __("Photo not available");
+@@ -1020,30 +1067,38 @@ class T4Packing {
+ 			<span class="tc-hint">${all ? `<span aria-hidden="true">&#10003;</span> ` : ""}${esc(
+ 			__("Confirmed {0}/{1} lines", [this.checked.size, total])
+ 		)}</span>
+ 			${ready ? "" : `<span class="tc-hint">${esc(__("Loading instrument photos..."))}</span>`}
+ 		</div>`;
+ 	}
+ 
+ 	ciHtml() {
+ 		if (!this.ctx) return "";
+ 		const heading = `<h3>${esc(__("Indicator Lot"))}</h3>`;
++		const field = `<form class="tc-ci-form" autocomplete="off">
++			<label for="tc-ci-input">${esc(__("Scan indicator lot"))}</label>
++			<input id="tc-ci-input" class="tc-scan-input" type="text" inputmode="none"
++				autocomplete="off" autocapitalize="off" spellcheck="false"${t4Disabled(Boolean(this.busy))} />
++			<button type="submit" class="tc-btn tc-btn-secondary"${t4Disabled(Boolean(this.busy))}>${esc(
++			__("Scan")
++		)}</button>
++		</form>`;
+ 		if (!this.ci) {
+ 			const prompt = __("Scan indicator lot class {0} – {1}", [
+ 				this.ctx.ci.classes.join("/"),
+ 				__(this.ctx.ci.method),
+ 			]);
+-			return `${heading}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
++			return `${heading}${field}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
+ 				prompt
+ 			)}</p>`;
+ 		}
+-		return `${heading}
++		return `${heading}${field}
+ 			<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span>
+ 				<b class="tc-mono">${esc(this.ci.batch)}</b> · ${esc(__("class {0}", [this.ci.ci_class]))}</p>
+ 			<p>${esc(__("Expiry: {0}", [t4Date(this.ci.expiry_date)]))}</p>`;
+ 	}
+ 
+ 	packHtml() {
+ 		if (!this.ctx) return "";
+ 		const heading = `<h3>${esc(__("Pack Type"))}</h3>`;
+ 		const types = this.ctx.pack_types || [];
+ 		if (!types.length) {
+diff --git a/tracecore/tests/test_station_page.py b/tracecore/tests/test_station_page.py
+index 87241fe..fb3d033 100644
+--- a/tracecore/tests/test_station_page.py
++++ b/tracecore/tests/test_station_page.py
+@@ -103,20 +103,35 @@ def other_app_translations():
+ 		po_path = os.path.join(base, "locale", "vi.po")
+ 		if os.path.exists(po_path):
+ 			with open(po_path, "rb") as handle:
+ 				for message in read_po(handle):
+ 					if isinstance(message.id, str) and message.id and message.string and not message.context:
+ 						found[message.id].add(_nfc(message.string))
+ 	return found
+ 
+ 
+ class TestStationPage(FrappeTestCase):
++	def test_station_auth_shell_gates_the_existing_work_surface(self):
++		with open(os.path.join(APP_PATH, "ui/page/station/station.html"), encoding="utf-8") as handle:
++			html = handle.read()
++		self.assertIn('class="tc-auth-form', html)
++		self.assertIn('id="tc-card-input"', html)
++		self.assertIn('class="tc-work" hidden', html)
++		self.assertIn('class="tc-session" hidden', html)
++
++	def test_station_bearer_never_uses_persistent_storage(self):
++		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
++			source = handle.read()
++		self.assertIn("sessionStorage", source)
++		self.assertNotIn("localStorage", source)
++		self.assertNotIn('headers["Authorization"]', source)
++
+ 	def test_station_page_registered(self):
+ 		page = frappe.get_doc("Page", "station")
+ 		self.assertEqual(page.module, "UI")
+ 		roles = {row.role for row in page.roles}
+ 		self.assertTrue({"System Manager", "TC R03", "TC R04", "TC R06"} <= roles, msg=roles)
+ 
+ 	def test_service_worker_served(self):
+ 		set_request(method="GET", path="/sw.js")
+ 		response = get_response()
+ 		self.assertEqual(response.status_code, 200)
+diff --git a/tracecore/translations/vi.csv b/tracecore/translations/vi.csv
+index 124f4b2..c633e03 100644
+--- a/tracecore/translations/vi.csv
++++ b/tracecore/translations/vi.csv
+@@ -846,10 +846,44 @@ Current password or a valid recovery key is required.,Cần mật khẩu hiện
+ PIN change required,Cần đổi PIN,
+ A supervisor reset this PIN.,Người quản lý đã đặt lại PIN này.,
+ Change your PIN before continuing.,Đổi PIN trước khi tiếp tục.,
+ Choose a different PIN.,Chọn PIN khác.,
+ A supervisor station PIN proof is required.,Cần bằng chứng PIN còn hiệu lực từ phiên trạm của R02.,
+ Choose an employee account.,Chọn tài khoản nhân viên.,
+ Station PIN Change Required,Yêu cầu đổi PIN trạm,
+ Use account credential actions to change or reset a password.,Dùng chức năng tài khoản để đổi hoặc đặt lại mật khẩu.,
+ Use account credential actions to change or reset a PIN.,Dùng chức năng tài khoản để đổi hoặc đặt lại PIN.,
+ Ask R10 or a PIN-verified R02 to reset your account.,Đề nghị R10 hoặc R02 đã xác thực PIN đặt lại tài khoản.,
++Scan employee card,Quét thẻ nhân viên,
++Scan employee card...,Quét thẻ nhân viên...,
++Scan another card,Quét thẻ khác,
++Session expires: {0},Phiên hết hạn: {0},
++Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy chủ.,
++"Reconnect, then scan your employee card again.",Kết nối lại rồi quét lại thẻ nhân viên.,
++"Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
++Scan indicator lot,Quét lô chỉ thị,
++"Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
++Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
++"Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
++raw and open_set must be strings.,raw và open_set phải là chuỗi.,
++Absolute Expires At,Hết hạn tuyệt đối lúc,Station Session
++Approved By,Người phê duyệt,Station Competency
++"Competency must be assigned to a station, not a zone.","Năng lực phải được gán cho trạm, không phải khu.",
++Employee Disabled,Nhân viên đã bị vô hiệu,Station Session
++End Reason,Lý do kết thúc,Station Session
++Idle,Không hoạt động,Station Session
++Is Open,Đang mở,Station Session
++Last Activity At,Hoạt động cuối lúc,Station Session
++Replaced,Được thay thế,Station Session
++Station Card Enabled,Bật thẻ trạm,Employee
++Station Card ID,Mã thẻ trạm,Employee
++Station Competency,Năng lực trạm,
++Station PIN Hash,Mã băm PIN trạm,Employee
++Station Session,Phiên trạm,
++Temporary Access,Truy cập tạm thời,Station Competency
++Temporary Reason,Lý do tạm thời,Station Competency
++The session belongs to another station.,Phiên thuộc về trạm khác.,
++Token Hash,Mã băm token,Station Session
++Use the station where you scanned your card.,Sử dụng trạm nơi bạn đã quét thẻ.,
++Valid Until,Có hiệu lực đến,Station Competency
++card_id and station must be strings.,card_id và station phải là chuỗi.,
++pin must be a string.,pin phải là chuỗi.,
+diff --git a/tracecore/ui/page/station/station.css b/tracecore/ui/page/station/station.css
+index 9c846ed..a552196 100644
+--- a/tracecore/ui/page/station/station.css
++++ b/tracecore/ui/page/station/station.css
+@@ -117,30 +117,55 @@ body.tc-kiosk .layout-main-section {
+ 	border-radius: var(--tc-r-xl);
+ }
+ 
+ .tc-scan.is-error {
+ 	background: var(--tc-fail-tint);
+ 	border: var(--tc-bw-thick) solid var(--tc-fail);
+ }
+ 
+ .tc-scan-input {
+ 	flex: 1;
++	min-width: 0;
+ 	min-height: var(--tc-touch-station);
+ 	padding: var(--tc-sp-3);
+ 	background: var(--tc-card);
+ 	border: var(--tc-bw-hair) solid var(--tc-primary);
+ 	border-radius: var(--tc-r-md);
+ 	color: var(--tc-text);
+ 	font-family: var(--tc-font-mono);
+ 	font-size: var(--tc-fs-2xl);
+ }
+ 
++.tc-work[hidden],
++.tc-session[hidden],
++.tc-auth-form[hidden] {
++	display: none;
++}
++
++.tc-session {
++	display: flex;
++	flex-wrap: wrap;
++	align-items: center;
++	gap: var(--tc-touch-gap);
++	margin-bottom: var(--tc-sp-3);
++}
++
++.tc-ci-form {
++	display: flex;
++	flex-wrap: wrap;
++	gap: var(--tc-touch-gap);
++}
++
++.tc-ci-form label {
++	flex-basis: 100%;
++}
++
+ .tc-btn {
+ 	min-height: var(--tc-touch-min);
+ 	padding: var(--tc-sp-2-5) var(--tc-sp-4-5);
+ 	border: 0;
+ 	border-radius: var(--tc-r-md);
+ 	font-size: var(--tc-fs-md);
+ 	font-weight: var(--tc-fw-bold);
+ 	cursor: pointer;
+ 	transition: background var(--tc-dur-fast) var(--tc-ease);
+ }
+diff --git a/tracecore/ui/page/station/station.html b/tracecore/ui/page/station/station.html
+index 9c66396..3fce6f7 100644
+--- a/tracecore/ui/page/station/station.html
++++ b/tracecore/ui/page/station/station.html
+@@ -2,28 +2,45 @@
+ 	<div class="tc-zonebar tc-zone-web" role="presentation"></div>
+ 	<div class="tc-offline-banner" role="status" hidden>
+ 		{%= __("Offline - transactions are kept on this device") %}
+ 	</div>
+ 	<main class="tc-main">
+ 		<header class="tc-title">
+ 			<h2 class="tc-station-name">{%= __("Station") %}</h2>
+ 			<span class="tc-tag tc-zone-label"></span>
+ 			<span class="tc-tag tc-station-code"></span>
+ 		</header>
++		<form class="tc-auth-form tc-card tc-scan" autocomplete="off" novalidate>
++			<label class="tc-sr-only" for="tc-card-input">{%= __("Scan employee card") %}</label>
++			<input id="tc-card-input" class="tc-scan-input" type="text" inputmode="none"
++				autocomplete="off" autocapitalize="off" spellcheck="false"
++				placeholder="{%= __("Scan employee card...") %}" aria-label="{%= __("Scan employee card") %}" />
++			<button type="submit" class="tc-btn tc-btn-primary">{%= __("Login") %}</button>
++		</form>
++		<section class="tc-auth-result" aria-live="polite"></section>
++		<div class="tc-session" hidden>
++			<span class="tc-session-person"></span>
++			<span class="tc-session-station tc-mono"></span>
++			<span class="tc-session-expiry"></span>
++			<button type="button" class="tc-btn tc-btn-secondary" data-action="rescan-card">{%= __("Scan another card") %}</button>
++			<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">{%= __("Log out") %}</button>
++		</div>
++		<div class="tc-work" hidden>
+ 		<form class="tc-card tc-scan" autocomplete="off" novalidate>
+ 			<label class="tc-sr-only" for="tc-scan-input">{%= __("Scan Set ID") %}</label>
+ 			<input
+ 				id="tc-scan-input"
+ 				class="tc-scan-input"
+ 				type="text"
+ 				inputmode="none"
+ 				autocomplete="off"
+ 				autocapitalize="off"
+ 				spellcheck="false"
+ 				placeholder="{%= __("Scan Set ID...") %}"
+ 				aria-label="{%= __("Scan Set ID") %}"
+ 			/>
+ 			<button type="submit" class="tc-btn tc-btn-primary tc-scan-button">{%= __("Scan") %}</button>
+ 		</form>
+ 		<section class="tc-card tc-result" aria-live="polite" data-state="loading"></section>
++		</div>
+ 	</main>
+ </div>
+diff --git a/tracecore/ui/page/station/station.js b/tracecore/ui/page/station/station.js
+index 05bbb68..e2daaed 100644
+--- a/tracecore/ui/page/station/station.js
++++ b/tracecore/ui/page/station/station.js
+@@ -1,17 +1,19 @@
+ // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
+ // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
+ // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
+ // Trạm bước T4 giao cho T4Packing (public/js/station_t4.js, nối sau file này qua hook page_js).
+ /* global T4Packing */
+ 
+ const RPC_TIMEOUT_MS = 8000;
++const STATION_IDLE_MS = 10 * 60 * 1000;
++const STATION_HEARTBEAT_MS = 30000;
+ const ZONE_CLASS = {
+ 	Dirty: "dirty",
+ 	Clean: "clean",
+ 	Sterile: "sterile",
+ 	Department: "dept",
+ 	Waste: "waste",
+ };
+ const ZONE_LABEL = {
+ 	Dirty: "Dirty zone",
+ 	Clean: "Clean zone",
+@@ -61,78 +63,141 @@ function esc(value) {
+ class TraceCoreStation {
+ 	constructor(wrapper) {
+ 		this.wrapper = wrapper;
+ 		this.station = new URLSearchParams(window.location.search).get("station");
+ 		this.stationInfo = null;
+ 		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
+ 		this.pending = null;
+ 		this.lastRaw = null;
+ 		this.manualOffline = false;
+ 		this.visible = false;
++		this.session = null;
++		this.sessionVersion = 0;
++		this.authBusy = false;
++		this.heartbeatBusy = false;
++		this.lastActivity = Date.now();
++		this.heartbeatActivity = 0;
++		this.heartbeatAttempt = 0;
+ 
+ 		$(wrapper).html(frappe.render_template("station", {}));
+ 		this.root = wrapper.querySelector(".tc-station");
+ 		this.zonebar = this.root.querySelector(".tc-zonebar");
+ 		this.banner = this.root.querySelector(".tc-offline-banner");
+-		this.form = this.root.querySelector(".tc-scan");
+-		this.input = this.root.querySelector(".tc-scan-input");
++		this.form = this.root.querySelector(".tc-work .tc-scan");
++		this.input = this.root.querySelector("#tc-scan-input");
+ 		this.result = this.root.querySelector(".tc-result");
++		this.authForm = this.root.querySelector(".tc-auth-form");
++		this.cardInput = this.root.querySelector("#tc-card-input");
++		this.authResult = this.root.querySelector(".tc-auth-result");
++		this.work = this.root.querySelector(".tc-work");
++		this.sessionBar = this.root.querySelector(".tc-session");
+ 		this.root.dataset.shellMs = String(Math.round(performance.now()));
+ 
+ 		this.bind();
+ 		this.addManifestLink();
+ 		this.registerServiceWorker();
+-		this.renderLoading();
+-		this.handshake();
++		this.renderLogin();
++		this.initialHandshake = this.handshake();
++		this.sessionTimer = setInterval(() => this.checkSession(), 1000);
+ 	}
+ 
+ 	// ---- vòng đời Page ----
+ 	show() {
+ 		this.visible = true;
+ 		document.body.classList.add("tc-kiosk");
+ 		this.focus();
++		if (this.session) this.heartbeat();
+ 	}
+ 
+ 	hide() {
+ 		this.visible = false;
++		this.endSession();
+ 		document.body.classList.remove("tc-kiosk");
+ 	}
+ 
+-	focus() {
++	focus(force = false) {
+ 		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
+ 		if (this.t4 && this.t4.dialogOpen) return;
+-		if (this.visible && document.activeElement !== this.input) {
+-			this.input.focus({ preventScroll: true });
++		// Dedicated lot input owns focus until submitted; scanner must not steal it.
++		if (
++			!force &&
++			this.session &&
++			document.activeElement &&
++			document.activeElement.matches("#tc-ci-input")
++		)
++			return;
++		const input = this.session ? this.input : this.cardInput;
++		if (this.visible && document.activeElement !== input) {
++			input.focus({ preventScroll: true });
+ 		}
+ 	}
+ 
+ 	bind() {
++		this.authForm.addEventListener("submit", (event) => {
++			event.preventDefault();
++			this.login(this.cardInput.value);
++		});
+ 		this.form.addEventListener("submit", (event) => {
+ 			event.preventDefault();
+ 			this.scan(this.input.value);
+ 		});
+ 		this.root.addEventListener("click", (event) => {
+ 			const button = event.target.closest("[data-action]");
+ 			if (button) this.onAction(button.dataset.action, button);
+ 			setTimeout(() => this.focus(), 0);
+ 		});
+ 		this.input.addEventListener("blur", () => setTimeout(() => this.focus(), 150));
++		this.cardInput.addEventListener("blur", () => setTimeout(() => this.focus(), 150));
++		for (const name of ["pointerdown", "keydown", "input", "change"]) {
++			this.root.addEventListener(
++				name,
++				() => {
++					if (!this.session) return;
++					// Check the old deadline before counting the first interaction after sleep.
++					if (Date.now() - this.lastActivity >= STATION_IDLE_MS) this.checkSession();
++					else this.lastActivity = Date.now();
++				},
++				true
++			);
++		}
++		// Reader adapters dispatch this event when a contact card is removed.
++		window.addEventListener("tc-card-removed", () => this.endSession());
++		// Reader adapter contract: CustomEvent("tc-card-scanned", {detail: {card_id: string}}).
++		// Card events are separate from the Set/Cycle/roll scanner and never render credentials.
++		window.addEventListener("tc-card-scanned", async (event) => {
++			const card = event.detail && event.detail.card_id;
++			if (typeof card !== "string" || !card.trim()) return;
++			const sequence = (this.cardScanVersion = (this.cardScanVersion || 0) + 1);
++			const closing = this.session ? this.endSession() : Promise.resolve();
++			const version = this.sessionVersion;
++			await closing;
++			if (sequence === this.cardScanVersion && version === this.sessionVersion)
++				this.login(card);
++		});
+ 		window.addEventListener("offline", () => this.setOffline(true));
+ 		window.addEventListener("online", () => {
+ 			if (!this.manualOffline) {
+ 				this.setOffline(false);
+ 				this.handshake();
+ 			}
+ 		});
+ 	}
+ 
+ 	onAction(action, button) {
++		if (action === "logout" || action === "rescan-card") return this.endSession();
++		if (!this.session) {
++			if (action === "retry") {
++				this.manualOffline = false;
++				return this.handshake();
++			}
++			return;
++		}
+ 		if (this.t4 && this.t4.onAction(action, button)) return;
+ 		if (action === "retry") {
+ 			this.manualOffline = false;
+ 			if (!navigator.onLine) return this.setOffline(true);
+ 			this.setOffline(false);
+ 			if (this.lastRaw) this.scan(this.lastRaw, true);
+ 			else this.handshake();
+ 		} else if (action === "offline") {
+ 			this.manualOffline = true;
+ 			this.setOffline(true);
+@@ -142,51 +207,246 @@ class TraceCoreStation {
+ 				alert.insertAdjacentHTML(
+ 					"beforeend",
+ 					`<p class="tc-help">${esc(
+ 						__("Ask R02 (zone supervisor) at this station for help.")
+ 					)}</p>`
+ 				);
+ 			}
+ 		}
+ 	}
+ 
++	// ---- employee-card session: bearer stays in memory/tab storage, never in rendered markup ----
++	storageKey() {
++		return `tc-station-session:${this.station}`;
++	}
++
++	storedToken(value) {
++		try {
++			if (value === undefined) return sessionStorage.getItem(this.storageKey());
++			if (value) sessionStorage.setItem(this.storageKey(), value);
++			else sessionStorage.removeItem(this.storageKey());
++		} catch (error) {
++			// Storage may be disabled on a managed PDA; memory-only sessions still work.
++		}
++		return null;
++	}
++
++	renderLogin(error) {
++		this.authForm.hidden = false;
++		this.work.hidden = true;
++		this.sessionBar.hidden = true;
++		this.authResult.innerHTML = error
++			? `<div class="tc-card tc-alert tc-alert-error" role="alert">
++				<p class="tc-alert-title">${esc(error.title)}</p>
++				<p class="tc-alert-reason">${esc(error.reason)}</p>
++				<p class="tc-alert-action">${esc(error.action)}</p></div>`
++			: "";
++		this.focus();
++	}
++
++	clearSession(error) {
++		this.sessionVersion++;
++		this.session = null;
++		this.storedToken(null);
++		this.pending = null;
++		this.lastRaw = null;
++		this.input.value = "";
++		this.cardInput.value = "";
++		if (this.t4) this.t4.clearSession();
++		this.result.innerHTML = "";
++		this.result.dataset.state = "locked";
++		this.form.classList.remove("is-error");
++		for (const selector of [".tc-session-person", ".tc-session-station", ".tc-session-expiry"])
++			this.root.querySelector(selector).textContent = "";
++		this.renderLogin(error);
++	}
++
++	async endSession(error) {
++		const token = this.session && this.session.token;
++		this.clearSession(error);
++		if (!token) return;
++		try {
++			await this.rpc("tracecore.v1.station.logout", { token, client_ts: clientTs() });
++		} catch (failure) {
++			// Local lock is immediate even offline. Server expiry/revocation remains authoritative.
++		}
++	}
++
++	activateSession(session) {
++		this.session = session;
++		this.storedToken(session.token);
++		this.lastActivity = Date.now();
++		this.heartbeatActivity = this.lastActivity;
++		this.heartbeatAttempt = Date.now();
++		this.authForm.hidden = true;
++		this.authResult.innerHTML = "";
++		this.sessionBar.hidden = false;
++		this.work.hidden = false;
++		this.root.querySelector(".tc-session-person").textContent =
++			session.employee_name || session.employee;
++		this.root.querySelector(".tc-session-station").textContent = session.station;
++		this.root.querySelector(".tc-session-expiry").textContent = __("Session expires: {0}", [
++			this.formatExpiry(session.expires_at),
++		]);
++		if (this.stationInfo) this.applyStation(this.stationInfo);
++		this.renderEmpty();
++		this.focus();
++	}
++
++	formatExpiry(value) {
++		const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(value || "");
++		return match
++			? `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}`
++			: value || "-";
++	}
++
++	async login(raw) {
++		this.cardInput.value = "";
++		if (this.authBusy || !this.station || !(raw || "").trim()) return;
++		if (this.isOffline()) return this.setOffline(true);
++		this.authBusy = true;
++		const version = this.sessionVersion;
++		try {
++			if (!this.stationInfo) await this.initialHandshake;
++			if (!this.stationInfo || version !== this.sessionVersion) return;
++			if (this.isOffline()) return this.setOffline(true);
++			const result = await this.rpc("tracecore.v1.station.login", {
++				card_id: raw.trim(),
++				station: this.station,
++				client_ts: clientTs(),
++			});
++			if (version !== this.sessionVersion) {
++				if (result.ok)
++					this.rpc("tracecore.v1.station.logout", {
++						token: result.session.token,
++						client_ts: clientTs(),
++					}).catch(() => {});
++				return;
++			}
++			if (result.ok) this.activateSession(result.session);
++			else this.renderLogin(result.error);
++		} catch (error) {
++			if (version === this.sessionVersion) this.handleFailure(error);
++		} finally {
++			this.authBusy = false;
++			this.focus();
++		}
++	}
++
++	async heartbeat() {
++		if (!this.session || this.heartbeatBusy || this.isOffline()) return false;
++		this.heartbeatBusy = true;
++		const version = this.sessionVersion;
++		const activity = this.lastActivity;
++		this.heartbeatAttempt = Date.now();
++		try {
++			const result = await this.rpc("tracecore.v1.station.heartbeat", {
++				token: this.session.token,
++				client_ts: clientTs(),
++			});
++			if (version !== this.sessionVersion) return false;
++			this.heartbeatActivity = activity;
++			return result;
++		} catch (error) {
++			if (!error.sessionEnded && version === this.sessionVersion) this.handleFailure(error);
++			return false;
++		} finally {
++			this.heartbeatBusy = false;
++		}
++	}
++
++	async checkSession() {
++		if (!this.session) return;
++		if (Date.now() - this.lastActivity >= STATION_IDLE_MS) {
++			return this.endSession({
++				title: __("Station session was locked"),
++				reason: __("There was no activity for 10 minutes."),
++				action: __("Scan your employee card again."),
++			});
++		}
++		// Heartbeat itself must not count as operator activity or keep an idle session alive.
++		if (
++			this.lastActivity > this.heartbeatActivity &&
++			Date.now() - this.heartbeatAttempt >= STATION_HEARTBEAT_MS
++		)
++			return this.heartbeat();
++	}
++
+ 	// ---- mạng ----
+ 	isOffline() {
+ 		return this.manualOffline || !navigator.onLine;
+ 	}
+ 
+ 	setOffline(offline) {
+ 		this.banner.hidden = !offline;
+ 		this.root.dataset.offline = offline ? "1" : "0";
++		if (!this.session) {
++			if (offline)
++				this.renderLogin({
++					title: __("Station offline"),
++					reason: __("Card login needs the server."),
++					action: __("Reconnect, then scan your employee card again."),
++				});
++			return;
++		}
+ 		if (this.t4) return this.t4.setOffline(offline);
+ 		if (offline) this.renderOffline();
+ 	}
+ 
+ 	async rpc(method, args, idempotencyKey) {
++		const protectedCall =
++			method.startsWith("tracecore.v1.pack.") || method === "tracecore.v1.printer.set_roll";
++		const version = this.sessionVersion;
++		const sessionCall =
++			protectedCall ||
++			method === "tracecore.v1.station.heartbeat" ||
++			method === "tracecore.v1.set_unit.get";
++		const ended = () =>
++			Object.assign(new Error("Station session ended"), { sessionEnded: true });
++		if (protectedCall) {
++			if (!this.session) throw ended();
++			args = { ...args, token: this.session.token };
++		}
+ 		const controller = new AbortController();
+ 		const timer = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
+ 		const headers = {
+ 			Accept: "application/json",
+ 			"Content-Type": "application/json",
+ 			"X-Frappe-CSRF-Token": frappe.csrf_token,
+ 		};
+ 		if (this.station) headers["X-TC-Station"] = this.station;
+ 		if (idempotencyKey) headers["X-Idempotency-Key"] = idempotencyKey;
+ 		try {
+ 			const response = await fetch(`/api/method/${method}`, {
+ 				method: "POST",
+ 				headers,
+ 				body: JSON.stringify(args),
+ 				credentials: "same-origin",
+ 				signal: controller.signal,
+ 			});
+ 			const data = await response.json().catch(() => ({}));
++			if (sessionCall && version !== this.sessionVersion) throw ended();
++			const block = data.message && data.message.error;
++			if (
++				sessionCall &&
++				(response.status === 401 ||
++					(block && String(block.code || "").startsWith("SESSION_")))
++			) {
++				this.clearSession(
++					block || {
++						title: __("Station session is invalid"),
++						reason: __("The session has ended or the token is invalid."),
++						action: __("Scan your employee card again."),
++					}
++				);
++				throw ended();
++			}
+ 			if (!response.ok) {
+ 				// Từ chối nghiệp vụ (404/409/422) vẫn mang body {ok: false, error}: trả để màn hình hiện alert,
+ 				// không coi là lỗi máy chủ (lỗi khác như 403, 5xx, khóa idempotent sai giữ nguyên đường ném lỗi)
+ 				const rejected = response.status >= 400 && response.status < 500;
+ 				if (rejected && data.message && data.message.ok === false) return data.message;
+ 				const error = new Error(`HTTP ${response.status}`);
+ 				error.status = response.status;
+ 				throw error;
+ 			}
+ 			return data.message;
+@@ -202,44 +462,63 @@ class TraceCoreStation {
+ 		if (!this.station) {
+ 			return this.renderError({
+ 				title: __("Station not configured"),
+ 				reason: __("The kiosk address has no station code (?station=TR-...)."),
+ 				action: __("Check the kiosk address or call R10."),
+ 			});
+ 		}
+ 		if (this.isOffline()) return this.setOffline(true);
+ 		try {
+ 			const info = await this.rpc("tracecore.v1.ping", { station: this.station });
++			if (this.isOffline()) return this.setOffline(true);
+ 			if (info.station_error) return this.renderError(info.station_error);
+ 			this.applyStation(info.station);
+-			this.renderEmpty();
++			if (!this.session) {
++				const token = this.storedToken();
++				if (token) {
++					this.session = { token };
++					const result = await this.heartbeat();
++					if (result && this.session && result.station === this.station)
++						this.activateSession({ ...result, token });
++					else if (this.session) this.clearSession();
++				} else this.renderLogin();
++			} else {
++				await this.heartbeat();
++				if (this.session) this.renderEmpty();
++			}
+ 		} catch (error) {
+ 			this.handleFailure(error);
+ 		} finally {
+ 			this.root.dataset.readyMs = String(Math.round(performance.now()));
+ 		}
+ 	}
+ 
+ 	applyStation(station) {
+ 		this.stationInfo = station;
+-		if (station.step === "T4" && !this.t4 && typeof T4Packing !== "undefined") {
++		if (
++			this.session &&
++			station.step === "T4" &&
++			!this.t4 &&
++			typeof T4Packing !== "undefined"
++		) {
+ 			this.t4 = new T4Packing(this);
+ 		}
+ 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
+ 		this.root.querySelector(".tc-station-name").textContent = station.label;
+ 		this.root.querySelector(".tc-zone-label").textContent = __(
+ 			ZONE_LABEL[station.zone_type] || "Station"
+ 		);
+ 		this.root.querySelector(".tc-station-code").textContent = station.name;
+ 	}
+ 
+ 	async scan(raw, retry = false) {
++		if (!this.session) return this.focus();
+ 		if (this.t4) return this.t4.scan(raw);
+ 		raw = (raw || "").trim();
+ 		this.input.value = "";
+ 		if (!raw) return this.focus();
+ 		if (!retry || !this.pending || this.pending.raw !== raw)
+ 			this.pending = { raw, key: uuid4(), ts: clientTs() };
+ 		this.lastRaw = raw;
+ 		if (this.isOffline()) return this.setOffline(true);
+ 
+ 		this.renderLoading();
+@@ -258,20 +537,21 @@ class TraceCoreStation {
+ 			} else {
+ 				this.renderError(result.error);
+ 			}
+ 		} catch (error) {
+ 			this.handleFailure(error);
+ 		}
+ 		this.focus();
+ 	}
+ 
+ 	handleFailure(error) {
++		if (error.sessionEnded) return;
+ 		if (error.offline) return this.setOffline(true);
+ 		// 4xx là câu trả lời dứt khoát của server: lần quét sau phải dùng key mới
+ 		if (error.status >= 400 && error.status < 500) this.pending = null;
+ 		if (error.status === 403) {
+ 			return this.renderError({
+ 				title: __("Not permitted"),
+ 				reason: __("This account cannot read set records."),
+ 				action: __("Log in with the station account or call R10."),
+ 			});
+ 		}
+@@ -291,28 +571,30 @@ class TraceCoreStation {
+ 
+ 	renderLoading() {
+ 		this.setState(
+ 			"loading",
+ 			`<div class="tc-skeleton" aria-busy="true"><span></span><span></span><span></span></div>
+ 			<span class="tc-sr-only">${esc(__("Loading..."))}</span>`
+ 		);
+ 	}
+ 
+ 	renderEmpty() {
++		if (!this.session) return this.renderLogin();
+ 		if (this.t4) return this.t4.show();
+ 		this.setState(
+ 			"empty",
+ 			`<p class="tc-empty">${esc(__("Scan the Set ID on the set tag."))}</p>`
+ 		);
+ 	}
+ 
+ 	renderError(error) {
++		if (!this.session) return this.renderLogin(error);
+ 		this.setState(
+ 			"error",
+ 			`<div class="tc-alert tc-alert-error" role="alert">
+ 				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(error.title)}</p>
+ 				<p class="tc-alert-reason">${esc(error.reason)}</p>
+ 				<p class="tc-alert-action">${esc(error.action)}</p>
+ 				<div class="tc-actions">
+ 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
+ 						__("Retry")
+ 					)}</button>
+diff --git a/tracecore/v1/pack.py b/tracecore/v1/pack.py
+index 0c05f77..c29746e 100644
+--- a/tracecore/v1/pack.py
++++ b/tracecore/v1/pack.py
+@@ -70,25 +70,25 @@ def _maint_actions(value):
+ 		actions.append({key: item[key] for key in MAINT_KEYS if key in item})
+ 	return actions
+ 
+ 
+ # --- Quét ----------------------------------------------------------------------------------------------
+ 
+ 
+ def _scan_invalid(scanned):
+ 	"""Mã không dùng được ở màn đóng gói: lạ (khi chưa mở bộ) hoặc mã nội bộ của loại khác (nhân viên, thiết bị…)."""
+ 	if scanned["type"] == "unknown":
+-		reason = _("Code {0} is not a TraceCore code, and no set is open to take it as an indicator lot.")
+-		action = _("Scan the Set ID on the set tag first, or call R02.")
++		reason = _("Code {0} is not a set, pack or label roll.")
++		action = _("Scan indicator lots in the separate indicator lot field.")
+ 	else:
+-		reason = _("Code {0} is not a set, pack, label roll or indicator lot.")
+-		action = _("Scan the Set ID, the Cycle ID, the label roll code or the indicator lot.")
++		reason = _("Code {0} is not a set, pack or label roll.")
++		action = _("Scan the Set ID, the Cycle ID or the label roll code.")
+ 	return BlockedError(
+ 		Block("SCAN_INVALID", _("Invalid code"), reason.format(scanned["raw"] or "-"), action)
+ 	)
+ 
+ 
+ def _open_set_method(open_set):
+ 	"""Phương pháp (Steam/Plasma) của bộ đang mở; mã không phải Set ID hoặc không có bộ → SET_NOT_FOUND."""
+ 	scanned = gs1.parse_scan(open_set)
+ 	set_type = (
+ 		frappe.db.get_value("Set Unit", scanned["id"], "set_type") if scanned["type"] == "set" else None
+@@ -100,44 +100,41 @@ def _open_set_method(open_set):
+ 				"SET_NOT_FOUND",
+ 				_("Set not found"),
+ 				_("Set ID {0} does not exist in TraceCore.").format(scanned["raw"] or "-"),
+ 				_("Check the set tag or call R02."),
+ 			)
+ 		)
+ 	return method
+ 
+ 
+ def _route(scanned, raw, station, open_set):
+-	"""Ô quét duy nhất của màn T4 (D10): phân loại bằng `gs1.parse_scan` rồi giao cho dịch vụ tương ứng."""
++	"""Ô chính T4: Set ID, Cycle ID hoặc cuộn nhãn; lô chỉ thị có endpoint riêng."""
+ 	kind = scanned["type"]
+ 	if kind == "set":
+ 		return {"ok": True, "kind": "context", "context": packing.get_context(raw, station)}
+ 	if kind == "pack":
+ 		return {"ok": True, "kind": "pack", "pack": packing.lookup(raw)}
+ 	if kind == "roll":
+ 		return {"ok": True, "kind": "roll", "roll": change_roll(scanned["id"], station)}
+-	if kind == "unknown" and open_set:
+-		lot = packing.resolve_ci_batch(raw, _open_set_method(open_set), today())
+-		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
+ 	raise _scan_invalid(scanned)
+ 
+ 
+ @frappe.whitelist(allow_guest=True, methods=["POST"])
+ @station_session(*PACKING_ROLES)
+ @idempotent
+ def scan(raw, station, open_set=None, client_ts=None, token=None):
+ 	"""Xử lý một lần quét ở màn T4. Trả ``{"ok": true, "kind": ..., <kind>: ...}``:
+ 
+ 	- ``context`` (Set ID): ngữ cảnh đóng gói của bộ (BOM, cổng, bảo dưỡng, cơ số, loại gói, máy in);
+ 	- ``pack`` (Cycle ID hoặc DataMatrix nhãn gói): tra cứu gói (AC-14);
+ 	- ``roll`` (``CN-#####``): đổi cuộn của máy in duy nhất của trạm (AC-9);
+-	- ``ci`` (mã khác, khi `open_set` là bộ đang mở): lô chỉ thị hóa học loại 5/6 đúng phương pháp của bộ.
++	Lô chỉ thị dùng endpoint ``resolve_ci`` của ô riêng, không phân loại từ ô chính.
+ 
+ 	Từ chối nghiệp vụ: xem `_common.run_at_step`; mã lạ khi chưa mở bộ và mã loại khác là ``SCAN_INVALID`` (422).
+ 	"""
+ 	require_any_role(*PACKING_ROLES)
+ 	timestamp = parse_client_ts(client_ts)
+ 	scanned = gs1.parse_scan(raw)
+ 	ref_doctype, ref_name = REF_BY_KIND.get(scanned["type"]), scanned["id"]
+ 	if scanned["type"] == "unknown" and open_set:
+ 		ref_doctype, ref_name = "Set Unit", gs1.parse_scan(open_set)["id"]  # từ chối nói về bộ đang mở
+ 	if not (ref_doctype and ref_name):
+@@ -146,20 +143,46 @@ def scan(raw, station, open_set=None, client_ts=None, token=None):
+ 		STEP,
+ 		station,
+ 		timestamp,
+ 		lambda: _route(scanned, raw, station, open_set),
+ 		ref_doctype,
+ 		ref_name,
+ 		scanned["raw"],
+ 	)
+ 
+ 
++@frappe.whitelist(allow_guest=True, methods=["POST"])
++@station_session(*PACKING_ROLES)
++@idempotent
++def resolve_ci(raw, station, open_set, client_ts=None, token=None):
++	"""Ô lô chỉ thị riêng: giữ nguyên kiểm tra loại 5/6, phương pháp và hạn dùng FEAT-018."""
++	require_any_role(*PACKING_ROLES)
++	if not isinstance(raw, str) or not isinstance(open_set, str):
++		raise BadRequestError(_("raw and open_set must be strings."))
++	timestamp = parse_client_ts(client_ts)
++
++	def resolve():
++		lot = packing.resolve_ci_batch(raw.strip(), _open_set_method(open_set), today())
++		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
++
++	scanned = gs1.parse_scan(open_set)
++	return run_at_step(
++		STEP,
++		station,
++		timestamp,
++		resolve,
++		"Set Unit" if scanned["type"] == "set" else None,
++		scanned["id"],
++		raw.strip(),
++	)
++
++
+ # --- Sinh Cycle ID, in lại, hủy -------------------------------------------------------------------------
+ 
+ 
+ @frappe.whitelist(allow_guest=True, methods=["POST"])
+ @station_session(*PACKING_ROLES)
+ @idempotent
+ def generate_cycle_id(
+ 	set_id, station, confirmed_lines, ci_batch, pack_type, maint_actions=None, client_ts=None, token=None
+ ):
+ 	"""Sinh Cycle ID cho bộ tại T4 (FR-M2-07/08) trong một transaction; trả gói, HRI, DataMatrix và lệnh in.
+diff --git a/tracecore/v1/tests/test_pack_api.py b/tracecore/v1/tests/test_pack_api.py
+index 2141bb4..0a240e3 100644
+--- a/tracecore/v1/tests/test_pack_api.py
++++ b/tracecore/v1/tests/test_pack_api.py
+@@ -51,20 +51,21 @@ def now_ts():
+ 
+ def call(fn, key=None, station_header=STATION, **kwargs):
+ 	"""Gọi RPC như kiosk (header khóa idempotent + trạm, `client_ts` hiện tại).
+ 
+ 	Xóa mã HTTP của lần gọi trước để `http_status()` chỉ phản ánh lần gọi này.
+ 	"""
+ 	frappe.local.response.pop("http_status_code", None)
+ 	kwargs.setdefault("client_ts", now_ts())
+ 	if fn in (
+ 		pack_api.scan,
++		pack_api.resolve_ci,
+ 		pack_api.generate_cycle_id,
+ 		pack_api.reprint_label,
+ 		pack_api.void,
+ 		printer_api.set_roll,
+ 	):
+ 		kwargs.setdefault("token", SESSION_TOKENS.get(frappe.session.user))
+ 	with request_headers({"X-Idempotency-Key": key or str(uuid.uuid4()), "X-TC-Station": station_header}):
+ 		return fn(**kwargs)
+ 
+ 
+@@ -135,34 +136,72 @@ class PackApiCase(IsolatedTestCase):
+ 		deactivate_printers(STATION)
+ 
+ 	def as_user(self, email, roles=()):
+ 		user = make_user(email, roles=roles)
+ 		SESSION_TOKENS[user] = make_station_session(user)["token"]
+ 		frappe.set_user(user)
+ 		self.addCleanup(frappe.set_user, "Administrator")
+ 
+ 
+ class TestScan(PackApiCase):
++	def test_main_scan_never_resolves_indicator_lots_even_with_open_set(self):
++		ready = make_t4_ready_set()
++		with patch.object(packing, "resolve_ci_batch", wraps=packing.resolve_ci_batch) as resolver:
++			result = call(pack_api.scan, raw=ready.ci_batch, station=STATION, open_set=ready.set_id)
++			assert_rejection(self, result, "SCAN_INVALID", 422)
++			resolver.assert_not_called()
++
++	def test_dedicated_ci_endpoint_uses_existing_method_and_expiry_rules(self):
++		endpoint = getattr(pack_api, "resolve_ci", None)
++		self.assertTrue(callable(endpoint), "Dedicated indicator-lot RPC is missing")
++		ready = make_t4_ready_set()
++		args = dict(
++			raw=ready.ci_batch, station=STATION, open_set=ready.set_id, token=SESSION_TOKENS["Administrator"]
++		)
++		result = call(endpoint, **args)
++		self.assertTrue(result["ok"])
++		self.assertEqual(result["ci"]["batch"], ready.ci_batch)
++		self.assertEqual(result["kind"], "ci")
++		frappe.set_user("Guest")
++		self.addCleanup(frappe.set_user, "Administrator")
++		result = call(endpoint, **{**args, "token": "invalid"})
++		assert_rejection(self, result, "SESSION_INVALID", 401)
++
+ 	def test_scan_set_returns_context(self):
+ 		ready = make_t4_ready_set()
+ 		before = reject_count()
+ 		result = call(pack_api.scan, raw="]d2\x1d8004" + ready.set_id + "\r\n", station=STATION)
+ 		self.assertIs(result["ok"], True)
+ 		self.assertEqual(result["kind"], "context")
+ 		context = result["context"]
+ 		self.assertEqual(context["set"]["set_id"], ready.set_id)
+ 		self.assertEqual([line["instrument"] for line in context["bom"]], ready.instruments)
+ 		self.assertEqual(context["printer"]["name"], ready.printer)
+ 		self.assertIn(ready.pack_type, [row["item"] for row in context["pack_types"]])
+ 		self.assertIsNone(http_status())
+ 		self.assertEqual(reject_count(), before)
+ 
++	def test_dedicated_ci_schema_and_replay_still_require_live_session(self):
++		ready = make_t4_ready_set()
++		for raw, open_set in (({}, ready.set_id), (ready.ci_batch, [])):
++			with self.subTest(raw=raw, open_set=open_set), self.assertRaises(BadRequestError):
++				call(pack_api.resolve_ci, raw=raw, station=STATION, open_set=open_set)
++		key, ts = str(uuid.uuid4()), now_ts()
++		args = dict(raw=ready.ci_batch, station=STATION, open_set=ready.set_id, client_ts=ts)
++		first = call(pack_api.resolve_ci, key=key, **args)
++		self.assertEqual(call(pack_api.resolve_ci, key=key, **args), first)
++		token = SESSION_TOKENS["Administrator"]
++		from tracecore.core import station_auth
++
++		station_auth.logout(token)
++		assert_rejection(self, call(pack_api.resolve_ci, key=key, **args), "SESSION_INVALID", 401)
++
+ 	@bru("BRU-FLOW-004")
+ 	def test_scan_gate_rejection_writes_audit_and_409(self):
+ 		ready = make_t4_ready_set()
+ 		make_assembly_record(ready.set_id, "Fail")
+ 		before = reject_count()
+ 		result = call(pack_api.scan, raw=ready.set_id, station=STATION)
+ 		assert_rejection(self, result, "GATE_PREV_NOT_PASSED", 409)
+ 		self.assertEqual(result["error"]["redo_step"], "T3")
+ 		self.assertEqual(frappe.local.response.http_status_code, 409)
+ 
+@@ -186,21 +225,21 @@ class TestScan(PackApiCase):
+ 		self.assertEqual((row.reason, row.station), ("STATION_INACTIVE", STATION))
+ 
+ 	def test_http_status_by_error_code(self):
+ 		steam = make_t4_ready_set()
+ 		plasma = make_t4_ready_set("Plasma", with_printer=False)
+ 		missing_set = gs1.make_giai(gs1.configured_company_prefix(), "ZZZ999999")
+ 		cases = [
+ 			("set not found", pack_api.scan, {"raw": missing_set, "station": STATION}, "SET_NOT_FOUND", 404),
+ 			(
+ 				"lot of another method",
+-				pack_api.scan,
++				pack_api.resolve_ci,
+ 				{"raw": steam.ci_batch, "station": STATION, "open_set": plasma.set_id},
+ 				"CI_LOT_INVALID",
+ 				422,
+ 			),
+ 			(
+ 				"station is not T4",
+ 				pack_api.scan,
+ 				{"raw": steam.set_id, "station": "TR-003"},
+ 				"SESSION_STATION_MISMATCH",
+ 				403,
+@@ -255,21 +294,21 @@ class TestScan(PackApiCase):
+ 		for label, fn, args, code, status in cases:
+ 			with self.subTest(label):
+ 				assert_rejection(self, call(fn, **args), code, status)
+ 
+ 		self.assertTrue(call(pack_api.generate_cycle_id, **generate_args(steam))["ok"])
+ 		with self.subTest("second cycle id for the set"):
+ 			assert_rejection(
+ 				self, call(pack_api.generate_cycle_id, **generate_args(steam)), "ACTIVE_CYCLE_EXISTS", 409
+ 			)
+ 
+-	def test_scan_routes_pack_roll_and_ci(self):
++	def test_scan_routes_pack_roll_and_dedicated_ci(self):
+ 		ready = make_t4_ready_set()
+ 		cycle_id = call(pack_api.generate_cycle_id, **generate_args(ready))["pack"]["cycle_id"]
+ 		payload = frappe.db.get_value("Pack", cycle_id, "barcode_payload")
+ 		for raw in (cycle_id, "]d2" + payload):
+ 			with self.subTest(raw=raw):
+ 				result = call(pack_api.scan, raw=raw, station=STATION)
+ 				self.assertIs(result["ok"], True)
+ 				self.assertEqual(result["kind"], "pack")
+ 				self.assertEqual(result["pack"]["cycle_id"], cycle_id)
+ 				self.assertEqual(result["pack"]["status"], "Packed")
+@@ -277,21 +316,21 @@ class TestScan(PackApiCase):
+ 				self.assertIsNone(http_status())
+ 
+ 		steam_label, _plasma_label = make_label_items()
+ 		result = call(pack_api.scan, raw=make_roll(steam_label), station=STATION)
+ 		self.assertEqual(result["kind"], "roll")
+ 		self.assertEqual(result["roll"]["printer"], ready.printer)
+ 		self.assertEqual(result["roll"]["label_type"], steam_label)
+ 
+ 		other = make_t4_ready_set(with_printer=False)
+ 		result = call(
+-			pack_api.scan, raw=" " + other.ci_batch + "\r\n", station=STATION, open_set=other.set_id
++			pack_api.resolve_ci, raw=" " + other.ci_batch + "\r\n", station=STATION, open_set=other.set_id
+ 		)
+ 		self.assertIs(result["ok"], True)
+ 		self.assertEqual(result["kind"], "ci")
+ 		self.assertEqual(result["ci"]["batch"], other.ci_batch)
+ 		self.assertEqual(result["ci"]["ci_class"], "5")
+ 		self.assertRegex(result["ci"]["expiry_date"], r"^\d{4}-\d{2}-\d{2}$")
+ 
+ 	def test_scan_roll_needs_exactly_one_active_printer(self):
+ 		steam_label, _plasma_label = make_label_items()
+ 		roll = make_roll(steam_label)
+@@ -328,27 +367,27 @@ class TestScan(PackApiCase):
+ 			for open_set in (None, ready.set_id):
+ 				with self.subTest(raw=raw, open_set=open_set):
+ 					result = call(pack_api.scan, raw=raw, station=STATION, open_set=open_set)
+ 					assert_rejection(self, result, "SCAN_INVALID", 422)
+ 					self.assertIn(raw, result["error"]["reason"])
+ 
+ 	def test_scan_lot_for_unknown_open_set(self):
+ 		ready = make_t4_ready_set()
+ 		for open_set in ("not-a-set", gs1.make_giai(gs1.configured_company_prefix(), "ZZZ999998")):
+ 			with self.subTest(open_set=open_set):
+-				result = call(pack_api.scan, raw=ready.ci_batch, station=STATION, open_set=open_set)
++				result = call(pack_api.resolve_ci, raw=ready.ci_batch, station=STATION, open_set=open_set)
+ 				assert_rejection(self, result, "SET_NOT_FOUND", 404)
+ 
+ 	def test_scan_expired_lot_is_422(self):
+ 		ready = make_t4_ready_set()
+ 		expired = make_ci_batch("Steam", expiry_days=-3)
+-		result = call(pack_api.scan, raw=expired, station=STATION, open_set=ready.set_id)
++		result = call(pack_api.resolve_ci, raw=expired, station=STATION, open_set=ready.set_id)
+ 		assert_rejection(self, result, "CI_LOT_EXPIRED", 422)
+ 
+ 	def test_scan_replay_same_key_returns_same_result(self):
+ 		ready = make_t4_ready_set()
+ 		key, ts = str(uuid.uuid4()), now_ts()
+ 		first = call(pack_api.scan, key=key, raw=ready.set_id, station=STATION, client_ts=ts)
+ 		second = call(pack_api.scan, key=key, raw=ready.set_id, station=STATION, client_ts=ts)
+ 		self.assertEqual(second, first)
+ 
+ 	def test_scan_requires_the_station_role(self):
+diff --git a/tracecore/v1/tests/test_station_security.py b/tracecore/v1/tests/test_station_security.py
+index e02cc9d..2b250f1 100644
+--- a/tracecore/v1/tests/test_station_security.py
++++ b/tracecore/v1/tests/test_station_security.py
+@@ -328,33 +328,47 @@ class TestStationSecurity(IsolatedTestCase):
+ 				"PIN_CHANGE_REQUIRED",
+ 				409,
+ 			)
+ 			with self.assertRaises(BlockedError) as error:
+ 				station_auth.consume_pin_proof(self.session["token"], proof)
+ 			self.assertEqual(error.exception.block.code, "PIN_CHANGE_REQUIRED")
+ 
+ 	def test_all_pack_rpcs_require_live_session_even_for_frappe_admin(self):
+ 		for fn, args in (
+ 			(pack_api.scan, {"raw": "CY-991231-9999"}),
++			(pack_api.resolve_ci, {"raw": "lot", "open_set": "missing"}),
+ 			(
+ 				pack_api.generate_cycle_id,
+ 				{"set_id": "missing", "confirmed_lines": [], "ci_batch": "missing", "pack_type": "missing"},
+ 			),
+ 			(pack_api.reprint_label, {"cycle_id": "missing", "reason": "faded"}),
+ 			(pack_api.void, {"cycle_id": "missing", "reason": "Torn"}),
+ 		):
+ 			with self.subTest(fn=fn.__name__):
+ 				self.assert_block(self.rpc(fn, station="TR-004", **args), "SESSION_INVALID", 401)
+ 		self.assert_block(
+ 			self.rpc(printer_api.set_roll, station="TR-004", roll_code="CN-99999"), "SESSION_INVALID", 401
+ 		)
+ 
++	def test_second_station_login_rejects_old_kiosk_heartbeat(self):
++		make_station_session(self.user, "TR-005")  # valid competency at the second physical station
++		frappe.set_user("Guest")
++		first = self.rpc(station_api.login, card_id=self.employee.tc_card_id, station="TR-004")
++		second = self.rpc(station_api.login, card_id=self.employee.tc_card_id, station="TR-005")
++		self.assertTrue(first["ok"] and second["ok"])
++		self.assert_block(
++			self.rpc(station_api.heartbeat, token=first["session"]["token"]), "SESSION_INVALID", 401
++		)
++		live = self.rpc(station_api.heartbeat, token=second["session"]["token"])
++		self.assertTrue(live["ok"])
++		self.assertEqual(live["station"], "TR-005")
++
+ 	def test_guest_pack_actor_and_idempotent_replay_recheck_live_session(self):
+ 		ready = make_t4_ready_set()
+ 		frappe.set_user("Guest")
+ 		key = str(uuid.uuid4())
+ 		args = {
+ 			"set_id": ready.set_id,
+ 			"station": "TR-004",
+ 			"confirmed_lines": ready.instruments,
+ 			"ci_batch": ready.ci_batch,
+ 			"pack_type": ready.pack_type,

@@ -1,0 +1,855 @@
+/* Page station (surface STN) — chỉ dùng biến --tc-* sinh từ docs/tokens.json (design.md §4). */
+
+body.tc-kiosk {
+	background: var(--tc-bg);
+}
+
+body.tc-kiosk .navbar,
+body.tc-kiosk .page-head,
+body.tc-kiosk .web-footer {
+	display: none !important;
+}
+
+body.tc-kiosk .main-section > .container,
+body.tc-kiosk .page-container,
+body.tc-kiosk .page-body,
+body.tc-kiosk .layout-main-section {
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+
+.tc-station {
+	min-height: 100vh;
+	background: var(--tc-bg);
+	color: var(--tc-text);
+	font-family: var(--tc-font-sans);
+	font-size: var(--tc-fs-base);
+	line-height: var(--tc-lh-base);
+}
+
+.tc-zonebar {
+	height: var(--tc-zonebar-h);
+	background: var(--tc-zone-web);
+}
+
+.tc-zone-dirty {
+	background: var(--tc-zone-dirty);
+}
+
+.tc-zone-clean {
+	background: var(--tc-zone-clean);
+}
+
+.tc-zone-sterile {
+	background: var(--tc-zone-sterile);
+}
+
+.tc-zone-dept {
+	background: var(--tc-zone-dept);
+}
+
+.tc-zone-waste {
+	background: var(--tc-zone-waste);
+}
+
+.tc-offline-banner {
+	padding: var(--tc-sp-2) var(--tc-sp-6-5);
+	background: var(--tc-info-tint);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-info);
+	color: var(--tc-info-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-offline-banner[hidden] {
+	display: none;
+}
+
+.tc-main {
+	padding: var(--tc-sp-5) var(--tc-sp-6-5) var(--tc-sp-22);
+}
+
+.tc-title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-title h2 {
+	margin: 0;
+	color: var(--tc-text-heading);
+	font-size: var(--tc-fs-3xl);
+	font-weight: var(--tc-fw-bold);
+	line-height: var(--tc-lh-snug);
+}
+
+.tc-tag {
+	padding: var(--tc-sp-0-5) var(--tc-sp-1-5);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-xs);
+	color: var(--tc-text-muted);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-tag:empty {
+	display: none;
+}
+
+.tc-card {
+	margin-bottom: var(--tc-sp-3);
+	padding: var(--tc-sp-3-5) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-scan {
+	display: flex;
+	align-items: stretch;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-3);
+	background: var(--tc-primary-soft);
+	border: var(--tc-bw-thick) dashed var(--tc-border-strong);
+	border-radius: var(--tc-r-xl);
+}
+
+.tc-scan.is-error {
+	background: var(--tc-fail-tint);
+	border: var(--tc-bw-thick) solid var(--tc-fail);
+}
+
+.tc-scan-input {
+	flex: 1;
+	min-width: 0;
+	min-height: var(--tc-touch-station);
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-primary);
+	border-radius: var(--tc-r-md);
+	color: var(--tc-text);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xl);
+}
+
+.tc-work[hidden],
+.tc-session[hidden],
+.tc-auth-form[hidden] {
+	display: none;
+}
+
+.tc-session {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-ci-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-ci-form label {
+	flex-basis: 100%;
+}
+
+.tc-btn {
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2-5) var(--tc-sp-4-5);
+	border: 0;
+	border-radius: var(--tc-r-md);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+	cursor: pointer;
+	transition: background var(--tc-dur-fast) var(--tc-ease);
+}
+
+.tc-btn:active {
+	transform: translateY(var(--tc-bw-hair));
+}
+
+.tc-btn-primary {
+	min-width: var(--tc-scan-btn-min);
+	min-height: var(--tc-touch-station);
+	background: var(--tc-primary);
+	color: var(--tc-on-primary);
+}
+
+.tc-btn-primary:hover {
+	background: var(--tc-primary-hover);
+}
+
+.tc-btn-secondary {
+	background: var(--tc-card);
+	border: var(--tc-bw-med) solid var(--tc-primary);
+	color: var(--tc-primary);
+}
+
+.tc-btn-secondary:hover {
+	background: var(--tc-primary-soft);
+}
+
+.tc-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-sp-3);
+}
+
+.tc-alert {
+	padding: var(--tc-sp-2-5) var(--tc-sp-3);
+	border-left: var(--tc-bw-alert) solid var(--tc-info);
+	border-radius: 0 var(--tc-r-sm) var(--tc-r-sm) 0;
+	color: var(--tc-text);
+}
+
+.tc-alert p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-alert-error {
+	background: var(--tc-fail-tint);
+	border-left-color: var(--tc-fail);
+}
+
+.tc-alert-info {
+	background: var(--tc-info-tint);
+	border-left-color: var(--tc-info);
+	color: var(--tc-info-text);
+}
+
+.tc-alert-title {
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-alert-error .tc-alert-title {
+	color: var(--tc-fail-text);
+}
+
+.tc-help {
+	margin-top: var(--tc-sp-2);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-empty {
+	margin: 0;
+	color: var(--tc-text-2);
+}
+
+.tc-skeleton span {
+	display: block;
+	height: var(--tc-sp-4);
+	margin: var(--tc-sp-2) 0;
+	background: var(--tc-track);
+	border-radius: var(--tc-r-sm);
+}
+
+.tc-skeleton span:nth-child(2) {
+	width: 75%;
+}
+
+.tc-skeleton span:nth-child(3) {
+	width: 50%;
+}
+
+.tc-res-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+}
+
+.tc-code {
+	color: var(--tc-text-heading);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xl);
+	letter-spacing: var(--tc-ls-code);
+}
+
+.tc-badge {
+	display: inline-block;
+	padding: var(--tc-sp-1) var(--tc-sp-3);
+	background: var(--tc-primary);
+	border-radius: var(--tc-r-badge);
+	color: var(--tc-text-inverse);
+	font-size: var(--tc-fs-2xs);
+	font-weight: var(--tc-fw-bold);
+	white-space: nowrap;
+}
+
+.tc-badge-g {
+	background: var(--tc-pass);
+}
+
+.tc-badge-o {
+	background: var(--tc-warn-fill);
+}
+
+.tc-badge-r {
+	background: var(--tc-fail);
+}
+
+.tc-badge-x {
+	background: var(--tc-neutral-fill);
+}
+
+.tc-res-grid {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: var(--tc-sp-2) var(--tc-sp-4);
+	margin: var(--tc-sp-3) 0 0;
+}
+
+.tc-res-grid dt {
+	color: var(--tc-text-2);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-res-grid dd {
+	margin: 0;
+}
+
+.tc-mono {
+	font-family: var(--tc-font-mono);
+}
+
+.tc-sr-only {
+	position: absolute;
+	width: var(--tc-bw-hair);
+	height: var(--tc-bw-hair);
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ---- Màn T4 đóng gói (SCR-08, public/js/station_t4.js) ---- */
+
+.tc-btn:disabled,
+.tc-btn:disabled:hover {
+	background: var(--tc-disabled-bg);
+	border-color: var(--tc-disabled-bg);
+	color: var(--tc-disabled-text);
+	cursor: not-allowed;
+	transform: none;
+}
+
+.tc-btn-ok {
+	background: var(--tc-pass);
+	color: var(--tc-text-inverse);
+}
+
+.tc-btn-warn {
+	background: var(--tc-warn-fill);
+	color: var(--tc-text-inverse);
+}
+
+.tc-btn-danger {
+	background: var(--tc-fail);
+	color: var(--tc-text-inverse);
+}
+
+.tc-alert-warn {
+	background: var(--tc-warn-tint);
+	border-left-color: var(--tc-warn);
+}
+
+.tc-alert-warn .tc-alert-title,
+.tc-warn-text {
+	color: var(--tc-warn-text);
+}
+
+.tc-alert-ok {
+	background: var(--tc-pass-tint);
+	border-left-color: var(--tc-pass);
+}
+
+.tc-alert-ok .tc-alert-title {
+	color: var(--tc-pass-text);
+}
+
+.tc-alert-items {
+	margin: 0 0 var(--tc-sp-1);
+	padding-left: var(--tc-sp-6);
+}
+
+.tc-hint,
+.tc-loading {
+	color: var(--tc-text-2);
+}
+
+.tc-loading {
+	margin: 0;
+}
+
+.tc-t4 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t4 [data-region="notice"],
+.tc-t4 [data-region="maint"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t4 [data-region="notice"]:empty,
+.tc-t4 [data-region="maint"]:empty {
+	display: none;
+}
+
+.tc-t4 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t4 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-t4-block {
+	padding: var(--tc-sp-3-5) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-t4-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(var(--tc-label-w), 1fr));
+	gap: var(--tc-sp-3);
+}
+
+.tc-t4-setname {
+	margin-top: var(--tc-sp-2);
+}
+
+.tc-t4-ok {
+	color: var(--tc-pass-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t4-todo {
+	padding: var(--tc-sp-3);
+	background: var(--tc-primary-soft);
+	border: var(--tc-bw-thick) dashed var(--tc-border-strong);
+	border-radius: var(--tc-r-md);
+	color: var(--tc-info-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+/* gate panel §4.4 */
+.tc-gates {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-1-5);
+	margin: var(--tc-sp-3) 0;
+}
+
+.tc-gate {
+	padding: var(--tc-sp-2-5) var(--tc-sp-3-5);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-gate small {
+	display: block;
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-gate b {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-gate-ok {
+	background: var(--tc-pass-tint);
+	border-color: var(--tc-pass);
+	color: var(--tc-pass-text);
+}
+
+.tc-gate-bad {
+	background: var(--tc-fail-tint);
+	border-color: var(--tc-fail);
+	color: var(--tc-fail-text);
+}
+
+/* thanh cơ số §4.11 */
+.tc-par-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+}
+
+.tc-par {
+	flex: 1;
+	min-width: var(--tc-photo-big);
+	height: var(--tc-par-h);
+	overflow: hidden;
+	background: var(--tc-track);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-par span {
+	display: block;
+	height: 100%;
+	background: var(--tc-pass);
+}
+
+.tc-par-warn span {
+	background: var(--tc-warn);
+}
+
+.tc-par-blocked span {
+	background: var(--tc-fail);
+}
+
+/* BOM checklist với ảnh thực tế §4.11 */
+.tc-bom.has-tray {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+	gap: var(--tc-sp-3);
+	align-items: start;
+}
+
+.tc-tray {
+	margin: 0;
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-tray img {
+	display: block;
+	width: 100%;
+	max-height: var(--tc-tray-max);
+	object-fit: contain;
+	background: var(--tc-photo-bg);
+	border: var(--tc-bw-hair) solid var(--tc-photo-border);
+	border-radius: var(--tc-r-sm);
+}
+
+.tc-inst {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--tc-inst-min), 1fr));
+	gap: var(--tc-sp-3);
+}
+
+.tc-ins {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-sp-2-5);
+	min-height: var(--tc-touch-min);
+	margin: 0;
+	padding: var(--tc-sp-2);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-lg);
+	font-weight: var(--tc-fw-regular);
+	cursor: pointer;
+}
+
+.tc-ins.is-done {
+	background: var(--tc-pass-tint);
+	border-color: var(--tc-pass);
+}
+
+.tc-photo {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: var(--tc-photo);
+	height: var(--tc-photo);
+	object-fit: cover;
+	background: var(--tc-photo-bg);
+	border: var(--tc-bw-hair) solid var(--tc-photo-border);
+	border-radius: var(--tc-r-sm);
+	color: var(--tc-photo-text);
+	font-size: var(--tc-fs-2xs);
+	text-align: center;
+}
+
+.tc-ins-text {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.tc-ins-name {
+	color: var(--tc-text-heading);
+	font-size: var(--tc-fs-sm);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-ins-pos,
+.tc-ins-state {
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-ins.is-done .tc-ins-state {
+	color: var(--tc-pass-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-check {
+	/* checkbox của Frappe lấy cỡ từ biến này (width !important) */
+	--checkbox-size: var(--tc-checkbox-station);
+	--checkbox-right-margin: 0;
+	flex: none;
+	width: var(--tc-checkbox-station);
+	height: var(--tc-checkbox-station);
+	margin: 0;
+	accent-color: var(--tc-pass);
+}
+
+/* nhắc bảo dưỡng */
+.tc-maint {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-3);
+	padding: var(--tc-sp-2);
+	background: var(--tc-warn-tint);
+	border: var(--tc-bw-hair) solid var(--tc-warn);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-maint:last-child {
+	margin-bottom: 0;
+}
+
+.tc-maint.is-done {
+	background: var(--tc-pass-tint);
+	border-color: var(--tc-pass);
+}
+
+.tc-maint-text {
+	flex: 1;
+	min-width: var(--tc-inst-min);
+}
+
+.tc-maint .tc-actions {
+	flex-basis: 100%;
+	align-items: center;
+	margin-top: 0;
+}
+
+/* chọn loại gói */
+.tc-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-2);
+}
+
+.tc-chip {
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2-5) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-primary);
+	border-radius: var(--tc-r-pill);
+	color: var(--tc-primary);
+	font-size: var(--tc-fs-md);
+	cursor: pointer;
+}
+
+.tc-chip[aria-pressed="true"] {
+	background: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+/* actions bar cố định §4.16 (kiosk không có rail: left 0) */
+.tc-actionsbar {
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: var(--tc-z-actions);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-2-5) var(--tc-sp-6-5);
+	padding-bottom: calc(var(--tc-sp-2-5) + env(safe-area-inset-bottom));
+	background: var(--tc-card);
+	border-top: var(--tc-bw-thick) solid var(--tc-primary);
+}
+
+.tc-missing {
+	margin: 0;
+	font-weight: var(--tc-fw-bold);
+}
+
+/* kết quả sinh Cycle ID + label preview §4.12 */
+.tc-cycle {
+	color: var(--tc-text-heading);
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-4xl);
+	font-weight: var(--tc-fw-bold);
+	letter-spacing: var(--tc-ls-code);
+}
+
+.tc-t4-done-grid {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--tc-sp-6);
+}
+
+.tc-t4-done-grid > div {
+	flex: 1;
+	min-width: var(--tc-label-w);
+}
+
+.tc-label {
+	flex: none;
+	width: var(--tc-label-w);
+	margin: 0;
+	padding: var(--tc-sp-2-5);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-label);
+	color: var(--tc-label-ink);
+	font-size: var(--tc-fs-xs);
+	line-height: var(--tc-lh-label);
+	overflow-wrap: anywhere;
+}
+
+.tc-label-plasma {
+	border-style: dashed;
+	border-color: var(--tc-border-label-plasma);
+}
+
+.tc-label-dm {
+	float: right;
+	width: var(--tc-datamatrix);
+	height: var(--tc-datamatrix);
+	margin: 0 0 var(--tc-sp-1) var(--tc-sp-2);
+	image-rendering: pixelated;
+}
+
+.tc-label-code {
+	font-family: var(--tc-font-mono);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-label-hri {
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-label-strong {
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-label-type {
+	clear: both;
+	margin-top: var(--tc-sp-1);
+	padding-top: var(--tc-sp-1);
+	border-top: var(--tc-bw-hair) solid var(--tc-border-label);
+}
+
+/* dialog §4.13 */
+.tc-modal {
+	position: fixed;
+	inset: 0;
+	z-index: var(--tc-z-modal);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--tc-overlay);
+}
+
+.tc-modal-box {
+	width: min(var(--tc-modal-w), 92vw);
+	padding: var(--tc-sp-5);
+	background: var(--tc-card);
+	border-top: var(--tc-bw-kpi) solid var(--tc-primary);
+	border-radius: var(--tc-r-xl);
+	box-shadow: var(--tc-shadow-overlay);
+}
+
+.tc-modal-warn {
+	border-top-color: var(--tc-warn);
+}
+
+.tc-modal-danger {
+	border-top-color: var(--tc-fail);
+}
+
+.tc-modal-box h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-heading);
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-modal-intro {
+	margin: 0 0 var(--tc-sp-3);
+}
+
+.tc-field {
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-field label {
+	display: block;
+	margin-bottom: var(--tc-sp-1);
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-field input,
+.tc-field textarea,
+.tc-field select {
+	width: 100%;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-sm);
+	color: var(--tc-text);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-field .is-error {
+	border: var(--tc-bw-thick) solid var(--tc-fail);
+}
+
+.tc-field-error {
+	margin: var(--tc-sp-1) 0 0;
+	color: var(--tc-fail-text);
+	font-size: var(--tc-fs-sm);
+}
+
+.tc-field-error[hidden] {
+	display: none;
+}
+
+.tc-modal-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-sp-4);
+}
+
+.tc-modal-actions .tc-btn {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}

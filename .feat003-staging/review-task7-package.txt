@@ -1,0 +1,1780 @@
+7e49a91 test(feat-003): verify station auth with live devdata and acceptance evidence
+ docs/rtm.md                                        |  20 +--
+ .../reviews/FEAT-003-acceptance-evidence.md        |  72 +++++++++++
+ scripts/e2e_prepare.sh                             |  19 ++-
+ tests_e2e/conftest.py                              |  45 ++++---
+ tests_e2e/test_station_live.py                     |  68 ++++++++++
+ .../doctype/zone_station/test_zone_station.py      |   5 +-
+ tracecore/core/tests/test_account.py               |  28 ++---
+ tracecore/core/tests/test_errors.py                |  10 ++
+ tracecore/core/tests/test_station_models.py        |   7 +-
+ .../equipment/doctype/equipment/test_equipment.py  |   5 +-
+ .../process_program/test_process_program.py        |  13 +-
+ tracecore/equipment/tests/test_norms.py            |   8 +-
+ tracecore/reprocessing/doctype/pack/test_pack.py   |  26 ++--
+ tracecore/setup/devdata.py                         | 111 +++++++++++++++-
+ tracecore/tests/factories.py                       |  32 ++---
+ tracecore/tests/test_devdata.py                    | 140 +++++++++++++++++++++
+ tracecore/tests/test_e2e_prepare_guard.py          |  59 +++++++++
+ tracecore/tests/utils.py                           |  55 ++++++++
+ .../tracecore/doctype/audit_log/test_audit_log.py  |  26 ++--
+ .../step_gate_result/test_step_gate_result.py      |  27 ++--
+ tracecore/translations/vi.csv                      |   4 +
+ tracecore/v1/tests/test_equipment_admin_api.py     |   5 +-
+ tracecore/v1/tests/test_label_template_api.py      |   9 +-
+ 23 files changed, 680 insertions(+), 114 deletions(-)
+diff --git a/docs/rtm.md b/docs/rtm.md
+index e031d9d..df45d3f 100755
+--- a/docs/rtm.md
++++ b/docs/rtm.md
+@@ -42,23 +42,23 @@
+ | FR-M2-19 | Tra cứu truy xuất hai chiều | Must | Active | BR-M2 (BRD #02) | UC-14 | _TBD_ | FEAT-028 | _TBD_ |
+ | FR-M2-20 | Lệnh thu hồi | Must | Active | BR-M2 (BRD #02) | UC-14 | ADR-010; ADR-014 | FEAT-029 | _TBD_ |
+ | FR-M2-21 | Ghi nhận sự cố / NC | Must | Active | BR-M2 (BRD #02) | UC-15 | ADR-014 | FEAT-030 | _TBD_ |
+ | FR-M2-22 | CAPA và theo dõi đóng | Should | Active | BR-M2 (BRD #02) | UC-15 | _TBD_ | FEAT-030 | _TBD_ |
+ | FR-M3-01 | Nhập lượt thu gom đồ vải | Must | Active | BR-M3 (BRD #02) | UC-16 | ADR-006 | FEAT-033 | _TBD_ |
+ | FR-M3-02 | Danh mục loại đồ vải và khối lượng chuẩn | Must | Active | BR-M3 (BRD #02) | UC-16 | _TBD_ | FEAT-033 | _TBD_ |
+ | FR-M3-03 | Tạo lô giặt | Must | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
+ | FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
+ | FR-M3-05 | Cấp phát đồ vải theo khoa | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
+ | FR-M3-06 | Đối chiếu thu – trả và định mức | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
+-| FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | _TBD_ |
++| FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | [FEAT-003 Employee subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | FR-M4-02 | Chứng chỉ và cảnh báo hết hạn | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-014 | FEAT-036 | _TBD_ |
+-| FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | _TBD_ |
++| FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | [FEAT-003 competency subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | FR-M4-04 | Phân ca và sản lượng theo người | Should | Active | BR-M4 (BRD #02) | UC-20 | ADR-009 | FEAT-037 | _TBD_ |
+ | FR-M5-01 | Hồ sơ thiết bị theo khu | Must | Active | BR-M5 (BRD #02) | UC-21 | ADR-009 | FEAT-038 | _TBD_ |
+ | FR-M5-02 | Danh mục chương trình xử lý theo máy | Must | Active | BR-M5 (BRD #02) | UC-21 | _TBD_ | FEAT-038 | _TBD_ |
+ | FR-M5-03 | Lịch bảo trì, kiểm định, hiệu chuẩn | Must | Active | BR-M5 (BRD #02) | UC-22 | ADR-014 | FEAT-039 | _TBD_ |
+ | FR-M5-04 | Sự cố và sửa chữa thiết bị | Must | Active | BR-M5 (BRD #02) | UC-22 | _TBD_ | FEAT-039 | _TBD_ |
+ | FR-M5-05 | Test hằng ngày theo máy | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
+ | FR-M5-06 | Khóa máy tự động | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
+ | FR-M6-01 | Nhập kho theo lô/hạn | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009 | FEAT-041 | _TBD_ |
+ | FR-M6-02 | Danh mục vật tư tiêu hao tái xử lý | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009 | FEAT-041 | _TBD_ |
+ | FR-M6-03 | Tiêu hao tự động theo mẻ/lô | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
+@@ -72,25 +72,25 @@
+ | FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
+ | FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
+ | FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | _TBD_ |
+ | FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | _TBD_ |
+ | FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | _TBD_ |
+ | FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | _TBD_ |
+ | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-006 | _TBD_ |
+ | FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-007 | _TBD_ |
+ | FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
+ | FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | _TBD_ | FEAT-008 | _TBD_ |
+-| FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | _TBD_ |
++| FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | FR-M9-07 | Hệ thống sinh mã định danh cho mọi đối tượng quét | Must | Active | CHG-032 (review v1.10, kế thừa BR-M9) | UC-33 | ADR-004 | FEAT-001; FEAT-005 | _TBD_ |
+ | FR-M9-06 | Chế độ offline tại trạm (Must từ v1.11 theo NFR-AVAIL-02, chốt 2026-10-17) | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-003 | FEAT-009 | _TBD_ |
+-| FR-M9-08 | Đăng xuất / kết thúc phiên trạm, một thẻ – một phiên | Must | Active | Catalog gap v1.11 | UC-33 | ADR-008 | FEAT-003 | _TBD_ |
+-| FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | _TBD_ |
++| FR-M9-08 | Đăng xuất / kết thúc phiên trạm, một thẻ – một phiên | Must | Active | Catalog gap v1.11 | UC-33 | ADR-008 | FEAT-003 | [FEAT-003 session evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
++| FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | [FEAT-003 account evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | FR-M9-10 | Trung tâm thông báo: kênh, người nhận theo loại sự kiện, trạng thái gửi/đọc | Must | Active | Catalog gap v1.11 | UC-38 | ADR-014 | FEAT-010 | _TBD_ |
+ | FR-M9-11 | Import danh mục ban đầu theo lô từ Excel mẫu, kiểm tra từng dòng, import ảnh hàng loạt | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-011 | _TBD_ |
+ | FR-M9-12 | Xuất hồ sơ tiệt khuẩn theo kỳ (PDF + Excel/CSV) phục vụ lưu trữ ≥ 10 năm | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-012 | _TBD_ |
+ | FR-M9-13 | Tìm kiếm, lọc, sắp xếp, phân trang trên mọi danh sách; ô quét là phím tắt | Must | Active | Catalog gap v1.11 | UC-32 | ADR-001 | FEAT-006 | _TBD_ |
+ | FR-M9-14 | Trạng thái màn hình trạm/PDA: rỗng / đang tải / lỗi kèm hành động kế tiếp | Must | Active | Catalog gap v1.11 | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36) | ADR-002 | FEAT-001; Foundations | _TBD_ |
+ | FR-M9-15 | Trợ giúp theo trạm và gửi phản hồi/báo lỗi kèm ảnh màn hình | Could | Active | Catalog gap v1.11 | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36) | ADR-002 | FEAT-013 | _TBD_ |
+ | FR-M9-16 | Xóa mềm danh mục đã có giao dịch; chỉ R10 xóa cứng bản ghi chưa giao dịch | Must | Active | Catalog gap v1.11 | UC-33 | ADR-001; ADR-008 | FEAT-004 | _TBD_ |
+ | FR-M10-01 | Danh mục loại chất thải & mã màu TT 20/2021, bao bì, khối lượng chuẩn, đơn giá/kg, thời gian lưu tối đa, QR túi/thùng | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-34 | ADR-004; ADR-013 | FEAT-047 | _TBD_ |
+ | FR-M10-02 | Thu gom chất thải tại khoa: quét thẻ người giao, loại, số túi, cân; phiếu khoa – loại – số – kg; chặn trộn loại | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-34 | ADR-006; ADR-013 | FEAT-047 | _TBD_ |
+ | FR-M10-03 | Lưu giữ tạm kho chất thải: vị trí theo loại, nhiệt độ kho lạnh, cảnh báo hạn lưu, FIFO | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-35 | ADR-013; ADR-014 | FEAT-048 | _TBD_ |
+@@ -105,41 +105,41 @@ FR-M9-08..16 và FR-M10-01..08 là ID mới v1.11 (chủ đầu tư duyệt 2026
+ ## 2. Non-functional requirements (35)
+ 
+ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Use case(s) ghi các UC khai báo "NFR liên quan" trong #06 (trường 22) để tham khảo, phân hệ áp dụng theo #05 §3. 21 NFR mới (NFR-PERF-03..NFR-BACKUP-02, srs.md §3.3.2) được chủ đầu tư duyệt 2026-10-17, Use case = "—" (áp dụng toàn hệ thống).
+ 
+ | Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
+ | :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
+ | NFR-PERF-01 | Hiệu năng — Phản hồi quét: Thời gian từ quét đến phản hồi màn hình ≤ 1 giây với 95% giao dịch. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-13, UC-14, UC-15, UC-30, UC-31) | ADR-005; ADR-012 | FEAT-018; FEAT-019; FEAT-022; FEAT-027; Foundations | _TBD_ |
+ | NFR-PERF-02 | Hiệu năng — Tải đồng thời: ≥ 40 trạm/thiết bị cầm tay hoạt động đồng thời, ≥ 600 mẻ/tháng, ≥ 3.000 Cycle ID/ngày. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M6; tham chiếu UC-24, UC-25, UC-26) | ADR-012 | Foundations | _TBD_ |
+ | NFR-AVAIL-01 | Sẵn sàng — Uptime: ≥ 99,5%/tháng trong giờ vận hành 24/7; bảo trì có kế hoạch ngoài giờ cao điểm. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M9; tham chiếu UC-32, UC-33) | ADR-001; ADR-011 | Foundations | _TBD_ |
+ | NFR-AVAIL-02 | Sẵn sàng — Offline tại trạm: Trạm tiếp tục quét ≥ 4 giờ khi mất mạng; đồng bộ tự động khi kết nối lại (FR-M9-06 = Must từ v1.11). | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-13, UC-14, UC-15) | ADR-003; ADR-012 | FEAT-009 | _TBD_ |
+-| NFR-SEC-01 | Bảo mật — Xác thực: Đăng nhập bằng tài khoản hoặc quét thẻ nhân viên; khóa sau 5 lần sai; phiên trạm tự khóa sau 10 phút. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M4, M9; tham chiếu UC-19, UC-20, UC-32, UC-33) | ADR-010 | FEAT-003; Foundations | _TBD_ |
++| NFR-SEC-01 | Bảo mật — Xác thực: Đăng nhập bằng tài khoản hoặc quét thẻ nhân viên; khóa sau 5 lần sai; phiên trạm tự khóa sau 10 phút. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M4, M9; tham chiếu UC-19, UC-20, UC-32, UC-33) | ADR-010 | FEAT-003; Foundations | [FEAT-003 authentication evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | NFR-SEC-02 | Bảo mật — Dữ liệu bệnh nhân: Mã bệnh nhân mã hóa khi lưu, ẩn một phần khi hiển thị; chỉ vai trò được phép xem. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng Toàn hệ thống; tham chiếu UC-13) | ADR-010 | FEAT-027 | _TBD_ |
+-| NFR-SEC-03 | Bảo mật — Audit trail bất biến: Mọi thao tác ghi người – thời điểm – trạm – giá trị trước/sau; không xóa, chỉ vô hiệu. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8, M9; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-30, UC-31, UC-32, UC-33) | ADR-005; ADR-008 | FEAT-004; Foundations | _TBD_ |
++| NFR-SEC-03 | Bảo mật — Audit trail bất biến: Mọi thao tác ghi người – thời điểm – trạm – giá trị trước/sau; không xóa, chỉ vô hiệu. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8, M9; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-30, UC-31, UC-32, UC-33) | ADR-005; ADR-008 | FEAT-004; Foundations | [FEAT-003 auth audit subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | NFR-USAB-01 | Khả dụng — Giao diện trạm: Nút ≥ 48px, thao tác được khi đeo găng, màn hình ướt; tối đa 3 chạm cho thao tác chính. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M3; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-16, UC-17, UC-18) | ADR-002; ADR-013 | FEAT-018; FEAT-019; FEAT-027; Foundations | _TBD_ |
+ | NFR-USAB-02 | Khả dụng — Ngôn ngữ: Tiếng Việt là chính, thuật ngữ theo QĐ 3671/QĐ-BYT; hỗ trợ tiếng Anh cho nhãn. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng Toàn hệ thống) | ADR-002 | Foundations | _TBD_ |
+ | NFR-COMP-01 | Tuân thủ — Quy định KSNK: TT 16/2018/TT-BYT, QĐ 3671/QĐ-BYT; lưu hồ sơ tiệt khuẩn ≥ 10 năm; sổ tiệt khuẩn điện tử in được. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M4, M5; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-19, UC-20, UC-21, UC-22, UC-23) | ADR-005; ADR-007; ADR-008; ADR-013 | FEAT-007; FEAT-012; Foundations | _TBD_ |
+ | NFR-COMP-02 | Tuân thủ — Nhãn và mã vạch: GS1 DataMatrix GIAI (AI 8004) cho Set ID; Cycle ID GS1 DataMatrix (01)(11)(17)(21) duy nhất (chốt 2026-10-17); hai loại nhãn: nhãn chịu hấp hơi nước 134°C và nhãn tương thích plasma H2O2, quét được sau chu trình. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M1; tham chiếu UC-01, UC-02, UC-03, UC-04) | ADR-004; ADR-006 | FEAT-016; FEAT-018 | _TBD_ |
+ | NFR-MAINT-01 | Bảo trì — Cấu hình không code: Khu, trạm, chương trình, mẫu nhãn, định mức, cơ số cấu hình bằng giao diện, không cần lập trình. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M1, M6, M7; tham chiếu UC-01, UC-02, UC-03, UC-04, UC-24, UC-25, UC-26, UC-27, UC-28, UC-29) | ADR-001; ADR-002; ADR-009 | FEAT-002; FEAT-031; FEAT-038 | _TBD_ |
+ | NFR-BACKUP-01 | Sao lưu — RPO/RTO: RPO ≤ 15 phút, RTO ≤ 4 giờ; sao lưu hằng ngày, kiểm tra khôi phục hằng quý. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M7, M9; tham chiếu UC-27, UC-28, UC-29, UC-32, UC-33) | ADR-011 | Foundations | _TBD_ |
+ | NFR-INT-01 | Tích hợp — Thiết bị ngoại vi: Máy quét HID/serial, máy in nhãn ZPL/TSPL, cân điện tử RS-232/USB, máy tiệt khuẩn (tùy chọn, giai đoạn 2). Không tích hợp HIS. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M3, M5; tham chiếu UC-16, UC-17, UC-18, UC-21, UC-22, UC-23) | ADR-006; ADR-007 | FEAT-018; FEAT-024; FEAT-033 | _TBD_ |
+ | NFR-PERF-03 | Hiệu năng — Web desktop: 95% trang tải ≤ 3 giây; báo cáo/sổ tiệt khuẩn tháng sinh PDF ≤ 30 giây. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-001 | FEAT-006; FEAT-007; Foundations | _TBD_ |
+ | NFR-PERF-04 | Hiệu năng — Truy xuất hai chiều / liệt kê gói của mẻ ≤ 10 giây với CSDL 10 năm. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-008 | FEAT-028; FEAT-029 | _TBD_ |
+ | NFR-SCAL-01 | Mở rộng — 25–40 người dùng đồng thời, 40 trạm/PDA trên 8 vCPU/16 GB; lên 80 người dùng bằng nâng VM. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-001; ADR-011 | Foundations | _TBD_ |
+ | NFR-SCAL-02 | Mở rộng — Dung lượng 10 năm: ≈ 11 triệu DT-PACK, ≥ 50 triệu DT-AUDIT; file storage ≥ 500 GB. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-008; ADR-011 | Foundations | _TBD_ |
+ | NFR-AVAIL-03 | Sẵn sàng — Cửa sổ bảo trì ≤ 4 giờ/tháng ngoài 06:00–20:00, báo trước ≥ 24 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-011 | Foundations | _TBD_ |
+ | NFR-AVAIL-04 | Sẵn sàng — Thiết bị ngoại vi lỗi không chặn giao dịch; không single point of failure trong chuỗi 8 trạm. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-006; ADR-014 | FEAT-018; FEAT-033; Foundations | _TBD_ |
+ | NFR-SEC-04 | Bảo mật — Không lỗ hổng High/Critical theo OWASP Top 10 / ASVS L2 trước go-live; Medium ≤ 30 ngày. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
+ | NFR-SEC-05 | Bảo mật — Bản vá ≤ 30 ngày (Critical ≤ 7 ngày), thử trên staging. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
+ | NFR-SEC-06 | Bảo mật — Secret ngoài mã nguồn, không ghi log; API key xoay 90 ngày; quy trình khóa AES-256. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | Foundations | _TBD_ |
+-| NFR-SEC-07 | Bảo mật — RBAC 10 vai trò × DocType theo #13; R08 chỉ dữ liệu khoa mình; 100% ô ma trận test tại CI. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010; ADR-012; ADR-013 | FEAT-003; Foundations | _TBD_ |
+-| NFR-SEC-08 | Bảo mật — Vô hiệu tài khoản nghỉ việc trong ngày; rà soát quyền hằng quý; cảnh báo đăng nhập bất thường ≤ 5 phút. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | FEAT-003; FEAT-036 | _TBD_ |
++| NFR-SEC-07 | Bảo mật — RBAC 10 vai trò × DocType theo #13; R08 chỉ dữ liệu khoa mình; 100% ô ma trận test tại CI. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010; ADR-012; ADR-013 | FEAT-003; Foundations | [FEAT-003 matrix subset; future R08 limits](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
++| NFR-SEC-08 | Bảo mật — Vô hiệu tài khoản nghỉ việc trong ngày; rà soát quyền hằng quý; cảnh báo đăng nhập bất thường ≤ 5 phút. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | FEAT-003; FEAT-036 | [FEAT-003 disable subset; review/alert pending](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+ | NFR-OBS-01 | Giám sát — Health check mọi dịch vụ và station agent; cảnh báo R10 ≤ 5 phút khi down hoặc hàng đợi offline > 4 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011; ADR-014 | Foundations | _TBD_ |
+ | NFR-OBS-02 | Giám sát — Log JSON có cấu trúc, lưu ≥ 12 tháng, không chứa mã bệnh nhân dạng rõ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-008 | Foundations | _TBD_ |
+ | NFR-MAINT-02 | Bảo trì — Test tự động độ phủ ≥ 70%, 100% BRU có test; CI trước mỗi merge. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
+ | NFR-MAINT-03 | Bảo trì — Tài liệu kỹ thuật đồng bộ #08/#11/#16; thay đổi ghi #00 CHG và Revision History. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-001; ADR-009; ADR-012 | Foundations | _TBD_ |
+ | NFR-PORT-01 | Di động — Cài lại từ đầu trên Ubuntu 22.04 sạch hoặc Docker ≤ 4 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-001; ADR-011 | Foundations | _TBD_ |
+ | NFR-PORT-02 | Di động — Nhập từ Excel mẫu; xuất toàn bộ dữ liệu nghiệp vụ ra CSV/Excel theo DocType. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-009 | FEAT-011; FEAT-012 | _TBD_ |
+ | NFR-L10N-01 | Bản địa hóa — dd/mm/yyyy, 24h, dấu phẩy thập phân, VND, Asia/Ho_Chi_Minh; lưu UTC. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-002; ADR-003 | Foundations | _TBD_ |
+ | NFR-ACC-01 | Tiếp cận — Web WCAG 2.1 AA; trạm tương phản ≥ 4,5:1, chữ ≥ 16 px, trạng thái không chỉ bằng màu. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-002 | FEAT-018; Foundations | _TBD_ |
+ | NFR-COMPAT-01 | Tương thích — Chromium/Edge/Firefox 2 bản mới nhất; kiosk Windows 10+/Ubuntu 22.04; Android 12+; 1366×768–1920×1080. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-002; ADR-011 | Foundations | _TBD_ |
+ | NFR-BACKUP-02 | Sao lưu — Gồm CSDL, file đính kèm, site_config, mẫu nhãn; bản ngoài site cách ly; khôi phục thử hằng quý. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
+@@ -249,11 +249,11 @@ Kiểm thử NFR: 14 NFR gốc tham chiếu "#14 mục 3.1 (TC phi chức năng,
+ | FR có >1 UC | 0 (mỗi FR thuộc đúng một UC sở hữu, như #15) |
+ | Bộ Số Chuẩn BA v1.10 → v1.11 | N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43 |
+ 
+ **Điểm bất nhất phát hiện khi import (d05 / d06 / d15):**
+ 
+ - FR-M9-06: ưu tiên bảng 2.1 = Should, mục chi tiết 2.2 = Must — ✅ đã chốt Must ngày 2026-10-17 theo NFR-AVAIL-02 (OQ-08).
+ - Thứ tự ID trong #05 §2.1 và #15 không theo số (FR-M2-23 đứng sau FR-M2-02; FR-M2-24/25 giữa FR-M2-03 và FR-M2-04; FR-M9-07 trước FR-M9-06) — RTM giữ nguyên thứ tự này theo yêu cầu import; không ảnh hưởng ID.
+ - #05 bảng 2.1 không có cột Nguồn BR; nguồn BR lấy từ mục chi tiết 2.2 (trường "Nguồn BR"), khớp 100% với tiền tố phân hệ (FR-Mx → BR-Mx).
+ - #06 trường 25 "Vấn đề mở" dùng chung một câu cho cả nhóm UC (UC-01..15 một câu, UC-16..33 một câu), không phải vấn đề mở riêng từng UC — đã chép nguyên vào docs/use-cases.md, cần rà lại khi finalize.
+ - Nhãn ngoại lệ UC-08 trong #06 có thứ tự E1, E4, E5, E2, E3 (do bổ sung ở v1.3/v1.10) — giữ nguyên nhãn để TC-08-xx tham chiếu được.
+-- #15 §2.2 ghi BRU-FLOW-004 áp dụng "UC-06..UC-11" nhưng #06 trường 13 chỉ liệt kê BRU-FLOW-004 tại UC-06, 07, 08, 09, 10, 11 (khớp); BRU-ID-005 và BRU-LIN-002, BRU-HR-002 chỉ gắn FR, không gắn UC trong #15 §2.2 — RTM mục 3 lấy theo #15 §2.1 (cấp FR) nên vẫn đủ.
+\ No newline at end of file
++- #15 §2.2 ghi BRU-FLOW-004 áp dụng "UC-06..UC-11" nhưng #06 trường 13 chỉ liệt kê BRU-FLOW-004 tại UC-06, 07, 08, 09, 10, 11 (khớp); BRU-ID-005 và BRU-LIN-002, BRU-HR-002 chỉ gắn FR, không gắn UC trong #15 §2.2 — RTM mục 3 lấy theo #15 §2.1 (cấp FR) nên vẫn đủ.
+diff --git a/docs/superpowers/reviews/FEAT-003-acceptance-evidence.md b/docs/superpowers/reviews/FEAT-003-acceptance-evidence.md
+new file mode 100644
+index 0000000..7b7b5e7
+--- /dev/null
++++ b/docs/superpowers/reviews/FEAT-003-acceptance-evidence.md
+@@ -0,0 +1,72 @@
++# FEAT-003 acceptance evidence
++
++Review branch: `feat/FEAT-003-rbac-station-auth`; Task 7 baseline: `04a222eaed7ce29cc2c47a369b29289fef60de6f`.
++Environment: isolated `/home/tien2003/tracecore-codex`, Frappe/ERPNext/HRMS v15, MariaDB/Redis, cached Chromium.
++Developer site: `tracecore-codex.local` on port 8100; integration site: `test_codex`.
++
++## Acceptance-to-evidence map
++
++Acceptance IDs below identify the FEAT-003 plan decisions A1–A8 and their concrete verification; they do not introduce new FR/BRU identifiers.
++
++| Acceptance | FR / BRU / NFR | Executable evidence | Scope and limits |
++| --- | --- | --- | --- |
++| A1: R01–R10 SEC matrix, deterministic fixture, amendments and no delete | FR-M9-05; NFR-SEC-07 | `tracecore.tests.test_permissions`: ten roles/40 baseline DocTypes, symbol mapping, amendment precedence, audit immutability, generator/fixture equality; effective Zone Station/Equipment/Process Program permissions compared with the generated matrix | Future DocTypes stay in the matrix but receive no Custom DocPerm until present. R08 departmental filtering on future business documents is not certified by these tests. |
++| A2: native web password + 2FA for privileged roles | FR-M9-05; NFR-SEC-01 | `test_privileged_roles_require_two_factor_auth`; account `test_settings_lock_after_fifth_failure_and_two_factor_roles`; native password-recovery + OTP login integration test; all live browser fixtures complete Frappe's real OTP challenge when enabled | Developer accounts receive generated private OTP seeds; production 2FA settings and authorization checks remain enabled. Native `All` role also requests OTP on this bench. |
++| A3: unique normalized active Employee card and protected PIN fields | FR-M4-01 (partial); FR-M9-09 | account `test_card_normalized_and_duplicate_rejected`; `test_employee_auth_custom_fields_are_secure` checks unique card, hidden Password/no-copy PIN and read-only/no-copy reset flag; `TestStationDemoData` verifies reusable Employee/card, normalization and dev-only guards | HRMS Employee extension only; broader personnel UI/history belongs to FEAT-036. Card scans use keyboard/reader events; no physical reader was available. |
++| A4/A5: opaque hashed bearer, absolute eight-hour/idle ten-minute expiry, one open session per Employee | FR-M9-08; NFR-SEC-01 | `tracecore.core.tests.test_station_auth`; `tracecore.v1.tests.test_station_security`: native Guest dispatch, replay/session checks, token hashing, wrong station/actor guards, second-station replacement; live `test_live_second_station_replaces_first_and_idle_revokes` | Live browser uses real server replacement and logout. Its idle test advances the controller's last-human-activity timestamp; exact server idle/absolute boundaries are exercised by integration tests rather than an eight-hour wait. |
++| A6: valid station competency and temporary access <=24h | FR-M4-03 (partial); BRU-HR-001 | `@bru("BRU-HR-001")` on `test_login_requires_active_competency_and_returns_one_time_token`; model tests reject excessive temporary duration and missing reason/approver; inactive card/user/station and competency checks; demo has valid competency at TR-004 and TR-005 | Competency foundation only. Certificate/requirement workflows and complete SCR-20 UI remain FEAT-037. |
++| A7: bcrypt PIN, three failures/Redis five-minute lock, bound single-use 120s proof | FR-M9-09; NFR-SEC-01 | station-auth `test_pin_is_bcrypt_and_three_failures_lock_for_five_minutes`; security `test_verify_pin_issues_hashed_120s_single_use_bound_proof`, expiry/revocation/other-session tests; account R02 reset and forced-change tests | No reusable demo PIN is seeded. Existing integration tests use disposable test PINs and assert secrets do not enter audit responses. |
++| A8: minimum ten-character password, day-90 expiry, fifth-failure lock, secure resets and leaving-employee disable | FR-M9-09; NFR-SEC-08 (disable subset) | `tracecore.core.tests.test_account`: native update entry point, day-90 boundary, old-value changes, forced reset, real OTP recovery, explicit R10 authorization including Administrator, R02 proof, employee unlink/disable/concurrent state checks | Quarterly rights reviews and <=5-minute anomalous-login alerts are not implemented/certified in this slice; NFR-SEC-08 remains partial. |
++| Auth/role/credential changes retain immutable history without secret plaintext | FR-M9-05; NFR-SEC-03 (auth subset); BRU-ID-006 | account audit assertions and no-delete tests; station-auth login/reject/logout audits; immutable Audit Log and matrix tests; server-packed identity comes from bearer actor, not client/cookie identity | This certifies the FEAT-003 authentication subset, not every application module's entire audit trail. |
++| Locked shell, identity/roles, dedicated T4 CI input, safe logout and stale-response isolation | FR-M9-08; FR-M9-05; FEAT-018 regression | `tests_e2e/test_station_auth.py` runs real production JS in Chromium with routed RPCs; Node `scripts/tests/station_auth.test.js`; live `test_live_card_identity_t4_indicator_and_logout`; live smoke/T4 suite | Live tests exercise Frappe/MariaDB/Redis. Existing packing E2E intercepts only the physical printer-agent HTTP boundary; no physical label quality/reader hardware claim is made. |
++| Idempotent private dev/test preparation | Task 7 | `TestStationDemoData`; `TestE2ePrepareGuard`: repeat seeds/preparation, generated/reused card+OTP, encrypted native OTP storage, mode-0600 env output, no stdout credential disclosure, production guard, temporary explicit R10 restored after success and exception | `BENCH_DIR` and `TC_E2E_ENV` must target the intended isolated bench. No fixed production password/PIN/token/OTP seed is shipped. |
++
++## Verification record
++
++The Task 7 handoff report at `.superpowers/sdd/task-7-report.md` records the full-suite, coverage, browser and hook commands/results and commit SHA. It also records the initial failing suite and the test-harness causes repaired without relaxing production security.
++
++Final verification:
++
++- Both `test_codex` and `tracecore-codex.local` migrations and `bench build --app tracecore` exited 0. Build emitted the existing caniuse-lite age advisory.
++- The complete TraceCore Python suite passed 716/716 in 742.723s with coverage saved. `diff-cover` measured 94/96 changed Python lines, 97%, above the 70% gate.
++- The refreshed live Chromium suite passed 51/51 in 192.44s, including native OTP Desk admin/equipment, real station login/T4/logout/replacement and routed frontend auth regressions. An earlier focused live station/smoke/T4 run passed 13/13 in 98.79s.
++- Node auth regressions passed 15/15. Focused Pack and four repaired legacy modules passed 21/21, 9/9, 5/5, 6/6 and 19/19 respectively; an earlier affected set passed 61/61.
++- All-files pre-commit passed every applicable hook, including architecture, BRU markers, token assets, Ruff, ESLint, Prettier and Bandit. Standalone architecture and BRU checks exited 0 (17/49 catalog markers currently covered).
++
++## Reproduction
++
++Run migrations/build and the full app suite in the isolated bench. Optional coverage/Playwright packages were reused from the local `uv` cache; no network installation was required.
++
++```sh
++cd /home/tien2003/tracecore-codex
++bench --site test_codex migrate
++bench --site tracecore-codex.local migrate
++bench build --app tracecore
++cd /home/tien2003/tracecore-codex/sites
++uv run --offline --no-project --with coverage \
++  --python /home/tien2003/tracecore-codex/env/bin/python \
++  python -m frappe.utils.bench_helper frappe --site test_codex run-tests --app tracecore --coverage --skip-test-records
++```
++
++`--skip-test-records` skips Frappe automatic fixture generation, not test methods. The existing migrated integration site already has the required ERPNext/HRMS dependency records; no TraceCore module is excluded.
++
++```sh
++cd /home/tien2003/tracecore-codex/apps/tracecore
++BENCH_DIR=/home/tien2003/tracecore-codex \
++TC_E2E_ENV=/home/tien2003/tracecore-codex/.task7-e2e.env \
++  bash scripts/e2e_prepare.sh tracecore-codex.local
++# Export the private env locally; never copy its values into reports or source.
++set -a
++source /home/tien2003/tracecore-codex/.task7-e2e.env
++set +a
++TC_BASE_URL=http://127.0.0.1:8100 \
++  uv run --offline --no-project --with pytest-playwright \
++  --python /home/tien2003/tracecore-codex/env/bin/python pytest tests_e2e -q
++node --test scripts/tests/station_auth.test.js
++pre-commit run --all-files
++python3 scripts/check_architecture.py
++python3 scripts/check_bru_coverage.py
++diff-cover ../../sites/coverage.xml --compare-branch=04a222eaed7ce29cc2c47a369b29289fef60de6f --fail-under=70
++```
++
++Stop at the reviewed branch. No push, merge, cherry-pick or deployment is authorized by this evidence artifact.
+diff --git a/scripts/e2e_prepare.sh b/scripts/e2e_prepare.sh
+index eb9f27f..fcc0bb5 100755
+--- a/scripts/e2e_prepare.sh
++++ b/scripts/e2e_prepare.sh
+@@ -1,38 +1,42 @@
+ #!/usr/bin/env bash
+ # Chuẩn bị một site DEV/TEST cho e2e kiosk (KHÔNG dùng cho production):
+ #   1. Hoàn tất Setup Wizard ERPNext bằng dữ liệu test (Desk ép user về Setup Wizard nếu chưa xong)
+ #   2. Định dạng Việt Nam (System Settings)
+ #   3. User trạm cho smoke FEAT-001 (TR-003, không phải T4) và user trạm T4 (TR-004); mật khẩu ngẫu nhiên
+ #      lưu trong file quyền 600
+ #      và user Desk TC R10 (r10-e2e@…, mật khẩu ngẫu nhiên riêng, khác mật khẩu kiosk) cho tests_e2e/test_desk_admin.py
+ #   4. Set Unit demo để quét (smoke) và dữ liệu demo T4 (devdata.ensure_t4_demo: bộ hấp/plasma/gate-fail,
+ #      lô chỉ thị, mã cuộn nhãn, máy in)
+ # Kết quả ghi vào $TC_E2E_ENV (mặc định ~/.tracecore-e2e.env): TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID,
+-# TC_E2E_STATION (smoke) TC_E2E_R10_USER/PASSWORD và TC_E2E_T4_USER/PASSWORD/STATION + TC_E2E_T4_<khóa của ensure_t4_demo>.
++# TC_E2E_STATION/CARD_ID/EMPLOYEE (smoke), TC_E2E_R10_USER/PASSWORD và TC_E2E_T4_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE
++# + TC_E2E_T4_SECOND_STATION và TC_E2E_T4_<khóa của ensure_t4_demo>.
++# Employee/card/competency demo được dùng lại; không tạo PIN cố định. Site phải bật developer_mode hoặc allow_tests.
++# OTP App seed ngẫu nhiên riêng cho mỗi user demo chỉ ghi vào file env quyền 600; browser hoàn tất 2FA thật.
+ #   5. Máy và chương trình demo thiết bị (devdata.ensure_equipment_demo, FEAT-038) → TC_E2E_EQ_<khóa> cho tests_e2e/test_desk_equipment.py
+ # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
+ #
+ # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
+ # `test_site` hoặc site có `allow_tests` bật trong site_config.json (in lỗi, thoát mã 2): site test là nơi chạy
+ # `bench run-tests`, dữ liệu e2e rò vào đó làm hỏng test. Dùng site dev (vd tracecore-dev.local). Riêng CI, nơi site
+ # test_site được dựng mới và bỏ đi sau job, đặt TC_E2E_ALLOW_TEST_SITE=1 để bỏ qua kiểm tra.
+ # TC_E2E_CHECK_ONLY=1 chỉ chạy kiểm tra rồi thoát (dùng cho tracecore/tests/test_e2e_prepare_guard.py).
+ #
+ # Dùng: scripts/e2e_prepare.sh <site>    (BENCH_DIR mặc định ~/tracecore-dev)
+ set -euo pipefail
+ 
+ SITE="${1:?usage: scripts/e2e_prepare.sh <site>}"
+ BENCH_DIR="${BENCH_DIR:-$HOME/tracecore-dev}"
+ ENV_FILE="${TC_E2E_ENV:-$HOME/.tracecore-e2e.env}"
+ STATION="${TC_E2E_STATION:-TR-003}"
+ T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
++SECOND_STATION="${TC_E2E_T4_SECOND_STATION:-TR-005}"
+ 
+ # Từ chối site test: tên test_site hoặc site_config.json có allow_tests bật (1/true/"1").
+ refuse_test_site() {
+ 	local site="$1" config="$BENCH_DIR/sites/$1/site_config.json"
+ 	[ "${TC_E2E_ALLOW_TEST_SITE:-0}" = "1" ] && return 0
+ 	if [ "$site" = "test_site" ]; then
+ 		echo "error: e2e_prepare.sh refuses to run on test_site (it would leak e2e data into the unit-test site); use a dev site" >&2
+ 		return 2
+ 	fi
+ 	if [ -f "$config" ] && python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1])).get("allow_tests") in (1, True, "1", "true") else 1)' "$config"; then
+@@ -65,27 +69,34 @@ if [ -s "$ENV_FILE" ]; then
+ 	password=$(sed -n 's/^TC_E2E_PASSWORD=//p' "$ENV_FILE")
+ 	r10_password=$(sed -n 's/^TC_E2E_R10_PASSWORD=//p' "$ENV_FILE")
+ fi
+ if [ -z "$password" ]; then
+ 	password=$(random_password)
+ fi
+ # user Desk R10 có mật khẩu riêng (file env cũ dùng chung mật khẩu kiosk thì tạo mới)
+ if [ -z "$r10_password" ] || [ "$r10_password" = "$password" ]; then
+ 	r10_password=$(random_password)
+ fi
+-user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station': '$STATION', 'password': '$password'}" | tr -d '"')
+-t4_user=$(bench_exec tracecore.setup.provision.station_user --kwargs "{'station': '$T4_STATION', 'password': '$password'}" | tr -d '"')
+-r10_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R10', 'name': 'r10-e2e', 'password': '$r10_password'}" | tr -d '"')
++users=$(bench_exec tracecore.setup.devdata.ensure_e2e_users --kwargs "{'station': '$STATION', 't4_station': '$T4_STATION', 'password': '$password', 'r10_password': '$r10_password'}")
++user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["user"])')
++t4_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t4_user"])')
++r10_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["r10_user"])')
++station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$STATION', 'user': '$user'}")
++t4_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T4_STATION', 'user': '$t4_user', 'second_station': '$SECOND_STATION'}")
+ set_id=$(bench_exec tracecore.setup.devdata.ensure_demo_set | tr -d '"')
+ t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
+ eq_demo=$(bench_exec tracecore.setup.devdata.ensure_equipment_demo)
+ 
+ {
+ 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
+ 		"$user" "$password" "$set_id" "$STATION"
+ 	printf 'TC_E2E_R10_USER=%s\nTC_E2E_R10_PASSWORD=%s\n' "$r10_user" "$r10_password"
+ 	printf 'TC_E2E_T4_USER=%s\nTC_E2E_T4_PASSWORD=%s\nTC_E2E_T4_STATION=%s\n' "$t4_user" "$password" "$T4_STATION"
++	printf 'TC_E2E_T4_SECOND_STATION=%s\n' "$SECOND_STATION"
++	printf '%s' "$users" | python3 -c 'import json, sys; [print("TC_E2E_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items() if k.endswith("otp_secret")]'
++	printf '%s' "$station_demo" | python3 -c 'import json, sys; [print("TC_E2E_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
++	printf '%s' "$t4_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T4_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+ 	printf '%s' "$t4_demo" | python3 -c 'import json, sys; [print("TC_E2E_T4_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+ 	printf '%s' "$eq_demo" | python3 -c 'import json, sys; [print("TC_E2E_EQ_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+ } > "$ENV_FILE"
+ chmod 600 "$ENV_FILE"
+ echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"
+diff --git a/tests_e2e/conftest.py b/tests_e2e/conftest.py
+index 3e3b87a..5a403c0 100644
+--- a/tests_e2e/conftest.py
++++ b/tests_e2e/conftest.py
+@@ -13,32 +13,55 @@ BASE_URL = os.environ.get("TC_BASE_URL", "http://127.0.0.1:8000")
+ KIOSK_VIEWPORT = {"width": 1366, "height": 768}
+ 
+ 
+ def require_env(name):
+ 	value = os.environ.get(name)
+ 	if not value:
+ 		pytest.skip(f"{name} is not set - run scripts/e2e_prepare.sh first")
+ 	return value
+ 
+ 
++def desk_login(page, prefix="TC_E2E"):
++	"""Complete the native password + OTP challenge when enabled; never bypass 2FA."""
++	user, password = require_env(prefix + "_USER"), require_env(prefix + "_PASSWORD")
++	response = page.request.post("/api/method/login", form={"usr": user, "pwd": password})
++	assert response.ok, response.text()
++	challenge = response.json()
++	if challenge.get("tmp_id"):
++		import pyotp
++
++		totp = pyotp.TOTP(require_env(prefix + "_OTP_SECRET"))
++		code = totp.now()
++		response = page.request.post(
++			"/api/method/login",
++			form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": code},
++		)
++		# Native Frappe verifies the current 30-second window. Retry only if it rolled
++		# during the request; other authentication failures remain failures.
++		if response.status == 401 and totp.now() != code:
++			response = page.request.post(
++				"/api/method/login",
++				form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": totp.now()},
++			)
++		assert response.ok, response.text()
++	logged_in = page.request.get("/api/method/frappe.auth.get_logged_user")
++	assert logged_in.ok and logged_in.json().get("message") == user
++
++
+ @pytest.fixture(scope="session")
+ def browser_context_args(browser_context_args):
+ 	return {**browser_context_args, "viewport": KIOSK_VIEWPORT, "base_url": BASE_URL}
+ 
+ 
+ @pytest.fixture
+ def logged_in_page(page):
+-	response = page.request.post(
+-		"/api/method/login",
+-		form={"usr": require_env("TC_E2E_USER"), "pwd": require_env("TC_E2E_PASSWORD")},
+-	)
+-	assert response.ok, response.text()
++	desk_login(page)
+ 	return page
+ 
+ 
+ @pytest.fixture
+ def station_page(logged_in_page):
+ 	station = os.environ.get("TC_E2E_STATION", "TR-003")
+ 	card = require_env("TC_E2E_CARD_ID")
+ 	logged_in_page.goto(f"/app/station?station={station}")
+ 	logged_in_page.locator("#tc-card-input").fill(card)
+ 	logged_in_page.locator("#tc-card-input").press("Enter")
+@@ -66,34 +89,26 @@ def t4_demo():
+ 		"ci_plasma",
+ 		"roll_steam",
+ 		"roll_plasma",
+ 	)
+ 	return {key: require_env(f"TC_E2E_T4_{key.upper()}") for key in keys}
+ 
+ 
+ @pytest.fixture
+ def t4_page(page):
+ 	card = require_env("TC_E2E_T4_CARD_ID")
+-	response = page.request.post(
+-		"/api/method/login",
+-		form={"usr": require_env("TC_E2E_T4_USER"), "pwd": require_env("TC_E2E_T4_PASSWORD")},
+-	)
+-	assert response.ok, response.text()
++	desk_login(page, "TC_E2E_T4")
+ 	station = os.environ.get("TC_E2E_T4_STATION", "TR-004")
+ 	page.goto(f"/app/station?station={station}")
+ 	page.locator("#tc-card-input").fill(card)
+ 	page.locator("#tc-card-input").press("Enter")
+ 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
+ 	return page
+ 
+ 
+ # --- Desk cấu hình (SCR-33, FEAT-002): user TC R10, viewport WEB 1366x768 ---
+ 
+ 
+ @pytest.fixture
+ def r10_page(page):
+-	response = page.request.post(
+-		"/api/method/login",
+-		form={"usr": require_env("TC_E2E_R10_USER"), "pwd": require_env("TC_E2E_R10_PASSWORD")},
+-	)
+-	assert response.ok, response.text()
++	desk_login(page, "TC_E2E_R10")
+ 	return page
+diff --git a/tests_e2e/test_station_live.py b/tests_e2e/test_station_live.py
+new file mode 100644
+index 0000000..9398fa1
+--- /dev/null
++++ b/tests_e2e/test_station_live.py
+@@ -0,0 +1,68 @@
++"""Live Frappe/MariaDB browser checks; only the physical printer agent is outside this scope.
++
++Prepare the dev site with scripts/e2e_prepare.sh and export its private env file.
++No station RPC is routed or mocked in this module. Idle advances the controller's
++last-human-activity timestamp; server absolute/idle expiry has integration coverage.
++"""
++
++from datetime import datetime, timezone
++
++from conftest import desk_login, require_env
++from playwright.sync_api import expect
++
++
++def heartbeat(page, token):
++	return page.request.post(
++		"/api/method/tracecore.v1.station.heartbeat",
++		data={"token": token, "client_ts": datetime.now(timezone.utc).isoformat()},
++		headers={"X-Frappe-CSRF-Token": page.evaluate("frappe.csrf_token")},
++	)
++
++
++def test_live_card_identity_t4_indicator_and_logout(t4_page, t4_demo):
++	page = t4_page
++	expect(page.locator(".tc-session-person")).to_have_text("TraceCore Demo")
++	expect(page.locator(".tc-session-station")).to_have_text(require_env("TC_E2E_T4_STATION"))
++	expect(page.locator(".tc-session-roles")).to_contain_text("R04")
++	token = page.evaluate("frappe.tc_station.session.token")
++	assert heartbeat(page, token).json()["message"]["ok"]
++	field = page.locator("#tc-scan-input")
++	field.fill(t4_demo["set_plasma"])
++	field.press("Enter")
++	expect(page.locator(".tc-t4[data-view='ctx'] .tc-code").first).to_have_text(t4_demo["set_plasma"])
++	indicator = page.locator("#tc-ci-input")
++	indicator.fill(t4_demo["ci_plasma"])
++	indicator.press("Enter")
++	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_plasma"])
++	page.locator("[data-action='logout']").click()
++	expect(page.locator("#tc-card-input")).to_be_visible()
++	expect(page.locator(".tc-work")).to_be_hidden()
++	assert page.evaluate("frappe.tc_station.storedToken()") is None
++	response = heartbeat(page, token)
++	assert response.status == 401
++	assert response.json()["message"]["error"]["code"] == "SESSION_INVALID"
++
++
++def test_live_second_station_replaces_first_and_idle_revokes(t4_page, browser, browser_context_args):
++	page = t4_page
++	old_token = page.evaluate("frappe.tc_station.session.token")
++	with browser.new_context(**browser_context_args) as context:
++		second = context.new_page()
++		desk_login(second, "TC_E2E_T4")
++		station = require_env("TC_E2E_T4_SECOND_STATION")
++		second.goto(f"/app/station?station={station}")
++		second.locator("#tc-card-input").fill(require_env("TC_E2E_T4_CARD_ID"))
++		second.locator("#tc-card-input").press("Enter")
++		expect(second.locator(".tc-session-station")).to_have_text(station)
++		assert heartbeat(page, old_token).json()["message"]["error"]["code"] == "SESSION_INVALID"
++		page.evaluate("frappe.tc_station.heartbeat()")
++		expect(page.locator("#tc-card-input")).to_be_visible()
++		expect(page.locator(".tc-work")).to_be_hidden()
++		new_token = second.evaluate("frappe.tc_station.session.token")
++		assert heartbeat(second, new_token).json()["message"]["ok"]
++		second.evaluate(
++			"async () => { frappe.tc_station.lastActivity = Date.now() - 600001; await frappe.tc_station.checkSession(); }"
++		)
++		expect(second.locator("#tc-card-input")).to_be_visible()
++		assert second.evaluate("frappe.tc_station.storedToken()") is None
++		assert heartbeat(second, new_token).json()["message"]["error"]["code"] == "SESSION_INVALID"
+diff --git a/tracecore/admin_reports/doctype/zone_station/test_zone_station.py b/tracecore/admin_reports/doctype/zone_station/test_zone_station.py
+index 480fc3e..395dc1a 100644
+--- a/tracecore/admin_reports/doctype/zone_station/test_zone_station.py
++++ b/tracecore/admin_reports/doctype/zone_station/test_zone_station.py
+@@ -1,18 +1,18 @@
+ import json
+ 
+ import frappe
+ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
+ 
+ from tracecore.core import code_registry
+ from tracecore.patches.v0_1 import activate_existing_stations, register_station_codes
+-from tracecore.tests.utils import IsolatedTestCase, bru
++from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
+ 
+ test_ignore = ["User"]
+ 
+ FIXTURE_STATIONS = [f"TR-00{n}" for n in range(1, 8)]
+ 
+ 
+ def make_zone(zone_type="Clean", **kwargs):
+ 	return frappe.get_doc(
+ 		{
+ 			"doctype": "Zone Station",
+@@ -222,22 +222,23 @@ class TestZoneStation(IsolatedTestCase):
+ 	def test_creating_station_writes_audit_log(self):
+ 		station = make_station("ZONE-CLEAN", "T4")
+ 		self.assertTrue(
+ 			frappe.db.exists(
+ 				"Audit Log", {"ref_doctype": "Zone Station", "ref_name": station.name, "action": "Create"}
+ 			)
+ 		)
+ 
+ 	def test_permissions_match_e8(self):
+ 		validate_permissions_for_doctype("Zone Station")
++		assert_permission_matrix(self, "Zone Station")
+ 		perms = {p.role: p for p in frappe.get_meta("Zone Station").permissions if p.permlevel == 0}
+-		for role in ("System Manager", "TC R10"):
++		for role in ("TC R10",):
+ 			for right in ("read", "write", "create", "report"):
+ 				self.assertEqual(perms[role].get(right), 1, f"{role}.{right}")
+ 		for role in ("TC R01", "TC R02", "TC R09"):
+ 			self.assertEqual(perms[role].read, 1, role)
+ 			self.assertFalse(perms[role].write or perms[role].create, role)
+ 		for p in perms.values():
+ 			self.assertFalse(p.delete, p.role)
+ 
+ 	def test_patch_activates_existing_stations(self):
+ 		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)
+diff --git a/tracecore/core/tests/test_account.py b/tracecore/core/tests/test_account.py
+index 9b092cf..75433a9 100644
+--- a/tracecore/core/tests/test_account.py
++++ b/tracecore/core/tests/test_account.py
+@@ -8,21 +8,21 @@ import pyotp
+ from frappe.auth import CookieManager, LoginAttemptTracker, LoginManager
+ from frappe.handler import execute_cmd
+ from frappe.utils import add_days, now_datetime, today
+ from frappe.utils.password import check_password, update_password
+ from werkzeug.test import EnvironBuilder
+ from werkzeug.wrappers import Request
+ 
+ from tracecore.core import station_auth
+ from tracecore.core.errors import BlockedError
+ from tracecore.tests.factories import make_user
+-from tracecore.tests.utils import IsolatedTestCase
++from tracecore.tests.utils import IsolatedTestCase, local_context
+ from tracecore.v1 import station as station_api
+ 
+ test_dependencies = ["Company"]
+ OLD_PASSWORD = "Old-Credential-2026!"
+ NEW_PASSWORD = "New-Credential-2026!"
+ CLIENT_TS = "2026-10-21T09:00:00+07:00"
+ 
+ 
+ class TestAccount(IsolatedTestCase):
+ 	def setUp(self):
+@@ -290,66 +290,66 @@ class TestAccount(IsolatedTestCase):
+ 		before = frappe.db.count("Sessions", {"user": self.user})
+ 		self.assertEqual(self.account.update_web_password(NEW_PASSWORD, old_password=OLD_PASSWORD), "/login")
+ 		self.assertEqual(check_password(self.user, NEW_PASSWORD), self.user)
+ 		self.assertFalse(self.account.password_is_expired(self.user))
+ 		self.assertEqual(frappe.session.user, self.user)
+ 		self.assertEqual(frappe.db.count("Sessions", {"user": self.user}), before)
+ 
+ 	def test_recovery_keeps_guest_session_until_password_and_real_otp_login(self):
+ 		from frappe.twofactor import get_otpsecret_for_, set_default
+ 
++		original_response = frappe.local.response
++
+ 		frappe.set_user(self.r10)
+ 		self.account.reset_password(self.r02, OLD_PASSWORD)
+ 		url = frappe.get_doc("User", self.r02)._reset_password(send_email=False, password_expired=True)
+ 		key = url.split("key=", 1)[1].split("&", 1)[0]
+ 		set_default(self.r02 + "_otplogin", 1)
+ 		secret = get_otpsecret_for_(self.r02)
+ 		frappe.set_user("Guest")
+ 		previous_session = frappe.local.session
+ 		self.addCleanup(setattr, frappe.local, "session", previous_session)
+ 		request = Request(EnvironBuilder(path="/api/method/login", method="POST").get_environ())
+ 		manager = object.__new__(LoginManager)
+ 		manager.user = None
+ 		manager.info = None
+ 		manager.full_name = None
+ 		manager.user_type = None
+ 		manager.resume = False
+ 		with (
+-			patch.object(frappe.local, "request", request, create=True),
+-			patch.object(frappe.local, "cookie_manager", CookieManager(), create=True),
+-			patch.object(frappe.local, "login_manager", manager, create=True),
+-			patch.object(frappe.local, "request_ip", "127.0.0.1", create=True),
+-			patch.object(frappe.local, "form_dict", frappe._dict(), create=True),
+-			patch.object(frappe.local, "response", frappe._dict(), create=True),
+-			patch.object(
+-				frappe.local,
+-				"session",
+-				frappe._dict(user="Guest", sid="Guest", data=frappe._dict()),
+-				create=True,
++			local_context(
++				request=request,
++				cookie_manager=CookieManager(),
++				login_manager=manager,
++				request_ip="127.0.0.1",
++				form_dict=frappe._dict(),
++				response=frappe._dict(),
++				session=frappe._dict(user="Guest", sid="Guest", data=frappe._dict()),
+ 			),
+ 			patch("frappe.database.database.Database.commit", return_value=None),
+ 		):
+ 			before = frappe.db.count("Sessions", {"user": self.r02})
+ 			self.account.update_web_password(NEW_PASSWORD, key=key)
+ 			self.assertEqual(frappe.session.user, "Guest")
+ 			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before)
+ 			self.assertNotIn("sid", frappe.local.cookie_manager.cookies)
+ 			frappe.form_dict.update(usr=self.r02, pwd=NEW_PASSWORD)
+ 			self.assertFalse(manager.login())
+ 			self.assertEqual(frappe.session.user, "Guest")
+ 			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before)
+ 			frappe.form_dict.otp = pyotp.TOTP(secret).now()
+ 			frappe.form_dict.tmp_id = frappe.local.response.tmp_id
+ 			manager.login()
+ 			self.assertEqual(frappe.session.user, self.r02)
+ 			self.assertEqual(frappe.db.count("Sessions", {"user": self.r02}), before + 1)
+ 			frappe.cache.hdel("session", frappe.session.sid)
++		self.assertIs(frappe.local.response, original_response)
+ 
+ 	def test_r02_cannot_unlink_or_reassign_employee_user(self):
+ 		frappe.set_user(self.r02)
+ 		for target in (None, self.r10):
+ 			employee = frappe.get_doc("Employee", self.employee.name)
+ 			employee.user_id = target
+ 			if target is None:
+ 				employee.status = "Left"
+ 				employee.relieving_date = today()
+ 			with self.assertRaises(frappe.PermissionError):
+@@ -367,23 +367,21 @@ class TestAccount(IsolatedTestCase):
+ 		self.assertEqual(frappe.db.get_value("Station Session", session["session"], "is_open"), 0)
+ 
+ 	def test_guest_cannot_invoke_native_email_reset_endpoint(self):
+ 		frappe.set_user("Guest")
+ 		request = Request(
+ 			EnvironBuilder(
+ 				path="/api/method/frappe.core.doctype.user.user.reset_password", method="POST"
+ 			).get_environ()
+ 		)
+ 		with (
+-			patch.object(frappe.local, "request", request, create=True),
+-			patch.object(frappe.local, "form_dict", frappe._dict(user=self.user), create=True),
+-			patch.object(frappe.local, "request_ip", "127.0.0.1", create=True),
++			local_context(request=request, form_dict=frappe._dict(user=self.user), request_ip="127.0.0.1"),
+ 			patch("frappe.core.doctype.user.user.User.password_reset_mail"),
+ 		):
+ 			with self.assertRaises(frappe.PermissionError):
+ 				execute_cmd("frappe.core.doctype.user.user.reset_password")
+ 		self.assertFalse(frappe.db.get_value("User", self.user, "reset_password_key"))
+ 
+ 	def test_administrator_without_explicit_r10_cannot_reset_or_disable(self):
+ 		frappe.db.delete("Has Role", {"parent": "Administrator", "role": "TC R10"})
+ 		frappe.set_user("Administrator")
+ 		with self.assertRaises(frappe.PermissionError):
+diff --git a/tracecore/core/tests/test_errors.py b/tracecore/core/tests/test_errors.py
+index c7c8de3..8b706cf 100644
+--- a/tracecore/core/tests/test_errors.py
++++ b/tracecore/core/tests/test_errors.py
+@@ -10,21 +10,31 @@ class TestErrors(FrappeTestCase):
+ 		self.assertEqual(Block("SET_NOT_FOUND", "t", "r", "a").http_status, 404)
+ 		self.assertEqual(Block("CI_LOT_INVALID", "t", "r", "a").http_status, 422)
+ 		self.assertEqual(Block("GATE_PREV_NOT_PASSED", "t", "r", "a").http_status, 409)
+ 		# mã không có trong bảng: xung đột trạng thái nghiệp vụ
+ 		self.assertEqual(Block("X", "t", "r", "a").http_status, 409)
+ 		error = BlockedError(Block("PACK_NOT_FOUND", "t", "r", "a"))
+ 		self.assertEqual(error.http_status_code, 404)
+ 
+ 	def test_http_status_table_matches_decision_d3(self):
+ 		expected = {
++			401: ("SESSION_INVALID", "SESSION_EXPIRED", "SESSION_IDLE"),
++			403: (
++				"SESSION_STATION_MISMATCH",
++				"CARD_INVALID",
++				"COMPETENCY_REQUIRED",
++				"PIN_INVALID",
++				"PIN_PROOF_INVALID",
++			),
++			429: ("PIN_LOCKED",),
+ 			422: (
++				"PIN_FORMAT_INVALID",
+ 				"STATION_WRONG_STEP",
+ 				"SCAN_INVALID",
+ 				"BOM_INCOMPLETE",
+ 				"CI_LOT_INVALID",
+ 				"CI_LOT_EXPIRED",
+ 				"PACK_TYPE_INVALID",
+ 				"REASON_REQUIRED",
+ 				"MAINT_ACTION_REQUIRED",
+ 				"MAINT_OIL_LOT_REQUIRED",
+ 				"ROLL_NOT_LABEL",
+diff --git a/tracecore/core/tests/test_station_models.py b/tracecore/core/tests/test_station_models.py
+index d17d56f..1860ee0 100755
+--- a/tracecore/core/tests/test_station_models.py
++++ b/tracecore/core/tests/test_station_models.py
+@@ -8,21 +8,26 @@ from frappe.utils import add_to_date, now_datetime
+ FIXTURES = Path(__file__).parents[2] / "fixtures"
+ 
+ 
+ class TestStationAuthModels(FrappeTestCase):
+ 	def test_employee_auth_custom_fields_are_secure(self):
+ 		fields = {
+ 			row["fieldname"]: row
+ 			for row in json.loads((FIXTURES / "custom_field.json").read_text(encoding="utf-8"))
+ 			if row["dt"] == "Employee"
+ 		}
+-		self.assertEqual(set(fields), {"tc_card_id", "tc_card_enabled", "tc_pin_hash"})
++		self.assertEqual(
++			set(fields), {"tc_card_id", "tc_card_enabled", "tc_pin_hash", "tc_pin_reset_required"}
++		)
++		self.assertEqual(fields["tc_pin_reset_required"]["fieldtype"], "Check")
++		self.assertEqual(fields["tc_pin_reset_required"]["read_only"], 1)
++		self.assertEqual(fields["tc_pin_reset_required"]["no_copy"], 1)
+ 		self.assertEqual(fields["tc_card_id"]["unique"], 1)
+ 		self.assertEqual(fields["tc_pin_hash"]["fieldtype"], "Password")
+ 		self.assertEqual(fields["tc_pin_hash"]["hidden"], 1)
+ 		self.assertEqual(fields["tc_pin_hash"]["no_copy"], 1)
+ 
+ 	def test_temporary_competency_cannot_exceed_24_hours(self):
+ 		start = now_datetime()
+ 		doc = frappe.get_doc(
+ 			{
+ 				"doctype": "Station Competency",
+diff --git a/tracecore/equipment/doctype/equipment/test_equipment.py b/tracecore/equipment/doctype/equipment/test_equipment.py
+index 7f67a3b..69bc2f0 100644
+--- a/tracecore/equipment/doctype/equipment/test_equipment.py
++++ b/tracecore/equipment/doctype/equipment/test_equipment.py
+@@ -1,16 +1,16 @@
+ import frappe
+ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
+ 
+ from tracecore.equipment.status import set_status
+ from tracecore.tests.factories import make_equipment
+-from tracecore.tests.utils import IsolatedTestCase, bru
++from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
+ 
+ test_ignore = ["Asset", "Item", "User"]
+ 
+ 
+ class TestEquipment(IsolatedTestCase):
+ 	@bru("BRU-ID-006")
+ 	def test_code_tb_registered_and_immutable(self):
+ 		doc = make_equipment()
+ 		self.assertRegex(doc.name, r"^TB-\d{4}$")
+ 		row = frappe.db.get_value(
+@@ -205,22 +205,23 @@ class TestEquipment(IsolatedTestCase):
+ 			set_status(make_equipment(serial="X").name, "Bogus")
+ 
+ 	def test_equipment_cannot_be_deleted(self):
+ 		doc = make_equipment()
+ 		with self.assertRaises(frappe.ValidationError):
+ 			frappe.delete_doc("Equipment", doc.name, force=True)
+ 		self.assertTrue(frappe.db.exists("Equipment", doc.name))
+ 
+ 	def test_permissions_match_q7(self):
+ 		validate_permissions_for_doctype("Equipment")
++		assert_permission_matrix(self, "Equipment")
+ 		perms = {row.role: row for row in frappe.get_meta("Equipment").permissions}
+-		for role in ("System Manager", "TC R10"):
++		for role in ("TC R10",):
+ 			for right in ("read", "write", "create", "report"):
+ 				self.assertEqual(perms[role].get(right), 1, msg=(role, right))
+ 		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
+ 			self.assertEqual(perms[role].read, 1, msg=role)
+ 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
+ 		self.assertFalse(any(row.delete for row in perms.values()))
+ 
+ 	def test_asset_is_optional(self):
+ 		doc = make_equipment()
+ 		self.assertFalse(doc.asset)
+diff --git a/tracecore/equipment/doctype/process_program/test_process_program.py b/tracecore/equipment/doctype/process_program/test_process_program.py
+index 70d62fe..45882ce 100644
+--- a/tracecore/equipment/doctype/process_program/test_process_program.py
++++ b/tracecore/equipment/doctype/process_program/test_process_program.py
+@@ -1,16 +1,16 @@
+ import frappe
+ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
+ 
+ from tracecore.equipment.status import set_status
+-from tracecore.tests.factories import make_equipment, make_item, make_program
+-from tracecore.tests.utils import IsolatedTestCase, bru
++from tracecore.tests.factories import make_equipment, make_item, make_program, make_user
++from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
+ 
+ test_ignore = ["Asset", "Item", "User"]
+ 
+ 
+ class TestProcessProgram(IsolatedTestCase):
+ 	def setUp(self):
+ 		super().setUp()
+ 		self.equipment = make_equipment()
+ 
+ 	def test_program_code_normalized_and_unique(self):
+@@ -128,35 +128,32 @@ class TestProcessProgram(IsolatedTestCase):
+ 		doc = make_program(self.equipment.name, code="OLD-1")
+ 		set_status(self.equipment.name, "Retired", "Hết đời")
+ 		with self.assertRaises(frappe.ValidationError):
+ 			make_program(self.equipment.name, code="NEW-1")
+ 		doc.reload()
+ 		doc.is_active = 0  # chương trình có sẵn vẫn sửa/ngừng được
+ 		doc.save()
+ 
+ 	def test_permissions_match_q7(self):
+ 		validate_permissions_for_doctype("Process Program")
++		assert_permission_matrix(self, "Process Program")
+ 		perms = {row.role: row for row in frappe.get_meta("Process Program").permissions}
+-		for role in ("System Manager", "TC R10"):
++		for role in ("TC R10",):
+ 			for right in ("read", "write", "create", "report"):
+ 				self.assertEqual(perms[role].get(right), 1, msg=(role, right))
+ 		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
+ 			self.assertEqual(perms[role].read, 1, msg=role)
+ 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
+ 		self.assertFalse(any(row.delete for row in perms.values()))
+ 
+ 	def test_r02_cannot_write_process_program(self):
+ 		doc = make_program(self.equipment.name, code="R02-1")
+-		user = "r02.program@test.local"
+-		if not frappe.db.exists("User", user):
+-			frappe.get_doc(
+-				{"doctype": "User", "email": user, "first_name": "R02", "roles": [{"role": "TC R02"}]}
+-			).insert(ignore_permissions=True)
++		user = make_user("r02.program@test.local", ("TC R02",))
+ 		self.assertTrue(frappe.has_permission("Process Program", "read", doc=doc, user=user))
+ 		self.assertFalse(frappe.has_permission("Process Program", "write", doc=doc, user=user))
+ 		self.assertFalse(frappe.has_permission("Process Program", "create", user=user))
+ 
+ 	def test_norm_flags_are_read_only_defaults(self):
+ 		meta = frappe.get_meta("Process Program")
+ 		self.assertEqual(meta.get_field("norm_status").read_only, 1)
+ 		self.assertEqual(meta.get_field("outside_safe_range").read_only, 1)
+ 		self.assertEqual(make_program(self.equipment.name, code="DF-1").norm_status, "Missing")
+diff --git a/tracecore/equipment/tests/test_norms.py b/tracecore/equipment/tests/test_norms.py
+index 475f6b7..b081e51 100644
+--- a/tracecore/equipment/tests/test_norms.py
++++ b/tracecore/equipment/tests/test_norms.py
+@@ -1,16 +1,16 @@
+ import frappe
+ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
+ 
+ from tracecore.equipment import norms
+ from tracecore.equipment.status import set_status
+-from tracecore.tests.factories import make_equipment, make_item, make_program
++from tracecore.tests.factories import make_equipment, make_item, make_program, make_user
+ from tracecore.tests.utils import IsolatedTestCase, bru
+ 
+ test_ignore = ["Asset", "Item", "User"]
+ 
+ MISSING_WARNING = "costing is not calculated"
+ 
+ 
+ def make_type_norm(equipment_type="Steam Sterilizer", **values):
+ 	return frappe.get_doc(
+ 		{
+@@ -168,25 +168,21 @@ class TestNorms(IsolatedTestCase):
+ 			for right in ("read", "write", "create", "report"):
+ 				self.assertEqual(perms[role].get(right), 1, msg=(role, right))
+ 		for role in ("TC R01", "TC R02", "TC R09"):
+ 			self.assertEqual(perms[role].read, 1, msg=role)
+ 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
+ 		self.assertFalse(any(row.delete for row in perms.values()))
+ 
+ 	def test_r02_cannot_set_use_default_norms(self):
+ 		make_type_norm()
+ 		doc = make_program(self.steam.name, code="P1-1", consumables=consumable())
+-		user = "r02.norms@test.local"
+-		if not frappe.db.exists("User", user):
+-			frappe.get_doc(
+-				{"doctype": "User", "email": user, "first_name": "R02", "roles": [{"role": "TC R02"}]}
+-			).insert(ignore_permissions=True)
++		user = make_user("r02.norms@test.local", ("TC R02",))
+ 		doc.reload()
+ 		doc.use_default_norms = 1
+ 		frappe.set_user(user)
+ 		try:
+ 			with self.assertRaises(frappe.PermissionError):
+ 				doc.save()
+ 		finally:
+ 			frappe.set_user("Administrator")
+ 
+ 	def test_reactivating_program_on_retired_equipment_rejected(self):
+diff --git a/tracecore/reprocessing/doctype/pack/test_pack.py b/tracecore/reprocessing/doctype/pack/test_pack.py
+index 39d27e4..961914d 100644
+--- a/tracecore/reprocessing/doctype/pack/test_pack.py
++++ b/tracecore/reprocessing/doctype/pack/test_pack.py
+@@ -1,14 +1,15 @@
+ import frappe
+ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
+ from frappe.utils import add_days, today
+ 
++from tracecore.setup.permissions import ROLE_CODES, build_custom_docperms
+ from tracecore.tests.factories import (
+ 	make_bom,
+ 	make_instrument,
+ 	make_pack,
+ 	make_pack_type,
+ 	make_set_type,
+ 	make_set_unit,
+ 	make_user,
+ 	next_free_test_cycle_id,
+ )
+@@ -303,31 +304,34 @@ class TestPack(IsolatedTestCase):
+ 			filters={"ref_doctype": "Pack", "ref_name": doc.name},
+ 			fields=["action", "new_value"],
+ 			order_by="creation asc",
+ 		)
+ 		kinds = [row.action for row in actions]
+ 		for expected in ("Create", "Submit", "Update"):
+ 			self.assertIn(expected, kinds)
+ 		update = [row for row in actions if row.action == "Update"][-1]
+ 		self.assertIn("Void", update.new_value)
+ 
+-	def test_station_role_r04_can_create_and_submit_others_only_read(self):
+-		author = make_user("pack-r04@example.com", roles=["TC R04"])
+-		for ptype in ("create", "read", "write", "submit"):
+-			self.assertTrue(frappe.has_permission("Pack", ptype, user=author), ptype)
+-		for ptype in ("delete", "cancel", "amend"):
+-			self.assertFalse(frappe.has_permission("Pack", ptype, user=author), ptype)
+-		for role in ("TC R01", "TC R02", "TC R05"):
+-			reader = make_user(f"pack-{role[-3:].lower()}@example.com", roles=[role])
+-			self.assertTrue(frappe.has_permission("Pack", "read", user=reader), role)
+-			for ptype in ("create", "write", "submit", "delete"):
+-				self.assertFalse(frappe.has_permission("Pack", ptype, user=reader), f"{role} {ptype}")
++	def test_station_roles_follow_generated_pack_matrix_without_delete(self):
++		generated = {row["role"]: row for row in build_custom_docperms({"Pack"})}
++		for code in ROLE_CODES:
++			role = f"TC {code}"
++			user = make_user(f"pack-{code.lower()}@example.com", roles=[role])
++			expected = generated.get(role, {})
++			for ptype in ("read", "write", "create", "report", "submit", "cancel", "amend"):
++				self.assertEqual(
++					bool(frappe.has_permission("Pack", ptype, user=user)),
++					bool(expected.get(ptype, 0)),
++					f"{role} {ptype}",
++				)
++			self.assertFalse(expected.get("delete", 0), role)
++			self.assertFalse(frappe.has_permission("Pack", "delete", user=user), role)
+ 		manager = frappe.get_all(
+ 			"DocPerm",
+ 			filters={"parent": "Pack", "role": "System Manager"},
+ 			fields=["create", "write", "submit", "read"],
+ 		)
+ 		self.assertEqual([(p["read"], p["write"], p["create"], p["submit"]) for p in manager], [(1, 1, 1, 1)])
+ 
+ 	def test_permission_rows_pass_frappe_validation(self):
+ 		# Cùng kiểm tra mà Customize Form / Role Permission Manager chạy khi lưu DocType: migrate bỏ qua
+ 		# bước này nên một dòng quyền sai (ví dụ submit mà thiếu write) chỉ lộ ra ở lần lưu sau.
+diff --git a/tracecore/setup/devdata.py b/tracecore/setup/devdata.py
+index 822c749..03c88d8 100644
+--- a/tracecore/setup/devdata.py
++++ b/tracecore/setup/devdata.py
+@@ -2,24 +2,25 @@
+ 
+ - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_demo_set`` in Set ID GIAI thử để quét ở /app/station.
+ - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t4_demo`` chuẩn bị màn T4 đóng gói (SCR-08) tại
+   TR-004 và in JSON các mã để quét (bộ hấp, bộ plasma, bộ chưa qua cổng T3, lô chỉ thị, mã cuộn nhãn, máy in).
+ - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_equipment_demo`` chuẩn bị máy và chương trình xử lý
+   cho e2e Desk SCR-21 (FEAT-038) và in JSON các mã (tên máy, mã chương trình).
+ """
+ 
+ import io
+ import json
++import secrets
+ 
+ import frappe
+ from frappe import _
+-from frappe.utils import add_days, today
++from frappe.utils import add_days, now_datetime, today
+ 
+ from tracecore.core import code_registry, gs1, step_gate
+ from tracecore.core import print as core_print
+ from tracecore.equipment import status as equipment_status
+ from tracecore.setup.label_templates import ensure_sample_templates
+ from tracecore.tests import factories
+ 
+ DEMO_SET_TYPE = "DEMO"
+ 
+ # --- Demo T4 (FEAT-018) ------------------------------------------------------------------------------
+@@ -34,20 +35,128 @@ DEMO_OIL_LOT = "DEMO-T4-DAU-01"  # lô dầu để xác nhận "Đã bảo dư
+ STEAM_LABEL, PLASMA_LABEL = (code for code, _method in factories.LABEL_ITEMS)
+ T4_GATES_READY = ("T1", "T2", "T3")
+ T4_GATES_FAIL = ("T1", "T2")  # chưa có cổng T3 Đạt → T4 từ chối GATE_PREV_NOT_PASSED
+ 
+ 
+ def _require_dev_site():
+ 	if not (frappe.conf.get("developer_mode") or frappe.conf.get("allow_tests") or frappe.flags.in_test):
+ 		frappe.throw(_("Demo data can only be created on a developer or test site."))
+ 
+ 
++def ensure_e2e_users(station, t4_station, password, r10_password):
++	"""CLI dev/test bootstrap; returned secrets must go only to the private E2E env file.
++
++	Enroll generated demo accounts in native OTP App authentication, avoiding email
++	delivery without disabling 2FA. Never commit while temporary authority is held.
++	"""
++	import pyotp
++	from frappe.twofactor import get_default, set_default
++	from frappe.utils.password import decrypt, encrypt
++
++	from tracecore.setup import provision
++
++	_require_dev_site()
++	if frappe.session.user != "Administrator":
++		frappe.throw(_("Only Administrator can prepare demo accounts."), frappe.PermissionError)
++	admin = frappe.get_doc("User", "Administrator")
++	had_r10 = any(row.role == "TC R10" for row in admin.roles)
++	try:
++		if not had_r10:
++			admin.add_roles("TC R10")
++		result = {
++			"user": provision.station_user(station, password),
++			"t4_user": provision.station_user(t4_station, password),
++			"r10_user": provision.desk_user("TC R10", "r10-e2e", r10_password),
++		}
++		for prefix in ("", "t4_", "r10_"):
++			user = result[prefix + "user"]
++			key = user + "_otpsecret"
++			stored = get_default(key)
++			secret = decrypt(stored) if stored else pyotp.random_base32()
++			if not stored:
++				set_default(key, encrypt(secret))
++			set_default(user + "_otplogin", 1)
++			result[prefix + "otp_secret"] = secret
++	finally:
++		if not had_r10:
++			admin.remove_roles("TC R10")
++	return result
++
++
++def ensure_station_demo(station, user, card_id=None, second_station=None):
++	"""Dev/test-only card identity for an existing kiosk User; no password or PIN is seeded.
++
++	Cards are generated once and reused. Expired demo competencies are renewed in place;
++	valid competencies and their dates remain unchanged on a repeated preparation run.
++	"""
++	from tracecore.core.station_auth import normalize_card_id
++
++	_require_dev_site()
++	stations = list(dict.fromkeys(filter(None, (station, second_station))))
++	for target in stations:
++		if not frappe.db.exists("Zone Station", {"name": target, "is_zone": 0, "is_active": 1}):
++			frappe.throw(_("An active station is required for demo data."))
++	if not frappe.db.get_value("User", user, "enabled"):
++		frappe.throw(_("An enabled user is required for demo data."))
++	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
++	if not company:
++		frappe.throw(_("Complete company setup before creating demo employees."))
++	name = frappe.db.get_value("Employee", {"user_id": user}, "name")
++	employee = (
++		frappe.get_doc("Employee", name)
++		if name
++		else frappe.get_doc(
++			{
++				"doctype": "Employee",
++				"first_name": "TraceCore Demo",
++				"gender": "Male",
++				"date_of_birth": "1990-01-01",
++				"date_of_joining": today(),
++				"company": company,
++				"user_id": user,
++			}
++		)
++	)
++	employee.status = "Active"
++	employee.tc_card_enabled = 1
++	employee.tc_card_id = normalize_card_id(card_id or employee.tc_card_id or f"E2E-{secrets.token_hex(12)}")
++	employee.save(ignore_permissions=True)
++	now = now_datetime()
++	for target in stations:
++		name = frappe.db.get_value(
++			"Station Competency", {"employee": employee.name, "station": target}, "name"
++		)
++		competency = (
++			frappe.get_doc("Station Competency", name)
++			if name
++			else frappe.get_doc(
++				{
++					"doctype": "Station Competency",
++					"employee": employee.name,
++					"station": target,
++				}
++			)
++		)
++		if (
++			not name
++			or not competency.is_active
++			or not (competency.valid_from <= now <= competency.valid_until)
++		):
++			competency.update(
++				{"valid_from": add_days(now, -1), "valid_until": add_days(now, 365), "is_active": 1}
++			)
++			competency.save(ignore_permissions=True)
++	result = {"employee": employee.name, "card_id": employee.tc_card_id}
++	print(json.dumps(result, sort_keys=True))
++	return result
++
++
+ def ensure_demo_set():
+ 	"""Tạo (nếu chưa có) loại bộ DEMO và một Set Unit; trả và in Set ID."""
+ 	_require_dev_site()
+ 	if not frappe.db.exists("Instrument Set Type", DEMO_SET_TYPE):
+ 		frappe.get_doc(
+ 			{
+ 				"doctype": "Instrument Set Type",
+ 				"type_code": DEMO_SET_TYPE,
+ 				"set_type_name": "Demo set",
+ 				"method": "Steam",
+diff --git a/tracecore/tests/factories.py b/tracecore/tests/factories.py
+index b8be285..8bce56d 100644
+--- a/tracecore/tests/factories.py
++++ b/tracecore/tests/factories.py
+@@ -1,39 +1,41 @@
+ """Factory dữ liệu test (F-5)."""
+ 
+ import re
+ import unicodedata
+ 
+ import frappe
+ from frappe.model.naming import getseries
+ from frappe.utils import add_days, getdate, now_datetime, today
+ 
+ from tracecore.core import code_registry, gs1, step_gate
++from tracecore.tests.utils import fixture_r10
+ 
+ 
+ def make_user(email, roles=()):
+ 	"""Tạo (hoặc lấy) System User với các role cho trước; trả email."""
+-	if frappe.db.exists("User", email):
+-		user = frappe.get_doc("User", email)
+-	else:
+-		user = frappe.get_doc(
+-			{
+-				"doctype": "User",
+-				"email": email,
+-				"first_name": email.split("@")[0],
+-				"send_welcome_email": 0,
+-				"user_type": "System User",
+-			}
+-		).insert(ignore_permissions=True)
+-	if roles:
+-		user.add_roles(*roles)
+-	return user.name
++	with fixture_r10():
++		if frappe.db.exists("User", email):
++			user = frappe.get_doc("User", email)
++		else:
++			user = frappe.get_doc(
++				{
++					"doctype": "User",
++					"email": email,
++					"first_name": email.split("@")[0],
++					"send_welcome_email": 0,
++					"user_type": "System User",
++				}
++			).insert(ignore_permissions=True)
++		if roles:
++			user.add_roles(*roles)
++		return user.name
+ 
+ 
+ def make_set_unit(set_type=None, max_cycles=300, **kwargs):
+ 	set_type = set_type or make_set_type().name
+ 	return frappe.get_doc(
+ 		{"doctype": "Set Unit", "set_type": set_type, "max_cycles": max_cycles, **kwargs}
+ 	).insert()
+ 
+ 
+ def _ref_name(ref):
+diff --git a/tracecore/tests/test_devdata.py b/tracecore/tests/test_devdata.py
+index ce7cd7c..6753c44 100644
+--- a/tracecore/tests/test_devdata.py
++++ b/tracecore/tests/test_devdata.py
+@@ -1,17 +1,157 @@
+ import frappe
+ from frappe.tests.utils import FrappeTestCase
+ 
+ from tracecore.core import code_registry, gs1, step_gate
+ from tracecore.core.errors import BlockedError
+ from tracecore.reprocessing import packing
+ from tracecore.setup import devdata
++from tracecore.tests.factories import make_user
++from tracecore.tests.utils import IsolatedTestCase
++
++test_dependencies = ["Company"]
++
++
++class TestStationDemoData(IsolatedTestCase):
++	def setUp(self):
++		super().setUp()
++		frappe.set_user("Administrator")
++		frappe.get_doc("User", "Administrator").add_roles("TC R10")
++		self.user = make_user("station-demo@example.test", ("TC R04",))
++
++	def seed(self, **kwargs):
++		return devdata.ensure_station_demo("TR-004", self.user, **kwargs)
++
++	def admin_roles(self):
++		return set(
++			frappe.get_all(
++				"Has Role", filters={"parent": "Administrator", "parenttype": "User"}, pluck="role"
++			)
++		)
++
++	def test_legacy_user_factory_restores_explicit_roles_on_success_and_failure(self):
++		from unittest.mock import patch
++
++		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
++		before = self.admin_roles()
++		self.assertTrue(make_user("legacy-fixture@example.test"))
++		self.assertEqual(self.admin_roles(), before)
++		with patch("frappe.core.doctype.user.user.User.insert", side_effect=RuntimeError("fixture failure")):
++			with self.assertRaisesRegex(RuntimeError, "fixture failure"):
++				make_user("failed-fixture@example.test")
++		self.assertEqual(self.admin_roles(), before)
++
++	def test_e2e_user_bootstrap_restores_administrator_roles(self):
++		import secrets
++
++		admin = frappe.get_doc("User", "Administrator")
++		admin.remove_roles("TC R10")
++		before = self.admin_roles()
++		users = devdata.ensure_e2e_users(
++			"TR-003", "TR-004", secrets.token_urlsafe(24), secrets.token_urlsafe(24)
++		)
++		self.assertEqual(self.admin_roles(), before)
++		self.assertEqual(
++			set(users), {"user", "t4_user", "r10_user", "otp_secret", "t4_otp_secret", "r10_otp_secret"}
++		)
++		self.assertIn("TC R04", frappe.get_roles(users["t4_user"]))
++		self.assertIn("TC R10", frappe.get_roles(users["r10_user"]))
++		from frappe.twofactor import get_default
++		from frappe.utils.password import decrypt
++
++		for prefix in ("", "t4_", "r10_"):
++			stored = get_default(users[prefix + "user"] + "_otpsecret")
++			self.assertNotEqual(stored, users[prefix + "otp_secret"])
++			self.assertEqual(decrypt(stored), users[prefix + "otp_secret"])
++			self.assertTrue(get_default(users[prefix + "user"] + "_otplogin"))
++		self.assertEqual(
++			users,
++			devdata.ensure_e2e_users(
++				"TR-003", "TR-004", secrets.token_urlsafe(24), secrets.token_urlsafe(24)
++			),
++		)
++
++	def test_e2e_user_bootstrap_restores_roles_after_failure_and_preserves_existing_r10(self):
++		from unittest.mock import patch
++
++		admin = frappe.get_doc("User", "Administrator")
++		for already_r10 in (False, True):
++			admin.reload()
++			(admin.add_roles if already_r10 else admin.remove_roles)("TC R10")
++			before = self.admin_roles()
++			with patch(
++				"tracecore.setup.provision.station_user", side_effect=RuntimeError("injected failure")
++			):
++				with self.assertRaisesRegex(RuntimeError, "injected failure"):
++					devdata.ensure_e2e_users("TR-003", "TR-004", "unused", "unused")
++			self.assertEqual(self.admin_roles(), before)
++
++	def test_e2e_user_bootstrap_refuses_production_before_role_grant(self):
++		from unittest.mock import patch
++
++		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
++		before = self.admin_roles()
++		with (
++			patch.dict(frappe.conf, {"developer_mode": 0, "allow_tests": 0}),
++			patch.dict(frappe.flags, {"in_test": False}),
++		):
++			with self.assertRaises(frappe.ValidationError):
++				devdata.ensure_e2e_users("TR-003", "TR-004", "unused", "unused")
++		self.assertEqual(self.admin_roles(), before)
++
++	def test_card_employee_and_competencies_are_reusable_and_can_login(self):
++		from tracecore.core import station_auth
++
++		first = self.seed(second_station="TR-005")
++		self.assertEqual(first, self.seed(second_station="TR-005"))
++		self.assertTrue(first["card_id"].startswith("E2E-"))
++		self.assertEqual(frappe.db.count("Employee", {"user_id": self.user}), 1)
++		self.assertEqual(frappe.db.count("Station Competency", {"employee": first["employee"]}), 2)
++		self.assertEqual(frappe.db.get_value("Employee", first["employee"], "status"), "Active")
++		self.assertFalse(
++			frappe.utils.password.get_decrypted_password(
++				"Employee", first["employee"], "tc_pin_hash", raise_exception=False
++			)
++		)
++		for station in ("TR-004", "TR-005"):
++			login = station_auth.login(first["card_id"], station)
++			self.assertEqual(login["user"], self.user)
++			self.assertEqual(login["roles"], ["TC R04"])
++
++	def test_supplied_card_is_normalized_and_stale_competency_is_renewed(self):
++		first = self.seed(card_id=" e2e-explicit-card ")
++		self.assertEqual(first["card_id"], "E2E-EXPLICIT-CARD")
++		name = frappe.db.get_value("Station Competency", {"employee": first["employee"]}, "name")
++		frappe.db.set_value("Station Competency", name, {"valid_until": "2000-01-01", "is_active": 0})
++		self.assertEqual(first, self.seed(card_id="E2E-EXPLICIT-CARD"))
++		self.assertEqual(frappe.db.count("Station Competency", {"employee": first["employee"]}), 1)
++		self.assertTrue(frappe.db.get_value("Station Competency", name, "is_active"))
++
++	def test_production_guard_runs_before_any_seed(self):
++		from unittest.mock import patch
++
++		with (
++			patch.dict(frappe.conf, {"developer_mode": 0, "allow_tests": 0}),
++			patch.dict(frappe.flags, {"in_test": False}),
++		):
++			with self.assertRaises(frappe.ValidationError):
++				self.seed()
++		self.assertFalse(frappe.db.exists("Employee", {"user_id": self.user}))
++
++	def test_disabled_users_and_inactive_stations_are_rejected(self):
++		frappe.db.set_value("User", self.user, "enabled", 0)
++		with self.assertRaises(frappe.ValidationError):
++			self.seed()
++		frappe.db.set_value("User", self.user, "enabled", 1)
++		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)
++		with self.assertRaises(frappe.ValidationError):
++			self.seed()
+ 
+ 
+ class TestDevData(FrappeTestCase):
+ 	def test_ensure_demo_set_is_idempotent(self):
+ 		first = devdata.ensure_demo_set()
+ 		second = devdata.ensure_demo_set()
+ 		self.assertEqual(first, second)
+ 		self.assertEqual(frappe.db.get_value("Set Unit", first, "set_type"), "DEMO")
+ 		self.assertEqual(gs1.parse_scan(first)["type"], "set")
+ 
+diff --git a/tracecore/tests/test_e2e_prepare_guard.py b/tracecore/tests/test_e2e_prepare_guard.py
+index 272c5a4..1f40fbc 100644
+--- a/tracecore/tests/test_e2e_prepare_guard.py
++++ b/tracecore/tests/test_e2e_prepare_guard.py
+@@ -1,15 +1,16 @@
+ """Kiểm tra chốt chặn của scripts/e2e_prepare.sh: từ chối site test (tên test_site hoặc allow_tests bật).
+ 
+ Chạy script ở chế độ TC_E2E_CHECK_ONLY=1 với BENCH_DIR là thư mục tạm chứa site giả, nên không chạm site thật nào.
+ """
+ 
++import base64
+ import json
+ import os
+ import subprocess
+ import tempfile
+ import unittest
+ from pathlib import Path
+ 
+ SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "e2e_prepare.sh"
+ 
+ 
+@@ -22,20 +23,78 @@ def run_guard(site, site_config=None, allow_override=False):
+ 		env = {**os.environ, "BENCH_DIR": bench, "TC_E2E_CHECK_ONLY": "1", "TC_E2E_ENV": f"{bench}/e2e.env"}
+ 		env.pop("TC_E2E_ALLOW_TEST_SITE", None)
+ 		if allow_override:
+ 			env["TC_E2E_ALLOW_TEST_SITE"] = "1"
+ 		return subprocess.run(
+ 			["bash", str(SCRIPT), site], env=env, capture_output=True, text=True, timeout=60
+ 		)
+ 
+ 
+ class TestE2ePrepareGuard(unittest.TestCase):
++	def test_preparation_exports_both_cards_without_disclosing_credentials(self):
++		with tempfile.TemporaryDirectory() as bench:
++			bin_dir = Path(bench, "bin")
++			bin_dir.mkdir()
++			fake_bench = bin_dir / "bench"
++			fake_bench.write_text("""#!/usr/bin/env python3
++import ast, json, os, sys
++method = sys.argv[sys.argv.index("execute") + 1]
++kwargs = ast.literal_eval(sys.argv[sys.argv.index("--kwargs") + 1]) if "--kwargs" in sys.argv else {}
++if method == "frappe.is_setup_complete":
++    print("true")
++elif method.endswith("ensure_e2e_users"):
++    print(json.dumps({"user": "station-tr-003@tracecore.local", "t4_user": "station-tr-004@tracecore.local", "r10_user": "r10-e2e@tracecore.local", "otp_secret": os.environ["TC_FAKE_OTP"], "t4_otp_secret": os.environ["TC_FAKE_OTP"], "r10_otp_secret": os.environ["TC_FAKE_OTP"]}))
++elif method.endswith("station_user"):
++    print(json.dumps("station-" + kwargs["station"].lower() + "@tracecore.local"))
++elif method.endswith("desk_user"):
++    print(json.dumps("r10-e2e@tracecore.local"))
++elif method.endswith("ensure_station_demo"):
++    print(json.dumps({"employee": "DEMO-" + kwargs["station"], "card_id": "CARD-" + kwargs["station"]}))
++elif method.endswith("ensure_demo_set"):
++    print(json.dumps("9520000DEMO000001"))
++else:
++    print("{}")
++""")
++			fake_bench.chmod(0o700)
++			env_file = Path(bench, "e2e.env")
++			env = {
++				**os.environ,
++				"BENCH_DIR": bench,
++				"TC_E2E_ENV": str(env_file),
++				"PATH": f"{bin_dir}:{os.environ['PATH']}",
++				"TC_FAKE_OTP": base64.b32encode(os.urandom(20)).decode(),
++			}
++			for key in ("TC_E2E_CHECK_ONLY", "TC_E2E_ALLOW_TEST_SITE"):
++				env.pop(key, None)
++			result = subprocess.run(
++				["bash", str(SCRIPT), "fake.local"], env=env, capture_output=True, text=True, timeout=60
++			)
++			self.assertEqual(result.returncode, 0, result.stderr)
++			values = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
++			self.assertEqual(values["TC_E2E_CARD_ID"], "CARD-TR-003")
++			self.assertEqual(values["TC_E2E_T4_CARD_ID"], "CARD-TR-004")
++			self.assertEqual(values["TC_E2E_T4_SECOND_STATION"], "TR-005")
++			self.assertEqual(values["TC_E2E_OTP_SECRET"], env["TC_FAKE_OTP"])
++			self.assertEqual(values["TC_E2E_T4_OTP_SECRET"], env["TC_FAKE_OTP"])
++			self.assertEqual(values["TC_E2E_R10_OTP_SECRET"], env["TC_FAKE_OTP"])
++			self.assertNotIn(env["TC_FAKE_OTP"], result.stdout + result.stderr)
++			self.assertNotEqual(values["TC_E2E_PASSWORD"], values["TC_E2E_R10_PASSWORD"])
++			self.assertNotIn(values["TC_E2E_PASSWORD"], result.stdout + result.stderr)
++			self.assertEqual(env_file.stat().st_mode & 0o777, 0o600)
++			result = subprocess.run(
++				["bash", str(SCRIPT), "fake.local"], env=env, capture_output=True, text=True, timeout=60
++			)
++			self.assertEqual(result.returncode, 0, result.stderr)
++			self.assertEqual(
++				env_file.read_text().splitlines(), [f"{key}={value}" for key, value in values.items()]
++			)
++
+ 	def test_refuses_site_named_test_site(self):
+ 		result = run_guard("test_site")
+ 		self.assertEqual(result.returncode, 2, result.stderr)
+ 		self.assertIn("refuses", result.stderr)
+ 
+ 	def test_refuses_site_with_allow_tests(self):
+ 		for flag in (1, True, "1"):
+ 			result = run_guard("fake.local", {"allow_tests": flag})
+ 			self.assertEqual(result.returncode, 2, (flag, result.stderr))
+ 			self.assertIn("allow_tests", result.stderr)
+diff --git a/tracecore/tests/utils.py b/tracecore/tests/utils.py
+index c71e6df..8e61129 100644
+--- a/tracecore/tests/utils.py
++++ b/tracecore/tests/utils.py
+@@ -1,20 +1,75 @@
+ """Tiện ích dùng chung cho test TraceCore."""
+ 
+ from contextlib import contextmanager
+ 
+ import frappe
+ from frappe.tests.utils import FrappeTestCase
+ 
+ TEST_SAVEPOINT = "tc_isolated_test"
+ 
+ 
++def assert_permission_matrix(testcase, doctype):
++	"""Compare effective permissions with the generated SEC matrix, including absent roles."""
++	from tracecore.setup.permissions import build_custom_docperms
++
++	rights = ("read", "write", "create", "report", "submit", "cancel", "amend", "delete")
++	expected = {
++		row["role"]: tuple(row.get(right, 0) for right in rights) for row in build_custom_docperms({doctype})
++	}
++	actual = {
++		row.role: tuple(row.get(right, 0) for right in rights)
++		for row in frappe.get_meta(doctype).permissions
++		if row.permlevel == 0
++	}
++	testcase.assertEqual(actual, expected, doctype)
++
++
++@contextmanager
++def local_context(**values):
++	"""Patch Werkzeug Local fields while preserving existing context on every exit."""
++	missing = object()
++	previous = {field: getattr(frappe.local, field, missing) for field in values}
++	try:
++		for field, value in values.items():
++			setattr(frappe.local, field, value)
++		yield
++	finally:
++		for field, value in previous.items():
++			if value is missing:
++				if hasattr(frappe.local, field):
++					delattr(frappe.local, field)
++			else:
++				setattr(frappe.local, field, value)
++
++
++@contextmanager
++def fixture_r10():
++	"""Explicit authority for Administrator-only test fixture creation, always restored.
++
++	Other actors retain their actual permissions, including negative security tests.
++	Installation bootstrap tests also retain their native production path.
++	"""
++	if not frappe.flags.in_test or frappe.session.user != "Administrator" or frappe.flags.in_install:
++		yield
++		return
++	admin = frappe.get_doc("User", "Administrator")
++	had_r10 = any(row.role == "TC R10" for row in admin.roles)
++	try:
++		if not had_r10:
++			admin.add_roles("TC R10")
++		yield
++	finally:
++		if not had_r10:
++			admin.reload().remove_roles("TC R10")
++
++
+ class IsolatedTestCase(FrappeTestCase):
+ 	"""FrappeTestCase hoàn tác dữ liệu sau MỖI test (savepoint), không chỉ sau cả class.
+ 
+ 	Dùng khi test sửa dữ liệu dùng chung với test khác trong class (mẫu nhãn mẫu, máy in của trạm…).
+ 	"""
+ 
+ 	def setUp(self):
+ 		super().setUp()
+ 		frappe.db.savepoint(TEST_SAVEPOINT)
+ 		self.addCleanup(frappe.db.rollback, save_point=TEST_SAVEPOINT)
+diff --git a/tracecore/tracecore/doctype/audit_log/test_audit_log.py b/tracecore/tracecore/doctype/audit_log/test_audit_log.py
+index 412b51f..a726733 100644
+--- a/tracecore/tracecore/doctype/audit_log/test_audit_log.py
++++ b/tracecore/tracecore/doctype/audit_log/test_audit_log.py
+@@ -1,16 +1,17 @@
+ import frappe
+ from frappe.tests.utils import FrappeTestCase
+ 
+ from tracecore.core import audit
++from tracecore.setup.permissions import ROLE_CODES, build_custom_docperms
+ from tracecore.tests.factories import make_user
+-from tracecore.tests.utils import request_headers
++from tracecore.tests.utils import assert_permission_matrix, request_headers
+ 
+ # User -> Email Account -> Company (ERPNext) cần Setup Wizard; test tự tạo user qua factory.
+ test_ignore = ["User"]
+ 
+ 
+ class TestAuditLog(FrappeTestCase):
+ 	def test_diff_ignores_type_drift_in_child_rows(self):
+ 		"""F5: `1` với `1.0`, `'9100'` với `9100` trong bảng con không làm ghi lại cả bảng."""
+ 		before = {"peripherals": [{"port": "9100", "baud_rate": 9600.0, "is_active": 1, "host": None}]}
+ 		after = {"peripherals": [{"host": "", "is_active": 1.0, "baud_rate": 9600, "port": 9100}]}
+@@ -34,37 +35,48 @@ class TestAuditLog(FrappeTestCase):
+ 		doc.reason = "tamper"
+ 		with self.assertRaises(audit.AuditLogImmutableError):
+ 			doc.save()
+ 
+ 	def test_audit_log_cannot_be_deleted_by_administrator(self):
+ 		name = audit.log("Login")
+ 		with self.assertRaises(audit.AuditLogImmutableError):
+ 			frappe.delete_doc("Audit Log", name, ignore_permissions=True)
+ 		self.assertTrue(frappe.db.exists("Audit Log", name))
+ 
+-	def test_no_role_has_write_or_delete(self):
++	def test_native_rows_are_read_only_and_effective_matrix_matches(self):
+ 		perms = frappe.get_all(
+ 			"DocPerm",
+ 			filters={"parent": "Audit Log"},
+ 			fields=["role", "write", "delete", "create", "cancel", "amend", "submit"],
+ 		)
+ 		self.assertTrue(perms)
++		assert_permission_matrix(self, "Audit Log")
+ 		for perm in perms:
+ 			for ptype in ("write", "delete", "create", "cancel", "amend", "submit"):
+ 				self.assertFalse(perm[ptype], msg=f"{perm.role} has {ptype}")
+ 
+-	def test_system_manager_user_has_no_delete_permission(self):
+-		user = make_user("audit-sm@example.com", roles=["System Manager"])
++	def test_generated_audit_read_permissions_and_no_delete(self):
++		generated = {row["role"]: row for row in build_custom_docperms({"Audit Log"})}
+ 		name = audit.log("Login")
+-		self.assertTrue(frappe.has_permission("Audit Log", "read", doc=name, user=user))
+-		self.assertFalse(frappe.has_permission("Audit Log", "write", doc=name, user=user))
+-		self.assertFalse(frappe.has_permission("Audit Log", "delete", doc=name, user=user))
++		for code in ROLE_CODES:
++			role = f"TC {code}"
++			user = make_user(f"audit-{code.lower()}@example.com", roles=[role])
++			self.assertEqual(
++				bool(frappe.has_permission("Audit Log", "read", doc=name, user=user)),
++				bool(generated.get(role, {}).get("read", 0)),
++				role,
++			)
++			self.assertFalse(frappe.has_permission("Audit Log", "write", doc=name, user=user), role)
++			self.assertFalse(frappe.has_permission("Audit Log", "delete", doc=name, user=user), role)
++		manager = make_user("audit-sm@example.com", roles=["System Manager"])
++		self.assertFalse(frappe.has_permission("Audit Log", "read", doc=name, user=manager))
++		self.assertFalse(frappe.has_permission("Audit Log", "delete", doc=name, user=manager))
+ 
+ 	def test_snapshot_drops_password_fields(self):
+ 		user = frappe.new_doc("User")
+ 		user.email = "snap@example.com"
+ 		user.first_name = "Snap"
+ 		user.new_password = "Secret-123!"
+ 		snap = audit.snapshot(user)
+ 		self.assertEqual(snap["first_name"], "Snap")
+ 		self.assertNotIn("new_password", snap)
+ 		self.assertNotIn("modified", snap)
+diff --git a/tracecore/tracecore/doctype/step_gate_result/test_step_gate_result.py b/tracecore/tracecore/doctype/step_gate_result/test_step_gate_result.py
+index 8eda7f4..0dd9989 100644
+--- a/tracecore/tracecore/doctype/step_gate_result/test_step_gate_result.py
++++ b/tracecore/tracecore/doctype/step_gate_result/test_step_gate_result.py
+@@ -1,15 +1,17 @@
+ import frappe
+ from frappe.tests.utils import FrappeTestCase
+ 
+ from tracecore.core import step_gate
++from tracecore.setup.permissions import ROLE_CODES, build_custom_docperms
+ from tracecore.tests.factories import make_set_unit, make_user
++from tracecore.tests.utils import assert_permission_matrix
+ 
+ # recorded_by → User → Email Account → Company (ERPNext) cần Setup Wizard; test tự tạo user qua factory.
+ test_ignore = ["User"]
+ 
+ WRITE_PTYPES = ("create", "write", "delete", "submit", "cancel", "amend")
+ 
+ 
+ class TestStepGateResult(FrappeTestCase):
+ 	def test_name_is_set_unit_cycle_and_step(self):
+ 		su = make_set_unit().name
+@@ -22,45 +24,46 @@ class TestStepGateResult(FrappeTestCase):
+ 	def test_same_key_cannot_be_inserted_twice(self):
+ 		su = make_set_unit().name
+ 		step_gate.start_cycle(su)
+ 		step_gate.record(su, "T4", "Pass")
+ 		duplicate = frappe.get_doc(
+ 			{"doctype": "Step Gate Result", "set_unit": su, "cycle_no": 1, "step": "T4", "result": "Pass"}
+ 		)
+ 		with self.assertRaises(frappe.DuplicateEntryError):
+ 			duplicate.insert(ignore_permissions=True)
+ 
+-	def test_no_role_can_write_or_delete(self):
++	def test_native_rows_are_read_only_and_effective_matrix_matches(self):
+ 		perms = frappe.get_all(
+ 			"DocPerm", filters={"parent": "Step Gate Result"}, fields=["role", "read", *WRITE_PTYPES]
+ 		)
+ 		self.assertTrue(perms)
++		assert_permission_matrix(self, "Step Gate Result")
+ 		for perm in perms:
+ 			for ptype in WRITE_PTYPES:
+ 				self.assertFalse(perm[ptype], msg=f"{perm.role} has {ptype}")
+ 		self.assertEqual({p.role for p in perms if p.read}, {"System Manager", "TC R01", "TC R02"})
+ 
+-	def test_only_manager_r01_r02_can_read(self):
++	def test_generated_step_gate_read_permissions_and_no_delete(self):
++		generated = {row["role"]: row for row in build_custom_docperms({"Step Gate Result"})}
+ 		su = make_set_unit().name
+ 		step_gate.start_cycle(su)
+ 		name = step_gate.record(su, "T4", "Pass")
+-		for role, can_read in (
+-			("System Manager", True),
+-			("TC R01", True),
+-			("TC R02", True),
+-			("TC R04", False),
+-			("TC R10", False),
+-		):
+-			user = make_user(f"sgr-{role.lower().replace(' ', '-')}@example.com", roles=[role])
++		for code in ROLE_CODES:
++			role = f"TC {code}"
++			user = make_user(f"sgr-{code.lower()}@example.com", roles=[role])
+ 			self.assertEqual(
+-				bool(frappe.has_permission("Step Gate Result", "read", doc=name, user=user)), can_read, role
++				bool(frappe.has_permission("Step Gate Result", "read", doc=name, user=user)),
++				bool(generated.get(role, {}).get("read", 0)),
++				role,
+ 			)
+-			self.assertFalse(frappe.has_permission("Step Gate Result", "write", doc=name, user=user), role)
+ 			self.assertFalse(frappe.has_permission("Step Gate Result", "delete", doc=name, user=user), role)
++		manager = make_user("sgr-system-manager@example.com", roles=["System Manager"])
++		self.assertFalse(frappe.has_permission("Step Gate Result", "read", doc=name, user=manager))
++		self.assertFalse(frappe.has_permission("Step Gate Result", "delete", doc=name, user=manager))
+ 
+ 	def test_cannot_be_deleted_even_by_administrator(self):
+ 		su = make_set_unit().name
+ 		step_gate.start_cycle(su)
+ 		name = step_gate.record(su, "T4", "Pass")
+ 		with self.assertRaises(frappe.ValidationError):
+ 			frappe.delete_doc("Step Gate Result", name, ignore_permissions=True)
+ 		self.assertTrue(frappe.db.exists("Step Gate Result", name))
+diff --git a/tracecore/translations/vi.csv b/tracecore/translations/vi.csv
+index 5ac78aa..42645ff 100644
+--- a/tracecore/translations/vi.csv
++++ b/tracecore/translations/vi.csv
+@@ -1,11 +1,15 @@
+ Invalid code,Mã không hợp lệ,
++An active station is required for demo data.,Cần trạm đang hoạt động để tạo dữ liệu demo.,
++An enabled user is required for demo data.,Cần người dùng đang hoạt động để tạo dữ liệu demo.,
++Complete company setup before creating demo employees.,Hoàn tất thiết lập công ty trước khi tạo nhân viên demo.,
++Only Administrator can prepare demo accounts.,Chỉ Administrator được chuẩn bị tài khoản demo.,
+ Code {0} was not issued by TraceCore.,Mã {0} không do TraceCore cấp.,
+ Rescan the set tag or call R02.,Quét lại thẻ bộ hoặc gọi R02.,
+ Not a set code,Không phải mã bộ,
+ Code {0} is not a Set ID.,Mã {0} không phải Set ID.,
+ Scan the Set ID on the set tag.,Quét Set ID trên thẻ bộ.,
+ Set not found,Không tìm thấy bộ,
+ Set ID {0} does not exist in TraceCore.,Set ID {0} chưa có trong TraceCore.,
+ Check the set tag or call R02.,Kiểm tra thẻ bộ hoặc gọi R02.,
+ Station not configured,Chưa cấu hình trạm,
+ Station {0} does not exist.,Không có trạm {0}.,
+diff --git a/tracecore/v1/tests/test_equipment_admin_api.py b/tracecore/v1/tests/test_equipment_admin_api.py
+index a7fca9b..c5f5018 100644
+--- a/tracecore/v1/tests/test_equipment_admin_api.py
++++ b/tracecore/v1/tests/test_equipment_admin_api.py
+@@ -67,26 +67,27 @@ class TestRetireRpc(IsolatedTestCase):
+ 		rows = frappe.get_all(
+ 			"Audit Log",
+ 			filters={"ref_doctype": "Equipment", "ref_name": equipment.name, "action": "Update"},
+ 			fields=["new_value"],
+ 		)
+ 		self.assertTrue(any("Retired" in (row.new_value or "") for row in rows))
+ 
+ 	def test_retire_role_checked_before_any_write(self):
+ 		equipment = make_equipment(name="Máy R04", serial="SN-RET-R04")
+ 		keys = frappe.db.count("Idempotency Key")
+-		audit_rows = frappe.db.count("Audit Log")
++		audit_filter = {"ref_doctype": "Equipment", "ref_name": equipment.name}
++		audit_rows = frappe.db.count("Audit Log", audit_filter)
+ 		with self.assertRaises(frappe.PermissionError):
+ 			as_user(["TC R04"], admin_api.retire, equipment=equipment.name, reason="Thử")
+ 		self.assertEqual(frappe.db.get_value("Equipment", equipment.name, "status"), "Ready")
+ 		self.assertEqual(frappe.db.count("Idempotency Key"), keys)
+-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
++		self.assertEqual(frappe.db.count("Audit Log", audit_filter), audit_rows)
+ 
+ 	@bru("BRU-EQP-003")
+ 	def test_retire_requires_reason(self):
+ 		equipment = make_equipment(name="Máy lý do", serial="SN-RET-REASON")
+ 		before = rejects("REASON_REQUIRED")
+ 		for reason in ("", "   ", None):
+ 			result = call(admin_api.retire, equipment=equipment.name, reason=reason)
+ 			self.assertFalse(result["ok"])
+ 			self.assertEqual(result["error"]["code"], "REASON_REQUIRED")
+ 			self.assertTrue(
+diff --git a/tracecore/v1/tests/test_label_template_api.py b/tracecore/v1/tests/test_label_template_api.py
+index a044c79..83f02cd 100644
+--- a/tracecore/v1/tests/test_label_template_api.py
++++ b/tracecore/v1/tests/test_label_template_api.py
+@@ -1,20 +1,20 @@
+ """RPC tracecore.v1.label_template.preview (FEAT-002 Task 4, E7): xem trước mẫu nhãn bằng dữ liệu mẫu trên Desk."""
+ 
+ from unittest.mock import patch
+ 
+ import frappe
+ 
+ from tracecore.core import print as core_print
+ from tracecore.setup.label_templates import sample_pack_context
+ from tracecore.tests.factories import make_user
+-from tracecore.tests.utils import IsolatedTestCase, request_headers
++from tracecore.tests.utils import IsolatedTestCase, fixture_r10, request_headers
+ from tracecore.v1 import label_template as label_template_api
+ 
+ # Người dùng test có role TC; site CI mới chưa chạy Setup Wizard (xem factories.py).
+ test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
+ 
+ SAMPLE = "Pack label - Steam"
+ 
+ 
+ class TestLabelTemplatePreview(IsolatedTestCase):
+ 	def setUp(self):
+@@ -68,17 +68,20 @@ class TestLabelTemplatePreview(IsolatedTestCase):
+ 		self.assertIs(result["ok"], False)
+ 		self.assertEqual(result["error"]["code"], "LABEL_RENDER_FAILED")
+ 		self.assertEqual(frappe.local.response.http_status_code, 422)
+ 		self.assertEqual(frappe.db.count("Error Log"), before + 1)
+ 
+ 	def test_preview_unknown_template_is_not_found(self):
+ 		with self.assertRaises(frappe.DoesNotExistError):
+ 			label_template_api.preview("no-such-template")
+ 
+ 	def test_preview_requires_r10_or_system_manager(self):
+-		frappe.set_user(make_user("preview-r04@example.com", roles=["TC R04"]))
++		with fixture_r10():
++			r04 = make_user("preview-r04@example.com", roles=["TC R04"])
++			r10 = make_user("preview-r10@example.com", roles=["TC R10"])
++		frappe.set_user(r04)
+ 		with self.assertRaises(frappe.PermissionError):
+ 			label_template_api.preview(SAMPLE)
+-		frappe.set_user(make_user("preview-r10@example.com", roles=["TC R10"]))
++		frappe.set_user(r10)
+ 		self.assertIs(label_template_api.preview(SAMPLE)["ok"], True)
+ 		frappe.set_user("Administrator")
+ 		self.assertIs(label_template_api.preview(SAMPLE)["ok"], True)
