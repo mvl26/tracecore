@@ -13,6 +13,8 @@
   bốn vật tư mẫu (chỉ thị hóa học lớp 5, chỉ thị sinh học, bao gói, hóa chất) cho e2e Desk nhập kho (SCR-24, FEAT-041).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_set_type_demo`` chuẩn bị loại gói, dụng cụ, loại bộ có
   nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t2_demo`` chuẩn bị màn T2 lô rửa (SCR-06, FEAT-021) tại
+  TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
 """
 
 import io
@@ -25,10 +27,11 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, now_datetime, today
 
-from tracecore.core import code_registry, gs1, step_gate
+from tracecore.core import client_time, code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
 from tracecore.instrument import bom, bom_versions
+from tracecore.reprocessing import washing
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
 
@@ -111,6 +114,20 @@ def ensure_e2e_users(station, t4_station, password, r10_password):
 		for prefix in ("", "t4_", "r10_"):
 			result[prefix + "otp_secret"] = _enroll_otp(result[prefix + "user"])
 	return result
+
+
+def ensure_t2_e2e_user(station, password):
+	"""User kiosk trạm T2 (khu bẩn → TC R03) cho e2e màn lô rửa (FEAT-021), đăng ký OTP App như `ensure_e2e_users`.
+
+	Tách khỏi `ensure_e2e_users` để không đổi khóa trả về của hàm đó; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		return {"t2_user": user, "t2_otp_secret": _enroll_otp(user)}
 
 
 def ensure_desk_users(password, specs):
@@ -1095,6 +1112,178 @@ def ensure_set_type_demo():
 		"inflight_effective": bom_versions.effective_version(inflight_type),
 		"set_type_edit": edit_type,
 		"department": _demo_department(),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T2 lô rửa (FEAT-021, SCR-06) ------------------------------------------------------------------
+T2_STATION = "TR-002"
+T2_CHEMICAL = "DEMO-T2-ENZ"
+T2_LOT_OK = "DEMO-T2-ENZ-OK"
+T2_LOT_EXPIRED = "DEMO-T2-ENZ-HET"
+T2_SERIALS = {
+	"machine": "DEMO-T2-WASH-01",
+	"machine_two_door": "DEMO-T2-WASH-02",
+	"machine_locked": "DEMO-T2-WASH-LOCK",
+	"machine_connected": "DEMO-T2-WASH-API",
+}
+T2_PARAMETERS = [
+	{
+		"parameter_name": "Disinfection temperature",
+		"unit": "°C",
+		"min_value": 90,
+		"max_value": 95,
+		"required": 1,
+	},
+	{"parameter_name": "Hold time", "unit": "min", "min_value": 5, "max_value": 0, "required": 1},
+	{"parameter_name": "Chemical dose", "unit": "ml", "min_value": 0, "max_value": 0, "required": 0},
+]
+T2_READY_SETS = 3
+
+
+def _t2_machine(key, **fields):
+	"""Máy rửa demo theo serial cố định (Equipment không xóa được nên dùng lại); trả TB-####."""
+	name = frappe.db.get_value("Equipment", {"serial_no": T2_SERIALS[key]}, "name")
+	if name:
+		return name
+	values = {
+		"name": f"Demo washer {key}",
+		"equipment_type": "Washer-Disinfector",
+		"serial": T2_SERIALS[key],
+		"zone_in": "ZONE-DIRTY",
+		"zone_out": None,
+		"manufacturer": EQ_MANUFACTURER,
+		"model": "DEMO-W2",
+		**fields,
+	}
+	return factories.make_equipment(**values).name
+
+
+def _t2_program(equipment):
+	"""Chương trình rửa đang dùng đầu tiên của máy (tạo nếu chưa có), có hóa chất và tham số."""
+	name = frappe.db.get_value(
+		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="creation asc"
+	)
+	if name:
+		return name
+	code = "DEMO-T2-" + equipment.replace("TB-", "")
+	return factories.make_wash_program(
+		equipment, chemical=T2_CHEMICAL, code=code, parameters=T2_PARAMETERS
+	).name
+
+
+def _t2_chemical_lots():
+	factories.make_item(T2_CHEMICAL, "Chemical", has_batch_no=1, apply_rules=True)
+	if not frappe.db.exists("Batch", T2_LOT_OK):
+		factories.make_chemical_batch(T2_CHEMICAL, batch_id=T2_LOT_OK, expiry_days=365, qty=100)
+	if not frappe.db.exists("Batch", T2_LOT_EXPIRED):
+		factories.make_batch(T2_CHEMICAL, T2_LOT_EXPIRED, add_days(today(), -1))
+	return T2_LOT_OK, T2_LOT_EXPIRED
+
+
+def _t2_free(set_id):
+	return not frappe.db.sql(
+		"""select 1 from `tabWash Batch Set Unit` row join `tabWash Batch` batch on batch.name = row.parent
+		where row.set_unit = %s and batch.docstatus = 0 and batch.status = 'Running' limit 1""",
+		set_id,
+	)
+
+
+def _t2_candidates(set_type, status, wanted):
+	"""Set ID của `set_type` có trạng thái `status`, chưa có Cycle ID, không ở lô đang chạy và cổng đúng `wanted`."""
+	rows = frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type, "status": status, "current_cycle_no": [">", 0]},
+		fields=["name", "active_cycle_id"],
+		order_by="creation asc",
+	)
+	out = []
+	for row in rows:
+		if row.active_cycle_id or not _t2_free(row.name):
+			continue
+		gates = {gate["step"]: gate["result"] for gate in step_gate.gates(row.name)}
+		if all(gates[step] == result for step, result in wanted.items()):
+			out.append(row.name)
+	return out
+
+
+def _t2_new_set(set_type, passed=(), fail_t2=False):
+	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
+		ignore_permissions=True
+	)
+	factories.make_cycle(unit.name, passed=passed)
+	if fail_t2:
+		step_gate.record(unit.name, "T2", "Fail")
+	return unit.name
+
+
+def _t2_operator():
+	name = frappe.db.get_value("Employee", {"status": "Active"}, "name", order_by="creation asc")
+	return name or factories.make_employee(card="DEMO-T2-OPERATOR").name
+
+
+def ensure_t2_demo():
+	"""Chuẩn bị màn T2 lô rửa (SCR-06) tại TR-002 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``machine``: máy rửa một cửa có bản in (Đạt không cần R02); ``machine_two_door``: máy hai cửa Bẩn → Sạch, có một
+	  lô ``batch_running`` đang chạy; ``machine_locked``: máy đã ngừng sử dụng (``Retired``, từ chối 423);
+	  ``machine_connected``: máy kết nối API (FEAT-021 vẫn nhập tay, Q13). Mỗi máy có một chương trình có hóa chất
+	  ``DEMO-T2-ENZ`` và tham số (``program`` là chương trình của ``machine``).
+	- ``sets``: 3 bộ loại hấp demo T4 đã qua T1, chưa ở lô nào; ``set_no_t1``: bộ chưa qua T1; ``set_redo``: bộ rửa
+	  Không đạt (có trong hàng đợi xử lý lại).
+	- ``chemical_lot_ok`` còn hạn, còn tồn; ``chemical_lot_expired`` đã hết hạn.
+	Bộ đã được nạp/rửa được thay bằng bộ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	ensure_sample_templates()
+	ensure_object_templates()
+	lot_ok, lot_expired = _t2_chemical_lots()
+	machine = _t2_machine("machine", has_printout=1)
+	two_door = _t2_machine("machine_two_door", zone_out="ZONE-CLEAN", has_printout=1)
+	locked = _t2_machine("machine_locked")
+	connected = _t2_machine("machine_connected", is_connected=1, has_printout=1)
+	if frappe.db.get_value("Equipment", locked, "status") != "Retired":
+		equipment_status.set_status(locked, "Retired", "Demo T2: washer retired")
+	programs = {key: _t2_program(name) for key, name in (("machine", machine), ("two_door", two_door))}
+	_t2_program(connected)
+
+	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"])
+	ready = _t2_candidates(set_type, "Processing", {"T1": "Pass", "T2": "Pending"})
+	while len(ready) < T2_READY_SETS:
+		ready.append(_t2_new_set(set_type, passed=("T1",)))
+	no_t1 = _t2_candidates(set_type, "Processing", {"T1": "Pending"})
+	redo = _t2_candidates(set_type, "Reprocess", {"T1": "Pass", "T2": "Fail"})
+
+	running = frappe.db.get_value(
+		"Wash Batch",
+		{"equipment": two_door, "status": "Running", "docstatus": 0},
+		"name",
+		order_by="creation asc",
+	)
+	if not running:
+		running = washing.start(
+			two_door,
+			programs["two_door"],
+			[_t2_new_set(set_type, passed=("T1",))],
+			[{"item": T2_CHEMICAL, "lot": lot_ok}],
+			T2_STATION,
+			client_time.utc_now(),
+			_t2_operator(),
+		)["batch"]
+
+	result = {
+		"machine": machine,
+		"machine_two_door": two_door,
+		"machine_locked": locked,
+		"machine_connected": connected,
+		"program": programs["machine"],
+		"sets": ready[:T2_READY_SETS],
+		"set_no_t1": no_t1[0] if no_t1 else _t2_new_set(set_type),
+		"set_redo": redo[0] if redo else _t2_new_set(set_type, passed=("T1",), fail_t2=True),
+		"chemical_lot_ok": lot_ok,
+		"chemical_lot_expired": lot_expired,
+		"batch_running": running,
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

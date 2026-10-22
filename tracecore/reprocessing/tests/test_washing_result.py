@@ -177,6 +177,34 @@ class TestWashUnload(WashResultCase):
 		)
 		self.assertEqual(context["equipment"]["has_printout"], 1)
 
+	def test_running_batches_list_open_batches_only(self):
+		batch, sets = self.load()
+		closed, _ = self.load()
+		self.save_data(closed)
+		self.close(closed)
+		rows = {row["batch"]: row for row in washing.running_batches()}
+		self.assertIn(batch, rows)
+		self.assertNotIn(closed, rows)
+		row = rows[batch]
+		self.assertEqual((row["equipment"], row["program"]), (self.machine.name, self.program.name))
+		self.assertEqual((row["sets"], row["data_complete"]), (sets, 0))
+		self.assertEqual(row["equipment_name"], self.machine.equipment_name)
+
+	def test_start_returns_qr_png_of_batch_code(self):
+		import base64
+
+		units = [make_wash_ready_set()]
+		result = washing.start(
+			self.machine.name,
+			self.program.name,
+			[u.name for u in units],
+			[{"item": CHEMICAL, "lot": self.lot.name}],
+			STATION,
+			client_time.utc_now(),
+			self.employee.name,
+		)
+		self.assertTrue(base64.b64decode(result["qr_png_b64"]).startswith(b"\x89PNG"))
+
 	def test_lookup_shows_sets_chemicals_and_people(self):
 		batch, sets = self.load()
 		info = washing.lookup(f"]Q1{batch}\r\n")

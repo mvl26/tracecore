@@ -160,6 +160,16 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("public/js/station_t4.js", frappe.get_hooks("page_js").get("station", []))
 		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t4.js")))
 
+	def test_station_page_includes_t2_script(self):
+		# màn T2 lô rửa (SCR-06, FEAT-021) ở file riêng, nối sau station.js như T4
+		scripts = frappe.get_hooks("page_js").get("station", [])
+		self.assertIn("public/js/station_t2.js", scripts)
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t2.js")))
+		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('method.startsWith("tracecore.v1.wash.")', source)  # bearer trong body như T4
+		self.assertIn("new T2Wash(this)", source)
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()

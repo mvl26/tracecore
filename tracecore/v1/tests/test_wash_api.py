@@ -288,6 +288,11 @@ class TestWashLoadApi(WashApiCase):
 		)
 		self.assertEqual(counts(), before)
 
+	def test_redo_queue_endpoint_also_lists_running_batches(self):
+		batch = self.complete([make_wash_ready_set().name])["batch"]
+		queue = call(wash_api.redo_queue, station=STATION)
+		self.assertIn(batch, [row["batch"] for row in queue["running"]])
+
 
 class TestWashUnloadApi(WashApiCase):
 	def test_unload_then_manual_data_then_result(self):

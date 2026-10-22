@@ -200,10 +200,15 @@ def complete(equipment, program, sets, chemicals, station, client_ts=None, token
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 def redo_queue(station, client_ts=None, token=None):
-	"""Hàng đợi xử lý lại tại T2 (FR-M2-25.2, Q16); chỉ đọc."""
+	"""Bảng phụ của màn T2, chỉ đọc: hàng đợi xử lý lại (``sets``, FR-M2-25.2, Q16) và lô đang chạy (``running``)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	parse_client_ts(client_ts)
-	return run_at_step(STEP, station, None, lambda: {"ok": True, "sets": washing.redo_queue()})
+	return run_at_step(
+		STEP,
+		station,
+		None,
+		lambda: {"ok": True, "sets": washing.redo_queue(), "running": washing.running_batches()},
+	)
 
 
 # --- Tra cứu, dỡ lô, dữ liệu, kết luận ---------------------------------------------------------------------

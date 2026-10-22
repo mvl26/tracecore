@@ -11,6 +11,7 @@ DocType, như `packing.resolve_ci_batch`. Trạng thái Set Unit chỉ đổi qu
 ``flags.tc_washing`` của Wash Batch. Từ chối nghiệp vụ là `BlockedError` (mã HTTP ở `core.errors`).
 """
 
+import base64
 import contextlib
 from datetime import timezone
 from zoneinfo import ZoneInfo
@@ -20,7 +21,7 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import audit, client_time, extension, gs1, station_auth, step_gate
+from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 
@@ -254,6 +255,38 @@ def redo_queue():
 	]
 
 
+def running_batches():
+	"""Lô đang chạy (chưa dỡ) để màn T2 hiện thẻ "Lô đang chạy" (SCR-06): máy, chương trình, bộ, dữ liệu."""
+	rows = frappe.get_all(
+		"Wash Batch",
+		filters={"status": RUNNING, "docstatus": 0},
+		fields=["name", "equipment", "program", "load_completed_at", "data_complete", "needs_review"],
+		order_by="load_completed_at asc, name asc",
+	)
+	out = []
+	for row in rows:
+		sets = frappe.get_all(
+			"Wash Batch Set Unit",
+			filters={"parent": row.name, "parenttype": "Wash Batch"},
+			pluck="set_unit",
+			order_by="idx asc",
+		)
+		out.append(
+			{
+				"batch": row.name,
+				"equipment": row.equipment,
+				"equipment_name": frappe.db.get_value("Equipment", row.equipment, "equipment_name"),
+				"program": row.program,
+				"program_name": frappe.db.get_value("Process Program", row.program, "program_name"),
+				"load_completed_at": row.load_completed_at,
+				"data_complete": cint(row.data_complete),
+				"needs_review": cint(row.needs_review),
+				"sets": sets,
+			}
+		)
+	return out
+
+
 # --- Hóa chất (FR-M2-03.5, BRU-INV-001) ---------------------------------------------------------------
 
 
@@ -456,7 +489,14 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator):
 	batch.flags.tc_washing = True
 	batch.insert(ignore_permissions=True)
 	label = _queue_label(batch, machine, program, station, started)
-	return {"batch": batch.name, "sets": accepted, "rejected": rejected, "print": label}
+	return {
+		"batch": batch.name,
+		"sets": accepted,
+		"rejected": rejected,
+		"print": label,
+		# label preview §4.12 trên kiosk: QR thật của mã lô (máy in nhận ZPL riêng)
+		"qr_png_b64": base64.b64encode(qr.qr_png(batch.name)).decode(),
+	}
 
 
 def _warning(code, title, reason, action):

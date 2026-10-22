@@ -853,3 +853,90 @@ body.tc-kiosk .layout-main-section {
 	width: 100%;
 	min-height: var(--tc-touch-station);
 }
+
+/* ---- Màn T2 lô rửa (SCR-06, public/js/station_t2.js); dùng lại khối, gate, chip, nhãn của T4 ---- */
+
+.tc-t2 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t2 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t2 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t2 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t2 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-t2 .tc-t4-block > .tc-alert + .tc-alert {
+	margin-top: var(--tc-sp-3);
+}
+
+.tc-t2-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.tc-t2-table th,
+.tc-t2-table td {
+	padding: var(--tc-sp-2);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	font-size: var(--tc-fs-md);
+	text-align: left;
+	vertical-align: middle;
+}
+
+.tc-t2-table th {
+	color: var(--tc-text-2);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t2-table .tc-gates {
+	margin: 0;
+}
+
+.tc-t2 .tc-field.is-review input {
+	border: var(--tc-bw-thick) solid var(--tc-warn);
+	background: var(--tc-warn-tint);
+}
+
+.tc-t2-review {
+	color: var(--tc-warn-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t2-review[hidden] {
+	display: none;
+}
+
+.tc-t2-confirm {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	min-height: var(--tc-touch-min);
+	margin: var(--tc-sp-3) 0 0;
+	font-weight: var(--tc-fw-regular);
+	cursor: pointer;
+}
+
+.tc-label-qr {
+	/* QR lô rửa vuông, cỡ ảnh nhỏ của trạm (không có token QR riêng) */
+	width: var(--tc-photo);
+	height: var(--tc-photo);
+}

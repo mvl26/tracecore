@@ -73,6 +73,21 @@ class TestStationDemoData(IsolatedTestCase):
 			),
 		)
 
+	def test_t2_station_user_bootstrap_has_r03_and_otp(self):
+		import secrets
+
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		users = devdata.ensure_t2_e2e_user("TR-002", secrets.token_urlsafe(24))
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(set(users), {"t2_user", "t2_otp_secret"})
+		self.assertIn("TC R03", frappe.get_roles(users["t2_user"]))
+		self.assertEqual(decrypt(get_default(users["t2_user"] + "_otpsecret")), users["t2_otp_secret"])
+		self.assertEqual(users, devdata.ensure_t2_e2e_user("TR-002", secrets.token_urlsafe(24)))
+
 	def test_desk_users_bootstrap_adds_otp_extra_roles_and_restores_administrator_roles(self):
 		import secrets
 
@@ -294,6 +309,63 @@ class TestT4DemoData(FrappeTestCase):
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				devdata.ensure_t4_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+T2_KEYS = {
+	"machine",
+	"machine_two_door",
+	"machine_locked",
+	"machine_connected",
+	"program",
+	"sets",
+	"set_no_t1",
+	"set_redo",
+	"chemical_lot_ok",
+	"chemical_lot_expired",
+	"batch_running",
+}
+
+
+class TestT2DemoData(FrappeTestCase):
+	def test_ensure_t2_demo_idempotent(self):
+		from frappe.utils import getdate, today
+
+		from tracecore.reprocessing import washing
+
+		first = devdata.ensure_t2_demo()
+		second = devdata.ensure_t2_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T2_KEYS)
+		self.assertEqual(len(set(first["sets"])), 3)
+		for set_id in first["sets"]:
+			self.assertEqual(_gates(set_id)["T1"], "Pass")
+			self.assertEqual(_gates(set_id)["T2"], "Pending")
+			washing.admit_set(set_id, first["machine"])  # nạp được, không ném
+		self.assertNotEqual(_gates(first["set_no_t1"])["T1"], "Pass")
+		self.assertIn(first["set_redo"], [row["set_id"] for row in washing.redo_queue()])
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine_locked"], "status"), "Retired")
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine_connected"], "is_connected"), 1)
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine"], "has_printout"), 1)
+		self.assertTrue(frappe.db.get_value("Equipment", first["machine_two_door"], "zone_out"))
+		self.assertEqual(
+			frappe.db.get_value("Process Program", first["program"], "equipment"), first["machine"]
+		)
+		self.assertIsNone(washing.check_chemical_lot("DEMO-T2-ENZ", first["chemical_lot_ok"]))
+		expiry = frappe.db.get_value("Batch", first["chemical_lot_expired"], "expiry_date")
+		self.assertLess(getdate(expiry), getdate(today()))
+		batch = frappe.get_doc("Wash Batch", first["batch_running"])
+		self.assertEqual((batch.status, batch.equipment), ("Running", first["machine_two_door"]))
+
+	def test_t2_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t2_demo()
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True
