@@ -169,6 +169,7 @@ class TestStationPage(FrappeTestCase):
 			source = handle.read()
 		self.assertIn('method.startsWith("tracecore.v1.wash.")', source)  # bearer trong body như T4
 		self.assertIn("new T2Wash(this)", source)
+
 	def test_station_page_includes_t6_script(self):
 		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
 		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))

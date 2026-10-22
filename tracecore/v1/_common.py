@@ -21,6 +21,8 @@ from tracecore.core.errors import Block, BlockedError
 AGENT_ROLE = "TC Agent"
 # R04 là role của user kiosk T4; System Manager để R10 xử lý trên Desk
 PACKING_ROLES = ("TC R04", "System Manager")
+# R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025)
+STORAGE_ROLES = ("TC R06", "System Manager")
 # FEAT-021 Q20: nạp lô rửa do R03 (actor chính UC-06), R05, R02; dỡ/nhập dữ liệu/kết luận thêm R04 (cửa ra máy hai cửa)
 WASH_LOAD_ROLES = ("TC R03", "TC R05", "TC R02", "System Manager")
 WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")
@@ -36,8 +38,6 @@ def current_station_session():
 	if not name:
 		return None
 	return frappe.db.get_value("Station Session", name, ["name", "employee", "user", "station"], as_dict=True)
-# R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025)
-STORAGE_ROLES = ("TC R06", "System Manager")
 
 
 def station_session(*roles, desk_roles=()):
