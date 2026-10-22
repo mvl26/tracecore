@@ -305,15 +305,27 @@ def ensure_item_masters():
 		).insert(ignore_permissions=True)
 
 
-def make_item(item_code, group, method=None, ci_class=None, shelf_life_days=None, has_batch_no=0):
+def make_item(
+	item_code,
+	group,
+	method=None,
+	ci_class=None,
+	shelf_life_days=None,
+	has_batch_no=0,
+	apply_rules=False,
+):
 	"""Tạo (hoặc lấy) Item ERPNext với các Custom Field CSSD (Item-tc_*).
 
-	group: Packaging | Chemical Indicator | Label | Lubricant. Item đã có thì trả nguyên trạng.
+	group: một giá trị của inventory.items.CSSD_GROUPS. Item đã có thì trả nguyên trạng.
+
+	Mặc định dựng Item "cũ" (trước FEAT-041, dữ liệu của test FEAT-005/014/018): luật Item vật tư
+	(inventory.items: tự bật cờ lô/hạn/bình quân, nhãn phải có phương pháp) chưa áp lúc tạo; đặt
+	apply_rules=True để tạo Item như người dùng nhập trên Desk (test FEAT-041).
 	"""
 	if frappe.db.exists("Item", item_code):
 		return frappe.get_doc("Item", item_code)
 	ensure_item_masters()
-	return frappe.get_doc(
+	item = frappe.get_doc(
 		{
 			"doctype": "Item",
 			"item_code": item_code,
@@ -327,7 +339,74 @@ def make_item(item_code, group, method=None, ci_class=None, shelf_life_days=None
 			"tc_ci_class": ci_class,
 			"tc_shelf_life_days": shelf_life_days,
 		}
-	).insert(ignore_permissions=True)
+	)
+	if not apply_rules:
+		item.flags.tc_legacy_data = (
+			True  # lần lưu kế tiếp của người dùng mới áp luật (FEAT-041 Review Focus 5)
+		)
+	return item.insert(ignore_permissions=True)
+
+
+STOCK_COMPANY = "TraceCore Test"
+STOCK_ABBR = "TCT"
+
+
+def ensure_stock_masters():
+	"""Company thử, kho mặc định, Fiscal Year và Stock Entry Type "Material Receipt" (idempotent).
+
+	Site test/dev chưa chạy Setup Wizard của ERPNext nên chưa có các bản ghi này. Perpetual inventory tắt.
+	Trả {"company", "warehouse"}.
+	"""
+	ensure_item_masters()
+	if not frappe.db.exists("Warehouse Type", "Transit"):  # Company tạo kho Goods In Transit kiểu Transit
+		frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert(ignore_permissions=True)
+	if not frappe.db.exists("Company", STOCK_COMPANY):
+		frappe.get_doc(
+			{
+				"doctype": "Company",
+				"company_name": STOCK_COMPANY,
+				"abbr": STOCK_ABBR,
+				"default_currency": "VND",
+				"country": "Vietnam",
+				"enable_perpetual_inventory": 0,
+			}
+		).insert(ignore_permissions=True)
+	year = getdate(today()).year
+	if not frappe.get_all(
+		"Fiscal Year",
+		filters=[["year_start_date", "<=", today()], ["year_end_date", ">=", today()]],
+		limit=1,
+	):
+		frappe.get_doc(
+			{
+				"doctype": "Fiscal Year",
+				"year": f"{year} TCT",
+				"year_start_date": f"{year}-01-01",
+				"year_end_date": f"{year}-12-31",
+			}
+		).insert(ignore_permissions=True)
+	if not frappe.db.exists("Stock Entry Type", "Material Receipt"):
+		frappe.get_doc(
+			{"doctype": "Stock Entry Type", "name": "Material Receipt", "purpose": "Material Receipt"}
+		).insert(ignore_permissions=True)
+	return {"company": STOCK_COMPANY, "warehouse": f"Stores - {STOCK_ABBR}"}
+
+
+def make_warehouse(name, is_group=False):
+	"""Tạo (hoặc lấy) Warehouse của Company thử; trả tên đầy đủ (<name> - TCT)."""
+	masters = ensure_stock_masters()
+	full_name = f"{name} - {STOCK_ABBR}"
+	if not frappe.db.exists("Warehouse", full_name):
+		frappe.get_doc(
+			{
+				"doctype": "Warehouse",
+				"warehouse_name": name,
+				"company": masters["company"],
+				"parent_warehouse": f"All Warehouses - {STOCK_ABBR}",
+				"is_group": 1 if is_group else 0,
+			}
+		).insert(ignore_permissions=True)
+	return full_name
 
 
 def make_batch(item_code, batch_id, expiry_date=None):
@@ -340,6 +419,7 @@ def make_batch(item_code, batch_id, expiry_date=None):
 	item = frappe.get_doc("Item", item_code)
 	if not item.has_batch_no:
 		item.has_batch_no = 1
+		item.flags.tc_legacy_data = True  # chỉ bật cờ lô, không kéo theo luật hạn dùng của FEAT-041
 		item.save(ignore_permissions=True)
 	return frappe.get_doc(
 		{"doctype": "Batch", "batch_id": batch_id, "item": item_code, "expiry_date": expiry_date}

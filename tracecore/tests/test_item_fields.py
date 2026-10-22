@@ -18,13 +18,16 @@ class TestItemFields(FrappeTestCase):
 		self.assertTrue(all(fields.values()), msg=fields)
 
 		self.assertEqual(fields["tc_item_group_cssd"].fieldtype, "Select")
+		# FEAT-041 A-07 V1: bốn giá trị cũ giữ nguyên và đứng trước, thêm sáu nhóm của FR-M6-02.1
 		self.assertEqual(
-			fields["tc_item_group_cssd"].options, "\nPackaging\nChemical Indicator\nLabel\nLubricant"
+			fields["tc_item_group_cssd"].options,
+			"\nPackaging\nChemical Indicator\nLabel\nLubricant"
+			"\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther",
 		)
 		self.assertEqual(fields["tc_compatible_method"].fieldtype, "Select")
 		self.assertEqual(fields["tc_compatible_method"].options, "\nSteam\nPlasma")
 		self.assertEqual(fields["tc_ci_class"].fieldtype, "Select")
-		self.assertEqual(fields["tc_ci_class"].options, "\n1\n2\n4\n5\n6")
+		self.assertEqual(fields["tc_ci_class"].options, "\n1\n2\n3\n4\n5\n6")  # A-07 V2: thêm lớp 3
 		self.assertEqual(fields["tc_shelf_life_days"].fieldtype, "Int")
 		self.assertEqual(fields["tc_shelf_life_days"].depends_on, "eval:doc.tc_item_group_cssd=='Packaging'")
 
@@ -38,6 +41,26 @@ class TestItemFields(FrappeTestCase):
 				"tc_shelf_life_days": "Shelf Life (Days)",
 			},
 		)
+
+	def test_new_custom_fields_installed(self):
+		"""FEAT-041 A-07 V6: quy cách trên Item; NCC, số chứng từ, mã lô, hạn dùng trên Stock Entry."""
+		expected = (
+			("Item", "tc_specification", "Data", None),
+			("Stock Entry", "tc_supplier", "Link", "Supplier"),
+			("Stock Entry", "tc_document_no", "Data", None),
+			("Stock Entry Detail", "tc_batch_id", "Data", None),
+			("Stock Entry Detail", "tc_expiry_date", "Date", None),
+		)
+		for doctype, fieldname, fieldtype, options in expected:
+			field = frappe.get_meta(doctype).get_field(fieldname)
+			self.assertIsNotNone(field, msg=f"{doctype}.{fieldname}")
+			self.assertEqual((field.fieldtype, field.options or None), (fieldtype, options))
+			self.assertTrue(frappe.db.exists("Custom Field", f"{doctype}-{fieldname}"))
+		for fieldname in ("tc_batch_id", "tc_expiry_date"):
+			self.assertEqual(frappe.get_meta("Stock Entry Detail").get_field(fieldname).in_list_view, 1)
+		# V4: tồn tối thiểu theo kho dùng bảng Item Reorder chuẩn, không có Custom Field riêng
+		self.assertIsNone(frappe.get_meta("Item").get_field("tc_min_qty_by_warehouse"))
+		self.assertEqual(frappe.get_meta("Item").get_field("reorder_levels").options, "Item Reorder")
 
 	def test_item_custom_fields_follow_item_group(self):
 		"""Bốn trường nằm liền sau item_group theo đúng thứ tự (insert_after dây chuyền)."""

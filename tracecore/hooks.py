@@ -11,12 +11,20 @@ app_license = "gpl-3.0"
 required_apps = ["erpnext", "hrms"]
 
 # Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
-# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói).
+# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói;
+# FEAT-041: thêm Stock Entry-tc_*, Stock Entry Detail-tc_* cho nhập kho theo lô/hạn).
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
-	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
+	{
+		"dt": "Custom Field",
+		"or_filters": [
+			["name", "like", "Item-tc_%"],
+			["name", "like", "Stock Entry-tc_%"],
+			["name", "like", "Stock Entry Detail-tc_%"],
+		],
+	},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -193,6 +201,11 @@ doc_events = {
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	"TraceCore Settings": dict(_AUDIT_EVENTS),
+	# vật tư tiêu hao CSSD trên Item ERPNext (FEAT-041, A-07): chặn trùng mã; nhóm, nhãn, hạn dùng, tồn tối thiểu
+	"Item": {
+		"before_insert": "tracecore.inventory.items.check_duplicate_code",
+		"validate": "tracecore.inventory.items.validate_item",
+	},
 	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
 	"File": {
 		"before_insert": "tracecore.instrument.media.check_upload",
