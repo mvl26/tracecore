@@ -168,6 +168,15 @@ class TestStationPage(FrappeTestCase):
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
 			self.assertIn("T6Storage", handle.read())
 
+	def test_t6_rpcs_carry_station_token_and_screen_clears_on_session_end(self):
+		# FEAT-003: rpc() gắn token phiên cho RPC putaway như pack; hết phiên thì màn T6 xóa gói/tồn đang hiện
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn('method.startsWith("tracecore.v1.putaway.")', handle.read())
+		with open(os.path.join(APP_PATH, "public", "js", "station_t6.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("clearSession() {", source)
+		self.assertIn("sessionEnded", source)
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()

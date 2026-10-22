@@ -248,12 +248,14 @@ def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
 	)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*STORAGE_ROLES)
 @idempotent
-def mark_damaged(cycle_id, reason, station, client_ts=None):
+def mark_damaged(cycle_id, reason, station, client_ts=None, token=None):
 	"""Báo gói trong kho vô khuẩn bị rách/ướt/mở tại T6 (FR-M2-14, UC-11 A1): gói Hết hiệu lực, bộ Chờ tiếp nhận.
 
-	`reason` là mô tả bắt buộc, lưu vào ghi chú hủy. Gói không ở trong kho → ``PACK_NOT_IN_STOCK`` (409).
+	Cần phiên trạm thẻ nhân viên đúng trạm (A-08, `station_session`) như RPC T4. `reason` là mô tả bắt buộc, lưu vào
+	ghi chú hủy. Gói không ở trong kho → ``PACK_NOT_IN_STOCK`` (409).
 	"""
 	require_any_role(*STORAGE_ROLES)
 	timestamp = parse_client_ts(client_ts)

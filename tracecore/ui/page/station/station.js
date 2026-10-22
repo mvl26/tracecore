@@ -540,8 +540,11 @@ class TraceCoreStation {
 	}
 
 	async rpc(method, args, idempotencyKey, candidate = null) {
+		// RPC của màn trạm cần token phiên thẻ nhân viên (FEAT-003): T4 pack/cuộn nhãn, T6 putaway (FEAT-025)
 		const protectedCall =
-			method.startsWith("tracecore.v1.pack.") || method === "tracecore.v1.printer.set_roll";
+			method.startsWith("tracecore.v1.pack.") ||
+			method.startsWith("tracecore.v1.putaway.") ||
+			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =
 			!candidate &&

@@ -60,6 +60,20 @@ class T6Storage {
 		return this.damaging; // ô lý do giữ focus, ô quét không giành lại
 	}
 
+	// Hết phiên trạm (rút thẻ, idle 10 phút, đổi người): xóa gói đang mở, tồn kho và yêu cầu dở của người trước
+	clearSession() {
+		this.pending = null;
+		this.busy = null;
+		this.offline = false;
+		this.overview = null;
+		this.pack = null;
+		this.notice = null;
+		this.damaging = false;
+		this.reasonError = false;
+		this.input.placeholder = __("Scan the Cycle ID of the pack...");
+		this.input.setAttribute("aria-label", __("Scan the Cycle ID of the pack..."));
+	}
+
 	openPack() {
 		return this.pack ? this.pack.cycle_id : null;
 	}
@@ -79,7 +93,8 @@ class T6Storage {
 	}
 
 	async request(method, args, onOk) {
-		if (this.busy) return;
+		if (this.busy || !this.station.session) return;
+		const version = this.station.sessionVersion;
 		const sig = method + JSON.stringify(args);
 		if (!this.pending || this.pending.sig !== sig) {
 			this.pending = { sig, method, args, onOk, key: uuid4(), ts: clientTs() };
@@ -95,10 +110,14 @@ class T6Storage {
 				{ ...args, client_ts: pending.ts },
 				pending.key
 			);
-			this.pending = null;
-			this.result.dataset.ms = String(Math.round(performance.now() - started));
 		} catch (error) {
 			failure = error;
+		}
+		// phiên đã kết thúc hoặc đổi người trong lúc chờ: clearSession đã xóa màn, bỏ câu trả lời cũ
+		if (version !== this.station.sessionVersion || (failure && failure.sessionEnded)) return;
+		if (!failure) {
+			this.pending = null;
+			this.result.dataset.ms = String(Math.round(performance.now() - started));
 		}
 		this.busy = null;
 		if (!failure) this.markOnline();
