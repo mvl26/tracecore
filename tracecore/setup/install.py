@@ -1,9 +1,13 @@
-"""Cài đặt app: định dạng Việt Nam (F-13, NFR-L10N-01), mẫu nhãn gói và nhãn QR đối tượng (FR-M2-08.4, FR-M9-07),
-khung khu-trạm (FR-M9-03)."""
+"""Cài đặt app: định dạng Việt Nam (F-13, NFR-L10N-01), mẫu nhãn gói, nhãn QR đối tượng, thẻ kim loại và nhãn khay
+(FR-M2-08.4, FR-M9-07, FR-M1-05), khung khu-trạm (FR-M9-03)."""
 
 import frappe
 
-from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
+from tracecore.setup.label_templates import (
+	ensure_object_templates,
+	ensure_sample_templates,
+	ensure_set_templates,
+)
 from tracecore.setup.seed import ensure_zone_stations
 
 SYSTEM_SETTINGS = {
@@ -20,6 +24,7 @@ def after_install():
 	apply_system_settings()
 	ensure_sample_templates()
 	ensure_object_templates()
+	ensure_set_templates()
 	ensure_zone_stations()
 
 

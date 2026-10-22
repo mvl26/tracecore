@@ -6,11 +6,12 @@
   vào đã bỏ ký tự điều khiển của dialect; chữ in qua `text()` giữ dấu hoặc bỏ dấu theo `Printer.supports_unicode`.
 - **Nhãn đối tượng** (FEAT-005, A-05 R2): `render_object` in nhãn QR mã trần cho thiết bị, trạm, cuộn nhãn, thẻ
   nhân viên, kệ bằng mẫu active của loại đối tượng (`OBJECT_LABELS`); QR qua hàm `qr()` của dialect.
+- **Thẻ kim loại / nhãn khay** (FEAT-016 G8): `SET_LABELS`; `render_label` (dùng chung với `render_object`) chọn mẫu
+  active theo đối tượng + ngôn ngữ máy in. Ảnh xem trước ở `core.print_preview`.
 - **Chọn máy in** (BRU-REP-011): theo trạm và phương pháp của cuộn nhãn đang lắp (`Printer.label_type_loaded`).
 - **Đổi cuộn** (`set_roll`): cập nhật loại nhãn đang lắp và đưa các Print Job `Waiting` khớp phương pháp vào hàng đợi.
 """
 
-import io
 import unicodedata
 
 import frappe
@@ -21,10 +22,14 @@ from jinja2.sandbox import SandboxedEnvironment
 
 from tracecore.core import code_registry, gs1, qr
 from tracecore.core.errors import Block, BlockedError
+from tracecore.core.print_preview import (
+	DM_ORIGIN,
+	LABEL_HEIGHT_DOTS,
+	LABEL_WIDTH_DOTS,
+	datamatrix_preview_png,
+	label_layout,
+)
 
-LABEL_WIDTH_DOTS = 590  # 50 mm ở 300 dpi
-LABEL_HEIGHT_DOTS = 354  # 30 mm ở 300 dpi
-DM_ORIGIN = (30, 40)
 ACK_STATUSES = ("Printed", "Failed")
 OUTPUT_MODES = ("Printer", "File")
 NEW_JOB_STATUSES = ("Queued", "Waiting")
@@ -41,6 +46,8 @@ OBJECT_SCAN_TYPES = dict(
 	zip(OBJECT_LABELS, ("equipment", "station", "roll", "employee", "location"), strict=True)
 )
 OBJECT_CODE_MAX_LENGTH = 40
+# Thẻ kim loại và nhãn khay của bộ dụng cụ (FEAT-016 G8): DataMatrix GIAI Set ID, mẫu không có phương pháp
+SET_LABELS = ("Set Tag", "Set Tray Label")
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -334,7 +341,20 @@ def render_object(label_object, code, title, subtitle="", printer=None, with_tem
 	(không có → bỏ dấu). Chưa có mẫu active → ValidationError đã dịch; mẫu lỗi → ValidationError nêu tên mẫu.
 	`with_template` → trả ``(zpl, dòng mẫu đã dùng)`` để người gọi ghi Print Job mà không tra lại mẫu.
 	"""
-	doc = object_context(label_object, code, title, subtitle)
+	return render_label(
+		label_object, object_context(label_object, code, title, subtitle), printer, with_template
+	)
+
+
+def render_label(label_object, doc, printer=None, with_template=False):
+	"""Render `doc` bằng mẫu active (không phương pháp) của `label_object` (nhãn đối tượng hoặc `SET_LABELS`).
+
+	`printer` (dict như `select_printer`, hoặc None) cho ``language`` (mặc định ZPL) và ``supports_unicode``
+	(không có → bỏ dấu). Chưa có mẫu active → ValidationError đã dịch; mẫu lỗi → ValidationError nêu tên mẫu.
+	`with_template` → trả ``(zpl, dòng mẫu đã dùng)``. Nhãn gói (có phương pháp) đi `render_pack`.
+	"""
+	if label_object not in OBJECT_LABELS + SET_LABELS:
+		frappe.throw(_("Label object {0} cannot be printed with a single template.").format(label_object))
 	printer = printer or {}
 	language = printer.get("language") or DEFAULT_LANGUAGE
 	get_dialect(language)
@@ -548,32 +568,6 @@ def set_roll(printer, roll_code, release=True):
 # ---------------------------------------------------------------------------------------------------------
 
 
-def label_layout(giai, station):
-	"""Các dòng chữ của nhãn thử: (x, y, cỡ chữ theo dot, nội dung ASCII).
-
-	Cột phải cạnh DataMatrix cho tiêu đề/trạm; chuỗi người đọc (8004)… chạy hết bề ngang ở đáy nhãn.
-	"""
-	return [
-		(200, 50, 34, "TraceCore TEST"),
-		(200, 110, 28, f"Station {station}"),
-		(30, 290, 24, gs1.giai_hri(giai)),
-	]
-
-
-def _preview_png(payload, layout):
-	from PIL import Image, ImageDraw, ImageFont
-
-	canvas = Image.new("RGB", (LABEL_WIDTH_DOTS, LABEL_HEIGHT_DOTS), "white")
-	symbol = Image.open(io.BytesIO(gs1.encode_datamatrix_png(payload, module_px=6, margin_px=12)))
-	canvas.paste(symbol, DM_ORIGIN)
-	draw = ImageDraw.Draw(canvas)
-	for x, y, size, text in layout:
-		draw.text((x, y), text, fill="black", font=ImageFont.load_default(size=size))
-	buffer = io.BytesIO()
-	canvas.save(buffer, format="PNG")
-	return buffer.getvalue()
-
-
 def render_test_label(station):
 	"""Nhãn thử 50x30 mm: DataMatrix GIAI test (không ghi Code Registry) + chữ ASCII."""
 	zpl_dialect = DIALECTS[DEFAULT_LANGUAGE]
@@ -590,7 +584,7 @@ def render_test_label(station):
 		"giai": giai,
 		"hri": gs1.giai_hri(giai),
 		"zpl": "".join(parts),
-		"preview_png": _preview_png(payload, layout),
+		"preview_png": datamatrix_preview_png(payload, layout, (LABEL_WIDTH_DOTS, LABEL_HEIGHT_DOTS)),
 	}
 
 

@@ -273,7 +273,7 @@ Tick only when the printer prints Vietnamese diacritics (Unicode font loaded); o
 Leave empty when the Station Agent writes a file instead of printing.,Để trống khi Station Agent ghi tệp thay vì in.,
 Label item currently loaded; set by changing the roll at the station.,Vật tư nhãn đang lắp; đổi khi thay cuộn tại trạm.,
 "Only one template can be active for each label object, method and language.","Mỗi đối tượng nhãn, phương pháp và ngôn ngữ chỉ có một mẫu hiệu lực.",
-"Jinja template in the printer language. Pack: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Object label: doc (code, title, subtitle, payload, is_test). Also width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).","Mẫu Jinja theo ngôn ngữ máy in. Nhãn gói: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Nhãn đối tượng: doc (code, title, subtitle, payload, is_test). Thêm width_dots, height_dots, dpi. Hàm: text(giá trị) chỉ in dấu trên máy in hỗ trợ Unicode; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).",
+"Jinja template in the printer language. Pack: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Object label: doc (code, title, subtitle, payload, is_test). Set Tag / Set Tray Label: doc (set_id, payload, hri, type_code, set_type_name, department, method, is_implant, issued_on, is_test). Also width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).","Mẫu Jinja theo ngôn ngữ máy in. Nhãn gói: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Nhãn đối tượng: doc (code, title, subtitle, payload, is_test). Thẻ kim loại / nhãn khay: doc (set_id, payload, hri, type_code, set_type_name, department, method, is_implant, issued_on, is_test). Thêm width_dots, height_dots, dpi. Hàm: text(giá trị) chỉ in dấu trên máy in hỗ trợ Unicode; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).",
 Waiting: the label is kept until a printer with the right label roll is ready.,Chờ máy in: nhãn được giữ lại cho tới khi có máy in lắp đúng cuộn nhãn.,
 A queued print job needs label content.,Lệnh in đang chờ in phải có nội dung nhãn.,
 DPI must be greater than zero.,DPI phải lớn hơn 0.,
@@ -1491,3 +1491,8 @@ Tag Verified By,Người kiểm tra thẻ,Set Unit
 Tag Verified On,Thời điểm kiểm tra thẻ,Set Unit
 The number of sets must be a whole number from 1 to {0}.,Số bộ phải là số nguyên từ 1 đến {0}.,
 These fields are set only by issuing or verifying Set ID tags: {0},Các trường này chỉ được ghi khi cấp Set ID hoặc quét kiểm tra thẻ: {0},
+Set Tag,Thẻ kim loại,Label Template
+Set Tray Label,Nhãn khay,Label Template
+Label object {0} cannot be printed with a single template.,Đối tượng nhãn {0} không in được bằng một mẫu riêng.,
+Label object {0} is not a set tag or tray label.,Đối tượng nhãn {0} không phải thẻ kim loại hay nhãn khay của bộ.,
+Unknown set label kind: {0},Loại bản in của bộ không hợp lệ: {0},

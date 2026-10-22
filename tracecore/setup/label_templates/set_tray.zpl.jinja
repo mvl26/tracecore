@@ -1,0 +1,31 @@
+{# Nhãn khay của bộ dụng cụ (Label Template "Set tray label", đối tượng Set Tray Label), 60 x 40 mm, 300 dpi, ZPL
+   (FEAT-016 G8, như nhãn D7). Gốc tọa độ ở góc trên trái; 1 mm = 11,8 dot ở 300 dpi. Lề 24 dot.
+
+   DataMatrix GIAI ở trái trên (payload = FNC1 + 8004 + Set ID, module 6 dot, tối đa 144 dot), cột chữ bên phải:
+   tên loại bộ, Set ID, mã loại bộ, khoa, phương pháp, ngày cấp; dấu CẤY GHÉP khi loại bộ là bộ cấy ghép. Dòng TEST
+   dưới DataMatrix khi Set ID mang tiền tố GS1 demo (dev/test). Chuỗi người đọc (8004)… chạy hết bề ngang ở đáy nhãn.
+
+   Mọi chữ in qua text(): giữ dấu khi Printer.supports_unicode = 1, bỏ dấu khi = 0. ^CI28 chọn UTF-8;
+   ^FB giới hạn bề rộng và số dòng nên chuỗi dài không tràn nhãn.
+
+   Biến: doc.set_id, payload, hri, type_code, set_type_name, department, method, is_implant, issued_on (dd/mm/yyyy),
+   is_test; width_dots, height_dots, dpi. Hàm: text(giá trị), datamatrix(payload, x, y, module). #}
+^XA
+^CI28
+^PW{{ width_dots }}
+^LL{{ height_dots }}
+{{ datamatrix(doc.payload, 24, 24, 6) }}
+^FO200,24^A0N,30,30^FB485,2,2,L,0^FD{{ text(doc.set_type_name) }}^FS
+^FO200,94^A0N,24,24^FB485,1,0,L,0^FD{{ text("Set ID: " ~ doc.set_id) }}^FS
+^FO200,124^A0N,24,24^FB485,1,0,L,0^FD{{ text("Mã loại bộ: " ~ doc.type_code) }}^FS
+^FO200,154^A0N,24,24^FB485,2,2,L,0^FD{{ text("Khoa: " ~ doc.department) }}^FS
+^FO200,210^A0N,24,24^FB485,1,0,L,0^FD{{ text("Phương pháp: " ~ doc.method) }}^FS
+^FO200,240^A0N,24,24^FB485,1,0,L,0^FD{{ text("Ngày cấp: " ~ doc.issued_on) }}^FS
+{% if doc.is_implant %}
+^FO200,280^A0N,34,34^FB485,1,0,L,0^FD{{ text("CẤY GHÉP / IMPLANT") }}^FS
+{% endif %}
+{% if doc.is_test %}
+^FO24,206^A0N,44,44^FDTEST^FS
+{% endif %}
+^FO24,420^A0N,24,24^FB661,1,0,L,0^FD{{ text(doc.hri) }}^FS
+^XZ

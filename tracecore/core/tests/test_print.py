@@ -1,6 +1,7 @@
 import io
 import json
 from typing import ClassVar
+from unittest import mock as unittest_mock
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -718,3 +719,71 @@ class TestRenderObject(IsolatedTestCase):
 		self.assertEqual(template.label_object, "Station")
 		self.assertIn("^FDMA,TR-001^FS", zpl)
 		self.assertEqual(core_print.render_object("Station", "TR-001", "Trạm"), zpl)
+
+
+class TestRenderLabel(IsolatedTestCase):
+	"""`render_label` dùng chung cho nhãn đối tượng và thẻ/nhãn khay Set ID (FEAT-016 Task 3)."""
+
+	DOC: ClassVar[dict] = {"set_id": "9520000KTQ000001", "payload": gs1.giai_payload("9520000KTQ000001")}
+
+	def test_set_labels(self):
+		self.assertEqual(core_print.SET_LABELS, ("Set Tag", "Set Tray Label"))
+		self.assertFalse(set(core_print.SET_LABELS) & set(core_print.OBJECT_LABELS))
+
+	def test_render_label_uses_active_template_and_printer_unicode(self):
+		frappe.db.set_value(
+			"Label Template",
+			"Set tag",
+			"body",
+			"^XA{{ datamatrix(doc.payload, 0, 0) }}^FDTAG {{ text(doc.name) }}^FS^XZ",
+		)
+		doc = {**self.DOC, "name": "Bộ khám"}
+		self.assertEqual(
+			core_print.render_label("Set Tag", doc),
+			"^XA^FO0,0^BXN,6,200,0,0,1,_,1^FD_18004" + self.DOC["set_id"] + "^FS^FDTAG Bo kham^FS^XZ",
+		)
+		self.assertIn("TAG Bộ khám", core_print.render_label("Set Tag", doc, {"supports_unicode": 1}))
+		zpl, template = core_print.render_label("Set Tag", doc, with_template=True)
+		self.assertEqual((template.name, template.label_object), ("Set tag", "Set Tag"))
+		self.assertIn("TAG Bo kham", zpl)
+
+	def test_render_label_missing_template_translated_error(self):
+		frappe.db.set_value("Label Template", {"label_object": "Set Tray Label"}, "is_active", 0)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			core_print.render_label("Set Tray Label", self.DOC)
+		self.assertEqual(str(ctx.exception), "No active label template for Set Tray Label (ZPL).")
+		frappe.local.lang = "vi"
+		try:
+			with self.assertRaises(frappe.ValidationError) as ctx:
+				core_print.render_label("Set Tray Label", self.DOC)
+			self.assertEqual(str(ctx.exception), "Chưa có mẫu nhãn hiệu lực cho Nhãn khay (ZPL).")
+		finally:
+			frappe.local.lang = "en"
+		with self.assertRaises(frappe.ValidationError):
+			core_print.render_label("Set Tag", self.DOC, printer={"language": "TSPL"})
+
+	def test_render_label_rejects_pack_and_unknown_objects(self):
+		for label_object in ("Pack", "Nope", "", None):
+			with self.assertRaises(frappe.ValidationError, msg=repr(label_object)):
+				core_print.render_label(label_object, self.DOC)
+
+	def test_render_object_goes_through_render_label(self):
+		with unittest_mock.patch.object(core_print, "render_label", wraps=core_print.render_label) as spy:
+			zpl = core_print.render_object("Station", "TR-001", "Trạm", printer={"supports_unicode": 1})
+		spy.assert_called_once()
+		self.assertEqual(spy.call_args.args[0], "Station")
+		self.assertEqual(spy.call_args.args[1]["payload"], "TR-001")
+		self.assertIn("^FDMA,TR-001^FS", zpl)
+
+	def test_datamatrix_preview_png(self):
+		payload = gs1.giai_payload("9520000KTQ000001")
+		png = core_print.datamatrix_preview_png(payload, [(200, 40, 30, "9520000KTQ000001")], (709, 472))
+		self.assertEqual(Image.open(io.BytesIO(png)).size, (709, 472))
+		self.assertEqual(gs1.decode_datamatrix_png(png), payload)
+		# nhãn thử vẫn dùng cùng hàm vẽ (thay `_preview_png` riêng tư)
+		self.assertFalse(hasattr(core_print, "_preview_png"))
+		with unittest_mock.patch.object(
+			core_print, "datamatrix_preview_png", wraps=core_print.datamatrix_preview_png
+		) as spy:
+			core_print.render_test_label("TR-004")
+		self.assertEqual(spy.call_args.args[2], (core_print.LABEL_WIDTH_DOTS, core_print.LABEL_HEIGHT_DOTS))
