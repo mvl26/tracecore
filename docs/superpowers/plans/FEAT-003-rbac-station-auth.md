@@ -12,7 +12,7 @@
 
 **Nhánh/môi trường:** `feat/FEAT-003-rbac-station-auth` tại bench độc lập `~/tracecore-codex`, base `183c7a2`. Không sửa `~/tracecore-dev`, không lấy thay đổi chưa commit của FEAT-005.
 
-## Quyết định triển khai A-06
+## Quyết định triển khai A-08
 
 | # | Quyết định | Áp dụng |
 | :- | :- | :- |
@@ -32,11 +32,11 @@
 - Mọi BRU trong scope có test `@bru`; coverage changed-code ≥ 70%; pre-commit và architecture check sạch.
 - Security focus: replay token, token plaintext, race hai login, expiry/idle, Employee disabled, client-supplied user, enumeration thẻ, brute-force PIN, quyền ngoài matrix.
 
-### Task 0: Amendment A-06 và truy vết
+### Task 0: Amendment A-08 và truy vết
 
 **Files:** Modify `docs/architecture.md`, `docs/srs.md`; create this plan.
 
-- [ ] Ghi Revision History A-06: A1–A8, không thêm FR/BRU mới.
+- [ ] Ghi Revision History A-08: A1–A8, không thêm FR/BRU mới.
 - [ ] Làm rõ token hash, absolute/idle expiry, competency khung và precedence quyền.
 - [ ] Lint docs; commit `docs: amendment A-06 cho FEAT-003`.
 
