@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 import frappe
 from frappe.utils import add_to_date, now_datetime, today
@@ -103,6 +104,23 @@ class TestStationAuth(IsolatedTestCase):
 		with self.assertRaises(BlockedError) as caught:
 			station_auth.verify_pin(self.employee.name, "123456")
 		self.assertEqual(caught.exception.block.code, "PIN_LOCKED")
+
+	def test_pin_failure_counter_is_atomic_not_read_modify_write(self):
+		# Parallel guesses can all read a stale counter; the limit must use an atomic increment.
+		original = type(frappe.cache).get_value
+
+		def stale(cache, key, *args, **kwargs):
+			if str(key).startswith("tracecore:pin"):
+				return 0
+			return original(cache, key, *args, **kwargs)
+
+		with patch.object(type(frappe.cache), "get_value", stale):
+			codes = []
+			for _ in range(3):
+				with self.assertRaises(BlockedError) as caught:
+					station_auth.verify_pin(self.employee.name, "000000")
+				codes.append(caught.exception.block.code)
+		self.assertEqual(codes, ["PIN_INVALID", "PIN_INVALID", "PIN_LOCKED"])
 
 	def test_logout_and_heartbeat_require_the_token(self):
 		result = station_auth.login("NV-AUTH-001", "TR-004")

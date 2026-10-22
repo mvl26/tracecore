@@ -141,11 +141,25 @@ class TestAccount(IsolatedTestCase):
 
 	def test_change_pin_requires_authenticated_session_and_old_pin(self):
 		session = self.make_session()
-		with self.assertRaises(Exception):
-			self.account.change_pin(session["token"], "000000", "112233")
+		rejected = self.account.change_pin(session["token"], "000000", "112233")
+		self.assertFalse(rejected["ok"])
+		self.assertEqual(rejected["error"]["code"], "PIN_INVALID")
 		self.account.change_pin(session["token"], "123456", "112233")
 		self.assertTrue(station_auth.verify_pin(self.employee.name, "112233"))
 		self.assert_safe_audit(self.employee.name, "PIN Changed", "123456", "112233")
+
+	def test_change_pin_wrong_old_pin_returns_error_and_keeps_reject_audit(self):
+		session = self.make_session()
+		before = frappe.db.count("Audit Log", {"ref_name": self.employee.name})
+		result = self.account.change_pin(session["token"], "000000", "112233")
+		self.assertEqual(result["error"]["code"], "PIN_INVALID")
+		self.assertGreater(frappe.db.count("Audit Log", {"ref_name": self.employee.name}), before)
+		self.assertTrue(station_auth.verify_pin(self.employee.name, "123456"))
+
+	def test_reset_pin_rejects_unknown_employee(self):
+		frappe.set_user(self.r10)
+		with self.assertRaises(frappe.DoesNotExistError):
+			self.account.reset_pin("HR-EMP-DOES-NOT-EXIST", "112233")
 
 	def test_r10_reset_forces_password_change_on_next_login(self):
 		frappe.set_user(self.r10)

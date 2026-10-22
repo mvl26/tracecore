@@ -84,7 +84,12 @@ def verify_pin(employee: str, pin: str, client_ts=None) -> bool:
 		clear_pin_rate_limit(employee)
 		_audit("PIN Verify", employee=employee, code="PIN_OK", client_ts=client_ts)
 		return True
-	failures = int(cache.get_value(_pin_key(employee, "failures"), expires=True) or 0) + 1
+	# Atomic INCR: parallel guesses cannot each read the same stale count and exceed the limit.
+	failures_key = cache.make_key(_pin_key(employee, "failures"))
+	with cache.pipeline(transaction=True) as pipeline:
+		pipeline.incr(failures_key)
+		pipeline.expire(failures_key, PIN_LOCK_SECONDS)
+		failures = int(pipeline.execute()[0])
 	if failures >= PIN_FAILURE_LIMIT:
 		cache.delete_value(_pin_key(employee, "failures"))
 		cache.set_value(_pin_key(employee, "locked"), 1, expires_in_sec=PIN_LOCK_SECONDS)
@@ -95,7 +100,6 @@ def verify_pin(employee: str, pin: str, client_ts=None) -> bool:
 			"PIN was entered incorrectly 3 times.",
 			"Wait 5 minutes and try again.",
 		)
-	cache.set_value(_pin_key(employee, "failures"), failures, expires_in_sec=PIN_LOCK_SECONDS)
 	_audit("PIN Reject", employee=employee, code="PIN_INVALID", client_ts=client_ts)
 	raise _block("PIN_INVALID", "PIN is incorrect", "The PIN did not match.", "Check the PIN and try again.")
 
