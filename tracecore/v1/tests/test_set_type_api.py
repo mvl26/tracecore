@@ -510,19 +510,25 @@ class TestSetTypeBomRpc(IsolatedTestCase):
 
 
 class TestSetTypeBomRpcLarge(IsolatedTestCase):
-	def test_bom_rpc_under_one_second_for_500_lines(self):
-		# Review Focus 5: BOM 500 dòng, chưa cache, ≤ 1 s (bench dev)
+	def test_bom_rpc_500_lines_constant_queries(self):
+		# Review Focus 5: BOM 500 dòng chưa cache trả đủ dòng với số truy vấn không đổi theo số dòng (không N+1). Không
+		# kiểm thời gian đồng hồ (review cuối Minor 9: chập chờn trên máy CI/WSL chậm); thời gian chỉ in ra để theo dõi
 		bulk_set_type("STBL", 500, [(list(range(500)), lambda index: 1 + index % 3)])
+		bulk_set_type("STBS", 3, [(list(range(3)), lambda index: 1)])
 		bom.invalidate(set_type="STBL")
+		bom.invalidate(set_type="STBS")
 		started = time.perf_counter()
-		result = call(api.bom, set_type="STBL")
-		elapsed = time.perf_counter() - started
-		print(f"\nv1.set_type.bom 500 lines, uncached: {elapsed * 1000:.0f} ms")
+		result, large_count, _sql = count_queries(call, api.bom, set_type="STBL")
+		print(f"\nv1.set_type.bom 500 lines, uncached: {(time.perf_counter() - started) * 1000:.0f} ms")
 		self.assertTrue(result["ok"])
 		self.assertEqual(result["total_lines"], 500)
 		self.assertEqual(result["total_qty"], sum(1 + index % 3 for index in range(500)))
 		self.assertEqual([line["position"] for line in result["lines"]], list(range(1, 501)))
-		self.assertLess(elapsed, 1.0)
+		small, small_count, _sql = count_queries(call, api.bom, set_type="STBS")
+		self.assertEqual(small["total_lines"], 3)
+		self.assertEqual(large_count, small_count)
 		started = time.perf_counter()
-		self.assertEqual(call(api.bom, set_type="STBL")["etag"], result["etag"])
+		cached, cached_count, _sql = count_queries(call, api.bom, set_type="STBL")
 		print(f"v1.set_type.bom 500 lines, cached: {(time.perf_counter() - started) * 1000:.0f} ms")
+		self.assertEqual(cached["etag"], result["etag"])
+		self.assertLess(cached_count, large_count)
