@@ -352,7 +352,7 @@ STOCK_ABBR = "TCT"
 
 
 def ensure_stock_masters():
-	"""Company thử, kho mặc định, Fiscal Year và Stock Entry Type "Material Receipt" (idempotent).
+	"""Company thử (đặt làm Company mặc định nếu site chưa có), kho mặc định, Fiscal Year và Stock Entry Type "Material Receipt" (idempotent).
 
 	Site test/dev chưa chạy Setup Wizard của ERPNext nên chưa có các bản ghi này. Perpetual inventory tắt.
 	Trả {"company", "warehouse"}.
@@ -371,6 +371,8 @@ def ensure_stock_masters():
 				"enable_perpetual_inventory": 0,
 			}
 		).insert(ignore_permissions=True)
+	if not frappe.db.get_single_value("Global Defaults", "default_company"):
+		frappe.db.set_single_value("Global Defaults", "default_company", STOCK_COMPANY)
 	year = getdate(today()).year
 	if not frappe.get_all(
 		"Fiscal Year",
@@ -494,6 +496,37 @@ def make_batch(item_code, batch_id, expiry_date=None):
 	return frappe.get_doc(
 		{"doctype": "Batch", "batch_id": batch_id, "item": item_code, "expiry_date": expiry_date}
 	).insert(ignore_permissions=True)
+
+
+def make_receipt_workbook(rows, headers=None):
+	"""File .xlsx (bytes) cho nhập kho hàng loạt: dòng 1 là tiêu đề, `rows` là danh sách dòng giá trị thô.
+
+	`headers` mặc định là tiêu đề của file mẫu; ô để nguyên kiểu (ngày, số, chuỗi) như người dùng nhập trong Excel.
+	"""
+	from io import BytesIO
+
+	from openpyxl import Workbook
+
+	from tracecore.inventory import receipt_import
+
+	workbook = Workbook()
+	sheet = workbook.active
+	sheet.title = "Receipt"
+	sheet.append(list(headers if headers is not None else receipt_import.header_labels()))
+	for values in rows:
+		sheet.append(list(values))
+	buffer = BytesIO()
+	workbook.save(buffer)
+	return buffer.getvalue()
+
+
+def attach_private_file(content, file_name):
+	"""Tải `content` lên làm File riêng tư của người dùng hiện tại; trả `file_url`."""
+	return (
+		frappe.get_doc({"doctype": "File", "file_name": file_name, "content": content, "is_private": 1})
+		.insert(ignore_permissions=True)
+		.file_url
+	)
 
 
 LABEL_ITEMS = (("VT-NHAN-HAP", "Steam"), ("VT-NHAN-PLASMA", "Plasma"))

@@ -31,6 +31,8 @@ def bru(*ids):
 
 
 class _FakeRequest:
+	host = "localhost"  # frappe.utils.get_url (link tới chứng từ trong ERPNext) đọc request.host
+
 	def __init__(self, headers):
 		self.headers = headers
 
