@@ -12,6 +12,7 @@ TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang
 import os
 import socket
 import threading
+import time
 
 import pytest
 
@@ -36,18 +37,17 @@ def desk_login(page, prefix="TC_E2E"):
 		import pyotp
 
 		totp = pyotp.TOTP(require_env(prefix + "_OTP_SECRET"))
-		code = totp.now()
-		response = page.request.post(
-			"/api/method/login",
-			form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": code},
-		)
-		# Native Frappe verifies the current 30-second window. Retry only if it rolled
-		# during the request; other authentication failures remain failures.
-		if response.status == 401 and totp.now() != code:
+		# Native Frappe verifies only the current 30-second window. A code generated near the
+		# boundary can arrive after it rolled, so retry a bounded number of times with a fresh
+		# code, and only for a rejected verification code; other failures remain failures.
+		for _ in range(3):
 			response = page.request.post(
 				"/api/method/login",
 				form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": totp.now()},
 			)
+			if response.ok or response.status != 401 or "Incorrect Verification code" not in response.text():
+				break
+			time.sleep(1.5)
 		assert response.ok, response.text()
 	logged_in = page.request.get("/api/method/frappe.auth.get_logged_user")
 	assert logged_in.ok and logged_in.json().get("message") == user
