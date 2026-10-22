@@ -14,7 +14,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-PACKING_FIELDS = ("status", "void_reason", "void_note", "label_print_count")
+# `location` (FEAT-025) chỉ đổi qua dịch vụ kho vô khuẩn, cũng bằng cờ tc_packing
+PACKING_FIELDS = ("status", "void_reason", "void_note", "label_print_count", "location")
 
 
 class Pack(Document):

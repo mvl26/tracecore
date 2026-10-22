@@ -21,6 +21,8 @@ from tracecore.core.errors import Block, BlockedError
 AGENT_ROLE = "TC Agent"
 # R04 là role của user kiosk T4; System Manager để R10 xử lý trên Desk
 PACKING_ROLES = ("TC R04", "System Manager")
+# R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025)
+STORAGE_ROLES = ("TC R06", "System Manager")
 
 
 def station_session(*roles, desk_roles=()):

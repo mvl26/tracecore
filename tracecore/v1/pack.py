@@ -15,9 +15,10 @@ from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import packing
+from tracecore.reprocessing import packing, storage
 from tracecore.v1._common import (
 	PACKING_ROLES,
+	STORAGE_ROLES,
 	BadRequestError,
 	require_any_role,
 	run_at_step,
@@ -242,6 +243,25 @@ def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
 		station,
 		timestamp,
 		lambda: {"ok": True, **packing.void(cycle_id, reason, station, note)},
+		"Pack",
+		cycle_id,
+	)
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def mark_damaged(cycle_id, reason, station, client_ts=None):
+	"""Báo gói trong kho vô khuẩn bị rách/ướt/mở tại T6 (FR-M2-14, UC-11 A1): gói Hết hiệu lực, bộ Chờ tiếp nhận.
+
+	`reason` là mô tả bắt buộc, lưu vào ghi chú hủy. Gói không ở trong kho → ``PACK_NOT_IN_STOCK`` (409).
+	"""
+	require_any_role(*STORAGE_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		storage.STEP,
+		station,
+		timestamp,
+		lambda: {"ok": True, **storage.mark_damaged(cycle_id, reason, station, timestamp)},
 		"Pack",
 		cycle_id,
 	)
