@@ -11,12 +11,20 @@ app_license = "gpl-3.0"
 required_apps = ["erpnext", "hrms"]
 
 # Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
-# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói).
+# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói;
+# FEAT-041: thêm Stock Entry-tc_*, Stock Entry Detail-tc_* cho nhập kho theo lô/hạn).
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
-	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
+	{
+		"dt": "Custom Field",
+		"or_filters": [
+			["name", "like", "Item-tc_%"],
+			["name", "like", "Stock Entry-tc_%"],
+			["name", "like", "Stock Entry Detail-tc_%"],
+		],
+	},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -55,9 +63,10 @@ app_include_js = ["tracecore.bundle.js"]
 page_js = {"station": "public/js/station_t4.js"}
 
 # include js in doctype views
-# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3)
-doctype_js = {"Item": "public/js/item.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
+# Stock Entry: phiếu nhập kho vật tư theo lô/hạn và nhập từ Excel (FEAT-041, SCR-24)
+doctype_js = {"Item": "public/js/item.js", "Stock Entry": "public/js/stock_entry.js"}
+doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -97,6 +106,8 @@ doctype_js = {"Item": "public/js/item.js"}
 
 # before_install = "tracecore.install.before_install"
 after_install = "tracecore.setup.install.after_install"
+# Quyền R09/R06/R10/R02 cho Item, Batch, Stock Entry (FEAT-041, A-07 V11): Custom DocPerm idempotent
+after_migrate = "tracecore.inventory.permissions.ensure_permissions"
 
 # Uninstallation
 # ------------
@@ -193,6 +204,26 @@ doc_events = {
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	"TraceCore Settings": dict(_AUDIT_EVENTS),
+	# vật tư tiêu hao CSSD trên Item ERPNext (FEAT-041, A-07): chặn trùng mã; nhóm, nhãn, hạn dùng, tồn tối thiểu
+	"Item": {
+		"before_insert": "tracecore.inventory.items.check_duplicate_code",
+		"validate": "tracecore.inventory.items.validate_item",
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+	},
+	# Batch và phiếu nhập kho vật tư: Audit Log chỉ khi liên quan Item CSSD; xóa bị chặn ở permission (không on_trash)
+	"Batch": {
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+	},
+	"Stock Entry": {
+		# nhập kho vật tư theo lô/hạn (FEAT-041, FR-M6-01): kiểm dòng, tạo Batch khi ghi sổ
+		"before_validate": "tracecore.inventory.receipt.prepare_receipt",
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+		"on_submit": "tracecore.inventory.audit.on_cssd_event",
+		"on_cancel": "tracecore.inventory.audit.on_cssd_event",
+	},
 	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
 	"File": {
 		"before_insert": "tracecore.instrument.media.check_upload",

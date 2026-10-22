@@ -3,7 +3,7 @@
 Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi trường:
 TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
 và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
-TC_E2E_INSTR_* (test_desk_instrument.py).
+TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py).
 
 TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
 (vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
@@ -240,3 +240,25 @@ def other_user_page(browser, browser_context_args):
 	yield open_page
 	for context in contexts:
 		context.close()
+
+
+# --- Vật tư tiêu hao và nhập kho Desk (SCR-24, FEAT-041): user TC R09, dữ liệu `devdata.ensure_inventory_demo` ---
+
+INV_KEYS = ("company", "warehouse", "supplier", "ci", "bi", "pk", "ch")
+
+
+@pytest.fixture
+def inv_demo():
+	"""Mã demo của `devdata.ensure_inventory_demo` (TC_E2E_INV_CI, ..._WAREHOUSE...)."""
+	return {key: require_env(f"TC_E2E_INV_{key.upper()}") for key in INV_KEYS}
+
+
+@pytest.fixture
+def inv_page(page):
+	"""User Desk TC R09 (nhập kho vật tư, khai báo vật tư)."""
+	response = page.request.post(
+		"/api/method/login",
+		form={"usr": require_env("TC_E2E_INV_USER"), "pwd": require_env("TC_E2E_INV_PASSWORD")},
+	)
+	assert response.ok, response.text()
+	return page
