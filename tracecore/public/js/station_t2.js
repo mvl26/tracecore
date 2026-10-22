@@ -1083,7 +1083,9 @@ class T2Wash {
 					<td>${esc(row.set_name || "-")}</td>
 					<td>${this.gatesHtml(row.gates)}</td>
 					<td><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-remove"
-						data-set="${esc(row.set_id)}"${t2Disabled(Boolean(this.busy))}>${esc(__("Remove from the list"))}</button></td>
+						data-set="${esc(row.set_id)}"${t2Disabled(Boolean(this.busy))}>${esc(
+					__("Remove from the list")
+				)}</button></td>
 				</tr>`
 			)
 			.join("");
@@ -1091,7 +1093,9 @@ class T2Wash {
 			? `<table class="tc-t2-table">
 				<thead><tr><th>${esc(__("Set ID"))}</th><th>${esc(__("Set Type"))}</th><th>${esc(
 					__("Step gates")
-			  )}</th><th><span class="tc-sr-only">${esc(__("Remove from the list"))}</span></th></tr></thead>
+			  )}</th><th><span class="tc-sr-only">${esc(
+					__("Remove from the list")
+			  )}</span></th></tr></thead>
 				<tbody>${rows}</tbody></table>`
 			: `<p class="tc-empty">${esc(
 					__(

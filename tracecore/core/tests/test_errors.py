@@ -124,6 +124,7 @@ class TestErrors(FrappeTestCase):
 			"SET_TYPE_CODE_EXISTS": 409,
 		}.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
+
 	def test_http_status_wash_codes(self):
 		# FEAT-021 A-12: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
 		self.assertEqual(Block("EQUIPMENT_NOT_READY", "t", "r", "a").http_status, 423)
