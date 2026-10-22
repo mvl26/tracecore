@@ -1,6 +1,6 @@
 """Cấu hình cơ số tái xử lý và cơ số tồn khoa (M8, FEAT-031, FR-M8-01, FR-M8-02, UC-30, OTH-RET-002).
 
-``Par Level`` là nguồn sự thật cơ số tái xử lý (A-xx S1): lưu Par Level của một dụng cụ đồng bộ một chiều sang
+``Par Level`` là nguồn sự thật cơ số tái xử lý (A-11 S1): lưu Par Level của một dụng cụ đồng bộ một chiều sang
 ``Instrument.max_cycles`` để M1/M2 và ``par.check`` đọc như cũ. Par Level của loại bộ **không** ghi vào Set Unit
 (``max_cycles`` là snapshot lúc cấp Set ID, FEAT-016/032). Module này không import M1-M10: đọc ``Instrument``,
 ``Set Unit``, ``Set BOM Item`` theo tên DocType.

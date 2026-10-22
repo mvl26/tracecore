@@ -51,7 +51,7 @@
 
 **FR/AC:** chuẩn bị. **Files:** Modify `docs/architecture.md` (Revision History; ghi chú I4 dòng 358 thay "chờ chủ đầu tư chốt" bằng quyết định S1; §5.3.1 M8 trường `Par Level`; §5.3.3 dòng `PAR-.#####`), `docs/rtm.md` (FR-M8-01/02 cột Test).
 
-- [ ] **Step 1:** Ghi Amendment (số kế tiếp trong Revision History) với S1 "đã duyệt bởi người dùng 22/10/2026", S2–S11 "tạm — chờ chủ đầu tư duyệt"; ghi gap G1–G4 (cuối plan). **Step 2:** `pre-commit run --files <docs>`. **Step 3:** Commit `docs: amendment quyết định FEAT-031`.
+- [x] **Step 1:** Ghi **Amendment A-11** (A-08 FEAT-003, A-09 FEAT-015 đã trên develop; A-10 đã cấp cho FEAT-025) với S1 "đã duyệt bởi người dùng 22/10/2026", S2–S11 "tạm — chờ chủ đầu tư duyệt"; ghi gap G1–G4 (cuối plan). **Step 2:** `pre-commit run --files <docs>`. **Step 3:** Commit `docs: amendment quyết định FEAT-031`.
 
 ### Task 1: DocType `Par Level` + child `Par Level History`, quyền, audit
 
