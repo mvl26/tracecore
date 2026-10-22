@@ -3,6 +3,7 @@ khung khu-trạm (FR-M9-03)."""
 
 import frappe
 
+from tracecore.inventory.permissions import ensure_permissions
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.setup.seed import ensure_zone_stations
 
@@ -21,6 +22,7 @@ def after_install():
 	ensure_sample_templates()
 	ensure_object_templates()
 	ensure_zone_stations()
+	ensure_permissions()
 
 
 def apply_system_settings():

@@ -105,6 +105,8 @@ doctype_js = {"Item": "public/js/item.js"}
 
 # before_install = "tracecore.install.before_install"
 after_install = "tracecore.setup.install.after_install"
+# Quyền R09/R06/R10/R02 cho Item, Batch, Stock Entry (FEAT-041, A-07 V11): Custom DocPerm idempotent
+after_migrate = "tracecore.inventory.permissions.ensure_permissions"
 
 # Uninstallation
 # ------------
@@ -205,6 +207,19 @@ doc_events = {
 	"Item": {
 		"before_insert": "tracecore.inventory.items.check_duplicate_code",
 		"validate": "tracecore.inventory.items.validate_item",
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+	},
+	# Batch và phiếu nhập kho vật tư: Audit Log chỉ khi liên quan Item CSSD; xóa bị chặn ở permission (không on_trash)
+	"Batch": {
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+	},
+	"Stock Entry": {
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+		"on_submit": "tracecore.inventory.audit.on_cssd_event",
+		"on_cancel": "tracecore.inventory.audit.on_cssd_event",
 	},
 	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
 	"File": {
