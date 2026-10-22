@@ -33,6 +33,11 @@
 #      dụng cụ chỉ Plasma, dụng cụ đã ngừng sử dụng, loại bộ có phiên bản hiệu lực + đã lên lịch và ba ảnh bộ, bộ đang giữa
 #      chu trình ghim phiên bản cũ, loại bộ để sửa BOM; user r02-settype-e2e@… (TC R02, cùng mật khẩu với user R10)
 #      → TC_E2E_SETTYPE_USER/PASSWORD + TC_E2E_SETTYPE_<khóa> cho tests_e2e/test_desk_set_type.py.
+#  10. Màn T2 lô rửa (devdata.ensure_t2_e2e_user + ensure_station_demo + ensure_t2_demo, FEAT-021): user kiosk
+#      station-t2@… (TC R03, cùng mật khẩu kiosk, OTP riêng) có thẻ và năng lực tại $TC_E2E_T2_STATION (mặc định TR-002),
+#      máy rửa, chương trình, lô hóa chất, 3 bộ đã qua T1, bộ chưa qua T1, bộ chờ rửa lại, một lô đang chạy
+#      → TC_E2E_T2_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T2_<khóa> (``sets`` nối bằng dấu phẩy)
+#      cho tests_e2e/test_station_t2.py. Bộ demo bị tiêu thụ khi nạp lô: chạy lại script này trước mỗi lần chạy test đó.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -51,6 +56,7 @@ STATION="${TC_E2E_STATION:-TR-003}"
 T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
 CODES_PORT="${TC_E2E_CODES_PRINTER_PORT:-19101}"
 SECOND_STATION="${TC_E2E_T4_SECOND_STATION:-TR-005}"
+T2_STATION="${TC_E2E_T2_STATION:-TR-002}"
 
 # Từ chối site test: tên test_site hoặc site_config.json / common_site_config.json có allow_tests bật (1/true/"1").
 allow_tests_in() {
@@ -123,6 +129,10 @@ instr_demo=$(bench_exec tracecore.setup.devdata.ensure_instrument_demo)
 inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
 settype_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R02', 'name': 'r02-settype-e2e', 'password': '$r10_password'}" | tr -d '"')
 settype_demo=$(bench_exec tracecore.setup.devdata.ensure_set_type_demo)
+t2_users=$(bench_exec tracecore.setup.devdata.ensure_t2_e2e_user --kwargs "{'station': '$T2_STATION', 'password': '$password'}")
+t2_user=$(printf '%s' "$t2_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t2_user"])')
+t2_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T2_STATION', 'user': '$t2_user'}")
+t2_demo=$(bench_exec tracecore.setup.devdata.ensure_t2_demo)
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
@@ -145,6 +155,10 @@ settype_demo=$(bench_exec tracecore.setup.devdata.ensure_set_type_demo)
 	printf 'TC_E2E_SETTYPE_USER=%s\nTC_E2E_SETTYPE_PASSWORD=%s\n' "$settype_user" "$r10_password"
 	# giá trị có khoảng trắng/ngoặc (tên khoa) → quote để `set -a; . file` đọc được
 	printf '%s' "$settype_demo" | python3 -c 'import json, shlex, sys; [print("TC_E2E_SETTYPE_%s=%s" % (k.upper(), shlex.quote(str(v)))) for k, v in json.load(sys.stdin).items()]'
+	printf 'TC_E2E_T2_USER=%s\nTC_E2E_T2_PASSWORD=%s\nTC_E2E_T2_STATION=%s\n' "$t2_user" "$password" "$T2_STATION"
+	printf '%s' "$t2_users" | python3 -c 'import json, sys; print("TC_E2E_T2_OTP_SECRET=%s" % json.load(sys.stdin)["t2_otp_secret"])'
+	printf '%s' "$t2_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T2_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf '%s' "$t2_demo" | python3 -c 'import json, sys; [print("TC_E2E_T2_%s=%s" % (k.upper(), ",".join(v) if isinstance(v, list) else v)) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"

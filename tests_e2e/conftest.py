@@ -112,6 +112,43 @@ def t4_page(page):
 	return page
 
 
+# --- T2 (SCR-06 lô rửa, FEAT-021): user trạm TR-002 và dữ liệu demo `devdata.ensure_t2_demo` ---
+
+T2_KEYS = (
+	"machine",
+	"machine_two_door",
+	"machine_locked",
+	"machine_connected",
+	"program",
+	"sets",
+	"set_no_t1",
+	"set_redo",
+	"chemical_lot_ok",
+	"chemical_lot_expired",
+	"batch_running",
+)
+
+
+@pytest.fixture
+def t2_demo():
+	"""Mã demo T2 từ scripts/e2e_prepare.sh (TC_E2E_T2_MACHINE, ...); ``sets`` là danh sách 3 Set ID."""
+	demo = {key: require_env(f"TC_E2E_T2_{key.upper()}") for key in T2_KEYS}
+	demo["sets"] = demo["sets"].split(",")
+	return demo
+
+
+@pytest.fixture
+def t2_page(page):
+	card = require_env("TC_E2E_T2_CARD_ID")
+	desk_login(page, "TC_E2E_T2")
+	station = os.environ.get("TC_E2E_T2_STATION", "TR-002")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result[data-state='empty'] .tc-t2").wait_for(timeout=30000)
+	return page
+
+
 # --- Desk cấu hình (SCR-33, FEAT-002): user TC R10, viewport WEB 1366x768 ---
 
 
