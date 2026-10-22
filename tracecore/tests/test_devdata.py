@@ -376,6 +376,30 @@ class TestInstrumentDemoData(FrappeTestCase):
 			{k: v for k, v in first.items() if k not in ("retire", "giai")},
 		)
 
+	def test_ensure_bom_line_with_scheduled_version(self):
+		# review Task 2 (6): loại bộ có phiên bản đã lên lịch → thêm dòng không bị BOM_EFFECTIVE_DATE_INVALID
+		from frappe.utils import add_days, getdate, nowdate
+
+		from tracecore.instrument import bom_versions
+		from tracecore.tests import factories
+
+		set_type = factories.make_set_type("DDSCH", bom=[("DD-SCH-1", 1)])
+		tomorrow = getdate(add_days(nowdate(), 1))
+		factories.make_bom(set_type, [("DD-SCH-2", 1)], version=2, effective_from=tomorrow)
+		factories.make_instrument("DD-SCH-3", methods=("Steam 134",))
+
+		devdata._ensure_bom_line(set_type.name, "DD-SCH-3")
+		latest = bom_versions.versions(set_type.name)[0]
+		self.assertEqual((latest["bom_version"], latest["effective_from"]), (3, tomorrow))
+		self.assertIn(
+			"DD-SCH-3",
+			frappe.get_all(
+				"Set BOM Item", filters={"set_type": set_type.name, "bom_version": 3}, pluck="instrument"
+			),
+		)
+		devdata._ensure_bom_line(set_type.name, "DD-SCH-3")  # đã có ở phiên bản mới nhất: không tạo thêm
+		self.assertEqual(bom_versions.versions(set_type.name)[0]["bom_version"], 3)
+
 	def test_instrument_demo_refused_outside_developer_or_test_site(self):
 		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
 		frappe.flags.in_test = False

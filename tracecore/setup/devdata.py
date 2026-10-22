@@ -582,14 +582,19 @@ def _giai_candidate(code):
 
 
 def _ensure_bom_line(set_type, instrument):
-	"""Thêm `instrument` vào BOM hiện hành của `set_type` (dòng cuối) nếu chưa có: phiên bản BOM mới hiệu lực hôm nay
-	(phiên bản đã lưu không sửa được, FEAT-015)."""
-	version = bom_versions.effective_version(set_type) or 0
-	if frappe.db.exists(
-		"Set BOM Item", {"set_type": set_type, "bom_version": version, "instrument": instrument}
-	):
-		return
-	latest = max((row["bom_version"] for row in bom_versions.versions(set_type)), default=0)
+	"""Thêm `instrument` vào BOM của `set_type` (dòng cuối) nếu phiên bản hiệu lực và phiên bản mới nhất chưa có: phiên
+	bản BOM mới chép từ phiên bản mới nhất, hiệu lực hôm nay, hoặc cùng ngày với phiên bản đã lên lịch mới nhất (ngày
+	hiệu lực không được sớm hơn phiên bản mới nhất; phiên bản đã lưu không sửa được, FEAT-015)."""
+	history = bom_versions.versions(set_type)
+	latest = history[0]["bom_version"] if history else 0
+	for version in {bom_versions.effective_version(set_type) or 0, latest}:
+		if frappe.db.exists(
+			"Set BOM Item", {"set_type": set_type, "bom_version": version, "instrument": instrument}
+		):
+			return
+	day = max(
+		bom_versions.today(), (history[0]["effective_from"] if history else None) or bom_versions.today()
+	)
 	retired = set(frappe.get_all("Instrument", filters={"status": "Retired"}, pluck="name"))
 	# dụng cụ demo đã bị e2e ngừng sử dụng không chép sang phiên bản mới (FR-M1-03.6)
 	lines = [
@@ -598,7 +603,7 @@ def _ensure_bom_line(set_type, instrument):
 		if row["instrument"] not in retired
 	]
 	lines.append({"instrument": instrument, "qty": 1})
-	bom_versions.create_version(set_type, lines, bom_versions.today(), _("Demo data"), latest)
+	bom_versions.create_version(set_type, lines, day, _("Demo data"), latest)
 
 
 def ensure_instrument_demo():
