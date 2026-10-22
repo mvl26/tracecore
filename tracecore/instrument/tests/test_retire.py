@@ -1,14 +1,14 @@
 """Ngừng sử dụng dụng cụ (FEAT-014 Task 2; FR-M1-01, UC-01 E3; A-06 I13)."""
 
 import frappe
-from frappe.utils import getdate, today
+from frappe.utils import add_days, getdate, today
 
 from tracecore.instrument import catalog
 from tracecore.tests.factories import make_bom, make_instrument, make_item, make_set_type
 from tracecore.tests.utils import IsolatedTestCase
 
 # Instrument liên kết Item (ERPNext), loại bộ liên kết Department; site CI chưa chạy Setup Wizard
-test_ignore = ["Item", "User", "Batch", "Department"]
+test_ignore = ["Item", "User", "Batch", "Department", "Employee"]
 
 
 def _audit_updates(code):
@@ -68,6 +68,17 @@ class TestRetire(IsolatedTestCase):
 		make_bom(set_type, [("RT-OTHER", 1)], version=2)
 		frappe.db.set_value("Instrument Set Type", set_type.name, "current_bom_version", 2)
 		self.assertTrue(catalog.retire("RT-OLDV", "Worn out")["retired"])
+
+	def test_retire_instrument_only_in_scheduled_version_needs_confirmation(self):
+		# FEAT-015 S2: phiên bản BOM đã lên lịch chứa dụng cụ → vẫn hỏi xác nhận (A-06 I13)
+		make_instrument("RT-SCH")
+		set_type = make_set_type("RTS")
+		make_bom(set_type, [("RT-OTHER", 1)], version=1)
+		make_bom(set_type, [("RT-OTHER", 1), ("RT-SCH", 1)], version=2, effective_from=add_days(today(), 1))
+		first = catalog.retire("RT-SCH", "Broken")
+		self.assertFalse(first["retired"])
+		self.assertEqual([(row["set_type"], row["scheduled"]) for row in first["boms"]], [("RTS", True)])
+		self.assertTrue(catalog.retire("RT-SCH", "Broken", confirm=True)["retired"])
 
 	def test_retire_is_one_way(self):
 		make_instrument("RT-ONE")

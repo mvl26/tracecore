@@ -17,7 +17,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, flt
 
-from tracecore.instrument import catalog, media, thresholds, versions
+from tracecore.instrument import bom, catalog, media, thresholds, versions
 
 REQUIRED_FIELDS = ("instrument_code", "instrument_name", "spaulding_class", "compatible_methods")
 TEXT_FIELDS = ("instrument_name", "manufacturer", "model")
@@ -64,6 +64,9 @@ class Instrument(Document):
 			versions.notify_boms(self)
 		# đổi ngưỡng/nhóm: cảnh báo bộ sẽ đến hạn, không đụng bộ đếm (A-06 I5, Review Focus 4)
 		thresholds.warn_rule_change(self)
+		# tên/ảnh nằm trong payload BOM của trạm: xóa cache mọi phiên bản BOM chứa dụng cụ (FEAT-015 S11)
+		if bom.payload_changed(self, bom.INSTRUMENT_PAYLOAD_FIELDS):
+			bom.invalidate(instrument=self.name)
 
 	def db_insert(self, *args, **kwargs):
 		# hai request cùng mã vượt qua kiểm tra trước: khóa chính chặn bản ghi thứ hai, báo kèm mã gợi ý

@@ -303,7 +303,8 @@ class TestPack(IsolatedTestCase):
 			"Audit Log",
 			filters={"ref_doctype": "Pack", "ref_name": doc.name},
 			fields=["action", "new_value"],
-			order_by="creation asc",
+			# Audit Log đặt tên autoincrement: thứ tự chèn xác định (creation cùng giây làm "creation asc" lẫn thứ tự)
+			order_by="name asc",
 		)
 		kinds = [row.action for row in actions]
 		for expected in ("Create", "Submit", "Update"):

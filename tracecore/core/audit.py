@@ -104,6 +104,11 @@ def _diff(before, after):
 	return {k: before.get(k) for k in keys}, {k: after.get(k) for k in keys}
 
 
+def changes(before, doc) -> dict:
+	"""Trường dữ liệu đã đổi giữa `before` và `doc` (cùng quy tắc so sánh như dòng Audit Log Update): ``{trường: mới}``."""
+	return _diff(snapshot(before), snapshot(doc))[1]
+
+
 def on_document_event(doc, method):
 	"""Handler doc_events: after_insert/on_update/on_submit/on_cancel → Audit Log.
 

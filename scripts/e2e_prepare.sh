@@ -29,6 +29,10 @@
 #      vật tư mẫu (chỉ thị hóa học lớp 5, chỉ thị sinh học, bao gói, hóa chất) có tồn tối thiểu theo kho; user
 #      r09-inv-e2e@… (TC R09, cùng mật khẩu với user R10) → TC_E2E_INV_USER/PASSWORD + TC_E2E_INV_<khóa> cho
 #      tests_e2e/test_desk_inventory.py. Stock Entry và Item không xóa được: test tự sinh mã lô và số chứng từ duy nhất.
+#   9. Loại bộ và BOM theo phiên bản Desk (devdata.ensure_set_type_demo, FEAT-015): loại gói có/không hạn lưu, dụng cụ hấp,
+#      dụng cụ chỉ Plasma, dụng cụ đã ngừng sử dụng, loại bộ có phiên bản hiệu lực + đã lên lịch và ba ảnh bộ, bộ đang giữa
+#      chu trình ghim phiên bản cũ, loại bộ để sửa BOM; user r02-settype-e2e@… (TC R02, cùng mật khẩu với user R10)
+#      → TC_E2E_SETTYPE_USER/PASSWORD + TC_E2E_SETTYPE_<khóa> cho tests_e2e/test_desk_set_type.py.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -117,6 +121,8 @@ bench --site "$SITE" set-config tracecore_allow_local_printers 1 > /dev/null
 codes_demo=$(bench_exec tracecore.setup.devdata.ensure_codes_demo --kwargs "{'port': '$CODES_PORT'}")
 instr_demo=$(bench_exec tracecore.setup.devdata.ensure_instrument_demo)
 inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
+settype_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R02', 'name': 'r02-settype-e2e', 'password': '$r10_password'}" | tr -d '"')
+settype_demo=$(bench_exec tracecore.setup.devdata.ensure_set_type_demo)
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
@@ -136,6 +142,9 @@ inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
 	printf '%s' "$instr_demo" | python3 -c 'import json, sys; [print("TC_E2E_INSTR_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf 'TC_E2E_INV_USER=%s\nTC_E2E_INV_PASSWORD=%s\n' "$inv_user" "$r10_password"
 	printf '%s' "$inv_demo" | python3 -c 'import json, shlex, sys; [print("TC_E2E_INV_%s=%s" % (k.upper(), shlex.quote(str(v)))) for k, v in json.load(sys.stdin).items()]'
+	printf 'TC_E2E_SETTYPE_USER=%s\nTC_E2E_SETTYPE_PASSWORD=%s\n' "$settype_user" "$r10_password"
+	# giá trị có khoảng trắng/ngoặc (tên khoa) → quote để `set -a; . file` đọc được
+	printf '%s' "$settype_demo" | python3 -c 'import json, shlex, sys; [print("TC_E2E_SETTYPE_%s=%s" % (k.upper(), shlex.quote(str(v)))) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"

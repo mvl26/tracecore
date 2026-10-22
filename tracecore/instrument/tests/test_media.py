@@ -200,6 +200,39 @@ class TestInstrumentMedia(FrappeTestCase):
 			(20 * 1024 * 1024, 5 * 1024 * 1024, 40_000_000, 320),
 		)
 
+	def test_targets_table_and_instrument_aliases(self):
+		# FEAT-015 Task 5: luật tra theo (DocType, trường); hằng cũ của Instrument giữ làm bí danh
+		mib = 1024 * 1024
+		self.assertEqual(
+			media.TARGETS,
+			{
+				("Instrument", "image"): media.Rule(("jpeg", "png", "webp"), 5 * mib, "image_thumbnail"),
+				("Instrument", "ifu"): media.Rule(("pdf", "jpeg", "png"), 20 * mib, None),
+				("Instrument Set Type", "tray_image"): media.Rule(
+					("jpeg", "png", "webp"), 5 * mib, "tray_thumbnail"
+				),
+				("Instrument Set Type", "tray_image_2"): media.Rule(
+					("jpeg", "png", "webp"), 5 * mib, "tray_thumbnail_2"
+				),
+				("Instrument Set Type", "tray_image_3"): media.Rule(
+					("jpeg", "png", "webp"), 5 * mib, "tray_thumbnail_3"
+				),
+			},
+		)
+		self.assertEqual(
+			(media.DOCTYPE, media.MEDIA_FIELDS, media.THUMB_FIELD),
+			("Instrument", ("image", "ifu"), "image_thumbnail"),
+		)
+		# Instrument: refresh_thumbnail trả {trường thumbnail: URL}
+		make_instrument("MD-RULES")
+		source = attach_instrument_file("MD-RULES", "image", _image("PNG", color=(2, 22, 122)), "rules.png")
+		doc = frappe.get_doc("Instrument", "MD-RULES")
+		doc.image = source.file_url
+		doc._doc_before_save = frappe.get_doc("Instrument", "MD-RULES")
+		result = media.refresh_thumbnail(doc)
+		self.assertEqual(set(result), {"image_thumbnail"})
+		self.assertTrue(result["image_thumbnail"].startswith("/private/files/"), msg=result)
+
 	def test_ifu_over_20mb_rejected_and_blob_removed(self):
 		# FR-M1-01.5, Review Focus 2: 20 MiB + 1 byte bị từ chối, nêu giới hạn; không còn blob kể cả sau rollback
 		make_instrument("MD-IFU-BIG")
