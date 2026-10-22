@@ -25,7 +25,7 @@ class TestErrors(FrappeTestCase):
 				"PIN_INVALID",
 				"PIN_PROOF_INVALID",
 			),
-			429: ("PIN_LOCKED",),
+			429: ("PIN_LOCKED", "LOGIN_THROTTLED"),
 			422: (
 				"PIN_FORMAT_INVALID",
 				"STATION_WRONG_STEP",

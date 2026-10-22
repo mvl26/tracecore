@@ -23,7 +23,7 @@ HTTP_STATUS: dict[str, int] = {
 		),
 		403,
 	),
-	"PIN_LOCKED": 429,
+	**dict.fromkeys(("PIN_LOCKED", "LOGIN_THROTTLED"), 429),
 	**dict.fromkeys(
 		(
 			"STATION_WRONG_STEP",

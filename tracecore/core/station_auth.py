@@ -22,6 +22,8 @@ IDLE_MINUTES = 10
 PIN_LOCK_SECONDS = 300
 PIN_FAILURE_LIMIT = 3
 PROOF_SECONDS = 120
+LOGIN_FAILURE_LIMIT = 30
+LOGIN_WINDOW_SECONDS = 300
 PIN_PATTERN = re.compile(r"^\d{6}$")
 
 
@@ -125,6 +127,45 @@ def _employee_is_active(employee, user=None):
 	)
 
 
+def _card_rejected() -> BlockedError:
+	# One public answer for unknown, disabled and unqualified cards: scanning cannot probe which exist.
+	return _block(
+		"CARD_INVALID",
+		"Card login was rejected",
+		"The card is invalid, inactive or not authorised for this station.",
+		"Use an active employee card, or ask R02 to check your station competency.",
+	)
+
+
+def _throttle_key() -> str:
+	return frappe.cache.make_key(
+		"tracecore:login-reject:" + (getattr(frappe.local, "request_ip", None) or "local")
+	)
+
+
+def clear_login_throttle() -> None:
+	frappe.cache.delete(_throttle_key())
+
+
+def _check_login_throttle(client_ts=None) -> None:
+	if int(frappe.cache.get(_throttle_key()) or 0) >= LOGIN_FAILURE_LIMIT:
+		_audit("Login Reject", code="LOGIN_THROTTLED", client_ts=client_ts)
+		raise _block(
+			"LOGIN_THROTTLED",
+			"Too many card attempts",
+			"Too many rejected card scans from this device.",
+			"Wait 5 minutes and try again.",
+		)
+
+
+def _count_login_failure() -> None:
+	key = _throttle_key()
+	with frappe.cache.pipeline(transaction=True) as pipeline:
+		pipeline.incr(key)
+		pipeline.expire(key, LOGIN_WINDOW_SECONDS)
+		pipeline.execute()
+
+
 def _active_employee(card_id: str, client_ts=None):
 	card_id = normalize_card_id(card_id)
 	name = frappe.db.get_value("Employee", {"tc_card_id": card_id}, "name")
@@ -132,12 +173,7 @@ def _active_employee(card_id: str, client_ts=None):
 	# The locking read above sees revocations committed while waiting for the lock.
 	if not _employee_is_active(employee) or employee.tc_card_id != card_id:
 		_audit("Login Reject", code="CARD_INVALID", client_ts=client_ts)
-		raise _block(
-			"CARD_INVALID",
-			"Card login was rejected",
-			"The card is invalid or inactive.",
-			"Use an active employee card or contact a supervisor.",
-		)
+		raise _card_rejected()
 	return employee
 
 
@@ -173,12 +209,7 @@ def _require_competency(employee: str, station: str, client_ts=None) -> None:
 			code="COMPETENCY_REQUIRED",
 			client_ts=client_ts,
 		)
-		raise _block(
-			"COMPETENCY_REQUIRED",
-			"Card login was rejected",
-			"The employee has no valid competency for this station.",
-			"Ask R02 to check competency or temporary access.",
-		)
+		raise _card_rejected()
 
 
 def _close_session(doc, reason: str, client_ts=None) -> None:
@@ -213,6 +244,16 @@ def close_employee_sessions(employee: str, reason: str = "Employee Disabled", cl
 
 
 def login(card_id: str, station: str, client_ts=None) -> dict:
+	_check_login_throttle(client_ts)
+	try:
+		return _login(card_id, station, client_ts)
+	except BlockedError as error:
+		if error.block.code == "CARD_INVALID":
+			_count_login_failure()
+		raise
+
+
+def _login(card_id: str, station: str, client_ts=None) -> dict:
 	_require_station(station)
 	employee = _active_employee(card_id, client_ts)
 	_require_competency(employee.name, station, client_ts)
