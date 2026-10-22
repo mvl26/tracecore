@@ -123,7 +123,7 @@ inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
 	printf 'TC_E2E_INSTR_USER=%s\nTC_E2E_INSTR_PASSWORD=%s\n' "$instr_user" "$r10_password"
 	printf '%s' "$instr_demo" | python3 -c 'import json, sys; [print("TC_E2E_INSTR_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf 'TC_E2E_INV_USER=%s\nTC_E2E_INV_PASSWORD=%s\n' "$inv_user" "$r10_password"
-	printf '%s' "$inv_demo" | python3 -c 'import json, sys; [print("TC_E2E_INV_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf '%s' "$inv_demo" | python3 -c 'import json, shlex, sys; [print("TC_E2E_INV_%s=%s" % (k.upper(), shlex.quote(str(v)))) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"
