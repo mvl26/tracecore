@@ -142,6 +142,49 @@ class TestSetTypeAdminRpc(IsolatedTestCase):
 		self.assertFalse(frappe.db.exists(SET_TYPE, "SAR"))
 		self.assertEqual(api.ADMIN_ROLES, ("TC R02", "TC R10", "System Manager"))
 
+	def test_save_bom_and_copy_check_document_permission(self):
+		# review cuối Minor 2: ngoài role, kiểm quyền mức bản ghi (User Permission giới hạn loại bộ được truy cập)
+		lines = [{"instrument": "SA-1", "qty": 1}]
+		for code in ("SAUA", "SAUB"):
+			call(api.create, header=header(code), lines=lines)
+		email = make_user("st-admin-userperm@example.com", ["TC R02"])
+		frappe.get_doc(
+			{"doctype": "User Permission", "user": email, "allow": SET_TYPE, "for_value": "SAUA"}
+		).insert(ignore_permissions=True)
+		frappe.clear_cache(user=email)
+		changed = [{"instrument": "SA-2", "qty": 1}]
+		frappe.set_user(email)
+		try:
+			for fn, kwargs in (
+				(
+					api.save_bom,
+					{
+						"set_type": "SAUB",
+						"lines": changed,
+						"effective_from": nowdate(),
+						"reason": "x",
+						"base_version": 1,
+					},
+				),
+				(api.copy, {"source": "SAUB", "type_code": "SAUC", "set_type_name": "x"}),
+			):
+				with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
+					call(fn, **kwargs)
+			allowed = call(
+				api.save_bom,
+				set_type="SAUA",
+				lines=changed,
+				effective_from=nowdate(),
+				reason="x",
+				base_version=1,
+			)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual((allowed["ok"], allowed["bom_version"]), (True, 2))
+		self.assertEqual(frappe.db.get_value(SET_TYPE, "SAUB", "current_bom_version"), 1)
+		self.assertFalse(frappe.db.count("Set BOM Item", {"set_type": "SAUB", "bom_version": 2}))
+		self.assertFalse(frappe.db.exists(SET_TYPE, "SAUC"))
+
 	def test_rpc_reject_bodies_and_http_status(self):
 		bad = call(
 			api.create,

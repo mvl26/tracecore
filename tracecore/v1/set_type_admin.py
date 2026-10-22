@@ -1,6 +1,7 @@
 """RPC tracecore.v1.set_type_admin.*: tạo loại bộ cùng BOM v1, lưu phiên bản BOM mới, sao chép loại bộ (FEAT-015 Task 2).
 
-Quyền TC R02, TC R10, System Manager (S12), kiểm TRƯỚC mọi ghi; mọi RPC là POST + ``@idempotent`` (``X-Idempotency-Key``,
+Quyền TC R02, TC R10, System Manager (S12) và quyền mức bản ghi trên loại bộ có sẵn (ghi khi lưu BOM, đọc nguồn
+khi sao chép), kiểm TRƯỚC mọi ghi; mọi RPC là POST + ``@idempotent`` (``X-Idempotency-Key``,
 ``client_ts`` ISO 8601 có offset). ``header``/``lines`` nhận JSON string hoặc object/list; sai kiểu → ``BadRequestError``
 (400). Từ chối nghiệp vụ: body ``{"ok": false, "error"}`` + mã HTTP + Audit Log ``Reject`` (``reject_block``). Thành
 công: ``{"ok": true, set_type, bom_version, effective_from, status}``. Nghiệp vụ ở ``tracecore.instrument.bom_versions``.
@@ -59,6 +60,14 @@ def _base_version(value) -> int:
 	return number
 
 
+def _require_doc_permission(set_type, ptype):
+	"""Quyền mức bản ghi (User Permission…) trên loại bộ có sẵn, ngoài role (review cuối Minor 2); loại bộ không có thì
+	để nghiệp vụ trả ``SET_TYPE_NOT_FOUND`` (người gọi đã có quyền ghi DocType nên không lộ thêm gì)."""
+	name = frappe.db.get_value(SET_TYPE, set_type, "name") if set_type else None
+	if name:
+		frappe.has_permission(SET_TYPE, ptype, doc=name, throw=True)
+
+
 def _ref(value):
 	return value.strip().upper() if isinstance(value, str) and value.strip() else None
 
@@ -101,6 +110,7 @@ def save_bom(set_type, lines, effective_from, reason, base_version, client_ts=No
 	effective_from = _text(effective_from, "effective_from")
 	reason = _text(reason, "reason")
 	lines, base = _lines(lines), _base_version(base_version)
+	_require_doc_permission(set_type, "write")
 	try:
 		result = bom_versions.create_version(set_type, lines, effective_from, reason, base)
 	except BlockedError as error:
@@ -120,6 +130,7 @@ def copy(source, type_code, set_type_name, client_ts=None):
 	source = _text(source, "source")
 	type_code = _text(type_code, "type_code")
 	set_type_name = _text(set_type_name, "set_type_name")
+	_require_doc_permission(source, "read")
 	try:
 		name = bom_versions.copy_set_type(source, type_code, set_type_name)
 	except BlockedError as error:
