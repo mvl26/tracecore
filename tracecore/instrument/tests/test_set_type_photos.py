@@ -330,7 +330,7 @@ class TestSetTypePhotos(FrappeTestCase):
 		# đuôi .png: Frappe không bỏ EXIF của file này, hàm phải tự xoay theo EXIF
 		source = attach_set_type_photo(st, "tray_image", _split_jpeg(), "spp-portrait.png")
 		self.assertEqual(Image.open(source.get_full_path()).getexif().get(0x0112), 6)
-		uri = media.print_image_data_uri(source.file_url)
+		uri = media.print_image_data_uri(source.file_url, DOCTYPE, st)
 		self.assertTrue(uri.startswith("data:image/jpeg;base64,"), msg=uri[:40])
 		image = Image.open(io.BytesIO(base64.b64decode(uri.split(",", 1)[1])))
 		self.assertEqual((image.format, image.size), ("JPEG", (600, 1200)))
@@ -341,7 +341,9 @@ class TestSetTypePhotos(FrappeTestCase):
 		self.assertGreater(bottom[2], bottom[0], msg=bottom)
 		small = Image.open(
 			io.BytesIO(
-				base64.b64decode(media.print_image_data_uri(source.file_url, max_side=300).split(",", 1)[1])
+				base64.b64decode(
+					media.print_image_data_uri(source.file_url, DOCTYPE, st, max_side=300).split(",", 1)[1]
+				)
 			)
 		)
 		self.assertEqual(small.size, (150, 300))
@@ -349,7 +351,7 @@ class TestSetTypePhotos(FrappeTestCase):
 		tiny = attach_set_type_photo(
 			st, "tray_image_2", _image("PNG", (64, 48), (11, 110, 11)), "spp-tiny.png"
 		)
-		tiny_uri = media.print_image_data_uri(tiny.file_url)
+		tiny_uri = media.print_image_data_uri(tiny.file_url, DOCTYPE, st)
 		self.assertEqual(Image.open(io.BytesIO(base64.b64decode(tiny_uri.split(",", 1)[1]))).size, (64, 48))
 		# không đọc URL ngoài, file công khai, đường dẫn thoát thư mục, file không phải ảnh
 		public = _loose_file(_image("PNG", color=(12, 120, 12)), "spp-public.png", is_private=0)
@@ -365,7 +367,37 @@ class TestSetTypePhotos(FrappeTestCase):
 			None,
 		):
 			with self.subTest(url=bad):
-				self.assertIsNone(media.print_image_data_uri(bad))
+				self.assertIsNone(media.print_image_data_uri(bad, DOCTYPE, st))
+
+	def test_print_image_data_uri_only_embeds_files_of_the_set_type(self):
+		# review cuối Minor 1: chỉ nhúng File riêng tư đính vào CHÍNH loại bộ này; URL trỏ tới File riêng tư của bản ghi
+		# khác (loại bộ khác, dụng cụ, file rời) không được đọc dù hợp lệ
+		own = make_set_type("SPO").name
+		other = make_set_type("SPX").name
+		mine = attach_set_type_photo(own, "tray_image", _image("PNG", color=(14, 140, 14)), "spo.png")
+		theirs = attach_set_type_photo(other, "tray_image", _image("PNG", color=(15, 150, 15)), "spx.png")
+		make_instrument("SP-OWN-I")
+		instrument_photo = attach_instrument_file(
+			"SP-OWN-I", "image", _image("PNG", color=(16, 160, 16)), "sp-own-i.png"
+		)
+		loose = _loose_file(_image("PNG", color=(17, 170, 17)), "spo-loose.png")
+		self.assertTrue(media.print_image_data_uri(mine.file_url, DOCTYPE, own).startswith("data:image/jpeg"))
+		for url in (theirs.file_url, instrument_photo.file_url, loose.file_url):
+			with self.subTest(url=url):
+				self.assertIsNone(media.print_image_data_uri(url, DOCTYPE, own))
+		self.assertIsNone(media.print_image_data_uri(mine.file_url, DOCTYPE, other))
+		self.assertIsNone(media.print_image_data_uri(mine.file_url, "Instrument", own))
+
+		# phiếu kiểm đếm: ảnh khay của loại bộ trỏ (ghi thẳng DB như dữ liệu cũ) tới File của loại bộ khác → không nhúng
+		from tracecore.instrument import bom, count_sheet
+		from tracecore.tests.factories import make_bom
+
+		make_bom(own, [("SP-OWN-I", 1)])
+		frappe.db.set_value(DOCTYPE, own, {"tray_image": theirs.file_url, "tray_image_2": mine.file_url})
+		bom.invalidate(set_type=own)
+		photos = count_sheet.context(own)["photos"]
+		self.assertEqual(len(photos), 1)
+		self.assertEqual(photos[0], media.print_image_data_uri(mine.file_url, DOCTYPE, own))
 
 	def test_photo_change_audited(self):
 		# S14: đổi ảnh khay ghi Audit Log Update (old/new) của loại bộ, kể cả thumbnail do server sinh

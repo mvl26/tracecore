@@ -148,9 +148,13 @@ def context(set_type: str, version: int | None = None) -> dict:
 	bom_version, effective_from (date | None), effective_from_text, reason, status, status_label, code, code_png,
 	photos [data URI…], lines [{position, instrument, instrument_name, qty}], total_lines, total_qty, printed_at,
 	printed_by, tc}``. Dòng và tổng lấy từ ``bom.payload`` (cache). Ảnh bộ đã xếp là ảnh hiện tại của loại bộ (gap S6);
-	ảnh không hợp lệ bị bỏ qua. Kiểm quyền đọc loại bộ. Loại bộ / phiên bản không có → ``BlockedError``
+	ảnh không hợp lệ hoặc không đính vào chính loại bộ bị bỏ qua. Kiểm quyền đọc
+	DocType trước khi tra loại bộ, quyền đọc bản ghi sau. Loại bộ / phiên bản không có → ``BlockedError``
 	(``SET_TYPE_NOT_FOUND`` / ``BOM_VERSION_NOT_FOUND``). Không ghi gì.
 	"""
+	# quyền đọc DocType trước khi tra (review cuối Minor 3: người không có quyền không biết mã có tồn tại hay không),
+	# quyền mức bản ghi sau khi tra (như v1.set_type._open)
+	frappe.has_permission(SET_TYPE, "read", throw=True)
 	header = frappe.db.get_value(
 		SET_TYPE,
 		set_type,
@@ -173,7 +177,9 @@ def context(set_type: str, version: int | None = None) -> dict:
 	info = next((row for row in bom_versions.versions(header.name) if row["bom_version"] == number), {})
 	effective = getdate(data["effective_from"]) if data.get("effective_from") else None
 	code = gs1.make_bom_code(header.name, number)
-	photos = [media.print_image_data_uri(image["image_url"]) for image in data["tray_images"]]
+	photos = [
+		media.print_image_data_uri(image["image_url"], SET_TYPE, header.name) for image in data["tray_images"]
+	]
 	shelf = shelf_life.effective(header.name)
 	return {
 		"set_type": header.name,

@@ -772,18 +772,25 @@ def set_type_photos(set_type: str) -> list[dict]:
 	return photos
 
 
-def print_image_data_uri(file_url: str, max_side: int = PRINT_MAX_SIDE) -> str | None:
+def print_image_data_uri(
+	file_url: str, doctype: str, name: str, max_side: int = PRINT_MAX_SIDE
+) -> str | None:
 	"""Ảnh in (phiếu kiểm đếm, AC-3): ``data:image/jpeg;base64,…`` dựng trong bộ nhớ từ File **riêng tư** của site.
 
 	Đúng hướng theo EXIF, cạnh dài ≤ ``max_side`` (không phóng to), JPEG q85, không EXIF. Chỉ URL ``/private/files/…``
-	có bản ghi File riêng tư, blob nằm trong ``private/files`` của site, ≤ 5 MiB và là ảnh JPEG/PNG/WebP hợp lệ; khác
-	(URL ngoài, file công khai, thoát thư mục, không phải ảnh, hỏng) → None. Không đọc mạng, không ghi File.
+	có bản ghi File riêng tư **đính vào chính bản ghi** (`doctype`, `name`) (review cuối Minor 1: URL trỏ tới file riêng
+	tư của bản ghi khác không được nhúng), blob nằm trong ``private/files`` của site, ≤ 5 MiB và là ảnh JPEG/PNG/WebP
+	hợp lệ; khác (URL ngoài, file công khai, file của bản ghi khác, thoát thư mục, không phải ảnh, hỏng) → None. Không
+	đọc mạng, không ghi File.
 	"""
 	if not isinstance(file_url, str) or not file_url.startswith(PRIVATE_PREFIX):
 		return None
 	if any(part in file_url for part in ("..", "\\", "?", "#", "\x00")):
 		return None
-	if not frappe.db.exists("File", {"file_url": file_url, "is_private": 1}):
+	if not doctype or not name:
+		return None
+	owned = {"file_url": file_url, "is_private": 1, "attached_to_doctype": doctype, "attached_to_name": name}
+	if not frappe.db.exists("File", owned):
 		return None
 	root = os.path.realpath(frappe.get_site_path("private", "files"))
 	path = os.path.realpath(os.path.join(root, file_url[len(PRIVATE_PREFIX) :]))

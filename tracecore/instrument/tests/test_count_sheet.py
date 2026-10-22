@@ -350,6 +350,10 @@ class TestCountSheet(IsolatedTestCase):
 		self.addCleanup(frappe.set_user, "Administrator")
 		with self.assertRaises(frappe.PermissionError):
 			count_sheet.context(code)
+		# review cuối Minor 3: không có quyền đọc → PermissionError cả với mã không tồn tại (không lộ mã có hay không),
+		# kiểm trước khi tra loại bộ
+		with self.assertRaises(frappe.PermissionError):
+			count_sheet.context("CSP-NONE")
 
 
 class TestBomCodeAtStations(IsolatedTestCase):
