@@ -26,6 +26,22 @@ function tc_is_receipt(frm) {
 	return (frm.doc.purpose || frm.doc.stock_entry_type) === TC_RECEIPT_PURPOSE;
 }
 
+// ERPNext mở hộp thoại "Add Batch Nos" mỗi khi chọn vật tư có lô trong Stock Entry (trừ khi Stock Settings tắt bộ chọn).
+// Phiếu nhập này ghi mã lô và hạn ngay trên dòng (cột Mã lô, Hạn dùng) nên hộp thoại chỉ làm người dùng nhập hai lần:
+// tắt nó cho phiếu nhập và trả lại giá trị cũ khi mở phiếu loại khác.
+let tc_batch_dialog_before = null;
+function tc_hide_batch_dialog(frm) {
+	if (tc_is_receipt(frm)) {
+		if (tc_batch_dialog_before === null) {
+			tc_batch_dialog_before = Boolean(frappe.flags.hide_serial_batch_dialog);
+		}
+		frappe.flags.hide_serial_batch_dialog = true;
+	} else if (tc_batch_dialog_before !== null) {
+		frappe.flags.hide_serial_batch_dialog = tc_batch_dialog_before;
+		tc_batch_dialog_before = null;
+	}
+}
+
 // Hạn dùng trước hôm nay: chữ cam kèm ký hiệu và chữ "Expired", không chỉ màu (design.md, F-14)
 function tc_expiry_formatter(value, df, options, doc) {
 	const shown = frappe.form.formatters.Date(value, df, options, doc);
@@ -87,6 +103,7 @@ function tc_receipt_indicator(frm) {
 
 frappe.ui.form.on("Stock Entry", {
 	refresh(frm) {
+		tc_hide_batch_dialog(frm);
 		tc_receipt_layout(frm);
 		tc_receipt_indicator(frm);
 		if (frm.is_new() && tc_is_receipt(frm) && !frm.doc.to_warehouse) {
@@ -103,10 +120,12 @@ frappe.ui.form.on("Stock Entry", {
 	},
 
 	stock_entry_type(frm) {
+		tc_hide_batch_dialog(frm);
 		tc_receipt_layout(frm);
 	},
 
 	purpose(frm) {
+		tc_hide_batch_dialog(frm);
 		tc_receipt_layout(frm);
 	},
 

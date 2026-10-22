@@ -9,6 +9,8 @@
   để e2e Desk in nhãn QR (SCR-33, FEAT-005) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_instrument_demo`` chuẩn bị nhóm, dụng cụ, loại bộ và bộ
   demo cho e2e Desk danh mục dụng cụ (SCR-01, FEAT-014) và in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_inventory_demo`` chuẩn bị Company, kho, nhà cung cấp và
+  bốn vật tư mẫu (chỉ thị hóa học lớp 5, chỉ thị sinh học, bao gói, hóa chất) cho e2e Desk nhập kho (SCR-24, FEAT-041).
 """
 
 import io
@@ -634,6 +636,76 @@ def ensure_instrument_demo():
 		**set_types,
 		"set_steam": _ensure_set(set_types["set_type_steam"], T4_GATES_READY),
 		"set_plasma": _ensure_set(set_types["set_type_plasma"], T4_GATES_READY),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo vật tư tiêu hao và nhập kho Desk SCR-24 (FEAT-041) --------------------------------------------
+# Stock Entry và Item không xóa được: vật tư mẫu có mã cố định (dùng lại); mã lô và số chứng từ do e2e tự sinh duy nhất.
+INV_SUPPLIER = "TraceCore NCC"
+INV_MIN_QTY = 10
+# khóa -> (mã Item, nhóm vật tư CSSD, lớp chỉ thị hóa học)
+INV_ITEMS = {
+	"ci": ("TCINV-CI5", "Chemical Indicator", "5"),
+	"bi": ("TCINV-BI", "Biological Indicator", None),
+	"pk": ("TCINV-PK", "Packaging", None),
+	"ch": ("TCINV-CH", "Chemical", None),
+}
+
+
+def _inventory_warehouse(company):
+	"""Kho lá của Company, ưu tiên ``Stores - <abbr>``; site đã chạy Setup Wizard đặt tên kho theo ngôn ngữ nên tra theo Company."""
+	abbr = frappe.db.get_value("Company", company, "abbr")
+	if frappe.db.exists("Warehouse", f"Stores - {abbr}"):
+		return f"Stores - {abbr}"
+	warehouse = frappe.db.get_value(
+		"Warehouse",
+		{"company": company, "is_group": 0, "disabled": 0},
+		"name",
+		order_by="creation asc",
+	)
+	if not warehouse:
+		frappe.throw(_("Company {0} has no warehouse.").format(company))
+	return warehouse
+
+
+def _ensure_inventory_item(code, group, ci_class, warehouse):
+	item = factories.make_item(code, group, ci_class=ci_class, apply_rules=True)
+	if not item.get("reorder_levels"):
+		item.append(
+			"reorder_levels",
+			{
+				"warehouse": warehouse,
+				"warehouse_reorder_level": INV_MIN_QTY,
+				"warehouse_reorder_qty": INV_MIN_QTY,
+				"material_request_type": "Purchase",
+			},
+		)
+		item.save(ignore_permissions=True)
+	return item.name
+
+
+def ensure_inventory_demo():
+	"""Dữ liệu demo cho e2e Desk nhập kho vật tư (SCR-24, FEAT-041) trên site dev/test; idempotent, trả và in JSON.
+
+	Company thử (chỉ tạo nếu site chưa có), kho lá của Company, nhà cung cấp và bốn vật tư có tồn tối thiểu theo kho:
+	``ci`` (chỉ thị hóa học lớp 5), ``bi`` (chỉ thị sinh học), ``ch`` (hóa chất) bắt buộc hạn dùng; ``pk`` (bao gói)
+	không bắt buộc hạn. Tài khoản TC R09 do ``scripts/e2e_prepare.sh`` tạo (mật khẩu ngẫu nhiên, không nằm ở đây).
+	"""
+	_require_dev_site()
+	masters = factories.ensure_stock_masters()
+	company = frappe.db.get_single_value("Global Defaults", "default_company") or masters["company"]
+	warehouse = _inventory_warehouse(company)
+	items = {
+		key: _ensure_inventory_item(code, group, ci_class, warehouse)
+		for key, (code, group, ci_class) in INV_ITEMS.items()
+	}
+	result = {
+		"company": company,
+		"warehouse": warehouse,
+		"supplier": factories.make_supplier(INV_SUPPLIER),
+		**items,
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

@@ -114,6 +114,17 @@ class TestDeskInventory(FrappeTestCase):
 		self.assertEqual(set(re.findall(r'"([^"]+)"', block.group(1))), set(items.EXPIRY_REQUIRED_GROUPS))
 		self.assertIn(items.VALUATION_METHOD, script)
 
+	def test_receipt_form_hides_erpnext_batch_selector_and_restores_it(self):
+		"""E2E (Task 6) thấy ERPNext mở hộp thoại "Add Batch Nos" khi chọn vật tư có lô; phiếu nhập đã có cột Mã lô / Hạn dùng."""
+		script = _code("stock_entry.js")
+		self.assertIn("frappe.flags.hide_serial_batch_dialog = true", script)
+		self.assertIn(
+			"frappe.flags.hide_serial_batch_dialog = tc_batch_dialog_before", script
+		)  # phiếu loại khác: trả lại
+		for event in ("refresh(frm)", "stock_entry_type(frm)", "purpose(frm)"):
+			handler = script[script.index(event) :].split("},", 1)[0]
+			self.assertIn("tc_hide_batch_dialog(frm)", handler, event)
+
 	def test_excel_dialog_uses_import_rpcs_with_fresh_key_per_write(self):
 		script = _code("stock_entry_list.js")
 		for method in (
