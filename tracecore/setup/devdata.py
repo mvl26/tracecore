@@ -9,6 +9,8 @@
   để e2e Desk in nhãn QR (SCR-33, FEAT-005) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_instrument_demo`` chuẩn bị nhóm, dụng cụ, loại bộ và bộ
   demo cho e2e Desk danh mục dụng cụ (SCR-01, FEAT-014) và in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_set_type_demo`` chuẩn bị loại gói, dụng cụ, loại bộ có
+  nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
 """
 
 import io
@@ -17,7 +19,7 @@ import os
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, today
+from frappe.utils import add_days, getdate, today
 
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.core import print as core_print
@@ -659,6 +661,219 @@ def ensure_instrument_demo():
 		**set_types,
 		"set_steam": _ensure_set(set_types["set_type_steam"], T4_GATES_READY),
 		"set_plasma": _ensure_set(set_types["set_type_plasma"], T4_GATES_READY),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo loại bộ và BOM theo phiên bản (FEAT-015) ----------------------------------------------------------------
+# Loại bộ / dòng BOM / dụng cụ không xóa được: dữ liệu cố định, dùng lại giữa các lần chạy e2e.
+SETTYPE_CODES = {"set_type": "DEMOF15S", "set_type_inflight": "DEMOF15T", "set_type_edit": "DEMOF15E"}
+SETTYPE_TRAY_FIELDS = ("tray_image", "tray_image_2", "tray_image_3")
+
+
+def _set_type_catalog():
+	"""Mã và tên hiển thị demo FEAT-015 (bản dịch tiếng Việt trong vi.csv)."""
+	return {
+		"packs": {
+			"pack_short": ("DEMO-F15-GOI-30", _("Demo e2e crepe paper 30 days", lang="vi"), 30),
+			"pack_long": ("DEMO-F15-GOI-180", _("Demo e2e pouch 180 days", lang="vi"), 180),
+			"pack_none": ("DEMO-F15-GOI-0", _("Demo e2e wrap without shelf life", lang="vi"), 0),
+			"pack_r10": ("DEMO-F15-GOI-R10", _("Demo e2e container for R10 shelf life", lang="vi"), 90),
+		},
+		"instruments": {
+			"steam_1": ("DEMO-F15-KEO", _("Demo e2e dissecting scissors", lang="vi"), "Steam"),
+			"steam_2": ("DEMO-F15-KEP", _("Demo e2e Kocher forceps", lang="vi"), "Steam"),
+			"steam_3": ("DEMO-F15-BAT", _("Demo e2e stainless bowl", lang="vi"), "Steam"),
+			"plasma": ("DEMO-F15-PLASMA", _("Demo e2e plasma-only scope", lang="vi"), "Plasma"),
+			"retired": ("DEMO-F15-RETIRED", _("Demo e2e retired forceps", lang="vi"), "Steam"),
+		},
+		"set_types": {
+			"set_type": _("Demo e2e versioned steam set", lang="vi"),
+			"set_type_inflight": _("Demo e2e set with a set in its cycle", lang="vi"),
+			"set_type_edit": _("Demo e2e set for BOM editing", lang="vi"),
+		},
+	}
+
+
+def _ensure_retired(code):
+	from tracecore.instrument import catalog
+
+	if frappe.db.get_value("Instrument", code, "status") != "Retired":
+		catalog.retire(code, _("Demo data", lang="vi"), confirm=True)
+
+
+def _ensure_demo_set_type(code, name, method, pack_type, lines):
+	"""Loại bộ demo (khoa demo, GTIN test, loại gói) cùng BOM v1 `lines` [(mã, số lượng)] nếu chưa có; trả mã."""
+	if not frappe.db.exists("Instrument Set Type", code):
+		bom_versions.create_set_type(
+			{
+				"type_code": code,
+				"set_type_name": name,
+				"method": method,
+				"gtin": _free_demo_gtin(),
+				"department": _demo_department(),
+				"default_pack_type": pack_type,
+			},
+			[{"instrument": instrument, "qty": qty} for instrument, qty in lines],
+		)
+	return code
+
+
+def _ensure_tray_photos(code):
+	"""Ba ảnh bộ đã xếp riêng tư (qua kiểm file và thumbnail của ``media``, S6) cho các ô ảnh còn trống."""
+	doc = frappe.get_doc("Instrument Set Type", code)
+	missing = [field for field in SETTYPE_TRAY_FIELDS if not doc.get(field)]
+	if not missing:
+		return
+	for field in missing:
+		position = SETTYPE_TRAY_FIELDS.index(field) + 1
+		photo = factories.attach_set_type_photo(
+			code, field, _demo_png(f"{code}-{position}"), f"{code.lower()}-tray-{position}.png"
+		)
+		doc.set(field, photo.file_url)
+	doc.save(ignore_permissions=True)
+
+
+def _latest_lines(set_type):
+	history = bom_versions.versions(set_type)
+	latest = history[0] if history else None
+	lines = (
+		[(row["instrument"], row["qty"]) for row in bom.lines(set_type, latest["bom_version"])]
+		if latest
+		else []
+	)
+	return latest, lines
+
+
+def _demo_version(set_type, day, reason, change):
+	"""Phiên bản mới từ phiên bản mới nhất với thay đổi `change(lines) -> lines`, hiệu lực `day`; trả số phiên bản."""
+	latest, lines = _latest_lines(set_type)
+	return bom_versions.create_version(
+		set_type,
+		[{"instrument": instrument, "qty": qty} for instrument, qty in change(lines)],
+		day,
+		reason,
+		latest["bom_version"] if latest else 0,
+	)["bom_version"]
+
+
+def _bump_first_qty(lines):
+	"""Đổi số lượng dòng đầu (1 → 2 → 3 → 1 …), giữ các dòng khác."""
+	(instrument, qty), rest = lines[0], lines[1:]
+	return [(instrument, qty % 3 + 1), *rest]
+
+
+def _toggle_line(code):
+	"""Thêm `code` (1 cái) nếu chưa có, bỏ nếu đã có."""
+
+	def change(lines):
+		if any(instrument == code for instrument, _qty in lines):
+			return [(instrument, qty) for instrument, qty in lines if instrument != code]
+		return [*lines, (code, 1)]
+
+	return change
+
+
+def _ensure_scheduled_version(set_type):
+	"""Phiên bản đã lên lịch (ngày mai, hoặc cùng ngày phiên bản mới nhất nếu muộn hơn) nếu chưa có; trả số phiên bản."""
+	live = bom_versions.live_map([set_type])[set_type]
+	if live["scheduled"]:
+		return live["scheduled"][-1]
+	latest, _lines = _latest_lines(set_type)
+	day = max(getdate(add_days(today(), 1)), latest["effective_from"] or getdate(today()))
+	return _demo_version(set_type, day, _("Demo scheduled BOM change", lang="vi"), _bump_first_qty)
+
+
+def _inflight_set(set_type, toggled):
+	"""Bộ đã qua T1-T3, chưa có Cycle ID, ghim phiên bản cũ hơn phiên bản hiệu lực (FR-M1-04.1); trả (Set ID, ghim).
+
+	Không còn (bộ cũ đã được đóng gói) → bộ mới mở chu trình (ghim phiên bản hiệu lực N) rồi lưu phiên bản N+1 hiệu lực
+	hôm nay (thêm/bỏ dụng cụ `toggled`), như R02 sửa BOM khi bộ đang giữa chu trình.
+	"""
+	effective = bom_versions.effective_version(set_type) or 0
+	for row in frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type},
+		fields=["name", "status", "active_cycle_id", "current_cycle_no", "cycle_bom_version"],
+		order_by="creation asc",
+	):
+		if _matches(_gate_results(row), T4_GATES_READY) and 0 < row.cycle_bom_version < effective:
+			return row.name, row.cycle_bom_version
+	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
+		ignore_permissions=True
+	)
+	factories.make_cycle(unit.name, passed=T4_GATES_READY)
+	_demo_version(
+		set_type, getdate(today()), _("Demo BOM change during a cycle", lang="vi"), _toggle_line(toggled)
+	)
+	return unit.name, frappe.db.get_value("Set Unit", unit.name, "cycle_bom_version")
+
+
+def ensure_set_type_demo():
+	"""Dữ liệu demo cho e2e Desk loại bộ và BOM theo phiên bản (SCR-02, FEAT-015) trên site dev/test; idempotent, trả
+	và in JSON.
+
+	- ``pack_short``/``pack_long``: loại gói có hạn lưu 30/180 ngày; ``pack_none``: loại gói hạn 0 (không được gợi ý,
+	  BRU-REP-009); ``pack_r10``: loại gói riêng để R10 sửa hạn lưu (e2e đổi giá trị mỗi lần chạy).
+	- ``steam_1..3``: dụng cụ hấp có ảnh; ``plasma``: dụng cụ chỉ Plasma (lỗi tương thích ở loại bộ hấp, FR-M1-03.3);
+	  ``retired``: dụng cụ đã Ngừng sử dụng (FR-M1-03.6).
+	- ``set_type`` (hấp, loại gói ``pack_short``): phiên bản ``effective_version`` đang hiệu lực, phiên bản
+	  ``scheduled_version`` lên lịch ngày mai (ngày sau chạy lại thì lên lịch phiên bản mới), ba ảnh bộ đã xếp.
+	- ``set_type_inflight``: bộ ``set_inflight`` đã qua T1-T3 ghim ``inflight_version`` < ``inflight_effective`` (mở ở
+	  T4 TR-004 phải hiện BOM đã ghim). Chỉ đọc ở e2e; đã bị đóng gói thì lần gọi sau tạo bộ mới và phiên bản mới.
+	- ``set_type_edit`` (loại gói ``pack_long``, không ghi đè hạn lưu): e2e sửa BOM thêm phiên bản hiệu lực hôm nay.
+	"""
+	_require_dev_site()
+	catalog = _set_type_catalog()
+	packs = {key: _ensure_pack_type(spec) for key, spec in catalog["packs"].items()}
+	instruments = {}
+	for key, (code, name, method) in catalog["instruments"].items():
+		_ensure_instrument(code, name, method)
+		instruments[key] = code
+	_ensure_retired(instruments["retired"])
+	names = catalog["set_types"]
+	steam = [instruments[key] for key in ("steam_1", "steam_2", "steam_3")]
+
+	set_type = _ensure_demo_set_type(
+		SETTYPE_CODES["set_type"],
+		names["set_type"],
+		"Steam",
+		packs["pack_short"],
+		[(steam[0], 2), (steam[1], 1)],
+	)
+	_ensure_tray_photos(set_type)
+	scheduled = _ensure_scheduled_version(set_type)
+
+	inflight_type = _ensure_demo_set_type(
+		SETTYPE_CODES["set_type_inflight"],
+		names["set_type_inflight"],
+		"Steam",
+		packs["pack_short"],
+		[(steam[0], 1), (steam[1], 1)],
+	)
+	set_inflight, inflight_version = _inflight_set(inflight_type, steam[2])
+
+	edit_type = _ensure_demo_set_type(
+		SETTYPE_CODES["set_type_edit"],
+		names["set_type_edit"],
+		"Steam",
+		packs["pack_long"],
+		[(steam[0], 1), (steam[1], 2)],
+	)
+
+	result = {
+		**packs,
+		**instruments,
+		"set_type": set_type,
+		"effective_version": bom_versions.effective_version(set_type),
+		"scheduled_version": scheduled,
+		"set_type_inflight": inflight_type,
+		"set_inflight": set_inflight,
+		"inflight_version": inflight_version,
+		"inflight_effective": bom_versions.effective_version(inflight_type),
+		"set_type_edit": edit_type,
+		"department": _demo_department(),
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result
