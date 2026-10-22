@@ -951,6 +951,7 @@ def _set_result(
 		}
 	)
 	doc.flags.tc_washing = True
+	doc.flags.ignore_permissions = True  # quyền thao tác đã kiểm ở RPC theo role trạm (Q20)
 	doc.submit()
 	ctx = {
 		"batch": doc.name,

@@ -1801,3 +1801,7 @@ Demo BOM change during a cycle,Thay đổi BOM khi bộ đang giữa chu trình 
 "Enter the cycle data from the washer screen or printout and confirm it, then record the result.","Nhập dữ liệu chu trình theo màn hình hoặc bản in của máy và xác nhận, rồi ghi kết quả.",""
 "cycle data","dữ liệu chu trình",""
 "A batch can pass only when the cleaning test has passed.","Lô chỉ Đạt khi test làm sạch Đạt.",""
+"{0} must be a list of scanned codes.","{0} phải là danh sách mã quét.",""
+"chemicals must be a list of objects with an item and a lot.","chemicals phải là danh sách đối tượng có item và lot.",""
+"values must be a list of objects with a parameter_name and a value.","values phải là danh sách đối tượng có parameter_name và value.",""
+"{0} must be a string.","{0} phải là chuỗi ký tự.",""
