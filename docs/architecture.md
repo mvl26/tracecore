@@ -408,6 +408,16 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 
 > **Amendment A-09 (2026-10-22), M2 (FEAT-015; S3):** hook tùy biến mới `tracecore_cycle_bom_version` của `core.step_gate.start_cycle(set_unit, on=None)`: M1 khai báo hàm trong `hooks.py` trả phiên bản BOM hiệu lực tại ngày tiếp nhận (`on` = giờ hệ thống; FEAT-019 đổi `client_ts` UTC bằng `core.client_time.to_system_time` trước khi gọi) để `step_gate` ghi `Set Unit.cycle_bom_version`; M2 không import M1. `reprocessing/packing.py`, `Pack` và luồng T4 không đổi: `Pack.bom_version` vẫn là snapshot, và `tracecore_pack_context` (M1, `bom.pack_context`) đọc phiên bản đã ghim của bộ (không ghim → phiên bản hiệu lực hôm nay). FR-M2-07.7/.8 (hạn lưu loại gói, giá trị mới chỉ áp cho gói đóng sau thời điểm sửa) xem ghi chú A-09 ở M1 (S7).
 
+> **Amendment A-10 (2026-10-22), M2 (FEAT-025 T6 Kho vô khuẩn; D1–D7):** D1 chủ đầu tư/người dùng chốt 22/10/2026; D2–D7 dev lead xác nhận.
+> - **D1 Set Unit.status:** thêm `Awaiting Receipt` (Chờ tiếp nhận) giữa `At Department` và `End of Life`; giải quyết điểm chưa thống nhất tên trạng thái giữa FR-M2-02, FR-M2-14 và FR-M2-17 (srs Appendix, mục "Chờ tiếp nhận"). Chỉ `core.step_gate.return_to_receipt` đặt trạng thái này (từ `Sterile`); FEAT-027 dùng chung; T1 (FEAT-019) phải nhận trạng thái này khi tiếp nhận.
+> - **D2:** test T6 dựng gói Released + 5 cổng Pass bằng factory (`make_released_pack`) thay cho luồng T5b; FEAT-023 thay bằng luồng thật.
+> - **D3 Cổng T6 kiểm:** `step_gate.check_stored(set_unit)` chỉ đọc, trả `GATE_PREV_NOT_PASSED` kèm `items` = bước chưa Đạt; không thêm hàng `Step Gate Result` T6 (enum bước giữ T1..T5).
+> - **D4 DocType (đã thuộc §5.3):** `Sterile Location` (module Reprocessing, tên `KE-.####`, ghi Code Registry prefix `KE`, `is_active`, không xóa); `Sterile Putaway` (submittable, tên `SP-.YY.MM.DD.-.####`, `action` Putaway/Move, chỉ dịch vụ `reprocessing.storage` tạo); thêm `Pack.location` (allow_on_submit, chỉ đổi qua dịch vụ, cờ `tc_packing`). Quyền: R10 ghi kệ; R06 đọc kệ, tạo/ghi sổ Sterile Putaway, đọc Pack.
+> - **D5 Hết hạn:** quá hạn = `expiry` < hôm nay; scheduler `0 0 * * *` (chung danh sách với FEAT-015) đóng gói `Released`/`In Sterile Stock` → `Void` (`Expired`), rách/ướt/mở → `Void` (`Torn`, lý do bắt buộc); Cycle ID bị vô hiệu trong Code Registry.
+> - **D6 FEFO:** `storage.fefo_suggest(set_type)` và `fefo_check(cycle_id)` (cảnh báo `FEFO_NEARER_PACK`) cho FEAT-026 gọi; RPC `v1.putaway.fefo`.
+> - **D7 Ngoài phạm vi:** gia hạn hạn lưu (FR-M2-14.3), kiểm kê E3, PDF danh sách về khu bẩn (FEAT-007), chặn quét Hết hiệu lực ở T7 (FEAT-026).
+> - **RPC và mã lỗi:** `v1.putaway.scan/overview/fefo`, `v1.pack.mark_damaged` (role TC R06, System Manager). 404 `LOCATION_NOT_FOUND`; 409 `PACK_NOT_RELEASED`, `PACK_EXPIRED`, `PACK_NOT_IN_STOCK`, `PACK_ALREADY_ON_LOCATION`, `LOCATION_INACTIVE`.
+
 **M3 — Đồ vải (4 gốc)**
 
 | DocType | BA ID | Vai trò | ERPNext/HRMS | FR |

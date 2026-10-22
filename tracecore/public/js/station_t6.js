@@ -133,7 +133,9 @@ class T6Storage {
 		if (error.offline) {
 			notice = {
 				title: __("No answer from the server"),
-				reason: __("The request got no answer in time; the server may already have recorded it."),
+				reason: __(
+					"The request got no answer in time; the server may already have recorded it."
+				),
 				action: __("Retry: the same request is sent again and is never recorded twice."),
 			};
 		} else if (error.status === 403) {
@@ -145,7 +147,9 @@ class T6Storage {
 		} else {
 			notice = {
 				title: __("Server error"),
-				reason: __("The server could not process the request ({0}).", [error.status || "?"]),
+				reason: __("The server could not process the request ({0}).", [
+					error.status || "?",
+				]),
 				action: __("Retry, or call R02 if it happens again."),
 			};
 		}
@@ -225,17 +229,21 @@ class T6Storage {
 		}
 		const cycleId = this.openPack();
 		this.damaging = false;
-		this.request(T6_DAMAGED, { cycle_id: cycleId, reason, station: this.station.station }, () => {
-			this.notice = {
-				variant: "ok",
-				title: __("Pack {0} is no longer valid", [cycleId]),
-				reason: __("The set is waiting to go back to the dirty zone."),
-				action: __("Take the pack to the dirty zone."),
-			};
-			this.pack = null;
-			this.show();
-			this.loadOverview();
-		});
+		this.request(
+			T6_DAMAGED,
+			{ cycle_id: cycleId, reason, station: this.station.station },
+			() => {
+				this.notice = {
+					variant: "ok",
+					title: __("Pack {0} is no longer valid", [cycleId]),
+					reason: __("The set is waiting to go back to the dirty zone."),
+					action: __("Take the pack to the dirty zone."),
+				};
+				this.pack = null;
+				this.show();
+				this.loadOverview();
+			}
+		);
 	}
 
 	// ---- trạng thái mạng ----
@@ -337,7 +345,9 @@ class T6Storage {
 		let html = "";
 		if (this.offline) html += this.offlineHtml();
 		if (this.busy) {
-			html += `<p class="tc-loading" role="status" aria-busy="true">${esc(__("Loading..."))}</p>`;
+			html += `<p class="tc-loading" role="status" aria-busy="true">${esc(
+				__("Loading...")
+			)}</p>`;
 		}
 		if (this.notice) {
 			const standalone = !this.pack && this.notice.variant === "error";
@@ -442,7 +452,9 @@ class T6Storage {
 						: this.tableHtml(
 								[__("Set Type"), __("Packs"), __("Earliest use-by")],
 								data.by_set_type.map((row) => [
-									`${row.set_name || ""} <span class="tc-tag">${esc(row.set_type)}</span>`,
+									`${row.set_name || ""} <span class="tc-tag">${esc(
+										row.set_type
+									)}</span>`,
 									String(row.count),
 									t6Date(row.nearest_expiry),
 								])
@@ -454,7 +466,9 @@ class T6Storage {
 				${this.tableHtml(
 					[__("Location"), __("Packs")],
 					data.by_location.map((row) => [
-						`<span class="tc-mono">${esc(row.location)}</span> ${esc(row.location_name || "")}`,
+						`<span class="tc-mono">${esc(row.location)}</span> ${esc(
+							row.location_name || ""
+						)}`,
 						String(row.count),
 					])
 				)}
@@ -464,7 +478,12 @@ class T6Storage {
 				${
 					data.expiring.length
 						? this.tableHtml(
-								[__("Cycle ID"), __("Use-by date"), __("Days left"), __("Location")],
+								[
+									__("Cycle ID"),
+									__("Use-by date"),
+									__("Days left"),
+									__("Location"),
+								],
 								data.expiring.map((row) => [
 									`<span class="tc-mono">${esc(row.cycle_id)}</span>`,
 									t6Date(row.expiry),
@@ -472,7 +491,9 @@ class T6Storage {
 									`<span class="tc-mono">${esc(row.location || "-")}</span>`,
 								])
 						  )
-						: `<p class="tc-t6-hint">${esc(__("No packs expire in the next 7 days."))}</p>`
+						: `<p class="tc-t6-hint">${esc(
+								__("No packs expire in the next 7 days.")
+						  )}</p>`
 				}
 			</section>
 			<section class="tc-t6-block">
@@ -480,7 +501,12 @@ class T6Storage {
 				${
 					data.return_list.length
 						? this.tableHtml(
-								[__("Cycle ID"), __("Set Name"), __("Void Reason"), __("Location")],
+								[
+									__("Cycle ID"),
+									__("Set Name"),
+									__("Void Reason"),
+									__("Location"),
+								],
 								data.return_list.map((row) => [
 									`<span class="tc-mono">${esc(row.cycle_id)}</span>`,
 									esc(row.set_name || ""),
