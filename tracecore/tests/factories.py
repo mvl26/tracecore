@@ -847,6 +847,8 @@ def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_
 		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
 	step_gate.bind_cycle(set_unit.name, pack.name, None)
 	return pack
+
+
 def make_bom_set_type(type_code, lines, caps=None):
 	"""Loại bộ cùng BOM v1; ``caps``: ``{mã dụng cụ: cơ số}`` (thiếu = Chưa xác định)."""
 	for code, _qty in lines:
