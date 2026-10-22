@@ -22,6 +22,10 @@
 #      cụ để ngừng sử dụng, dụng cụ để cấp mã GIAI; user r02-instr-e2e@… (TC R02, cùng mật khẩu với user R10)
 #      → TC_E2E_INSTR_USER/PASSWORD + TC_E2E_INSTR_<khóa> cho tests_e2e/test_desk_instrument.py. Ngừng sử dụng và cấp
 #      mã GIAI là một chiều: chạy lại script này trước mỗi lần chạy test đó (dụng cụ đã dùng được thay bằng dụng cụ mới).
+#   8. Vật tư tiêu hao và nhập kho Desk (devdata.ensure_inventory_demo, FEAT-041): Company thử + kho, nhà cung cấp, bốn
+#      vật tư mẫu (chỉ thị hóa học lớp 5, chỉ thị sinh học, bao gói, hóa chất) có tồn tối thiểu theo kho; user
+#      r09-inv-e2e@… (TC R09, cùng mật khẩu với user R10) → TC_E2E_INV_USER/PASSWORD + TC_E2E_INV_<khóa> cho
+#      tests_e2e/test_desk_inventory.py. Stock Entry và Item không xóa được: test tự sinh mã lô và số chứng từ duy nhất.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -104,6 +108,8 @@ bench --site "$SITE" set-config tracecore_allow_local_printers 1 > /dev/null
 codes_demo=$(bench_exec tracecore.setup.devdata.ensure_codes_demo --kwargs "{'port': '$CODES_PORT'}")
 instr_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R02', 'name': 'r02-instr-e2e', 'password': '$r10_password'}" | tr -d '"')
 instr_demo=$(bench_exec tracecore.setup.devdata.ensure_instrument_demo)
+inv_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R09', 'name': 'r09-inv-e2e', 'password': '$r10_password'}" | tr -d '"')
+inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
@@ -116,6 +122,8 @@ instr_demo=$(bench_exec tracecore.setup.devdata.ensure_instrument_demo)
 	printf '%s' "$codes_demo" | python3 -c 'import json, sys; [print("TC_E2E_CODES_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf 'TC_E2E_INSTR_USER=%s\nTC_E2E_INSTR_PASSWORD=%s\n' "$instr_user" "$r10_password"
 	printf '%s' "$instr_demo" | python3 -c 'import json, sys; [print("TC_E2E_INSTR_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf 'TC_E2E_INV_USER=%s\nTC_E2E_INV_PASSWORD=%s\n' "$inv_user" "$r10_password"
+	printf '%s' "$inv_demo" | python3 -c 'import json, shlex, sys; [print("TC_E2E_INV_%s=%s" % (k.upper(), shlex.quote(str(v)))) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"

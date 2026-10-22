@@ -386,3 +386,58 @@ class TestInstrumentDemoData(FrappeTestCase):
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True
+
+
+INVENTORY_KEYS = {"company", "warehouse", "supplier", "ci", "bi", "pk", "ch"}
+
+
+class TestInventoryDemoData(FrappeTestCase):
+	"""Dữ liệu demo e2e Desk nhập kho SCR-24 (FEAT-041 Task 6): Item không xóa được nên dùng lại mã cố định."""
+
+	def test_ensure_inventory_demo_idempotent(self):
+		first = devdata.ensure_inventory_demo()
+		counts = {
+			doctype: frappe.db.count(doctype)
+			for doctype in ("Item", "Item Reorder", "Supplier", "Warehouse", "Company")
+		}
+		second = devdata.ensure_inventory_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), INVENTORY_KEYS)
+		self.assertEqual(
+			{doctype: frappe.db.count(doctype) for doctype in counts}, counts, msg="gọi lại không tạo thêm"
+		)
+
+	def test_inventory_demo_items_follow_group_rules(self):
+		from tracecore.inventory import items
+
+		demo = devdata.ensure_inventory_demo()
+		self.assertEqual(frappe.db.get_value("Warehouse", demo["warehouse"], "company"), demo["company"])
+		self.assertFalse(frappe.db.get_value("Warehouse", demo["warehouse"], "is_group"))
+		groups = {
+			"ci": "Chemical Indicator",
+			"bi": "Biological Indicator",
+			"pk": "Packaging",
+			"ch": "Chemical",
+		}
+		for key, group in groups.items():
+			item = frappe.get_doc("Item", demo[key])
+			self.assertEqual(item.tc_item_group_cssd, group)
+			self.assertTrue(item.has_batch_no)
+			self.assertEqual(item.valuation_method, items.VALUATION_METHOD)
+			self.assertEqual(item.has_expiry_date, 1 if group in items.EXPIRY_REQUIRED_GROUPS else 0, msg=key)
+			self.assertEqual(
+				[(row.warehouse, row.warehouse_reorder_level) for row in item.reorder_levels],
+				[(demo["warehouse"], devdata.INV_MIN_QTY)],
+			)
+		self.assertEqual(frappe.db.get_value("Item", demo["ci"], "tc_ci_class"), "5")
+
+	def test_inventory_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_inventory_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
