@@ -470,22 +470,7 @@ def instrument_counters(instrument: str, rule: dict | None = None) -> list[dict]
 	``can_init`` = bộ chứa dụng cụ trong BOM áp dụng và chưa có lịch sử T4 (điều kiện của ``init_counter``).
 	"""
 	interval = cint((rule or {}).get("interval"))
-	in_bom = {
-		row.name: row.set_type
-		for row in frappe.db.sql(
-			"""
-			select distinct su.name, su.set_type
-			from `tabSet Unit` su
-			join `tabInstrument Set Type` st on st.name = su.set_type
-			join `tabSet BOM Item` line
-				on line.set_type = st.name
-				and line.bom_version = if(su.cycle_bom_version > 0, su.cycle_bom_version, st.current_bom_version)
-			where line.instrument = %s
-			""",
-			(instrument,),
-			as_dict=True,
-		)
-	}
+	in_bom = _units_with_instrument_in_bom(instrument)
 	rows = {
 		row.set_unit: row
 		for row in frappe.get_all(
@@ -533,6 +518,42 @@ def instrument_counters(instrument: str, rule: dict | None = None) -> list[dict]
 			}
 		)
 	return result
+
+
+def _units_with_instrument_in_bom(instrument: str) -> dict[str, str]:
+	"""``{bộ: loại bộ}`` của các bộ có `instrument` trong BOM áp dụng của bộ (3 truy vấn cố định).
+
+	Cùng chuỗi dự phòng với ``_in_current_bom`` / ``init_counter`` (``bom_versions.applied_version``: ghim > phiên bản
+	hiệu lực hôm nay > ``current_bom_version``), nên ``can_init`` khớp ``init_counter`` cả từ 00:00 tới khi scheduler
+	cập nhật ``current_bom_version``.
+	"""
+	versions_with = {}
+	for set_type, version in frappe.db.sql(
+		"select distinct set_type, bom_version from `tabSet BOM Item` where instrument = %s", (instrument,)
+	):
+		versions_with.setdefault(set_type, set()).add(cint(version))
+	if not versions_with:
+		return {}
+	effective = bom_versions.effective_versions(versions_with)
+	marks = ", ".join(["%s"] * len(versions_with))
+	units = frappe.db.sql(
+		f"""
+		select su.name, su.set_type, su.cycle_bom_version, st.current_bom_version
+		from `tabSet Unit` su
+		join `tabInstrument Set Type` st on st.name = su.set_type
+		where su.set_type in ({marks})
+		""",  # nosec B608 - chỉ chèn chuỗi giữ chỗ %s
+		sorted(versions_with),
+		as_dict=True,
+	)
+	return {
+		row.name: row.set_type
+		for row in units
+		if bom_versions.applied_version(
+			row.cycle_bom_version, effective.get(row.set_type), row.current_bom_version
+		)
+		in versions_with[row.set_type]
+	}
 
 
 def _counter_name(set_unit, instrument, for_update=False):

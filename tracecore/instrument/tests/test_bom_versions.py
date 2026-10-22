@@ -4,7 +4,6 @@ Review Focus 1 (ngày hiệu lực, biên múi giờ), 2 (phiên bản đã lưu
 """
 
 import threading
-import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -297,8 +296,9 @@ class TestBomVersions(IsolatedTestCase):
 		self.assertIn("Add retractor", comments[0])
 
 		listed = bom_versions.versions(name)
+		# v1 đã áp dụng từ lúc tạo tới khi v2 (lưu cùng ngày, hiệu lực ngay) thay: Đã thay thế (review Task 2 (3))
 		self.assertEqual(
-			[(v["bom_version"], v["status"]) for v in listed], [(2, "Effective"), (1, "Skipped")]
+			[(v["bom_version"], v["status"]) for v in listed], [(2, "Effective"), (1, "Superseded")]
 		)
 		self.assertEqual(
 			{
@@ -435,6 +435,91 @@ class TestBomVersions(IsolatedTestCase):
 			[(3, "Scheduled"), (2, "Skipped"), (1, "Effective")],
 		)
 		self.assertEqual(bom_versions.live_versions(name), [1, 3])
+
+	def test_version_replaced_on_its_own_day_after_use_is_superseded(self):
+		# review Task 2 (3): v1 hiệu lực từ hôm nay đã được dùng (bộ ghim v1) rồi v2 lưu cùng ngày, hiệu lực ngay
+		# → v1 "Đã thay thế", không phải "Bị thay trước hiệu lực" (chỉ dành cho phiên bản chưa từng áp dụng)
+		_instruments("BV-S1", "BV-S2", "BV-S3")
+		name = bom_versions.create_set_type(_header("BVS"), _lines(("BV-S1", 1)))
+		_new_version(name, [("BV-S2", 1)])
+		statuses = {v["bom_version"]: v["status"] for v in bom_versions.versions(name)}
+		self.assertEqual(statuses, {1: "Superseded", 2: "Effective"})
+		self.assertEqual(bom.payload(name, 1)["status"], "Superseded")
+		# v3 và v4 cùng lên lịch ngày mai: v3 chưa từng áp dụng → vẫn Bị thay trước hiệu lực
+		tomorrow = add_days(_today(), 1)
+		_new_version(name, [("BV-S3", 1)], day=tomorrow)
+		_new_version(name, [("BV-S1", 2)], day=tomorrow)
+		statuses = {v["bom_version"]: v["status"] for v in bom_versions.versions(name)}
+		self.assertEqual(statuses, {1: "Superseded", 2: "Effective", 3: "Skipped", 4: "Scheduled"})
+		self.assertEqual(bom.payload(name, 3)["status"], "Skipped")
+
+	def test_create_version_reads_today_once(self):
+		# review Task 2 (2): qua nửa đêm giữa hai lần đọc "hôm nay" không được để phiên bản ngày D ở trạng thái
+		# Đã lên lịch trong khi current_bom_version không đổi
+		_instruments("BV-N1", "BV-N2")
+		name = bom_versions.create_set_type(_header("BVN"), _lines(("BV-N1", 1)))
+		day = _today()
+		calls = []
+
+		def crossing_midnight():
+			calls.append(1)
+			return day if len(calls) == 1 else add_days(day, 1)
+
+		with patch.object(bom_versions, "today", side_effect=crossing_midnight):
+			result = bom_versions.create_version(name, _lines(("BV-N2", 1)), day, "Midnight", 1)
+		self.assertEqual(result["status"], "Effective")
+		self.assertEqual(frappe.db.get_value(SET_TYPE, name, "current_bom_version"), 2)
+
+	def test_create_set_type_race_returns_409_without_msgprint(self):
+		# review Task 2 (5): request song song vừa tạo cùng mã → 409 sạch, không kèm msgprint "already exists"
+		_instruments("BV-R1")
+		bom_versions.create_set_type(_header("BVR"), _lines(("BV-R1", 1)))
+		real_exists = frappe.db.exists
+
+		def not_yet(doctype, *args, **kwargs):
+			if doctype == SET_TYPE and args and args[0] == "BVR":
+				return None  # kiểm trước khi chèn chưa thấy bản ghi của request kia
+			return real_exists(doctype, *args, **kwargs)
+
+		logged = len(frappe.local.message_log)
+		with patch.object(frappe.db, "exists", side_effect=not_yet):
+			block = _blocked(self, bom_versions.create_set_type, _header("BVR"), _lines(("BV-R1", 1)))
+		self.assertEqual((block.code, block.http_status), ("SET_TYPE_CODE_EXISTS", 409))
+		self.assertEqual(len(frappe.local.message_log), logged)
+
+	def test_unique_index_patch(self):
+		# review Task 2 (1): chỉ mục unique tạo bằng patch (on_doctype_update chỉ chạy khi JSON DocType đổi)
+		from tracecore.instrument.doctype.set_bom_item import set_bom_item
+		from tracecore.patches.v0_1 import set_bom_item_unique_index
+
+		with (
+			patch.object(set_bom_item_unique_index, "duplicate_lines", return_value=[]),
+			patch.object(frappe.db, "add_unique") as add_unique,
+		):
+			set_bom_item_unique_index.execute()
+		add_unique.assert_called_once_with(
+			ITEM, list(set_bom_item.UNIQUE_FIELDS), constraint_name=set_bom_item.UNIQUE_CONSTRAINT
+		)
+		duplicate = frappe._dict(set_type="X", bom_version=1, instrument="I", line_count=2)
+		with (
+			patch.object(set_bom_item_unique_index, "duplicate_lines", return_value=[duplicate]),
+			patch.object(frappe.db, "add_unique") as add_unique,
+			patch("builtins.print") as printed,
+		):
+			set_bom_item_unique_index.execute()
+		add_unique.assert_not_called()
+		self.assertIn("instrument I", printed.call_args.args[0])
+		# chỉ mục thật đã có trên site test
+		self.assertTrue(
+			frappe.db.sql(
+				"select 1 from information_schema.statistics where table_schema = database() "
+				"and table_name = 'tabSet BOM Item' and index_name = %s and non_unique = 0",
+				set_bom_item.UNIQUE_CONSTRAINT,
+			)
+		)
+		with open(frappe.get_app_path("tracecore", "patches.txt"), encoding="utf-8") as handle:
+			post = handle.read().split("[post_model_sync]", 1)[1]
+		self.assertIn("tracecore.patches.v0_1.set_bom_item_unique_index", post)
 
 	def test_live_versions_ignore_version_overtaken_on_earlier_date(self):
 		# carry-over review Task 1 (b): v2 lên lịch ngày +5, v3 (số lớn hơn) ngày +3 → v2 không bao giờ áp dụng
@@ -655,10 +740,20 @@ class TestBomVersionConcurrency(FrappeTestCase):
 	INSTRUMENTS = ("BV-CC1", "BV-CC2", "BV-CC3")
 
 	def _cleanup(self):
+		# dữ liệu đã commit của test (hai kết nối thật): xóa thẳng DB, kể cả Audit Log (append-only chỉ chặn ở
+		# Document/permission; đây là dọn dữ liệu test) và dụng cụ test
 		frappe.db.rollback()
+		lines = frappe.get_all(ITEM, filters={"set_type": self.CODE}, pluck="name")
 		frappe.db.delete(ITEM, {"set_type": self.CODE})
 		frappe.db.delete("Comment", {"reference_doctype": SET_TYPE, "reference_name": self.CODE})
 		frappe.db.delete(SET_TYPE, {"name": self.CODE})
+		frappe.db.delete("Audit Log", {"ref_doctype": SET_TYPE, "ref_name": self.CODE})
+		if lines:
+			frappe.db.delete("Audit Log", {"ref_doctype": ITEM, "ref_name": ["in", lines]})
+		for code in self.INSTRUMENTS:
+			frappe.db.delete("Instrument Compatible Method", {"parent": code})
+			frappe.db.delete("Audit Log", {"ref_doctype": "Instrument", "ref_name": code})
+			frappe.db.delete("Instrument", {"name": code})
 		frappe.db.commit()
 
 	def test_parallel_create_version_one_wins(self):
@@ -669,6 +764,7 @@ class TestBomVersionConcurrency(FrappeTestCase):
 		self.addCleanup(self._cleanup)
 		site, sites_path = frappe.local.site, frappe.local.sites_path
 		errors = []
+		locked = threading.Event()  # người thứ nhất đã lưu phiên bản (giữ khóa loại bộ), chưa commit
 
 		def other_request():
 			frappe.init(site=site, sites_path=sites_path)
@@ -676,18 +772,21 @@ class TestBomVersionConcurrency(FrappeTestCase):
 			frappe.set_user("Administrator")
 			try:
 				bom_versions.create_version(self.CODE, _lines(("BV-CC2", 1)), _today(), "First editor", 1)
-				time.sleep(1.0)  # giữ khóa loại bộ, chưa commit
+				locked.set()
 				frappe.db.commit()
 			except Exception as error:  # pragma: no cover - chỉ để báo lỗi của luồng phụ
 				errors.append(error)
 			finally:
+				locked.set()
 				frappe.destroy()
 
 		# snapshot của transaction chính mở trước khi người kia commit
 		frappe.db.sql("select count(*) from `tabSet BOM Item` where set_type = %s", self.CODE)
 		thread = threading.Thread(target=other_request)
 		thread.start()
-		time.sleep(0.4)
+		# không ngủ cố định: chờ người thứ nhất giữ khóa; người sau hoặc chờ khóa tới khi người kia commit, hoặc chạy
+		# sau commit — cả hai trường hợp locking read đều thấy v2 trong khi snapshot đọc thường còn cũ
+		self.assertTrue(locked.wait(timeout=30))
 		try:
 			with self.assertRaises(BlockedError) as raised:
 				bom_versions.create_version(self.CODE, _lines(("BV-CC3", 1)), _today(), "Second editor", 1)

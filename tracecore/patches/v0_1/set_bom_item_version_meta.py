@@ -5,7 +5,8 @@
 - ``based_on_version`` = phiên bản - 1 cho phiên bản > 1 còn 0.
 - ``current_bom_version`` của loại bộ = ``bom_versions.effective_version`` hôm nay nếu khác.
 - Nhóm dòng trùng dụng cụ / trùng thứ tự xếp trong một phiên bản cũ chỉ được **báo** (in ra), không sửa: phiên bản bất
-  biến; trùng dụng cụ còn chặn tạo chỉ mục unique (``set_bom_item.on_doctype_update`` tạo ở lần migrate sau khi xử lý).
+  biến; trùng dụng cụ còn chặn tạo chỉ mục unique (patch ``set_bom_item_unique_index`` tạo khi hết trùng; sau khi gộp
+  dòng bằng tay thì chạy lại patch đó, xem docstring của nó).
 
 Ghi thẳng DB (không qua validate: phiên bản đã lưu không sửa được qua Document). Mỗi phiên bản / loại bộ đổi có một
 Audit Log Update.
@@ -97,7 +98,8 @@ def _report_duplicates():
 	for row in duplicate_lines():
 		print(
 			f"Set type {row.set_type} BOM version {row.bom_version}: instrument {row.instrument} "
-			f"is listed {row.line_count} times (left unchanged; unique index not created)"
+			f"is listed {row.line_count} times (left unchanged; patch set_bom_item_unique_index creates the unique "
+			"index once the lines are merged)"
 		)
 	for row in frappe.db.sql(
 		"""

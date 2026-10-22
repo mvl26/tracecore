@@ -105,23 +105,36 @@ def version_not_found_block(set_type, version=None) -> Block:
 	)
 
 
+def _version_meta(set_type: str) -> dict[int, list]:
+	"""``{phiên bản: [ngày hiệu lực ISO | None, ngày lưu ISO | None]}`` (cache ``dates`` cùng TTL, một truy vấn)."""
+	key = _key(set_type, "dates")
+	meta = frappe.cache.get_value(key, expires=True)
+	# giá trị cache dạng cũ (chỉ ngày hiệu lực, trước khi có ngày lưu) → dựng lại
+	if meta is None or any(not isinstance(value, list | tuple) for value in meta.values()):
+		meta = {
+			version: [
+				None if day == bom_versions.NO_DATE else day.isoformat(),
+				saved.isoformat() if saved else None,
+			]
+			for version, (day, saved) in bom_versions.dates_by_set_type([set_type], with_saved=True)
+			.get(set_type, {})
+			.items()
+		}
+		frappe.cache.set_value(key, meta, expires_in_sec=CACHE_TTL)
+	return meta
+
+
 def version_dates(set_type: str) -> dict[int, str | None]:
 	"""``{phiên bản: ngày hiệu lực ISO | None}`` của mọi phiên bản BOM của loại bộ (cache cùng TTL, một truy vấn)."""
-	key = _key(set_type, "dates")
-	dates = frappe.cache.get_value(key, expires=True)
-	if dates is None:
-		dates = {
-			version: None if day == bom_versions.NO_DATE else day.isoformat()
-			for version, day in bom_versions.dates_by_set_type([set_type]).get(set_type, {}).items()
-		}
-		frappe.cache.set_value(key, dates, expires_in_sec=CACHE_TTL)
-	return dates
+	return {version: values[0] for version, values in _version_meta(set_type).items()}
 
 
-def _statuses(dates: dict[int, str | None]) -> dict[int, str]:
+def _statuses(set_type: str) -> dict[int, str]:
+	meta = _version_meta(set_type)
 	return bom_versions.statuses_on(
-		{version: getdate(day) if day else bom_versions.NO_DATE for version, day in dates.items()},
+		{version: getdate(day) if day else bom_versions.NO_DATE for version, (day, _saved) in meta.items()},
 		bom_versions.today(),
+		{version: getdate(saved) if saved else None for version, (_day, saved) in meta.items()},
 	)
 
 
@@ -230,7 +243,9 @@ def resolve_version(set_type: str, version: int | None = None) -> int:
 	dates = version_dates(set_type)
 	if version is None:
 		effective = [
-			number for number, status in _statuses(dates).items() if status == bom_versions.STATUS_EFFECTIVE
+			number
+			for number, status in _statuses(set_type).items()
+			if status == bom_versions.STATUS_EFFECTIVE
 		]
 		if not effective:
 			raise BlockedError(version_not_found_block(set_type))
@@ -256,7 +271,7 @@ def payload(set_type: str, version: int | None = None) -> dict:
 	if data is None:
 		data = _build(set_type, version, dates.get(version))
 		frappe.cache.set_value(key, data, expires_in_sec=CACHE_TTL)
-	return {**data, "status": _statuses(dates).get(version)}
+	return {**data, "status": _statuses(set_type).get(version)}
 
 
 def _delete(keys: list[str]) -> None:

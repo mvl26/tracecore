@@ -7,6 +7,7 @@
 
 import subprocess  # nosec B404 - chỉ chạy script lint của chính repo
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -36,6 +37,16 @@ test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 STATION = "TR-004"
 HOOK = "tracecore_cycle_bom_version"
 APP_ROOT = Path(__file__).resolve().parents[3]
+
+
+@contextmanager
+def utc_clock(instant):
+	"""Đồng hồ tiến trình đứng ở thời điểm UTC `instant` (Frappe đổi sang giờ hệ thống như server chạy UTC)."""
+	from frappe.utils import data
+
+	convert = data.convert_utc_to_system_timezone
+	with patch.object(data, "convert_utc_to_system_timezone", side_effect=lambda _now: convert(instant)):
+		yield
 
 
 def _pinned(set_unit):
@@ -92,9 +103,19 @@ class TestBomPinning(IsolatedTestCase):
 			1,
 		)
 		yesterday = add_days(nowdate(), -1)
-		self.assertIsNone(
+		# review Task 3: không có phiên bản hiệu lực tại ngày `on` (vd tiếp nhận ghi lùi trước ngày của v1) vẫn ghim
+		# phiên bản hiện hành của loại bộ, không ghim 0 (ghim 0 làm phiên bản của bộ trôi theo ngày giữa chu trình)
+		self.assertEqual(
 			bom_versions.pin_cycle_version(
 				{"set_unit": unit.name, "set_type": set_type.name, "cycle_no": 1, "on": yesterday}
+			),
+			1,
+		)
+		# loại bộ chưa có phiên bản nào (dữ liệu có trước FEAT-015, chưa có dòng BOM) → None (không ghim)
+		legacy = make_set_type("PNBL")
+		self.assertIsNone(
+			bom_versions.pin_cycle_version(
+				{"set_unit": unit.name, "set_type": legacy.name, "cycle_no": 1, "on": nowdate()}
 			)
 		)
 		self.assertEqual(bom_versions.version_for_set_unit(unit.name), 1)
@@ -266,6 +287,73 @@ class TestBomPinning(IsolatedTestCase):
 			pin_cycle_bom_version.execute()
 		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": "Set Unit", "action": "Update"}), count)
 		self.assertEqual(_pinned(running), 2)
+
+	def test_start_cycle_with_client_ts_pins_version_of_local_reception_day(self):
+		# review Task 3 (Important): client_ts là UTC không múi giờ (parse_client_ts); start_cycle nhận giờ hệ thống.
+		# 17:30 UTC ngày D-1 = 00:30 ngày D giờ Asia/Ho_Chi_Minh → ghim phiên bản hiệu lực ngày D (FR-M1-04.2, AC-10)
+		from tracecore.core import client_time
+
+		day = _tomorrow()
+		set_type = make_set_type("PNZ", bom=[("PN-Z1", 1)])
+		make_bom(set_type, [("PN-Z2", 1)], version=2, effective_from=day)
+		unit = make_set_unit(set_type.name)
+		previous = add_days(day, -1)
+		received_utc = client_time.parse_client_ts(f"{previous.isoformat()}T17:30:00Z")
+
+		local = client_time.to_system_time(received_utc)
+		self.assertEqual(local, datetime(day.year, day.month, day.day, 0, 30))
+		# cùng kết quả với chuyển đổi T4 đang dùng (D13), T4 không đổi hành vi
+		self.assertEqual(local, packing._system_time(received_utc))
+		self.assertEqual(client_time.to_system_time(f"{previous.isoformat()} 17:30:00"), local)
+
+		step_gate.start_cycle(unit.name, on=local)
+		self.assertEqual(_pinned(unit), 2)
+		# bẫy hợp đồng: truyền thẳng giờ UTC sẽ lấy nhầm ngày D-1 → v1
+		self.assertEqual(
+			bom_versions.pin_cycle_version(
+				{"set_unit": unit.name, "set_type": set_type.name, "cycle_no": 2, "on": received_utc}
+			),
+			1,
+		)
+
+	def test_can_init_matches_init_counter_before_scheduler_run(self):
+		# review Task 3: nhánh không ghim của instrument_counters (SQL) phải cùng chuỗi dự phòng với init_counter:
+		# ghim > phiên bản hiệu lực hôm nay > current_bom_version (từ 00:00 tới khi scheduler chạy, hai giá trị khác nhau)
+		make_instrument("PN-C1", interval=5)
+		make_instrument("PN-C2", interval=5)
+		set_type = make_set_type("PNC", bom=[("PN-C1", 1)])
+		unit = make_set_unit(set_type.name)  # chưa có chu trình → không ghim
+		day = _tomorrow()
+		make_bom(set_type, [("PN-C2", 1)], version=2, effective_from=day)
+
+		with utc_clock(datetime(day.year, day.month, day.day, 0, 30, tzinfo=timezone.utc)):  # 07:30 ngày D
+			self.assertEqual(
+				frappe.db.get_value("Instrument Set Type", set_type.name, "current_bom_version"), 1
+			)
+			self.assertEqual(bom_versions.version_for_set_unit(unit.name), 2)
+			can_init = {
+				code: {
+					r["set_unit"]: r["can_init"]
+					for r in maintenance.instrument_counters(code, {"interval": 5})
+				}
+				for code in ("PN-C1", "PN-C2")
+			}
+			self.assertTrue(can_init["PN-C2"].get(unit.name))
+			self.assertFalse(can_init["PN-C1"].get(unit.name, False))
+			maintenance.init_counter(unit.name, "PN-C2", 2, None, "Sổ giấy")
+			with self.assertRaises(BlockedError):
+				maintenance.init_counter(unit.name, "PN-C1", 2, None, "Sổ giấy")
+
+	def test_pack_context_without_set_unit_reads_current_version_of_set_type(self):
+		# nhánh dự phòng của bom.pack_context khi ngữ cảnh không có set_unit (đầu vào FEAT-018 cũ; T4 luôn gửi set_unit)
+		set_type = make_set_type("PNW", bom=[("PN-W1", 1)])
+		make_bom(set_type, [("PN-W2", 1)], version=2, effective_from=_tomorrow())
+		row = frappe.db.get_value(
+			"Instrument Set Type", set_type.name, ["name", "current_bom_version", "tray_image"], as_dict=True
+		)
+		context = bom.pack_context({"set_type": row, "station": "T4"})
+		self.assertEqual(context["bom_version"], 1)
+		self.assertEqual([r["instrument"] for r in context["bom"]], ["PN-W1"])
 
 	def test_start_cycle_without_hook_keeps_zero(self):
 		set_type = make_set_type("PNH", bom=[("PN-H1", 1)])

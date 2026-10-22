@@ -109,9 +109,14 @@ def start_cycle(set_unit, on=None):
 	"""Mở chu trình mới (stub của T1): ``current_cycle_no + 1``, Set Unit sang Processing, bỏ Cycle ID cũ.
 
 	Ghim phiên bản BOM của chu trình (FR-M1-04.1, .2; FEAT-015 S3): hook ``tracecore_cycle_bom_version`` nhận
-	``{"set_unit", "set_type", "cycle_no", "on"}`` (`on` = ngày/giờ tiếp nhận, mặc định giờ server) và trả phiên bản;
-	số nguyên đầu tiên được ghi vào ``cycle_bom_version`` trong CÙNG lần lưu với ``current_cycle_no``/``status``.
-	Không có hook hoặc hook trả None → 0 (không ghim; nơi đọc dùng phiên bản hiệu lực).
+	``{"set_unit", "set_type", "cycle_no", "on"}`` và trả phiên bản; số nguyên đầu tiên được ghi vào
+	``cycle_bom_version`` trong CÙNG lần lưu với ``current_cycle_no``/``status``. Ghim giữ nguyên sau khi bộ được giải
+	phóng, tới lần tiếp nhận kế tiếp. Không có hook hoặc hook trả None → 0 (không ghim; nơi đọc dùng phiên bản hiệu lực).
+
+	**Hợp đồng của `on`:** ngày/giờ tiếp nhận theo **giờ hệ thống** (``Asia/Ho_Chi_Minh``) không múi giờ, như
+	``now_datetime()`` (mặc định). Nơi gọi có ``client_ts`` (``client_time.parse_client_ts`` trả UTC không múi giờ) phải
+	đổi bằng ``client_time.to_system_time`` trước khi truyền (FEAT-019), nếu không bộ tiếp nhận từ 00:00 tới 06:59 giờ
+	Việt Nam bị ghim phiên bản của ngày hôm trước.
 	"""
 	unit = _set_unit(set_unit, for_update=True)
 	cycle_no = cint(unit.current_cycle_no) + 1

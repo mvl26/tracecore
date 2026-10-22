@@ -300,35 +300,54 @@ def effective_version(set_type: str, on=None) -> int | None:
 	return _max_effective(set_type, getdate(on) if on else today())
 
 
-def _dates_by_set_type(set_types) -> dict[str, dict[int, date]]:
-	result: dict[str, dict[int, date]] = defaultdict(dict)
+def _dates_by_set_type(set_types, with_saved: bool = False) -> dict[str, dict]:
+	"""``{loại bộ: {phiên bản: ngày hiệu lực}}`` (một truy vấn); ``with_saved`` → giá trị là ``(ngày hiệu lực, ngày
+	lưu)`` (ngày của ``min(creation)``, giờ hệ thống) để ``_statuses`` phân biệt Đã thay thế / Bị thay trước hiệu lực."""
+	result: dict[str, dict] = defaultdict(dict)
 	set_types = sorted(set_types)
 	if not set_types:
 		return result
 	marks = ", ".join(["%s"] * len(set_types))
-	for set_type, version, day in frappe.db.sql(
+	for set_type, version, day, saved in frappe.db.sql(
 		f"""
-		select set_type, bom_version, min(effective_from)
+		select set_type, bom_version, min(effective_from), min(creation)
 		from `tabSet BOM Item` where set_type in ({marks})
 		group by set_type, bom_version
 		""",  # nosec B608 - chỉ chèn chuỗi giữ chỗ %s
 		set_types,
 	):
-		result[set_type][cint(version)] = getdate(day) if day else _NO_DATE
+		day = getdate(day) if day else _NO_DATE
+		result[set_type][cint(version)] = (day, getdate(saved) if saved else None) if with_saved else day
 	return result
 
 
-def _statuses(dates: dict[int, date], on: date) -> dict[int, str]:
+def _statuses(
+	dates: dict[int, date], on: date, saved: dict[int, date | None] | None = None
+) -> dict[int, str]:
 	"""Trạng thái từng phiên bản tại ngày `on` (S2).
 
-	Bị thay trước hiệu lực: có phiên bản số lớn hơn với ngày ≤ ngày của nó (không bao giờ áp dụng ngày nào). Còn lại:
-	phiên bản áp dụng hôm nay → Đang hiệu lực; ngày sau `on` → Đã lên lịch; trước đó → Đã thay thế.
+	Có phiên bản số lớn hơn với ngày ≤ ngày của nó (bị vượt): Bị thay trước hiệu lực (không bao giờ áp dụng), trừ khi
+	mọi phiên bản vượt có CÙNG ngày hiệu lực và phiên bản vượt đầu tiên được lưu từ chính ngày đó trở đi (`saved` =
+	``{phiên bản: ngày lưu}``) — tức phiên bản này đã áp dụng từ đầu ngày/lúc lưu tới khi bị thay giữa ngày (vd v1 tạo
+	hôm nay rồi v2 lưu hiệu lực ngay hôm nay) → Đã thay thế. Còn lại: phiên bản áp dụng tại `on` → Đang hiệu lực;
+	ngày sau `on` → Đã lên lịch; trước đó → Đã thay thế. Không có `saved` → mọi phiên bản bị vượt là Bị thay trước
+	hiệu lực.
 	"""
 	effective = max((version for version, day in dates.items() if day <= on), default=None)
 	result = {}
 	for version, day in dates.items():
-		if any(other > version and other_day <= day for other, other_day in dates.items()):
-			result[version] = STATUS_SKIPPED
+		overtaken = sorted(
+			other for other, other_day in dates.items() if other > version and other_day <= day
+		)
+		if overtaken:
+			first_saved = (saved or {}).get(overtaken[0])
+			used = (
+				day <= on
+				and all(dates[other] == day for other in overtaken)
+				and first_saved is not None
+				and first_saved >= day
+			)
+			result[version] = STATUS_SUPERSEDED if used else STATUS_SKIPPED
 		elif version == effective:
 			result[version] = STATUS_EFFECTIVE
 		elif day > on:
@@ -394,6 +413,7 @@ def versions(set_type: str) -> list[dict]:
 			for row in rows
 		},
 		today(),
+		{cint(row.bom_version): getdate(row.created_on) if row.created_on else None for row in rows},
 	)
 	return [
 		{
@@ -578,8 +598,10 @@ def create_set_type(header: dict, lines: list[dict], reason: str | None = None) 
 		_insert_lines(doc.name, 1, rows, today(), reason or _("Initial version"), 0)
 		_invalidate_cache(doc.name)
 	except frappe.DuplicateEntryError:
-		# request song song vừa tạo cùng mã
+		# request song song vừa tạo cùng mã; db_insert đã msgprint "... already exists": bỏ để chỉ còn lỗi 409
 		frappe.db.rollback(save_point=SAVEPOINT)
+		if frappe.local.message_log and cstr(type_code) in str(frappe.local.message_log[-1]):
+			frappe.clear_last_message()
 		raise BlockedError(code_exists_block(type_code)) from None
 	except Exception:
 		frappe.db.rollback(save_point=SAVEPOINT)
@@ -657,7 +679,10 @@ def create_version(set_type: str, lines: list[dict], effective_from, reason: str
 		raise BlockedError(
 			_date_block(_("Effective date {0} is not a valid date.").format(cstr(effective_from)[:40] or "-"))
 		)
-	if day < today():
+	# "hôm nay" đọc MỘT lần cho cả request: qua nửa đêm giữa hai lần đọc không được để phiên bản ngày D ở trạng thái
+	# Đã lên lịch trong khi current_bom_version không đổi
+	now_day = today()
+	if day < now_day:
 		raise BlockedError(_date_block(_("Effective date {0} is in the past.").format(formatdate(day))))
 	base = whole_number(base_version)
 	if base is None or base < 0:
@@ -713,7 +738,7 @@ def create_version(set_type: str, lines: list[dict], effective_from, reason: str
 	try:
 		_insert_lines(set_type, new, rows, day, reason, base)
 		_invalidate_cache(set_type)
-		if day == today():
+		if day == now_day:
 			status = STATUS_EFFECTIVE
 			current = cint(header.current_bom_version)
 			if current != new:
@@ -826,19 +851,60 @@ def roll_effective_versions() -> list[str]:
 def pin_cycle_version(ctx: dict) -> int | None:
 	"""Hook ``tracecore_cycle_bom_version`` (``core.step_gate.start_cycle``): phiên bản ghim cho chu trình mới.
 
-	``ctx = {"set_unit", "set_type", "cycle_no", "on"}``; trả phiên bản hiệu lực tại ngày tiếp nhận ``on``
-	(FR-M1-04.2: từ ngày hiệu lực trở đi chu trình mới dùng phiên bản mới), None khi loại bộ chưa có phiên bản hiệu lực.
+	``ctx = {"set_unit", "set_type", "cycle_no", "on"}``. **Hợp đồng của ``on``:** ngày/giờ tiếp nhận theo giờ hệ thống
+	(``Asia/Ho_Chi_Minh``) không múi giờ, như ``now_datetime()``; nơi gọi có ``client_ts`` (UTC không múi giờ của
+	``client_time.parse_client_ts``) phải đổi bằng ``client_time.to_system_time`` trước (FEAT-019), nếu không tiếp
+	nhận từ 00:00 tới 06:59 sẽ lấy nhầm ngày hôm trước.
+
+	Trả phiên bản hiệu lực tại ngày ``on`` (FR-M1-04.2: từ ngày hiệu lực trở đi chu trình mới dùng phiên bản mới); không
+	có phiên bản hiệu lực tại ngày đó (vd tiếp nhận ghi lùi trước ngày của v1) → ``current_bom_version`` của loại bộ, để
+	bộ luôn được ghim (> 0) khi loại bộ có phiên bản; None (không ghim) chỉ khi loại bộ chưa có dòng BOM nào.
 	Chỉ đọc; step_gate ghi ``Set Unit.cycle_bom_version``.
 	"""
-	return effective_version(ctx["set_type"], ctx.get("on"))
+	set_type = ctx["set_type"]
+	version = effective_version(set_type, ctx.get("on"))
+	if version:
+		return version
+	if not frappe.db.exists(ITEM, {"set_type": set_type}):
+		return None
+	return cint(frappe.db.get_value(SET_TYPE, set_type, "current_bom_version")) or None
+
+
+def applied_version(pinned, effective, current) -> int | None:
+	"""Chuỗi dự phòng phiên bản áp dụng của một bộ (dùng chung cho mọi nơi đọc, kể cả SQL gom nhiều bộ).
+
+	Ghim (> 0) → phiên bản ghim; không ghim → phiên bản hiệu lực hôm nay; loại bộ chưa có phiên bản hiệu lực →
+	``current_bom_version`` của loại bộ như FEAT-018; còn lại None.
+	"""
+	return cint(pinned) or cint(effective) or cint(current) or None
+
+
+def effective_versions(set_types, on=None) -> dict[str, int]:
+	"""``{loại bộ: phiên bản hiệu lực tại ngày `on`}`` (mặc định hôm nay) bằng một truy vấn; loại bộ không có thì vắng."""
+	set_types = sorted(set(set_types))
+	if not set_types:
+		return {}
+	marks = ", ".join(["%s"] * len(set_types))
+	return {
+		set_type: cint(version)
+		for set_type, version in frappe.db.sql(
+			f"""
+			select set_type, max(bom_version) from `tabSet BOM Item`
+			where set_type in ({marks}) and (effective_from is null or effective_from <= %s)
+			group by set_type
+			""",  # nosec B608 - chỉ chèn chuỗi giữ chỗ %s
+			(*set_types, getdate(on) if on else today()),
+		)
+	}
 
 
 def version_for_set_unit(set_unit) -> int | None:
-	"""Phiên bản BOM áp dụng cho bộ `set_unit` (tên hoặc dict có ``name``), FR-M1-04.1.
+	"""Phiên bản BOM áp dụng cho bộ `set_unit` (tên hoặc dict có ``name``), FR-M1-04.1; chuỗi dự phòng ``applied_version``.
 
-	Đã ghim (``cycle_bom_version > 0``, bộ đang trong chu trình) → phiên bản ghim. Chưa ghim (bộ cũ chưa có chu trình
-	từ FEAT-015) → phiên bản hiệu lực hôm nay; loại bộ chưa có phiên bản hiệu lực → ``current_bom_version`` của loại
-	bộ như FEAT-018 (cùng quy tắc ``set_type.live_versions``). Bộ không có → None.
+	Đã ghim (``cycle_bom_version > 0``) → phiên bản ghim; ghim giữ nguyên cả sau khi bộ được giải phóng, tới lần tiếp
+	nhận kế tiếp (``start_cycle`` ghim lại). Chưa ghim (bộ chưa có chu trình nào từ FEAT-015) → phiên bản hiệu lực hôm
+	nay; loại bộ chưa có phiên bản hiệu lực → ``current_bom_version`` của loại bộ như FEAT-018 (cùng quy tắc
+	``set_type.live_versions``). Bộ không có → None.
 	"""
 	name = set_unit.get("name") if isinstance(set_unit, dict) else set_unit
 	row = frappe.db.get_value("Set Unit", name, ["set_type", "cycle_bom_version"]) if name else None
@@ -847,8 +913,6 @@ def version_for_set_unit(set_unit) -> int | None:
 	set_type, pinned = row
 	if cint(pinned) > 0:
 		return cint(pinned)
-	return (
-		effective_version(set_type)
-		or cint(frappe.db.get_value(SET_TYPE, set_type, "current_bom_version"))
-		or None
+	return applied_version(
+		0, effective_version(set_type), frappe.db.get_value(SET_TYPE, set_type, "current_bom_version")
 	)

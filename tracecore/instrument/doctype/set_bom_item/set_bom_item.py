@@ -59,6 +59,7 @@ def on_doctype_update():
 	# bom.lines tra theo (loại bộ, phiên bản)
 	frappe.db.add_index("Set BOM Item", ["set_type", "bom_version"])
 	# chốt cuối chống lẫn dòng hai phiên bản cùng số (S4); dữ liệu cũ còn trùng thì chưa tạo được: patch
-	# set_bom_item_version_meta báo các nhóm trùng, lần migrate sau khi đã xử lý sẽ tạo
+	# set_bom_item_version_meta báo các nhóm trùng; hàm này chỉ chạy khi JSON DocType đổi, nên patch
+	# set_bom_item_unique_index tạo chỉ mục khi hết trùng (chạy lại tay sau khi gộp dòng)
 	if not duplicate_lines():
 		frappe.db.add_unique("Set BOM Item", list(UNIQUE_FIELDS), constraint_name=UNIQUE_CONSTRAINT)

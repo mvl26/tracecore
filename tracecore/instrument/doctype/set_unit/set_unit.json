@@ -88,7 +88,7 @@
   },
   {
    "default": "0",
-   "description": "BOM version of the set type pinned when the current cycle started (reception); the set keeps it until the next cycle. 0 = not pinned (the effective version applies). Changed only by the step gate.",
+   "description": "BOM version of the set type pinned when the current cycle started (reception); the set keeps it, also after release, until the next reception starts a new cycle. 0 = not pinned (the effective version applies). Changed only by the step gate.",
    "fieldname": "cycle_bom_version",
    "fieldtype": "Int",
    "label": "Cycle BOM Version",
