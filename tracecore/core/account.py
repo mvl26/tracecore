@@ -196,15 +196,22 @@ def require_pin_changed(employee):
 
 @frappe.whitelist(methods=["POST"])
 def change_pin(token, old_pin, new_pin):
-	with station_auth.as_session_user(token) as session:
-		station_auth.verify_pin(session.employee, old_pin)
-		if old_pin == new_pin:
-			frappe.throw(_("Choose a different PIN."))
-		station_auth.set_pin(session.employee, new_pin)
-		frappe.db.set_value("Employee", session.employee, "tc_pin_reset_required", 0)
-		audit.log(
-			"Update", "Employee", session.employee, new={"event": "PIN Changed"}, station=session.station
-		)
+	# Return rejections instead of raising: an exception would roll back the PIN Reject audit.
+	try:
+		with station_auth.as_session_user(token) as session:
+			station_auth.verify_pin(session.employee, old_pin)
+			if old_pin == new_pin:
+				frappe.throw(_("Choose a different PIN."))
+			station_auth.set_pin(session.employee, new_pin)
+			frappe.db.set_value("Employee", session.employee, "tc_pin_reset_required", 0)
+			audit.log(
+				"Update", "Employee", session.employee, new={"event": "PIN Changed"}, station=session.station
+			)
+	except BlockedError as error:
+		if getattr(frappe.local, "request", None):
+			frappe.local.response["http_status_code"] = error.block.http_status
+		return {"ok": False, "error": error.block.as_dict()}
+	return {"ok": True}
 
 
 def _authorize_reset(proof, token=None):
@@ -233,6 +240,8 @@ def reset_password(user, new_password, proof=None, token=None):
 @frappe.whitelist(methods=["POST"])
 def reset_pin(employee, new_pin, proof=None, token=None):
 	_authorize_reset(proof, token)
+	if not frappe.db.exists("Employee", employee):
+		frappe.throw(_("Employee {0} does not exist.").format(employee), frappe.DoesNotExistError)
 	station_auth.set_pin(employee, new_pin)
 	frappe.db.set_value("Employee", employee, "tc_pin_reset_required", 1)
 	audit.log("Update", "Employee", employee, new={"event": "PIN Reset"})
