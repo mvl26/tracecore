@@ -285,3 +285,39 @@ def release_cycle(set_unit):
 	unit = _set_unit(set_unit, for_update=True)
 	if unit.active_cycle_id:
 		_save_lifecycle(unit, active_cycle_id=None)
+
+
+def check_stored(set_unit):
+	"""Lý do chặn nhập kho vô khuẩn (cổng T6 kiểm, UC-11 E1, BRU-FLOW-004), hoặc None nếu bộ đủ năm cổng Đạt.
+
+	Chỉ đọc, không ghi hàng `Step Gate Result` T6. `items` là các bước chưa Đạt của chu trình hiện hành (bộ chưa
+	có chu trình: cả năm bước); `redo_step` là bước đầu tiên còn thiếu.
+	"""
+	_status, cycle_no = _state(set_unit)
+	results = _results(set_unit, cycle_no) if cycle_no else {}
+	missing = [step for step in STEPS if results.get(step, (PENDING, 0))[0] != "Pass"]
+	if not missing:
+		return None
+	return Block(
+		"GATE_PREV_NOT_PASSED",
+		_("Set is not sterile yet"),
+		_("Set {0} has not passed step(s) {1}.").format(set_unit, ", ".join(missing)),
+		_("Send the set back to step {0} and complete it before storing the pack.").format(missing[0]),
+		items=missing,
+		redo_step=missing[0],
+	)
+
+
+def return_to_receipt(set_unit):
+	"""Gói hết hiệu lực trong kho: bộ Vô khuẩn sang Chờ tiếp nhận để đưa về khu bẩn (FR-M2-14); bỏ Cycle ID hiện hành.
+
+	Chỉ bộ đang Vô khuẩn; trạng thái khác → lỗi, không ghi gì. Chu trình kế tiếp mở lại bằng ``start_cycle`` (T1).
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status != "Sterile":
+		frappe.throw(
+			_("Set {0} is {1}; only a sterile set can be returned for receipt.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)
