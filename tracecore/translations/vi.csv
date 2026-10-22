@@ -1285,3 +1285,41 @@ Choose two different BOM versions to compare.,Chọn hai phiên bản BOM khác 
 {0} must be a whole number.,{0} phải là số nguyên.,
 No photo of the assembled set yet. The count sheet will show an empty frame.,Chưa có ảnh bộ đã xếp. Phiếu kiểm đếm sẽ hiện khung trống.,
 Standard assembly time has not been entered.,Chưa nhập thời gian lắp ráp chuẩn.,
+Count sheet,Phiếu kiểm đếm,
+BOM in effect,Đang hiệu lực,
+BOM scheduled,Đã lên lịch,
+BOM superseded,Đã thay thế,
+BOM replaced before taking effect,Bị thay trước hiệu lực,
+Shelf life not set,Chưa có hạn lưu,
+{0} days (set type override),{0} ngày (ghi đè của loại bộ),
+{0} days (from pack type),{0} ngày (theo loại gói),
+(dd/mm/yyyy),(dd/mm/yyyy),TC Count Sheet
+"(signature, full name)","(ký, ghi rõ họ tên)",TC Count Sheet
+Assembled set photo {0},Ảnh bộ đã xếp {0},TC Count Sheet
+Assembly order,STT xếp,TC Count Sheet
+BOM qty,SL BOM,TC Count Sheet
+BOM version {0},BOM phiên bản {0},TC Count Sheet
+Code,Mã,TC Count Sheet
+Count sheet,Phiếu kiểm đếm,TC Count Sheet
+Counted by,Người kiểm,TC Count Sheet
+Counted qty,SL thực tế,TC Count Sheet
+Date,Ngày,TC Count Sheet
+Department,Khoa,TC Count Sheet
+Implant,Cấy ghép,TC Count Sheet
+Instrument name,Tên dụng cụ,TC Count Sheet
+No photo of the assembled set yet,Chưa có ảnh bộ đã xếp,TC Count Sheet
+No,Không,TC Count Sheet
+Not entered,Chưa nhập,TC Count Sheet
+Note,Ghi chú,TC Count Sheet
+Pack type,Loại gói,TC Count Sheet
+Packed by,Người đóng gói,TC Count Sheet
+Page {0}/{1},Trang {0}/{1},TC Count Sheet
+Printed {0} by {1},In lúc {0} bởi {1},TC Count Sheet
+Reason: {0},Lý do: {0},TC Count Sheet
+Shelf life applied,Hạn lưu áp dụng,TC Count Sheet
+Standard assembly time,Thời gian lắp ráp chuẩn,TC Count Sheet
+Sterilization method,Phương pháp tiệt khuẩn,TC Count Sheet
+"Total: {0} lines, {1} instruments","Tổng: {0} dòng, {1} dụng cụ",TC Count Sheet
+Yes,Có,TC Count Sheet
+effective from {0},hiệu lực từ {0},TC Count Sheet
+{0} minutes,{0} phút,TC Count Sheet

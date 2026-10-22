@@ -436,6 +436,78 @@ class TestSetTypeBomRpc(IsolatedTestCase):
 		call(api.bom, set_type="STB", version=7)
 		self.assertEqual(http_status(), 404)
 
+	def test_count_sheet_rpc_returns_pdf_and_404(self):
+		# FR-M1-03, EI-HW-007: GET trả file PDF của phiên bản bất kỳ, sinh khi yêu cầu, không ghi Audit/File
+		fn = api.count_sheet
+		self.assertEqual(frappe.get_attr("tracecore.v1.set_type.count_sheet"), fn)
+		self.assertIn(fn, frappe.whitelisted)
+		self.assertEqual(frappe.allowed_http_methods_for_whitelisted_func[fn], ["GET"])
+
+		def download(**kwargs):
+			for key in ("type", "filename", "filecontent", "http_status_code"):
+				frappe.local.response.pop(key, None)
+			# request GET như trình duyệt (render Jinja và get_pdf đọc path/host của request)
+			previous = getattr(frappe.local, "request", None)
+			frappe.local.request = SimpleNamespace(
+				method="GET",
+				headers={},
+				path="/api/method/tracecore.v1.set_type.count_sheet",
+				host="localhost",
+			)
+			try:
+				result = fn(**kwargs)
+			finally:
+				if previous is None:
+					del frappe.local.request
+				else:
+					frappe.local.request = previous
+			response = {
+				key: frappe.local.response.pop(key, None) for key in ("type", "filename", "filecontent")
+			}
+			return result, response
+
+		before = (frappe.db.count("Audit Log"), frappe.db.count("File"))
+		result, response = download(set_type=" stb ")
+		self.assertIsNone(result)
+		self.assertIsNone(http_status())
+		self.assertEqual((response["type"], response["filename"]), ("pdf", "STB-BOM-V1.pdf"))
+		self.assertTrue(response["filecontent"].startswith(b"%PDF"))
+		_result, scheduled = download(set_type="STB", version="2")
+		self.assertEqual(scheduled["filename"], "STB-BOM-V2.pdf")
+		self.assertEqual((frappe.db.count("Audit Log"), frappe.db.count("File")), before)
+
+		for kwargs, code in (
+			({"set_type": "STB-NONE"}, "SET_TYPE_NOT_FOUND"),
+			({"set_type": None}, "SET_TYPE_NOT_FOUND"),
+			({"set_type": "STB", "version": 9}, "BOM_VERSION_NOT_FOUND"),
+			({"set_type": "STB", "version": 0}, "BOM_VERSION_NOT_FOUND"),
+		):
+			with self.subTest(**kwargs):
+				count = frappe.db.count("Audit Log", {"action": "Reject", "reason": code})
+				result, response = download(**kwargs)
+				self.assertFalse(result["ok"])
+				self.assertEqual(result["error"]["code"], code)
+				self.assertEqual(http_status(), 404)
+				self.assertIsNone(response["filecontent"])
+				self.assertEqual(
+					frappe.db.count("Audit Log", {"action": "Reject", "reason": code}), count + 1
+				)
+		with self.assertRaises(BadRequestError):
+			download(set_type="STB", version="abc")
+		# R04 (T3/T4) tải được; người không có quyền đọc → PermissionError, không lộ loại bộ, không Audit
+		email = make_user("st-read-tcr04@example.com", ["TC R04"])
+		frappe.set_user(email)
+		try:
+			_result, response = download(set_type="STB")
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual(response["filename"], "STB-BOM-V1.pdf")
+		rejects = frappe.db.count("Audit Log", {"action": "Reject"})
+		for set_type in ("STB", "STB-NONE"):
+			with self.assertRaises(frappe.PermissionError):
+				as_user([], fn, set_type=set_type)
+		self.assertEqual(frappe.db.count("Audit Log", {"action": "Reject"}), rejects)
+
 
 class TestSetTypeBomRpcLarge(IsolatedTestCase):
 	def test_bom_rpc_under_one_second_for_500_lines(self):

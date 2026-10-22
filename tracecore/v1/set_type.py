@@ -1,5 +1,6 @@
 """RPC tracecore.v1.set_type.*: đọc BOM theo phiên bản cho trạm/PDA (cache + etag), danh sách phiên bản, so sánh hai
-phiên bản và dữ liệu form Desk của loại bộ (FEAT-015 Task 6; S10, S11; FR-M1-03, FR-M1-04.3, F-17).
+phiên bản, dữ liệu form Desk của loại bộ (FEAT-015 Task 6; S10, S11; FR-M1-03, FR-M1-04.3, F-17) và tải phiếu kiểm
+đếm PDF (Task 7, S9).
 
 Chỉ đọc: ``@frappe.whitelist(methods=["GET"])``, không ``@idempotent``. Quyền đọc ``Instrument Set Type`` (mọi TC role,
 S12) kiểm **trước** khi tra loại bộ: người không có quyền không biết được mã có tồn tại hay không, và không có dòng
@@ -16,6 +17,7 @@ from tracecore.core import gs1
 from tracecore.core.errors import BlockedError
 from tracecore.instrument import bom as bom_service
 from tracecore.instrument import bom_versions, media, shelf_life
+from tracecore.instrument import count_sheet as count_sheet_service
 from tracecore.instrument import set_type as set_type_rules
 from tracecore.v1._common import BadRequestError, reject_block
 from tracecore.v1.set_type_admin import ADMIN_ROLES
@@ -115,6 +117,30 @@ def compare(set_type=None, from_version=None, to_version=None):
 		return {"ok": True, **bom_versions.compare(name, old, new)}
 	except BlockedError as error:
 		return reject_block(error.block, SET_TYPE, name, raw=name)
+
+
+@frappe.whitelist(methods=["GET"])
+def count_sheet(set_type=None, version=None):
+	"""Tải phiếu kiểm đếm PDF của loại bộ ở phiên bản `version` (trống → phiên bản hiệu lực) (S9, FR-M1-03, EI-HW-007).
+
+	Thành công: response file ``<type_code>-BOM-V<n>.pdf`` (``frappe.local.response`` ``type = "pdf"``), sinh khi yêu
+	cầu, không lưu File, không ghi Audit (chỉ đọc). Quyền đọc loại bộ (mọi TC role, S12). Từ chối (JSON):
+	``SET_TYPE_NOT_FOUND``, ``BOM_VERSION_NOT_FOUND`` (404); ``version`` không phải số nguyên → 400.
+	"""
+	name, rejected = _open(set_type)
+	if rejected:
+		return rejected
+	number = _version(version)
+	try:
+		if number is not None and number < 1:
+			raise BlockedError(bom_service.version_not_found_block(name, number))
+		number = bom_service.resolve_version(name, number)
+		pdf = count_sheet_service.render_pdf(name, number)
+	except BlockedError as error:
+		return reject_block(error.block, SET_TYPE, name, raw=name)
+	frappe.local.response.filename = f"{name}-BOM-V{number}.pdf"
+	frappe.local.response.filecontent = pdf
+	frappe.local.response.type = "pdf"
 
 
 def _missing(name: str, photos: list) -> list[dict]:

@@ -87,10 +87,9 @@ doctype_js = {"Item": "public/js/item.js"}
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "tracecore.utils.jinja_methods",
-# 	"filters": "tracecore.utils.jinja_filters"
-# }
+# Print Format "TC Count Sheet" (FEAT-015 S9) gọi tc_count_sheet_context(doc.name) khi in từ Desk. Chỉ trỏ tới MỘT hàm
+# (không cả module) để không đưa hàm khác của count_sheet vào môi trường Jinja chung của site.
+jinja = {"methods": ["tracecore.instrument.count_sheet.tc_count_sheet_context"]}
 
 # Installation
 # ------------
