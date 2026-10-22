@@ -31,8 +31,9 @@
 #      tests_e2e/test_desk_inventory.py. Stock Entry và Item không xóa được: test tự sinh mã lô và số chứng từ duy nhất.
 #   9. Loại bộ và BOM theo phiên bản Desk (devdata.ensure_set_type_demo, FEAT-015): loại gói có/không hạn lưu, dụng cụ hấp,
 #      dụng cụ chỉ Plasma, dụng cụ đã ngừng sử dụng, loại bộ có phiên bản hiệu lực + đã lên lịch và ba ảnh bộ, bộ đang giữa
-#      chu trình ghim phiên bản cũ, loại bộ để sửa BOM; user r02-settype-e2e@… (TC R02, cùng mật khẩu với user R10)
-#      → TC_E2E_SETTYPE_USER/PASSWORD + TC_E2E_SETTYPE_<khóa> cho tests_e2e/test_desk_set_type.py.
+#      chu trình ghim phiên bản cũ, loại bộ để sửa BOM; user r02-settype-e2e@… (TC R02, cùng mật khẩu với user R10,
+#      tạo qua ensure_desk_users có R10 tạm như các user Desk khác, OTP riêng)
+#      → TC_E2E_SETTYPE_USER/PASSWORD/OTP_SECRET + TC_E2E_SETTYPE_<khóa> cho tests_e2e/test_desk_set_type.py.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -110,10 +111,11 @@ t4_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(s
 r10_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["r10_user"])')
 station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$STATION', 'user': '$user'}")
 t4_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T4_STATION', 'user': '$t4_user', 'second_station': '$SECOND_STATION'}")
-desk_users=$(bench_exec tracecore.setup.devdata.ensure_desk_users --kwargs "{'password': '$r10_password', 'specs': [{'key': 'codes', 'role': 'TC R10', 'name': 'r10-codes-e2e', 'extra_roles': ['Stock User']}, {'key': 'instr', 'role': 'TC R02', 'name': 'r02-instr-e2e'}, {'key': 'inv', 'role': 'TC R09', 'name': 'r09-inv-e2e'}]}")
+desk_users=$(bench_exec tracecore.setup.devdata.ensure_desk_users --kwargs "{'password': '$r10_password', 'specs': [{'key': 'codes', 'role': 'TC R10', 'name': 'r10-codes-e2e', 'extra_roles': ['Stock User']}, {'key': 'instr', 'role': 'TC R02', 'name': 'r02-instr-e2e'}, {'key': 'inv', 'role': 'TC R09', 'name': 'r09-inv-e2e'}, {'key': 'settype', 'role': 'TC R02', 'name': 'r02-settype-e2e'}]}")
 codes_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["codes_user"])')
 instr_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["instr_user"])')
 inv_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["inv_user"])')
+settype_user=$(printf '%s' "$desk_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["settype_user"])')
 set_id=$(bench_exec tracecore.setup.devdata.ensure_demo_set | tr -d '"')
 t4_demo=$(bench_exec tracecore.setup.devdata.ensure_t4_demo)
 eq_demo=$(bench_exec tracecore.setup.devdata.ensure_equipment_demo)
@@ -121,7 +123,6 @@ bench --site "$SITE" set-config tracecore_allow_local_printers 1 > /dev/null
 codes_demo=$(bench_exec tracecore.setup.devdata.ensure_codes_demo --kwargs "{'port': '$CODES_PORT'}")
 instr_demo=$(bench_exec tracecore.setup.devdata.ensure_instrument_demo)
 inv_demo=$(bench_exec tracecore.setup.devdata.ensure_inventory_demo)
-settype_user=$(bench_exec tracecore.setup.provision.desk_user --kwargs "{'role': 'TC R02', 'name': 'r02-settype-e2e', 'password': '$r10_password'}" | tr -d '"')
 settype_demo=$(bench_exec tracecore.setup.devdata.ensure_set_type_demo)
 
 {
