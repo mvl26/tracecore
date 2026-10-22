@@ -271,6 +271,11 @@ tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
 # +1 bộ đếm bảo dưỡng. cycle_id bắt buộc theo hợp đồng: cùng cycle_id gọi lại không đếm thêm (last_release_cycle);
 # thiếu cycle_id thì không chống trùng.
 tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
+# M2 (FEAT-021) gọi khi lô rửa đóng: (ctx {batch, equipment, program, sets, chemicals, result}) -> None.
+#  - wash_complete: sau khi kết luận Đạt (FEAT-042 trừ hóa chất theo định mức, FEAT-046 chi phí lô)
+#  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
+tracecore_after_wash_complete = []
+tracecore_after_wash_failed = []
 
 # Scheduled Tasks
 # ---------------

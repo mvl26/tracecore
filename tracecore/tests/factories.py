@@ -335,6 +335,23 @@ def make_chemical_batch(item_code="HC-ENZ-01", batch_id=None, expiry_days=60, qt
 	return frappe.get_doc("Batch", batch_id)
 
 
+def make_employee(card=None):
+	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User)."""
+	return frappe.get_doc(
+		{
+			"doctype": "Employee",
+			"first_name": "Wash Test",
+			"gender": "Male",
+			"date_of_birth": "1990-01-01",
+			"date_of_joining": today(),
+			"company": "_Test Company",
+			"status": "Active",
+			"tc_card_id": card or "WT-" + frappe.generate_hash(length=10),
+			"tc_card_enabled": 1,
+		}
+	).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
+
+
 def make_wash_batch(equipment, program, sets, operator="HR-EMP-TEST", **fields):
 	"""Wash Batch `Running` dựng thẳng (không qua dịch vụ nạp) để test quy tắc đọc; operator là mã giả, không kiểm link."""
 	doc = frappe.get_doc(

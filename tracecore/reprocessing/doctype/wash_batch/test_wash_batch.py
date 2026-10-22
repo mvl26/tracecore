@@ -30,7 +30,9 @@ class TestWashBatch(FrappeTestCase):
 		for batch in (first, second):
 			self.assertRegex(batch.name, r"^LR-\d{6}-\d{2}$")
 			self.assertEqual(
-				frappe.db.get_value("Code Registry", batch.name, ["prefix", "ref_doctype", "ref_name", "status"]),
+				frappe.db.get_value(
+					"Code Registry", batch.name, ["prefix", "ref_doctype", "ref_name", "status"]
+				),
 				("LR", "Wash Batch", batch.name, "Active"),
 			)
 			self.assertTrue(code_registry.is_issued(batch.name))

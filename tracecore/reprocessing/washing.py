@@ -1,21 +1,29 @@
 """Lô rửa tại T2 (M2, FEAT-021, UC-06): quy tắc máy, nạp bộ, hóa chất; dịch vụ nạp, dỡ và kết luận lô.
 
-- Quy tắc (Task 2): `check_equipment_ready`, `scan_machine`, `admit_set`, `suggest_chemical_lots`,
-  `check_chemical_lot`, `redo_queue`.
+- Quy tắc: `check_equipment_ready`, `scan_machine`, `admit_set`, `suggest_chemical_lots`, `check_chemical_lot`,
+  `redo_queue`.
+- Dịch vụ trạm T2: `start` (Hoàn thành nạp: sinh mã lô, gắn bộ, in nhãn QR).
 
 M2 không import `tracecore.equipment`/`tracecore.inventory` (lint R1): máy, chương trình, lô hóa chất đọc bằng tên
 DocType, như `packing.resolve_ci_batch`. Trạng thái Set Unit chỉ đổi qua `core.step_gate`; lô chỉ đổi ở đây bằng cờ
 ``flags.tc_washing`` của Wash Batch. Từ chối nghiệp vụ là `BlockedError` (mã HTTP ở `core.errors`).
 """
 
+import contextlib
+from datetime import timezone
+from zoneinfo import ZoneInfo
+
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, formatdate, getdate, now_datetime
+from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
+from frappe.utils.data import get_system_timezone
 
-from tracecore.core import gs1, step_gate
+from tracecore.core import client_time, gs1, step_gate
+from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 
 STEP = "T2"
+SAVEPOINT = "tc_wash_start"
 WASH_EQUIPMENT_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
 RUNNING = "Running"
 CHEMICAL_GROUP = "Chemical"  # Item.tc_item_group_cssd của hóa chất rửa (FEAT-041)
@@ -140,13 +148,18 @@ def _t2_result(set_unit):
 	return step_gate.PENDING
 
 
-def _running_batch_of(set_unit):
-	"""Tên lô rửa đang chạy chứa `set_unit`, hoặc None."""
+def _running_batch_of(set_unit, for_update=False):
+	"""Tên lô rửa đang chạy chứa `set_unit`, hoặc None.
+
+	for_update: đọc có khóa để thấy lô vừa được request khác commit (snapshot REPEATABLE READ có thể cũ, xem
+	docstring của `core.step_gate`); nơi gọi đã khóa Set Unit trước nên chỉ một request vào được tại đây.
+	"""
 	rows = frappe.db.sql(
 		"""select batch.name from `tabWash Batch Set Unit` row
 		join `tabWash Batch` batch on batch.name = row.parent
 		where row.set_unit = %s and batch.status = %s and batch.docstatus = 0
-		limit 1""",
+		limit 1"""
+		+ (" for update" if for_update else ""),
 		(set_unit, RUNNING),
 	)
 	return rows[0][0] if rows else None
@@ -187,7 +200,7 @@ def admit_set(raw, equipment, queued=None, for_update=False):
 			_("Set {0} has already passed the wash step in this cycle.").format(set_id),
 			_("Take the set to the next step."),
 		)
-	other = _running_batch_of(set_id)
+	other = _running_batch_of(set_id, for_update)
 	if other:
 		raise _blocked(
 			"SET_IN_OTHER_BATCH",
@@ -267,7 +280,9 @@ def check_chemical_lot(item, batch_no):
 	batch = frappe.db.get_value("Batch", batch_no, ["name", "item", "expiry_date", "disabled"], as_dict=True)
 	group = frappe.db.get_value("Item", item, "tc_item_group_cssd") if item else None
 	if not batch or batch.item != item or group != CHEMICAL_GROUP:
-		return _invalid_chemical(_("Lot {0} is not a lot of chemical {1}.").format(batch_no or "-", item or "-"))
+		return _invalid_chemical(
+			_("Lot {0} is not a lot of chemical {1}.").format(batch_no or "-", item or "-")
+		)
 	if cint(batch.disabled):
 		return _invalid_chemical(_("Lot {0} has been disabled.").format(batch.name))
 	if not batch.expiry_date:
@@ -290,3 +305,195 @@ def _invalid_chemical(reason):
 		reason,
 		_("Choose a lot of the chemical that the wash program uses."),
 	)
+
+
+# --- Hoàn thành nạp (FR-M2-03.2, FR-M2-24.1, BRU-REP-016) -------------------------------------------------
+
+
+def _system_time(client_ts):
+	"""`client_ts` UTC không múi giờ → giờ hệ thống (Asia/Ho_Chi_Minh) không múi giờ (ADR-003)."""
+	utc = get_datetime(client_ts).replace(tzinfo=timezone.utc)
+	return utc.astimezone(ZoneInfo(get_system_timezone())).replace(tzinfo=None)
+
+
+def _program(equipment, program):
+	"""Chương trình `program` của máy `equipment` còn dùng, hoặc PROGRAM_INVALID."""
+	row = frappe.db.get_value(
+		"Process Program",
+		program,
+		["name", "program_name", "equipment", "is_active", "chemical"],
+		as_dict=True,
+	)
+	if not row or row.equipment != equipment or not cint(row.is_active):
+		raise _blocked(
+			"PROGRAM_INVALID",
+			_("Program is not valid"),
+			_("Program {0} is not an active program of equipment {1}.").format(program or "-", equipment),
+			_("Choose a program from the list of this washer."),
+		)
+	return row
+
+
+def _chemical_rows(program, chemicals):
+	"""Dòng hóa chất đã kiểm của lô (Q23): lô còn hạn, đúng hóa chất của chương trình, ít nhất một lô nếu có khai."""
+	rows = []
+	for entry in chemicals or []:
+		item, lot = entry.get("item"), entry.get("lot")
+		if program.chemical and item != program.chemical:
+			raise BlockedError(
+				_invalid_chemical(
+					_("Program {0} uses chemical {1}, not {2}.").format(
+						program.name, program.chemical, item or "-"
+					)
+				)
+			)
+		block = check_chemical_lot(item, lot)
+		if block:
+			raise BlockedError(block)
+		rows.append({"item": item, "lot": lot, "qty": flt(entry.get("qty"))})
+	if program.chemical and not rows:
+		raise BlockedError(
+			_invalid_chemical(
+				_("Program {0} needs a lot of chemical {1}.").format(program.name, program.chemical)
+			)
+		)
+	return rows
+
+
+def _admit_all(sets, equipment):
+	"""``(bộ nhận được, bộ bị loại)`` cho danh sách quét `sets`; bộ bị loại là ``{"set_id", "code", "reason"}``.
+
+	Khóa các Set Unit theo thứ tự tên rồi kiểm lại từng bộ bằng đọc có khóa: hai kiosk cùng nạp một bộ thì chỉ một
+	nơi giữ được, nơi kia thấy SET_IN_OTHER_BATCH. Quét lặp cùng bộ chỉ tính một lần.
+	"""
+	scanned = [(raw, gs1.parse_scan(raw)) for raw in sets or []]
+	for set_id in sorted({s["id"] for _raw, s in scanned if s["type"] == "set"}):
+		frappe.db.get_value("Set Unit", set_id, "name", for_update=True)
+	accepted, rejected = [], []
+	for raw, parsed in scanned:
+		try:
+			admitted = admit_set(raw, equipment, accepted, for_update=True)
+		except BlockedError as error:
+			rejected.append(
+				{
+					"set_id": parsed["id"] or parsed["raw"],
+					"code": error.block.code,
+					"reason": error.block.reason,
+				}
+			)
+			continue
+		if not admitted["duplicate"]:
+			accepted.append(admitted["set_id"])
+	return accepted, rejected
+
+
+def start(equipment, program, sets, chemicals, station, client_ts, operator):
+	"""Hoàn thành nạp: sinh mã lô `LR-YYMMDD-NN` cho các bộ quét vào máy, ghi lô `Running` và xếp lệnh in nhãn QR.
+
+	`client_ts` là kết quả `parse_client_ts` (UTC); giờ nạp = giờ hệ thống của nó, lệch giờ server quá
+	`client_time.max_skew_seconds()` → ClientTimestampError trước khi ghi gì. `operator` là Employee đăng nhập thẻ.
+	Máy phải Sẵn sàng, chương trình thuộc máy, hóa chất còn hạn (cả lô bị từ chối nếu sai). Bộ nào không còn hợp lệ
+	(bị lô khác lấy, đã qua T2…) vào `rejected` mà không dừng lô; không còn bộ nào → BATCH_EMPTY. Mọi lỗi hoàn tác về
+	savepoint rồi ném lại: không còn lô, dòng Code Registry hay số series nào. In không bao giờ làm mất mã lô.
+
+	Trả ``{"batch", "sets", "rejected", "print": {"print_job", "status", "printer", "zpl", "warning"}}``.
+	"""
+	client_time.check_skew(client_ts)
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		return _start(equipment, program, sets, chemicals, station, client_ts, operator)
+	except Exception:
+		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
+		with contextlib.suppress(Exception):
+			frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+
+
+def _start(equipment, program, sets, chemicals, station, client_ts, operator):
+	block = check_equipment_ready(equipment)
+	if block:
+		raise BlockedError(block)
+	machine = frappe.db.get_value("Equipment", equipment, ["equipment_name", "equipment_type"], as_dict=True)
+	program = _program(equipment, program)
+	chemical_rows = _chemical_rows(program, chemicals)
+	accepted, rejected = _admit_all(sets, equipment)
+	if not accepted:
+		raise _blocked(
+			"BATCH_EMPTY",
+			_("No set can be loaded"),
+			_("None of the scanned sets can go into a wash batch on {0}.").format(equipment),
+			_("Scan sets that have passed receiving, then complete loading again."),
+			items=rejected or None,
+		)
+	started = _system_time(client_ts)
+	batch = frappe.get_doc(
+		{
+			"doctype": "Wash Batch",
+			"batch_type": "Ultrasonic" if machine.equipment_type == "Ultrasonic Cleaner" else "Machine",
+			"equipment": equipment,
+			"program": program.name,
+			"operator": operator,
+			"status": RUNNING,
+			"loaded_by_scan": 1,
+			"load_completed_at": started,
+			"started_at": started,
+			"set_units": [{"set_unit": set_id, "added_at": started} for set_id in accepted],
+			"chemicals": chemical_rows,
+		}
+	)
+	batch.flags.tc_washing = True
+	batch.insert(ignore_permissions=True)
+	label = _queue_label(batch, machine, program, station, started)
+	return {"batch": batch.name, "sets": accepted, "rejected": rejected, "print": label}
+
+
+def _warning(code, title, reason, action):
+	return {"code": code, "title": title, "reason": reason, "action": action}
+
+
+def _queue_label(batch, machine, program, station, started):
+	"""Tạo Print Job nhãn QR của lô tại `station`; trả ``{"print_job", "status", "printer", "zpl", "warning"}``.
+
+	Có máy in hoạt động ở trạm và mẫu `Object label - Wash Batch` dựng được → ``Queued``. Không có máy in hay không
+	dựng được nhãn → ``Waiting`` kèm cảnh báo; mã lô vẫn giữ và nhãn in lại được sau.
+	"""
+	job = {
+		"station": station,
+		"data": {"label_object": "Wash Batch", "code": batch.name},
+		"ref_doctype": "Wash Batch",
+		"ref_name": batch.name,
+	}
+	printer = core_print.object_printer(station)
+	zpl = template = warning = None
+	if printer is None:
+		warning = _warning(
+			"NO_PRINTER_AT_STATION",
+			_("No printer at this station"),
+			_("Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.").format(
+				station, batch.name
+			),
+			_("Ask R10 to add a printer to this station, then print the batch label again."),
+		)
+	else:
+		title = f"{machine.equipment_name} - {program.program_name}"
+		subtitle = f"{started:%d/%m/%Y %H:%M}"
+		logged = len(frappe.local.message_log)
+		try:
+			zpl, template = core_print.render_object(
+				"Wash Batch", batch.name, title, subtitle, printer=printer, with_template=True
+			)
+		except frappe.ValidationError as error:
+			del frappe.local.message_log[logged:]  # lỗi đã thành cảnh báo, không để msgprint lên kiosk
+			warning = _warning(
+				"LABEL_RENDER_FAILED",
+				_("Label could not be prepared"),
+				_("{0} Wash batch {1} is kept; its label is waiting.").format(error, batch.name),
+				_("Ask R10 to fix the label template of the wash batch, then print the label again."),
+			)
+	if zpl is None:
+		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
+		return {"print_job": name, "status": "Waiting", "printer": None, "zpl": None, "warning": warning}
+	name = core_print.create_job(
+		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
+	)
+	return {"print_job": name, "status": "Queued", "printer": printer["name"], "zpl": zpl, "warning": None}

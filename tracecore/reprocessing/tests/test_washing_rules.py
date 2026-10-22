@@ -117,7 +117,8 @@ class TestWashingAdmit(FrappeTestCase):
 
 	def test_admit_rejects_set_that_is_not_at_the_dirty_side(self):
 		self.assertEqual(
-			_code(washing.admit_set, make_set_unit().name, self.machine.name, []), "STATUS_INVALID_FOR_STATION"
+			_code(washing.admit_set, make_set_unit().name, self.machine.name, []),
+			"STATUS_INVALID_FOR_STATION",
 		)
 
 	def test_admit_rejects_set_in_running_batch(self):
@@ -155,7 +156,8 @@ class TestWashingAdmit(FrappeTestCase):
 		for raw in ("TB-0001", "ABC", ""):
 			self.assertEqual(_code(washing.admit_set, raw, self.machine.name, []), "SCAN_INVALID", msg=raw)
 		self.assertEqual(
-			_code(washing.admit_set, "TR-004", self.machine.name, [make_wash_ready_set().name]), "SCAN_INVALID"
+			_code(washing.admit_set, "TR-004", self.machine.name, [make_wash_ready_set().name]),
+			"SCAN_INVALID",
 		)
 
 	def test_admit_rejects_unknown_set(self):
@@ -208,9 +210,13 @@ class TestWashingChemicals(FrappeTestCase):
 		expired = make_chemical_batch(CHEMICAL, expiry_days=-1)
 		other = make_chemical_batch("HC-OTHER-01")
 		make_item("PK-WASH-01", "Packaging")
-		pack_lot = make_batch("PK-WASH-01", "PK-WASH-LOT-" + frappe.generate_hash(length=6), add_days(today(), 30))
+		pack_lot = make_batch(
+			"PK-WASH-01", "PK-WASH-LOT-" + frappe.generate_hash(length=6), add_days(today(), 30)
+		)
 		self.assertIsNone(washing.check_chemical_lot(CHEMICAL, ok.name))
-		self.assertIsNone(washing.check_chemical_lot(CHEMICAL, today_lot.name))  # hạn đúng hôm nay vẫn dùng được
+		self.assertIsNone(
+			washing.check_chemical_lot(CHEMICAL, today_lot.name)
+		)  # hạn đúng hôm nay vẫn dùng được
 		block = washing.check_chemical_lot(CHEMICAL, expired.name)
 		self.assertEqual((block.code, block.http_status), ("CHEMICAL_LOT_EXPIRED", 422))
 		self.assertIn(expired.name, block.reason)
@@ -230,7 +236,9 @@ class TestWashingChemicals(FrappeTestCase):
 		this_day = make_chemical_batch(CHEMICAL, expiry_days=0)
 		frappe.db.set_value("Batch", this_day.name, "expiry_date", "2026-10-23")
 		with patch("tracecore.reprocessing.washing.now_datetime", return_value=datetime(2026, 10, 23, 0, 30)):
-			self.assertEqual(washing.check_chemical_lot(CHEMICAL, last_night.name).code, "CHEMICAL_LOT_EXPIRED")
+			self.assertEqual(
+				washing.check_chemical_lot(CHEMICAL, last_night.name).code, "CHEMICAL_LOT_EXPIRED"
+			)
 			self.assertIsNone(washing.check_chemical_lot(CHEMICAL, this_day.name))
 			lots = {lot["batch_no"] for lot in washing.suggest_chemical_lots(CHEMICAL)}
 			self.assertNotIn(last_night.name, lots)
