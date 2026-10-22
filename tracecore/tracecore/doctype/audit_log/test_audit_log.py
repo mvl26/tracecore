@@ -2,8 +2,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import audit
+from tracecore.setup.permissions import ROLE_CODES, build_custom_docperms
 from tracecore.tests.factories import make_user
-from tracecore.tests.utils import request_headers
+from tracecore.tests.utils import assert_permission_matrix, request_headers
 
 # User -> Email Account -> Company (ERPNext) cần Setup Wizard; test tự tạo user qua factory.
 test_ignore = ["User"]
@@ -41,23 +42,34 @@ class TestAuditLog(FrappeTestCase):
 			frappe.delete_doc("Audit Log", name, ignore_permissions=True)
 		self.assertTrue(frappe.db.exists("Audit Log", name))
 
-	def test_no_role_has_write_or_delete(self):
+	def test_native_rows_are_read_only_and_effective_matrix_matches(self):
 		perms = frappe.get_all(
 			"DocPerm",
 			filters={"parent": "Audit Log"},
 			fields=["role", "write", "delete", "create", "cancel", "amend", "submit"],
 		)
 		self.assertTrue(perms)
+		assert_permission_matrix(self, "Audit Log")
 		for perm in perms:
 			for ptype in ("write", "delete", "create", "cancel", "amend", "submit"):
 				self.assertFalse(perm[ptype], msg=f"{perm.role} has {ptype}")
 
-	def test_system_manager_user_has_no_delete_permission(self):
-		user = make_user("audit-sm@example.com", roles=["System Manager"])
+	def test_generated_audit_read_permissions_and_no_delete(self):
+		generated = {row["role"]: row for row in build_custom_docperms({"Audit Log"})}
 		name = audit.log("Login")
-		self.assertTrue(frappe.has_permission("Audit Log", "read", doc=name, user=user))
-		self.assertFalse(frappe.has_permission("Audit Log", "write", doc=name, user=user))
-		self.assertFalse(frappe.has_permission("Audit Log", "delete", doc=name, user=user))
+		for code in ROLE_CODES:
+			role = f"TC {code}"
+			user = make_user(f"audit-{code.lower()}@example.com", roles=[role])
+			self.assertEqual(
+				bool(frappe.has_permission("Audit Log", "read", doc=name, user=user)),
+				bool(generated.get(role, {}).get("read", 0)),
+				role,
+			)
+			self.assertFalse(frappe.has_permission("Audit Log", "write", doc=name, user=user), role)
+			self.assertFalse(frappe.has_permission("Audit Log", "delete", doc=name, user=user), role)
+		manager = make_user("audit-sm@example.com", roles=["System Manager"])
+		self.assertFalse(frappe.has_permission("Audit Log", "read", doc=name, user=manager))
+		self.assertFalse(frappe.has_permission("Audit Log", "delete", doc=name, user=manager))
 
 	def test_snapshot_drops_password_fields(self):
 		user = frappe.new_doc("User")

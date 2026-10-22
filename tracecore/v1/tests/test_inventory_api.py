@@ -90,10 +90,10 @@ class TestReceiptTemplate(InventoryApiCase):
 class TestReceiptCheck(InventoryApiCase):
 	def test_check_requires_role(self):
 		url = self.upload([self.row("CK-0")])
-		before = frappe.db.count("Audit Log")
+		before = frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]})
 		with self.assertRaises(frappe.PermissionError):
 			as_user(["TC R04"], inventory_api.receipt_check, file_url=url, warehouse=self.warehouse)
-		self.assertEqual(frappe.db.count("Audit Log"), before)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), before)
 
 	def test_check_ok_writes_nothing(self):
 		url = self.upload([self.row("CK-1"), self.row("CK-2", doc="PGH-2")])

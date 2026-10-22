@@ -17,12 +17,14 @@ required_apps = ["erpnext", "hrms"]
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	{"dt": "Custom DocPerm", "filters": [["role", "like", "TC R%"]]},
 	{
 		"dt": "Custom Field",
 		"or_filters": [
 			["name", "like", "Item-tc_%"],
 			["name", "like", "Stock Entry-tc_%"],
 			["name", "like", "Stock Entry Detail-tc_%"],
+			["name", "like", "Employee-tc_%"],
 		],
 	},
 ]
@@ -107,7 +109,10 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # before_install = "tracecore.install.before_install"
 after_install = "tracecore.setup.install.after_install"
 # Quyền R09/R06/R10/R02 cho Item, Batch, Stock Entry (FEAT-041, A-07 V11): Custom DocPerm idempotent
-after_migrate = "tracecore.inventory.permissions.ensure_permissions"
+after_migrate = [
+	"tracecore.inventory.permissions.ensure_permissions",
+	"tracecore.setup.install.apply_system_settings",
+]
 
 # Uninstallation
 # ------------
@@ -187,6 +192,17 @@ _AUDIT_EVENTS = {
 }
 
 doc_events = {
+	"User": {
+		"before_validate": "tracecore.core.account.validate_user",
+		"after_insert": "tracecore.core.account.user_updated",
+		"on_update": "tracecore.core.account.user_updated",
+		"on_trash": "tracecore.core.audit.block_delete",
+	},
+	"Employee": {
+		"before_validate": "tracecore.core.account.validate_employee",
+		"on_update": "tracecore.core.account.employee_updated",
+		"on_trash": "tracecore.core.audit.block_delete",
+	},
 	"Set Unit": dict(_AUDIT_EVENTS),
 	"Instrument": dict(_AUDIT_EVENTS),
 	"Instrument Group": dict(_AUDIT_EVENTS),
@@ -229,6 +245,7 @@ doc_events = {
 		"before_insert": "tracecore.instrument.media.check_upload",
 		"validate": "tracecore.instrument.media.validate_file",
 	},
+	"Station Competency": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
@@ -266,6 +283,12 @@ scheduler_events = {
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
 	],
+}
+
+on_login = "tracecore.core.account.on_login"
+override_whitelisted_methods = {
+	"frappe.core.doctype.user.user.update_password": "tracecore.core.account.update_web_password",
+	"frappe.core.doctype.user.user.reset_password": "tracecore.core.account.reject_email_reset",
 }
 
 # scheduler_events = {

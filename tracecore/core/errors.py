@@ -12,6 +12,18 @@ import frappe
 # 400 (sai định dạng) và 403 (thiếu quyền) không phải Block: do IdempotencyKeyError, ClientTimestampError,
 # thiếu tham số và frappe.PermissionError đảm nhiệm.
 HTTP_STATUS: dict[str, int] = {
+	**dict.fromkeys(("SESSION_INVALID", "SESSION_EXPIRED", "SESSION_IDLE"), 401),
+	**dict.fromkeys(
+		(
+			"CARD_INVALID",
+			"COMPETENCY_REQUIRED",
+			"PIN_INVALID",
+			"PIN_PROOF_INVALID",
+			"SESSION_STATION_MISMATCH",
+		),
+		403,
+	),
+	**dict.fromkeys(("PIN_LOCKED", "LOGIN_THROTTLED"), 429),
 	**dict.fromkeys(
 		(
 			"STATION_WRONG_STEP",
@@ -32,6 +44,7 @@ HTTP_STATUS: dict[str, int] = {
 			"ETCHING_INVALID",
 			"IMPORT_ROWS_INVALID",
 			"IMPORT_FILE_INVALID",
+			"PIN_FORMAT_INVALID",
 		),
 		422,
 	),

@@ -4,6 +4,8 @@ Hai kiểu từ chối cùng tồn tại (D3): `rejection` của FEAT-001 trả 
 của FEAT-018 trả ``ok: false`` kèm mã HTTP theo loại lỗi (404/409/422) và ghi Audit Log `Reject`.
 """
 
+import functools
+import inspect
 from zoneinfo import ZoneInfo
 
 import frappe
@@ -13,11 +15,57 @@ from frappe.utils import cint, now_datetime
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import audit, gs1
+from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 
 AGENT_ROLE = "TC Agent"
 # R04 là role của user kiosk T4; System Manager để R10 xử lý trên Desk
 PACKING_ROLES = ("TC R04", "System Manager")
+
+
+def station_session(*roles, desk_roles=()):
+	"""Authorize human kiosk RPCs before idempotency lookup and execute as the session actor.
+
+	Machine endpoints keep their dedicated TC Agent/API-key checks. Explicit-printer
+	Desk requests retain their own role guard; a Frappe login alone never authorizes a kiosk.
+	"""
+
+	def decorate(fn):
+		signature = inspect.signature(fn)
+
+		@functools.wraps(fn)
+		def wrapper(*args, **kwargs):
+			kwargs = signature.bind(*args, **kwargs).arguments
+			token = kwargs.pop("token", None)
+			if desk_roles and kwargs.get("printer"):
+				require_any_role(*desk_roles)
+				return fn(**kwargs)
+			timestamp = parse_client_ts(kwargs.get("client_ts"))
+			# A body token avoids Frappe's OAuth interpretation of Authorization: Bearer.
+			from tracecore.core import station_auth
+
+			try:
+				with station_auth.as_session_user(token, client_ts=timestamp) as session:
+					if kwargs.get("station") != session.station:
+						raise BlockedError(
+							Block(
+								"SESSION_STATION_MISMATCH",
+								_("Wrong station"),
+								_("The session belongs to another station."),
+								_("Use the station where you scanned your card."),
+							)
+						)
+					require_any_role(*roles)
+					kwargs["station"] = session.station
+					return fn(**kwargs)
+			except BlockedError as error:
+				if getattr(frappe.local, "request", None):
+					frappe.local.response["http_status_code"] = error.block.http_status
+				return {"ok": False, "error": error.block.as_dict()}
+
+		return wrapper
+
+	return decorate
 
 
 class BadRequestError(frappe.ValidationError):
