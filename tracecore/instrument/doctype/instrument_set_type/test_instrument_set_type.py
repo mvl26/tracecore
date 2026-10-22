@@ -2,14 +2,33 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import gs1
-from tracecore.tests.factories import make_item, make_pack, make_set_type, make_set_unit
+from tracecore.tests.factories import (
+	make_department,
+	make_item,
+	make_pack,
+	make_pack_type,
+	make_set_type,
+	make_set_unit,
+)
 
-# Department/Item (ERPNext) kéo theo test record Company → Warehouse… cần Setup Wizard;
+# Department/Item/User (ERPNext) kéo theo test record Company → Warehouse… cần Setup Wizard;
 # site CI mới chưa chạy wizard nên bỏ phụ thuộc này (dữ liệu tạo qua tracecore/tests/factories.py).
-test_ignore = ["Department", "Item"]
+test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
 GTIN_OK = "09520000000011"
 GTIN_BAD_CHECK_DIGIT = "09520000000012"
+
+
+def _required():
+	"""Trường bắt buộc từ FEAT-015 (khoa, loại gói có hạn lưu) cho các bản ghi tạo thẳng bằng get_doc."""
+	return {"department": make_department(), "default_pack_type": make_pack_type()}
+
+
+def _new_set_type(values):
+	"""Loại bộ dựng thẳng bằng get_doc, ghi như dịch vụ BOM (FEAT-015: loại bộ chỉ tạo qua bom_versions)."""
+	doc = frappe.get_doc({"doctype": "Instrument Set Type", **values})
+	doc.flags.tc_bom = True
+	return doc
 
 
 class TestInstrumentSetType(FrappeTestCase):
@@ -22,21 +41,21 @@ class TestInstrumentSetType(FrappeTestCase):
 
 	def test_set_type_code_validation(self):
 		with self.assertRaises(frappe.ValidationError):
-			frappe.get_doc(
+			_new_set_type(
 				{
-					"doctype": "Instrument Set Type",
 					"type_code": "bpt 1",
 					"set_type_name": "X",
 					"method": "Steam",
+					**_required(),
 				}
 			).insert()
 
-		doc = frappe.get_doc(
+		doc = _new_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": "zz9t",
 				"set_type_name": "Bo test",
 				"method": "Plasma",
+				**_required(),
 			}
 		).insert()
 		self.assertEqual(doc.name, "ZZ9T")
@@ -72,13 +91,13 @@ class TestInstrumentSetType(FrappeTestCase):
 	def test_gtin_optional_until_packing(self):
 		first = make_set_type("GOA", gtin=None)
 		second = make_set_type("GOB", gtin=None)
-		blank = frappe.get_doc(
+		blank = _new_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": "GOC",
 				"set_type_name": "Blank GTIN",
 				"method": "Steam",
 				"gtin": "",
+				**_required(),
 			}
 		).insert()
 		for doc in (first, second, blank):
@@ -113,7 +132,7 @@ class TestInstrumentSetType(FrappeTestCase):
 		self.assertEqual(row.shelf_life_days, 90)
 		self.assertEqual(row.tray_image, "/files/tray-pkf.png")
 		self.assertEqual(row.current_bom_version, 1)
-		self.assertFalse(row.department)
+		self.assertEqual(row.department, make_department())
 
 	def test_gtin_locked_after_pack(self):
 		set_type = make_set_type("GLK", gtin=GTIN_OK)

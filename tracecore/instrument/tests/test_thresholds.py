@@ -280,13 +280,14 @@ class TestInitCounter(IsolatedTestCase):
 			self._code(lambda: maintenance.init_counter(other_unit.name, "TH-HIST", 5, None, "x")),
 			"COUNTER_INIT_INVALID",
 		)
-		make_bom(_set_type, [("TH-OTHER", 1)], version=2)
-		frappe.db.set_value("Instrument Set Type", _set_type.name, "current_bom_version", 2)
+		# phiên bản hiệu lực tính từ dòng BOM (FEAT-015 S1) nên không bật/tắt current_bom_version được nữa: dùng một loại
+		# bộ riêng có v2 (hiệu lực hôm nay) bỏ TH-HIST; bộ chưa ghim phiên bản dùng v2
+		old_unit, old_type = _scene("THV", [("TH-HIST", 1)])
+		make_bom(old_type, [("TH-OTHER", 1)], version=2)
 		self.assertEqual(
-			self._code(lambda: maintenance.init_counter(set_unit.name, "TH-HIST", 5, None, "x")),
+			self._code(lambda: maintenance.init_counter(old_unit.name, "TH-HIST", 5, None, "x")),
 			"COUNTER_INIT_INVALID",
 		)
-		frappe.db.set_value("Instrument Set Type", _set_type.name, "current_bom_version", 1)
 
 		for value in (-1, 10000, "abc", 3.5, True, None):
 			self.assertEqual(

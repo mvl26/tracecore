@@ -9,9 +9,22 @@ runs:
 
     - name: System packages
       shell: bash
+      env:
+        WKHTMLTOX_URL: https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
+        # SHA-256 của đúng file wkhtmltox_0.12.6.1-2.jammy_amd64.deb ở trên (17352866 byte; tính ngày 22/10/2026, GitHub không công bố hash). Trống → bước này dừng,
+        # không cài gói chưa kiểm (gói cài bằng sudo).
+        WKHTMLTOX_SHA256: "ee88d74834bdec650f7432c7d3ef1c981e42ae7a762a75a01f7f5da59abc18d5"
       run: |
         sudo apt-get update -q
         sudo apt-get install -y -q mariadb-client libdmtx0b
+        # phiếu kiểm đếm PDF (FEAT-015 S9): wkhtmltopdf 0.12.6.1 patched qt của Frappe v15 + font có chữ Việt
+        if ! [[ "$WKHTMLTOX_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+          echo "::error::WKHTMLTOX_SHA256 is empty or not a SHA-256 hex digest: refusing to install an unchecked package ($WKHTMLTOX_URL)"
+          exit 1
+        fi
+        curl -fsSL -o /tmp/wkhtmltox.deb "$WKHTMLTOX_URL"
+        echo "$WKHTMLTOX_SHA256  /tmp/wkhtmltox.deb" | sha256sum -c -
+        sudo apt-get install -y -q /tmp/wkhtmltox.deb fonts-liberation2 fonts-dejavu-core
 
     - name: Install bench
       shell: bash

@@ -34,6 +34,11 @@ class TestErrors(FrappeTestCase):
 				"COUNT_OUT_OF_RANGE",
 				"COUNTER_INIT_INVALID",
 				"ETCHING_INVALID",
+				"BOM_EMPTY",
+				"BOM_LINE_INVALID",
+				"BOM_TOO_LARGE",
+				"BOM_EFFECTIVE_DATE_INVALID",
+				"SHELF_LIFE_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -42,6 +47,8 @@ class TestErrors(FrappeTestCase):
 				"EQUIPMENT_NOT_FOUND",
 				"CODE_NOT_FOUND",
 				"INSTRUMENT_NOT_FOUND",
+				"SET_TYPE_NOT_FOUND",
+				"BOM_VERSION_NOT_FOUND",
 			),
 			409: (
 				"STATUS_INVALID_FOR_STATION",
@@ -64,6 +71,8 @@ class TestErrors(FrappeTestCase):
 				"GIAI_ALREADY_ASSIGNED",
 				"GIAI_NOT_ASSIGNED",
 				"GS1_PREFIX_NOT_CONFIGURED",
+				"BOM_VERSION_CONFLICT",
+				"SET_TYPE_CODE_EXISTS",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -73,6 +82,21 @@ class TestErrors(FrappeTestCase):
 		# FEAT-014 A-06 I12: v1.instrument.get_image với mã dụng cụ không có
 		self.assertEqual(errors.HTTP_STATUS["INSTRUMENT_NOT_FOUND"], 404)
 		self.assertEqual(Block("INSTRUMENT_NOT_FOUND", "t", "r", "a").http_status, 404)
+
+	def test_http_status_feat015_codes(self):
+		# FEAT-015 A-07 (S4, S5, S7, S11, S13): mã mới của loại bộ / phiên bản BOM, cùng bảng ADR-003
+		for code, status in {
+			"SET_TYPE_NOT_FOUND": 404,
+			"BOM_VERSION_NOT_FOUND": 404,
+			"BOM_EMPTY": 422,
+			"BOM_LINE_INVALID": 422,
+			"BOM_TOO_LARGE": 422,
+			"BOM_EFFECTIVE_DATE_INVALID": 422,
+			"SHELF_LIFE_INVALID": 422,
+			"BOM_VERSION_CONFLICT": 409,
+			"SET_TYPE_CODE_EXISTS": 409,
+		}.items():
+			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 
 	def test_block_as_dict(self):
 		self.assertEqual(

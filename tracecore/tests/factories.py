@@ -8,6 +8,7 @@ from frappe.model.naming import getseries
 from frappe.utils import add_days, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
+from tracecore.instrument import bom_versions
 
 
 def make_user(email, roles=()):
@@ -58,34 +59,79 @@ def next_free_test_gtin():
 	frappe.throw("No free test GTIN-14 left")
 
 
+TEST_DEPARTMENT = "Test CSSD department"
+# Loại gói mặc định của loại bộ test khi không truyền: hạn lưu dài để mọi ghi đè hợp lệ (< hạn loại gói) đều nhận
+AUTO_PACK_TYPE = ("Test auto", 365)
+
+
+def make_department(department_name=TEST_DEPARTMENT):
+	"""Tạo (hoặc lấy) Department (khoa, ERPNext); trả tên Department.
+
+	Có Company (site đã chạy Setup Wizard) thì gắn Company mặc định; site CI mới chưa có Company nên tạo không kèm
+	Company (bỏ kiểm bắt buộc, như dữ liệu test của các factory ERPNext khác).
+	"""
+	existing = frappe.db.get_value("Department", {"department_name": department_name}, "name")
+	if existing:
+		return existing
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	doc = frappe.get_doc({"doctype": "Department", "department_name": department_name, "company": company})
+	doc.flags.ignore_mandatory = not company
+	return doc.insert(ignore_permissions=True).name
+
+
 def make_set_type(
 	type_code="TST",
 	method="Steam",
 	set_type_name=None,
 	gtin="auto",
-	default_pack_type=None,
+	default_pack_type="auto",
 	shelf_life_days=0,
 	tray_image=None,
+	department="auto",
+	is_implant=0,
+	assembly_minutes=0,
+	bom=None,
 ):
 	"""Tạo (hoặc lấy) loại bộ.
 
 	gtin: "auto" → GTIN test chưa dùng (mặc định); None → không có GTIN; chuỗi → dùng nguyên văn.
+	department: "auto" → ``make_department()``; default_pack_type: "auto" → loại gói test hạn 365 ngày
+	(``AUTO_PACK_TYPE``); None → để trống (kiểm trường bắt buộc). bom: ``[(mã dụng cụ, số lượng), …]`` → tạo loại bộ
+	cùng BOM v1 qua ``bom_versions.create_set_type`` (như R02 lưu lần đầu, FR-M1-03.1); không có bom → loại bộ chưa có
+	BOM như dữ liệu có trước FEAT-015 (ghi với cờ dịch vụ ``flags.tc_bom``), thêm BOM sau bằng ``make_bom``.
 	Loại bộ đã có thì trả nguyên trạng.
 	"""
 	if frappe.db.exists("Instrument Set Type", type_code):
 		return frappe.get_doc("Instrument Set Type", type_code)
-	return frappe.get_doc(
-		{
-			"doctype": "Instrument Set Type",
-			"type_code": type_code,
-			"set_type_name": set_type_name or f"Test set {type_code}",
-			"method": method,
-			"gtin": next_free_test_gtin() if gtin == "auto" else gtin,
-			"default_pack_type": default_pack_type,
-			"shelf_life_days": shelf_life_days,
-			"tray_image": tray_image,
-		}
-	).insert()
+	values = {
+		"type_code": type_code,
+		"set_type_name": set_type_name or f"Test set {type_code}",
+		"method": method,
+		"gtin": next_free_test_gtin() if gtin == "auto" else gtin,
+		"department": make_department() if department == "auto" else department,
+		"default_pack_type": make_pack_type(*AUTO_PACK_TYPE)
+		if default_pack_type == "auto"
+		else default_pack_type,
+		"shelf_life_days": shelf_life_days,
+		"is_implant": is_implant,
+		"assembly_minutes": assembly_minutes,
+	}
+	if bom:
+		_ensure_bom_instruments(bom)
+		name = bom_versions.create_set_type(values, [{"instrument": code, "qty": qty} for code, qty in bom])
+		if tray_image:
+			frappe.db.set_value("Instrument Set Type", name, "tray_image", tray_image, update_modified=False)
+		return frappe.get_doc("Instrument Set Type", name)
+	doc = frappe.get_doc({"doctype": "Instrument Set Type", **values})
+	doc.flags.tc_bom = True
+	doc.insert()
+	doc.flags.tc_bom = False  # doc trả về lưu tiếp như người dùng (không mang cờ dịch vụ)
+	if tray_image:
+		# URL ghi thẳng như dữ liệu có trước FEAT-015 (không qua kiểm file của media); ảnh thật: attach_set_type_photo
+		frappe.db.set_value("Instrument Set Type", doc.name, "tray_image", tray_image, update_modified=False)
+		doc.reload()
+		doc.flags.tc_bom = False
+	return doc
 
 
 def make_instrument_group(group_name, interval=None, maint_type=None, description=None):
@@ -120,6 +166,24 @@ def attach_instrument_file(instrument, field, content, file_name, is_private=1):
 			"is_private": is_private,
 			"attached_to_doctype": "Instrument",
 			"attached_to_name": instrument,
+			"attached_to_field": field,
+		}
+	).insert()
+
+
+def attach_set_type_photo(set_type, field, content, file_name, is_private=1):
+	"""Tải `content` lên làm File đính vào ảnh bộ đã xếp `field` (``tray_image``/``tray_image_2``/``tray_image_3``)
+	của loại bộ; trả File. Đi qua đúng kiểm tra file của ``media`` như ảnh dụng cụ (FEAT-015 S6); gán URL vào trường
+	rồi lưu loại bộ để dùng.
+	"""
+	return frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": file_name,
+			"content": content,
+			"is_private": is_private,
+			"attached_to_doctype": "Instrument Set Type",
+			"attached_to_name": _ref_name(set_type),
 			"attached_to_field": field,
 		}
 	).insert()
@@ -168,17 +232,37 @@ def make_instrument(
 	return doc
 
 
-def make_bom(set_type, lines, version=1):
-	"""Tạo các dòng Set BOM Item cho một phiên bản BOM; trả list Document theo thứ tự `lines`.
+# dụng cụ test tạo kèm BOM: hợp cả loại bộ hấp và plasma (FR-M1-03.3), dùng chung được giữa các loại bộ
+BOM_INSTRUMENT_METHODS = ("Steam 134", "Plasma")
 
-	lines: [(mã dụng cụ, số lượng), …]; position = thứ tự trong list (từ 1). Dụng cụ chưa có được tạo.
+
+def _ensure_bom_instruments(lines):
+	for instrument, _qty in lines:
+		make_instrument(instrument, methods=BOM_INSTRUMENT_METHODS)
+
+
+def make_bom(set_type, lines, version=1, effective_from=None, reason=None, legacy=False):
+	"""Tạo phiên bản BOM `version` (phải = phiên bản mới nhất + 1) cho loại bộ; trả list Set BOM Item theo `lines`.
+
+	lines: [(mã dụng cụ, số lượng), …]; position = thứ tự trong list (từ 1). Dụng cụ chưa có được tạo với phương pháp
+	Hấp 134 °C + Plasma (hợp mọi loại bộ). Mặc định đi qua ``bom_versions.create_version`` (luật dòng, ngày hiệu lực, Audit) với
+	``effective_from`` = hôm nay và lý do ``Test BOM version N``. ``legacy=True``: ghi thẳng dòng (cờ dịch vụ, bỏ luật
+	dòng) để giả lập dữ liệu có trước FEAT-015, vd dụng cụ không tương thích đã nằm trong BOM.
 	"""
 	set_type = _ref_name(set_type)
-	rows = []
-	for position, (instrument, qty) in enumerate(lines, 1):
-		make_instrument(instrument)
-		rows.append(
-			frappe.get_doc(
+	_ensure_bom_instruments(lines)
+	latest = int(
+		frappe.db.sql(
+			"select ifnull(max(bom_version), 0) from `tabSet BOM Item` where set_type = %s", set_type
+		)[0][0]
+	)
+	if version != latest + 1:
+		frappe.throw(f"make_bom: BOM version {version} must follow the latest version {latest} of {set_type}")
+	day = getdate(effective_from or today())
+	reason = reason or f"Test BOM version {version}"
+	if legacy:
+		for position, (instrument, qty) in enumerate(lines, 1):
+			doc = frappe.get_doc(
 				{
 					"doctype": "Set BOM Item",
 					"set_type": set_type,
@@ -186,10 +270,26 @@ def make_bom(set_type, lines, version=1):
 					"instrument": instrument,
 					"qty": qty,
 					"position": position,
+					"effective_from": day,
+					"change_reason": reason,
+					"based_on_version": latest,
 				}
-			).insert()
+			)
+			doc.flags.tc_bom = True
+			doc.insert()
+	else:
+		bom_versions.create_version(
+			set_type, [{"instrument": code, "qty": qty} for code, qty in lines], day, reason, latest
 		)
-	return rows
+	names = dict(
+		frappe.get_all(
+			"Set BOM Item",
+			filters={"set_type": set_type, "bom_version": version},
+			fields=["instrument", "name"],
+			as_list=True,
+		)
+	)
+	return [frappe.get_doc("Set BOM Item", names[instrument]) for instrument, _qty in lines]
 
 
 def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
@@ -413,14 +513,15 @@ def _slug(text):
 	return re.sub(r"[^A-Z0-9]+", "-", ascii_text.upper()).strip("-") or "GOI"
 
 
-def make_pack_type(name="Giấy crepe", shelf_life_days=30):
+def make_pack_type(name="Giấy crepe", shelf_life_days=30, disabled=0):
 	"""Item loại gói (nhóm Packaging) có hạn lưu `shelf_life_days`; trả mã Item `VT-GOI-<tên không dấu>`.
 
-	Gọi lại với hạn lưu khác thì cập nhật hạn lưu của Item đó (không giữ giá trị cũ một cách âm thầm).
+	Gọi lại với hạn lưu/cờ ngừng dùng khác thì cập nhật Item đó (không giữ giá trị cũ một cách âm thầm).
 	"""
 	item = make_item(f"VT-GOI-{_slug(name)}", "Packaging", shelf_life_days=shelf_life_days)
-	if item.tc_shelf_life_days != shelf_life_days:
+	if item.tc_shelf_life_days != shelf_life_days or int(item.disabled or 0) != int(disabled):
 		item.tc_shelf_life_days = shelf_life_days
+		item.disabled = int(disabled)
 		item.save(ignore_permissions=True)
 	return item.name
 
@@ -458,17 +559,26 @@ def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_pri
 	30 ngày), lô chỉ thị loại 5 đúng phương pháp, và (nếu `with_printer`) máy in tại TR-004 đang lắp nhãn
 	đúng phương pháp. `set_kwargs`: khóa của loại bộ (`type_code, set_type_name, gtin, shelf_life_days,
 	tray_image`) đi vào `make_set_type`, còn lại (`max_cycles, is_loaner, department`…) vào `make_set_unit`.
+	`set_type_department`: khoa của loại bộ; None (mặc định) → loại bộ không có khoa như dữ liệu có trước FEAT-015
+	(patch không bịa khoa), để các kỳ vọng T4 của FEAT-018 (nhãn không có khoa khi bộ không có khoa) giữ nguyên.
 	Trả `frappe._dict(set_id, set_type, gtin, pack_type, ci_batch, printer, instruments)`.
 	"""
 	type_kwargs = {key: set_kwargs.pop(key) for key in _SET_TYPE_KWARGS if key in set_kwargs}
+	set_type_department = set_kwargs.pop("set_type_department", None)
 	pack_type = make_pack_type()
 	set_type = make_set_type(
 		type_kwargs.pop("type_code", None) or _free_type_code(),
 		method=method,
 		default_pack_type=pack_type,
+		department=set_type_department or "auto",
 		**type_kwargs,
 	)
-	make_bom(set_type, bom)
+	if not set_type_department:
+		# khoa bắt buộc khi lưu từ FEAT-015; ghi thẳng DB để giả lập loại bộ cũ chưa có khoa
+		frappe.db.set_value("Instrument Set Type", set_type.name, "department", None, update_modified=False)
+		set_type.department = None
+	if bom:  # bom rỗng: loại bộ chưa có BOM (dữ liệu cũ) để kiểm T4 chặn BOM rỗng
+		make_bom(set_type, bom)
 	set_unit = make_set_unit(set_type.name, **set_kwargs)
 	make_cycle(set_unit)
 	printer = None

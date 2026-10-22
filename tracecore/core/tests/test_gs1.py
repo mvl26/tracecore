@@ -412,3 +412,90 @@ class TestInstrumentGiai(FrappeTestCase):
 		png = gs1.encode_datamatrix_png(gs1.giai_payload(INSTRUMENT_GIAI))
 		self.assertEqual(gs1.decode_datamatrix_png(png), "\x1d8004" + INSTRUMENT_GIAI)
 		self.assertEqual(gs1.parse_scan(gs1.decode_datamatrix_png(png))["type"], "instrument")
+
+
+class TestBomCode(FrappeTestCase):
+	"""Mã phiên bản BOM trên phiếu kiểm đếm (FEAT-015 S8): ``BOM-<TYPE_CODE>-V<n>``, không phải GS1."""
+
+	def test_make_bom_code_and_parse_scan(self):
+		self.assertEqual(gs1.BOM_CODE_PREFIX, "BOM-")
+		self.assertEqual(gs1.make_bom_code("KHAM01", 3), "BOM-KHAM01-V3")
+		self.assertEqual(gs1.make_bom_code("AB", 9999), "BOM-AB-V9999")
+		self.assertEqual(gs1.make_bom_code("ABCDEFGH", 1), "BOM-ABCDEFGH-V1")
+		for bad in (
+			("X", 1),
+			("ABCDEFGHI", 1),
+			("kham01", 1),
+			("KH-1", 1),
+			("", 1),
+			(None, 1),
+			("KHAM01", 0),
+			("KHAM01", -1),
+			("KHAM01", 10000),
+			("KHAM01", True),
+			("KHAM01", "3"),
+			("KHAM01", 3.0),
+		):
+			with self.subTest(bad=bad), self.assertRaises(ValueError):
+				gs1.make_bom_code(*bad)
+
+		expected = {
+			"type": "bom",
+			"id": "BOM-KHAM01-V3",
+			"set_type": "KHAM01",
+			"bom_version": 3,
+			"raw": "BOM-KHAM01-V3",
+		}
+		for raw in (
+			"BOM-KHAM01-V3",
+			"]d1BOM-KHAM01-V3",
+			"  BOM-KHAM01-V3\r\n",
+			"\x1d]d2BOM-KHAM01-V3\t",
+			"]Q1BOM-KHAM01-V3",
+		):
+			with self.subTest(raw=raw):
+				self.assertEqual(gs1.parse_scan(raw), expected)
+				self.assertEqual(gs1.parse_scan(raw, company_prefix="9520000"), expected)
+		self.assertEqual(gs1.parse_scan("BOM-AB-V9999")["bom_version"], 9999)
+		for bad in (
+			"BOM-X-V1",
+			"BOM-KHAM01-V0",
+			"BOM-KHAM01-V03",
+			"BOM-KHAM01-V10000",
+			"BOM-kham01-V3",
+			"BOM-KHAM01-3",
+			"BOM-KHAM01-V3X",
+			"XBOM-KHAM01-V3",
+			"BOM-ABCDEFGHI-V1",
+			"BOM--V1",
+		):
+			with self.subTest(bad=bad):
+				self.assertEqual(gs1.parse_scan(bad)["type"], "unknown")
+
+		# loại mã cũ không đổi kết quả khi có nhánh mã BOM
+		cases = {
+			GIAI: ("set", GIAI),
+			"(8004)" + GIAI: ("set", GIAI),
+			CYCLE_HRI: ("pack", CYCLE_ID),
+			CYCLE_PAYLOAD: ("pack", CYCLE_ID),
+			"CY-261019-0001": ("pack", "CY-261019-0001"),
+			"NV-00012": ("employee", "NV-00012"),
+			"TB-0003": ("equipment", "TB-0003"),
+			"KE-0001": ("location", "KE-0001"),
+			"TR-004": ("station", "TR-004"),
+			"CN-00001": ("roll", "CN-00001"),
+			"CT-261019-00001": ("container", "CT-261019-00001"),
+			INSTRUMENT_GIAI: ("instrument", INSTRUMENT_GIAI),
+			"(8004)" + INSTRUMENT_GIAI: ("instrument", INSTRUMENT_GIAI),
+			"ABC": ("unknown", None),
+		}
+		for raw, kind in cases.items():
+			with self.subTest(raw=raw):
+				result = gs1.parse_scan(raw, company_prefix="9520000")
+				self.assertEqual((result["type"], result["id"]), kind)
+
+	def test_bom_code_datamatrix_roundtrip(self):
+		code = gs1.make_bom_code("KHAM01", 12)
+		decoded = gs1.decode_datamatrix_png(gs1.encode_datamatrix_png(code))
+		self.assertEqual(decoded, "BOM-KHAM01-V12")
+		self.assertEqual(gs1.parse_scan(decoded)["type"], "bom")

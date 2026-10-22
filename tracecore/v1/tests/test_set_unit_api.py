@@ -51,7 +51,8 @@ class TestSetUnitApi(FrappeTestCase):
 			"Audit Log",
 			filters={"action": "Reject", "reason": "SCAN_INVALID"},
 			fields=["station", "new_value"],
-			order_by="timestamp desc, name desc",
+			# Audit Log đặt tên autoincrement: dòng chèn sau cùng (timestamp có thể lùi khi đồng hồ WSL nhảy)
+			order_by="name desc",
 			limit=1,
 		)[0]
 		self.assertEqual(log.station, "TR-004")
@@ -75,7 +76,8 @@ class TestSetUnitApi(FrappeTestCase):
 			"Audit Log",
 			filters={"action": "Reject", "reason": "SCAN_INVALID"},
 			fields=["new_value"],
-			order_by="timestamp desc, name desc",
+			# Audit Log đặt tên autoincrement: dòng chèn sau cùng (timestamp có thể lùi khi đồng hồ WSL nhảy)
+			order_by="name desc",
 			limit=1,
 		)[0]
 		self.assertLessEqual(len(frappe.parse_json(log.new_value)["raw"]), 120)

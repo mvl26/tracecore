@@ -62,9 +62,12 @@ if [ "$DRY_RUN" != "1" ]; then
 	}
 fi
 
-log "2/8 gói hệ thống (MariaDB $MARIADB_VERSION, Redis, nginx, supervisor, libdmtx)"
+log "2/8 gói hệ thống (MariaDB $MARIADB_VERSION, Redis, nginx, supervisor, libdmtx, font PDF)"
+# Font phiếu PDF (FEAT-015 S9): fonts-liberation (1.07) thiếu chữ Việt có dấu; fonts-liberation2 (2.1) và DejaVu có đủ.
+# wkhtmltopdf 0.12.6 (patched qt) cho PDF của Frappe chưa được script này cài: cài gói wkhtmltox của bản phát hành.
 for pkg in git curl mariadb-server mariadb-client redis-server nginx supervisor libdmtx0b \
-	python3.11 python3.11-venv python3.11-dev build-essential xvfb libfontconfig cron; do
+	python3.11 python3.11-venv python3.11-dev build-essential xvfb libfontconfig cron \
+	fonts-liberation fonts-liberation2 fonts-dejavu-core; do
 	unless "dpkg -s $pkg" sudo apt-get install -y "$pkg"
 done
 unless "command -v node" sudo bash -c "curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && apt-get install -y nodejs"

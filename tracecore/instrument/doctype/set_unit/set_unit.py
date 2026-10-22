@@ -1,7 +1,8 @@
 """Set Unit: bộ dụng cụ vật lý; Set ID GIAI do hệ thống cấp, không sửa (FR-M1-05, BRU-ID-001).
 
 Trạng thái (`status`) và các trường vòng đời (`cycles_used`, `current_station`, `active_cycle_id`,
-`current_cycle_no`) chỉ được đổi bởi `tracecore.core.step_gate` (ADR-005).
+`current_cycle_no`, `cycle_bom_version` — phiên bản BOM ghim khi mở chu trình, FEAT-015 S3) chỉ được đổi bởi
+`tracecore.core.step_gate` (ADR-005).
 """
 
 import frappe
@@ -19,6 +20,7 @@ LIFECYCLE_DEFAULTS = {
 	"current_station": None,
 	"active_cycle_id": None,
 	"current_cycle_no": 0,
+	"cycle_bom_version": 0,
 }
 
 

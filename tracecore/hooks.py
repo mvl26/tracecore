@@ -87,10 +87,9 @@ doctype_js = {"Item": "public/js/item.js"}
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "tracecore.utils.jinja_methods",
-# 	"filters": "tracecore.utils.jinja_filters"
-# }
+# Print Format "TC Count Sheet" (FEAT-015 S9) gọi tc_count_sheet_context(doc.name) khi in từ Desk. Chỉ trỏ tới MỘT hàm
+# (không cả module) để không đưa hàm khác của count_sheet vào môi trường Jinja chung của site.
+jinja = {"methods": ["tracecore.instrument.count_sheet.tc_count_sheet_context"]}
 
 # Installation
 # ------------
@@ -159,8 +158,9 @@ after_install = "tracecore.setup.install.after_install"
 # ---------------
 # Override standard doctype classes
 
-# File: kiểm ảnh/IFU của dụng cụ trước khi Frappe đọc nội dung (SVG đổi đuôi .jpg, HTML đổi đuôi .pdf → lỗi
-# sạch thay vì HTTP 500; FEAT-014 A-06 I11). Chưa app nào khác trong bench ghi đè File.
+# File: kiểm ảnh/IFU của dụng cụ và ảnh bộ đã xếp của loại bộ trước khi Frappe đọc nội dung (SVG đổi đuôi .jpg, HTML
+# đổi đuôi .pdf → lỗi sạch thay vì HTTP 500; FEAT-014 A-06 I11, FEAT-015 S6). Chỉ File đính vào đích của
+# media.TARGETS bị kiểm; File khác đi nguyên đường của Frappe. Chưa app nào khác trong bench ghi đè File.
 override_doctype_class = {"File": "tracecore.instrument.media.InstrumentMediaFile"}
 
 # Document Events
@@ -179,6 +179,8 @@ doc_events = {
 	"Set Unit": dict(_AUDIT_EVENTS),
 	"Instrument": dict(_AUDIT_EVENTS),
 	"Instrument Group": dict(_AUDIT_EVENTS),
+	# loại bộ: Create/Update có old/new (ảnh, hạn lưu, phương pháp, GTIN), không xóa (FEAT-015 S14)
+	"Instrument Set Type": dict(_AUDIT_EVENTS),
 	"Set BOM Item": dict(_AUDIT_EVENTS),
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
@@ -193,11 +195,14 @@ doc_events = {
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	"TraceCore Settings": dict(_AUDIT_EVENTS),
-	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
+	# ảnh/IFU của dụng cụ, ảnh khay loại bộ (media.TARGETS): kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính
+	# lại cũng kiểm (FEAT-014 A-06 I11, FEAT-015 S6)
 	"File": {
 		"before_insert": "tracecore.instrument.media.check_upload",
 		"validate": "tracecore.instrument.media.validate_file",
 	},
+	# Item (ERPNext) nhóm Packaging đổi hạn lưu loại gói qua form Item → Audit Log Update, không chặn (FEAT-015 S7)
+	"Item": {"on_update": "tracecore.instrument.shelf_life.audit_item_change"},
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
@@ -221,6 +226,9 @@ tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
 # +1 bộ đếm bảo dưỡng. cycle_id bắt buộc theo hợp đồng: cùng cycle_id gọi lại không đếm thêm (last_release_cycle);
 # thiếu cycle_id thì không chống trùng.
 tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
+# core.step_gate.start_cycle (FEAT-015 S3): (ctx {set_unit, set_type, cycle_no, on}) -> int | None, phiên bản BOM ghim
+# cho chu trình mới (số nguyên đầu tiên được ghi vào Set Unit.cycle_bom_version; không có → 0)
+tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_version"]
 
 # Scheduled Tasks
 # ---------------
@@ -230,6 +238,10 @@ scheduler_events = {
 		# đường in từ server (A-05 R1): gửi lại Print Job còn Queued của máy in có host
 		"* * * * *": [
 			"tracecore.core.print_server.dispatch_pending",
+		],
+		# FEAT-015 S2: 00:00 giờ hệ thống (Asia/Ho_Chi_Minh) kích hoạt phiên bản BOM đã lên lịch
+		"0 0 * * *": [
+			"tracecore.instrument.bom_versions.roll_effective_versions",
 		],
 	},
 	"daily": [

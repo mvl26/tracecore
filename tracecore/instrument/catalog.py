@@ -137,37 +137,50 @@ def _current_methods(instrument: str) -> frozenset[str]:
 
 
 def bom_usage(instrument: str) -> list[dict]:
-	"""Loại bộ có BOM **hiện hành** chứa dụng cụ (A-06 I3, I13), sắp theo mã loại bộ.
+	"""Loại bộ có BOM **hiện hành hoặc đã lên lịch** chứa dụng cụ (A-06 I3, I13; FEAT-015 S2), sắp theo mã loại bộ.
 
-	Mỗi dòng: ``{set_type, set_type_name, method, bom_version, compatible}``; ``compatible`` = họ phương pháp của
-	loại bộ nằm trong họ phương pháp tương thích hiện tại của dụng cụ (loại bộ chưa khai phương pháp coi như
-	tương thích). Phiên bản BOM cũ không tính. Đọc Set BOM Item/Instrument Set Type (cùng M1), chỉ đọc.
+	Mỗi loại bộ một dòng: ``{set_type, set_type_name, method, bom_version, compatible, scheduled}``. Dụng cụ có trong
+	phiên bản hiệu lực hôm nay → ``bom_version`` = phiên bản đó, ``scheduled`` False; chỉ có ở phiên bản đã lên lịch →
+	phiên bản lên lịch sớm nhất chứa nó, ``scheduled`` True. ``compatible`` = họ phương pháp của loại bộ nằm trong họ
+	phương pháp tương thích hiện tại của dụng cụ (loại bộ chưa khai phương pháp coi như tương thích). Phiên bản đã thay
+	thế / bị thay trước hiệu lực không tính. Phiên bản áp dụng tính trực tiếp từ dòng (``bom_versions``), chỉ đọc.
 	"""
+	from tracecore.instrument import bom_versions  # bom_versions dùng catalog (luật dòng): import lúc gọi
+
 	rows = frappe.db.sql(
 		"""
-		select distinct st.name as set_type, st.set_type_name, st.method, st.current_bom_version as bom_version
-		from `tabInstrument Set Type` st
-		join `tabSet BOM Item` line
-			on line.set_type = st.name and line.bom_version = st.current_bom_version
+		select distinct line.set_type, line.bom_version, st.set_type_name, st.method
+		from `tabSet BOM Item` line
+		join `tabInstrument Set Type` st on st.name = line.set_type
 		where line.instrument = %s
-		order by st.name
+		order by line.set_type, line.bom_version
 		""",
 		(instrument,),
 		as_dict=True,
 	)
 	if not rows:
 		return []
+	live = bom_versions.live_map({row.set_type for row in rows})
 	usable = families(_current_methods(instrument))
-	return [
-		{
+	result: dict[str, dict] = {}
+	for row in rows:
+		state = live.get(row.set_type) or {"effective": None, "scheduled": []}
+		version = cint(row.bom_version)
+		if version == state["effective"]:
+			scheduled = False
+		elif version in state["scheduled"] and row.set_type not in result:
+			scheduled = True
+		else:
+			continue
+		result[row.set_type] = {
 			"set_type": row.set_type,
 			"set_type_name": row.set_type_name,
 			"method": row.method,
-			"bom_version": cint(row.bom_version),
+			"bom_version": version,
 			"compatible": not row.method or row.method in usable,
+			"scheduled": scheduled,
 		}
-		for row in rows
-	]
+	return [result[name] for name in sorted(result)]
 
 
 def retire(instrument: str, reason: str, confirm: bool = False) -> dict:
