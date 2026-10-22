@@ -3,7 +3,8 @@
 GTIN-14 của loại bộ (AI 01 của Cycle ID) do R10 nhập tay, không sinh bằng công thức (D6, OQ-05).
 Luật phần đầu FEAT-015 (khoa, loại gói có hạn lưu, ghi đè ngắn hơn, cấy ghép, thời gian lắp ráp, phiên bản BOM hiện
 hành chỉ server ghi, đổi phương pháp kiểm lại BOM) ở tracecore.instrument.set_type; tạo loại bộ (cùng BOM v1), phiên bản
-BOM, sao chép ở tracecore.instrument.bom_versions.
+BOM, sao chép ở tracecore.instrument.bom_versions. Ảnh bộ đã xếp ``tray_image``/``_2``/``_3`` và thumbnail
+``tray_thumbnail``/``_2``/``_3`` (chỉ server ghi) theo luật file chung ở tracecore.instrument.media (S6).
 """
 
 import re
@@ -13,6 +14,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from tracecore.core import gs1
+from tracecore.instrument import media
 from tracecore.instrument import set_type as set_type_rules
 
 TYPE_CODE_PATTERN = re.compile(r"[A-Z0-9]{2,8}")
@@ -32,6 +34,10 @@ class InstrumentSetType(Document):
 			frappe.throw(_("Type Code must be 2-8 uppercase letters or digits."))
 		self._validate_gtin()
 		set_type_rules.validate_header(self)
+		# S6: 1-3 ảnh bộ đã xếp cùng luật file với ảnh dụng cụ (File riêng tư của chính loại bộ, kiểm nội dung),
+		# thumbnail 320 px chỉ server ghi
+		media.validate_fields(self)
+		media.refresh_thumbnail(self)
 
 	def _validate_gtin(self):
 		# Trống được (loại bộ chưa có GTIN thì chưa sinh được Cycle ID); lưu NULL để chỉ mục unique

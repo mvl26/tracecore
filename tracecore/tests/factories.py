@@ -122,10 +122,15 @@ def make_set_type(
 		if tray_image:
 			frappe.db.set_value("Instrument Set Type", name, "tray_image", tray_image, update_modified=False)
 		return frappe.get_doc("Instrument Set Type", name)
-	doc = frappe.get_doc({"doctype": "Instrument Set Type", **values, "tray_image": tray_image})
+	doc = frappe.get_doc({"doctype": "Instrument Set Type", **values})
 	doc.flags.tc_bom = True
 	doc.insert()
 	doc.flags.tc_bom = False  # doc trả về lưu tiếp như người dùng (không mang cờ dịch vụ)
+	if tray_image:
+		# URL ghi thẳng như dữ liệu có trước FEAT-015 (không qua kiểm file của media); ảnh thật: attach_set_type_photo
+		frappe.db.set_value("Instrument Set Type", doc.name, "tray_image", tray_image, update_modified=False)
+		doc.reload()
+		doc.flags.tc_bom = False
 	return doc
 
 
@@ -161,6 +166,24 @@ def attach_instrument_file(instrument, field, content, file_name, is_private=1):
 			"is_private": is_private,
 			"attached_to_doctype": "Instrument",
 			"attached_to_name": instrument,
+			"attached_to_field": field,
+		}
+	).insert()
+
+
+def attach_set_type_photo(set_type, field, content, file_name, is_private=1):
+	"""Tải `content` lên làm File đính vào ảnh bộ đã xếp `field` (``tray_image``/``tray_image_2``/``tray_image_3``)
+	của loại bộ; trả File. Đi qua đúng kiểm tra file của ``media`` như ảnh dụng cụ (FEAT-015 S6); gán URL vào trường
+	rồi lưu loại bộ để dùng.
+	"""
+	return frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": file_name,
+			"content": content,
+			"is_private": is_private,
+			"attached_to_doctype": "Instrument Set Type",
+			"attached_to_name": _ref_name(set_type),
 			"attached_to_field": field,
 		}
 	).insert()

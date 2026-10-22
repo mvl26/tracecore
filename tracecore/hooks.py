@@ -159,8 +159,9 @@ after_install = "tracecore.setup.install.after_install"
 # ---------------
 # Override standard doctype classes
 
-# File: kiểm ảnh/IFU của dụng cụ trước khi Frappe đọc nội dung (SVG đổi đuôi .jpg, HTML đổi đuôi .pdf → lỗi
-# sạch thay vì HTTP 500; FEAT-014 A-06 I11). Chưa app nào khác trong bench ghi đè File.
+# File: kiểm ảnh/IFU của dụng cụ và ảnh bộ đã xếp của loại bộ trước khi Frappe đọc nội dung (SVG đổi đuôi .jpg, HTML
+# đổi đuôi .pdf → lỗi sạch thay vì HTTP 500; FEAT-014 A-06 I11, FEAT-015 S6). Chỉ File đính vào đích của
+# media.TARGETS bị kiểm; File khác đi nguyên đường của Frappe. Chưa app nào khác trong bench ghi đè File.
 override_doctype_class = {"File": "tracecore.instrument.media.InstrumentMediaFile"}
 
 # Document Events
@@ -195,7 +196,8 @@ doc_events = {
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	"TraceCore Settings": dict(_AUDIT_EVENTS),
-	# ảnh/IFU của dụng cụ: kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính lại cũng kiểm (FEAT-014 A-06 I11)
+	# ảnh/IFU của dụng cụ, ảnh khay loại bộ (media.TARGETS): kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính
+	# lại cũng kiểm (FEAT-014 A-06 I11, FEAT-015 S6)
 	"File": {
 		"before_insert": "tracecore.instrument.media.check_upload",
 		"validate": "tracecore.instrument.media.validate_file",
