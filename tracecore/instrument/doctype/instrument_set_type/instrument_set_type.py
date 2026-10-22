@@ -14,7 +14,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from tracecore.core import gs1
-from tracecore.instrument import media
+from tracecore.instrument import bom, media
 from tracecore.instrument import set_type as set_type_rules
 
 TYPE_CODE_PATTERN = re.compile(r"[A-Z0-9]{2,8}")
@@ -38,6 +38,11 @@ class InstrumentSetType(Document):
 		# thumbnail 320 px chỉ server ghi
 		media.validate_fields(self)
 		media.refresh_thumbnail(self)
+
+	def on_update(self):
+		# tên/phương pháp/ảnh khay (và thumbnail) nằm trong payload BOM của trạm: xóa cache mọi phiên bản (S11)
+		if bom.payload_changed(self, bom.SET_TYPE_PAYLOAD_FIELDS):
+			bom.invalidate(set_type=self.name)
 
 	def _validate_gtin(self):
 		# Trống được (loại bộ chưa có GTIN thì chưa sinh được Cycle ID); lưu NULL để chỉ mục unique

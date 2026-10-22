@@ -338,6 +338,12 @@ def _statuses(dates: dict[int, date], on: date) -> dict[int, str]:
 	return result
 
 
+# dùng chung với bom.payload (cache ngày hiệu lực, S11)
+NO_DATE = _NO_DATE
+dates_by_set_type = _dates_by_set_type
+statuses_on = _statuses
+
+
 def live_map(set_types, on=None) -> dict[str, dict]:
 	"""``{loại bộ: {"effective": int | None, "scheduled": [phiên bản đã lên lịch, tăng dần]}}`` (một truy vấn).
 
@@ -420,6 +426,109 @@ def _version_lines(set_type: str, version: int, lock: bool = False) -> list[tupl
 	]
 
 
+def _version_missing_block(set_type: str, version) -> Block:
+	return Block(
+		"BOM_VERSION_NOT_FOUND",
+		_("BOM version not found"),
+		_("Set type {0} has no BOM version {1}.").format(set_type, cstr(version)[:20] or "-"),
+		_("Choose a BOM version from the version list, or ask R02 to save the BOM."),
+	)
+
+
+def compare_labels() -> dict[str, str]:
+	"""Nhãn chữ của bảng khác biệt (trạng thái không chỉ bằng màu, design.md)."""
+	return {
+		"added": _("Line added"),
+		"removed": _("Line removed"),
+		"qty_changed": _("Quantity changed"),
+		"moved": _("Position changed"),
+	}
+
+
+def compare(set_type: str, from_version, to_version) -> dict:
+	"""So sánh hai phiên bản BOM của loại bộ theo mã dụng cụ, chiều `from_version` → `to_version` (S10, FR-M1-04.3).
+
+	Trả ``{set_type, from_version, to_version, added, removed, qty_changed, moved, unchanged, labels}``:
+	``from_version``/``to_version`` = thông tin phiên bản như ``versions()``; ``added``/``removed`` =
+	``[{instrument, instrument_name, qty, position}]`` (vị trí trong phiên bản có dòng đó); ``qty_changed`` =
+	``[{instrument, instrument_name, from_qty, to_qty, position}]``; ``moved`` = ``[{instrument, instrument_name,
+	from_position, to_position}]`` — đổi thứ tự xếp **tương đối** giữa các dụng cụ có ở cả hai phiên bản (thêm/bỏ dòng
+	làm số thứ tự dồn lên không tính là đổi thứ tự); ``unchanged`` = số dụng cụ có ở cả hai phiên bản với cùng số lượng
+	(đổi thứ tự vẫn tính, vì ``moved`` báo riêng). Danh sách sắp theo vị trí trong ``to_version`` (``removed`` theo
+	``from_version``). 4 truy vấn cố định bất kể số dòng. Từ chối (``BlockedError``): ``SET_TYPE_NOT_FOUND``,
+	``BOM_VERSION_NOT_FOUND`` (phiên bản không có / không phải số nguyên ≥ 1), ``BOM_LINE_INVALID`` (cùng phiên bản).
+	"""
+	name = frappe.db.get_value(SET_TYPE, set_type, "name") if isinstance(set_type, str) and set_type else None
+	if not name:
+		raise BlockedError(not_found_block(set_type))
+	set_type = name
+	numbers = (whole_number(from_version), whole_number(to_version))
+	if numbers[0] is not None and numbers[0] == numbers[1]:
+		raise BlockedError(
+			Block(
+				"BOM_LINE_INVALID",
+				_("Same BOM version"),
+				_("Both sides are BOM version {0}.").format(numbers[0]),
+				_("Choose two different BOM versions to compare."),
+			)
+		)
+	by_number = {row["bom_version"]: row for row in versions(set_type)}
+	for raw, number in zip((from_version, to_version), numbers, strict=True):
+		if number is None or number not in by_number:
+			raise BlockedError(_version_missing_block(set_type, raw))
+	old_number, new_number = numbers
+	lines: dict[int, dict[str, tuple[int, int]]] = {old_number: {}, new_number: {}}
+	for version, instrument, qty, position in frappe.db.sql(
+		"""
+		select bom_version, instrument, qty, position from `tabSet BOM Item`
+		where set_type = %s and bom_version in (%s, %s)
+		order by bom_version asc, position asc, name asc
+		""",
+		(set_type, old_number, new_number),
+	):
+		lines[cint(version)].setdefault(instrument, (cint(qty), cint(position)))
+	old, new = lines[old_number], lines[new_number]
+	codes = sorted(set(old) | set(new))
+	names = (
+		dict(
+			frappe.get_all(
+				"Instrument",
+				filters={"name": ["in", codes]},
+				fields=["name", "instrument_name"],
+				as_list=True,
+			)
+		)
+		if codes
+		else {}
+	)
+	common = [code for code in new if code in old]  # theo thứ tự xếp của to_version
+	old_rank = {code: rank for rank, code in enumerate(code for code in old if code in new)}
+	new_rank = {code: rank for rank, code in enumerate(common)}
+
+	def entry(code, **values):
+		return {"instrument": code, "instrument_name": names.get(code), **values}
+
+	return {
+		"set_type": set_type,
+		"from_version": by_number[old_number],
+		"to_version": by_number[new_number],
+		"added": [entry(code, qty=new[code][0], position=new[code][1]) for code in new if code not in old],
+		"removed": [entry(code, qty=old[code][0], position=old[code][1]) for code in old if code not in new],
+		"qty_changed": [
+			entry(code, from_qty=old[code][0], to_qty=new[code][0], position=new[code][1])
+			for code in common
+			if old[code][0] != new[code][0]
+		],
+		"moved": [
+			entry(code, from_position=old[code][1], to_position=new[code][1])
+			for code in common
+			if old_rank[code] != new_rank[code]
+		],
+		"unchanged": sum(1 for code in common if old[code][0] == new[code][0]),
+		"labels": compare_labels(),
+	}
+
+
 # --- Ghi --------------------------------------------------------------------------------------------------------
 
 
@@ -467,6 +576,7 @@ def create_set_type(header: dict, lines: list[dict], reason: str | None = None) 
 	try:
 		doc.insert()
 		_insert_lines(doc.name, 1, rows, today(), reason or _("Initial version"), 0)
+		_invalidate_cache(doc.name)
 	except frappe.DuplicateEntryError:
 		# request song song vừa tạo cùng mã
 		frappe.db.rollback(save_point=SAVEPOINT)
@@ -602,6 +712,7 @@ def create_version(set_type: str, lines: list[dict], effective_from, reason: str
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		_insert_lines(set_type, new, rows, day, reason, base)
+		_invalidate_cache(set_type)
 		if day == today():
 			status = STATUS_EFFECTIVE
 			current = cint(header.current_bom_version)
@@ -617,6 +728,14 @@ def create_version(set_type: str, lines: list[dict], effective_from, reason: str
 		frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 	return {"set_type": set_type, "bom_version": new, "effective_from": str(day), "status": status}
+
+
+def _invalidate_cache(set_type: str) -> None:
+	# phiên bản mới đổi danh sách phiên bản / phiên bản hiệu lực của cache BOM (bom.version_dates); mã loại bộ
+	# tạo lại sau một transaction bị hoàn tác cũng không đọc cache cũ. Import muộn: bom import module này.
+	from tracecore.instrument import bom
+
+	bom.invalidate(set_type=set_type)
 
 
 def _comment(set_type: str, version: int, day: date, base: int, reason: str):
