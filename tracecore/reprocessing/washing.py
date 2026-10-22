@@ -197,10 +197,11 @@ def admit_set(raw, equipment, queued=None, for_update=False):
 			_("Code {0} is not a set ID.").format(scanned["raw"] or "-"),
 			_("Scan the Set ID on the tray or tag."),
 		)
-	set_id = scanned["id"]
-	set_type = frappe.db.get_value("Set Unit", set_id, "set_type")
-	if not set_type:
+	# tra không phân biệt hoa thường (collation) → dùng Set ID đã lưu để so quét lặp và trả về kiosk
+	found = frappe.db.get_value("Set Unit", scanned["id"], ["name", "set_type"])
+	if not found or not found[1]:
 		raise _set_not_found(scanned["raw"])
+	set_id, set_type = found
 	if set_id in set(queued or []):
 		return _admitted(set_id, set_type, duplicate=True)
 	block = step_gate.check(set_id, STEP, for_update)

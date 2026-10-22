@@ -152,6 +152,16 @@ class TestWashingAdmit(FrappeTestCase):
 			self.assertTrue(result["duplicate"], msg=repr(raw))
 			self.assertEqual(result["set_id"], unit.name)
 
+	def test_admit_lowercase_scan_resolves_to_stored_set_id(self):
+		# Set ID tra theo collation không phân biệt hoa thường: trả mã đã lưu để kiosk nhận ra quét lặp
+		unit = make_wash_ready_set()
+		lower = unit.name.lower()
+		self.assertNotEqual(lower, unit.name)
+		self.assertEqual(washing.admit_set(lower, self.machine.name, [])["set_id"], unit.name)
+		result = washing.admit_set(lower, self.machine.name, [unit.name])
+		self.assertTrue(result["duplicate"])
+		self.assertEqual(result["set_id"], unit.name)
+
 	def test_admit_rejects_codes_that_are_not_a_set(self):
 		for raw in ("TB-0001", "ABC", ""):
 			self.assertEqual(_code(washing.admit_set, raw, self.machine.name, []), "SCAN_INVALID", msg=raw)
