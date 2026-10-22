@@ -6,17 +6,16 @@
 - ``check_method_against_boms``: phiên bản BOM hiệu lực hôm nay + đã lên lịch phải tương thích họ phương pháp mới.
 - ``derived_max_cycles``: cơ số bộ suy ra từ dụng cụ thấp nhất (chỉ hiển thị, không ghi; A-06 I4).
 
-Phiên bản áp dụng tại ngày D = phiên bản số lớn nhất có ``effective_from ≤ D`` (S2); dòng cũ chưa có ngày hiệu lực
-coi như hiệu lực từ đầu. Ngày lấy theo múi giờ hệ thống (``nowdate``), không theo giờ tiến trình.
+Phiên bản áp dụng / đã lên lịch theo ``bom_versions`` (S2): ngày theo múi giờ hệ thống, cùng ngày số lớn thắng.
 """
 
 from collections import defaultdict
 
 import frappe
 from frappe import _
-from frappe.utils import cint, escape_html, getdate, nowdate
+from frappe.utils import cint, escape_html
 
-from tracecore.instrument import catalog, shelf_life
+from tracecore.instrument import bom_versions, catalog, shelf_life
 
 DOCTYPE = "Instrument Set Type"
 ASSEMBLY_MINUTES_MAX = 600
@@ -40,11 +39,11 @@ def validate_header(doc) -> None:
 
 def _guard_current_bom_version(doc) -> None:
 	# Phiên bản hiện hành là giá trị suy ra từ các dòng BOM (S1): chỉ dịch vụ BOM (cờ flags.tc_bom) được ghi.
-	if doc.flags.tc_bom:
-		return
 	current = cint(doc.get("current_bom_version"))
 	if doc.is_new():
-		expected = 1
+		expected = 1  # loại bộ mới luôn bắt đầu ở v1 (tạo cùng BOM v1 qua bom_versions)
+	elif doc.flags.tc_bom:
+		return
 	else:
 		before = doc.get_doc_before_save()
 		expected = cint(before.get("current_bom_version")) if before is not None else current
@@ -56,45 +55,18 @@ def _guard_current_bom_version(doc) -> None:
 		)
 
 
-def _version_dates(set_type: str) -> dict[int, object]:
-	"""``{phiên bản: ngày hiệu lực | None}`` của các phiên bản BOM đã có."""
-	rows = frappe.db.sql(
-		"""
-		select bom_version, min(effective_from) as effective_from
-		from `tabSet BOM Item`
-		where set_type = %s
-		group by bom_version
-		""",
-		(set_type,),
-		as_dict=True,
-	)
-	return {cint(row.bom_version): row.effective_from for row in rows}
-
-
-def _effective(dates: dict, on) -> int | None:
-	started = [version for version, day in dates.items() if day is None or getdate(day) <= on]
-	return max(started) if started else None
-
-
 def live_versions(set_type: str, on=None) -> list[int]:
 	"""Phiên bản còn áp dụng từ ngày `on` (mặc định hôm nay): phiên bản hiệu lực + các phiên bản đã lên lịch.
 
-	Phiên bản đã thay thế không tính; cùng một ngày hiệu lực thì chỉ phiên bản số lớn nhất (S2: phiên bản thua
-	không bao giờ áp dụng). Chưa có dòng BOM nào hiệu lực → dùng ``current_bom_version`` của loại bộ.
+	Theo ``bom_versions.live_map`` (S2): phiên bản đã thay thế và phiên bản bị thay trước hiệu lực (cùng ngày, hoặc số
+	lớn hơn vượt lên ở ngày sớm hơn) không tính. Chưa có dòng BOM nào hiệu lực → dùng ``current_bom_version`` của loại bộ.
 	"""
-	on = getdate(on or nowdate())
-	dates = _version_dates(set_type)
-	effective = _effective(dates, on)
-	if effective is None:
-		effective = cint(frappe.db.get_value(DOCTYPE, set_type, "current_bom_version")) or None
-	by_day: dict = {}
-	for version, day in dates.items():
-		if effective is not None and version <= effective:
-			continue
-		if day is not None and getdate(day) > on:
-			by_day[getdate(day)] = max(version, by_day.get(getdate(day), 0))
-	versions = sorted(by_day.values())
-	return ([effective] if effective is not None else []) + versions
+	live = bom_versions.live_map([set_type], on).get(set_type) or {"effective": None, "scheduled": []}
+	effective = (
+		live["effective"] or cint(frappe.db.get_value(DOCTYPE, set_type, "current_bom_version")) or None
+	)
+	scheduled = [version for version in live["scheduled"] if effective is None or version > effective]
+	return ([effective] if effective is not None else []) + scheduled
 
 
 def _lines(set_type: str, versions: list[int]) -> list[dict]:

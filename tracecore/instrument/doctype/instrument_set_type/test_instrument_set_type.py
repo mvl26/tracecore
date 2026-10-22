@@ -24,6 +24,13 @@ def _required():
 	return {"department": make_department(), "default_pack_type": make_pack_type()}
 
 
+def _new_set_type(values):
+	"""Loại bộ dựng thẳng bằng get_doc, ghi như dịch vụ BOM (FEAT-015: loại bộ chỉ tạo qua bom_versions)."""
+	doc = frappe.get_doc({"doctype": "Instrument Set Type", **values})
+	doc.flags.tc_bom = True
+	return doc
+
+
 class TestInstrumentSetType(FrappeTestCase):
 	def setUp(self):
 		# FrappeTestCase chỉ rollback theo lớp; các test GTIN dùng cùng giá trị nên cô lập từng test
@@ -34,9 +41,8 @@ class TestInstrumentSetType(FrappeTestCase):
 
 	def test_set_type_code_validation(self):
 		with self.assertRaises(frappe.ValidationError):
-			frappe.get_doc(
+			_new_set_type(
 				{
-					"doctype": "Instrument Set Type",
 					"type_code": "bpt 1",
 					"set_type_name": "X",
 					"method": "Steam",
@@ -44,9 +50,8 @@ class TestInstrumentSetType(FrappeTestCase):
 				}
 			).insert()
 
-		doc = frappe.get_doc(
+		doc = _new_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": "zz9t",
 				"set_type_name": "Bo test",
 				"method": "Plasma",
@@ -86,9 +91,8 @@ class TestInstrumentSetType(FrappeTestCase):
 	def test_gtin_optional_until_packing(self):
 		first = make_set_type("GOA", gtin=None)
 		second = make_set_type("GOB", gtin=None)
-		blank = frappe.get_doc(
+		blank = _new_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": "GOC",
 				"set_type_name": "Blank GTIN",
 				"method": "Steam",

@@ -143,6 +143,8 @@ class TestPackTypes(IsolatedTestCase):
 	def test_pack_types_without_default_is_still_a_list(self):
 		make_pack_type("Giấy crepe", 30)
 		set_type = make_set_type("PTD")
+		# loại bộ có trước FEAT-015 chưa có loại gói mặc định (bắt buộc khi lưu từ FEAT-015) → ghi thẳng DB để giả lập
+		frappe.db.set_value("Instrument Set Type", set_type.name, "default_pack_type", None)
 		self.assertTrue(packing.pack_types(set_type.name))
 
 

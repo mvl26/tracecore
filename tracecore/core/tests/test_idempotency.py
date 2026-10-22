@@ -24,7 +24,7 @@ def sample_write(value, client_ts=None):
 
 @idempotency.idempotent
 def failing_write(value, client_ts=None):
-	frappe.get_doc(
+	doc = frappe.get_doc(
 		{
 			"doctype": "Instrument Set Type",
 			"type_code": "IDF",
@@ -33,7 +33,9 @@ def failing_write(value, client_ts=None):
 			"department": make_department(),
 			"default_pack_type": make_pack_type(),
 		}
-	).insert()
+	)
+	doc.flags.tc_bom = True  # loại bộ chỉ tạo qua dịch vụ BOM (FEAT-015); insert phải thành công trước "boom"
+	doc.insert()
 	raise frappe.ValidationError("boom")
 
 

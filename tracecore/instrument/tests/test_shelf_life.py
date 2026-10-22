@@ -24,7 +24,10 @@ def _set_type_doc(type_code, **values):
 		"default_pack_type": make_pack_type("Giấy crepe", 30),
 	}
 	doc.update(values)
-	return frappe.get_doc(doc)
+	doc = frappe.get_doc(doc)
+	# loại bộ chỉ tạo qua bom_versions (Task 2); test luật loại gói / hạn lưu ghi như dịch vụ BOM
+	doc.flags.tc_bom = True
+	return doc
 
 
 class TestShelfLife(IsolatedTestCase):

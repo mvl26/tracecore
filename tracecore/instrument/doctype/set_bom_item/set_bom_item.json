@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "hash",
  "creation": "2026-10-20 10:00:00.000000",
- "description": "One BOM line of a set type for one BOM version (FEAT-018 stub). Versioned as separate rows; comparison and UI in FEAT-015.",
+ "description": "One BOM line of a set type for one BOM version. A version is the set of lines with the same set type and version number; saved versions cannot be changed or deleted (FEAT-015). Lines are created only through Edit BOM.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -12,7 +12,11 @@
   "column_break_qty",
   "qty",
   "position",
-  "effective_from"
+  "section_version",
+  "effective_from",
+  "based_on_version",
+  "column_break_version",
+  "change_reason"
  ],
  "fields": [
   {
@@ -22,6 +26,7 @@
    "in_standard_filter": 1,
    "label": "Set Type",
    "options": "Instrument Set Type",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -31,6 +36,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "BOM Version",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -39,6 +45,7 @@
    "in_list_view": 1,
    "label": "Instrument",
    "options": "Instrument",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -51,25 +58,56 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Quantity",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "default": "0",
-   "description": "Order of the line on the tray (ascending).",
+   "description": "Order of the line on the tray (1..n, numbered by the system).",
    "fieldname": "position",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Position"
+   "label": "Position",
+   "read_only": 1
   },
   {
+   "description": "The version applies from 00:00 of this date (Asia/Ho_Chi_Minh). Same for every line of the version.",
    "fieldname": "effective_from",
    "fieldtype": "Date",
-   "label": "Effective From"
+   "in_list_view": 1,
+   "label": "Effective From",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_version",
+   "fieldtype": "Section Break",
+   "label": "Version"
+  },
+  {
+   "default": "0",
+   "description": "The version this one was edited from (0 for version 1).",
+   "fieldname": "based_on_version",
+   "fieldtype": "Int",
+   "label": "Based On Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Why this BOM version was created (at most 500 characters). Same for every line of the version.",
+   "fieldname": "change_reason",
+   "fieldtype": "Small Text",
+   "label": "Change Reason",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 10:00:00.000000",
+ "modified": "2026-10-22 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set BOM Item",
@@ -77,11 +115,9 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
-   "write": 1
+   "role": "System Manager"
   },
   {
    "read": 1,

@@ -2,7 +2,8 @@
 
 GTIN-14 của loại bộ (AI 01 của Cycle ID) do R10 nhập tay, không sinh bằng công thức (D6, OQ-05).
 Luật phần đầu FEAT-015 (khoa, loại gói có hạn lưu, ghi đè ngắn hơn, cấy ghép, thời gian lắp ráp, phiên bản BOM hiện
-hành chỉ server ghi, đổi phương pháp kiểm lại BOM) ở tracecore.instrument.set_type.
+hành chỉ server ghi, đổi phương pháp kiểm lại BOM) ở tracecore.instrument.set_type; tạo loại bộ (cùng BOM v1), phiên bản
+BOM, sao chép ở tracecore.instrument.bom_versions.
 """
 
 import re
@@ -22,6 +23,10 @@ class InstrumentSetType(Document):
 		self.type_code = (self.type_code or "").strip().upper()
 
 	def validate(self):
+		# FR-M1-03.1, S1: loại bộ chỉ tạo cùng BOM phiên bản 1 qua tracecore.instrument.bom_versions (cờ flags.tc_bom);
+		# Desk "New", Duplicate, frappe.client.insert đều bị chặn
+		if self.is_new() and not self.flags.tc_bom:
+			frappe.throw(_("A set type can only be created together with its BOM version 1."))
 		self.type_code = (self.type_code or "").strip().upper()
 		if not TYPE_CODE_PATTERN.fullmatch(self.type_code):
 			frappe.throw(_("Type Code must be 2-8 uppercase letters or digits."))

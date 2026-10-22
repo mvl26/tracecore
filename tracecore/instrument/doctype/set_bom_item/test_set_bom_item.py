@@ -1,12 +1,18 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import nowdate
 
 from tracecore.instrument import bom, catalog
 from tracecore.tests.factories import make_bom, make_instrument, make_set_type
 
+# Set BOM Item liên kết Instrument Set Type (→ Department, Item) và Instrument (→ Item); CI chưa có Setup Wizard
+test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
+
 
 def _bom_line(set_type, version, instrument, qty, position):
-	return frappe.get_doc(
+	"""Dòng BOM ghi như dịch vụ BOM (cờ ``flags.tc_bom``) nhưng bỏ luật dòng của ``bom_versions``: giả lập dữ liệu có
+	trước FEAT-015 (vd hai dòng cùng thứ tự xếp) để kiểm phần đọc và chốt chặn của chính DocType."""
+	doc = frappe.get_doc(
 		{
 			"doctype": "Set BOM Item",
 			"set_type": set_type,
@@ -14,8 +20,13 @@ def _bom_line(set_type, version, instrument, qty, position):
 			"instrument": instrument,
 			"qty": qty,
 			"position": position,
+			"effective_from": nowdate(),
+			"change_reason": "Legacy line",
+			"based_on_version": max(version - 1, 0),
 		}
-	).insert()
+	)
+	doc.flags.tc_bom = True
+	return doc.insert()
 
 
 class TestSetBOMItem(FrappeTestCase):
@@ -116,6 +127,7 @@ class TestSetBOMItem(FrappeTestCase):
 
 	def test_new_bom_line_rejects_retired_instrument(self):
 		# FR-M1-01 "danh sách chọn khi lập BOM", A-06 I13: dòng cũ giữ nguyên, dòng mới không nhận dụng cụ đã ngừng
+		# (chốt chặn của DocType, kể cả khi dịch vụ BOM ghi); FEAT-015: dòng đã lưu không sửa được nữa
 		st = make_set_type("BMR")
 		old_line = make_bom(st.name, [("BM-RET", 2)], version=1)[0]
 		make_instrument("BM-ACT")
@@ -124,8 +136,9 @@ class TestSetBOMItem(FrappeTestCase):
 		self.assertTrue(frappe.db.exists("Set BOM Item", old_line.name))
 		old_line.reload()
 		old_line.qty = 3
-		old_line.save()
-		self.assertEqual(frappe.db.get_value("Set BOM Item", old_line.name, "qty"), 3)
+		with self.assertRaises(frappe.ValidationError):
+			old_line.save()
+		self.assertEqual(frappe.db.get_value("Set BOM Item", old_line.name, "qty"), 2)
 
 		frappe.local.lang = "vi"
 		try:
@@ -135,7 +148,4 @@ class TestSetBOMItem(FrappeTestCase):
 			self.assertIn("ngừng sử dụng", str(raised.exception))
 		finally:
 			frappe.local.lang = "en"
-		line = _bom_line(st.name, 2, "BM-ACT", 1, 1)
-		line.instrument = "BM-RET"
-		with self.assertRaises(frappe.ValidationError):
-			line.save()
+		self.assertEqual(_bom_line(st.name, 2, "BM-ACT", 1, 1).instrument, "BM-ACT")

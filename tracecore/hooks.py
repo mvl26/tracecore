@@ -233,6 +233,10 @@ scheduler_events = {
 		"* * * * *": [
 			"tracecore.core.print_server.dispatch_pending",
 		],
+		# FEAT-015 S2: 00:00 giờ hệ thống (Asia/Ho_Chi_Minh) kích hoạt phiên bản BOM đã lên lịch
+		"0 0 * * *": [
+			"tracecore.instrument.bom_versions.roll_effective_versions",
+		],
 	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",

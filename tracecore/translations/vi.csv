@@ -1080,7 +1080,6 @@ Employee who badged in at the station (filled once badge sign-in exists).,Nhân 
 Lubricant lot used when the maintenance type is lubrication.,Lô dầu bôi trơn dùng khi loại bảo dưỡng là tra dầu.,Pack Maintenance Done
 Number of times this step failed in this cycle.,Số lần bước này không đạt trong chu trình.,Step Gate Result
 Optional ERPNext Item; stock is not synchronized.,Item ERPNext (tùy chọn); không đồng bộ tồn kho.,Instrument
-Order of the line on the tray (ascending).,Thứ tự dòng trên khay (tăng dần).,Set BOM Item
 Quantity of this instrument in the BOM line that was confirmed.,Số lượng dụng cụ này trong dòng BOM đã xác nhận.,Pack Instrument Confirmed
 Raised by one when the set of compatible methods changes.,Tăng thêm một khi tập phương pháp tiệt khuẩn tương thích thay đổi.,Instrument
 "Reminder after this many cycles since the last maintenance. Blank or 0 = no reminder.","Nhắc bảo dưỡng sau số chu trình này kể từ lần bảo dưỡng gần nhất. Để trống hoặc 0 = không nhắc.",Instrument
@@ -1198,3 +1197,60 @@ The sterilization method cannot be changed to {0}: these BOM lines are not compa
 Incompatible BOM lines,Dòng BOM không tương thích,
 Set type header defaults filled in by the FEAT-015 data patch,Điền mặc định phần đầu loại bộ bằng patch dữ liệu FEAT-015,
 Demo operating theatre,Khoa phẫu thuật (demo),
+A reason is required to save a new BOM version.,Phải nhập lý do để lưu phiên bản BOM mới.,
+A saved BOM version cannot be changed. Create a new BOM version.,"Phiên bản BOM đã lưu không sửa được, hãy tạo phiên bản mới.",
+A set type can only be created together with its BOM version 1.,Loại bộ chỉ tạo được cùng BOM phiên bản 1.,
+A set type needs at least one BOM line.,Loại bộ phải có ít nhất một dòng BOM.,
+"Add the instruments of the set, then save.",Thêm các dụng cụ của bộ rồi lưu lại.,
+BOM changed meanwhile,BOM vừa được người khác thay đổi,
+BOM is empty,BOM rỗng,
+BOM lines can only be created through Edit BOM.,Dòng BOM chỉ tạo qua Sửa BOM.,
+"BOM lines must be a list of objects with instrument, qty and position.","Dòng BOM phải là danh sách gồm dụng cụ, số lượng và thứ tự xếp.",
+BOM not saved,Chưa lưu BOM,
+BOM too large,BOM quá lớn,
+BOM version data filled in by the FEAT-015 data patch,Điền dữ liệu phiên bản BOM bằng patch dữ liệu FEAT-015,
+"BOM version {0} saved by {1} (based on version {2}), effective from {3}. Reason: {4}","{1} lưu BOM phiên bản {0} (sửa từ phiên bản {2}), hiệu lực từ {3}. Lý do: {4}",
+Base version must be a whole number of at least 0.,Phiên bản cơ sở phải là số nguyên từ 0 trở lên.,
+Based On Version,Sửa từ phiên bản,Set BOM Item
+Change Reason,Lý do thay đổi,Set BOM Item
+"Change at least one line, or close without saving.","Hãy thay đổi ít nhất một dòng, hoặc đóng mà không lưu.",
+Check the set type code.,Kiểm tra lại mã loại bộ.,
+"Choose today or a later date, not earlier than the latest BOM version.","Chọn hôm nay hoặc ngày sau, không sớm hơn phiên bản BOM mới nhất.",
+"Copied from set type {0}, BOM version {1}","Sao chép từ loại bộ {0}, BOM phiên bản {1}",
+Demo data,Dữ liệu demo,
+Effective date not accepted,Ngày hiệu lực không hợp lệ,
+"Effective date {0} is earlier than BOM version {1}, effective from {2}.",Ngày hiệu lực {0} sớm hơn BOM phiên bản {1} (hiệu lực từ {2}).,
+Effective date {0} is in the past.,Ngày hiệu lực {0} đã qua.,
+Effective date {0} is not a valid date.,Ngày hiệu lực {0} không phải ngày hợp lệ.,
+Enter a different type code.,Nhập mã loại bộ khác.,
+"Enter why the BOM changes, at most {0} characters.","Nhập lý do thay đổi BOM, tối đa {0} ký tự.",
+"Fix the lines listed below, then save again.",Sửa các dòng liệt kê dưới đây rồi lưu lại.,
+Initial version,Phiên bản đầu tiên,
+Instrument {0} ({1}) is not compatible with the set type method {2}.,Dụng cụ {0} ({1}) không tương thích với phương pháp {2} của loại bộ.,
+Instrument {0} is already listed in row {1}. Combine the quantities in one line.,Dụng cụ {0} đã có ở dòng {1}. Gộp số lượng vào một dòng.,
+No changes,Không có thay đổi,
+"Order of the line on the tray (1..n, numbered by the system).","Thứ tự xếp của dòng trên khay (1..n, hệ thống đánh số).",Set BOM Item
+Position must be a whole number of at least 1.,Thứ tự xếp phải là số nguyên từ 1 trở lên.,
+Position {0} is already used in row {1}.,Thứ tự xếp {0} đã dùng ở dòng {1}.,
+Quantity must be a whole number from 1 to {0}.,Số lượng phải là số nguyên từ 1 đến {0}.,
+Recorded before BOM versioning,Ghi nhận trước khi có quản lý phiên bản BOM,
+Reload the BOM and make your change again.,Tải lại BOM rồi thực hiện lại thay đổi.,
+Set type code already used,Mã loại bộ đã được dùng,
+Set type not found,Không tìm thấy loại bộ,
+Set type {0} already exists.,Loại bộ {0} đã có.,
+Set type {0} not found.,Không tìm thấy loại bộ {0}.,
+Split the set into smaller set types.,Tách bộ thành các loại bộ nhỏ hơn.,
+The BOM has {0} lines; at most {1} are allowed.,BOM có {0} dòng; tối đa {1} dòng.,
+The BOM is the same as version {0}.,BOM giống hệt phiên bản {0}.,
+The reason has {0} characters; at most {1} are allowed.,Lý do dài {0} ký tự; tối đa {1} ký tự.,
+The version applies from 00:00 of this date (Asia/Ho_Chi_Minh). Same for every line of the version.,Phiên bản áp dụng từ 00:00 ngày này (giờ Việt Nam). Giống nhau cho mọi dòng của phiên bản.,Set BOM Item
+The version this one was edited from (0 for version 1).,Phiên bản được sửa thành phiên bản này (0 với phiên bản 1).,Set BOM Item
+Why this BOM version was created (at most 500 characters). Same for every line of the version.,Lý do tạo phiên bản BOM này (tối đa 500 ký tự). Giống nhau cho mọi dòng của phiên bản.,Set BOM Item
+"You edited BOM version {0}, but the latest version is now {1}.","Bạn sửa từ BOM phiên bản {0}, nhưng phiên bản mới nhất hiện là {1}.",
+base_version must be a whole number of at least 0.,base_version phải là số nguyên từ 0 trở lên.,
+header has fields that cannot be set: {0}.,header có trường không được đặt: {0}.,
+"lines must be a list of objects with instrument, qty and position.","lines phải là danh sách gồm instrument, qty và position.",
+scheduled BOM version {0},BOM phiên bản {0} đã lên lịch,
+{0} BOM lines have errors.,{0} dòng BOM có lỗi.,
+{0} has the wrong type.,{0} sai kiểu dữ liệu.,
+{0} must be valid JSON.,{0} phải là JSON hợp lệ.,

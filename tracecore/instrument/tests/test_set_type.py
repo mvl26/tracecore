@@ -33,7 +33,10 @@ def _set_type_doc(type_code, **values):
 		"default_pack_type": make_pack_type("Giấy crepe", 30),
 	}
 	doc.update(values)
-	return frappe.get_doc(doc)
+	doc = frappe.get_doc(doc)
+	# loại bộ chỉ tạo qua bom_versions (Task 2); test phần đầu ghi như dịch vụ BOM
+	doc.flags.tc_bom = True
+	return doc
 
 
 def _set_dates(set_type, dates):
@@ -157,6 +160,7 @@ class TestSetTypeHeader(IsolatedTestCase):
 		set_type = make_set_type("DMC", bom=[("DM-500", 1), ("DM-300", 2), ("DM-NONE", 1)])
 		make_bom(set_type, [("DM-NONE", 1)], version=2)
 		_set_dates(set_type.name, {1: today, 2: add_days(today, 3)})
+		updates = len(_audit(set_type.name, "Update"))  # phiên bản v2 có Audit Update của dịch vụ BOM (S14)
 
 		self.assertEqual(
 			set_type_rules.derived_max_cycles(set_type.name),
@@ -171,7 +175,7 @@ class TestSetTypeHeader(IsolatedTestCase):
 			{"value": None, "undefined": [], "limiting": []},
 		)
 		# chỉ đọc: không ghi gì vào loại bộ
-		self.assertFalse(_audit(set_type.name, "Update"))
+		self.assertEqual(len(_audit(set_type.name, "Update")), updates)
 
 	def test_permissions_match_s12(self):
 		validate_permissions_for_doctype(DOCTYPE)

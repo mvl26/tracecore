@@ -22,6 +22,7 @@ from frappe.utils import add_days, today
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
+from tracecore.instrument import bom, bom_versions
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
 
@@ -52,7 +53,7 @@ def ensure_demo_set():
 	"""Tạo (nếu chưa có) loại bộ DEMO và một Set Unit; trả và in Set ID."""
 	_require_dev_site()
 	if not frappe.db.exists("Instrument Set Type", DEMO_SET_TYPE):
-		frappe.get_doc(
+		doc = frappe.get_doc(
 			{
 				"doctype": "Instrument Set Type",
 				"type_code": DEMO_SET_TYPE,
@@ -61,7 +62,10 @@ def ensure_demo_set():
 				"department": _demo_department(),
 				"default_pack_type": _ensure_pack_type(_t4_catalog()["Steam"]["pack_type"]),
 			}
-		).insert(ignore_permissions=True)
+		)
+		# loại bộ demo không có BOM (chỉ để in Set ID) như dữ liệu có trước FEAT-015: ghi với cờ dịch vụ BOM
+		doc.flags.tc_bom = True
+		doc.insert(ignore_permissions=True)
 	set_id = frappe.db.get_value("Set Unit", {"set_type": DEMO_SET_TYPE}, "name", order_by="creation asc")
 	if not set_id:
 		set_id = (
@@ -212,21 +216,23 @@ def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
 	if ensure_instruments:
 		for instrument, name, _qty in spec["bom"]:
 			_ensure_instrument(instrument, name, method)
+	lines = [{"instrument": instrument, "qty": qty} for instrument, _name, qty in spec["bom"]]
 	if not frappe.db.exists("Instrument Set Type", code):
-		frappe.get_doc(
+		# FR-M1-03.1: loại bộ tạo cùng BOM v1 qua dịch vụ BOM (luật dòng, Audit)
+		bom_versions.create_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": code,
 				"set_type_name": spec["set_name"],
 				"method": method,
 				"gtin": _free_demo_gtin(),
 				"department": _demo_department(),
 				"default_pack_type": pack_code,
-				"tray_image": _demo_image(f"{code}-TRAY"),
-			}
-		).insert(ignore_permissions=True)
-	if not frappe.db.exists("Set BOM Item", {"set_type": code, "bom_version": 1}):
-		factories.make_bom(code, [(instrument, qty) for instrument, _name, qty in spec["bom"]])
+			},
+			lines,
+		)
+		frappe.db.set_value("Instrument Set Type", code, "tray_image", _demo_image(f"{code}-TRAY"))
+	elif not frappe.db.exists("Set BOM Item", {"set_type": code}):
+		bom_versions.create_version(code, lines, bom_versions.today(), _("Demo data"), 0)
 	return code
 
 
@@ -576,23 +582,23 @@ def _giai_candidate(code):
 
 
 def _ensure_bom_line(set_type, instrument):
-	"""Thêm `instrument` vào BOM hiện hành của `set_type` (dòng cuối) nếu chưa có."""
-	version = frappe.db.get_value("Instrument Set Type", set_type, "current_bom_version") or 1
+	"""Thêm `instrument` vào BOM hiện hành của `set_type` (dòng cuối) nếu chưa có: phiên bản BOM mới hiệu lực hôm nay
+	(phiên bản đã lưu không sửa được, FEAT-015)."""
+	version = bom_versions.effective_version(set_type) or 0
 	if frappe.db.exists(
 		"Set BOM Item", {"set_type": set_type, "bom_version": version, "instrument": instrument}
 	):
 		return
-	position = frappe.db.count("Set BOM Item", {"set_type": set_type, "bom_version": version}) + 1
-	frappe.get_doc(
-		{
-			"doctype": "Set BOM Item",
-			"set_type": set_type,
-			"bom_version": version,
-			"instrument": instrument,
-			"qty": 1,
-			"position": position,
-		}
-	).insert(ignore_permissions=True)
+	latest = max((row["bom_version"] for row in bom_versions.versions(set_type)), default=0)
+	retired = set(frappe.get_all("Instrument", filters={"status": "Retired"}, pluck="name"))
+	# dụng cụ demo đã bị e2e ngừng sử dụng không chép sang phiên bản mới (FR-M1-03.6)
+	lines = [
+		{"instrument": row["instrument"], "qty": row["qty"]}
+		for row in (bom.lines(set_type, latest) if latest else [])
+		if row["instrument"] not in retired
+	]
+	lines.append({"instrument": instrument, "qty": 1})
+	bom_versions.create_version(set_type, lines, bom_versions.today(), _("Demo data"), latest)
 
 
 def ensure_instrument_demo():

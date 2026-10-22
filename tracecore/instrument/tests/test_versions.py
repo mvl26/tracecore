@@ -6,6 +6,7 @@ hành chứa dụng cụ nhận cảnh báo; gói và bộ đang giữa chu trì
 
 import frappe
 from frappe import _
+from frappe.utils import add_days, nowdate
 
 from tracecore.core import step_gate
 from tracecore.core.audit import AuditLogImmutableError
@@ -32,12 +33,14 @@ def _set_methods(code, methods, **fields):
 
 
 def _set_type_comments(set_type):
+	"""Comment cảnh báo đổi phiên bản dụng cụ trên timeline loại bộ (bỏ Comment "BOM version N saved…" của FEAT-015)."""
 	return frappe.get_all(
 		"Comment",
 		filters={
 			"reference_doctype": "Instrument Set Type",
 			"reference_name": set_type,
 			"comment_type": "Info",
+			"content": ["not like", "BOM version%"],
 		},
 		pluck="content",
 	)
@@ -158,14 +161,18 @@ class TestVersions(IsolatedTestCase):
 		plasma = make_set_type("VRWP", method="Plasma", set_type_name="Plasma tray")
 		old_only = make_set_type("VRWO", method="Steam", set_type_name="Old BOM only")
 		make_bom(steam, [("VR-WRN", 2)], version=1)
-		make_bom(plasma, [("VR-OTH", 1), ("VR-WRN", 1)], version=1)
+		# dữ liệu có trước FEAT-015: dụng cụ chỉ hấp đã nằm trong BOM loại bộ Plasma (nay bị chặn khi lưu BOM)
+		make_bom(plasma, [("VR-OTH", 1), ("VR-WRN", 1)], version=1, legacy=True)
 		make_bom(old_only, [("VR-WRN", 1)], version=1)
 		make_bom(old_only, [("VR-OTH", 1)], version=2)
 		frappe.db.set_value("Instrument Set Type", old_only.name, "current_bom_version", 2)
 
 		usage = catalog.bom_usage("VR-WRN")
 		self.assertEqual([row["set_type"] for row in usage], ["VRWP", "VRWS"])
-		self.assertEqual(set(usage[0]), {"set_type", "set_type_name", "method", "bom_version", "compatible"})
+		self.assertEqual(
+			set(usage[0]), {"set_type", "set_type_name", "method", "bom_version", "compatible", "scheduled"}
+		)
+		self.assertFalse(any(row["scheduled"] for row in usage))
 		self.assertTrue(all(row["compatible"] is False for row in usage if row["method"] == "Plasma"))
 
 		frappe.clear_messages()
@@ -209,6 +216,23 @@ class TestVersions(IsolatedTestCase):
 		self.assertEqual(doc.version_no, 2)
 		self.assertEqual(versions.notify_boms(doc), [])
 		self.assertFalse([m for m in _messages() if "VR-UNU" in str(m.get("message"))])
+
+	def test_method_change_warns_set_type_with_scheduled_version(self):
+		# FEAT-015 S2: dụng cụ chỉ có ở phiên bản BOM đã lên lịch cũng được cảnh báo (FEAT-014 I3)
+		make_instrument("VR-SCH", methods=("Steam 134",))
+		scheduled = make_set_type("VRSC", method="Steam", set_type_name="Scheduled tray")
+		make_bom(scheduled, [("VR-OTH", 1)], version=1)
+		make_bom(scheduled, [("VR-OTH", 1), ("VR-SCH", 1)], version=2, effective_from=add_days(nowdate(), 2))
+
+		usage = catalog.bom_usage("VR-SCH")
+		self.assertEqual(
+			[(row["set_type"], row["bom_version"], row["scheduled"]) for row in usage], [("VRSC", 2, True)]
+		)
+		frappe.clear_messages()
+		_set_methods("VR-SCH", ("Plasma",))
+		self.assertEqual(len(_set_type_comments("VRSC")), 1)
+		notes = [m for m in _messages() if "VR-SCH" in str(m.get("message"))]
+		self.assertIn(_("scheduled BOM version {0}").format(2), notes[0]["message"])
 
 	def test_method_change_does_not_touch_in_flight_cycles(self):
 		ready = make_t4_ready_set(method="Steam", bom=(("VR-INF", 1), ("VR-IN2", 1)), with_printer=False)
