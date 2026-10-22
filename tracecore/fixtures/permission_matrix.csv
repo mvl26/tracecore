@@ -35,7 +35,7 @@ DT-STOCKCOUNT,Stock Reconciliation,R,RA,R,R,RW,RWS,RW,,RWS,R,
 DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,future FEAT-045
 DT-COSTRATE,Cost Rate Version,RA,R,,,,,,,RWS,R,future FEAT-045
 DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
-DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,future FEAT-031
+DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
 DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,future FEAT-032
 DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
 DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

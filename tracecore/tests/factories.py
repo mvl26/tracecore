@@ -935,3 +935,23 @@ def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_
 		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
 	step_gate.bind_cycle(set_unit.name, pack.name, None)
 	return pack
+
+
+def make_bom_set_type(type_code, lines, caps=None):
+	"""Loại bộ cùng BOM v1; ``caps``: ``{mã dụng cụ: cơ số}`` (thiếu = Chưa xác định)."""
+	for code, _qty in lines:
+		make_instrument(code, methods=BOM_INSTRUMENT_METHODS, max_cycles=(caps or {}).get(code))
+	return make_set_type(type_code, bom=lines)
+
+
+def make_par_level(target_doctype, target, par_kind="Reprocessing", **values):
+	"""Tạo Par Level (FEAT-031); ``values``: max_cycles, source, department, min_qty, max_qty, over_percent…"""
+	return frappe.get_doc(
+		{
+			"doctype": "Par Level",
+			"par_kind": par_kind,
+			"target_doctype": target_doctype,
+			"target": target,
+			**values,
+		}
+	).insert()

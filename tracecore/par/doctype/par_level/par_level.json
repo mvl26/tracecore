@@ -1,0 +1,227 @@
+{
+ "actions": [],
+ "autoname": "PAR-.#####",
+ "creation": "2026-10-22 10:00:00.000000",
+ "description": "Par level (FEAT-031, FR-M8-01/02): maximum reprocessing cycles of an instrument or set type, or the minimum/maximum stock of a set type in a department. Saving a reprocessing par level of an instrument updates Instrument.max_cycles.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "par_kind",
+  "target_doctype",
+  "target",
+  "department",
+  "column_break_target",
+  "is_active",
+  "section_reprocessing",
+  "max_cycles",
+  "source",
+  "column_break_reprocessing",
+  "warn_percent",
+  "warn_count",
+  "confirm_below_used",
+  "used_html",
+  "section_stock",
+  "min_qty",
+  "max_qty",
+  "column_break_stock",
+  "over_percent",
+  "is_emergency_dept",
+  "section_change",
+  "reason",
+  "section_history",
+  "history"
+ ],
+ "fields": [
+  {
+   "fieldname": "par_kind",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Kind",
+   "options": "Reprocessing\nDepartment Stock",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target Type",
+   "options": "Instrument\nInstrument Set Type",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "target",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Target",
+   "options": "target_doctype",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.par_kind=='Department Stock'",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "mandatory_depends_on": "eval:doc.par_kind=='Department Stock'",
+   "options": "Department",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_target",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Inactive par levels are ignored. A par level is never deleted.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "depends_on": "eval:doc.par_kind=='Reprocessing'",
+   "fieldname": "section_reprocessing",
+   "fieldtype": "Section Break",
+   "label": "Reprocessing Limit"
+  },
+  {
+   "description": "Entered by hand, never taken from the IFU automatically. 0 or blank = Undefined (warning only, does not block).",
+   "fieldname": "max_cycles",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Maximum Cycles",
+   "non_negative": 1
+  },
+  {
+   "default": "Estimate",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "IFU\nEstimate"
+  },
+  {
+   "fieldname": "column_break_reprocessing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "10",
+   "description": "Early warning when the remaining cycles are at most this percent of the limit.",
+   "fieldname": "warn_percent",
+   "fieldtype": "Percent",
+   "label": "Early Warning (%)"
+  },
+  {
+   "default": "5",
+   "description": "Early warning when this many cycles or fewer remain.",
+   "fieldname": "warn_count",
+   "fieldtype": "Int",
+   "label": "Early Warning (Cycles)",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "description": "Tick to save a limit that is not above the cycles already used.",
+   "fieldname": "confirm_below_used",
+   "fieldtype": "Check",
+   "label": "Confirm Limit Below Used Cycles",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "used_html",
+   "fieldtype": "HTML",
+   "label": "Used Cycles"
+  },
+  {
+   "depends_on": "eval:doc.par_kind=='Department Stock'",
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Department Stock Limit"
+  },
+  {
+   "fieldname": "min_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Minimum Sets",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "max_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Maximum Sets",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_stock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.is_emergency_dept",
+   "description": "Share above the maximum allowed without approval, up to 20 percent, emergency departments only.",
+   "fieldname": "over_percent",
+   "fieldtype": "Percent",
+   "label": "Allowed Overshoot (%)"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_emergency_dept",
+   "fieldtype": "Check",
+   "label": "Emergency Department"
+  },
+  {
+   "fieldname": "section_change",
+   "fieldtype": "Section Break",
+   "label": "Change"
+  },
+  {
+   "description": "Required when the limit changes; recorded in the history.",
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Change",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_history",
+   "fieldtype": "Section Break",
+   "label": "History"
+  },
+  {
+   "fieldname": "history",
+   "fieldtype": "Table",
+   "label": "History",
+   "no_copy": 1,
+   "options": "Par Level History",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-22 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Par",
+ "name": "Par Level",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "target",
+ "track_changes": 1
+}
