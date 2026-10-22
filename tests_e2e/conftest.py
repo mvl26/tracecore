@@ -341,10 +341,6 @@ def settype_demo():
 
 @pytest.fixture
 def settype_page(page):
-	"""User Desk TC R02 (khai báo loại bộ, sửa BOM, ảnh bộ, phiếu kiểm đếm)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_SETTYPE_USER"), "pwd": require_env("TC_E2E_SETTYPE_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	"""User Desk TC R02 (khai báo loại bộ, sửa BOM, ảnh bộ, phiếu kiểm đếm); hoàn tất OTP như các user Desk khác."""
+	desk_login(page, "TC_E2E_SETTYPE")
 	return page

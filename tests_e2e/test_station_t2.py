@@ -23,6 +23,13 @@ def scan(page, raw):
 	page.keyboard.press("Enter")
 
 
+def scan_settled(page, raw):
+	"""Quét rồi chờ RPC trả lời: kiosk bỏ qua mã quét khi đang chờ máy chủ (``busy``), nên hai mã dỡ lô liên tiếp
+	phải đợi nhau (màn đã hiện khối "Đang dỡ lô" trước khi RPC đầu trả lời)."""
+	scan(page, raw)
+	expect(page.locator(".tc-t2 .tc-loading")).to_have_count(0, timeout=15000)
+
+
 def mock_agent(page):
 	received = []
 
@@ -162,9 +169,9 @@ def test_t2_unload_requires_matching_machine(t2_page, t2_demo):
 	batch = STATE.get("batch")
 	assert batch, "chạy test_t2_load_happy_path_within_three_taps trước"
 	page.locator("[data-action='t2-mode'][data-mode='unload']").click()
-	scan(page, batch)
+	scan_settled(page, batch)
 	expect(page.locator(".tc-t2-unload")).to_contain_text(batch, timeout=15000)
-	scan(page, t2_demo["machine_two_door"])
+	scan_settled(page, t2_demo["machine_two_door"])
 	alert = page.locator(".tc-t2 .tc-alert-error")
 	expect(alert).to_contain_text("không khớp", timeout=15000)
 	expect(page.locator(".tc-t2-form")).to_have_count(0)
@@ -174,8 +181,10 @@ def test_t2_pass_blocked_until_manual_data_confirmed(t2_page, t2_demo):
 	page = t2_page
 	batch = STATE["batch"]
 	page.locator("[data-action='t2-mode'][data-mode='unload']").click()
-	scan(page, t2_demo["machine"])
-	scan(page, batch)
+	# QR lô trước rồi QR máy (Q15 nhận cả hai thứ tự): máy demo có thể còn lô đang chạy của lần chạy dở trước,
+	# khi đó quét máy trước bị chặn "máy có nhiều lô đang chạy"
+	scan_settled(page, batch)
+	scan_settled(page, t2_demo["machine"])
 	form = page.locator(".tc-t2-form")
 	expect(form).to_be_visible(timeout=15000)
 	expect(page.locator(".tc-t2-verdict")).to_have_count(0)  # chưa có dữ liệu: chưa kết luận được
@@ -197,8 +206,8 @@ def test_t2_close_requires_clean_test_and_confirm_tick_then_fail_returns_all_set
 	page = t2_page
 	batch = STATE["batch"]
 	page.locator("[data-action='t2-mode'][data-mode='unload']").click()
-	scan(page, t2_demo["machine"])
-	scan(page, batch)
+	scan_settled(page, batch)
+	scan_settled(page, t2_demo["machine"])
 	verdict = page.locator(".tc-t2-verdict")
 	expect(verdict).to_be_visible(timeout=15000)
 	verdict.locator("[data-field='result'][data-value='Fail']").click()
