@@ -9,7 +9,7 @@ from frappe.utils import add_days, now_datetime
 
 from tracecore.core import idempotency
 from tracecore.core.client_time import ClientTimestampError, parse_client_ts
-from tracecore.tests.factories import make_user
+from tracecore.tests.factories import make_department, make_pack_type, make_user
 from tracecore.tests.utils import request_headers
 
 TS = "2026-10-19T09:00:00+07:00"
@@ -25,7 +25,14 @@ def sample_write(value, client_ts=None):
 @idempotency.idempotent
 def failing_write(value, client_ts=None):
 	frappe.get_doc(
-		{"doctype": "Instrument Set Type", "type_code": "IDF", "set_type_name": "x", "method": "Steam"}
+		{
+			"doctype": "Instrument Set Type",
+			"type_code": "IDF",
+			"set_type_name": "x",
+			"method": "Steam",
+			"department": make_department(),
+			"default_pack_type": make_pack_type(),
+		}
 	).insert()
 	raise frappe.ValidationError("boom")
 

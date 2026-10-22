@@ -132,7 +132,10 @@ class TestPackTypes(IsolatedTestCase):
 	def test_pack_types_ignores_an_unusable_default(self):
 		unusable = make_item("VT-GOI-KHONG-HAN-4", "Packaging")
 		usable = make_pack_type("Giấy crepe", 30)
-		set_type = make_set_type("PTC", default_pack_type=unusable.name)
+		# FEAT-015 chặn chọn loại gói không dùng được khi lưu loại bộ; loại gói mặc định thôi dùng được sau khi
+		# đã chọn (hoặc dữ liệu cũ) thì vẫn gặp ở T4 → ghi thẳng DB để giả lập
+		set_type = make_set_type("PTC")
+		frappe.db.set_value("Instrument Set Type", set_type.name, "default_pack_type", unusable.name)
 		listed = [row["item"] for row in packing.pack_types(set_type.name)]
 		self.assertNotIn(unusable.name, listed)
 		self.assertIn(usable, listed)

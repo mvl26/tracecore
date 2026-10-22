@@ -58,34 +58,68 @@ def next_free_test_gtin():
 	frappe.throw("No free test GTIN-14 left")
 
 
+TEST_DEPARTMENT = "Test CSSD department"
+# Loại gói mặc định của loại bộ test khi không truyền: hạn lưu dài để mọi ghi đè hợp lệ (< hạn loại gói) đều nhận
+AUTO_PACK_TYPE = ("Test auto", 365)
+
+
+def make_department(department_name=TEST_DEPARTMENT):
+	"""Tạo (hoặc lấy) Department (khoa, ERPNext); trả tên Department.
+
+	Có Company (site đã chạy Setup Wizard) thì gắn Company mặc định; site CI mới chưa có Company nên tạo không kèm
+	Company (bỏ kiểm bắt buộc, như dữ liệu test của các factory ERPNext khác).
+	"""
+	existing = frappe.db.get_value("Department", {"department_name": department_name}, "name")
+	if existing:
+		return existing
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	doc = frappe.get_doc({"doctype": "Department", "department_name": department_name, "company": company})
+	doc.flags.ignore_mandatory = not company
+	return doc.insert(ignore_permissions=True).name
+
+
 def make_set_type(
 	type_code="TST",
 	method="Steam",
 	set_type_name=None,
 	gtin="auto",
-	default_pack_type=None,
+	default_pack_type="auto",
 	shelf_life_days=0,
 	tray_image=None,
+	department="auto",
+	is_implant=0,
+	assembly_minutes=0,
+	bom=None,
 ):
 	"""Tạo (hoặc lấy) loại bộ.
 
 	gtin: "auto" → GTIN test chưa dùng (mặc định); None → không có GTIN; chuỗi → dùng nguyên văn.
-	Loại bộ đã có thì trả nguyên trạng.
+	department: "auto" → ``make_department()``; default_pack_type: "auto" → loại gói test hạn 365 ngày
+	(``AUTO_PACK_TYPE``); None → để trống (kiểm trường bắt buộc). bom: ``[(mã dụng cụ, số lượng), …]`` → BOM
+	phiên bản 1 qua ``make_bom``. Loại bộ đã có thì trả nguyên trạng.
 	"""
 	if frappe.db.exists("Instrument Set Type", type_code):
 		return frappe.get_doc("Instrument Set Type", type_code)
-	return frappe.get_doc(
+	doc = frappe.get_doc(
 		{
 			"doctype": "Instrument Set Type",
 			"type_code": type_code,
 			"set_type_name": set_type_name or f"Test set {type_code}",
 			"method": method,
 			"gtin": next_free_test_gtin() if gtin == "auto" else gtin,
-			"default_pack_type": default_pack_type,
+			"department": make_department() if department == "auto" else department,
+			"default_pack_type": make_pack_type(*AUTO_PACK_TYPE)
+			if default_pack_type == "auto"
+			else default_pack_type,
 			"shelf_life_days": shelf_life_days,
 			"tray_image": tray_image,
+			"is_implant": is_implant,
+			"assembly_minutes": assembly_minutes,
 		}
 	).insert()
+	if bom:
+		make_bom(doc, bom)
+	return doc
 
 
 def make_instrument_group(group_name, interval=None, maint_type=None, description=None):
@@ -413,14 +447,15 @@ def _slug(text):
 	return re.sub(r"[^A-Z0-9]+", "-", ascii_text.upper()).strip("-") or "GOI"
 
 
-def make_pack_type(name="Giấy crepe", shelf_life_days=30):
+def make_pack_type(name="Giấy crepe", shelf_life_days=30, disabled=0):
 	"""Item loại gói (nhóm Packaging) có hạn lưu `shelf_life_days`; trả mã Item `VT-GOI-<tên không dấu>`.
 
-	Gọi lại với hạn lưu khác thì cập nhật hạn lưu của Item đó (không giữ giá trị cũ một cách âm thầm).
+	Gọi lại với hạn lưu/cờ ngừng dùng khác thì cập nhật Item đó (không giữ giá trị cũ một cách âm thầm).
 	"""
 	item = make_item(f"VT-GOI-{_slug(name)}", "Packaging", shelf_life_days=shelf_life_days)
-	if item.tc_shelf_life_days != shelf_life_days:
+	if item.tc_shelf_life_days != shelf_life_days or int(item.disabled or 0) != int(disabled):
 		item.tc_shelf_life_days = shelf_life_days
+		item.disabled = int(disabled)
 		item.save(ignore_permissions=True)
 	return item.name
 
@@ -458,16 +493,24 @@ def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_pri
 	30 ngày), lô chỉ thị loại 5 đúng phương pháp, và (nếu `with_printer`) máy in tại TR-004 đang lắp nhãn
 	đúng phương pháp. `set_kwargs`: khóa của loại bộ (`type_code, set_type_name, gtin, shelf_life_days,
 	tray_image`) đi vào `make_set_type`, còn lại (`max_cycles, is_loaner, department`…) vào `make_set_unit`.
+	`set_type_department`: khoa của loại bộ; None (mặc định) → loại bộ không có khoa như dữ liệu có trước FEAT-015
+	(patch không bịa khoa), để các kỳ vọng T4 của FEAT-018 (nhãn không có khoa khi bộ không có khoa) giữ nguyên.
 	Trả `frappe._dict(set_id, set_type, gtin, pack_type, ci_batch, printer, instruments)`.
 	"""
 	type_kwargs = {key: set_kwargs.pop(key) for key in _SET_TYPE_KWARGS if key in set_kwargs}
+	set_type_department = set_kwargs.pop("set_type_department", None)
 	pack_type = make_pack_type()
 	set_type = make_set_type(
 		type_kwargs.pop("type_code", None) or _free_type_code(),
 		method=method,
 		default_pack_type=pack_type,
+		department=set_type_department or "auto",
 		**type_kwargs,
 	)
+	if not set_type_department:
+		# khoa bắt buộc khi lưu từ FEAT-015; ghi thẳng DB để giả lập loại bộ cũ chưa có khoa
+		frappe.db.set_value("Instrument Set Type", set_type.name, "department", None, update_modified=False)
+		set_type.department = None
 	make_bom(set_type, bom)
 	set_unit = make_set_unit(set_type.name, **set_kwargs)
 	make_cycle(set_unit)

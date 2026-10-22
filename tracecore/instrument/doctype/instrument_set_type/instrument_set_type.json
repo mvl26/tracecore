@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:type_code",
  "creation": "2026-10-19 10:00:00.000000",
- "description": "Instrument set type (FEAT-001 skeleton, FEAT-018 packing data): code, name, sterilization method, owner department, GTIN-14, default pack type, shelf-life override, tray photo and current BOM version.",
+ "description": "Instrument set type (FEAT-001 skeleton, FEAT-018 packing data, FEAT-015 header): code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -10,13 +10,22 @@
   "set_type_name",
   "method",
   "department",
+  "column_break_header",
+  "is_implant",
+  "assembly_minutes",
   "section_packing",
   "gtin",
   "default_pack_type",
   "column_break_packing",
   "shelf_life_days",
   "current_bom_version",
-  "tray_image"
+  "section_tray",
+  "tray_image",
+  "tray_image_2",
+  "tray_image_3",
+  "tray_thumbnail",
+  "tray_thumbnail_2",
+  "tray_thumbnail_3"
  ],
  "fields": [
   {
@@ -45,11 +54,31 @@
    "reqd": 1
   },
   {
+   "description": "Owner department of this set type.",
    "fieldname": "department",
    "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Department",
-   "options": "Department"
+   "options": "Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_implant",
+   "fieldtype": "Check",
+   "label": "Implant Set"
+  },
+  {
+   "default": "0",
+   "description": "Standard assembly time in minutes, 0-600. 0 = not entered yet.",
+   "fieldname": "assembly_minutes",
+   "fieldtype": "Int",
+   "label": "Standard Assembly Time (Minutes)",
+   "non_negative": 1
   },
   {
    "fieldname": "section_packing",
@@ -64,10 +93,12 @@
    "unique": 1
   },
   {
+   "description": "Packaging item in use with a shelf life; the set type shelf life defaults to it.",
    "fieldname": "default_pack_type",
    "fieldtype": "Link",
    "label": "Default Pack Type",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_packing",
@@ -75,7 +106,7 @@
   },
   {
    "default": "0",
-   "description": "Shelf life of this set type in days. 0 = no override (the pack type shelf life applies).",
+   "description": "Override in days, only shorter than the default pack type shelf life. 0 = no override (the pack type shelf life applies).",
    "fieldname": "shelf_life_days",
    "fieldtype": "Int",
    "label": "Shelf Life Override (Days)",
@@ -83,20 +114,61 @@
   },
   {
    "default": "1",
+   "description": "BOM version in effect today; maintained by the system when BOM versions are saved.",
    "fieldname": "current_bom_version",
    "fieldtype": "Int",
-   "label": "Current BOM Version"
+   "label": "Current BOM Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_tray",
+   "fieldtype": "Section Break",
+   "label": "Tray Images"
   },
   {
    "fieldname": "tray_image",
    "fieldtype": "Attach Image",
    "label": "Tray Image"
+  },
+  {
+   "fieldname": "tray_image_2",
+   "fieldtype": "Attach Image",
+   "label": "Tray Image 2"
+  },
+  {
+   "fieldname": "tray_image_3",
+   "fieldtype": "Attach Image",
+   "label": "Tray Image 3"
+  },
+  {
+   "fieldname": "tray_thumbnail",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Tray Thumbnail 1",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "tray_thumbnail_2",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Tray Thumbnail 2",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "tray_thumbnail_3",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Tray Thumbnail 3",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 10:00:00.000000",
+ "modified": "2026-10-22 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",
@@ -111,12 +183,23 @@
    "write": 1
   },
   {
+   "create": 1,
    "read": 1,
-   "role": "TC R01"
+   "report": 1,
+   "role": "TC R02",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TC R10",
+   "write": 1
   },
   {
    "read": 1,
-   "role": "TC R02"
+   "report": 1,
+   "role": "TC R01"
   },
   {
    "read": 1,
@@ -145,10 +228,6 @@
   {
    "read": 1,
    "role": "TC R09"
-  },
-  {
-   "read": 1,
-   "role": "TC R10"
   }
  ],
  "show_title_field_in_link": 1,

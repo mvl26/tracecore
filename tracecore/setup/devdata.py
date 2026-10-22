@@ -58,6 +58,8 @@ def ensure_demo_set():
 				"type_code": DEMO_SET_TYPE,
 				"set_type_name": "Demo set",
 				"method": "Steam",
+				"department": _demo_department(),
+				"default_pack_type": _ensure_pack_type(_t4_catalog()["Steam"]["pack_type"]),
 			}
 		).insert(ignore_permissions=True)
 	set_id = frappe.db.get_value("Set Unit", {"set_type": DEMO_SET_TYPE}, "name", order_by="creation asc")
@@ -186,16 +188,27 @@ def _ensure_instrument_photo(code):
 	doc.save(ignore_permissions=True)
 
 
+def _demo_department():
+	"""Khoa demo sở hữu các loại bộ demo (FEAT-015: khoa của loại bộ bắt buộc); trả tên Department."""
+	return factories.make_department(_("Demo operating theatre", lang="vi"))
+
+
+def _ensure_pack_type(pack_type):
+	"""Item loại gói demo ``(mã, tên, hạn lưu)`` (tạo một lần); trả mã Item."""
+	pack_code, pack_name, days = pack_type
+	if not frappe.db.exists("Item", pack_code):
+		factories.make_item(pack_code, "Packaging", shelf_life_days=days)
+		frappe.db.set_value("Item", pack_code, "item_name", pack_name)
+	return pack_code
+
+
 def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
-	"""Loại bộ demo (GTIN test, loại gói mặc định, ảnh khay) và BOM phiên bản 1; trả mã loại bộ.
+	"""Loại bộ demo (khoa demo, GTIN test, loại gói mặc định, ảnh khay) và BOM phiên bản 1; trả mã loại bộ.
 
 	`code` mặc định là loại bộ demo T4 của `method`; `ensure_instruments` False khi dụng cụ của BOM đã được tạo sẵn.
 	"""
 	code = code or T4_SET_TYPES[method]
-	pack_code, pack_name, days = spec["pack_type"]
-	if not frappe.db.exists("Item", pack_code):
-		factories.make_item(pack_code, "Packaging", shelf_life_days=days)
-		frappe.db.set_value("Item", pack_code, "item_name", pack_name)
+	pack_code = _ensure_pack_type(spec["pack_type"])
 	if ensure_instruments:
 		for instrument, name, _qty in spec["bom"]:
 			_ensure_instrument(instrument, name, method)
@@ -207,6 +220,7 @@ def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
 				"set_type_name": spec["set_name"],
 				"method": method,
 				"gtin": _free_demo_gtin(),
+				"department": _demo_department(),
 				"default_pack_type": pack_code,
 				"tray_image": _demo_image(f"{code}-TRAY"),
 			}
@@ -551,7 +565,7 @@ def _next_candidate(prefix, name, usable):
 			return code
 	code = f"{prefix}{len(codes) + 1:02d}"
 	while frappe.db.exists("Instrument", code):
-		code = f"{prefix}{int(code[len(prefix):]) + 1:02d}"
+		code = f"{prefix}{int(code[len(prefix) :]) + 1:02d}"
 	factories.make_instrument(code, name, spaulding=T4_INSTRUMENT_SPAULDING, methods=("Steam 134",))
 	return code
 

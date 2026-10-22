@@ -141,8 +141,9 @@ class TestMaintenanceContext(IsolatedTestCase):
 			make_maintenance(set_unit, code, cycles_since=5)
 		make_bom(set_type, [("MV-3", 1), ("MV-1", 1)], version=1)
 		make_bom(set_type, [("MV-2", 1), ("MV-3", 1)], version=2)
-		set_type.current_bom_version = 2
-		set_type.save()
+		# phiên bản hiện hành chỉ dịch vụ BOM ghi (FEAT-015): giả lập bằng ghi thẳng DB như các test khác
+		frappe.db.set_value("Instrument Set Type", set_type.name, "current_bom_version", 2)
+		set_type.reload()
 
 		ctx = _ctx(set_unit, set_type)
 		self.assertEqual(

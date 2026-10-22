@@ -1170,3 +1170,31 @@ Demo e2e steam set,Bộ hấp (demo e2e),
 Demo e2e plasma set,Bộ plasma (demo e2e),
 Demo e2e set with instrument to retire,Bộ có dụng cụ để ngừng sử dụng (demo e2e),
 Demo e2e group with a maintenance threshold,Nhóm có ngưỡng bảo dưỡng (demo e2e),
+Implant Set,Bộ cấy ghép,Instrument Set Type
+Standard Assembly Time (Minutes),Thời gian lắp ráp chuẩn (phút),Instrument Set Type
+Tray Images,Ảnh bộ đã xếp,Instrument Set Type
+Tray Image 2,Ảnh bộ đã xếp 2,Instrument Set Type
+Tray Image 3,Ảnh bộ đã xếp 3,Instrument Set Type
+Tray Thumbnail 1,Ảnh thu nhỏ bộ đã xếp 1,Instrument Set Type
+Tray Thumbnail 2,Ảnh thu nhỏ bộ đã xếp 2,Instrument Set Type
+Tray Thumbnail 3,Ảnh thu nhỏ bộ đã xếp 3,Instrument Set Type
+Owner department of this set type.,Khoa sở hữu loại bộ này.,Instrument Set Type
+Packaging item in use with a shelf life; the set type shelf life defaults to it.,Vật tư gói đang dùng và đã có hạn lưu; hạn lưu của loại bộ mặc định lấy theo loại gói này.,Instrument Set Type
+"Override in days, only shorter than the default pack type shelf life. 0 = no override (the pack type shelf life applies).","Hạn lưu riêng theo ngày, chỉ được ngắn hơn hạn lưu của loại gói mặc định. 0 = không ghi đè (áp hạn lưu của loại gói).",Instrument Set Type
+BOM version in effect today; maintained by the system when BOM versions are saved.,Phiên bản BOM đang hiệu lực hôm nay; hệ thống tự cập nhật khi lưu phiên bản BOM.,Instrument Set Type
+"Standard assembly time in minutes, 0-600. 0 = not entered yet.","Thời gian lắp ráp chuẩn theo phút, 0-600. 0 = chưa nhập.",Instrument Set Type
+"Instrument set type (FEAT-001 skeleton, FEAT-018 packing data, FEAT-015 header): code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.","Loại bộ dụng cụ: mã, tên, phương pháp tiệt khuẩn, khoa sở hữu, cờ cấy ghép, thời gian lắp ráp chuẩn, GTIN-14, loại gói mặc định, hạn lưu riêng, ảnh bộ đã xếp và phiên bản BOM hiện hành.",Instrument Set Type
+"{0} is not a packaging item, so it cannot be chosen as the pack type.","{0} không phải vật tư gói, không chọn làm loại gói được.",
+Pack type {0} is disabled and cannot be chosen.,"Loại gói {0} đã ngừng dùng, không chọn được.",
+Pack type {0} has no shelf life yet and cannot be chosen.,"Loại gói {0} chưa có hạn lưu, không chọn được.",
+Shelf life override cannot be negative.,Hạn lưu riêng của loại bộ không được âm.,
+Pack type cannot be chosen,Không chọn được loại gói,
+"The set type can only override the shelf life with a value shorter than {0} days, the shelf life of pack type {1}. Enter 0 to use the pack type shelf life.","Loại bộ chỉ ghi đè hạn lưu bằng giá trị ngắn hơn {0} ngày (hạn lưu của loại gói {1}). Nhập 0 để dùng hạn lưu của loại gói.",
+Shelf life override not allowed,Không nhận hạn lưu riêng này,
+Standard assembly time must be between 0 and {0} minutes.,Thời gian lắp ráp chuẩn phải từ 0 đến {0} phút.,
+Current BOM Version is maintained by the system. Save a new BOM version to change the BOM of this set type.,Phiên bản BOM hiện hành do hệ thống cập nhật. Muốn đổi BOM của loại bộ này hãy lưu một phiên bản BOM mới.,
+BOM version {0}: {1},Phiên bản BOM {0}: {1},
+The sterilization method cannot be changed to {0}: these BOM lines are not compatible with it.,Không đổi được phương pháp tiệt khuẩn sang {0}: các dòng BOM sau không tương thích.,
+Incompatible BOM lines,Dòng BOM không tương thích,
+Set type header defaults filled in by the FEAT-015 data patch,Điền mặc định phần đầu loại bộ bằng patch dữ liệu FEAT-015,
+Demo operating theatre,Khoa phẫu thuật (demo),

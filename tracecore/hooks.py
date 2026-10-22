@@ -179,6 +179,8 @@ doc_events = {
 	"Set Unit": dict(_AUDIT_EVENTS),
 	"Instrument": dict(_AUDIT_EVENTS),
 	"Instrument Group": dict(_AUDIT_EVENTS),
+	# loại bộ: Create/Update có old/new (ảnh, hạn lưu, phương pháp, GTIN), không xóa (FEAT-015 S14)
+	"Instrument Set Type": dict(_AUDIT_EVENTS),
 	"Set BOM Item": dict(_AUDIT_EVENTS),
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
