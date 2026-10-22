@@ -11,9 +11,9 @@ runs:
       shell: bash
       env:
         WKHTMLTOX_URL: https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
-        # SHA-256 của đúng file wkhtmltox_0.12.6.1-2.jammy_amd64.deb ở trên (64 ký tự hex). Trống → bước này dừng,
+        # SHA-256 của đúng file wkhtmltox_0.12.6.1-2.jammy_amd64.deb ở trên (17352866 byte; tính ngày 22/10/2026, GitHub không công bố hash). Trống → bước này dừng,
         # không cài gói chưa kiểm (gói cài bằng sudo).
-        WKHTMLTOX_SHA256: ""
+        WKHTMLTOX_SHA256: "ee88d74834bdec650f7432c7d3ef1c981e42ae7a762a75a01f7f5da59abc18d5"
       run: |
         sudo apt-get update -q
         sudo apt-get install -y -q mariadb-client libdmtx0b
