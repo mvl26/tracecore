@@ -210,6 +210,16 @@ class TestParseScan(FrappeTestCase):
 		for raw in [" ]Q1TB-001\r\n", "]Q1XX-0001", "]Q1", "TB 0001", "]Q1TB-0001X"]:
 			self.assertEqual(gs1.parse_scan(raw, company_prefix="9520000")["type"], "unknown", msg=repr(raw))
 
+	@bru("BRU-REP-016")
+	def test_parse_scan_wash_batch(self):
+		# mã lô rửa LR-YYMMDD-NN (QR nhãn lô): máy quét HID có thể thêm tiền tố AIM, CR LF, Tab
+		for raw in ["LR-261022-03", "]Q1LR-261022-03\r\n", " LR-261022-03\t", "\x1d]Q1LR-261022-03"]:
+			result = gs1.parse_scan(raw, company_prefix="9520000")
+			self.assertEqual((result["type"], result["id"]), ("wash_batch", "LR-261022-03"), msg=repr(raw))
+		malformed = ["LR-26102-03", "LR-261022-3", "LR-261022", "LR 261022-03", "lr-261022-03"]
+		for raw in malformed:
+			self.assertEqual(gs1.parse_scan(raw, company_prefix="9520000")["type"], "unknown", msg=repr(raw))
+
 	@bru("BRU-ID-006")
 	def test_parse_scan_unknown(self):
 		for raw in ["ABC", "", "8004", "8004 X", "X" * 200, "(01)09520000000013", "TR-04", "NV-1"]:

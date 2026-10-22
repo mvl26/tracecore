@@ -89,6 +89,32 @@ class TestStepGate(FrappeTestCase):
 		su = make_set_unit().name
 		self.assertIsNone(step_gate.check(su, "T1"))
 
+	@bru("BRU-FLOW-004")
+	def test_check_t2_requires_t1_pass(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		block = step_gate.check(su, "T2")
+		self.assertEqual(block.code, "GATE_PREV_NOT_PASSED")
+		self.assertEqual(block.redo_step, "T1")
+		step_gate.record(su, "T1", "Pass")
+		self.assertIsNone(step_gate.check(su, "T2"))
+
+	@bru("BRU-FLOW-002")
+	def test_check_t2_rejects_status_invalid_for_station(self):
+		sterile = make_set_unit().name
+		make_cycle(sterile, passed=("T1", "T2", "T3", "T4", "T5"))
+		self.assertEqual(_lifecycle(sterile).status, "Sterile")
+		self.assertEqual(step_gate.check(sterile, "T2").code, "STATUS_INVALID_FOR_STATION")
+		# bộ mới tạo, chưa mở chu trình, cũng không vào được T2
+		self.assertEqual(step_gate.check(make_set_unit().name, "T2").code, "STATUS_INVALID_FOR_STATION")
+
+	def test_check_t2_accepts_set_in_reprocess(self):
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1",))
+		step_gate.record(su, "T2", "Fail")
+		self.assertEqual(_lifecycle(su).status, "Reprocess")
+		self.assertIsNone(step_gate.check(su, "T2"))
+
 	def test_check_rejects_unknown_step_and_unknown_set(self):
 		su = make_set_unit().name
 		with self.assertRaises(frappe.ValidationError):

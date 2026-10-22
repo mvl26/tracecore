@@ -46,6 +46,13 @@ class TestErrors(FrappeTestCase):
 				"ETCHING_INVALID",
 				"IMPORT_ROWS_INVALID",
 				"IMPORT_FILE_INVALID",
+				"EQUIPMENT_NOT_WASHER",
+				"PROGRAM_INVALID",
+				"CHEMICAL_LOT_INVALID",
+				"CHEMICAL_LOT_EXPIRED",
+				"BATCH_EMPTY",
+				"DATA_INCOMPLETE",
+				"RESULT_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -54,7 +61,9 @@ class TestErrors(FrappeTestCase):
 				"EQUIPMENT_NOT_FOUND",
 				"CODE_NOT_FOUND",
 				"INSTRUMENT_NOT_FOUND",
+				"WASH_BATCH_NOT_FOUND",
 			),
+			423: ("EQUIPMENT_NOT_READY",),
 			409: (
 				"STATUS_INVALID_FOR_STATION",
 				"ACTIVE_CYCLE_EXISTS",
@@ -77,6 +86,11 @@ class TestErrors(FrappeTestCase):
 				"GIAI_NOT_ASSIGNED",
 				"GS1_PREFIX_NOT_CONFIGURED",
 				"COMPANY_NOT_CONFIGURED",
+				"STEP_ALREADY_PASSED",
+				"SET_IN_OTHER_BATCH",
+				"BATCH_NOT_RUNNING",
+				"EQUIPMENT_MISMATCH",
+				"R02_CONFIRM_REQUIRED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -86,6 +100,14 @@ class TestErrors(FrappeTestCase):
 		# FEAT-014 A-06 I12: v1.instrument.get_image với mã dụng cụ không có
 		self.assertEqual(errors.HTTP_STATUS["INSTRUMENT_NOT_FOUND"], 404)
 		self.assertEqual(Block("INSTRUMENT_NOT_FOUND", "t", "r", "a").http_status, 404)
+
+	def test_http_status_wash_codes(self):
+		# FEAT-021 A-09: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
+		self.assertEqual(Block("EQUIPMENT_NOT_READY", "t", "r", "a").http_status, 423)
+		self.assertEqual(Block("WASH_BATCH_NOT_FOUND", "t", "r", "a").http_status, 404)
+		self.assertEqual(Block("BATCH_EMPTY", "t", "r", "a").http_status, 422)
+		self.assertEqual(Block("SET_IN_OTHER_BATCH", "t", "r", "a").http_status, 409)
+		self.assertEqual(BlockedError(Block("EQUIPMENT_NOT_READY", "t", "r", "a")).http_status_code, 423)
 
 	def test_block_as_dict(self):
 		self.assertEqual(
