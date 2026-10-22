@@ -1700,7 +1700,18 @@ Par Level History,Lịch sử cơ số,
 Kind,Loại cơ số,
 Department Stock,Tồn khoa,
 Target Type,Loại đối tượng,
-Target,Đối tượng,
+Target,Đối tượng,Par Level
+Reprocessing,Tái xử lý,Par Level
+History,Lịch sử,Par Level
+Changed By,Người thay đổi,Par Level History
+Changed On,Thời điểm thay đổi,Par Level History
+Early warning when the remaining cycles are at most this percent of the limit.,Cảnh báo sớm khi số chu trình còn lại không quá tỷ lệ này của cơ số.,Par Level
+Early warning when this many cycles or fewer remain.,Cảnh báo sớm khi còn lại từ số chu trình này trở xuống.,Par Level
+"Entered by hand, never taken from the IFU automatically. 0 or blank = Undefined (warning only, does not block).","Nhập tay, không bao giờ tự lấy từ IFU. 0 hoặc để trống = Chưa xác định (chỉ cảnh báo, không chặn).",Par Level
+Inactive par levels are ignored. A par level is never deleted.,Cơ số ngừng dùng bị bỏ qua. Cơ số không bao giờ bị xóa.,Par Level
+Required when the limit changes; recorded in the history.,Bắt buộc khi thay đổi cơ số; được ghi vào lịch sử.,Par Level
+"Share above the maximum allowed without approval, up to 20 percent, emergency departments only.","Tỷ lệ được vượt cơ số tối đa không cần duyệt, tối đa 20 %, chỉ cho khoa cấp cứu.",Par Level
+Tick to save a limit that is not above the cycles already used.,Tick để lưu cơ số không cao hơn số chu trình đã dùng.,Par Level
 Reprocessing Limit,Cơ số tái xử lý,
 Maximum Cycles,Số chu trình tối đa,
 Estimate,Ước tính,
@@ -1728,4 +1739,6 @@ A reason is required when the par level changes.,Phải nhập lý do khi thay �
 Par level history cannot be removed.,Không xóa được lịch sử cơ số.,
 Par level history cannot be changed.,Không sửa được lịch sử cơ số.,
 Par Level {0},Cơ số {0},
-Highest cycles already used by a set of this type: {0},Số chu trình đã dùng cao nhất của một bộ thuộc loại này: {0},
+Defined,Đã xác định,
+Used {0} / Limit {1},Đã dùng {0} / Cơ số {1},
+Cycle limit {0} is not above the {1} cycles already used. Save it anyway?,Cơ số {0} không cao hơn số chu trình đã dùng ({1}). Vẫn lưu?,
