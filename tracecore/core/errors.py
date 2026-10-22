@@ -40,6 +40,8 @@ HTTP_STATUS: dict[str, int] = {
 			"SET_TYPE_BOM_INVALID",
 			"DEPARTMENT_INVALID",
 			"MAX_CYCLES_INVALID",
+			# FEAT-016 ruling Task 4/5: thẻ/nhãn khay Set ID chỉ in qua đường server (máy in phải có địa chỉ mạng)
+			"PRINTER_NOT_NETWORK",
 		),
 		422,
 	),
@@ -82,6 +84,10 @@ HTTP_STATUS: dict[str, int] = {
 			"SET_TYPE_CODE_EXISTS",
 			# FEAT-016: series Set ID của loại bộ đã hết dải 999 999 (G2) — không cấp mã 7 số
 			"SET_SERIES_EXHAUSTED",
+			# FEAT-016 G10, G12: bộ đã thanh lý, lệnh in cùng loại đang chờ, thẻ quét không khớp bộ
+			"SET_DISPOSED",
+			"TAG_PRINT_PENDING",
+			"TAG_MISMATCH",
 		),
 		409,
 	),

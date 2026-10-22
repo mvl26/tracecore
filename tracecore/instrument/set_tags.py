@@ -11,10 +11,13 @@
 In qua hàng đợi server (Task 4; FR-M1-05.3, .4; EI-HW-008; G9-G12):
 
 - `queue_prints`: **một Print Job cho mỗi (bộ, loại bản in)**, thứ tự thẻ rồi nhãn khay của từng bộ; kiểm cả lô
-  (`check_printable`, `TAG_PRINT_PENDING`, lý do in lại, dựng ZPL) **trước** mọi ghi. Máy in có địa chỉ → ``Queued`` +
-  một `print_server.enqueue_server_dispatch_many` cho cả lô; máy in chỉ qua agent → ``Waiting`` + cảnh báo
-  ``PRINTER_AGENT_ONLY``. Mỗi job một Audit ``Create`` trên Print Job (``new = {set_unit, kind, reprint, printer}``,
-  ``reason`` = lý do in lại) vì Audit Log không có hành động "Print".
+  (máy in có địa chỉ mạng, `check_printable`, `TAG_PRINT_PENDING`, lý do in lại, dựng ZPL) **trước** mọi ghi. Job
+  ``Queued`` + một `print_server.enqueue_server_dispatch_many` cho cả lô. Máy in không gửi được từ server (chỉ qua
+  agent, host bị chặn) → ``PRINTER_NOT_NETWORK`` (ruling Task 4/5): job ``Waiting`` của thẻ không ai giải phóng nên sẽ
+  chặn bộ bằng ``TAG_PRINT_PENDING`` mãi mãi. Mỗi job một Audit ``Create`` trên Print Job (``new = {set_unit, kind,
+  reprint, printer}``, ``reason`` = lý do in lại) vì Audit Log không có hành động "Print".
+- `cancel_pending`: lối ra cho job đang chờ bị kẹt (``Waiting`` cũ, ``Queued`` của máy in đã tắt): đánh dấu ``Failed``
+  qua `core.print.ack` kèm lý do, Audit ``Update`` trên Print Job; sau đó in bù không cần lý do.
 - In lại (G10): bản in đầu tiên của (bộ, loại) và in bù khi mọi job trước của loại đó ``Failed`` không cần lý do; còn
   lại lý do bắt buộc 1-`REASON_MAX` ký tự (bỏ khoảng trắng). Từ lần in lại thứ `REPRINT_WARN_AT` trả cảnh báo.
   Thẻ và nhãn khay đếm/xét riêng theo cùng một luật.
@@ -306,16 +309,22 @@ def _render_or_block(set_unit, kind, printer):
 		) from None
 
 
-def _agent_only_warning(printers: list[str]) -> dict:
-	return {
-		"code": "PRINTER_AGENT_ONLY",
-		"title": _("Printer not reachable from Desk"),
-		"reason": _(
-			"Printer {0} has no network address the server can send to; it only prints through the Station Agent."
-		).format(", ".join(printers)),
-		"action": _("Choose a printer with a network address, or ask R10 to set the printer host and port."),
-		"items": printers,
-	}
+def printer_block(printers: list[str]) -> Block | None:
+	"""``PRINTER_NOT_NETWORK`` khi một máy in trong `printers` không gửi được từ server (không có host, host bị chặn,
+	port sai, không hoạt động), ngược lại None. Thẻ/nhãn khay Set ID chỉ in qua đường server (A-09 G9, ruling Task 4/5).
+	"""
+	refused = [name for name in dict.fromkeys(printers) if print_server.printer_address(name) is None]
+	if not refused:
+		return None
+	return Block(
+		"PRINTER_NOT_NETWORK",
+		_("Printer not reachable from the server"),
+		_(
+			"Printer {0} has no network address the server can send to; set tags and tray labels are printed only from the server."
+		).format(", ".join(refused)),
+		_("Choose a printer with a network address, or ask R10 to set the printer host and port."),
+		items=refused,
+	)
 
 
 def _reprint_warning(items: list[dict]) -> dict:
@@ -361,17 +370,19 @@ def queue_prints(
 	"""Xếp hàng in thẻ kim loại / nhãn khay cho `set_units` (FR-M1-05, .3, .4; G9, G10).
 
 	`kinds` ⊂ ``KINDS``; `printers` = ``{kind: tên Printer đang hoạt động}``; tham số sai → ``ValidationError``.
-	Kiểm cả lô trước mọi ghi: ``check_printable``, ``TAG_PRINT_PENDING``, ``REASON_REQUIRED`` (``items`` = các
-	(bộ, loại) là in lại), ``LABEL_RENDER_FAILED`` → ``BlockedError``. Trả
+	Kiểm cả lô trước mọi ghi: ``PRINTER_NOT_NETWORK``, ``check_printable``, ``TAG_PRINT_PENDING``, ``REASON_REQUIRED``
+	(``items`` = các (bộ, loại) là in lại), ``LABEL_RENDER_FAILED`` → ``BlockedError``. Trả
 	``{"jobs": [{set_unit, kind, print_job, status}], "warnings": [...]}``; gửi thật do worker sau commit.
 	"""
 	units = _unit_list(set_units)
 	kinds = _kind_list(kinds)
 	rows = _printer_rows(kinds, printers)
+	block = printer_block([rows[k].name for k in kinds])
+	if block:
+		raise BlockedError(block)
 	reason = reason.strip() if isinstance(reason, str) else ""
 	counts = _check_batch(units, kinds, reason)
 	rendered = {(u, k): _render_or_block(u, k, rows[k]) for u in units for k in kinds}
-	agent_only = {k: print_server.printer_address(rows[k].name) is None for k in kinds}
 
 	jobs, queued, warned = [], [], []
 	frappe.db.savepoint(SAVEPOINT)
@@ -381,14 +392,13 @@ def queue_prints(
 				zpl, template = rendered[(unit, kind)]
 				printer = rows[kind]
 				reprint = bool(counts[unit][kind]["printed"])
-				status = "Waiting" if agent_only[kind] else "Queued"
 				name = core_print.create_job(
 					printer.station,
-					None if agent_only[kind] else zpl,
+					zpl,
 					{"label_object": KINDS[kind], "set_unit": unit, "kind": kind, "reprint": reprint},
 					template.name,
 					printer=printer.name,
-					status=status,
+					status="Queued",
 					ref_doctype=REF_DOCTYPE,
 					ref_name=unit,
 					reprint_reason=reason if reprint else None,
@@ -400,9 +410,8 @@ def queue_prints(
 					new={"set_unit": unit, "kind": kind, "reprint": reprint, "printer": printer.name},
 					reason=reason if reprint else None,
 				)
-				jobs.append({"set_unit": unit, "kind": kind, "print_job": name, "status": status})
-				if status == "Queued":
-					queued.append(name)
+				jobs.append({"set_unit": unit, "kind": kind, "print_job": name, "status": "Queued"})
+				queued.append(name)
 				total = counts[unit][kind]["reprints"] + 1
 				if reprint and total >= REPRINT_WARN_AT:
 					warned.append({"set_unit": unit, "kind": kind, "reprints": total})
@@ -411,13 +420,64 @@ def queue_prints(
 		frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 
-	warnings = []
-	agent_printers = list(dict.fromkeys(rows[k].name for k in kinds if agent_only[k]))
-	if agent_printers:
-		warnings.append(_agent_only_warning(agent_printers))
-	if warned:
-		warnings.append(_reprint_warning(warned))
-	return {"jobs": jobs, "warnings": warnings}
+	return {"jobs": jobs, "warnings": [_reprint_warning(warned)] if warned else []}
+
+
+def cancel_pending(set_unit: str, kind: str | None, reason: str) -> list[str]:
+	"""Hủy các lệnh in đang chờ (``Queued``/``Waiting``) thẻ/nhãn khay của `set_unit` (chỉ loại `kind` nếu có).
+
+	Lối ra cho job kẹt (ruling Task 4/5): ``Waiting`` của máy in agent tạo trước ruling, ``Queued`` của máy in đã tắt
+	(cron bỏ qua mãi) — không có thì ``TAG_PRINT_PENDING`` chặn bộ mãi mãi. Mỗi job đọc lại có khóa (worker có thể vừa
+	in xong: job đã ``Printed`` thì bỏ qua), đánh dấu ``Failed`` qua `core.print.ack` (cùng đường lỗi in, đếm lần thử),
+	``error`` = lý do hủy, Audit ``Update`` trên Print Job (``old/new status``, ``reason``). Bộ không có →
+	``BlockedError(SET_NOT_FOUND)``; lý do rỗng hoặc quá `REASON_MAX` → ``BlockedError(REASON_REQUIRED)``. Trả tên các
+	job đã hủy theo thứ tự tạo (rỗng nếu không có job chờ). Sau đó bản in kế tiếp là in bù (không cần lý do) nếu chưa
+	có bản ``Printed``.
+	"""
+	if kind is not None:
+		label_object(kind)
+	if not isinstance(set_unit, str) or not set_unit or not frappe.db.exists(REF_DOCTYPE, set_unit):
+		raise BlockedError(_not_found_block(set_unit))
+	reason = reason.strip() if isinstance(reason, str) else ""
+	if not reason or len(reason) > REASON_MAX:
+		raise BlockedError(
+			_reason_block(
+				_("Enter why the pending print is cancelled, at most {0} characters.").format(REASON_MAX)
+			)
+		)
+	rows = frappe.get_all(
+		"Print Job",
+		filters={"ref_doctype": REF_DOCTYPE, "ref_name": set_unit, "status": ["in", PENDING_STATUSES]},
+		fields=["name", "data"],
+		order_by="name asc",
+	)
+	cancelled = []
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		for row in rows:
+			data = frappe.parse_json(row.data) if row.data else {}
+			job_kind = _kind_of(data.get("label_object")) if isinstance(data, dict) else None
+			if job_kind is None or (kind is not None and job_kind != kind):
+				continue
+			name = str(row.name)
+			old = frappe.db.get_value("Print Job", name, "status", for_update=True)
+			if old not in PENDING_STATUSES:
+				continue  # worker vừa in xong / báo lỗi
+			error = _("Cancelled by {0}: {1}").format(frappe.session.user, reason)
+			core_print.ack(name, "Failed", "Printer", error=error)
+			audit.log(
+				"Update",
+				"Print Job",
+				name,
+				old={"status": old},
+				new={"status": "Failed", "set_unit": set_unit, "kind": job_kind, "cancelled": True},
+				reason=reason,
+			)
+			cancelled.append(name)
+	except Exception:
+		frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+	return cancelled
 
 
 # --- Quét kiểm tra thẻ (G12) ----------------------------------------------------------------------------------------

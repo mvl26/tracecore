@@ -42,6 +42,7 @@ class TestErrors(FrappeTestCase):
 				"SET_TYPE_BOM_INVALID",
 				"DEPARTMENT_INVALID",
 				"MAX_CYCLES_INVALID",
+				"PRINTER_NOT_NETWORK",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -77,6 +78,9 @@ class TestErrors(FrappeTestCase):
 				"BOM_VERSION_CONFLICT",
 				"SET_TYPE_CODE_EXISTS",
 				"SET_SERIES_EXHAUSTED",
+				"SET_DISPOSED",
+				"TAG_PRINT_PENDING",
+				"TAG_MISMATCH",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -109,6 +113,12 @@ class TestErrors(FrappeTestCase):
 			"DEPARTMENT_INVALID": 422,
 			"MAX_CYCLES_INVALID": 422,
 			"SET_SERIES_EXHAUSTED": 409,
+			# Task 4/5: in thẻ/nhãn khay, quét kiểm tra; thẻ Set ID chỉ in qua đường server (ruling Task 4)
+			"SET_DISPOSED": 409,
+			"TAG_PRINT_PENDING": 409,
+			"TAG_MISMATCH": 409,
+			"PRINTER_NOT_NETWORK": 422,
+			"GS1_PREFIX_NOT_CONFIGURED": 409,
 		}.items():
 			self.assertEqual(errors.HTTP_STATUS.get(code), status, msg=code)
 			self.assertEqual(BlockedError(Block(code, "t", "r", "a")).http_status_code, status, msg=code)

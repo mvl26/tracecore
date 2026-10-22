@@ -286,18 +286,27 @@ class TestBatchDispatch(SetTagPrintingCase):
 		)
 		self.assertEqual(fake.received, self.payloads([jobs[1], jobs[3]]))
 
-	def test_agent_only_printer_waits_with_warning(self):
+	def test_printer_without_network_address_refused(self):
+		"""Ruling Task 4/5: thẻ/nhãn khay chỉ in qua đường server; máy in chỉ qua agent (host rỗng) hoặc host bị chặn
+		→ ``PRINTER_NOT_NETWORK`` trước mọi ghi, không tạo job ``Waiting`` (không ai giải phóng → chặn bộ mãi mãi)."""
 		units = self.units(2)
 		agent = self.printer(host="")
+		network = self.printer()
+		jobs_before = frappe.db.count("Print Job")
 
-		result = self.queue(units, ("tag",), agent)
+		block = self.block_code(
+			set_tags.queue_prints, units, ["tag", "tray"], {"tag": network, "tray": agent}
+		)
 
-		self.assertEqual({row["status"] for row in result["jobs"]}, {"Waiting"})
-		self.assertEqual([w["code"] for w in result["warnings"]], ["PRINTER_AGENT_ONLY"])
-		self.assertIn(agent, result["warnings"][0]["reason"])
+		self.assertEqual(block.code, "PRINTER_NOT_NETWORK")
+		self.assertEqual(block.http_status, 422)
+		self.assertEqual(block.items, [agent])
+		self.assertIn(agent, block.reason)
+		self.assertEqual(frappe.db.count("Print Job"), jobs_before)
 		self.enqueue.assert_not_called()
-		for job in self.jobs(result):
-			self.assertEqual(self.state(job), ("Waiting", 0))
+		frappe.conf.pop("tracecore_allow_local_printers")  # 127.0.0.1 bị chặn khi site không bật cờ
+		block = self.block_code(set_tags.queue_prints, units, ["tag"], {"tag": network})
+		self.assertEqual(block.code, "PRINTER_NOT_NETWORK")
 
 	def test_dispatch_refuses_demo_prefix_set_label_on_real_site(self):
 		"""DB dev (Set ID tiền tố demo, job Queued) chép sang site thật: worker không gửi, job Failed có lý do."""
@@ -422,7 +431,17 @@ class TestReprint(SetTagPrintingCase):
 		block = self.block_code(set_tags.queue_prints, [unit], ["tag"], {"tag": printer}, reason="Thẻ rơi")
 		self.assertEqual(block.code, "TAG_PRINT_PENDING")
 		self.assertEqual(block.items, [{"set_unit": unit, "kind": "tag"}])
-		self.queue([unit], ("tray",), self.printer(host=""))  # Waiting cũng là đang chờ
+		# Waiting (job cũ của máy in agent, trước ruling PRINTER_NOT_NETWORK) cũng là đang chờ
+		core_print.create_job(
+			STATION,
+			None,
+			{"label_object": "Set Tray Label", "set_unit": unit, "kind": "tray", "reprint": False},
+			core_print.active_template("Set Tray Label", None).name,
+			printer=printer,
+			status="Waiting",
+			ref_doctype="Set Unit",
+			ref_name=unit,
+		)
 		self.assertEqual(set_tags.pending_block(unit, "tray").code, "TAG_PRINT_PENDING")
 
 	@bru("BRU-ID-001")
