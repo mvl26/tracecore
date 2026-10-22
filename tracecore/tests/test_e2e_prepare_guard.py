@@ -51,7 +51,19 @@ if method == "frappe.is_setup_complete":
 elif method.endswith("ensure_e2e_users"):
     print(json.dumps({"user": "station-tr-003@tracecore.local", "t4_user": "station-tr-004@tracecore.local", "r10_user": "r10-e2e@tracecore.local", "otp_secret": os.environ["TC_FAKE_OTP"], "t4_otp_secret": os.environ["TC_FAKE_OTP"], "r10_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_desk_users"):
-    print(json.dumps({"codes_user": "r10-codes-e2e@tracecore.local", "codes_otp_secret": os.environ["TC_FAKE_OTP"], "instr_user": "r02-instr-e2e@tracecore.local", "instr_otp_secret": os.environ["TC_FAKE_OTP"], "inv_user": "r09-inv-e2e@tracecore.local", "inv_otp_secret": os.environ["TC_FAKE_OTP"]}))
+    result = {}
+    for spec in kwargs["specs"]:
+        result[spec["key"] + "_user"] = spec["name"] + "@tracecore.local"
+        result[spec["key"] + "_otp_secret"] = os.environ["TC_FAKE_OTP"]
+    print(json.dumps(result))
+elif method == "tracecore.setup.provision.desk_user":
+    # provision.desk_user gọi trực tiếp (không có R10 tạm) bị guard FEAT-003 từ chối trên site thật
+    print("frappe.exceptions.PermissionError: Only R10 can create or disable accounts.", file=sys.stderr)
+    sys.exit(1)
+elif method.endswith("ensure_t6_e2e_user"):
+    print(json.dumps({"t6_user": "station-t6@tracecore.local", "t6_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t6_demo"):
+    print(json.dumps({"location": "KE-0001", "pack_released": "CY-261022-0001"}))
 elif method.endswith("station_user"):
     print(json.dumps("station-" + kwargs["station"].lower() + "@tracecore.local"))
 elif method.endswith("desk_user"):
@@ -85,7 +97,16 @@ else:
 			self.assertEqual(values["TC_E2E_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_T4_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_R10_OTP_SECRET"], env["TC_FAKE_OTP"])
-			for key in ("CODES", "INSTR", "INV"):
+			# FEAT-015: user Desk R02 loại bộ tạo qua ensure_desk_users (có R10 tạm), không gọi thẳng provision.desk_user
+			self.assertEqual(values["TC_E2E_SETTYPE_USER"], "r02-settype-e2e@tracecore.local")
+			# FEAT-025: user kiosk T6 có thẻ, OTP riêng và mã demo T6
+			self.assertEqual(values["TC_E2E_T6_USER"], "station-t6@tracecore.local")
+			self.assertEqual(values["TC_E2E_T6_CARD_ID"], "CARD-TR-006")
+			self.assertEqual(values["TC_E2E_T6_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T6_STATION"], "TR-006")
+			self.assertEqual(values["TC_E2E_T6_LOCATION"], "KE-0001")
+			self.assertEqual(values["TC_E2E_T6_PACK_RELEASED"], "CY-261022-0001")
+			for key in ("CODES", "INSTR", "INV", "SETTYPE"):
 				self.assertEqual(values[f"TC_E2E_{key}_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertNotIn(env["TC_FAKE_OTP"], result.stdout + result.stderr)
 			self.assertNotEqual(values["TC_E2E_PASSWORD"], values["TC_E2E_R10_PASSWORD"])
