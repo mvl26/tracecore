@@ -143,13 +143,13 @@ class TestIssueRolls(IsolatedTestCase):
 
 	def test_issue_rolls_requires_r10_or_sm_before_any_write(self):
 		keys = frappe.db.count("Idempotency Key")
-		audit_rows = frappe.db.count("Audit Log")
+		audit_rows = frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]})
 		issued = frappe.db.count("Code Registry")
 		for roles in (["TC R04"], ["TC R02"], []):
 			with self.assertRaises(frappe.PermissionError, msg=roles):
 				as_user(roles, codes_api.issue_rolls, item=self.steam_item, count=3)
 		self.assertEqual(frappe.db.count("Idempotency Key"), keys)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 		self.assertEqual(frappe.db.count("Code Registry"), issued)
 		for roles in (["TC R10"], ["System Manager"]):
 			self.assertTrue(as_user(roles, codes_api.issue_rolls, item=self.steam_item, count=1)["ok"])
@@ -398,7 +398,7 @@ class TestObjectLabel(ObjectLabelCase):
 		equipment = make_equipment(name="Máy tham số", serial="SN-LBL-BAD")
 		inactive = make_printer(PRINTER_STATION, self.steam_item, host="10.0.0.51", name="Off")
 		frappe.db.set_value("Printer", inactive, "is_active", 0)
-		audit_rows = frappe.db.count("Audit Log")
+		audit_rows = frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]})
 		keys = frappe.db.count("Idempotency Key")
 		for kwargs in (
 			{"label_object": "Pack", "printer": self.host_printer},
@@ -410,7 +410,7 @@ class TestObjectLabel(ObjectLabelCase):
 			with self.assertRaises(frappe.ValidationError, msg=kwargs) as ctx:
 				call(print_api.object_label, code=equipment.name, **kwargs)
 			self.assertEqual(ctx.exception.http_status_code, 400, kwargs)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 		self.assertEqual(frappe.db.count("Idempotency Key"), keys)
 
 	def test_object_label_missing_template_is_render_failed(self):
@@ -567,11 +567,11 @@ class TestListRolls(IsolatedTestCase):
 		self.assertTrue(result["truncated"])
 
 	def test_list_rolls_requires_roles_first(self):
-		audit_rows = frappe.db.count("Audit Log")
+		audit_rows = frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]})
 		for roles in (["TC R02"], ["TC R04"], []):
 			with self.assertRaises(frappe.PermissionError, msg=roles):
 				as_user(roles, codes_api.list_rolls, caller=read, item=self.steam_item)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 		for roles in (["TC R10"], ["System Manager"]):
 			self.assertTrue(as_user(roles, codes_api.list_rolls, caller=read, item=self.steam_item)["ok"])
 

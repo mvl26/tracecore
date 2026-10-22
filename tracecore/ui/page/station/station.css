@@ -124,6 +124,7 @@ body.tc-kiosk .layout-main-section {
 
 .tc-scan-input {
 	flex: 1;
+	min-width: 0;
 	min-height: var(--tc-touch-station);
 	padding: var(--tc-sp-3);
 	background: var(--tc-card);
@@ -132,6 +133,30 @@ body.tc-kiosk .layout-main-section {
 	color: var(--tc-text);
 	font-family: var(--tc-font-mono);
 	font-size: var(--tc-fs-2xl);
+}
+
+.tc-work[hidden],
+.tc-session[hidden],
+.tc-auth-form[hidden] {
+	display: none;
+}
+
+.tc-session {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-ci-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-ci-form label {
+	flex-basis: 100%;
 }
 
 .tc-btn {

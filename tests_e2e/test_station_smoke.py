@@ -75,7 +75,7 @@ def test_retry_after_timeout_gets_stored_result(station_page, set_id):
 def test_missing_station_shows_error(logged_in_page):
 	page = logged_in_page
 	page.goto("/app/station")
-	alert = page.locator(".tc-result[data-state='error'] .tc-alert-error")
+	alert = page.locator(".tc-auth-result .tc-alert-error")
 	expect(alert).to_contain_text("Chưa cấu hình trạm")
 
 

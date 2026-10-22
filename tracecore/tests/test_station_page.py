@@ -113,6 +113,21 @@ def other_app_translations():
 
 
 class TestStationPage(FrappeTestCase):
+	def test_station_auth_shell_gates_the_existing_work_surface(self):
+		with open(os.path.join(APP_PATH, "ui/page/station/station.html"), encoding="utf-8") as handle:
+			html = handle.read()
+		self.assertIn('class="tc-auth-form', html)
+		self.assertIn('id="tc-card-input"', html)
+		self.assertIn('class="tc-work" hidden', html)
+		self.assertIn('class="tc-session" hidden', html)
+
+	def test_station_bearer_never_uses_persistent_storage(self):
+		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("sessionStorage", source)
+		self.assertNotIn("localStorage", source)
+		self.assertNotIn('headers["Authorization"]', source)
+
 	def test_station_page_registered(self):
 		page = frappe.get_doc("Page", "station")
 		self.assertEqual(page.module, "UI")

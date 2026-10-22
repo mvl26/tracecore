@@ -16,10 +16,12 @@
 import io
 import json
 import os
+import secrets
+from contextlib import contextmanager
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, today
+from frappe.utils import add_days, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.core import print as core_print
@@ -48,6 +50,153 @@ T4_GATES_FAIL = ("T1", "T2")  # chưa có cổng T3 Đạt → T4 từ chối GA
 def _require_dev_site():
 	if not (frappe.conf.get("developer_mode") or frappe.conf.get("allow_tests") or frappe.flags.in_test):
 		frappe.throw(_("Demo data can only be created on a developer or test site."))
+
+
+@contextmanager
+def _temporary_r10():
+	"""Give Administrator explicit R10 while demo accounts are created, then restore exactly.
+
+	Never commit inside this block: temporary authority must not be persisted.
+	"""
+	admin = frappe.get_doc("User", "Administrator")
+	had_r10 = any(row.role == "TC R10" for row in admin.roles)
+	try:
+		if not had_r10:
+			admin.add_roles("TC R10")
+		yield
+	finally:
+		if not had_r10:
+			admin.remove_roles("TC R10")
+
+
+def _enroll_otp(user):
+	"""Enroll a demo account in native OTP App authentication; returns its (stable) secret."""
+	import pyotp
+	from frappe.twofactor import get_default, set_default
+	from frappe.utils.password import decrypt, encrypt
+
+	key = user + "_otpsecret"
+	stored = get_default(key)
+	secret = decrypt(stored) if stored else pyotp.random_base32()
+	if not stored:
+		set_default(key, encrypt(secret))
+	set_default(user + "_otplogin", 1)
+	return secret
+
+
+def _require_administrator():
+	if frappe.session.user != "Administrator":
+		frappe.throw(_("Only Administrator can prepare demo accounts."), frappe.PermissionError)
+
+
+def ensure_e2e_users(station, t4_station, password, r10_password):
+	"""CLI dev/test bootstrap; returned secrets must go only to the private E2E env file.
+
+	Enroll generated demo accounts in native OTP App authentication, avoiding email
+	delivery without disabling 2FA. Never commit while temporary authority is held.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		result = {
+			"user": provision.station_user(station, password),
+			"t4_user": provision.station_user(t4_station, password),
+			"r10_user": provision.desk_user("TC R10", "r10-e2e", r10_password),
+		}
+		for prefix in ("", "t4_", "r10_"):
+			result[prefix + "otp_secret"] = _enroll_otp(result[prefix + "user"])
+	return result
+
+
+def ensure_desk_users(password, specs):
+	"""Dev/test Desk accounts for e2e whose role needs 2FA (R01/R02/R09/R10).
+
+	``specs`` is a list of ``{"key", "role", "name", "extra_roles"}``; returns ``<key>_user`` and
+	``<key>_otp_secret`` for each. Secrets go only to the private E2E env file.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	result = {}
+	with _temporary_r10():
+		for spec in specs:
+			user = provision.desk_user(spec["role"], spec["name"], password)
+			for role in spec.get("extra_roles") or ():
+				provision.desk_user(role, spec["name"], password)
+			result[spec["key"] + "_user"] = user
+			result[spec["key"] + "_otp_secret"] = _enroll_otp(user)
+	return result
+
+
+def ensure_station_demo(station, user, card_id=None, second_station=None):
+	"""Dev/test-only card identity for an existing kiosk User; no password or PIN is seeded.
+
+	Cards are generated once and reused. Expired demo competencies are renewed in place;
+	valid competencies and their dates remain unchanged on a repeated preparation run.
+	"""
+	from tracecore.core.station_auth import normalize_card_id
+
+	_require_dev_site()
+	stations = list(dict.fromkeys(filter(None, (station, second_station))))
+	for target in stations:
+		if not frappe.db.exists("Zone Station", {"name": target, "is_zone": 0, "is_active": 1}):
+			frappe.throw(_("An active station is required for demo data."))
+	if not frappe.db.get_value("User", user, "enabled"):
+		frappe.throw(_("An enabled user is required for demo data."))
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	if not company:
+		frappe.throw(_("Complete company setup before creating demo employees."))
+	name = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	employee = (
+		frappe.get_doc("Employee", name)
+		if name
+		else frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": "TraceCore Demo",
+				"gender": "Male",
+				"date_of_birth": "1990-01-01",
+				"date_of_joining": today(),
+				"company": company,
+				"user_id": user,
+			}
+		)
+	)
+	employee.status = "Active"
+	employee.tc_card_enabled = 1
+	employee.tc_card_id = normalize_card_id(card_id or employee.tc_card_id or f"E2E-{secrets.token_hex(12)}")
+	employee.save(ignore_permissions=True)
+	now = now_datetime()
+	for target in stations:
+		name = frappe.db.get_value(
+			"Station Competency", {"employee": employee.name, "station": target}, "name"
+		)
+		competency = (
+			frappe.get_doc("Station Competency", name)
+			if name
+			else frappe.get_doc(
+				{
+					"doctype": "Station Competency",
+					"employee": employee.name,
+					"station": target,
+				}
+			)
+		)
+		if (
+			not name
+			or not competency.is_active
+			or not (competency.valid_from <= now <= competency.valid_until)
+		):
+			competency.update(
+				{"valid_from": add_days(now, -1), "valid_until": add_days(now, 365), "is_active": 1}
+			)
+			competency.save(ignore_permissions=True)
+	result = {"employee": employee.name, "card_id": employee.tc_card_id}
+	print(json.dumps(result, sort_keys=True))
+	return result
 
 
 def ensure_demo_set():
@@ -553,7 +702,7 @@ def _next_candidate(prefix, name, usable):
 			return code
 	code = f"{prefix}{len(codes) + 1:02d}"
 	while frappe.db.exists("Instrument", code):
-		code = f"{prefix}{int(code[len(prefix):]) + 1:02d}"
+		code = f"{prefix}{int(code[len(prefix) :]) + 1:02d}"
 	factories.make_instrument(code, name, spaulding=T4_INSTRUMENT_SPAULDING, methods=("Steam 134",))
 	return code
 

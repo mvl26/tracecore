@@ -12,6 +12,7 @@ TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang
 import os
 import socket
 import threading
+import time
 
 import pytest
 
@@ -26,6 +27,32 @@ def require_env(name):
 	return value
 
 
+def desk_login(page, prefix="TC_E2E"):
+	"""Complete the native password + OTP challenge when enabled; never bypass 2FA."""
+	user, password = require_env(prefix + "_USER"), require_env(prefix + "_PASSWORD")
+	response = page.request.post("/api/method/login", form={"usr": user, "pwd": password})
+	assert response.ok, response.text()
+	challenge = response.json()
+	if challenge.get("tmp_id"):
+		import pyotp
+
+		totp = pyotp.TOTP(require_env(prefix + "_OTP_SECRET"))
+		# Native Frappe verifies only the current 30-second window. A code generated near the
+		# boundary can arrive after it rolled, so retry a bounded number of times with a fresh
+		# code, and only for a rejected verification code; other failures remain failures.
+		for _ in range(3):
+			response = page.request.post(
+				"/api/method/login",
+				form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": totp.now()},
+			)
+			if response.ok or response.status != 401 or "Incorrect Verification code" not in response.text():
+				break
+			time.sleep(1.5)
+		assert response.ok, response.text()
+	logged_in = page.request.get("/api/method/frappe.auth.get_logged_user")
+	assert logged_in.ok and logged_in.json().get("message") == user
+
+
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
 	return {**browser_context_args, "viewport": KIOSK_VIEWPORT, "base_url": BASE_URL}
@@ -33,18 +60,17 @@ def browser_context_args(browser_context_args):
 
 @pytest.fixture
 def logged_in_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_USER"), "pwd": require_env("TC_E2E_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page)
 	return page
 
 
 @pytest.fixture
 def station_page(logged_in_page):
 	station = os.environ.get("TC_E2E_STATION", "TR-003")
+	card = require_env("TC_E2E_CARD_ID")
 	logged_in_page.goto(f"/app/station?station={station}")
+	logged_in_page.locator("#tc-card-input").fill(card)
+	logged_in_page.locator("#tc-card-input").press("Enter")
 	logged_in_page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	return logged_in_page
 
@@ -75,13 +101,12 @@ def t4_demo():
 
 @pytest.fixture
 def t4_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_T4_USER"), "pwd": require_env("TC_E2E_T4_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	card = require_env("TC_E2E_T4_CARD_ID")
+	desk_login(page, "TC_E2E_T4")
 	station = os.environ.get("TC_E2E_T4_STATION", "TR-004")
 	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	return page
 
@@ -91,11 +116,7 @@ def t4_page(page):
 
 @pytest.fixture
 def r10_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_R10_USER"), "pwd": require_env("TC_E2E_R10_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_R10")
 	return page
 
 
@@ -112,11 +133,7 @@ def codes_demo():
 @pytest.fixture
 def codes_page(page):
 	"""User R10 cấp mã cuộn và in nhãn: TC R10 + Stock User (R10 không đọc được Item của ERPNext)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_CODES_USER"), "pwd": require_env("TC_E2E_CODES_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_CODES")
 	return page
 
 
@@ -211,11 +228,7 @@ def instr_demo():
 @pytest.fixture
 def instr_page(page):
 	"""User Desk TC R02 (khai báo và sửa danh mục dụng cụ)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_INSTR_USER"), "pwd": require_env("TC_E2E_INSTR_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_INSTR")
 	return page
 
 
@@ -231,10 +244,8 @@ def other_user_page(browser, browser_context_args):
 		context = browser.new_context(**browser_context_args)
 		contexts.append(context)
 		page = context.new_page()
-		response = page.request.post(
-			"/api/method/login", form={"usr": require_env(user_env), "pwd": require_env(password_env)}
-		)
-		assert response.ok, response.text()
+		assert user_env.endswith("_USER") and password_env == user_env[: -len("_USER")] + "_PASSWORD"
+		desk_login(page, user_env[: -len("_USER")])
 		return page
 
 	yield open_page
@@ -256,9 +267,5 @@ def inv_demo():
 @pytest.fixture
 def inv_page(page):
 	"""User Desk TC R09 (nhập kho vật tư, khai báo vật tư)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_INV_USER"), "pwd": require_env("TC_E2E_INV_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_INV")
 	return page

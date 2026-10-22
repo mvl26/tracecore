@@ -7,7 +7,7 @@ import frappe
 from tracecore.core import print as core_print
 from tracecore.setup.label_templates import sample_pack_context
 from tracecore.tests.factories import make_user
-from tracecore.tests.utils import IsolatedTestCase, request_headers
+from tracecore.tests.utils import IsolatedTestCase, fixture_r10, request_headers
 from tracecore.v1 import label_template as label_template_api
 
 # Người dùng test có role TC; site CI mới chưa chạy Setup Wizard (xem factories.py).
@@ -82,10 +82,13 @@ class TestLabelTemplatePreview(IsolatedTestCase):
 			label_template_api.preview("no-such-template")
 
 	def test_preview_requires_r10_or_system_manager(self):
-		frappe.set_user(make_user("preview-r04@example.com", roles=["TC R04"]))
+		with fixture_r10():
+			r04 = make_user("preview-r04@example.com", roles=["TC R04"])
+			r10 = make_user("preview-r10@example.com", roles=["TC R10"])
+		frappe.set_user(r04)
 		with self.assertRaises(frappe.PermissionError):
 			label_template_api.preview(SAMPLE)
-		frappe.set_user(make_user("preview-r10@example.com", roles=["TC R10"]))
+		frappe.set_user(r10)
 		self.assertIs(label_template_api.preview(SAMPLE)["ok"], True)
 		frappe.set_user("Administrator")
 		self.assertIs(label_template_api.preview(SAMPLE)["ok"], True)

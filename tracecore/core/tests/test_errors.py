@@ -17,7 +17,17 @@ class TestErrors(FrappeTestCase):
 
 	def test_http_status_table_matches_decision_d3(self):
 		expected = {
+			401: ("SESSION_INVALID", "SESSION_EXPIRED", "SESSION_IDLE"),
+			403: (
+				"SESSION_STATION_MISMATCH",
+				"CARD_INVALID",
+				"COMPETENCY_REQUIRED",
+				"PIN_INVALID",
+				"PIN_PROOF_INVALID",
+			),
+			429: ("PIN_LOCKED", "LOGIN_THROTTLED"),
 			422: (
+				"PIN_FORMAT_INVALID",
 				"STATION_WRONG_STEP",
 				"SCAN_INVALID",
 				"BOM_INCOMPLETE",

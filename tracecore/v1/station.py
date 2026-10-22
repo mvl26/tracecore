@@ -1,12 +1,16 @@
-"""RPC tracecore.v1.station.* — cấu hình trạm cho Station Agent (role TC Agent, API key)."""
+"""Station bearer-session RPCs and TC Agent/API-key station configuration."""
 
 import frappe
 from frappe import _
 from frappe.utils import cint
 
 from tracecore.core import print as core_print
+from tracecore.core import station_auth
+from tracecore.core.client_time import parse_client_ts
+from tracecore.core.errors import BlockedError
 from tracecore.v1._common import (
 	AGENT_ROLE,
+	BadRequestError,
 	require_agent_for,
 	require_role,
 	require_station,
@@ -14,6 +18,68 @@ from tracecore.v1._common import (
 )
 
 PERIPHERAL_FIELDS = ["peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"]
+
+
+def _session_response(call):
+	try:
+		return call()
+	except BlockedError as error:
+		if getattr(frappe.local, "request", None):
+			frappe.local.response["http_status_code"] = error.block.http_status
+		return {"ok": False, "error": error.block.as_dict()}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def login(card_id=None, station=None, client_ts=None):
+	# Do not persist bearer tokens in Idempotency Key responses; each login replaces the old session.
+	timestamp = parse_client_ts(client_ts)
+	if not isinstance(card_id, str) or not isinstance(station, str):
+		raise BadRequestError(_("card_id and station must be strings."))
+	return _session_response(lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)})
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def logout(token=None, client_ts=None):
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		station_auth.logout(token, timestamp)
+		return {"ok": True}
+
+	return _session_response(call)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def heartbeat(token=None, client_ts=None):
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		doc = station_auth.heartbeat(token, timestamp)
+		return {
+			"ok": True,
+			"session": doc.name,
+			"employee": doc.employee,
+			"employee_name": frappe.db.get_value("Employee", doc.employee, "employee_name"),
+			"roles": sorted(role for role in frappe.get_roles(doc.user) if role.startswith("TC R")),
+			"station": doc.station,
+			"expires_at": doc.absolute_expires_at,
+		}
+
+	return _session_response(call)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def verify_pin(token=None, pin=None, client_ts=None):
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		if not isinstance(token, str) or not token:
+			station_auth.authenticate_session(token)  # stable SESSION_INVALID, before PIN validation
+		if not isinstance(pin, str):
+			raise BadRequestError(_("pin must be a string."))
+		return {"ok": True, **station_auth.create_pin_proof(token, pin, timestamp)}
+
+	return _session_response(call)
 
 
 def _station_row(station):

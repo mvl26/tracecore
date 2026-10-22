@@ -5,7 +5,7 @@ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
 from tracecore.core import code_registry
 from tracecore.patches.v0_1 import activate_existing_stations, register_station_codes
-from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
 
 test_ignore = ["User"]
 
@@ -229,8 +229,9 @@ class TestZoneStation(IsolatedTestCase):
 
 	def test_permissions_match_e8(self):
 		validate_permissions_for_doctype("Zone Station")
+		assert_permission_matrix(self, "Zone Station")
 		perms = {p.role: p for p in frappe.get_meta("Zone Station").permissions if p.permlevel == 0}
-		for role in ("System Manager", "TC R10"):
+		for role in ("TC R10",):
 			for right in ("read", "write", "create", "report"):
 				self.assertEqual(perms[role].get(right), 1, f"{role}.{right}")
 		for role in ("TC R01", "TC R02", "TC R09"):

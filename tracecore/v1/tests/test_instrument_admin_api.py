@@ -75,11 +75,14 @@ class TestInitCountersRpc(IsolatedTestCase):
 			{"set_unit": self.units[1], "cycles_since": 5, "last_maint_on": None},
 		]
 		# R04: PermissionError trước mọi ghi
-		keys, audit_rows = frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log")
+		keys, audit_rows = (
+			frappe.db.count("Idempotency Key"),
+			frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}),
+		)
 		with self.assertRaises(frappe.PermissionError):
 			as_user(["TC R04"], admin_api.init_counters, instrument="IA-CNT", rows=rows, reason="Sổ cũ")
 		self.assertEqual(frappe.db.count("Idempotency Key"), keys)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 		self.assertIsNone(_counter(self.units[0], "IA-CNT"))
 
 		# lỗi ở dòng 2 → không dòng nào được ghi
@@ -133,10 +136,10 @@ class TestInitCountersRpc(IsolatedTestCase):
 			"client_ts": ts,
 		}
 		first = call(admin_api.init_counters, key=key, **kwargs)
-		audit_rows = frappe.db.count("Audit Log")
+		audit_rows = frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]})
 		second = call(admin_api.init_counters, key=key, **kwargs)
 		self.assertEqual(first, second)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 
 	def test_init_counters_rejections(self):
 		make_maintenance(self.units[0], "IA-CNT", cycles_since=2, deferred_count=1)

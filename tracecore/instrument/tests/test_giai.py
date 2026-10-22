@@ -28,6 +28,7 @@ from tracecore.tests.utils import IsolatedTestCase, bru, request_headers
 from tracecore.v1 import instrument as instrument_api
 from tracecore.v1 import instrument_admin as admin_api
 from tracecore.v1 import pack as pack_api
+from tracecore.v1.tests.station_fixtures import make_station_session
 
 # Instrument liên kết Item/User, Set Unit/Pack liên kết Department, Batch, Employee; CI chưa có Setup Wizard
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
@@ -48,6 +49,11 @@ def call(fn, key=None, station_header=None, **kwargs):
 	headers = {"X-Idempotency-Key": key or str(uuid.uuid4())}
 	if station_header:
 		headers["X-TC-Station"] = station_header
+	if fn.__module__ == pack_api.__name__ and "token" not in kwargs:
+		# RPC trạm đóng gói cần phiên đăng nhập thẻ thật (FEAT-003)
+		kwargs["token"] = make_station_session(frappe.session.user, kwargs.get("station") or "TR-004")[
+			"token"
+		]
 	with request_headers(headers):
 		return fn(**kwargs)
 
@@ -173,11 +179,11 @@ class TestAssignGiai(GiaiCase):
 	def test_assign_roles_and_unknown_instrument(self):
 		set_flag(True)
 		make_instrument("GI-ROLE")
-		audit_rows = frappe.db.count("Audit Log")
+		audit_rows = frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]})
 		for roles in (["TC R02"], ["TC R01"], ["TC R04"]):
 			with self.assertRaises(frappe.PermissionError, msg=roles):
 				assign("GI-ROLE", roles)
-		self.assertEqual(frappe.db.count("Audit Log"), audit_rows)
+		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 		self.assertTrue(assign("GI-ROLE", ["System Manager"])["ok"])
 		self.assertRejected(assign("GI-NONE"), "INSTRUMENT_NOT_FOUND", 404)
 		with self.assertRaises(frappe.ValidationError):

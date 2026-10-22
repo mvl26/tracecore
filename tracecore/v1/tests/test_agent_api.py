@@ -21,6 +21,8 @@ def call(fn, **kwargs):
 class TestAgentApi(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		frappe.set_user("Administrator")
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
 		# user agent của trạm TR-004 theo quy ước provision: agent-<trạm>@tracecore.local
 		frappe.set_user(make_user("agent-tr-004@tracecore.local", roles=["TC Agent"]))
 
@@ -73,6 +75,7 @@ class TestAgentApi(IsolatedTestCase):
 		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Printed")
 
 	def test_agent_endpoints_require_role(self):
+		frappe.set_user("Administrator")  # R10 fixture creates the non-agent actor.
 		frappe.set_user(make_user("no-agent@example.com", roles=["TC R04"]))
 		for fn in (agent_api.heartbeat, print_api.test_label):
 			with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
@@ -84,6 +87,7 @@ class TestAgentApi(IsolatedTestCase):
 			with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
 				call(fn, station="TR-999")
 		# agent có System Manager: trạm không tồn tại → ValidationError
+		frappe.set_user("Administrator")  # Account provisioning is not an agent operation.
 		frappe.set_user(make_user("agent-sm@example.com", roles=["TC Agent", "System Manager"]))
 		for fn in (agent_api.heartbeat, print_api.test_label):
 			with self.assertRaises(frappe.ValidationError, msg=fn.__name__):
