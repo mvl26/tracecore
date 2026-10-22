@@ -16,6 +16,18 @@ MATRIX_PATH = Path(__file__).parents[1] / "fixtures" / "permission_matrix.csv"
 FIXTURE_PATH = Path(__file__).parents[1] / "fixtures" / "custom_docperm.json"
 VALID_SYMBOLS = frozenset("RWSA")
 
+# DocType do một amendment mới hơn ma trận BA #13 quản lý bằng đường riêng; không sinh Custom DocPerm ở đây để
+# hai nguồn không ghi đè nhau. Custom DocPerm thay thế toàn bộ quyền chuẩn của DocType, nên Item/Stock Entry của
+# ERPNext phải để ``inventory.permissions.ensure_permissions`` (FEAT-041, A-07 V11) tự sao chép quyền chuẩn
+# trước rồi chỉnh theo V11.
+AMENDED_ELSEWHERE = frozenset({"Item", "Stock Entry"})
+
+# Quyền thêm theo amendment cho vai trò ngoài R01-R10 (ký hiệu SEC như ma trận, không bao giờ có delete):
+# Instrument: System Manager đọc/ghi (FEAT-014, A-06 I15).
+AMENDMENT_GRANTS: dict[str, dict[str, str]] = {
+	"Instrument": {"System Manager": "RW"},
+}
+
 
 @dataclass(frozen=True)
 class PermissionRow:
@@ -87,7 +99,7 @@ def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dic
 		existing_doctypes = set(frappe.get_all("DocType", pluck="name"))
 	records = []
 	for row in load_permission_matrix():
-		if row.doctype not in existing_doctypes:
+		if row.doctype not in existing_doctypes or row.doctype in AMENDED_ELSEWHERE:
 			continue
 		for code in ROLE_CODES:
 			flags = permission_flags(row.permissions[code])
@@ -104,6 +116,20 @@ def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dic
 					"role": ROLE_NAMES[code],
 					"permlevel": 0,
 					**flags,
+				}
+			)
+		for role, symbols in AMENDMENT_GRANTS.get(row.doctype, {}).items():
+			name = hashlib.sha256(f"{row.doctype}:{role}:0".encode()).hexdigest()[:10]
+			records.append(
+				{
+					"doctype": "Custom DocPerm",
+					"name": name,
+					"parent": row.doctype,
+					"parenttype": "DocType",
+					"parentfield": "permissions",
+					"role": role,
+					"permlevel": 0,
+					**permission_flags(symbols),
 				}
 			)
 	return records

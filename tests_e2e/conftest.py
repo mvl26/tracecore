@@ -244,10 +244,8 @@ def other_user_page(browser, browser_context_args):
 		context = browser.new_context(**browser_context_args)
 		contexts.append(context)
 		page = context.new_page()
-		response = page.request.post(
-			"/api/method/login", form={"usr": require_env(user_env), "pwd": require_env(password_env)}
-		)
-		assert response.ok, response.text()
+		assert user_env.endswith("_USER") and password_env == user_env[: -len("_USER")] + "_PASSWORD"
+		desk_login(page, user_env[: -len("_USER")])
 		return page
 
 	yield open_page

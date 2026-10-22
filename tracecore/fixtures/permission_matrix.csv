@@ -1,5 +1,5 @@
 code,doctype,R01,R02,R03,R04,R05,R06,R07,R08,R09,R10,notes
-DT-INSTR,Instrument,R,RWS,R,R,R,R,,,R,RW,
+DT-INSTR,Instrument,R,RWS,R,R,R,R,R,R,R,RW,FEAT-014 A-06 I15: mọi vai trò TC được đọc; System Manager theo AMENDMENT_GRANTS
 DT-SETTYPE,Instrument Set Type,R,RWS,R,R,R,R,,,R,RW,
 DT-SETBOM,Set BOM Item,R,RWS,R,R,R,R,,,R,RW,
 DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,

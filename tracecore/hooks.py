@@ -109,7 +109,10 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # before_install = "tracecore.install.before_install"
 after_install = "tracecore.setup.install.after_install"
 # Quyền R09/R06/R10/R02 cho Item, Batch, Stock Entry (FEAT-041, A-07 V11): Custom DocPerm idempotent
-after_migrate = "tracecore.inventory.permissions.ensure_permissions"
+after_migrate = [
+	"tracecore.inventory.permissions.ensure_permissions",
+	"tracecore.setup.install.apply_system_settings",
+]
 
 # Uninstallation
 # ------------
@@ -283,7 +286,6 @@ scheduler_events = {
 }
 
 on_login = "tracecore.core.account.on_login"
-after_migrate = "tracecore.setup.install.apply_system_settings"
 override_whitelisted_methods = {
 	"frappe.core.doctype.user.user.update_password": "tracecore.core.account.update_web_password",
 	"frappe.core.doctype.user.user.reset_password": "tracecore.core.account.reject_email_reset",
