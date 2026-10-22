@@ -28,7 +28,7 @@ FR/BRU đáp ứng: FR-M2-13, FR-M2-13.1–.5, FR-M2-14, FR-M2-14.1, FR-M2-14.2;
 
 Mọi task: test trước (thấy FAIL), code, PASS, commit `feat(...)`. Bản dịch `vi.csv` cập nhật cùng task.
 
-- [ ] **T0 Amendment** `architecture.md` Revision History A-08 (D1, D3–D7) + `srs.md` Appendix mục 4 ghi đã chốt.
+- [ ] **T0 Amendment** `architecture.md` Revision History A-10 (D1, D3–D7) + `srs.md` Appendix mục 4 ghi đã chốt.
 - [ ] **T1 Set Unit `Awaiting Receipt` + `step_gate.check_stored` + `step_gate.return_to_receipt`** (FR-M2-14, BRU-FLOW-004). Test: `core/tests/test_step_gate.py`.
 - [ ] **T2 DocType Sterile Location** (+ test, quyền R10 ghi, R06/R02/R01 đọc, `next_code("KE")`, audit hook). Test: `reprocessing/doctype/sterile_location/test_sterile_location.py`.
 - [ ] **T3 DocType Sterile Putaway + `Pack.location`** (guard trường, quyền, audit). Test: `reprocessing/doctype/sterile_putaway/test_sterile_putaway.py`, `pack/test_pack.py`.

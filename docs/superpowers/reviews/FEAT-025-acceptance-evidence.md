@@ -1,6 +1,6 @@
 # FEAT-025 T6 Kho vô khuẩn — bằng chứng nghiệm thu
 
-Plan: `docs/superpowers/plans/FEAT-025-t6-sterile-storage.md`. Amendment: architecture A-08.
+Plan: `docs/superpowers/plans/FEAT-025-t6-sterile-storage.md`. Amendment: architecture A-10 (đánh lại số khi đưa lên `develop`: A-08 thuộc FEAT-003, A-09 thuộc FEAT-015).
 
 | Yêu cầu | Hành vi | Test |
 | :- | :- | :- |
@@ -15,5 +15,9 @@ Plan: `docs/superpowers/plans/FEAT-025-t6-sterile-storage.md`. Amendment: archit
 BRU: BRU-FLOW-004, BRU-REP-008, BRU-ID-003, BRU-ID-001 (marker `@bru`).
 
 Kết quả chạy (22/10/2026, `test_site`): full suite 1100 test, 1 fail không liên quan (`test_system_settings_localized`: site `en`, không kiểm trên baseline). Coverage changed-code (`diff-cover`, so với `328398d`): 97 %. `ruff check`/`ruff format`, `prettier`, `eslint` sạch.
+
+**Tích hợp FEAT-003 (sau khi đưa lên `develop` a3e9518, 22/10/2026):** RPC màn T6 (`v1.putaway.scan/overview/fefo`, `v1.pack.mark_damaged`) dùng `@station_session` như T4 (POST, `allow_guest`, token phiên trong body, đúng trạm; `@idempotent` chạy sau khi xác thực phiên). Test: `v1/tests/test_putaway_api.py::TestStationSession` (không token/token sai → `SESSION_INVALID` 401 kể cả Administrator và không ghi Idempotency Key; phiên trạm khác → `SESSION_STATION_MISMATCH` 403; Guest có phiên T6 nhập kho với actor là người của phiên, replay sau logout bị chặn). Client: `rpc()` gắn token cho `tracecore.v1.putaway.*`; `T6Storage.clearSession()` xóa gói/tồn/yêu cầu dở khi hết phiên và bỏ câu trả lời muộn (`scripts/tests/station_auth.test.js`, 18/18 pass).
+
+Kết quả chạy sau tích hợp (`test_site` đã migrate): full suite 1301 test, 23 lỗi/fail đều ngoài FEAT-025 (inventory receipt import thiếu kho test, `test_count_sheet` gọi `pack.scan` không token, số dòng Audit Log khi tạo user, quyền S12, asset FEAT-015, savepoint `test_account`); toàn bộ test T6 pass. `diff-cover` so với `origin/develop`: 97 %. `pre-commit run --all-files` sạch.
 
 Chưa có: e2e Playwright và thử màn SCR-11 trên trình duyệt (UI mới kiểm cú pháp và bằng test hook/script); sinh nhãn QR in cho kệ `KE-` (nút in thuộc FEAT-005).
