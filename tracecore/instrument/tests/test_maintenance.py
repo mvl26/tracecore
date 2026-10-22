@@ -538,7 +538,9 @@ class TestPackHooks(IsolatedTestCase):
 			for part in extension.run("tracecore_pack_context", ctx):
 				merged.update(part)
 			self.assertEqual(
-				set(merged), {"bom", "bom_version", "tray_image", "maintenance", "par"}, msg=sorted(merged)
+				set(merged),
+				{"bom", "bom_version", "tray_image", "tray_images", "maintenance", "par"},
+				msg=sorted(merged),
 			)
 			self.assertEqual(merged["par"]["state"], "warn")
 			self.assertEqual([row["instrument"] for row in merged["bom"]], ["MH-1", "MH-2"])

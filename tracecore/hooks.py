@@ -223,6 +223,9 @@ tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
 # +1 bộ đếm bảo dưỡng. cycle_id bắt buộc theo hợp đồng: cùng cycle_id gọi lại không đếm thêm (last_release_cycle);
 # thiếu cycle_id thì không chống trùng.
 tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
+# core.step_gate.start_cycle (FEAT-015 S3): (ctx {set_unit, set_type, cycle_no, on}) -> int | None, phiên bản BOM ghim
+# cho chu trình mới (số nguyên đầu tiên được ghi vào Set Unit.cycle_bom_version; không có → 0)
+tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_version"]
 
 # Scheduled Tasks
 # ---------------

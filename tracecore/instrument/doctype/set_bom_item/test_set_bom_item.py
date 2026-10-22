@@ -2,8 +2,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import nowdate
 
+from tracecore.core import step_gate
 from tracecore.instrument import bom, catalog
-from tracecore.tests.factories import make_bom, make_instrument, make_set_type
+from tracecore.tests.factories import make_bom, make_instrument, make_set_type, make_set_unit
 
 # Set BOM Item liên kết Instrument Set Type (→ Department, Item) và Instrument (→ Item); CI chưa có Setup Wizard
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
@@ -79,21 +80,29 @@ class TestSetBOMItem(FrappeTestCase):
 	def test_pack_context_gives_current_bom_and_tray_image(self):
 		st = make_set_type("BMP", tray_image="/files/bmp-tray.png")
 		make_bom(st.name, [("BM-P1", 2)], version=1)
+		older_unit = make_set_unit(st.name)
+		step_gate.start_cycle(older_unit.name)  # chu trình mở khi v1 hiệu lực → ghim v1 (FEAT-015 S3)
 		make_bom(st.name, [("BM-P2", 1), ("BM-P1", 3)], version=2)
 		set_type = {"name": st.name, "current_bom_version": 2, "tray_image": "/files/bmp-tray.png"}
+		unit = make_set_unit(st.name)
 
-		result = bom.pack_context({"set_type": set_type, "station": "T4"})
+		result = bom.pack_context({"set_unit": {"name": unit.name}, "set_type": set_type, "station": "T4"})
 
-		self.assertEqual(set(result), {"bom", "bom_version", "tray_image"})
+		self.assertEqual(set(result), {"bom", "bom_version", "tray_image", "tray_images"})
 		self.assertEqual(result["bom_version"], 2)
 		self.assertEqual(result["tray_image"], "/files/bmp-tray.png")
+		self.assertEqual(result["tray_images"], ["/files/bmp-tray.png"])
 		self.assertEqual([(r["instrument"], r["qty"]) for r in result["bom"]], [("BM-P2", 1), ("BM-P1", 3)])
 		self.assertEqual(result["bom"], bom.lines(st.name, 2))
 
-		# phiên bản cũ vẫn dựng được; loại bộ chưa có phiên bản BOM thì BOM rỗng
-		older = bom.pack_context({"set_type": {**set_type, "current_bom_version": 1}})
+		# phiên bản cũ (đã ghim cho bộ giữa chu trình) vẫn dựng được; loại bộ chưa có phiên bản BOM thì BOM rỗng
+		older = bom.pack_context({"set_unit": {"name": older_unit.name}, "set_type": set_type})
 		self.assertEqual((older["bom_version"], [r["instrument"] for r in older["bom"]]), (1, ["BM-P1"]))
-		empty = bom.pack_context({"set_type": {"name": st.name, "current_bom_version": None}})
+		bare = make_set_type("BMPE")
+		frappe.db.set_value("Instrument Set Type", bare.name, "current_bom_version", 0, update_modified=False)
+		empty = bom.pack_context(
+			{"set_unit": {"name": make_set_unit(bare.name).name}, "set_type": {"name": bare.name}}
+		)
 		self.assertEqual((empty["bom"], empty["bom_version"], empty["tray_image"]), ([], 0, None))
 
 	def test_quantity_at_least_one(self):

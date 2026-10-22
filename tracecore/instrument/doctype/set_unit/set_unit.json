@@ -14,6 +14,7 @@
   "current_station",
   "active_cycle_id",
   "current_cycle_no",
+  "cycle_bom_version",
   "section_cycles",
   "cycles_used",
   "max_cycles"
@@ -86,6 +87,14 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "BOM version of the set type pinned when the current cycle started (reception); the set keeps it until the next cycle. 0 = not pinned (the effective version applies). Changed only by the step gate.",
+   "fieldname": "cycle_bom_version",
+   "fieldtype": "Int",
+   "label": "Cycle BOM Version",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_cycles",
    "fieldtype": "Section Break",
    "label": "Cycles"
@@ -106,7 +115,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 10:00:00.000000",
+ "modified": "2026-10-22 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",

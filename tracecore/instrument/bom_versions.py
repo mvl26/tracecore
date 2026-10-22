@@ -699,3 +699,37 @@ def roll_effective_versions() -> list[str]:
 		)
 		changed.append(name)
 	return changed
+
+
+# --- Phiên bản của một bộ (S3) ---------------------------------------------------------------------------------
+
+
+def pin_cycle_version(ctx: dict) -> int | None:
+	"""Hook ``tracecore_cycle_bom_version`` (``core.step_gate.start_cycle``): phiên bản ghim cho chu trình mới.
+
+	``ctx = {"set_unit", "set_type", "cycle_no", "on"}``; trả phiên bản hiệu lực tại ngày tiếp nhận ``on``
+	(FR-M1-04.2: từ ngày hiệu lực trở đi chu trình mới dùng phiên bản mới), None khi loại bộ chưa có phiên bản hiệu lực.
+	Chỉ đọc; step_gate ghi ``Set Unit.cycle_bom_version``.
+	"""
+	return effective_version(ctx["set_type"], ctx.get("on"))
+
+
+def version_for_set_unit(set_unit) -> int | None:
+	"""Phiên bản BOM áp dụng cho bộ `set_unit` (tên hoặc dict có ``name``), FR-M1-04.1.
+
+	Đã ghim (``cycle_bom_version > 0``, bộ đang trong chu trình) → phiên bản ghim. Chưa ghim (bộ cũ chưa có chu trình
+	từ FEAT-015) → phiên bản hiệu lực hôm nay; loại bộ chưa có phiên bản hiệu lực → ``current_bom_version`` của loại
+	bộ như FEAT-018 (cùng quy tắc ``set_type.live_versions``). Bộ không có → None.
+	"""
+	name = set_unit.get("name") if isinstance(set_unit, dict) else set_unit
+	row = frappe.db.get_value("Set Unit", name, ["set_type", "cycle_bom_version"]) if name else None
+	if not row:
+		return None
+	set_type, pinned = row
+	if cint(pinned) > 0:
+		return cint(pinned)
+	return (
+		effective_version(set_type)
+		or cint(frappe.db.get_value(SET_TYPE, set_type, "current_bom_version"))
+		or None
+	)
