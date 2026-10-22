@@ -210,7 +210,7 @@
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 20:00:00.000000",
+ "modified": "2026-10-22 20:30:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",
@@ -219,6 +219,7 @@
  "permissions": [
   {
    "create": 1,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "System Manager",
@@ -226,6 +227,7 @@
   },
   {
    "create": 1,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "TC R02",
@@ -233,41 +235,50 @@
   },
   {
    "create": 1,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "TC R10",
    "write": 1
   },
   {
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "TC R01"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R03"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R04"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R05"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R06"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R07"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R08"
   },
   {
+   "print": 1,
    "read": 1,
    "role": "TC R09"
   }

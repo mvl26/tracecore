@@ -188,6 +188,9 @@ class TestSetTypeHeader(IsolatedTestCase):
 			self.assertEqual(perms[role].read, 1, msg=role)
 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
 		self.assertFalse(any(row.delete for row in perms.values()))
+		# review cuối Minor 4: menu Print chuẩn (Print Format TC Count Sheet, S9) cho mọi role đọc được loại bộ
+		for role, row in perms.items():
+			self.assertEqual(row.print, 1 if row.read else 0, msg=role)
 
 		writer = make_user("settype-r02@example.com", roles=["TC R02"])
 		admin = make_user("settype-r10@example.com", roles=["TC R10"])
@@ -197,6 +200,7 @@ class TestSetTypeHeader(IsolatedTestCase):
 			self.assertTrue(frappe.has_permission(DOCTYPE, "write", user=user), user)
 			self.assertFalse(frappe.has_permission(DOCTYPE, "delete", user=user), user)
 		self.assertTrue(frappe.has_permission(DOCTYPE, "read", user=reader))
+		self.assertTrue(frappe.has_permission(DOCTYPE, "print", user=reader))
 		for ptype in ("create", "write", "delete"):
 			self.assertFalse(frappe.has_permission(DOCTYPE, ptype, user=reader), ptype)
 
