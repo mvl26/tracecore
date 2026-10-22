@@ -7,17 +7,30 @@
   site thật) không dựng được trên site không phải dev/test → ``BlockedError(GS1_PREFIX_NOT_CONFIGURED)`` (G3);
   trên dev/test thẻ in thêm dòng ``TEST``.
 - `render` / `preview`: ZPL bằng `core.print.render_label`; ảnh PNG xem trước dựng từ chính ZPL (máy in không Unicode).
+
+In qua hàng đợi server (Task 4; FR-M1-05.3, .4; EI-HW-008; G9-G12):
+
+- `queue_prints`: **một Print Job cho mỗi (bộ, loại bản in)**, thứ tự thẻ rồi nhãn khay của từng bộ; kiểm cả lô
+  (`check_printable`, `TAG_PRINT_PENDING`, lý do in lại, dựng ZPL) **trước** mọi ghi. Máy in có địa chỉ → ``Queued`` +
+  một `print_server.enqueue_server_dispatch_many` cho cả lô; máy in chỉ qua agent → ``Waiting`` + cảnh báo
+  ``PRINTER_AGENT_ONLY``. Mỗi job một Audit ``Create`` trên Print Job (``new = {set_unit, kind, reprint, printer}``,
+  ``reason`` = lý do in lại) vì Audit Log không có hành động "Print".
+- In lại (G10): bản in đầu tiên của (bộ, loại) và in bù khi mọi job trước của loại đó ``Failed`` không cần lý do; còn
+  lại lý do bắt buộc 1-`REASON_MAX` ký tự (bỏ khoảng trắng). Từ lần in lại thứ `REPRINT_WARN_AT` trả cảnh báo.
+  Thẻ và nhãn khay đếm/xét riêng theo cùng một luật.
+- `print_counts` (G11): số lần in suy ra từ Print Job (index ``ref_doctype``, ``ref_name``), không có trường đếm.
+- `verify` (G12): quét thẻ vừa in phải ra đúng Set ID của bộ.
 """
 
 import base64
 
 import frappe
 from frappe import _
-from frappe.utils import cint, get_datetime
+from frappe.utils import cint, get_datetime, now_datetime
 
-from tracecore.core import code_registry, gs1
+from tracecore.core import audit, code_registry, gs1, print_server
 from tracecore.core import print as core_print
-from tracecore.core.errors import BlockedError
+from tracecore.core.errors import Block, BlockedError
 from tracecore.core.print_preview import zpl_preview_png
 
 KINDS = {"tag": "Set Tag", "tray": "Set Tray Label"}
@@ -25,6 +38,13 @@ KINDS = {"tag": "Set Tag", "tray": "Set Tray Label"}
 PREVIEW_PRINTER = {"language": core_print.DEFAULT_LANGUAGE, "supports_unicode": 0}
 UNIT_FIELDS = ["name", "set_type", "department", "creation"]
 SET_TYPE_FIELDS = ["type_code", "set_type_name", "method", "is_implant"]
+REASON_MAX = 500
+REPRINT_WARN_AT = 3
+MAX_UNITS = 100  # một lần in tối đa bằng một lô cấp (FR-M1-05.1)
+REF_DOCTYPE = "Set Unit"
+PENDING_STATUSES = ("Queued", "Waiting")
+SAVEPOINT = "tc_queue_set_prints"
+VERIFY_REASON = "verify_tag"  # cột reason của Audit Update khi quét kiểm tra thẻ
 
 
 def label_object(kind) -> str:
@@ -84,3 +104,357 @@ def preview(set_unit: str, kind: str) -> dict:
 	)
 	png = zpl_preview_png(zpl, context["payload"], size)
 	return {"png_b64": base64.b64encode(png).decode("ascii"), "zpl": zpl, "hri": context["hri"]}
+
+
+# --- In qua hàng đợi (Task 4) -------------------------------------------------------------------------------------
+
+
+def _kind_of(label):
+	return next((kind for kind, value in KINDS.items() if value == label), None)
+
+
+def _empty_counts():
+	return {
+		kind: {
+			"requested": 0,
+			"printed": 0,
+			"failed": 0,
+			"reprints": 0,
+			"pending": 0,
+			"last_printed_at": None,
+		}
+		for kind in KINDS
+	}
+
+
+def _counts_for(set_units: list[str]) -> dict[str, dict]:
+	"""`print_counts` của nhiều bộ bằng một truy vấn: ``{set_unit: {kind: {...}}}``."""
+	result = {name: _empty_counts() for name in set_units}
+	if not set_units:
+		return result
+	rows = frappe.get_all(
+		"Print Job",
+		filters={"ref_doctype": REF_DOCTYPE, "ref_name": ["in", list(set_units)]},
+		fields=["ref_name", "status", "data", "printed_at"],
+		order_by="name asc",
+	)
+	for row in rows:
+		data = frappe.parse_json(row.data) if row.data else {}
+		data = data if isinstance(data, dict) else {}
+		kind = _kind_of(data.get("label_object"))
+		if kind is None or row.ref_name not in result:
+			continue  # job không phải thẻ/nhãn khay không tính
+		counts = result[row.ref_name][kind]
+		counts["requested"] += 1
+		if row.status == "Printed":
+			counts["printed"] += 1
+			last = counts["last_printed_at"]
+			if row.printed_at and (last is None or row.printed_at > last):
+				counts["last_printed_at"] = row.printed_at
+		elif row.status == "Failed":
+			counts["failed"] += 1
+		elif row.status in PENDING_STATUSES:
+			counts["pending"] += 1
+		if data.get("reprint"):
+			counts["reprints"] += 1
+	return result
+
+
+def print_counts(set_unit: str) -> dict[str, dict]:
+	"""Số lần in theo loại: ``{"tag"|"tray": {requested, printed, failed, reprints, pending, last_printed_at}}``.
+
+	Suy ra từ Print Job (``ref_doctype = Set Unit``, ``data.label_object``) bằng một truy vấn (G11).
+	"""
+	if not isinstance(set_unit, str) or not set_unit:
+		return _empty_counts()
+	return _counts_for([set_unit])[set_unit]
+
+
+def _not_found_block(set_unit) -> Block:
+	return Block(
+		"SET_NOT_FOUND",
+		_("Set not found"),
+		_("Set ID {0} does not exist in TraceCore.").format(set_unit if isinstance(set_unit, str) else "-"),
+		_("Check the set tag or call R02."),
+	)
+
+
+def check_printable(set_unit: str) -> Block | None:
+	"""Block nếu thẻ/nhãn của bộ không được in, ngược lại None.
+
+	Không có bộ (hoặc tham số không phải chuỗi) → ``SET_NOT_FOUND``; bộ ``Disposed`` → ``SET_DISPOSED``; mã Set ID
+	``Disabled`` trong Code Registry → ``CODE_DISABLED``; tiền tố trong Set ID không dùng được trên site này →
+	``GS1_PREFIX_NOT_CONFIGURED`` (G3). ``End of Life`` vẫn in được: thẻ cần tới khi thanh lý (G10).
+	"""
+	unit = (
+		frappe.db.get_value(REF_DOCTYPE, set_unit, ["name", "status", "set_type"], as_dict=True)
+		if isinstance(set_unit, str) and set_unit
+		else None
+	)
+	if not unit:
+		return _not_found_block(set_unit)
+	if unit.status == "Disposed":
+		return Block(
+			"SET_DISPOSED",
+			_("Set disposed"),
+			_("Set {0} has been disposed; its tag and tray label can no longer be printed.").format(
+				unit.name
+			),
+			_("Do not print a tag for a disposed set. Issue a new Set ID for a replacement set."),
+		)
+	if frappe.db.get_value("Code Registry", unit.name, "status") == "Disabled":
+		return Block(
+			"CODE_DISABLED",
+			_("Code disabled"),
+			_("Set ID {0} is disabled in the code registry.").format(unit.name),
+			_("Do not print this code. Call R10 to check the set record."),
+		)
+	type_code = frappe.db.get_value("Instrument Set Type", unit.set_type, "type_code")
+	return code_registry.set_id_block(unit.name, type_code)
+
+
+def needs_reason(set_unit: str, kind: str) -> bool:
+	"""True khi (bộ, loại) đã có bản in ``Printed``: bản in mới là in lại, cần lý do. Chưa có job hoặc chỉ ``Failed``
+	(chưa ra giấy) → False (bản in đầu tiên / in bù)."""
+	label_object(kind)
+	return print_counts(set_unit)[kind]["printed"] > 0
+
+
+def _pending_block(items: list[dict]) -> Block:
+	return Block(
+		"TAG_PRINT_PENDING",
+		_("Print already pending"),
+		_("A tag or tray label of this set is still waiting to be printed."),
+		_("Wait for the pending print to finish or fail before printing again."),
+		items=items,
+	)
+
+
+def pending_block(set_unit: str, kind: str) -> Block | None:
+	"""``TAG_PRINT_PENDING`` khi (bộ, loại) còn job ``Queued``/``Waiting`` (tránh hai thẻ cùng Set ID), ngược lại None."""
+	label_object(kind)
+	if print_counts(set_unit)[kind]["pending"]:
+		return _pending_block([{"set_unit": set_unit, "kind": kind}])
+	return None
+
+
+def _reason_block(reason: str, items: list[dict] | None = None) -> Block:
+	return Block(
+		"REASON_REQUIRED",
+		_("Reason is required"),
+		reason,
+		_("Enter why the tag is printed again, at most {0} characters.").format(REASON_MAX),
+		items=items,
+	)
+
+
+def _unit_list(set_units) -> list[str]:
+	if (
+		not isinstance(set_units, list | tuple)
+		or not set_units
+		or not all(isinstance(name, str) and name for name in set_units)
+	):
+		frappe.throw(_("set_units must be a non-empty list of Set IDs."))
+	units = list(dict.fromkeys(set_units))
+	if len(units) > MAX_UNITS:
+		frappe.throw(_("At most {0} sets can be printed at once.").format(MAX_UNITS))
+	return units
+
+
+def _kind_list(kinds) -> list[str]:
+	if not isinstance(kinds, list | tuple) or not kinds:
+		frappe.throw(_("Choose at least one label kind to print."))
+	for kind in kinds:
+		label_object(kind)
+	return [kind for kind in KINDS if kind in kinds]  # thứ tự cố định: thẻ rồi nhãn khay
+
+
+def _printer_rows(kinds: list[str], printers) -> dict:
+	if not isinstance(printers, dict):
+		frappe.throw(_("printers must map each label kind to a printer."))
+	rows = {}
+	for kind in kinds:
+		name = printers.get(kind)
+		if not isinstance(name, str) or not name:
+			frappe.throw(_("Choose a printer for {0}.").format(_(KINDS[kind], context="Label Template")))
+		row = frappe.db.get_value(
+			"Printer", name, ["name", "station", "language", "supports_unicode", "is_active"], as_dict=True
+		)
+		if not row or not cint(row.is_active):
+			frappe.throw(_("Printer {0} does not exist or is not active.").format(name))
+		rows[kind] = row
+	return rows
+
+
+def _render_or_block(set_unit, kind, printer):
+	"""``(zpl, mẫu)``; mẫu thiếu/lỗi → ``BlockedError(LABEL_RENDER_FAILED)`` (không để lại msgprint)."""
+	logged = len(frappe.local.message_log)
+	try:
+		return render(set_unit, kind, printer, with_template=True)
+	except BlockedError:
+		raise
+	except frappe.ValidationError as error:
+		del frappe.local.message_log[logged:]
+		raise BlockedError(
+			Block(
+				"LABEL_RENDER_FAILED",
+				_("Label could not be rendered"),
+				str(error),
+				_("Ask R10 to check the active label template for this object."),
+				items=[{"set_unit": set_unit, "kind": kind}],
+			)
+		) from None
+
+
+def _agent_only_warning(printers: list[str]) -> dict:
+	return {
+		"code": "PRINTER_AGENT_ONLY",
+		"title": _("Printer not reachable from Desk"),
+		"reason": _(
+			"Printer {0} has no network address the server can send to; it only prints through the Station Agent."
+		).format(", ".join(printers)),
+		"action": _("Choose a printer with a network address, or ask R10 to set the printer host and port."),
+		"items": printers,
+	}
+
+
+def _reprint_warning(items: list[dict]) -> dict:
+	return {
+		"code": "TAG_REPRINTED",
+		"title": _("Tag reprinted many times"),
+		"reason": _("A tag of this batch has been reprinted {0} times.").format(
+			max(item["reprints"] for item in items)
+		),
+		"action": _("Check for lost tags: a set must carry only one tag with its Set ID."),
+		"items": items,
+	}
+
+
+def _check_batch(units, kinds, reason) -> dict:
+	"""Kiểm cả lô trước mọi ghi; trả ``_counts_for(units)``. Lỗi nghiệp vụ → ``BlockedError``."""
+	for unit in units:
+		block = check_printable(unit)
+		if block:
+			raise BlockedError(block)
+	counts = _counts_for(units)
+	pending = [{"set_unit": u, "kind": k} for u in units for k in kinds if counts[u][k]["pending"]]
+	if pending:
+		raise BlockedError(_pending_block(pending))
+	reprints = [{"set_unit": u, "kind": k} for u in units for k in kinds if counts[u][k]["printed"]]
+	if len(reason) > REASON_MAX:
+		too_long = _("The reason has {0} characters; at most {1} are allowed.").format(
+			len(reason), REASON_MAX
+		)
+		raise BlockedError(_reason_block(too_long, reprints or None))
+	if reprints and not reason:
+		raise BlockedError(
+			_reason_block(
+				_("These tags have already been printed; a reason is required to reprint."), reprints
+			)
+		)
+	return counts
+
+
+def queue_prints(
+	set_units: list[str], kinds: list[str], printers: dict[str, str], reason: str | None = None
+) -> dict:
+	"""Xếp hàng in thẻ kim loại / nhãn khay cho `set_units` (FR-M1-05, .3, .4; G9, G10).
+
+	`kinds` ⊂ ``KINDS``; `printers` = ``{kind: tên Printer đang hoạt động}``; tham số sai → ``ValidationError``.
+	Kiểm cả lô trước mọi ghi: ``check_printable``, ``TAG_PRINT_PENDING``, ``REASON_REQUIRED`` (``items`` = các
+	(bộ, loại) là in lại), ``LABEL_RENDER_FAILED`` → ``BlockedError``. Trả
+	``{"jobs": [{set_unit, kind, print_job, status}], "warnings": [...]}``; gửi thật do worker sau commit.
+	"""
+	units = _unit_list(set_units)
+	kinds = _kind_list(kinds)
+	rows = _printer_rows(kinds, printers)
+	reason = reason.strip() if isinstance(reason, str) else ""
+	counts = _check_batch(units, kinds, reason)
+	rendered = {(u, k): _render_or_block(u, k, rows[k]) for u in units for k in kinds}
+	agent_only = {k: print_server.printer_address(rows[k].name) is None for k in kinds}
+
+	jobs, queued, warned = [], [], []
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		for unit in units:
+			for kind in kinds:
+				zpl, template = rendered[(unit, kind)]
+				printer = rows[kind]
+				reprint = bool(counts[unit][kind]["printed"])
+				status = "Waiting" if agent_only[kind] else "Queued"
+				name = core_print.create_job(
+					printer.station,
+					None if agent_only[kind] else zpl,
+					{"label_object": KINDS[kind], "set_unit": unit, "kind": kind, "reprint": reprint},
+					template.name,
+					printer=printer.name,
+					status=status,
+					ref_doctype=REF_DOCTYPE,
+					ref_name=unit,
+					reprint_reason=reason if reprint else None,
+				)
+				audit.log(
+					"Create",
+					"Print Job",
+					name,
+					new={"set_unit": unit, "kind": kind, "reprint": reprint, "printer": printer.name},
+					reason=reason if reprint else None,
+				)
+				jobs.append({"set_unit": unit, "kind": kind, "print_job": name, "status": status})
+				if status == "Queued":
+					queued.append(name)
+				total = counts[unit][kind]["reprints"] + 1
+				if reprint and total >= REPRINT_WARN_AT:
+					warned.append({"set_unit": unit, "kind": kind, "reprints": total})
+		print_server.enqueue_server_dispatch_many(queued)
+	except Exception:
+		frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+
+	warnings = []
+	agent_printers = list(dict.fromkeys(rows[k].name for k in kinds if agent_only[k]))
+	if agent_printers:
+		warnings.append(_agent_only_warning(agent_printers))
+	if warned:
+		warnings.append(_reprint_warning(warned))
+	return {"jobs": jobs, "warnings": warnings}
+
+
+# --- Quét kiểm tra thẻ (G12) ----------------------------------------------------------------------------------------
+
+
+def verify(set_unit: str, raw: str) -> dict:
+	"""Quét thẻ vừa in (UC-03 bước 4, E2): mã phải là Set ID của chính bộ `set_unit`.
+
+	Đúng → ghi ``tag_verified_on/by`` (cờ ``flags.tc_tag_verify``; Audit ``Update`` của Set Unit, lý do
+	``verify_tag``), trả ``{set_unit, verified_on}``. Bộ không có → ``SET_NOT_FOUND``; chuỗi không phải Set ID →
+	``SCAN_INVALID``; Set ID khác → ``TAG_MISMATCH`` (``items = [{expected, scanned}]``).
+	"""
+	if not isinstance(set_unit, str) or not set_unit or not frappe.db.exists(REF_DOCTYPE, set_unit):
+		raise BlockedError(_not_found_block(set_unit))
+	scanned = gs1.parse_scan(raw) if isinstance(raw, str) else {"type": "unknown", "id": None, "raw": ""}
+	if scanned["type"] != "set":
+		raise BlockedError(
+			Block(
+				"SCAN_INVALID",
+				_("Invalid code"),
+				_("Code {0} is not a Set ID tag.").format(scanned.get("raw") or "-"),
+				_("Scan the DataMatrix on the printed tag of set {0}.").format(set_unit),
+			)
+		)
+	if scanned["id"] != set_unit:
+		raise BlockedError(
+			Block(
+				"TAG_MISMATCH",
+				_("Tag does not match"),
+				_("The scanned tag is {0}, but this set is {1}.").format(scanned["id"], set_unit),
+				_("Take the tag off this set, find the right tag, or reprint the tag with a reason."),
+				items=[{"expected": set_unit, "scanned": scanned["id"]}],
+			)
+		)
+	doc = frappe.get_doc(REF_DOCTYPE, set_unit, for_update=True)
+	doc.update({"tag_verified_on": now_datetime(), "tag_verified_by": frappe.session.user})
+	doc.flags.tc_tag_verify = True
+	doc.flags.tc_audit_reason = VERIFY_REASON
+	doc.save(ignore_permissions=True)
+	return {"set_unit": set_unit, "verified_on": doc.tag_verified_on}
