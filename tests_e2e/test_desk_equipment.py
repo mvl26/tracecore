@@ -150,6 +150,10 @@ def test_copy_program_to_same_model_machine(r10_page):
 		re.compile(r"E2E steam sterilizer 2")
 	)  # ô Link hiện tên máy (title), không phải mã
 
+	# Ô Link đổi tên hiển thị thành mã máy bất đồng bộ: chờ giá trị thật rồi mới gửi
+	r10_page.wait_for_function(
+		"target => cur_dialog && cur_dialog.get_value('target_equipment') === target", arg=target
+	)
 	dialog.locator("input[data-fieldname='new_code']").fill(new_code)
 	dialog.get_by_role("button", name="Sao chép", exact=True).click()
 	expect(r10_page).to_have_url(re.compile(rf"/app/process-program/{new_code}$"), timeout=30000)
