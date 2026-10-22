@@ -8,7 +8,10 @@ from frappe.utils import now_datetime
 from tracecore.core import gs1
 from tracecore.core.errors import Block, BlockedError
 
-SET_SERIAL_DIGITS = 6
+SET_SERIAL_DIGITS = gs1.SET_SERIAL_DIGITS
+SET_SERIES_MAX = (
+	10**SET_SERIAL_DIGITS - 1
+)  # 999 999: số tiếp theo → lỗi "series đã hết", không cấp mã 7 số (G2)
 INSTRUMENT_GIAI_PREFIX = (
 	"GI"  # mã GIAI khắc laser của dụng cụ `<prefix>I-########`, ref_doctype = Instrument (A-06 I8)
 )
@@ -150,11 +153,25 @@ def next_cycle_id(packed_at, station=None):
 
 
 def next_set_id(type_code):
-	"""Cấp Set ID GIAI mới = tiền tố GS1 + mã loại bộ + số thứ tự 6 chữ số, và ghi sổ."""
+	"""Cấp Set ID GIAI mới = tiền tố GS1 + mã loại bộ + số thứ tự 6 chữ số, và ghi sổ (FEAT-016 G2, G3).
+
+	Series riêng theo (tiền tố, mã loại bộ) qua `getseries` (khóa dòng ``tabSeries`` tới commit); số đã có trong sổ
+	(đăng ký tay, đã vô hiệu) thì bỏ qua nên không bao giờ cấp lại (BRU-ID-001). Tiền tố demo ngoài site dev/test hoặc
+	sai định dạng → `BlockedError` ``GS1_PREFIX_NOT_CONFIGURED`` trước `getseries`; quá ``SET_SERIES_MAX`` →
+	``ValidationError`` "series đã hết", không cấp mã 7 số.
+	"""
 	prefix = company_prefix()
+	block = gs1_prefix_block(prefix, "set")
+	if block:
+		raise BlockedError(block)
 	series_key = f"{prefix}{type_code}"
 	while True:
 		serial = getseries(series_key, SET_SERIAL_DIGITS)
+		if len(serial) > SET_SERIAL_DIGITS:
+			frappe.throw(
+				_("Code series {0} is exhausted.").format(series_key + "#" * SET_SERIAL_DIGITS),
+				frappe.ValidationError,
+			)
 		code = gs1.make_giai(prefix, f"{type_code}{serial}")
 		if not is_issued(code):
 			register(code, series_key, "Set Unit", code)
@@ -166,26 +183,65 @@ def demo_prefix_allowed():
 	return bool(frappe.conf.get("developer_mode") or frappe.conf.get("allow_tests") or frappe.flags.in_test)
 
 
-def etching_prefix_block(prefix):
-	"""Block ``GS1_PREFIX_NOT_CONFIGURED`` nếu tiền tố GS1 chưa dùng được cho mã khắc laser; dùng được → ``None``.
+GS1_PREFIX_PURPOSES = ("instrument", "set")
 
-	Khắc laser không xóa được (A-06 I8, OQ-05/D6): tiền tố phải là 4-12 chữ số; tiền tố thuộc dải demo ``952``
-	chỉ dùng trên site dev/test.
+
+def _prefix_block_texts(purpose):
+	"""(lý do, hành động) của Block tiền tố GS1 theo mục đích; chuỗi viết nguyên văn để `_()` trích được."""
+	if purpose == "instrument":
+		return (
+			_(
+				"GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits."
+			),
+			_(
+				"Ask the administrator to set the hospital's real GS1 Company Prefix before assigning or etching instrument codes."
+			),
+		)
+	return (
+		_(
+			"GS1 Company Prefix {0} cannot be used for Set IDs on this site: it is the demo prefix or is not 4-12 digits."
+		),
+		_(
+			"Ask the administrator to set the hospital's real GS1 Company Prefix before issuing or printing Set ID tags."
+		),
+	)
+
+
+def gs1_prefix_block(prefix, purpose="instrument"):
+	"""Block ``GS1_PREFIX_NOT_CONFIGURED`` nếu tiền tố GS1 chưa dùng được cho mã không sửa được; dùng được → ``None``.
+
+	Mã khắc laser dụng cụ (``purpose = "instrument"``, A-06 I8) và thẻ Set ID (``"set"``, FEAT-016 G3) không xóa
+	được (OQ-05/D6): tiền tố phải là 4-12 chữ số ASCII; tiền tố thuộc dải demo ``952`` chỉ dùng trên site dev/test.
 	"""
+	if purpose not in GS1_PREFIX_PURPOSES:
+		raise ValueError(f"Unknown GS1 prefix purpose: {purpose!r}")
 	prefix = str(prefix or "")
 	valid = prefix.isascii() and prefix.isdecimal() and 4 <= len(prefix) <= 12
 	if valid and (not gs1.is_demo_prefix(prefix) or demo_prefix_allowed()):
 		return None
+	reason, action = _prefix_block_texts(purpose)
 	return Block(
-		"GS1_PREFIX_NOT_CONFIGURED",
-		_("GS1 prefix not configured"),
-		_(
-			"GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits."
-		).format(prefix or "-"),
-		_(
-			"Ask the administrator to set the hospital's real GS1 Company Prefix before assigning or etching instrument codes."
-		),
+		"GS1_PREFIX_NOT_CONFIGURED", _("GS1 prefix not configured"), reason.format(prefix or "-"), action
 	)
+
+
+def etching_prefix_block(prefix):
+	"""Bí danh `gs1_prefix_block(prefix, "instrument")` (FEAT-014: mã khắc laser dụng cụ)."""
+	return gs1_prefix_block(prefix, "instrument")
+
+
+def set_id_block(set_id, type_code):
+	"""`gs1_prefix_block(…, "set")` theo tiền tố **chứa trong** Set ID đã cấp (FEAT-016 G3).
+
+	Set ID cấp trên dev/test (tiền tố demo) rồi DB bị chép sang site thật thì không được in/in lại/xuất CSV, dù tiền tố
+	cấu hình hiện tại là thật. Mã không đúng cấu trúc Set ID của `type_code` (`gs1.split_set_id`) → không xác định
+	được tiền tố → cũng chặn.
+	"""
+	try:
+		prefix, _serial = gs1.split_set_id(set_id, type_code)
+	except gs1.GS1Error:
+		prefix = None
+	return gs1_prefix_block(prefix, "set")
 
 
 def instrument_giai_block(giai):

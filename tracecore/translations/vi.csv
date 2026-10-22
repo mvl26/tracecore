@@ -1054,6 +1054,8 @@ GIAI code {0} is not in the TraceCore code registry.,Mã GIAI {0} không có tro
 Do not etch this code. Call R10 to check the instrument record.,Không khắc mã này. Gọi R10 kiểm tra bản ghi dụng cụ.,
 GS1 Company Prefix {0} cannot be used for instrument codes on this site: it is the demo prefix or is not 4-12 digits.,Không dùng được tiền tố doanh nghiệp GS1 {0} cho mã dụng cụ trên hệ thống này: đây là tiền tố demo hoặc không gồm 4–12 chữ số.,
 GS1 prefix not configured,Chưa cấu hình tiền tố GS1,
+GS1 Company Prefix {0} cannot be used for Set IDs on this site: it is the demo prefix or is not 4-12 digits.,Không dùng được tiền tố doanh nghiệp GS1 {0} cho Set ID trên hệ thống này: đây là tiền tố demo hoặc không gồm 4–12 chữ số.,
+Ask the administrator to set the hospital's real GS1 Company Prefix before issuing or printing Set ID tags.,Đề nghị quản trị hệ thống cấu hình tiền tố doanh nghiệp GS1 thật của bệnh viện trước khi cấp hoặc in thẻ Set ID.,
 Instrument GIAI is turned off,Mã GIAI dụng cụ đang tắt,
 Instrument {0} already has GIAI code {1}.,Dụng cụ {0} đã có mã GIAI {1}.,
 Instrument {0} has no GIAI code yet.,Dụng cụ {0} chưa có mã GIAI.,
