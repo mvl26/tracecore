@@ -896,3 +896,42 @@ def make_pack(set_unit, cycle_id=None, submit=True, **fields):
 	if submit:
 		doc.submit()
 	return doc
+
+
+T6_STATION = "TR-006"
+ALL_GATES = ("T1", "T2", "T3", "T4", "T5")
+
+
+def make_sterile_location(location_name="Kệ test", zone_station=T6_STATION, **fields):
+	"""Kệ kho vô khuẩn `KE-####` thuộc trạm T6 (FEAT-025)."""
+	return frappe.get_doc(
+		{
+			"doctype": "Sterile Location",
+			"location_name": location_name,
+			"zone_station": zone_station,
+			**fields,
+		}
+	).insert()
+
+
+def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_type=None, **fields):
+	"""Gói đã giải phóng sẵn sàng nhập kho T6, thay cho luồng T5b (FEAT-023, quyết định D2 của FEAT-025).
+
+	Bộ mới (hoặc cùng loại `set_type`) đi qua các cổng `passed` bằng `step_gate` (đủ năm cổng = Vô khuẩn); Pack
+	ghi sổ ở trạng thái `status` (mặc định Released), hạn `today() + expiry_days` (âm = đã quá hạn). `fields` ghi
+	đè trường Pack. Trả Pack.
+	"""
+	set_unit = make_set_unit(set_type)
+	make_cycle(set_unit, passed=passed)
+	cycle_no = frappe.db.get_value("Set Unit", set_unit.name, "current_cycle_no")
+	pack = make_pack(
+		set_unit,
+		status=status,
+		cycle_no=cycle_no,
+		expiry=add_days(today(), expiry_days),
+		**fields,
+	)
+	if not code_registry.is_issued(pack.name):  # như packing.generate: Cycle ID nằm trong Code Registry
+		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
+	step_gate.bind_cycle(set_unit.name, pack.name, None)
+	return pack

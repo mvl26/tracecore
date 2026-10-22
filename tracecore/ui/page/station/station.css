@@ -486,6 +486,44 @@ body.tc-kiosk .layout-main-section {
 	color: var(--tc-fail-text);
 }
 
+/* màn T6 kho vô khuẩn (SCR-11, FEAT-025) */
+.tc-t6-block {
+	margin: var(--tc-sp-4) 0;
+	padding: var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-t6-block h3 {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-t6-hint {
+	margin: var(--tc-sp-3) 0;
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-t6-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--tc-fs-base);
+}
+
+.tc-t6-table th,
+.tc-t6-table td {
+	padding: var(--tc-sp-3) var(--tc-sp-3-5);
+	text-align: left;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-border-input);
+}
+
+.tc-t6-table th {
+	color: var(--tc-text-2);
+	font-weight: 600;
+}
+
 /* thanh cơ số §4.11 */
 .tc-par-row {
 	display: flex;

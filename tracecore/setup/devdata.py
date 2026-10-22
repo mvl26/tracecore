@@ -15,6 +15,8 @@
   nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t2_demo`` chuẩn bị màn T2 lô rửa (SCR-06, FEAT-021) tại
   TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t6_demo`` chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại
+  TR-006: hai kệ ``KE-``, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn; in JSON các mã.
 """
 
 import io
@@ -1284,6 +1286,94 @@ def ensure_t2_demo():
 		"chemical_lot_ok": lot_ok,
 		"chemical_lot_expired": lot_expired,
 		"batch_running": running,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T6 kho vô khuẩn (FEAT-025) ------------------------------------------------------------------
+T6_STATION = "TR-006"
+T6_SET_TYPE = "DEMOT6S"
+T6_LOCATIONS = {"location": "DEMO-T6 Shelf A", "location_2": "DEMO-T6 Shelf B"}
+T6_STORE_DAYS = 30  # hạn của gói demo "còn xa" (ngoài danh sách sắp hết hạn 7 ngày)
+T6_EXPIRING_DAYS = 3  # hạn của gói demo nằm trong danh sách sắp hết hạn 7 ngày (FR-M2-13.2)
+
+
+def ensure_t6_e2e_user(station, password):
+	"""User kiosk trạm T6 (khu vô khuẩn → TC R06) cho e2e màn kho vô khuẩn (FEAT-025), đăng ký OTP App.
+
+	Tách khỏi `ensure_e2e_users` để không đổi khóa trả về của hàm đó; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		return {"t6_user": user, "t6_otp_secret": _enroll_otp(user)}
+
+
+def _t6_location(location_name):
+	"""Kệ demo `KE-####` đang dùng của TR-006 (tạo một lần theo tên kệ); trả mã kệ."""
+	code = frappe.db.get_value(
+		"Sterile Location", {"location_name": location_name, "zone_station": T6_STATION}, "name"
+	)
+	if not code:
+		code = factories.make_sterile_location(location_name, T6_STATION).name
+	if not frappe.db.get_value("Sterile Location", code, "is_active"):
+		frappe.db.set_value("Sterile Location", code, "is_active", 1)
+	return code
+
+
+def _t6_candidate(status, expiring=False, location=None):
+	"""Gói demo đầu tiên (loại bộ `T6_SET_TYPE`) ở `status`, hạn trong (expiring) hoặc ngoài 7 ngày tới."""
+	from tracecore.reprocessing import storage
+
+	horizon = add_days(today(), storage.EXPIRING_DAYS)
+	filters = {
+		"docstatus": 1,
+		"set_type": T6_SET_TYPE,
+		"status": status,
+		"expiry": ["between", [today(), horizon]] if expiring else [">", horizon],
+		"location": location or ["is", "not set"],
+	}
+	return frappe.db.get_value("Pack", filters, "name", order_by="creation asc")
+
+
+def _t6_new_pack(status="Released", expiry_days=T6_STORE_DAYS, location=None, passed=factories.ALL_GATES):
+	"""Gói mới của loại bộ demo T6 qua `factories.make_released_pack`; có `location` thì nhập kho thật lên kệ đó."""
+	from tracecore.reprocessing import storage
+
+	pack = factories.make_released_pack(
+		status=status, expiry_days=expiry_days, passed=passed, set_type=T6_SET_TYPE
+	)
+	if location:
+		storage.putaway(pack.name, location, T6_STATION)
+	return pack.name
+
+
+def ensure_t6_demo():
+	"""Chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại TR-006 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``location``, ``location_2``: hai kệ ``KE-`` đang dùng của TR-006.
+	- ``pack_released``: gói Released (bộ đủ 5 cổng Đạt), chưa lên kệ, hạn 30 ngày — để nhập kho.
+	- ``pack_not_released``: gói Packed (bộ mới qua T1-T4) — nhập kho bị chặn ``PACK_NOT_RELEASED``.
+	- ``pack_stored``: gói đang trong kho trên ``location``, hạn 30 ngày — để báo rách.
+	- ``pack_expiring``: gói đang trong kho trên ``location_2``, hạn 3 ngày — hiện ở danh sách sắp hết hạn 7 ngày.
+	Gói đã bị nhập kho/báo rách/hết hạn được thay bằng gói mới khi gọi lại.
+	"""
+	_require_dev_site()
+	_ensure_set_type("Steam", _t4_catalog()["Steam"], code=T6_SET_TYPE)
+	locations = {key: _t6_location(name) for key, name in T6_LOCATIONS.items()}
+	result = {
+		**locations,
+		"pack_released": _t6_candidate("Released") or _t6_new_pack(),
+		"pack_not_released": _t6_candidate("Packed")
+		or _t6_new_pack(status="Packed", passed=("T1", "T2", "T3", "T4")),
+		"pack_stored": _t6_candidate("In Sterile Stock", location=locations["location"])
+		or _t6_new_pack(location=locations["location"]),
+		"pack_expiring": _t6_candidate("In Sterile Stock", expiring=True, location=locations["location_2"])
+		or _t6_new_pack(expiry_days=T6_EXPIRING_DAYS, location=locations["location_2"]),
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

@@ -36,6 +36,8 @@ def current_station_session():
 	if not name:
 		return None
 	return frappe.db.get_value("Station Session", name, ["name", "employee", "user", "station"], as_dict=True)
+# R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025)
+STORAGE_ROLES = ("TC R06", "System Manager")
 
 
 def station_session(*roles, desk_roles=()):

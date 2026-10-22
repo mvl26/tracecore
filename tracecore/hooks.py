@@ -61,9 +61,9 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018) và T2 lô rửa (SCR-06, FEAT-021): Frappe nối các file này sau station.js
-# trong script của Page station
-page_js = {"station": ["public/js/station_t4.js", "public/js/station_t2.js"]}
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025) và T2 lô rửa (SCR-06, FEAT-021):
+# Frappe nối các file này sau station.js trong script của Page station
+page_js = {"station": ["public/js/station_t4.js", "public/js/station_t6.js", "public/js/station_t2.js"]}
 
 # include js in doctype views
 # Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
@@ -217,6 +217,9 @@ doc_events = {
 	"Wash Batch": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
+	"Sterile Location": dict(_AUDIT_EVENTS),
+	"Sterile Putaway": dict(_AUDIT_EVENTS),
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
@@ -297,9 +300,12 @@ scheduler_events = {
 		"* * * * *": [
 			"tracecore.core.print_server.dispatch_pending",
 		],
-		# FEAT-015 S2: 00:00 giờ hệ thống (Asia/Ho_Chi_Minh) kích hoạt phiên bản BOM đã lên lịch
+		# 00:00 giờ hệ thống (Asia/Ho_Chi_Minh): một khóa cron nên mọi việc nửa đêm nằm chung một danh sách
 		"0 0 * * *": [
+			# FEAT-015 S2: kích hoạt phiên bản BOM đã lên lịch
 			"tracecore.instrument.bom_versions.roll_effective_versions",
+			# FEAT-025, FR-M2-14: gói trong kho vô khuẩn quá hạn (hết ngày `expiry`) → Hết hiệu lực, bộ Chờ tiếp nhận
+			"tracecore.reprocessing.storage.run_expiry",
 		],
 	},
 	"daily": [

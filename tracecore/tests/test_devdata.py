@@ -113,6 +113,21 @@ class TestStationDemoData(IsolatedTestCase):
 			self.assertTrue(get_default(users[key + "_user"] + "_otplogin"))
 		self.assertEqual(users, devdata.ensure_desk_users(password, specs))
 
+	def test_t6_station_user_bootstrap_has_r06_and_otp(self):
+		import secrets
+
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		users = devdata.ensure_t6_e2e_user("TR-006", secrets.token_urlsafe(24))
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(set(users), {"t6_user", "t6_otp_secret"})
+		self.assertIn("TC R06", frappe.get_roles(users["t6_user"]))
+		self.assertEqual(decrypt(get_default(users["t6_user"] + "_otpsecret")), users["t6_otp_secret"])
+		self.assertEqual(users, devdata.ensure_t6_e2e_user("TR-006", secrets.token_urlsafe(24)))
+
 	def test_e2e_user_bootstrap_restores_roles_after_failure_and_preserves_existing_r10(self):
 		from unittest.mock import patch
 
@@ -366,6 +381,65 @@ class TestT2DemoData(FrappeTestCase):
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				devdata.ensure_t2_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+T6_KEYS = {"location", "location_2", "pack_released", "pack_not_released", "pack_stored", "pack_expiring"}
+
+
+class TestT6DemoData(FrappeTestCase):
+	def _pack(self, name):
+		return frappe.db.get_value("Pack", name, ["status", "location", "expiry", "docstatus"], as_dict=True)
+
+	def test_ensure_t6_demo_idempotent(self):
+		from frappe.utils import add_days, getdate, today
+
+		first = devdata.ensure_t6_demo()
+		second = devdata.ensure_t6_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T6_KEYS)
+		for key in ("location", "location_2"):
+			self.assertTrue(first[key].startswith("KE-"), msg=first[key])
+			self.assertEqual(
+				frappe.db.get_value("Sterile Location", first[key], ["zone_station", "is_active"]),
+				("TR-006", 1),
+			)
+		released = self._pack(first["pack_released"])
+		self.assertEqual((released.status, released.location, released.docstatus), ("Released", None, 1))
+		self.assertGreater(getdate(released.expiry), getdate(add_days(today(), 7)))
+		self.assertEqual(self._pack(first["pack_not_released"]).status, "Packed")
+		stored = self._pack(first["pack_stored"])
+		self.assertEqual((stored.status, stored.location), ("In Sterile Stock", first["location"]))
+		self.assertGreater(getdate(stored.expiry), getdate(add_days(today(), 7)))
+		expiring = self._pack(first["pack_expiring"])
+		self.assertEqual((expiring.status, expiring.location), ("In Sterile Stock", first["location_2"]))
+		self.assertLessEqual(getdate(expiring.expiry), getdate(add_days(today(), 7)))
+		self.assertGreaterEqual(getdate(expiring.expiry), getdate(today()))
+
+	def test_t6_demo_packs_follow_putaway_rules_and_consumed_ones_are_replaced(self):
+		from tracecore.reprocessing import storage
+
+		first = devdata.ensure_t6_demo()
+		with self.assertRaises(BlockedError) as raised:
+			storage.putaway(first["pack_not_released"], first["location"], "TR-006")
+		self.assertEqual(raised.exception.block.code, "PACK_NOT_RELEASED")
+		storage.putaway(first["pack_released"], first["location"], "TR-006")
+		storage.mark_damaged(first["pack_stored"], "demo torn", "TR-006")
+		second = devdata.ensure_t6_demo()
+		self.assertNotEqual(second["pack_released"], first["pack_released"])
+		self.assertNotEqual(second["pack_stored"], first["pack_stored"])
+		self.assertEqual(second["pack_not_released"], first["pack_not_released"])
+		self.assertEqual(second["pack_expiring"], first["pack_expiring"])
+
+	def test_t6_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t6_demo()
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True

@@ -39,6 +39,11 @@
 #      máy rửa, chương trình, lô hóa chất, 3 bộ đã qua T1, bộ chưa qua T1, bộ chờ rửa lại, một lô đang chạy
 #      → TC_E2E_T2_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T2_<khóa> (``sets`` nối bằng dấu phẩy)
 #      cho tests_e2e/test_station_t2.py. Bộ demo bị tiêu thụ khi nạp lô: chạy lại script này trước mỗi lần chạy test đó.
+#  11. Màn T6 kho vô khuẩn (devdata.ensure_t6_e2e_user + ensure_station_demo + ensure_t6_demo, FEAT-025): user kiosk
+#      station-t6@… (TC R06, cùng mật khẩu kiosk, OTP riêng) có thẻ và năng lực tại $TC_E2E_T6_STATION (mặc định TR-006),
+#      hai kệ KE-, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn
+#      → TC_E2E_T6_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T6_<khóa> cho tests_e2e/test_station_t6.py.
+#      Gói demo bị tiêu thụ khi nhập kho/báo rách: chạy lại script này trước mỗi lần chạy test đó.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -58,6 +63,7 @@ T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
 CODES_PORT="${TC_E2E_CODES_PRINTER_PORT:-19101}"
 SECOND_STATION="${TC_E2E_T4_SECOND_STATION:-TR-005}"
 T2_STATION="${TC_E2E_T2_STATION:-TR-002}"
+T6_STATION="${TC_E2E_T6_STATION:-TR-006}"
 
 # Từ chối site test: tên test_site hoặc site_config.json / common_site_config.json có allow_tests bật (1/true/"1").
 allow_tests_in() {
@@ -134,6 +140,10 @@ t2_users=$(bench_exec tracecore.setup.devdata.ensure_t2_e2e_user --kwargs "{'sta
 t2_user=$(printf '%s' "$t2_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t2_user"])')
 t2_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T2_STATION', 'user': '$t2_user'}")
 t2_demo=$(bench_exec tracecore.setup.devdata.ensure_t2_demo)
+t6_users=$(bench_exec tracecore.setup.devdata.ensure_t6_e2e_user --kwargs "{'station': '$T6_STATION', 'password': '$password'}")
+t6_user=$(printf '%s' "$t6_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t6_user"])')
+t6_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T6_STATION', 'user': '$t6_user'}")
+t6_demo=$(bench_exec tracecore.setup.devdata.ensure_t6_demo)
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
@@ -160,6 +170,10 @@ t2_demo=$(bench_exec tracecore.setup.devdata.ensure_t2_demo)
 	printf '%s' "$t2_users" | python3 -c 'import json, sys; print("TC_E2E_T2_OTP_SECRET=%s" % json.load(sys.stdin)["t2_otp_secret"])'
 	printf '%s' "$t2_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T2_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf '%s' "$t2_demo" | python3 -c 'import json, sys; [print("TC_E2E_T2_%s=%s" % (k.upper(), ",".join(v) if isinstance(v, list) else v)) for k, v in json.load(sys.stdin).items()]'
+	printf 'TC_E2E_T6_USER=%s\nTC_E2E_T6_PASSWORD=%s\nTC_E2E_T6_STATION=%s\n' "$t6_user" "$password" "$T6_STATION"
+	printf '%s' "$t6_users" | python3 -c 'import json, sys; print("TC_E2E_T6_OTP_SECRET=%s" % json.load(sys.stdin)["t6_otp_secret"])'
+	printf '%s' "$t6_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T6_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf '%s' "$t6_demo" | python3 -c 'import json, sys; [print("TC_E2E_T6_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"
