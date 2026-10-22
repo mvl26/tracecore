@@ -200,6 +200,8 @@ doc_events = {
 		"before_insert": "tracecore.instrument.media.check_upload",
 		"validate": "tracecore.instrument.media.validate_file",
 	},
+	# Item (ERPNext) nhóm Packaging đổi hạn lưu loại gói qua form Item → Audit Log Update, không chặn (FEAT-015 S7)
+	"Item": {"on_update": "tracecore.instrument.shelf_life.audit_item_change"},
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)

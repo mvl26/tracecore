@@ -237,3 +237,53 @@ class TestSetTypeAdminRpc(IsolatedTestCase):
 			"SET_TYPE_CODE_EXISTS": 409,
 		}
 		self.assertEqual({code: HTTP_STATUS.get(code) for code in expected}, expected)
+
+	def test_set_pack_shelf_life_rpc_roles(self):
+		pack = make_pack_type("Giấy crepe", 30)
+		ok = as_user(["TC R02"], api.set_pack_shelf_life, item=pack, days="25", reason="R02 edit")
+		self.assertEqual(
+			ok,
+			{"ok": True, "item": pack, "old_days": 30, "new_days": 25, "affected_set_types": []},
+		)
+		ok = as_user(["TC R10"], api.set_pack_shelf_life, item=pack, days=28, reason="R10 edit")
+		self.assertEqual((ok["old_days"], ok["new_days"]), (25, 28))
+
+		keys, audit_rows = frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log")
+		with self.assertRaises(frappe.PermissionError):
+			as_user(["TC R04"], api.set_pack_shelf_life, item=pack, days=10, reason="No")
+		self.assertEqual(
+			(frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log")), (keys, audit_rows)
+		)
+		self.assertEqual(frappe.db.get_value("Item", pack, "tc_shelf_life_days"), 28)
+
+		# gửi lại cùng khóa → cùng response, không ghi lần hai
+		key = str(uuid.uuid4())
+		args = {"item": pack, "days": 21, "reason": "Replay", "client_ts": now_ts()}
+		first = call(api.set_pack_shelf_life, key=key, **args)
+		again = call(api.set_pack_shelf_life, key=key, **args)
+		self.assertEqual(again, first)
+		updates = {"ref_doctype": "Item", "ref_name": pack, "action": "Update"}
+		self.assertEqual(frappe.db.count("Audit Log", updates), 3)
+
+	def test_set_pack_shelf_life_rpc_rejections(self):
+		pack = make_pack_type("Giấy crepe", 30)
+		for kwargs, code in (
+			({"item": pack, "days": 0, "reason": "x"}, "SHELF_LIFE_INVALID"),
+			({"item": "VT-GOI-NOPE", "days": 10, "reason": "x"}, "PACK_TYPE_INVALID"),
+			({"item": pack, "days": 10, "reason": " "}, "REASON_REQUIRED"),
+		):
+			result = call(api.set_pack_shelf_life, **kwargs)
+			self.assertEqual((result["ok"], result["error"]["code"], http_status()), (False, code, 422))
+			self.assertTrue(
+				result["error"]["title"] and result["error"]["reason"] and result["error"]["action"]
+			)
+			rejected = {"ref_doctype": "Item", "ref_name": kwargs["item"], "action": "Reject", "reason": code}
+			self.assertEqual(frappe.db.count("Audit Log", rejected), 1, msg=code)
+		self.assertEqual(frappe.db.get_value("Item", pack, "tc_shelf_life_days"), 30)
+		for kwargs in ({"item": [pack], "days": 10, "reason": "x"}, {"item": pack, "days": 10, "reason": 5}):
+			with self.assertRaises(BadRequestError, msg=kwargs):
+				call(api.set_pack_shelf_life, **kwargs)
+
+	def test_http_status_shelf_life_invalid(self):
+		codes = ("SHELF_LIFE_INVALID", "PACK_TYPE_INVALID", "REASON_REQUIRED")
+		self.assertEqual({code: HTTP_STATUS.get(code) for code in codes}, dict.fromkeys(codes, 422))

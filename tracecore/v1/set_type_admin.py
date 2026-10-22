@@ -4,6 +4,7 @@ Quyền TC R02, TC R10, System Manager (S12), kiểm TRƯỚC mọi ghi; mọi R
 ``client_ts`` ISO 8601 có offset). ``header``/``lines`` nhận JSON string hoặc object/list; sai kiểu → ``BadRequestError``
 (400). Từ chối nghiệp vụ: body ``{"ok": false, "error"}`` + mã HTTP + Audit Log ``Reject`` (``reject_block``). Thành
 công: ``{"ok": true, set_type, bom_version, effective_from, status}``. Nghiệp vụ ở ``tracecore.instrument.bom_versions``.
+Sửa hạn lưu loại gói (Task 4, S7): ``set_pack_shelf_life``, nghiệp vụ ở ``tracecore.instrument.shelf_life``.
 """
 
 import frappe
@@ -12,7 +13,7 @@ from frappe import _
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.instrument import bom_versions
+from tracecore.instrument import bom_versions, shelf_life
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
 ADMIN_ROLES = ("TC R02", "TC R10", "System Manager")
@@ -130,3 +131,24 @@ def copy(source, type_code, set_type_name, client_ts=None):
 		"effective_from": str(bom_versions.today()),
 		"status": bom_versions.STATUS_EFFECTIVE,
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def set_pack_shelf_life(item, days, reason, client_ts=None):
+	"""Sửa hạn lưu (ngày) của loại gói kèm lý do; chỉ áp cho gói đóng sau (FR-M2-07.8, BRU-REP-009; S7).
+
+	Từ chối (422): ``PACK_TYPE_INVALID`` (Item không phải Packaging), ``SHELF_LIFE_INVALID`` (không phải số nguyên
+	1-3650), ``REASON_REQUIRED``. Thành công: ``{"ok": true, item, old_days, new_days, affected_set_types}``
+	(``affected_set_types`` = loại bộ có ghi đè thành vô hiệu theo ``min``: cảnh báo, không chặn).
+	"""
+	require_any_role(*ADMIN_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	item = _text(item, "item")
+	reason = _text(reason, "reason")
+	try:
+		result = shelf_life.set_pack_shelf_life(item, days, reason)
+	except BlockedError as error:
+		ref = item.strip() if item and item.strip() else None
+		return reject_block(error.block, shelf_life.ITEM, ref, client_ts=timestamp)
+	return {"ok": True, **result}

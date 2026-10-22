@@ -4,16 +4,30 @@ Hạn loại gói = ``Item.tc_shelf_life_days`` của Item nhóm ``Packaging`` c
 (CHG-020). ``Instrument Set Type.shelf_life_days`` là ghi đè: 0 = dùng hạn loại gói, chỉ nhận giá trị ngắn hơn hạn
 loại gói mặc định. Công thức hạn áp dụng = min(hạn loại gói, ghi đè > 0) như ``packing.compute_expiry`` của M2
 (D4); M1 không import M2 (lint R1) nên tiêu chí được viết lại ở đây và test đối chiếu với M2 giữ hai bên khớp.
+
+Sửa hạn loại gói (FR-M2-07.8, S7): ``set_pack_shelf_life`` (RPC ``v1.set_type_admin.set_pack_shelf_life`` cho TC R02,
+TC R10, System Manager) có lý do bắt buộc và Audit Log ``Update`` trên Item. Pack đã đóng giữ snapshot
+``shelf_life_days_applied``/``expiry`` (FEAT-018) nên giá trị mới chỉ áp cho gói đóng sau. Đổi hạn lưu qua form Item
+cũng ghi Audit Log (``audit_item_change``, không chặn). Giảm hạn loại gói xuống ≤ ghi đè của loại bộ không bị chặn,
+chỉ trả danh sách loại bộ có ghi đè thành vô hiệu theo ``min`` (``affected_set_types``).
 """
 
 import frappe
 from frappe import _
 from frappe.utils import cint
 
+from tracecore.core import audit
+from tracecore.core.errors import Block, BlockedError
+from tracecore.instrument.bom_versions import REASON_MAX, whole_number
+
 DOCTYPE = "Instrument Set Type"
+ITEM = "Item"
 PACKAGING = "Packaging"
 SOURCE_PACK_TYPE = "Pack Type"
 SOURCE_SET_TYPE = "Set Type"
+FIELD = "tc_shelf_life_days"
+MIN_DAYS = 1
+MAX_DAYS = 3650
 
 
 def _pack_type_problem(item: str | None) -> tuple[str | None, int | None]:
@@ -116,3 +130,110 @@ def validate_set_type(doc) -> None:
 			).format(days, doc.default_pack_type),
 			title=_("Shelf life override not allowed"),
 		)
+
+
+# --- Sửa hạn lưu loại gói (FR-M2-07.8, S7) ------------------------------------------------------------------------
+
+
+def affected_set_types(item: str, new_days: int) -> list[dict]:
+	"""Loại bộ lấy `item` làm loại gói mặc định có ghi đè ``0 < override`` mà ``override ≥ new_days``.
+
+	Với hạn loại gói mới, ghi đè đó không còn ngắn hơn nên vô hiệu theo ``min`` (D4). Trả
+	``[{"set_type", "override"}]`` theo tên loại bộ.
+	"""
+	rows = frappe.get_all(
+		DOCTYPE,
+		filters={"default_pack_type": item, "shelf_life_days": [">=", max(cint(new_days), 1)]},
+		fields=["name", "shelf_life_days"],
+		order_by="name asc",
+	)
+	return [{"set_type": row.name, "override": cint(row.shelf_life_days)} for row in rows]
+
+
+def _pack_type_block(item) -> Block:
+	return Block(
+		"PACK_TYPE_INVALID",
+		_("Shelf life not changed"),
+		_("{0} is not a packaging item, so it has no pack type shelf life.").format(item or "-"),
+		_("Choose a packaging item."),
+	)
+
+
+def _days_block() -> Block:
+	return Block(
+		"SHELF_LIFE_INVALID",
+		_("Shelf life not changed"),
+		_("The shelf life must be a whole number of days from {0} to {1}.").format(MIN_DAYS, MAX_DAYS),
+		_("Enter a whole number of days in that range."),
+	)
+
+
+def _reason_block() -> Block:
+	return Block(
+		"REASON_REQUIRED",
+		_("Reason is required"),
+		_("A reason of at most {0} characters is required to change a pack type shelf life.").format(
+			REASON_MAX
+		),
+		_("Enter why the shelf life changes."),
+	)
+
+
+def set_pack_shelf_life(item: str, days: int, reason: str) -> dict:
+	"""Đổi hạn lưu (ngày) của loại gói `item` kèm lý do (FR-M2-07.8, BRU-REP-009; quyền kiểm ở RPC).
+
+	Từ chối (``BlockedError``, không ghi gì): Item không tồn tại / không phải Packaging → ``PACK_TYPE_INVALID``;
+	`days` không phải số nguyên 1-3650 (0 = "chưa có hạn" chỉ có ở dữ liệu mới nhập) → ``SHELF_LIFE_INVALID``; lý do
+	trống/chỉ khoảng trắng/quá 500 ký tự → ``REASON_REQUIRED``. Loại gói đã ngừng dùng vẫn sửa được. Khóa dòng Item,
+	ghi thẳng ``tc_shelf_life_days`` (không chạy validate của Item) + Audit Log ``Update`` old/new với lý do; cùng giá
+	trị cũ thì không ghi gì. Pack đã đóng không đổi (snapshot). Trả
+	``{item, old_days, new_days, affected_set_types}`` (cảnh báo, không chặn).
+	"""
+	item = item.strip() if isinstance(item, str) else ""
+	row = (
+		frappe.db.get_value(ITEM, item, ["name", "tc_item_group_cssd", FIELD], as_dict=True, for_update=True)
+		if item
+		else None
+	)
+	if not row or row.tc_item_group_cssd != PACKAGING:
+		raise BlockedError(_pack_type_block(item))
+	new_days = whole_number(days)
+	if new_days is None or not MIN_DAYS <= new_days <= MAX_DAYS:
+		raise BlockedError(_days_block())
+	reason = reason.strip() if isinstance(reason, str) else ""
+	if not reason or len(reason) > REASON_MAX:
+		raise BlockedError(_reason_block())
+
+	old_days = cint(row.get(FIELD))
+	if new_days != old_days:
+		frappe.db.set_value(ITEM, row.name, FIELD, new_days)
+		audit.log("Update", ITEM, row.name, old={FIELD: old_days}, new={FIELD: new_days}, reason=reason)
+	return {
+		"item": row.name,
+		"old_days": old_days,
+		"new_days": new_days,
+		"affected_set_types": affected_set_types(row.name, new_days),
+	}
+
+
+def audit_item_change(doc, method=None) -> None:
+	"""``doc_events["Item"]["on_update"]``: hạn lưu loại gói đổi qua form Item → Audit Log ``Update`` (không chặn).
+
+	Chỉ Item đã có (có bản trước khi lưu) thuộc nhóm Packaging (trước hoặc sau khi lưu) và ``tc_shelf_life_days`` đổi.
+	"""
+	before = doc.get_doc_before_save()
+	if before is None:
+		return
+	if PACKAGING not in (before.get("tc_item_group_cssd"), doc.get("tc_item_group_cssd")):
+		return
+	old_days, new_days = cint(before.get(FIELD)), cint(doc.get(FIELD))
+	if old_days == new_days:
+		return
+	audit.log(
+		"Update",
+		ITEM,
+		doc.name,
+		old={FIELD: old_days},
+		new={FIELD: new_days},
+		reason=_("Pack type shelf life changed on the Item form"),
+	)
