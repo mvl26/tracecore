@@ -160,6 +160,55 @@ def _missing(name: str, photos: list) -> list[dict]:
 	return missing
 
 
+@frappe.whitelist()
+def pack_type_query(doctype=None, txt=None, searchfield=None, start=0, page_len=20, filters=None):
+	"""Gợi ý của trường Link ``default_pack_type`` trên form Desk (Task 8, FR-M1-03.5): chỉ loại gói dùng được.
+
+	Hàm query chuẩn của Frappe (``frappe.desk.search.search_widget`` gọi với chữ ký này): lọc
+	``shelf_life.usable_pack_types()`` theo chuỗi gõ (mã hoặc tên, không phân biệt hoa thường), trả
+	``[(mã Item, tên, "N ngày")]`` để ô gợi ý hiện số ngày. Cùng tiêu chí với kiểm khi lưu nên JS không chép luật.
+	Quyền đọc ``Instrument Set Type`` (người không đọc được loại bộ không cần gợi ý này).
+	"""
+	frappe.has_permission(SET_TYPE, "read", throw=True)
+	rows = [
+		(row["item"], row["item_name"], _("{0} days").format(row["shelf_life_days"]))
+		for row in shelf_life.usable_pack_types()
+	]
+	return _page(_matching(rows, txt), start, page_len)
+
+
+@frappe.whitelist()
+def department_query(doctype=None, txt=None, searchfield=None, start=0, page_len=20, filters=None):
+	"""Gợi ý của trường Link ``department`` (khoa sở hữu loại bộ, FR-M1-03) trên form Desk (Task 8).
+
+	TC R02/R10 tạo/sửa loại bộ (S12) nhưng không có quyền đọc ``Department`` của ERPNext/HRMS, nên ô gợi ý chuẩn trả
+	403. Query này chỉ trả ``[(mã khoa, tên khoa)]`` của khoa chưa tắt, lọc theo chuỗi gõ; quyền đọc
+	``Instrument Set Type``. Lưu loại bộ vẫn kiểm Link tồn tại ở server.
+	"""
+	frappe.has_permission(SET_TYPE, "read", throw=True)
+	rows = frappe.get_all(
+		"Department",
+		filters={"disabled": 0},
+		fields=["name", "department_name"],
+		order_by="department_name asc, name asc",
+		as_list=True,
+	)
+	return _page(_matching([tuple(row) for row in rows], txt), start, page_len)
+
+
+def _matching(rows: list[tuple], txt) -> list[tuple]:
+	"""Dòng có cột 1 (mã) hoặc cột 2 (tên) chứa chuỗi gõ, không phân biệt hoa thường."""
+	needle = txt.strip().lower() if isinstance(txt, str) else ""
+	if not needle:
+		return rows
+	return [row for row in rows if needle in str(row[0]).lower() or needle in str(row[1] or "").lower()]
+
+
+def _page(rows: list[tuple], start, page_len) -> list[tuple]:
+	offset, limit = max(cint(start), 0), cint(page_len)
+	return rows[offset : offset + limit] if limit > 0 else rows[offset:]
+
+
 @frappe.whitelist(methods=["GET"])
 def form_context(set_type=None):
 	"""Dữ liệu cho form Desk của loại bộ; chỉ đọc, không chép quy tắc nghiệp vụ sang JS.

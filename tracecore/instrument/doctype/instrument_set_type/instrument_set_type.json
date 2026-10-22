@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "tab_info",
   "type_code",
   "set_type_name",
   "method",
@@ -18,6 +19,7 @@
   "default_pack_type",
   "column_break_packing",
   "shelf_life_days",
+  "shelf_life_html",
   "current_bom_version",
   "section_tray",
   "tray_image",
@@ -25,9 +27,19 @@
   "tray_image_3",
   "tray_thumbnail",
   "tray_thumbnail_2",
-  "tray_thumbnail_3"
+  "tray_thumbnail_3",
+  "tray_html",
+  "tab_bom",
+  "bom_html",
+  "tab_history",
+  "history_html"
  ],
  "fields": [
+  {
+   "fieldname": "tab_info",
+   "fieldtype": "Tab Break",
+   "label": "Information"
+  },
   {
    "description": "2-8 uppercase letters or digits, used inside the GS1 GIAI Set ID.",
    "fieldname": "type_code",
@@ -113,6 +125,11 @@
    "non_negative": 1
   },
   {
+   "fieldname": "shelf_life_html",
+   "fieldtype": "HTML",
+   "label": "Shelf Life Applied"
+  },
+  {
    "default": "1",
    "description": "BOM version in effect today; maintained by the system when BOM versions are saved.",
    "fieldname": "current_bom_version",
@@ -163,12 +180,37 @@
    "label": "Tray Thumbnail 3",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "tray_html",
+   "fieldtype": "HTML",
+   "label": "Tray Photos"
+  },
+  {
+   "fieldname": "tab_bom",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "bom_html",
+   "fieldtype": "HTML",
+   "label": "BOM"
+  },
+  {
+   "fieldname": "tab_history",
+   "fieldtype": "Tab Break",
+   "label": "History"
+  },
+  {
+   "fieldname": "history_html",
+   "fieldtype": "HTML",
+   "label": "BOM Version History"
   }
  ],
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 10:00:00.000000",
+ "modified": "2026-10-22 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",
