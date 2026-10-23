@@ -144,6 +144,23 @@ class TestStepGate(FrappeTestCase):
 		self.assertEqual(_lifecycle(su).status, "Reprocess")
 		self.assertIsNone(step_gate.check(su, "T2"))
 
+	@bru("BRU-FLOW-004")
+	def test_check_t5_requires_t4_pass(self):
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3"))
+		block = step_gate.check(su, "T5")
+		self.assertEqual(block.code, "GATE_PREV_NOT_PASSED")
+		self.assertEqual(block.redo_step, "T4")
+		step_gate.record(su, "T4", "Pass")
+		self.assertIsNone(step_gate.check(su, "T5"))
+
+	@bru("BRU-FLOW-002")
+	def test_check_t5_rejects_status_invalid_for_station(self):
+		sterile = make_set_unit().name
+		make_cycle(sterile, passed=("T1", "T2", "T3", "T4", "T5"))
+		self.assertEqual(step_gate.check(sterile, "T5").code, "STATUS_INVALID_FOR_STATION")
+		self.assertEqual(step_gate.STATION_STATUSES["T5"], ("Processing", "Reprocess"))
+
 	def test_check_rejects_unknown_step_and_unknown_set(self):
 		su = make_set_unit().name
 		with self.assertRaises(frappe.ValidationError):

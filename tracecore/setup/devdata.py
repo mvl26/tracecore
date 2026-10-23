@@ -15,6 +15,8 @@
   nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t2_demo`` chuẩn bị màn T2 lô rửa (SCR-06, FEAT-021) tại
   TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t5_demo`` chuẩn bị màn T5 nạp mẻ (SCR-09, FEAT-022) tại
+  TR-005 (máy hấp/plasma, chương trình, gói đã qua T4, mẻ đang chạy); in JSON các mã để quét.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t6_demo`` chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại
   TR-006: hai kệ ``KE-``, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn; in JSON các mã.
 """
@@ -27,13 +29,13 @@ from contextlib import contextmanager
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, getdate, now_datetime, today
+from frappe.utils import add_days, cint, getdate, now_datetime, today
 
 from tracecore.core import client_time, code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
 from tracecore.instrument import bom, bom_versions
-from tracecore.reprocessing import washing
+from tracecore.reprocessing import sterilizing, washing
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
 
@@ -130,6 +132,22 @@ def ensure_t2_e2e_user(station, password):
 	with _temporary_r10():
 		user = provision.station_user(station, password)
 		return {"t2_user": user, "t2_otp_secret": _enroll_otp(user)}
+
+
+def ensure_t5_e2e_user(station, password):
+	"""User kiosk trạm T5 (khu sạch → TC R04, thêm TC R05 của KTV tiệt khuẩn) cho e2e màn nạp mẻ (FEAT-022), OTP App.
+
+	Khu sạch cấp role R04 (T3/T4/T5 chung khu) nhưng RPC nạp mẻ chỉ nhận R05, R02, System Manager (A-16 Q13) nên user
+	e2e được thêm R05. Tách khỏi `ensure_e2e_users`; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		frappe.get_doc("User", user).add_roles("TC R05")
+		return {"t5_user": user, "t5_otp_secret": _enroll_otp(user)}
 
 
 def ensure_desk_users(password, specs):
@@ -1286,6 +1304,142 @@ def ensure_t2_demo():
 		"chemical_lot_ok": lot_ok,
 		"chemical_lot_expired": lot_expired,
 		"batch_running": running,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T5 nạp mẻ tiệt khuẩn (FEAT-022, SCR-09) ----------------------------------------------------------
+T5_STATION = "TR-005"
+# Mã loại bộ chỉ gồm 2-8 chữ hoa/số: DEMOT5S/DEMOT5P (tách khỏi DEMOT4*, e2e T4 đóng gói không lấy mất gói T5)
+T5_SET_TYPES = {"Steam": "DEMOT5S", "Plasma": "DEMOT5P"}
+T5_SERIALS = {
+	"machine": "DEMO-T5-STEAM-01",
+	"machine_plasma": "DEMO-T5-PLASMA-01",
+	"machine_locked": "DEMO-T5-STEAM-LOCK",
+}
+T5_CAPACITY = "12"  # số gói tối đa mỗi mẻ (A-16 Q4)
+T5_PARAMETERS = [
+	{
+		"parameter_name": "Sterilization temperature",
+		"unit": "°C",
+		"min_value": 132,
+		"max_value": 138,
+		"required": 1,
+	},
+	{"parameter_name": "Pressure", "unit": "bar", "min_value": 0, "max_value": 2.3, "required": 1},
+	{"parameter_name": "Hold time", "unit": "min", "min_value": 3, "max_value": 0, "required": 1},
+]
+T5_READY_PACKS = 3
+
+
+def _t5_machine(key, equipment_type, **fields):
+	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại); trả TB-####."""
+	name = frappe.db.get_value("Equipment", {"serial_no": T5_SERIALS[key]}, "name")
+	if name:
+		return name
+	values = {
+		"name": f"Demo sterilizer {key}",
+		"equipment_type": equipment_type,
+		"serial": T5_SERIALS[key],
+		"manufacturer": EQ_MANUFACTURER,
+		"model": "DEMO-S5",
+		"capacity": T5_CAPACITY,
+		**fields,
+	}
+	return factories.make_sterilizer(**values).name
+
+
+def _t5_program(equipment):
+	"""Chương trình tiệt khuẩn đang dùng đầu tiên của máy (tạo nếu chưa có), có tham số."""
+	name = frappe.db.get_value(
+		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="creation asc"
+	)
+	if name:
+		return name
+	code = "DEMO-T5-" + equipment.replace("TB-", "")
+	return factories.make_sterilize_program(equipment, code=code, parameters=T5_PARAMETERS).name
+
+
+def _t5_loadable(set_type, with_t4):
+	"""Gói Packed demo của `set_type` còn hạn, còn là Cycle ID hiện hành, chưa ở mẻ nào; `with_t4` chọn cổng T4 Đạt hay chưa."""
+	rows = frappe.get_all(
+		"Pack",
+		filters={"docstatus": 1, "status": "Packed", "set_type": set_type, "expiry": [">=", today()]},
+		fields=["name", "set_unit", "cycle_no"],
+		order_by="creation asc",
+	)
+	out = []
+	for row in rows:
+		unit = frappe.db.get_value(
+			"Set Unit", row.set_unit, ["active_cycle_id", "current_cycle_no", "status"], as_dict=True
+		)
+		if unit.active_cycle_id != row.name or cint(unit.current_cycle_no) != cint(row.cycle_no):
+			continue
+		gates = {gate["step"]: gate["result"] for gate in step_gate.gates(row.set_unit)}
+		if (gates["T4"] == "Pass") == with_t4 and gates["T5"] == "Pending":
+			out.append(row.name)
+	return out
+
+
+def _t5_new_pack(method, with_t4=True):
+	passed = ("T1", "T2", "T3", "T4") if with_t4 else ("T1", "T2", "T3")
+	return factories.make_load_ready_pack(method=method, passed=passed, set_type=T5_SET_TYPES[method]).name
+
+
+def ensure_t5_demo():
+	"""Chuẩn bị màn T5 nạp mẻ (SCR-09) tại TR-005 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``machine``: máy hấp hơi nước hai cửa Sạch → Vô khuẩn, dung tích 12 gói, có bản in; ``machine_plasma``: máy
+	  plasma; ``machine_locked``: máy hấp đã ngừng sử dụng (``Retired``, từ chối 423). ``program``/``program_plasma`` là
+	  chương trình của hai máy đầu (có tham số cho form nhập tay).
+	- ``packs``: 3 gói hơi nước (Cycle ID) đã qua T4, chưa ở mẻ nào; ``pack_plasma``: gói plasma (vào máy hấp bị
+	  ``PACK_INCOMPATIBLE``); ``pack_no_t4``: gói hơi nước mà bộ chưa qua cổng T4.
+	- ``load_running``: một mẻ ``Running`` trên ``machine`` (để thử nhập dữ liệu chu trình).
+	Gói đã nạp/mẻ đã nhập dữ liệu được thay bằng gói/mẻ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	ensure_sample_templates()
+	ensure_object_templates()
+	machine = _t5_machine(
+		"machine", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE", has_printout=1
+	)
+	plasma = _t5_machine("machine_plasma", "Plasma Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
+	locked = _t5_machine("machine_locked", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
+	if frappe.db.get_value("Equipment", locked, "status") != "Retired":
+		equipment_status.set_status(locked, "Retired", "Demo T5: sterilizer retired")
+	program, program_plasma = _t5_program(machine), _t5_program(plasma)
+
+	for method in T5_SET_TYPES:
+		_ensure_set_type(method, _t4_catalog()[method], code=T5_SET_TYPES[method])
+	steam_type, plasma_type = T5_SET_TYPES["Steam"], T5_SET_TYPES["Plasma"]
+	ready = _t5_loadable(steam_type, with_t4=True)
+	while len(ready) < T5_READY_PACKS + 1:  # +1: gói của mẻ đang chạy
+		ready.append(_t5_new_pack("Steam"))
+	plasma_packs = _t5_loadable(plasma_type, with_t4=True)
+	no_t4 = _t5_loadable(steam_type, with_t4=False)
+
+	running = frappe.db.get_value(
+		"Sterilization Load",
+		{"equipment": machine, "status": "Running", "docstatus": 0},
+		"name",
+		order_by="creation asc",
+	)
+	if not running:
+		running = sterilizing.complete(
+			machine, program, [ready.pop()], T5_STATION, client_time.utc_now(), _t2_operator()
+		)["load"]
+
+	result = {
+		"machine": machine,
+		"machine_plasma": plasma,
+		"machine_locked": locked,
+		"program": program,
+		"program_plasma": program_plasma,
+		"packs": ready[:T5_READY_PACKS],
+		"pack_plasma": plasma_packs[0] if plasma_packs else _t5_new_pack("Plasma"),
+		"pack_no_t4": no_t4[0] if no_t4 else _t5_new_pack("Steam", with_t4=False),
+		"load_running": running,
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

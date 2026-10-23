@@ -27,7 +27,11 @@ from tracecore.core.errors import Block
 
 STEPS = ("T1", "T2", "T3", "T4", "T5")
 # Trạng thái Set Unit mà trạm chấp nhận; bước khác bổ sung ở FEAT của bước đó.
-STATION_STATUSES = {"T2": ("Processing", "Reprocess"), "T4": ("Processing", "Reprocess")}
+STATION_STATUSES = {
+	"T2": ("Processing", "Reprocess"),
+	"T4": ("Processing", "Reprocess"),
+	"T5": ("Processing", "Reprocess"),
+}
 
 PENDING = "Pending"
 RESULTS = ("Pass", "Fail")

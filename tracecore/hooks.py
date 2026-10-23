@@ -63,7 +63,14 @@ app_include_js = ["tracecore.bundle.js"]
 # include js in page
 # Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025) và T2 lô rửa (SCR-06, FEAT-021):
 # Frappe nối các file này sau station.js trong script của Page station
-page_js = {"station": ["public/js/station_t4.js", "public/js/station_t6.js", "public/js/station_t2.js"]}
+page_js = {
+	"station": [
+		"public/js/station_t4.js",
+		"public/js/station_t6.js",
+		"public/js/station_t2.js",
+		"public/js/station_t5.js",
+	]
+}
 
 # include js in doctype views
 # Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
@@ -217,6 +224,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
+	# mẻ tiệt khuẩn T5 (FEAT-022): tạo khi Hoàn thành nạp, cập nhật khi nhập tay dữ liệu chu trình
+	"Sterilization Load": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
@@ -292,6 +301,11 @@ tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_vers
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 T5 nạp mẻ (FEAT-022, UC-09):
+#  - load_equipment_checks: (equipment) -> Block | None, điều kiện chọn máy tiệt khuẩn (FEAT-040: test ngày, kiểm định)
+#  - after_load_complete:   (ctx) sau khi Hoàn thành nạp (ctx: load, equipment, program, packs, sets)
+tracecore_load_equipment_checks = []
+tracecore_after_load_complete = []
 
 # Scheduled Tasks
 # ---------------

@@ -179,6 +179,23 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("Intl.DateTimeFormat", source)
 		self.assertIn("frappe.boot.time_zone.system", source)
 
+	def test_station_page_includes_t5_script(self):
+		# màn T5 nạp mẻ (SCR-09 STN, SCR-35 PDA, FEAT-022) ở file riêng, nối sau station.js như T2
+		scripts = frappe.get_hooks("page_js").get("station", [])
+		self.assertIn("public/js/station_t5.js", scripts)
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t5.js")))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('method.startsWith("tracecore.v1.load.")', source)  # bearer trong body như T4/T2
+		self.assertIn("new T5Load(this)", source)
+		with open(os.path.join(APP_PATH, "public", "js", "station_t5.js"), encoding="utf-8") as handle:
+			screen = handle.read()
+		self.assertIn("clearSession() {", screen)
+		self.assertIn("sessionEnded", screen)
+		self.assertIn(
+			'dataset.surface = query.matches ? "PDA" : "STN"', screen
+		)  # SCR-35: cùng màn, surface PDA
+
 	def test_station_page_includes_t6_script(self):
 		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
 		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))

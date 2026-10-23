@@ -4,7 +4,7 @@ Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi
 TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
 và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
 TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py),
-TC_E2E_SETTYPE_* (test_desk_set_type.py), TC_E2E_T6_* (test_station_t6.py).
+TC_E2E_SETTYPE_* (test_desk_set_type.py), TC_E2E_T6_* (test_station_t6.py), TC_E2E_T5_* (test_station_t5.py).
 
 TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
 (vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
@@ -146,6 +146,41 @@ def t2_page(page):
 	page.locator("#tc-card-input").fill(card)
 	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result[data-state='empty'] .tc-t2").wait_for(timeout=30000)
+	return page
+
+
+# --- T5 (SCR-09 nạp mẻ, FEAT-022): user trạm TR-005 và dữ liệu demo `devdata.ensure_t5_demo` ---
+
+T5_KEYS = (
+	"machine",
+	"machine_plasma",
+	"machine_locked",
+	"program",
+	"program_plasma",
+	"packs",
+	"pack_plasma",
+	"pack_no_t4",
+	"load_running",
+)
+
+
+@pytest.fixture
+def t5_demo():
+	"""Mã demo T5 từ scripts/e2e_prepare.sh (TC_E2E_T5_MACHINE, ...); ``packs`` là danh sách 3 Cycle ID."""
+	demo = {key: require_env(f"TC_E2E_T5_{key.upper()}") for key in T5_KEYS}
+	demo["packs"] = demo["packs"].split(",")
+	return demo
+
+
+@pytest.fixture
+def t5_page(page):
+	card = require_env("TC_E2E_T5_CARD_ID")
+	desk_login(page, "TC_E2E_T5")
+	station = os.environ.get("TC_E2E_T5_STATION", "TR-005")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result[data-state='empty'] .tc-t5").wait_for(timeout=30000)
 	return page
 
 

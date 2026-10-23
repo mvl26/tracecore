@@ -2,9 +2,10 @@
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
 // Trạm bước T4 giao cho T4Packing (public/js/station_t4.js), bước T6 giao cho T6Storage (public/js/station_t6.js),
-// bước T2 giao cho T2Wash (public/js/station_t2.js); các file này nối sau file này qua hook page_js.
+// bước T2 giao cho T2Wash (public/js/station_t2.js), bước T5 giao cho T5Load (public/js/station_t5.js); các file này
+// nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash */
+/* global T4Packing, T6Storage, T2Wash, T5Load */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -547,6 +548,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.pack.") ||
 			method.startsWith("tracecore.v1.putaway.") ||
 			method.startsWith("tracecore.v1.wash.") ||
+			method.startsWith("tracecore.v1.load.") ||
 			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =
@@ -667,6 +669,8 @@ class TraceCoreStation {
 				this.screen = new T6Storage(this);
 			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
 				this.screen = new T2Wash(this);
+			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
+				this.screen = new T5Load(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;

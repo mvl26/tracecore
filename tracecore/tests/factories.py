@@ -937,6 +937,89 @@ def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_
 	return pack
 
 
+def make_sterilizer(equipment_type="Steam Sterilizer", capacity=None, **kwargs):
+	"""Máy tiệt khuẩn hai cửa khu sạch → vô khuẩn (serial duy nhất mỗi lần gọi); `capacity` là Data (Q4 A-16)."""
+	values = {
+		"name": "Máy tiệt khuẩn test",
+		"equipment_type": equipment_type,
+		"serial": "ST-" + frappe.generate_hash(length=8),
+		"zone_in": "ZONE-CLEAN",
+		"zone_out": "ZONE-STERILE",
+		"capacity": capacity,
+		**kwargs,
+	}
+	return make_equipment(**values)
+
+
+def make_sterilize_program(equipment, pack_types=(), **kwargs):
+	"""Chương trình tiệt khuẩn đủ định mức cho máy `equipment`, mã duy nhất mỗi lần gọi.
+
+	`pack_types`: danh sách Item loại gói tương thích (rỗng = chương trình không giới hạn loại gói).
+	"""
+	values = {
+		"code": "MH-" + frappe.generate_hash(length=6).upper(),
+		"minutes": 4,
+		"kwh": 3.5,
+		"water": 20,
+		**kwargs,
+	}
+	if pack_types:
+		values["compatible_pack_types"] = [{"pack_type": _ref_name(item)} for item in pack_types]
+	return make_program(equipment, **values)
+
+
+def make_load_ready_pack(
+	method="Steam", expiry_days=30, passed=("T1", "T2", "T3", "T4"), set_type=None, **fields
+):
+	"""Gói `Packed` sẵn sàng nạp mẻ tại T5 (FEAT-022): bộ mới qua các cổng `passed`, Pack ghi sổ, Cycle ID hiện hành.
+
+	Loại bộ mới theo `method` (`Steam`/`Plasma`) trừ khi truyền `set_type` (mã loại bộ có sẵn, dữ liệu demo); `fields`
+	ghi đè trường Pack (vd `pack_type`, `status`). Dựng thẳng bằng `step_gate` thay cho T1 đến T4 thật. Trả Pack.
+	"""
+	set_type = (
+		frappe.get_doc("Instrument Set Type", set_type)
+		if set_type
+		else make_set_type(_free_type_code("T5"), method=method)
+	)
+	set_unit = make_set_unit(set_type.name)
+	make_cycle(set_unit, passed=passed)
+	cycle_no = frappe.db.get_value("Set Unit", set_unit.name, "current_cycle_no")
+	pack = make_pack(set_unit, cycle_no=cycle_no, expiry=add_days(today(), expiry_days), **fields)
+	if not code_registry.is_issued(pack.name):  # như packing.generate: Cycle ID nằm trong Code Registry
+		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
+	step_gate.bind_cycle(set_unit.name, pack.name, None)
+	return pack
+
+
+def make_load(equipment, program, packs, operator="HR-EMP-TEST", **fields):
+	"""Sterilization Load `Running` dựng thẳng (không qua dịch vụ nạp) để test quy tắc đọc; operator là mã giả."""
+	now = now_datetime()
+	doc = frappe.get_doc(
+		{
+			"doctype": "Sterilization Load",
+			"equipment": _ref_name(equipment),
+			"program": _ref_name(program),
+			"operator": operator,
+			"started_at": now,
+			"load_completed_at": now,
+			"packs": [
+				{
+					"pack": _ref_name(pack),
+					"set_unit": frappe.db.get_value("Pack", _ref_name(pack), "set_unit"),
+				}
+				for pack in packs
+			],
+			**fields,
+		}
+	)
+	doc.flags.tc_sterilizing = True
+	doc.flags.ignore_links = True
+	doc.insert(ignore_permissions=True)
+	for pack in packs:
+		frappe.db.set_value("Pack", _ref_name(pack), {"status": "In Load", "load": doc.name})
+	return doc
+
+
 def make_bom_set_type(type_code, lines, caps=None):
 	"""Loại bộ cùng BOM v1; ``caps``: ``{mã dụng cụ: cơ số}`` (thiếu = Chưa xác định)."""
 	for code, _qty in lines:
