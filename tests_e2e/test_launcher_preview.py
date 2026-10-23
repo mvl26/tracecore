@@ -3,13 +3,25 @@
 These checks complement, but do not replace, an installed-site integration check.
 """
 
+import os
 from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect
 
 ROOT = Path(__file__).resolve().parents[1]
-JQUERY = Path.home() / "tracecore-dev/apps/frappe/node_modules/jquery/dist/jquery.min.js"
+JQUERY_RELATIVE = "apps/frappe/node_modules/jquery/dist/jquery.min.js"
+
+
+def find_jquery():
+	"""jQuery của Frappe trong bench: TC_JQUERY (đường dẫn file), BENCH_DIR, bench CI (~/frappe-bench) hoặc bench dev."""
+	candidates = [Path(os.environ["TC_JQUERY"])] if os.environ.get("TC_JQUERY") else []
+	benches = [os.environ.get("BENCH_DIR"), Path.home() / "frappe-bench", Path.home() / "tracecore-dev"]
+	candidates += [Path(bench) / JQUERY_RELATIVE for bench in benches if bench]
+	return next((path for path in candidates if path.is_file()), candidates[0])
+
+
+JQUERY = find_jquery()
 ASSETS = ROOT / "tracecore/ui/page/tracecore"
 
 

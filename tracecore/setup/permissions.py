@@ -26,6 +26,9 @@ AMENDED_ELSEWHERE = frozenset({"Item", "Stock Entry"})
 # Instrument: System Manager đọc/ghi (FEAT-014, A-06 I15).
 AMENDMENT_GRANTS: dict[str, dict[str, str]] = {
 	"Instrument": {"System Manager": "RW"},
+	# FEAT-015 A-09 S12: System Manager đọc/tạo/ghi loại bộ; Set BOM Item chỉ đọc (dòng bất biến, chỉ bom_versions ghi)
+	"Instrument Set Type": {"System Manager": "RW"},
+	"Set BOM Item": {"System Manager": "R"},
 }
 
 

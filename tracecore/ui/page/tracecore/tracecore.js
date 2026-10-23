@@ -122,7 +122,11 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	async function load() {
 		const current = ++request;
 		if (!navigator.onLine) {
-			message(__("Offline"), __("Connect to the network to choose a workspace."), true);
+			message(
+				__("Offline", null, "TraceCore Launcher"),
+				__("Connect to the network to choose a workspace."),
+				true
+			);
 			return;
 		}
 		message(__("Loading workspaces…"), "", false);

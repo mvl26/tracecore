@@ -35,6 +35,26 @@ def after_install():
 	ensure_permissions()
 
 
+TEST_GENDERS = ("Male", "Female", "Other")
+
+
+def before_tests():
+	"""Chuẩn bị site mới (CI: ``install-app`` rồi ``run-tests``) trước khi Frappe dựng test record (hook ``before_tests``).
+
+	`bench run-tests --app tracecore` chỉ gọi hook của chính app (``get_hooks("before_tests", app_name=app)``) nên không
+	chạy ``erpnext.setup.utils.before_tests``. Không chạy setup wizard của ERPNext ở đây: nó tạo Company mặc định,
+	đổi ngôn ngữ/múi giờ và làm lệch các test kho (`tests.factories.ensure_stock_masters` giả định site chưa có Company).
+	Chỉ tạo các bản ghi mà wizard sẽ tạo và test cần: loại kho "Transit" (test record Company của ERPNext tạo kho
+	Goods In Transit kiểu Transit) và Gender (Employee của test trạm khai giới tính "Male"). Idempotent.
+	"""
+	if not frappe.db.exists("Warehouse Type", "Transit"):
+		frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert(ignore_permissions=True)
+	for gender in TEST_GENDERS:
+		if not frappe.db.exists("Gender", gender):
+			frappe.get_doc({"doctype": "Gender", "gender": gender}).insert(ignore_permissions=True)
+	frappe.db.commit()  # nosemgrep
+
+
 def apply_system_settings():
 	settings = frappe.get_single("System Settings")
 	settings.update(SYSTEM_SETTINGS)

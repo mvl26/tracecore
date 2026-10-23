@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from pymysql import OperationalError
 
 TEST_SAVEPOINT = "tc_isolated_test"
 
@@ -63,6 +64,23 @@ def fixture_r10():
 			admin.reload().remove_roles("TC R10")
 
 
+SAVEPOINT_MISSING = 1305  # MariaDB: SAVEPOINT ... does not exist
+
+
+def rollback_to_test_savepoint():
+	"""Hoàn tác về savepoint của `IsolatedTestCase`; savepoint đã mất thì rollback thường.
+
+	Câu lệnh gây commit ngầm giữa test (DDL lần đầu chạm trên site mới, luồng đăng nhập/OTP) hủy savepoint; khi đó
+	``ROLLBACK TO SAVEPOINT`` ném 1305 làm test lỗi ở bước dọn dù phần kiểm tra đã đạt (CI site mới).
+	"""
+	try:
+		frappe.db.rollback(save_point=TEST_SAVEPOINT)
+	except OperationalError as error:
+		if error.args[0] != SAVEPOINT_MISSING:
+			raise
+		frappe.db.rollback()
+
+
 class IsolatedTestCase(FrappeTestCase):
 	"""FrappeTestCase hoàn tác dữ liệu sau MỖI test (savepoint), không chỉ sau cả class.
 
@@ -72,7 +90,7 @@ class IsolatedTestCase(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.db.savepoint(TEST_SAVEPOINT)
-		self.addCleanup(frappe.db.rollback, save_point=TEST_SAVEPOINT)
+		self.addCleanup(rollback_to_test_savepoint)
 
 
 def bru(*ids):
