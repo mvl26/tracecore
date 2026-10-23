@@ -19,6 +19,8 @@ STATE = {}
 
 
 def scan(page, raw):
+	# đổi chế độ vẽ lại màn; ô quét lấy lại focus sau 150 ms (station.js blur): gõ sớm hơn sẽ mất các ký tự đầu
+	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	page.keyboard.type(raw)
 	page.keyboard.press("Enter")
 
