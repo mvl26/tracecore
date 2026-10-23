@@ -145,7 +145,7 @@ jobs:
         env:
           TC_BASE_URL: http://127.0.0.1:8000
         run: |
-          pip install pytest-playwright openpyxl
+          pip install pytest-playwright openpyxl pyotp
           python -m playwright install --with-deps chromium
           set -a; . "${{ runner.temp }}/e2e.env"; set +a
           python -m pytest -q --screenshot only-on-failure --output test-results
