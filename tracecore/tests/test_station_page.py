@@ -170,6 +170,15 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn('method.startsWith("tracecore.v1.wash.")', source)  # bearer trong body như T4
 		self.assertIn("new T2Wash(this)", source)
 
+	def test_t2_form_times_follow_the_system_timezone_not_the_browser(self):
+		# Giờ kết thúc mặc định của form nhập tay gửi không kèm offset và server coi là giờ hệ thống: lấy theo múi giờ
+		# hệ thống (frappe.boot.time_zone.system), không theo đồng hồ trình duyệt (runner CI chạy UTC → sớm hơn 7 giờ)
+		with open(os.path.join(APP_PATH, "public", "js", "station_t2.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertNotIn("getHours", source)
+		self.assertIn("Intl.DateTimeFormat", source)
+		self.assertIn("frappe.boot.time_zone.system", source)
+
 	def test_station_page_includes_t6_script(self):
 		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
 		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))
