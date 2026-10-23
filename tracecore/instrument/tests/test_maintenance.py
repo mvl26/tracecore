@@ -511,7 +511,10 @@ class TestPackHooks(IsolatedTestCase):
 			],
 			"tracecore_pack_prechecks": ["tracecore.par.check.check_pack"],
 			"tracecore_pack_checks": ["tracecore.instrument.maintenance.check_pack"],
-			"tracecore_after_cycle_id": ["tracecore.instrument.maintenance.apply_pack"],
+			"tracecore_after_cycle_id": [
+				"tracecore.instrument.maintenance.apply_pack",
+				"tracecore.par.override.consume",
+			],
 		}
 		for hook, paths in expected.items():
 			registered = frappe.get_hooks(hook, app_name="tracecore")
