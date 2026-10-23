@@ -7,6 +7,17 @@ from tracecore.v1.navigation import context as get_context
 
 
 class TestLauncher(FrappeTestCase):
+	def test_management_menu_contains_tracecore_operations_not_sample_erp(self):
+		with (
+			patch("frappe.session", frappe._dict(user="manager@example.test")),
+			patch("frappe.get_roles", return_value=["TC R01"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+		):
+			doctypes = {link["doctype"] for link in get_context()["management"]}
+		self.assertTrue({"Wash Batch", "Sterile Putaway", "Employee", "Zone Station"} <= doctypes)
+		self.assertFalse(doctypes & {"Sales Invoice", "Customer", "Lead", "Opportunity"})
+
 	def test_guest_cannot_read_launcher(self):
 		with patch("frappe.session", frappe._dict(user="Guest")):
 			with self.assertRaises(frappe.PermissionError):

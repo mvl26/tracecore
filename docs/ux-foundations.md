@@ -8,6 +8,7 @@
 
 | Ngày | Thay đổi |
 | --- | --- |
+| 23/10/2026 | Amendment HOME-01, người dùng yêu cầu thay Home mẫu bằng chức năng TraceCore: tài khoản TC/System Manager vào Home hoặc Workspace sẽ chuyển tới `/app/tracecore`; các List/Form ERPNext dùng trong nghiệp vụ được giữ nguyên, không thay quyền. Tài khoản khác giữ Workspace sẵn có. |
 | 23/10/2026 | Amendment NAV-01, người dùng duyệt trong chat: Home có liên kết “Mở TraceCore” tới Page `/app/tracecore`, chọn không gian quản lý / trạm / khoa theo quyền. Trang chỉ điều hướng; xác thực thẻ/PIN vẫn tại đích. Các màn chưa triển khai hiển thị trạng thái và không có đích giả. Không hiện thực SCR-44..46. Kế hoạch: `superpowers/plans/tracecore-launcher.md`. |
 
 ## 1. Overview

@@ -14,7 +14,28 @@ STEP_ROLES = {
 	"T7": {"TC R07"},
 }
 IMPLEMENTED_STEPS = {"T2", "T4", "T6"}
-MANAGEMENT_TARGETS = ("Instrument", "Instrument Set Type", "Set Unit", "Pack", "Equipment", "Par Level")
+MANAGEMENT_TARGETS = (
+	"Instrument",
+	"Instrument Set Type",
+	"Set Unit",
+	"Pack",
+	"Wash Batch",
+	"Sterile Putaway",
+	"Sterile Location",
+	"Equipment",
+	"Process Program",
+	"Par Level",
+	"Employee",
+	"Station Competency",
+	"Item",
+	"Batch",
+	"Stock Entry",
+	"Zone Station",
+	"Printer",
+	"Label Template",
+	"Print Job",
+	"Audit Log",
+)
 
 
 @frappe.whitelist(methods=["GET"])
