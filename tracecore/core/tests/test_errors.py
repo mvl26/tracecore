@@ -51,6 +51,13 @@ class TestErrors(FrappeTestCase):
 				"BOM_TOO_LARGE",
 				"BOM_EFFECTIVE_DATE_INVALID",
 				"SHELF_LIFE_INVALID",
+				"EQUIPMENT_NOT_WASHER",
+				"PROGRAM_INVALID",
+				"CHEMICAL_LOT_INVALID",
+				"CHEMICAL_LOT_EXPIRED",
+				"BATCH_EMPTY",
+				"DATA_INCOMPLETE",
+				"RESULT_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -61,7 +68,10 @@ class TestErrors(FrappeTestCase):
 				"INSTRUMENT_NOT_FOUND",
 				"SET_TYPE_NOT_FOUND",
 				"BOM_VERSION_NOT_FOUND",
+				"WASH_BATCH_NOT_FOUND",
+				"LOCATION_NOT_FOUND",
 			),
+			423: ("EQUIPMENT_NOT_READY",),
 			409: (
 				"STATUS_INVALID_FOR_STATION",
 				"ACTIVE_CYCLE_EXISTS",
@@ -71,6 +81,11 @@ class TestErrors(FrappeTestCase):
 				"MAINT_OVERDUE",
 				"REPRINT_WINDOW_EXPIRED",
 				"PACK_NOT_VOIDABLE",
+				"PACK_NOT_RELEASED",
+				"PACK_EXPIRED",
+				"PACK_NOT_IN_STOCK",
+				"PACK_ALREADY_ON_LOCATION",
+				"LOCATION_INACTIVE",
 				"ROLL_PRINTER_AMBIGUOUS",
 				"STATION_INACTIVE",
 				"EQUIPMENT_NOT_RETIRABLE",
@@ -86,6 +101,11 @@ class TestErrors(FrappeTestCase):
 				"COMPANY_NOT_CONFIGURED",
 				"BOM_VERSION_CONFLICT",
 				"SET_TYPE_CODE_EXISTS",
+				"STEP_ALREADY_PASSED",
+				"SET_IN_OTHER_BATCH",
+				"BATCH_NOT_RUNNING",
+				"EQUIPMENT_MISMATCH",
+				"R02_CONFIRM_REQUIRED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -110,6 +130,14 @@ class TestErrors(FrappeTestCase):
 			"SET_TYPE_CODE_EXISTS": 409,
 		}.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
+
+	def test_http_status_wash_codes(self):
+		# FEAT-021 A-12: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
+		self.assertEqual(Block("EQUIPMENT_NOT_READY", "t", "r", "a").http_status, 423)
+		self.assertEqual(Block("WASH_BATCH_NOT_FOUND", "t", "r", "a").http_status, 404)
+		self.assertEqual(Block("BATCH_EMPTY", "t", "r", "a").http_status, 422)
+		self.assertEqual(Block("SET_IN_OTHER_BATCH", "t", "r", "a").http_status, 409)
+		self.assertEqual(BlockedError(Block("EQUIPMENT_NOT_READY", "t", "r", "a")).http_status_code, 423)
 
 	def test_block_as_dict(self):
 		self.assertEqual(

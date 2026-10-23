@@ -35,6 +35,8 @@ function harness() {
 	for (const file of [
 		"tracecore/ui/page/station/station.js",
 		"tracecore/public/js/station_t4.js",
+		"tracecore/public/js/station_t6.js",
+		"tracecore/public/js/station_t2.js",
 	])
 		vm.runInContext(fs.readFileSync(path.resolve(__dirname, "../..", file), "utf8"), sandbox);
 	const station = vm.runInContext("Object.create(TraceCoreStation.prototype)", sandbox);
@@ -87,7 +89,8 @@ test("protected RPC without a session never reaches network", async () => {
 test("session rejection clears token, pending scans, packing state and dialogs", async () => {
 	const { station, sandbox, store } = harness();
 	let cleared = false;
-	station.t4 = {
+	// màn riêng của bước (T4 đóng gói, T6 kho vô khuẩn, T2 lô rửa) nằm ở station.screen
+	station.screen = {
 		clearSession() {
 			cleared = true;
 		},
@@ -170,6 +173,88 @@ test("T4 drops a late response after auth state changes", async () => {
 	});
 	station.sessionVersion++;
 	finish({ ok: true });
+	await request;
+	assert.equal(applied, false);
+});
+
+function t6Screen(station, sandbox) {
+	const t6 = vm.runInContext("Object.create(T6Storage.prototype)", sandbox);
+	Object.assign(t6, {
+		station,
+		result: station.result,
+		input: { value: "", placeholder: "", setAttribute() {} },
+		pending: null,
+		busy: null,
+		offline: false,
+		overview: null,
+		pack: null,
+		notice: null,
+		damaging: false,
+		reasonError: false,
+	});
+	return t6;
+}
+
+test("T6 putaway and mark_damaged RPCs carry the station bearer in JSON only", async () => {
+	const { station, calls } = harness();
+	for (const method of [
+		"tracecore.v1.putaway.scan",
+		"tracecore.v1.putaway.overview",
+		"tracecore.v1.pack.mark_damaged",
+	]) {
+		await station.rpc(method, { client_ts: "original" }, "key");
+	}
+	for (const call of calls) {
+		assert.equal(JSON.parse(call.body).token, "private-bearer");
+		assert.ok(!JSON.stringify(call.headers).includes("private-bearer"));
+		assert.ok(!call.url.includes("private-bearer"));
+	}
+	station.session = null;
+	await assert.rejects(
+		station.rpc("tracecore.v1.putaway.scan", {}),
+		(error) => error.sessionEnded
+	);
+	assert.equal(calls.length, 3);
+});
+
+test("T6 clearSession drops the previous operator's pack, stock and pending request", () => {
+	const { station, sandbox } = harness();
+	const t6 = t6Screen(station, sandbox);
+	Object.assign(t6, {
+		pending: { key: "k" },
+		busy: "tracecore.v1.putaway.scan",
+		overview: { by_set_type: [] },
+		pack: { cycle_id: "CY-1" },
+		notice: { title: "x" },
+		damaging: true,
+		reasonError: true,
+		offline: true,
+	});
+	t6.clearSession();
+	assert.equal(t6.pending, null);
+	assert.equal(t6.busy, null);
+	assert.equal(t6.overview, null);
+	assert.equal(t6.pack, null);
+	assert.equal(t6.notice, null);
+	assert.equal(t6.damaging, false);
+	assert.equal(t6.dialogOpen, false);
+});
+
+test("T6 drops a late response after auth state changes", async () => {
+	const { station, sandbox } = harness();
+	const t6 = t6Screen(station, sandbox);
+	let finish;
+	let applied = false;
+	station.rpc = () =>
+		new Promise((resolve) => {
+			finish = resolve;
+		});
+	sandbox.uuid4 = () => "key";
+	const request = t6.request("tracecore.v1.putaway.scan", { raw: "CY-1" }, () => {
+		applied = true;
+	});
+	station.sessionVersion++;
+	finish({ ok: true, kind: "pack", pack: { cycle_id: "CY-1" } });
 	await request;
 	assert.equal(applied, false);
 });
@@ -307,4 +392,100 @@ test("retired new-card intent cannot capture or revoke replacement's equal-value
 	await station.login("NEW-CARD");
 	assert.equal(store.get(station.storageKey()), "private-bearer");
 	assert.equal(calls.length, 0);
+});
+
+function t2Screen(station, sandbox) {
+	const t2 = vm.runInContext("Object.create(T2Wash.prototype)", sandbox);
+	Object.assign(t2, {
+		station,
+		result: station.result,
+		input: { value: "", placeholder: "", setAttribute() {} },
+		pending: null,
+		busy: null,
+		offline: false,
+		overview: null,
+		overviewBusy: false,
+	});
+	t2.reset();
+	return t2;
+}
+
+test("T2 wash RPCs carry the station bearer in JSON only", async () => {
+	const { station, calls } = harness();
+	for (const method of [
+		"tracecore.v1.wash.start",
+		"tracecore.v1.wash.add_set",
+		"tracecore.v1.wash.complete",
+		"tracecore.v1.wash.result",
+	]) {
+		await station.rpc(method, { client_ts: "original" }, "key");
+	}
+	for (const call of calls) {
+		assert.equal(JSON.parse(call.body).token, "private-bearer");
+		assert.ok(!JSON.stringify(call.headers).includes("private-bearer"));
+		assert.ok(!call.url.includes("private-bearer"));
+	}
+	station.session = null;
+	await assert.rejects(
+		station.rpc("tracecore.v1.wash.start", {}),
+		(error) => error.sessionEnded
+	);
+	assert.equal(calls.length, 4);
+});
+
+test("T2 clearSession drops the previous operator's load list, batch and stored list", () => {
+	const { station, sandbox, store } = harness();
+	const t2 = t2Screen(station, sandbox);
+	Object.assign(t2, {
+		load: { machine: { name: "TB-0001" }, programs: [], lots: [], sets: [{ set_id: "S1" }] },
+		unload: { batch: "LR-261022-01" },
+		done: { batch: "LR-261022-02" },
+		pending: { key: "k" },
+		busy: "tracecore.v1.wash.add_set",
+		overview: { sets: [], running: [] },
+		mode: "unload",
+	});
+	t2.saveLoad();
+	assert.ok(store.get(t2.storageKey()));
+	t2.clearSession();
+	assert.equal(t2.load, null);
+	assert.equal(t2.unload, null);
+	assert.equal(t2.done, null);
+	assert.equal(t2.pending, null);
+	assert.equal(t2.busy, null);
+	assert.equal(t2.overview, null);
+	assert.equal(t2.mode, "load");
+	assert.equal(store.get(t2.storageKey()), undefined);
+});
+
+test("T2 drops a late response after auth state changes", async () => {
+	const { station, sandbox } = harness();
+	const t2 = t2Screen(station, sandbox);
+	t2.show = () => {};
+	let finish;
+	let applied = false;
+	station.rpc = () =>
+		new Promise((resolve) => {
+			finish = resolve;
+		});
+	sandbox.uuid4 = () => "key";
+	const request = t2.request("tracecore.v1.wash.add_set", { raw: "S1" }, () => {
+		applied = true;
+	});
+	station.sessionVersion++;
+	finish({ ok: true, set_id: "S1" });
+	await request;
+	assert.equal(applied, false);
+});
+
+test("T2 recognises the HOAN-THANH-NAP control code before any server call", async () => {
+	const { station, sandbox } = harness();
+	const t2 = t2Screen(station, sandbox);
+	station.isOffline = () => false;
+	let completed = 0;
+	t2.complete = () => {
+		completed++;
+	};
+	await t2.scan("hoan-thanh-nap");
+	assert.equal(completed, 1);
 });

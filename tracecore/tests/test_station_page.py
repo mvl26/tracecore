@@ -160,6 +160,33 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("public/js/station_t4.js", frappe.get_hooks("page_js").get("station", []))
 		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t4.js")))
 
+	def test_station_page_includes_t2_script(self):
+		# màn T2 lô rửa (SCR-06, FEAT-021) ở file riêng, nối sau station.js như T4
+		scripts = frappe.get_hooks("page_js").get("station", [])
+		self.assertIn("public/js/station_t2.js", scripts)
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t2.js")))
+		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('method.startsWith("tracecore.v1.wash.")', source)  # bearer trong body như T4
+		self.assertIn("new T2Wash(this)", source)
+
+	def test_station_page_includes_t6_script(self):
+		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
+		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))
+		path = os.path.join(APP_PATH, "public", "js", "station_t6.js")
+		self.assertTrue(os.path.exists(path))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn("T6Storage", handle.read())
+
+	def test_t6_rpcs_carry_station_token_and_screen_clears_on_session_end(self):
+		# FEAT-003: rpc() gắn token phiên cho RPC putaway như pack; hết phiên thì màn T6 xóa gói/tồn đang hiện
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn('method.startsWith("tracecore.v1.putaway.")', handle.read())
+		with open(os.path.join(APP_PATH, "public", "js", "station_t6.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("clearSession() {", source)
+		self.assertIn("sessionEnded", source)
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()

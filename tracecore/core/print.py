@@ -35,10 +35,14 @@ DEFAULT_WIDTH_MM = 60
 DEFAULT_HEIGHT_MM = 40
 DEFAULT_LANGUAGE = "ZPL"
 # Đối tượng có nhãn QR mã trần (A-05 R2); nhãn gói ("Pack") đi đường `render_pack`
-OBJECT_LABELS = ("Equipment", "Station", "Roll", "Employee Card", "Location")
+OBJECT_LABELS = ("Equipment", "Station", "Roll", "Employee Card", "Location", "Wash Batch")
 # Loại mã (`gs1.parse_scan`) in được cho từng đối tượng; thẻ nhân viên còn nhận thẻ có sẵn đã đăng ký (sổ CARD)
 OBJECT_SCAN_TYPES = dict(
-	zip(OBJECT_LABELS, ("equipment", "station", "roll", "employee", "location"), strict=True)
+	zip(
+		OBJECT_LABELS,
+		("equipment", "station", "roll", "employee", "location", "wash_batch"),
+		strict=True,
+	)
 )
 OBJECT_CODE_MAX_LENGTH = 40
 
@@ -384,6 +388,24 @@ def select_printer(station, method):
 				"supports_unicode": cint(printer.supports_unicode),
 				"label_type": printer.label_type_loaded,
 			}
+	return None
+
+
+def object_printer(station):
+	"""Máy in hoạt động đầu tiên (theo tên Printer) của trạm để in nhãn QR đối tượng, hoặc None.
+
+	Nhãn QR đối tượng (vd mã lô rửa) không gắn với phương pháp tiệt khuẩn nên không xét loại nhãn đang lắp. Trả
+	`{"name", "host", "port", "language", "supports_unicode", "label_type"}` như `select_printer`.
+	"""
+	for printer in _active_printers(station):
+		return {
+			"name": printer.name,
+			"host": printer.host or "",
+			"port": cint(printer.port),
+			"language": printer.language,
+			"supports_unicode": cint(printer.supports_unicode),
+			"label_type": printer.label_type_loaded,
+		}
 	return None
 
 

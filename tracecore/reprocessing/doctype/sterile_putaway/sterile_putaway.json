@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "autoname": "SP-.YY.MM.DD.-.####",
+ "creation": "2026-10-22 09:00:00.000000",
+ "description": "One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves (FEAT-025, UC-11). Created and submitted by the sterile storage service only.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pack",
+  "set_unit",
+  "set_type",
+  "column_break_pack",
+  "action",
+  "location",
+  "from_location",
+  "section_who",
+  "putaway_by_user",
+  "station",
+  "column_break_who",
+  "putaway_at",
+  "client_ts",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Pack",
+   "options": "Pack",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "pack.set_unit",
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "pack.set_type",
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pack",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Putaway",
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Action",
+   "options": "Putaway\nMove",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Location",
+   "options": "Sterile Location",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval:doc.action=='Move'",
+   "fieldname": "from_location",
+   "fieldtype": "Link",
+   "label": "From Location",
+   "options": "Sterile Location"
+  },
+  {
+   "fieldname": "section_who",
+   "fieldtype": "Section Break",
+   "label": "Operator"
+  },
+  {
+   "fieldname": "putaway_by_user",
+   "fieldtype": "Link",
+   "label": "Stored By (User)",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station"
+  },
+  {
+   "fieldname": "column_break_who",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "putaway_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Stored At",
+   "reqd": 1
+  },
+  {
+   "description": "Device time of the action, in UTC.",
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Client Time (UTC)"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-22 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Sterile Putaway",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TC R06",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  }
+ ],
+ "search_fields": "pack,location,set_type",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

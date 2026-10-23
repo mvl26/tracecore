@@ -32,7 +32,7 @@ PACK_STATUSES = [
 	"Void",
 ]
 VOID_REASONS = ["Used", "Expired", "Torn", "Load Failed", "Returned Unused", "Label Damaged"]
-ALLOW_ON_SUBMIT = {"status", "void_reason", "void_note", "label_print_count"}
+ALLOW_ON_SUBMIT = {"status", "void_reason", "void_note", "label_print_count", "location"}
 
 
 def _set_unit(code="PKT"):

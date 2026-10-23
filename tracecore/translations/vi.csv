@@ -91,6 +91,7 @@ Processing,Đang xử lý,Set Unit
 Reprocess,Xử lý lại,
 Sterile,Vô khuẩn,
 At Department,Tại khoa,
+Awaiting Receipt,Chờ tiếp nhận,Set Unit
 End of Life,Hết vòng đời,Set Unit
 Disposed,Thanh lý,
 Current Station,Trạm hiện tại,
@@ -1695,6 +1696,331 @@ Demo e2e set with a set in its cycle,Loại bộ có bộ đang giữa chu trìn
 Demo e2e set for BOM editing,Loại bộ để sửa BOM (demo e2e),
 Demo scheduled BOM change,Thay đổi BOM đã lên lịch (demo),
 Demo BOM change during a cycle,Thay đổi BOM khi bộ đang giữa chu trình (demo),
+"A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).","Lô không đạt vẫn cần lập phiếu không phù hợp (NC); hệ thống sẽ tự tạo khi có tính năng sự cố (FEAT-030).","Wash Batch"
+"A recorded value is outside the program range; R02 should review it.","Có giá trị ghi nhận nằm ngoài dải của chương trình; R02 cần xem xét.","Wash Batch"
+"A set unit appears more than once in the wash batch.","Một bộ dụng cụ xuất hiện nhiều lần trong lô rửa.",
+"A wash batch cannot be cancelled.","Không hủy được lô rửa.",
+"A wash batch is changed only by the wash screen service.","Lô rửa chỉ được đổi bởi dịch vụ của màn rửa.",
+"A wash batch is created only when loading is completed on the wash screen.","Lô rửa chỉ được tạo khi hoàn thành nạp trên màn rửa.",
+"Added At","Thời điểm thêm","Wash Batch Set Unit"
+"Batch Cost","Chi phí lô","Wash Batch"
+"Batch Type","Loại lô rửa","Wash Batch"
+"Chemical lot has expired","Lô hóa chất đã hết hạn",
+"Chemical lot is not valid","Lô hóa chất không hợp lệ",
+"Chemicals","Hóa chất","Wash Batch"
+"Choose a lot of the chemical that the wash program uses.","Chọn lô của hóa chất mà chương trình rửa sử dụng.",
+"Choose another lot that is still valid.","Chọn lô khác còn hạn dùng.",
+"Cleaning Test","Test làm sạch","Wash Batch"
+"Code {0} is not a set ID.","Mã {0} không phải Set ID.",
+"Code {0} is not a washer QR code.","Mã {0} không phải mã QR máy rửa.",
+"Cycle Data","Dữ liệu chu trình","Wash Batch"
+"Cycle Result","Kết quả chu trình","Wash Batch"
+"Data Complete","Dữ liệu đầy đủ","Wash Batch"
+"Data Source","Nguồn dữ liệu","Wash Batch"
+"Employee who completed loading, taken from the card session.","Nhân viên hoàn thành nạp, lấy từ phiên đăng nhập thẻ.","Wash Batch"
+"Equipment {0} is a {1}, not a washer-disinfector or ultrasonic cleaner.","Thiết bị {0} là {1}, không phải máy rửa khử khuẩn hoặc máy rửa siêu âm.",
+"Equipment {0} is {1}.","Thiết bị {0} đang {1}.",
+"Follow-up","Theo dõi tiếp","Wash Batch"
+"Loaded By Scan","Nạp bằng quét mã","Wash Batch"
+"Loading Completed At","Hoàn thành nạp lúc","Wash Batch"
+"Lot","Lô","Wash Batch Chemical"
+"Lot {0} is not a lot of chemical {1}.","Lô {0} không phải lô của hóa chất {1}.",
+"Machine Data","Dữ liệu máy","Wash Batch"
+"Machine Files","Tệp từ máy","Wash Batch"
+"Machine Scanned At Unloading","Máy quét khi dỡ","Wash Batch"
+"Manual Data Confirmed At","Thời điểm xác nhận dữ liệu nhập tay","Wash Batch"
+"Manual Data Confirmed By","Người xác nhận dữ liệu nhập tay","Wash Batch"
+"Needs Review","Cần xem xét","Wash Batch"
+"Nonconformity Pending","Chờ lập NC","Wash Batch"
+"Not a washer","Không phải máy rửa",
+"Parameters, alerts and the result the machine reported: [{parameter_name, unit, value, outside_range}] plus alerts and reported_result.","Tham số, cảnh báo và kết quả máy báo: [{parameter_name, unit, value, outside_range}] cùng alerts và reported_result.","Wash Batch"
+"Photo of the printout or chart of the machine.","Ảnh bản in hoặc biểu đồ của máy.","Wash Batch"
+"Quantity used; filled by the consumption feature (FEAT-042).","Số lượng đã dùng; do tính năng tiêu hao (FEAT-042) điền.","Wash Batch Chemical"
+"R02 who confirmed a pass for a machine without connection or printout.","R02 xác nhận kết quả Đạt cho máy không kết nối và không có bản in.","Wash Batch"
+"Result Note","Ghi chú kết quả","Wash Batch"
+"Result Source","Nguồn kết quả","Wash Batch"
+"Reviewed At","Xem xét lúc","Wash Batch"
+"Reviewer","Người xem xét","Wash Batch"
+"Running","Đang chạy","Wash Batch"
+"Scan the QR code of a washer.","Quét mã QR của máy rửa.",
+"Scan the QR code on the washer.","Quét mã QR trên máy rửa.",
+"Scan the Set ID on the tray or tag.","Quét Set ID trên khay hoặc thẻ.",
+"Set Units","Bộ dụng cụ","Wash Batch"
+"Set already washed","Bộ đã được rửa",
+"Set is in another wash batch","Bộ đang ở lô rửa khác",
+"Set {0} has already passed the wash step in this cycle.","Bộ {0} đã qua bước rửa trong chu trình này.",
+"Set {0} is in wash batch {1}, which is still running.","Bộ {0} đang ở lô rửa {1}, lô này còn đang chạy.",
+"Sets and Chemicals","Bộ và hóa chất","Wash Batch"
+"Take the set to the next step.","Chuyển bộ sang bước kế tiếp.",
+"Ultrasonic","Siêu âm","Wash Batch"
+"Unload Scanned At","Thời điểm quét dỡ","Wash Batch"
+"Unload batch {0} first, or take the set out of the washer.","Dỡ lô {0} trước, hoặc lấy bộ ra khỏi máy rửa.",
+"Use another washer, or call R02 to check the daily test and the inspection.","Dùng máy rửa khác, hoặc gọi R02 kiểm tra test hằng ngày và kiểm định.",
+"Wash Batch","Lô rửa",
+"Wash Batch Chemical","Hóa chất của lô rửa",
+"Wash Batch Set Unit","Bộ dụng cụ của lô rửa",
+"Washer is not ready","Máy rửa chưa sẵn sàng",
+"Ask R10 to add a printer to this station, then print the batch label again.","Nhờ R10 thêm máy in cho trạm này, rồi in lại nhãn của lô.",
+"Ask R10 to fix the label template of the wash batch, then print the label again.","Nhờ R10 sửa mẫu nhãn của lô rửa, rồi in lại nhãn.",
+"Choose a program from the list of this washer.","Chọn một chương trình trong danh sách của máy rửa này.",
+"No printer at this station","Trạm này chưa có máy in",
+"No set can be loaded","Không có bộ nào nạp được",
+"None of the scanned sets can go into a wash batch on {0}.","Không bộ nào trong số đã quét nạp được vào lô rửa trên máy {0}.",
+"Program is not valid","Chương trình không hợp lệ",
+"Program {0} is not an active program of equipment {1}.","Chương trình {0} không phải chương trình đang dùng của thiết bị {1}.",
+"Program {0} needs a lot of chemical {1}.","Chương trình {0} cần chọn một lô hóa chất {1}.",
+"Program {0} uses chemical {1}, not {2}.","Chương trình {0} dùng hóa chất {1}, không phải {2}.",
+"Scan sets that have passed receiving, then complete loading again.","Quét các bộ đã qua tiếp nhận, rồi hoàn thành nạp lại.",
+"Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.","Trạm {0} chưa có máy in đang hoạt động. Lô rửa {1} vẫn được giữ; nhãn đang chờ in.",
+"{0} Wash batch {1} is kept; its label is waiting.","{0} Lô rửa {1} vẫn được giữ; nhãn đang chờ in.",
+"Passed","Đạt","Wash Batch"
+"Failed","Không đạt","Wash Batch"
+"Wash batch not found","Không tìm thấy lô rửa",""
+"Wash batch {0} does not exist.","Lô rửa {0} không tồn tại.",""
+"Scan the QR code on the wash batch label.","Quét mã QR trên nhãn lô rửa.",""
+"Code {0} is not a wash batch code.","Mã {0} không phải mã lô rửa.",""
+"Station {0} cannot unload washer {1}: use a T2 station or a station at the exit door.","Trạm {0} không dỡ được máy {1}: dùng trạm T2 hoặc trạm ở cửa ra của máy.",""
+"Unload the batch at a T2 station or at a station in zone {0}.","Dỡ lô tại trạm T2 hoặc tại trạm thuộc khu {0}.",""
+"Wash batch is closed","Lô rửa đã đóng",""
+"Wash batch {0} is already {1}.","Lô rửa {0} đã {1}.",""
+"Scan the QR code of a running wash batch.","Quét mã QR của lô rửa đang chạy.",""
+"Washer does not match","Máy rửa không khớp",""
+"Washer {0} does not match washer {1} of batch {2}.","Máy {0} không khớp máy {1} của lô {2} — từ chối (BRU-REP-016).",""
+"Scan the QR code of washer {0}.","Quét mã QR của máy {0}.",""
+"Code {0} is not the washer QR code or the code of batch {1}.","Mã {0} không phải QR máy hay mã lô {1}.",""
+"Scan the QR code of washer {0}, then the QR code of batch {1}.","Quét QR máy {0}, rồi QR mã lô {1}.",""
+"Scan both codes","Cần quét đủ hai mã",""
+"Batch {0} needs the washer QR code and the batch QR code.","Lô {0} cần quét QR máy và QR mã lô.",""
+"Result is not valid","Kết quả không hợp lệ",""
+"Choose Pass or Fail for the cycle and the cleaning test.","Chọn Đạt hoặc Không đạt cho chu trình và test làm sạch.",""
+"R02 confirmation required","Cần R02 xác nhận",""
+"This washer has no connection and no printout, so a Pass needs the confirmation of R02.","Máy này không kết nối và không có bản in, nên kết luận Đạt cần R02 xác nhận.",""
+"Ask R02 to sign in at this station and enter the PIN, then record the result again.","Mời R02 đăng nhập tại trạm này và nhập PIN, rồi ghi kết quả lại.",""
+"The result and the cleaning test must each be Pass or Fail.","Kết quả chu trình và test làm sạch phải là Đạt hoặc Không đạt.",""
+"Cycle data is incomplete","Thiếu dữ liệu chu trình",""
+"Wash batch {0} has no complete, confirmed cycle data, so it cannot be closed.","Lô rửa {0} chưa có dữ liệu chu trình đầy đủ và đã xác nhận, nên chưa đóng lô được.",""
+"Enter the cycle data from the washer screen or printout and confirm it, then record the result.","Nhập dữ liệu chu trình theo màn hình hoặc bản in của máy và xác nhận, rồi ghi kết quả.",""
+"cycle data","dữ liệu chu trình",""
+"A batch can pass only when the cleaning test has passed.","Lô chỉ Đạt khi test làm sạch Đạt.",""
+"{0} must be a list of scanned codes.","{0} phải là danh sách mã quét.",""
+"chemicals must be a list of objects with an item and a lot.","chemicals phải là danh sách đối tượng có item và lot.",""
+"values must be a list of objects with a parameter_name and a value.","values phải là danh sách đối tượng có parameter_name và value.",""
+"{0} must be a string.","{0} phải là chuỗi ký tự.",""
+"Loading of washer {0} is not finished","Chưa nạp xong máy {0}",""
+"{0} set(s) are on the list for washer {1}.","Đang có {0} bộ trong danh sách nạp máy {1}.",""
+"Complete loading or cancel it before scanning another washer.","Hoàn thành nạp hoặc Hủy nạp trước khi quét máy khác.",""
+"Scan the washer first","Cần quét QR máy rửa trước",""
+"Code {0} was scanned before a washer QR code.","Mã {0} được quét khi chưa quét QR máy rửa.",""
+"Scan the QR code on the washer, then scan each set.","Quét QR trên máy rửa, rồi quét từng bộ.",""
+"This account cannot work with wash batches at this station.","Tài khoản này không được thao tác lô rửa tại trạm này.",""
+"Washer {0} scanned · {1}","Máy {0} đã quét · {1}",""
+"API connected - automatic data comes with FEAT-024; unload with confirmed manual entry.","Kết nối API — dữ liệu tự động có ở FEAT-024; dỡ lô nhập tay có xác nhận.",""
+"Not connected - unload with confirmed manual entry.","Không kết nối — dỡ lô nhập tay có xác nhận.",""
+"{0} is already on the list","{0} đã có trong danh sách",""
+"Scanned {0} into washer {1} ({2} set(s))","Đã quét {0} vào máy {1} ({2} bộ)",""
+"Removed {0} from the list","Đã bỏ {0} khỏi danh sách",""
+"Loading cancelled; scan a washer QR code to start again.","Đã hủy nạp; quét QR máy rửa để bắt đầu lại.",""
+"washer","máy rửa",""
+"at least 1 set","ít nhất 1 bộ",""
+"wash program","chương trình rửa",""
+"chemical lot","lô hóa chất",""
+"Loading cannot be completed yet","Chưa hoàn thành nạp được",""
+"Scan the washer and the sets, choose the program and the chemical lot.","Quét máy và các bộ, chọn chương trình và lô hóa chất.",""
+"Code {0} is not the washer QR code or a wash batch code.","Mã {0} không phải QR máy hay mã lô rửa.",""
+"Scan the washer QR code, then the batch QR code.","Quét QR máy, rồi QR mã lô.",""
+"Washer {0} has more than one running batch","Máy {0} có nhiều hơn một lô đang chạy",""
+"Washer {0} has no running batch","Máy {0} không có lô đang chạy",""
+"The batch to unload cannot be chosen from the washer QR code alone.","Không xác định được lô cần dỡ chỉ từ QR máy.",""
+"Washer QR code scanned for batch {0}","Đã quét QR máy cho lô {0}",""
+"Batch QR code {0} scanned","Đã quét QR lô {0}",""
+"Scan the batch QR code next.","Quét tiếp QR mã lô.",""
+"Scan the washer QR code next.","Quét tiếp QR máy.",""
+"Scanned washer QR {0} and batch QR {1}","Đã quét QR máy {0} và QR lô {1}",""
+"The result below applies to all {0} set(s) in the batch.","Kết quả dưới đây sẽ áp cho toàn bộ {0} bộ trong lô.",""
+"Manual cycle data saved and confirmed","Đã lưu dữ liệu nhập tay và xác nhận",""
+"Some values are outside the program range: Needs review by R02.","Có giá trị ngoài dải của chương trình: Cần xem xét (R02).",""
+"The data was saved, but the batch cannot be closed yet.","Dữ liệu đã lưu nhưng chưa đóng lô được.",""
+"Complete the missing items, then save again.","Bổ sung các mục còn thiếu rồi lưu lại.",""
+"end time (not before the start time)","giờ kết thúc (không trước giờ bắt đầu)",""
+"photo of the printout or chart","ảnh bản in hoặc biểu đồ",""
+"confirmation tick","tick xác nhận",""
+"Photo attached: {0}","Đã đính ảnh: {0}",""
+"Photo could not be attached","Không đính được ảnh",""
+"The file {0} was not uploaded.","Tệp {0} chưa được tải lên.",""
+"Check the connection and choose the photo again.","Kiểm tra kết nối rồi chọn lại ảnh.",""
+"Choose the result","Chọn kết quả",""
+"Choose Pass or Fail for the cycle and for the cleaning test.","Chọn Đạt hoặc Không đạt cho chu trình và cho test làm sạch.",""
+"Tap the result buttons, then record again.","Chạm nút kết quả rồi ghi lại.",""
+"Confirmation tick is required","Bắt buộc tick xác nhận kết quả với máy",""
+"The result must be confirmed against the washer before it is recorded.","Kết quả phải được xác nhận đúng với máy trước khi ghi.",""
+"Tick the confirmation box, then record the result.","Tick ô xác nhận rồi ghi kết quả.",""
+"R02 PIN is required","Cần PIN của R02",""
+"R02 signs in with the card at this station and enters the 6-digit PIN.","R02 đăng nhập thẻ tại trạm này và nhập PIN 6 số.",""
+"Scan the washer QR code...","Quét QR máy rửa…",""
+"Scan the washer QR code, then the batch QR code...","Quét QR máy rồi QR mã lô…",""
+"Scan each Set ID into the washer... (scan HOAN-THANH-NAP when done)","Quét Set ID từng bộ đưa vào máy… (quét HOAN-THANH-NAP khi xong)",""
+"Wash batch","Lô rửa",""
+"Load batch","Nạp lô",""
+"Unload batch ({0} running)","Dỡ lô ({0} lô đang chạy)",""
+"Wash batches need a network connection; offline work comes with FEAT-009.","Lô rửa cần kết nối mạng; làm việc offline có từ FEAT-009.",""
+"Load washer - scan the washer QR code first, then scan each set","Nạp máy rửa — quét QR máy trước, rồi quét từng bộ",""
+"Only sets that passed T1 (receiving count) and are not in another batch are accepted.","Chỉ nhận bộ đã qua cổng T1 (kiểm đếm tiếp nhận) và chưa ở lô khác.",""
+"This program uses no chemical.","Chương trình này không dùng hóa chất.",""
+"Chemical (FEFO suggestion)","Hóa chất (gợi ý FEFO)",""
+"{0} lot {1} · expires {2} · {3} {4} left","{0} lô {1} · hạn {2} · còn {3} {4}",""
+"No valid lot of chemical {0}","Không có lô hợp lệ của hóa chất {0}",""
+"Every lot of this chemical has expired or is out of stock.","Mọi lô của hóa chất này đã hết hạn hoặc hết tồn.",""
+"Receive a new lot into stock or call R02.","Nhập kho lô mới hoặc gọi R02.",""
+"API connected - automatic data comes with FEAT-024","kết nối API — dữ liệu tự động có ở FEAT-024",""
+"not connected - unload with confirmed manual entry","không kết nối — dỡ lô nhập tay có xác nhận",""
+"Sets scanned into washer {0} ({1}) - the batch code is generated at Complete loading","Bộ đã quét vào máy {0} ({1}) — mã lô sẽ tự sinh khi Hoàn thành nạp",""
+"Complete loading → generate batch code","Hoàn thành nạp → sinh mã lô",""
+"Cancel loading","Hủy nạp",""
+"{0} set(s) were not loaded","{0} bộ không được nạp vào lô",""
+"Take these sets out of the washer and check them.","Lấy các bộ này ra khỏi máy và kiểm tra.",""
+"Batch code generated for {0} set(s)","Đã sinh mã lô cho {0} bộ",""
+"Washer","Máy rửa",""
+"Sets in batch","Bộ trong lô",""
+"QR {0}","QR {0}",""
+"{0} set(s)","{0} bộ",""
+"Batch code kept - check the Station Agent, then print again","Mã lô vẫn giữ — kiểm tra Station Agent rồi In lại",""
+"{0} lot {1}","{0} lô {1}",""
+"Wash batch lookup","Tra cứu lô rửa",""
+"Loaded at","Nạp lúc",""
+"Sets in batch ({0})","Bộ trong lô ({0})",""
+"Cycle data","Dữ liệu chu trình",""
+"No cycle data yet","Chưa có dữ liệu chu trình",""
+"Manual entry, confirmed","Nhập tay có xác nhận",""
+"Manual entry, incomplete","Nhập tay, chưa đủ",""
+"Needs review","Cần xem xét",""
+"{0} - wash again, attempt {1}: scan it into a new batch.","{0} — rửa lại lần {1}: quét vào máy mới.",""
+"None.","Không có.",""
+"Reprocessing queue at T2","Hàng đợi xử lý lại tại T2",""
+"No running wash batch.","Không có lô rửa đang chạy.",""
+"Wash batch · {0} · {1}","Lô rửa · {0} · {1}",""
+"Sets in batch ({0}): {1}","Bộ trong lô ({0}): {1}",""
+"Cycle data: confirmed manual entry","Dữ liệu chu trình: nhập tay có xác nhận",""
+"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)","Chưa có dữ liệu chu trình — cần dữ liệu tự động hoặc nhập tay có xác nhận trước khi kết luận Đạt (BRU-REP-015)",""
+"Running batches - unload: scan the washer QR code, then the batch QR code","Lô đang chạy — dỡ máy: quét QR máy rồi QR mã lô",""
+"Unloading batch {0}","Đang dỡ lô {0}",""
+"Washer QR code","QR máy",""
+"Not scanned","Chưa quét",""
+"Batch QR code","QR mã lô",""
+"Choose another batch","Chọn lô khác",""
+"Manual cycle data for batch {0}","Nhập tay dữ liệu chu trình của lô {0}",""
+"Washer alerts observed","Cảnh báo máy quan sát được",""
+"Yes - describe","Có — ghi rõ",""
+"Cycle result shown by the washer","Kết quả chu trình của máy",""
+"Printout / chart photo","Ảnh bản in / biểu đồ",""
+"required: this washer has a printout","bắt buộc: máy này có bản in",""
+"Photo attached","Đã đính ảnh",""
+"I, {0} {1}, confirm that the values above match the screen/printout of washer {2}.","Tôi, {0} {1}, xác nhận các tham số trên đúng với màn hình/bản in của máy {2}.",""
+"Save manual data and confirm","Lưu dữ liệu nhập tay và xác nhận",""
+"Cycle data of batch {0}: confirmed manual entry","Dữ liệu chu trình của lô {0}: nhập tay có xác nhận",""
+"R02 PIN (washer without connection or printout)","PIN R02 (máy không kết nối, không bản in)",""
+"Record the result for {0} set(s)","Ghi kết quả cho {0} bộ",""
+"Cycle result (applies to every set)","Kết quả chu trình (áp cho mọi bộ)",""
+"Cleaning test","Test làm sạch",""
+"I confirm that the result above matches washer {0} for batch {1}.","Tôi xác nhận kết quả trên đúng với máy {0} cho lô {1}.",""
+"Waiting for assembly","Chờ lắp ráp",""
+"Reprocess (wash again, attempt {0})","Xử lý lại (rửa lại lần {0})",""
+"Recorded Pass for {0} set(s) of batch {1}","Đã ghi Đạt cho {0} bộ của lô {1}",""
+"Recorded Fail for {0} set(s) of batch {1}","Đã ghi Không đạt cho {0} bộ của lô {1}",""
+"Every set goes back to reprocessing.","Mọi bộ về Xử lý lại.",""
+"Marked as needing a nonconformity (automatic NC comes with FEAT-030).","Đã đánh dấu cần tạo NC (NC tự động có ở FEAT-030).",""
+"Next step","Bước tiếp theo",""
+"Chemicals","Hóa chất",""
+"End time","Giờ kết thúc",""
+"Scanned","Đã quét",""
+"Start time","Giờ bắt đầu",""
+"optional","không bắt buộc",""
+"Remove from the list","Bỏ",""
+"Pass","Đạt","Wash Batch"
+"Fail","Không đạt","Wash Batch"
+A Sterile Putaway can only be created by the sterile storage service.,Chứng từ nhập kho vô khuẩn chỉ do dịch vụ kho vô khuẩn tạo.,
+A Sterile Putaway cannot be cancelled; record a new move instead.,Không hủy được chứng từ nhập kho vô khuẩn; hãy ghi một lần chuyển vị trí mới.,
+A deactivated shelf takes no new packs; its code stays valid for packs already on it.,Kệ ngừng dùng không nhận gói mới; mã vẫn hợp lệ với các gói đang nằm trên kệ.,Sterile Location
+A pack with an earlier expiry is available,Còn gói có hạn dùng sớm hơn,
+"Check the sterilization load result, or call R02.","Kiểm tra kết quả mẻ tiệt khuẩn, hoặc gọi R02.",
+Code {0} is not a pack label or a shelf code.,Mã {0} không phải nhãn gói hay mã kệ.,
+Code {0} is not valid here.,Mã {0} không dùng được ở đây.,
+"Device time of the action, in UTC.","Giờ thiết bị lúc thao tác, theo UTC.",Sterile Putaway
+Do not store the pack; send it back to the dirty zone.,Không nhập kho gói này; đưa về khu bẩn.,
+"Enter what is wrong with the pack (torn, wet, opened).","Nhập tình trạng của gói (rách, ướt, đã mở).",
+Expired on {0},Hết hạn ngày {0},
+From Location,Từ vị trí,Sterile Putaway
+From Location is required to move a pack.,Cần có vị trí cũ để chuyển vị trí gói.,
+Location Name is required.,Cần nhập tên vị trí.,
+Location is deactivated,Vị trí đã ngừng dùng,
+Location not found,Không có vị trí này,
+Location {0} does not exist.,Vị trí {0} không tồn tại.,
+Location {0} is deactivated and takes no new packs.,"Vị trí {0} đã ngừng dùng, không nhận gói mới.",
+No reason was entered for the damaged pack {0}.,Chưa nhập lý do cho gói hư hỏng {0}.,
+Not a shelf code,Không phải mã kệ,
+Open the sterile storage screen on a T6 station.,Mở màn kho vô khuẩn trên trạm T6.,
+Pack has expired,Gói đã hết hạn,
+Pack is already on this shelf,Gói đã nằm trên kệ này,
+Pack is not in the sterile store,Gói không ở trong kho vô khuẩn,
+Pack is not released,Gói chưa được giải phóng,
+Pack {0} expired on {1}.,Gói {0} hết hạn ngày {1}.,
+"Pack {0} expires on {1}, earlier than {2}.","Gói {0} hết hạn ngày {1}, sớm hơn {2}.",
+Pack {0} is already on location {1}.,Gói {0} đã ở vị trí {1}.,
+Pack {0} is {1}; only a released pack can be stored.,Gói {0} đang {1}; chỉ nhập kho được gói đã giải phóng.,
+Pack {0} is {1}; only a stored pack can be reported damaged here.,Gói {0} đang {1}; chỉ báo hư hỏng được gói đang trong kho.,
+Putaway,Nhập kho,Sterile Putaway
+"Scan another shelf, or ask R10 to activate this one.","Quét kệ khác, hoặc nhờ R10 bật lại kệ này.",
+"Scan the Cycle ID on the pack label first, then the shelf.","Quét Cycle ID trên nhãn gói trước, rồi quét kệ.",
+"Scan the DataMatrix or Cycle ID on the pack, then the KE- code on the shelf.","Quét DataMatrix hoặc Cycle ID trên gói, rồi quét mã KE- trên kệ.",
+Scan the KE- QR code on the shelf.,Quét mã QR KE- trên kệ.,
+"Scan the QR code on the shelf, or ask R10 to create the location.","Quét mã QR trên kệ, hoặc nhờ R10 tạo vị trí.",
+Scan the new shelf to move the pack.,Quét kệ mới để chuyển vị trí gói.,
+Send the set back to step {0} and complete it before storing the pack.,Đưa bộ về bước {0} và hoàn tất trước khi nhập kho gói.,
+Set is not sterile yet,Bộ chưa vô khuẩn,
+Set {0} has not passed step(s) {1}.,Bộ {0} chưa đạt bước {1}.,
+Set {0} is {1}; only a sterile set can be returned for receipt.,Bộ {0} đang {1}; chỉ bộ vô khuẩn mới chuyển về chờ tiếp nhận được.,
+Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.,Kệ đang chứa gói. Chỉ dịch vụ kho vô khuẩn được đổi.,Pack
+Shelf {0} was scanned before any pack.,Kệ {0} được quét trước khi quét gói.,
+Station of the sterile zone this shelf belongs to.,Trạm của khu vô khuẩn mà kệ này thuộc về.,Sterile Location
+Sterile Location,Vị trí kho vô khuẩn,
+Sterile Putaway,Nhập kho vô khuẩn,
+Storage Location,Vị trí lưu kho,Pack
+Stored At,Thời điểm nhập kho,Sterile Putaway
+Stored By (User),Người nhập kho (tài khoản),Sterile Putaway
+"Take {0} first, or enter a note if the department asked for this Set ID.","Lấy {0} trước, hoặc ghi chú nếu khoa yêu cầu đúng Set ID này.",
+The pack is already on location {0}.,Gói đã ở vị trí {0}.,
+Zone Station {0} is not in the sterile zone.,Trạm {0} không thuộc khu vô khuẩn.,
+{0} is not a {1} sterile storage station.,{0} không phải trạm kho vô khuẩn {1}.,
+Confirm: pack is no longer valid,Xác nhận: gói hết hiệu lực,
+Cycle ID,Cycle ID,
+Days left,Số ngày còn lại,
+Earliest use-by,Hạn dùng sớm nhất,
+No packs are waiting to return.,Không có gói nào chờ đưa về khu bẩn.,
+No packs expire in the next 7 days.,Không có gói nào hết hạn trong 7 ngày tới.,
+No packs in the sterile store.,Kho vô khuẩn chưa có gói nào.,
+Pack is on {0}. Scan another shelf to move it.,Gói đang ở {0}. Quét kệ khác để chuyển vị trí.,
+Pack {0} is no longer valid,Gói {0} đã hết hiệu lực,
+Pack {0} moved to {1},Đã chuyển gói {0} sang {1},
+Pack {0} stored on {1},Đã nhập kho gói {0} vào {1},
+Packs,Số gói,
+Packs expiring within 7 days,Gói hết hạn trong 7 ngày tới,
+Packs to return to the dirty zone,Gói cần đưa về khu bẩn,
+Report torn / wet pack,Báo gói rách / ướt,
+Retry when the connection returns.,Thử lại khi có mạng.,
+Scan the Cycle ID of the pack to store.,Quét Cycle ID của gói cần nhập kho.,
+Scan the Cycle ID of the pack...,Quét Cycle ID của gói...,
+Scan the next pack.,Quét gói tiếp theo.,
+Scan the shelf code (KE-) to store the pack.,Quét mã kệ (KE-) để nhập kho gói.,
+Scan the shelf code (KE-)...,Quét mã kệ (KE-)...,
+Sterile stock by set type,Tồn kho vô khuẩn theo loại bộ,
+Stock by location,Tồn theo vị trí,
+Storage Location,Vị trí lưu kho,
+Storing packs needs a network connection.,Nhập kho vô khuẩn cần có kết nối mạng.,
+Take the pack to the dirty zone.,Đưa gói về khu bẩn.,
+The set is waiting to go back to the dirty zone.,Bộ đang chờ đưa về khu bẩn.,
+This account cannot store packs at this station.,Tài khoản này không được nhập kho gói tại trạm này.,
+Use-by date {0},Hạn dùng {0},
+Void Reason,Lý do hết hiệu lực,
+What is wrong with the pack?,Gói bị làm sao?,
 Par Level,Cơ số,
 Par Level History,Lịch sử cơ số,
 Kind,Loại cơ số,

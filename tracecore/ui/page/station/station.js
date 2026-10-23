@@ -1,8 +1,10 @@
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
-// Trạm bước T4 giao cho T4Packing (public/js/station_t4.js, nối sau file này qua hook page_js).
-/* global T4Packing */
+// Trạm bước T4 giao cho T4Packing (public/js/station_t4.js), bước T6 giao cho T6Storage (public/js/station_t6.js),
+// bước T2 giao cho T2Wash (public/js/station_t2.js); các file này nối sau file này qua hook page_js.
+// Màn riêng của bước nằm ở this.screen.
+/* global T4Packing, T6Storage, T2Wash */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -29,6 +31,7 @@ const STATUS_BADGE = {
 	Reprocess: "o",
 	Sterile: "g",
 	"At Department": "",
+	"Awaiting Receipt": "o",
 	"End of Life": "r",
 	Disposed: "x",
 };
@@ -166,7 +169,7 @@ class TraceCoreStation {
 	focus(force = false) {
 		if (!this.ownsPage()) return;
 		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
-		if (this.t4 && this.t4.dialogOpen) return;
+		if (this.screen && this.screen.dialogOpen) return;
 		// Preserve keyboard navigation and deliberate focus on every interactive control.
 		if (
 			!force &&
@@ -244,7 +247,7 @@ class TraceCoreStation {
 			}
 			return;
 		}
-		if (this.t4 && this.t4.onAction(action, button)) return;
+		if (this.screen && this.screen.onAction(action, button)) return;
 		if (action === "retry") {
 			this.manualOffline = false;
 			if (!navigator.onLine) return this.setOffline(true);
@@ -314,7 +317,7 @@ class TraceCoreStation {
 		this.lastRaw = null;
 		this.input.value = "";
 		this.cardInput.value = "";
-		if (this.t4) this.t4.clearSession();
+		if (this.screen && this.screen.clearSession) this.screen.clearSession();
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
@@ -533,13 +536,18 @@ class TraceCoreStation {
 				});
 			return;
 		}
-		if (this.t4) return this.t4.setOffline(offline);
+		if (this.screen) return this.screen.setOffline(offline);
 		if (offline) this.renderOffline();
 	}
 
 	async rpc(method, args, idempotencyKey, candidate = null) {
+		// RPC của màn trạm cần token phiên thẻ nhân viên (FEAT-003): T4 pack/cuộn nhãn, T6 putaway (FEAT-025),
+		// T2 lô rửa (FEAT-021)
 		const protectedCall =
-			method.startsWith("tracecore.v1.pack.") || method === "tracecore.v1.printer.set_roll";
+			method.startsWith("tracecore.v1.pack.") ||
+			method.startsWith("tracecore.v1.putaway.") ||
+			method.startsWith("tracecore.v1.wash.") ||
+			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =
 			!candidate &&
@@ -651,13 +659,15 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
-		if (
-			this.session &&
-			station.step === "T4" &&
-			!this.t4 &&
-			typeof T4Packing !== "undefined"
-		) {
-			this.t4 = new T4Packing(this);
+		// màn riêng của bước (this.screen): T4 đóng gói, T6 kho vô khuẩn, T2 lô rửa; bước khác dùng tra cứu Set ID chung
+		if (this.session && !this.screen) {
+			if (station.step === "T4" && typeof T4Packing !== "undefined") {
+				this.screen = this.t4 = new T4Packing(this);
+			} else if (station.step === "T6" && typeof T6Storage !== "undefined") {
+				this.screen = new T6Storage(this);
+			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
+				this.screen = new T2Wash(this);
+			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
@@ -669,7 +679,7 @@ class TraceCoreStation {
 
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
-		if (this.t4) return this.t4.scan(raw);
+		if (this.screen) return this.screen.scan(raw);
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.focus();
@@ -737,7 +747,7 @@ class TraceCoreStation {
 
 	renderEmpty() {
 		if (!this.session) return this.renderLogin();
-		if (this.t4) return this.t4.show();
+		if (this.screen) return this.screen.show();
 		this.setState(
 			"empty",
 			`<p class="tc-empty">${esc(__("Scan the Set ID on the set tag."))}</p>`

@@ -383,6 +383,94 @@ def make_cycle(set_unit, passed=("T1", "T2", "T3")):
 	return cycle_no
 
 
+def make_wash_ready_set(**kwargs):
+	"""Bộ đã qua cổng T1 trong chu trình mới (đủ điều kiện nạp lô rửa T2), thay cho Dirty Receipt của FEAT-019."""
+	unit = make_set_unit(**kwargs)
+	make_cycle(unit, passed=("T1",))
+	return unit.reload()
+
+
+def make_wash_machine(**kwargs):
+	"""Máy rửa khử khuẩn một cửa ở khu bẩn (serial duy nhất mỗi lần gọi); `kwargs` ghi đè trường Equipment."""
+	values = {
+		"name": "Máy rửa test",
+		"equipment_type": "Washer-Disinfector",
+		"serial": "WM-" + frappe.generate_hash(length=8),
+		"zone_in": "ZONE-DIRTY",
+		"zone_out": None,
+		**kwargs,
+	}
+	return make_equipment(**values)
+
+
+def make_wash_program(equipment, chemical=None, **kwargs):
+	"""Chương trình rửa đầy đủ định mức cho máy `equipment`, mã duy nhất mỗi lần gọi; `chemical` là Item hóa chất."""
+	values = {
+		"code": "MR-" + frappe.generate_hash(length=6).upper(),
+		"minutes": 52,
+		"kwh": 3,
+		"water": 80,
+		"chemical": chemical,
+		**kwargs,
+	}
+	return make_program(equipment, **values)
+
+
+def make_chemical_batch(item_code="HC-ENZ-01", batch_id=None, expiry_days=60, qty=10):
+	"""Lô hóa chất rửa (Item nhóm Chemical) hạn `expiry_days` ngày kể từ hôm nay, còn tồn `qty`.
+
+	`qty = 0` chỉ tạo Batch không có tồn. Lô đã quá hạn (`expiry_days < 0`) cũng chỉ tạo Batch: phiếu nhập kho chặn
+	lô quá hạn, mà dữ liệu cũ vẫn có thể còn trong sổ.
+	"""
+	make_item(item_code, "Chemical", has_batch_no=1, apply_rules=True)
+	batch_id = batch_id or f"{item_code}-{frappe.generate_hash(length=6)}"
+	expiry = add_days(today(), expiry_days)
+	if qty <= 0 or expiry_days < 0:
+		return make_batch(item_code, batch_id, expiry)
+	make_receipt(
+		[{"item_code": item_code, "batch_id": batch_id, "expiry_date": expiry, "qty": qty, "rate": 1000}],
+		supplier=make_supplier(),
+		document_no="DOC-" + frappe.generate_hash(length=8),
+	)
+	return frappe.get_doc("Batch", batch_id)
+
+
+def make_employee(card=None):
+	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User)."""
+	return frappe.get_doc(
+		{
+			"doctype": "Employee",
+			"first_name": "Wash Test",
+			"gender": "Male",
+			"date_of_birth": "1990-01-01",
+			"date_of_joining": today(),
+			"company": "_Test Company",
+			"status": "Active",
+			"tc_card_id": card or "WT-" + frappe.generate_hash(length=10),
+			"tc_card_enabled": 1,
+		}
+	).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
+
+
+def make_wash_batch(equipment, program, sets, operator="HR-EMP-TEST", **fields):
+	"""Wash Batch `Running` dựng thẳng (không qua dịch vụ nạp) để test quy tắc đọc; operator là mã giả, không kiểm link."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Wash Batch",
+			"batch_type": "Machine",
+			"equipment": _ref_name(equipment),
+			"program": _ref_name(program),
+			"operator": operator,
+			"started_at": now_datetime(),
+			"set_units": [{"set_unit": _ref_name(unit)} for unit in sets],
+			**fields,
+		}
+	)
+	doc.flags.tc_washing = True
+	doc.flags.ignore_links = True
+	return doc.insert(ignore_permissions=True)
+
+
 ITEM_GROUP_ROOT = "All Item Groups"
 ITEM_UOM = "Nos"
 
@@ -808,6 +896,45 @@ def make_pack(set_unit, cycle_id=None, submit=True, **fields):
 	if submit:
 		doc.submit()
 	return doc
+
+
+T6_STATION = "TR-006"
+ALL_GATES = ("T1", "T2", "T3", "T4", "T5")
+
+
+def make_sterile_location(location_name="Kệ test", zone_station=T6_STATION, **fields):
+	"""Kệ kho vô khuẩn `KE-####` thuộc trạm T6 (FEAT-025)."""
+	return frappe.get_doc(
+		{
+			"doctype": "Sterile Location",
+			"location_name": location_name,
+			"zone_station": zone_station,
+			**fields,
+		}
+	).insert()
+
+
+def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_type=None, **fields):
+	"""Gói đã giải phóng sẵn sàng nhập kho T6, thay cho luồng T5b (FEAT-023, quyết định D2 của FEAT-025).
+
+	Bộ mới (hoặc cùng loại `set_type`) đi qua các cổng `passed` bằng `step_gate` (đủ năm cổng = Vô khuẩn); Pack
+	ghi sổ ở trạng thái `status` (mặc định Released), hạn `today() + expiry_days` (âm = đã quá hạn). `fields` ghi
+	đè trường Pack. Trả Pack.
+	"""
+	set_unit = make_set_unit(set_type)
+	make_cycle(set_unit, passed=passed)
+	cycle_no = frappe.db.get_value("Set Unit", set_unit.name, "current_cycle_no")
+	pack = make_pack(
+		set_unit,
+		status=status,
+		cycle_no=cycle_no,
+		expiry=add_days(today(), expiry_days),
+		**fields,
+	)
+	if not code_registry.is_issued(pack.name):  # như packing.generate: Cycle ID nằm trong Code Registry
+		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
+	step_gate.bind_cycle(set_unit.name, pack.name, None)
+	return pack
 
 
 def make_bom_set_type(type_code, lines, caps=None):

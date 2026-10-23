@@ -4,7 +4,7 @@ Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi
 TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
 và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
 TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py),
-TC_E2E_SETTYPE_* (test_desk_set_type.py).
+TC_E2E_SETTYPE_* (test_desk_set_type.py), TC_E2E_T6_* (test_station_t6.py).
 
 TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
 (vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
@@ -109,6 +109,43 @@ def t4_page(page):
 	page.locator("#tc-card-input").fill(card)
 	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
+	return page
+
+
+# --- T2 (SCR-06 lô rửa, FEAT-021): user trạm TR-002 và dữ liệu demo `devdata.ensure_t2_demo` ---
+
+T2_KEYS = (
+	"machine",
+	"machine_two_door",
+	"machine_locked",
+	"machine_connected",
+	"program",
+	"sets",
+	"set_no_t1",
+	"set_redo",
+	"chemical_lot_ok",
+	"chemical_lot_expired",
+	"batch_running",
+)
+
+
+@pytest.fixture
+def t2_demo():
+	"""Mã demo T2 từ scripts/e2e_prepare.sh (TC_E2E_T2_MACHINE, ...); ``sets`` là danh sách 3 Set ID."""
+	demo = {key: require_env(f"TC_E2E_T2_{key.upper()}") for key in T2_KEYS}
+	demo["sets"] = demo["sets"].split(",")
+	return demo
+
+
+@pytest.fixture
+def t2_page(page):
+	card = require_env("TC_E2E_T2_CARD_ID")
+	desk_login(page, "TC_E2E_T2")
+	station = os.environ.get("TC_E2E_T2_STATION", "TR-002")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result[data-state='empty'] .tc-t2").wait_for(timeout=30000)
 	return page
 
 
@@ -306,4 +343,27 @@ def settype_demo():
 def settype_page(page):
 	"""User Desk TC R02 (khai báo loại bộ, sửa BOM, ảnh bộ, phiếu kiểm đếm); hoàn tất OTP như các user Desk khác."""
 	desk_login(page, "TC_E2E_SETTYPE")
+	return page
+
+
+# --- T6 (SCR-11 kho vô khuẩn, FEAT-025): user trạm TR-006 và dữ liệu demo `devdata.ensure_t6_demo` ---
+
+T6_KEYS = ("location", "location_2", "pack_released", "pack_not_released", "pack_stored", "pack_expiring")
+
+
+@pytest.fixture
+def t6_demo():
+	"""Mã demo T6 từ scripts/e2e_prepare.sh (TC_E2E_T6_LOCATION, ..._PACK_RELEASED...)."""
+	return {key: require_env(f"TC_E2E_T6_{key.upper()}") for key in T6_KEYS}
+
+
+@pytest.fixture
+def t6_page(page):
+	card = require_env("TC_E2E_T6_CARD_ID")
+	desk_login(page, "TC_E2E_T6")
+	station = os.environ.get("TC_E2E_T6_STATION", "TR-006")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result .tc-t6").wait_for(timeout=30000)  # tồn kho đã tải xong (overview)
 	return page
