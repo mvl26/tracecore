@@ -33,7 +33,7 @@
 
 ## Quyết định
 
-`[Cần duyệt]` = tài liệu thiếu/mâu thuẫn, chọn phương án tạm và **chờ người dùng/chủ đầu tư duyệt**; `[Xác nhận]` = dev lead xác nhận. Ghi thành **Amendment A-18** (A-13..A-16 đã cấp cho FEAT-016/011/019/020, A-17 để cho FEAT-022 đang làm song song).
+`[Cần duyệt]` = tài liệu thiếu/mâu thuẫn, chọn phương án tạm và **chờ người dùng/chủ đầu tư duyệt**; `[Xác nhận]` = dev lead xác nhận. Ghi thành **Amendment A-18** (bảng đã chốt: A-13 FEAT-016, A-14 FEAT-011, A-15 FEAT-019, A-16 FEAT-022, A-17 FEAT-026).
 
 | # | Loại | Quyết định | Phương án khác | Căn cứ |
 | :- | :- | :- | :- | :- |
@@ -144,3 +144,9 @@
 - G3: email/SMS, thông báo realtime cho T4 khi duyệt, SCR-42 → FEAT-010.
 - G4: widget dashboard SCR-32 → FEAT-006; báo cáo dự báo thay thế → FEAT-007 (dùng `v1.par.check`).
 - G5: thanh lý bộ End of Life → Disposed (FEAT-016 G5).
+
+## Phối hợp với các nhánh FEAT khác (người dùng đã duyệt)
+
+- Thứ tự merge: FEAT-016/011/019/020, rồi 022, 026, **032 cuối**; rebase lên `develop` mới nhất và chạy lại test theo `--module` trước khi mở PR. Conflict ở `step_gate.py`, `test_step_gate.py`, `hooks.py`, `errors.py`, `architecture.md`, `rtm.md`, `par/`: giữ phần của cả hai bên (FEAT-026 thêm `par/stock.py`, hook `tracecore_issue_par_check`).
+- **Duyệt tại T4 (WF-08):** dùng approver proof của FEAT-019 (`create_approver_proof(token, card_id, pin, role="TC R01")`, `consume_approver_proof(session, proof, role="TC R01")`), KHÔNG dùng `verify_card_pin` của FEAT-026. Làm sau khi 019 lên `develop`: thêm `TC R01` vào `APPROVER_ROLES`, `APPROVER_NOT_ALLOWED` cho role khác R02 (giữ `R02_CONFIRM_REQUIRED` cho R02). Hiện tại duyệt chỉ trên Desk (SCR-31) bằng PIN Employee của user đăng nhập (Q7).
+- `end_of_life`/`reopen_after_override` đi qua `_save_lifecycle` (hook `tracecore_after_set_status` của 019 tự phát). Khi rebase: chặn Hết vòng đời cả `step_gate.receive` (T1) và thêm test.
