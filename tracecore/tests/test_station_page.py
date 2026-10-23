@@ -195,6 +195,9 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn(
 			'dataset.surface = query.matches ? "PDA" : "STN"', screen
 		)  # SCR-35: cùng màn, surface PDA
+		# giờ trên form theo múi giờ hệ thống, không theo đồng hồ trình duyệt (runner UTC lệch 7 giờ so với server)
+		self.assertNotIn("getHours", screen)
+		self.assertIn("frappe.boot.time_zone.system", screen)
 
 	def test_station_page_includes_t6_script(self):
 		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4

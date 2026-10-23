@@ -31,12 +31,31 @@ function t5LocalInput(value) {
 	return m ? `${m[1]}T${m[2]}` : "";
 }
 
-function t5NowInput(date = new Date()) {
-	const pad = (n) => String(n).padStart(2, "0");
+function t5SystemTimeZone() {
+	// giờ trên form là giờ hệ thống (Asia/Ho_Chi_Minh), không theo múi giờ của trình duyệt: server coi chuỗi không có
+	// offset là giờ hệ thống, và giờ bắt đầu của lô cũng là giờ hệ thống
 	return (
-		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-		`T${pad(date.getHours())}:${pad(date.getMinutes())}`
+		(frappe.boot && frappe.boot.time_zone && frappe.boot.time_zone.system) ||
+		"Asia/Ho_Chi_Minh"
 	);
+}
+
+function t5NowInput(date = new Date()) {
+	const parts = {};
+	new Intl.DateTimeFormat("en-CA", {
+		timeZone: t5SystemTimeZone(),
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hourCycle: "h23",
+	})
+		.formatToParts(date)
+		.forEach((part) => {
+			parts[part.type] = part.value;
+		});
+	return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
 function t5Disabled(flag) {
