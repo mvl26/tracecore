@@ -415,6 +415,37 @@ class TestAccount(IsolatedTestCase):
 			with self.assertRaises(frappe.PermissionError):
 				self.account.reset_password(self.user, NEW_PASSWORD)
 
+	def test_test_runner_lets_administrator_create_fixture_users_but_not_reset(self):
+		# Frappe tạo test record User bằng Administrator (make_test_records) khi bench run-tests --app
+		frappe.db.delete("Has Role", {"parent": "Administrator", "role": "TC R10"})
+		frappe.set_user("Administrator")
+		with patch.dict(frappe.local.flags, {"in_test": True, "in_install": False}):
+			fixture = frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": "runner-fixture@example.test",
+					"first_name": "runner",
+					"send_welcome_email": 0,
+				}
+			).insert(ignore_permissions=True)
+			self.assertTrue(frappe.db.exists("User", fixture.name))
+			with self.assertRaises(frappe.PermissionError):
+				self.account.reset_password(self.user, NEW_PASSWORD)
+
+	def test_outside_test_and_install_administrator_cannot_create_users(self):
+		frappe.db.delete("Has Role", {"parent": "Administrator", "role": "TC R10"})
+		frappe.set_user("Administrator")
+		with patch.dict(frappe.local.flags, {"in_test": False, "in_install": False}):
+			with self.assertRaises(frappe.PermissionError):
+				frappe.get_doc(
+					{
+						"doctype": "User",
+						"email": "production-forbidden@example.test",
+						"first_name": "forbidden",
+						"send_welcome_email": 0,
+					}
+				).insert(ignore_permissions=True)
+
 	def test_session_rechecks_card_status_link_and_user_enablement(self):
 		session = self.make_session()
 		for doctype, name, field, value, original in (

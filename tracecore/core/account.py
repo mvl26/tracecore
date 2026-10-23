@@ -26,7 +26,13 @@ def _has_role(role, user=None):
 
 
 def require_r10(install_creation=False):
-	if install_creation and frappe.flags.in_install and frappe.session.user == "Administrator":
+	# Cài đặt, và `bench run-tests`: Frappe/ERPNext tạo test record User và chạy setup wizard bằng Administrator trước
+	# khi có R10 nào. Cờ in_test chỉ bật trong test runner nên production không bị nới (chỉ tạo mới, không đặt lại/tắt).
+	if (
+		install_creation
+		and (frappe.flags.in_install or frappe.flags.in_test)
+		and frappe.session.user == "Administrator"
+	):
 		return
 	if not _has_role("TC R10"):
 		frappe.throw(_("Only R10 can create or disable accounts."), frappe.PermissionError)
