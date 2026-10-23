@@ -342,7 +342,7 @@ override_whitelisted_methods = {
 # Testing
 # -------
 
-# before_tests = "tracecore.install.before_tests"
+before_tests = "tracecore.setup.install.before_tests"
 
 # Overriding Methods
 # ------------------------------
