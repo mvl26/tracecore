@@ -61,9 +61,16 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025) và T2 lô rửa (SCR-06, FEAT-021):
-# Frappe nối các file này sau station.js trong script của Page station
-page_js = {"station": ["public/js/station_t4.js", "public/js/station_t6.js", "public/js/station_t2.js"]}
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021) và T7 cấp phát
+# (SCR-12/SCR-36, FEAT-026): Frappe nối các file này sau station.js trong script của Page station
+page_js = {
+	"station": [
+		"public/js/station_t4.js",
+		"public/js/station_t6.js",
+		"public/js/station_t2.js",
+		"public/js/station_t7.js",
+	]
+}
 
 # include js in doctype views
 # Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
@@ -101,7 +108,13 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # add methods and filters to jinja environment
 # Print Format "TC Count Sheet" (FEAT-015 S9) gọi tc_count_sheet_context(doc.name) khi in từ Desk. Chỉ trỏ tới MỘT hàm
 # (không cả module) để không đưa hàm khác của count_sheet vào môi trường Jinja chung của site.
-jinja = {"methods": ["tracecore.instrument.count_sheet.tc_count_sheet_context"]}
+jinja = {
+	"methods": [
+		"tracecore.instrument.count_sheet.tc_count_sheet_context",
+		# Print Format "TC Issue Note" (FEAT-026 C10): phiếu cấp phát T7
+		"tracecore.ui.issue_print.tc_issue_note_context",
+	]
+}
 
 # Installation
 # ------------
@@ -222,6 +235,8 @@ doc_events = {
 	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
 	"Sterile Location": dict(_AUDIT_EVENTS),
 	"Sterile Putaway": dict(_AUDIT_EVENTS),
+	# phiếu cấp phát T7 (FEAT-026): nháp đổi danh sách gói/người nhận, ghi sổ khi xác nhận; không xóa
+	"Issue Note": dict(_AUDIT_EVENTS),
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
@@ -292,6 +307,9 @@ tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_vers
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 (FEAT-026, A-17 C5) gọi khi cấp phát T7: (ctx {department, set_type, stock, adding}) -> dict, so tồn khoa + số
+# gói cấp với cơ số khoa (Par Level Department Stock); không hàm nào trả dict → coi như khoa chưa cấu hình cơ số
+tracecore_issue_par_check = ["tracecore.par.stock.issue_par"]
 
 # Scheduled Tasks
 # ---------------

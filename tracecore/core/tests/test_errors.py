@@ -58,6 +58,9 @@ class TestErrors(FrappeTestCase):
 				"BATCH_EMPTY",
 				"DATA_INCOMPLETE",
 				"RESULT_INVALID",
+				# FEAT-026 A-17: cấp phát T7
+				"RECIPIENT_INVALID",
+				"SIGNATURE_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -70,6 +73,8 @@ class TestErrors(FrappeTestCase):
 				"BOM_VERSION_NOT_FOUND",
 				"WASH_BATCH_NOT_FOUND",
 				"LOCATION_NOT_FOUND",
+				"ISSUE_NOT_FOUND",
+				"DEPARTMENT_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
@@ -106,6 +111,14 @@ class TestErrors(FrappeTestCase):
 				"BATCH_NOT_RUNNING",
 				"EQUIPMENT_MISMATCH",
 				"R02_CONFIRM_REQUIRED",
+				# FEAT-026 A-17: cấp phát T7
+				"PACK_IN_OTHER_ISSUE",
+				"FEFO_NOTE_REQUIRED",
+				"RECIPIENT_DEPT_MISMATCH",
+				"ISSUE_NOT_DRAFT",
+				"ISSUE_EMPTY",
+				"ISSUE_NOT_SIGNED",
+				"PAR_APPROVAL_REQUIRED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

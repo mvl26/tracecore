@@ -321,3 +321,21 @@ def return_to_receipt(set_unit):
 			)
 		)
 	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)
+
+
+def issue_to_department(set_unit, station):
+	"""Cấp phát T7 (FEAT-026 C3): bộ Vô khuẩn sang Tại khoa, ghi trạm cấp; giữ Cycle ID vì gói còn dùng ở T8.
+
+	Chỉ bộ đang Vô khuẩn; trạng thái khác → lỗi, không ghi gì.
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status != "Sterile":
+		frappe.throw(
+			_("Set {0} is {1}; only a sterile set can be issued to a department.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	fields = {"status": "At Department"}
+	if station:
+		fields["current_station"] = station
+	_save_lifecycle(unit, **fields)

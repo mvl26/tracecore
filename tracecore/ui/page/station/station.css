@@ -978,3 +978,70 @@ body.tc-kiosk .layout-main-section {
 	width: var(--tc-photo);
 	height: var(--tc-photo);
 }
+
+/* ---- Màn T7 cấp phát (SCR-12 kiosk, SCR-36 PDA; public/js/station_t7.js); dùng lại khối, bảng, nút của T6 ---- */
+
+.tc-t7 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t7 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t7 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t7 .tc-t6-block {
+	margin: 0;
+}
+
+.tc-t7-depts {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--tc-label-w), 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-t7-depts .tc-btn {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+.tc-t7-dialog {
+	margin-top: var(--tc-sp-3);
+	padding: var(--tc-sp-3);
+	background: var(--tc-warn-tint);
+	border: var(--tc-bw-thick) solid var(--tc-warn);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-t7-dialog h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+}
+
+.tc-t7-pad {
+	display: block;
+	width: 100%;
+	height: var(--tc-photo-big);
+	background: var(--tc-card);
+	border: var(--tc-bw-thick) dashed var(--tc-border-strong);
+	border-radius: var(--tc-r-md);
+	touch-action: none;
+}
+
+/* PDA (SCR-36, 412 px): bảng cuộn ngang trong khối, nút dàn đủ hàng */
+@media (max-width: 480px) {
+	.tc-t7 .tc-t6-block {
+		overflow-x: auto;
+	}
+
+	.tc-t7 .tc-actions .tc-btn {
+		flex: 1 1 100%;
+	}
+}

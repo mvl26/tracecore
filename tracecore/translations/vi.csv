@@ -2090,3 +2090,149 @@ Cannot load workspaces,Không tải được không gian làm việc,
 "Check your connection and account permissions, then try again.",Kiểm tra kết nối mạng và quyền tài khoản rồi thử lại.,
 Try again,Thử lại,
 Offline,Mất kết nối,TraceCore Launcher
+A pack was scanned before any department was chosen.,Đã quét một gói khi chưa chọn khoa.
+An Issue Note can only be confirmed by the issuing service.,Phiếu cấp phát chỉ được xác nhận qua dịch vụ cấp phát.
+An Issue Note can only be created and changed by the issuing service.,Phiếu cấp phát chỉ được tạo và sửa qua dịch vụ cấp phát.
+An Issue Note cannot be cancelled; return the packs instead.,Phiếu cấp phát không hủy được; hãy hoàn trả gói.
+Approve and issue,Duyệt và cấp phát
+Approved At,Duyệt lúc,Issue Note
+Ask R02 to scan the card and enter the PIN here.,Nhờ R02 quét thẻ và nhập PIN tại đây.
+"Ask R02 to scan the card and enter the PIN to approve, or remove packs.","Nhờ R02 quét thẻ và nhập PIN để duyệt, hoặc bỏ bớt gói."
+"Ask the recipient for an active employee card, or call R02.","Yêu cầu người nhận dùng thẻ nhân viên đang hoạt động, hoặc gọi R02."
+Ask the recipient to scan the employee card and sign.,Yêu cầu người nhận quét thẻ nhân viên và ký.
+"Ask the recipient to sign in the box, then confirm.","Yêu cầu người nhận ký vào khung, rồi xác nhận."
+Back to packs,Quay lại danh sách gói
+Change department,Đổi khoa
+"Check the set status, or call R02.","Kiểm tra trạng thái bộ, hoặc gọi R02."
+Choose the department again from the list.,Chọn lại khoa trong danh sách.
+Choose the department again to open a new issue note.,Chọn lại khoa để mở phiếu cấp phát mới.
+Choose the department first,Chọn khoa trước
+Choose the department that receives the packs,Chọn khoa nhận gói
+"Choose the department, then scan the packs...","Chọn khoa, rồi quét các gói..."
+Clear the signature box and ask the recipient to sign again.,Xóa khung chữ ký và yêu cầu người nhận ký lại.
+Confirm and print,Xác nhận và in phiếu
+Confirm signature,Xác nhận chữ ký
+Continue with this recipient,Tiếp tục với người nhận này
+Department Par Level,Cơ số khoa,Issue Note
+Department not found,Không tìm thấy khoa
+Department par level exceeded,Vượt cơ số tồn khoa
+Department stock and par level,Tồn khoa và cơ số
+Department stock and par level check per set type at the time of issue.,Tồn khoa và kết quả kiểm cơ số theo loại bộ tại thời điểm cấp phát.,Issue Note
+Department {0} does not exist.,Khoa {0} không tồn tại.
+"Device time of the confirmation, in UTC.","Giờ thiết bị lúc xác nhận, theo UTC.",Issue Note
+Do not issue the pack; send it back to the dirty zone.,Không cấp phát gói này; đưa về khu bẩn.
+Employee card,Thẻ nhân viên
+"Enter the reason to continue, or ask a member of {0} to receive.","Nhập lý do để tiếp tục, hoặc nhờ nhân viên khoa {0} nhận."
+FEFO Note,Ghi chú FEFO,Issue Note Pack
+FEFO note,Ghi chú FEFO
+In department,Tại khoa
+In sterile store,Trong kho vô khuẩn
+Issue Note,Phiếu cấp phát
+Issue Note Pack,Gói trong phiếu cấp phát
+Issue note confirmed.,Phiếu cấp phát đã xác nhận.
+Issue note is already confirmed,Phiếu cấp phát đã được xác nhận
+Issue note is not signed,Phiếu cấp phát chưa được ký
+Issue note not found,Không tìm thấy phiếu cấp phát
+Issue note {0} confirmed,Phiếu cấp phát {0} đã xác nhận
+Issue note {0} does not exist.,Phiếu cấp phát {0} không tồn tại.
+Issue note {0} has been confirmed and cannot change.,Phiếu cấp phát {0} đã xác nhận và không sửa được.
+Issue note {0} has no packs yet.,Phiếu cấp phát {0} chưa có gói nào.
+Issue this pack with note,Cấp gói này kèm ghi chú
+"Issue {0} instead, or enter a note if the department asked for this Set ID.","Hãy cấp {0}, hoặc nhập ghi chú nếu khoa yêu cầu đúng Set ID này."
+Issued At,Cấp phát lúc,Issue Note
+Issued By (User),Người cấp (tài khoản),Issue Note
+Issued By,Người cấp,Issue Note
+Issuing packs needs a network connection.,Cấp phát gói cần có kết nối mạng.
+Max,Tối đa
+Min,Tối thiểu
+Move the pack to this issue note,Chuyển gói sang phiếu này
+"Move the pack to this issue note, or remove it from {0}.","Chuyển gói sang phiếu này, hoặc bỏ gói khỏi {0}."
+New issue note,Phiếu cấp phát mới
+Next: the recipient scans the employee card and signs.,Tiếp theo: người nhận quét thẻ nhân viên và ký.
+No department is available to issue to.,Chưa có khoa nào để cấp phát.
+No packs on the issue note,Phiếu cấp phát chưa có gói
+No par level set,Chưa đặt cơ số
+Nothing was drawn in the signature box.,Chưa có nét nào trong khung chữ ký.
+Open the issuing screen on a T7 station.,Mở màn cấp phát trên trạm T7.
+Over maximum,Vượt cơ số tối đa
+"Over maximum, allowed","Vượt tối đa, được phép"
+Over-par Approved By,R02 duyệt vượt cơ số,Issue Note
+Pack is on another issue note,Gói đang ở phiếu cấp phát khác
+Pack {0} is already on draft issue note {1}.,Gói {0} đang nằm trên phiếu nháp {1}.
+Pack {0} is {1}; only a pack in the sterile store can be issued.,Gói {0} đang ở trạng thái {1}; chỉ cấp phát được gói trong kho vô khuẩn.
+Packs on this issue note ({0}),Gói trên phiếu ({0})
+Par Level Check,Kết quả kiểm cơ số,Issue Note
+Print issue note,In phiếu cấp phát
+"Print the issue note, then start the next one.","In phiếu cấp phát, rồi làm phiếu kế tiếp."
+R02 PIN,PIN của R02
+R02 approval,R02 duyệt
+R02 approves,R02 duyệt
+R02 employee card,Thẻ nhân viên R02
+R02 must approve before the packs are issued.,R02 phải duyệt trước khi cấp phát các gói.
+Reason (recipient of another department),Lý do (người nhận thuộc khoa khác),Issue Note
+Reason the recipient is not from this department,Lý do người nhận không thuộc khoa này
+Recipient Department,Khoa của người nhận,Issue Note
+Recipient Name,Tên người nhận,Issue Note
+Recipient card is not valid,Thẻ người nhận không hợp lệ
+Recipient is not from this department,Người nhận không thuộc khoa này
+Recipient of another department,Người nhận thuộc khoa khác
+Recipient signature,Chữ ký người nhận
+Recipient signs,Người nhận ký
+"Recipient: scan the employee card, then sign in the box.","Người nhận: quét thẻ nhân viên, rồi ký vào khung."
+Recipient: scan the employee card. The card scan is the signature.,Người nhận: quét thẻ nhân viên. Quét thẻ là chữ ký.
+Recipient: scan the employee card...,Người nhận: quét thẻ nhân viên...
+Remove {0},Bỏ {0}
+Scan the Cycle ID of the first pack.,Quét Cycle ID của gói đầu tiên.
+Scan the packs to issue first.,Hãy quét các gói cần cấp trước.
+Set {0} is {1}; only a sterile set can be issued to a department.,Bộ {0} đang {1}; chỉ cấp phát được bộ Vô khuẩn cho khoa.
+Sign again,Ký lại
+Sign method {0} is not supported.,Cách ký {0} không được hỗ trợ.
+Sign on screen,Ký trên màn hình
+Sign with card,Ký bằng thẻ
+Sign with the card or on the screen.,Hãy ký bằng thẻ hoặc trên màn hình.
+Signature box,Khung chữ ký
+Signature is empty,Chữ ký còn trống
+Signature is not valid,Chữ ký không hợp lệ
+Signature method,Cách ký
+Signature on screen,Chữ ký trên màn hình
+Signed At,Ký lúc,Issue Note
+Signed With,Cách ký,Issue Note
+Signed by {0},Đã ký bởi {0}
+"Store the pack at T6 first, or check its status with R02.","Nhập gói vào kho ở T6 trước, hoặc hỏi R02 về trạng thái gói."
+Suggest issuing more,Gợi ý cấp bổ sung
+Tap the department that receives the packs.,Chạm vào khoa nhận gói.
+The card does not belong to an active employee.,Thẻ không thuộc nhân viên đang làm việc.
+The department would hold more sets than its maximum for: {0}.,Khoa sẽ giữ nhiều bộ hơn cơ số tối đa với: {0}.
+The recipient has not signed issue note {0}.,Người nhận chưa ký phiếu cấp phát {0}.
+The signature drawn on the screen is empty or too large.,Chữ ký vẽ trên màn hình trống hoặc quá lớn.
+This account cannot issue packs at this station.,Tài khoản này không cấp phát gói tại trạm này.
+This note,Phiếu này
+Touch,Cảm ứng,Issue Note
+Use-by Date,Hạn dùng,Issue Note Pack
+Why a pack with a later use-by date was issued (the department asked for this Set ID).,Lý do cấp gói có hạn dùng muộn hơn (khoa yêu cầu đúng Set ID này).,Issue Note Pack
+Why issue this pack and not the one that expires first?,Vì sao cấp gói này mà không phải gói hết hạn sớm nhất?
+Within par level,Trong cơ số
+"{0} belongs to {1}, not {2}.","{0} thuộc {1}, không thuộc {2}."
+{0} is not a {1} issuing station.,{0} không phải trạm cấp phát {1}.
+{0} pack(s) issued to {1}.,Đã cấp {0} gói cho {1}.
+{0}: {1} more pack(s) to reach the minimum,{0}: cần thêm {1} gói để đạt tối thiểu
+Issue note,Phiếu cấp phát,TC Issue Note
+Not confirmed yet,Chưa xác nhận,TC Issue Note
+Department,Khoa,TC Issue Note
+Issued at,Cấp phát lúc,TC Issue Note
+Issued by,Người cấp,TC Issue Note
+Recipient,Người nhận,TC Issue Note
+Reason (recipient of another department),Lý do (người nhận thuộc khoa khác),TC Issue Note
+Over-par approved by,R02 duyệt vượt cơ số,TC Issue Note
+No.,STT,TC Issue Note
+Cycle ID,Cycle ID,TC Issue Note
+Set ID,Set ID,TC Issue Note
+Set name,Tên bộ,TC Issue Note
+Use-by date,Hạn dùng,TC Issue Note
+Note,Ghi chú,TC Issue Note
+Total: {0} packs,Tổng: {0} gói,TC Issue Note
+Received by,Người nhận ký,TC Issue Note
+Signature on screen,Chữ ký trên màn hình,TC Issue Note
+Employee card,Thẻ nhân viên,TC Issue Note
+Page {0}/{1},Trang {0}/{1},TC Issue Note
+Printed {0} by {1},In lúc {0} bởi {1},TC Issue Note
