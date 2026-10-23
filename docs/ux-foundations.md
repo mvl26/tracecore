@@ -4,6 +4,12 @@
 > Sources: docs/srs.md v1.11 (§1.2, §2.3, §2.5, §3.1, §3.2.1, §3.3) · docs/use-cases.md v1.11 (39 UC) · docs/architecture.md (**chưa tồn tại tại thời điểm viết** — surface lấy từ `.architecture-inputs.md`, cần đối chiếu lại khi có) · input/ba_md/d09.md (#09) · #17 HTML · docs/design-refs (21 ảnh)
 > Design system: **docs/design.md + docs/tokens.json** (nguồn sự thật duy nhất cho mọi giá trị thiết kế — tài liệu này chỉ tham chiếu, không lặp lại)
 
+## Revision History
+
+| Ngày | Thay đổi |
+| --- | --- |
+| 23/10/2026 | Amendment NAV-01, người dùng duyệt trong chat: Home có liên kết “Mở TraceCore” tới Page `/app/tracecore`, chọn không gian quản lý / trạm / khoa theo quyền. Trang chỉ điều hướng; xác thực thẻ/PIN vẫn tại đích. Các màn chưa triển khai hiển thị trạng thái và không có đích giả. Không hiện thực SCR-44..46. Kế hoạch: `superpowers/plans/tracecore-launcher.md`. |
+
 ## 1. Overview
 
 TraceCore là phần mềm quản lý vận hành khoa Kiểm soát nhiễm khuẩn (CSSD) trên Frappe v15/ERPNext: truy xuất dụng cụ hai tầng mã (Set ID vĩnh viễn + Cycle ID một lần) qua 8 trạm T1–T8 với cổng kiểm soát 5 bước, quản lý đồ vải, [v1.11] chất thải y tế rắn, và ERP nội bộ khoa (nhân sự, thiết bị, kho, chi phí, cơ số) — SRS §1.2. Tài liệu này định nghĩa cấu trúc UI cho **4 surface** (mã surface là thuộc tính của màn hình; ID màn hình giữ nguyên `SCR-NN` theo quyết định 2026-10-17):
