@@ -1,0 +1,22 @@
+{
+ "doctype": "Page",
+ "name": "tracecore",
+ "page_name": "tracecore",
+ "title": "TraceCore",
+ "module": "UI",
+ "standard": "Yes",
+ "system_page": 0,
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "TC R01"},
+  {"role": "TC R02"},
+  {"role": "TC R03"},
+  {"role": "TC R04"},
+  {"role": "TC R05"},
+  {"role": "TC R06"},
+  {"role": "TC R07"},
+  {"role": "TC R08"},
+  {"role": "TC R09"},
+  {"role": "TC R10"}
+ ]
+}
