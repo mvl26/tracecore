@@ -31,6 +31,8 @@ STATION_STATUSES = {"T2": ("Processing", "Reprocess"), "T4": ("Processing", "Rep
 
 PENDING = "Pending"
 RESULTS = ("Pass", "Fail")
+END_OF_LIFE = "End of Life"
+NOT_RETIRABLE = ("Disposed",)  # bộ đã thanh lý không quay lại Hết vòng đời
 
 
 def result_name(set_unit, cycle_no, step):
@@ -146,6 +148,13 @@ def check(set_unit, step, for_update=False):
 	"""
 	_check_step(step)
 	status, cycle_no = _state(set_unit, for_update)
+	if status == END_OF_LIFE:  # FEAT-032, FR-M2-18.1: Hết vòng đời bị chặn ở mọi bước
+		return Block(
+			"SET_END_OF_LIFE",
+			_("Set has reached the end of its life"),
+			_("Set {0} has used up its reprocessing cycles and is waiting for disposal.").format(set_unit),
+			_("Do not use this set. Ask R01 for an override or take it out of circulation."),
+		)
 	allowed = STATION_STATUSES.get(step)
 	if allowed and status not in allowed:
 		return Block(
@@ -306,6 +315,43 @@ def check_stored(set_unit):
 		items=missing,
 		redo_step=missing[0],
 	)
+
+
+def end_of_life(set_unit, reason=None):
+	"""Bộ đã dùng hết cơ số: sang Hết vòng đời, chờ thanh lý, bỏ Cycle ID hiện hành (FEAT-032, FR-M8-03.2).
+
+	Trả True khi vừa chuyển; đã Hết vòng đời thì False và không ghi gì. Bộ đã thanh lý → lỗi. `reason` đi vào
+	cột lý do của Audit Log (mặc định None). Giữ nguyên chu trình và các cổng của chu trình hiện hành.
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status == END_OF_LIFE:
+		return False
+	if unit.status in NOT_RETIRABLE:
+		frappe.throw(
+			_("Set {0} is {1}; it cannot be moved to end of life.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	unit.flags.tc_audit_reason = reason
+	_save_lifecycle(unit, status=END_OF_LIFE, active_cycle_id=None)
+	return True
+
+
+def reopen_after_override(set_unit, override):
+	"""Ghi đè cơ số được duyệt: bộ Hết vòng đời quay lại Processing để đóng gói tiếp (A-18 Q4).
+
+	`override` (tên Par Override) đi vào lý do của Audit Log. Trạng thái khác Hết vòng đời → lỗi, không ghi gì.
+	Các cổng của chu trình hiện hành giữ nguyên nên bộ quay lại T4 ngay.
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status != END_OF_LIFE:
+		frappe.throw(
+			_("Set {0} is {1}; only a set at end of life can be reopened by an override.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	unit.flags.tc_audit_reason = override
+	_save_lifecycle(unit, status="Processing")
 
 
 def return_to_receipt(set_unit):
