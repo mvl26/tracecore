@@ -36,6 +36,7 @@
   "barcode_payload",
   "section_status",
   "status",
+  "location",
   "column_break_status",
   "void_reason",
   "void_note",
@@ -258,6 +259,17 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
+   "description": "Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.",
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Storage Location",
+   "options": "Sterile Location",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
    "fieldname": "column_break_status",
    "fieldtype": "Column Break"
   },
@@ -330,6 +342,10 @@
   {
    "read": 1,
    "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
   }
  ],
  "search_fields": "set_unit,set_name,status",

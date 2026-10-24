@@ -12,6 +12,18 @@ import frappe
 # 400 (sai định dạng) và 403 (thiếu quyền) không phải Block: do IdempotencyKeyError, ClientTimestampError,
 # thiếu tham số và frappe.PermissionError đảm nhiệm.
 HTTP_STATUS: dict[str, int] = {
+	**dict.fromkeys(("SESSION_INVALID", "SESSION_EXPIRED", "SESSION_IDLE"), 401),
+	**dict.fromkeys(
+		(
+			"CARD_INVALID",
+			"COMPETENCY_REQUIRED",
+			"PIN_INVALID",
+			"PIN_PROOF_INVALID",
+			"SESSION_STATION_MISMATCH",
+		),
+		403,
+	),
+	**dict.fromkeys(("PIN_LOCKED", "LOGIN_THROTTLED"), 429),
 	**dict.fromkeys(
 		(
 			"STATION_WRONG_STEP",
@@ -30,7 +42,10 @@ HTTP_STATUS: dict[str, int] = {
 			"COUNT_OUT_OF_RANGE",
 			"COUNTER_INIT_INVALID",
 			"ETCHING_INVALID",
-			# FEAT-015 A-07 (S4, S5, S7): loại bộ / phiên bản BOM / hạn lưu loại gói
+			"IMPORT_ROWS_INVALID",
+			"IMPORT_FILE_INVALID",
+			"PIN_FORMAT_INVALID",
+			# FEAT-015 A-09 (S4, S5, S7): loại bộ / phiên bản BOM / hạn lưu loại gói
 			"BOM_EMPTY",
 			"BOM_LINE_INVALID",
 			"BOM_TOO_LARGE",
@@ -42,6 +57,14 @@ HTTP_STATUS: dict[str, int] = {
 			"MAX_CYCLES_INVALID",
 			# FEAT-016 ruling Task 4/5: thẻ/nhãn khay Set ID chỉ in qua đường server (máy in phải có địa chỉ mạng)
 			"PRINTER_NOT_NETWORK",
+			# FEAT-021 A-12: lô rửa T2
+			"EQUIPMENT_NOT_WASHER",
+			"PROGRAM_INVALID",
+			"CHEMICAL_LOT_INVALID",
+			"CHEMICAL_LOT_EXPIRED",
+			"BATCH_EMPTY",
+			"DATA_INCOMPLETE",
+			"RESULT_INVALID",
 		),
 		422,
 	),
@@ -55,9 +78,13 @@ HTTP_STATUS: dict[str, int] = {
 			"INSTRUMENT_NOT_FOUND",
 			"SET_TYPE_NOT_FOUND",
 			"BOM_VERSION_NOT_FOUND",
+			"WASH_BATCH_NOT_FOUND",
+			"LOCATION_NOT_FOUND",
 		),
 		404,
 	),
+	# 423: máy rửa không Sẵn sàng (Khóa/Sửa chữa/Ngừng sử dụng), theo BA API-M2-02/03 (FEAT-021 A-12, Q21).
+	"EQUIPMENT_NOT_READY": 423,
 	**dict.fromkeys(
 		(
 			"STATUS_INVALID_FOR_STATION",
@@ -68,6 +95,11 @@ HTTP_STATUS: dict[str, int] = {
 			"MAINT_OVERDUE",
 			"REPRINT_WINDOW_EXPIRED",
 			"PACK_NOT_VOIDABLE",
+			"PACK_NOT_RELEASED",
+			"PACK_EXPIRED",
+			"PACK_NOT_IN_STOCK",
+			"PACK_ALREADY_ON_LOCATION",
+			"LOCATION_INACTIVE",
 			"ROLL_PRINTER_AMBIGUOUS",
 			"STATION_INACTIVE",
 			"EQUIPMENT_NOT_RETIRABLE",
@@ -80,6 +112,7 @@ HTTP_STATUS: dict[str, int] = {
 			"GIAI_ALREADY_ASSIGNED",
 			"GIAI_NOT_ASSIGNED",
 			"GS1_PREFIX_NOT_CONFIGURED",
+			"COMPANY_NOT_CONFIGURED",
 			"BOM_VERSION_CONFLICT",
 			"SET_TYPE_CODE_EXISTS",
 			# FEAT-016: series Set ID của loại bộ đã hết dải 999 999 (G2) — không cấp mã 7 số
@@ -90,6 +123,11 @@ HTTP_STATUS: dict[str, int] = {
 			"TAG_MISMATCH",
 			# FEAT-016 G14: thanh lý bộ ngoài Mới tạo / Hết vòng đời hoặc còn Cycle ID hiệu lực
 			"STATUS_INVALID_FOR_ACTION",
+			"STEP_ALREADY_PASSED",
+			"SET_IN_OTHER_BATCH",
+			"BATCH_NOT_RUNNING",
+			"EQUIPMENT_MISMATCH",
+			"R02_CONFIRM_REQUIRED",
 		),
 		409,
 	),

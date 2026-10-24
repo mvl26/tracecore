@@ -8,7 +8,201 @@ from tracecore.core import print as core_print
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing
 from tracecore.setup import devdata
-from tracecore.tests.utils import allow_local_printers
+from tracecore.tests.factories import make_user
+from tracecore.tests.utils import IsolatedTestCase, allow_local_printers
+
+test_dependencies = ["Company"]
+
+
+class TestStationDemoData(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		frappe.set_user("Administrator")
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
+		self.user = make_user("station-demo@example.test", ("TC R04",))
+
+	def seed(self, **kwargs):
+		return devdata.ensure_station_demo("TR-004", self.user, **kwargs)
+
+	def admin_roles(self):
+		return set(
+			frappe.get_all(
+				"Has Role", filters={"parent": "Administrator", "parenttype": "User"}, pluck="role"
+			)
+		)
+
+	def test_legacy_user_factory_restores_explicit_roles_on_success_and_failure(self):
+		from unittest.mock import patch
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		self.assertTrue(make_user("legacy-fixture@example.test"))
+		self.assertEqual(self.admin_roles(), before)
+		with patch("frappe.core.doctype.user.user.User.insert", side_effect=RuntimeError("fixture failure")):
+			with self.assertRaisesRegex(RuntimeError, "fixture failure"):
+				make_user("failed-fixture@example.test")
+		self.assertEqual(self.admin_roles(), before)
+
+	def test_e2e_user_bootstrap_restores_administrator_roles(self):
+		import secrets
+
+		admin = frappe.get_doc("User", "Administrator")
+		admin.remove_roles("TC R10")
+		before = self.admin_roles()
+		users = devdata.ensure_e2e_users(
+			"TR-003", "TR-004", secrets.token_urlsafe(24), secrets.token_urlsafe(24)
+		)
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(
+			set(users), {"user", "t4_user", "r10_user", "otp_secret", "t4_otp_secret", "r10_otp_secret"}
+		)
+		self.assertIn("TC R04", frappe.get_roles(users["t4_user"]))
+		self.assertIn("TC R10", frappe.get_roles(users["r10_user"]))
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		for prefix in ("", "t4_", "r10_"):
+			stored = get_default(users[prefix + "user"] + "_otpsecret")
+			self.assertNotEqual(stored, users[prefix + "otp_secret"])
+			self.assertEqual(decrypt(stored), users[prefix + "otp_secret"])
+			self.assertTrue(get_default(users[prefix + "user"] + "_otplogin"))
+		self.assertEqual(
+			users,
+			devdata.ensure_e2e_users(
+				"TR-003", "TR-004", secrets.token_urlsafe(24), secrets.token_urlsafe(24)
+			),
+		)
+
+	def test_t2_station_user_bootstrap_has_r03_and_otp(self):
+		import secrets
+
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		users = devdata.ensure_t2_e2e_user("TR-002", secrets.token_urlsafe(24))
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(set(users), {"t2_user", "t2_otp_secret"})
+		self.assertIn("TC R03", frappe.get_roles(users["t2_user"]))
+		self.assertEqual(decrypt(get_default(users["t2_user"] + "_otpsecret")), users["t2_otp_secret"])
+		self.assertEqual(users, devdata.ensure_t2_e2e_user("TR-002", secrets.token_urlsafe(24)))
+
+	def test_desk_users_bootstrap_adds_otp_extra_roles_and_restores_administrator_roles(self):
+		import secrets
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		specs = [
+			{"key": "codes", "role": "TC R10", "name": "r10-codes-e2e", "extra_roles": ["Stock User"]},
+			{"key": "instr", "role": "TC R02", "name": "r02-instr-e2e"},
+		]
+		password = secrets.token_urlsafe(24)
+		users = devdata.ensure_desk_users(password, specs)
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(set(users), {"codes_user", "codes_otp_secret", "instr_user", "instr_otp_secret"})
+		self.assertTrue({"TC R10", "Stock User"} <= set(frappe.get_roles(users["codes_user"])))
+		self.assertIn("TC R02", frappe.get_roles(users["instr_user"]))
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		for key in ("codes", "instr"):
+			self.assertEqual(
+				decrypt(get_default(users[key + "_user"] + "_otpsecret")), users[key + "_otp_secret"]
+			)
+			self.assertTrue(get_default(users[key + "_user"] + "_otplogin"))
+		self.assertEqual(users, devdata.ensure_desk_users(password, specs))
+
+	def test_t6_station_user_bootstrap_has_r06_and_otp(self):
+		import secrets
+
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		users = devdata.ensure_t6_e2e_user("TR-006", secrets.token_urlsafe(24))
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(set(users), {"t6_user", "t6_otp_secret"})
+		self.assertIn("TC R06", frappe.get_roles(users["t6_user"]))
+		self.assertEqual(decrypt(get_default(users["t6_user"] + "_otpsecret")), users["t6_otp_secret"])
+		self.assertEqual(users, devdata.ensure_t6_e2e_user("TR-006", secrets.token_urlsafe(24)))
+
+	def test_e2e_user_bootstrap_restores_roles_after_failure_and_preserves_existing_r10(self):
+		from unittest.mock import patch
+
+		admin = frappe.get_doc("User", "Administrator")
+		for already_r10 in (False, True):
+			admin.reload()
+			(admin.add_roles if already_r10 else admin.remove_roles)("TC R10")
+			before = self.admin_roles()
+			with patch(
+				"tracecore.setup.provision.station_user", side_effect=RuntimeError("injected failure")
+			):
+				with self.assertRaisesRegex(RuntimeError, "injected failure"):
+					devdata.ensure_e2e_users("TR-003", "TR-004", "unused", "unused")
+			self.assertEqual(self.admin_roles(), before)
+
+	def test_e2e_user_bootstrap_refuses_production_before_role_grant(self):
+		from unittest.mock import patch
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		with (
+			patch.dict(frappe.conf, {"developer_mode": 0, "allow_tests": 0}),
+			patch.dict(frappe.flags, {"in_test": False}),
+		):
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_e2e_users("TR-003", "TR-004", "unused", "unused")
+		self.assertEqual(self.admin_roles(), before)
+
+	def test_card_employee_and_competencies_are_reusable_and_can_login(self):
+		from tracecore.core import station_auth
+
+		first = self.seed(second_station="TR-005")
+		self.assertEqual(first, self.seed(second_station="TR-005"))
+		self.assertTrue(first["card_id"].startswith("E2E-"))
+		self.assertEqual(frappe.db.count("Employee", {"user_id": self.user}), 1)
+		self.assertEqual(frappe.db.count("Station Competency", {"employee": first["employee"]}), 2)
+		self.assertEqual(frappe.db.get_value("Employee", first["employee"], "status"), "Active")
+		self.assertFalse(
+			frappe.utils.password.get_decrypted_password(
+				"Employee", first["employee"], "tc_pin_hash", raise_exception=False
+			)
+		)
+		for station in ("TR-004", "TR-005"):
+			login = station_auth.login(first["card_id"], station)
+			self.assertEqual(login["user"], self.user)
+			self.assertEqual(login["roles"], ["TC R04"])
+
+	def test_supplied_card_is_normalized_and_stale_competency_is_renewed(self):
+		first = self.seed(card_id=" e2e-explicit-card ")
+		self.assertEqual(first["card_id"], "E2E-EXPLICIT-CARD")
+		name = frappe.db.get_value("Station Competency", {"employee": first["employee"]}, "name")
+		frappe.db.set_value("Station Competency", name, {"valid_until": "2000-01-01", "is_active": 0})
+		self.assertEqual(first, self.seed(card_id="E2E-EXPLICIT-CARD"))
+		self.assertEqual(frappe.db.count("Station Competency", {"employee": first["employee"]}), 1)
+		self.assertTrue(frappe.db.get_value("Station Competency", name, "is_active"))
+
+	def test_production_guard_runs_before_any_seed(self):
+		from unittest.mock import patch
+
+		with (
+			patch.dict(frappe.conf, {"developer_mode": 0, "allow_tests": 0}),
+			patch.dict(frappe.flags, {"in_test": False}),
+		):
+			with self.assertRaises(frappe.ValidationError):
+				self.seed()
+		self.assertFalse(frappe.db.exists("Employee", {"user_id": self.user}))
+
+	def test_disabled_users_and_inactive_stations_are_rejected(self):
+		frappe.db.set_value("User", self.user, "enabled", 0)
+		with self.assertRaises(frappe.ValidationError):
+			self.seed()
+		frappe.db.set_value("User", self.user, "enabled", 1)
+		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)
+		with self.assertRaises(frappe.ValidationError):
+			self.seed()
 
 
 class TestDevData(FrappeTestCase):
@@ -130,6 +324,122 @@ class TestT4DemoData(FrappeTestCase):
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				devdata.ensure_t4_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+T2_KEYS = {
+	"machine",
+	"machine_two_door",
+	"machine_locked",
+	"machine_connected",
+	"program",
+	"sets",
+	"set_no_t1",
+	"set_redo",
+	"chemical_lot_ok",
+	"chemical_lot_expired",
+	"batch_running",
+}
+
+
+class TestT2DemoData(FrappeTestCase):
+	def test_ensure_t2_demo_idempotent(self):
+		from frappe.utils import getdate, today
+
+		from tracecore.reprocessing import washing
+
+		first = devdata.ensure_t2_demo()
+		second = devdata.ensure_t2_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T2_KEYS)
+		self.assertEqual(len(set(first["sets"])), 3)
+		for set_id in first["sets"]:
+			self.assertEqual(_gates(set_id)["T1"], "Pass")
+			self.assertEqual(_gates(set_id)["T2"], "Pending")
+			washing.admit_set(set_id, first["machine"])  # nạp được, không ném
+		self.assertNotEqual(_gates(first["set_no_t1"])["T1"], "Pass")
+		self.assertIn(first["set_redo"], [row["set_id"] for row in washing.redo_queue()])
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine_locked"], "status"), "Retired")
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine_connected"], "is_connected"), 1)
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine"], "has_printout"), 1)
+		self.assertTrue(frappe.db.get_value("Equipment", first["machine_two_door"], "zone_out"))
+		self.assertEqual(
+			frappe.db.get_value("Process Program", first["program"], "equipment"), first["machine"]
+		)
+		self.assertIsNone(washing.check_chemical_lot("DEMO-T2-ENZ", first["chemical_lot_ok"]))
+		expiry = frappe.db.get_value("Batch", first["chemical_lot_expired"], "expiry_date")
+		self.assertLess(getdate(expiry), getdate(today()))
+		batch = frappe.get_doc("Wash Batch", first["batch_running"])
+		self.assertEqual((batch.status, batch.equipment), ("Running", first["machine_two_door"]))
+
+	def test_t2_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t2_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+T6_KEYS = {"location", "location_2", "pack_released", "pack_not_released", "pack_stored", "pack_expiring"}
+
+
+class TestT6DemoData(FrappeTestCase):
+	def _pack(self, name):
+		return frappe.db.get_value("Pack", name, ["status", "location", "expiry", "docstatus"], as_dict=True)
+
+	def test_ensure_t6_demo_idempotent(self):
+		from frappe.utils import add_days, getdate, today
+
+		first = devdata.ensure_t6_demo()
+		second = devdata.ensure_t6_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T6_KEYS)
+		for key in ("location", "location_2"):
+			self.assertTrue(first[key].startswith("KE-"), msg=first[key])
+			self.assertEqual(
+				frappe.db.get_value("Sterile Location", first[key], ["zone_station", "is_active"]),
+				("TR-006", 1),
+			)
+		released = self._pack(first["pack_released"])
+		self.assertEqual((released.status, released.location, released.docstatus), ("Released", None, 1))
+		self.assertGreater(getdate(released.expiry), getdate(add_days(today(), 7)))
+		self.assertEqual(self._pack(first["pack_not_released"]).status, "Packed")
+		stored = self._pack(first["pack_stored"])
+		self.assertEqual((stored.status, stored.location), ("In Sterile Stock", first["location"]))
+		self.assertGreater(getdate(stored.expiry), getdate(add_days(today(), 7)))
+		expiring = self._pack(first["pack_expiring"])
+		self.assertEqual((expiring.status, expiring.location), ("In Sterile Stock", first["location_2"]))
+		self.assertLessEqual(getdate(expiring.expiry), getdate(add_days(today(), 7)))
+		self.assertGreaterEqual(getdate(expiring.expiry), getdate(today()))
+
+	def test_t6_demo_packs_follow_putaway_rules_and_consumed_ones_are_replaced(self):
+		from tracecore.reprocessing import storage
+
+		first = devdata.ensure_t6_demo()
+		with self.assertRaises(BlockedError) as raised:
+			storage.putaway(first["pack_not_released"], first["location"], "TR-006")
+		self.assertEqual(raised.exception.block.code, "PACK_NOT_RELEASED")
+		storage.putaway(first["pack_released"], first["location"], "TR-006")
+		storage.mark_damaged(first["pack_stored"], "demo torn", "TR-006")
+		second = devdata.ensure_t6_demo()
+		self.assertNotEqual(second["pack_released"], first["pack_released"])
+		self.assertNotEqual(second["pack_stored"], first["pack_stored"])
+		self.assertEqual(second["pack_not_released"], first["pack_not_released"])
+		self.assertEqual(second["pack_expiring"], first["pack_expiring"])
+
+	def test_t6_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t6_demo()
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True
@@ -407,6 +717,61 @@ class TestInstrumentDemoData(FrappeTestCase):
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				devdata.ensure_instrument_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+INVENTORY_KEYS = {"company", "warehouse", "supplier", "ci", "bi", "pk", "ch"}
+
+
+class TestInventoryDemoData(FrappeTestCase):
+	"""Dữ liệu demo e2e Desk nhập kho SCR-24 (FEAT-041 Task 6): Item không xóa được nên dùng lại mã cố định."""
+
+	def test_ensure_inventory_demo_idempotent(self):
+		first = devdata.ensure_inventory_demo()
+		counts = {
+			doctype: frappe.db.count(doctype)
+			for doctype in ("Item", "Item Reorder", "Supplier", "Warehouse", "Company")
+		}
+		second = devdata.ensure_inventory_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), INVENTORY_KEYS)
+		self.assertEqual(
+			{doctype: frappe.db.count(doctype) for doctype in counts}, counts, msg="gọi lại không tạo thêm"
+		)
+
+	def test_inventory_demo_items_follow_group_rules(self):
+		from tracecore.inventory import items
+
+		demo = devdata.ensure_inventory_demo()
+		self.assertEqual(frappe.db.get_value("Warehouse", demo["warehouse"], "company"), demo["company"])
+		self.assertFalse(frappe.db.get_value("Warehouse", demo["warehouse"], "is_group"))
+		groups = {
+			"ci": "Chemical Indicator",
+			"bi": "Biological Indicator",
+			"pk": "Packaging",
+			"ch": "Chemical",
+		}
+		for key, group in groups.items():
+			item = frappe.get_doc("Item", demo[key])
+			self.assertEqual(item.tc_item_group_cssd, group)
+			self.assertTrue(item.has_batch_no)
+			self.assertEqual(item.valuation_method, items.VALUATION_METHOD)
+			self.assertEqual(item.has_expiry_date, 1 if group in items.EXPIRY_REQUIRED_GROUPS else 0, msg=key)
+			self.assertEqual(
+				[(row.warehouse, row.warehouse_reorder_level) for row in item.reorder_levels],
+				[(demo["warehouse"], devdata.INV_MIN_QTY)],
+			)
+		self.assertEqual(frappe.db.get_value("Item", demo["ci"], "tc_ci_class"), "5")
+
+	def test_inventory_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_inventory_demo()
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True

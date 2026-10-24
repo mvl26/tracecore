@@ -88,7 +88,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "New\nIn Circulation\nProcessing\nReprocess\nSterile\nAt Department\nEnd of Life\nDisposed",
+   "options": "New\nIn Circulation\nProcessing\nReprocess\nSterile\nAt Department\nAwaiting Receipt\nEnd of Life\nDisposed",
    "read_only": 1
   },
   {

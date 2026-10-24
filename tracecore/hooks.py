@@ -11,12 +11,22 @@ app_license = "gpl-3.0"
 required_apps = ["erpnext", "hrms"]
 
 # Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
-# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói).
+# FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói;
+# FEAT-041: thêm Stock Entry-tc_*, Stock Entry Detail-tc_* cho nhập kho theo lô/hạn).
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
 # ------------------
 fixtures = [
 	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
-	{"dt": "Custom Field", "filters": [["name", "like", "Item-tc_%"]]},
+	{"dt": "Custom DocPerm", "filters": [["role", "like", "TC R%"]]},
+	{
+		"dt": "Custom Field",
+		"or_filters": [
+			["name", "like", "Item-tc_%"],
+			["name", "like", "Stock Entry-tc_%"],
+			["name", "like", "Stock Entry Detail-tc_%"],
+			["name", "like", "Employee-tc_%"],
+		],
+	},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -51,13 +61,15 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018): Frappe nối file này sau station.js trong script của Page station
-page_js = {"station": "public/js/station_t4.js"}
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025) và T2 lô rửa (SCR-06, FEAT-021):
+# Frappe nối các file này sau station.js trong script của Page station
+page_js = {"station": ["public/js/station_t4.js", "public/js/station_t6.js", "public/js/station_t2.js"]}
 
 # include js in doctype views
-# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3)
-doctype_js = {"Item": "public/js/item.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
+# Stock Entry: phiếu nhập kho vật tư theo lô/hạn và nhập từ Excel (FEAT-041, SCR-24)
+doctype_js = {"Item": "public/js/item.js", "Stock Entry": "public/js/stock_entry.js"}
+doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -96,6 +108,11 @@ jinja = {"methods": ["tracecore.instrument.count_sheet.tc_count_sheet_context"]}
 
 # before_install = "tracecore.install.before_install"
 after_install = "tracecore.setup.install.after_install"
+# Quyền R09/R06/R10/R02 cho Item, Batch, Stock Entry (FEAT-041, A-07 V11): Custom DocPerm idempotent
+after_migrate = [
+	"tracecore.inventory.permissions.ensure_permissions",
+	"tracecore.setup.install.apply_system_settings",
+]
 
 # Uninstallation
 # ------------
@@ -176,17 +193,35 @@ _AUDIT_EVENTS = {
 }
 
 doc_events = {
+	"User": {
+		"before_validate": "tracecore.core.account.validate_user",
+		"after_insert": "tracecore.core.account.user_updated",
+		"on_update": "tracecore.core.account.user_updated",
+		"on_trash": "tracecore.core.audit.block_delete",
+	},
+	"Employee": {
+		"before_validate": "tracecore.core.account.validate_employee",
+		"on_update": "tracecore.core.account.employee_updated",
+		"on_trash": "tracecore.core.audit.block_delete",
+	},
 	"Set Unit": dict(_AUDIT_EVENTS),
 	"Instrument": dict(_AUDIT_EVENTS),
 	"Instrument Group": dict(_AUDIT_EVENTS),
 	# loại bộ: Create/Update có old/new (ảnh, hạn lưu, phương pháp, GTIN), không xóa (FEAT-015 S14)
 	"Instrument Set Type": dict(_AUDIT_EVENTS),
 	"Set BOM Item": dict(_AUDIT_EVENTS),
+	# cơ số: Create/Update có old/new, không xóa (FEAT-031, FR-M8-01.3)
+	"Par Level": dict(_AUDIT_EVENTS),
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
 	"Assembly Record": dict(_AUDIT_EVENTS),
+	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
+	"Wash Batch": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
+	"Sterile Location": dict(_AUDIT_EVENTS),
+	"Sterile Putaway": dict(_AUDIT_EVENTS),
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
@@ -195,14 +230,37 @@ doc_events = {
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	"TraceCore Settings": dict(_AUDIT_EVENTS),
+	# vật tư tiêu hao CSSD trên Item ERPNext (FEAT-041, A-07): chặn trùng mã; nhóm, nhãn, hạn dùng, tồn tối thiểu
+	"Item": {
+		"before_insert": "tracecore.inventory.items.check_duplicate_code",
+		"validate": "tracecore.inventory.items.validate_item",
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": [
+			"tracecore.inventory.audit.on_cssd_event",
+			# nhóm Packaging đổi hạn lưu loại gói qua form Item → Audit Log Update, không chặn (FEAT-015 S7)
+			"tracecore.instrument.shelf_life.audit_item_change",
+		],
+	},
+	# Batch và phiếu nhập kho vật tư: Audit Log chỉ khi liên quan Item CSSD; xóa bị chặn ở permission (không on_trash)
+	"Batch": {
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+	},
+	"Stock Entry": {
+		# nhập kho vật tư theo lô/hạn (FEAT-041, FR-M6-01): kiểm dòng, tạo Batch khi ghi sổ
+		"before_validate": "tracecore.inventory.receipt.prepare_receipt",
+		"after_insert": "tracecore.inventory.audit.on_cssd_event",
+		"on_update": "tracecore.inventory.audit.on_cssd_event",
+		"on_submit": "tracecore.inventory.audit.on_cssd_event",
+		"on_cancel": "tracecore.inventory.audit.on_cssd_event",
+	},
 	# ảnh/IFU của dụng cụ, ảnh khay loại bộ (media.TARGETS): kiểm nội dung, giới hạn cỡ, luôn riêng tư; File có sẵn đính
 	# lại cũng kiểm (FEAT-014 A-06 I11, FEAT-015 S6)
 	"File": {
 		"before_insert": "tracecore.instrument.media.check_upload",
 		"validate": "tracecore.instrument.media.validate_file",
 	},
-	# Item (ERPNext) nhóm Packaging đổi hạn lưu loại gói qua form Item → Audit Log Update, không chặn (FEAT-015 S7)
-	"Item": {"on_update": "tracecore.instrument.shelf_life.audit_item_change"},
+	"Station Competency": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
@@ -229,6 +287,11 @@ tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
 # core.step_gate.start_cycle (FEAT-015 S3): (ctx {set_unit, set_type, cycle_no, on}) -> int | None, phiên bản BOM ghim
 # cho chu trình mới (số nguyên đầu tiên được ghi vào Set Unit.cycle_bom_version; không có → 0)
 tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_version"]
+# M2 (FEAT-021) gọi khi lô rửa đóng: (ctx {batch, equipment, program, sets, chemicals, result}) -> None.
+#  - wash_complete: sau khi kết luận Đạt (FEAT-042 trừ hóa chất theo định mức, FEAT-046 chi phí lô)
+#  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
+tracecore_after_wash_complete = []
+tracecore_after_wash_failed = []
 
 # Scheduled Tasks
 # ---------------
@@ -239,14 +302,23 @@ scheduler_events = {
 		"* * * * *": [
 			"tracecore.core.print_server.dispatch_pending",
 		],
-		# FEAT-015 S2: 00:00 giờ hệ thống (Asia/Ho_Chi_Minh) kích hoạt phiên bản BOM đã lên lịch
+		# 00:00 giờ hệ thống (Asia/Ho_Chi_Minh): một khóa cron nên mọi việc nửa đêm nằm chung một danh sách
 		"0 0 * * *": [
+			# FEAT-015 S2: kích hoạt phiên bản BOM đã lên lịch
 			"tracecore.instrument.bom_versions.roll_effective_versions",
+			# FEAT-025, FR-M2-14: gói trong kho vô khuẩn quá hạn (hết ngày `expiry`) → Hết hiệu lực, bộ Chờ tiếp nhận
+			"tracecore.reprocessing.storage.run_expiry",
 		],
 	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
 	],
+}
+
+on_login = "tracecore.core.account.on_login"
+override_whitelisted_methods = {
+	"frappe.core.doctype.user.user.update_password": "tracecore.core.account.update_web_password",
+	"frappe.core.doctype.user.user.reset_password": "tracecore.core.account.reject_email_reset",
 }
 
 # scheduler_events = {
@@ -270,7 +342,7 @@ scheduler_events = {
 # Testing
 # -------
 
-# before_tests = "tracecore.install.before_tests"
+before_tests = "tracecore.setup.install.before_tests"
 
 # Overriding Methods
 # ------------------------------

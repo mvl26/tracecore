@@ -30,7 +30,7 @@ from tracecore.core.errors import Block, BlockedError
 
 STEPS = ("T1", "T2", "T3", "T4", "T5")
 # Trạng thái Set Unit mà trạm chấp nhận; bước khác bổ sung ở FEAT của bước đó.
-STATION_STATUSES = {"T4": ("Processing", "Reprocess")}
+STATION_STATUSES = {"T2": ("Processing", "Reprocess"), "T4": ("Processing", "Reprocess")}
 
 PENDING = "Pending"
 RESULTS = ("Pass", "Fail")
@@ -343,36 +343,37 @@ def release_cycle(set_unit):
 		_save_lifecycle(unit, "release_cycle", active_cycle_id=None)
 
 
-def _status_block(unit) -> Block:
+def check_stored(set_unit):
+	"""Lý do chặn nhập kho vô khuẩn (cổng T6 kiểm, UC-11 E1, BRU-FLOW-004), hoặc None nếu bộ đủ năm cổng Đạt.
+
+	Chỉ đọc, không ghi hàng `Step Gate Result` T6. `items` là các bước chưa Đạt của chu trình hiện hành (bộ chưa
+	có chu trình: cả năm bước); `redo_step` là bước đầu tiên còn thiếu.
+	"""
+	_status, cycle_no = _state(set_unit)
+	results = _results(set_unit, cycle_no) if cycle_no else {}
+	missing = [step for step in STEPS if results.get(step, (PENDING, 0))[0] != "Pass"]
+	if not missing:
+		return None
 	return Block(
-		"STATUS_INVALID_FOR_ACTION",
-		_("Set cannot be disposed now"),
-		_(
-			"Set {0} still has active Cycle ID {1}; only a set without an active Cycle ID can be disposed."
-		).format(unit.name, unit.active_cycle_id)
-		if unit.active_cycle_id
-		else _("Set {0} is {1}; only a set that is {2} can be disposed.").format(
-			unit.name,
-			_(unit.status, context="Set Unit"),
-			", ".join(_(s, context="Set Unit") for s in DISPOSABLE_STATUSES),
-		),
-		_("Finish the current cycle first; dispose a set only when it is new or at end of life."),
+		"GATE_PREV_NOT_PASSED",
+		_("Set is not sterile yet"),
+		_("Set {0} has not passed step(s) {1}.").format(set_unit, ", ".join(missing)),
+		_("Send the set back to step {0} and complete it before storing the pack.").format(missing[0]),
+		items=missing,
+		redo_step=missing[0],
 	)
 
 
-def dispose(set_unit, reason):
-	"""Thanh lý bộ (FEAT-016 G14; FR-M1-06, FR-M1-05.2): trạng thái ``Disposed``, một chiều.
+def return_to_receipt(set_unit):
+	"""Gói hết hiệu lực trong kho: bộ Vô khuẩn sang Chờ tiếp nhận để đưa về khu bẩn (FR-M2-14); bỏ Cycle ID hiện hành.
 
-	Khóa dòng Set Unit; chỉ từ ``DISPOSABLE_STATUSES`` và không có ``active_cycle_id``, ngược lại
-	``BlockedError(STATUS_INVALID_FOR_ACTION)`` (409), chưa ghi gì. Lý do người dùng bắt buộc (rỗng → ValidationError;
-	nơi gọi nghiệp vụ kiểm độ dài) và vào Audit ``Update`` dạng ``dispose: <lý do>``. Bộ không có → DoesNotExistError.
-	Vô hiệu mã Set ID trong Code Registry là việc của nơi gọi (M1 ``set_units.dispose``; core không import M1, ADR-001);
-	rẽ nhánh Thanh lý tại T3 (FEAT-020) và duyệt Hết vòng đời (FEAT-032) đi qua cùng đường đó.
+	Chỉ bộ đang Vô khuẩn; trạng thái khác → lỗi, không ghi gì. Chu trình kế tiếp mở lại bằng ``start_cycle`` (T1).
 	"""
-	reason = reason.strip() if isinstance(reason, str) else ""
-	if not reason:
-		frappe.throw(_("A reason is required to dispose a set."))
 	unit = _set_unit(set_unit, for_update=True)
-	if unit.status not in DISPOSABLE_STATUSES or unit.active_cycle_id:
-		raise BlockedError(_status_block(unit))
-	_save_lifecycle(unit, event_reason(DISPOSE_EVENT, reason), status="Disposed")
+	if unit.status != "Sterile":
+		frappe.throw(
+			_("Set {0} is {1}; only a sterile set can be returned for receipt.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)

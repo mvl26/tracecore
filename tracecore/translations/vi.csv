@@ -1,4 +1,8 @@
 Invalid code,Mã không hợp lệ,
+An active station is required for demo data.,Cần trạm đang hoạt động để tạo dữ liệu demo.,
+An enabled user is required for demo data.,Cần người dùng đang hoạt động để tạo dữ liệu demo.,
+Complete company setup before creating demo employees.,Hoàn tất thiết lập công ty trước khi tạo nhân viên demo.,
+Only Administrator can prepare demo accounts.,Chỉ Administrator được chuẩn bị tài khoản demo.,
 Code {0} was not issued by TraceCore.,Mã {0} không do TraceCore cấp.,
 Rescan the set tag or call R02.,Quét lại thẻ bộ hoặc gọi R02.,
 Not a set code,Không phải mã bộ,
@@ -87,6 +91,7 @@ Processing,Đang xử lý,Set Unit
 Reprocess,Xử lý lại,
 Sterile,Vô khuẩn,
 At Department,Tại khoa,
+Awaiting Receipt,Chờ tiếp nhận,Set Unit
 End of Life,Hết vòng đời,Set Unit
 Disposed,Thanh lý,
 Current Station,Trạm hiện tại,
@@ -174,6 +179,7 @@ Chemical Indicator,Chỉ thị hóa học,
 Lubricant,Dầu bôi trơn,
 Instrument traceability and CSSD / infection control management on Frappe v15,Truy xuất dụng cụ và quản lý khoa KSNK/CSSD trên Frappe v15,
 Demo data can only be created on a developer or test site.,Chỉ tạo được dữ liệu demo trên site dev hoặc site test.,
+Company {0} has no warehouse.,Công ty {0} chưa có kho.,
 Demo printer port must be a number from 1 to 65535.,Cổng máy in demo phải là số từ 1 đến 65535.,
 Instrument,Dụng cụ,
 Set BOM Item,Dòng BOM của loại bộ,
@@ -1171,6 +1177,240 @@ Demo e2e steam set,Bộ hấp (demo e2e),
 Demo e2e plasma set,Bộ plasma (demo e2e),
 Demo e2e set with instrument to retire,Bộ có dụng cụ để ngừng sử dụng (demo e2e),
 Demo e2e group with a maintenance threshold,Nhóm có ngưỡng bảo dưỡng (demo e2e),
+Biological Indicator,Chỉ thị sinh học,
+Pouch,Túi,
+Filter Box,Hộp lọc,
+Other,Khác,
+Specification,Quy cách,
+Document No,Số chứng từ,
+Lot Code,Mã lô,
+Duplicate Item Code,Trùng mã vật tư,
+Item code {0} already exists (item {1}).,Mã vật tư {0} đã tồn tại (vật tư {1}).,
+Use a different code or open the existing item.,Dùng mã khác hoặc mở vật tư đã có.,
+Invalid Consumable Item,Vật tư tiêu hao không hợp lệ,
+CSSD item group {0} is not in the fixed list.,Nhóm vật tư CSSD {0} không có trong danh sách cố định.,
+Choose a group from the list.,Chọn một nhóm trong danh sách.,
+Label items need a Compatible Method.,Vật tư nhóm Nhãn cần có phương pháp tương thích.,
+Set Compatible Method to Steam or Plasma.,Đặt phương pháp tương thích là Hấp hoặc Plasma.,
+Compatible Method {0} is not valid.,Phương pháp tương thích {0} không hợp lệ.,
+Choose Steam or Plasma.,Chọn Hấp hoặc Plasma.,
+Item {0} must be a Label item with Compatible Method {1}.,Vật tư {0} phải thuộc nhóm Nhãn với phương pháp tương thích {1}.,
+Set the group to Label and the Compatible Method to {0}.,Đặt nhóm là Nhãn và phương pháp tương thích là {0}.,
+Chemical Indicator Class applies only to the Chemical Indicator group.,Loại chỉ thị hóa học chỉ áp dụng cho nhóm Chỉ thị hóa học.,
+Clear Chemical Indicator Class or change the group.,Xóa loại chỉ thị hóa học hoặc đổi nhóm.,
+Item {0} already has stock but its valuation method is {1}.,Vật tư {0} đã có tồn kho nhưng phương pháp định giá là {1}.,
+Consumable items use Moving Average; ask the accountant to correct the valuation method.,Vật tư tiêu hao dùng bình quân gia quyền; nhờ kế toán sửa phương pháp định giá.,
+Row #{0}: warehouse {1} appears more than once in the minimum stock table.,Dòng #{0}: kho {1} xuất hiện nhiều lần trong bảng tồn tối thiểu.,
+Keep one row per warehouse.,Mỗi kho chỉ giữ một dòng.,
+Row #{0}: minimum stock cannot be negative.,Dòng #{0}: tồn tối thiểu không được âm.,
+Enter 0 or a positive quantity.,Nhập 0 hoặc số dương.,
+Row #{0}: {1} is a group warehouse.,Dòng #{0}: {1} là kho nhóm.,
+Choose a leaf warehouse that holds stock.,Chọn kho lá có chứa tồn kho.,
+Supplier is required. Choose the supplier.,Cần có nhà cung cấp. Chọn nhà cung cấp.,
+Supplier document number is required. Enter the delivery note or invoice number.,Cần có số chứng từ của nhà cung cấp. Nhập số phiếu giao hàng hoặc số hóa đơn.,
+Receiving warehouse is required. Choose the warehouse.,Cần có kho nhận. Chọn kho nhận.,
+Item {0}: lot (batch) number is required. Enter the lot number printed on the package.,Vật tư {0}: cần có số lô. Nhập số lô in trên bao bì.,
+Item {0}: lot number is longer than {1} characters. Shorten the lot number.,Vật tư {0}: số lô dài hơn {1} ký tự. Rút ngắn số lô.,
+Item {0} does not exist. Check the item code or create the item first.,Vật tư {0} không tồn tại. Kiểm tra mã vật tư hoặc tạo vật tư trước.,
+Item {0} is disabled. Enable the item or choose another one.,Vật tư {0} đã ngừng sử dụng. Bật lại vật tư hoặc chọn vật tư khác.,
+Item {0} is not a CSSD consumable. Set its CSSD item group first.,Vật tư {0} không phải vật tư tiêu hao CSSD. Đặt nhóm vật tư CSSD trước.,
+Item {0} does not track lots. Enable Has Batch No on the item.,Vật tư {0} không theo dõi lô. Bật Có số lô ở vật tư.,
+Item {0}: quantity must be greater than 0. Enter the received quantity.,Vật tư {0}: số lượng phải lớn hơn 0. Nhập số lượng nhận.,
+Item {0}: unit price cannot be negative. Enter 0 or a positive price.,Vật tư {0}: đơn giá không được âm. Nhập 0 hoặc số dương.,
+Item {0} must have an expiry date. Enter the expiry date printed on the package.,Vật tư {0} bắt buộc có hạn dùng. Nhập hạn dùng in trên bao bì.,
+"Item {0} does not track expiry dates. Turn on Has Expiry Date on the item, or leave the expiry date empty.",Vật tư {0} không theo dõi hạn dùng. Bật Có hạn dùng ở vật tư hoặc để trống hạn dùng.,
+Item {0}: the lot expired on {1}. Expired lots are not accepted; return it to the supplier.,Vật tư {0}: lô đã hết hạn ngày {1}. Không nhận lô quá hạn; trả lại nhà cung cấp.,
+Lot {0} is already used for item {1} on row {2}. Use a different lot number.,Lô {0} đã dùng cho vật tư {1} ở dòng {2}. Dùng số lô khác.,
+Lot {0} has expiry {1} here but {2} on row {3}. One lot has one expiry date; correct one of the rows.,Lô {0} có hạn {1} ở đây nhưng {2} ở dòng {3}. Một lô chỉ có một hạn dùng; sửa một trong hai dòng.,
+Lot {0} already belongs to item {1}. Use a different lot number.,Lô {0} đã thuộc vật tư {1}. Dùng số lô khác.,
+"Lot {0} already exists with expiry {1}, not {2}. Correct the expiry date or the lot number.","Lô {0} đã có với hạn {1}, không phải {2}. Sửa hạn dùng hoặc số lô.",
+Line {0},Dòng {0},
+{0} problem(s) stop this receipt from being saved:,{0} lỗi khiến phiếu nhập chưa lưu được:,
+"Fix the lines above, then save the receipt again.",Sửa các dòng trên rồi lưu phiếu nhập lại.,
+Cannot receive these items,Không nhập kho được các vật tư này,
+No company is configured for this site. Ask the administrator to finish the ERPNext setup.,Site chưa cấu hình công ty. Nhờ quản trị viên hoàn tất thiết lập ERPNext.,
+Row(s) {0} have a unit price of 0; the stock is received with a zero valuation rate.,Dòng {0} có đơn giá 0; hàng được nhập với giá trị tồn bằng 0.,
+Unit price is 0,Đơn giá bằng 0,
+Item code,Mã vật tư,
+Lot number,Số lô,
+Expiry date,Hạn dùng,
+Received quantity,Số lượng nhập,
+Unit price,Đơn giá,
+Supplier name,Nhà cung cấp,
+Supplier document number,Số chứng từ nhà cung cấp,
+Receiving warehouse,Kho nhận,
+Optional,Không bắt buộc,
+Fill in the Receipt sheet from row 2; row 1 is the header and must not be changed.,"Nhập dữ liệu vào sheet Receipt từ dòng 2; dòng 1 là tiêu đề, không được sửa.",
+If any row is wrong nothing is saved; every wrong row is listed so you can fix them all at once.,Còn một dòng sai thì không ghi gì; mọi dòng sai đều được liệt kê để sửa một lần.,
+Posting date is today; receipts are posted as submitted Stock Entries.,Ngày ghi sổ là hôm nay; mỗi phiếu nhập được ghi sổ thành Stock Entry.,
+The Excel file cannot be used,Không dùng được file Excel này,
+"Fix the file, then check it again.",Sửa file rồi kiểm tra lại.,
+"Ask the administrator to finish the ERPNext setup, then import the file again.","Nhờ quản trị viên hoàn tất thiết lập ERPNext, rồi nhập file lại.",
+The Excel file has errors; nothing was saved,File Excel có lỗi; chưa ghi gì,
+"Fix the rows listed, then check the file again.",Sửa các dòng được liệt kê rồi kiểm tra file lại.,
+Code of a CSSD consumable item that already exists in ERPNext.,Mã vật tư tiêu hao CSSD đã có trong ERPNext.,
+"Lot number printed on the package, up to 140 characters. One lot has one expiry date.","Số lô in trên bao bì, tối đa 140 ký tự. Một lô chỉ có một hạn dùng.",
+Required for chemicals and indicators,Bắt buộc với hóa chất và chỉ thị,
+"Date cell or text dd/mm/yyyy. Required for chemical indicators, biological indicators and chemicals; must not be earlier than today; leave empty for items that do not track expiry.","Ô ngày hoặc chuỗi dd/mm/yyyy. Bắt buộc với chỉ thị hóa học, chỉ thị sinh học và hóa chất; không được trước hôm nay; để trống với vật tư không theo dõi hạn dùng.",
+Number greater than 0.,Số lớn hơn 0.,
+Price per unit in VND. Empty or 0 is received with a warning.,"Đơn giá một đơn vị, tính bằng VND. Để trống hoặc 0 vẫn nhập nhưng có cảnh báo.",
+Name of an existing supplier.,Tên nhà cung cấp đã có.,
+"Delivery note or invoice number. Rows with the same supplier, document number and warehouse form one receipt.","Số phiếu giao hàng hoặc hóa đơn. Các dòng cùng nhà cung cấp, số chứng từ và kho tạo thành một phiếu nhập.",
+Name of a receiving warehouse. Empty uses the warehouse chosen when importing.,Tên kho nhận. Để trống thì dùng kho đã chọn khi nhập.,
+Excel column,Cột Excel,
+Requirement,Yêu cầu,
+"Download the template, fill it in and upload it again.","Tải file mẫu, điền rồi tải lên lại.",
+The file is empty.,File rỗng.,
+The file is not an Excel .xlsx workbook.,File không phải bảng tính Excel .xlsx.,
+The workbook is too large to read.,Bảng tính quá lớn để đọc.,
+The workbook has no sheet.,Bảng tính không có sheet nào.,
+Row 1 of the first sheet must be the header row.,Dòng 1 của sheet đầu tiên phải là dòng tiêu đề.,
+The file has no data rows.,File không có dòng dữ liệu.,
+Unit price is 0; the stock is received with a zero valuation rate.,Đơn giá bằng 0; hàng được nhập với giá trị tồn bằng 0.,
+At most {0} rows and {1} MB per file.,Tối đa {0} dòng và {1} MB mỗi file.,
+The workbook could not be read.,Không đọc được bảng tính.,
+The sheet has too many rows to read.,Sheet có quá nhiều dòng để đọc.,
+Warehouse {0} does not exist or is disabled. Choose an existing warehouse.,Kho {0} không tồn tại hoặc đã bị vô hiệu. Chọn một kho có sẵn.,
+Warehouse {0} is a group. Choose a warehouse that can hold stock.,Kho {0} là kho nhóm. Chọn kho có thể chứa hàng.,
+Warehouse {0} belongs to another company. Choose a warehouse of {1}.,Kho {0} thuộc công ty khác. Chọn kho của {1}.,
+{0} problem(s) in {1} row(s) stop this file from being imported.,{0} lỗi ở {1} dòng khiến file này chưa nhập được.,
+The file is larger than {0} MB.,File lớn hơn {0} MB.,
+Missing column(s): {0}.,Thiếu cột: {0}.,
+"Expiry date ""{0}"" is not a valid date. Enter it as dd/mm/yyyy, or use a date cell.","Hạn dùng ""{0}"" không phải ngày hợp lệ. Nhập dạng dd/mm/yyyy hoặc dùng ô ngày.",
+"Unit price ""{0}"" is not a number. Enter a number such as 125000, or leave it empty.","Đơn giá ""{0}"" không phải số. Nhập số như 125000 hoặc để trống.",
+The file has more than {0} data rows.,File có hơn {0} dòng dữ liệu.,
+Supplier {0} does not exist or is disabled. Check the supplier name or create the supplier first.,Nhà cung cấp {0} không tồn tại hoặc đã bị vô hiệu. Kiểm tra tên nhà cung cấp hoặc tạo nhà cung cấp trước.,
+The file was not found among your private uploads. Upload the Excel file again.,Không thấy file trong các file riêng tư bạn đã tải lên. Tải file Excel lên lại.,
+file_url must be the URL of an uploaded Excel file.,file_url phải là URL của file Excel đã tải lên.,
+warehouse must be text.,warehouse phải là chuỗi văn bản.,
+Only Excel .xlsx files are accepted. Save the workbook as .xlsx and upload it again.,Chỉ nhận file Excel .xlsx. Lưu bảng tính dạng .xlsx rồi tải lên lại.,
+The file is larger than {0} MB. Split it into smaller files.,File lớn hơn {0} MB. Tách thành các file nhỏ hơn.,
+Label,Nhãn,Item
+Test,Thử nghiệm,Item
+Chemical,Hóa chất,Item
+Expiry Date,Hạn dùng,Stock Entry Detail
+Expired,Hết hạn,Stock Entry Detail
+Required for this group,Bắt buộc với nhóm này,
+Excel row,Dòng Excel,
+Problem,Vấn đề,
+"Warning",Cảnh báo,Stock Entry
+{0} row(s) are received with a warning. They are not blocked.,{0} dòng được nhập kèm cảnh báo. Các dòng này không bị chặn.,
+Import receipts from Excel,Nhập kho từ Excel,
+Download template,Tải mẫu,
+Default warehouse,Kho mặc định,
+Used for rows whose warehouse cell is empty.,Dùng cho các dòng để trống ô kho.,
+Choose Excel file,Chọn file Excel,
+Post receipts,Ghi sổ nhập kho,
+Check file,Kiểm tra file,
+No file chosen.,Chưa chọn file.,
+Checking the file...,Đang kiểm tra file...,
+The file is valid,File hợp lệ,
+{0} row(s) will be saved in {1} receipt(s).,{0} dòng sẽ được ghi vào {1} phiếu nhập.,
+Choose Post receipts to save them.,Chọn Ghi sổ nhập kho để lưu.,
+Receipts saved,Đã ghi sổ phiếu nhập,
+{0} row(s) saved in {1} receipt(s).,Đã ghi {0} dòng vào {1} phiếu nhập.,
+Receive supplies,Nhập kho vật tư,
+Import from Excel,Nhập từ Excel,
+Draft,Nháp,Stock Entry
+Posted,Đã ghi sổ,Stock Entry
+Cancelled,Đã hủy,Stock Entry
+Valid until must be after valid from.,Thời điểm hết hiệu lực phải sau thời điểm bắt đầu.,
+Temporary competency requires a reason and approver.,Quyền trạm tạm thời phải có lý do và người phê duyệt.,
+Temporary competency cannot exceed 24 hours.,Quyền trạm tạm thời không được vượt quá 24 giờ.,
+Station Competency {0} cannot be deleted.,Không thể xóa năng lực trạm {0}.,
+A closed station session requires an end timestamp.,Phiên trạm đã đóng phải có thời điểm kết thúc.,
+Station Session {0} cannot be deleted.,Không thể xóa phiên trạm {0}.,
+PIN is invalid,PIN không hợp lệ,
+PIN must contain exactly 6 digits.,PIN phải gồm đúng 6 chữ số.,
+Enter a 6-digit PIN.,Nhập PIN gồm 6 chữ số.,
+PIN is temporarily locked,PIN đang bị khóa tạm thời,
+PIN was entered incorrectly 3 times.,PIN đã được nhập sai 3 lần.,
+Wait 5 minutes and try again.,Chờ 5 phút rồi thử lại.,
+PIN is incorrect,PIN không đúng,
+The PIN did not match.,PIN không khớp.,
+Check the PIN and try again.,Kiểm tra PIN rồi thử lại.,
+Card login was rejected,Đăng nhập bằng thẻ bị từ chối,
+The card is invalid or inactive.,Thẻ không hợp lệ hoặc đã bị vô hiệu.,
+Use an active employee card or contact a supervisor.,Dùng thẻ nhân viên đang hoạt động hoặc liên hệ giám sát.,
+Station is unavailable,Trạm không khả dụng,
+The station is missing or inactive.,Trạm không tồn tại hoặc chưa hoạt động.,
+Choose an active station or contact R10.,Chọn trạm đang hoạt động hoặc liên hệ R10.,
+The employee has no valid competency for this station.,Nhân viên không có năng lực còn hiệu lực tại trạm này.,
+Ask R02 to check competency or temporary access.,Đề nghị R02 kiểm tra năng lực hoặc cấp quyền tạm thời.,
+Station session is invalid,Phiên trạm không hợp lệ,
+The session token is missing or invalid.,Thiếu mã phiên hoặc mã phiên không hợp lệ.,
+The session has ended or the token is invalid.,Phiên đã kết thúc hoặc mã phiên không hợp lệ.,
+Scan your employee card again.,Quét lại thẻ nhân viên.,
+Station session expired,Phiên trạm đã hết hạn,
+The 8-hour session has ended.,Phiên 8 giờ đã kết thúc.,
+Station session was locked,Phiên trạm đã bị khóa,
+There was no activity for 10 minutes.,Không có hoạt động trong 10 phút.,
+Only R10 can create or disable accounts.,Chỉ R10 được tạo hoặc vô hiệu tài khoản.,
+Password must contain at least 10 characters.,Mật khẩu phải có ít nhất 10 ký tự.,
+Password expired. Change your password before signing in.,Mật khẩu đã hết hạn. Đổi mật khẩu trước khi đăng nhập.,
+Station card ID must be unique.,Mã thẻ trạm không được trùng.,
+Sign in with an employee account.,Đăng nhập bằng tài khoản nhân viên.,
+Current password or a valid recovery key is required.,Cần mật khẩu hiện tại hoặc mã khôi phục hợp lệ.,
+PIN change required,Cần đổi PIN,
+A supervisor reset this PIN.,Người quản lý đã đặt lại PIN này.,
+Change your PIN before continuing.,Đổi PIN trước khi tiếp tục.,
+Choose a different PIN.,Chọn PIN khác.,
+A supervisor station PIN proof is required.,Cần bằng chứng PIN còn hiệu lực từ phiên trạm của R02.,
+Choose an employee account.,Chọn tài khoản nhân viên.,
+Station PIN Change Required,Yêu cầu đổi PIN trạm,
+Use account credential actions to change or reset a password.,Dùng chức năng tài khoản để đổi hoặc đặt lại mật khẩu.,
+Use account credential actions to change or reset a PIN.,Dùng chức năng tài khoản để đổi hoặc đặt lại PIN.,
+Ask R10 or a PIN-verified R02 to reset your account.,Đề nghị R10 hoặc R02 đã xác thực PIN đặt lại tài khoản.,
+Scan employee card,Quét thẻ nhân viên,
+Scan employee card...,Quét thẻ nhân viên...,
+Scan another card,Quét thẻ khác,
+Session expires: {0},Phiên hết hạn: {0},
+Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy chủ.,
+"Reconnect, then scan your employee card again.",Kết nối lại rồi quét lại thẻ nhân viên.,
+"Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
+Scan indicator lot,Quét lô chỉ thị,
+"Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
+Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
+"Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
+raw and open_set must be strings.,raw và open_set phải là chuỗi.,
+Absolute Expires At,Hết hạn tuyệt đối lúc,Station Session
+Approved By,Người phê duyệt,Station Competency
+"Competency must be assigned to a station, not a zone.","Năng lực phải được gán cho trạm, không phải khu.",
+Employee Disabled,Nhân viên đã bị vô hiệu,Station Session
+End Reason,Lý do kết thúc,Station Session
+Idle,Không hoạt động,Station Session
+Is Open,Đang mở,Station Session
+Last Activity At,Hoạt động cuối lúc,Station Session
+Replaced,Được thay thế,Station Session
+Station Card Enabled,Bật thẻ trạm,Employee
+Station Card ID,Mã thẻ trạm,Employee
+Station Competency,Năng lực trạm,
+Station PIN Hash,Mã băm PIN trạm,Employee
+Station Session,Phiên trạm,
+Temporary Access,Truy cập tạm thời,Station Competency
+Temporary Reason,Lý do tạm thời,Station Competency
+The session belongs to another station.,Phiên thuộc về trạm khác.,
+Token Hash,Mã băm token,Station Session
+Use the station where you scanned your card.,Sử dụng trạm nơi bạn đã quét thẻ.,
+Valid Until,Có hiệu lực đến,Station Competency
+card_id and station must be strings.,card_id và station phải là chuỗi.,
+pin must be a string.,pin phải là chuỗi.,
+Roles: {0},Vai trò: {0},
+TC R01,R01 · Trưởng khoa KSNK,
+TC R02,R02 · Điều dưỡng trưởng / Giám sát CSSD,
+TC R03,R03 · KTV khu bẩn,
+TC R04,R04 · KTV khu sạch,
+TC R05,R05 · KTV tiệt khuẩn,
+TC R06,R06 · KTV kho vô khuẩn / cấp phát,
+TC R07,R07 · Nhân viên đồ vải và chất thải,
+TC R08,R08 · Nhân viên khoa sử dụng,
+TC R09,R09 · Kế toán / Vật tư,
+TC R10,R10 · Quản trị hệ thống,
+Employee {0} does not exist.,Nhân viên {0} không tồn tại.,
+"The card is invalid, inactive or not authorised for this station.","Thẻ không hợp lệ, đã bị vô hiệu hoặc chưa được phép dùng ở trạm này.",
+"Use an active employee card, or ask R02 to check your station competency.","Dùng thẻ nhân viên đang hoạt động, hoặc nhờ R02 kiểm tra năng lực trạm của bạn.",
+Too many card attempts,Quét thẻ sai quá nhiều lần,
+Too many rejected card scans from this device.,Thiết bị này đã quét thẻ bị từ chối quá nhiều lần.,
 Implant Set,Bộ cấy ghép,Instrument Set Type
 Standard Assembly Time (Minutes),Thời gian lắp ráp chuẩn (phút),Instrument Set Type
 Tray Images,Ảnh bộ đã xếp,Instrument Set Type
@@ -1667,3 +1907,397 @@ Set units are created only with Issue Set IDs.,Bộ dụng cụ chỉ được t
 Estimated,Ước tính,
 Max cycles,Cơ số tối đa,
 Packing,Đóng gói,
+"A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).","Lô không đạt vẫn cần lập phiếu không phù hợp (NC); hệ thống sẽ tự tạo khi có tính năng sự cố (FEAT-030).","Wash Batch"
+"A recorded value is outside the program range; R02 should review it.","Có giá trị ghi nhận nằm ngoài dải của chương trình; R02 cần xem xét.","Wash Batch"
+"A set unit appears more than once in the wash batch.","Một bộ dụng cụ xuất hiện nhiều lần trong lô rửa.",
+"A wash batch cannot be cancelled.","Không hủy được lô rửa.",
+"A wash batch is changed only by the wash screen service.","Lô rửa chỉ được đổi bởi dịch vụ của màn rửa.",
+"A wash batch is created only when loading is completed on the wash screen.","Lô rửa chỉ được tạo khi hoàn thành nạp trên màn rửa.",
+"Added At","Thời điểm thêm","Wash Batch Set Unit"
+"Batch Cost","Chi phí lô","Wash Batch"
+"Batch Type","Loại lô rửa","Wash Batch"
+"Chemical lot has expired","Lô hóa chất đã hết hạn",
+"Chemical lot is not valid","Lô hóa chất không hợp lệ",
+"Chemicals","Hóa chất","Wash Batch"
+"Choose a lot of the chemical that the wash program uses.","Chọn lô của hóa chất mà chương trình rửa sử dụng.",
+"Choose another lot that is still valid.","Chọn lô khác còn hạn dùng.",
+"Cleaning Test","Test làm sạch","Wash Batch"
+"Code {0} is not a set ID.","Mã {0} không phải Set ID.",
+"Code {0} is not a washer QR code.","Mã {0} không phải mã QR máy rửa.",
+"Cycle Data","Dữ liệu chu trình","Wash Batch"
+"Cycle Result","Kết quả chu trình","Wash Batch"
+"Data Complete","Dữ liệu đầy đủ","Wash Batch"
+"Data Source","Nguồn dữ liệu","Wash Batch"
+"Employee who completed loading, taken from the card session.","Nhân viên hoàn thành nạp, lấy từ phiên đăng nhập thẻ.","Wash Batch"
+"Equipment {0} is a {1}, not a washer-disinfector or ultrasonic cleaner.","Thiết bị {0} là {1}, không phải máy rửa khử khuẩn hoặc máy rửa siêu âm.",
+"Equipment {0} is {1}.","Thiết bị {0} đang {1}.",
+"Follow-up","Theo dõi tiếp","Wash Batch"
+"Loaded By Scan","Nạp bằng quét mã","Wash Batch"
+"Loading Completed At","Hoàn thành nạp lúc","Wash Batch"
+"Lot","Lô","Wash Batch Chemical"
+"Lot {0} is not a lot of chemical {1}.","Lô {0} không phải lô của hóa chất {1}.",
+"Machine Data","Dữ liệu máy","Wash Batch"
+"Machine Files","Tệp từ máy","Wash Batch"
+"Machine Scanned At Unloading","Máy quét khi dỡ","Wash Batch"
+"Manual Data Confirmed At","Thời điểm xác nhận dữ liệu nhập tay","Wash Batch"
+"Manual Data Confirmed By","Người xác nhận dữ liệu nhập tay","Wash Batch"
+"Needs Review","Cần xem xét","Wash Batch"
+"Nonconformity Pending","Chờ lập NC","Wash Batch"
+"Not a washer","Không phải máy rửa",
+"Parameters, alerts and the result the machine reported: [{parameter_name, unit, value, outside_range}] plus alerts and reported_result.","Tham số, cảnh báo và kết quả máy báo: [{parameter_name, unit, value, outside_range}] cùng alerts và reported_result.","Wash Batch"
+"Photo of the printout or chart of the machine.","Ảnh bản in hoặc biểu đồ của máy.","Wash Batch"
+"Quantity used; filled by the consumption feature (FEAT-042).","Số lượng đã dùng; do tính năng tiêu hao (FEAT-042) điền.","Wash Batch Chemical"
+"R02 who confirmed a pass for a machine without connection or printout.","R02 xác nhận kết quả Đạt cho máy không kết nối và không có bản in.","Wash Batch"
+"Result Note","Ghi chú kết quả","Wash Batch"
+"Result Source","Nguồn kết quả","Wash Batch"
+"Reviewed At","Xem xét lúc","Wash Batch"
+"Reviewer","Người xem xét","Wash Batch"
+"Running","Đang chạy","Wash Batch"
+"Scan the QR code of a washer.","Quét mã QR của máy rửa.",
+"Scan the QR code on the washer.","Quét mã QR trên máy rửa.",
+"Scan the Set ID on the tray or tag.","Quét Set ID trên khay hoặc thẻ.",
+"Set Units","Bộ dụng cụ","Wash Batch"
+"Set already washed","Bộ đã được rửa",
+"Set is in another wash batch","Bộ đang ở lô rửa khác",
+"Set {0} has already passed the wash step in this cycle.","Bộ {0} đã qua bước rửa trong chu trình này.",
+"Set {0} is in wash batch {1}, which is still running.","Bộ {0} đang ở lô rửa {1}, lô này còn đang chạy.",
+"Sets and Chemicals","Bộ và hóa chất","Wash Batch"
+"Take the set to the next step.","Chuyển bộ sang bước kế tiếp.",
+"Ultrasonic","Siêu âm","Wash Batch"
+"Unload Scanned At","Thời điểm quét dỡ","Wash Batch"
+"Unload batch {0} first, or take the set out of the washer.","Dỡ lô {0} trước, hoặc lấy bộ ra khỏi máy rửa.",
+"Use another washer, or call R02 to check the daily test and the inspection.","Dùng máy rửa khác, hoặc gọi R02 kiểm tra test hằng ngày và kiểm định.",
+"Wash Batch","Lô rửa",
+"Wash Batch Chemical","Hóa chất của lô rửa",
+"Wash Batch Set Unit","Bộ dụng cụ của lô rửa",
+"Washer is not ready","Máy rửa chưa sẵn sàng",
+"Ask R10 to add a printer to this station, then print the batch label again.","Nhờ R10 thêm máy in cho trạm này, rồi in lại nhãn của lô.",
+"Ask R10 to fix the label template of the wash batch, then print the label again.","Nhờ R10 sửa mẫu nhãn của lô rửa, rồi in lại nhãn.",
+"Choose a program from the list of this washer.","Chọn một chương trình trong danh sách của máy rửa này.",
+"No printer at this station","Trạm này chưa có máy in",
+"No set can be loaded","Không có bộ nào nạp được",
+"None of the scanned sets can go into a wash batch on {0}.","Không bộ nào trong số đã quét nạp được vào lô rửa trên máy {0}.",
+"Program is not valid","Chương trình không hợp lệ",
+"Program {0} is not an active program of equipment {1}.","Chương trình {0} không phải chương trình đang dùng của thiết bị {1}.",
+"Program {0} needs a lot of chemical {1}.","Chương trình {0} cần chọn một lô hóa chất {1}.",
+"Program {0} uses chemical {1}, not {2}.","Chương trình {0} dùng hóa chất {1}, không phải {2}.",
+"Scan sets that have passed receiving, then complete loading again.","Quét các bộ đã qua tiếp nhận, rồi hoàn thành nạp lại.",
+"Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.","Trạm {0} chưa có máy in đang hoạt động. Lô rửa {1} vẫn được giữ; nhãn đang chờ in.",
+"{0} Wash batch {1} is kept; its label is waiting.","{0} Lô rửa {1} vẫn được giữ; nhãn đang chờ in.",
+"Passed","Đạt","Wash Batch"
+"Failed","Không đạt","Wash Batch"
+"Wash batch not found","Không tìm thấy lô rửa",""
+"Wash batch {0} does not exist.","Lô rửa {0} không tồn tại.",""
+"Scan the QR code on the wash batch label.","Quét mã QR trên nhãn lô rửa.",""
+"Code {0} is not a wash batch code.","Mã {0} không phải mã lô rửa.",""
+"Station {0} cannot unload washer {1}: use a T2 station or a station at the exit door.","Trạm {0} không dỡ được máy {1}: dùng trạm T2 hoặc trạm ở cửa ra của máy.",""
+"Unload the batch at a T2 station or at a station in zone {0}.","Dỡ lô tại trạm T2 hoặc tại trạm thuộc khu {0}.",""
+"Wash batch is closed","Lô rửa đã đóng",""
+"Wash batch {0} is already {1}.","Lô rửa {0} đã {1}.",""
+"Scan the QR code of a running wash batch.","Quét mã QR của lô rửa đang chạy.",""
+"Washer does not match","Máy rửa không khớp",""
+"Washer {0} does not match washer {1} of batch {2}.","Máy {0} không khớp máy {1} của lô {2} — từ chối (BRU-REP-016).",""
+"Scan the QR code of washer {0}.","Quét mã QR của máy {0}.",""
+"Code {0} is not the washer QR code or the code of batch {1}.","Mã {0} không phải QR máy hay mã lô {1}.",""
+"Scan the QR code of washer {0}, then the QR code of batch {1}.","Quét QR máy {0}, rồi QR mã lô {1}.",""
+"Scan both codes","Cần quét đủ hai mã",""
+"Batch {0} needs the washer QR code and the batch QR code.","Lô {0} cần quét QR máy và QR mã lô.",""
+"Result is not valid","Kết quả không hợp lệ",""
+"Choose Pass or Fail for the cycle and the cleaning test.","Chọn Đạt hoặc Không đạt cho chu trình và test làm sạch.",""
+"R02 confirmation required","Cần R02 xác nhận",""
+"This washer has no connection and no printout, so a Pass needs the confirmation of R02.","Máy này không kết nối và không có bản in, nên kết luận Đạt cần R02 xác nhận.",""
+"Ask R02 to sign in at this station and enter the PIN, then record the result again.","Mời R02 đăng nhập tại trạm này và nhập PIN, rồi ghi kết quả lại.",""
+"The result and the cleaning test must each be Pass or Fail.","Kết quả chu trình và test làm sạch phải là Đạt hoặc Không đạt.",""
+"Cycle data is incomplete","Thiếu dữ liệu chu trình",""
+"Wash batch {0} has no complete, confirmed cycle data, so it cannot be closed.","Lô rửa {0} chưa có dữ liệu chu trình đầy đủ và đã xác nhận, nên chưa đóng lô được.",""
+"Enter the cycle data from the washer screen or printout and confirm it, then record the result.","Nhập dữ liệu chu trình theo màn hình hoặc bản in của máy và xác nhận, rồi ghi kết quả.",""
+"cycle data","dữ liệu chu trình",""
+"A batch can pass only when the cleaning test has passed.","Lô chỉ Đạt khi test làm sạch Đạt.",""
+"{0} must be a list of scanned codes.","{0} phải là danh sách mã quét.",""
+"chemicals must be a list of objects with an item and a lot.","chemicals phải là danh sách đối tượng có item và lot.",""
+"values must be a list of objects with a parameter_name and a value.","values phải là danh sách đối tượng có parameter_name và value.",""
+"{0} must be a string.","{0} phải là chuỗi ký tự.",""
+"Loading of washer {0} is not finished","Chưa nạp xong máy {0}",""
+"{0} set(s) are on the list for washer {1}.","Đang có {0} bộ trong danh sách nạp máy {1}.",""
+"Complete loading or cancel it before scanning another washer.","Hoàn thành nạp hoặc Hủy nạp trước khi quét máy khác.",""
+"Scan the washer first","Cần quét QR máy rửa trước",""
+"Code {0} was scanned before a washer QR code.","Mã {0} được quét khi chưa quét QR máy rửa.",""
+"Scan the QR code on the washer, then scan each set.","Quét QR trên máy rửa, rồi quét từng bộ.",""
+"This account cannot work with wash batches at this station.","Tài khoản này không được thao tác lô rửa tại trạm này.",""
+"Washer {0} scanned · {1}","Máy {0} đã quét · {1}",""
+"API connected - automatic data comes with FEAT-024; unload with confirmed manual entry.","Kết nối API — dữ liệu tự động có ở FEAT-024; dỡ lô nhập tay có xác nhận.",""
+"Not connected - unload with confirmed manual entry.","Không kết nối — dỡ lô nhập tay có xác nhận.",""
+"{0} is already on the list","{0} đã có trong danh sách",""
+"Scanned {0} into washer {1} ({2} set(s))","Đã quét {0} vào máy {1} ({2} bộ)",""
+"Removed {0} from the list","Đã bỏ {0} khỏi danh sách",""
+"Loading cancelled; scan a washer QR code to start again.","Đã hủy nạp; quét QR máy rửa để bắt đầu lại.",""
+"washer","máy rửa",""
+"at least 1 set","ít nhất 1 bộ",""
+"wash program","chương trình rửa",""
+"chemical lot","lô hóa chất",""
+"Loading cannot be completed yet","Chưa hoàn thành nạp được",""
+"Scan the washer and the sets, choose the program and the chemical lot.","Quét máy và các bộ, chọn chương trình và lô hóa chất.",""
+"Code {0} is not the washer QR code or a wash batch code.","Mã {0} không phải QR máy hay mã lô rửa.",""
+"Scan the washer QR code, then the batch QR code.","Quét QR máy, rồi QR mã lô.",""
+"Washer {0} has more than one running batch","Máy {0} có nhiều hơn một lô đang chạy",""
+"Washer {0} has no running batch","Máy {0} không có lô đang chạy",""
+"The batch to unload cannot be chosen from the washer QR code alone.","Không xác định được lô cần dỡ chỉ từ QR máy.",""
+"Washer QR code scanned for batch {0}","Đã quét QR máy cho lô {0}",""
+"Batch QR code {0} scanned","Đã quét QR lô {0}",""
+"Scan the batch QR code next.","Quét tiếp QR mã lô.",""
+"Scan the washer QR code next.","Quét tiếp QR máy.",""
+"Scanned washer QR {0} and batch QR {1}","Đã quét QR máy {0} và QR lô {1}",""
+"The result below applies to all {0} set(s) in the batch.","Kết quả dưới đây sẽ áp cho toàn bộ {0} bộ trong lô.",""
+"Manual cycle data saved and confirmed","Đã lưu dữ liệu nhập tay và xác nhận",""
+"Some values are outside the program range: Needs review by R02.","Có giá trị ngoài dải của chương trình: Cần xem xét (R02).",""
+"The data was saved, but the batch cannot be closed yet.","Dữ liệu đã lưu nhưng chưa đóng lô được.",""
+"Complete the missing items, then save again.","Bổ sung các mục còn thiếu rồi lưu lại.",""
+"end time (not before the start time)","giờ kết thúc (không trước giờ bắt đầu)",""
+"photo of the printout or chart","ảnh bản in hoặc biểu đồ",""
+"confirmation tick","tick xác nhận",""
+"Photo attached: {0}","Đã đính ảnh: {0}",""
+"Photo could not be attached","Không đính được ảnh",""
+"The file {0} was not uploaded.","Tệp {0} chưa được tải lên.",""
+"Check the connection and choose the photo again.","Kiểm tra kết nối rồi chọn lại ảnh.",""
+"Choose the result","Chọn kết quả",""
+"Choose Pass or Fail for the cycle and for the cleaning test.","Chọn Đạt hoặc Không đạt cho chu trình và cho test làm sạch.",""
+"Tap the result buttons, then record again.","Chạm nút kết quả rồi ghi lại.",""
+"Confirmation tick is required","Bắt buộc tick xác nhận kết quả với máy",""
+"The result must be confirmed against the washer before it is recorded.","Kết quả phải được xác nhận đúng với máy trước khi ghi.",""
+"Tick the confirmation box, then record the result.","Tick ô xác nhận rồi ghi kết quả.",""
+"R02 PIN is required","Cần PIN của R02",""
+"R02 signs in with the card at this station and enters the 6-digit PIN.","R02 đăng nhập thẻ tại trạm này và nhập PIN 6 số.",""
+"Scan the washer QR code...","Quét QR máy rửa…",""
+"Scan the washer QR code, then the batch QR code...","Quét QR máy rồi QR mã lô…",""
+"Scan each Set ID into the washer... (scan HOAN-THANH-NAP when done)","Quét Set ID từng bộ đưa vào máy… (quét HOAN-THANH-NAP khi xong)",""
+"Wash batch","Lô rửa",""
+"Load batch","Nạp lô",""
+"Unload batch ({0} running)","Dỡ lô ({0} lô đang chạy)",""
+"Wash batches need a network connection; offline work comes with FEAT-009.","Lô rửa cần kết nối mạng; làm việc offline có từ FEAT-009.",""
+"Load washer - scan the washer QR code first, then scan each set","Nạp máy rửa — quét QR máy trước, rồi quét từng bộ",""
+"Only sets that passed T1 (receiving count) and are not in another batch are accepted.","Chỉ nhận bộ đã qua cổng T1 (kiểm đếm tiếp nhận) và chưa ở lô khác.",""
+"This program uses no chemical.","Chương trình này không dùng hóa chất.",""
+"Chemical (FEFO suggestion)","Hóa chất (gợi ý FEFO)",""
+"{0} lot {1} · expires {2} · {3} {4} left","{0} lô {1} · hạn {2} · còn {3} {4}",""
+"No valid lot of chemical {0}","Không có lô hợp lệ của hóa chất {0}",""
+"Every lot of this chemical has expired or is out of stock.","Mọi lô của hóa chất này đã hết hạn hoặc hết tồn.",""
+"Receive a new lot into stock or call R02.","Nhập kho lô mới hoặc gọi R02.",""
+"API connected - automatic data comes with FEAT-024","kết nối API — dữ liệu tự động có ở FEAT-024",""
+"not connected - unload with confirmed manual entry","không kết nối — dỡ lô nhập tay có xác nhận",""
+"Sets scanned into washer {0} ({1}) - the batch code is generated at Complete loading","Bộ đã quét vào máy {0} ({1}) — mã lô sẽ tự sinh khi Hoàn thành nạp",""
+"Complete loading → generate batch code","Hoàn thành nạp → sinh mã lô",""
+"Cancel loading","Hủy nạp",""
+"{0} set(s) were not loaded","{0} bộ không được nạp vào lô",""
+"Take these sets out of the washer and check them.","Lấy các bộ này ra khỏi máy và kiểm tra.",""
+"Batch code generated for {0} set(s)","Đã sinh mã lô cho {0} bộ",""
+"Washer","Máy rửa",""
+"Sets in batch","Bộ trong lô",""
+"QR {0}","QR {0}",""
+"{0} set(s)","{0} bộ",""
+"Batch code kept - check the Station Agent, then print again","Mã lô vẫn giữ — kiểm tra Station Agent rồi In lại",""
+"{0} lot {1}","{0} lô {1}",""
+"Wash batch lookup","Tra cứu lô rửa",""
+"Loaded at","Nạp lúc",""
+"Sets in batch ({0})","Bộ trong lô ({0})",""
+"Cycle data","Dữ liệu chu trình",""
+"No cycle data yet","Chưa có dữ liệu chu trình",""
+"Manual entry, confirmed","Nhập tay có xác nhận",""
+"Manual entry, incomplete","Nhập tay, chưa đủ",""
+"Needs review","Cần xem xét",""
+"{0} - wash again, attempt {1}: scan it into a new batch.","{0} — rửa lại lần {1}: quét vào máy mới.",""
+"None.","Không có.",""
+"Reprocessing queue at T2","Hàng đợi xử lý lại tại T2",""
+"No running wash batch.","Không có lô rửa đang chạy.",""
+"Wash batch · {0} · {1}","Lô rửa · {0} · {1}",""
+"Sets in batch ({0}): {1}","Bộ trong lô ({0}): {1}",""
+"Cycle data: confirmed manual entry","Dữ liệu chu trình: nhập tay có xác nhận",""
+"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)","Chưa có dữ liệu chu trình — cần dữ liệu tự động hoặc nhập tay có xác nhận trước khi kết luận Đạt (BRU-REP-015)",""
+"Running batches - unload: scan the washer QR code, then the batch QR code","Lô đang chạy — dỡ máy: quét QR máy rồi QR mã lô",""
+"Unloading batch {0}","Đang dỡ lô {0}",""
+"Washer QR code","QR máy",""
+"Not scanned","Chưa quét",""
+"Batch QR code","QR mã lô",""
+"Choose another batch","Chọn lô khác",""
+"Manual cycle data for batch {0}","Nhập tay dữ liệu chu trình của lô {0}",""
+"Washer alerts observed","Cảnh báo máy quan sát được",""
+"Yes - describe","Có — ghi rõ",""
+"Cycle result shown by the washer","Kết quả chu trình của máy",""
+"Printout / chart photo","Ảnh bản in / biểu đồ",""
+"required: this washer has a printout","bắt buộc: máy này có bản in",""
+"Photo attached","Đã đính ảnh",""
+"I, {0} {1}, confirm that the values above match the screen/printout of washer {2}.","Tôi, {0} {1}, xác nhận các tham số trên đúng với màn hình/bản in của máy {2}.",""
+"Save manual data and confirm","Lưu dữ liệu nhập tay và xác nhận",""
+"Cycle data of batch {0}: confirmed manual entry","Dữ liệu chu trình của lô {0}: nhập tay có xác nhận",""
+"R02 PIN (washer without connection or printout)","PIN R02 (máy không kết nối, không bản in)",""
+"Record the result for {0} set(s)","Ghi kết quả cho {0} bộ",""
+"Cycle result (applies to every set)","Kết quả chu trình (áp cho mọi bộ)",""
+"Cleaning test","Test làm sạch",""
+"I confirm that the result above matches washer {0} for batch {1}.","Tôi xác nhận kết quả trên đúng với máy {0} cho lô {1}.",""
+"Waiting for assembly","Chờ lắp ráp",""
+"Reprocess (wash again, attempt {0})","Xử lý lại (rửa lại lần {0})",""
+"Recorded Pass for {0} set(s) of batch {1}","Đã ghi Đạt cho {0} bộ của lô {1}",""
+"Recorded Fail for {0} set(s) of batch {1}","Đã ghi Không đạt cho {0} bộ của lô {1}",""
+"Every set goes back to reprocessing.","Mọi bộ về Xử lý lại.",""
+"Marked as needing a nonconformity (automatic NC comes with FEAT-030).","Đã đánh dấu cần tạo NC (NC tự động có ở FEAT-030).",""
+"Next step","Bước tiếp theo",""
+"Chemicals","Hóa chất",""
+"End time","Giờ kết thúc",""
+"Scanned","Đã quét",""
+"Start time","Giờ bắt đầu",""
+"optional","không bắt buộc",""
+"Remove from the list","Bỏ",""
+"Pass","Đạt","Wash Batch"
+"Fail","Không đạt","Wash Batch"
+A Sterile Putaway can only be created by the sterile storage service.,Chứng từ nhập kho vô khuẩn chỉ do dịch vụ kho vô khuẩn tạo.,
+A Sterile Putaway cannot be cancelled; record a new move instead.,Không hủy được chứng từ nhập kho vô khuẩn; hãy ghi một lần chuyển vị trí mới.,
+A deactivated shelf takes no new packs; its code stays valid for packs already on it.,Kệ ngừng dùng không nhận gói mới; mã vẫn hợp lệ với các gói đang nằm trên kệ.,Sterile Location
+A pack with an earlier expiry is available,Còn gói có hạn dùng sớm hơn,
+"Check the sterilization load result, or call R02.","Kiểm tra kết quả mẻ tiệt khuẩn, hoặc gọi R02.",
+Code {0} is not a pack label or a shelf code.,Mã {0} không phải nhãn gói hay mã kệ.,
+Code {0} is not valid here.,Mã {0} không dùng được ở đây.,
+"Device time of the action, in UTC.","Giờ thiết bị lúc thao tác, theo UTC.",Sterile Putaway
+Do not store the pack; send it back to the dirty zone.,Không nhập kho gói này; đưa về khu bẩn.,
+"Enter what is wrong with the pack (torn, wet, opened).","Nhập tình trạng của gói (rách, ướt, đã mở).",
+Expired on {0},Hết hạn ngày {0},
+From Location,Từ vị trí,Sterile Putaway
+From Location is required to move a pack.,Cần có vị trí cũ để chuyển vị trí gói.,
+Location Name is required.,Cần nhập tên vị trí.,
+Location is deactivated,Vị trí đã ngừng dùng,
+Location not found,Không có vị trí này,
+Location {0} does not exist.,Vị trí {0} không tồn tại.,
+Location {0} is deactivated and takes no new packs.,"Vị trí {0} đã ngừng dùng, không nhận gói mới.",
+No reason was entered for the damaged pack {0}.,Chưa nhập lý do cho gói hư hỏng {0}.,
+Not a shelf code,Không phải mã kệ,
+Open the sterile storage screen on a T6 station.,Mở màn kho vô khuẩn trên trạm T6.,
+Pack has expired,Gói đã hết hạn,
+Pack is already on this shelf,Gói đã nằm trên kệ này,
+Pack is not in the sterile store,Gói không ở trong kho vô khuẩn,
+Pack is not released,Gói chưa được giải phóng,
+Pack {0} expired on {1}.,Gói {0} hết hạn ngày {1}.,
+"Pack {0} expires on {1}, earlier than {2}.","Gói {0} hết hạn ngày {1}, sớm hơn {2}.",
+Pack {0} is already on location {1}.,Gói {0} đã ở vị trí {1}.,
+Pack {0} is {1}; only a released pack can be stored.,Gói {0} đang {1}; chỉ nhập kho được gói đã giải phóng.,
+Pack {0} is {1}; only a stored pack can be reported damaged here.,Gói {0} đang {1}; chỉ báo hư hỏng được gói đang trong kho.,
+Putaway,Nhập kho,Sterile Putaway
+"Scan another shelf, or ask R10 to activate this one.","Quét kệ khác, hoặc nhờ R10 bật lại kệ này.",
+"Scan the Cycle ID on the pack label first, then the shelf.","Quét Cycle ID trên nhãn gói trước, rồi quét kệ.",
+"Scan the DataMatrix or Cycle ID on the pack, then the KE- code on the shelf.","Quét DataMatrix hoặc Cycle ID trên gói, rồi quét mã KE- trên kệ.",
+Scan the KE- QR code on the shelf.,Quét mã QR KE- trên kệ.,
+"Scan the QR code on the shelf, or ask R10 to create the location.","Quét mã QR trên kệ, hoặc nhờ R10 tạo vị trí.",
+Scan the new shelf to move the pack.,Quét kệ mới để chuyển vị trí gói.,
+Send the set back to step {0} and complete it before storing the pack.,Đưa bộ về bước {0} và hoàn tất trước khi nhập kho gói.,
+Set is not sterile yet,Bộ chưa vô khuẩn,
+Set {0} has not passed step(s) {1}.,Bộ {0} chưa đạt bước {1}.,
+Set {0} is {1}; only a sterile set can be returned for receipt.,Bộ {0} đang {1}; chỉ bộ vô khuẩn mới chuyển về chờ tiếp nhận được.,
+Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.,Kệ đang chứa gói. Chỉ dịch vụ kho vô khuẩn được đổi.,Pack
+Shelf {0} was scanned before any pack.,Kệ {0} được quét trước khi quét gói.,
+Station of the sterile zone this shelf belongs to.,Trạm của khu vô khuẩn mà kệ này thuộc về.,Sterile Location
+Sterile Location,Vị trí kho vô khuẩn,
+Sterile Putaway,Nhập kho vô khuẩn,
+Storage Location,Vị trí lưu kho,Pack
+Stored At,Thời điểm nhập kho,Sterile Putaway
+Stored By (User),Người nhập kho (tài khoản),Sterile Putaway
+"Take {0} first, or enter a note if the department asked for this Set ID.","Lấy {0} trước, hoặc ghi chú nếu khoa yêu cầu đúng Set ID này.",
+The pack is already on location {0}.,Gói đã ở vị trí {0}.,
+Zone Station {0} is not in the sterile zone.,Trạm {0} không thuộc khu vô khuẩn.,
+{0} is not a {1} sterile storage station.,{0} không phải trạm kho vô khuẩn {1}.,
+Confirm: pack is no longer valid,Xác nhận: gói hết hiệu lực,
+Cycle ID,Cycle ID,
+Days left,Số ngày còn lại,
+Earliest use-by,Hạn dùng sớm nhất,
+No packs are waiting to return.,Không có gói nào chờ đưa về khu bẩn.,
+No packs expire in the next 7 days.,Không có gói nào hết hạn trong 7 ngày tới.,
+No packs in the sterile store.,Kho vô khuẩn chưa có gói nào.,
+Pack is on {0}. Scan another shelf to move it.,Gói đang ở {0}. Quét kệ khác để chuyển vị trí.,
+Pack {0} is no longer valid,Gói {0} đã hết hiệu lực,
+Pack {0} moved to {1},Đã chuyển gói {0} sang {1},
+Pack {0} stored on {1},Đã nhập kho gói {0} vào {1},
+Packs,Số gói,
+Packs expiring within 7 days,Gói hết hạn trong 7 ngày tới,
+Packs to return to the dirty zone,Gói cần đưa về khu bẩn,
+Report torn / wet pack,Báo gói rách / ướt,
+Retry when the connection returns.,Thử lại khi có mạng.,
+Scan the Cycle ID of the pack to store.,Quét Cycle ID của gói cần nhập kho.,
+Scan the Cycle ID of the pack...,Quét Cycle ID của gói...,
+Scan the next pack.,Quét gói tiếp theo.,
+Scan the shelf code (KE-) to store the pack.,Quét mã kệ (KE-) để nhập kho gói.,
+Scan the shelf code (KE-)...,Quét mã kệ (KE-)...,
+Sterile stock by set type,Tồn kho vô khuẩn theo loại bộ,
+Stock by location,Tồn theo vị trí,
+Storage Location,Vị trí lưu kho,
+Storing packs needs a network connection.,Nhập kho vô khuẩn cần có kết nối mạng.,
+Take the pack to the dirty zone.,Đưa gói về khu bẩn.,
+The set is waiting to go back to the dirty zone.,Bộ đang chờ đưa về khu bẩn.,
+This account cannot store packs at this station.,Tài khoản này không được nhập kho gói tại trạm này.,
+Use-by date {0},Hạn dùng {0},
+Void Reason,Lý do hết hiệu lực,
+What is wrong with the pack?,Gói bị làm sao?,
+Par Level,Cơ số,
+Par Level History,Lịch sử cơ số,
+Kind,Loại cơ số,
+Department Stock,Tồn khoa,
+Target Type,Loại đối tượng,
+Target,Đối tượng,Par Level
+Reprocessing,Tái xử lý,Par Level
+History,Lịch sử,Par Level
+Changed By,Người thay đổi,Par Level History
+Changed On,Thời điểm thay đổi,Par Level History
+Early warning when the remaining cycles are at most this percent of the limit.,Cảnh báo sớm khi số chu trình còn lại không quá tỷ lệ này của cơ số.,Par Level
+Early warning when this many cycles or fewer remain.,Cảnh báo sớm khi còn lại từ số chu trình này trở xuống.,Par Level
+"Entered by hand, never taken from the IFU automatically. 0 or blank = Undefined (warning only, does not block).","Nhập tay, không bao giờ tự lấy từ IFU. 0 hoặc để trống = Chưa xác định (chỉ cảnh báo, không chặn).",Par Level
+Inactive par levels are ignored. A par level is never deleted.,Cơ số ngừng dùng bị bỏ qua. Cơ số không bao giờ bị xóa.,Par Level
+Required when the limit changes; recorded in the history.,Bắt buộc khi thay đổi cơ số; được ghi vào lịch sử.,Par Level
+"Share above the maximum allowed without approval, up to 20 percent, emergency departments only.","Tỷ lệ được vượt cơ số tối đa không cần duyệt, tối đa 20 %, chỉ cho khoa cấp cứu.",Par Level
+Tick to save a limit that is not above the cycles already used.,Tick để lưu cơ số không cao hơn số chu trình đã dùng.,Par Level
+Reprocessing Limit,Cơ số tái xử lý,
+Maximum Cycles,Số chu trình tối đa,
+Estimate,Ước tính,
+Early Warning (%),Cảnh báo sớm (%),
+Early Warning (Cycles),Cảnh báo sớm (số lần),
+Confirm Limit Below Used Cycles,Xác nhận cơ số thấp hơn số chu trình đã dùng,
+Used Cycles,Chu trình đã dùng,
+Department Stock Limit,Cơ số tồn khoa,
+Minimum Sets,Số bộ tối thiểu,
+Maximum Sets,Số bộ tối đa,
+Allowed Overshoot (%),Cho phép vượt (%),
+Emergency Department,Khoa cấp cứu,
+Reason for Change,Lý do thay đổi,
+{0} cannot be used as the target of a {1} par level.,{0} không dùng được làm đối tượng của cơ số {1}.,
+{0} {1} does not exist.,{0} {1} không tồn tại.,
+Department is required for a department stock par level.,Cơ số tồn khoa phải chọn khoa.,
+Par level {0} already exists for this target.,Đối tượng này đã có cơ số {0}.,
+Par level values cannot be negative.,Giá trị cơ số không được âm.,
+Early warning percent must be between 0 and 100.,Ngưỡng cảnh báo sớm phải từ 0 đến 100 %.,
+Minimum ({0}) cannot be greater than maximum ({1}).,Tối thiểu ({0}) không được lớn hơn tối đa ({1}).,
+Allowed overshoot must be between 0 and {0} percent.,Mức cho phép vượt phải từ 0 đến {0} %.,
+Only an emergency department may be allowed to exceed its maximum.,Chỉ khoa cấp cứu mới được cho phép vượt cơ số tối đa.,
+Cycle limit {0} is not above the {1} cycles already used. Tick Confirm to save it anyway.,Cơ số {0} không cao hơn số chu trình đã dùng ({1}). Tick Xác nhận để vẫn lưu.,
+A reason is required when the par level changes.,Phải nhập lý do khi thay đổi cơ số.,
+Par level history cannot be removed.,Không xóa được lịch sử cơ số.,
+Par level history cannot be changed.,Không sửa được lịch sử cơ số.,
+Par Level {0},Cơ số {0},
+Defined,Đã xác định,
+Used {0} / Limit {1},Đã dùng {0} / Cơ số {1},
+Cycle limit {0} is not above the {1} cycles already used. Save it anyway?,Cơ số {0} không cao hơn số chu trình đã dùng ({1}). Vẫn lưu?,
+Open TraceCore,Mở TraceCore,
+Please sign in to open TraceCore.,Đăng nhập để mở TraceCore.,
+Choose your workspace. Station access requires an authorised employee card.,Chọn không gian làm việc. Vào trạm cần thẻ nhân viên có năng lực phù hợp.,
+CSSD management,Quản lý khoa KSNK,
+"Manage instruments, equipment and processing records.",Quản lý dụng cụ thiết bị và hồ sơ xử lý.,
+Instrument processing technician,Kỹ thuật viên xử lý dụng cụ,
+"Choose a station, then scan your employee card.",Chọn trạm rồi quét thẻ nhân viên.,
+No management access for this account.,Tài khoản chưa có quyền quản lý.,
+Not implemented yet,Chưa triển khai,
+No available station,Chưa có trạm khả dụng,
+Enter station,Vào trạm,
+Stations marked as not implemented will be enabled after their feature is delivered.,Trạm chưa triển khai sẽ được mở khi hoàn tất chức năng tương ứng.,
+Clinical department,Khoa sử dụng dụng cụ,
+"Department stock, instrument usage and issue requests.",Tồn khoa sử dụng dụng cụ và đề nghị cấp phát.,
+Department portal is not implemented yet.,Cổng khoa chưa triển khai.,
+No department access for this account.,Tài khoản chưa có quyền cổng khoa.,
+Connect to the network to choose a workspace.,Kết nối mạng để chọn không gian làm việc.,
+Loading workspaces…,Đang tải không gian làm việc…,
+Cannot load workspaces,Không tải được không gian làm việc,
+"Check your connection and account permissions, then try again.",Kiểm tra kết nối mạng và quyền tài khoản rồi thử lại.,
+Try again,Thử lại,
+Offline,Mất kết nối,TraceCore Launcher

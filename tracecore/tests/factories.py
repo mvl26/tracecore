@@ -9,25 +9,27 @@ from frappe.utils import add_days, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.instrument import bom_versions, set_units
+from tracecore.tests.utils import fixture_r10
 
 
 def make_user(email, roles=()):
 	"""Tạo (hoặc lấy) System User với các role cho trước; trả email."""
-	if frappe.db.exists("User", email):
-		user = frappe.get_doc("User", email)
-	else:
-		user = frappe.get_doc(
-			{
-				"doctype": "User",
-				"email": email,
-				"first_name": email.split("@")[0],
-				"send_welcome_email": 0,
-				"user_type": "System User",
-			}
-		).insert(ignore_permissions=True)
-	if roles:
-		user.add_roles(*roles)
-	return user.name
+	with fixture_r10():
+		if frappe.db.exists("User", email):
+			user = frappe.get_doc("User", email)
+		else:
+			user = frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": email,
+					"first_name": email.split("@")[0],
+					"send_welcome_email": 0,
+					"user_type": "System User",
+				}
+			).insert(ignore_permissions=True)
+		if roles:
+			user.add_roles(*roles)
+		return user.name
 
 
 def make_set_unit(set_type=None, max_cycles=300, department=None, **kwargs):
@@ -386,6 +388,94 @@ def make_cycle(set_unit, passed=("T1", "T2", "T3")):
 	return cycle_no
 
 
+def make_wash_ready_set(**kwargs):
+	"""Bộ đã qua cổng T1 trong chu trình mới (đủ điều kiện nạp lô rửa T2), thay cho Dirty Receipt của FEAT-019."""
+	unit = make_set_unit(**kwargs)
+	make_cycle(unit, passed=("T1",))
+	return unit.reload()
+
+
+def make_wash_machine(**kwargs):
+	"""Máy rửa khử khuẩn một cửa ở khu bẩn (serial duy nhất mỗi lần gọi); `kwargs` ghi đè trường Equipment."""
+	values = {
+		"name": "Máy rửa test",
+		"equipment_type": "Washer-Disinfector",
+		"serial": "WM-" + frappe.generate_hash(length=8),
+		"zone_in": "ZONE-DIRTY",
+		"zone_out": None,
+		**kwargs,
+	}
+	return make_equipment(**values)
+
+
+def make_wash_program(equipment, chemical=None, **kwargs):
+	"""Chương trình rửa đầy đủ định mức cho máy `equipment`, mã duy nhất mỗi lần gọi; `chemical` là Item hóa chất."""
+	values = {
+		"code": "MR-" + frappe.generate_hash(length=6).upper(),
+		"minutes": 52,
+		"kwh": 3,
+		"water": 80,
+		"chemical": chemical,
+		**kwargs,
+	}
+	return make_program(equipment, **values)
+
+
+def make_chemical_batch(item_code="HC-ENZ-01", batch_id=None, expiry_days=60, qty=10):
+	"""Lô hóa chất rửa (Item nhóm Chemical) hạn `expiry_days` ngày kể từ hôm nay, còn tồn `qty`.
+
+	`qty = 0` chỉ tạo Batch không có tồn. Lô đã quá hạn (`expiry_days < 0`) cũng chỉ tạo Batch: phiếu nhập kho chặn
+	lô quá hạn, mà dữ liệu cũ vẫn có thể còn trong sổ.
+	"""
+	make_item(item_code, "Chemical", has_batch_no=1, apply_rules=True)
+	batch_id = batch_id or f"{item_code}-{frappe.generate_hash(length=6)}"
+	expiry = add_days(today(), expiry_days)
+	if qty <= 0 or expiry_days < 0:
+		return make_batch(item_code, batch_id, expiry)
+	make_receipt(
+		[{"item_code": item_code, "batch_id": batch_id, "expiry_date": expiry, "qty": qty, "rate": 1000}],
+		supplier=make_supplier(),
+		document_no="DOC-" + frappe.generate_hash(length=8),
+	)
+	return frappe.get_doc("Batch", batch_id)
+
+
+def make_employee(card=None):
+	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User)."""
+	return frappe.get_doc(
+		{
+			"doctype": "Employee",
+			"first_name": "Wash Test",
+			"gender": "Male",
+			"date_of_birth": "1990-01-01",
+			"date_of_joining": today(),
+			"company": "_Test Company",
+			"status": "Active",
+			"tc_card_id": card or "WT-" + frappe.generate_hash(length=10),
+			"tc_card_enabled": 1,
+		}
+	).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
+
+
+def make_wash_batch(equipment, program, sets, operator="HR-EMP-TEST", **fields):
+	"""Wash Batch `Running` dựng thẳng (không qua dịch vụ nạp) để test quy tắc đọc; operator là mã giả, không kiểm link."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Wash Batch",
+			"batch_type": "Machine",
+			"equipment": _ref_name(equipment),
+			"program": _ref_name(program),
+			"operator": operator,
+			"started_at": now_datetime(),
+			"set_units": [{"set_unit": _ref_name(unit)} for unit in sets],
+			**fields,
+		}
+	)
+	doc.flags.tc_washing = True
+	doc.flags.ignore_links = True
+	return doc.insert(ignore_permissions=True)
+
+
 ITEM_GROUP_ROOT = "All Item Groups"
 ITEM_UOM = "Nos"
 
@@ -410,15 +500,27 @@ def ensure_item_masters():
 		).insert(ignore_permissions=True)
 
 
-def make_item(item_code, group, method=None, ci_class=None, shelf_life_days=None, has_batch_no=0):
+def make_item(
+	item_code,
+	group,
+	method=None,
+	ci_class=None,
+	shelf_life_days=None,
+	has_batch_no=0,
+	apply_rules=False,
+):
 	"""Tạo (hoặc lấy) Item ERPNext với các Custom Field CSSD (Item-tc_*).
 
-	group: Packaging | Chemical Indicator | Label | Lubricant. Item đã có thì trả nguyên trạng.
+	group: một giá trị của inventory.items.CSSD_GROUPS. Item đã có thì trả nguyên trạng.
+
+	Mặc định dựng Item "cũ" (trước FEAT-041, dữ liệu của test FEAT-005/014/018): luật Item vật tư
+	(inventory.items: tự bật cờ lô/hạn/bình quân, nhãn phải có phương pháp) chưa áp lúc tạo; đặt
+	apply_rules=True để tạo Item như người dùng nhập trên Desk (test FEAT-041).
 	"""
 	if frappe.db.exists("Item", item_code):
 		return frappe.get_doc("Item", item_code)
 	ensure_item_masters()
-	return frappe.get_doc(
+	item = frappe.get_doc(
 		{
 			"doctype": "Item",
 			"item_code": item_code,
@@ -432,7 +534,146 @@ def make_item(item_code, group, method=None, ci_class=None, shelf_life_days=None
 			"tc_ci_class": ci_class,
 			"tc_shelf_life_days": shelf_life_days,
 		}
-	).insert(ignore_permissions=True)
+	)
+	if not apply_rules:
+		item.flags.tc_legacy_data = (
+			True  # lần lưu kế tiếp của người dùng mới áp luật (FEAT-041 Review Focus 5)
+		)
+	return item.insert(ignore_permissions=True)
+
+
+STOCK_COMPANY = "TraceCore Test"
+STOCK_ABBR = "TCT"
+
+
+def ensure_stock_masters():
+	"""Company thử (đặt làm Company mặc định nếu site chưa có), kho mặc định, Fiscal Year và Stock Entry Type "Material Receipt" (idempotent).
+
+	Site test/dev chưa chạy Setup Wizard của ERPNext nên chưa có các bản ghi này. Perpetual inventory tắt.
+	Trả {"company", "warehouse"}.
+	"""
+	ensure_item_masters()
+	if not frappe.db.exists("Warehouse Type", "Transit"):  # Company tạo kho Goods In Transit kiểu Transit
+		frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert(ignore_permissions=True)
+	if not frappe.db.exists("Company", STOCK_COMPANY):
+		frappe.get_doc(
+			{
+				"doctype": "Company",
+				"company_name": STOCK_COMPANY,
+				"abbr": STOCK_ABBR,
+				"default_currency": "VND",
+				"country": "Vietnam",
+				"enable_perpetual_inventory": 0,
+			}
+		).insert(ignore_permissions=True)
+	if not frappe.db.get_single_value("Global Defaults", "default_company"):
+		frappe.db.set_single_value("Global Defaults", "default_company", STOCK_COMPANY)
+	year = getdate(today()).year
+	if not frappe.get_all(
+		"Fiscal Year",
+		filters=[["year_start_date", "<=", today()], ["year_end_date", ">=", today()]],
+		limit=1,
+	):
+		frappe.get_doc(
+			{
+				"doctype": "Fiscal Year",
+				"year": f"{year} TCT",
+				"year_start_date": f"{year}-01-01",
+				"year_end_date": f"{year}-12-31",
+			}
+		).insert(ignore_permissions=True)
+	if not frappe.db.exists("Stock Entry Type", "Material Receipt"):
+		frappe.get_doc(
+			{"doctype": "Stock Entry Type", "name": "Material Receipt", "purpose": "Material Receipt"}
+		).insert(ignore_permissions=True)
+	return {"company": STOCK_COMPANY, "warehouse": f"Stores - {STOCK_ABBR}"}
+
+
+def make_warehouse(name, is_group=False):
+	"""Tạo (hoặc lấy) Warehouse của Company thử; trả tên đầy đủ (<name> - TCT)."""
+	masters = ensure_stock_masters()
+	full_name = f"{name} - {STOCK_ABBR}"
+	if not frappe.db.exists("Warehouse", full_name):
+		frappe.get_doc(
+			{
+				"doctype": "Warehouse",
+				"warehouse_name": name,
+				"company": masters["company"],
+				"parent_warehouse": f"All Warehouses - {STOCK_ABBR}",
+				"is_group": 1 if is_group else 0,
+			}
+		).insert(ignore_permissions=True)
+	return full_name
+
+
+def make_supplier(name="TraceCore NCC"):
+	"""Tạo (hoặc lấy) Supplier thử; trả tên."""
+	if frappe.db.exists("Supplier", name):
+		return name
+	if not frappe.db.exists("Supplier Group", "All Supplier Groups"):
+		frappe.get_doc(
+			{"doctype": "Supplier Group", "supplier_group_name": "All Supplier Groups", "is_group": 1}
+		).insert(ignore_permissions=True)
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Supplier",
+				"supplier_name": name,
+				"supplier_group": "All Supplier Groups",
+				"supplier_type": "Company",
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
+def build_receipt(lines, supplier, document_no, warehouse=None):
+	"""Stock Entry Material Receipt chưa lưu cho vật tư CSSD.
+
+	lines: danh sách dict {item_code, batch_id, expiry_date, qty, rate}. Chỉ điền các trường dòng cần khi
+	chèn từ code (trên Desk, client script điền uom, conversion_factor).
+	"""
+	masters = ensure_stock_masters()
+	warehouse = warehouse or masters["warehouse"]
+	items = []
+	for entry in lines:
+		stock_uom = frappe.db.get_value("Item", entry["item_code"], "stock_uom")
+		items.append(
+			{
+				"item_code": entry["item_code"],
+				"qty": entry.get("qty", 1),
+				"basic_rate": entry.get("rate", 0),
+				"uom": stock_uom,
+				"stock_uom": stock_uom,
+				"conversion_factor": 1,
+				"t_warehouse": warehouse,
+				"tc_batch_id": entry.get("batch_id"),
+				"tc_expiry_date": entry.get("expiry_date"),
+			}
+		)
+	return frappe.get_doc(
+		{
+			"doctype": "Stock Entry",
+			"stock_entry_type": "Material Receipt",
+			"purpose": "Material Receipt",
+			"company": masters["company"],
+			"posting_date": today(),
+			"to_warehouse": warehouse,
+			"tc_supplier": supplier,
+			"tc_document_no": document_no,
+			"items": items,
+		}
+	)
+
+
+def make_receipt(lines, supplier, document_no, warehouse=None, submit=True):
+	"""Lập (và mặc định ghi sổ) phiếu nhập kho vật tư: Stock Entry Material Receipt theo lô/hạn."""
+	doc = build_receipt(lines, supplier, document_no, warehouse)
+	doc.insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+	return doc
 
 
 def make_batch(item_code, batch_id, expiry_date=None):
@@ -445,10 +686,42 @@ def make_batch(item_code, batch_id, expiry_date=None):
 	item = frappe.get_doc("Item", item_code)
 	if not item.has_batch_no:
 		item.has_batch_no = 1
+		item.flags.tc_legacy_data = True  # chỉ bật cờ lô, không kéo theo luật hạn dùng của FEAT-041
 		item.save(ignore_permissions=True)
 	return frappe.get_doc(
 		{"doctype": "Batch", "batch_id": batch_id, "item": item_code, "expiry_date": expiry_date}
 	).insert(ignore_permissions=True)
+
+
+def make_receipt_workbook(rows, headers=None):
+	"""File .xlsx (bytes) cho nhập kho hàng loạt: dòng 1 là tiêu đề, `rows` là danh sách dòng giá trị thô.
+
+	`headers` mặc định là tiêu đề của file mẫu; ô để nguyên kiểu (ngày, số, chuỗi) như người dùng nhập trong Excel.
+	"""
+	from io import BytesIO
+
+	from openpyxl import Workbook
+
+	from tracecore.inventory import receipt_import
+
+	workbook = Workbook()
+	sheet = workbook.active
+	sheet.title = "Receipt"
+	sheet.append(list(headers if headers is not None else receipt_import.header_labels()))
+	for values in rows:
+		sheet.append(list(values))
+	buffer = BytesIO()
+	workbook.save(buffer)
+	return buffer.getvalue()
+
+
+def attach_private_file(content, file_name):
+	"""Tải `content` lên làm File riêng tư của người dùng hiện tại; trả `file_url`."""
+	return (
+		frappe.get_doc({"doctype": "File", "file_name": file_name, "content": content, "is_private": 1})
+		.insert(ignore_permissions=True)
+		.file_url
+	)
 
 
 LABEL_ITEMS = (("VT-NHAN-HAP", "Steam"), ("VT-NHAN-PLASMA", "Plasma"))
@@ -628,3 +901,62 @@ def make_pack(set_unit, cycle_id=None, submit=True, **fields):
 	if submit:
 		doc.submit()
 	return doc
+
+
+T6_STATION = "TR-006"
+ALL_GATES = ("T1", "T2", "T3", "T4", "T5")
+
+
+def make_sterile_location(location_name="Kệ test", zone_station=T6_STATION, **fields):
+	"""Kệ kho vô khuẩn `KE-####` thuộc trạm T6 (FEAT-025)."""
+	return frappe.get_doc(
+		{
+			"doctype": "Sterile Location",
+			"location_name": location_name,
+			"zone_station": zone_station,
+			**fields,
+		}
+	).insert()
+
+
+def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_type=None, **fields):
+	"""Gói đã giải phóng sẵn sàng nhập kho T6, thay cho luồng T5b (FEAT-023, quyết định D2 của FEAT-025).
+
+	Bộ mới (hoặc cùng loại `set_type`) đi qua các cổng `passed` bằng `step_gate` (đủ năm cổng = Vô khuẩn); Pack
+	ghi sổ ở trạng thái `status` (mặc định Released), hạn `today() + expiry_days` (âm = đã quá hạn). `fields` ghi
+	đè trường Pack. Trả Pack.
+	"""
+	set_unit = make_set_unit(set_type)
+	make_cycle(set_unit, passed=passed)
+	cycle_no = frappe.db.get_value("Set Unit", set_unit.name, "current_cycle_no")
+	pack = make_pack(
+		set_unit,
+		status=status,
+		cycle_no=cycle_no,
+		expiry=add_days(today(), expiry_days),
+		**fields,
+	)
+	if not code_registry.is_issued(pack.name):  # như packing.generate: Cycle ID nằm trong Code Registry
+		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
+	step_gate.bind_cycle(set_unit.name, pack.name, None)
+	return pack
+
+
+def make_bom_set_type(type_code, lines, caps=None):
+	"""Loại bộ cùng BOM v1; ``caps``: ``{mã dụng cụ: cơ số}`` (thiếu = Chưa xác định)."""
+	for code, _qty in lines:
+		make_instrument(code, methods=BOM_INSTRUMENT_METHODS, max_cycles=(caps or {}).get(code))
+	return make_set_type(type_code, bom=lines)
+
+
+def make_par_level(target_doctype, target, par_kind="Reprocessing", **values):
+	"""Tạo Par Level (FEAT-031); ``values``: max_cycles, source, department, min_qty, max_qty, over_percent…"""
+	return frappe.get_doc(
+		{
+			"doctype": "Par Level",
+			"par_kind": par_kind,
+			"target_doctype": target_doctype,
+			"target": target,
+			**values,
+		}
+	).insert()

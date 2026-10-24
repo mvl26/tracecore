@@ -47,6 +47,13 @@ def _item_audits(item, action="Update"):
 	)
 
 
+def _form_audits(item):
+	"""Dòng Audit Log do hook form Item (`shelf_life.audit_item_change`) ghi, tách khỏi dòng Update chung của
+	`inventory.audit.on_cssd_event` (cùng một lần lưu có thể sinh cả hai: dòng chung kèm các trường Item được chuẩn hóa)."""
+	reason = frappe._("Pack type shelf life changed on the Item form")
+	return [row for row in _item_audits(item) if row.reason == reason]
+
+
 def _blocked_code(fn, *args):
 	try:
 		fn(*args)
@@ -291,12 +298,12 @@ class TestShelfLife(IsolatedTestCase):
 	def test_item_form_change_is_audited(self):
 		pack = make_pack_type("Giấy crepe", 30)
 		label = make_item("VT-NHAN-SLF", "Label", method="Steam", shelf_life_days=30).name
-		before = len(_item_audits(pack))
+		before = len(_form_audits(pack))
 
 		item = frappe.get_doc("Item", pack)
 		item.tc_shelf_life_days = 45
 		item.save()
-		audits = _item_audits(pack)
+		audits = _form_audits(pack)
 		self.assertEqual(len(audits), before + 1)
 		self.assertEqual(frappe.parse_json(audits[-1].old_value), {"tc_shelf_life_days": 30})
 		self.assertEqual(frappe.parse_json(audits[-1].new_value), {"tc_shelf_life_days": 45})
@@ -306,17 +313,17 @@ class TestShelfLife(IsolatedTestCase):
 		item.reload()
 		item.description = "Other change"
 		item.save()
-		self.assertEqual(len(_item_audits(pack)), before + 1)
+		self.assertEqual(len(_form_audits(pack)), before + 1)
 
 		# Item không phải Packaging: không phải hạn lưu loại gói, không ghi
 		label_doc = frappe.get_doc("Item", label)
 		label_doc.tc_shelf_life_days = 60
 		label_doc.save()
-		self.assertEqual(_item_audits(label), [])
+		self.assertEqual(_form_audits(label), [])
 
 		# Item mới tạo không có giá trị cũ để ghi
 		fresh = make_item("VT-GOI-SLF-NEW", "Packaging", shelf_life_days=30).name
-		self.assertEqual(_item_audits(fresh), [])
+		self.assertEqual(_form_audits(fresh), [])
 		self.assertIn(
 			"tracecore.instrument.shelf_life.audit_item_change",
 			frappe.get_hooks("doc_events").get("Item", {}).get("on_update", []),

@@ -4,3 +4,4 @@
 import "./tc_codes.js";
 import "./tc_shelf_life.js";
 import "./tc_set_unit.js";
+import "./tc_launcher.js";

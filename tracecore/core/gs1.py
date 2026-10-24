@@ -61,6 +61,7 @@ _INTERNAL_CODES = (
 	("roll", re.compile(r"CN-\d{5}")),
 	("container", re.compile(r"CT-\d{6}-\d{5}")),
 	("pack", re.compile(r"CY-\d{6}-(?:T\d{2}-)?\d{4}")),
+	("wash_batch", re.compile(r"LR-\d{6}-\d{2}")),
 )
 
 

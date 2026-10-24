@@ -113,6 +113,21 @@ def other_app_translations():
 
 
 class TestStationPage(FrappeTestCase):
+	def test_station_auth_shell_gates_the_existing_work_surface(self):
+		with open(os.path.join(APP_PATH, "ui/page/station/station.html"), encoding="utf-8") as handle:
+			html = handle.read()
+		self.assertIn('class="tc-auth-form', html)
+		self.assertIn('id="tc-card-input"', html)
+		self.assertIn('class="tc-work" hidden', html)
+		self.assertIn('class="tc-session" hidden', html)
+
+	def test_station_bearer_never_uses_persistent_storage(self):
+		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("sessionStorage", source)
+		self.assertNotIn("localStorage", source)
+		self.assertNotIn('headers["Authorization"]', source)
+
 	def test_station_page_registered(self):
 		page = frappe.get_doc("Page", "station")
 		self.assertEqual(page.module, "UI")
@@ -144,6 +159,42 @@ class TestStationPage(FrappeTestCase):
 		# màn T4 (SCR-08) ở file riêng; Frappe nối nó vào script của Page station qua hook page_js
 		self.assertIn("public/js/station_t4.js", frappe.get_hooks("page_js").get("station", []))
 		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t4.js")))
+
+	def test_station_page_includes_t2_script(self):
+		# màn T2 lô rửa (SCR-06, FEAT-021) ở file riêng, nối sau station.js như T4
+		scripts = frappe.get_hooks("page_js").get("station", [])
+		self.assertIn("public/js/station_t2.js", scripts)
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t2.js")))
+		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('method.startsWith("tracecore.v1.wash.")', source)  # bearer trong body như T4
+		self.assertIn("new T2Wash(this)", source)
+
+	def test_t2_form_times_follow_the_system_timezone_not_the_browser(self):
+		# Giờ kết thúc mặc định của form nhập tay gửi không kèm offset và server coi là giờ hệ thống: lấy theo múi giờ
+		# hệ thống (frappe.boot.time_zone.system), không theo đồng hồ trình duyệt (runner CI chạy UTC → sớm hơn 7 giờ)
+		with open(os.path.join(APP_PATH, "public", "js", "station_t2.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertNotIn("getHours", source)
+		self.assertIn("Intl.DateTimeFormat", source)
+		self.assertIn("frappe.boot.time_zone.system", source)
+
+	def test_station_page_includes_t6_script(self):
+		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
+		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))
+		path = os.path.join(APP_PATH, "public", "js", "station_t6.js")
+		self.assertTrue(os.path.exists(path))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn("T6Storage", handle.read())
+
+	def test_t6_rpcs_carry_station_token_and_screen_clears_on_session_end(self):
+		# FEAT-003: rpc() gắn token phiên cho RPC putaway như pack; hết phiên thì màn T6 xóa gói/tồn đang hiện
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn('method.startsWith("tracecore.v1.putaway.")', handle.read())
+		with open(os.path.join(APP_PATH, "public", "js", "station_t6.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("clearSession() {", source)
+		self.assertIn("sessionEnded", source)
 
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")

@@ -124,6 +124,7 @@ body.tc-kiosk .layout-main-section {
 
 .tc-scan-input {
 	flex: 1;
+	min-width: 0;
 	min-height: var(--tc-touch-station);
 	padding: var(--tc-sp-3);
 	background: var(--tc-card);
@@ -132,6 +133,30 @@ body.tc-kiosk .layout-main-section {
 	color: var(--tc-text);
 	font-family: var(--tc-font-mono);
 	font-size: var(--tc-fs-2xl);
+}
+
+.tc-work[hidden],
+.tc-session[hidden],
+.tc-auth-form[hidden] {
+	display: none;
+}
+
+.tc-session {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-ci-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-ci-form label {
+	flex-basis: 100%;
 }
 
 .tc-btn {
@@ -459,6 +484,44 @@ body.tc-kiosk .layout-main-section {
 	background: var(--tc-fail-tint);
 	border-color: var(--tc-fail);
 	color: var(--tc-fail-text);
+}
+
+/* màn T6 kho vô khuẩn (SCR-11, FEAT-025) */
+.tc-t6-block {
+	margin: var(--tc-sp-4) 0;
+	padding: var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-t6-block h3 {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-t6-hint {
+	margin: var(--tc-sp-3) 0;
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-t6-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--tc-fs-base);
+}
+
+.tc-t6-table th,
+.tc-t6-table td {
+	padding: var(--tc-sp-3) var(--tc-sp-3-5);
+	text-align: left;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-border-input);
+}
+
+.tc-t6-table th {
+	color: var(--tc-text-2);
+	font-weight: 600;
 }
 
 /* thanh cơ số §4.11 */
@@ -827,4 +890,91 @@ body.tc-kiosk .layout-main-section {
 .tc-modal-actions .tc-btn {
 	width: 100%;
 	min-height: var(--tc-touch-station);
+}
+
+/* ---- Màn T2 lô rửa (SCR-06, public/js/station_t2.js); dùng lại khối, gate, chip, nhãn của T4 ---- */
+
+.tc-t2 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t2 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t2 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t2 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t2 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-t2 .tc-t4-block > .tc-alert + .tc-alert {
+	margin-top: var(--tc-sp-3);
+}
+
+.tc-t2-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.tc-t2-table th,
+.tc-t2-table td {
+	padding: var(--tc-sp-2);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	font-size: var(--tc-fs-md);
+	text-align: left;
+	vertical-align: middle;
+}
+
+.tc-t2-table th {
+	color: var(--tc-text-2);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t2-table .tc-gates {
+	margin: 0;
+}
+
+.tc-t2 .tc-field.is-review input {
+	border: var(--tc-bw-thick) solid var(--tc-warn);
+	background: var(--tc-warn-tint);
+}
+
+.tc-t2-review {
+	color: var(--tc-warn-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t2-review[hidden] {
+	display: none;
+}
+
+.tc-t2-confirm {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	min-height: var(--tc-touch-min);
+	margin: var(--tc-sp-3) 0 0;
+	font-weight: var(--tc-fw-regular);
+	cursor: pointer;
+}
+
+.tc-label-qr {
+	/* QR lô rửa vuông, cỡ ảnh nhỏ của trạm (không có token QR riêng) */
+	width: var(--tc-photo);
+	height: var(--tc-photo);
 }

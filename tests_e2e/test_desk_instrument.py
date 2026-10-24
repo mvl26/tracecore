@@ -8,6 +8,7 @@ Form mới (``/app/instrument/new``) không bao giờ được lưu. File IFU qu
 """
 
 import json
+import os
 import re
 import uuid
 
@@ -81,6 +82,9 @@ def save_and_wait(page):
 
 def scan_t4(page, set_id):
 	page.goto("/app/station?station=TR-004")
+	# FEAT-003: kiosk chỉ nhận quét sau khi nhân viên quét thẻ (phiên trạm)
+	page.locator("#tc-card-input").fill(os.environ["TC_E2E_T4_CARD_ID"])
+	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	page.keyboard.type(set_id)
 	page.keyboard.press("Enter")

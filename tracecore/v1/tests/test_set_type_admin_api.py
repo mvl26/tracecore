@@ -45,8 +45,13 @@ def http_status():
 	return frappe.local.response.get("http_status_code")
 
 
+def user_for(roles):
+	"""User thử theo bộ role; tạo user ghi Audit Log (FEAT-003), nên test đếm Audit Log phải tạo user TRƯỚC khi đếm."""
+	return make_user(f"st-admin-{'-'.join(r.lower().replace(' ', '') for r in roles)}@example.com", roles)
+
+
 def as_user(roles, fn, **kwargs):
-	email = make_user(f"st-admin-{'-'.join(r.lower().replace(' ', '') for r in roles)}@example.com", roles)
+	email = user_for(roles)
 	frappe.set_user(email)
 	try:
 		return call(fn, **kwargs)
@@ -119,6 +124,7 @@ class TestSetTypeAdminRpc(IsolatedTestCase):
 
 	def test_rpc_roles_before_any_write(self):
 		lines = [{"instrument": "SA-1", "qty": 1}]
+		user_for(["TC R04"])
 		keys, audit_rows = frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log")
 		for fn, kwargs in (
 			(api.create, {"header": header("SAR"), "lines": lines}),
@@ -283,6 +289,7 @@ class TestSetTypeAdminRpc(IsolatedTestCase):
 
 	def test_set_pack_shelf_life_rpc_roles(self):
 		pack = make_pack_type("Giấy crepe", 30)
+		user_for(["TC R04"])
 		ok = as_user(["TC R02"], api.set_pack_shelf_life, item=pack, days="25", reason="R02 edit")
 		self.assertEqual(
 			ok,

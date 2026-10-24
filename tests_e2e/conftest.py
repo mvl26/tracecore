@@ -3,7 +3,8 @@
 Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi trường:
 TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
 và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
-TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_SETTYPE_* (test_desk_set_type.py).
+TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py),
+TC_E2E_SETTYPE_* (test_desk_set_type.py), TC_E2E_T6_* (test_station_t6.py).
 
 TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
 (vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
@@ -12,6 +13,7 @@ TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang
 import os
 import socket
 import threading
+import time
 
 import pytest
 
@@ -26,6 +28,32 @@ def require_env(name):
 	return value
 
 
+def desk_login(page, prefix="TC_E2E"):
+	"""Complete the native password + OTP challenge when enabled; never bypass 2FA."""
+	user, password = require_env(prefix + "_USER"), require_env(prefix + "_PASSWORD")
+	response = page.request.post("/api/method/login", form={"usr": user, "pwd": password})
+	assert response.ok, response.text()
+	challenge = response.json()
+	if challenge.get("tmp_id"):
+		import pyotp
+
+		totp = pyotp.TOTP(require_env(prefix + "_OTP_SECRET"))
+		# Native Frappe verifies only the current 30-second window. A code generated near the
+		# boundary can arrive after it rolled, so retry a bounded number of times with a fresh
+		# code, and only for a rejected verification code; other failures remain failures.
+		for _ in range(3):
+			response = page.request.post(
+				"/api/method/login",
+				form={"usr": user, "pwd": password, "tmp_id": challenge["tmp_id"], "otp": totp.now()},
+			)
+			if response.ok or response.status != 401 or "Incorrect Verification code" not in response.text():
+				break
+			time.sleep(1.5)
+		assert response.ok, response.text()
+	logged_in = page.request.get("/api/method/frappe.auth.get_logged_user")
+	assert logged_in.ok and logged_in.json().get("message") == user
+
+
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
 	return {**browser_context_args, "viewport": KIOSK_VIEWPORT, "base_url": BASE_URL}
@@ -33,18 +61,17 @@ def browser_context_args(browser_context_args):
 
 @pytest.fixture
 def logged_in_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_USER"), "pwd": require_env("TC_E2E_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page)
 	return page
 
 
 @pytest.fixture
 def station_page(logged_in_page):
 	station = os.environ.get("TC_E2E_STATION", "TR-003")
+	card = require_env("TC_E2E_CARD_ID")
 	logged_in_page.goto(f"/app/station?station={station}")
+	logged_in_page.locator("#tc-card-input").fill(card)
+	logged_in_page.locator("#tc-card-input").press("Enter")
 	logged_in_page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	return logged_in_page
 
@@ -75,14 +102,50 @@ def t4_demo():
 
 @pytest.fixture
 def t4_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_T4_USER"), "pwd": require_env("TC_E2E_T4_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	card = require_env("TC_E2E_T4_CARD_ID")
+	desk_login(page, "TC_E2E_T4")
 	station = os.environ.get("TC_E2E_T4_STATION", "TR-004")
 	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
+	return page
+
+
+# --- T2 (SCR-06 lô rửa, FEAT-021): user trạm TR-002 và dữ liệu demo `devdata.ensure_t2_demo` ---
+
+T2_KEYS = (
+	"machine",
+	"machine_two_door",
+	"machine_locked",
+	"machine_connected",
+	"program",
+	"sets",
+	"set_no_t1",
+	"set_redo",
+	"chemical_lot_ok",
+	"chemical_lot_expired",
+	"batch_running",
+)
+
+
+@pytest.fixture
+def t2_demo():
+	"""Mã demo T2 từ scripts/e2e_prepare.sh (TC_E2E_T2_MACHINE, ...); ``sets`` là danh sách 3 Set ID."""
+	demo = {key: require_env(f"TC_E2E_T2_{key.upper()}") for key in T2_KEYS}
+	demo["sets"] = demo["sets"].split(",")
+	return demo
+
+
+@pytest.fixture
+def t2_page(page):
+	card = require_env("TC_E2E_T2_CARD_ID")
+	desk_login(page, "TC_E2E_T2")
+	station = os.environ.get("TC_E2E_T2_STATION", "TR-002")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result[data-state='empty'] .tc-t2").wait_for(timeout=30000)
 	return page
 
 
@@ -91,11 +154,7 @@ def t4_page(page):
 
 @pytest.fixture
 def r10_page(page):
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_R10_USER"), "pwd": require_env("TC_E2E_R10_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_R10")
 	return page
 
 
@@ -112,11 +171,7 @@ def codes_demo():
 @pytest.fixture
 def codes_page(page):
 	"""User R10 cấp mã cuộn và in nhãn: TC R10 + Stock User (R10 không đọc được Item của ERPNext)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_CODES_USER"), "pwd": require_env("TC_E2E_CODES_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_CODES")
 	return page
 
 
@@ -211,11 +266,7 @@ def instr_demo():
 @pytest.fixture
 def instr_page(page):
 	"""User Desk TC R02 (khai báo và sửa danh mục dụng cụ)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_INSTR_USER"), "pwd": require_env("TC_E2E_INSTR_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	desk_login(page, "TC_E2E_INSTR")
 	return page
 
 
@@ -231,15 +282,31 @@ def other_user_page(browser, browser_context_args):
 		context = browser.new_context(**browser_context_args)
 		contexts.append(context)
 		page = context.new_page()
-		response = page.request.post(
-			"/api/method/login", form={"usr": require_env(user_env), "pwd": require_env(password_env)}
-		)
-		assert response.ok, response.text()
+		assert user_env.endswith("_USER") and password_env == user_env[: -len("_USER")] + "_PASSWORD"
+		desk_login(page, user_env[: -len("_USER")])
 		return page
 
 	yield open_page
 	for context in contexts:
 		context.close()
+
+
+# --- Vật tư tiêu hao và nhập kho Desk (SCR-24, FEAT-041): user TC R09, dữ liệu `devdata.ensure_inventory_demo` ---
+
+INV_KEYS = ("company", "warehouse", "supplier", "ci", "bi", "pk", "ch")
+
+
+@pytest.fixture
+def inv_demo():
+	"""Mã demo của `devdata.ensure_inventory_demo` (TC_E2E_INV_CI, ..._WAREHOUSE...)."""
+	return {key: require_env(f"TC_E2E_INV_{key.upper()}") for key in INV_KEYS}
+
+
+@pytest.fixture
+def inv_page(page):
+	"""User Desk TC R09 (nhập kho vật tư, khai báo vật tư)."""
+	desk_login(page, "TC_E2E_INV")
+	return page
 
 
 # --- Loại bộ và BOM theo phiên bản Desk (SCR-02, FEAT-015): user TC R02, dữ liệu `devdata.ensure_set_type_demo` ---
@@ -274,10 +341,29 @@ def settype_demo():
 
 @pytest.fixture
 def settype_page(page):
-	"""User Desk TC R02 (khai báo loại bộ, sửa BOM, ảnh bộ, phiếu kiểm đếm)."""
-	response = page.request.post(
-		"/api/method/login",
-		form={"usr": require_env("TC_E2E_SETTYPE_USER"), "pwd": require_env("TC_E2E_SETTYPE_PASSWORD")},
-	)
-	assert response.ok, response.text()
+	"""User Desk TC R02 (khai báo loại bộ, sửa BOM, ảnh bộ, phiếu kiểm đếm); hoàn tất OTP như các user Desk khác."""
+	desk_login(page, "TC_E2E_SETTYPE")
+	return page
+
+
+# --- T6 (SCR-11 kho vô khuẩn, FEAT-025): user trạm TR-006 và dữ liệu demo `devdata.ensure_t6_demo` ---
+
+T6_KEYS = ("location", "location_2", "pack_released", "pack_not_released", "pack_stored", "pack_expiring")
+
+
+@pytest.fixture
+def t6_demo():
+	"""Mã demo T6 từ scripts/e2e_prepare.sh (TC_E2E_T6_LOCATION, ..._PACK_RELEASED...)."""
+	return {key: require_env(f"TC_E2E_T6_{key.upper()}") for key in T6_KEYS}
+
+
+@pytest.fixture
+def t6_page(page):
+	card = require_env("TC_E2E_T6_CARD_ID")
+	desk_login(page, "TC_E2E_T6")
+	station = os.environ.get("TC_E2E_T6_STATION", "TR-006")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result .tc-t6").wait_for(timeout=30000)  # tồn kho đã tải xong (overview)
 	return page

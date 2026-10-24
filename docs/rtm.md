@@ -33,8 +33,8 @@
 | FR-M2-10 | Nhập tay dữ liệu máy có xác nhận người dùng | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-007 | FEAT-022 | _TBD_ |
 | FR-M2-11 | Dỡ mẻ: quét mã máy + mã mẻ, kết quả mẻ áp cho toàn bộ gói; nhập chỉ thị và giải phóng | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-007 | FEAT-023 | _TBD_ |
 | FR-M2-12 | Cách ly mẻ và xử lý mẻ không đạt | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-014 | FEAT-023 | _TBD_ |
-| FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | _TBD_ |
-| FR-M2-14 | Xử lý gói hết hạn hoặc hư hỏng | Must | Active | BR-M2 (BRD #02) | UC-11 | _TBD_ | FEAT-025 | _TBD_ |
+| FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
+| FR-M2-14 | Xử lý gói hết hạn hoặc hư hỏng | Must | Active | BR-M2 (BRD #02) | UC-11 | _TBD_ | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
 | FR-M2-15 | Cấp phát cho khoa và ký điện tử | Must | Active | BR-M2 (BRD #02) | UC-12 | _TBD_ | FEAT-026 | _TBD_ |
 | FR-M2-16 | Kiểm tra cơ số khoa khi cấp phát | Must | Active | BR-M2 (BRD #02) | UC-12 | _TBD_ | FEAT-026 | _TBD_ |
 | FR-M2-17 | Quét sử dụng và gắn bệnh nhân | Must | Active | BR-M2 (BRD #02) | UC-13 | ADR-010 | FEAT-027 | _TBD_ |
@@ -49,9 +49,9 @@
 | FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
 | FR-M3-05 | Cấp phát đồ vải theo khoa | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
 | FR-M3-06 | Đối chiếu thu – trả và định mức | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
-| FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | _TBD_ |
+| FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | [FEAT-003 Employee subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M4-02 | Chứng chỉ và cảnh báo hết hạn | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-014 | FEAT-036 | _TBD_ |
-| FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | _TBD_ |
+| FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | [FEAT-003 competency subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M4-04 | Phân ca và sản lượng theo người | Should | Active | BR-M4 (BRD #02) | UC-20 | ADR-009 | FEAT-037 | _TBD_ |
 | FR-M5-01 | Hồ sơ thiết bị theo khu | Must | Active | BR-M5 (BRD #02) | UC-21 | ADR-009 | FEAT-038 | _TBD_ |
 | FR-M5-02 | Danh mục chương trình xử lý theo máy | Must | Active | BR-M5 (BRD #02) | UC-21 | _TBD_ | FEAT-038 | _TBD_ |
@@ -59,8 +59,8 @@
 | FR-M5-04 | Sự cố và sửa chữa thiết bị | Must | Active | BR-M5 (BRD #02) | UC-22 | _TBD_ | FEAT-039 | _TBD_ |
 | FR-M5-05 | Test hằng ngày theo máy | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
 | FR-M5-06 | Khóa máy tự động | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
-| FR-M6-01 | Nhập kho theo lô/hạn | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009 | FEAT-041 | _TBD_ |
-| FR-M6-02 | Danh mục vật tư tiêu hao tái xử lý | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009 | FEAT-041 | _TBD_ |
+| FR-M6-01 | Nhập kho theo lô/hạn | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009; A-07 | FEAT-041 | _TBD_ |
+| FR-M6-02 | Danh mục vật tư tiêu hao tái xử lý | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009; A-07 | FEAT-041 | _TBD_ |
 | FR-M6-03 | Tiêu hao tự động theo mẻ/lô | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
 | FR-M6-04 | Xuất kho thủ công và FEFO | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
 | FR-M6-05 | Kiểm kê định kỳ | Should | Active | BR-M6 (BRD #02) | UC-26 | ADR-009 | FEAT-043 | _TBD_ |
@@ -71,19 +71,19 @@
 | FR-M7-04 | Định mức tiêu hao theo chương trình | Must | Active | BR-M7 (BRD #02) | UC-28 | _TBD_ | FEAT-045 | _TBD_ |
 | FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
 | FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
-| FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | _TBD_ |
-| FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | _TBD_ |
+| FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | `tracecore/par/tests/test_config.py`, `tracecore/par/tests/test_par_desk_assets.py`; e2e `tests_e2e/test_desk_par.py` (FEAT-031) |
+| FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | `tracecore/par/tests/test_config.py` (FR-M8-02, .1, .3; FEAT-031); FR-M8-02.2 chưa có (sau FEAT-026, A-11 G3) |
 | FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | _TBD_ |
 | FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | _TBD_ |
 | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-006 | _TBD_ |
 | FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-007 | _TBD_ |
 | FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
 | FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | _TBD_ | FEAT-008 | _TBD_ |
-| FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | _TBD_ |
+| FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-07 | Hệ thống sinh mã định danh cho mọi đối tượng quét | Must | Active | CHG-032 (review v1.10, kế thừa BR-M9) | UC-33 | ADR-004 | FEAT-001; FEAT-005 | _TBD_ |
 | FR-M9-06 | Chế độ offline tại trạm (Must từ v1.11 theo NFR-AVAIL-02, chốt 2026-10-17) | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-003 | FEAT-009 | _TBD_ |
-| FR-M9-08 | Đăng xuất / kết thúc phiên trạm, một thẻ – một phiên | Must | Active | Catalog gap v1.11 | UC-33 | ADR-008 | FEAT-003 | _TBD_ |
-| FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | _TBD_ |
+| FR-M9-08 | Đăng xuất / kết thúc phiên trạm, một thẻ – một phiên | Must | Active | Catalog gap v1.11 | UC-33 | ADR-008 | FEAT-003 | [FEAT-003 session evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | [FEAT-003 account evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-10 | Trung tâm thông báo: kênh, người nhận theo loại sự kiện, trạng thái gửi/đọc | Must | Active | Catalog gap v1.11 | UC-38 | ADR-014 | FEAT-010 | _TBD_ |
 | FR-M9-11 | Import danh mục ban đầu theo lô từ Excel mẫu, kiểm tra từng dòng, import ảnh hàng loạt | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-011 | _TBD_ |
 | FR-M9-12 | Xuất hồ sơ tiệt khuẩn theo kỳ (PDF + Excel/CSV) phục vụ lưu trữ ≥ 10 năm | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-012 | _TBD_ |
@@ -112,9 +112,9 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-PERF-02 | Hiệu năng — Tải đồng thời: ≥ 40 trạm/thiết bị cầm tay hoạt động đồng thời, ≥ 600 mẻ/tháng, ≥ 3.000 Cycle ID/ngày. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M6; tham chiếu UC-24, UC-25, UC-26) | ADR-012 | Foundations | _TBD_ |
 | NFR-AVAIL-01 | Sẵn sàng — Uptime: ≥ 99,5%/tháng trong giờ vận hành 24/7; bảo trì có kế hoạch ngoài giờ cao điểm. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M9; tham chiếu UC-32, UC-33) | ADR-001; ADR-011 | Foundations | _TBD_ |
 | NFR-AVAIL-02 | Sẵn sàng — Offline tại trạm: Trạm tiếp tục quét ≥ 4 giờ khi mất mạng; đồng bộ tự động khi kết nối lại (FR-M9-06 = Must từ v1.11). | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-13, UC-14, UC-15) | ADR-003; ADR-012 | FEAT-009 | _TBD_ |
-| NFR-SEC-01 | Bảo mật — Xác thực: Đăng nhập bằng tài khoản hoặc quét thẻ nhân viên; khóa sau 5 lần sai; phiên trạm tự khóa sau 10 phút. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M4, M9; tham chiếu UC-19, UC-20, UC-32, UC-33) | ADR-010 | FEAT-003; Foundations | _TBD_ |
+| NFR-SEC-01 | Bảo mật — Xác thực: Đăng nhập bằng tài khoản hoặc quét thẻ nhân viên; khóa sau 5 lần sai; phiên trạm tự khóa sau 10 phút. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M4, M9; tham chiếu UC-19, UC-20, UC-32, UC-33) | ADR-010 | FEAT-003; Foundations | [FEAT-003 authentication evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | NFR-SEC-02 | Bảo mật — Dữ liệu bệnh nhân: Mã bệnh nhân mã hóa khi lưu, ẩn một phần khi hiển thị; chỉ vai trò được phép xem. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng Toàn hệ thống; tham chiếu UC-13) | ADR-010 | FEAT-027 | _TBD_ |
-| NFR-SEC-03 | Bảo mật — Audit trail bất biến: Mọi thao tác ghi người – thời điểm – trạm – giá trị trước/sau; không xóa, chỉ vô hiệu. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8, M9; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-30, UC-31, UC-32, UC-33) | ADR-005; ADR-008 | FEAT-004; Foundations | _TBD_ |
+| NFR-SEC-03 | Bảo mật — Audit trail bất biến: Mọi thao tác ghi người – thời điểm – trạm – giá trị trước/sau; không xóa, chỉ vô hiệu. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8, M9; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-30, UC-31, UC-32, UC-33) | ADR-005; ADR-008 | FEAT-004; Foundations | [FEAT-003 auth audit subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | NFR-USAB-01 | Khả dụng — Giao diện trạm: Nút ≥ 48px, thao tác được khi đeo găng, màn hình ướt; tối đa 3 chạm cho thao tác chính. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M3; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-16, UC-17, UC-18) | ADR-002; ADR-013 | FEAT-018; FEAT-019; FEAT-027; Foundations | _TBD_ |
 | NFR-USAB-02 | Khả dụng — Ngôn ngữ: Tiếng Việt là chính, thuật ngữ theo QĐ 3671/QĐ-BYT; hỗ trợ tiếng Anh cho nhãn. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng Toàn hệ thống) | ADR-002 | Foundations | _TBD_ |
 | NFR-COMP-01 | Tuân thủ — Quy định KSNK: TT 16/2018/TT-BYT, QĐ 3671/QĐ-BYT; lưu hồ sơ tiệt khuẩn ≥ 10 năm; sổ tiệt khuẩn điện tử in được. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M4, M5; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-19, UC-20, UC-21, UC-22, UC-23) | ADR-005; ADR-007; ADR-008; ADR-013 | FEAT-007; FEAT-012; Foundations | _TBD_ |
@@ -131,8 +131,8 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-SEC-04 | Bảo mật — Không lỗ hổng High/Critical theo OWASP Top 10 / ASVS L2 trước go-live; Medium ≤ 30 ngày. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
 | NFR-SEC-05 | Bảo mật — Bản vá ≤ 30 ngày (Critical ≤ 7 ngày), thử trên staging. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
 | NFR-SEC-06 | Bảo mật — Secret ngoài mã nguồn, không ghi log; API key xoay 90 ngày; quy trình khóa AES-256. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | Foundations | _TBD_ |
-| NFR-SEC-07 | Bảo mật — RBAC 10 vai trò × DocType theo #13; R08 chỉ dữ liệu khoa mình; 100% ô ma trận test tại CI. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010; ADR-012; ADR-013 | FEAT-003; Foundations | _TBD_ |
-| NFR-SEC-08 | Bảo mật — Vô hiệu tài khoản nghỉ việc trong ngày; rà soát quyền hằng quý; cảnh báo đăng nhập bất thường ≤ 5 phút. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | FEAT-003; FEAT-036 | _TBD_ |
+| NFR-SEC-07 | Bảo mật — RBAC 10 vai trò × DocType theo #13; R08 chỉ dữ liệu khoa mình; 100% ô ma trận test tại CI. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010; ADR-012; ADR-013 | FEAT-003; Foundations | [FEAT-003 matrix subset; future R08 limits](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| NFR-SEC-08 | Bảo mật — Vô hiệu tài khoản nghỉ việc trong ngày; rà soát quyền hằng quý; cảnh báo đăng nhập bất thường ≤ 5 phút. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | FEAT-003; FEAT-036 | [FEAT-003 disable subset; review/alert pending](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | NFR-OBS-01 | Giám sát — Health check mọi dịch vụ và station agent; cảnh báo R10 ≤ 5 phút khi down hoặc hàng đợi offline > 4 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011; ADR-014 | Foundations | _TBD_ |
 | NFR-OBS-02 | Giám sát — Log JSON có cấu trúc, lưu ≥ 12 tháng, không chứa mã bệnh nhân dạng rõ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-008 | Foundations | _TBD_ |
 | NFR-MAINT-02 | Bảo trì — Test tự động độ phủ ≥ 70%, 100% BRU có test; CI trước mỗi merge. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |

@@ -2,6 +2,7 @@ import frappe
 from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 from frappe.utils import add_days, today
 
+from tracecore.setup.permissions import ROLE_CODES, build_custom_docperms
 from tracecore.tests.factories import (
 	make_bom,
 	make_instrument,
@@ -31,7 +32,7 @@ PACK_STATUSES = [
 	"Void",
 ]
 VOID_REASONS = ["Used", "Expired", "Torn", "Load Failed", "Returned Unused", "Label Damaged"]
-ALLOW_ON_SUBMIT = {"status", "void_reason", "void_note", "label_print_count"}
+ALLOW_ON_SUBMIT = {"status", "void_reason", "void_note", "label_print_count", "location"}
 
 
 def _set_unit(code="PKT"):
@@ -311,17 +312,20 @@ class TestPack(IsolatedTestCase):
 		update = [row for row in actions if row.action == "Update"][-1]
 		self.assertIn("Void", update.new_value)
 
-	def test_station_role_r04_can_create_and_submit_others_only_read(self):
-		author = make_user("pack-r04@example.com", roles=["TC R04"])
-		for ptype in ("create", "read", "write", "submit"):
-			self.assertTrue(frappe.has_permission("Pack", ptype, user=author), ptype)
-		for ptype in ("delete", "cancel", "amend"):
-			self.assertFalse(frappe.has_permission("Pack", ptype, user=author), ptype)
-		for role in ("TC R01", "TC R02", "TC R05"):
-			reader = make_user(f"pack-{role[-3:].lower()}@example.com", roles=[role])
-			self.assertTrue(frappe.has_permission("Pack", "read", user=reader), role)
-			for ptype in ("create", "write", "submit", "delete"):
-				self.assertFalse(frappe.has_permission("Pack", ptype, user=reader), f"{role} {ptype}")
+	def test_station_roles_follow_generated_pack_matrix_without_delete(self):
+		generated = {row["role"]: row for row in build_custom_docperms({"Pack"})}
+		for code in ROLE_CODES:
+			role = f"TC {code}"
+			user = make_user(f"pack-{code.lower()}@example.com", roles=[role])
+			expected = generated.get(role, {})
+			for ptype in ("read", "write", "create", "report", "submit", "cancel", "amend"):
+				self.assertEqual(
+					bool(frappe.has_permission("Pack", ptype, user=user)),
+					bool(expected.get(ptype, 0)),
+					f"{role} {ptype}",
+				)
+			self.assertFalse(expected.get("delete", 0), role)
+			self.assertFalse(frappe.has_permission("Pack", "delete", user=user), role)
 		manager = frappe.get_all(
 			"DocPerm",
 			filters={"parent": "Pack", "role": "System Manager"},

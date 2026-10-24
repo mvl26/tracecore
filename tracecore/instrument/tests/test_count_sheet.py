@@ -23,7 +23,14 @@ from tracecore.instrument.tests.test_bom_compare import bulk_set_type
 from tracecore.tests.factories import attach_set_type_photo, make_bom, make_instrument, make_set_type
 from tracecore.tests.utils import IsolatedTestCase
 from tracecore.v1 import pack as pack_api
-from tracecore.v1.tests.test_pack_api import STATION, assert_rejection, reject_count, rejects_since
+from tracecore.v1.tests.station_fixtures import make_station_session
+from tracecore.v1.tests.test_pack_api import (
+	SESSION_TOKENS,
+	STATION,
+	assert_rejection,
+	reject_count,
+	rejects_since,
+)
 from tracecore.v1.tests.test_pack_api import call as station_call
 
 # Instrument Set Type liên kết Department, Item; Set BOM Item/Instrument liên kết Item; CI chưa có Setup Wizard
@@ -361,6 +368,11 @@ class TestBomCodeAtStations(IsolatedTestCase):
 		super().setUp()
 		frappe.local.response.pop("http_status_code", None)
 		self.addCleanup(frappe.local.response.pop, "http_status_code", None)
+		# FEAT-003: RPC trạm cần phiên thẻ; `station_call` lấy token từ SESSION_TOKENS của test_pack_api, nên test tự tạo
+		# phiên thay vì dựa vào token còn sót của test khác (chạy riêng module → SESSION_INVALID)
+		SESSION_TOKENS.clear()
+		SESSION_TOKENS["Administrator"] = make_station_session("Administrator")["token"]
+		self.addCleanup(SESSION_TOKENS.clear)
 
 	def test_pack_scan_of_bom_code_is_scan_invalid(self):
 		# S8: T4 quét nhầm mã trên phiếu kiểm đếm → SCAN_INVALID 422 như mã không phải Set ID, không 500

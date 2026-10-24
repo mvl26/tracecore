@@ -10,22 +10,31 @@
   để e2e Desk in nhãn QR (SCR-33, FEAT-005) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_instrument_demo`` chuẩn bị nhóm, dụng cụ, loại bộ và bộ
   demo cho e2e Desk danh mục dụng cụ (SCR-01, FEAT-014) và in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_inventory_demo`` chuẩn bị Company, kho, nhà cung cấp và
+  bốn vật tư mẫu (chỉ thị hóa học lớp 5, chỉ thị sinh học, bao gói, hóa chất) cho e2e Desk nhập kho (SCR-24, FEAT-041).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_set_type_demo`` chuẩn bị loại gói, dụng cụ, loại bộ có
   nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t2_demo`` chuẩn bị màn T2 lô rửa (SCR-06, FEAT-021) tại
+  TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t6_demo`` chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại
+  TR-006: hai kệ ``KE-``, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn; in JSON các mã.
 """
 
 import io
 import json
 import os
+import secrets
+from contextlib import contextmanager
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, getdate, today
+from frappe.utils import add_days, getdate, now_datetime, today
 
-from tracecore.core import code_registry, gs1, step_gate
+from tracecore.core import client_time, code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
 from tracecore.instrument import bom, bom_versions, set_units
+from tracecore.reprocessing import washing
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
 
@@ -50,6 +59,167 @@ T4_GATES_FAIL = ("T1", "T2")  # chưa có cổng T3 Đạt → T4 từ chối GA
 def _require_dev_site():
 	if not (frappe.conf.get("developer_mode") or frappe.conf.get("allow_tests") or frappe.flags.in_test):
 		frappe.throw(_("Demo data can only be created on a developer or test site."))
+
+
+@contextmanager
+def _temporary_r10():
+	"""Give Administrator explicit R10 while demo accounts are created, then restore exactly.
+
+	Never commit inside this block: temporary authority must not be persisted.
+	"""
+	admin = frappe.get_doc("User", "Administrator")
+	had_r10 = any(row.role == "TC R10" for row in admin.roles)
+	try:
+		if not had_r10:
+			admin.add_roles("TC R10")
+		yield
+	finally:
+		if not had_r10:
+			admin.remove_roles("TC R10")
+
+
+def _enroll_otp(user):
+	"""Enroll a demo account in native OTP App authentication; returns its (stable) secret."""
+	import pyotp
+	from frappe.twofactor import get_default, set_default
+	from frappe.utils.password import decrypt, encrypt
+
+	key = user + "_otpsecret"
+	stored = get_default(key)
+	secret = decrypt(stored) if stored else pyotp.random_base32()
+	if not stored:
+		set_default(key, encrypt(secret))
+	set_default(user + "_otplogin", 1)
+	return secret
+
+
+def _require_administrator():
+	if frappe.session.user != "Administrator":
+		frappe.throw(_("Only Administrator can prepare demo accounts."), frappe.PermissionError)
+
+
+def ensure_e2e_users(station, t4_station, password, r10_password):
+	"""CLI dev/test bootstrap; returned secrets must go only to the private E2E env file.
+
+	Enroll generated demo accounts in native OTP App authentication, avoiding email
+	delivery without disabling 2FA. Never commit while temporary authority is held.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		result = {
+			"user": provision.station_user(station, password),
+			"t4_user": provision.station_user(t4_station, password),
+			"r10_user": provision.desk_user("TC R10", "r10-e2e", r10_password),
+		}
+		for prefix in ("", "t4_", "r10_"):
+			result[prefix + "otp_secret"] = _enroll_otp(result[prefix + "user"])
+	return result
+
+
+def ensure_t2_e2e_user(station, password):
+	"""User kiosk trạm T2 (khu bẩn → TC R03) cho e2e màn lô rửa (FEAT-021), đăng ký OTP App như `ensure_e2e_users`.
+
+	Tách khỏi `ensure_e2e_users` để không đổi khóa trả về của hàm đó; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		return {"t2_user": user, "t2_otp_secret": _enroll_otp(user)}
+
+
+def ensure_desk_users(password, specs):
+	"""Dev/test Desk accounts for e2e whose role needs 2FA (R01/R02/R09/R10).
+
+	``specs`` is a list of ``{"key", "role", "name", "extra_roles"}``; returns ``<key>_user`` and
+	``<key>_otp_secret`` for each. Secrets go only to the private E2E env file.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	result = {}
+	with _temporary_r10():
+		for spec in specs:
+			user = provision.desk_user(spec["role"], spec["name"], password)
+			for role in spec.get("extra_roles") or ():
+				provision.desk_user(role, spec["name"], password)
+			result[spec["key"] + "_user"] = user
+			result[spec["key"] + "_otp_secret"] = _enroll_otp(user)
+	return result
+
+
+def ensure_station_demo(station, user, card_id=None, second_station=None):
+	"""Dev/test-only card identity for an existing kiosk User; no password or PIN is seeded.
+
+	Cards are generated once and reused. Expired demo competencies are renewed in place;
+	valid competencies and their dates remain unchanged on a repeated preparation run.
+	"""
+	from tracecore.core.station_auth import normalize_card_id
+
+	_require_dev_site()
+	stations = list(dict.fromkeys(filter(None, (station, second_station))))
+	for target in stations:
+		if not frappe.db.exists("Zone Station", {"name": target, "is_zone": 0, "is_active": 1}):
+			frappe.throw(_("An active station is required for demo data."))
+	if not frappe.db.get_value("User", user, "enabled"):
+		frappe.throw(_("An enabled user is required for demo data."))
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	if not company:
+		frappe.throw(_("Complete company setup before creating demo employees."))
+	name = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	employee = (
+		frappe.get_doc("Employee", name)
+		if name
+		else frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": "TraceCore Demo",
+				"gender": "Male",
+				"date_of_birth": "1990-01-01",
+				"date_of_joining": today(),
+				"company": company,
+				"user_id": user,
+			}
+		)
+	)
+	employee.status = "Active"
+	employee.tc_card_enabled = 1
+	employee.tc_card_id = normalize_card_id(card_id or employee.tc_card_id or f"E2E-{secrets.token_hex(12)}")
+	employee.save(ignore_permissions=True)
+	now = now_datetime()
+	for target in stations:
+		name = frappe.db.get_value(
+			"Station Competency", {"employee": employee.name, "station": target}, "name"
+		)
+		competency = (
+			frappe.get_doc("Station Competency", name)
+			if name
+			else frappe.get_doc(
+				{
+					"doctype": "Station Competency",
+					"employee": employee.name,
+					"station": target,
+				}
+			)
+		)
+		if (
+			not name
+			or not competency.is_active
+			or not (competency.valid_from <= now <= competency.valid_until)
+		):
+			competency.update(
+				{"valid_from": add_days(now, -1), "valid_until": add_days(now, 365), "is_active": 1}
+			)
+			competency.save(ignore_permissions=True)
+	result = {"employee": employee.name, "card_id": employee.tc_card_id}
+	print(json.dumps(result, sort_keys=True))
+	return result
 
 
 def ensure_demo_set():
@@ -677,6 +847,76 @@ def ensure_instrument_demo():
 	return result
 
 
+# --- Demo vật tư tiêu hao và nhập kho Desk SCR-24 (FEAT-041) --------------------------------------------
+# Stock Entry và Item không xóa được: vật tư mẫu có mã cố định (dùng lại); mã lô và số chứng từ do e2e tự sinh duy nhất.
+INV_SUPPLIER = "TraceCore NCC"
+INV_MIN_QTY = 10
+# khóa -> (mã Item, nhóm vật tư CSSD, lớp chỉ thị hóa học)
+INV_ITEMS = {
+	"ci": ("TCINV-CI5", "Chemical Indicator", "5"),
+	"bi": ("TCINV-BI", "Biological Indicator", None),
+	"pk": ("TCINV-PK", "Packaging", None),
+	"ch": ("TCINV-CH", "Chemical", None),
+}
+
+
+def _inventory_warehouse(company):
+	"""Kho lá của Company, ưu tiên ``Stores - <abbr>``; site đã chạy Setup Wizard đặt tên kho theo ngôn ngữ nên tra theo Company."""
+	abbr = frappe.db.get_value("Company", company, "abbr")
+	if frappe.db.exists("Warehouse", f"Stores - {abbr}"):
+		return f"Stores - {abbr}"
+	warehouse = frappe.db.get_value(
+		"Warehouse",
+		{"company": company, "is_group": 0, "disabled": 0},
+		"name",
+		order_by="creation asc",
+	)
+	if not warehouse:
+		frappe.throw(_("Company {0} has no warehouse.").format(company))
+	return warehouse
+
+
+def _ensure_inventory_item(code, group, ci_class, warehouse):
+	item = factories.make_item(code, group, ci_class=ci_class, apply_rules=True)
+	if not item.get("reorder_levels"):
+		item.append(
+			"reorder_levels",
+			{
+				"warehouse": warehouse,
+				"warehouse_reorder_level": INV_MIN_QTY,
+				"warehouse_reorder_qty": INV_MIN_QTY,
+				"material_request_type": "Purchase",
+			},
+		)
+		item.save(ignore_permissions=True)
+	return item.name
+
+
+def ensure_inventory_demo():
+	"""Dữ liệu demo cho e2e Desk nhập kho vật tư (SCR-24, FEAT-041) trên site dev/test; idempotent, trả và in JSON.
+
+	Company thử (chỉ tạo nếu site chưa có), kho lá của Company, nhà cung cấp và bốn vật tư có tồn tối thiểu theo kho:
+	``ci`` (chỉ thị hóa học lớp 5), ``bi`` (chỉ thị sinh học), ``ch`` (hóa chất) bắt buộc hạn dùng; ``pk`` (bao gói)
+	không bắt buộc hạn. Tài khoản TC R09 do ``scripts/e2e_prepare.sh`` tạo (mật khẩu ngẫu nhiên, không nằm ở đây).
+	"""
+	_require_dev_site()
+	masters = factories.ensure_stock_masters()
+	company = frappe.db.get_single_value("Global Defaults", "default_company") or masters["company"]
+	warehouse = _inventory_warehouse(company)
+	items = {
+		key: _ensure_inventory_item(code, group, ci_class, warehouse)
+		for key, (code, group, ci_class) in INV_ITEMS.items()
+	}
+	result = {
+		"company": company,
+		"warehouse": warehouse,
+		"supplier": factories.make_supplier(INV_SUPPLIER),
+		**items,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
 # --- Demo loại bộ và BOM theo phiên bản (FEAT-015) ----------------------------------------------------------------
 # Loại bộ / dòng BOM / dụng cụ không xóa được: dữ liệu cố định, dùng lại giữa các lần chạy e2e.
 SETTYPE_CODES = {"set_type": "DEMOF15S", "set_type_inflight": "DEMOF15T", "set_type_edit": "DEMOF15E"}
@@ -883,6 +1123,266 @@ def ensure_set_type_demo():
 		"inflight_effective": bom_versions.effective_version(inflight_type),
 		"set_type_edit": edit_type,
 		"department": _demo_department(),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T2 lô rửa (FEAT-021, SCR-06) ------------------------------------------------------------------
+T2_STATION = "TR-002"
+T2_CHEMICAL = "DEMO-T2-ENZ"
+T2_LOT_OK = "DEMO-T2-ENZ-OK"
+T2_LOT_EXPIRED = "DEMO-T2-ENZ-HET"
+T2_SERIALS = {
+	"machine": "DEMO-T2-WASH-01",
+	"machine_two_door": "DEMO-T2-WASH-02",
+	"machine_locked": "DEMO-T2-WASH-LOCK",
+	"machine_connected": "DEMO-T2-WASH-API",
+}
+T2_PARAMETERS = [
+	{
+		"parameter_name": "Disinfection temperature",
+		"unit": "°C",
+		"min_value": 90,
+		"max_value": 95,
+		"required": 1,
+	},
+	{"parameter_name": "Hold time", "unit": "min", "min_value": 5, "max_value": 0, "required": 1},
+	{"parameter_name": "Chemical dose", "unit": "ml", "min_value": 0, "max_value": 0, "required": 0},
+]
+T2_READY_SETS = 3
+
+
+def _t2_machine(key, **fields):
+	"""Máy rửa demo theo serial cố định (Equipment không xóa được nên dùng lại); trả TB-####."""
+	name = frappe.db.get_value("Equipment", {"serial_no": T2_SERIALS[key]}, "name")
+	if name:
+		return name
+	values = {
+		"name": f"Demo washer {key}",
+		"equipment_type": "Washer-Disinfector",
+		"serial": T2_SERIALS[key],
+		"zone_in": "ZONE-DIRTY",
+		"zone_out": None,
+		"manufacturer": EQ_MANUFACTURER,
+		"model": "DEMO-W2",
+		**fields,
+	}
+	return factories.make_equipment(**values).name
+
+
+def _t2_program(equipment):
+	"""Chương trình rửa đang dùng đầu tiên của máy (tạo nếu chưa có), có hóa chất và tham số."""
+	name = frappe.db.get_value(
+		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="creation asc"
+	)
+	if name:
+		return name
+	code = "DEMO-T2-" + equipment.replace("TB-", "")
+	return factories.make_wash_program(
+		equipment, chemical=T2_CHEMICAL, code=code, parameters=T2_PARAMETERS
+	).name
+
+
+def _t2_chemical_lots():
+	factories.make_item(T2_CHEMICAL, "Chemical", has_batch_no=1, apply_rules=True)
+	if not frappe.db.exists("Batch", T2_LOT_OK):
+		factories.make_chemical_batch(T2_CHEMICAL, batch_id=T2_LOT_OK, expiry_days=365, qty=100)
+	if not frappe.db.exists("Batch", T2_LOT_EXPIRED):
+		factories.make_batch(T2_CHEMICAL, T2_LOT_EXPIRED, add_days(today(), -1))
+	return T2_LOT_OK, T2_LOT_EXPIRED
+
+
+def _t2_free(set_id):
+	return not frappe.db.sql(
+		"""select 1 from `tabWash Batch Set Unit` row join `tabWash Batch` batch on batch.name = row.parent
+		where row.set_unit = %s and batch.docstatus = 0 and batch.status = 'Running' limit 1""",
+		set_id,
+	)
+
+
+def _t2_candidates(set_type, status, wanted):
+	"""Set ID của `set_type` có trạng thái `status`, chưa có Cycle ID, không ở lô đang chạy và cổng đúng `wanted`."""
+	rows = frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type, "status": status, "current_cycle_no": [">", 0]},
+		fields=["name", "active_cycle_id"],
+		order_by="creation asc",
+	)
+	out = []
+	for row in rows:
+		if row.active_cycle_id or not _t2_free(row.name):
+			continue
+		gates = {gate["step"]: gate["result"] for gate in step_gate.gates(row.name)}
+		if all(gates[step] == result for step, result in wanted.items()):
+			out.append(row.name)
+	return out
+
+
+def _t2_new_set(set_type, passed=(), fail_t2=False):
+	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
+		ignore_permissions=True
+	)
+	factories.make_cycle(unit.name, passed=passed)
+	if fail_t2:
+		step_gate.record(unit.name, "T2", "Fail")
+	return unit.name
+
+
+def _t2_operator():
+	name = frappe.db.get_value("Employee", {"status": "Active"}, "name", order_by="creation asc")
+	return name or factories.make_employee(card="DEMO-T2-OPERATOR").name
+
+
+def ensure_t2_demo():
+	"""Chuẩn bị màn T2 lô rửa (SCR-06) tại TR-002 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``machine``: máy rửa một cửa có bản in (Đạt không cần R02); ``machine_two_door``: máy hai cửa Bẩn → Sạch, có một
+	  lô ``batch_running`` đang chạy; ``machine_locked``: máy đã ngừng sử dụng (``Retired``, từ chối 423);
+	  ``machine_connected``: máy kết nối API (FEAT-021 vẫn nhập tay, Q13). Mỗi máy có một chương trình có hóa chất
+	  ``DEMO-T2-ENZ`` và tham số (``program`` là chương trình của ``machine``).
+	- ``sets``: 3 bộ loại hấp demo T4 đã qua T1, chưa ở lô nào; ``set_no_t1``: bộ chưa qua T1; ``set_redo``: bộ rửa
+	  Không đạt (có trong hàng đợi xử lý lại).
+	- ``chemical_lot_ok`` còn hạn, còn tồn; ``chemical_lot_expired`` đã hết hạn.
+	Bộ đã được nạp/rửa được thay bằng bộ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	ensure_sample_templates()
+	ensure_object_templates()
+	lot_ok, lot_expired = _t2_chemical_lots()
+	machine = _t2_machine("machine", has_printout=1)
+	two_door = _t2_machine("machine_two_door", zone_out="ZONE-CLEAN", has_printout=1)
+	locked = _t2_machine("machine_locked")
+	connected = _t2_machine("machine_connected", is_connected=1, has_printout=1)
+	if frappe.db.get_value("Equipment", locked, "status") != "Retired":
+		equipment_status.set_status(locked, "Retired", "Demo T2: washer retired")
+	programs = {key: _t2_program(name) for key, name in (("machine", machine), ("two_door", two_door))}
+	_t2_program(connected)
+
+	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"])
+	ready = _t2_candidates(set_type, "Processing", {"T1": "Pass", "T2": "Pending"})
+	while len(ready) < T2_READY_SETS:
+		ready.append(_t2_new_set(set_type, passed=("T1",)))
+	no_t1 = _t2_candidates(set_type, "Processing", {"T1": "Pending"})
+	redo = _t2_candidates(set_type, "Reprocess", {"T1": "Pass", "T2": "Fail"})
+
+	running = frappe.db.get_value(
+		"Wash Batch",
+		{"equipment": two_door, "status": "Running", "docstatus": 0},
+		"name",
+		order_by="creation asc",
+	)
+	if not running:
+		running = washing.start(
+			two_door,
+			programs["two_door"],
+			[_t2_new_set(set_type, passed=("T1",))],
+			[{"item": T2_CHEMICAL, "lot": lot_ok}],
+			T2_STATION,
+			client_time.utc_now(),
+			_t2_operator(),
+		)["batch"]
+
+	result = {
+		"machine": machine,
+		"machine_two_door": two_door,
+		"machine_locked": locked,
+		"machine_connected": connected,
+		"program": programs["machine"],
+		"sets": ready[:T2_READY_SETS],
+		"set_no_t1": no_t1[0] if no_t1 else _t2_new_set(set_type),
+		"set_redo": redo[0] if redo else _t2_new_set(set_type, passed=("T1",), fail_t2=True),
+		"chemical_lot_ok": lot_ok,
+		"chemical_lot_expired": lot_expired,
+		"batch_running": running,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T6 kho vô khuẩn (FEAT-025) ------------------------------------------------------------------
+T6_STATION = "TR-006"
+T6_SET_TYPE = "DEMOT6S"
+T6_LOCATIONS = {"location": "DEMO-T6 Shelf A", "location_2": "DEMO-T6 Shelf B"}
+T6_STORE_DAYS = 30  # hạn của gói demo "còn xa" (ngoài danh sách sắp hết hạn 7 ngày)
+T6_EXPIRING_DAYS = 3  # hạn của gói demo nằm trong danh sách sắp hết hạn 7 ngày (FR-M2-13.2)
+
+
+def ensure_t6_e2e_user(station, password):
+	"""User kiosk trạm T6 (khu vô khuẩn → TC R06) cho e2e màn kho vô khuẩn (FEAT-025), đăng ký OTP App.
+
+	Tách khỏi `ensure_e2e_users` để không đổi khóa trả về của hàm đó; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		return {"t6_user": user, "t6_otp_secret": _enroll_otp(user)}
+
+
+def _t6_location(location_name):
+	"""Kệ demo `KE-####` đang dùng của TR-006 (tạo một lần theo tên kệ); trả mã kệ."""
+	code = frappe.db.get_value(
+		"Sterile Location", {"location_name": location_name, "zone_station": T6_STATION}, "name"
+	)
+	if not code:
+		code = factories.make_sterile_location(location_name, T6_STATION).name
+	if not frappe.db.get_value("Sterile Location", code, "is_active"):
+		frappe.db.set_value("Sterile Location", code, "is_active", 1)
+	return code
+
+
+def _t6_candidate(status, expiring=False, location=None):
+	"""Gói demo đầu tiên (loại bộ `T6_SET_TYPE`) ở `status`, hạn trong (expiring) hoặc ngoài 7 ngày tới."""
+	from tracecore.reprocessing import storage
+
+	horizon = add_days(today(), storage.EXPIRING_DAYS)
+	filters = {
+		"docstatus": 1,
+		"set_type": T6_SET_TYPE,
+		"status": status,
+		"expiry": ["between", [today(), horizon]] if expiring else [">", horizon],
+		"location": location or ["is", "not set"],
+	}
+	return frappe.db.get_value("Pack", filters, "name", order_by="creation asc")
+
+
+def _t6_new_pack(status="Released", expiry_days=T6_STORE_DAYS, location=None, passed=factories.ALL_GATES):
+	"""Gói mới của loại bộ demo T6 qua `factories.make_released_pack`; có `location` thì nhập kho thật lên kệ đó."""
+	from tracecore.reprocessing import storage
+
+	pack = factories.make_released_pack(
+		status=status, expiry_days=expiry_days, passed=passed, set_type=T6_SET_TYPE
+	)
+	if location:
+		storage.putaway(pack.name, location, T6_STATION)
+	return pack.name
+
+
+def ensure_t6_demo():
+	"""Chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại TR-006 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``location``, ``location_2``: hai kệ ``KE-`` đang dùng của TR-006.
+	- ``pack_released``: gói Released (bộ đủ 5 cổng Đạt), chưa lên kệ, hạn 30 ngày — để nhập kho.
+	- ``pack_not_released``: gói Packed (bộ mới qua T1-T4) — nhập kho bị chặn ``PACK_NOT_RELEASED``.
+	- ``pack_stored``: gói đang trong kho trên ``location``, hạn 30 ngày — để báo rách.
+	- ``pack_expiring``: gói đang trong kho trên ``location_2``, hạn 3 ngày — hiện ở danh sách sắp hết hạn 7 ngày.
+	Gói đã bị nhập kho/báo rách/hết hạn được thay bằng gói mới khi gọi lại.
+	"""
+	_require_dev_site()
+	_ensure_set_type("Steam", _t4_catalog()["Steam"], code=T6_SET_TYPE)
+	locations = {key: _t6_location(name) for key, name in T6_LOCATIONS.items()}
+	result = {
+		**locations,
+		"pack_released": _t6_candidate("Released") or _t6_new_pack(),
+		"pack_not_released": _t6_candidate("Packed")
+		or _t6_new_pack(status="Packed", passed=("T1", "T2", "T3", "T4")),
+		"pack_stored": _t6_candidate("In Sterile Stock", location=locations["location"])
+		or _t6_new_pack(location=locations["location"]),
+		"pack_expiring": _t6_candidate("In Sterile Stock", expiring=True, location=locations["location_2"])
+		or _t6_new_pack(expiry_days=T6_EXPIRING_DAYS, location=locations["location_2"]),
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

@@ -15,8 +15,15 @@ from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import packing
-from tracecore.v1._common import PACKING_ROLES, BadRequestError, require_any_role, run_at_step
+from tracecore.reprocessing import packing, storage
+from tracecore.v1._common import (
+	PACKING_ROLES,
+	STORAGE_ROLES,
+	BadRequestError,
+	require_any_role,
+	run_at_step,
+	station_session,
+)
 from tracecore.v1.printer import change_roll
 
 STEP = packing.STEP  # màn đóng gói chỉ chạy ở trạm bước T4
@@ -71,11 +78,11 @@ def _maint_actions(value):
 def _scan_invalid(scanned):
 	"""Mã không dùng được ở màn đóng gói: lạ (khi chưa mở bộ) hoặc mã nội bộ của loại khác (nhân viên, thiết bị…)."""
 	if scanned["type"] == "unknown":
-		reason = _("Code {0} is not a TraceCore code, and no set is open to take it as an indicator lot.")
-		action = _("Scan the Set ID on the set tag first, or call R02.")
+		reason = _("Code {0} is not a set, pack or label roll.")
+		action = _("Scan indicator lots in the separate indicator lot field.")
 	else:
-		reason = _("Code {0} is not a set, pack, label roll or indicator lot.")
-		action = _("Scan the Set ID, the Cycle ID, the label roll code or the indicator lot.")
+		reason = _("Code {0} is not a set, pack or label roll.")
+		action = _("Scan the Set ID, the Cycle ID or the label roll code.")
 	return BlockedError(
 		Block("SCAN_INVALID", _("Invalid code"), reason.format(scanned["raw"] or "-"), action)
 	)
@@ -101,7 +108,7 @@ def _open_set_method(open_set):
 
 
 def _route(scanned, raw, station, open_set):
-	"""Ô quét duy nhất của màn T4 (D10): phân loại bằng `gs1.parse_scan` rồi giao cho dịch vụ tương ứng."""
+	"""Ô chính T4: Set ID, Cycle ID hoặc cuộn nhãn; lô chỉ thị có endpoint riêng."""
 	kind = scanned["type"]
 	if kind == "set":
 		return {"ok": True, "kind": "context", "context": packing.get_context(raw, station)}
@@ -109,21 +116,19 @@ def _route(scanned, raw, station, open_set):
 		return {"ok": True, "kind": "pack", "pack": packing.lookup(raw)}
 	if kind == "roll":
 		return {"ok": True, "kind": "roll", "roll": change_roll(scanned["id"], station)}
-	if kind == "unknown" and open_set:
-		lot = packing.resolve_ci_batch(raw, _open_set_method(open_set), today())
-		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
 	raise _scan_invalid(scanned)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
-def scan(raw, station, open_set=None, client_ts=None):
+def scan(raw, station, open_set=None, client_ts=None, token=None):
 	"""Xử lý một lần quét ở màn T4. Trả ``{"ok": true, "kind": ..., <kind>: ...}``:
 
 	- ``context`` (Set ID): ngữ cảnh đóng gói của bộ (BOM, cổng, bảo dưỡng, cơ số, loại gói, máy in);
 	- ``pack`` (Cycle ID hoặc DataMatrix nhãn gói): tra cứu gói (AC-14);
 	- ``roll`` (``CN-#####``): đổi cuộn của máy in duy nhất của trạm (AC-9);
-	- ``ci`` (mã khác, khi `open_set` là bộ đang mở): lô chỉ thị hóa học loại 5/6 đúng phương pháp của bộ.
+	Lô chỉ thị dùng endpoint ``resolve_ci`` của ô riêng, không phân loại từ ô chính.
 
 	Từ chối nghiệp vụ: xem `_common.run_at_step`; mã lạ khi chưa mở bộ và mã loại khác là ``SCAN_INVALID`` (422).
 	"""
@@ -146,13 +151,40 @@ def scan(raw, station, open_set=None, client_ts=None):
 	)
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
+@idempotent
+def resolve_ci(raw, station, open_set, client_ts=None, token=None):
+	"""Ô lô chỉ thị riêng: giữ nguyên kiểm tra loại 5/6, phương pháp và hạn dùng FEAT-018."""
+	require_any_role(*PACKING_ROLES)
+	if not isinstance(raw, str) or not isinstance(open_set, str):
+		raise BadRequestError(_("raw and open_set must be strings."))
+	timestamp = parse_client_ts(client_ts)
+
+	def resolve():
+		lot = packing.resolve_ci_batch(raw.strip(), _open_set_method(open_set), today())
+		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
+
+	scanned = gs1.parse_scan(open_set)
+	return run_at_step(
+		STEP,
+		station,
+		timestamp,
+		resolve,
+		"Set Unit" if scanned["type"] == "set" else None,
+		scanned["id"],
+		raw.strip(),
+	)
+
+
 # --- Sinh Cycle ID, in lại, hủy -------------------------------------------------------------------------
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
 def generate_cycle_id(
-	set_id, station, confirmed_lines, ci_batch, pack_type, maint_actions=None, client_ts=None
+	set_id, station, confirmed_lines, ci_batch, pack_type, maint_actions=None, client_ts=None, token=None
 ):
 	"""Sinh Cycle ID cho bộ tại T4 (FR-M2-07/08) trong một transaction; trả gói, HRI, DataMatrix và lệnh in.
 
@@ -182,9 +214,10 @@ def generate_cycle_id(
 	)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
-def reprint_label(cycle_id, reason, station, client_ts=None):
+def reprint_label(cycle_id, reason, station, client_ts=None, token=None):
 	"""In lại nhãn cùng Cycle ID trong 10 phút kể từ khi sinh (AC-10); cần lý do."""
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
@@ -198,9 +231,10 @@ def reprint_label(cycle_id, reason, station, client_ts=None):
 	)
 
 
-@frappe.whitelist(methods=["POST"])
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
 @idempotent
-def void(cycle_id, reason, station, note=None, client_ts=None):
+def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
 	"""Hủy Cycle ID tại T4 (D12): `reason` là một lý do hủy của Pack; bộ về Reprocess để đóng gói lại."""
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
@@ -209,6 +243,27 @@ def void(cycle_id, reason, station, note=None, client_ts=None):
 		station,
 		timestamp,
 		lambda: {"ok": True, **packing.void(cycle_id, reason, station, note)},
+		"Pack",
+		cycle_id,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*STORAGE_ROLES)
+@idempotent
+def mark_damaged(cycle_id, reason, station, client_ts=None, token=None):
+	"""Báo gói trong kho vô khuẩn bị rách/ướt/mở tại T6 (FR-M2-14, UC-11 A1): gói Hết hiệu lực, bộ Chờ tiếp nhận.
+
+	Cần phiên trạm thẻ nhân viên đúng trạm (A-08, `station_session`) như RPC T4. `reason` là mô tả bắt buộc, lưu vào
+	ghi chú hủy. Gói không ở trong kho → ``PACK_NOT_IN_STOCK`` (409).
+	"""
+	require_any_role(*STORAGE_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		storage.STEP,
+		station,
+		timestamp,
+		lambda: {"ok": True, **storage.mark_damaged(cycle_id, reason, station, timestamp)},
 		"Pack",
 		cycle_id,
 	)

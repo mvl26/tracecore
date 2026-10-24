@@ -1,4 +1,4 @@
-"""Mẫu nhãn QR đối tượng (FEAT-005 Task 2, A-05 R2): Equipment, Station, Roll, Employee Card, Location."""
+"""Mẫu nhãn QR đối tượng (FEAT-005 Task 2, A-05 R2): Equipment, Station, Roll, Employee Card, Location; Wash Batch (FEAT-021)."""
 
 from unittest.mock import patch
 
@@ -16,13 +16,14 @@ from tracecore.setup.label_templates import (
 from tracecore.tests.utils import IsolatedTestCase
 from tracecore.tracecore.doctype.label_template.test_label_template import _text_boxes
 
-OBJECTS = ("Equipment", "Station", "Roll", "Employee Card", "Location")
+OBJECTS = ("Equipment", "Station", "Roll", "Employee Card", "Location", "Wash Batch")
 SCAN_TYPES = {
 	"Equipment": "equipment",
 	"Station": "station",
 	"Roll": "roll",
 	"Employee Card": "employee",
 	"Location": "location",
+	"Wash Batch": "wash_batch",
 }
 BODY = "^XA{{ qr(doc.payload, 20, 40, 6) }}^FO220,40^FD{{ text(doc.code) }}^FS^XZ"
 

@@ -1,0 +1,41 @@
+code,doctype,R01,R02,R03,R04,R05,R06,R07,R08,R09,R10,notes
+DT-INSTR,Instrument,R,RWS,R,R,R,R,R,R,R,RW,FEAT-014 A-06 I15: mọi vai trò TC được đọc; System Manager theo AMENDMENT_GRANTS
+DT-SETTYPE,Instrument Set Type,R,RWS,R,R,R,R,R,R,R,RW,"FEAT-015 A-09 S12 (mới hơn ma trận): TC R03-R09 đọc; System Manager đọc/tạo/ghi theo AMENDMENT_GRANTS"
+DT-SETBOM,Set BOM Item,R,R,R,R,R,R,R,R,R,R,"FEAT-015 A-09 S12 (mới hơn ma trận): mọi TC role chỉ đọc; không ai tạo/ghi trực tiếp, dòng chỉ tạo qua bom_versions (cờ tc_bom)"
+DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,
+DT-LOANER,Loaner Instrument,R,RWS,R,R,R,R,,,R,RW,future FEAT-017
+DT-INSTRMAINT,Instrument Maintenance,R,RWS,R,R,R,R,,,R,RW,
+DT-RECEIPT,Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-019
+DT-WASHBATCH,Wash Batch,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-021
+DT-ASSEMBLY,Assembly Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
+DT-PACK,Pack,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
+DT-LOAD,Sterilization Load,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-023
+DT-LOADTEST,Load Test Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-025
+DT-STERLOC,Sterile Location,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-026
+DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-027
+DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
+DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-030
+DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
+DT-INCIDENT,Incident,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-030
+DT-LINENTYPE,Linen Type,R,RWS,,,,,RWS,R,R,R,future FEAT-033
+DT-LINENCOL,Linen Collection,R,RWS,,,,,RWS,R,R,R,future FEAT-033
+DT-LAUNDRY,Laundry Batch,R,RWS,,,,,RWS,R,R,R,future FEAT-034
+DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
+DT-EMP,Employee,R,RWS,,,,,,,,RW,
+DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
+DT-COMP,Station Competency,R,RWS,,,,,,,,RW,
+DT-SHIFT,Shift Assignment,R,RWS,,,,,,,,RW,HRMS
+DT-EQUIP,Equipment,R,R,R,R,R,R,,,R,RW,A-04 overrides BA baseline
+DT-PROGRAM,Process Program,R,R,R,R,R,R,,,R,RW,A-04 overrides BA baseline
+DT-MAINT,Maintenance Record,RA,RWSA,R,R,RW,R,RW,,RW,RW,future FEAT-039
+DT-DAILYTEST,Daily Test,RA,RWSA,R,R,RW,R,RW,,RW,RW,future FEAT-040
+DT-ITEM,Item,R,RA,R,R,RW,RWS,RW,,RWS,R,
+DT-STOCKENTRY,Stock Entry,R,RA,R,R,RW,RWS,RW,,RWS,R,
+DT-STOCKCOUNT,Stock Reconciliation,R,RA,R,R,RW,RWS,RW,,RWS,R,
+DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,future FEAT-045
+DT-COSTRATE,Cost Rate Version,RA,R,,,,,,,RWS,R,future FEAT-045
+DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
+DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
+DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,future FEAT-032
+DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
+DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

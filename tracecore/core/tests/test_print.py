@@ -293,6 +293,30 @@ class TestPrinterSelection(IsolatedTestCase):
 		make_printer("TR-004", self.steam, name="A created second")
 		self.assertEqual(core_print.select_printer("TR-004", "Steam")["name"], first)
 
+	def test_object_printer_is_first_active_printer_of_the_station(self):
+		# nhãn QR đối tượng (vd mã lô rửa) không phụ thuộc loại nhãn đang lắp: máy in hoạt động đầu tiên theo tên
+		self.assertIsNone(core_print.object_printer("TR-004"))
+		bare = (
+			frappe.get_doc({"doctype": "Printer", "printer_name": "Bare", "station": "TR-004"}).insert().name
+		)
+		loaded = make_printer("TR-004", self.steam, host="10.0.0.5", supports_unicode=1)
+		make_printer("TR-005", self.plasma)
+		self.assertEqual(
+			core_print.object_printer("TR-004"),
+			{
+				"name": bare,
+				"host": "",
+				"port": 9100,
+				"language": "ZPL",
+				"supports_unicode": 0,
+				"label_type": None,
+			},
+		)
+		frappe.db.set_value("Printer", bare, "is_active", 0)
+		self.assertEqual(core_print.object_printer("TR-004")["name"], loaded)
+		self.assertEqual(core_print.object_printer("TR-004")["supports_unicode"], 1)
+		self.assertIsNone(core_print.object_printer("TR-006"))
+
 	def test_station_printers_for_agent(self):
 		p1 = make_printer("TR-004", self.steam, host="10.0.0.5")
 		p2 = make_printer("TR-004", self.plasma)
@@ -678,6 +702,24 @@ class TestRenderObject(IsolatedTestCase):
 			self.assertEqual(zpl.count("^XZ"), 1)
 			self.assertNotIn("~", zpl)
 			self.assertIn("^FDMA,TB-0001^FS", zpl)  # QR không đổi
+
+	@bru("BRU-REP-016")
+	def test_wash_batch_label_has_qr_of_the_batch_code(self):
+		code = "LR-261022-03"
+		title = "Máy rửa MR-01 - Chương trình thường"
+		zpl = core_print.render_object("Wash Batch", code, title, "22/10/2026 09:41")
+		self.assertEqual(zpl.count("^BQN"), 1)
+		self.assertIn(f"^FDMA,{code}^FS", zpl)  # QR chứa đúng mã lô
+		self.assertIn(f"^FD{code}^FS", zpl)  # mã người đọc
+		self.assertIn("May rua MR-01 - Chuong trinh thuong", zpl)  # không truyền máy in → bỏ dấu
+		self.assertTrue(zpl.isascii(), msg=zpl)
+		self.assertIsNone(core_print.object_code_problem("Wash Batch", code))
+		self.assertEqual(core_print.OBJECT_SCAN_TYPES["Wash Batch"], "wash_batch")
+		# mã loại khác không in thành nhãn lô, và mã lô không in thành nhãn loại khác
+		for bad in ("TB-0001", "LR-26102-03", "LR-261022-03 ", "CY-261022-0001"):
+			self.assertTrue(core_print.object_code_problem("Wash Batch", bad), msg=bad)
+		for other in ("Equipment", "Station", "Roll", "Location"):
+			self.assertTrue(core_print.object_code_problem(other, code), msg=other)
 
 	def test_render_object_each_object_uses_its_own_template(self):
 		frappe.db.set_value(

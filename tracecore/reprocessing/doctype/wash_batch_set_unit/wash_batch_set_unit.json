@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-10-22 16:00:00.000000",
+ "description": "One set unit loaded into a wash batch (FR-M2-03, UC-06).",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "added_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "added_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Added At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-22 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Wash Batch Set Unit",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

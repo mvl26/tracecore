@@ -9,6 +9,7 @@ Chuẩn bị: ``scripts/e2e_prepare.sh <site dev>`` (KHÔNG chạy trên site te
 Không ngủ cố định: mọi chờ đều theo phần tử, response hoặc điều kiện JS.
 """
 
+import os
 import re
 import struct
 import uuid
@@ -468,6 +469,9 @@ def test_in_flight_set_keeps_old_bom_at_t4(settype_page, settype_demo, other_use
 	assert names(pinned) != names(effective)
 	t4 = other_user_page("TC_E2E_T4_USER", "TC_E2E_T4_PASSWORD")
 	t4.goto("/app/station?station=TR-004")
+	# FEAT-003: kiosk chỉ nhận quét sau khi nhân viên quét thẻ (phiên trạm), như scan_t4 của test_desk_instrument
+	t4.locator("#tc-card-input").fill(os.environ["TC_E2E_T4_CARD_ID"])
+	t4.locator("#tc-card-input").press("Enter")
 	t4.locator(".tc-result[data-state='empty']").wait_for(timeout=30000)
 	t4.keyboard.type(set_id)
 	t4.keyboard.press("Enter")
