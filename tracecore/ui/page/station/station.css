@@ -1028,7 +1028,12 @@ body.tc-kiosk .layout-main-section {
 	min-height: var(--tc-touch-station);
 }
 
+[data-surface="PDA"] .tc-t5 .tc-chips {
+	flex-direction: column;
+}
+
 [data-surface="PDA"] .tc-t5 .tc-chip {
+	width: 100%;
 	min-height: var(--tc-touch-station);
 }
 
