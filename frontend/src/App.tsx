@@ -414,8 +414,10 @@ export default function App() {
   // A single versioned in-memory snapshot; never persist identity or records in browser storage.
   const snapshot = useRef<{ version: 1; context: HomeContext } | null>(null);
   const request = useRef(0);
+  const session = useRef<"active" | "logging-out" | "ended">("active");
   const menuButton = useRef<HTMLButtonElement>(null);
   const load = useCallback(async (connected = navigator.onLine) => {
+    if (session.current !== "active") return;
     const current = ++request.current;
     if (!connected) {
       setPhase(snapshot.current ? "stale" : "error");
@@ -424,7 +426,7 @@ export default function App() {
     setRefreshing(true);
     try {
       const next = await homeApi.context();
-      if (current !== request.current) return;
+      if (current !== request.current || session.current !== "active") return;
       if (next.system.api_version !== 1) {
         snapshot.current = null;
         setContext(null);
@@ -435,7 +437,7 @@ export default function App() {
       setContext(next);
       setPhase("ready");
     } catch (error) {
-      if (current !== request.current) return;
+      if (current !== request.current || session.current !== "active") return;
       if (
         error instanceof SessionExpiredError ||
         error instanceof PermissionError
@@ -459,8 +461,9 @@ export default function App() {
   useEffect(() => {
     void load();
     const goOffline = () => {
-      ++request.current;
       setOnline(false);
+      if (session.current !== "active") return;
+      ++request.current;
       setRefreshing(false);
       setPhase(snapshot.current ? "stale" : "error");
     };
@@ -479,16 +482,17 @@ export default function App() {
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && menuOpen) {
         setMenuOpen(false);
         menuButton.current?.focus();
       }
     };
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, []);
+  }, [menuOpen]);
 
   const logout = async () => {
+    if (session.current !== "active") return;
     const token = document.querySelector<HTMLMetaElement>(
       'meta[name="csrf-token"]'
     )?.content;
@@ -496,9 +500,11 @@ export default function App() {
       setLogoutError(true);
       return;
     }
+    session.current = "logging-out";
+    ++request.current;
+    setRefreshing(false);
     setLoggingOut(true);
     setLogoutError(false);
-    ++request.current;
     try {
       const response = await fetch("/api/method/logout", {
         method: "POST",
@@ -506,12 +512,17 @@ export default function App() {
         headers: { Accept: "application/json", "X-Frappe-CSRF-Token": token },
       });
       if (!response.ok) throw new Error("Logout request failed");
+      session.current = "ended";
+      ++request.current;
       snapshot.current = null;
       setContext(null);
       setPhase("session");
       window.location.assign("/login");
     } catch {
-      setLogoutError(true);
+      if (session.current !== "ended") {
+        session.current = "active";
+        setLogoutError(true);
+      }
     } finally {
       setLoggingOut(false);
     }
@@ -550,7 +561,7 @@ export default function App() {
           context={context}
           readOnly={readOnly}
           refresh={retry}
-          refreshing={refreshing || !online}
+          refreshing={refreshing || !online || loggingOut}
         />
         {phase === "loading" ? (
           <HomeSkeleton />
@@ -630,7 +641,7 @@ export default function App() {
                   phase !== "session" && (
                     <button
                       className="tc-button"
-                      disabled={!online || refreshing}
+                      disabled={!online || refreshing || loggingOut}
                       onClick={retry}
                     >
                       {_("Thử lại")}

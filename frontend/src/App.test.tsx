@@ -50,6 +50,21 @@ function respond(payload: unknown = context) {
   return Response.json({ message: payload });
 }
 
+function deferredResponse() {
+  let resolve!: (response: Response) => void;
+  const promise = new Promise<Response>((complete) => {
+    resolve = complete;
+  });
+  return { promise, resolve };
+}
+
+function addCsrfToken() {
+  const token = document.createElement("meta");
+  token.name = "csrf-token";
+  token.content = "test-csrf";
+  document.head.append(token);
+}
+
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
@@ -369,6 +384,149 @@ describe("Home", () => {
     );
     fireEvent.keyDown(document, { key: "Escape" });
     expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).toHaveFocus();
+  });
+
+  it("preserves keyboard focus on Escape when compact navigation is closed", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: /Xin chào/ });
+    const refresh = screen.getByRole("button", { name: "Làm mới" });
+    refresh.focus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(refresh).toHaveFocus();
+  });
+
+  it.each(["refresh-first", "logout-first"])(
+    "blocks context loads during logout and cannot restore Home after success (%s)",
+    async (ordering) => {
+      addCsrfToken();
+      render(<App />);
+      await screen.findByRole("heading", { name: /Xin chào/ });
+      const refresh = deferredResponse();
+      const logout = deferredResponse();
+      const duringLogout = deferredResponse();
+      vi.mocked(fetch)
+        .mockReturnValueOnce(refresh.promise)
+        .mockReturnValueOnce(logout.promise)
+        .mockReturnValueOnce(duringLogout.promise);
+      fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+      fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+      // A reconnect can start a load even when the refresh button is disabled.
+      act(() => window.dispatchEvent(new Event("online")));
+      if (ordering === "refresh-first") {
+        await act(async () => {
+          refresh.resolve(respond());
+        });
+      }
+      await act(async () => {
+        logout.resolve(Response.json({ message: "ok" }));
+      });
+      await act(async () => {
+        if (ordering === "logout-first") refresh.resolve(respond());
+        duringLogout.resolve(respond());
+      });
+      expect(window.location.assign).toHaveBeenCalledWith("/login");
+      expect(
+        screen.queryByRole("heading", { name: /Xin chào/ })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("region", { name: "Truy cập nhanh" })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: /Mở trạm/ })
+      ).not.toBeInTheDocument();
+      act(() => window.dispatchEvent(new Event("online")));
+      expect(fetch).toHaveBeenCalledTimes(3);
+    }
+  );
+
+  it.each(["refresh-first", "logout-first"])(
+    "recovers refresh after a canceled context request and failed logout (%s)",
+    async (ordering) => {
+      addCsrfToken();
+      render(<App />);
+      await screen.findByRole("heading", { name: /Xin chào/ });
+      const refresh = deferredResponse();
+      const logout = deferredResponse();
+      vi.mocked(fetch)
+        .mockReturnValueOnce(refresh.promise)
+        .mockReturnValueOnce(logout.promise);
+      fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+      fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+      if (ordering === "refresh-first") {
+        await act(async () => {
+          refresh.resolve(respond());
+        });
+      }
+      await act(async () => {
+        logout.resolve(new Response("", { status: 500 }));
+      });
+      if (ordering === "logout-first") {
+        await act(async () => {
+          refresh.resolve(respond());
+        });
+      }
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Không thể đăng xuất."
+      );
+      const retryRefresh = screen.getByRole("button", { name: "Làm mới" });
+      expect(retryRefresh).toBeEnabled();
+      fireEvent.click(retryRefresh);
+      await screen.findByRole("button", { name: "Làm mới" });
+      expect(fetch).toHaveBeenCalledTimes(4);
+      expect(window.location.assign).not.toHaveBeenCalled();
+      expect(screen.getByRole("heading", { name: /Xin chào/ })).toBeVisible();
+    }
+  );
+
+  it("recovers inline retry after failed logout cancels a stale refresh", async () => {
+    addCsrfToken();
+    render(<App />);
+    await screen.findByRole("heading", { name: /Xin chào/ });
+    vi.mocked(fetch).mockRejectedValueOnce(
+      new TypeError("Network unavailable")
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+    await screen.findByRole("button", { name: "Thử lại" });
+    const refresh = deferredResponse();
+    const logout = deferredResponse();
+    vi.mocked(fetch)
+      .mockReturnValueOnce(refresh.promise)
+      .mockReturnValueOnce(logout.promise);
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+    await act(async () => {
+      logout.resolve(new Response("", { status: 500 }));
+    });
+    await act(async () => {
+      refresh.resolve(respond());
+    });
+    const retry = screen.getByRole("button", { name: "Thử lại" });
+    expect(retry).toBeEnabled();
+    fireEvent.click(retry);
+    await within(
+      screen.getByRole("region", { name: "Truy cập nhanh" })
+    ).findByRole("link", { name: /Mở trạm/ });
+    expect(fetch).toHaveBeenCalledTimes(5);
+  });
+
+  it("keeps successful logout final even if the login navigation is blocked", async () => {
+    addCsrfToken();
+    render(<App />);
+    await screen.findByRole("heading", { name: /Xin chào/ });
+    vi.mocked(window.location.assign).mockImplementationOnce(() => {
+      throw new Error("Navigation blocked");
+    });
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ message: "ok" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+    await screen.findByText("Phiên đăng nhập đã hết hạn.");
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(
+      screen.queryByRole("heading", { name: /Xin chào/ })
+    ).not.toBeInTheDocument();
   });
 
   it("logs out with the independent CSRF boot token and clears Home", async () => {
