@@ -185,7 +185,6 @@ AUDIT_TITLES = {
 	"start_cycle": lambda: _("Cycle started"),
 	"bind_cycle": lambda: _("Cycle ID bound"),
 	"release_cycle": lambda: _("Cycle ID released"),
-	step_gate.DISPOSE_EVENT: lambda: _("Set disposed"),
 	set_tags.VERIFY_REASON: lambda: _("Tag verified"),
 	"export": lambda: _("Exported for engraving"),
 }

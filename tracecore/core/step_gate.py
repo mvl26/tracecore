@@ -46,9 +46,9 @@ LIFECYCLE_DEFAULTS = {
 	"cycle_bom_version": 0,
 }
 ISSUE_EVENT = "issue"
-DISPOSE_EVENT = "dispose"
-# Thanh lý (FEAT-016 G14): chỉ bộ Mới tạo (cấp nhầm, thẻ chưa dùng) hoặc Hết vòng đời, không còn Cycle ID hiệu lực
-DISPOSABLE_STATUSES = ("New", "End of Life")
+# Hook sau mỗi lần ``status`` của Set Unit thực sự đổi (A-13 G13): ``(payload) -> None`` với payload
+# ``{set_unit, old_status, new_status, event, client_ts, ref_doctype, ref_name}``; chạy trong cùng transaction.
+STATUS_HOOK = "tracecore_after_set_status"
 # Cột lý do Audit của sự kiện có lý do người dùng: ``"<sự kiện>: <lý do>"`` (vd ``dispose: Cấp nhầm``)
 EVENT_SEPARATOR = ": "
 
@@ -114,14 +114,29 @@ def split_event(value):
 	return (event, reason) if separator else (value, None)
 
 
-def _save_lifecycle(unit, event=None, **fields):
+def _save_lifecycle(unit, event=None, _notify=None, **fields):
 	"""Lưu trường vòng đời của bộ; `event` (vd ``start_cycle``, ``gate T4 Fail``) vào cột lý do của Audit Log Update
 	của Set Unit, để Audit Log thành lịch sử vòng đời (FEAT-016 G13)."""
+	old_status = unit.status
 	for fieldname, value in fields.items():
 		unit.set(fieldname, value)
 	unit.flags.tc_step_gate = True
 	unit.flags.tc_audit_reason = event
 	unit.save(ignore_permissions=True)
+	if unit.status != old_status:
+		notify = _notify or {}
+		extension.run(
+			STATUS_HOOK,
+			{
+				"set_unit": unit.name,
+				"old_status": old_status,
+				"new_status": unit.status,
+				"event": event,
+				"client_ts": notify.get("client_ts"),
+				"ref_doctype": notify.get("ref_doctype"),
+				"ref_name": notify.get("ref_name"),
+			},
+		)
 
 
 def _results(set_unit, cycle_no, for_update=False):
@@ -160,7 +175,7 @@ def _first_int(results):
 	return 0
 
 
-def start_cycle(set_unit, on=None):
+def start_cycle(set_unit, on=None, client_ts=None):
 	"""Mở chu trình mới (stub của T1): ``current_cycle_no + 1``, Set Unit sang Processing, bỏ Cycle ID cũ.
 
 	Ghim phiên bản BOM của chu trình (FR-M1-04.1, .2; FEAT-015 S3): hook ``tracecore_cycle_bom_version`` nhận
@@ -185,6 +200,7 @@ def start_cycle(set_unit, on=None):
 	_save_lifecycle(
 		unit,
 		"start_cycle",
+		{"client_ts": client_ts},
 		current_cycle_no=cycle_no,
 		status="Processing",
 		active_cycle_id=None,
@@ -231,7 +247,7 @@ def check(set_unit, step, for_update=False):
 	return None
 
 
-def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None):
+def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None, client_ts=None):
 	"""Ghi kết quả một cổng của chu trình hiện hành; trả tên Step Gate Result.
 
 	Upsert theo tên ``{set_unit}-C{cycle_no}-{step}``. Không đạt: ``redo_count + 1``, các bước sau đã có kết quả
@@ -282,7 +298,13 @@ def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None
 	results = _results(unit.name, cycle_no, for_update=True)
 	if result == "Fail":
 		_reset_later_steps(unit.name, cycle_no, step, results)
-	_update_status(unit, results, result, f"gate {step} {result}")
+	_update_status(
+		unit,
+		results,
+		result,
+		f"gate {step} {result}",
+		{"client_ts": client_ts, "ref_doctype": ref_doctype, "ref_name": ref_name},
+	)
 	return row.name
 
 
@@ -299,7 +321,7 @@ def _reset_later_steps(set_unit, cycle_no, step, results):
 			results[later] = (PENDING, current[1])
 
 
-def _update_status(unit, results, result, event=None):
+def _update_status(unit, results, result, event=None, notify=None):
 	if all(results.get(step, (PENDING, 0))[0] == "Pass" for step in STEPS):
 		status = "Sterile"
 	elif result == "Fail":
@@ -309,7 +331,7 @@ def _update_status(unit, results, result, event=None):
 	else:
 		status = unit.status
 	if status != unit.status:
-		_save_lifecycle(unit, event, status=status)
+		_save_lifecycle(unit, event, notify, status=status)
 
 
 def gates(set_unit):

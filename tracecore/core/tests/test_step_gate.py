@@ -41,8 +41,9 @@ class TestStepGate(FrappeTestCase):
 		su = make_set_unit().name
 		with patch("tracecore.core.step_gate.extension.run", return_value=["x", True, 4, 9]) as run:
 			self.assertEqual(step_gate.start_cycle(su, on="2026-11-02"), 1)
-		run.assert_called_once()
-		hook, ctx = run.call_args.args
+		bom_calls = [c for c in run.call_args_list if c.args[0] == "tracecore_cycle_bom_version"]
+		self.assertEqual(len(bom_calls), 1)
+		hook, ctx = bom_calls[0].args
 		self.assertEqual(hook, "tracecore_cycle_bom_version")
 		set_type = frappe.db.get_value("Set Unit", su, "set_type")
 		self.assertEqual(ctx, {"set_unit": su, "set_type": set_type, "cycle_no": 1, "on": "2026-11-02"})
@@ -530,76 +531,61 @@ class TestStepGateLocking(FrappeTestCase):
 		self.assertFalse([q for q in queries if "for update" in q.lower()])
 
 
-class TestStepGateDispose(FrappeTestCase):
-	"""FEAT-016 G14: thanh lý chỉ từ Mới tạo / Hết vòng đời, không có Cycle ID hiệu lực (FR-M1-06, FR-M1-05.2)."""
+class TestAfterSetStatusHook(FrappeTestCase):
+	"""A-13 G13: ``tracecore_after_set_status`` chỉ chạy khi ``status`` thực sự đổi, payload tối thiểu cố định."""
 
-	def _updates(self, su):
-		return frappe.get_all(
-			"Audit Log",
-			filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update"},
-			fields=["old_value", "new_value", "reason"],
-			order_by="name desc",
+	def _hook_calls(self, run):
+		return [call.args[1] for call in run.call_args_list if call.args[0] == step_gate.STATUS_HOOK]
+
+	def test_hook_name_is_declared(self):
+		self.assertEqual(step_gate.STATUS_HOOK, "tracecore_after_set_status")
+		self.assertEqual(frappe.get_hooks("tracecore_after_set_status"), [])
+
+	def test_start_cycle_fires_hook_once_with_payload(self):
+		su = make_set_unit().name
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			step_gate.start_cycle(su, client_ts="2026-10-24T08:00:00+07:00")
+		self.assertEqual(
+			self._hook_calls(run),
+			[
+				{
+					"set_unit": su,
+					"old_status": "New",
+					"new_status": "Processing",
+					"event": "start_cycle",
+					"client_ts": "2026-10-24T08:00:00+07:00",
+					"ref_doctype": None,
+					"ref_name": None,
+				}
+			],
 		)
 
-	def test_disposable_statuses(self):
-		self.assertEqual(step_gate.DISPOSABLE_STATUSES, ("New", "End of Life"))
-
-	def test_dispose_new_set_writes_status_and_reason(self):
+	def test_no_hook_when_status_unchanged(self):
 		su = make_set_unit().name
-		step_gate.dispose(su, "Issued by mistake")
-		self.assertEqual(_lifecycle(su).status, "Disposed")
-		log = self._updates(su)[0]
-		self.assertEqual(frappe.parse_json(log.new_value), {"status": "Disposed"})
-		self.assertEqual(frappe.parse_json(log.old_value), {"status": "New"})
-		self.assertEqual(log.reason, "dispose: Issued by mistake")
-		self.assertEqual(step_gate.split_event(log.reason), ("dispose", "Issued by mistake"))
-		self.assertEqual(step_gate.split_event("gate T2 Fail"), ("gate T2 Fail", None))
-		self.assertEqual(step_gate.split_event(None), (None, None))
+		step_gate.start_cycle(su)
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			step_gate.bind_cycle(su, "CY-261020-0001", "TR-004")  # đổi Cycle ID/trạm, không đổi status
+			step_gate.record(su, "T1", "Pass")  # Processing -> Processing
+			step_gate.release_cycle(su)
+		self.assertEqual(self._hook_calls(run), [])
 
-	def test_dispose_end_of_life_set(self):
+	def test_gate_fail_reports_business_reference(self):
 		su = make_set_unit().name
-		step_gate._save_lifecycle(frappe.get_doc("Set Unit", su), "end_of_life", status="End of Life")
-		step_gate.dispose(su, "Worn out")
-		self.assertEqual(_lifecycle(su).status, "Disposed")
-
-	def test_dispose_refused_outside_allowed_states(self):
-		su = make_set_unit().name
-		step_gate.start_cycle(su)  # Processing
-		with self.assertRaises(BlockedError) as raised:
-			step_gate.dispose(su, "x")
-		self.assertEqual(raised.exception.block.code, "STATUS_INVALID_FOR_ACTION")
-		self.assertEqual(raised.exception.http_status_code, 409)
-		for step in step_gate.STEPS:
-			step_gate.record(su, step, "Pass")
-		self.assertEqual(_lifecycle(su).status, "Sterile")
-		with self.assertRaises(BlockedError):
-			step_gate.dispose(su, "x")
-		# End of Life nhưng còn Cycle ID hiệu lực (gói chưa dùng) → chặn
-		step_gate.bind_cycle(su, "CY-261019-0001", None)
-		step_gate._save_lifecycle(frappe.get_doc("Set Unit", su), "end_of_life", status="End of Life")
-		with self.assertRaises(BlockedError) as raised:
-			step_gate.dispose(su, "x")
-		self.assertEqual(raised.exception.block.code, "STATUS_INVALID_FOR_ACTION")
-		self.assertEqual(_lifecycle(su).status, "End of Life")
-		# đã thanh lý → không thanh lý lại
-		other = make_set_unit().name
-		step_gate.dispose(other, "x")
-		with self.assertRaises(BlockedError):
-			step_gate.dispose(other, "again")
-
-	def test_dispose_requires_reason_and_existing_set(self):
-		su = make_set_unit().name
-		for reason in ("", "   ", None):
-			with self.assertRaises(frappe.ValidationError):
-				step_gate.dispose(su, reason)
-		self.assertEqual(_lifecycle(su).status, "New")
-		with self.assertRaises(frappe.DoesNotExistError):
-			step_gate.dispose("NO-SUCH-SET", "x")
-
-	def test_dispose_locks_set_unit_row(self):
-		su = make_set_unit().name
-		with patch("tracecore.core.step_gate.frappe.get_doc", wraps=frappe.get_doc) as get_doc:
-			step_gate.dispose(su, "x")
-		self.assertTrue(
-			any(c.args[:2] == ("Set Unit", su) and c.kwargs.get("for_update") for c in get_doc.call_args_list)
+		set_type = frappe.db.get_value("Set Unit", su, "set_type")
+		step_gate.start_cycle(su)
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			step_gate.record(
+				su,
+				"T2",
+				"Fail",
+				ref_doctype="Instrument Set Type",
+				ref_name=set_type,
+				client_ts="2026-10-24T09:00:00+07:00",
+			)
+		(payload,) = self._hook_calls(run)
+		self.assertEqual(
+			(payload["old_status"], payload["new_status"], payload["event"]),
+			("Processing", "Reprocess", "gate T2 Fail"),
 		)
+		self.assertEqual((payload["ref_doctype"], payload["ref_name"]), ("Instrument Set Type", set_type))
+		self.assertEqual(payload["client_ts"], "2026-10-24T09:00:00+07:00")

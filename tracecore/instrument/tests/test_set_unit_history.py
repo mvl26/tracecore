@@ -74,7 +74,7 @@ class TestSetUnitSummary(SetUnitLifecycleCase):
 		self.assertEqual(
 			(summary["cycles_used"], summary["max_cycles"], summary["remaining"]), (120, 300, 180)
 		)
-		self.assertEqual(summary["cycles_source"], "Estimated")
+		self.assertEqual(summary["cycles_source"], "Estimate")
 		self.assertIsNone(summary["active_cycle_id"])
 		self.assertIsNone(summary["current_station"])
 		# chưa ghim: phiên bản áp dụng = phiên bản hiệu lực hôm nay, "sẽ ghim khi tiếp nhận"
@@ -109,7 +109,7 @@ class TestSetUnitSummary(SetUnitLifecycleCase):
 		self.assertTrue(summary["tag_verified_on"])
 
 		new_unit = self.unit()
-		self.assertEqual(set_units.summary(new_unit)["cycles_source"], "Actual")
+		self.assertEqual(set_units.summary(new_unit)["cycles_source"], "System")
 		self.assertEqual(set_units.summary(new_unit)["remaining"], 300)
 		for bad in ("9520000THIST999999", "", None, 5):
 			self.assertEqual(_blocked(self, set_units.summary, bad).code, "SET_NOT_FOUND")
@@ -227,110 +227,15 @@ class TestSetUnitHistory(SetUnitLifecycleCase):
 		self.assertEqual(_blocked(self, set_units.history, "9520000THIST999999").code, "SET_NOT_FOUND")
 
 
-class TestSetUnitDispose(SetUnitLifecycleCase):
-	@bru("BRU-ID-001")
-	def test_dispose_from_new_disables_code_never_reissued(self):
-		unit = self.unit()
-		pending = self.print_tag(unit, status=None)  # job Queued từ trước khi thanh lý
-		result = set_units.dispose(unit, "  Issued by mistake  ")
-		self.assertEqual(result, {"set_unit": unit, "status": "Disposed"})
-		self.assertEqual(frappe.db.get_value("Set Unit", unit, "status"), "Disposed")
-		code = frappe.db.get_value("Code Registry", unit, ["status", "disabled_reason"], as_dict=True)
-		self.assertEqual(code.status, "Disabled")
-		self.assertEqual(code.disabled_reason, "Issued by mistake")
-		log = frappe.get_all(
-			"Audit Log",
-			filters={"ref_doctype": "Set Unit", "ref_name": unit, "action": "Update"},
-			fields=["reason", "new_value"],
-			order_by="name desc",
-			limit=1,
-		)[0]
-		self.assertEqual(log.reason, "dispose: Issued by mistake")
-		self.assertEqual(frappe.parse_json(log.new_value), {"status": "Disposed"})
-		history = set_units.history(unit)["events"]
-		self.assertEqual(history[0]["event"], "dispose")
-		self.assertEqual(history[0]["reason"], "Issued by mistake")
-		self.assertEqual(set_units.summary(unit)["code_status"], "Disabled")
-
-		# không bao giờ cấp lại: kéo bộ đếm series lùi về trước số đã thanh lý, mã kế tiếp vẫn khác
-		prefix, serial = gs1.split_set_id(unit, "THIST")
-		key = f"{prefix}THIST"
-		frappe.db.sql("update `tabSeries` set `current` = %s where name = %s", (int(serial) - 1, key))
-		self.assertNotEqual(code_registry.next_set_id("THIST"), unit)
-
-		# vẫn tra được
-		self.assertEqual(gs1.parse_scan(unit), {"type": "set", "id": unit, "raw": unit})
-		self.assertEqual(gs1.parse_scan("(8004)" + unit)["id"], unit)
-
-		# không in được, kể cả job đã xếp hàng trước khi thanh lý (kiểm lại lúc gửi)
-		self.assertEqual(
-			_blocked(self, set_tags.queue_prints, [unit], ["tray"], {"tray": self.printer}).code,
-			"SET_DISPOSED",
-		)
-		# worker commit thật sẽ phá savepoint cách ly của test: giả commit
-		with patch.object(print_server, "_send") as send, patch.object(frappe.db, "commit"):
-			print_server.dispatch_job(pending)
-		send.assert_not_called()
-		job = frappe.db.get_value("Print Job", pending, ["status", "error"], as_dict=True)
-		self.assertEqual(job.status, "Failed")
-		self.assertIn(unit, job.error)
-
+class TestDisposedSetPrint(SetUnitLifecycleCase):
 	def test_send_time_refuses_disposed_set_even_if_code_active(self):
 		unit = self.unit()
 		pending = self.print_tag(unit, status=None)
-		step_gate.dispose(unit, "x")  # chỉ đổi trạng thái (vd nhánh T3 sau này), mã còn Active
+		# bộ ở trạng thái Thanh lý (FEAT-032 sẽ đặt qua step gate), mã còn Active
+		frappe.db.sql("update `tabSet Unit` set status = 'Disposed' where name = %s", unit)
 		self.assertEqual(frappe.db.get_value("Code Registry", unit, "status"), "Active")
 		# worker commit thật sẽ phá savepoint cách ly của test: giả commit
 		with patch.object(print_server, "_send") as send, patch.object(frappe.db, "commit"):
 			print_server.dispatch_job(pending)
 		send.assert_not_called()
 		self.assertEqual(frappe.db.get_value("Print Job", pending, "status"), "Failed")
-
-	def test_dispose_state_rules(self):
-		processing = self.unit()
-		step_gate.start_cycle(processing)
-		self.assertEqual(_blocked(self, set_units.dispose, processing, "x").code, "STATUS_INVALID_FOR_ACTION")
-		sterile = self.unit()
-		step_gate.start_cycle(sterile)
-		for step in step_gate.STEPS:
-			step_gate.record(sterile, step, "Pass")
-		self.assertEqual(_blocked(self, set_units.dispose, sterile, "x").code, "STATUS_INVALID_FOR_ACTION")
-		with_cycle = self.unit()
-		step_gate.start_cycle(with_cycle)
-		step_gate.bind_cycle(with_cycle, "CY-261019-0043", None)
-		step_gate._save_lifecycle(frappe.get_doc("Set Unit", with_cycle), "end_of_life", status="End of Life")
-		self.assertEqual(_blocked(self, set_units.dispose, with_cycle, "x").code, "STATUS_INVALID_FOR_ACTION")
-		for unit in (processing, sterile, with_cycle):
-			self.assertEqual(frappe.db.get_value("Code Registry", unit, "status"), "Active")
-
-		end_of_life = self.unit()
-		step_gate.start_cycle(end_of_life)
-		step_gate._save_lifecycle(
-			frappe.get_doc("Set Unit", end_of_life), "end_of_life", status="End of Life"
-		)
-		self.assertEqual(set_units.dispose(end_of_life, "Worn out")["status"], "Disposed")
-		self.assertEqual(frappe.db.get_value("Code Registry", end_of_life, "status"), "Disabled")
-
-		fresh = self.unit()
-		for reason in ("", "   ", None, 5, "x" * 501):
-			self.assertEqual(
-				_blocked(self, set_units.dispose, fresh, reason).code, "REASON_REQUIRED", msg=repr(reason)
-			)
-		self.assertEqual(frappe.db.get_value("Set Unit", fresh, "status"), "New")
-		self.assertEqual(set_units.dispose(fresh, "x" * 500)["status"], "Disposed")
-		self.assertEqual(_blocked(self, set_units.dispose, fresh, "again").code, "STATUS_INVALID_FOR_ACTION")
-		for missing in ("9520000THIST999999", "", None):
-			self.assertEqual(_blocked(self, set_units.dispose, missing, "x").code, "SET_NOT_FOUND")
-
-	def test_dispose_rolls_back_status_when_code_disable_fails(self):
-		unit = self.unit()
-		with patch.object(code_registry, "disable", side_effect=frappe.ValidationError("boom")):
-			with self.assertRaises(frappe.ValidationError):
-				set_units.dispose(unit, "x")
-		self.assertEqual(frappe.db.get_value("Set Unit", unit, "status"), "New")
-
-	def test_dispose_legacy_set_without_registry_row(self):
-		unit = self.unit()
-		frappe.db.delete("Code Registry", {"name": unit})  # bộ cũ chưa có dòng sổ
-		self.assertEqual(set_units.dispose(unit, "x")["status"], "Disposed")
-		self.assertIsNone(set_units.summary(unit)["code_status"])

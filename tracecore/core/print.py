@@ -363,9 +363,16 @@ def render_label(label_object, doc, printer=None, with_template=False):
 	language = printer.get("language") or DEFAULT_LANGUAGE
 	get_dialect(language)
 	template = active_template(label_object, None, language)
+	label = _(label_object, context="Label Template")
 	if template is None:
-		label = _(label_object, context="Label Template")
 		frappe.throw(_("No active label template for {0} ({1}).").format(label, language))
+	if (
+		frappe.db.count(
+			"Label Template", {"label_object": label_object, "language": language, "is_active": 1}
+		)
+		> 1
+	):
+		frappe.throw(_("More than one active label template for {0} ({1}).").format(label, language))
 	zpl = _render_template_row(template, doc, bool(cint(printer.get("supports_unicode"))))
 	return (zpl, template) if with_template else zpl
 

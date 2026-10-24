@@ -87,7 +87,6 @@ class TestSetUnitDeskAssets(IsolatedTestCase):
 			"tracecore.v1.set_unit.tag_preview",
 			"tracecore.v1.set_unit.verify_tag",
 			"tracecore.v1.set_unit.history",
-			"tracecore.v1.set_unit.dispose",
 		):
 			self.assertIn(f'"{method}"', form, method)
 		for key, script in (("shared", shared), ("form", form)):
@@ -111,7 +110,7 @@ class TestSetUnitDeskAssets(IsolatedTestCase):
 		self.assertIn("counts[kind].pending", form)
 		# giới hạn lấy từ server
 		self.assertIn("limits.max_batch", shared)
-		self.assertIn("limits.reason_max", form)
+		self.assertIn("limits.reason_max", shared)
 		# không xóa nút của Client Script khác
 		for script in (shared, form, _read(*SCRIPTS["list"])):
 			self.assertNotIn("clear_custom_buttons", script)

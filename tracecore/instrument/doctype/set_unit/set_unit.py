@@ -69,7 +69,7 @@ class SetUnit(Document):
 
 	def _guard_service_fields(self):
 		if self.is_new():
-			self.cycles_source = self.cycles_source or "Actual"
+			self.cycles_source = self.cycles_source or "System"
 			if not self.flags.tc_tag_verify:
 				self.update(dict.fromkeys(TAG_FIELDS))
 			return

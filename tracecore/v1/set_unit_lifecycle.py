@@ -1,29 +1,24 @@
-"""RPC vòng đời Set Unit: ngữ cảnh form, lịch sử, thanh lý (FEAT-016 Task 6; FR-M1-06, FR-M1-06.2, FR-M1-05.2;
-BRU-ID-001; A-09 G7, G13, G14).
+"""RPC vòng đời Set Unit: ngữ cảnh form, lịch sử (FEAT-016 Task 6; FR-M1-06, FR-M1-06.2; A-13 G7, G13).
 
-Đường RPC công khai giữ ``tracecore.v1.set_unit.<action>`` như plan: `tracecore.v1.set_unit` nhập lại ba hàm này (Frappe
+Đường RPC công khai giữ ``tracecore.v1.set_unit.<action>`` như plan: `tracecore.v1.set_unit` nhập lại hai hàm này (Frappe
 tra đường chấm bằng ``getattr`` trên module và so hàm với danh sách whitelist, nên cùng một hàm whitelist được ở cả hai
 đường). Tách file để `set_unit.py` không vượt giới hạn độ dài; các tuple role của cả hai module đặt ở đây.
 
 - `form_context` (GET): tóm tắt bộ (`set_units.summary`), giới hạn nghiệp vụ cho JS (không chép hằng số), quyền theo
   role, loại bản in, máy in gợi ý (đang hoạt động, có địa chỉ mạng), cờ ``test_labels`` (nhãn in dòng TEST, Task 7).
 - `history` (GET): `set_units.history`, phân trang bằng ``next_before``.
-- `dispose` (POST, ``@idempotent``): TC R02 / System Manager, lý do bắt buộc (G14).
 """
 
 import frappe
 from frappe import _
 
 from tracecore.core import code_registry, gs1, print_server
-from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
-from tracecore.core.idempotency import idempotent
 from tracecore.instrument import set_history, set_tags, set_units
-from tracecore.v1._common import BadRequestError, reject_block, require_any_role
+from tracecore.v1._common import BadRequestError, reject_block
 
 ISSUE_ROLES = ("TC R02", "TC R10", "System Manager")  # cấp, in, in lại, hủy lệnh in, xuất CSV (G7)
 VERIFY_ROLES = (*ISSUE_ROLES, "TC R04")  # quét kiểm tra thẻ (UC-03 bước 4)
-DISPOSE_ROLES = ("TC R02", "System Manager")  # thanh lý (G7, G14)
 MAX_NAME_CHARS = 140
 MAX_LIMIT_CHARS = 3
 PRINTERS_HINT_MAX = 50
@@ -59,12 +54,14 @@ def _printers_hint():
 
 
 @frappe.whitelist(methods=["GET"])
-def form_context(set_unit=None):
+def form_context(set_unit=None, set_type=None):
 	"""Ngữ cảnh form Set Unit / hộp thoại Cấp Set ID (FR-M1-06.2; G7): ``{ok, summary, limits, permissions, kinds,
-	printers_hint}``. ``summary`` None khi không truyền bộ; bộ không có → ``SET_NOT_FOUND`` (404, Audit ``Reject`` được
-	commit dù là GET)."""
+	printers_hint, max_cycles_cap}``. ``summary`` None khi không truyền bộ; bộ không có → ``SET_NOT_FOUND`` (404, Audit
+	``Reject`` được commit dù là GET). ``max_cycles_cap`` = ``{value, source}`` của `set_type` (nguồn cơ số tối đa,
+	A-13 G5), None khi không truyền loại bộ hoặc loại bộ không có."""
 	frappe.has_permission("Set Unit", "read", throw=True)
 	set_unit = _set_id(set_unit, required=False)
+	set_type = _set_id(set_type, required=False)
 	roles = set(frappe.get_roles())
 	can_issue = bool(roles & set(ISSUE_ROLES))
 	summary = None
@@ -86,7 +83,6 @@ def form_context(set_unit=None):
 			"can_print": can_issue,
 			"can_reprint": can_issue,
 			"can_verify": bool(roles & set(VERIFY_ROLES)),
-			"can_dispose": bool(roles & set(DISPOSE_ROLES)),
 		},
 		"kinds": [
 			{"kind": kind, "label_object": label, "label": _(label, context="Label Template")}
@@ -95,6 +91,7 @@ def form_context(set_unit=None):
 		"printers_hint": _printers_hint() if can_issue else [],
 		# thẻ/nhãn in thêm dòng TEST (G3): theo tiền tố trong Set ID của bộ, chưa có bộ thì theo tiền tố của site
 		"test_labels": gs1.is_demo_prefix(set_unit or code_registry.company_prefix()),
+		"max_cycles_cap": set_units.max_cycles_cap(set_type) if set_type else None,
 	}
 
 
@@ -115,22 +112,4 @@ def history(set_unit=None, before=None, limit=set_history.DEFAULT_LIMIT):
 		result = set_units.history(set_unit, before or None, limit)
 	except BlockedError as error:
 		return reject_block(error.block, "Set Unit", set_unit)
-	return {"ok": True, **result}
-
-
-@frappe.whitelist(methods=["POST"])
-@idempotent
-def dispose(set_unit, reason=None, client_ts=None):
-	"""Thanh lý bộ Mới tạo / Hết vòng đời (G14; FR-M1-05.2, BRU-ID-001): ``{ok, set_unit, status}``.
-
-	Role kiểm trước mọi ghi (``DISPOSE_ROLES``; R10, R04 → PermissionError, không để lại Idempotency Key/Audit). Lý do
-	1-500 ký tự (``REASON_REQUIRED`` 422); trạng thái khác hoặc còn Cycle ID → ``STATUS_INVALID_FOR_ACTION`` (409);
-	bộ không có → ``SET_NOT_FOUND`` (404). Mã Set ID thành ``Disabled``: vẫn tra được, không in được, không cấp lại."""
-	require_any_role(*DISPOSE_ROLES)
-	timestamp = parse_client_ts(client_ts)
-	set_unit = _set_id(set_unit)
-	try:
-		result = set_units.dispose(set_unit, reason)
-	except BlockedError as error:
-		return reject_block(error.block, "Set Unit", set_unit, client_ts=timestamp)
 	return {"ok": True, **result}

@@ -804,6 +804,17 @@ class TestRenderLabel(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			core_print.render_label("Set Tag", self.DOC, printer={"language": "TSPL"})
 
+	def test_render_label_blocks_when_more_than_one_active_template(self):
+		"""A-13 G5, G8: một loại bản in chỉ được có đúng một mẫu active; dữ liệu lệch (sửa thẳng DB) thì chặn."""
+		original = core_print.active_template("Set Tag", None)
+		clone = frappe.copy_doc(frappe.get_doc("Label Template", original.name))
+		clone.template_name = "Set tag duplicate active"
+		clone.is_active = 0
+		clone.insert(ignore_permissions=True)
+		frappe.db.set_value("Label Template", clone.name, "is_active", 1)  # qua mặt validate
+		with self.assertRaises(frappe.ValidationError):
+			core_print.render_label("Set Tag", self.DOC)
+
 	def test_render_label_rejects_pack_and_unknown_objects(self):
 		for label_object in ("Pack", "Nope", "", None):
 			with self.assertRaises(frappe.ValidationError, msg=repr(label_object)):

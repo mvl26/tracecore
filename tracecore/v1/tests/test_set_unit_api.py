@@ -8,7 +8,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.core import code_registry, gs1
+from tracecore.core import code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.core.tests.test_code_registry import production_site
 from tracecore.instrument import set_tags, set_units
@@ -252,6 +252,7 @@ class SetUnitRpcCase(IsolatedTestCase):
 class TestCreateBatchRpc(SetUnitRpcCase):
 	def test_create_batch_roles_before_any_write(self):
 		unit = self.units(1)[0]
+		nobody = make_user("t5-nobody@example.com")  # tạo tài khoản ghi Audit Log: dựng trước khi đo
 		before = self.footprint()
 		calls = (
 			(api.create_batch, {"set_type": self.set_type, "count": 1}),
@@ -259,7 +260,7 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 			(api.reprint_tag, {"set_unit": unit, "kind": "tag", "printer": self.printer, "reason": "x"}),
 			(api.cancel_print, {"set_unit": unit, "reason": "x"}),
 		)
-		for user in (self.r04, self.r01, make_user("t5-nobody@example.com")):
+		for user in (self.r04, self.r01, nobody):
 			frappe.set_user(user)
 			for fn, kwargs in calls:
 				with self.assertRaises(frappe.PermissionError, msg=(user, fn.__name__)):
@@ -324,8 +325,17 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 		self.assertEqual(frappe.db.count("Print Job"), jobs_before)
 		self.assertEqual(self.dispatch_calls(), [])
 
+	@bru("BRU-ID-001")
+	def test_create_batch_takes_no_prefix_from_the_form(self):
+		"""A-13 G5: tiền tố GS1 chỉ lấy từ cấu hình site; người dùng không nhập được qua RPC."""
+		import inspect
+
+		parameters = set(inspect.signature(api.create_batch).parameters)
+		self.assertFalse({"prefix", "company_prefix", "tc_gs1_company_prefix"} & parameters)
+		self.assertIn("estimate_reason", parameters)
+
 	def test_create_batch_existing_sets_and_warning(self):
-		"""UC-03 A1 (AC-8): bộ đang lưu hành có số chu trình ước tính; cơ số > cơ số suy ra → cảnh báo, vẫn cấp."""
+		"""UC-03 A1 (AC-8): bộ đang lưu hành có số chu trình ước tính kèm lý do; cơ số > nguồn → chặn (A-13 G5, G6)."""
 		frappe.set_user(self.r02)
 		result, _response = post(
 			api.create_batch,
@@ -334,14 +344,26 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 			max_cycles="600",
 			origin="Existing",
 			cycles_used="120",
+			estimate_reason="Đếm từ sổ giấy",
+			client_ts=TS,
+		)
+		self.assert_reject(result, _response, "MAX_CYCLES_INVALID", 422)  # nguồn cơ số thấp hơn 600
+		result, _response = post(
+			api.create_batch,
+			set_type=self.set_type,
+			count=1,
+			max_cycles="200",
+			origin="Existing",
+			cycles_used="120",
+			estimate_reason="Đếm từ sổ giấy",
 			client_ts=TS,
 		)
 		self.assertTrue(result["ok"])
 		row = frappe.db.get_value(
 			"Set Unit", result["set_ids"][0], ["cycles_used", "cycles_source", "max_cycles"], as_dict=True
 		)
-		self.assertEqual((row.cycles_used, row.cycles_source, row.max_cycles), (120, "Estimated", 600))
-		self.assertEqual([w["code"] for w in result["warnings"]], ["MAX_CYCLES_ABOVE_DERIVED"])
+		self.assertEqual((row.cycles_used, row.cycles_source, row.max_cycles), (120, "Estimate", 200))
+		self.assertEqual(result["warnings"], [])
 
 	def test_create_batch_reject_bodies_and_http_status(self):
 		frappe.set_user(self.r02)
@@ -358,6 +380,12 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 			({"max_cycles": "9" * 5000}, "MAX_CYCLES_INVALID", 422),
 			({"origin": "Existing", "cycles_used": "9" * 5000}, "MAX_CYCLES_INVALID", 422),
 			({"origin": "Existing", "cycles_used": 300, "max_cycles": 300}, "MAX_CYCLES_INVALID", 422),
+			({"origin": "Existing", "cycles_used": 5, "max_cycles": 100}, "REASON_REQUIRED", 422),
+			(
+				{"origin": "Existing", "cycles_used": 0, "max_cycles": 100, "estimate_reason": "x"},
+				"MAX_CYCLES_INVALID",
+				422,
+			),
 			({"set_type": "NOPE-T5"}, "SET_TYPE_NOT_FOUND", 404),
 		]
 		before = self.footprint()
@@ -804,57 +832,21 @@ class TestLifecycleRpc(SetUnitRpcCase):
 	def test_lifecycle_rpcs_keep_set_unit_paths(self):
 		from tracecore.v1 import set_unit_lifecycle
 
-		for name in ("form_context", "history", "dispose"):
+		for name in ("form_context", "history"):
 			fn = frappe.get_attr(f"tracecore.v1.set_unit.{name}")
 			self.assertIs(fn, getattr(set_unit_lifecycle, name))
 			self.assertIn(fn, frappe.whitelisted, msg=name)
 		self.assertEqual(api.ISSUE_ROLES, set_unit_lifecycle.ISSUE_ROLES)
-		self.assertEqual(set_unit_lifecycle.DISPOSE_ROLES, ("TC R02", "System Manager"))
-
-	def test_dispose_rpc_roles(self):
-		unit = self.units(1)[0]
-		before = self.footprint()
-		for user in (self.r10, self.r04, self.r01):
-			frappe.set_user(user)
-			with self.assertRaises(frappe.PermissionError, msg=user):
-				post(api.dispose, set_unit=unit, reason="x", client_ts=TS)
-		frappe.set_user("Administrator")
-		self.assertEqual(self.footprint(), before)
-		self.assertEqual(frappe.db.get_value("Set Unit", unit, "status"), "New")
-
-		frappe.set_user(self.r02)
-		key = str(uuid.uuid4())
-		result, response = post(api.dispose, key, set_unit=unit, reason="Issued by mistake", client_ts=TS)
-		self.assertEqual(result, {"ok": True, "set_unit": unit, "status": "Disposed"})
-		replay, _response = post(api.dispose, key, set_unit=unit, reason="Issued by mistake", client_ts=TS)
-		self.assertEqual(replay, result)
-		frappe.set_user("Administrator")
-		self.assertEqual(frappe.db.get_value("Code Registry", unit, "status"), "Disabled")
-
-		frappe.set_user(self.r02)
-		result, response = post(api.dispose, set_unit=unit, reason="again", client_ts=TS)
-		self.assert_reject(result, response, "STATUS_INVALID_FOR_ACTION", 409)
-		other = self.units(1)[0]
-		result, response = post(api.dispose, set_unit=other, reason="   ", client_ts=TS)
-		self.assert_reject(result, response, "REASON_REQUIRED", 422)
-		result, response = post(api.dispose, set_unit="9520000TFIVE999999", reason="x", client_ts=TS)
-		self.assert_reject(result, response, "SET_NOT_FOUND", 404)
-		with self.assertRaises(BadRequestError):
-			post(api.dispose, set_unit=["x"], reason="x", client_ts=TS)
+		self.assertFalse(hasattr(set_unit_lifecycle, "dispose"))  # thanh lý hoãn sang FEAT-032 (A-13 G14)
 
 	def test_form_context_permissions_by_role(self):
+		nobody = make_user("t6-nobody@example.com")  # tạo trước khi đổi người dùng (chỉ R10 tạo tài khoản)
 		unit = self.units(1)[0]
 		expected = {
-			self.r04: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_dispose"), False)
-			| {"can_verify": True},
-			self.r02: dict.fromkeys(
-				("can_issue", "can_print", "can_reprint", "can_verify", "can_dispose"), True
-			),
-			self.r10: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_verify"), True)
-			| {"can_dispose": False},
-			self.r01: dict.fromkeys(
-				("can_issue", "can_print", "can_reprint", "can_verify", "can_dispose"), False
-			),
+			self.r04: dict.fromkeys(("can_issue", "can_print", "can_reprint"), False) | {"can_verify": True},
+			self.r02: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_verify"), True),
+			self.r10: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_verify"), True),
+			self.r01: dict.fromkeys(("can_issue", "can_print", "can_reprint", "can_verify"), False),
 		}
 		for user, permissions in expected.items():
 			frappe.set_user(user)
@@ -875,7 +867,7 @@ class TestLifecycleRpc(SetUnitRpcCase):
 		frappe.set_user(self.r02)
 		result, _response = get(api.form_context)
 		self.assertIsNone(result["summary"])  # form "Cấp Set ID" chưa có bộ
-		frappe.set_user(make_user("t6-nobody@example.com"))
+		frappe.set_user(nobody)
 		with self.assertRaises(frappe.PermissionError):
 			get(api.form_context, set_unit=unit)
 		with self.assertRaises(frappe.PermissionError):
@@ -904,11 +896,10 @@ class TestLifecycleRpc(SetUnitRpcCase):
 			self.assertTrue(response["_commit"])  # GET: dòng Audit Reject phải được commit
 
 		unit = self.units(1)[0]
-		set_units.dispose(unit, "Issued by mistake")
+		step_gate.start_cycle(unit)
 		result, response = get(api.history, set_unit=unit, limit="1")
 		self.assertTrue(result["ok"])
-		self.assertEqual([e["event"] for e in result["events"]], ["dispose"])
-		self.assertEqual(result["events"][0]["reason"], "Issued by mistake")
+		self.assertEqual([e["event"] for e in result["events"]], ["start_cycle"])
 		self.assertFalse(response["_commit"])  # đọc thành công không ghi gì
 		older, _response = get(api.history, set_unit=unit, before=result["next_before"], limit=50)
 		self.assertEqual([e["event"] for e in older["events"]], ["issue"])

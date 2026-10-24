@@ -28,6 +28,7 @@ const TC_SU_STATUS_COLORS = {
 	Reprocess: "red",
 	Sterile: "green",
 	"At Department": "purple",
+	"Awaiting Receipt": "orange",
 	"End of Life": "gray",
 	Disposed: "gray",
 };
@@ -565,32 +566,27 @@ function tc_su_chosen_print(ctx, values) {
 
 function tc_su_cycles_hint(dialog) {
 	const field = dialog.fields_dict.max_cycles;
-	const info = dialog.tc_su_derived || {};
-	const lines = [];
-	if (info.value) {
-		lines.push(
-			__(
-				"Derived from the BOM in effect: {0} (instruments with the lowest max cycles: {1}).",
-				[info.value, (info.limiting || []).join(", ")]
-			)
+	const cap = dialog.tc_su_cap || {};
+	let html = "";
+	if (cap.value) {
+		html = tc_su_escape(
+			cap.source === "Par Level"
+				? __("Limit from the Par Level of the set type: {0}.", [cap.value])
+				: __("Limit from the lowest max cycles of the instruments in the BOM: {0}.", [
+						cap.value,
+				  ])
 		);
 	} else if (dialog.get_value("set_type")) {
-		lines.push(
-			__("Cannot be derived from the BOM: enter the max cycles, 1 to {0}.", [
+		html = tc_su_escape(
+			__("No limit defined for this set type: enter the max cycles, 1 to {0}.", [
 				dialog.tc_su_ctx.limits.max_cycles_limit,
 			])
 		);
 	}
-	if ((info.undefined || []).length) {
-		lines.push(__("{0} instruments have undefined max cycles.", [info.undefined.length]));
-	}
-	let html = lines.map((line) => tc_su_escape(line)).join("<br>");
 	const value = Number(dialog.get_value("max_cycles") || 0);
-	if (info.value && value > info.value) {
-		html += `<br><strong class="text-warning">${tc_su_escape(
-			__("Higher than the derived max cycles {0}: allowed, but check the instruments.", [
-				info.value,
-			])
+	if (cap.value && value > cap.value) {
+		html += `<br><strong class="text-danger">${tc_su_escape(
+			__("Higher than the limit {0}: the Set IDs cannot be issued.", [cap.value])
 		)}</strong>`;
 	}
 	field.set_description(html);
@@ -600,7 +596,7 @@ function tc_su_cycles_hint(dialog) {
 async function tc_su_load_set_type(dialog, preset) {
 	const set_type = preset || dialog.get_value("set_type");
 	const box = dialog.fields_dict.set_type_info.$wrapper;
-	dialog.tc_su_derived = null;
+	dialog.tc_su_cap = null;
 	if (!set_type) {
 		box.empty();
 		tc_su_cycles_hint(dialog);
@@ -608,9 +604,10 @@ async function tc_su_load_set_type(dialog, preset) {
 	}
 	const token = (dialog.tc_su_type_token = (dialog.tc_su_type_token || 0) + 1);
 	box.html(tc_su_muted(__("Loading...")));
-	const [context, header] = await Promise.all([
+	const [context, header, issue_ctx] = await Promise.all([
 		tracecore.codes.get(TC_SU_SET_TYPE_CONTEXT, { set_type }),
 		frappe.db.get_value("Instrument Set Type", set_type, ["department", "set_type_name"]),
+		tracecore.codes.get(TC_SU_CONTEXT, { set_type }),
 	]);
 	if (token !== dialog.tc_su_type_token) {
 		return;
@@ -620,8 +617,8 @@ async function tc_su_load_set_type(dialog, preset) {
 		return;
 	}
 	const row = (header && header.message) || {};
-	const derived = context.data.derived_max_cycles || {};
-	dialog.tc_su_derived = derived;
+	const cap = (issue_ctx.ok && issue_ctx.data.max_cycles_cap) || {};
+	dialog.tc_su_cap = cap;
 	box.html(
 		context.data.effective_version
 			? tc_su_muted(
@@ -643,10 +640,10 @@ async function tc_su_load_set_type(dialog, preset) {
 		await dialog.set_value("department", row.department);
 	}
 	const current_cycles = dialog.get_value("max_cycles");
-	if (derived.value && (!current_cycles || current_cycles === auto.max_cycles)) {
-		await dialog.set_value("max_cycles", derived.value);
+	if (cap.value && (!current_cycles || current_cycles === auto.max_cycles)) {
+		await dialog.set_value("max_cycles", cap.value);
 	}
-	dialog.tc_su_auto = { department: row.department, max_cycles: derived.value };
+	dialog.tc_su_auto = { department: row.department, max_cycles: cap.value };
 	tc_su_cycles_hint(dialog);
 }
 
@@ -663,6 +660,7 @@ function tc_su_issue_args(values, chosen) {
 				: String(values.max_cycles),
 		origin: values.origin || "New",
 		cycles_used: values.origin === "Existing" ? String(values.cycles_used || 0) : "0",
+		estimate_reason: values.origin === "Existing" ? values.estimate_reason || "" : "",
 		kinds: chosen.kinds,
 	};
 	chosen.kinds.forEach((kind) => {
@@ -769,11 +767,19 @@ tracecore.set_unit.issue_dialog = async function (opts = {}) {
 				fieldname: "cycles_used",
 				fieldtype: "Int",
 				label: __("Cycles already used (estimated)"),
-				default: 0,
+				default: 1,
 				depends_on: 'eval:doc.origin === "Existing"',
 				description: __(
-					"Estimated number of cycles the set has been through; below the max cycles. Shown as Estimated on the set."
+					"Estimated number of cycles the set has been through, at least 1 and below the max cycles. Shown as Estimate on the set."
 				),
+			},
+			{
+				fieldname: "estimate_reason",
+				fieldtype: "Small Text",
+				label: __("Where the estimate comes from"),
+				depends_on: 'eval:doc.origin === "Existing"',
+				mandatory_depends_on: 'eval:doc.origin === "Existing"',
+				description: __("Required, at most {0} characters.", [ctx.limits.reason_max]),
 			},
 			{ fieldname: "section_print", fieldtype: "Section Break", label: __("Printing") },
 			{ fieldname: "print_note", fieldtype: "HTML", options: tc_su_print_note(ctx) },

@@ -109,7 +109,6 @@ class TestErrors(FrappeTestCase):
 				"SET_DISPOSED",
 				"TAG_PRINT_PENDING",
 				"TAG_MISMATCH",
-				"STATUS_INVALID_FOR_ACTION",
 				"STEP_ALREADY_PASSED",
 				"SET_IN_OTHER_BATCH",
 				"BATCH_NOT_RUNNING",
@@ -153,11 +152,10 @@ class TestErrors(FrappeTestCase):
 			"TAG_MISMATCH": 409,
 			"PRINTER_NOT_NETWORK": 422,
 			"GS1_PREFIX_NOT_CONFIGURED": 409,
-			# Task 6: thanh lý bộ ngoài Mới tạo / Hết vòng đời hoặc còn Cycle ID (G14)
-			"STATUS_INVALID_FOR_ACTION": 409,
 		}.items():
 			self.assertEqual(errors.HTTP_STATUS.get(code), status, msg=code)
 			self.assertEqual(BlockedError(Block(code, "t", "r", "a")).http_status_code, status, msg=code)
+
 	def test_http_status_wash_codes(self):
 		# FEAT-021 A-12: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
 		self.assertEqual(Block("EQUIPMENT_NOT_READY", "t", "r", "a").http_status, 423)

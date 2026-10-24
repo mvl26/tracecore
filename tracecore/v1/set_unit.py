@@ -4,7 +4,7 @@
 - Ghi (POST + ``@idempotent``): `create_batch`, `print_tags`, `reprint_tag`, `cancel_print`, `verify_tag`. Role kiểm
   TRƯỚC mọi ghi, nên user thiếu quyền không để lại Idempotency Key/Audit (G7): cấp, in, in lại, hủy lệnh in kẹt —
   ``ISSUE_ROLES``; quét kiểm tra thẻ thêm TC R04 (``VERIFY_ROLES``).
-- Vòng đời (Task 6, hiện thực ở `set_unit_lifecycle`): `form_context`, `history` (GET), `dispose` (POST).
+- Vòng đời (Task 6, hiện thực ở `set_unit_lifecycle`): `form_context`, `history` (GET).
 - Đọc (GET): `tag_preview`, `print_status`, `batch_csv`. Từ chối và dòng Audit xuất CSV qua `keep_writes_on_get` để
   được commit (Frappe v15 không commit request GET).
 - Tham số sai kiểu → `BadRequestError` (400); từ chối nghiệp vụ → `reject_block` (Audit ``Reject`` + 404/409/422).
@@ -35,12 +35,11 @@ from tracecore.v1._common import (
 	require_any_role,
 )
 
-# Task 6: vòng đời (ngữ cảnh form, lịch sử, thanh lý) ở module riêng, công bố lại ở đây để giữ đường RPC
+# Task 6: vòng đời (ngữ cảnh form, lịch sử) ở module riêng, công bố lại ở đây để giữ đường RPC
 # tracecore.v1.set_unit.<action> của plan; role cấp/in/quét kiểm tra dùng chung đặt ở đó
 from tracecore.v1.set_unit_lifecycle import (  # RPC công bố lại
 	ISSUE_ROLES,
 	VERIFY_ROLES,
-	dispose,
 	form_context,
 	history,
 )
@@ -250,6 +249,7 @@ def create_batch(
 	max_cycles=None,
 	origin="New",
 	cycles_used=0,
+	estimate_reason=None,
 	kinds=None,
 	tag_printer=None,
 	tray_printer=None,
@@ -270,6 +270,8 @@ def create_batch(
 	department = _optional_text(department, "department")
 	max_cycles = _optional_whole_arg(max_cycles, "max_cycles")
 	cycles_used = _optional_whole_arg(cycles_used, "cycles_used")
+	if estimate_reason is not None and not isinstance(estimate_reason, str):
+		raise BadRequestError(_("{0} must be a non-empty text.").format("estimate_reason"))
 	if not isinstance(origin, str) or origin not in set_units.ORIGINS:
 		raise BadRequestError(_("Set origin must be one of: {0}.").format(", ".join(set_units.ORIGINS)))
 	kinds = _kinds(kinds)
@@ -280,12 +282,14 @@ def create_batch(
 			raise BlockedError(block)
 		if set_units.parse_count(count) is None:
 			raise BlockedError(set_units.count_block())
-		ctx = set_units.precheck(set_type, department, max_cycles, origin, cycles_used)
+		ctx = set_units.precheck(set_type, department, max_cycles, origin, cycles_used, estimate_reason)
 		for kind in kinds:
 			_trial_render(kind, printers[kind])
 		frappe.db.savepoint(SAVEPOINT)
 		try:
-			set_ids = set_units.issue_batch(set_type, count, department, max_cycles, origin, cycles_used)
+			set_ids = set_units.issue_batch(
+				set_type, count, department, max_cycles, origin, cycles_used, estimate_reason
+			)
 			printed = (
 				set_tags.queue_prints(set_ids, kinds, {kind: printers[kind].name for kind in kinds})
 				if kinds

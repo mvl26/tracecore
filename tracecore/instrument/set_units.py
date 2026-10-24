@@ -8,8 +8,6 @@
   cùng loại bộ chạy lần lượt và serial trong một lô liên tiếp. Set Unit chỉ tạo qua đây (cờ ``flags.tc_set_issue``);
   trường vòng đời khởi tạo ở ``step_gate.init_unit`` (ADR-005). Không ghim BOM khi cấp (G4).
 
-- ``dispose``: thanh lý bộ Mới tạo / Hết vòng đời (G14) qua ``step_gate.dispose``, rồi vô hiệu mã Set ID trong Code
-  Registry (vẫn tra được, không in được, không bao giờ cấp lại; FR-M1-05.2, BRU-ID-001).
 - ``summary``, ``history``: tóm tắt form và lịch sử vòng đời (G13), hiện thực ở ``set_history``.
 
 Từ chối nghiệp vụ là ``BlockedError`` (mã trong ``core.errors.HTTP_STATUS``); tầng RPC (``v1.set_unit``) đổi thành body
@@ -20,7 +18,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-from tracecore.core import audit, code_registry, step_gate
+from tracecore.core import audit, code_registry, extension, step_gate
 from tracecore.core.errors import Block, BlockedError
 from tracecore.instrument import bom_versions, catalog, set_tags
 from tracecore.instrument import set_type as set_type_service
@@ -30,10 +28,10 @@ MAX_BATCH = 100
 MAX_CYCLES_LIMIT = 99999
 ORIGINS = ("New", "Existing")
 SAVEPOINT = "tc_issue_set_units"
-CYCLES_SOURCE = {"New": "Actual", "Existing": "Estimated"}
+CYCLES_SOURCE = {"New": "System", "Existing": "Estimate"}
+CAP_HOOK = "tracecore_set_type_cap"
 ISSUE_REASON = step_gate.ISSUE_EVENT  # cột reason của Audit Create (lô và từng bộ)
 REASON_MAX = set_tags.REASON_MAX
-DISPOSE_SAVEPOINT = "tc_dispose_set_unit"
 
 
 def _whole(value) -> int | None:
@@ -165,8 +163,36 @@ def _check_department(department) -> str:
 	return department
 
 
-def _check_max_cycles(value, derived) -> int:
-	number = derived if value in (None, "") else _whole(value)
+def _cap(set_type, version) -> dict:
+	"""Cơ số tối đa nguồn của loại bộ (A-13 G5): hook ``tracecore_set_type_cap`` (Par Level, rồi dụng cụ thấp nhất
+	trong BOM); không phân hệ nào trả giá trị thì dùng cơ số suy ra từ BOM hiệu lực. ``{value | None, source}``."""
+	for cap in extension.run(CAP_HOOK, {"set_type": set_type}):
+		if cap.get("value"):
+			return {"value": cint(cap["value"]), "source": cap["source"]}
+	derived = set_type_service.derived_max_cycles(set_type, version)["value"]
+	return {"value": derived, "source": "Derived"} if derived else {"value": None, "source": "Undefined"}
+
+
+def max_cycles_cap(set_type: str) -> dict | None:
+	"""Cơ số tối đa nguồn của loại bộ cho hộp thoại Cấp Set ID (``{value, source}``); loại bộ không có → None."""
+	if not isinstance(set_type, str) or not frappe.db.exists("Instrument Set Type", set_type):
+		return None
+	return _cap(set_type, None)
+
+
+def _above_cap_block(number, cap) -> Block:
+	source = (
+		_("the Par Level of the set type")
+		if cap["source"] == "Par Level"
+		else _("the lowest max cycles of the instruments in the BOM")
+	)
+	return _max_cycles_block(
+		_("Max cycles {0} is higher than {1}, {2}.").format(number, cap["value"], source)
+	)
+
+
+def _check_max_cycles(value, cap) -> int:
+	number = cap["value"] if value in (None, "") else _whole(value)
 	if number is None or not 1 <= number <= MAX_CYCLES_LIMIT:
 		raise BlockedError(
 			_max_cycles_block(
@@ -175,6 +201,8 @@ def _check_max_cycles(value, derived) -> int:
 				else _("Max cycles is required: it cannot be derived from the instruments of this set type.")
 			)
 		)
+	if cap["value"] and number > cap["value"]:
+		raise BlockedError(_above_cap_block(number, cap))
 	return number
 
 
@@ -184,17 +212,41 @@ def _check_cycles_used(origin, value, max_cycles) -> int:
 			raise BlockedError(_max_cycles_block(_("A new set has used 0 cycles.")))
 		return 0
 	number = _whole(value)
-	if number is None or not 0 <= number < max_cycles:
+	if number is None or not 1 <= number < max_cycles:
 		raise BlockedError(
 			_max_cycles_block(
-				_("Estimated cycles used must be a whole number from 0 to {0}.").format(max_cycles - 1)
+				_("Estimated cycles used must be a whole number from 1 to {0}.").format(max_cycles - 1)
 			)
 		)
 	return number
 
 
+def _check_estimate_reason(origin, value) -> str | None:
+	"""Lý do ước tính (A-13 G6): bắt buộc 1-``REASON_MAX`` ký tự với bộ đang lưu hành; bộ Mới thì không có."""
+	if origin != "Existing":
+		return None
+	text = value.strip() if isinstance(value, str) else ""
+	if not text or len(text) > REASON_MAX:
+		raise BlockedError(
+			Block(
+				"REASON_REQUIRED",
+				_("Reason is required"),
+				_("A reason of 1 to {0} characters is required for the estimated cycles used.").format(
+					REASON_MAX
+				),
+				_("Enter where the estimate comes from, at most {0} characters.").format(REASON_MAX),
+			)
+		)
+	return text
+
+
 def precheck(
-	set_type: str, department: str | None = None, max_cycles=None, origin: str = "New", cycles_used=0
+	set_type: str,
+	department: str | None = None,
+	max_cycles=None,
+	origin: str = "New",
+	cycles_used=0,
+	estimate_reason=None,
 ) -> dict:
 	"""Điều kiện cấp Set ID cho loại bộ (G3, G5, G6); không ghi gì.
 
@@ -236,19 +288,10 @@ def precheck(
 		raise BlockedError(_bom_block(header.name, items))
 
 	department = _check_department(department or header.department)
-	derived = set_type_service.derived_max_cycles(header.name, version)["value"]
-	max_cycles = _check_max_cycles(max_cycles, derived)
+	cap = _cap(header.name, version)
+	max_cycles = _check_max_cycles(max_cycles, cap)
 	cycles_used = _check_cycles_used(origin, cycles_used, max_cycles)
-	warnings = []
-	if derived and max_cycles > derived:
-		warnings.append(
-			{
-				"code": "MAX_CYCLES_ABOVE_DERIVED",
-				"message": _(
-					"Max cycles {0} is higher than {1}, the lowest max cycles of the instruments in the BOM."
-				).format(max_cycles, derived),
-			}
-		)
+	estimate_reason = _check_estimate_reason(origin, estimate_reason)
 	return {
 		"set_type": header.name,
 		"type_code": header.type_code,
@@ -257,8 +300,9 @@ def precheck(
 		"origin": origin,
 		"cycles_used": cycles_used,
 		"bom_version": version,
-		"derived_max_cycles": derived,
-		"warnings": warnings,
+		"max_cycles_cap": cap,
+		"estimate_reason": estimate_reason,
+		"warnings": [],
 	}
 
 
@@ -266,7 +310,7 @@ def precheck(
 
 
 def _insert_units(
-	set_type, count, department, max_cycles, origin="New", cycles_used=0, fields=None
+	set_type, count, department, max_cycles, origin="New", cycles_used=0, fields=None, estimate_reason=None
 ) -> list[str]:
 	"""Tạo `count` Set Unit (không savepoint, không kiểm điều kiện); trả Set ID theo thứ tự cấp."""
 	names = []
@@ -277,6 +321,8 @@ def _insert_units(
 		doc.flags.tc_set_issue = True
 		step_gate.init_unit(doc, cycles_used)
 		doc.cycles_source = CYCLES_SOURCE[origin]
+		if estimate_reason:  # người, thời điểm và lý do ước tính ở Audit Create của bộ (A-13 G6)
+			doc.flags.tc_audit_reason = step_gate.event_reason(step_gate.ISSUE_EVENT, estimate_reason)
 		doc.insert(ignore_permissions=True)  # autoname → code_registry.next_set_id + register
 		names.append(doc.name)
 	return names
@@ -299,7 +345,13 @@ def _create_units(
 
 
 def issue_batch(
-	set_type: str, count, department: str | None = None, max_cycles=None, origin: str = "New", cycles_used=0
+	set_type: str,
+	count,
+	department: str | None = None,
+	max_cycles=None,
+	origin: str = "New",
+	cycles_used=0,
+	estimate_reason=None,
 ) -> list[str]:
 	"""Cấp Set ID cho `count` bộ của loại bộ `set_type` trong một transaction (FR-M1-05, .1; G1); trả Set ID theo thứ tự.
 
@@ -311,11 +363,17 @@ def issue_batch(
 	number = parse_count(count)
 	if number is None:
 		raise BlockedError(count_block())
-	ctx = precheck(set_type, department, max_cycles, origin, cycles_used)
+	ctx = precheck(set_type, department, max_cycles, origin, cycles_used, estimate_reason)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		names = _insert_units(
-			ctx["set_type"], number, ctx["department"], ctx["max_cycles"], origin, ctx["cycles_used"]
+			ctx["set_type"],
+			number,
+			ctx["department"],
+			ctx["max_cycles"],
+			origin,
+			ctx["cycles_used"],
+			estimate_reason=ctx["estimate_reason"],
 		)
 		audit.log(
 			"Create",
@@ -327,6 +385,11 @@ def issue_batch(
 				"last": names[-1],
 				"department": ctx["department"],
 				"origin": origin,
+				**(
+					{"cycles_used": ctx["cycles_used"], "estimate_reason": ctx["estimate_reason"]}
+					if origin == "Existing"
+					else {}
+				),
 			},
 			reason=ISSUE_REASON,
 		)
@@ -337,39 +400,3 @@ def issue_batch(
 		frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 	return names
-
-
-# --- Thanh lý (G14) ------------------------------------------------------------------------------------------------
-
-
-def _dispose_reason_block() -> Block:
-	return Block(
-		"REASON_REQUIRED",
-		_("Reason is required"),
-		_("A reason of 1 to {0} characters is required to dispose a set.").format(REASON_MAX),
-		_("Enter why the set is disposed, at most {0} characters.").format(REASON_MAX),
-	)
-
-
-def dispose(set_unit: str, reason: str) -> dict:
-	"""Thanh lý bộ (FR-M1-06, FR-M1-05.2; BRU-ID-001; G14); trả ``{set_unit, status}``.
-
-	Bộ không có → ``SET_NOT_FOUND``; lý do (bỏ khoảng trắng) rỗng hoặc quá ``REASON_MAX`` ký tự → ``REASON_REQUIRED``;
-	trạng thái ngoài Mới tạo / Hết vòng đời hoặc còn Cycle ID → ``STATUS_INVALID_FOR_ACTION`` (từ ``step_gate.dispose``).
-	Đổi trạng thái (``step_gate``) và vô hiệu mã Set ID (``code_registry.disable``, lý do = lý do thanh lý) trong một
-	savepoint: một bước lỗi thì không bước nào còn. Bộ cũ chưa có dòng Code Registry vẫn thanh lý được.
-	"""
-	if not isinstance(set_unit, str) or not set_unit or not frappe.db.exists("Set Unit", set_unit):
-		raise BlockedError(set_tags.not_found_block(set_unit))
-	text = reason.strip() if isinstance(reason, str) else ""
-	if not text or len(text) > REASON_MAX:
-		raise BlockedError(_dispose_reason_block())
-	frappe.db.savepoint(DISPOSE_SAVEPOINT)
-	try:
-		step_gate.dispose(set_unit, text)
-		if frappe.db.get_value("Code Registry", set_unit, "status") == "Active":
-			code_registry.disable(set_unit, text)
-	except Exception:
-		frappe.db.rollback(save_point=DISPOSE_SAVEPOINT)
-		raise
-	return {"set_unit": set_unit, "status": "Disposed"}

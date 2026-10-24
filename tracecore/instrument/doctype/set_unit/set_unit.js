@@ -4,16 +4,13 @@
 // lực, phiên bản BOM, trạng thái mã), Chi tiết (xem trước thẻ và nhãn khay, số lần in theo loại, quét kiểm tra thẻ, lệnh
 // in đang chờ), Lịch sử (sự kiện vòng đời, phân trang "Xem thêm" theo next_before).
 // Dữ liệu và quyền từ tracecore.v1.set_unit.form_context (nút theo permissions, RPC vẫn kiểm lại); giới hạn (độ dài lý
-// do) lấy từ limits, không chép vào JS. Ghi (quét kiểm tra, thanh lý; in/in lại/hủy lệnh in qua tc_set_unit.js) dùng
+// do) lấy từ limits, không chép vào JS. Ghi (quét kiểm tra; in/in lại/hủy lệnh in qua tc_set_unit.js) dùng
 // tracecore.codes.new_request/send: mỗi thao tác một khóa X-Idempotency-Key + client_ts, gửi lại sau lỗi mạng dùng đúng
 // request cũ. Lỗi chặn: khối đỏ inline ngay tại chỗ thao tác (kết quả → lý do → hành động).
 
 const TC_SU_FORM_PREVIEW = "tracecore.v1.set_unit.tag_preview";
 const TC_SU_FORM_VERIFY = "tracecore.v1.set_unit.verify_tag";
 const TC_SU_FORM_HISTORY = "tracecore.v1.set_unit.history";
-const TC_SU_FORM_DISPOSE = "tracecore.v1.set_unit.dispose";
-// thanh lý chỉ từ Mới tạo / Hết vòng đời và khi không còn Cycle ID (server kiểm lại, STATUS_INVALID_FOR_ACTION)
-const TC_SU_FORM_DISPOSABLE = ["New", "End of Life"];
 
 function tc_su_form_ready() {
 	return Boolean(window.tracecore && tracecore.codes && tracecore.set_unit);
@@ -70,8 +67,8 @@ function tc_su_render_summary(frm, ctx) {
 		s.max_cycles,
 		s.remaining,
 	]);
-	if (s.cycles_source === "Estimated") {
-		cycles += ` (${__("Estimated")})`;
+	if (s.cycles_source === "Estimate") {
+		cycles += ` (${__("Estimate")})`;
 	}
 	let bom = __("No BOM version in effect");
 	if (s.bom_pinned) {
@@ -413,57 +410,6 @@ async function tc_su_load_history(frm, before) {
 	}
 }
 
-// --- Thanh lý -----------------------------------------------------------------------------------------------------
-
-function tc_su_dispose_dialog(frm, ctx) {
-	const dialog = new frappe.ui.Dialog({
-		title: __("Dispose set {0}", [frm.doc.name]),
-		fields: [
-			{
-				fieldname: "warning",
-				fieldtype: "HTML",
-				options: `<div class="alert alert-warning" role="status"><strong>${tc_su_form_escape(
-					__("The Set ID will be disabled permanently and never issued again.")
-				)}</strong></div>`,
-			},
-			{
-				fieldname: "reason",
-				fieldtype: "Small Text",
-				label: __("Reason for disposal"),
-				description: __("Required, at most {0} characters.", [ctx.limits.reason_max]),
-			},
-			{ fieldname: "tc_error", fieldtype: "HTML" },
-		],
-		primary_action_label: __("Dispose"),
-		async primary_action() {
-			const values = dialog.get_values(true) || {};
-			const box = dialog.fields_dict.tc_error.$wrapper;
-			box.empty();
-			dialog.disable_primary_action();
-			let result;
-			try {
-				result = await tracecore.set_unit.send(dialog, TC_SU_FORM_DISPOSE, {
-					set_unit: frm.doc.name,
-					reason: values.reason || "",
-				});
-			} finally {
-				dialog.enable_primary_action();
-			}
-			if (!result.ok) {
-				box.html(tracecore.set_unit.error_html(result.error, ctx));
-				return;
-			}
-			dialog.hide();
-			frappe.show_alert({
-				message: __("Set {0} disposed; its Set ID is disabled.", [frm.doc.name]),
-				indicator: "green",
-			});
-			frm.reload_doc();
-		},
-	});
-	dialog.show();
-}
-
 // --- Nút theo quyền do server trả ---------------------------------------------------------------------------
 
 // Chỉ gỡ nút do script này thêm (không xóa nút của Client Script khác)
@@ -508,9 +454,6 @@ function tc_su_buttons(frm, ctx) {
 				}),
 			group
 		);
-	}
-	if (perms.can_dispose && TC_SU_FORM_DISPOSABLE.includes(s.status) && !s.active_cycle_id) {
-		tc_su_add_button(frm, __("Dispose"), () => tc_su_dispose_dialog(frm, ctx));
 	}
 }
 

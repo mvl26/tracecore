@@ -1220,13 +1220,11 @@ def _t2_candidates(set_type, status, wanted):
 
 
 def _t2_new_set(set_type, passed=(), fail_t2=False):
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=passed)
+	unit = _issue_one(set_type)
+	factories.make_cycle(unit, passed=passed)
 	if fail_t2:
-		step_gate.record(unit.name, "T2", "Fail")
-	return unit.name
+		step_gate.record(unit, "T2", "Fail")
+	return unit
 
 
 def _t2_operator():

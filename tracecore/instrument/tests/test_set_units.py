@@ -108,7 +108,7 @@ class TestIssueBatch(FrappeTestCase):
 					"cycle_bom_version": 0,
 					"active_cycle_id": None,
 					"current_station": None,
-					"cycles_source": "Actual",
+					"cycles_source": "System",
 				},
 			)
 			self.assertEqual(
@@ -261,7 +261,10 @@ class TestIssueBatch(FrappeTestCase):
 		set_type = _set_type("SUD", [("SU-MC1", 1)])
 		own = frappe.db.get_value(SET_TYPE, set_type, "department")
 		ctx = set_units.precheck(set_type, max_cycles=150)
-		self.assertEqual((ctx["department"], ctx["derived_max_cycles"], ctx["warnings"]), (own, 200, []))
+		self.assertEqual(
+			(ctx["department"], ctx["max_cycles_cap"], ctx["warnings"]),
+			(own, {"value": 200, "source": "Derived"}, []),
+		)
 		other = make_department("SU other department")
 		self.assertEqual(set_units.precheck(set_type, other, 150)["department"], other)
 
@@ -283,38 +286,79 @@ class TestIssueBatch(FrappeTestCase):
 			with self.subTest(max_cycles=value):
 				block = _blocked(self, set_units.precheck, set_type, None, value)
 				self.assertEqual((block.code, block.http_status), ("MAX_CYCLES_INVALID", 422))
-		self.assertEqual(
-			set_units.precheck(set_type, None, "99999")["max_cycles"], set_units.MAX_CYCLES_LIMIT
-		)
 		# không nhập: lấy cơ số suy ra; không suy ra được → bắt buộc nhập
 		self.assertEqual(set_units.precheck(set_type)["max_cycles"], 200)
 		undefined = make_set_type("SUD3", bom=[("SU-UNDEF", 1)]).name  # dụng cụ cơ số Chưa xác định
-		self.assertIsNone(set_units.precheck(undefined, max_cycles=10)["derived_max_cycles"])
+		self.assertIsNone(set_units.precheck(undefined, max_cycles=10)["max_cycles_cap"]["value"])
+		# chưa có cơ số nguồn: chỉ chặn ở giới hạn kỹ thuật 99 999
+		self.assertEqual(
+			set_units.precheck(undefined, None, "99999")["max_cycles"], set_units.MAX_CYCLES_LIMIT
+		)
 		self.assertEqual(_blocked(self, set_units.precheck, undefined).code, "MAX_CYCLES_INVALID")
 
-		# lớn hơn cơ số suy ra: cảnh báo, vẫn cấp
-		ctx = set_units.precheck(set_type, max_cycles=300)
-		self.assertEqual([w["code"] for w in ctx["warnings"]], ["MAX_CYCLES_ABOVE_DERIVED"])
-		names = set_units.issue_batch(set_type, 2, max_cycles=300)
-		self.assertEqual(frappe.db.get_value("Set Unit", names[0], "max_cycles"), 300)
+		# A-13 G5: R02 nhập thấp hơn nguồn thì được, cao hơn thì chặn (không còn cảnh báo cho qua)
+		block = _blocked(self, set_units.precheck, set_type, max_cycles=300)
+		self.assertEqual((block.code, block.http_status), ("MAX_CYCLES_INVALID", 422))
+		self.assertIn("200", block.reason)
+		names = set_units.issue_batch(set_type, 2, max_cycles=150)
+		self.assertEqual(frappe.db.get_value("Set Unit", names[0], "max_cycles"), 150)
+		self.assertEqual(set_units.precheck(set_type, max_cycles=200)["max_cycles"], 200)
+
+	@bru("BRU-PAR-001")
+	def test_par_level_is_the_source_of_the_cap(self):
+		"""A-13 G5: nguồn cơ số là Par Level (qua hook ``tracecore_set_type_cap``), không import M8."""
+		make_instrument("SU-PAR1", max_cycles=500, methods=factories.BOM_INSTRUMENT_METHODS)
+		set_type = _set_type("SUP", [("SU-PAR1", 1)])
+		factories.make_par_level(SET_TYPE, set_type, max_cycles=250)
+		ctx = set_units.precheck(set_type)
+		self.assertEqual(
+			(ctx["max_cycles"], ctx["max_cycles_cap"]), (250, {"value": 250, "source": "Par Level"})
+		)
+		self.assertEqual(set_units.precheck(set_type, max_cycles=250)["max_cycles"], 250)
+		self.assertEqual(
+			_blocked(self, set_units.precheck, set_type, max_cycles=251).code, "MAX_CYCLES_INVALID"
+		)
+		with patch("tracecore.core.extension.run", return_value=[]):  # không phân hệ nào khai báo nguồn
+			self.assertEqual(set_units.precheck(set_type, max_cycles=400)["max_cycles"], 400)
 
 	def test_existing_sets_estimated_cycles(self):
 		set_type = _set_type("SUE")
-		names = set_units.issue_batch(set_type, 3, max_cycles=300, origin="Existing", cycles_used=120)
+		names = set_units.issue_batch(
+			set_type, 3, max_cycles=300, origin="Existing", cycles_used=120, estimate_reason="Đếm từ sổ giấy"
+		)
 		for name in names:
 			self.assertEqual(
 				frappe.db.get_value("Set Unit", name, ["status", "cycles_used", "cycles_source"]),
-				("New", 120, "Estimated"),
+				("New", 120, "Estimate"),
 			)
+			# người, thời điểm và lý do ước tính nằm trong Audit Log của từng bộ
+			log = frappe.get_all(
+				"Audit Log",
+				filters={"ref_doctype": "Set Unit", "ref_name": name, "action": "Create"},
+				fields=["user", "creation", "reason"],
+			)[0]
+			self.assertEqual(log.reason, "issue: Đếm từ sổ giấy")
+			self.assertTrue(log.user and log.creation)
 		batch = frappe.get_all(
 			"Audit Log",
 			filters={"ref_doctype": SET_TYPE, "ref_name": set_type, "action": "Create", "reason": "issue"},
 			pluck="new_value",
 		)
 		self.assertEqual(frappe.parse_json(batch[0])["origin"], "Existing")
+		self.assertEqual(frappe.parse_json(batch[0])["estimate_reason"], "Đếm từ sổ giấy")
+		# ước tính phải > 0; bộ chưa dùng lần nào là bộ Mới, không phải ước tính
 		self.assertEqual(
-			set_units.precheck(set_type, None, 300, "Existing", "0")["cycles_used"], 0
-		)  # bộ cũ chưa dùng lần nào
+			_blocked(self, set_units.precheck, set_type, None, 300, "Existing", "0", "x").code,
+			"MAX_CYCLES_INVALID",
+		)
+		for reason in (None, "", "   ", "x" * 501, 7):
+			with self.subTest(estimate_reason=reason):
+				block = _blocked(self, set_units.precheck, set_type, None, 300, "Existing", 5, reason)
+				self.assertEqual((block.code, block.http_status), ("REASON_REQUIRED", 422))
+		# lý do ước tính chỉ có nghĩa với bộ đang lưu hành
+		self.assertEqual(
+			set_units.precheck(set_type, None, 300, "New", 0, "ignored")["estimate_reason"], None
+		)
 		before = _footprint(set_type)
 		for cycles_used in (300, 301, -1, "abc", 2.5, None):
 			with self.subTest(cycles_used=cycles_used):
@@ -326,6 +370,7 @@ class TestIssueBatch(FrappeTestCase):
 					max_cycles=300,
 					origin="Existing",
 					cycles_used=cycles_used,
+					estimate_reason="Đếm từ sổ giấy",
 				)
 				self.assertEqual(block.code, "MAX_CYCLES_INVALID")
 		# bộ mới luôn 0 chu trình
@@ -379,14 +424,20 @@ class TestSetUnitCreationGuard(FrappeTestCase):
 		self.assertTrue(frappe.has_permission("Set Unit", "write", user=manager))
 		for role in [f"TC R{n:02d}" for n in range(1, 11)]:
 			perms = [p for p in frappe.get_meta("Set Unit").permissions if p.role == role]
-			self.assertEqual([(p.read, p.write, p.create) for p in perms], [(1, 0, 0)], msg=role)
+			# ma trận RBAC (FEAT-003): R02 và R10 được ghi (W) nhưng không vai trò nào có cờ create (A-13 G4)
+			# R07, R08 không có quyền trên Set Unit trong ma trận SEC #13
+			if role in ("TC R07", "TC R08"):
+				expected = []
+			else:
+				expected = [(1, 1, 0) if role in ("TC R02", "TC R10") else (1, 0, 0)]
+			self.assertEqual([(p.read, p.write, p.create) for p in perms], expected, msg=role)
 
 	@bru("BRU-ID-001")
 	def test_set_id_and_new_fields_not_editable(self):
 		unit = make_set_unit(_set_type("SUJ"))
 		for field, value in (
 			("set_id", code_registry.company_prefix() + "SUJ999999"),
-			("cycles_source", "Estimated"),
+			("cycles_source", "Estimate"),
 			("tag_verified_on", now_datetime()),
 			("tag_verified_by", "Administrator"),
 			("status", "Sterile"),
@@ -400,18 +451,18 @@ class TestSetUnitCreationGuard(FrappeTestCase):
 		row = frappe.db.get_value(
 			"Set Unit", unit.name, ["cycles_source", "tag_verified_on", "tag_verified_by"], as_dict=True
 		)
-		self.assertEqual(row, {"cycles_source": "Actual", "tag_verified_on": None, "tag_verified_by": None})
+		self.assertEqual(row, {"cycles_source": "System", "tag_verified_on": None, "tag_verified_by": None})
 		meta = frappe.get_meta("Set Unit")
 		self.assertTrue(meta.get_field("cycles_source").read_only)
 		self.assertTrue(meta.get_field("cycles_source").set_only_once)
-		self.assertEqual(meta.get_field("cycles_source").options.split("\n"), ["Actual", "Estimated"])
+		self.assertEqual(meta.get_field("cycles_source").options.split("\n"), ["System", "Estimate"])
 		self.assertTrue(meta.get_field("tag_verified_on").read_only)
 		self.assertEqual(meta.get_field("tag_verified_by").options, "User")
 
 	def test_factory_and_devdata_use_issue_path(self):
 		unit = make_set_unit(_set_type("SUK"), max_cycles=120, is_loaner=1)
 		self.assertEqual(
-			(unit.status, unit.max_cycles, unit.is_loaner, unit.cycles_source), ("New", 120, 1, "Actual")
+			(unit.status, unit.max_cycles, unit.is_loaner, unit.cycles_source), ("New", 120, 1, "System")
 		)
 		self.assertEqual(
 			frappe.get_all(
@@ -438,13 +489,15 @@ class TestSetUnitCreationGuard(FrappeTestCase):
 
 		set_type = _set_type("SUL")
 		old = make_set_unit(set_type).name
-		estimated = set_units.issue_batch(set_type, 1, max_cycles=300, origin="Existing", cycles_used=4)[0]
+		estimated = set_units.issue_batch(
+			set_type, 1, max_cycles=300, origin="Existing", cycles_used=4, estimate_reason="Đếm tay"
+		)[0]
 		frappe.db.sql("update `tabSet Unit` set cycles_source = null where name = %s", old)
 		audit = frappe.db.count("Audit Log")
 		set_unit_issue_fields.execute()
 		set_unit_issue_fields.execute()
-		self.assertEqual(frappe.db.get_value("Set Unit", old, "cycles_source"), "Actual")
-		self.assertEqual(frappe.db.get_value("Set Unit", estimated, "cycles_source"), "Estimated")
+		self.assertEqual(frappe.db.get_value("Set Unit", old, "cycles_source"), "System")
+		self.assertEqual(frappe.db.get_value("Set Unit", estimated, "cycles_source"), "Estimate")
 		self.assertIsNone(frappe.db.get_value("Set Unit", old, "department"))  # không bịa khoa
 		self.assertEqual(frappe.db.count("Audit Log"), audit)
 		with open(frappe.get_app_path("tracecore", "patches.txt"), encoding="utf-8") as handle:

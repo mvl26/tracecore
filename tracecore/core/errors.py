@@ -121,8 +121,6 @@ HTTP_STATUS: dict[str, int] = {
 			"SET_DISPOSED",
 			"TAG_PRINT_PENDING",
 			"TAG_MISMATCH",
-			# FEAT-016 G14: thanh lý bộ ngoài Mới tạo / Hết vòng đời hoặc còn Cycle ID hiệu lực
-			"STATUS_INVALID_FOR_ACTION",
 			"STEP_ALREADY_PASSED",
 			"SET_IN_OTHER_BATCH",
 			"BATCH_NOT_RUNNING",
