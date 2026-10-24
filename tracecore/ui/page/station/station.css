@@ -1020,6 +1020,10 @@ body.tc-kiosk .layout-main-section {
 	min-height: var(--tc-touch-station);
 }
 
+[data-surface="PDA"] .tc-t5 .tc-chip {
+	min-height: var(--tc-touch-station);
+}
+
 [data-surface="PDA"] .tc-t5 .tc-actionsbar {
 	flex-direction: column;
 	align-items: stretch;

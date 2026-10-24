@@ -211,7 +211,7 @@ def test_t5_manual_data_requires_confirmation_card_and_photo(t5_page, t5_demo):
 	form.locator("#tc-t5-file").set_input_files(
 		{"name": "printout.png", "mimeType": "image/png", "buffer": PNG_1PX}
 	)
-	expect(form).to_contain_text("Đã đính ảnh", timeout=15000)
+	expect(page.locator("[data-region='notice']")).to_contain_text("Đã đính ảnh", timeout=15000)
 	form.locator("[data-form='confirmed']").check()
 	form.locator("#tc-t5-card").fill("THE-SAI-0000")
 	form.locator("[data-action='t5-save-data']").click()
@@ -237,7 +237,7 @@ def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
 	form.locator("#tc-t5-file").set_input_files(
 		{"name": "printout.png", "mimeType": "image/png", "buffer": PNG_1PX}
 	)
-	expect(form).to_contain_text("Đã đính ảnh", timeout=15000)
+	expect(page.locator("[data-region='notice']")).to_contain_text("Đã đính ảnh", timeout=15000)
 	form.locator("[data-form='confirmed']").check()
 	form.locator("#tc-t5-card").fill(os.environ["TC_E2E_T5_CARD_ID"])
 	form.locator("[data-action='t5-save-data']").click()
