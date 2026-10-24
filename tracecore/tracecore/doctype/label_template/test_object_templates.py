@@ -16,7 +16,7 @@ from tracecore.setup.label_templates import (
 from tracecore.tests.utils import IsolatedTestCase
 from tracecore.tracecore.doctype.label_template.test_label_template import _text_boxes
 
-OBJECTS = ("Equipment", "Station", "Roll", "Employee Card", "Location", "Wash Batch")
+OBJECTS = ("Equipment", "Station", "Roll", "Employee Card", "Location", "Wash Batch", "Sterilization Load")
 SCAN_TYPES = {
 	"Equipment": "equipment",
 	"Station": "station",
@@ -24,6 +24,7 @@ SCAN_TYPES = {
 	"Employee Card": "employee",
 	"Location": "location",
 	"Wash Batch": "wash_batch",
+	"Sterilization Load": "load",
 }
 BODY = "^XA{{ qr(doc.payload, 20, 40, 6) }}^FO220,40^FD{{ text(doc.code) }}^FS^XZ"
 

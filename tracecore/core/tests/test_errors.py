@@ -24,6 +24,7 @@ class TestErrors(FrappeTestCase):
 				"COMPETENCY_REQUIRED",
 				"PIN_INVALID",
 				"PIN_PROOF_INVALID",
+				"CARD_MISMATCH",
 				"APPROVER_NOT_ALLOWED",
 			),
 			429: ("PIN_LOCKED", "LOGIN_THROTTLED"),
@@ -59,6 +60,9 @@ class TestErrors(FrappeTestCase):
 				"BATCH_EMPTY",
 				"DATA_INCOMPLETE",
 				"RESULT_INVALID",
+				"EQUIPMENT_NOT_STERILIZER",
+				"PACK_INCOMPATIBLE",
+				"LOAD_EMPTY",
 				"EXTRA_CYCLES_INVALID",
 				"VALID_UNTIL_INVALID",
 			),
@@ -73,6 +77,7 @@ class TestErrors(FrappeTestCase):
 				"BOM_VERSION_NOT_FOUND",
 				"WASH_BATCH_NOT_FOUND",
 				"LOCATION_NOT_FOUND",
+				"LOAD_NOT_FOUND",
 				"OVERRIDE_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
@@ -110,6 +115,10 @@ class TestErrors(FrappeTestCase):
 				"BATCH_NOT_RUNNING",
 				"EQUIPMENT_MISMATCH",
 				"R02_CONFIRM_REQUIRED",
+				"PACK_IN_OTHER_LOAD",
+				"PACK_NOT_LOADABLE",
+				"LOAD_CAPACITY_EXCEEDED",
+				"LOAD_NOT_OPEN",
 				"SET_END_OF_LIFE",
 				"PAR_NOT_EXCEEDED",
 				"OVERRIDE_PENDING",
@@ -146,6 +155,22 @@ class TestErrors(FrappeTestCase):
 		self.assertEqual(Block("BATCH_EMPTY", "t", "r", "a").http_status, 422)
 		self.assertEqual(Block("SET_IN_OTHER_BATCH", "t", "r", "a").http_status, 409)
 		self.assertEqual(BlockedError(Block("EQUIPMENT_NOT_READY", "t", "r", "a")).http_status_code, 423)
+
+	def test_http_status_load_codes(self):
+		# FEAT-022 A-16 Q14: nạp mẻ tiệt khuẩn T5
+		expected = {
+			"EQUIPMENT_NOT_STERILIZER": 422,
+			"PACK_INCOMPATIBLE": 422,
+			"LOAD_EMPTY": 422,
+			"LOAD_NOT_FOUND": 404,
+			"PACK_IN_OTHER_LOAD": 409,
+			"PACK_NOT_LOADABLE": 409,
+			"LOAD_CAPACITY_EXCEEDED": 409,
+			"LOAD_NOT_OPEN": 409,
+			"CARD_MISMATCH": 403,
+		}
+		for code, status in expected.items():
+			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 
 	def test_block_as_dict(self):
 		self.assertEqual(

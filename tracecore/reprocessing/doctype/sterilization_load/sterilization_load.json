@@ -1,0 +1,312 @@
+{
+ "actions": [],
+ "autoname": "ME-.YY.MM.DD.-.##",
+ "creation": "2026-10-23 10:00:00.000000",
+ "description": "Sterilization load on a steam or plasma sterilizer (FEAT-022, UC-09, WF-03). Created by the sterilizing service when loading is completed.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "machine_section",
+  "equipment",
+  "program",
+  "operator",
+  "is_priority",
+  "requires_bi",
+  "column_break_run",
+  "status",
+  "loaded_by_scan",
+  "load_completed_at",
+  "started_at",
+  "ended_at",
+  "packs_section",
+  "packs",
+  "data_section",
+  "data_source",
+  "data_complete",
+  "needs_review",
+  "manual_reason",
+  "column_break_data",
+  "manual_confirmed_by",
+  "manual_confirmed_at",
+  "params",
+  "machine_alerts",
+  "machine_report",
+  "chart_files",
+  "result_section",
+  "unload_scan_equipment",
+  "unload_scan_at",
+  "column_break_result",
+  "cycle_result",
+  "result_source",
+  "released_by",
+  "released_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "machine_section",
+   "fieldtype": "Section Break",
+   "label": "Machine"
+  },
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Equipment",
+   "options": "Equipment",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Process Program",
+   "options": "Process Program",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "description": "Employee who completed loading, taken from the card session.",
+   "fieldname": "operator",
+   "fieldtype": "Link",
+   "label": "Operator",
+   "options": "Employee",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_priority",
+   "fieldtype": "Check",
+   "label": "Priority Load",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Copied from the program when loading is completed.",
+   "fieldname": "requires_bi",
+   "fieldtype": "Check",
+   "label": "Requires Biological Indicator",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_run",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Running",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Running\nCycle Complete\nQuarantine\nReleased\nFailed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "loaded_by_scan",
+   "fieldtype": "Check",
+   "label": "Loaded By Scan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "load_completed_at",
+   "fieldtype": "Datetime",
+   "label": "Loading Completed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At"
+  },
+  {
+   "fieldname": "packs_section",
+   "fieldtype": "Section Break",
+   "label": "Packs"
+  },
+  {
+   "fieldname": "packs",
+   "fieldtype": "Table",
+   "label": "Packs",
+   "options": "Load Pack",
+   "reqd": 1
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Cycle Data"
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Select",
+   "label": "Data Source",
+   "options": "\nManual\nAuto",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "data_complete",
+   "fieldtype": "Check",
+   "label": "Data Complete",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A recorded value is outside the program range; R02 confirms it at release.",
+   "fieldname": "needs_review",
+   "fieldtype": "Check",
+   "label": "Needs Review",
+   "read_only": 1
+  },
+  {
+   "description": "Why the cycle data of a connected machine was entered by hand.",
+   "fieldname": "manual_reason",
+   "fieldtype": "Small Text",
+   "label": "Manual Entry Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_data",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manual_confirmed_by",
+   "fieldtype": "Link",
+   "label": "Manual Data Confirmed By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manual_confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Manual Data Confirmed At",
+   "read_only": 1
+  },
+  {
+   "description": "Cycle parameters: [{parameter_name, unit, value, min_value, max_value, outside_range}].",
+   "fieldname": "params",
+   "fieldtype": "JSON",
+   "label": "Parameters",
+   "read_only": 1
+  },
+  {
+   "description": "Alerts the operator saw on the machine during the cycle.",
+   "fieldname": "machine_alerts",
+   "fieldtype": "JSON",
+   "label": "Machine Alerts",
+   "read_only": 1
+  },
+  {
+   "description": "Photo of the printout of the machine.",
+   "fieldname": "machine_report",
+   "fieldtype": "Attach",
+   "label": "Machine Report",
+   "read_only": 1
+  },
+  {
+   "fieldname": "chart_files",
+   "fieldtype": "Attach",
+   "label": "Cycle Chart",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "unload_scan_equipment",
+   "fieldtype": "Link",
+   "label": "Machine Scanned At Unloading",
+   "options": "Equipment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unload_scan_at",
+   "fieldtype": "Datetime",
+   "label": "Unload Scanned At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cycle_result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cycle Result",
+   "options": "\nPass\nFail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_source",
+   "fieldtype": "Select",
+   "label": "Result Source",
+   "options": "\nManual\nAuto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_by",
+   "fieldtype": "Link",
+   "label": "Released By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_at",
+   "fieldtype": "Datetime",
+   "label": "Released At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-23 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Sterilization Load",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "TC R05",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
