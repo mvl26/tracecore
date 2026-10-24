@@ -52,3 +52,6 @@ labels_out/
 
 # Assets build
 tracecore/public/dist/
+frontend/*.tsbuildinfo
+frontend/coverage/
+frontend/.npm-cache/
