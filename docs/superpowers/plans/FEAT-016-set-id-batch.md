@@ -52,7 +52,7 @@ FR/BRU đáp ứng: FR-M1-05 (cấp Set ID GIAI với tiền tố GS1 bệnh vi�
 | G16 | [Xác nhận] | Mã lỗi | Mới (vào `core.errors.HTTP_STATUS` và bảng ADR-003): `SET_TYPE_BOM_INVALID` 422, `DEPARTMENT_INVALID` 422, `MAX_CYCLES_INVALID` 422, `SET_DISPOSED` 409, `TAG_PRINT_PENDING` 409, `TAG_MISMATCH` 409, `STATUS_INVALID_FOR_ACTION` 409. Dùng lại: `COUNT_OUT_OF_RANGE`, `REASON_REQUIRED`, `LABEL_RENDER_FAILED` 422; `SET_TYPE_NOT_FOUND`, `SET_NOT_FOUND` 404; `GS1_PREFIX_NOT_CONFIGURED`, `CODE_DISABLED` 409; `SCAN_INVALID`; tham số sai kiểu → `BadRequestError` 400 | ADR-003 | 5, 6 |
 | G17 | [Xác nhận] | E2E (chính sách người dùng 22/10/2026) | **Không** thêm bộ Playwright tự động: đường in (cấp lô → Print Job → worker → socket TCP giả nhận ZPL, lỗi giữa lô, in lại) kiểm trọn ở mức Python bằng socket giả cục bộ và gọi worker đồng bộ (như `test_print_server.py`), trình duyệt chỉ thêm phần nối hộp thoại. Task 7 kiểm tay một lần bằng Playwright trên dev site (ảnh vào workspace). Vẫn chạy lại bộ `tests_e2e` hiện có làm hồi quy vì `tc_codes.js` dùng chung | Quyết định người dùng 2026-10-22 | 7, 8 |
 
-Ghi chú: G1–G10, G14 ghi "tạm — chờ chủ đầu tư duyệt" trong A-09; G11–G13, G15–G17 dev lead xác nhận. Người dùng đổi ý ở mục nào thì sửa task tương ứng trước khi code.
+Ghi chú: G1–G10, G14 ghi "tạm — chờ chủ đầu tư duyệt" trong A-13; G11–G13, G15–G17 dev lead xác nhận. Người dùng đổi ý ở mục nào thì sửa task tương ứng trước khi code.
 
 ## Global Constraints
 
@@ -82,11 +82,11 @@ Ghi chú: G1–G10, G14 ghi "tạm — chờ chủ đầu tư duyệt" trong A-0
 
 **FR/BRU/AC:** chuẩn bị cho mọi FR ở trên; không đổi yêu cầu.
 
-**Files:** Modify `docs/architecture.md` (Revision History **A-09**; §5.3.1 M1 ghi chú A-09 cho `Set Unit` (G4–G6, G11–G14: trường `cycles_source`, `tag_verified_on`, `tag_verified_by`, tạo chỉ qua `set_units.issue_batch`, điều kiện cấp, quyền, thanh lý, lịch sử); M9 ghi chú A-09: `Label Template.label_object` thêm `Set Tag`/`Set Tray Label` và kích thước (G8), `print_server.dispatch_many` (G9), index Print Job (G11); §5.3.3 dòng Set Unit: series theo (tiền tố, mã loại bộ), 6 số, không check digit, hết dải, chặn tiền tố demo (G2, G3); ADR-003 bảng mã HTTP thêm 7 mã (G16); ADR-004 bullet A-09 (GIAI không check digit, `split_set_id`, chặn tiền tố demo khi cấp/in); ADR-005 bullet A-09 (`init_unit`, `dispose`, `event` vào lý do Audit); ADR-006 bullet A-09 (thẻ/nhãn khay đi đường server, một job mỗi nhãn, `dispatch_many`)), `docs/srs.md` (revision `1.11 A-09`; ghi chú FR-M1-05, .1, .3, .4, FR-M1-06, .2 trỏ A-09; không đổi câu EARS), `docs/implementation-plan.md` (dòng FEAT-016: endpoint thật `v1.set_unit.create_batch/print_tags/reprint_tag/verify_tag/dispose/tag_preview/print_status/form_context/history/batch_csv`, Data `W: Set Unit, Code Registry, Print Job, Label Template (mẫu Set Tag/Set Tray Label)`; dòng FEAT-019: T1 nhận bộ `New` cho chu trình đầu tiên; dòng FEAT-011: import Set Unit qua `set_units.issue_batch`; dòng FEAT-020/032: thanh lý gọi `step_gate.dispose` qua `set_units.dispose`), `docs/rtm.md` (FR-M1-05/06 cột Test trỏ file test dự kiến).
+**Files:** Modify `docs/architecture.md` (Revision History **A-13**; §5.3.1 M1 ghi chú A-13 cho `Set Unit` (G4–G6, G11–G14: trường `cycles_source`, `tag_verified_on`, `tag_verified_by`, tạo chỉ qua `set_units.issue_batch`, điều kiện cấp, quyền, thanh lý, lịch sử); M9 ghi chú A-09: `Label Template.label_object` thêm `Set Tag`/`Set Tray Label` và kích thước (G8), `print_server.dispatch_many` (G9), index Print Job (G11); §5.3.3 dòng Set Unit: series theo (tiền tố, mã loại bộ), 6 số, không check digit, hết dải, chặn tiền tố demo (G2, G3); ADR-003 bảng mã HTTP thêm 7 mã (G16); ADR-004 bullet A-09 (GIAI không check digit, `split_set_id`, chặn tiền tố demo khi cấp/in); ADR-005 bullet A-09 (`init_unit`, `dispose`, `event` vào lý do Audit); ADR-006 bullet A-09 (thẻ/nhãn khay đi đường server, một job mỗi nhãn, `dispatch_many`)), `docs/srs.md` (revision `1.11 A-09`; ghi chú FR-M1-05, .1, .3, .4, FR-M1-06, .2 trỏ A-09; không đổi câu EARS), `docs/implementation-plan.md` (dòng FEAT-016: endpoint thật `v1.set_unit.create_batch/print_tags/reprint_tag/verify_tag/dispose/tag_preview/print_status/form_context/history/batch_csv`, Data `W: Set Unit, Code Registry, Print Job, Label Template (mẫu Set Tag/Set Tray Label)`; dòng FEAT-019: T1 nhận bộ `New` cho chu trình đầu tiên; dòng FEAT-011: import Set Unit qua `set_units.issue_batch`; dòng FEAT-020/032: thanh lý gọi `step_gate.dispose` qua `set_units.dispose`), `docs/rtm.md` (FR-M1-05/06 cột Test trỏ file test dự kiến).
 
-- [ ] **Step 1:** Ghi A-09: G1–G10, G14 "tạm — chờ chủ đầu tư duyệt", G11–G13, G15–G17 dev lead xác nhận; ghi các gap ở cuối plan (tiền tố thật, vật liệu/kích thước thẻ, nguồn sự thật cơ số, T1 nhận `New`, phiếu PDF thẻ). **Rủi ro đánh số:** trên nhánh này A-07 là số cuối (FEAT-015); nhánh FEAT-041 (`D:\tracecore`) cũng dùng A-07, nhánh FEAT-003 (`~/tracecore-codex`) và `~/tracecore-dev` dùng A-08 — plan dùng **A-09**; nhánh nào vào `main` sau phải đánh lại số và sửa mọi tham chiếu "A-09" của nó — ghi câu này trong dòng Revision History. Không thêm/bớt FR/BRU (49 BRU).
+- [ ] **Step 1:** Ghi A-13: G1–G10, G14 "tạm — chờ chủ đầu tư duyệt", G11–G13, G15–G17 dev lead xác nhận; ghi các gap ở cuối plan (tiền tố thật, vật liệu/kích thước thẻ, nguồn sự thật cơ số, T1 nhận `New`, phiếu PDF thẻ). **Rủi ro đánh số:** trên nhánh này A-07 là số cuối (FEAT-015); nhánh FEAT-041 (`D:\tracecore`) cũng dùng A-07, nhánh FEAT-003 (`~/tracecore-codex`) và `~/tracecore-dev` dùng A-08 — plan dùng **A-09**; nhánh nào vào `main` sau phải đánh lại số và sửa mọi tham chiếu "A-09" của nó — ghi câu này trong dòng Revision History. Không thêm/bớt FR/BRU (49 BRU).
 - [ ] **Step 2:** `pre-commit run --files <4 docs>`; `bench --site test_f015 run-tests --module tracecore.tests.test_lint_scripts` OK.
-- [ ] **Step 3:** Commit `docs: amendment A-09 quyết định FEAT-016 (tạm, chờ chủ đầu tư duyệt)`.
+- [ ] **Step 3:** Commit `docs: amendment A-13 quyết định FEAT-016 (tạm, chờ chủ đầu tư duyệt)`.
 
 ### Task 1: Lõi GS1 — Set ID có chặn hết dải và tiền tố demo, tách cấu trúc Set ID
 
@@ -216,7 +216,30 @@ Hành vi (kiểm được bằng tay), tab Thông tin / Chi tiết / Lịch sử
 - [ ] **Step 2:** Bảng đối chiếu FR-M1-05 (.1–.4), FR-M1-06 (+ .2), BRU-ID-001, BRU-ID-006, EI-HW-008, AC-1…AC-9 → test chứng minh; ghi rõ phần chờ (G1–G10, G14 chờ chủ đầu tư; tiền tố GS1 thật OQ-05; vật liệu/kích thước thẻ R-01; T1 nhận `New` ở FEAT-019; FR-M1-05.5/06.1/06.3/06.4 ở FEAT-017/023/032/009).
 - [ ] **Step 3:** Review toàn nhánh bằng model mạnh, sửa lượt cuối nếu cần; **push, mở PR base `feat/FEAT-015-set-type-bom` (Conventional Commits) rồi DỪNG chờ Codex review** (không bắt đầu FEAT kế tiếp).
 
-## Mâu thuẫn / khoảng trống tài liệu cần người dùng phán quyết
+## Quyết định đã chốt 24/10/2026 (thay các điểm bên dưới nếu khác)
+
+Người dùng chốt 16 điểm; chi tiết ở `docs/architecture.md` Amendment **A-13** (số A-09 cũ của nhánh này đã thuộc FEAT-015 trên `develop`).
+
+| # | Kết luận | Thay đổi so với kế hoạch ban đầu |
+| :- | :- | :- |
+| 1 | 100 bộ/lần | UC-03 E3 sửa từ 200 thành 100 |
+| 2 | Tiền tố chỉ từ cấu hình site; chọn loại bản in, server chọn đúng một mẫu active, thiếu/nhiều hơn một thì chặn | Thêm kiểm "nhiều hơn một mẫu active" ở `core.print.render_label` |
+| 3 | Production phải có tiền tố thật; không chuyển định danh demo; chặn dải `952` ngoài dev/test | Không đổi |
+| 4 | Không ghim BOM khi cấp; UC-03 bước 3 là "hiển thị phiên bản dự kiến" | Sửa UC-03 |
+| 5 | FEAT-019 làm; sửa cả FR-M2-02 (T1 nhận New, At Department, Awaiting Receipt) | Sửa srs FR-M2-02 |
+| 6 | Select giữ nguyên, chốt 9 giá trị (thêm `Awaiting Receipt`) | JS màu trạng thái thêm `Awaiting Receipt` |
+| 7 | Nguồn cơ số là `Par Level`; `Instrument.max_cycles` là bản sao, `Set Unit.max_cycles` là snapshot; vượt nguồn thì **chặn** | Hook `tracecore_set_type_cap` (M1 không import M8); bỏ cảnh báo `MAX_CYCLES_ABOVE_DERIVED` |
+| 8 | 50×30 mm chỉ cho prototype/UAT; có CSV khắc và xem trước | Ghi vào A-13; proof SVG/PDF là gap |
+| 9 | Hoãn Thanh lý sang FEAT-032 | Bỏ `step_gate.dispose`, `set_units.dispose`, RPC `dispose`, nút Desk, 13 chuỗi dịch |
+| 10 | `cycles_source` = `System`/`Estimate`, bất biến; Estimate cần `cycles_used > 0` và lý do | Đổi enum, thêm `estimate_reason`, patch `rename_cycles_source` |
+| 11 | Hook `tracecore_after_set_status` định nghĩa riêng, chỉ khi `status` đổi | `step_gate._save_lifecycle` gọi hook, `start_cycle`/`record` nhận `client_ts` |
+| 12 | Giữ Audit `Create` trên Print Job, không thêm hành động `Print` | Không đổi |
+| 13 | R02/R10/System Manager in và in lại; R04 chỉ gắn thẻ và quét xác minh | Không đổi |
+| 14 | AC viết thành điều kiện kiểm thử độc lập | Bổ sung test AC (giới hạn 100, uniqueness, prefix production, atomic, lỗi máy in, reprint, quyền, BOM chỉ preview, bộ ước tính) |
+| 15 | Đổi sang A-13 ngay trong nhánh | Đã đổi |
+| 16 | `test_ignore` của `test_set_unit.py` đã đủ trên nhánh này | Phát hiện thêm: ma trận RBAC (FEAT-003) cấp `create` Set Unit cho R02/R10, nên thêm `NO_CREATE_DOCTYPES` và quyền System Manager vào `setup/permissions.py` |
+
+## Mâu thuẫn / khoảng trống tài liệu (đã chốt, xem bảng trên)
 
 1. **Giới hạn lô:** FR-M1-05.1 và implementation-plan nói 100 bộ/lần; UC-03 E3 nói "vượt 200 bộ/lần → chia lô". Plan dùng 100 (G1).
 2. **Đầu vào "tiền tố mã và mẫu thẻ" của FR-M1-05:** tiền tố GS1 là của bệnh viện (OQ-05), không phải lựa chọn mỗi lần cấp. Plan: tiền tố là cấu hình site, "mẫu thẻ" = chọn loại bản in, mỗi loại một mẫu active (G5, G8).
@@ -227,7 +250,7 @@ Hành vi (kiểm được bằng tay), tab Thông tin / Chi tiết / Lịch sử
 7. **Cơ số tối đa ba nơi:** `Set Unit.max_cycles` (bắt buộc > 0), `Instrument.max_cycles` (A-06 I4), `Par Level` (FEAT-031, CHG-021 "R01/R02 nhập tay"). Plan: R02 nhập khi cấp, điền sẵn cơ số suy ra, chỉ cảnh báo khi lớn hơn (G5); chủ đầu tư cần chốt nguồn sự thật.
 8. **Thẻ kim loại không được định nghĩa:** không tài liệu nào nêu kích thước/vật liệu/nội dung thẻ (ux gap 5, R-01, D-03); ADR-004 hàm ý thẻ in từ ảnh PNG/PDF. Plan: mẫu ZPL `Set Tag` 50 × 30 mm trên phôi thẻ + CSV cho đơn vị khắc, không có phiếu PDF thẻ (G8).
 9. **Thanh lý:** FR-M1-05.2 nhắc "Thanh lý", FR-M2-00.5 (rẽ nhánh T3), FR-M8-03.2 (Hết vòng đời) nhưng không FR nào quy định ai thanh lý, từ trạng thái nào, có duyệt không. Plan G14 (R02/SM, từ Mới tạo/Hết vòng đời, có lý do); phương án thay là hoãn sang FEAT-020/032.
-10. **UC-03 A1 (bộ đang lưu hành, số chu trình ước tính) không có FR riêng** và cần trường mới `cycles_source` (§5.3 không có). Plan làm qua A-09 (G6).
+10. **UC-03 A1 (bộ đang lưu hành, số chu trình ước tính) không có FR riêng** và cần trường mới `cycles_source` (§5.3 không có). Plan làm qua A-13 (G6).
 11. **"Hook vòng đời từ step gate"** (implementation-plan) không được định nghĩa. Plan hiểu là Audit Log của Set Unit do `step_gate._save_lifecycle` ghi kèm tên sự kiện, không thêm extension hook (G13).
 12. **Audit Log không có hành động "In"** (chỉ Create/Update/…/Sync). Plan ghi `Create` trên Print Job kèm lý do thay vì đổi DocType Audit Log (G10).
 13. **Quyền in:** UC-03 cho R02 (chính) và R04; A-05 R8 chỉ cho R10/SM in nhãn đối tượng. Plan: R02/R10/SM in và in lại, R04 chỉ quét kiểm tra (G7).
