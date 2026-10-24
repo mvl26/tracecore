@@ -1,0 +1,60 @@
+<style>
+  .tc-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+  .tc-option { border:2px solid #d8e4ef; border-radius:10px; overflow:hidden; background:#fff; cursor:pointer; }
+  .tc-option:hover { border-color:#2d75ad; }
+  .tc-option.selected { border-color:#195789; box-shadow:0 0 0 3px rgba(25,87,137,.14); }
+  .tc-preview { height:390px; display:grid; grid-template-columns:86px 1fr; background:#f2f6fa; color:#173f63; font:11px Arial,sans-serif; }
+  .tc-side { background:white; border-right:1px solid #c8d9e8; padding:12px 8px; }
+  .tc-brand { font-weight:700; font-size:13px; margin-bottom:18px; }
+  .tc-nav { padding:8px 6px; margin:4px -8px; border-left:3px solid transparent; }
+  .tc-nav.active { background:#e7f0f8; border-left-color:#236293; font-weight:700; }
+  .tc-main { padding:13px; overflow:hidden; }
+  .tc-topline { height:5px; background:#286b9f; margin-bottom:8px; }
+  .tc-title { font-size:17px; font-weight:700; margin:7px 0 12px; }
+  .tc-alert { background:#fff1f1; border-left:4px solid #c90000; padding:8px; margin-bottom:8px; color:#222; }
+  .tc-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:9px; }
+  .tc-card { background:#fff; border:1px solid #cbdceb; border-left:4px solid #266493; border-radius:6px; padding:9px; min-height:48px; }
+  .tc-card.warn { border-left-color:#e46d00; }
+  .tc-card strong { display:block; font-size:19px; margin-bottom:3px; }
+  .tc-actions { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .tc-action { background:#fff; border:1px solid #bcd1e3; border-radius:6px; padding:12px 8px; min-height:48px; }
+  .tc-action b { display:block; color:#236293; margin-bottom:4px; }
+  .tc-stations { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .tc-station { background:#fff; border:1px solid #bcd1e3; border-radius:6px; padding:14px 8px; text-align:center; }
+  .tc-station b { display:block; font-size:15px; margin-bottom:4px; }
+  .tc-body { padding:14px; }
+  .tc-body h3 { margin:0 0 5px; color:#173f63; }
+  .tc-body p { margin:0; color:#536b7e; line-height:1.45; }
+  @media (max-width:1000px){ .tc-grid{grid-template-columns:1fr;} }
+</style>
+
+<h2>Home TraceCore nên ưu tiên điều gì?</h2>
+<p class="subtitle">Cả ba phương án đều giữ sidebar, màu sắc và component language từ bộ screenshot. Khác nhau ở vai trò của trang Home.</p>
+
+<div class="tc-grid">
+  <div class="tc-option" data-choice="a-dashboard" onclick="toggleSelect(this)">
+    <div class="tc-preview">
+      <div class="tc-side"><div class="tc-brand">TraceCore</div><div class="tc-nav active">Trang chủ</div><div class="tc-nav">Vận hành</div><div class="tc-nav">Báo cáo</div><div class="tc-nav">Danh mục</div></div>
+      <div class="tc-main"><div class="tc-topline"></div><div class="tc-title">Tổng quan hôm nay</div><div class="tc-alert"><b>2 việc cần xử lý</b><br>Ghi đè cơ số · Thu hồi mở</div><div class="tc-cards"><div class="tc-card"><strong>144</strong>Bộ đang xử lý</div><div class="tc-card warn"><strong>26</strong>Gói sắp hết hạn</div><div class="tc-card"><strong>11</strong>Mẻ hôm nay</div><div class="tc-card"><strong>3</strong>Sự cố đang mở</div></div><div class="tc-card"><b>Sản lượng theo trạm</b><br><br>T1 156 · T3 142 · T5 138</div></div>
+    </div>
+    <div class="tc-body"><h3>A — Dashboard điều hành</h3><p>Ưu tiên KPI, cảnh báo và việc cần duyệt. Phù hợp R01/R02 nhưng KTV phải thêm một bước để vào trạm.</p></div>
+  </div>
+
+  <div class="tc-option" data-choice="b-launcher" onclick="toggleSelect(this)">
+    <div class="tc-preview">
+      <div class="tc-side"><div class="tc-brand">TraceCore</div><div class="tc-nav active">Trang chủ</div><div class="tc-nav">Gần đây</div><div class="tc-nav">Tra cứu</div></div>
+      <div class="tc-main"><div class="tc-topline"></div><div class="tc-title">Chào Trần Văn Hùng</div><div class="tc-alert"><b>Đang trực tại T1</b><br>Phiên còn hiệu lực</div><div class="tc-stations"><div class="tc-station"><b>T1</b>Tiếp nhận</div><div class="tc-station"><b>T2</b>Làm sạch</div><div class="tc-station"><b>T3</b>Lắp ráp</div><div class="tc-station"><b>T4</b>Đóng gói</div><div class="tc-station"><b>T5</b>Tiệt khuẩn</div><div class="tc-station"><b>T6–T8</b>Kho & khoa</div></div></div>
+    </div>
+    <div class="tc-body"><h3>B — Launcher chức năng</h3><p>Vào tác vụ rất nhanh, dễ học. Tuy nhiên Home ít giá trị điều hành và dễ trở thành một menu lớn đẹp hơn Frappe.</p></div>
+  </div>
+
+  <div class="tc-option" data-choice="c-hybrid" onclick="toggleSelect(this)">
+    <div class="tc-preview">
+      <div class="tc-side"><div class="tc-brand">TraceCore</div><div class="tc-nav active">Trang chủ</div><div class="tc-nav">Công việc</div><div class="tc-nav">Tra cứu</div><div class="tc-nav">Quản trị</div></div>
+      <div class="tc-main"><div class="tc-topline"></div><div class="tc-title">Hôm nay của bạn</div><div class="tc-alert"><b>Ưu tiên</b> · 1 việc cần duyệt, 1 thu hồi đang mở</div><div class="tc-cards"><div class="tc-card"><strong>144</strong>Bộ đang xử lý</div><div class="tc-card warn"><strong>2</strong>Việc quá hạn</div></div><div class="tc-actions"><div class="tc-action"><b>Mở trạm T1</b>Tiếp tục phiên đang trực</div><div class="tc-action"><b>Quét / tra cứu mã</b>Set ID, Cycle ID, mẻ</div><div class="tc-action"><b>Duyệt ghi đè</b>1 yêu cầu mới</div><div class="tc-action"><b>Thu hồi & sự cố</b>1 hồ sơ đang mở</div></div></div>
+    </div>
+    <div class="tc-body"><h3>C — Hybrid theo vai trò · Khuyến nghị</h3><p>Phía trên là việc cần chú ý; phía dưới là shortcut theo quyền và phiên làm việc. Cùng một Home nhưng nội dung thay đổi theo role.</p></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">Bấm vào phương án gần nhất với điều mày muốn. Có thể chọn rồi đổi lựa chọn.</p>
