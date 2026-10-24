@@ -65,6 +65,10 @@ class TestErrors(FrappeTestCase):
 				"RESULT_INVALID",
 				"EXTRA_CYCLES_INVALID",
 				"VALID_UNTIL_INVALID",
+				"LINES_NOT_COUNTED",
+				"QTY_INVALID",
+				"BRANCH_INVALID",
+				"PHOTO_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -78,6 +82,7 @@ class TestErrors(FrappeTestCase):
 				"WASH_BATCH_NOT_FOUND",
 				"LOCATION_NOT_FOUND",
 				"OVERRIDE_NOT_FOUND",
+				"ASSEMBLY_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
@@ -122,6 +127,9 @@ class TestErrors(FrappeTestCase):
 				"PAR_NOT_EXCEEDED",
 				"OVERRIDE_PENDING",
 				"OVERRIDE_NOT_PENDING",
+				"SHORTAGE_UNCONFIRMED",
+				"NO_SHORTAGE",
+				"ASSEMBLY_CLOSED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
