@@ -1,4 +1,5 @@
-"""Mẫu nhãn mẫu (Label Template): nhãn gói (FEAT-018 Task 5) và nhãn QR đối tượng (FEAT-005 Task 2).
+"""Mẫu nhãn mẫu (Label Template): nhãn gói (FEAT-018 Task 5), nhãn QR đối tượng (FEAT-005 Task 2), thẻ kim loại và
+nhãn khay của bộ dụng cụ (FEAT-016 Task 3, G8).
 
 Tạo bằng hàm, không bằng fixtures.
 
@@ -19,6 +20,7 @@ from tracecore.core import print as core_print
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "label_templates")
 SAMPLE_DOC_PATH = os.path.join(TEMPLATE_DIR, "pack_sample.json")
 OBJECT_SAMPLE_PATH = os.path.join(TEMPLATE_DIR, "object_sample.json")
+SET_SAMPLE_PATH = os.path.join(TEMPLATE_DIR, "set_sample.json")
 
 # Mẫu đầu: 60 x 40 mm, 300 dpi, ZPL (D7)
 SAMPLE_TEMPLATES = (
@@ -37,6 +39,22 @@ OBJECT_TEMPLATES = tuple(
 	for label_object in core_print.OBJECT_LABELS
 )
 OBJECT_SIZE = {"width_mm": 50, "height_mm": 30, "dpi": 300}
+
+# Thẻ kim loại 50 x 30 mm và nhãn khay 60 x 40 mm, 300 dpi, ZPL (G8); không có phương pháp tiệt khuẩn
+SET_TEMPLATES = (
+	{
+		"template_name": "Set tag",
+		"label_object": "Set Tag",
+		"file": "set_tag.zpl.jinja",
+		"size": {"width_mm": 50, "height_mm": 30, "dpi": 300},
+	},
+	{
+		"template_name": "Set tray label",
+		"label_object": "Set Tray Label",
+		"file": "set_tray.zpl.jinja",
+		"size": {"width_mm": 60, "height_mm": 40, "dpi": 300},
+	},
+)
 
 
 def _ensure_templates(rows) -> list[str]:
@@ -89,6 +107,11 @@ def ensure_object_templates() -> list[str]:
 	)
 
 
+def ensure_set_templates() -> list[str]:
+	"""Tạo mẫu thẻ kim loại / nhãn khay (`SET_TEMPLATES`) còn thiếu (không ghi đè, không tranh chỗ active)."""
+	return _ensure_templates(SET_TEMPLATES)
+
+
 def sample_pack_context(**overrides) -> dict:
 	"""`doc` đầy đủ cho mẫu nhãn gói: dùng cho test và xem trước mẫu.
 
@@ -124,6 +147,31 @@ def sample_object_context(label_object) -> dict:
 	}
 
 
+def sample_set_context(label_object) -> dict:
+	"""`doc` mẫu cho thẻ kim loại / nhãn khay, cùng khóa với `instrument.set_tags.tag_context`: dùng cho test, dựng thử
+	khi lưu mẫu và xem trước.
+
+	Set ID mẫu mang tiền tố GS1 demo (`gs1.DEFAULT_COMPANY_PREFIX`, không ghi Code Registry) nên `is_test` bật; bộ cấy
+	ghép và tên có dấu để thử mọi nhánh của mẫu ở cả hai chế độ in.
+	"""
+	if label_object not in core_print.SET_LABELS:
+		frappe.throw(_("Label object {0} is not a set tag or tray label.").format(label_object))
+	with open(SET_SAMPLE_PATH, encoding="utf-8") as handle:
+		sample = json.load(handle)
+	set_id = gs1.make_giai(gs1.DEFAULT_COMPANY_PREFIX, sample["type_code"] + sample.pop("serial"))
+	return {
+		"set_id": set_id,
+		"payload": gs1.giai_payload(set_id),
+		"hri": gs1.giai_hri(set_id),
+		**sample,
+		"is_test": gs1.is_demo_prefix(set_id),
+	}
+
+
 def sample_context(label_object) -> dict:
-	"""Dữ liệu mẫu theo loại đối tượng của mẫu nhãn: nhãn gói hoặc nhãn QR đối tượng."""
-	return sample_pack_context() if label_object == "Pack" else sample_object_context(label_object)
+	"""Dữ liệu mẫu theo loại đối tượng của mẫu nhãn: nhãn gói, thẻ/nhãn khay bộ dụng cụ hoặc nhãn QR đối tượng."""
+	if label_object == "Pack":
+		return sample_pack_context()
+	if label_object in core_print.SET_LABELS:
+		return sample_set_context(label_object)
+	return sample_object_context(label_object)

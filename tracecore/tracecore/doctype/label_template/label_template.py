@@ -1,8 +1,9 @@
 """Label Template: mẫu nhãn Jinja theo (đối tượng nhãn, phương pháp, ngôn ngữ máy in); R10 chỉnh không cần code.
 
 Mỗi bộ ba (`label_object`, `method`, `language`) chỉ có đúng một mẫu active. `method` chỉ có nghĩa (và bắt buộc)
-với nhãn gói; nhãn QR đối tượng (FEAT-005) không có phương pháp. Mẫu mẫu tạo ở
-`tracecore.setup.label_templates.ensure_sample_templates` / `ensure_object_templates`.
+với nhãn gói; nhãn QR đối tượng (FEAT-005), thẻ kim loại `Set Tag` và nhãn khay `Set Tray Label` (FEAT-016) không có
+phương pháp. Mẫu mẫu tạo ở `tracecore.setup.label_templates.ensure_sample_templates` / `ensure_object_templates` /
+`ensure_set_templates`.
 """
 
 import frappe

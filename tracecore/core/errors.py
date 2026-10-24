@@ -52,6 +52,12 @@ HTTP_STATUS: dict[str, int] = {
 			"BOM_TOO_LARGE",
 			"BOM_EFFECTIVE_DATE_INVALID",
 			"SHELF_LIFE_INVALID",
+			# FEAT-016 A-09 (G5, G6, G16): điều kiện cấp Set ID hàng loạt
+			"SET_TYPE_BOM_INVALID",
+			"DEPARTMENT_INVALID",
+			"MAX_CYCLES_INVALID",
+			# FEAT-016 ruling Task 4/5: thẻ/nhãn khay Set ID chỉ in qua đường server (máy in phải có địa chỉ mạng)
+			"PRINTER_NOT_NETWORK",
 			# FEAT-021 A-12: lô rửa T2
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
@@ -114,6 +120,12 @@ HTTP_STATUS: dict[str, int] = {
 			"COMPANY_NOT_CONFIGURED",
 			"BOM_VERSION_CONFLICT",
 			"SET_TYPE_CODE_EXISTS",
+			# FEAT-016: series Set ID của loại bộ đã hết dải 999 999 (G2) — không cấp mã 7 số
+			"SET_SERIES_EXHAUSTED",
+			# FEAT-016 G10, G12: bộ đã thanh lý, lệnh in cùng loại đang chờ, thẻ quét không khớp bộ
+			"SET_DISPOSED",
+			"TAG_PRINT_PENDING",
+			"TAG_MISMATCH",
 			"STEP_ALREADY_PASSED",
 			"SET_IN_OTHER_BATCH",
 			"BATCH_NOT_RUNNING",

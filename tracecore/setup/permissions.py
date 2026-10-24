@@ -22,6 +22,10 @@ VALID_SYMBOLS = frozenset("RWSA")
 # trước rồi chỉnh theo V11.
 AMENDED_ELSEWHERE = frozenset({"Item", "Stock Entry"})
 
+# Set Unit chỉ tạo qua Cấp Set ID (``set_units.issue_batch``; FEAT-016, A-13 G4): ký hiệu W của ma trận vẫn cho
+# ghi nhưng không sinh cờ ``create``, để Desk không có nút "Thêm" cho vai trò nào.
+NO_CREATE_DOCTYPES = frozenset({"Set Unit"})
+
 # Quyền thêm theo amendment cho vai trò ngoài R01-R10 (ký hiệu SEC như ma trận, không bao giờ có delete):
 # Instrument: System Manager đọc/ghi (FEAT-014, A-06 I15).
 AMENDMENT_GRANTS: dict[str, dict[str, str]] = {
@@ -29,6 +33,8 @@ AMENDMENT_GRANTS: dict[str, dict[str, str]] = {
 	# FEAT-015 A-09 S12: System Manager đọc/tạo/ghi loại bộ; Set BOM Item chỉ đọc (dòng bất biến, chỉ bom_versions ghi)
 	"Instrument Set Type": {"System Manager": "RW"},
 	"Set BOM Item": {"System Manager": "R"},
+	# FEAT-016 A-13 G4: System Manager đọc/ghi Set Unit (cờ create bị bỏ ở NO_CREATE_DOCTYPES)
+	"Set Unit": {"System Manager": "RW"},
 }
 
 
@@ -95,6 +101,14 @@ def permission_flags(symbols: str) -> dict[str, int]:
 	return flags
 
 
+def flags_for(doctype: str, symbols: str) -> dict[str, int]:
+	"""Cờ Frappe của ký hiệu SEC; DocType trong ``NO_CREATE_DOCTYPES`` không bao giờ nhận cờ ``create``."""
+	flags = permission_flags(symbols)
+	if doctype in NO_CREATE_DOCTYPES:
+		flags.pop("create", None)
+	return flags
+
+
 def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dict]:
 	"""Sinh fixture cho DocType đã tồn tại; các dòng future vẫn ở CSV để CI theo dõi."""
 
@@ -105,7 +119,7 @@ def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dic
 		if row.doctype not in existing_doctypes or row.doctype in AMENDED_ELSEWHERE:
 			continue
 		for code in ROLE_CODES:
-			flags = permission_flags(row.permissions[code])
+			flags = flags_for(row.doctype, row.permissions[code])
 			if not flags:
 				continue
 			name = hashlib.sha256(f"{row.doctype}:{ROLE_NAMES[code]}:0".encode()).hexdigest()[:10]
@@ -132,7 +146,7 @@ def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dic
 					"parentfield": "permissions",
 					"role": role,
 					"permlevel": 0,
-					**permission_flags(symbols),
+					**flags_for(row.doctype, symbols),
 				}
 			)
 	return records

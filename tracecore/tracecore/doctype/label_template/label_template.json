@@ -49,7 +49,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Label Object",
-   "options": "Pack\nEquipment\nStation\nRoll\nEmployee Card\nLocation\nWash Batch",
+   "options": "Pack\nEquipment\nStation\nRoll\nEmployee Card\nLocation\nWash Batch\nSet Tag\nSet Tray Label",
    "reqd": 1
   },
   {
@@ -108,7 +108,7 @@
    "label": "Template"
   },
   {
-   "description": "Jinja template in the printer language. Pack: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Object label: doc (code, title, subtitle, payload, is_test). Also width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).",
+   "description": "Jinja template in the printer language. Pack: doc (set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot, bom_version, is_loaner, is_test, warning, payload, hri). Object label: doc (code, title, subtitle, payload, is_test). Set Tag / Set Tray Label: doc (set_id, payload, hri, type_code, set_type_name, department, method, is_implant, issued_on, is_test). Also width_dots, height_dots, dpi. Functions: text(value) prints diacritics only on Unicode printers; datamatrix(payload, x, y, module); qr(payload, x, y, magnification).",
    "fieldname": "body",
    "fieldtype": "Code",
    "label": "Template Body",
@@ -118,7 +118,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 12:30:00.000000",
+ "modified": "2026-10-24 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Label Template",
