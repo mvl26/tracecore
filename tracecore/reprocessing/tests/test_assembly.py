@@ -307,7 +307,6 @@ class TestScanInstrument(AssemblyCase):
 	def set_flag(self, on):
 		frappe.db.set_single_value("TraceCore Settings", "enable_instrument_giai", on)
 
-	@bru("BRU-ID-004")
 	def test_scan_ticks_the_matching_bom_line(self):
 		ctx = self.line(self.name, raw=self.codes["T3-KEO"])
 		keo = next(l for l in ctx["lines"] if l["instrument"] == "T3-KEO")
@@ -318,7 +317,6 @@ class TestScanInstrument(AssemblyCase):
 			next(l for l in again["lines"] if l["instrument"] == "T3-KEO")["line_status"], "Enough"
 		)
 
-	@bru("BRU-ID-004")
 	def test_foreign_instrument_warns_and_flags_nc(self):
 		patcher, calls = _hook_calls(assembly.NC_HOOK)
 		with patcher:
