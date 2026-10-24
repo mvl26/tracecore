@@ -304,6 +304,19 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 (FEAT-020, A-35) kiểm đếm tại T3:
+#  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
+#                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)
+#  - assembly_nc:      (ctx {assembly, set_unit, kind, items}) -> None, khi bản nháp lần đầu có dòng thiếu hoặc quét
+#                      dụng cụ lạ (FEAT-030 tạo Incident CAPA thật, idempotent theo assembly)
+#  - after_assembly:   (ctx {assembly, set_unit, result, branch, branch_reason, station, shortage, damaged}) -> None,
+#                      sau khi ghi sổ (dụng cụ hỏng sang Sửa chữa/Thanh lý ở M1/FEAT-032)
+tracecore_assembly_context = [
+	"tracecore.instrument.bom.pack_context",
+	"tracecore.par.check.pack_context",
+]
+tracecore_assembly_nc = []
+tracecore_after_assembly = []
 
 # Scheduled Tasks
 # ---------------

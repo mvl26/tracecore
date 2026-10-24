@@ -66,6 +66,11 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
 			"RESULT_INVALID",
+			# FEAT-020 A-35: kiểm đếm lắp ráp T3
+			"LINES_NOT_COUNTED",
+			"QTY_INVALID",
+			"BRANCH_INVALID",
+			"PHOTO_INVALID",
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",
@@ -85,6 +90,7 @@ HTTP_STATUS: dict[str, int] = {
 			"WASH_BATCH_NOT_FOUND",
 			"LOCATION_NOT_FOUND",
 			"OVERRIDE_NOT_FOUND",
+			"ASSEMBLY_NOT_FOUND",
 		),
 		404,
 	),
@@ -136,6 +142,10 @@ HTTP_STATUS: dict[str, int] = {
 			"PAR_NOT_EXCEEDED",
 			"OVERRIDE_PENDING",
 			"OVERRIDE_NOT_PENDING",
+			# FEAT-020 A-35: thiếu chưa R02 xác nhận, bản nháp đã đóng
+			"SHORTAGE_UNCONFIRMED",
+			"NO_SHORTAGE",
+			"ASSEMBLY_CLOSED",
 		),
 		409,
 	),
