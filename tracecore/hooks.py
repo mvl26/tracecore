@@ -61,9 +61,17 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025) và T2 lô rửa (SCR-06, FEAT-021):
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021) và
+# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019):
 # Frappe nối các file này sau station.js trong script của Page station
-page_js = {"station": ["public/js/station_t4.js", "public/js/station_t6.js", "public/js/station_t2.js"]}
+page_js = {
+	"station": [
+		"public/js/station_t4.js",
+		"public/js/station_t6.js",
+		"public/js/station_t2.js",
+		"public/js/station_t1.js",
+	]
+}
 
 # include js in doctype views
 # Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);

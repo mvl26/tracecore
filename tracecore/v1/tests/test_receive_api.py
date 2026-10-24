@@ -130,6 +130,30 @@ class TestReceiveFlowApi(ReceiveApiCase):
 		self.assert_rejection(bad, "PHOTO_INVALID", 422)
 
 
+class TestReceiveAsStationUser(ReceiveApiCase):
+	"""Kiosk chạy bằng user trạm TC R03 thật (không phải Administrator): mọi bước ghi qua quyền của dịch vụ."""
+
+	@bru("BRU-FLOW-004")
+	def test_r03_station_user_completes_a_receipt_end_to_end(self):
+		user = make_user("t1-api-r03@test.local", roles=("TC R03",))
+		TOKENS[(user, STATION)] = make_station_session(user, station=STATION)["token"]
+		frappe.set_user(user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		receipt = call(receive_api.open, raw=self.card)["receipt"]
+		units = [self.new_set(), self.new_set("Awaiting Receipt")]
+		for index, unit in enumerate(units):
+			call(receive_api.scan_set, receipt=receipt, raw=unit)
+			if index == 0:  # ảnh gắn trước khi Xác nhận bộ (gắn sau thì phải xác nhận lại)
+				call(receive_api.attach_photo, receipt=receipt, set_id=unit, file_name="a.png", content=png_b64())
+			call(receive_api.confirm_line, receipt=receipt, set_id=unit, confirm_all=1, finalize=1)
+		done = call(receive_api.submit, receipt=receipt)
+		self.assertTrue(done["ok"], done)
+		self.assertEqual(sorted(done["sets"]), sorted(units))
+		self.assertEqual(frappe.db.get_value("Dirty Receipt", receipt, "docstatus"), 1)
+		for unit in units:
+			self.assertEqual(frappe.db.get_value("Set Unit", unit, "status"), "Processing")
+
+
 class TestReceiveRejections(ReceiveApiCase):
 	@bru("BRU-ID-006")
 	def test_unknown_code_is_rejected_with_audit_log(self):

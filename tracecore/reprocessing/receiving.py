@@ -689,6 +689,7 @@ def _submit(doc, station, client_ts):
 	doc.set_count = len(doc.items)
 	doc.flagged_count = sum(1 for item in doc.items if cint(item.needs_review))
 	doc.flags.tc_receiving = True
+	doc.flags.ignore_permissions = True  # quyền đã kiểm ở RPC (role + phiên trạm); user kiosk không cần quyền ghi sổ Desk
 	doc.submit()
 	return {
 		"receipt": doc.name,
