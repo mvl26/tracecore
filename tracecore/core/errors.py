@@ -20,6 +20,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PIN_INVALID",
 			"PIN_PROOF_INVALID",
 			"SESSION_STATION_MISMATCH",
+			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
 		),
 		403,
 	),
@@ -62,6 +63,9 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-026 A-17: cấp phát T7
 			"RECIPIENT_INVALID",
 			"SIGNATURE_INVALID",
+			# FEAT-032 A-18: ghi đè cơ số
+			"EXTRA_CYCLES_INVALID",
+			"VALID_UNTIL_INVALID",
 		),
 		422,
 	),
@@ -79,6 +83,7 @@ HTTP_STATUS: dict[str, int] = {
 			"LOCATION_NOT_FOUND",
 			"ISSUE_NOT_FOUND",
 			"DEPARTMENT_NOT_FOUND",
+			"OVERRIDE_NOT_FOUND",
 		),
 		404,
 	),
@@ -127,6 +132,11 @@ HTTP_STATUS: dict[str, int] = {
 			"ISSUE_EMPTY",
 			"ISSUE_NOT_SIGNED",
 			"PAR_APPROVAL_REQUIRED",
+			# FEAT-032 A-18: vượt cơ số và ghi đè
+			"SET_END_OF_LIFE",
+			"PAR_NOT_EXCEEDED",
+			"OVERRIDE_PENDING",
+			"OVERRIDE_NOT_PENDING",
 		),
 		409,
 	),

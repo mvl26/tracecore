@@ -6,7 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "section_instrument",
-  "enable_instrument_giai"
+  "enable_instrument_giai",
+  "section_par",
+  "par_override_delegate"
  ],
  "fields": [
   {
@@ -20,6 +22,18 @@
    "fieldname": "enable_instrument_giai",
    "fieldtype": "Check",
    "label": "Enable Instrument GIAI"
+  },
+  {
+   "fieldname": "section_par",
+   "fieldtype": "Section Break",
+   "label": "Par Levels"
+  },
+  {
+   "description": "A TC R02 user who may approve or reject par overrides on behalf of R01 (FR-M8-04.1). Leave empty to let only R01 decide.",
+   "fieldname": "par_override_delegate",
+   "fieldtype": "Link",
+   "label": "Par Override Delegate (R02)",
+   "options": "User"
   }
  ],
  "index_web_pages_for_search": 0,
