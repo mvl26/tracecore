@@ -29,6 +29,11 @@ BUSINESS = (
 SCAN_DIRS = ("tracecore", "tracecore_agent")
 SKIP_DIRS = {"node_modules", "__pycache__", "dist", "tests", "translations", "fixtures"}
 GENERATED_CSS = {"tokens.css", "tracecore-theme.css", "tracecore.bundle.css"}
+# Vite bundles contain generated tokens and minified translations; check their sources instead.
+GENERATED_HOME_ASSETS = {
+	os.path.join("tracecore", "public", "home", "home.js"),
+	os.path.join("tracecore", "public", "home", "home.css"),
+}
 STEP_GATE = os.path.join("tracecore", "core", "step_gate.py")
 
 _VI_LOWER = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ"
@@ -158,6 +163,8 @@ def check(root=REPO):
 	violations = []
 	for path in _files(root):
 		rel = os.path.relpath(path, root)
+		if rel in GENERATED_HOME_ASSETS:
+			continue
 		ext = os.path.splitext(path)[1]
 		if ext not in (".py", ".js", ".html", ".css"):
 			continue
