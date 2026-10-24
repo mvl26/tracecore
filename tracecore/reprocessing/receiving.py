@@ -255,10 +255,13 @@ def item_summary(doc, item):
 	}
 
 
-def view(doc):
-	"""Phiếu cho kiosk: người giao, khoa, các bộ (tóm tắt) và bộ đang chờ xác nhận (``current``, đủ dòng BOM + ảnh)."""
+def view(doc, detail=True):
+	"""Phiếu cho kiosk: người giao, khoa, các bộ (tóm tắt) và bộ đang chờ xác nhận (``current``, đủ dòng BOM + ảnh).
+
+	`detail=False` bỏ ``current`` (nơi gọi đã có chi tiết của bộ vừa thao tác, đỡ một lần gọi hook BOM).
+	"""
 	items = [item_summary(doc, item) for item in doc.items]
-	waiting = next((item for item in doc.items if not cint(item.confirmed)), None)
+	waiting = next((item for item in doc.items if not cint(item.confirmed)), None) if detail else None
 	return {
 		"receipt": doc.name,
 		"department": doc.department,
@@ -309,3 +312,148 @@ def item_detail(doc, item):
 		"photo": item.abnormal_photo,
 		"force_reason": item.force_reason,
 	}
+
+
+# --- Quét bộ (FR-M2-01.1, .2, .5, .6, FR-M2-02, FR-M2-23) -------------------------------------------------
+
+
+def _not_a_set(scanned, raw):
+	"""Mã quét trong phiếu đang mở không phải Set ID: chỉ nhận mã bộ (thẻ người giao đã quét một lần, FR-M2-01.1)."""
+	if scanned["type"] == "employee" or _employee_by_card(raw):
+		reason = _("A deliverer card was already scanned for this receipt; scan the set tags only.")
+	else:
+		reason = _("Code {0} is not a Set ID.").format(scanned["raw"] or "-")
+	return _blocked(
+		"SCAN_INVALID",
+		_("Invalid code"),
+		reason,
+		_("Scan the Set ID on the set tag."),
+	)
+
+
+def _where(set_unit):
+	"""Trạm/bước hiện tại của bộ để báo khi từ chối (FR-M2-02.1): trạm đã ghi, hoặc bước đầu tiên chưa Đạt."""
+	row = frappe.db.get_value("Set Unit", set_unit, ["current_station", "current_cycle_no"], as_dict=True)
+	if row.current_station:
+		return row.current_station
+	if cint(row.current_cycle_no):
+		for gate in step_gate.gates(set_unit):
+			if gate["result"] != step_gate.RESULTS[0]:
+				return gate["step"]
+	return None
+
+
+def _status_block(set_unit, for_update=False):
+	"""Block nếu T1 không nhận bộ (trạng thái không hợp trạm, Hết vòng đời), kèm nơi bộ đang ở; ngược lại None."""
+	block = step_gate.check(set_unit, STEP, for_update)
+	if block and block.code == "STATUS_INVALID_FOR_STATION":
+		where = _where(set_unit)
+		if where:
+			block.reason = f"{block.reason} " + _("The set is currently at {0}.").format(where)
+		block.action = _("Take the set to the station that matches it, or ask R02 to receive it by force.")
+	return block
+
+
+def _approve_force(status, force_reason, session, proof):
+	"""``(User R02, lý do)`` cho tiếp nhận cưỡng bức (A-33); không đủ điều kiện → chặn."""
+	if status not in FORCE_STATUSES:
+		raise _blocked(
+			"FORCE_NOT_ALLOWED",
+			_("Forced receipt is not allowed"),
+			_("A set that is {0} cannot be received by force.").format(_(status, context="Set Unit")),
+			_("Ask R01 for an override, or take the set out of circulation."),
+		)
+	reason = (force_reason or "").strip()
+	if not reason:
+		raise _blocked(
+			"REASON_REQUIRED",
+			_("Reason is required"),
+			_("No reason was entered for receiving this set by force."),
+			_("Enter why the set is received although the station refused it."),
+		)
+	reviewer = None
+	if proof:
+		with contextlib.suppress(BlockedError):
+			reviewer = station_auth.consume_session_pin_proof(session, proof).user
+	if not reviewer or REVIEWER_ROLE not in frappe.get_roles(reviewer):
+		raise _blocked(
+			"R02_CONFIRM_REQUIRED",
+			_("R02 confirmation required"),
+			_("Only R02 can receive a set that the station refused."),
+			_("Ask R02 to sign in at this station and enter the PIN, then scan the set again."),
+		)
+	return reviewer, reason
+
+
+def scan_set(
+	receipt, raw, station, receiver, client_ts, force_reason=None, session=None, reviewer_proof=None
+):
+	"""Quét một Set ID vào phiếu nháp `receipt`; trả ``{"duplicate", "item", "receipt"}``.
+
+	Chỉ nhận mã bộ; trạng thái phải hợp T1 (`step_gate.check`, FR-M2-02). Bộ đã có trong phiếu → ``duplicate`` và không
+	thêm dòng (FR-M2-01.6). `force_reason`/`reviewer_proof` (PIN proof của phiên `session`, R02) chỉ có hiệu lực khi
+	bộ bị từ chối (A-33). BOM và ảnh là phiên bản áp dụng tại ngày quét theo giờ hệ thống; chưa ghi gì vào Set Unit.
+	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → ClientTimestampError.
+	"""
+	client_time.check_skew(client_ts)
+	doc = _draft(receipt, station, receiver)
+	scanned = gs1.parse_scan(raw)
+	if scanned["type"] != "set":
+		raise _not_a_set(scanned, raw)
+	unit = frappe.db.get_value("Set Unit", scanned["id"], ["name", "set_type", "status"], as_dict=True)
+	if not unit:
+		raise _blocked(
+			"SCAN_INVALID",
+			_("Invalid code"),
+			_("Code {0} does not exist in TraceCore.").format(scanned["raw"] or "-"),
+			_("Check the set tag or call R02."),
+		)
+	existing = next((item for item in doc.items if item.set_unit == unit.name), None)
+	if existing:
+		return {"duplicate": True, "item": item_detail(doc, existing), "receipt": view(doc, detail=False)}
+	frappe.db.get_value("Set Unit", unit.name, "name", for_update=True)
+	unit.status = frappe.db.get_value("Set Unit", unit.name, "status")
+	block = _status_block(unit.name, for_update=True)
+	forced = None
+	if block:
+		if force_reason is None and reviewer_proof is None:
+			raise BlockedError(block)
+		forced = _approve_force(unit.status, force_reason, session, reviewer_proof)
+	on = _system_time(client_ts)
+	context = _context(unit.set_type, unit.name, on)
+	if not cint(context.get("bom_version")) or not context.get("bom"):
+		raise _blocked(
+			"BOM_VERSION_NOT_FOUND",
+			_("BOM version not found"),
+			_("Set type {0} has no effective BOM version.").format(unit.set_type),
+			_("Ask R02 to save the BOM of this set type."),
+		)
+	doc.append(
+		"items",
+		{
+			"set_unit": unit.name,
+			"set_type": unit.set_type,
+			"set_name": frappe.db.get_value("Instrument Set Type", unit.set_type, "set_type_name"),
+			"status_before": unit.status,
+			"bom_version": cint(context["bom_version"]),
+			"received_at": on,
+			"confirmed": 0,
+			"forced": 1 if forced else 0,
+			"forced_by": forced[0] if forced else None,
+			"force_reason": forced[1] if forced else None,
+		},
+	)
+	for line in context["bom"]:
+		doc.append(
+			"confirm_lines",
+			{
+				"set_unit": unit.name,
+				"instrument": line["instrument"],
+				"instrument_name": line["instrument_name"],
+				"qty": cint(line["qty"]),
+				"position": cint(line["position"]),
+				"confirmed": 0,
+			},
+		)
+	_save(doc)
+	return {"duplicate": False, "item": item_detail(doc, doc.items[-1]), "receipt": view(doc, detail=False)}
