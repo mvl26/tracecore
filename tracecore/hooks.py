@@ -212,6 +212,8 @@ doc_events = {
 	"Set BOM Item": dict(_AUDIT_EVENTS),
 	# cơ số: Create/Update có old/new, không xóa (FEAT-031, FR-M8-01.3)
 	"Par Level": dict(_AUDIT_EVENTS),
+	# ghi đè cơ số (FEAT-032, WF-08): quyết định và bộ đếm đổi sau khi ghi sổ (on_update_after_submit), không xóa
+	"Par Override": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
 	"Assembly Record": dict(_AUDIT_EVENTS),
@@ -279,7 +281,11 @@ tracecore_pack_context = [
 ]
 tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
 tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
-tracecore_after_cycle_id = ["tracecore.instrument.maintenance.apply_pack"]
+tracecore_after_cycle_id = [
+	"tracecore.instrument.maintenance.apply_pack",
+	# FEAT-032: Cycle ID sinh dưới ghi đè cơ số trừ một chu trình của ghi đè (A-18 Q9)
+	"tracecore.par.override.consume",
+]
 # M2 (FEAT-023) gọi ĐÚNG MỘT LẦN cho mỗi lần giải phóng Đạt: (ctx {set_unit, set_type, bom_version, cycle_id}) -> None,
 # +1 bộ đếm bảo dưỡng. cycle_id bắt buộc theo hợp đồng: cùng cycle_id gọi lại không đếm thêm (last_release_cycle);
 # thiếu cycle_id thì không chống trùng.
@@ -308,10 +314,16 @@ scheduler_events = {
 			"tracecore.instrument.bom_versions.roll_effective_versions",
 			# FEAT-025, FR-M2-14: gói trong kho vô khuẩn quá hạn (hết ngày `expiry`) → Hết hiệu lực, bộ Chờ tiếp nhận
 			"tracecore.reprocessing.storage.run_expiry",
+			# FEAT-032, FR-M8-04.2: ghi đè cơ số quá thời hạn → Hết hiệu lực
+			"tracecore.par.override.expire_overdue",
 		],
 	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
+	],
+	"monthly": [
+		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước
+		"tracecore.par.override.notify_monthly_report",
 	],
 }
 

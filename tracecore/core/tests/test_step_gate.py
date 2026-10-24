@@ -347,6 +347,75 @@ class TestStepGate(FrappeTestCase):
 		self.assertEqual(_lifecycle(su).status, "Reprocess")
 
 
+class TestStepGateEndOfLife(FrappeTestCase):
+	"""FEAT-032 (A-18 Q3, Q4): bộ vượt cơ số → Hết vòng đời; ghi đè được duyệt → mở lại."""
+
+	def _ready(self):
+		su = make_set_unit().name
+		make_cycle(su)  # T1..T3 Đạt, Processing
+		return su
+
+	@bru("BRU-PAR-002")
+	def test_end_of_life_sets_status_keeps_cycle_and_audits_reason(self):
+		su = self._ready()
+		self.assertTrue(step_gate.end_of_life(su, "Par Exceeded"))
+		state = _lifecycle(su)
+		self.assertEqual((state.status, state.current_cycle_no), ("End of Life", 1))
+		row = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update", "reason": "Par Exceeded"},
+			fields=["old_value", "new_value"],
+		)
+		self.assertEqual(len(row), 1)
+		self.assertEqual(frappe.parse_json(row[0].old_value).get("status"), "Processing")
+		self.assertEqual(frappe.parse_json(row[0].new_value).get("status"), "End of Life")
+
+	def test_end_of_life_is_idempotent_and_drops_active_cycle_id(self):
+		su = self._ready()
+		step_gate.bind_cycle(su, "CY-261023-0001", "TR-004")
+		self.assertTrue(step_gate.end_of_life(su))
+		self.assertIsNone(_lifecycle(su).active_cycle_id)
+		self.assertFalse(step_gate.end_of_life(su))  # đã Hết vòng đời: không ghi lại
+		updates = frappe.db.count(
+			"Audit Log", {"ref_doctype": "Set Unit", "ref_name": su, "reason": "Par Exceeded"}
+		)
+		self.assertEqual(updates, 0)  # lý do mặc định None
+
+	def test_end_of_life_refuses_disposed_set(self):
+		su = self._ready()
+		frappe.db.set_value("Set Unit", su, "status", "Disposed")
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.end_of_life(su)
+
+	@bru("BRU-PAR-002")
+	def test_check_blocks_end_of_life_at_every_step(self):
+		su = self._ready()
+		step_gate.end_of_life(su)
+		for step in step_gate.STEPS:
+			block = step_gate.check(su, step)
+			self.assertEqual(block.code, "SET_END_OF_LIFE", msg=step)
+			self.assertEqual(block.http_status, 409)
+			self.assertIn(su, block.reason)
+			self.assertTrue(block.title and block.action)
+		self.assertEqual(step_gate.check(su, "T4", for_update=True).code, "SET_END_OF_LIFE")
+
+	@bru("BRU-PAR-004")
+	def test_reopen_after_override_only_from_end_of_life(self):
+		su = self._ready()
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.reopen_after_override(su, "GD-2026-00001")
+		step_gate.end_of_life(su)
+		step_gate.reopen_after_override(su, "GD-2026-00001")
+		self.assertEqual(_lifecycle(su).status, "Processing")
+		self.assertIsNone(step_gate.check(su, "T4"))  # cổng chu trình hiện hành giữ nguyên
+		reasons = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update"},
+			pluck="reason",
+		)
+		self.assertIn("GD-2026-00001", reasons)
+
+
 class TestStepGateLocking(FrappeTestCase):
 	"""record() chạy dưới REPEATABLE READ: sau khi khóa Set Unit, mọi thứ nó quyết định phải đọc có khóa.
 

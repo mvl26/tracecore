@@ -2090,3 +2090,104 @@ Cannot load workspaces,Không tải được không gian làm việc,
 "Check your connection and account permissions, then try again.",Kiểm tra kết nối mạng và quyền tài khoản rồi thử lại.,
 Try again,Thử lại,
 Offline,Mất kết nối,TraceCore Launcher
+A TC R02 user who may approve or reject par overrides on behalf of R01 (FR-M8-04.1). Leave empty to let only R01 decide.,Người dùng TC R02 được duyệt hoặc từ chối ghi đè cơ số thay R01 (FR-M8-04.1). Để trống thì chỉ R01 quyết định.,TraceCore Settings
+Approve or reject the override request instead of submitting it.,Hãy duyệt hoặc từ chối đề nghị ghi đè thay vì ghi sổ trực tiếp.
+Approve override,Duyệt ghi đè
+Approved Overrides,Ghi đè đã duyệt
+Approved: the set may be packed within the extra cycles and date,Đã duyệt: bộ được đóng gói trong số chu trình thêm và thời hạn
+Ask R01 to decide this request.,Nhờ R01 quyết định đề nghị này.
+Ask R10 to link your employee record and set your PIN.,Nhờ R10 liên kết hồ sơ nhân viên của tài khoản này và đặt PIN.
+Cancelled: the set is blocked again,Đã hủy: bộ lại bị chặn
+Cycle number of the last Cycle ID issued under this override; packing the same cycle again does not consume another cycle.,Số chu trình của Cycle ID cuối cùng sinh theo ghi đè này; đóng gói lại cùng chu trình không trừ thêm.,Par Override
+Cycles Consumed,Chu trình đã dùng theo ghi đè
+Cycles Consumed,Chu trình đã dùng theo ghi đè,Par Override
+Date Passed,Quá thời hạn,Par Override
+Decided At,Thời điểm quyết định
+Decided At,Thời điểm quyết định,Par Override
+Decided By,Người quyết định
+Decided By,Người quyết định,Par Override
+Decided By (Employee),Người quyết định (nhân viên),Par Override
+Decision,Quyết định,Par Override
+Do not pack this set. Tap Request override and give the reason; R01 decides.,Không đóng gói bộ này. Bấm Đề nghị ghi đè và nêu lý do; R01 quyết định.
+Do not use this set. Ask R01 for an override or take it out of circulation.,Không dùng bộ này. Đề nghị R01 ghi đè hoặc đưa bộ ra khỏi lưu thông.
+Enter a date from today on.,Nhập ngày từ hôm nay trở đi.
+Enter how many reprocessing cycles beyond the limit are allowed.,Nhập số chu trình tái xử lý được phép vượt cơ số.
+Enter why the override is approved or rejected.,Nhập lý do duyệt hoặc từ chối ghi đè.
+Enter why the set is still needed although it reached its cycle limit.,Nhập lý do vẫn cần bộ dù đã hết cơ số.
+Expired At,Thời điểm hết hiệu lực,Par Override
+Expired: the set is blocked again,Hết hiệu lực: bộ lại bị chặn
+Expiry Cause,Nguyên nhân hết hiệu lực,Par Override
+Extra Cycles,Số chu trình thêm
+Extra Cycles,Số chu trình thêm,Par Override
+Extra cycles are not valid,Số chu trình thêm không hợp lệ
+Instruments at Their Limit,Dụng cụ đã hết cơ số,Par Override
+Last Cycle No,Số chu trình gần nhất,Par Override
+No employee record with a PIN belongs to this account.,Tài khoản này không có hồ sơ nhân viên kèm PIN.
+No reason was entered for the decision.,Chưa nhập lý do quyết định.
+No reason was entered for the override request.,Chưa nhập lý do đề nghị ghi đè.
+Not allowed to decide,Không được quyết định
+"Only R01, or the R02 user delegated by R10, can approve or reject an override.","Chỉ R01, hoặc người dùng R02 được R10 ủy quyền, được duyệt hoặc từ chối ghi đè."
+Open the override from the list.,Mở ghi đè từ danh sách.
+Overridden Share (%) (target ≤ {0}),Tỷ lệ bộ được ghi đè (%) (mục tiêu ≤ {0})
+Override Requests,Đề nghị ghi đè
+Override already requested,Đã có đề nghị ghi đè
+Override fields are changed only by approving or rejecting: {0},Các trường ghi đè chỉ đổi khi duyệt hoặc từ chối: {0}
+Override not found,Không tìm thấy ghi đè
+Override request {0} is waiting for R01. Do not pack this set until it is approved.,Đề nghị ghi đè {0} đang chờ R01. Không đóng gói bộ này cho tới khi được duyệt.
+Override request {0} sent,Đã gửi đề nghị ghi đè {0}
+Override requested for set {0},Đề nghị ghi đè cho bộ {0}
+Override was already decided,Ghi đè đã được quyết định
+Override {0} does not exist.,Ghi đè {0} không tồn tại.
+Override {0} is {1}.,Ghi đè {0} đang ở trạng thái {1}.
+Override {0}: {1} more cycle(s) allowed until {2},Ghi đè {0}: còn được thêm {1} chu trình đến {2}
+PIN Verified,Đã xác thực PIN,Par Override
+Pack the set normally; an override is needed only after the limit is reached.,Đóng gói bộ bình thường; chỉ cần ghi đè sau khi hết cơ số.
+Par Levels,Cơ số,TraceCore Settings
+Par Override,Ghi đè cơ số
+Par Override Delegate (R02),Người được ủy quyền duyệt ghi đè cơ số (R02),TraceCore Settings
+Par override report for {0}/{1} is ready,Báo cáo ghi đè cơ số tháng {0}/{1} đã sẵn sàng
+R01 was notified. Do not pack set {0} until the override is approved.,Đã báo R01. Không đóng gói bộ {0} cho tới khi ghi đè được duyệt.
+Reason for Decision,Lý do quyết định
+Reason for Decision,Lý do quyết định,Par Override
+Reason for Request,Lý do đề nghị
+Reason for Request,Lý do đề nghị,Par Override
+Refresh the list; only a requested override can be approved or rejected.,Tải lại danh sách; chỉ đề nghị đang chờ mới được duyệt hoặc từ chối.
+Reject override,Từ chối ghi đè
+Rejected: the set stays at the end of its life,Đã từ chối: bộ giữ trạng thái Hết vòng đời
+Reprocessing cycles allowed beyond the limit.,Số chu trình tái xử lý được phép vượt cơ số.,Par Override
+Request,Đề nghị,Par Override
+Requested At,Thời điểm đề nghị
+Requested At,Thời điểm đề nghị,Par Override
+Requested By,Người đề nghị
+Requested By,Người đề nghị,Par Override
+Scan the set again after R01 approved the override.,Quét lại bộ sau khi R01 duyệt ghi đè.
+Send request,Gửi đề nghị
+Set has not reached its cycle limit,Bộ chưa hết cơ số
+Set has reached the end of its life,Bộ đã hết vòng đời
+Set {0} already has override {1}.,Bộ {0} đã có ghi đè {1}.
+Set {0} has used up its reprocessing cycles and is waiting for disposal.,Bộ {0} đã dùng hết số chu trình tái xử lý và đang chờ thanh lý.
+Set {0} has used {1} cycles; instrument(s) {2} reached their cycle limit.,Bộ {0} đã dùng {1} chu trình; dụng cụ {2} đã hết cơ số.
+Set {0} has used {1} of {2} cycles.,Bộ {0} đã dùng {1}/{2} chu trình.
+Set {0} is {1}; it cannot be moved to end of life.,Bộ {0} đang {1}; không chuyển được sang Hết vòng đời.
+Set {0} is {1}; only a set at end of life can be reopened by an override.,Bộ {0} đang {1}; chỉ bộ Hết vòng đời mới được mở lại bằng ghi đè.
+Set {0} reached its cycle limit. R01 decides after you give the reason.,Bộ {0} đã hết cơ số. R01 quyết định sau khi nhập lý do.
+Sets at Their Limit,Bộ đã hết cơ số
+Usage,Sử dụng,Par Override
+Valid Until,Hiệu lực đến
+Valid Until,Hiệu lực đến,Par Override
+Valid-until date is not valid,Ngày hiệu lực không hợp lệ
+"Wait for R01 to decide, or pack the set within the approved override.","Chờ R01 quyết định, hoặc đóng gói bộ trong phạm vi ghi đè đã duyệt."
+Waiting for R01 to decide,Đang chờ R01 quyết định
+Why the set is needed although it reached its cycle limit.,Lý do cần dùng bộ dù đã hết cơ số.,Par Override
+states must be a list of: {0}.,states phải là danh sách gồm: {0}.
+{0} ({1}) reached its cycle limit,{0} ({1}) đã hết cơ số
+{0} ({1}): {2} cycle(s) left,{0} ({1}): còn {2} chu trình
+{0} cycles used · limit not defined,Đã dùng {0} chu trình · chưa xác định cơ số
+"{0} is empty, not a date, or already past.","{0} trống, không phải ngày, hoặc đã qua."
+{0} is not a whole number of cycles of at least 1.,{0} không phải số nguyên chu trình từ 1 trở lên.
+Requested,Chờ duyệt,Par Override
+Approved,Đã duyệt,Par Override
+Rejected,Đã từ chối,Par Override
+Expired,Hết hiệu lực,Par Override
+Cancelled,Đã hủy,Par Override
+Cycles Used,Hết số chu trình thêm,Par Override
