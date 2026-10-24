@@ -457,3 +457,150 @@ def scan_set(
 		)
 	_save(doc)
 	return {"duplicate": False, "item": item_detail(doc, doc.items[-1]), "receipt": view(doc, detail=False)}
+
+
+# --- Xác nhận thành phần, ghi chú bất thường, ảnh (FR-M2-23.1 đến .6) -----------------------------------------
+
+
+def _find_item(doc, set_id):
+	item = next((row for row in doc.items if row.set_unit == set_id), None)
+	if not item:
+		raise _blocked(
+			"SET_NOT_FOUND",
+			_("Set is not on this receipt"),
+			_("Set {0} was not scanned into receipt {1}.").format(set_id or "-", doc.name),
+			_("Scan the Set ID on the set tag first."),
+		)
+	return item
+
+
+def _bom_line_invalid(instrument, set_id):
+	return _blocked(
+		"BOM_LINE_INVALID",
+		_("Component not in the BOM"),
+		_("Instrument {0} is not a component of set {1} in the BOM version shown.").format(
+			instrument or "-", set_id
+		),
+		_("Tick only the components listed for the set."),
+	)
+
+
+def _refresh_review(item):
+	item.needs_review = 1 if ((item.abnormal_note or "").strip() or item.abnormal_photo) else 0
+
+
+def confirm_line(
+	receipt,
+	set_id,
+	station,
+	receiver,
+	lines=None,
+	confirm_all=False,
+	note=None,
+	finalize=False,
+	ack_incomplete=False,
+):
+	"""Cập nhật xác nhận của một bộ trong phiếu nháp; trả ``item_detail``.
+
+	- `lines`: ``[{"instrument", "confirmed"}]`, đặt tick từng dòng; `confirm_all` tick mọi dòng (FR-M2-23.1).
+	- `note`: ghi chú bất thường dạng văn bản (None = giữ nguyên, rỗng = xóa); bộ có ghi chú hoặc ảnh mang cờ Cần xem xét
+	  (FR-M2-23.2, .3). Không có trường số lượng thực nhận.
+	- `finalize`: "Xác nhận bộ". Còn dòng chưa tick và không có ghi chú → CONFIRM_INCOMPLETE (nhắc, FR-M2-23.6) trừ khi
+	  `ack_incomplete`. Mọi thay đổi không kèm `finalize` đưa bộ về chưa xác nhận: sửa xong phải Xác nhận bộ lại
+	  (FR-M2-23.5). Chưa đổi trạng thái Set Unit (ghi sổ phiếu mới đổi).
+	"""
+	doc = _draft(receipt, station, receiver)
+	item = _find_item(doc, set_id)
+	rows = {row.instrument: row for row in _item_lines(doc, item.set_unit)}
+	for entry in lines or []:
+		row = rows.get(entry.get("instrument"))
+		if not row:
+			raise _bom_line_invalid(entry.get("instrument"), item.set_unit)
+		row.confirmed = 1 if cint(entry.get("confirmed")) else 0
+	if confirm_all:
+		for row in rows.values():
+			row.confirmed = 1
+	if note is not None:
+		item.abnormal_note = note.strip() or None
+	_refresh_review(item)
+	item.confirmed = 0
+	if finalize:
+		pending = [
+			f"{row.instrument_name} ({row.instrument})" for row in rows.values() if not cint(row.confirmed)
+		]
+		if pending and not item.abnormal_note and not ack_incomplete:
+			raise _blocked(
+				"CONFIRM_INCOMPLETE",
+				_("Some components are not confirmed"),
+				_("{0} component(s) of set {1} are not ticked and there is no abnormal note.").format(
+					len(pending), item.set_unit
+				),
+				_("Tick the missing components, write an abnormal note, or confirm the set anyway."),
+				items=pending,
+			)
+		item.confirmed = 1
+	_save(doc)
+	return item_detail(doc, item)
+
+
+def _photo_invalid(reason):
+	return _blocked(
+		"PHOTO_INVALID",
+		_("Photo is not valid"),
+		reason,
+		_("Take the photo again (JPEG, PNG or WebP, up to 5 MB)."),
+	)
+
+
+def _checked_image(content_base64):
+	"""``(bytes, đuôi file)`` của ảnh bất thường; kiểm theo nội dung, không theo tên file hay Content-Type."""
+	import base64
+	import binascii
+
+	from PIL import Image, UnidentifiedImageError
+
+	if not isinstance(content_base64, str) or len(content_base64) > PHOTO_MAX_BYTES * 4 // 3 + 16:
+		raise _photo_invalid(_("The photo is missing or larger than 5 MB."))
+	try:
+		data = base64.b64decode(content_base64, validate=True)
+	except (binascii.Error, ValueError):
+		raise _photo_invalid(_("The photo could not be read.")) from None
+	if not data or len(data) > PHOTO_MAX_BYTES:
+		raise _photo_invalid(_("The photo is missing or larger than 5 MB."))
+	try:
+		with Image.open(io.BytesIO(data)) as image:
+			extension_ = PHOTO_FORMATS.get(image.format)
+			width, height = image.size
+			image.verify()
+	except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+		raise _photo_invalid(_("The file is not a JPEG, PNG or WebP image.")) from None
+	if not extension_ or width * height > PHOTO_MAX_PIXELS:
+		raise _photo_invalid(_("The file is not a JPEG, PNG or WebP image."))
+	return data, extension_
+
+
+def attach_photo(receipt, set_id, station, receiver, file_name, content_base64):
+	"""Đính ảnh chụp bất thường (tùy chọn) vào một bộ; ảnh riêng tư gắn vào phiếu, thay ảnh cũ nếu có.
+
+	`file_name` chỉ để người dùng nhận ra ảnh, không dùng làm tên file (tên do hệ thống đặt, đuôi theo nội dung).
+	Bộ có ảnh mang cờ Cần xem xét. Trả ``item_detail``.
+	"""
+	doc = _draft(receipt, station, receiver)
+	item = _find_item(doc, set_id)
+	data, suffix = _checked_image(content_base64)
+	file_doc = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": f"{doc.name}-{frappe.generate_hash(length=8)}.{suffix}",
+			"attached_to_doctype": "Dirty Receipt",
+			"attached_to_name": doc.name,
+			"content": data,
+			"is_private": 1,
+		}
+	)
+	file_doc.save(ignore_permissions=True)
+	item.abnormal_photo = file_doc.file_url
+	_refresh_review(item)
+	item.confirmed = 0
+	_save(doc)
+	return item_detail(doc, item)
