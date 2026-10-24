@@ -219,6 +219,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
+	# phiếu tiếp nhận T1 (FEAT-019): nháp tạo khi quét thẻ người giao, ghi sổ khi hoàn tất; không xóa
+	"Dirty Receipt": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
