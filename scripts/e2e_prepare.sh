@@ -44,6 +44,11 @@
 #      hai kệ KE-, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn
 #      → TC_E2E_T6_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T6_<khóa> cho tests_e2e/test_station_t6.py.
 #      Gói demo bị tiêu thụ khi nhập kho/báo rách: chạy lại script này trước mỗi lần chạy test đó.
+#  12. Màn T7 cấp phát (devdata.ensure_t7_e2e_user + ensure_station_demo + ensure_t7_demo, FEAT-026): user kiosk
+#      station-t7@… (TC R06, cùng mật khẩu kiosk, OTP riêng) có thẻ và năng lực tại $TC_E2E_T7_STATION (mặc định TR-007),
+#      user R02 duyệt vượt cơ số (thẻ + PIN), bốn khoa, nhân viên nhận, 8 gói trong kho, một gói chưa nhập kho
+#      → TC_E2E_T7_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T7_<khóa> cho tests_e2e/test_station_t7.py.
+#      Gói demo bị cấp phát khi test chạy (và phiếu nháp cũ của khoa demo bị xóa): chạy lại script này trước mỗi lần chạy test đó.
 # Bộ demo T4 bị tiêu thụ khi test đóng gói chạy (và cuộn nhãn của máy in demo bị test_desk_admin đổi): chạy lại script này trước mỗi lần chạy tests_e2e/test_station_t4.py.
 #
 # AN TOÀN: script tạo user, máy in, thiết bị, Set Unit demo mà test đơn vị không ngờ tới, nên TỪ CHỐI chạy trên site tên
@@ -64,6 +69,7 @@ CODES_PORT="${TC_E2E_CODES_PRINTER_PORT:-19101}"
 SECOND_STATION="${TC_E2E_T4_SECOND_STATION:-TR-005}"
 T2_STATION="${TC_E2E_T2_STATION:-TR-002}"
 T6_STATION="${TC_E2E_T6_STATION:-TR-006}"
+T7_STATION="${TC_E2E_T7_STATION:-TR-007}"
 
 # Từ chối site test: tên test_site hoặc site_config.json / common_site_config.json có allow_tests bật (1/true/"1").
 allow_tests_in() {
@@ -144,6 +150,11 @@ t6_users=$(bench_exec tracecore.setup.devdata.ensure_t6_e2e_user --kwargs "{'sta
 t6_user=$(printf '%s' "$t6_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t6_user"])')
 t6_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T6_STATION', 'user': '$t6_user'}")
 t6_demo=$(bench_exec tracecore.setup.devdata.ensure_t6_demo)
+t7_users=$(bench_exec tracecore.setup.devdata.ensure_t7_e2e_user --kwargs "{'station': '$T7_STATION', 'password': '$password'}")
+t7_user=$(printf '%s' "$t7_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t7_user"])')
+t7_approver=$(printf '%s' "$t7_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t7_approver_user"])')
+t7_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T7_STATION', 'user': '$t7_user'}")
+t7_demo=$(bench_exec tracecore.setup.devdata.ensure_t7_demo --kwargs "{'approver_user': '$t7_approver'}")
 
 {
 	printf 'TC_E2E_USER=%s\nTC_E2E_PASSWORD=%s\nTC_E2E_SET_ID=%s\nTC_E2E_STATION=%s\n' \
@@ -174,6 +185,11 @@ t6_demo=$(bench_exec tracecore.setup.devdata.ensure_t6_demo)
 	printf '%s' "$t6_users" | python3 -c 'import json, sys; print("TC_E2E_T6_OTP_SECRET=%s" % json.load(sys.stdin)["t6_otp_secret"])'
 	printf '%s' "$t6_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T6_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf '%s' "$t6_demo" | python3 -c 'import json, sys; [print("TC_E2E_T6_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf 'TC_E2E_T7_USER=%s\nTC_E2E_T7_PASSWORD=%s\nTC_E2E_T7_STATION=%s\n' "$t7_user" "$password" "$T7_STATION"
+	printf '%s' "$t7_users" | python3 -c 'import json, sys; print("TC_E2E_T7_OTP_SECRET=%s" % json.load(sys.stdin)["t7_otp_secret"])'
+	printf '%s' "$t7_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T7_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	# tên khoa có khoảng trắng → quote để `set -a; . file` đọc được
+	printf '%s' "$t7_demo" | python3 -c 'import json, shlex, sys; [print("TC_E2E_T7_%s=%s" % (k.upper(), shlex.quote(str(v)))) for k, v in json.load(sys.stdin).items()]'
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 echo "e2e ready on $SITE: smoke user $user ($STATION), T4 user $t4_user ($T4_STATION), set $set_id (credentials in $ENV_FILE)"

@@ -66,6 +66,26 @@ class TestStepGateStorage(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			unit.save(ignore_permissions=True)
 
+	@bru("BRU-FLOW-003")
+	def test_issue_to_department_moves_sterile_set_to_department(self):
+		# FEAT-026 C3: cấp phát T7 đưa bộ Vô khuẩn sang Tại khoa, giữ Cycle ID (gói còn dùng ở T8) và ghi trạm T7
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))
+		step_gate.bind_cycle(su, "CY-261023-0001", "TR-006")
+		step_gate.issue_to_department(su, "TR-007")
+		state = _status(su)
+		self.assertEqual(state.status, "At Department")
+		self.assertEqual(state.active_cycle_id, "CY-261023-0001")
+		self.assertEqual(state.current_station, "TR-007")
+
+	@bru("BRU-FLOW-003")
+	def test_issue_to_department_only_from_sterile(self):
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4"))
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.issue_to_department(su, "TR-007")
+		self.assertEqual(_status(su).status, "Processing")
+
 	def test_start_cycle_after_awaiting_receipt_reopens_processing(self):
 		su = make_set_unit().name
 		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))

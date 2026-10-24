@@ -341,18 +341,20 @@ def fefo_suggest(set_type):
 	return _summary(rows[0]) if rows else None
 
 
-def fefo_check(cycle_id):
+def fefo_check(cycle_id, exclude=()):
 	"""Cảnh báo khi còn gói cùng loại bộ hạn gần hơn gói được chọn (FR-M2-13.4); không có thì None.
 
 	Khoa yêu cầu theo Set ID cụ thể vẫn được chấp nhận: nơi cấp phát hiển thị cảnh báo và nhận ghi chú.
+	`exclude`: các Cycle ID đã lấy cho cùng phiếu cấp phát (FEAT-026), không tính là còn trong kho.
 	"""
 	chosen = frappe.db.get_value("Pack", cycle_id, ["set_type", "expiry"], as_dict=True)
 	if not chosen:
 		return None
+	skipped = {cycle_id, *exclude}
 	nearer = [
 		row
 		for row in _stock_rows(set_type=chosen.set_type)
-		if getdate(today()) <= getdate(row.expiry) < getdate(chosen.expiry) and row.name != cycle_id
+		if getdate(today()) <= getdate(row.expiry) < getdate(chosen.expiry) and row.name not in skipped
 	]
 	if not nearer:
 		return None
