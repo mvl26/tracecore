@@ -64,6 +64,10 @@ elif method.endswith("ensure_t2_e2e_user"):
     print(json.dumps({"t2_user": "station-tr-002@tracecore.local", "t2_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_t2_demo"):
     print(json.dumps({"machine": "TB-0001", "sets": ["S-1", "S-2", "S-3"]}))
+elif method.endswith("ensure_t1_e2e_user"):
+    print(json.dumps({"t1_user": "station-t1@tracecore.local", "t1_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t1_demo"):
+    print(json.dumps({"department": "Khoa Demo - TCT", "deliverer_name": "Demo ward nurse", "deliverer_card": "DEMO-T1-DELIVERER", "sets": ["S-1", "S-2", "S-3"], "sets_pda": ["S-4", "S-5"], "set_new": "S-6"}))
 elif method.endswith("ensure_t6_e2e_user"):
     print(json.dumps({"t6_user": "station-t6@tracecore.local", "t6_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_t6_demo"):
@@ -101,3 +105,10 @@ else:
 			self.assertEqual(values["TC_E2E_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_T4_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_R10_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T1_STATION"], "TR-001")
+			self.assertEqual(values["TC_E2E_T1_CARD_ID"], "CARD-TR-001")
+			self.assertEqual(values["TC_E2E_T1_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T1_SETS"], "S-1,S-2,S-3")
+			self.assertEqual(values["TC_E2E_T1_SETS_PDA"], "S-4,S-5")
+			self.assertEqual(values["TC_E2E_T1_DELIVERER_CARD"], "DEMO-T1-DELIVERER")
+			self.assertEqual(values["TC_E2E_T1_DEPARTMENT"], "'Khoa Demo - TCT'")  # có khoảng trắng → quote
