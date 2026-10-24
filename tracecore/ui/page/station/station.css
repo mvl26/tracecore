@@ -555,6 +555,14 @@ body.tc-kiosk .layout-main-section {
 	background: var(--tc-fail);
 }
 
+/* ghi đè và dụng cụ sắp hết cơ số (FEAT-032) */
+.tc-par-notes {
+	margin: var(--tc-sp-3) 0 0;
+	padding: 0;
+	list-style: none;
+	font-weight: var(--tc-fw-bold);
+}
+
 /* BOM checklist với ảnh thực tế §4.11 */
 .tc-bom.has-tray {
 	display: grid;
