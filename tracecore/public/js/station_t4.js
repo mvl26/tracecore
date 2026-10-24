@@ -26,6 +26,10 @@ const T4_KEEP_CONTEXT_CODES = [
 ];
 const T4_PACK_BADGE = { Packed: "", Void: "x", Recalled: "r", Quarantine: "o", Released: "g" };
 const T4_GENERATE = "tracecore.v1.pack.generate_cycle_id";
+const T4_SCAN = "tracecore.v1.pack.scan";
+const T4_REQUEST_OVERRIDE = "tracecore.v1.par.override.request";
+// lỗi chặn vì hết cơ số: T4 hiện nút "Đề nghị ghi đè" (FEAT-032, FR-M8-04)
+const T4_PAR_CODES = ["PAR_EXCEEDED", "SET_END_OF_LIFE"];
 
 function t4Date(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
@@ -116,8 +120,9 @@ class T4Packing {
 		this.input.value = "";
 		if (!raw) return this.station.focus();
 		if (this.station.isOffline()) return this.station.setOffline(true);
+		this.scanned = raw; // lỗi hết cơ số của lần quét này đề nghị ghi đè cho đúng mã đã quét
 		await this.request(
-			"tracecore.v1.pack.scan",
+			T4_SCAN,
 			{ raw, station: this.station.station, open_set: this.openSet() },
 			(res) => this.onScan(res, raw)
 		);
@@ -229,10 +234,12 @@ class T4Packing {
 	}
 
 	reject(error, method) {
-		const setLevel =
-			method === "tracecore.v1.pack.scan" && !T4_KEEP_CONTEXT_CODES.includes(error.code);
+		const setLevel = method === T4_SCAN && !T4_KEEP_CONTEXT_CODES.includes(error.code);
+		// bộ bị từ chối vì hết cơ số: nhớ mã để nút "Đề nghị ghi đè" gửi đúng bộ (trước khi reset bỏ ngữ cảnh)
+		const parSet = this.ctx && method === T4_GENERATE ? this.ctx.set.set_id : this.scanned;
 		if (setLevel) this.reset();
 		this.notice = { variant: "error", ...error };
+		if (T4_PAR_CODES.includes(error.code)) this.notice.setId = parSet;
 		this.show();
 	}
 
@@ -376,6 +383,7 @@ class T4Packing {
 			},
 			reprint: () => this.reprint(),
 			void: () => this.voidPack(),
+			"request-override": () => this.requestOverride(),
 		};
 		if (!handlers[action]) return false; // offline, call-r02: TraceCoreStation xử lý
 		handlers[action]();
@@ -509,6 +517,38 @@ class T4Packing {
 					(res) => {
 						this.notice = null;
 						this.handlePrint(res.print);
+					}
+				),
+		});
+	}
+
+	requestOverride() {
+		const setId = this.notice && this.notice.setId;
+		if (!setId || this.busy || this.offline) return;
+		this.openDialog({
+			title: __("Request override"),
+			variant: "warn",
+			intro: __("Set {0} reached its cycle limit. R01 decides after you give the reason.", [
+				setId,
+			]),
+			fields: [{ name: "reason", label: __("Reason"), type: "textarea", required: true }],
+			submitLabel: __("Send request"),
+			onSubmit: (values) =>
+				this.request(
+					T4_REQUEST_OVERRIDE,
+					{ set_id: setId, reason: values.reason, station: this.station.station },
+					(res) => {
+						this.reset();
+						this.notice = {
+							variant: "ok",
+							title: __("Override request {0} sent", [res.override.name]),
+							reason: __(
+								"R01 was notified. Do not pack set {0} until the override is approved.",
+								[res.override.set_unit]
+							),
+							action: __("Scan the set again after R01 approved the override."),
+						};
+						this.show();
 					}
 				),
 		});
@@ -762,12 +802,11 @@ class T4Packing {
 			.map((item) => `<li>${esc(this.itemText(item))}</li>`)
 			.join("");
 		const override =
-			notice.code === "PAR_EXCEEDED"
+			T4_PAR_CODES.includes(notice.code) && notice.setId
 				? `<div class="tc-actions">
-					<button type="button" class="tc-btn tc-btn-secondary" disabled>${esc(
-						__("Request override")
-					)}</button>
-					<span class="tc-hint">${esc(__("Available from FEAT-032"))}</span>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="request-override"${t4Disabled(
+						this.busy || this.offline
+					)}>${esc(__("Request override"))}</button>
 				</div>`
 				: "";
 		return `<div class="tc-alert tc-alert-${variant}" role="${
@@ -917,6 +956,8 @@ class T4Packing {
 			state: "ok",
 		};
 		const width = Math.min(par.percent, 100);
+		// override / undefined chỉ khác chữ; thanh dùng màu cảnh báo khi đang ghi đè, màu thường khi chưa xác định
+		const barState = { override: "warn", undefined: "ok" }[par.state] || par.state;
 		const status = STATUS_BADGE[set.status] || "";
 		const department = set.department
 			? ` · ${esc(__("Department: {0}", [set.department]))}`
@@ -936,16 +977,58 @@ class T4Packing {
 			.map((gate) => this.gateHtml(gate))
 			.join("")}</div>
 			<div class="tc-par-row">
-				<div class="tc-par tc-par-${esc(par.state)}" role="progressbar" aria-valuemin="0"
+				<div class="tc-par tc-par-${esc(barState)}" role="progressbar" aria-valuemin="0"
 					aria-valuemax="100" aria-valuenow="${width}"><span style="width: ${width}%"></span></div>
-				<span>${esc(__("{0}/{1} cycles ({2}%)", [par.cycles_used, par.max_cycles, par.percent]))}</span>
+				<span>${esc(
+					par.max_cycles
+						? __("{0}/{1} cycles ({2}%)", [
+								par.cycles_used,
+								par.max_cycles,
+								par.percent,
+						  ])
+						: __("{0} cycles used · limit not defined", [par.cycles_used])
+				)}</span>
 				${
 					par.state === "warn"
 						? `<b class="tc-warn-text">! ${esc(__("Close to the cycle limit"))}</b>`
 						: ""
 				}
 			</div>
+			${this.parNoteHtml(par)}
 		</section>`;
+	}
+
+	// FEAT-032: ghi đè đang hiệu lực và dụng cụ sắp hết / hết cơ số (chữ cam, luôn có chữ và ký hiệu)
+	parNoteHtml(par) {
+		const lines = [];
+		if (par.state === "override" && par.override) {
+			const left = Math.max(par.override.extra_cycles - par.override.cycles_consumed, 0);
+			lines.push(
+				__("Override {0}: {1} more cycle(s) allowed until {2}", [
+					par.override.name,
+					left,
+					t4Date(par.override.valid_until),
+				])
+			);
+		}
+		(par.instruments || []).forEach((row) =>
+			lines.push(
+				row.state === "blocked"
+					? __("{0} ({1}) reached its cycle limit", [
+							row.instrument_name,
+							row.instrument,
+					  ])
+					: __("{0} ({1}): {2} cycle(s) left", [
+							row.instrument_name,
+							row.instrument,
+							row.remaining,
+					  ])
+			)
+		);
+		if (!lines.length) return "";
+		return `<ul class="tc-warn-text tc-par-notes">${lines
+			.map((line) => `<li><b aria-hidden="true">!</b> ${esc(line)}</li>`)
+			.join("")}</ul>`;
 	}
 
 	maintStateLabel(state) {

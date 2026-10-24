@@ -11,7 +11,7 @@ DT-ASSEMBLY,Assembly Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
 DT-PACK,Pack,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
 DT-LOAD,Sterilization Load,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-023
 DT-LOADTEST,Load Test Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-025
-DT-STERLOC,Sterile Location,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-026
+DT-STERLOC,Sterile Location,R,R,,,,R,,,,RW,FEAT-025: danh mục kệ do R10 quản lý; R01/R02/R06 chỉ đọc
 DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-027
 DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
 DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-030
@@ -36,6 +36,6 @@ DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,future FEAT-045
 DT-COSTRATE,Cost Rate Version,RA,R,,,,,,,RWS,R,future FEAT-045
 DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
 DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
-DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,future FEAT-032
+DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
 DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
 DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

@@ -24,6 +24,7 @@ class TestErrors(FrappeTestCase):
 				"COMPETENCY_REQUIRED",
 				"PIN_INVALID",
 				"PIN_PROOF_INVALID",
+				"APPROVER_NOT_ALLOWED",
 			),
 			429: ("PIN_LOCKED", "LOGIN_THROTTLED"),
 			422: (
@@ -62,6 +63,8 @@ class TestErrors(FrappeTestCase):
 				"BATCH_EMPTY",
 				"DATA_INCOMPLETE",
 				"RESULT_INVALID",
+				"EXTRA_CYCLES_INVALID",
+				"VALID_UNTIL_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -74,6 +77,7 @@ class TestErrors(FrappeTestCase):
 				"BOM_VERSION_NOT_FOUND",
 				"WASH_BATCH_NOT_FOUND",
 				"LOCATION_NOT_FOUND",
+				"OVERRIDE_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
@@ -114,6 +118,10 @@ class TestErrors(FrappeTestCase):
 				"BATCH_NOT_RUNNING",
 				"EQUIPMENT_MISMATCH",
 				"R02_CONFIRM_REQUIRED",
+				"SET_END_OF_LIFE",
+				"PAR_NOT_EXCEEDED",
+				"OVERRIDE_PENDING",
+				"OVERRIDE_NOT_PENDING",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
