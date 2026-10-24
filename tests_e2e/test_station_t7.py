@@ -93,9 +93,17 @@ def test_t7_issue_two_packs_signed_by_card_moves_stock(t7_page, t7_demo):
 
 
 # RPC tracecore.v1.station.verify_approver thuộc FEAT-019 (chưa có trên develop): không có nó, bước duyệt R02 trả lỗi máy
-# chủ. Bỏ nguyên test (không chạy dở) vì pack_3/pack_4 không được cấp phát sẽ làm các test sau gặp cảnh báo FEFO.
-# Bỏ dấu skip khi FEAT-019 merge.
-@pytest.mark.skip(reason="Chờ FEAT-019: v1.station.verify_approver chưa có")
+# chủ. Khi test duyệt bị bỏ, pack_3/pack_4 không được cấp phát và vẫn nằm trong kho với hạn sớm hơn pack_5/pack_6, nên các
+# test sau dùng gói theo `pack_key`. Khi FEAT-019 merge: đặt R02_APPROVAL_AVAILABLE = True.
+R02_APPROVAL_AVAILABLE = False
+
+
+def pack_key(enabled_key, fallback_key):
+	"""Gói còn hạn sớm nhất mà không bị cảnh báo FEFO: khi test duyệt R02 chạy thì pack_3/4 đã được cấp, nếu không thì chưa."""
+	return enabled_key if R02_APPROVAL_AVAILABLE else fallback_key
+
+
+@pytest.mark.skipif(not R02_APPROVAL_AVAILABLE, reason="Chờ FEAT-019: v1.station.verify_approver chưa có")
 def test_t7_over_par_other_department_recipient_needs_reason_and_r02_pin(t7_page, t7_demo):
 	page = t7_page
 	pick_department(page, t7_demo["dept_tight_name"])
@@ -128,7 +136,7 @@ def test_t7_over_par_other_department_recipient_needs_reason_and_r02_pin(t7_page
 def test_t7_touch_signature_and_unconfigured_par_warning(t7_page, t7_demo):
 	page = t7_page
 	pick_department(page, t7_demo["dept_open_name"])
-	add_pack(page, t7_demo["pack_5"], 1)
+	add_pack(page, t7_demo[pack_key("pack_5", "pack_3")], 1)
 	expect(page.locator(".tc-t6-block .tc-badge-o").first).to_have_text("Chưa đặt cơ số")  # FR-M2-16.4
 	page.locator("[data-action='to-sign']").click()
 	page.locator("[data-action='sign-mode'][data-mode='Touch']").click()
@@ -155,7 +163,7 @@ def test_t7_touch_signature_and_unconfigured_par_warning(t7_page, t7_demo):
 def test_t7_pda_viewport_fits_without_horizontal_scroll(t7_pda_page, t7_demo):
 	page = t7_pda_page
 	pick_department(page, t7_demo["dept_name"])
-	add_pack(page, t7_demo["pack_6"], 1)
+	add_pack(page, t7_demo[pack_key("pack_6", "pack_4")], 1)
 	scan_box = page.locator(SCAN_INPUT).bounding_box()
 	result_box = page.locator(".tc-result .tc-t7").bounding_box()
 	assert scan_box["y"] < result_box["y"], (scan_box, result_box)
@@ -188,7 +196,7 @@ def test_t7_fefo_later_pack_needs_note(t7_page, t7_demo):
 	scan_settled(page, t7_demo["pack_fefo_far"])  # còn gói cùng loại hạn gần hơn
 	warn = page.locator(".tc-alert-warn")
 	expect(warn).to_be_visible(timeout=15000)
-	expect(warn.locator(".tc-alert-items")).to_contain_text(t7_demo["pack_fefo_near"])
+	expect(warn.locator(".tc-alert-items")).to_contain_text(t7_demo[pack_key("pack_fefo_near", "pack_5")])
 	page.locator("[data-action='fefo-submit']").click()  # chưa nhập ghi chú
 	expect(page.locator(".tc-field-error")).to_contain_text("Bắt buộc")
 	page.locator("#tc-t7-fefo-note").fill("Phẫu thuật viên chỉ định bộ này")
