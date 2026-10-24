@@ -462,7 +462,7 @@ export default function App() {
     void load();
     const goOffline = () => {
       setOnline(false);
-      if (session.current !== "active") return;
+      if (session.current === "ended") return;
       ++request.current;
       setRefreshing(false);
       setPhase(snapshot.current ? "stale" : "error");

@@ -529,6 +529,72 @@ describe("Home", () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each(["before-rejection", "after-rejection"])(
+    "keeps cached actions read-only when reconnect occurs %s after offline during logout",
+    async (ordering) => {
+      addCsrfToken();
+      render(<App />);
+      await screen.findByRole("heading", { name: /Xin chào/ });
+      const logout = deferredResponse();
+      const freshContext = deferredResponse();
+      vi.mocked(fetch)
+        .mockReturnValueOnce(logout.promise)
+        .mockReturnValueOnce(freshContext.promise);
+      fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+      act(() => window.dispatchEvent(new Event("offline")));
+      expect(screen.queryAllByRole("link", { name: /Mở trạm/ })).toHaveLength(
+        0
+      );
+      if (ordering === "before-rejection") {
+        act(() => window.dispatchEvent(new Event("online")));
+        expect(fetch).toHaveBeenCalledTimes(2);
+      }
+      await act(async () => {
+        logout.resolve(new Response("", { status: 503 }));
+      });
+      if (ordering === "after-rejection") {
+        act(() => window.dispatchEvent(new Event("online")));
+      }
+      expect(screen.queryAllByRole("link", { name: /Mở trạm/ })).toHaveLength(
+        0
+      );
+      expect(
+        screen.queryAllByRole("link", { name: /Quét hoặc tra cứu/ })
+      ).toHaveLength(0);
+      expect(screen.getByText("Dữ liệu đã lưu chỉ để xem.")).toBeVisible();
+      expect(
+        screen.getByRole("region", { name: "Chỉ số tổng quan" })
+      ).toHaveTextContent("7");
+      if (ordering === "before-rejection") {
+        fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+      }
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(screen.queryAllByRole("link", { name: /Mở trạm/ })).toHaveLength(
+        0
+      );
+      await act(async () => {
+        freshContext.resolve(
+          respond({
+            ...context,
+            metrics: [{ ...context.metrics[0], value: 8 }],
+          })
+        );
+      });
+      expect(
+        within(
+          screen.getByRole("region", { name: "Truy cập nhanh" })
+        ).getByRole("link", { name: /Mở trạm/ })
+      ).toBeVisible();
+      expect(
+        screen.getByRole("region", { name: "Chỉ số tổng quan" })
+      ).toHaveTextContent("8");
+      expect(
+        screen.queryByText("Dữ liệu đã lưu chỉ để xem.")
+      ).not.toBeInTheDocument();
+      expect(window.location.assign).not.toHaveBeenCalled();
+    }
+  );
+
   it("logs out with the independent CSRF boot token and clears Home", async () => {
     const token = document.createElement("meta");
     token.name = "csrf-token";
