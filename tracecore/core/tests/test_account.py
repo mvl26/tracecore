@@ -1,16 +1,19 @@
 import importlib
 import importlib.util
+from contextlib import contextmanager
 from datetime import timedelta
 from unittest.mock import patch
 
 import frappe
 import pyotp
+from frappe.app import run_after_request_hooks
 from frappe.auth import CookieManager, LoginAttemptTracker, LoginManager
 from frappe.handler import execute_cmd
 from frappe.utils import add_days, now_datetime, today
 from frappe.utils.password import check_password, update_password
+from frappe.utils.response import build_response
 from werkzeug.test import EnvironBuilder
-from werkzeug.wrappers import Request
+from werkzeug.wrappers import Request, Response
 
 from tracecore.core import station_auth
 from tracecore.core.errors import BlockedError
@@ -104,6 +107,177 @@ class TestAccount(IsolatedTestCase):
 		self.assertTrue(self.account.password_is_expired(self.user))
 		with self.assertRaises(frappe.AuthenticationError):
 			self.account.on_login(frappe._dict(user=self.user))
+
+	@contextmanager
+	def login_request(self, path="/login", form=None):
+		from frappe.twofactor import set_default
+
+		form = form or {"cmd": "login", "usr": self.user, "pwd": OLD_PASSWORD}
+		request = Request(EnvironBuilder(path=path, method="POST", data=form).get_environ())
+		manager = object.__new__(LoginManager)
+		manager.user = None
+		manager.info = None
+		manager.full_name = None
+		manager.user_type = None
+		manager.resume = False
+		with (
+			local_context(
+				request=request,
+				cookie_manager=CookieManager(),
+				login_manager=manager,
+				request_ip="127.0.0.1",
+				form_dict=frappe._dict(form),
+				response=frappe._dict(),
+				flags=frappe._dict(frappe.flags),
+				session=frappe._dict(user="Guest", sid="Guest", data=frappe._dict()),
+			),
+			patch("frappe.database.database.Database.commit", return_value=None),
+		):
+			try:
+				set_default(self.user + "_otplogin", 1)
+				yield manager, request
+			finally:
+				if frappe.session.sid != "Guest":
+					frappe.cache.hdel("session", frappe.session.sid)
+
+	def complete_login(self, manager):
+		from frappe.twofactor import get_otpsecret_for_
+
+		if manager.login() is False:
+			frappe.form_dict.otp = pyotp.TOTP(get_otpsecret_for_(self.user)).now()
+			frappe.form_dict.tmp_id = frappe.response.tmp_id
+			manager.login()
+
+	def test_web_login_sets_tracecore_home_after_password_check(self):
+		with self.login_request() as (manager, request):
+			self.complete_login(manager)
+			self.assertEqual(frappe.session.user, self.user)
+			self.assertEqual(frappe.flags.tracecore_login_user, self.user)
+			response = build_response("json")
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_json()["home_page"], "/tracecore")
+			self.assertEqual(response.get_json()["message"], "Logged In")
+			self.assertNotIn("redirect_to", response.get_json())
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+			before = response.get_data()
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_data(), before)
+
+	def test_website_user_login_sets_tracecore_home(self):
+		frappe.db.set_value("User", self.user, "user_type", "Website User")
+		with self.login_request() as (manager, request):
+			self.complete_login(manager)
+			response = build_response("json")
+			self.assertEqual(response.get_json()["message"], "No App")
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_json()["home_page"], "/tracecore")
+
+	def test_expired_password_still_blocks_before_redirect(self):
+		frappe.db.set_value("User", self.user, "last_password_reset_date", add_days(today(), -90))
+		with self.login_request() as (manager, request):
+			manager.user = self.user
+			frappe.flags.tracecore_login_user = self.user
+			with self.assertRaises(frappe.AuthenticationError):
+				self.account.on_login(manager)
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+			self.assertNotIn("home_page", frappe.response)
+			# Frappe's earlier expiry branch must keep its recovery destination too.
+			self.assertFalse(manager.login())
+			response = build_response("json")
+			before = response.get_data()
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_data(), before)
+			self.assertEqual(response.get_json()["message"], "Password Reset")
+			self.assertIn("update-password", response.get_json()["redirect_to"])
+
+	def test_guest_and_api_login_do_not_receive_unsafe_redirect(self):
+		with self.login_request(path="/api/method/login") as (manager, request):
+			self.complete_login(manager)
+			response = build_response("json")
+			before = response.get_data()
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_data(), before)
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+		with self.login_request() as (manager, request):
+			manager.user = "Guest"
+			self.account.on_login(manager)
+			response = Response('{"message":"Logged In","home_page":"/app"}', mimetype="application/json")
+			before = response.get_data()
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_data(), before)
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+
+	def test_login_home_preserves_explicit_redirect_for_framework_validation(self):
+		for destination in (
+			"/app/station?station=TR-004",
+			"http://localhost/app/station",
+			"https://evil.example/steal",
+			"//evil.example",
+		):
+			with (
+				self.subTest(destination=destination),
+				self.login_request(
+					path="/login?redirect-to=" + destination,
+				) as (manager, request),
+			):
+				self.complete_login(manager)
+				response = build_response("json")
+				run_after_request_hooks(request, response)
+				self.assertEqual(response.get_json()["home_page"], "/tracecore")
+				self.assertEqual(request.args["redirect-to"], destination)
+				self.assertNotIn("redirect_to", response.get_json())
+
+	def test_login_home_hook_ignores_failed_or_unrelated_responses(self):
+		cases = (
+			(401, "application/json", '{"message":"Logged In","home_page":"/app"}'),
+			(200, "text/html", "<html>login failed</html>"),
+			(200, "application/json", '{"message":"Password Reset","redirect_to":"/update-password"}'),
+			(200, "application/json", '{"message":"Logged In","exc":"failed","home_page":"/app"}'),
+			(200, "application/json", "not-json"),
+			(200, "application/json", "[]"),
+		)
+		for status, mimetype, body in cases:
+			with self.subTest(status=status, body=body), self.login_request() as (manager, request):
+				self.account.on_login(frappe._dict(user=self.user))
+				frappe.session.user = self.user
+				response = Response(body, status=status, mimetype=mimetype)
+				before = response.get_data()
+				run_after_request_hooks(request, response)
+				self.assertEqual(response.get_data(), before)
+				self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+		with self.login_request(path="/other", form={"cmd": "other"}) as (manager, request):
+			frappe.flags.tracecore_login_user = self.user
+			response = Response('{"message":"Logged In","home_page":"/app"}', mimetype="application/json")
+			before = response.get_data()
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_data(), before)
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+
+	def test_login_home_requires_form_post_and_matching_authenticated_user(self):
+		for method, mimetype, cmd in (
+			("GET", "application/x-www-form-urlencoded", "login"),
+			("POST", "application/json", "login"),
+			("POST", "application/x-www-form-urlencoded", "other"),
+		):
+			request = Request(
+				EnvironBuilder(path="/login", method=method, content_type=mimetype).get_environ()
+			)
+			with (
+				self.subTest(method=method, mimetype=mimetype, cmd=cmd),
+				local_context(
+					request=request, form_dict=frappe._dict(cmd=cmd), flags=frappe._dict(frappe.flags)
+				),
+			):
+				self.account.on_login(frappe._dict(user=self.user))
+				self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+		with self.login_request() as (manager, request):
+			self.account.on_login(frappe._dict(user=self.user))
+			self.assertEqual(frappe.flags.tracecore_login_user, self.user)
+			response = Response('{"message":"Logged In","home_page":"/app"}', mimetype="application/json")
+			before = response.get_data()
+			run_after_request_hooks(request, response)
+			self.assertEqual(response.get_data(), before)
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
 
 	def test_settings_lock_after_fifth_failure_and_two_factor_roles(self):
 		from tracecore.setup.install import apply_system_settings

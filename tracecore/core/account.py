@@ -54,10 +54,48 @@ def password_is_expired(user):
 
 
 def on_login(login_manager):
+	frappe.flags.pop("tracecore_login_user", None)
 	if password_is_expired(login_manager.user):
 		frappe.throw(
 			_("Password expired. Change your password before signing in."), frappe.AuthenticationError
 		)
+	if login_manager.user != "Guest" and _is_interactive_login(getattr(frappe.local, "request", None)):
+		frappe.flags.tracecore_login_user = login_manager.user
+
+
+def _is_interactive_login(request):
+	return (
+		request is not None
+		and request.method == "POST"
+		and request.path in ("/", "/login")
+		and request.mimetype == "application/x-www-form-urlencoded"
+		and frappe.form_dict.get("cmd") == "login"
+	)
+
+
+def set_login_home(request, response):
+	# Frappe v15 sets home_page after on_login; update its final JSON response.
+	user = frappe.flags.pop("tracecore_login_user", None)
+	if (
+		not user
+		or user == "Guest"
+		or frappe.session.user != user
+		or not _is_interactive_login(request)
+		or response is None
+		or response.status_code != 200
+		or not response.is_json
+	):
+		return
+	payload = response.get_json(silent=True)
+	if (
+		not isinstance(payload, dict)
+		or payload.get("message") not in ("Logged In", "No App")
+		or any(payload.get(key) for key in ("exc", "exception", "exc_type"))
+	):
+		return
+	# login.js keeps its sanitized explicit redirect-to ahead of this fallback.
+	payload["home_page"] = "/tracecore"
+	response.set_data(frappe.as_json(payload))
 
 
 def validate_user(doc, method=None):
