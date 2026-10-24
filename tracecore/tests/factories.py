@@ -318,10 +318,35 @@ def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
 	return doc.insert()
 
 
-def make_assembly_record(set_unit, result="Pass", submit=True, notes=None):
-	"""Tạo Assembly Record (stub T3) cho chu trình hiện hành của bộ; ghi sổ mặc định → ghi cổng T3."""
+def full_count_lines(set_unit):
+	"""Dòng kiểm đếm đủ theo BOM đã ghim cho chu trình hiện hành của bộ (mỗi dòng đã đếm, đủ số lượng); chưa ghim → []."""
+	unit = frappe.db.get_value("Set Unit", _ref_name(set_unit), ["set_type", "cycle_bom_version"], as_dict=True)
+	if not int(unit.cycle_bom_version or 0):
+		return []
+	rows = frappe.get_all(
+		"Set BOM Item",
+		filters={"set_type": unit.set_type, "bom_version": int(unit.cycle_bom_version)},
+		fields=["instrument", "qty"],
+		order_by="position asc, name asc",
+	)
+	return [{"instrument": row.instrument, "counted": 1, "actual_qty": int(row.qty)} for row in rows]
+
+
+def make_assembly_record(set_unit, result="Pass", submit=True, notes=None, lines="auto", **fields):
+	"""Tạo Assembly Record cho chu trình hiện hành của bộ; ghi sổ mặc định → ghi cổng T3.
+
+	`lines`: ``"auto"`` → đếm đủ mọi dòng BOM đã ghim (`full_count_lines`); danh sách dòng → dùng nguyên; `fields` ghi
+	đè trường khác (``station``, ``branch``…).
+	"""
 	doc = frappe.get_doc(
-		{"doctype": "Assembly Record", "set_unit": _ref_name(set_unit), "result": result, "notes": notes}
+		{
+			"doctype": "Assembly Record",
+			"set_unit": _ref_name(set_unit),
+			"result": result,
+			"notes": notes,
+			"lines": full_count_lines(set_unit) if lines == "auto" else lines,
+			**fields,
+		}
 	).insert()
 	if submit:
 		doc.submit()
