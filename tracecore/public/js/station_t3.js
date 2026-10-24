@@ -232,8 +232,10 @@ class T3Assembly {
 
 	setQty(code, qty) {
 		if (!this.asm || this.busy || this.offline || qty < 0) return;
-		this.request(T3_LINE, { assembly: this.asm.assembly, instrument: code, actual_qty: qty }, (res) =>
-			this.onLine(res)
+		this.request(
+			T3_LINE,
+			{ assembly: this.asm.assembly, instrument: code, actual_qty: qty },
+			(res) => this.onLine(res)
 		);
 	}
 
@@ -269,7 +271,9 @@ class T3Assembly {
 
 	allOk() {
 		if (!this.asm || this.busy || this.offline) return;
-		this.request(T3_LINE, { assembly: this.asm.assembly, all_ok: 1 }, (res) => this.onLine(res));
+		this.request(T3_LINE, { assembly: this.asm.assembly, all_ok: 1 }, (res) =>
+			this.onLine(res)
+		);
 	}
 
 	openForm(form) {
@@ -378,7 +382,9 @@ class T3Assembly {
 		if (!form.reason.trim() || !/^\d{6}$/.test(pin)) {
 			return this.blocked({
 				title: __("Reason and R02 PIN are required"),
-				reason: __("Packing with missing instruments needs a reason and the 6-digit PIN of R02."),
+				reason: __(
+					"Packing with missing instruments needs a reason and the 6-digit PIN of R02."
+				),
 				action: __("Write the reason, enter the PIN, then confirm."),
 			});
 		}
@@ -623,7 +629,9 @@ class T3Assembly {
 				<span class="tc-tag">${esc(__("Cycle {0}", [asm.cycle_no]))}</span>
 				${
 					asm.docstatus === 1
-						? `<span class="tc-badge ${asm.result === "Pass" ? "tc-badge-g" : "tc-badge-r"}">${esc(
+						? `<span class="tc-badge ${
+								asm.result === "Pass" ? "tc-badge-g" : "tc-badge-r"
+						  }">${esc(
 								asm.result === "Pass"
 									? __("Assembly recorded")
 									: __("Assembly failed")
@@ -660,7 +668,9 @@ class T3Assembly {
 				left,
 			]),
 			items,
-			action: __("Tell R02 so a replacement can be prepared; packing (T4) still checks the limit."),
+			action: __(
+				"Tell R02 so a replacement can be prepared; packing (T4) still checks the limit."
+			),
 		});
 	}
 
@@ -686,9 +696,10 @@ class T3Assembly {
 		const status = row.counted ? row.line_status : "";
 		const cls = { Enough: " is-done", Short: " is-short", Over: " is-over" }[status] || "";
 		let state = t3LineLabel(status);
-		if (status === "Short") state += ` (−${row.missing_qty})`;
+		if (status === "Short") state += ` (-${row.missing_qty})`;
 		if (status === "Over") state += ` (+${row.actual_qty - row.bom_qty})`;
-		const marks = { Enough: "&#10003; ", Short: "&#10005; ", Over: "! " }[status] || "&#9675; ";
+		const marks =
+			{ Enough: "&#10003; ", Short: "&#10005; ", Over: "! " }[status] || "&#9675; ";
 		const damaged = row.damaged_qty
 			? `<span class="tc-ins-state">${esc(
 					__("Damaged {0} · replaced {1} · {2}", [
@@ -700,7 +711,9 @@ class T3Assembly {
 			: "";
 		const par =
 			row.par_state && row.par_state !== "ok"
-				? `<span class="tc-ins-state tc-warn-text">${esc(__("Cycle limit is near"))}</span>`
+				? `<span class="tc-ins-state tc-warn-text">${esc(
+						__("Cycle limit is near")
+				  )}</span>`
 				: "";
 		const code = esc(row.instrument);
 		return `<div class="tc-ins${cls}" data-instrument="${code}">
@@ -708,7 +721,11 @@ class T3Assembly {
 			<span class="tc-ins-text">
 				<span class="tc-ins-name">${esc(row.instrument_name)}</span>
 				<span class="tc-ins-pos">${esc(
-					__("Position {0} · BOM × {1} · {2}", [row.position, row.bom_qty, row.instrument])
+					__("Position {0} · BOM × {1} · {2}", [
+						row.position,
+						row.bom_qty,
+						row.instrument,
+					])
 				)}</span>
 				<span class="tc-ins-state"><span aria-hidden="true">${marks}</span>${esc(state)}</span>
 				${damaged}${par}
@@ -746,12 +763,10 @@ class T3Assembly {
 				<div class="tc-inst">${asm.lines.map((row) => this.lineHtml(row)).join("")}</div>
 			</div>
 			<div class="tc-actions">
-				<button type="button" class="tc-btn tc-btn-ok" data-action="t3-all"${t3Disabled(
-					!open
-				)}>${esc(__("Confirm all components"))}</button>
-				<span class="tc-hint">${esc(
-					__("Counted {0}/{1} lines", [counted, asm.lines.length])
-				)}</span>
+				<button type="button" class="tc-btn tc-btn-ok" data-action="t3-all"${t3Disabled(!open)}>${esc(
+			__("Confirm all components")
+		)}</button>
+				<span class="tc-hint">${esc(__("Counted {0}/{1} lines", [counted, asm.lines.length]))}</span>
 			</div>
 		</section>`;
 	}
@@ -777,7 +792,9 @@ class T3Assembly {
 
 	damageFormHtml(form) {
 		const row = this.line(form.instrument);
-		return `<section class="tc-t4-block tc-t3-form" aria-label="${esc(__("Damaged / replace"))}">
+		return `<section class="tc-t4-block tc-t3-form" aria-label="${esc(
+			__("Damaged / replace")
+		)}">
 			<h3>${esc(__("Damaged / replace"))}: ${esc(row.instrument_name)} (${esc(row.instrument)})</h3>
 			<div class="tc-t4-row">
 				<div class="tc-field">
@@ -809,9 +826,7 @@ class T3Assembly {
 				)}>
 				${form.photo ? `<p class="tc-t4-ok">&#10003; ${esc(__("Photo attached"))}</p>` : ""}
 			</div>
-			<p class="tc-hint">${esc(
-				__("Usable instruments = BOM quantity − damaged + replaced.")
-			)}</p>
+			<p class="tc-hint">${esc(__("Usable instruments = BOM quantity − damaged + replaced."))}</p>
 			<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="t3-save-damage"${t3Disabled(
 					this.busy || form.uploading
@@ -827,7 +842,9 @@ class T3Assembly {
 		return `<section class="tc-t4-block tc-t3-form" aria-label="${esc(__("Damage Branch"))}">
 			<h3>${esc(__("Set is damaged: send to repair or disposal"))}</h3>
 			<p>${esc(
-				__("The set stops here and does not go to packing. The assembly is recorded as failed.")
+				__(
+					"The set stops here and does not go to packing. The assembly is recorded as failed."
+				)
 			)}</p>
 			${this.chips("t3-branch-pick", form.branch, [
 				["Repair", __("Repair", null, "Assembly Record")],
@@ -849,7 +866,9 @@ class T3Assembly {
 	}
 
 	confirmFormHtml(form) {
-		return `<section class="tc-t4-block tc-t3-form" aria-label="${esc(__("R02 confirmation"))}">
+		return `<section class="tc-t4-block tc-t3-form" aria-label="${esc(
+			__("R02 confirmation")
+		)}">
 			<h3>${esc(__("R02 confirms packing with missing instruments"))}</h3>
 			<div class="tc-field">
 				<label for="tc-t3-confirm-reason">${esc(__("Reason"))} *</label>
@@ -883,7 +902,10 @@ class T3Assembly {
 			return this.alertHtml({
 				variant: "ok",
 				title: __("Shortage confirmed by R02"),
-				reason: __("Confirmed by {0}: {1}", [asm.shortage_confirmed_by, asm.shortage_reason]),
+				reason: __("Confirmed by {0}: {1}", [
+					asm.shortage_confirmed_by,
+					asm.shortage_reason,
+				]),
 				items: asm.shortage_items.map(t3ItemText),
 			});
 		}
@@ -892,15 +914,21 @@ class T3Assembly {
 					this.busy || this.offline
 			  )}>${esc(__("R02 confirms: pack with missing instruments"))}</button></div>`
 			: `<p class="tc-hint">${esc(
-					__("R02 signs in with the card at this station, scans the Set ID again and enters the PIN.")
+					__(
+						"R02 signs in with the card at this station, scans the Set ID again and enters the PIN."
+					)
 			  )}</p>`;
 		return this.alertHtml(
 			{
 				variant: "error",
 				title: __("Missing instruments"),
-				reason: __("Packing is locked until the missing instruments are added or R02 confirms."),
+				reason: __(
+					"Packing is locked until the missing instruments are added or R02 confirms."
+				),
 				items: asm.shortage_items.map(t3ItemText),
-				action: __("Add the instruments from the spare stock, or ask R02 to confirm with the PIN."),
+				action: __(
+					"Add the instruments from the spare stock, or ask R02 to confirm with the PIN."
+				),
 			},
 			button
 		);
@@ -931,7 +959,8 @@ class T3Assembly {
 		const asm = this.asm;
 		const missing = [];
 		if (asm.docstatus === 0) {
-			if (asm.uncounted.length) missing.push(__("{0} line(s) not counted", [asm.uncounted.length]));
+			if (asm.uncounted.length)
+				missing.push(__("{0} line(s) not counted", [asm.uncounted.length]));
 			if (asm.has_shortage && !asm.shortage_confirmed) missing.push(__("R02 confirmation"));
 		}
 		const done = asm.docstatus === 1;

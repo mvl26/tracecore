@@ -60,7 +60,7 @@ def _flag(value):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ASSEMBLY_ROLES)
 @idempotent
-def open(raw, station, client_ts=None, token=None):  # noqa: A001 - tên RPC theo implementation-plan §3
+def open(raw, station, client_ts=None, token=None):  # tên RPC theo implementation-plan §3
 	"""Quét Set ID tại T3: BOM phiên bản áp dụng kèm ảnh, bản nháp kiểm đếm, cổng, cơ số (FR-M2-05, FR-M2-05.4)."""
 	require_any_role(*ASSEMBLY_ROLES)
 	raw = _string(raw, "raw")
@@ -182,4 +182,3 @@ def submit(assembly, station, notes=None, branch=None, branch_reason=None, clien
 		REF,
 		name,
 	)
-

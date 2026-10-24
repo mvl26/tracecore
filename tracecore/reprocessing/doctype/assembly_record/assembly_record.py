@@ -76,7 +76,9 @@ class AssemblyRecord(Document):
 		seen = set()
 		for line in lines:
 			if line.instrument not in bom:
-				frappe.throw(_("{0} is not in BOM version {1} of this set type.").format(line.instrument, version))
+				frappe.throw(
+					_("{0} is not in BOM version {1} of this set type.").format(line.instrument, version)
+				)
 			if line.instrument in seen:
 				frappe.throw(_("Instrument {0} appears on more than one line.").format(line.instrument))
 			seen.add(line.instrument)
@@ -101,7 +103,9 @@ class AssemblyRecord(Document):
 		for field in ("actual_qty", "damaged_qty", "replaced_qty"):
 			value = cint(line.get(field))
 			if value < 0 or value > 9999:
-				frappe.throw(_("{0}: quantities must be whole numbers between 0 and 9999.").format(line.instrument))
+				frappe.throw(
+					_("{0}: quantities must be whole numbers between 0 and 9999.").format(line.instrument)
+				)
 			line.set(field, value)
 		if line.replaced_qty > line.damaged_qty:
 			frappe.throw(
@@ -132,7 +136,10 @@ class AssemblyRecord(Document):
 		short = [line for line in (self.get("lines") or []) if line.line_status == "Short"]
 		self.has_shortage = 1 if short else 0
 		self.shortage_summary = (
-			"\n".join(f"{line.instrument_name or line.instrument} ({line.instrument}) × {line.missing_qty}" for line in short)
+			"\n".join(
+				f"{line.instrument_name or line.instrument} ({line.instrument}) x {line.missing_qty}"
+				for line in short
+			)
 			if short
 			else None
 		)

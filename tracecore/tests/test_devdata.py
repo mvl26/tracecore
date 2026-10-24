@@ -475,8 +475,8 @@ class TestT3DemoData(IsolatedTestCase):
 		self.assertIn(first["short_instrument"], [line["instrument"] for line in opened["lines"]])
 
 	def test_t3_demo_replaces_a_set_that_was_counted(self):
-		from tracecore.reprocessing import assembly
 		from tracecore.core import client_time
+		from tracecore.reprocessing import assembly
 
 		first = devdata.ensure_t3_demo()
 		name = assembly.open_set(first["set_full"], "TR-003")["assembly"]

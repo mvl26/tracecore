@@ -1,4 +1,4 @@
-"""Kiểm đếm – lắp ráp theo BOM tại T3 (M2, FEAT-020, UC-07, SCR-07).
+"""Kiểm đếm - lắp ráp theo BOM tại T3 (M2, FEAT-020, UC-07, SCR-07).
 
 Dịch vụ trạm T3 (RPC `tracecore.v1.assembly` bọc từng hàm):
 
@@ -110,7 +110,11 @@ def _draft(name, for_update=False):
 	"""Bản nháp `name` của chu trình hiện hành; không có → ASSEMBLY_NOT_FOUND, đã ghi sổ/qua chu trình → ASSEMBLY_CLOSED."""
 	row = (
 		frappe.db.get_value(
-			"Assembly Record", name, ["name", "docstatus", "set_unit", "cycle_no"], as_dict=True, for_update=for_update
+			"Assembly Record",
+			name,
+			["name", "docstatus", "set_unit", "cycle_no"],
+			as_dict=True,
+			for_update=for_update,
 		)
 		if isinstance(name, str) and name
 		else None
@@ -175,17 +179,21 @@ def open_set(raw, station, client_ts=None):
 		)
 	name = _draft_name(unit)
 	if not name:
-		name = frappe.get_doc(
-			{
-				"doctype": "Assembly Record",
-				"set_unit": unit.name,
-				"station": station,
-				"assembled_by_user": frappe.session.user,
-				"client_ts": client_ts,
-				"bom_version": cint(ctx.get("bom_version")),
-				"lines": [{"instrument": line["instrument"]} for line in ctx["bom"]],
-			}
-		).insert(ignore_permissions=True).name
+		name = (
+			frappe.get_doc(
+				{
+					"doctype": "Assembly Record",
+					"set_unit": unit.name,
+					"station": station,
+					"assembled_by_user": frappe.session.user,
+					"client_ts": client_ts,
+					"bom_version": cint(ctx.get("bom_version")),
+					"lines": [{"instrument": line["instrument"]} for line in ctx["bom"]],
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
 	return _summary(frappe.get_doc("Assembly Record", name), ctx)
 
 
@@ -288,7 +296,9 @@ def _apply_line(doc, instrument, values):
 		raise _blocked(
 			"INSTRUMENT_NOT_FOUND",
 			_("Instrument not found"),
-			_("Instrument {0} is not a line of this BOM.").format(instrument if isinstance(instrument, str) else "-"),
+			_("Instrument {0} is not a line of this BOM.").format(
+				instrument if isinstance(instrument, str) else "-"
+			),
 			_("Scan the Set ID again to reload the BOM."),
 		)
 	for key in ("actual_qty", "damaged_qty", "replaced_qty"):
@@ -350,7 +360,10 @@ def _scan_instrument(doc, raw, station, client_ts):
 		doc.foreign_instruments = "\n".join([*known, code])
 		doc.flags.tc_new_foreign = code
 	return {
-		"scanned": {"instrument": code, "instrument_name": frappe.db.get_value("Instrument", code, "instrument_name")},
+		"scanned": {
+			"instrument": code,
+			"instrument_name": frappe.db.get_value("Instrument", code, "instrument_name"),
+		},
 		"warning": {
 			"code": "FOREIGN_INSTRUMENT",
 			"title": _("Foreign instrument"),
@@ -362,7 +375,11 @@ def _scan_instrument(doc, raw, station, client_ts):
 
 def _shortage_items(doc):
 	return [
-		{"instrument": row.instrument, "instrument_name": row.instrument_name, "missing_qty": cint(row.missing_qty)}
+		{
+			"instrument": row.instrument,
+			"instrument_name": row.instrument_name,
+			"missing_qty": cint(row.missing_qty),
+		}
 		for row in doc.lines
 		if row.line_status == "Short"
 	]
@@ -376,7 +393,14 @@ def _sync_nc(doc, had_shortage, station, client_ts):
 		frappe.db.set_value("Assembly Record", doc.name, "nc_pending", want, update_modified=False)
 		doc.nc_pending = want
 	if cint(doc.has_shortage) and not had_shortage:
-		_raise_nc(doc, "Shortage", [item["instrument"] for item in _shortage_items(doc)], "AssemblyShortage", station, client_ts)
+		_raise_nc(
+			doc,
+			"Shortage",
+			[item["instrument"] for item in _shortage_items(doc)],
+			"AssemblyShortage",
+			station,
+			client_ts,
+		)
 	new_foreign = doc.flags.get("tc_new_foreign")
 	if new_foreign:
 		_raise_nc(doc, "Foreign Instrument", [new_foreign], "AssemblyForeignInstrument", station, client_ts)
@@ -417,7 +441,7 @@ def _reviewer(session, proof):
 
 
 def confirm_shortage(assembly, reason, station, reviewer_proof=None, session=None, client_ts=None):
-	"""R02 xác nhận đóng gói thiếu: lý do 1–500 ký tự + PIN proof của phiên `session`; mở khóa Đóng gói.
+	"""R02 xác nhận đóng gói thiếu: lý do 1-500 ký tự + PIN proof của phiên `session`; mở khóa Đóng gói.
 
 	Bản nháp phải đang có dòng thiếu (``NO_SHORTAGE``). Xác nhận gắn với đúng danh sách thiếu lúc đó: đổi số lượng làm
 	thiếu khác đi thì xác nhận mất hiệu lực (`AssemblyRecord._guard_confirmation`).

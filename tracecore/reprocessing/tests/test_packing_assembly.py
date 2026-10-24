@@ -42,7 +42,10 @@ class TestPackingWithConfirmedShortage(IsolatedTestCase):
 		result = _generate(ready)
 		pack = frappe.get_doc("Pack", result["pack"]["cycle_id"])
 		self.assertEqual([(row.instrument, row.qty) for row in pack.instruments_confirmed], [("KC-01", 2)])
-		self.assertEqual(pack.assembly, frappe.get_all("Assembly Record", filters={"set_unit": ready.set_id}, pluck="name")[0])
+		self.assertEqual(
+			pack.assembly,
+			frappe.get_all("Assembly Record", filters={"set_unit": ready.set_id}, pluck="name")[0],
+		)
 		self.assertEqual(step_gate.gates(ready.set_id)[3]["result"], "Pass")
 
 	def test_other_lines_still_have_to_be_ticked(self):
@@ -55,7 +58,10 @@ class TestPackingWithConfirmedShortage(IsolatedTestCase):
 	def test_partly_missing_line_records_the_quantity_present(self):
 		ready = make_t4_ready_set(short={"KC-01": 1})
 		pack = frappe.get_doc("Pack", _generate(ready, confirmed=["KC-02"])["pack"]["cycle_id"])
-		self.assertEqual(sorted((row.instrument, row.qty) for row in pack.instruments_confirmed), [("KC-01", 1), ("KC-02", 1)])
+		self.assertEqual(
+			sorted((row.instrument, row.qty) for row in pack.instruments_confirmed),
+			[("KC-01", 1), ("KC-02", 1)],
+		)
 
 	def test_context_lists_the_confirmed_shortage_for_the_station(self):
 		ready = make_t4_ready_set(short={"KC-02": 0})
@@ -84,7 +90,10 @@ class TestPackingWithConfirmedShortage(IsolatedTestCase):
 		step_gate.start_cycle(unit.name)
 		step_gate.record(unit.name, "T1", "Pass")
 		step_gate.record(unit.name, "T2", "Pass")
-		lines = [{"instrument": "KC-01", "counted": 1, "actual_qty": 0}, {"instrument": "KC-02", "counted": 1, "actual_qty": 1}]
+		lines = [
+			{"instrument": "KC-01", "counted": 1, "actual_qty": 0},
+			{"instrument": "KC-02", "counted": 1, "actual_qty": 1},
+		]
 		draft = make_assembly_record(unit, lines=lines, submit=False)
 		with self.assertRaises(frappe.ValidationError):
 			draft.submit()

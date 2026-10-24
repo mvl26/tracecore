@@ -74,7 +74,11 @@ class AssemblyApiCase(IsolatedTestCase):
 	def count(self, name, **short):
 		for code, qty in BOM:
 			result = call(
-				assembly_api.line, assembly=name, instrument=code, actual_qty=short.get(code, qty), station=STATION
+				assembly_api.line,
+				assembly=name,
+				instrument=code,
+				actual_qty=short.get(code, qty),
+				station=STATION,
 			)
 			self.assertIs(result["ok"], True, msg=result)
 
@@ -109,7 +113,9 @@ class TestAssemblyFlow(AssemblyApiCase):
 		self.assertEqual([i["instrument"] for i in locked["error"]["items"]], ["API-KEO"])
 		self.assertEqual(frappe.db.get_value("Assembly Record", name, "docstatus"), 0)
 		self.assertEqual(
-			call(assembly_api.line, assembly=name, instrument="API-KEO", actual_qty=0, station=STATION)["pack_lock_reason"],
+			call(assembly_api.line, assembly=name, instrument="API-KEO", actual_qty=0, station=STATION)[
+				"pack_lock_reason"
+			],
 			"SHORTAGE_UNCONFIRMED",
 		)
 		with self.assertRaises(Exception) as caught:
@@ -148,7 +154,9 @@ class TestAssemblyFlow(AssemblyApiCase):
 			branch_reason="Gãy kẹp",
 			station=STATION,
 		)
-		self.assertEqual((done["ok"], done["result"], done["branch"], done["next_station"]), (True, "Fail", "Repair", None))
+		self.assertEqual(
+			(done["ok"], done["result"], done["branch"], done["next_station"]), (True, "Fail", "Repair", None)
+		)
 		self.assertEqual(frappe.db.get_value("Set Unit", self.set_id, "status"), "Reprocess")
 
 	def test_replay_same_key_returns_same_result_without_duplicates(self):
@@ -196,11 +204,13 @@ class TestAssemblyRejections(AssemblyApiCase):
 	def test_wrong_station_gate_and_unknown_assembly(self):
 		self.login("Administrator", T4_STATION)
 		self.assert_rejection(self.open(station=T4_STATION), "STATION_WRONG_STEP", 422)
-		self.login("Administrator", STATION)  # một thẻ – một phiên: đăng nhập T4 đã đóng phiên T3
+		self.login("Administrator", STATION)  # một thẻ, một phiên: đăng nhập T4 đã đóng phiên T3
 		other = make_set_unit(make_set_type("APIB", bom=BOM).name)
 		make_cycle(other, passed=("T1",))
 		self.assert_rejection(self.open(raw=other.name), "GATE_PREV_NOT_PASSED", 409)
-		missing = call(assembly_api.line, assembly="AS-2026-99999", instrument="API-KEO", actual_qty=1, station=STATION)
+		missing = call(
+			assembly_api.line, assembly="AS-2026-99999", instrument="API-KEO", actual_qty=1, station=STATION
+		)
 		self.assert_rejection(missing, "ASSEMBLY_NOT_FOUND", 404)
 
 	def test_business_codes_map_to_http_statuses(self):

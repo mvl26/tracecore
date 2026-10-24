@@ -340,7 +340,11 @@ def get_context(set_id, station):
 		"bom": ctx.get("bom", []),
 		"bom_version": cint(ctx.get("bom_version")),
 		"shortage": [
-			{"instrument": row.instrument, "instrument_name": row.instrument_name, "missing_qty": cint(row.missing_qty)}
+			{
+				"instrument": row.instrument,
+				"instrument_name": row.instrument_name,
+				"missing_qty": cint(row.missing_qty),
+			}
 			for row in confirmed_shortage(unit).values()
 		],
 		"tray_image": ctx.get("tray_image"),

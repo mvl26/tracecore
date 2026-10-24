@@ -125,7 +125,9 @@ class TestOpen(AssemblyCase):
 		self.assertEqual(_code(self.open, su, "ZONE-CLEAN"), "STATION_WRONG_STEP")
 		self.assertEqual(_code(self.open, "XYZ-123"), "SCAN_INVALID")
 		self.assertEqual(_code(self.open, "TB-0001"), "SCAN_INVALID")
-		self.assertEqual(_code(self.open, gs1.make_giai(gs1.configured_company_prefix(), "S-999999")), "SET_NOT_FOUND")
+		self.assertEqual(
+			_code(self.open, gs1.make_giai(gs1.configured_company_prefix(), "S-999999")), "SET_NOT_FOUND"
+		)
 
 	def test_set_that_already_passed_t3_is_blocked(self):
 		su = self.washed_set()
@@ -202,33 +204,68 @@ class TestLine(AssemblyCase):
 		keo = next(l for l in ctx["lines"] if l["instrument"] == "T3-KEO")
 		self.assertEqual((keo["line_status"], keo["damaged_qty"], keo["replaced_qty"]), ("Enough", 1, 1))
 		self.assertEqual((keo["disposition"], keo["replacement_instrument"]), ("Repair", "T3-KEO"))
-		self.assertEqual(self.line(name, instrument="T3-KEO", replacement_instrument="T3-KEP")["lines"][0]["replacement_instrument"], "T3-KEP")
+		self.assertEqual(
+			self.line(name, instrument="T3-KEO", replacement_instrument="T3-KEP")["lines"][0][
+				"replacement_instrument"
+			],
+			"T3-KEP",
+		)
 
 	def test_invalid_quantities_are_rejected_without_writing(self):
 		name = self.open(self.washed_set())["assembly"]
 		for bad in ({"actual_qty": -1}, {"actual_qty": "x"}, {"actual_qty": 10000}, {"actual_qty": True}):
 			self.assertEqual(_code(self.line, name, instrument="T3-KEO", **bad), "QTY_INVALID", bad)
 		self.assertEqual(
-			_code(self.line, name, instrument="T3-KEO", actual_qty=1, damaged_qty=1, replaced_qty=2, disposition="Repair"),
+			_code(
+				self.line,
+				name,
+				instrument="T3-KEO",
+				actual_qty=1,
+				damaged_qty=1,
+				replaced_qty=2,
+				disposition="Repair",
+			),
 			"QTY_INVALID",
 		)
-		self.assertEqual(_code(self.line, name, instrument="T3-KEO", actual_qty=1, damaged_qty=1), "QTY_INVALID")
-		self.assertEqual(_code(self.line, name, instrument="T3-KEO", actual_qty=1, disposition="Burn"), "QTY_INVALID")
+		self.assertEqual(
+			_code(self.line, name, instrument="T3-KEO", actual_qty=1, damaged_qty=1), "QTY_INVALID"
+		)
+		self.assertEqual(
+			_code(self.line, name, instrument="T3-KEO", actual_qty=1, disposition="Burn"), "QTY_INVALID"
+		)
 		self.assertEqual(_code(self.line, name, instrument="T3-LA", actual_qty=1), "INSTRUMENT_NOT_FOUND")
-		self.assertFalse(frappe.db.get_value("Assembly Line", {"parent": name, "instrument": "T3-KEO"}, "counted"))
+		self.assertFalse(
+			frappe.db.get_value("Assembly Line", {"parent": name, "instrument": "T3-KEO"}, "counted")
+		)
 
 	def test_photo_must_be_an_uploaded_file(self):
 		name = self.open(self.washed_set())["assembly"]
-		self.assertEqual(_code(self.line, name, instrument="T3-KEO", actual_qty=1, photo="/files/none.png"), "PHOTO_INVALID")
-		frappe.get_doc({"doctype": "File", "file_name": "t3-damaged.png", "file_url": PHOTO, "content": b"x", "is_private": 0}).insert(ignore_permissions=True)
+		self.assertEqual(
+			_code(self.line, name, instrument="T3-KEO", actual_qty=1, photo="/files/none.png"),
+			"PHOTO_INVALID",
+		)
+		frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": "t3-damaged.png",
+				"file_url": PHOTO,
+				"content": b"x",
+				"is_private": 0,
+			}
+		).insert(ignore_permissions=True)
 		ctx = self.line(name, instrument="T3-KEO", actual_qty=1, photo=PHOTO)
 		self.assertEqual(ctx["lines"][0]["photo"], PHOTO)
 
 	def test_unknown_or_closed_assembly(self):
 		su = self.washed_set()
-		self.assertEqual(_code(self.line, "AS-2026-99999", instrument="T3-KEO", actual_qty=1), "ASSEMBLY_NOT_FOUND")
+		self.assertEqual(
+			_code(self.line, "AS-2026-99999", instrument="T3-KEO", actual_qty=1), "ASSEMBLY_NOT_FOUND"
+		)
 		name = self.open(su)["assembly"]
-		self.assertEqual(_code(assembly.line, name, T4_STATION, self.ts, instrument="T3-KEO", actual_qty=1), "STATION_WRONG_STEP")
+		self.assertEqual(
+			_code(assembly.line, name, T4_STATION, self.ts, instrument="T3-KEO", actual_qty=1),
+			"STATION_WRONG_STEP",
+		)
 		self.count_all(name)
 		assembly.submit(name, STATION, self.ts)
 		self.assertEqual(_code(self.line, name, instrument="T3-KEO", actual_qty=1), "ASSEMBLY_CLOSED")
@@ -244,7 +281,10 @@ class TestLine(AssemblyCase):
 		self.assertEqual((calls[0]["assembly"], calls[0]["kind"]), (name, "Shortage"))
 		self.assertEqual(frappe.db.get_value("Assembly Record", name, "nc_pending"), 1)
 		self.assertTrue(
-			frappe.db.exists("Audit Log", {"ref_doctype": "Assembly Record", "ref_name": name, "reason": "AssemblyShortage"})
+			frappe.db.exists(
+				"Audit Log",
+				{"ref_doctype": "Assembly Record", "ref_name": name, "reason": "AssemblyShortage"},
+			)
 		)
 		self.line(name, instrument="T3-KEO", actual_qty=2)
 		self.line(name, instrument="T3-KEP", actual_qty=1)
@@ -274,7 +314,9 @@ class TestScanInstrument(AssemblyCase):
 		self.assertEqual((keo["counted"], keo["actual_qty"]), (1, 1))
 		self.assertEqual(ctx["scanned"]["instrument"], "T3-KEO")
 		again = self.line(self.name, raw=self.codes["T3-KEO"])
-		self.assertEqual(next(l for l in again["lines"] if l["instrument"] == "T3-KEO")["line_status"], "Enough")
+		self.assertEqual(
+			next(l for l in again["lines"] if l["instrument"] == "T3-KEO")["line_status"], "Enough"
+		)
 
 	@bru("BRU-ID-004")
 	def test_foreign_instrument_warns_and_flags_nc(self):
@@ -288,9 +330,15 @@ class TestScanInstrument(AssemblyCase):
 		self.assertFalse(any(l["counted"] for l in ctx["lines"]))
 
 	def test_scan_rejections(self):
-		self.assertEqual(_code(self.line, self.name, raw=gs1.make_instrument_giai(gs1.configured_company_prefix(), 90555)), "INSTRUMENT_NOT_FOUND")
+		self.assertEqual(
+			_code(self.line, self.name, raw=gs1.make_instrument_giai(gs1.configured_company_prefix(), 90555)),
+			"INSTRUMENT_NOT_FOUND",
+		)
 		self.assertEqual(_code(self.line, self.name, raw="XYZ-123"), "SCAN_INVALID")
-		self.assertEqual(_code(self.line, self.name, raw=frappe.db.get_value("Assembly Record", self.name, "set_unit")), "SCAN_INVALID")
+		self.assertEqual(
+			_code(self.line, self.name, raw=frappe.db.get_value("Assembly Record", self.name, "set_unit")),
+			"SCAN_INVALID",
+		)
 		self.set_flag(0)
 		self.assertEqual(_code(self.line, self.name, raw=self.codes["T3-KEO"]), "FEATURE_DISABLED")
 
@@ -314,10 +362,16 @@ class TestConfirmShortage(AssemblyCase):
 		self.assertEqual(_code(self.confirm, whole, proof=proof, session=session), "NO_SHORTAGE")
 		_su, name = self.short_draft()
 		session, proof, _user = self.r02_proof("t3-r02b@test.local")
-		self.assertEqual(_code(self.confirm, name, reason="  ", proof=proof, session=session), "REASON_REQUIRED")
-		self.assertEqual(_code(self.confirm, name, reason="x" * 501, proof=proof, session=session), "REASON_REQUIRED")
+		self.assertEqual(
+			_code(self.confirm, name, reason="  ", proof=proof, session=session), "REASON_REQUIRED"
+		)
+		self.assertEqual(
+			_code(self.confirm, name, reason="x" * 501, proof=proof, session=session), "REASON_REQUIRED"
+		)
 		self.assertEqual(_code(self.confirm, name, proof=None, session=session), "R02_CONFIRM_REQUIRED")
-		self.assertEqual(_code(self.confirm, name, proof="not-a-proof", session=session), "R02_CONFIRM_REQUIRED")
+		self.assertEqual(
+			_code(self.confirm, name, proof="not-a-proof", session=session), "R02_CONFIRM_REQUIRED"
+		)
 		self.assertEqual(frappe.db.get_value("Assembly Record", name, "shortage_confirmed"), 0)
 
 	def test_proof_of_a_non_r02_user_is_refused(self):
@@ -327,7 +381,9 @@ class TestConfirmShortage(AssemblyCase):
 		employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
 		station_auth.set_pin(employee, PIN)
 		proof = station_auth.create_pin_proof(login["token"], PIN)["proof"]
-		self.assertEqual(_code(self.confirm, name, proof=proof, session=login["session"]), "R02_CONFIRM_REQUIRED")
+		self.assertEqual(
+			_code(self.confirm, name, proof=proof, session=login["session"]), "R02_CONFIRM_REQUIRED"
+		)
 
 	@bru("BRU-REP-003")
 	def test_confirmed_shortage_unlocks_packing_and_lists_missing_instruments(self):
@@ -336,7 +392,9 @@ class TestConfirmShortage(AssemblyCase):
 		session, proof, user = self.r02_proof()
 		ctx = self.confirm(name, "Ca mổ gấp, bổ sung sau", proof, session)
 		self.assertTrue(ctx["shortage_confirmed"])
-		self.assertEqual((ctx["shortage_confirmed_by"], ctx["shortage_reason"]), (user, "Ca mổ gấp, bổ sung sau"))
+		self.assertEqual(
+			(ctx["shortage_confirmed_by"], ctx["shortage_reason"]), (user, "Ca mổ gấp, bổ sung sau")
+		)
 		self.assertTrue(ctx["ready_to_submit"])  # đã đủ điều kiện ghi sổ; Đóng gói mở khi cổng T3 Đạt
 		done = assembly.submit(name, STATION, self.ts)
 		self.assertEqual((done["result"], done["pack_locked"]), ("Pass", False))
@@ -348,7 +406,9 @@ class TestConfirmShortage(AssemblyCase):
 		_su, name = self.short_draft()
 		session, proof, _user = self.r02_proof()
 		self.confirm(name, proof=proof, session=session)
-		self.assertEqual(_code(self.confirm, name, proof=proof, session=session), "R02_CONFIRM_REQUIRED")  # dùng lại proof
+		self.assertEqual(
+			_code(self.confirm, name, proof=proof, session=session), "R02_CONFIRM_REQUIRED"
+		)  # dùng lại proof
 		user = make_user("t3-lock@test.local", roles=("TC R02",))
 		login = make_station_session(user, station=STATION)
 		employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
@@ -357,7 +417,9 @@ class TestConfirmShortage(AssemblyCase):
 		codes = [_code(station_auth.create_pin_proof, login["token"], "000000") for _i in range(3)]
 		self.assertEqual(codes, ["PIN_INVALID", "PIN_INVALID", "PIN_LOCKED"])
 		self.assertEqual(_code(station_auth.create_pin_proof, login["token"], PIN), "PIN_LOCKED")
-		self.assertEqual(_code(self.confirm, name, proof=None, session=login["session"]), "R02_CONFIRM_REQUIRED")
+		self.assertEqual(
+			_code(self.confirm, name, proof=None, session=login["session"]), "R02_CONFIRM_REQUIRED"
+		)
 
 	def test_changing_counts_after_confirmation_withdraws_it(self):
 		_su, name = self.short_draft()
@@ -378,7 +440,9 @@ class TestSubmit(AssemblyCase):
 		done = assembly.submit(name, STATION, self.ts, notes="Đủ")
 		self.assertEqual((done["result"], done["docstatus"]), ("Pass", 1))
 		doc = frappe.get_doc("Assembly Record", name)
-		self.assertEqual((doc.docstatus, doc.result, doc.notes, doc.assembled_by_user), (1, "Pass", "Đủ", "Administrator"))
+		self.assertEqual(
+			(doc.docstatus, doc.result, doc.notes, doc.assembled_by_user), (1, "Pass", "Đủ", "Administrator")
+		)
 		self.assertIsNotNone(doc.assembled_at)
 		gate = frappe.get_doc("Step Gate Result", f"{su}-C1-T3")
 		self.assertEqual((gate.result, gate.ref_name, gate.station), ("Pass", name, STATION))
@@ -405,18 +469,30 @@ class TestSubmit(AssemblyCase):
 		su = self.washed_set()
 		name = self.open(su)["assembly"]
 		self.line(name, instrument="T3-KEO", actual_qty=0, damaged_qty=2, disposition="Dispose")
-		self.assertEqual(_code(assembly.submit, name, STATION, self.ts, branch="Burn", branch_reason="x"), "BRANCH_INVALID")
-		self.assertEqual(_code(assembly.submit, name, STATION, self.ts, branch="Repair", branch_reason=" "), "REASON_REQUIRED")
+		self.assertEqual(
+			_code(assembly.submit, name, STATION, self.ts, branch="Burn", branch_reason="x"), "BRANCH_INVALID"
+		)
+		self.assertEqual(
+			_code(assembly.submit, name, STATION, self.ts, branch="Repair", branch_reason=" "),
+			"REASON_REQUIRED",
+		)
 		patcher, calls = _hook_calls(assembly.AFTER_HOOK)
 		with patcher:
-			done = assembly.submit(name, STATION, self.ts, branch="Disposal", branch_reason="Hỏng nặng, không sửa được")
+			done = assembly.submit(
+				name, STATION, self.ts, branch="Disposal", branch_reason="Hỏng nặng, không sửa được"
+			)
 		self.assertEqual((done["result"], done["branch"]), ("Fail", "Disposal"))
 		self.assertEqual(step_gate.gates(su)[2], {"step": "T3", "result": "Fail", "redo_count": 1})
 		self.assertEqual(frappe.db.get_value("Set Unit", su, "status"), "Reprocess")
 		self.assertEqual(step_gate.check(su, "T4").code, "GATE_PREV_NOT_PASSED")
-		self.assertEqual((calls[0]["branch"], calls[0]["result"], calls[0]["damaged"][0]["instrument"]), ("Disposal", "Fail", "T3-KEO"))
+		self.assertEqual(
+			(calls[0]["branch"], calls[0]["result"], calls[0]["damaged"][0]["instrument"]),
+			("Disposal", "Fail", "T3-KEO"),
+		)
 		self.assertTrue(
-			frappe.db.exists("Audit Log", {"ref_doctype": "Assembly Record", "ref_name": name, "reason": "AssemblyBranch"})
+			frappe.db.exists(
+				"Audit Log", {"ref_doctype": "Assembly Record", "ref_name": name, "reason": "AssemblyBranch"}
+			)
 		)
 
 	def test_after_assembly_hook_runs_on_pass(self):
@@ -432,7 +508,10 @@ class TestSubmit(AssemblyCase):
 		su = self.washed_set()
 		name = self.open(su)["assembly"]
 		self.count_all(name)
-		with patch.object(step_gate, "record", side_effect=RuntimeError("boom")), self.assertRaises(RuntimeError):
+		with (
+			patch.object(step_gate, "record", side_effect=RuntimeError("boom")),
+			self.assertRaises(RuntimeError),
+		):
 			assembly.submit(name, STATION, self.ts)
 		self.assertEqual(frappe.db.get_value("Assembly Record", name, "docstatus"), 0)
 		self.assertEqual(step_gate.gates(su)[2]["result"], "Pending")

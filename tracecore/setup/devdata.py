@@ -422,7 +422,9 @@ def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
 		bom_versions.create_version(code, lines, bom_versions.today(), _("Demo data"), 0)
 	if not frappe.db.get_value("Instrument Set Type", code, "department"):
 		# loại bộ demo tạo trước FEAT-015 chưa có khoa; cấp Set ID bắt buộc khoa (A-13 G5)
-		frappe.db.set_value("Instrument Set Type", code, "department", _demo_department(), update_modified=False)
+		frappe.db.set_value(
+			"Instrument Set Type", code, "department", _demo_department(), update_modified=False
+		)
 	return code
 
 
@@ -1395,7 +1397,9 @@ def ensure_t6_demo():
 T3_STATION = "TR-003"
 T3_SET_TYPE = "DEMOT3S"
 T3_READY = ("set_full", "set_short", "set_branch")
-SMOKE_STATION = "TR-090"  # trạm tra cứu Set ID chung (không bước) cho smoke FEAT-001, vì TR-003 đã có màn T3 riêng
+SMOKE_STATION = (
+	"TR-090"  # trạm tra cứu Set ID chung (không bước) cho smoke FEAT-001, vì TR-003 đã có màn T3 riêng
+)
 
 
 def ensure_smoke_station(station=SMOKE_STATION):

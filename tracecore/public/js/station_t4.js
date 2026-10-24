@@ -407,7 +407,9 @@ class T4Packing {
 
 	// dòng BOM đã được R02 xác nhận thiếu ở T3 (FR-M2-06.1): không phải tick
 	isShort(line) {
-		return ((this.ctx && this.ctx.shortage) || []).some((row) => row.instrument === line.instrument);
+		return ((this.ctx && this.ctx.shortage) || []).some(
+			(row) => row.instrument === line.instrument
+		);
 	}
 
 	tickable() {
@@ -1117,7 +1119,9 @@ class T4Packing {
 				const label = __("Placed correctly at position {0} as in the photo", [
 					line.position,
 				]);
-				return `<label class="tc-ins${checked ? " is-done" : ""}${short ? " is-short" : ""}">
+				return `<label class="tc-ins${checked ? " is-done" : ""}${
+					short ? " is-short" : ""
+				}">
 					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
 					<span class="tc-ins-text">
 						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
@@ -1132,9 +1136,9 @@ class T4Packing {
 							short ? __("Missing – confirmed by R02") : this.lineState(checked)
 						)}</span>
 					</span>
-					<input type="checkbox" class="tc-check" data-line="${index}"${
-					checked ? " checked" : ""
-				}${short ? " disabled" : ""} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
+					<input type="checkbox" class="tc-check" data-line="${index}"${checked ? " checked" : ""}${
+					short ? " disabled" : ""
+				} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
 				</label>`;
 			})
 			.join("");

@@ -119,7 +119,7 @@ def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo,
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	short.locator("[data-action='t3-dec']").click()
 	# thiếu 1: chữ + ký hiệu (không chỉ màu), Đóng gói khóa, nút ghi nhận khóa, R04 không tự xác nhận được
-	expect(short.locator(".tc-ins-state").first).to_contain_text("Thiếu (−1)", timeout=15000)
+	expect(short.locator(".tc-ins-state").first).to_contain_text("Thiếu (-1)", timeout=15000)
 	expect(page.locator(".tc-t3 .tc-alert-error")).to_contain_text("Dụng cụ thiếu")
 	expect(page.locator(".tc-t3-lock")).to_contain_text("Đóng gói: khóa")
 	expect(page.locator("[data-action='t3-submit']")).to_be_disabled()
@@ -146,7 +146,9 @@ def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo,
 	page.locator("#tc-t3-confirm-reason").fill("Ca mổ gấp, bổ sung dụng cụ sau")
 	page.locator("#tc-t3-pin").fill(t3_r02["pin"])
 	page.locator("[data-action='t3-confirm-save']").click()
-	expect(page.locator(".tc-t3 [data-region='notice'] .tc-alert-ok")).to_contain_text("R02 đã xác nhận thiếu", timeout=15000)
+	expect(page.locator(".tc-t3 [data-region='notice'] .tc-alert-ok")).to_contain_text(
+		"R02 đã xác nhận thiếu", timeout=15000
+	)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	submit = page.locator("[data-action='t3-submit']")
 	expect(submit).to_be_enabled()

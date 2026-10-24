@@ -320,7 +320,9 @@ def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
 
 def full_count_lines(set_unit):
 	"""Dòng kiểm đếm đủ theo BOM đã ghim cho chu trình hiện hành của bộ (mỗi dòng đã đếm, đủ số lượng); chưa ghim → []."""
-	unit = frappe.db.get_value("Set Unit", _ref_name(set_unit), ["set_type", "cycle_bom_version"], as_dict=True)
+	unit = frappe.db.get_value(
+		"Set Unit", _ref_name(set_unit), ["set_type", "cycle_bom_version"], as_dict=True
+	)
 	if not int(unit.cycle_bom_version or 0):
 		return []
 	rows = frappe.get_all(
