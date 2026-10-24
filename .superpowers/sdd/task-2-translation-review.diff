@@ -1,0 +1,37 @@
+# Review package: 9d3683071d1ea10f8ec1699660de88ed020ed3fa..9c92e19b41b11eab8bc748d84bdaa221864e6655
+
+## Commits
+9c92e19 fix(home): add Vietnamese dashboard translations
+
+## Files changed
+ tracecore/translations/vi.csv | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+## Diff
+diff --git a/tracecore/translations/vi.csv b/tracecore/translations/vi.csv
+index 786e092..ffe9bf5 100644
+--- a/tracecore/translations/vi.csv
++++ b/tracecore/translations/vi.csv
+@@ -2229,10 +2229,22 @@ Cycle ID,Cycle ID,TC Issue Note
+ Set ID,Set ID,TC Issue Note
+ Set name,Tên bộ,TC Issue Note
+ Use-by date,Hạn dùng,TC Issue Note
+ Note,Ghi chú,TC Issue Note
+ Total: {0} packs,Tổng: {0} gói,TC Issue Note
+ Received by,Người nhận ký,TC Issue Note
+ Signature on screen,Chữ ký trên màn hình,TC Issue Note
+ Employee card,Thẻ nhân viên,TC Issue Note
+ Page {0}/{1},Trang {0}/{1},TC Issue Note
+ Printed {0} by {1},In lúc {0} bởi {1},TC Issue Note
++Browse department par levels you can read.,Xem cơ số khoa trong phạm vi được phép.
++Browse equipment you can read.,Xem thiết bị trong phạm vi được phép.
++Browse instrument sets you can read.,Xem bộ dụng cụ trong phạm vi được phép.
++Browse packs you can read.,Xem gói trong phạm vi được phép.
++Continue work at an authorized station.,Tiếp tục công việc tại trạm được phép truy cập.
++"Find an instrument set, cycle, batch or equipment.","Tìm bộ dụng cụ, chu trình, lô hoặc thiết bị."
++Frappe Admin,Quản trị Frappe
++Instrument sets,Bộ dụng cụ
++Open Frappe administration.,Mở trang quản trị Frappe.
++Open station,Mở trạm
++Par levels,Cơ số
++Scan or search,Quét hoặc tìm kiếm

@@ -1,0 +1,31 @@
+<style>
+  :root{--blue:#245d8b;--line:#c8daea;--bg:#f3f6fa;--red:#c90000;--orange:#e46d00;--green:#386b22}
+  body{margin:0!important}.home{height:calc(100vh - 95px);min-height:720px;display:grid;grid-template-columns:270px 1fr;background:var(--bg);color:#172b3a;font-family:Arial,Segoe UI,sans-serif;border:1px solid var(--line)}
+  .side{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column}.identity{padding:24px 22px 20px;border-bottom:1px solid var(--line)}.identity h2{font-size:21px;margin:0 0 8px;color:#173f63}.identity p{margin:0;color:#52697b;line-height:1.5}.menu{padding:12px 0}.menu a{display:flex;justify-content:space-between;padding:14px 22px;color:#253746;text-decoration:none;border-left:5px solid transparent}.menu a.active{background:#e6f0f8;border-left-color:var(--blue);font-weight:700;color:#174a73}.badge{background:var(--red);color:#fff;border-radius:999px;padding:2px 7px;font-size:12px}.foot{margin-top:auto;border-top:1px solid var(--line);padding:18px 22px}.online{font-size:13px;margin-bottom:14px}.logout{padding:10px 18px;background:#fff;border:1px solid var(--blue);border-radius:5px;color:#174a73}
+  .main{padding:26px 34px;overflow:auto}.topline{height:7px;background:var(--blue);margin-bottom:8px}.crumb{color:#336b99;font-size:14px}.title{display:flex;justify-content:space-between;align-items:end;margin:12px 0 20px}.title h1{font-size:27px;margin:0;color:#173f63}.search{border:1px solid #a9bfd1;background:#fff;border-radius:6px;padding:12px 15px;width:310px;color:#62778a}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:16px}.panel h3{margin:0 0 14px;color:#2570aa;font-size:17px}.attention{display:flex;align-items:center;gap:14px;background:#fff1f1;border-left:6px solid var(--red);padding:14px 16px;margin:9px 0}.attention.orange{background:#fff7ef;border-left-color:var(--orange)}.attention .copy{flex:1}.attention b{display:block;margin-bottom:4px}.btn{border:0;border-radius:6px;background:var(--blue);color:#fff;padding:11px 16px}.btn.red{background:var(--red)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}.metric{background:#fff;border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:7px;padding:18px}.metric.warn{border-left-color:var(--orange)}.metric.danger{border-left-color:var(--red);background:#fff4f4}.metric strong{display:block;font-size:30px;color:#174a73;margin-bottom:5px}.metric span{color:#506476}
+  .lower{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:11px}.shortcut{border:1px solid #b9cfe1;border-radius:7px;padding:16px;background:#fff;min-height:68px;color:#263947}.shortcut b{display:block;color:#1e6397;font-size:16px;margin-bottom:5px}.recent{width:100%;border-collapse:collapse}.recent th{background:var(--blue);color:#fff;text-align:left;padding:10px}.recent td{padding:11px 10px;border-bottom:1px solid #d6e1ea}.mono{font-family:'Courier New',monospace}
+  @media(max-width:900px){.home{grid-template-columns:1fr}.side{display:none}.main{padding:18px}.title{align-items:start;gap:12px;flex-direction:column}.search{width:calc(100% - 32px)}.metrics{grid-template-columns:1fr 1fr}.lower{grid-template-columns:1fr}.shortcuts{grid-template-columns:1fr}}
+</style>
+<div class="home">
+  <aside class="side">
+    <div class="identity"><h2>BS. Lê Thị Hoa</h2><p>Trưởng khoa KSNK · R01<br>Ca sáng · đang trực tuyến</p></div>
+    <nav class="menu"><a class="active">Trang chủ</a><a>Công việc <span class="badge">2</span></a><a>Tra cứu & quét mã</a><a>Vận hành CSSD</a><a>Báo cáo</a><a>Danh mục</a><a>Quản trị</a><a>Frappe Admin ↗</a></nav>
+    <div class="foot"><div class="online">● Trực tuyến · 0 giao dịch chờ đồng bộ</div><button class="logout">Đăng xuất</button></div>
+  </aside>
+  <main class="main">
+    <div class="topline"></div><div class="crumb">TraceCore › Trang chủ</div>
+    <div class="title"><h1>Hôm nay của bạn — 24/10/2026</h1><div class="search">⌕ Quét hoặc nhập Set ID, Cycle ID, mã mẻ…</div></div>
+    <section class="panel"><h3>Việc cần xử lý</h3>
+      <div class="attention"><div class="copy"><b>Đề nghị ghi đè cơ số bộ <span class="mono">TE01-021</span></b>+5 chu trình, chờ Trưởng khoa duyệt</div><button class="btn">Xem và duyệt</button></div>
+      <div class="attention"><div class="copy"><b>Thu hồi <span class="mono">TH-2026-003</span> đang mở</b>2/4 gói chưa xác nhận · chỉ thị sinh học dương tính</div><button class="btn red">Theo dõi</button></div>
+      <div class="attention orange"><div class="copy"><b>Máy MH-02 đang khóa</b>Chưa có Bowie–Dick trong ngày; hạn kiểm định còn 25 ngày</div><button class="btn">Mở thiết bị</button></div>
+    </section>
+    <section class="metrics"><div class="metric"><strong>144</strong><span>Bộ đang tái xử lý</span></div><div class="metric"><strong>11</strong><span>Mẻ hôm nay · 1 chờ giải phóng</span></div><div class="metric danger"><strong>1</strong><span>Bộ đạt cơ số, chờ xử lý</span></div><div class="metric warn"><strong>26</strong><span>Gói hết hạn trong 7 ngày</span></div></section>
+    <div class="lower">
+      <section class="panel"><h3>Lối tắt của bạn</h3><div class="shortcuts"><div class="shortcut"><b>Mở Tổng quan vận hành</b>Sản lượng, hàng chờ và cảnh báo theo trạm</div><div class="shortcut"><b>Quét / tra cứu mã</b>Set ID, Cycle ID, mã mẻ hoặc thiết bị</div><div class="shortcut"><b>Duyệt ghi đè cơ số</b>1 yêu cầu đang chờ quyết định</div><div class="shortcut"><b>Thu hồi & sự cố</b>1 hồ sơ cần theo dõi</div><div class="shortcut"><b>Sổ tiệt khuẩn điện tử</b>Tra cứu mẻ và hồ sơ giải phóng</div><div class="shortcut"><b>Thiết bị & test ngày</b>1 máy đang bị khóa</div></div></section>
+      <section class="panel"><h3>Gần đây</h3><table class="recent"><tr><th>Hồ sơ</th><th>Trạng thái</th></tr><tr><td class="mono">TE01-021</td><td>Chờ duyệt</td></tr><tr><td class="mono">TH-2026-003</td><td>Đang thu hồi</td></tr><tr><td class="mono">ME-261024-07</td><td>Chờ giải phóng</td></tr><tr><td class="mono">DB01-007</td><td>Đang xử lý</td></tr></table></section>
+    </div>
+  </main>
+</div>
