@@ -420,6 +420,9 @@ def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
 		frappe.db.set_value("Instrument Set Type", code, "tray_image", _demo_image(f"{code}-TRAY"))
 	elif not frappe.db.exists("Set BOM Item", {"set_type": code}):
 		bom_versions.create_version(code, lines, bom_versions.today(), _("Demo data"), 0)
+	if not frappe.db.get_value("Instrument Set Type", code, "department"):
+		# loại bộ demo tạo trước FEAT-015 chưa có khoa; cấp Set ID bắt buộc khoa (A-13 G5)
+		frappe.db.set_value("Instrument Set Type", code, "department", _demo_department(), update_modified=False)
 	return code
 
 

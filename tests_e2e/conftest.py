@@ -1,10 +1,10 @@
 """E2E smoke cho kiosk /app/station (Playwright for Python, ADR-012).
 
 Chuẩn bị site trước bằng ``scripts/e2e_prepare.sh <site>``; biến môi trường:
-TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm không phải T4)
+TC_BASE_URL, TC_E2E_USER, TC_E2E_PASSWORD, TC_E2E_SET_ID, TC_E2E_STATION (smoke FEAT-001, trạm tra cứu chung TR-090 không gán bước)
 và TC_E2E_T4_* (test_station_t4.py; xem scripts/e2e_prepare.sh), TC_E2E_CODES_* (test_desk_codes.py),
 TC_E2E_INSTR_* (test_desk_instrument.py), TC_E2E_INV_* (test_desk_inventory.py),
-TC_E2E_SETTYPE_* (test_desk_set_type.py), TC_E2E_T6_* (test_station_t6.py).
+TC_E2E_SETTYPE_* (test_desk_set_type.py), TC_E2E_T6_* (test_station_t6.py), TC_E2E_T3_* (test_station_t3.py).
 
 TC_BASE_URL chọn site (mặc định http://127.0.0.1:8000); bench khác đang giữ cổng đó thì phục vụ site dev ở cổng khác
 (vd ``bench serve --port 8101``) và đặt TC_BASE_URL=http://127.0.0.1:8101.
@@ -67,7 +67,7 @@ def logged_in_page(page):
 
 @pytest.fixture
 def station_page(logged_in_page):
-	station = os.environ.get("TC_E2E_STATION", "TR-003")
+	station = os.environ.get("TC_E2E_STATION", "TR-090")
 	card = require_env("TC_E2E_CARD_ID")
 	logged_in_page.goto(f"/app/station?station={station}")
 	logged_in_page.locator("#tc-card-input").fill(card)
@@ -366,4 +366,33 @@ def t6_page(page):
 	page.locator("#tc-card-input").fill(card)
 	page.locator("#tc-card-input").press("Enter")
 	page.locator(".tc-result .tc-t6").wait_for(timeout=30000)  # tồn kho đã tải xong (overview)
+	return page
+
+
+# --- T3 (SCR-07 kiểm đếm lắp ráp, FEAT-020): user trạm TR-003, R02 có thẻ + PIN và dữ liệu `devdata.ensure_t3_demo` ---
+
+T3_KEYS = ("set_full", "set_short", "set_branch", "set_no_wash", "short_instrument")
+
+
+@pytest.fixture
+def t3_demo():
+	"""Mã demo T3 từ scripts/e2e_prepare.sh (TC_E2E_T3_SET_FULL, ...)."""
+	return {key: require_env(f"TC_E2E_T3_{key.upper()}") for key in T3_KEYS}
+
+
+@pytest.fixture
+def t3_r02():
+	"""Thẻ và PIN 6 số (ngẫu nhiên mỗi lần chuẩn bị) của R02 tại trạm T3."""
+	return {"card": require_env("TC_E2E_T3_R02_CARD_ID"), "pin": require_env("TC_E2E_T3_R02_PIN")}
+
+
+@pytest.fixture
+def t3_page(page):
+	card = require_env("TC_E2E_T3_CARD_ID")
+	desk_login(page, "TC_E2E_T3")
+	station = os.environ.get("TC_E2E_T3_STATION", "TR-003")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result[data-state='empty'] .tc-t3").wait_for(timeout=30000)
 	return page
