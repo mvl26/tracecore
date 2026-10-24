@@ -123,7 +123,8 @@ def _save_lifecycle(unit, event=None, _notify=None, **fields):
 	for fieldname, value in fields.items():
 		unit.set(fieldname, value)
 	unit.flags.tc_step_gate = True
-	unit.flags.tc_audit_reason = event
+	if event is not None:  # không đè lý do nơi gọi đã đặt sẵn (FEAT-032: lý do ghi đè cơ số)
+		unit.flags.tc_audit_reason = event
 	unit.save(ignore_permissions=True)
 	if unit.status != old_status:
 		notify = _notify or {}
