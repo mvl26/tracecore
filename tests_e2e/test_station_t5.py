@@ -261,8 +261,9 @@ def test_t5_pda_layout_is_single_column(t5_page, t5_demo):
 	page = t5_page
 	page.set_viewport_size({"width": 412, "height": 915})
 	expect(page.locator(".tc-station")).to_have_attribute("data-surface", "PDA", timeout=15000)
-	load_machine(page, t5_demo["machine"])
-	scan(page, t5_demo["packs"][0])
+	# ba gói `packs` đã nạp hết ở test happy path: dùng máy plasma với gói plasma chưa ai nạp
+	load_machine(page, t5_demo["machine_plasma"])
+	scan(page, t5_demo["pack_plasma"])
 	expect(page.locator(".tc-t5-pack")).to_have_count(1, timeout=15000)
 	measured = page.evaluate(
 		"""() => {

@@ -547,6 +547,8 @@ class T5Load {
 		if (mode === "load") this.data = null;
 		this.loadOverview(true);
 		this.show();
+		// nút đổi chế độ vừa bị render lại: trả focus về ô quét để mã quét ngay sau đó không bị mất
+		this.station.focus(true);
 	}
 
 	openData(load) {
