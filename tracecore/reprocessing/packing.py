@@ -339,6 +339,10 @@ def get_context(set_id, station):
 		"gates": step_gate.gates(unit.name),
 		"bom": ctx.get("bom", []),
 		"bom_version": cint(ctx.get("bom_version")),
+		"shortage": [
+			{"instrument": row.instrument, "instrument_name": row.instrument_name, "missing_qty": cint(row.missing_qty)}
+			for row in confirmed_shortage(unit).values()
+		],
 		"tray_image": ctx.get("tray_image"),
 		"maintenance": ctx.get("maintenance", []),
 		"par": ctx.get("par"),
@@ -388,7 +392,8 @@ def _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cl
 	bom = ctx.get("bom") or []
 	if not bom:
 		raise _no_bom(set_type.name, cint(ctx.get("bom_version")))
-	missing = missing_lines(bom, confirmed)
+	short = confirmed_shortage(unit)  # dòng thiếu đã R02 xác nhận ở T3 (FR-M2-06.1): không phải tick
+	missing = missing_lines(bom, [*(confirmed or ()), *short])
 	if missing:
 		raise _bom_incomplete(missing)
 	packed_at = _system_time(client_ts)
@@ -424,7 +429,7 @@ def _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cl
 				set_type.gtin, packed_at.date(), expiry["expiry"], cycle_id
 			),
 			"status": "Packed",
-			"instruments_confirmed": [{"instrument": line["instrument"], "qty": line["qty"]} for line in bom],
+			"instruments_confirmed": _confirmed_rows(bom, short),
 			"maint_done": _maint_rows(ctx),
 		}
 	)
@@ -457,6 +462,34 @@ def _assembly(unit):
 		pluck="name",
 	)
 	return names[0] if names else None
+
+
+def confirmed_shortage(unit):
+	"""``{mã dụng cụ: dòng}`` của các dòng THIẾU trên phiếu lắp ráp T3 Đạt của chu trình hiện hành mà R02 đã xác nhận.
+
+	Mỗi dòng có ``instrument, instrument_name, actual_qty, missing_qty`` (đọc Assembly Line, FEAT-020). Không có phiếu
+	hoặc phiếu không có xác nhận thiếu → ``{}``.
+	"""
+	name = _assembly(unit)
+	if not name or not frappe.db.get_value("Assembly Record", name, "shortage_confirmed"):
+		return {}
+	rows = frappe.get_all(
+		"Assembly Line",
+		filters={"parent": name, "parenttype": "Assembly Record", "line_status": "Short"},
+		fields=["instrument", "instrument_name", "actual_qty", "missing_qty"],
+		order_by="idx asc",
+	)
+	return {row.instrument: row for row in rows}
+
+
+def _confirmed_rows(bom, short):
+	"""Dòng `Pack.instruments_confirmed`: dòng BOM đủ theo số lượng BOM, dòng thiếu theo số lượng thực có (bỏ nếu 0)."""
+	rows = []
+	for line in bom:
+		qty = cint(short[line["instrument"]].actual_qty) if line["instrument"] in short else line["qty"]
+		if qty > 0:
+			rows.append({"instrument": line["instrument"], "qty": qty})
+	return rows
 
 
 def _maint_rows(ctx):

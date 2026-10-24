@@ -2396,3 +2396,5 @@ Rejected,Đã từ chối,Par Override
 Expired,Hết hiệu lực,Par Override
 Cancelled,Đã hủy,Par Override
 Cycles Used,Hết số chu trình thêm,Par Override
+MISSING: {0},THIẾU: {0},
+Missing – confirmed by R02,Thiếu – R02 đã xác nhận,
