@@ -65,6 +65,12 @@ class TestErrors(FrappeTestCase):
 				"RESULT_INVALID",
 				"EXTRA_CYCLES_INVALID",
 				"VALID_UNTIL_INVALID",
+				# FEAT-019 A-31: tiếp nhận T1
+				"DELIVERER_NO_DEPARTMENT",
+				"DELIVERER_NAME_REQUIRED",
+				"RECEIPT_EMPTY",
+				"CONFIRM_INCOMPLETE",
+				"PHOTO_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -78,6 +84,8 @@ class TestErrors(FrappeTestCase):
 				"WASH_BATCH_NOT_FOUND",
 				"LOCATION_NOT_FOUND",
 				"OVERRIDE_NOT_FOUND",
+				"RECEIPT_NOT_FOUND",
+				"DELIVERER_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
@@ -122,6 +130,9 @@ class TestErrors(FrappeTestCase):
 				"PAR_NOT_EXCEEDED",
 				"OVERRIDE_PENDING",
 				"OVERRIDE_NOT_PENDING",
+				"RECEIPT_CLOSED",
+				"ITEM_NOT_CONFIRMED",
+				"FORCE_NOT_ALLOWED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

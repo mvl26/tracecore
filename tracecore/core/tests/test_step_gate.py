@@ -195,6 +195,21 @@ class TestStepGate(FrappeTestCase):
 		su = make_set_unit().name
 		self.assertIsNone(step_gate.check(su, "T1"))
 
+	@bru("BRU-FLOW-002")
+	def test_check_t1_accepts_new_at_department_and_awaiting_receipt_only(self):
+		# FEAT-019, FR-M2-02: T1 chỉ nhận bộ Mới tạo, Tại khoa, Chờ tiếp nhận
+		self.assertEqual(
+			step_gate.STATION_STATUSES["T1"], ("New", "At Department", "Awaiting Receipt")
+		)
+		for status in ("New", "At Department", "Awaiting Receipt"):
+			su = make_set_unit().name
+			frappe.db.set_value("Set Unit", su, "status", status)
+			self.assertIsNone(step_gate.check(su, "T1"), status)
+		for status in ("Processing", "Reprocess", "Sterile", "Disposed"):
+			su = make_set_unit().name
+			frappe.db.set_value("Set Unit", su, "status", status)
+			self.assertEqual(step_gate.check(su, "T1").code, "STATUS_INVALID_FOR_STATION", status)
+
 	@bru("BRU-FLOW-004")
 	def test_check_t2_requires_t1_pass(self):
 		su = make_set_unit().name
@@ -578,7 +593,9 @@ class TestStepGateLocking(FrappeTestCase):
 		self.assertEqual(step_gate.check(su, "T4", for_update=True).code, "GATE_PREV_NOT_PASSED")
 		step_gate.record(su, "T3", "Pass")
 		self.assertIsNone(step_gate.check(su, "T4", for_update=True))
-		self.assertIsNone(step_gate.check(su, "T1", for_update=True))
+		# FEAT-019: T1 chỉ nhận bộ chưa vào chu trình / đã trở về; bộ đang xử lý bị chặn, bộ mới thì qua
+		self.assertEqual(step_gate.check(su, "T1", for_update=True).code, "STATUS_INVALID_FOR_STATION")
+		self.assertIsNone(step_gate.check(make_set_unit().name, "T1", for_update=True))
 		with self.assertRaises(frappe.DoesNotExistError):
 			step_gate.check("NO-SUCH-SET", "T4", for_update=True)
 

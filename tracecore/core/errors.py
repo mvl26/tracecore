@@ -69,6 +69,12 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",
+			# FEAT-019 A-31: tiếp nhận T1
+			"DELIVERER_NO_DEPARTMENT",
+			"DELIVERER_NAME_REQUIRED",
+			"RECEIPT_EMPTY",
+			"CONFIRM_INCOMPLETE",
+			"PHOTO_INVALID",
 		),
 		422,
 	),
@@ -85,6 +91,8 @@ HTTP_STATUS: dict[str, int] = {
 			"WASH_BATCH_NOT_FOUND",
 			"LOCATION_NOT_FOUND",
 			"OVERRIDE_NOT_FOUND",
+			"RECEIPT_NOT_FOUND",
+			"DELIVERER_NOT_FOUND",
 		),
 		404,
 	),
@@ -136,6 +144,10 @@ HTTP_STATUS: dict[str, int] = {
 			"PAR_NOT_EXCEEDED",
 			"OVERRIDE_PENDING",
 			"OVERRIDE_NOT_PENDING",
+			# FEAT-019 A-31: phiếu đã đóng, bộ chưa xác nhận lúc ghi sổ, cưỡng bức không áp dụng cho trạng thái này
+			"RECEIPT_CLOSED",
+			"ITEM_NOT_CONFIRMED",
+			"FORCE_NOT_ALLOWED",
 		),
 		409,
 	),
