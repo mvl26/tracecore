@@ -45,9 +45,9 @@ class TestReceivingScan(ReceivingCase):
 
 	def test_receipt_view_counts_received_and_flagged_sets(self):
 		first = self.scan(self.receipt, self.new_set())
-		self.assertEqual((first["receipt"]["set_count"], first["receipt"]["flagged_count"]), (1, 0))
+		self.assertEqual((first["summary"]["set_count"], first["summary"]["flagged_count"]), (1, 0))
 		self.scan(self.receipt, self.new_set())
-		view = self.scan(self.receipt, self.new_set())["receipt"]
+		view = self.scan(self.receipt, self.new_set())["summary"]
 		self.assertEqual(view["set_count"], 3)
 		resumed = self.open()  # mở lại phiếu: bộ chờ xác nhận đầu tiên hiện đủ dòng BOM
 		self.assertEqual(resumed["current"]["set_id"], resumed["items"][0]["set_id"])

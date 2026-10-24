@@ -388,7 +388,7 @@ def _approve_force(status, force_reason, session, proof):
 def scan_set(
 	receipt, raw, station, receiver, client_ts, force_reason=None, session=None, reviewer_proof=None
 ):
-	"""Quét một Set ID vào phiếu nháp `receipt`; trả ``{"duplicate", "item", "receipt"}``.
+	"""Quét một Set ID vào phiếu nháp `receipt`; trả ``{"duplicate", "item", "summary"}``.
 
 	Chỉ nhận mã bộ; trạng thái phải hợp T1 (`step_gate.check`, FR-M2-02). Bộ đã có trong phiếu → ``duplicate`` và không
 	thêm dòng (FR-M2-01.6). `force_reason`/`reviewer_proof` (PIN proof của phiên `session`, R02) chỉ có hiệu lực khi
@@ -410,7 +410,7 @@ def scan_set(
 		)
 	existing = next((item for item in doc.items if item.set_unit == unit.name), None)
 	if existing:
-		return {"duplicate": True, "item": item_detail(doc, existing), "receipt": view(doc, detail=False)}
+		return {"duplicate": True, "item": item_detail(doc, existing), "summary": view(doc, detail=False)}
 	frappe.db.get_value("Set Unit", unit.name, "name", for_update=True)
 	unit.status = frappe.db.get_value("Set Unit", unit.name, "status")
 	block = _status_block(unit.name, for_update=True)
@@ -456,7 +456,7 @@ def scan_set(
 			},
 		)
 	_save(doc)
-	return {"duplicate": False, "item": item_detail(doc, doc.items[-1]), "receipt": view(doc, detail=False)}
+	return {"duplicate": False, "item": item_detail(doc, doc.items[-1]), "summary": view(doc, detail=False)}
 
 
 # --- Xác nhận thành phần, ghi chú bất thường, ảnh (FR-M2-23.1 đến .6) -----------------------------------------
@@ -604,3 +604,124 @@ def attach_photo(receipt, set_id, station, receiver, file_name, content_base64):
 	item.confirmed = 0
 	_save(doc)
 	return item_detail(doc, item)
+
+
+# --- Ghi sổ (FR-M2-01.3, .4, FR-M2-23.3, .4, FR-M2-25) ---------------------------------------------------
+
+
+def _recheck(item):
+	"""Block nếu bộ của dòng phiếu không còn tiếp nhận được lúc ghi sổ (đã bị phiếu/trạm khác lấy), ngược lại None."""
+	status = frappe.db.get_value("Set Unit", item.set_unit, "status")
+	if cint(item.forced):
+		if status in step_gate.STATION_STATUSES[STEP] or status in FORCE_STATUSES:
+			return None
+		return Block(
+			"FORCE_NOT_ALLOWED",
+			_("Forced receipt is not allowed"),
+			_("A set that is {0} cannot be received by force.").format(_(status, context="Set Unit")),
+			_("Ask R01 for an override, or take the set out of circulation."),
+		)
+	return _status_block(item.set_unit, for_update=True)
+
+
+def _rejection(item, block):
+	return {"set_id": item.set_unit, "code": block.code, "reason": block.reason}
+
+
+def submit(receipt, station, receiver, client_ts):
+	"""Ghi sổ phiếu nháp: với từng bộ void Cycle ID chưa dùng, mở chu trình (ghim BOM theo giờ quét, giờ hệ thống) và
+	ghi cổng T1 Đạt; bộ → Chờ rửa (``Processing``). Trả ``{"receipt", "sets", "flagged", "rejected", "received_at"}``.
+
+	Mọi bộ phải đã Xác nhận bộ (ITEM_NOT_CONFIRMED). Bộ không còn tiếp nhận được lúc này (bị lấy giữa chừng) bị bỏ khỏi
+	phiếu và nằm trong ``rejected`` (``{set_id, code, reason}``); không còn bộ nào → RECEIPT_EMPTY, phiếu vẫn nháp. Mọi
+	lỗi hoàn tác về savepoint: không bộ nào đổi trạng thái, phiếu vẫn nháp. `client_ts` là UTC không múi giờ.
+	"""
+	doc = _draft(receipt, station, receiver)
+	if not doc.items:
+		raise _blocked(
+			"RECEIPT_EMPTY",
+			_("Receipt has no sets"),
+			_("Receipt {0} has no set to submit.").format(doc.name),
+			_("Scan the Set ID of each set before submitting the receipt."),
+		)
+	waiting = [item.set_unit for item in doc.items if not cint(item.confirmed)]
+	if waiting:
+		raise _blocked(
+			"ITEM_NOT_CONFIRMED",
+			_("Some sets are not confirmed"),
+			_("{0} set(s) are not confirmed yet.").format(len(waiting)),
+			_("Open each set, then press Confirm set."),
+			items=waiting,
+		)
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		return _submit(doc, station, client_ts)
+	except Exception:
+		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
+		with contextlib.suppress(Exception):
+			frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+
+
+def _submit(doc, station, client_ts):
+	items = sorted(doc.items, key=lambda item: item.set_unit)
+	for item in items:  # khóa theo thứ tự tên: hai phiếu cùng lấy một bộ thì chỉ một nơi giữ được
+		frappe.db.get_value("Set Unit", item.set_unit, "name", for_update=True)
+	accepted, rejected = [], []
+	for item in items:
+		block = _recheck(item)
+		(rejected if block else accepted).append(_rejection(item, block) if block else item)
+	if not accepted:
+		raise _blocked(
+			"RECEIPT_EMPTY",
+			_("No set can be received"),
+			_("None of the sets on receipt {0} can be received any more.").format(doc.name),
+			_("Check the status of the sets, then scan the sets again."),
+			items=rejected,
+		)
+	dropped = {row["set_id"] for row in rejected}
+	if dropped:
+		doc.set("items", [item for item in doc.items if item.set_unit not in dropped])
+		doc.set("confirm_lines", [line for line in doc.confirm_lines if line.set_unit not in dropped])
+	for item in accepted:
+		_receive(doc, item, station, client_ts)
+	doc.received_at = _system_time(client_ts)
+	doc.set_count = len(doc.items)
+	doc.flagged_count = sum(1 for item in doc.items if cint(item.needs_review))
+	doc.flags.tc_receiving = True
+	doc.submit()
+	return {
+		"receipt": doc.name,
+		"sets": [item.set_unit for item in accepted],
+		"flagged": [item.set_unit for item in accepted if cint(item.needs_review)],
+		"rejected": rejected,
+		"received_at": doc.received_at,
+	}
+
+
+def _receive(doc, item, station, client_ts):
+	"""Một bộ: hủy Cycle ID chưa dùng → mở chu trình ghim BOM → cổng T1 Đạt (chỉ `core.step_gate` đổi Set Unit)."""
+	from frappe.utils import get_datetime
+
+	from tracecore.reprocessing import packing
+
+	active = frappe.db.get_value("Set Unit", item.set_unit, "active_cycle_id")
+	item.voided_pack = packing.void_returned_unused(
+		active, _("Returned unused at receipt {0}.").format(doc.name)
+	)
+	# `on` = giờ quét của bộ theo giờ hệ thống (Asia/Ho_Chi_Minh, không múi giờ): đã đổi từ client_ts UTC lúc quét,
+	# nên tiếp nhận 00:00-06:59 giờ VN ghim phiên bản BOM của đúng ngày VN (hợp đồng `step_gate.start_cycle`)
+	item.cycle_no = step_gate.start_cycle(
+		item.set_unit, on=get_datetime(item.received_at), client_ts=client_ts
+	)
+	step_gate.record(item.set_unit, STEP, "Pass", "Dirty Receipt", doc.name, station, client_ts)
+	if cint(item.forced):
+		extension.run(
+			AFTER_FORCE_HOOK,
+			{
+				"receipt": doc.name,
+				"set_unit": item.set_unit,
+				"reason": item.force_reason,
+				"by": item.forced_by,
+			},
+		)
