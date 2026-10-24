@@ -36,6 +36,7 @@ class T7Issue {
 		this.pending = null; // yêu cầu chưa có câu trả lời dứt khoát: Thử lại gửi lại y nguyên key + client_ts
 		this.offline = false;
 		this.busy = null;
+		this.queuedScan = null; // mã quét đến khi đang chờ máy chủ: giữ lại, quét sau khi xong
 		this.departments = null;
 		this.context = null; // tồn khoa, cơ số, tồn kho vô khuẩn theo loại bộ của khoa đang chọn
 		this.dept = null;
@@ -69,6 +70,11 @@ class T7Issue {
 		if (!raw) return this.station.focus();
 		if (this.station.isOffline()) return this.station.setOffline(true);
 		if (this.done) return this.station.focus();
+		if (this.busy) {
+			// tải tồn khoa chạy ngầm sau mỗi lần quét: không bỏ mất mã quét kế tiếp
+			this.queuedScan = raw;
+			return;
+		}
 		if (!this.issue) {
 			this.notice = {
 				variant: "error",
@@ -163,6 +169,14 @@ class T7Issue {
 		else if (response && response.ok === false) this.reject(response.error, pending);
 		else onOk(response);
 		this.station.focus();
+		this.runQueuedScan();
+	}
+
+	runQueuedScan() {
+		if (this.busy || !this.queuedScan) return;
+		const raw = this.queuedScan;
+		this.queuedScan = null;
+		this.scan(raw);
 	}
 
 	markOnline() {

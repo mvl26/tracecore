@@ -18,7 +18,7 @@ def scan(page, raw):
 
 
 def scan_settled(page, raw):
-	"""Quét rồi chờ RPC trả lời: kiosk bỏ qua mã quét khi đang chờ máy chủ (``busy``)."""
+	"""Quét rồi chờ RPC trả lời; mã quét đến khi kiosk đang chờ máy chủ (``busy``) được giữ và quét sau."""
 	scan(page, raw)
 	expect(page.locator(".tc-t7 .tc-loading")).to_have_count(0, timeout=15000)
 
