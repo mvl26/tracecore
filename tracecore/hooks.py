@@ -91,6 +91,12 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # application home page (will override Website Settings)
 # home_page = "login"
 
+# Independent Home and client-side deep routes; API and asset namespaces stay with Frappe.
+website_route_rules = [
+	{"from_route": "/tracecore", "to_route": "tracecore"},
+	{"from_route": "/tracecore/<path:app_path>", "to_route": "tracecore"},
+]
+
 # website user home page (by Role)
 # role_home_page = {
 # 	"Role": "home_page"
