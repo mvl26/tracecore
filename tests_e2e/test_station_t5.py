@@ -269,14 +269,21 @@ def test_t5_pda_layout_is_single_column(t5_page, t5_demo):
 		"""() => {
 			const visible = (el) => el.offsetParent !== null;
 			const buttons = Array.from(document.querySelectorAll('.tc-t5 button')).filter(visible)
-				.map((el) => ({action: el.dataset.action || '', width: el.getBoundingClientRect().width,
-					height: el.getBoundingClientRect().height}));
+				.map((el) => {
+					const parent = getComputedStyle(el.parentElement);
+					const room = el.parentElement.clientWidth
+						- parseFloat(parent.paddingLeft) - parseFloat(parent.paddingRight);
+					return {action: el.dataset.action || '', width: el.getBoundingClientRect().width,
+						height: el.getBoundingClientRect().height, room};
+				});
 			return {buttons, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth};
 		}"""
 	)
 	assert measured["overflow"] <= 0, measured
 	for button in measured["buttons"]:
 		assert button["height"] >= 56, button
-		assert button["width"] >= 300, button
+		# full-width = lấp đầy vùng chứa (nút trong khối có padding hẹp hơn màn), không thu về bề ngang chữ
+		assert button["width"] >= button["room"] - 1, button
+		assert button["width"] >= 250, button
 	page.locator("[data-action='t5-cancel']").click()
 	page.set_viewport_size({"width": 1366, "height": 768})
