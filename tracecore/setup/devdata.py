@@ -1476,7 +1476,9 @@ def ensure_t1_demo():
 	while len(awaiting) < T1_READY_SETS:
 		awaiting.append(_t1_awaiting_set(set_type))
 	new = _t1_sets(set_type, "New")
-	new = [name for name in new if not frappe.db.get_value("Set Unit", name, "current_cycle_no")][:T1_NEW_SETS]
+	new = [name for name in new if not frappe.db.get_value("Set Unit", name, "current_cycle_no")][
+		:T1_NEW_SETS
+	]
 	while len(new) < T1_NEW_SETS:
 		new.append(_issue_one(set_type))
 	sterile = _t1_sets(set_type, "Sterile")

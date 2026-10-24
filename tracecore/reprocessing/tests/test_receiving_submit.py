@@ -57,11 +57,18 @@ class TestReceivingSubmit(SubmitCase):
 			self.assertEqual((state.status, state.current_cycle_no), ("Processing", 1))
 			self.assertEqual(
 				self.gate(unit),
-				{"result": "Pass", "ref_doctype": "Dirty Receipt", "ref_name": self.receipt, "station": STATION},
+				{
+					"result": "Pass",
+					"ref_doctype": "Dirty Receipt",
+					"ref_name": self.receipt,
+					"station": STATION,
+				},
 			)
 			self.assertIsNone(step_gate.check(unit, "T2"))  # sẵn sàng vào lô rửa
 		doc = frappe.get_doc("Dirty Receipt", self.receipt)
-		self.assertEqual((doc.docstatus, doc.set_count, doc.receiver, doc.station), (1, 2, self.receiver, STATION))
+		self.assertEqual(
+			(doc.docstatus, doc.set_count, doc.receiver, doc.station), (1, 2, self.receiver, STATION)
+		)
 		self.assertTrue(doc.received_at)
 		self.assertEqual({item.cycle_no for item in doc.items}, {1})
 
@@ -138,7 +145,9 @@ class TestReceivingSubmit(SubmitCase):
 			with self.assertRaises(RuntimeError):
 				self.submit()
 		for unit in (first, second):
-			self.assertEqual(frappe.db.get_value("Set Unit", unit, ["status", "current_cycle_no"]), ("At Department", 0))
+			self.assertEqual(
+				frappe.db.get_value("Set Unit", unit, ["status", "current_cycle_no"]), ("At Department", 0)
+			)
 		self.assertEqual(frappe.db.get_value("Dirty Receipt", self.receipt, "docstatus"), 0)
 
 
@@ -222,7 +231,11 @@ class TestForcedSubmit(SubmitCase):
 		pack = make_released_pack(set_type=self.set_type)
 		unit = pack.set_unit
 		self.scan(
-			self.receipt, unit, force_reason="Returned by mistake", session=self.session, reviewer_proof=self.proof
+			self.receipt,
+			unit,
+			force_reason="Returned by mistake",
+			session=self.session,
+			reviewer_proof=self.proof,
 		)
 		receiving.confirm_line(self.receipt, unit, STATION, self.receiver, confirm_all=True, finalize=True)
 		real = receiving.extension.run
@@ -234,8 +247,12 @@ class TestForcedSubmit(SubmitCase):
 
 		with patch("tracecore.reprocessing.receiving.extension.run", side_effect=spy):
 			self.submit()
-		self.assertEqual(frappe.db.get_value("Set Unit", unit, ["status", "current_cycle_no"]), ("Processing", 2))
-		self.assertEqual(frappe.db.get_value("Pack", pack.name, ["status", "void_reason"]), ("Void", "Returned Unused"))
+		self.assertEqual(
+			frappe.db.get_value("Set Unit", unit, ["status", "current_cycle_no"]), ("Processing", 2)
+		)
+		self.assertEqual(
+			frappe.db.get_value("Pack", pack.name, ["status", "void_reason"]), ("Void", "Returned Unused")
+		)
 		forced = [args[0] for hook, args in calls if hook == receiving.AFTER_FORCE_HOOK]
 		self.assertEqual(len(forced), 1)
 		self.assertEqual(

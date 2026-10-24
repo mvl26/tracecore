@@ -124,7 +124,9 @@ class TestReceiveFlowApi(ReceiveApiCase):
 		receipt = self.opened()
 		unit = self.new_set()
 		call(receive_api.scan_set, receipt=receipt, raw=unit)
-		result = call(receive_api.attach_photo, receipt=receipt, set_id=unit, file_name="a.png", content=png_b64())
+		result = call(
+			receive_api.attach_photo, receipt=receipt, set_id=unit, file_name="a.png", content=png_b64()
+		)
 		self.assertTrue(result["item"]["photo"].startswith("/private/files/"))
 		bad = call(receive_api.attach_photo, receipt=receipt, set_id=unit, file_name="a.png", content="AAAA")
 		self.assert_rejection(bad, "PHOTO_INVALID", 422)
@@ -144,7 +146,13 @@ class TestReceiveAsStationUser(ReceiveApiCase):
 		for index, unit in enumerate(units):
 			call(receive_api.scan_set, receipt=receipt, raw=unit)
 			if index == 0:  # ảnh gắn trước khi Xác nhận bộ (gắn sau thì phải xác nhận lại)
-				call(receive_api.attach_photo, receipt=receipt, set_id=unit, file_name="a.png", content=png_b64())
+				call(
+					receive_api.attach_photo,
+					receipt=receipt,
+					set_id=unit,
+					file_name="a.png",
+					content=png_b64(),
+				)
 			call(receive_api.confirm_line, receipt=receipt, set_id=unit, confirm_all=1, finalize=1)
 		done = call(receive_api.submit, receipt=receipt)
 		self.assertTrue(done["ok"], done)
@@ -214,7 +222,9 @@ class TestReceiveRejections(ReceiveApiCase):
 		counts = tuple(frappe.db.count(d) for d in ("Audit Log", "Idempotency Key", "Dirty Receipt"))
 		with self.assertRaises(frappe.PermissionError):
 			call(receive_api.open, raw=self.card)
-		self.assertEqual(tuple(frappe.db.count(d) for d in ("Audit Log", "Idempotency Key", "Dirty Receipt")), counts)
+		self.assertEqual(
+			tuple(frappe.db.count(d) for d in ("Audit Log", "Idempotency Key", "Dirty Receipt")), counts
+		)
 
 
 class TestReceiveIdempotency(ReceiveApiCase):
@@ -225,7 +235,9 @@ class TestReceiveIdempotency(ReceiveApiCase):
 		again = call(receive_api.open, key=key, raw=self.card, client_ts=ts)
 		self.assertEqual(first["receipt"], again["receipt"])
 		self.assertEqual(frappe.db.count("Dirty Receipt", {"name": first["receipt"]}), 1)
-		self.assertEqual(frappe.db.count("Dirty Receipt", {"abandoned": 0, "docstatus": 0, "station": STATION}), 1)
+		self.assertEqual(
+			frappe.db.count("Dirty Receipt", {"abandoned": 0, "docstatus": 0, "station": STATION}), 1
+		)
 
 	@bru("BRU-FLOW-004")
 	def test_submit_replay_returns_the_stored_answer_and_opens_one_cycle(self):
@@ -256,4 +268,6 @@ class TestReceiveIdempotency(ReceiveApiCase):
 		unit = self.new_set("Sterile")
 		call(receive_api.scan_set, receipt=receipt, raw=unit)
 		self.assertTrue(gs1.parse_scan(unit)["type"] == "set")
-		self.assertTrue(frappe.db.exists("Audit Log", {"action": "Reject", "ref_doctype": "Set Unit", "ref_name": unit}))
+		self.assertTrue(
+			frappe.db.exists("Audit Log", {"action": "Reject", "ref_doctype": "Set Unit", "ref_name": unit})
+		)

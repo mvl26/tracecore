@@ -139,23 +139,29 @@ def _deliverer_from_card(raw):
 		raise _blocked(
 			"DELIVERER_NOT_FOUND",
 			_("Employee card not recognised"),
-			_("Card {0} does not belong to an active employee, or it is disabled.").format(scanned["raw"] or "-"),
+			_("Card {0} does not belong to an active employee, or it is disabled.").format(
+				scanned["raw"] or "-"
+			),
 			_("Check the card, or choose the department and type the name if the person has no card."),
 		)
 	if not employee.department:
 		raise _blocked(
 			"DELIVERER_NO_DEPARTMENT",
 			_("Card has no department"),
-			_("Employee {0} has no department, so the returning department cannot be taken from the card.").format(
-				employee.employee_name or employee.name
-			),
+			_(
+				"Employee {0} has no department, so the returning department cannot be taken from the card."
+			).format(employee.employee_name or employee.name),
 			_("Choose the department and type the name, then ask R02 to complete the employee record."),
 		)
 	return employee
 
 
 def _manual_deliverer(department, name):
-	row = frappe.db.get_value("Department", department, ["is_group", "disabled"], as_dict=True) if department else None
+	row = (
+		frappe.db.get_value("Department", department, ["is_group", "disabled"], as_dict=True)
+		if department
+		else None
+	)
 	if not row or cint(row.is_group) or cint(row.disabled):
 		raise _blocked(
 			"DEPARTMENT_INVALID",
@@ -281,9 +287,7 @@ def view(doc, detail=True):
 def _context(set_type, set_unit, on):
 	"""BOM + ảnh áp dụng tại `on` (giờ hệ thống) do M1 trả qua hook; gộp mọi phần trả về."""
 	context = {}
-	for part in extension.run(
-		RECEIPT_CONTEXT_HOOK, {"set_unit": set_unit, "set_type": set_type, "on": on}
-	):
+	for part in extension.run(RECEIPT_CONTEXT_HOOK, {"set_unit": set_unit, "set_type": set_type, "on": on}):
 		context.update(part)
 	return context
 
@@ -689,7 +693,9 @@ def _submit(doc, station, client_ts):
 	doc.set_count = len(doc.items)
 	doc.flagged_count = sum(1 for item in doc.items if cint(item.needs_review))
 	doc.flags.tc_receiving = True
-	doc.flags.ignore_permissions = True  # quyền đã kiểm ở RPC (role + phiên trạm); user kiosk không cần quyền ghi sổ Desk
+	doc.flags.ignore_permissions = (
+		True  # quyền đã kiểm ở RPC (role + phiên trạm); user kiosk không cần quyền ghi sổ Desk
+	)
 	doc.submit()
 	return {
 		"receipt": doc.name,

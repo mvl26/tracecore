@@ -33,7 +33,9 @@ class TestReceivingOpen(ReceivingCase):
 	@bru("BRU-ID-006")
 	def test_unknown_code_is_invalid_code(self):
 		self.assertEqual(self.code_of(self.open, "NOT-A-CARD"), "SCAN_INVALID")
-		self.assertEqual(self.code_of(self.open, "NV-99999"), "DELIVERER_NOT_FOUND")  # đúng dạng thẻ, chưa cấp
+		self.assertEqual(
+			self.code_of(self.open, "NV-99999"), "DELIVERER_NOT_FOUND"
+		)  # đúng dạng thẻ, chưa cấp
 		# mã loại khác (Set ID, máy…) không thay cho thẻ người giao
 		self.assertEqual(self.code_of(self.open, "TB-0001"), "SCAN_INVALID")
 
@@ -56,19 +58,26 @@ class TestReceivingOpen(ReceivingCase):
 
 	def test_manual_deliverer_needs_name_and_a_real_department(self):
 		self.assertEqual(
-			self.code_of(self.open, department=self.department, deliverer_name="  "), "DELIVERER_NAME_REQUIRED"
+			self.code_of(self.open, department=self.department, deliverer_name="  "),
+			"DELIVERER_NAME_REQUIRED",
 		)
-		self.assertEqual(self.code_of(self.open, department="No such department", deliverer_name="A"), "DEPARTMENT_INVALID")
+		self.assertEqual(
+			self.code_of(self.open, department="No such department", deliverer_name="A"), "DEPARTMENT_INVALID"
+		)
 		root = frappe.get_doc({"doctype": "Department", "department_name": "Group dept", "is_group": 1})
 		root.flags.ignore_mandatory = True
 		root.insert(ignore_permissions=True)
-		self.assertEqual(self.code_of(self.open, department=root.name, deliverer_name="A"), "DEPARTMENT_INVALID")
+		self.assertEqual(
+			self.code_of(self.open, department=root.name, deliverer_name="A"), "DEPARTMENT_INVALID"
+		)
 
 	def test_open_without_arguments_resumes_the_latest_draft_of_this_receiver_and_station(self):
 		self.assertIsNone(self.open())
 		first = self.open(self.card)["receipt"]
 		self.assertEqual(self.open()["receipt"], first)
-		other = receiving.open_receipt(STATION, make_employee(first_name="Other").name, self.now(), raw=self.card)
+		other = receiving.open_receipt(
+			STATION, make_employee(first_name="Other").name, self.now(), raw=self.card
+		)
 		self.assertNotEqual(other["receipt"], first)
 		self.assertEqual(self.open()["receipt"], first)  # phiếu của người khác không lẫn vào
 
@@ -90,7 +99,9 @@ class TestReceivingOpen(ReceivingCase):
 		name = self.open(self.card)["receipt"]
 		stranger = make_employee(first_name="Stranger").name
 		self.assertEqual(self.code_of(receiving.discard, name, STATION, stranger), "RECEIPT_NOT_FOUND")
-		self.assertEqual(self.code_of(receiving.discard, "RC-0000-00000", STATION, self.receiver), "RECEIPT_NOT_FOUND")
+		self.assertEqual(
+			self.code_of(receiving.discard, "RC-0000-00000", STATION, self.receiver), "RECEIPT_NOT_FOUND"
+		)
 
 	def test_open_lists_departments_when_no_draft_exists(self):
 		names = {row["name"] for row in receiving.departments()}

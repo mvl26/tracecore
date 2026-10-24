@@ -19,9 +19,7 @@ class ReceivingCase(IsolatedTestCase):
 		super().setUp()
 		self.department = make_department("Test operating room")
 		self.card = "DLV-" + uuid.uuid4().hex[:10].upper()
-		self.deliverer = make_employee(
-			card=self.card, department=self.department, first_name="Deliverer"
-		)
+		self.deliverer = make_employee(card=self.card, department=self.department, first_name="Deliverer")
 		self.receiver = make_employee(first_name="Receiver").name
 		self.set_type = make_set_type("RCV1", bom=BOM).name
 

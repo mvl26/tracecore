@@ -615,7 +615,9 @@ def void_returned_unused(cycle_id, note=None):
 	pack = frappe.get_doc("Pack", name, for_update=True)
 	if pack.status in ("Used", "Void", "Recalled"):
 		return None
-	pack.update({"status": "Void", "void_reason": "Returned Unused", "void_note": (note or "").strip() or None})
+	pack.update(
+		{"status": "Void", "void_reason": "Returned Unused", "void_note": (note or "").strip() or None}
+	)
 	_save_packing(pack)
 	if code_registry.is_issued(pack.name):
 		code_registry.disable(pack.name, f"Returned Unused: {note}" if note else "Returned Unused")

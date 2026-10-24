@@ -44,7 +44,9 @@ class TestReceivingConfirm(ReceivingCase):
 		self.assertEqual((item["lines_confirmed"], item["lines_total"]), (len(BOM), len(BOM)))
 
 	def test_individual_lines_can_be_ticked_and_unticked(self):
-		self.confirm(lines=[{"instrument": "RV-KC-01", "confirmed": 1}, {"instrument": "RV-KC-03", "confirmed": 1}])
+		self.confirm(
+			lines=[{"instrument": "RV-KC-01", "confirmed": 1}, {"instrument": "RV-KC-03", "confirmed": 1}]
+		)
 		self.assertEqual(self.lines(), {"RV-KC-01": 1, "RV-KC-02": 0, "RV-KC-03": 1})
 		self.confirm(lines=[{"instrument": "RV-KC-01", "confirmed": 0}])
 		self.assertEqual(self.lines()["RV-KC-01"], 0)
@@ -56,7 +58,9 @@ class TestReceivingConfirm(ReceivingCase):
 
 	def test_set_that_is_not_on_the_receipt_is_refused(self):
 		self.assertEqual(
-			self.code_of(receiving.confirm_line, self.receipt, self.new_set(), STATION, self.receiver, confirm_all=True),
+			self.code_of(
+				receiving.confirm_line, self.receipt, self.new_set(), STATION, self.receiver, confirm_all=True
+			),
 			"SET_NOT_FOUND",
 		)
 

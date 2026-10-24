@@ -24,7 +24,9 @@ class TestReceiptContext(IsolatedTestCase):
 		return bom.receipt_context({"set_unit": self.unit, "set_type": self.set_type, "on": on})
 
 	def test_hook_is_registered_for_the_receiving_service(self):
-		self.assertIn("tracecore.instrument.bom.receipt_context", frappe.get_hooks("tracecore_receipt_context"))
+		self.assertIn(
+			"tracecore.instrument.bom.receipt_context", frappe.get_hooks("tracecore_receipt_context")
+		)
 		results = extension.run(
 			"tracecore_receipt_context",
 			{"set_unit": self.unit, "set_type": self.set_type, "on": datetime.now()},

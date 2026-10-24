@@ -198,9 +198,7 @@ class TestStepGate(FrappeTestCase):
 	@bru("BRU-FLOW-002")
 	def test_check_t1_accepts_new_at_department_and_awaiting_receipt_only(self):
 		# FEAT-019, FR-M2-02: T1 chỉ nhận bộ Mới tạo, Tại khoa, Chờ tiếp nhận
-		self.assertEqual(
-			step_gate.STATION_STATUSES["T1"], ("New", "At Department", "Awaiting Receipt")
-		)
+		self.assertEqual(step_gate.STATION_STATUSES["T1"], ("New", "At Department", "Awaiting Receipt"))
 		for status in ("New", "At Department", "Awaiting Receipt"):
 			su = make_set_unit().name
 			frappe.db.set_value("Set Unit", su, "status", status)

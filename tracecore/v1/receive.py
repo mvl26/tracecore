@@ -86,7 +86,7 @@ def _receipt_ref(receipt):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RECEIVE_ROLES)
 @idempotent
-def open(station, raw=None, department=None, deliverer_name=None, client_ts=None, token=None):  # noqa: A001
+def open(station, raw=None, department=None, deliverer_name=None, client_ts=None, token=None):
 	"""Mở phiếu nháp từ thẻ người giao `raw`, hoặc từ `department` + `deliverer_name` (người giao không có thẻ).
 
 	Không truyền gì: tiếp tục phiếu nháp gần nhất của người đăng nhập tại trạm. Trả ``{"ok": true, **phiếu}`` hoặc,
@@ -103,7 +103,9 @@ def open(station, raw=None, department=None, deliverer_name=None, client_ts=None
 			return {"ok": True, "receipt": None, "departments": receiving.departments()}
 		return {"ok": True, **opened}
 
-	return run_at_step(STEP, station, timestamp, call, None, None, gs1.parse_scan(raw)["raw"] if raw else None)
+	return run_at_step(
+		STEP, station, timestamp, call, None, None, gs1.parse_scan(raw)["raw"] if raw else None
+	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

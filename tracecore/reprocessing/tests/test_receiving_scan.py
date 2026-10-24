@@ -76,7 +76,9 @@ class TestReceivingScan(ReceivingCase):
 		self.assertIn("T1", caught.exception.block.reason)  # cổng đầu tiên chưa Đạt của chu trình
 
 	def test_end_of_life_set_is_refused(self):
-		self.assertEqual(self.code_of(self.scan, self.receipt, self.new_set("End of Life")), "SET_END_OF_LIFE")
+		self.assertEqual(
+			self.code_of(self.scan, self.receipt, self.new_set("End of Life")), "SET_END_OF_LIFE"
+		)
 
 	@bru("BRU-FLOW-002")
 	def test_duplicate_scan_adds_no_second_row(self):
@@ -134,9 +136,7 @@ class TestForcedReceipt(ReceivingCase):
 		return session["session"], proof
 
 	def force(self, unit, session=None, proof=None, reason="Returned early from the ward"):
-		return self.scan(
-			self.receipt, unit, force_reason=reason, session=session, reviewer_proof=proof
-		)
+		return self.scan(self.receipt, unit, force_reason=reason, session=session, reviewer_proof=proof)
 
 	@bru("BRU-FLOW-002")
 	def test_r02_with_pin_proof_and_reason_receives_a_refused_set(self):
@@ -162,12 +162,16 @@ class TestForcedReceipt(ReceivingCase):
 		self.assertEqual(self.code_of(self.force, unit, r03_session, r03_proof), "R02_CONFIRM_REQUIRED")
 		session, proof = self.proof_of(self.r02)
 		self.force(unit, session, proof)
-		self.assertEqual(self.code_of(self.force, self.new_set("Sterile"), session, proof), "R02_CONFIRM_REQUIRED")
+		self.assertEqual(
+			self.code_of(self.force, self.new_set("Sterile"), session, proof), "R02_CONFIRM_REQUIRED"
+		)
 
 	def test_disposed_and_end_of_life_cannot_be_forced(self):
 		session, proof = self.proof_of(self.r02)
 		for status in ("Disposed", "End of Life"):
-			self.assertEqual(self.code_of(self.force, self.new_set(status), session, proof), "FORCE_NOT_ALLOWED")
+			self.assertEqual(
+				self.code_of(self.force, self.new_set(status), session, proof), "FORCE_NOT_ALLOWED"
+			)
 
 	def test_forcing_a_set_that_needs_no_force_is_an_ordinary_receipt(self):
 		session, proof = self.proof_of(self.r02)
