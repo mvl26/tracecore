@@ -172,6 +172,60 @@ class TestAccount(IsolatedTestCase):
 			run_after_request_hooks(request, response)
 			self.assertEqual(response.get_json()["home_page"], "/tracecore")
 
+	def test_otp_login_redirects_across_fresh_request_boundary(self):
+		from frappe.twofactor import get_otpsecret_for_, set_default
+
+		update_password(self.r02, OLD_PASSWORD)
+		frappe.db.set_value("User", self.r02, "last_password_reset_date", today())
+		with self.login_request(form={"cmd": "login", "usr": self.r02, "pwd": OLD_PASSWORD}) as (
+			first_manager,
+			first_request,
+		):
+			set_default(self.r02 + "_otplogin", 1)
+			first_flags = frappe.local.flags
+			self.assertFalse(first_manager.login())
+			self.assertEqual(frappe.session.user, "Guest")
+			self.assertIsNone(first_flags.get("tracecore_login_user"))
+			tmp_id = frappe.response.tmp_id
+			self.assertTrue(tmp_id)
+			otp = pyotp.TOTP(get_otpsecret_for_(self.r02)).now()
+			response = build_response("json")
+			before = response.get_data()
+			run_after_request_hooks(first_request, response)
+			self.assertEqual(response.get_data(), before)
+			self.assertNotIn("home_page", response.get_json())
+
+		with self.login_request(path="/", form={"cmd": "login", "otp": otp, "tmp_id": tmp_id}) as (
+			second_manager,
+			second_request,
+		):
+			second_flags = frappe.local.flags
+			self.assertIsNot(second_manager, first_manager)
+			self.assertIsNot(second_request, first_request)
+			self.assertIsNot(second_flags, first_flags)
+			self.assertIsNone(second_flags.get("tracecore_login_user"))
+			self.assertEqual(set(second_request.form), {"cmd", "otp", "tmp_id"})
+			self.assertEqual(frappe.response, {})
+			second_manager.login()
+			self.assertEqual(frappe.session.user, self.r02)
+			self.assertEqual(second_flags.tracecore_login_user, self.r02)
+			response = build_response("json")
+			run_after_request_hooks(second_request, response)
+			self.assertEqual(response.get_json()["message"], "Logged In")
+			self.assertEqual(response.get_json()["home_page"], "/tracecore")
+			self.assertIsNone(second_flags.get("tracecore_login_user"))
+
+		with self.login_request(path="/other", form={"cmd": "other"}) as (_, next_request):
+			self.assertIsNot(frappe.local.flags, second_flags)
+			self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+			response = Response('{"message":"Logged In","home_page":"/app"}', mimetype="application/json")
+			before = response.get_data()
+			run_after_request_hooks(next_request, response)
+			self.assertEqual(response.get_data(), before)
+		self.assertIsNone(first_flags.get("tracecore_login_user"))
+		self.assertIsNone(second_flags.get("tracecore_login_user"))
+		self.assertIsNone(frappe.flags.get("tracecore_login_user"))
+
 	def test_expired_password_still_blocks_before_redirect(self):
 		frappe.db.set_value("User", self.user, "last_password_reset_date", add_days(today(), -90))
 		with self.login_request() as (manager, request):
