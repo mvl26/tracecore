@@ -25,7 +25,7 @@
 | T11 | [Xác nhận] | **Kho dự phòng.** Thay thế chỉ ghi mã dụng cụ thay (`replacement_instrument`, `replaced_qty`); không trừ kho/không tạo Stock Entry (không FR nào định nghĩa kho dự phòng; để FEAT-042). |
 | T12 | [Xác nhận] | **Nhãn THIẾU (FR-M2-06.1) và T4.** `pack_label.label_context` đặt `warning` = `THIẾU: <tên dụng cụ>` khi chứng từ T3 của gói có thiếu đã xác nhận (mẫu nhãn đã có ô `warning`). `packing.generate`/`get_context` không yêu cầu tick các dòng đã được R02 xác nhận thiếu; `Pack.instruments_confirmed` không ghi dòng đó. T4 JS hiển thị dòng đó "Thiếu – R02 đã xác nhận". |
 | T13 | [Xác nhận] | **Phiên và quyền.** RPC `assembly.open/line/submit`: `TC R04`, `TC R02`, System Manager; `confirm_shortage`: `TC R02`, System Manager. Tất cả chạy ở trạm bước T3 (`run_at_step`). Quyền DocType Assembly Record giữ ma trận hiện có (không đổi `custom_docperm.json`). |
-| T14 | [Xác nhận] | **Mã HTTP mới** (`core.errors.HTTP_STATUS`): 422 `LINES_NOT_COUNTED`, `QTY_INVALID`, `BRANCH_INVALID`; 404 `ASSEMBLY_NOT_FOUND`; 409 `SHORTAGE_UNCONFIRMED`, `NO_SHORTAGE`, `ASSEMBLY_CLOSED`. Tái dùng `SCAN_INVALID`, `SET_NOT_FOUND`, `STATION_WRONG_STEP`, `STATUS_INVALID_FOR_STATION`, `GATE_PREV_NOT_PASSED`, `STEP_ALREADY_PASSED`, `BOM_INCOMPLETE`, `REASON_REQUIRED`, `R02_CONFIRM_REQUIRED`, `FEATURE_DISABLED`, `INSTRUMENT_NOT_FOUND`. |
+| T14 | [Xác nhận] | **Mã HTTP mới** (`core.errors.HTTP_STATUS`): 422 `LINES_NOT_COUNTED`, `QTY_INVALID`, `BRANCH_INVALID`, `PHOTO_INVALID`; 404 `ASSEMBLY_NOT_FOUND`; 409 `SHORTAGE_UNCONFIRMED`, `NO_SHORTAGE`, `ASSEMBLY_CLOSED`. Tái dùng `SCAN_INVALID`, `SET_NOT_FOUND`, `STATION_WRONG_STEP`, `STATUS_INVALID_FOR_STATION`, `GATE_PREV_NOT_PASSED`, `STEP_ALREADY_PASSED`, `BOM_INCOMPLETE`, `REASON_REQUIRED`, `R02_CONFIRM_REQUIRED`, `FEATURE_DISABLED`, `INSTRUMENT_NOT_FOUND`. |
 
 **Ngoài phạm vi:** NC/Incident CAPA thật (FEAT-030); thanh lý thật và duyệt (FEAT-032); Dirty Receipt (FEAT-019); trừ kho dự phòng (FEAT-042); in phiếu kiểm đếm theo số liệu thực tế (phiếu PDF theo BOM của FEAT-015 giữ nguyên); offline (FEAT-009); PDA.
 
@@ -83,3 +83,11 @@
 | AC-13 | FR-M1-02.4: dụng cụ lạ cảnh báo + NC | |
 | AC-14 | ADR-003: idempotent + `client_ts` | |
 | AC-15 | FR-M9-14 / design.md: 4 trạng thái, STN | |
+
+## Ghi chú hiện thực (khác với dự kiến lúc lập kế hoạch)
+
+- **Mã lỗi thêm:** `PHOTO_INVALID` (422) khi ảnh đính không phải File đã tải lên; `INSTRUMENT_NOT_FOUND` (404, có sẵn) dùng cho dòng không thuộc BOM và mã GIAI chưa gán.
+- **`ready_to_submit` / `pack_locked`:** server trả `pack_locked` (Đóng gói khóa tới khi cổng T3 Đạt) kèm `pack_lock_reason` (`LINES_NOT_COUNTED`, `SHORTAGE_UNCONFIRMED`, `NOT_RECORDED`, `BRANCH`, `ASSEMBLY_FAILED`) và `ready_to_submit` để kiosk bật nút ghi nhận; kiosk không tự suy ra.
+- **Trạm smoke chung:** TR-003 nay có màn T3 riêng nên smoke FEAT-001 (tra cứu Set ID chung) chuyển sang trạm khu sạch không gán bước `TR-090` do `devdata.ensure_smoke_station` tạo trên site dev/test (không thêm vào khung khu-trạm mặc định). `e2e_prepare.sh` mặc định `TC_E2E_STATION=TR-090`; user smoke trở thành `station-tr-090@…`, user `station-t3@…` là user T3.
+- **Dữ liệu dev cũ:** `devdata._ensure_set_type` gán khoa demo cho loại bộ demo tạo trước FEAT-015 (cấp Set ID bắt buộc khoa), để `e2e_prepare.sh` chạy được trên site dev cũ.
+- **Quyền DocType:** không đổi ma trận `permission_matrix.csv` và `custom_docperm.json` (Assembly Line là bảng con, không có quyền riêng).
