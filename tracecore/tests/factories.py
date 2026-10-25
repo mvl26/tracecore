@@ -8,7 +8,7 @@ from frappe.model.naming import getseries
 from frappe.utils import add_days, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
-from tracecore.instrument import bom_versions
+from tracecore.instrument import bom_versions, set_units
 from tracecore.tests.utils import fixture_r10
 
 
@@ -32,11 +32,16 @@ def make_user(email, roles=()):
 		return user.name
 
 
-def make_set_unit(set_type=None, max_cycles=300, **kwargs):
+def make_set_unit(set_type=None, max_cycles=300, department=None, **kwargs):
+	"""Một Set Unit Mới tạo qua đường cấp Set ID (FEAT-016 G4: cờ cấp + ``step_gate.init_unit``); trả Document.
+
+	Dùng đường ghi của ``set_units.issue_batch`` nhưng KHÔNG kiểm điều kiện cấp (``set_units._create_units``), để dựng
+	bộ như dữ liệu có trước FEAT-016: loại bộ chưa có BOM/khoa, bộ không có khoa (`department` None). `kwargs`: trường
+	khác (vd ``is_loaner``); trường vòng đời truyền vào bị đặt lại về mặc định như khi cấp. Không có Audit lô.
+	"""
 	set_type = set_type or make_set_type().name
-	return frappe.get_doc(
-		{"doctype": "Set Unit", "set_type": set_type, "max_cycles": max_cycles, **kwargs}
-	).insert()
+	name = set_units._create_units(set_type, 1, department, max_cycles, fields=kwargs)[0]
+	return frappe.get_doc("Set Unit", name)
 
 
 def _ref_name(ref):
@@ -313,11 +318,51 @@ def make_maintenance(set_unit, instrument, cycles_since=0, deferred_count=0):
 	return doc.insert()
 
 
-def make_assembly_record(set_unit, result="Pass", submit=True, notes=None):
-	"""Tạo Assembly Record (stub T3) cho chu trình hiện hành của bộ; ghi sổ mặc định → ghi cổng T3."""
+def full_count_lines(set_unit):
+	"""Dòng kiểm đếm đủ theo BOM đã ghim cho chu trình hiện hành của bộ (mỗi dòng đã đếm, đủ số lượng); chưa ghim → []."""
+	unit = frappe.db.get_value(
+		"Set Unit", _ref_name(set_unit), ["set_type", "cycle_bom_version"], as_dict=True
+	)
+	if not int(unit.cycle_bom_version or 0):
+		return []
+	rows = frappe.get_all(
+		"Set BOM Item",
+		filters={"set_type": unit.set_type, "bom_version": int(unit.cycle_bom_version)},
+		fields=["instrument", "qty"],
+		order_by="position asc, name asc",
+	)
+	return [{"instrument": row.instrument, "counted": 1, "actual_qty": int(row.qty)} for row in rows]
+
+
+def make_assembly_record(
+	set_unit, result="Pass", submit=True, notes=None, lines="auto", shortage_confirmed=False, **fields
+):
+	"""Tạo Assembly Record cho chu trình hiện hành của bộ; ghi sổ mặc định → ghi cổng T3.
+
+	`lines`: ``"auto"`` → đếm đủ mọi dòng BOM đã ghim (`full_count_lines`); danh sách dòng → dùng nguyên; `fields` ghi
+	đè trường khác (``station``, ``branch``…). `shortage_confirmed`: R02 đã xác nhận thiếu (qua cờ dịch vụ, không PIN).
+	"""
 	doc = frappe.get_doc(
-		{"doctype": "Assembly Record", "set_unit": _ref_name(set_unit), "result": result, "notes": notes}
+		{
+			"doctype": "Assembly Record",
+			"set_unit": _ref_name(set_unit),
+			"result": result,
+			"notes": notes,
+			"lines": full_count_lines(set_unit) if lines == "auto" else lines,
+			**fields,
+		}
 	).insert()
+	if shortage_confirmed:
+		doc.flags.tc_assembly = True
+		doc.update(
+			{
+				"shortage_confirmed": 1,
+				"shortage_reason": "Test: R02 xác nhận thiếu",
+				"shortage_confirmed_by": "Administrator",
+				"shortage_confirmed_at": now_datetime(),
+			}
+		)
+		doc.save()
 	if submit:
 		doc.submit()
 	return doc
@@ -435,12 +480,16 @@ def make_chemical_batch(item_code="HC-ENZ-01", batch_id=None, expiry_days=60, qt
 	return frappe.get_doc("Batch", batch_id)
 
 
-def make_employee(card=None):
-	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User)."""
+def make_employee(card=None, department=None, first_name="Wash Test", **fields):
+	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User).
+
+	`department`: khoa (Department) của nhân viên, cần cho người giao ở T1 (FEAT-019); `fields` ghi đè trường khác.
+	"""
 	return frappe.get_doc(
 		{
 			"doctype": "Employee",
-			"first_name": "Wash Test",
+			"first_name": first_name,
+			"department": department,
 			"gender": "Male",
 			"date_of_birth": "1990-01-01",
 			"date_of_joining": today(),
@@ -448,6 +497,7 @@ def make_employee(card=None):
 			"status": "Active",
 			"tc_card_id": card or "WT-" + frappe.generate_hash(length=10),
 			"tc_card_enabled": 1,
+			**fields,
 		}
 	).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
 
@@ -825,7 +875,9 @@ def _free_type_code(prefix="T4"):
 	frappe.throw("No free set type code left")
 
 
-def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_printer=True, **set_kwargs):
+def make_t4_ready_set(
+	method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_printer=True, short=None, **set_kwargs
+):
 	"""Bộ sẵn sàng đóng gói tại T4 (TR-004): đã qua T1..T3 Đạt trong chu trình 1.
 
 	Loại bộ mới (mã `T4NNNN`, GTIN test, BOM phiên bản 1 = `bom`, loại gói mặc định `make_pack_type()`
@@ -834,6 +886,8 @@ def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_pri
 	tray_image`) đi vào `make_set_type`, còn lại (`max_cycles, is_loaner, department`…) vào `make_set_unit`.
 	`set_type_department`: khoa của loại bộ; None (mặc định) → loại bộ không có khoa như dữ liệu có trước FEAT-015
 	(patch không bịa khoa), để các kỳ vọng T4 của FEAT-018 (nhãn không có khoa khi bộ không có khoa) giữ nguyên.
+	`short`: ``{mã dụng cụ: số lượng thực tế}`` → phiếu lắp ráp T3 có các dòng đó thiếu và R02 đã xác nhận (FEAT-020);
+	`instruments` chỉ gồm các mã không thiếu (những mã T4 phải tick).
 	Trả `frappe._dict(set_id, set_type, gtin, pack_type, ci_batch, printer, instruments)`.
 	"""
 	type_kwargs = {key: set_kwargs.pop(key) for key in _SET_TYPE_KWARGS if key in set_kwargs}
@@ -853,7 +907,15 @@ def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_pri
 	if bom:  # bom rỗng: loại bộ chưa có BOM (dữ liệu cũ) để kiểm T4 chặn BOM rỗng
 		make_bom(set_type, bom)
 	set_unit = make_set_unit(set_type.name, **set_kwargs)
-	make_cycle(set_unit)
+	if short:
+		make_cycle(set_unit, passed=("T1", "T2"))
+		counted = [
+			{**row, "actual_qty": short.get(row["instrument"], row["actual_qty"])}
+			for row in full_count_lines(set_unit)
+		]
+		make_assembly_record(set_unit, lines=counted, shortage_confirmed=True)
+	else:
+		make_cycle(set_unit)
 	printer = None
 	if with_printer:
 		steam_label, plasma_label = make_label_items()
@@ -865,7 +927,7 @@ def make_t4_ready_set(method="Steam", bom=(("KC-01", 2), ("KC-02", 1)), with_pri
 		pack_type=pack_type,
 		ci_batch=make_ci_batch(method),
 		printer=printer,
-		instruments=[code for code, _qty in bom],
+		instruments=[code for code, _qty in bom if code not in (short or {})],
 	)
 
 

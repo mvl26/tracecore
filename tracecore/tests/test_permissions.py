@@ -64,6 +64,12 @@ class TestPermissionMatrix(FrappeTestCase):
 		self.assertEqual(audit.permissions["R09"], "")
 		self.assertEqual(audit.permissions["R10"], "R")
 
+	def test_set_unit_has_no_create_flag_for_any_role(self):
+		"""A-13 G4: Set Unit chỉ tạo qua Cấp Set ID; ma trận W cho ghi nhưng không cho tạo trên Desk."""
+		records = [r for r in build_custom_docperms({"Set Unit"}) if r["parent"] == "Set Unit"]
+		self.assertTrue(any(r.get("write") for r in records))
+		self.assertFalse(any(r.get("create") for r in records))
+
 	def test_custom_docperm_fixture_matches_generator(self):
 		fixture_path = MATRIX_PATH.with_name("custom_docperm.json")
 		fixture = json.loads(fixture_path.read_text(encoding="utf-8"))

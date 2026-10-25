@@ -22,6 +22,14 @@ Dùng khi lệnh in không đi qua kiosk/Station Agent (in nhãn đối tượng
 - **Quét định kỳ** (`dispatch_pending`, cron mỗi phút): chỉ job đã đánh dấu đi đường server
   (`enqueue_server_dispatch`) và không đổi trong 1 phút — job của kiosk/Station Agent không bao giờ bị server gửi.
 
+- **Gửi cả lô** (`dispatch_many`, FEAT-016 G9: thẻ kim loại / nhãn khay Set ID, một Print Job mỗi nhãn): một RQ job gửi
+  tuần tự, mỗi job commit ngay như `dispatch_job`. Lỗi mạng đầu tiên của một máy in → job đó tính một lần thử, các job
+  **sau** của cùng máy in không gửi trong lượt này (giữ `Queued`, không tính lần thử) để worker chỉ chờ tối đa một
+  timeout cho mỗi máy in; cron `dispatch_pending` nhặt lại sau `RETRY_AFTER`. Job của máy in khác vẫn gửi.
+- **Thẻ Set ID kiểm lại lúc gửi**: job `Set Tag`/`Set Tray Label` mang ZPL đã dựng sẵn; trước khi gửi, Set ID được kiểm
+  lại (tiền tố demo trên site không phải dev/test — DB dev chép sang site thật — hoặc mã đã `Disabled`) → `Failed`
+  kèm lý do, không gửi.
+
 **Ngữ nghĩa giao nhận: ít nhất một lần (at-least-once), không phải đúng một lần.** Raw TCP 9100 không có ack ở tầng
 ứng dụng: `sendall` thành công chỉ nghĩa là byte đã vào bộ đệm TCP. Nếu máy in nhận một phần (hoặc toàn bộ) ZPL rồi
 kết nối mới bị timeout/reset, server ghi lần thử lỗi và gửi lại ở lần sau → máy in có thể ra **hai nhãn giống hệt**
@@ -37,6 +45,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
+from tracecore.core import code_registry
 from tracecore.core import print as core_print
 
 # Timeout cho MỖI địa chỉ mà create_connection thử, không bao phân giải tên (getaddrinfo không bị giới hạn):
@@ -46,6 +55,7 @@ MAX_ATTEMPTS = 3
 RETRY_AFTER = timedelta(minutes=1)
 SERVER_ROUTE = "server"  # giá trị khóa `dispatch` trong `Print Job.data`
 DISPATCH_METHOD = "tracecore.core.print_server.dispatch_job"
+DISPATCH_MANY_METHOD = "tracecore.core.print_server.dispatch_many"
 PENDING_SCAN_FACTOR = (
 	5  # cỡ một trang đọc = limit * hệ số; đọc tiếp trang sau tới khi đủ `limit` job gửi được
 )
@@ -170,30 +180,57 @@ def _record_printed(job, output_ref):
 		)
 
 
-def dispatch_job(job):
-	"""Gửi ZPL của Print Job `Queued` tới máy in của job; trả `{"status", "attempts"}` sau lần gửi.
+def _set_label_refusal(doc):
+	"""Lý do (đã dịch) không được gửi job thẻ kim loại / nhãn khay Set ID, ngược lại None (job khác → None).
 
-	Job không `Queued`, không có payload, hoặc máy in không gửi được từ server (không có, không hoạt động, host rỗng,
-	port sai) → không gửi, trả trạng thái hiện tại. Host bị chặn (IP cục bộ khi site không bật cờ) hoặc có khoảng trắng
-	→ không gửi, ghi `Failed` qua `ack` kèm lý do đã dịch. Thành công → `Printed` với `output_ref = "host:port"`.
-	Chỉ chạy trong background job/scheduler: kết quả lần gửi được `frappe.db.commit()` ngay.
+	ZPL của job dựng lúc xếp hàng; kiểm lại Set ID lúc gửi: tiền tố chứa trong mã phải dùng được trên site này
+	(`code_registry.set_id_block`, G3), bộ chưa ``Disposed`` và mã không `Disabled` trong Code Registry (thanh lý sau
+	khi job đã xếp hàng: không ra thêm thẻ của bộ đã thanh lý, G14).
 	"""
+	data = _data(doc.data)
+	if data.get("label_object") not in core_print.SET_LABELS:
+		return None
+	set_id = doc.ref_name if doc.ref_doctype == "Set Unit" else None
+	row = frappe.db.get_value("Set Unit", set_id, ["set_type", "status"]) if set_id else None
+	if not row:
+		return _("Set ID {0} of this print job does not exist.").format(set_id or "-")
+	set_type, status = row
+	if status == "Disposed":
+		return _("Set {0} has been disposed; its tag and tray label can no longer be printed.").format(set_id)
+	type_code = frappe.db.get_value("Instrument Set Type", set_type, "type_code")
+	block = code_registry.set_id_block(set_id, type_code)
+	if block:
+		return _("Set ID {0}: {1}").format(set_id, block.reason)
+	if frappe.db.get_value("Code Registry", set_id, "status") == "Disabled":
+		return _("Set ID {0} is disabled and cannot be printed.").format(set_id)
+	return None
+
+
+def _dispatch(job):
+	"""`(kết quả, lỗi mạng?)` của một lần xử lý job (xem `dispatch_job`)."""
 	doc = frappe.get_doc("Print Job", job, for_update=True)
 	if doc.status != "Queued" or not doc.payload:
-		return _result(doc)
+		return _result(doc), False
+	refusal = _set_label_refusal(doc)
+	if refusal:
+		core_print.ack(doc.name, "Failed", "Printer", error=refusal)
+		frappe.db.commit()  # nosemgrep: worker path — kết quả lần xử lý phải bền như các nhánh khác
+		return _result(frappe.get_doc("Print Job", doc.name)), False
 	address = printer_address(doc.printer)
 	if address is None:
 		reason = _host_refused_reason(doc.printer)
 		if reason:  # máy in bị chặn (vd đổi host sau khi job Queued): báo Failed, không để job nằm im Queued
 			core_print.ack(doc.name, "Failed", "Printer", error=reason)
 			frappe.db.commit()  # nosemgrep: worker path — kết quả lần xử lý phải bền như các nhánh khác
-			return _result(frappe.get_doc("Print Job", doc.name))
-		return _result(doc)
+			return _result(frappe.get_doc("Print Job", doc.name)), False
+		return _result(doc), False
 	host, port = address
 	output_ref = f"{host}:{port}"
+	network_error = False
 	try:
 		_send(host, port, doc.payload)
 	except OSError as error:
+		network_error = True
 		reason = _("Printer {0} at {1} could not be reached: {2}").format(doc.printer, output_ref, error)
 		if cint(doc.attempts) + 1 >= MAX_ATTEMPTS:
 			core_print.ack(doc.name, "Failed", "Printer", output_ref=output_ref, error=reason)
@@ -203,7 +240,19 @@ def dispatch_job(job):
 	else:
 		_record_printed(doc.name, output_ref)
 	frappe.db.commit()  # nosemgrep: worker path — nhãn đã ra giấy thì kết quả phải bền trước mọi bước sau
-	return _result(frappe.get_doc("Print Job", doc.name))
+	return _result(frappe.get_doc("Print Job", doc.name)), network_error
+
+
+def dispatch_job(job):
+	"""Gửi ZPL của Print Job `Queued` tới máy in của job; trả `{"status", "attempts"}` sau lần gửi.
+
+	Job không `Queued`, không có payload, hoặc máy in không gửi được từ server (không có, không hoạt động, host rỗng,
+	port sai) → không gửi, trả trạng thái hiện tại. Host bị chặn (IP cục bộ khi site không bật cờ) hoặc có khoảng trắng
+	→ không gửi, ghi `Failed` qua `ack` kèm lý do đã dịch; job thẻ Set ID không còn in được (`_set_label_refusal`) cũng
+	vậy. Thành công → `Printed` với `output_ref = "host:port"`.
+	Chỉ chạy trong background job/scheduler: kết quả lần gửi được `frappe.db.commit()` ngay.
+	"""
+	return _dispatch(job)[0]
 
 
 def enqueue_server_dispatch(job):
@@ -220,6 +269,57 @@ def enqueue_server_dispatch(job):
 		deduplicate=True,
 		job=str(doc.name),
 	)
+
+
+def enqueue_server_dispatch_many(jobs):
+	"""Đánh dấu từng Print Job đi đường server (như `enqueue_server_dispatch`) và xếp **một** `dispatch_many` cho cả lô
+	vào hàng `short` sau khi transaction commit. Job nào worker không gửi tới vẫn được `dispatch_pending` nhặt lại."""
+	names = [str(job) for job in jobs or []]
+	if not names:
+		return
+	for name in names:
+		doc = frappe.get_doc("Print Job", name)
+		data = _data(doc.data)
+		data["dispatch"] = SERVER_ROUTE
+		doc.db_set("data", frappe.as_json(data))
+	frappe.enqueue(
+		DISPATCH_MANY_METHOD,
+		queue="short",
+		enqueue_after_commit=True,
+		job_id=f"tc-print-batch-{names[0]}-{len(names)}",
+		deduplicate=True,
+		jobs=names,
+	)
+
+
+def dispatch_many(jobs):
+	"""Gửi lần lượt các Print Job `jobs` (theo thứ tự); trả kết quả từng job như `dispatch_job`, cùng thứ tự.
+
+	Mỗi job commit ngay sau lần gửi. Lỗi mạng (`OSError`) đầu tiên của một máy in → job đó tính một lần thử như
+	`dispatch_job`; các job sau của **cùng máy in** không gửi trong lượt này (giữ nguyên `Queued`, không đổi
+	`attempts`), job của máy in khác vẫn gửi: lượt này chờ tối đa một timeout cho mỗi máy in. Lỗi bất ngờ khác của một
+	job → rollback phần chưa commit, tính một lần thử, Error Log, làm tiếp. Chỉ chạy trong background job.
+	"""
+	results = []
+	down = set()
+	for name in [str(job) for job in jobs or []]:
+		printer = frappe.db.get_value("Print Job", name, "printer")
+		if printer in down:
+			results.append(_result(frappe.get_doc("Print Job", name)))
+			continue
+		try:
+			result, network_error = _dispatch(name)
+		except Exception as error:
+			frappe.db.rollback()
+			_count_unexpected_failure(name, error)
+			frappe.log_error(title=_("Print job {0} could not be dispatched").format(name))
+			frappe.db.commit()  # nosemgrep: worker path — lần thử phải bền để không thử lại vô hạn
+			results.append(_result(frappe.get_doc("Print Job", name)))
+			continue
+		if network_error:
+			down.add(printer)
+		results.append(result)
+	return results
 
 
 def _pending_jobs(limit):

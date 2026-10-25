@@ -518,3 +518,60 @@ class TestBomCode(FrappeTestCase):
 		decoded = gs1.decode_datamatrix_png(gs1.encode_datamatrix_png(code))
 		self.assertEqual(decoded, "BOM-KHAM01-V12")
 		self.assertEqual(gs1.parse_scan(decoded)["type"], "bom")
+
+
+class TestSplitSetId(FrappeTestCase):
+	"""Cấu trúc Set ID (FEAT-016 G2): ``<tiền tố 4-12 số><mã loại bộ><6 số>``, GIAI không có check digit."""
+
+	@bru("BRU-ID-001")
+	def test_split_set_id_valid(self):
+		self.assertEqual(gs1.SET_SERIAL_DIGITS, 6)
+		self.assertEqual(gs1.split_set_id("9520000KHAM01000123", "KHAM01"), ("9520000", "000123"))
+		self.assertEqual(gs1.split_set_id("9520000KHAM01000123", "KHAM01", "9520000"), ("9520000", "000123"))
+		# mã loại bộ kết thúc bằng số: 6 số cuối luôn là serial
+		self.assertEqual(gs1.split_set_id("8930001K10999999", "K10"), ("8930001", "999999"))
+		self.assertEqual(gs1.split_set_id("8930001K1000001", "K1"), ("8930001", "000001"))
+		# tiền tố 4 và 12 chữ số
+		self.assertEqual(gs1.split_set_id("1234AB000001", "AB"), ("1234", "000001"))
+		self.assertEqual(gs1.split_set_id("123456789012AB000001", "AB"), ("123456789012", "000001"))
+		self.assertEqual(gs1.split_set_id(GIAI, "BPT01"), ("9520000", "000001"))
+
+	@bru("BRU-ID-001")
+	def test_split_set_id_rejects(self):
+		bad = [
+			("9520000KHAM01000123", "KHAM02", None),  # khác mã loại bộ
+			("9520000KHAM01000123", "KHAM01", "8930001"),  # khác tiền tố truyền vào
+			("9520000KHAM0100012", "KHAM01", None),  # serial 5 số
+			("9520000KHAM010001234", "KHAM01", None),  # serial 7 số (hết dải)
+			("9520000KHAM0100012A", "KHAM01", None),  # serial có chữ
+			("952KHAM01000123", "KHAM01", None),  # tiền tố 3 số
+			("1234567890123KHAM01000123", "KHAM01", None),  # tiền tố 13 số
+			("95A0000KHAM01000123", "KHAM01", None),  # tiền tố có chữ
+			("KHAM01000123", "KHAM01", None),  # không tiền tố
+			("9520000I-00000001", "I-", None),  # mã dụng cụ
+			("BOM-KHAM01-V3", "KHAM01", None),
+			("9520000KHAM01000123", "kham01", None),  # mã loại bộ sai định dạng
+			("9520000KHAM01000123", "", None),
+			("9520000KHAM01000123", None, None),
+			("9520000" + "A" * 18 + "000001", "A" * 18, None),  # mã loại bộ > 8
+			("9520000ABCDEFGH0000012345", "ABCDEFGH", None),  # serial 10 số
+			("\uff19\uff15\uff120000KHAM01000123", "KHAM01", None),  # chữ số toàn chiều rộng
+			(" 9520000KHAM01000123", "KHAM01", None),
+			("", "KHAM01", None),
+			(None, "KHAM01", None),
+		]
+		for giai, type_code, prefix in bad:
+			with self.subTest(giai=giai, type_code=type_code, prefix=prefix):
+				with self.assertRaises(gs1.GS1Error) as raised:
+					gs1.split_set_id(giai, type_code, prefix)
+				self.assertEqual(raised.exception.code, "GS1_SET_ID")
+
+	def test_split_set_id_type_codes_ending_in_digits_do_not_cross(self):
+		k1 = "8930001K1000010"
+		k10 = "8930001K10000010"
+		self.assertEqual(gs1.split_set_id(k1, "K1"), ("8930001", "000010"))
+		self.assertEqual(gs1.split_set_id(k10, "K10"), ("8930001", "000010"))
+		for giai, wrong in [(k1, "K10"), (k10, "K1")]:
+			with self.subTest(giai=giai, wrong=wrong):
+				with self.assertRaises(gs1.GS1Error):
+					gs1.split_set_id(giai, wrong)

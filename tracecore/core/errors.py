@@ -53,6 +53,12 @@ HTTP_STATUS: dict[str, int] = {
 			"BOM_TOO_LARGE",
 			"BOM_EFFECTIVE_DATE_INVALID",
 			"SHELF_LIFE_INVALID",
+			# FEAT-016 A-09 (G5, G6, G16): điều kiện cấp Set ID hàng loạt
+			"SET_TYPE_BOM_INVALID",
+			"DEPARTMENT_INVALID",
+			"MAX_CYCLES_INVALID",
+			# FEAT-016 ruling Task 4/5: thẻ/nhãn khay Set ID chỉ in qua đường server (máy in phải có địa chỉ mạng)
+			"PRINTER_NOT_NETWORK",
 			# FEAT-021 A-12: lô rửa T2
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
@@ -65,9 +71,20 @@ HTTP_STATUS: dict[str, int] = {
 			"EQUIPMENT_NOT_STERILIZER",
 			"PACK_INCOMPATIBLE",
 			"LOAD_EMPTY",
+			# FEAT-020 A-35: kiểm đếm lắp ráp T3
+			"LINES_NOT_COUNTED",
+			"QTY_INVALID",
+			"BRANCH_INVALID",
+			"PHOTO_INVALID",
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",
+			# FEAT-019 A-31: tiếp nhận T1
+			"DELIVERER_NO_DEPARTMENT",
+			"DELIVERER_NAME_REQUIRED",
+			"RECEIPT_EMPTY",
+			"CONFIRM_INCOMPLETE",
+			"PHOTO_INVALID",
 		),
 		422,
 	),
@@ -85,6 +102,9 @@ HTTP_STATUS: dict[str, int] = {
 			"LOCATION_NOT_FOUND",
 			"LOAD_NOT_FOUND",
 			"OVERRIDE_NOT_FOUND",
+			"ASSEMBLY_NOT_FOUND",
+			"RECEIPT_NOT_FOUND",
+			"DELIVERER_NOT_FOUND",
 		),
 		404,
 	),
@@ -120,6 +140,12 @@ HTTP_STATUS: dict[str, int] = {
 			"COMPANY_NOT_CONFIGURED",
 			"BOM_VERSION_CONFLICT",
 			"SET_TYPE_CODE_EXISTS",
+			# FEAT-016: series Set ID của loại bộ đã hết dải 999 999 (G2) — không cấp mã 7 số
+			"SET_SERIES_EXHAUSTED",
+			# FEAT-016 G10, G12: bộ đã thanh lý, lệnh in cùng loại đang chờ, thẻ quét không khớp bộ
+			"SET_DISPOSED",
+			"TAG_PRINT_PENDING",
+			"TAG_MISMATCH",
 			"STEP_ALREADY_PASSED",
 			"SET_IN_OTHER_BATCH",
 			"BATCH_NOT_RUNNING",
@@ -135,6 +161,14 @@ HTTP_STATUS: dict[str, int] = {
 			"PAR_NOT_EXCEEDED",
 			"OVERRIDE_PENDING",
 			"OVERRIDE_NOT_PENDING",
+			# FEAT-020 A-35: thiếu chưa R02 xác nhận, bản nháp đã đóng
+			"SHORTAGE_UNCONFIRMED",
+			"NO_SHORTAGE",
+			"ASSEMBLY_CLOSED",
+			# FEAT-019 A-31: phiếu đã đóng, bộ chưa xác nhận lúc ghi sổ, cưỡng bức không áp dụng cho trạng thái này
+			"RECEIPT_CLOSED",
+			"ITEM_NOT_CONFIRMED",
+			"FORCE_NOT_ALLOWED",
 		),
 		409,
 	),

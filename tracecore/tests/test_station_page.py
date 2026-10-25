@@ -216,6 +216,26 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("clearSession() {", source)
 		self.assertIn("sessionEnded", source)
 
+	def test_station_page_includes_t1_script(self):
+		# màn T1 tiếp nhận (SCR-05, FEAT-019) ở file riêng, cùng cơ chế page_js với T4/T2/T6
+		self.assertIn("public/js/station_t1.js", frappe.get_hooks("page_js").get("station", []))
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t1.js")))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new T1Receiving(this)", source)
+		self.assertIn('method.startsWith("tracecore.v1.receive.")', source)  # bearer trong body như T4
+
+	def test_t1_screen_never_drops_a_scan_and_returns_focus_to_the_scan_box(self):
+		with open(os.path.join(APP_PATH, "public", "js", "station_t1.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("clearSession() {", source)
+		self.assertIn("sessionEnded", source)
+		# mã quét đến khi đang chờ máy chủ được xếp hàng, không bị bỏ (bài học FEAT-026)
+		self.assertIn("this.queue.push(raw)", source)
+		self.assertIn("runQueued()", source)
+		# sau mỗi thao tác trên màn, ô quét lấy lại focus
+		self.assertIn("this.station.focus(true)", source)
+
 	def test_manifest_served(self):
 		set_request(method="GET", path="/manifest.json")
 		response = get_response()

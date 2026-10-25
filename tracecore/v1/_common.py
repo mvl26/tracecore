@@ -28,6 +28,8 @@ WASH_LOAD_ROLES = ("TC R03", "TC R05", "TC R02", "System Manager")
 WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")
 # FEAT-022 Q13: nạp mẻ tiệt khuẩn và nhập dữ liệu chu trình do R05 (actor chính UC-09), R02 (actor phụ)
 LOAD_ROLES = ("TC R05", "TC R02", "System Manager")
+# FEAT-019 (A-31): tiếp nhận T1 do R03 (actor chính UC-05); R02 cũng làm được và là người duy nhất tiếp nhận cưỡng bức
+RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 SESSION_FLAG = "tc_station_session"
 
 
@@ -219,9 +221,57 @@ def reject_block(block, ref_doctype=None, ref_name=None, raw=None, *, station=No
 		# (RPC chỉ đọc: v1.instrument.get_image, giai_preview, form_context…) bị rollback khi kết thúc, trừ khi
 		# `frappe.local.flags.commit`. Không đặt cờ thì dòng Audit Log `Reject` vừa ghi mất ở production (test gọi hàm
 		# trực tiếp không thấy). RPC GET không ghi gì khác, nên commit ở đây chỉ giữ dòng Audit Log này.
-		if getattr(request, "method", None) in SAFE_HTTP_METHODS:
-			frappe.local.flags.commit = True
+		keep_writes_on_get()
 	return {"ok": False, "error": block.as_dict()}
+
+
+def keep_writes_on_get():
+	"""Request GET đang chạy → bật `frappe.local.flags.commit` để dòng Audit Log vừa ghi không bị rollback.
+
+	Frappe v15 chỉ commit request POST/PUT/PATCH/DELETE; RPC chỉ đọc mà vẫn ghi Audit (từ chối, xuất CSV) gọi hàm này.
+	"""
+	request = getattr(frappe.local, "request", None)
+	if request and getattr(request, "method", None) in SAFE_HTTP_METHODS:
+		frappe.local.flags.commit = True
+
+
+def desk_printer(name):
+	"""Printer đang hoạt động mà người dùng Desk chọn; không có/không hoạt động → 400 (tham số sai, chưa ghi gì).
+
+	Dùng chung cho nhãn QR đối tượng (`v1.print.object_label`) và thẻ/nhãn khay Set ID (`v1.set_unit`).
+	"""
+	if not isinstance(name, str) or not name:
+		raise BadRequestError(_("printer must be a printer name."))
+	row = frappe.db.get_value(
+		"Printer", name, ["name", "station", "language", "supports_unicode", "is_active"], as_dict=True
+	)
+	if not row or not cint(row.is_active):
+		raise BadRequestError(_("Printer {0} does not exist or is not active.").format(name))
+	return row
+
+
+def _job_name(value):
+	if isinstance(value, bool):
+		return None
+	if isinstance(value, int):
+		return str(value) if value > 0 else None
+	return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def job_names(names, limit):
+	"""Tên Print Job (list hoặc chuỗi JSON của list; tên là số tự tăng, nhận số hoặc chuỗi), 1..`limit`; sai → 400."""
+	if isinstance(names, str):
+		try:
+			names = frappe.parse_json(names)
+		except ValueError:
+			names = None
+	if (
+		not isinstance(names, list)
+		or not 0 < len(names) <= limit
+		or not all(_job_name(name) for name in names)
+	):
+		raise BadRequestError(_("names must be a list of 1 to {0} print job names.").format(limit))
+	return [_job_name(name) for name in names]
 
 
 def run_at_step(step, station, client_ts, call, ref_doctype=None, ref_name=None, raw=None):

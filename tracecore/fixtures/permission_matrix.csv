@@ -5,7 +5,7 @@ DT-SETBOM,Set BOM Item,R,R,R,R,R,R,R,R,R,R,"FEAT-015 A-09 S12 (mới hơn ma tr�
 DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,
 DT-LOANER,Loaner Instrument,R,RWS,R,R,R,R,,,R,RW,future FEAT-017
 DT-INSTRMAINT,Instrument Maintenance,R,RWS,R,R,R,R,,,R,RW,
-DT-RECEIPT,Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-019
+DT-RECEIPT,Dirty Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-019 A-30: DocType Dirty Receipt (tên BA Receipt); ghi/sổ chỉ qua dịch vụ tiếp nhận (cờ tc_receiving)
 DT-WASHBATCH,Wash Batch,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-021
 DT-ASSEMBLY,Assembly Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
 DT-PACK,Pack,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
