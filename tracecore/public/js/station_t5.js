@@ -770,6 +770,7 @@ class T5Load {
 			retry: () => this.retry(),
 			"t5-mode": () => this.setMode(data.mode),
 			"t5-release": () => this.openRelease(),
+			"t5-daily-test": () => this.openDailyTest(),
 			"t5-remove": () => this.removePack(data.pack),
 			"t5-complete": () => this.complete(),
 			"t5-cancel": () => this.cancelLoad(),
@@ -879,6 +880,9 @@ class T5Load {
 			${chip("data", __("Cycle data ({0} open)", [open]))}
 			<button type="button" class="tc-chip" data-action="t5-release" aria-pressed="false">${esc(
 				__("Unload and release")
+			)}</button>
+			<button type="button" class="tc-chip" data-action="t5-daily-test" aria-pressed="false">${esc(
+				__("Daily test")
 			)}</button>
 		</div>`;
 	}
