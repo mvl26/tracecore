@@ -89,9 +89,12 @@ class TestKtvUI(FrappeTestCase):
 			patch("frappe.get_list", return_value=[]),
 			patch("frappe.get_all") as internal,
 		):
-			with self.assertRaises(frappe.PermissionError):
-				context("DENIED")
-		internal.assert_not_called()
+			with patch("tracecore.v1.set_type.bom") as bom:
+				with self.assertRaises(frappe.PermissionError):
+					context("DENIED")
+		# frappe.throw tự tra bản dịch (get_all Translation): chỉ cấm đọc trạng thái cổng và BOM của bộ bị từ chối
+		self.assertFalse([call for call in internal.call_args_list if call.args[:1] == ("Step Gate Result",)])
+		bom.assert_not_called()
 
 	def test_history_is_scoped_to_current_actor(self):
 		from tracecore.v1.ktv import history
