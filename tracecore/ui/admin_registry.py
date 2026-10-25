@@ -79,7 +79,7 @@ SCREENS = {
 	"set-types": (
 		"Set types & BOM",
 		"Instrument Set Type",
-		["set_name", "set_type_name", "method", "current_bom_version", "shelf_life_days", "status"],
+		["type_code", "set_type_name", "method", "department", "current_bom_version", "shelf_life_days"],
 	),
 	"set-units": (
 		"Instrument sets / Set ID",
@@ -114,33 +114,37 @@ SCREENS = {
 	"competencies": (
 		"Station competencies",
 		"Station Competency",
-		["employee", "station_step", "valid_until", "status"],
+		["employee", "station", "valid_until", "is_active"],
 	),
 	"receipts": (
 		"T1 · Receiving",
 		"Dirty Receipt",
-		["department", "handed_by", "received_by", "station", "docstatus"],
+		["department", "deliverer_name", "receiver", "station", "received_at", "docstatus"],
 	),
 	"wash-batches": (
 		"T2 · Washing–disinfection",
 		"Wash Batch",
-		["equipment", "program", "status", "result", "station"],
+		["equipment", "program", "status", "cycle_result", "started_at"],
 	),
 	"assembly": (
 		"T3 · Inspection–assembly",
 		"Assembly Record",
-		["set_unit", "status", "station", "docstatus"],
+		["set_unit", "result", "station", "assembled_at", "docstatus"],
 	),
 	"packs": ("T4 · Packing", "Pack", ["set_unit", "status", "method", "expiry", "packed_by_user"]),
 	"loads": (
 		"T5 / T5b · Sterilization loads",
 		"Sterilization Load",
-		["equipment", "program", "status", "result", "docstatus"],
+		["equipment", "program", "status", "cycle_result", "bi_result", "docstatus"],
 	),
 	"daily-tests": ("Daily tests", "Daily Test", ["equipment", "test_type", "result", "test_date"]),
-	"putaways": ("T6 · Putaway", "Sterile Putaway", ["pack", "location", "station", "docstatus"]),
+	"putaways": ("T6 · Putaway", "Sterile Putaway", ["pack", "action", "location", "station", "putaway_at"]),
 	"sterile-stock": ("Sterile stock", "Pack", ["set_unit", "status", "expiry", "location"]),
-	"issues": ("T7 · Issuing", "Issue Note", ["department", "status", "docstatus"]),
+	"issues": (
+		"T7 · Issuing",
+		"Issue Note",
+		["department", "recipient_name", "pack_count", "issued_at", "docstatus"],
+	),
 	"linen-collections": ("Linen collection", "Linen Collection", ["department", "status", "total_weight"]),
 	"laundry": ("Laundry batches", "Laundry Batch", ["equipment", "status", "total_weight"]),
 	"linen-issues": ("Linen issuing", "Linen Issue", ["department", "status", "docstatus"]),
@@ -152,7 +156,7 @@ SCREENS = {
 	"waste-storage": ("Waste storage", "Waste Storage", ["waste_type", "location", "status"]),
 	"waste-handover": ("Waste handover", "Waste Handover", ["contractor", "status", "docstatus"]),
 	"department-stock": ("Department sets & par levels", None, []),
-	"usage": ("T8 · Usage scan", "Usage Record", ["pack", "department", "usage_date", "status"]),
+	"usage": ("T8 · Usage scan", "Usage Record", ["pack", "department", "used_at", "surgery_code"]),
 	"returns": ("Return used sets", None, []),
 	"requests": ("Supply requests", None, []),
 	"trace": ("Pack trace", None, []),
@@ -172,10 +176,10 @@ SCREENS = {
 	"zones": (
 		"Zones & stations",
 		"Zone Station",
-		["zone_station_name", "station_step", "zone", "is_zone", "is_active"],
+		["zone_station_name", "station_step", "parent_zone", "is_zone", "is_active"],
 	),
-	"printers": ("Printers", "Printer", ["printer_name", "station", "is_active", "status"]),
-	"labels": ("Label templates", "Label Template", ["label_name", "label_object", "is_active"]),
+	"printers": ("Printers", "Printer", ["printer_name", "station", "is_active", "label_type_loaded"]),
+	"labels": ("Label templates", "Label Template", ["template_name", "label_object", "is_active"]),
 	"accounts": ("Accounts & permissions", "User", ["full_name", "enabled", "user_type"]),
 	"audit": (
 		"Audit trail",
@@ -186,6 +190,6 @@ SCREENS = {
 	"sterilization-book": (
 		"Electronic sterilization log",
 		"Sterilization Load",
-		["equipment", "program", "status", "result", "docstatus"],
+		["equipment", "program", "status", "cycle_result", "bi_result", "docstatus"],
 	),
 }

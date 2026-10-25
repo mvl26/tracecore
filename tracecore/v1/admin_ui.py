@@ -7,6 +7,8 @@ from frappe.utils import cint
 from tracecore.ui.admin_registry import ROLES, SCREENS
 
 LABEL_CONTEXT = "TraceCore Admin"
+# trường chuẩn của Frappe không nằm trong meta.fields nhưng đọc được ở permlevel 0 (trạng thái chứng từ)
+STANDARD_FIELDS = ("docstatus",)
 
 
 def _label(text):
@@ -70,7 +72,8 @@ def _schema(doctype, requested):
 	return [
 		field
 		for field in requested
-		if meta.has_field(field) and cint(getattr(meta.get_field(field), "permlevel", 0)) in levels
+		if (field in STANDARD_FIELDS and 0 in levels)
+		or (meta.has_field(field) and cint(getattr(meta.get_field(field), "permlevel", 0)) in levels)
 	]
 
 

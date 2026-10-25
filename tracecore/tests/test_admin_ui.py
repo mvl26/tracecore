@@ -173,3 +173,26 @@ class TestAdminUIRoles(FrappeTestCase):
 		)
 		self.assertIn("TraceCore Desk Access", exported)
 		self.assertIn("TC Admin Overview", exported)
+
+
+class TestAdminUIRegistry(FrappeTestCase):
+	def test_every_screen_field_exists_in_its_doctype(self):
+		# trường sai tên bị _schema lọc bỏ âm thầm (cột biến mất); DocType chưa có thì màn báo chưa sẵn sàng
+		from tracecore.ui.admin_registry import SCREENS
+		from tracecore.v1.admin_ui import STANDARD_FIELDS
+
+		wrong = {}
+		for screen, (_title, doctype, fields) in SCREENS.items():
+			if not doctype or not frappe.db.exists("DocType", doctype):
+				continue
+			meta = frappe.get_meta(doctype)
+			bad = [field for field in fields if not meta.has_field(field) and field not in STANDARD_FIELDS]
+			if bad:
+				wrong[screen] = bad
+		self.assertEqual(wrong, {})
+
+	def test_docstatus_column_is_kept_for_submittable_screens(self):
+		from tracecore.v1.admin_ui import _schema
+
+		with patch("frappe.get_roles", return_value=["Administrator", "TC R02"]):
+			self.assertIn("docstatus", _schema("Assembly Record", ["set_unit", "docstatus"]))
