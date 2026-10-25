@@ -426,6 +426,10 @@ class DailyTestScreen {
 		const machine = this.machine();
 		if (!machine) return "";
 		const form = this.form;
+		// loại test phải thuộc máy đang chọn; máy chỉ có một loại test (máy rửa) thì chọn sẵn, đỡ một chạm
+		if (!machine.required.includes(form.test_type)) {
+			form.test_type = machine.required.length === 1 ? machine.required[0] : "";
+		}
 		const types = machine.required
 			.map((type) => this.chip("dt-type", type, dtTestLabel(type), form.test_type === type))
 			.join("");

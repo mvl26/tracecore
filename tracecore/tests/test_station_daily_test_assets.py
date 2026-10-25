@@ -40,6 +40,16 @@ class TestStationDailyTestAssets(FrappeTestCase):
 		self.assertTrue(sources)
 		self.assertEqual([text for text in sources if text not in translated], [])
 
+	def test_single_required_test_is_preselected_and_back_label_fits_t2_and_t5(self):
+		# máy chỉ có một loại test (máy rửa: test làm sạch) thì chọn sẵn, đỡ một chạm; nút quay lại dùng chung cho
+		# màn nạp lô T2 và nạp mẻ T5 nên không gọi riêng là "nạp mẻ"
+		script = _read(*DT_JS)
+		self.assertIn("machine.required.length === 1", script)
+		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
+		with open(path, encoding="utf-8", newline="") as handle:
+			rows = {row[0]: row[1] for row in csv.reader(handle) if row and len(row) > 1}
+		self.assertEqual(rows["Back to loading"], "Quay lại màn nạp")
+
 	def test_no_hard_coded_colours_or_pixels_and_no_hover_only_ui(self):
 		script = _read(*DT_JS)
 		self.assertIsNone(re.search(r"(?<![&\w])#[0-9a-fA-F]{3,8}\b", script))

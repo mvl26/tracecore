@@ -690,8 +690,11 @@ class TraceCoreStation {
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
+		// context "Zone Station": khu khoa là "Khoa", không lấy bản dịch chung "Department" của Frappe ("Cục")
 		this.root.querySelector(".tc-zone-label").textContent = __(
-			ZONE_LABEL[station.zone_type] || "Station"
+			ZONE_LABEL[station.zone_type] || "Station",
+			null,
+			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
 	}

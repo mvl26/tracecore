@@ -71,6 +71,21 @@ class TestIssueNote(IsolatedTestCase):
 	def test_permissions_follow_matrix(self):
 		assert_permission_matrix(self, "Issue Note")
 
+	def test_station_user_limited_to_own_employee_can_read_and_print(self):
+		# HRMS tự tạo User Permission Employee cho user gắn nhân viên; phiếu có người cấp/người nhận là nhân viên khác
+		# vẫn phải đọc và in được ở kiosk T7 (in phiếu sau khi xác nhận, FEAT-026 C10)
+		from frappe.permissions import add_user_permission
+
+		from tracecore.tests.factories import make_employee, make_user
+
+		user = make_user("t7-print@test.local", roles=("TC R06",))
+		own = make_employee(user_id=user)
+		add_user_permission("Employee", own.name, user)
+		other = make_employee(department=make_department())
+		note = make_note(issued_by=own.name, recipient=other.name)
+		for ptype in ("read", "print"):
+			self.assertTrue(frappe.has_permission("Issue Note", ptype, note, user=user), ptype)
+
 
 class TestIssueNotePrint(IsolatedTestCase):
 	"""Print Format TC Issue Note (C10, FR-M2-15.1): số phiếu, khoa, người nhận, gói, chữ ký."""
