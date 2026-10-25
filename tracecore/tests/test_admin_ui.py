@@ -1,4 +1,4 @@
-"""Role-space access is separate from document permissions (Admin UI A-35)."""
+"""Role-space access is separate from document permissions (Admin UI A-36)."""
 
 from unittest.mock import patch
 
@@ -153,7 +153,7 @@ class TestAdminUI(FrappeTestCase):
 
 class TestAdminUIRoles(FrappeTestCase):
 	def test_admin_overview_and_desk_access_roles_ship_as_fixtures(self):
-		# A-35: hai role mới phải có trên mọi site để quản trị cấp được; fixtures của app mang chúng theo
+		# A-36: hai role mới phải có trên mọi site để quản trị cấp được; fixtures của app mang chúng theo
 		import json
 
 		from tracecore import hooks

@@ -1,6 +1,6 @@
 # TraceCore Admin — thiết kế frontend riêng
 
-Ngày: 2026-10-25. Thiết kế được người dùng duyệt trong chat; văn bản cụ thể đang chờ review. Amendment A-35, bổ sung và thay thế quy định WEB của C-02/ADR-002. Không thay đổi kiosk, PDA hoặc Portal.
+Ngày: 2026-10-25. Thiết kế được người dùng duyệt trong chat; văn bản cụ thể đang chờ review. Amendment A-36, bổ sung và thay thế quy định WEB của C-02/ADR-002. Không thay đổi kiosk, PDA hoặc Portal.
 
 ## Phạm vi và thứ tự chuyển đổi
 

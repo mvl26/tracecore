@@ -117,7 +117,7 @@ jobs:
           node-version: 18
       - uses: ./.github/actions/setup-bench
 
-      # get-app clone repo nên phải build Admin UI (Vue, A-35) ngay trong app của bench; ra tracecore/public/admin
+      # get-app clone repo nên phải build Admin UI (Vue, A-36) ngay trong app của bench; ra tracecore/public/admin
       - name: Build Admin UI
         working-directory: /home/runner/frappe-bench/apps/tracecore
         run: |
