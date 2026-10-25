@@ -20,7 +20,8 @@ required_apps = ["erpnext", "hrms"]
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
 # ------------------
 fixtures = [
-	{"dt": "Role", "filters": [["name", "like", "TC %"]]},
+	# vai trò TC R01..R10, TC Agent, TC Admin Overview và quyền mở Desk của Admin UI (A-35)
+	{"dt": "Role", "or_filters": [["name", "like", "TC %"], ["name", "=", "TraceCore Desk Access"]]},
 	{"dt": "Custom DocPerm", "filters": [["role", "like", "TC R%"]]},
 	{
 		"dt": "Custom Field",

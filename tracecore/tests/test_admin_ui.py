@@ -149,3 +149,27 @@ class TestAdminUI(FrappeTestCase):
 		)
 		self.assertEqual(updated["name"], name)
 		self.assertEqual(frappe.db.get_value("Instrument", name, "instrument_name"), "Edited")
+
+
+class TestAdminUIRoles(FrappeTestCase):
+	def test_admin_overview_and_desk_access_roles_ship_as_fixtures(self):
+		# A-35: hai role mới phải có trên mọi site để quản trị cấp được; fixtures của app mang chúng theo
+		import json
+
+		from tracecore import hooks
+
+		path = frappe.get_app_path("tracecore", "fixtures", "role.json")
+		with open(path, encoding="utf-8") as handle:
+			shipped = {row["name"]: row for row in json.load(handle)}
+		for role in ("TC Admin Overview", "TraceCore Desk Access"):
+			self.assertIn(role, shipped)
+			self.assertTrue(frappe.db.exists("Role", role), role)
+		role_fixture = next(item for item in hooks.fixtures if item["dt"] == "Role")
+		exported = frappe.get_all(
+			"Role",
+			filters=role_fixture.get("filters"),
+			or_filters=role_fixture.get("or_filters"),
+			pluck="name",
+		)
+		self.assertIn("TraceCore Desk Access", exported)
+		self.assertIn("TC Admin Overview", exported)
