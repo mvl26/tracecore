@@ -30,6 +30,9 @@ DEMO_PREFIX_RANGE = "952"  # GS1 dành dải 952 cho demo/thử nghiệm: không
 # Set ID <prefix><mã loại bộ [A-Z0-9]{2,8}><6 số>.
 INSTRUMENT_ASSET_PREFIX = "I-"
 INSTRUMENT_SERIAL_DIGITS = 8
+# Set ID (§5.3.3, FEAT-016 G2): 6 số cuối luôn là số thứ tự, nên mã loại bộ kết thúc bằng số không gây nhập nhằng.
+# GIAI (AI 8004) không có check digit: chỉ kiểm tiền tố 4-12 chữ số + CSET 82 + độ dài.
+SET_SERIAL_DIGITS = 6
 # Mã phiên bản BOM in trên phiếu kiểm đếm (FEAT-015 S8): tham chiếu bất biến tới (loại bộ, phiên bản), không phải GS1,
 # không ghi Code Registry. Tiền tố chữ "BOM-" làm mã không bao giờ trùng Set ID (bắt đầu bằng số) hay mã nội bộ.
 BOM_CODE_PREFIX = "BOM-"
@@ -59,6 +62,7 @@ _INTERNAL_CODES = (
 	("container", re.compile(r"CT-\d{6}-\d{5}")),
 	("pack", re.compile(r"CY-\d{6}-(?:T\d{2}-)?\d{4}")),
 	("wash_batch", re.compile(r"LR-\d{6}-\d{2}")),
+	("load", re.compile(r"ME-\d{6}-\d{2}")),
 )
 
 
@@ -107,6 +111,30 @@ def make_bom_code(type_code, version):
 	if isinstance(version, bool) or not isinstance(version, int) or not 1 <= version <= BOM_MAX_VERSION:
 		raise GS1Error("BOM_CODE", f"BOM version must be an integer 1..{BOM_MAX_VERSION}: {version!r}")
 	return f"{BOM_CODE_PREFIX}{type_code}-V{version}"
+
+
+def split_set_id(giai, type_code, prefix=None):
+	"""Tách Set ID ``<tiền tố 4-12 số><TYPE_CODE><6 số>`` thành ``(tiền tố, serial)`` (FEAT-016 G2).
+
+	Set ID phải là GIAI hợp lệ (CSET 82, ≤ 30 ký tự), kết thúc bằng `type_code` (``[A-Z0-9]{2,8}``) + 6 chữ số; phần
+	trước là tiền tố 4-12 chữ số và bằng `prefix` khi truyền. GIAI không có check digit nên không kiểm thêm gì.
+	Sai → ``GS1Error("GS1_SET_ID", …)``.
+	"""
+	if not isinstance(type_code, str) or not _SET_TYPE_CODE.fullmatch(type_code):
+		raise GS1Error("GS1_SET_ID", f"Set type code must be 2-8 characters A-Z, 0-9: {type_code!r}")
+	if not isinstance(giai, str) or not _is_valid_giai(giai):
+		raise GS1Error("GS1_SET_ID", f"Set ID is not a valid GIAI: {giai!r}")
+	suffix = len(type_code) + SET_SERIAL_DIGITS
+	head, code, serial = giai[:-suffix], giai[-suffix:-SET_SERIAL_DIGITS], giai[-SET_SERIAL_DIGITS:]
+	if (
+		code != type_code
+		or not re.fullmatch(r"[0-9]{4,12}", head)
+		or not re.fullmatch(rf"[0-9]{{{SET_SERIAL_DIGITS}}}", serial)
+	):
+		raise GS1Error("GS1_SET_ID", f"Set ID {giai!r} does not match <prefix>{type_code}<6 digits>")
+	if prefix is not None and head != prefix:
+		raise GS1Error("GS1_SET_ID", f"Set ID {giai!r} does not start with GS1 Company Prefix {prefix!r}")
+	return head, serial
 
 
 def is_demo_prefix(prefix):

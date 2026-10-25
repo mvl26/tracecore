@@ -821,6 +821,7 @@ class T2Wash {
 		const handlers = {
 			retry: () => this.retry(),
 			"t2-mode": () => this.setMode(data.mode),
+			"t2-daily-test": () => this.openDailyTest(),
 			"t2-remove": () => this.removeSet(data.set),
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
@@ -937,6 +938,9 @@ class T2Wash {
 		return `<div class="tc-chips" role="group" aria-label="${esc(__("Wash batch"))}">
 			${chip("load", __("Load batch"))}
 			${chip("unload", __("Unload batch ({0} running)", [running]))}
+			<button type="button" class="tc-chip" data-action="t2-daily-test" aria-pressed="false">${esc(
+				__("Daily test")
+			)}</button>
 		</div>`;
 	}
 

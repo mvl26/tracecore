@@ -10,23 +10,23 @@
 | Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
 | :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
 | FR-M1-01 | Khai báo dụng cụ đơn lẻ | Must | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 | _TBD_ |
-| FR-M1-02 | Mã DataMatrix dụng cụ đơn lẻ (giai đoạn 2 sẵn sàng) | Should | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 (FR-M1-02, .1, .3); FEAT-020 (FR-M1-02.2, .4) | _TBD_ |
+| FR-M1-02 | Mã DataMatrix dụng cụ đơn lẻ (giai đoạn 2 sẵn sàng) | Should | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 (FR-M1-02, .1, .3); FEAT-020 (FR-M1-02.2, .4) | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) (FR-M1-02.2, .4) |
 | FR-M1-03 | Định nghĩa loại bộ dụng cụ (BOM) | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | `tracecore/instrument/tests/test_set_type.py`, `test_shelf_life.py`, `test_set_type_photos.py`, `test_count_sheet.py`; `tracecore/instrument/doctype/instrument_set_type/test_instrument_set_type.py` (dự kiến, FEAT-015) |
 | FR-M1-04 | Phiên bản BOM và khoa sở hữu | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | `tracecore/instrument/tests/test_bom_versions.py`, `test_bom_compare.py`, `test_bom_pinning.py`; `tracecore/instrument/doctype/set_bom_item/test_set_bom_item.py` (dự kiến, FEAT-015) |
-| FR-M1-05 | Cấp Set ID vĩnh viễn (GS1) | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-004; ADR-006 | FEAT-016 | _TBD_ |
-| FR-M1-06 | Vòng đời bộ dụng cụ vật lý | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-003; ADR-005 | FEAT-009; FEAT-016; FEAT-023 | _TBD_ |
+| FR-M1-05 | Cấp Set ID vĩnh viễn (GS1) | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-004; ADR-006 | FEAT-016 | `tracecore/core/tests/test_code_registry.py`, `tracecore/core/tests/test_gs1.py`, `tracecore/instrument/tests/test_set_units.py`, `test_set_tags.py`, `test_set_tag_printing.py`; `tracecore/tracecore/doctype/label_template/test_set_templates.py`; `tracecore/v1/tests/test_set_unit_api.py` (dự kiến, FEAT-016) |
+| FR-M1-06 | Vòng đời bộ dụng cụ vật lý | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-003; ADR-005 | FEAT-009; FEAT-016; FEAT-023 | `tracecore/instrument/tests/test_set_units.py`, `test_set_unit_history.py`; `tracecore/core/tests/test_step_gate.py`; `tracecore/v1/tests/test_set_unit_api.py` (dự kiến, FEAT-016) |
 | FR-M1-07 | Nhập và trả dụng cụ mượn | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
 | FR-M1-08 | Chặn cấp phát bộ mượn chưa tái xử lý | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
 | FR-M1-09 | Ngưỡng bảo dưỡng dụng cụ (tra dầu, bảo trì) | Must | Active | CHG-024 (review v1.10, kế thừa BR-M1) | UC-01 | _TBD_ | FEAT-014; FEAT-018 | _TBD_ |
-| FR-M2-01 | Tiếp nhận bằng quét mã bộ + quét thẻ nhân viên giao | Must | Active | BR-M2 (BRD #02) | UC-05 | _TBD_ | FEAT-019 | _TBD_ |
-| FR-M2-02 | Kiểm tra chiều luồng tại tiếp nhận | Must | Active | BR-M2 (BRD #02) | UC-05 | ADR-005 | FEAT-019 | _TBD_ |
-| FR-M2-23 | Xác nhận thành phần bộ tại tiếp nhận (từng dòng hoặc tất cả) + ghi chú bất thường | Must | Active | CHG-024 (review v1.10, kế thừa BR-M2) | UC-05 | _TBD_ | FEAT-019 | _TBD_ |
+| FR-M2-01 | Tiếp nhận bằng quét mã bộ + quét thẻ nhân viên giao | Must | Active | BR-M2 (BRD #02) | UC-05 | _TBD_ | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
+| FR-M2-02 | Kiểm tra chiều luồng tại tiếp nhận | Must | Active | BR-M2 (BRD #02) | UC-05 | ADR-005 | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
+| FR-M2-23 | Xác nhận thành phần bộ tại tiếp nhận (từng dòng hoặc tất cả) + ghi chú bất thường | Must | Active | CHG-024 (review v1.10, kế thừa BR-M2) | UC-05 | _TBD_ | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
 | FR-M2-03 | Nạp lô rửa: quét mã máy + quét từng bộ, mã lô sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-06 | ADR-005 | FEAT-021 | _TBD_ |
 | FR-M2-24 | Mã mẻ gắn toàn bộ bộ dụng cụ và dữ liệu báo cáo của máy | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-007 | FEAT-021; FEAT-024 | _TBD_ |
-| FR-M2-25 | Cổng kiểm soát từng bước và xử lý lại | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-005 | FEAT-018; FEAT-019; FEAT-020; FEAT-021; FEAT-023 | _TBD_ |
+| FR-M2-25 | Cổng kiểm soát từng bước và xử lý lại | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-005 | FEAT-018; FEAT-019; FEAT-020; FEAT-021; FEAT-023 | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) (cổng T3) |
 | FR-M2-04 | Dỡ lô: quét mã máy + mã lô, kết quả áp cho toàn bộ bộ trong lô | Must | Active | BR-M2 (BRD #02) | UC-06 | ADR-007 | FEAT-021 | _TBD_ |
-| FR-M2-05 | Kiểm đếm theo BOM có ảnh chụp thực tế | Must | Active | BR-M2 (BRD #02) | UC-07 | ADR-005 | FEAT-020 | _TBD_ |
-| FR-M2-06 | Chặn đóng gói khi thiếu chưa xác nhận | Must | Active | BR-M2 (BRD #02) | UC-07 | _TBD_ | FEAT-020 | _TBD_ |
+| FR-M2-05 | Kiểm đếm theo BOM có ảnh chụp thực tế | Must | Active | BR-M2 (BRD #02) | UC-07 | ADR-005 | FEAT-020 | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) |
+| FR-M2-06 | Chặn đóng gói khi thiếu chưa xác nhận | Must | Active | BR-M2 (BRD #02) | UC-07 | ADR-005 | FEAT-020 | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) |
 | FR-M2-07 | Xác nhận hoàn thành đóng gói → hệ thống tự sinh mã vạch một lần (Cycle ID) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-003; ADR-004; ADR-005 | FEAT-009; FEAT-018 | _TBD_ |
 | FR-M2-08 | In nhãn theo phương pháp (2 loại nhãn) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-006 | FEAT-002; FEAT-018 | _TBD_ |
 | FR-M2-09 | Nạp mẻ tiệt khuẩn: quét mã máy + quét từng gói, mã mẻ sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-005 | FEAT-022 | _TBD_ |

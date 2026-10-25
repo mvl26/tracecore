@@ -128,6 +128,21 @@ class TestStationDemoData(IsolatedTestCase):
 		self.assertEqual(decrypt(get_default(users["t6_user"] + "_otpsecret")), users["t6_otp_secret"])
 		self.assertEqual(users, devdata.ensure_t6_e2e_user("TR-006", secrets.token_urlsafe(24)))
 
+	def test_t1_station_user_bootstrap_has_r03_and_otp(self):
+		import secrets
+
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = self.admin_roles()
+		users = devdata.ensure_t1_e2e_user("TR-001", secrets.token_urlsafe(24))
+		self.assertEqual(self.admin_roles(), before)
+		self.assertEqual(set(users), {"t1_user", "t1_otp_secret"})
+		self.assertIn("TC R03", frappe.get_roles(users["t1_user"]))
+		self.assertEqual(decrypt(get_default(users["t1_user"] + "_otpsecret")), users["t1_otp_secret"])
+		self.assertEqual(users, devdata.ensure_t1_e2e_user("TR-001", secrets.token_urlsafe(24)))
+
 	def test_e2e_user_bootstrap_restores_roles_after_failure_and_preserves_existing_r10(self):
 		from unittest.mock import patch
 
@@ -386,6 +401,63 @@ class TestT2DemoData(FrappeTestCase):
 			frappe.flags.in_test = True
 
 
+T5_KEYS = {
+	"machine",
+	"machine_plasma",
+	"machine_locked",
+	"program",
+	"program_plasma",
+	"packs",
+	"pack_plasma",
+	"pack_no_t4",
+	"load_running",
+}
+
+
+class TestT5DemoData(FrappeTestCase):
+	def test_ensure_t5_demo_idempotent(self):
+		from tracecore.reprocessing import sterilizing
+
+		first = devdata.ensure_t5_demo()
+		second = devdata.ensure_t5_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T5_KEYS)
+		self.assertEqual(len(set(first["packs"])), 3)
+		for cycle_id in first["packs"]:
+			result = sterilizing.admit_pack(
+				cycle_id, first["machine"], first["program"]
+			)  # nạp được, không ném
+			self.assertEqual(result["method"], "Steam")
+		with self.assertRaises(BlockedError) as plasma:
+			sterilizing.admit_pack(first["pack_plasma"], first["machine"], first["program"])
+		self.assertEqual(plasma.exception.block.code, "PACK_INCOMPATIBLE")
+		self.assertTrue(
+			sterilizing.admit_pack(first["pack_plasma"], first["machine_plasma"], first["program_plasma"])
+		)
+		with self.assertRaises(BlockedError) as no_t4:
+			sterilizing.admit_pack(first["pack_no_t4"], first["machine"], first["program"])
+		self.assertEqual(no_t4.exception.block.code, "GATE_PREV_NOT_PASSED")
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine_locked"], "status"), "Retired")
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine"], "has_printout"), 1)
+		self.assertEqual(sterilizing.capacity_of(first["machine"]), 12)
+		self.assertEqual(
+			frappe.db.get_value("Process Program", first["program"], "equipment"), first["machine"]
+		)
+		load = frappe.get_doc("Sterilization Load", first["load_running"])
+		self.assertEqual((load.status, load.equipment, load.docstatus), ("Running", first["machine"], 0))
+
+	def test_t5_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t5_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
 T6_KEYS = {"location", "location_2", "pack_released", "pack_not_released", "pack_stored", "pack_expiring"}
 
 
@@ -531,6 +603,171 @@ class TestT7DemoData(FrappeTestCase):
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				devdata.ensure_t7_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+T3_KEYS = {"set_full", "set_short", "set_branch", "set_no_wash", "short_instrument"}
+
+
+class TestT3DemoData(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		frappe.set_user("Administrator")
+
+	def test_ensure_t3_demo_idempotent_and_sets_open_at_t3(self):
+		from tracecore.reprocessing import assembly
+
+		first = devdata.ensure_t3_demo()
+		second = devdata.ensure_t3_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T3_KEYS)
+		sets = [first["set_full"], first["set_short"], first["set_branch"]]
+		self.assertEqual(len(set(sets)), 3)
+		for set_id in sets:
+			gates = _gates(set_id)
+			self.assertEqual((gates["T1"], gates["T2"], gates["T3"]), ("Pass", "Pass", "Pending"))
+			opened = assembly.open_set(set_id, "TR-003")
+			self.assertGreaterEqual(len(opened["lines"]), 3)
+			self.assertTrue(any(line["thumbnail"] or line["image"] for line in opened["lines"]))
+			self.assertTrue(opened["tray_images"])
+		with self.assertRaises(BlockedError) as raised:
+			assembly.open_set(first["set_no_wash"], "TR-003")
+		self.assertEqual(raised.exception.block.code, "GATE_PREV_NOT_PASSED")
+		self.assertIn(first["short_instrument"], [line["instrument"] for line in opened["lines"]])
+
+	def test_t3_demo_replaces_a_set_that_was_counted(self):
+		from tracecore.core import client_time
+		from tracecore.reprocessing import assembly
+
+		first = devdata.ensure_t3_demo()
+		name = assembly.open_set(first["set_full"], "TR-003")["assembly"]
+		assembly.line(name, "TR-003", client_time.utc_now(), all_ok=True)
+		assembly.submit(name, "TR-003", client_time.utc_now())
+		second = devdata.ensure_t3_demo()
+		ready = {second[key] for key in devdata.T3_READY}
+		self.assertNotIn(first["set_full"], ready)  # bộ đã ghi sổ được thay bằng bộ mới
+		self.assertLessEqual({first["set_short"], first["set_branch"]}, ready)  # bộ chưa dùng giữ nguyên
+		self.assertEqual(second["set_no_wash"], first["set_no_wash"])
+
+	def test_t3_users_bootstrap_has_r04_otp_and_r02(self):
+		import secrets
+
+		from frappe.twofactor import get_default
+		from frappe.utils.password import decrypt
+
+		def admin_roles():
+			return set(frappe.get_all("Has Role", filters={"parent": "Administrator"}, pluck="role"))
+
+		frappe.get_doc("User", "Administrator").remove_roles("TC R10")
+		before = admin_roles()
+		users = devdata.ensure_t3_e2e_users("TR-003", secrets.token_urlsafe(24))
+		self.assertEqual(admin_roles(), before)
+		self.assertEqual(set(users), {"t3_user", "t3_otp_secret", "t3_r02_user"})
+		self.assertIn("TC R04", frappe.get_roles(users["t3_user"]))
+		self.assertIn("TC R02", frappe.get_roles(users["t3_r02_user"]))
+		self.assertEqual(decrypt(get_default(users["t3_user"] + "_otpsecret")), users["t3_otp_secret"])
+
+	def test_t3_r02_has_card_competency_and_a_random_working_pin(self):
+		from tracecore.core import station_auth
+
+		user = make_user("t3-demo-r02@example.test", ("TC R02",))
+		first = devdata.ensure_t3_r02("TR-003", user)
+		self.assertEqual(set(first), {"employee", "card_id", "pin"})
+		self.assertRegex(first["pin"], r"^\d{6}$")
+		self.assertTrue(station_auth.verify_pin(first["employee"], first["pin"]))
+		self.addCleanup(station_auth.clear_pin_rate_limit, first["employee"])
+		self.assertTrue(
+			frappe.db.exists("Station Competency", {"employee": first["employee"], "station": "TR-003"})
+		)
+		login = station_auth.login(first["card_id"], "TR-003")
+		self.assertEqual(login["user"], user)
+		self.assertIn("TC R02", login["roles"])
+
+	def test_smoke_station_is_a_clean_zone_station_without_a_step(self):
+		name = devdata.ensure_smoke_station("TR-090")
+		self.assertEqual(name, devdata.ensure_smoke_station("TR-090"))
+		row = frappe.db.get_value(
+			"Zone Station", name, ["is_zone", "is_active", "station_step", "zone_type"], as_dict=True
+		)
+		self.assertEqual((row.is_zone, row.is_active), (0, 1))
+		self.assertFalse(row.station_step)
+		self.assertEqual(row.zone_type, "Clean")
+
+	def test_t3_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			for fn, args in ((devdata.ensure_t3_demo, ()), (devdata.ensure_smoke_station, ("TR-090",))):
+				with self.assertRaises(frappe.ValidationError):
+					fn(*args)
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
+T1_KEYS = {
+	"department",
+	"deliverer_card",
+	"deliverer_name",
+	"sets",
+	"set_new",
+	"sets_pda",
+	"set_sterile",
+	"set_unknown",
+}
+
+
+class TestT1DemoData(FrappeTestCase):
+	def _status(self, set_id):
+		return frappe.db.get_value("Set Unit", set_id, "status")
+
+	def test_ensure_t1_demo_idempotent(self):
+		first = devdata.ensure_t1_demo()
+		second = devdata.ensure_t1_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T1_KEYS)
+		self.assertEqual(len(first["sets"]), 3)
+		self.assertEqual(len(first["sets_pda"]), 2)
+		self.assertEqual([self._status(s) for s in first["sets"]], ["Awaiting Receipt"] * 3)
+		self.assertEqual([self._status(s) for s in first["sets_pda"]], ["New"] * 2)
+		self.assertEqual(self._status(first["set_new"]), "New")
+		self.assertEqual(self._status(first["set_sterile"]), "Sterile")
+
+	def test_t1_demo_sets_follow_the_receiving_rules(self):
+		demo = devdata.ensure_t1_demo()
+		for set_id in (*demo["sets"], demo["set_new"], *demo["sets_pda"]):
+			self.assertIsNone(step_gate.check(set_id, "T1"), set_id)
+		self.assertEqual(step_gate.check(demo["set_sterile"], "T1").code, "STATUS_INVALID_FOR_STATION")
+		self.assertEqual(gs1.parse_scan(demo["set_unknown"])["type"], "set")
+		self.assertFalse(frappe.db.exists("Set Unit", demo["set_unknown"]))
+
+	def test_t1_demo_deliverer_card_gives_the_demo_department(self):
+		from tracecore.reprocessing import receiving
+
+		demo = devdata.ensure_t1_demo()
+		employee = receiving._deliverer_from_card(demo["deliverer_card"])
+		self.assertEqual(employee.department, demo["department"])
+		self.assertEqual(employee.employee_name, demo["deliverer_name"])
+
+	def test_t1_demo_replaces_consumed_sets(self):
+		first = devdata.ensure_t1_demo()
+		step_gate.start_cycle(first["sets"][0])
+		step_gate.start_cycle(first["set_new"])
+		second = devdata.ensure_t1_demo()
+		self.assertNotIn(first["sets"][0], second["sets"])
+		self.assertTrue(set(first["sets"][1:]) <= set(second["sets"]))
+		self.assertNotEqual(second["set_new"], first["set_new"])
+
+	def test_t1_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t1_demo()
 		finally:
 			frappe.conf.developer_mode, frappe.conf.allow_tests = original
 			frappe.flags.in_test = True

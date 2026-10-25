@@ -165,19 +165,19 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-02; API API-M1-02; DocType D
 **Main success scenario**
 1. R02 chọn loại bộ, nhập số lượng bộ cần tạo và khoa sở hữu.
 2. Hệ thống sinh Set ID theo chuẩn GS1 DataMatrix GIAI với tiền tố GS1 của bệnh viện, kiểm tra duy nhất.
-3. Hệ thống tạo Set Unit gắn phiên bản BOM hiện hành.
+3. Hệ thống tạo Set Unit và hiển thị phiên bản BOM dự kiến áp dụng; phiên bản chỉ được ghim khi bộ bắt đầu chu trình tại T1, Set Unit chưa gắn cố định phiên bản lúc cấp.
 4. In thẻ; R04 gắn thẻ vào khay và quét kiểm tra đọc được.
 5. Hệ thống ghi số lần in và audit.
 6. Bộ sẵn sàng đi vào chuỗi từ trạm Tiếp nhận (chu trình đầu tiên bắt buộc).
 
 **Alternate flows**
-- A1. Gắn mã cho bộ đang lưu hành: nhập số chu trình đã dùng ước tính, hệ thống ghi nguồn Ước tính.
+- A1. Gắn mã cho bộ đang lưu hành: nhập số chu trình đã dùng ước tính (lớn hơn 0) kèm lý do, hệ thống ghi nguồn Ước tính; người, thời điểm và lý do nằm trong Audit Log.
 - A2. Thẻ bị mất/hỏng: in lại thẻ cùng Set ID với lý do, đếm số lần in.
 
 **Exception flows**
 - E1. Máy in không phản hồi → Set ID vẫn được lưu, đưa vào hàng đợi in.
 - E2. Quét kiểm tra không đọc được → đánh dấu Thẻ lỗi, in lại.
-- E3. Tạo hàng loạt vượt 200 bộ/lần → yêu cầu chia lô.
+- E3. Tạo hàng loạt vượt 100 bộ/lần → yêu cầu chia lô.
 
 **Open issues:** Đã chốt: Set ID GS1; 2 loại nhãn (hấp / plasma); hạn lưu loại gói và cơ số do khoa nhập tay trước Sprint 1. Còn xác nhận mẫu nhãn cụ thể tại UAT.
 

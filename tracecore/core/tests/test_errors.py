@@ -24,6 +24,7 @@ class TestErrors(FrappeTestCase):
 				"COMPETENCY_REQUIRED",
 				"PIN_INVALID",
 				"PIN_PROOF_INVALID",
+				"CARD_MISMATCH",
 				"APPROVER_NOT_ALLOWED",
 			),
 			429: ("PIN_LOCKED", "LOGIN_THROTTLED"),
@@ -35,6 +36,10 @@ class TestErrors(FrappeTestCase):
 				"CI_LOT_INVALID",
 				"CI_LOT_EXPIRED",
 				"PACK_TYPE_INVALID",
+				"TEST_INVALID",
+				"TEST_LOT_EXPIRED",
+				"UNLOCK_INVALID",
+				"INDICATOR_INVALID",
 				"REASON_REQUIRED",
 				"MAINT_ACTION_REQUIRED",
 				"MAINT_OIL_LOT_REQUIRED",
@@ -52,6 +57,10 @@ class TestErrors(FrappeTestCase):
 				"BOM_TOO_LARGE",
 				"BOM_EFFECTIVE_DATE_INVALID",
 				"SHELF_LIFE_INVALID",
+				"SET_TYPE_BOM_INVALID",
+				"DEPARTMENT_INVALID",
+				"MAX_CYCLES_INVALID",
+				"PRINTER_NOT_NETWORK",
 				"EQUIPMENT_NOT_WASHER",
 				"PROGRAM_INVALID",
 				"CHEMICAL_LOT_INVALID",
@@ -62,8 +71,21 @@ class TestErrors(FrappeTestCase):
 				# FEAT-026 A-17: cấp phát T7
 				"RECIPIENT_INVALID",
 				"SIGNATURE_INVALID",
+				"EQUIPMENT_NOT_STERILIZER",
+				"PACK_INCOMPATIBLE",
+				"LOAD_EMPTY",
 				"EXTRA_CYCLES_INVALID",
 				"VALID_UNTIL_INVALID",
+				"LINES_NOT_COUNTED",
+				"QTY_INVALID",
+				"BRANCH_INVALID",
+				"PHOTO_INVALID",
+				# FEAT-019 A-31: tiếp nhận T1
+				"DELIVERER_NO_DEPARTMENT",
+				"DELIVERER_NAME_REQUIRED",
+				"RECEIPT_EMPTY",
+				"CONFIRM_INCOMPLETE",
+				"PHOTO_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -78,7 +100,11 @@ class TestErrors(FrappeTestCase):
 				"LOCATION_NOT_FOUND",
 				"ISSUE_NOT_FOUND",
 				"DEPARTMENT_NOT_FOUND",
+				"LOAD_NOT_FOUND",
 				"OVERRIDE_NOT_FOUND",
+				"ASSEMBLY_NOT_FOUND",
+				"RECEIPT_NOT_FOUND",
+				"DELIVERER_NOT_FOUND",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
@@ -110,6 +136,10 @@ class TestErrors(FrappeTestCase):
 				"COMPANY_NOT_CONFIGURED",
 				"BOM_VERSION_CONFLICT",
 				"SET_TYPE_CODE_EXISTS",
+				"SET_SERIES_EXHAUSTED",
+				"SET_DISPOSED",
+				"TAG_PRINT_PENDING",
+				"TAG_MISMATCH",
 				"STEP_ALREADY_PASSED",
 				"SET_IN_OTHER_BATCH",
 				"BATCH_NOT_RUNNING",
@@ -123,10 +153,25 @@ class TestErrors(FrappeTestCase):
 				"ISSUE_EMPTY",
 				"ISSUE_NOT_SIGNED",
 				"PAR_APPROVAL_REQUIRED",
+				"PACK_IN_OTHER_LOAD",
+				"PACK_NOT_LOADABLE",
+				"LOAD_CAPACITY_EXCEEDED",
+				"LOAD_NOT_OPEN",
+				"DAILY_TEST_REQUIRED",
+				"EQUIPMENT_INSPECTION_EXPIRED",
+				"UNLOCK_NOT_ALLOWED",
+				"LOAD_NOT_RELEASABLE",
+				"BI_NOT_PENDING",
 				"SET_END_OF_LIFE",
 				"PAR_NOT_EXCEEDED",
 				"OVERRIDE_PENDING",
 				"OVERRIDE_NOT_PENDING",
+				"SHORTAGE_UNCONFIRMED",
+				"NO_SHORTAGE",
+				"ASSEMBLY_CLOSED",
+				"RECEIPT_CLOSED",
+				"ITEM_NOT_CONFIRMED",
+				"FORCE_NOT_ALLOWED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -152,6 +197,23 @@ class TestErrors(FrappeTestCase):
 		}.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 
+	def test_http_status_new_codes(self):
+		# FEAT-016 G16 (A-09): cấp Set ID hàng loạt; SET_SERIES_EXHAUSTED: hết dải 999 999 giữa lô (review Task 1)
+		for code, status in {
+			"SET_TYPE_BOM_INVALID": 422,
+			"DEPARTMENT_INVALID": 422,
+			"MAX_CYCLES_INVALID": 422,
+			"SET_SERIES_EXHAUSTED": 409,
+			# Task 4/5: in thẻ/nhãn khay, quét kiểm tra; thẻ Set ID chỉ in qua đường server (ruling Task 4)
+			"SET_DISPOSED": 409,
+			"TAG_PRINT_PENDING": 409,
+			"TAG_MISMATCH": 409,
+			"PRINTER_NOT_NETWORK": 422,
+			"GS1_PREFIX_NOT_CONFIGURED": 409,
+		}.items():
+			self.assertEqual(errors.HTTP_STATUS.get(code), status, msg=code)
+			self.assertEqual(BlockedError(Block(code, "t", "r", "a")).http_status_code, status, msg=code)
+
 	def test_http_status_wash_codes(self):
 		# FEAT-021 A-12: lô rửa T2; máy Khóa/Sửa chữa trả 423 theo BA API-M2-02/03
 		self.assertEqual(Block("EQUIPMENT_NOT_READY", "t", "r", "a").http_status, 423)
@@ -159,6 +221,22 @@ class TestErrors(FrappeTestCase):
 		self.assertEqual(Block("BATCH_EMPTY", "t", "r", "a").http_status, 422)
 		self.assertEqual(Block("SET_IN_OTHER_BATCH", "t", "r", "a").http_status, 409)
 		self.assertEqual(BlockedError(Block("EQUIPMENT_NOT_READY", "t", "r", "a")).http_status_code, 423)
+
+	def test_http_status_load_codes(self):
+		# FEAT-022 A-16 Q14: nạp mẻ tiệt khuẩn T5
+		expected = {
+			"EQUIPMENT_NOT_STERILIZER": 422,
+			"PACK_INCOMPATIBLE": 422,
+			"LOAD_EMPTY": 422,
+			"LOAD_NOT_FOUND": 404,
+			"PACK_IN_OTHER_LOAD": 409,
+			"PACK_NOT_LOADABLE": 409,
+			"LOAD_CAPACITY_EXCEEDED": 409,
+			"LOAD_NOT_OPEN": 409,
+			"CARD_MISMATCH": 403,
+		}
+		for code, status in expected.items():
+			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 
 	def test_block_as_dict(self):
 		self.assertEqual(

@@ -64,6 +64,20 @@ elif method.endswith("ensure_t2_e2e_user"):
     print(json.dumps({"t2_user": "station-tr-002@tracecore.local", "t2_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_t2_demo"):
     print(json.dumps({"machine": "TB-0001", "sets": ["S-1", "S-2", "S-3"]}))
+elif method.endswith("ensure_t5_e2e_user"):
+    print(json.dumps({"t5_user": "station-t5@tracecore.local", "t5_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t5_demo"):
+    print(json.dumps({"machine": "TB-0002", "packs": ["CY-1", "CY-2", "CY-3"]}))
+elif method.endswith("ensure_t3_e2e_users"):
+    print(json.dumps({"t3_user": "station-t3@tracecore.local", "t3_r02_user": "r02-t3-e2e@tracecore.local", "t3_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t3_r02"):
+    print(json.dumps({"employee": "DEMO-R02", "card_id": "CARD-R02-" + kwargs["station"], "pin": "135790"}))
+elif method.endswith("ensure_t3_demo"):
+    print(json.dumps({"set_full": "S-F", "set_short": "S-S", "set_branch": "S-B", "set_no_wash": "S-N", "short_instrument": "KC-1"}))
+elif method.endswith("ensure_t1_e2e_user"):
+    print(json.dumps({"t1_user": "station-t1@tracecore.local", "t1_otp_secret": os.environ["TC_FAKE_OTP"]}))
+elif method.endswith("ensure_t1_demo"):
+    print(json.dumps({"department": "Khoa Demo - TCT", "deliverer_name": "Demo ward nurse", "deliverer_card": "DEMO-T1-DELIVERER", "sets": ["S-1", "S-2", "S-3"], "sets_pda": ["S-4", "S-5"], "set_new": "S-6"}))
 elif method.endswith("ensure_t6_e2e_user"):
     print(json.dumps({"t6_user": "station-t6@tracecore.local", "t6_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_t6_demo"):
@@ -99,9 +113,27 @@ else:
 			)
 			self.assertEqual(result.returncode, 0, result.stderr)
 			values = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
-			self.assertEqual(values["TC_E2E_CARD_ID"], "CARD-TR-003")
+			self.assertEqual(values["TC_E2E_STATION"], "TR-090")  # trạm tra cứu chung, không phải trạm T3
+			self.assertEqual(values["TC_E2E_CARD_ID"], "CARD-TR-090")
 			self.assertEqual(values["TC_E2E_T4_CARD_ID"], "CARD-TR-004")
+			self.assertEqual(values["TC_E2E_T3_STATION"], "TR-003")
+			self.assertEqual(values["TC_E2E_T3_CARD_ID"], "CARD-TR-003")
+			self.assertEqual(values["TC_E2E_T3_R02_CARD_ID"], "CARD-R02-TR-003")
+			self.assertEqual(values["TC_E2E_T3_R02_PIN"], "135790")
+			self.assertEqual(values["TC_E2E_T3_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T3_SET_SHORT"], "S-S")
 			self.assertEqual(values["TC_E2E_T4_SECOND_STATION"], "TR-005")
 			self.assertEqual(values["TC_E2E_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_T4_OTP_SECRET"], env["TC_FAKE_OTP"])
 			self.assertEqual(values["TC_E2E_R10_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T5_STATION"], "TR-005")
+			self.assertEqual(values["TC_E2E_T5_CARD_ID"], "CARD-TR-005")
+			self.assertEqual(values["TC_E2E_T5_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T5_PACKS"], "CY-1,CY-2,CY-3")
+			self.assertEqual(values["TC_E2E_T1_STATION"], "TR-001")
+			self.assertEqual(values["TC_E2E_T1_CARD_ID"], "CARD-TR-001")
+			self.assertEqual(values["TC_E2E_T1_OTP_SECRET"], env["TC_FAKE_OTP"])
+			self.assertEqual(values["TC_E2E_T1_SETS"], "S-1,S-2,S-3")
+			self.assertEqual(values["TC_E2E_T1_SETS_PDA"], "S-4,S-5")
+			self.assertEqual(values["TC_E2E_T1_DELIVERER_CARD"], "DEMO-T1-DELIVERER")
+			self.assertEqual(values["TC_E2E_T1_DEPARTMENT"], "'Khoa Demo - TCT'")  # có khoảng trắng → quote

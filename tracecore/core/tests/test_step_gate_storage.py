@@ -92,3 +92,18 @@ class TestStepGateStorage(FrappeTestCase):
 		step_gate.return_to_receipt(su)
 		self.assertEqual(step_gate.start_cycle(su), 2)
 		self.assertEqual(_status(su).status, "Processing")
+
+
+class TestStepGateCountCycle(FrappeTestCase):
+	@bru("BRU-FLOW-003")
+	def test_count_cycle_adds_one_cycle_used_through_the_step_gate_only(self):
+		# FEAT-023 D6: mẻ giải phóng Đạt tăng bộ đếm chu trình của bộ; chỉ step_gate đổi được cycles_used
+		su = make_set_unit().name
+		before = frappe.db.get_value("Set Unit", su, "cycles_used")
+		self.assertEqual(step_gate.count_cycle(su), before + 1)
+		self.assertEqual(step_gate.count_cycle(su), before + 2)
+		self.assertEqual(frappe.db.get_value("Set Unit", su, "cycles_used"), before + 2)
+		unit = frappe.get_doc("Set Unit", su)
+		unit.cycles_used = before
+		with self.assertRaises(frappe.ValidationError):
+			unit.save(ignore_permissions=True)
