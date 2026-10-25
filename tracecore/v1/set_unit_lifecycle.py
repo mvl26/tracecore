@@ -1,0 +1,115 @@
+"""RPC vòng đời Set Unit: ngữ cảnh form, lịch sử (FEAT-016 Task 6; FR-M1-06, FR-M1-06.2; A-13 G7, G13).
+
+Đường RPC công khai giữ ``tracecore.v1.set_unit.<action>`` như plan: `tracecore.v1.set_unit` nhập lại hai hàm này (Frappe
+tra đường chấm bằng ``getattr`` trên module và so hàm với danh sách whitelist, nên cùng một hàm whitelist được ở cả hai
+đường). Tách file để `set_unit.py` không vượt giới hạn độ dài; các tuple role của cả hai module đặt ở đây.
+
+- `form_context` (GET): tóm tắt bộ (`set_units.summary`), giới hạn nghiệp vụ cho JS (không chép hằng số), quyền theo
+  role, loại bản in, máy in gợi ý (đang hoạt động, có địa chỉ mạng), cờ ``test_labels`` (nhãn in dòng TEST, Task 7).
+- `history` (GET): `set_units.history`, phân trang bằng ``next_before``.
+"""
+
+import frappe
+from frappe import _
+
+from tracecore.core import code_registry, gs1, print_server
+from tracecore.core.errors import BlockedError
+from tracecore.instrument import set_history, set_tags, set_units
+from tracecore.v1._common import BadRequestError, reject_block
+
+ISSUE_ROLES = ("TC R02", "TC R10", "System Manager")  # cấp, in, in lại, hủy lệnh in, xuất CSV (G7)
+VERIFY_ROLES = (*ISSUE_ROLES, "TC R04")  # quét kiểm tra thẻ (UC-03 bước 4)
+MAX_NAME_CHARS = 140
+MAX_LIMIT_CHARS = 3
+PRINTERS_HINT_MAX = 50
+
+
+def _set_id(value, required=True):
+	if value in (None, "") and not required:
+		return None
+	if not isinstance(value, str) or not value.strip() or len(value) > MAX_NAME_CHARS:
+		raise BadRequestError(_("{0} must be a non-empty text.").format("set_unit"))
+	return value.strip()
+
+
+def _limit(value):
+	"""`limit` 1-``set_history.MAX_LIMIT`` dạng int hoặc chuỗi chữ số (query string GET); sai → 400."""
+	if isinstance(value, str) and value.strip().isascii() and value.strip().isdigit():
+		value = int(value.strip()) if len(value.strip()) <= MAX_LIMIT_CHARS else 0
+	if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= set_history.MAX_LIMIT:
+		raise BadRequestError(_("limit must be a whole number from 1 to {0}.").format(set_history.MAX_LIMIT))
+	return value
+
+
+def _printers_hint():
+	"""Máy in đang hoạt động gửi được từ server (thẻ/nhãn khay chỉ in qua đường server, ``PRINTER_NOT_NETWORK``)."""
+	rows = frappe.get_all(
+		"Printer",
+		filters={"is_active": 1, "host": ["is", "set"]},
+		fields=["name", "printer_name", "station"],
+		order_by="name asc",
+		limit=PRINTERS_HINT_MAX,
+	)
+	return [row for row in rows if print_server.printer_address(row.name) is not None]
+
+
+@frappe.whitelist(methods=["GET"])
+def form_context(set_unit=None, set_type=None):
+	"""Ngữ cảnh form Set Unit / hộp thoại Cấp Set ID (FR-M1-06.2; G7): ``{ok, summary, limits, permissions, kinds,
+	printers_hint, max_cycles_cap}``. ``summary`` None khi không truyền bộ; bộ không có → ``SET_NOT_FOUND`` (404, Audit
+	``Reject`` được commit dù là GET). ``max_cycles_cap`` = ``{value, source}`` của `set_type` (nguồn cơ số tối đa,
+	A-13 G5), None khi không truyền loại bộ hoặc loại bộ không có."""
+	frappe.has_permission("Set Unit", "read", throw=True)
+	set_unit = _set_id(set_unit, required=False)
+	set_type = _set_id(set_type, required=False)
+	roles = set(frappe.get_roles())
+	can_issue = bool(roles & set(ISSUE_ROLES))
+	summary = None
+	if set_unit:
+		try:
+			summary = set_units.summary(set_unit)
+		except BlockedError as error:
+			return reject_block(error.block, "Set Unit", set_unit)
+	return {
+		"ok": True,
+		"summary": summary,
+		"limits": {
+			"max_batch": set_units.MAX_BATCH,
+			"reason_max": set_tags.REASON_MAX,
+			"max_cycles_limit": set_units.MAX_CYCLES_LIMIT,
+		},
+		"permissions": {
+			"can_issue": can_issue,
+			"can_print": can_issue,
+			"can_reprint": can_issue,
+			"can_verify": bool(roles & set(VERIFY_ROLES)),
+		},
+		"kinds": [
+			{"kind": kind, "label_object": label, "label": _(label, context="Label Template")}
+			for kind, label in set_tags.KINDS.items()
+		],
+		"printers_hint": _printers_hint() if can_issue else [],
+		# thẻ/nhãn in thêm dòng TEST (G3): theo tiền tố trong Set ID của bộ, chưa có bộ thì theo tiền tố của site
+		"test_labels": gs1.is_demo_prefix(set_unit or code_registry.company_prefix()),
+		"max_cycles_cap": set_units.max_cycles_cap(set_type) if set_type else None,
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def history(set_unit=None, before=None, limit=set_history.DEFAULT_LIMIT):
+	"""Lịch sử vòng đời của bộ, mới → cũ (FR-M1-06; G13): ``{ok, events, next_before}``.
+
+	`before` = ``next_before`` của trang trước (hoặc một thời điểm); `limit` 1-200; tham số sai → 400; bộ không có →
+	``SET_NOT_FOUND`` (404, Audit ``Reject`` được commit)."""
+	frappe.has_permission("Set Unit", "read", throw=True)
+	set_unit = _set_id(set_unit)
+	limit = _limit(limit)
+	try:
+		set_history.parse_cursor(before)
+	except frappe.ValidationError:
+		raise BadRequestError(_("before must be a history cursor or a date and time.")) from None
+	try:
+		result = set_units.history(set_unit, before or None, limit)
+	except BlockedError as error:
+		return reject_block(error.block, "Set Unit", set_unit)
+	return {"ok": True, **result}

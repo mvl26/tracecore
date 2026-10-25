@@ -1,0 +1,24 @@
+{# Thẻ kim loại của bộ dụng cụ (Label Template "Set tag", đối tượng Set Tag), 50 x 30 mm, 300 dpi, ZPL (FEAT-016 G8).
+   In nhiệt lên phôi thẻ kim loại/foil chịu hấp. Gốc tọa độ ở góc trên trái; 1 mm = 11,8 dot ở 300 dpi. Lề 24 dot.
+
+   DataMatrix GIAI bên trái: payload = FNC1 + 8004 + Set ID, module 6 dot; Set ID dài nhất (26 ký tự) cho mã
+   tối đa 24 x 24 module = 144 dot nên cột chữ bắt đầu ở x = 200. Cột phải: Set ID chữ to (tối đa 2 dòng), mã loại
+   bộ. Dòng TEST dưới DataMatrix khi Set ID mang tiền tố GS1 demo (dev/test). Chuỗi người đọc (8004)… ở đáy thẻ.
+
+   Mọi chữ in qua text(): giữ dấu khi Printer.supports_unicode = 1, bỏ dấu khi = 0. ^CI28 chọn UTF-8;
+   ^FB giới hạn bề rộng và số dòng nên chuỗi dài không tràn thẻ.
+
+   Biến: doc.set_id, payload, hri, type_code, set_type_name, department, method, is_implant, issued_on (dd/mm/yyyy),
+   is_test; width_dots, height_dots, dpi. Hàm: text(giá trị), datamatrix(payload, x, y, module). #}
+^XA
+^CI28
+^PW{{ width_dots }}
+^LL{{ height_dots }}
+{{ datamatrix(doc.payload, 24, 24, 6) }}
+^FO200,28^A0N,36,36^FB367,2,4,L,0^FD{{ text(doc.set_id) }}^FS
+^FO200,116^A0N,32,32^FB367,1,0,L,0^FD{{ text(doc.type_code) }}^FS
+{% if doc.is_test %}
+^FO24,206^A0N,44,44^FDTEST^FS
+{% endif %}
+^FO24,296^A0N,24,24^FB543,1,0,L,0^FD{{ text(doc.hri) }}^FS
+^XZ

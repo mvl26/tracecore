@@ -1,6 +1,7 @@
 """Dữ liệu demo cho site dev/test (developer_mode hoặc allow_tests; không chạy trên production).
 
-- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_demo_set`` in Set ID GIAI thử để quét ở /app/station.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_demo_set`` in Set ID GIAI thử để quét ở /app/station
+  (loại bộ DEMO có BOM một dụng cụ demo; Set Unit cấp qua ``set_units.issue_batch``).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t4_demo`` chuẩn bị màn T4 đóng gói (SCR-08) tại
   TR-004 và in JSON các mã để quét (bộ hấp, bộ plasma, bộ chưa qua cổng T3, lô chỉ thị, mã cuộn nhãn, máy in).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_equipment_demo`` chuẩn bị máy và chương trình xử lý
@@ -17,8 +18,13 @@
   TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t5_demo`` chuẩn bị màn T5 nạp mẻ (SCR-09, FEAT-022) tại
   TR-005 (máy hấp/plasma, chương trình, gói đã qua T4, mẻ đang chạy); in JSON các mã để quét.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t1_demo`` chuẩn bị màn T1 tiếp nhận (SCR-05, FEAT-019) tại
+  TR-001: thẻ người giao thuộc khoa demo, bộ Chờ tiếp nhận / Mới tạo để tiếp nhận, bộ Vô khuẩn (bị từ chối), một Set ID
+  hợp lệ về định dạng nhưng chưa cấp; in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t6_demo`` chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại
   TR-006: hai kệ ``KE-``, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t3_demo`` chuẩn bị màn T3 kiểm đếm lắp ráp (SCR-07) tại
+  TR-003: bộ đã qua T1-T2 để đếm đủ / đếm thiếu / rẽ nhánh, bộ chưa qua lô rửa; in JSON các mã.
 """
 
 import io
@@ -34,7 +40,7 @@ from frappe.utils import add_days, cint, getdate, now_datetime, today
 from tracecore.core import client_time, code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
-from tracecore.instrument import bom, bom_versions
+from tracecore.instrument import bom, bom_versions, set_units
 from tracecore.reprocessing import sterilizing, washing
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
@@ -240,31 +246,43 @@ def ensure_station_demo(station, user, card_id=None, second_station=None):
 
 
 def ensure_demo_set():
-	"""Tạo (nếu chưa có) loại bộ DEMO và một Set Unit; trả và in Set ID."""
+	"""Tạo (nếu chưa có) loại bộ DEMO (BOM một dụng cụ demo hấp) và một Set Unit cấp qua Cấp Set ID; trả và in Set ID."""
 	_require_dev_site()
+	steam = _t4_catalog()["Steam"]
+	instrument, instrument_name, _qty = steam["bom"][0]
+	_ensure_instrument(instrument, instrument_name, "Steam")
+	lines = [{"instrument": instrument, "qty": 1}]
 	if not frappe.db.exists("Instrument Set Type", DEMO_SET_TYPE):
-		doc = frappe.get_doc(
+		bom_versions.create_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": DEMO_SET_TYPE,
 				"set_type_name": "Demo set",
 				"method": "Steam",
 				"department": _demo_department(),
-				"default_pack_type": _ensure_pack_type(_t4_catalog()["Steam"]["pack_type"]),
-			}
+				"default_pack_type": _ensure_pack_type(steam["pack_type"]),
+			},
+			lines,
 		)
-		# loại bộ demo không có BOM (chỉ để in Set ID) như dữ liệu có trước FEAT-015: ghi với cờ dịch vụ BOM
-		doc.flags.tc_bom = True
-		doc.insert(ignore_permissions=True)
+	elif not bom_versions.effective_version(DEMO_SET_TYPE):
+		# loại bộ DEMO tạo trước FEAT-016 không có BOM: cấp Set ID cần BOM hiệu lực (G5)
+		latest = bom_versions.versions(DEMO_SET_TYPE)
+		bom_versions.create_version(
+			DEMO_SET_TYPE,
+			lines,
+			bom_versions.today(),
+			_("Demo data"),
+			latest[0]["bom_version"] if latest else 0,
+		)
 	set_id = frappe.db.get_value("Set Unit", {"set_type": DEMO_SET_TYPE}, "name", order_by="creation asc")
 	if not set_id:
-		set_id = (
-			frappe.get_doc({"doctype": "Set Unit", "set_type": DEMO_SET_TYPE, "max_cycles": 300})
-			.insert(ignore_permissions=True)
-			.name
-		)
+		set_id = _issue_one(DEMO_SET_TYPE)
 	print(set_id)
 	return set_id
+
+
+def _issue_one(set_type):
+	"""Một Set Unit Mới tạo của `set_type` qua Cấp Set ID (FEAT-016: Set Unit chỉ tạo qua ``set_units.issue_batch``)."""
+	return set_units.issue_batch(set_type, 1, max_cycles=300)[0]
 
 
 def _t4_catalog():
@@ -423,6 +441,11 @@ def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
 		frappe.db.set_value("Instrument Set Type", code, "tray_image", _demo_image(f"{code}-TRAY"))
 	elif not frappe.db.exists("Set BOM Item", {"set_type": code}):
 		bom_versions.create_version(code, lines, bom_versions.today(), _("Demo data"), 0)
+	if not frappe.db.get_value("Instrument Set Type", code, "department"):
+		# loại bộ demo tạo trước FEAT-015 chưa có khoa; cấp Set ID bắt buộc khoa (A-13 G5)
+		frappe.db.set_value(
+			"Instrument Set Type", code, "department", _demo_department(), update_modified=False
+		)
 	return code
 
 
@@ -460,13 +483,11 @@ def _ensure_set(set_type, passed, reminder=False):
 	for row in rows:
 		if _matches(_gate_results(row), passed) and _has_lube_reminder(row.name) == reminder:
 			return row.name
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=passed)
+	set_id = _issue_one(set_type)
+	factories.make_cycle(set_id, passed=passed)
 	if reminder:
-		_ensure_lube_reminder(unit.name)
-	return unit.name
+		_ensure_lube_reminder(set_id)
+	return set_id
 
 
 def _ensure_lube_reminder(set_id):
@@ -1058,14 +1079,12 @@ def _inflight_set(set_type, toggled):
 	):
 		if _matches(_gate_results(row), T4_GATES_READY) and 0 < row.cycle_bom_version < effective:
 			return row.name, row.cycle_bom_version
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=T4_GATES_READY)
+	set_id = _issue_one(set_type)
+	factories.make_cycle(set_id, passed=T4_GATES_READY)
 	_demo_version(
 		set_type, getdate(today()), _("Demo BOM change during a cycle", lang="vi"), _toggle_line(toggled)
 	)
-	return unit.name, frappe.db.get_value("Set Unit", unit.name, "cycle_bom_version")
+	return set_id, frappe.db.get_value("Set Unit", set_id, "cycle_bom_version")
 
 
 def ensure_set_type_demo():
@@ -1229,13 +1248,11 @@ def _t2_candidates(set_type, status, wanted):
 
 
 def _t2_new_set(set_type, passed=(), fail_t2=False):
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=passed)
+	unit = _issue_one(set_type)
+	factories.make_cycle(unit, passed=passed)
 	if fail_t2:
-		step_gate.record(unit.name, "T2", "Fail")
-	return unit.name
+		step_gate.record(unit, "T2", "Fail")
+	return unit
 
 
 def _t2_operator():
@@ -1528,6 +1545,231 @@ def ensure_t6_demo():
 		or _t6_new_pack(location=locations["location"]),
 		"pack_expiring": _t6_candidate("In Sterile Stock", expiring=True, location=locations["location_2"])
 		or _t6_new_pack(expiry_days=T6_EXPIRING_DAYS, location=locations["location_2"]),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T3 kiểm đếm lắp ráp (FEAT-020) --------------------------------------------------------------
+T3_STATION = "TR-003"
+T3_SET_TYPE = "DEMOT3S"
+T3_READY = ("set_full", "set_short", "set_branch")
+SMOKE_STATION = (
+	"TR-090"  # trạm tra cứu Set ID chung (không bước) cho smoke FEAT-001, vì TR-003 đã có màn T3 riêng
+)
+
+
+def ensure_smoke_station(station=SMOKE_STATION):
+	"""Trạm khu sạch không gán bước (màn tra cứu Set ID chung) cho e2e smoke FEAT-001; idempotent, trả mã trạm.
+
+	Mỗi trạm bước T1..T7 dần có màn riêng nên smoke không thể đặt ở trạm có bước. Trạm không bước vẫn đăng nhập thẻ được
+	và dùng `v1.set_unit.get`.
+	"""
+	_require_dev_site()
+	if not frappe.db.exists("Zone Station", station):
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"is_zone": 0,
+				"is_active": 1,
+				"zone_station_name": "Set lookup (smoke)",
+				"parent_zone": "ZONE-CLEAN",
+			}
+		).insert(ignore_permissions=True, set_name=station)
+	return station
+
+
+def ensure_t3_e2e_users(station, password):
+	"""User kiosk trạm T3 (khu sạch → TC R04) và user R02 cho PIN xác nhận thiếu (FEAT-020); đăng ký OTP App cho user kiosk.
+
+	R02 chỉ cần Employee + thẻ + năng lực (`ensure_t3_r02`), không đăng nhập Desk. Bí mật chỉ ghi vào file env riêng tư.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		r02 = provision.desk_user("TC R02", "r02-t3-e2e", password)
+		return {"t3_user": user, "t3_otp_secret": _enroll_otp(user), "t3_r02_user": r02}
+
+
+def ensure_t3_r02(station, user):
+	"""Thẻ + năng lực tại `station` cho user R02 và một PIN 6 số ngẫu nhiên mới; trả ``{employee, card_id, pin}``.
+
+	PIN đổi mỗi lần chạy (không có PIN cố định); chỉ ghi vào file env riêng tư của e2e.
+	"""
+	import secrets as secrets_module
+
+	from tracecore.core import station_auth
+
+	card = ensure_station_demo(station, user)
+	pin = f"{secrets_module.randbelow(10**6):06d}"
+	station_auth.set_pin(card["employee"], pin)
+	frappe.db.set_value("Employee", card["employee"], "tc_pin_reset_required", 0)
+	return {"employee": card["employee"], "card_id": card["card_id"], "pin": pin}
+
+
+def _t3_counted(set_id):
+	"""Bộ đã có phiếu lắp ráp (bản nháp hay ghi sổ) trong chu trình hiện hành."""
+	return bool(
+		frappe.db.exists(
+			"Assembly Record",
+			{
+				"set_unit": set_id,
+				"cycle_no": frappe.db.get_value("Set Unit", set_id, "current_cycle_no"),
+			},
+		)
+	)
+
+
+def _t3_candidates(set_type, wanted):
+	rows = frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type, "status": "Processing", "current_cycle_no": [">", 0]},
+		fields=["name", "active_cycle_id"],
+		order_by="creation asc",
+	)
+	out = []
+	for row in rows:
+		if row.active_cycle_id or _t3_counted(row.name):
+			continue
+		gates = {gate["step"]: gate["result"] for gate in step_gate.gates(row.name)}
+		if all(gates[step] == result for step, result in wanted.items()):
+			out.append(row.name)
+	return out
+
+
+def ensure_t3_demo():
+	"""Chuẩn bị màn T3 kiểm đếm lắp ráp (SCR-07) tại TR-003 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``set_full``, ``set_short``, ``set_branch``: ba bộ loại hấp ``DEMOT3S`` (BOM 4 dụng cụ có ảnh, 3 ảnh khay) đã qua
+	  T1-T2, chưa có phiếu lắp ráp: đếm đủ → T3 Đạt; đếm thiếu → R02 PIN; rẽ nhánh Sửa chữa/Thanh lý.
+	- ``set_no_wash``: bộ mới qua T1, chưa qua lô rửa (T2 Chưa): T3 từ chối ``GATE_PREV_NOT_PASSED``.
+	- ``short_instrument``: dụng cụ (BOM, số lượng 2) để ghi thiếu.
+	Bộ đã được đếm/ghi sổ được thay bằng bộ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"], code=T3_SET_TYPE)
+	ready = _t3_candidates(set_type, {"T1": "Pass", "T2": "Pass", "T3": "Pending"})
+	while len(ready) < len(T3_READY):
+		ready.append(_t2_new_set(set_type, passed=("T1", "T2")))
+	no_wash = _t3_candidates(set_type, {"T1": "Pass", "T2": "Pending"})
+	result = {
+		**dict(zip(T3_READY, ready, strict=False)),
+		"set_no_wash": no_wash[0] if no_wash else _t2_new_set(set_type, passed=("T1",)),
+		"short_instrument": _t4_catalog()["Steam"]["bom"][0][0],
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T1 tiếp nhận (FEAT-019) ---------------------------------------------------------------------
+T1_STATION = "TR-001"
+T1_SET_TYPE = "DEMOT1S"
+T1_DELIVERER_CARD = "DEMO-T1-DELIVERER"
+T1_READY_SETS = 3  # bộ Chờ tiếp nhận cho luồng nhiều bộ nối tiếp
+T1_NEW_SETS = 3  # bộ Mới tạo: một cho luồng chính, hai cho PDA
+
+
+def ensure_t1_e2e_user(station, password):
+	"""User kiosk trạm T1 (khu bẩn → TC R03) cho e2e màn tiếp nhận (FEAT-019), đăng ký OTP App.
+
+	Tách khỏi `ensure_e2e_users` để không đổi khóa trả về của hàm đó; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		return {"t1_user": user, "t1_otp_secret": _enroll_otp(user)}
+
+
+def _t1_deliverer():
+	"""Nhân viên khoa demo có thẻ đã bật (người giao ở T1); dùng lại nếu đã có. Trả Employee."""
+	from tracecore.core.station_auth import normalize_card_id
+
+	card = normalize_card_id(T1_DELIVERER_CARD)
+	name = frappe.db.get_value("Employee", {"tc_card_id": card}, "name")
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	if not name and not company:
+		frappe.throw(_("Complete company setup before creating demo employees."))
+	employee = (
+		frappe.get_doc("Employee", name)
+		if name
+		else frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": _("Demo ward deliverer", lang="vi"),
+				"gender": "Female",
+				"date_of_birth": "1992-01-01",
+				"date_of_joining": today(),
+				"company": company,
+				"tc_card_id": card,
+			}
+		)
+	)
+	employee.status = "Active"
+	employee.tc_card_enabled = 1
+	employee.department = _demo_department()
+	employee.save(ignore_permissions=True)
+	return employee
+
+
+def _t1_sets(set_type, status):
+	return frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type, "status": status, "active_cycle_id": ["is", "not set"]},
+		pluck="name",
+		order_by="creation asc",
+	)
+
+
+def _t1_awaiting_set(set_type):
+	"""Bộ Chờ tiếp nhận hợp lệ: đi hết năm cổng rồi trả về khu bẩn (`step_gate.return_to_receipt`, FR-M2-14)."""
+	unit = _issue_one(set_type)
+	factories.make_cycle(unit, passed=factories.ALL_GATES)
+	step_gate.return_to_receipt(unit)
+	return unit
+
+
+def ensure_t1_demo():
+	"""Chuẩn bị màn T1 tiếp nhận (SCR-05) tại TR-001 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``deliverer_card``, ``deliverer_name``, ``department``: thẻ người giao (nhân viên khoa demo) và khoa suy ra từ thẻ.
+	- ``sets``: 3 bộ Chờ tiếp nhận (đã đi hết chu trình rồi trả về) cho luồng nhiều bộ nối tiếp; ``set_new``: 1 bộ
+	  Mới tạo; ``sets_pda``: 2 bộ Mới tạo cho PDA. Cả sáu bộ có BOM 4 dụng cụ kèm ảnh demo.
+	- ``set_sterile``: bộ Vô khuẩn, T1 từ chối ``STATUS_INVALID_FOR_STATION``.
+	- ``set_unknown``: Set ID đúng định dạng GIAI nhưng chưa cấp (mã không hợp lệ).
+	Bộ đã được tiếp nhận (đã mở chu trình) được thay bằng bộ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"], code=T1_SET_TYPE)
+	deliverer = _t1_deliverer()
+	awaiting = _t1_sets(set_type, "Awaiting Receipt")[:T1_READY_SETS]
+	while len(awaiting) < T1_READY_SETS:
+		awaiting.append(_t1_awaiting_set(set_type))
+	new = _t1_sets(set_type, "New")
+	new = [name for name in new if not frappe.db.get_value("Set Unit", name, "current_cycle_no")][
+		:T1_NEW_SETS
+	]
+	while len(new) < T1_NEW_SETS:
+		new.append(_issue_one(set_type))
+	sterile = _t1_sets(set_type, "Sterile")
+	if not sterile:
+		unit = _issue_one(set_type)
+		factories.make_cycle(unit, passed=factories.ALL_GATES)
+		sterile = [unit]
+	result = {
+		"department": deliverer.department,
+		"deliverer_card": deliverer.tc_card_id,
+		"deliverer_name": deliverer.employee_name,
+		"sets": awaiting,
+		"set_new": new[0],
+		"sets_pda": new[1:],
+		"set_sterile": sterile[0],
+		"set_unknown": gs1.make_giai(gs1.configured_company_prefix(), f"{T1_SET_TYPE}999999"),
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result
