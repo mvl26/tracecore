@@ -41,6 +41,10 @@ SERVICE_FIELDS = (
 	"result_source",
 	"released_by",
 	"released_at",
+	"review_confirmed",
+	"bi_result",
+	"redo_from",
+	"release_reason",
 )
 
 
