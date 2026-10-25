@@ -34,6 +34,8 @@ HTTP_STATUS: dict[str, int] = {
 			"CI_LOT_INVALID",
 			"CI_LOT_EXPIRED",
 			"PACK_TYPE_INVALID",
+			# FEAT-023 A-20: dỡ mẻ, chỉ thị, giải phóng
+			"INDICATOR_INVALID",
 			"REASON_REQUIRED",
 			"MAINT_ACTION_REQUIRED",
 			"MAINT_OIL_LOT_REQUIRED",
@@ -130,6 +132,9 @@ HTTP_STATUS: dict[str, int] = {
 			"PACK_NOT_LOADABLE",
 			"LOAD_CAPACITY_EXCEEDED",
 			"LOAD_NOT_OPEN",
+			# FEAT-023 A-20: giải phóng mẻ và BI
+			"LOAD_NOT_RELEASABLE",
+			"BI_NOT_PENDING",
 			# FEAT-032 A-18: vượt cơ số và ghi đè
 			"SET_END_OF_LIFE",
 			"PAR_NOT_EXCEEDED",
