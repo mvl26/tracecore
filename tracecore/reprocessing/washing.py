@@ -29,6 +29,7 @@ STEP = "T2"
 SAVEPOINT = "tc_wash_start"
 RESULT_SAVEPOINT = "tc_wash_result"
 WASH_EQUIPMENT_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
+EQUIPMENT_CHECKS_HOOK = "tracecore_wash_equipment_checks"
 RUNNING = "Running"
 RESULTS = ("Pass", "Fail")
 CLOSED_STATUS = {"Pass": "Passed", "Fail": "Failed"}
@@ -87,6 +88,9 @@ def check_equipment_ready(equipment):
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another washer, or call R02 to check the daily test and the inspection."),
 		)
+	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
+		if isinstance(block, Block):
+			return block
 	return None
 
 

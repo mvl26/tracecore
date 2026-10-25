@@ -238,6 +238,8 @@ doc_events = {
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
 	"Equipment": dict(_AUDIT_EVENTS),
+	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
+	"Daily Test": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -311,7 +313,10 @@ tracecore_after_wash_failed = []
 # M2 T5 nạp mẻ (FEAT-022, UC-09):
 #  - load_equipment_checks: (equipment) -> Block | None, điều kiện chọn máy tiệt khuẩn (FEAT-040: test ngày, kiểm định)
 #  - after_load_complete:   (ctx) sau khi Hoàn thành nạp (ctx: load, equipment, program, packs, sets)
-tracecore_load_equipment_checks = []
+# M5 (FEAT-040): test hằng ngày và kiểm định chặn tạo mẻ/lô; M2 không import M5
+tracecore_load_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+#  - wash_equipment_checks: (equipment) -> Block | None, như load_equipment_checks cho máy rửa (T2)
+tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
 tracecore_after_load_complete = []
 # M2 T5b dỡ mẻ và giải phóng (FEAT-023, UC-10); ctx là dict, mọi hook chạy trong cùng transaction:
 #  - after_release:       (ctx {set_unit, set_type, bom_version, cycle_id}) mỗi bộ khi giải phóng Đạt (đã khai báo ở trên)

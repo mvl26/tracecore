@@ -332,9 +332,14 @@ def make_equipment(
 	purchase_value=600000000,
 	years=10,
 	loads=3000,
+	daily_tested=True,
 	**kwargs,
 ):
-	"""Tạo Equipment (mã TB-#### do hệ thống sinh). `kwargs` ghi đè bất kỳ trường nào."""
+	"""Tạo Equipment (mã TB-#### do hệ thống sinh). `kwargs` ghi đè bất kỳ trường nào.
+
+	`daily_tested` (mặc định bật, FEAT-040): ghi sẵn test hằng ngày Đạt của hôm nay cho loại máy cần test, để máy dùng được
+	ngay; test về chính test hằng ngày truyền `daily_tested=False`.
+	"""
 	values = {
 		"doctype": "Equipment",
 		"equipment_name": name,
@@ -349,7 +354,31 @@ def make_equipment(
 		"planned_loads_year": loads,
 		**kwargs,
 	}
-	return frappe.get_doc(values).insert()
+	doc = frappe.get_doc(values).insert()
+	if daily_tested:
+		record_daily_tests(doc)
+	return doc
+
+
+def record_daily_tests(equipment):
+	"""Ghi test hằng ngày Đạt của hôm nay cho mọi test bắt buộc của máy (không qua dịch vụ, không khóa/mở máy)."""
+	from tracecore.equipment import daily_test
+
+	for test_type in daily_test.required_tests(equipment.equipment_type):
+		row = frappe.get_doc(
+			{
+				"doctype": "Daily Test",
+				"equipment": equipment.name,
+				"test_type": test_type,
+				"result": "Pass",
+				"test_date": today(),
+				"lot": "TEST-LOT",
+				"lot_expiry": add_days(today(), 30),
+				"tested_at": now_datetime(),
+			}
+		)
+		row.flags.tc_daily_test = True
+		row.insert(ignore_permissions=True)
 
 
 def make_program(equipment, code="MH-01-134", minutes=4, kwh=3.5, water=0, consumables=None, **kwargs):
