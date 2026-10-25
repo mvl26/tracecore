@@ -2,10 +2,10 @@
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
 // Trạm bước T4 giao cho T4Packing (public/js/station_t4.js), bước T6 giao cho T6Storage (public/js/station_t6.js),
-// bước T2 giao cho T2Wash (public/js/station_t2.js), bước T1 giao cho T1Receiving (public/js/station_t1.js); các file
-// này nối sau file này qua hook page_js.
+// bước T1 giao cho T1Receiving, T2 cho T2Wash, T3 cho T3Assembly, T5 cho T5Load, T7 cho T7Issue (public/js/station_t*.js);
+// các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -72,6 +72,8 @@ class TraceCoreStation {
 		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
 		this.pending = null;
 		this.lastRaw = null;
+		this.pendingScans = []; // mã quét đến khi màn của bước đang chờ máy chủ: quét lại khi màn rảnh
+		this.scanTimer = null;
 		this.manualOffline = false;
 		this.visible = false;
 		this.session = null;
@@ -198,7 +200,9 @@ class TraceCoreStation {
 		this.listen(this.root, "click", (event) => {
 			const button = event.target.closest("[data-action]");
 			if (button) this.onAction(button.dataset.action, button);
-			setTimeout(() => this.focus(), 0);
+			// nút vừa bấm còn giữ focus (màn không chuyển focus sang ô nhập nào): trả focus về ô quét, để ký tự máy quét
+			// không rơi vào nút (Enter còn bấm lại nút)
+			setTimeout(() => this.focus(Boolean(button) && document.activeElement === button), 0);
 		});
 		this.listen(this.input, "blur", () => setTimeout(() => this.focus(), 150));
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
@@ -543,11 +547,17 @@ class TraceCoreStation {
 
 	async rpc(method, args, idempotencyKey, candidate = null) {
 		// RPC của màn trạm cần token phiên thẻ nhân viên (FEAT-003): T4 pack/cuộn nhãn, T6 putaway (FEAT-025),
-		// T2 lô rửa (FEAT-021), T1 tiếp nhận (FEAT-019)
+		// T2 lô rửa (FEAT-021), T1 tiếp nhận (FEAT-019), T3 kiểm đếm lắp ráp (FEAT-020), T7 cấp phát (FEAT-026)
 		const protectedCall =
 			method.startsWith("tracecore.v1.pack.") ||
+			method.startsWith("tracecore.v1.assembly.") ||
 			method.startsWith("tracecore.v1.putaway.") ||
 			method.startsWith("tracecore.v1.wash.") ||
+			method.startsWith("tracecore.v1.issue.") ||
+			method.startsWith("tracecore.v1.usage.") ||
+			method.startsWith("tracecore.v1.load.") ||
+			method.startsWith("tracecore.v1.release.") ||
+			method.startsWith("tracecore.v1.daily_test.") ||
 			method.startsWith("tracecore.v1.receive.") ||
 			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
@@ -661,7 +671,8 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
-		// màn riêng của bước (this.screen): T1 tiếp nhận, T4 đóng gói, T6 kho vô khuẩn, T2 lô rửa; bước khác dùng tra cứu Set ID chung
+		// màn riêng của bước (this.screen): T1 tiếp nhận, T2 lô rửa, T3 kiểm đếm, T4 đóng gói, T6 kho vô khuẩn; bước khác
+		// dùng tra cứu Set ID chung
 		if (this.session && !this.screen) {
 			if (station.step === "T4" && typeof T4Packing !== "undefined") {
 				this.screen = this.t4 = new T4Packing(this);
@@ -669,21 +680,70 @@ class TraceCoreStation {
 				this.screen = new T6Storage(this);
 			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
 				this.screen = new T2Wash(this);
+			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
+				this.screen = new T7Issue(this);
+			} else if (station.step === "T8" && typeof T8Usage !== "undefined") {
+				this.screen = new T8Usage(this);
+			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
+				this.screen = new T5Load(this);
+			} else if (station.step === "T3" && typeof T3Assembly !== "undefined") {
+				this.screen = new T3Assembly(this);
 			} else if (station.step === "T1" && typeof T1Receiving !== "undefined") {
 				this.screen = new T1Receiving(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
+		// context "Zone Station": khu khoa là "Khoa", không lấy bản dịch chung "Department" của Frappe ("Cục")
 		this.root.querySelector(".tc-zone-label").textContent = __(
-			ZONE_LABEL[station.zone_type] || "Station"
+			ZONE_LABEL[station.zone_type] || "Station",
+			null,
+			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
 	}
 
+	// quét lần lượt các mã giữ lại khi màn của bước hết chờ máy chủ; đổi phiên hoặc chờ quá lâu thì bỏ hàng đợi
+	drainScans() {
+		if (this.scanTimer) return;
+		const version = this.sessionVersion;
+		const started = Date.now();
+		const tick = () => {
+			this.scanTimer = null;
+			if (version !== this.sessionVersion || !this.screen) {
+				this.pendingScans = [];
+				return;
+			}
+			if (this.screen.busy) {
+				if (Date.now() - started > 2 * RPC_TIMEOUT_MS) this.pendingScans = [];
+				else this.scanTimer = setTimeout(tick, 100);
+				return;
+			}
+			const next = this.pendingScans.shift();
+			if (!next) return;
+			Promise.resolve(this.screen.scan(next)).finally(() => {
+				if (this.pendingScans.length) this.drainScans();
+			});
+		};
+		this.scanTimer = setTimeout(tick, 100);
+	}
+
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
-		if (this.screen) return this.screen.scan(raw);
+		if (this.screen) {
+			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới
+			// cũng xếp sau các mã còn chờ để giữ đúng thứ tự quét)
+			const ownQueue = ["queue", "scanQueue", "queuedScan"].some(
+				(key) => key in this.screen
+			);
+			if ((this.screen.busy || this.pendingScans.length) && !ownQueue) {
+				const text = (raw || "").trim();
+				this.input.value = "";
+				if (text) this.pendingScans.push(text);
+				return this.drainScans();
+			}
+			return this.screen.scan(raw);
+		}
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.focus();

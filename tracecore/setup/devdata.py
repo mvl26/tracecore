@@ -16,11 +16,15 @@
   nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t2_demo`` chuẩn bị màn T2 lô rửa (SCR-06, FEAT-021) tại
   TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t5_demo`` chuẩn bị màn T5 nạp mẻ (SCR-09, FEAT-022) tại
+  TR-005 (máy hấp/plasma, chương trình, gói đã qua T4, mẻ đang chạy); in JSON các mã để quét.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t1_demo`` chuẩn bị màn T1 tiếp nhận (SCR-05, FEAT-019) tại
   TR-001: thẻ người giao thuộc khoa demo, bộ Chờ tiếp nhận / Mới tạo để tiếp nhận, bộ Vô khuẩn (bị từ chối), một Set ID
   hợp lệ về định dạng nhưng chưa cấp; in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t6_demo`` chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại
   TR-006: hai kệ ``KE-``, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t3_demo`` chuẩn bị màn T3 kiểm đếm lắp ráp (SCR-07) tại
+  TR-003: bộ đã qua T1-T2 để đếm đủ / đếm thiếu / rẽ nhánh, bộ chưa qua lô rửa; in JSON các mã.
 """
 
 import io
@@ -31,13 +35,13 @@ from contextlib import contextmanager
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, getdate, now_datetime, today
+from frappe.utils import add_days, cint, getdate, now_datetime, today
 
 from tracecore.core import client_time, code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
 from tracecore.instrument import bom, bom_versions, set_units
-from tracecore.reprocessing import washing
+from tracecore.reprocessing import sterilizing, washing
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
 
@@ -134,6 +138,22 @@ def ensure_t2_e2e_user(station, password):
 	with _temporary_r10():
 		user = provision.station_user(station, password)
 		return {"t2_user": user, "t2_otp_secret": _enroll_otp(user)}
+
+
+def ensure_t5_e2e_user(station, password):
+	"""User kiosk trạm T5 (khu sạch → TC R04, thêm TC R05 của KTV tiệt khuẩn) cho e2e màn nạp mẻ (FEAT-022), OTP App.
+
+	Khu sạch cấp role R04 (T3/T4/T5 chung khu) nhưng RPC nạp mẻ chỉ nhận R05, R02, System Manager (A-16 Q13) nên user
+	e2e được thêm R05. Tách khỏi `ensure_e2e_users`; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		frappe.get_doc("User", user).add_roles("TC R05")
+		return {"t5_user": user, "t5_otp_secret": _enroll_otp(user)}
 
 
 def ensure_desk_users(password, specs):
@@ -421,6 +441,11 @@ def _ensure_set_type(method, spec, code=None, ensure_instruments=True):
 		frappe.db.set_value("Instrument Set Type", code, "tray_image", _demo_image(f"{code}-TRAY"))
 	elif not frappe.db.exists("Set BOM Item", {"set_type": code}):
 		bom_versions.create_version(code, lines, bom_versions.today(), _("Demo data"), 0)
+	if not frappe.db.get_value("Instrument Set Type", code, "department"):
+		# loại bộ demo tạo trước FEAT-015 chưa có khoa; cấp Set ID bắt buộc khoa (A-13 G5)
+		frappe.db.set_value(
+			"Instrument Set Type", code, "department", _demo_department(), update_modified=False
+		)
 	return code
 
 
@@ -1301,6 +1326,148 @@ def ensure_t2_demo():
 	return result
 
 
+# --- Demo T5 nạp mẻ tiệt khuẩn (FEAT-022, SCR-09) ----------------------------------------------------------
+T5_STATION = "TR-005"
+# Mã loại bộ chỉ gồm 2-8 chữ hoa/số: DEMOT5S/DEMOT5P (tách khỏi DEMOT4*, e2e T4 đóng gói không lấy mất gói T5)
+T5_SET_TYPES = {"Steam": "DEMOT5S", "Plasma": "DEMOT5P"}
+T5_SERIALS = {
+	"machine": "DEMO-T5-STEAM-01",
+	"machine_plasma": "DEMO-T5-PLASMA-01",
+	"machine_locked": "DEMO-T5-STEAM-LOCK",
+	"machine_running": "DEMO-T5-STEAM-RUN",
+}
+T5_CAPACITY = "12"  # số gói tối đa mỗi mẻ (A-16 Q4)
+T5_PARAMETERS = [
+	{
+		"parameter_name": "Sterilization temperature",
+		"unit": "°C",
+		"min_value": 132,
+		"max_value": 138,
+		"required": 1,
+	},
+	{"parameter_name": "Pressure", "unit": "bar", "min_value": 0, "max_value": 2.3, "required": 1},
+	{"parameter_name": "Hold time", "unit": "min", "min_value": 3, "max_value": 0, "required": 1},
+]
+T5_READY_PACKS = 3
+
+
+def _t5_machine(key, equipment_type, **fields):
+	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại); trả TB-####."""
+	name = frappe.db.get_value("Equipment", {"serial_no": T5_SERIALS[key]}, "name")
+	if name:
+		return name
+	values = {
+		"name": f"Demo sterilizer {key}",
+		"equipment_type": equipment_type,
+		"serial": T5_SERIALS[key],
+		"manufacturer": EQ_MANUFACTURER,
+		"model": "DEMO-S5",
+		"capacity": T5_CAPACITY,
+		**fields,
+	}
+	return factories.make_sterilizer(**values).name
+
+
+def _t5_program(equipment):
+	"""Chương trình tiệt khuẩn đang dùng đầu tiên của máy (tạo nếu chưa có), có tham số."""
+	name = frappe.db.get_value(
+		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="creation asc"
+	)
+	if name:
+		return name
+	code = "DEMO-T5-" + equipment.replace("TB-", "")
+	return factories.make_sterilize_program(equipment, code=code, parameters=T5_PARAMETERS).name
+
+
+def _t5_loadable(set_type, with_t4):
+	"""Gói Packed demo của `set_type` còn hạn, còn là Cycle ID hiện hành, chưa ở mẻ nào; `with_t4` chọn cổng T4 Đạt hay chưa."""
+	rows = frappe.get_all(
+		"Pack",
+		filters={"docstatus": 1, "status": "Packed", "set_type": set_type, "expiry": [">=", today()]},
+		fields=["name", "set_unit", "cycle_no"],
+		order_by="creation asc",
+	)
+	out = []
+	for row in rows:
+		unit = frappe.db.get_value(
+			"Set Unit", row.set_unit, ["active_cycle_id", "current_cycle_no", "status"], as_dict=True
+		)
+		if unit.active_cycle_id != row.name or cint(unit.current_cycle_no) != cint(row.cycle_no):
+			continue
+		gates = {gate["step"]: gate["result"] for gate in step_gate.gates(row.set_unit)}
+		if (gates["T4"] == "Pass") == with_t4 and gates["T5"] == "Pending":
+			out.append(row.name)
+	return out
+
+
+def _t5_new_pack(method, with_t4=True):
+	passed = ("T1", "T2", "T3", "T4") if with_t4 else ("T1", "T2", "T3")
+	return factories.make_load_ready_pack(method=method, passed=passed, set_type=T5_SET_TYPES[method]).name
+
+
+def ensure_t5_demo():
+	"""Chuẩn bị màn T5 nạp mẻ (SCR-09) tại TR-005 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``machine``: máy hấp hơi nước hai cửa Sạch → Vô khuẩn, dung tích 12 gói, có bản in; ``machine_plasma``: máy
+	  plasma; ``machine_locked``: máy hấp đã ngừng sử dụng (``Retired``, từ chối 423). ``program``/``program_plasma`` là
+	  chương trình của hai máy đầu (có tham số cho form nhập tay).
+	- ``packs``: 3 gói hơi nước (Cycle ID) đã qua T4, chưa ở mẻ nào; ``pack_plasma``: gói plasma (vào máy hấp bị
+	  ``PACK_INCOMPATIBLE``); ``pack_no_t4``: gói hơi nước mà bộ chưa qua cổng T4.
+	- ``load_running``: một mẻ ``Running`` trên ``machine_running`` (máy hấp riêng, để thử nhập dữ liệu chu trình):
+	  máy còn mẻ chưa xong chu trình thì không nạp mẻ mới (A-22), nên ``machine`` để trống cho test nạp.
+	Gói đã nạp/mẻ đã nhập dữ liệu được thay bằng gói/mẻ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	ensure_sample_templates()
+	ensure_object_templates()
+	machine = _t5_machine(
+		"machine", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE", has_printout=1
+	)
+	plasma = _t5_machine("machine_plasma", "Plasma Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
+	locked = _t5_machine("machine_locked", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
+	if frappe.db.get_value("Equipment", locked, "status") != "Retired":
+		equipment_status.set_status(locked, "Retired", "Demo T5: sterilizer retired")
+	busy = _t5_machine(
+		"machine_running", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE", has_printout=1
+	)
+	program, program_plasma = _t5_program(machine), _t5_program(plasma)
+
+	for method in T5_SET_TYPES:
+		_ensure_set_type(method, _t4_catalog()[method], code=T5_SET_TYPES[method])
+	steam_type, plasma_type = T5_SET_TYPES["Steam"], T5_SET_TYPES["Plasma"]
+	ready = _t5_loadable(steam_type, with_t4=True)
+	while len(ready) < T5_READY_PACKS + 1:  # +1: gói của mẻ đang chạy
+		ready.append(_t5_new_pack("Steam"))
+	plasma_packs = _t5_loadable(plasma_type, with_t4=True)
+	no_t4 = _t5_loadable(steam_type, with_t4=False)
+
+	running = frappe.db.get_value(
+		"Sterilization Load",
+		{"equipment": busy, "status": "Running", "docstatus": 0},
+		"name",
+		order_by="creation asc",
+	)
+	if not running:
+		running = sterilizing.complete(
+			busy, _t5_program(busy), [ready.pop()], T5_STATION, client_time.utc_now(), _t2_operator()
+		)["load"]
+
+	result = {
+		"machine": machine,
+		"machine_plasma": plasma,
+		"machine_locked": locked,
+		"machine_running": busy,
+		"program": program,
+		"program_plasma": program_plasma,
+		"packs": ready[:T5_READY_PACKS],
+		"pack_plasma": plasma_packs[0] if plasma_packs else _t5_new_pack("Plasma"),
+		"pack_no_t4": no_t4[0] if no_t4 else _t5_new_pack("Steam", with_t4=False),
+		"load_running": running,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
 # --- Demo T6 kho vô khuẩn (FEAT-025) ------------------------------------------------------------------
 T6_STATION = "TR-006"
 T6_SET_TYPE = "DEMOT6S"
@@ -1384,6 +1551,287 @@ def ensure_t6_demo():
 		or _t6_new_pack(location=locations["location"]),
 		"pack_expiring": _t6_candidate("In Sterile Stock", expiring=True, location=locations["location_2"])
 		or _t6_new_pack(expiry_days=T6_EXPIRING_DAYS, location=locations["location_2"]),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T7 cấp phát (FEAT-026) ----------------------------------------------------------------------
+T7_STATION = "TR-007"
+T7_SET_TYPE = "DEMOT7S"
+T7_SHELF = "DEMO-T7 Shelf"
+T7_PIN = "246813"  # PIN của R02 duyệt vượt cơ số; chỉ ghi vào file env riêng tư của e2e
+T7_PACKS = 8  # pack_1..pack_6 bị tiêu thụ theo thứ tự hạn, pack_fefo_near / pack_fefo_far chỉ quét thử FEFO
+T7_DEPARTMENTS = {
+	"dept": "DEMO-T7 Khoa A",
+	"dept_tight": "DEMO-T7 Khoa B",
+	"dept_open": "DEMO-T7 Khoa C",
+	"dept_other": "DEMO-T7 Khoa D",
+}
+T7_EMPLOYEES = {
+	"recipient": ("DEMO-T7 Nurse A", "dept"),
+	"stranger": ("DEMO-T7 Nurse D", "dept_other"),
+	"approver": ("DEMO-T7 R02 Supervisor", "dept_other"),
+}
+
+
+def ensure_t7_e2e_user(station, password):
+	"""User kiosk trạm T7 (khu vô khuẩn → TC R06) và user R02 duyệt vượt cơ số, đăng ký OTP App như các trạm khác."""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		approver = provision.desk_user("TC R02", "r02-t7-e2e", password)
+		return {"t7_user": user, "t7_otp_secret": _enroll_otp(user), "t7_approver_user": approver}
+
+
+def _t7_employee(key, departments, approver_user=None):
+	"""Nhân viên demo có thẻ (một lần theo tên); `approver` gắn User R02 và đặt PIN. Trả (Employee, thẻ)."""
+	from tracecore.core import station_auth
+
+	label, dept_key = T7_EMPLOYEES[key]
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	name = frappe.db.get_value("Employee", {"employee_name": label}, "name")
+	employee = (
+		frappe.get_doc("Employee", name)
+		if name
+		else frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": label,
+				"gender": "Female",
+				"date_of_birth": "1990-01-01",
+				"date_of_joining": today(),
+				"company": company,
+			}
+		)
+	)
+	employee.status = "Active"
+	employee.department = departments[dept_key]
+	employee.tc_card_enabled = 1
+	employee.tc_card_id = employee.tc_card_id or f"T7-{secrets.token_hex(10)}".upper()
+	if key == "approver" and approver_user:
+		employee.user_id = approver_user
+	employee.save(ignore_permissions=True)
+	if key == "approver":
+		station_auth.set_pin(employee.name, T7_PIN)
+	return employee
+
+
+def _t7_shelf():
+	code = frappe.db.get_value(
+		"Sterile Location", {"location_name": T7_SHELF, "zone_station": T6_STATION}, "name"
+	)
+	if not code:
+		code = factories.make_sterile_location(T7_SHELF, T6_STATION).name
+	if not frappe.db.get_value("Sterile Location", code, "is_active"):
+		frappe.db.set_value("Sterile Location", code, "is_active", 1)
+	return code
+
+
+def _t7_stock():
+	"""Gói demo T7 đang trong kho, chưa quá hạn và chưa nằm trong phiếu cấp phát, hạn sớm trước."""
+	return frappe.db.sql_list(
+		"""
+		select p.name from `tabPack` p
+		where p.docstatus = 1 and p.set_type = %s and p.status = 'In Sterile Stock' and p.expiry >= %s
+		order by p.expiry asc, p.name asc
+		""",
+		(T7_SET_TYPE, today()),
+	)
+
+
+def _t7_par(set_type, department, min_qty, max_qty):
+	if frappe.db.exists(
+		"Par Level",
+		{"par_kind": "Department Stock", "target": set_type, "department": department},
+	):
+		return
+	factories.make_par_level(
+		"Instrument Set Type",
+		set_type,
+		par_kind="Department Stock",
+		department=department,
+		min_qty=min_qty,
+		max_qty=max_qty,
+		is_active=1,
+	)
+
+
+def ensure_t7_demo(approver_user=None):
+	"""Chuẩn bị màn T7 cấp phát (SCR-12/SCR-36) tại TR-007 trên site dev; idempotent, trả và in JSON các mã để quét.
+
+	- ``dept``/``dept_name`` (cơ số tối đa 50), ``dept_tight``/``dept_tight_name`` (tối đa 1: cấp 2 gói là vượt, cần R02),
+	  ``dept_open``/``dept_open_name`` (chưa cấu hình cơ số), ``dept_other``/``dept_other_name`` (khoa của người lạ).
+	- ``recipient_card`` (nhân viên khoa ``dept``), ``stranger_card`` (khoa ``dept_other``), ``approver_card`` +
+	  ``approver_pin`` (R02 khi ``approver_user`` được truyền).
+	- ``pack_1``..``pack_6``: gói trong kho theo thứ tự hạn sớm trước (mỗi gói cấp một lần);
+	  ``pack_fefo_near``/``pack_fefo_far``: hai gói hạn muộn nhất, chỉ quét thử FEFO; ``pack_released``: gói chưa nhập kho.
+	Phiếu nháp cũ của các khoa demo bị xóa thẳng (chỉ trên site dev). Gói đã cấp được thay bằng gói mới khi gọi lại.
+	"""
+	from tracecore.reprocessing import storage
+
+	_require_dev_site()
+	_ensure_set_type("Steam", _t4_catalog()["Steam"], code=T7_SET_TYPE)
+	departments = {key: factories.make_department(label) for key, label in T7_DEPARTMENTS.items()}
+	names = {
+		key: frappe.db.get_value("Department", name, "department_name") for key, name in departments.items()
+	}
+	_t7_par(T7_SET_TYPE, departments["dept"], 0, 50)
+	_t7_par(T7_SET_TYPE, departments["dept_tight"], 0, 1)
+	for dept in departments.values():
+		drafts = frappe.get_all("Issue Note", filters={"docstatus": 0, "department": dept}, pluck="name")
+		for draft in drafts:
+			frappe.db.delete("Issue Note Pack", {"parent": draft})
+			frappe.db.delete("Issue Note", {"name": draft})
+	shelf = _t7_shelf()
+	stock = _t7_stock()
+	for index in range(len(stock), T7_PACKS):
+		pack = factories.make_released_pack(expiry_days=20 + 2 * index + len(stock), set_type=T7_SET_TYPE)
+		storage.putaway(pack.name, shelf, T6_STATION)
+		stock = _t7_stock()
+	packs = stock[:T7_PACKS]
+	near, far = packs[-2], packs[-1]
+	if frappe.db.get_value("Pack", near, "expiry") == frappe.db.get_value("Pack", far, "expiry"):
+		frappe.db.set_value("Pack", far, "expiry", add_days(frappe.db.get_value("Pack", far, "expiry"), 1))
+	released = (
+		frappe.db.get_value(
+			"Pack",
+			{"docstatus": 1, "set_type": T7_SET_TYPE, "status": "Released", "expiry": [">", today()]},
+			"name",
+			order_by="creation asc",
+		)
+		or factories.make_released_pack(set_type=T7_SET_TYPE).name
+	)
+	cards = {}
+	for key in T7_EMPLOYEES:
+		employee = _t7_employee(key, departments, approver_user)
+		cards[f"{key}_card"] = employee.tc_card_id
+	result = {
+		**{key: value for key, value in departments.items()},
+		**{f"{key}_name": value for key, value in names.items()},
+		**cards,
+		"approver_pin": T7_PIN,
+		**{f"pack_{i}": packs[i - 1] for i in range(1, 7)},
+		"pack_fefo_near": near,
+		"pack_fefo_far": far,
+		"pack_released": released,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T3 kiểm đếm lắp ráp (FEAT-020) --------------------------------------------------------------
+T3_STATION = "TR-003"
+T3_SET_TYPE = "DEMOT3S"
+T3_READY = ("set_full", "set_short", "set_branch")
+SMOKE_STATION = (
+	"TR-090"  # trạm tra cứu Set ID chung (không bước) cho smoke FEAT-001, vì TR-003 đã có màn T3 riêng
+)
+
+
+def ensure_smoke_station(station=SMOKE_STATION):
+	"""Trạm khu sạch không gán bước (màn tra cứu Set ID chung) cho e2e smoke FEAT-001; idempotent, trả mã trạm.
+
+	Mỗi trạm bước T1..T7 dần có màn riêng nên smoke không thể đặt ở trạm có bước. Trạm không bước vẫn đăng nhập thẻ được
+	và dùng `v1.set_unit.get`.
+	"""
+	_require_dev_site()
+	if not frappe.db.exists("Zone Station", station):
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"is_zone": 0,
+				"is_active": 1,
+				"zone_station_name": "Set lookup (smoke)",
+				"parent_zone": "ZONE-CLEAN",
+			}
+		).insert(ignore_permissions=True, set_name=station)
+	return station
+
+
+def ensure_t3_e2e_users(station, password):
+	"""User kiosk trạm T3 (khu sạch → TC R04) và user R02 cho PIN xác nhận thiếu (FEAT-020); đăng ký OTP App cho user kiosk.
+
+	R02 chỉ cần Employee + thẻ + năng lực (`ensure_t3_r02`), không đăng nhập Desk. Bí mật chỉ ghi vào file env riêng tư.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		r02 = provision.desk_user("TC R02", "r02-t3-e2e", password)
+		return {"t3_user": user, "t3_otp_secret": _enroll_otp(user), "t3_r02_user": r02}
+
+
+def ensure_t3_r02(station, user):
+	"""Thẻ + năng lực tại `station` cho user R02 và một PIN 6 số ngẫu nhiên mới; trả ``{employee, card_id, pin}``.
+
+	PIN đổi mỗi lần chạy (không có PIN cố định); chỉ ghi vào file env riêng tư của e2e.
+	"""
+	import secrets as secrets_module
+
+	from tracecore.core import station_auth
+
+	card = ensure_station_demo(station, user)
+	pin = f"{secrets_module.randbelow(10**6):06d}"
+	station_auth.set_pin(card["employee"], pin)
+	frappe.db.set_value("Employee", card["employee"], "tc_pin_reset_required", 0)
+	return {"employee": card["employee"], "card_id": card["card_id"], "pin": pin}
+
+
+def _t3_counted(set_id):
+	"""Bộ đã có phiếu lắp ráp (bản nháp hay ghi sổ) trong chu trình hiện hành."""
+	return bool(
+		frappe.db.exists(
+			"Assembly Record",
+			{
+				"set_unit": set_id,
+				"cycle_no": frappe.db.get_value("Set Unit", set_id, "current_cycle_no"),
+			},
+		)
+	)
+
+
+def _t3_candidates(set_type, wanted):
+	rows = frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type, "status": "Processing", "current_cycle_no": [">", 0]},
+		fields=["name", "active_cycle_id"],
+		order_by="creation asc",
+	)
+	out = []
+	for row in rows:
+		if row.active_cycle_id or _t3_counted(row.name):
+			continue
+		gates = {gate["step"]: gate["result"] for gate in step_gate.gates(row.name)}
+		if all(gates[step] == result for step, result in wanted.items()):
+			out.append(row.name)
+	return out
+
+
+def ensure_t3_demo():
+	"""Chuẩn bị màn T3 kiểm đếm lắp ráp (SCR-07) tại TR-003 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``set_full``, ``set_short``, ``set_branch``: ba bộ loại hấp ``DEMOT3S`` (BOM 4 dụng cụ có ảnh, 3 ảnh khay) đã qua
+	  T1-T2, chưa có phiếu lắp ráp: đếm đủ → T3 Đạt; đếm thiếu → R02 PIN; rẽ nhánh Sửa chữa/Thanh lý.
+	- ``set_no_wash``: bộ mới qua T1, chưa qua lô rửa (T2 Chưa): T3 từ chối ``GATE_PREV_NOT_PASSED``.
+	- ``short_instrument``: dụng cụ (BOM, số lượng 2) để ghi thiếu.
+	Bộ đã được đếm/ghi sổ được thay bằng bộ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"], code=T3_SET_TYPE)
+	ready = _t3_candidates(set_type, {"T1": "Pass", "T2": "Pass", "T3": "Pending"})
+	while len(ready) < len(T3_READY):
+		ready.append(_t2_new_set(set_type, passed=("T1", "T2")))
+	no_wash = _t3_candidates(set_type, {"T1": "Pass", "T2": "Pending"})
+	result = {
+		**dict(zip(T3_READY, ready, strict=False)),
+		"set_no_wash": no_wash[0] if no_wash else _t2_new_set(set_type, passed=("T1",)),
+		"short_instrument": _t4_catalog()["Steam"]["bom"][0][0],
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

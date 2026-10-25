@@ -34,7 +34,9 @@ STEPS = ("T1", "T2", "T3", "T4", "T5")
 STATION_STATUSES = {
 	"T1": ("New", "At Department", "Awaiting Receipt"),
 	"T2": ("Processing", "Reprocess"),
+	"T3": ("Processing", "Reprocess"),
 	"T4": ("Processing", "Reprocess"),
+	"T5": ("Processing", "Reprocess"),
 }
 
 PENDING = "Pending"
@@ -438,6 +440,17 @@ def reopen_after_override(set_unit, override):
 	_save_lifecycle(unit, status="Processing")
 
 
+def count_cycle(set_unit):
+	"""Mẻ giải phóng Đạt (FEAT-023 D6, FR-M1-06.1): +1 ``cycles_used`` của bộ; trả giá trị mới.
+
+	Chỉ nơi này đổi `cycles_used` sau khi cấp (bộ đếm thật thay stub FEAT-018). Nơi gọi chịu trách nhiệm gọi đúng một lần
+	cho mỗi lần giải phóng (mẻ đã ghi sổ không giải phóng lại).
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	_save_lifecycle(unit, cycles_used=cint(unit.cycles_used) + 1)
+	return cint(unit.cycles_used)
+
+
 def return_to_receipt(set_unit):
 	"""Gói hết hiệu lực trong kho: bộ Vô khuẩn sang Chờ tiếp nhận để đưa về khu bẩn (FR-M2-14); bỏ Cycle ID hiện hành.
 
@@ -451,3 +464,36 @@ def return_to_receipt(set_unit):
 			)
 		)
 	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)
+
+
+def use_pack(set_unit):
+	"""Quét sử dụng T8 (FEAT-027, FR-M2-17): bộ Tại khoa sang Chờ tiếp nhận, bỏ Cycle ID hiện hành (đã dùng, không kích hoạt lại).
+
+	Chỉ bộ đang Tại khoa; trạng thái khác → lỗi, không ghi gì. Chu trình kế tiếp mở lại bằng start_cycle (T1).
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status != "At Department":
+		frappe.throw(
+			_("Set {0} is {1}; only a set at a department can be used.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)
+
+
+def issue_to_department(set_unit, station):
+	"""Cấp phát T7 (FEAT-026 C3): bộ Vô khuẩn sang Tại khoa, ghi trạm cấp; giữ Cycle ID vì gói còn dùng ở T8.
+
+	Chỉ bộ đang Vô khuẩn; trạng thái khác → lỗi, không ghi gì.
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status != "Sterile":
+		frappe.throw(
+			_("Set {0} is {1}; only a sterile set can be issued to a department.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	fields = {"status": "At Department"}
+	if station:
+		fields["current_station"] = station
+	_save_lifecycle(unit, **fields)

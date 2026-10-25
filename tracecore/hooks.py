@@ -29,6 +29,7 @@ fixtures = [
 			["name", "like", "Stock Entry-tc_%"],
 			["name", "like", "Stock Entry Detail-tc_%"],
 			["name", "like", "Employee-tc_%"],
+			["name", "like", "Department-tc_%"],
 		],
 	},
 ]
@@ -65,15 +66,22 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021) và
-# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019):
-# Frappe nối các file này sau station.js trong script của Page station
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021),
+# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019), T3 kiểm đếm (SCR-07, FEAT-020), T5 nạp mẻ (SCR-09, SCR-35, FEAT-022),
+# T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023), T7 cấp phát (SCR-12/SCR-36, FEAT-026) và T8 quét sử dụng (SCR-37,
+# FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
+		"public/js/station_t3.js",
+		"public/js/station_t5.js",
+		"public/js/station_t5b.js",
+		"public/js/station_daily_test.js",
+		"public/js/station_t7.js",
+		"public/js/station_t8.js",
 	]
 }
 
@@ -113,7 +121,13 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # add methods and filters to jinja environment
 # Print Format "TC Count Sheet" (FEAT-015 S9) gọi tc_count_sheet_context(doc.name) khi in từ Desk. Chỉ trỏ tới MỘT hàm
 # (không cả module) để không đưa hàm khác của count_sheet vào môi trường Jinja chung của site.
-jinja = {"methods": ["tracecore.instrument.count_sheet.tc_count_sheet_context"]}
+jinja = {
+	"methods": [
+		"tracecore.instrument.count_sheet.tc_count_sheet_context",
+		# Print Format "TC Issue Note" (FEAT-026 C10): phiếu cấp phát T7
+		"tracecore.ui.issue_print.tc_issue_note_context",
+	]
+}
 
 # Installation
 # ------------
@@ -231,6 +245,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
+	# mẻ tiệt khuẩn T5 (FEAT-022): tạo khi Hoàn thành nạp, cập nhật khi nhập tay dữ liệu chu trình
+	"Sterilization Load": dict(_AUDIT_EVENTS),
 	# phiếu tiếp nhận T1 (FEAT-019): nháp tạo khi quét thẻ người giao, ghi sổ khi hoàn tất; không xóa
 	"Dirty Receipt": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
@@ -238,10 +254,16 @@ doc_events = {
 	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
 	"Sterile Location": dict(_AUDIT_EVENTS),
 	"Sterile Putaway": dict(_AUDIT_EVENTS),
+	# phiếu cấp phát T7 (FEAT-026): nháp đổi danh sách gói/người nhận, ghi sổ khi xác nhận; không xóa
+	"Issue Note": dict(_AUDIT_EVENTS),
+	# quét sử dụng T8 (FEAT-027): mã bệnh nhân (Password) bị bỏ khỏi Audit; bổ sung mã sau ghi sổ (ca cấp cứu)
+	"Usage Record": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
 	"Equipment": dict(_AUDIT_EVENTS),
+	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
+	"Daily Test": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -324,6 +346,38 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 (FEAT-026, A-17 C5) gọi khi cấp phát T7: (ctx {department, set_type, stock, adding}) -> dict, so tồn khoa + số
+# gói cấp với cơ số khoa (Par Level Department Stock); không hàm nào trả dict → coi như khoa chưa cấu hình cơ số
+tracecore_issue_par_check = ["tracecore.par.stock.issue_par"]
+# M2 T5 nạp mẻ (FEAT-022, UC-09):
+#  - load_equipment_checks: (equipment) -> Block | None, điều kiện chọn máy tiệt khuẩn (FEAT-040: test ngày, kiểm định)
+#  - after_load_complete:   (ctx) sau khi Hoàn thành nạp (ctx: load, equipment, program, packs, sets)
+# M5 (FEAT-040): test hằng ngày và kiểm định chặn tạo mẻ/lô; M2 không import M5
+tracecore_load_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+#  - wash_equipment_checks: (equipment) -> Block | None, như load_equipment_checks cho máy rửa (T2)
+tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+tracecore_after_load_complete = []
+# M2 T5b dỡ mẻ và giải phóng (FEAT-023, UC-10); ctx là dict, mọi hook chạy trong cùng transaction:
+#  - after_release:       (ctx {set_unit, set_type, bom_version, cycle_id}) mỗi bộ khi giải phóng Đạt (đã khai báo ở trên)
+#  - after_load_release:  (ctx {load, equipment, program, sets, packs}) sau khi mẻ giải phóng (FEAT-042 tiêu hao, FEAT-046 chi phí)
+#  - after_load_failed:   (ctx {load, equipment, program, sets, redo_from}) mẻ Không đạt (FEAT-030 NC)
+#  - bi_positive:         (ctx {load, equipment, packs[{cycle_id, set_unit, status}]}) BI dương tính (FEAT-029 thu hồi, FEAT-010 thông báo)
+tracecore_after_load_release = []
+tracecore_after_load_failed = []
+tracecore_bi_positive = []
+# M2 (FEAT-020, A-35) kiểm đếm tại T3:
+#  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
+#                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)
+#  - assembly_nc:      (ctx {assembly, set_unit, kind, items}) -> None, khi bản nháp lần đầu có dòng thiếu hoặc quét
+#                      dụng cụ lạ (FEAT-030 tạo Incident CAPA thật, idempotent theo assembly)
+#  - after_assembly:   (ctx {assembly, set_unit, result, branch, branch_reason, station, shortage, damaged}) -> None,
+#                      sau khi ghi sổ (dụng cụ hỏng sang Sửa chữa/Thanh lý ở M1/FEAT-032)
+tracecore_assembly_context = [
+	"tracecore.instrument.bom.pack_context",
+	"tracecore.par.check.pack_context",
+]
+tracecore_assembly_nc = []
+tracecore_after_assembly = []
 
 # Scheduled Tasks
 # ---------------

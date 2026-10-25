@@ -66,9 +66,65 @@ class TestStepGateStorage(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			unit.save(ignore_permissions=True)
 
+	@bru("BRU-FLOW-003")
+	def test_issue_to_department_moves_sterile_set_to_department(self):
+		# FEAT-026 C3: cấp phát T7 đưa bộ Vô khuẩn sang Tại khoa, giữ Cycle ID (gói còn dùng ở T8) và ghi trạm T7
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))
+		step_gate.bind_cycle(su, "CY-261023-0001", "TR-006")
+		step_gate.issue_to_department(su, "TR-007")
+		state = _status(su)
+		self.assertEqual(state.status, "At Department")
+		self.assertEqual(state.active_cycle_id, "CY-261023-0001")
+		self.assertEqual(state.current_station, "TR-007")
+
+	@bru("BRU-FLOW-003")
+	def test_issue_to_department_only_from_sterile(self):
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4"))
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.issue_to_department(su, "TR-007")
+		self.assertEqual(_status(su).status, "Processing")
+
 	def test_start_cycle_after_awaiting_receipt_reopens_processing(self):
 		su = make_set_unit().name
 		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))
 		step_gate.return_to_receipt(su)
 		self.assertEqual(step_gate.start_cycle(su), 2)
 		self.assertEqual(_status(su).status, "Processing")
+
+
+class TestStepGateUsage(FrappeTestCase):
+	@bru("BRU-ID-003")
+	def test_use_pack_moves_department_set_to_awaiting_receipt_and_clears_cycle_id(self):
+		# FEAT-027 Task 1: quét sử dụng ở T8 đưa bộ Tại khoa sang Chờ tiếp nhận, Cycle ID hết hiệu lực
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))
+		step_gate.bind_cycle(su, "CY-261025-0001", "TR-006")
+		step_gate.issue_to_department(su, "TR-007")
+		step_gate.use_pack(su)
+		state = _status(su)
+		self.assertEqual(state.status, "Awaiting Receipt")
+		self.assertIsNone(state.active_cycle_id)
+
+	def test_use_pack_only_from_department(self):
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))  # đang Vô khuẩn, chưa cấp phát
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.use_pack(su)
+		self.assertEqual(_status(su).status, "Sterile")
+
+
+class TestStepGateCountCycle(FrappeTestCase):
+	@bru("BRU-FLOW-003")
+	def test_count_cycle_adds_one_cycle_used_through_the_step_gate_only(self):
+		# FEAT-023 D6: mẻ giải phóng Đạt tăng bộ đếm chu trình của bộ; chỉ step_gate đổi được cycles_used
+		su = make_set_unit().name
+		before = frappe.db.get_value("Set Unit", su, "cycles_used")
+		self.assertEqual(step_gate.count_cycle(su), before + 1)
+		self.assertEqual(step_gate.count_cycle(su), before + 2)
+		self.assertEqual(frappe.db.get_value("Set Unit", su, "cycles_used"), before + 2)
+		unit = frappe.get_doc("Set Unit", su)
+		unit.cycles_used = before
+		with self.assertRaises(frappe.ValidationError):
+			unit.save(ignore_permissions=True)

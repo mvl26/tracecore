@@ -1,4 +1,4 @@
-"""Khung khu-trạm mặc định (FEAT-002): 3 khu ZONE-DIRTY/CLEAN/STERILE và 7 trạm TR-001..007.
+"""Khung khu-trạm mặc định (FEAT-002): 4 khu ZONE-DIRTY/CLEAN/STERILE/DEPT và 8 trạm TR-001..008 (TR-008 = T8 quét sử dụng tại khoa, FEAT-027).
 
 Không dùng fixtures: `bench migrate` nhập lại fixtures với force (xóa rồi chèn lại bản ghi, cả bảng con) nên trạm R10 đã
 tắt sẽ bật lại và thiết bị ngoại vi mất. Khung chỉ được tạo NẾU CHƯA CÓ (`after_install` và patch cho site đã cài),
@@ -11,6 +11,7 @@ DEFAULT_ZONES = (
 	{"name": "ZONE-DIRTY", "zone_station_name": "Dirty zone", "zone_type": "Dirty"},
 	{"name": "ZONE-CLEAN", "zone_station_name": "Clean zone", "zone_type": "Clean"},
 	{"name": "ZONE-STERILE", "zone_station_name": "Sterile zone", "zone_type": "Sterile"},
+	{"name": "ZONE-DEPT", "zone_station_name": "Department zone", "zone_type": "Department"},
 )
 
 DEFAULT_STATIONS = (
@@ -40,6 +41,12 @@ DEFAULT_STATIONS = (
 		"zone_station_name": "T7 Issuing",
 		"parent_zone": "ZONE-STERILE",
 		"station_step": "T7",
+	},
+	{
+		"name": "TR-008",
+		"zone_station_name": "T8 Usage",
+		"parent_zone": "ZONE-DEPT",
+		"station_step": "T8",
 	},
 )
 

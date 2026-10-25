@@ -20,6 +20,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PIN_INVALID",
 			"PIN_PROOF_INVALID",
 			"SESSION_STATION_MISMATCH",
+			"CARD_MISMATCH",
 			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
 		),
 		403,
@@ -33,6 +34,16 @@ HTTP_STATUS: dict[str, int] = {
 			"CI_LOT_INVALID",
 			"CI_LOT_EXPIRED",
 			"PACK_TYPE_INVALID",
+			# FEAT-027 A-19: quét sử dụng T8
+			"PATIENT_CODE_REQUIRED",
+			"DEPARTMENT_REASON_REQUIRED",
+			"PATIENT_CODE_DEADLINE",
+			# FEAT-040 A-21: test hằng ngày và khóa máy
+			"TEST_INVALID",
+			"TEST_LOT_EXPIRED",
+			"UNLOCK_INVALID",
+			# FEAT-023 A-20: dỡ mẻ, chỉ thị, giải phóng
+			"INDICATOR_INVALID",
 			"REASON_REQUIRED",
 			"MAINT_ACTION_REQUIRED",
 			"MAINT_OIL_LOT_REQUIRED",
@@ -66,6 +77,18 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
 			"RESULT_INVALID",
+			# FEAT-026 A-17: cấp phát T7
+			"RECIPIENT_INVALID",
+			"SIGNATURE_INVALID",
+			# FEAT-022 A-16: nạp mẻ tiệt khuẩn T5
+			"EQUIPMENT_NOT_STERILIZER",
+			"PACK_INCOMPATIBLE",
+			"LOAD_EMPTY",
+			# FEAT-020 A-35: kiểm đếm lắp ráp T3
+			"LINES_NOT_COUNTED",
+			"QTY_INVALID",
+			"BRANCH_INVALID",
+			"PHOTO_INVALID",
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",
@@ -90,7 +113,12 @@ HTTP_STATUS: dict[str, int] = {
 			"BOM_VERSION_NOT_FOUND",
 			"WASH_BATCH_NOT_FOUND",
 			"LOCATION_NOT_FOUND",
+			"ISSUE_NOT_FOUND",
+			"DEPARTMENT_NOT_FOUND",
+			"LOAD_NOT_FOUND",
 			"OVERRIDE_NOT_FOUND",
+			"USAGE_NOT_FOUND",
+			"ASSEMBLY_NOT_FOUND",
 			"RECEIPT_NOT_FOUND",
 			"DELIVERER_NOT_FOUND",
 		),
@@ -139,11 +167,43 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_NOT_RUNNING",
 			"EQUIPMENT_MISMATCH",
 			"R02_CONFIRM_REQUIRED",
+			# FEAT-026 A-17: cấp phát T7
+			"PACK_IN_OTHER_ISSUE",
+			# FEAT-027 A-19: Cycle ID không dùng được ở T8 (FR-M2-18)
+			"PACK_NOT_ISSUED",
+			"PACK_USED",
+			"PACK_RECALLED",
+			"PACK_VOID",
+			"SET_END_OF_LIFE",
+			"PATIENT_CODE_ALREADY_SET",
+			"FEFO_NOTE_REQUIRED",
+			"RECIPIENT_DEPT_MISMATCH",
+			"ISSUE_NOT_DRAFT",
+			"ISSUE_EMPTY",
+			"ISSUE_NOT_SIGNED",
+			"PAR_APPROVAL_REQUIRED",
+			# FEAT-022 A-16
+			"PACK_IN_OTHER_LOAD",
+			"PACK_NOT_LOADABLE",
+			"LOAD_CAPACITY_EXCEEDED",
+			"LOAD_NOT_OPEN",
+			"DAILY_TEST_REQUIRED",
+			"EQUIPMENT_INSPECTION_EXPIRED",
+			"UNLOCK_NOT_ALLOWED",
+			# A-22: máy tiệt khuẩn còn mẻ chưa xong chu trình
+			"EQUIPMENT_BUSY",
+			# FEAT-023 A-20: giải phóng mẻ và BI
+			"LOAD_NOT_RELEASABLE",
+			"BI_NOT_PENDING",
 			# FEAT-032 A-18: vượt cơ số và ghi đè
 			"SET_END_OF_LIFE",
 			"PAR_NOT_EXCEEDED",
 			"OVERRIDE_PENDING",
 			"OVERRIDE_NOT_PENDING",
+			# FEAT-020 A-35: thiếu chưa R02 xác nhận, bản nháp đã đóng
+			"SHORTAGE_UNCONFIRMED",
+			"NO_SHORTAGE",
+			"ASSEMBLY_CLOSED",
 			# FEAT-019 A-31: phiếu đã đóng, bộ chưa xác nhận lúc ghi sổ, cưỡng bức không áp dụng cho trạng thái này
 			"RECEIPT_CLOSED",
 			"ITEM_NOT_CONFIRMED",

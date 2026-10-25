@@ -986,6 +986,209 @@ body.tc-kiosk .layout-main-section {
 	width: var(--tc-photo);
 	height: var(--tc-photo);
 }
+
+/* ---- Màn T7 cấp phát (SCR-12 kiosk, SCR-36 PDA; public/js/station_t7.js); dùng lại khối, bảng, nút của T6 ---- */
+
+.tc-t7 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t7 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t7 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t7 .tc-t6-block {
+	margin: 0;
+}
+
+.tc-t7-depts {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--tc-label-w), 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-t7-depts .tc-btn {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+.tc-t7-dialog {
+	margin-top: var(--tc-sp-3);
+	padding: var(--tc-sp-3);
+	background: var(--tc-warn-tint);
+	border: var(--tc-bw-thick) solid var(--tc-warn);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-t7-dialog h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+}
+
+.tc-t7-pad {
+	display: block;
+	width: 100%;
+	height: var(--tc-photo-big);
+	background: var(--tc-card);
+	border: var(--tc-bw-thick) dashed var(--tc-border-strong);
+	border-radius: var(--tc-r-md);
+	touch-action: none;
+}
+
+/* PDA (SCR-36, 412 px): bảng cuộn ngang trong khối, nút dàn đủ hàng */
+@media (max-width: 480px) {
+	.tc-t7 .tc-t6-block {
+		overflow-x: auto;
+	}
+
+	.tc-t7 .tc-actions .tc-btn {
+		flex: 1 1 100%;
+	}
+}
+/* T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022): dùng lại khối .tc-t2; thêm danh sách gói */
+.tc-t5-label {
+	display: block;
+	margin-bottom: var(--tc-sp-1);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t5-packs {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-t5-pack {
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 2fr) auto;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	padding: var(--tc-sp-3) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	font-size: var(--tc-fs-md);
+}
+
+.tc-t5-pack-id {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-1);
+}
+
+/* PDA (màn ≤ 480 px): một cột, nút full-width, nút chính 56 px */
+[data-surface="PDA"] .tc-t5-pack {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+[data-surface="PDA"] .tc-t5 .tc-btn {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+[data-surface="PDA"] .tc-t5 .tc-chips {
+	flex-direction: column;
+}
+
+[data-surface="PDA"] .tc-t5 .tc-chip {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+[data-surface="PDA"] .tc-t5 .tc-actionsbar {
+	flex-direction: column;
+	align-items: stretch;
+}
+/* ---- Màn T3 kiểm đếm lắp ráp (SCR-07, public/js/station_t3.js); dùng lại khối, thẻ dụng cụ, gate, chip của T4 ---- */
+
+.tc-t3 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t3 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t3 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t3 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t3 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-t3 .tc-ins {
+	align-items: flex-start;
+	cursor: default;
+}
+
+.tc-ins.is-short,
+.tc-t3 .tc-ins.is-short {
+	background: var(--tc-fail-tint);
+	border-color: var(--tc-fail);
+}
+
+.tc-ins.is-short .tc-ins-state {
+	color: var(--tc-fail-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t3 .tc-ins.is-over {
+	background: var(--tc-warn-tint);
+	border-color: var(--tc-warn);
+}
+
+.tc-t3 .tc-ins.is-over .tc-ins-state {
+	color: var(--tc-warn-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t3-qty {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-sp-2);
+}
+
+.tc-t3-count {
+	min-width: var(--tc-touch-min);
+	color: var(--tc-text-heading);
+	font-size: var(--tc-fs-lg);
+	text-align: center;
+}
+
+.tc-t3-lock {
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-thick) solid var(--tc-neutral-fill);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-t3-lock p {
+	margin: 0;
+}
 /* ---- Màn T1 tiếp nhận (SCR-05, SCR-34, public/js/station_t1.js); dùng lại khối, BOM, bảng và ô nhập của T4/T2 ---- */
 
 .tc-t1 {

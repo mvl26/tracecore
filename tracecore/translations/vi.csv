@@ -31,6 +31,7 @@ T4 Packing,T4 Đóng gói,
 T5 Sterilization,T5 Tiệt khuẩn,
 T6 Sterile storage,T6 Kho vô khuẩn,
 T7 Issuing,T7 Cấp phát,
+T8 Usage,T8 Sử dụng,
 Ask R02 (zone supervisor) at this station for help.,Gọi R02 (giám sát khu) tại trạm để được hỗ trợ.,
 The kiosk address has no station code (?station=TR-...).,Địa chỉ kiosk thiếu mã trạm (?station=TR-...).,
 This account cannot read set records.,Tài khoản này không được xem bộ dụng cụ.,
@@ -2284,6 +2285,333 @@ Cannot load workspaces,Không tải được không gian làm việc,
 "Check your connection and account permissions, then try again.",Kiểm tra kết nối mạng và quyền tài khoản rồi thử lại.,
 Try again,Thử lại,
 Offline,Mất kết nối,TraceCore Launcher
+A pack was scanned before any department was chosen.,Đã quét một gói khi chưa chọn khoa.
+An Issue Note can only be confirmed by the issuing service.,Phiếu cấp phát chỉ được xác nhận qua dịch vụ cấp phát.
+An Issue Note can only be created and changed by the issuing service.,Phiếu cấp phát chỉ được tạo và sửa qua dịch vụ cấp phát.
+An Issue Note cannot be cancelled; return the packs instead.,Phiếu cấp phát không hủy được; hãy hoàn trả gói.
+Approve and issue,Duyệt và cấp phát
+Approved At,Duyệt lúc,Issue Note
+Ask R02 to scan the card and enter the PIN here.,Nhờ R02 quét thẻ và nhập PIN tại đây.
+"Ask R02 to scan the card and enter the PIN to approve, or remove packs.","Nhờ R02 quét thẻ và nhập PIN để duyệt, hoặc bỏ bớt gói."
+"Ask the recipient for an active employee card, or call R02.","Yêu cầu người nhận dùng thẻ nhân viên đang hoạt động, hoặc gọi R02."
+Ask the recipient to scan the employee card and sign.,Yêu cầu người nhận quét thẻ nhân viên và ký.
+"Ask the recipient to sign in the box, then confirm.","Yêu cầu người nhận ký vào khung, rồi xác nhận."
+Back to packs,Quay lại danh sách gói
+Change department,Đổi khoa
+"Check the set status, or call R02.","Kiểm tra trạng thái bộ, hoặc gọi R02."
+Choose the department again from the list.,Chọn lại khoa trong danh sách.
+Choose the department again to open a new issue note.,Chọn lại khoa để mở phiếu cấp phát mới.
+Choose the department first,Chọn khoa trước
+Choose the department that receives the packs,Chọn khoa nhận gói
+"Choose the department, then scan the packs...","Chọn khoa, rồi quét các gói..."
+Clear the signature box and ask the recipient to sign again.,Xóa khung chữ ký và yêu cầu người nhận ký lại.
+Confirm and print,Xác nhận và in phiếu
+Confirm signature,Xác nhận chữ ký
+Continue with this recipient,Tiếp tục với người nhận này
+Department Par Level,Cơ số khoa,Issue Note
+Department not found,Không tìm thấy khoa
+Department par level exceeded,Vượt cơ số tồn khoa
+Department stock and par level,Tồn khoa và cơ số
+Department stock and par level check per set type at the time of issue.,Tồn khoa và kết quả kiểm cơ số theo loại bộ tại thời điểm cấp phát.,Issue Note
+Department {0} does not exist.,Khoa {0} không tồn tại.
+"Device time of the confirmation, in UTC.","Giờ thiết bị lúc xác nhận, theo UTC.",Issue Note
+Do not issue the pack; send it back to the dirty zone.,Không cấp phát gói này; đưa về khu bẩn.
+Employee card,Thẻ nhân viên
+"Enter the reason to continue, or ask a member of {0} to receive.","Nhập lý do để tiếp tục, hoặc nhờ nhân viên khoa {0} nhận."
+FEFO Note,Ghi chú FEFO,Issue Note Pack
+FEFO note,Ghi chú FEFO
+In department,Tại khoa
+In sterile store,Trong kho vô khuẩn
+Issue Note,Phiếu cấp phát
+Issue Note Pack,Gói trong phiếu cấp phát
+Issue note confirmed.,Phiếu cấp phát đã xác nhận.
+Issue note is already confirmed,Phiếu cấp phát đã được xác nhận
+Issue note is not signed,Phiếu cấp phát chưa được ký
+Issue note not found,Không tìm thấy phiếu cấp phát
+Issue note {0} confirmed,Phiếu cấp phát {0} đã xác nhận
+Issue note {0} does not exist.,Phiếu cấp phát {0} không tồn tại.
+Issue note {0} has been confirmed and cannot change.,Phiếu cấp phát {0} đã xác nhận và không sửa được.
+Issue note {0} has no packs yet.,Phiếu cấp phát {0} chưa có gói nào.
+Issue this pack with note,Cấp gói này kèm ghi chú
+"Issue {0} instead, or enter a note if the department asked for this Set ID.","Hãy cấp {0}, hoặc nhập ghi chú nếu khoa yêu cầu đúng Set ID này."
+Issued At,Cấp phát lúc,Issue Note
+Issued By (User),Người cấp (tài khoản),Issue Note
+Issued By,Người cấp,Issue Note
+Issuing packs needs a network connection.,Cấp phát gói cần có kết nối mạng.
+Max,Tối đa
+Min,Tối thiểu
+Move the pack to this issue note,Chuyển gói sang phiếu này
+"Move the pack to this issue note, or remove it from {0}.","Chuyển gói sang phiếu này, hoặc bỏ gói khỏi {0}."
+New issue note,Phiếu cấp phát mới
+Next: the recipient scans the employee card and signs.,Tiếp theo: người nhận quét thẻ nhân viên và ký.
+No department is available to issue to.,Chưa có khoa nào để cấp phát.
+No packs on the issue note,Phiếu cấp phát chưa có gói
+No par level set,Chưa đặt cơ số
+Nothing was drawn in the signature box.,Chưa có nét nào trong khung chữ ký.
+Open the issuing screen on a T7 station.,Mở màn cấp phát trên trạm T7.
+Over maximum,Vượt cơ số tối đa
+"Over maximum, allowed","Vượt tối đa, được phép"
+Over-par Approved By,R02 duyệt vượt cơ số,Issue Note
+Pack is on another issue note,Gói đang ở phiếu cấp phát khác
+Pack {0} is already on draft issue note {1}.,Gói {0} đang nằm trên phiếu nháp {1}.
+Pack {0} is {1}; only a pack in the sterile store can be issued.,Gói {0} đang ở trạng thái {1}; chỉ cấp phát được gói trong kho vô khuẩn.
+Packs on this issue note ({0}),Gói trên phiếu ({0})
+Par Level Check,Kết quả kiểm cơ số,Issue Note
+Print issue note,In phiếu cấp phát
+"Print the issue note, then start the next one.","In phiếu cấp phát, rồi làm phiếu kế tiếp."
+R02 PIN,PIN của R02
+R02 approval,R02 duyệt
+R02 approves,R02 duyệt
+R02 employee card,Thẻ nhân viên R02
+R02 must approve before the packs are issued.,R02 phải duyệt trước khi cấp phát các gói.
+Reason (recipient of another department),Lý do (người nhận thuộc khoa khác),Issue Note
+Reason the recipient is not from this department,Lý do người nhận không thuộc khoa này
+Recipient Department,Khoa của người nhận,Issue Note
+Recipient Name,Tên người nhận,Issue Note
+Recipient card is not valid,Thẻ người nhận không hợp lệ
+Recipient is not from this department,Người nhận không thuộc khoa này
+Recipient of another department,Người nhận thuộc khoa khác
+Recipient signature,Chữ ký người nhận
+Recipient signs,Người nhận ký
+"Recipient: scan the employee card, then sign in the box.","Người nhận: quét thẻ nhân viên, rồi ký vào khung."
+Recipient: scan the employee card. The card scan is the signature.,Người nhận: quét thẻ nhân viên. Quét thẻ là chữ ký.
+Recipient: scan the employee card...,Người nhận: quét thẻ nhân viên...
+Remove {0},Bỏ {0}
+Scan the Cycle ID of the first pack.,Quét Cycle ID của gói đầu tiên.
+Scan the packs to issue first.,Hãy quét các gói cần cấp trước.
+Set {0} is {1}; only a sterile set can be issued to a department.,Bộ {0} đang {1}; chỉ cấp phát được bộ Vô khuẩn cho khoa.
+Sign again,Ký lại
+Sign method {0} is not supported.,Cách ký {0} không được hỗ trợ.
+Sign on screen,Ký trên màn hình
+Sign with card,Ký bằng thẻ
+Sign with the card or on the screen.,Hãy ký bằng thẻ hoặc trên màn hình.
+Signature box,Khung chữ ký
+Signature is empty,Chữ ký còn trống
+Signature is not valid,Chữ ký không hợp lệ
+Signature method,Cách ký
+Signature on screen,Chữ ký trên màn hình
+Signed At,Ký lúc,Issue Note
+Signed With,Cách ký,Issue Note
+Signed by {0},Đã ký bởi {0}
+"Store the pack at T6 first, or check its status with R02.","Nhập gói vào kho ở T6 trước, hoặc hỏi R02 về trạng thái gói."
+Suggest issuing more,Gợi ý cấp bổ sung
+Tap the department that receives the packs.,Chạm vào khoa nhận gói.
+The card does not belong to an active employee.,Thẻ không thuộc nhân viên đang làm việc.
+The department would hold more sets than its maximum for: {0}.,Khoa sẽ giữ nhiều bộ hơn cơ số tối đa với: {0}.
+The recipient has not signed issue note {0}.,Người nhận chưa ký phiếu cấp phát {0}.
+The signature drawn on the screen is empty or too large.,Chữ ký vẽ trên màn hình trống hoặc quá lớn.
+This account cannot issue packs at this station.,Tài khoản này không cấp phát gói tại trạm này.
+This note,Phiếu này
+Touch,Cảm ứng,Issue Note
+Use-by Date,Hạn dùng,Issue Note Pack
+Why a pack with a later use-by date was issued (the department asked for this Set ID).,Lý do cấp gói có hạn dùng muộn hơn (khoa yêu cầu đúng Set ID này).,Issue Note Pack
+Why issue this pack and not the one that expires first?,Vì sao cấp gói này mà không phải gói hết hạn sớm nhất?
+Within par level,Trong cơ số
+"{0} belongs to {1}, not {2}.","{0} thuộc {1}, không thuộc {2}."
+{0} is not a {1} issuing station.,{0} không phải trạm cấp phát {1}.
+{0} pack(s) issued to {1}.,Đã cấp {0} gói cho {1}.
+{0}: {1} more pack(s) to reach the minimum,{0}: cần thêm {1} gói để đạt tối thiểu
+Issue note,Phiếu cấp phát,TC Issue Note
+Not confirmed yet,Chưa xác nhận,TC Issue Note
+Department,Khoa,TC Issue Note
+Issued at,Cấp phát lúc,TC Issue Note
+Issued by,Người cấp,TC Issue Note
+Recipient,Người nhận,TC Issue Note
+Reason (recipient of another department),Lý do (người nhận thuộc khoa khác),TC Issue Note
+Over-par approved by,R02 duyệt vượt cơ số,TC Issue Note
+No.,STT,TC Issue Note
+Cycle ID,Cycle ID,TC Issue Note
+Set ID,Set ID,TC Issue Note
+Set name,Tên bộ,TC Issue Note
+Use-by date,Hạn dùng,TC Issue Note
+Note,Ghi chú,TC Issue Note
+Total: {0} packs,Tổng: {0} gói,TC Issue Note
+Received by,Người nhận ký,TC Issue Note
+Signature on screen,Chữ ký trên màn hình,TC Issue Note
+Employee card,Thẻ nhân viên,TC Issue Note
+Page {0}/{1},Trang {0}/{1},TC Issue Note
+Printed {0} by {1},In lúc {0} bởi {1},TC Issue Note
+"A pack appears more than once in the sterilization load.","Một gói xuất hiện nhiều lần trong mẻ tiệt khuẩn.",""
+"A sterilization load cannot be cancelled.","Không hủy được mẻ tiệt khuẩn.",""
+"A sterilization load is changed only by the T5 screen service.","Mẻ tiệt khuẩn chỉ được đổi bởi dịch vụ của màn T5.",""
+"A sterilization load is created only when loading is completed on the T5 screen.","Mẻ tiệt khuẩn chỉ được tạo khi hoàn thành nạp trên màn T5.",""
+"API connected - automatic data comes with FEAT-024; enter data by hand with confirmation.","Kết nối API — dữ liệu tự động có ở FEAT-024; nhập tay có xác nhận.",""
+"Ask R10 to add a printer to this station, then print the load label again.","Nhờ R10 thêm máy in cho trạm này, rồi in lại nhãn mẻ.",""
+"Ask R10 to add a program to the sterilizer.","Nhờ R10 thêm chương trình cho máy tiệt khuẩn.",""
+"Ask R10 to fix the label template of the sterilization load, then print the label again.","Nhờ R10 sửa mẫu nhãn mẻ tiệt khuẩn, rồi in lại nhãn.",""
+"Biological indicator (quarantine until read)","Chỉ thị sinh học (cách ly chờ đọc kết quả)",""
+"Bowie-Dick test of the day","Test Bowie-Dick trong ngày",""
+"Capacity not set for this sterilizer.","Máy tiệt khuẩn chưa khai dung tích.",""
+"Card does not match","Thẻ không khớp",""
+"Chemical indicator class 5","Chỉ thị hóa học loại 5",""
+"Choose a program from the list of this sterilizer.","Chọn chương trình trong danh sách của máy tiệt khuẩn này.",""
+"Choose a program that accepts this pack type.","Chọn chương trình nhận loại gói này.",""
+"Choose another load","Chọn mẻ khác",""
+"Choose the program first","Chọn chương trình trước",""
+"Code {0} is not a Cycle ID.","Mã {0} không phải Cycle ID.",""
+"Code {0} is not a sterilization load code.","Mã {0} không phải mã mẻ tiệt khuẩn.",""
+"Code {0} is not a sterilizer QR code.","Mã {0} không phải QR máy tiệt khuẩn.",""
+"Code {0} is not the sterilizer QR code or a sterilization load code.","Mã {0} không phải QR máy tiệt khuẩn hay mã mẻ tiệt khuẩn.",""
+"Code {0} is not the sterilizer QR code or the code of load {1}.","Mã {0} không phải QR máy tiệt khuẩn hay mã của mẻ {1}.",""
+"Code {0} was scanned before a sterilizer QR code.","Mã {0} được quét trước khi quét QR máy tiệt khuẩn.",""
+"Complete loading or cancel it before scanning another sterilizer.","Hoàn thành nạp hoặc hủy nạp trước khi quét máy tiệt khuẩn khác.",""
+"Complete loading → generate load code","Hoàn thành nạp → sinh mã mẻ",""
+"Complete loading, then load the remaining packs in the next load.","Hoàn thành nạp, rồi nạp các gói còn lại ở mẻ sau.",""
+"Cycle data ({0} open)","Dữ liệu chu trình ({0} mẻ mở)",""
+"Cycle data - scan the sterilizer QR code, then the load QR code","Dữ liệu chu trình — quét QR máy tiệt khuẩn, rồi QR mã mẻ",""
+"Cycle data attached to the load","Đã đính dữ liệu chu trình vào mẻ",""
+"Ended at","Kết thúc lúc",""
+"Enter cycle data","Nhập dữ liệu chu trình",""
+"Enter data for load {0}","Nhập dữ liệu cho mẻ {0}",""
+"Enter the cycle data at a T5 station or at a station in zone {0}.","Nhập dữ liệu chu trình tại trạm T5 hoặc trạm thuộc khu {0}.",""
+"Enter the cycle data from the sterilizer screen or printout, confirm it and scan your card.","Nhập dữ liệu chu trình từ màn hình hoặc bản in của máy, xác nhận và quét thẻ nhân viên.",""
+"Entering data for load {0}","Đang nhập dữ liệu cho mẻ {0}",""
+"Equipment {0} is a {1}, not a steam or plasma sterilizer.","Thiết bị {0} là {1}, không phải máy hấp hơi nước hay máy plasma.",""
+"Expires {0}","Hạn dùng {0}",""
+"I, {0}, confirm the values above match the screen or printout of sterilizer {1}.","Tôi, {0}, xác nhận các giá trị trên đúng với màn hình/bản in của máy tiệt khuẩn {1}.",""
+"Indicators for this program","Chỉ thị theo chương trình",""
+"Load Pack","Gói của mẻ tiệt khuẩn",""
+"Load QR code","QR mã mẻ",""
+"Load QR code {0} scanned","Đã quét QR mã mẻ {0}",""
+"Load code generated for {0} pack(s)","Đã sinh mã mẻ cho {0} gói",""
+"Load code kept - check the Station Agent, then print again","Mã mẻ vẫn giữ — kiểm tra Station Agent rồi in lại",""
+"Load sterilizer","Nạp máy tiệt khuẩn",""
+"Load sterilizer - scan the sterilizer QR code first, then scan each pack","Nạp máy tiệt khuẩn — quét QR máy trước, rồi quét từng gói",""
+"Load the pack into a {0} sterilizer.","Nạp gói vào máy tiệt khuẩn {0}.",""
+"Load {0} needs the sterilizer QR code and the load QR code.","Mẻ {0} cần QR máy tiệt khuẩn và QR mã mẻ.",""
+"Loading cancelled; scan a sterilizer QR code to start again.","Đã hủy nạp; quét QR máy tiệt khuẩn để bắt đầu lại.",""
+"Loading of sterilizer {0} is not finished","Chưa nạp xong máy tiệt khuẩn {0}",""
+"Machine alerts observed","Cảnh báo máy quan sát được",""
+"Manual cycle data - confirmed by the operator","Dữ liệu chu trình nhập tay — người vận hành xác nhận",""
+"No cycle data yet - enter it by hand with confirmation when the cycle ends","Chưa có dữ liệu chu trình — nhập tay có xác nhận khi chu trình kết thúc",""
+"No open sterilization load.","Không có mẻ tiệt khuẩn đang mở.",""
+"No pack can be loaded","Không có gói nào nạp được",""
+"None of the scanned packs can go into a sterilization load on {0}.","Không gói nào trong số đã quét nạp được vào mẻ tiệt khuẩn trên máy {0}.",""
+"Not a sterilizer","Không phải máy tiệt khuẩn",""
+"Not connected - enter the cycle data by hand with confirmation.","Không kết nối — nhập tay dữ liệu chu trình có xác nhận.",""
+"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004).","Chỉ nhận gói đã qua cổng T4 và hợp chương trình (BRU-FLOW-004, BRU-REP-004).",""
+"Open sterilization loads","Mẻ tiệt khuẩn đang mở",""
+"Outside the program range - Needs review","Ngoài dải của chương trình — Cần xem xét",""
+"Pack cannot be loaded","Không nạp được gói",""
+"Pack does not fit this program","Gói không hợp chương trình này",""
+"Pack does not fit this sterilizer","Gói không hợp máy tiệt khuẩn này",""
+"Pack is in another load","Gói đang ở mẻ khác",""
+"Pack {0} is for {1} sterilization, but this sterilizer runs {2} programs.","Gói {0} dùng phương pháp {1}, nhưng máy tiệt khuẩn này chạy chương trình {2}.",""
+"Pack {0} is in sterilization load {1}.","Gói {0} đang ở mẻ tiệt khuẩn {1}.",""
+"Pack {0} is not the current Cycle ID of set {1}.","Gói {0} không phải Cycle ID hiện hành của bộ {1}.",""
+"Pack {0} is {1}; only a packed pack can be loaded.","Gói {0} đang ở trạng thái {1}; chỉ nạp được gói đã đóng gói.",""
+"Pack {0} uses pack type {1}, which program {2} does not accept.","Gói {0} dùng loại gói {1}, chương trình {2} không nhận.",""
+"Packs in load","Gói trong mẻ",""
+"Packs in load ({0})","Gói trong mẻ ({0})",""
+"Packs scanned into sterilizer {0} ({1}{2}) - the load code is generated at Complete loading","Gói đã quét vào máy tiệt khuẩn {0} ({1}{2}) — mã mẻ tự sinh khi Hoàn thành nạp",""
+"Photo of the printout (optional)","Ảnh bản in (không bắt buộc)",""
+"Photo of the printout (required for this sterilizer)","Ảnh bản in (bắt buộc với máy tiệt khuẩn này)",""
+"Plasma chemical indicator for each load","Chỉ thị hóa học plasma cho từng mẻ",""
+"Priority load","Mẻ ưu tiên",""
+"Scan each Cycle ID into the sterilizer... (scan HOAN-THANH-NAP when done)","Quét Cycle ID từng gói đưa vào máy… (quét HOAN-THANH-NAP khi xong)",""
+"Scan packs that have passed packing, then complete loading again.","Quét gói đã qua đóng gói, rồi hoàn thành nạp lại.",""
+"Scan the QR code of a running sterilization load.","Quét QR của mẻ tiệt khuẩn đang chạy.",""
+"Scan the QR code of a steam or plasma sterilizer.","Quét QR của máy hấp hơi nước hoặc máy plasma.",""
+"Scan the QR code of sterilizer {0}, then the QR code of load {1}.","Quét QR máy tiệt khuẩn {0}, rồi QR mẻ {1}.",""
+"Scan the QR code of sterilizer {0}.","Quét QR máy tiệt khuẩn {0}.",""
+"Scan the QR code on the sterilization load label.","Quét QR trên nhãn mẻ tiệt khuẩn.",""
+"Scan the QR code on the sterilizer, then scan each pack.","Quét QR trên máy tiệt khuẩn, rồi quét từng gói.",""
+"Scan the QR code on the sterilizer.","Quét QR trên máy tiệt khuẩn.",""
+"Scan the code on the pack label.","Quét mã trên nhãn gói.",""
+"Scan the load QR code next.","Tiếp theo quét QR mã mẻ.",""
+"Scan the sterilizer QR code next.","Tiếp theo quét QR máy tiệt khuẩn.",""
+"Scan the sterilizer QR code, then the load QR code.","Quét QR máy tiệt khuẩn, rồi QR mã mẻ.",""
+"Scan the sterilizer QR code, then the load QR code...","Quét QR máy tiệt khuẩn, rồi QR mã mẻ…",""
+"Scan the sterilizer QR code...","Quét QR máy tiệt khuẩn…",""
+"Scan the sterilizer and the packs, then choose the program.","Quét máy tiệt khuẩn và các gói, rồi chọn chương trình.",""
+"Scan the sterilizer first","Quét máy tiệt khuẩn trước",""
+"Scan your employee card to confirm","Quét thẻ nhân viên để xác nhận",""
+"Scan your own card to confirm, or sign in again.","Quét đúng thẻ của nhân viên đang đăng nhập để xác nhận, hoặc đăng nhập lại.",""
+"Scanned sterilizer QR {0} and load QR {1}","Đã quét QR máy tiệt khuẩn {0} và QR mẻ {1}",""
+"Scanned {0} into sterilizer {1} ({2} pack(s))","Đã quét {0} vào máy tiệt khuẩn {1} ({2} gói)",""
+"Started at","Bắt đầu lúc",""
+"Station {0} cannot enter data for sterilizer {1}: use a T5 station or a station at the exit door.","Trạm {0} không nhập được dữ liệu cho máy tiệt khuẩn {1}: dùng trạm T5 hoặc trạm ở cửa ra.",""
+"Station {0} has no active printer. Sterilization load {1} is kept; its label is waiting.","Trạm {0} chưa có máy in hoạt động. Mẻ tiệt khuẩn {1} vẫn giữ; nhãn đang chờ in.",""
+"Sterilization Load","Mẻ tiệt khuẩn",""
+"Sterilization load","Mẻ tiệt khuẩn",""
+"Sterilization load is closed","Mẻ tiệt khuẩn đã đóng",""
+"Sterilization load lookup","Tra cứu mẻ tiệt khuẩn",""
+"Sterilization load not found","Không tìm thấy mẻ tiệt khuẩn",""
+"Sterilization load {0} does not exist.","Mẻ tiệt khuẩn {0} không tồn tại.",""
+"Sterilization load {0} has no complete, confirmed cycle data, so nothing was saved.","Mẻ tiệt khuẩn {0} chưa có dữ liệu chu trình đầy đủ và đã xác nhận, nên chưa lưu gì.",""
+"Sterilization load {0} is already {1}.","Mẻ tiệt khuẩn {0} đã ở trạng thái {1}.",""
+"Sterilization load · {0} · {1}","Mẻ tiệt khuẩn · {0} · {1}",""
+"Sterilization loads need a network connection; offline work comes with FEAT-009.","Mẻ tiệt khuẩn cần kết nối mạng; làm việc offline có từ FEAT-009.",""
+"Sterilizer","Máy tiệt khuẩn",""
+"Sterilizer QR code","QR máy tiệt khuẩn",""
+"Sterilizer QR code scanned for load {0}","Đã quét QR máy tiệt khuẩn cho mẻ {0}",""
+"Sterilizer does not match","Máy tiệt khuẩn không khớp",""
+"Sterilizer is full","Máy tiệt khuẩn đã đầy",""
+"Sterilizer is not ready","Máy tiệt khuẩn chưa sẵn sàng",""
+"Sterilizer {0} does not match sterilizer {1} of load {2}.","Máy tiệt khuẩn {0} không khớp máy {1} của mẻ {2}.",""
+"Sterilizer {0} has more than one open load","Máy tiệt khuẩn {0} có nhiều hơn một mẻ đang mở",""
+"Sterilizer {0} has no active program.","Máy tiệt khuẩn {0} chưa có chương trình đang dùng.",""
+"Sterilizer {0} has no open load","Máy tiệt khuẩn {0} không có mẻ đang mở",""
+"Sterilizer {0} scanned · {1}","Đã quét máy tiệt khuẩn {0} · {1}",""
+"Sterilizer {0} takes at most {1} pack(s) per load.","Máy tiệt khuẩn {0} nhận tối đa {1} gói mỗi mẻ.",""
+"Take the pack out of that load first, or scan another pack.","Lấy gói ra khỏi mẻ đó trước, hoặc quét gói khác.",""
+"Take the set back to packing.","Đưa bộ quay lại đóng gói.",""
+"Take these packs out of the sterilizer load and check them.","Lấy các gói này ra khỏi máy và kiểm tra lại.",""
+"The data below is attached to all {0} pack(s) of the load.","Dữ liệu dưới đây được đính cho cả {0} gói của mẻ.",""
+"The load cannot be chosen from the sterilizer QR code alone.","Không chọn được mẻ chỉ từ QR máy tiệt khuẩn.",""
+"The load is now {0}.","Mẻ hiện ở trạng thái {0}.",""
+"The scanned card is not the card of the employee signed in at this station.","Thẻ vừa quét không phải thẻ của nhân viên đang đăng nhập tại trạm này.",""
+"This account cannot work with sterilization loads at this station.","Tài khoản này không thao tác được với mẻ tiệt khuẩn tại trạm này.",""
+"Up to {0} pack(s) per load.","Tối đa {0} gói mỗi mẻ.",""
+"Use another sterilizer, or call R02 to check the daily test and the inspection.","Dùng máy tiệt khuẩn khác, hoặc gọi R02 kiểm tra test ngày và kiểm định.",""
+"Why is the data entered by hand?","Vì sao nhập tay dữ liệu?",""
+"at least 1 pack","ít nhất 1 gói",""
+"not connected - enter the cycle data by hand with confirmation","không kết nối — nhập tay dữ liệu chu trình có xác nhận",""
+"operator","người vận hành",""
+"operator card scan","quét thẻ người vận hành",""
+"photo of the printout","ảnh bản in",""
+"program","chương trình",""
+"reason for entering the data by hand","lý do nhập tay dữ liệu",""
+"sterilizer","máy tiệt khuẩn",""
+"{0} Sterilization load {1} is kept; its label is waiting.","{0} Mẻ tiệt khuẩn {1} vẫn giữ; nhãn đang chờ in.",""
+"{0} pack(s)","{0} gói",""
+"{0} pack(s) are on the list for sterilizer {1}.","Có {0} gói trong danh sách của máy tiệt khuẩn {1}.",""
+"{0} pack(s) were not loaded","{0} gói không được nạp",""
+"A recorded value is outside the program range; R02 confirms it at release.","Có giá trị ghi nhận nằm ngoài dải của chương trình; R02 xác nhận khi giải phóng.","Sterilization Load"
+"Added At","Thời điểm thêm","Load Pack"
+"Alerts the operator saw on the machine during the cycle.","Cảnh báo người vận hành quan sát được trên máy trong chu trình.","Sterilization Load"
+"Copied from the program when loading is completed.","Chép từ chương trình khi hoàn thành nạp.","Sterilization Load"
+"Cycle Chart","Biểu đồ chu trình","Sterilization Load"
+"Cycle Complete","Hoàn tất chu trình","Sterilization Load"
+"Cycle Data","Dữ liệu chu trình","Sterilization Load"
+"Cycle Result","Kết quả chu trình","Sterilization Load"
+"Cycle parameters: [{parameter_name, unit, value, min_value, max_value, outside_range}].","Tham số chu trình: [{parameter_name, unit, value, min_value, max_value, outside_range}].","Sterilization Load"
+"Data Complete","Dữ liệu đầy đủ","Sterilization Load"
+"Data Source","Nguồn dữ liệu","Sterilization Load"
+"Employee who completed loading, taken from the card session.","Nhân viên hoàn thành nạp, lấy từ phiên đăng nhập thẻ.","Sterilization Load"
+"Loaded By Scan","Nạp bằng quét mã","Sterilization Load"
+"Loading Completed At","Hoàn thành nạp lúc","Sterilization Load"
+"Machine Alerts","Cảnh báo máy","Sterilization Load"
+"Machine Report","Bản in máy","Sterilization Load"
+"Machine Scanned At Unloading","Máy quét khi dỡ","Sterilization Load"
+"Manual Data Confirmed At","Thời điểm xác nhận dữ liệu nhập tay","Sterilization Load"
+"Manual Data Confirmed By","Người xác nhận dữ liệu nhập tay","Sterilization Load"
+"Manual Entry Reason","Lý do nhập tay","Sterilization Load"
+"Needs Review","Cần xem xét","Sterilization Load"
+"Photo of the printout of the machine.","Ảnh bản in của máy.","Sterilization Load"
+"Priority Load","Mẻ ưu tiên","Sterilization Load"
+"Quarantine","Cách ly chờ BI","Sterilization Load"
+"Released At","Giải phóng lúc","Sterilization Load"
+"Released By","Người giải phóng","Sterilization Load"
+"Released","Đã giải phóng","Sterilization Load"
+"Requires Biological Indicator","Cần chỉ thị sinh học","Sterilization Load"
+"Result Source","Nguồn kết quả","Sterilization Load"
+"Running","Đang chạy","Sterilization Load"
+"Unload Scanned At","Thời điểm quét dỡ","Sterilization Load"
+"Why the cycle data of a connected machine was entered by hand.","Lý do dữ liệu chu trình của máy kết nối phải nhập tay.","Sterilization Load"
+"Sterilization Load","Mẻ tiệt khuẩn","Label Template"
+"Sterilization Load","Mẻ tiệt khuẩn","Pack"
+"Sterilization load the pack went into (FEAT-022). Set only by the sterilizing service when loading is completed.","Mẻ tiệt khuẩn mà gói đã vào (FEAT-022). Chỉ dịch vụ tiệt khuẩn đặt khi hoàn thành nạp.","Pack"
 the Par Level of the set type,Par Level của loại bộ,
 the lowest max cycles of the instruments in the BOM,số chu trình tối đa thấp nhất của dụng cụ trong BOM,
 A reason of 1 to {0} characters is required for the estimated cycles used.,Phải nhập lý do từ 1 đến {0} ký tự cho số chu trình đã dùng ước tính.,
@@ -2396,6 +2724,483 @@ Rejected,Đã từ chối,Par Override
 Expired,Hết hiệu lực,Par Override
 Cancelled,Đã hủy,Par Override
 Cycles Used,Hết số chu trình thêm,Par Override
+Open the usage screen on a T8 station in a department.,Mở màn sử dụng trên trạm T8 của khoa.,
+Surgery code is required,Cần có mã ca mổ,
+"Enter the surgery code, then confirm again.",Nhập mã ca mổ rồi xác nhận lại.,
+Patient code is required,Cần có mã bệnh nhân,
+"Enter the patient code, then confirm again.",Nhập mã bệnh nhân rồi xác nhận lại.,
+Enter why you need the full patient code.,Nhập lý do cần xem mã bệnh nhân đầy đủ.,
+Pack already used,Gói đã được sử dụng,
+Do not use this pack. Return it to the dirty zone; a used Cycle ID is never reactivated.,Không dùng gói này. Đưa về khu bẩn; Cycle ID đã dùng không bao giờ được kích hoạt lại.,
+Pack recalled,Gói đã bị thu hồi,
+Do not use this pack. Return it to the sterile store and call R02.,Không dùng gói này. Trả về kho vô khuẩn và gọi R02.,
+Do not use this pack; send it back to the dirty zone.,Không dùng gói này; gửi về khu bẩn.,
+Cycle ID no longer valid,Cycle ID không còn hiệu lực,
+Do not use this pack; call R02 if you think this is a mistake.,Không dùng gói này; gọi R02 nếu bạn cho là nhầm.,
+Pack was not issued to a department,Gói chưa được cấp phát cho khoa,
+Do not use this pack; ask the sterile store to issue it first.,Không dùng gói này; nhờ kho vô khuẩn cấp phát trước.,
+Set has used up its cycles,Bộ đã dùng hết số chu trình,
+Do not use this pack; call R02 or R01 about an override.,Không dùng gói này; gọi R02 hoặc R01 về việc ghi đè.,
+"Enter the patient code, or choose Emergency to enter it within 24 hours.","Nhập mã bệnh nhân, hoặc chọn Cấp cứu để nhập trong vòng 24 giờ.",
+Usage record not found,Không tìm thấy bản ghi sử dụng,
+"Check the usage record number, or call R02.","Kiểm tra số bản ghi sử dụng, hoặc gọi R02.",
+Patient code already entered,Đã nhập mã bệnh nhân,
+The patient code cannot be changed; call R02 if it is wrong.,Không đổi được mã bệnh nhân; gọi R02 nếu nhập sai.,
+Patient code deadline passed,Đã quá hạn nhập mã bệnh nhân,
+Call R02 to record the patient code.,Gọi R02 để ghi mã bệnh nhân.,
+"Enter the surgery code, 1 to {0} characters.","Nhập mã ca mổ, từ 1 đến {0} ký tự.",
+Pack belongs to another department,Gói thuộc khoa khác,
+"Enter why this department uses the pack, then confirm again.","Nhập lý do khoa này dùng gói, rồi xác nhận lại.",
+"Enter the patient code, 1 to {0} characters.","Nhập mã bệnh nhân, từ 1 đến {0} ký tự.",
+A reason of 1 to {0} characters is required to view the patient code.,Phải nhập lý do từ 1 đến {0} ký tự để xem mã bệnh nhân.,
+{0} is not a {1} usage station.,{0} không phải trạm sử dụng bước {1}.,
+Cycle ID {0} was used on {1} and is no longer valid.,Cycle ID {0} đã được dùng ngày {1} và không còn hiệu lực.,
+Cycle ID {0} was recalled on {1}.,Cycle ID {0} đã bị thu hồi ngày {1}.,
+Cycle ID {0} became invalid on {1} ({2}).,Cycle ID {0} hết hiệu lực ngày {1} ({2}).,
+Pack {0} is {1}; only an issued pack can be used.,Gói {0} đang ở trạng thái {1}; chỉ gói đã cấp phát mới dùng được.,
+Set {0} reached its cycle limit and cannot be used.,Bộ {0} đã hết cơ số và không dùng được.,
+Usage record {0} does not exist.,Bản ghi sử dụng {0} không tồn tại.,
+Usage record {0} already has a patient code.,Bản ghi sử dụng {0} đã có mã bệnh nhân.,
+The patient code of usage record {0} can no longer be entered.,Không còn nhập được mã bệnh nhân của bản ghi sử dụng {0}.,
+"Pack {0} was issued to {1}, not to {2}.","Gói {0} được cấp cho {1}, không phải {2}.",
+A Usage Record cannot be cancelled; a used Cycle ID is never reactivated.,Không hủy được bản ghi sử dụng; Cycle ID đã dùng không bao giờ được kích hoạt lại.,
+A Usage Record can only be created and changed by the usage service.,Bản ghi sử dụng chỉ do dịch vụ sử dụng tạo và sửa.,
+A Usage Record can only be confirmed by the usage service.,Bản ghi sử dụng chỉ do dịch vụ sử dụng xác nhận.,
+Pack {0} already has a usage record.,Gói {0} đã có bản ghi sử dụng.,
+Set {0} is {1}; only a set at a department can be used.,Bộ {0} đang ở trạng thái {1}; chỉ bộ đang ở khoa mới dùng được.,
+Scan the Cycle ID of the pack to use...,Quét Cycle ID của gói cần sử dụng...,
+Not permitted,Không được phép,
+This account cannot record the use of packs at this station.,Tài khoản này không được ghi nhận sử dụng gói tại trạm này.,
+Pack {0} recorded as used,Đã ghi nhận gói {0} đã sử dụng,
+Enter the patient code within 24 hours.,Nhập mã bệnh nhân trong vòng 24 giờ.,
+{0} pack(s) are linked to surgery {1}.,{0} gói đã gắn với ca mổ {1}.,
+"Scan the next pack of this surgery, or finish.","Quét gói tiếp theo của ca mổ này, hoặc kết thúc.",
+Patient code saved,Đã lưu mã bệnh nhân,
+The patient code is stored encrypted and shown with hidden characters.,Mã bệnh nhân được lưu mã hóa và hiển thị ẩn bớt ký tự.,
+Recording the use of packs needs a network connection.,Ghi nhận sử dụng gói cần có kết nối mạng.,
+"Enter why this department uses the pack, then confirm.","Nhập lý do khoa này dùng gói, rồi xác nhận.",
+Why is this department using the pack?,Vì sao khoa này dùng gói?,
+Emergency: enter the patient code within 24 hours,Cấp cứu: nhập mã bệnh nhân trong vòng 24 giờ,
+Patient code,Mã bệnh nhân,
+Surgery code,Mã ca mổ,
+Surgeon,Phẫu thuật viên,
+Room,Phòng,
+Confirm: record use of this pack,Xác nhận: ghi nhận đã dùng gói này,
+Scan the Cycle ID of the pack to use.,Quét Cycle ID của gói cần sử dụng.,
+Emergency cases waiting for the patient code,Ca cấp cứu đang chờ mã bệnh nhân,
+Save patient code,Lưu mã bệnh nhân,
+Enter patient code,Nhập mã bệnh nhân,
+Pack Department,Khoa nhận gói,
+Department the pack was issued to; differs from Department when it was used elsewhere.,Khoa được cấp gói; khác Khoa khi gói được dùng ở nơi khác.,
+Reason for Another Department,Lý do dùng ở khoa khác,
+Required when the pack belongs to another department than the person who scanned it.,Bắt buộc khi gói thuộc khoa khác với người quét.,
+Used At,Thời điểm sử dụng,
+Client Time,Giờ thiết bị,
+Scanned By (User),Người quét (tài khoản),
+Scanned By,Người quét,
+Patient and Operation,Bệnh nhân và ca mổ,
+Patient Code,Mã bệnh nhân,
+Stored encrypted. Shown with the four middle characters hidden.,Lưu mã hóa. Hiển thị ẩn bốn ký tự giữa.,
+Patient Code (masked),Mã bệnh nhân (đã ẩn),
+Emergency,Cấp cứu,
+Emergency case: the patient code may be entered up to 24 hours after the scan.,Ca cấp cứu: được nhập mã bệnh nhân trong vòng 24 giờ sau khi quét.,
+Patient Code Due,Hạn nhập mã bệnh nhân,
+Surgery Code,Mã ca mổ,
+"One scan of a sterile pack used on a patient at a department (T8 usage station, FEAT-027, UC-13). Created and submitted by the usage service only; the patient code is stored encrypted.","Một lần quét gói vô khuẩn dùng cho bệnh nhân tại khoa (trạm sử dụng T8, FEAT-027, UC-13). Chỉ dịch vụ sử dụng tạo và ghi sổ; mã bệnh nhân được lưu mã hóa.",
+Usage Record,Bản ghi sử dụng,
+Cycle result is not confirmed,Chưa xác nhận kết quả chu trình,
+The cycle result needs a Pass or Fail and the confirmation tick.,Kết quả chu trình cần chọn Đạt hoặc Không đạt và tick xác nhận.,
+"Choose Pass or Fail, tick the confirmation, then record the result.","Chọn Đạt hoặc Không đạt, tick xác nhận rồi ghi kết quả.",
+Indicator is not valid,Chỉ thị không hợp lệ,
+"Check the indicator type and result, then record it again.",Kiểm tra loại chỉ thị và kết quả rồi ghi lại.,
+"Only R02 can release a sterilization load, with the card and PIN.","Chỉ R02 được giải phóng mẻ tiệt khuẩn, bằng thẻ và PIN.",
+Ask R02 to sign in at this station and enter the PIN. R01 needs a reason for an emergency release.,Nhờ R02 đăng nhập thẻ tại trạm và nhập PIN. R01 giải phóng khẩn cần nêu lý do.,
+Sterilization load failed,Mẻ tiệt khuẩn không đạt,
+The cycle result must be Pass or Fail.,Kết quả chu trình phải là Đạt hoặc Không đạt.,
+Choose Pass or Fail for the cycle.,Chọn Đạt hoặc Không đạt cho chu trình.,
+Enter the cycle data from the sterilizer screen or printout and confirm it first.,Nhập dữ liệu chu trình từ màn hình hoặc bản in của máy và xác nhận trước.,
+The Bowie-Dick test date must be today.,Ngày thử Bowie-Dick phải là hôm nay.,
+A biological indicator needs its lot and the incubator.,Chỉ thị sinh học cần có lô và tủ ủ.,
+"Enter the cycle data and confirm it, then record the result.","Nhập dữ liệu chu trình và xác nhận, rồi ghi kết quả.",
+Load cannot be released,Chưa giải phóng được mẻ,
+Restart from T4 or from T2.,Xử lý lại từ T4 hoặc từ T2.,
+Choose T4 or T2 to restart the sets from.,Chọn T4 hoặc T2 để xử lý lại các bộ.,
+The biological indicator result must be Pass (negative) or Fail (positive).,Kết quả chỉ thị sinh học phải là Đạt (âm tính) hoặc Không đạt (dương tính).,
+Choose Pass or Fail for the biological indicator.,Chọn Đạt hoặc Không đạt cho chỉ thị sinh học.,
+Biological indicator is positive,Chỉ thị sinh học dương tính,
+A failed cycle or indicator cannot be released; reject the load.,Chu trình hoặc chỉ thị không đạt thì không giải phóng được; hãy loại mẻ.,
+Reject the load so its sets are reprocessed.,Loại mẻ để các bộ được xử lý lại.,
+"Record the missing results, then ask R02 to release the load.","Ghi các kết quả còn thiếu, rồi nhờ R02 giải phóng mẻ.",
+No biological indicator is waiting,Không có chỉ thị sinh học đang chờ đọc,
+Record the biological indicator with its lot and incubator first.,Ghi chỉ thị sinh học kèm lô và tủ ủ trước.,
+"Sterilization load {0} has no complete, confirmed cycle data.",Mẻ {0} chưa có dữ liệu chu trình đầy đủ và đã xác nhận.,
+Indicator {0} does not apply to this load.,Chỉ thị {0} không áp dụng cho mẻ này.,
+Result {0} is not valid for indicator {1}.,Kết quả {0} không hợp lệ cho chỉ thị {1}.,
+Pack {0} is not in load {1}.,Gói {0} không thuộc mẻ {1}.,
+Sterilization load {0} still lacks: {1}.,Mẻ {0} còn thiếu: {1}.,
+Sterilization load {0} has no biological indicator waiting to be read.,Mẻ {0} không có chỉ thị sinh học đang chờ đọc.,
+This screen needs the QR code of the sterilizer and the QR code of the load.,Màn này cần QR máy tiệt khuẩn và QR mã mẻ.,
+"Scan the QR code of the sterilizer, then the QR code on the load label.","Quét QR máy tiệt khuẩn, rồi QR trên nhãn mẻ.",
+This account cannot unload or release sterilization loads.,Tài khoản này không được dỡ hoặc giải phóng mẻ tiệt khuẩn.,
+Cycle result is not chosen,Chưa chọn kết quả chu trình,
+The cycle result needs a Pass or Fail.,Kết quả chu trình cần chọn Đạt hoặc Không đạt.,
+Cycle result recorded,Đã ghi kết quả chu trình,
+Indicator result is not chosen,Chưa chọn kết quả chỉ thị,
+Choose Pass or Fail for the indicator.,Chọn Đạt hoặc Không đạt cho chỉ thị.,
+"Choose the result, then record it.",Chọn kết quả rồi ghi.,
+Indicator {0} recorded,Đã ghi chỉ thị {0},
+PIN is required,Cần nhập PIN,
+Only R02 releases a load with the PIN; R01 releases in an emergency.,Chỉ R02 giải phóng mẻ bằng PIN; R01 giải phóng khi khẩn cấp.,
+Load {0} is in quarantine until the biological indicator is read,Mẻ {0} đang cách ly cho tới khi đọc chỉ thị sinh học,
+Load {0} released,Đã giải phóng mẻ {0},
+{0} set(s) updated.,Đã cập nhật {0} bộ.,
+"Read the biological indicator, then record it with Read BI.",Đọc chỉ thị sinh học rồi ghi bằng Đọc BI.,
+The packs can now go to the sterile store (T6).,Các gói đã chuyển được vào kho vô khuẩn (T6).,
+Load {0} failed,Mẻ {0} không đạt,
+Every pack of the load is no longer valid; the sets go back to reprocessing.,Mọi gói của mẻ hết hiệu lực; các bộ quay lại xử lý lại.,
+Take the packs back to the dirty zone.,Đưa các gói về khu bẩn.,
+Biological indicator result is not chosen,Chưa chọn kết quả chỉ thị sinh học,
+Scan the load and choose negative (Pass) or positive (Fail).,Quét mẻ và chọn âm tính (Đạt) hoặc dương tính (Không đạt).,
+"Scan the QR code on the load label, then choose the result.","Quét QR trên nhãn mẻ, rồi chọn kết quả.",
+Positive indicator after release: recall needed,Chỉ thị dương tính sau giải phóng: cần thu hồi,
+Call R01: packs of this load may already be issued or used.,Gọi R01: các gói của mẻ này có thể đã được cấp phát hoặc sử dụng.,
+The biological indicator was recorded.,Đã ghi chỉ thị sinh học.,
+Scan the next load.,Quét mẻ tiếp theo.,
+Scan the QR code on the load label...,Quét QR trên nhãn mẻ...,
+Scan the sterilizer QR code and the load QR code...,Quét QR máy tiệt khuẩn và QR mã mẻ...,
+Unload and release,Dỡ mẻ / giải phóng,
+Read BI,Đọc BI,
+Unloading and releasing a load needs a network connection.,Dỡ và giải phóng mẻ cần có kết nối mạng.,
+not scanned,chưa quét,
+Scan the sterilizer QR code and the load QR code.,Quét QR máy tiệt khuẩn và QR mã mẻ.,
+Load,Mẻ,
+Not recorded,Chưa ghi,
+Waiting to be read,Đang chờ đọc,
+Test date,Ngày thử,
+Indicator lot,Lô chỉ thị,
+Incubator,Tủ ủ,
+Start incubation,Bắt đầu ủ,
+Record indicator,Ghi chỉ thị,
+Program,Chương trình,
+Entered and confirmed,Đã nhập và xác nhận,
+Not entered yet,Chưa nhập,
+Cycle result (applies to every pack),Kết quả chu trình (áp cho mọi gói),
+I confirm that the result above matches the sterilizer printout or screen.,Tôi xác nhận kết quả trên khớp với bản in hoặc màn hình của máy tiệt khuẩn.,
+Record cycle result,Ghi kết quả chu trình,
+R02 reviewed the parameters outside the program range.,R02 đã xem xét các tham số ngoài dải của chương trình.,
+Still missing: {0}.,Còn thiếu: {0}.,
+Release,Giải phóng,Sterilization Load
+Emergency release reason (R01 only),Lý do giải phóng khẩn (chỉ R01),
+Release the load,Giải phóng mẻ,
+Reject the load,Loại mẻ,
+Use it when the cycle or an indicator failed.,Dùng khi chu trình hoặc chỉ thị không đạt.,
+Restart from,Xử lý lại từ,
+Restart from T4,Xử lý lại từ T4,
+Restart from T2,Xử lý lại từ T2,
+Reject: the load failed,Loại mẻ: mẻ không đạt,
+cycle result,kết quả chu trình,
+review confirmation,xác nhận xem xét,
+Biological indicator of a load in quarantine,Chỉ thị sinh học của mẻ đang cách ly,
+Load {0},Mẻ {0},
+Scan the QR code on the load label.,Quét QR trên nhãn mẻ.,
+Biological indicator,Chỉ thị sinh học,
+Negative (Pass),Âm tính (Đạt),
+Positive (Fail),Dương tính (Không đạt),
+Record the biological indicator,Ghi chỉ thị sinh học,
+Indicator,Chỉ thị,Load Indicator Result
+Empty = the indicator covers the whole load.,Để trống = chỉ thị áp cho cả mẻ.,
+Result,Kết quả,
+Test Date,Ngày thử,
+Bowie-Dick test date.,Ngày thử Bowie-Dick.,
+Read At,Thời điểm đọc,
+Read By,Người đọc,
+"One indicator result of a sterilization load: Bowie-Dick, chemical class 5/6 or biological (FEAT-023, UC-10). Written by the release service only; a biological indicator is Pending until it is read.","Một kết quả chỉ thị của mẻ tiệt khuẩn: Bowie-Dick, hóa học loại 5/6 hoặc sinh học (FEAT-023, UC-10). Chỉ dịch vụ giải phóng ghi; chỉ thị sinh học ở trạng thái chờ cho tới khi được đọc.",
+Load Indicator Result,Kết quả chỉ thị của mẻ,
+Review Confirmed,Đã xác nhận xem xét,
+R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3).,R02 đã xác nhận mẻ có tham số nhập tay ngoài dải của chương trình (FR-M2-10.3).,
+Biological Indicator Result,Kết quả chỉ thị sinh học,
+Redo From,Xử lý lại từ,
+Step the sets of a failed load restart from (default T4).,Bước các bộ của mẻ không đạt xử lý lại từ đó (mặc định T4).,
+Release or Rejection Reason,Lý do giải phóng hoặc loại mẻ,
+biological,Sinh học,Load Indicator Result
+bowie_dick,Bowie-Dick,Load Indicator Result
+chemical_class_5,Hóa học loại 5,Load Indicator Result
+chemical_plasma,Hóa học plasma,Load Indicator Result
+An indicator result can only be recorded by the release service.,Kết quả chỉ thị chỉ do dịch vụ giải phóng ghi.,
+Test is not valid,Test không hợp lệ,
+"Check the test type, the result and the test lot, then record the test again.","Kiểm tra loại test, kết quả và lô test rồi ghi lại.",
+Unlock request is not valid,Yêu cầu mở khóa không hợp lệ,
+Enter the reason and a duration of up to 24 hours.,Nhập lý do và thời hạn tối đa 24 giờ.,
+Scan the QR code on the machine.,Quét QR trên máy.,
+The result must be Pass or Fail.,Kết quả phải là Đạt hoặc Không đạt.,
+Enter the lot of the test pack and its expiry date.,Nhập lô gói test và hạn dùng của lô.,
+Test pack lot has expired,Lô gói test đã hết hạn,
+Use a test pack from a lot that has not expired.,Dùng gói test thuộc lô còn hạn.,
+Inspection has expired,Đã quá hạn kiểm định,
+Use another machine. Call R02 about the inspection.,Dùng máy khác. Báo R02 về việc kiểm định.,
+Daily test is required,Cần test hằng ngày,
+"Record the daily test first, or call R02 for a temporary unlock.","Ghi test hằng ngày trước, hoặc gọi R02 mở khóa tạm.",
+Temporary unlock is not allowed,Không được mở khóa tạm,
+Use another machine. Nobody can unlock this one.,Dùng máy khác. Không ai mở khóa được máy này.,
+Test {0} does not apply to {1}.,Test {0} không áp dụng cho {1}.,
+The test pack lot {0} expired on {1}.,Lô gói test {0} hết hạn ngày {1}.,
+Equipment {0} was due for inspection on {1}.,Thiết bị {0} đến hạn kiểm định ngày {1}.,
+Equipment {0} has no passed daily test today: {1}.,Thiết bị {0} chưa có test hằng ngày Đạt hôm nay: {1}.,
+"Enter the number of hours, from 1 to {0}.",Nhập số giờ từ 1 đến {0}.,
+Equipment {0} is {1} or has an overdue inspection of pressure equipment.,Thiết bị {0} đang {1} hoặc là thiết bị áp lực quá hạn kiểm định.,
+Bowie-Dick test,Test Bowie-Dick,
+Leak test,Test rò rỉ,
+Washer cleaning test,Test làm sạch máy rửa,
+Code {0} is not a machine code.,Mã {0} không phải mã máy.,
+This account cannot record daily tests or unlock machines.,Tài khoản này không được ghi test hằng ngày hoặc mở khóa máy.,
+Test is not complete,Test chưa đầy đủ,
+"Choose the machine, the test and its result.","Chọn máy, loại test và kết quả.",
+"Choose the missing items, then record the test.",Chọn các mục còn thiếu rồi ghi test.,
+Test failed: machine {0} is locked,Test không đạt: máy {0} bị khóa,
+Test recorded for machine {0},Đã ghi test cho máy {0},
+A non-conformity is needed. Call R02.,Cần lập sự cố không phù hợp. Gọi R02.,
+The machine is open again for today.,Máy đã mở lại cho hôm nay.,
+The Bowie-Dick printout photo is missing.,Thiếu ảnh bản in Bowie-Dick.,
+Do not load this machine.,Không nạp mẻ vào máy này.,
+Scan the next machine.,Quét máy tiếp theo.,
+"Choose the machine, enter a reason and a duration from 1 to {0} hours.","Chọn máy, nhập lý do và thời hạn từ 1 đến {0} giờ.",
+"Complete the request, then unlock.",Hoàn tất yêu cầu rồi mở khóa.,
+Machine {0} is unlocked temporarily,Máy {0} được mở khóa tạm,
+The unlock ends after {0} hour(s).,Mở khóa kết thúc sau {0} giờ.,
+Record the daily test as soon as possible.,Ghi test hằng ngày sớm nhất có thể.,
+Scan the QR code on the machine...,Quét QR trên máy...,
+Daily test,Test hằng ngày,
+Back to loading,Quay lại màn nạp,
+Recording daily tests needs a network connection.,Ghi test hằng ngày cần có kết nối mạng.,
+Ready to load,Sẵn sàng nạp,
+Inspection expired,Quá hạn kiểm định,
+Daily test missing,Thiếu test hằng ngày,
+No machine needs a daily test.,Không có máy nào cần test hằng ngày.,
+Not passed today,Hôm nay chưa đạt,
+Unlocked temporarily,Đang mở khóa tạm,
+Machines and today's daily tests,Máy và test hằng ngày hôm nay,
+Machine,Máy,Equipment
+Daily tests,Test hằng ngày,
+Daily test of {0},Test hằng ngày của {0},
+Test type,Loại test,
+Test pack lot,Lô gói test,
+Lot expiry date,Hạn lô,
+Record the daily test,Ghi test hằng ngày,
+This machine needs no daily test.,Máy này không cần test hằng ngày.,
+Temporary unlock (R02),Mở khóa tạm (R02),
+Reason for the temporary unlock,Lý do mở khóa tạm,
+Hours (1 to 24),Số giờ (1 đến 24),
+Unlock temporarily,Mở khóa tạm,
+Test Type,Loại test,Daily Test
+Test Pack Lot,Lô gói test,Daily Test
+Lot Expiry,Hạn lô,Daily Test
+Photo,Ảnh,Daily Test
+Tested By (User),Người test (tài khoản),Daily Test
+Tested By,Người test,Daily Test
+Tested At,Thời điểm test,Daily Test
+Non-conformity Pending,Chờ tạo sự cố không phù hợp,Daily Test
+A failed test needs a non-conformity (FEAT-030 creates it).,Test không đạt cần sự cố không phù hợp (FEAT-030 tạo).,Daily Test
+"One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (FEAT-040, UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.","Một test hằng ngày của máy tiệt khuẩn hoặc máy rửa: Bowie-Dick, rò rỉ hoặc làm sạch (FEAT-040, UC-23). Chỉ dịch vụ test hằng ngày ghi; Đạt mở máy cho ngày, Không đạt khóa máy.",
+Daily Test,Test hằng ngày,
+bowie_dick,Bowie-Dick,Daily Test
+leak,Rò rỉ,Daily Test
+washer_cleaning,Làm sạch máy rửa,Daily Test
+Lock,Khóa,Equipment
+Lock Reason,Lý do khóa,Equipment
+Why the machine is Locked by the system (a failed daily test).,Vì sao hệ thống khóa máy (test hằng ngày không đạt).,Equipment
+Temporarily Unlocked Until,Mở khóa tạm đến,Equipment
+Unlocked By,Người mở khóa,Equipment
+Temporary Unlock Reason,Lý do mở khóa tạm,Equipment
+Daily Test,Test hằng ngày,Equipment
+A daily test can only be recorded by the daily test service.,Test hằng ngày chỉ do dịch vụ test hằng ngày ghi.,
+A daily test cannot be changed after it is recorded.,Không sửa được test hằng ngày sau khi đã ghi.,
+MISSING: {0},THIẾU: {0},
+Missing – confirmed by R02,Thiếu – R02 đã xác nhận,
+{0} is not a {1} assembly station.,{0} không phải trạm lắp ráp {1}.,
+Open the assembly screen on a T3 station.,Hãy mở màn lắp ráp trên trạm T3.,
+Assembly record not found,Không tìm thấy phiếu lắp ráp,
+Assembly record {0} does not exist.,Phiếu lắp ráp {0} không tồn tại.,
+Scan the Set ID again to open its assembly record.,Quét lại Set ID để mở phiếu lắp ráp của bộ.,
+Assembly record is closed,Phiếu lắp ráp đã đóng,
+Assembly record {0} is already recorded or belongs to an earlier cycle.,Phiếu lắp ráp {0} đã ghi sổ hoặc thuộc chu trình trước.,
+Scan the Set ID again to open the assembly record of the current cycle.,Quét lại Set ID để mở phiếu lắp ráp của chu trình hiện tại.,
+Assembly already recorded,Bộ đã lắp ráp xong,
+Set {0} already passed assembly in cycle {1}.,Bộ {0} đã qua lắp ráp trong chu trình {1}.,
+Take the set to the packing station (T4).,Chuyển bộ sang trạm đóng gói (T4).,
+Quantity is not valid,Số lượng không hợp lệ,
+{0} must be a whole number from 0 to {1}.,{0} phải là số nguyên từ 0 đến {1}.,
+Enter the number of instruments you counted.,Nhập số dụng cụ đã đếm.,
+Check the numbers of this line and enter them again.,Kiểm tra các số của dòng này rồi nhập lại.,
+Choose the photo again.,Chọn lại ảnh.,
+Instrument {0} does not exist.,Dụng cụ {0} không tồn tại.,
+Choose an instrument from the spare stock list.,Chọn dụng cụ trong danh sách kho dự phòng.,
+Instrument {0} is not a line of this BOM.,Dụng cụ {0} không phải dòng của BOM này.,
+Scan the Set ID again to reload the BOM.,Quét lại Set ID để tải lại BOM.,
+Choose Repair or Dispose for a damaged instrument.,Chọn Sửa chữa hoặc Thanh lý cho dụng cụ hỏng.,
+{0}: replaced quantity ({1}) cannot exceed damaged quantity ({2}).,{0}: số lượng thay ({1}) không được vượt số lượng hỏng ({2}).,
+{0}: choose Repair or Dispose for the damaged instrument(s).,{0}: chọn Sửa chữa hoặc Thanh lý cho dụng cụ hỏng.,
+Code {0} is not an instrument code.,Mã {0} không phải mã dụng cụ.,
+Scan the code etched on the instrument.,Quét mã khắc trên dụng cụ.,
+Instrument codes are turned off,Mã dụng cụ đang tắt,
+Scanning single instrument codes is not enabled on this site.,Chưa bật quét mã dụng cụ đơn lẻ trên hệ thống này.,
+"Tick or enter the quantity by hand, or ask R10 to enable instrument codes.","Hãy tick hoặc nhập số lượng bằng tay, hoặc nhờ R10 bật mã dụng cụ.",
+Code {0} is not assigned to any instrument.,Mã {0} chưa gán cho dụng cụ nào.,
+Check the code on the instrument or count it by hand.,Kiểm tra mã trên dụng cụ hoặc đếm bằng tay.,
+Foreign instrument,Dụng cụ lạ,
+Instrument {0} is not in the BOM of this set.,Dụng cụ {0} không có trong BOM của bộ này.,
+Take it out of the tray and report it; a non-conformance is recorded.,Lấy ra khỏi khay và báo cáo; hệ thống ghi một không phù hợp (NC).,
+Packing a set with missing instruments needs the PIN of R02.,Đóng gói bộ thiếu dụng cụ cần PIN của R02.,
+"Ask R02 to sign in at this station and enter the 6-digit PIN, then confirm again.","Nhờ R02 đăng nhập thẻ tại trạm, nhập PIN 6 số rồi xác nhận lại.",
+Nothing is missing,Không có dụng cụ nào thiếu,
+Assembly record {0} has no missing instruments to confirm.,Phiếu lắp ráp {0} không có dụng cụ thiếu để xác nhận.,
+Count the lines first; confirm only when instruments are missing.,Hãy đếm các dòng trước; chỉ xác nhận khi có dụng cụ thiếu.,
+Reason required,Cần nhập lý do,
+Give the reason for packing without the missing instruments ({0} characters at most).,Nhập lý do đóng gói khi thiếu dụng cụ (tối đa {0} ký tự).,
+"Write the reason, then confirm again.",Viết lý do rồi xác nhận lại.,
+Branch is not valid,Nhánh xử lý không hợp lệ,
+Choose Repair or Disposal for a damaged set.,Chọn Sửa chữa hoặc Thanh lý cho bộ hỏng.,
+"Choose one of the two branches, or leave it empty to continue to packing.","Chọn một trong hai nhánh, hoặc để trống để tiếp tục sang đóng gói.",
+Give the reason for sending the set to repair or disposal.,Nhập lý do chuyển bộ sang sửa chữa hoặc thanh lý.,
+Not all lines are counted,Chưa đếm hết các dòng,
+Lines not counted yet: {0}.,Dòng chưa đếm: {0}.,
+"Tick or enter the quantity of each line, then record the assembly.",Tick hoặc nhập số lượng từng dòng rồi ghi nhận lắp ráp.,
+Missing instruments are not confirmed,Dụng cụ thiếu chưa được xác nhận,
+Missing: {0}. Packing stays locked.,Thiếu: {0}. Đóng gói vẫn bị khóa.,
+"Add the instruments from the spare stock, or ask R02 to confirm with the PIN.","Bổ sung dụng cụ từ kho dự phòng, hoặc nhờ R02 xác nhận bằng PIN.",
+Set type {0} has no BOM to count against.,Loại bộ {0} không có BOM để đối chiếu.,
+{0} is not in BOM version {1} of this set type.,{0} không có trong BOM phiên bản {1} của loại bộ này.,
+Instrument {0} appears on more than one line.,Dụng cụ {0} xuất hiện ở nhiều hơn một dòng.,
+The count must cover every BOM line; missing: {0}.,Phiếu đếm phải đủ mọi dòng BOM; còn thiếu: {0}.,
+{0}: quantities must be whole numbers between 0 and 9999.,{0}: số lượng phải là số nguyên từ 0 đến 9999.,
+The shortage can only be confirmed by R02 at the station with a PIN.,"Chỉ R02 xác nhận được dụng cụ thiếu, tại trạm và bằng PIN.",
+Result is required.,Cần có kết quả.,
+A set sent to repair or disposal cannot pass assembly.,Bộ chuyển sang sửa chữa hoặc thanh lý không thể Đạt lắp ráp.,
+Count every BOM line first; not counted: {0}.,Hãy đếm mọi dòng BOM trước; chưa đếm: {0}.,
+Missing instruments need the confirmation of R02 before the set can be packed.,Dụng cụ thiếu cần R02 xác nhận trước khi đóng gói bộ.,
+The confirmation of a shortage needs the confirming user and a reason.,Xác nhận thiếu cần có người xác nhận và lý do.,
+Not counted,Chưa đếm,
+Scan the instrument code or the next Set ID...,Quét mã dụng cụ hoặc Set ID kế tiếp...,
+This account cannot count instruments at this station.,Tài khoản này không được kiểm đếm dụng cụ tại trạm này.,
+Choose repair or disposal,Chọn sửa chữa hoặc thanh lý,
+A damaged instrument must go to repair or to disposal.,Dụng cụ hỏng phải chuyển sang sửa chữa hoặc thanh lý.,
+"Tap Repair or Dispose, then save.",Chạm Sửa chữa hoặc Thanh lý rồi lưu.,
+The replaced quantity cannot exceed the damaged quantity.,Số lượng thay không được vượt số lượng hỏng.,
+"Check the numbers, then save again.",Kiểm tra các số rồi lưu lại.,
+Choose the branch and give the reason,Chọn nhánh và nhập lý do,
+Sending a set to repair or disposal needs a branch and a reason.,Chuyển bộ sang sửa chữa hoặc thanh lý cần chọn nhánh và lý do.,
+"Tap Repair or Disposal, write the reason, then confirm.","Chạm Sửa chữa hoặc Thanh lý, viết lý do rồi xác nhận.",
+Reason and R02 PIN are required,Cần lý do và PIN của R02,
+Packing with missing instruments needs a reason and the 6-digit PIN of R02.,Đóng gói khi thiếu dụng cụ cần lý do và PIN 6 số của R02.,
+"Write the reason, enter the PIN, then confirm.","Viết lý do, nhập PIN rồi xác nhận.",
+Shortage confirmed by R02,R02 đã xác nhận thiếu,
+Packing is unlocked once the count is recorded.,Đóng gói được mở khi ghi nhận kiểm đếm.,
+Record the count.,Hãy ghi nhận kiểm đếm.,
+Scan the Set ID to count its instruments against the BOM.,Quét Set ID để đếm dụng cụ của bộ theo BOM.,
+Counting instruments needs a network connection.,Kiểm đếm dụng cụ cần kết nối mạng.,
+Cycle {0},Chu trình {0},
+Assembly recorded,Đã ghi nhận lắp ráp,
+Assembly failed,Lắp ráp không đạt,
+Draft count,Đang đếm (nháp),
+{0} cycles left,Còn {0} chu trình,
+Cycle limit is near,Sắp hết cơ số chu trình,
+Set {0}: {1} of {2} cycles used. {3},Bộ {0}: đã dùng {1}/{2} chu trình. {3},
+Tell R02 so a replacement can be prepared; packing (T4) still checks the limit.,Báo R02 để chuẩn bị bộ thay thế; trạm đóng gói (T4) vẫn kiểm tra cơ số.,
+Notes from reception,Ghi chú từ tiếp nhận,
+Damaged {0} · replaced {1} · {2},Hỏng {0} · thay {1} · {2},
+Position {0} · BOM × {1} · {2},Vị trí {0} · BOM × {1} · {2},
+Decrease,Giảm,
+Increase,Tăng,
+All present,Đủ,
+Damaged / replace,Hỏng / thay,
+BOM Count,Kiểm đếm BOM,
+Counted {0}/{1} lines,Đã đếm {0}/{1} dòng,
+Damaged Quantity,Số lượng hỏng,
+Replaced from spare stock,Số lượng thay từ kho dự phòng,
+Disposition,Hướng xử lý,
+Photo of the damage,Ảnh chỗ hỏng,
+Usable instruments = BOM quantity − damaged + replaced.,Số dụng cụ dùng được = số lượng BOM − hỏng + thay.,
+Save,Lưu,
+Damage Branch,Nhánh xử lý hỏng,
+Set is damaged: send to repair or disposal,Bộ hỏng: chuyển sang sửa chữa hoặc thanh lý,
+The set stops here and does not go to packing. The assembly is recorded as failed.,Bộ dừng tại đây và không sang đóng gói. Lắp ráp được ghi nhận là không đạt.,
+Confirm: send the set away,Xác nhận: chuyển bộ đi,
+R02 confirmation,R02 xác nhận,
+R02 confirms packing with missing instruments,R02 xác nhận đóng gói khi thiếu dụng cụ,
+Confirm: pack with missing instruments,Xác nhận: đóng gói khi thiếu dụng cụ,
+Confirmed by {0}: {1},{0} xác nhận: {1},
+R02 confirms: pack with missing instruments,R02 xác nhận: đóng gói khi thiếu dụng cụ,
+"R02 signs in with the card at this station, scans the Set ID again and enters the PIN.","R02 đăng nhập thẻ tại trạm, quét lại Set ID rồi nhập PIN.",
+Missing instruments,Dụng cụ thiếu,
+Packing is locked until the missing instruments are added or R02 confirms.,Đóng gói bị khóa cho đến khi bổ sung dụng cụ thiếu hoặc R02 xác nhận.,
+Packing: ready,Đóng gói: sẵn sàng,
+Assembly is recorded. The set can go to packing (T4).,Đã ghi nhận lắp ráp. Bộ có thể sang đóng gói (T4).,
+Count every line first.,Hãy đếm hết các dòng trước.,
+Missing instruments are not confirmed.,Dụng cụ thiếu chưa được xác nhận.,
+Record the count to unlock packing.,Ghi nhận kiểm đếm để mở khóa đóng gói.,
+The set was sent to repair or disposal.,Bộ đã chuyển sang sửa chữa hoặc thanh lý.,
+Assembly failed; the set must be assembled again.,Lắp ráp không đạt; bộ phải lắp ráp lại.,
+Packing: locked,Đóng gói: khóa,
+{0} line(s) not counted,{0} dòng chưa đếm,
+Assembly recorded. Scan the next set.,Đã ghi nhận lắp ráp. Quét bộ kế tiếp.,
+Assembly recorded as failed. Scan the next set.,Đã ghi nhận lắp ráp không đạt. Quét bộ kế tiếp.,
+Still needed: {0},Còn thiếu: {0},
+Ready to record,Sẵn sàng ghi nhận,
+Go to packing station {0},Sang trạm đóng gói {0},
+Record the count,Ghi nhận kiểm đếm,
+Set is damaged: repair / disposal,Bộ hỏng: sửa chữa / thanh lý,
+Enough,Đủ,Assembly Line
+Short,Thiếu,Assembly Line
+Over,Thừa,Assembly Line
+Repair,Sửa chữa,Assembly Line
+Dispose,Thanh lý,Assembly Line
+Repair,Sửa chữa,Assembly Record
+Disposal,Thanh lý,Assembly Record
+Enough,Đủ,
+Short,Thiếu,
+Over,Thừa,
+Repair,Sửa chữa,
+Dispose,Thanh lý,
+Disposal,Thanh lý,
+BOM version pinned for this cycle and counted against.,Phiên bản BOM ghim cho chu trình này và dùng để đối chiếu.,Assembly Record
+Result,Kết quả,Assembly Record
+Assembled By,Người lắp ráp,Assembly Record
+Assembled At,Thời điểm lắp ráp,Assembly Record
+Client Timestamp,Thời điểm từ trạm,Assembly Record
+Lines,Dòng kiểm đếm,Assembly Record
+Shortage,Thiếu dụng cụ,Assembly Record
+Has Shortage,Có thiếu,Assembly Record
+Missing Instruments,Dụng cụ thiếu,Assembly Record
+Non-conformance Pending,NC chờ tạo,Assembly Record
+Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030.,Đặt khi phiếu có dụng cụ thiếu hoặc dụng cụ lạ; sự cố CAPA do FEAT-030 tạo.,Assembly Record
+Foreign Instruments,Dụng cụ lạ,Assembly Record
+Instrument codes scanned at T3 that are not in the BOM.,Mã dụng cụ quét tại T3 không có trong BOM.,Assembly Record
+Shortage Confirmed by R02,R02 đã xác nhận thiếu,Assembly Record
+Shortage Reason,Lý do đóng gói thiếu,Assembly Record
+Confirmed By,Người xác nhận,Assembly Record
+Confirmed At,Thời điểm xác nhận,Assembly Record
+Confirmed Shortage,Danh sách thiếu đã xác nhận,Assembly Record
+Branch,Nhánh xử lý,Assembly Record
+Branch Reason,Lý do rẽ nhánh,Assembly Record
+BOM Count,Kiểm đếm BOM,Assembly Record
+Damage Branch,Nhánh xử lý hỏng,Assembly Record
+Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.,Kiểm đếm một bộ theo BOM đã ghim tại trạm T3 (FEAT-020). Ghi sổ sẽ ghi cổng T3.,Assembly Record
+BOM Quantity,Số lượng theo BOM,Assembly Line
+Counted,Đã đếm,Assembly Line
+Actual Quantity,Số lượng thực tế,Assembly Line
+Line Status,Trạng thái dòng,Assembly Line
+Missing Quantity,Số lượng thiếu,Assembly Line
+Replaced Quantity,Số lượng thay,Assembly Line
+Replacement Instrument,Dụng cụ thay thế,Assembly Line
+Photo,Ảnh,Assembly Line
+Disposition,Hướng xử lý,Assembly Line
+One BOM line counted at station T3 (FEAT-020).,Một dòng BOM được kiểm đếm tại trạm T3 (FEAT-020).,Assembly Line
+Assembly Line,Dòng kiểm đếm lắp ráp,
+Instrument Name,Tên dụng cụ,Assembly Line
+Instrument,Dụng cụ,Assembly Line
+Note,Ghi chú,Assembly Line
+Station,Trạm,Assembly Record
+Set Type,Loại bộ,Assembly Record
+BOM Version,Phiên bản BOM,Assembly Record
 A deliverer card was already scanned for this receipt; scan the set tags only.,Đã quét thẻ người giao cho phiếu này; chỉ quét thẻ bộ (Set ID).,
 A dirty receipt cannot be cancelled.,Phiếu tiếp nhận không thể hủy chứng từ.,
 A dirty receipt is created and changed only by the receiving screen service.,Phiếu tiếp nhận chỉ được tạo và sửa bởi dịch vụ của màn tiếp nhận.,
@@ -2455,7 +3260,6 @@ Only R02 can receive a set that the station refused.,Chỉ R02 được tiếp n
 "Open each set, then press Confirm set.",Mở từng bộ rồi bấm Xác nhận bộ.,
 Open receipt,Mở phiếu,
 Photo is not valid,Ảnh không hợp lệ,
-R02 PIN,PIN của R02,
 R02 will issue a card for this person later.,R02 sẽ cấp thẻ cho người này sau.,
 Reason and PIN are required,Cần lý do và PIN,
 Receipt has no sets,Phiếu chưa có bộ nào,
@@ -2620,3 +3424,9 @@ This screen is unavailable or you do not have permission.,Màn này chưa sẵn 
 This workspace is not available for this account.,Không gian làm việc này không dành cho tài khoản này.,
 You do not have permission to edit this field.,Bạn không có quyền sửa trường này.,
 You do not have permission to read this record.,Bạn không có quyền xem bản ghi này.,
+||||||| 8a74068
+Sterilizer is still running a load,Máy tiệt khuẩn còn mẻ đang chạy,
+Load {0} on sterilizer {1} has no cycle data yet.,Mẻ {0} trên máy {1} chưa có dữ liệu chu trình.,
+"Enter the cycle data of load {0} first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} trước, rồi mới nạp máy này tiếp.",
+TraceCore Ward,Khoa dùng TraceCore,Department
+"Ward or unit that receives and returns instrument sets in TraceCore (T1, T7).","Khoa/đơn vị nhận và trả bộ dụng cụ trong TraceCore (T1, T7).",Department

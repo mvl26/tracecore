@@ -54,10 +54,29 @@ def label_context(pack):
 		"bom_version": cint(pack.bom_version),
 		"is_loaner": _is_loaner(pack),
 		"is_test": gs1.is_test_gtin(pack.gtin),
-		"warning": "",
+		"warning": _shortage_warning(pack),
 		"payload": pack.barcode_payload,
 		"hri": _hri(pack),
 	}
+
+
+def _shortage_warning(pack):
+	"""Dòng THIẾU trên nhãn (FR-M2-06.1): tên các dụng cụ thiếu mà R02 đã xác nhận ở T3; không có thì rỗng.
+
+	Nhãn luôn in tiếng Việt (mẫu nhãn cố định), nên dịch sang ``vi`` bất kể ngôn ngữ của người dùng đang thao tác.
+	"""
+	if not pack.assembly or not frappe.db.get_value("Assembly Record", pack.assembly, "shortage_confirmed"):
+		return ""
+	names = frappe.get_all(
+		"Assembly Line",
+		filters={"parent": pack.assembly, "parenttype": "Assembly Record", "line_status": "Short"},
+		fields=["instrument", "instrument_name"],
+		order_by="idx asc",
+	)
+	if not names:
+		return ""
+	listed = ", ".join(row.instrument_name or row.instrument for row in names)
+	return _("MISSING: {0}", "vi").format(listed)
 
 
 def _hri(pack):

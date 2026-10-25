@@ -16,7 +16,15 @@ from frappe.utils import cint, flt, getdate, today
 from tracecore.core import audit, code_registry, zones
 
 CODE_PREFIX = "TB"
-CONTROLLED_FIELDS = ("status", "retired_on", "retired_reason")
+CONTROLLED_FIELDS = (
+	"status",
+	"retired_on",
+	"retired_reason",
+	"lock_reason",
+	"unlock_until",
+	"unlocked_by",
+	"unlock_reason",
+)
 SAFE_RANGE_FIELDS = ("safe_temp_min", "safe_temp_max", "safe_pressure_max")
 RECOMPUTE_SAVEPOINT = "tc_equipment_programs"
 DEFAULT_STATUS = "Ready"

@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "autoname": "LT-.YYYY.-.#####",
+ "creation": "2026-10-25 10:00:00.000000",
+ "description": "One indicator result of a sterilization load: Bowie-Dick, chemical class 5/6 or biological (FEAT-023, UC-10). Written by the release service only; a biological indicator is Pending until it is read.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "load",
+  "indicator",
+  "pack",
+  "result",
+  "column_break_head",
+  "test_date",
+  "lot",
+  "incubator",
+  "read_at",
+  "read_by",
+  "recorded_by_user",
+  "station"
+ ],
+ "fields": [
+  {
+   "fieldname": "load",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Load",
+   "options": "Sterilization Load",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "indicator",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Indicator",
+   "options": "bowie_dick\nchemical_class_5\nchemical_plasma\nbiological",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "Empty = the indicator covers the whole load.",
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "label": "Pack",
+   "options": "Pack",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Result",
+   "options": "Pending\nPass\nFail",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Bowie-Dick test date.",
+   "fieldname": "test_date",
+   "fieldtype": "Date",
+   "label": "Test Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lot",
+   "fieldtype": "Data",
+   "label": "Indicator Lot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "incubator",
+   "fieldtype": "Data",
+   "label": "Incubator",
+   "read_only": 1
+  },
+  {
+   "fieldname": "read_at",
+   "fieldtype": "Datetime",
+   "label": "Read At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "read_by",
+   "fieldtype": "Link",
+   "label": "Read By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recorded_by_user",
+   "fieldtype": "Link",
+   "label": "Recorded By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-25 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Load Indicator Result",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "indicator",
+ "track_changes": 1
+}

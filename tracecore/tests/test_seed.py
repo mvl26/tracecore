@@ -88,6 +88,10 @@ class TestZoneStationSeed(IsolatedTestCase):
 				(0, 1, station["parent_zone"], station["station_step"]),
 			)
 		self.assertEqual(frappe.db.get_value("Zone Station", "TR-007", "zone_type"), "Sterile")
+		# FEAT-027: trạm T8 quét sử dụng nằm ở khu Department mặc định
+		self.assertEqual(
+			frappe.db.get_value("Zone Station", "TR-008", ["zone_type", "station_step"]), ("Department", "T8")
+		)
 		self.assertEqual(frappe.db.get_value("Code Registry", "TR-007", "prefix"), "TR")
 
 	def test_after_install_seeds_zone_stations(self):

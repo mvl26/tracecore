@@ -179,6 +179,26 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("Intl.DateTimeFormat", source)
 		self.assertIn("frappe.boot.time_zone.system", source)
 
+	def test_station_page_includes_t5_script(self):
+		# màn T5 nạp mẻ (SCR-09 STN, SCR-35 PDA, FEAT-022) ở file riêng, nối sau station.js như T2
+		scripts = frappe.get_hooks("page_js").get("station", [])
+		self.assertIn("public/js/station_t5.js", scripts)
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t5.js")))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('method.startsWith("tracecore.v1.load.")', source)  # bearer trong body như T4/T2
+		self.assertIn("new T5Load(this)", source)
+		with open(os.path.join(APP_PATH, "public", "js", "station_t5.js"), encoding="utf-8") as handle:
+			screen = handle.read()
+		self.assertIn("clearSession() {", screen)
+		self.assertIn("sessionEnded", screen)
+		self.assertIn(
+			'dataset.surface = query.matches ? "PDA" : "STN"', screen
+		)  # SCR-35: cùng màn, surface PDA
+		# giờ trên form theo múi giờ hệ thống, không theo đồng hồ trình duyệt (runner UTC lệch 7 giờ so với server)
+		self.assertNotIn("getHours", screen)
+		self.assertIn("frappe.boot.time_zone.system", screen)
+
 	def test_station_page_includes_t6_script(self):
 		# màn T6 kho vô khuẩn (SCR-11, FEAT-025) ở file riêng, cùng cơ chế page_js với T4
 		self.assertIn("public/js/station_t6.js", frappe.get_hooks("page_js").get("station", []))
@@ -195,6 +215,38 @@ class TestStationPage(FrappeTestCase):
 			source = handle.read()
 		self.assertIn("clearSession() {", source)
 		self.assertIn("sessionEnded", source)
+
+	def test_station_page_includes_t7_script(self):
+		# màn T7 cấp phát (SCR-12/SCR-36, FEAT-026) ở file riêng, nối sau station.js như T4/T6
+		self.assertIn("public/js/station_t7.js", frappe.get_hooks("page_js").get("station", []))
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t7.js")))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('station.step === "T7"', source)
+		self.assertIn("new T7Issue(this)", source)
+
+	def test_t7_rpcs_carry_station_token_and_screen_clears_on_session_end(self):
+		# FEAT-003: rpc() gắn token phiên cho RPC issue như pack/putaway; hết phiên thì màn T7 xóa phiếu đang mở
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn('method.startsWith("tracecore.v1.issue.")', handle.read())
+		with open(os.path.join(APP_PATH, "public", "js", "station_t7.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("clearSession() {", source)
+		self.assertIn("sessionEnded", source)
+
+	def test_t7_screen_follows_station_ui_rules(self):
+		# ô quét luôn là input của trạm; 4 trạng thái (loading / empty / error / offline); không hover-only, swipe, drag
+		with open(os.path.join(APP_PATH, "public", "js", "station_t7.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		for token in (
+			"renderLoading",
+			"offlineHtml",
+			"tc-alert-",
+			'"alert" : "status"',  # lỗi chặn là role=alert, thông báo khác là role=status
+		):
+			self.assertIn(token, source)
+		for banned in ("mouseover", "mouseenter", "touchmove", "swipe", "dragstart", "contextmenu"):
+			self.assertNotIn(banned, source)
 
 	def test_station_page_includes_t1_script(self):
 		# màn T1 tiếp nhận (SCR-05, FEAT-019) ở file riêng, cùng cơ chế page_js với T4/T2/T6
@@ -294,3 +346,28 @@ class TestStationPage(FrappeTestCase):
 			self.assertEqual(_("Sterile"), "Vô khuẩn")
 		finally:
 			frappe.local.lang = "en"
+
+	def test_default_station_and_zone_labels_are_vietnamese(self):
+		# nhãn trạm mặc định (seed) và nhãn khu trên thanh trạm có bản dịch vi; khu khoa là "Khoa", không lấy bản
+		# dịch chung "Department" của Frappe/ERPNext ("Cục")
+		from tracecore.setup.seed import DEFAULT_STATIONS
+
+		ours = vi_translations()
+		missing = [
+			row["zone_station_name"] for row in DEFAULT_STATIONS if not ours.get(row["zone_station_name"])
+		]
+		self.assertEqual(missing, [])
+		self.assertEqual(ours.get("Department:Zone Station"), "Khoa")
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = re.sub(r"\s+", " ", handle.read())
+		self.assertIn('ZONE_LABEL[station.zone_type] || "Station", null, "Zone Station"', source)
+
+	def test_scans_while_screen_is_busy_are_kept_and_focus_leaves_the_clicked_button(self):
+		# mã quét đến khi màn đang chờ máy chủ được giữ lại và quét khi màn rảnh (màn T2, T4, T5, T5b, T6, T8, test hằng
+		# ngày không tự xếp hàng như T1/T3/T7); bấm nút xong mà nút còn giữ focus thì trả focus về ô quét, để ký tự máy
+		# quét không rơi vào nút (Enter còn bấm lại nút)
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("this.pendingScans.push(", source)
+		self.assertIn("drainScans() {", source)
+		self.assertIn("document.activeElement === button", source)
