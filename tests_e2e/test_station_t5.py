@@ -284,6 +284,7 @@ def test_t5_pda_layout_is_single_column(t5_page, t5_demo):
 		assert button["height"] >= 56, button
 		# full-width = lấp đầy vùng chứa (nút trong khối có padding hẹp hơn màn), không thu về bề ngang chữ
 		assert button["width"] >= button["room"] - 1, button
-		assert button["width"] >= 250, button
+		# nút nằm trong khối lồng nhau (khối → mẻ đang mở) nên vùng chứa chỉ ~243 px trên màn 412 px; đã full-width ở trên
+		assert button["width"] >= 200, button
 	page.locator("[data-action='t5-cancel']").click()
 	page.set_viewport_size({"width": 1366, "height": 768})
