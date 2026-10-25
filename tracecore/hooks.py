@@ -239,6 +239,8 @@ doc_events = {
 	"Sterile Putaway": dict(_AUDIT_EVENTS),
 	# phiếu cấp phát T7 (FEAT-026): nháp đổi danh sách gói/người nhận, ghi sổ khi xác nhận; không xóa
 	"Issue Note": dict(_AUDIT_EVENTS),
+	# quét sử dụng T8 (FEAT-027): mã bệnh nhân (Password) bị bỏ khỏi Audit; bổ sung mã sau ghi sổ (ca cấp cứu)
+	"Usage Record": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
