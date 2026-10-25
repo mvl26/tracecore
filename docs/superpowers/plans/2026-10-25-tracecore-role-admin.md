@@ -2,6 +2,8 @@
 
 Goal: deliver the approved role-based Vue administration shell on a separate branch, with real permission-filtered data, without merging.
 
+Execution status 2026-10-25: Admin Shell and initial M1 forms implemented. Evidence and explicit remaining scope: `docs/superpowers/reviews/tracecore-role-admin-evidence.md`. Full role-specific operational migration is not complete; Desk rollout stays disabled. Existing kiosk smoke is blocked by dev Employee schema missing tc_card_id, independently diagnosed; do not describe the whole application suite as passing.
+
 Architecture: Vue 3 + TypeScript + Vite served at /tracecore, Frappe cookie session and CSRF. Backend returns available roles, explicitly supported screens, lists and details. One screen registry defines permissions and safe fields. Existing station workflows remain separate until migrated; no simulated approvals or invented production data.
 
 Design: docs/tracecore-admin-design.md and docs/tracecore-ui-source-review.md; role prototype approved 2026-10-25. Preserve source role taxonomy and design tokens. Administrator sees all role spaces; ordinary accounts see their explicitly assigned TC roles. Broader access requires explicit TC Admin Overview role; this never bypasses record permissions. Desk bypass is Administrator or explicitly assigned TraceCore Desk Access only, rollout guarded by site flag.

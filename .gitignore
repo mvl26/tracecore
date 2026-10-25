@@ -52,3 +52,6 @@ labels_out/
 
 # Assets build
 tracecore/public/dist/
+tracecore/public/admin/
+.superpowers/
+frontend/.test/

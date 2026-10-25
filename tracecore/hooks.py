@@ -5,6 +5,10 @@ app_description = "Instrument traceability and CSSD / infection control manageme
 app_email = "info@miyano.com.vn"
 app_license = "gpl-3.0"
 
+# Independent Vue UI; deep links render the same entry document.
+website_route_rules = [{"from_route": "/tracecore/<path:app_path>", "to_route": "tracecore"}]
+before_request = ["tracecore.ui.admin_access.before_request"]
+
 # Apps
 # ------------------
 

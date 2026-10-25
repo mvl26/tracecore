@@ -1,0 +1,22 @@
+name: TraceCore Admin UI
+
+on:
+  push:
+    paths: ['frontend/**', '.github/workflows/admin-ui.yml']
+  pull_request:
+    paths: ['frontend/**', '.github/workflows/admin-ui.yml']
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend run build
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend audit --audit-level=high
