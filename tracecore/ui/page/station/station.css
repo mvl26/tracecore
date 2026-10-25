@@ -1067,3 +1067,49 @@ body.tc-kiosk .layout-main-section {
 .tc-t3-lock p {
 	margin: 0;
 }
+/* ---- Màn T1 tiếp nhận (SCR-05, SCR-34, public/js/station_t1.js); dùng lại khối, BOM, bảng và ô nhập của T4/T2 ---- */
+
+.tc-t1 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-22);
+}
+
+.tc-t1 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t1 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t1 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t1 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+/* ảnh bộ đã xếp và lưới dụng cụ xếp chồng khi màn hẹp (PDA), cạnh nhau khi màn rộng (STN) */
+.tc-t1 .tc-bom.has-tray {
+	grid-template-columns: repeat(auto-fit, minmax(var(--tc-photo-big), 1fr));
+}
+
+.tc-t1 .tc-t4-block > .tc-alert + .tc-alert {
+	margin-top: var(--tc-sp-3);
+}
+
+.tc-t1 .tc-t2-table td .tc-btn {
+	min-height: var(--tc-touch-min);
+}
+
+.tc-t1 .tc-t2-table td {
+	overflow-wrap: anywhere;
+}

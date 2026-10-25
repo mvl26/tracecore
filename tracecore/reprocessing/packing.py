@@ -638,6 +638,30 @@ def void(cycle_id, reason, station, note=None):
 	return {"cycle_id": pack.name, "set_id": unit.name, "status": pack.status, "void_reason": reason}
 
 
+def void_returned_unused(cycle_id, note=None):
+	"""Hủy hiệu lực Cycle ID chưa dùng khi bộ được tiếp nhận lại ở T1 (FR-M2-01.3, BRU-REP-001, BRU-ID-003).
+
+	Gói chuyển ``Void`` với lý do ``Returned Unused`` (bản ghi cho thống kê lãng phí), mã bị vô hiệu trong Code Registry,
+	nhãn chờ in của gói chuyển ``Failed``. Gói đã ``Used``/``Void``/``Recalled`` hoặc không có gói ghi sổ thì không làm gì.
+	Không đụng cổng hay Cycle ID hiện hành của bộ: người gọi (`receiving.submit`) mở chu trình mới ngay sau đó
+	(`step_gate.start_cycle` bỏ ``active_cycle_id``). Trả Cycle ID đã hủy, hoặc None.
+	"""
+	name = frappe.db.get_value("Pack", {"name": cycle_id, "docstatus": 1}, "name") if cycle_id else None
+	if not name:
+		return None
+	pack = frappe.get_doc("Pack", name, for_update=True)
+	if pack.status in ("Used", "Void", "Recalled"):
+		return None
+	pack.update(
+		{"status": "Void", "void_reason": "Returned Unused", "void_note": (note or "").strip() or None}
+	)
+	_save_packing(pack)
+	if code_registry.is_issued(pack.name):
+		code_registry.disable(pack.name, f"Returned Unused: {note}" if note else "Returned Unused")
+	pack_label.cancel_waiting_jobs(pack, "Returned Unused")
+	return pack.name
+
+
 def lookup(raw):
 	"""Tra cứu gói từ chuỗi quét: DataMatrix/HRI của nhãn hoặc Cycle ID trần (AC-14, FR-M2-07.9).
 

@@ -61,13 +61,15 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025) và T2 lô rửa (SCR-06, FEAT-021):
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021),
+# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019) và T3 kiểm đếm (SCR-07, FEAT-020):
 # Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
+		"public/js/station_t1.js",
 		"public/js/station_t3.js",
 	]
 }
@@ -226,6 +228,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
+	# phiếu tiếp nhận T1 (FEAT-019): nháp tạo khi quét thẻ người giao, ghi sổ khi hoàn tất; không xóa
+	"Dirty Receipt": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
 	"Pack": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	# kho vô khuẩn (FEAT-025): kệ KE- và chứng từ nhập kho / chuyển vị trí
@@ -300,6 +304,12 @@ tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
 # core.step_gate.start_cycle (FEAT-015 S3): (ctx {set_unit, set_type, cycle_no, on}) -> int | None, phiên bản BOM ghim
 # cho chu trình mới (số nguyên đầu tiên được ghi vào Set Unit.cycle_bom_version; không có → 0)
 tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_version"]
+# M2 tiếp nhận T1 (FEAT-019, A-32): (ctx {set_unit, set_type, on}) -> {bom_version, bom, tray_images}, BOM + ảnh áp dụng
+# tại ngày tiếp nhận (cùng phiên bản `tracecore_cycle_bom_version` sẽ ghim); M2 không import M1
+tracecore_receipt_context = ["tracecore.instrument.bom.receipt_context"]
+# M2 (FEAT-019, A-33) gọi sau khi R02 tiếp nhận cưỡng bức một bộ: (ctx {receipt, set_unit, reason, by}) -> None.
+# FEAT-030 đăng ký để tự tạo NC (FR-M2-02.2).
+tracecore_after_force_receive = []
 # core.step_gate gọi sau mỗi lần Set Unit.status thực sự đổi (FEAT-016, A-13 G13): (payload {set_unit, old_status,
 # new_status, event, client_ts, ref_doctype, ref_name}) -> None. Chưa phân hệ nào đăng ký (FEAT-019/023/032 dùng).
 tracecore_after_set_status = []
