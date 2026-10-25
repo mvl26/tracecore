@@ -1,5 +1,7 @@
 """Live role workspace navigation and real read API; no simulated lifecycle completion."""
 
+import re
+
 from conftest import desk_login, require_env
 from playwright.sync_api import expect
 
@@ -14,7 +16,10 @@ def test_ktv_station_navigation_and_real_reads(page):
 	page.get_by_role("textbox", name="Set ID").fill(require_env("TC_E2E_T4_SET_STEAM"))
 	page.get_by_role("button", name="Quét bộ", exact=True).click()
 	expect(page.get_by_role("heading", name="Ảnh bộ & danh sách dụng cụ")).to_be_visible()
-	expect(page.get_by_role("button", name="Hoàn tất T3", exact=True)).to_be_disabled()
+	# ghi nhận T3 chạy ở kiosk thật: không có nút hoàn tất giả, có link sang trạm T3
+	expect(page.get_by_role("button", name="Hoàn tất T3", exact=True)).to_have_count(0)
+	kiosk = page.get_by_role("link", name="Mở trạm T3", exact=False).first
+	expect(kiosk).to_have_attribute("href", re.compile(r"^/app/station\?station="))
 	page.get_by_role("link", name="Mở bộ này tại T4").click()
 	expect(page.get_by_role("heading", name="T4 · Đóng gói")).to_be_visible()
 	expect(page.get_by_role("textbox", name="Set ID")).to_have_value(require_env("TC_E2E_T4_SET_STEAM"))

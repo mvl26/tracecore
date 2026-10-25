@@ -567,6 +567,18 @@ onUnmounted(() => {
 							Cấp Set ID
 						</button>
 					</form>
+					<div v-if="list.stations?.length" class="station-links">
+						<p class="subtle">
+							Màn này chỉ để xem. Ghi nhận thao tác tại trạm kiosk (quét thẻ + PIN):
+						</p>
+						<a
+							v-for="station in list.stations"
+							:key="station.name"
+							:href="station.url"
+							class="primary"
+							>Mở trạm {{ station.step }} · {{ station.label }}</a
+						>
+					</div>
 					<div v-if="list.rows.length" class="table-scroll">
 						<table>
 							<thead>

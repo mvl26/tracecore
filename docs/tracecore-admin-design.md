@@ -21,7 +21,7 @@ Ngày: 2026-10-25. Thiết kế được người dùng duyệt trong chat; văn
 | R09 Kế toán / Vật tư | Kho vật tư/lô/hạn, chi phí, bảng giá, giá thành, xuất báo cáo |
 | R10 Quản trị hệ thống (Phòng CNTT) | Khu/trạm, ngoại vi, tài khoản/quyền, mẫu nhãn/cấu hình, audit và hạ tầng |
 
-Bảng là định hướng menu theo SRS, không thay thế ma trận permission và amendment của từng action. Người dùng thường chỉ thấy các nhóm được cấp; Admin tổng có quyền xem liên role riêng. Các màn STN/DEPT hiện hữu được mở qua điều hướng của Admin tổng với ngữ cảnh rõ ràng; việc thay giao diện hay mở bản xem quản trị cho các màn đó cần được cụ thể hóa trong kế hoạch, không tự mở rộng thành viết lại cả kiosk/PDA/Portal.
+Bảng là định hướng menu theo SRS, không thay thế ma trận permission và amendment của từng action. Người dùng thường chỉ thấy các nhóm được cấp; Admin tổng có quyền xem liên role riêng. Các màn STN/DEPT hiện hữu được mở qua điều hướng của Admin tổng với ngữ cảnh rõ ràng; màn T1–T8 trong SPA chỉ đọc và có nút “Mở trạm” sang kiosk của bước (cách A, người dùng chọn 25/10/2026); việc thay giao diện hay mở bản xem quản trị cho các màn đó cần được cụ thể hóa trong kế hoạch, không tự mở rộng thành viết lại cả kiosk/PDA/Portal.
 
 Giai đoạn 1 xây Admin Shell: login mang thương hiệu TraceCore, xác thực Frappe, điều hướng theo quyền, dashboard việc cần xử lý, hết phiên/đăng xuất và kiểm soát truy cập Desk. Giai đoạn 2 chuyển lần lượt Instrument, Instrument Set Type/BOM và Set Unit. Mỗi màn chuyển phải hoàn thành chức năng tương ứng đã có trước khi đưa vào menu nghiệp vụ. Không dẫn người dùng nghiệp vụ về Desk hoặc hiển thị placeholder như chức năng đã sẵn sàng. Các phân hệ chưa chuyển không xuất hiện trong menu người dùng; giữ màn cũ cho kỹ thuật trong thời gian chuyển đổi.
 

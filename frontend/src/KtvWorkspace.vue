@@ -583,13 +583,15 @@ onUnmounted(() => {
 					<section v-if="step === 'T3'" class="ktv-card">
 						<h2>Kết quả kiểm tra – lắp ráp</h2>
 						<p class="ktv-warning">
-							{{
-								data?.assembly_ready
-									? "Chức năng ghi nhận T3 chưa sẵn sàng trên môi trường này. Các đánh dấu chỉ phục vụ đối chiếu, chưa lưu hồ sơ."
-									: "Chức năng ghi nhận T3 chưa sẵn sàng trên môi trường này. Các đánh dấu chỉ phục vụ đối chiếu, chưa lưu hồ sơ hoặc thay đổi cổng kiểm soát."
-							}}
+							Kiểm đếm theo BOM và hoàn tất T3 ghi nhận tại trạm kiosk T3 (quét thẻ +
+							PIN). Các đánh dấu ở đây chỉ để đối chiếu, không lưu hồ sơ.
 						</p>
-						<button disabled>Hoàn tất T3</button
+						<a
+							v-for="station in data?.stations"
+							:key="station.name"
+							:href="'/app/station?station=' + encodeURIComponent(station.name)"
+							class="primary"
+							>Mở trạm T3 · {{ station.zone_station_name }}</a
 						><RouterLink :to="{ path: '/R04/packs', query: { set: opened.set.name } }"
 							>Mở bộ này tại T4</RouterLink
 						>

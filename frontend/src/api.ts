@@ -24,6 +24,13 @@ export interface RecordList {
   start: number;
   can_create: boolean;
   can_issue: boolean;
+  stations: StationLink[];
+}
+export interface StationLink {
+  name: string;
+  label: string;
+  step: string;
+  url: string;
 }
 
 let csrf =

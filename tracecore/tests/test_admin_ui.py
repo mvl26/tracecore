@@ -196,3 +196,73 @@ class TestAdminUIRegistry(FrappeTestCase):
 
 		with patch("frappe.get_roles", return_value=["Administrator", "TC R02"]):
 			self.assertIn("docstatus", _schema("Assembly Record", ["set_unit", "docstatus"]))
+
+
+class TestAdminUIStations(FrappeTestCase):
+	"""Màn T1-T8 trên Admin UI chỉ đọc; thao tác thật dẫn sang kiosk Page station (A-36, cách A)."""
+
+	def _records(self, role, screen, links):
+		from tracecore.v1.admin_ui import records
+
+		with (
+			patch("frappe.session", frappe._dict(user="Administrator")),
+			patch("tracecore.v1.admin_ui._availability", return_value="ready"),
+			patch("tracecore.v1.admin_ui._schema", return_value=[]),
+			patch("frappe.get_list", return_value=[]),
+			patch("tracecore.v1.admin_ui.station_links", return_value=links) as station_links,
+		):
+			return records(role, screen), station_links
+
+	def test_station_screen_links_to_kiosk_of_its_step(self):
+		links = [{"name": "ZS-T1", "label": "T1", "step": "T1", "url": "/app/station?station=ZS-T1"}]
+		result, station_links = self._records("R03", "receipts", links)
+		station_links.assert_called_once_with("T1")
+		self.assertEqual(result["stations"], links)
+
+	def test_master_screen_has_no_kiosk_link(self):
+		result, station_links = self._records("R02", "instruments", [{"name": "X"}])
+		station_links.assert_not_called()
+		self.assertEqual(result["stations"], [])
+
+	def test_station_links_only_cover_steps_the_user_may_open(self):
+		from tracecore.v1.navigation import station_links
+
+		rows = [
+			frappe._dict(name="ZS T1/A", zone_station_name="Tiếp nhận A", station_step="T1"),
+			frappe._dict(name="ZS-T3", zone_station_name="Lắp ráp", station_step="T3"),
+		]
+		with (
+			patch("frappe.session", frappe._dict(user="operator@example.test")),
+			patch("frappe.get_roles", return_value=["TC R03"]),
+			patch("frappe.get_list", return_value=rows) as query,
+		):
+			self.assertEqual(
+				station_links("T1"),
+				[
+					{
+						"name": "ZS T1/A",
+						"label": "Tiếp nhận A",
+						"step": "T1",
+						"url": "/app/station?station=ZS%20T1%2FA",
+					}
+				],
+			)
+			self.assertEqual(station_links("T3"), [])
+		# bước không được mở thì không truy vấn trạm
+		query.assert_called_once()
+		self.assertEqual(query.call_args.kwargs["filters"]["station_step"], "T1")
+
+	def test_every_kiosk_step_is_marked_implemented(self):
+		from tracecore.v1.navigation import IMPLEMENTED_STEPS
+
+		# T5b là chế độ "Dỡ mẻ" của màn T5 trên kiosk
+		self.assertEqual(IMPLEMENTED_STEPS, {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"})
+
+	def test_station_screens_exist_and_use_known_steps(self):
+		from tracecore.ui.admin_registry import SCREENS, STATION_SCREENS
+		from tracecore.v1.navigation import STEP_ROLES
+
+		self.assertEqual(set(STATION_SCREENS.values()), {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"})
+		for screen, step in STATION_SCREENS.items():
+			self.assertIn(screen, SCREENS)
+			self.assertIn(step, STEP_ROLES)

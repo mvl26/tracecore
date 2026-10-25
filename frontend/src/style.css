@@ -377,6 +377,22 @@ tr:nth-child(even) td {
 	background: var(--tc-card);
 	color: var(--tc-text);
 }
+.station-links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-4);
+}
+.station-links p {
+	flex-basis: 100%;
+	margin: 0;
+}
+.station-links a {
+	display: inline-flex;
+	align-items: center;
+	text-decoration: none;
+}
 .pagination {
 	display: flex;
 	align-items: center;

@@ -68,6 +68,18 @@ ROLES = {
 	),
 }
 
+# Station screens are read-only here; operations happen at the kiosk (Page station) of this step (A-36).
+STATION_SCREENS = {
+	"receipts": "T1",
+	"wash-batches": "T2",
+	"assembly": "T3",
+	"packs": "T4",
+	"loads": "T5",
+	"putaways": "T6",
+	"issues": "T7",
+	"usage": "T8",
+}
+
 # Only these fields can leave the read API. Credentials and patient identifiers are absent.
 # A missing DocType is unavailable, never represented by invented records.
 SCREENS = {

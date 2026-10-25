@@ -4,7 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-from tracecore.ui.admin_registry import ROLES, SCREENS
+from tracecore.ui.admin_registry import ROLES, SCREENS, STATION_SCREENS
+from tracecore.v1.navigation import station_links
 
 LABEL_CONTEXT = "TraceCore Admin"
 # trường chuẩn của Frappe không nằm trong meta.fields nhưng đọc được ở permlevel 0 (trạng thái chứng từ)
@@ -157,6 +158,8 @@ def records(role, screen, search="", start=0):
 		"can_create": screen in MASTER_FIELDS and bool(frappe.has_permission(doctype, ptype="create")),
 		"can_issue": screen == "set-units"
 		and bool(set(frappe.get_roles()) & {"TC R02", "TC R10", "System Manager"}),
+		# thao tác trạm chạy ở kiosk của bước; màn này chỉ đọc
+		"stations": station_links(STATION_SCREENS[screen]) if screen in STATION_SCREENS else [],
 	}
 
 

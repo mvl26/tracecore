@@ -1,5 +1,7 @@
 """Native Vue UI smoke tests against the real dev site and Frappe login/OTP."""
 
+import re
+
 from conftest import desk_login
 from playwright.sync_api import expect
 
@@ -35,6 +37,16 @@ def test_deep_link_and_unknown_role_are_denied(page):
 	expect(page.get_by_role("heading", name="Danh mục dụng cụ", exact=True)).to_be_visible()
 	page.goto("/tracecore/R01/overrides")
 	expect(page.get_by_role("alert")).to_contain_text("Không có quyền mở không gian này")
+
+
+def test_station_screen_links_to_real_kiosk(page):
+	desk_login(page, "TC_E2E_INSTR")
+	page.goto("/tracecore/R02/loads")
+	expect(page.get_by_text("Màn này chỉ để xem", exact=False)).to_be_visible()
+	kiosk = page.get_by_role("link", name="Mở trạm T5", exact=False).first
+	expect(kiosk).to_have_attribute("href", re.compile(r"^/app/station\?station="))
+	kiosk.click()
+	expect(page).to_have_url(re.compile(r"/app/station\?station="))
 
 
 def test_logout_clears_role_ui(page):
