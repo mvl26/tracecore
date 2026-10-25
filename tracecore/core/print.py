@@ -40,12 +40,20 @@ DEFAULT_WIDTH_MM = 60
 DEFAULT_HEIGHT_MM = 40
 DEFAULT_LANGUAGE = "ZPL"
 # Đối tượng có nhãn QR mã trần (A-05 R2); nhãn gói ("Pack") đi đường `render_pack`
-OBJECT_LABELS = ("Equipment", "Station", "Roll", "Employee Card", "Location", "Wash Batch")
+OBJECT_LABELS = (
+	"Equipment",
+	"Station",
+	"Roll",
+	"Employee Card",
+	"Location",
+	"Wash Batch",
+	"Sterilization Load",
+)
 # Loại mã (`gs1.parse_scan`) in được cho từng đối tượng; thẻ nhân viên còn nhận thẻ có sẵn đã đăng ký (sổ CARD)
 OBJECT_SCAN_TYPES = dict(
 	zip(
 		OBJECT_LABELS,
-		("equipment", "station", "roll", "employee", "location", "wash_batch"),
+		("equipment", "station", "roll", "employee", "location", "wash_batch", "load"),
 		strict=True,
 	)
 )

@@ -721,6 +721,24 @@ class TestRenderObject(IsolatedTestCase):
 		for other in ("Equipment", "Station", "Roll", "Location"):
 			self.assertTrue(core_print.object_code_problem(other, code), msg=other)
 
+	@bru("BRU-REP-016")
+	def test_sterilization_load_label_has_qr_of_the_load_code(self):
+		code = "ME-261023-01"
+		title = "Máy hấp MH-01 - Dụng cụ 134 độ"
+		zpl = core_print.render_object("Sterilization Load", code, title, "23/10/2026 09:41")
+		self.assertEqual(zpl.count("^BQN"), 1)
+		self.assertIn(f"^FDMA,{code}^FS", zpl)  # QR chứa đúng mã mẻ
+		self.assertIn(f"^FD{code}^FS", zpl)  # mã người đọc
+		self.assertIn("May hap MH-01 - Dung cu 134 do", zpl)  # không truyền máy in → bỏ dấu
+		self.assertTrue(zpl.isascii(), msg=zpl)
+		self.assertIsNone(core_print.object_code_problem("Sterilization Load", code))
+		self.assertEqual(core_print.OBJECT_SCAN_TYPES["Sterilization Load"], "load")
+		# mã loại khác (kể cả mã lô rửa) không in thành nhãn mẻ, và mã mẻ không in thành nhãn loại khác
+		for bad in ("TB-0001", "ME-26102-03", "ME-261023-01 ", "LR-261023-01"):
+			self.assertTrue(core_print.object_code_problem("Sterilization Load", bad), msg=bad)
+		for other in ("Equipment", "Station", "Roll", "Location", "Wash Batch"):
+			self.assertTrue(core_print.object_code_problem(other, code), msg=other)
+
 	def test_render_object_each_object_uses_its_own_template(self):
 		frappe.db.set_value(
 			"Label Template",

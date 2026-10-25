@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "autoname": "NT-.YYYY.-.#####",
+ "creation": "2026-10-25 11:00:00.000000",
+ "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (FEAT-040, UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "equipment",
+  "test_type",
+  "result",
+  "test_date",
+  "column_break_head",
+  "lot",
+  "lot_expiry",
+  "photo",
+  "station",
+  "section_by",
+  "tested_by_user",
+  "tested_by",
+  "tested_at",
+  "note",
+  "nc_pending"
+ ],
+ "fields": [
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Equipment",
+   "options": "Equipment",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "test_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Test Type",
+   "options": "bowie_dick\nleak\nwasher_cleaning",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Result",
+   "options": "Pass\nFail",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "test_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Test Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lot",
+   "fieldtype": "Data",
+   "label": "Test Pack Lot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lot_expiry",
+   "fieldtype": "Date",
+   "label": "Lot Expiry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach",
+   "label": "Photo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_by",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "tested_by_user",
+   "fieldtype": "Link",
+   "label": "Tested By (User)",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tested_by",
+   "fieldtype": "Link",
+   "label": "Tested By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tested_at",
+   "fieldtype": "Datetime",
+   "label": "Tested At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A failed test needs a non-conformity (FEAT-030 creates it).",
+   "fieldname": "nc_pending",
+   "fieldtype": "Check",
+   "label": "Non-conformity Pending",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-25 11:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Equipment",
+ "name": "Daily Test",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "equipment",
+ "track_changes": 1
+}

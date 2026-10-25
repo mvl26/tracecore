@@ -62,8 +62,8 @@ app_include_js = ["tracecore.bundle.js"]
 
 # include js in page
 # Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021),
-# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019) và T3 kiểm đếm (SCR-07, FEAT-020):
-# Frappe nối các file này sau station.js trong script của Page station
+# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019), T3 kiểm đếm (SCR-07, FEAT-020), T5 nạp mẻ (SCR-09, SCR-35, FEAT-022) và
+# T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023): Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
 		"public/js/station_t4.js",
@@ -71,6 +71,9 @@ page_js = {
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		"public/js/station_t3.js",
+		"public/js/station_t5.js",
+		"public/js/station_t5b.js",
+		"public/js/station_daily_test.js",
 	]
 }
 
@@ -228,6 +231,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
+	# mẻ tiệt khuẩn T5 (FEAT-022): tạo khi Hoàn thành nạp, cập nhật khi nhập tay dữ liệu chu trình
+	"Sterilization Load": dict(_AUDIT_EVENTS),
 	# phiếu tiếp nhận T1 (FEAT-019): nháp tạo khi quét thẻ người giao, ghi sổ khi hoàn tất; không xóa
 	"Dirty Receipt": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
@@ -239,6 +244,8 @@ doc_events = {
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),
 	"Equipment": dict(_AUDIT_EVENTS),
+	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
+	"Daily Test": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -321,6 +328,22 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 T5 nạp mẻ (FEAT-022, UC-09):
+#  - load_equipment_checks: (equipment) -> Block | None, điều kiện chọn máy tiệt khuẩn (FEAT-040: test ngày, kiểm định)
+#  - after_load_complete:   (ctx) sau khi Hoàn thành nạp (ctx: load, equipment, program, packs, sets)
+# M5 (FEAT-040): test hằng ngày và kiểm định chặn tạo mẻ/lô; M2 không import M5
+tracecore_load_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+#  - wash_equipment_checks: (equipment) -> Block | None, như load_equipment_checks cho máy rửa (T2)
+tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+tracecore_after_load_complete = []
+# M2 T5b dỡ mẻ và giải phóng (FEAT-023, UC-10); ctx là dict, mọi hook chạy trong cùng transaction:
+#  - after_release:       (ctx {set_unit, set_type, bom_version, cycle_id}) mỗi bộ khi giải phóng Đạt (đã khai báo ở trên)
+#  - after_load_release:  (ctx {load, equipment, program, sets, packs}) sau khi mẻ giải phóng (FEAT-042 tiêu hao, FEAT-046 chi phí)
+#  - after_load_failed:   (ctx {load, equipment, program, sets, redo_from}) mẻ Không đạt (FEAT-030 NC)
+#  - bi_positive:         (ctx {load, equipment, packs[{cycle_id, set_unit, status}]}) BI dương tính (FEAT-029 thu hồi, FEAT-010 thông báo)
+tracecore_after_load_release = []
+tracecore_after_load_failed = []
+tracecore_bi_positive = []
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
 #  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
 #                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)

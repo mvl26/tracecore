@@ -401,6 +401,63 @@ class TestT2DemoData(FrappeTestCase):
 			frappe.flags.in_test = True
 
 
+T5_KEYS = {
+	"machine",
+	"machine_plasma",
+	"machine_locked",
+	"program",
+	"program_plasma",
+	"packs",
+	"pack_plasma",
+	"pack_no_t4",
+	"load_running",
+}
+
+
+class TestT5DemoData(FrappeTestCase):
+	def test_ensure_t5_demo_idempotent(self):
+		from tracecore.reprocessing import sterilizing
+
+		first = devdata.ensure_t5_demo()
+		second = devdata.ensure_t5_demo()
+		self.assertEqual(first, second)
+		self.assertEqual(set(first), T5_KEYS)
+		self.assertEqual(len(set(first["packs"])), 3)
+		for cycle_id in first["packs"]:
+			result = sterilizing.admit_pack(
+				cycle_id, first["machine"], first["program"]
+			)  # nạp được, không ném
+			self.assertEqual(result["method"], "Steam")
+		with self.assertRaises(BlockedError) as plasma:
+			sterilizing.admit_pack(first["pack_plasma"], first["machine"], first["program"])
+		self.assertEqual(plasma.exception.block.code, "PACK_INCOMPATIBLE")
+		self.assertTrue(
+			sterilizing.admit_pack(first["pack_plasma"], first["machine_plasma"], first["program_plasma"])
+		)
+		with self.assertRaises(BlockedError) as no_t4:
+			sterilizing.admit_pack(first["pack_no_t4"], first["machine"], first["program"])
+		self.assertEqual(no_t4.exception.block.code, "GATE_PREV_NOT_PASSED")
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine_locked"], "status"), "Retired")
+		self.assertEqual(frappe.db.get_value("Equipment", first["machine"], "has_printout"), 1)
+		self.assertEqual(sterilizing.capacity_of(first["machine"]), 12)
+		self.assertEqual(
+			frappe.db.get_value("Process Program", first["program"], "equipment"), first["machine"]
+		)
+		load = frappe.get_doc("Sterilization Load", first["load_running"])
+		self.assertEqual((load.status, load.equipment, load.docstatus), ("Running", first["machine"], 0))
+
+	def test_t5_demo_refused_outside_developer_or_test_site(self):
+		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))
+		frappe.flags.in_test = False
+		frappe.conf.developer_mode, frappe.conf.allow_tests = 0, 0
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				devdata.ensure_t5_demo()
+		finally:
+			frappe.conf.developer_mode, frappe.conf.allow_tests = original
+			frappe.flags.in_test = True
+
+
 T6_KEYS = {"location", "location_2", "pack_released", "pack_not_released", "pack_stored", "pack_expiring"}
 
 

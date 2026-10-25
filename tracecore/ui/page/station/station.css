@@ -986,6 +986,61 @@ body.tc-kiosk .layout-main-section {
 	width: var(--tc-photo);
 	height: var(--tc-photo);
 }
+/* T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022): dùng lại khối .tc-t2; thêm danh sách gói */
+.tc-t5-label {
+	display: block;
+	margin-bottom: var(--tc-sp-1);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t5-packs {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-t5-pack {
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 2fr) auto;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	padding: var(--tc-sp-3) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	font-size: var(--tc-fs-md);
+}
+
+.tc-t5-pack-id {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-1);
+}
+
+/* PDA (màn ≤ 480 px): một cột, nút full-width, nút chính 56 px */
+[data-surface="PDA"] .tc-t5-pack {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+[data-surface="PDA"] .tc-t5 .tc-btn {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+[data-surface="PDA"] .tc-t5 .tc-chips {
+	flex-direction: column;
+}
+
+[data-surface="PDA"] .tc-t5 .tc-chip {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+[data-surface="PDA"] .tc-t5 .tc-actionsbar {
+	flex-direction: column;
+	align-items: stretch;
+}
 /* ---- Màn T3 kiểm đếm lắp ráp (SCR-07, public/js/station_t3.js); dùng lại khối, thẻ dụng cụ, gate, chip của T4 ---- */
 
 .tc-t3 {

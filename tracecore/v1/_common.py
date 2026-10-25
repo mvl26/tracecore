@@ -26,6 +26,10 @@ STORAGE_ROLES = ("TC R06", "System Manager")
 # FEAT-021 Q20: nạp lô rửa do R03 (actor chính UC-06), R05, R02; dỡ/nhập dữ liệu/kết luận thêm R04 (cửa ra máy hai cửa)
 WASH_LOAD_ROLES = ("TC R03", "TC R05", "TC R02", "System Manager")
 WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")
+# FEAT-022 Q13: nạp mẻ tiệt khuẩn và nhập dữ liệu chu trình do R05 (actor chính UC-09), R02 (actor phụ)
+LOAD_ROLES = ("TC R05", "TC R02", "System Manager")
+# T5b dỡ mẻ và giải phóng (FEAT-023): R05 dỡ và ghi chỉ thị, R02 giải phóng (PIN), R01 giải phóng khẩn (lý do)
+RELEASE_ROLES = ("TC R05", "TC R02", "TC R01", "System Manager")
 # FEAT-019 (A-31): tiếp nhận T1 do R03 (actor chính UC-05); R02 cũng làm được và là người duy nhất tiếp nhận cưỡng bức
 RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 SESSION_FLAG = "tc_station_session"

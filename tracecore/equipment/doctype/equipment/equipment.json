@@ -32,7 +32,13 @@
   "safe_pressure_max",
   "retired_section",
   "retired_on",
-  "retired_reason"
+  "retired_reason",
+  "lock_section",
+  "lock_reason",
+  "unlock_until",
+  "column_break_unlock",
+  "unlocked_by",
+  "unlock_reason"
  ],
  "fields": [
   {
@@ -209,11 +215,47 @@
    "label": "Retired Reason",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "lock_section",
+   "fieldtype": "Section Break",
+   "label": "Lock"
+  },
+  {
+   "fieldname": "lock_reason",
+   "fieldtype": "Select",
+   "label": "Lock Reason",
+   "options": "\nDaily Test",
+   "read_only": 1,
+   "description": "Why the machine is Locked by the system (a failed daily test)."
+  },
+  {
+   "fieldname": "unlock_until",
+   "fieldtype": "Datetime",
+   "label": "Temporarily Unlocked Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_unlock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unlocked_by",
+   "fieldtype": "Link",
+   "label": "Unlocked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unlock_reason",
+   "fieldtype": "Small Text",
+   "label": "Temporary Unlock Reason",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 12:00:00.000000",
+ "modified": "2026-10-25 11:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Equipment",

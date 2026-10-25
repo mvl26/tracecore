@@ -36,6 +36,7 @@ STATION_STATUSES = {
 	"T2": ("Processing", "Reprocess"),
 	"T3": ("Processing", "Reprocess"),
 	"T4": ("Processing", "Reprocess"),
+	"T5": ("Processing", "Reprocess"),
 }
 
 PENDING = "Pending"
@@ -437,6 +438,17 @@ def reopen_after_override(set_unit, override):
 		)
 	unit.flags.tc_audit_reason = override
 	_save_lifecycle(unit, status="Processing")
+
+
+def count_cycle(set_unit):
+	"""Mẻ giải phóng Đạt (FEAT-023 D6, FR-M1-06.1): +1 ``cycles_used`` của bộ; trả giá trị mới.
+
+	Chỉ nơi này đổi `cycles_used` sau khi cấp (bộ đếm thật thay stub FEAT-018). Nơi gọi chịu trách nhiệm gọi đúng một lần
+	cho mỗi lần giải phóng (mẻ đã ghi sổ không giải phóng lại).
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	_save_lifecycle(unit, cycles_used=cint(unit.cycles_used) + 1)
+	return cint(unit.cycles_used)
 
 
 def return_to_receipt(set_unit):
