@@ -405,9 +405,22 @@ class T4Packing {
 		this.refresh();
 	}
 
+	// dòng BOM đã được R02 xác nhận thiếu ở T3 (FR-M2-06.1): không phải tick
+	isShort(line) {
+		return ((this.ctx && this.ctx.shortage) || []).some(
+			(row) => row.instrument === line.instrument
+		);
+	}
+
+	tickable() {
+		return this.ctx.bom.filter((line) => !this.isShort(line)).length;
+	}
+
 	confirmAll() {
 		if (!this.ctx || !this.imagesReady) return;
-		this.ctx.bom.forEach((_line, index) => this.checked.add(index));
+		this.ctx.bom.forEach((line, index) => {
+			if (!this.isShort(line)) this.checked.add(index);
+		});
 		this.result.querySelectorAll(".tc-check").forEach((box) => this.markLine(box, true));
 		this.refresh();
 	}
@@ -430,7 +443,7 @@ class T4Packing {
 		if (!this.ctx) return [];
 		const out = [];
 		if (this.offline) out.push(__("network connection"));
-		const left = this.ctx.bom.length - this.checked.size;
+		const left = this.tickable() - this.checked.size;
 		if (left > 0) out.push(__("{0} instrument(s)", [left]));
 		if (!this.ci) out.push(__("indicator lot"));
 		const maint = (this.ctx.maintenance || [])
@@ -1101,11 +1114,14 @@ class T4Packing {
 		const ctx = this.ctx;
 		const lines = ctx.bom
 			.map((line, index) => {
+				const short = this.isShort(line);
 				const checked = this.checked.has(index);
 				const label = __("Placed correctly at position {0} as in the photo", [
 					line.position,
 				]);
-				return `<label class="tc-ins${checked ? " is-done" : ""}">
+				return `<label class="tc-ins${checked ? " is-done" : ""}${
+					short ? " is-short" : ""
+				}">
 					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
 					<span class="tc-ins-text">
 						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
@@ -1116,10 +1132,12 @@ class T4Packing {
 								line.instrument,
 							])
 						)}</span>
-						<span class="tc-ins-state">${esc(this.lineState(checked))}</span>
+						<span class="tc-ins-state">${esc(
+							short ? __("Missing – confirmed by R02") : this.lineState(checked)
+						)}</span>
 					</span>
-					<input type="checkbox" class="tc-check" data-line="${index}"${
-					checked ? " checked" : ""
+					<input type="checkbox" class="tc-check" data-line="${index}"${checked ? " checked" : ""}${
+					short ? " disabled" : ""
 				} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
 				</label>`;
 			})
@@ -1140,7 +1158,7 @@ class T4Packing {
 
 	bomFootHtml() {
 		if (!this.ctx) return "";
-		const total = this.ctx.bom.length;
+		const total = this.tickable();
 		const ready = this.imagesReady && total > 0;
 		const all = total > 0 && this.checked.size === total;
 		return `<div class="tc-actions">

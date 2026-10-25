@@ -32,7 +32,7 @@ PACK_STATUSES = [
 	"Void",
 ]
 VOID_REASONS = ["Used", "Expired", "Torn", "Load Failed", "Returned Unused", "Label Damaged"]
-ALLOW_ON_SUBMIT = {"status", "void_reason", "void_note", "label_print_count", "location"}
+ALLOW_ON_SUBMIT = {"status", "void_reason", "void_note", "label_print_count", "location", "load"}
 
 
 def _set_unit(code="PKT"):
@@ -55,7 +55,7 @@ class TestPack(IsolatedTestCase):
 		field = frappe.get_meta("Pack").get_field("void_reason")
 		self.assertEqual(field.options.split("\n"), ["", *VOID_REASONS])
 
-	def test_pack_is_submittable_and_only_four_fields_change_after_submit(self):
+	def test_pack_is_submittable_and_only_service_fields_change_after_submit(self):
 		meta = frappe.get_meta("Pack")
 		self.assertTrue(meta.is_submittable)
 		editable = {f.fieldname for f in meta.fields if f.allow_on_submit}

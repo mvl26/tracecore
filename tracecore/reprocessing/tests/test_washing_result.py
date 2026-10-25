@@ -448,8 +448,11 @@ class TestWashResult(WashResultCase):
 		self.save_data(batch)
 		with patch.object(washing.extension, "run", side_effect=lambda hook, ctx: calls.append((hook, ctx))):
 			self.close(batch)
-		self.assertEqual([hook for hook, _ctx in calls], ["tracecore_after_wash_complete"])
-		ctx = calls[0][1]
+		self.assertEqual(
+			[hook for hook, _ctx in calls if hook != "tracecore_after_set_status"],
+			["tracecore_after_wash_complete"],
+		)
+		ctx = next(c for h, c in calls if h == "tracecore_after_wash_complete")
 		self.assertEqual(
 			(ctx["batch"], ctx["equipment"], ctx["program"]), (batch, self.machine.name, self.program.name)
 		)
@@ -461,7 +464,10 @@ class TestWashResult(WashResultCase):
 		self.save_data(batch)
 		with patch.object(washing.extension, "run", side_effect=lambda hook, ctx: calls.append((hook, ctx))):
 			self.close(batch, result="Fail", clean_test="Fail")
-		self.assertEqual([hook for hook, _ctx in calls], ["tracecore_after_wash_failed"])
+		self.assertEqual(
+			[hook for hook, _ctx in calls if hook != "tracecore_after_set_status"],
+			["tracecore_after_wash_failed"],
+		)
 
 	def test_result_rejects_client_clock_far_from_server(self):
 		batch, _sets = self.load()

@@ -15,5 +15,9 @@ tracecore.patches.v0_1.set_type_master_defaults
 tracecore.patches.v0_1.pin_cycle_bom_version
 tracecore.patches.v0_1.set_bom_item_version_meta
 tracecore.patches.v0_1.set_bom_item_unique_index
+tracecore.patches.v0_1.set_unit_issue_fields
+tracecore.patches.v0_1.rename_cycles_source
+tracecore.patches.v0_1.create_set_label_templates
 tracecore.patches.v0_1.create_wash_batch_label_template
 tracecore.patches.v0_1.seed_department_station
+tracecore.patches.v0_1.create_load_label_template

@@ -1105,6 +1105,17 @@ function tc_st_buttons(frm, ctx) {
 	if (can_write && has_versions) {
 		tc_st_add_button(frm, __("Copy set type"), () => tc_st_copy_dialog(frm));
 	}
+	// FEAT-016 (SCR-03): cấp Set ID cho loại bộ đang xem, cùng hộp thoại với list Set Unit (tc_set_unit.js); quyền theo
+	// form_context của Set Unit, server kiểm lại BOM hiệu lực và role
+	if (ctx.effective_version && tc_st_ready() && tracecore.set_unit) {
+		tracecore.set_unit.context().then((result) => {
+			if (result.ok && result.data.permissions.can_issue && frm.tc_ctx === ctx) {
+				tc_st_add_button(frm, __("Issue Set IDs"), () =>
+					tracecore.set_unit.issue_dialog({ set_type: frm.doc.name })
+				);
+			}
+		});
+	}
 }
 
 function tc_st_render_state(frm, html) {

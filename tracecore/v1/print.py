@@ -15,6 +15,8 @@ from tracecore.v1 import codes
 from tracecore.v1._common import (
 	AGENT_ROLE,
 	BadRequestError,
+	desk_printer,
+	job_names,
 	reject_block,
 	require_agent_for,
 	require_any_role,
@@ -72,15 +74,8 @@ def _label_object(value):
 
 
 def _desk_printer(name):
-	"""Printer đang hoạt động mà R10 chọn; không có/không hoạt động → 400 (tham số sai, chưa ghi gì)."""
-	if not isinstance(name, str) or not name:
-		raise BadRequestError(_("printer must be a printer name."))
-	row = frappe.db.get_value(
-		"Printer", name, ["name", "station", "language", "supports_unicode", "is_active"], as_dict=True
-	)
-	if not row or not cint(row.is_active):
-		raise BadRequestError(_("Printer {0} does not exist or is not active.").format(name))
-	return row
+	"""Printer đang hoạt động mà R10 chọn; không có/không hoạt động → 400 (`_common.desk_printer`)."""
+	return desk_printer(name)
 
 
 def _render_object(label_object, target, printer=None):
@@ -192,27 +187,8 @@ def object_preview(label_object, code):
 
 
 def _job_names(names):
-	"""Tên Print Job (list hoặc chuỗi JSON của list; tên là số tự tăng, nhận số hoặc chuỗi), 1..MAX_STATUS_JOBS; sai → 400."""
-	if isinstance(names, str):
-		try:
-			names = frappe.parse_json(names)
-		except ValueError:
-			names = None
-	if (
-		not isinstance(names, list)
-		or not 0 < len(names) <= MAX_STATUS_JOBS
-		or not all(_job_name(name) for name in names)
-	):
-		raise BadRequestError(_("names must be a list of 1 to {0} print job names.").format(MAX_STATUS_JOBS))
-	return [_job_name(name) for name in names]
-
-
-def _job_name(value):
-	if isinstance(value, bool):
-		return None
-	if isinstance(value, int):
-		return str(value) if value > 0 else None
-	return value.strip() if isinstance(value, str) and value.strip() else None
+	"""Tên Print Job, 1..MAX_STATUS_JOBS; sai → 400 (`_common.job_names`)."""
+	return job_names(names, MAX_STATUS_JOBS)
 
 
 @frappe.whitelist()
