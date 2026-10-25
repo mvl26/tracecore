@@ -550,6 +550,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.wash.") ||
 			method.startsWith("tracecore.v1.load.") ||
 			method.startsWith("tracecore.v1.release.") ||
+			method.startsWith("tracecore.v1.daily_test.") ||
 			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =

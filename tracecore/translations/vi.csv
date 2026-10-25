@@ -2493,3 +2493,91 @@ bowie_dick,Bowie-Dick,Load Indicator Result
 chemical_class_5,Hóa học loại 5,Load Indicator Result
 chemical_plasma,Hóa học plasma,Load Indicator Result
 An indicator result can only be recorded by the release service.,Kết quả chỉ thị chỉ do dịch vụ giải phóng ghi.,
+Test is not valid,Test không hợp lệ,
+"Check the test type, the result and the test lot, then record the test again.","Kiểm tra loại test, kết quả và lô test rồi ghi lại.",
+Unlock request is not valid,Yêu cầu mở khóa không hợp lệ,
+Enter the reason and a duration of up to 24 hours.,Nhập lý do và thời hạn tối đa 24 giờ.,
+Scan the QR code on the machine.,Quét QR trên máy.,
+The result must be Pass or Fail.,Kết quả phải là Đạt hoặc Không đạt.,
+Enter the lot of the test pack and its expiry date.,Nhập lô gói test và hạn dùng của lô.,
+Test pack lot has expired,Lô gói test đã hết hạn,
+Use a test pack from a lot that has not expired.,Dùng gói test thuộc lô còn hạn.,
+Inspection has expired,Đã quá hạn kiểm định,
+Use another machine. Call R02 about the inspection.,Dùng máy khác. Báo R02 về việc kiểm định.,
+Daily test is required,Cần test hằng ngày,
+"Record the daily test first, or call R02 for a temporary unlock.","Ghi test hằng ngày trước, hoặc gọi R02 mở khóa tạm.",
+Temporary unlock is not allowed,Không được mở khóa tạm,
+Use another machine. Nobody can unlock this one.,Dùng máy khác. Không ai mở khóa được máy này.,
+Test {0} does not apply to {1}.,Test {0} không áp dụng cho {1}.,
+The test pack lot {0} expired on {1}.,Lô gói test {0} hết hạn ngày {1}.,
+Equipment {0} was due for inspection on {1}.,Thiết bị {0} đến hạn kiểm định ngày {1}.,
+Equipment {0} has no passed daily test today: {1}.,Thiết bị {0} chưa có test hằng ngày Đạt hôm nay: {1}.,
+"Enter the number of hours, from 1 to {0}.",Nhập số giờ từ 1 đến {0}.,
+A reason of 1 to {0} characters is required.,Phải nhập lý do từ 1 đến {0} ký tự.,
+Equipment {0} is {1} or has an overdue inspection of pressure equipment.,Thiết bị {0} đang {1} hoặc là thiết bị áp lực quá hạn kiểm định.,
+Bowie-Dick test,Test Bowie-Dick,
+Leak test,Test rò rỉ,
+Washer cleaning test,Test làm sạch máy rửa,
+Code {0} is not a machine code.,Mã {0} không phải mã máy.,
+This account cannot record daily tests or unlock machines.,Tài khoản này không được ghi test hằng ngày hoặc mở khóa máy.,
+Test is not complete,Test chưa đầy đủ,
+"Choose the machine, the test and its result.","Chọn máy, loại test và kết quả.",
+"Choose the missing items, then record the test.",Chọn các mục còn thiếu rồi ghi test.,
+Test failed: machine {0} is locked,Test không đạt: máy {0} bị khóa,
+Test recorded for machine {0},Đã ghi test cho máy {0},
+A non-conformity is needed. Call R02.,Cần lập sự cố không phù hợp. Gọi R02.,
+The machine is open again for today.,Máy đã mở lại cho hôm nay.,
+The Bowie-Dick printout photo is missing.,Thiếu ảnh bản in Bowie-Dick.,
+Do not load this machine.,Không nạp mẻ vào máy này.,
+Scan the next machine.,Quét máy tiếp theo.,
+"Choose the machine, enter a reason and a duration from 1 to {0} hours.","Chọn máy, nhập lý do và thời hạn từ 1 đến {0} giờ.",
+"Complete the request, then unlock.",Hoàn tất yêu cầu rồi mở khóa.,
+Machine {0} is unlocked temporarily,Máy {0} được mở khóa tạm,
+The unlock ends after {0} hour(s).,Mở khóa kết thúc sau {0} giờ.,
+Record the daily test as soon as possible.,Ghi test hằng ngày sớm nhất có thể.,
+Scan the QR code on the machine...,Quét QR trên máy...,
+Daily test,Test hằng ngày,
+Back to loading,Quay lại nạp mẻ,
+Recording daily tests needs a network connection.,Ghi test hằng ngày cần có kết nối mạng.,
+Ready to load,Sẵn sàng nạp,
+Inspection expired,Quá hạn kiểm định,
+Daily test missing,Thiếu test hằng ngày,
+No machine needs a daily test.,Không có máy nào cần test hằng ngày.,
+Not passed today,Hôm nay chưa đạt,
+Unlocked temporarily,Đang mở khóa tạm,
+Machines and today's daily tests,Máy và test hằng ngày hôm nay,
+Machine,Máy,Equipment
+Daily tests,Test hằng ngày,
+Daily test of {0},Test hằng ngày của {0},
+Test type,Loại test,
+Test pack lot,Lô gói test,
+Lot expiry date,Hạn lô,
+Record the daily test,Ghi test hằng ngày,
+This machine needs no daily test.,Máy này không cần test hằng ngày.,
+Temporary unlock (R02),Mở khóa tạm (R02),
+Reason for the temporary unlock,Lý do mở khóa tạm,
+Hours (1 to 24),Số giờ (1 đến 24),
+Unlock temporarily,Mở khóa tạm,
+Test Type,Loại test,Daily Test
+Test Pack Lot,Lô gói test,Daily Test
+Lot Expiry,Hạn lô,Daily Test
+Photo,Ảnh,Daily Test
+Tested By (User),Người test (tài khoản),Daily Test
+Tested By,Người test,Daily Test
+Tested At,Thời điểm test,Daily Test
+Non-conformity Pending,Chờ tạo sự cố không phù hợp,Daily Test
+A failed test needs a non-conformity (FEAT-030 creates it).,Test không đạt cần sự cố không phù hợp (FEAT-030 tạo).,Daily Test
+"One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (FEAT-040, UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.","Một test hằng ngày của máy tiệt khuẩn hoặc máy rửa: Bowie-Dick, rò rỉ hoặc làm sạch (FEAT-040, UC-23). Chỉ dịch vụ test hằng ngày ghi; Đạt mở máy cho ngày, Không đạt khóa máy.",
+Daily Test,Test hằng ngày,
+bowie_dick,Bowie-Dick,Daily Test
+leak,Rò rỉ,Daily Test
+washer_cleaning,Làm sạch máy rửa,Daily Test
+Lock,Khóa,Equipment
+Lock Reason,Lý do khóa,Equipment
+Why the machine is Locked by the system (a failed daily test).,Vì sao hệ thống khóa máy (test hằng ngày không đạt).,Equipment
+Temporarily Unlocked Until,Mở khóa tạm đến,Equipment
+Unlocked By,Người mở khóa,Equipment
+Temporary Unlock Reason,Lý do mở khóa tạm,Equipment
+Daily Test,Test hằng ngày,Equipment
+A daily test can only be recorded by the daily test service.,Test hằng ngày chỉ do dịch vụ test hằng ngày ghi.,
+A daily test cannot be changed after it is recorded.,Không sửa được test hằng ngày sau khi đã ghi.,
