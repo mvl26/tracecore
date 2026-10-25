@@ -2479,7 +2479,6 @@ Packing is unlocked once the count is recorded.,Đóng gói được mở khi gh
 Record the count.,Hãy ghi nhận kiểm đếm.,
 Scan the Set ID to count its instruments against the BOM.,Quét Set ID để đếm dụng cụ của bộ theo BOM.,
 Counting instruments needs a network connection.,Kiểm đếm dụng cụ cần kết nối mạng.,
-Set,Bộ,
 Cycle {0},Chu trình {0},
 Assembly recorded,Đã ghi nhận lắp ráp,
 Assembly failed,Lắp ráp không đạt,
@@ -2532,7 +2531,6 @@ Ready to record,Sẵn sàng ghi nhận,
 Go to packing station {0},Sang trạm đóng gói {0},
 Record the count,Ghi nhận kiểm đếm,
 Set is damaged: repair / disposal,Bộ hỏng: sửa chữa / thanh lý,
-Change,Đổi,
 Enough,Đủ,Assembly Line
 Short,Thiếu,Assembly Line
 Over,Thừa,Assembly Line
@@ -2540,6 +2538,12 @@ Repair,Sửa chữa,Assembly Line
 Dispose,Thanh lý,Assembly Line
 Repair,Sửa chữa,Assembly Record
 Disposal,Thanh lý,Assembly Record
+Enough,Đủ,
+Short,Thiếu,
+Over,Thừa,
+Repair,Sửa chữa,
+Dispose,Thanh lý,
+Disposal,Thanh lý,
 BOM version pinned for this cycle and counted against.,Phiên bản BOM ghim cho chu trình này và dùng để đối chiếu.,Assembly Record
 Result,Kết quả,Assembly Record
 Assembled By,Người lắp ráp,Assembly Record
