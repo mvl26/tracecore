@@ -69,6 +69,7 @@ page_js = {
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
 		"public/js/station_t5.js",
+		"public/js/station_t5b.js",
 	]
 }
 

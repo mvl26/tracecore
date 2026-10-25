@@ -25,7 +25,7 @@
 | D3 | Chỉ thị bắt buộc theo máy: hơi nước = hóa học 5 + Bowie-Dick (ngày hôm nay, Đạt); plasma = hóa học plasma; cần BI thì thêm sinh học. Mọi chỉ thị cần có kết quả `Pass`, thiếu hoặc `Fail` không giải phóng được. |
 | D4 | Mẻ Không đạt (kết quả chu trình Fail hoặc chỉ thị Fail, R02 xác nhận) → mọi gói `Void/Load Failed`, cổng T5 Fail cho mọi bộ (bộ về `Reprocess`), `redo_from` T4 mặc định hoặc T2 (khi T2: ghi thêm cổng T2 Fail). |
 | D5 | Cần BI: giải phóng chuyển mẻ sang `Quarantine`, gói `Quarantine`; BI âm tính → hoàn tất giải phóng; BI dương tính → mẻ Không đạt, hook `tracecore_bi_positive`. BI đọc sau giải phóng dương tính → hook, Audit `Override`, gap: lệnh thu hồi là FEAT-029. |
-| D6 | Giải phóng Đạt: Pack `Released`, cổng T5 Đạt từng bộ (đủ 5 cổng → Vô khuẩn), `step_gate.count_cycle` (+1 `cycles_used`), hook `tracecore_after_release` (+1 bộ đếm bảo dưỡng) và `tracecore_after_load_release` sau commit cho M6/M7; mẻ ghi sổ. |
+| D6 | Giải phóng Đạt: Pack `Released`, cổng T5 Đạt từng bộ (đủ 5 cổng → Vô khuẩn), `step_gate.count_cycle` (+1 `cycles_used`), hook `tracecore_after_release` (+1 bộ đếm bảo dưỡng) và `tracecore_after_load_release` cho M6/M7 (hook đồng bộ trong cùng transaction); mẻ ghi sổ. |
 
 ## Review Focus
 - Quét QR máy khác máy của mẻ: chặn `EQUIPMENT_MISMATCH`; chưa đủ hai mã: không mở dỡ.

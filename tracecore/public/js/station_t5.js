@@ -769,6 +769,7 @@ class T5Load {
 		const handlers = {
 			retry: () => this.retry(),
 			"t5-mode": () => this.setMode(data.mode),
+			"t5-release": () => this.openRelease(),
 			"t5-remove": () => this.removePack(data.pack),
 			"t5-complete": () => this.complete(),
 			"t5-cancel": () => this.cancelLoad(),
@@ -876,6 +877,9 @@ class T5Load {
 		return `<div class="tc-chips" role="group" aria-label="${esc(__("Sterilization load"))}">
 			${chip("load", __("Load sterilizer"))}
 			${chip("data", __("Cycle data ({0} open)", [open]))}
+			<button type="button" class="tc-chip" data-action="t5-release" aria-pressed="false">${esc(
+				__("Unload and release")
+			)}</button>
 		</div>`;
 	}
 
