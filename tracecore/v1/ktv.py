@@ -1,6 +1,7 @@
 """Read-only context for the clean-zone workspace. Lifecycle writes stay in station RPCs."""
 
 import frappe
+from frappe import _
 from frappe.utils import today
 
 from tracecore.v1.admin_ui import available_roles
@@ -8,7 +9,7 @@ from tracecore.v1.admin_ui import available_roles
 
 def require_workspace(role="R04", step="T3"):
 	if role != "R04" or role not in available_roles() or step not in ("T3", "T4"):
-		frappe.throw("Không có quyền mở trạm này.", frappe.PermissionError)
+		frappe.throw(_("You cannot open this station."), frappe.PermissionError)
 
 
 def queue_candidates(units, gates, step):
@@ -30,7 +31,7 @@ def personal_requests():
 	if not frappe.db.exists("DocType", "Par Override"):
 		return {"available": False, "rows": []}
 	if not frappe.has_permission("Par Override", ptype="read"):
-		frappe.throw("Không có quyền đọc đề nghị.", frappe.PermissionError)
+		frappe.throw(_("You cannot read the requests."), frappe.PermissionError)
 	return {
 		"available": True,
 		"rows": frappe.get_list(
@@ -135,7 +136,7 @@ def context(set_id, step="T3"):
 		limit_page_length=1,
 	)
 	if not rows:
-		frappe.throw("Không tìm thấy bộ hoặc không có quyền xem.", frappe.PermissionError)
+		frappe.throw(_("Set not found, or you cannot view it."), frappe.PermissionError)
 	unit = rows[0]
 	from tracecore.v1.set_type import bom
 

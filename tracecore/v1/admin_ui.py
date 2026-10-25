@@ -6,6 +6,14 @@ from frappe.utils import cint
 
 from tracecore.ui.admin_registry import ROLES, SCREENS
 
+LABEL_CONTEXT = "TraceCore Admin"
+
+
+def _label(text):
+	"""Nhãn registry (chuỗi nguồn tiếng Anh) theo ngôn ngữ người dùng."""
+	return _(text, context=LABEL_CONTEXT) if text else text
+
+
 MASTER_FIELDS = {
 	"instruments": [
 		"instrument_code",
@@ -81,10 +89,14 @@ def bootstrap():
 		spaces.append(
 			{
 				"id": role,
-				"title": title,
-				"description": description,
+				"title": _label(title),
+				"description": _label(description),
 				"screens": [
-					{"id": screen, "title": SCREENS[screen][0], "state": _availability(SCREENS[screen][1])}
+					{
+						"id": screen,
+						"title": _label(SCREENS[screen][0]),
+						"state": _availability(SCREENS[screen][1]),
+					}
 					if screen != "dashboard"
 					else {"id": "dashboard", "title": _("Overview"), "state": "ready"}
 					for screen in screens
@@ -133,7 +145,7 @@ def records(role, screen, search="", start=0):
 		page_length=26,
 	)
 	return {
-		"title": title,
+		"title": _label(title),
 		"doctype": doctype,
 		"fields": fields,
 		"rows": rows[:25],
@@ -159,7 +171,7 @@ def detail(role, screen, name):
 		if not doc.meta.get_field(field) or doc.has_permlevel_access_to(field, permission_type="read")
 	]
 	return {
-		"title": title,
+		"title": _label(title),
 		"doctype": doctype,
 		"record": {field: doc.get(field) for field in ["name", "modified", *fields]},
 	}
@@ -248,7 +260,12 @@ def dashboard(role):
 			# Bounded, permission-aware counts, explicitly label saturation.
 			rows = frappe.get_list(doctype, fields=["name"], filters=_filters(screen, ""), page_length=1001)
 			counts.append(
-				{"screen": screen, "title": title, "count": min(len(rows), 1000), "capped": len(rows) > 1000}
+				{
+					"screen": screen,
+					"title": _label(title),
+					"count": min(len(rows), 1000),
+					"capped": len(rows) > 1000,
+				}
 			)
 	attention = []
 	for screen, statuses in [
@@ -268,6 +285,7 @@ def dashboard(role):
 				order_by="modified desc",
 			)
 			attention.extend(
-				{"screen": screen, "title": title, "name": row.name, "status": row.status} for row in rows
+				{"screen": screen, "title": _label(title), "name": row.name, "status": row.status}
+				for row in rows
 			)
 	return {"counts": counts, "attention": attention}
