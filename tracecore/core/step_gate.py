@@ -369,6 +369,21 @@ def return_to_receipt(set_unit):
 	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)
 
 
+def use_pack(set_unit):
+	"""Quét sử dụng T8 (FEAT-027, FR-M2-17): bộ Tại khoa sang Chờ tiếp nhận, bỏ Cycle ID hiện hành (đã dùng, không kích hoạt lại).
+
+	Chỉ bộ đang Tại khoa; trạng thái khác → lỗi, không ghi gì. Chu trình kế tiếp mở lại bằng start_cycle (T1).
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status != "At Department":
+		frappe.throw(
+			_("Set {0} is {1}; only a set at a department can be used.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	_save_lifecycle(unit, status="Awaiting Receipt", active_cycle_id=None)
+
+
 def issue_to_department(set_unit, station):
 	"""Cấp phát T7 (FEAT-026 C3): bộ Vô khuẩn sang Tại khoa, ghi trạm cấp; giữ Cycle ID vì gói còn dùng ở T8.
 
