@@ -530,3 +530,97 @@ class TestServerDispatchQueue(IsolatedTestCase):
 		self.assertIn(
 			"tracecore.core.print_server.dispatch_pending", hooks.scheduler_events["cron"]["* * * * *"]
 		)
+
+
+class TestServerDispatchMany(IsolatedTestCase):
+	"""Gửi cả lô một worker (FEAT-016 G9): tuần tự, commit từng job, dừng máy in ở lỗi mạng đầu tiên."""
+
+	def setUp(self):
+		super().setUp()
+		deactivate_printers(STATION)
+		self.label_item = make_label_items()[0]
+		self.tx = FakeTransactions(self)
+		allow_local_printers(self)
+
+	def printer(self, port=9100):
+		name = make_printer(STATION, self.label_item, host="127.0.0.1")
+		frappe.db.set_value("Printer", name, "port", port)
+		return name
+
+	def jobs(self, printer, count):
+		jobs = [
+			core_print.create_job(
+				STATION, ZPL, {"label_object": "Equipment"}, "object-label", printer=printer
+			)
+			for _ in range(count)
+		]
+		self.tx.commit()
+		return jobs
+
+	def test_enqueue_server_dispatch_many_marks_jobs_and_enqueues_once(self):
+		jobs = self.jobs(self.printer(), 3)
+		with patch.object(print_server.frappe, "enqueue") as enqueue:
+			self.assertIsNone(print_server.enqueue_server_dispatch_many(jobs))
+			print_server.enqueue_server_dispatch_many([])
+		enqueue.assert_called_once()
+		args, kwargs = enqueue.call_args
+		self.assertEqual(args, ("tracecore.core.print_server.dispatch_many",))
+		self.assertEqual(kwargs["jobs"], jobs)
+		self.assertEqual(kwargs["queue"], "short")
+		self.assertTrue(kwargs["enqueue_after_commit"])
+		self.assertEqual(kwargs["job_id"], f"tc-print-batch-{jobs[0]}-3")
+		self.assertTrue(kwargs["deduplicate"])
+		for job in jobs:
+			data = json.loads(frappe.db.get_value("Print Job", job, "data"))
+			self.assertEqual(data, {"label_object": "Equipment", "dispatch": "server"})
+
+	def test_dispatch_many_commits_each_job(self):
+		jobs = self.jobs(self.printer(closed_port()), 2)
+		sent = []
+
+		def send_then_crash(host, port, payload):
+			sent.append(payload)
+			if len(sent) == 2:
+				self.tx.crash()  # worker chết giữa job thứ hai: job thứ nhất đã commit
+				raise KeyboardInterrupt
+
+		with patch.object(print_server, "_send", side_effect=send_then_crash):
+			with self.assertRaises(KeyboardInterrupt):
+				print_server.dispatch_many(jobs)
+		self.assertEqual(frappe.db.get_value("Print Job", jobs[0], ["status", "attempts"]), ("Printed", 1))
+
+	def test_dispatch_many_counts_unexpected_error_and_continues(self):
+		jobs = self.jobs(self.printer(), 3)
+		calls = []
+
+		def flaky(host, port, payload):
+			calls.append(payload)
+			if len(calls) == 1:
+				raise UnicodeEncodeError("utf-8", "x", 0, 1, "bad")
+
+		with patch.object(print_server, "_send", side_effect=flaky):
+			results = print_server.dispatch_many(jobs)
+		self.assertEqual(len(calls), 3)  # lỗi không phải lỗi mạng: không dừng lô
+		self.assertEqual(
+			results,
+			[
+				{"status": "Queued", "attempts": 1},
+				{"status": "Printed", "attempts": 1},
+				{"status": "Printed", "attempts": 1},
+			],
+		)
+		self.assertIn("UnicodeEncodeError", frappe.db.get_value("Print Job", jobs[0], "error"))
+
+	def test_dispatch_many_skips_jobs_not_queued(self):
+		jobs = self.jobs(self.printer(closed_port()), 2)
+		core_print.ack(jobs[0], "Printed", "File", output_ref="agent.zpl")
+		with patch.object(print_server.socket, "create_connection", side_effect=ConnectionRefusedError):
+			results = print_server.dispatch_many([str(job) for job in jobs])
+		self.assertEqual(results, [{"status": "Printed", "attempts": 1}, {"status": "Queued", "attempts": 1}])
+
+	def test_new_public_functions_take_no_host_or_port(self):
+		import inspect
+
+		for function in (print_server.dispatch_many, print_server.enqueue_server_dispatch_many):
+			params = set(inspect.signature(function).parameters)
+			self.assertFalse(params & {"host", "port", "address"}, function.__name__)

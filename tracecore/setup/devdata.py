@@ -1,6 +1,7 @@
 """Dữ liệu demo cho site dev/test (developer_mode hoặc allow_tests; không chạy trên production).
 
-- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_demo_set`` in Set ID GIAI thử để quét ở /app/station.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_demo_set`` in Set ID GIAI thử để quét ở /app/station
+  (loại bộ DEMO có BOM một dụng cụ demo; Set Unit cấp qua ``set_units.issue_batch``).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t4_demo`` chuẩn bị màn T4 đóng gói (SCR-08) tại
   TR-004 và in JSON các mã để quét (bộ hấp, bộ plasma, bộ chưa qua cổng T3, lô chỉ thị, mã cuộn nhãn, máy in).
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_equipment_demo`` chuẩn bị máy và chương trình xử lý
@@ -32,7 +33,7 @@ from frappe.utils import add_days, getdate, now_datetime, today
 from tracecore.core import client_time, code_registry, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.equipment import status as equipment_status
-from tracecore.instrument import bom, bom_versions
+from tracecore.instrument import bom, bom_versions, set_units
 from tracecore.reprocessing import washing
 from tracecore.setup.label_templates import ensure_object_templates, ensure_sample_templates
 from tracecore.tests import factories
@@ -222,31 +223,43 @@ def ensure_station_demo(station, user, card_id=None, second_station=None):
 
 
 def ensure_demo_set():
-	"""Tạo (nếu chưa có) loại bộ DEMO và một Set Unit; trả và in Set ID."""
+	"""Tạo (nếu chưa có) loại bộ DEMO (BOM một dụng cụ demo hấp) và một Set Unit cấp qua Cấp Set ID; trả và in Set ID."""
 	_require_dev_site()
+	steam = _t4_catalog()["Steam"]
+	instrument, instrument_name, _qty = steam["bom"][0]
+	_ensure_instrument(instrument, instrument_name, "Steam")
+	lines = [{"instrument": instrument, "qty": 1}]
 	if not frappe.db.exists("Instrument Set Type", DEMO_SET_TYPE):
-		doc = frappe.get_doc(
+		bom_versions.create_set_type(
 			{
-				"doctype": "Instrument Set Type",
 				"type_code": DEMO_SET_TYPE,
 				"set_type_name": "Demo set",
 				"method": "Steam",
 				"department": _demo_department(),
-				"default_pack_type": _ensure_pack_type(_t4_catalog()["Steam"]["pack_type"]),
-			}
+				"default_pack_type": _ensure_pack_type(steam["pack_type"]),
+			},
+			lines,
 		)
-		# loại bộ demo không có BOM (chỉ để in Set ID) như dữ liệu có trước FEAT-015: ghi với cờ dịch vụ BOM
-		doc.flags.tc_bom = True
-		doc.insert(ignore_permissions=True)
+	elif not bom_versions.effective_version(DEMO_SET_TYPE):
+		# loại bộ DEMO tạo trước FEAT-016 không có BOM: cấp Set ID cần BOM hiệu lực (G5)
+		latest = bom_versions.versions(DEMO_SET_TYPE)
+		bom_versions.create_version(
+			DEMO_SET_TYPE,
+			lines,
+			bom_versions.today(),
+			_("Demo data"),
+			latest[0]["bom_version"] if latest else 0,
+		)
 	set_id = frappe.db.get_value("Set Unit", {"set_type": DEMO_SET_TYPE}, "name", order_by="creation asc")
 	if not set_id:
-		set_id = (
-			frappe.get_doc({"doctype": "Set Unit", "set_type": DEMO_SET_TYPE, "max_cycles": 300})
-			.insert(ignore_permissions=True)
-			.name
-		)
+		set_id = _issue_one(DEMO_SET_TYPE)
 	print(set_id)
 	return set_id
+
+
+def _issue_one(set_type):
+	"""Một Set Unit Mới tạo của `set_type` qua Cấp Set ID (FEAT-016: Set Unit chỉ tạo qua ``set_units.issue_batch``)."""
+	return set_units.issue_batch(set_type, 1, max_cycles=300)[0]
 
 
 def _t4_catalog():
@@ -442,13 +455,11 @@ def _ensure_set(set_type, passed, reminder=False):
 	for row in rows:
 		if _matches(_gate_results(row), passed) and _has_lube_reminder(row.name) == reminder:
 			return row.name
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=passed)
+	set_id = _issue_one(set_type)
+	factories.make_cycle(set_id, passed=passed)
 	if reminder:
-		_ensure_lube_reminder(unit.name)
-	return unit.name
+		_ensure_lube_reminder(set_id)
+	return set_id
 
 
 def _ensure_lube_reminder(set_id):
@@ -1040,14 +1051,12 @@ def _inflight_set(set_type, toggled):
 	):
 		if _matches(_gate_results(row), T4_GATES_READY) and 0 < row.cycle_bom_version < effective:
 			return row.name, row.cycle_bom_version
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=T4_GATES_READY)
+	set_id = _issue_one(set_type)
+	factories.make_cycle(set_id, passed=T4_GATES_READY)
 	_demo_version(
 		set_type, getdate(today()), _("Demo BOM change during a cycle", lang="vi"), _toggle_line(toggled)
 	)
-	return unit.name, frappe.db.get_value("Set Unit", unit.name, "cycle_bom_version")
+	return set_id, frappe.db.get_value("Set Unit", set_id, "cycle_bom_version")
 
 
 def ensure_set_type_demo():
@@ -1211,13 +1220,11 @@ def _t2_candidates(set_type, status, wanted):
 
 
 def _t2_new_set(set_type, passed=(), fail_t2=False):
-	unit = frappe.get_doc({"doctype": "Set Unit", "set_type": set_type, "max_cycles": 300}).insert(
-		ignore_permissions=True
-	)
-	factories.make_cycle(unit.name, passed=passed)
+	unit = _issue_one(set_type)
+	factories.make_cycle(unit, passed=passed)
 	if fail_t2:
-		step_gate.record(unit.name, "T2", "Fail")
-	return unit.name
+		step_gate.record(unit, "T2", "Fail")
+	return unit
 
 
 def _t2_operator():

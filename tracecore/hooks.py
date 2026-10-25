@@ -293,6 +293,12 @@ tracecore_after_release = ["tracecore.instrument.maintenance.on_set_released"]
 # core.step_gate.start_cycle (FEAT-015 S3): (ctx {set_unit, set_type, cycle_no, on}) -> int | None, phiên bản BOM ghim
 # cho chu trình mới (số nguyên đầu tiên được ghi vào Set Unit.cycle_bom_version; không có → 0)
 tracecore_cycle_bom_version = ["tracecore.instrument.bom_versions.pin_cycle_version"]
+# core.step_gate gọi sau mỗi lần Set Unit.status thực sự đổi (FEAT-016, A-13 G13): (payload {set_unit, old_status,
+# new_status, event, client_ts, ref_doctype, ref_name}) -> None. Chưa phân hệ nào đăng ký (FEAT-019/023/032 dùng).
+tracecore_after_set_status = []
+# M1 cấp Set ID (FEAT-016, A-13 G5): (ctx {set_type}) -> {value, source} | None, cơ số tối đa nguồn của loại bộ;
+# M8 trả Par Level riêng của loại bộ, nếu không thì cơ số thấp nhất của dụng cụ trong BOM (không import chéo M1 ↔ M8).
+tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 # M2 (FEAT-021) gọi khi lô rửa đóng: (ctx {batch, equipment, program, sets, chemicals, result}) -> None.
 #  - wash_complete: sau khi kết luận Đạt (FEAT-042 trừ hóa chất theo định mức, FEAT-046 chi phí lô)
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)

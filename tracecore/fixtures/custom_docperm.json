@@ -456,7 +456,6 @@
   "role": "TC R01"
  },
  {
-  "create": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "80e313e487",
@@ -537,7 +536,6 @@
   "role": "TC R09"
  },
  {
-  "create": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "31d84db5b5",
@@ -549,6 +547,20 @@
   "read": 1,
   "report": 1,
   "role": "TC R10",
+  "write": 1
+ },
+ {
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "0b8903d8c6",
+  "parent": "Set Unit",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "System Manager",
   "write": 1
  },
  {

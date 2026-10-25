@@ -1,3 +1,5 @@
+import subprocess  # nosec B404 - chạy lint kiến trúc của repo
+import sys
 from functools import partial
 from unittest.mock import patch
 
@@ -5,7 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import step_gate
-from tracecore.core.errors import Block
+from tracecore.core.errors import Block, BlockedError
 from tracecore.tests.factories import make_assembly_record, make_cycle, make_set_unit
 from tracecore.tests.utils import bru
 
@@ -39,8 +41,9 @@ class TestStepGate(FrappeTestCase):
 		su = make_set_unit().name
 		with patch("tracecore.core.step_gate.extension.run", return_value=["x", True, 4, 9]) as run:
 			self.assertEqual(step_gate.start_cycle(su, on="2026-11-02"), 1)
-		run.assert_called_once()
-		hook, ctx = run.call_args.args
+		bom_calls = [c for c in run.call_args_list if c.args[0] == "tracecore_cycle_bom_version"]
+		self.assertEqual(len(bom_calls), 1)
+		hook, ctx = bom_calls[0].args
 		self.assertEqual(hook, "tracecore_cycle_bom_version")
 		set_type = frappe.db.get_value("Set Unit", su, "set_type")
 		self.assertEqual(ctx, {"set_unit": su, "set_type": set_type, "cycle_no": 1, "on": "2026-11-02"})
@@ -70,6 +73,80 @@ class TestStepGate(FrappeTestCase):
 		step_gate.bind_cycle(su, "CY-261020-0001", "TR-004")
 		step_gate.start_cycle(su)
 		self.assertIsNone(_lifecycle(su).active_cycle_id)
+
+	def test_init_unit_is_only_lifecycle_writer(self):
+		# FEAT-016 G4: khởi tạo trường vòng đời của bộ mới cũng chỉ ở step gate (ADR-005)
+		self.assertEqual(
+			step_gate.LIFECYCLE_DEFAULTS,
+			{
+				"status": "New",
+				"cycles_used": 0,
+				"current_station": None,
+				"active_cycle_id": None,
+				"current_cycle_no": 0,
+				"cycle_bom_version": 0,
+			},
+		)
+		doc = frappe.new_doc("Set Unit")
+		doc.update(
+			{"status": "Sterile", "current_cycle_no": 4, "active_cycle_id": "CY-1", "cycle_bom_version": 3}
+		)
+		step_gate.init_unit(doc, 7)
+		self.assertEqual(
+			{field: doc.get(field) for field in step_gate.LIFECYCLE_DEFAULTS},
+			{**step_gate.LIFECYCLE_DEFAULTS, "cycles_used": 7},
+		)
+		self.assertTrue(doc.flags.tc_step_gate)
+		self.assertEqual(doc.flags.tc_audit_reason, "issue")
+		existing = frappe.get_doc("Set Unit", make_set_unit().name)
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.init_unit(existing)
+		for bad in (-1, "3", True, None):
+			with self.assertRaises(frappe.ValidationError, msg=bad):
+				step_gate.init_unit(frappe.new_doc("Set Unit"), bad)
+
+		# doc mới qua đường cấp nhưng không qua init_unit: trường vòng đời về mặc định
+		set_type = frappe.db.get_value("Set Unit", existing.name, "set_type")
+		bare = frappe.get_doc(
+			{"doctype": "Set Unit", "set_type": set_type, "max_cycles": 10, "status": "Sterile"}
+		)
+		bare.flags.tc_set_issue = True
+		bare.insert()
+		self.assertEqual(_lifecycle(bare.name).status, "New")
+
+		lint = subprocess.run(  # nosec B603 - đối số cố định
+			[sys.executable, frappe.get_app_path("tracecore", "..", "scripts", "check_architecture.py")],
+			capture_output=True,
+			text=True,
+			check=False,
+		)
+		self.assertEqual(lint.returncode, 0, lint.stdout + lint.stderr)
+		self.assertNotIn("R2", lint.stdout)
+
+	def test_lifecycle_events_recorded_as_audit_reason(self):
+		# FEAT-016 G13: Audit Log của Set Unit thành lịch sử vòng đời (sự kiện ở cột reason)
+		su = make_set_unit().name
+
+		def reasons():
+			return frappe.get_all(
+				"Audit Log",
+				filters={"ref_doctype": "Set Unit", "ref_name": su, "action": "Update"},
+				pluck="reason",
+				order_by="creation asc, name asc",
+			)
+
+		step_gate.start_cycle(su)
+		self.assertEqual(reasons(), ["start_cycle"])
+		step_gate.record(su, "T4", "Fail")
+		self.assertEqual(reasons()[-1], "gate T4 Fail")
+		step_gate.record(su, "T4", "Pass")
+		self.assertEqual(reasons()[-1], "gate T4 Pass")
+		step_gate.bind_cycle(su, "CY-261022-0001", "TR-004")
+		self.assertEqual(reasons()[-1], "bind_cycle")
+		step_gate.release_cycle(su)
+		self.assertEqual(
+			reasons(), ["start_cycle", "gate T4 Fail", "gate T4 Pass", "bind_cycle", "release_cycle"]
+		)
 
 	@bru("BRU-FLOW-004")
 	def test_check_requires_previous_step_pass(self):
@@ -521,3 +598,63 @@ class TestStepGateLocking(FrappeTestCase):
 		queries = self._capture(step_gate.gates, su)
 		self.assertTrue(self._selects_on(queries, "Step Gate Result"))
 		self.assertFalse([q for q in queries if "for update" in q.lower()])
+
+
+class TestAfterSetStatusHook(FrappeTestCase):
+	"""A-13 G13: ``tracecore_after_set_status`` chỉ chạy khi ``status`` thực sự đổi, payload tối thiểu cố định."""
+
+	def _hook_calls(self, run):
+		return [call.args[1] for call in run.call_args_list if call.args[0] == step_gate.STATUS_HOOK]
+
+	def test_hook_name_is_declared(self):
+		self.assertEqual(step_gate.STATUS_HOOK, "tracecore_after_set_status")
+		self.assertEqual(frappe.get_hooks("tracecore_after_set_status"), [])
+
+	def test_start_cycle_fires_hook_once_with_payload(self):
+		su = make_set_unit().name
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			step_gate.start_cycle(su, client_ts="2026-10-24T08:00:00+07:00")
+		self.assertEqual(
+			self._hook_calls(run),
+			[
+				{
+					"set_unit": su,
+					"old_status": "New",
+					"new_status": "Processing",
+					"event": "start_cycle",
+					"client_ts": "2026-10-24T08:00:00+07:00",
+					"ref_doctype": None,
+					"ref_name": None,
+				}
+			],
+		)
+
+	def test_no_hook_when_status_unchanged(self):
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			step_gate.bind_cycle(su, "CY-261020-0001", "TR-004")  # đổi Cycle ID/trạm, không đổi status
+			step_gate.record(su, "T1", "Pass")  # Processing -> Processing
+			step_gate.release_cycle(su)
+		self.assertEqual(self._hook_calls(run), [])
+
+	def test_gate_fail_reports_business_reference(self):
+		su = make_set_unit().name
+		set_type = frappe.db.get_value("Set Unit", su, "set_type")
+		step_gate.start_cycle(su)
+		with patch("tracecore.core.step_gate.extension.run", return_value=[]) as run:
+			step_gate.record(
+				su,
+				"T2",
+				"Fail",
+				ref_doctype="Instrument Set Type",
+				ref_name=set_type,
+				client_ts="2026-10-24T09:00:00+07:00",
+			)
+		(payload,) = self._hook_calls(run)
+		self.assertEqual(
+			(payload["old_status"], payload["new_status"], payload["event"]),
+			("Processing", "Reprocess", "gate T2 Fail"),
+		)
+		self.assertEqual((payload["ref_doctype"], payload["ref_name"]), ("Instrument Set Type", set_type))
+		self.assertEqual(payload["client_ts"], "2026-10-24T09:00:00+07:00")

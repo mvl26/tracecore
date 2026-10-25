@@ -237,3 +237,9 @@ def effective_set_type_cap(set_type: str) -> dict:
 	if caps:
 		return {"value": min(caps), "source": "Derived", "undefined": undefined}
 	return {"value": None, "source": "Undefined", "undefined": undefined}
+
+
+def set_type_cap(ctx: dict) -> dict:
+	"""Hook ``tracecore_set_type_cap`` cho M1 cấp Set ID (FEAT-016, A-13 G5): ``{value, source}`` của loại bộ."""
+	cap = effective_set_type_cap(ctx["set_type"])
+	return {"value": cap["value"], "source": cap["source"]}
