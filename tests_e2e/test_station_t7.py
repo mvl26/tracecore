@@ -92,10 +92,9 @@ def test_t7_issue_two_packs_signed_by_card_moves_stock(t7_page, t7_demo):
 	expect(page.locator(".modal.show, .msgprint, .toast, [role='dialog']:visible")).to_have_count(0)
 
 
-# RPC tracecore.v1.station.verify_approver thuộc FEAT-019 (chưa có trên develop): không có nó, bước duyệt R02 trả lỗi máy
-# chủ. Khi test duyệt bị bỏ, pack_3/pack_4 không được cấp phát và vẫn nằm trong kho với hạn sớm hơn pack_5/pack_6, nên các
-# test sau dùng gói theo `pack_key`. Khi FEAT-019 merge: đặt R02_APPROVAL_AVAILABLE = True.
-R02_APPROVAL_AVAILABLE = False
+# Bước R02 duyệt vượt cơ số dùng RPC tracecore.v1.station.verify_approver. Khi tắt cờ này (test duyệt bị bỏ), pack_3/pack_4
+# không được cấp phát và vẫn nằm trong kho với hạn sớm hơn pack_5/pack_6, nên các test sau dùng gói theo `pack_key`.
+R02_APPROVAL_AVAILABLE = True
 
 
 def pack_key(enabled_key, fallback_key):

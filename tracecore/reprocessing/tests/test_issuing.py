@@ -308,8 +308,8 @@ class TestSubmit(IssuingCase):
 		self.assertEqual(block.items, [self.set_type])
 		self.assertEqual(frappe.db.get_value("Pack", packs[0].name, "status"), "In Sterile Stock")
 
-		# proof người duyệt do FEAT-019 (station_auth.create/consume_approver_proof, chưa có trên develop): test patch
-		# consume_approver_proof; sau khi 019 merge thì bỏ patch và tạo proof thật
+		# test đơn vị của issuing: patch consume_approver_proof để kiểm riêng phần issuing tự kiểm role R02 và phiên;
+		# proof thật (thẻ + PIN) được kiểm ở test_station_auth.TestApproverProof và test_issue_api
 		r06 = make_user("khong-phai-r02@example.com", ["TC R06"])
 		r02 = make_user("giam-sat-r02@example.com", ["TC R02"])
 

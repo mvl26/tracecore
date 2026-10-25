@@ -3355,3 +3355,10 @@ Load {0} on sterilizer {1} has no cycle data yet.,Mẻ {0} trên máy {1} chưa 
 "Enter the cycle data of load {0} first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} trước, rồi mới nạp máy này tiếp.",
 TraceCore Ward,Khoa dùng TraceCore,Department
 "Ward or unit that receives and returns instrument sets in TraceCore (T1, T7).","Khoa/đơn vị nhận và trả bộ dụng cụ trong TraceCore (T1, T7).",Department
+Approver is not allowed,Người duyệt không được phép,
+This employee is not authorised to approve this action.,Nhân viên này không được ủy quyền duyệt thao tác này.,
+Ask an authorised supervisor to scan the card and enter the PIN.,Nhờ người giám sát được ủy quyền quét thẻ và nhập PIN.,
+PIN proof is invalid,Bằng chứng PIN không hợp lệ,
+The PIN proof expired or was already used.,Bằng chứng PIN đã hết hạn hoặc đã được dùng.,
+Verify your PIN again.,Xác thực lại PIN.,
+"card_id, pin and role must be strings.","card_id, pin và role phải là chuỗi.",

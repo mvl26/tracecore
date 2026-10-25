@@ -2,13 +2,11 @@
 
 import uuid
 from datetime import datetime
-from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import frappe
 
 from tracecore.core import station_auth
-from tracecore.core.errors import Block, BlockedError
 from tracecore.tests import factories
 from tracecore.tests.factories import (
 	make_department,
@@ -19,6 +17,7 @@ from tracecore.tests.factories import (
 )
 from tracecore.tests.utils import IsolatedTestCase, bru, request_headers
 from tracecore.v1 import issue as issue_api
+from tracecore.v1 import station as station_api
 from tracecore.v1.tests.station_fixtures import make_station_session
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
@@ -159,32 +158,61 @@ class TestFlow(IssueApiCase):
 			self, call(issue_api.submit, issue_note=note, station=STATION), "PAR_APPROVAL_REQUIRED", 409
 		)
 
-		# proof người duyệt do FEAT-019 cấp qua v1.station.verify_approver (chưa có trên develop): patch consume
+		# R02 quét thẻ + nhập PIN ngay trên kiosk của R06 (v1.station.verify_approver) → proof gắn với phiên R06
 		frappe.set_user("Administrator")
 		r02 = make_user("duyet-api-r02@example.com", ["TC R02"])
+		approver = make_employee(first_name="Giám sát API", user_id=r02)
+		station_auth.set_pin(approver.name, "246813")
+		station_auth.clear_pin_rate_limit(approver.name)
 		frappe.set_user("capphat@example.com")
-		seen = []
-
-		def consume(session, proof, role="TC R02"):
-			seen.append(session)
-			if proof != "proof-r02":
-				raise BlockedError(Block("PIN_PROOF_INVALID", "t", "r", "a"))
-			return frappe._dict(employee="E", user=r02, employee_name="N")
-
-		with patch.object(station_auth, "consume_approver_proof", consume, create=True):
-			assert_block(
-				self,
-				call(issue_api.submit, issue_note=note, station=STATION, approver_proof="proof-sai"),
-				"PAR_APPROVAL_REQUIRED",
-				409,
-			)
-			done = call(issue_api.submit, issue_note=note, station=STATION, approver_proof="proof-r02")
-		self.assertTrue(done["ok"])
-		# proof gắn với phiên trạm của người đang cấp phát
-		self.assertEqual(
-			set(seen), {frappe.db.get_value("Station Session", {"user": "capphat@example.com"}, "name")}
+		token = SESSION_TOKENS["capphat@example.com"]
+		verified = station_api.verify_approver(
+			token=token, card_id=approver.tc_card_id, pin="246813", role="TC R02", client_ts=now_ts()
 		)
+		self.assertTrue(verified["ok"])
+
+		assert_block(
+			self,
+			call(issue_api.submit, issue_note=note, station=STATION, approver_proof="proof-sai"),
+			"PAR_APPROVAL_REQUIRED",
+			409,
+		)
+		done = call(issue_api.submit, issue_note=note, station=STATION, approver_proof=verified["proof"])
+		self.assertTrue(done["ok"])
 		self.assertEqual(frappe.db.get_value("Issue Note", note, "approved_by"), "duyet-api-r02@example.com")
+
+	def test_over_par_rejects_proof_from_another_station_session(self):
+		as_administrator(
+			make_par_level,
+			"Instrument Set Type",
+			self.set_type,
+			par_kind="Department Stock",
+			department=self.dept,
+			min_qty=0,
+			max_qty=1,
+			is_active=1,
+		)
+		note = self.open_draft()
+		for _ in range(2):
+			call(issue_api.add_pack, issue_note=note, raw=self.stocked().name, station=STATION)
+		call(issue_api.sign, issue_note=note, card=self.recipient.tc_card_id, station=STATION)
+		frappe.set_user("Administrator")
+		r02 = make_user("duyet-api-r02b@example.com", ["TC R02"])
+		approver = make_employee(first_name="Giám sát API B", user_id=r02)
+		station_auth.set_pin(approver.name, "246813")
+		station_auth.clear_pin_rate_limit(approver.name)
+		# proof lấy trên phiên của một kiosk khác không dùng được cho phiếu của phiên này
+		other = self.as_user("capphat-khac@example.com", ["TC R06"])
+		proof = station_api.verify_approver(
+			token=SESSION_TOKENS[other], card_id=approver.tc_card_id, pin="246813", client_ts=now_ts()
+		)["proof"]
+		frappe.set_user("capphat@example.com")
+		assert_block(
+			self,
+			call(issue_api.submit, issue_note=note, station=STATION, approver_proof=proof),
+			"PAR_APPROVAL_REQUIRED",
+			409,
+		)
 
 
 class TestRejections(IssueApiCase):

@@ -397,6 +397,88 @@ def consume_session_pin_proof(session: str, proof: str):
 	return _consume_proof(doc, proof)
 
 
+# --- Người duyệt quét thẻ + PIN trên kiosk của người khác (architecture C6, UC-12 A1) --------------------------------
+APPROVER_ROLES = ("TC R02",)  # FEAT-032 sẽ thêm TC R01 khi duyệt ghi đè cơ số tại T4
+
+
+def _approver_key(proof):
+	return "tracecore:station-approver-proof:" + _token_hash(proof)
+
+
+def _approver_not_allowed() -> BlockedError:
+	return _block(
+		"APPROVER_NOT_ALLOWED",
+		"Approver is not allowed",
+		"This employee is not authorised to approve this action.",
+		"Ask an authorised supervisor to scan the card and enter the PIN.",
+	)
+
+
+def _proof_invalid() -> BlockedError:
+	return _block(
+		"PIN_PROOF_INVALID",
+		"PIN proof is invalid",
+		"The PIN proof expired or was already used.",
+		"Verify your PIN again.",
+	)
+
+
+def create_approver_proof(token: str, card_id: str, pin: str, role: str = "TC R02", client_ts=None) -> dict:
+	"""Người duyệt (`role`) quét thẻ + nhập PIN trên phiên `token` của người khác; trả proof dùng một lần.
+
+	Proof gắn với phiên đang mở, người duyệt và role; chỉ giữ trong cache `PROOF_SECONDS` giây, không vào database.
+	Người không có role duyệt bị chặn trước khi thử PIN để không đốt lượt PIN của họ.
+	"""
+	from tracecore.core.account import require_pin_changed
+
+	doc = authenticate_session(token, touch=True, client_ts=client_ts)
+	if role not in APPROVER_ROLES:
+		raise _approver_not_allowed()
+	approver = _active_employee(card_id, client_ts)
+	if role not in frappe.get_roles(approver.user_id):
+		_audit(
+			"Approve Reject",
+			employee=approver.name,
+			station=doc.station,
+			code="APPROVER_NOT_ALLOWED",
+			session=doc.name,
+			client_ts=client_ts,
+		)
+		raise _approver_not_allowed()
+	require_pin_changed(approver.name)
+	verify_pin(approver.name, pin, client_ts=client_ts)
+	proof = secrets.token_urlsafe(32)
+	value = frappe.as_json(
+		{"session": doc.name, "employee": approver.name, "user": approver.user_id, "role": role}
+	)
+	frappe.cache.set(frappe.cache.make_key(_approver_key(proof)), value, ex=PROOF_SECONDS)
+	return {"proof": proof, "expires_in": PROOF_SECONDS, "employee_name": approver.employee_name}
+
+
+def consume_approver_proof(session: str, proof: str, role: str = "TC R02"):
+	"""Dùng (một lần) proof của `create_approver_proof` cho phiên `session` và `role`; trả người duyệt.
+
+	Trả ``{employee, user, employee_name}``. Phiên đã đóng, proof sai/hết hạn/đã dùng hoặc khác role → PIN_PROOF_INVALID;
+	người duyệt bị khóa thẻ hoặc mất role từ lúc nhập PIN → APPROVER_NOT_ALLOWED.
+	"""
+	stored = None
+	if isinstance(proof, str) and proof:
+		with frappe.cache.pipeline(transaction=True) as pipeline:
+			key = frappe.cache.make_key(_approver_key(proof))
+			pipeline.get(key)
+			pipeline.delete(key)
+			stored = pipeline.execute()[0]
+	row = frappe.parse_json(stored.decode()) if stored else None
+	exists = isinstance(session, str) and session and frappe.db.exists("Station Session", session)
+	is_open = exists and frappe.db.get_value("Station Session", session, "is_open")
+	if not row or not is_open or (row.session, row.role) != (session, role):
+		raise _proof_invalid()
+	approver = lock_employee(row.employee)
+	if not _employee_is_active(approver, row.user) or role not in frappe.get_roles(row.user):
+		raise _approver_not_allowed()
+	return frappe._dict(employee=approver.name, user=row.user, employee_name=approver.employee_name)
+
+
 def _consume_proof(doc, proof):
 	from tracecore.core.account import require_pin_changed
 
