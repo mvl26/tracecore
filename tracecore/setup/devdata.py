@@ -1550,6 +1550,173 @@ def ensure_t6_demo():
 	return result
 
 
+# --- Demo T7 cấp phát (FEAT-026) ----------------------------------------------------------------------
+T7_STATION = "TR-007"
+T7_SET_TYPE = "DEMOT7S"
+T7_SHELF = "DEMO-T7 Shelf"
+T7_PIN = "246813"  # PIN của R02 duyệt vượt cơ số; chỉ ghi vào file env riêng tư của e2e
+T7_PACKS = 8  # pack_1..pack_6 bị tiêu thụ theo thứ tự hạn, pack_fefo_near / pack_fefo_far chỉ quét thử FEFO
+T7_DEPARTMENTS = {
+	"dept": "DEMO-T7 Khoa A",
+	"dept_tight": "DEMO-T7 Khoa B",
+	"dept_open": "DEMO-T7 Khoa C",
+	"dept_other": "DEMO-T7 Khoa D",
+}
+T7_EMPLOYEES = {
+	"recipient": ("DEMO-T7 Nurse A", "dept"),
+	"stranger": ("DEMO-T7 Nurse D", "dept_other"),
+	"approver": ("DEMO-T7 R02 Supervisor", "dept_other"),
+}
+
+
+def ensure_t7_e2e_user(station, password):
+	"""User kiosk trạm T7 (khu vô khuẩn → TC R06) và user R02 duyệt vượt cơ số, đăng ký OTP App như các trạm khác."""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		approver = provision.desk_user("TC R02", "r02-t7-e2e", password)
+		return {"t7_user": user, "t7_otp_secret": _enroll_otp(user), "t7_approver_user": approver}
+
+
+def _t7_employee(key, departments, approver_user=None):
+	"""Nhân viên demo có thẻ (một lần theo tên); `approver` gắn User R02 và đặt PIN. Trả (Employee, thẻ)."""
+	from tracecore.core import station_auth
+
+	label, dept_key = T7_EMPLOYEES[key]
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	name = frappe.db.get_value("Employee", {"employee_name": label}, "name")
+	employee = (
+		frappe.get_doc("Employee", name)
+		if name
+		else frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": label,
+				"gender": "Female",
+				"date_of_birth": "1990-01-01",
+				"date_of_joining": today(),
+				"company": company,
+			}
+		)
+	)
+	employee.status = "Active"
+	employee.department = departments[dept_key]
+	employee.tc_card_enabled = 1
+	employee.tc_card_id = employee.tc_card_id or f"T7-{secrets.token_hex(10)}".upper()
+	if key == "approver" and approver_user:
+		employee.user_id = approver_user
+	employee.save(ignore_permissions=True)
+	if key == "approver":
+		station_auth.set_pin(employee.name, T7_PIN)
+	return employee
+
+
+def _t7_shelf():
+	code = frappe.db.get_value(
+		"Sterile Location", {"location_name": T7_SHELF, "zone_station": T6_STATION}, "name"
+	)
+	if not code:
+		code = factories.make_sterile_location(T7_SHELF, T6_STATION).name
+	if not frappe.db.get_value("Sterile Location", code, "is_active"):
+		frappe.db.set_value("Sterile Location", code, "is_active", 1)
+	return code
+
+
+def _t7_stock():
+	"""Gói demo T7 đang trong kho, chưa quá hạn và chưa nằm trong phiếu cấp phát, hạn sớm trước."""
+	return frappe.db.sql_list(
+		"""
+		select p.name from `tabPack` p
+		where p.docstatus = 1 and p.set_type = %s and p.status = 'In Sterile Stock' and p.expiry >= %s
+		order by p.expiry asc, p.name asc
+		""",
+		(T7_SET_TYPE, today()),
+	)
+
+
+def _t7_par(set_type, department, min_qty, max_qty):
+	if frappe.db.exists(
+		"Par Level",
+		{"par_kind": "Department Stock", "target": set_type, "department": department},
+	):
+		return
+	factories.make_par_level(
+		"Instrument Set Type",
+		set_type,
+		par_kind="Department Stock",
+		department=department,
+		min_qty=min_qty,
+		max_qty=max_qty,
+		is_active=1,
+	)
+
+
+def ensure_t7_demo(approver_user=None):
+	"""Chuẩn bị màn T7 cấp phát (SCR-12/SCR-36) tại TR-007 trên site dev; idempotent, trả và in JSON các mã để quét.
+
+	- ``dept``/``dept_name`` (cơ số tối đa 50), ``dept_tight``/``dept_tight_name`` (tối đa 1: cấp 2 gói là vượt, cần R02),
+	  ``dept_open``/``dept_open_name`` (chưa cấu hình cơ số), ``dept_other``/``dept_other_name`` (khoa của người lạ).
+	- ``recipient_card`` (nhân viên khoa ``dept``), ``stranger_card`` (khoa ``dept_other``), ``approver_card`` +
+	  ``approver_pin`` (R02 khi ``approver_user`` được truyền).
+	- ``pack_1``..``pack_6``: gói trong kho theo thứ tự hạn sớm trước (mỗi gói cấp một lần);
+	  ``pack_fefo_near``/``pack_fefo_far``: hai gói hạn muộn nhất, chỉ quét thử FEFO; ``pack_released``: gói chưa nhập kho.
+	Phiếu nháp cũ của các khoa demo bị xóa thẳng (chỉ trên site dev). Gói đã cấp được thay bằng gói mới khi gọi lại.
+	"""
+	from tracecore.reprocessing import storage
+
+	_require_dev_site()
+	_ensure_set_type("Steam", _t4_catalog()["Steam"], code=T7_SET_TYPE)
+	departments = {key: factories.make_department(label) for key, label in T7_DEPARTMENTS.items()}
+	names = {
+		key: frappe.db.get_value("Department", name, "department_name") for key, name in departments.items()
+	}
+	_t7_par(T7_SET_TYPE, departments["dept"], 0, 50)
+	_t7_par(T7_SET_TYPE, departments["dept_tight"], 0, 1)
+	for dept in departments.values():
+		drafts = frappe.get_all("Issue Note", filters={"docstatus": 0, "department": dept}, pluck="name")
+		for draft in drafts:
+			frappe.db.delete("Issue Note Pack", {"parent": draft})
+			frappe.db.delete("Issue Note", {"name": draft})
+	shelf = _t7_shelf()
+	stock = _t7_stock()
+	for index in range(len(stock), T7_PACKS):
+		pack = factories.make_released_pack(expiry_days=20 + 2 * index + len(stock), set_type=T7_SET_TYPE)
+		storage.putaway(pack.name, shelf, T6_STATION)
+		stock = _t7_stock()
+	packs = stock[:T7_PACKS]
+	near, far = packs[-2], packs[-1]
+	if frappe.db.get_value("Pack", near, "expiry") == frappe.db.get_value("Pack", far, "expiry"):
+		frappe.db.set_value("Pack", far, "expiry", add_days(frappe.db.get_value("Pack", far, "expiry"), 1))
+	released = (
+		frappe.db.get_value(
+			"Pack",
+			{"docstatus": 1, "set_type": T7_SET_TYPE, "status": "Released", "expiry": [">", today()]},
+			"name",
+			order_by="creation asc",
+		)
+		or factories.make_released_pack(set_type=T7_SET_TYPE).name
+	)
+	cards = {}
+	for key in T7_EMPLOYEES:
+		employee = _t7_employee(key, departments, approver_user)
+		cards[f"{key}_card"] = employee.tc_card_id
+	result = {
+		**{key: value for key, value in departments.items()},
+		**{f"{key}_name": value for key, value in names.items()},
+		**cards,
+		"approver_pin": T7_PIN,
+		**{f"pack_{i}": packs[i - 1] for i in range(1, 7)},
+		"pack_fefo_near": near,
+		"pack_fefo_far": far,
+		"pack_released": released,
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
 # --- Demo T3 kiểm đếm lắp ráp (FEAT-020) --------------------------------------------------------------
 T3_STATION = "TR-003"
 T3_SET_TYPE = "DEMOT3S"

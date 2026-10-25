@@ -405,6 +405,63 @@ def t6_page(page):
 	return page
 
 
+# --- T7 (SCR-12 kiosk / SCR-36 PDA, cấp phát, FEAT-026): user trạm TR-007 và dữ liệu demo `devdata.ensure_t7_demo` ---
+
+T7_KEYS = (
+	"dept",
+	"dept_name",
+	"dept_tight",
+	"dept_tight_name",
+	"dept_open",
+	"dept_open_name",
+	"dept_other",
+	"dept_other_name",
+	"recipient_card",
+	"stranger_card",
+	"approver_card",
+	"approver_pin",
+	"pack_1",
+	"pack_2",
+	"pack_3",
+	"pack_4",
+	"pack_5",
+	"pack_6",
+	"pack_fefo_near",
+	"pack_fefo_far",
+	"pack_released",
+)
+PDA_VIEWPORT = {"width": 412, "height": 915}
+
+
+@pytest.fixture
+def t7_demo():
+	"""Mã demo T7 từ scripts/e2e_prepare.sh (TC_E2E_T7_DEPT, ..._PACK_1...)."""
+	return {key: require_env(f"TC_E2E_T7_{key.upper()}") for key in T7_KEYS}
+
+
+def _open_t7(page):
+	card = require_env("TC_E2E_T7_CARD_ID")
+	desk_login(page, "TC_E2E_T7")
+	station = os.environ.get("TC_E2E_T7_STATION", "TR-007")
+	page.goto(f"/app/station?station={station}")
+	page.locator("#tc-card-input").fill(card)
+	page.locator("#tc-card-input").press("Enter")
+	page.locator(".tc-result .tc-t7").wait_for(timeout=30000)  # danh sách khoa đã tải xong
+	return page
+
+
+@pytest.fixture
+def t7_page(page):
+	return _open_t7(page)
+
+
+@pytest.fixture
+def t7_pda_page(page):
+	"""Cùng màn T7 ở khổ PDA 412x915 (SCR-36)."""
+	page.set_viewport_size(PDA_VIEWPORT)
+	return _open_t7(page)
+
+
 # --- T3 (SCR-07 kiểm đếm lắp ráp, FEAT-020): user trạm TR-003, R02 có thẻ + PIN và dữ liệu `devdata.ensure_t3_demo` ---
 
 T3_KEYS = ("set_full", "set_short", "set_branch", "set_no_wash", "short_instrument")

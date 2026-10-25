@@ -35,8 +35,8 @@
 | FR-M2-12 | Cách ly mẻ và xử lý mẻ không đạt | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-014 | FEAT-023 | _TBD_ |
 | FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
 | FR-M2-14 | Xử lý gói hết hạn hoặc hư hỏng | Must | Active | BR-M2 (BRD #02) | UC-11 | _TBD_ | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
-| FR-M2-15 | Cấp phát cho khoa và ký điện tử | Must | Active | BR-M2 (BRD #02) | UC-12 | _TBD_ | FEAT-026 | _TBD_ |
-| FR-M2-16 | Kiểm tra cơ số khoa khi cấp phát | Must | Active | BR-M2 (BRD #02) | UC-12 | _TBD_ | FEAT-026 | _TBD_ |
+| FR-M2-15 | Cấp phát cho khoa và ký điện tử | Must | Active | BR-M2 (BRD #02) | UC-12 | ADR-001, ADR-005 | FEAT-026 | [FEAT-026 evidence](superpowers/reviews/FEAT-026-acceptance-evidence.md) |
+| FR-M2-16 | Kiểm tra cơ số khoa khi cấp phát | Must | Active | BR-M2 (BRD #02) | UC-12 | ADR-001 | FEAT-026 | [FEAT-026 evidence](superpowers/reviews/FEAT-026-acceptance-evidence.md) |
 | FR-M2-17 | Quét sử dụng và gắn bệnh nhân | Must | Active | BR-M2 (BRD #02) | UC-13 | ADR-010 | FEAT-027 | _TBD_ |
 | FR-M2-18 | Chặn quét mã hết hiệu lực | Must | Active | BR-M2 (BRD #02) | UC-13 | ADR-008 | FEAT-027 | _TBD_ |
 | FR-M2-19 | Tra cứu truy xuất hai chiều | Must | Active | BR-M2 (BRD #02) | UC-14 | _TBD_ | FEAT-028 | _TBD_ |
@@ -72,7 +72,7 @@
 | FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
 | FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
 | FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | `tracecore/par/tests/test_config.py`, `tracecore/par/tests/test_par_desk_assets.py`; e2e `tests_e2e/test_desk_par.py` (FEAT-031) |
-| FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | `tracecore/par/tests/test_config.py` (FR-M8-02, .1, .3; FEAT-031); FR-M8-02.2 chưa có (sau FEAT-026, A-11 G3) |
+| FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | `tracecore/par/tests/test_config.py` (FR-M8-02, .1, .3; FEAT-031); `tracecore/par/tests/test_stock.py` (áp cơ số khoa khi cấp phát, FEAT-026); FR-M8-02.2 (báo cáo tồn khoa so cơ số) chưa có: tồn khoa đã có từ `Issue Note` (A-11 G3, A-17 C4), báo cáo làm ở FEAT riêng |
 | FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | `tracecore/par/tests/test_check.py`, `tracecore/core/tests/test_step_gate.py`, `tracecore/v1/tests/test_par_api.py` (FR-M8-03.1–.3; FEAT-032); bộ đếm tăng khi giải phóng → FEAT-023 (A-18 G2) |
 | FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | `tracecore/par/tests/test_override.py`, `tracecore/par/doctype/par_override/test_par_override.py`, `tracecore/v1/tests/test_par_api.py`, `tracecore/par/report/par_override_report/test_par_override_report.py`, `tracecore/par/tests/test_par_override_desk_assets.py` (FEAT-032) |
 | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-006 | _TBD_ |

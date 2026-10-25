@@ -512,7 +512,8 @@ def make_chemical_batch(item_code="HC-ENZ-01", batch_id=None, expiry_days=60, qt
 def make_employee(card=None, department=None, first_name="Wash Test", **fields):
 	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User).
 
-	`department`: khoa (Department) của nhân viên, cần cho người giao ở T1 (FEAT-019); `fields` ghi đè trường khác.
+	`department`: khoa (Department) của nhân viên, cần cho người giao ở T1 (FEAT-019) và người nhận cấp phát T7;
+	`fields` ghi đè trường khác.
 	"""
 	return frappe.get_doc(
 		{
@@ -1026,6 +1027,23 @@ def make_released_pack(status="Released", expiry_days=30, passed=ALL_GATES, set_
 		code_registry.register(pack.name, code_registry.CYCLE_PREFIX, "Pack", pack.name)
 	step_gate.bind_cycle(set_unit.name, pack.name, None)
 	return pack
+
+
+T7_STATION = "TR-007"
+
+
+def make_stocked_pack(set_type=None, expiry_days=30, location=None):
+	"""Gói Trong kho vô khuẩn sẵn sàng cấp phát T7 (FEAT-026): gói giải phóng rồi nhập kệ bằng dịch vụ kho T6.
+
+	Hạn đặt lại thành hôm nay + `expiry_days` sau khi nhập kho (âm = đã quá hạn mà job 00:00 chưa chạy). Trả Pack.
+	"""
+	from tracecore.reprocessing import storage
+
+	pack = make_released_pack(set_type=set_type)
+	shelf = location or make_sterile_location("Kệ cấp phát")
+	storage.putaway(pack.name, getattr(shelf, "name", shelf), T6_STATION)
+	frappe.db.set_value("Pack", pack.name, "expiry", add_days(today(), expiry_days), update_modified=False)
+	return frappe.get_doc("Pack", pack.name)
 
 
 def make_sterilizer(equipment_type="Steam Sterilizer", capacity=None, **kwargs):

@@ -82,6 +82,10 @@ elif method.endswith("ensure_t6_e2e_user"):
     print(json.dumps({"t6_user": "station-t6@tracecore.local", "t6_otp_secret": os.environ["TC_FAKE_OTP"]}))
 elif method.endswith("ensure_t6_demo"):
     print(json.dumps({"location": "KE-0001", "pack_released": "CY-261022-0001"}))
+elif method.endswith("ensure_t7_e2e_user"):
+    print(json.dumps({"t7_user": "station-t7@tracecore.local", "t7_otp_secret": os.environ["TC_FAKE_OTP"], "t7_approver_user": "t7-approver@tracecore.local"}))
+elif method.endswith("ensure_t7_demo"):
+    print(json.dumps({"dept": "DEMO-T7 Khoa A", "pack_1": "CY-261022-0001"}))
 elif method.endswith("station_user"):
     print(json.dumps("station-" + kwargs["station"].lower() + "@tracecore.local"))
 elif method.endswith("desk_user"):

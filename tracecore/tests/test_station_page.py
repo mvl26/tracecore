@@ -216,6 +216,38 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("clearSession() {", source)
 		self.assertIn("sessionEnded", source)
 
+	def test_station_page_includes_t7_script(self):
+		# màn T7 cấp phát (SCR-12/SCR-36, FEAT-026) ở file riêng, nối sau station.js như T4/T6
+		self.assertIn("public/js/station_t7.js", frappe.get_hooks("page_js").get("station", []))
+		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t7.js")))
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn('station.step === "T7"', source)
+		self.assertIn("new T7Issue(this)", source)
+
+	def test_t7_rpcs_carry_station_token_and_screen_clears_on_session_end(self):
+		# FEAT-003: rpc() gắn token phiên cho RPC issue như pack/putaway; hết phiên thì màn T7 xóa phiếu đang mở
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			self.assertIn('method.startsWith("tracecore.v1.issue.")', handle.read())
+		with open(os.path.join(APP_PATH, "public", "js", "station_t7.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("clearSession() {", source)
+		self.assertIn("sessionEnded", source)
+
+	def test_t7_screen_follows_station_ui_rules(self):
+		# ô quét luôn là input của trạm; 4 trạng thái (loading / empty / error / offline); không hover-only, swipe, drag
+		with open(os.path.join(APP_PATH, "public", "js", "station_t7.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		for token in (
+			"renderLoading",
+			"offlineHtml",
+			"tc-alert-",
+			'"alert" : "status"',  # lỗi chặn là role=alert, thông báo khác là role=status
+		):
+			self.assertIn(token, source)
+		for banned in ("mouseover", "mouseenter", "touchmove", "swipe", "dragstart", "contextmenu"):
+			self.assertNotIn(banned, source)
+
 	def test_station_page_includes_t1_script(self):
 		# màn T1 tiếp nhận (SCR-05, FEAT-019) ở file riêng, cùng cơ chế page_js với T4/T2/T6
 		self.assertIn("public/js/station_t1.js", frappe.get_hooks("page_js").get("station", []))

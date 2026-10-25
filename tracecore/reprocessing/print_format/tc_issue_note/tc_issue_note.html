@@ -1,0 +1,97 @@
+{#- Issue note of the T7 issuing station (FEAT-026 C10; FR-M2-15, FR-M2-15.1).
+    Data: tracecore.ui.issue_print.tc_issue_note_context (hook jinja.methods). Every dynamic value goes through |e;
+    colours and sizes come from the generated tokens.css (tc.*); the touch signature is the stored data: URL.
+    Layout uses tables (the WebKit of wkhtmltopdf has no flex/grid). -#}
+{%- set cs = tc_issue_note_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Issue Note" -%}
+<style>
+.print-format { margin-bottom: 26mm; }
+.tc-in { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-in table { width: 100%; border-collapse: collapse; }
+.tc-in td, .tc-in th { vertical-align: top; }
+.tc-in .tc-code, .tc-in-footer .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-in h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-in .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-in .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-in .tc-facts td.tc-label { color: {{ tc.muted }}; width: 40mm; white-space: nowrap; }
+.tc-in table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-in table.tc-lines thead { display: table-header-group; }
+.tc-in table.tc-lines tr { page-break-inside: avoid; }
+.tc-in table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; white-space: nowrap; }
+.tc-in table.tc-lines th, .tc-in table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-in table.tc-lines .tc-num { text-align: right; width: 12mm; }
+.tc-in .tc-total { margin-top: {{ tc.sp_2 }}; font-size: {{ tc.fs_md }}; font-weight: {{ tc.fw_bold }}; }
+.tc-in .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-in .tc-sign td { width: 50%; text-align: center; padding-bottom: {{ tc.sp_3 }}; font-weight: {{ tc.fw_bold }}; }
+.tc-in .tc-sign span { display: block; font-weight: normal; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
+.tc-in .tc-sign img { max-width: 60mm; max-height: 25mm; display: block; margin: {{ tc.sp_2 }} auto 0 auto; }
+.tc-in-footer, .tc-in-footer span { font-family: {{ tc.font_sans }}; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
+</style>
+<div class="tc-in">
+	<h1>{{ _("Issue note", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}
+	<div class="tc-draft">{{ _("Not confirmed yet", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Department", context=T) | e }}</td><td>{{ cs.department_name | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Issued at", context=T) | e }}</td><td>{{ (cs.issued_at or "—") | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Issued by", context=T) | e }}</td><td>{{ cs.issued_by | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Recipient", context=T) | e }}</td><td>{{ (cs.recipient or "—") | e }}{% if cs.recipient_department %} ({{ cs.recipient_department | e }}){% endif %}</td></tr>
+		{%- if cs.dept_mismatch_reason %}
+		<tr><td class="tc-label">{{ _("Reason (recipient of another department)", context=T) | e }}</td><td>{{ cs.dept_mismatch_reason | e }}</td></tr>
+		{%- endif %}
+		{%- if cs.approved_by %}
+		<tr><td class="tc-label">{{ _("Over-par approved by", context=T) | e }}</td><td>{{ cs.approved_by | e }} · {{ cs.approved_at | e }}</td></tr>
+		{%- endif %}
+	</table>
+
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Cycle ID", context=T) | e }}</th>
+				<th>{{ _("Set ID", context=T) | e }}</th>
+				<th>{{ _("Set name", context=T) | e }}</th>
+				<th>{{ _("Use-by date", context=T) | e }}</th>
+				<th>{{ _("Note", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for pack in cs.packs %}
+			<tr>
+				<td class="tc-num">{{ pack.index | e }}</td>
+				<td class="tc-code">{{ pack.cycle_id | e }}</td>
+				<td class="tc-code">{{ pack.set_id | e }}</td>
+				<td>{{ (pack.set_name or "") | e }}</td>
+				<td>{{ pack.expiry | e }}</td>
+				<td>{{ (pack.fefo_note or "") | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<div class="tc-total">{{ _("Total: {0} packs", context=T).format(cs.pack_count) | e }}</div>
+
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Issued by", context=T) | e }}<span>{{ cs.issued_by | e }}</span></td>
+			<td>
+				{{ _("Received by", context=T) | e }}
+				<span>{{ (cs.recipient or "") | e }}{% if cs.signed_at %} · {{ cs.signed_at | e }}{% endif %}</span>
+				{%- if cs.signature %}
+				<img src="{{ cs.signature | e }}" alt="{{ _('Signature on screen', context=T) | e }}">
+				{%- elif cs.sign_method %}
+				<span>{{ cs.sign_method_label | e }}</span>
+				{%- endif %}
+			</td>
+		</tr>
+	</table>
+</div>
+<div id="footer-html" class="visible-pdf">
+	<div class="tc-in-footer">
+		{{ _("Page {0}/{1}", context=T).format('<span class="page"></span>', '<span class="topage"></span>') }}
+		· <span class="tc-code">{{ cs.name | e }}</span>
+		{%- if cs.printed_at %} · {{ _("Printed {0} by {1}", context=T).format(cs.printed_at, cs.printed_by or "") | e }}{% endif %}
+	</div>
+</div>

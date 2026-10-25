@@ -2,10 +2,10 @@
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
 // Trạm bước T4 giao cho T4Packing (public/js/station_t4.js), bước T6 giao cho T6Storage (public/js/station_t6.js),
-// bước T1 giao cho T1Receiving, T2 cho T2Wash, T3 cho T3Assembly, T5 cho T5Load (public/js/station_t*.js); các file
-// này nối sau file này qua hook page_js.
+// bước T1 giao cho T1Receiving, T2 cho T2Wash, T3 cho T3Assembly, T5 cho T5Load, T7 cho T7Issue (public/js/station_t*.js);
+// các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -543,12 +543,13 @@ class TraceCoreStation {
 
 	async rpc(method, args, idempotencyKey, candidate = null) {
 		// RPC của màn trạm cần token phiên thẻ nhân viên (FEAT-003): T4 pack/cuộn nhãn, T6 putaway (FEAT-025),
-		// T2 lô rửa (FEAT-021), T1 tiếp nhận (FEAT-019), T3 kiểm đếm lắp ráp (FEAT-020)
+		// T2 lô rửa (FEAT-021), T1 tiếp nhận (FEAT-019), T3 kiểm đếm lắp ráp (FEAT-020), T7 cấp phát (FEAT-026)
 		const protectedCall =
 			method.startsWith("tracecore.v1.pack.") ||
 			method.startsWith("tracecore.v1.assembly.") ||
 			method.startsWith("tracecore.v1.putaway.") ||
 			method.startsWith("tracecore.v1.wash.") ||
+			method.startsWith("tracecore.v1.issue.") ||
 			method.startsWith("tracecore.v1.load.") ||
 			method.startsWith("tracecore.v1.release.") ||
 			method.startsWith("tracecore.v1.daily_test.") ||
@@ -674,6 +675,8 @@ class TraceCoreStation {
 				this.screen = new T6Storage(this);
 			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
 				this.screen = new T2Wash(this);
+			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
+				this.screen = new T7Issue(this);
 			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
 				this.screen = new T5Load(this);
 			} else if (station.step === "T3" && typeof T3Assembly !== "undefined") {
