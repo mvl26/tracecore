@@ -12,6 +12,7 @@ import {
 } from "./api";
 import MasterPanel from "./MasterPanel.vue";
 import UnitPanel from "./UnitPanel.vue";
+import KtvWorkspace from "./KtvWorkspace.vue";
 
 const route = useRoute(),
 	router = useRouter();
@@ -128,6 +129,12 @@ async function bootstrap() {
 	try {
 		session.value = await adminAPI("bootstrap");
 		setCSRF(session.value!.csrf_token);
+		if (
+			home.value &&
+			session.value!.roles.length === 1 &&
+			session.value!.roles[0].id === "R04"
+		)
+			await router.replace("/R04/assembly");
 		await load();
 	} catch (e) {
 		if (e instanceof APIError && [401, 403].includes(e.status)) session.value = null;
@@ -208,6 +215,7 @@ async function load() {
 		error.value = "Không có quyền mở không gian này.";
 		return;
 	}
+	if (roleID.value === "R04") return;
 	if (screenID.value && !screen.value) {
 		error.value = "Chức năng không thuộc không gian này.";
 		return;
@@ -359,6 +367,7 @@ onUnmounted(() => {
 			</button>
 		</form>
 	</div>
+	<KtvWorkspace v-else-if="roleID === 'R04' && space" :session="session" @logout="logout" />
 	<div v-else class="shell">
 		<aside>
 			<div class="brand">
