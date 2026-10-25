@@ -18,9 +18,9 @@
 | FR-M1-07 | Nhập và trả dụng cụ mượn | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
 | FR-M1-08 | Chặn cấp phát bộ mượn chưa tái xử lý | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
 | FR-M1-09 | Ngưỡng bảo dưỡng dụng cụ (tra dầu, bảo trì) | Must | Active | CHG-024 (review v1.10, kế thừa BR-M1) | UC-01 | _TBD_ | FEAT-014; FEAT-018 | _TBD_ |
-| FR-M2-01 | Tiếp nhận bằng quét mã bộ + quét thẻ nhân viên giao | Must | Active | BR-M2 (BRD #02) | UC-05 | _TBD_ | FEAT-019 | _TBD_ |
-| FR-M2-02 | Kiểm tra chiều luồng tại tiếp nhận | Must | Active | BR-M2 (BRD #02) | UC-05 | ADR-005 | FEAT-019 | _TBD_ |
-| FR-M2-23 | Xác nhận thành phần bộ tại tiếp nhận (từng dòng hoặc tất cả) + ghi chú bất thường | Must | Active | CHG-024 (review v1.10, kế thừa BR-M2) | UC-05 | _TBD_ | FEAT-019 | _TBD_ |
+| FR-M2-01 | Tiếp nhận bằng quét mã bộ + quét thẻ nhân viên giao | Must | Active | BR-M2 (BRD #02) | UC-05 | _TBD_ | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
+| FR-M2-02 | Kiểm tra chiều luồng tại tiếp nhận | Must | Active | BR-M2 (BRD #02) | UC-05 | ADR-005 | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
+| FR-M2-23 | Xác nhận thành phần bộ tại tiếp nhận (từng dòng hoặc tất cả) + ghi chú bất thường | Must | Active | CHG-024 (review v1.10, kế thừa BR-M2) | UC-05 | _TBD_ | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
 | FR-M2-03 | Nạp lô rửa: quét mã máy + quét từng bộ, mã lô sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-06 | ADR-005 | FEAT-021 | _TBD_ |
 | FR-M2-24 | Mã mẻ gắn toàn bộ bộ dụng cụ và dữ liệu báo cáo của máy | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-007 | FEAT-021; FEAT-024 | _TBD_ |
 | FR-M2-25 | Cổng kiểm soát từng bước và xử lý lại | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-005 | FEAT-018; FEAT-019; FEAT-020; FEAT-021; FEAT-023 | _TBD_ |

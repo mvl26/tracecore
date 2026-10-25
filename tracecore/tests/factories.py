@@ -440,12 +440,16 @@ def make_chemical_batch(item_code="HC-ENZ-01", batch_id=None, expiry_days=60, qt
 	return frappe.get_doc("Batch", batch_id)
 
 
-def make_employee(card=None):
-	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User)."""
+def make_employee(card=None, department=None, first_name="Wash Test", **fields):
+	"""Employee HRMS có thẻ đã bật (như `v1/tests/station_fixtures.make_station_employee`, không gắn User).
+
+	`department`: khoa (Department) của nhân viên, cần cho người giao ở T1 (FEAT-019); `fields` ghi đè trường khác.
+	"""
 	return frappe.get_doc(
 		{
 			"doctype": "Employee",
-			"first_name": "Wash Test",
+			"first_name": first_name,
+			"department": department,
 			"gender": "Male",
 			"date_of_birth": "1990-01-01",
 			"date_of_joining": today(),
@@ -453,6 +457,7 @@ def make_employee(card=None):
 			"status": "Active",
 			"tc_card_id": card or "WT-" + frappe.generate_hash(length=10),
 			"tc_card_enabled": 1,
+			**fields,
 		}
 	).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
 

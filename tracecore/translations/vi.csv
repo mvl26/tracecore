@@ -2396,3 +2396,153 @@ Rejected,Đã từ chối,Par Override
 Expired,Hết hiệu lực,Par Override
 Cancelled,Đã hủy,Par Override
 Cycles Used,Hết số chu trình thêm,Par Override
+A deliverer card was already scanned for this receipt; scan the set tags only.,Đã quét thẻ người giao cho phiếu này; chỉ quét thẻ bộ (Set ID).,
+A dirty receipt cannot be cancelled.,Phiếu tiếp nhận không thể hủy chứng từ.,
+A dirty receipt is created and changed only by the receiving screen service.,Phiếu tiếp nhận chỉ được tạo và sửa bởi dịch vụ của màn tiếp nhận.,
+A set that is {0} cannot be received by force.,Bộ đang ở trạng thái {0} không thể tiếp nhận cưỡng bức.,
+A set that was already scanned is not added a second time.,Bộ đã quét rồi sẽ không được thêm lần thứ hai.,
+A set unit appears more than once in the receipt.,Một Set Unit xuất hiện nhiều hơn một lần trong phiếu tiếp nhận.,
+Abnormal note,Ghi chú bất thường,
+"Abnormal note (missing, damaged, foreign object, sharps)","Ghi chú bất thường (thiếu, hỏng, vật lạ, sắc nhọn)",
+All sets are confirmed.,Mọi bộ đã được xác nhận.,
+"Ask R01 for an override, or take the set out of circulation.","Xin R01 ghi đè, hoặc đưa bộ ra khỏi lưu hành.",
+Ask R02 to save the BOM of this set type.,Nhờ R02 lưu BOM của loại bộ này.,
+"Ask R02 to sign in at this station and enter the PIN, then scan the set again.","Nhờ R02 quét thẻ đăng nhập tại trạm này và nhập PIN, rồi quét lại bộ.",
+Card has no department,Thẻ chưa gắn khoa,
+"Card {0} does not belong to an active employee, or it is disabled.","Thẻ {0} không thuộc nhân viên đang làm việc, hoặc thẻ đã bị khóa.",
+"Check the card, or choose the department and type the name if the person has no card.","Kiểm tra lại thẻ, hoặc chọn khoa và nhập tên nếu người giao không có thẻ.",
+"Check the status of the sets, then scan the sets again.",Kiểm tra trạng thái các bộ rồi quét lại.,
+Check their status before scanning them again.,Kiểm tra trạng thái trước khi quét lại.,
+Choose the department,Chọn khoa,
+Choose the department and type the name of the deliverer.,Chọn khoa và nhập tên người giao.,
+"Choose the department and type the name, then ask R02 to complete the employee record.","Chọn khoa và nhập tên, rồi nhờ R02 bổ sung khoa vào hồ sơ nhân viên.",
+Choose the department that returns the sets.,Chọn khoa trả bộ dụng cụ.,
+Code {0} does not exist in TraceCore.,Mã {0} không tồn tại trong TraceCore.,
+Code {0} is not an employee card.,Mã {0} không phải thẻ nhân viên.,
+Component not in the BOM,Thành phần không có trong BOM,
+Confirm forced receipt,Xác nhận tiếp nhận cưỡng bức,
+Confirm set,Xác nhận bộ,
+Confirm the components of this set.,Xác nhận các thành phần của bộ này.,
+Confirm the set anyway,Vẫn xác nhận bộ,
+Confirm: drop this receipt,Xác nhận: bỏ phiếu này,
+Deliverer,Người giao,
+Deliverer Name,Tên người giao,
+Deliverer has no card,Người giao không có thẻ,
+Deliverer name is required,Cần tên người giao,
+Deliverer without a card,Người giao chưa có thẻ,
+Demo ward deliverer,Điều dưỡng khoa demo,
+Department and name are required,Cần khoa và tên người giao,
+Department is not valid,Khoa không hợp lệ,
+"Department {0} does not exist, is disabled, or is a group.","Khoa {0} không tồn tại, đã bị tắt hoặc là khoa nhóm.",
+Dirty Receipt,Phiếu tiếp nhận đồ bẩn,
+Dirty Receipt Confirm Line,Dòng xác nhận thành phần,
+Dirty Receipt Item,Bộ trong phiếu tiếp nhận,
+Drop receipt,Bỏ phiếu,
+Employee card not recognised,Không nhận ra thẻ nhân viên,
+"Employee {0} has no department, so the returning department cannot be taken from the card.",Nhân viên {0} chưa có khoa nên không suy ra được khoa trả từ thẻ.,
+"Enter the reason and the PIN, then confirm.","Nhập lý do và PIN, rồi xác nhận.",
+Enter why the set is received although the station refused it.,Nhập lý do tiếp nhận bộ dù trạm đã từ chối.,
+Forced receipt,Tiếp nhận cưỡng bức,
+Forced receipt is not allowed,Không được tiếp nhận cưỡng bức,
+Forced receipt needs a reason and the 6-digit PIN of R02.,Tiếp nhận cưỡng bức cần lý do và PIN 6 chữ số của R02.,
+Instrument {0} is not a component of set {1} in the BOM version shown.,Dụng cụ {0} không phải thành phần của bộ {1} trong phiên bản BOM đang hiển thị.,
+Needs card,Cần cấp thẻ,
+No reason was entered for receiving this set by force.,Chưa nhập lý do tiếp nhận cưỡng bức bộ này.,
+No set can be received,Không có bộ nào tiếp nhận được,
+No set has been scanned yet.,Chưa quét bộ nào.,
+None of the sets on receipt {0} can be received any more.,Không còn bộ nào trên phiếu {0} tiếp nhận được.,
+Only R02 can receive a set that the station refused.,Chỉ R02 được tiếp nhận bộ mà trạm đã từ chối.,
+"Open each set, then press Confirm set.",Mở từng bộ rồi bấm Xác nhận bộ.,
+Open receipt,Mở phiếu,
+Photo is not valid,Ảnh không hợp lệ,
+R02 PIN,PIN của R02,
+R02 will issue a card for this person later.,R02 sẽ cấp thẻ cho người này sau.,
+Reason and PIN are required,Cần lý do và PIN,
+Receipt has no sets,Phiếu chưa có bộ nào,
+Receipt is closed,Phiếu đã đóng,
+Receipt not found,Không tìm thấy phiếu,
+Receipt {0} does not exist for this receiver at this station.,Phiếu {0} không có cho người nhận này tại trạm này.,
+Receipt {0} has no set to submit.,Phiếu {0} chưa có bộ nào để ghi sổ.,
+Receipt {0} submitted,Đã ghi sổ phiếu {0},
+Receipt {0} was already submitted or dropped.,Phiếu {0} đã ghi sổ hoặc đã bỏ.,
+Receive by force (R02),Tiếp nhận cưỡng bức (R02),
+Receiving sets needs a network connection.,Tiếp nhận bộ cần có kết nối mạng.,
+Returned unused at receipt {0}.,Trả về không sử dụng tại phiếu tiếp nhận {0}.,
+Returning Department,Khoa trả,
+Scan the Set ID of each set before submitting the receipt.,Quét Set ID của từng bộ trước khi ghi sổ phiếu.,
+Scan the Set ID of the first set.,Quét Set ID của bộ đầu tiên.,
+Scan the Set ID of the next set...,Quét Set ID của bộ kế tiếp...,
+Scan the Set ID on the set tag first.,Quét Set ID trên thẻ bộ trước.,
+Scan the deliverer's employee card to open a new receipt.,Quét thẻ nhân viên của người giao để mở phiếu mới.,
+Scan the employee card of the deliverer...,Quét thẻ nhân viên của người giao...,
+Scan the employee card of the next deliverer to open a new receipt.,Quét thẻ nhân viên của người giao kế tiếp để mở phiếu mới.,
+Scan the employee card of the person who hands the sets over.,Quét thẻ nhân viên của người giao bộ dụng cụ.,
+"Scan the next set, or submit the receipt.","Quét bộ kế tiếp, hoặc ghi sổ phiếu.",
+Scan the next set.,Quét bộ kế tiếp.,
+Set is not on this receipt,Bộ không có trên phiếu này,
+Set {0} confirmed,Đã xác nhận bộ {0},
+Set {0} is already on this receipt,Bộ {0} đã có trên phiếu này,
+Set {0} was not scanned into receipt {1}.,Bộ {0} chưa được quét vào phiếu {1}.,
+Set {0} was refused by the station.,Trạm đã từ chối bộ {0}.,
+Some components are not confirmed,Còn thành phần chưa xác nhận,
+Some sets are not confirmed,Còn bộ chưa xác nhận,
+Some sets were not received,Có bộ chưa được tiếp nhận,
+Submit receipt,Ghi sổ phiếu,
+Take a photo of the abnormality,Chụp ảnh bất thường,
+"Take the photo again (JPEG, PNG or WebP, up to 5 MB).","Chụp lại ảnh (JPEG, PNG hoặc WebP, tối đa 5 MB).",
+"Take the set to the station that matches it, or ask R02 to receive it by force.","Đưa bộ tới đúng trạm của nó, hoặc nhờ R02 tiếp nhận cưỡng bức.",
+"The deliverer has no card, so the department and the name must be entered.",Người giao không có thẻ nên phải chọn khoa và nhập tên.,
+"The deliverer has no card, so the name must be typed.",Người giao không có thẻ nên phải nhập tên.,
+"The file is not a JPEG, PNG or WebP image.","Tệp không phải ảnh JPEG, PNG hoặc WebP.",
+The photo could not be read.,Không đọc được ảnh.,
+The photo is missing or larger than 5 MB.,Chưa có ảnh hoặc ảnh lớn hơn 5 MB.,
+The photo is optional.,Ảnh là tùy chọn.,
+The set has an abnormal note; assembly will check it in detail.,Bộ có ghi chú bất thường; khâu lắp ráp sẽ kiểm tra chi tiết.,
+The set is currently at {0}.,Hiện bộ đang ở {0}.,
+These sets were taken by another receipt or are no longer valid.,Các bộ này đã nằm ở phiếu khác hoặc không còn hợp lệ.,
+This account cannot receive sets at this station.,Tài khoản này không được tiếp nhận bộ tại trạm này.,
+Tick only the components listed for the set.,Chỉ tick các thành phần có trong danh sách của bộ.,
+"Tick the missing components, write an abnormal note, or confirm the set anyway.","Tick các thành phần còn thiếu, ghi chú bất thường, hoặc vẫn xác nhận bộ.",
+Type the name of the person who hands the sets over.,Nhập tên người giao bộ dụng cụ.,
+Why is the set received although it was refused?,Vì sao nhận bộ dù trạm đã từ chối?,
+lines must be a list of objects with an instrument and a confirmed flag.,lines phải là danh sách đối tượng gồm instrument và cờ confirmed.,
+{0} component(s) are not ticked and there is no abnormal note.,Còn {0} thành phần chưa tick và chưa có ghi chú bất thường.,
+{0} component(s) of set {1} are not ticked and there is no abnormal note.,Còn {0} thành phần của bộ {1} chưa tick và chưa có ghi chú bất thường.,
+{0} set(s) are not confirmed yet.,Còn {0} bộ chưa xác nhận.,
+{0} set(s) are waiting for confirmation.,Còn {0} bộ chờ xác nhận.,
+{0} set(s) are waiting for washing; {1} have an abnormal note.,{0} bộ đang chờ rửa; {1} bộ có ghi chú bất thường.,
+{0} sets received · {1} with abnormal note,Đã nhận {0} bộ · {1} bộ có ghi chú bất thường,
+A draft that was dropped by the receiver; it is kept for the audit trail.,Phiếu nháp đã bị người nhận bỏ; vẫn giữ để truy vết Audit.,Dirty Receipt
+Abandoned,Đã bỏ,Dirty Receipt
+Component Confirmations,Xác nhận thành phần,Dirty Receipt
+Deliverer,Người giao,Dirty Receipt
+Deliverer Name,Tên người giao,Dirty Receipt
+"Employee of the department who handed the sets over, from the scanned employee card. Empty when the deliverer has no card.","Nhân viên của khoa đã giao bộ, lấy từ thẻ nhân viên đã quét. Trống khi người giao không có thẻ.",Dirty Receipt
+"Employee who received the sets, taken from the card session.","Nhân viên nhận bộ, lấy từ phiên đăng nhập thẻ.",Dirty Receipt
+Needs Card,Cần cấp thẻ,Dirty Receipt
+Opened At,Mở lúc,Dirty Receipt
+Received At,Tiếp nhận lúc,Dirty Receipt
+Receiver,Người nhận,Dirty Receipt
+Receiving Station,Trạm tiếp nhận,Dirty Receipt
+Returning Department,Khoa trả,Dirty Receipt
+Sets Received,Số bộ đã nhận,Dirty Receipt
+Sets With Abnormal Note,Số bộ có ghi chú bất thường,Dirty Receipt
+Sets and Components,Bộ và thành phần,Dirty Receipt
+The deliverer has no card: R02 issues one later (FR-M9-07).,Người giao không có thẻ: R02 cấp thẻ sau (FR-M9-07).,Dirty Receipt
+Abnormal Note,Ghi chú bất thường,Dirty Receipt Item
+Abnormal Photo,Ảnh bất thường,Dirty Receipt Item
+BOM version in force on the day the set was received.,Phiên bản BOM hiệu lực vào ngày nhận bộ.,Dirty Receipt Item
+Cycle ID that was still valid and unused; it was voided at receipt (FR-M2-01.3).,Cycle ID còn hiệu lực nhưng chưa dùng; đã bị hủy khi tiếp nhận (FR-M2-01.3).,Dirty Receipt Item
+Force Reason,Lý do cưỡng bức,Dirty Receipt Item
+Forced By,Người cưỡng bức,Dirty Receipt Item
+Forced Receipt,Tiếp nhận cưỡng bức,Dirty Receipt Item
+Needs Review,Cần xem xét,Dirty Receipt Item
+Reprocessing cycle opened for the set when the receipt was submitted.,Chu trình tái xử lý được mở cho bộ khi phiếu được ghi sổ.,Dirty Receipt Item
+Scanned At,Quét lúc,Dirty Receipt Item
+Set Confirmed,Đã xác nhận bộ,Dirty Receipt Item
+Status Before Receipt,Trạng thái trước khi nhận,Dirty Receipt Item
+Status of the set when it was scanned.,Trạng thái của bộ lúc quét.,Dirty Receipt Item
+"The set has an abnormal note, so assembly checks it in detail (FR-M2-23.3).",Bộ có ghi chú bất thường nên khâu lắp ráp kiểm tra chi tiết (FR-M2-23.3).,Dirty Receipt Item
+Voided Cycle ID,Cycle ID đã hủy,Dirty Receipt Item
+BOM Quantity,Số lượng theo BOM,Dirty Receipt Confirm Line
+Quantity required by the BOM version in force.,Số lượng yêu cầu theo phiên bản BOM hiệu lực.,Dirty Receipt Confirm Line

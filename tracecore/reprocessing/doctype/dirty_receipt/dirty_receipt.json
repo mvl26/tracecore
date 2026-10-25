@@ -1,0 +1,182 @@
+{
+ "actions": [],
+ "autoname": "RC-.YYYY.-.#####",
+ "creation": "2026-10-24 09:00:00.000000",
+ "description": "Dirty-zone receiving slip for several sets in a row (FEAT-019, UC-05). Created and changed only by the receiving service; submitting it starts the cycle of each set and records gate T1.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "receipt_section",
+  "department",
+  "deliverer",
+  "deliverer_name",
+  "needs_card",
+  "column_break_receipt",
+  "receiver",
+  "station",
+  "opened_at",
+  "received_at",
+  "abandoned",
+  "set_count",
+  "flagged_count",
+  "items_section",
+  "items",
+  "confirm_lines"
+ ],
+ "fields": [
+  {
+   "fieldname": "receipt_section",
+   "fieldtype": "Section Break",
+   "label": "Receipt"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Returning Department",
+   "options": "Department",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "description": "Employee of the department who handed the sets over, from the scanned employee card. Empty when the deliverer has no card.",
+   "fieldname": "deliverer",
+   "fieldtype": "Link",
+   "label": "Deliverer",
+   "options": "Employee",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "deliverer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Deliverer Name",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "description": "The deliverer has no card: R02 issues one later (FR-M9-07).",
+   "fieldname": "needs_card",
+   "fieldtype": "Check",
+   "label": "Needs Card",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_receipt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Employee who received the sets, taken from the card session.",
+   "fieldname": "receiver",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Receiver",
+   "options": "Employee",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Receiving Station",
+   "options": "Zone Station",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "label": "Opened At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Received At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A draft that was dropped by the receiver; it is kept for the audit trail.",
+   "fieldname": "abandoned",
+   "fieldtype": "Check",
+   "label": "Abandoned",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "set_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sets Received",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "flagged_count",
+   "fieldtype": "Int",
+   "label": "Sets With Abnormal Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Sets and Components"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Sets",
+   "options": "Dirty Receipt Item"
+  },
+  {
+   "fieldname": "confirm_lines",
+   "fieldtype": "Table",
+   "label": "Component Confirmations",
+   "options": "Dirty Receipt Confirm Line"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-24 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Dirty Receipt",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "TC R03",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

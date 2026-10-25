@@ -16,6 +16,9 @@
   nhiều phiên bản BOM, ảnh bộ đã xếp và bộ đang giữa chu trình cho e2e Desk loại bộ (SCR-02, FEAT-015) và in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t2_demo`` chuẩn bị màn T2 lô rửa (SCR-06, FEAT-021) tại
   TR-002: máy rửa, chương trình, lô hóa chất, bộ đã qua T1, bộ chờ rửa lại, một lô đang chạy; in JSON các mã.
+- ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t1_demo`` chuẩn bị màn T1 tiếp nhận (SCR-05, FEAT-019) tại
+  TR-001: thẻ người giao thuộc khoa demo, bộ Chờ tiếp nhận / Mới tạo để tiếp nhận, bộ Vô khuẩn (bị từ chối), một Set ID
+  hợp lệ về định dạng nhưng chưa cấp; in JSON các mã.
 - ``bench --site <SITE> execute tracecore.setup.devdata.ensure_t6_demo`` chuẩn bị màn T6 kho vô khuẩn (SCR-11) tại
   TR-006: hai kệ ``KE-``, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn; in JSON các mã.
 """
@@ -1381,6 +1384,117 @@ def ensure_t6_demo():
 		or _t6_new_pack(location=locations["location"]),
 		"pack_expiring": _t6_candidate("In Sterile Stock", expiring=True, location=locations["location_2"])
 		or _t6_new_pack(expiry_days=T6_EXPIRING_DAYS, location=locations["location_2"]),
+	}
+	print(json.dumps(result, sort_keys=True))
+	return result
+
+
+# --- Demo T1 tiếp nhận (FEAT-019) ---------------------------------------------------------------------
+T1_STATION = "TR-001"
+T1_SET_TYPE = "DEMOT1S"
+T1_DELIVERER_CARD = "DEMO-T1-DELIVERER"
+T1_READY_SETS = 3  # bộ Chờ tiếp nhận cho luồng nhiều bộ nối tiếp
+T1_NEW_SETS = 3  # bộ Mới tạo: một cho luồng chính, hai cho PDA
+
+
+def ensure_t1_e2e_user(station, password):
+	"""User kiosk trạm T1 (khu bẩn → TC R03) cho e2e màn tiếp nhận (FEAT-019), đăng ký OTP App.
+
+	Tách khỏi `ensure_e2e_users` để không đổi khóa trả về của hàm đó; bí mật chỉ ghi vào file env riêng tư của e2e.
+	"""
+	from tracecore.setup import provision
+
+	_require_dev_site()
+	_require_administrator()
+	with _temporary_r10():
+		user = provision.station_user(station, password)
+		return {"t1_user": user, "t1_otp_secret": _enroll_otp(user)}
+
+
+def _t1_deliverer():
+	"""Nhân viên khoa demo có thẻ đã bật (người giao ở T1); dùng lại nếu đã có. Trả Employee."""
+	from tracecore.core.station_auth import normalize_card_id
+
+	card = normalize_card_id(T1_DELIVERER_CARD)
+	name = frappe.db.get_value("Employee", {"tc_card_id": card}, "name")
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	if not name and not company:
+		frappe.throw(_("Complete company setup before creating demo employees."))
+	employee = (
+		frappe.get_doc("Employee", name)
+		if name
+		else frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": _("Demo ward deliverer", lang="vi"),
+				"gender": "Female",
+				"date_of_birth": "1992-01-01",
+				"date_of_joining": today(),
+				"company": company,
+				"tc_card_id": card,
+			}
+		)
+	)
+	employee.status = "Active"
+	employee.tc_card_enabled = 1
+	employee.department = _demo_department()
+	employee.save(ignore_permissions=True)
+	return employee
+
+
+def _t1_sets(set_type, status):
+	return frappe.get_all(
+		"Set Unit",
+		filters={"set_type": set_type, "status": status, "active_cycle_id": ["is", "not set"]},
+		pluck="name",
+		order_by="creation asc",
+	)
+
+
+def _t1_awaiting_set(set_type):
+	"""Bộ Chờ tiếp nhận hợp lệ: đi hết năm cổng rồi trả về khu bẩn (`step_gate.return_to_receipt`, FR-M2-14)."""
+	unit = _issue_one(set_type)
+	factories.make_cycle(unit, passed=factories.ALL_GATES)
+	step_gate.return_to_receipt(unit)
+	return unit
+
+
+def ensure_t1_demo():
+	"""Chuẩn bị màn T1 tiếp nhận (SCR-05) tại TR-001 trên site dev/test; idempotent, trả và in JSON các mã để quét.
+
+	- ``deliverer_card``, ``deliverer_name``, ``department``: thẻ người giao (nhân viên khoa demo) và khoa suy ra từ thẻ.
+	- ``sets``: 3 bộ Chờ tiếp nhận (đã đi hết chu trình rồi trả về) cho luồng nhiều bộ nối tiếp; ``set_new``: 1 bộ
+	  Mới tạo; ``sets_pda``: 2 bộ Mới tạo cho PDA. Cả sáu bộ có BOM 4 dụng cụ kèm ảnh demo.
+	- ``set_sterile``: bộ Vô khuẩn, T1 từ chối ``STATUS_INVALID_FOR_STATION``.
+	- ``set_unknown``: Set ID đúng định dạng GIAI nhưng chưa cấp (mã không hợp lệ).
+	Bộ đã được tiếp nhận (đã mở chu trình) được thay bằng bộ mới khi gọi lại.
+	"""
+	_require_dev_site()
+	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"], code=T1_SET_TYPE)
+	deliverer = _t1_deliverer()
+	awaiting = _t1_sets(set_type, "Awaiting Receipt")[:T1_READY_SETS]
+	while len(awaiting) < T1_READY_SETS:
+		awaiting.append(_t1_awaiting_set(set_type))
+	new = _t1_sets(set_type, "New")
+	new = [name for name in new if not frappe.db.get_value("Set Unit", name, "current_cycle_no")][
+		:T1_NEW_SETS
+	]
+	while len(new) < T1_NEW_SETS:
+		new.append(_issue_one(set_type))
+	sterile = _t1_sets(set_type, "Sterile")
+	if not sterile:
+		unit = _issue_one(set_type)
+		factories.make_cycle(unit, passed=factories.ALL_GATES)
+		sterile = [unit]
+	result = {
+		"department": deliverer.department,
+		"deliverer_card": deliverer.tc_card_id,
+		"deliverer_name": deliverer.employee_name,
+		"sets": awaiting,
+		"set_new": new[0],
+		"sets_pda": new[1:],
+		"set_sterile": sterile[0],
+		"set_unknown": gs1.make_giai(gs1.configured_company_prefix(), f"{T1_SET_TYPE}999999"),
 	}
 	print(json.dumps(result, sort_keys=True))
 	return result

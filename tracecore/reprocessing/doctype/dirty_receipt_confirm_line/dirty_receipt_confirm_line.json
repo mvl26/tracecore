@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "creation": "2026-10-24 09:00:00.000000",
+ "description": "Component line of a received set with its tick (FR-M2-23). No received quantity is kept: abnormalities are free text.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "instrument",
+  "instrument_name",
+  "qty",
+  "position",
+  "confirmed"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "instrument",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Instrument",
+   "options": "Instrument",
+   "reqd": 1
+  },
+  {
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "label": "Instrument Name",
+   "read_only": 1
+  },
+  {
+   "description": "Quantity required by the BOM version in force.",
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "label": "BOM Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "position",
+   "fieldtype": "Int",
+   "label": "Position",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "confirmed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Confirmed"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-24 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Dirty Receipt Confirm Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
