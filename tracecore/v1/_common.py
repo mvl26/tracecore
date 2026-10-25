@@ -23,6 +23,8 @@ AGENT_ROLE = "TC Agent"
 PACKING_ROLES = ("TC R04", "System Manager")
 # R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025)
 STORAGE_ROLES = ("TC R06", "System Manager")
+# T8 quét sử dụng tại khoa (FEAT-027): nhân viên khoa R08
+USAGE_ROLES = ("TC R08", "System Manager")
 # FEAT-021 Q20: nạp lô rửa do R03 (actor chính UC-06), R05, R02; dỡ/nhập dữ liệu/kết luận thêm R04 (cửa ra máy hai cửa)
 WASH_LOAD_ROLES = ("TC R03", "TC R05", "TC R02", "System Manager")
 WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")

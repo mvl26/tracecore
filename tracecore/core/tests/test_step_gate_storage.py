@@ -94,6 +94,27 @@ class TestStepGateStorage(FrappeTestCase):
 		self.assertEqual(_status(su).status, "Processing")
 
 
+class TestStepGateUsage(FrappeTestCase):
+	@bru("BRU-ID-003")
+	def test_use_pack_moves_department_set_to_awaiting_receipt_and_clears_cycle_id(self):
+		# FEAT-027 Task 1: quét sử dụng ở T8 đưa bộ Tại khoa sang Chờ tiếp nhận, Cycle ID hết hiệu lực
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))
+		step_gate.bind_cycle(su, "CY-261025-0001", "TR-006")
+		step_gate.issue_to_department(su, "TR-007")
+		step_gate.use_pack(su)
+		state = _status(su)
+		self.assertEqual(state.status, "Awaiting Receipt")
+		self.assertIsNone(state.active_cycle_id)
+
+	def test_use_pack_only_from_department(self):
+		su = make_set_unit().name
+		make_cycle(su, passed=("T1", "T2", "T3", "T4", "T5"))  # đang Vô khuẩn, chưa cấp phát
+		with self.assertRaises(frappe.ValidationError):
+			step_gate.use_pack(su)
+		self.assertEqual(_status(su).status, "Sterile")
+
+
 class TestStepGateCountCycle(FrappeTestCase):
 	@bru("BRU-FLOW-003")
 	def test_count_cycle_adds_one_cycle_used_through_the_step_gate_only(self):

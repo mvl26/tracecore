@@ -1,0 +1,202 @@
+{
+ "actions": [],
+ "autoname": "US-.YYYY.-.#####",
+ "creation": "2026-10-25 09:00:00.000000",
+ "description": "One scan of a sterile pack used on a patient at a department (T8 usage station, FEAT-027, UC-13). Created and submitted by the usage service only; the patient code is stored encrypted.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pack",
+  "set_unit",
+  "set_type",
+  "department",
+  "pack_department",
+  "department_reason",
+  "column_break_head",
+  "used_at",
+  "client_ts",
+  "station",
+  "scanned_by_user",
+  "scanned_by",
+  "section_patient",
+  "patient_code",
+  "patient_code_masked",
+  "emergency",
+  "patient_code_due",
+  "column_break_patient",
+  "surgery_code",
+  "surgeon",
+  "room"
+ ],
+ "fields": [
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Pack",
+   "options": "Pack",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "label": "Set ID",
+   "options": "Set Unit",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "Department the pack was issued to; differs from Department when it was used elsewhere.",
+   "fieldname": "pack_department",
+   "fieldtype": "Link",
+   "label": "Pack Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "description": "Required when the pack belongs to another department than the person who scanned it.",
+   "fieldname": "department_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Another Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "used_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Used At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Client Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scanned_by_user",
+   "fieldtype": "Link",
+   "label": "Scanned By (User)",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scanned_by",
+   "fieldtype": "Link",
+   "label": "Scanned By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_patient",
+   "fieldtype": "Section Break",
+   "label": "Patient and Operation"
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Stored encrypted. Shown with the four middle characters hidden.",
+   "fieldname": "patient_code",
+   "fieldtype": "Password",
+   "label": "Patient Code",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "is_virtual": 1,
+   "label": "Patient Code (masked)",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Emergency case: the patient code may be entered up to 24 hours after the scan.",
+   "fieldname": "emergency",
+   "fieldtype": "Check",
+   "label": "Emergency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "patient_code_due",
+   "fieldtype": "Datetime",
+   "label": "Patient Code Due",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_patient",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "surgery_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Surgery Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "surgeon",
+   "fieldtype": "Data",
+   "label": "Surgeon",
+   "read_only": 1
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Data",
+   "label": "Room",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-25 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Usage Record",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "pack,department,surgery_code",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "pack",
+ "track_changes": 1
+}

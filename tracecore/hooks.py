@@ -63,8 +63,8 @@ app_include_js = ["tracecore.bundle.js"]
 # include js in page
 # Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021),
 # T1 tiếp nhận (SCR-05, SCR-34, FEAT-019), T3 kiểm đếm (SCR-07, FEAT-020), T5 nạp mẻ (SCR-09, SCR-35, FEAT-022),
-# T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023) và T7 cấp phát (SCR-12/SCR-36, FEAT-026): Frappe nối các file này sau
-# station.js trong script của Page station
+# T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023), T7 cấp phát (SCR-12/SCR-36, FEAT-026) và T8 quét sử dụng (SCR-37,
+# FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
 		"public/js/station_t4.js",
@@ -76,6 +76,7 @@ page_js = {
 		"public/js/station_t5b.js",
 		"public/js/station_daily_test.js",
 		"public/js/station_t7.js",
+		"public/js/station_t8.js",
 	]
 }
 
@@ -250,6 +251,8 @@ doc_events = {
 	"Sterile Putaway": dict(_AUDIT_EVENTS),
 	# phiếu cấp phát T7 (FEAT-026): nháp đổi danh sách gói/người nhận, ghi sổ khi xác nhận; không xóa
 	"Issue Note": dict(_AUDIT_EVENTS),
+	# quét sử dụng T8 (FEAT-027): mã bệnh nhân (Password) bị bỏ khỏi Audit; bổ sung mã sau ghi sổ (ca cấp cứu)
+	"Usage Record": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),

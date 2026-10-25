@@ -19,4 +19,5 @@ tracecore.patches.v0_1.set_unit_issue_fields
 tracecore.patches.v0_1.rename_cycles_source
 tracecore.patches.v0_1.create_set_label_templates
 tracecore.patches.v0_1.create_wash_batch_label_template
+tracecore.patches.v0_1.seed_department_station
 tracecore.patches.v0_1.create_load_label_template

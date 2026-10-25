@@ -5,7 +5,7 @@
 // bước T1 giao cho T1Receiving, T2 cho T2Wash, T3 cho T3Assembly, T5 cho T5Load, T7 cho T7Issue (public/js/station_t*.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -550,6 +550,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.putaway.") ||
 			method.startsWith("tracecore.v1.wash.") ||
 			method.startsWith("tracecore.v1.issue.") ||
+			method.startsWith("tracecore.v1.usage.") ||
 			method.startsWith("tracecore.v1.load.") ||
 			method.startsWith("tracecore.v1.release.") ||
 			method.startsWith("tracecore.v1.daily_test.") ||
@@ -677,6 +678,8 @@ class TraceCoreStation {
 				this.screen = new T2Wash(this);
 			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
 				this.screen = new T7Issue(this);
+			} else if (station.step === "T8" && typeof T8Usage !== "undefined") {
+				this.screen = new T8Usage(this);
 			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
 				this.screen = new T5Load(this);
 			} else if (station.step === "T3" && typeof T3Assembly !== "undefined") {

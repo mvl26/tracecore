@@ -12,8 +12,9 @@ STEP_ROLES = {
 	"T5b": {"TC R02", "TC R05"},
 	"T6": {"TC R06"},
 	"T7": {"TC R07"},
+	"T8": {"TC R08"},
 }
-IMPLEMENTED_STEPS = {"T2", "T4", "T6"}
+IMPLEMENTED_STEPS = {"T2", "T4", "T6", "T8"}
 MANAGEMENT_TARGETS = ("Instrument", "Instrument Set Type", "Set Unit", "Pack", "Equipment", "Par Level")
 
 
