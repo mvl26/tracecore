@@ -40,6 +40,12 @@ class TestProvision(FrappeTestCase):
 		self.assertIn("TC R04", frappe.get_roles(user))
 		self.assertEqual(check_password(user, "Kiosk-Test-2026!"), user)
 
+	def test_provision_department_station_user_is_r08(self):
+		# trạm T8 ở khu khoa (FEAT-027): kiosk/PDA của khoa dùng vai trò R08, không phải R03/R04/R06 của CSSD
+		user = provision.station_user("TR-008", password="Kiosk-Test-2026!")
+		self.assertEqual(user, "station-t8@tracecore.local")
+		self.assertIn("TC R08", frappe.get_roles(user))
+
 	def test_provision_desk_user_r10(self):
 		user = provision.desk_user("TC R10", "r10-e2e", password="Desk-Test-2026!")
 		self.assertEqual(user, "r10-e2e@tracecore.local")

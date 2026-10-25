@@ -346,3 +346,18 @@ class TestStationPage(FrappeTestCase):
 			self.assertEqual(_("Sterile"), "Vô khuẩn")
 		finally:
 			frappe.local.lang = "en"
+
+	def test_default_station_and_zone_labels_are_vietnamese(self):
+		# nhãn trạm mặc định (seed) và nhãn khu trên thanh trạm có bản dịch vi; khu khoa là "Khoa", không lấy bản
+		# dịch chung "Department" của Frappe/ERPNext ("Cục")
+		from tracecore.setup.seed import DEFAULT_STATIONS
+
+		ours = vi_translations()
+		missing = [
+			row["zone_station_name"] for row in DEFAULT_STATIONS if not ours.get(row["zone_station_name"])
+		]
+		self.assertEqual(missing, [])
+		self.assertEqual(ours.get("Department:Zone Station"), "Khoa")
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = re.sub(r"\s+", " ", handle.read())
+		self.assertIn('ZONE_LABEL[station.zone_type] || "Station", null, "Zone Station"', source)

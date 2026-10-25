@@ -14,7 +14,8 @@ from frappe.utils.password import update_password
 
 # Frappe không chấp nhận email "x@local" (thiếu dấu chấm ở domain)
 USER_DOMAIN = "tracecore.local"
-STATION_ROLE_BY_ZONE = {"Dirty": "TC R03", "Clean": "TC R04", "Sterile": "TC R06"}
+# T8 quét sử dụng ở khu khoa (FEAT-027): nhân viên khoa dùng R08
+STATION_ROLE_BY_ZONE = {"Dirty": "TC R03", "Clean": "TC R04", "Sterile": "TC R06", "Department": "TC R08"}
 
 
 def agent_user_email(station):
