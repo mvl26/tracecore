@@ -62,13 +62,14 @@ app_include_js = ["tracecore.bundle.js"]
 
 # include js in page
 # Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021) và T7 cấp phát
-# (SCR-12/SCR-36, FEAT-026): Frappe nối các file này sau station.js trong script của Page station
+# (SCR-12/SCR-36, FEAT-026) và T8 quét sử dụng (SCR-37, FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
 		"public/js/station_t7.js",
+		"public/js/station_t8.js",
 	]
 }
 

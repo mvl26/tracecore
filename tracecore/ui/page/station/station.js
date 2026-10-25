@@ -5,7 +5,7 @@
 // bước T2 giao cho T2Wash (public/js/station_t2.js), bước T7 giao cho T7Issue (public/js/station_t7.js); các file
 // này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T7Issue */
+/* global T4Packing, T6Storage, T2Wash, T7Issue, T8Usage */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -549,6 +549,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.putaway.") ||
 			method.startsWith("tracecore.v1.wash.") ||
 			method.startsWith("tracecore.v1.issue.") ||
+			method.startsWith("tracecore.v1.usage.") ||
 			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =
@@ -671,6 +672,8 @@ class TraceCoreStation {
 				this.screen = new T2Wash(this);
 			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
 				this.screen = new T7Issue(this);
+			} else if (station.step === "T8" && typeof T8Usage !== "undefined") {
+				this.screen = new T8Usage(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
