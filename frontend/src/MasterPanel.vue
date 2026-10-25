@@ -93,7 +93,7 @@ async function save() {
 				modified: modified.value,
 				values: values.value,
 			},
-			true,
+			true
 		);
 		message.value = "Đã lưu danh mục.";
 		emit("saved");
@@ -123,7 +123,7 @@ async function saveBOM() {
 			reason: reason.value,
 			base_version: Math.max(
 				0,
-				...versions.value.map((x) => Number(x.bom_version || x.version)),
+				...versions.value.map((x) => Number(x.bom_version || x.version))
 			),
 		});
 		if (!result.ok)

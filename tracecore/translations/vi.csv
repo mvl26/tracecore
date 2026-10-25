@@ -3424,7 +3424,6 @@ This screen is unavailable or you do not have permission.,Màn này chưa sẵn 
 This workspace is not available for this account.,Không gian làm việc này không dành cho tài khoản này.,
 You do not have permission to edit this field.,Bạn không có quyền sửa trường này.,
 You do not have permission to read this record.,Bạn không có quyền xem bản ghi này.,
-||||||| 8a74068
 Sterilizer is still running a load,Máy tiệt khuẩn còn mẻ đang chạy,
 Load {0} on sterilizer {1} has no cycle data yet.,Mẻ {0} trên máy {1} chưa có dữ liệu chu trình.,
 "Enter the cycle data of load {0} first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} trước, rồi mới nạp máy này tiếp.",

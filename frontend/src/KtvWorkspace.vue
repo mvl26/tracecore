@@ -19,7 +19,7 @@ const title = computed(
 			instruments: "Tra cứu dụng cụ",
 			overrides: "Đề nghị của tôi",
 			history: "Lịch sử thực hiện",
-		})[view.value] || "Không tìm thấy chức năng",
+		}[view.value] || "Không tìm thấy chức năng")
 );
 const data = ref<any>(null),
 	opened = ref<any>(null),
@@ -61,8 +61,8 @@ const canPack = computed(
 		(packing.value.maintenance || []).every(
 			(x: any) =>
 				maintenance.value[x.instrument] &&
-				(x.maint_type !== "Lubrication" || oilBatches.value[x.instrument]?.trim()),
-		),
+				(x.maint_type !== "Lubrication" || oilBatches.value[x.instrument]?.trim())
+		)
 );
 const menus = [
 	{ id: "assembly", label: "T3 · Kiểm tra – lắp ráp" },
@@ -100,7 +100,7 @@ async function closeStation(invalidate = true) {
 			await request(
 				"tracecore.v1.station.logout",
 				{ token: previous, client_ts: new Date().toISOString() },
-				true,
+				true
 			);
 		} catch {
 			/* local credentials are already discarded */
@@ -154,14 +154,14 @@ async function loginStation() {
 				station: selectedStation.value,
 				client_ts: new Date().toISOString(),
 			},
-			true,
+			true
 		);
 		if (!response.ok || !response.session?.token) throw new Error("Không mở được phiên trạm.");
 		if (current !== generation || station !== selectedStation.value) {
 			await request(
 				"tracecore.v1.station.logout",
 				{ token: response.session.token, client_ts: new Date().toISOString() },
-				true,
+				true
 			);
 			return;
 		}
@@ -170,10 +170,10 @@ async function loginStation() {
 			await request(
 				"tracecore.v1.station.logout",
 				{ token: response.session.token, client_ts: new Date().toISOString() },
-				true,
+				true
 			);
 			throw new Error(
-				"Thẻ phải thuộc tài khoản đang đăng nhập. Hãy đổi tài khoản trước khi thao tác.",
+				"Thẻ phải thuộc tài khoản đang đăng nhập. Hãy đổi tài khoản trước khi thao tác."
 			);
 		}
 		token.value = response.session.token;
@@ -194,7 +194,7 @@ async function checkSession() {
 		const response = await request(
 			"tracecore.v1.station.heartbeat",
 			{ token: previous, client_ts: new Date().toISOString() },
-			true,
+			true
 		);
 		if (!response.ok) throw new Error("Session expired");
 	} catch {

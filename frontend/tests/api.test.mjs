@@ -23,20 +23,20 @@ test("return targets stay inside TraceCore", () => {
     assert.equal(internalPath(path), "/tracecore");
   assert.equal(
     internalPath("/tracecore/R01/dashboard"),
-    "/tracecore/R01/dashboard",
+    "/tracecore/R01/dashboard"
   );
 });
 test("password reset redirects only to the same-origin password flow", () => {
   assert.equal(
     passwordResetPath("/update-password?key=abc", "http://localhost:8000"),
-    "/update-password?key=abc",
+    "/update-password?key=abc"
   );
   assert.equal(
     passwordResetPath(
       "https://example.org/update-password?key=abc",
-      "http://localhost:8000",
+      "http://localhost:8000"
     ),
-    null,
+    null
   );
   assert.equal(passwordResetPath("/app", "http://localhost:8000"), null);
 });
@@ -58,7 +58,7 @@ test("mutations carry session, CSRF and a stable idempotency key", async () => {
     { count: 2 },
     true,
     false,
-    "request-123",
+    "request-123"
   );
   assert.equal(call.init.credentials, "same-origin");
   assert.equal(call.init.headers["X-Frappe-CSRF-Token"], "test-csrf");
@@ -74,14 +74,14 @@ test("server errors are reduced to safe user-facing messages", async () => {
   });
   await assert.rejects(
     request("test"),
-    (error) => error instanceof APIError && !error.message.includes("secret"),
+    (error) => error instanceof APIError && !error.message.includes("secret")
   );
 });
 test("expired Frappe sessions are distinguished from permission denial", async () => {
   globalThis.fetch = async () => ({ ok: false, status: 403 });
   await assert.rejects(
     request("test"),
-    (error) => error instanceof APIError && error.status === 401,
+    (error) => error instanceof APIError && error.status === 401
   );
   globalThis.fetch = async (url) =>
     String(url).includes("get_logged_user")
@@ -89,7 +89,7 @@ test("expired Frappe sessions are distinguished from permission denial", async (
       : { ok: false, status: 403 };
   await assert.rejects(
     request("test"),
-    (error) => error instanceof APIError && error.status === 403,
+    (error) => error instanceof APIError && error.status === 403
   );
 });
 test("uncertain mutation retries preserve the exact key and timestamp", async () => {
@@ -109,7 +109,7 @@ test("uncertain mutation retries preserve the exact key and timestamp", async ()
   assert.equal(calls[0].body, calls[1].body);
   assert.equal(
     calls[0].headers["X-Idempotency-Key"],
-    calls[1].headers["X-Idempotency-Key"],
+    calls[1].headers["X-Idempotency-Key"]
   );
 });
 test("changed payloads and operations receive new idempotency keys", async () => {
@@ -124,10 +124,10 @@ test("changed payloads and operations receive new idempotency keys", async () =>
   await assert.rejects(mutate("print", { count: 3 }));
   assert.notEqual(
     calls[0].headers["X-Idempotency-Key"],
-    calls[1].headers["X-Idempotency-Key"],
+    calls[1].headers["X-Idempotency-Key"]
   );
   assert.notEqual(
     calls[1].headers["X-Idempotency-Key"],
-    calls[2].headers["X-Idempotency-Key"],
+    calls[2].headers["X-Idempotency-Key"]
   );
 });

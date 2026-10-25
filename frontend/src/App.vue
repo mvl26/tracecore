@@ -41,7 +41,7 @@ const home = computed(() => !roleID.value);
 const title = computed(
 	() =>
 		screen.value?.title ||
-		(space.value ? "Tổng quan · " + space.value.title : "Trung tâm quản trị"),
+		(space.value ? "Tổng quan · " + space.value.title : "Trung tâm quản trị")
 );
 const statusText: Record<string, string> = {
 	ready: "Sẵn sàng",
@@ -153,7 +153,7 @@ async function login() {
 				? { otp: otp.value, tmp_id: challenge.value }
 				: { usr: username.value, pwd: password.value },
 			true,
-			true,
+			true
 		);
 		password.value = "";
 		if (response.message === "Password Reset") {
@@ -302,7 +302,7 @@ watch(
 		search.value = "";
 		offset.value = 0;
 		load();
-	},
+	}
 );
 onMounted(() => {
 	bootstrap();
