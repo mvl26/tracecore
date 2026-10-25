@@ -36,6 +36,7 @@ STATION_STATUSES = {
 	"T2": ("Processing", "Reprocess"),
 	"T3": ("Processing", "Reprocess"),
 	"T4": ("Processing", "Reprocess"),
+	"T5": ("Processing", "Reprocess"),
 }
 
 PENDING = "Pending"

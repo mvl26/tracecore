@@ -62,7 +62,7 @@ app_include_js = ["tracecore.bundle.js"]
 
 # include js in page
 # Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021),
-# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019) và T3 kiểm đếm (SCR-07, FEAT-020):
+# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019), T3 kiểm đếm (SCR-07, FEAT-020) và T5 nạp mẻ (SCR-09, SCR-35, FEAT-022):
 # Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
@@ -71,6 +71,7 @@ page_js = {
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		"public/js/station_t3.js",
+		"public/js/station_t5.js",
 	]
 }
 
@@ -228,6 +229,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
+	# mẻ tiệt khuẩn T5 (FEAT-022): tạo khi Hoàn thành nạp, cập nhật khi nhập tay dữ liệu chu trình
+	"Sterilization Load": dict(_AUDIT_EVENTS),
 	# phiếu tiếp nhận T1 (FEAT-019): nháp tạo khi quét thẻ người giao, ghi sổ khi hoàn tất; không xóa
 	"Dirty Receipt": dict(_AUDIT_EVENTS),
 	# Pack đổi status/void_reason/label_print_count sau khi ghi sổ (on_update_after_submit)
@@ -321,6 +324,11 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 T5 nạp mẻ (FEAT-022, UC-09):
+#  - load_equipment_checks: (equipment) -> Block | None, điều kiện chọn máy tiệt khuẩn (FEAT-040: test ngày, kiểm định)
+#  - after_load_complete:   (ctx) sau khi Hoàn thành nạp (ctx: load, equipment, program, packs, sets)
+tracecore_load_equipment_checks = []
+tracecore_after_load_complete = []
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
 #  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
 #                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)

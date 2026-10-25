@@ -220,6 +220,15 @@ class TestParseScan(FrappeTestCase):
 		for raw in malformed:
 			self.assertEqual(gs1.parse_scan(raw, company_prefix="9520000")["type"], "unknown", msg=repr(raw))
 
+	def test_parse_scan_sterilization_load(self):
+		# mã mẻ tiệt khuẩn ME-YYMMDD-NN (QR nhãn mẻ, FEAT-022): cùng bước chuẩn hóa chuỗi quét như LR-
+		for raw in ["ME-261023-01", "]Q1ME-261023-01\r\n", " ME-261023-01\t", "\x1d]Q1ME-261023-01"]:
+			result = gs1.parse_scan(raw, company_prefix="9520000")
+			self.assertEqual((result["type"], result["id"]), ("load", "ME-261023-01"), msg=repr(raw))
+		malformed = ["ME-26102-01", "ME-261023-1", "ME-261023", "ME 261023-01", "me-261023-01"]
+		for raw in malformed:
+			self.assertEqual(gs1.parse_scan(raw, company_prefix="9520000")["type"], "unknown", msg=repr(raw))
+
 	@bru("BRU-ID-006")
 	def test_parse_scan_unknown(self):
 		for raw in ["ABC", "", "8004", "8004 X", "X" * 200, "(01)09520000000013", "TR-04", "NV-1"]:

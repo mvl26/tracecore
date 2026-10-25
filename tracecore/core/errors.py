@@ -20,6 +20,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PIN_INVALID",
 			"PIN_PROOF_INVALID",
 			"SESSION_STATION_MISMATCH",
+			"CARD_MISMATCH",
 			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
 		),
 		403,
@@ -66,6 +67,10 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
 			"RESULT_INVALID",
+			# FEAT-022 A-16: nạp mẻ tiệt khuẩn T5
+			"EQUIPMENT_NOT_STERILIZER",
+			"PACK_INCOMPATIBLE",
+			"LOAD_EMPTY",
 			# FEAT-020 A-35: kiểm đếm lắp ráp T3
 			"LINES_NOT_COUNTED",
 			"QTY_INVALID",
@@ -95,6 +100,7 @@ HTTP_STATUS: dict[str, int] = {
 			"BOM_VERSION_NOT_FOUND",
 			"WASH_BATCH_NOT_FOUND",
 			"LOCATION_NOT_FOUND",
+			"LOAD_NOT_FOUND",
 			"OVERRIDE_NOT_FOUND",
 			"ASSEMBLY_NOT_FOUND",
 			"RECEIPT_NOT_FOUND",
@@ -145,6 +151,11 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_NOT_RUNNING",
 			"EQUIPMENT_MISMATCH",
 			"R02_CONFIRM_REQUIRED",
+			# FEAT-022 A-16
+			"PACK_IN_OTHER_LOAD",
+			"PACK_NOT_LOADABLE",
+			"LOAD_CAPACITY_EXCEEDED",
+			"LOAD_NOT_OPEN",
 			# FEAT-032 A-18: vượt cơ số và ghi đè
 			"SET_END_OF_LIFE",
 			"PAR_NOT_EXCEEDED",
