@@ -34,6 +34,7 @@ STEPS = ("T1", "T2", "T3", "T4", "T5")
 STATION_STATUSES = {
 	"T1": ("New", "At Department", "Awaiting Receipt"),
 	"T2": ("Processing", "Reprocess"),
+	"T3": ("Processing", "Reprocess"),
 	"T4": ("Processing", "Reprocess"),
 }
 

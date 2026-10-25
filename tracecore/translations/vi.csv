@@ -2396,6 +2396,194 @@ Rejected,Đã từ chối,Par Override
 Expired,Hết hiệu lực,Par Override
 Cancelled,Đã hủy,Par Override
 Cycles Used,Hết số chu trình thêm,Par Override
+MISSING: {0},THIẾU: {0},
+Missing – confirmed by R02,Thiếu – R02 đã xác nhận,
+{0} is not a {1} assembly station.,{0} không phải trạm lắp ráp {1}.,
+Open the assembly screen on a T3 station.,Hãy mở màn lắp ráp trên trạm T3.,
+Assembly record not found,Không tìm thấy phiếu lắp ráp,
+Assembly record {0} does not exist.,Phiếu lắp ráp {0} không tồn tại.,
+Scan the Set ID again to open its assembly record.,Quét lại Set ID để mở phiếu lắp ráp của bộ.,
+Assembly record is closed,Phiếu lắp ráp đã đóng,
+Assembly record {0} is already recorded or belongs to an earlier cycle.,Phiếu lắp ráp {0} đã ghi sổ hoặc thuộc chu trình trước.,
+Scan the Set ID again to open the assembly record of the current cycle.,Quét lại Set ID để mở phiếu lắp ráp của chu trình hiện tại.,
+Assembly already recorded,Bộ đã lắp ráp xong,
+Set {0} already passed assembly in cycle {1}.,Bộ {0} đã qua lắp ráp trong chu trình {1}.,
+Take the set to the packing station (T4).,Chuyển bộ sang trạm đóng gói (T4).,
+Quantity is not valid,Số lượng không hợp lệ,
+{0} must be a whole number from 0 to {1}.,{0} phải là số nguyên từ 0 đến {1}.,
+Enter the number of instruments you counted.,Nhập số dụng cụ đã đếm.,
+Check the numbers of this line and enter them again.,Kiểm tra các số của dòng này rồi nhập lại.,
+Choose the photo again.,Chọn lại ảnh.,
+Instrument {0} does not exist.,Dụng cụ {0} không tồn tại.,
+Choose an instrument from the spare stock list.,Chọn dụng cụ trong danh sách kho dự phòng.,
+Instrument {0} is not a line of this BOM.,Dụng cụ {0} không phải dòng của BOM này.,
+Scan the Set ID again to reload the BOM.,Quét lại Set ID để tải lại BOM.,
+Choose Repair or Dispose for a damaged instrument.,Chọn Sửa chữa hoặc Thanh lý cho dụng cụ hỏng.,
+{0}: replaced quantity ({1}) cannot exceed damaged quantity ({2}).,{0}: số lượng thay ({1}) không được vượt số lượng hỏng ({2}).,
+{0}: choose Repair or Dispose for the damaged instrument(s).,{0}: chọn Sửa chữa hoặc Thanh lý cho dụng cụ hỏng.,
+Code {0} is not an instrument code.,Mã {0} không phải mã dụng cụ.,
+Scan the code etched on the instrument.,Quét mã khắc trên dụng cụ.,
+Instrument codes are turned off,Mã dụng cụ đang tắt,
+Scanning single instrument codes is not enabled on this site.,Chưa bật quét mã dụng cụ đơn lẻ trên hệ thống này.,
+"Tick or enter the quantity by hand, or ask R10 to enable instrument codes.","Hãy tick hoặc nhập số lượng bằng tay, hoặc nhờ R10 bật mã dụng cụ.",
+Code {0} is not assigned to any instrument.,Mã {0} chưa gán cho dụng cụ nào.,
+Check the code on the instrument or count it by hand.,Kiểm tra mã trên dụng cụ hoặc đếm bằng tay.,
+Foreign instrument,Dụng cụ lạ,
+Instrument {0} is not in the BOM of this set.,Dụng cụ {0} không có trong BOM của bộ này.,
+Take it out of the tray and report it; a non-conformance is recorded.,Lấy ra khỏi khay và báo cáo; hệ thống ghi một không phù hợp (NC).,
+Packing a set with missing instruments needs the PIN of R02.,Đóng gói bộ thiếu dụng cụ cần PIN của R02.,
+"Ask R02 to sign in at this station and enter the 6-digit PIN, then confirm again.","Nhờ R02 đăng nhập thẻ tại trạm, nhập PIN 6 số rồi xác nhận lại.",
+Nothing is missing,Không có dụng cụ nào thiếu,
+Assembly record {0} has no missing instruments to confirm.,Phiếu lắp ráp {0} không có dụng cụ thiếu để xác nhận.,
+Count the lines first; confirm only when instruments are missing.,Hãy đếm các dòng trước; chỉ xác nhận khi có dụng cụ thiếu.,
+Reason required,Cần nhập lý do,
+Give the reason for packing without the missing instruments ({0} characters at most).,Nhập lý do đóng gói khi thiếu dụng cụ (tối đa {0} ký tự).,
+"Write the reason, then confirm again.",Viết lý do rồi xác nhận lại.,
+Branch is not valid,Nhánh xử lý không hợp lệ,
+Choose Repair or Disposal for a damaged set.,Chọn Sửa chữa hoặc Thanh lý cho bộ hỏng.,
+"Choose one of the two branches, or leave it empty to continue to packing.","Chọn một trong hai nhánh, hoặc để trống để tiếp tục sang đóng gói.",
+Give the reason for sending the set to repair or disposal.,Nhập lý do chuyển bộ sang sửa chữa hoặc thanh lý.,
+Not all lines are counted,Chưa đếm hết các dòng,
+Lines not counted yet: {0}.,Dòng chưa đếm: {0}.,
+"Tick or enter the quantity of each line, then record the assembly.",Tick hoặc nhập số lượng từng dòng rồi ghi nhận lắp ráp.,
+Missing instruments are not confirmed,Dụng cụ thiếu chưa được xác nhận,
+Missing: {0}. Packing stays locked.,Thiếu: {0}. Đóng gói vẫn bị khóa.,
+"Add the instruments from the spare stock, or ask R02 to confirm with the PIN.","Bổ sung dụng cụ từ kho dự phòng, hoặc nhờ R02 xác nhận bằng PIN.",
+Set type {0} has no BOM to count against.,Loại bộ {0} không có BOM để đối chiếu.,
+{0} is not in BOM version {1} of this set type.,{0} không có trong BOM phiên bản {1} của loại bộ này.,
+Instrument {0} appears on more than one line.,Dụng cụ {0} xuất hiện ở nhiều hơn một dòng.,
+The count must cover every BOM line; missing: {0}.,Phiếu đếm phải đủ mọi dòng BOM; còn thiếu: {0}.,
+{0}: quantities must be whole numbers between 0 and 9999.,{0}: số lượng phải là số nguyên từ 0 đến 9999.,
+The shortage can only be confirmed by R02 at the station with a PIN.,"Chỉ R02 xác nhận được dụng cụ thiếu, tại trạm và bằng PIN.",
+Result is required.,Cần có kết quả.,
+A set sent to repair or disposal cannot pass assembly.,Bộ chuyển sang sửa chữa hoặc thanh lý không thể Đạt lắp ráp.,
+Count every BOM line first; not counted: {0}.,Hãy đếm mọi dòng BOM trước; chưa đếm: {0}.,
+Missing instruments need the confirmation of R02 before the set can be packed.,Dụng cụ thiếu cần R02 xác nhận trước khi đóng gói bộ.,
+The confirmation of a shortage needs the confirming user and a reason.,Xác nhận thiếu cần có người xác nhận và lý do.,
+Not counted,Chưa đếm,
+Scan the instrument code or the next Set ID...,Quét mã dụng cụ hoặc Set ID kế tiếp...,
+This account cannot count instruments at this station.,Tài khoản này không được kiểm đếm dụng cụ tại trạm này.,
+Choose repair or disposal,Chọn sửa chữa hoặc thanh lý,
+A damaged instrument must go to repair or to disposal.,Dụng cụ hỏng phải chuyển sang sửa chữa hoặc thanh lý.,
+"Tap Repair or Dispose, then save.",Chạm Sửa chữa hoặc Thanh lý rồi lưu.,
+The replaced quantity cannot exceed the damaged quantity.,Số lượng thay không được vượt số lượng hỏng.,
+"Check the numbers, then save again.",Kiểm tra các số rồi lưu lại.,
+Choose the branch and give the reason,Chọn nhánh và nhập lý do,
+Sending a set to repair or disposal needs a branch and a reason.,Chuyển bộ sang sửa chữa hoặc thanh lý cần chọn nhánh và lý do.,
+"Tap Repair or Disposal, write the reason, then confirm.","Chạm Sửa chữa hoặc Thanh lý, viết lý do rồi xác nhận.",
+Reason and R02 PIN are required,Cần lý do và PIN của R02,
+Packing with missing instruments needs a reason and the 6-digit PIN of R02.,Đóng gói khi thiếu dụng cụ cần lý do và PIN 6 số của R02.,
+"Write the reason, enter the PIN, then confirm.","Viết lý do, nhập PIN rồi xác nhận.",
+Shortage confirmed by R02,R02 đã xác nhận thiếu,
+Packing is unlocked once the count is recorded.,Đóng gói được mở khi ghi nhận kiểm đếm.,
+Record the count.,Hãy ghi nhận kiểm đếm.,
+Scan the Set ID to count its instruments against the BOM.,Quét Set ID để đếm dụng cụ của bộ theo BOM.,
+Counting instruments needs a network connection.,Kiểm đếm dụng cụ cần kết nối mạng.,
+Cycle {0},Chu trình {0},
+Assembly recorded,Đã ghi nhận lắp ráp,
+Assembly failed,Lắp ráp không đạt,
+Draft count,Đang đếm (nháp),
+{0} cycles left,Còn {0} chu trình,
+Cycle limit is near,Sắp hết cơ số chu trình,
+Set {0}: {1} of {2} cycles used. {3},Bộ {0}: đã dùng {1}/{2} chu trình. {3},
+Tell R02 so a replacement can be prepared; packing (T4) still checks the limit.,Báo R02 để chuẩn bị bộ thay thế; trạm đóng gói (T4) vẫn kiểm tra cơ số.,
+Notes from reception,Ghi chú từ tiếp nhận,
+Damaged {0} · replaced {1} · {2},Hỏng {0} · thay {1} · {2},
+Position {0} · BOM × {1} · {2},Vị trí {0} · BOM × {1} · {2},
+Decrease,Giảm,
+Increase,Tăng,
+All present,Đủ,
+Damaged / replace,Hỏng / thay,
+BOM Count,Kiểm đếm BOM,
+Counted {0}/{1} lines,Đã đếm {0}/{1} dòng,
+Damaged Quantity,Số lượng hỏng,
+Replaced from spare stock,Số lượng thay từ kho dự phòng,
+Disposition,Hướng xử lý,
+Photo of the damage,Ảnh chỗ hỏng,
+Usable instruments = BOM quantity − damaged + replaced.,Số dụng cụ dùng được = số lượng BOM − hỏng + thay.,
+Save,Lưu,
+Damage Branch,Nhánh xử lý hỏng,
+Set is damaged: send to repair or disposal,Bộ hỏng: chuyển sang sửa chữa hoặc thanh lý,
+The set stops here and does not go to packing. The assembly is recorded as failed.,Bộ dừng tại đây và không sang đóng gói. Lắp ráp được ghi nhận là không đạt.,
+Confirm: send the set away,Xác nhận: chuyển bộ đi,
+R02 confirmation,R02 xác nhận,
+R02 confirms packing with missing instruments,R02 xác nhận đóng gói khi thiếu dụng cụ,
+R02 PIN,PIN của R02,
+Confirm: pack with missing instruments,Xác nhận: đóng gói khi thiếu dụng cụ,
+Confirmed by {0}: {1},{0} xác nhận: {1},
+R02 confirms: pack with missing instruments,R02 xác nhận: đóng gói khi thiếu dụng cụ,
+"R02 signs in with the card at this station, scans the Set ID again and enters the PIN.","R02 đăng nhập thẻ tại trạm, quét lại Set ID rồi nhập PIN.",
+Missing instruments,Dụng cụ thiếu,
+Packing is locked until the missing instruments are added or R02 confirms.,Đóng gói bị khóa cho đến khi bổ sung dụng cụ thiếu hoặc R02 xác nhận.,
+Packing: ready,Đóng gói: sẵn sàng,
+Assembly is recorded. The set can go to packing (T4).,Đã ghi nhận lắp ráp. Bộ có thể sang đóng gói (T4).,
+Count every line first.,Hãy đếm hết các dòng trước.,
+Missing instruments are not confirmed.,Dụng cụ thiếu chưa được xác nhận.,
+Record the count to unlock packing.,Ghi nhận kiểm đếm để mở khóa đóng gói.,
+The set was sent to repair or disposal.,Bộ đã chuyển sang sửa chữa hoặc thanh lý.,
+Assembly failed; the set must be assembled again.,Lắp ráp không đạt; bộ phải lắp ráp lại.,
+Packing: locked,Đóng gói: khóa,
+{0} line(s) not counted,{0} dòng chưa đếm,
+Assembly recorded. Scan the next set.,Đã ghi nhận lắp ráp. Quét bộ kế tiếp.,
+Assembly recorded as failed. Scan the next set.,Đã ghi nhận lắp ráp không đạt. Quét bộ kế tiếp.,
+Still needed: {0},Còn thiếu: {0},
+Ready to record,Sẵn sàng ghi nhận,
+Go to packing station {0},Sang trạm đóng gói {0},
+Record the count,Ghi nhận kiểm đếm,
+Set is damaged: repair / disposal,Bộ hỏng: sửa chữa / thanh lý,
+Enough,Đủ,Assembly Line
+Short,Thiếu,Assembly Line
+Over,Thừa,Assembly Line
+Repair,Sửa chữa,Assembly Line
+Dispose,Thanh lý,Assembly Line
+Repair,Sửa chữa,Assembly Record
+Disposal,Thanh lý,Assembly Record
+Enough,Đủ,
+Short,Thiếu,
+Over,Thừa,
+Repair,Sửa chữa,
+Dispose,Thanh lý,
+Disposal,Thanh lý,
+BOM version pinned for this cycle and counted against.,Phiên bản BOM ghim cho chu trình này và dùng để đối chiếu.,Assembly Record
+Result,Kết quả,Assembly Record
+Assembled By,Người lắp ráp,Assembly Record
+Assembled At,Thời điểm lắp ráp,Assembly Record
+Client Timestamp,Thời điểm từ trạm,Assembly Record
+Lines,Dòng kiểm đếm,Assembly Record
+Shortage,Thiếu dụng cụ,Assembly Record
+Has Shortage,Có thiếu,Assembly Record
+Missing Instruments,Dụng cụ thiếu,Assembly Record
+Non-conformance Pending,NC chờ tạo,Assembly Record
+Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030.,Đặt khi phiếu có dụng cụ thiếu hoặc dụng cụ lạ; sự cố CAPA do FEAT-030 tạo.,Assembly Record
+Foreign Instruments,Dụng cụ lạ,Assembly Record
+Instrument codes scanned at T3 that are not in the BOM.,Mã dụng cụ quét tại T3 không có trong BOM.,Assembly Record
+Shortage Confirmed by R02,R02 đã xác nhận thiếu,Assembly Record
+Shortage Reason,Lý do đóng gói thiếu,Assembly Record
+Confirmed By,Người xác nhận,Assembly Record
+Confirmed At,Thời điểm xác nhận,Assembly Record
+Confirmed Shortage,Danh sách thiếu đã xác nhận,Assembly Record
+Branch,Nhánh xử lý,Assembly Record
+Branch Reason,Lý do rẽ nhánh,Assembly Record
+BOM Count,Kiểm đếm BOM,Assembly Record
+Damage Branch,Nhánh xử lý hỏng,Assembly Record
+Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.,Kiểm đếm một bộ theo BOM đã ghim tại trạm T3 (FEAT-020). Ghi sổ sẽ ghi cổng T3.,Assembly Record
+BOM Quantity,Số lượng theo BOM,Assembly Line
+Counted,Đã đếm,Assembly Line
+Actual Quantity,Số lượng thực tế,Assembly Line
+Line Status,Trạng thái dòng,Assembly Line
+Missing Quantity,Số lượng thiếu,Assembly Line
+Replaced Quantity,Số lượng thay,Assembly Line
+Replacement Instrument,Dụng cụ thay thế,Assembly Line
+Photo,Ảnh,Assembly Line
+Disposition,Hướng xử lý,Assembly Line
+One BOM line counted at station T3 (FEAT-020).,Một dòng BOM được kiểm đếm tại trạm T3 (FEAT-020).,Assembly Line
+Assembly Line,Dòng kiểm đếm lắp ráp,
+Instrument Name,Tên dụng cụ,Assembly Line
+Instrument,Dụng cụ,Assembly Line
+Note,Ghi chú,Assembly Line
+Station,Trạm,Assembly Record
+Set Type,Loại bộ,Assembly Record
+BOM Version,Phiên bản BOM,Assembly Record
 A deliverer card was already scanned for this receipt; scan the set tags only.,Đã quét thẻ người giao cho phiếu này; chỉ quét thẻ bộ (Set ID).,
 A dirty receipt cannot be cancelled.,Phiếu tiếp nhận không thể hủy chứng từ.,
 A dirty receipt is created and changed only by the receiving screen service.,Phiếu tiếp nhận chỉ được tạo và sửa bởi dịch vụ của màn tiếp nhận.,
@@ -2455,7 +2643,6 @@ Only R02 can receive a set that the station refused.,Chỉ R02 được tiếp n
 "Open each set, then press Confirm set.",Mở từng bộ rồi bấm Xác nhận bộ.,
 Open receipt,Mở phiếu,
 Photo is not valid,Ảnh không hợp lệ,
-R02 PIN,PIN của R02,
 R02 will issue a card for this person later.,R02 sẽ cấp thẻ cho người này sau.,
 Reason and PIN are required,Cần lý do và PIN,
 Receipt has no sets,Phiếu chưa có bộ nào,

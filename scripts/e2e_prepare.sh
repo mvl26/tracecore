@@ -2,7 +2,8 @@
 # Chuẩn bị một site DEV/TEST cho e2e kiosk (KHÔNG dùng cho production):
 #   1. Hoàn tất Setup Wizard ERPNext bằng dữ liệu test (Desk ép user về Setup Wizard nếu chưa xong)
 #   2. Định dạng Việt Nam (System Settings)
-#   3. User trạm cho smoke FEAT-001 (TR-003, không phải T4) và user trạm T4 (TR-004); mật khẩu ngẫu nhiên
+#   3. User trạm cho smoke FEAT-001 (trạm tra cứu chung TR-090 không gán bước, devdata.ensure_smoke_station, vì các trạm bước T1..T7
+#      dần có màn riêng) và user trạm T4 (TR-004); mật khẩu ngẫu nhiên
 #      lưu trong file quyền 600
 #      và user Desk TC R10 (r10-e2e@…, mật khẩu ngẫu nhiên riêng, khác mật khẩu kiosk) cho tests_e2e/test_desk_admin.py
 #   4. Set Unit demo để quét (smoke) và dữ liệu demo T4 (devdata.ensure_t4_demo: bộ hấp/plasma/gate-fail,
@@ -44,6 +45,13 @@
 #      hai kệ KE-, gói đã giải phóng, gói chưa giải phóng, gói trong kho, gói sắp hết hạn
 #      → TC_E2E_T6_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T6_<khóa> cho tests_e2e/test_station_t6.py.
 #      Gói demo bị tiêu thụ khi nhập kho/báo rách: chạy lại script này trước mỗi lần chạy test đó.
+#  12. Màn T3 kiểm đếm lắp ráp (devdata.ensure_t3_e2e_users + ensure_station_demo + ensure_t3_demo + ensure_t3_r02, FEAT-020):
+#      user kiosk station-t3@… (TC R04, cùng mật khẩu kiosk, OTP riêng) có thẻ và năng lực tại $TC_E2E_T3_STATION (mặc định
+#      TR-003); bộ đã qua T1-T2 để đếm đủ / đếm thiếu / rẽ nhánh, bộ chưa qua lô rửa; user R02 (r02-t3-e2e@…) có thẻ, năng
+#      lực tại TR-003 và PIN 6 số ngẫu nhiên mới mỗi lần chạy
+#      → TC_E2E_T3_USER/PASSWORD/STATION/CARD_ID/EMPLOYEE/OTP_SECRET + TC_E2E_T3_R02_CARD_ID/PIN + TC_E2E_T3_<khóa của
+#      ensure_t3_demo> cho tests_e2e/test_station_t3.py. Bộ demo bị tiêu thụ khi đếm/ghi sổ: chạy lại script này trước mỗi lần
+#      chạy test đó (cả tests_e2e/test_station_t4.py chạy sau nó).
 #  12. Màn T1 tiếp nhận (devdata.ensure_t1_e2e_user + ensure_station_demo + ensure_t1_demo, FEAT-019): user kiosk
 #      station-t1@… (TC R03, cùng mật khẩu kiosk, OTP riêng) có thẻ và năng lực tại $TC_E2E_T1_STATION (mặc định TR-001),
 #      thẻ người giao thuộc khoa demo, 3 bộ Chờ tiếp nhận, bộ Mới tạo, 2 bộ cho PDA, bộ Vô khuẩn (bị từ chối), Set ID chưa cấp
@@ -64,12 +72,13 @@ set -euo pipefail
 SITE="${1:?usage: scripts/e2e_prepare.sh <site>}"
 BENCH_DIR="${BENCH_DIR:-$HOME/tracecore-dev}"
 ENV_FILE="${TC_E2E_ENV:-$HOME/.tracecore-e2e.env}"
-STATION="${TC_E2E_STATION:-TR-003}"
+STATION="${TC_E2E_STATION:-TR-090}"
 T4_STATION="${TC_E2E_T4_STATION:-TR-004}"
 CODES_PORT="${TC_E2E_CODES_PRINTER_PORT:-19101}"
 SECOND_STATION="${TC_E2E_T4_SECOND_STATION:-TR-005}"
 T2_STATION="${TC_E2E_T2_STATION:-TR-002}"
 T6_STATION="${TC_E2E_T6_STATION:-TR-006}"
+T3_STATION="${TC_E2E_T3_STATION:-TR-003}"
 T1_STATION="${TC_E2E_T1_STATION:-TR-001}"
 
 # Từ chối site test: tên test_site hoặc site_config.json / common_site_config.json có allow_tests bật (1/true/"1").
@@ -124,6 +133,7 @@ fi
 if [ -z "$r10_password" ] || [ "$r10_password" = "$password" ]; then
 	r10_password=$(random_password)
 fi
+bench_exec tracecore.setup.devdata.ensure_smoke_station --kwargs "{'station': '$STATION'}" > /dev/null
 users=$(bench_exec tracecore.setup.devdata.ensure_e2e_users --kwargs "{'station': '$STATION', 't4_station': '$T4_STATION', 'password': '$password', 'r10_password': '$r10_password'}")
 user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["user"])')
 t4_user=$(printf '%s' "$users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t4_user"])')
@@ -151,6 +161,12 @@ t6_users=$(bench_exec tracecore.setup.devdata.ensure_t6_e2e_user --kwargs "{'sta
 t6_user=$(printf '%s' "$t6_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t6_user"])')
 t6_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T6_STATION', 'user': '$t6_user'}")
 t6_demo=$(bench_exec tracecore.setup.devdata.ensure_t6_demo)
+t3_users=$(bench_exec tracecore.setup.devdata.ensure_t3_e2e_users --kwargs "{'station': '$T3_STATION', 'password': '$password'}")
+t3_user=$(printf '%s' "$t3_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t3_user"])')
+t3_r02_user=$(printf '%s' "$t3_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t3_r02_user"])')
+t3_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T3_STATION', 'user': '$t3_user'}")
+t3_r02=$(bench_exec tracecore.setup.devdata.ensure_t3_r02 --kwargs "{'station': '$T3_STATION', 'user': '$t3_r02_user'}")
+t3_demo=$(bench_exec tracecore.setup.devdata.ensure_t3_demo)
 t1_users=$(bench_exec tracecore.setup.devdata.ensure_t1_e2e_user --kwargs "{'station': '$T1_STATION', 'password': '$password'}")
 t1_user=$(printf '%s' "$t1_users" | python3 -c 'import json, sys; print(json.load(sys.stdin)["t1_user"])')
 t1_station_demo=$(bench_exec tracecore.setup.devdata.ensure_station_demo --kwargs "{'station': '$T1_STATION', 'user': '$t1_user'}")
@@ -185,6 +201,14 @@ t1_demo=$(bench_exec tracecore.setup.devdata.ensure_t1_demo)
 	printf '%s' "$t6_users" | python3 -c 'import json, sys; print("TC_E2E_T6_OTP_SECRET=%s" % json.load(sys.stdin)["t6_otp_secret"])'
 	printf '%s' "$t6_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T6_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf '%s' "$t6_demo" | python3 -c 'import json, sys; [print("TC_E2E_T6_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf 'TC_E2E_T3_USER=%s
+TC_E2E_T3_PASSWORD=%s
+TC_E2E_T3_STATION=%s
+' "$t3_user" "$password" "$T3_STATION"
+	printf '%s' "$t3_users" | python3 -c 'import json, sys; print("TC_E2E_T3_OTP_SECRET=%s" % json.load(sys.stdin)["t3_otp_secret"])'
+	printf '%s' "$t3_station_demo" | python3 -c 'import json, sys; [print("TC_E2E_T3_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
+	printf '%s' "$t3_r02" | python3 -c 'import json, sys; [print("TC_E2E_T3_R02_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items() if k != "employee"]'
+	printf '%s' "$t3_demo" | python3 -c 'import json, sys; [print("TC_E2E_T3_%s=%s" % (k.upper(), v)) for k, v in json.load(sys.stdin).items()]'
 	printf 'TC_E2E_T1_USER=%s
 TC_E2E_T1_PASSWORD=%s
 TC_E2E_T1_STATION=%s

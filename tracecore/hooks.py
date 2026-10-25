@@ -61,8 +61,8 @@ app_include_js = ["tracecore.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021) và
-# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019):
+# Màn T4 đóng gói (SCR-08, FEAT-018), T6 kho vô khuẩn (SCR-11, FEAT-025), T2 lô rửa (SCR-06, FEAT-021),
+# T1 tiếp nhận (SCR-05, SCR-34, FEAT-019) và T3 kiểm đếm (SCR-07, FEAT-020):
 # Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
@@ -70,6 +70,7 @@ page_js = {
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
+		"public/js/station_t3.js",
 	]
 }
 
@@ -320,6 +321,19 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
 tracecore_after_wash_failed = []
+# M2 (FEAT-020, A-35) kiểm đếm tại T3:
+#  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
+#                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)
+#  - assembly_nc:      (ctx {assembly, set_unit, kind, items}) -> None, khi bản nháp lần đầu có dòng thiếu hoặc quét
+#                      dụng cụ lạ (FEAT-030 tạo Incident CAPA thật, idempotent theo assembly)
+#  - after_assembly:   (ctx {assembly, set_unit, result, branch, branch_reason, station, shortage, damaged}) -> None,
+#                      sau khi ghi sổ (dụng cụ hỏng sang Sửa chữa/Thanh lý ở M1/FEAT-032)
+tracecore_assembly_context = [
+	"tracecore.instrument.bom.pack_context",
+	"tracecore.par.check.pack_context",
+]
+tracecore_assembly_nc = []
+tracecore_after_assembly = []
 
 # Scheduled Tasks
 # ---------------
