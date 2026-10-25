@@ -69,6 +69,36 @@ def passed_today(equipment, test_type):
 	return result == "Pass"
 
 
+# chỉ thị của mẻ (T5b) lấy được từ test hằng ngày cùng tên (A-23): Bowie-Dick chạy mỗi sáng trên máy hấp
+DAILY_INDICATORS = ("bowie_dick",)
+
+
+def load_indicator(equipment, indicator, on=None):
+	"""Hook ``tracecore_load_daily_indicator`` (A-23): lần ghi mới nhất trong ngày `on` của test hằng ngày ứng với chỉ thị.
+
+	Trả ``{"daily_test", "result", "test_date", "tested_at", "tested_by"}`` hoặc None (chỉ thị không lấy từ test hằng
+	ngày, hoặc máy chưa có test đó trong ngày).
+	"""
+	if indicator not in DAILY_INDICATORS or not equipment:
+		return None
+	row = frappe.db.get_value(
+		"Daily Test",
+		{"equipment": equipment, "test_type": indicator, "test_date": getdate(on or today())},
+		["name", "result", "test_date", "tested_at", "tested_by"],
+		as_dict=True,
+		order_by="creation desc, name desc",
+	)
+	if not row:
+		return None
+	return {
+		"daily_test": row.name,
+		"result": row.result,
+		"test_date": str(row.test_date),
+		"tested_at": str(row.tested_at) if row.tested_at else None,
+		"tested_by": row.tested_by,
+	}
+
+
 def missing_tests(equipment, equipment_type):
 	return [test for test in required_tests(equipment_type) if not passed_today(equipment, test)]
 

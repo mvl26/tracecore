@@ -633,6 +633,23 @@ class T5Release {
 
 	indicatorHtml(kind, state) {
 		const draft = this.indicator[kind] || {};
+		const badge = `<span class="tc-badge${
+			state === "Pass" ? " tc-badge-g" : state === "Fail" ? " tc-badge-r" : ""
+		}">${esc(this.statusText(state))}</span>`;
+		// A-23: chỉ thị đã có từ test hằng ngày của máy (Bowie-Dick) và chưa ghi theo mẻ: chỉ hiển thị, không ghi lại
+		const daily = (this.ctx.daily_indicators || {})[kind];
+		const recorded = (this.ctx.indicator_rows || []).some((row) => row.indicator === kind);
+		if (daily && !recorded) {
+			const [year, month, day] = String(daily.test_date || "").split("-");
+			return `<section class="tc-t4-block">
+				<h3>${esc(t5IndicatorLabel(kind))} ${badge}</h3>
+				<p class="tc-t6-hint">${esc(
+					__("From the daily test of {0}: no need to record it again.", [
+						`${day}/${month}/${year}`,
+					])
+				)}</p>
+			</section>`;
+		}
 		let fields = "";
 		if (kind === "bowie_dick") {
 			fields = `<div class="tc-field"><label>${esc(__("Test date"))}
@@ -652,10 +669,7 @@ class T5Release {
 		const choose =
 			kind === "biological" ? "" : this.passFail("t5b-ind-result", kind, draft.result);
 		return `<section class="tc-t4-block">
-			<h3>${esc(t5IndicatorLabel(kind))}
-				<span class="tc-badge${
-					state === "Pass" ? " tc-badge-g" : state === "Fail" ? " tc-badge-r" : ""
-				}">${esc(this.statusText(state))}</span></h3>
+			<h3>${esc(t5IndicatorLabel(kind))} ${badge}</h3>
 			${choose}${fields}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-record-ind" data-kind="${kind}">${esc(
 			kind === "biological" ? __("Start incubation") : __("Record indicator")

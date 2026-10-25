@@ -36,6 +36,7 @@ AFTER_RELEASE_HOOK = "tracecore_after_release"  # M1 (FEAT-014): +1 bộ đếm 
 AFTER_LOAD_RELEASE_HOOK = "tracecore_after_load_release"  # M6/M7 (FEAT-042/046) tiêu hao và chi phí mẻ
 AFTER_LOAD_FAILED_HOOK = "tracecore_after_load_failed"  # FEAT-030 NC mẻ không đạt
 BI_POSITIVE_HOOK = "tracecore_bi_positive"  # FEAT-029 thu hồi, FEAT-010 thông báo
+DAILY_INDICATOR_HOOK = "tracecore_load_daily_indicator"  # M5 (FEAT-040, A-23): Bowie-Dick từ test hằng ngày
 
 
 def _blocked(code, title, reason, action, items=None):
@@ -79,26 +80,46 @@ def _status_of(kind, rows, packs):
 	return "Missing"
 
 
-def _indicator_state(doc, machine):
+def _daily_indicators(doc, machine):
+	"""Chỉ thị bắt buộc lấy được từ test hằng ngày của máy trong ngày chạy mẻ (A-23), qua hook của M5 (M2 không import M5).
+
+	``{kind: {"daily_test", "result", "test_date", "tested_at", "tested_by"}}``; chỉ thị không có test hằng ngày thì vắng.
+	"""
+	on = getdate(doc.started_at) if doc.started_at else getdate(today())
+	daily = {}
+	for kind in required_indicators(machine):
+		found = [row for row in extension.run(DAILY_INDICATOR_HOOK, doc.equipment, kind, on) if row]
+		if found:
+			daily[kind] = found[0]
+	return daily
+
+
+def _indicator_state(doc, machine, daily=None):
+	"""Trạng thái từng chỉ thị; kết quả ghi theo mẻ thắng, chưa ghi thì lấy test hằng ngày của máy (A-23)."""
 	rows = _rows(doc.name)
 	packs = [row.pack for row in doc.packs]
 	kinds = [*required_indicators(machine), *([BIOLOGICAL] if cint(doc.requires_bi) else [])]
-	return {
-		kind: (
-			"Pending" if kind == BIOLOGICAL and doc.bi_result == "Pending" else _status_of(kind, rows, packs)
-		)
-		for kind in kinds
-	}
+	state = {}
+	for kind in kinds:
+		if kind == BIOLOGICAL and doc.bi_result == "Pending":
+			state[kind] = "Pending"
+			continue
+		state[kind] = _status_of(kind, rows, packs)
+		if state[kind] == "Missing" and kind in (daily or {}) and daily[kind]["result"] in RESULTS:
+			state[kind] = daily[kind]["result"]
+	return state
 
 
 def context(load, equipment_raw, load_raw, station):
 	"""Màn dỡ mẻ sau khi quét QR máy và QR mẻ: thẻ mẻ, chỉ thị đã ghi, trạng thái từng chỉ thị và điều kiện còn thiếu."""
 	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station)
-	state = _indicator_state(doc, machine)
+	daily = _daily_indicators(doc, machine)
+	state = _indicator_state(doc, machine, daily)
 	return {
 		**sterilizing._describe(doc),
 		"cycle_result": doc.cycle_result or None,
 		"indicator_state": state,
+		"daily_indicators": daily,
 		"indicator_rows": _rows(doc.name),
 		"missing": _missing(doc, state, review_confirmed=bool(cint(doc.review_confirmed))),
 	}
@@ -310,7 +331,8 @@ def _release(
 			_("Enter the cycle data and confirm it, then record the result."),
 			items=[_("cycle data")],
 		)
-	state = _indicator_state(doc, machine)
+	daily = _daily_indicators(doc, machine)
+	state = _indicator_state(doc, machine, daily)
 	missing = _missing(doc, state, bool(cint(review_confirmed)))
 	if missing:
 		failed = doc.cycle_result == "Fail" or "Fail" in state.values()
@@ -327,6 +349,7 @@ def _release(
 		)
 	approver, emergency = _approver(session, pin_proof, emergency_reason)
 	employee = _employee(approver)
+	_keep_daily_indicators(doc, daily, station)
 	needs_bi = cint(doc.requires_bi) and state.get(BIOLOGICAL) != "Pass" and not emergency
 	doc.review_confirmed = 1 if cint(doc.needs_review) else 0
 	if emergency:
@@ -342,6 +365,30 @@ def _release(
 	if needs_bi:
 		return _quarantine(doc, station, employee)
 	return _finalize(doc, station, client_ts, employee, emergency)
+
+
+def _keep_daily_indicators(doc, daily, station):
+	"""Lúc giải phóng, chỉ thị lấy từ test hằng ngày được ghi lại thành Load Indicator Result của mẻ (A-23): hồ sơ mẻ
+	giữ đúng kết quả đã dùng để giải phóng, kể cả khi sau đó máy có thêm lần test trong ngày."""
+	recorded = {row.indicator for row in _rows(doc.name)}
+	for kind, row in daily.items():
+		if kind in recorded:
+			continue
+		result = frappe.get_doc(
+			{
+				"doctype": "Load Indicator Result",
+				"load": doc.name,
+				"indicator": kind,
+				"result": row["result"],
+				"test_date": row["test_date"],
+				"read_at": row.get("tested_at") or now_datetime(),
+				"read_by": row.get("tested_by"),
+				"recorded_by_user": frappe.session.user,
+				"station": station,
+			}
+		)
+		result.flags.tc_releasing = True
+		result.insert(ignore_permissions=True)
 
 
 def _quarantine(doc, station, employee):

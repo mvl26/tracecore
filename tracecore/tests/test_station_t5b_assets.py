@@ -36,6 +36,12 @@ class TestStationT5bAssets(FrappeTestCase):
 		self.assertTrue(sources)
 		self.assertEqual([text for text in sources if text not in translated], [])
 
+	def test_indicator_from_daily_test_is_shown_without_record_buttons(self):
+		# A-23: Bowie-Dick đã có từ test hằng ngày của máy thì chỉ hiển thị kết quả và ngày thử, không bắt chọn/ghi lại
+		script = _read(*T5B_JS)
+		self.assertIn("ctx.daily_indicators", script)
+		self.assertIn("From the daily test of {0}: no need to record it again.", script)
+
 	def test_no_hard_coded_colours_or_pixels_and_no_hover_only_ui(self):
 		script = _read(*T5B_JS)
 		self.assertIsNone(re.search(r"(?<![&\w])#[0-9a-fA-F]{3,8}\b", script))
