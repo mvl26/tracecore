@@ -108,6 +108,14 @@ class TestReceivingOpen(ReceivingCase):
 		self.assertIn(self.department, names)
 		self.assertNotIn(make_department("Test operating room") + "x", names)
 
+	def test_departments_lists_only_tracecore_wards(self):
+		# A-22: phòng ban ERPNext (Accounts, Sales…) không phải khoa giao đồ bẩn; chỉ khoa đánh dấu dùng TraceCore
+		office = make_department("Phòng kế toán T1 test")
+		frappe.db.set_value("Department", office, "tc_is_ward", 0)
+		names = {row["name"] for row in receiving.departments()}
+		self.assertIn(self.department, names)
+		self.assertNotIn(office, names)
+
 	def test_blocked_error_carries_result_reason_action(self):
 		with self.assertRaises(BlockedError) as caught:
 			self.open("NOT-A-CARD")

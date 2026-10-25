@@ -411,6 +411,7 @@ T5_KEYS = {
 	"pack_plasma",
 	"pack_no_t4",
 	"load_running",
+	"machine_running",
 }
 
 
@@ -444,7 +445,11 @@ class TestT5DemoData(FrappeTestCase):
 			frappe.db.get_value("Process Program", first["program"], "equipment"), first["machine"]
 		)
 		load = frappe.get_doc("Sterilization Load", first["load_running"])
-		self.assertEqual((load.status, load.equipment, load.docstatus), ("Running", first["machine"], 0))
+		self.assertEqual(
+			(load.status, load.equipment, load.docstatus), ("Running", first["machine_running"], 0)
+		)
+		# máy dùng cho test nạp không có mẻ đang chạy (A-22)
+		self.assertIsNone(sterilizing.check_equipment_ready(first["machine"]))
 
 	def test_t5_demo_refused_outside_developer_or_test_site(self):
 		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))

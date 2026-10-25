@@ -199,7 +199,10 @@ class TestLoadApi(LoadApiCase):
 
 	def test_complete_with_new_key_for_same_packs_rejected(self):
 		pack = make_load_ready_pack()
-		self.complete([pack.name])
+		first = self.complete([pack.name])["load"]
+		frappe.db.set_value(
+			"Sterilization Load", first, "status", "Cycle Complete"
+		)  # máy nạp tiếp được (A-22)
 		result = self.complete([pack.name])
 		self.assert_rejection(result, "LOAD_EMPTY", 422)
 		self.assertEqual(result["error"]["items"][0]["code"], "PACK_IN_OTHER_LOAD")
@@ -248,8 +251,10 @@ class TestLoadApi(LoadApiCase):
 		for role in ("TC R05", "TC R02"):
 			pack = make_load_ready_pack()
 			self.as_user(f"load-{role[-3:].lower()}@test.local", (role,))
-			self.assertIs(self.complete([pack.name])["ok"], True, msg=role)
+			done = self.complete([pack.name])
+			self.assertIs(done["ok"], True, msg=role)
 			frappe.set_user("Administrator")
+			frappe.db.set_value("Sterilization Load", done["load"], "status", "Cycle Complete")  # A-22
 		pack = make_load_ready_pack()
 		self.as_user("load-r03@test.local", ("TC R03",))
 		before = counts()

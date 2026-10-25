@@ -79,9 +79,13 @@ def make_department(department_name=TEST_DEPARTMENT):
 	"""
 	existing = frappe.db.get_value("Department", {"department_name": department_name}, "name")
 	if existing:
+		if not frappe.db.get_value("Department", existing, "tc_is_ward"):
+			frappe.db.set_value("Department", existing, "tc_is_ward", 1)  # khoa dùng TraceCore (A-22)
 		return existing
 	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
-	doc = frappe.get_doc({"doctype": "Department", "department_name": department_name, "company": company})
+	doc = frappe.get_doc(
+		{"doctype": "Department", "department_name": department_name, "company": company, "tc_is_ward": 1}
+	)
 	doc.flags.ignore_mandatory = not company
 	return doc.insert(ignore_permissions=True).name
 
