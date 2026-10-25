@@ -1,13 +1,21 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.core import code_registry, gs1
+from tracecore.core import code_registry, gs1, step_gate
 from tracecore.tests.factories import make_set_type, make_set_unit
 from tracecore.tests.utils import bru
 
-# Department (ERPNext) kéo theo test record Company → Warehouse, cần ERPNext đã chạy Setup Wizard;
-# test Set Unit không dùng department nên bỏ phụ thuộc này (site CI mới chưa có wizard).
-test_ignore = ["Department"]
+# Set Unit liên kết Department, Instrument Set Type (→ Item) và User (tag_verified_by): các bản ghi ERPNext/HRMS kéo
+# theo test record Company → Warehouse… cần Setup Wizard (site CI mới chưa có); dữ liệu test tạo qua factories.
+test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
+
+
+def _issue_doc(values):
+	"""Set Unit mới đi đúng đường cấp của `set_units.issue_batch` (cờ cấp + khởi tạo vòng đời ở step gate)."""
+	doc = frappe.get_doc({"doctype": "Set Unit", **values})
+	doc.flags.tc_set_issue = True
+	step_gate.init_unit(doc)
+	return doc
 
 
 def _audit_rows(set_unit, action):
@@ -30,9 +38,8 @@ class TestSetUnit(FrappeTestCase):
 
 	@bru("BRU-ID-001")
 	def test_user_supplied_name_ignored(self):
-		su = frappe.get_doc(
+		su = _issue_doc(
 			{
-				"doctype": "Set Unit",
 				"name": "MY-OWN-ID",
 				"set_id": "MY-OWN-ID",
 				"set_type": make_set_type("SUT").name,
@@ -46,9 +53,8 @@ class TestSetUnit(FrappeTestCase):
 	def test_user_supplied_name_ignored_during_import(self):
 		frappe.flags.in_import = True
 		try:
-			su = frappe.get_doc(
+			su = _issue_doc(
 				{
-					"doctype": "Set Unit",
 					"name": "MY-IMPORT-ID",
 					"set_type": make_set_type("SUT").name,
 					"max_cycles": 100,

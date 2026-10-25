@@ -1041,3 +1041,130 @@ body.tc-kiosk .layout-main-section {
 	flex-direction: column;
 	align-items: stretch;
 }
+/* ---- Màn T3 kiểm đếm lắp ráp (SCR-07, public/js/station_t3.js); dùng lại khối, thẻ dụng cụ, gate, chip của T4 ---- */
+
+.tc-t3 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-12);
+}
+
+.tc-t3 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t3 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t3 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t3 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-t3 .tc-ins {
+	align-items: flex-start;
+	cursor: default;
+}
+
+.tc-ins.is-short,
+.tc-t3 .tc-ins.is-short {
+	background: var(--tc-fail-tint);
+	border-color: var(--tc-fail);
+}
+
+.tc-ins.is-short .tc-ins-state {
+	color: var(--tc-fail-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t3 .tc-ins.is-over {
+	background: var(--tc-warn-tint);
+	border-color: var(--tc-warn);
+}
+
+.tc-t3 .tc-ins.is-over .tc-ins-state {
+	color: var(--tc-warn-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t3-qty {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-sp-2);
+}
+
+.tc-t3-count {
+	min-width: var(--tc-touch-min);
+	color: var(--tc-text-heading);
+	font-size: var(--tc-fs-lg);
+	text-align: center;
+}
+
+.tc-t3-lock {
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-thick) solid var(--tc-neutral-fill);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-t3-lock p {
+	margin: 0;
+}
+/* ---- Màn T1 tiếp nhận (SCR-05, SCR-34, public/js/station_t1.js); dùng lại khối, BOM, bảng và ô nhập của T4/T2 ---- */
+
+.tc-t1 {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	padding-bottom: var(--tc-sp-22);
+}
+
+.tc-t1 [data-region="notice"] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+}
+
+.tc-t1 [data-region="notice"]:empty {
+	display: none;
+}
+
+.tc-t1 h3 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-sub);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t1 p {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+/* ảnh bộ đã xếp và lưới dụng cụ xếp chồng khi màn hẹp (PDA), cạnh nhau khi màn rộng (STN) */
+.tc-t1 .tc-bom.has-tray {
+	grid-template-columns: repeat(auto-fit, minmax(var(--tc-photo-big), 1fr));
+}
+
+.tc-t1 .tc-t4-block > .tc-alert + .tc-alert {
+	margin-top: var(--tc-sp-3);
+}
+
+.tc-t1 .tc-t2-table td .tc-btn {
+	min-height: var(--tc-touch-min);
+}
+
+.tc-t1 .tc-t2-table td {
+	overflow-wrap: anywhere;
+}

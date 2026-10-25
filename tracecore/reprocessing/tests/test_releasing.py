@@ -181,10 +181,9 @@ class TestRelease(ReleaseCase):
 		self.assertTrue(doc.released_at and doc.released_by)
 		release_hooks = [c.args[1] for c in run.call_args_list if c.args[0] == "tracecore_after_release"]
 		self.assertCountEqual([c["cycle_id"] for c in release_hooks], [p.name for p in self.packs])
-		self.assertEqual(
-			sorted(c.args[0] for c in run.call_args_list if c.args[0] != "tracecore_after_release"),
-			["tracecore_after_load_release"],
-		)
+		# chỉ xét hook của mẻ: hook trạng thái bộ của step_gate (FEAT-016) cũng đi qua extension.run
+		load_hooks = [c.args[0] for c in run.call_args_list if c.args[0].startswith("tracecore_after_load_")]
+		self.assertEqual(load_hooks, ["tracecore_after_load_release"])
 
 	def test_release_second_time_is_blocked_and_counts_once(self):
 		self.ready()

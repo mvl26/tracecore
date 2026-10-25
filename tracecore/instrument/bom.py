@@ -86,6 +86,21 @@ def pack_context(ctx):
 	}
 
 
+def receipt_context(ctx):
+	"""Hook ``tracecore_receipt_context`` (FEAT-019, A-32): BOM áp dụng và ảnh khay tại ngày tiếp nhận cho màn T1.
+
+	``ctx = {"set_unit", "set_type" (mã loại bộ), "on"}``; ``on`` là giờ hệ thống như hợp đồng của
+	``bom_versions.pin_cycle_version`` (cùng phiên bản mà ``step_gate.start_cycle`` sẽ ghim lúc ghi sổ phiếu). Chỉ đọc.
+	Trả ``{"bom_version": int, "bom": [dòng của payload()], "tray_images": [{position, image_url, thumbnail_url, etag}]}``;
+	loại bộ chưa có dòng BOM nào → phiên bản 0, danh sách rỗng.
+	"""
+	version = bom_versions.pin_cycle_version(ctx)
+	if not version:
+		return {"bom_version": 0, "bom": [], "tray_images": []}
+	data = payload(ctx["set_type"], version)
+	return {"bom_version": data["bom_version"], "bom": data["lines"], "tray_images": data["tray_images"]}
+
+
 # --- Đọc BOM cho trạm: payload, etag, cache (FEAT-015 S11) -------------------------------------------------------
 
 

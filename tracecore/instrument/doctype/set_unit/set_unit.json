@@ -5,6 +5,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "tab_info",
+  "summary_html",
+  "section_identity",
   "set_id",
   "set_type",
   "department",
@@ -17,9 +20,32 @@
   "cycle_bom_version",
   "section_cycles",
   "cycles_used",
-  "max_cycles"
+  "max_cycles",
+  "cycles_source",
+  "tab_details",
+  "section_tag",
+  "tag_verified_on",
+  "tag_verified_by",
+  "tag_html",
+  "tab_history",
+  "history_html"
  ],
  "fields": [
+  {
+   "fieldname": "tab_info",
+   "fieldtype": "Tab Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "summary_html",
+   "fieldtype": "HTML",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "section_identity",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
   {
    "fieldname": "set_id",
    "fieldtype": "Data",
@@ -111,18 +137,65 @@
    "fieldtype": "Int",
    "label": "Max Cycles",
    "reqd": 1
+  },
+  {
+   "default": "System",
+   "description": "System: counted by the system since issue. Estimate: a set already in circulation when its Set ID was issued; Cycles Used started from an estimate whose reason is in the Audit Log (UC-03 A1).",
+   "fieldname": "cycles_source",
+   "fieldtype": "Select",
+   "label": "Cycles Source",
+   "options": "System\nEstimate",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "tab_details",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "section_tag",
+   "fieldtype": "Section Break",
+   "label": "Tag"
+  },
+  {
+   "fieldname": "tag_verified_on",
+   "fieldtype": "Datetime",
+   "label": "Tag Verified On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tag_verified_by",
+   "fieldtype": "Link",
+   "label": "Tag Verified By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tag_html",
+   "fieldtype": "HTML",
+   "label": "Tag and Tray Label"
+  },
+  {
+   "fieldname": "tab_history",
+   "fieldtype": "Tab Break",
+   "label": "History"
+  },
+  {
+   "fieldname": "history_html",
+   "fieldtype": "HTML",
+   "label": "Lifecycle History"
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 10:00:00.000000",
+ "modified": "2026-10-24 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
    "read": 1,
    "report": 1,
    "role": "System Manager",
