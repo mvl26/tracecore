@@ -39,7 +39,13 @@
   "cycle_result",
   "result_source",
   "released_by",
-  "released_at"
+  "released_at",
+  "section_release",
+  "review_confirmed",
+  "bi_result",
+  "column_break_release",
+  "redo_from",
+  "release_reason"
  ],
  "fields": [
   {
@@ -267,12 +273,51 @@
    "fieldtype": "Datetime",
    "label": "Released At",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_release",
+   "fieldtype": "Section Break",
+   "label": "Release"
+  },
+  {
+   "fieldname": "review_confirmed",
+   "fieldtype": "Check",
+   "label": "Review Confirmed",
+   "read_only": 1,
+   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3)."
+  },
+  {
+   "fieldname": "bi_result",
+   "fieldtype": "Select",
+   "label": "Biological Indicator Result",
+   "options": "\nPending\nPass\nFail",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_release",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "redo_from",
+   "fieldtype": "Select",
+   "label": "Redo From",
+   "options": "\nT4\nT2",
+   "read_only": 1,
+   "description": "Step the sets of a failed load restart from (default T4)."
+  },
+  {
+   "fieldname": "release_reason",
+   "fieldtype": "Small Text",
+   "label": "Release or Rejection Reason",
+   "read_only": 1,
+   "allow_on_submit": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-23 10:00:00.000000",
+ "modified": "2026-10-25 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterilization Load",
