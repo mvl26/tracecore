@@ -6,6 +6,8 @@
 
 ## Revision History
 
+> **Amendment A-35 (2026-10-25, người dùng duyệt thiết kế trong chat):** WEB quản trị chuyển sang Vue 3 + TypeScript + Vite SPA tại `/tracecore/*`, build và phục vụ cùng app TraceCore; dùng session/2FA/permission/API của Frappe. Quyết định này thay thế giới hạn “không SPA riêng” của C-02/ADR-002 **chỉ cho WEB quản trị** và quy định Desk-only tương ứng trong design/UX/implementation-plan; STN/PDA/Portal giữ kiến trúc hiện tại. Desk dành cho tài khoản kỹ thuật có quyền rõ ràng, giữ ngoại lệ route trạm. Triển khai theo giai đoạn, rollout có kiểm soát; chi tiết và phạm vi tại [TraceCore Admin design](tracecore-admin-design.md). Văn bản cụ thể đang chờ người dùng review trước kế hoạch triển khai.
+
 | Ngày | Phiên bản | Người thực hiện | Thay đổi |
 | --- | --- | --- | --- |
 | 2026-10-19 | Amendment A-01 | Miyano (dev) + Claude Code, chủ đầu tư duyệt | Tên module Frappe: `Core` (frappe) và `HR` (hrms) đã là Module Def có sẵn, không đăng ký trùng được. Dịch vụ `core` ở package Python `tracecore/core/`; DocType nền (Audit Log, Code Registry, Idempotency Key, Print Job) ở module `TraceCore`; Zone Station ở `Admin Reports`; Page `station` ở `UI`; M4 chưa đăng ký Module Def. Xem ghi chú ở §5.2 và §5.3. |
