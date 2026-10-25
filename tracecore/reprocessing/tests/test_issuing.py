@@ -92,6 +92,14 @@ class TestCreate(IssuingCase):
 		names = [row["name"] for row in issuing.departments()]
 		self.assertIn(self.dept, names)
 
+	def test_departments_lists_only_tracecore_wards(self):
+		# A-22: phòng ban ERPNext (Accounts, Sales…) không phải khoa nhận cấp phát; chỉ khoa đánh dấu dùng TraceCore
+		office = make_department("Phòng kế toán T7 test")
+		frappe.db.set_value("Department", office, "tc_is_ward", 0)
+		names = [row["name"] for row in issuing.departments()]
+		self.assertIn(self.dept, names)
+		self.assertNotIn(office, names)
+
 
 class TestAddPack(IssuingCase):
 	@bru("BRU-FLOW-002")

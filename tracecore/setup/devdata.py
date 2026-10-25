@@ -1334,6 +1334,7 @@ T5_SERIALS = {
 	"machine": "DEMO-T5-STEAM-01",
 	"machine_plasma": "DEMO-T5-PLASMA-01",
 	"machine_locked": "DEMO-T5-STEAM-LOCK",
+	"machine_running": "DEMO-T5-STEAM-RUN",
 }
 T5_CAPACITY = "12"  # số gói tối đa mỗi mẻ (A-16 Q4)
 T5_PARAMETERS = [
@@ -1412,7 +1413,8 @@ def ensure_t5_demo():
 	  chương trình của hai máy đầu (có tham số cho form nhập tay).
 	- ``packs``: 3 gói hơi nước (Cycle ID) đã qua T4, chưa ở mẻ nào; ``pack_plasma``: gói plasma (vào máy hấp bị
 	  ``PACK_INCOMPATIBLE``); ``pack_no_t4``: gói hơi nước mà bộ chưa qua cổng T4.
-	- ``load_running``: một mẻ ``Running`` trên ``machine`` (để thử nhập dữ liệu chu trình).
+	- ``load_running``: một mẻ ``Running`` trên ``machine_running`` (máy hấp riêng, để thử nhập dữ liệu chu trình):
+	  máy còn mẻ chưa xong chu trình thì không nạp mẻ mới (A-22), nên ``machine`` để trống cho test nạp.
 	Gói đã nạp/mẻ đã nhập dữ liệu được thay bằng gói/mẻ mới khi gọi lại.
 	"""
 	_require_dev_site()
@@ -1425,6 +1427,9 @@ def ensure_t5_demo():
 	locked = _t5_machine("machine_locked", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
 	if frappe.db.get_value("Equipment", locked, "status") != "Retired":
 		equipment_status.set_status(locked, "Retired", "Demo T5: sterilizer retired")
+	busy = _t5_machine(
+		"machine_running", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE", has_printout=1
+	)
 	program, program_plasma = _t5_program(machine), _t5_program(plasma)
 
 	for method in T5_SET_TYPES:
@@ -1438,19 +1443,20 @@ def ensure_t5_demo():
 
 	running = frappe.db.get_value(
 		"Sterilization Load",
-		{"equipment": machine, "status": "Running", "docstatus": 0},
+		{"equipment": busy, "status": "Running", "docstatus": 0},
 		"name",
 		order_by="creation asc",
 	)
 	if not running:
 		running = sterilizing.complete(
-			machine, program, [ready.pop()], T5_STATION, client_time.utc_now(), _t2_operator()
+			busy, _t5_program(busy), [ready.pop()], T5_STATION, client_time.utc_now(), _t2_operator()
 		)["load"]
 
 	result = {
 		"machine": machine,
 		"machine_plasma": plasma,
 		"machine_locked": locked,
+		"machine_running": busy,
 		"program": program,
 		"program_plasma": program_plasma,
 		"packs": ready[:T5_READY_PACKS],

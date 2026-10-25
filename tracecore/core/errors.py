@@ -190,6 +190,8 @@ HTTP_STATUS: dict[str, int] = {
 			"DAILY_TEST_REQUIRED",
 			"EQUIPMENT_INSPECTION_EXPIRED",
 			"UNLOCK_NOT_ALLOWED",
+			# A-22: máy tiệt khuẩn còn mẻ chưa xong chu trình
+			"EQUIPMENT_BUSY",
 			# FEAT-023 A-20: giải phóng mẻ và BI
 			"LOAD_NOT_RELEASABLE",
 			"BI_NOT_PENDING",

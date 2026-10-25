@@ -25,6 +25,7 @@ fixtures = [
 			["name", "like", "Stock Entry-tc_%"],
 			["name", "like", "Stock Entry Detail-tc_%"],
 			["name", "like", "Employee-tc_%"],
+			["name", "like", "Department-tc_%"],
 		],
 	},
 ]

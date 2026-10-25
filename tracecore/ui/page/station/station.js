@@ -72,6 +72,8 @@ class TraceCoreStation {
 		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
 		this.pending = null;
 		this.lastRaw = null;
+		this.pendingScans = []; // mã quét đến khi màn của bước đang chờ máy chủ: quét lại khi màn rảnh
+		this.scanTimer = null;
 		this.manualOffline = false;
 		this.visible = false;
 		this.session = null;
@@ -198,7 +200,9 @@ class TraceCoreStation {
 		this.listen(this.root, "click", (event) => {
 			const button = event.target.closest("[data-action]");
 			if (button) this.onAction(button.dataset.action, button);
-			setTimeout(() => this.focus(), 0);
+			// nút vừa bấm còn giữ focus (màn không chuyển focus sang ô nhập nào): trả focus về ô quét, để ký tự máy quét
+			// không rơi vào nút (Enter còn bấm lại nút)
+			setTimeout(() => this.focus(Boolean(button) && document.activeElement === button), 0);
 		});
 		this.listen(this.input, "blur", () => setTimeout(() => this.focus(), 150));
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
@@ -699,9 +703,47 @@ class TraceCoreStation {
 		this.root.querySelector(".tc-station-code").textContent = station.name;
 	}
 
+	// quét lần lượt các mã giữ lại khi màn của bước hết chờ máy chủ; đổi phiên hoặc chờ quá lâu thì bỏ hàng đợi
+	drainScans() {
+		if (this.scanTimer) return;
+		const version = this.sessionVersion;
+		const started = Date.now();
+		const tick = () => {
+			this.scanTimer = null;
+			if (version !== this.sessionVersion || !this.screen) {
+				this.pendingScans = [];
+				return;
+			}
+			if (this.screen.busy) {
+				if (Date.now() - started > 2 * RPC_TIMEOUT_MS) this.pendingScans = [];
+				else this.scanTimer = setTimeout(tick, 100);
+				return;
+			}
+			const next = this.pendingScans.shift();
+			if (!next) return;
+			Promise.resolve(this.screen.scan(next)).finally(() => {
+				if (this.pendingScans.length) this.drainScans();
+			});
+		};
+		this.scanTimer = setTimeout(tick, 100);
+	}
+
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
-		if (this.screen) return this.screen.scan(raw);
+		if (this.screen) {
+			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới
+			// cũng xếp sau các mã còn chờ để giữ đúng thứ tự quét)
+			const ownQueue = ["queue", "scanQueue", "queuedScan"].some(
+				(key) => key in this.screen
+			);
+			if ((this.screen.busy || this.pendingScans.length) && !ownQueue) {
+				const text = (raw || "").trim();
+				this.input.value = "";
+				if (text) this.pendingScans.push(text);
+				return this.drainScans();
+			}
+			return this.screen.scan(raw);
+		}
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.focus();

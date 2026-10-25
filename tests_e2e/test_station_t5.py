@@ -169,9 +169,12 @@ def test_t5_load_happy_path_within_three_taps(t5_page, t5_demo):
 
 
 def test_t5_complete_by_scanning_control_code(t5_page, t5_demo):
-	"""Quét ``HOAN-THANH-NAP`` cho cùng kết quả như bấm nút: dùng lại mẻ demo đã có để không tiêu thụ gói."""
+	"""Quét ``HOAN-THANH-NAP`` cho cùng kết quả như bấm nút: dùng lại mẻ demo đã có để không tiêu thụ gói.
+
+	Máy plasma: máy hấp ``machine`` đã có mẻ đang chạy từ test happy path (A-22: không nạp mẻ mới).
+	"""
 	page = t5_page
-	load_machine(page, t5_demo["machine"])
+	load_machine(page, t5_demo["machine_plasma"])
 	scan(page, "hoan-thanh-nap")
 	alert = page.locator(".tc-t5 .tc-alert-error")
 	expect(alert).to_contain_text("ít nhất 1 gói", timeout=15000)  # chưa có gói: nút bị chặn, không sinh mã
@@ -197,7 +200,7 @@ def test_t5_manual_data_requires_confirmation_card_and_photo(t5_page, t5_demo):
 	expect(page.locator(".tc-t5 .tc-alert-error")).to_contain_text("không khớp", timeout=15000)
 	expect(page.locator(".tc-t2-form")).to_have_count(0)
 	scan_settled(page, load)
-	scan_settled(page, t5_demo["machine"])
+	scan_settled(page, t5_demo["machine_running"])
 	form = page.locator(".tc-t2-form")
 	expect(form).to_be_visible(timeout=15000)
 	inputs = form.locator("input[data-param]")
@@ -225,7 +228,7 @@ def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
 	load = t5_demo["load_running"]
 	page.locator("[data-action='t5-mode'][data-mode='data']").click()
 	scan_settled(page, load)
-	scan_settled(page, t5_demo["machine"])
+	scan_settled(page, t5_demo["machine_running"])
 	form = page.locator(".tc-t2-form")
 	expect(form).to_be_visible(timeout=15000)
 	inputs = form.locator("input[data-param]")
@@ -248,7 +251,8 @@ def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
 
 def test_t5_offline_blocks_actions(t5_page, t5_demo):
 	page = t5_page
-	load_machine(page, t5_demo["machine"])
+	# máy hấp ``machine`` đã có mẻ đang chạy từ test happy path (A-22)
+	load_machine(page, t5_demo["machine_plasma"])
 	page.context.set_offline(True)
 	page.evaluate("window.dispatchEvent(new Event('offline'))")
 	expect(page.locator(".tc-t5")).to_contain_text("FEAT-009", timeout=15000)

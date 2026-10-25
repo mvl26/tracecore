@@ -361,3 +361,13 @@ class TestStationPage(FrappeTestCase):
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
 			source = re.sub(r"\s+", " ", handle.read())
 		self.assertIn('ZONE_LABEL[station.zone_type] || "Station", null, "Zone Station"', source)
+
+	def test_scans_while_screen_is_busy_are_kept_and_focus_leaves_the_clicked_button(self):
+		# mã quét đến khi màn đang chờ máy chủ được giữ lại và quét khi màn rảnh (màn T2, T4, T5, T5b, T6, T8, test hằng
+		# ngày không tự xếp hàng như T1/T3/T7); bấm nút xong mà nút còn giữ focus thì trả focus về ô quét, để ký tự máy
+		# quét không rơi vào nút (Enter còn bấm lại nút)
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("this.pendingScans.push(", source)
+		self.assertIn("drainScans() {", source)
+		self.assertIn("document.activeElement === button", source)

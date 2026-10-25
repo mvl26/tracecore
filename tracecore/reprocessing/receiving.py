@@ -102,10 +102,13 @@ def _current_draft(station, receiver):
 
 
 def departments():
-	"""Khoa chọn được khi người giao không có thẻ (FR-M2-01.7): khoa lá, chưa tắt, theo tên."""
+	"""Khoa chọn được khi người giao không có thẻ (FR-M2-01.7): khoa lá, chưa tắt, theo tên.
+
+	Chỉ khoa đánh dấu `tc_is_ward` (A-22): phòng ban mặc định của ERPNext (Accounts, Sales…) không phải khoa.
+	"""
 	return frappe.get_all(
 		"Department",
-		filters={"is_group": 0, "disabled": 0},
+		filters={"is_group": 0, "disabled": 0, "tc_is_ward": 1},
 		fields=["name", "department_name"],
 		order_by="department_name asc",
 	)

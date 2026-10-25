@@ -3350,3 +3350,8 @@ Status of the set when it was scanned.,Trạng thái của bộ lúc quét.,Dirt
 Voided Cycle ID,Cycle ID đã hủy,Dirty Receipt Item
 BOM Quantity,Số lượng theo BOM,Dirty Receipt Confirm Line
 Quantity required by the BOM version in force.,Số lượng yêu cầu theo phiên bản BOM hiệu lực.,Dirty Receipt Confirm Line
+Sterilizer is still running a load,Máy tiệt khuẩn còn mẻ đang chạy,
+Load {0} on sterilizer {1} has no cycle data yet.,Mẻ {0} trên máy {1} chưa có dữ liệu chu trình.,
+"Enter the cycle data of load {0} first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} trước, rồi mới nạp máy này tiếp.",
+TraceCore Ward,Khoa dùng TraceCore,Department
+"Ward or unit that receives and returns instrument sets in TraceCore (T1, T7).","Khoa/đơn vị nhận và trả bộ dụng cụ trong TraceCore (T1, T7).",Department

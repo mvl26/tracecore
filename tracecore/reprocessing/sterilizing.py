@@ -73,8 +73,9 @@ def check_equipment_ready(equipment):
 	"""Block nếu `equipment` không dùng được để nạp mẻ, ngược lại None.
 
 	Thứ tự: không có máy → EQUIPMENT_NOT_FOUND; không phải máy hấp hơi nước/plasma → EQUIPMENT_NOT_STERILIZER; trạng thái
-	khác Sẵn sàng → EQUIPMENT_NOT_READY; rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định)
-	— hàm hook trả `Block` thì chặn (A-16, Q3).
+	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa xong chu trình (`Running`) → EQUIPMENT_BUSY (A-22: một máy chỉ
+	chạy một mẻ); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
+	thì chặn (A-16, Q3).
 	"""
 	row = frappe.db.get_value("Equipment", equipment, ["equipment_type", "status"], as_dict=True)
 	if not row:
@@ -99,6 +100,16 @@ def check_equipment_ready(equipment):
 			_("Sterilizer is not ready"),
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another sterilizer, or call R02 to check the daily test and the inspection."),
+		)
+	running = frappe.db.get_value(
+		"Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0}, "name"
+	)
+	if running:
+		return Block(
+			"EQUIPMENT_BUSY",
+			_("Sterilizer is still running a load"),
+			_("Load {0} on sterilizer {1} has no cycle data yet.").format(running, equipment),
+			_("Enter the cycle data of load {0} first, then load this sterilizer again.").format(running),
 		)
 	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
 		if isinstance(block, Block):

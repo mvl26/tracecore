@@ -164,7 +164,8 @@ class TestSterilizingRules(FrappeTestCase):
 
 	def test_admit_rejects_pack_in_other_load(self):
 		pack = make_load_ready_pack()
-		load = make_load(self.machine, self.program, [pack])
+		busy = make_sterilizer()  # mẻ ở máy khác: máy này còn mẻ Running thì không nạp được (A-22)
+		load = make_load(busy, make_sterilize_program(busy.name), [pack])
 		block = self.blocked(lambda: self.admit(pack), "PACK_IN_OTHER_LOAD")
 		self.assertIn(load.name, block.reason)
 

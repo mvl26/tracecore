@@ -162,6 +162,7 @@ T5_KEYS = (
 	"pack_plasma",
 	"pack_no_t4",
 	"load_running",
+	"machine_running",
 )
 
 
