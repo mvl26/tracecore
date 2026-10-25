@@ -13,7 +13,7 @@ STEP_ROLES = {
 	"T5": {"TC R05"},
 	"T5b": {"TC R02", "TC R05"},
 	"T6": {"TC R06"},
-	"T7": {"TC R07"},
+	"T7": {"TC R06"},  # SRS §2.3, FR-M2-15: cấp phát thuộc KTV kho vô khuẩn
 	"T8": {"TC R08"},
 }
 # T5b là chế độ "Dỡ mẻ" của màn T5 trên kiosk

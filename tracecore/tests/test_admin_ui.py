@@ -252,6 +252,21 @@ class TestAdminUIStations(FrappeTestCase):
 		query.assert_called_once()
 		self.assertEqual(query.call_args.kwargs["filters"]["station_step"], "T1")
 
+	def test_issue_station_t7_belongs_to_sterile_store_r06(self):
+		# SRS §2.3, FR-M2-15: cấp phát T7 do R06 (KTV kho vô khuẩn / cấp phát); R07 là đồ vải & chất thải
+		from tracecore.v1.navigation import context, station_links
+
+		rows = [frappe._dict(name="ZS-T7", zone_station_name="Cấp phát", station_step="T7")]
+		for role, visible in (("TC R06", True), ("TC R07", False)):
+			with (
+				patch("frappe.session", frappe._dict(user="operator@example.test")),
+				patch("frappe.get_roles", return_value=[role]),
+				patch("frappe.get_list", return_value=rows),
+				patch("frappe.has_permission", return_value=False),
+			):
+				self.assertEqual(bool(station_links("T7")), visible, role)
+				self.assertEqual([s["step"] for s in context()["stations"]], ["T7"] if visible else [], role)
+
 	def test_every_kiosk_step_is_marked_implemented(self):
 		from tracecore.v1.navigation import IMPLEMENTED_STEPS
 
