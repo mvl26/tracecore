@@ -1,0 +1,102 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.11.0
+2 info using node@v24.14.1
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:D:\tracecore\frontend\.npmrc
+5 silly config load:file:C:\Users\Admin\.npmrc
+6 silly config load:file:C:\Users\Admin\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install
+8 verbose argv "install" "--ignore-scripts" "--cache" "D:/tracecore/frontend/.npm-cache" "--fetch-retries" "0"
+9 verbose logfile logs-max:10 dir:D:\tracecore\frontend\.npm-cache\_logs\2026-10-24T03_29_05_596Z-
+10 verbose logfile D:\tracecore\frontend\.npm-cache\_logs\2026-10-24T03_29_05_596Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with EACCES
+14 silly idealTree buildDeps
+15 silly fetch manifest react@18.3.1
+16 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+17 http fetch GET https://registry.npmjs.org/react attempt 1 failed with EACCES
+18 silly fetch manifest react-dom@18.3.1
+19 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+20 http fetch GET https://registry.npmjs.org/react-dom attempt 1 failed with EACCES
+21 silly fetch manifest react-router-dom@6.30.1
+22 silly packumentCache full:https://registry.npmjs.org/react-router-dom cache-miss
+23 http fetch GET https://registry.npmjs.org/react-router-dom attempt 1 failed with EACCES
+24 silly fetch manifest @testing-library/jest-dom@6.6.3
+25 silly packumentCache full:https://registry.npmjs.org/@testing-library%2fjest-dom cache-miss
+26 http fetch GET https://registry.npmjs.org/@testing-library%2fjest-dom attempt 1 failed with EACCES
+27 silly fetch manifest @testing-library/react@16.1.0
+28 silly packumentCache full:https://registry.npmjs.org/@testing-library%2freact cache-miss
+29 http fetch GET https://registry.npmjs.org/@testing-library%2freact attempt 1 failed with EACCES
+30 silly fetch manifest @testing-library/user-event@14.5.2
+31 silly packumentCache full:https://registry.npmjs.org/@testing-library%2fuser-event cache-miss
+32 http fetch GET https://registry.npmjs.org/@testing-library%2fuser-event attempt 1 failed with EACCES
+33 silly fetch manifest @types/react@18.3.18
+34 silly packumentCache full:https://registry.npmjs.org/@types%2freact cache-miss
+35 http fetch GET https://registry.npmjs.org/@types%2freact attempt 1 failed with EACCES
+36 silly fetch manifest @types/react-dom@18.3.5
+37 silly packumentCache full:https://registry.npmjs.org/@types%2freact-dom cache-miss
+38 http fetch GET https://registry.npmjs.org/@types%2freact-dom attempt 1 failed with EACCES
+39 silly fetch manifest jsdom@25.0.1
+40 silly packumentCache full:https://registry.npmjs.org/jsdom cache-miss
+41 http fetch GET https://registry.npmjs.org/jsdom attempt 1 failed with EACCES
+42 silly fetch manifest typescript@5.7.3
+43 silly packumentCache full:https://registry.npmjs.org/typescript cache-miss
+44 http fetch GET https://registry.npmjs.org/typescript attempt 1 failed with EACCES
+45 silly fetch manifest vite@5.4.21
+46 silly packumentCache full:https://registry.npmjs.org/vite cache-miss
+47 http fetch GET https://registry.npmjs.org/vite attempt 1 failed with EACCES
+48 silly fetch manifest vitest@2.1.9
+49 silly packumentCache full:https://registry.npmjs.org/vitest cache-miss
+50 http fetch GET https://registry.npmjs.org/vitest attempt 1 failed with EACCES
+51 silly placeDep ROOT @testing-library/jest-dom@ OK for: tracecore-home@0.1.0 want: 6.6.3
+52 silly placeDep ROOT @testing-library/react@ OK for: tracecore-home@0.1.0 want: 16.1.0
+53 silly placeDep ROOT @testing-library/user-event@ OK for: tracecore-home@0.1.0 want: 14.5.2
+54 silly placeDep ROOT @types/react@ OK for: tracecore-home@0.1.0 want: 18.3.18
+55 silly placeDep ROOT @types/react-dom@ OK for: tracecore-home@0.1.0 want: 18.3.5
+56 silly placeDep ROOT jsdom@ OK for: tracecore-home@0.1.0 want: 25.0.1
+57 silly placeDep ROOT react@ OK for: tracecore-home@0.1.0 want: 18.3.1
+58 silly placeDep ROOT react-dom@ OK for: tracecore-home@0.1.0 want: 18.3.1
+59 silly placeDep ROOT react-router-dom@ OK for: tracecore-home@0.1.0 want: 6.30.1
+60 silly placeDep ROOT typescript@ OK for: tracecore-home@0.1.0 want: 5.7.3
+61 silly placeDep ROOT vite@ OK for: tracecore-home@0.1.0 want: 5.4.21
+62 silly placeDep ROOT vitest@ OK for: tracecore-home@0.1.0 want: 2.1.9
+63 verbose type system
+64 verbose stack FetchError: request to https://registry.npmjs.org/@testing-library%2fjest-dom failed, reason: 
+64 verbose stack     at ClientRequest.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+64 verbose stack     at ClientRequest.emit (node:events:508:28)
+64 verbose stack     at emitErrorEvent (node:_http_client:108:11)
+64 verbose stack     at _destroy (node:_http_client:963:9)
+64 verbose stack     at onSocketNT (node:_http_client:983:5)
+64 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:91:21)
+65 error code EACCES
+66 error errno EACCES
+67 error FetchError: request to https://registry.npmjs.org/@testing-library%2fjest-dom failed, reason: 
+67 error     at ClientRequest.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+67 error     at ClientRequest.emit (node:events:508:28)
+67 error     at emitErrorEvent (node:_http_client:108:11)
+67 error     at _destroy (node:_http_client:963:9)
+67 error     at onSocketNT (node:_http_client:983:5)
+67 error     at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+67 error   code: 'EACCES',
+67 error   errno: 'EACCES',
+67 error   type: 'system',
+67 error   requiredBy: '.'
+67 error }
+68 error
+68 error The operation was rejected by your operating system.
+68 error It's possible that the file was already in use (by a text editor or antivirus),
+68 error or that you lack permissions to access it.
+68 error
+68 error If you believe this might be a permissions issue, please double-check the
+68 error permissions of the file and its containing directories, or try running
+68 error the command again as root/Administrator.
+69 silly unfinished npm timer reify 1792812546143
+70 silly unfinished npm timer reify:loadTrees 1792812546145
+71 verbose cwd D:\tracecore\frontend
+72 verbose os Windows_NT 10.0.22631
+73 verbose node v24.14.1
+74 verbose npm  v11.11.0
+75 verbose exit 1
+76 verbose code 1
+77 error A complete log of this run can be found in: D:\tracecore\frontend\.npm-cache\_logs\2026-10-24T03_29_05_596Z-debug-0.log
