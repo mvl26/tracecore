@@ -68,6 +68,21 @@ class TestLauncher(FrappeTestCase):
 			dict.fromkeys(steps, True),
 		)
 
+	def test_sterile_storage_operator_sees_t6_and_t7(self):
+		# R06 là KTV kho vô khuẩn / cấp phát (SRS FR-M2-13, FR-M2-15; ISSUE_ROLES = STORAGE_ROLES), R07 là đồ vải
+		stations = [
+			frappe._dict(name="TR-006", station_step="T6", zone_station_name="Storage"),
+			frappe._dict(name="TR-007", station_step="T7", zone_station_name="Issuing"),
+		]
+		for roles, expected in ((["TC R06"], ["TR-006", "TR-007"]), (["TC R07"], [])):
+			with (
+				patch("frappe.session", frappe._dict(user="operator@example.test")),
+				patch("frappe.get_roles", return_value=roles),
+				patch("frappe.get_list", return_value=stations),
+			):
+				context = get_context()
+			self.assertEqual([s["name"] for s in context["stations"]], expected)
+
 	def test_unrelated_account_has_no_operational_choices(self):
 		with (
 			patch("frappe.session", frappe._dict(user="employee@example.test")),
