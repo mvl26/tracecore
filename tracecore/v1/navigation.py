@@ -14,7 +14,8 @@ STEP_ROLES = {
 	"T7": {"TC R07"},
 	"T8": {"TC R08"},
 }
-IMPLEMENTED_STEPS = {"T2", "T4", "T6", "T8"}
+# Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
+IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
 MANAGEMENT_TARGETS = ("Instrument", "Instrument Set Type", "Set Unit", "Pack", "Equipment", "Par Level")
 
 
