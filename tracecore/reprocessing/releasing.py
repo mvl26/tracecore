@@ -597,6 +597,10 @@ def _after_bi(doc, result, station, employee, client_ts):
 	if result == "Fail" and doc.status == RELEASED:
 		_bi_positive(doc, station, client_ts)
 		out["recall_needed"] = True
+		# lệnh thu hồi do hook tracecore_bi_positive lập (FEAT-029); None khi không còn gói nào phải thu
+		out["recall"] = frappe.db.get_value(
+			"Recall Order", {"sterilization_load": doc.name, "docstatus": 0}, "name"
+		)
 	return out
 
 

@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "creation": "2026-10-26 14:00:00.000000",
+ "description": "One pack of a Recall Order with what must be done for it (FEAT-029, FR-M2-20.1).",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "pack",
+  "set_unit",
+  "load",
+  "status_at_recall",
+  "action",
+  "department",
+  "usage_record",
+  "patient_code_masked",
+  "line_status",
+  "confirmed_by",
+  "confirmed_at",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Pack",
+   "options": "Pack",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "load",
+   "fieldtype": "Link",
+   "label": "Sterilization Load",
+   "options": "Sterilization Load",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_at_recall",
+   "fieldtype": "Data",
+   "label": "Pack Status at Recall",
+   "read_only": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Required Action",
+   "options": "Lock in Stock\nReturn from Department\nNotify Physician",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "usage_record",
+   "fieldtype": "Link",
+   "label": "Usage Record",
+   "options": "Usage Record",
+   "read_only": 1
+  },
+  {
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Patient Code (masked)",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "line_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Line Status",
+   "options": "Pending\nConfirmed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-26 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Recall Order Pack",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

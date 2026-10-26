@@ -241,6 +241,8 @@ doc_events = {
 	"Assembly Record": dict(_AUDIT_EVENTS),
 	# sự cố / NC / CAPA (FEAT-030, WF-06): chuyển trạng thái có old/new, không xóa (FR-M2-21.4)
 	"Incident CAPA": dict(_AUDIT_EVENTS),
+	# lệnh thu hồi (FEAT-029, WF-05): xác nhận từng gói có old/new, không xóa
+	"Recall Order": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
 	# mẻ tiệt khuẩn T5 (FEAT-022): tạo khi Hoàn thành nạp, cập nhật khi nhập tay dữ liệu chu trình
@@ -364,8 +366,12 @@ tracecore_after_load_complete = []
 #  - after_load_failed:   (ctx {load, equipment, program, sets, redo_from}) mẻ Không đạt (FEAT-030 NC)
 #  - bi_positive:         (ctx {load, equipment, packs[{cycle_id, set_unit, status}]}) BI dương tính (FEAT-029 thu hồi, FEAT-010 thông báo)
 tracecore_after_load_release = []
-tracecore_after_load_failed = ["tracecore.reprocessing.incidents.on_load_failed"]
-tracecore_bi_positive = []
+tracecore_after_load_failed = [
+	"tracecore.reprocessing.incidents.on_load_failed",
+	# FEAT-029: chỉ lập lệnh khi mẻ có gói đã giải phóng trở đi (sau NC để lệnh dùng lại NC của mẻ)
+	"tracecore.reprocessing.recall.on_load_failed",
+]
+tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
 #  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
 #                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)
@@ -388,6 +394,10 @@ scheduler_events = {
 		# đường in từ server (A-05 R1): gửi lại Print Job còn Queued của máy in có host
 		"* * * * *": [
 			"tracecore.core.print_server.dispatch_pending",
+		],
+		# FEAT-029, UC-14 E3: lệnh thu hồi chưa xác nhận quá 2 giờ → nhắc khoa và R01
+		"*/15 * * * *": [
+			"tracecore.reprocessing.recall.remind_pending",
 		],
 		# 00:00 giờ hệ thống (Asia/Ho_Chi_Minh): một khóa cron nên mọi việc nửa đêm nằm chung một danh sách
 		"0 0 * * *": [

@@ -70,6 +70,12 @@ class TestPermissionMatrix(FrappeTestCase):
 		self.assertTrue(any(r.get("write") for r in records))
 		self.assertFalse(any(r.get("create") for r in records))
 
+	def test_recall_order_has_no_create_flag_for_any_role(self):
+		"""FEAT-029 R2: lệnh thu hồi chỉ lập qua dịch vụ (nút trên mẻ, hook), không nhập tay trên Desk."""
+		records = [r for r in build_custom_docperms({"Recall Order"}) if r["parent"] == "Recall Order"]
+		self.assertTrue(any(r.get("read") for r in records))
+		self.assertFalse(any(r.get("create") for r in records))
+
 	def test_custom_docperm_fixture_matches_generator(self):
 		fixture_path = MATRIX_PATH.with_name("custom_docperm.json")
 		fixture = json.loads(fixture_path.read_text(encoding="utf-8"))

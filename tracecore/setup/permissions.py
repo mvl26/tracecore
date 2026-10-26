@@ -22,9 +22,10 @@ VALID_SYMBOLS = frozenset("RWSA")
 # trước rồi chỉnh theo V11.
 AMENDED_ELSEWHERE = frozenset({"Item", "Stock Entry"})
 
-# Set Unit chỉ tạo qua Cấp Set ID (``set_units.issue_batch``; FEAT-016, A-13 G4): ký hiệu W của ma trận vẫn cho
-# ghi nhưng không sinh cờ ``create``, để Desk không có nút "Thêm" cho vai trò nào.
-NO_CREATE_DOCTYPES = frozenset({"Set Unit"})
+# Set Unit chỉ tạo qua Cấp Set ID (``set_units.issue_batch``; FEAT-016, A-13 G4) và Recall Order chỉ lập qua dịch vụ
+# thu hồi (FEAT-029 R2): ký hiệu W của ma trận vẫn cho ghi nhưng không sinh cờ ``create``, để Desk không có nút
+# "Thêm" cho vai trò nào.
+NO_CREATE_DOCTYPES = frozenset({"Set Unit", "Recall Order"})
 
 # Quyền thêm theo amendment cho vai trò ngoài R01-R10 (ký hiệu SEC như ma trận, không bao giờ có delete):
 # Instrument: System Manager đọc/ghi (FEAT-014, A-06 I15).
