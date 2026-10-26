@@ -1,0 +1,25 @@
+{
+  "name": "tracecore-admin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "check": "vue-tsc --noEmit",
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "tsc src/api.ts --outDir .test --module ESNext --moduleResolution Bundler --target ES2022 --skipLibCheck && node --test tests/api.test.mjs"
+  },
+  "dependencies": {
+    "vue": "3.5.44",
+    "vue-router": "4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.2.4",
+    "typescript": "5.7.3",
+    "vite": "6.4.4",
+    "vue-tsc": "2.2.0"
+  }
+}

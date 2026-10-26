@@ -1,0 +1,69 @@
+<h2>Chọn cấu trúc cho TraceCore Admin</h2>
+<p class="subtitle">Cả ba phương án đều là Vue 3 riêng, không hiển thị navbar, sidebar hoặc Workspace của Frappe.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#f4f7fa">
+      <div style="display:flex;height:270px;border:1px solid #ccd6e0;border-radius:8px;overflow:hidden;background:white;font-size:12px">
+        <aside style="width:150px;background:#073763;color:white;padding:14px 10px">
+          <strong style="font-size:15px">TRACECORE</strong>
+          <div style="opacity:.7;margin:4px 0 18px">Kiểm soát vô khuẩn</div>
+          <div style="background:#145a8d;padding:8px;border-radius:5px">▦ Tổng quan</div>
+          <div style="padding:8px">⌁ Dụng cụ & bộ</div>
+          <div style="padding:8px">↻ Tái xử lý</div>
+          <div style="padding:8px">□ Kho vô khuẩn</div>
+          <div style="padding:8px">△ Thiết bị</div>
+          <div style="padding:8px">▥ Báo cáo</div>
+          <div style="padding:8px">⚙ Quản trị</div>
+        </aside>
+        <main style="flex:1;padding:14px">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #dfe6ed;padding-bottom:10px"><strong>Tổng quan vận hành</strong><span>🔔 &nbsp; Nguyễn An ▾</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+            <div style="border:1px solid #dce3ea;padding:10px;border-radius:6px"><b>128</b><br><span style="color:#64748b">Bộ đang xử lý</span></div>
+            <div style="border:1px solid #dce3ea;padding:10px;border-radius:6px"><b>7</b><br><span style="color:#64748b">Cần chú ý</span></div>
+            <div style="border:1px solid #dce3ea;padding:10px;border-radius:6px"><b>96%</b><br><span style="color:#64748b">Đạt hôm nay</span></div>
+          </div>
+          <div style="margin-top:12px;border:1px solid #dce3ea;padding:12px;border-radius:6px;height:100px"><b>Việc cần xử lý</b><div style="margin-top:12px;color:#9b1c1c">● 3 mẻ chờ duyệt giải phóng</div><div style="margin-top:8px;color:#9a5b00">● 4 thiết bị sắp đến hạn kiểm định</div></div>
+        </main>
+      </div>
+    </div>
+    <div class="card-body"><h3>A — Điều hướng theo nghiệp vụ</h3><p>Sidebar cố định, dashboard theo vai trò, phù hợp thao tác quản trị hằng ngày. <strong>Khuyến nghị.</strong></p></div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#f4f7fa">
+      <div style="height:270px;border:1px solid #ccd6e0;border-radius:8px;overflow:hidden;background:white;font-size:12px">
+        <header style="height:42px;background:#073763;color:white;display:flex;align-items:center;justify-content:space-between;padding:0 15px"><strong>TRACECORE</strong><span>Tổng quan　Vận hành　Danh mục　Báo cáo　⚙　● NA</span></header>
+        <main style="padding:16px">
+          <strong style="font-size:16px">Trung tâm điều hành CSSD</strong>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:13px">
+            <div style="border:1px solid #dce3ea;border-radius:6px;padding:12px;height:150px"><b>Luồng xử lý hôm nay</b><div style="display:flex;justify-content:space-around;margin-top:30px"><span>T1<br><b>42</b></span><span>→ T2<br><b>36</b></span><span>→ T3<br><b>31</b></span><span>→ T4<br><b>27</b></span><span>→ T5<br><b>24</b></span></div></div>
+            <div style="border:1px solid #dce3ea;border-radius:6px;padding:12px"><b>Cảnh báo</b><div style="margin-top:15px;color:#9b1c1c">3 việc khẩn</div><div style="margin-top:10px;color:#9a5b00">7 việc sắp hạn</div></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div class="card-body"><h3>B — Trung tâm điều hành</h3><p>Ưu tiên số liệu, luồng T1–T8 và cảnh báo; menu ngang gọn nhưng khó mở rộng khi nhiều phân hệ.</p></div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#f4f7fa">
+      <div style="height:270px;border:1px solid #ccd6e0;border-radius:8px;overflow:hidden;background:#f8fafc;font-size:12px">
+        <header style="height:44px;background:white;border-bottom:1px solid #dce3ea;display:flex;align-items:center;justify-content:space-between;padding:0 16px"><strong style="color:#073763">TRACECORE</strong><span>🔍 Tìm nhanh　🔔　Nguyễn An</span></header>
+        <main style="padding:18px"><strong style="font-size:16px">Xin chào, Nguyễn An</strong><p style="color:#64748b">Bạn muốn làm gì hôm nay?</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div style="background:white;border:1px solid #dce3ea;border-radius:7px;padding:18px;text-align:center">⌁<br><b>Dụng cụ & bộ</b></div>
+            <div style="background:white;border:1px solid #dce3ea;border-radius:7px;padding:18px;text-align:center">↻<br><b>Tái xử lý</b></div>
+            <div style="background:white;border:1px solid #dce3ea;border-radius:7px;padding:18px;text-align:center">□<br><b>Kho</b></div>
+            <div style="background:white;border:1px solid #dce3ea;border-radius:7px;padding:18px;text-align:center">△<br><b>Thiết bị</b></div>
+            <div style="background:white;border:1px solid #dce3ea;border-radius:7px;padding:18px;text-align:center">▥<br><b>Báo cáo</b></div>
+            <div style="background:white;border:1px solid #dce3ea;border-radius:7px;padding:18px;text-align:center">⚙<br><b>Quản trị</b></div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div class="card-body"><h3>C — Cổng tác vụ theo vai trò</h3><p>Dễ học và thân thiện, nhưng thêm một lớp click trước khi tới công việc chi tiết.</p></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:20px">Nhấn vào một phương án để chọn. Đây mới là cấu trúc bố cục; màu sắc và chi tiết component sẽ theo design token TraceCore hiện có.</p>

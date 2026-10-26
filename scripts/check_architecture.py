@@ -28,6 +28,8 @@ BUSINESS = (
 )
 SCAN_DIRS = ("tracecore", "tracecore_agent")
 SKIP_DIRS = {"node_modules", "__pycache__", "dist", "tests", "translations", "fixtures"}
+# bản build Vite của Admin UI (gitignore, nguồn ở frontend/)
+GENERATED_DIRS = {os.path.join("tracecore", "public", "admin")}
 GENERATED_CSS = {"tokens.css", "tracecore-theme.css", "tracecore.bundle.css"}
 STEP_GATE = os.path.join("tracecore", "core", "step_gate.py")
 
@@ -60,7 +62,12 @@ def _line_of(text, offset):
 def _files(root):
 	for top in SCAN_DIRS:
 		for current, dirs, files in os.walk(os.path.join(root, top)):
-			dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+			dirs[:] = [
+				d
+				for d in dirs
+				if d not in SKIP_DIRS
+				and os.path.relpath(os.path.join(current, d), root) not in GENERATED_DIRS
+			]
 			for name in files:
 				if not name.startswith("test_"):
 					yield os.path.join(current, name)

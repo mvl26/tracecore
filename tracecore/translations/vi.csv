@@ -3350,6 +3350,80 @@ Status of the set when it was scanned.,Trạng thái của bộ lúc quét.,Dirt
 Voided Cycle ID,Cycle ID đã hủy,Dirty Receipt Item
 BOM Quantity,Số lượng theo BOM,Dirty Receipt Confirm Line
 Quantity required by the BOM version in force.,Số lượng yêu cầu theo phiên bản BOM hiệu lực.,Dirty Receipt Confirm Line
+Head of infection control,Trưởng khoa KSNK,TraceCore Admin
+"Approvals, monitoring and reports","Phê duyệt, theo dõi và báo cáo",TraceCore Admin
+CSSD supervisor,Giám sát CSSD,TraceCore Admin
+Shift coordination and exceptions,Điều phối ca và xử lý ngoại lệ,TraceCore Admin
+Dirty zone technician,KTV khu bẩn,TraceCore Admin
+Receiving and washing–disinfection,Tiếp nhận và rửa–khử khuẩn,TraceCore Admin
+Clean zone technician,KTV khu sạch,TraceCore Admin
+"Inspection, assembly and packing","Kiểm tra, lắp ráp và đóng gói",TraceCore Admin
+Sterilization technician,KTV tiệt khuẩn,TraceCore Admin
+"Daily tests, operation and unloading","Test ngày, vận hành và dỡ mẻ",TraceCore Admin
+Sterile store / issuing,Kho vô khuẩn / cấp phát,TraceCore Admin
+"Locations, FEFO and issuing to departments","Vị trí, FEFO và cấp phát cho khoa",TraceCore Admin
+Linen & waste,Đồ vải & chất thải,TraceCore Admin
+"Collection, processing and handover","Thu gom, xử lý và bàn giao",TraceCore Admin
+User department,Khoa sử dụng,TraceCore Admin
+"Receive, use and return instruments","Nhận, sử dụng và trả dụng cụ",TraceCore Admin
+Accounting / supplies,Kế toán / Vật tư,TraceCore Admin
+"Supplies, expenses and costing","Vật tư, chi phí và giá thành",TraceCore Admin
+System administration,Quản trị hệ thống,TraceCore Admin
+"Configuration, accounts and audit","Cấu hình, tài khoản và audit",TraceCore Admin
+Instrument catalogue,Danh mục dụng cụ,TraceCore Admin
+Set types & BOM,Loại bộ & BOM,TraceCore Admin
+Instrument sets / Set ID,Bộ dụng cụ / Set ID,TraceCore Admin
+Cycle limit overrides,Ghi đè cơ số,TraceCore Admin
+Recalls,Thu hồi,TraceCore Admin
+Incidents / NC-CAPA,Sự cố / NC-CAPA,TraceCore Admin
+Equipment & programs,Thiết bị & chương trình,TraceCore Admin
+Staff & certificates,Nhân sự & chứng chỉ,TraceCore Admin
+Station competencies,Năng lực trạm,TraceCore Admin
+T1 · Receiving,T1 · Tiếp nhận,TraceCore Admin
+T2 · Washing–disinfection,T2 · Rửa–khử khuẩn,TraceCore Admin
+T3 · Inspection–assembly,T3 · Kiểm tra–lắp ráp,TraceCore Admin
+T4 · Packing,T4 · Đóng gói,TraceCore Admin
+T5 / T5b · Sterilization loads,T5 / T5b · Mẻ tiệt khuẩn,TraceCore Admin
+Daily tests,Test hằng ngày,TraceCore Admin
+T6 · Putaway,T6 · Nhập kho,TraceCore Admin
+Sterile stock,Tồn kho vô khuẩn,TraceCore Admin
+T7 · Issuing,T7 · Cấp phát,TraceCore Admin
+Linen collection,Thu gom đồ vải,TraceCore Admin
+Laundry batches,Lô giặt,TraceCore Admin
+Linen issuing,Cấp phát đồ vải,TraceCore Admin
+Waste collection,Thu gom chất thải,TraceCore Admin
+Waste storage,Kho lưu giữ chất thải,TraceCore Admin
+Waste handover,Bàn giao chất thải,TraceCore Admin
+Department sets & par levels,Bộ tại khoa & cơ số,TraceCore Admin
+T8 · Usage scan,T8 · Quét sử dụng,TraceCore Admin
+Return used sets,Gửi trả đồ bẩn,TraceCore Admin
+Supply requests,Đề nghị cấp,TraceCore Admin
+Pack trace,Truy xuất gói,TraceCore Admin
+Supply catalogue,Danh mục vật tư,TraceCore Admin
+Supply receipts / issues,Nhập / xuất kho vật tư,TraceCore Admin
+Expenses,Chi phí,TraceCore Admin
+Rate tables,Bảng định giá,TraceCore Admin
+Reprocessing cost,Giá thành tái xử lý,TraceCore Admin
+Zones & stations,Khu & trạm,TraceCore Admin
+Printers,Máy in,TraceCore Admin
+Label templates,Mẫu nhãn,TraceCore Admin
+Accounts & permissions,Tài khoản & quyền,TraceCore Admin
+Sync conflicts,Xung đột đồng bộ,TraceCore Admin
+Electronic sterilization log,Sổ tiệt khuẩn điện tử,TraceCore Admin
+Audit trail,Audit trail,TraceCore Admin
+You cannot open this station.,Không có quyền mở trạm này.,
+You cannot read the requests.,Không có quyền đọc đề nghị.,
+"Set not found, or you cannot view it.",Không tìm thấy bộ hoặc không có quyền xem.,
+TraceCore Admin is not built yet. Run npm --prefix frontend ci and npm --prefix frontend run build.,TraceCore Admin chưa được build. Chạy npm --prefix frontend ci và npm --prefix frontend run build.,
+Compatible methods must be a list of methods.,Phương pháp tương thích phải là danh sách phương pháp.,
+Create a set type together with its BOM.,Tạo loại bộ cùng với BOM của nó.,
+The record has changed. Reload before saving.,Bản ghi đã thay đổi. Tải lại trước khi lưu.,
+This request contains fields that cannot be edited.,Yêu cầu có trường không được phép sửa.,
+This screen cannot be edited here.,Màn này không sửa được ở đây.,
+This screen is unavailable or you do not have permission.,Màn này chưa sẵn sàng hoặc bạn không có quyền.,
+This workspace is not available for this account.,Không gian làm việc này không dành cho tài khoản này.,
+You do not have permission to edit this field.,Bạn không có quyền sửa trường này.,
+You do not have permission to read this record.,Bạn không có quyền xem bản ghi này.,
 Sterilizer is still running a load,Máy tiệt khuẩn còn mẻ đang chạy,
 Load {0} on sterilizer {1} has no cycle data yet.,Mẻ {0} trên máy {1} chưa có dữ liệu chu trình.,
 "Enter the cycle data of load {0} first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} trước, rồi mới nạp máy này tiếp.",

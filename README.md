@@ -58,6 +58,28 @@ python3 -m tracecore_agent --config ~/.tracecore-agent/agent.ini serve   # dịc
 
 Chưa có máy in (`[printer] host` trống): nhãn được ghi ra `~/.tracecore-agent/labels/<job>.zpl` và `<job>.png`.
 
+## TraceCore Admin (Vue)
+
+Giao diện độc lập tại `/tracecore`, với các không gian R01–R10. Backend tiếp tục dùng Frappe session và quyền theo bản ghi; mở không gian của role khác không thay danh tính hoặc cấp thêm quyền dữ liệu.
+
+```bash
+npm --prefix frontend ci
+npm --prefix frontend run check
+npm --prefix frontend test
+npm --prefix frontend run build
+bench --site <site> clear-cache
+```
+
+Build tạo `tracecore/public/admin/` (không commit assets sinh tự động). Khi triển khai phải build frontend trước khi khởi động web worker; `/tracecore/R02/instruments` và các deep link dùng chung SPA entry. Server HTML chứa CSRF token và không cache; nếu chưa build, trang báo thiếu build rõ ràng.
+
+`Administrator` có đủ 10 không gian. Người dùng khác thấy các role `TC R01`…`TC R10` đã được cấp. Có thể cấp role `TC Admin Overview` để xem menu của mọi role; quyền đọc/ghi DocType và phạm vi khoa vẫn bắt buộc. Chỉ quản trị có thẩm quyền mới cấp role này. Không tự cấp System Manager cho người dùng nghiệp vụ.
+
+Bản đầu có danh sách/chi tiết theo quyền, dashboard với nguồn cảnh báo đang hỗ trợ, form tạo/sửa dụng cụ, form loại bộ và BOM có phiên bản, phiếu kiểm đếm PDF, cấp Set ID hàng loạt, lịch sử, xem nhãn, CSV và yêu cầu in lại. Các nguồn chưa được hiện thực đánh dấu chưa sẵn sàng; không đưa dữ liệu demo vào runtime. Các màn trạm hiện hữu tiếp tục dùng cơ chế thẻ/PIN riêng; bản này chưa thay thế toàn bộ luồng vận hành kiosk, PDA, Portal, duyệt ghi đè, hồ sơ tài khoản và các phân hệ chưa có backend. Không bật chuyển hướng Desk đại trà trước khi chuyển đủ các màn người dùng cần.
+
+Cờ site `tracecore_admin_rollout` mặc định tắt. Khi đã đủ điều kiện cutover, bật cờ sẽ chuyển người không có quyền kỹ thuật từ `/app/*` về `/tracecore`, ngoại lệ `/app/station`. `Administrator` và người được gán rõ role `TraceCore Desk Access` vẫn vào Desk. Tắt cờ để khôi phục điều hướng cũ; không đổi dữ liệu nghiệp vụ. Bản này không tự bật cờ hoặc sửa tài khoản hiện hữu.
+
+Kiểm thử backend: `bench --site test_site run-tests --module tracecore.tests.test_admin_ui`. Kiểm thử trình duyệt: nạp môi trường dev E2E hiện hữu, rồi chạy `pytest tests_e2e/test_admin_ui.py`; không dùng tài khoản hoặc dữ liệu production. Tài khoản với OTP được kiểm tra bằng challenge thật từ Frappe. Đăng ký OTP lần đầu dùng liên kết thiết lập an toàn tới luồng xác thực chuẩn.
+
 ## License
 
 GPL-3.0

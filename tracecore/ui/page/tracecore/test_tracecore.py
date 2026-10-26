@@ -33,16 +33,18 @@ class TestLauncher(FrappeTestCase):
 	def test_pending_station_and_active_filter(self):
 		with (
 			patch("frappe.session", frappe._dict(user="operator@example.test")),
-			patch("frappe.get_roles", return_value=["TC R03"]),
+			patch("frappe.get_roles", return_value=["TC R05"]),
 			patch(
 				"frappe.get_list",
 				return_value=[
-					frappe._dict(name="TR-999", station_step="T1", zone_station_name="Receiving"),
+					# T1-T8 đều có màn kiosk; trạm gán riêng T5b chưa có (dỡ mẻ là chế độ của màn T5)
+					frappe._dict(name="TR-998", station_step="T5", zone_station_name="Load"),
+					frappe._dict(name="TR-999", station_step="T5b", zone_station_name="Unload"),
 				],
 			) as query,
 		):
 			context = get_context()
-		self.assertFalse(context["stations"][0]["implemented"])
+		self.assertEqual([s["implemented"] for s in context["stations"]], [True, False])
 		self.assertEqual(query.call_args.kwargs["filters"], {"is_zone": 0, "is_active": 1})
 
 	def test_unrelated_account_has_no_operational_choices(self):
