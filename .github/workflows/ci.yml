@@ -34,9 +34,15 @@ jobs:
           pip-audit .
 
   test:
-    name: test (FrappeTestCase + coverage changed-code >= 70%)
+    # bộ test app chia 4 phần chạy song song (Frappe run-parallel-tests chia file test theo số test); mỗi phần dựng bench
+    # và site test riêng, ghi coverage của phần mình; job `coverage` gộp lại để kiểm diff-cover như cũ
+    name: test (FrappeTestCase, phần ${{ matrix.shard }}/4)
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       mariadb:
         image: mariadb:10.6
@@ -52,8 +58,6 @@ jobs:
         ports: ["11000:6379"]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -63,32 +67,68 @@ jobs:
       - uses: ./.github/actions/setup-bench
 
       - name: Station Agent tests (pytest)
+        if: matrix.shard == 1
         run: |
           pip install pytest pytest-cov
           python -m pytest tracecore_agent -q -p no:cacheprovider --cov=tracecore_agent --cov-report=xml:agent-coverage.xml
 
-      - name: App tests (bench run-tests --coverage)
+      - name: App tests (bench run-parallel-tests, phần ${{ matrix.shard }}/4)
         working-directory: /home/runner/frappe-bench
         env:
           CI: "Yes"
-        run: bench --site test_site run-tests --app tracecore --coverage
+        run: >-
+          bench --site test_site run-parallel-tests --app tracecore
+          --build-number ${{ matrix.shard }} --total-builds 4 --with-coverage
 
+      - name: Coverage XML của phần này (đường dẫn theo checkout)
+        run: |
+          mkdir -p coverage-out
+          sed "s#/home/runner/frappe-bench/apps/tracecore#${GITHUB_WORKSPACE}#g" \
+            /home/runner/frappe-bench/sites/coverage.xml > coverage-out/coverage-${{ matrix.shard }}.xml
+          if [ -f agent-coverage.xml ]; then cp agent-coverage.xml coverage-out/; fi
+
+      - name: Upload coverage của phần này
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}
+          path: coverage-out/
+
+  coverage:
+    # giữ tên check cũ: gộp coverage 4 phần và kiểm >= 70 % dòng đổi; phần nào đỏ thì job này đỏ (không bị "skipped")
+    name: test (FrappeTestCase + coverage changed-code >= 70%)
+    runs-on: ubuntu-22.04
+    needs: test
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - name: Mọi phần test phải xanh
+        if: needs.test.result != 'success'
+        run: |
+          echo "Một hoặc nhiều phần test không xanh: ${{ needs.test.result }}"
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-shard-*
+          path: coverage-in
+          merge-multiple: true
       - name: Coverage on changed lines (diff-cover >= 70%)
         run: |
           pip install diff-cover
-          sed "s#/home/runner/frappe-bench/apps/tracecore#${GITHUB_WORKSPACE}#g" \
-            /home/runner/frappe-bench/sites/coverage.xml > coverage.xml
+          # diff-cover gộp nhiều báo cáo: một dòng tính là đã chạy nếu được chạy ở bất kỳ phần nào
           BASE=origin/${{ github.base_ref || 'main' }}
-          diff-cover coverage.xml agent-coverage.xml --compare-branch="$BASE" --fail-under=70
-
+          diff-cover coverage-in/coverage-*.xml coverage-in/agent-coverage.xml --compare-branch="$BASE" --fail-under=70
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: |
-            coverage.xml
-            agent-coverage.xml
+          path: coverage-in/
 
   e2e:
     name: "e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002 + thiết bị FEAT-038 + nhãn QR FEAT-005)"
