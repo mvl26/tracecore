@@ -3519,3 +3519,19 @@ Biological indicator positive after release,Chỉ thị sinh học dương tính
 Recall {0}: {1} pack(s) still waiting for confirmation,Thu hồi {0}: còn {1} gói chờ xác nhận,
 Choose a sterilization load or an indicator lot to recall.,Chọn mẻ tiệt khuẩn hoặc lô chỉ thị cần thu hồi.,
 Opened Manually,Lập tay,
+Pack Trace,Truy xuất gói,
+Receiving,Tiếp nhận,Pack Trace
+Washing,Rửa – khử khuẩn,Pack Trace
+Assembly,Kiểm tra – lắp ráp,Pack Trace
+Packing,Đóng gói,Pack Trace
+Sterilization,Tiệt khuẩn,Pack Trace
+Sterile storage,Kho vô khuẩn,Pack Trace
+Issuing,Cấp phát,Pack Trace
+Usage,Sử dụng,Pack Trace
+Person,Người thực hiện,Pack Trace
+Station Step,Bước,Pack Trace
+Patient Code Hash,Hash mã bệnh nhân,Usage Record
+"HMAC-SHA256 of the patient code, used to trace by patient without decrypting (FEAT-028).","HMAC-SHA256 của mã bệnh nhân, dùng để truy xuất theo bệnh nhân mà không giải mã (FEAT-028).",
+"Only R01, R02 or department staff can trace sets.","Chỉ R01, R02 hoặc nhân viên khoa được truy xuất bộ dụng cụ.",
+Enter at least one search criterion.,Nhập ít nhất một tiêu chí tìm kiếm.,
+"No result. Check the code, try only one criterion (Set ID, Cycle ID or load), or widen the date range.","Không có kết quả. Kiểm tra lại mã, thử chỉ một tiêu chí (Set ID, Cycle ID hoặc mẻ), hoặc mở rộng khoảng ngày.",

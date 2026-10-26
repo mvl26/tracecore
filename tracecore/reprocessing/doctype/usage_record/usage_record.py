@@ -10,6 +10,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
+from tracecore.core import crypto
+
 HIDDEN = 4  # FR-M2-17.1: ẩn 4 ký tự giữa
 
 
@@ -35,6 +37,9 @@ class UsageRecord(Document):
 			frappe.throw(_("A Usage Record can only be created and changed by the usage service."))
 		if self.is_new() and frappe.db.exists("Usage Record", {"pack": self.pack, "docstatus": ["<", 2]}):
 			frappe.throw(_("Pack {0} already has a usage record.").format(self.pack))
+		# FEAT-028: mã vừa nhập còn ở dạng rõ trước khi Frappe mã hóa; mã cũ đọc lên là dấu sao, giữ hash cũ
+		if self.patient_code and set(self.patient_code) != {"*"}:
+			self.patient_code_hash = crypto.patient_hash(self.patient_code)
 
 	def before_submit(self):
 		if not self.flags.tc_usage:
