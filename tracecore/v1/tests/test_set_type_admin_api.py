@@ -124,8 +124,9 @@ class TestSetTypeAdminRpc(IsolatedTestCase):
 
 	def test_rpc_roles_before_any_write(self):
 		lines = [{"instrument": "SA-1", "qty": 1}]
-		user_for(["TC R04"])
-		keys, audit_rows = frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log")
+		# chỉ đếm Audit Log của chính user bị từ chối: tổng Audit Log phụ thuộc test chạy trước (chia shard CI thì lệch)
+		audit = {"user": user_for(["TC R04"])}
+		keys, audit_rows = frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log", audit)
 		for fn, kwargs in (
 			(api.create, {"header": header("SAR"), "lines": lines}),
 			(
@@ -143,7 +144,7 @@ class TestSetTypeAdminRpc(IsolatedTestCase):
 			with self.assertRaises(frappe.PermissionError, msg=fn.__name__):
 				as_user(["TC R04"], fn, **kwargs)
 		self.assertEqual(
-			(frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log")), (keys, audit_rows)
+			(frappe.db.count("Idempotency Key"), frappe.db.count("Audit Log", audit)), (keys, audit_rows)
 		)
 		self.assertFalse(frappe.db.exists(SET_TYPE, "SAR"))
 		self.assertEqual(api.ADMIN_ROLES, ("TC R02", "TC R10", "System Manager"))
