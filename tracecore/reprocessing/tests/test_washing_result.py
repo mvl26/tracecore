@@ -403,7 +403,12 @@ class TestWashResult(WashResultCase):
 		result = self.close(batch, result="Fail", clean_test="Fail")
 		self.assertEqual({s["status"] for s in result["sets"]}, {"Reprocess"})
 		self.assertEqual({s["redo_count"] for s in result["sets"]}, {1})
-		self.assertIsNone(result["incident_id"])
+		# FEAT-030, FR-M2-04.4 / FR-M2-21.1: lô Không đạt tự tạo NC loại Wash Failed gắn lô và máy
+		incident = frappe.get_doc("Incident CAPA", result["incident_id"])
+		self.assertEqual(
+			(incident.incident_type, incident.wash_batch, incident.equipment, incident.is_auto),
+			("Wash Failed", batch, self.machine.name, 1),
+		)
 		for set_id in sets:
 			gates = {g["step"]: g for g in step_gate.gates(set_id)}
 			self.assertEqual((gates["T2"]["result"], gates["T2"]["redo_count"]), ("Fail", 1))
