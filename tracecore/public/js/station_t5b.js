@@ -386,7 +386,11 @@ class T5Release {
 						: res.status === "Failed"
 						? __("Load {0} failed", [res.load])
 						: __("Load {0} released", [res.load]),
-					reason: res.recall_needed
+					reason: res.recall
+						? __("Recall order {0} was opened for the packs of this load. Call R01.", [
+								res.recall,
+						  ])
+						: res.recall_needed
 						? __("Call R01: packs of this load may already be issued or used.")
 						: __("The biological indicator was recorded."),
 					action: __("Scan the next load."),

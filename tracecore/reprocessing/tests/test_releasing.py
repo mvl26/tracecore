@@ -331,6 +331,19 @@ class TestRejectAndBi(ReleaseCase):
 			)
 		)
 
+	@bru("BRU-REP-007")
+	def test_positive_bi_after_release_opens_a_recall_order(self):
+		# FEAT-029, FR-M2-11.7: hook thật lập lệnh thu hồi gồm mọi gói của mẻ, bi_result trả mã lệnh
+		frappe.db.set_value("Sterilization Load", self.load.name, "requires_bi", 1)
+		self.ready()
+		self.indicator("biological", result="Pending", lot="BI-004", incubator="TU-1")
+		self.release(self.r01, emergency_reason="Ca khẩn")
+		done = releasing.bi_result(self.load.name, "Fail", STATION, employee=self.employee.name)
+		order = frappe.get_doc("Recall Order", done["recall"])
+		self.assertEqual((order.trigger, order.sterilization_load), ("BI Positive", self.load.name))
+		self.assertCountEqual([row.pack for row in order.packs], [p.name for p in self.packs])
+		self.assertEqual({frappe.db.get_value("Pack", p.name, "status") for p in self.packs}, {"Recalled"})
+
 
 class TestBowieDickFromDailyTest(ReleaseCase):
 	"""A-23: Bowie-Dick của mẻ lấy từ test hằng ngày Đạt của máy trong ngày chạy mẻ (FEAT-040), không nhập lại ở T5b."""

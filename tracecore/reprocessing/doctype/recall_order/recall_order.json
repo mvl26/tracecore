@@ -1,0 +1,182 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "TH-.YYYY.-.#####",
+ "creation": "2026-10-26 14:00:00.000000",
+ "description": "Recall order listing every affected pack of a sterilization load or indicator lot (DT-RECALL, FEAT-029, FR-M2-20, WF-05). Open (draft) -> Closed (submitted) when every pack is confirmed.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "trigger",
+  "sterilization_load",
+  "indicator_lot",
+  "column_break_status",
+  "status",
+  "incident",
+  "section_reason",
+  "reason",
+  "column_break_open",
+  "opened_by",
+  "opened_at",
+  "section_packs",
+  "pack_count",
+  "confirmed_count",
+  "packs",
+  "section_close",
+  "closed_by",
+  "closed_at",
+  "last_reminded_at"
+ ],
+ "fields": [
+  {
+   "default": "Opened Manually",
+   "fieldname": "trigger",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Trigger",
+   "options": "Opened Manually\nBI Positive\nLoad Failed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sterilization_load",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sterilization Load",
+   "options": "Sterilization Load",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "indicator_lot",
+   "fieldtype": "Data",
+   "label": "Indicator Lot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nClosed",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "incident",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident CAPA",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_reason",
+   "fieldtype": "Section Break",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Recall",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_open",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "opened_by",
+   "fieldtype": "Link",
+   "label": "Opened By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "label": "Opened At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_packs",
+   "fieldtype": "Section Break",
+   "label": "Packs"
+  },
+  {
+   "fieldname": "pack_count",
+   "fieldtype": "Int",
+   "label": "Packs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_count",
+   "fieldtype": "Int",
+   "label": "Confirmed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "packs",
+   "fieldtype": "Table",
+   "label": "Affected Packs",
+   "options": "Recall Order Pack",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_close",
+   "fieldtype": "Section Break",
+   "label": "Closing"
+  },
+  {
+   "fieldname": "closed_by",
+   "fieldtype": "Link",
+   "label": "Closed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Closed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_reminded_at",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Last Reminded At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-26 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Recall Order",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "sterilization_load",
+ "track_changes": 1
+}
