@@ -210,6 +210,9 @@ HTTP_STATUS: dict[str, int] = {
 			"RECEIPT_CLOSED",
 			"ITEM_NOT_CONFIRMED",
 			"FORCE_NOT_ALLOWED",
+			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
+			"CODE_RANGE_INVALID",
+			"CODE_RANGE_EXHAUSTED",
 		),
 		409,
 	),
