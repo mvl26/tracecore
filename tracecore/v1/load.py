@@ -12,11 +12,13 @@ import frappe
 from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import sterilizing
+from tracecore.reprocessing import machine_data, sterilizing
 from tracecore.v1._common import (
 	LOAD_ROLES,
 	current_station_session,
+	require_agent_for,
 	require_any_role,
+	require_station,
 	run_at_step,
 	station_session,
 )
@@ -233,4 +235,28 @@ def manual_data(
 		},
 		ref_doctype,
 		ref_name,
+	)
+
+
+# --- Dữ liệu máy tự động qua station agent (FEAT-024, A-39, ADR-007) -----------------------------------------
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def ingest_machine_data(station, equipment, cycle, client_ts=None):
+	"""Agent của trạm gửi một chu trình máy rửa / máy tiệt khuẩn (FR-M2-24, EI-SW-001); dùng chung cho cả hai loại máy.
+
+	`cycle` (JSON) = ``{cycle_ref, load_id, program, started_at, ended_at, parameters[{parameter_name, value}], alerts,
+	result, driver}``. Chỉ user agent của đúng `station` (role TC Agent, API key); chặn nghiệp vụ trả ``ok: false``
+	(chưa khớp → MACHINE_CYCLE_UNMATCHED 404, agent gửi lại sau).
+	"""
+	require_agent_for(station)
+	require_station(station)
+	timestamp = parse_client_ts(client_ts) if client_ts else None
+	return _run(
+		station,
+		timestamp,
+		lambda: {"ok": True, **machine_data.ingest(station, equipment, cycle)},
+		"Equipment",
+		equipment if isinstance(equipment, str) else None,
 	)

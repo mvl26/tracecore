@@ -1306,8 +1306,14 @@ class T2Wash {
 
 	dataText(batch) {
 		if (!batch.data_source) return __("No cycle data yet");
+		// FEAT-024: dữ liệu do station agent gửi (A-39)
+		const auto = batch.data_source === "Auto";
 		const text = batch.data_complete
-			? __("Manual entry, confirmed")
+			? auto
+				? __("Automatic (station agent)")
+				: __("Manual entry, confirmed")
+			: auto
+			? __("Automatic (station agent), incomplete")
 			: __("Manual entry, incomplete");
 		return batch.needs_review ? `${text} · ${__("Needs review")}` : text;
 	}

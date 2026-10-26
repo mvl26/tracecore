@@ -1196,8 +1196,14 @@ class T5Load {
 
 	dataText(load) {
 		if (!load.data_source) return __("No cycle data yet");
+		// FEAT-024: dữ liệu do station agent gửi (A-39)
+		const auto = load.data_source === "Auto";
 		const text = load.data_complete
-			? __("Manual entry, confirmed")
+			? auto
+				? __("Automatic (station agent)")
+				: __("Manual entry, confirmed")
+			: auto
+			? __("Automatic (station agent), incomplete")
 			: __("Manual entry, incomplete");
 		return load.needs_review ? `${text} · ${__("Needs review")}` : text;
 	}

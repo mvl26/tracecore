@@ -109,6 +109,7 @@ class TestErrors(FrappeTestCase):
 				"ASSEMBLY_NOT_FOUND",
 				"RECEIPT_NOT_FOUND",
 				"DELIVERER_NOT_FOUND",
+				"MACHINE_CYCLE_UNMATCHED",
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
