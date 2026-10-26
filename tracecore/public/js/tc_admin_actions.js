@@ -29,20 +29,19 @@ function tc_admin_error_html(error) {
 function tc_admin_submit(dialog, frm, method, args) {
 	const button = dialog.get_primary_btn();
 	button.prop("disabled", true);
-	frappe.call({
+	tracecore.desk_call({
 		method,
 		args,
-		callback: (response) => {
-			const result = response.message || {};
+		on_ok: () => {
 			button.prop("disabled", false);
-			if (result.ok === false) {
-				dialog.fields_dict.error_html.$wrapper.html(tc_admin_error_html(result.error));
-				return;
-			}
 			dialog.hide();
 			frm.reload_doc();
 		},
-		error: () => button.prop("disabled", false),
+		on_block: (error) => {
+			button.prop("disabled", false);
+			dialog.fields_dict.error_html.$wrapper.html(tc_admin_error_html(error));
+		},
+		on_fail: () => button.prop("disabled", false),
 	});
 }
 

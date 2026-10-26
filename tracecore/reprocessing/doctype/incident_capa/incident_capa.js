@@ -1,3 +1,4 @@
+/* global tracecore */
 // Desk: sự cố / NC / CAPA (SCR-15, FEAT-030; UC-15, FR-M2-21, FR-M2-22, WF-06).
 // Quy tắc nằm ở server (tracecore.reprocessing.incidents): chỉ R01/R02 chuyển bước, đóng, hủy; người phụ trách ghi
 // kết quả hành động của mình. JS chỉ hiện nút theo trạng thái, thu thập giá trị và đưa lỗi chặn về dạng
@@ -31,20 +32,17 @@ function tc_incident_error_html(error) {
 
 // gọi RPC; lỗi chặn hiện trong `show_error` (hộp thoại) hoặc khối đỏ trên form
 function tc_incident_call(frm, method, args, show_error, done) {
-	frappe.call({
+	// tracecore.desk_call: body ok: false đi kèm HTTP 409/422 nên phải đọc cả nhánh lỗi của frappe.call
+	tracecore.desk_call({
 		method: TC_INCIDENT_API + method,
 		args: { incident: frm.doc.name, ...args },
-		callback: (response) => {
-			const result = response.message || {};
-			if (result.ok === false) {
-				show_error(tc_incident_error_html(result.error));
-				return;
-			}
+		on_ok: () => {
 			if (done) {
 				done();
 			}
 			frm.reload_doc();
 		},
+		on_block: (error) => show_error(tc_incident_error_html(error)),
 	});
 }
 

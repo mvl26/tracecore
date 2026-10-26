@@ -35,6 +35,7 @@ const STATUS_BADGE = {
 	"Awaiting Receipt": "o",
 	"End of Life": "r",
 	Disposed: "x",
+	Returned: "x",
 };
 
 function uuid4() {

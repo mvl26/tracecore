@@ -42,7 +42,8 @@ STATION_STATUSES = {
 PENDING = "Pending"
 RESULTS = ("Pass", "Fail")
 END_OF_LIFE = "End of Life"
-NOT_RETIRABLE = ("Disposed",)  # bộ đã thanh lý không quay lại Hết vòng đời
+RETURNED = "Returned"  # bộ mượn đã trả hãng (FEAT-017, A-38 e)
+NOT_RETIRABLE = ("Disposed", RETURNED)  # bộ đã thanh lý / đã trả hãng không quay lại
 
 # Giá trị khởi tạo trường vòng đời của bộ mới (FEAT-016 G4: Mới tạo, chưa có chu trình, chưa ghim BOM). Set Unit chặn ghi
 # các trường này trừ khi có cờ ``flags.tc_step_gate`` (chỉ đặt trong file này, lint R2).
@@ -463,6 +464,21 @@ def force_status(set_unit, status, reason):
 	if status in CLEARS_CYCLE_ID:
 		fields["active_cycle_id"] = None
 	_save_lifecycle(unit, event=event_reason("override", reason), **fields)
+
+
+def return_loaner(set_unit, reason):
+	"""Biên bản trả bộ mượn (FEAT-017, A-38 e, FR-M1-07.2/.3): bộ mượn Vô khuẩn sang Đã trả hãng, bỏ Cycle ID.
+
+	Chỉ bộ ``is_loaner`` đang Vô khuẩn (đã tái xử lý sau lần dùng cuối); khác → lỗi, không ghi gì. Không quay lại.
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if not cint(unit.is_loaner) or unit.status != "Sterile":
+		frappe.throw(
+			_("Set {0} is {1}; only a sterile loaner set can be returned to the vendor.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	_save_lifecycle(unit, event=event_reason("return_loaner", reason), status=RETURNED, active_cycle_id=None)
 
 
 def reopen_after_override(set_unit, override):

@@ -122,6 +122,8 @@ jinja = {
 		"tracecore.instrument.count_sheet.tc_count_sheet_context",
 		# Print Format "TC Issue Note" (FEAT-026 C10): phiếu cấp phát T7
 		"tracecore.ui.issue_print.tc_issue_note_context",
+		# Print Format "TC Loaner Receipt" / "TC Loaner Return" (FEAT-017, A-38): biên bản nhận / trả bộ mượn
+		"tracecore.instrument.loaner.tc_loaner_context",
 	]
 }
 
@@ -232,6 +234,8 @@ doc_events = {
 	# loại bộ: Create/Update có old/new (ảnh, hạn lưu, phương pháp, GTIN), không xóa (FEAT-015 S14)
 	"Instrument Set Type": dict(_AUDIT_EVENTS),
 	"Set BOM Item": dict(_AUDIT_EVENTS),
+	# bộ mượn (FEAT-017, A-38): nhận/trả/gia hạn ghi Audit Update kèm lý do, không hủy, không xóa
+	"Loaner Set": dict(_AUDIT_EVENTS),
 	# cơ số: Create/Update có old/new, không xóa (FEAT-031, FR-M8-01.3)
 	"Par Level": dict(_AUDIT_EVENTS),
 	# ghi đè cơ số (FEAT-032, WF-08): quyết định và bộ đếm đổi sau khi ghi sổ (on_update_after_submit), không xóa
@@ -336,8 +340,12 @@ tracecore_receipt_context = ["tracecore.instrument.bom.receipt_context"]
 # FEAT-030 đăng ký để tự tạo NC (FR-M2-02.2).
 tracecore_after_force_receive = []
 # core.step_gate gọi sau mỗi lần Set Unit.status thực sự đổi (FEAT-016, A-13 G13): (payload {set_unit, old_status,
-# new_status, event, client_ts, ref_doctype, ref_name}) -> None. Chưa phân hệ nào đăng ký (FEAT-019/023/032 dùng).
-tracecore_after_set_status = []
+# new_status, event, client_ts, ref_doctype, ref_name}) -> None.
+# FEAT-017 (A-38 e): bộ mượn trả hãng → M2 hủy gói còn trong kho của chu trình hiện hành.
+tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
+# M1 trả bộ mượn thiếu dụng cụ (FEAT-017, A-38 e): (ctx {loaner, set_unit, missing[{instrument, name, qty}], note})
+# -> tên Incident CAPA; M2 tạo NC Missing Instrument (M1 không import M2).
+tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
 # M1 cấp Set ID (FEAT-016, A-13 G5): (ctx {set_type}) -> {value, source} | None, cơ số tối đa nguồn của loại bộ;
 # M8 trả Par Level riêng của loại bộ, nếu không thì cơ số thấp nhất của dụng cụ trong BOM (không import chéo M1 ↔ M8).
 tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
@@ -413,6 +421,8 @@ scheduler_events = {
 		"tracecore.core.idempotency.purge_expired",
 		# FEAT-030, FR-M2-22.1: nhắc hành động CAPA quá hạn (người phụ trách + R02)
 		"tracecore.reprocessing.incidents.remind_overdue",
+		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày
+		"tracecore.instrument.loaner.remind_overdue",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

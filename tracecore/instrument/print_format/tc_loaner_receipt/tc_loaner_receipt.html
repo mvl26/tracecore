@@ -1,0 +1,67 @@
+{#- Loaner set receipt (FEAT-017, A-38; UC-04 step 3; FR-M1-07). Data: tracecore.instrument.loaner.tc_loaner_context
+    (hook jinja.methods). Every dynamic value goes through |e; colours and sizes come from tokens.css (tc.*).
+    Layout uses tables (the WebKit of wkhtmltopdf has no flex/grid). -#}
+{%- set cs = tc_loaner_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Loaner Receipt" -%}
+<style>
+.tc-ln { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-ln table { width: 100%; border-collapse: collapse; }
+.tc-ln td, .tc-ln th { vertical-align: top; }
+.tc-ln .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-ln h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-ln .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-ln .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-ln .tc-facts td.tc-label { color: {{ tc.muted }}; width: 45mm; white-space: nowrap; }
+.tc-ln table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-ln table.tc-lines thead { display: table-header-group; }
+.tc-ln table.tc-lines tr { page-break-inside: avoid; }
+.tc-ln table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-ln table.tc-lines th, .tc-ln table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-ln table.tc-lines .tc-num { text-align: right; width: 14mm; }
+.tc-ln .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-ln .tc-sign td { width: 50%; text-align: center; padding-bottom: 25mm; font-weight: {{ tc.fw_bold }}; }
+</style>
+<div class="tc-ln">
+	<h1>{{ _("Loaner set receipt", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}
+	<div class="tc-draft">{{ _("Not received yet", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Vendor", context=T) | e }}</td><td>{{ cs.supplier | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Set name", context=T) | e }}</td><td>{{ cs.set_name | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Set ID", context=T) | e }}</td><td class="tc-code">{{ (cs.set_id or "—") | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Method", context=T) | e }}</td><td>{{ _(cs.method) | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Department", context=T) | e }}</td><td>{{ cs.department | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Received on", context=T) | e }}</td><td>{{ cs.received_on | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Expected return", context=T) | e }}</td><td>{{ cs.expected_return | e }}</td></tr>
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Instrument", context=T) | e }}</th>
+				<th>{{ _("Code", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Qty", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td class="tc-num">{{ row.index | e }}</td>
+				<td>{{ row.name | e }}</td>
+				<td class="tc-code">{{ row.code | e }}</td>
+				<td class="tc-num">{{ row.qty | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<p>{{ _("The set must be washed, assembled, packed and sterilized at the department before its first use.", context=T) | e }}</p>
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Vendor representative", context=T) | e }}</td>
+			<td>{{ _("Received by (CSSD)", context=T) | e }}</td>
+		</tr>
+	</table>
+</div>

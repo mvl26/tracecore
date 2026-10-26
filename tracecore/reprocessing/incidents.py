@@ -397,6 +397,21 @@ def on_assembly_nc(ctx):
 	)
 
 
+def on_loaner_returned(ctx):
+	"""Hook ``tracecore_loaner_returned``: trả bộ mượn thiếu dụng cụ → NC Missing Instrument (UC-04 E3, A-38 e)."""
+	items = ", ".join(f"{line['name']} ({line['qty']})" for line in ctx.get("missing") or [])
+	return _auto(
+		"Loaner Set",
+		ctx["loaner"],
+		"Missing Instrument",
+		"Medium",
+		_("Loaner set {0} ({1}) was returned to the vendor missing: {2}.").format(
+			ctx["loaner"], ctx.get("set_unit"), items or "-"
+		),
+		{"set_unit": ctx.get("set_unit")},
+	)
+
+
 # --- Nhắc quá hạn (FR-M2-22.1) --------------------------------------------------------------------------
 
 

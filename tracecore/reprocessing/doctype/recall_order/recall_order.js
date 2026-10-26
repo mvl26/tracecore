@@ -1,3 +1,4 @@
+/* global tracecore */
 // Desk: lệnh thu hồi (SCR-14, FEAT-029; UC-14, FR-M2-20, WF-05).
 // Quy tắc nằm ở server (tracecore.reprocessing.recall): ai xác nhận dòng nào, đóng khi đủ 100 % gói. JS chỉ hiện nút,
 // thu thập giá trị và đưa lỗi chặn về dạng kết quả → lý do → hành động ngay trong hộp thoại hoặc khối đỏ trên form.
@@ -21,20 +22,17 @@ function tc_recall_error_html(error) {
 }
 
 function tc_recall_call(frm, method, args, show_error, done) {
-	frappe.call({
+	// tracecore.desk_call: body ok: false đi kèm HTTP 409/422 nên phải đọc cả nhánh lỗi của frappe.call
+	tracecore.desk_call({
 		method: TC_RECALL_API + method,
 		args: { recall: frm.doc.name, ...args },
-		callback: (response) => {
-			const result = response.message || {};
-			if (result.ok === false) {
-				show_error(tc_recall_error_html(result.error));
-				return;
-			}
+		on_ok: () => {
 			if (done) {
 				done();
 			}
 			frm.reload_doc();
 		},
+		on_block: (error) => show_error(tc_recall_error_html(error)),
 	});
 }
 

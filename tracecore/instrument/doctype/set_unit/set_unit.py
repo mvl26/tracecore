@@ -18,6 +18,7 @@ from frappe.utils import cint
 from tracecore.core import code_registry
 from tracecore.core.step_gate import LIFECYCLE_DEFAULTS
 
+LOANER_TYPE_CODE = "LN"  # đoạn mã loại trong Set ID GIAI của bộ mượn (A-38 a)
 ISSUE_FIELDS = ("cycles_source",)  # ghi một lần khi cấp (cờ flags.tc_set_issue)
 TAG_FIELDS = ("tag_verified_on", "tag_verified_by")  # ghi qua quét kiểm tra thẻ (cờ flags.tc_tag_verify)
 # ghi qua đề nghị / duyệt thanh lý (cờ flags.tc_disposal, `instrument.disposal`, A-37 a)
@@ -50,6 +51,9 @@ class SetUnit(Document):
 		type_code = frappe.db.get_value("Instrument Set Type", self.set_type, "type_code")
 		if not type_code:
 			frappe.throw(_("Set Type {0} not found.").format(self.set_type))
+		# bộ mượn: GIAI series LN chung cho mọi loại bộ mượn (FEAT-017, A-38 a, FR-M1-05.5)
+		if cint(self.is_loaner):
+			type_code = LOANER_TYPE_CODE
 		self.name = self.set_id = code_registry.next_set_id(type_code)
 
 	def validate(self):

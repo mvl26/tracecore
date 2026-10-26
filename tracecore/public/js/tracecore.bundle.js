@@ -3,6 +3,7 @@
 // (FEAT-016, dùng ở list Set Unit, form Set Unit và form loại bộ); thanh lý và chuyển trạng thái thủ công
 // tracecore.admin.* (FEAT-004, form Set Unit và Pack).
 import "./tc_codes.js";
+import "./tc_desk_call.js";
 import "./tc_admin_actions.js";
 import "./tc_shelf_life.js";
 import "./tc_set_unit.js";

@@ -1,3 +1,4 @@
+/* global tracecore */
 // Desk: nút "Lập lệnh thu hồi" trên mẻ tiệt khuẩn (SCR-14, FEAT-029; UC-14 bước 3, FR-M2-20).
 // Chỉ R01/R02 thấy nút; server tự gom mọi gói bị ảnh hưởng của mẻ, không nhập tay. Lỗi chặn hiện inline trong hộp thoại.
 
@@ -33,21 +34,19 @@ function tc_load_open_recall(frm) {
 		primary_action_label: __("Open recall order"),
 		primary_action(values) {
 			dialog.get_primary_btn().prop("disabled", true);
-			frappe.call({
+			tracecore.desk_call({
 				method: "tracecore.v1.recall.create",
 				args: { load: frm.doc.name, reason: values.reason },
-				callback: (response) => {
-					const result = response.message || {};
+				on_ok: (result) => {
 					dialog.get_primary_btn().prop("disabled", false);
-					if (result.ok === false) {
-						dialog.fields_dict.error_html.$wrapper.html(
-							tc_load_error_html(result.error)
-						);
-						return;
-					}
 					dialog.hide();
 					frappe.set_route("Form", "Recall Order", result.recall.name);
 				},
+				on_block: (error) => {
+					dialog.get_primary_btn().prop("disabled", false);
+					dialog.fields_dict.error_html.$wrapper.html(tc_load_error_html(error));
+				},
+				on_fail: () => dialog.get_primary_btn().prop("disabled", false),
 			});
 		},
 	});

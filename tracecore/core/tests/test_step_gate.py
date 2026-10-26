@@ -640,7 +640,10 @@ class TestAfterSetStatusHook(FrappeTestCase):
 
 	def test_hook_name_is_declared(self):
 		self.assertEqual(step_gate.STATUS_HOOK, "tracecore_after_set_status")
-		self.assertEqual(frappe.get_hooks("tracecore_after_set_status"), [])
+		# FEAT-017 A-38 e: M2 hủy gói còn trong kho khi bộ mượn trả hãng
+		self.assertEqual(
+			frappe.get_hooks("tracecore_after_set_status"), ["tracecore.reprocessing.storage.on_set_status"]
+		)
 
 	def test_start_cycle_fires_hook_once_with_payload(self):
 		su = make_set_unit().name
