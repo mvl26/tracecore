@@ -125,6 +125,22 @@ def _replay(fn, endpoint, roles, kwargs, token, timestamp):
 				_("The transaction goes to R02 as a sync conflict."),
 			)
 		)
+	except frappe.ValidationError as exc:
+		# 400 (ClientTimestampError, tham số sai…) khi phát lại cũng là xung đột (A-40 Q2); 5xx vẫn ném để kiosk dừng
+		status = getattr(exc, "http_status_code", 417)
+		if not 400 <= status < 500:
+			raise
+		frappe.clear_last_message()
+		result = _block_body(
+			Block(
+				type(exc).__name__,
+				_("Request rejected"),
+				str(exc),
+				_("The transaction goes to R02 as a sync conflict."),
+			)
+		)
+		result["error"]["http_status"] = status
+		frappe.local.response["http_status_code"] = status
 	error = result.get("error") if isinstance(result, dict) and result.get("ok") is False else None
 	if error:
 		sync.record_conflict(

@@ -19,7 +19,7 @@ from frappe import _
 from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, code_registry, extension, gs1, step_gate
+from tracecore.core import client_time, code_range, code_registry, extension, gs1, step_gate
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -366,7 +366,9 @@ def _with_expected_expiry(row, set_type):
 # --- Sinh Cycle ID (FR-M2-07/08, BRU-ID-002/004, D13) ------------------------------------------------
 
 
-def generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts):
+def generate(
+	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+):
 	"""Sinh Cycle ID cho bộ tại T4 trong MỘT transaction; trả gói, HRI, ảnh DataMatrix và lệnh in.
 
 	`client_ts` là kết quả `parse_client_ts` (UTC, không múi giờ); `packed_at` = giờ hệ thống của nó (D13) và
@@ -378,11 +380,20 @@ def generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cli
 
 	Trả ``{"pack": {...}, "hri", "datamatrix_png_b64", "print": {"print_job", "status", "printer", "zpl",
 	"warning"}}``; ngày/giờ trong ``pack`` dạng ISO (``YYYY-MM-DD``, ``YYYY-MM-DD HH:MM:SS``), chữ giữ dấu.
+
+	`offline_cycle_id` (FEAT-009, A-40): gói đóng khi mất mạng, phát lại sau đó — dùng mã kiosk lấy từ Code Range
+	(`code_range.claim` kiểm đúng trạm, đúng ngày `packed_at`, chưa dùng) thay cho series; `client_ts` có thể cũ
+	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`.
 	"""
-	client_time.check_skew(client_ts)
+	if offline_cycle_id:
+		client_time.check_not_future(client_ts)
+	else:
+		client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		return _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts)
+		return _generate(
+			set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id
+		)
 	except Exception:
 		# Sau deadlock, InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
 		with contextlib.suppress(Exception):
@@ -390,7 +401,9 @@ def generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cli
 		raise
 
 
-def _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts):
+def _generate(
+	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+):
 	unit, set_type, ctx = _open(set_id, station, for_update=True, maint_actions=maint_actions)
 	_raise_first("tracecore_pack_checks", ctx)
 	bom = ctx.get("bom") or []
@@ -405,7 +418,11 @@ def _generate(set_id, station, confirmed, ci_batch, pack_type, maint_actions, cl
 	expiry = compute_expiry(packed_at.date(), pack_type, set_type.name)
 	printer = core_print.select_printer(station, set_type.method)
 
-	cycle_id = code_registry.next_cycle_id(packed_at, station)
+	if offline_cycle_id:
+		code_range.claim(offline_cycle_id, station, packed_at.date())
+		cycle_id = offline_cycle_id
+	else:
+		cycle_id = code_registry.next_cycle_id(packed_at, station)
 	pack = frappe.get_doc(
 		{
 			"doctype": "Pack",
