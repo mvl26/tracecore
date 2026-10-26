@@ -65,6 +65,25 @@ def _private_key():
 	return serialization.load_pem_private_key(pem.encode(), password=None)
 
 
+def decrypt_patient_code(enc: str) -> str:
+	"""Giải mã `patient_code_enc` (base64 của RSA-OAEP SHA-256) do PDA gửi; sai → ValueError (không kèm dữ liệu)."""
+	import base64
+	import binascii
+
+	from cryptography.hazmat.primitives import hashes
+	from cryptography.hazmat.primitives.asymmetric import padding
+
+	try:
+		cipher = base64.b64decode(enc or "", validate=True)
+		plain = _private_key().decrypt(
+			cipher,
+			padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None),
+		)
+		return plain.decode()
+	except (ValueError, binascii.Error, UnicodeDecodeError):
+		raise ValueError("patient code cannot be decrypted") from None
+
+
 def patient_public_key() -> str:
 	"""Public key PEM (SubjectPublicKeyInfo) để PDA mã hóa mã BN khi offline; sinh cặp khóa nếu chưa có."""
 	from cryptography.hazmat.primitives import serialization

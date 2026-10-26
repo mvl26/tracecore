@@ -37,6 +37,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PACK_TYPE_INVALID",
 			# FEAT-027 A-19: quét sử dụng T8
 			"PATIENT_CODE_REQUIRED",
+			"PATIENT_CODE_UNREADABLE",  # FEAT-009 A-40 D2: mã BN mã hóa từ PDA không giải được
 			"DEPARTMENT_REASON_REQUIRED",
 			"PATIENT_CODE_DEADLINE",
 			# FEAT-040 A-21: test hằng ngày và khóa máy

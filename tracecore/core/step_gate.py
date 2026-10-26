@@ -26,6 +26,7 @@ from frappe import _
 from frappe.utils import cint, now_datetime
 
 from tracecore.core import extension
+from tracecore.core.client_time import to_system_time
 from tracecore.core.errors import Block, BlockedError
 
 STEPS = ("T1", "T2", "T3", "T4", "T5")
@@ -303,7 +304,8 @@ def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None
 			"ref_name": ref_name,
 			"station": station,
 			"recorded_by": frappe.session.user,
-			"recorded_at": now_datetime(),
+			# FR-M1-06.4 (A-40 D6): thời điểm nghiệp vụ ở trạm; đồng bộ offline muộn vẫn đúng thứ tự trong lịch sử
+			"recorded_at": to_system_time(client_ts) if client_ts else now_datetime(),
 		}
 	)
 	if exists:

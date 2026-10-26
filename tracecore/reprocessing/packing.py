@@ -456,7 +456,7 @@ def _generate(
 	)
 	pack.insert(ignore_permissions=True, set_name=cycle_id)
 	pack.submit()
-	step_gate.record(unit.name, STEP, "Pass", "Pack", cycle_id, station)
+	step_gate.record(unit.name, STEP, "Pass", "Pack", cycle_id, station, client_ts)
 	step_gate.bind_cycle(unit.name, cycle_id, station)
 	extension.run("tracecore_after_cycle_id", pack, ctx)
 	return pack_label.pack_result(pack, pack_label.queue_label(pack, station, printer))

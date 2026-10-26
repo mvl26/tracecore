@@ -7,10 +7,11 @@ Audit Log `Reject` (FR-M2-18.2, xem `_common.run_at_step`). RPC ghi (`confirm`, 
 """
 
 import frappe
+from frappe import _
 
-from tracecore.core import gs1
-from tracecore.core.client_time import parse_client_ts
-from tracecore.core.errors import BlockedError
+from tracecore.core import crypto, gs1, sync
+from tracecore.core.client_time import parse_client_ts, to_system_time
+from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import usage as usage_service
 from tracecore.v1._common import (
@@ -71,29 +72,49 @@ def confirm(
 	room=None,
 	emergency=0,
 	department_reason=None,
+	patient_code_enc=None,
 	client_ts=None,
 	token=None,
 ):
-	"""Xác nhận sử dụng (SCR-37 bước 2): Usage Record, Pack → Used, Set Unit → Chờ tiếp nhận; không trả mã rõ."""
+	"""Xác nhận sử dụng (SCR-37 bước 2): Usage Record, Pack → Used, Set Unit → Chờ tiếp nhận; không trả mã rõ.
+
+	PDA offline gửi `patient_code_enc` (mã BN mã hóa bằng public key của site, A-40 D2) thay cho `patient_code`.
+	Khi phát lại (`X-TC-Replay`), thời điểm sử dụng = `client_ts` (ADR-003).
+	"""
 	require_any_role(*USAGE_ROLES)
-	return _run(
-		station,
-		client_ts,
-		lambda ts: usage_service.confirm(
+	replay = sync.is_replay()
+
+	def call(ts):
+		code = _decrypt(patient_code_enc) if patient_code_enc else patient_code
+		return usage_service.confirm(
 			cycle_id,
 			station,
 			_employee(),
-			patient_code,
+			code,
 			surgery_code,
 			surgeon,
 			room,
 			emergency,
 			department_reason,
 			ts,
-		),
-		"Pack",
-		cycle_id,
-	)
+			used_at=to_system_time(ts) if replay else None,
+		)
+
+	return _run(station, client_ts, call, "Pack", cycle_id)
+
+
+def _decrypt(enc):
+	try:
+		return crypto.decrypt_patient_code(enc)
+	except ValueError:
+		raise BlockedError(
+			Block(
+				"PATIENT_CODE_UNREADABLE",
+				_("Patient code cannot be read"),
+				_("The encrypted patient code from the PDA could not be decrypted."),
+				_("Do not use the pack yet; R02 checks the usage on the Desk."),
+			)
+		) from None
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

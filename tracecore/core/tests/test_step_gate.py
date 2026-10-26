@@ -294,6 +294,21 @@ class TestStepGate(FrappeTestCase):
 		)
 		self.assertIsNotNone(frappe.db.get_value("Step Gate Result", name, "recorded_at"))
 
+	def test_gate_recorded_at_uses_client_ts(self):
+		"""FR-M1-06.4 (A-40 D6): thời điểm cổng = thời điểm nghiệp vụ ở trạm, kể cả khi đồng bộ muộn."""
+		from datetime import datetime
+
+		from frappe.utils import get_datetime
+
+		from tracecore.core.client_time import to_system_time
+
+		su = make_set_unit().name
+		step_gate.start_cycle(su)
+		client_ts = datetime(2026, 10, 25, 16, 30)  # UTC = 23:30 giờ hệ thống
+		name = step_gate.record(su, "T1", "Pass", station="TR-001", client_ts=client_ts)
+		recorded = get_datetime(frappe.db.get_value("Step Gate Result", name, "recorded_at"))
+		self.assertEqual(recorded, to_system_time(client_ts))
+
 	def test_record_rejects_bad_input_and_cycle_zero(self):
 		su = make_set_unit().name
 		with self.assertRaises(frappe.ValidationError):

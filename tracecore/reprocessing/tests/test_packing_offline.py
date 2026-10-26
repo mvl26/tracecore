@@ -83,6 +83,10 @@ class TestOfflineGenerate(OfflinePackCase):
 		self.assertEqual(get_datetime(pack.packed_at), moment)
 		self.assertEqual(frappe.db.get_value("Code Registry", code, "ref_doctype"), "Pack")
 		self.assertEqual(frappe.db.get_value("Set Unit", ready.set_id, "active_cycle_id"), code)
+		gate = frappe.db.get_value(
+			"Step Gate Result", {"set_unit": ready.set_id, "step": "T4"}, "recorded_at"
+		)
+		self.assertEqual(get_datetime(gate), moment)  # FR-M1-06.4: cổng theo thời điểm ở trạm
 
 	def test_offline_generate_future_client_ts_rejected(self):
 		moment = add_to_date(now_datetime(), hours=1).replace(microsecond=0)
