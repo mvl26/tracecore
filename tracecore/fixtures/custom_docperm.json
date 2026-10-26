@@ -121,6 +121,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "5f8e3671de",
@@ -271,6 +272,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "3d174e600b",
@@ -1541,6 +1543,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "668663a584",
@@ -2463,6 +2466,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "07b12f2080",
@@ -2569,6 +2573,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "8d587be13e",
@@ -3082,6 +3087,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "41a5afd5e4",

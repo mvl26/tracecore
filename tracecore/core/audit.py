@@ -5,6 +5,7 @@ from decimal import Decimal
 import frappe
 from frappe import _
 from frappe.model import default_fields, no_value_fields, table_fields
+from frappe.model.delete_doc import check_if_doc_is_dynamically_linked, check_if_doc_is_linked
 from frappe.utils import cstr, now_datetime
 
 SKIP_FIELDTYPES = (*no_value_fields, "Password")
@@ -129,6 +130,63 @@ def on_document_event(doc, method):
 		log(action, doc.doctype, doc.name, new={"docstatus": doc.docstatus})
 
 
+# Danh mục R10 được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16); người khác chỉ ngừng dùng
+MASTER_DOCTYPES = frozenset(
+	{
+		"Instrument",
+		"Instrument Group",
+		"Instrument Set Type",
+		"Par Level",
+		"Sterile Location",
+		"Printer",
+		"Label Template",
+		"Zone Station",
+		"Equipment",
+		"Process Program",
+		"Equipment Type Norm",
+	}
+)
+MASTER_DELETE_ROLE = "TC R10"
+
+
+def _may_delete_master(doc):
+	"""R10 thật (không phải Administrator, vốn mang mọi role) xóa danh mục chưa có giao dịch liên kết."""
+	user = frappe.session.user
+	if doc.doctype not in MASTER_DOCTYPES or user == "Administrator":
+		return False
+	if not frappe.db.exists("Has Role", {"parent": user, "parenttype": "User", "role": MASTER_DELETE_ROLE}):
+		return False
+	check_if_doc_is_linked(doc)
+	check_if_doc_is_dynamically_linked(doc)
+	return True
+
+
+def _disable_codes(doc):
+	"""Mã đã cấp cho danh mục bị xóa vẫn nằm trong sổ (không cấp lại) nhưng bị vô hiệu."""
+	for name in frappe.get_all(
+		"Code Registry",
+		filters={"ref_doctype": doc.doctype, "ref_name": doc.name, "status": ("!=", "Disabled")},
+		pluck="name",
+	):
+		code = frappe.get_doc("Code Registry", name)
+		code.update(
+			{
+				"status": "Disabled",
+				"disabled_reason": _("{0} {1} deleted").format(_(doc.doctype), doc.name),
+				"disabled_on": now_datetime(),
+			}
+		)
+		code.save(ignore_permissions=True)
+
+
 def block_delete(doc, method):
-	"""Handler on_trash: chứng từ/danh mục nghiệp vụ không được xóa."""
+	"""Handler on_trash: chứng từ/danh mục nghiệp vụ không được xóa; trừ danh mục chưa dùng do R10 xóa (ghi Audit)."""
+	if _may_delete_master(doc):
+		if (
+			not doc.flags.tc_delete_logged
+		):  # handler có thể chạy hai lần (hook doc_events và on_trash của class)
+			doc.flags.tc_delete_logged = True
+			log("Delete", doc.doctype, doc.name, old=snapshot(doc))
+			_disable_codes(doc)
+		return
 	frappe.throw(_("{0} {1} cannot be deleted.").format(_(doc.doctype), doc.name))

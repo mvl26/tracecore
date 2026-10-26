@@ -3535,3 +3535,71 @@ Patient Code Hash,Hash mã bệnh nhân,Usage Record
 "Only R01, R02 or department staff can trace sets.","Chỉ R01, R02 hoặc nhân viên khoa được truy xuất bộ dụng cụ.",
 Enter at least one search criterion.,Nhập ít nhất một tiêu chí tìm kiếm.,
 "No result. Check the code, try only one criterion (Set ID, Cycle ID or load), or widen the date range.","Không có kết quả. Kiểm tra lại mã, thử chỉ một tiêu chí (Set ID, Cycle ID hoặc mẻ), hoặc mở rộng khoảng ngày.",
+Disposal,Thanh lý,Set Unit
+Disposal Status,Trạng thái thanh lý,Set Unit
+Disposal Reason,Lý do thanh lý,
+Disposal Requested By,Người đề nghị thanh lý,Set Unit
+Disposal Requested At,Thời điểm đề nghị thanh lý,Set Unit
+Disposal Decided By,Người quyết định thanh lý,Set Unit
+Disposal Decided At,Thời điểm quyết định thanh lý,Set Unit
+Disposal Decision Note,Ghi chú quyết định thanh lý,
+Requested,Đã đề nghị,Set Unit
+Approved,Đã duyệt,Set Unit
+Rejected,Bị từ chối,Set Unit
+Only {0} can {1}.,Chỉ {0} được {1}.,
+Ask {0} to do this step.,Đề nghị {0} thực hiện bước này.,
+request a disposal,đề nghị thanh lý,
+decide on a disposal,quyết định thanh lý,
+No {0} was entered.,Chưa nhập {0}.,
+"Enter the {0}, then try again.",Nhập {0} rồi thử lại.,
+disposal reason,lý do thanh lý,
+decision note,ghi chú quyết định,
+Disposal already requested,Đã có đề nghị thanh lý,
+Set {0} is waiting for R01 to decide on its disposal.,Bộ {0} đang chờ R01 quyết định thanh lý.,
+Wait for the decision of R01.,Chờ R01 quyết định.,
+Set cannot be disposed,Không thanh lý được bộ,
+Set {0} is {1}; only a set at end of life or sent to disposal at T3 can be disposed.,Bộ {0} đang {1}; chỉ bộ Hết vòng đời hoặc rẽ nhánh Thanh lý ở T3 mới thanh lý được.,
+Check the set status before requesting a disposal.,Kiểm tra trạng thái bộ trước khi đề nghị thanh lý.,
+Disposal requested for set {0}: {1},Đề nghị thanh lý bộ {0}: {1},
+No disposal request,Không có đề nghị thanh lý,
+Set {0} has no disposal request waiting for a decision.,Bộ {0} không có đề nghị thanh lý nào đang chờ quyết định.,
+Ask R02 to request the disposal first.,Đề nghị R02 lập đề nghị thanh lý trước.,
+Disposal of set {0}: {1},Thanh lý bộ {0}: {1},
+Set {0} is {1}; it can no longer be disposed.,Bộ {0} đang {1}; không còn thanh lý được.,
+Reject the request and ask R02 to check the set.,Từ chối đề nghị và đề nghị R02 kiểm tra lại bộ.,
+Set {0} is {1}; only a set at end of life or sent to disposal can be disposed.,Bộ {0} đang {1}; chỉ bộ Hết vòng đời hoặc rẽ nhánh Thanh lý mới thanh lý được.,
+Set {0} cannot be moved from {1} to {2} by hand.,Không chuyển tay được bộ {0} từ {1} sang {2}.,
+Pack {0} cannot be moved from {1} to {2} by hand.,Không chuyển tay được gói {0} từ {1} sang {2}.,
+Only R02 can change a status by hand.,Chỉ R02 được chuyển trạng thái thủ công.,
+No reason was entered for the manual status change.,Chưa nhập lý do chuyển trạng thái thủ công.,
+Enter why the status is changed by hand.,Nhập lý do chuyển trạng thái thủ công.,
+Incident ticket is required,Bắt buộc nhập số ticket sự cố,
+No incident ticket number was entered for the manual status change.,Chưa nhập số ticket sự cố cho lần chuyển trạng thái thủ công.,
+Enter the ticket number of the system incident.,Nhập số ticket của sự cố hệ thống.,
+Status change not allowed,Không được chuyển trạng thái,
+{0} {1} cannot be moved from {2} to {3} by hand.,Không chuyển tay được {0} {1} từ {2} sang {3}.,
+Choose another status.,Chọn trạng thái khác.,
+"Manual status change of {0} {1} from {2} to {3}, ticket {4}: {5}","Chuyển trạng thái thủ công {0} {1} từ {2} sang {3}, ticket {4}: {5}",
+Choose why pack {0} is void.,Chọn lý do gói {0} hết hiệu lực.,
+"Choose the void reason, then try again.",Chọn lý do hủy hiệu lực rồi thử lại.,
+Only a Set Unit or a Pack can be moved by hand.,Chỉ bộ hoặc gói mới chuyển trạng thái thủ công được.,
+{0} {1} deleted,Đã xóa {0} {1},
+Time,Thời điểm,Audit Trail
+User,Người dùng,Audit Trail
+Station,Trạm,Audit Trail
+Action,Thao tác,Audit Trail
+Document Type,Loại chứng từ,Audit Trail
+Document,Chứng từ,Audit Trail
+Reason,Lý do,Audit Trail
+Old Value,Giá trị cũ,Audit Trail
+New Value,Giá trị mới,Audit Trail
+Device,Thiết bị,Audit Trail
+Audit Log,Audit Log,Audit Trail
+Request disposal,Đề nghị thanh lý,
+Approve disposal,Duyệt thanh lý,
+Reject disposal,Từ chối thanh lý,
+Change status by hand,Chuyển trạng thái thủ công,
+Status after change,Trạng thái sau khi chuyển,
+Incident Ticket,Số ticket sự cố,
+Ask R02 to do this step.,Đề nghị R02 thực hiện bước này.,
+Pack {0} not found.,Không tìm thấy gói {0}.,

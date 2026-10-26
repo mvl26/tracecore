@@ -235,6 +235,35 @@ def _void_pack(pack_name, void_reason, note):
 	return pack
 
 
+FORCE_PACK_TARGETS = (IN_STOCK, "Issued", "Used", "Void")  # A-37 b: chuyển tay khi sự cố hệ thống
+FORCE_PACK_FROM = ("Released", IN_STOCK, "Issued", "Used")
+
+
+def force_status(name, status, void_reason=None, note=None):
+	"""Chuyển trạng thái gói thủ công (A-37 b, FR-M2-00.3); quyền, lý do, ticket do nơi gọi kiểm.
+
+	Gói đã ghi sổ, đang ``FORCE_PACK_FROM``, tới ``FORCE_PACK_TARGETS`` khác hiện tại; sai → ``ValidationError``.
+	Void đi đúng đường hết hiệu lực (vô hiệu Cycle ID, bộ Vô khuẩn sang Chờ tiếp nhận). Trả Pack.
+	"""
+	pack = _lock_pack(name)
+	if (
+		pack.docstatus != 1
+		or pack.status not in FORCE_PACK_FROM
+		or status not in FORCE_PACK_TARGETS
+		or status == pack.status
+	):
+		frappe.throw(
+			_("Pack {0} cannot be moved from {1} to {2} by hand.").format(
+				pack.name, _(pack.status, context="Pack"), _(status or "-", context="Pack")
+			)
+		)
+	if status == "Void":
+		return _void_pack(pack.name, void_reason, note)
+	pack.status = status
+	_save(pack)
+	return pack
+
+
 def mark_damaged(cycle_id, reason, station, client_ts=None):
 	"""Quét báo gói rách/ướt/mở kèm lý do: Pack Void (Torn), bộ sang Chờ tiếp nhận (A1, FR-M2-14).
 

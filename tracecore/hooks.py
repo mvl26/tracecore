@@ -470,7 +470,9 @@ before_tests = "tracecore.setup.install.before_tests"
 # Ignore links to specified DocTypes when deleting documents
 # -----------------------------------------------------------
 
-# ignore_links_on_delete = ["Communication", "ToDo"]
+# Audit Log (lịch sử) và Code Registry (sổ mã, mã bị vô hiệu chứ không xóa) không phải giao dịch: không chặn R10 xóa
+# danh mục chưa dùng (FEAT-004, A-37 d, FR-M9-16)
+ignore_links_on_delete = ["Audit Log", "Code Registry"]
 
 # Request Events
 # ----------------
