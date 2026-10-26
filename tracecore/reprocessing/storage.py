@@ -235,6 +235,21 @@ def _void_pack(pack_name, void_reason, note):
 	return pack
 
 
+def on_set_status(payload):
+	"""Hook ``tracecore_after_set_status``: bộ mượn trả hãng (A-38 e) → gói chưa cấp phát của bộ hết hiệu lực.
+
+	Gói Released / In Sterile Stock → Void ``Returned Unused``, Cycle ID vô hiệu. Trạng thái khác: không làm gì.
+	"""
+	if payload.get("new_status") != step_gate.RETURNED:
+		return
+	for name in frappe.get_all(
+		"Pack",
+		filters={"set_unit": payload["set_unit"], "docstatus": 1, "status": ("in", ("Released", IN_STOCK))},
+		pluck="name",
+	):
+		_void_pack(name, "Returned Unused", _("Loaner set returned to the vendor"))
+
+
 FORCE_PACK_TARGETS = (IN_STOCK, "Issued", "Used", "Void")  # A-37 b: chuyển tay khi sự cố hệ thống
 FORCE_PACK_FROM = ("Released", IN_STOCK, "Issued", "Used")
 

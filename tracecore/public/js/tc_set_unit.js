@@ -31,6 +31,7 @@ const TC_SU_STATUS_COLORS = {
 	"Awaiting Receipt": "orange",
 	"End of Life": "gray",
 	Disposed: "gray",
+	Returned: "gray",
 };
 
 function tc_su_ready() {

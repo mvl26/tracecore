@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "creation": "2026-10-26 20:00:00.000000",
+ "description": "Line of a loaner BOM (FEAT-017, A-38): instrument name and quantity received; returned and damaged quantities are written by the return action.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "instrument_name",
+  "qty",
+  "instrument",
+  "returned_qty",
+  "damaged_qty",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "label": "Instrument Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "label": "Qty",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "instrument",
+   "fieldtype": "Link",
+   "label": "Instrument",
+   "options": "Instrument",
+   "in_list_view": 1,
+   "columns": 2,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "returned_qty",
+   "fieldtype": "Int",
+   "label": "Returned Qty",
+   "in_list_view": 1,
+   "columns": 1,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "damaged_qty",
+   "fieldtype": "Int",
+   "label": "Damaged Qty",
+   "in_list_view": 1,
+   "columns": 1,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Data",
+   "label": "Note",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instrument",
+ "name": "Loaner BOM Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

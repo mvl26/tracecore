@@ -3603,3 +3603,113 @@ Status after change,Trạng thái sau khi chuyển,
 Incident Ticket,Số ticket sự cố,
 Ask R02 to do this step.,Đề nghị R02 thực hiện bước này.,
 Pack {0} not found.,Không tìm thấy gói {0}.,
+Loaner Set,Bộ mượn,
+Loaner BOM Item,Dòng BOM bộ mượn,
+Vendor,Hãng cho mượn,Loaner Set
+Set Name,Tên bộ,Loaner Set
+Method,Phương pháp tiệt khuẩn,Loaner Set
+GTIN-14,GTIN-14,Loaner Set
+Pack Type,Loại gói,Loaner Set
+Department,Khoa sử dụng,Loaner Set
+Received On,Ngày nhận,Loaner Set
+Expected Return,Ngày trả dự kiến,
+IFU,IFU,Loaner Set
+Status,Trạng thái,Loaner Set
+Draft,Nháp,Loaner Set
+Received,Đã nhận,Loaner Set
+Returned,Đã trả hãng,Loaner Set
+Returned,Đã trả hãng,Set Unit
+Loaner BOM,BOM mượn,
+Set ID,Set ID,Loaner Set
+Set Unit,Bộ dụng cụ,Loaner Set
+Set Type,Loại bộ,Loaner Set
+Extension,Gia hạn,Loaner Set
+Extension Reason,Lý do gia hạn,
+Last Reminded On,Ngày nhắc gần nhất,Loaner Set
+Return,Trả hãng,Loaner Set
+Returned On,Thời điểm trả,Loaner Set
+Returned By,Người trả,Loaner Set
+Return Note,Ghi chú trả,Loaner Set
+Missing Count,Số dụng cụ thiếu,Loaner Set
+Damaged Count,Số dụng cụ hỏng,Loaner Set
+Incident,Sự cố (NC),Loaner Set
+Amended From,Sửa từ,Loaner Set
+Instrument Name,Tên dụng cụ,Loaner BOM Item
+Qty,Số lượng,Loaner BOM Item
+Instrument,Dụng cụ,Loaner BOM Item
+Returned Qty,Số trả,Loaner BOM Item
+Damaged Qty,Số hỏng,
+Note,Ghi chú,Loaner BOM Item
+"Only R02 can receive, return or extend a loaner set.","Chỉ R02 được nhận, trả hoặc gia hạn bộ mượn.",
+Return date not accepted,Ngày trả không hợp lệ,
+The expected return date {0} is before the received date {1}.,Ngày trả dự kiến {0} trước ngày nhận {1}.,
+Choose a return date on or after the received date.,Chọn ngày trả từ ngày nhận trở đi.,
+Enter at least one instrument of the loaner set.,Nhập ít nhất một dụng cụ của bộ mượn.,
+Row {0}: enter the instrument name.,Dòng {0}: nhập tên dụng cụ.,
+Row {0}: instrument {1} is listed twice. Combine the quantities in one line.,Dòng {0}: dụng cụ {1} bị nhập hai lần. Gộp số lượng vào một dòng.,
+Row {0}: quantity must be a whole number from 1 to {1}.,Dòng {0}: số lượng phải là số nguyên từ 1 đến {1}.,
+A received loaner set cannot be cancelled; return it to the vendor instead.,Không hủy được bộ mượn đã nhận; hãy lập biên bản trả hãng.,
+GTIN already used,GTIN đã được dùng,
+"GTIN {0} belongs to set type {1} of the hospital, not to a loaner set.","GTIN {0} thuộc loại bộ {1} của bệnh viện, không phải bộ mượn.",
+Check the GTIN-14 on the vendor's set.,Kiểm tra GTIN-14 trên bộ của hãng.,
+Loaner set {0},Bộ mượn {0},
+Return quantities not accepted,Số lượng trả không hợp lệ,
+{0} lines of the return have wrong quantities.,{0} dòng của biên bản trả có số lượng sai.,
+For every line enter the returned quantity (0 to the received quantity) and the damaged quantity (0 to the returned quantity).,Mỗi dòng nhập số trả (0 đến số đã nhận) và số hỏng (0 đến số trả).,
+Loaner set is not on loan,Bộ mượn không còn đang mượn,
+Loaner set {0} is {1}; only a received loaner set can be returned.,Bộ mượn {0} đang {1}; chỉ bộ đã nhận mới trả được.,
+Open the loaner set that is still on loan.,Mở bộ mượn còn đang mượn.,
+Loaner set not reprocessed,Bộ mượn chưa tái xử lý,
+Set {0} is {1}; a loaner set is returned only after the full reprocessing chain (T1 to T5).,Bộ {0} đang {1}; bộ mượn chỉ được trả sau khi qua đủ chuỗi tái xử lý (T1 đến T5).,
+"Send the set through receipt, washing, assembly, packing and sterilization, then return it.","Đưa bộ qua tiếp nhận, rửa, lắp ráp, đóng gói và tiệt khuẩn rồi mới trả.",
+Returned to vendor: {0},Trả hãng: {0},
+No reason was entered for extending the loan.,Chưa nhập lý do gia hạn.,
+Enter why the loaner set is kept longer.,Nhập lý do giữ bộ mượn lâu hơn.,
+Loaner set {0} is {1}; only a received loaner set can be extended.,Bộ mượn {0} đang {1}; chỉ bộ đã nhận mới gia hạn được.,
+Loaner set {0} ({1}) is overdue since {2},Bộ mượn {0} ({1}) quá hạn trả từ {2},
+Set {0} is {1}; only a sterile loaner set can be returned to the vendor.,Bộ {0} đang {1}; chỉ bộ mượn Vô khuẩn mới trả hãng được.,
+Loaner set returned to the vendor,Bộ mượn đã trả hãng,
+Loaner set {0} ({1}) was returned to the vendor missing: {2}.,Bộ mượn {0} ({1}) trả hãng bị thiếu: {2}.,
+Return to vendor,Trả hãng,
+Extend loan,Gia hạn mượn,
+Loaner set receipt,Biên bản nhận bộ mượn,
+Loaner set return note,Biên bản trả bộ mượn,
+Open Set Unit,Mở bộ dụng cụ,
+Overdue: the expected return date has passed.,Quá hạn: đã qua ngày trả dự kiến.,
+Loaner set receipt,Biên bản nhận bộ mượn,TC Loaner Receipt
+Not received yet,Chưa nhận,TC Loaner Receipt
+Vendor,Hãng cho mượn,TC Loaner Receipt
+Set name,Tên bộ,TC Loaner Receipt
+Set ID,Set ID,TC Loaner Receipt
+Method,Phương pháp,TC Loaner Receipt
+Department,Khoa sử dụng,TC Loaner Receipt
+Received on,Ngày nhận,TC Loaner Receipt
+Expected return,Ngày trả dự kiến,TC Loaner Receipt
+No.,STT,TC Loaner Receipt
+Instrument,Dụng cụ,TC Loaner Receipt
+Code,Mã,TC Loaner Receipt
+Qty,SL,TC Loaner Receipt
+"The set must be washed, assembled, packed and sterilized at the department before its first use.","Bộ phải được rửa, lắp ráp, đóng gói và tiệt khuẩn tại khoa trước lần dùng đầu tiên.",TC Loaner Receipt
+Vendor representative,Đại diện hãng,TC Loaner Receipt
+Received by (CSSD),Người nhận (KSNK),TC Loaner Receipt
+Loaner set return note,Biên bản trả bộ mượn,TC Loaner Return
+Not returned yet,Chưa trả,TC Loaner Return
+Vendor,Hãng cho mượn,TC Loaner Return
+Set name,Tên bộ,TC Loaner Return
+Set ID,Set ID,TC Loaner Return
+Received on,Ngày nhận,TC Loaner Return
+Returned on,Thời điểm trả,TC Loaner Return
+Returned by,Người trả,TC Loaner Return
+Note,Ghi chú,TC Loaner Return
+Incident,Sự cố (NC),TC Loaner Return
+No.,STT,TC Loaner Return
+Instrument,Dụng cụ,TC Loaner Return
+Received,Đã nhận,TC Loaner Return
+Returned,Đã trả,TC Loaner Return
+Missing,Thiếu,TC Loaner Return
+Damaged,Hỏng,TC Loaner Return
+Missing: {0} · Damaged: {1},Thiếu: {0} · Hỏng: {1},TC Loaner Return
+The set was reprocessed after its last use before being returned. Its Set ID is no longer valid.,Bộ đã được tái xử lý sau lần dùng cuối trước khi trả. Set ID của bộ hết hiệu lực.,TC Loaner Return
+Handed over by (CSSD),Người giao (KSNK),TC Loaner Return
+Vendor representative,Đại diện hãng,TC Loaner Return
+Return Note,Ghi chú trả,

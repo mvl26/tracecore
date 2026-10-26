@@ -3,7 +3,7 @@ DT-INSTR,Instrument,R,RWS,R,R,R,R,R,R,R,RW,FEAT-014 A-06 I15: mọi vai trò TC 
 DT-SETTYPE,Instrument Set Type,R,RWS,R,R,R,R,R,R,R,RW,"FEAT-015 A-09 S12 (mới hơn ma trận): TC R03-R09 đọc; System Manager đọc/tạo/ghi theo AMENDMENT_GRANTS"
 DT-SETBOM,Set BOM Item,R,R,R,R,R,R,R,R,R,R,"FEAT-015 A-09 S12 (mới hơn ma trận): mọi TC role chỉ đọc; không ai tạo/ghi trực tiếp, dòng chỉ tạo qua bom_versions (cờ tc_bom)"
 DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,
-DT-LOANER,Loaner Instrument,R,RWS,R,R,R,R,,,R,RW,future FEAT-017
+DT-LOANER,Loaner Set,R,RWS,R,R,R,R,,,R,RW,FEAT-017 A-38: tên DocType theo architecture §5.3 (Loaner Set); R02 nhận và trả
 DT-INSTRMAINT,Instrument Maintenance,R,RWS,R,R,R,R,,,R,RW,
 DT-RECEIPT,Dirty Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-019 A-30: DocType Dirty Receipt (tên BA Receipt); ghi/sổ chỉ qua dịch vụ tiếp nhận (cờ tc_receiving)
 DT-WASHBATCH,Wash Batch,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-021
