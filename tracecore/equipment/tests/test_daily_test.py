@@ -162,3 +162,15 @@ class TestIntegration(DailyTestCase):
 			sorted(frappe.get_all("Daily Test", filters={"equipment": machine.name}, pluck="test_type")),
 			["bowie_dick", "leak"],
 		)
+
+
+class TestLoadIndicator(IsolatedTestCase):
+	"""Hook `tracecore_load_daily_indicator` (A-23): T5b lấy Bowie-Dick từ test hằng ngày của máy trong ngày chạy mẻ."""
+
+	def test_returns_latest_bowie_dick_of_the_day_and_nothing_for_other_indicators(self):
+		machine = make_sterilizer().name  # factory ghi sẵn test hằng ngày Đạt của hôm nay
+		row = daily_test.load_indicator(machine, "bowie_dick", today())
+		self.assertEqual((row["result"], row["test_date"]), ("Pass", today()))
+		self.assertTrue(row["daily_test"])
+		self.assertIsNone(daily_test.load_indicator(machine, "chemical_class_5", today()))
+		self.assertIsNone(daily_test.load_indicator(machine, "bowie_dick", add_days(today(), -1)))

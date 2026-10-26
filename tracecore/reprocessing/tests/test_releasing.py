@@ -193,6 +193,8 @@ class TestRelease(ReleaseCase):
 
 	@bru("BRU-REP-005")
 	def test_release_needs_result_and_every_required_indicator(self):
+		# máy chưa có test hằng ngày hôm nay: Bowie-Dick phải ghi theo mẻ (A-23)
+		frappe.db.delete("Daily Test", {"equipment": self.machine.name})
 		self.save_data()
 		block = blocked(self, self.release)
 		self.assertEqual(block.code, "LOAD_NOT_RELEASABLE")
@@ -328,3 +330,49 @@ class TestRejectAndBi(ReleaseCase):
 				"Audit Log", {"ref_name": self.load.name, "action": "Override", "reason": "BIPositive"}
 			)
 		)
+
+
+class TestBowieDickFromDailyTest(ReleaseCase):
+	"""A-23: Bowie-Dick của mẻ lấy từ test hằng ngày Đạt của máy trong ngày chạy mẻ (FEAT-040), không nhập lại ở T5b."""
+
+	def daily(self, result):
+		row = frappe.get_doc(
+			{
+				"doctype": "Daily Test",
+				"equipment": self.machine.name,
+				"test_type": "bowie_dick",
+				"result": result,
+				"test_date": today(),
+				"lot": "BD-LOT",
+				"lot_expiry": add_to_date(today(), days=30),
+				"tested_at": now_datetime(),
+			}
+		)
+		row.flags.tc_daily_test = True
+		return row.insert(ignore_permissions=True)
+
+	def test_todays_daily_test_fills_the_bowie_dick_and_is_kept_at_release(self):
+		ctx = releasing.context(self.load.name, self.machine.name, self.load.name, STATION)
+		self.assertEqual(ctx["indicator_state"]["bowie_dick"], "Pass")
+		self.assertEqual(ctx["daily_indicators"]["bowie_dick"]["result"], "Pass")
+		self.save_data()
+		self.result()
+		self.indicator("chemical_class_5")  # chỉ còn chỉ thị hóa học của mẻ phải ghi
+		self.assertEqual(self.release()["status"], "Released")
+		rows = frappe.get_all(
+			"Load Indicator Result",
+			filters={"load": self.load.name, "indicator": "bowie_dick"},
+			fields=["result", "test_date"],
+		)
+		self.assertEqual([(row.result, str(row.test_date)) for row in rows], [("Pass", today())])
+
+	def test_without_a_daily_test_the_bowie_dick_must_be_recorded(self):
+		frappe.db.delete("Daily Test", {"equipment": self.machine.name})
+		ctx = releasing.context(self.load.name, self.machine.name, self.load.name, STATION)
+		self.assertEqual(ctx["indicator_state"]["bowie_dick"], "Missing")
+		self.assertNotIn("bowie_dick", ctx["daily_indicators"])
+
+	def test_latest_failed_daily_test_fails_the_indicator(self):
+		self.daily("Fail")
+		ctx = releasing.context(self.load.name, self.machine.name, self.load.name, STATION)
+		self.assertEqual(ctx["indicator_state"]["bowie_dick"], "Fail")
