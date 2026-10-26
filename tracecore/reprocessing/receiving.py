@@ -22,6 +22,9 @@ from tracecore.core.errors import Block, BlockedError
 
 STEP = "T1"
 SAVEPOINT = "tc_receipt_submit"
+OFFLINE_SAVEPOINT = (
+	"tc_receipt_offline"  # phiếu offline phát lại (FEAT-009): hoàn tác cả phiếu khi một bộ lỗi
+)
 DRAFT = 0
 PHOTO_MAX_BYTES = 5 * 1024 * 1024
 PHOTO_MAX_PIXELS = 40_000_000
@@ -186,11 +189,14 @@ def _manual_deliverer(department, name):
 # --- Mở, tiếp tục, hủy phiếu -----------------------------------------------------------------------------
 
 
-def open_receipt(station, receiver, client_ts, raw=None, department=None, deliverer_name=None):
+def open_receipt(
+	station, receiver, client_ts, raw=None, department=None, deliverer_name=None, abandon_drafts=True
+):
 	"""Mở phiếu nháp mới từ thẻ người giao `raw` hoặc từ khoa + tên (người giao không có thẻ); không có cả hai thì
 	tiếp tục phiếu nháp gần nhất của (`receiver`, `station`), hoặc trả None.
 
-	Mở phiếu mới đóng (``abandoned``) phiếu nháp cũ của cùng người nhận và trạm. `client_ts` là UTC không múi giờ.
+	Mở phiếu mới đóng (``abandoned``) phiếu nháp cũ của cùng người nhận và trạm, trừ khi `abandon_drafts` False
+	(phiếu offline phát lại không bỏ phiếu đang làm online, A-40 D3). `client_ts` là UTC không múi giờ.
 	Trả `view` của phiếu (xem dưới).
 	"""
 	if not raw and not (department or deliverer_name):
@@ -211,11 +217,12 @@ def open_receipt(station, receiver, client_ts, raw=None, department=None, delive
 			"deliverer_name": _manual_deliverer(department, deliverer_name),
 			"needs_card": 1,
 		}
-	for name in frappe.get_all(
+	drafts = frappe.get_all(
 		"Dirty Receipt",
 		filters={"receiver": receiver, "station": station, "docstatus": DRAFT, "abandoned": 0},
 		pluck="name",
-	):
+	)
+	for name in drafts if abandon_drafts else ():
 		_abandon(_draft(name, station, receiver))
 	doc = frappe.get_doc(
 		{
@@ -393,16 +400,26 @@ def _approve_force(status, force_reason, session, proof):
 
 
 def scan_set(
-	receipt, raw, station, receiver, client_ts, force_reason=None, session=None, reviewer_proof=None
+	receipt,
+	raw,
+	station,
+	receiver,
+	client_ts,
+	force_reason=None,
+	session=None,
+	reviewer_proof=None,
+	offline=False,
 ):
 	"""Quét một Set ID vào phiếu nháp `receipt`; trả ``{"duplicate", "item", "summary"}``.
 
 	Chỉ nhận mã bộ; trạng thái phải hợp T1 (`step_gate.check`, FR-M2-02). Bộ đã có trong phiếu → ``duplicate`` và không
 	thêm dòng (FR-M2-01.6). `force_reason`/`reviewer_proof` (PIN proof của phiên `session`, R02) chỉ có hiệu lực khi
 	bộ bị từ chối (A-33). BOM và ảnh là phiên bản áp dụng tại ngày quét theo giờ hệ thống; chưa ghi gì vào Set Unit.
-	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → ClientTimestampError.
+	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → ClientTimestampError;
+	`offline` (phát lại, A-40): `client_ts` cũ được, nơi gọi đã chặn giờ tương lai.
 	"""
-	client_time.check_skew(client_ts)
+	if not offline:
+		client_time.check_skew(client_ts)
 	doc = _draft(receipt, station, receiver)
 	scanned = gs1.parse_scan(raw)
 	if scanned["type"] != "set":
@@ -667,6 +684,56 @@ def submit(receipt, station, receiver, client_ts):
 		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
 		with contextlib.suppress(Exception):
 			frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+
+
+def submit_offline(station, receiver, client_ts, receipt):
+	"""Phiếu T1 làm khi mất mạng, phát lại thành MỘT lệnh (A-40 D3): mở → quét từng bộ → xác nhận → ghi sổ.
+
+	``receipt = {"deliverer_raw"? | "department" + "deliverer_name", "items": [{"set_id", "lines"?, "confirm_all"?,
+	"note"?, "ack_incomplete"?}]}``. Thời điểm mọi bước = `client_ts` gốc (cũ được, tương lai bị chặn). Không bỏ phiếu
+	nháp đang làm online của người nhận. Một bộ bị từ chối → hoàn tác cả phiếu và ném lại lỗi của bộ đó (Sync
+	Conflict khi phát lại). Trả kết quả của `submit`.
+	"""
+	client_time.check_not_future(client_ts)
+	items = (receipt or {}).get("items") or []
+	if not items:
+		raise _blocked(
+			"RECEIPT_EMPTY",
+			_("Receipt has no sets"),
+			_("The offline receipt has no set to submit."),
+			_("Scan the Set ID of each set before submitting the receipt."),
+		)
+	frappe.db.savepoint(OFFLINE_SAVEPOINT)
+	try:
+		opened = open_receipt(
+			station,
+			receiver,
+			client_ts,
+			raw=receipt.get("deliverer_raw"),
+			department=receipt.get("department"),
+			deliverer_name=receipt.get("deliverer_name"),
+			abandon_drafts=False,
+		)
+		name = opened["receipt"]
+		for item in items:
+			set_id = gs1.parse_scan(item.get("set_id"))["id"] or item.get("set_id")
+			scan_set(name, item.get("set_id"), station, receiver, client_ts, offline=True)
+			confirm_line(
+				name,
+				set_id,
+				station,
+				receiver,
+				lines=item.get("lines"),
+				confirm_all=bool(cint(item.get("confirm_all"))),
+				note=item.get("note"),
+				finalize=True,
+				ack_incomplete=bool(cint(item.get("ack_incomplete"))),
+			)
+		return submit(name, station, receiver, client_ts)
+	except Exception:
+		with contextlib.suppress(Exception):
+			frappe.db.rollback(save_point=OFFLINE_SAVEPOINT)
 		raise
 
 

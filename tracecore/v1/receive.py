@@ -247,3 +247,50 @@ def submit(receipt, station, client_ts=None, token=None):
 		lambda: {"ok": True, **receiving.submit(receipt, station, _receiver(), timestamp)},
 		*_receipt_ref(receipt),
 	)
+
+
+def _offline_receipt(value):
+	"""Phiếu offline: object (hoặc chuỗi JSON) có `items` là danh sách bộ; dòng xác nhận qua `_lines` (400 khi sai)."""
+	message = _("receipt must be an object with a list of items.")
+	if isinstance(value, str):
+		try:
+			value = json.loads(value)
+		except ValueError:
+			raise BadRequestError(message) from None
+	if not isinstance(value, dict) or not isinstance(value.get("items"), list):
+		raise BadRequestError(message)
+	items = []
+	for item in value["items"]:
+		if not isinstance(item, dict):
+			raise BadRequestError(message)
+		items.append(
+			{
+				"set_id": _text(item.get("set_id"), "set_id", required=True),
+				"lines": _lines(item.get("lines")),
+				"confirm_all": _flag(item.get("confirm_all")),
+				"note": _text(item.get("note"), "note"),
+				"ack_incomplete": _flag(item.get("ack_incomplete")),
+			}
+		)
+	return {
+		"deliverer_raw": _text(value.get("deliverer_raw"), "deliverer_raw"),
+		"department": _text(value.get("department"), "department"),
+		"deliverer_name": _text(value.get("deliverer_name"), "deliverer_name"),
+		"items": items,
+	}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*RECEIVE_ROLES)
+@idempotent
+def submit_offline(station, receipt, client_ts=None, token=None):
+	"""Phiếu T1 làm khi mất mạng, phát lại thành một lệnh (FEAT-009, A-40 D3); xem `receiving.submit_offline`."""
+	require_any_role(*RECEIVE_ROLES)
+	payload = _offline_receipt(receipt)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		STEP,
+		station,
+		timestamp,
+		lambda: {"ok": True, **receiving.submit_offline(station, _receiver(), timestamp, payload)},
+	)
