@@ -21,3 +21,25 @@ listen_host = 127.0.0.1
 listen_port = 8765
 output_dir = ~/.tracecore-agent/labels
 db_path = ~/.tracecore-agent/queue.sqlite3
+
+; Dữ liệu máy tự động (FEAT-024, ADR-007): một mục cho mỗi máy kết nối được (Equipment.is_connected = 1) cùng khu với
+; trạm này. Đặt tên chu trình trên máy = mã lô/mẻ (LR-…/ME-…) để khớp chính xác; không có thì khớp theo giờ bắt đầu.
+; Thử một lượt: python3 -m tracecore_agent machines
+;[machine:TB-0015]
+;driver = csv_generic
+;path = /mnt/sterilizer-export
+;glob = *.csv
+;delimiter = ;
+;time_format = %d/%m/%Y %H:%M
+;timezone = +07:00
+;col.cycle_ref = Cycle
+;col.load_id = Batch
+;col.program = Program
+;col.started_at = Start
+;col.ended_at = End
+;col.result = Status
+;col.alerts = Alarm
+;result.pass = OK
+;result.fail = FAIL
+;param.Nhiệt độ = Temp
+;param.Áp suất = Pressure

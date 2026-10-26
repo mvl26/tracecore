@@ -2,9 +2,19 @@
 
 import configparser
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 DEFAULT_CONFIG = "~/.tracecore-agent/agent.ini"
+MACHINE_PREFIX = "machine:"
+
+
+@dataclass
+class MachineConfig:
+	"""Một máy kết nối được (FEAT-024): mục ``[machine:<TB-####>]``, ``driver`` + các khóa của driver."""
+
+	equipment: str
+	driver: str
+	options: dict
 
 
 @dataclass
@@ -19,6 +29,7 @@ class AgentConfig:
 	printer_port: int = 9100
 	listen_host: str = "127.0.0.1"
 	listen_port: int = 8765
+	machines: list = field(default_factory=list)
 
 	@property
 	def printer_mode(self):
@@ -26,9 +37,23 @@ class AgentConfig:
 		return "printer" if self.printer_host else "file"
 
 
+def _machines(parser):
+	return [
+		MachineConfig(
+			equipment=section[len(MACHINE_PREFIX) :].strip(),
+			driver=parser[section].get("driver", "csv_generic").strip(),
+			options={key: value for key, value in parser[section].items() if key != "driver"},
+		)
+		for section in parser.sections()
+		if section.startswith(MACHINE_PREFIX)
+	]
+
+
 def load(path=DEFAULT_CONFIG):
 	path = os.path.expanduser(str(path))
-	parser = configparser.ConfigParser()
+	# không nội suy `%` (định dạng giờ `%d/%m/%Y` của driver CSV); giữ hoa thường của `param.<tên>` (FEAT-024)
+	parser = configparser.ConfigParser(interpolation=None)
+	parser.optionxform = str
 	if not parser.read(path, encoding="utf-8"):
 		raise FileNotFoundError(f"Agent config not found: {path}")
 	agent = parser["agent"] if parser.has_section("agent") else {}
@@ -44,4 +69,5 @@ def load(path=DEFAULT_CONFIG):
 		listen_port=int(agent.get("listen_port") or 8765),
 		output_dir=os.path.expanduser(agent.get("output_dir") or "~/.tracecore-agent/labels"),
 		db_path=os.path.expanduser(agent.get("db_path") or "~/.tracecore-agent/queue.sqlite3"),
+		machines=_machines(parser),
 	)

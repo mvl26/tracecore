@@ -62,6 +62,15 @@ class ServerClient:
 		"""Cấu hình trạm (danh sách máy in đang dùng) — RPC tracecore.v1.station.config."""
 		return self.call("tracecore.v1.station.config", station=self.cfg.station)
 
+	def ingest_machine_data(self, equipment, cycle):
+		"""Gửi một chu trình máy (FEAT-024, A-39); 404 = chưa khớp lô/mẻ, gửi lại sau."""
+		return self.call(
+			"tracecore.v1.load.ingest_machine_data",
+			station=self.cfg.station,
+			equipment=equipment,
+			cycle=cycle,
+		)
+
 	def test_label(self):
 		return self.call("tracecore.v1.print.test_label", station=self.cfg.station)
 

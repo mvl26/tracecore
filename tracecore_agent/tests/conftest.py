@@ -17,6 +17,8 @@ class StubFrappe:
 		self.requests = []
 		self.fail_status = None
 		self.printers = []
+		# FEAT-024: mã HTTP trả cho từng cycle_ref của ingest_machine_data (thiếu = 200)
+		self.ingest_status = {}
 		self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
 		self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}"
 		threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
@@ -44,6 +46,20 @@ class StubFrappe:
 					self.send_response(stub.fail_status)
 					self.end_headers()
 					self.wfile.write(b'{"exc_type": "PermissionError"}')
+					return
+				if method.endswith("ingest_machine_data"):
+					ref = (body.get("cycle") or {}).get("cycle_ref")
+					status = stub.ingest_status.get(ref, 200)
+					ok = status == 200
+					message = (
+						{"ok": ok, "name": "ME-261026-01"} if ok else {"ok": False, "error": {"code": "X"}}
+					)
+					payload = json.dumps({"message": message}).encode()
+					self.send_response(status)
+					self.send_header("Content-Type", "application/json")
+					self.send_header("Content-Length", str(len(payload)))
+					self.end_headers()
+					self.wfile.write(payload)
 					return
 				if method.endswith("test_label"):
 					message = {

@@ -121,6 +121,8 @@ HTTP_STATUS: dict[str, int] = {
 			"ASSEMBLY_NOT_FOUND",
 			"RECEIPT_NOT_FOUND",
 			"DELIVERER_NOT_FOUND",
+			# FEAT-024 A-39: chu trình máy chưa khớp lô/mẻ nào; agent giữ lại và gửi lại sau
+			"MACHINE_CYCLE_UNMATCHED",
 		),
 		404,
 	),

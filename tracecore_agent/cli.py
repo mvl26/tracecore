@@ -1,4 +1,4 @@
-"""Dòng lệnh agent: ``python3 -m tracecore_agent [--config PATH] serve|health|hello|config``."""
+"""Dòng lệnh agent: ``python3 -m tracecore_agent [--config PATH] serve|health|hello|config|machines``."""
 
 import argparse
 import base64
@@ -11,6 +11,7 @@ import time
 from tracecore_agent import __version__, config
 from tracecore_agent.client import ServerClient
 from tracecore_agent.jobqueue import PrintQueue
+from tracecore_agent.machines import MachineStore, poll_once
 from tracecore_agent.printers import PrinterDirectory
 from tracecore_agent.server import make_server
 from tracecore_agent.service import process_one
@@ -19,6 +20,22 @@ log = logging.getLogger("tracecore_agent")
 HEARTBEAT_SECONDS = 30
 POLL_SECONDS = 1.0
 CONFIG_REFRESH_BEATS = 10
+MACHINE_POLL_SECONDS = 60  # FEAT-024: quét dữ liệu máy kết nối được mỗi phút
+
+
+def _machine_store(cfg):
+	"""Sổ chu trình đã gửi, chung file SQLite với hàng đợi in."""
+	return MachineStore(cfg.db_path)
+
+
+def cmd_machines(cfg, queue):
+	"""Quét một lượt dữ liệu máy (FEAT-024) và in số chu trình đã gửi / chờ / bị từ chối / bỏ."""
+	if not cfg.machines:
+		print("tracecore_agent: no [machine:<TB-####>] section in the config", file=sys.stderr)
+		return 1
+	summary = poll_once(cfg, ServerClient(cfg), _machine_store(cfg))
+	print(json.dumps(summary))
+	return 0
 
 
 def cmd_health(cfg, queue):
@@ -69,10 +86,18 @@ def cmd_serve(cfg, queue):
 	client = ServerClient(cfg)
 	directory = PrinterDirectory(cfg, client)
 	directory.refresh()
+	machines = _machine_store(cfg) if cfg.machines else None
 	beats = 0
 	next_heartbeat = 0.0
+	next_machine_poll = 0.0
 	try:
 		while True:
+			if machines and time.monotonic() >= next_machine_poll:
+				try:
+					poll_once(cfg, client, machines)
+				except Exception as error:  # dữ liệu máy lỗi không được dừng việc in
+					log.warning("machine poll failed: %s", error)
+				next_machine_poll = time.monotonic() + MACHINE_POLL_SECONDS
 			if time.monotonic() >= next_heartbeat:
 				try:
 					client.heartbeat(queue.depth())
@@ -90,7 +115,13 @@ def cmd_serve(cfg, queue):
 		server.shutdown()
 
 
-COMMANDS = {"config": cmd_config, "health": cmd_health, "hello": cmd_hello, "serve": cmd_serve}
+COMMANDS = {
+	"config": cmd_config,
+	"health": cmd_health,
+	"hello": cmd_hello,
+	"machines": cmd_machines,
+	"serve": cmd_serve,
+}
 
 
 def main(argv=None):
