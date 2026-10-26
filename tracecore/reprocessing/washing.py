@@ -928,7 +928,8 @@ def set_result(
 	`tracecore_after_wash_failed` (NC tự tạo là FEAT-030, Q22); Đạt gọi `tracecore_after_wash_complete`. Lỗi giữa
 	chừng hoàn tác về savepoint: không bộ nào có cổng mới, lô vẫn `Running`.
 
-	Trả ``{"batch", "result", "sets": [{"set_id", "status", "redo_count"}], "incident_id": None}``.
+	Trả ``{"batch", "result", "sets": [{"set_id", "status", "redo_count"}], "incident_id"}``; ``incident_id`` là NC tự
+	tạo khi Không đạt (FEAT-030), None khi Đạt.
 	"""
 	client_ts = client_ts or client_time.utc_now()
 	client_time.check_skew(client_ts)
@@ -1024,4 +1025,11 @@ def _set_result(
 		status = frappe.db.get_value("Set Unit", set_id, "status")
 		redo = next(g["redo_count"] for g in step_gate.gates(set_id) if g["step"] == STEP)
 		states.append({"set_id": set_id, "status": status, "redo_count": redo})
-	return {"batch": doc.name, "result": result, "sets": states, "incident_id": None}
+	incident = (
+		frappe.db.get_value(
+			"Incident CAPA", {"source_doctype": "Wash Batch", "source_name": doc.name}, "name"
+		)  # NC tự tạo qua hook tracecore_after_wash_failed (FEAT-030)
+		if result == "Fail"
+		else None
+	)
+	return {"batch": doc.name, "result": result, "sets": states, "incident_id": incident}

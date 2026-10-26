@@ -239,6 +239,8 @@ doc_events = {
 	"Instrument Maintenance": dict(_AUDIT_EVENTS),
 	"Step Gate Result": dict(_AUDIT_EVENTS),
 	"Assembly Record": dict(_AUDIT_EVENTS),
+	# sự cố / NC / CAPA (FEAT-030, WF-06): chuyển trạng thái có old/new, không xóa (FR-M2-21.4)
+	"Incident CAPA": dict(_AUDIT_EVENTS),
 	# lô rửa T2 (FEAT-021): tạo khi Hoàn thành nạp, ghi sổ khi có kết luận
 	"Wash Batch": dict(_AUDIT_EVENTS),
 	# mẻ tiệt khuẩn T5 (FEAT-022): tạo khi Hoàn thành nạp, cập nhật khi nhập tay dữ liệu chu trình
@@ -341,7 +343,7 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_complete: sau khi kết luận Đạt (FEAT-042 trừ hóa chất theo định mức, FEAT-046 chi phí lô)
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = []
-tracecore_after_wash_failed = []
+tracecore_after_wash_failed = ["tracecore.reprocessing.incidents.on_wash_failed"]
 # M2 (FEAT-026, A-17 C5) gọi khi cấp phát T7: (ctx {department, set_type, stock, adding}) -> dict, so tồn khoa + số
 # gói cấp với cơ số khoa (Par Level Department Stock); không hàm nào trả dict → coi như khoa chưa cấu hình cơ số
 tracecore_issue_par_check = ["tracecore.par.stock.issue_par"]
@@ -362,7 +364,7 @@ tracecore_after_load_complete = []
 #  - after_load_failed:   (ctx {load, equipment, program, sets, redo_from}) mẻ Không đạt (FEAT-030 NC)
 #  - bi_positive:         (ctx {load, equipment, packs[{cycle_id, set_unit, status}]}) BI dương tính (FEAT-029 thu hồi, FEAT-010 thông báo)
 tracecore_after_load_release = []
-tracecore_after_load_failed = []
+tracecore_after_load_failed = ["tracecore.reprocessing.incidents.on_load_failed"]
 tracecore_bi_positive = []
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
 #  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
@@ -375,7 +377,7 @@ tracecore_assembly_context = [
 	"tracecore.instrument.bom.pack_context",
 	"tracecore.par.check.pack_context",
 ]
-tracecore_assembly_nc = []
+tracecore_assembly_nc = ["tracecore.reprocessing.incidents.on_assembly_nc"]
 tracecore_after_assembly = []
 
 # Scheduled Tasks
@@ -399,6 +401,8 @@ scheduler_events = {
 	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
+		# FEAT-030, FR-M2-22.1: nhắc hành động CAPA quá hạn (người phụ trách + R02)
+		"tracecore.reprocessing.incidents.remind_overdue",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

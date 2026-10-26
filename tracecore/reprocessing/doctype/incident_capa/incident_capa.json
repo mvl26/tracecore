@@ -1,0 +1,283 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "NC-.YYYY.-.#####",
+ "creation": "2026-10-26 12:00:00.000000",
+ "description": "Incident / non-conformance with corrective and preventive actions (DT-INCIDENT, FEAT-030, FR-M2-21, FR-M2-22, WF-06). New -> Analysis -> CAPA -> Verification (draft) -> Closed or Cancelled (submitted).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "incident_type",
+  "severity",
+  "column_break_status",
+  "status",
+  "occurred_at",
+  "reported_by",
+  "section_detail",
+  "description",
+  "photo",
+  "section_links",
+  "set_unit",
+  "pack",
+  "assembly_record",
+  "wash_batch",
+  "column_break_links",
+  "sterilization_load",
+  "equipment",
+  "employee",
+  "department",
+  "station",
+  "section_source",
+  "is_auto",
+  "source_doctype",
+  "source_name",
+  "section_analysis",
+  "root_cause",
+  "actions",
+  "section_verification",
+  "verification_result",
+  "column_break_close",
+  "closed_by",
+  "closed_at",
+  "cancel_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "incident_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Incident Type",
+   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nOther",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Medium",
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Severity",
+   "options": "Low\nMedium\nHigh",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "New",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "New\nAnalysis\nCAPA\nVerification\nClosed\nCancelled",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "occurred_at",
+   "fieldtype": "Datetime",
+   "label": "Occurred At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "description": "At least one linked object (load, equipment, set, pack, employee, wash batch or assembly) is required.",
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Linked Objects"
+  },
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "search_index": 1
+  },
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "label": "Pack",
+   "options": "Pack"
+  },
+  {
+   "fieldname": "assembly_record",
+   "fieldtype": "Link",
+   "label": "Assembly Record",
+   "options": "Assembly Record"
+  },
+  {
+   "fieldname": "wash_batch",
+   "fieldtype": "Link",
+   "label": "Wash Batch",
+   "options": "Wash Batch"
+  },
+  {
+   "fieldname": "column_break_links",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sterilization_load",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Sterilization Load",
+   "options": "Sterilization Load",
+   "search_index": 1
+  },
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Equipment",
+   "options": "Equipment"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_source",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_auto",
+   "fieldtype": "Check",
+   "label": "Created Automatically",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source Document Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Source Document",
+   "options": "source_doctype",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_analysis",
+   "fieldtype": "Section Break",
+   "label": "Analysis and CAPA"
+  },
+  {
+   "fieldname": "root_cause",
+   "fieldtype": "Small Text",
+   "label": "Root Cause"
+  },
+  {
+   "fieldname": "actions",
+   "fieldtype": "Table",
+   "label": "Corrective and Preventive Actions",
+   "options": "CAPA Action"
+  },
+  {
+   "fieldname": "section_verification",
+   "fieldtype": "Section Break",
+   "label": "Effectiveness Check"
+  },
+  {
+   "fieldname": "verification_result",
+   "fieldtype": "Small Text",
+   "label": "Effectiveness Check Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_close",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "closed_by",
+   "fieldtype": "Link",
+   "label": "Closed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Closed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancel_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Reason",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-26 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Incident CAPA",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "incident_type",
+ "track_changes": 1
+}
