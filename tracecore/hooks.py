@@ -380,6 +380,8 @@ tracecore_after_load_failed = [
 	"tracecore.reprocessing.recall.on_load_failed",
 ]
 tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
+# core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
+tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
 #  - assembly_context: (ctx {set_unit, set_type, station, receipt_notes}) -> dict gộp vào ngữ cảnh T3 (BOM + ảnh từ M1,
 #                      mức dùng cơ số từ M8; khóa receipt_notes do FEAT-019 đóng góp)

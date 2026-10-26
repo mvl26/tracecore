@@ -22,6 +22,7 @@ HTTP_STATUS: dict[str, int] = {
 			"SESSION_STATION_MISMATCH",
 			"CARD_MISMATCH",
 			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
+			"PERMISSION_DENIED",  # FEAT-009 A-40: PermissionError khi phát lại offline thành Block để ghi Sync Conflict
 		),
 		403,
 	),

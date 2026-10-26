@@ -57,6 +57,7 @@ def station_session(*roles, desk_roles=()):
 
 	def decorate(fn):
 		signature = inspect.signature(fn)
+		endpoint = f"{fn.__module__}.{fn.__name__}"
 
 		@functools.wraps(fn)
 		def wrapper(*args, **kwargs):
@@ -66,36 +67,91 @@ def station_session(*roles, desk_roles=()):
 				require_any_role(*desk_roles)
 				return fn(**kwargs)
 			timestamp = parse_client_ts(kwargs.get("client_ts"))
-			# A body token avoids Frappe's OAuth interpretation of Authorization: Bearer.
-			from tracecore.core import station_auth
+			from tracecore.core import sync
 
-			try:
-				with station_auth.as_session_user(token, client_ts=timestamp) as session:
-					if kwargs.get("station") != session.station:
-						raise BlockedError(
-							Block(
-								"SESSION_STATION_MISMATCH",
-								_("Wrong station"),
-								_("The session belongs to another station."),
-								_("Use the station where you scanned your card."),
-							)
-						)
-					require_any_role(*roles)
-					kwargs["station"] = session.station
-					previous = frappe.flags.get(SESSION_FLAG)
-					frappe.flags[SESSION_FLAG] = session.name
-					try:
-						return fn(**kwargs)
-					finally:
-						frappe.flags[SESSION_FLAG] = previous
-			except BlockedError as error:
-				if getattr(frappe.local, "request", None):
-					frappe.local.response["http_status_code"] = error.block.http_status
-				return {"ok": False, "error": error.block.as_dict()}
+			if sync.is_replay():
+				return _replay(fn, endpoint, roles, kwargs, token, timestamp)
+			return _live(fn, roles, kwargs, token, timestamp)
 
 		return wrapper
 
 	return decorate
+
+
+def _run_as_session(fn, roles, kwargs, session):
+	if kwargs.get("station") != session.station:
+		raise BlockedError(
+			Block(
+				"SESSION_STATION_MISMATCH",
+				_("Wrong station"),
+				_("The session belongs to another station."),
+				_("Use the station where you scanned your card."),
+			)
+		)
+	require_any_role(*roles)
+	kwargs["station"] = session.station
+	previous = frappe.flags.get(SESSION_FLAG)
+	frappe.flags[SESSION_FLAG] = session.name
+	try:
+		return fn(**kwargs)
+	finally:
+		frappe.flags[SESSION_FLAG] = previous
+
+
+def _block_body(block):
+	if getattr(frappe.local, "request", None):
+		frappe.local.response["http_status_code"] = block.http_status
+	return {"ok": False, "error": block.as_dict()}
+
+
+def _replay(fn, endpoint, roles, kwargs, token, timestamp):
+	"""Giao dịch offline phát lại (`X-TC-Replay`): phiên xét tại `client_ts`; từ chối 4xx/403 → Sync Conflict (A-40)."""
+	from tracecore.core import station_auth, sync
+	from tracecore.core.idempotency import KEY_HEADER
+
+	session = None
+	try:
+		with station_auth.as_replay_user(token, kwargs.get("station"), timestamp) as session:
+			result = _run_as_session(fn, roles, kwargs, session)
+	except BlockedError as error:
+		result = _block_body(error.block)
+	except frappe.PermissionError:
+		frappe.clear_last_message()
+		result = _block_body(
+			Block(
+				"PERMISSION_DENIED",
+				_("Not permitted"),
+				_("The station user may not do this action."),
+				_("The transaction goes to R02 as a sync conflict."),
+			)
+		)
+	error = result.get("error") if isinstance(result, dict) and result.get("ok") is False else None
+	if error:
+		sync.record_conflict(
+			endpoint=endpoint,
+			key=(frappe.get_request_header(KEY_HEADER) or "").strip(),
+			client_ts=timestamp,
+			args=kwargs,
+			error=error,
+			http_status=error.get("http_status") or frappe.local.response.get("http_status_code"),
+			session=(
+				{"station": session.station, "employee": session.employee, "user": session.user}
+				if session
+				else station_auth.session_owner(token)
+			),
+		)
+	return result
+
+
+def _live(fn, roles, kwargs, token, timestamp):
+	# A body token avoids Frappe's OAuth interpretation of Authorization: Bearer.
+	from tracecore.core import station_auth
+
+	try:
+		with station_auth.as_session_user(token, client_ts=timestamp) as session:
+			return _run_as_session(fn, roles, kwargs, session)
+	except BlockedError as error:
+		return _block_body(error.block)
 
 
 class BadRequestError(frappe.ValidationError):

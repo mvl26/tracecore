@@ -379,6 +379,27 @@ def on_load_failed(ctx):
 	)
 
 
+def on_sync_conflict(conflict):
+	"""Hook ``tracecore_after_sync_conflict``: phát lại offline bị từ chối → NC Sync Conflict (FR-M9-06.3, A-40)."""
+	links = {"employee": conflict.employee}
+	if conflict.ref_doctype == "Pack" and frappe.db.exists("Pack", conflict.ref_name):
+		links["pack"] = conflict.ref_name
+	elif conflict.ref_doctype == "Set Unit" and frappe.db.exists("Set Unit", conflict.ref_name):
+		links["set_unit"] = conflict.ref_name
+	if not any(links.values()):
+		return None  # không biết người/đối tượng (token lạ): Sync Conflict vẫn ở danh sách của R02
+	return _auto(
+		"Sync Conflict",
+		conflict.name,
+		"Sync Conflict",
+		"Medium",
+		_(
+			"Offline transaction from station {0} was rejected on sync ({1}); the server record was kept."
+		).format(conflict.station or "-", conflict.error_code or conflict.http_status),
+		links,
+	)
+
+
 def on_assembly_nc(ctx):
 	"""Hook ``tracecore_assembly_nc``: T3 thiếu dụng cụ / dụng cụ lạ → NC (FR-M2-06.2, FR-M1-02.4, A-35 T6)."""
 	incident_type = NC_TYPES.get(ctx.get("kind"), "Other")
