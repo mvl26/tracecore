@@ -21,6 +21,7 @@
   "section_patient",
   "patient_code",
   "patient_code_masked",
+  "patient_code_hash",
   "emergency",
   "patient_code_due",
   "column_break_patient",
@@ -135,6 +136,16 @@
    "is_virtual": 1,
    "label": "Patient Code (masked)",
    "read_only": 1
+  },
+  {
+   "description": "HMAC-SHA256 of the patient code, used to trace by patient without decrypting (FEAT-028).",
+   "fieldname": "patient_code_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Patient Code Hash",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "default": "0",
