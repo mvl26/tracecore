@@ -13,39 +13,44 @@ from tracecore.v1 import station as station_api
 test_dependencies = ["Company"]
 
 
+def setup_operator(case):
+	"""Người giữ phiên NV-AUTH-001 (R04, PIN 123456) có năng lực tại TR-004."""
+	case.user = make_user("station.operator@example.test", ("TC R04",))
+	case.employee = frappe.get_doc(
+		{
+			"doctype": "Employee",
+			"first_name": "Station",
+			"last_name": "Operator",
+			"gender": "Male",
+			"date_of_birth": "1990-01-01",
+			"date_of_joining": today(),
+			"company": "_Test Company",
+			"status": "Active",
+			"user_id": case.user,
+			"tc_card_id": "NV-AUTH-001",
+			"tc_card_enabled": 1,
+		}
+	).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
+	start = now_datetime()
+	case.competency = frappe.get_doc(
+		{
+			"doctype": "Station Competency",
+			"employee": case.employee.name,
+			"station": "TR-004",
+			"valid_from": add_to_date(start, hours=-1),
+			"valid_until": add_to_date(start, hours=8),
+			"is_active": 1,
+		}
+	).insert(ignore_permissions=True)
+	station_auth.set_pin(case.employee.name, "123456")
+	station_auth.clear_pin_rate_limit(case.employee.name)
+
+
 class TestStationAuth(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.get_doc("User", "Administrator").add_roles("TC R10")
-		self.user = make_user("station.operator@example.test", ("TC R04",))
-		self.employee = frappe.get_doc(
-			{
-				"doctype": "Employee",
-				"first_name": "Station",
-				"last_name": "Operator",
-				"gender": "Male",
-				"date_of_birth": "1990-01-01",
-				"date_of_joining": today(),
-				"company": "_Test Company",
-				"status": "Active",
-				"user_id": self.user,
-				"tc_card_id": "NV-AUTH-001",
-				"tc_card_enabled": 1,
-			}
-		).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
-		start = now_datetime()
-		self.competency = frappe.get_doc(
-			{
-				"doctype": "Station Competency",
-				"employee": self.employee.name,
-				"station": "TR-004",
-				"valid_from": add_to_date(start, hours=-1),
-				"valid_until": add_to_date(start, hours=8),
-				"is_active": 1,
-			}
-		).insert(ignore_permissions=True)
-		station_auth.set_pin(self.employee.name, "123456")
-		station_auth.clear_pin_rate_limit(self.employee.name)
+		setup_operator(self)
 
 	@bru("BRU-HR-001")
 	def test_login_requires_active_competency_and_returns_one_time_token(self):
@@ -165,3 +170,123 @@ class TestStationAuth(IsolatedTestCase):
 		failed = station_api.heartbeat(token=login["session"]["token"], client_ts=ts)
 		self.assertFalse(failed["ok"])
 		self.assertEqual(failed["error"]["code"], "SESSION_INVALID")
+
+
+class TestApproverProof(IsolatedTestCase):
+	"""R02 quét thẻ + PIN trên kiosk của người khác (architecture C6, UC-12 A1): proof dùng một lần gắn với phiên đó."""
+
+	def setUp(self):
+		super().setUp()
+		frappe.get_doc("User", "Administrator").add_roles("TC R10")
+		setup_operator(self)
+
+	def make_approver(self, card="NV-R02-001", roles=("TC R02",), pin="654321"):
+		user = make_user(card.lower() + "@example.test", roles)
+		employee = frappe.get_doc(
+			{
+				"doctype": "Employee",
+				"first_name": "Giám sát",
+				"last_name": card,
+				"gender": "Female",
+				"date_of_birth": "1990-01-01",
+				"date_of_joining": today(),
+				"company": "_Test Company",
+				"status": "Active",
+				"user_id": user,
+				"tc_card_id": card,
+				"tc_card_enabled": 1,
+			}
+		).insert(ignore_permissions=True, ignore_mandatory=True, ignore_links=True)
+		station_auth.set_pin(employee.name, pin)
+		station_auth.clear_pin_rate_limit(employee.name)
+		return employee
+
+	def assert_block(self, code, fn, *args, **kwargs):
+		with self.assertRaises(BlockedError) as caught:
+			fn(*args, **kwargs)
+		self.assertEqual(caught.exception.block.code, code)
+
+	@bru("BRU-PAR-005")
+	def test_proof_is_one_time_and_bound_to_operator_session(self):
+		approver = self.make_approver()
+		login = station_auth.login("NV-AUTH-001", "TR-004")
+		result = station_auth.create_approver_proof(login["token"], " nv-r02-001 ", "654321")
+		self.assertTrue(result["proof"])
+		self.assertEqual(result["expires_in"], station_auth.PROOF_SECONDS)
+		self.assertEqual(result["employee_name"], approver.employee_name)
+
+		got = station_auth.consume_approver_proof(login["session"], result["proof"])
+		self.assertEqual((got.employee, got.user), (approver.name, approver.user_id))
+		# dùng một lần
+		self.assert_block(
+			"PIN_PROOF_INVALID", station_auth.consume_approver_proof, login["session"], result["proof"]
+		)
+		# phiên khác, hoặc role khác role đã duyệt → không nhận
+		other = station_auth.create_approver_proof(login["token"], "NV-R02-001", "654321")["proof"]
+		self.assert_block("PIN_PROOF_INVALID", station_auth.consume_approver_proof, "SES-OTHER", other)
+		other = station_auth.create_approver_proof(login["token"], "NV-R02-001", "654321")["proof"]
+		self.assert_block(
+			"PIN_PROOF_INVALID", station_auth.consume_approver_proof, login["session"], other, role="TC R01"
+		)
+		# proof không phải proof duyệt (PIN của chính người giữ phiên) → không nhận
+		own = station_auth.create_pin_proof(login["token"], "123456")["proof"]
+		self.assert_block("PIN_PROOF_INVALID", station_auth.consume_approver_proof, login["session"], own)
+
+	@bru("BRU-PAR-005")
+	def test_proof_rejected_after_logout_or_approver_loses_role(self):
+		approver = self.make_approver()
+		login = station_auth.login("NV-AUTH-001", "TR-004")
+		proof = station_auth.create_approver_proof(login["token"], "NV-R02-001", "654321")["proof"]
+		frappe.get_doc("User", approver.user_id).remove_roles("TC R02")
+		self.assert_block(
+			"APPROVER_NOT_ALLOWED", station_auth.consume_approver_proof, login["session"], proof
+		)
+
+		frappe.get_doc("User", approver.user_id).add_roles("TC R02")
+		proof = station_auth.create_approver_proof(login["token"], "NV-R02-001", "654321")["proof"]
+		station_auth.logout(login["token"])
+		self.assert_block("PIN_PROOF_INVALID", station_auth.consume_approver_proof, login["session"], proof)
+
+	def test_create_rejects_wrong_pin_card_role_and_session(self):
+		self.make_approver()
+		self.make_approver(card="NV-R06-009", roles=("TC R06",))
+		token = station_auth.login("NV-AUTH-001", "TR-004")["token"]
+		self.assert_block("PIN_INVALID", station_auth.create_approver_proof, token, "NV-R02-001", "000000")
+		self.assert_block("CARD_INVALID", station_auth.create_approver_proof, token, "NV-KHONG-CO", "654321")
+		# người không có role duyệt: chặn trước khi thử PIN (không đốt lượt PIN)
+		self.assert_block(
+			"APPROVER_NOT_ALLOWED", station_auth.create_approver_proof, token, "NV-R06-009", "654321"
+		)
+		# role xin duyệt phải là role được ủy quyền duyệt
+		self.assert_block(
+			"APPROVER_NOT_ALLOWED",
+			station_auth.create_approver_proof,
+			token,
+			"NV-R02-001",
+			"654321",
+			role="TC R06",
+		)
+		self.assert_block(
+			"SESSION_INVALID", station_auth.create_approver_proof, "sai", "NV-R02-001", "654321"
+		)
+
+	def test_create_requires_changed_pin(self):
+		approver = self.make_approver()
+		frappe.db.set_value("Employee", approver.name, "tc_pin_reset_required", 1)
+		token = station_auth.login("NV-AUTH-001", "TR-004")["token"]
+		self.assert_block(
+			"PIN_CHANGE_REQUIRED", station_auth.create_approver_proof, token, "NV-R02-001", "654321"
+		)
+
+	def test_v1_verify_approver_returns_proof_or_stable_error(self):
+		self.make_approver()
+		ts = "2026-10-26T09:00:00+07:00"
+		token = station_api.login(card_id="NV-AUTH-001", station="TR-004", client_ts=ts)["session"]["token"]
+		ok = station_api.verify_approver(
+			token=token, card_id="NV-R02-001", pin="654321", role="TC R02", client_ts=ts
+		)
+		self.assertTrue(ok["ok"])
+		self.assertTrue(ok["proof"])
+		wrong = station_api.verify_approver(token=token, card_id="NV-R02-001", pin="000000", client_ts=ts)
+		self.assertFalse(wrong["ok"])
+		self.assertEqual(wrong["error"]["code"], "PIN_INVALID")

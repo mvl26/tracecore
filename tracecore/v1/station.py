@@ -82,6 +82,24 @@ def verify_pin(token=None, pin=None, client_ts=None):
 	return _session_response(call)
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def verify_approver(token=None, card_id=None, pin=None, role="TC R02", client_ts=None):
+	"""Người duyệt quét thẻ + nhập PIN trên kiosk đang mở phiên `token` (vd R02 duyệt vượt cơ số ở T7, architecture C6).
+
+	Trả proof dùng một lần gắn với phiên này; RPC nghiệp vụ nhận proof và gọi `station_auth.consume_approver_proof`.
+	"""
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		if not isinstance(token, str) or not token:
+			station_auth.authenticate_session(token)  # SESSION_INVALID ổn định, trước khi kiểm thẻ/PIN
+		if not all(isinstance(value, str) for value in (card_id, pin, role)):
+			raise BadRequestError(_("card_id, pin and role must be strings."))
+		return {"ok": True, **station_auth.create_approver_proof(token, card_id, pin, role, timestamp)}
+
+	return _session_response(call)
+
+
 def _station_row(station):
 	row = frappe.db.get_value(
 		"Zone Station",
