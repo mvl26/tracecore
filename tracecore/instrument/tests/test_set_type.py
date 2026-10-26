@@ -187,7 +187,8 @@ class TestSetTypeHeader(IsolatedTestCase):
 		for role in [f"TC R{n:02d}" for n in (1, 3, 4, 5, 6, 7, 8, 9)]:
 			self.assertEqual(perms[role].read, 1, msg=role)
 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
-		self.assertFalse(any(row.delete for row in perms.values()))
+		# FEAT-004 A-37 d (FR-M9-16): chỉ R10 có delete (on_trash vẫn chặn danh mục đã có giao dịch)
+		self.assertEqual({row.role for row in perms.values() if row.delete}, {"TC R10"})
 		# review cuối Minor 4: menu Print chuẩn (Print Format TC Count Sheet, S9) cho mọi role đọc được loại bộ
 		for role, row in perms.items():
 			self.assertEqual(row.print, 1 if row.read else 0, msg=role)
@@ -198,7 +199,8 @@ class TestSetTypeHeader(IsolatedTestCase):
 		for user in (writer, admin):
 			self.assertTrue(frappe.has_permission(DOCTYPE, "create", user=user), user)
 			self.assertTrue(frappe.has_permission(DOCTYPE, "write", user=user), user)
-			self.assertFalse(frappe.has_permission(DOCTYPE, "delete", user=user), user)
+			# FEAT-004 A-37 d: chỉ R10 có delete (on_trash vẫn chặn khi đã có giao dịch)
+			self.assertEqual(frappe.has_permission(DOCTYPE, "delete", user=user), user == admin, user)
 		self.assertTrue(frappe.has_permission(DOCTYPE, "read", user=reader))
 		self.assertTrue(frappe.has_permission(DOCTYPE, "print", user=reader))
 		for ptype in ("create", "write", "delete"):

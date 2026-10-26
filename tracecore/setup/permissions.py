@@ -10,6 +10,8 @@ from pathlib import Path
 
 import frappe
 
+from tracecore.core.audit import MASTER_DOCTYPES
+
 ROLE_CODES = tuple(f"R{i:02d}" for i in range(1, 11))
 ROLE_NAMES = {code: f"TC {code}" for code in ROLE_CODES}
 MATRIX_PATH = Path(__file__).parents[1] / "fixtures" / "permission_matrix.csv"
@@ -26,6 +28,10 @@ AMENDED_ELSEWHERE = frozenset({"Item", "Stock Entry"})
 # thu hồi (FEAT-029 R2): ký hiệu W của ma trận vẫn cho ghi nhưng không sinh cờ ``create``, để Desk không có nút
 # "Thêm" cho vai trò nào.
 NO_CREATE_DOCTYPES = frozenset({"Set Unit", "Recall Order"})
+
+# FEAT-004 A-37 d (FR-M9-16): R10 (ký hiệu W) được cờ delete trên danh mục; on_trash (`audit.block_delete`) vẫn chặn
+# khi danh mục đã có giao dịch liên kết. Mọi vai trò/DocType khác không bao giờ có delete.
+MASTER_DELETE_ROLE = "R10"
 
 # Quyền thêm theo amendment cho vai trò ngoài R01-R10 (ký hiệu SEC như ma trận, không bao giờ có delete):
 # Instrument: System Manager đọc/ghi (FEAT-014, A-06 I15).
@@ -123,6 +129,8 @@ def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dic
 			flags = flags_for(row.doctype, row.permissions[code])
 			if not flags:
 				continue
+			if code == MASTER_DELETE_ROLE and row.doctype in MASTER_DOCTYPES and flags.get("write"):
+				flags["delete"] = 1
 			name = hashlib.sha256(f"{row.doctype}:{ROLE_NAMES[code]}:0".encode()).hexdigest()[:10]
 			records.append(
 				{

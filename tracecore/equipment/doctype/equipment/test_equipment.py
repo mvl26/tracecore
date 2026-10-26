@@ -220,7 +220,8 @@ class TestEquipment(IsolatedTestCase):
 		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
 			self.assertEqual(perms[role].read, 1, msg=role)
 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
-		self.assertFalse(any(row.delete for row in perms.values()))
+		# FEAT-004 A-37 d (FR-M9-16): chỉ R10 có delete (on_trash vẫn chặn danh mục đã có giao dịch)
+		self.assertEqual({row.role for row in perms.values() if row.delete}, {"TC R10"})
 
 	def test_asset_is_optional(self):
 		doc = make_equipment()

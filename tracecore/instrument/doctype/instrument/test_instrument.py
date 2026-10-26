@@ -304,14 +304,16 @@ class TestInstrument(FrappeTestCase):
 			for role in [f"TC R{n:02d}" for n in (1, 3, 4, 5, 6, 7, 8, 9)]:
 				self.assertEqual(perms[role].read, 1, msg=(doctype, role))
 				self.assertFalse(perms[role].write or perms[role].create, msg=(doctype, role))
-			self.assertFalse(any(row.delete for row in perms.values()), msg=doctype)
+			# FEAT-004 A-37 d (FR-M9-16): chỉ R10 có delete (on_trash vẫn chặn danh mục đã có giao dịch)
+			self.assertLessEqual({row.role for row in perms.values() if row.delete}, {"TC R10"}, msg=doctype)
 
 		writer = make_user("instr-r02@example.com", roles=["TC R02"])
 		admin = make_user("instr-r10@example.com", roles=["TC R10"])
 		for user in (writer, admin):
 			self.assertTrue(frappe.has_permission("Instrument", "create", user=user), user)
 			self.assertTrue(frappe.has_permission("Instrument Group", "create", user=user), user)
-			self.assertFalse(frappe.has_permission("Instrument", "delete", user=user), user)
+			# FEAT-004 A-37 d: chỉ R10 có delete (on_trash vẫn chặn khi đã có giao dịch)
+			self.assertEqual(frappe.has_permission("Instrument", "delete", user=user), user == admin, user)
 		for role in ("TC R01", "TC R04"):
 			reader = make_user(f"instr-{role[-3:].lower()}@example.com", roles=[role])
 			self.assertTrue(frappe.has_permission("Instrument", "read", user=reader), role)

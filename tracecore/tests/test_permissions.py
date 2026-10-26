@@ -3,6 +3,7 @@ from pathlib import Path
 
 from frappe.tests.utils import FrappeTestCase
 
+from tracecore.core.audit import MASTER_DOCTYPES
 from tracecore.setup.permissions import (
 	ROLE_CODES,
 	build_custom_docperms,
@@ -83,7 +84,12 @@ class TestPermissionMatrix(FrappeTestCase):
 		self.assertEqual(fixture, build_custom_docperms(existing))
 		self.assertTrue(all(record.get("name") for record in fixture))
 		self.assertEqual(len({record["name"] for record in fixture}), len(fixture))
-		self.assertTrue(all(not record.get("delete") for record in fixture))
+		# FEAT-004 A-37 d (FR-M9-16): chỉ R10 có delete, chỉ trên danh mục (on_trash còn kiểm chưa có giao dịch)
+		deleters = {(record["parent"], record["role"]) for record in fixture if record.get("delete")}
+		self.assertTrue(deleters)
+		self.assertTrue(
+			all(role == "TC R10" and parent in MASTER_DOCTYPES for parent, role in deleters), deleters
+		)
 
 	def test_privileged_roles_require_two_factor_auth(self):
 		roles_path = MATRIX_PATH.with_name("role.json")

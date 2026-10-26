@@ -22,6 +22,15 @@
   "cycles_used",
   "max_cycles",
   "cycles_source",
+  "section_disposal",
+  "disposal_status",
+  "disposal_reason",
+  "disposal_requested_by",
+  "disposal_requested_at",
+  "column_break_disposal",
+  "disposal_decided_by",
+  "disposal_decided_at",
+  "disposal_decision_note",
   "tab_details",
   "section_tag",
   "tag_verified_on",
@@ -147,6 +156,62 @@
    "options": "System\nEstimate",
    "read_only": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "section_disposal",
+   "fieldtype": "Section Break",
+   "label": "Disposal",
+   "depends_on": "disposal_status"
+  },
+  {
+   "fieldname": "disposal_status",
+   "fieldtype": "Select",
+   "label": "Disposal Status",
+   "options": "\nRequested\nApproved\nRejected",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "disposal_reason",
+   "fieldtype": "Small Text",
+   "label": "Disposal Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disposal_requested_by",
+   "fieldtype": "Link",
+   "label": "Disposal Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disposal_requested_at",
+   "fieldtype": "Datetime",
+   "label": "Disposal Requested At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_disposal",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "disposal_decided_by",
+   "fieldtype": "Link",
+   "label": "Disposal Decided By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disposal_decided_at",
+   "fieldtype": "Datetime",
+   "label": "Disposal Decided At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disposal_decision_note",
+   "fieldtype": "Small Text",
+   "label": "Disposal Decision Note",
+   "read_only": 1
   },
   {
    "fieldname": "tab_details",

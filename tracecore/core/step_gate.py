@@ -423,6 +423,48 @@ def end_of_life(set_unit, reason=None):
 	return True
 
 
+DISPOSED = "Disposed"
+DISPOSABLE = (END_OF_LIFE, "Reprocess")  # Hết vòng đời, hoặc bộ rẽ nhánh Thanh lý ở T3 (A-37 a)
+# Đích của chuyển trạng thái thủ công khi sự cố (A-37 b, FR-M2-00.3); không về Mới tạo / Đang lưu hành / Đã thanh lý
+FORCE_TARGETS = ("Processing", "Reprocess", "Sterile", "At Department", "Awaiting Receipt", END_OF_LIFE)
+CLEARS_CYCLE_ID = ("Awaiting Receipt", END_OF_LIFE)
+
+
+def dispose(set_unit, reason):
+	"""R01 duyệt thanh lý (A-37 a): bộ Hết vòng đời hoặc Xử lý lại sang Đã thanh lý, bỏ Cycle ID hiện hành.
+
+	Không quay lại được (``NOT_RETIRABLE``). Trạng thái khác → lỗi, không ghi gì. Vô hiệu Set ID trong Code Registry
+	là việc của nơi gọi (``instrument.disposal``).
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if unit.status not in DISPOSABLE:
+		frappe.throw(
+			_("Set {0} is {1}; only a set at end of life or sent to disposal can be disposed.").format(
+				unit.name, _(unit.status, context="Set Unit")
+			)
+		)
+	_save_lifecycle(unit, event=event_reason("dispose", reason), status=DISPOSED, active_cycle_id=None)
+
+
+def force_status(set_unit, status, reason):
+	"""Chuyển trạng thái thủ công khi hệ thống lỗi (A-37 b, FR-M2-00.3); quyền, lý do, ticket do nơi gọi kiểm.
+
+	Chỉ tới ``FORCE_TARGETS``, từ trạng thái khác trạng thái đích và khác Đã thanh lý; sai → lỗi, không ghi gì. Đích
+	Chờ tiếp nhận / Hết vòng đời bỏ Cycle ID hiện hành như đường thường. Giữ nguyên chu trình và các cổng.
+	"""
+	unit = _set_unit(set_unit, for_update=True)
+	if status not in FORCE_TARGETS or unit.status == status or unit.status in NOT_RETIRABLE:
+		frappe.throw(
+			_("Set {0} cannot be moved from {1} to {2} by hand.").format(
+				unit.name, _(unit.status, context="Set Unit"), _(status or "-", context="Set Unit")
+			)
+		)
+	fields = {"status": status}
+	if status in CLEARS_CYCLE_ID:
+		fields["active_cycle_id"] = None
+	_save_lifecycle(unit, event=event_reason("override", reason), **fields)
+
+
 def reopen_after_override(set_unit, override):
 	"""Ghi đè cơ số được duyệt: bộ Hết vòng đời quay lại Processing để đóng gói tiếp (A-18 Q4).
 

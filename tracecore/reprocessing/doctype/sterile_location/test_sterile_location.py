@@ -63,7 +63,8 @@ class TestSterileLocation(FrappeTestCase):
 		meta = frappe.get_meta("Sterile Location")
 		perms = {p.role: p for p in meta.permissions}
 		self.assertTrue(perms["TC R10"].write and perms["TC R10"].create)
-		self.assertFalse(perms["TC R10"].delete)
+		# FEAT-004 A-37 d (FR-M9-16): chỉ R10 có delete (on_trash vẫn chặn danh mục đã có giao dịch)
+		self.assertTrue(perms["TC R10"].delete)
 		for role in ("TC R06", "TC R02", "TC R01"):
 			self.assertTrue(perms[role].read)
 			self.assertFalse(perms[role].write)

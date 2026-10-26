@@ -37,6 +37,11 @@ from tracecore.v1._common import (
 
 # Task 6: vòng đời (ngữ cảnh form, lịch sử) ở module riêng, công bố lại ở đây để giữ đường RPC
 # tracecore.v1.set_unit.<action> của plan; role cấp/in/quét kiểm tra dùng chung đặt ở đó
+from tracecore.v1.set_unit_disposal import (  # RPC công bố lại (FEAT-004 thanh lý)
+	disposal_approve,
+	disposal_reject,
+	disposal_request,
+)
 from tracecore.v1.set_unit_lifecycle import (  # RPC công bố lại
 	ISSUE_ROLES,
 	VERIFY_ROLES,

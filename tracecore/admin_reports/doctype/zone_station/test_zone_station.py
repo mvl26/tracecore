@@ -237,8 +237,9 @@ class TestZoneStation(IsolatedTestCase):
 		for role in ("TC R01", "TC R02", "TC R09"):
 			self.assertEqual(perms[role].read, 1, role)
 			self.assertFalse(perms[role].write or perms[role].create, role)
+		# FEAT-004 A-37 d (FR-M9-16): chỉ R10 có delete (on_trash vẫn chặn danh mục đã có giao dịch)
 		for p in perms.values():
-			self.assertFalse(p.delete, p.role)
+			self.assertEqual(bool(p.delete), p.role == "TC R10", p.role)
 
 	def test_patch_activates_existing_stations(self):
 		frappe.db.set_value("Zone Station", "TR-004", "is_active", 0)

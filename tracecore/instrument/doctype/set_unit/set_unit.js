@@ -423,9 +423,54 @@ function tc_su_remove_buttons(frm) {
 	frm.tc_su_buttons = [];
 }
 
+// Thanh lý và chuyển trạng thái thủ công (FEAT-004, tc_admin_actions.js); role chỉ để hiện nút, server kiểm lại
+function tc_su_admin_buttons(frm) {
+	const doc = frm.doc;
+	const group = __("Actions");
+	if (doc.status === "Disposed") {
+		return;
+	}
+	const pending = doc.disposal_status === "Requested";
+	if (
+		frappe.user.has_role("TC R02") &&
+		!pending &&
+		["End of Life", "Reprocess"].includes(doc.status)
+	) {
+		tc_su_add_button(
+			frm,
+			__("Request disposal"),
+			() => tracecore.admin.request_disposal(frm),
+			group
+		);
+	}
+	if (frappe.user.has_role("TC R01") && pending) {
+		tc_su_add_button(
+			frm,
+			__("Approve disposal"),
+			() => tracecore.admin.decide_disposal(frm, true),
+			group
+		);
+		tc_su_add_button(
+			frm,
+			__("Reject disposal"),
+			() => tracecore.admin.decide_disposal(frm, false),
+			group
+		);
+	}
+	if (frappe.user.has_role("TC R02")) {
+		tc_su_add_button(
+			frm,
+			__("Change status by hand"),
+			() => tracecore.admin.force_transition(frm),
+			group
+		);
+	}
+}
+
 function tc_su_buttons(frm, ctx) {
 	const perms = ctx.permissions;
 	const s = ctx.summary;
+	tc_su_admin_buttons(frm);
 	const group = __("Print tags");
 	const reload = () => tc_su_load(frm);
 	const printable = s.status !== "Disposed" && s.code_status !== "Disabled";

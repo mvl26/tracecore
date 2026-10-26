@@ -20,6 +20,16 @@ from tracecore.core.step_gate import LIFECYCLE_DEFAULTS
 
 ISSUE_FIELDS = ("cycles_source",)  # ghi một lần khi cấp (cờ flags.tc_set_issue)
 TAG_FIELDS = ("tag_verified_on", "tag_verified_by")  # ghi qua quét kiểm tra thẻ (cờ flags.tc_tag_verify)
+# ghi qua đề nghị / duyệt thanh lý (cờ flags.tc_disposal, `instrument.disposal`, A-37 a)
+DISPOSAL_FIELDS = (
+	"disposal_status",
+	"disposal_reason",
+	"disposal_requested_by",
+	"disposal_requested_at",
+	"disposal_decided_by",
+	"disposal_decided_at",
+	"disposal_decision_note",
+)
 
 __all__ = ["LIFECYCLE_DEFAULTS", "SetUnit"]
 
@@ -72,11 +82,14 @@ class SetUnit(Document):
 			self.cycles_source = self.cycles_source or "System"
 			if not self.flags.tc_tag_verify:
 				self.update(dict.fromkeys(TAG_FIELDS))
+			self.update(dict.fromkeys(DISPOSAL_FIELDS))
 			return
 		before = self.get_doc_before_save()
 		changed = _changed(before, self, ISSUE_FIELDS)
 		if not self.flags.tc_tag_verify:
 			changed += _changed(before, self, TAG_FIELDS)
+		if not self.flags.tc_disposal:
+			changed += _changed(before, self, DISPOSAL_FIELDS)
 		if changed:
 			frappe.throw(
 				_("These fields are set only by issuing or verifying Set ID tags: {0}").format(
