@@ -352,6 +352,9 @@ tracecore_issue_par_check = ["tracecore.par.stock.issue_par"]
 tracecore_load_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
 #  - wash_equipment_checks: (equipment) -> Block | None, như load_equipment_checks cho máy rửa (T2)
 tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+#  - load_daily_indicator: (equipment, indicator, on) -> dict | None, chỉ thị của mẻ lấy từ test hằng ngày của máy trong
+#    ngày chạy mẻ (A-23: Bowie-Dick không nhập lại ở T5b)
+tracecore_load_daily_indicator = ["tracecore.equipment.daily_test.load_indicator"]
 tracecore_after_load_complete = []
 # M2 T5b dỡ mẻ và giải phóng (FEAT-023, UC-10); ctx là dict, mọi hook chạy trong cùng transaction:
 #  - after_release:       (ctx {set_unit, set_type, bom_version, cycle_id}) mỗi bộ khi giải phóng Đạt (đã khai báo ở trên)

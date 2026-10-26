@@ -3355,3 +3355,4 @@ Load {0} on sterilizer {1} has no cycle data yet.,Mẻ {0} trên máy {1} chưa 
 "Enter the cycle data of load {0} first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} trước, rồi mới nạp máy này tiếp.",
 TraceCore Ward,Khoa dùng TraceCore,Department
 "Ward or unit that receives and returns instrument sets in TraceCore (T1, T7).","Khoa/đơn vị nhận và trả bộ dụng cụ trong TraceCore (T1, T7).",Department
+"From the daily test of {0}: no need to record it again.","Lấy từ test hằng ngày {0}: không cần ghi lại.",
