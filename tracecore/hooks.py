@@ -386,6 +386,7 @@ tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
 	"tracecore.instrument.imports.import_kinds",
+	"tracecore.equipment.imports.import_kinds",
 ]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
