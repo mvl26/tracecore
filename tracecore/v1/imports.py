@@ -47,7 +47,7 @@ def kinds():
 	"""Các loại danh mục import được: ``[{key, label, columns, required}]``."""
 	require_any_role(*IMPORT_ROLES)
 	roles = set(frappe.get_roles())
-	return [
+	rows = [
 		{
 			"key": kind.key,
 			"label": _(kind.label),
@@ -57,6 +57,7 @@ def kinds():
 		for kind in importer.kinds().values()
 		if roles & set(kind.roles) and importer.can_import(kind)
 	]
+	return {"ok": True, "kinds": rows}
 
 
 @frappe.whitelist(methods=["GET"])
@@ -108,6 +109,7 @@ def batch(name=None):
 		raise BadRequestError(_("Import batch {0} does not exist.").format(name))
 	doc = frappe.get_doc("Import Batch", name)
 	return {
+		"ok": True,
 		**{field: doc.get(field) for field in BATCH_FIELDS},
 		"rows": [{field: row.get(field) for field in ROW_FIELDS} for row in doc.rows],
 	}

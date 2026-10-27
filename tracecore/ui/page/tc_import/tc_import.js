@@ -156,7 +156,7 @@ class TraceCoreImport {
 		const outcome = await tracecore.codes.send(TC_IMP + "kinds", null, {});
 		if (!outcome.ok)
 			return this.region("result").html(tc_imp_alert("error", "&#10005;", outcome.error));
-		this.kinds = outcome.data;
+		this.kinds = outcome.data.kinds;
 		this.kind_control = frappe.ui.form.make_control({
 			parent: this.root.find('[data-field="kind"]'),
 			df: {

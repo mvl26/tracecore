@@ -43,7 +43,7 @@ class TestKindsAndTemplate(ImportsApiCase):
 	def test_kinds_lists_catalogs(self):
 		# R10 + R02 + HR Manager có quyền tạo mọi danh mục (Par Level cần R02, Department cần HR Manager)
 		frappe.set_user(make_user("imp-all@example.com", roles=("TC R10", "TC R02", "HR Manager")))
-		keys = [row["key"] for row in imports_api.kinds()]
+		keys = [row["key"] for row in imports_api.kinds()["kinds"]]
 		for key in (
 			"department",
 			"employee",
@@ -67,7 +67,7 @@ class TestKindsAndTemplate(ImportsApiCase):
 	def test_import_needs_create_permission_of_the_catalog(self):
 		"""Import không lách quyền: R10 không có quyền tạo Par Level / Department thì không import được hai loại đó."""
 		frappe.set_user(make_user("imp-r10-only@example.com", roles=("TC R10",)))
-		keys = [row["key"] for row in imports_api.kinds()]
+		keys = [row["key"] for row in imports_api.kinds()["kinds"]]
 		self.assertIn("instrument", keys)  # R10 có quyền tạo Instrument
 		self.assertNotIn("par_level", keys)
 		self.assertNotIn("department", keys)
