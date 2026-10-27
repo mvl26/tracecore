@@ -44,7 +44,7 @@ def _kind(key):
 
 @frappe.whitelist(methods=["GET", "POST"])
 def kinds():
-	"""Các loại danh mục import được: ``[{key, label, columns, required}]``."""
+	"""Các loại danh mục import được: ``{"ok": true, "kinds": [{key, label, columns, required}]}``."""
 	require_any_role(*IMPORT_ROLES)
 	roles = set(frappe.get_roles())
 	rows = [
@@ -118,7 +118,7 @@ def batch(name=None):
 @frappe.whitelist(methods=["POST"])
 @idempotent
 def photos(file_url=None, client_ts=None):
-	"""Gắn ảnh thực tế từ file zip theo tên file = mã (FR-M9-11.1): {"ok": true, attached, unmatched, rejected}."""
+	"""Gắn ảnh thực tế từ file zip theo tên file = mã (FR-M9-11.1): ``{"ok": true, attached, unmatched, rejected}``."""
 	require_any_role(*IMPORT_ROLES)
 	if not frappe.has_permission("Instrument", "write"):
 		raise frappe.PermissionError(_("You are not allowed to change instrument photos."))
