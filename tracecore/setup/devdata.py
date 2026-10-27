@@ -481,7 +481,7 @@ def _ensure_set(set_type, passed, reminder=False, exclude=()):
 		"Set Unit",
 		filters={"set_type": set_type},
 		fields=["name", "status", "active_cycle_id", "current_cycle_no"],
-		order_by="creation asc, name asc",  # bộ tạo cùng thời điểm: thứ tự ổn định giữa các lần gọi
+		order_by="name asc",  # Set ID cấp theo series tăng dần, cùng độ rộng: thứ tự ổn định giữa các lần gọi
 	)
 	for row in rows:
 		if row.name in exclude:
