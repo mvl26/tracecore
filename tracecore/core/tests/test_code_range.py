@@ -45,6 +45,14 @@ class TestAllocate(IsolatedTestCase):
 		ranges = code_range.ensure(STATION, DAY)
 		self.assertEqual(len(ranges), 1)
 
+	def test_ensure_reports_used_numbers(self):
+		"""Kiosk mất dữ liệu cục bộ (trình duyệt mới, đổi PDA) không cấp lại số đã ghi sổ trên server."""
+		first = code_range.allocate(STATION, DAY)
+		for number in (first["from_no"], first["from_no"] + 2):
+			code_registry.register(f"{first['prefix']}{number:04d}", "CY", "Pack", None, STATION)
+		ranges = code_range.ensure(STATION, DAY)
+		self.assertEqual(ranges[0]["used"], [first["from_no"], first["from_no"] + 2])
+
 
 class TestClaim(IsolatedTestCase):
 	def setUp(self):

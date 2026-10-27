@@ -108,12 +108,15 @@ class TcOutbox {
 		}
 	}
 
-	// dải mã của trạm trong ngày: giữ danh sách số đã dùng cục bộ khi server cấp thêm dải
+	// dải mã của trạm trong ngày: số đã dùng = số dùng cục bộ (chưa đồng bộ) ∪ số server đã ghi sổ (`used` của dải),
+	// để thiết bị mất dữ liệu cục bộ hoặc PDA khác cùng trạm không cấp lại mã đã có
 	static async saveRanges(station, ranges) {
 		const day = tcLocalDay();
 		const id = `${station}|${day}`;
 		const old = await TcOutbox.tx("ranges", "readonly", (store) => store.get(id));
-		const used = old ? old.used : [];
+		const used = [
+			...new Set([...(old ? old.used : []), ...ranges.flatMap((range) => range.used || [])]),
+		];
 		return TcOutbox.tx("ranges", "readwrite", (store) => store.put({ id, ranges, used }));
 	}
 

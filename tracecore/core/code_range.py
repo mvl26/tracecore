@@ -92,16 +92,20 @@ def _ranges(station, on):
 	)
 
 
+def _used_numbers(prefix):
+	codes = frappe.get_all("Code Registry", filters={"code": ("like", prefix + "%")}, pluck="code")
+	return sorted(int(code[len(prefix) :]) for code in codes if code[len(prefix) :].isdigit())
+
+
 def ensure(station: str, on: date, session: str | None = None) -> list[dict]:
-	"""Mọi dải của trạm trong ngày; chưa có, hoặc số chưa dùng < 20 % một dải thì cấp thêm một dải."""
+	"""Mọi dải của trạm trong ngày, mỗi dải kèm ``used`` (số đã ghi sổ trên server, để kiosk mất dữ liệu cục bộ không
+	cấp lại); chưa có dải, hoặc số chưa dùng < 20 % một dải thì cấp thêm một dải."""
 	ranges = _ranges(station, on)
-	if ranges:
-		total = sum(row.to_no - row.from_no + 1 for row in ranges)
-		used = frappe.db.count("Code Registry", {"code": ("like", ranges[0].prefix + "%")})
-		if total - used >= SIZE * REFILL_RATIO:
-			return [dict(row) for row in ranges]
-	allocate(station, on, session)
-	return [dict(row) for row in _ranges(station, on)]
+	used = _used_numbers(ranges[0].prefix) if ranges else []
+	if not ranges or sum(row.to_no - row.from_no + 1 for row in ranges) - len(used) < SIZE * REFILL_RATIO:
+		allocate(station, on, session)
+		ranges = _ranges(station, on)
+	return [{**row, "used": [no for no in used if row.from_no <= no <= row.to_no]} for row in ranges]
 
 
 def claim(code: str, station: str, on: date) -> None:

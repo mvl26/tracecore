@@ -505,7 +505,6 @@ Pack lookup,Tra cứu gói,
 Pack type: {0},Loại gói: {0},
 Packed At,Thời điểm đóng gói,
 Packed: {0} · {1},Đóng gói: {0} · {1},
-Packing needs a network connection; offline Cycle ID generation comes with FEAT-009.,Đóng gói cần kết nối mạng; sinh Cycle ID offline có từ FEAT-009,
 Photo not available,Không tải được ảnh,
 Placed correctly,Đã đặt đúng vị trí,
 Placed correctly at position {0} as in the photo,Đã đặt đúng vị trí {0} theo ảnh thực tế,
@@ -2057,7 +2056,7 @@ Packing,Đóng gói,
 "Wash batch","Lô rửa",""
 "Load batch","Nạp lô",""
 "Unload batch ({0} running)","Dỡ lô ({0} lô đang chạy)",""
-"Wash batches need a network connection; offline work comes with FEAT-009.","Lô rửa cần kết nối mạng; làm việc offline có từ FEAT-009.",""
+"Wash batches need a network connection.","Lô rửa cần kết nối mạng.",""
 "Load washer - scan the washer QR code first, then scan each set","Nạp máy rửa — quét QR máy trước, rồi quét từng bộ",""
 "Only sets that passed T1 (receiving count) and are not in another batch are accepted.","Chỉ nhận bộ đã qua cổng T1 (kiểm đếm tiếp nhận) và chưa ở lô khác.",""
 "This program uses no chemical.","Chương trình này không dùng hóa chất.",""
@@ -2541,7 +2540,7 @@ Printed {0} by {1},In lúc {0} bởi {1},TC Issue Note
 "Sterilization load {0} has no complete, confirmed cycle data, so nothing was saved.","Mẻ tiệt khuẩn {0} chưa có dữ liệu chu trình đầy đủ và đã xác nhận, nên chưa lưu gì.",""
 "Sterilization load {0} is already {1}.","Mẻ tiệt khuẩn {0} đã ở trạng thái {1}.",""
 "Sterilization load · {0} · {1}","Mẻ tiệt khuẩn · {0} · {1}",""
-"Sterilization loads need a network connection; offline work comes with FEAT-009.","Mẻ tiệt khuẩn cần kết nối mạng; làm việc offline có từ FEAT-009.",""
+"Sterilization loads need a network connection.","Mẻ tiệt khuẩn cần kết nối mạng.",""
 "Sterilizer","Máy tiệt khuẩn",""
 "Sterilizer QR code","QR máy tiệt khuẩn",""
 "Sterilizer QR code scanned for load {0}","Đã quét QR máy tiệt khuẩn cho mẻ {0}",""

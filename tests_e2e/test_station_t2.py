@@ -230,6 +230,6 @@ def test_t2_offline_blocks_actions(t2_page, t2_demo):
 	load_machine(page, t2_demo["machine"])
 	page.context.set_offline(True)
 	page.evaluate("window.dispatchEvent(new Event('offline'))")
-	expect(page.locator(".tc-t2")).to_contain_text("FEAT-009", timeout=15000)
+	expect(page.locator(".tc-t2")).to_contain_text("cần kết nối mạng", timeout=15000)
 	expect(page.locator("[data-action='t2-complete']")).to_be_disabled()
 	page.context.set_offline(False)
