@@ -43,6 +43,7 @@ class ImportCase(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		self.masters = factories.ensure_stock_masters()
+		factories.use_stock_company(self)
 		self.warehouse = self.masters["warehouse"]
 		self.supplier = factories.make_supplier("F41 NCC IMP")
 		self.supplier_b = factories.make_supplier("F41 NCC IMP B")

@@ -668,6 +668,19 @@ def ensure_stock_masters():
 	return {"company": STOCK_COMPANY, "warehouse": f"Stores - {STOCK_ABBR}"}
 
 
+def use_stock_company(case):
+	"""Company mặc định = Company thử của kho trong suốt test `case`.
+
+	Site test chung có thể đã có Company mặc định khác (test record của ERPNext, vd "Wind Power LLC") nên nhập kho
+	theo Company mặc định sẽ chê kho ``Stores - TCT`` "thuộc Company khác". Test cần Company khác tự patch lồng bên trong.
+	"""
+	from unittest.mock import patch
+
+	patcher = patch("erpnext.get_default_company", return_value=STOCK_COMPANY)
+	patcher.start()
+	case.addCleanup(patcher.stop)
+
+
 def make_warehouse(name, is_group=False):
 	"""Tạo (hoặc lấy) Warehouse của Company thử; trả tên đầy đủ (<name> - TCT)."""
 	masters = ensure_stock_masters()
