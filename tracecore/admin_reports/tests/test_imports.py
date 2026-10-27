@@ -24,7 +24,9 @@ class TestDepartmentImport(IsolatedTestCase):
 	def test_departments_created_as_wards_with_parent(self):
 		parent = factories.make_department("Khoa Ngoại nhập")
 		name = "Khoa Phẫu thuật " + uuid.uuid4().hex[:6]
-		batch = run("department", ["Department Name", "Parent Department", "Ward"], [[name, parent, "x"]])
+		batch = run(
+			"department", ["Department Name", "Parent Department Name", "Ward"], [[name, parent, "x"]]
+		)
 		self.assertEqual(batch.created, 1, batch.rows)
 		doc = frappe.get_doc("Department", batch.rows[0].ref_name)
 		self.assertEqual((doc.department_name, doc.parent_department, doc.tc_is_ward), (name, parent, 1))
@@ -36,17 +38,17 @@ class TestDepartmentImport(IsolatedTestCase):
 
 	def test_unknown_parent_is_row_error(self):
 		result = importer.check(
-			"department", workbook(["Department Name", "Parent Department"], [["K1", "Không có"]])
+			"department", workbook(["Department Name", "Parent Department Name"], [["K1", "Không có"]])
 		)
 		self.assertEqual([(i["row"], i["code"]) for i in result["issues"]], [(2, "PARENT_NOT_FOUND")])
 
 
 class TestEmployeeImport(IsolatedTestCase):
 	HEADER = (
-		"First Name",
+		"Given Name",
 		"Gender",
 		"Date of Birth",
-		"Date of Joining",
+		"Joining Date",
 		"Department",
 		"Card ID",
 		"User Email",
@@ -59,10 +61,10 @@ class TestEmployeeImport(IsolatedTestCase):
 
 	def row(self, card=None, email=None, **over):
 		values = {
-			"First Name": "Nguyễn Văn A",
+			"Given Name": "Nguyễn Văn A",
 			"Gender": "Male",
 			"Date of Birth": "01/02/1990",
-			"Date of Joining": "01/10/2026",
+			"Joining Date": "01/10/2026",
 			"Department": self.department,
 			"Card ID": card,
 			"User Email": email,

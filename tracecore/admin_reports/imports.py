@@ -144,7 +144,7 @@ def import_kinds():
 			doctype="Department",
 			columns=[
 				Column("department_name", "Department Name", required=True),
-				Column("parent_department", "Parent Department", help="Name of an existing department."),
+				Column("parent_department", "Parent Department Name", help="Name of an existing department."),
 				Column(
 					"is_ward", "Ward", kind="check", help="Yes for a clinical department that uses TraceCore."
 				),
@@ -159,11 +159,11 @@ def import_kinds():
 			label="Employees",
 			doctype="Employee",
 			columns=[
-				Column("first_name", "First Name", required=True),
-				Column("last_name", "Last Name"),
+				Column("first_name", "Given Name", required=True),
+				Column("last_name", "Family Name"),
 				Column("gender", "Gender", required=True, kind="select", options=GENDERS),
 				Column("date_of_birth", "Date of Birth", required=True, kind="date"),
-				Column("date_of_joining", "Date of Joining", required=True, kind="date"),
+				Column("date_of_joining", "Joining Date", required=True, kind="date"),
 				Column("department", "Department", required=True),
 				Column("card_id", "Card ID", help="Existing hospital card used to log in at stations."),
 				Column("user_email", "User Email", help="Email of an existing user account."),

@@ -26,7 +26,7 @@ SET_TYPE_HEADER = (
 	"Default Pack Type",
 	"Instrument",
 	"Quantity",
-	"Position",
+	"BOM Position",
 )
 
 
@@ -98,7 +98,7 @@ class TestSetTypeImport(ImportCase):
 		return values
 
 	def row(self, head, instrument, qty, position=None):
-		values = {**head, "Instrument": instrument, "Quantity": qty, "Position": position}
+		values = {**head, "Instrument": instrument, "Quantity": qty, "BOM Position": position}
 		return [values.get(name) for name in SET_TYPE_HEADER]
 
 	def test_set_type_with_bom_from_several_rows(self):
@@ -140,7 +140,7 @@ class TestSetTypeImport(ImportCase):
 
 
 class TestSetUnitImport(ImportCase):
-	HEADER = ("Type Code", "Count", "Department", "Max Cycles")
+	HEADER = ("Type Code", "Set Count", "Department", "Max Cycles")
 
 	def setUp(self):
 		super().setUp()

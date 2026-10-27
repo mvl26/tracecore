@@ -11,7 +11,16 @@ from tracecore.tests.utils import IsolatedTestCase
 
 test_ignore = ["Item", "Department"]
 
-HEADER = ("Par Kind", "Target Type", "Target", "Department", "Max Cycles", "Source", "Min Qty", "Max Qty")
+HEADER = (
+	"Par Kind",
+	"Target Type",
+	"Target",
+	"Department",
+	"Max Cycles",
+	"Source",
+	"Min Stock Qty",
+	"Max Stock Qty",
+)
 
 
 class TestParImport(IsolatedTestCase):
