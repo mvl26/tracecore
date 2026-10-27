@@ -1192,10 +1192,47 @@ T2_PARAMETERS = [
 T2_READY_SETS = 3
 
 
+def _ensure_daily_tests(equipment):
+	"""Test hằng ngày Đạt của hôm nay cho mọi test bắt buộc còn thiếu của máy demo (FEAT-040 khóa máy chưa test).
+
+	Máy demo dùng lại qua nhiều ngày; test chỉ ghi lúc tạo máy thì từ hôm sau máy bị khóa và e2e T2/T5 hỏng.
+	"""
+	from tracecore.equipment import daily_test
+
+	kind = frappe.db.get_value("Equipment", equipment, "equipment_type")
+	done = set(
+		frappe.get_all(
+			"Daily Test",
+			filters={"equipment": equipment, "test_date": today(), "result": "Pass"},
+			pluck="test_type",
+		)
+	)
+	for test_type in daily_test.required_tests(kind):
+		if test_type in done:
+			continue
+		row = frappe.get_doc(
+			{
+				"doctype": "Daily Test",
+				"equipment": equipment,
+				"test_type": test_type,
+				"result": "Pass",
+				"test_date": today(),
+				"lot": "DEMO-DAILY-LOT",
+				"lot_expiry": add_days(today(), 30),
+				"tested_at": now_datetime(),
+			}
+		)
+		row.flags.tc_daily_test = True
+		row.insert(ignore_permissions=True)
+
+
 def _t2_machine(key, **fields):
-	"""Máy rửa demo theo serial cố định (Equipment không xóa được nên dùng lại); trả TB-####."""
+	"""Máy rửa demo theo serial cố định (Equipment không xóa được nên dùng lại), đã test hằng ngày hôm nay
+	(trừ máy ngừng sử dụng); trả TB-####."""
 	name = frappe.db.get_value("Equipment", {"serial_no": T2_SERIALS[key]}, "name")
 	if name:
+		if key != "machine_locked":
+			_ensure_daily_tests(name)
 		return name
 	values = {
 		"name": f"Demo washer {key}",
@@ -1363,9 +1400,12 @@ T5_READY_PACKS = 3
 
 
 def _t5_machine(key, equipment_type, **fields):
-	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại); trả TB-####."""
+	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại), đã test hằng ngày hôm nay
+	(trừ máy ngừng sử dụng); trả TB-####."""
 	name = frappe.db.get_value("Equipment", {"serial_no": T5_SERIALS[key]}, "name")
 	if name:
+		if key != "machine_locked":
+			_ensure_daily_tests(name)
 		return name
 	values = {
 		"name": f"Demo sterilizer {key}",

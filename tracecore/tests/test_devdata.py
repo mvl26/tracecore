@@ -1250,3 +1250,46 @@ def _clock_on(day):
 
 	instant = datetime.combine(getdate(day), time(10, 0))
 	return patch.object(data, "convert_utc_to_system_timezone", side_effect=lambda _now: instant)
+
+
+class TestDemoMachinesDailyTest(FrappeTestCase):
+	"""FEAT-040 khóa máy chưa có test hằng ngày Đạt: máy demo T2/T5 tạo từ hôm trước vẫn dùng được hôm nay."""
+
+	def assert_tested_today(self, machines):
+		from frappe.utils import today
+
+		from tracecore.equipment import daily_test
+
+		for name in machines:
+			kind = frappe.db.get_value("Equipment", name, "equipment_type")
+			done = set(
+				frappe.get_all(
+					"Daily Test",
+					filters={"equipment": name, "test_date": today(), "result": "Pass"},
+					pluck="test_type",
+				)
+			)
+			self.assertLessEqual(set(daily_test.required_tests(kind)), done, msg=name)
+
+	def age_daily_tests(self, machines):
+		from frappe.utils import add_days, today
+
+		for name in machines:
+			frappe.db.sql(
+				"update `tabDaily Test` set test_date = %s where equipment = %s",
+				(add_days(today(), -1), name),
+			)
+
+	def test_t5_machines_get_todays_daily_tests(self):
+		demo = devdata.ensure_t5_demo()
+		machines = (demo["machine"], demo["machine_plasma"], demo["machine_running"])
+		self.age_daily_tests(machines)
+		devdata.ensure_t5_demo()
+		self.assert_tested_today(machines)
+
+	def test_t2_machines_get_todays_daily_tests(self):
+		demo = devdata.ensure_t2_demo()
+		machines = (demo["machine"], demo["machine_two_door"])
+		self.age_daily_tests(machines)
+		devdata.ensure_t2_demo()
+		self.assert_tested_today(machines)
