@@ -273,9 +273,7 @@ def ensure_demo_set():
 			_("Demo data"),
 			latest[0]["bom_version"] if latest else 0,
 		)
-	set_id = frappe.db.get_value(
-		"Set Unit", {"set_type": DEMO_SET_TYPE}, "name", order_by="creation asc, name asc"
-	)
+	set_id = frappe.db.get_value("Set Unit", {"set_type": DEMO_SET_TYPE}, "name", order_by="name asc")
 	if not set_id:
 		set_id = _issue_one(DEMO_SET_TYPE)
 	print(set_id)
@@ -511,7 +509,7 @@ def _ensure_roll(label_item):
 			"status": "Active",
 		},
 		"name",
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 	return code or factories.make_roll(label_item)
 
@@ -908,7 +906,7 @@ def _inventory_warehouse(company):
 		"Warehouse",
 		{"company": company, "is_group": 0, "disabled": 0},
 		"name",
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 	if not warehouse:
 		frappe.throw(_("Company {0} has no warehouse.").format(company))
@@ -1086,7 +1084,7 @@ def _inflight_set(set_type, toggled):
 		"Set Unit",
 		filters={"set_type": set_type},
 		fields=["name", "status", "active_cycle_id", "current_cycle_no", "cycle_bom_version"],
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	):
 		if _matches(_gate_results(row), T4_GATES_READY) and 0 < row.cycle_bom_version < effective:
 			return row.name, row.cycle_bom_version
@@ -1250,7 +1248,7 @@ def _t2_machine(key, **fields):
 def _t2_program(equipment):
 	"""Chương trình rửa đang dùng đầu tiên của máy (tạo nếu chưa có), có hóa chất và tham số."""
 	name = frappe.db.get_value(
-		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="creation asc, name asc"
+		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="name asc"
 	)
 	if name:
 		return name
@@ -1283,7 +1281,7 @@ def _t2_candidates(set_type, status, wanted):
 		"Set Unit",
 		filters={"set_type": set_type, "status": status, "current_cycle_no": [">", 0]},
 		fields=["name", "active_cycle_id"],
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 	out = []
 	for row in rows:
@@ -1304,7 +1302,7 @@ def _t2_new_set(set_type, passed=(), fail_t2=False):
 
 
 def _t2_operator():
-	name = frappe.db.get_value("Employee", {"status": "Active"}, "name", order_by="creation asc, name asc")
+	name = frappe.db.get_value("Employee", {"status": "Active"}, "name", order_by="name asc")
 	return name or factories.make_employee(card="DEMO-T2-OPERATOR").name
 
 
@@ -1344,7 +1342,7 @@ def ensure_t2_demo():
 		"Wash Batch",
 		{"equipment": two_door, "status": "Running", "docstatus": 0},
 		"name",
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 	if not running:
 		running = washing.start(
@@ -1399,30 +1397,45 @@ T5_PARAMETERS = [
 T5_READY_PACKS = 3
 
 
-def _t5_machine(key, equipment_type, **fields):
+def _has_running_load(equipment):
+	return bool(
+		frappe.db.exists("Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0})
+	)
+
+
+def _t5_machine(key, equipment_type, free=False, **fields):
 	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại), đã test hằng ngày hôm nay
-	(trừ máy ngừng sử dụng); trả TB-####."""
-	name = frappe.db.get_value("Equipment", {"serial_no": T5_SERIALS[key]}, "name")
-	if name:
+	(trừ máy ngừng sử dụng); trả TB-####.
+
+	`free`: máy để e2e nạp mẻ phải trống (A-22: còn mẻ ``Running`` thì không nạp được). Lượt e2e trước để lại mẻ
+	đang chạy (mẻ không xóa được) thì dùng máy demo kế tiếp ``<serial>-2``, ``-3``… (tạo nếu chưa có).
+	"""
+	for index in range(1, 100):
+		serial = T5_SERIALS[key] if index == 1 else f"{T5_SERIALS[key]}-{index}"
+		name = frappe.db.get_value("Equipment", {"serial_no": serial}, "name")
+		if not name:
+			values = {
+				"name": f"Demo sterilizer {key}" + ("" if index == 1 else f" {index}"),
+				"equipment_type": equipment_type,
+				"serial": serial,
+				"manufacturer": EQ_MANUFACTURER,
+				"model": "DEMO-S5",
+				"capacity": T5_CAPACITY,
+				**fields,
+			}
+			return factories.make_sterilizer(**values).name
+		if free and _has_running_load(name):
+			continue
 		if key != "machine_locked":
 			_ensure_daily_tests(name)
 		return name
-	values = {
-		"name": f"Demo sterilizer {key}",
-		"equipment_type": equipment_type,
-		"serial": T5_SERIALS[key],
-		"manufacturer": EQ_MANUFACTURER,
-		"model": "DEMO-S5",
-		"capacity": T5_CAPACITY,
-		**fields,
-	}
-	return factories.make_sterilizer(**values).name
+	frappe.throw(_("No free demo sterilizer for {0}.").format(key))
 
 
 def _t5_program(equipment):
 	"""Chương trình tiệt khuẩn đang dùng đầu tiên của máy (tạo nếu chưa có), có tham số."""
 	name = frappe.db.get_value(
-		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="creation asc, name asc"
+		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="name asc"
 	)
 	if name:
 		return name
@@ -1436,7 +1449,7 @@ def _t5_loadable(set_type, with_t4):
 		"Pack",
 		filters={"docstatus": 1, "status": "Packed", "set_type": set_type, "expiry": [">=", today()]},
 		fields=["name", "set_unit", "cycle_no"],
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 	out = []
 	for row in rows:
@@ -1472,9 +1485,16 @@ def ensure_t5_demo():
 	ensure_sample_templates()
 	ensure_object_templates()
 	machine = _t5_machine(
-		"machine", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE", has_printout=1
+		"machine",
+		"Steam Sterilizer",
+		free=True,
+		zone_in="ZONE-CLEAN",
+		zone_out="ZONE-STERILE",
+		has_printout=1,
 	)
-	plasma = _t5_machine("machine_plasma", "Plasma Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
+	plasma = _t5_machine(
+		"machine_plasma", "Plasma Sterilizer", free=True, zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE"
+	)
 	locked = _t5_machine("machine_locked", "Steam Sterilizer", zone_in="ZONE-CLEAN", zone_out="ZONE-STERILE")
 	if frappe.db.get_value("Equipment", locked, "status") != "Retired":
 		equipment_status.set_status(locked, "Retired", "Demo T5: sterilizer retired")
@@ -1486,18 +1506,19 @@ def ensure_t5_demo():
 	for method in T5_SET_TYPES:
 		_ensure_set_type(method, _t4_catalog()[method], code=T5_SET_TYPES[method])
 	steam_type, plasma_type = T5_SET_TYPES["Steam"], T5_SET_TYPES["Plasma"]
-	ready = _t5_loadable(steam_type, with_t4=True)
-	while len(ready) < T5_READY_PACKS + 1:  # +1: gói của mẻ đang chạy
-		ready.append(_t5_new_pack("Steam"))
-	plasma_packs = _t5_loadable(plasma_type, with_t4=True)
-	no_t4 = _t5_loadable(steam_type, with_t4=False)
-
 	running = frappe.db.get_value(
 		"Sterilization Load",
 		{"equipment": busy, "status": "Running", "docstatus": 0},
 		"name",
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
+	ready = _t5_loadable(steam_type, with_t4=True)
+	while len(ready) < T5_READY_PACKS + (0 if running else 1):  # +1: gói cho mẻ đang chạy còn thiếu
+		ready.append(_t5_new_pack("Steam"))
+	ready.sort()  # gói mới tạo và gói đã có cùng một thứ tự (theo Cycle ID) giữa các lần gọi
+	plasma_packs = _t5_loadable(plasma_type, with_t4=True)
+	no_t4 = _t5_loadable(steam_type, with_t4=False)
+
 	if not running:
 		running = sterilizing.complete(
 			busy, _t5_program(busy), [ready.pop()], T5_STATION, client_time.utc_now(), _t2_operator()
@@ -1565,7 +1586,7 @@ def _t6_candidate(status, expiring=False, location=None):
 		"expiry": ["between", [today(), horizon]] if expiring else [">", horizon],
 		"location": location or ["is", "not set"],
 	}
-	return frappe.db.get_value("Pack", filters, "name", order_by="creation asc, name asc")
+	return frappe.db.get_value("Pack", filters, "name", order_by="name asc")
 
 
 def _t6_new_pack(status="Released", expiry_days=T6_STORE_DAYS, location=None, passed=factories.ALL_GATES):
@@ -1752,7 +1773,7 @@ def ensure_t7_demo(approver_user=None):
 			"Pack",
 			{"docstatus": 1, "set_type": T7_SET_TYPE, "status": "Released", "expiry": [">", today()]},
 			"name",
-			order_by="creation asc, name asc",
+			order_by="name asc",
 		)
 		or factories.make_released_pack(set_type=T7_SET_TYPE).name
 	)
@@ -1852,7 +1873,7 @@ def _t3_candidates(set_type, wanted):
 		"Set Unit",
 		filters={"set_type": set_type, "status": "Processing", "current_cycle_no": [">", 0]},
 		fields=["name", "active_cycle_id"],
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 	out = []
 	for row in rows:
@@ -1946,7 +1967,7 @@ def _t1_sets(set_type, status):
 		"Set Unit",
 		filters={"set_type": set_type, "status": status, "active_cycle_id": ["is", "not set"]},
 		pluck="name",
-		order_by="creation asc, name asc",
+		order_by="name asc",
 	)
 
 

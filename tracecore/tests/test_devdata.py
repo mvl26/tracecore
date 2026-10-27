@@ -1293,3 +1293,27 @@ class TestDemoMachinesDailyTest(FrappeTestCase):
 		self.age_daily_tests(machines)
 		devdata.ensure_t2_demo()
 		self.assert_tested_today(machines)
+
+	def test_t5_machine_left_with_running_load_is_replaced(self):
+		"""Lượt e2e trước để lại mẻ đang chạy trên máy demo: lần chuẩn bị sau trả máy trống để nạp (A-22)."""
+		from tracecore.core import client_time
+		from tracecore.reprocessing import sterilizing
+
+		demo = devdata.ensure_t5_demo()
+		sterilizing.complete(
+			demo["machine"],
+			demo["program"],
+			[demo["packs"][0]],
+			devdata.T5_STATION,
+			client_time.utc_now(),
+			devdata._t2_operator(),
+		)
+		again = devdata.ensure_t5_demo()
+		for key in ("machine", "machine_plasma"):
+			self.assertFalse(
+				frappe.db.exists(
+					"Sterilization Load", {"equipment": again[key], "status": "Running", "docstatus": 0}
+				),
+				msg=key,
+			)
+		self.assertEqual(devdata.ensure_t5_demo(), again)  # vẫn idempotent khi máy trống
