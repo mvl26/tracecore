@@ -99,6 +99,7 @@ class ImportKind:
 	group_fields: Sequence[str] = ()  # trường phần đầu của nhóm: dòng sau để trống hoặc trùng dòng đầu
 	forbidden_columns: Sequence[str] = ()  # tiêu đề cột mã hệ thống (BRU-ID-006)
 	roles: Sequence[str] = ("TC R10", "TC R02", "System Manager")
+	code_of: Callable[[dict], str] | None = None  # mã "đã có" tính từ nhiều cột (vd thẻ hoặc email nhân viên)
 	guide: Sequence[str] = field(default_factory=tuple)  # câu hướng dẫn thêm cho sheet Guide
 
 
@@ -445,6 +446,8 @@ def _units(kind: ImportKind, rows: list[ParsedRow]) -> tuple[list[list[ParsedRow
 
 
 def _code(kind: ImportKind, unit: list[ParsedRow]) -> str:
+	if kind.code_of:
+		return kind.code_of(unit[0].values) or ""
 	return unit[0].values.get(kind.code_field) or ""
 
 
