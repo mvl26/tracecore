@@ -10,6 +10,7 @@
   "kind",
   "status",
   "file",
+  "content_hash",
   "column_break_counts",
   "total",
   "created",
@@ -55,6 +56,14 @@
    "fieldtype": "Data",
    "label": "File",
    "read_only": 1
+  },
+  {
+   "fieldname": "content_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Content Hash",
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_counts",

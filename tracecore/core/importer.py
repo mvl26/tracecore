@@ -14,6 +14,7 @@ Không biết gì về nghiệp vụ: mỗi module khai báo "loại import" (`I
 
 from __future__ import annotations
 
+import hashlib
 import math
 import unicodedata
 import zipfile
@@ -491,8 +492,25 @@ def _analyse(kind: ImportKind, content: bytes):
 	return units, per_unit, existing, len(rows), rows_with_issue
 
 
+def content_hash(content: bytes) -> str:
+	return hashlib.sha256(content).hexdigest()
+
+
+def previous_batch(key: str, content: bytes) -> str | None:
+	"""Import Batch gần nhất (chưa thất bại) của đúng file này: loại không có "đã có" (vd Set Unit) sẽ ghi lại lần hai."""
+	names = frappe.get_all(
+		"Import Batch",
+		filters={"kind": key, "content_hash": content_hash(content), "status": ["!=", "Failed"]},
+		pluck="name",
+		order_by="creation desc",
+		limit=1,
+	)
+	return names[0] if names else None
+
+
 def check(key: str, content: bytes) -> dict:
-	"""Kiểm file, không ghi gì: ``{"total", "units", "valid", "existing": [mã], "issues": [Issue dict]}``."""
+	"""Kiểm file, không ghi gì: ``{"total", "units", "valid", "existing": [mã], "issues": [Issue dict],
+	"previous_batch"}`` (`previous_batch`: file y hệt đã được ghi sổ trước đó)."""
 	kind = get_kind(key)
 	units, per_unit, existing, total, _rows = _analyse(kind, content)
 	issues = sorted(
@@ -505,6 +523,7 @@ def check(key: str, content: bytes) -> dict:
 		"valid": valid,
 		"existing": existing,
 		"issues": [asdict(issue) for issue in issues],
+		"previous_batch": previous_batch(key, content),
 	}
 
 
@@ -516,7 +535,14 @@ def run(key: str, content: bytes, file_url: str | None) -> str:
 	kind = get_kind(key)
 	rows, _issues = parse(kind, content)  # file sai mẫu → lỗi ngay, không tạo batch
 	batch = frappe.get_doc(
-		{"doctype": "Import Batch", "kind": key, "file": file_url, "status": "Queued", "total": len(rows)}
+		{
+			"doctype": "Import Batch",
+			"kind": key,
+			"file": file_url,
+			"content_hash": content_hash(content),
+			"status": "Queued",
+			"total": len(rows),
+		}
 	)
 	batch.flags.tc_import = True
 	batch.insert(ignore_permissions=True)

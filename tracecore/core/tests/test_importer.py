@@ -170,6 +170,13 @@ class TestCheckAndRun(ImporterCase):
 		errors = {(row.row_no, row.result) for row in batch.rows if row.result == "Error"}
 		self.assertEqual(errors, {(3, "Error"), (4, "Error"), (5, "Error")})
 
+	def test_check_warns_when_same_file_was_imported(self):
+		"""Cùng một file đã ghi sổ (vd lô cấp Set Unit, không có "đã có") → Kiểm tra cảnh báo trước khi ghi lại."""
+		content = workbook(["Code"], [["SAME-1"]])
+		self.assertIsNone(importer.check(KEY, content)["previous_batch"])
+		name = importer.run(KEY, content, "same.xlsx")
+		self.assertEqual(importer.check(KEY, content)["previous_batch"], name)
+
 	def test_batch_records_row_results(self):
 		batch = frappe.get_doc("Import Batch", importer.run(KEY, workbook(["Code"], [["R1"]]), "notes.xlsx"))
 		self.assertEqual(batch.kind, KEY)
