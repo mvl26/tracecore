@@ -35,7 +35,9 @@ def _bom_lines(lines):
 			"instrument": line["instrument"],
 			"instrument_name": line.get("instrument_name"),
 			"qty": cint(line.get("qty")),
+			"position": cint(line.get("position")),
 			"thumbnail": line.get("thumbnail") or line.get("image_thumbnail"),
+			"image": line.get("image"),
 		}
 		for line in lines or []
 	]
@@ -101,18 +103,18 @@ def _t4_row(set_id, station):
 		"short_lines": ctx["shortage"],
 		"par_blocked": False,
 		"maint_pending": bool(ctx.get("maintenance")),
-		"pack_types": [
-			{"item": row.get("item"), "days": row.get("days"), "item_name": row.get("item_name")}
-			for row in ctx["pack_types"]
-		],
+		"pack_types": ctx["pack_types"],
 		"blocked": None,
+		# ngữ cảnh đầy đủ như `pack.scan` online để màn T4 vẽ y hệt khi offline (máy in không dùng được khi offline)
+		"context": {**ctx, "printer": None},
 	}
 
 
 def _ci_batches():
 	"""Lô chỉ thị loại 5/6 còn dùng được (cùng điều kiện `packing.resolve_ci_batch`, trừ hạn kiểm lúc đóng gói)."""
 	return frappe.db.sql(
-		"""select b.name as batch, i.tc_compatible_method as method, b.expiry_date as expiry
+		"""select b.name as batch, i.tc_compatible_method as method, i.tc_ci_class as ci_class,
+			b.expiry_date as expiry
 		from `tabBatch` b join `tabItem` i on i.name = b.item
 		where i.tc_item_group_cssd = 'Chemical Indicator' and i.tc_ci_class in %(classes)s
 			and ifnull(i.tc_compatible_method, '') != '' and b.disabled = 0

@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, tcScanId */
 // Màn T1 tiếp nhận đồ bẩn (SCR-05 STN, SCR-34 PDA, FEAT-019) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Một ô quét duy nhất luôn ở đầu và có focus: quét thẻ người giao mở phiếu, rồi quét liên tiếp từng Set ID. Mỗi bộ hiện
@@ -66,7 +66,7 @@ class T1Receiving {
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.station.focus();
-		if (this.station.isOffline()) return this.station.setOffline(true);
+		if (this.station.isOffline() && !this.localReceipt()) return this.station.setOffline(true);
 		if (this.busy) {
 			// không bỏ mất mã quét trong lúc chờ máy chủ: xếp hàng, chạy sau khi lần trước xong
 			this.queue.push(raw);
@@ -167,9 +167,194 @@ class T1Receiving {
 		return this.waiting.find((row) => row.set_id === this.currentId) || null;
 	}
 
+	// ---- offline (FEAT-009, UC-05 E3, A-40 D3): phiếu làm trên thiết bị, Ghi sổ thành một mục hàng đợi ----
+	offlineReady() {
+		const data = this.station.offlineData;
+		return Boolean(this.station.offlineCapable() && data && data.step === "T1");
+	}
+
+	// phiếu offline đi hết vòng đời cục bộ (kể cả khi mạng về giữa chừng); phiếu online không chuyển sang offline
+	localReceipt() {
+		if (this.receipt) return Boolean(this.receipt.offline);
+		return this.station.isOffline() && this.offlineReady();
+	}
+
+	offlineRefusal(code, title, reason, action) {
+		return { ok: false, error: { code, title, reason, action } };
+	}
+
+	offlineItem(row, raw) {
+		return {
+			set_id: row.set_id,
+			raw,
+			set_name: row.set_name,
+			set_type: row.set_type,
+			status_before: row.status,
+			bom_version: "-",
+			confirmed: 0,
+			needs_review: 0,
+			forced: 0,
+			lines_total: row.bom.length,
+			lines_confirmed: 0,
+			lines: row.bom.map((line) => ({ ...line, confirmed: 0 })),
+			tray_images: [],
+			note: "",
+			photo: null,
+		};
+	}
+
+	async offlineCall(name, args) {
+		const data = this.station.offlineData;
+		if (name === "open" && !args.raw && !args.department) {
+			return { receipt: null, departments: data.departments || [] };
+		}
+		if (name === "open") {
+			const id = tcScanId(args.raw);
+			if (args.raw && data.sets.some((row) => row.set_id === id)) {
+				return this.offlineRefusal(
+					"SCAN_INVALID",
+					__("Scan the deliverer card first"),
+					__(
+						"{0} is a Set ID; a receipt starts with the employee card of the deliverer.",
+						[id]
+					),
+					__("Scan the deliverer card, or choose Deliverer has no card.")
+				);
+			}
+			const department = (data.departments || []).find(
+				(row) => row.name === args.department
+			);
+			this.offlineItems = {};
+			return {
+				offline: true,
+				receipt: __("Offline receipt"),
+				deliverer_raw: args.raw || null,
+				department: args.department || null,
+				department_name: department ? department.department_name : "",
+				deliverer_name: args.raw
+					? __("Card {0} (checked when synced)", [args.raw])
+					: args.deliverer_name,
+				needs_card: args.raw ? 0 : 1,
+				items: [],
+				set_count: 0,
+				flagged_count: 0,
+			};
+		}
+		if (name === "scan_set") {
+			if (args.force_reason) {
+				return this.offlineRefusal(
+					"FORCE_NOT_ALLOWED",
+					__("Forced receipt needs the network"),
+					__("R02 can receive a refused set by force only online."),
+					__("Keep the set aside until the connection returns.")
+				);
+			}
+			const id = tcScanId(args.raw);
+			const row = data.sets.find((set) => set.set_id === id);
+			if (!row) {
+				return this.offlineRefusal(
+					"STATUS_INVALID_FOR_STATION",
+					__("Set not in offline data"),
+					__(
+						"{0} is not among the sets T1 could receive when the station went offline.",
+						[id]
+					),
+					__("Keep the set aside and receive it when the connection returns.")
+				);
+			}
+			const known = this.offlineItems[id];
+			const item = known || this.offlineItem(row, args.raw);
+			this.offlineItems[id] = item;
+			if (!known) this.upsertSummary(item);
+			return { duplicate: Boolean(known), item, summary: {} };
+		}
+		if (name === "confirm_line") {
+			const item = this.offlineItems[args.set_id];
+			const done = args.lines.filter((line) => line.confirmed).length;
+			Object.assign(item, {
+				confirmed: 1,
+				note: args.note,
+				ack_incomplete: args.ack_incomplete,
+				lines_confirmed: done,
+				needs_review: args.note || done < item.lines.length ? 1 : 0,
+			});
+			return { item };
+		}
+		if (name === "submit") return this.offlineSubmit();
+		if (name === "discard") {
+			this.offlineItems = {};
+			return { receipt: null, departments: data.departments || [] };
+		}
+		return this.offlineRefusal(
+			"OFFLINE_NOT_AVAILABLE",
+			__("Needs the network"),
+			__("Photos of abnormalities are taken online only."),
+			__("Write the abnormality in the note instead.")
+		);
+	}
+
+	async offlineSubmit() {
+		const items = Object.values(this.offlineItems);
+		const receipt = {
+			deliverer_raw: this.receipt.deliverer_raw,
+			department: this.receipt.deliverer_raw ? null : this.receipt.department,
+			deliverer_name: this.receipt.deliverer_raw ? null : this.receipt.deliverer_name,
+			items: items.map((item) => ({
+				set_id: item.raw,
+				lines: item.lines.map((line) => ({
+					instrument: line.instrument,
+					confirmed: line.confirmed ? 1 : 0,
+				})),
+				note: item.note || null,
+				ack_incomplete: item.ack_incomplete ? 1 : 0,
+			})),
+		};
+		await this.station.queueCall(
+			T1_API + "submit_offline",
+			{ station: this.station.station, receipt },
+			uuid4(),
+			clientTs()
+		);
+		const data = this.station.offlineData;
+		const ids = new Set(items.map((item) => item.set_id));
+		data.sets = data.sets.filter((row) => !ids.has(row.set_id)); // không nhận lại bộ đã vào phiếu chờ đồng bộ
+		this.offlineItems = {};
+		return {
+			offline: true,
+			receipt: __("Offline receipt"),
+			sets: [...ids],
+			flagged: items.filter((item) => item.needs_review).map((item) => item.set_id),
+			rejected: [],
+		};
+	}
+
+	async offlineRequest(name, args, onOk) {
+		this.busy = T1_API + name;
+		let response;
+		try {
+			response = await this.offlineCall(name, args);
+		} catch (error) {
+			this.busy = null;
+			if (error.sessionEnded) return;
+			response = this.offlineRefusal(
+				"OFFLINE_STORE_FAILED",
+				__("Could not keep the transaction on this device"),
+				__("The station storage is not available."),
+				__("Keep the sets aside and call R10.")
+			);
+		}
+		this.busy = null;
+		if (response && response.ok === false)
+			this.reject(response.error, { method: T1_API + name, args });
+		else onOk(response);
+		this.station.focus(true);
+		this.runQueued();
+	}
+
 	// ---- RPC ----
 	async request(name, args, onOk) {
 		if (this.busy || !this.station.session) return;
+		if (this.localReceipt()) return this.offlineRequest(name, args, onOk);
 		const method = T1_API + name;
 		const version = this.station.sessionVersion;
 		const sig = method + JSON.stringify(args);
@@ -592,7 +777,7 @@ class T1Receiving {
 
 	show() {
 		this.updatePlaceholder();
-		if (this.offline && !this.receipt) {
+		if (this.offline && !this.receipt && !this.offlineReady()) {
 			return this.station.setState("offline", this.offlineHtml());
 		}
 		if (!this.loaded && !this.notice && !this.busy) {
@@ -710,8 +895,14 @@ class T1Receiving {
 			{
 				variant: "info",
 				title: __("Station offline"),
-				reason: __("Receiving sets needs a network connection."),
-				action: __("Retry when the connection returns."),
+				reason: this.offlineReady()
+					? __(
+							"Receiving continues from the data loaded before the connection was lost; the receipt is sent when the connection returns."
+					  )
+					: __("Receiving sets needs a network connection."),
+				action: this.offlineReady()
+					? __("Photos and forced receipt need the connection.")
+					: __("Retry when the connection returns."),
 			},
 			`<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
@@ -1036,7 +1227,9 @@ class T1Receiving {
 		return `<section class="tc-t4-block">
 			${this.alertHtml({
 				variant: "ok",
-				title: __("Receipt {0} submitted", [done.receipt]),
+				title: done.offline
+					? __("Receipt kept on this device; it is sent when the connection returns")
+					: __("Receipt {0} submitted", [done.receipt]),
 				reason: __("{0} set(s) are waiting for washing; {1} have an abnormal note.", [
 					done.sets.length,
 					done.flagged.length,

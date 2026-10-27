@@ -71,6 +71,9 @@ class TestSnapshotT4(SnapshotCase):
 		self.assertEqual(sorted(line["instrument"] for line in row["bom"]), sorted(ready.instruments))
 		self.assertIs(row["par_blocked"], False)
 		self.assertIs(row["maint_pending"], False)
+		self.assertEqual(row["context"]["set"]["set_id"], ready.set_id)  # màn T4 offline vẽ từ ngữ cảnh này
+		self.assertIsNone(row["context"]["printer"])
+		self.assertIn("ci_class", result["ci_batches"][0])
 		self.assertIn(ready.pack_type, [p["item"] for p in row["pack_types"]])
 		self.assertIn(ready.ci_batch, [lot["batch"] for lot in result["ci_batches"]])
 		self.assertTrue(result["ranges"])

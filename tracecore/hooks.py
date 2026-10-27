@@ -78,6 +78,8 @@ page_js = {
 		"public/js/station_daily_test.js",
 		"public/js/station_t7.js",
 		"public/js/station_t8.js",
+		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
+		"public/js/tc_outbox.js",
 	]
 }
 
