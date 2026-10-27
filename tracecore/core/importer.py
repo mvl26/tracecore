@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
 import unicodedata
 import zipfile
 from collections.abc import Callable, Sequence
@@ -29,7 +30,7 @@ from frappe.utils import now_datetime
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 
-from tracecore.core.errors import BlockedError
+from tracecore.core.errors import Block, BlockedError
 
 HOOK = "tracecore_import_kinds"
 MAX_ROWS = 5000
@@ -101,7 +102,17 @@ class ImportKind:
 	forbidden_columns: Sequence[str] = ()  # tiêu đề cột mã hệ thống (BRU-ID-006)
 	roles: Sequence[str] = ("TC R10", "TC R02", "System Manager")
 	code_of: Callable[[dict], str] | None = None  # mã "đã có" tính từ nhiều cột (vd thẻ hoặc email nhân viên)
+	# quyền import = quyền tạo như nhập tay; mặc định quyền create của `doctype`, loại tạo qua dịch vụ riêng (Set Unit)
+	# khai báo hàm kiểm vai trò của dịch vụ đó
+	can_import: Callable[[], bool] | None = None
 	guide: Sequence[str] = field(default_factory=tuple)  # câu hướng dẫn thêm cho sheet Guide
+
+
+def can_import(kind: ImportKind) -> bool:
+	"""Người dùng hiện tại được import loại này (import không lách quyền nhập tay)."""
+	if kind.can_import:
+		return bool(kind.can_import())
+	return bool(frappe.has_permission(kind.doctype, "create"))
 
 
 # --- Đăng ký loại import -------------------------------------------------------------------------------------------
@@ -133,6 +144,47 @@ def department_ref(value) -> str | None:
 	if frappe.db.exists("Department", value):
 		return value
 	return frappe.db.get_value("Department", {"department_name": value}, "name")
+
+
+def file_block(reason: str) -> Block:
+	return Block(
+		"IMPORT_FILE_INVALID",
+		_("File not accepted"),
+		reason,
+		_("Download the template, fill it in and upload it again."),
+	)
+
+
+def read_upload(file_url, extensions=(".xlsx",), max_bytes=MAX_BYTES) -> bytes:
+	"""Nội dung file riêng tư người gọi vừa tải lên (`File` của chính họ, ``/private/files/``); sai → ImportFileError.
+
+	Không tiết lộ file của người khác có tồn tại hay không. Đọc thẳng từ thư mục private của site.
+	"""
+	invalid = ImportFileError(_("The file was not found among your private uploads. Upload the file again."))
+	if not isinstance(file_url, str) or not file_url.strip():
+		raise invalid
+	names = frappe.get_all(
+		"File",
+		filters={"file_url": file_url.strip(), "is_private": 1, "is_folder": 0, "owner": frappe.session.user},
+		pluck="name",
+		limit=1,
+	)
+	if not names:
+		raise invalid
+	doc = frappe.get_doc("File", names[0])
+	if not (doc.file_name or "").lower().endswith(tuple(extensions)):
+		raise ImportFileError(_("Only {0} files are accepted.").format(", ".join(extensions)))
+	parts = (doc.file_url or "").split("/")
+	if not doc.file_url.startswith("/private/files/") or ".." in parts or "" in parts[1:]:
+		raise invalid
+	try:
+		path = frappe.get_site_path(*parts[1:])
+		if os.path.getsize(path) > max_bytes:
+			raise ImportFileError(_("The file is larger than {0} MB.").format(max_bytes // (1024 * 1024)))
+		with open(path, "rb") as handle:
+			return handle.read()
+	except OSError:
+		raise invalid from None
 
 
 # --- Mẫu Excel -----------------------------------------------------------------------------------------------------
@@ -554,6 +606,7 @@ def run(key: str, content: bytes, file_url: str | None) -> str:
 			enqueue_after_commit=True,
 			batch=batch.name,
 			content=content,
+			background=True,
 		)
 	else:
 		execute_batch(batch.name, content)
@@ -564,8 +617,12 @@ def _file_content(file_url: str) -> bytes:
 	return frappe.get_doc("File", {"file_url": file_url}).get_content()
 
 
-def execute_batch(batch: str, content: bytes | None = None) -> None:
-	"""Ghi từng đơn vị của file vào DB; mỗi đơn vị một savepoint; cập nhật kết quả vào `Import Batch`."""
+def execute_batch(batch: str, content: bytes | None = None, background: bool = False) -> None:
+	"""Ghi từng đơn vị của file vào DB; mỗi đơn vị một savepoint; cập nhật kết quả vào `Import Batch`.
+
+	Lỗi ngoài dự kiến: trong request (``background`` False) ném lại để request hoàn tác như mọi RPC (không rollback cả
+	transaction ở đây: giữ savepoint của ``@idempotent``); trong job nền thì hoàn tác và đánh dấu batch Failed.
+	"""
 	doc = frappe.get_doc("Import Batch", batch)
 	kind = get_kind(doc.kind)
 	_save(doc, status="Running", started_at=now_datetime())
@@ -575,7 +632,8 @@ def execute_batch(batch: str, content: bytes | None = None) -> None:
 		for unit in units:
 			results += _write_unit(kind, unit, per_unit.get(id(unit)), existing)
 	except Exception as error:
-		# lỗi ngoài dự kiến (file đổi, lỗi máy chủ): bỏ mọi ghi dở, đánh dấu Failed nếu batch đã được lưu từ trước
+		if not background:
+			raise
 		frappe.db.rollback()
 		if frappe.db.exists("Import Batch", batch):
 			frappe.db.set_value(
@@ -611,6 +669,11 @@ def _write_unit(kind: ImportKind, unit, issues, existing) -> list[dict]:
 	except RowError as error:
 		frappe.db.rollback(save_point=SAVEPOINT)
 		return [_error_row(issue, code) for issue in error.issues]
+	except frappe.PermissionError:
+		frappe.db.rollback(save_point=SAVEPOINT)
+		frappe.clear_last_message()
+		reason = _("You are not allowed to create this record or a record it links to.")
+		return [_error_row(Issue(unit[0].row, "PERMISSION_DENIED", None, reason), code)]
 	except (BlockedError, frappe.ValidationError, frappe.DoesNotExistError) as error:
 		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.clear_last_message()

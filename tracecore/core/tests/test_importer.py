@@ -193,6 +193,7 @@ class TestCheckAndRun(ImporterCase):
 		enqueue.assert_called_once()
 		self.assertEqual(enqueue.call_args.kwargs["queue"], "long")
 		self.assertEqual(enqueue.call_args.kwargs["batch"], name)
+		self.assertIs(enqueue.call_args.kwargs["background"], True)
 		importer.execute_batch(name, enqueue.call_args.kwargs["content"])  # như job nền nhận từ hàng đợi
 		self.assertEqual(frappe.db.get_value("Import Batch", name, "created"), importer.BACKGROUND_ROWS + 1)
 
