@@ -222,13 +222,19 @@ def test_t1_pda_viewport_reminds_before_confirming_an_unchecked_set(t1_pda_page,
 		assert set_status(page, set_id)[0] == "Processing", set_id
 
 
-def test_t1_offline_shows_offline_state(t1_page):
+def test_t1_offline_continues_on_device(t1_page):
+	"""FEAT-009 (A-40 Q1, D3): mất mạng thì T1 tiếp nhận tiếp trên thiết bị theo snapshot, phiếu chờ đồng bộ."""
 	page = t1_page
+	page.wait_for_function(
+		"() => frappe.tc_station.offlineData && frappe.tc_station.offlineData.step === 'T1'", timeout=30000
+	)
 	page.context.set_offline(True)
 	page.evaluate("window.dispatchEvent(new Event('offline'))")
-	offline = page.locator(".tc-result[data-state='offline']")
-	expect(offline).to_be_visible(timeout=15000)
-	expect(offline).to_contain_text("Tiếp nhận bộ cần có kết nối mạng")
-	scan(page, "NV-00001")  # quét khi ngoại tuyến không gửi gì, màn vẫn báo ngoại tuyến
-	expect(offline).to_be_visible()
+	expect(page.locator(".tc-result")).to_contain_text("Tiếp nhận tiếp theo dữ liệu đã tải", timeout=15000)
+	scan(page, "NV-00001")  # thẻ người giao chỉ kiểm khi đồng bộ
+	expect(page.locator(".tc-t1-head")).to_contain_text("Phiếu offline")
+	expect(page.locator(".tc-t1-head")).to_contain_text("NV-00001")
+	page.locator("[data-action='discard']").click()
+	page.locator("[data-action='discard']").click()  # bỏ phiếu offline: không gì vào hàng đợi
+	expect(page.locator(".tc-sync-bar")).to_be_hidden()
 	page.context.set_offline(False)

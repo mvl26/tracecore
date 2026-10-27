@@ -5,7 +5,7 @@
 // bước T1 giao cho T1Receiving, T2 cho T2Wash, T3 cho T3Assembly, T5 cho T5Load, T7 cho T7Issue (public/js/station_t*.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, TcOutbox, tcSync, TC_SNAPSHOT_MS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -109,11 +109,20 @@ class TraceCoreStation {
 		this.sessionBar = this.root.querySelector(".tc-session");
 		this.root.dataset.shellMs = String(Math.round(performance.now()));
 
+		this.syncBar = this.root.querySelector(".tc-sync-bar");
+		this.offlineData = null; // snapshot đọc offline của trạm (FEAT-009): T1/T4/T8
+		this.snapshotAt = 0;
+
 		this.bind();
 		this.addManifestLink();
 		this.registerServiceWorker();
 		this.renderLogin();
 		this.initialHandshake = Promise.resolve();
+		if (typeof tcSync !== "undefined") {
+			this.unsubscribeSync = tcSync.onChange((state) => this.renderSync(state));
+			tcSync.refreshCount();
+			tcSync.replay();
+		}
 	}
 
 	// ---- vòng đời Page ----
@@ -155,6 +164,7 @@ class TraceCoreStation {
 		for (const [target, name, handler, options] of this.listeners)
 			target.removeEventListener(name, handler, options);
 		this.listeners = [];
+		if (this.unsubscribeSync) this.unsubscribeSync();
 		return Promise.all([this.authBarrier, ending, this.authWorker]);
 	}
 
@@ -389,6 +399,76 @@ class TraceCoreStation {
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
 		this.focus(true);
+		this.loadOfflineData();
+	}
+
+	// ---- offline (FEAT-009, ADR-003, A-40) ----
+	offlineCapable() {
+		return (
+			typeof TcOutbox !== "undefined" &&
+			Boolean(window.indexedDB) &&
+			["T1", "T4", "T8"].includes(this.stationInfo && this.stationInfo.step)
+		);
+	}
+
+	async loadOfflineData() {
+		if (!this.offlineCapable()) return;
+		this.offlineData = (await TcOutbox.snapshot(this.station)) || this.offlineData;
+		return this.refreshSnapshot(true);
+	}
+
+	// snapshot đọc offline: khi đăng nhập, rồi mỗi 10 phút khi còn mạng (D4); T4 kèm dải Cycle ID cấp trước
+	async refreshSnapshot(force = false) {
+		if (!this.offlineCapable() || !this.session || this.isOffline()) return;
+		if (!force && Date.now() - this.snapshotAt < TC_SNAPSHOT_MS) return;
+		this.snapshotAt = Date.now();
+		const version = this.sessionVersion;
+		try {
+			const data = await this.rpc("tracecore.v1.sync.snapshot", {
+				station: this.station,
+				client_ts: clientTs(),
+			});
+			if (version !== this.sessionVersion || !data || !data.ok || !data.offline) return;
+			this.offlineData = data;
+			await TcOutbox.saveSnapshot(this.station, data);
+			if (data.ranges) await TcOutbox.saveRanges(this.station, data.ranges);
+		} catch (error) {
+			this.snapshotAt = 0; // lần sau thử lại; snapshot cũ vẫn dùng được
+		}
+	}
+
+	// xếp một RPC ghi của màn bước vào hàng đợi (token của phiên đi cùng để phát lại sau khi khóa máy)
+	queueCall(method, args, key, ts) {
+		if (!this.session)
+			throw Object.assign(new Error("Station session ended"), { sessionEnded: true });
+		return tcSync.enqueue(
+			this.station,
+			method,
+			{ ...args, token: this.session.token },
+			key,
+			ts
+		);
+	}
+
+	renderSync(state) {
+		if (!this.syncBar) return;
+		let text = "";
+		if (state.sending)
+			text = __("Syncing {0}/{1}...", [state.sending, state.sending + state.queued - 1]);
+		else if (state.queued && state.error)
+			text = __("{0} transaction(s) waiting · last attempt failed: {1}", [
+				state.queued,
+				state.error,
+			]);
+		else if (state.queued) text = __("Offline – {0} transaction(s) waiting", [state.queued]);
+		else if (state.conflicts)
+			text = __("Synced · {0} transaction(s) sent to R02 as sync conflicts", [
+				state.conflicts,
+			]);
+		else if (state.synced_at) text = __("All offline transactions are synced");
+		this.syncBar.hidden = !text;
+		this.syncBar.textContent = text;
+		this.syncBar.dataset.state = state.conflicts ? "warn" : state.queued ? "queued" : "ok";
 	}
 
 	formatExpiry(value) {
@@ -517,6 +597,7 @@ class TraceCoreStation {
 				action: __("Scan your employee card again."),
 			});
 		}
+		this.refreshSnapshot();
 		// Heartbeat itself must not count as operator activity or keep an idle session alive.
 		if (
 			this.lastActivity > this.heartbeatActivity &&
@@ -533,6 +614,7 @@ class TraceCoreStation {
 	setOffline(offline) {
 		this.banner.hidden = !offline;
 		this.root.dataset.offline = offline ? "1" : "0";
+		if (!offline && typeof tcSync !== "undefined") tcSync.replay();
 		if (!this.session) {
 			if (offline)
 				this.renderLogin({
@@ -560,6 +642,8 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.release.") ||
 			method.startsWith("tracecore.v1.daily_test.") ||
 			method.startsWith("tracecore.v1.receive.") ||
+			method.startsWith("tracecore.v1.sync.") ||
+			method.startsWith("tracecore.v1.code_range.") ||
 			method === "tracecore.v1.printer.set_roll";
 		const version = this.sessionVersion;
 		const sessionCall =

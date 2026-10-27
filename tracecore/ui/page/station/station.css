@@ -65,6 +65,25 @@ body.tc-kiosk .layout-main-section {
 	display: none;
 }
 
+/* Hàng đợi offline (FEAT-009, ux-foundations §57): số giao dịch chờ / đang đồng bộ / xung đột — luôn có chữ */
+.tc-sync-bar {
+	padding: var(--tc-sp-2) var(--tc-sp-6-5);
+	background: var(--tc-info-tint);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-info);
+	color: var(--tc-info-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-sync-bar[data-state="warn"] {
+	background: var(--tc-warn-tint);
+	border-bottom-color: var(--tc-warn);
+	color: var(--tc-warn-text);
+}
+
+.tc-sync-bar[hidden] {
+	display: none;
+}
+
 .tc-main {
 	padding: var(--tc-sp-5) var(--tc-sp-6-5) var(--tc-sp-22);
 }

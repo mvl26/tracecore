@@ -74,8 +74,11 @@ def _used_on(pack):
 	return _date(used_at or pack.modified)
 
 
-def _check_usable(pack):
-	"""FR-M2-18: chặn 100 % Cycle ID không còn dùng được, kèm lý do và ngày phát sinh trạng thái (không có ngoại lệ)."""
+def _check_usable(pack, on=None):
+	"""FR-M2-18: chặn 100 % Cycle ID không còn dùng được, kèm lý do và ngày phát sinh trạng thái (không có ngoại lệ).
+
+	`on`: ngày sử dụng để so hạn dùng (giao dịch offline phát lại, A-40); mặc định hôm nay.
+	"""
 	status = pack.status
 	if status == USED:
 		raise _blocked(
@@ -116,7 +119,7 @@ def _check_usable(pack):
 			),
 			_("Do not use this pack; ask the sterile store to issue it first."),
 		)
-	if getdate(pack.expiry) < getdate(today()):
+	if getdate(pack.expiry) < getdate(on or today()):
 		raise _blocked(
 			"PACK_EXPIRED",
 			_("Pack has expired"),
@@ -216,8 +219,12 @@ def confirm(
 	emergency=False,
 	department_reason=None,
 	client_ts=None,
+	used_at=None,
 ):
 	"""Xác nhận sử dụng một gói (FR-M2-17): Usage Record ghi sổ, Pack → Used, Set Unit → Chờ tiếp nhận.
+
+	`used_at` (giờ hệ thống): thời điểm nghiệp vụ của giao dịch offline phát lại (ADR-003, A-40); hạn dùng so theo
+	ngày đó. Không truyền → giờ server hiện tại như trước.
 
 	Mã bệnh nhân bắt buộc (1-50 ký tự), trừ ca cấp cứu: lưu trống và nhập bổ sung trong 24 giờ (`set_patient_code`).
 	Mã ca mổ bắt buộc; nhiều gói cùng mã ca mổ được. Gói thuộc khoa khác khoa người quét cần lý do. Mọi ghi trong một
@@ -248,7 +255,7 @@ def confirm(
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		pack = storage._lock_pack(storage._pack_name(cycle_id))
-		_check_usable(pack)
+		_check_usable(pack, getdate(used_at) if used_at else None)
 		card = _card(pack, employee)
 		reason = _optional(department_reason, MAX_REASON)
 		if card["department_mismatch"] and not reason:
@@ -260,7 +267,7 @@ def confirm(
 				),
 				_("Enter why this department uses the pack, then confirm again."),
 			)
-		now = now_datetime()
+		now = used_at or now_datetime()
 		record = frappe.get_doc(
 			{
 				"doctype": "Usage Record",

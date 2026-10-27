@@ -48,7 +48,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Incident Type",
-   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nOther",
+   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nSync Conflict\nOther",
    "reqd": 1,
    "set_only_once": 1
   },

@@ -278,7 +278,7 @@ def test_offline_card_login_stays_locked_and_can_login_after_reconnect(page, con
 	login(page)
 	context.set_offline(True)
 	expect(page.locator(".tc-result")).to_have_attribute("data-state", "offline")
-	expect(page.locator(".tc-result")).to_contain_text("Packing needs a network connection")
+	expect(page.locator(".tc-result")).to_contain_text("Station offline")
 	context.set_offline(False)
 	expect(page.locator(".tc-result")).to_have_attribute("data-state", "empty")
 

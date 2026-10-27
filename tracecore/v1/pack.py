@@ -181,10 +181,18 @@ def resolve_ci(raw, station, open_set, client_ts=None, token=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@station_session(*PACKING_ROLES)
+@station_session(*PACKING_ROLES, offline=True)
 @idempotent
 def generate_cycle_id(
-	set_id, station, confirmed_lines, ci_batch, pack_type, maint_actions=None, client_ts=None, token=None
+	set_id,
+	station,
+	confirmed_lines,
+	ci_batch,
+	pack_type,
+	maint_actions=None,
+	offline_cycle_id=None,
+	client_ts=None,
+	token=None,
 ):
 	"""Sinh Cycle ID cho bộ tại T4 (FR-M2-07/08) trong một transaction; trả gói, HRI, DataMatrix và lệnh in.
 
@@ -192,6 +200,7 @@ def generate_cycle_id(
 	(``[{"instrument", "action": "Done"|"Deferred", "oil_batch"?, "reason"?}]``); cả hai nhận list hoặc chuỗi JSON.
 	Cảnh báo in (``NO_PRINTER_FOR_METHOD``, ``LABEL_TEMPLATE_MISSING``, ``LABEL_RENDER_FAILED``) nằm trong
 	``print.warning`` của kết quả thành công: Cycle ID vẫn giữ, không phải lỗi HTTP.
+	`offline_cycle_id`: mã kiosk đã lấy từ Code Range khi mất mạng (FR-M2-07.11, A-40), gửi khi phát lại.
 	"""
 	require_any_role(*PACKING_ROLES)
 	frappe.has_permission("Pack", "create", throw=True)  # trước mọi thao tác ghi, kể cả Audit Log
@@ -206,7 +215,9 @@ def generate_cycle_id(
 		timestamp,
 		lambda: {
 			"ok": True,
-			**packing.generate(set_id, station, confirmed, ci_batch, pack_type, actions, timestamp),
+			**packing.generate(
+				set_id, station, confirmed, ci_batch, pack_type, actions, timestamp, offline_cycle_id
+			),
 		},
 		"Set Unit" if is_set else None,
 		scanned["id"] if is_set else None,

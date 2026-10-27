@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc, STATUS_BADGE */
+/* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
 // Ô chính quét Set/Cycle/cuộn nhãn; lô chỉ thị dùng ô riêng và RPC resolve_ci.
@@ -119,7 +119,9 @@ class T4Packing {
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.station.focus();
-		if (this.station.isOffline()) return this.station.setOffline(true);
+		if (this.station.isOffline()) {
+			return this.offlineReady() ? this.offlineScan(raw) : this.station.setOffline(true);
+		}
 		this.scanned = raw; // lỗi hết cơ số của lần quét này đề nghị ghi đè cho đúng mã đã quét
 		await this.request(
 			T4_SCAN,
@@ -131,7 +133,11 @@ class T4Packing {
 	async scanIndicator(raw) {
 		raw = (raw || "").trim();
 		if (!raw || !this.openSet() || !this.station.session) return;
-		if (this.station.isOffline()) return this.station.setOffline(true);
+		if (this.station.isOffline()) {
+			return this.offlineReady()
+				? this.offlineIndicator(raw)
+				: this.station.setOffline(true);
+		}
 		await this.request(
 			"tracecore.v1.pack.resolve_ci",
 			{
@@ -442,7 +448,7 @@ class T4Packing {
 	missing() {
 		if (!this.ctx) return [];
 		const out = [];
-		if (this.offline) out.push(__("network connection"));
+		if (this.offline && !this.offlineReady()) out.push(__("network connection"));
 		const left = this.tickable() - this.checked.size;
 		if (left > 0) out.push(__("{0} instrument(s)", [left]));
 		if (!this.ci) out.push(__("indicator lot"));
@@ -464,7 +470,184 @@ class T4Packing {
 			pack_type: this.packType,
 			maint_actions: Object.values(this.maint),
 		};
+		if (this.station.isOffline() && this.offlineReady()) return this.offlineGenerate(args);
 		this.request(T4_GENERATE, args, (res) => this.onGenerated(res));
+	}
+
+	// ---- offline (FEAT-009, FR-M2-07.11, A-40) ----
+	offlineReady() {
+		const data = this.station.offlineData;
+		return Boolean(this.station.offlineCapable() && data && data.step === "T4");
+	}
+
+	offlineScan(raw) {
+		const id = tcScanId(raw);
+		this.scanned = id;
+		this.queuedSets = this.queuedSets || new Set();
+		const row = (this.station.offlineData.sets || []).find((item) => item.set_id === id);
+		if (!row) {
+			return this.reject(
+				{
+					code: "OFFLINE_SET_UNKNOWN",
+					title: __("Set not in offline data"),
+					reason: __(
+						"{0} is not among the sets ready for packing when the station went offline.",
+						[id]
+					),
+					action: __("Keep the set aside and pack it when the connection returns."),
+				},
+				T4_SCAN
+			);
+		}
+		if (row.blocked) return this.reject(row.blocked, T4_SCAN);
+		if (this.queuedSets.has(id)) {
+			return this.reject(
+				{
+					code: "OFFLINE_ALREADY_PACKED",
+					title: __("Set already packed offline"),
+					reason: __("A Cycle ID for {0} is waiting to be synced.", [id]),
+					action: __("Do not pack the set again."),
+				},
+				T4_SCAN
+			);
+		}
+		if (row.maint_pending) {
+			return this.reject(
+				{
+					code: "OFFLINE_MAINT",
+					title: __("Maintenance needs the network"),
+					reason: __("Set {0} has maintenance reminders that are handled online only.", [
+						id,
+					]),
+					action: __("Pack this set when the connection returns."),
+				},
+				T4_SCAN
+			);
+		}
+		this.onScan({ kind: "context", context: { ...row.context, offline: true } }, raw);
+	}
+
+	offlineIndicator(raw) {
+		const code = tcScanId(raw).toUpperCase();
+		const today = tcLocalDay();
+		const lot = (this.station.offlineData.ci_batches || []).find(
+			(row) => row.batch.toUpperCase() === code && row.method === this.ctx.set.method
+		);
+		if (!lot || lot.expiry < today) {
+			this.notice = {
+				variant: "error",
+				code: "CI_LOT_INVALID",
+				title: __("Indicator lot not valid"),
+				reason: lot
+					? __("Lot {0} expired on {1}.", [lot.batch, t4Date(lot.expiry)])
+					: __(
+							"Lot {0} is not a valid class 5/6 indicator lot for {1} in the offline data.",
+							[code, __(this.ctx.set.method)]
+					  ),
+				action: __("Scan another indicator lot that is still valid."),
+			};
+			return this.show();
+		}
+		this.notice = null;
+		this.ci = { batch: lot.batch, ci_class: lot.ci_class, expiry_date: lot.expiry };
+		this.show();
+	}
+
+	// bấm hai lần liền không xếp hai gói cho cùng bộ (review I10): khóa `busy` suốt lúc lấy mã và ghi hàng đợi
+	async offlineGenerate(args) {
+		if (this.busy) return;
+		this.busy = T4_GENERATE;
+		try {
+			await this.offlineGenerateLocked(args);
+		} finally {
+			this.busy = null;
+		}
+		this.show();
+		this.station.focus(true);
+	}
+
+	async offlineGenerateLocked(args) {
+		const code = await TcOutbox.nextCode(this.station.station);
+		if (!code) {
+			this.notice = {
+				variant: "error",
+				code: "CODE_RANGE_EXHAUSTED",
+				title: __("No offline codes left"),
+				reason: __("This station has used every offline Cycle ID it received."),
+				action: __("Pack the remaining sets when the connection returns."),
+			};
+			return this.show();
+		}
+		const key = uuid4();
+		const ts = clientTs();
+		try {
+			await this.station.queueCall(
+				T4_GENERATE,
+				{ ...args, offline_cycle_id: code },
+				key,
+				ts
+			);
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.notice = {
+				variant: "error",
+				code: "OFFLINE_STORE_FAILED",
+				title: __("Could not keep the transaction on this device"),
+				reason: __("The station storage is not available."),
+				action: __("Do not label the set; call R10."),
+			};
+			return this.show();
+		}
+		this.queuedSets.add(args.set_id);
+		const type = this.ctx.pack_types.find((row) => row.item === this.packType) || {};
+		const days = Number(type.days || type.shelf_life_days || 0);
+		const expiry = new Date();
+		expiry.setDate(expiry.getDate() + days);
+		const set = this.ctx.set;
+		this.notice = null;
+		this.done = {
+			offline: true,
+			pack: {
+				cycle_id: code,
+				set_id: set.set_id,
+				set_name: set.set_name,
+				method: set.method,
+				pack_type: this.packType,
+				pack_type_name: type.item_name,
+				expiry: tcLocalDay(expiry),
+				shelf_life_days_applied: days,
+				packed_at: ts,
+			},
+			hri: code,
+			print: null,
+		};
+		this.show();
+	}
+
+	offlineDoneHtml() {
+		const pack = this.done.pack;
+		return `<section class="tc-t4-block tc-t4-done">
+			${this.alertHtml({
+				variant: "info",
+				title: __("Cycle ID kept on this device"),
+				reason: __(
+					"The pack is recorded offline and is sent to the server when the connection returns."
+				),
+				action: __(
+					"The label prints when the connection returns; keep the pack with its set tag until then."
+				),
+			})}
+			<p class="tc-cycle">${esc(pack.cycle_id)}</p>
+			<dl class="tc-res-grid">
+				<dt>${esc(__("Set ID"))}</dt><dd class="tc-mono">${esc(pack.set_id)}</dd>
+				<dt>${esc(__("Set Name"))}</dt><dd>${esc(pack.set_name)}</dd>
+				<dt>${esc(__("Use-by date"))}</dt><dd><b>${esc(t4Date(pack.expiry))}</b> (${esc(
+			__("{0} days", [pack.shelf_life_days_applied])
+		)})</dd>
+				<dt>${esc(__("Pack Type"))}</dt><dd>${esc(pack.pack_type_name || pack.pack_type)}</dd>
+				<dt>${esc(__("Packed At"))}</dt><dd>${esc(t4DateTime(pack.packed_at))}</dd>
+			</dl>
+		</section>`;
 	}
 
 	maintIntro(row) {
@@ -735,7 +918,7 @@ class T4Packing {
 		if (key === this.viewKey && this.result.querySelector(".tc-t4")) return this.refresh();
 		this.viewKey = key;
 		let body = "";
-		if (this.done) body = this.doneHtml();
+		if (this.done) body = this.done.offline ? this.offlineDoneHtml() : this.doneHtml();
 		else if (this.ctx) body = this.ctxHtml();
 		this.station.setState(
 			this.viewState(),
@@ -863,11 +1046,20 @@ class T4Packing {
 	}
 
 	offlineAlert() {
+		if (this.offlineReady()) {
+			return {
+				variant: "info",
+				title: __("Station offline"),
+				reason: __(
+					"Packing continues from the data loaded before the connection was lost. Cycle IDs come from this station's offline range; labels print when the connection returns."
+				),
+			};
+		}
 		return {
 			variant: "info",
 			title: __("Station offline"),
 			reason: __(
-				"Packing needs a network connection; offline Cycle ID generation comes with FEAT-009."
+				"Packing needs a network connection; no offline data was loaded on this station."
 			),
 		};
 	}
@@ -1248,7 +1440,8 @@ class T4Packing {
 
 	barHtml() {
 		if (this.done) {
-			const blocked = Boolean(this.busy) || this.offline;
+			// gói offline chưa lên server: chưa in lại / hủy được (A-40 D1)
+			const blocked = Boolean(this.busy) || this.offline || Boolean(this.done.offline);
 			const waiting = this.labelWaiting();
 			const waitingHint = waiting
 				? `<span class="tc-hint">${esc(

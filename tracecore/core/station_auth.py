@@ -7,6 +7,7 @@ import re
 import secrets
 from contextlib import contextmanager
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import frappe
 from frappe import _
@@ -19,6 +20,9 @@ from tracecore.core.errors import Block, BlockedError
 
 SESSION_HOURS = 8
 IDLE_MINUTES = 10
+REPLAY_MAX_HOURS = (
+	24  # FEAT-009: giao dịch offline phát lại muộn nhất 24 giờ sau client_ts (ADR-003 cần ≥ 4 giờ)
+)
 PIN_LOCK_SECONDS = 300
 PIN_FAILURE_LIMIT = 3
 PROOF_SECONDS = 120
@@ -501,10 +505,78 @@ def _consume_proof(doc, proof):
 	return doc
 
 
+def _replay_invalid() -> BlockedError:
+	return _block(
+		"SESSION_INVALID",
+		"Station session is invalid",
+		"The session was not valid at the time of this offline transaction.",
+		"The transaction goes to R02 as a sync conflict.",
+	)
+
+
+def session_owner(token: str) -> dict | None:
+	"""``{station, employee, user}`` của Station Session mang `token` (mở hay đã đóng), để ghi Sync Conflict."""
+	if not isinstance(token, str) or not token:
+		return None
+	return frappe.db.get_value(
+		"Station Session", {"token_hash": _token_hash(token)}, ["station", "employee", "user"], as_dict=True
+	)
+
+
+def authenticate_replay(token: str, station: str, client_ts):
+	"""Phiên của một giao dịch offline phát lại: hợp lệ **tại `client_ts`** (A-40 Q3), không phải lúc phát lại.
+
+	Đúng trạm, ``started_at ≤ client_ts ≤ absolute_expires_at``; phiên đã đóng thì ``ended_at ≥ client_ts`` và không
+	đóng vì nhân viên bị vô hiệu. Phiên còn mở mà nhân viên đã vô hiệu → đóng và từ chối như phiên thường. Phiên còn
+	mở thì ``last_activity_at`` tiến tới `client_ts` (thao tác offline là hoạt động thật, không khóa Idle oan).
+	"""
+	from tracecore.core.client_time import to_system_time
+
+	if not isinstance(token, str) or not token or not client_ts:
+		raise _replay_invalid()
+	# token phiên cũ không là chứng thực dài hạn: chỉ nhận giao dịch offline trong REPLAY_MAX_HOURS (review I4)
+	if (
+		datetime.now(timezone.utc).replace(tzinfo=None) - client_ts
+	).total_seconds() > REPLAY_MAX_HOURS * 3600:
+		raise _replay_invalid()
+	name = frappe.db.get_value("Station Session", {"token_hash": _token_hash(token)}, "name")
+	if not name:
+		raise _replay_invalid()
+	employee = lock_employee(frappe.db.get_value("Station Session", name, "employee"))
+	doc = frappe.get_doc("Station Session", name, for_update=True)
+	at = to_system_time(client_ts)
+	if doc.is_open and not _employee_is_active(employee, doc.user):
+		_close_session(doc, "Employee Disabled", client_ts)
+		raise _replay_invalid()
+	if (
+		doc.station != station
+		or get_datetime(doc.started_at).replace(microsecond=0) > at  # client_ts chỉ tới giây
+		or get_datetime(doc.absolute_expires_at) < at
+		or (not doc.is_open and (doc.end_reason == "Employee Disabled" or get_datetime(doc.ended_at) < at))
+	):
+		raise _replay_invalid()
+	if doc.is_open and get_datetime(doc.last_activity_at) < at:
+		doc.last_activity_at = at
+		doc.save(ignore_permissions=True)
+	return doc
+
+
 @contextmanager
 def as_session_user(token: str, touch: bool = True, client_ts=None):
 	"""Run as the station actor without altering or persisting the caller's web session."""
-	doc = authenticate_session(token, touch=touch, client_ts=client_ts)
+	with _impersonate(authenticate_session(token, touch=touch, client_ts=client_ts)) as doc:
+		yield doc
+
+
+@contextmanager
+def as_replay_user(token: str, station: str, client_ts):
+	"""Như `as_session_user` cho giao dịch offline phát lại: phiên xét tại `client_ts` (`authenticate_replay`)."""
+	with _impersonate(authenticate_replay(token, station, client_ts)) as doc:
+		yield doc
+
+
+@contextmanager
+def _impersonate(doc):
 	# set_user mutates session in place and replaces these user-scoped local caches.
 	# Keep the actual Desk session object untouched for native after-request persistence.
 	fields = (

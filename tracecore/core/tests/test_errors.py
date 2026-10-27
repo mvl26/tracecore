@@ -26,6 +26,7 @@ class TestErrors(FrappeTestCase):
 				"PIN_PROOF_INVALID",
 				"CARD_MISMATCH",
 				"APPROVER_NOT_ALLOWED",
+				"PERMISSION_DENIED",
 			),
 			429: ("PIN_LOCKED", "LOGIN_THROTTLED"),
 			422: (
@@ -37,6 +38,7 @@ class TestErrors(FrappeTestCase):
 				"CI_LOT_EXPIRED",
 				"PACK_TYPE_INVALID",
 				"PATIENT_CODE_REQUIRED",
+				"PATIENT_CODE_UNREADABLE",
 				"DEPARTMENT_REASON_REQUIRED",
 				"PATIENT_CODE_DEADLINE",
 				"TEST_INVALID",
@@ -184,6 +186,8 @@ class TestErrors(FrappeTestCase):
 				"RECEIPT_CLOSED",
 				"ITEM_NOT_CONFIRMED",
 				"FORCE_NOT_ALLOWED",
+				"CODE_RANGE_INVALID",
+				"CODE_RANGE_EXHAUSTED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

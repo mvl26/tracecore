@@ -48,15 +48,18 @@ def current_station_session():
 	return frappe.db.get_value("Station Session", name, ["name", "employee", "user", "station"], as_dict=True)
 
 
-def station_session(*roles, desk_roles=()):
+def station_session(*roles, desk_roles=(), offline=False):
 	"""Authorize human kiosk RPCs before idempotency lookup and execute as the session actor.
 
 	Machine endpoints keep their dedicated TC Agent/API-key checks. Explicit-printer
 	Desk requests retain their own role guard; a Frappe login alone never authorizes a kiosk.
+	`offline=True` (chỉ RPC xếp hàng offline của T1/T4/T8, A-40): nhận phát lại ``X-TC-Replay`` với phiên xét tại
+	`client_ts`; RPC khác bỏ qua header này và luôn cần phiên đang sống.
 	"""
 
 	def decorate(fn):
 		signature = inspect.signature(fn)
+		endpoint = f"{fn.__module__}.{fn.__name__}"
 
 		@functools.wraps(fn)
 		def wrapper(*args, **kwargs):
@@ -66,36 +69,121 @@ def station_session(*roles, desk_roles=()):
 				require_any_role(*desk_roles)
 				return fn(**kwargs)
 			timestamp = parse_client_ts(kwargs.get("client_ts"))
-			# A body token avoids Frappe's OAuth interpretation of Authorization: Bearer.
-			from tracecore.core import station_auth
+			from tracecore.core import sync
 
-			try:
-				with station_auth.as_session_user(token, client_ts=timestamp) as session:
-					if kwargs.get("station") != session.station:
-						raise BlockedError(
-							Block(
-								"SESSION_STATION_MISMATCH",
-								_("Wrong station"),
-								_("The session belongs to another station."),
-								_("Use the station where you scanned your card."),
-							)
-						)
-					require_any_role(*roles)
-					kwargs["station"] = session.station
-					previous = frappe.flags.get(SESSION_FLAG)
-					frappe.flags[SESSION_FLAG] = session.name
-					try:
-						return fn(**kwargs)
-					finally:
-						frappe.flags[SESSION_FLAG] = previous
-			except BlockedError as error:
-				if getattr(frappe.local, "request", None):
-					frappe.local.response["http_status_code"] = error.block.http_status
-				return {"ok": False, "error": error.block.as_dict()}
+			if offline and sync.is_replay():
+				return _replay(fn, endpoint, roles, kwargs, token, timestamp)
+			return _live(fn, roles, kwargs, token, timestamp)
 
 		return wrapper
 
 	return decorate
+
+
+def _run_as_session(fn, roles, kwargs, session):
+	if kwargs.get("station") != session.station:
+		raise BlockedError(
+			Block(
+				"SESSION_STATION_MISMATCH",
+				_("Wrong station"),
+				_("The session belongs to another station."),
+				_("Use the station where you scanned your card."),
+			)
+		)
+	require_any_role(*roles)
+	kwargs["station"] = session.station
+	previous = frappe.flags.get(SESSION_FLAG)
+	frappe.flags[SESSION_FLAG] = session.name
+	try:
+		return fn(**kwargs)
+	finally:
+		frappe.flags[SESSION_FLAG] = previous
+
+
+def _block_body(block):
+	if getattr(frappe.local, "request", None):
+		frappe.local.response["http_status_code"] = block.http_status
+	return {"ok": False, "error": block.as_dict()}
+
+
+def _client_errors():
+	"""Lỗi do dữ liệu của giao dịch phát lại (thành Sync Conflict); lỗi khác là lỗi server, kiosk thử lại sau."""
+	from tracecore.core.client_time import ClientTimestampError
+	from tracecore.core.idempotency import IdempotencyConflictError
+
+	return (ClientTimestampError, BadRequestError, IdempotencyConflictError, frappe.DoesNotExistError)
+
+
+def _replay(fn, endpoint, roles, kwargs, token, timestamp):
+	"""Giao dịch offline phát lại (`X-TC-Replay`): phiên xét tại `client_ts`; từ chối nghiệp vụ, thiếu quyền hoặc dữ
+	liệu sai → Sync Conflict (A-40 Q2), body lỗi mang ``sync_conflict`` để kiosk biết được xóa mục khỏi hàng đợi.
+
+	Không ghi gì khi khóa idempotent sai dạng hoặc token không thuộc phiên nào (khách gửi rác, review I3).
+	"""
+	from tracecore.core import station_auth, sync
+	from tracecore.core.idempotency import _UUID, KEY_HEADER, IdempotencyKeyError
+
+	key = (frappe.get_request_header(KEY_HEADER) or "").strip()
+	if not _UUID.fullmatch(key):
+		raise IdempotencyKeyError(_("Missing or invalid X-Idempotency-Key header."))
+	session = None
+	try:
+		with station_auth.as_replay_user(token, kwargs.get("station"), timestamp) as session:
+			result = _run_as_session(fn, roles, kwargs, session)
+	except BlockedError as error:
+		result = _block_body(error.block)
+	except frappe.PermissionError:
+		frappe.clear_last_message()
+		result = _block_body(
+			Block(
+				"PERMISSION_DENIED",
+				_("Not permitted"),
+				_("The station user may not do this action."),
+				_("The transaction goes to R02 as a sync conflict."),
+			)
+		)
+	except _client_errors() as exc:
+		# giờ trạm sai, tham số sai… khi phát lại cũng là xung đột (A-40 Q2); lỗi khác (417 chung, 5xx) ném để kiosk thử lại
+		status = getattr(exc, "http_status_code", 400)
+		frappe.clear_last_message()
+		result = _block_body(
+			Block(
+				type(exc).__name__,
+				_("Request rejected"),
+				str(exc),
+				_("The transaction goes to R02 as a sync conflict."),
+			)
+		)
+		result["error"]["http_status"] = status
+		frappe.local.response["http_status_code"] = status
+	error = result.get("error") if isinstance(result, dict) and result.get("ok") is False else None
+	owner = (
+		{"station": session.station, "employee": session.employee, "user": session.user}
+		if session
+		else station_auth.session_owner(token)
+	)
+	if error and owner:
+		error["sync_conflict"] = sync.record_conflict(
+			endpoint=endpoint,
+			key=key,
+			client_ts=timestamp,
+			args=kwargs,
+			error=error,
+			http_status=error.get("http_status") or frappe.local.response.get("http_status_code"),
+			session=owner,
+		)
+	return result
+
+
+def _live(fn, roles, kwargs, token, timestamp):
+	# A body token avoids Frappe's OAuth interpretation of Authorization: Bearer.
+	from tracecore.core import station_auth
+
+	try:
+		with station_auth.as_session_user(token, client_ts=timestamp) as session:
+			return _run_as_session(fn, roles, kwargs, session)
+	except BlockedError as error:
+		return _block_body(error.block)
 
 
 class BadRequestError(frappe.ValidationError):

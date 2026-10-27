@@ -58,7 +58,15 @@ def max_skew_seconds():
 
 def check_skew(client_ts):
 	"""`client_ts` (UTC không múi giờ) lệch giờ server quá `max_skew_seconds()` → ClientTimestampError (400)."""
-	seconds = abs((client_ts - utc_now()).total_seconds())
+	_raise_if_skewed(abs((client_ts - utc_now()).total_seconds()))
+
+
+def check_not_future(client_ts):
+	"""Giao dịch offline phát lại (A-40): `client_ts` cũ bao nhiêu cũng được, chỉ chặn khi ở tương lai quá ngưỡng."""
+	_raise_if_skewed((client_ts - utc_now()).total_seconds())
+
+
+def _raise_if_skewed(seconds):
 	if seconds > max_skew_seconds():
 		raise ClientTimestampError(
 			_(

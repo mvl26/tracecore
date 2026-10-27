@@ -929,9 +929,7 @@ class T5Load {
 			{
 				variant: "info",
 				title: __("Station offline"),
-				reason: __(
-					"Sterilization loads need a network connection; offline work comes with FEAT-009."
-				),
+				reason: __("Sterilization loads need a network connection."),
 			},
 			`<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(

@@ -22,6 +22,7 @@ HTTP_STATUS: dict[str, int] = {
 			"SESSION_STATION_MISMATCH",
 			"CARD_MISMATCH",
 			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
+			"PERMISSION_DENIED",  # FEAT-009 A-40: PermissionError khi phát lại offline thành Block để ghi Sync Conflict
 		),
 		403,
 	),
@@ -36,6 +37,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PACK_TYPE_INVALID",
 			# FEAT-027 A-19: quét sử dụng T8
 			"PATIENT_CODE_REQUIRED",
+			"PATIENT_CODE_UNREADABLE",  # FEAT-009 A-40 D2: mã BN mã hóa từ PDA không giải được
 			"DEPARTMENT_REASON_REQUIRED",
 			"PATIENT_CODE_DEADLINE",
 			# FEAT-040 A-21: test hằng ngày và khóa máy
@@ -210,6 +212,9 @@ HTTP_STATUS: dict[str, int] = {
 			"RECEIPT_CLOSED",
 			"ITEM_NOT_CONFIRMED",
 			"FORCE_NOT_ALLOWED",
+			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
+			"CODE_RANGE_INVALID",
+			"CODE_RANGE_EXHAUSTED",
 		),
 		409,
 	),

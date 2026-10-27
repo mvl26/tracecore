@@ -271,3 +271,37 @@ class TestReceiveIdempotency(ReceiveApiCase):
 		self.assertTrue(
 			frappe.db.exists("Audit Log", {"action": "Reject", "ref_doctype": "Set Unit", "ref_name": unit})
 		)
+
+
+class TestSubmitOfflineApi(ReceiveApiCase):
+	"""FEAT-009 (A-40 D3): phiếu T1 offline phát lại thành một lệnh; bộ bị từ chối → Sync Conflict."""
+
+	def replay(self, receipt, key=None):
+		frappe.local.response.pop("http_status_code", None)
+		headers = {"X-Idempotency-Key": key or str(uuid.uuid4()), "X-TC-Station": STATION, "X-TC-Replay": "1"}
+		with request_headers(headers):
+			return receive_api.submit_offline(
+				station=STATION,
+				receipt=receipt,
+				client_ts=now_ts(),
+				token=TOKENS[("Administrator", STATION)],
+			)
+
+	def test_submit_offline_replay_receives_sets(self):
+		unit = self.new_set()
+		result = self.replay({"deliverer_raw": self.card, "items": [{"set_id": unit, "confirm_all": 1}]})
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(result["sets"], [unit])
+		self.assertEqual(frappe.db.get_value("Set Unit", unit, "status"), "Processing")
+
+	def test_submit_offline_rejected_set_becomes_conflict(self):
+		unit = self.new_set("Sterile")
+		key = str(uuid.uuid4())
+		result = self.replay({"deliverer_raw": self.card, "items": [{"set_id": unit, "confirm_all": 1}]}, key)
+		self.assertIs(result["ok"], False)
+		self.assertEqual(result["error"]["code"], "STATUS_INVALID_FOR_STATION")
+		self.assertTrue(frappe.db.exists("Sync Conflict", {"idempotency_key": key}))
+
+	def test_submit_offline_payload_must_be_object(self):
+		with self.assertRaises(BadRequestError):
+			call(receive_api.submit_offline, receipt="[1, 2]")

@@ -255,7 +255,7 @@ def test_t5_offline_blocks_actions(t5_page, t5_demo):
 	load_machine(page, t5_demo["machine_plasma"])
 	page.context.set_offline(True)
 	page.evaluate("window.dispatchEvent(new Event('offline'))")
-	expect(page.locator(".tc-t5")).to_contain_text("FEAT-009", timeout=15000)
+	expect(page.locator(".tc-t5")).to_contain_text("cần kết nối mạng", timeout=15000)
 	expect(page.locator("[data-action='t5-complete']")).to_be_disabled()
 	page.context.set_offline(False)
 

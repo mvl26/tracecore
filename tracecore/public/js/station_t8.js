@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, tcScanId, tcLocalDay */
 // Màn T8 quét sử dụng (SCR-37, FEAT-027, UC-13) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // TraceCoreStation giao cho T8Usage khi trạm là bước T8: ô quét luôn trên cùng; quét Cycle ID mở thẻ gói kèm form (mã bệnh
@@ -15,6 +15,25 @@ const T8_KEEP = ["surgery_code", "surgeon", "room"];
 function t8Date(value) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || "");
 	return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+// Mã bệnh nhân khi offline (A-40 D2): mã hóa RSA-OAEP SHA-256 bằng public key của site trước khi lưu IndexedDB
+async function t8Encrypt(pem, text) {
+	const body = pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+	const der = Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
+	const key = await crypto.subtle.importKey(
+		"spki",
+		der.buffer,
+		{ name: "RSA-OAEP", hash: "SHA-256" },
+		false,
+		["encrypt"]
+	);
+	const cipher = await crypto.subtle.encrypt(
+		{ name: "RSA-OAEP" },
+		key,
+		new TextEncoder().encode(text)
+	);
+	return btoa(String.fromCharCode(...new Uint8Array(cipher)));
 }
 
 class T8Usage {
@@ -59,7 +78,12 @@ class T8Usage {
 		raw = (raw || "").trim();
 		this.input.value = "";
 		if (!raw) return this.station.focus();
-		if (this.station.isOffline()) return this.station.setOffline(true);
+		if (this.station.isOffline()) {
+			if (!this.offlineReady()) return this.station.setOffline(true);
+			this.captureDraft();
+			this.codeFor = null;
+			return this.offlineScan(raw);
+		}
 		this.captureDraft();
 		this.codeFor = null;
 		await this.request(T8_SCAN, { raw, station: this.station.station }, (res) =>
@@ -175,6 +199,105 @@ class T8Usage {
 		);
 	}
 
+	// ---- offline (FEAT-009, UC-13 E3, A-40 D2) ----
+	offlineReady() {
+		const data = this.station.offlineData;
+		return Boolean(this.station.offlineCapable() && data && data.step === "T8");
+	}
+
+	offlineScan(raw) {
+		const id = tcScanId(raw);
+		this.usedOffline = this.usedOffline || new Set();
+		const pack = (this.station.offlineData.packs || []).find((row) => row.cycle_id === id);
+		const reject = (code, title, reason, action) =>
+			this.reject({ code, title, reason, action });
+		if (this.usedOffline.has(id)) {
+			return reject(
+				"PACK_USED",
+				__("Pack already used"),
+				__("Cycle ID {0} was already recorded as used on this device.", [id]),
+				__("Do not use this pack. Return it to the dirty zone.")
+			);
+		}
+		if (!pack) {
+			return reject(
+				"PACK_NOT_IN_OFFLINE_DATA",
+				__("Pack not in offline data"),
+				__(
+					"{0} is not an issued, valid pack of this department in the data loaded before the connection was lost.",
+					[id]
+				),
+				__("Do not use this pack until the connection returns, or call R02.")
+			);
+		}
+		if (pack.expiry < tcLocalDay()) {
+			return reject(
+				"PACK_EXPIRED",
+				__("Pack has expired"),
+				__("Pack {0} expired on {1}.", [id, t8Date(pack.expiry)]),
+				__("Do not use this pack; send it back to the dirty zone.")
+			);
+		}
+		this.emergency = false;
+		this.onScan({ card: { ...pack, department_mismatch: false, offline: true } });
+	}
+
+	async offlineConfirm(args) {
+		const code = (this.draft.patient_code || "").trim();
+		const surgery = (this.draft.surgery_code || "").trim();
+		if (!code || !surgery) {
+			this.fieldError = code ? "DATA_INCOMPLETE" : "PATIENT_CODE_REQUIRED";
+			this.notice = {
+				variant: "error",
+				code: this.fieldError,
+				title: code ? __("Surgery code is required") : __("Patient code is required"),
+				reason: __("Offline use needs the patient code and the surgery code."),
+				action: __("Enter the missing code, then confirm again."),
+			};
+			return this.show();
+		}
+		if (!window.crypto || !crypto.subtle || !this.station.offlineData.patient_key) {
+			this.notice = {
+				variant: "error",
+				code: "OFFLINE_ENCRYPTION_UNAVAILABLE",
+				title: __("Cannot protect the patient code offline"),
+				reason: __(
+					"This device cannot encrypt data (the station page is not served over HTTPS)."
+				),
+				action: __("Record the use when the connection returns, or call R10."),
+			};
+			return this.show();
+		}
+		const cycleId = this.card.cycle_id;
+		const { patient_code: _plain, ...rest } = args; // mã rõ không bao giờ vào IndexedDB
+		const queued = { ...rest, emergency: 0 };
+		try {
+			queued.patient_code_enc = await t8Encrypt(this.station.offlineData.patient_key, code);
+			await this.station.queueCall(T8_CONFIRM, queued, uuid4(), clientTs());
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.notice = {
+				variant: "error",
+				code: "OFFLINE_STORE_FAILED",
+				title: __("Could not keep the transaction on this device"),
+				reason: __("The station storage or encryption is not available."),
+				action: __("Record the use when the connection returns, or call R10."),
+			};
+			return this.show();
+		}
+		this.usedOffline.add(cycleId);
+		this.draft = Object.fromEntries(T8_KEEP.map((name) => [name, this.draft[name] || ""]));
+		this.card = null;
+		this.fieldError = null;
+		this.notice = {
+			variant: "ok",
+			title: __("Pack {0} recorded on this device", [cycleId]),
+			reason: __("It is sent to the server when the connection returns."),
+			action: __("Scan the next pack of this surgery, or finish."),
+		};
+		this.show();
+	}
+
 	confirm() {
 		if (!this.card) return;
 		this.captureDraft();
@@ -190,6 +313,10 @@ class T8Usage {
 				? this.draft.department_reason || ""
 				: "",
 		};
+		if (this.card.offline || this.station.isOffline()) {
+			if (this.offlineReady()) return this.offlineConfirm(args);
+			return this.station.setOffline(true);
+		}
 		const cycleId = this.card.cycle_id;
 		const emergency = this.emergency;
 		this.request(T8_CONFIRM, args, (res) => {
@@ -300,7 +427,7 @@ class T8Usage {
 	// ---- render ----
 	show() {
 		this.updatePlaceholder();
-		if (this.offline && !this.card)
+		if (this.offline && !this.card && !this.notice)
 			return this.station.setState("offline", this.offlineHtml());
 		const state = this.notice && this.notice.variant === "error" ? "error" : "result";
 		this.station.setState(
@@ -349,12 +476,19 @@ class T8Usage {
 	}
 
 	offlineHtml() {
+		const ready = this.offlineReady();
 		return this.alertHtml(
 			{
 				variant: "info",
 				title: __("Station offline"),
-				reason: __("Recording the use of packs needs a network connection."),
-				action: __("Retry when the connection returns."),
+				reason: ready
+					? __(
+							"Scanning continues from the packs issued to this department before the connection was lost; uses are sent when the connection returns."
+					  )
+					: __("Recording the use of packs needs a network connection."),
+				action: ready
+					? __("Emergency cases without a patient code need the connection.")
+					: __("Retry when the connection returns."),
 			},
 			`<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
@@ -434,11 +568,15 @@ class T8Usage {
 					  )
 					: ""
 			}
-			<div class="tc-field">
+			${
+				card.offline
+					? ""
+					: `<div class="tc-field">
 				<label><input type="checkbox" data-action="emergency"${this.emergency ? " checked" : ""}> ${esc(
-			__("Emergency: enter the patient code within 24 hours")
-		)}</label>
-			</div>
+							__("Emergency: enter the patient code within 24 hours")
+					  )}</label>
+			</div>`
+			}
 			${
 				this.emergency
 					? ""
