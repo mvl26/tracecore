@@ -90,6 +90,8 @@ def t4_demo():
 	"""Mã demo T4 từ scripts/e2e_prepare.sh (TC_E2E_T4_SET_STEAM, ...)."""
 	keys = (
 		"set_steam",
+		"set_offline_1",
+		"set_offline_2",
 		"set_maint",
 		"set_plasma",
 		"set_gate_fail",

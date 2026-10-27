@@ -467,8 +467,9 @@ def _has_lube_reminder(set_id):
 	)
 
 
-def _ensure_set(set_type, passed, reminder=False):
-	"""Set Unit đầu tiên của `set_type` có đúng các cổng `passed` Đạt (còn lại Chưa) và chưa có Cycle ID.
+def _ensure_set(set_type, passed, reminder=False, exclude=()):
+	"""Set Unit đầu tiên của `set_type` (ngoài `exclude`) có đúng các cổng `passed` Đạt (còn lại Chưa) và chưa có
+	Cycle ID.
 
 	`reminder` chọn bộ có (True, kèm nhắc tra dầu đến hạn) hoặc không có (False) bản ghi bảo dưỡng tra dầu.
 
@@ -478,9 +479,11 @@ def _ensure_set(set_type, passed, reminder=False):
 		"Set Unit",
 		filters={"set_type": set_type},
 		fields=["name", "status", "active_cycle_id", "current_cycle_no"],
-		order_by="creation asc",
+		order_by="creation asc, name asc",  # bộ tạo cùng thời điểm: thứ tự ổn định giữa các lần gọi
 	)
 	for row in rows:
+		if row.name in exclude:
+			continue
 		if _matches(_gate_results(row), passed) and _has_lube_reminder(row.name) == reminder:
 			return row.name
 	set_id = _issue_one(set_type)
@@ -548,8 +551,14 @@ def ensure_t4_demo():
 	}
 	rolls = {label: _ensure_roll(label) for label in (STEAM_LABEL, PLASMA_LABEL)}
 
+	steam = _ensure_set(set_types["Steam"], T4_GATES_READY)
+	# FEAT-009: hai bộ hấp riêng cho e2e đóng gói offline (tests_e2e/test_station_offline.py), không đụng bộ của T4
+	offline_1 = _ensure_set(set_types["Steam"], T4_GATES_READY, exclude=(steam,))
+	offline_2 = _ensure_set(set_types["Steam"], T4_GATES_READY, exclude=(steam, offline_1))
 	result = {
-		"set_steam": _ensure_set(set_types["Steam"], T4_GATES_READY),
+		"set_steam": steam,
+		"set_offline_1": offline_1,
+		"set_offline_2": offline_2,
 		"set_maint": _ensure_set(set_types["Steam"], T4_GATES_READY, reminder=True),
 		"set_plasma": _ensure_set(set_types["Plasma"], T4_GATES_READY),
 		"set_gate_fail": _ensure_set(set_types["Steam"], T4_GATES_FAIL),

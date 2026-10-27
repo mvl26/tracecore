@@ -8,7 +8,7 @@ const TC_DB_NAME = "tracecore";
 const TC_DB_VERSION = 1;
 const TC_REPLAY_MS = 15000;
 const TC_SNAPSHOT_MS = 10 * 60 * 1000;
-const TC_RANGE_REFILL = 0.2;
+const TC_MAX_ATTEMPTS = 5; // mục lỗi lặp lại quá số lần này được bỏ qua trong lượt phát lại (giữ lại, báo lỗi)
 // RPC ghi được xếp hàng khi mất mạng (A-40 Q1): T1 cả phiếu, T4 sinh Cycle ID, T8 xác nhận sử dụng
 const TC_QUEUEABLE = [
 	"tracecore.v1.receive.submit_offline",
@@ -108,41 +108,62 @@ class TcOutbox {
 		}
 	}
 
-	// dải mã của trạm trong ngày: số đã dùng = số dùng cục bộ (chưa đồng bộ) ∪ số server đã ghi sổ (`used` của dải),
-	// để thiết bị mất dữ liệu cục bộ hoặc PDA khác cùng trạm không cấp lại mã đã có
+	// ngày của dải lấy từ chính mã (`CY-YYMMDD-T<NNN>-`), không theo lúc kiosk nhận snapshot (review I8)
+	static rangeDay(prefix) {
+		const m = /^CY-(\d{2})(\d{2})(\d{2})-/.exec(prefix || "");
+		return m ? `20${m[1]}-${m[2]}-${m[3]}` : null;
+	}
+
+	// dải mã của trạm theo ngày của dải: số đã dùng = số dùng cục bộ (chưa đồng bộ) ∪ số server đã ghi sổ (`used`),
+	// để thiết bị mất dữ liệu cục bộ không cấp lại mã đã có
 	static async saveRanges(station, ranges) {
-		const day = tcLocalDay();
-		const id = `${station}|${day}`;
-		const old = await TcOutbox.tx("ranges", "readonly", (store) => store.get(id));
-		const used = [
-			...new Set([...(old ? old.used : []), ...ranges.flatMap((range) => range.used || [])]),
-		];
-		return TcOutbox.tx("ranges", "readwrite", (store) => store.put({ id, ranges, used }));
-	}
-
-	static async rangeState(station) {
-		const id = `${station}|${tcLocalDay()}`;
-		const row = await TcOutbox.tx("ranges", "readonly", (store) => store.get(id));
-		if (!row) return { id, ranges: [], used: [], left: 0, total: 0 };
-		const total = row.ranges.reduce((sum, r) => sum + (r.to_no - r.from_no + 1), 0);
-		return { ...row, total, left: total - row.used.length };
-	}
-
-	// mã offline kế tiếp `CY-YYMMDD-T<NNN>-NNNN` của trạm hôm nay; hết dải → null
-	static async nextCode(station) {
-		const state = await TcOutbox.rangeState(station);
-		const used = new Set(state.used);
-		for (const range of state.ranges) {
-			for (let no = range.from_no; no <= range.to_no; no++) {
-				if (used.has(no)) continue;
-				state.used.push(no);
-				await TcOutbox.tx("ranges", "readwrite", (store) =>
-					store.put({ id: state.id, ranges: state.ranges, used: state.used })
-				);
-				return `${range.prefix}${String(no).padStart(4, "0")}`;
-			}
+		const byDay = {};
+		for (const range of ranges) {
+			const day = TcOutbox.rangeDay(range.prefix);
+			if (day) (byDay[day] = byDay[day] || []).push(range);
 		}
-		return null;
+		for (const [day, rows] of Object.entries(byDay)) {
+			const id = `${station}|${day}`;
+			const old = await TcOutbox.tx("ranges", "readonly", (store) => store.get(id));
+			const used = [
+				...new Set([
+					...(old ? old.used : []),
+					...rows.flatMap((range) => range.used || []),
+				]),
+			];
+			await TcOutbox.tx("ranges", "readwrite", (store) =>
+				store.put({ id, ranges: rows, used })
+			);
+		}
+	}
+
+	// mã offline kế tiếp của trạm cho ngày `day` (mặc định hôm nay theo giờ kiosk); đọc và giữ số trong MỘT giao dịch
+	// IndexedDB để hai lần bấm liền không lấy trùng số (review I10); hết dải → null
+	static async nextCode(station, day = tcLocalDay()) {
+		const db = await TcOutbox.open();
+		const id = `${station}|${day}`;
+		return new Promise((resolve, reject) => {
+			const transaction = db.transaction("ranges", "readwrite");
+			const store = transaction.objectStore("ranges");
+			let code = null;
+			store.get(id).onsuccess = (event) => {
+				const row = event.target.result;
+				if (!row) return;
+				const used = new Set(row.used);
+				for (const range of row.ranges) {
+					for (let no = range.from_no; no <= range.to_no && !code; no++) {
+						if (used.has(no)) continue;
+						row.used.push(no);
+						code = `${range.prefix}${String(no).padStart(4, "0")}`;
+					}
+					if (code) break;
+				}
+				if (code) store.put(row);
+			};
+			transaction.oncomplete = () => resolve(code);
+			transaction.onerror = () => reject(transaction.error);
+			transaction.onabort = () => reject(transaction.error);
+		});
 	}
 }
 TcOutbox.db = null;
@@ -207,6 +228,7 @@ const tcSync = {
 		}
 		if (!entries.length) return this.emit({ queued: 0, sending: 0 });
 		let done = 0;
+		let failed = null;
 		for (const entry of entries) {
 			this.emit({ queued: entries.length - done, sending: done + 1, error: null });
 			let response;
@@ -227,26 +249,56 @@ const tcSync = {
 			} catch (error) {
 				return this.stop(entry, __("No network"));
 			}
-			if (response.status >= 500) return this.stop(entry, `HTTP ${response.status}`);
-			if (response.status >= 400) this.emit({ conflicts: this.state.conflicts + 1 });
-			else await this.printReplayed(entry, response);
+			// chỉ xóa mục khi chính TraceCore trả lời dứt khoát: ghi nhận (ok) hoặc đã ghi Sync Conflict cho R02.
+			// Mọi trả lời khác (proxy 408/413/429, trang HTML của captive portal, 5xx, CSRF…) giữ mục để thử lại (review C1)
+			const body = await response.json().catch(() => null);
+			const message = body && body.message;
+			if (message && message.ok === true) {
+				await this.printReplayed(entry, message);
+			} else if (
+				message &&
+				message.ok === false &&
+				message.error &&
+				message.error.sync_conflict
+			) {
+				this.emit({ conflicts: this.state.conflicts + 1 });
+			} else {
+				failed = `HTTP ${response.status}`;
+				// mục lỗi lặp lại (≥ TC_MAX_ATTEMPTS lần) không chặn cả hàng đợi: giữ lại, đi tiếp (review I7)
+				if (!(await this.fail(entry, failed))) break;
+				continue;
+			}
 			await TcOutbox.remove(entry.key);
 			done++;
 		}
-		this.emit({ queued: 0, sending: 0, error: null, synced_at: Date.now() });
+		const queued = await TcOutbox.count();
+		this.emit({
+			queued,
+			sending: 0,
+			error: failed,
+			synced_at: queued ? this.state.synced_at : Date.now(),
+		});
+	},
+
+	// ghi lần thử thất bại; trả true nếu mục đã thử quá nhiều lần và được bỏ qua để phát lại các mục sau
+	async fail(entry, reason) {
+		entry.attempts = (entry.attempts || 0) + 1;
+		entry.state = "error";
+		entry.last_error = reason;
+		await TcOutbox.put(entry);
+		return entry.attempts >= TC_MAX_ATTEMPTS;
 	},
 
 	// gói T4 đóng offline: nhãn in khi có mạng (A-40 D1) — gửi ZPL server vừa dựng sang Station Agent như màn T4;
 	// agent lỗi thì nhãn vẫn ở Print Job, in lại từ Desk/T4 như mọi nhãn chờ
-	async printReplayed(entry, response) {
+	async printReplayed(entry, message) {
 		if (
 			entry.endpoint !== "tracecore.v1.pack.generate_cycle_id" ||
 			typeof T4_AGENT_URL === "undefined"
 		)
 			return;
 		try {
-			const data = await response.json();
-			const print = data.message && data.message.print;
+			const print = message.print;
 			if (!print || print.status !== "Queued" || !print.zpl) return;
 			await fetch(T4_AGENT_URL, {
 				method: "POST",

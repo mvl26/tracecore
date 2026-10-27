@@ -553,7 +553,20 @@ class T4Packing {
 		this.show();
 	}
 
+	// bấm hai lần liền không xếp hai gói cho cùng bộ (review I10): khóa `busy` suốt lúc lấy mã và ghi hàng đợi
 	async offlineGenerate(args) {
+		if (this.busy) return;
+		this.busy = T4_GENERATE;
+		try {
+			await this.offlineGenerateLocked(args);
+		} finally {
+			this.busy = null;
+		}
+		this.show();
+		this.station.focus(true);
+	}
+
+	async offlineGenerateLocked(args) {
 		const code = await TcOutbox.nextCode(this.station.station);
 		if (!code) {
 			this.notice = {

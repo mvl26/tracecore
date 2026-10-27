@@ -251,6 +251,8 @@ T4_KEYS = {
 	"set_maint",
 	"set_plasma",
 	"set_gate_fail",
+	"set_offline_1",
+	"set_offline_2",
 	"ci_steam",
 	"ci_plasma",
 	"roll_steam",
@@ -274,9 +276,13 @@ class TestT4DemoData(FrappeTestCase):
 		self.assertEqual(_gates(first["set_plasma"])["T3"], "Pass")
 		self.assertNotEqual(_gates(first["set_gate_fail"])["T3"], "Pass")
 		self.assertEqual(_gates(first["set_maint"])["T3"], "Pass")
-		self.assertEqual(
-			len({first["set_steam"], first["set_maint"], first["set_plasma"], first["set_gate_fail"]}), 4
-		)
+		sets = ("set_steam", "set_maint", "set_plasma", "set_gate_fail", "set_offline_1", "set_offline_2")
+		self.assertEqual(len({first[key] for key in sets}), 6)
+		# FEAT-009: hai bộ hấp riêng cho e2e offline, không dùng chung bộ của test_station_t4.py
+		for key in ("set_offline_1", "set_offline_2"):
+			self.assertEqual(_gates(first[key])["T3"], "Pass", msg=key)
+			set_type = frappe.db.get_value("Set Unit", first[key], "set_type")
+			self.assertEqual(frappe.db.get_value("Instrument Set Type", set_type, "method"), "Steam")
 
 		methods = {}
 		for key in ("set_steam", "set_plasma", "set_gate_fail"):
