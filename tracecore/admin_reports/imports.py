@@ -9,7 +9,7 @@ hai để import lại cùng file không tạo trùng (A-41 Q3).
 import frappe
 from frappe import _
 
-from tracecore.core.importer import Column, ImportKind, Issue, RowError
+from tracecore.core.importer import Column, ImportKind, Issue, RowError, department_ref
 
 GENDERS = ("Male", "Female", "Other")
 
@@ -27,19 +27,10 @@ def _department_exists(code):
 	return bool(frappe.db.exists("Department", {"department_name": code}))
 
 
-def _department_ref(value):
-	"""Tên Department theo tên đầy đủ (``Khoa A - TC``) hoặc tên khoa người dùng gõ."""
-	if not value:
-		return None
-	if frappe.db.exists("Department", value):
-		return value
-	return frappe.db.get_value("Department", {"department_name": value}, "name")
-
-
 def _validate_department(unit):
 	row = unit[0]
 	parent = row.values.get("parent_department")
-	if parent and not _department_ref(parent):
+	if parent and not department_ref(parent):
 		return [
 			Issue(
 				row.row,
@@ -57,7 +48,7 @@ def _write_department(unit):
 		{
 			"doctype": "Department",
 			"department_name": values["department_name"],
-			"parent_department": _department_ref(values.get("parent_department")),
+			"parent_department": department_ref(values.get("parent_department")),
 			"company": _company(),
 			"tc_is_ward": 0 if values.get("is_ward") is False else 1,
 		}
@@ -96,7 +87,7 @@ def _validate_employee(unit):
 				),
 			)
 		)
-	if not _department_ref(values.get("department")):
+	if not department_ref(values.get("department")):
 		issues.append(
 			Issue(
 				row.row,
@@ -128,7 +119,7 @@ def _write_employee(unit):
 			"gender": values["gender"],
 			"date_of_birth": values["date_of_birth"],
 			"date_of_joining": values["date_of_joining"],
-			"department": _department_ref(values["department"]),
+			"department": department_ref(values["department"]),
 			"company": _company(),
 			"status": "Active",
 			"user_id": values.get("user_email"),

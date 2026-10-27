@@ -383,7 +383,10 @@ tracecore_after_load_failed = [
 ]
 tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
-tracecore_import_kinds = ["tracecore.admin_reports.imports.import_kinds"]
+tracecore_import_kinds = [
+	"tracecore.admin_reports.imports.import_kinds",
+	"tracecore.instrument.imports.import_kinds",
+]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:

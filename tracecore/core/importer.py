@@ -122,6 +122,18 @@ def get_kind(key: str) -> ImportKind:
 	return kind
 
 
+def department_ref(value) -> str | None:
+	"""Tên Department theo tên đầy đủ (``Khoa A - TC``) hoặc tên khoa người dùng gõ; không có → None.
+
+	Dùng chung cho các loại import có cột khoa (ERPNext Department là danh mục dùng chung, không thuộc module nào).
+	"""
+	if not value:
+		return None
+	if frappe.db.exists("Department", value):
+		return value
+	return frappe.db.get_value("Department", {"department_name": value}, "name")
+
+
 # --- Mẫu Excel -----------------------------------------------------------------------------------------------------
 
 
@@ -456,9 +468,14 @@ def _analyse(kind: ImportKind, content: bytes):
 	rows, issues = parse(kind, content)
 	units, group_issues = _units(kind, rows)
 	issues += group_issues
+	reported = {(issue.row, issue.field) for issue in issues}  # ô sai giá trị không báo thêm "bắt buộc"
 	for unit in units:
 		for index, row in enumerate(unit):
-			issues += _required_issues(kind, row, head=index == 0)
+			issues += [
+				issue
+				for issue in _required_issues(kind, row, head=index == 0)
+				if (issue.row, issue.field) not in reported
+			]
 	rows_with_issue = {issue.row for issue in issues}
 	per_unit: dict[int, list[Issue]] = {}
 	existing: list[str] = []
