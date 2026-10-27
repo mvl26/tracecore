@@ -48,11 +48,13 @@ def current_station_session():
 	return frappe.db.get_value("Station Session", name, ["name", "employee", "user", "station"], as_dict=True)
 
 
-def station_session(*roles, desk_roles=()):
+def station_session(*roles, desk_roles=(), offline=False):
 	"""Authorize human kiosk RPCs before idempotency lookup and execute as the session actor.
 
 	Machine endpoints keep their dedicated TC Agent/API-key checks. Explicit-printer
 	Desk requests retain their own role guard; a Frappe login alone never authorizes a kiosk.
+	`offline=True` (chỉ RPC xếp hàng offline của T1/T4/T8, A-40): nhận phát lại ``X-TC-Replay`` với phiên xét tại
+	`client_ts`; RPC khác bỏ qua header này và luôn cần phiên đang sống.
 	"""
 
 	def decorate(fn):
@@ -69,7 +71,7 @@ def station_session(*roles, desk_roles=()):
 			timestamp = parse_client_ts(kwargs.get("client_ts"))
 			from tracecore.core import sync
 
-			if sync.is_replay():
+			if offline and sync.is_replay():
 				return _replay(fn, endpoint, roles, kwargs, token, timestamp)
 			return _live(fn, roles, kwargs, token, timestamp)
 
@@ -104,11 +106,26 @@ def _block_body(block):
 	return {"ok": False, "error": block.as_dict()}
 
 
-def _replay(fn, endpoint, roles, kwargs, token, timestamp):
-	"""Giao dịch offline phát lại (`X-TC-Replay`): phiên xét tại `client_ts`; từ chối 4xx/403 → Sync Conflict (A-40)."""
-	from tracecore.core import station_auth, sync
-	from tracecore.core.idempotency import KEY_HEADER
+def _client_errors():
+	"""Lỗi do dữ liệu của giao dịch phát lại (thành Sync Conflict); lỗi khác là lỗi server, kiosk thử lại sau."""
+	from tracecore.core.client_time import ClientTimestampError
+	from tracecore.core.idempotency import IdempotencyConflictError
 
+	return (ClientTimestampError, BadRequestError, IdempotencyConflictError, frappe.DoesNotExistError)
+
+
+def _replay(fn, endpoint, roles, kwargs, token, timestamp):
+	"""Giao dịch offline phát lại (`X-TC-Replay`): phiên xét tại `client_ts`; từ chối nghiệp vụ, thiếu quyền hoặc dữ
+	liệu sai → Sync Conflict (A-40 Q2), body lỗi mang ``sync_conflict`` để kiosk biết được xóa mục khỏi hàng đợi.
+
+	Không ghi gì khi khóa idempotent sai dạng hoặc token không thuộc phiên nào (khách gửi rác, review I3).
+	"""
+	from tracecore.core import station_auth, sync
+	from tracecore.core.idempotency import _UUID, KEY_HEADER, IdempotencyKeyError
+
+	key = (frappe.get_request_header(KEY_HEADER) or "").strip()
+	if not _UUID.fullmatch(key):
+		raise IdempotencyKeyError(_("Missing or invalid X-Idempotency-Key header."))
 	session = None
 	try:
 		with station_auth.as_replay_user(token, kwargs.get("station"), timestamp) as session:
@@ -125,11 +142,9 @@ def _replay(fn, endpoint, roles, kwargs, token, timestamp):
 				_("The transaction goes to R02 as a sync conflict."),
 			)
 		)
-	except frappe.ValidationError as exc:
-		# 400 (ClientTimestampError, tham số sai…) khi phát lại cũng là xung đột (A-40 Q2); 5xx vẫn ném để kiosk dừng
-		status = getattr(exc, "http_status_code", 417)
-		if not 400 <= status < 500:
-			raise
+	except _client_errors() as exc:
+		# giờ trạm sai, tham số sai… khi phát lại cũng là xung đột (A-40 Q2); lỗi khác (417 chung, 5xx) ném để kiosk thử lại
+		status = getattr(exc, "http_status_code", 400)
 		frappe.clear_last_message()
 		result = _block_body(
 			Block(
@@ -142,19 +157,20 @@ def _replay(fn, endpoint, roles, kwargs, token, timestamp):
 		result["error"]["http_status"] = status
 		frappe.local.response["http_status_code"] = status
 	error = result.get("error") if isinstance(result, dict) and result.get("ok") is False else None
-	if error:
-		sync.record_conflict(
+	owner = (
+		{"station": session.station, "employee": session.employee, "user": session.user}
+		if session
+		else station_auth.session_owner(token)
+	)
+	if error and owner:
+		error["sync_conflict"] = sync.record_conflict(
 			endpoint=endpoint,
-			key=(frappe.get_request_header(KEY_HEADER) or "").strip(),
+			key=key,
 			client_ts=timestamp,
 			args=kwargs,
 			error=error,
 			http_status=error.get("http_status") or frappe.local.response.get("http_status_code"),
-			session=(
-				{"station": session.station, "employee": session.employee, "user": session.user}
-				if session
-				else station_auth.session_owner(token)
-			),
+			session=owner,
 		)
 	return result
 

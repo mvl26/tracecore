@@ -10,7 +10,7 @@ import frappe
 from frappe import _
 
 from tracecore.core import crypto, gs1, sync
-from tracecore.core.client_time import parse_client_ts, to_system_time
+from tracecore.core.client_time import check_not_future, parse_client_ts, to_system_time
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import usage as usage_service
@@ -61,7 +61,7 @@ def scan(raw, station, client_ts=None, token=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@station_session(*USAGE_ROLES)
+@station_session(*USAGE_ROLES, offline=True)
 @idempotent
 def confirm(
 	cycle_id,
@@ -85,6 +85,8 @@ def confirm(
 	replay = sync.is_replay()
 
 	def call(ts):
+		if replay:
+			check_not_future(ts)  # thời điểm sử dụng do trạm báo: cũ được, tương lai thì không (review I5)
 		code = _decrypt(patient_code_enc) if patient_code_enc else patient_code
 		return usage_service.confirm(
 			cycle_id,

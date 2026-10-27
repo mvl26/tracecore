@@ -181,7 +181,7 @@ def resolve_ci(raw, station, open_set, client_ts=None, token=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@station_session(*PACKING_ROLES)
+@station_session(*PACKING_ROLES, offline=True)
 @idempotent
 def generate_cycle_id(
 	set_id,

@@ -83,7 +83,8 @@ class TestUsageOffline(UsageApiCase):
 			for row in frappe.get_all(doctype, fields=fields):
 				text = frappe.as_json(row)
 				self.assertNotIn(PATIENT, text, doctype)
-				self.assertNotIn(enc, text, doctype)
+				if doctype != "Sync Conflict":  # Sync Conflict giữ bản mã hóa cho R02 (review C2)
+					self.assertNotIn(enc, text, doctype)
 		self.assertEqual(frappe.db.count("Error Log"), errors)
 
 	def test_usage_enc_unreadable_is_rejected(self):
@@ -101,3 +102,13 @@ class TestUsageOffline(UsageApiCase):
 		self.backdate_session(moment.replace(hour=20))
 		result = self.replay(moment, patient_code_enc=encrypt(PATIENT))
 		self.assertIs(result["ok"], True, result)
+
+	def test_usage_replay_future_client_ts_is_conflict(self):
+		"""Phát lại không được tự chọn giờ sử dụng ở tương lai (review I5)."""
+		moment = add_to_date(now_datetime(), hours=2).replace(microsecond=0)
+		name = frappe.db.get_value("Station Session", {"user": self.nurse, "is_open": 1})
+		frappe.db.set_value("Station Session", name, "absolute_expires_at", add_to_date(moment, hours=1))
+		key = str(uuid.uuid4())
+		result = self.replay(moment, key=key, patient_code_enc=encrypt(PATIENT))
+		self.assertEqual(result["error"]["http_status"], 400, result)
+		self.assertEqual(frappe.db.get_value("Pack", self.pack.name, "status"), "Issued")

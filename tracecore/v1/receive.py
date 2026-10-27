@@ -281,7 +281,7 @@ def _offline_receipt(value):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@station_session(*RECEIVE_ROLES)
+@station_session(*RECEIVE_ROLES, offline=True)
 @idempotent
 def submit_offline(station, receipt, client_ts=None, token=None):
 	"""Phiếu T1 làm khi mất mạng, phát lại thành một lệnh (FEAT-009, A-40 D3); xem `receiving.submit_offline`."""

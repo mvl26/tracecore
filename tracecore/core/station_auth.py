@@ -7,6 +7,7 @@ import re
 import secrets
 from contextlib import contextmanager
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import frappe
 from frappe import _
@@ -19,6 +20,9 @@ from tracecore.core.errors import Block, BlockedError
 
 SESSION_HOURS = 8
 IDLE_MINUTES = 10
+REPLAY_MAX_HOURS = (
+	24  # FEAT-009: giao dịch offline phát lại muộn nhất 24 giờ sau client_ts (ADR-003 cần ≥ 4 giờ)
+)
 PIN_LOCK_SECONDS = 300
 PIN_FAILURE_LIMIT = 3
 PROOF_SECONDS = 120
@@ -529,6 +533,11 @@ def authenticate_replay(token: str, station: str, client_ts):
 	from tracecore.core.client_time import to_system_time
 
 	if not isinstance(token, str) or not token or not client_ts:
+		raise _replay_invalid()
+	# token phiên cũ không là chứng thực dài hạn: chỉ nhận giao dịch offline trong REPLAY_MAX_HOURS (review I4)
+	if (
+		datetime.now(timezone.utc).replace(tzinfo=None) - client_ts
+	).total_seconds() > REPLAY_MAX_HOURS * 3600:
 		raise _replay_invalid()
 	name = frappe.db.get_value("Station Session", {"token_hash": _token_hash(token)}, "name")
 	if not name:

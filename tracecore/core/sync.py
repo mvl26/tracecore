@@ -26,10 +26,12 @@ def is_replay() -> bool:
 
 
 def _redacted(args):
+	"""Bỏ token, PIN và mã BN rõ; GIỮ `patient_code_enc` (chỉ private key của server giải được): khi gói bị từ chối,
+	đó là bản duy nhất của mã BN để R02 truy vết bệnh nhân (review C2)."""
 	return {
 		key: value
 		for key, value in (args or {}).items()
-		if key not in _SECRET_ARGS and not key.startswith("patient_code") and key != "cmd"
+		if key not in _SECRET_ARGS and key != "patient_code" and key != "cmd"
 	}
 
 
