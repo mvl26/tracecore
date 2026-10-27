@@ -1,0 +1,157 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-27 10:00:00.000000",
+ "description": "One catalog import from an Excel template and the result of each row (FR-M9-11, A-41).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "kind",
+  "status",
+  "file",
+  "column_break_counts",
+  "total",
+  "created",
+  "skipped",
+  "failed",
+  "section_time",
+  "started_at",
+  "finished_at",
+  "error",
+  "section_rows",
+  "rows"
+ ],
+ "fields": [
+  {
+   "default": "IMP-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "IMP-.YYYY.-.#####",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Import Type",
+   "read_only": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nDone\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Data",
+   "label": "File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_counts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Int",
+   "label": "Rows",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Created",
+   "read_only": 1
+  },
+  {
+   "fieldname": "skipped",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Already Existing",
+   "read_only": 1
+  },
+  {
+   "fieldname": "failed",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Errors",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_time",
+   "fieldtype": "Section Break",
+   "label": "Run"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "Finished At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_rows",
+   "fieldtype": "Section Break",
+   "label": "Row Results"
+  },
+  {
+   "fieldname": "rows",
+   "fieldtype": "Table",
+   "label": "Rows",
+   "options": "Import Batch Row",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-27 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Import Batch",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R10"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "kind",
+ "track_changes": 0
+}
