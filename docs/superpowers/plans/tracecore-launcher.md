@@ -15,6 +15,16 @@ cho surface hiện hữu; không phải SCR-44..46, không thêm DocType hay đ�
 
 ## Tasks
 
+### Điều chỉnh HOME-01 — người dùng duyệt 23/10/2026
+
+Thay Home/Workspace ERPNext mẫu bằng `/app/tracecore` cho tài khoản có role TC
+hoặc System Manager. Không hiển thị onboarding và menu Workspace mặc định trong
+luồng này. Giữ List/Form ERPNext mà TraceCore tái sử dụng; không đổi permission,
+không xóa Workspace/DocType/dữ liệu. Tài khoản ngoài TraceCore vẫn giữ Home cũ.
+Danh mục điều hướng chỉ gồm chức năng đã có của TraceCore và kiểm read permission.
+AC7: Home và Workspace mẫu chuyển sang TraceCore, List/Form/trạm không bị chuyển.
+AC8: không đưa Sales Invoice/Customer/CRM vào danh sách chức năng TraceCore.
+
 1. FrappeTestCase kiểm guest, role, active station, trạng thái triển khai (AC2/3/5).
 2. Controller read-only và Page UI, không thay đổi xác thực (AC1/2/3).
 3. Card, trạng thái, liên kết Home, bản dịch (AC1/4/5/6).

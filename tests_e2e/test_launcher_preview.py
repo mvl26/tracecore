@@ -88,21 +88,36 @@ def test_launcher_error_retry_and_offline(page):
 	expect(page.locator(".tc-launcher-card")).to_have_count(3)
 
 
-def test_home_and_sidebar_links_are_idempotent(page):
+@pytest.mark.parametrize(
+	("roles", "route", "redirect"),
+	[
+		(["TC R03"], ["Workspaces", "Home"], True),
+		(["System Manager"], ["Workspaces", "Accounting"], True),
+		(["TC R01"], ["List", "Instrument"], False),
+		(["TC R03"], ["station"], False),
+		(["Employee"], ["Workspaces", "Home"], False),
+	],
+)
+def test_tracecore_home_replaces_sample_workspaces(page, roles, route, redirect):
 	page.set_content("""<div class='page-container'>
 		<aside class='standard-sidebar-section' data-title='Public'><div item-name='Home'>Home</div></aside>
 		<div class='layout-main-section'>Home workspace</div></div>""")
 	page.add_script_tag(content=JQUERY.read_text())
-	page.evaluate("""() => {
+	page.evaluate(
+		"""({roles, route}) => {
 		window.__ = text => text;
 		window.frappe = {
-			user_roles: ['TC R03'], get_route: () => ['Workspaces', 'Home'],
+			user_roles: roles, get_route: () => route,
+			set_route: (...args) => { window.destination = args; },
 			after_ajax: fn => fn(), router: {on: (event, fn) => window.onRoute = fn}
 		};
-	}""")
+	}""",
+		{"roles": roles, "route": route},
+	)
 	page.add_script_tag(content=(ROOT / "tracecore/public/js/tc_launcher.js").read_text())
-	expect(page.locator(".tc-home-launcher")).to_have_attribute("href", "/app/tracecore")
-	expect(page.locator(".tc-sidebar-launcher a")).to_have_attribute("href", "/app/tracecore")
-	page.evaluate("onRoute(); onRoute()")
-	expect(page.locator(".tc-home-launcher")).to_have_count(1)
-	expect(page.locator(".tc-sidebar-launcher")).to_have_count(1)
+	page.wait_for_function("document.readyState === 'complete'")
+	if redirect:
+		page.wait_for_function("window.destination !== undefined", timeout=2000)
+		assert page.evaluate("window.destination") == ["tracecore"]
+	else:
+		assert page.evaluate("window.destination === undefined")

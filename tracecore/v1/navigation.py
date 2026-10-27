@@ -16,7 +16,28 @@ STEP_ROLES = {
 }
 # Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
 IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
-MANAGEMENT_TARGETS = ("Instrument", "Instrument Set Type", "Set Unit", "Pack", "Equipment", "Par Level")
+MANAGEMENT_TARGETS = (
+	"Instrument",
+	"Instrument Set Type",
+	"Set Unit",
+	"Pack",
+	"Wash Batch",
+	"Sterile Putaway",
+	"Sterile Location",
+	"Equipment",
+	"Process Program",
+	"Par Level",
+	"Employee",
+	"Station Competency",
+	"Item",
+	"Batch",
+	"Stock Entry",
+	"Zone Station",
+	"Printer",
+	"Label Template",
+	"Print Job",
+	"Audit Log",
+)
 
 
 @frappe.whitelist(methods=["GET"])

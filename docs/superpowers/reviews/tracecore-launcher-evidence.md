@@ -1,5 +1,23 @@
 # TraceCore launcher — bằng chứng kiểm tra 23/10/2026
 
+## Điều chỉnh HOME-01 — nhánh feat/tracecore-home
+
+- Thay liên kết bổ sung trên Home bằng chuyển hướng Workspace → `/app/tracecore`
+  cho TC/System Manager; tài khoản thường, List/Form và trạm được giữ nguyên.
+- Menu quản lý bổ sung phiếu rửa, nhập kho vô khuẩn, vị trí kho, chương trình,
+  nhân viên/năng lực, vật tư/lô/phiếu kho, khu-trạm, in nhãn, audit. Từng mục
+  tiếp tục kiểm read permission. Không thêm CRM/Customer/Sales Invoice.
+- TDD routing: trước sửa **2 failed, 3 passed**; sau sửa **5 passed** bằng
+  `node --test scripts/test_tracecore_home.cjs`.
+- Playwright Python: **8 passed in 34.97s**, bao gồm 5 tổ hợp role/route.
+- Ruff check/format, ESLint và architecture/syntax/diff checks: pass.
+- FrappeTestCase mới chưa chạy được: bench FEAT-019 đang merge conflict,
+  import `tracecore/v1/_common.py` gặp `SyntaxError` ở marker `<<<<<<< HEAD`.
+  Chưa đo lại coverage Python sau mở rộng menu; chưa migrate/build site dev.
+- Không sửa/xử lý merge của Claude và không đưa thay đổi vào bench đó.
+
+## Bản launcher ban đầu
+
 Nhánh: `feat/tracecore-launcher` trong clone Windows. Base: `develop` ở `3bb928b`.
 Không đổi checkout FEAT-019 của Claude, không migrate/build site dev.
 
