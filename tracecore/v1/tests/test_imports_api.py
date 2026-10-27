@@ -124,3 +124,25 @@ class TestCheckAndRun(ImportsApiCase):
 	def test_unknown_kind_is_bad_request(self):
 		with self.assertRaises(frappe.ValidationError):
 			imports_api.check(kind="no_such_kind", file_url=department_file("K"))
+
+
+class TestPhotos(ImportsApiCase):
+	def test_photos_attach_and_report(self):
+		from tracecore.instrument.tests.test_photo_import import archive, png
+		from tracecore.tests import factories
+
+		frappe.set_user("Administrator")
+		instrument = factories.make_instrument("PA-" + uuid.uuid4().hex[:6].upper()).name
+		frappe.set_user("imp-r10@example.com")
+		file_url = upload(archive({f"{instrument}.png": png(), "la.png": png()}), "anh.zip")
+		with request_headers({"X-Idempotency-Key": str(uuid.uuid4())}):
+			result = imports_api.photos(file_url=file_url, client_ts=now_ts())
+		self.assertIs(result["ok"], True, result)
+		self.assertEqual([row["name"] for row in result["attached"]], [instrument])
+		self.assertEqual(result["unmatched"], ["la.png"])
+
+	def test_photos_need_instrument_write_permission(self):
+		frappe.set_user(make_user("imp-r04p@example.com", roles=("TC R04",)))
+		with self.assertRaises(frappe.PermissionError):
+			with request_headers({"X-Idempotency-Key": str(uuid.uuid4())}):
+				imports_api.photos(file_url="/private/files/x.zip", client_ts=now_ts())

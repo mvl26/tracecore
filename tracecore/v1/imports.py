@@ -11,6 +11,7 @@ from frappe import _
 from tracecore.core import audit, importer
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
+from tracecore.instrument import photo_import
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
 IMPORT_ROLES = ("TC R10", "TC R02", "System Manager")
@@ -110,3 +111,27 @@ def batch(name=None):
 		**{field: doc.get(field) for field in BATCH_FIELDS},
 		"rows": [{field: row.get(field) for field in ROW_FIELDS} for row in doc.rows],
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def photos(file_url=None, client_ts=None):
+	"""Gắn ảnh thực tế từ file zip theo tên file = mã (FR-M9-11.1): {"ok": true, attached, unmatched, rejected}."""
+	require_any_role(*IMPORT_ROLES)
+	if not frappe.has_permission("Instrument", "write"):
+		raise frappe.PermissionError(_("You are not allowed to change instrument photos."))
+	timestamp = parse_client_ts(client_ts)
+	try:
+		content = importer.read_upload(file_url, extensions=(".zip",), max_bytes=photo_import.MAX_ZIP_BYTES)
+		result = photo_import.import_zip(content)
+	except importer.ImportFileError as error:
+		return reject_block(importer.file_block(error.reason), "Instrument", None, client_ts=timestamp)
+	audit.log(
+		"Update",
+		"Instrument",
+		None,
+		new={"photos": len(result["attached"]), "unmatched": len(result["unmatched"]), "file": file_url},
+		reason="photo import",
+		client_ts=timestamp,
+	)
+	return {"ok": True, **result}
