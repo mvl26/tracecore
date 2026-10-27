@@ -585,7 +585,7 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 | **Printer** *(mới)* | — | Máy in/cuộn theo trạm: IP:9100, ngôn ngữ, `label_type_loaded` (Link Item VT-NHAN-*), mã cuộn `CN-` | Link Item, Zone Station | FR-M2-08.2, EI-HW-003 |
 | **Print Job** *(mới)* | — | Hàng đợi in: template, dữ liệu, printer, trạng thái, retry, lý do in lại | Link Printer | FR-M2-08.5/.8, EI-HW-008 |
 | **Environment Log** *(mới)* | — | Nhật ký T/RH/dP theo khu và nhiệt độ kho lạnh chất thải (nhập tay/cảm biến) | Link Zone Station | FR-M9-04, FR-M10-03.2 |
-| **Import Template** *(mới)* | — | Mẫu import theo danh mục (cột, giá trị hợp lệ, mapping) + `Import Batch` log lỗi theo dòng; bọc Frappe Data Import | Frappe Data Import | FR-M9-11 |
+| **Import Batch** *(mới, A-41)* | — | Log mỗi lần import danh mục (loại, file, trạng thái, số dòng tạo / đã có / lỗi) + child `Import Batch Row` kết quả từng dòng; mẫu cột khai báo trong code qua hook `tracecore_import_kinds` (A-41: không có DocType Import Template, không bọc Frappe Data Import) | — | FR-M9-11 |
 | **Archive Export** *(mới)* | — | Gói xuất hồ sơ theo kỳ: phạm vi, file PDF/CSV, checksum, dấu thời gian, người xuất | — | FR-M9-12 |
 | **TraceCore Settings** *(mới, Single, A-06)* | — | Cấu hình bật/tắt tính năng toàn site, module `TraceCore`; hiện có `enable_instrument_giai` (Check, mặc định 0, chỉ TC R10 và System Manager ghi, đổi cờ ghi Audit Log) | — | FR-M1-02, FR-M1-02.3 |
 
