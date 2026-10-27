@@ -31,6 +31,12 @@ class TestDepartmentImport(IsolatedTestCase):
 		doc = frappe.get_doc("Department", batch.rows[0].ref_name)
 		self.assertEqual((doc.department_name, doc.parent_department, doc.tc_is_ward), (name, parent, 1))
 
+	def test_blank_ward_cell_is_not_ward(self):
+		"""Ô Ward trống theo mặc định của trường tc_is_ward (0), không tự biến khoa hành chính thành khoa lâm sàng."""
+		name = "Khối Ngoại " + uuid.uuid4().hex[:6]
+		batch = run("department", ["Department Name", "Ward"], [[name, None]])
+		self.assertEqual(frappe.db.get_value("Department", batch.rows[0].ref_name, "tc_is_ward"), 0)
+
 	def test_existing_department_skipped(self):
 		name = factories.make_department("Khoa Đã có " + uuid.uuid4().hex[:6])
 		label = frappe.db.get_value("Department", name, "department_name")

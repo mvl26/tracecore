@@ -32,6 +32,10 @@ def _write(unit):
 		raise RowError([Issue(unit[0].row, "WRITE_FAILED", None, "boom")])
 	if head["code"] == "CRASH":
 		frappe.throw("crash")
+	if head["code"] == "DBDUP":
+		raise frappe.DuplicateEntryError("Note", "DBDUP")
+	if head["code"] == "BUG":
+		raise KeyError("bug")
 	lines = ", ".join(str(row.values.get("tags") or []) for row in unit)
 	doc = frappe.get_doc({"doctype": "Note", "title": head["code"], "content": lines, "public": 1})
 	doc.insert(ignore_permissions=True)
@@ -169,6 +173,31 @@ class TestCheckAndRun(ImporterCase):
 		self.assertFalse(frappe.db.exists("Note", {"title": "CRASH"}))
 		errors = {(row.row_no, row.result) for row in batch.rows if row.result == "Error"}
 		self.assertEqual(errors, {(3, "Error"), (4, "Error"), (5, "Error")})
+
+	def test_unexpected_error_in_one_unit_keeps_others(self):
+		"""Lỗi ngoài dự kiến (trùng khóa DB, lỗi lập trình) chỉ hỏng dòng đó, không hoàn tác cả file (review #1)."""
+		content = workbook(["Code"], [["U1"], ["DBDUP"], ["BUG"], ["U2"]])
+		batch = frappe.get_doc("Import Batch", importer.run(KEY, content, "x.xlsx"))
+		self.assertEqual((batch.status, batch.created, batch.failed), ("Done", 2, 2))
+		self.assertTrue(frappe.db.exists("Note", {"title": "U2"}))
+		errors = {(row.row_no, row.error_code) for row in batch.rows if row.result == "Error"}
+		self.assertEqual(errors, {(3, "WRITE_FAILED"), (4, "WRITE_FAILED")})
+
+	def test_duplicate_code_in_file_is_row_error(self):
+		"""Mã lặp lại trong cùng file: dòng sau báo lỗi ngay ở bước Kiểm tra, dòng đầu vẫn ghi (review #1)."""
+		content = workbook(["Code"], [["D1"], ["D2"], ["D1"]])
+		result = importer.check(KEY, content)
+		self.assertEqual((result["total"], result["valid"]), (3, 2))
+		self.assertEqual([(i["row"], i["code"]) for i in result["issues"]], [(4, "DUPLICATE_IN_FILE")])
+		batch = frappe.get_doc("Import Batch", importer.run(KEY, content, "x.xlsx"))
+		self.assertEqual((batch.created, batch.failed), (2, 1))
+		self.assertEqual(frappe.db.count("Note", {"title": "D1"}), 1)
+
+	def test_kind_without_unique_code_allows_repeats(self):
+		"""Loại không có mã riêng (vd lô cấp Set Unit theo loại bộ) được lặp mã trong file."""
+		self.kind = ImportKind(**{**self.kind.__dict__, "unique_code": False, "exists": lambda _code: False})
+		result = importer.check(KEY, workbook(["Code"], [["R"], ["R"]]))
+		self.assertEqual((result["valid"], result["issues"]), (2, []))
 
 	def test_check_warns_when_same_file_was_imported(self):
 		"""Cùng một file đã ghi sổ (vd lô cấp Set Unit, không có "đã có") → Kiểm tra cảnh báo trước khi ghi lại."""

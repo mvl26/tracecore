@@ -106,6 +106,8 @@ class ImportKind:
 	# khai báo hàm kiểm vai trò của dịch vụ đó
 	can_import: Callable[[], bool] | None = None
 	guide: Sequence[str] = field(default_factory=tuple)  # câu hướng dẫn thêm cho sheet Guide
+	# mã lặp lại trong cùng file là lỗi dòng (``DUPLICATE_IN_FILE``); False cho loại mỗi dòng là một lô mới (Set Unit)
+	unique_code: bool = True
 
 
 def can_import(kind: ImportKind) -> bool:
@@ -532,9 +534,26 @@ def _analyse(kind: ImportKind, content: bytes):
 	rows_with_issue = {issue.row for issue in issues}
 	per_unit: dict[int, list[Issue]] = {}
 	existing: list[str] = []
+	first_row: dict[
+		str, int
+	] = {}  # mã → dòng đầu tiên mang mã đó (bắt mã lặp trước khi ghi, tránh trùng khóa DB)
 	for unit in units:
 		own = [issue for issue in issues if issue.row in {row.row for row in unit}]
 		code = _code(kind, unit)
+		if not own and code and kind.unique_code:
+			if code in first_row:
+				own = [
+					Issue(
+						unit[0].row,
+						"DUPLICATE_IN_FILE",
+						kind.code_field,
+						_("{0} appears more than once in this file (first on row {1}).").format(
+							code, first_row[code]
+						),
+					)
+				]
+			else:
+				first_row[code] = unit[0].row
 		if not own and code and kind.exists(code):
 			existing.append(code)
 			continue
@@ -626,6 +645,8 @@ def execute_batch(batch: str, content: bytes | None = None, background: bool = F
 	doc = frappe.get_doc("Import Batch", batch)
 	kind = get_kind(doc.kind)
 	_save(doc, status="Running", started_at=now_datetime())
+	if background:
+		frappe.db.commit()  # nosemgrep: màn SCR-43 thấy "Running" và giờ bắt đầu trong lúc job nền đang ghi
 	try:
 		units, per_unit, existing, _total, _rows = _analyse(kind, content or _file_content(doc.file))
 		results = []
@@ -682,6 +703,18 @@ def _write_unit(kind: ImportKind, unit, issues, existing) -> list[dict]:
 		else:
 			issue = Issue(unit[0].row, "WRITE_FAILED", None, frappe.utils.strip_html(str(error)))
 		return [_error_row(issue, code)]
+	except Exception as error:
+		# lỗi ngoài dự kiến (trùng khóa DB khi hai người cùng ghi, lỗi lập trình): chỉ hỏng đơn vị này, các dòng đúng
+		# vẫn ghi; chi tiết vào Error Log cho quản trị
+		frappe.db.rollback(save_point=SAVEPOINT)
+		frappe.clear_last_message()
+		frappe.log_error(title=f"TraceCore import {kind.key} row {unit[0].row}")
+		reason = _(
+			"The row could not be saved because of an unexpected error ({0}); it is logged for the administrator."
+		)
+		return [
+			_error_row(Issue(unit[0].row, "WRITE_FAILED", None, reason.format(type(error).__name__)), code)
+		]
 	return [
 		{
 			"row_no": unit[0].row,

@@ -287,6 +287,7 @@ def import_kinds():
 			],
 			code_field="type_code",
 			exists=lambda _code: False,  # mỗi dòng là một lô cấp Set ID mới, không có "đã có"
+			unique_code=False,  # nhiều dòng cùng loại bộ = nhiều lô cấp
 			validate=_validate_set_unit,
 			write=_write_set_unit,
 			forbidden_columns=SET_ID_COLUMNS,

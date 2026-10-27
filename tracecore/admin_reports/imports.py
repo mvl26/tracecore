@@ -50,7 +50,7 @@ def _write_department(unit):
 			"department_name": values["department_name"],
 			"parent_department": department_ref(values.get("parent_department")),
 			"company": _company(),
-			"tc_is_ward": 0 if values.get("is_ward") is False else 1,
+			"tc_is_ward": 1 if values.get("is_ward") else 0,  # ô trống theo mặc định của trường (0)
 		}
 	)
 	return doc.insert().name
