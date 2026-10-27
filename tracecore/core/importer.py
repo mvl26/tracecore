@@ -266,7 +266,7 @@ def _date(value):
 
 def _plain(text: str) -> str:
 	"""Chữ thường, bỏ dấu tiếng Việt để so khớp từ có/không."""
-	folded = unicodedata.normalize("NFD", text.casefold().replace("đ", "d"))
+	folded = unicodedata.normalize("NFD", text.casefold().replace(chr(0x111), "d"))  # chữ đ không tách dấu
 	return "".join(char for char in folded if not unicodedata.combining(char))
 
 
