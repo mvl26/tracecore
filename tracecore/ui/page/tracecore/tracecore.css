@@ -30,5 +30,13 @@
 }
 .tc-launcher-note { color: var(--tc-text-2); }
 .tc-launcher-link { display: block; padding: var(--tc-sp-3); color: var(--tc-text-link); }
+.tc-launcher-group {
+	margin: var(--tc-sp-4) 0 0;
+	padding: 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-sm);
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-text-2);
+}
+.tc-launcher-group:first-child { margin-top: 0; }
 .tc-launcher-message { padding: var(--tc-sp-5); }
 .tc-launcher-error { background: var(--tc-fail-tint); border: var(--tc-bw-hair) solid var(--tc-fail); }
