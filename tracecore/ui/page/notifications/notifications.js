@@ -1,3 +1,4 @@
+/* global tracecore */
 // Desk Page notifications — SCR-42 Trung tâm thông báo (FEAT-010, FR-M9-10, UC-38).
 // Danh sách thông báo của người đăng nhập, mới nhất trước; lọc chưa đọc / theo loại sự kiện; bấm một thông báo thì đánh
 // dấu Đã đọc rồi đi tới chứng từ liên quan. Mọi quy tắc ở server (tracecore.v1.notification.*); trang chỉ trình bày.
@@ -149,7 +150,7 @@ frappe.pages["notifications"].on_page_load = function (wrapper) {
 		const start = reset ? 0 : state.rows.length;
 		if (reset) message(__("Loading notifications…"), "");
 		try {
-			const data = await frappe.xcall(TC_NTF + "inbox", {
+			const data = await tracecore.desk_get(TC_NTF + "inbox", {
 				only_unread: state.onlyUnread,
 				event_code: state.eventCode || null,
 				start,

@@ -290,7 +290,7 @@ frappe.pages["competency-matrix"].on_page_load = function (wrapper) {
 		const current = ++state.request;
 		message(__("Loading competency matrix…"), "");
 		try {
-			const data = await frappe.xcall(TC_CM + "matrix", {
+			const data = await tracecore.desk_get(TC_CM + "matrix", {
 				zone: zoneField.get_value() || null,
 			});
 			if (current !== state.request || !visible()) return;
