@@ -3,6 +3,7 @@
 import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today
 
+from tracecore.core import notification
 from tracecore.equipment import daily_test, maintenance
 from tracecore.reprocessing import sterilizing
 from tracecore.tests.factories import make_equipment, make_maintenance_record, make_sterilizer, make_user
@@ -16,6 +17,7 @@ DOCTYPE = "Maintenance Record"
 class JobCase(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		notification.ensure_default_rules()  # Notification Rule của EQUIPMENT_LOCKED và MAINTENANCE_DUE
 		self.r02 = make_user("mj-r02@example.com", ["TC R02"])
 		self.r10 = make_user("mj-r10@example.com", ["TC R10"])
 		self.r03 = make_user("mj-r03@example.com", ["TC R03"])
@@ -98,6 +100,13 @@ class TestLockOverdue(JobCase):
 			self.assertEqual(self.notifications(user, "Equipment", self.machine.name), 1)
 		self.assertEqual(self.notifications(self.r03, "Equipment", self.machine.name), 0)
 
+	def test_notifies_through_the_notification_center(self):  # FEAT-010: sự kiện EQUIPMENT_LOCKED
+		self.set_due("inspection_due", -1)
+		maintenance.lock_overdue()
+		filters = {"event_code": "EQUIPMENT_LOCKED", "ref_name": self.machine.name, "channel": "In App"}
+		self.assertEqual(frappe.db.count("Notification Delivery", {**filters, "recipient": self.r02}), 1)
+		self.assertEqual(frappe.db.count("Notification Delivery", {**filters, "recipient": self.r03}), 0)
+
 
 class TestRemindDue(JobCase):
 	def plan(self, days, kind="Inspection", **kwargs):
@@ -119,6 +128,12 @@ class TestRemindDue(JobCase):
 		self.assertEqual(self.flags(doc), {"reminded_30": 1, "reminded_7": 0})
 		maintenance.remind_due()
 		self.assertEqual(self.count(doc), 1)
+
+	def test_reminder_is_a_maintenance_due_event_in_the_notification_center(self):
+		doc = self.plan(10)
+		maintenance.remind_due()
+		filters = {"event_code": "MAINTENANCE_DUE", "ref_name": doc.name, "channel": "In App"}
+		self.assertEqual(frappe.db.count("Notification Delivery", {**filters, "recipient": self.r10}), 1)
 
 	def test_nothing_before_the_30_day_window(self):
 		doc = self.plan(31)

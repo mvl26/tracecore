@@ -38,6 +38,8 @@ EVENTS = {
 	"LOANER_OVERDUE": ("Loaner set overdue", "Normal", 0, 0, ()),
 	"PAR_OVERRIDE_REQUESTED": ("Par override requested", "Normal", 0, 0, ()),
 	"PAR_OVERRIDE_REPORT": ("Monthly par override report", "Normal", 0, 0, ()),
+	"EQUIPMENT_LOCKED": ("Equipment locked for expired inspection or calibration", "Normal", 0, 0, ()),
+	"MAINTENANCE_DUE": ("Equipment maintenance due", "Normal", 0, 0, ()),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }
