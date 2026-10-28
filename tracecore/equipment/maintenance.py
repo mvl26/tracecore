@@ -1,17 +1,21 @@
-"""Bảo trì, kiểm định, hiệu chuẩn và sự cố thiết bị (M5, FEAT-039; FR-M5-03 .1-.3; UC-22; BRU-EQP-002; A-42).
+"""Bảo trì, kiểm định, hiệu chuẩn và sự cố thiết bị (M5, FEAT-039; FR-M5-03 .1-.3, FR-M5-04 .1-.4; UC-22; BRU-EQP-002; A-42).
 
-Các hàm của controller `Maintenance Record`: `before_submit` chặn đóng hồ sơ thiếu chứng nhận hoặc hạn hiệu lực
-(FR-M5-03.3); `on_submit` cập nhật hạn trên `Equipment`, mở lại máy đang khóa vì quá hạn khi hạn mới còn hiệu lực và tạo
-hồ sơ Nháp kế tiếp theo chu kỳ (FR-M5-03.2). Trạng thái máy chỉ đổi qua `equipment.status.set_status`.
+Các hàm của controller `Maintenance Record`: `before_submit` chặn đóng hồ sơ thiếu chứng nhận, hạn hiệu lực hoặc kết quả
+kiểm tra sau sửa (FR-M5-03.3, FR-M5-04.4); `on_submit` cập nhật hạn trên `Equipment`, mở lại máy đang khóa vì quá hạn khi
+hạn mới còn hiệu lực và tạo hồ sơ Nháp kế tiếp theo chu kỳ (FR-M5-03.2). Sự cố: lưu Nháp đưa máy sang Sửa chữa và đánh
+dấu mẻ/lô đang mở qua hook M2 (FR-M5-04, .2); ghi sổ hoặc bỏ bản Nháp đưa máy ra khỏi Sửa chữa khi không còn sự cố mở nào
+khác. Trạng thái máy chỉ đổi qua `equipment.status.set_status`.
 """
 
 import frappe
 from frappe import _
-from frappe.utils import add_months, cint, getdate, today
+from frappe.utils import add_months, cint, getdate, now_datetime, today
 
+from tracecore.core import extension
 from tracecore.equipment.status import set_status
 
 DOCTYPE = "Maintenance Record"
+INCIDENT_HOOK = "tracecore_equipment_incident"
 # loại hồ sơ → hạn hiệu lực trên Equipment (A-42 M4); sự cố không có hạn
 DUE_FIELDS = {
 	"Inspection": "inspection_due",
@@ -76,8 +80,81 @@ def apply_validity(equipment, field, due):
 	settle_expiry_lock(equipment)
 
 
+def check_incident_target(doc):
+	"""Không ghi sự cố cho máy đã ngừng sử dụng."""
+	if (
+		doc.record_type == "Incident"
+		and doc.is_new()
+		and frappe.db.get_value("Equipment", doc.equipment, "status") == "Retired"
+	):
+		frappe.throw(
+			_("Equipment {0} is retired; an incident cannot be recorded for it.").format(doc.equipment)
+		)
+
+
+def prepare_incident(doc):
+	"""``before_insert`` của sự cố: nhớ trạng thái máy trước đó và đánh dấu mẻ/lô đang mở qua hook M2 (FR-M5-04.2).
+
+	Máy đã ở Sửa chữa (sự cố khác còn mở) thì trạng thái trước là Sẵn sàng.
+	"""
+	status = frappe.db.get_value("Equipment", doc.equipment, "status")
+	doc.status_before = status if status != "Repair" else "Ready"
+	flagged_at = now_datetime()
+	for flagged in extension.run(INCIDENT_HOOK, doc.equipment, doc.name):
+		for item in flagged:
+			doc.append("affected_loads", {**item, "flagged_at": flagged_at})
+
+
+def open_incident(doc):
+	"""``after_insert`` của sự cố: máy sang Sửa chữa; từ lúc này không chọn được máy khi tạo lô/mẻ (FR-M5-04.1)."""
+	set_status(doc.equipment, "Repair")
+
+
+def _end_repair(equipment, status, exclude):
+	"""Đưa máy khỏi Sửa chữa về `status` khi không còn sự cố mở nào khác (Nháp, chưa bỏ); máy đã đổi trạng thái giữ nguyên."""
+	if frappe.db.count(
+		DOCTYPE,
+		{
+			"equipment": equipment,
+			"record_type": "Incident",
+			"docstatus": 0,
+			"abandoned": 0,
+			"name": ["!=", exclude],
+		},
+	):
+		return
+	if frappe.db.get_value("Equipment", equipment, "status") != "Repair":
+		return
+	fields = {"lock_reason": None} if status == "Ready" else {}
+	_save_machine(equipment, status=status, **fields)
+
+
+def close_incident(doc):
+	"""Ghi sổ sự cố: máy về Sẵn sàng (FR-M5-04)."""
+	_end_repair(doc.equipment, "Ready", doc.name)
+
+
+def abandon(doc, reason):
+	"""Bỏ bản Nháp (Frappe không hủy được Nháp, chứng từ không xóa): ghi lý do, sự cố trả máy về trạng thái trước đó."""
+	text = (reason or "").strip()
+	if not text:
+		frappe.throw(_("A reason is required to abandon a record."))
+	if doc.docstatus != 0 or doc.abandoned:
+		frappe.throw(_("Only a draft record that is not already abandoned can be abandoned."))
+	doc.abandoned = 1
+	doc.abandon_reason = text
+	doc.save(ignore_permissions=True)
+	if doc.record_type == "Incident":
+		_end_repair(doc.equipment, doc.status_before or "Ready", doc.name)
+
+
 def before_submit(doc):
-	"""Chặn đóng hồ sơ kiểm định/hiệu chuẩn thiếu chứng nhận hoặc hạn hiệu lực (FR-M5-03.3, UC-22 E1)."""
+	"""Chặn đóng hồ sơ đã bỏ, kiểm định/hiệu chuẩn thiếu chứng nhận hoặc hạn hiệu lực (FR-M5-03.3, UC-22 E1), sự cố thiếu
+	kết quả kiểm tra sau sửa (FR-M5-04.4, UC-22 E2)."""
+	if doc.abandoned:
+		frappe.throw(_("An abandoned record cannot be closed."))
+	if doc.record_type == "Incident" and not (doc.post_repair_check or "").strip():
+		frappe.throw(_("The post-repair check result is required to close an incident."))
 	if doc.record_type in CERTIFIED_TYPES:
 		if not doc.certificate:
 			frappe.throw(_("A certificate is required to close an inspection or calibration record."))
@@ -89,7 +166,9 @@ def before_submit(doc):
 
 
 def on_submit(doc):
-	"""Ghi sổ: lập hồ sơ kế tiếp theo chu kỳ rồi cập nhật hạn hiệu lực của máy."""
+	"""Ghi sổ: sự cố đưa máy về Sẵn sàng; hồ sơ khác lập hồ sơ kế tiếp theo chu kỳ rồi cập nhật hạn hiệu lực của máy."""
+	if doc.record_type == "Incident":
+		return close_incident(doc)
 	next_name = plan_next(doc)
 	field = DUE_FIELDS.get(doc.record_type)
 	if not field:

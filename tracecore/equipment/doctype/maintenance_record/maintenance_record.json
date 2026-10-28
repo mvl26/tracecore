@@ -10,6 +10,8 @@
   "equipment",
   "record_type",
   "status_before",
+  "abandoned",
+  "abandon_reason",
   "column_break_head",
   "planned_date",
   "cycle_months",
@@ -68,6 +70,24 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Machine Status Before",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A draft cannot be cancelled or deleted, so a draft entered by mistake is abandoned with a reason (the record stays for the audit trail).",
+   "fieldname": "abandoned",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Abandoned",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "abandoned",
+   "fieldname": "abandon_reason",
+   "fieldtype": "Small Text",
+   "label": "Abandon Reason",
    "no_copy": 1,
    "read_only": 1
   },

@@ -15,8 +15,23 @@ from tracecore.equipment import maintenance
 
 class MaintenanceRecord(Document):
 	def validate(self):
+		maintenance.check_incident_target(self)
 		self.validate_numbers()
 		self.compute_part_amounts()
+
+	def before_insert(self):
+		if self.record_type == "Incident":
+			maintenance.prepare_incident(self)
+
+	def after_insert(self):
+		if self.record_type == "Incident":
+			maintenance.open_incident(self)
+
+	@frappe.whitelist()
+	def abandon(self, reason):
+		"""Nút "Bỏ bản nháp" trên form (R02): ghi lý do, sự cố trả máy về trạng thái trước đó."""
+		self.check_permission("write")
+		maintenance.abandon(self, reason)
 
 	def before_submit(self):
 		maintenance.before_submit(self)
