@@ -556,7 +556,6 @@ position {0},vị trí {0},
 × {0},× {0},
 Overdue,Quá hạn,
 Use-by date,Hạn sử dụng,
-No answer from the server,Máy chủ không phản hồi,
 "The request got no answer in time; the server may already have recorded it.","Yêu cầu không có phản hồi kịp thời; máy chủ có thể đã ghi nhận.",
 "Retry: the same request is sent again and is never recorded twice.","Thử lại: gửi lại đúng yêu cầu này, không bao giờ ghi hai lần.",
 Waiting label could not be rendered,Không dựng được nhãn chờ in,
@@ -2284,132 +2283,132 @@ Cannot load workspaces,Không tải được không gian làm việc,
 "Check your connection and account permissions, then try again.",Kiểm tra kết nối mạng và quyền tài khoản rồi thử lại.,
 Try again,Thử lại,
 Offline,Mất kết nối,TraceCore Launcher
-A pack was scanned before any department was chosen.,Đã quét một gói khi chưa chọn khoa.
-An Issue Note can only be confirmed by the issuing service.,Phiếu cấp phát chỉ được xác nhận qua dịch vụ cấp phát.
-An Issue Note can only be created and changed by the issuing service.,Phiếu cấp phát chỉ được tạo và sửa qua dịch vụ cấp phát.
-An Issue Note cannot be cancelled; return the packs instead.,Phiếu cấp phát không hủy được; hãy hoàn trả gói.
-Approve and issue,Duyệt và cấp phát
+A pack was scanned before any department was chosen.,Đã quét một gói khi chưa chọn khoa.,
+An Issue Note can only be confirmed by the issuing service.,Phiếu cấp phát chỉ được xác nhận qua dịch vụ cấp phát.,
+An Issue Note can only be created and changed by the issuing service.,Phiếu cấp phát chỉ được tạo và sửa qua dịch vụ cấp phát.,
+An Issue Note cannot be cancelled; return the packs instead.,Phiếu cấp phát không hủy được; hãy hoàn trả gói.,
+Approve and issue,Duyệt và cấp phát,
 Approved At,Duyệt lúc,Issue Note
-Ask R02 to scan the card and enter the PIN here.,Nhờ R02 quét thẻ và nhập PIN tại đây.
-"Ask R02 to scan the card and enter the PIN to approve, or remove packs.","Nhờ R02 quét thẻ và nhập PIN để duyệt, hoặc bỏ bớt gói."
-"Ask the recipient for an active employee card, or call R02.","Yêu cầu người nhận dùng thẻ nhân viên đang hoạt động, hoặc gọi R02."
-Ask the recipient to scan the employee card and sign.,Yêu cầu người nhận quét thẻ nhân viên và ký.
-"Ask the recipient to sign in the box, then confirm.","Yêu cầu người nhận ký vào khung, rồi xác nhận."
-Back to packs,Quay lại danh sách gói
-Change department,Đổi khoa
-"Check the set status, or call R02.","Kiểm tra trạng thái bộ, hoặc gọi R02."
-Choose the department again from the list.,Chọn lại khoa trong danh sách.
-Choose the department again to open a new issue note.,Chọn lại khoa để mở phiếu cấp phát mới.
-Choose the department first,Chọn khoa trước
-Choose the department that receives the packs,Chọn khoa nhận gói
-"Choose the department, then scan the packs...","Chọn khoa, rồi quét các gói..."
-Clear the signature box and ask the recipient to sign again.,Xóa khung chữ ký và yêu cầu người nhận ký lại.
-Confirm and print,Xác nhận và in phiếu
-Confirm signature,Xác nhận chữ ký
-Continue with this recipient,Tiếp tục với người nhận này
+Ask R02 to scan the card and enter the PIN here.,Nhờ R02 quét thẻ và nhập PIN tại đây.,
+"Ask R02 to scan the card and enter the PIN to approve, or remove packs.","Nhờ R02 quét thẻ và nhập PIN để duyệt, hoặc bỏ bớt gói.",
+"Ask the recipient for an active employee card, or call R02.","Yêu cầu người nhận dùng thẻ nhân viên đang hoạt động, hoặc gọi R02.",
+Ask the recipient to scan the employee card and sign.,Yêu cầu người nhận quét thẻ nhân viên và ký.,
+"Ask the recipient to sign in the box, then confirm.","Yêu cầu người nhận ký vào khung, rồi xác nhận.",
+Back to packs,Quay lại danh sách gói,
+Change department,Đổi khoa,
+"Check the set status, or call R02.","Kiểm tra trạng thái bộ, hoặc gọi R02.",
+Choose the department again from the list.,Chọn lại khoa trong danh sách.,
+Choose the department again to open a new issue note.,Chọn lại khoa để mở phiếu cấp phát mới.,
+Choose the department first,Chọn khoa trước,
+Choose the department that receives the packs,Chọn khoa nhận gói,
+"Choose the department, then scan the packs...","Chọn khoa, rồi quét các gói...",
+Clear the signature box and ask the recipient to sign again.,Xóa khung chữ ký và yêu cầu người nhận ký lại.,
+Confirm and print,Xác nhận và in phiếu,
+Confirm signature,Xác nhận chữ ký,
+Continue with this recipient,Tiếp tục với người nhận này,
 Department Par Level,Cơ số khoa,Issue Note
-Department not found,Không tìm thấy khoa
-Department par level exceeded,Vượt cơ số tồn khoa
-Department stock and par level,Tồn khoa và cơ số
+Department not found,Không tìm thấy khoa,
+Department par level exceeded,Vượt cơ số tồn khoa,
+Department stock and par level,Tồn khoa và cơ số,
 Department stock and par level check per set type at the time of issue.,Tồn khoa và kết quả kiểm cơ số theo loại bộ tại thời điểm cấp phát.,Issue Note
-Department {0} does not exist.,Khoa {0} không tồn tại.
+Department {0} does not exist.,Khoa {0} không tồn tại.,
 "Device time of the confirmation, in UTC.","Giờ thiết bị lúc xác nhận, theo UTC.",Issue Note
-Do not issue the pack; send it back to the dirty zone.,Không cấp phát gói này; đưa về khu bẩn.
-Employee card,Thẻ nhân viên
-"Enter the reason to continue, or ask a member of {0} to receive.","Nhập lý do để tiếp tục, hoặc nhờ nhân viên khoa {0} nhận."
+Do not issue the pack; send it back to the dirty zone.,Không cấp phát gói này; đưa về khu bẩn.,
+Employee card,Thẻ nhân viên,
+"Enter the reason to continue, or ask a member of {0} to receive.","Nhập lý do để tiếp tục, hoặc nhờ nhân viên khoa {0} nhận.",
 FEFO Note,Ghi chú FEFO,Issue Note Pack
-FEFO note,Ghi chú FEFO
-In department,Tại khoa
-In sterile store,Trong kho vô khuẩn
-Issue Note,Phiếu cấp phát
-Issue Note Pack,Gói trong phiếu cấp phát
-Issue note confirmed.,Phiếu cấp phát đã xác nhận.
-Issue note is already confirmed,Phiếu cấp phát đã được xác nhận
-Issue note is not signed,Phiếu cấp phát chưa được ký
-Issue note not found,Không tìm thấy phiếu cấp phát
-Issue note {0} confirmed,Phiếu cấp phát {0} đã xác nhận
-Issue note {0} does not exist.,Phiếu cấp phát {0} không tồn tại.
-Issue note {0} has been confirmed and cannot change.,Phiếu cấp phát {0} đã xác nhận và không sửa được.
-Issue note {0} has no packs yet.,Phiếu cấp phát {0} chưa có gói nào.
-Issue this pack with note,Cấp gói này kèm ghi chú
-"Issue {0} instead, or enter a note if the department asked for this Set ID.","Hãy cấp {0}, hoặc nhập ghi chú nếu khoa yêu cầu đúng Set ID này."
+FEFO note,Ghi chú FEFO,
+In department,Tại khoa,
+In sterile store,Trong kho vô khuẩn,
+Issue Note,Phiếu cấp phát,
+Issue Note Pack,Gói trong phiếu cấp phát,
+Issue note confirmed.,Phiếu cấp phát đã xác nhận.,
+Issue note is already confirmed,Phiếu cấp phát đã được xác nhận,
+Issue note is not signed,Phiếu cấp phát chưa được ký,
+Issue note not found,Không tìm thấy phiếu cấp phát,
+Issue note {0} confirmed,Phiếu cấp phát {0} đã xác nhận,
+Issue note {0} does not exist.,Phiếu cấp phát {0} không tồn tại.,
+Issue note {0} has been confirmed and cannot change.,Phiếu cấp phát {0} đã xác nhận và không sửa được.,
+Issue note {0} has no packs yet.,Phiếu cấp phát {0} chưa có gói nào.,
+Issue this pack with note,Cấp gói này kèm ghi chú,
+"Issue {0} instead, or enter a note if the department asked for this Set ID.","Hãy cấp {0}, hoặc nhập ghi chú nếu khoa yêu cầu đúng Set ID này.",
 Issued At,Cấp phát lúc,Issue Note
 Issued By (User),Người cấp (tài khoản),Issue Note
 Issued By,Người cấp,Issue Note
-Issuing packs needs a network connection.,Cấp phát gói cần có kết nối mạng.
-Max,Tối đa
-Min,Tối thiểu
-Move the pack to this issue note,Chuyển gói sang phiếu này
-"Move the pack to this issue note, or remove it from {0}.","Chuyển gói sang phiếu này, hoặc bỏ gói khỏi {0}."
-New issue note,Phiếu cấp phát mới
-Next: the recipient scans the employee card and signs.,Tiếp theo: người nhận quét thẻ nhân viên và ký.
-No department is available to issue to.,Chưa có khoa nào để cấp phát.
-No packs on the issue note,Phiếu cấp phát chưa có gói
-No par level set,Chưa đặt cơ số
-Nothing was drawn in the signature box.,Chưa có nét nào trong khung chữ ký.
-Open the issuing screen on a T7 station.,Mở màn cấp phát trên trạm T7.
-Over maximum,Vượt cơ số tối đa
-"Over maximum, allowed","Vượt tối đa, được phép"
+Issuing packs needs a network connection.,Cấp phát gói cần có kết nối mạng.,
+Max,Tối đa,
+Min,Tối thiểu,
+Move the pack to this issue note,Chuyển gói sang phiếu này,
+"Move the pack to this issue note, or remove it from {0}.","Chuyển gói sang phiếu này, hoặc bỏ gói khỏi {0}.",
+New issue note,Phiếu cấp phát mới,
+Next: the recipient scans the employee card and signs.,Tiếp theo: người nhận quét thẻ nhân viên và ký.,
+No department is available to issue to.,Chưa có khoa nào để cấp phát.,
+No packs on the issue note,Phiếu cấp phát chưa có gói,
+No par level set,Chưa đặt cơ số,
+Nothing was drawn in the signature box.,Chưa có nét nào trong khung chữ ký.,
+Open the issuing screen on a T7 station.,Mở màn cấp phát trên trạm T7.,
+Over maximum,Vượt cơ số tối đa,
+"Over maximum, allowed","Vượt tối đa, được phép",
 Over-par Approved By,R02 duyệt vượt cơ số,Issue Note
-Pack is on another issue note,Gói đang ở phiếu cấp phát khác
-Pack {0} is already on draft issue note {1}.,Gói {0} đang nằm trên phiếu nháp {1}.
-Pack {0} is {1}; only a pack in the sterile store can be issued.,Gói {0} đang ở trạng thái {1}; chỉ cấp phát được gói trong kho vô khuẩn.
-Packs on this issue note ({0}),Gói trên phiếu ({0})
+Pack is on another issue note,Gói đang ở phiếu cấp phát khác,
+Pack {0} is already on draft issue note {1}.,Gói {0} đang nằm trên phiếu nháp {1}.,
+Pack {0} is {1}; only a pack in the sterile store can be issued.,Gói {0} đang ở trạng thái {1}; chỉ cấp phát được gói trong kho vô khuẩn.,
+Packs on this issue note ({0}),Gói trên phiếu ({0}),
 Par Level Check,Kết quả kiểm cơ số,Issue Note
-Print issue note,In phiếu cấp phát
-"Print the issue note, then start the next one.","In phiếu cấp phát, rồi làm phiếu kế tiếp."
-R02 PIN,PIN của R02
-R02 approval,R02 duyệt
-R02 approves,R02 duyệt
-R02 employee card,Thẻ nhân viên R02
-R02 must approve before the packs are issued.,R02 phải duyệt trước khi cấp phát các gói.
+Print issue note,In phiếu cấp phát,
+"Print the issue note, then start the next one.","In phiếu cấp phát, rồi làm phiếu kế tiếp.",
+R02 PIN,PIN của R02,
+R02 approval,R02 duyệt,
+R02 approves,R02 duyệt,
+R02 employee card,Thẻ nhân viên R02,
+R02 must approve before the packs are issued.,R02 phải duyệt trước khi cấp phát các gói.,
 Reason (recipient of another department),Lý do (người nhận thuộc khoa khác),Issue Note
-Reason the recipient is not from this department,Lý do người nhận không thuộc khoa này
+Reason the recipient is not from this department,Lý do người nhận không thuộc khoa này,
 Recipient Department,Khoa của người nhận,Issue Note
 Recipient Name,Tên người nhận,Issue Note
-Recipient card is not valid,Thẻ người nhận không hợp lệ
-Recipient is not from this department,Người nhận không thuộc khoa này
-Recipient of another department,Người nhận thuộc khoa khác
-Recipient signature,Chữ ký người nhận
-Recipient signs,Người nhận ký
-"Recipient: scan the employee card, then sign in the box.","Người nhận: quét thẻ nhân viên, rồi ký vào khung."
-Recipient: scan the employee card. The card scan is the signature.,Người nhận: quét thẻ nhân viên. Quét thẻ là chữ ký.
-Recipient: scan the employee card...,Người nhận: quét thẻ nhân viên...
-Remove {0},Bỏ {0}
-Scan the Cycle ID of the first pack.,Quét Cycle ID của gói đầu tiên.
-Scan the packs to issue first.,Hãy quét các gói cần cấp trước.
-Set {0} is {1}; only a sterile set can be issued to a department.,Bộ {0} đang {1}; chỉ cấp phát được bộ Vô khuẩn cho khoa.
-Sign again,Ký lại
-Sign method {0} is not supported.,Cách ký {0} không được hỗ trợ.
-Sign on screen,Ký trên màn hình
-Sign with card,Ký bằng thẻ
-Sign with the card or on the screen.,Hãy ký bằng thẻ hoặc trên màn hình.
-Signature box,Khung chữ ký
-Signature is empty,Chữ ký còn trống
-Signature is not valid,Chữ ký không hợp lệ
-Signature method,Cách ký
-Signature on screen,Chữ ký trên màn hình
+Recipient card is not valid,Thẻ người nhận không hợp lệ,
+Recipient is not from this department,Người nhận không thuộc khoa này,
+Recipient of another department,Người nhận thuộc khoa khác,
+Recipient signature,Chữ ký người nhận,
+Recipient signs,Người nhận ký,
+"Recipient: scan the employee card, then sign in the box.","Người nhận: quét thẻ nhân viên, rồi ký vào khung.",
+Recipient: scan the employee card. The card scan is the signature.,Người nhận: quét thẻ nhân viên. Quét thẻ là chữ ký.,
+Recipient: scan the employee card...,Người nhận: quét thẻ nhân viên...,
+Remove {0},Bỏ {0},
+Scan the Cycle ID of the first pack.,Quét Cycle ID của gói đầu tiên.,
+Scan the packs to issue first.,Hãy quét các gói cần cấp trước.,
+Set {0} is {1}; only a sterile set can be issued to a department.,Bộ {0} đang {1}; chỉ cấp phát được bộ Vô khuẩn cho khoa.,
+Sign again,Ký lại,
+Sign method {0} is not supported.,Cách ký {0} không được hỗ trợ.,
+Sign on screen,Ký trên màn hình,
+Sign with card,Ký bằng thẻ,
+Sign with the card or on the screen.,Hãy ký bằng thẻ hoặc trên màn hình.,
+Signature box,Khung chữ ký,
+Signature is empty,Chữ ký còn trống,
+Signature is not valid,Chữ ký không hợp lệ,
+Signature method,Cách ký,
+Signature on screen,Chữ ký trên màn hình,
 Signed At,Ký lúc,Issue Note
 Signed With,Cách ký,Issue Note
-Signed by {0},Đã ký bởi {0}
-"Store the pack at T6 first, or check its status with R02.","Nhập gói vào kho ở T6 trước, hoặc hỏi R02 về trạng thái gói."
-Suggest issuing more,Gợi ý cấp bổ sung
-Tap the department that receives the packs.,Chạm vào khoa nhận gói.
-The card does not belong to an active employee.,Thẻ không thuộc nhân viên đang làm việc.
-The department would hold more sets than its maximum for: {0}.,Khoa sẽ giữ nhiều bộ hơn cơ số tối đa với: {0}.
-The recipient has not signed issue note {0}.,Người nhận chưa ký phiếu cấp phát {0}.
-The signature drawn on the screen is empty or too large.,Chữ ký vẽ trên màn hình trống hoặc quá lớn.
-This account cannot issue packs at this station.,Tài khoản này không cấp phát gói tại trạm này.
-This note,Phiếu này
+Signed by {0},Đã ký bởi {0},
+"Store the pack at T6 first, or check its status with R02.","Nhập gói vào kho ở T6 trước, hoặc hỏi R02 về trạng thái gói.",
+Suggest issuing more,Gợi ý cấp bổ sung,
+Tap the department that receives the packs.,Chạm vào khoa nhận gói.,
+The card does not belong to an active employee.,Thẻ không thuộc nhân viên đang làm việc.,
+The department would hold more sets than its maximum for: {0}.,Khoa sẽ giữ nhiều bộ hơn cơ số tối đa với: {0}.,
+The recipient has not signed issue note {0}.,Người nhận chưa ký phiếu cấp phát {0}.,
+The signature drawn on the screen is empty or too large.,Chữ ký vẽ trên màn hình trống hoặc quá lớn.,
+This account cannot issue packs at this station.,Tài khoản này không cấp phát gói tại trạm này.,
+This note,Phiếu này,
 Touch,Cảm ứng,Issue Note
 Use-by Date,Hạn dùng,Issue Note Pack
 Why a pack with a later use-by date was issued (the department asked for this Set ID).,Lý do cấp gói có hạn dùng muộn hơn (khoa yêu cầu đúng Set ID này).,Issue Note Pack
-Why issue this pack and not the one that expires first?,Vì sao cấp gói này mà không phải gói hết hạn sớm nhất?
-Within par level,Trong cơ số
-"{0} belongs to {1}, not {2}.","{0} thuộc {1}, không thuộc {2}."
-{0} is not a {1} issuing station.,{0} không phải trạm cấp phát {1}.
-{0} pack(s) issued to {1}.,Đã cấp {0} gói cho {1}.
-{0}: {1} more pack(s) to reach the minimum,{0}: cần thêm {1} gói để đạt tối thiểu
+Why issue this pack and not the one that expires first?,Vì sao cấp gói này mà không phải gói hết hạn sớm nhất?,
+Within par level,Trong cơ số,
+"{0} belongs to {1}, not {2}.","{0} thuộc {1}, không thuộc {2}.",
+{0} is not a {1} issuing station.,{0} không phải trạm cấp phát {1}.,
+{0} pack(s) issued to {1}.,Đã cấp {0} gói cho {1}.,
+{0}: {1} more pack(s) to reach the minimum,{0}: cần thêm {1} gói để đạt tối thiểu,
 Issue note,Phiếu cấp phát,TC Issue Note
 Not confirmed yet,Chưa xác nhận,TC Issue Note
 Department,Khoa,TC Issue Note
@@ -2623,100 +2622,100 @@ Higher than the limit {0}: the Set IDs cannot be issued.,Cao hơn giới hạn {
 Where the estimate comes from,Căn cứ của số ước tính,
 Set disposed,Bộ đã thanh lý,
 A TC R02 user who may approve or reject par overrides on behalf of R01 (FR-M8-04.1). Leave empty to let only R01 decide.,Người dùng TC R02 được duyệt hoặc từ chối ghi đè cơ số thay R01 (FR-M8-04.1). Để trống thì chỉ R01 quyết định.,TraceCore Settings
-Approve or reject the override request instead of submitting it.,Hãy duyệt hoặc từ chối đề nghị ghi đè thay vì ghi sổ trực tiếp.
-Approve override,Duyệt ghi đè
-Approved Overrides,Ghi đè đã duyệt
-Approved: the set may be packed within the extra cycles and date,Đã duyệt: bộ được đóng gói trong số chu trình thêm và thời hạn
-Ask R01 to decide this request.,Nhờ R01 quyết định đề nghị này.
-Ask R10 to link your employee record and set your PIN.,Nhờ R10 liên kết hồ sơ nhân viên của tài khoản này và đặt PIN.
-Cancelled: the set is blocked again,Đã hủy: bộ lại bị chặn
+Approve or reject the override request instead of submitting it.,Hãy duyệt hoặc từ chối đề nghị ghi đè thay vì ghi sổ trực tiếp.,
+Approve override,Duyệt ghi đè,
+Approved Overrides,Ghi đè đã duyệt,
+Approved: the set may be packed within the extra cycles and date,Đã duyệt: bộ được đóng gói trong số chu trình thêm và thời hạn,
+Ask R01 to decide this request.,Nhờ R01 quyết định đề nghị này.,
+Ask R10 to link your employee record and set your PIN.,Nhờ R10 liên kết hồ sơ nhân viên của tài khoản này và đặt PIN.,
+Cancelled: the set is blocked again,Đã hủy: bộ lại bị chặn,
 Cycle number of the last Cycle ID issued under this override; packing the same cycle again does not consume another cycle.,Số chu trình của Cycle ID cuối cùng sinh theo ghi đè này; đóng gói lại cùng chu trình không trừ thêm.,Par Override
-Cycles Consumed,Chu trình đã dùng theo ghi đè
+Cycles Consumed,Chu trình đã dùng theo ghi đè,
 Cycles Consumed,Chu trình đã dùng theo ghi đè,Par Override
 Date Passed,Quá thời hạn,Par Override
-Decided At,Thời điểm quyết định
+Decided At,Thời điểm quyết định,
 Decided At,Thời điểm quyết định,Par Override
-Decided By,Người quyết định
+Decided By,Người quyết định,
 Decided By,Người quyết định,Par Override
 Decided By (Employee),Người quyết định (nhân viên),Par Override
 Decision,Quyết định,Par Override
-Do not pack this set. Tap Request override and give the reason; R01 decides.,Không đóng gói bộ này. Bấm Đề nghị ghi đè và nêu lý do; R01 quyết định.
-Do not use this set. Ask R01 for an override or take it out of circulation.,Không dùng bộ này. Đề nghị R01 ghi đè hoặc đưa bộ ra khỏi lưu thông.
-Enter a date from today on.,Nhập ngày từ hôm nay trở đi.
-Enter how many reprocessing cycles beyond the limit are allowed.,Nhập số chu trình tái xử lý được phép vượt cơ số.
-Enter why the override is approved or rejected.,Nhập lý do duyệt hoặc từ chối ghi đè.
-Enter why the set is still needed although it reached its cycle limit.,Nhập lý do vẫn cần bộ dù đã hết cơ số.
+Do not pack this set. Tap Request override and give the reason; R01 decides.,Không đóng gói bộ này. Bấm Đề nghị ghi đè và nêu lý do; R01 quyết định.,
+Do not use this set. Ask R01 for an override or take it out of circulation.,Không dùng bộ này. Đề nghị R01 ghi đè hoặc đưa bộ ra khỏi lưu thông.,
+Enter a date from today on.,Nhập ngày từ hôm nay trở đi.,
+Enter how many reprocessing cycles beyond the limit are allowed.,Nhập số chu trình tái xử lý được phép vượt cơ số.,
+Enter why the override is approved or rejected.,Nhập lý do duyệt hoặc từ chối ghi đè.,
+Enter why the set is still needed although it reached its cycle limit.,Nhập lý do vẫn cần bộ dù đã hết cơ số.,
 Expired At,Thời điểm hết hiệu lực,Par Override
-Expired: the set is blocked again,Hết hiệu lực: bộ lại bị chặn
+Expired: the set is blocked again,Hết hiệu lực: bộ lại bị chặn,
 Expiry Cause,Nguyên nhân hết hiệu lực,Par Override
-Extra Cycles,Số chu trình thêm
+Extra Cycles,Số chu trình thêm,
 Extra Cycles,Số chu trình thêm,Par Override
-Extra cycles are not valid,Số chu trình thêm không hợp lệ
+Extra cycles are not valid,Số chu trình thêm không hợp lệ,
 Instruments at Their Limit,Dụng cụ đã hết cơ số,Par Override
 Last Cycle No,Số chu trình gần nhất,Par Override
-No employee record with a PIN belongs to this account.,Tài khoản này không có hồ sơ nhân viên kèm PIN.
-No reason was entered for the decision.,Chưa nhập lý do quyết định.
-No reason was entered for the override request.,Chưa nhập lý do đề nghị ghi đè.
-Not allowed to decide,Không được quyết định
-"Only R01, or the R02 user delegated by R10, can approve or reject an override.","Chỉ R01, hoặc người dùng R02 được R10 ủy quyền, được duyệt hoặc từ chối ghi đè."
-Open the override from the list.,Mở ghi đè từ danh sách.
-Overridden Share (%) (target ≤ {0}),Tỷ lệ bộ được ghi đè (%) (mục tiêu ≤ {0})
-Override Requests,Đề nghị ghi đè
-Override already requested,Đã có đề nghị ghi đè
-Override fields are changed only by approving or rejecting: {0},Các trường ghi đè chỉ đổi khi duyệt hoặc từ chối: {0}
-Override not found,Không tìm thấy ghi đè
-Override request {0} is waiting for R01. Do not pack this set until it is approved.,Đề nghị ghi đè {0} đang chờ R01. Không đóng gói bộ này cho tới khi được duyệt.
-Override request {0} sent,Đã gửi đề nghị ghi đè {0}
-Override requested for set {0},Đề nghị ghi đè cho bộ {0}
-Override was already decided,Ghi đè đã được quyết định
-Override {0} does not exist.,Ghi đè {0} không tồn tại.
-Override {0} is {1}.,Ghi đè {0} đang ở trạng thái {1}.
-Override {0}: {1} more cycle(s) allowed until {2},Ghi đè {0}: còn được thêm {1} chu trình đến {2}
+No employee record with a PIN belongs to this account.,Tài khoản này không có hồ sơ nhân viên kèm PIN.,
+No reason was entered for the decision.,Chưa nhập lý do quyết định.,
+No reason was entered for the override request.,Chưa nhập lý do đề nghị ghi đè.,
+Not allowed to decide,Không được quyết định,
+"Only R01, or the R02 user delegated by R10, can approve or reject an override.","Chỉ R01, hoặc người dùng R02 được R10 ủy quyền, được duyệt hoặc từ chối ghi đè.",
+Open the override from the list.,Mở ghi đè từ danh sách.,
+Overridden Share (%) (target ≤ {0}),Tỷ lệ bộ được ghi đè (%) (mục tiêu ≤ {0}),
+Override Requests,Đề nghị ghi đè,
+Override already requested,Đã có đề nghị ghi đè,
+Override fields are changed only by approving or rejecting: {0},Các trường ghi đè chỉ đổi khi duyệt hoặc từ chối: {0},
+Override not found,Không tìm thấy ghi đè,
+Override request {0} is waiting for R01. Do not pack this set until it is approved.,Đề nghị ghi đè {0} đang chờ R01. Không đóng gói bộ này cho tới khi được duyệt.,
+Override request {0} sent,Đã gửi đề nghị ghi đè {0},
+Override requested for set {0},Đề nghị ghi đè cho bộ {0},
+Override was already decided,Ghi đè đã được quyết định,
+Override {0} does not exist.,Ghi đè {0} không tồn tại.,
+Override {0} is {1}.,Ghi đè {0} đang ở trạng thái {1}.,
+Override {0}: {1} more cycle(s) allowed until {2},Ghi đè {0}: còn được thêm {1} chu trình đến {2},
 PIN Verified,Đã xác thực PIN,Par Override
-Pack the set normally; an override is needed only after the limit is reached.,Đóng gói bộ bình thường; chỉ cần ghi đè sau khi hết cơ số.
+Pack the set normally; an override is needed only after the limit is reached.,Đóng gói bộ bình thường; chỉ cần ghi đè sau khi hết cơ số.,
 Par Levels,Cơ số,TraceCore Settings
-Par Override,Ghi đè cơ số
+Par Override,Ghi đè cơ số,
 Par Override Delegate (R02),Người được ủy quyền duyệt ghi đè cơ số (R02),TraceCore Settings
-Par override report for {0}/{1} is ready,Báo cáo ghi đè cơ số tháng {0}/{1} đã sẵn sàng
-R01 was notified. Do not pack set {0} until the override is approved.,Đã báo R01. Không đóng gói bộ {0} cho tới khi ghi đè được duyệt.
-Reason for Decision,Lý do quyết định
+Par override report for {0}/{1} is ready,Báo cáo ghi đè cơ số tháng {0}/{1} đã sẵn sàng,
+R01 was notified. Do not pack set {0} until the override is approved.,Đã báo R01. Không đóng gói bộ {0} cho tới khi ghi đè được duyệt.,
+Reason for Decision,Lý do quyết định,
 Reason for Decision,Lý do quyết định,Par Override
-Reason for Request,Lý do đề nghị
+Reason for Request,Lý do đề nghị,
 Reason for Request,Lý do đề nghị,Par Override
-Refresh the list; only a requested override can be approved or rejected.,Tải lại danh sách; chỉ đề nghị đang chờ mới được duyệt hoặc từ chối.
-Reject override,Từ chối ghi đè
-Rejected: the set stays at the end of its life,Đã từ chối: bộ giữ trạng thái Hết vòng đời
+Refresh the list; only a requested override can be approved or rejected.,Tải lại danh sách; chỉ đề nghị đang chờ mới được duyệt hoặc từ chối.,
+Reject override,Từ chối ghi đè,
+Rejected: the set stays at the end of its life,Đã từ chối: bộ giữ trạng thái Hết vòng đời,
 Reprocessing cycles allowed beyond the limit.,Số chu trình tái xử lý được phép vượt cơ số.,Par Override
 Request,Đề nghị,Par Override
-Requested At,Thời điểm đề nghị
+Requested At,Thời điểm đề nghị,
 Requested At,Thời điểm đề nghị,Par Override
-Requested By,Người đề nghị
+Requested By,Người đề nghị,
 Requested By,Người đề nghị,Par Override
-Scan the set again after R01 approved the override.,Quét lại bộ sau khi R01 duyệt ghi đè.
-Send request,Gửi đề nghị
-Set has not reached its cycle limit,Bộ chưa hết cơ số
-Set has reached the end of its life,Bộ đã hết vòng đời
-Set {0} already has override {1}.,Bộ {0} đã có ghi đè {1}.
-Set {0} has used up its reprocessing cycles and is waiting for disposal.,Bộ {0} đã dùng hết số chu trình tái xử lý và đang chờ thanh lý.
-Set {0} has used {1} cycles; instrument(s) {2} reached their cycle limit.,Bộ {0} đã dùng {1} chu trình; dụng cụ {2} đã hết cơ số.
-Set {0} has used {1} of {2} cycles.,Bộ {0} đã dùng {1}/{2} chu trình.
-Set {0} is {1}; it cannot be moved to end of life.,Bộ {0} đang {1}; không chuyển được sang Hết vòng đời.
-Set {0} is {1}; only a set at end of life can be reopened by an override.,Bộ {0} đang {1}; chỉ bộ Hết vòng đời mới được mở lại bằng ghi đè.
-Set {0} reached its cycle limit. R01 decides after you give the reason.,Bộ {0} đã hết cơ số. R01 quyết định sau khi nhập lý do.
-Sets at Their Limit,Bộ đã hết cơ số
+Scan the set again after R01 approved the override.,Quét lại bộ sau khi R01 duyệt ghi đè.,
+Send request,Gửi đề nghị,
+Set has not reached its cycle limit,Bộ chưa hết cơ số,
+Set has reached the end of its life,Bộ đã hết vòng đời,
+Set {0} already has override {1}.,Bộ {0} đã có ghi đè {1}.,
+Set {0} has used up its reprocessing cycles and is waiting for disposal.,Bộ {0} đã dùng hết số chu trình tái xử lý và đang chờ thanh lý.,
+Set {0} has used {1} cycles; instrument(s) {2} reached their cycle limit.,Bộ {0} đã dùng {1} chu trình; dụng cụ {2} đã hết cơ số.,
+Set {0} has used {1} of {2} cycles.,Bộ {0} đã dùng {1}/{2} chu trình.,
+Set {0} is {1}; it cannot be moved to end of life.,Bộ {0} đang {1}; không chuyển được sang Hết vòng đời.,
+Set {0} is {1}; only a set at end of life can be reopened by an override.,Bộ {0} đang {1}; chỉ bộ Hết vòng đời mới được mở lại bằng ghi đè.,
+Set {0} reached its cycle limit. R01 decides after you give the reason.,Bộ {0} đã hết cơ số. R01 quyết định sau khi nhập lý do.,
+Sets at Their Limit,Bộ đã hết cơ số,
 Usage,Sử dụng,Par Override
-Valid Until,Hiệu lực đến
+Valid Until,Hiệu lực đến,
 Valid Until,Hiệu lực đến,Par Override
-Valid-until date is not valid,Ngày hiệu lực không hợp lệ
-"Wait for R01 to decide, or pack the set within the approved override.","Chờ R01 quyết định, hoặc đóng gói bộ trong phạm vi ghi đè đã duyệt."
-Waiting for R01 to decide,Đang chờ R01 quyết định
+Valid-until date is not valid,Ngày hiệu lực không hợp lệ,
+"Wait for R01 to decide, or pack the set within the approved override.","Chờ R01 quyết định, hoặc đóng gói bộ trong phạm vi ghi đè đã duyệt.",
+Waiting for R01 to decide,Đang chờ R01 quyết định,
 Why the set is needed although it reached its cycle limit.,Lý do cần dùng bộ dù đã hết cơ số.,Par Override
-states must be a list of: {0}.,states phải là danh sách gồm: {0}.
-{0} ({1}) reached its cycle limit,{0} ({1}) đã hết cơ số
-{0} ({1}): {2} cycle(s) left,{0} ({1}): còn {2} chu trình
-{0} cycles used · limit not defined,Đã dùng {0} chu trình · chưa xác định cơ số
-"{0} is empty, not a date, or already past.","{0} trống, không phải ngày, hoặc đã qua."
-{0} is not a whole number of cycles of at least 1.,{0} không phải số nguyên chu trình từ 1 trở lên.
+states must be a list of: {0}.,states phải là danh sách gồm: {0}.,
+{0} ({1}) reached its cycle limit,{0} ({1}) đã hết cơ số,
+{0} ({1}): {2} cycle(s) left,{0} ({1}): còn {2} chu trình,
+{0} cycles used · limit not defined,Đã dùng {0} chu trình · chưa xác định cơ số,
+"{0} is empty, not a date, or already past.","{0} trống, không phải ngày, hoặc đã qua.",
+{0} is not a whole number of cycles of at least 1.,{0} không phải số nguyên chu trình từ 1 trở lên.,
 Requested,Chờ duyệt,Par Override
 Approved,Đã duyệt,Par Override
 Rejected,Đã từ chối,Par Override
@@ -4158,7 +4157,7 @@ Mark as read,Đánh dấu đã đọc,
 No unread notifications,Không có thông báo chưa đọc,
 No notifications yet,Chưa có thông báo nào,
 New notifications appear here and in the bell at the top.,Thông báo mới sẽ hiện ở đây và trên chuông phía trên.,
-Load more,Xem thêm,
+Load more,Tải thêm,
 Loading notifications…,Đang tải thông báo…,
 Cannot load notifications,Không tải được thông báo,
 Cannot update notifications,Không cập nhật được thông báo,
@@ -4170,7 +4169,7 @@ Equipment maintenance due,Thiết bị đến hạn bảo trì hoặc kiểm đ�
 Equipment {0} status: {1}.,Trạng thái thiết bị {0}: {1}.,
 Certificate,Chứng chỉ,TraceCore Launcher
 Certificate,Chứng chỉ,
-Staff certificate with expiry date and scan (FR-M4-02, DT-CERT). Renewals are new records; old ones are kept as history.,Chứng chỉ của nhân viên có hạn và file scan. Gia hạn là bản ghi mới; bản cũ được giữ làm lịch sử.,
+"Staff certificate with expiry date and scan (FR-M4-02, DT-CERT). Renewals are new records; old ones are kept as history.",Chứng chỉ của nhân viên có hạn và file scan. Gia hạn là bản ghi mới; bản cũ được giữ làm lịch sử.,
 Employee Name,Tên nhân viên,Certificate
 Certificate Type,Loại chứng chỉ,Certificate
 Practice License,Chứng chỉ hành nghề (CCHN),Certificate
@@ -4226,3 +4225,5 @@ This certificate was renewed; it is kept as history.,Chứng chỉ này đã đ�
 {0} expired certificates,{0} chứng chỉ đã hết hạn,
 {0} valid until {1},{0} có hiệu lực đến {1},
 {0} (expired),{0} (đã hết hạn),
+Desk Bell Entry,Mục chuông Desk,Notification Delivery
+PDA,PDA,Notification Rule
