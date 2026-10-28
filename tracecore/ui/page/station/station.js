@@ -10,6 +10,7 @@
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
+const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
 const ZONE_CLASS = {
 	Dirty: "dirty",
 	Clean: "clean",
@@ -89,6 +90,7 @@ class TraceCoreStation {
 		this.globalListeners = [];
 		this.controllers = new Set();
 		this.sessionTimer = null;
+		this.notifyTimer = null;
 		this.authBusy = false;
 		this.heartbeatBusy = false;
 		this.lastActivity = Date.now();
@@ -134,6 +136,7 @@ class TraceCoreStation {
 		this.sessionTimer = setInterval(() => {
 			if (this.ownsPage()) this.checkSession();
 		}, 1000);
+		this.notifyTimer = setInterval(() => this.refreshNotifications(), TC_NOTIFY_MS);
 		this.initialHandshake = this.handshake();
 		this.focus(true);
 	}
@@ -145,6 +148,8 @@ class TraceCoreStation {
 		this.globalListeners = [];
 		clearInterval(this.sessionTimer);
 		this.sessionTimer = null;
+		clearInterval(this.notifyTimer);
+		this.notifyTimer = null;
 		for (const controller of this.controllers) {
 			// A login may already have committed server-side: receive and revoke its stale token.
 			if (
@@ -256,6 +261,8 @@ class TraceCoreStation {
 
 	onAction(action, button) {
 		if (action === "logout" || action === "rescan-card") return this.endSession();
+		if (action === "toggle-notifications") return this.toggleNotifications();
+		if (action === "read-notification") return this.readNotification(button.dataset.name);
 		if (!this.session) {
 			if (action === "retry") {
 				this.manualOffline = false;
@@ -344,7 +351,93 @@ class TraceCoreStation {
 			".tc-session-roles",
 		])
 			this.root.querySelector(selector).textContent = "";
+		this.resetNotifications();
 		this.renderLogin(error);
+	}
+
+	// ---- thông báo (FEAT-010, SCR-42 trên trạm/PDA) ----
+	// Chuông + số chưa đọc cạnh tên người đăng nhập, banner khi có thông báo khẩn, bảng danh sách mở bằng nút chuông.
+	// Hỏi lại 60 giây một lần bằng token phiên thẻ (chỉ đọc, không kéo dài phiên); lỗi mạng thì giữ số cũ.
+	async notifyCall(method, args) {
+		const version = this.sessionVersion;
+		const result = await this.rpc(`tracecore.v1.notification.${method}`, {
+			...args,
+			token: this.session.token,
+		});
+		return version === this.sessionVersion && result && result.ok ? result : null;
+	}
+
+	async refreshNotifications() {
+		if (!this.ownsPage() || !this.session || this.isOffline()) return;
+		try {
+			const result = await this.notifyCall("station_summary", {});
+			if (result) this.renderNotifications(result);
+		} catch (error) {
+			// chuông không được làm hỏng màn quét
+		}
+	}
+
+	renderNotifications(summary) {
+		const button = this.root.querySelector(".tc-notify-btn");
+		const banner = this.root.querySelector(".tc-notify-banner");
+		button.hidden = false;
+		button.querySelector(".tc-notify-count").textContent = String(summary.unread);
+		banner.hidden = !summary.urgent;
+		banner.textContent = summary.urgent ? __("Urgent: {0}", [summary.urgent.subject]) : "";
+		if (!this.root.querySelector(".tc-notify-panel").hidden) this.loadNotificationPanel();
+	}
+
+	async loadNotificationPanel() {
+		const panel = this.root.querySelector(".tc-notify-panel");
+		try {
+			const result = await this.notifyCall("station_inbox", { limit: 20 });
+			if (!result) return;
+			panel.innerHTML = result.rows.length
+				? result.rows
+						.map(
+							(row) => `<div class="tc-notify-row">
+								<span>${
+									row.urgency === "Urgent"
+										? `<b class="tc-notify-urgent">${esc(
+												__("Urgent", null, "Notification Center")
+										  )}</b> `
+										: ""
+								}${esc(row.subject)}</span>
+								<button type="button" class="tc-btn tc-btn-secondary" data-action="read-notification" data-name="${esc(
+									row.name
+								)}">${esc(__("Mark as read"))}</button>
+							</div>`
+						)
+						.join("")
+				: `<p>${esc(__("No unread notifications"))}</p>`;
+		} catch (error) {
+			panel.textContent = __("Cannot load notifications");
+		}
+	}
+
+	toggleNotifications() {
+		const panel = this.root.querySelector(".tc-notify-panel");
+		const button = this.root.querySelector(".tc-notify-btn");
+		panel.hidden = !panel.hidden;
+		button.setAttribute("aria-expanded", String(!panel.hidden));
+		if (!panel.hidden) this.loadNotificationPanel();
+	}
+
+	async readNotification(name) {
+		try {
+			const result = await this.notifyCall("station_mark_read", { names: [name] });
+			if (result) await this.refreshNotifications();
+		} catch (error) {
+			// giữ nguyên danh sách; lần hỏi lại kế tiếp sẽ cập nhật
+		}
+	}
+
+	resetNotifications() {
+		this.root.querySelector(".tc-notify-btn").hidden = true;
+		this.root.querySelector(".tc-notify-banner").hidden = true;
+		const panel = this.root.querySelector(".tc-notify-panel");
+		panel.hidden = true;
+		panel.innerHTML = "";
 	}
 
 	async endSession(error, options = {}) {
@@ -400,6 +493,7 @@ class TraceCoreStation {
 		this.renderEmpty();
 		this.focus(true);
 		this.loadOfflineData();
+		this.refreshNotifications();
 	}
 
 	// ---- offline (FEAT-009, ADR-003, A-40) ----

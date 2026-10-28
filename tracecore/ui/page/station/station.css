@@ -168,6 +168,46 @@ body.tc-kiosk .layout-main-section {
 	margin-bottom: var(--tc-sp-3);
 }
 
+/* thông báo (FEAT-010, SCR-42): chuông cạnh người đăng nhập, banner khẩn, bảng danh sách chưa đọc */
+.tc-notify-btn[hidden],
+.tc-notify-banner[hidden],
+.tc-notify-panel[hidden] {
+	display: none;
+}
+
+.tc-notify-banner {
+	margin-bottom: var(--tc-sp-3);
+	padding: var(--tc-sp-3) var(--tc-sp-4);
+	background: var(--tc-warn-tint);
+	border-left: var(--tc-bw-alert) solid var(--tc-warn);
+	color: var(--tc-warn-text);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-notify-panel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-notify-panel[hidden] {
+	display: none;
+}
+
+.tc-notify-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-notify-urgent {
+	color: var(--tc-fail-text);
+}
+
 .tc-ci-form {
 	display: flex;
 	flex-wrap: wrap;

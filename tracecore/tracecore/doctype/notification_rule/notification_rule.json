@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "autoname": "field:event_code",
+ "creation": "2026-10-28 10:00:00.000000",
+ "description": "Per business event: extra recipients, channels and urgency (FR-M9-10, ADR-014). People tied to the event itself are always notified.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_code",
+  "description",
+  "enabled",
+  "urgency",
+  "escalate_after_min",
+  "section_channels",
+  "ch_in_app",
+  "ch_pda",
+  "ch_email",
+  "ch_sms",
+  "section_recipients",
+  "recipients"
+ ],
+ "fields": [
+  {"fieldname": "event_code", "fieldtype": "Data", "in_list_view": 1, "label": "Event Code", "read_only_depends_on": "eval:!doc.__islocal", "reqd": 1, "unique": 1},
+  {"fieldname": "description", "fieldtype": "Data", "in_list_view": 1, "label": "Description"},
+  {"default": "1", "description": "Turn off to stop this kind of notification completely.", "fieldname": "enabled", "fieldtype": "Check", "in_list_view": 1, "in_standard_filter": 1, "label": "Enabled"},
+  {"default": "Normal", "fieldname": "urgency", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Urgency", "options": "Normal\nUrgent"},
+  {"default": "15", "depends_on": "eval:doc.urgency=='Urgent'", "description": "Unread urgent notifications are escalated to R01 by email/SMS after this many minutes.", "fieldname": "escalate_after_min", "fieldtype": "Int", "label": "Escalate After (minutes)"},
+  {"fieldname": "section_channels", "fieldtype": "Section Break", "label": "Channels"},
+  {"default": "1", "fieldname": "ch_in_app", "fieldtype": "Check", "label": "In-app"},
+  {"default": "0", "fieldname": "ch_pda", "fieldtype": "Check", "label": "PDA"},
+  {"default": "0", "fieldname": "ch_email", "fieldtype": "Check", "label": "Email"},
+  {"default": "0", "description": "Needs the SMS gateway in TraceCore Settings.", "fieldname": "ch_sms", "fieldtype": "Check", "label": "SMS"},
+  {"fieldname": "section_recipients", "fieldtype": "Section Break", "label": "Extra Recipients"},
+  {"fieldname": "recipients", "fieldtype": "Table", "label": "Recipients", "options": "Notification Rule Recipient"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-28 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Notification Rule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "email": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "read": 1, "report": 1, "role": "TC R10", "write": 1},
+  {"read": 1, "report": 1, "role": "TC R02"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
