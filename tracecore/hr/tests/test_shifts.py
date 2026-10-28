@@ -1,5 +1,7 @@
 """Phân ca theo khu và báo cáo (FEAT-037, FR-M4-04, UC-20): chặn xếp ca thiếu năng lực, lịch tuần, sản lượng theo ca."""
 
+from datetime import datetime, timedelta
+
 import frappe
 from frappe.utils import add_days, add_to_date, getdate, now_datetime, today
 
@@ -29,6 +31,17 @@ def shift_type(start="00:00:00", end="23:30:00"):
 		}
 	).insert(ignore_permissions=True)
 	return name
+
+
+def shift_around(now):
+	"""Giờ bắt đầu/kết thúc của ca bao thời điểm `now` trong khung ngày hôm nay của báo cáo.
+
+	Ca mặc định 00:00-23:30 bỏ sót thao tác test tạo khi CI chạy sau 23:30 giờ VN (HRMS không cho ca 00:00-23:59:59).
+	Bắt đầu = max(now - 1 giờ, 00:00 hôm nay); kết thúc = now + 1 giờ, qua nửa đêm thì thành ca đêm.
+	"""
+	midnight = datetime.combine(now.date(), datetime.min.time())
+	begin = max(now - timedelta(hours=1), midnight)
+	return begin.strftime("%H:%M:%S"), (now + timedelta(hours=1)).strftime("%H:%M:%S")
 
 
 def assignment(employee, shift, zone=None, start=None, end=None, **fields):
@@ -168,9 +181,19 @@ def gate_pass(unit, step, user, result="Pass"):
 
 
 class TestStationOutput(ShiftCase):
+	def test_shift_around_now_contains_now_in_todays_window(self):
+		for now in (
+			datetime(2026, 10, 28, 23, 45),
+			datetime(2026, 10, 28, 0, 15),
+			datetime(2026, 10, 28, 10, 0),
+		):
+			begin, end = station_output.shift_window(now.date(), *shift_around(now))
+			self.assertTrue(begin <= now <= end, (now, begin, end))
+
 	def test_counts_sets_and_batches_recorded_by_the_employee_inside_the_shift(self):
 		self.grant()
-		assignment(self.employee.name, self.shift, self.zone)
+		# ca quanh lúc chạy test: không lệ thuộc giờ CI chạy (sau 23:30 ca mặc định đã kết thúc)
+		assignment(self.employee.name, shift_type(*shift_around(now_datetime())), self.zone)
 		units = [factories.make_set_unit() for _ in range(3)]
 		gate_pass(units[0], "T1", self.worker_user)
 		gate_pass(units[0], "T2", self.worker_user)  # cùng bộ, bước khác: vẫn tính một bộ

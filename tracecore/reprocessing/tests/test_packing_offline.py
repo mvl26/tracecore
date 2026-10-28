@@ -22,6 +22,12 @@ def iso(moment):
 	return moment.replace(tzinfo=TZ).isoformat(timespec="seconds")
 
 
+def last_2330(now):
+	"""Mốc 23:30 gần nhất đã qua: luôn trong 24 giờ (giới hạn phiên offline), dù test chạy lúc 23:45 hay 10:00."""
+	moment = datetime.combine(now.date(), datetime.min.time()).replace(hour=23, minute=30)
+	return moment if moment <= now else moment - timedelta(days=1)
+
+
 class OfflinePackCase(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
@@ -113,9 +119,13 @@ class TestOfflineGenerate(OfflinePackCase):
 		conflict = frappe.get_doc("Sync Conflict", {"idempotency_key": key})
 		self.assertEqual((conflict.error_code, conflict.ref_doctype), ("CODE_RANGE_INVALID", "Set Unit"))
 
+	def test_last_2330_stays_within_the_offline_cap(self):
+		# CI chạy 23:45 giờ VN: lấy 23:30 hôm nay (hôm qua 23:30 đã quá 24 giờ, phiên offline bị từ chối)
+		self.assertEqual(last_2330(datetime(2026, 10, 28, 23, 45)), datetime(2026, 10, 28, 23, 30))
+		self.assertEqual(last_2330(datetime(2026, 10, 28, 10, 0)), datetime(2026, 10, 27, 23, 30))
+
 	def test_offline_2330_synced_0010_keeps_day(self):
-		today = now_datetime().date()
-		moment = datetime.combine(today - timedelta(days=1), datetime.min.time()).replace(hour=23, minute=30)
+		moment = last_2330(now_datetime())
 		self.backdate_session(moment.replace(hour=23, minute=0))
 		ready = make_t4_ready_set()
 		code = self.code_for(moment.date())
