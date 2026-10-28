@@ -5,7 +5,7 @@ import unicodedata
 
 import frappe
 from frappe.model.naming import getseries
-from frappe.utils import add_days, getdate, now_datetime, today
+from frappe.utils import add_days, get_first_day, get_last_day, getdate, now_datetime, today
 
 from tracecore.core import code_registry, gs1, step_gate
 from tracecore.instrument import bom_versions, set_units
@@ -437,6 +437,25 @@ def make_maintenance_record(equipment, record_type="Preventive", **kwargs):
 		"equipment": equipment,
 		"record_type": record_type,
 		"planned_date": today(),
+		**kwargs,
+	}
+	return frappe.get_doc(values).insert()
+
+
+def cost_allocation(target, percent=100, target_type="Equipment"):
+	"""Một dòng `Cost Allocation` (FEAT-044) cho `make_cost_entry`."""
+	return {"target_type": target_type, "target": target, "percent": percent}
+
+
+def make_cost_entry(**kwargs):
+	"""Tạo Cost Entry Nháp (FEAT-044): khoản Điện 1.000.000 đ, kỳ là tháng hiện tại. `kwargs` ghi đè bất kỳ trường nào."""
+	values = {
+		"doctype": "Cost Entry",
+		"category": "Electricity Expense",
+		"amount": 1000000,
+		"period_from": get_first_day(today()),
+		"period_to": get_last_day(today()),
+		"source": "Invoice",
 		**kwargs,
 	}
 	return frappe.get_doc(values).insert()

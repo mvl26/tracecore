@@ -23,3 +23,4 @@ tracecore.patches.v0_1.seed_department_station
 tracecore.patches.v0_1.create_load_label_template
 tracecore.patches.v0_1.mark_tracecore_wards
 tracecore.patches.v0_1.backfill_patient_code_hash
+tracecore.patches.v0_1.create_cost_categories

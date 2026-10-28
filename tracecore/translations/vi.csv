@@ -4340,3 +4340,82 @@ Sets Processed,Số bộ đã xử lý
 Temporary Reason,Lý do cấp tạm
 Wash and Sterilization Batches,Số lô rửa và mẻ tiệt khuẩn
 Work Zone,Khu làm việc
+Cost Entry,Khoản chi phí,
+Cost Category,Khoản mục chi phí,
+Cost Settings,Cài đặt chi phí,
+Cost Allocation,Phân bổ chi phí,
+Source,Nguồn,
+Invoice,Hóa đơn,
+Norm,Định mức,
+Meter,Đồng hồ đo,
+Period From,Kỳ từ ngày,
+Period To,Kỳ đến ngày,
+Meter Readings,Chỉ số đồng hồ,
+Opening Reading,Chỉ số đầu,
+Closing Reading,Chỉ số cuối,
+Unit,Đơn vị,
+Consumption,Lượng tiêu thụ,
+Closing reading minus opening reading.,Chỉ số cuối trừ chỉ số đầu.,
+Document Date,Ngày chứng từ,
+Allocation,Phân bổ,
+Allocation Targets,Đối tượng phân bổ,
+Document this entry was created from (for example a maintenance record).,Chứng từ sinh ra khoản này (ví dụ hồ sơ bảo trì).,
+System Category,Khoản mục hệ thống,
+System categories are created by the app and cannot be deleted or renamed.,"Khoản mục hệ thống do ứng dụng tạo, không xóa và không đổi tên được.",
+Periods Locked Until,Khóa các kỳ đến hết ngày,
+"Cost entries whose period starts on or before this date can no longer be created, changed, submitted or cancelled. Move the date back to reopen a period.","Khoản chi phí có kỳ bắt đầu từ ngày này trở về trước không tạo, sửa, ghi sổ hay hủy được nữa. Lùi ngày này lại để mở lại kỳ.",
+Add at least one allocation target before submitting the cost entry.,Thêm ít nhất một đối tượng phân bổ trước khi ghi sổ khoản chi phí.,
+"The source document {0} {1} is not submitted, so this cost entry cannot be submitted.","Chứng từ nguồn {0} {1} chưa ghi sổ (hoặc đã hủy), nên không ghi sổ được khoản chi phí này.",
+Cost category {0} is not active.,Khoản mục chi phí {0} đã ngừng dùng.,
+Amount cannot be negative.,Số tiền không được âm.,
+{0} is required for a meter source.,Nguồn đồng hồ đo bắt buộc có {0}.,
+Closing Reading cannot be less than Opening Reading.,Chỉ số cuối không được nhỏ hơn chỉ số đầu.,
+Period To cannot be before Period From.,Kỳ đến ngày không được trước kỳ từ ngày.,
+Row {0}: choose the target type and the target.,Dòng {0}: chọn loại đối tượng và đối tượng.,
+Row {0}: percent must be greater than 0 and at most 100.,Dòng {0}: tỷ lệ phải lớn hơn 0 và không quá 100.,
+Row {0}: {1} {2} is already allocated in this entry.,Dòng {0}: {1} {2} đã được phân bổ trong khoản này.,
+"The allocation percentages total {0} %, but must total 100 %. Adjust the rows and save again.","Tổng tỷ lệ phân bổ là {0} %, nhưng phải đủ 100 %. Chỉnh lại các dòng rồi lưu lại.",
+The cost period starting {0} is closed (locked until {1}). Ask the Head of Department to move the lock date back in Cost Settings.,Kỳ chi phí bắt đầu từ {0} đã khóa (khóa đến hết {1}). Nhờ Trưởng khoa lùi ngày khóa trong Cài đặt chi phí.,
+Period Closed,Kỳ đã khóa,
+System cost category {0} cannot be renamed.,Không đổi tên được khoản mục hệ thống {0}.,
+No cost entry was created because the cost period is closed. Move the lock date back in Cost Settings and enter the cost manually.,Chưa tạo khoản chi phí vì kỳ chi phí đã khóa. Lùi ngày khóa trong Cài đặt chi phí rồi nhập chi phí thủ công.,
+From {0} {1} ({2}).,Từ {0} {1} ({2}).,
+{0} x {1} = {2},{0} x {1} = {2},
+Parts: {0},Phụ tùng: {0},
+Total Cost,Tổng chi phí,
+From Date and To Date are required.,Phải chọn Từ ngày và Đến ngày.,
+To Date cannot be before From Date.,Đến ngày không được trước Từ ngày.,
+Allocation is missing,Chưa có phân bổ,
+A cost entry needs at least one allocation target before it is submitted.,Khoản chi phí cần ít nhất một đối tượng phân bổ trước khi ghi sổ.,
+"Add a machine, zone or process program, then submit again.","Thêm một máy, khu hoặc chương trình, rồi ghi sổ lại.",
+Allocation does not total 100 %,Phân bổ chưa đủ 100 %,
+The allocation percentages total {0} %.,Tổng tỷ lệ phân bổ là {0} %.,
+"Adjust the percentages to total 100 %, then submit again.","Chỉnh các tỷ lệ cho đủ 100 %, rồi ghi sổ lại.",
+Allocation total: {0} %,Tổng phân bổ: {0} %,
+Allocation total: {0} % - it must total 100 %.,Tổng phân bổ: {0} % - phải đủ 100 %.,
+Depreciation Cost,Khấu hao,
+Maintenance Cost,Bảo trì,
+Spare Parts Cost,Phụ tùng,
+Tap Water Cost,Nước máy,
+RO Water Cost,Nước RO,
+Steam Cost,Hơi,
+Compressed Air Cost,Khí nén,
+Labor Cost,Nhân công,
+Protective Gear Cost,Đồ bảo hộ,
+Outsourcing Cost,Thuê ngoài,
+Electricity Expense,Điện,
+Repair Expense,Sửa chữa,
+Active,Đang dùng,Cost Category
+Amended From,Sửa từ,Cost Entry
+Amount,Số tiền,Cost Entry
+Cancelled,Đã hủy,Cost Entry
+Category,Khoản mục,Cost Entry
+Category,Khoản mục,Cost Category
+Cost Center,Trung tâm chi phí,Cost Entry
+Document,Chứng từ,Cost Entry
+Draft,Nháp,Cost Entry
+Submitted,Đã ghi sổ,Cost Entry
+Percent,Tỷ lệ (%),Cost Allocation
+Source DocType,Loại chứng từ nguồn,Cost Entry
+Target,Đối tượng,Cost Allocation
+Target,Đối tượng,Cost Entry

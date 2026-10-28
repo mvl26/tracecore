@@ -15,11 +15,12 @@ MATRIX_PATH = Path(__file__).parents[1] / "fixtures" / "permission_matrix.csv"
 
 
 class TestPermissionMatrix(FrappeTestCase):
-	def test_matrix_covers_ten_roles_and_forty_baseline_doctypes(self):
+	def test_matrix_covers_ten_roles_and_baseline_doctypes_plus_amendments(self):
 		rows = load_permission_matrix(MATRIX_PATH)
 		self.assertEqual(tuple(rows.roles), ROLE_CODES)
-		self.assertEqual(len(rows), 40)
-		self.assertEqual(len({row.code for row in rows}), 40)
+		# 40 DocType của BA #13 + Cost Category và Cost Settings (FEAT-044, A-47 C3, C6)
+		self.assertEqual(len(rows), 42)
+		self.assertEqual(len({row.code for row in rows}), 42)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

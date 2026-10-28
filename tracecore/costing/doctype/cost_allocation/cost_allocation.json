@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 09:00:00.000000",
+ "description": "One allocation target of a cost entry (FEAT-044, FR-M7-02): a machine, a zone or a process program, with its percentage of the cost.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "target_type",
+  "target",
+  "percent"
+ ],
+ "fields": [
+  {
+   "default": "Equipment",
+   "fieldname": "target_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target Type",
+   "options": "Equipment\nZone Station\nProcess Program",
+   "reqd": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "target",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Target",
+   "options": "target_type",
+   "reqd": 1,
+   "columns": 5
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Percent",
+   "reqd": 1,
+   "columns": 2
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-29 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Allocation",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -293,6 +293,10 @@ doc_events = {
 	"Daily Test": dict(_AUDIT_EVENTS),
 	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-43): ghi sổ có old/new, không xóa
 	"Maintenance Record": dict(_AUDIT_EVENTS),
+	# chi phí theo kỳ (FEAT-044, A-47): ghi sổ có old/new, không xóa; khóa kỳ và danh mục khoản mục cũng ghi vết
+	"Cost Entry": dict(_AUDIT_EVENTS),
+	"Cost Category": dict(_AUDIT_EVENTS),
+	"Cost Settings": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -397,6 +401,9 @@ tracecore_load_daily_indicator = ["tracecore.equipment.daily_test.load_indicator
 # M5 (FEAT-039, A-43 M8) gọi khi lưu hồ sơ sự cố thiết bị: (equipment, record) -> [{load_doctype, load}], M2 đánh dấu mẻ/lô
 # chưa dỡ trên máy `needs_review` và trả danh sách để ghi vào hồ sơ (FR-M5-04.2); M5 không import M2
 tracecore_equipment_incident = ["tracecore.reprocessing.equipment_incident.flag_open_on"]
+# M5 (FEAT-039) gọi sau khi ghi sổ hồ sơ bảo trì: (record) -> None; M7 lập Cost Entry Nháp từ chi phí hồ sơ (FEAT-044,
+# A-47 C9, FR-M5-04.3); M5 không import M7
+tracecore_after_maintenance_submit = ["tracecore.costing.from_maintenance.on_maintenance_submit"]
 tracecore_after_load_complete = []
 # M2 T5b dỡ mẻ và giải phóng (FEAT-023, UC-10); ctx là dict, mọi hook chạy trong cùng transaction:
 #  - after_release:       (ctx {set_unit, set_type, bom_version, cycle_id}) mỗi bộ khi giải phóng Đạt (đã khai báo ở trên)
