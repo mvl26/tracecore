@@ -5,7 +5,8 @@ import frappe
 from tracecore.tests.factories import make_equipment, make_maintenance_record, make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
 
-test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
+# vendor → Supplier: test record của ERPNext cần "All Supplier Groups" (Setup Wizard), site CI chưa có
+test_ignore = ["Item", "Batch", "Department", "User", "Employee", "Supplier"]
 
 DOCTYPE = "Maintenance Record"
 
