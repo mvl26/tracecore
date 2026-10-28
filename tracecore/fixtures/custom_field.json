@@ -69,6 +69,37 @@
  },
  {
   "doctype": "Custom Field",
+  "dt": "Stock Entry",
+  "name": "Stock Entry-tc_source_doctype",
+  "fieldname": "tc_source_doctype",
+  "fieldtype": "Data",
+  "label": "Source DocType",
+  "read_only": 1,
+  "search_index": 1,
+  "insert_after": "tc_document_no"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Stock Entry",
+  "name": "Stock Entry-tc_source_name",
+  "fieldname": "tc_source_name",
+  "fieldtype": "Data",
+  "label": "Source Document",
+  "read_only": 1,
+  "search_index": 1,
+  "insert_after": "tc_source_doctype"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Stock Entry",
+  "name": "Stock Entry-tc_reason",
+  "fieldname": "tc_reason",
+  "fieldtype": "Small Text",
+  "label": "Reason",
+  "insert_after": "tc_source_name"
+ },
+ {
+  "doctype": "Custom Field",
   "dt": "Stock Entry Detail",
   "name": "Stock Entry Detail-tc_batch_id",
   "fieldname": "tc_batch_id",

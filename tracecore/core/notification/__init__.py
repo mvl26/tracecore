@@ -46,6 +46,10 @@ EVENTS = {
 	"HEALTH_RECORD_EXPIRING": ("Health check or vaccination expiring", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	# FEAT-037: năng lực trạm bị tạm dừng vì chứng chỉ bắt buộc hết hạn
 	"COMPETENCY_SUSPENDED": ("Station competency suspended", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	# FEAT-042: tiêu hao tự động thiếu tồn / không có định mức / lỗi; người nhận mặc định là kế toán vật tư (R09)
+	"CONSUMPTION_SHORT": ("Consumption exceeds stock", "Normal", 0, 0, ("TC R09",)),
+	"CONSUMPTION_NO_NORM": ("Consumption norm missing", "Normal", 0, 0, ("TC R09",)),
+	"CONSUMPTION_FAILED": ("Automatic consumption failed", "Urgent", 0, 0, ("TC R09",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

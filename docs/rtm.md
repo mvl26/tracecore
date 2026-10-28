@@ -61,8 +61,8 @@
 | FR-M5-06 | Khóa máy tự động | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
 | FR-M6-01 | Nhập kho theo lô/hạn | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009; A-07 | FEAT-041 | _TBD_ |
 | FR-M6-02 | Danh mục vật tư tiêu hao tái xử lý | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009; A-07 | FEAT-041 | _TBD_ |
-| FR-M6-03 | Tiêu hao tự động theo mẻ/lô | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
-| FR-M6-04 | Xuất kho thủ công và FEFO | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
+| FR-M6-03 | Tiêu hao tự động theo mẻ/lô | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | `inventory/tests/test_consume.py`, `inventory/tests/test_manual_issue.py`, `v1/tests/test_stock_api.py` |
+| FR-M6-04 | Xuất kho thủ công và FEFO | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | `inventory/tests/test_consume.py`, `inventory/tests/test_manual_issue.py`, `v1/tests/test_stock_api.py` |
 | FR-M6-05 | Kiểm kê định kỳ | Should | Active | BR-M6 (BRD #02) | UC-26 | ADR-009 | FEAT-043 | _TBD_ |
 | FR-M6-06 | Cảnh báo tồn tối thiểu và sắp hết hạn | Must | Active | BR-M6 (BRD #02) | UC-26 | ADR-009; ADR-014 | FEAT-043 | _TBD_ |
 | FR-M7-01 | Nhập chi phí theo khoản mục | Must | Active | BR-M7 (BRD #02) | UC-27 | _TBD_ | FEAT-044 | _TBD_ |
