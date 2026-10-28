@@ -28,6 +28,163 @@ body.tc-kiosk .layout-main-section {
 	line-height: var(--tc-lh-base);
 }
 
+/* Shell chung T1–T8: rail trái, dải bước và actions chừa đúng chiều rộng rail. */
+.tc-rail {
+	position: fixed;
+	inset: 0 auto 0 0;
+	z-index: var(--tc-z-rail);
+	display: flex;
+	flex-direction: column;
+	width: var(--tc-rail-w);
+	overflow-y: auto;
+	background: var(--tc-card);
+	border-right: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-rail-home,
+.tc-rail .tc-session,
+.tc-rail-foot {
+	padding: var(--tc-sp-4);
+}
+
+.tc-rail-home {
+	color: var(--tc-primary);
+	font-size: var(--tc-fs-2xl);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-rail .tc-session {
+	flex-direction: column;
+	align-items: stretch;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-session-person {
+	color: var(--tc-text-heading);
+}
+
+.tc-station-nav a,
+.tc-station-nav .tc-nav-locked {
+	display: flex;
+	align-items: center;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-3) var(--tc-sp-4);
+	border-left: var(--tc-bw-accent) solid transparent;
+	color: var(--tc-text-nav);
+}
+
+.tc-station-nav .tc-nav-locked {
+	flex-direction: column;
+	align-items: flex-start;
+	color: var(--tc-text-muted);
+}
+
+.tc-nav-locked small {
+	font-size: inherit;
+}
+
+.tc-station-nav a[aria-current="page"] {
+	background: var(--tc-primary-soft);
+	border-left-color: var(--tc-primary);
+	color: var(--tc-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-rail-foot {
+	margin-top: auto;
+	border-top: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-rail .tc-sync-bar {
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.tc-breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-2);
+	margin-bottom: var(--tc-sp-3);
+	color: var(--tc-primary);
+}
+
+.tc-process-steps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+	padding: 0;
+	margin: var(--tc-sp-4) 0;
+	list-style: none;
+}
+
+.tc-process-steps li {
+	display: flex;
+	align-items: center;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-full);
+	background: var(--tc-card);
+}
+
+.tc-process-steps [aria-current="step"] {
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-station > .tc-zonebar,
+.tc-station > .tc-offline-banner,
+.tc-station > .tc-main {
+	margin-left: var(--tc-rail-w);
+}
+
+.tc-station .tc-actionsbar {
+	left: var(--tc-rail-w);
+}
+
+@media (max-width: 900px) {
+	.tc-station-nav {
+		display: flex;
+		overflow-x: auto;
+		gap: var(--tc-touch-gap);
+	}
+
+	.tc-station-nav a,
+	.tc-station-nav .tc-nav-locked {
+		flex: 0 0 auto;
+		border-left: 0;
+		border-bottom: var(--tc-bw-accent) solid transparent;
+	}
+
+	.tc-station-nav a[aria-current="page"] {
+		border-bottom-color: var(--tc-primary);
+	}
+
+	.tc-rail {
+		position: static;
+		width: 100%;
+		max-height: none;
+	}
+
+	.tc-rail .tc-session {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.tc-station > .tc-zonebar,
+	.tc-station > .tc-offline-banner,
+	.tc-station > .tc-main {
+		margin-left: 0;
+	}
+
+	.tc-station .tc-actionsbar {
+		left: 0;
+	}
+}
+
 .tc-zonebar {
 	height: var(--tc-zonebar-h);
 	background: var(--tc-zone-web);

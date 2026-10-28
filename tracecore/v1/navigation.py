@@ -2,6 +2,7 @@
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 
 STEP_ROLES = {
 	"T1": {"TC R03"},
@@ -30,34 +31,49 @@ MANAGEMENT_GROUPS = (
 MANAGEMENT_PAGES = {"tc-import": "Catalog Import"}
 
 
-@frappe.whitelist(methods=["GET"])
-def context():
+@frappe.whitelist(methods=["GET", "POST"])
+def context(station=None, all_stations=0):
+	all_stations = bool(cint(all_stations))
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Please sign in to open TraceCore."), frappe.PermissionError)
 	roles = set(frappe.get_roles())
 	admin = frappe.session.user == "Administrator" or "System Manager" in roles
 	manager = admin or bool(roles & {"TC R01", "TC R02", "TC R09", "TC R10"})
+	# Rail chỉ đọc tên/mã/bước trạm, như ping; không cấp quyền đọc cấu hình Zone Station.
+	catalogue = all_stations and (admin or bool(roles & {f"TC R{n:02d}" for n in range(1, 11)}))
 	allowed = (
 		set(STEP_ROLES)
 		if admin or roles & {"TC R01", "TC R02", "TC R10"}
 		else {step for step, required in STEP_ROLES.items() if roles & required}
 	)
 	stations = []
-	if allowed:
-		for row in frappe.get_list(
+	filters = {"is_zone": 0, "is_active": 1}
+	if station:
+		if not catalogue:
+			frappe.has_permission("Zone Station", "read", doc=station, throw=True)
+		current = frappe.db.get_value(
+			"Zone Station", {"name": station, "is_zone": 0, "is_active": 1}, "parent_zone"
+		)
+		if not current:
+			frappe.throw(_("Station {0} does not exist or is not active.").format(station))
+		if not all_stations:
+			filters["parent_zone"] = current
+	if allowed or all_stations:
+		for row in (frappe.get_all if catalogue else frappe.get_list)(
 			"Zone Station",
-			filters={"is_zone": 0, "is_active": 1},
+			filters=filters,
 			fields=["name", "zone_station_name", "station_step"],
 			order_by="station_step asc, name asc",
 			limit_page_length=0,
 		):
-			if row.station_step in allowed:
+			if row.station_step in allowed or all_stations:
 				stations.append(
 					{
 						"name": row.name,
 						"label": row.zone_station_name,
 						"step": row.station_step,
 						"implemented": row.station_step in IMPLEMENTED_STEPS,
+						"permitted": row.station_step in allowed,
 					}
 				)
 	return {

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tracecore-f015",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["-d", "Ubuntu-22.04", "--", "bash", "-lc", "cd ~/tracecore-f015 && bench start"],
+      "port": 8200
+    },
+    {
+      "name": "tracecore-codex",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["-d", "Ubuntu-22.04", "--", "bash", "-lc", "cd ~/tracecore-codex && bench serve --port 8100"],
+      "port": 8100
+    }
+  ]
+}

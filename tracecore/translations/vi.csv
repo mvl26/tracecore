@@ -2274,7 +2274,7 @@ Not implemented yet,Chưa triển khai,
 No available station,Chưa có trạm khả dụng,
 Enter station,Vào trạm,
 Stations marked as not implemented will be enabled after their feature is delivered.,Trạm chưa triển khai sẽ được mở khi hoàn tất chức năng tương ứng.,
-Clinical department,Khoa sử dụng dụng cụ,
+Clinical department,Khoa gửi dụng cụ,
 "Department stock, instrument usage and issue requests.",Tồn khoa sử dụng dụng cụ và đề nghị cấp phát.,
 Department portal is not implemented yet.,Cổng khoa chưa triển khai.,
 No department access for this account.,Tài khoản chưa có quyền cổng khoa.,
@@ -4005,3 +4005,19 @@ Item,Vật tư,TraceCore Launcher
 Batch,Lô vật tư,TraceCore Launcher
 Stock Entry,Phiếu kho vật tư,TraceCore Launcher
 Department,Khoa,TraceCore Launcher
+Station workspace,Không gian làm việc tại trạm,
+Breadcrumb,Đường dẫn trang,
+Stations in this zone,Các trạm trong khu,
+Instrument processing steps,Các bước xử lý dụng cụ,
+{0} · {1} transaction(s) waiting to sync,{0} · {1} giao dịch chờ đồng bộ,
+Receiving,Tiếp nhận,Station Shell
+Washing,Rửa,Station Shell
+Assembly,Lắp ráp,Station Shell
+Packing,Đóng gói,Station Shell
+Sterilization,Tiệt khuẩn,Station Shell
+Sterile storage,Kho vô khuẩn,Station Shell
+Issuing,Cấp phát,Station Shell
+Usage,Sử dụng,Station Shell
+Unload and release,Giải phóng mẻ,Station Shell
+Unavailable for this account,Tài khoản chưa có quyền,
+Station {0} does not exist or is not active.,Trạm {0} không tồn tại hoặc đã ngừng hoạt động.,

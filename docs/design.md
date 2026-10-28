@@ -9,6 +9,8 @@
 
 ## 1. Visual Theme & Atmosphere
 
+> Amendment STN-NAV-02 (28/10/2026, người dùng duyệt): rail hiện đủ T1–T8 và T5b theo ảnh mẫu; mục không có quyền hiện khóa. Thay quy tắc rail chỉ cùng khu ở §4.15 và checklist; tokens, xác thực và cổng nghiệp vụ giữ nguyên.
+
 **Tin cậy – lâm sàng – một chiều.** TraceCore là công cụ làm việc theo ca trong CSSD: người dùng đeo găng, màn hình ướt, 120–200 bộ/ngày. Giao diện phẳng, nền xám xanh rất nhạt (`#F4F6F9`), card trắng viền xanh nhạt, không bóng đổ. Màu không phải trang trí mà là **mã khu và mã trạng thái**: đỏ = khu bẩn / chặn, cam = khu sạch / cảnh báo, xanh lá đậm = khu vô khuẩn / Đạt, navy = chủ đạo & khoa. Một dải 8 px trên cùng (zonebar) luôn cho biết trạm đang ở khu nào. Mật độ: web dày (bảng 13 px), trạm thưa và lớn (≥ 16 px, nút 48–56 px). Mã định danh (Set ID, Cycle ID, mã lô) luôn ở font mono để mắt phân biệt mã với chữ.
 
 Nguyên tắc #09 §2 được giữ nguyên: **quét trước – gõ sau**; **găng tay và màn ướt**; **trạng thái luôn thấy** (badge + stepper); **chặn rõ ràng** (đỏ toàn khối, có lý do và hành động kế tiếp, không modal nhỏ); **một chiều theo khu** (rail chỉ hiện chức năng khu của trạm); **offline minh bạch**; **in được**.

@@ -1,15 +1,36 @@
 <div class="tc-station" data-surface="STN">
+	<aside class="tc-rail" aria-label="{%= __("Station workspace") %}">
+		<a class="tc-rail-home" href="/app/tracecore">TraceCore</a>
+		<div class="tc-session" hidden>
+			<strong class="tc-session-person"></strong>
+			<span class="tc-session-station tc-mono"></span>
+			<span class="tc-session-roles"></span>
+			<span class="tc-session-expiry"></span>
+			<button type="button" class="tc-btn tc-btn-secondary" data-action="rescan-card">{%= __("Scan another card") %}</button>
+			<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">{%= __("Log out") %}</button>
+		</div>
+		<nav class="tc-station-nav" aria-label="{%= __("Instrument processing steps") %}"></nav>
+		<div class="tc-rail-foot">
+			<p class="tc-connection" role="status" aria-live="polite"></p>
+			<div class="tc-sync-bar" role="status" aria-live="polite" hidden></div>
+		</div>
+	</aside>
 	<div class="tc-zonebar tc-zone-web" role="presentation"></div>
 	<div class="tc-offline-banner" role="status" hidden>
 		{%= __("Offline - transactions are kept on this device") %}
 	</div>
-	<div class="tc-sync-bar" role="status" aria-live="polite" hidden></div>
 	<main class="tc-main">
+		<nav class="tc-breadcrumb" aria-label="{%= __("Breadcrumb") %}">
+			<a href="/app/tracecore">{%= __("Home") %}</a>
+			<span aria-hidden="true">›</span>
+			<span class="tc-breadcrumb-current"></span>
+		</nav>
 		<header class="tc-title">
 			<h2 class="tc-station-name">{%= __("Station") %}</h2>
 			<span class="tc-tag tc-zone-label"></span>
 			<span class="tc-tag tc-station-code"></span>
 		</header>
+		<ol class="tc-process-steps" aria-label="{%= __("Instrument processing steps") %}"></ol>
 		<form class="tc-auth-form tc-card tc-scan" autocomplete="off" novalidate>
 			<label class="tc-sr-only" for="tc-card-input">{%= __("Scan employee card") %}</label>
 			<input id="tc-card-input" class="tc-scan-input" type="text" inputmode="none"
@@ -18,14 +39,6 @@
 			<button type="submit" class="tc-btn tc-btn-primary">{%= __("Login") %}</button>
 		</form>
 		<section class="tc-auth-result" aria-live="polite"></section>
-		<div class="tc-session" hidden>
-			<span class="tc-session-person"></span>
-			<span class="tc-session-station tc-mono"></span>
-			<span class="tc-session-roles"></span>
-			<span class="tc-session-expiry"></span>
-			<button type="button" class="tc-btn tc-btn-secondary" data-action="rescan-card">{%= __("Scan another card") %}</button>
-			<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">{%= __("Log out") %}</button>
-		</div>
 		<div class="tc-work" hidden>
 		<form class="tc-card tc-scan" autocomplete="off" novalidate>
 			<label class="tc-sr-only" for="tc-scan-input">{%= __("Scan Set ID") %}</label>

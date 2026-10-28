@@ -25,6 +25,16 @@ const ZONE_LABEL = {
 	Linen: "Linen station",
 	Waste: "Waste station",
 };
+const PROCESS_STEPS = [
+	["T1", "Receiving"],
+	["T2", "Washing"],
+	["T3", "Assembly"],
+	["T4", "Packing"],
+	["T5", "Sterilization"],
+	["T6", "Sterile storage"],
+	["T7", "Issuing"],
+	["T8", "Usage"],
+];
 const STATUS_BADGE = {
 	New: "x",
 	"In Circulation": "",
@@ -398,6 +408,14 @@ class TraceCoreStation {
 		]);
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
+		if (
+			new URLSearchParams(window.location.search).get("mode") === "release" &&
+			this.stationInfo &&
+			this.stationInfo.step === "T5" &&
+			this.screen &&
+			this.screen.openRelease
+		)
+			this.screen.openRelease();
 		this.focus(true);
 		this.loadOfflineData();
 	}
@@ -451,6 +469,8 @@ class TraceCoreStation {
 	}
 
 	renderSync(state) {
+		this.syncState = state;
+		this.renderConnection();
 		if (!this.syncBar) return;
 		let text = "";
 		if (state.sending)
@@ -614,6 +634,7 @@ class TraceCoreStation {
 	setOffline(offline) {
 		this.banner.hidden = !offline;
 		this.root.dataset.offline = offline ? "1" : "0";
+		this.renderConnection();
 		if (!offline && typeof tcSync !== "undefined") tcSync.replay();
 		if (!this.session) {
 			if (offline)
@@ -786,6 +807,66 @@ class TraceCoreStation {
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
+		this.renderStationShell();
+		this.loadStationNavigation();
+	}
+
+	renderConnection() {
+		const target = this.root.querySelector(".tc-connection");
+		if (!target) return;
+		target.textContent = __("{0} · {1} transaction(s) waiting to sync", [
+			this.isOffline() ? __("Offline", null, "TraceCore Launcher") : __("Online"),
+			(this.syncState && this.syncState.queued) || 0,
+		]);
+	}
+
+	renderStationShell() {
+		const station = this.stationInfo;
+		this.root.querySelector(".tc-breadcrumb-current").textContent = station.label;
+		this.root.querySelector(".tc-process-steps").innerHTML = PROCESS_STEPS.map(
+			([step, label]) => `<li${step === station.step ? ' aria-current="step"' : ""}>
+				<span>${esc(step)} ${esc(__(label, null, "Station Shell"))}</span></li>`
+		).join("");
+		this.root.querySelector(
+			".tc-station-nav"
+		).innerHTML = `<a href="/app/station?station=${encodeURIComponent(
+			station.name
+		)}" aria-current="page">${esc(station.label)}</a>`;
+		this.renderConnection();
+	}
+
+	async loadStationNavigation() {
+		const currentStation = this.station;
+		try {
+			const data = await this.rpc("tracecore.v1.navigation.context", {
+				station: currentStation,
+				all_stations: 1,
+			});
+			if (!this.ownsPage() || currentStation !== this.station) return;
+			const steps = [...PROCESS_STEPS];
+			steps.splice(5, 0, ["T5b", "Unload and release"]);
+			this.root.querySelector(".tc-station-nav").innerHTML = steps
+				.map(([step, label]) => {
+					const target = data.stations.find(
+						(item) => item.step === (step === "T5b" ? "T5" : step)
+					);
+					const text = `${esc(step)} ${esc(__(label, null, "Station Shell"))}`;
+					if (!target || !target.implemented || !target.permitted)
+						return `<span class="tc-nav-locked" aria-disabled="true">${text}<small>${esc(
+							__("Unavailable for this account")
+						)}</small></span>`;
+					const release =
+						new URLSearchParams(window.location.search).get("mode") === "release";
+					const active =
+						target.name === currentStation && (step === "T5b" ? release : !release);
+					return `<a href="/app/station?station=${encodeURIComponent(target.name)}${
+						step === "T5b" ? "&mode=release" : ""
+					}"${active ? ' aria-current="page"' : ""}>${text}</a>`;
+				})
+				.join("");
+		} catch (error) {
+			// Giữ link trạm hiện tại; lỗi menu không được chặn thao tác đang làm.
+		}
 	}
 
 	// quét lần lượt các mã giữ lại khi màn của bước hết chờ máy chủ; đổi phiên hoặc chờ quá lâu thì bỏ hàng đợi
