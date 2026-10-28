@@ -75,6 +75,7 @@
   },
   {
    "default": "0",
+   "depends_on": "abandoned",
    "description": "A draft cannot be cancelled or deleted, so a draft entered by mistake is abandoned with a reason (the record stays for the audit trail).",
    "fieldname": "abandoned",
    "fieldtype": "Check",

@@ -84,7 +84,7 @@ function tc_maint_indicator(frm) {
 // dòng trạng thái hiện tại của máy (luôn có chữ), chỉ trên bản nháp
 function tc_maint_machine_banner(frm) {
 	frm.set_intro("");
-	if (frm.is_new() || !frm.doc.equipment || frm.doc.docstatus !== 0) {
+	if (frm.is_new() || !frm.doc.equipment || frm.doc.docstatus !== 0 || frm.doc.abandoned) {
 		return;
 	}
 	frappe.db.get_value("Equipment", frm.doc.equipment, "status").then((response) => {
@@ -92,8 +92,10 @@ function tc_maint_machine_banner(frm) {
 		if (!status) {
 			return;
 		}
+		// refresh có thể chạy hai lần liền nhau: xóa dòng cũ ngay trước khi đặt để banner không nhân đôi
+		frm.set_intro("");
 		frm.set_intro(
-			__("Equipment {0} is {1}.", [frm.doc.equipment, __(status, null, "Equipment")]),
+			__("Equipment {0} status: {1}.", [frm.doc.equipment, __(status, null, "Equipment")]),
 			status === "Ready" ? "green" : "orange"
 		);
 	});
@@ -136,6 +138,9 @@ frappe.ui.form.on("Maintenance Record", {
 		frm.dashboard.clear_headline();
 		tc_maint_indicator(frm);
 		tc_maint_machine_banner(frm);
+		if (frm.doc.docstatus === 0 && frm.doc.abandoned) {
+			frm.page.clear_primary_action(); // bản đã bỏ không ghi sổ được (server cũng chặn)
+		}
 		if (
 			!frm.is_new() &&
 			frm.doc.docstatus === 0 &&

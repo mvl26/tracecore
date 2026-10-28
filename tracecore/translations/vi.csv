@@ -4167,3 +4167,4 @@ Connect to the network to see notifications.,Kết nối mạng để xem thông
 Urgent: {0},Khẩn: {0},
 Equipment locked for expired inspection or calibration,Thiết bị bị khóa vì quá hạn kiểm định hoặc hiệu chuẩn,
 Equipment maintenance due,Thiết bị đến hạn bảo trì hoặc kiểm định,
+Equipment {0} status: {1}.,Trạng thái thiết bị {0}: {1}.,
