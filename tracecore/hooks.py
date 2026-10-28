@@ -379,7 +379,7 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 # M2 (FEAT-021) gọi khi lô rửa đóng: (ctx {batch, equipment, program, sets, chemicals, result}) -> None.
 #  - wash_complete: sau khi kết luận Đạt (FEAT-042 trừ hóa chất theo định mức, FEAT-046 chi phí lô)
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
-tracecore_after_wash_complete = []
+tracecore_after_wash_complete = ["tracecore.inventory.consume.on_wash_complete"]
 tracecore_after_wash_failed = ["tracecore.reprocessing.incidents.on_wash_failed"]
 # M2 (FEAT-026, A-17 C5) gọi khi cấp phát T7: (ctx {department, set_type, stock, adding}) -> dict, so tồn khoa + số
 # gói cấp với cơ số khoa (Par Level Department Stock); không hàm nào trả dict → coi như khoa chưa cấu hình cơ số
@@ -403,7 +403,7 @@ tracecore_after_load_complete = []
 #  - after_load_release:  (ctx {load, equipment, program, sets, packs}) sau khi mẻ giải phóng (FEAT-042 tiêu hao, FEAT-046 chi phí)
 #  - after_load_failed:   (ctx {load, equipment, program, sets, redo_from}) mẻ Không đạt (FEAT-030 NC)
 #  - bi_positive:         (ctx {load, equipment, packs[{cycle_id, set_unit, status}]}) BI dương tính (FEAT-029 thu hồi, FEAT-010 thông báo)
-tracecore_after_load_release = []
+tracecore_after_load_release = ["tracecore.inventory.consume.on_load_release"]
 tracecore_after_load_failed = [
 	"tracecore.reprocessing.incidents.on_load_failed",
 	# FEAT-029: chỉ lập lệnh khi mẻ có gói đã giải phóng trở đi (sau NC để lệnh dùng lại NC của mẻ)

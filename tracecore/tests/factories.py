@@ -677,6 +677,10 @@ def ensure_stock_masters():
 		frappe.get_doc(
 			{"doctype": "Stock Entry Type", "name": "Material Receipt", "purpose": "Material Receipt"}
 		).insert(ignore_permissions=True)
+	if not frappe.db.exists("Stock Entry Type", "Material Issue"):
+		frappe.get_doc(
+			{"doctype": "Stock Entry Type", "name": "Material Issue", "purpose": "Material Issue"}
+		).insert(ignore_permissions=True)
 	return {"company": STOCK_COMPANY, "warehouse": f"Stores - {STOCK_ABBR}"}
 
 

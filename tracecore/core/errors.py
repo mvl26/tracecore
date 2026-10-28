@@ -67,6 +67,12 @@ HTTP_STATUS: dict[str, int] = {
 			"CERTIFICATE_TYPE_INVALID",
 			"STATION_INVALID",
 			"EMPLOYEE_INVALID",
+			# FEAT-042: xuất kho thủ công (vật tư, số lượng, lý do, lô)
+			"ISSUE_ITEM_INVALID",
+			"ISSUE_QTY_INVALID",
+			"REASON_REQUIRED",
+			"LOT_INVALID",
+			"LOT_EXPIRED",
 			# FEAT-015 A-09 (S4, S5, S7): loại bộ / phiên bản BOM / hạn lưu loại gói
 			"BOM_EMPTY",
 			"BOM_LINE_INVALID",
@@ -225,6 +231,8 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-037: năng lực đã có / đã thu hồi
 			"COMPETENCY_EXISTS",
 			"COMPETENCY_NOT_ACTIVE",
+			# FEAT-042: tồn không đủ để xuất thủ công
+			"STOCK_INSUFFICIENT",
 			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
 			"CODE_RANGE_INVALID",
 			"CODE_RANGE_EXHAUSTED",

@@ -4305,3 +4305,31 @@ Cannot load competency matrix,Không tải được ma trận năng lực,
 Connect to the network to see the competency matrix.,Kết nối mạng để xem ma trận năng lực.,
 Sets Processed,Số bộ đã xử lý,Station Output
 Wash and Sterilization Batches,Số lô rửa và mẻ tiệt khuẩn,Station Output
+"Short, not issued: {0}","Thiếu, chưa xuất: {0}"
+"{0} {1} has no consumption norm, so nothing was deducted from stock",{0} {1} chưa có định mức tiêu hao nên chưa trừ kho
+Automatic consumption for {0} {1} failed. Issue the supplies by hand.,Tiêu hao tự động cho {0} {1} bị lỗi. Hãy xuất vật tư thủ công.
+{0} {1} needed more than the stock on hand ({2}). The shortage was not issued.,{0} {1} cần nhiều hơn tồn kho hiện có ({2}). Phần thiếu chưa được xuất.
+Automatic consumption of wash batch {0},Tiêu hao tự động của lô rửa {0}
+Automatic consumption of sterilization load {0},Tiêu hao tự động của mẻ tiệt khuẩn {0}
+Cannot issue these supplies,Không xuất được các vật tư này
+Item {0} was not found.,Không tìm thấy vật tư {0}.
+Choose an item from the catalog.,Hãy chọn vật tư trong danh mục.
+The quantity must be greater than zero.,Số lượng phải lớn hơn 0.
+Enter the quantity to issue.,Hãy nhập số lượng cần xuất.
+A manual issue needs a reason.,Xuất kho thủ công phải có lý do.
+"Enter the reason, then issue again.",Hãy nhập lý do rồi xuất lại.
+Lot {0} does not belong to item {1}.,Lô {0} không thuộc vật tư {1}.
+Choose a lot of this item.,Hãy chọn một lô của vật tư này.
+Choose another lot.,Hãy chọn lô khác.
+"The lot quantities add up to {0}, not {1}.","Tổng số lượng các lô là {0}, không phải {1}."
+Make the lot quantities add up to the quantity to issue.,Hãy chỉnh để tổng số lượng các lô bằng số lượng cần xuất.
+Item {0} is short by {1} in lot {2}.,Vật tư {0} thiếu {1} trong lô {2}.
+Item {0} is short by {1} in stock.,Vật tư {0} thiếu {1} trong tồn kho.
+Lower the quantity or choose lots with enough stock.,Hãy giảm số lượng hoặc chọn lô còn đủ tồn.
+Lot {0} expires sooner than the lot you chose and still has stock.,Lô {0} hết hạn sớm hơn lô bạn chọn và vẫn còn tồn.
+"lots must be a list of {batch, qty}.","lots phải là danh sách {batch, qty}."
+item must be an existing item.,item phải là vật tư có trong danh mục.
+Consumption exceeds stock,Tiêu hao vượt tồn kho
+Consumption norm missing,Thiếu định mức tiêu hao
+Automatic consumption failed,Tiêu hao tự động bị lỗi
+Source DocType,DocType nguồn
