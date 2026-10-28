@@ -4157,7 +4157,7 @@ Mark as read,Đánh dấu đã đọc,
 No unread notifications,Không có thông báo chưa đọc,
 No notifications yet,Chưa có thông báo nào,
 New notifications appear here and in the bell at the top.,Thông báo mới sẽ hiện ở đây và trên chuông phía trên.,
-Load more,Xem thêm,
+Load more,Tải thêm,
 Loading notifications…,Đang tải thông báo…,
 Cannot load notifications,Không tải được thông báo,
 Cannot update notifications,Không cập nhật được thông báo,
@@ -4225,3 +4225,5 @@ This certificate was renewed; it is kept as history.,Chứng chỉ này đã đ�
 {0} expired certificates,{0} chứng chỉ đã hết hạn,
 {0} valid until {1},{0} có hiệu lực đến {1},
 {0} (expired),{0} (đã hết hạn),
+Desk Bell Entry,Mục chuông Desk,Notification Delivery
+PDA,PDA,Notification Rule
