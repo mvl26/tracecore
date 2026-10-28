@@ -85,8 +85,13 @@ page_js = {
 
 # include js in doctype views
 # Form Item (ERPNext): nút "Cấp mã cuộn" cho Item nhóm Nhãn (FEAT-005, A-05 R3) và khai báo vật tư CSSD (FEAT-041);
-# Stock Entry: phiếu nhập kho vật tư theo lô/hạn và nhập từ Excel (FEAT-041, SCR-24)
-doctype_js = {"Item": "public/js/item.js", "Stock Entry": "public/js/stock_entry.js"}
+# Stock Entry: phiếu nhập kho vật tư theo lô/hạn và nhập từ Excel (FEAT-041, SCR-24);
+# Employee (HRMS): nút "Đặt PIN trạm" cho R10/R02 (FR-M9-09.1)
+doctype_js = {
+	"Item": "public/js/item.js",
+	"Stock Entry": "public/js/stock_entry.js",
+	"Employee": "public/js/employee.js",
+}
 doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -226,6 +231,7 @@ doc_events = {
 		"on_trash": "tracecore.core.audit.block_delete",
 	},
 	"Employee": {
+		"onload": "tracecore.core.account.employee_onload",
 		"before_validate": "tracecore.core.account.validate_employee",
 		"on_update": "tracecore.core.account.employee_updated",
 		"on_trash": "tracecore.core.audit.block_delete",

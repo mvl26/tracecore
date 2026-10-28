@@ -23,6 +23,7 @@ HTTP_STATUS: dict[str, int] = {
 			"CARD_MISMATCH",
 			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
 			"PERMISSION_DENIED",  # FEAT-009 A-40: PermissionError khi phát lại offline thành Block để ghi Sync Conflict
+			"OWN_PIN_RESET",  # FR-M9-09.1: R02 không tự đặt PIN trạm cho mình trên Desk
 		),
 		403,
 	),

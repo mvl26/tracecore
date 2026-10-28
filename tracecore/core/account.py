@@ -5,7 +5,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.utils import cint, date_diff, getdate, now_datetime, today
-from frappe.utils.password import check_password, update_password
+from frappe.utils.password import check_password, get_decrypted_password, update_password
 
 from tracecore.core import audit, station_auth
 from tracecore.core.errors import BlockedError
@@ -246,6 +246,48 @@ def reset_password(user, new_password, proof=None, token=None):
 @frappe.whitelist(methods=["POST"])
 def reset_pin(employee, new_pin, proof=None, token=None):
 	_authorize_reset(proof, token)
+	_apply_pin_reset(employee, new_pin)
+
+
+def reset_pin_on_desk(employee, new_pin, supervisor_pin=None):
+	"""Đặt PIN trạm từ form Employee (FR-M9-09.1): R10 đặt thẳng; R02 nhập PIN trạm của chính mình thay cho bằng chứng
+	phiên trạm và không tự đặt PIN cho mình. Lỗi nghiệp vụ ném `BlockedError`."""
+	r10 = _has_role("TC R10")
+	if not r10 and not _has_role("TC R02"):
+		frappe.throw(_("Only R10 or R02 can set a station PIN."), frappe.PermissionError)
+	if not r10:
+		own = frappe.db.get_value("Employee", {"user_id": frappe.session.user, "status": "Active"}, "name")
+		if own and own == employee:
+			raise station_auth._block(
+				"OWN_PIN_RESET",
+				"Cannot set your own PIN here",
+				"R02 cannot set a station PIN for their own employee record.",
+				"Change your PIN at a station, or ask R10 to reset it.",
+			)
+		if not own:
+			raise station_auth._block(
+				"PIN_INVALID",
+				"PIN is incorrect",
+				"No employee record with a PIN belongs to this account.",
+				"Ask R10 to link your employee record and set your PIN.",
+			)
+		station_auth.verify_pin(own, supervisor_pin or "")
+	_apply_pin_reset(employee, new_pin)
+
+
+def employee_onload(doc, method=None):
+	# PIN chỉ nằm mã hóa trong bảng __Auth (cột tc_pin_hash luôn trống): form Employee cần biết đã có PIN hay chưa
+	doc.set_onload(
+		"tc_has_pin",
+		bool(
+			not doc.is_new()
+			and get_decrypted_password("Employee", doc.name, "tc_pin_hash", raise_exception=False)
+		),
+	)
+
+
+def _apply_pin_reset(employee, new_pin):
+	# PIN do người khác đặt chỉ là PIN tạm: nhân viên phải đổi ở lần quẹt thẻ kế tiếp
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(_("Employee {0} does not exist.").format(employee), frappe.DoesNotExistError)
 	station_auth.set_pin(employee, new_pin)
