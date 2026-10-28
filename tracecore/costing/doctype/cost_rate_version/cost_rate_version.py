@@ -3,6 +3,7 @@
 Controller chỉ chuyển cho `costing.rates` (kiểm dữ liệu, duyệt, tự đóng bản cũ, hủy). Không xóa (on_trash).
 """
 
+import frappe
 from frappe.model.document import Document
 
 from tracecore.core import audit
@@ -24,6 +25,14 @@ class CostRateVersion(Document):
 
 	def on_cancel(self):
 		rates.on_cancel(self)
+
+	@frappe.whitelist()
+	def fill_from_stock(self):
+		"""UC-28 A1: lấy giá bình quân tồn kho cho các dòng vật tư rồi lưu bản Nháp."""
+		self.check_permission("write")
+		result = rates.fill_from_stock(self)
+		self.save()
+		return result
 
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")

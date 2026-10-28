@@ -189,3 +189,31 @@ def snapshot(version):
 			"Cost Norm Line", filters=rows, fields=["pack_type", "item", "qty_per_pack"], order_by="idx"
 		),
 	}
+
+
+# --- UC-28 A1: giá bình quân tồn kho -----------------------------------------------------------------------------
+
+
+def fill_from_stock(doc):
+	"""Đơn giá vật tư của bản Nháp = giá bình quân tồn kho hiện tại (tổng giá trị ÷ tổng tồn qua mọi kho, VND không lẻ).
+
+	Vật tư không còn tồn giữ nguyên đơn giá và được trả trong ``skipped``. Không lưu `doc`.
+	"""
+	if doc.docstatus != 0:
+		frappe.throw(_("Only a draft price list can take prices from stock."))
+	updated, skipped = [], []
+	for row in doc.rates:
+		if row.rate_type != "Item" or not row.item:
+			continue
+		bins = frappe.get_all(
+			"Bin",
+			filters={"item_code": row.item, "actual_qty": [">", 0]},
+			fields=["actual_qty", "stock_value"],
+		)
+		qty = sum(flt(b.actual_qty) for b in bins)
+		if qty <= 0:
+			skipped.append(row.item)
+			continue
+		row.rate = flt(sum(flt(b.stock_value) for b in bins) / qty, 0)
+		updated.append(row.item)
+	return {"updated": updated, "skipped": skipped}

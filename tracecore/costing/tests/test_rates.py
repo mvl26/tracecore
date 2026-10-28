@@ -9,6 +9,7 @@ from tracecore.tests.factories import (
 	make_item,
 	make_program,
 	make_user,
+	make_warehouse,
 	norm_line,
 	rate_line,
 )
@@ -215,3 +216,54 @@ class TestLookup(RatesCase):
 		)
 		self.assertEqual(rates.pack_norms(JAN, self.label), [])
 		self.assertEqual(rates.pack_norms("2030-06-01", self.pouch), [])
+
+
+def put_stock(item, warehouse, qty, value):
+	"""Bin dựng thẳng (A1 chỉ đọc actual_qty/stock_value của Bin, không cần sổ kho thật)."""
+	frappe.get_doc(
+		{"doctype": "Bin", "item_code": item, "warehouse": warehouse, "actual_qty": qty, "stock_value": value}
+	).insert(ignore_permissions=True)
+
+
+class TestFillFromStock(RatesCase):  # UC-28 A1, A-48 D3
+	def setUp(self):
+		super().setUp()
+		self.store_a = make_warehouse("F45 Kho A")
+		self.store_b = make_warehouse("F45 Kho B")
+
+	def test_fill_uses_weighted_average_of_bins(self):
+		put_stock(self.pouch, self.store_a, 10, 10000)
+		put_stock(self.pouch, self.store_b, 10, 30000)
+		doc = make_cost_rate_version(
+			rates=[rate_line(500, "Item", self.pouch), rate_line(3000, "Electricity")]
+		)
+		result = rates.fill_from_stock(doc)
+		self.assertEqual(result, {"updated": [self.pouch], "skipped": []})
+		self.assertEqual([r.rate for r in doc.rates], [2000, 3000])
+
+	def test_fill_rounds_to_whole_dong(self):
+		put_stock(self.pouch, self.store_a, 3, 10000)
+		doc = make_cost_rate_version(rates=[rate_line(0, "Item", self.pouch)])
+		rates.fill_from_stock(doc)
+		self.assertEqual(doc.rates[0].rate, 3333)
+
+	def test_fill_keeps_rate_when_no_stock(self):
+		put_stock(self.pouch, self.store_a, 0, 0)
+		doc = make_cost_rate_version(
+			rates=[rate_line(700, "Item", self.pouch), rate_line(90, "Item", self.label)]
+		)
+		result = rates.fill_from_stock(doc)
+		self.assertEqual(result, {"updated": [], "skipped": [self.pouch, self.label]})
+		self.assertEqual([r.rate for r in doc.rates], [700, 90])
+
+	def test_fill_only_on_draft(self):
+		doc = make_cost_rate_version(rates=[rate_line(700, "Item", self.pouch)], submit=True)
+		with self.assertRaises(frappe.ValidationError):
+			rates.fill_from_stock(doc)
+
+	def test_form_method_saves_the_draft(self):
+		put_stock(self.pouch, self.store_a, 4, 8000)
+		doc = make_cost_rate_version(rates=[rate_line(1, "Item", self.pouch)])
+		result = doc.fill_from_stock()
+		self.assertEqual(result["updated"], [self.pouch])
+		self.assertEqual(frappe.db.get_value("Cost Rate Line", doc.rates[0].name, "rate"), 2000)
