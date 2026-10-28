@@ -63,6 +63,51 @@ class TestLauncher(FrappeTestCase):
 			<= routes
 		)
 
+	def test_costs_and_maintenance_records_are_reachable_for_r09(self):
+		# FEAT-039/044/045: hồ sơ bảo trì, khoản chi phí, bảng giá, khoản mục, cài đặt và báo cáo chi phí phải mở từ trang chủ
+		with (
+			patch("frappe.session", frappe._dict(user="r09@example.test")),
+			patch("frappe.get_roles", return_value=["TC R09"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+			patch("tracecore.v1.navigation._roles_permit", return_value=True),
+		):
+			links = get_context()["management"]
+		routes = {link["route"] for link in links}
+		self.assertTrue(
+			{
+				"/app/maintenance-record",
+				"/app/cost-entry",
+				"/app/cost-rate-version",
+				"/app/cost-category",
+				"/app/cost-settings",
+				"/app/query-report/Cost by Target",
+			}
+			<= routes
+		)
+		cost_routes = [link["route"] for link in links if link["group"] == "Costs"]
+		self.assertEqual(cost_routes[0], "/app/cost-entry")
+
+	def test_every_group_and_label_has_a_vietnamese_translation(self):
+		from tracecore.tests.test_station_page import other_app_translations, vi_translations
+		from tracecore.v1 import navigation
+
+		ours, others = vi_translations(), other_app_translations()
+		texts = []
+		for group, targets in navigation.MANAGEMENT_GROUPS:
+			texts.append(group)
+			for target in targets:
+				if target.startswith(navigation.REPORT_PREFIX):
+					texts.append(target[len(navigation.REPORT_PREFIX) :])
+				else:
+					texts.append(navigation.MANAGEMENT_PAGES.get(target, target))
+		missing = [
+			text
+			for text in texts
+			if not (ours.get(f"{text}:TraceCore Launcher") or ours.get(text) or others.get(text))
+		]
+		self.assertFalse(missing, f"thiếu dòng vi.csv {missing}")
+
 	def test_catalog_import_follows_page_roles(self):
 		# Page tc-import chỉ cho R02 / R10 / System Manager; R01 quản lý nhưng không thấy link import
 		with (
