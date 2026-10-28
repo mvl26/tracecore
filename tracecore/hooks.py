@@ -276,6 +276,8 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
 	"Daily Test": dict(_AUDIT_EVENTS),
+	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-42): ghi sổ có old/new, không xóa
+	"Maintenance Record": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -375,6 +377,9 @@ tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_blo
 #  - load_daily_indicator: (equipment, indicator, on) -> dict | None, chỉ thị của mẻ lấy từ test hằng ngày của máy trong
 #    ngày chạy mẻ (A-23: Bowie-Dick không nhập lại ở T5b)
 tracecore_load_daily_indicator = ["tracecore.equipment.daily_test.load_indicator"]
+# M5 (FEAT-039, A-42 M8) gọi khi lưu hồ sơ sự cố thiết bị: (equipment, record) -> [{load_doctype, load}], M2 đánh dấu mẻ/lô
+# chưa dỡ trên máy `needs_review` và trả danh sách để ghi vào hồ sơ (FR-M5-04.2); M5 không import M2
+tracecore_equipment_incident = ["tracecore.reprocessing.equipment_incident.flag_open_on"]
 tracecore_after_load_complete = []
 # M2 T5b dỡ mẻ và giải phóng (FEAT-023, UC-10); ctx là dict, mọi hook chạy trong cùng transaction:
 #  - after_release:       (ctx {set_unit, set_type, bom_version, cycle_id}) mỗi bộ khi giải phóng Đạt (đã khai báo ở trên)
@@ -433,10 +438,14 @@ scheduler_events = {
 			"tracecore.reprocessing.storage.run_expiry",
 			# FEAT-032, FR-M8-04.2: ghi đè cơ số quá thời hạn → Hết hiệu lực
 			"tracecore.par.override.expire_overdue",
+			# FEAT-039, FR-M5-03.1: máy Sẵn sàng quá hạn kiểm định/hiệu chuẩn → Khóa, báo R02 và R10
+			"tracecore.equipment.maintenance.lock_overdue",
 		],
 	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
+		# FEAT-039, FR-M5-03: nhắc R02 và R10 trước 30 và 7 ngày khi hồ sơ bảo trì/kiểm định/hiệu chuẩn đến hạn
+		"tracecore.equipment.maintenance.remind_due",
 		# FEAT-030, FR-M2-22.1: nhắc hành động CAPA quá hạn (người phụ trách + R02)
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày

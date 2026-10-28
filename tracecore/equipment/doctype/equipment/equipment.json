@@ -20,6 +20,8 @@
   "has_printout",
   "commissioned_on",
   "inspection_due",
+  "calibration_due",
+  "maintenance_due",
   "asset",
   "cost_section",
   "purchase_value",
@@ -137,6 +139,18 @@
    "label": "Inspection Due"
   },
   {
+   "description": "Past this date the machine cannot start a load or batch; R02 can unlock it temporarily (FEAT-039).",
+   "fieldname": "calibration_due",
+   "fieldtype": "Date",
+   "label": "Calibration Due"
+  },
+  {
+   "description": "Reminder only: preventive maintenance past its date does not lock the machine (FEAT-039).",
+   "fieldname": "maintenance_due",
+   "fieldtype": "Date",
+   "label": "Maintenance Due"
+  },
+  {
    "fieldname": "asset",
    "fieldtype": "Link",
    "label": "Asset",
@@ -225,9 +239,9 @@
    "fieldname": "lock_reason",
    "fieldtype": "Select",
    "label": "Lock Reason",
-   "options": "\nDaily Test",
+   "options": "\nDaily Test\nInspection Expired\nCalibration Expired",
    "read_only": 1,
-   "description": "Why the machine is Locked by the system (a failed daily test)."
+   "description": "Why the machine is Locked by the system (a failed daily test, or an inspection or calibration past its date)."
   },
   {
    "fieldname": "unlock_until",

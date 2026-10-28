@@ -430,6 +430,18 @@ def record_daily_tests(equipment):
 		row.insert(ignore_permissions=True)
 
 
+def make_maintenance_record(equipment, record_type="Preventive", **kwargs):
+	"""Tạo Maintenance Record Nháp (FEAT-039). `kwargs` ghi đè bất kỳ trường nào (parts, affected_loads, cost, ...)."""
+	values = {
+		"doctype": "Maintenance Record",
+		"equipment": equipment,
+		"record_type": record_type,
+		"planned_date": today(),
+		**kwargs,
+	}
+	return frappe.get_doc(values).insert()
+
+
 def make_program(equipment, code="MH-01-134", minutes=4, kwh=3.5, water=0, consumables=None, **kwargs):
 	"""Tạo Process Program cho máy `equipment`. `kwargs` ghi đè bất kỳ trường nào (parameters, ...)."""
 	values = {

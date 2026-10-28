@@ -1,0 +1,296 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "BT-.YYYY.-.#####",
+ "creation": "2026-10-28 09:00:00.000000",
+ "description": "Maintenance, inspection, calibration or incident record of one machine (FEAT-039, UC-22). Submitting it closes the record, updates the validity dates of the machine and plans the next record; saving an incident puts the machine under repair.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "equipment",
+  "record_type",
+  "status_before",
+  "abandoned",
+  "abandon_reason",
+  "column_break_head",
+  "planned_date",
+  "cycle_months",
+  "performed_on",
+  "section_by",
+  "performed_by",
+  "vendor",
+  "column_break_by",
+  "contract_no",
+  "sla_hours",
+  "section_result",
+  "result",
+  "certificate",
+  "column_break_result",
+  "valid_until",
+  "section_incident",
+  "occurred_at",
+  "downtime_hours",
+  "column_break_incident",
+  "description",
+  "post_repair_check",
+  "section_cost",
+  "cost",
+  "parts",
+  "affected_loads",
+  "section_next",
+  "next_record",
+  "reminded_30",
+  "reminded_7",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Equipment",
+   "options": "Equipment",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Preventive",
+   "fieldname": "record_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Record Type",
+   "options": "Preventive\nInspection\nCalibration\nIncident",
+   "reqd": 1
+  },
+  {
+   "description": "Machine status when an incident was opened; restored if the draft incident is cancelled.",
+   "fieldname": "status_before",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Machine Status Before",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A draft cannot be cancelled or deleted, so a draft entered by mistake is abandoned with a reason (the record stays for the audit trail).",
+   "fieldname": "abandoned",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Abandoned",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "abandoned",
+   "fieldname": "abandon_reason",
+   "fieldtype": "Small Text",
+   "label": "Abandon Reason",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Planned Date"
+  },
+  {
+   "default": "0",
+   "description": "0 = one-off; above 0 plans the next record that many months after the work is done.",
+   "fieldname": "cycle_months",
+   "fieldtype": "Int",
+   "label": "Cycle (months)"
+  },
+  {
+   "fieldname": "performed_on",
+   "fieldtype": "Date",
+   "label": "Performed On"
+  },
+  {
+   "fieldname": "section_by",
+   "fieldtype": "Section Break",
+   "label": "Performed By"
+  },
+  {
+   "fieldname": "performed_by",
+   "fieldtype": "Data",
+   "label": "Performed By"
+  },
+  {
+   "fieldname": "vendor",
+   "fieldtype": "Link",
+   "label": "Vendor",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "column_break_by",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contract_no",
+   "fieldtype": "Data",
+   "label": "Contract No."
+  },
+  {
+   "fieldname": "sla_hours",
+   "fieldtype": "Int",
+   "label": "SLA (hours)"
+  },
+  {
+   "depends_on": "eval:doc.record_type!='Incident'",
+   "fieldname": "section_result",
+   "fieldtype": "Section Break",
+   "label": "Result and Certificate"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "\nPass\nFail"
+  },
+  {
+   "description": "Required to submit an inspection or calibration record.",
+   "fieldname": "certificate",
+   "fieldtype": "Attach",
+   "label": "Certificate"
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Becomes the validity date of the machine when the record is submitted.",
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "label": "Valid Until"
+  },
+  {
+   "depends_on": "eval:doc.record_type=='Incident'",
+   "fieldname": "section_incident",
+   "fieldtype": "Section Break",
+   "label": "Incident"
+  },
+  {
+   "fieldname": "occurred_at",
+   "fieldtype": "Datetime",
+   "label": "Occurred At"
+  },
+  {
+   "fieldname": "downtime_hours",
+   "fieldtype": "Float",
+   "label": "Downtime (hours)"
+  },
+  {
+   "fieldname": "column_break_incident",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "description": "Required to submit an incident record.",
+   "fieldname": "post_repair_check",
+   "fieldtype": "Small Text",
+   "label": "Post-repair Check"
+  },
+  {
+   "fieldname": "section_cost",
+   "fieldtype": "Section Break",
+   "label": "Cost and Parts"
+  },
+  {
+   "fieldname": "cost",
+   "fieldtype": "Currency",
+   "label": "Cost"
+  },
+  {
+   "fieldname": "parts",
+   "fieldtype": "Table",
+   "label": "Parts",
+   "options": "Maintenance Part"
+  },
+  {
+   "depends_on": "eval:doc.record_type=='Incident'",
+   "fieldname": "affected_loads",
+   "fieldtype": "Table",
+   "label": "Affected Loads",
+   "no_copy": 1,
+   "options": "Maintenance Affected Load",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_next",
+   "fieldtype": "Section Break",
+   "label": "Schedule"
+  },
+  {
+   "fieldname": "next_record",
+   "fieldtype": "Link",
+   "label": "Next Record",
+   "no_copy": 1,
+   "options": "Maintenance Record",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "reminded_30",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded 30 Days",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "reminded_7",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded 7 Days",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Maintenance Record",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-28 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Equipment",
+ "name": "Maintenance Record",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "equipment",
+ "track_changes": 1
+}

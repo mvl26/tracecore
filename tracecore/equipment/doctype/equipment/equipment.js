@@ -167,6 +167,31 @@ frappe.ui.form.on("Equipment", {
 		) {
 			frm.add_custom_button(__("Retire equipment"), () => equipment_open_retire_dialog(frm));
 		}
+		// SCR-22 (FEAT-039): ghi sự cố hoặc lập kế hoạch bảo trì cho máy này
+		if (
+			!frm.is_new() &&
+			frm.doc.status !== "Retired" &&
+			frappe.user.has_role(EQUIPMENT_ADMIN_ROLES)
+		) {
+			frm.add_custom_button(
+				__("Record incident"),
+				() =>
+					frappe.new_doc("Maintenance Record", {
+						equipment: frm.doc.name,
+						record_type: "Incident",
+					}),
+				__("Maintenance")
+			);
+			frm.add_custom_button(
+				__("Plan maintenance"),
+				() =>
+					frappe.new_doc("Maintenance Record", {
+						equipment: frm.doc.name,
+						record_type: "Preventive",
+					}),
+				__("Maintenance")
+			);
+		}
 		equipment_print_button(frm);
 	},
 

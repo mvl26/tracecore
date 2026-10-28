@@ -194,6 +194,8 @@ HTTP_STATUS: dict[str, int] = {
 			"LOAD_NOT_OPEN",
 			"DAILY_TEST_REQUIRED",
 			"EQUIPMENT_INSPECTION_EXPIRED",
+			# FEAT-039 A-42 M5: quá hạn hiệu chuẩn chặn tạo mẻ/lô, R02 mở khóa tạm được
+			"EQUIPMENT_CALIBRATION_EXPIRED",
 			"UNLOCK_NOT_ALLOWED",
 			# A-22: máy tiệt khuẩn còn mẻ chưa xong chu trình
 			"EQUIPMENT_BUSY",

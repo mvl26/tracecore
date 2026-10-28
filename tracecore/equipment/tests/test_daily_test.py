@@ -143,6 +143,57 @@ class TestInspectionAndUnlock(DailyTestCase):
 		self.assertIsNone(daily_test.equipment_block(washer.name))
 
 
+class TestCalibration(DailyTestCase):
+	"""Hạn hiệu chuẩn (FEAT-039, A-42 M4, M5): quá hạn chặn tạo mẻ/lô, R02 mở khóa tạm được kể cả máy áp lực."""
+
+	@bru("BRU-EQP-002")
+	def test_overdue_calibration_blocks_the_machine(self):
+		washer = self.washer(calibration_due=add_days(today(), -1))
+		self.record(washer, "washer_cleaning")
+		block = daily_test.equipment_block(washer.name)
+		self.assertEqual(block.code, "EQUIPMENT_CALIBRATION_EXPIRED")
+		self.assertEqual(washing.check_equipment_ready(washer.name).code, "EQUIPMENT_CALIBRATION_EXPIRED")
+
+	def test_calibration_due_today_or_later_does_not_block(self):
+		for due in (today(), add_days(today(), 30)):
+			with self.subTest(due=due):
+				washer = self.washer(calibration_due=due, serial=f"SN-CAL-{due}")
+				self.record(washer, "washer_cleaning")
+				self.assertIsNone(daily_test.equipment_block(washer.name))
+
+	@bru("BRU-EQP-002")
+	def test_r02_can_unlock_overdue_calibration_even_for_pressure_equipment(self):
+		machine = self.steam(calibration_due=add_days(today(), -1))
+		self.assertEqual(daily_test.equipment_block(machine.name).code, "EQUIPMENT_CALIBRATION_EXPIRED")
+		daily_test.unlock_temp(machine.name, "Chờ hiệu chuẩn", 2, STATION)
+		self.assertIsNone(daily_test.equipment_block(machine.name))
+
+	@bru("BRU-EQP-002")
+	def test_overdue_inspection_of_pressure_equipment_still_cannot_be_unlocked(self):
+		machine = self.steam(inspection_due=add_days(today(), -1), calibration_due=add_days(today(), -1))
+		self.assertEqual(
+			blocked(self, daily_test.unlock_temp, machine.name, "ok", 2).code, "UNLOCK_NOT_ALLOWED"
+		)
+		self.assertEqual(daily_test.equipment_block(machine.name).code, "EQUIPMENT_INSPECTION_EXPIRED")
+
+	def test_overview_reports_overdue_calibration(self):
+		washer = self.washer(calibration_due=add_days(today(), -1))
+		self.record(washer, "washer_cleaning")
+		row = next(item for item in daily_test.overview() if item["name"] == washer.name)
+		self.assertTrue(row["calibration_expired"])
+		self.assertEqual(row["ready_to_load"], 0)
+
+	def test_due_dates_and_expired_lock_reasons_exist_on_equipment(self):
+		machine = self.steam(maintenance_due=add_days(today(), 30))
+		self.assertEqual(
+			str(frappe.db.get_value("Equipment", machine.name, "maintenance_due")),
+			str(add_days(today(), 30)),
+		)
+		for reason in ("Inspection Expired", "Calibration Expired"):
+			daily_test._apply(machine.name, status="Locked", lock_reason=reason)
+			self.assertEqual(frappe.db.get_value("Equipment", machine.name, "lock_reason"), reason)
+
+
 class TestIntegration(DailyTestCase):
 	@bru("BRU-EQP-001")
 	def test_load_and_wash_readiness_use_the_daily_test(self):

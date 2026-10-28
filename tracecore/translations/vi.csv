@@ -3006,7 +3006,7 @@ leak,Rò rỉ,Daily Test
 washer_cleaning,Làm sạch máy rửa,Daily Test
 Lock,Khóa,Equipment
 Lock Reason,Lý do khóa,Equipment
-Why the machine is Locked by the system (a failed daily test).,Vì sao hệ thống khóa máy (test hằng ngày không đạt).,Equipment
+"Why the machine is Locked by the system (a failed daily test, or an inspection or calibration past its date).","Vì sao hệ thống khóa máy (test hằng ngày không đạt, hoặc kiểm định/hiệu chuẩn quá hạn).",Equipment
 Temporarily Unlocked Until,Mở khóa tạm đến,Equipment
 Unlocked By,Người mở khóa,Equipment
 Temporary Unlock Reason,Lý do mở khóa tạm,Equipment
@@ -4005,3 +4005,81 @@ Item,Vật tư,TraceCore Launcher
 Batch,Lô vật tư,TraceCore Launcher
 Stock Entry,Phiếu kho vật tư,TraceCore Launcher
 Department,Khoa,TraceCore Launcher
+Maintenance Record,Hồ sơ bảo trì thiết bị,
+Maintenance Part,Phụ tùng bảo trì,
+Maintenance Affected Load,Mẻ/lô bị ảnh hưởng bởi sự cố,
+Record Type,Loại hồ sơ,Maintenance Record
+Machine Status Before,Trạng thái máy trước đó,Maintenance Record
+Machine status when an incident was opened; restored if the draft incident is cancelled.,Trạng thái của máy khi mở sự cố; khôi phục nếu bỏ bản nháp sự cố.,Maintenance Record
+Abandoned,Đã bỏ,
+Abandon Reason,Lý do bỏ,Maintenance Record
+"A draft cannot be cancelled or deleted, so a draft entered by mistake is abandoned with a reason (the record stays for the audit trail).","Bản nháp không hủy hay xóa được, nên bản nháp nhập nhầm được bỏ kèm lý do (hồ sơ vẫn giữ để truy vết).",Maintenance Record
+Planned Date,Ngày kế hoạch,Maintenance Record
+Cycle (months),Chu kỳ (tháng),
+0 = one-off; above 0 plans the next record that many months after the work is done.,0 = làm một lần; lớn hơn 0 thì lập hồ sơ kế tiếp sau ngần ấy tháng kể từ ngày thực hiện.,Maintenance Record
+Performed On,Ngày thực hiện,Maintenance Record
+Performed By,Đơn vị thực hiện,Maintenance Record
+Vendor,Nhà cung cấp,Maintenance Record
+Contract No.,Số hợp đồng,Maintenance Record
+SLA (hours),SLA (giờ),
+Result and Certificate,Kết quả và chứng nhận,Maintenance Record
+Certificate,Chứng nhận,Maintenance Record
+Required to submit an inspection or calibration record.,Bắt buộc để ghi sổ hồ sơ kiểm định hoặc hiệu chuẩn.,Maintenance Record
+Valid Until,Hiệu lực đến,Maintenance Record
+Becomes the validity date of the machine when the record is submitted.,Trở thành hạn hiệu lực của máy khi ghi sổ hồ sơ.,Maintenance Record
+Occurred At,Thời điểm xảy ra,Maintenance Record
+Downtime (hours),Thời gian dừng máy (giờ),
+Post-repair Check,Kiểm tra sau sửa,Maintenance Record
+Required to submit an incident record.,Bắt buộc để ghi sổ hồ sơ sự cố.,Maintenance Record
+Cost and Parts,Chi phí và phụ tùng,Maintenance Record
+Parts,Phụ tùng,Maintenance Record
+Affected Loads,Mẻ/lô bị ảnh hưởng,Maintenance Record
+Schedule,Lịch,Maintenance Record
+Next Record,Hồ sơ kế tiếp,Maintenance Record
+Reminded 30 Days,Đã nhắc trước 30 ngày,Maintenance Record
+Reminded 7 Days,Đã nhắc trước 7 ngày,Maintenance Record
+Preventive,Bảo trì phòng ngừa,Maintenance Record
+Inspection,Kiểm định,Maintenance Record
+Calibration,Hiệu chuẩn,Maintenance Record
+Incident,Sự cố,Maintenance Record
+Pass,Đạt,Maintenance Record
+Fail,Không đạt,Maintenance Record
+Part,Phụ tùng,Maintenance Part
+Load Type,Loại mẻ/lô,Maintenance Affected Load
+Flagged At,Thời điểm đánh dấu,Maintenance Affected Load
+Sterilization Load,Mẻ tiệt khuẩn,Maintenance Affected Load
+Wash Batch,Lô rửa,Maintenance Affected Load
+Calibration Due,Hạn hiệu chuẩn,Equipment
+Maintenance Due,Hạn bảo trì,Equipment
+Past this date the machine cannot start a load or batch; R02 can unlock it temporarily (FEAT-039).,Quá ngày này máy không bắt đầu được mẻ hoặc lô; R02 mở khóa tạm được (FEAT-039).,Equipment
+Reminder only: preventive maintenance past its date does not lock the machine (FEAT-039).,Chỉ nhắc: bảo trì phòng ngừa quá ngày không khóa máy (FEAT-039).,Equipment
+Inspection Expired,Quá hạn kiểm định,Equipment
+Calibration Expired,Quá hạn hiệu chuẩn,Equipment
+Row {0}: quantity and rate cannot be negative.,Dòng {0}: số lượng và đơn giá không được âm.,
+Equipment {0} is retired; an incident cannot be recorded for it.,Thiết bị {0} đã ngừng sử dụng; không ghi sự cố cho thiết bị này được.,
+A reason is required to abandon a record.,Cần có lý do để bỏ hồ sơ.,
+Only a draft record that is not already abandoned can be abandoned.,Chỉ bỏ được hồ sơ còn Nháp và chưa bị bỏ.,
+An abandoned record cannot be closed.,Hồ sơ đã bỏ không đóng được.,
+The post-repair check result is required to close an incident.,Cần có kết quả kiểm tra sau sửa để đóng sự cố.,
+A certificate is required to close an inspection or calibration record.,Cần có chứng nhận để đóng hồ sơ kiểm định hoặc hiệu chuẩn.,
+Valid Until is required to close an inspection or calibration record.,Cần có hạn hiệu lực để đóng hồ sơ kiểm định hoặc hiệu chuẩn.,
+Valid Until cannot be before Performed On.,Hiệu lực đến không được trước ngày thực hiện.,
+Equipment {0} is locked: {1},Thiết bị {0} bị khóa: {1},
+{0} of equipment {1} is planned for {2},{0} của thiết bị {1} dự kiến ngày {2},
+Calibration has expired,Đã quá hạn hiệu chuẩn,
+Equipment {0} was due for calibration on {1}.,Thiết bị {0} đến hạn hiệu chuẩn ngày {1}.,
+"Use another machine, or call R02 for a temporary unlock.","Dùng máy khác, hoặc gọi R02 để mở khóa tạm.",
+Abandon draft,Bỏ bản nháp,
+Abandon draft {0},Bỏ bản nháp {0},
+Incident open,Sự cố đang mở,
+Record is abandoned,Hồ sơ đã bị bỏ,
+Plan a new record instead.,Hãy lập hồ sơ mới thay thế.,
+Certificate is missing,Thiếu chứng nhận,
+"Attach the certificate, then close the record.",Đính kèm chứng nhận rồi đóng hồ sơ.,
+Valid Until is missing,Thiếu hạn hiệu lực,
+"Enter the date the certificate is valid until, then close the record.",Nhập ngày chứng nhận có hiệu lực đến rồi đóng hồ sơ.,
+Post-repair check is missing,Thiếu kết quả kiểm tra sau sửa,
+"Enter the result of the check after the repair, then close the incident.",Nhập kết quả kiểm tra sau sửa rồi đóng sự cố.,
+The record stays for the audit trail; an incident returns the machine to its previous status.,"Hồ sơ vẫn được giữ để truy vết; với sự cố, máy được trả về trạng thái trước đó.",
+Record incident,Ghi sự cố,
+Plan maintenance,Lập kế hoạch bảo trì,
