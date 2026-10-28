@@ -22,7 +22,7 @@
 - Không import chéo M1–M10: `costing` chỉ đọc `Process Program`, `Item`, `Bin` bằng `frappe.get_all`/`frappe.db`, không import `tracecore.equipment` hay `tracecore.inventory`.
 - Chứng từ Nháp → Ghi sổ → Hủy, không xóa: `is_submittable=1`, `on_trash` gọi `audit.block_delete`; `track_changes=1`.
 - Naming `DG-.YYYY.-.#####` (A-48, thêm vào dòng "Chứng từ khác" §5.3.3).
-- Quyền (A-48, sửa dòng DT-COSTRATE của `permission_matrix.csv`): R01 `RSA`, R02 `R`, R09 `RW`, R10 `R`; sinh lại `custom_docperm.json`.
+- Quyền (A-48, sửa dòng DT-COSTRATE của `permission_matrix.csv`): R01 `RWSA` (Frappe cần W để Ghi sổ), R02 `R`, R09 `RW`, R10 `R`; sinh lại `custom_docperm.json`.
 - Mọi chuỗi qua `_()`, bản dịch ở `tracecore/translations/vi.csv` (3 cột); tiền VND không lẻ (`Currency`, precision 0).
 - Ngày "hôm nay" theo VN: `tracecore.inventory.receipt.today_vn` KHÔNG được import (M6) → dùng `frappe.utils.nowdate()` (System Settings = Asia/Ho_Chi_Minh).
 - Mỗi BRU-CST-002 test gắn `@bru("BRU-CST-002")`.
@@ -59,7 +59,7 @@
 **Files:**
 - Modify: `docs/architecture.md` (Revision History dòng A-48; ghi chú A-48 sau A-47; bảng §5.3 dòng Cost Rate Version; §5.3.3 thêm `DG- Cost Rate Version (A-48)`)
 - Create: ba DocType ở bảng trên
-- Modify: `tracecore/fixtures/permission_matrix.csv` dòng 38 → `DT-COSTRATE,Cost Rate Version,RSA,R,,,,,,,RW,R,FEAT-045 A-48 D2: R01 duyệt (Ghi sổ/Hủy), R09 lập Nháp`
+- Modify: `tracecore/fixtures/permission_matrix.csv` dòng 38 → `DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D2: R01 duyệt (Ghi sổ/Hủy), R09 lập Nháp`
 - Regenerate: `tracecore/fixtures/custom_docperm.json`
 - Test: `tracecore/costing/tests/test_cost_rate_version.py`
 

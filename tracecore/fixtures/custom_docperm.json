@@ -3202,6 +3202,7 @@
  {
   "amend": 1,
   "cancel": 1,
+  "create": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "73e5d3abd6",
@@ -3213,7 +3214,8 @@
   "read": 1,
   "report": 1,
   "role": "TC R01",
-  "submit": 1
+  "submit": 1,
+  "write": 1
  },
  {
   "doctype": "Custom DocPerm",

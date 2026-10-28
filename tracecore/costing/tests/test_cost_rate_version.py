@@ -26,7 +26,7 @@ class TestCostRateVersionDoc(IsolatedTestCase):
 
 	def test_permissions_follow_a48(self):  # A-48 D5: R01 duyệt, R09 lập Nháp
 		expected = {
-			"TC R01": {"read": 1, "write": 0, "create": 0, "submit": 1, "cancel": 1},
+			"TC R01": {"read": 1, "write": 1, "create": 1, "submit": 1, "cancel": 1},
 			"TC R09": {"read": 1, "write": 1, "create": 1, "submit": 0, "cancel": 0},
 			"TC R02": {"read": 1, "write": 0, "create": 0, "submit": 0, "cancel": 0},
 			"TC R10": {"read": 1, "write": 0, "create": 0, "submit": 0, "cancel": 0},

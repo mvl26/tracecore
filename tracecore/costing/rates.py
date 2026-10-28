@@ -6,7 +6,9 @@ R09 lập Nháp, R01 Ghi sổ = duyệt (D2). Định mức theo chương trình
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import add_days, flt, formatdate, now_datetime
+
+DOCTYPE = "Cost Rate Version"
 
 # Đơn vị của các đơn giá không phải vật tư (A-48 D4); vật tư dùng stock_uom của Item.
 UNIT_BY_TYPE = {"Labor": "hour", "Electricity": "kWh", "Tap Water": "L", "RO Water": "L", "Steam": "kg"}
@@ -81,17 +83,53 @@ def warn_programs_without_norm():
 		)
 
 
+def _approved(**filters):
+	"""Các bản đã duyệt (docstatus 1) theo `filters`, khóa dòng để hai lần duyệt cùng lúc không cùng lọt qua."""
+	return frappe.db.get_values(
+		DOCTYPE,
+		{"docstatus": 1, **filters},
+		["name", "effective_from", "effective_to"],
+		order_by="effective_from desc",
+		for_update=True,
+		as_dict=True,
+	)
+
+
 def before_submit(doc):
-	pass
+	"""R01 duyệt (UC-28 bước 4): phải có đơn giá, không chồng lấn bản đã duyệt (E1, FR-M7-03.3)."""
+	if not doc.rates:
+		frappe.throw(_("Add at least one unit price before approving the price list."))
+	later = _approved(effective_from=[">=", doc.effective_from], name=["!=", doc.name])
+	if later:
+		frappe.throw(
+			_(
+				"Price list {0} is already approved from {1}, so a version starting {2} would overlap it. "
+				"Choose a date after {1}."
+			).format(later[0].name, formatdate(later[0].effective_from), formatdate(doc.effective_from)),
+			title=_("Effective dates overlap"),
+		)
+	doc.approved_by = frappe.session.user
+	doc.approved_on = now_datetime()
+	doc.effective_to = None
 
 
 def on_submit(doc):
-	pass
+	"""Bản đã duyệt đang mở liền trước kết thúc vào ngày trước hiệu lực của bản mới (A-48 D2)."""
+	for previous in _approved(effective_from=["<", doc.effective_from], effective_to=["is", "not set"]):
+		frappe.db.set_value(DOCTYPE, previous.name, "effective_to", add_days(doc.effective_from, -1))
 
 
 def before_cancel(doc):
-	pass
+	"""Chỉ hủy được bản đã duyệt mới nhất; bản cũ hơn đã bị bản sau thay, hủy sẽ để trống một khoảng ngày."""
+	later = _approved(effective_from=[">", doc.effective_from])
+	if later:
+		frappe.throw(
+			_("Price list {0} starts later and replaces this one. Cancel {0} first.").format(later[0].name)
+		)
 
 
 def on_cancel(doc):
-	pass
+	"""Bản liền trước (đã bị bản này đóng) mở lại."""
+	closed_by_this = add_days(doc.effective_from, -1)
+	for previous in _approved(effective_to=closed_by_this):
+		frappe.db.set_value(DOCTYPE, previous.name, "effective_to", None)

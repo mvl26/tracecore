@@ -4,6 +4,7 @@ import frappe
 
 from tracecore.tests.factories import (
 	make_cost_rate_version,
+	make_user,
 	make_equipment,
 	make_item,
 	make_program,
@@ -98,3 +99,69 @@ class TestRateLines(RatesCase):
 
 	def test_empty_draft_can_be_saved(self):
 		self.assertEqual(make_cost_rate_version(rates=[]).docstatus, 0)
+
+
+JAN, MAR_31, APR, MAR = "2031-01-01", "2031-03-31", "2031-04-01", "2031-03-01"
+
+
+@bru("BRU-CST-002")
+class TestApproval(RatesCase):
+	def approve(self, effective_from, **kwargs):
+		return make_cost_rate_version(effective_from=effective_from, submit=True, **kwargs)
+
+	def effective_to(self, doc):
+		return frappe.db.get_value(DOCTYPE, doc.name, "effective_to")
+
+	def test_approval_records_user_and_time(self):  # UC-28 bước 4
+		doc = make_cost_rate_version(effective_from=JAN)
+		user = make_user("crv-approver@example.com", ["TC R01"])
+		frappe.set_user(user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		doc.submit()
+		self.assertEqual(doc.approved_by, user)
+		self.assertIsNotNone(doc.approved_on)
+
+	def test_empty_version_cannot_be_approved(self):
+		doc = make_cost_rate_version(effective_from=JAN, rates=[])
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
+
+	def test_approving_closes_previous_open_version(self):  # A-48 D2
+		v1 = self.approve(JAN)
+		v2 = self.approve(APR)
+		self.assertEqual(str(self.effective_to(v1)), MAR_31)
+		self.assertIsNone(self.effective_to(v2))
+
+	def test_approving_an_older_date_is_blocked(self):  # UC-28 E1, FR-M7-03.3
+		v1 = self.approve(APR)
+		older = make_cost_rate_version(effective_from=MAR)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			older.submit()
+		self.assertIn(v1.name, str(ctx.exception))
+
+	def test_two_drafts_same_date_only_second_approval_blocked(self):
+		first = make_cost_rate_version(effective_from=APR)
+		second = make_cost_rate_version(effective_from=APR)
+		first.submit()
+		with self.assertRaises(frappe.ValidationError):
+			second.submit()
+
+	def test_approved_version_cannot_be_edited(self):
+		doc = self.approve(JAN)
+		doc.rates[0].rate = 9999
+		with self.assertRaises(frappe.UpdateAfterSubmitError):
+			doc.save()
+
+	def test_only_latest_approved_can_be_cancelled(self):
+		v1 = self.approve(JAN)
+		v2 = self.approve(APR)
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_doc(DOCTYPE, v1.name).cancel()
+		frappe.get_doc(DOCTYPE, v2.name).cancel()
+		self.assertIsNone(self.effective_to(v1))
+
+	def test_cancelled_latest_then_new_version_closes_previous_again(self):
+		v1 = self.approve(JAN)
+		self.approve(APR).cancel()
+		self.approve(MAR)
+		self.assertEqual(str(self.effective_to(v1)), "2031-02-28")
