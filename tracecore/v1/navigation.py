@@ -33,9 +33,13 @@ MANAGEMENT_GROUPS = (
 		),
 	),
 	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
-	("Equipment", ("Equipment", "Process Program")),
+	("Equipment", ("Equipment", "Process Program", "Maintenance Record")),
 	("Instruments", ("Instrument", "Instrument Set Type", "Set Unit")),
 	("Stock and par levels", ("Item", "Batch", "Stock Entry", "Sterile Location", "Par Level")),
+	(
+		"Costs",
+		("Cost Entry", "Cost Rate Version", "Cost Category", "Cost Settings", "report:Cost by Target"),
+	),
 	("Processing records", ("Pack", "Wash Batch", "Sterile Putaway")),
 	("Data and audit", ("tc-import", "notifications", "Notification Rule", "Audit Log")),
 )
