@@ -2,12 +2,13 @@
 
 import frappe
 
+from tracecore.costing import rates
 from tracecore.tests.factories import (
 	make_cost_rate_version,
-	make_user,
 	make_equipment,
 	make_item,
 	make_program,
+	make_user,
 	norm_line,
 	rate_line,
 )
@@ -165,3 +166,52 @@ class TestApproval(RatesCase):
 		self.approve(APR).cancel()
 		self.approve(MAR)
 		self.assertEqual(str(self.effective_to(v1)), "2031-02-28")
+
+
+@bru("BRU-CST-002")
+class TestLookup(RatesCase):
+	def setUp(self):
+		super().setUp()
+		self.v1 = make_cost_rate_version(
+			effective_from=JAN,
+			rates=[rate_line(3000, "Electricity"), rate_line(1000, "Item", self.pouch)],
+			pack_norms=[norm_line(self.pouch, self.label, 2), norm_line(self.pouch, self.pouch, 1)],
+			submit=True,
+		)
+
+	def test_version_at_boundaries(self):
+		v2 = make_cost_rate_version(effective_from=APR, submit=True)
+		self.assertEqual(rates.version_at(MAR_31), self.v1.name)
+		self.assertEqual(rates.version_at(APR), v2.name)
+		self.assertEqual(rates.version_at("2031-12-31"), v2.name)
+		self.assertIsNone(rates.version_at("2030-12-31"))
+
+	def test_draft_and_cancelled_versions_are_ignored(self):  # UC-28 E3
+		make_cost_rate_version(effective_from=MAR)
+		self.assertEqual(rates.version_at(APR), self.v1.name)
+		later = make_cost_rate_version(effective_from=APR, submit=True)
+		later.cancel()
+		self.assertEqual(rates.version_at(APR), self.v1.name)
+
+	def test_rate_for_item_and_utility(self):
+		self.assertEqual(rates.rate_for(JAN, "Electricity"), 3000)
+		self.assertEqual(rates.rate_for(JAN, "Item", self.pouch), 1000)
+
+	def test_rate_for_returns_none_when_missing(self):  # FR-M7-05.2 cho FEAT-046
+		self.assertIsNone(rates.rate_for(JAN, "Steam"))
+		self.assertIsNone(rates.rate_for(JAN, "Item", self.label))
+		self.assertIsNone(rates.rate_for("2030-06-01", "Electricity"))
+
+	def test_past_lookup_unchanged_after_new_version(self):  # FR-M7-03.1
+		before = rates.rate_for("2031-02-15", "Electricity")
+		make_cost_rate_version(effective_from=APR, rates=[rate_line(4000, "Electricity")], submit=True)
+		self.assertEqual(rates.rate_for("2031-02-15", "Electricity"), before)
+		self.assertEqual(rates.rate_for(APR, "Electricity"), 4000)
+
+	def test_pack_norms_for_pack_type(self):
+		self.assertEqual(
+			rates.pack_norms(JAN, self.pouch),
+			[{"item": self.label, "qty_per_pack": 2}, {"item": self.pouch, "qty_per_pack": 1}],
+		)
+		self.assertEqual(rates.pack_norms(JAN, self.label), [])
+		self.assertEqual(rates.pack_norms("2030-06-01", self.pouch), [])

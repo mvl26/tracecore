@@ -6,7 +6,7 @@ R09 lập Nháp, R01 Ghi sổ = duyệt (D2). Định mức theo chương trình
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, flt, formatdate, now_datetime
+from frappe.utils import add_days, flt, formatdate, getdate, now_datetime
 
 DOCTYPE = "Cost Rate Version"
 
@@ -133,3 +133,59 @@ def on_cancel(doc):
 	closed_by_this = add_days(doc.effective_from, -1)
 	for previous in _approved(effective_to=closed_by_this):
 		frappe.db.set_value(DOCTYPE, previous.name, "effective_to", None)
+
+
+# --- tra cứu cho tính giá thành (FEAT-046) --------------------------------------------------------------------
+
+
+def version_at(date):
+	"""Bản đã duyệt có hiệu lực tại `date` (FR-M7-03.1); Nháp/Đã hủy không bao giờ dùng (UC-28 E3)."""
+	date = getdate(date)
+	names = frappe.get_all(
+		DOCTYPE,
+		filters={"docstatus": 1, "effective_from": ["<=", date]},
+		or_filters=[["effective_to", "is", "not set"], ["effective_to", ">=", date]],
+		order_by="effective_from desc",
+		pluck="name",
+		limit=1,
+	)
+	return names[0] if names else None
+
+
+def rate_for(date, rate_type, item=None):
+	"""Đơn giá `rate_type` (và `item` với vật tư) tại `date`; None khi chưa định giá (FR-M7-05.2)."""
+	version = version_at(date)
+	if not version:
+		return None
+	rate = frappe.db.get_value(
+		"Cost Rate Line",
+		{"parent": version, "parenttype": DOCTYPE, "rate_type": rate_type, "item": item or ("is", "not set")},
+		"rate",
+	)
+	return flt(rate) if rate is not None else None
+
+
+def pack_norms(date, pack_type):
+	"""Định mức theo loại gói `pack_type` tại `date`: ``[{"item", "qty_per_pack"}]`` theo thứ tự dòng."""
+	version = version_at(date)
+	if not version:
+		return []
+	return frappe.get_all(
+		"Cost Norm Line",
+		filters={"parent": version, "parenttype": DOCTYPE, "pack_type": pack_type},
+		fields=["item", "qty_per_pack"],
+		order_by="idx",
+	)
+
+
+def snapshot(version):
+	"""Toàn bộ bảng giá của `version` cho RPC `v1.costing.rate_at`."""
+	rows = {"parent": version, "parenttype": DOCTYPE}
+	return {
+		"rates": frappe.get_all(
+			"Cost Rate Line", filters=rows, fields=["rate_type", "item", "uom", "rate"], order_by="idx"
+		),
+		"pack_norms": frappe.get_all(
+			"Cost Norm Line", filters=rows, fields=["pack_type", "item", "qty_per_pack"], order_by="idx"
+		),
+	}
