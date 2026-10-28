@@ -4419,3 +4419,42 @@ Percent,Tỷ lệ (%),Cost Allocation
 Source DocType,Loại chứng từ nguồn,Cost Entry
 Target,Đối tượng,Cost Allocation
 Target,Đối tượng,Cost Entry
+Cost Rate Version,Phiên bản bảng giá,
+Cost Rate Line,Dòng đơn giá,
+Cost Norm Line,Dòng định mức theo loại gói,
+Effective From,Hiệu lực từ ngày,
+Effective To,Hiệu lực đến ngày,
+Approved By,Người duyệt,
+Approved On,Thời điểm duyệt,
+Rate Type,Loại đơn giá,
+Unit Prices,Đơn giá,
+Pack Norms,Định mức theo loại gói,
+Quantity per Pack,Số lượng mỗi gói,
+Labor,Nhân công,
+Electricity,Điện,
+Tap Water,Nước máy,
+RO Water,Nước RO,
+Steam,Hơi,Cost Rate Line
+Approved,Đã duyệt,Cost Rate Version
+Draft,Nháp,Cost Rate Version
+Cancelled,Đã hủy,Cost Rate Version
+Set by the system when a newer version is approved.,Hệ thống tự đặt khi một phiên bản mới hơn được duyệt.,
+Norms per process program are kept on the process program.,Định mức theo chương trình xử lý được khai báo trên chương trình xử lý.,
+Row {0}: choose the item of this unit price.,Dòng {0}: chọn vật tư của đơn giá này.,
+Row {0}: a {1} price has no item. Clear the item.,Dòng {0}: đơn giá {1} không gắn vật tư. Hãy xóa vật tư.,
+Row {0}: {1} already has a price in this version.,Dòng {0}: {1} đã có đơn giá trong phiên bản này.,
+Row {0}: the unit price cannot be negative.,Dòng {0}: đơn giá không được âm.,
+Row {0}: the unit price of {1} is 0.,Dòng {0}: đơn giá của {1} bằng 0.,
+Row {0}: pack type {1} already has a norm for {2}.,Dòng {0}: loại gói {1} đã có định mức cho {2}.,
+Row {0}: the quantity per pack cannot be negative.,Dòng {0}: số lượng mỗi gói không được âm.,
+Row {0}: the norm of {1} for pack type {2} is 0.,Dòng {0}: định mức {1} cho loại gói {2} bằng 0.,
+"These active programs have no consumption norm, so their loads cannot be costed: {0}",Các chương trình đang dùng sau chưa có định mức tiêu hao nên chưa tính được giá thành mẻ: {0},
+Add at least one unit price before approving the price list.,Thêm ít nhất một đơn giá trước khi duyệt bảng giá.,
+"Price list {0} is already approved from {1}, so a version starting {2} would overlap it. Choose a date after {1}.","Bảng giá {0} đã được duyệt từ ngày {1}, phiên bản bắt đầu {2} sẽ chồng lấn. Hãy chọn ngày sau {1}.",
+Effective dates overlap,Hiệu lực bị chồng lấn,
+Price list {0} starts later and replaces this one. Cancel {0} first.,Bảng giá {0} bắt đầu muộn hơn và đã thay bảng giá này. Hãy hủy {0} trước.,
+Only a draft price list can take prices from stock.,Chỉ bảng giá Nháp mới lấy được giá từ tồn kho.,
+date must be a date in YYYY-MM-DD form.,date phải là ngày dạng YYYY-MM-DD.,
+Take Prices from Stock,Lấy giá bình quân tồn kho,
+Some prices were kept,Một số đơn giá được giữ nguyên,
+"These items have no stock, so their prices were not changed: {0}",Các vật tư sau không còn tồn kho nên đơn giá không đổi: {0},

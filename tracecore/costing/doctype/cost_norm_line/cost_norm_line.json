@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "creation": "2026-10-28 09:00:00.000000",
+ "description": "Consumption norm per pack type (FEAT-045, A-48 D1): how much of a supply one pack of this type uses. Norms per program stay on the process program.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "pack_type",
+  "item",
+  "qty_per_pack"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "fieldname": "pack_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Pack Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "columns": 4,
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "qty_per_pack",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Quantity per Pack",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-28 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Norm Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

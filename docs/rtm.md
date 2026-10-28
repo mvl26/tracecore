@@ -67,8 +67,8 @@
 | FR-M6-06 | Cảnh báo tồn tối thiểu và sắp hết hạn | Must | Active | BR-M6 (BRD #02) | UC-26 | ADR-009; ADR-014 | FEAT-043 | _TBD_ |
 | FR-M7-01 | Nhập chi phí theo khoản mục | Must | Active | BR-M7 (BRD #02) | UC-27 | _TBD_ | FEAT-044 | _TBD_ |
 | FR-M7-02 | Gắn chi phí với đối tượng phân bổ | Must | Active | BR-M7 (BRD #02) | UC-27 | _TBD_ | FEAT-044 | _TBD_ |
-| FR-M7-03 | Bảng định giá vật tư có phiên bản | Must | Active | BR-M7 (BRD #02) | UC-28 | _TBD_ | FEAT-045 | _TBD_ |
-| FR-M7-04 | Định mức tiêu hao theo chương trình | Must | Active | BR-M7 (BRD #02) | UC-28 | _TBD_ | FEAT-045 | _TBD_ |
+| FR-M7-03 | Bảng định giá vật tư có phiên bản | Must | Active | BR-M7 (BRD #02) | UC-28 | A-48 | FEAT-045 | `tracecore/costing/tests/test_cost_rate_version.py`, `test_rates.py`, `test_rate_at_rpc.py`, `test_cost_rate_version_desk_assets.py` |
+| FR-M7-04 | Định mức tiêu hao theo chương trình | Must | Active | BR-M7 (BRD #02) | UC-28 | A-48 | FEAT-045 | `tracecore/costing/tests/test_rates.py` (định mức loại gói, cảnh báo 0 và chương trình thiếu định mức); `tracecore/equipment/tests/test_norms.py` (định mức theo chương trình, FEAT-038) |
 | FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
 | FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
 | FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | `tracecore/par/tests/test_config.py`, `tracecore/par/tests/test_par_desk_assets.py`; e2e `tests_e2e/test_desk_par.py` (FEAT-031) |

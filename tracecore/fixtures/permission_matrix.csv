@@ -35,7 +35,7 @@ DT-STOCKCOUNT,Stock Reconciliation,R,RA,R,R,RW,RWS,RW,,RWS,R,
 DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,FEAT-044 A-47 C12
 DT-COSTCAT,Cost Category,R,R,,,,,,,RW,R,FEAT-044 A-47 C12
 DT-COSTSET,Cost Settings,RW,,,,,,,,R,,FEAT-044 A-47 C6
-DT-COSTRATE,Cost Rate Version,RA,R,,,,,,,RWS,R,future FEAT-045
+DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D5: R01 duyệt (Ghi sổ/Hủy) theo UC-28 bước 4 (Frappe cần W để Ghi sổ); R09 lập Nháp
 DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
 DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
 DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032

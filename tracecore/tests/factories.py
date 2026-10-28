@@ -461,6 +461,35 @@ def make_cost_entry(**kwargs):
 	return frappe.get_doc(values).insert()
 
 
+def rate_line(rate, rate_type="Item", item=None):
+	"""Một dòng `Cost Rate Line` (FEAT-045) cho `make_cost_rate_version`."""
+	return {"rate_type": rate_type, "item": item, "rate": rate}
+
+
+def norm_line(pack_type, item, qty):
+	"""Một dòng `Cost Norm Line` (định mức theo loại gói, FEAT-045 A-48 D1)."""
+	return {"pack_type": pack_type, "item": item, "qty_per_pack": qty}
+
+
+def make_cost_rate_version(effective_from=None, rates=None, pack_norms=None, submit=False, **kwargs):
+	"""Tạo Cost Rate Version Nháp (FEAT-045): mặc định hiệu lực từ hôm nay, một dòng điện 3.000 đ/kWh.
+
+	`submit=True` ghi sổ (= R01 duyệt) bằng user hiện tại. `kwargs` ghi đè bất kỳ trường nào.
+	"""
+	values = {
+		"doctype": "Cost Rate Version",
+		"version_label": "Bảng giá " + frappe.generate_hash(length=6),
+		"effective_from": effective_from or today(),
+		"rates": rates if rates is not None else [rate_line(3000, "Electricity")],
+		"pack_norms": pack_norms or [],
+		**kwargs,
+	}
+	doc = frappe.get_doc(values).insert()
+	if submit:
+		doc.submit()
+	return doc
+
+
 def make_program(equipment, code="MH-01-134", minutes=4, kwh=3.5, water=0, consumables=None, **kwargs):
 	"""Tạo Process Program cho máy `equipment`. `kwargs` ghi đè bất kỳ trường nào (parameters, ...)."""
 	values = {
