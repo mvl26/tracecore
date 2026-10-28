@@ -791,6 +791,9 @@ class TestRenderLabel(IsolatedTestCase):
 		self.assertFalse(set(core_print.SET_LABELS) & set(core_print.OBJECT_LABELS))
 
 	def test_render_label_uses_active_template_and_printer_unicode(self):
+		# R10 có thể đã thêm mẫu Set Tag khác và đang active; test chỉ dựa vào mẫu mẫu "Set tag"
+		frappe.db.set_value("Label Template", {"label_object": "Set Tag"}, "is_active", 0)
+		frappe.db.set_value("Label Template", "Set tag", "is_active", 1)
 		frappe.db.set_value(
 			"Label Template",
 			"Set tag",
