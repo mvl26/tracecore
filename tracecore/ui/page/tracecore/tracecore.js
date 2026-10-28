@@ -48,12 +48,20 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			const links = $("<nav></nav>")
 				.attr("aria-label", __("CSSD management"))
 				.appendTo(management);
-			data.management.forEach((link) =>
+			// link theo nhóm (thứ tự thiết lập ban đầu); context "TraceCore Launcher" để tên CSSD thắng bản dịch chung
+			let group = null;
+			data.management.forEach((link) => {
+				if (link.group !== group) {
+					group = link.group;
+					$("<h3 class='tc-launcher-group'></h3>")
+						.text(__(group, null, "TraceCore Launcher"))
+						.appendTo(links);
+				}
 				$("<a class='tc-launcher-link'></a>")
 					.attr("href", link.route)
-					.text(__(link.doctype))
-					.appendTo(links)
-			);
+					.text(__(link.label, null, "TraceCore Launcher"))
+					.appendTo(links);
+			});
 		} else
 			$("<p></p>").text(__("No management access for this account.")).appendTo(management);
 		const station = card(

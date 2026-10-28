@@ -18,6 +18,35 @@ class TestLauncher(FrappeTestCase):
 		self.assertTrue({"Wash Batch", "Sterile Putaway", "Employee", "Zone Station"} <= doctypes)
 		self.assertFalse(doctypes & {"Sales Invoice", "Customer", "Lead", "Opportunity"})
 
+	def test_setup_links_include_department_user_and_catalog_import(self):
+		# Thiết lập ban đầu: khoa, tài khoản và import danh mục phải mở được từ trang chủ TraceCore
+		with (
+			patch("frappe.session", frappe._dict(user="admin@example.test")),
+			patch("frappe.get_roles", return_value=["TC R10"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+		):
+			links = get_context()["management"]
+		routes = {link["route"] for link in links}
+		self.assertTrue({"/app/department", "/app/user", "/app/tc-import"} <= routes)
+		self.assertEqual(links[0]["group"], "Organization and staff")
+		self.assertTrue(all(link["label"] and link["group"] for link in links))
+		# nhóm liền nhau, không lặp lại sau khi đã sang nhóm khác
+		groups = [link["group"] for link in links]
+		self.assertEqual(groups, sorted(groups, key=groups.index))
+
+	def test_catalog_import_follows_page_roles(self):
+		# Page tc-import chỉ cho R02 / R10 / System Manager; R01 quản lý nhưng không thấy link import
+		with (
+			patch("frappe.session", frappe._dict(user="manager@example.test")),
+			patch("frappe.get_roles", return_value=["TC R01"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+		):
+			routes = {link["route"] for link in get_context()["management"]}
+		self.assertNotIn("/app/tc-import", routes)
+		self.assertIn("/app/department", routes)
+
 	def test_guest_cannot_read_launcher(self):
 		with patch("frappe.session", frappe._dict(user="Guest")):
 			with self.assertRaises(frappe.PermissionError):

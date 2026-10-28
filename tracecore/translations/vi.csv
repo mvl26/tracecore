@@ -3993,3 +3993,15 @@ Enter the same 6-digit PIN twice.,Nhập cùng một PIN 6 chữ số hai lần.
 Station PIN set. The employee must change it at the next card scan.,Đã đặt PIN trạm. Nhân viên phải đổi PIN ở lần quẹt thẻ kế tiếp.,
 Reset station PIN,Đặt lại PIN trạm,
 Set station PIN,Đặt PIN trạm,
+Organization and staff,Tổ chức và nhân sự,TraceCore Launcher
+"Zones, stations and printing","Khu, trạm và in ấn",TraceCore Launcher
+Equipment,Thiết bị,TraceCore Launcher
+Instruments,Dụng cụ,TraceCore Launcher
+Stock and par levels,Kho và cơ số,TraceCore Launcher
+Processing records,Chứng từ xử lý,TraceCore Launcher
+Data and audit,Dữ liệu và nhật ký,TraceCore Launcher
+User,Tài khoản người dùng,TraceCore Launcher
+Item,Vật tư,TraceCore Launcher
+Batch,Lô vật tư,TraceCore Launcher
+Stock Entry,Phiếu kho vật tư,TraceCore Launcher
+Department,Khoa,TraceCore Launcher

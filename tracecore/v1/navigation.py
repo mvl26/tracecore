@@ -16,28 +16,18 @@ STEP_ROLES = {
 }
 # Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
 IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
-MANAGEMENT_TARGETS = (
-	"Instrument",
-	"Instrument Set Type",
-	"Set Unit",
-	"Pack",
-	"Wash Batch",
-	"Sterile Putaway",
-	"Sterile Location",
-	"Equipment",
-	"Process Program",
-	"Par Level",
-	"Employee",
-	"Station Competency",
-	"Item",
-	"Batch",
-	"Stock Entry",
-	"Zone Station",
-	"Printer",
-	"Label Template",
-	"Print Job",
-	"Audit Log",
+# Nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
+MANAGEMENT_GROUPS = (
+	("Organization and staff", ("Department", "Employee", "User", "Station Competency")),
+	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
+	("Equipment", ("Equipment", "Process Program")),
+	("Instruments", ("Instrument", "Instrument Set Type", "Set Unit")),
+	("Stock and par levels", ("Item", "Batch", "Stock Entry", "Sterile Location", "Par Level")),
+	("Processing records", ("Pack", "Wash Batch", "Sterile Putaway")),
+	("Data and audit", ("tc-import", "Audit Log")),
 )
+# Page Desk (không phải DocType) trong menu: quyền theo role của Page
+MANAGEMENT_PAGES = {"tc-import": "Catalog Import"}
 
 
 @frappe.whitelist(methods=["GET"])
@@ -72,10 +62,41 @@ def context():
 				)
 	return {
 		"stations": stations,
-		"management": [
-			{"doctype": dt, "route": "/app/" + frappe.scrub(dt).replace("_", "-")}
-			for dt in MANAGEMENT_TARGETS
-			if manager and frappe.has_permission(dt, ptype="read")
-		],
+		"management": _management_links() if manager else [],
 		"department": admin or "TC R08" in roles,
 	}
+
+
+def _management_links():
+	"""Link quản lý theo nhóm; `label` là chuỗi gốc tiếng Anh, client dịch bằng ``__()``."""
+	links = []
+	for group, targets in MANAGEMENT_GROUPS:
+		for target in targets:
+			if target in MANAGEMENT_PAGES:
+				if _page_permitted(target):
+					links.append(
+						{
+							"group": group,
+							"label": MANAGEMENT_PAGES[target],
+							"doctype": None,
+							"route": "/app/" + target,
+						}
+					)
+			elif frappe.has_permission(target, ptype="read"):
+				links.append(
+					{
+						"group": group,
+						"label": target,
+						"doctype": target,
+						"route": "/app/" + frappe.scrub(target).replace("_", "-"),
+					}
+				)
+	return links
+
+
+def _page_permitted(page):
+	# như Page.is_permitted: Page không gán role thì ai cũng mở được
+	if not frappe.db.exists("Page", page):
+		return False
+	page_roles = frappe.db.get_values("Has Role", {"parent": page, "parenttype": "Page"}, "role", pluck=True)
+	return not page_roles or bool(set(page_roles) & set(frappe.get_roles()))
