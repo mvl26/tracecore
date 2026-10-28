@@ -10,12 +10,19 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from tracecore.core import audit
+from tracecore.equipment import maintenance
 
 
 class MaintenanceRecord(Document):
 	def validate(self):
 		self.validate_numbers()
 		self.compute_part_amounts()
+
+	def before_submit(self):
+		maintenance.before_submit(self)
+
+	def on_submit(self):
+		maintenance.on_submit(self)
 
 	def validate_numbers(self):
 		"""Chi phí, thời gian dừng, chu kỳ và SLA không âm (UC-22 E3)."""
