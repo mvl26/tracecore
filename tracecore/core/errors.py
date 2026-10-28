@@ -22,6 +22,7 @@ HTTP_STATUS: dict[str, int] = {
 			"SESSION_STATION_MISMATCH",
 			"CARD_MISMATCH",
 			"APPROVER_NOT_ALLOWED",  # FEAT-032: chỉ R01 / R02 được ủy quyền duyệt ghi đè cơ số
+			"COMPETENCY_NOT_ALLOWED",  # FEAT-037: chỉ R02 / R10 gán và thu hồi năng lực trạm
 			"PERMISSION_DENIED",  # FEAT-009 A-40: PermissionError khi phát lại offline thành Block để ghi Sync Conflict
 			"OWN_PIN_RESET",  # FR-M9-09.1: R02 không tự đặt PIN trạm cho mình trên Desk
 		),
@@ -60,6 +61,12 @@ HTTP_STATUS: dict[str, int] = {
 			"IMPORT_ROWS_INVALID",
 			"IMPORT_FILE_INVALID",
 			"PIN_FORMAT_INVALID",
+			# FEAT-037: gán năng lực trạm
+			"COMPETENCY_INVALID",
+			"TEMP_TOO_LONG",
+			"CERTIFICATE_TYPE_INVALID",
+			"STATION_INVALID",
+			"EMPLOYEE_INVALID",
 			# FEAT-015 A-09 (S4, S5, S7): loại bộ / phiên bản BOM / hạn lưu loại gói
 			"BOM_EMPTY",
 			"BOM_LINE_INVALID",
@@ -215,6 +222,9 @@ HTTP_STATUS: dict[str, int] = {
 			"RECEIPT_CLOSED",
 			"ITEM_NOT_CONFIRMED",
 			"FORCE_NOT_ALLOWED",
+			# FEAT-037: năng lực đã có / đã thu hồi
+			"COMPETENCY_EXISTS",
+			"COMPETENCY_NOT_ACTIVE",
 			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
 			"CODE_RANGE_INVALID",
 			"CODE_RANGE_EXHAUSTED",

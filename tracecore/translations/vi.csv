@@ -4227,3 +4227,81 @@ This certificate was renewed; it is kept as history.,Chứng chỉ này đã đ�
 {0} (expired),{0} (đã hết hạn),
 Desk Bell Entry,Mục chuông Desk,Notification Delivery
 PDA,PDA,Notification Rule
+Competency Matrix,Ma trận năng lực,TraceCore Launcher
+Competency Matrix,Ma trận năng lực,
+Shift Schedule,Lịch ca,TraceCore Launcher
+Station Output,Sản lượng theo ca,TraceCore Launcher
+Shift Assignment,Phân ca,TraceCore Launcher
+Shift Schedule,Lịch ca,
+Station Output,Sản lượng theo ca,
+Competency Required Cert,Chứng chỉ bắt buộc của năng lực,
+Evaluated By,Người đánh giá,Station Competency
+Evaluated On,Ngày đánh giá,Station Competency
+Revoke Reason,Lý do thu hồi,Station Competency
+Required Certificates,Chứng chỉ bắt buộc,Station Competency
+"Certificates the employee must hold, valid, to sign in at this station. Empty = no certificate is required.",Chứng chỉ nhân viên phải có và còn hạn để đăng nhập trạm này. Để trống = không yêu cầu chứng chỉ.,
+Certificate Type,Loại chứng chỉ,Competency Required Cert
+Practice License,Chứng chỉ hành nghề (CCHN),Competency Required Cert
+Infection Control,Kiểm soát nhiễm khuẩn,Competency Required Cert
+Sterilization,Tiệt khuẩn,Competency Required Cert
+Pressure Equipment Operation,Vận hành thiết bị áp lực,Competency Required Cert
+Other,Khác,Competency Required Cert
+"Station competency validity, required certificates and temporary access (FEAT-003, FEAT-037). Granted and revoked from the Competency Matrix.","Hiệu lực năng lực trạm, chứng chỉ bắt buộc và quyền tạm (FEAT-003, FEAT-037). Gán và thu hồi từ Ma trận năng lực.",
+Work Zone,Khu làm việc,Shift Assignment
+Zone of the shift. The employee needs a valid station competency in this zone (FR-M4-04.1).,Khu của ca. Nhân viên cần có năng lực trạm còn hiệu lực trong khu này (FR-M4-04.1).,
+"Choose a zone, not a station.","Chọn một khu, không phải một trạm.",
+{0} has no valid station competency in zone {1} for these dates. Grant it in the competency matrix first.,{0} chưa có năng lực trạm còn hiệu lực trong khu {1} cho các ngày này. Hãy gán năng lực trong Ma trận năng lực trước.,
+Only R02 or R10 can grant or revoke station competencies.,Chỉ R02 hoặc R10 được gán và thu hồi năng lực trạm.,
+"Only R01, R02 or R10 can open the competency matrix.","Chỉ R01, R02 hoặc R10 được mở ma trận năng lực.",
+Ask R02 for the station assignment.,Hỏi R02 về phân công trạm.,
+Employee not found,Không tìm thấy nhân viên,
+Employee {0} does not exist or is not active.,Nhân viên {0} không tồn tại hoặc không còn làm việc.,
+Choose an active employee.,Chọn một nhân viên đang làm việc.,
+Station not valid,Trạm không hợp lệ,
+{0} is not an active station.,{0} không phải là trạm đang hoạt động.,
+"Choose an active station, not a zone.","Chọn một trạm đang hoạt động, không phải khu.",
+Certificate type not valid,Loại chứng chỉ không hợp lệ,
+Unknown certificate type: {0}.,Loại chứng chỉ không có trong danh sách: {0}.,
+Choose the certificate types from the list.,Chọn loại chứng chỉ trong danh sách.,
+Period not valid,Khoảng hiệu lực không hợp lệ,
+The competency must end after it starts.,Năng lực phải kết thúc sau khi bắt đầu.,
+Enter a later end date and time.,Nhập ngày giờ kết thúc muộn hơn.,
+A temporary competency needs the reason for the staff shortage.,Năng lực tạm thời cần lý do thiếu người.,
+Temporary access is too long,Quyền tạm quá dài,
+A temporary competency lasts at most {0} hours.,Năng lực tạm thời kéo dài tối đa {0} giờ.,
+Choose an end time within {0} hours.,Chọn giờ kết thúc trong vòng {0} giờ.,
+Competency already granted,Đã có năng lực này,
+{0} already has an active competency at {1} for this period.,{0} đã có năng lực đang hiệu lực tại {1} trong khoảng này.,
+"Revoke the existing competency first, then grant a new one.","Thu hồi năng lực hiện có trước, rồi gán mới.",
+No reason for revoking the competency was entered.,Chưa nhập lý do thu hồi năng lực.,
+Competency already revoked,Năng lực đã được thu hồi,
+Competency {0} is no longer active.,Năng lực {0} không còn hiệu lực.,
+Open the matrix to see the current competencies.,Mở ma trận để xem các năng lực hiện tại.,
+Station competency suspended,Năng lực trạm bị tạm dừng,
+Competency at {0} of {1} is suspended: certificate {2} has expired,Năng lực tại {0} của {1} bị tạm dừng: chứng chỉ {2} đã hết hạn,
+required_certificates must be a list of certificate types.,required_certificates phải là danh sách loại chứng chỉ.,
+Valid,Còn hiệu lực,Competency Matrix
+Temporary,Tạm thời,Competency Matrix
+Suspended,Tạm dừng,Competency Matrix
+None,Chưa có,Competency Matrix
+A required certificate is missing or expired.,Thiếu hoặc hết hạn một chứng chỉ bắt buộc.,
+No employees or stations to show,Không có nhân viên hoặc trạm để hiển thị,
+Add employees with a user account and active stations first.,Hãy thêm nhân viên có tài khoản và các trạm đang hoạt động trước.,
+Grant competency: {0} at {1},Gán năng lực: {0} tại {1},
+"Temporary access (staff shortage, at most 24 hours)","Quyền tạm (thiếu người, tối đa 24 giờ)",
+Valid Until,Có hiệu lực đến,Competency Matrix
+Temporary Reason,Lý do tạm thời,Competency Matrix
+Tick the certificates this employee must hold to sign in at this station.,Đánh dấu các chứng chỉ nhân viên phải có để đăng nhập trạm này.,
+Grant,Gán,Competency Matrix
+Competency granted.,Đã gán năng lực.,
+Competency revoked.,Đã thu hồi năng lực.,
+Revoke competency,Thu hồi năng lực,
+{0} at {1},{0} tại {1},
+Valid until {0},Có hiệu lực đến {0},
+Required certificates,Chứng chỉ bắt buộc,
+Missing or expired,Thiếu hoặc hết hạn,
+Loading competency matrix…,Đang tải ma trận năng lực…,
+Cannot load competency matrix,Không tải được ma trận năng lực,
+Connect to the network to see the competency matrix.,Kết nối mạng để xem ma trận năng lực.,
+Sets Processed,Số bộ đã xử lý,Station Output
+Wash and Sterilization Batches,Số lô rửa và mẻ tiệt khuẩn,Station Output

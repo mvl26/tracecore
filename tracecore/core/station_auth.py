@@ -15,7 +15,7 @@ from frappe.utils import add_to_date, get_datetime, now_datetime
 from frappe.utils.password import get_decrypted_password, set_encrypted_password
 from passlib.hash import bcrypt
 
-from tracecore.core import audit
+from tracecore.core import audit, extension
 from tracecore.core.errors import Block, BlockedError
 
 SESSION_HOURS = 8
@@ -43,12 +43,12 @@ def _block(code: str, title: str, reason: str, action: str) -> BlockedError:
 	return BlockedError(Block(code, _(title), _(reason), _(action)))
 
 
-def _audit(action: str, employee=None, station=None, code=None, session=None, client_ts=None):
+def _audit(action: str, employee=None, station=None, code=None, session=None, client_ts=None, detail=None):
 	audit.log(
 		"Reject" if "Reject" in action else "Login",
 		ref_doctype="Employee" if employee else "Station Session",
 		ref_name=employee or session,
-		new={"event": action, "station": station, "code": code, "session": session},
+		new={"event": action, "station": station, "code": code, "session": session, **(detail or {})},
 		station=station,
 		client_ts=client_ts,
 	)
@@ -192,28 +192,41 @@ def _require_station(station: str) -> None:
 		)
 
 
+def _missing_certificates(employee: str, competency: str, at) -> list[str]:
+	"""Chứng chỉ bắt buộc của năng lực mà nhân viên chưa có bản còn hạn (hook của M4, core không import hr)."""
+	results = extension.run("tracecore_competency_missing_certificates", employee, competency, at)
+	return sorted({certificate_type for result in results for certificate_type in result})
+
+
 def _require_competency(employee: str, station: str, client_ts=None) -> None:
 	now = now_datetime()
-	name = frappe.db.get_value(
+	names = frappe.get_all(
 		"Station Competency",
-		{
+		filters={
 			"employee": employee,
 			"station": station,
 			"is_active": 1,
 			"valid_from": ["<=", now],
 			"valid_until": [">=", now],
 		},
-		"name",
+		pluck="name",
 	)
-	if not name:
-		_audit(
-			"Login Reject",
-			employee=employee,
-			station=station,
-			code="COMPETENCY_REQUIRED",
-			client_ts=client_ts,
-		)
-		raise _card_rejected()
+	missing_by_name = {name: _missing_certificates(employee, name, now) for name in names}
+	if any(not missing for missing in missing_by_name.values()):
+		return
+	missing = sorted(
+		{certificate_type for missing in missing_by_name.values() for certificate_type in missing}
+	)
+	# FR-M4-03.2: ghi lý do cụ thể vào Audit Log; người quẹt thẻ chỉ thấy một câu trả lời chung (ADR-006, FEAT-003)
+	_audit(
+		"Login Reject",
+		employee=employee,
+		station=station,
+		code="CERTIFICATE_REQUIRED" if names else "COMPETENCY_REQUIRED",
+		client_ts=client_ts,
+		detail={"missing_certificates": missing} if missing else None,
+	)
+	raise _card_rejected()
 
 
 def _close_session(doc, reason: str, client_ts=None) -> None:
