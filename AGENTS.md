@@ -26,8 +26,8 @@ Trả lời người dùng bằng tiếng Việt; thuật ngữ kỹ thuật gi�
 - **Lập kế hoạch theo FEAT** bằng `writing-plans`, đầu vào là mục FEAT trong implementation-plan §3, acceptance criteria EARS và handoff detailed-design / ui-design. Lưu tại `docs/superpowers/plans/FEAT-NNN-<slug>.md`. Mỗi task ghi rõ FR / BRU / AC mà nó đáp ứng.
 - **Không dùng git worktree.** App phải nằm ở `apps/tracecore` trong bench thì mới chạy được `bench run-tests`. Làm trên nhánh `feat/FEAT-NNN-<slug>` ngay trong `apps/tracecore`.
 - **TDD bắt buộc** (`test-driven-development`): viết test `FrappeTestCase` trước, thấy fail, rồi mới code. Mỗi BRU có ít nhất 1 test gắn marker `@bru("BRU-XXX-NNN")`.
-- **Xong** nghĩa là: test pass, coverage changed-code ≥ 70 %, lint sạch, mọi AC của FEAT đạt. Chạy lệnh thật và dán kết quả trước khi báo xong.
-- **Kết thúc nhánh**: mở PR vào `main` (Conventional Commits). Không merge thẳng; `main` cần CI xanh và 1 review.
+- **Xong** nghĩa là: test `FrappeTestCase` pass, coverage changed-code ≥ 70 %, lint sạch, mọi AC của FEAT đạt. Chạy lệnh thật và dán kết quả trước khi báo xong. **Không chạy E2E (Playwright)** trừ khi người dùng bảo chạy.
+- **Kết thúc nhánh**: merge vào `develop` (Conventional Commits). **Không tự tạo Pull Request**; chỉ tạo PR khi người dùng bảo.
 
 ## Môi trường và lệnh
 
@@ -44,7 +44,7 @@ bench --site <TEST_SITE> run-tests --app tracecore --coverage
 bench --site <TEST_SITE> run-tests --module tracecore.<module>.doctype.<doctype>.test_<doctype>
 
 # Coverage changed-code (ngưỡng CI)
-diff-cover coverage.xml --compare-branch=origin/main --fail-under=70
+diff-cover coverage.xml --compare-branch=origin/develop --fail-under=70
 
 # Sau khi đổi DocType / fixtures / assets
 bench --site <SITE> migrate
@@ -54,7 +54,7 @@ bench build --app tracecore
 pre-commit run --all-files
 ```
 
-- E2E: Playwright for Python (`pytest-playwright`), viewport kiosk 1366×768 và PDA 412×915, offline bằng `context.set_offline(True)`. Không dùng Cypress.
+- E2E: Playwright for Python (`pytest-playwright`), viewport kiosk 1366×768 và PDA 412×915, offline bằng `context.set_offline(True)`. Không dùng Cypress. Chỉ chạy khi người dùng bảo.
 - Tokens: `scripts/build_tokens.py` sinh `tracecore/public/css/tokens.css` từ `docs/tokens.json` (F-11). Không sửa tay `tokens.css`.
 
 ## Quy tắc kiến trúc — không được vi phạm
