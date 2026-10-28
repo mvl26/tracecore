@@ -89,3 +89,14 @@
 - [x] `bench --site test_site run-tests --app tracecore --module` cho các module mới và `tracecore.equipment.tests.test_maintenance`; `--coverage` + `diff-cover … --compare-branch=origin/develop --fail-under=70`.
 - [x] `pre-commit run --all-files` sạch; `bench --site <SITE> migrate` + `bench build --app tracecore`.
 - [x] Ghi vào cuối plan: kết quả test, coverage, các mục hoãn (C10) và điểm lệch; push nhánh `feat/FEAT-044-cost-entry`. Merge vào `develop` khi người dùng bảo.
+
+## Ghi chú hiện thực (29/10/2026)
+- **Kết quả test:** 80 test mới của FEAT-044 (`tracecore.costing`) đạt; `tracecore.equipment.tests.test_maintenance` (31) vẫn đạt. Chạy cả app: 2535 test, 8 lỗi, **cả 8 đều có sẵn trên `develop`** (không do FEAT-044): `test_errors` (bảng HTTP status), `test_set_tags` (2), `test_set_templates` (3, mẫu `Set Tag - 40x20` còn lại trên `test_site`), `test_station_page.test_vi_translations_cover_source_strings` (7 chuỗi của FEAT-036/037 chưa có bản dịch). Coverage changed-code 98 % (`diff-cover` so với `origin/develop`, ngưỡng 70 %).
+- **Điểm lệch so với plan:**
+  - Tên khoản mục hệ thống đổi sang `Depreciation Cost`, `Maintenance Cost`, `Repair Expense`, `Spare Parts Cost`, `Electricity Expense`, `Tap Water Cost`, `RO Water Cost`, `Steam Cost`, `Compressed Air Cost`, `Labor Cost`, `Protective Gear Cost`, `Outsourcing Cost` vì `Steam`, `Maintenance`, `Repair`... đã có bản dịch nghĩa khác (phương pháp tiệt khuẩn, trạng thái máy). `Cost Category` bật `translated_doctype` nên Link hiện tiếng Việt.
+  - Không khoản mục nào bị xóa (hook `block_delete` áp cho cả `Cost Category`); khoản mục không dùng thì tắt `is_active`.
+  - `Cost Category` và `Cost Settings` vào `permission_matrix.csv` nên `test_permissions` đếm 42 dòng (40 của BA #13 + 2 của A-47).
+  - Nhãn trùng bản dịch của Frappe/ERPNext (Amount, Category, Draft, Target...) dùng dòng `vi.csv` có context DocType (`Cost Entry`, `Cost Allocation`, `Cost Category`), theo quy ước dự án.
+  - Khi kỳ chi phí đã khóa, hồ sơ bảo trì vẫn ghi sổ được; không tạo Cost Entry và ghi một Comment vào hồ sơ (A-47 C9).
+- **Chưa làm / gap:** khấu hao tự sinh hằng tháng và nhân công từ ca (C10, cần chủ đầu tư xác nhận cách tính, tránh trùng với khấu hao theo mẻ của FEAT-046); `Journal Entry`; đơn giá phiên bản định giá (FEAT-045); đồng hồ điện/nước tính tiền tự động từ đơn giá; Cost Entry từ thuê ngoài chất thải (FEAT-049); chưa thử tay trên trình duyệt (form Cost Entry, báo cáo Cost by Target) vì chưa merge và chưa migrate bench dev.
+
