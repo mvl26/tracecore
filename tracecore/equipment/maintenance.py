@@ -11,12 +11,12 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, add_months, cint, date_diff, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import extension
+from tracecore.core import extension, notification
 from tracecore.equipment.status import set_status
 
 DOCTYPE = "Maintenance Record"
 INCIDENT_HOOK = "tracecore_equipment_incident"
-# nhắc kế hoạch trước 30 và 7 ngày tới R02 và R10 (A-43 M1: chuông Desk; email/SMS/leo thang thuộc FEAT-010)
+# nhắc kế hoạch trước 30 và 7 ngày tới R02 và R10 qua trung tâm thông báo (A-43 M1; R10 thêm người nhận ở Notification Rule)
 RECIPIENT_ROLES = ("TC R02", "TC R10")
 REMIND_WINDOWS = (30, 7)
 # loại hồ sơ → hạn hiệu lực trên Equipment (A-43 M4); sự cố không có hạn
@@ -230,26 +230,16 @@ def _recipients():
 	return users
 
 
-def _notify(users, subject, doctype, name):
-	"""Thông báo chuông Desk (Notification Log); email/SMS và leo thang thuộc FEAT-010 (A-43 M1)."""
-	for user in users:
-		frappe.get_doc(
-			{
-				"doctype": "Notification Log",
-				"for_user": user,
-				"type": "Alert",
-				"subject": subject,
-				"document_type": doctype,
-				"document_name": name,
-			}
-		).insert(ignore_permissions=True)
+def _notify(event, users, subject, doctype, name):
+	"""Báo sự kiện qua trung tâm thông báo (FEAT-010): chuông Desk + kênh theo Notification Rule của R10 (A-43 M1)."""
+	notification.emit(event, frappe._dict(doctype=doctype, name=name), subject, users=users)
 
 
 def lock_overdue():
 	"""Việc 00:00 (FR-M5-03.1, BRU-EQP-002): máy Sẵn sàng có kiểm định/hiệu chuẩn đã quá ngày → Khóa; trả tên các máy bị khóa.
 
 	Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ qua tới lần chạy sau khi hết hạn mở. Bảo trì phòng ngừa
-	quá hạn không khóa (chỉ nhắc). Báo R02 và R10 bằng chuông Desk.
+	quá hạn không khóa (chỉ nhắc). Báo R02 và R10 (sự kiện ``EQUIPMENT_LOCKED``).
 	"""
 	day = today()
 	now = now_datetime()
@@ -271,6 +261,7 @@ def lock_overdue():
 		_save_machine(row.name, status="Locked", lock_reason=reason)
 		locked.append(row.name)
 		_notify(
+			"EQUIPMENT_LOCKED",
 			users,
 			_("Equipment {0} is locked: {1}").format(row.name, _(reason, context="Equipment")),
 			"Equipment",
@@ -308,6 +299,7 @@ def remind_due():
 		if row.get(f"reminded_{window}"):
 			continue
 		_notify(
+			"MAINTENANCE_DUE",
 			users,
 			_("{0} of equipment {1} is planned for {2}").format(
 				_(row.record_type, context=DOCTYPE),

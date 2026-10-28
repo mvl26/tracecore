@@ -22,7 +22,7 @@
 ## Quyết định (Amendment A-43, người dùng duyệt 28/10/2026 — chủ đầu tư chưa xác nhận)
 | # | Trạng thái | Quyết định |
 | :- | :- | :- |
-| M1 | [Đã duyệt 28/10/2026] | **Nhắc 30/7 ngày** = chuông Desk (`Notification Log`) gửi R02 (+ R10), giống FEAT-017/029/030/032 (A-18 Q11). Email/SMS/leo thang là FEAT-010. |
+| M1 | [Đã duyệt 28/10/2026] | **Nhắc 30/7 ngày** gửi R02 và R10 qua trung tâm thông báo FEAT-010 (`core.notification.emit`, sự kiện `MAINTENANCE_DUE`, `EQUIPMENT_LOCKED`); đã chuyển từ chuông Desk trực tiếp sau khi FEAT-010 merge. |
 | M2 | [Đã duyệt 28/10/2026] | **FR-M5-04.3 hoãn**: chi phí (`cost`, phụ tùng) chỉ lưu trên `Maintenance Record`; `Cost Entry` M7 do FEAT-044 tạo sau từ các hồ sơ đã ghi sổ (hook `tracecore_after_maintenance_submit` để trống). |
 | M3 | [Đã duyệt 28/10/2026] | **Loại hồ sơ** `record_type`: `Preventive` (bảo trì), `Inspection` (kiểm định), `Calibration` (hiệu chuẩn), `Incident` (sự cố). Một DocType cho cả bốn (DT-MAINT). |
 | M4 | [Đã duyệt 28/10/2026] | **Hạn hiệu lực trên máy**: giữ `Equipment.inspection_due` (kiểm định); thêm `calibration_due` và `maintenance_due` (Date). Ghi sổ hồ sơ Inspection/Calibration/Preventive đặt trường tương ứng = `valid_until` của hồ sơ. |
