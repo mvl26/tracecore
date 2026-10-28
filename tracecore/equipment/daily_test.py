@@ -197,17 +197,22 @@ def _inspection_expired(row):
 	return bool(row.inspection_due and getdate(row.inspection_due) < getdate(today()))
 
 
+def _calibration_expired(row):
+	return bool(row.calibration_due and getdate(row.calibration_due) < getdate(today()))
+
+
 def equipment_block(equipment):
 	"""Hàm của hook ``tracecore_load_equipment_checks`` / ``tracecore_wash_equipment_checks``: Block hoặc None (FR-M5-06).
 
-	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; thiếu test ngày → ``DAILY_TEST_REQUIRED`` kèm danh sách.
-	Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ qua test ngày, và bỏ qua kiểm định quá hạn nếu không phải
-	thiết bị áp lực. Máy ``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.
+	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; quá hạn hiệu chuẩn → ``EQUIPMENT_CALIBRATION_EXPIRED`` (A-42 M5);
+	thiếu test ngày → ``DAILY_TEST_REQUIRED`` kèm danh sách. Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ
+	qua test ngày và hiệu chuẩn quá hạn, và bỏ qua kiểm định quá hạn nếu không phải thiết bị áp lực. Máy
+	``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.
 	"""
 	row = frappe.db.get_value(
 		"Equipment",
 		equipment,
-		["equipment_type", "status", "inspection_due", "unlock_until"],
+		["equipment_type", "status", "inspection_due", "calibration_due", "unlock_until"],
 		as_dict=True,
 	)
 	if not row:
@@ -221,6 +226,15 @@ def equipment_block(equipment):
 				equipment, frappe.utils.formatdate(row.inspection_due)
 			),
 			_("Use another machine. Call R02 about the inspection."),
+		)
+	if _calibration_expired(row) and not unlocked:
+		return Block(
+			"EQUIPMENT_CALIBRATION_EXPIRED",
+			_("Calibration has expired"),
+			_("Equipment {0} was due for calibration on {1}.").format(
+				equipment, frappe.utils.formatdate(row.calibration_due)
+			),
+			_("Use another machine, or call R02 for a temporary unlock."),
 		)
 	if unlocked:
 		return None
@@ -307,6 +321,7 @@ def overview():
 			"status",
 			"lock_reason",
 			"inspection_due",
+			"calibration_due",
 			"unlock_until",
 		],
 		order_by="equipment_type asc, name asc",
@@ -315,8 +330,12 @@ def overview():
 		row["required"] = required_tests(row.equipment_type)
 		row["missing"] = missing_tests(row.name, row.equipment_type)
 		row["inspection_expired"] = _inspection_expired(row)
+		row["calibration_expired"] = _calibration_expired(row)
 		row["unlocked"] = bool(row.unlock_until and get_datetime(row.unlock_until) > now_datetime())
 		row["ready_to_load"] = cint(
-			row.status == "Ready" and not row["missing"] and not row["inspection_expired"]
+			row.status == "Ready"
+			and not row["missing"]
+			and not row["inspection_expired"]
+			and not row["calibration_expired"]
 		)
 	return rows
