@@ -41,7 +41,8 @@ def mount(page, fail=False):
 			call: async () => {
 				if (fail) throw new Error('offline test');
 				return {message: {
-					management: [{doctype: 'Pack', route: '/app/pack'}], department: true,
+					// cùng dạng navigation.context: link theo nhóm {group, label, route}
+					management: [{group: 'Reprocessing', label: 'Pack', route: '/app/pack'}], department: true,
 					stations: [
 						{name: 'TR-123', label: 'T2 Washing', step: 'T2', implemented: true},
 						{name: 'TR-999', label: 'T1 Receiving', step: 'T1', implemented: false}
@@ -66,6 +67,7 @@ def test_launcher_cards_and_station_link(page, viewport):
 	mount(page)
 	expect(page.locator(".tc-launcher-card")).to_have_count(3)
 	expect(page.locator("option[value='TR-999']")).to_be_disabled()
+	expect(page.locator(".tc-launcher-group")).to_have_text("Reprocessing")
 	expect(page.get_by_role("link", name="Pack", exact=True)).to_have_attribute("href", "/app/pack")
 	assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
 	preview = ROOT / ".pytest_cache" / "launcher-preview"
