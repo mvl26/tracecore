@@ -32,6 +32,7 @@ def _columns():
 			"fieldname": "amount",
 			"label": _("Amount", context="Cost Entry"),
 			"fieldtype": "Currency",
+			"precision": 0,
 			"width": 160,
 		},
 	]
@@ -69,9 +70,10 @@ def execute(filters=None):
 	]
 	summary = [
 		{
-			"label": _("Total Cost"),
+			# ô tổng của Frappe không nhận precision nên Currency luôn có phần lẻ; VND không lẻ → số nguyên kèm đơn vị
+			"label": _("Total Cost (VND)"),
 			"value": sum(cint(row["amount"]) for row in rows),
-			"datatype": "Currency",
+			"datatype": "Int",
 			"indicator": "blue",
 		}
 	]

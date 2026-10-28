@@ -15,7 +15,7 @@ def table(report):
 
 
 def total(report):
-	return {item["label"]: item["value"] for item in report[4]}["Total Cost"]
+	return {item["label"]: item["value"] for item in report[4]}["Total Cost (VND)"]
 
 
 class TestCostByTarget(IsolatedTestCase):

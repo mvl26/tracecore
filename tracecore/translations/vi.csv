@@ -4461,3 +4461,8 @@ Some prices were kept,Một số đơn giá được giữ nguyên,
 No default company is set; ask R10 to set the default company before importing.,Chưa đặt công ty mặc định; nhờ R10 đặt công ty mặc định trước khi import.,
 Costs,Chi phí,TraceCore Launcher
 Cost by Target,Chi phí theo đối tượng,TraceCore Launcher
+Quality and traceability,Chất lượng và truy xuất,TraceCore Launcher
+Par Override Report,Báo cáo ghi đè cơ số,
+Cost by Target,Chi phí theo đối tượng,
+Total Cost (VND),Tổng chi phí (VND),
+Audit Trail,Tra cứu nhật ký thao tác,

@@ -108,6 +108,43 @@ class TestLauncher(FrappeTestCase):
 		]
 		self.assertFalse(missing, f"thiếu dòng vi.csv {missing}")
 
+	def test_processing_quality_and_audit_records_are_reachable(self):
+		# chứng từ xử lý, truy xuất/chất lượng, báo cáo và thiết lập còn thiếu trên trang chủ (rà soát 28/10/2026)
+		with (
+			patch("frappe.session", frappe._dict(user="admin@example.test")),
+			patch("frappe.get_roles", return_value=["TC R01"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+			patch("tracecore.v1.navigation._roles_permit", return_value=True),
+		):
+			links = get_context()["management"]
+		routes = {link["route"] for link in links}
+		expected = {
+			"/app/dirty-receipt",
+			"/app/assembly-record",
+			"/app/sterilization-load",
+			"/app/issue-note",
+			"/app/usage-record",
+			"/app/incident-capa",
+			"/app/recall-order",
+			"/app/query-report/Pack Trace",
+			"/app/daily-test",
+			"/app/equipment-type-norm",
+			"/app/instrument-group",
+			"/app/instrument-maintenance",
+			"/app/loaner-set",
+			"/app/query-report/Instrument Data Gaps",
+			"/app/par-override",
+			"/app/query-report/Par Override Report",
+			"/app/query-report/Audit Trail",
+			"/app/sync-conflict",
+			"/app/code-range",
+			"/app/tracecore-settings",
+		}
+		self.assertFalse(expected - routes, sorted(expected - routes))
+		quality = [link["route"] for link in links if link["group"] == "Quality and traceability"]
+		self.assertEqual(quality[0], "/app/query-report/Pack Trace")
+
 	def test_catalog_import_follows_page_roles(self):
 		# Page tc-import chỉ cho R02 / R10 / System Manager; R01 quản lý nhưng không thấy link import
 		with (

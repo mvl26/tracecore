@@ -33,15 +33,65 @@ MANAGEMENT_GROUPS = (
 		),
 	),
 	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
-	("Equipment", ("Equipment", "Process Program", "Maintenance Record")),
-	("Instruments", ("Instrument", "Instrument Set Type", "Set Unit")),
-	("Stock and par levels", ("Item", "Batch", "Stock Entry", "Sterile Location", "Par Level")),
+	(
+		"Equipment",
+		("Equipment", "Process Program", "Equipment Type Norm", "Daily Test", "Maintenance Record"),
+	),
+	(
+		"Instruments",
+		(
+			"Instrument",
+			"Instrument Group",
+			"Instrument Set Type",
+			"Set Unit",
+			"Loaner Set",
+			"Instrument Maintenance",
+			"report:Instrument Data Gaps",
+		),
+	),
+	(
+		"Stock and par levels",
+		(
+			"Item",
+			"Batch",
+			"Stock Entry",
+			"Sterile Location",
+			"Par Level",
+			"Par Override",
+			"report:Par Override Report",
+		),
+	),
 	(
 		"Costs",
 		("Cost Entry", "Cost Rate Version", "Cost Category", "Cost Settings", "report:Cost by Target"),
 	),
-	("Processing records", ("Pack", "Wash Batch", "Sterile Putaway")),
-	("Data and audit", ("tc-import", "notifications", "Notification Rule", "Audit Log")),
+	(
+		"Processing records",
+		(
+			"Dirty Receipt",
+			"Wash Batch",
+			"Assembly Record",
+			"Pack",
+			"Sterilization Load",
+			"Sterile Putaway",
+			"Issue Note",
+			"Usage Record",
+		),
+	),
+	("Quality and traceability", ("report:Pack Trace", "Incident CAPA", "Recall Order")),
+	(
+		"Data and audit",
+		(
+			"tc-import",
+			"notifications",
+			"Notification Rule",
+			"Audit Log",
+			"report:Audit Trail",
+			"Sync Conflict",
+			"Code Range",
+			"TraceCore Settings",
+		),
+	),
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
 MANAGEMENT_PAGES = {

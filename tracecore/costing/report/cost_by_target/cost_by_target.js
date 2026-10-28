@@ -34,6 +34,8 @@ frappe.query_reports["Cost by Target"] = {
 			label: __("Target", null, "Cost Entry"),
 			fieldtype: "Dynamic Link",
 			options: "target_type",
+			// Frappe tìm DocType ở <input data-fieldname="target_type">, nhưng Loại đối tượng là <select>: đọc thẳng bộ lọc
+			get_options: () => frappe.query_report.get_filter_value("target_type"),
 		},
 		{
 			fieldname: "category",
