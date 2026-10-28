@@ -32,6 +32,10 @@ def department_file(*names):
 class ImportsApiCase(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
+		# site CI không có Company mặc định (chưa chạy Setup Wizard): Khoa import theo Company thử của kho
+		from tracecore.admin_reports.tests.test_imports import with_company
+
+		with_company(self)
 		# R10 kèm HR Manager (Department của ERPNext chỉ HR Manager/HR User được tạo); quyền từng danh mục theo DocType
 		frappe.set_user(make_user("imp-r10@example.com", roles=("TC R10", "HR Manager")))
 		self.addCleanup(frappe.set_user, "Administrator")

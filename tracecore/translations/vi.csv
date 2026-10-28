@@ -4458,3 +4458,4 @@ date must be a date in YYYY-MM-DD form.,date phải là ngày dạng YYYY-MM-DD.
 Take Prices from Stock,Lấy giá bình quân tồn kho,
 Some prices were kept,Một số đơn giá được giữ nguyên,
 "These items have no stock, so their prices were not changed: {0}",Các vật tư sau không còn tồn kho nên đơn giá không đổi: {0},
+No default company is set; ask R10 to set the default company before importing.,Chưa đặt công ty mặc định; nhờ R10 đặt công ty mặc định trước khi import.,
