@@ -35,6 +35,16 @@ class TestLauncher(FrappeTestCase):
 		groups = [link["group"] for link in links]
 		self.assertEqual(groups, sorted(groups, key=groups.index))
 
+	def test_notification_center_and_rules_are_reachable_from_the_launcher(self):
+		with (
+			patch("frappe.session", frappe._dict(user="admin@example.test")),
+			patch("frappe.get_roles", return_value=["TC R10"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+		):
+			routes = {link["route"] for link in get_context()["management"]}
+		self.assertTrue({"/app/notifications", "/app/notification-rule"} <= routes)
+
 	def test_catalog_import_follows_page_roles(self):
 		# Page tc-import chỉ cho R02 / R10 / System Manager; R01 quản lý nhưng không thấy link import
 		with (
@@ -142,4 +152,5 @@ class TestLauncher(FrappeTestCase):
 			patch("frappe.has_permission", side_effect=lambda dt, **kw: dt == "Pack"),
 		):
 			context = get_context()
-		self.assertEqual([link["doctype"] for link in context["management"]], ["Pack"])
+		# link DocType theo quyền DocType; link Page (Trung tâm thông báo) theo role của Page
+		self.assertEqual([link["doctype"] for link in context["management"] if link["doctype"]], ["Pack"])

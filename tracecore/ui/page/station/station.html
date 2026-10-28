@@ -23,9 +23,14 @@
 			<span class="tc-session-station tc-mono"></span>
 			<span class="tc-session-roles"></span>
 			<span class="tc-session-expiry"></span>
+			<button type="button" class="tc-btn tc-btn-secondary tc-notify-btn" data-action="toggle-notifications" aria-expanded="false" hidden>
+				{%= __("Notifications") %} <span class="tc-badge tc-notify-count">0</span>
+			</button>
 			<button type="button" class="tc-btn tc-btn-secondary" data-action="rescan-card">{%= __("Scan another card") %}</button>
 			<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">{%= __("Log out") %}</button>
 		</div>
+		<section class="tc-notify-banner" role="alert" hidden></section>
+		<section class="tc-notify-panel tc-card" aria-label="{%= __("Notifications") %}" hidden></section>
 		<div class="tc-work" hidden>
 		<form class="tc-card tc-scan" autocomplete="off" novalidate>
 			<label class="tc-sr-only" for="tc-scan-input">{%= __("Scan Set ID") %}</label>

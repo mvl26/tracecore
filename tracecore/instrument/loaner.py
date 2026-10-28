@@ -18,7 +18,7 @@ from frappe import _
 from frappe.model.naming import make_autoname
 from frappe.utils import cint, cstr, getdate, now_datetime, today
 
-from tracecore.core import audit, code_registry, extension, gs1, step_gate
+from tracecore.core import audit, code_registry, extension, gs1, notification, step_gate
 from tracecore.core.errors import Block, BlockedError
 from tracecore.instrument import bom_versions, set_units
 from tracecore.instrument.count_sheet import DATETIME_FORMAT, token_values
@@ -372,17 +372,9 @@ def remind_overdue():
 		subject = _("Loaner set {0} ({1}) is overdue since {2}").format(
 			row.name, row.set_unit, frappe.format(row.expected_return, {"fieldtype": "Date"})
 		)
-		for user in users:
-			frappe.get_doc(
-				{
-					"doctype": "Notification Log",
-					"for_user": user,
-					"type": "Alert",
-					"subject": subject,
-					"document_type": DOCTYPE,
-					"document_name": row.name,
-				}
-			).insert(ignore_permissions=True)
+		notification.emit(
+			"LOANER_OVERDUE", frappe._dict(doctype=DOCTYPE, name=row.name), subject, users=users
+		)
 		frappe.db.set_value(DOCTYPE, row.name, "last_reminded_on", day, update_modified=False)
 
 

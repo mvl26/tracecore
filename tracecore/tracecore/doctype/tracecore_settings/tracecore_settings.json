@@ -8,7 +8,12 @@
   "section_instrument",
   "enable_instrument_giai",
   "section_par",
-  "par_override_delegate"
+  "par_override_delegate",
+  "section_sms",
+  "enable_sms",
+  "sms_gateway_url",
+  "sms_api_token",
+  "sms_sender"
  ],
  "fields": [
   {
@@ -34,6 +39,39 @@
    "fieldtype": "Link",
    "label": "Par Override Delegate (R02)",
    "options": "User"
+  },
+  {
+   "fieldname": "section_sms",
+   "fieldtype": "Section Break",
+   "label": "SMS Notifications"
+  },
+  {
+   "default": "0",
+   "description": "Send SMS for notification rules that use the SMS channel (FR-M9-10). Off until the hospital SMS gateway is configured.",
+   "fieldname": "enable_sms",
+   "fieldtype": "Check",
+   "label": "Enable SMS"
+  },
+  {
+   "depends_on": "enable_sms",
+   "description": "HTTPS endpoint of the SMS gateway. TraceCore posts JSON {to, text, sender}; any 2xx answer counts as sent.",
+   "fieldname": "sms_gateway_url",
+   "fieldtype": "Data",
+   "label": "SMS Gateway URL",
+   "mandatory_depends_on": "enable_sms",
+   "options": "URL"
+  },
+  {
+   "depends_on": "enable_sms",
+   "fieldname": "sms_api_token",
+   "fieldtype": "Password",
+   "label": "SMS API Token"
+  },
+  {
+   "depends_on": "enable_sms",
+   "fieldname": "sms_sender",
+   "fieldtype": "Data",
+   "label": "SMS Sender Name"
   }
  ],
  "index_web_pages_for_search": 0,
