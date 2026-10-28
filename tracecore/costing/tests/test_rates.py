@@ -154,6 +154,34 @@ class TestApproval(RatesCase):
 		with self.assertRaises(frappe.UpdateAfterSubmitError):
 			doc.save()
 
+	def test_effective_to_cannot_be_changed_after_approval(self):  # review: chỉ hệ thống đặt effective_to
+		doc = self.approve(JAN)
+		doc.effective_to = "2031-12-31"
+		with self.assertRaises(frappe.UpdateAfterSubmitError):
+			doc.save()
+		self.assertIsNone(self.effective_to(doc))
+
+	def test_amended_copy_of_cancelled_version_closes_previous_again(self):
+		v1 = self.approve(JAN)
+		v2 = self.approve(APR)
+		v2.cancel()
+		copy = frappe.copy_doc(v2, ignore_no_copy=False)
+		copy.amended_from = v2.name
+		copy.docstatus = 0  # như nút Sửa đổi (Amend) của Desk
+		copy.insert()
+		self.assertIsNone(copy.effective_to)
+		self.assertIsNone(copy.approved_by)
+		copy.submit()
+		self.assertEqual(str(self.effective_to(v1)), MAR_31)
+		self.assertEqual(rates.version_at(APR), copy.name)
+
+	def test_approval_does_not_repeat_save_warnings(self):
+		make_program(make_equipment().name, code="MH-F45-02")
+		doc = make_cost_rate_version(effective_from=JAN)
+		frappe.clear_messages()
+		doc.submit()
+		self.assertNotIn("MH-F45-02", warnings())
+
 	def test_only_latest_approved_can_be_cancelled(self):
 		v1 = self.approve(JAN)
 		v2 = self.approve(APR)

@@ -21,7 +21,8 @@ def _warn(message):
 def validate(doc):
 	check_rates(doc)
 	check_pack_norms(doc)
-	warn_programs_without_norm()
+	if doc.get("_action") != "submit":  # cảnh báo đã hiện khi lưu Nháp; R01 duyệt không cần thấy lại
+		warn_programs_without_norm()
 
 
 def check_rates(doc):
@@ -34,21 +35,27 @@ def check_rates(doc):
 		else:
 			if row.item:
 				frappe.throw(
-					_("Row {0}: a {1} price has no item. Clear the item.").format(row.idx, _(row.rate_type))
+					_("Row {0}: a {1} price has no item. Clear the item.").format(
+						row.idx, _(row.rate_type, context="Cost Rate Line")
+					)
 				)
 			row.uom = UNIT_BY_TYPE[row.rate_type]
 		key = (row.rate_type, row.item or "")
 		if key in seen:
 			frappe.throw(
 				_("Row {0}: {1} already has a price in this version.").format(
-					row.idx, row.item or _(row.rate_type)
+					row.idx, row.item or _(row.rate_type, context="Cost Rate Line")
 				)
 			)
 		seen.add(key)
 		if flt(row.rate) < 0:
 			frappe.throw(_("Row {0}: the unit price cannot be negative.").format(row.idx))
-		if flt(row.rate) == 0:
-			_warn(_("Row {0}: the unit price of {1} is 0.").format(row.idx, row.item or _(row.rate_type)))
+		if flt(row.rate) == 0 and doc.get("_action") != "submit":
+			_warn(
+				_("Row {0}: the unit price of {1} is 0.").format(
+					row.idx, row.item or _(row.rate_type, context="Cost Rate Line")
+				)
+			)
 
 
 def check_pack_norms(doc):
@@ -64,7 +71,7 @@ def check_pack_norms(doc):
 		seen.add(key)
 		if flt(row.qty_per_pack) < 0:
 			frappe.throw(_("Row {0}: the quantity per pack cannot be negative.").format(row.idx))
-		if flt(row.qty_per_pack) == 0:
+		if flt(row.qty_per_pack) == 0 and doc.get("_action") != "submit":
 			_warn(
 				_("Row {0}: the norm of {1} for pack type {2} is 0.").format(row.idx, row.item, row.pack_type)
 			)

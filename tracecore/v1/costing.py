@@ -3,6 +3,8 @@
 Chỉ đọc. Bản Nháp/Đã hủy không bao giờ được trả (UC-28 E3). Quyền: R01, R02, R09, R10, System Manager.
 """
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import getdate
@@ -13,11 +15,17 @@ from tracecore.v1._common import BadRequestError, require_any_role
 READ_ROLES = ("TC R01", "TC R02", "TC R09", "TC R10", "System Manager")
 
 
+ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
 def _date(value):
-	try:
-		parsed = getdate(value) if value else None
-	except Exception:
-		parsed = None
+	"""Chỉ nhận ``YYYY-MM-DD``: `getdate` còn đọc dạng theo định dạng ngày của site (dd/mm hay mm/dd), dễ hiểu sai."""
+	parsed = None
+	if isinstance(value, str) and ISO_DATE.fullmatch(value):
+		try:
+			parsed = getdate(value)
+		except Exception:
+			parsed = None
 	if not parsed:
 		raise BadRequestError(_("date must be a date in YYYY-MM-DD form."))
 	return parsed

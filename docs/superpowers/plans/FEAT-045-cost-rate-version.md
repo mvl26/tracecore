@@ -163,3 +163,17 @@
 - FR-M7-03.2 tính lại giá thành quá khứ có ghi chú phiên bản: thuộc FEAT-046 (cần Cost Sheet).
 - FR-M7-04 định mức theo chương trình: dùng `Process Program.consumables` có sẵn; FR-M7-04.3 ở đó hiện **chặn** dòng 0/0 (chặt hơn "cảnh báo"), giữ nguyên.
 - Định mức theo loại gói chưa nối vào trừ kho tự động (FEAT-042 gap "nhãn/bao gói theo Cycle ID"): để FEAT-046 hoặc FEAT sau.
+
+## Ghi chú hiện thực (28/10/2026)
+
+**Kết quả kiểm tra** (bench `~/benches/tracecore-f041`, site `test_f041`, đồng hồ WSL đã ổn định):
+- Toàn bộ test costing (10 file, 126 test), `equipment` (11 file), `inventory` (9 file), `tracecore.tests.test_permissions`, `test_desk_inventory`: tất cả OK.
+- `scripts/check_architecture.py`, `scripts/check_bru_coverage.py` (BRU-CST-002 có marker): exit 0; `pre-commit run --all-files`: pass.
+- Coverage code mới: `costing/rates.py` 98/100 dòng, `v1/costing.py` 26/26, `cost_rate_version.py` 22/23 (dòng `on_trash` do `test_cost_rate_version` phủ).
+
+**Điểm lệch so với kế hoạch:**
+- Quyền R01 là `RWSA` chứ không phải `RSA`: Frappe kiểm quyền `write` khi Ghi sổ, nên R01 cũng sửa được bản Nháp (ghi ở A-48 D5).
+- `frappe.get_all` của v15 không nhận `for_update`: khóa dòng khi duyệt dùng `frappe.db.get_values(..., for_update=True)`.
+- Review độc lập phát hiện `effective_to` có `allow_on_submit` cho phép R09/R01 sửa ngày kết thúc của bản đã duyệt qua REST: đã bỏ, hệ thống ghi bằng `frappe.db.set_value`; thêm test `test_effective_to_cannot_be_changed_after_approval`. Cùng đợt: cảnh báo không lặp lại khi duyệt, nhãn loại đơn giá dịch theo ngữ cảnh `Cost Rate Line` ("Steam" = "Hơi", không phải "Hấp hơi nước"), RPC chỉ nhận ngày `YYYY-MM-DD`, thêm test luồng Sửa đổi (Amend) bản đã hủy.
+
+**Gap còn lại:** như mục "Gap ghi nhận" ở trên; ngoài ra tự đóng/mở `effective_to` không sinh dòng Version (A-48 ghi nhận). Chưa kiểm tay trên Desk.

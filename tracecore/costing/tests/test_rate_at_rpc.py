@@ -42,7 +42,7 @@ class TestRateAt(IsolatedTestCase):
 		self.assertEqual((result["ok"], result["version"], result["rates"]), (True, None, []))
 
 	def test_rate_at_rejects_bad_date(self):
-		for value in (None, "", "31/02/2031", "not-a-date"):
+		for value in (None, "", "31/02/2031", "05/01/2031", "2031-1-5", "2031-02-30", "not-a-date"):
 			with self.assertRaises(BadRequestError, msg=value):
 				api.rate_at(value)
 
