@@ -4333,3 +4333,10 @@ Consumption exceeds stock,Tiêu hao vượt tồn kho
 Consumption norm missing,Thiếu định mức tiêu hao
 Automatic consumption failed,Tiêu hao tự động bị lỗi
 Source DocType,DocType nguồn
+"Enter the reason, then try again.",Hãy nhập lý do rồi thử lại.
+Required Certificates,Chứng chỉ bắt buộc
+Revoke Reason,Lý do thu hồi
+Sets Processed,Số bộ đã xử lý
+Temporary Reason,Lý do cấp tạm
+Wash and Sterilization Batches,Số lô rửa và mẻ tiệt khuẩn
+Work Zone,Khu làm việc

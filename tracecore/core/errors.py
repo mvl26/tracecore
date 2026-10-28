@@ -70,7 +70,6 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-042: xuất kho thủ công (vật tư, số lượng, lý do, lô)
 			"ISSUE_ITEM_INVALID",
 			"ISSUE_QTY_INVALID",
-			"REASON_REQUIRED",
 			"LOT_INVALID",
 			"LOT_EXPIRED",
 			# FEAT-015 A-09 (S4, S5, S7): loại bộ / phiên bản BOM / hạn lưu loại gói
