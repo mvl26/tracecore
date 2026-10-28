@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "creation": "2026-10-28 09:00:00.000000",
+ "description": "One unit price of a cost rate version (FEAT-045, FR-M7-03): a supply item, or labor per hour, electricity per kWh, water per litre or steam per kg.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "rate_type",
+  "item",
+  "uom",
+  "rate"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "default": "Item",
+   "fieldname": "rate_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Rate Type",
+   "options": "Item\nLabor\nElectricity\nTap Water\nRO Water\nSteam",
+   "reqd": 1
+  },
+  {
+   "columns": 4,
+   "depends_on": "eval:doc.rate_type=='Item'",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "mandatory_depends_on": "eval:doc.rate_type=='Item'",
+   "options": "Item"
+  },
+  {
+   "columns": 1,
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Unit",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate",
+   "precision": "0",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-28 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Rate Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
