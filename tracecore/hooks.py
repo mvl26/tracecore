@@ -276,6 +276,8 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
 	"Daily Test": dict(_AUDIT_EVENTS),
+	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-42): ghi sổ có old/new, không xóa
+	"Maintenance Record": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
