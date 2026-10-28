@@ -64,7 +64,7 @@ PYTHON_STRINGS = (
 	("Target", None),
 	("Category", None),
 	("Amount", None),
-	("Total Cost", None),
+	("Total Cost (VND)", None),
 	("From Date", None),
 	("To Date", None),
 	("From Date and To Date are required.", None),
