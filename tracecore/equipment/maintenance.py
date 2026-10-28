@@ -9,13 +9,16 @@ khác. Trạng thái máy chỉ đổi qua `equipment.status.set_status`.
 
 import frappe
 from frappe import _
-from frappe.utils import add_months, cint, getdate, now_datetime, today
+from frappe.utils import add_days, add_months, cint, date_diff, get_datetime, getdate, now_datetime, today
 
 from tracecore.core import extension
 from tracecore.equipment.status import set_status
 
 DOCTYPE = "Maintenance Record"
 INCIDENT_HOOK = "tracecore_equipment_incident"
+# nhắc kế hoạch trước 30 và 7 ngày tới R02 và R10 (A-42 M1: chuông Desk; email/SMS/leo thang thuộc FEAT-010)
+RECIPIENT_ROLES = ("TC R02", "TC R10")
+REMIND_WINDOWS = (30, 7)
 # loại hồ sơ → hạn hiệu lực trên Equipment (A-42 M4); sự cố không có hạn
 DUE_FIELDS = {
 	"Inspection": "inspection_due",
@@ -210,3 +213,110 @@ def plan_next(doc):
 	frappe.db.set_value(DOCTYPE, doc.name, "next_record", name, update_modified=False)
 	doc.next_record = name
 	return name
+
+
+# --- Việc định kỳ ----------------------------------------------------------------------------------------------------
+
+
+def _recipients():
+	users = []
+	for role in RECIPIENT_ROLES:
+		holders = frappe.get_all("Has Role", filters={"role": role, "parenttype": "User"}, pluck="parent")
+		if not holders:
+			continue
+		for user in frappe.get_all("User", filters={"name": ["in", holders], "enabled": 1}, pluck="name"):
+			if user not in users:
+				users.append(user)
+	return users
+
+
+def _notify(users, subject, doctype, name):
+	"""Thông báo chuông Desk (Notification Log); email/SMS và leo thang thuộc FEAT-010 (A-42 M1)."""
+	for user in users:
+		frappe.get_doc(
+			{
+				"doctype": "Notification Log",
+				"for_user": user,
+				"type": "Alert",
+				"subject": subject,
+				"document_type": doctype,
+				"document_name": name,
+			}
+		).insert(ignore_permissions=True)
+
+
+def lock_overdue():
+	"""Việc 00:00 (FR-M5-03.1, BRU-EQP-002): máy Sẵn sàng có kiểm định/hiệu chuẩn đã quá ngày → Khóa; trả tên các máy bị khóa.
+
+	Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ qua tới lần chạy sau khi hết hạn mở. Bảo trì phòng ngừa
+	quá hạn không khóa (chỉ nhắc). Báo R02 và R10 bằng chuông Desk.
+	"""
+	day = today()
+	now = now_datetime()
+	rows = frappe.get_all(
+		"Equipment",
+		filters={"status": "Ready"},
+		or_filters=[["inspection_due", "<", day], ["calibration_due", "<", day]],
+		fields=["name", "inspection_due", "calibration_due", "unlock_until"],
+		order_by="name asc",
+	)
+	locked = []
+	users = _recipients()
+	for row in rows:
+		if row.unlock_until and get_datetime(row.unlock_until) > now:
+			continue
+		reason = expired_reason(row)
+		if not reason:
+			continue
+		_save_machine(row.name, status="Locked", lock_reason=reason)
+		locked.append(row.name)
+		_notify(
+			users,
+			_("Equipment {0} is locked: {1}").format(row.name, _(reason, context="Equipment")),
+			"Equipment",
+			row.name,
+		)
+	return locked
+
+
+def remind_due():
+	"""Việc hằng ngày (FR-M5-03, UC-22 bước 1): hồ sơ kế hoạch còn Nháp đến hạn trong 30 ngày → nhắc R02 và R10.
+
+	Mốc 30 ngày rồi mốc 7 ngày, mỗi mốc một lần (``reminded_30``/``reminded_7``); hồ sơ lần đầu được thấy trong 7 ngày hoặc đã
+	quá ngày kế hoạch chỉ nhắc một lần. Bỏ qua sự cố, hồ sơ đã bỏ, chưa có ngày kế hoạch.
+	"""
+	day = getdate(today())
+	users = _recipients()
+	for row in frappe.get_all(
+		DOCTYPE,
+		# "is set" tách riêng vì Frappe bọc so sánh bằng ifnull: ngày trống sẽ lọt vào điều kiện "<="
+		filters=[
+			["docstatus", "=", 0],
+			["abandoned", "=", 0],
+			["record_type", "!=", "Incident"],
+			["planned_date", "is", "set"],
+			["planned_date", "<=", add_days(day, max(REMIND_WINDOWS))],
+		],
+		fields=["name", "equipment", "record_type", "planned_date", "reminded_30", "reminded_7"],
+		order_by="planned_date asc, name asc",
+	):
+		window = (
+			min(REMIND_WINDOWS)
+			if date_diff(row.planned_date, day) <= min(REMIND_WINDOWS)
+			else max(REMIND_WINDOWS)
+		)
+		if row.get(f"reminded_{window}"):
+			continue
+		_notify(
+			users,
+			_("{0} of equipment {1} is planned for {2}").format(
+				_(row.record_type, context=DOCTYPE),
+				row.equipment,
+				frappe.format(row.planned_date, {"fieldtype": "Date"}),
+			),
+			DOCTYPE,
+			row.name,
+		)
+		# mốc 7 ngày bao luôn mốc 30 ngày
+		flags = {"reminded_30": 1} if window == max(REMIND_WINDOWS) else {"reminded_30": 1, "reminded_7": 1}
+		frappe.db.set_value(DOCTYPE, row.name, flags, update_modified=False)

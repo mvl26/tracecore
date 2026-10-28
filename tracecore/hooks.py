@@ -438,10 +438,14 @@ scheduler_events = {
 			"tracecore.reprocessing.storage.run_expiry",
 			# FEAT-032, FR-M8-04.2: ghi đè cơ số quá thời hạn → Hết hiệu lực
 			"tracecore.par.override.expire_overdue",
+			# FEAT-039, FR-M5-03.1: máy Sẵn sàng quá hạn kiểm định/hiệu chuẩn → Khóa, báo R02 và R10
+			"tracecore.equipment.maintenance.lock_overdue",
 		],
 	},
 	"daily": [
 		"tracecore.core.idempotency.purge_expired",
+		# FEAT-039, FR-M5-03: nhắc R02 và R10 trước 30 và 7 ngày khi hồ sơ bảo trì/kiểm định/hiệu chuẩn đến hạn
+		"tracecore.equipment.maintenance.remind_due",
 		# FEAT-030, FR-M2-22.1: nhắc hành động CAPA quá hạn (người phụ trách + R02)
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày
