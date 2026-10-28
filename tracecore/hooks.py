@@ -28,6 +28,8 @@ fixtures = [
 			["name", "like", "Department-tc_%"],
 		],
 	},
+	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
+	{"dt": "Property Setter", "filters": [["name", "like", "Employee-naming_series-%"]]},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -235,6 +237,9 @@ doc_events = {
 	},
 	"Employee": {
 		"onload": "tracecore.core.account.employee_onload",
+		# FEAT-036: mã NV- vào Code Registry, thẻ mặc định, đặt lại mức nhắc khi đổi ngày hạn
+		"after_insert": "tracecore.hr.employees.after_insert",
+		"before_save": "tracecore.hr.employees.before_save",
 		"before_validate": "tracecore.core.account.validate_employee",
 		"on_update": "tracecore.core.account.employee_updated",
 		"on_trash": "tracecore.core.audit.block_delete",
@@ -247,6 +252,8 @@ doc_events = {
 	"Set BOM Item": dict(_AUDIT_EVENTS),
 	# bộ mượn (FEAT-017, A-38): nhận/trả/gia hạn ghi Audit Update kèm lý do, không hủy, không xóa
 	"Loaner Set": dict(_AUDIT_EVENTS),
+	# chứng chỉ nhân viên (FEAT-036): Create/Update có old/new, không xóa (giữ lịch sử gia hạn)
+	"Certificate": dict(_AUDIT_EVENTS),
 	# cơ số: Create/Update có old/new, không xóa (FEAT-031, FR-M8-01.3)
 	"Par Level": dict(_AUDIT_EVENTS),
 	# ghi đè cơ số (FEAT-032, WF-08): quyết định và bộ đếm đổi sau khi ghi sổ (on_update_after_submit), không xóa
@@ -448,6 +455,8 @@ scheduler_events = {
 			"tracecore.par.override.expire_overdue",
 			# FEAT-039, FR-M5-03.1: máy Sẵn sàng quá hạn kiểm định/hiệu chuẩn → Khóa, báo R02 và R10
 			"tracecore.equipment.maintenance.lock_overdue",
+			# FEAT-036, FR-M4-02.1/.2, FR-M4-01.4: chứng chỉ hết hạn, nhắc 60/30/7 ngày, khám sức khỏe, tiêm chủng
+			"tracecore.hr.reminders.run_daily",
 		],
 	},
 	"daily": [
