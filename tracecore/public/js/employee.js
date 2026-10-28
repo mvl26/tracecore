@@ -139,8 +139,8 @@ function tc_employee_date_indicator(frm, field, label) {
 function tc_employee_certificates(frm) {
 	const name = frm.doc.name;
 	if (!frappe.model.can_read("Certificate")) return;
-	frappe
-		.xcall("tracecore.v1.staff.certificates", { employee: name })
+	tracecore
+		.desk_get("tracecore.v1.staff.certificates", { employee: name })
 		.then((data) => {
 			if (frm.doc.name !== name) return; // người dùng đã chuyển sang nhân viên khác trong lúc chờ
 			const counts = data.counts;

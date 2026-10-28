@@ -29,3 +29,17 @@ tracecore.desk_call = function ({ method, args, on_ok, on_block, on_fail }) {
 		},
 	});
 };
+
+// Như frappe.xcall nhưng gửi GET: RPC chỉ nhận GET (`@frappe.whitelist(methods=["GET"])`) trả 403 "Không được phép"
+// cho POST, mà frappe.xcall luôn gửi POST. Trả Promise của `message`; lỗi thì reject như xcall.
+tracecore.desk_get = function (method, args) {
+	return new Promise((resolve, reject) => {
+		frappe.call({
+			method,
+			args,
+			type: "GET",
+			callback: (response) => resolve(response.message),
+			error: (response) => reject(response && response.message),
+		});
+	});
+};
