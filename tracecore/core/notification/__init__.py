@@ -40,6 +40,10 @@ EVENTS = {
 	"PAR_OVERRIDE_REPORT": ("Monthly par override report", "Normal", 0, 0, ()),
 	"EQUIPMENT_LOCKED": ("Equipment locked for expired inspection or calibration", "Normal", 0, 0, ()),
 	"MAINTENANCE_DUE": ("Equipment maintenance due", "Normal", 0, 0, ()),
+	# FEAT-036: R02 nhận thêm theo Rule; nhân viên liên quan do nơi gọi truyền
+	"CERTIFICATE_EXPIRING": ("Certificate expiring", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"CERTIFICATE_EXPIRED": ("Certificate expired", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"HEALTH_RECORD_EXPIRING": ("Health check or vaccination expiring", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

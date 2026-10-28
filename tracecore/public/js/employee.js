@@ -122,10 +122,76 @@ function tc_employee_pin_dialog(frm) {
 	dialog.show();
 }
 
+// FEAT-036 (FR-M4-01/02, SCR-19): chứng chỉ, khám sức khỏe, tiêm chủng và thẻ QR ngay trên form nhân viên.
+// Số liệu do server tính (tracecore.v1.staff.certificates); script chỉ trình bày, trạng thái luôn có chữ.
+const TC_EXPIRING_DAYS = 60;
+
+function tc_employee_date_indicator(frm, field, label) {
+	const value = frm.doc[field];
+	if (!value) return;
+	const days = frappe.datetime.get_diff(value, frappe.datetime.get_today());
+	const text = __("{0} valid until {1}", [label, frappe.datetime.str_to_user(value)]);
+	if (days < 0) frm.dashboard.add_indicator(__("{0} (expired)", [text]), "red");
+	else if (days <= TC_EXPIRING_DAYS) frm.dashboard.add_indicator(text, "orange");
+	else frm.dashboard.add_indicator(text, "green");
+}
+
+function tc_employee_certificates(frm) {
+	const name = frm.doc.name;
+	if (!frappe.model.can_read("Certificate")) return;
+	frappe
+		.xcall("tracecore.v1.staff.certificates", { employee: name })
+		.then((data) => {
+			if (frm.doc.name !== name) return; // người dùng đã chuyển sang nhân viên khác trong lúc chờ
+			const counts = data.counts;
+			frm.dashboard.add_indicator(__("{0} valid certificates", [counts.valid]), "green");
+			if (counts.expiring)
+				frm.dashboard.add_indicator(
+					__("{0} expiring within {1} days", [counts.expiring, TC_EXPIRING_DAYS]),
+					"orange"
+				);
+			if (counts.expired)
+				frm.dashboard.add_indicator(
+					__("{0} expired certificates", [counts.expired]),
+					"red"
+				);
+		})
+		.catch(() => {
+			// chỉ là thông tin phụ: lỗi mạng không được làm hỏng form
+		});
+}
+
+function tc_employee_staff_buttons(frm) {
+	if (frappe.model.can_create("Certificate"))
+		frm.add_custom_button(
+			__("Add certificate"),
+			() => frappe.new_doc("Certificate", { employee: frm.doc.name }),
+			__("Certificates")
+		);
+	if (frappe.model.can_read("Certificate"))
+		frm.add_custom_button(
+			__("View certificates"),
+			() => frappe.set_route("List", "Certificate", { employee: frm.doc.name }),
+			__("Certificates")
+		);
+	// thẻ QR in từ mã NV- (nhân viên cũ HR-EMP- chưa có mã NV- nên không có nút)
+	if (frm.doc.name.startsWith("NV-") && window.tracecore && tracecore.codes)
+		tracecore.codes.add_print_button(
+			frm,
+			"Employee Card",
+			frm.doc.employee_name,
+			frm.doc.department || ""
+		);
+}
+
 frappe.ui.form.on("Employee", {
 	refresh(frm) {
 		if (frm.is_new()) return;
 		tc_employee_station_intro(frm);
+		tc_employee_date_indicator(frm, "tc_health_check_expiry", __("Health check"));
+		tc_employee_date_indicator(frm, "tc_vaccination_expiry", __("Vaccination"));
+		tc_employee_certificates(frm);
+		tc_employee_staff_buttons(frm);
 		if (frappe.user.has_role("TC R10") || frappe.user.has_role("TC R02")) {
 			frm.add_custom_button(
 				tc_employee_has_pin(frm) ? __("Reset station PIN") : __("Set station PIN"),

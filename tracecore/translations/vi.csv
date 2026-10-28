@@ -4129,7 +4129,7 @@ SMS Gateway URL,URL cổng SMS,TraceCore Settings
 SMS API Token,Token API SMS,TraceCore Settings
 SMS Sender Name,Tên người gửi SMS,TraceCore Settings
 Send SMS for notification rules that use the SMS channel (FR-M9-10). Off until the hospital SMS gateway is configured.,Gửi SMS cho các quy tắc thông báo có kênh SMS (FR-M9-10). Tắt cho tới khi cấu hình cổng SMS của bệnh viện.,
-HTTPS endpoint of the SMS gateway. TraceCore posts JSON {to, text, sender}; any 2xx answer counts as sent.,"Địa chỉ HTTPS của cổng SMS. TraceCore gửi JSON {to, text, sender}; trả mã 2xx là đã gửi.",
+"HTTPS endpoint of the SMS gateway. TraceCore posts JSON {to, text, sender}; any 2xx answer counts as sent.","Địa chỉ HTTPS của cổng SMS. TraceCore gửi JSON {to, text, sender}; trả mã 2xx là đã gửi.",
 Row {0}: choose a {1}.,Dòng {0}: chọn {1}.,
 Recall order,Lệnh thu hồi,
 Incident or non-conformance,Sự cố hoặc không phù hợp,
@@ -4168,3 +4168,61 @@ Urgent: {0},Khẩn: {0},
 Equipment locked for expired inspection or calibration,Thiết bị bị khóa vì quá hạn kiểm định hoặc hiệu chuẩn,
 Equipment maintenance due,Thiết bị đến hạn bảo trì hoặc kiểm định,
 Equipment {0} status: {1}.,Trạng thái thiết bị {0}: {1}.,
+Certificate,Chứng chỉ,TraceCore Launcher
+Certificate,Chứng chỉ,
+Staff certificate with expiry date and scan (FR-M4-02, DT-CERT). Renewals are new records; old ones are kept as history.,Chứng chỉ của nhân viên có hạn và file scan. Gia hạn là bản ghi mới; bản cũ được giữ làm lịch sử.,
+Employee Name,Tên nhân viên,Certificate
+Certificate Type,Loại chứng chỉ,Certificate
+Practice License,Chứng chỉ hành nghề (CCHN),Certificate
+Infection Control,Kiểm soát nhiễm khuẩn,Certificate
+Sterilization,Tiệt khuẩn,Certificate
+Pressure Equipment Operation,Vận hành thiết bị áp lực,Certificate
+Other,Khác,Certificate
+Certificate No.,Số chứng chỉ,Certificate
+Issued By,Nơi cấp,Certificate
+Status,Trạng thái,Certificate
+Valid,Còn hiệu lực,Certificate
+Expired,Đã hết hạn,Certificate
+Superseded,Đã thay thế,Certificate
+Renews,Gia hạn cho,Certificate
+The earlier certificate this one renews; it becomes Superseded and stays as history.,Chứng chỉ trước đó mà bản này gia hạn; bản cũ thành Đã thay thế và được giữ làm lịch sử.,
+Validity,Hiệu lực,Certificate
+Issued On,Ngày cấp,Certificate
+No Expiry,Không hết hạn,Certificate
+Tick for a certificate without an expiry date: no reminders are sent.,Đánh dấu cho chứng chỉ không có hạn: không gửi nhắc.,
+Expires On,Hạn,Certificate
+Scan,Bản scan,Certificate
+"PDF or image, at most 10 MB.","PDF hoặc ảnh, tối đa 10 MB.",
+Reminder Level Sent,Mức nhắc đã gửi,Certificate
+Certificates are kept as history and cannot be deleted.,"Chứng chỉ được giữ làm lịch sử, không được xóa.",
+The scan file is larger than {0} MB.,File scan lớn hơn {0} MB.,
+A renewal must be for the same employee and certificate type.,Gia hạn phải cùng nhân viên và cùng loại chứng chỉ.,
+Expiry date is required unless the certificate does not expire.,Phải nhập hạn trừ khi chứng chỉ không hết hạn.,
+Expiry date cannot be before the issue date.,Hạn không được trước ngày cấp.,
+Certificate {0} of {1} has expired,Chứng chỉ {0} của {1} đã hết hạn,
+Certificate {0} of {1} expires in {2} days,Chứng chỉ {0} của {1} còn {2} ngày hết hạn,
+{0} of {1} has expired,{0} của {1} đã hết hạn,
+{0} of {1} expires in {2} days,{0} của {1} còn {2} ngày hết hạn,
+Health check,Khám sức khỏe,
+Vaccination,Tiêm chủng,
+Certificate expiring,Chứng chỉ sắp hết hạn,
+Certificate expired,Chứng chỉ hết hạn,
+Health check or vaccination expiring,Khám sức khỏe hoặc tiêm chủng sắp hết hạn,
+Not permitted to read certificates.,Không có quyền xem chứng chỉ.,
+Work Area and Health Records,Khu làm việc và hồ sơ sức khỏe,Employee
+Work Zone,Khu làm việc,Employee
+"Zone where the employee works (dirty, clean, sterile, department...).","Khu nhân viên làm việc (bẩn, sạch, vô khuẩn, khoa...).",
+Health Check Valid Until,Khám sức khỏe có hiệu lực đến,Employee
+Hepatitis B Vaccination Valid Until,Tiêm viêm gan B có hiệu lực đến,Employee
+Health Check Reminder Level,Mức nhắc khám sức khỏe,Employee
+Vaccination Reminder Level,Mức nhắc tiêm chủng,Employee
+Certificates,Chứng chỉ,
+Add certificate,Thêm chứng chỉ,
+View certificates,Xem chứng chỉ,
+Renew,Gia hạn,
+This certificate was renewed; it is kept as history.,Chứng chỉ này đã được gia hạn; được giữ làm lịch sử.,
+{0} valid certificates,{0} chứng chỉ còn hiệu lực,
+{0} expiring within {1} days,{0} chứng chỉ hết hạn trong {1} ngày,
+{0} expired certificates,{0} chứng chỉ đã hết hạn,
+{0} valid until {1},{0} có hiệu lực đến {1},
+{0} (expired),{0} (đã hết hạn),

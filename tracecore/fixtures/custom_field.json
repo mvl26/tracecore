@@ -134,6 +134,72 @@
  },
  {
   "doctype": "Custom Field",
+  "dt": "Employee",
+  "name": "Employee-tc_staff_section",
+  "fieldname": "tc_staff_section",
+  "fieldtype": "Section Break",
+  "label": "Work Area and Health Records",
+  "insert_after": "tc_pin_reset_required"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "name": "Employee-tc_zone",
+  "fieldname": "tc_zone",
+  "fieldtype": "Link",
+  "label": "Work Zone",
+  "options": "Zone Station",
+  "description": "Zone where the employee works (dirty, clean, sterile, department...).",
+  "insert_after": "tc_staff_section"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "name": "Employee-tc_health_check_expiry",
+  "fieldname": "tc_health_check_expiry",
+  "fieldtype": "Date",
+  "label": "Health Check Valid Until",
+  "no_copy": 1,
+  "insert_after": "tc_zone"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "name": "Employee-tc_vaccination_expiry",
+  "fieldname": "tc_vaccination_expiry",
+  "fieldtype": "Date",
+  "label": "Hepatitis B Vaccination Valid Until",
+  "no_copy": 1,
+  "insert_after": "tc_health_check_expiry"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "name": "Employee-tc_health_remind_level",
+  "fieldname": "tc_health_remind_level",
+  "fieldtype": "Int",
+  "label": "Health Check Reminder Level",
+  "default": "0",
+  "hidden": 1,
+  "read_only": 1,
+  "no_copy": 1,
+  "insert_after": "tc_vaccination_expiry"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "name": "Employee-tc_vaccination_remind_level",
+  "fieldname": "tc_vaccination_remind_level",
+  "fieldtype": "Int",
+  "label": "Vaccination Reminder Level",
+  "default": "0",
+  "hidden": 1,
+  "read_only": 1,
+  "no_copy": 1,
+  "insert_after": "tc_health_remind_level"
+ },
+ {
+  "doctype": "Custom Field",
   "dt": "Department",
   "name": "Department-tc_is_ward",
   "fieldname": "tc_is_ward",

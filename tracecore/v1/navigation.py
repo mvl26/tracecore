@@ -18,7 +18,7 @@ STEP_ROLES = {
 IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
 # Nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
-	("Organization and staff", ("Department", "Employee", "User", "Station Competency")),
+	("Organization and staff", ("Department", "Employee", "Certificate", "User", "Station Competency")),
 	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
 	("Equipment", ("Equipment", "Process Program")),
 	("Instruments", ("Instrument", "Instrument Set Type", "Set Unit")),
