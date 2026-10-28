@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, cstr, now_datetime
 
-from tracecore.core import code_registry, station_auth, step_gate
+from tracecore.core import code_registry, notification, station_auth, step_gate
 from tracecore.core.errors import Block, BlockedError
 
 REQUESTER = "TC R02"
@@ -51,20 +51,9 @@ def _users_with(role):
 	return frappe.get_all("User", filters={"name": ["in", holders], "enabled": 1}, pluck="name")
 
 
-def _notify(users, subject, set_unit):
-	"""Thông báo chuông Desk (Notification Log); email/SMS thuộc FEAT-010."""
-	for user in dict.fromkeys(users):
-		frappe.get_doc(
-			{
-				"doctype": "Notification Log",
-				"for_user": user,
-				"from_user": frappe.session.user,
-				"type": "Alert",
-				"subject": subject,
-				"document_type": DOCTYPE,
-				"document_name": set_unit,
-			}
-		).insert(ignore_permissions=True)
+def _notify(event, users, subject, set_unit):
+	"""Báo qua trung tâm thông báo (FEAT-010): người nhận theo nghiệp vụ + người R10 cấu hình thêm."""
+	notification.emit(event, frappe._dict(doctype=DOCTYPE, name=set_unit), subject, users=users)
 
 
 def _unit(set_unit):
@@ -133,7 +122,10 @@ def request(set_unit, reason):
 		disposal_decision_note=None,
 	)
 	_notify(
-		_users_with(APPROVER), _("Disposal requested for set {0}: {1}").format(unit.name, reason), unit.name
+		"SET_DISPOSAL_REQUESTED",
+		_users_with(APPROVER),
+		_("Disposal requested for set {0}: {1}").format(unit.name, reason),
+		unit.name,
 	)
 	return {"set_id": unit.name, "disposal_status": unit.disposal_status}
 
@@ -175,6 +167,7 @@ def _decide(unit, status, note):
 		disposal_decision_note=note,
 	)
 	_notify(
+		"SET_DISPOSAL_DECIDED",
 		[unit.disposal_requested_by] if unit.disposal_requested_by else [],
 		_("Disposal of set {0}: {1}").format(unit.name, _(status, context=DOCTYPE)),
 		unit.name,

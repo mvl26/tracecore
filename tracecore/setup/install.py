@@ -3,6 +3,7 @@
 
 import frappe
 
+from tracecore.core.notification import ensure_default_rules
 from tracecore.inventory.permissions import ensure_permissions
 from tracecore.setup.label_templates import (
 	ensure_object_templates,
@@ -38,6 +39,7 @@ def after_install():
 	ensure_set_templates()
 	ensure_zone_stations()
 	ensure_permissions()
+	ensure_default_rules()
 
 
 TEST_GENDERS = ("Male", "Female", "Other")

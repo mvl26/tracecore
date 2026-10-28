@@ -1,4 +1,4 @@
-"""Bảo trì, kiểm định, hiệu chuẩn và sự cố thiết bị (M5, FEAT-039; FR-M5-03 .1-.3, FR-M5-04 .1-.4; UC-22; BRU-EQP-002; A-42).
+"""Bảo trì, kiểm định, hiệu chuẩn và sự cố thiết bị (M5, FEAT-039; FR-M5-03 .1-.3, FR-M5-04 .1-.4; UC-22; BRU-EQP-002; A-43).
 
 Các hàm của controller `Maintenance Record`: `before_submit` chặn đóng hồ sơ thiếu chứng nhận, hạn hiệu lực hoặc kết quả
 kiểm tra sau sửa (FR-M5-03.3, FR-M5-04.4); `on_submit` cập nhật hạn trên `Equipment`, mở lại máy đang khóa vì quá hạn khi
@@ -16,17 +16,17 @@ from tracecore.equipment.status import set_status
 
 DOCTYPE = "Maintenance Record"
 INCIDENT_HOOK = "tracecore_equipment_incident"
-# nhắc kế hoạch trước 30 và 7 ngày tới R02 và R10 (A-42 M1: chuông Desk; email/SMS/leo thang thuộc FEAT-010)
+# nhắc kế hoạch trước 30 và 7 ngày tới R02 và R10 (A-43 M1: chuông Desk; email/SMS/leo thang thuộc FEAT-010)
 RECIPIENT_ROLES = ("TC R02", "TC R10")
 REMIND_WINDOWS = (30, 7)
-# loại hồ sơ → hạn hiệu lực trên Equipment (A-42 M4); sự cố không có hạn
+# loại hồ sơ → hạn hiệu lực trên Equipment (A-43 M4); sự cố không có hạn
 DUE_FIELDS = {
 	"Inspection": "inspection_due",
 	"Calibration": "calibration_due",
 	"Preventive": "maintenance_due",
 }
 CERTIFIED_TYPES = ("Inspection", "Calibration")
-# hạn quá ngày → lý do khóa của máy (A-42 M5); bảo trì phòng ngừa quá hạn chỉ nhắc, không khóa
+# hạn quá ngày → lý do khóa của máy (A-43 M5); bảo trì phòng ngừa quá hạn chỉ nhắc, không khóa
 EXPIRY_REASONS = {
 	"inspection_due": "Inspection Expired",
 	"calibration_due": "Calibration Expired",
@@ -231,7 +231,7 @@ def _recipients():
 
 
 def _notify(users, subject, doctype, name):
-	"""Thông báo chuông Desk (Notification Log); email/SMS và leo thang thuộc FEAT-010 (A-42 M1)."""
+	"""Thông báo chuông Desk (Notification Log); email/SMS và leo thang thuộc FEAT-010 (A-43 M1)."""
 	for user in users:
 		frappe.get_doc(
 			{

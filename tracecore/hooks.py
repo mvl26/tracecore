@@ -143,6 +143,8 @@ after_install = "tracecore.setup.install.after_install"
 after_migrate = [
 	"tracecore.inventory.permissions.ensure_permissions",
 	"tracecore.setup.install.apply_system_settings",
+	# FEAT-010: Notification Rule mặc định cho mọi loại sự kiện (không ghi đè chỉnh sửa của R10)
+	"tracecore.core.notification.ensure_default_rules",
 ]
 
 # Uninstallation
@@ -194,13 +196,14 @@ after_migrate = [
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# Thông báo (FEAT-010): mỗi người chỉ thấy thông báo của mình; R10 và System Manager thấy tất cả
+permission_query_conditions = {
+	"Notification Delivery": "tracecore.core.notification.delivery_query_conditions",
+}
+
+has_permission = {
+	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
+}
 
 # DocType Class
 # ---------------
@@ -276,7 +279,7 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
 	"Daily Test": dict(_AUDIT_EVENTS),
-	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-42): ghi sổ có old/new, không xóa
+	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-43): ghi sổ có old/new, không xóa
 	"Maintenance Record": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
@@ -377,7 +380,7 @@ tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_blo
 #  - load_daily_indicator: (equipment, indicator, on) -> dict | None, chỉ thị của mẻ lấy từ test hằng ngày của máy trong
 #    ngày chạy mẻ (A-23: Bowie-Dick không nhập lại ở T5b)
 tracecore_load_daily_indicator = ["tracecore.equipment.daily_test.load_indicator"]
-# M5 (FEAT-039, A-42 M8) gọi khi lưu hồ sơ sự cố thiết bị: (equipment, record) -> [{load_doctype, load}], M2 đánh dấu mẻ/lô
+# M5 (FEAT-039, A-43 M8) gọi khi lưu hồ sơ sự cố thiết bị: (equipment, record) -> [{load_doctype, load}], M2 đánh dấu mẻ/lô
 # chưa dỡ trên máy `needs_review` và trả danh sách để ghi vào hồ sơ (FR-M5-04.2); M5 không import M2
 tracecore_equipment_incident = ["tracecore.reprocessing.equipment_incident.flag_open_on"]
 tracecore_after_load_complete = []
@@ -425,6 +428,11 @@ scheduler_events = {
 		# đường in từ server (A-05 R1): gửi lại Print Job còn Queued của máy in có host
 		"* * * * *": [
 			"tracecore.core.print_server.dispatch_pending",
+		],
+		# FEAT-010, FR-M9-10.1, UC-38 E1/E3: gửi lại email/SMS lỗi (tối đa 3 lần), leo thang thông báo khẩn chưa đọc
+		"*/5 * * * *": [
+			"tracecore.core.notification.retry_failed",
+			"tracecore.core.notification.escalate_unread",
 		],
 		# FEAT-029, UC-14 E3: lệnh thu hồi chưa xác nhận quá 2 giờ → nhắc khoa và R01
 		"*/15 * * * *": [

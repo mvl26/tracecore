@@ -8,7 +8,7 @@
 
 **Tech Stack:** Frappe v15, `FrappeTestCase` / `IsolatedTestCase`, Desk Client Script, scheduler `cron`/`daily`.
 
-**Spec:** `docs/srs.md` FR-M5-03 (.1–.3), FR-M5-04 (.1–.4), FR-M5-06 (.2); `docs/use-cases.md` UC-22 (A1, A2, E1–E3); `docs/architecture.md` §5.3 (DT-MAINT, DT-EQUIP), WF-07; `docs/ux-foundations.md` SCR-22; `docs/rtm.md` (TC-22-01, TC-22-02); BRU-EQP-002. Amendment **A-42** (cần tạo, xem Quyết định).
+**Spec:** `docs/srs.md` FR-M5-03 (.1–.3), FR-M5-04 (.1–.4), FR-M5-06 (.2); `docs/use-cases.md` UC-22 (A1, A2, E1–E3); `docs/architecture.md` §5.3 (DT-MAINT, DT-EQUIP), WF-07; `docs/ux-foundations.md` SCR-22; `docs/rtm.md` (TC-22-01, TC-22-02); BRU-EQP-002. Amendment **A-43** (cần tạo, xem Quyết định).
 
 ## Global Constraints
 - Chỉ `equipment.status` đổi `Equipment.status`; Audit Log Update do doc_events Equipment ghi. Không `set_value('Equipment', …, 'status')` ở nơi khác.
@@ -19,7 +19,7 @@
 - Mỗi BRU có ≥ 1 test gắn `@bru("BRU-EQP-002")`. Không chạy E2E, không tạo PR (CLAUDE.md).
 - Không làm: email/SMS/leo thang (FEAT-010), `Cost Entry` (FEAT-044), dashboard máy (FEAT-006), đồng bộ ERPNext `Asset Maintenance Log` / `Asset Repair`.
 
-## Quyết định (Amendment A-42, người dùng duyệt 28/10/2026 — chủ đầu tư chưa xác nhận)
+## Quyết định (Amendment A-43, người dùng duyệt 28/10/2026 — chủ đầu tư chưa xác nhận)
 | # | Trạng thái | Quyết định |
 | :- | :- | :- |
 | M1 | [Đã duyệt 28/10/2026] | **Nhắc 30/7 ngày** = chuông Desk (`Notification Log`) gửi R02 (+ R10), giống FEAT-017/029/030/032 (A-18 Q11). Email/SMS/leo thang là FEAT-010. |
@@ -30,7 +30,7 @@
 | M6 | [Đã duyệt 28/10/2026] | **Lịch kế tiếp (FR-M5-03.2)**: ghi sổ hồ sơ có `cycle_months > 0` tự tạo hồ sơ Nháp kế tiếp cùng loại, `planned_date = performed_on + cycle_months`. Sự cố không có chu kỳ. |
 | M7 | [Đã duyệt 28/10/2026] | **Đóng hồ sơ = Ghi sổ (submit)**. Inspection/Calibration thiếu `certificate` (Attach) hoặc `valid_until` → chặn (FR-M5-03.3, UC-22 E1). Incident thiếu `post_repair_check` (kết quả kiểm tra sau sửa) → chặn (FR-M5-04.4, E2). Chi phí âm → chặn (E3). |
 | M8 | [Đã duyệt 28/10/2026] | **Sự cố**: lưu Nháp sự cố (`record_type = Incident`) ngay lập tức chuyển máy `Repair` (FR-M5-04) và gọi hook `tracecore_equipment_incident(equipment, record)`; M2 đánh dấu mẻ/lô `Running`/đang mở trên máy đó `needs_review = 1`, trả danh sách để điền `Maintenance Affected Load` (FR-M5-04.2). Ghi sổ sự cố → máy `Ready`. Hủy sự cố Nháp → máy về trạng thái trước (`status_before`). |
-| M9 | [Đã duyệt] | **Naming series**: `BT-.YYYY.-.#####`, theo dòng "Chứng từ khác" của §5.3.3 (`<PREFIX>-.YYYY.-.#####`); bản đề xuất đầu ghi `BT-.YY.MM.DD.-.####` lệch quy ước nên đã sửa khi ghi A-42. |
+| M9 | [Đã duyệt] | **Naming series**: `BT-.YYYY.-.#####`, theo dòng "Chứng từ khác" của §5.3.3 (`<PREFIX>-.YYYY.-.#####`); bản đề xuất đầu ghi `BT-.YY.MM.DD.-.####` lệch quy ước nên đã sửa khi ghi A-43. |
 | M10 | [Đã duyệt 28/10/2026] | **Quyền**: R02 tạo/sửa/ghi sổ/hủy; R10 tạo/sửa (không ghi sổ); R09 và R01 chỉ đọc; KTV (R03/R05) không thấy. Thêm vào `custom_docperm.json` và `permission_matrix.csv`. |
 | M11 | [Đã duyệt 28/10/2026] | **Thuê ngoài (UC-22 A2)**: trường `vendor` (Link Supplier), `contract_no`, `sla_hours` trên hồ sơ; không có logic SLA. |
 
@@ -43,11 +43,11 @@
 
 ## Tasks
 
-### Task 0: Amendment A-42 và tài liệu
+### Task 0: Amendment A-43 và tài liệu
 **Đáp ứng:** quy trình CLAUDE.md (DocType/naming mới phải qua amendment).
-**Files:** Modify `docs/architecture.md` (Revision History A-42, ghi chú A-42, §5.3 dòng DT-MAINT, §5.3.3 naming `BT-`). `docs/srs.md` không có dòng amendment từ A-35 và `docs/rtm.md` không có cột FEAT nên không sửa.
+**Files:** Modify `docs/architecture.md` (Revision History A-43, ghi chú A-43, §5.3 dòng DT-MAINT, §5.3.3 naming `BT-`). `docs/srs.md` không có dòng amendment từ A-35 và `docs/rtm.md` không có cột FEAT nên không sửa.
 - [x] Ghi M1–M11 với trạng thái đã chốt (người dùng duyệt hết 28/10/2026).
-- [x] Commit `docs(architecture): A-42 bảo trì/kiểm định thiết bị (FEAT-039)`.
+- [x] Commit `docs(architecture): A-43 bảo trì/kiểm định thiết bị (FEAT-039)`.
 
 ### Task 1: DocType `Maintenance Record` + child
 **Đáp ứng:** FR-M5-03, FR-M5-04; M3, M7, M9, M10, M11.
@@ -97,6 +97,6 @@ Email/SMS và leo thang nhắc (FEAT-010); `Cost Entry` M7 từ chi phí sửa c
 
 ## Ghi chú hiện thực (28/10/2026)
 - **Nhánh** `feat/FEAT-039-equipment-maintenance`; commit theo từng task (Task 0–6). Không chạy E2E, không tạo PR.
-- **Lệch so với kế hoạch ban đầu:** (1) naming `BT-.YYYY.-.#####` (M9, theo §5.3.3); (2) bảng con `Maintenance Part` dùng `part_name` (Data) và `item` (Link Item, tùy chọn) thay vì chỉ Link Item; (3) thêm cờ `abandoned` + `abandon_reason` và phương thức `abandon` (A-42 M12) vì Frappe không hủy được bản Nháp; (4) mã lỗi `EQUIPMENT_CALIBRATION_EXPIRED` ở `core.errors` và bảng test; (5) `test_errors` thêm `OWN_PIN_RESET` (sót ở `fc9d57f`, test đỏ sẵn trên develop).
+- **Lệch so với kế hoạch ban đầu:** (1) naming `BT-.YYYY.-.#####` (M9, theo §5.3.3); (2) bảng con `Maintenance Part` dùng `part_name` (Data) và `item` (Link Item, tùy chọn) thay vì chỉ Link Item; (3) thêm cờ `abandoned` + `abandon_reason` và phương thức `abandon` (A-43 M12) vì Frappe không hủy được bản Nháp; (4) mã lỗi `EQUIPMENT_CALIBRATION_EXPIRED` ở `core.errors` và bảng test; (5) `test_errors` thêm `OWN_PIN_RESET` (sót ở `fc9d57f`, test đỏ sẵn trên develop).
 - **Không làm** (gap): `Cost Entry` (FEAT-044), email/SMS/leo thang (FEAT-010), đồng bộ `Asset Maintenance Log`/`Asset Repair`, cột hạn mới trong Excel import thiết bị (FEAT-011), logic SLA thuê ngoài.
 - **Kiểm tra:** test `FrappeTestCase` các module `tracecore.equipment.*`, `core.tests.test_errors`, `tests.test_permissions`, hồi quy T2/T5/T5b; `pre-commit` (ruff, prettier, eslint, bandit, kiến trúc, BRU) sạch; coverage changed-code 99 % (226 dòng, 2 dòng chưa phủ, ngưỡng 70 %; `diff-cover` so với `origin/develop`); 14 module test, 170 test, đều đạt. Màn SCR-22 chưa được bấm tay trên `tracecore-dev.local`.

@@ -144,7 +144,7 @@ class TestInspectionAndUnlock(DailyTestCase):
 
 
 class TestCalibration(DailyTestCase):
-	"""Hạn hiệu chuẩn (FEAT-039, A-42 M4, M5): quá hạn chặn tạo mẻ/lô, R02 mở khóa tạm được kể cả máy áp lực."""
+	"""Hạn hiệu chuẩn (FEAT-039, A-43 M4, M5): quá hạn chặn tạo mẻ/lô, R02 mở khóa tạm được kể cả máy áp lực."""
 
 	@bru("BRU-EQP-002")
 	def test_overdue_calibration_blocks_the_machine(self):

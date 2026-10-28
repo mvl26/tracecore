@@ -24,10 +24,10 @@ MANAGEMENT_GROUPS = (
 	("Instruments", ("Instrument", "Instrument Set Type", "Set Unit")),
 	("Stock and par levels", ("Item", "Batch", "Stock Entry", "Sterile Location", "Par Level")),
 	("Processing records", ("Pack", "Wash Batch", "Sterile Putaway")),
-	("Data and audit", ("tc-import", "Audit Log")),
+	("Data and audit", ("tc-import", "notifications", "Notification Rule", "Audit Log")),
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
-MANAGEMENT_PAGES = {"tc-import": "Catalog Import"}
+MANAGEMENT_PAGES = {"tc-import": "Catalog Import", "notifications": "Notification Center"}
 
 
 @frappe.whitelist(methods=["GET"])

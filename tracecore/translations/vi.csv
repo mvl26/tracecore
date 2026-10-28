@@ -4083,3 +4083,85 @@ Post-repair check is missing,Thiếu kết quả kiểm tra sau sửa,
 The record stays for the audit trail; an incident returns the machine to its previous status.,"Hồ sơ vẫn được giữ để truy vết; với sự cố, máy được trả về trạng thái trước đó.",
 Record incident,Ghi sự cố,
 Plan maintenance,Lập kế hoạch bảo trì,
+Notification Center,Trung tâm thông báo,TraceCore Launcher
+Notification Rule,Quy tắc thông báo,TraceCore Launcher
+Notification Center,Trung tâm thông báo,
+Notification Rule,Quy tắc thông báo,
+Notification Rule Recipient,Người nhận bổ sung,
+Notification Delivery,Thông báo đã gửi,
+Event Code,Mã sự kiện,Notification Rule
+Urgency,Mức khẩn,Notification Rule
+Normal,Bình thường,Notification Rule
+Urgent,Khẩn,Notification Rule
+Escalate After (minutes),Leo thang sau (phút),Notification Rule
+Unread urgent notifications are escalated to R01 by email/SMS after this many minutes.,Thông báo khẩn chưa đọc sẽ được gửi email/SMS tới R01 sau số phút này.,
+Channels,Kênh gửi,Notification Rule
+In-app,Trong ứng dụng,Notification Rule
+Extra Recipients,Người nhận bổ sung,Notification Rule
+Recipients,Người nhận,Notification Rule
+Turn off to stop this kind of notification completely.,Tắt để ngừng hẳn loại thông báo này.,
+Needs the SMS gateway in TraceCore Settings.,Cần cấu hình cổng SMS trong TraceCore Settings.,
+Recipient Type,Loại người nhận,Notification Rule Recipient
+Department of document,Khoa của chứng từ,Notification Rule Recipient
+Recipient,Người nhận,Notification Delivery
+Event Code,Mã sự kiện,Notification Delivery
+Channel,Kênh,Notification Delivery
+In App,Trong ứng dụng,Notification Delivery
+Sent,Đã gửi,Notification Delivery
+Read,Đã đọc,Notification Delivery
+Failed,Lỗi,Notification Delivery
+Urgency,Mức khẩn,Notification Delivery
+Normal,Bình thường,Notification Delivery
+Urgent,Khẩn,Notification Delivery
+Attempts,Số lần thử,Notification Delivery
+Sent At,Gửi lúc,Notification Delivery
+Read At,Đọc lúc,Notification Delivery
+Escalated,Đã leo thang,Notification Delivery
+Last Error,Lỗi gần nhất,Notification Delivery
+Show On PDA,Hiện trên PDA,Notification Delivery
+Related Document,Chứng từ liên quan,Notification Delivery
+Document Type,Loại chứng từ,Notification Delivery
+Delivery,Gửi nhận,Notification Delivery
+Notification records cannot be deleted.,Không được xóa bản ghi thông báo.,
+SMS Notifications,Thông báo SMS,TraceCore Settings
+Enable SMS,Bật SMS,TraceCore Settings
+SMS Gateway URL,URL cổng SMS,TraceCore Settings
+SMS API Token,Token API SMS,TraceCore Settings
+SMS Sender Name,Tên người gửi SMS,TraceCore Settings
+Send SMS for notification rules that use the SMS channel (FR-M9-10). Off until the hospital SMS gateway is configured.,Gửi SMS cho các quy tắc thông báo có kênh SMS (FR-M9-10). Tắt cho tới khi cấu hình cổng SMS của bệnh viện.,
+HTTPS endpoint of the SMS gateway. TraceCore posts JSON {to, text, sender}; any 2xx answer counts as sent.,"Địa chỉ HTTPS của cổng SMS. TraceCore gửi JSON {to, text, sender}; trả mã 2xx là đã gửi.",
+Row {0}: choose a {1}.,Dòng {0}: chọn {1}.,
+Recall order,Lệnh thu hồi,
+Incident or non-conformance,Sự cố hoặc không phù hợp,
+Overdue CAPA action,Hành động CAPA quá hạn,
+Set disposal requested,Đề nghị thanh lý bộ,
+Set disposal decided,Quyết định thanh lý bộ,
+Loaner set overdue,Bộ mượn quá hạn,
+Par override requested,Đề nghị ghi đè cơ số,
+Monthly par override report,Báo cáo ghi đè cơ số tháng,
+Notification rule missing,Thiếu quy tắc thông báo,
+Notification delivery failed,Gửi thông báo thất bại,
+Notification rule missing for event {0}.,Chưa có quy tắc thông báo cho sự kiện {0}.,
+Notification rule missing: {0},Thiếu quy tắc thông báo: {0},
+The user has no email address.,Người dùng chưa có địa chỉ email.,
+The user has no mobile number.,Người dùng chưa có số điện thoại.,
+Could not send {0} to {1}: {2},Không gửi được {0} tới {1}: {2},
+Unread urgent notification: {0},Thông báo khẩn chưa đọc: {0},
+names must be a list of notification IDs.,names phải là danh sách mã thông báo.,
+Show,Hiển thị,Notification Center
+All,Tất cả,Notification Center
+Unread,Chưa đọc,Notification Center
+Urgent,Khẩn,Notification Center
+Mark all as read,Đánh dấu tất cả đã đọc,
+Mark as read,Đánh dấu đã đọc,
+{0} unread,{0} chưa đọc,
+No unread notifications,Không có thông báo chưa đọc,
+No notifications yet,Chưa có thông báo nào,
+New notifications appear here and in the bell at the top.,Thông báo mới sẽ hiện ở đây và trên chuông phía trên.,
+Load more,Xem thêm,
+Loading notifications…,Đang tải thông báo…,
+Cannot load notifications,Không tải được thông báo,
+Cannot update notifications,Không cập nhật được thông báo,
+Connect to the network to see notifications.,Kết nối mạng để xem thông báo.,
+"Check your connection, then try again.","Kiểm tra kết nối rồi thử lại.",
+Urgent: {0},Khẩn: {0},

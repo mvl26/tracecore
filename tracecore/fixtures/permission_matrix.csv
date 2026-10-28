@@ -27,7 +27,7 @@ DT-COMP,Station Competency,R,RWS,,,,,,,,RW,
 DT-SHIFT,Shift Assignment,R,RWS,,,,,,,,RW,HRMS
 DT-EQUIP,Equipment,R,R,R,R,R,R,,,R,RW,A-04 overrides BA baseline
 DT-PROGRAM,Process Program,R,R,R,R,R,R,,,R,RW,A-04 overrides BA baseline
-DT-MAINT,Maintenance Record,R,RWSA,,,,,,,R,RW,"FEAT-039 A-42 M10 (mới hơn ma trận): R02 làm hết; R10 tạo/sửa không ghi sổ; R01 và R09 chỉ đọc; KTV không thấy"
+DT-MAINT,Maintenance Record,R,RWSA,,,,,,,R,RW,"FEAT-039 A-43 M10 (mới hơn ma trận): R02 làm hết; R10 tạo/sửa không ghi sổ; R01 và R09 chỉ đọc; KTV không thấy"
 DT-DAILYTEST,Daily Test,RA,RWSA,R,R,RW,R,RW,,RW,RW,future FEAT-040
 DT-ITEM,Item,R,RA,R,R,RW,RWS,RW,,RWS,R,
 DT-STOCKENTRY,Stock Entry,R,RA,R,R,RW,RWS,RW,,RWS,R,

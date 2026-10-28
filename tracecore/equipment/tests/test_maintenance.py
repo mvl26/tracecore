@@ -1,4 +1,4 @@
-"""Ghi sổ hồ sơ bảo trì, kiểm định, hiệu chuẩn (FEAT-039; FR-M5-03 .1-.3; UC-22; BRU-EQP-002; A-42 M4-M7)."""
+"""Ghi sổ hồ sơ bảo trì, kiểm định, hiệu chuẩn (FEAT-039; FR-M5-03 .1-.3; UC-22; BRU-EQP-002; A-43 M4-M7)."""
 
 import frappe
 from frappe.utils import add_days, add_months, today
@@ -265,7 +265,7 @@ class TestIncident(IncidentCase):
 
 class TestAbandonIncident(IncidentCase):
 	@bru("BRU-EQP-002")
-	def test_abandoning_a_draft_incident_restores_the_machine(self):  # A-42 M8
+	def test_abandoning_a_draft_incident_restores_the_machine(self):  # A-43 M8
 		doc = self.incident()
 		doc.abandon("Nhập nhầm máy")
 		self.assertEqual(self.state().status, "Ready")

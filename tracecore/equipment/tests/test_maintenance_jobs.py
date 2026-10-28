@@ -1,4 +1,4 @@
-"""Việc định kỳ của bảo trì thiết bị (FEAT-039; FR-M5-03 nhắc 30/7 ngày, FR-M5-03.1 khóa quá hạn; UC-22; BRU-EQP-002; A-42 M1, M5)."""
+"""Việc định kỳ của bảo trì thiết bị (FEAT-039; FR-M5-03 nhắc 30/7 ngày, FR-M5-03.1 khóa quá hạn; UC-22; BRU-EQP-002; A-43 M1, M5)."""
 
 import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today

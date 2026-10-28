@@ -204,7 +204,7 @@ def _calibration_expired(row):
 def equipment_block(equipment):
 	"""Hàm của hook ``tracecore_load_equipment_checks`` / ``tracecore_wash_equipment_checks``: Block hoặc None (FR-M5-06).
 
-	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; quá hạn hiệu chuẩn → ``EQUIPMENT_CALIBRATION_EXPIRED`` (A-42 M5);
+	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; quá hạn hiệu chuẩn → ``EQUIPMENT_CALIBRATION_EXPIRED`` (A-43 M5);
 	thiếu test ngày → ``DAILY_TEST_REQUIRED`` kèm danh sách. Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ
 	qua test ngày và hiệu chuẩn quá hạn, và bỏ qua kiểm định quá hạn nếu không phải thiết bị áp lực. Máy
 	``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.

@@ -13,6 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import cstr, getdate, now_datetime, today
 
+from tracecore.core import notification
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Incident CAPA"
@@ -73,20 +74,9 @@ def _users_with(role):
 	return frappe.get_all("User", filters={"name": ["in", holders], "enabled": 1}, pluck="name")
 
 
-def _notify(users, subject, doc):
-	"""Thông báo chuông Desk (Notification Log); email/SMS và SCR-42 thuộc FEAT-010."""
-	for user in dict.fromkeys(users):
-		frappe.get_doc(
-			{
-				"doctype": "Notification Log",
-				"for_user": user,
-				"from_user": frappe.session.user,
-				"type": "Alert",
-				"subject": subject,
-				"document_type": DOCTYPE,
-				"document_name": doc.name,
-			}
-		).insert(ignore_permissions=True)
+def _notify(event, users, subject, doc):
+	"""Báo qua trung tâm thông báo (FEAT-010): người nhận theo nghiệp vụ + người R10 cấu hình thêm."""
+	notification.emit(event, doc, subject, users=users)
 
 
 # --- Tạo ----------------------------------------------------------------------------------------------
@@ -152,7 +142,7 @@ def after_insert(doc):
 	if doc.severity == "High":
 		users = _users_with(R01) + users
 	subject = _("New incident {0}: {1}").format(doc.name, _(doc.incident_type))
-	_notify(users, subject, doc)
+	_notify("INCIDENT", users, subject, doc)
 
 
 def guard_submit(doc):
@@ -456,7 +446,7 @@ def remind_overdue():
 		if doc.docstatus != 0 or doc.status != "CAPA":
 			continue
 		subject = _("Overdue CAPA action in {0}: {1}").format(doc.name, row.description)
-		_notify(([row.responsible] if row.responsible else []) + r02, subject, doc)
+		_notify("INCIDENT_OVERDUE", ([row.responsible] if row.responsible else []) + r02, subject, doc)
 		frappe.db.set_value(ACTION_DOCTYPE, row.name, "last_reminded_on", today(), update_modified=False)
 		count += 1
 	return count

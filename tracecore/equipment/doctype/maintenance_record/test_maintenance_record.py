@@ -1,4 +1,4 @@
-"""Maintenance Record (FEAT-039; FR-M5-03, FR-M5-04; UC-22; BRU-EQP-002): dữ liệu, đặt tên, xóa, quyền (A-42 M3, M9, M10)."""
+"""Maintenance Record (FEAT-039; FR-M5-03, FR-M5-04; UC-22; BRU-EQP-002): dữ liệu, đặt tên, xóa, quyền (A-43 M3, M9, M10)."""
 
 import frappe
 

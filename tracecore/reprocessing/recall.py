@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cstr, get_datetime, now_datetime
 
-from tracecore.core import step_gate
+from tracecore.core import notification, step_gate
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import incidents, storage, usage
 
@@ -61,18 +61,8 @@ def _department_users(departments):
 
 
 def _notify(users, subject, doc):
-	for user in dict.fromkeys(users):
-		frappe.get_doc(
-			{
-				"doctype": "Notification Log",
-				"for_user": user,
-				"from_user": frappe.session.user,
-				"type": "Alert",
-				"subject": subject,
-				"document_type": DOCTYPE,
-				"document_name": doc.name,
-			}
-		).insert(ignore_permissions=True)
+	"""Thu hồi là sự kiện khẩn (UC-38 E3): chưa đọc sau 15 phút thì leo thang email/SMS cho R01."""
+	notification.emit("RECALL_ORDER", doc, subject, users=users)
 
 
 # --- Lập lệnh -----------------------------------------------------------------------------------------

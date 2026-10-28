@@ -12,7 +12,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_months, cint, cstr, get_first_day, get_last_day, getdate, now_datetime, today
 
-from tracecore.core import station_auth, step_gate
+from tracecore.core import notification, station_auth, step_gate
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Par Override"
@@ -124,22 +124,9 @@ def _recipients():
 	return users
 
 
-def _notify(users, subject, doc=None, link=None, content=None):
-	"""Thông báo chuông Desk (Notification Log); email/SMS và SCR-42 thuộc FEAT-010 (A-18 Q11)."""
-	for user in users:
-		frappe.get_doc(
-			{
-				"doctype": "Notification Log",
-				"for_user": user,
-				"from_user": frappe.session.user,
-				"type": "Alert",
-				"subject": subject,
-				"email_content": content,
-				"document_type": doc.doctype if doc else None,
-				"document_name": doc.name if doc else None,
-				"link": link,
-			}
-		).insert(ignore_permissions=True)
+def _notify(event, users, subject, doc=None, link=None, content=None):
+	"""Báo qua trung tâm thông báo (FEAT-010, A-18 Q11): người nhận theo nghiệp vụ + người R10 cấu hình thêm."""
+	notification.emit(event, doc, subject, message=content, users=users, link=link)
 
 
 # --- Đề nghị ------------------------------------------------------------------------------------------
@@ -215,6 +202,7 @@ def _prepare(doc):
 def after_insert(doc):
 	"""Thông báo R01 (và R02 được ủy quyền) có đề nghị mới (A-18 Q11)."""
 	_notify(
+		"PAR_OVERRIDE_REQUESTED",
 		_recipients(),
 		_("Override requested for set {0}").format(doc.set_unit),
 		doc=doc,
@@ -414,6 +402,7 @@ def notify_monthly_report():
 	last = get_last_day(first)
 	link = f"/app/query-report/Par Override Report?from_date={first}&to_date={last}"
 	_notify(
+		"PAR_OVERRIDE_REPORT",
 		_r01_users(),
 		_("Par override report for {0}/{1} is ready").format(f"{first.month:02d}", first.year),
 		link=link,

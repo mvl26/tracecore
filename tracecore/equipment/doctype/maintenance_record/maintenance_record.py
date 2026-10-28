@@ -1,4 +1,4 @@
-"""Maintenance Record: hồ sơ bảo trì, kiểm định, hiệu chuẩn, sự cố của máy (FEAT-039, UC-22; architecture §5.3 DT-MAINT, A-42).
+"""Maintenance Record: hồ sơ bảo trì, kiểm định, hiệu chuẩn, sự cố của máy (FEAT-039, UC-22; architecture §5.3 DT-MAINT, A-43).
 
 Controller chỉ kiểm dữ liệu (số không âm, thành tiền phụ tùng); ghi sổ, lịch kế tiếp và đổi trạng thái máy do
 `equipment.maintenance`. Không xóa (on_trash).
