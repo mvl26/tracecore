@@ -1,9 +1,11 @@
 """Import Khoa và Nhân viên từ Excel (FEAT-011 Task 3; FR-M9-11, UC-39; A-41 Q1, Q3, D3)."""
 
 import uuid
+from unittest.mock import patch
 
 import frappe
 
+from tracecore.admin_reports import imports as admin_imports
 from tracecore.core import importer
 from tracecore.core.tests.test_importer import workbook
 from tracecore.tests import factories
@@ -16,10 +18,35 @@ def run(key, header, rows):
 	return frappe.get_doc("Import Batch", importer.run(key, workbook(header, rows), "f.xlsx"))
 
 
+def with_company(case):
+	"""Site CI chưa chạy Setup Wizard nên không có Company mặc định: dùng Company thử của kho như các test kho."""
+	factories.ensure_stock_masters()
+	factories.use_stock_company(case)
+
+
 class TestDepartmentImport(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.set_user("Administrator")
+		with_company(self)
+
+	def test_company_falls_back_to_the_only_company(self):
+		# site chưa đặt Company mặc định nhưng chỉ có một Company: dùng Company đó như nhập tay
+		with (
+			patch("erpnext.get_default_company", return_value=None),
+			patch.object(admin_imports, "_companies", return_value=["Only Co"]),
+		):
+			self.assertEqual(admin_imports._company(), "Only Co")
+		with (
+			patch("erpnext.get_default_company", return_value=None),
+			patch.object(admin_imports, "_companies", return_value=["A", "B"]),
+		):
+			self.assertIsNone(admin_imports._company())
+
+	def test_no_company_is_row_error_not_a_write_failure(self):
+		with patch.object(admin_imports, "_company", return_value=None):
+			result = importer.check("department", workbook(["Department Name"], [["Khoa không Company"]]))
+		self.assertEqual([(i["row"], i["code"]) for i in result["issues"]], [(2, "COMPANY_NOT_SET")])
 
 	def test_departments_created_as_wards_with_parent(self):
 		parent = factories.make_department("Khoa Ngoại nhập")
@@ -63,6 +90,7 @@ class TestEmployeeImport(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.set_user("Administrator")
+		with_company(self)
 		self.department = factories.make_department("Khoa nhân viên import")
 
 	def row(self, card=None, email=None, **over):

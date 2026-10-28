@@ -14,10 +14,33 @@ from tracecore.core.importer import Column, ImportKind, Issue, RowError, departm
 GENDERS = ("Male", "Female", "Other")
 
 
+def _companies():
+	return frappe.get_all("Company", pluck="name", limit=2)
+
+
 def _company():
+	"""Company của Khoa/Nhân viên: Company mặc định; chưa đặt mặc định mà site chỉ có một Company thì dùng Company đó."""
 	import erpnext
 
-	return erpnext.get_default_company()
+	company = erpnext.get_default_company()
+	if company:
+		return company
+	companies = _companies()
+	return companies[0] if len(companies) == 1 else None
+
+
+def _company_issue(row):
+	"""Không xác định được Company → lỗi dòng rõ ràng ở bước Kiểm tra, không để Department/Employee báo thiếu company."""
+	if _company():
+		return []
+	return [
+		Issue(
+			row.row,
+			"COMPANY_NOT_SET",
+			None,
+			_("No default company is set; ask R10 to set the default company before importing."),
+		)
+	]
 
 
 # --- Khoa -------------------------------------------------------------------------------------------------------
@@ -39,7 +62,7 @@ def _validate_department(unit):
 				_("Parent department {0} does not exist.").format(parent),
 			)
 		]
-	return []
+	return _company_issue(row)
 
 
 def _write_department(unit):
@@ -105,7 +128,7 @@ def _validate_employee(unit):
 				_("User {0} does not exist.").format(values["user_email"]),
 			)
 		)
-	return issues
+	return issues + _company_issue(row)
 
 
 def _write_employee(unit):

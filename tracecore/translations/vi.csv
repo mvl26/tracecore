@@ -4419,3 +4419,4 @@ Percent,Tỷ lệ (%),Cost Allocation
 Source DocType,Loại chứng từ nguồn,Cost Entry
 Target,Đối tượng,Cost Allocation
 Target,Đối tượng,Cost Entry
+No default company is set; ask R10 to set the default company before importing.,Chưa đặt công ty mặc định; nhờ R10 đặt công ty mặc định trước khi import.,
