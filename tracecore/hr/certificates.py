@@ -87,7 +87,15 @@ def run_daily():
 	for row in frappe.get_all(
 		DOCTYPE,
 		filters={"status": VALID, "no_expiry": 0, "expires_on": ["is", "set"]},
-		fields=["name", "employee", "employee_name", "certificate_no", "expires_on", "reminded_level"],
+		fields=[
+			"name",
+			"employee",
+			"employee_name",
+			"certificate_type",
+			"certificate_no",
+			"expires_on",
+			"reminded_level",
+		],
 	):
 		days_left = date_diff(row.expires_on, day)
 		level = reminders.level_for(days_left)
@@ -107,3 +115,8 @@ def run_daily():
 				row.certificate_no, row.employee_name, days_left
 			)
 		notification.emit(event, doc, subject, users=_employee_users(row.employee))
+		if level == reminders.EXPIRED:
+			# FR-M4-02.2: năng lực trạm yêu cầu chứng chỉ này bị tạm dừng; báo R02 và nhân viên
+			from tracecore.hr import competency
+
+			competency.notify_suspended(row.employee, row.certificate_type, row.certificate_no)

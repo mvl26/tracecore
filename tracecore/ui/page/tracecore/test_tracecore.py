@@ -45,6 +45,24 @@ class TestLauncher(FrappeTestCase):
 			routes = {link["route"] for link in get_context()["management"]}
 		self.assertTrue({"/app/notifications", "/app/notification-rule"} <= routes)
 
+	def test_competency_matrix_shift_and_report_links_for_r02(self):
+		with (
+			patch("frappe.session", frappe._dict(user="r02@example.test")),
+			patch("frappe.get_roles", return_value=["TC R02"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+		):
+			routes = {link["route"] for link in get_context()["management"]}
+		self.assertTrue(
+			{
+				"/app/competency-matrix",
+				"/app/shift-assignment",
+				"/app/query-report/Shift Schedule",
+				"/app/query-report/Station Output",
+			}
+			<= routes
+		)
+
 	def test_catalog_import_follows_page_roles(self):
 		# Page tc-import chỉ cho R02 / R10 / System Manager; R01 quản lý nhưng không thấy link import
 		with (

@@ -44,6 +44,8 @@ EVENTS = {
 	"CERTIFICATE_EXPIRING": ("Certificate expiring", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	"CERTIFICATE_EXPIRED": ("Certificate expired", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	"HEALTH_RECORD_EXPIRING": ("Health check or vaccination expiring", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	# FEAT-037: năng lực trạm bị tạm dừng vì chứng chỉ bắt buộc hết hạn
+	"COMPETENCY_SUSPENDED": ("Station competency suspended", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

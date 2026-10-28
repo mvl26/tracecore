@@ -26,6 +26,7 @@ fixtures = [
 			["name", "like", "Stock Entry Detail-tc_%"],
 			["name", "like", "Employee-tc_%"],
 			["name", "like", "Department-tc_%"],
+			["name", "like", "Shift Assignment-tc_%"],  # FEAT-037: Khu làm việc của ca
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -147,6 +148,8 @@ after_migrate = [
 	"tracecore.setup.install.apply_system_settings",
 	# FEAT-010: Notification Rule mặc định cho mọi loại sự kiện (không ghi đè chỉnh sửa của R10)
 	"tracecore.core.notification.ensure_default_rules",
+	# FEAT-037: quyền R02/R10/R01 cho HRMS Shift Assignment và Shift Type
+	"tracecore.hr.permissions.ensure_permissions",
 ]
 
 # Uninstallation
@@ -254,6 +257,8 @@ doc_events = {
 	"Loaner Set": dict(_AUDIT_EVENTS),
 	# chứng chỉ nhân viên (FEAT-036): Create/Update có old/new, không xóa (giữ lịch sử gia hạn)
 	"Certificate": dict(_AUDIT_EVENTS),
+	# ca làm việc (FEAT-037): xếp ca vào khu cần năng lực trạm của khu đó (FR-M4-04.1); ghi sổ/hủy có Audit
+	"Shift Assignment": {"validate": "tracecore.hr.shifts.validate_assignment", **_AUDIT_EVENTS},
 	# cơ số: Create/Update có old/new, không xóa (FEAT-031, FR-M8-01.3)
 	"Par Level": dict(_AUDIT_EVENTS),
 	# ghi đè cơ số (FEAT-032, WF-08): quyết định và bộ đếm đổi sau khi ghi sổ (on_update_after_submit), không xóa
@@ -340,6 +345,8 @@ tracecore_pack_context = [
 	"tracecore.par.check.pack_context",
 ]
 tracecore_pack_prechecks = ["tracecore.par.check.check_pack"]
+# FEAT-037, FR-M4-03.1: chứng chỉ bắt buộc của năng lực trạm còn thiếu/hết hạn khi đăng nhập trạm (core không import hr)
+tracecore_competency_missing_certificates = ["tracecore.hr.competency.missing_certificate_types"]
 tracecore_pack_checks = ["tracecore.instrument.maintenance.check_pack"]
 tracecore_after_cycle_id = [
 	"tracecore.instrument.maintenance.apply_pack",

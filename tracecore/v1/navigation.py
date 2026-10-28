@@ -18,7 +18,20 @@ STEP_ROLES = {
 IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
 # Nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
-	("Organization and staff", ("Department", "Employee", "Certificate", "User", "Station Competency")),
+	(
+		"Organization and staff",
+		(
+			"Department",
+			"Employee",
+			"Certificate",
+			"competency-matrix",
+			"Station Competency",
+			"User",
+			"Shift Assignment",
+			"report:Shift Schedule",
+			"report:Station Output",
+		),
+	),
 	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
 	("Equipment", ("Equipment", "Process Program")),
 	("Instruments", ("Instrument", "Instrument Set Type", "Set Unit")),
@@ -27,7 +40,13 @@ MANAGEMENT_GROUPS = (
 	("Data and audit", ("tc-import", "notifications", "Notification Rule", "Audit Log")),
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
-MANAGEMENT_PAGES = {"tc-import": "Catalog Import", "notifications": "Notification Center"}
+MANAGEMENT_PAGES = {
+	"tc-import": "Catalog Import",
+	"notifications": "Notification Center",
+	"competency-matrix": "Competency Matrix",
+}
+# Báo cáo (Script Report) trong menu, khóa ``report:<tên>``: quyền theo role của Report
+REPORT_PREFIX = "report:"
 
 
 @frappe.whitelist(methods=["GET"])
@@ -72,8 +91,19 @@ def _management_links():
 	links = []
 	for group, targets in MANAGEMENT_GROUPS:
 		for target in targets:
-			if target in MANAGEMENT_PAGES:
-				if _page_permitted(target):
+			if target.startswith(REPORT_PREFIX):
+				report = target[len(REPORT_PREFIX) :]
+				if _roles_permit("Report", report):
+					links.append(
+						{
+							"group": group,
+							"label": report,
+							"doctype": None,
+							"route": "/app/query-report/" + report,
+						}
+					)
+			elif target in MANAGEMENT_PAGES:
+				if _roles_permit("Page", target):
 					links.append(
 						{
 							"group": group,
@@ -94,9 +124,9 @@ def _management_links():
 	return links
 
 
-def _page_permitted(page):
-	# như Page.is_permitted: Page không gán role thì ai cũng mở được
-	if not frappe.db.exists("Page", page):
+def _roles_permit(doctype, name):
+	# như Page/Report.is_permitted: không gán role thì ai cũng mở được
+	if not frappe.db.exists(doctype, name):
 		return False
-	page_roles = frappe.db.get_values("Has Role", {"parent": page, "parenttype": "Page"}, "role", pluck=True)
-	return not page_roles or bool(set(page_roles) & set(frappe.get_roles()))
+	roles = frappe.db.get_values("Has Role", {"parent": name, "parenttype": doctype}, "role", pluck=True)
+	return not roles or bool(set(roles) & set(frappe.get_roles()))

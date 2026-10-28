@@ -1,0 +1,34 @@
+.tc-cm { font-family: var(--tc-font-sans); color: var(--tc-text); }
+.tc-cm-legend { display: flex; flex-wrap: wrap; gap: var(--tc-sp-4); margin-bottom: var(--tc-sp-3); color: var(--tc-text-2); }
+.tc-cm-scroll { overflow: auto; border: var(--tc-bw-hair) solid var(--tc-line); border-radius: var(--tc-r-md); background: var(--tc-card); }
+.tc-cm-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+.tc-cm-table th,
+.tc-cm-table td {
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	border-right: var(--tc-bw-hair) solid var(--tc-line);
+	text-align: center;
+	white-space: nowrap;
+}
+.tc-cm-table thead th { position: sticky; top: 0; background: var(--tc-primary-soft); color: var(--tc-text-heading); z-index: 1; }
+.tc-cm-table .tc-cm-person { position: sticky; left: 0; text-align: left; background: var(--tc-card); font-weight: var(--tc-fw-bold); z-index: 1; }
+.tc-cm-table thead .tc-cm-person { z-index: 2; background: var(--tc-primary-soft); }
+.tc-cm-zone { display: block; color: var(--tc-text-2); font-size: var(--tc-fs-xs); font-weight: var(--tc-fw-regular); }
+.tc-cm-cell {
+	min-height: var(--tc-touch-min);
+	min-width: var(--tc-touch-min);
+	padding: var(--tc-sp-1) var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid transparent;
+	border-radius: var(--tc-r-sm);
+	background: transparent;
+	color: inherit;
+	font-size: var(--tc-fs-sm);
+	font-weight: var(--tc-fw-bold);
+}
+button.tc-cm-cell { cursor: pointer; }
+.tc-cm-cell[data-state="valid"] { background: var(--tc-pass-tint); border-color: var(--tc-pass); color: var(--tc-pass-text); }
+.tc-cm-cell[data-state="temporary"] { background: var(--tc-info-tint); border-color: var(--tc-info); color: var(--tc-info-text); }
+.tc-cm-cell[data-state="suspended"] { background: var(--tc-warn-tint); border-color: var(--tc-warn); color: var(--tc-warn-text); }
+.tc-cm-cell[data-state="none"] { color: var(--tc-text-muted); font-weight: var(--tc-fw-regular); }
+.tc-cm-message { padding: var(--tc-sp-6); text-align: center; color: var(--tc-text-2); }
+.tc-cm-error { padding: var(--tc-sp-3); background: var(--tc-fail-tint); border: var(--tc-bw-hair) solid var(--tc-fail); }
