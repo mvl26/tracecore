@@ -16,6 +16,7 @@ from tracecore.equipment.status import set_status
 
 DOCTYPE = "Maintenance Record"
 INCIDENT_HOOK = "tracecore_equipment_incident"
+AFTER_SUBMIT_HOOK = "tracecore_after_maintenance_submit"
 # nhắc kế hoạch trước 30 và 7 ngày tới R02 và R10 qua trung tâm thông báo (A-43 M1; R10 thêm người nhận ở Notification Rule)
 RECIPIENT_ROLES = ("TC R02", "TC R10")
 REMIND_WINDOWS = (30, 7)
@@ -169,7 +170,13 @@ def before_submit(doc):
 
 
 def on_submit(doc):
-	"""Ghi sổ: sự cố đưa máy về Sẵn sàng; hồ sơ khác lập hồ sơ kế tiếp theo chu kỳ rồi cập nhật hạn hiệu lực của máy."""
+	"""Ghi sổ rồi báo hook `tracecore_after_maintenance_submit` (M7 lập Cost Entry Nháp từ chi phí hồ sơ, A-47 C9)."""
+	_close(doc)
+	extension.run(AFTER_SUBMIT_HOOK, doc)
+
+
+def _close(doc):
+	"""Sự cố đưa máy về Sẵn sàng; hồ sơ khác lập hồ sơ kế tiếp theo chu kỳ rồi cập nhật hạn hiệu lực của máy."""
 	if doc.record_type == "Incident":
 		return close_incident(doc)
 	next_name = plan_next(doc)
