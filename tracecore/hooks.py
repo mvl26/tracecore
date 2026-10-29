@@ -84,6 +84,8 @@ page_js = {
 		# FEAT-033: thu gom đồ vải (SCR-16) và component dòng cân dùng chung (FEAT-047 dùng lại)
 		"public/js/tc_weigh_line.js",
 		"public/js/station_linen.js",
+		# FEAT-034: lô giặt theo kg (SCR-17) trong trạm đồ vải
+		"public/js/station_laundry.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -305,6 +307,7 @@ doc_events = {
 	# đồ vải (FEAT-033, A-49): loại đồ vải và phiếu thu gom ghi vết, không xóa
 	"Linen Type": dict(_AUDIT_EVENTS),
 	"Linen Collection": dict(_AUDIT_EVENTS),
+	"Laundry Batch": dict(_AUDIT_EVENTS),  # FEAT-034, A-50: lô giặt ghi vết, không xóa
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -393,6 +396,11 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
 tracecore_after_wash_complete = ["tracecore.inventory.consume.on_wash_complete"]
 tracecore_after_wash_failed = ["tracecore.reprocessing.incidents.on_wash_failed"]
+# lô giặt hoàn tất (FEAT-034, A-50): M6 trừ hóa chất, M7 tính chi phí/kg; M3 không import hai module này
+tracecore_after_laundry_complete = [
+	"tracecore.inventory.consume.on_laundry_complete",
+	"tracecore.costing.from_laundry.on_laundry_complete",
+]
 # M2 (FEAT-026, A-17 C5) gọi khi cấp phát T7: (ctx {department, set_type, stock, adding}) -> dict, so tồn khoa + số
 # gói cấp với cơ số khoa (Par Level Department Stock); không hàm nào trả dict → coi như khoa chưa cấu hình cơ số
 tracecore_issue_par_check = ["tracecore.par.stock.issue_par"]

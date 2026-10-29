@@ -45,8 +45,8 @@
 | FR-M2-22 | CAPA và theo dõi đóng | Should | Active | BR-M2 (BRD #02) | UC-15 | _TBD_ | FEAT-030 | _TBD_ |
 | FR-M3-01 | Nhập lượt thu gom đồ vải | Must | Active | BR-M3 (BRD #02) | UC-16 | ADR-006 | FEAT-033 | _TBD_ |
 | FR-M3-02 | Danh mục loại đồ vải và khối lượng chuẩn | Must | Active | BR-M3 (BRD #02) | UC-16 | _TBD_ | FEAT-033 | _TBD_ |
-| FR-M3-03 | Tạo lô giặt | Must | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
-| FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
+| FR-M3-03 | Tạo lô giặt | Must | Active | BR-M3 (BRD #02) | UC-17 | A-50 | FEAT-034 | `linen/tests/test_laundry.py`, `v1/tests/test_laundry_api.py` |
+| FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | A-50 | FEAT-034 | `inventory/tests/test_consume_laundry.py`, `costing/tests/test_from_laundry.py`, `linen/tests/test_laundry_cost_report.py` |
 | FR-M3-05 | Cấp phát đồ vải theo khoa | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
 | FR-M3-06 | Đối chiếu thu – trả và định mức | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
 | FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | [FEAT-003 Employee subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |

@@ -100,11 +100,13 @@ class ProcessProgram(Document):
 			if row.item in seen:
 				frappe.throw(_("Row {0}: consumable {1} is listed twice.").format(row.idx, row.item))
 			seen.add(row.item)
-			if flt(row.qty_per_load) < 0 or flt(row.qty_per_pack) < 0:
+			if flt(row.qty_per_load) < 0 or flt(row.qty_per_pack) < 0 or flt(row.qty_per_kg) < 0:
 				frappe.throw(_("Row {0}: quantities cannot be negative.").format(row.idx))
-			if flt(row.qty_per_load) <= 0 and flt(row.qty_per_pack) <= 0:
+			if flt(row.qty_per_load) <= 0 and flt(row.qty_per_pack) <= 0 and flt(row.qty_per_kg) <= 0:
 				frappe.throw(
-					_("Row {0}: enter a quantity per load or per pack greater than zero.").format(row.idx)
+					_("Row {0}: enter a quantity per load, per pack or per kg greater than zero.").format(
+						row.idx
+					)
 				)
 
 	def _validate_pack_types(self):

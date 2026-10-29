@@ -119,6 +119,18 @@ HTTP_STATUS: dict[str, int] = {
 			"LINEN_QTY_INVALID",
 			"LINEN_TOTAL_INVALID",
 			"LINEN_VARIANCE_NOTE_REQUIRED",
+			# FEAT-034 A-50: lô giặt (UC-17)
+			"LAUNDRY_WEIGHT_INVALID",
+			"LAUNDRY_MIXED",
+			"LAUNDRY_EQUIPMENT_INVALID",
+			"LAUNDRY_OVER_CAPACITY",
+			"LAUNDRY_PROGRAM_INVALID",
+			"LAUNDRY_TEMP_TOO_LOW",
+			"LAUNDRY_CHEMICAL_INVALID",
+			"LAUNDRY_VENDOR_REQUIRED",
+			"LAUNDRY_REDO_INVALID",
+			"LAUNDRY_RESULT_REQUIRED",
+			"LAUNDRY_DRY_INVALID",
 		),
 		422,
 	),
@@ -142,6 +154,7 @@ HTTP_STATUS: dict[str, int] = {
 			"ASSEMBLY_NOT_FOUND",
 			"RECEIPT_NOT_FOUND",
 			"DELIVERER_NOT_FOUND",
+			"LAUNDRY_NOT_FOUND",
 			# FEAT-024 A-39: chu trình máy chưa khớp lô/mẻ nào; agent giữ lại và gửi lại sau
 			"MACHINE_CYCLE_UNMATCHED",
 		),
@@ -238,6 +251,8 @@ HTTP_STATUS: dict[str, int] = {
 			"COMPETENCY_NOT_ACTIVE",
 			# FEAT-042: tồn không đủ để xuất thủ công
 			"STOCK_INSUFFICIENT",
+			# FEAT-034: lô giặt đã hoàn tất, không hoàn tất lại
+			"LAUNDRY_NOT_RUNNING",
 			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
 			"CODE_RANGE_INVALID",
 			"CODE_RANGE_EXHAUSTED",

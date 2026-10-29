@@ -1,0 +1,296 @@
+{
+ "actions": [],
+ "autoname": "LG-.YY.MM.DD.-.##",
+ "creation": "2026-10-29 12:00:00.000000",
+ "doctype": "DocType",
+ "description": "Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg (FEAT-034, UC-17, FR-M3-03/04).",
+ "engine": "InnoDB",
+ "field_order": [
+  "batch_type",
+  "status",
+  "weight_kg",
+  "contaminated",
+  "column_break_machine",
+  "equipment",
+  "program",
+  "operator",
+  "station",
+  "redo_of",
+  "section_times",
+  "started_at",
+  "ended_at",
+  "section_outsourced",
+  "vendor",
+  "price_per_kg",
+  "section_chemicals",
+  "chemicals",
+  "section_drying",
+  "dryer",
+  "dry_temp_c",
+  "dry_minutes",
+  "column_break_result",
+  "clean_ok",
+  "dry_ok",
+  "result_note",
+  "section_cost",
+  "cost_electricity",
+  "cost_water",
+  "cost_chemical",
+  "cost_labor",
+  "column_break_cost",
+  "cost_total",
+  "cost_per_kg",
+  "cost_note",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "batch_type",
+   "fieldtype": "Select",
+   "label": "Batch Type",
+   "options": "In-house\nOutsourced",
+   "default": "In-house",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Running\nPassed\nFailed",
+   "default": "Running",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "weight_kg",
+   "fieldtype": "Float",
+   "label": "Weight (kg)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "contaminated",
+   "fieldtype": "Check",
+   "label": "Contaminated",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_machine",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "label": "Washer",
+   "options": "Equipment",
+   "depends_on": "eval:doc.batch_type=='In-house'"
+  },
+  {
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Process Program",
+   "options": "Process Program",
+   "depends_on": "eval:doc.batch_type=='In-house'"
+  },
+  {
+   "fieldname": "operator",
+   "fieldtype": "Link",
+   "label": "Operator",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "redo_of",
+   "fieldtype": "Link",
+   "label": "Redo of",
+   "options": "Laundry Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_times",
+   "fieldtype": "Section Break",
+   "label": "Times"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_outsourced",
+   "fieldtype": "Section Break",
+   "label": "Outsourced"
+  },
+  {
+   "fieldname": "vendor",
+   "fieldtype": "Data",
+   "label": "Vendor",
+   "depends_on": "eval:doc.batch_type=='Outsourced'"
+  },
+  {
+   "fieldname": "price_per_kg",
+   "fieldtype": "Currency",
+   "label": "Price per kg",
+   "depends_on": "eval:doc.batch_type=='Outsourced'",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "section_chemicals",
+   "fieldtype": "Section Break",
+   "label": "Chemicals"
+  },
+  {
+   "fieldname": "chemicals",
+   "fieldtype": "Table",
+   "label": "Chemicals",
+   "options": "Laundry Batch Chemical"
+  },
+  {
+   "fieldname": "section_drying",
+   "fieldtype": "Section Break",
+   "label": "Drying and Result"
+  },
+  {
+   "fieldname": "dryer",
+   "fieldtype": "Link",
+   "label": "Dryer",
+   "options": "Equipment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dry_temp_c",
+   "fieldtype": "Int",
+   "label": "Dry Temperature (C)",
+   "read_only": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "dry_minutes",
+   "fieldtype": "Int",
+   "label": "Dry Time (min)",
+   "read_only": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "clean_ok",
+   "fieldtype": "Check",
+   "label": "Clean",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dry_ok",
+   "fieldtype": "Check",
+   "label": "Dry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "section_cost",
+   "fieldtype": "Section Break",
+   "label": "Cost"
+  },
+  {
+   "fieldname": "cost_electricity",
+   "fieldtype": "Currency",
+   "label": "Electricity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_water",
+   "fieldtype": "Currency",
+   "label": "Water",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_chemical",
+   "fieldtype": "Currency",
+   "label": "Chemicals",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_labor",
+   "fieldtype": "Currency",
+   "label": "Labor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cost",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cost_total",
+   "fieldtype": "Currency",
+   "label": "Total Cost",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Cost per kg",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cost_note",
+   "fieldtype": "Small Text",
+   "label": "Cost Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Laundry Batch",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-29 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Linen",
+ "name": "Laundry Batch",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "status"
+}

@@ -19,7 +19,7 @@ DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
 DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-030
 DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
 DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
-DT-LAUNDRY,Laundry Batch,R,RWS,,,,,RWS,R,R,R,future FEAT-034
+DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
 DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
 DT-EMP,Employee,R,RWS,,,,,,,,RW,
 DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036

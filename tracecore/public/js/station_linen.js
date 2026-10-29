@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc, TcWeighLine */
+/* global uuid4, clientTs, esc, TcWeighLine, linenTabs */
 // Màn thu gom đồ vải theo khoa (SCR-16, FEAT-033, UC-16) trên Page station, trạm bước LIN.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Một form chứng từ: chọn khoa, nhập người giao, thêm dòng loại đồ vải (số chiếc, kg từ cân hoặc nhập tay có xác nhận,
@@ -498,6 +498,7 @@ class LinenCollect {
 		this.station.setState(
 			state,
 			`<div class="tc-linen">
+				${typeof linenTabs === "function" ? linenTabs("collect") : ""}
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.done ? this.doneHtml() : this.catalog ? this.formHtml() : ""}
 			</div>`
