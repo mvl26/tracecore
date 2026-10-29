@@ -23,6 +23,7 @@ LOAD, WASH = "Sterilization Load", "Wash Batch"
 SOURCES = (LOAD, WASH)
 RATE_DOCTYPE = rates.DOCTYPE
 UNPRICED_EVENT = "COST_SHEET_UNPRICED"
+DAYS_PER_YEAR = 365
 COMPONENTS = (
 	"Equipment Depreciation",
 	"Electricity",
@@ -196,23 +197,22 @@ def _maintenance_today(equipment, day):
 	return total
 
 
-def _loads_on_day(equipment, day):
-	"""Số mẻ/lô của máy bắt đầu trong ngày (tối thiểu 1): mẫu số chia chi phí bảo trì theo ngày."""
-	start, end = f"{day} 00:00:00", f"{day} 23:59:59"
-	count = sum(
-		frappe.db.count(
-			doctype, {"equipment": equipment, "docstatus": ["<", 2], "started_at": ["between", [start, end]]}
-		)
-		for doctype in SOURCES
-	)
-	return max(count, 1)
+def _loads_per_day(equipment):
+	"""Số mẻ kế hoạch/ngày của máy (`planned_loads_year` ÷ 365, tối thiểu 1): mẫu số cố định chia bảo trì theo ngày.
+
+	Không đếm mẻ thực tế trong ngày: job chạy ngay sau mỗi mẻ nên mẻ sau chưa có, tổng phân bổ sẽ vượt 100 %.
+	"""
+	planned = flt(frappe.db.get_value("Equipment", equipment, "planned_loads_year"))
+	return max(planned / DAYS_PER_YEAR, 1)
 
 
 def _set_value(set_type, bom_version):
-	"""Giá trị bộ = Σ giá trị dụng cụ nhân số lượng của BOM phiên bản (FR-M7-06)."""
-	filters = {"set_type": set_type}
-	if bom_version:
-		filters["bom_version"] = bom_version
+	"""Giá trị bộ = Σ giá trị dụng cụ nhân số lượng của BOM phiên bản (FR-M7-06); thiếu phiên bản thì dùng phiên bản
+	hiện hành của loại bộ (mỗi phiên bản giữ đủ dòng BOM, cộng mọi phiên bản sẽ nhân giá trị lên)."""
+	version = cint(bom_version) or cint(
+		frappe.db.get_value("Instrument Set Type", set_type, "current_bom_version")
+	)
+	filters = {"set_type": set_type, "bom_version": version}
 	total = 0
 	for row in frappe.get_all("Set BOM Item", filters=filters, fields=["instrument", "qty"]):
 		total += flt(frappe.db.get_value("Instrument", row.instrument, "value")) * flt(row.qty)
@@ -285,8 +285,10 @@ def _lines(source_doctype, source_name, src, pricer):
 					"priced": int(bool(rate)),
 				}
 			)
+	# định mức "mỗi gói" của chương trình rửa tính theo số bộ của lô, như FEAT-042
+	units = len(src.packs) if source_doctype == LOAD else len(src.sets)
 	consumed = _consumed(source_doctype, source_name) or (
-		_norm_consumption(src.program, len(src.packs)) if src.program else {}
+		_norm_consumption(src.program, units) if src.program else {}
 	)
 	for item, quantity in consumed.items():
 		rate, amount = pricer.price("Item", quantity, item)
@@ -300,11 +302,13 @@ def _lines(source_doctype, source_name, src, pricer):
 				"priced": int(bool(rate)),
 			}
 		)
-	if src.equipment and src.moment:
-		day = getdate(src.moment)
+	start = src.started_at or src.moment
+	if src.equipment and start:
+		# ngày bắt đầu mẻ cho cả tử và mẫu số
+		day = getdate(start)
 		maintenance = _maintenance_today(src.equipment, day)
 		if maintenance:
-			share = vnd(flt(maintenance) / _loads_on_day(src.equipment, day))
+			share = vnd(flt(maintenance) / _loads_per_day(src.equipment))
 			lines.append(
 				{"component": "Maintenance", "quantity": 1, "rate": share, "amount": share, "priced": 1}
 			)
@@ -367,6 +371,8 @@ def build(source_doctype, source_name, rate_version=None, note=None, recalculati
 	"""Lập Cost Sheet cho mẻ/lô; trả tên. Bản chính idempotent theo nguồn; `recalculation` tạo bản tính lại mới."""
 	if source_doctype not in SOURCES:
 		frappe.throw(_("Cost sheets are built for sterilization loads and wash batches only."))
+	# khóa dòng nguồn: hai job song song cho cùng mẻ không cùng thấy "chưa có" rồi tạo hai bản chính
+	frappe.db.get_value(source_doctype, source_name, "name", for_update=True)
 	existing = current(source_doctype, source_name)
 	if existing and not recalculation:
 		return existing
@@ -412,12 +418,16 @@ def build(source_doctype, source_name, rate_version=None, note=None, recalculati
 		if source_doctype == WASH:
 			frappe.db.set_value(WASH, source_name, "cost_total", total, update_modified=False)
 		if pricer.missing:
-			emit(
-				UNPRICED_EVENT,
-				doc,
-				_("Cost sheet {0} is unpriced").format(doc.name),
-				_("No rate for: {0}").format(", ".join(pricer.missing)),
-			)
+			try:
+				emit(
+					UNPRICED_EVENT,
+					doc,
+					_("Cost sheet {0} is unpriced").format(doc.name),
+					_("No rate for: {0}").format(", ".join(pricer.missing)),
+				)
+			except Exception:
+				# gửi thông báo lỗi không được làm mất Cost Sheet (job sẽ hoàn tác cả giao dịch)
+				frappe.log_error(title=f"FEAT-046 notify {doc.name}")
 	return doc.name
 
 
@@ -430,6 +440,8 @@ def _enqueue(source_doctype, source_name):
 		"tracecore.costing.sheet.run_job",
 		queue="long",
 		enqueue_after_commit=True,
+		job_id=f"tc-cost-sheet-{source_doctype}-{source_name}",
+		deduplicate=True,
 		source_doctype=source_doctype,
 		source_name=source_name,
 	)

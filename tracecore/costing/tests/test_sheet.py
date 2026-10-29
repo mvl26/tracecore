@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import getdate, now_datetime
 
 from tracecore.costing import sheet
 from tracecore.tests import factories
@@ -109,14 +109,59 @@ class TestLoadSheet(SheetCase):
 		row = lines(name)["Chemical"]
 		self.assertEqual((row.item, row.quantity, row.amount), (chemical, 2.0, 1000))
 
-	def test_maintenance_allocated_per_load_of_the_day(self):
+	def test_maintenance_allocated_by_planned_loads_per_day(self):
+		"""Mẫu số cố định theo số mẻ kế hoạch/ngày: job chạy ngay sau mỗi mẻ không làm tổng phân bổ vượt 100 % (review #1)."""
 		self.priced()
-		with (
-			patch.object(sheet, "_maintenance_today", return_value=9000),
-			patch.object(sheet, "_loads_on_day", return_value=3),
-		):
-			name = sheet.build("Sterilization Load", self.load())
-		self.assertEqual(lines(name)["Maintenance"].amount, 3000)
+		frappe.db.set_value("Equipment", self.machine.name, "planned_loads_year", 1095)  # 3 mẻ/ngày
+		with patch.object(sheet, "_maintenance_today", return_value=9000) as daily:
+			names = [sheet.build("Sterilization Load", self.load(packs=[pack])) for pack in self.packs]
+		self.assertEqual([lines(name)["Maintenance"].amount for name in names], [3000, 3000, 3000])
+		started = frappe.db.get_value(
+			"Sterilization Load", frappe.db.get_value("Cost Sheet", names[0], "source_name"), "started_at"
+		)
+		self.assertEqual(
+			daily.call_args.args[1], getdate(started)
+		)  # ngày bắt đầu mẻ, không phải ngày giải phóng
+
+	def test_build_takes_a_lock_on_the_source(self):
+		"""Hai job song song cho cùng mẻ: khóa dòng nguồn trước khi kiểm bản chính (review #6)."""
+		self.priced()
+		load = self.load()
+		with patch.object(sheet.frappe.db, "get_value", wraps=sheet.frappe.db.get_value) as get_value:
+			sheet.build("Sterilization Load", load)
+		self.assertTrue(
+			any(
+				c.kwargs.get("for_update") and c.args[:2] == ("Sterilization Load", load)
+				for c in get_value.call_args_list
+			)
+		)
+
+	def test_notification_failure_keeps_the_sheet(self):
+		make_cost_rate_version(submit=True, rates=[rate_line(ELECTRICITY, "Electricity")])
+		self.emit.side_effect = RuntimeError("mail down")
+		name = sheet.build("Sterilization Load", self.load())
+		self.assertEqual(frappe.db.get_value("Cost Sheet", name, "status"), "Unpriced")
+
+	def test_set_value_without_bom_version_uses_current_version_only(self):
+		"""Gói thiếu phiên bản BOM: dùng phiên bản hiện hành, không cộng mọi phiên bản (review #4)."""
+		set_type = frappe.db.get_value("Pack", self.packs[0].name, "set_type")
+		frappe.db.set_value("Instrument Set Type", set_type, "current_bom_version", 2)
+		code = "CS-DC-" + frappe.generate_hash(length=5).upper()
+		factories.make_instrument(code)
+		frappe.db.set_value("Instrument", code, "value", 100000)
+		for version in (1, 2):  # mỗi phiên bản giữ đủ dòng BOM của nó
+			frappe.get_doc(
+				{
+					"doctype": "Set BOM Item",
+					"set_type": set_type,
+					"bom_version": version,
+					"instrument": code,
+					"qty": 3,
+				}
+			).db_insert()
+		# phiên bản 2 chỉ có dòng vừa tạo: 3 x 100.000; cộng mọi phiên bản sẽ ra từ 600.000 trở lên
+		self.assertEqual(sheet._set_value(set_type, None), 300000)
+		self.assertEqual(sheet._set_value(set_type, 2), 300000)
 
 
 class TestPackCost(SheetCase):
@@ -178,7 +223,10 @@ class TestWashSheet(IsolatedTestCase):
 		sets = [factories.make_wash_ready_set() for _ in range(2)]
 		batch = factories.make_wash_batch(machine, program, sets)
 		frappe.db.set_value("Wash Batch", batch.name, "ended_at", now_datetime())
-		name = sheet.build("Wash Batch", batch.name)
+		with patch.object(sheet, "_norm_consumption", wraps=sheet._norm_consumption) as norms:
+			name = sheet.build("Wash Batch", batch.name)
+		# không có phiếu xuất: định mức mỗi bộ nhân số bộ của lô (như FEAT-042), không phải số gói (review #2)
+		self.assertEqual(norms.call_args.args[1], 2)
 		doc = frappe.get_doc("Cost Sheet", name)
 		self.assertEqual(frappe.db.get_value("Wash Batch", batch.name, "cost_total"), doc.total_cost)
 		set_unit = frappe.get_all("Wash Batch Set Unit", filters={"parent": batch.name}, pluck="set_unit")[0]

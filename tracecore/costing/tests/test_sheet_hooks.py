@@ -35,6 +35,9 @@ class TestSheetHooks(IsolatedTestCase):
 			],
 		)
 		self.assertTrue(all(c.kwargs["enqueue_after_commit"] for c in enqueue.call_args_list))
+		# một job cho mỗi nguồn dù hook chạy lại (review #6)
+		self.assertEqual(enqueue.call_args_list[0].kwargs["job_id"], "tc-cost-sheet-Sterilization Load-ME-1")
+		self.assertTrue(all(c.kwargs["deduplicate"] for c in enqueue.call_args_list))
 
 	def test_job_errors_are_logged_not_raised(self):
 		with (

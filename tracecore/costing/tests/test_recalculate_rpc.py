@@ -54,6 +54,15 @@ class TestRecalculate(SheetCase):
 		with self.assertRaises(frappe.PermissionError):
 			self.call("DG-X")
 
+	def test_unfinished_load_is_rejected(self):
+		"""Mẻ đang chạy chưa có chi phí để tính lại (review #8)."""
+		running = self.load(status="Running")
+		approved = make_cost_rate_version(submit=True, effective_from=add_days(today(), 1))
+		result = api.recalculate(
+			source_doctype="Sterilization Load", source_name=running, rate_version=approved.name, note="x"
+		)
+		self.assertEqual(result["error"]["code"], "COST_SOURCE_NOT_FOUND")
+
 	def test_unknown_source_is_rejected(self):
 		with patch.object(sheet, "build") as build:
 			result = api.recalculate(

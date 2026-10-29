@@ -49,6 +49,23 @@ class TestSetCostReport(SheetCase):
 		self.assertEqual(row["previous_average"], total)
 		self.assertIn("change_percent", row)
 
+	def test_month_filter_compares_with_the_whole_previous_month(self):
+		"""Lọc tháng 11 thì kỳ trước là cả tháng 10 (gồm ngày 01/10), không phải 30 ngày trước (review #3)."""
+		self.priced()
+		previous = sheet.build("Sterilization Load", self.load(packs=self.packs[:1]))
+		current = sheet.build("Sterilization Load", self.load(packs=self.packs[1:2]))
+		set_type = frappe.db.get_value("Cost Sheet Pack", {"parent": current}, "set_type")
+		frappe.db.set_value("Cost Sheet Pack", {"parent": previous}, "set_type", set_type)
+		frappe.db.set_value("Cost Sheet", previous, "cost_date", "2026-10-01")
+		frappe.db.set_value("Cost Sheet", current, "cost_date", "2026-11-05")
+		_columns, rows = report.execute(
+			{"from_date": "2026-11-01", "to_date": "2026-11-30", "group_by": "Set Type"}
+		)
+		row = next(r for r in rows if r["group"] == set_type)
+		self.assertEqual(
+			row["previous_average"], frappe.db.get_value("Cost Sheet Pack", {"parent": previous}, "total")
+		)
+
 	def test_recalculated_sheets_are_excluded_and_columns_exported(self):
 		self.priced()
 		load = self.load(packs=self.packs[:1])
