@@ -64,7 +64,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Station Step",
-   "options": "\nT1\nT2\nT3\nT4\nT5\nT5b\nT6\nT7\nT8"
+   "options": "\nT1\nT2\nT3\nT4\nT5\nT5b\nT6\nT7\nT8\nLIN"
   },
   {
    "fieldname": "description",

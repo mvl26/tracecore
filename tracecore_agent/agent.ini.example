@@ -22,6 +22,17 @@ listen_port = 8765
 output_dir = ~/.tracecore-agent/labels
 db_path = ~/.tracecore-agent/queue.sqlite3
 
+; Cân điện tử RS-232/USB (FEAT-033, EI-HW-004): kiosk gọi GET http://127.0.0.1:8765/scale. Bỏ mục này nếu trạm không
+; có cân (kiosk chuyển sang nhập tay có xác nhận). Cần `pip install pyserial` trên máy trạm.
+;[scale]
+;port = COM3
+;baudrate = 9600
+;timeout = 2
+; Regex tùy chọn: nhóm 1 là số, nhóm 2 (nếu có) là đơn vị kg hoặc g
+;pattern =
+; Lệnh gửi trước khi đọc nếu cân không tự phát (dùng \r \n)
+;request =
+
 ; Dữ liệu máy tự động (FEAT-024, ADR-007): một mục cho mỗi máy kết nối được (Equipment.is_connected = 1) cùng khu với
 ; trạm này. Đặt tên chu trình trên máy = mã lô/mẻ (LR-…/ME-…) để khớp chính xác; không có thì khớp theo giờ bắt đầu.
 ; Thử một lượt: python3 -m tracecore_agent machines

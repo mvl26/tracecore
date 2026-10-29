@@ -13,9 +13,10 @@ STEP_ROLES = {
 	"T6": {"TC R06"},
 	"T7": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
 	"T8": {"TC R08"},
+	"LIN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
 }
 # Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
-IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
+IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "LIN"}
 # Nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
 	(
@@ -65,6 +66,7 @@ MANAGEMENT_GROUPS = (
 		"Costs",
 		("Cost Entry", "Cost Rate Version", "Cost Category", "Cost Settings", "report:Cost by Target"),
 	),
+	("Linen", ("Linen Type", "Linen Collection")),  # FEAT-033; FEAT-034/035 thêm lô giặt và cấp phát
 	(
 		"Processing records",
 		(

@@ -1294,3 +1294,79 @@ body.tc-kiosk .layout-main-section {
 .tc-t1 .tc-t2-table td {
 	overflow-wrap: anywhere;
 }
+
+/* Thu gom đồ vải (SCR-16, FEAT-033) và dòng cân tc-weigh-line dùng chung */
+.tc-linen-head {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(var(--tc-photo-big), 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-linen-line {
+	display: grid;
+	gap: var(--tc-touch-gap);
+	margin: var(--tc-sp-3) 0;
+	padding: var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-lg);
+}
+
+.tc-linen-line .tc-field {
+	margin-bottom: 0;
+}
+
+.tc-linen-flag,
+.tc-linen-mode,
+.tc-weigh-confirm {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	min-height: var(--tc-touch-min);
+}
+
+.tc-linen input[type="checkbox"] {
+	flex: none;
+	width: var(--tc-touch-min);
+	height: var(--tc-touch-min);
+}
+
+.tc-weigh label[for] {
+	display: block;
+	margin-bottom: var(--tc-sp-1);
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-weigh-input {
+	display: flex;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-weigh-input input {
+	flex: 1;
+	min-width: 0;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-sm);
+	color: var(--tc-text);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-weigh-input input.is-error {
+	border: var(--tc-bw-thick) solid var(--tc-fail);
+}
+
+.tc-weigh-source {
+	margin: var(--tc-sp-1) 0 0;
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-sm);
+}
+
+.tc-weigh-source[hidden],
+.tc-weigh-confirm[hidden],
+[data-weigh][hidden] {
+	display: none;
+}

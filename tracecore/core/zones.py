@@ -12,7 +12,7 @@ STEPS_BY_ZONE_TYPE: dict[str, tuple[str, ...]] = {
 	"Clean": ("T3", "T4", "T5"),
 	"Sterile": ("T5b", "T6", "T7"),
 	"Department": ("T8",),
-	"Linen": (),
+	"Linen": ("LIN",),  # FEAT-033 A-49 L1: trạm đồ vải không có cổng 5 bước
 	"Waste": (),
 }
 # Chiều đi của dụng cụ qua máy hai cửa: Bẩn → Sạch → Vô khuẩn.

@@ -23,7 +23,7 @@ class TestAllowedSteps(IsolatedTestCase):
 		self.assertEqual(zone_api.allowed_steps(["ZONE-CLEAN"]), [])
 
 	def test_zone_without_functions_gives_empty_list(self):
-		frappe.db.set_value("Zone Station", "ZONE-CLEAN", "zone_type", "Linen")
+		frappe.db.set_value("Zone Station", "ZONE-CLEAN", "zone_type", "Waste")
 		self.assertEqual(zone_api.allowed_steps("ZONE-CLEAN"), [])
 
 

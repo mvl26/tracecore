@@ -17,8 +17,8 @@ DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
 DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-029
 DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
 DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-030
-DT-LINENTYPE,Linen Type,R,RWS,,,,,RWS,R,R,R,future FEAT-033
-DT-LINENCOL,Linen Collection,R,RWS,,,,,RWS,R,R,R,future FEAT-033
+DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
+DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
 DT-LAUNDRY,Laundry Batch,R,RWS,,,,,RWS,R,R,R,future FEAT-034
 DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
 DT-EMP,Employee,R,RWS,,,,,,,,RW,
