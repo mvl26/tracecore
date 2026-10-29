@@ -514,6 +514,27 @@ def make_linen_collection(lines=None, submit=False, **kwargs):
 	return doc.submit() if submit else doc
 
 
+def make_linen_issue(lines=None, department=None, kind="Return", submit=False, **kwargs):
+	"""Tạo Linen Issue Nháp (FEAT-035). Cấp (Return/New) có người nhận ký thẻ; Dispose có lý do và ảnh. `submit=True` ghi sổ.
+
+	`lines` mặc định một dòng 10 chiếc/5 kg của loại mới (tên ngẫu nhiên).
+	"""
+	if lines is None:
+		lines = [linen_line(make_linen_type().name)]
+	values = {
+		"doctype": "Linen Issue",
+		"kind": kind,
+		"department": department or make_department(),
+		"lines": lines,
+	}
+	if kind == "Dispose":
+		values.update({"reason": "Rách không sửa được", "evidence": "/files/linen-damaged.png"})
+	else:
+		values.update({"recipient": make_employee().name, "sign_method": "Card"})
+	doc = frappe.get_doc({**values, **kwargs}).insert()
+	return doc.submit() if submit else doc
+
+
 def rate_line(rate, rate_type="Item", item=None):
 	"""Một dòng `Cost Rate Line` (FEAT-045) cho `make_cost_rate_version`."""
 	return {"rate_type": rate_type, "item": item, "rate": rate}

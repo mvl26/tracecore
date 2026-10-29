@@ -35,5 +35,7 @@ class TestLinenNavigation(IsolatedTestCase):
 				"/app/linen-collection",
 				"/app/laundry-batch",
 				"/app/query-report/Laundry Cost per Kg",
+				"/app/linen-issue",
+				"/app/query-report/Linen Reconciliation",
 			],
 		)

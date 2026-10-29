@@ -13,7 +13,8 @@ from frappe import _
 
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
-from tracecore.linen import collection
+from tracecore.linen import collection, reconcile
+from tracecore.linen import issue as issuing
 from tracecore.v1._common import (
 	LINEN_ROLES,
 	BadRequestError,
@@ -68,6 +69,60 @@ def catalog(station, department=None, client_ts=None, token=None):
 			"departments": collection.departments(),
 		},
 	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LINEN_ROLES)
+def balance(station, department=None, client_ts=None, token=None):
+	"""Chưa trả (thu - trả - hủy), tồn khoa và định mức theo loại của `department` (UC-18 bước 2); chỉ đọc."""
+	require_any_role(*LINEN_ROLES)
+	department = _text(department, "department")
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		collection.check_department(department)
+		return {"ok": True, "department": department, "balance": reconcile.balance(department)}
+
+	return run_at_step(STEP, station, timestamp, call)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LINEN_ROLES)
+@idempotent
+def issue(
+	station,
+	department=None,
+	kind=None,
+	recipient_card=None,
+	sign_method=None,
+	signature=None,
+	lines=None,
+	note=None,
+	client_ts=None,
+	token=None,
+):
+	"""Ghi sổ một lượt cấp phát: `kind` = ``Return`` hoặc ``New``, người nhận quét thẻ (`recipient_card`) và ký bằng thẻ hoặc
+	cảm ứng (`signature` là ảnh PNG data URI); `lines` như `collect`. Vượt định mức tối đa chỉ cảnh báo (`quota_warning`).
+
+	Trả ``{"ok": true, "issue": {...}}``.
+	"""
+	require_any_role(*LINEN_ROLES)
+	department = _text(department, "department")
+	kind = _text(kind, "kind")
+	recipient_card = _text(recipient_card, "recipient_card")
+	sign_method = _text(sign_method, "sign_method")
+	signature = _text(signature, "signature")
+	note = _text(note, "note")
+	lines = _lines(lines)
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		doc = issuing.record(
+			station, _receiver(), department, kind, recipient_card, sign_method, signature, lines, note
+		)
+		return {"ok": True, "issue": issuing.view(doc)}
+
+	return run_at_step(STEP, station, timestamp, call, None, None)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

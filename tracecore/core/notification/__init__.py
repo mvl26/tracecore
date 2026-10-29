@@ -50,6 +50,8 @@ EVENTS = {
 	"CONSUMPTION_SHORT": ("Consumption exceeds stock", "Normal", 0, 0, ("TC R09",)),
 	"CONSUMPTION_NO_NORM": ("Consumption norm missing", "Normal", 0, 0, ("TC R09",)),
 	"CONSUMPTION_FAILED": ("Automatic consumption failed", "Urgent", 0, 0, ("TC R09",)),
+	# FEAT-035: đồ vải chênh lệch thu - trả - hủy trong tháng > 5 % hoặc tồn khoa dưới tối thiểu
+	"LINEN_VARIANCE": ("Linen reconciliation variance", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

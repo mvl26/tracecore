@@ -4726,3 +4726,60 @@ dry,khô,
 "{0} kg, cost {1} per kg.","{0} kg, chi phí {1} mỗi kg.",
 {0} must be a list of objects.,{0} phải là danh sách các đối tượng.,
 Laundry Cost per Kg,Chi phí giặt mỗi kg,
+Attach a photo of the linen to dispose of.,Đính kèm ảnh đồ vải cần hủy.,
+Back to the issue,Quay lại phiếu cấp phát,
+Choose Return or New.,Chọn Trả sau giặt hoặc Cấp mới.,
+Choose the department of the linen.,Chọn khoa của đồ vải.,
+Choose the recipient before submitting.,Chọn người nhận trước khi ghi sổ.,
+Collected,Thu gom,
+Collected (kg),Thu gom (kg),
+Department stock,Tồn khoa,
+Disposed (kg),Đã hủy (kg),
+Enter the reason for disposing of the linen.,Nhập lý do hủy đồ vải.,
+"Fix the highlighted values, then continue.",Sửa các giá trị được đánh dấu rồi tiếp tục.,
+Issue {0} recorded,Đã ghi sổ phiếu cấp phát {0},
+Issued At,Thời điểm cấp,Linen Issue
+Issued By,Người cấp,Linen Issue
+Issued New,Cấp mới,
+Kind is not valid,Loại phiếu không hợp lệ,
+Kind {0} cannot be recorded at the station.,Loại {0} không ghi được tại trạm.,
+Kind {0} is not valid.,Loại {0} không hợp lệ.,
+Linen Issue,Phiếu cấp phát đồ vải,
+Linen Issue Line,Dòng cấp phát đồ vải,
+Linen issue,Cấp phát đồ vải,
+Linen reconciliation of {0} up to {1}:,Đối chiếu đồ vải của {0} đến {1}:,
+Linen reconciliation variance: {0},Chênh lệch đối chiếu đồ vải: {0},
+Lines,Dòng,Linen Issue
+New from stock,Cấp mới từ kho,
+New issue,Cấp phát mới,
+Next: recipient signs,Tiếp theo: người nhận ký,
+Not returned,Chưa trả,
+Not returned (kg),Chưa trả (kg),
+Not returned yet and department stock,Chưa trả và tồn khoa,
+Over the department quota,Vượt định mức của khoa,
+Print the receipt for the recipient.,In biên nhận cho người nhận.,
+Quota Warning,Cảnh báo định mức,Linen Issue
+Recipient Name,Tên người nhận,Linen Issue
+Required when the entered values differ from the standard weight by more than 15 %.,Bắt buộc khi giá trị nhập lệch khối lượng chuẩn quá 15 %.,Linen Issue Line
+Return after laundry,Trả sau giặt,
+Returned,Đã trả,
+Returned (kg),Đã trả (kg),
+Scale,Cân,Linen Issue Line
+Signed At,Thời điểm ký,Linen Issue
+Signed With,Ký bằng,Linen Issue
+The department would hold more than its maximum.,Khoa sẽ giữ nhiều hơn mức tối đa.,
+The issue is not complete,Phiếu cấp phát chưa đầy đủ,
+The recipient must sign with the card or on the screen.,Người nhận phải ký bằng thẻ hoặc trên màn hình.,
+The recipient's signature is missing.,Thiếu chữ ký của người nhận.,
+The warning is kept on the issue.,Cảnh báo được giữ trên phiếu cấp phát.,
+This department has no collection or quota yet.,Khoa này chưa có lượt thu gom hoặc định mức.,
+Total Pieces,Tổng số chiếc,Linen Issue
+Total Weight (kg),Tổng khối lượng (kg),Linen Issue
+Touch,Cảm ứng,Linen Issue
+Variance (%),Chênh lệch (%),
+Variance (kg),Chênh lệch (kg),
+Variance {0} % of {1} pieces collected.,Chênh lệch {0} % trên {1} chiếc đã thu gom.,
+You can still record; the warning is kept on the issue.,Vẫn ghi sổ được; cảnh báo được giữ trên phiếu cấp phát.,
+"{0} pieces, {1} kg to {2}, received by {3}.","{0} chiếc, {1} kg cấp cho {2}, người nhận {3}.",
+{0}: stock {1} + issued {2} exceeds the maximum {3}.,{0}: tồn {1} cộng cấp {2} vượt mức tối đa {3}.,
+{0}: stock {1} is below the minimum {2}.,{0}: tồn {1} thấp hơn mức tối thiểu {2}.,

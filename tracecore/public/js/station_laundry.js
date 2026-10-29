@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc, TcWeighLine, LinenCollect */
+/* global uuid4, clientTs, esc, TcWeighLine, LinenCollect, LinenIssue */
 // Màn lô giặt theo kg (SCR-17, FEAT-034, UC-17) trên Page station, trạm bước LIN, cạnh màn thu gom đồ vải.
 // Frappe nối file này sau station_linen.js (hook page_js) nên dùng chung uuid4/clientTs/esc và LinenCollect.
 // Hai bước: Bắt đầu lô (máy giặt, chương trình, nhiễm/không, kg, hóa chất) rồi Hoàn tất (máy sấy, nhiệt độ, thời gian, kết quả
@@ -10,7 +10,7 @@ const LAU_START = "tracecore.v1.laundry.start";
 const LAU_COMPLETE = "tracecore.v1.laundry.complete";
 const LAU_MIN_CONTAMINATED_C = 71; // FR-M3-03.2: đồ nhiễm giặt dưới 71 °C phải có hóa chất khử khuẩn
 
-// Thanh chuyển giữa thu gom và lô giặt, nằm đầu mỗi màn của trạm đồ vải (xem LinenStation)
+// Thanh chuyển giữa thu gom, lô giặt và cấp phát, nằm đầu mỗi màn của trạm đồ vải (xem LinenStation)
 function linenTabs(active) {
 	const tab = (mode, label) =>
 		`<button type="button" class="tc-btn ${
@@ -19,7 +19,10 @@ function linenTabs(active) {
 			label
 		)}</button>`;
 	return `<div class="tc-linen-tabs" role="group" aria-label="${esc(__("Linen station"))}">
-		${tab("collect", __("Collection"))}${tab("laundry", __("Laundry batch"))}
+		${tab("collect", __("Collection"))}${tab("laundry", __("Laundry batch"))}${tab(
+		"issue",
+		__("Issue")
+	)}
 	</div>`;
 }
 
@@ -848,6 +851,7 @@ class LinenStation {
 		this.station = station;
 		this.collect = new LinenCollect(station);
 		this.laundry = new LaundryBatch(station);
+		this.issue = new LinenIssue(station); // FEAT-035, SCR-18: cấp phát đồ vải cho khoa
 		this.active = this.collect;
 	}
 
@@ -862,6 +866,7 @@ class LinenStation {
 	clearSession() {
 		this.collect.clearSession();
 		this.laundry.clearSession();
+		this.issue.clearSession();
 		this.active = this.collect;
 	}
 
@@ -872,6 +877,7 @@ class LinenStation {
 	setOffline(offline) {
 		this.collect.offline = offline;
 		this.laundry.offline = offline;
+		this.issue.offline = offline;
 		return this.active.show();
 	}
 
@@ -882,7 +888,7 @@ class LinenStation {
 	onAction(action, button) {
 		if (action === "linen-mode") {
 			if (this.active.busy) return true;
-			this.active = button.dataset.mode === "laundry" ? this.laundry : this.collect;
+			this.active = this[button.dataset.mode] || this.collect; // collect | laundry | issue
 			this.active.notice = null;
 			this.active.show();
 			return true;

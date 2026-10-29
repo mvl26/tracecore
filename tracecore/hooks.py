@@ -86,6 +86,8 @@ page_js = {
 		"public/js/station_linen.js",
 		# FEAT-034: lô giặt theo kg (SCR-17) trong trạm đồ vải
 		"public/js/station_laundry.js",
+		# FEAT-035: cấp phát đồ vải (SCR-18), lớp con của LinenCollect nên nạp sau station_linen.js
+		"public/js/station_linen_issue.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -141,6 +143,8 @@ jinja = {
 		"tracecore.instrument.loaner.tc_loaner_context",
 		# Print Format "TC Linen Receipt" (FEAT-033, FR-M3-01.5): biên nhận thu gom đồ vải
 		"tracecore.ui.linen_print.tc_linen_receipt_context",
+		# Print Format "TC Linen Issue Receipt" (FEAT-035, FR-M3-05.1): biên nhận cấp phát đồ vải
+		"tracecore.ui.linen_print.tc_linen_issue_context",
 	]
 }
 
@@ -308,6 +312,7 @@ doc_events = {
 	"Linen Type": dict(_AUDIT_EVENTS),
 	"Linen Collection": dict(_AUDIT_EVENTS),
 	"Laundry Batch": dict(_AUDIT_EVENTS),  # FEAT-034, A-50: lô giặt ghi vết, không xóa
+	"Linen Issue": dict(_AUDIT_EVENTS),  # FEAT-035, A-51
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -487,6 +492,8 @@ scheduler_events = {
 			"tracecore.equipment.maintenance.lock_overdue",
 			# FEAT-036, FR-M4-02.1/.2, FR-M4-01.4: chứng chỉ hết hạn, nhắc 60/30/7 ngày, khám sức khỏe, tiêm chủng
 			"tracecore.hr.reminders.run_daily",
+			# FEAT-035, FR-M3-06.1: đồ vải chênh lệch tháng > 5 % hoặc tồn khoa dưới tối thiểu → báo R02
+			"tracecore.linen.reconcile.run_daily",
 		],
 	},
 	"daily": [

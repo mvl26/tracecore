@@ -22,6 +22,7 @@ JS_DIR = os.path.join(APP_PATH, "public", "js")
 WEIGH_JS = os.path.join(JS_DIR, "tc_weigh_line.js")
 LINEN_JS = os.path.join(JS_DIR, "station_linen.js")
 LAUNDRY_JS = os.path.join(JS_DIR, "station_laundry.js")
+ISSUE_JS = os.path.join(JS_DIR, "station_linen_issue.js")  # LinenStation c?ng t?o m?n C?p ph?t (FEAT-035)
 STATION_JS = os.path.join(APP_PATH, "ui", "page", "station", "station.js")
 STATION_CSS = os.path.join(APP_PATH, "ui", "page", "station", "station.css")
 VIETNAMESE = re.compile(r"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", re.I)
@@ -46,8 +47,10 @@ const load = (path, names, deps) => new Function(...Object.keys(deps),
 const TcWeighLine = load({json.dumps(WEIGH_JS)}, ['TcWeighLine'], {{ __, esc }}).TcWeighLine;
 const linenDeps = {{ __, esc, uuid4, clientTs, TcWeighLine }};
 const LinenCollect = load({json.dumps(LINEN_JS)}, ['LinenCollect'], linenDeps).LinenCollect;
-const {{ LaundryBatch, LinenStation, linenTabs }} = load(
-	{json.dumps(LAUNDRY_JS)}, ['LaundryBatch', 'LinenStation', 'linenTabs'], {{ ...linenDeps, LinenCollect }});
+const {{ linenTabs }} = load({json.dumps(LAUNDRY_JS)}, ['linenTabs'], {{ ...linenDeps, LinenCollect }});
+const LinenIssue = load({json.dumps(ISSUE_JS)}, ['LinenIssue'], {{ ...linenDeps, LinenCollect, linenTabs }}).LinenIssue;
+const {{ LaundryBatch, LinenStation }} = load(
+	{json.dumps(LAUNDRY_JS)}, ['LaundryBatch', 'LinenStation'], {{ ...linenDeps, LinenCollect, LinenIssue }});
 function stationStub() {{
 	const states = [];
 	return {{

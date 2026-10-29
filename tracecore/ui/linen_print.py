@@ -19,6 +19,45 @@ def kg(value) -> str:
 	return (text or "0").replace(".", ",")
 
 
+def tc_linen_issue_context(name: str) -> dict:
+	"""Ngữ cảnh Print Format "TC Linen Issue Receipt" (FEAT-035, FR-M3-05.1): biên nhận cấp phát kèm chữ ký người nhận."""
+	doc = frappe.get_doc("Linen Issue", name)
+	doc.check_permission("read")
+	issued = doc.issued_at
+	return {
+		"tc": token_values(),
+		"name": doc.name,
+		"draft": doc.docstatus == 0,
+		"cancelled": doc.docstatus == 2,
+		"kind": doc.kind,
+		"department": frappe.db.get_value("Department", doc.department, "department_name") or doc.department,
+		"issued_at": (
+			f"{formatdate(issued, 'dd/mm/yyyy')} {frappe.utils.get_datetime(issued).strftime('%H:%M')}"
+			if issued
+			else ""
+		),
+		"issued_by": frappe.db.get_value("Employee", doc.issued_by, "employee_name") or doc.issued_by or "",
+		"recipient": doc.recipient_name or doc.recipient or "",
+		"sign_method": doc.sign_method or "",
+		"signature": doc.signature if doc.sign_method == "Touch" else "",
+		"reason": doc.reason or "",
+		"total_qty": cint(doc.total_qty),
+		"total_weight": kg(doc.total_weight_kg),
+		"quota_warning": doc.quota_warning or "",
+		"note": doc.note or "",
+		"items": [
+			{
+				"index": row.idx,
+				"name": row.linen_type,
+				"qty": cint(row.qty),
+				"weight": kg(row.weight_kg),
+				"variance_note": row.variance_note or "",
+			}
+			for row in doc.lines
+		],
+	}
+
+
 def tc_linen_receipt_context(name: str) -> dict:
 	doc = frappe.get_doc(DOCTYPE, name)
 	doc.check_permission("read")

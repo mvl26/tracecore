@@ -90,21 +90,31 @@ def validate(doc):
 			continue
 		if not info.is_active:
 			frappe.throw(_("Row {0}: linen type {1} is no longer in use.").format(row.idx, row.linen_type))
-		row.qty, row.weight_kg, source = convert(info.std_weight_kg, row.qty, row.weight_kg)
-		if source:
-			row.weight_source = source
-		elif not row.weight_source:
-			row.weight_source = SOURCE_MANUAL
-		if (
-			source is None
-			and over_tolerance(info.std_weight_kg, row.qty, row.weight_kg)
-			and not (row.variance_note or "").strip()
-		):
-			frappe.throw(
-				_(
-					"Row {0}: the weight differs from the standard weight by more than 15 %. Enter a note to keep it."
-				).format(row.idx)
-			)
+		normalize_line(row, info)
+	set_totals(doc)
+
+
+def normalize_line(row, info):
+	"""Quy đổi số chiếc ↔ kg của một dòng theo `info` (Linen Type) và đòi ghi chú khi lệch quá 15 %; dùng chung với
+	`Linen Issue` (FEAT-035)."""
+	row.qty, row.weight_kg, source = convert(info.std_weight_kg, row.qty, row.weight_kg)
+	if source:
+		row.weight_source = source
+	elif not row.weight_source:
+		row.weight_source = SOURCE_MANUAL
+	if (
+		source is None
+		and over_tolerance(info.std_weight_kg, row.qty, row.weight_kg)
+		and not (row.variance_note or "").strip()
+	):
+		frappe.throw(
+			_(
+				"Row {0}: the weight differs from the standard weight by more than 15 %. Enter a note to keep it."
+			).format(row.idx)
+		)
+
+
+def set_totals(doc):
 	doc.total_qty = sum(row.qty or 0 for row in doc.lines)
 	doc.total_weight_kg = round(sum(row.weight_kg or 0 for row in doc.lines), WEIGHT_DIGITS)
 
@@ -274,11 +284,8 @@ def _allocated_rows(prepared, total_kg, note):
 	return rows
 
 
-def record(station, employee, department, delivered_by, lines, total_kg=None, note=None):
-	"""Ghi sổ một lượt thu gom từ trạm đồ vải: kiểm đầu vào bằng `Block` (mã LINEN_*), rồi tạo và ghi sổ `Linen Collection`.
-
-	`employee` là người nhận (Employee của phiên thẻ). `total_kg` có giá trị thì chia kg tổng cho các dòng (UC-16 A1).
-	"""
+def check_department(department):
+	"""Khoa lá, chưa tắt; ngược lại DEPARTMENT_INVALID. Dùng chung với `linen.issue`."""
 	row = (
 		frappe.db.get_value("Department", department, ["is_group", "disabled"], as_dict=True)
 		if isinstance(department, str) and department
@@ -289,8 +296,22 @@ def record(station, employee, department, delivered_by, lines, total_kg=None, no
 			"DEPARTMENT_INVALID",
 			_("Department is not valid"),
 			_("Department {0} does not exist, is disabled, or is a group.").format(department or "-"),
-			_("Choose the department that hands the linen over."),
+			_("Choose the department of the linen."),
 		)
+
+
+def prepare_rows(lines, note=None):
+	"""Dòng đã kiểm và quy đổi từ ``lines`` của RPC (không có cân tổng); lỗi thành `BlockedError` mã LINEN_*. Dùng chung với
+	`linen.issue`."""
+	return _station_rows(lines, None, (note or "").strip())
+
+
+def record(station, employee, department, delivered_by, lines, total_kg=None, note=None):
+	"""Ghi sổ một lượt thu gom từ trạm đồ vải: kiểm đầu vào bằng `Block` (mã LINEN_*), rồi tạo và ghi sổ `Linen Collection`.
+
+	`employee` là người nhận (Employee của phiên thẻ). `total_kg` có giá trị thì chia kg tổng cho các dòng (UC-16 A1).
+	"""
+	check_department(department)
 	delivered_by = (delivered_by or "").strip() if isinstance(delivered_by, str) else ""
 	if not delivered_by:
 		raise _blocked(

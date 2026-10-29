@@ -67,7 +67,17 @@ MANAGEMENT_GROUPS = (
 		("Cost Entry", "Cost Rate Version", "Cost Category", "Cost Settings", "report:Cost by Target"),
 	),
 	# FEAT-033 thu gom; FEAT-034 lô giặt và báo cáo chi phí/kg; FEAT-035 thêm cấp phát
-	("Linen", ("Linen Type", "Linen Collection", "Laundry Batch", "report:Laundry Cost per Kg")),
+	(
+		"Linen",
+		(
+			"Linen Type",
+			"Linen Collection",
+			"Laundry Batch",
+			"report:Laundry Cost per Kg",
+			"Linen Issue",
+			"report:Linen Reconciliation",
+		),
+	),
 	(
 		"Processing records",
 		(
