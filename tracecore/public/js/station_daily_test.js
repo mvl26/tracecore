@@ -40,6 +40,7 @@ class DailyTestScreen {
 	reset() {
 		this.list = null;
 		this.selected = null; // tên máy đang chọn
+		this.scrollToForm = false; // vừa chọn máy: cuộn tới form của máy một lần sau khi vẽ
 		this.notice = null;
 		this.form = { test_type: "", result: "", lot: "", lot_expiry: "", reason: "", hours: "" };
 	}
@@ -68,6 +69,7 @@ class DailyTestScreen {
 			});
 		}
 		this.selected = match[0];
+		this.scrollToForm = true;
 		this.notice = null;
 		if (!this.list) return this.load();
 		this.show();
@@ -252,6 +254,7 @@ class DailyTestScreen {
 			"dt-back": () => this.backToLoad(),
 			"dt-select": () => {
 				this.selected = data.machine;
+				this.scrollToForm = true;
 				this.notice = null;
 				this.show();
 			},
@@ -305,6 +308,17 @@ class DailyTestScreen {
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
+		if (this.scrollToForm && this.list) this.revealForm();
+	}
+
+	// Form nằm dưới bảng máy: cuộn tới để KTV thấy ngay sau khi quét; ô quét giữ focus (preventScroll) nên quét tiếp vẫn được
+	revealForm() {
+		this.scrollToForm = false;
+		const region = this.result.querySelector('[data-region="dt-form"]');
+		if (!region) return;
+		const reduced =
+			window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		region.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
 	}
 
 	alertHtml(notice, buttons = "") {
@@ -438,7 +452,7 @@ class DailyTestScreen {
 				<input id="tc-dt-${name}" type="${type}" autocomplete="off" data-dt-field="${name}" value="${esc(
 				form[name]
 			)}" ${extra}></div>`;
-		return `<section class="tc-t4-block">
+		return `<section class="tc-t4-block" data-region="dt-form">
 			<h3>${esc(__("Daily test of {0}", [machine.name]))}</h3>
 			${
 				machine.required.length
