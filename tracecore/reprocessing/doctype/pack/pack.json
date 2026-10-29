@@ -43,7 +43,8 @@
   "void_note",
   "section_confirmation",
   "instruments_confirmed",
-  "maint_done"
+  "maint_done",
+  "cost_total"
  ],
  "fields": [
   {
@@ -316,12 +317,20 @@
    "fieldtype": "Table",
    "label": "Maintenance Done",
    "options": "Pack Maintenance Done"
+  },
+  {
+   "fieldname": "cost_total",
+   "fieldtype": "Currency",
+   "label": "Pack Cost",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Reprocessing cost of this pack for its cycle, written by the cost sheet (FEAT-046)."
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 15:00:00.000000",
+ "modified": "2026-10-29 23:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Pack",
