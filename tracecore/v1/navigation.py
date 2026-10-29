@@ -67,7 +67,16 @@ MANAGEMENT_GROUPS = (
 	),
 	(
 		"Costs",
-		("Cost Entry", "Cost Rate Version", "Cost Category", "Cost Settings", "report:Cost by Target"),
+		(
+			"Cost Entry",
+			"Cost Rate Version",
+			"Cost Category",
+			"Cost Settings",
+			"report:Cost by Target",
+			# FEAT-046 SCR-29: giá thành mẻ và bộ
+			"Cost Sheet",
+			"report:Set Cost Report",
+		),
 	),
 	# FEAT-033 thu gom; FEAT-034 lô giặt và báo cáo chi phí/kg; FEAT-035 thêm cấp phát
 	(
