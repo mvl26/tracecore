@@ -4726,8 +4726,6 @@ dry,khô,
 "{0} kg, cost {1} per kg.","{0} kg, chi phí {1} mỗi kg.",
 {0} must be a list of objects.,{0} phải là danh sách các đối tượng.,
 Laundry Cost per Kg,Chi phí giặt mỗi kg,
-A stock count of this warehouse is already open ({0}). Post or cancel it first.,Kho này đã có phiếu kiểm kê đang mở ({0}). Hãy ghi sổ hoặc hủy phiếu đó trước.,
-Batch {0} of {1} expires on {2} ({3} left),Lô {0} của {1} hết hạn ngày {2} (còn {3}),
 Below minimum,Dưới tồn tối thiểu,
 Choose the alert row again.,Chọn lại dòng cảnh báo.,
 Create purchase request,Tạo đề nghị mua,
@@ -4742,7 +4740,6 @@ Row {0}: the counted quantity differs from the system quantity by more than 10 %
 "Set a minimum stock on the item, or restock from the stock alert list.","Đặt tồn tối thiểu cho vật tư, hoặc nhập kho bổ sung từ danh sách cảnh báo tồn.",
 Shortfall,Phần thiếu,
 Stock is not below the minimum,Tồn chưa dưới mức tối thiểu,
-The stock of this warehouse is being counted ({0}). Stock entries are locked until the count is posted or cancelled.,Kho này đang kiểm kê ({0}). Phiếu nhập xuất kho bị khóa đến khi phiếu kiểm kê được ghi sổ hoặc hủy.,
 Variance Reason,Lý do chênh lệch,Stock Reconciliation Item
 {0} is below the minimum stock of warehouse {1}: {2} of {3},{0} dưới tồn tối thiểu của kho {1}: còn {2} trên {3},
 {0} is not below its minimum stock in warehouse {1}.,{0} chưa dưới tồn tối thiểu ở kho {1}.,
@@ -4763,3 +4760,9 @@ Difference,Chênh lệch,TC Stock Count Sheet
 Reason,Lý do,TC Stock Count Sheet
 Counted by (warehouse),Người kiểm kê (kho),TC Stock Count Sheet
 Approved by (R02 / R09),Người duyệt (R02 / R09),TC Stock Count Sheet
+"A stock count of this warehouse is already open ({0}). Post it, or tick Abandoned on it first.","Kho này đã có phiếu kiểm kê đang mở ({0}). Hãy ghi sổ phiếu đó, hoặc đánh dấu Bỏ dở trước.",
+The stock of this warehouse is being counted ({0}). Stock entries are locked until the count is posted or abandoned.,Kho này đang kiểm kê ({0}). Phiếu nhập xuất kho bị khóa đến khi phiếu kiểm kê được ghi sổ hoặc bỏ dở.,
+Batch {0} of {1} expires on {2} ({3} in stock),Lô {0} của {1} hết hạn ngày {2} (còn {3} trong kho),
+This count was abandoned and cannot be posted. Untick Abandoned first.,Phiếu kiểm kê này đã bỏ dở nên không ghi sổ được. Hãy bỏ dấu Bỏ dở trước.,
+Only a draft purchase request can be deleted.,Chỉ xóa được đề nghị mua còn Nháp.,
+Abandoned,Bỏ dở,Stock Reconciliation
