@@ -43,5 +43,9 @@ class TestCostByTargetDesk(FrappeTestCase):
 		summary = cost_by_target.execute({"from_date": "2031-01-01", "to_date": "2031-01-31"})[4][0]
 		self.assertEqual(summary["datatype"], "Int")
 		self.assertIn("VND", summary["label"])
-		field = next(f for f in json.load(open(COST_ENTRY_JSON, encoding="utf-8"))["fields"] if f["fieldname"] == "amount")
+		field = next(
+			f
+			for f in json.load(open(COST_ENTRY_JSON, encoding="utf-8"))["fields"]
+			if f["fieldname"] == "amount"
+		)
 		self.assertEqual(str(field.get("precision")), "0")

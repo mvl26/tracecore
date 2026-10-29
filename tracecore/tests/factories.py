@@ -461,6 +461,59 @@ def make_cost_entry(**kwargs):
 	return frappe.get_doc(values).insert()
 
 
+LINEN_STATION = "TR-LIN"
+
+
+def make_linen_station():
+	"""Khu Linen và trạm đồ vải `TR-LIN` (bước LIN, FEAT-033); không có trong dữ liệu khởi tạo, R10 tạo trên Desk."""
+	if not frappe.db.exists("Zone Station", LINEN_STATION):
+		zone = frappe.get_doc(
+			{"doctype": "Zone Station", "zone_station_name": "Linen zone", "is_zone": 1, "zone_type": "Linen"}
+		).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"is_zone": 0,
+				"is_active": 1,
+				"zone_station_name": "Linen collection",
+				"parent_zone": zone.name,
+				"station_step": "LIN",
+			}
+		).insert(ignore_permissions=True, set_name=LINEN_STATION)
+	return LINEN_STATION
+
+
+def make_linen_type(type_name=None, std_weight_kg=0.5, **kwargs):
+	"""Tạo Linen Type (FEAT-033): mặc định 0,5 kg/chiếc, tên ngẫu nhiên để không trùng giữa các test."""
+	values = {
+		"doctype": "Linen Type",
+		"type_name": type_name or "Test linen " + frappe.generate_hash(length=6),
+		"std_weight_kg": std_weight_kg,
+		**kwargs,
+	}
+	return frappe.get_doc(values).insert()
+
+
+def linen_line(linen_type, qty=10, weight_kg=5, **kwargs):
+	"""Một dòng `Linen Collection Line` (FEAT-033) cho `make_linen_collection`."""
+	return {"linen_type": linen_type, "qty": qty, "weight_kg": weight_kg, **kwargs}
+
+
+def make_linen_collection(lines=None, submit=False, **kwargs):
+	"""Tạo Linen Collection Nháp (FEAT-033): một dòng 10 chiếc/5 kg của loại mới; `submit=True` ghi sổ."""
+	if lines is None:
+		lines = [linen_line(make_linen_type().name)]
+	values = {
+		"doctype": "Linen Collection",
+		"department": make_department(),
+		"delivered_by": "Hộ lý khoa",
+		"lines": lines,
+		**kwargs,
+	}
+	doc = frappe.get_doc(values).insert()
+	return doc.submit() if submit else doc
+
+
 def rate_line(rate, rate_type="Item", item=None):
 	"""Một dòng `Cost Rate Line` (FEAT-045) cho `make_cost_rate_version`."""
 	return {"rate_type": rate_type, "item": item, "rate": rate}

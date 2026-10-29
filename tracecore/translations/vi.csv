@@ -4466,3 +4466,126 @@ Par Override Report,Báo cáo ghi đè cơ số,
 Cost by Target,Chi phí theo đối tượng,
 Total Cost (VND),Tổng chi phí (VND),
 Audit Trail,Tra cứu nhật ký thao tác,
+Add a line,Thêm dòng,
+Add at least one line.,Thêm ít nhất một dòng.,
+Add at least one linen type with pieces or weight.,Thêm ít nhất một loại đồ vải kèm số chiếc hoặc cân nặng.,
+Ask R02 to add linen types in the Linen Type list.,Nhờ R02 thêm loại đồ vải trong danh mục Loại đồ vải.,
+Choose a linen type for {0}.,Chọn loại đồ vải cho {0}.,
+Choose a linen type from the list.,Chọn loại đồ vải trong danh sách.,
+Choose the department that hands the linen over.,Chọn khoa giao đồ vải.,
+Choose the department.,Chọn khoa.,
+Choose the linen type,Chọn loại đồ vải,
+Choose the linen type from the list on the line.,Chọn loại đồ vải trong danh sách ở dòng.,
+Collection {0} recorded,Đã ghi sổ phiếu thu gom {0},
+Confirm the typed weight of {0}.,Xác nhận cân nặng nhập tay của {0}.,
+Contaminated,Nhiễm,
+Converted from pieces,Quy đổi từ số chiếc,
+Converted pieces: {0},Số chiếc quy đổi: {0},
+Converted weight: {0} kg,Cân nặng quy đổi: {0} kg,
+Correct the pieces or weight and try again.,Sửa số chiếc hoặc cân nặng rồi thử lại.,
+Delivered By,Người giao,
+Department Quotas,Định mức theo khoa,Linen Type
+"Enter a note to keep the weight, or correct the pieces or weight.","Nhập ghi chú để giữ cân nặng, hoặc sửa số chiếc hoặc cân nặng.",
+Enter the number of pieces or the weight.,Nhập số chiếc hoặc cân nặng.,
+Enter the pieces of {0}.,Nhập số chiếc của {0}.,
+Enter the pieces or the weight of {0}.,Nhập số chiếc hoặc cân nặng của {0}.,
+Enter the total weight and at least one linen type.,Nhập tổng cân nặng và ít nhất một loại đồ vải.,
+Enter the total weight and the pieces of each linen type.,Nhập tổng cân nặng và số chiếc của từng loại đồ vải.,
+Enter the total weight of the cart.,Nhập tổng cân nặng của xe.,
+Every line needs a positive number of pieces.,Mỗi dòng cần số chiếc lớn hơn 0.,
+"Fix the highlighted values, then record again.","Sửa các giá trị được đánh dấu, rồi ghi sổ lại.",
+From the scale,Từ cân,
+Get weight,Lấy cân,
+I confirm the typed weight,Tôi xác nhận cân nặng đã nhập tay,
+LIN,Trạm đồ vải,Zone Station
+Linen Collection,Phiếu thu gom đồ vải,
+Linen Collection Line,Dòng thu gom đồ vải,
+Linen Dept Quota,Định mức đồ vải theo khoa,
+Linen Type,Loại đồ vải,
+Linen Type Name,Tên loại đồ vải,Linen Type
+Linen collection,Thu gom đồ vải,
+Linen type is not valid,Loại đồ vải không hợp lệ,
+Linen type not found,Không tìm thấy loại đồ vải,
+Lines,Dòng,Linen Collection
+Maximum Pieces,Số chiếc tối đa,
+Minimum Pieces,Số chiếc tối thiểu,
+New collection,Phiếu thu gom mới,
+No linen type in use is called {0}.,Không có loại đồ vải đang dùng tên {0}.,
+No linen types yet,Chưa có loại đồ vải,
+Nothing to record,Không có gì để ghi sổ,
+Only the total weight of the cart is known,Chỉ biết tổng cân nặng của xe,
+Pieces,Số chiếc,
+Pieces or weight are not valid,Số chiếc hoặc cân nặng không hợp lệ,
+"Price list {0} is already approved from {1}, so a version starting {2} would overlap it. ","Bảng giá {0} đã được duyệt từ {1}, nên phiên bản bắt đầu {2} sẽ chồng lên bảng giá đó. ",
+Print receipt,In biên nhận,
+Print the receipt for the person who delivered the linen.,In biên nhận cho người giao đồ vải.,
+Record collection,Ghi sổ thu gom,
+Recording linen collections needs a network connection.,Ghi sổ thu gom đồ vải cần kết nối mạng.,
+Required when the entered values differ from the standard weight by more than 15 %.,Bắt buộc khi giá trị nhập lệch khối lượng chuẩn quá 15 %.,Linen Collection Line
+Row {0}: department {1} already has a quota.,Dòng {0}: khoa {1} đã có định mức.,
+Row {0}: linen type {1} does not exist or is no longer in use.,Dòng {0}: loại đồ vải {1} không tồn tại hoặc đã ngừng dùng.,
+Row {0}: linen type {1} is no longer in use.,Dòng {0}: loại đồ vải {1} đã ngừng dùng.,
+Row {0}: quotas cannot be negative.,Dòng {0}: định mức không được âm.,
+Row {0}: the minimum cannot exceed the maximum.,Dòng {0}: mức tối thiểu không được lớn hơn mức tối đa.,
+Row {0}: the number of pieces must be a whole number.,Dòng {0}: số chiếc phải là số nguyên.,
+Row {0}: the weight differs from the standard weight by more than 15 %.,Dòng {0}: cân nặng lệch khối lượng chuẩn quá 15 %.,
+Row {0}: the weight differs from the standard weight by more than 15 %. Enter a note to keep it.,Dòng {0}: cân nặng lệch khối lượng chuẩn quá 15 %. Nhập ghi chú để giữ giá trị này.,
+Row {0}: {1},Dòng {0}: {1},
+Row {0}: {1} is not a number.,Dòng {0}: {1} không phải là số.,
+Scale,Cân,Linen Collection Line
+Manual,Nhập tay,Linen Collection Line
+Converted,Quy đổi,Linen Collection Line
+Some required values are missing or need confirmation.,Một số giá trị bắt buộc còn thiếu hoặc cần xác nhận.,
+Standard Weight (kg),Khối lượng chuẩn (kg),Linen Type
+"Standard weight of one piece in kg; must be greater than 0.","Khối lượng chuẩn của một chiếc, tính bằng kg; phải lớn hơn 0.",Linen Type
+The catalogue has no linen type in use.,Danh mục chưa có loại đồ vải nào đang dùng.,
+The collection has no lines.,Phiếu thu gom chưa có dòng nào.,
+The collection is not complete,Phiếu thu gom chưa đầy đủ,
+The collection needs the name of the person who hands the linen over.,Phiếu thu gom cần tên người giao đồ vải.,
+The number of pieces must be greater than 0.,Số chiếc phải lớn hơn 0.,
+The scale did not answer,Cân không phản hồi,
+The standard weight must be greater than 0.,Khối lượng chuẩn phải lớn hơn 0.,
+The station agent could not read the scale in 2 seconds.,Station agent không đọc được cân trong 2 giây.,
+The total weight and the number of pieces of every line must be greater than 0.,Tổng cân nặng và số chiếc của mọi dòng phải lớn hơn 0.,
+The total weight cannot be shared,Không chia được tổng cân nặng,
+The weight differs from the standard,Cân nặng lệch khối lượng chuẩn,
+The weight differs from the standard by {0} %,Cân nặng lệch khối lượng chuẩn {0} %,
+The weight is less than one piece of this linen type.,Cân nặng nhỏ hơn một chiếc của loại đồ vải này.,
+The weight is shared between the lines by the standard weight.,Cân nặng được chia cho các dòng theo khối lượng chuẩn.,
+The weight must be greater than 0.,Cân nặng phải lớn hơn 0.,
+This account cannot record linen collections at this station.,Tài khoản này không được ghi thu gom đồ vải tại trạm này.,
+Tick to confirm the typed weight.,Tick để xác nhận cân nặng đã nhập tay.,
+Total Pieces,Tổng số chiếc,Linen Collection
+Total Weight (kg),Tổng cân nặng (kg),Linen Collection
+Total weight of the cart (kg),Tổng cân nặng của xe (kg),
+Type or scan a linen type name to add a line...,Gõ hoặc quét tên loại đồ vải để thêm dòng...,
+Type the name of the person who hands the linen over.,Nhập tên người giao đồ vải.,
+Type the weight by hand and tick the confirmation.,Nhập cân nặng bằng tay và tick xác nhận.,
+Typed by hand,Nhập tay,
+Value per Piece,Giá trị mỗi chiếc,Linen Type
+Variance Note,Ghi chú lệch,
+Weight (kg),Cân nặng (kg),
+Weight Source,Nguồn cân nặng,
+a line without a linen type,một dòng chưa chọn loại đồ vải,
+lines must be a list of objects.,lines phải là danh sách các đối tượng.,
+pieces,số chiếc,
+total weight,tổng cân nặng,
+weight,cân nặng,
+"{0} pieces, {1} kg from {2}.","{0} chiếc, {1} kg từ {2}.",
+"{0}: the weight differs by more than 15 %, enter a note.","{0}: cân nặng lệch quá 15 %, nhập ghi chú.",
+Linen collection receipt,Biên nhận thu gom đồ vải,TC Linen Receipt
+Not recorded yet,Chưa ghi sổ,TC Linen Receipt
+Cancelled,Đã hủy,TC Linen Receipt
+Collected at,Thu gom lúc,TC Linen Receipt
+Delivered by,Người giao,TC Linen Receipt
+Received by (CSSD),Người nhận (CSSD),TC Linen Receipt
+No.,STT,TC Linen Receipt
+Linen type,Loại đồ vải,TC Linen Receipt
+Pieces,Số chiếc,TC Linen Receipt
+Weight (kg),Cân nặng (kg),TC Linen Receipt
+Status,Trạng thái,TC Linen Receipt
+Contaminated,Nhiễm,TC Linen Receipt
+Clean,Sạch,TC Linen Receipt
+Total,Tổng,TC Linen Receipt
+Department,Khoa,TC Linen Receipt
+Collected At,Thu gom lúc,Linen Collection

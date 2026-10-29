@@ -81,6 +81,9 @@ page_js = {
 		"public/js/station_daily_test.js",
 		"public/js/station_t7.js",
 		"public/js/station_t8.js",
+		# FEAT-033: thu gom đồ vải (SCR-16) và component dòng cân dùng chung (FEAT-047 dùng lại)
+		"public/js/tc_weigh_line.js",
+		"public/js/station_linen.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -134,6 +137,8 @@ jinja = {
 		"tracecore.ui.issue_print.tc_issue_note_context",
 		# Print Format "TC Loaner Receipt" / "TC Loaner Return" (FEAT-017, A-38): biên bản nhận / trả bộ mượn
 		"tracecore.instrument.loaner.tc_loaner_context",
+		# Print Format "TC Linen Receipt" (FEAT-033, FR-M3-01.5): biên nhận thu gom đồ vải
+		"tracecore.ui.linen_print.tc_linen_receipt_context",
 	]
 }
 
@@ -297,6 +302,9 @@ doc_events = {
 	"Cost Entry": dict(_AUDIT_EVENTS),
 	"Cost Category": dict(_AUDIT_EVENTS),
 	"Cost Settings": dict(_AUDIT_EVENTS),
+	# đồ vải (FEAT-033, A-49): loại đồ vải và phiếu thu gom ghi vết, không xóa
+	"Linen Type": dict(_AUDIT_EVENTS),
+	"Linen Collection": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa

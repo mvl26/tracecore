@@ -34,6 +34,8 @@ LOAD_ROLES = ("TC R05", "TC R02", "System Manager")
 RELEASE_ROLES = ("TC R05", "TC R02", "TC R01", "System Manager")
 # FEAT-019 (A-31): tiếp nhận T1 do R03 (actor chính UC-05); R02 cũng làm được và là người duy nhất tiếp nhận cưỡng bức
 RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
+# FEAT-033 (A-49): trạm đồ vải do R07 (actor chính UC-16); R02 hỗ trợ
+LINEN_ROLES = ("TC R07", "TC R02", "System Manager")
 SESSION_FLAG = "tc_station_session"
 
 

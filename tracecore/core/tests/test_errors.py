@@ -102,6 +102,11 @@ class TestErrors(FrappeTestCase):
 				"RECEIPT_EMPTY",
 				"CONFIRM_INCOMPLETE",
 				"PHOTO_INVALID",
+				"LINEN_EMPTY",
+				"LINEN_TYPE_INVALID",
+				"LINEN_QTY_INVALID",
+				"LINEN_TOTAL_INVALID",
+				"LINEN_VARIANCE_NOTE_REQUIRED",
 			),
 			404: (
 				"SET_NOT_FOUND",

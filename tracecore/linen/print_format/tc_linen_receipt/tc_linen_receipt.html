@@ -1,0 +1,81 @@
+{#- Linen collection receipt (FEAT-033, FR-M3-01.5; UC-16 step 5). Data: tracecore.ui.linen_print.tc_linen_receipt_context
+    (hook jinja.methods). Every dynamic value goes through |e; colours and sizes come from tokens.css (tc.*).
+    Layout uses tables (the WebKit of wkhtmltopdf has no flex/grid). -#}
+{%- set cs = tc_linen_receipt_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Linen Receipt" -%}
+<style>
+.tc-lr { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-lr table { width: 100%; border-collapse: collapse; }
+.tc-lr td, .tc-lr th { vertical-align: top; }
+.tc-lr .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-lr h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-lr .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-lr .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-lr .tc-facts td.tc-label { color: {{ tc.muted }}; width: 40mm; white-space: nowrap; }
+.tc-lr table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-lr table.tc-lines thead { display: table-header-group; }
+.tc-lr table.tc-lines tr { page-break-inside: avoid; }
+.tc-lr table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-lr table.tc-lines th, .tc-lr table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-lr table.tc-lines .tc-num { text-align: right; width: 18mm; }
+.tc-lr table.tc-lines tfoot td { font-weight: {{ tc.fw_bold }}; background: {{ tc.zebra }}; }
+.tc-lr .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-lr .tc-sign td { width: 50%; text-align: center; padding-bottom: 25mm; font-weight: {{ tc.fw_bold }}; }
+</style>
+<div class="tc-lr">
+	<h1>{{ _("Linen collection receipt", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}
+	<div class="tc-draft">{{ _("Not recorded yet", context=T) | e }}</div>
+	{%- endif %}
+	{%- if cs.cancelled %}
+	<div class="tc-draft">{{ _("Cancelled", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Department", context=T) | e }}</td><td>{{ cs.department | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Collected at", context=T) | e }}</td><td>{{ cs.collected_at | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Delivered by", context=T) | e }}</td><td>{{ cs.delivered_by | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Received by (CSSD)", context=T) | e }}</td><td>{{ cs.received_by | e }}</td></tr>
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Linen type", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Pieces", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Weight (kg)", context=T) | e }}</th>
+				<th>{{ _("Status", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td class="tc-num">{{ row.index | e }}</td>
+				<td>{{ row.name | e }}{% if row.variance_note %}<br>{{ row.variance_note | e }}{% endif %}</td>
+				<td class="tc-num">{{ row.qty | e }}</td>
+				<td class="tc-num">{{ row.weight | e }}</td>
+				<td>{{ (_("Contaminated", context=T) if row.contaminated else _("Clean", context=T)) | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td></td>
+				<td>{{ _("Total", context=T) | e }}</td>
+				<td class="tc-num">{{ cs.total_qty | e }}</td>
+				<td class="tc-num">{{ cs.total_weight | e }}</td>
+				<td></td>
+			</tr>
+		</tfoot>
+	</table>
+	{%- if cs.note %}
+	<p>{{ cs.note | e }}</p>
+	{%- endif %}
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Delivered by", context=T) | e }}</td>
+			<td>{{ _("Received by (CSSD)", context=T) | e }}</td>
+		</tr>
+	</table>
+</div>

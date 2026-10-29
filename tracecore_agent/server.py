@@ -1,4 +1,4 @@
-"""HTTP cục bộ cho kiosk cùng máy: ``GET /health``, ``POST /print`` (chỉ nghe 127.0.0.1)."""
+"""HTTP cục bộ cho kiosk cùng máy: ``GET /health``, ``GET /scale``, ``POST /print`` (chỉ nghe 127.0.0.1)."""
 
 import base64
 import binascii
@@ -7,7 +7,7 @@ import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
-from tracecore_agent import __version__
+from tracecore_agent import __version__, scale
 
 log = logging.getLogger("tracecore_agent")
 MAX_BODY = 1024 * 1024
@@ -53,6 +53,8 @@ def make_server(cfg, queue):
 		def do_GET(self):
 			if not self._host_ok():
 				return self._send(403, {"error": "forbidden host"})
+			if self.path == "/scale":
+				return self._scale()
 			if self.path != "/health":
 				return self._send(404, {"error": "not found"})
 			self._send(
@@ -65,6 +67,16 @@ def make_server(cfg, queue):
 					"printer_mode": cfg.printer_mode,
 				},
 			)
+
+		def _scale(self):
+			# số cân là dữ liệu của trạm: chỉ trang của server TraceCore (hoặc CLI không có Origin) đọc được
+			if not self._origin_ok():
+				return self._send(403, {"error": "forbidden origin"})
+			try:
+				kg = scale.read_weight(cfg)
+			except scale.ScaleError as error:
+				return self._send(503, {"error": str(error)})
+			self._send(200, {"kg": kg, "unit": "kg"})
 
 		def do_POST(self):
 			if not (self._host_ok() and self._origin_ok()):
