@@ -55,14 +55,19 @@ def heartbeat(token=None, client_ts=None):
 
 	def call():
 		doc = station_auth.heartbeat(token, timestamp)
+		employee = frappe.db.get_value(
+			"Employee", doc.employee, ["employee_name", "tc_pin_reset_required"], as_dict=True
+		)
 		return {
 			"ok": True,
 			"session": doc.name,
 			"employee": doc.employee,
-			"employee_name": frappe.db.get_value("Employee", doc.employee, "employee_name"),
+			"employee_name": employee.employee_name,
 			"roles": sorted(role for role in frappe.get_roles(doc.user) if role.startswith("TC R")),
 			"station": doc.station,
 			"expires_at": doc.absolute_expires_at,
+			# khôi phục phiên sau khi tải lại trang vẫn phải mở lại modal đổi PIN tạm
+			"pin_change_required": cint(employee.tc_pin_reset_required),
 		}
 
 	return _session_response(call)
