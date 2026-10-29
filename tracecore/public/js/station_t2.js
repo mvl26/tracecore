@@ -1341,49 +1341,60 @@ class T2Wash {
 	}
 
 	// -- chế độ dỡ --
-	runningHtml() {
-		const rows = (this.overview && this.overview.running) || [];
-		if (!this.overview) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
-		if (!rows.length) return `<p class="tc-empty">${esc(__("No running wash batch."))}</p>`;
-		return rows
-			.map(
-				(row) => `<section class="tc-t4-block tc-t2-batch" data-batch="${esc(row.batch)}">
-				<div class="tc-res-head">
-					<b class="tc-code">${esc(row.batch)}</b>
-					${this.statusBadge("Running")}
-				</div>
-				<p>${esc(
-					__("Wash batch · {0} · {1}", [
-						row.equipment_name || row.equipment,
-						row.program_name || row.program,
-					])
-				)}
-					<span class="tc-mono">${esc(row.equipment)}</span></p>
-				<p>${esc(__("Sets in batch ({0}): {1}", [row.sets.length, row.sets.join(", ")]))}</p>
-				${
-					row.data_complete
-						? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
-								__("Cycle data: confirmed manual entry")
-						  )}</p>`
-						: this.alertHtml({
-								variant: "warn",
-								title: __(
-									"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)"
-								),
-						  })
-				}
-			</section>`
-			)
-			.join("");
+	batchCardHtml(row) {
+		return `<section class="tc-t4-block tc-t2-batch" data-batch="${esc(row.batch)}">
+			<div class="tc-res-head">
+				<b class="tc-code">${esc(row.batch)}</b>
+				${this.statusBadge("Running")}
+			</div>
+			<p>${esc(
+				__("Wash batch · {0} · {1}", [
+					row.equipment_name || row.equipment,
+					row.program_name || row.program,
+				])
+			)}
+				<span class="tc-mono">${esc(row.equipment)}</span></p>
+			<p>${esc(__("Sets in batch ({0}): {1}", [row.sets.length, row.sets.join(", ")]))}</p>
+			${
+				row.data_complete
+					? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
+							__("Cycle data: confirmed manual entry")
+					  )}</p>`
+					: this.alertHtml({
+							variant: "warn",
+							title: __(
+								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)"
+							),
+					  })
+			}
+		</section>`;
 	}
 
+	// `skip`: lô đang dỡ đã hiện ở trên cùng, không lặp lại trong danh sách
+	runningHtml(skip) {
+		if (!this.overview) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		const rows = (this.overview.running || []).filter((row) => row.batch !== skip);
+		if (!rows.length) return `<p class="tc-empty">${esc(__("No running wash batch."))}</p>`;
+		return rows.map((row) => this.batchCardHtml(row)).join("");
+	}
+
+	// Lô vừa quét (form nhập tay / kết luận / kết quả) nằm ngay dưới ô quét, trên các lô đang chạy khác:
+	// KTV không phải cuộn qua danh sách và không xác nhận nhầm lô (≤ 3 chạm sau quét).
 	unloadHtml() {
 		const unload = this.unload;
-		let html = `<section class="tc-t4-block">
+		const list = (skip) => `<section class="tc-t4-block">
 			<h3>${esc(__("Running batches - unload: scan the washer QR code, then the batch QR code"))}</h3>
-		</section>${this.runningHtml()}`;
-		if (!unload) return html;
-		if (unload.result) return html + this.resultSummaryHtml(unload.result);
+		</section>${this.runningHtml(skip)}`;
+		if (!unload) return list();
+		if (unload.result) return this.resultSummaryHtml(unload.result) + list(unload.batch);
+		return this.activeUnloadHtml(unload) + list(unload.batch);
+	}
+
+	activeUnloadHtml(unload) {
+		const row = ((this.overview && this.overview.running) || []).find(
+			(item) => item.batch === unload.batch
+		);
+		let html = row ? this.batchCardHtml(row) : "";
 		const scanned = `<section class="tc-t4-block tc-t2-unload">
 			<h3>${esc(__("Unloading batch {0}", [unload.batch]))}</h3>
 			<p>${esc(__("Washer QR code"))}: <b>${esc(

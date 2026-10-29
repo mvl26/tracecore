@@ -478,6 +478,65 @@ test("T2 drops a late response after auth state changes", async () => {
 	assert.equal(applied, false);
 });
 
+function t2Running(batch, equipment) {
+	return { batch, equipment, program: "P1", sets: [`${batch}-S1`], data_complete: 0 };
+}
+
+test("T2 unload shows the scanned batch and its form above the other running batches", () => {
+	const { station, sandbox } = harness();
+	const t2 = t2Screen(station, sandbox);
+	t2.manualFormHtml = () => "<form-manual>";
+	Object.assign(t2, {
+		mode: "unload",
+		overview: {
+			sets: [],
+			running: [t2Running("LR-OTHER", "TB-0006"), t2Running("LR-ACTIVE", "TB-0005")],
+		},
+		unload: {
+			batch: "LR-ACTIVE",
+			equipmentRaw: "TB-0005",
+			batchRaw: "LR-ACTIVE",
+			context: { batch: "LR-ACTIVE", data_complete: 0 },
+		},
+	});
+	const html = t2.unloadHtml();
+	const unloading = html.indexOf("Unloading batch {0}");
+	assert.ok(unloading >= 0);
+	assert.ok(unloading < html.indexOf("<form-manual>"));
+	assert.ok(html.indexOf("<form-manual>") < html.indexOf('data-batch="LR-OTHER"'));
+	assert.ok(html.indexOf('data-batch="LR-ACTIVE"') < unloading);
+	assert.equal(html.split('data-batch="LR-ACTIVE"').length - 1, 1);
+});
+
+test("T2 unload result stays above the other running batches", () => {
+	const { station, sandbox } = harness();
+	const t2 = t2Screen(station, sandbox);
+	t2.resultSummaryHtml = () => "<result-summary>";
+	Object.assign(t2, {
+		mode: "unload",
+		overview: { sets: [], running: [t2Running("LR-OTHER", "TB-0006")] },
+		unload: { batch: "LR-DONE", result: { batch: "LR-DONE", result: "Pass" } },
+	});
+	const html = t2.unloadHtml();
+	assert.ok(html.indexOf("<result-summary>") >= 0);
+	assert.ok(html.indexOf("<result-summary>") < html.indexOf('data-batch="LR-OTHER"'));
+});
+
+test("T2 unload without a scanned batch lists every running batch", () => {
+	const { station, sandbox } = harness();
+	const t2 = t2Screen(station, sandbox);
+	Object.assign(t2, {
+		mode: "unload",
+		overview: {
+			sets: [],
+			running: [t2Running("LR-A", "TB-0005"), t2Running("LR-B", "TB-0006")],
+		},
+	});
+	const html = t2.unloadHtml();
+	assert.ok(html.indexOf('data-batch="LR-A"') < html.indexOf('data-batch="LR-B"'));
+	assert.ok(html.indexOf("Running batches") < html.indexOf('data-batch="LR-A"'));
+});
+
 test("T2 recognises the HOAN-THANH-NAP control code before any server call", async () => {
 	const { station, sandbox } = harness();
 	const t2 = t2Screen(station, sandbox);
