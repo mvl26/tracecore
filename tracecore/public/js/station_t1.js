@@ -1087,11 +1087,11 @@ class T1Receiving {
 								line.instrument,
 							])
 						)}</span>
-						<span class="tc-ins-state">${esc(checked ? __("Confirmed") : __("Not confirmed"))}</span>
+						<span class="tc-ins-state">${esc(checked ? __("Confirmed", null, "Dirty Receipt Item") : __("Not confirmed"))}</span>
 					</span>
 					<input type="checkbox" class="tc-check" data-line="${index}"${
 					checked ? " checked" : ""
-				} aria-label="${esc(`${line.instrument_name}: ${__("Confirmed")}`)}">
+				} aria-label="${esc(`${line.instrument_name}: ${__("Confirmed", null, "Dirty Receipt Item")}`)}">
 				</label>`;
 			})
 			.join("");
@@ -1138,7 +1138,7 @@ class T1Receiving {
 			.map((row) => {
 				const state = row.confirmed
 					? `<span class="tc-badge tc-badge-g"><span aria-hidden="true">&#10003;</span> ${esc(
-							__("Confirmed")
+							__("Confirmed", null, "Dirty Receipt Item")
 					  )}</span>`
 					: `<button type="button" class="tc-btn tc-btn-secondary" data-action="open" data-set="${esc(
 							row.set_id
