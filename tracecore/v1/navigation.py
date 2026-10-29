@@ -56,10 +56,13 @@ MANAGEMENT_GROUPS = (
 			"Item",
 			"Batch",
 			"Stock Entry",
+			"Stock Reconciliation",  # FEAT-043: kiểm kê
+			"Material Request",
 			"Sterile Location",
 			"Par Level",
 			"Par Override",
 			"report:Par Override Report",
+			"report:Stock Alerts",
 		),
 	),
 	(

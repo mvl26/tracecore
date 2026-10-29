@@ -46,6 +46,21 @@ PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 		"TC R02": (*_READ, "cancel"),
 		"TC R01": (*_READ, "report"),
 	},
+	# Phiếu kiểm kê (FEAT-043, A-52 C2): R06 lập bản nháp; ghi sổ = phê duyệt nên chỉ R02 và R09 có submit/cancel
+	"Stock Reconciliation": {
+		"TC R06": (*_EDIT, "report"),
+		"TC R09": (*_EDIT, "submit", "cancel", "amend", "report"),
+		"TC R02": (*_EDIT, "submit", "cancel", "amend", "report"),
+		"System Manager": (*_EDIT, "submit", "cancel", "amend", "report"),
+		"TC R01": (*_READ, "report"),
+	},
+	# Đề nghị mua tạo từ cảnh báo tồn (FEAT-043, A-52 C12): R09 lập và ghi sổ; R02 lập bản nháp; R01 xem
+	"Material Request": {
+		"TC R09": (*_EDIT, "delete", "submit", "cancel", "amend", "report"),
+		"System Manager": (*_EDIT, "submit", "cancel", "amend", "report"),
+		"TC R02": (*_EDIT, "report"),
+		"TC R01": (*_READ, "report"),
+	},
 	"Stock Entry": {
 		"TC R09": (*_EDIT, "submit", "cancel", "amend", "report"),
 		"TC R06": (*_EDIT, "submit", "report"),
@@ -58,13 +73,14 @@ PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 # DocType được Link tới từ form Item / phiếu nhập: các vai trò dưới đây đọc được để chọn trên Desk.
 LINK_TARGETS = ("Supplier", "Warehouse", "Item Group", "UOM", "Company", "Stock Entry Type")
 LINK_TARGET_ROLES = ("TC R09", "TC R06", "TC R10", "TC R02")
+READ_WAREHOUSE_ROLES = ("TC R01",)
 # Form Stock Entry của ERPNext đọc Stock Settings khi mở (frappe.client.get_single_value / get_value): thiếu quyền đọc
 # thì form báo "Không được phép" ngay khi mở phiếu. Chỉ các vai trò mở được phiếu nhập (Task 5, ghi ở A-07).
 SETTINGS_TARGETS: dict[str, tuple[str, ...]] = {
 	"Stock Settings": ("TC R09", "TC R06", "TC R02", "TC R01"),
 }
 # Chỉ ba DocType này bị gỡ quyền xóa (V11); Serial and Batch Bundle giữ quyền xóa chuẩn của ERPNext.
-NO_DELETE_DOCTYPES = ("Item", "Batch", "Stock Entry")
+NO_DELETE_DOCTYPES = ("Item", "Batch", "Stock Entry", "Stock Reconciliation")
 
 
 def ensure_permissions() -> None:
@@ -84,6 +100,9 @@ def ensure_permissions() -> None:
 		for role in LINK_TARGET_ROLES:
 			_ensure_rule(doctype, role, ("read",), only_add=True)
 		frappe.clear_cache(doctype=doctype)
+	# R01 xem báo cáo Stock Alerts (cột Link tới Kho): Frappe đòi quyền đọc DocType của cột Link (FEAT-043)
+	for role in READ_WAREHOUSE_ROLES:
+		_ensure_rule("Warehouse", role, ("read",), only_add=True)
 	for doctype, roles in SETTINGS_TARGETS.items():
 		if not frappe.db.exists("DocType", doctype):
 			continue

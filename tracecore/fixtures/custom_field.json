@@ -265,5 +265,26 @@
   "depends_on": "eval:doc.tc_item_group_cssd=='Chemical'",
   "description": "Counts as a disinfectant for contaminated laundry washed below 71 C (FEAT-034, FR-M3-03.2).",
   "insert_after": "tc_shelf_life_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Stock Reconciliation Item",
+  "name": "Stock Reconciliation Item-tc_variance_reason",
+  "fieldname": "tc_variance_reason",
+  "fieldtype": "Data",
+  "label": "Variance Reason",
+  "insert_after": "quantity_difference",
+  "description": "Required when the counted quantity differs from the system quantity by more than 10 % (FEAT-043, UC-26 E1)."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Stock Reconciliation",
+  "name": "Stock Reconciliation-tc_abandoned",
+  "fieldname": "tc_abandoned",
+  "fieldtype": "Check",
+  "label": "Abandoned",
+  "insert_after": "posting_time",
+  "no_copy": 1,
+  "description": "A draft count that will not be posted: it no longer locks the warehouse and cannot be posted (FEAT-043, A-52)."
  }
 ]

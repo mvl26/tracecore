@@ -135,6 +135,7 @@ HTTP_STATUS: dict[str, int] = {
 			"LINEN_ISSUE_KIND_INVALID",
 			"LINEN_RECIPIENT_INVALID",
 			"LINEN_SIGNATURE_INVALID",
+			"PURCHASE_ITEM_INVALID",
 		),
 		422,
 	),
@@ -257,6 +258,7 @@ HTTP_STATUS: dict[str, int] = {
 			"STOCK_INSUFFICIENT",
 			# FEAT-034: lô giặt đã hoàn tất, không hoàn tất lại
 			"LAUNDRY_NOT_RUNNING",
+			"PURCHASE_NOT_NEEDED",
 			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
 			"CODE_RANGE_INVALID",
 			"CODE_RANGE_EXHAUSTED",

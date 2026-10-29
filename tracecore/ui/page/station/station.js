@@ -97,6 +97,7 @@ class TraceCoreStation {
 		this.lastActivity = Date.now();
 		this.heartbeatActivity = 0;
 		this.heartbeatAttempt = 0;
+		this.pinChange = null; // modal đổi PIN tạm bắt buộc: {overlay, error, busy}
 
 		$(wrapper).html(frappe.render_template("station", {}));
 		this.root = wrapper.querySelector(".tc-station");
@@ -189,7 +190,7 @@ class TraceCoreStation {
 	focus(force = false) {
 		if (!this.ownsPage()) return;
 		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
-		if (this.screen && this.screen.dialogOpen) return;
+		if ((this.screen && this.screen.dialogOpen) || this.pinChange) return;
 		// Preserve keyboard navigation and deliberate focus on every interactive control.
 		if (
 			!force &&
@@ -345,6 +346,7 @@ class TraceCoreStation {
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
+		this.closePinChange();
 		for (const selector of [
 			".tc-session-person",
 			".tc-session-station",
@@ -493,8 +495,155 @@ class TraceCoreStation {
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
 		this.focus(true);
+		if (session.pin_change_required) this.openPinChange();
 		this.loadOfflineData();
 		this.refreshNotifications();
+	}
+
+	// ---- đổi PIN tạm bắt buộc ngay sau quét thẻ (FR-M9-09, FR-M9-09.1, UC-33 A3) ----
+	// PIN do R10/R02 đặt trên Desk là PIN tạm: phiên báo pin_change_required thì modal §4.13 bắt buộc (không Esc, không
+	// Hủy) che màn trạm tới khi đổi xong; lối ra duy nhất là Đăng xuất. Lỗi hiện alert-error ngay trong modal.
+	pinChangeError({ old_pin, new_pin, confirm_pin }) {
+		if (![old_pin, new_pin, confirm_pin].every((pin) => /^\d{6}$/.test(pin || "")))
+			return {
+				title: __("PIN is invalid"),
+				reason: __("PIN must contain exactly 6 digits."),
+				action: __("Enter a 6-digit PIN."),
+			};
+		if (new_pin !== confirm_pin)
+			return {
+				title: __("New PIN entries do not match"),
+				reason: __("The two entries of the new PIN are different."),
+				action: __("Enter the same new PIN in both fields."),
+			};
+		if (new_pin === old_pin)
+			return {
+				title: __("New PIN must be different"),
+				reason: __("The new PIN is the same as the current PIN."),
+				action: __("Choose a different PIN."),
+			};
+		return null;
+	}
+
+	pinChangeHtml(error, busy) {
+		const field = (name, label) => `<div class="tc-field">
+				<label for="tc-pin-${name}">${esc(label)}</label>
+				<input id="tc-pin-${name}" name="${name}" class="tc-pin-input" type="password" inputmode="numeric"
+					maxlength="6" autocomplete="off">
+			</div>`;
+		return `<div class="tc-modal-box" role="dialog" aria-modal="true" aria-labelledby="tc-pin-title">
+			<h3 id="tc-pin-title">${esc(__("Change your PIN"))}</h3>
+			<p class="tc-modal-intro">${esc(
+				__(
+					"A supervisor set a temporary PIN for you. Choose your own 6-digit PIN before using this station."
+				)
+			)}</p>
+			${
+				error
+					? `<div class="tc-alert tc-alert-error" role="alert">
+				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(error.title)}</p>
+				<p class="tc-alert-reason">${esc(error.reason)}</p>
+				<p class="tc-alert-action">${esc(error.action)}</p></div>`
+					: ""
+			}
+			<form class="tc-modal-form" novalidate>
+				${field("old_pin", __("Temporary PIN"))}
+				${field("new_pin", __("New PIN"))}
+				${field("confirm_pin", __("Enter the new PIN again"))}
+				<div class="tc-modal-actions">
+					<button type="submit" class="tc-btn tc-btn-primary"${busy ? " disabled" : ""}>${esc(
+			busy ? __("Saving...") : __("Change PIN")
+		)}</button>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">${esc(
+						__("Log out")
+					)}</button>
+				</div>
+			</form>
+		</div>`;
+	}
+
+	openPinChange() {
+		if (this.pinChange) return;
+		const overlay = document.createElement("div");
+		overlay.className = "tc-modal";
+		overlay.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const fields = event.target.elements;
+			this.changePin({
+				old_pin: fields.old_pin.value,
+				new_pin: fields.new_pin.value,
+				confirm_pin: fields.confirm_pin.value,
+			});
+		});
+		overlay.addEventListener("keydown", (event) => {
+			// modal bắt buộc: Esc không đóng; Tab vòng trong modal
+			if (event.key === "Escape") event.preventDefault();
+			if (event.key !== "Tab") return;
+			const items = [...overlay.querySelectorAll("input, button:not([disabled])")];
+			const edge = event.shiftKey ? items[0] : items[items.length - 1];
+			if (document.activeElement === edge) {
+				event.preventDefault();
+				(event.shiftKey ? items[items.length - 1] : items[0]).focus();
+			}
+		});
+		this.pinChange = { overlay, error: null, busy: false };
+		this.root.appendChild(overlay);
+		this.renderPinChange();
+	}
+
+	renderPinChange() {
+		const state = this.pinChange;
+		if (!state) return;
+		state.overlay.innerHTML = this.pinChangeHtml(state.error, state.busy);
+		const first = state.overlay.querySelector("input");
+		if (first) first.focus({ preventScroll: true });
+	}
+
+	closePinChange() {
+		if (!this.pinChange) return;
+		this.pinChange.overlay.remove();
+		this.pinChange = null;
+	}
+
+	async changePin(values) {
+		const state = this.pinChange;
+		if (!state || state.busy) return;
+		state.error = this.pinChangeError(values);
+		if (state.error) return this.renderPinChange();
+		state.busy = true;
+		this.renderPinChange();
+		try {
+			// không gửi X-Idempotency-Key: Idempotency Key lưu băm tham số, PIN 6 số dò ngược được (như station.verify_pin)
+			const result = await this.rpc("tracecore.v1.account.change_pin", {
+				old_pin: values.old_pin,
+				new_pin: values.new_pin,
+				client_ts: clientTs(),
+			});
+			if (this.pinChange !== state) return;
+			if (result && result.ok) {
+				this.session.pin_change_required = 0;
+				this.closePinChange();
+				return this.focus(true);
+			}
+			state.error = result.error;
+		} catch (error) {
+			if (error.sessionEnded || this.pinChange !== state) return;
+			state.error = error.offline
+				? {
+						title: __("Station offline"),
+						reason: __("Changing the PIN needs the server."),
+						action: __("Reconnect, then try again."),
+				  }
+				: {
+						title: __("Server error"),
+						reason: __("The server could not process the request ({0}).", [
+							error.status || "?",
+						]),
+						action: __("Retry, or call R02 if it happens again."),
+				  };
+		}
+		state.busy = false;
+		this.renderPinChange();
 	}
 
 	// ---- offline (FEAT-009, ADR-003, A-40) ----
@@ -741,7 +890,8 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.laundry.") ||
 			method.startsWith("tracecore.v1.sync.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
-			method === "tracecore.v1.printer.set_roll";
+			method === "tracecore.v1.printer.set_roll" ||
+			method === "tracecore.v1.account.change_pin";
 		const version = this.sessionVersion;
 		const sessionCall =
 			!candidate &&

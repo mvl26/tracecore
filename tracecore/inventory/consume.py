@@ -187,8 +187,12 @@ def _notify(event, source_doctype, source_name, subject):
 
 
 def _run(source_doctype, source_name, lines, reason):
-	"""Trừ kho, không bao giờ làm hỏng bước gọi: lỗi được ghi Error Log và báo R09."""
-	if not lines:
+	"""Trừ kho, không bao giờ làm hỏng bước gọi: lỗi được ghi Error Log và báo R09.
+
+	Không dòng nào có số lượng dương (chương trình không có định mức, hóa chất ghi 0) cũng là "không có định mức"
+	(UC-25 E2; FEAT-043 K13).
+	"""
+	if not any(flt(line.get("qty"), PRECISION) > 0 for line in lines):
 		_notify(
 			"CONSUMPTION_NO_NORM",
 			source_doctype,

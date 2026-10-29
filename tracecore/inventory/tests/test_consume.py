@@ -172,6 +172,14 @@ class TestWashComplete(ProgramCase):
 		# 1 + 1 x 2 = 3
 		self.assertEqual(self.issued("Wash Batch", "WB-F42-10")[ITEM], 3)
 
+	def test_zero_quantity_without_any_norm_tells_accounting(self):  # FEAT-043 K13, UC-25 E2
+		bare = factories.make_wash_program(self.machine.name, chemical=ITEM, consumables=[])
+		ctx = {**self.ctx(qty=0), "program": bare.name}
+		with patch("tracecore.inventory.consume.notification.emit") as emit:
+			consume.on_wash_complete(ctx)
+		self.assertEqual(self.issued("Wash Batch", "WB-F42-10"), {})
+		self.assertEqual(emit.call_args.args[0], "CONSUMPTION_NO_NORM")
+
 	def test_failed_wash_consumes_nothing(self):
 		consume.on_wash_complete(self.ctx(result="Fail"))
 		self.assertEqual(self.issued("Wash Batch", "WB-F42-10"), {})
