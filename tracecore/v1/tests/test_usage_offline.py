@@ -3,13 +3,14 @@
 import base64
 import uuid
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import frappe
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from tracecore.core import crypto, sync
+from tracecore.core import crypto, station_auth, sync
 from tracecore.tests.utils import request_headers
 from tracecore.v1 import usage as usage_api
 from tracecore.v1.tests.test_usage_api import SESSION_TOKENS, STATION, TIME_ZONE, UsageApiCase
@@ -100,7 +101,9 @@ class TestUsageOffline(UsageApiCase):
 		moment = datetime.combine(yesterday, datetime.min.time()).replace(hour=23, minute=50)
 		frappe.db.set_value("Pack", self.pack.name, "expiry", yesterday, update_modified=False)
 		self.backdate_session(moment.replace(hour=20))
-		result = self.replay(moment, patient_code_enc=encrypt(PATIENT))
+		# chạy sau 23:50 thì 23:50 hôm qua đã quá cửa sổ phát lại 24 giờ; test này chỉ kiểm ngày hết hạn
+		with patch.object(station_auth, "REPLAY_MAX_HOURS", 48):
+			result = self.replay(moment, patient_code_enc=encrypt(PATIENT))
 		self.assertIs(result["ok"], True, result)
 
 	def test_usage_replay_future_client_ts_is_conflict(self):

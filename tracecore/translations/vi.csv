@@ -1364,7 +1364,7 @@ Temporary PIN,PIN tạm,
 New PIN,PIN mới,
 Enter the new PIN again,Nhập lại PIN mới,
 Change PIN,Đổi PIN,
-Saving...,Đang lưu...,
+Saving...,Đang lưu...,Change PIN
 Changing the PIN needs the server.,Đổi PIN cần kết nối máy chủ.,
 "Reconnect, then try again.","Kết nối lại mạng, rồi thử lại.",
 old_pin and new_pin must be strings.,old_pin và new_pin phải là chuỗi.,
@@ -4479,7 +4479,7 @@ Quality and traceability,Chất lượng và truy xuất,TraceCore Launcher
 Par Override Report,Báo cáo ghi đè cơ số,
 Cost by Target,Chi phí theo đối tượng,
 Total Cost (VND),Tổng chi phí (VND),
-Audit Trail,Tra cứu nhật ký thao tác,
+Audit Trail,Tra cứu nhật ký thao tác,TraceCore Launcher
 Add a line,Thêm dòng,
 Add at least one line.,Thêm ít nhất một dòng.,
 Add at least one linen type with pieces or weight.,Thêm ít nhất một loại đồ vải kèm số chiếc hoặc cân nặng.,
