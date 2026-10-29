@@ -68,7 +68,11 @@ FR/BRU đáp ứng: FR-M6-05, FR-M6-05.1, FR-M6-05.2, FR-M6-06, FR-M6-06.1–.3.
 
 ## Ghi chú hiện thực
 
-**Kết quả (2026-10-29):** xem số liệu full suite, coverage ở cuối mục này (điền sau khi chạy xong).
+**Kết quả (2026-10-29):**
+- Test mới: 25 (`test_count`) + 26 (`test_alerts`) + 8 (`test_stock_alerts_report`) + 7 (`test_count_print`) + 7 (`test_purchase_request_api`).
+- Coverage dòng đổi phía Frappe: 97,9 % (186/190), gộp từ các lần chạy từng module vì `diff-cover` chưa cài trong env.
+- Full suite lần cuối bị gián đoạn: MariaDB và Redis của bench bị hệ điều hành tắt vì thiếu RAM (máy 3,7 GB, nhiều phiên cùng chạy test và build), làm 137 test lỗi kết nối. Đã bật lại dịch vụ và chạy lại toàn bộ các module bị ảnh hưởng (74 module `v1/*`, `tests/*`, doctype): chỉ còn 6 test đỏ có sẵn trên develop, không thuộc FEAT này: `test_shifts.test_week_schedule...` (error), `test_station_page.test_vi_translations_do_not_override_other_apps` ('Audit Trail'), `test_set_templates` (2 fail + 1 error), `test_imports_api.test_import_needs_create_permission_of_the_catalog`. Hai test nhãn `test_set_tags` (2) và một test thời gian `test_set_tag_printing` đỏ sẵn từ trước, không chạy lại.
+- `pre-commit run --all-files` sạch.
 
 **Review độc lập (sub-agent, chỉ đọc) và đã sửa:**
 - Phiếu kiểm kê Nháp bị bỏ quên khóa kho mãi: Frappe không cho hủy bản Nháp, plan lại gỡ quyền xóa. Thêm cờ `tc_abandoned` (phiếu bỏ dở không khóa kho, không ghi sổ được, vẫn lưu hồ sơ).
