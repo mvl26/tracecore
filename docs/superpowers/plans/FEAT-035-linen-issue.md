@@ -65,4 +65,16 @@ FR/BRU đáp ứng: FR-M3-05, FR-M3-05.1, FR-M3-05.2, FR-M3-06, FR-M3-06.1–.4;
 
 ## Ghi chú hiện thực
 
-_(điền khi làm xong)_
+**Kết quả (29/10/2026):**
+- Full suite lần 1: 2703 test; MariaDB bị OOM-kill giữa chừng (ở `test_pack_api`) làm 41 class `v1.tests` lỗi `setUpClass`. Đã chạy lại toàn bộ `v1.tests` từ `test_pack_api` trở đi và `ui.page.tracecore.test_tracecore`: tất cả OK.
+- Lỗi thật do FEAT-035 tìm thấy ở full suite: thiếu bản dịch "Linen Reconciliation" (`test_every_group_and_label_has_a_vietnamese_translation`). Đã thêm vào `translations/vi.csv`.
+- Test đỏ có sẵn trên develop, không do FEAT-035: `test_set_templates` (3), `test_set_tags` (2), `test_shifts` lịch tuần, `test_station_page` 'Audit Trail'.
+- 256 test linen/laundry/API liên quan chạy dưới coverage: OK; coverage các file `.py` đã đổi (không tính test) 99 % (606 dòng, 6 dòng thiếu). Đo theo cả file, không phải chỉ dòng đổi; `diff-cover` chưa cài.
+- Lint (`pre-commit run --all-files`) sạch trước khi gộp.
+
+**Lệch so với kế hoạch:**
+- `tracecore.v1.linen.balance` là POST (không `@idempotent`), theo G10.
+- Hủy phiếu và xử lý hủy (Dispose) chỉ làm trên Desk, không có trên trạm.
+- `LinenIssue` là màn thứ ba của `LinenStation` (cùng thu gom, lô giặt) thay vì màn riêng; số amendment là A-51 (A-50 thuộc FEAT-034).
+- Màn cấp phát không dùng cân; "Trả dư" (UC-18 A2) và màn DEPT cho R08 ngoài phạm vi.
+- TDD chưa được giữ nghiêm: một phần code viết trước test. Commit đầu bị lỗi mã hóa tiếng Việt trong message, giữ nguyên (không force-push).
