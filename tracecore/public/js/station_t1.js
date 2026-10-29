@@ -1087,11 +1087,17 @@ class T1Receiving {
 								line.instrument,
 							])
 						)}</span>
-						<span class="tc-ins-state">${esc(checked ? __("Confirmed", null, "Dirty Receipt Item") : __("Not confirmed"))}</span>
+						<span class="tc-ins-state">${esc(
+							checked
+								? __("Confirmed", null, "Dirty Receipt Item")
+								: __("Not confirmed")
+						)}</span>
 					</span>
 					<input type="checkbox" class="tc-check" data-line="${index}"${
 					checked ? " checked" : ""
-				} aria-label="${esc(`${line.instrument_name}: ${__("Confirmed", null, "Dirty Receipt Item")}`)}">
+				} aria-label="${esc(
+					`${line.instrument_name}: ${__("Confirmed", null, "Dirty Receipt Item")}`
+				)}">
 				</label>`;
 			})
 			.join("");

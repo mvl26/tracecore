@@ -3190,6 +3190,7 @@
  {
   "amend": 1,
   "cancel": 1,
+  "create": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "bab08ceada",
@@ -3200,7 +3201,9 @@
   "print": 1,
   "read": 1,
   "report": 1,
-  "role": "TC R02"
+  "role": "TC R02",
+  "submit": 1,
+  "write": 1
  },
  {
   "doctype": "Custom DocPerm",
@@ -3256,7 +3259,6 @@
   "read": 1,
   "report": 1,
   "role": "TC R06",
-  "submit": 1,
   "write": 1
  },
  {
@@ -3275,6 +3277,8 @@
   "write": 1
  },
  {
+  "amend": 1,
+  "cancel": 1,
   "create": 1,
   "doctype": "Custom DocPerm",
   "export": 1,

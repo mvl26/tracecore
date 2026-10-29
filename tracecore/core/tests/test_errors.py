@@ -118,6 +118,7 @@ class TestErrors(FrappeTestCase):
 				"LAUNDRY_REDO_INVALID",
 				"LAUNDRY_RESULT_REQUIRED",
 				"LAUNDRY_DRY_INVALID",
+				"PURCHASE_ITEM_INVALID",
 			),
 			404: (
 				"SET_NOT_FOUND",
@@ -219,6 +220,7 @@ class TestErrors(FrappeTestCase):
 				"COMPETENCY_NOT_ACTIVE",
 				"STOCK_INSUFFICIENT",
 				"LAUNDRY_NOT_RUNNING",
+				"PURCHASE_NOT_NEEDED",
 				"CODE_RANGE_INVALID",
 				"CODE_RANGE_EXHAUSTED",
 			),
