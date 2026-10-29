@@ -68,4 +68,20 @@ FR/BRU đáp ứng: FR-M3-01, FR-M3-01.1–.5, FR-M3-02, FR-M3-02.1–.3; BRU-LI
 
 ## Ghi chú hiện thực
 
-_(điền khi làm xong)_
+**Kết quả (2026-10-29):** full suite 2744 test, 18 đỏ (6 fail, 12 error), không có test nào do FEAT-033 gây ra:
+- 10 lỗi `test_linen_type` do user của test trước bị rò sang (chỉ đỏ khi chạy full); đã thêm `setUp` đặt Administrator, chạy lại 10/10 pass.
+- Đỏ có sẵn trên develop, không thuộc FEAT này: `test_set_templates` (3), `test_set_tags` (2), `test_set_tag_printing` (1), `test_shifts.test_week_schedule...` (1), `test_station_page.test_vi_translations_do_not_override_other_apps` ('Audit Trail').
+- Coverage dòng đổi phía Frappe: 97,1 % (231/238). `tracecore_agent` (scale.py, server.py) không nằm trong coverage của bench; 68 test agent chạy riêng, pass. `diff-cover` chưa cài trong env nên tính trực tiếp từ coverage.xml.
+- `pre-commit run --all-files` sạch.
+
+**Khác với plan:**
+- `catalog` là POST (cùng kiểu `sync.snapshot`), không phải GET.
+- Print Format tên "TC Linen Receipt".
+- R08 chưa có quyền đọc Linen Collection cho đến FEAT-035.
+- Thêm `GET /scale` ở agent, nhóm launcher "Linen", 5 mã lỗi `LINEN_*`.
+- Sửa một dòng dịch FEAT-045 còn thiếu ("Price list {0} is already approved ...").
+
+**Chưa làm / lưu ý:**
+- Chưa thử tay màn kiosk trên trình duyệt; chưa migrate site dev `tracecore-dev.local`.
+- Trạm đồ vải không seed: R10 tạo Zone (loại Linen) và trạm bước LIN trên Desk.
+- PC trạm cân cần `pip install pyserial` cho agent.
