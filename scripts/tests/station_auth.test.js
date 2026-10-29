@@ -548,3 +548,76 @@ test("T2 recognises the HOAN-THANH-NAP control code before any server call", asy
 	await t2.scan("hoan-thanh-nap");
 	assert.equal(completed, 1);
 });
+
+function dailyTestScreen(reducedMotion = false) {
+	const { station, sandbox } = harness();
+	for (const file of [
+		"tracecore/public/js/station_t5.js",
+		"tracecore/public/js/station_daily_test.js",
+	])
+		vm.runInContext(fs.readFileSync(path.resolve(__dirname, "../..", file), "utf8"), sandbox);
+	const scrolls = [];
+	const formRegion = { scrollIntoView: (options) => scrolls.push(options) };
+	sandbox.window = { matchMedia: () => ({ matches: reducedMotion }) };
+	Object.assign(station, {
+		isOffline: () => false,
+		setState: (state, html) => {
+			station.result.innerHTML = html;
+		},
+	});
+	station.result.querySelector = (selector) =>
+		selector === '[data-region="dt-form"]' &&
+		station.result.innerHTML.includes('data-region="dt-form"')
+			? formRegion
+			: null;
+	const screen = vm.runInContext("Object.create(DailyTestScreen.prototype)", sandbox);
+	Object.assign(screen, {
+		station,
+		back: {},
+		result: station.result,
+		input: { value: "", placeholder: "", setAttribute() {} },
+		pending: null,
+		busy: null,
+		offline: false,
+	});
+	screen.reset();
+	screen.list = [
+		{
+			name: "TB-0005",
+			equipment_name: "Washer",
+			required: ["washer_cleaning"],
+			missing: [],
+			status: "Ready",
+		},
+		{
+			name: "TB-0009",
+			equipment_name: "Steam",
+			required: ["bowie_dick", "leak"],
+			missing: [],
+			status: "Ready",
+		},
+	];
+	return { screen, scrolls };
+}
+
+test("daily test scrolls to the form of the scanned machine once", async () => {
+	const { screen, scrolls } = dailyTestScreen();
+	await screen.scan("TB-0005");
+	assert.equal(scrolls.length, 1);
+	assert.equal(scrolls[0].block, "start");
+	assert.equal(scrolls[0].behavior, "smooth");
+	screen.onAction("dt-result", { dataset: { value: "Pass" } });
+	assert.equal(scrolls.length, 1);
+});
+
+test("daily test scrolls to the form when a machine is chosen in the list", () => {
+	const { screen, scrolls } = dailyTestScreen();
+	screen.onAction("dt-select", { dataset: { machine: "TB-0009" } });
+	assert.equal(scrolls.length, 1);
+});
+
+test("daily test jumps to the form without motion when reduced motion is preferred", async () => {
+	const { screen, scrolls } = dailyTestScreen(true);
+	await screen.scan("TB-0005");
+	assert.equal(scrolls[0].behavior, "auto");
+});
