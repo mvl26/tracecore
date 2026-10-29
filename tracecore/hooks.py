@@ -412,7 +412,11 @@ tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
 # M2 (FEAT-021) gọi khi lô rửa đóng: (ctx {batch, equipment, program, sets, chemicals, result}) -> None.
 #  - wash_complete: sau khi kết luận Đạt (FEAT-042 trừ hóa chất theo định mức, FEAT-046 chi phí lô)
 #  - wash_failed:   sau khi kết luận Không đạt (FEAT-030 tự tạo NC)
-tracecore_after_wash_complete = ["tracecore.inventory.consume.on_wash_complete"]
+tracecore_after_wash_complete = [
+	"tracecore.inventory.consume.on_wash_complete",
+	# FEAT-046: chi phí lô rửa
+	"tracecore.costing.sheet.on_wash_complete",
+]
 tracecore_after_wash_failed = ["tracecore.reprocessing.incidents.on_wash_failed"]
 # lô giặt hoàn tất (FEAT-034, A-50): M6 trừ hóa chất, M7 tính chi phí/kg; M3 không import hai module này
 tracecore_after_laundry_complete = [
@@ -444,11 +448,17 @@ tracecore_after_load_complete = []
 #  - after_load_release:  (ctx {load, equipment, program, sets, packs}) sau khi mẻ giải phóng (FEAT-042 tiêu hao, FEAT-046 chi phí)
 #  - after_load_failed:   (ctx {load, equipment, program, sets, redo_from}) mẻ Không đạt (FEAT-030 NC)
 #  - bi_positive:         (ctx {load, equipment, packs[{cycle_id, set_unit, status}]}) BI dương tính (FEAT-029 thu hồi, FEAT-010 thông báo)
-tracecore_after_load_release = ["tracecore.inventory.consume.on_load_release"]
+tracecore_after_load_release = [
+	"tracecore.inventory.consume.on_load_release",
+	# FEAT-046 (A-53 h): Cost Sheet mẻ, job sau commit
+	"tracecore.costing.sheet.on_load_release",
+]
 tracecore_after_load_failed = [
 	"tracecore.reprocessing.incidents.on_load_failed",
 	# FEAT-029: chỉ lập lệnh khi mẻ có gói đã giải phóng trở đi (sau NC để lệnh dùng lại NC của mẻ)
 	"tracecore.reprocessing.recall.on_load_failed",
+	# FEAT-046 (FR-M7-05.1): mẻ Không đạt vẫn ghi chi phí, tính vào chi phí chất lượng
+	"tracecore.costing.sheet.on_load_failed",
 ]
 tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)

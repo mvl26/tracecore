@@ -419,3 +419,41 @@ def build(source_doctype, source_name, rate_version=None, note=None, recalculati
 				_("No rate for: {0}").format(", ".join(pricer.missing)),
 			)
 	return doc.name
+
+
+# --- sự kiện M2 (hooks.py) -----------------------------------------------------------------------------------------
+
+
+def _enqueue(source_doctype, source_name):
+	# job sau commit: giải phóng mẻ không chờ tính giá; giao dịch hoàn tác thì không có job (A-53 h)
+	frappe.enqueue(
+		"tracecore.costing.sheet.run_job",
+		queue="long",
+		enqueue_after_commit=True,
+		source_doctype=source_doctype,
+		source_name=source_name,
+	)
+
+
+def on_load_release(ctx):
+	"""Hook tracecore_after_load_release: mẻ giải phóng → Cost Sheet (UC-29 bước 1)."""
+	_enqueue(LOAD, ctx["load"])
+
+
+def on_load_failed(ctx):
+	"""Hook tracecore_after_load_failed: mẻ Không đạt vẫn ghi chi phí, tính vào chi phí chất lượng (FR-M7-05.1)."""
+	_enqueue(LOAD, ctx["load"])
+
+
+def on_wash_complete(ctx):
+	"""Hook tracecore_after_wash_complete: chi phí lô rửa, phần của mỗi bộ cộng vào giá thành gói (OQ-26)."""
+	_enqueue(WASH, ctx["batch"])
+
+
+def run_job(source_doctype, source_name):
+	"""Job RQ: lập Cost Sheet; lỗi ghi Error Log (R10 xem), không ảnh hưởng nghiệp vụ trạm."""
+	try:
+		build(source_doctype, source_name)
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title=f"FEAT-046 cost sheet {source_doctype} {source_name}")
