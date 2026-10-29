@@ -621,3 +621,131 @@ test("daily test jumps to the form without motion when reduced motion is preferr
 	await screen.scan("TB-0005");
 	assert.equal(scrolls[0].behavior, "auto");
 });
+
+// ---- đổi PIN tạm bắt buộc sau quét thẻ (FR-M9-09, FR-M9-09.1, UC-33 A3) ----
+function pinChangeModal(station) {
+	const overlay = {
+		innerHTML: "",
+		removed: false,
+		remove() {
+			this.removed = true;
+		},
+		querySelector: () => null,
+	};
+	station.pinChange = { overlay, error: null, busy: false };
+	return overlay;
+}
+
+const GOOD_PINS = { old_pin: "112233", new_pin: "135790", confirm_pin: "135790" };
+
+test("card session with a temporary PIN opens the mandatory PIN change", () => {
+	const { station } = harness();
+	let opened = 0;
+	station.openPinChange = () => opened++;
+	station.activateSession({ token: "t1", employee: "EMP-1", pin_change_required: 0 });
+	assert.equal(opened, 0);
+	station.activateSession({ token: "t2", employee: "EMP-1", pin_change_required: 1 });
+	assert.equal(opened, 1);
+});
+
+test("PIN change form checks 6 digits, matching entries and a different PIN", () => {
+	const { station } = harness();
+	assert.equal(station.pinChangeError(GOOD_PINS), null);
+	for (const values of [
+		{ ...GOOD_PINS, old_pin: "" },
+		{ ...GOOD_PINS, new_pin: "12345", confirm_pin: "12345" },
+		{ ...GOOD_PINS, new_pin: "12ab56", confirm_pin: "12ab56" },
+		{ ...GOOD_PINS, confirm_pin: "135791" },
+		{ ...GOOD_PINS, new_pin: "112233", confirm_pin: "112233" },
+	]) {
+		const error = station.pinChangeError(values);
+		assert.ok(error && error.title && error.reason && error.action, JSON.stringify(values));
+	}
+});
+
+test("invalid PIN entries show an inline error and never reach the network", async () => {
+	const { station, calls } = harness();
+	const overlay = pinChangeModal(station);
+	await station.changePin({ ...GOOD_PINS, confirm_pin: "000000" });
+	assert.equal(calls.length, 0);
+	assert.match(overlay.innerHTML, /tc-alert-error/);
+	assert.equal(overlay.removed, false);
+});
+
+test("PIN change carries the bearer in JSON only and closes the modal on success", async () => {
+	const { station, calls } = harness();
+	station.session.pin_change_required = 1;
+	const overlay = pinChangeModal(station);
+	await station.changePin(GOOD_PINS);
+	assert.equal(calls.length, 1);
+	assert.match(calls[0].url, /tracecore\.v1\.account\.change_pin$/);
+	const body = JSON.parse(calls[0].body);
+	assert.equal(body.token, "private-bearer");
+	assert.equal(body.old_pin, "112233");
+	assert.equal(body.new_pin, "135790");
+	assert.ok(!("confirm_pin" in body));
+	assert.ok(body.client_ts);
+	assert.ok(!JSON.stringify(calls[0].headers).includes("private-bearer"));
+	assert.ok(!calls[0].url.includes("135790"));
+	assert.equal(overlay.removed, true);
+	assert.equal(station.pinChange, null);
+	assert.equal(station.session.pin_change_required, 0);
+});
+
+test("rejected PIN change keeps the modal open with result, reason and action", async () => {
+	const { station, sandbox } = harness();
+	const overlay = pinChangeModal(station);
+	sandbox.fetch = async () => ({
+		ok: false,
+		status: 422,
+		json: async () => ({
+			message: {
+				ok: false,
+				error: {
+					code: "PIN_INVALID",
+					title: "PIN is incorrect",
+					reason: "The PIN did not match.",
+					action: "Check the PIN and try again.",
+				},
+			},
+		}),
+	});
+	await station.changePin(GOOD_PINS);
+	assert.equal(overlay.removed, false);
+	assert.equal(station.pinChange.busy, false);
+	assert.match(
+		overlay.innerHTML,
+		/tc-alert-error[\s\S]*PIN is incorrect[\s\S]*did not match[\s\S]*try again/
+	);
+});
+
+test("PIN change modal has no cancel: the only way out is ending the session", () => {
+	const { station } = harness();
+	const html = station.pinChangeHtml(null, false);
+	assert.match(html, /aria-modal="true"/);
+	assert.match(html, /data-action="logout"/);
+	assert.ok(!html.includes("Cancel"));
+	assert.equal(html.match(/type="password" inputmode="numeric"\s+maxlength="6"/g).length, 3);
+	assert.ok(!html.includes("tc-alert-error"));
+});
+
+test("ending the session removes the PIN change modal", () => {
+	const { station } = harness();
+	const overlay = pinChangeModal(station);
+	station.clearSession();
+	assert.equal(overlay.removed, true);
+	assert.equal(station.pinChange, null);
+});
+
+test("scan input does not steal focus from the PIN change modal", () => {
+	const { station, sandbox } = harness();
+	let focused = 0;
+	sandbox.document = { activeElement: null };
+	station.input = { focus: () => focused++ };
+	pinChangeModal(station);
+	vm.runInContext("TraceCoreStation.prototype.focus", sandbox).call(station, true);
+	assert.equal(focused, 0);
+	station.pinChange = null;
+	vm.runInContext("TraceCoreStation.prototype.focus", sandbox).call(station, true);
+	assert.equal(focused, 1);
+});

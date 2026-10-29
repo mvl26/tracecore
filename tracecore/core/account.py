@@ -200,19 +200,30 @@ def require_pin_changed(employee):
 		)
 
 
-@frappe.whitelist(methods=["POST"])
+def change_station_pin(employee, old_pin, new_pin, station=None, client_ts=None):
+	"""Nhân viên tự đổi PIN trạm (FR-M9-09): xác thực lại PIN cũ (tính vào khóa 3 lần sai), PIN mới 6 số và khác PIN cũ,
+	rồi tắt cờ PIN tạm (FR-M9-09.1). Lỗi nghiệp vụ ném `BlockedError`; Audit không chứa PIN."""
+	station_auth.verify_pin(employee, old_pin, client_ts=client_ts)
+	if old_pin == new_pin:
+		raise station_auth._block(
+			"PIN_REUSED",
+			"New PIN must be different",
+			"The new PIN is the same as the current PIN.",
+			"Choose a different PIN.",
+		)
+	station_auth.set_pin(employee, new_pin)
+	frappe.db.set_value("Employee", employee, "tc_pin_reset_required", 0)
+	audit.log(
+		"Update", "Employee", employee, new={"event": "PIN Changed"}, station=station, client_ts=client_ts
+	)
+
+
 def change_pin(token, old_pin, new_pin):
 	# Return rejections instead of raising: an exception would roll back the PIN Reject audit.
+	# Kiosk gọi qua RPC `tracecore.v1.account.change_pin`.
 	try:
 		with station_auth.as_session_user(token) as session:
-			station_auth.verify_pin(session.employee, old_pin)
-			if old_pin == new_pin:
-				frappe.throw(_("Choose a different PIN."))
-			station_auth.set_pin(session.employee, new_pin)
-			frappe.db.set_value("Employee", session.employee, "tc_pin_reset_required", 0)
-			audit.log(
-				"Update", "Employee", session.employee, new={"event": "PIN Changed"}, station=session.station
-			)
+			change_station_pin(session.employee, old_pin, new_pin, station=session.station)
 	except BlockedError as error:
 		if getattr(frappe.local, "request", None):
 			frappe.local.response["http_status_code"] = error.block.http_status

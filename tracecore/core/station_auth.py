@@ -309,6 +309,8 @@ def _login(card_id: str, station: str, client_ts=None) -> dict:
 		"station": station,
 		"expires_at": doc.absolute_expires_at,
 		"roles": sorted(role for role in frappe.get_roles(employee.user_id) if role.startswith("TC R")),
+		# PIN tạm do R10/R02 đặt (FR-M9-09.1): kiosk mở modal đổi PIN bắt buộc trước khi vào trạm
+		"pin_change_required": int(bool(employee.tc_pin_reset_required)),
 	}
 
 

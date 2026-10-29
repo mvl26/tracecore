@@ -959,6 +959,17 @@ body.tc-kiosk .layout-main-section {
 	min-height: var(--tc-touch-station);
 }
 
+/* modal đổi PIN tạm bắt buộc sau quét thẻ (FR-M9-09.1): lỗi alert-error trong modal, PIN mono cỡ lớn (§4.13) */
+.tc-modal-box .tc-alert {
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-field .tc-pin-input {
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-2xl);
+	letter-spacing: var(--tc-ls-code);
+}
+
 /* ---- Màn T2 lô rửa (SCR-06, public/js/station_t2.js); dùng lại khối, gate, chip, nhãn của T4 ---- */
 
 .tc-t2 {
