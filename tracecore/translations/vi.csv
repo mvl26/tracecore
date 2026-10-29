@@ -4839,3 +4839,78 @@ Batch {0} of {1} expires on {2} ({3} in stock),Lô {0} của {1} hết hạn ng�
 This count was abandoned and cannot be posted. Untick Abandoned first.,Phiếu kiểm kê này đã bỏ dở nên không ghi sổ được. Hãy bỏ dấu Bỏ dở trước.,
 Only a draft purchase request can be deleted.,Chỉ xóa được đề nghị mua còn Nháp.,
 Abandoned,Bỏ dở,Stock Reconciliation
+Cost Sheet,Bảng giá thành,
+Cost Sheet,Bảng giá thành,TraceCore Launcher
+Cost Sheet Line,Khoản giá thành,
+Cost Sheet Pack,Giá thành gói,
+Set Cost Report,Báo cáo giá thành bộ,
+Set Cost Report,Báo cáo giá thành bộ,TraceCore Launcher
+GT-.YYYY.-.#####,GT-.YYYY.-.#####,Cost Sheet
+Source Type,Loại nguồn,Cost Sheet
+Source,Nguồn,Cost Sheet
+Status,Trạng thái,Cost Sheet
+Priced,Đã định giá,Cost Sheet
+Unpriced,Chưa định giá,Cost Sheet
+Sterilization Load,Mẻ tiệt khuẩn,Cost Sheet
+Wash Batch,Lô rửa,Cost Sheet
+Quality Cost,Chi phí chất lượng,Cost Sheet
+Recalculation,Tính lại,Cost Sheet
+Cost Date,Ngày giá thành,Cost Sheet
+Equipment,Thiết bị,Cost Sheet
+Process Program,Chương trình xử lý,Cost Sheet
+Cost Rate Version,Bảng định giá,Cost Sheet
+Packs,Số gói,Cost Sheet
+Total Cost,Tổng chi phí,Cost Sheet
+Cost per Pack,Chi phí mỗi gói,Cost Sheet
+Missing Rates,Khoản thiếu đơn giá,Cost Sheet
+Recalculation Note,Ghi chú tính lại,Cost Sheet
+Recalculation Of,Tính lại từ,Cost Sheet
+Cost Components,Các khoản chi phí,Cost Sheet
+Pack Costs,Giá thành gói,Cost Sheet
+"Cost of one sterilization load or wash batch split into packs, and the cost of each pack (FR-M7-05, FR-M7-06, A-53).","Chi phí của một mẻ tiệt khuẩn hoặc lô rửa, chia cho các gói, và giá thành từng gói (FR-M7-05, FR-M7-06, A-53).",
+Cost Component,Khoản chi phí,Cost Sheet Line
+Equipment Depreciation,Khấu hao máy,Cost Sheet Line
+Electricity,Điện,Cost Sheet Line
+Tap Water,Nước máy,Cost Sheet Line
+Steam,Hơi,Cost Sheet Line
+Chemical,Hóa chất và chỉ thị,Cost Sheet Line
+Labor,Nhân công,Cost Sheet Line
+Maintenance,Bảo trì phân bổ,Cost Sheet Line
+Item,Vật tư,Cost Sheet Line
+Quantity,Số lượng,Cost Sheet Line
+Unit,Đơn vị,Cost Sheet Line
+Rate,Đơn giá,Cost Sheet Line
+Amount,Thành tiền,Cost Sheet Line
+Priced,Đã định giá,Cost Sheet Line
+Cycle ID,Cycle ID,Cost Sheet Pack
+Set Unit,Bộ dụng cụ,Cost Sheet Pack
+Set Type,Loại bộ,Cost Sheet Pack
+Department,Khoa,Cost Sheet Pack
+Method,Phương pháp,Cost Sheet Pack
+Load Share,Phần chi phí mẻ,Cost Sheet Pack
+Wash Share,Phần chi phí lô rửa,Cost Sheet Pack
+Assembly Cost,Chi phí lắp ráp,Cost Sheet Pack
+Packaging Cost,Chi phí bao gói,Cost Sheet Pack
+Instrument Depreciation,Khấu hao dụng cụ,Cost Sheet Pack
+Pack Cost,Giá thành gói,Cost Sheet Pack
+Pack Cost,Giá thành gói,Pack
+"Reprocessing cost of this pack for its cycle, written by the cost sheet (FEAT-046).","Giá thành tái xử lý của gói trong chu trình, do bảng giá thành ghi (FEAT-046).",
+Cost sheets are written by the costing service only.,Bảng giá thành chỉ do chức năng tính giá thành ghi.,
+Cost sheets cannot be deleted.,Không thể xóa bảng giá thành.,
+Cost sheets are built for sterilization loads and wash batches only.,Bảng giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
+Cost sheet {0} is unpriced,Bảng giá thành {0} chưa định giá,
+Cost sheet unpriced,Bảng giá thành chưa định giá,
+Load or wash batch not found,Không tìm thấy mẻ hoặc lô rửa,
+Choose an existing sterilization load or wash batch.,Chọn mẻ tiệt khuẩn hoặc lô rửa đang có.,
+Rate version not approved,Bảng định giá chưa duyệt,
+Cost rate version {0} is not approved.,Bảng định giá {0} chưa được duyệt.,
+Choose an approved cost rate version.,Chọn bảng định giá đã duyệt.,
+Note required,Cần ghi chú,
+A recalculation needs a note on why another rate version is used.,Tính lại cần ghi chú lý do dùng bảng định giá khác.,
+"Enter the note, then try again.",Nhập ghi chú rồi thử lại.,
+Group,Nhóm,Set Cost Report
+Previous Period per Pack,Mỗi gói kỳ trước,
+Change %,% thay đổi,
+Group By,Nhóm theo,Set Cost Report
+Group by must be one of: {0},Nhóm theo phải là một trong: {0},
+Cost per Pack,Chi phí mỗi gói,

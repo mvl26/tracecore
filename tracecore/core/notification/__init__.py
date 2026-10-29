@@ -55,6 +55,8 @@ EVENTS = {
 	# FEAT-043: tồn dưới tối thiểu và lô sắp hết hạn; email cho kế toán vật tư (R09)
 	"STOCK_BELOW_MIN": ("Stock below minimum", "Normal", 1, 0, ("TC R09",)),
 	"BATCH_EXPIRING": ("Batch expiring soon", "Normal", 1, 0, ("TC R09",)),
+	# FEAT-046: Cost Sheet thiếu đơn giá (FR-M7-05.2), kế toán vật tư (R09) bổ sung bảng giá
+	"COST_SHEET_UNPRICED": ("Cost sheet unpriced", "Normal", 0, 0, ("TC R09",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

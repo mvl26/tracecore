@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 23:30:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "component",
+  "item",
+  "quantity",
+  "uom",
+  "rate",
+  "amount",
+  "priced"
+ ],
+ "fields": [
+  {
+   "fieldname": "component",
+   "fieldtype": "Select",
+   "label": "Cost Component",
+   "options": "Equipment Depreciation\nElectricity\nTap Water\nSteam\nChemical\nLabor\nMaintenance",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Quantity",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "priced",
+   "fieldtype": "Check",
+   "label": "Priced",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-29 23:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Sheet Line",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 0,
+ "permissions": []
+}
