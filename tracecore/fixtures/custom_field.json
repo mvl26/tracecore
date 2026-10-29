@@ -254,5 +254,16 @@
   "in_standard_filter": 1,
   "insert_after": "department_name",
   "description": "Ward or unit that receives and returns instrument sets in TraceCore (T1, T7)."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_is_disinfectant",
+  "fieldname": "tc_is_disinfectant",
+  "fieldtype": "Check",
+  "label": "Disinfectant",
+  "depends_on": "eval:doc.tc_item_group_cssd=='Chemical'",
+  "description": "Counts as a disinfectant for contaminated laundry washed below 71 C (FEAT-034, FR-M3-03.2).",
+  "insert_after": "tc_shelf_life_days"
  }
 ]

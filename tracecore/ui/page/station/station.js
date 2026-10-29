@@ -3,10 +3,10 @@
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
 // Trạm bước T4 giao cho T4Packing (public/js/station_t4.js), bước T6 giao cho T6Storage (public/js/station_t6.js),
 // bước T1 giao cho T1Receiving, T2 cho T2Wash, T3 cho T3Assembly, T5 cho T5Load, T7 cho T7Issue (public/js/station_t*.js),
-// bước LIN (trạm đồ vải, FEAT-033) cho LinenCollect (public/js/station_linen.js);
+// bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, TcOutbox, tcSync, TC_SNAPSHOT_MS */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, TcOutbox, tcSync, TC_SNAPSHOT_MS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -738,6 +738,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.daily_test.") ||
 			method.startsWith("tracecore.v1.receive.") ||
 			method.startsWith("tracecore.v1.linen.") ||
+			method.startsWith("tracecore.v1.laundry.") ||
 			method.startsWith("tracecore.v1.sync.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
 			method === "tracecore.v1.printer.set_roll";
@@ -872,7 +873,11 @@ class TraceCoreStation {
 			} else if (station.step === "T1" && typeof T1Receiving !== "undefined") {
 				this.screen = new T1Receiving(this);
 			} else if (station.step === "LIN" && typeof LinenCollect !== "undefined") {
-				this.screen = new LinenCollect(this);
+				// trạm đồ vải: thu gom + lô giặt (FEAT-034) chuyển bằng tab; không có station_laundry.js thì chỉ thu gom
+				this.screen =
+					typeof LinenStation !== "undefined"
+						? new LinenStation(this)
+						: new LinenCollect(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;

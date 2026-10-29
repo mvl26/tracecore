@@ -28,4 +28,12 @@ class TestLinenNavigation(IsolatedTestCase):
 		frappe.set_user(make_user("linen-nav-r02@example.com", roles=("TC R02",)))
 		links = navigation.context()["management"]
 		linen = [link["route"] for link in links if link["group"] == "Linen"]
-		self.assertEqual(linen, ["/app/linen-type", "/app/linen-collection"])
+		self.assertEqual(
+			linen,
+			[
+				"/app/linen-type",
+				"/app/linen-collection",
+				"/app/laundry-batch",
+				"/app/query-report/Laundry Cost per Kg",
+			],
+		)

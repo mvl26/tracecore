@@ -8,7 +8,8 @@
  "field_order": [
   "item",
   "qty_per_load",
-  "qty_per_pack"
+  "qty_per_pack",
+  "qty_per_kg"
  ],
  "fields": [
   {
@@ -33,6 +34,14 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Quantity per Pack",
+   "non_negative": 1
+  },
+  {
+   "description": "Quantity used per kg of laundry (laundry programs).",
+   "fieldname": "qty_per_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Quantity per kg",
    "non_negative": 1
   }
  ],

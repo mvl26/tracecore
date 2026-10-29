@@ -1370,3 +1370,15 @@ body.tc-kiosk .layout-main-section {
 [data-weigh][hidden] {
 	display: none;
 }
+
+/* Lô giặt (SCR-17, FEAT-034): thanh chuyển Thu gom / Lô giặt đầu màn trạm đồ vải */
+.tc-linen-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-4);
+}
+
+.tc-linen-tabs .tc-btn {
+	flex: 1 1 var(--tc-photo-big);
+}

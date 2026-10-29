@@ -169,13 +169,13 @@ def _norms(program):
 	return frappe.get_all(
 		"Program Consumable",
 		filters={"parent": program, "parenttype": "Process Program"},
-		fields=["item", "qty_per_load", "qty_per_pack"],
+		fields=["item", "qty_per_load", "qty_per_pack", "qty_per_kg"],
 		order_by="idx",
 	)
 
 
-def _norm_qty(norm, units):
-	return flt(norm.qty_per_load) + flt(norm.qty_per_pack) * units
+def _norm_qty(norm, units, kg=0):
+	return flt(norm.qty_per_load) + flt(norm.qty_per_pack) * units + flt(norm.qty_per_kg) * kg
 
 
 def _notify(event, source_doctype, source_name, subject):
@@ -245,6 +245,31 @@ def on_wash_complete(ctx):
 		{"item": norm.item, "qty": _norm_qty(norm, units)} for norm in norms if norm.item not in covered
 	]
 	_run("Wash Batch", ctx["batch"], lines, _("Automatic consumption of wash batch {0}").format(ctx["batch"]))
+
+
+def on_laundry_complete(ctx):
+	"""Lô giặt hoàn tất (Đạt hoặc Không đạt, hóa chất đã dùng thật): định mức chương trình theo kg; số lượng người vận hành
+	nhập thay định mức của đúng vật tư đó (0 → định mức). Lô thuê ngoài không trừ kho; lô hóa chất theo FEFO."""
+	if ctx.get("batch_type") == "Outsourced" or not ctx.get("program"):
+		return
+	kg = flt(ctx.get("kg"))
+	norms = _norms(ctx["program"])
+	by_item = {norm.item: norm for norm in norms}
+	lines, covered = [], set()
+	for chemical in ctx.get("chemicals") or []:
+		norm = by_item.get(chemical["item"])
+		qty = flt(chemical.get("qty")) or (_norm_qty(norm, 0, kg) if norm else 0)
+		lines.append({"item": chemical["item"], "qty": qty})
+		covered.add(chemical["item"])
+	lines += [
+		{"item": norm.item, "qty": _norm_qty(norm, 0, kg)} for norm in norms if norm.item not in covered
+	]
+	_run(
+		"Laundry Batch",
+		ctx["batch"],
+		lines,
+		_("Automatic consumption of laundry batch {0}").format(ctx["batch"]),
+	)
 
 
 def on_load_release(ctx):

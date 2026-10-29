@@ -1,0 +1,145 @@
+"""RPC tracecore.v1.laundry.* — màn lô giặt theo kg (SCR-17, FEAT-034, UC-17, FR-M3-03, FR-M3-04).
+
+Lớp mỏng trên `tracecore.linen.laundry`, theo khuôn `v1.linen`: phiên thẻ nhân viên (`station_session`, token trong body) →
+`@idempotent` → kiểm định dạng tham số (400) → gọi dịch vụ. Từ chối nghiệp vụ (`BlockedError`) thành
+``{"ok": false, "error": {...}}`` (xem `_common.run_at_step`). Mọi RPC chỉ chạy ở trạm bước LIN (trạm đồ vải, A-49 L1, A-50 D1);
+người vận hành là Employee của phiên thẻ, không nhận từ tham số.
+"""
+
+import json
+
+import frappe
+from frappe import _
+
+from tracecore.core.client_time import parse_client_ts
+from tracecore.core.idempotency import idempotent
+from tracecore.linen import laundry
+from tracecore.v1._common import (
+	LINEN_ROLES,
+	BadRequestError,
+	current_station_session,
+	require_any_role,
+	run_at_step,
+	station_session,
+)
+
+STEP = "LIN"
+BATCH_TYPES = (laundry.IN_HOUSE, laundry.OUTSOURCED)
+
+
+def _text(value, name):
+	if value is not None and not isinstance(value, str):
+		raise BadRequestError(_("{0} must be a string.").format(name))
+	return value or None
+
+
+def _rows(value, name):
+	"""`name` là list (hoặc chuỗi JSON của list) các object; không có → None (dịch vụ trả mã lỗi nghiệp vụ)."""
+	if value is None:
+		return None
+	if isinstance(value, str):
+		try:
+			value = json.loads(value)
+		except ValueError:
+			raise BadRequestError(_("{0} must be a list of objects.").format(name)) from None
+	if not isinstance(value, list) or not all(isinstance(row, dict) for row in value):
+		raise BadRequestError(_("{0} must be a list of objects.").format(name))
+	return value
+
+
+def _operator():
+	session = current_station_session()
+	return session.employee if session else None
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LINEN_ROLES)
+def context(station, client_ts=None, token=None):
+	"""Máy giặt/sấy Sẵn sàng, chương trình, hóa chất và lô đang chạy; chỉ đọc, không ghi Idempotency Key."""
+	require_any_role(*LINEN_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(STEP, station, timestamp, lambda: {"ok": True, **laundry.context()})
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LINEN_ROLES)
+@idempotent
+def start(
+	station,
+	loads=None,
+	equipment=None,
+	program=None,
+	chemicals=None,
+	batch_type=laundry.IN_HOUSE,
+	vendor=None,
+	price_per_kg=None,
+	redo_of=None,
+	note=None,
+	client_ts=None,
+	token=None,
+):
+	"""Tạo lô giặt Đang chạy: `loads` = ``[{"kg", "contaminated"}]``, `chemicals` = ``[{"item", "qty"}]`` (không bắt buộc).
+
+	Trả ``{"ok": true, "batch": {...}}``.
+	"""
+	require_any_role(*LINEN_ROLES)
+	loads = _rows(loads, "loads")
+	chemicals = _rows(chemicals, "chemicals")
+	equipment, program = _text(equipment, "equipment"), _text(program, "program")
+	vendor, redo_of, note = _text(vendor, "vendor"), _text(redo_of, "redo_of"), _text(note, "note")
+	if batch_type not in BATCH_TYPES:
+		raise BadRequestError(_("batch_type must be one of {0}.").format(", ".join(BATCH_TYPES)))
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		doc = laundry.start(
+			station,
+			_operator(),
+			loads,
+			equipment=equipment,
+			program=program,
+			chemicals=chemicals,
+			batch_type=batch_type,
+			vendor=vendor,
+			price_per_kg=price_per_kg,
+			redo_of=redo_of,
+			note=note,
+		)
+		return {"ok": True, "batch": laundry.view(doc)}
+
+	return run_at_step(STEP, station, timestamp, call, None, None)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LINEN_ROLES)
+@idempotent
+def complete(
+	station,
+	batch=None,
+	dryer=None,
+	dry_temp_c=None,
+	dry_minutes=None,
+	clean_ok=None,
+	dry_ok=None,
+	note=None,
+	client_ts=None,
+	token=None,
+):
+	"""Hoàn tất lô: ghi sấy và kết quả, trừ hóa chất, tính chi phí/kg. Trả ``{"ok": true, "batch": {...}}`` kèm chi phí."""
+	require_any_role(*LINEN_ROLES)
+	batch, dryer, note = _text(batch, "batch"), _text(dryer, "dryer"), _text(note, "note")
+	timestamp = parse_client_ts(client_ts)
+
+	def call():
+		doc = laundry.complete(
+			batch,
+			dryer=dryer,
+			dry_temp_c=dry_temp_c,
+			dry_minutes=dry_minutes,
+			clean_ok=clean_ok,
+			dry_ok=dry_ok,
+			note=note,
+		)
+		return {"ok": True, "batch": laundry.view(doc)}
+
+	return run_at_step(STEP, station, timestamp, call, "Laundry Batch", batch)
