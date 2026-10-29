@@ -27,6 +27,8 @@ fixtures = [
 			["name", "like", "Employee-tc_%"],
 			["name", "like", "Department-tc_%"],
 			["name", "like", "Shift Assignment-tc_%"],  # FEAT-037: Khu làm việc của ca
+			["name", "like", "Stock Reconciliation Item-tc_%"],  # FEAT-043: lý do chênh lệch kiểm kê
+			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -141,6 +143,8 @@ jinja = {
 		"tracecore.instrument.loaner.tc_loaner_context",
 		# Print Format "TC Linen Receipt" (FEAT-033, FR-M3-01.5): biên nhận thu gom đồ vải
 		"tracecore.ui.linen_print.tc_linen_receipt_context",
+		# Print Format "TC Stock Count Sheet" (FEAT-043, FR-M6-05): phiếu kiểm kê kho
+		"tracecore.ui.stock_count_print.tc_stock_count_context",
 	]
 }
 
@@ -328,9 +332,18 @@ doc_events = {
 		"after_insert": "tracecore.inventory.audit.on_cssd_event",
 		"on_update": "tracecore.inventory.audit.on_cssd_event",
 	},
+	# phiếu kiểm kê: lý do khi lệch > 10 %, một kho một phiếu mở (FEAT-043, FR-M6-05)
+	"Stock Reconciliation": {
+		"validate": "tracecore.inventory.count.validate",
+		"before_submit": "tracecore.inventory.count.before_submit",
+	},
+	# đề nghị mua tạo từ cảnh báo tồn: chỉ bản Nháp xóa được (FEAT-043, A-52 C12)
+	"Material Request": {"on_trash": "tracecore.inventory.count.only_draft_deletable"},
 	"Stock Entry": {
 		# nhập kho vật tư theo lô/hạn (FEAT-041, FR-M6-01): kiểm dòng, tạo Batch khi ghi sổ
 		"before_validate": "tracecore.inventory.receipt.prepare_receipt",
+		# khóa xuất nhập thủ công khi kho đang kiểm kê (FEAT-043, FR-M6-05.2)
+		"validate": "tracecore.inventory.count.check_warehouse_lock",
 		"after_insert": "tracecore.inventory.audit.on_cssd_event",
 		"on_update": "tracecore.inventory.audit.on_cssd_event",
 		"on_submit": "tracecore.inventory.audit.on_cssd_event",
@@ -475,6 +488,8 @@ scheduler_events = {
 		"*/15 * * * *": [
 			"tracecore.reprocessing.recall.remind_pending",
 		],
+		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
+		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],
 		# 00:00 giờ hệ thống (Asia/Ho_Chi_Minh): một khóa cron nên mọi việc nửa đêm nằm chung một danh sách
 		"0 0 * * *": [
 			# FEAT-015 S2: kích hoạt phiên bản BOM đã lên lịch
