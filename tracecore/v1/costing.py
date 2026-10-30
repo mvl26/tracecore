@@ -55,15 +55,6 @@ def rate_at(date=None):
 	return {"ok": True, "version": version, **period, **rates.snapshot(version)}
 
 
-def _finished(source_doctype, source_name):
-	"""Mẻ đã Giải phóng/Không đạt hoặc lô rửa đã kết thúc: mới có chi phí để tính lại."""
-	if source_doctype not in sheet.SOURCES or not source_name:
-		return False
-	if source_doctype == sheet.LOAD:
-		return frappe.db.get_value(sheet.LOAD, source_name, "status") in ("Released", "Failed")
-	return bool(frappe.db.get_value(sheet.WASH, source_name, "ended_at"))
-
-
 @frappe.whitelist(methods=["POST"])
 def recalculate(source_doctype=None, source_name=None, rate_version=None, note=None):
 	"""Tính lại giá thành mẻ/lô theo phiên bản giá đã duyệt khác, ghi chú bắt buộc (UC-29 A1, FR-M7-03.2, A-53 i).
@@ -72,7 +63,7 @@ def recalculate(source_doctype=None, source_name=None, rate_version=None, note=N
 	{"ok": true, "cost_sheet"} hoặc {"ok": false, "error"}.
 	"""
 	require_any_role(*RECALC_ROLES)
-	if not _finished(source_doctype, source_name):
+	if not sheet.finished(source_doctype, source_name):
 		return reject_block(
 			Block(
 				"COST_SOURCE_NOT_FOUND",

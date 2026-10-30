@@ -6,7 +6,7 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, TcOutbox, tcSync, TC_SNAPSHOT_MS */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -190,7 +190,12 @@ class TraceCoreStation {
 	focus(force = false) {
 		if (!this.ownsPage()) return;
 		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
-		if ((this.screen && this.screen.dialogOpen) || this.pinChange) return;
+		if (
+			(this.screen && this.screen.dialogOpen) ||
+			this.pinChange ||
+			(this.help && this.help.isOpen)
+		)
+			return;
 		// Preserve keyboard navigation and deliberate focus on every interactive control.
 		if (
 			!force &&
@@ -262,6 +267,12 @@ class TraceCoreStation {
 	}
 
 	onAction(action, button) {
+		// Trợ giúp theo trạm (FEAT-013, public/js/station_help.js): mở được cả trước khi quét thẻ
+		if (action === "open-help" && typeof TcStationHelp !== "undefined") {
+			this.help = this.help || new TcStationHelp(this);
+			return this.help.open();
+		}
+		if (this.help && this.help.onAction(action, button)) return;
 		if (action === "logout" || action === "rescan-card") return this.endSession();
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
@@ -347,6 +358,7 @@ class TraceCoreStation {
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
 		this.closePinChange();
+		if (this.help) this.help.sessionChanged();
 		for (const selector of [
 			".tc-session-person",
 			".tc-session-station",
@@ -888,8 +900,10 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.receive.") ||
 			method.startsWith("tracecore.v1.linen.") ||
 			method.startsWith("tracecore.v1.laundry.") ||
+			method.startsWith("tracecore.v1.waste.") ||
 			method.startsWith("tracecore.v1.sync.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
+			method.startsWith("tracecore.v1.feedback.") ||
 			method === "tracecore.v1.printer.set_roll" ||
 			method === "tracecore.v1.account.change_pin";
 		const version = this.sessionVersion;
@@ -1028,6 +1042,8 @@ class TraceCoreStation {
 					typeof LinenStation !== "undefined"
 						? new LinenStation(this)
 						: new LinenCollect(this);
+			} else if (station.step === "WST" && typeof WasteCollect !== "undefined") {
+				this.screen = new WasteCollect(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;

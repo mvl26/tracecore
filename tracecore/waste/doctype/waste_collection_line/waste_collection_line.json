@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "waste_type",
+  "qty",
+  "weight_kg",
+  "weight_source",
+  "weight_confirmed",
+  "misclassified",
+  "misclass_note",
+  "photo"
+ ],
+ "fields": [
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Waste Type",
+   "options": "Waste Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Bags or Bins",
+   "reqd": 1
+  },
+  {
+   "fieldname": "weight_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Weight (kg)",
+   "precision": "3",
+   "reqd": 1
+  },
+  {
+   "default": "Manual",
+   "fieldname": "weight_source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Weight Source",
+   "options": "Scale\nManual\nConverted"
+  },
+  {
+   "default": "0",
+   "fieldname": "weight_confirmed",
+   "fieldtype": "Check",
+   "label": "Manual Weight Confirmed"
+  },
+  {
+   "default": "0",
+   "fieldname": "misclassified",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Misclassified"
+  },
+  {
+   "fieldname": "misclass_note",
+   "fieldtype": "Small Text",
+   "label": "Misclassification Note"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Collection Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "description": "One waste type per line (BRU-WST-001, FEAT-047)."
+}

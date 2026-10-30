@@ -9,6 +9,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, add_months, date_diff, flt, get_first_day, get_last_day, getdate
 
+from tracecore.costing.sheet import vnd
+
 GROUPS = {
 	"Set Type": "set_type",
 	"Department": "department",
@@ -74,9 +76,9 @@ def execute(filters=None):
 	previous = _totals(field, *previous_period(date_from, date_to))
 	data = []
 	for group, (packs, total) in sorted(current.items(), key=lambda item: str(item[0] or "")):
-		average = flt(total / packs) if packs else 0
+		average = vnd(total / packs) if packs else 0
 		before_packs, before_total = previous.get(group, (0, 0))
-		before = flt(before_total / before_packs) if before_packs else 0
+		before = vnd(before_total / before_packs) if before_packs else 0
 		data.append(
 			{
 				"group": group,

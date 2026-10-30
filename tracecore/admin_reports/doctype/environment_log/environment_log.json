@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "autoname": "MT-.YYYY.-.#####",
+ "creation": "2026-10-30 10:00:00.000000",
+ "description": "One reading of temperature, humidity and pressure difference in a monitored zone, entered by hand or sent by a sensor (FEAT-008, FR-M9-04). A submitted reading outside the zone limits alerts R02.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zone",
+  "measured_at",
+  "log_date",
+  "source",
+  "sensor_id",
+  "column_break_values",
+  "temperature",
+  "humidity",
+  "pressure_diff",
+  "section_result",
+  "out_of_range",
+  "breach_detail",
+  "breaches",
+  "column_break_result",
+  "recorded_by",
+  "note",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "zone",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Zone",
+   "options": "Zone Station",
+   "reqd": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "measured_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Measured At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "in_standard_filter": 1,
+   "label": "Date",
+   "read_only": 1
+  },
+  {
+   "default": "Manual",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Manual\nSensor",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.source == 'Sensor'",
+   "fieldname": "sensor_id",
+   "fieldtype": "Data",
+   "label": "Sensor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_values",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Leave empty when not measured.",
+   "fieldname": "temperature",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Temperature (°C)"
+  },
+  {
+   "fieldname": "humidity",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Humidity (%)"
+  },
+  {
+   "fieldname": "pressure_diff",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Pressure Difference (Pa)"
+  },
+  {
+   "fieldname": "section_result",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "out_of_range",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Out of Range",
+   "read_only": 1
+  },
+  {
+   "depends_on": "out_of_range",
+   "fieldname": "breach_detail",
+   "fieldtype": "Small Text",
+   "label": "Out-of-Range Readings",
+   "read_only": 1
+  },
+  {
+   "fieldname": "breaches",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Out-of-Range Codes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recorded_by",
+   "fieldtype": "Link",
+   "label": "Recorded By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Environment Log",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-30 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "Environment Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "measured_at",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "zone",
+ "track_changes": 1
+}

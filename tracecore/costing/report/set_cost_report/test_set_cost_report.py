@@ -1,5 +1,7 @@
 """Set Cost Report (FEAT-046 Task 5; FR-M7-06.1, EI-SW-006; A-53 j)."""
 
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import add_days, add_months, get_first_day, get_last_day, getdate, today
 
@@ -65,6 +67,14 @@ class TestSetCostReport(SheetCase):
 		self.assertEqual(
 			row["previous_average"], frappe.db.get_value("Cost Sheet Pack", {"parent": previous}, "total")
 		)
+
+	def test_averages_are_whole_vnd(self):
+		"""34.700 đ / 3 gói hiển thị 11.567 đ, không có số lẻ (VND không lẻ; review FEAT-046 #5)."""
+		with patch.object(report, "_totals", return_value={"A": (3, 34700)}):
+			_columns, rows = report.execute(
+				{"from_date": today(), "to_date": today(), "group_by": "Set Type"}
+			)
+		self.assertEqual((rows[0]["average"], rows[0]["previous_average"]), (11567, 11567))
 
 	def test_recalculated_sheets_are_excluded_and_columns_exported(self):
 		self.priced()

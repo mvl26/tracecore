@@ -84,6 +84,10 @@ class Pricer:
 			self._cache[key] = flt(value) if value is not None else None
 		return self._cache[key]
 
+	def has_rate(self, rate_type, item=None):
+		"""Có đơn giá (kể cả 0 đ) trong phiên bản; khác với thiếu giá."""
+		return self.rate(rate_type, item) is not None
+
 	def price(self, rate_type, quantity, item=None, label=None):
 		"""(đơn giá, thành tiền VND); số lượng > 0 mà thiếu giá → ghi thiếu, thành tiền 0."""
 		if not flt(quantity):
@@ -219,8 +223,9 @@ def _set_value(set_type, bom_version):
 	return total
 
 
-def _wash_share(set_unit, before):
-	"""Phần chi phí lô rửa của bộ: Cost Sheet của lô rửa gần nhất có bộ, bắt đầu trước `before`, chia đều số bộ."""
+def _wash_share(set_unit, before, pricer=None):
+	"""Phần chi phí lô rửa của bộ: Cost Sheet của lô rửa gần nhất có bộ, bắt đầu trước `before`, chia đều số bộ theo
+	thứ tự trong lô (bộ cuối nhận phần dư). Lô chưa có Cost Sheet thì ghi thiếu vào `pricer`, phần lô rửa 0 đ."""
 	batches = frappe.get_all(
 		"Wash Batch Set Unit", filters={"set_unit": set_unit, "parenttype": WASH}, pluck="parent"
 	)
@@ -238,10 +243,17 @@ def _wash_share(set_unit, before):
 	total = frappe.db.get_value(
 		DOCTYPE, {"source_doctype": WASH, "source_name": latest[0], "is_recalculation": 0}, "total_cost"
 	)
-	if not total:
+	if total is None:
+		if pricer is not None:
+			pricer.missing.append(_("cost sheet of wash batch {0}").format(latest[0]))
 		return 0
-	count = frappe.db.count("Wash Batch Set Unit", {"parent": latest[0], "parenttype": WASH})
-	return vnd(total) // max(count, 1)
+	members = frappe.get_all(
+		"Wash Batch Set Unit",
+		filters={"parent": latest[0], "parenttype": WASH},
+		pluck="set_unit",
+		order_by="idx",
+	)
+	return split(vnd(total), len(members))[members.index(set_unit)]
 
 
 # --- lập Cost Sheet -----------------------------------------------------------------------------------------------
@@ -282,7 +294,7 @@ def _lines(source_doctype, source_name, src, pricer):
 					"uom": rates.UNIT_BY_TYPE.get(rate_type),
 					"rate": rate,
 					"amount": amount,
-					"priced": int(bool(rate)),
+					"priced": int(pricer.has_rate(rate_type)),
 				}
 			)
 	# định mức "mỗi gói" của chương trình rửa tính theo số bộ của lô, như FEAT-042
@@ -299,7 +311,7 @@ def _lines(source_doctype, source_name, src, pricer):
 				"quantity": quantity,
 				"rate": rate,
 				"amount": amount,
-				"priced": int(bool(rate)),
+				"priced": int(pricer.has_rate("Item", item)),
 			}
 		)
 	start = src.started_at or src.moment
@@ -341,7 +353,7 @@ def _pack_rows(src, shares, pricer):
 		depreciation = 0
 		if not cint(unit.get("is_loaner")) and cint(unit.get("max_cycles")):
 			depreciation = vnd(_set_value(info.set_type, info.bom_version) / cint(unit.max_cycles))
-		wash = vnd(_wash_share(info.set_unit, src.started_at or src.moment or now_datetime()))
+		wash = vnd(_wash_share(info.set_unit, src.started_at or src.moment or now_datetime(), pricer=pricer))
 		rows.append(
 			{
 				"pack": pack.pack,
@@ -367,12 +379,26 @@ def current(source_doctype, source_name):
 	)
 
 
-def build(source_doctype, source_name, rate_version=None, note=None, recalculation=False) -> str:
-	"""Lập Cost Sheet cho mẻ/lô; trả tên. Bản chính idempotent theo nguồn; `recalculation` tạo bản tính lại mới."""
+def finished(source_doctype, source_name):
+	"""Mẻ đã Giải phóng/Không đạt hoặc lô rửa đã kết thúc: mới có chi phí để lập Cost Sheet."""
+	if source_doctype not in SOURCES or not source_name:
+		return False
+	if source_doctype == LOAD:
+		return frappe.db.get_value(LOAD, source_name, "status") in ("Released", "Failed")
+	return bool(frappe.db.get_value(WASH, source_name, "ended_at"))
+
+
+def build(source_doctype, source_name, rate_version=None, note=None, recalculation=False) -> str | None:
+	"""Lập Cost Sheet cho mẻ/lô; trả tên, hoặc None khi nguồn chưa xong. Bản chính idempotent theo nguồn;
+	`recalculation` tạo bản tính lại mới."""
 	if source_doctype not in SOURCES:
 		frappe.throw(_("Cost sheets are built for sterilization loads and wash batches only."))
 	# khóa dòng nguồn: hai job song song cho cùng mẻ không cùng thấy "chưa có" rồi tạo hai bản chính
 	frappe.db.get_value(source_doctype, source_name, "name", for_update=True)
+	# job xếp sau commit vẫn chạy khi nghiệp vụ hoàn tác về savepoint (Frappe không xóa after_commit lúc đó):
+	# đọc lại trạng thái đã ghi sổ, mẻ chưa Giải phóng/Không đạt thì không lập
+	if not finished(source_doctype, source_name):
+		return None
 	existing = current(source_doctype, source_name)
 	if existing and not recalculation:
 		return existing

@@ -21,6 +21,9 @@ DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không 
 DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
 DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
 DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
+DT-WASTETYPE,Waste Type,R,RW,,,,,R,,R,RW,FEAT-047 A-60 W14: danh mục; R02 và R10 cấu hình
+DT-WASTECOL,Waste Collection,R,RWSA,,,,,RWS,,R,R,FEAT-047 A-60 W14: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
+DT-WASTECON,Waste Container,R,R,,,,,R,,R,R,FEAT-047 A-60 W14: chỉ dịch vụ thu gom tạo và đổi
 DT-EMP,Employee,R,RWS,,,,,,,,RW,
 DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
 DT-COMP,Station Competency,R,RWS,,,,,,,,RW,
@@ -39,5 +42,7 @@ DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D5: R01 duyệt (G
 DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,FEAT-046 A-53 D1
 DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
 DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
-DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
+DT-ZONE,Zone Station,R,R,R,R,R,R,,,R,RW,A-03 overrides BA baseline; FEAT-008 A-55 Q4: R03-R06 đọc để chọn khu khi ghi nhật ký môi trường
+DT-ARCHIVE,Archive Export,RW,,,,,,,,,RW,FEAT-012 A-58 D2: R01 và R10 tạo/đọc phiếu xuất hồ sơ lưu trữ; phiếu không sửa sau khi tạo
+DT-ENVLOG,Environment Log,R,RWSA,RWS,RWS,RWS,RWS,,,,R,FEAT-008 A-55 Q4: R02-R06 ghi sổ; R02 hủy/sửa đổi; R01 và R10 chỉ đọc
 DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

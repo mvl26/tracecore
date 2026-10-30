@@ -29,10 +29,14 @@ fixtures = [
 			["name", "like", "Shift Assignment-tc_%"],  # FEAT-037: Khu làm việc của ca
 			["name", "like", "Stock Reconciliation Item-tc_%"],  # FEAT-043: lý do chênh lệch kiểm kê
 			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
+			["name", "like", "Help Article-tc_%"],  # FEAT-013: hướng dẫn theo bước trạm
+			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
 	{"dt": "Property Setter", "filters": [["name", "like", "Employee-naming_series-%"]]},
+	# Phân ca: ẩn Shift Location (chấm công GPS của HRMS); khu của ca là tc_zone
+	{"dt": "Property Setter", "filters": [["name", "=", "Shift Assignment-shift_location-hidden"]]},
 ]
 
 # Each item in the list will be shown as an app in the apps page
@@ -90,6 +94,10 @@ page_js = {
 		"public/js/station_laundry.js",
 		# FEAT-035: cấp phát đồ vải (SCR-18), lớp con của LinenCollect nên nạp sau station_linen.js
 		"public/js/station_linen_issue.js",
+		# FEAT-013: trợ giúp theo trạm và báo sự cố kèm ảnh màn hình (mọi bước trạm, cả trước khi quét thẻ)
+		"public/js/station_help.js",
+		# FEAT-047: thu gom chất thải (SCR-38), trạm bước WST; dùng tc_weigh_line.js
+		"public/js/station_waste.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -147,6 +155,8 @@ jinja = {
 		"tracecore.ui.linen_print.tc_linen_receipt_context",
 		# Print Format "TC Linen Issue Receipt" (FEAT-035, FR-M3-05.1): biên nhận cấp phát đồ vải
 		"tracecore.ui.linen_print.tc_linen_issue_context",
+		# Print Format "TC Waste Receipt" (FEAT-047, FR-M10-02.6): biên nhận thu gom chất thải
+		"tracecore.ui.waste_print.tc_waste_receipt_context",
 		# Print Format "TC Stock Count Sheet" (FEAT-043, FR-M6-05): phiếu kiểm kê kho
 		"tracecore.ui.stock_count_print.tc_stock_count_context",
 	]
@@ -165,6 +175,11 @@ after_migrate = [
 	"tracecore.core.notification.ensure_default_rules",
 	# FEAT-037: quyền R02/R10/R01 cho HRMS Shift Assignment và Shift Type
 	"tracecore.hr.permissions.ensure_permissions",
+	# FEAT-013: hướng dẫn mặc định theo trạm (Help Article), không ghi đè bài R10 đã sửa
+	"tracecore.ui.station_help.ensure_station_help",
+	# FEAT-013: quyền R10 cho Issue / Help Article và Issue Type phản hồi phần mềm
+	"tracecore.ui.permissions.ensure_permissions",
+	"tracecore.ui.feedback.ensure_issue_type",
 ]
 
 # Uninstallation
@@ -247,6 +262,8 @@ _AUDIT_EVENTS = {
 }
 
 doc_events = {
+	# FEAT-013 (A-56 D4): bài hướng dẫn gắn trạm có 3 đến 5 bước, ảnh chỉ là file công khai
+	"Help Article": {"validate": "tracecore.ui.station_help.validate_article"},
 	"User": {
 		"before_validate": "tracecore.core.account.validate_user",
 		"after_insert": "tracecore.core.account.user_updated",
@@ -306,6 +323,8 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
 	"Daily Test": dict(_AUDIT_EVENTS),
+	# nhật ký môi trường khu (FEAT-008, A-55): ghi sổ/hủy có old/new, không xóa
+	"Environment Log": dict(_AUDIT_EVENTS),
 	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-43): ghi sổ có old/new, không xóa
 	"Maintenance Record": dict(_AUDIT_EVENTS),
 	# chi phí theo kỳ (FEAT-044, A-47): ghi sổ có old/new, không xóa; khóa kỳ và danh mục khoản mục cũng ghi vết
@@ -317,6 +336,10 @@ doc_events = {
 	"Linen Collection": dict(_AUDIT_EVENTS),
 	"Laundry Batch": dict(_AUDIT_EVENTS),  # FEAT-034, A-50: lô giặt ghi vết, không xóa
 	"Linen Issue": dict(_AUDIT_EVENTS),  # FEAT-035, A-51
+	# chất thải (FEAT-047, A-60): loại, phiếu thu gom và túi/thùng ghi vết, không xóa
+	"Waste Type": dict(_AUDIT_EVENTS),
+	"Waste Collection": dict(_AUDIT_EVENTS),
+	"Waste Container": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -406,6 +429,8 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 # M1 trả bộ mượn thiếu dụng cụ (FEAT-017, A-38 e): (ctx {loaner, set_unit, missing[{instrument, name, qty}], note})
 # -> tên Incident CAPA; M2 tạo NC Missing Instrument (M1 không import M2).
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
+# M10 phân loại sai (FEAT-047, A-60 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
+tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
 # M1 cấp Set ID (FEAT-016, A-13 G5): (ctx {set_type}) -> {value, source} | None, cơ số tối đa nguồn của loại bộ;
 # M8 trả Par Level riêng của loại bộ, nếu không thì cơ số thấp nhất của dụng cụ trong BOM (không import chéo M1 ↔ M8).
 tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
@@ -502,6 +527,8 @@ scheduler_events = {
 		# FEAT-029, UC-14 E3: lệnh thu hồi chưa xác nhận quá 2 giờ → nhắc khoa và R01
 		"*/15 * * * *": [
 			"tracecore.reprocessing.recall.remind_pending",
+			# FEAT-008, FR-M9-04.2: khu theo dõi chưa có lần đo môi trường trước mốc giờ nhắc → nhắc R02
+			"tracecore.admin_reports.environment.remind_missing",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],

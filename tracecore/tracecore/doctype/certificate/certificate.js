@@ -3,8 +3,15 @@
 
 const TC_CERT_COLOR = { Valid: "green", Expired: "red", Superseded: "gray" };
 
+const TC_CERT_TYPES_METHOD = "tracecore.v1.staff.certificate_types";
+
 frappe.ui.form.on("Certificate", {
+	setup(frm) {
+		frm.set_query("certificate_type", () => ({ query: TC_CERT_TYPES_METHOD }));
+	},
 	refresh(frm) {
+		// Autocomplete mặc định xóa giá trị ngoài danh sách gợi ý; ô này cho tự điền loại mới (A-59)
+		frm.set_df_property("certificate_type", "ignore_validation", 1);
 		if (frm.is_new()) return;
 		frm.page.set_indicator(
 			__(frm.doc.status, null, "Certificate"),

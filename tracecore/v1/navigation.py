@@ -14,11 +14,13 @@ STEP_ROLES = {
 	"T7": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
 	"T8": {"TC R08"},
 	"LIN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
+	"WST": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)
 }
 # Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
-IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "LIN"}
-# Nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
+IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "LIN", "WST"}
+# Dashboard vận hành đứng đầu; sau đó nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
+	("Overview", ("tc-dashboard",)),  # FEAT-006 SCR-32
 	(
 		"Organization and staff",
 		(
@@ -33,7 +35,18 @@ MANAGEMENT_GROUPS = (
 			"report:Station Output",
 		),
 	),
-	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
+	(
+		"Zones, stations and printing",
+		(
+			"Zone Station",
+			# FEAT-008: nhật ký môi trường khu và báo cáo tháng
+			"Environment Log",
+			"report:Environment Monthly Report",
+			"Printer",
+			"Label Template",
+			"Print Job",
+		),
+	),
 	(
 		"Equipment",
 		("Equipment", "Process Program", "Equipment Type Norm", "Daily Test", "Maintenance Record"),
@@ -48,6 +61,7 @@ MANAGEMENT_GROUPS = (
 			"Loaner Set",
 			"Instrument Maintenance",
 			"report:Instrument Data Gaps",
+			"report:Instrument Life Forecast",  # FEAT-007: bộ sắp hết vòng đời kèm giá
 		),
 	),
 	(
@@ -78,6 +92,8 @@ MANAGEMENT_GROUPS = (
 			"report:Set Cost Report",
 		),
 	),
+	# FEAT-047 thu gom chất thải; FEAT-048..050 thêm kho, bàn giao, báo cáo
+	("Medical waste", ("Waste Type", "Waste Collection", "Waste Container")),
 	# FEAT-033 thu gom; FEAT-034 lô giặt và báo cáo chi phí/kg; FEAT-035 thêm cấp phát
 	(
 		"Linen",
@@ -103,11 +119,22 @@ MANAGEMENT_GROUPS = (
 			"Usage Record",
 		),
 	),
-	("Quality and traceability", ("report:Pack Trace", "Incident CAPA", "Recall Order")),
+	(
+		"Quality and traceability",
+		(
+			"report:Pack Trace",
+			"Incident CAPA",
+			"Recall Order",
+			# FEAT-007: sổ tiệt khuẩn điện tử và báo cáo KSNK (in PDF có chữ ký Trưởng khoa)
+			"report:Sterilization Log",
+			"report:KSNK Summary Report",
+		),
+	),
 	(
 		"Data and audit",
 		(
 			"tc-import",
+			"Archive Export",  # FEAT-012: xuất gói hồ sơ tiệt khuẩn lưu trữ (SCR-43)
 			"notifications",
 			"Notification Rule",
 			"Audit Log",
@@ -120,6 +147,7 @@ MANAGEMENT_GROUPS = (
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
 MANAGEMENT_PAGES = {
+	"tc-dashboard": "Operations Dashboard",
 	"tc-import": "Catalog Import",
 	"notifications": "Notification Center",
 	"competency-matrix": "Competency Matrix",

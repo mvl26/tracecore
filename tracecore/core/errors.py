@@ -269,7 +269,22 @@ HTTP_STATUS: dict[str, int] = {
 	),
 	# FEAT-046 A-53 i: tính lại giá thành cần ghi chú và mẻ/lô có thật
 	"NOTE_REQUIRED": 422,
+	# FEAT-008 A-55 D4: số đo môi trường sai (khu chưa theo dõi dùng mặc định 409)
+	"ENV_READING_INVALID": 422,
 	"COST_SOURCE_NOT_FOUND": 404,
+	# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
+	"FEEDBACK_INVALID": 422,
+	"SCREENSHOT_INVALID": 422,
+	"FEEDBACK_RATE_LIMIT": 429,
+	# FEAT-047 A-60: thu gom chất thải
+	"WASTE_EMPTY": 422,
+	"WASTE_TYPE_INVALID": 422,
+	"WASTE_QTY_INVALID": 422,
+	"WASTE_TOTAL_INVALID": 422,
+	"WASTE_WEIGHT_UNCONFIRMED": 422,
+	"WASTE_NOTE_REQUIRED": 422,
+	"WASTE_GIVER_INVALID": 403,
+	"WASTE_NOT_HELD": 409,
 }
 DEFAULT_HTTP_STATUS = 409
 

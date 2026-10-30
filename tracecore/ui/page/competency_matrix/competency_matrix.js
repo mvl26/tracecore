@@ -6,13 +6,6 @@
 
 const TC_CM = "tracecore.v1.competency.";
 const TC_CM_CTX = "Competency Matrix"; // ngữ cảnh dịch cho các từ chung để không đè bản dịch của Frappe
-const TC_CM_CERT_TYPES = [
-	"Practice License",
-	"Infection Control",
-	"Sterilization",
-	"Pressure Equipment Operation",
-	"Other",
-];
 const TC_CM_STATE = {
 	valid: ["✓", "Valid"],
 	temporary: ["◷", "Temporary"],
@@ -34,10 +27,6 @@ function tc_cm_error_html(error) {
 	return `<div class="alert alert-danger" role="alert">${lines
 		.filter(Boolean)
 		.join("<br>")}</div>`;
-}
-
-function tc_cm_cert_label(type) {
-	return __(type, null, "Certificate");
 }
 
 frappe.pages["competency-matrix"].on_page_load = function (wrapper) {
@@ -194,11 +183,15 @@ frappe.pages["competency-matrix"].on_page_load = function (wrapper) {
 					fieldname: "required",
 					fieldtype: "MultiCheck",
 					label: __("Required Certificates"),
-					description: __(
-						"Tick the certificates this employee must hold to sign in at this station."
-					),
-					options: TC_CM_CERT_TYPES.map((type) => ({
-						label: tc_cm_cert_label(type),
+					description: state.data.certificate_types.length
+						? __(
+								"Tick the certificates this employee must hold to sign in at this station."
+						  )
+						: __(
+								"No certificate types yet. Record a certificate for an employee first."
+						  ),
+					options: state.data.certificate_types.map((type) => ({
+						label: type,
 						value: type,
 						checked: 0,
 					})),
@@ -227,8 +220,8 @@ frappe.pages["competency-matrix"].on_page_load = function (wrapper) {
 
 	function revokeDialog(employee, station, cell) {
 		const [, label] = TC_CM_STATE[cell.state];
-		const required = (cell.required || []).map(tc_cm_cert_label);
-		const missing = (cell.missing || []).map(tc_cm_cert_label);
+		const required = cell.required || [];
+		const missing = cell.missing || [];
 		const lines = [
 			`<p><b>${tc_cm_escape(__(label, null, TC_CM_CTX))}</b> · ${tc_cm_escape(
 				__("Valid until {0}", [frappe.datetime.str_to_user(cell.valid_until)])
