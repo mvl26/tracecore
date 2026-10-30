@@ -58,5 +58,5 @@ Người dùng chốt W1–W4 ngày 30/10/2026; W5–W14 là chi tiết hiện t
 - **`test_errors` có sẵn đỏ trên develop:** FEAT-008 thêm `ENV_READING_INVALID` thiếu trong bảng test; đã thêm.
 - **Chưa làm (gap có chủ đích):** offline và dải mã `CT-` cấp trước (W2); nhãn in trước UC-34 A1; ảnh dòng phiếu trên kiosk (W13). Màn JS chỉ có test tĩnh, chưa xem trên trình duyệt, chưa E2E.
 - **Exit code của test:** `bench run-tests --coverage` trả 0 dù có test fail; phải đọc dòng `FAILED`/`OK` trong log, không tin exit code.
-- **Bài hướng dẫn trạm WST:** FEAT-013 chưa merge; khi gộp phải thêm khóa `WST` vào `station_help.STATION_KEYS`, bài mặc định và option `tc_station_key`.
+- **Bài hướng dẫn trạm WST:** đã thêm khóa `WST` vào `station_help.STATION_KEYS`, bài mặc định và option `tc_station_key` khi gộp FEAT-013.
 

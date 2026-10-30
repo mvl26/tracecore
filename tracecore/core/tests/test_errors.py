@@ -235,6 +235,8 @@ class TestErrors(FrappeTestCase):
 		table.update({"NOTE_REQUIRED": 422, "COST_SOURCE_NOT_FOUND": 404})
 		# FEAT-008 A-55 D4
 		table["ENV_READING_INVALID"] = 422
+		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
+		table.update({"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429})
 		# FEAT-047 A-60: thu gom chất thải
 		table.update(
 			{
@@ -308,6 +310,12 @@ class TestErrors(FrappeTestCase):
 			"LOAD_NOT_OPEN": 409,
 			"CARD_MISMATCH": 403,
 		}
+		for code, status in expected.items():
+			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
+
+	def test_http_status_feedback_codes(self):
+		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
+		expected = {"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429}
 		for code, status in expected.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 

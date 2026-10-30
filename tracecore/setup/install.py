@@ -13,6 +13,8 @@ from tracecore.setup.label_templates import (
 	ensure_set_templates,
 )
 from tracecore.setup.seed import ensure_zone_stations
+from tracecore.ui.permissions import ensure_permissions as ensure_ui_permissions
+from tracecore.ui.station_help import ensure_station_help
 
 SYSTEM_SETTINGS = {
 	"language": "vi",
@@ -44,6 +46,8 @@ def after_install():
 	ensure_default_rules()
 	ensure_hr_permissions()
 	ensure_categories()
+	ensure_ui_permissions()
+	ensure_station_help()
 
 
 TEST_GENDERS = ("Male", "Female", "Other")
