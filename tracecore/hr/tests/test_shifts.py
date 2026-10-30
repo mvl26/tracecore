@@ -101,6 +101,17 @@ class TestShiftAssignment(ShiftCase):
 
 	@bru("BRU-HR-001")
 	def test_missing_required_certificate_blocks_scheduling(self):
+		holder = factories.make_employee(first_name="Người giữ chứng chỉ").name
+		frappe.get_doc(
+			{
+				"doctype": "Certificate",
+				"employee": holder,
+				"certificate_type": "Pressure Equipment Operation",
+				"certificate_no": "CC-" + frappe.generate_hash(length=8),
+				"issued_on": today(),
+				"no_expiry": 1,
+			}
+		).insert(ignore_permissions=True)
 		self.grant(required_certificates=["Pressure Equipment Operation"])
 		with self.assertRaises(frappe.ValidationError):
 			assignment(self.employee.name, self.shift, self.zone)

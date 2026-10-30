@@ -19,7 +19,7 @@
 | # | Quyết định | AC |
 | :- | :- | :- |
 | H1 | `Certificate` ở module `TraceCore`, M4 không đăng ký Module Def. | A-01 |
-| H2 | Loại chứng chỉ là danh sách cố định (CCHN, KSNK, tiệt khuẩn, vận hành thiết bị áp lực, khác). | FR-M4-02 |
+| H2 | ~~Loại chứng chỉ là danh sách cố định (CCHN, KSNK, tiệt khuẩn, vận hành thiết bị áp lực, khác).~~ Thay bằng A-58: loại tự điền, gợi ý từ các loại đã dùng. | FR-M4-02, A-58 |
 | H3 | Gia hạn = bản ghi mới có `renews`; bản cũ Superseded, giữ lịch sử; không xóa. | FR-M4-02.3 |
 | H4 | Không hết hạn → `no_expiry`, không nhắc; file scan > 10 MB bị từ chối. | FR-M4-02.4, UC-19 E2/E3 |
 | H5 | Nhắc theo mức 60/30/7 và khi hết hạn, mỗi mức một lần, qua `core.notification`; đổi ngày hạn thì nhắc lại từ đầu. | FR-M4-02.1, FR-M4-01.4 |
