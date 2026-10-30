@@ -78,7 +78,7 @@
 | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | ADR-002; A-54 | FEAT-006 | `admin_reports/tests/test_dashboard.py`, `v1/tests/test_dashboard_api.py`, `tests/test_tc_dashboard.py` |
 | FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-007 | _TBD_ |
 | FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
-| FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | _TBD_ | FEAT-008 | _TBD_ |
+| FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | A-55 | FEAT-008 | `admin_reports/tests/test_environment.py`, `admin_reports/tests/test_environment_report.py`, `v1/tests/test_env_api.py` |
 | FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-07 | Hệ thống sinh mã định danh cho mọi đối tượng quét | Must | Active | CHG-032 (review v1.10, kế thừa BR-M9) | UC-33 | ADR-004 | FEAT-001; FEAT-005 | _TBD_ |
 | FR-M9-06 | Chế độ offline tại trạm (Must từ v1.11 theo NFR-AVAIL-02, chốt 2026-10-17) | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-003 | FEAT-009 | `tracecore/core/tests/test_code_range.py`, `test_sync.py`; `tracecore/v1/tests/test_sync_api.py`; `tests_e2e/test_station_offline.py`, `test_station_t1.py` |

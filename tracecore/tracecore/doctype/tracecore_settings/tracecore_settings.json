@@ -13,7 +13,9 @@
   "enable_sms",
   "sms_gateway_url",
   "sms_api_token",
-  "sms_sender"
+  "sms_sender",
+  "section_environment",
+  "env_reminder_times"
  ],
  "fields": [
   {
@@ -72,12 +74,24 @@
    "fieldname": "sms_sender",
    "fieldtype": "Data",
    "label": "SMS Sender Name"
+  },
+  {
+   "fieldname": "section_environment",
+   "fieldtype": "Section Break",
+   "label": "Zone Environment"
+  },
+  {
+   "default": "11:00, 17:00",
+   "description": "Times of day (HH:MM, comma separated) at which a monitored zone with no reading since the previous time is reminded (FR-M9-04.2). Leave empty to turn reminders off.",
+   "fieldname": "env_reminder_times",
+   "fieldtype": "Data",
+   "label": "Environment Reminder Times"
   }
  ],
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-21 12:00:00.000000",
+ "modified": "2026-10-30 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

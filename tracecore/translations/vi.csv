@@ -5888,3 +5888,59 @@ Report an Issue,Báo lỗi,
 Toggle Full Width,Bật/tắt toàn chiều rộng,
 Toggle Theme,Đổi giao diện sáng/tối,
 User Forum,Diễn đàn người dùng,
+"Check the values and the time of the reading, then record it again.","Kiểm tra lại các chỉ số và giờ đo, rồi ghi lại.",
+"Choose a monitored zone, or ask R10 to turn on Monitor Environment for the zone.","Chọn khu đang theo dõi môi trường, hoặc đề nghị R10 bật Theo dõi môi trường cho khu.",
+Choose a month and a year.,Chọn tháng và năm.,
+"Enter at least one of temperature, humidity or pressure difference.","Nhập ít nhất một chỉ số: nhiệt độ, độ ẩm hoặc áp suất chênh.",
+Environment Log,Nhật ký môi trường,
+Environment Monitoring,Môi trường khu,Zone Station
+Environment Reminder Times,Giờ nhắc ghi môi trường,TraceCore Settings
+Environment out of range in {0},Môi trường vượt ngưỡng tại {0},
+Environment reading is not valid,Số đo môi trường không hợp lệ,
+Environment reading missing: {0},Thiếu số đo môi trường: {0},
+Environment reading out of range,Số đo môi trường vượt ngưỡng,
+Environment reading missing,Thiếu số đo môi trường,
+Humidity,Độ ẩm,
+Pressure Difference,Áp suất chênh,
+Humidity (%),Độ ẩm (%),Environment Log
+Temperature (°C),Nhiệt độ (°C),Environment Log
+Pressure Difference (Pa),Áp suất chênh (Pa),Environment Log
+Humidity must be between 0 and 100 %.,Độ ẩm phải từ 0 đến 100 %.,
+Leave empty to skip this check.,Để trống nếu không kiểm ngưỡng này.,Zone Station
+Leave empty when not measured.,Để trống nếu không đo.,Environment Log
+Max Humidity (%),Độ ẩm cao nhất (%),
+Max Pressure Difference (Pa),Áp suất chênh cao nhất (Pa),
+Max Temperature (°C),Nhiệt độ cao nhất (°C),
+Min Humidity (%),Độ ẩm thấp nhất (%),
+Min Pressure Difference (Pa),Áp suất chênh thấp nhất (Pa),
+Min Temperature (°C),Nhiệt độ thấp nhất (°C),
+Maximum Humidity (%),Độ ẩm tối đa (%),Zone Station
+Maximum Pressure Difference (Pa),Áp suất chênh tối đa (Pa),Zone Station
+Maximum Temperature (°C),Nhiệt độ tối đa (°C),Zone Station
+Minimum Humidity (%),Độ ẩm tối thiểu (%),Zone Station
+Minimum Pressure Difference (Pa),Áp suất chênh tối thiểu (Pa),Zone Station
+Minimum Temperature (°C),Nhiệt độ tối thiểu (°C),Zone Station
+Measured At,Giờ đo,Environment Log
+Missing Times,Số mốc thiếu số đo,
+Monitor Environment,Theo dõi môi trường,Zone Station
+No environment reading in {0} from {1} to {2} on {3}.,{0} chưa có số đo môi trường từ {1} đến {2} ngày {3}.,
+Out of Range,Vượt ngưỡng,
+Out of Range,Vượt ngưỡng,Environment Log
+Out-of-Range Codes,Mã chỉ số vượt ngưỡng,Environment Log
+Out-of-Range Readings,Chỉ số vượt ngưỡng,Environment Log
+"Record temperature, humidity and pressure difference for this zone (FR-M9-04). Missing readings are reminded at the times set in TraceCore Settings.","Ghi nhiệt độ, độ ẩm và áp suất chênh của khu này (FR-M9-04). Khu thiếu số đo được nhắc vào các mốc giờ đặt trong Cài đặt TraceCore.",Zone Station
+Sensor,Cảm biến,Environment Log
+Manual,Nhập tay,Environment Log
+Readings,Số lần đo,Environment Log
+The measuring time {0} is in the future.,Giờ đo {0} ở tương lai.,
+"Times of day (HH:MM, comma separated) at which a monitored zone with no reading since the previous time is reminded (FR-M9-04.2). Leave empty to turn reminders off.","Các mốc giờ trong ngày (HH:MM, cách nhau bằng dấu phẩy). Đến mỗi mốc, khu đang theo dõi chưa có số đo kể từ mốc trước sẽ được nhắc (FR-M9-04.2). Để trống để tắt nhắc.",TraceCore Settings
+Zone Environment,Môi trường khu,TraceCore Settings
+Zone Name,Tên khu,
+Zone is not monitored,Khu chưa bật theo dõi môi trường,
+{0} is not a time of day (HH:MM).,{0} không phải giờ trong ngày (HH:MM).,
+{0} is not a zone with environment monitoring turned on.,{0} không phải khu đã bật theo dõi môi trường.,
+{0} must be a number.,{0} phải là số.,
+{0} must be a number: {1},{0} phải là số: {1},
+{0} {1} {2} is above the maximum {3},{0} {1} {2} vượt mức tối đa {3},
+{0} {1} {2} is below the minimum {3},{0} {1} {2} dưới mức tối thiểu {3},
+{0}: the minimum is greater than the maximum.,{0}: mức tối thiểu lớn hơn mức tối đa.,

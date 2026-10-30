@@ -308,6 +308,8 @@ doc_events = {
 	"Equipment": dict(_AUDIT_EVENTS),
 	# test hằng ngày (FEAT-040): ghi một lần, không sửa, không xóa
 	"Daily Test": dict(_AUDIT_EVENTS),
+	# nhật ký môi trường khu (FEAT-008, A-55): ghi sổ/hủy có old/new, không xóa
+	"Environment Log": dict(_AUDIT_EVENTS),
 	# hồ sơ bảo trì/kiểm định/hiệu chuẩn/sự cố (FEAT-039, A-43): ghi sổ có old/new, không xóa
 	"Maintenance Record": dict(_AUDIT_EVENTS),
 	# chi phí theo kỳ (FEAT-044, A-47): ghi sổ có old/new, không xóa; khóa kỳ và danh mục khoản mục cũng ghi vết
@@ -504,6 +506,8 @@ scheduler_events = {
 		# FEAT-029, UC-14 E3: lệnh thu hồi chưa xác nhận quá 2 giờ → nhắc khoa và R01
 		"*/15 * * * *": [
 			"tracecore.reprocessing.recall.remind_pending",
+			# FEAT-008, FR-M9-04.2: khu theo dõi chưa có lần đo môi trường trước mốc giờ nhắc → nhắc R02
+			"tracecore.admin_reports.environment.remind_missing",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],

@@ -14,6 +14,12 @@ from tracecore.core import audit, code_registry, zones
 
 STATION_PREFIX = "TR"
 DEFAULT_BAUD_RATE = 9600
+# (tối thiểu, tối đa, chỉ số) của ngưỡng môi trường khu (FEAT-008)
+ENV_LIMITS = (
+	("temp_min", "temp_max", "Temperature"),
+	("humidity_min", "humidity_max", "Humidity"),
+	("pressure_min", "pressure_max", "Pressure Difference"),
+)
 
 
 class ZoneStation(Document):
@@ -59,6 +65,7 @@ class ZoneStation(Document):
 		self.station_step = None
 		if not self.zone_type:
 			frappe.throw(_("Zone Type is required for a zone."))
+		self._validate_env_limits()
 		before = self.get_doc_before_save()
 		if before and before.zone_type != self.zone_type:
 			self._check_active_stations_fit_new_type()
@@ -87,6 +94,22 @@ class ZoneStation(Document):
 						"Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow."
 					).format(station.name, station.station_step, _(self.zone_type, context="Zone Station"))
 				)
+
+	def _validate_env_limits(self):
+		"""Ngưỡng môi trường của khu (FEAT-008, A-55 Q2): ô trống = không kiểm; có cả hai thì tối thiểu ≤ tối đa.
+
+		Ngưỡng là ô Data (Float của Frappe không để trống được), lưu số đã chuẩn hóa dấu chấm thập phân.
+		"""
+		from tracecore.admin_reports.environment import to_number
+
+		for low, high, label in ENV_LIMITS:
+			bounds = []
+			for fieldname in (low, high):
+				value = to_number(self.get(fieldname), _(label))
+				self.set(fieldname, None if value is None else f"{value:g}")
+				bounds.append(value)
+			if None not in bounds and bounds[0] > bounds[1]:
+				frappe.throw(_("{0}: the minimum is greater than the maximum.").format(_(label)))
 
 	def _validate_peripherals(self):
 		"""Thiết bị ngoại vi (E4): chỉ trạm có; TCP cần host:port, Serial cần cổng; không trùng điểm kết nối."""
@@ -139,6 +162,7 @@ class ZoneStation(Document):
 		return None
 
 	def _validate_station(self):
+		self.env_monitored = 0  # chỉ khu có nhật ký môi trường
 		if not self.parent_zone:
 			self._validate_station_without_zone()
 			return
