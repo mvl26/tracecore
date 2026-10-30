@@ -1393,3 +1393,11 @@ body.tc-kiosk .layout-main-section {
 .tc-linen-tabs .tc-btn {
 	flex: 1 1 var(--tc-photo-big);
 }
+
+/* thu gom chất thải (SCR-38, FEAT-047): mã màu TT 20/2021 luôn là chữ cỡ lớn */
+.tc-waste-color {
+	display: inline-block;
+	margin-bottom: var(--tc-sp-2);
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+}

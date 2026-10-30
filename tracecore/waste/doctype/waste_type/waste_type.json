@@ -1,0 +1,127 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "type_name",
+  "waste_group",
+  "color_code",
+  "packaging",
+  "std_weight_kg",
+  "is_active",
+  "storage_section",
+  "max_storage_hours",
+  "max_storage_cold_hours",
+  "storage_override_reason",
+  "rates_section",
+  "rates"
+ ],
+ "fields": [
+  {
+   "fieldname": "type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Waste Type Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "waste_group",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Waste Group",
+   "options": "\nSharp Infectious\nNon-sharp Infectious\nHigh-risk Infectious\nAnatomical\nHazardous Non-infectious\nGeneral\nRecyclable",
+   "reqd": 1
+  },
+  {
+   "fieldname": "color_code",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Color Code",
+   "options": "\nYellow\nBlack\nGreen\nWhite",
+   "read_only": 1,
+   "description": "Set from the waste group (Circular 20/2021/TT-BYT)."
+  },
+  {
+   "fieldname": "packaging",
+   "fieldtype": "Link",
+   "label": "Standard Packaging",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "std_weight_kg",
+   "fieldtype": "Float",
+   "label": "Standard Weight per Bag (kg)",
+   "precision": "3",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage Time"
+  },
+  {
+   "default": "48",
+   "fieldname": "max_storage_hours",
+   "fieldtype": "Int",
+   "label": "Maximum Storage (hours)",
+   "reqd": 1,
+   "description": "Default 48 hours."
+  },
+  {
+   "fieldname": "max_storage_cold_hours",
+   "fieldtype": "Int",
+   "label": "Maximum Cold Storage (hours)",
+   "description": "Default 168 hours (7 days) at 8 degrees C or below."
+  },
+  {
+   "fieldname": "storage_override_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Other Storage Time"
+  },
+  {
+   "fieldname": "rates_section",
+   "fieldtype": "Section Break",
+   "label": "Treatment Rates"
+  },
+  {
+   "fieldname": "rates",
+   "fieldtype": "Table",
+   "label": "Rates",
+   "options": "Waste Type Rate"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Type",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:type_name",
+ "naming_rule": "By fieldname",
+ "title_field": "type_name",
+ "description": "Waste type by Circular 20/2021/TT-BYT group (FEAT-047, FR-M10-01)."
+}

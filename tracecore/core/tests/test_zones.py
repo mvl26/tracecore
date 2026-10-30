@@ -12,7 +12,7 @@ class TestZones(FrappeTestCase):
 		self.assertEqual(zones.allowed_steps("Sterile"), ("T5b", "T6", "T7"))
 		self.assertEqual(zones.allowed_steps("Department"), ("T8",))
 		self.assertEqual(zones.allowed_steps("Linen"), ("LIN",))
-		self.assertEqual(zones.allowed_steps("Waste"), ())
+		self.assertEqual(zones.allowed_steps("Waste"), ("WST",))
 		self.assertEqual(zones.allowed_steps("Unknown"), ())
 		self.assertEqual(zones.ZONE_FLOW, ("Dirty", "Clean", "Sterile"))
 
