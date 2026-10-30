@@ -76,7 +76,7 @@
 | FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | `tracecore/par/tests/test_check.py`, `tracecore/core/tests/test_step_gate.py`, `tracecore/v1/tests/test_par_api.py` (FR-M8-03.1–.3; FEAT-032); bộ đếm tăng khi giải phóng → FEAT-023 (A-18 G2) |
 | FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | `tracecore/par/tests/test_override.py`, `tracecore/par/doctype/par_override/test_par_override.py`, `tracecore/v1/tests/test_par_api.py`, `tracecore/par/report/par_override_report/test_par_override_report.py`, `tracecore/par/tests/test_par_override_desk_assets.py` (FEAT-032) |
 | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | ADR-002; A-54 | FEAT-006 | `admin_reports/tests/test_dashboard.py`, `v1/tests/test_dashboard_api.py`, `tests/test_tc_dashboard.py` |
-| FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-007 | _TBD_ |
+| FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | A-57 | FEAT-007 | `admin_reports/tests/test_sterilization_log.py` |
 | FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
 | FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | A-55 | FEAT-008 | `admin_reports/tests/test_environment.py`, `admin_reports/tests/test_environment_report.py`, `v1/tests/test_env_api.py` |
 | FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
