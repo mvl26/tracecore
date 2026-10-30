@@ -342,9 +342,10 @@ def _notify(doc, subject):
 	frappe.publish_realtime("tc_archive_ready", {"name": doc.name}, user=doc.requested_by, after_commit=True)
 
 
-def build(name):
+def build(name, lang=None):
 	"""Sinh gói ZIP của phiếu `name`; lỗi → trạng thái Failed + thông báo (A-58 D3)."""
 	doc = frappe.get_doc(EXPORT, name)
+	sterilization_log.use_language(lang, doc.requested_by)
 	_set(doc, status="Running")
 	frappe.db.savepoint(SAVEPOINT)
 	try:
