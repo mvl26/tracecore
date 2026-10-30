@@ -233,7 +233,7 @@ class TestErrors(FrappeTestCase):
 		table = {code: status for status, codes in expected.items() for code in codes}
 		# FEAT-046 A-53 i: tính lại giá thành
 		table.update({"NOTE_REQUIRED": 422, "COST_SOURCE_NOT_FOUND": 404})
-		# FEAT-013 A-55 D7: phản hồi/báo lỗi từ trạm
+		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
 		table.update({"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429})
 		self.assertEqual(errors.HTTP_STATUS, table)
 
@@ -299,7 +299,7 @@ class TestErrors(FrappeTestCase):
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 
 	def test_http_status_feedback_codes(self):
-		# FEAT-013 A-55 D7: phản hồi/báo lỗi từ trạm
+		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
 		expected = {"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429}
 		for code, status in expected.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)

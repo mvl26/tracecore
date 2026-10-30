@@ -1,4 +1,4 @@
-"""RPC phản hồi / báo lỗi phần mềm từ trạm (FEAT-013, FR-M9-15, A-55 D7).
+"""RPC phản hồi / báo lỗi phần mềm từ trạm (FEAT-013, FR-M9-15, A-56 D7).
 
 Lớp mỏng trên `tracecore.ui.feedback`: phiên thẻ nhân viên (`@station_session`, token trong body POST) xác định người
 gửi; mọi vai trò TraceCore gửi được. Ghi nên dùng ``@idempotent``: kiosk gửi lại cùng khóa không tạo Issue thứ hai.

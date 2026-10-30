@@ -1,4 +1,4 @@
-"""Hướng dẫn theo trạm (FEAT-013, FR-M9-15, A-55 D2, D4, D5): nội dung là Frappe `Help Article` có sẵn.
+"""Hướng dẫn theo trạm (FEAT-013, FR-M9-15, A-56 D2, D4, D5): nội dung là Frappe `Help Article` có sẵn.
 
 Bài gắn trạm qua Custom Field `tc_station_key` (bước trạm T1…T8, T5b, LIN hoặc General). Bước = mục `<li>` của danh
 sách đầu tiên trong `content`, ảnh = `<img>` đầu tiên của mục; kiosk chỉ nhận chữ thuần và đường dẫn ảnh công khai,

@@ -1,4 +1,4 @@
-"""Quyền R10 cho ERPNext Issue và Frappe Help Article / Help Category (FEAT-013, A-55): Custom DocPerm idempotent.
+"""Quyền R10 cho ERPNext Issue và Frappe Help Article / Help Category (FEAT-013, A-56): Custom DocPerm idempotent.
 
 Gọi ở ``after_install`` và ``after_migrate``. Quyền chuẩn (Support Team, Knowledge Base Editor…) giữ nguyên; R10 xử lý
 phản hồi/báo lỗi từ trạm và soạn hướng dẫn theo trạm, theo cùng cách `hr.permissions`.

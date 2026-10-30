@@ -1,4 +1,4 @@
-"""Asset kiosk của trợ giúp theo trạm (FEAT-013, FR-M9-15, A-55 D3, D9, D10): nút, modal, lib chụp màn, che ô nhạy cảm."""
+"""Asset kiosk của trợ giúp theo trạm (FEAT-013, FR-M9-15, A-56 D3, D9, D10): nút, modal, lib chụp màn, che ô nhạy cảm."""
 
 import re
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""RPC hướng dẫn theo trạm (FEAT-013, FR-M9-15, A-55 D6).
+"""RPC hướng dẫn theo trạm (FEAT-013, FR-M9-15, A-56 D6).
 
 Chỉ đọc, không cần phiên thẻ: người chưa quét thẻ cũng xem được cách đăng nhập. Kiosk cache bài cuối để xem khi offline.
 """

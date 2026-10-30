@@ -1,4 +1,4 @@
-"""Hướng dẫn theo trạm từ Frappe Help Article (FEAT-013, FR-M9-15, A-55 D2, D4, D5).
+"""Hướng dẫn theo trạm từ Frappe Help Article (FEAT-013, FR-M9-15, A-56 D2, D4, D5).
 
 Bước = mục của danh sách đầu tiên trong `content`, ảnh = `<img>` đầu tiên của mục; bài gắn trạm (`tc_station_key`)
 phải có 3 đến 5 bước và ảnh chỉ là file công khai. Trạm không có bài riêng dùng bài General.

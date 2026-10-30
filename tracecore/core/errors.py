@@ -270,7 +270,7 @@ HTTP_STATUS: dict[str, int] = {
 	# FEAT-046 A-53 i: tính lại giá thành cần ghi chú và mẻ/lô có thật
 	"NOTE_REQUIRED": 422,
 	"COST_SOURCE_NOT_FOUND": 404,
-	# FEAT-013 A-55 D7: phản hồi/báo lỗi từ trạm
+	# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
 	"FEEDBACK_INVALID": 422,
 	"SCREENSHOT_INVALID": 422,
 	"FEEDBACK_RATE_LIMIT": 429,

@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.help.get (FEAT-013, FR-M9-15, A-55 D6): hướng dẫn của trạm, xem được cả trước khi quét thẻ."""
+"""RPC tracecore.v1.help.get (FEAT-013, FR-M9-15, A-56 D6): hướng dẫn của trạm, xem được cả trước khi quét thẻ."""
 
 import frappe
 

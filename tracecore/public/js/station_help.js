@@ -1,4 +1,4 @@
-// Trợ giúp theo trạm (FEAT-013, FR-M9-15, A-55 D6, D9, D10): nút Trợ giúp ở thanh tiêu đề trạm mở modal §4.13 gồm
+// Trợ giúp theo trạm (FEAT-013, FR-M9-15, A-56 D6, D9, D10): nút Trợ giúp ở thanh tiêu đề trạm mở modal §4.13 gồm
 // hướng dẫn 3-5 bước có ảnh của bước trạm (tracecore.v1.help.get, cache localStorage để xem khi offline) và form
 // "Báo sự cố" gửi phản hồi/báo lỗi kèm ảnh chụp màn hình tới R10 (tracecore.v1.feedback.create, @idempotent).
 // Ảnh chụp bằng html2canvas để trong app (public/js/lib/html2canvas), nạp lười; ô mã bệnh nhân / PIN bị che trước khi

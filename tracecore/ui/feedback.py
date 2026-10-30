@@ -1,4 +1,4 @@
-"""Phản hồi / báo lỗi phần mềm từ trạm (FEAT-013, FR-M9-15, A-55 D1, D7, D8).
+"""Phản hồi / báo lỗi phần mềm từ trạm (FEAT-013, FR-M9-15, A-56 D1, D7, D8).
 
 Lưu thành ERPNext `Issue` loại `TraceCore Software` (không dùng Incident CAPA để lỗi phần mềm không lẫn vào NC/CAPA
 tái xử lý), gắn trạm, nhân viên, ngữ cảnh đã lọc và ảnh chụp màn hình private; báo R10 qua `SOFTWARE_FEEDBACK`.

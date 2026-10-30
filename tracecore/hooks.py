@@ -258,7 +258,7 @@ _AUDIT_EVENTS = {
 }
 
 doc_events = {
-	# FEAT-013 (A-55 D4): bài hướng dẫn gắn trạm có 3 đến 5 bước, ảnh chỉ là file công khai
+	# FEAT-013 (A-56 D4): bài hướng dẫn gắn trạm có 3 đến 5 bước, ảnh chỉ là file công khai
 	"Help Article": {"validate": "tracecore.ui.station_help.validate_article"},
 	"User": {
 		"before_validate": "tracecore.core.account.validate_user",

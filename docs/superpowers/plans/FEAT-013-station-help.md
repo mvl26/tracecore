@@ -11,9 +11,9 @@ gửi phản hồi / báo lỗi phần mềm tới R10 kèm ảnh chụp màn h�
 (RPC `tracecore.v1.*`, ADR-003 idempotent), FR-M9-14 (4 trạng thái).
 
 **Nhánh:** `feat/FEAT-013-station-help` cắt từ `develop` (ea1ffa5), bench riêng `~/tracecore-f006` (site test
-`test_f006`); không đụng `~/tracecore-dev` (tab song song). Số amendment: **A-55**.
+`test_f006`); không đụng `~/tracecore-dev` (tab song song). Số amendment: **A-56**.
 
-## Quyết định (Amendment A-55, người dùng duyệt D1–D3 ngày 30/10/2026; D4–D10 là chi tiết hiện thực theo D1–D3)
+## Quyết định (Amendment A-56, người dùng duyệt D1–D3 ngày 30/10/2026; D4–D10 là chi tiết hiện thực theo D1–D3)
 
 | # | Quyết định |
 | --- | --- |
@@ -33,7 +33,7 @@ thêm vào ma trận `Custom DocPerm` idempotent.
 
 ## Tasks
 
-- [x] **Task 0 — Tài liệu:** A-55 vào Revision History `architecture.md`; ghi chú cột kỹ thuật FEAT-013 trong
+- [x] **Task 0 — Tài liệu:** A-56 vào Revision History `architecture.md`; ghi chú cột kỹ thuật FEAT-013 trong
   implementation-plan; plan này.
 - [x] **Task 1 — Dịch vụ `tracecore/ui/station_help.py`** (FR-M9-15; D2, D4, D5): `steps_from_html`, `validate_article`
   (hook), `article_for(station)`, `ensure_station_help()`; Custom Field fixture. Test: `tracecore/ui/tests/test_station_help.py`.

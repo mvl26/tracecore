@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.feedback.create (FEAT-013, FR-M9-15, A-55 D1, D7, D8).
+"""RPC tracecore.v1.feedback.create (FEAT-013, FR-M9-15, A-56 D1, D7, D8).
 
 Người đã quét thẻ gửi phản hồi/báo lỗi phần mềm từ trạm → ERPNext Issue loại `TraceCore Software` gắn trạm, nhân viên,
 ngữ cảnh đã lọc và ảnh chụp màn hình private; R10 nhận thông báo `SOFTWARE_FEEDBACK`.
