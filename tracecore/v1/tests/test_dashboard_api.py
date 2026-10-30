@@ -19,6 +19,7 @@ ALL_BLOCKS = {
 	"certificates",
 	"equipment",
 	"stock",
+	"waste",
 }
 
 
