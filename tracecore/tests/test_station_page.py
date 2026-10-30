@@ -14,6 +14,16 @@ from frappe.website.serve import get_response
 APP_PATH = frappe.get_app_path("tracecore")
 PY_STRING = re.compile(r"(?<![\w.])_\(\s*\"((?:[^\"\\]|\\.)+)\"")
 JS_STRING = re.compile(r"__\(\s*([\"'])((?:(?!\1)[^\\]|\\.)+)\1")
+# Tên DocType của ERPNext/HRMS bị dịch sai được phép ghi đè toàn site (tiêu đề, breadcrumb dịch không có context).
+# Mỗi dòng phải có lý do; nhãn trường thì luôn sửa bằng dòng có context (tên DocType), không thêm vào đây.
+GLOBAL_OVERRIDES = {
+	"Shift Assignment": "Phân ca",  # HRMS dịch "Chuyển nhượng Shift" (sang nhượng quyền sở hữu)
+	"Shift Type": "Loại ca",  # HRMS dịch "Loại thay đổi" (shift = thay đổi)
+	"Department": "Khoa",  # ERPNext dịch "Cục" (cơ quan nhà nước); Department = khoa (CLAUDE.md)
+	"Item": "Vật tư",  # ERPNext dịch "Hạng mục" (hạng mục công việc)
+	"Material Request": "Yêu cầu vật tư",  # ERPNext dịch "Yêu cầu nguyên liệu" (nguyên liệu sản xuất)
+	"Batch": "Lô",  # ERPNext dịch "Lô hàng" (chuyến hàng); batch có hạn dùng = lô
+}
 
 
 def _source_files(extensions):
@@ -328,15 +338,25 @@ class TestStationPage(FrappeTestCase):
 			self.assertTrue(translations.get(source), msg=source)
 
 	def test_vi_translations_do_not_override_other_apps(self):
-		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms."""
+		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms, trừ tên DocType
+		bị dịch sai đã duyệt trong ``GLOBAL_OVERRIDES`` (tên DocType trên tiêu đề, breadcrumb không có context)."""
 		others = other_app_translations()
 		# hợp lệ chỉ khi bản dịch của mình trùng (NFC) với MỌI bản dịch sẵn có (CSV cũ và .po)
 		overrides = sorted(
 			f"{row[0]!r}: {sorted(others[row[0]])!r} -> {row[1]!r}"
 			for row in vi_rows()
-			if not (len(row) > 2 and row[2]) and others.get(row[0]) and others[row[0]] != {_nfc(row[1])}
+			if not (len(row) > 2 and row[2])
+			and others.get(row[0])
+			and others[row[0]] != {_nfc(row[1])}
+			and GLOBAL_OVERRIDES.get(row[0]) != _nfc(row[1])
 		)
 		self.assertFalse(overrides, msg="Dùng cột context (tên DocType) cho:\n" + "\n".join(overrides))
+
+	def test_approved_global_overrides_are_in_vi_csv(self):
+		ours = {row[0]: _nfc(row[1]) for row in vi_rows() if not (len(row) > 2 and row[2])}
+		for source, vi in GLOBAL_OVERRIDES.items():
+			with self.subTest(source=source):
+				self.assertEqual(ours.get(source), vi)
 
 	def test_vi_translation_examples(self):
 		frappe.local.lang = "vi"

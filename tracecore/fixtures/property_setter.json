@@ -18,5 +18,15 @@
   "property_type": "Text",
   "value": "NV-",
   "name": "Employee-naming_series-default"
+ },
+ {
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "doc_type": "Shift Assignment",
+  "field_name": "shift_location",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "1",
+  "name": "Shift Assignment-shift_location-hidden"
  }
 ]
