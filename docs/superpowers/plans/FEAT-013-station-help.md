@@ -33,16 +33,16 @@ thêm vào ma trận `Custom DocPerm` idempotent.
 
 ## Tasks
 
-- [ ] **Task 0 — Tài liệu:** A-55 vào Revision History `architecture.md`; ghi chú cột kỹ thuật FEAT-013 trong
+- [x] **Task 0 — Tài liệu:** A-55 vào Revision History `architecture.md`; ghi chú cột kỹ thuật FEAT-013 trong
   implementation-plan; plan này.
-- [ ] **Task 1 — Dịch vụ `tracecore/ui/station_help.py`** (FR-M9-15; D2, D4, D5): `steps_from_html`, `validate_article`
+- [x] **Task 1 — Dịch vụ `tracecore/ui/station_help.py`** (FR-M9-15; D2, D4, D5): `steps_from_html`, `validate_article`
   (hook), `article_for(station)`, `ensure_station_help()`; Custom Field fixture. Test: `tracecore/ui/tests/test_station_help.py`.
-- [ ] **Task 2 — RPC `tracecore.v1.help.get`** (D6). Test: `tracecore/v1/tests/test_help_api.py`.
-- [ ] **Task 3 — Dịch vụ `tracecore/ui/feedback.py` + RPC `tracecore.v1.feedback.create`** (D1, D7, D8; quyền Issue).
+- [x] **Task 2 — RPC `tracecore.v1.help.get`** (D6). Test: `tracecore/v1/tests/test_help_api.py`.
+- [x] **Task 3 — Dịch vụ `tracecore/ui/feedback.py` + RPC `tracecore.v1.feedback.create`** (D1, D7, D8; quyền Issue).
   Test: `tracecore/v1/tests/test_feedback_api.py`.
-- [ ] **Task 4 — Client `public/js/station_help.js` + lib html2canvas + CSS** (D3, D9, D10), nối qua `page_js`,
+- [x] **Task 4 — Client `public/js/station_help.js` + lib html2canvas + CSS** (D3, D9, D10), nối qua `page_js`,
   nút trong `station.html`. Test tĩnh: `tracecore/tests/test_station_help_assets.py`.
-- [ ] **Task 5 — Hoàn thiện:** bản dịch `vi.csv`, `rtm.md` FR-M9-15, ghi chú hiện thực; full test + diff-cover ≥ 70 %,
+- [x] **Task 5 — Hoàn thiện:** bản dịch `vi.csv`, `rtm.md` FR-M9-15, ghi chú hiện thực; full test + diff-cover ≥ 70 %,
   lint; merge `develop` mới nhất trước khi push.
 
 ## Acceptance (EARS, suy từ FR-M9-15)
@@ -58,4 +58,16 @@ thêm vào ma trận `Custom DocPerm` idempotent.
 
 ## Ghi chú hiện thực
 
-_(điền khi xong)_
+- **Thứ tự TDD lệch ở Task 4:** `station_help.js` được viết trước test tĩnh; test asset viết ngay sau, chạy fail ở hook
+  `page_js`, nút HTML và CSS (chưa nối) rồi mới nối. Logic JS không có test chạy thật (không E2E theo CLAUDE.md), chỉ
+  kiểm tĩnh: chuỗi RPC, khóa idempotent, che ô nhạy cảm, 4 trạng thái, token CSS.
+- **Ảnh chụp:** server kiểm magic bytes và mở thử bằng Pillow (`Image.verify`, đúng định dạng đã khai) chứ không chỉ
+  đọc đầu file; test dùng ảnh PNG/JPEG thật 8×8 sinh bằng Pillow vì Frappe `File` xử lý ảnh khi lưu.
+- **Thông báo R10:** sự kiện `SOFTWARE_FEEDBACK` thêm vào `core.notification.EVENTS` (vai trò mặc định TC R10);
+  Rule mặc định tạo ở `after_install` / `after_migrate` như các sự kiện khác.
+- **Quyền:** `ui.permissions.ensure_permissions` (mẫu `hr.permissions`) cho R10 đọc/ghi Issue (không tạo tay) và soạn
+  Help Article / Help Category; gọi ở `after_install` và `after_migrate`.
+- **CI:** `after_install` gọi thêm `ensure_ui_permissions` và `ensure_station_help` vì site CI chỉ `install-app`.
+- **html2canvas 1.4.1:** lấy bằng `npm pack` (integrity sha512-fPU6BHNp…bmWA== khớp registry), để nguyên bản min.js +
+  LICENSE MIT tại `public/js/lib/html2canvas/` (thư mục này đã nằm ngoài prettier/eslint).
+- **Chưa kiểm trên trình duyệt:** bench f006 chỉ có site test; cần xem ở `tracecore-dev.local` sau khi merge.
