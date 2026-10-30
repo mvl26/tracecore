@@ -120,6 +120,8 @@ def _loads(filters, fields):
 			(LOAD, filters["department"]),
 		)
 		conditions.append(["name", "in", names or [""]])
+	if filters.get("loads") is not None:  # FEAT-012: gói lưu trữ theo một mẻ / một lệnh thu hồi
+		conditions.append(["name", "in", list(filters["loads"]) or [""]])
 	return frappe.get_all(LOAD, filters=conditions, fields=fields, order_by="started_at asc, name asc")
 
 
