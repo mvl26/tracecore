@@ -16,6 +16,14 @@
   "sms_sender",
   "section_environment",
   "env_reminder_times",
+  "section_waste",
+  "waste_warn_percent",
+  "waste_cold_limit_c",
+  "waste_cold_breach_hours",
+  "waste_variance_percent",
+  "waste_misclass_count",
+  "waste_misclass_days",
+  "waste_anomaly_percent",
   "section_reports",
   "report_locked_until"
  ],
@@ -90,6 +98,60 @@
    "label": "Environment Reminder Times"
   },
   {
+   "fieldname": "section_waste",
+   "fieldtype": "Section Break",
+   "label": "Medical Waste"
+  },
+  {
+   "default": "80",
+   "description": "Warn when this share of the maximum storage time has passed (FR-M10-03.3). Default 80.",
+   "fieldname": "waste_warn_percent",
+   "fieldtype": "Int",
+   "label": "Storage Warning (%)"
+  },
+  {
+   "default": "8",
+   "description": "Cold room limit (FR-M10-03.2). Default 8.",
+   "fieldname": "waste_cold_limit_c",
+   "fieldtype": "Float",
+   "label": "Cold Room Limit (°C)"
+  },
+  {
+   "default": "2",
+   "description": "Hours above the limit before bags go back to the normal storage time (FR-M10-03.2). Default 2.",
+   "fieldname": "waste_cold_breach_hours",
+   "fieldtype": "Float",
+   "label": "Hours Above the Limit"
+  },
+  {
+   "fieldname": "waste_variance_percent",
+   "fieldtype": "Float",
+   "default": "5",
+   "description": "A larger difference between collected and handed over weight needs a reason and R02 approval (FR-M10-04.1). Default 5.",
+   "label": "Handover Weight Difference (%)"
+  },
+  {
+   "fieldname": "waste_misclass_count",
+   "fieldtype": "Int",
+   "default": "3",
+   "description": "This many misclassifications of a department within the days below alert R01 (FR-M10-06.2). Default 3.",
+   "label": "Repeated Misclassification Count"
+  },
+  {
+   "fieldname": "waste_misclass_days",
+   "fieldtype": "Int",
+   "default": "30",
+   "description": "Default 30.",
+   "label": "Repeated Misclassification Days"
+  },
+  {
+   "fieldname": "waste_anomaly_percent",
+   "fieldtype": "Float",
+   "default": "30",
+   "description": "A daily weight this far from the department average alerts R02 (FR-M10-08.1). Default 30.",
+   "label": "Unusual Department Weight (%)"
+  },
+  {
    "fieldname": "section_reports",
    "fieldtype": "Section Break",
    "label": "Reports"
@@ -105,7 +167,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-30 14:00:00.000000",
+ "modified": "2026-10-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

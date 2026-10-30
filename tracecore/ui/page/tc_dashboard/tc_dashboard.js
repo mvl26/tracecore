@@ -254,6 +254,52 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		);
 	}
 
+	// Khối chất thải (FEAT-050, FR-M10-07.1): chữ và số, không chỉ màu
+	function renderWaste(waste) {
+		const box = section(__("Medical waste", null, DASH_CTX));
+		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(box);
+		kpi(
+			grid,
+			waste.overdue,
+			__("Bags past the storage limit", null, DASH_CTX),
+			waste.overdue ? "alert" : "ok",
+			() => frappe.set_route("query-report", "Waste Storage Stock")
+		);
+		kpi(
+			grid,
+			waste.due_soon,
+			__("Bags close to the storage limit", null, DASH_CTX),
+			waste.due_soon ? "warn" : "ok",
+			() => frappe.set_route("query-report", "Waste Storage Stock")
+		);
+		kpi(
+			grid,
+			waste.pending_documents,
+			__("Handovers waiting for a document", null, DASH_CTX),
+			waste.pending_documents ? "warn" : "ok",
+			() => route("Waste Handover", { document_pending: 1, docstatus: 1 })
+		);
+		kpi(
+			grid,
+			waste.unusual_departments.length,
+			__("Departments with unusual waste", null, DASH_CTX),
+			waste.unusual_departments.length ? "warn" : "ok",
+			() => frappe.set_route("query-report", "Waste Report")
+		);
+		table(
+			box,
+			[
+				{ label: __("Waste type", null, DASH_CTX), value: (r) => r.waste_type },
+				{
+					label: __("Kg today", null, DASH_CTX),
+					num: true,
+					value: (r) => format_number(r.kg, null, 1),
+				},
+			],
+			waste.kg_today
+		);
+	}
+
 	function renderSterile(sterile) {
 		const box = section(__("Sterile store", null, DASH_CTX));
 		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(box);
@@ -510,6 +556,7 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		if (blocks.sets) renderSets(blocks.sets);
 		if (blocks.failures) renderFailures(blocks.failures);
 		if (blocks.sterile) renderSterile(blocks.sterile);
+		if (blocks.waste) renderWaste(blocks.waste);
 		renderActions(blocks);
 		if (blocks.output) renderOutput(blocks.output);
 	}

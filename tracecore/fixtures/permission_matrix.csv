@@ -16,7 +16,7 @@ DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-027
 DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
 DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-029
 DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
-DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-030
+DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,RW,RW,R,R,FEAT-030; FEAT-050 A-63: R07 ghi sự cố chất thải (UC-37 bước 4)
 DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
 DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
 DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
@@ -24,6 +24,10 @@ DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
 DT-WASTETYPE,Waste Type,R,RW,,,,,R,,R,RW,FEAT-047 A-60 W14: danh mục; R02 và R10 cấu hình
 DT-WASTECOL,Waste Collection,R,RWSA,,,,,RWS,,R,R,FEAT-047 A-60 W14: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
 DT-WASTECON,Waste Container,R,R,,,,,R,,R,R,FEAT-047 A-60 W14: chỉ dịch vụ thu gom tạo và đổi
+DT-WASTELOC,Waste Storage Location,R,RW,,,,,R,,,RW,FEAT-048 A-61: R10 và R02 cấu hình vị trí kho; R07 chỉ đọc
+DT-WASTEVENDOR,Waste Treatment Vendor,R,RW,,,,,R,,RW,R,FEAT-049 A-62: R09 và R02 quản lý đơn vị xử lý và hợp đồng; R07 đọc để chọn
+DT-WASTEHANDOVER,Waste Handover,R,RWSA,,,,,RWS,,RW,R,FEAT-049 A-62: R07 lập và ghi sổ; R02 hủy; R09 bổ sung chứng từ
+DT-WASTEQUOTA,Waste Quota,R,RW,,,,,,,R,R,FEAT-050 A-63: R02 cấu hình định mức
 DT-EMP,Employee,R,RWS,,,,,,,,RW,
 DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
 DT-COMP,Station Competency,R,RWS,,,,,,,,RW,

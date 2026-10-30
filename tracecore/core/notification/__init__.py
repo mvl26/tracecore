@@ -60,6 +60,29 @@ EVENTS = {
 	# FEAT-008: chỉ số môi trường khu vượt ngưỡng (FR-M9-04.1), khu thiếu số liệu trước mốc giờ nhắc (FR-M9-04.2)
 	"ENV_OUT_OF_RANGE": ("Environment reading out of range", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	"ENV_LOG_MISSING": ("Environment reading missing", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	# FEAT-048: túi/thùng chất thải sắp quá hạn và quá hạn lưu, kho lạnh vượt nhiệt độ (FR-M10-03.2-.4)
+	"WASTE_STORAGE_DUE": ("Waste bags close to the storage limit", "Normal", 0, 0, ("TC R07", FALLBACK_ROLE)),
+	"WASTE_STORAGE_OVERDUE": ("Waste bags past the storage limit", "Urgent", 0, 0, ("TC R07", FALLBACK_ROLE)),
+	"WASTE_COLD_BREACH": ("Waste cold room above the limit", "Urgent", 0, 0, ("TC R07", FALLBACK_ROLE)),
+	# FEAT-049: phiếu bàn giao ghi sổ, chứng từ CTNH chờ quá hạn, giấy phép/hợp đồng đơn vị xử lý sắp hết (FR-M10-04, FR-M10-05.2)
+	"WASTE_HANDOVER_POSTED": ("Waste handover posted", "Normal", 0, 0, (FALLBACK_ROLE, "TC R09")),
+	"WASTE_DOCUMENT_PENDING": (
+		"Hazardous waste document still pending",
+		"Normal",
+		0,
+		0,
+		("TC R07", "TC R09"),
+	),
+	"WASTE_VENDOR_EXPIRING": (
+		"Waste vendor license or contract expiring",
+		"Normal",
+		1,
+		0,
+		(FALLBACK_ROLE, "TC R09"),
+	),
+	# FEAT-050: khoa phát sinh bất thường (FR-M10-08.1) và phân loại sai lặp lại (FR-M10-06.2)
+	"WASTE_ANOMALY": ("Unusual waste from a department", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"WASTE_MISCLASS_REPEAT": ("Repeated waste misclassification", "Normal", 0, 0, ("TC R01",)),
 	# FEAT-013 A-56 D8: phản hồi / báo lỗi phần mềm gửi từ trạm, R10 xử lý
 	"SOFTWARE_FEEDBACK": ("Software feedback from a station", "Normal", 0, 0, (ADMIN_ROLE,)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),

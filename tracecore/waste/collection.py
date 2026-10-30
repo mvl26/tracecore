@@ -243,6 +243,10 @@ def on_submit(doc):
 			jobs.append(job)
 			warning = warning or job.get("warning")
 	doc.flags.tc_labels = {"jobs": jobs, "warning": warning}
+	# FR-M10-08.1 (FEAT-050): import trong hàm vì analysis dùng storage, storage dùng hằng của file này
+	from tracecore.waste import analysis
+
+	analysis.check_anomaly(doc)
 
 
 def _create_container(doc, line, weight, due):

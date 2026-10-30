@@ -93,7 +93,20 @@ MANAGEMENT_GROUPS = (
 		),
 	),
 	# FEAT-047 thu gom chất thải; FEAT-048..050 thêm kho, bàn giao, báo cáo
-	("Medical waste", ("Waste Type", "Waste Collection", "Waste Container")),
+	(
+		"Medical waste",
+		(
+			"Waste Type",
+			"Waste Collection",
+			"Waste Container",
+			"Waste Storage Location",  # FEAT-048
+			"report:Waste Storage Stock",
+			"Waste Treatment Vendor",  # FEAT-049
+			"Waste Handover",
+			"Waste Quota",  # FEAT-050
+			"report:Waste Report",
+		),
+	),
 	# FEAT-033 thu gom; FEAT-034 lô giặt và báo cáo chi phí/kg; FEAT-035 thêm cấp phát
 	(
 		"Linen",

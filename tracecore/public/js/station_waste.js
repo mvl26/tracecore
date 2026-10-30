@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc, TcWeighLine */
+/* global uuid4, clientTs, esc, TcWeighLine, wasteTabs */
 // Màn thu gom chất thải theo khoa (SCR-38, FEAT-047, UC-34, A-60) trên Page station, trạm bước WST (kiosk và PDA).
 // Frappe nối file này sau tc_weigh_line.js (hook page_js) nên dùng chung uuid4/clientTs/esc/TcWeighLine.
 // Ô quét luôn ở đầu: quét thẻ người giao trước (khoa lấy từ thẻ), rồi quét hoặc gõ tên loại để thêm dòng; sau khi ghi sổ
@@ -500,6 +500,7 @@ class WasteCollect {
 		this.station.setState(
 			state,
 			`<div class="tc-linen tc-waste">
+				${typeof wasteTabs === "function" ? wasteTabs("collect") : ""}
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.done ? this.doneHtml() : this.catalog ? this.formHtml() : ""}
 			</div>`

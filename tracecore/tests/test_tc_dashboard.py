@@ -19,7 +19,7 @@ class TestDashboardPage(FrappeTestCase):
 		page = frappe.get_doc("Page", "tc-dashboard")
 		self.assertEqual(page.module, "UI")
 		roles = {row.role for row in page.roles}
-		self.assertEqual(roles, {"TC R01", "TC R02", "TC R09", "TC R10", "System Manager"})
+		self.assertEqual(roles, {"TC R01", "TC R02", "TC R07", "TC R09", "TC R10", "System Manager"})
 
 	def test_page_reads_the_summary_rpc_with_get(self):
 		script = _read("tc_dashboard.js")
