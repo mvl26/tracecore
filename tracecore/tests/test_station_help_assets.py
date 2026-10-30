@@ -1,5 +1,6 @@
 """Asset kiosk của trợ giúp theo trạm (FEAT-013, FR-M9-15, A-56 D3, D9, D10): nút, modal, lib chụp màn, che ô nhạy cảm."""
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -46,6 +47,11 @@ class TestStationHelpAssets(FrappeTestCase):
 		self.assertIn("/assets/tracecore/js/lib/html2canvas/html2canvas.min.js", self.js)
 		self.assertIn("frappe.require(TC_HTML2CANVAS)", self.js)
 		self.assertNotRegex(self.js, r"https?://")
+
+	def test_vendored_html2canvas_is_unmodified(self):
+		# bản min.js gốc của npm html2canvas@1.4.1 (dist/html2canvas.min.js); thay bản khác phải cập nhật hash có chủ đích
+		digest = hashlib.sha256((LIB / "html2canvas.min.js").read_bytes()).hexdigest()
+		self.assertEqual(digest, "e87e550794322e574a1fda0c1549a3c70dae5a93d9113417a429016838eab8cb")
 
 	def test_sensitive_fields_are_masked_and_modal_excluded_from_screenshot(self):
 		for selector in ('input[type="password"]', '[name="patient_code"]', "[data-tc-mask]"):
