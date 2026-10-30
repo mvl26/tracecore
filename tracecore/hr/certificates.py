@@ -8,7 +8,7 @@ cùng R02 ở mức 60/30/7 ngày (`tracecore.hr.reminders`). Kiểm tra năng l
 
 import frappe
 from frappe import _
-from frappe.utils import date_diff, getdate, today
+from frappe.utils import cstr, date_diff, getdate, today
 
 from tracecore.core import audit, notification
 from tracecore.hr import reminders
@@ -40,7 +40,22 @@ def _check_renewal(doc):
 		frappe.throw(_("A renewal must be for the same employee and certificate type."))
 
 
+def certificate_types() -> list[str]:
+	"""Các loại chứng chỉ đã dùng, làm gợi ý khi nhập và danh sách chọn chứng chỉ bắt buộc của ma trận (A-59)."""
+	return sorted(set(frappe.get_all(DOCTYPE, pluck="certificate_type", order_by="certificate_type asc")))
+
+
+def normalize_type(value) -> str:
+	"""Bỏ khoảng trắng thừa; khác hoa thường với loại đã dùng thì theo loại đó, vì đăng nhập trạm so khớp đúng từng chữ."""
+	cleaned = " ".join(cstr(value).split())
+	for existing in certificate_types():
+		if existing.casefold() == cleaned.casefold():
+			return existing
+	return cleaned
+
+
 def validate_certificate(doc):
+	doc.certificate_type = normalize_type(doc.certificate_type)
 	if doc.no_expiry:
 		doc.expires_on = None
 	elif not doc.expires_on:
