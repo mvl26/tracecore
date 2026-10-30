@@ -136,6 +136,21 @@ class TestLoadSheet(SheetCase):
 			)
 		)
 
+	def test_zero_rate_is_priced_not_missing(self):
+		"""Đơn giá 0 đ là giá đã định, khác với thiếu giá (review FEAT-046 #4)."""
+		make_cost_rate_version(
+			submit=True,
+			rates=[
+				rate_line(ELECTRICITY, "Electricity"),
+				rate_line(0, "Tap Water"),
+				rate_line(LABOR, "Labor"),
+			],
+		)
+		name = sheet.build("Sterilization Load", self.load())
+		water = lines(name)["Tap Water"]
+		self.assertEqual((water.amount, water.priced), (0, 1))
+		self.assertEqual(frappe.db.get_value("Cost Sheet", name, "status"), "Priced")
+
 	def test_notification_failure_keeps_the_sheet(self):
 		make_cost_rate_version(submit=True, rates=[rate_line(ELECTRICITY, "Electricity")])
 		self.emit.side_effect = RuntimeError("mail down")
@@ -162,6 +177,28 @@ class TestLoadSheet(SheetCase):
 		# phiên bản 2 chỉ có dòng vừa tạo: 3 x 100.000; cộng mọi phiên bản sẽ ra từ 600.000 trở lên
 		self.assertEqual(sheet._set_value(set_type, None), 300000)
 		self.assertEqual(sheet._set_value(set_type, 2), 300000)
+
+
+class TestUnfinishedSource(SheetCase):
+	"""Job xếp sau commit vẫn chạy khi nghiệp vụ hoàn tác về savepoint (Frappe v15 không xóa after_commit khi rollback
+	savepoint): mẻ chưa Giải phóng/Không đạt thì không lập Cost Sheet (review FEAT-046 #1)."""
+
+	def test_quarantined_load_gets_no_sheet(self):
+		self.priced()
+		load = self.load(status="Quarantine")
+		self.assertIsNone(sheet.build("Sterilization Load", load))
+		self.assertFalse(frappe.db.exists("Cost Sheet", {"source_name": load}))
+		self.assertFalse(frappe.db.get_value("Pack", self.packs[0].name, "cost_total"))
+
+	def test_job_for_a_load_rolled_back_to_quarantine_writes_nothing(self):
+		self.priced()
+		load = self.load(status="Quarantine")
+		sheet.run_job("Sterilization Load", load)
+		self.assertFalse(frappe.db.exists("Cost Sheet", {"source_name": load}))
+		# mẻ sau đó Không đạt thật: bản chính là chi phí chất lượng, không bị bản sai chặn trước
+		frappe.db.set_value("Sterilization Load", load, "status", "Failed")
+		name = sheet.build("Sterilization Load", load)
+		self.assertEqual(frappe.db.get_value("Cost Sheet", name, "is_quality_cost"), 1)
 
 
 class TestPackCost(SheetCase):
@@ -193,7 +230,9 @@ class TestPackCost(SheetCase):
 		self.priced()
 		pack = frappe.get_doc("Pack", self.packs[0].name)
 		with patch.object(
-			sheet, "_wash_share", side_effect=lambda set_unit, before: 700 if set_unit == pack.set_unit else 0
+			sheet,
+			"_wash_share",
+			side_effect=lambda set_unit, before, pricer=None: 700 if set_unit == pack.set_unit else 0,
 		):
 			name = sheet.build("Sterilization Load", self.load())
 		rows = {r.pack: r for r in frappe.get_doc("Cost Sheet", name).packs}
@@ -208,6 +247,51 @@ class TestWashSheet(IsolatedTestCase):
 		notify = patch.object(sheet, "emit")
 		notify.start()
 		self.addCleanup(notify.stop)
+
+	def batch(self, ended=True):
+		machine = factories.make_wash_machine()
+		program = factories.make_wash_program(machine)
+		batch = factories.make_wash_batch(
+			machine, program, [factories.make_wash_ready_set() for _ in range(2)]
+		)
+		if ended:
+			frappe.db.set_value("Wash Batch", batch.name, "ended_at", now_datetime())
+		sets = frappe.get_all(
+			"Wash Batch Set Unit", filters={"parent": batch.name}, pluck="set_unit", order_by="idx"
+		)
+		return batch.name, sets
+
+	def rates(self):
+		make_cost_rate_version(
+			submit=True,
+			rates=[
+				rate_line(ELECTRICITY, "Electricity"),
+				rate_line(WATER, "Tap Water"),
+				rate_line(LABOR, "Labor"),
+			],
+		)
+
+	def test_running_wash_batch_gets_no_sheet(self):
+		self.rates()
+		name, _sets = self.batch(ended=False)
+		self.assertIsNone(sheet.build("Wash Batch", name))
+		self.assertFalse(frappe.db.exists("Cost Sheet", {"source_name": name}))
+
+	def test_wash_shares_sum_exactly_to_the_batch_cost(self):
+		"""Phần lô rửa của các bộ cộng lại đúng tới đồng; bộ cuối lô nhận phần dư (review FEAT-046 #3)."""
+		self.rates()
+		name, sets = self.batch()
+		cost_sheet = sheet.build("Wash Batch", name)
+		frappe.db.set_value("Cost Sheet", cost_sheet, "total_cost", 10001)
+		shares = [sheet._wash_share(set_unit, now_datetime()) for set_unit in sets]
+		self.assertEqual(shares, [5000, 5001])
+
+	def test_wash_batch_without_cost_sheet_marks_the_pack_unpriced(self):
+		"""Lô rửa của bộ chưa có Cost Sheet (job lỗi/chưa chạy): không im lặng tính 0 đ (review FEAT-046 #3)."""
+		name, sets = self.batch()
+		pricer = sheet.Pricer(None)
+		self.assertEqual(sheet._wash_share(sets[0], now_datetime(), pricer), 0)
+		self.assertTrue(any(name in missing for missing in pricer.missing))
 
 	def test_wash_batch_sheet_writes_batch_cost_and_share(self):
 		make_cost_rate_version(
