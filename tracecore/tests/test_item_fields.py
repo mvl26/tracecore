@@ -1,0 +1,121 @@
+import frappe
+from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_days, getdate, today
+
+from tracecore.tests import factories
+
+# Item/Batch (ERPNext) kéo theo test record Company → Warehouse, cần ERPNext đã chạy Setup Wizard;
+# test này tự tạo dữ liệu qua factories nên bỏ phụ thuộc đó (site CI mới chưa có wizard).
+test_ignore = ["Item", "Batch"]
+
+CUSTOM_FIELDS = ("tc_item_group_cssd", "tc_compatible_method", "tc_ci_class", "tc_shelf_life_days")
+
+
+class TestItemFields(FrappeTestCase):
+	def test_item_custom_fields_installed(self):
+		meta = frappe.get_meta("Item")
+		fields = {name: meta.get_field(name) for name in CUSTOM_FIELDS}
+		self.assertTrue(all(fields.values()), msg=fields)
+
+		self.assertEqual(fields["tc_item_group_cssd"].fieldtype, "Select")
+		# FEAT-041 A-07 V1: bốn giá trị cũ giữ nguyên và đứng trước, thêm sáu nhóm của FR-M6-02.1
+		self.assertEqual(
+			fields["tc_item_group_cssd"].options,
+			"\nPackaging\nChemical Indicator\nLabel\nLubricant"
+			"\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther",
+		)
+		self.assertEqual(fields["tc_compatible_method"].fieldtype, "Select")
+		self.assertEqual(fields["tc_compatible_method"].options, "\nSteam\nPlasma")
+		self.assertEqual(fields["tc_ci_class"].fieldtype, "Select")
+		self.assertEqual(fields["tc_ci_class"].options, "\n1\n2\n3\n4\n5\n6")  # A-07 V2: thêm lớp 3
+		self.assertEqual(fields["tc_shelf_life_days"].fieldtype, "Int")
+		self.assertEqual(fields["tc_shelf_life_days"].depends_on, "eval:doc.tc_item_group_cssd=='Packaging'")
+
+		labels = {name: field.label for name, field in fields.items()}
+		self.assertEqual(
+			labels,
+			{
+				"tc_item_group_cssd": "CSSD Item Group",
+				"tc_compatible_method": "Compatible Method",
+				"tc_ci_class": "Chemical Indicator Class",
+				"tc_shelf_life_days": "Shelf Life (Days)",
+			},
+		)
+
+	def test_new_custom_fields_installed(self):
+		"""FEAT-041 A-07 V6: quy cách trên Item; NCC, số chứng từ, mã lô, hạn dùng trên Stock Entry."""
+		expected = (
+			("Item", "tc_specification", "Data", None),
+			("Stock Entry", "tc_supplier", "Link", "Supplier"),
+			("Stock Entry", "tc_document_no", "Data", None),
+			("Stock Entry Detail", "tc_batch_id", "Data", None),
+			("Stock Entry Detail", "tc_expiry_date", "Date", None),
+		)
+		for doctype, fieldname, fieldtype, options in expected:
+			field = frappe.get_meta(doctype).get_field(fieldname)
+			self.assertIsNotNone(field, msg=f"{doctype}.{fieldname}")
+			self.assertEqual((field.fieldtype, field.options or None), (fieldtype, options))
+			self.assertTrue(frappe.db.exists("Custom Field", f"{doctype}-{fieldname}"))
+		for fieldname in ("tc_batch_id", "tc_expiry_date"):
+			self.assertEqual(frappe.get_meta("Stock Entry Detail").get_field(fieldname).in_list_view, 1)
+		# V4: tồn tối thiểu theo kho dùng bảng Item Reorder chuẩn, không có Custom Field riêng
+		self.assertIsNone(frappe.get_meta("Item").get_field("tc_min_qty_by_warehouse"))
+		self.assertEqual(frappe.get_meta("Item").get_field("reorder_levels").options, "Item Reorder")
+
+	def test_item_custom_fields_follow_item_group(self):
+		"""Bốn trường nằm liền sau item_group theo đúng thứ tự (insert_after dây chuyền)."""
+		names = [field.fieldname for field in frappe.get_meta("Item").fields]
+		start = names.index("item_group") + 1
+		self.assertEqual(tuple(names[start : start + len(CUSTOM_FIELDS)]), CUSTOM_FIELDS)
+
+	def test_shelf_life_is_separate_from_erpnext_batch_shelf_life(self):
+		"""tc_shelf_life_days là hạn lưu của loại gói, không dùng shelf_life_in_days (hạn lô của vật tư)."""
+		meta = frappe.get_meta("Item")
+		erpnext_field, pack_field = meta.get_field("shelf_life_in_days"), meta.get_field("tc_shelf_life_days")
+		self.assertTrue(erpnext_field and pack_field)
+		self.assertNotEqual(pack_field.fieldname, erpnext_field.fieldname)
+		self.assertEqual(erpnext_field.fieldtype, "Int")
+		# trường chuẩn của ERPNext không bị ta đổi (không ẩn theo nhóm CSSD)
+		self.assertFalse(erpnext_field.depends_on and "tc_item_group_cssd" in erpnext_field.depends_on)
+
+	def test_ensure_item_masters_is_idempotent(self):
+		factories.ensure_item_masters()
+		factories.ensure_item_masters()
+		self.assertTrue(frappe.db.exists("UOM", "Nos"))
+		self.assertEqual(frappe.db.get_value("Item Group", "All Item Groups", "is_group"), 1)
+
+	def test_factories_create_items_and_batches(self):
+		label = factories.make_item("VT-NHAN-HAP", "Label", method="Steam")
+		self.assertEqual(label.tc_compatible_method, "Steam")
+		self.assertEqual(label.tc_item_group_cssd, "Label")
+		self.assertEqual(
+			(label.stock_uom, label.item_group, label.is_stock_item), ("Nos", "All Item Groups", 1)
+		)
+
+		indicator = factories.make_item(
+			"CI5-STEAM", "Chemical Indicator", method="Steam", ci_class="5", has_batch_no=0
+		)
+		self.assertEqual(indicator.tc_ci_class, "5")
+		self.assertEqual(indicator.has_batch_no, 0)
+
+		expiry = add_days(today(), 30)
+		batch = factories.make_batch("CI5-STEAM", "LOT-A", expiry_date=expiry)
+		self.assertEqual(batch.item, "CI5-STEAM")
+		self.assertEqual(batch.name, "LOT-A")
+		self.assertEqual(getdate(batch.expiry_date), getdate(expiry))
+		self.assertEqual(frappe.db.get_value("Item", "CI5-STEAM", "has_batch_no"), 1)
+
+	def test_make_item_stores_pack_type_shelf_life(self):
+		pack = factories.make_item("GOI-VAI-60", "Packaging", method="Steam", shelf_life_days=180)
+		self.assertEqual(frappe.db.get_value("Item", pack.name, "tc_shelf_life_days"), 180)
+
+	def test_factories_are_idempotent(self):
+		first = factories.make_item("VT-DAU-BT", "Lubricant", has_batch_no=1)
+		second = factories.make_item("VT-DAU-BT", "Lubricant", has_batch_no=1)
+		self.assertEqual(first.name, second.name)
+		self.assertEqual(frappe.db.count("Item", {"item_code": "VT-DAU-BT"}), 1)
+
+		lot = factories.make_batch("VT-DAU-BT", "LOT-DAU-1")
+		again = factories.make_batch("VT-DAU-BT", "LOT-DAU-1")
+		self.assertEqual(lot.name, again.name)
+		self.assertEqual(frappe.db.count("Batch", {"batch_id": "LOT-DAU-1"}), 1)

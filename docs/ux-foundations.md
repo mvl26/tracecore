@@ -4,6 +4,14 @@
 > Sources: docs/srs.md v1.11 (§1.2, §2.3, §2.5, §3.1, §3.2.1, §3.3) · docs/use-cases.md v1.11 (39 UC) · docs/architecture.md (**chưa tồn tại tại thời điểm viết** — surface lấy từ `.architecture-inputs.md`, cần đối chiếu lại khi có) · input/ba_md/d09.md (#09) · #17 HTML · docs/design-refs (21 ảnh)
 > Design system: **docs/design.md + docs/tokens.json** (nguồn sự thật duy nhất cho mọi giá trị thiết kế — tài liệu này chỉ tham chiếu, không lặp lại)
 
+## Revision History
+
+| Ngày | Thay đổi |
+| --- | --- |
+| 23/10/2026 | Amendment HOME-01, người dùng yêu cầu thay Home mẫu bằng chức năng TraceCore: tài khoản TC/System Manager vào Home hoặc Workspace sẽ chuyển tới `/app/tracecore`; các List/Form ERPNext dùng trong nghiệp vụ được giữ nguyên, không thay quyền. Tài khoản khác giữ Workspace sẵn có. |
+| 23/10/2026 | Amendment NAV-01, người dùng duyệt trong chat: Home có liên kết “Mở TraceCore” tới Page `/app/tracecore`, chọn không gian quản lý / trạm / khoa theo quyền. Trang chỉ điều hướng; xác thực thẻ/PIN vẫn tại đích. Các màn chưa triển khai hiển thị trạng thái và không có đích giả. Không hiện thực SCR-44..46. Kế hoạch: `superpowers/plans/tracecore-launcher.md`. |
+| 29/10/2026 | Amendment PIN-01, người dùng duyệt trong chat (FR-M9-09, FR-M9-09.1, UC-33 A3): PIN trạm do R10/R02 đặt trên Desk là PIN tạm. Trên STN/PDA (Page `station`), quét thẻ mà phiên báo `pin_change_required` thì mở modal §4.13 **bắt buộc** (không Esc, không Hủy): PIN tạm · PIN mới · nhập lại PIN mới; lỗi là alert-error trong modal; lối ra duy nhất là Đăng xuất. Đổi xong mới vào màn trạm. RPC `tracecore.v1.account.change_pin` (token trong body, không `@idempotent` vì băm tham số lộ PIN, giống `station.verify_pin`). Không thêm SCR mới. |
+
 ## 1. Overview
 
 TraceCore là phần mềm quản lý vận hành khoa Kiểm soát nhiễm khuẩn (CSSD) trên Frappe v15/ERPNext: truy xuất dụng cụ hai tầng mã (Set ID vĩnh viễn + Cycle ID một lần) qua 8 trạm T1–T8 với cổng kiểm soát 5 bước, quản lý đồ vải, [v1.11] chất thải y tế rắn, và ERP nội bộ khoa (nhân sự, thiết bị, kho, chi phí, cơ số) — SRS §1.2. Tài liệu này định nghĩa cấu trúc UI cho **4 surface** (mã surface là thuộc tính của màn hình; ID màn hình giữ nguyên `SCR-NN` theo quyết định 2026-10-17):
@@ -397,7 +405,7 @@ Ba màn đại diện cho ba surface thao tác và bao phủ nhiều component c
 | Anchor | Màn | Surface | Vì sao | Component kiểm chứng | Nguồn đối chiếu |
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | A1 | **SCR-05** T1 Tiếp nhận đồ bẩn | STN (khu bẩn) | Màn đầu chuỗi, tần suất cao nhất (120–200 bộ/ngày), có quét 2 loại mã, BOM có ảnh, ghi chú bất thường, lặp nhiều bộ trong một phiếu, offline | rail theo khu, zonebar dirty, stepper, scan-box 2 pha (thẻ → Set ID), alert ok/error, BOM table + photo, textarea, button-ok, actions bar với nhãn đếm, offline foot | #17 `t1*` · ảnh 07, 08 |
-| A2 | **SCR-08** T4 Đóng gói & sinh Cycle ID | STN (khu sạch) | Màn phức tạp nhất: gate panel, progress cơ số, nhắc bảo dưỡng (ins due), quét lô chỉ thị (scan-box thứ hai), form grid, chặn có lý do, label preview hấp/plasma, ghi đè → WEB | gate panel, par bar, ins (due/done), chips, form grid, alert warn/error, button disabled có lý do, label preview, PIN/lý do modal, hàng đợi in | #17 `t4*` · ảnh 12, 13 |
+| A2 | **SCR-08** T4 Đóng gói & sinh Cycle ID | STN (khu sạch) | Màn phức tạp nhất: gate panel, progress cơ số, nhắc bảo dưỡng (ins due), quét lô chỉ thị qua ô quét duy nhất ở đầu màn, khối Lô chỉ thị chỉ hiển thị kết quả (A-02, D10), form grid, chặn có lý do, label preview hấp/plasma, ghi đè → WEB | gate panel, par bar, ins (due/done), chips, form grid, alert warn/error, button disabled có lý do, label preview, PIN/lý do modal, hàng đợi in | #17 `t4*` · ảnh 12, 13 |
 | A3 | **SCR-37** PDA Quét sử dụng cho bệnh nhân | PDA (khoa) | Surface PDA, người dùng ngoài KSNK (R08), 1 chạm, nhập mã BN mã hóa, lỗi chặn FR-M2-18, offline queue | top bar PDA, zonebar dept, scan-box PDA, res card, alert-error toàn khối, form 1 cột, nút 56 px full-width, toast, badge số chờ | #17 `deptUse/useScan/useConfirm` · ảnh 19 |
 
 Bổ sung tùy chọn nếu ui-design cần một anchor WEB: **SCR-32** Tổng quan hôm nay (KPI tile 3 biến thể, alert có nút hành động, 2 bảng, Frappe Workspace) — ảnh 02.

@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 09:00:00.000000",
+ "description": "Settings of the costing module (FEAT-044, A-47 C6): the date up to which cost periods are closed.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "locked_until"
+ ],
+ "fields": [
+  {
+   "description": "Cost entries whose period starts on or before this date can no longer be created, changed, submitted or cancelled. Move the date back to reopen a period.",
+   "fieldname": "locked_until",
+   "fieldtype": "Date",
+   "label": "Periods Locked Until"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-29 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

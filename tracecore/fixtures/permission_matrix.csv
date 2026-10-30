@@ -1,0 +1,43 @@
+code,doctype,R01,R02,R03,R04,R05,R06,R07,R08,R09,R10,notes
+DT-INSTR,Instrument,R,RWS,R,R,R,R,R,R,R,RW,FEAT-014 A-06 I15: mọi vai trò TC được đọc; System Manager theo AMENDMENT_GRANTS
+DT-SETTYPE,Instrument Set Type,R,RWS,R,R,R,R,R,R,R,RW,"FEAT-015 A-09 S12 (mới hơn ma trận): TC R03-R09 đọc; System Manager đọc/tạo/ghi theo AMENDMENT_GRANTS"
+DT-SETBOM,Set BOM Item,R,R,R,R,R,R,R,R,R,R,"FEAT-015 A-09 S12 (mới hơn ma trận): mọi TC role chỉ đọc; không ai tạo/ghi trực tiếp, dòng chỉ tạo qua bom_versions (cờ tc_bom)"
+DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,
+DT-LOANER,Loaner Set,R,RWS,R,R,R,R,,,R,RW,FEAT-017 A-38: tên DocType theo architecture §5.3 (Loaner Set); R02 nhận và trả
+DT-INSTRMAINT,Instrument Maintenance,R,RWS,R,R,R,R,,,R,RW,
+DT-RECEIPT,Dirty Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-019 A-30: DocType Dirty Receipt (tên BA Receipt); ghi/sổ chỉ qua dịch vụ tiếp nhận (cờ tc_receiving)
+DT-WASHBATCH,Wash Batch,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-021
+DT-ASSEMBLY,Assembly Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
+DT-PACK,Pack,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
+DT-LOAD,Sterilization Load,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-022
+DT-LOADTEST,Load Indicator Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-023 A-20: tên DocType theo architecture §5.3
+DT-STERLOC,Sterile Location,R,R,,,,R,,,,RW,FEAT-025: danh mục kệ do R10 quản lý; R01/R02/R06 chỉ đọc
+DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-027
+DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
+DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-029
+DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
+DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-030
+DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
+DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
+DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
+DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
+DT-EMP,Employee,R,RWS,,,,,,,,RW,
+DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
+DT-COMP,Station Competency,R,RWS,,,,,,,,RW,
+DT-SHIFT,Shift Assignment,R,RWS,,,,,,,,RW,HRMS
+DT-EQUIP,Equipment,R,R,R,R,R,R,,,R,RW,A-04 overrides BA baseline
+DT-PROGRAM,Process Program,R,R,R,R,R,R,,,R,RW,A-04 overrides BA baseline
+DT-MAINT,Maintenance Record,R,RWSA,,,,,,,R,RW,"FEAT-039 A-43 M10 (mới hơn ma trận): R02 làm hết; R10 tạo/sửa không ghi sổ; R01 và R09 chỉ đọc; KTV không thấy"
+DT-DAILYTEST,Daily Test,RA,RWSA,R,R,RW,R,RW,,RW,RW,future FEAT-040
+DT-ITEM,Item,R,RA,R,R,RW,RWS,RW,,RWS,R,
+DT-STOCKENTRY,Stock Entry,R,RA,R,R,RW,RWS,RW,,RWS,R,
+DT-STOCKCOUNT,Stock Reconciliation,R,RWSA,R,R,RW,RW,RW,,RWSA,R,FEAT-043 A-52 C2: ghi sổ = phê duyệt của R02/R09 (FR-M6-05.1); R06 lập bản nháp
+DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,FEAT-044 A-47 C12
+DT-COSTCAT,Cost Category,R,R,,,,,,,RW,R,FEAT-044 A-47 C12
+DT-COSTSET,Cost Settings,RW,,,,,,,,R,,FEAT-044 A-47 C6
+DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D5: R01 duyệt (Ghi sổ/Hủy) theo UC-28 bước 4 (Frappe cần W để Ghi sổ); R09 lập Nháp
+DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
+DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
+DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
+DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
+DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

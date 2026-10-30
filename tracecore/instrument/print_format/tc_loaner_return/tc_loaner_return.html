@@ -1,0 +1,80 @@
+{#- Loaner set return note (FEAT-017, A-38; UC-04 steps 5-6, E3; FR-M1-07.2, FR-M1-07.3): missing and damaged
+    instruments against the loaner BOM. Data: tracecore.instrument.loaner.tc_loaner_context (hook jinja.methods).
+    Every dynamic value goes through |e; colours and sizes come from tokens.css (tc.*). -#}
+{%- set cs = tc_loaner_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Loaner Return" -%}
+<style>
+.tc-ln { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-ln table { width: 100%; border-collapse: collapse; }
+.tc-ln td, .tc-ln th { vertical-align: top; }
+.tc-ln .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-ln h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-ln .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-ln .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-ln .tc-facts td.tc-label { color: {{ tc.muted }}; width: 45mm; white-space: nowrap; }
+.tc-ln table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-ln table.tc-lines thead { display: table-header-group; }
+.tc-ln table.tc-lines tr { page-break-inside: avoid; }
+.tc-ln table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-ln table.tc-lines th, .tc-ln table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-ln table.tc-lines .tc-num { text-align: right; width: 16mm; }
+.tc-ln .tc-total { margin-top: {{ tc.sp_2 }}; font-size: {{ tc.fs_md }}; font-weight: {{ tc.fw_bold }}; }
+.tc-ln .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-ln .tc-sign td { width: 50%; text-align: center; padding-bottom: 25mm; font-weight: {{ tc.fw_bold }}; }
+</style>
+<div class="tc-ln">
+	<h1>{{ _("Loaner set return note", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.status != "Returned" %}
+	<div class="tc-draft">{{ _("Not returned yet", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Vendor", context=T) | e }}</td><td>{{ cs.supplier | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Set name", context=T) | e }}</td><td>{{ cs.set_name | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Set ID", context=T) | e }}</td><td class="tc-code">{{ (cs.set_id or "—") | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Received on", context=T) | e }}</td><td>{{ cs.received_on | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Returned on", context=T) | e }}</td><td>{{ (cs.returned_on or "—") | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Returned by", context=T) | e }}</td><td>{{ (cs.returned_by or "—") | e }}</td></tr>
+		{%- if cs.return_note %}
+		<tr><td class="tc-label">{{ _("Note", context=T) | e }}</td><td>{{ cs.return_note | e }}</td></tr>
+		{%- endif %}
+		{%- if cs.incident %}
+		<tr><td class="tc-label">{{ _("Incident", context=T) | e }}</td><td class="tc-code">{{ cs.incident | e }}</td></tr>
+		{%- endif %}
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Instrument", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Received", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Returned", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Missing", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Damaged", context=T) | e }}</th>
+				<th>{{ _("Note", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td class="tc-num">{{ row.index | e }}</td>
+				<td>{{ row.name | e }}</td>
+				<td class="tc-num">{{ row.qty | e }}</td>
+				<td class="tc-num">{{ row.returned | e }}</td>
+				<td class="tc-num">{{ row.missing | e }}</td>
+				<td class="tc-num">{{ row.damaged | e }}</td>
+				<td>{{ row.note | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<div class="tc-total">{{ _("Missing: {0} · Damaged: {1}", context=T).format(cs.missing_count, cs.damaged_count) | e }}</div>
+	<p>{{ _("The set was reprocessed after its last use before being returned. Its Set ID is no longer valid.", context=T) | e }}</p>
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Handed over by (CSSD)", context=T) | e }}</td>
+			<td>{{ _("Vendor representative", context=T) | e }}</td>
+		</tr>
+	</table>
+</div>

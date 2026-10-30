@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-26 10:00:00.000000",
+ "description": "Offline Cycle ID ranges issued to a station for one day (ADR-003, A-40).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "station",
+  "prefix",
+  "range_date",
+  "column_break_numbers",
+  "from_no",
+  "to_no",
+  "section_issue",
+  "issued_at",
+  "issued_to",
+  "expires_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "prefix",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Prefix",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "range_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Range Date",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_numbers",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "From No",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "To No",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_issue",
+   "fieldtype": "Section Break",
+   "label": "Issue"
+  },
+  {
+   "fieldname": "issued_at",
+   "fieldtype": "Datetime",
+   "label": "Issued At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issued_to",
+   "fieldtype": "Link",
+   "label": "Issued To Session",
+   "options": "Station Session",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "label": "Expires At",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-26 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Code Range",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R10"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

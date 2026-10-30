@@ -1,0 +1,251 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:program_code",
+ "creation": "2026-10-21 13:00:00.000000",
+ "description": "Process program of one machine: parameters, norms, consumables, compatible pack types (FR-M5-02, FEAT-038).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "program_code",
+  "program_name",
+  "equipment",
+  "is_active",
+  "requires_bi",
+  "column_break_main",
+  "temperature",
+  "pressure",
+  "duration_min",
+  "chemical",
+  "norms_section",
+  "kwh_per_cycle",
+  "water_l_per_cycle",
+  "steam_kg_per_cycle",
+  "column_break_norms",
+  "use_default_norms",
+  "norm_status",
+  "outside_safe_range",
+  "consumables_section",
+  "consumables",
+  "packs_section",
+  "compatible_pack_types",
+  "parameters_section",
+  "parameters"
+ ],
+ "fields": [
+  {
+   "description": "Uppercase letters, digits and hyphens only. Cannot change after saving.",
+   "fieldname": "program_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Program Code",
+   "no_copy": 1,
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "program_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Program Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Equipment",
+   "options": "Equipment",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "1",
+   "description": "Untick to stop using the program. All its data is kept.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_bi",
+   "fieldtype": "Check",
+   "label": "Requires Biological Indicator"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "temperature",
+   "fieldtype": "Int",
+   "label": "Temperature (°C)"
+  },
+  {
+   "fieldname": "pressure",
+   "fieldtype": "Float",
+   "label": "Pressure (bar)"
+  },
+  {
+   "fieldname": "duration_min",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Duration (min)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "chemical",
+   "fieldtype": "Link",
+   "label": "Chemical",
+   "options": "Item"
+  },
+  {
+   "fieldname": "norms_section",
+   "fieldtype": "Section Break",
+   "label": "Norms per Cycle"
+  },
+  {
+   "fieldname": "kwh_per_cycle",
+   "fieldtype": "Float",
+   "label": "Electricity per Cycle (kWh)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "water_l_per_cycle",
+   "fieldtype": "Float",
+   "label": "Water per Cycle (L)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "steam_kg_per_cycle",
+   "fieldtype": "Float",
+   "label": "Steam per Cycle (kg)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_norms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Use the default norms of the equipment type when this program has no norms.",
+   "fieldname": "use_default_norms",
+   "fieldtype": "Check",
+   "label": "Use Default Norms"
+  },
+  {
+   "default": "Missing",
+   "fieldname": "norm_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Norm Status",
+   "no_copy": 1,
+   "options": "Complete\nDefault\nMissing",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "outside_safe_range",
+   "fieldtype": "Check",
+   "label": "Outside Safe Range",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "consumables_section",
+   "fieldtype": "Section Break",
+   "label": "Consumables"
+  },
+  {
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Program Consumable"
+  },
+  {
+   "fieldname": "packs_section",
+   "fieldtype": "Section Break",
+   "label": "Compatible Pack Types"
+  },
+  {
+   "fieldname": "compatible_pack_types",
+   "fieldtype": "Table",
+   "label": "Compatible Pack Types",
+   "options": "Program Compatible Pack Type"
+  },
+  {
+   "fieldname": "parameters_section",
+   "fieldtype": "Section Break",
+   "label": "Manual-entry Parameters"
+  },
+  {
+   "fieldname": "parameters",
+   "fieldtype": "Table",
+   "label": "Parameters",
+   "options": "Program Parameter"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-21 13:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Equipment",
+ "name": "Process Program",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TC R10",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "program_name",
+ "track_changes": 1
+}

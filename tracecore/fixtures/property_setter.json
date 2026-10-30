@@ -1,0 +1,22 @@
+[
+ {
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "doc_type": "Employee",
+  "field_name": "naming_series",
+  "property": "options",
+  "property_type": "Text",
+  "value": "NV-\nHR-EMP-",
+  "name": "Employee-naming_series-options"
+ },
+ {
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "doc_type": "Employee",
+  "field_name": "naming_series",
+  "property": "default",
+  "property_type": "Text",
+  "value": "NV-",
+  "name": "Employee-naming_series-default"
+ }
+]

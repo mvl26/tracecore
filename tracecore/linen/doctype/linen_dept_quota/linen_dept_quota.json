@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 10:00:00.000000",
+ "description": "Per-department min/max pieces of a linen type (FEAT-033, FR-M3-02); used by the reconciliation of FEAT-035.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "min_qty",
+  "max_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "min_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Minimum Pieces"
+  },
+  {
+   "default": "0",
+   "fieldname": "max_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Maximum Pieces"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-29 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Linen",
+ "name": "Linen Dept Quota",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

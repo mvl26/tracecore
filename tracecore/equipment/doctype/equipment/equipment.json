@@ -1,0 +1,337 @@
+{
+ "actions": [],
+ "autoname": "TB-.####",
+ "creation": "2026-10-21 12:00:00.000000",
+ "description": "Equipment record (FEAT-038): TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "equipment_name",
+  "equipment_type",
+  "status",
+  "manufacturer",
+  "model",
+  "serial_no",
+  "capacity",
+  "capacity_kg",
+  "column_break_zone",
+  "zone_in",
+  "zone_out",
+  "is_connected",
+  "has_printout",
+  "commissioned_on",
+  "inspection_due",
+  "calibration_due",
+  "maintenance_due",
+  "asset",
+  "cost_section",
+  "purchase_value",
+  "depreciation_years",
+  "planned_loads_year",
+  "depreciation_per_load",
+  "safe_range_section",
+  "safe_temp_min",
+  "safe_temp_max",
+  "safe_pressure_max",
+  "retired_section",
+  "retired_on",
+  "retired_reason",
+  "lock_section",
+  "lock_reason",
+  "unlock_until",
+  "column_break_unlock",
+  "unlocked_by",
+  "unlock_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "equipment_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Equipment Type",
+   "options": "\nSteam Sterilizer\nWasher-Disinfector\nPlasma Sterilizer\nSealer\nLaundry Washer\nDryer\nUltrasonic Cleaner",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Ready",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Ready\nLocked\nRepair\nRetired",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manufacturer",
+   "fieldtype": "Data",
+   "label": "Manufacturer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "reqd": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Serial No",
+   "no_copy": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Data",
+   "label": "Capacity"
+  },
+  {
+   "description": "Maximum load in kg of a laundry washer or dryer; empty means not limited (FEAT-034, FR-M3-03.3).",
+   "depends_on": "eval:doc.equipment_type=='Laundry Washer' || doc.equipment_type=='Dryer'",
+   "fieldname": "capacity_kg",
+   "fieldtype": "Float",
+   "label": "Capacity (kg)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_zone",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Entry door zone. Must be a zone, not a station.",
+   "fieldname": "zone_in",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Entry Zone",
+   "options": "Zone Station",
+   "reqd": 1
+  },
+  {
+   "description": "Leave empty for a one-door machine. A two-door machine exits to the next zone (Dirty, Clean, Sterile).",
+   "fieldname": "zone_out",
+   "fieldtype": "Link",
+   "label": "Exit Zone",
+   "options": "Zone Station"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_connected",
+   "fieldtype": "Check",
+   "label": "Is Connected"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_printout",
+   "fieldtype": "Check",
+   "label": "Has Printout"
+  },
+  {
+   "fieldname": "commissioned_on",
+   "fieldtype": "Date",
+   "label": "Commissioned On"
+  },
+  {
+   "fieldname": "inspection_due",
+   "fieldtype": "Date",
+   "label": "Inspection Due"
+  },
+  {
+   "description": "Past this date the machine cannot start a load or batch; R02 can unlock it temporarily (FEAT-039).",
+   "fieldname": "calibration_due",
+   "fieldtype": "Date",
+   "label": "Calibration Due"
+  },
+  {
+   "description": "Reminder only: preventive maintenance past its date does not lock the machine (FEAT-039).",
+   "fieldname": "maintenance_due",
+   "fieldtype": "Date",
+   "label": "Maintenance Due"
+  },
+  {
+   "fieldname": "asset",
+   "fieldtype": "Link",
+   "label": "Asset",
+   "options": "Asset"
+  },
+  {
+   "fieldname": "cost_section",
+   "fieldtype": "Section Break",
+   "label": "Depreciation"
+  },
+  {
+   "fieldname": "purchase_value",
+   "fieldtype": "Currency",
+   "label": "Purchase Value",
+   "non_negative": 1,
+   "precision": "0",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "depreciation_years",
+   "fieldtype": "Int",
+   "label": "Depreciation Years",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "planned_loads_year",
+   "fieldtype": "Int",
+   "label": "Planned Loads per Year",
+   "reqd": 1
+  },
+  {
+   "fieldname": "depreciation_per_load",
+   "fieldtype": "Currency",
+   "label": "Depreciation per Load",
+   "precision": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "safe_range_section",
+   "fieldtype": "Section Break",
+   "label": "Safe Range"
+  },
+  {
+   "fieldname": "safe_temp_min",
+   "fieldtype": "Int",
+   "label": "Safe Temperature Min (°C)"
+  },
+  {
+   "fieldname": "safe_temp_max",
+   "fieldtype": "Int",
+   "label": "Safe Temperature Max (°C)"
+  },
+  {
+   "fieldname": "safe_pressure_max",
+   "fieldtype": "Float",
+   "label": "Safe Pressure Max (bar)"
+  },
+  {
+   "depends_on": "eval:doc.status == \"Retired\"",
+   "fieldname": "retired_section",
+   "fieldtype": "Section Break",
+   "label": "Retirement"
+  },
+  {
+   "fieldname": "retired_on",
+   "fieldtype": "Date",
+   "label": "Retired On",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "retired_reason",
+   "fieldtype": "Small Text",
+   "label": "Retired Reason",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "lock_section",
+   "fieldtype": "Section Break",
+   "label": "Lock"
+  },
+  {
+   "fieldname": "lock_reason",
+   "fieldtype": "Select",
+   "label": "Lock Reason",
+   "options": "\nDaily Test\nInspection Expired\nCalibration Expired",
+   "read_only": 1,
+   "description": "Why the machine is Locked by the system (a failed daily test, or an inspection or calibration past its date)."
+  },
+  {
+   "fieldname": "unlock_until",
+   "fieldtype": "Datetime",
+   "label": "Temporarily Unlocked Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_unlock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unlocked_by",
+   "fieldtype": "Link",
+   "label": "Unlocked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unlock_reason",
+   "fieldtype": "Small Text",
+   "label": "Temporary Unlock Reason",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-25 11:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Equipment",
+ "name": "Equipment",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TC R10",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "equipment_name",
+ "track_changes": 1
+}

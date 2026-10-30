@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "creation": "2026-10-26 12:00:00.000000",
+ "description": "Corrective or preventive action of an Incident CAPA (FEAT-030, FR-M2-22).",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "action_type",
+  "description",
+  "responsible",
+  "due_date",
+  "status",
+  "result",
+  "done_at",
+  "last_reminded_on"
+ ],
+ "fields": [
+  {
+   "default": "Corrective",
+   "fieldname": "action_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Action Type",
+   "options": "Corrective\nPreventive",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Action",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsible",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Responsible",
+   "options": "User"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Due Date"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Open\nDone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Small Text",
+   "label": "Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "done_at",
+   "fieldtype": "Datetime",
+   "label": "Done At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_reminded_on",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Last Reminded On",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-26 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "CAPA Action",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

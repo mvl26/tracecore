@@ -1,0 +1,201 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint (ruff, eslint, bandit, kiến trúc, pip-audit)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: pre-commit (ruff, prettier, eslint, bandit, check_architecture, BRU, tokens)
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files --show-diff-on-failure
+      - name: pip-audit (phụ thuộc Python của app)
+        run: |
+          pip install pip-audit
+          pip-audit .
+
+  test:
+    # bộ test app chia 4 phần chạy song song (Frappe run-parallel-tests chia file test theo số test); mỗi phần dựng bench
+    # và site test riêng, ghi coverage của phần mình; job `coverage` gộp lại để kiểm diff-cover như cũ
+    name: test (FrappeTestCase, phần ${{ matrix.shard }}/4)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: --health-cmd="mariadb-admin ping" --health-interval=5s --health-timeout=2s --health-retries=5
+      redis-cache:
+        image: redis:7-alpine
+        ports: ["13000:6379"]
+      redis-queue:
+        image: redis:7-alpine
+        ports: ["11000:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - uses: ./.github/actions/setup-bench
+
+      - name: Station Agent tests (pytest)
+        if: matrix.shard == 1
+        run: |
+          pip install pytest pytest-cov
+          python -m pytest tracecore_agent -q -p no:cacheprovider --cov=tracecore_agent --cov-report=xml:agent-coverage.xml
+
+      - name: App tests (bench run-parallel-tests, phần ${{ matrix.shard }}/4)
+        working-directory: /home/runner/frappe-bench
+        env:
+          CI: "Yes"
+        run: >-
+          bench --site test_site run-parallel-tests --app tracecore
+          --build-number ${{ matrix.shard }} --total-builds 4 --with-coverage
+
+      - name: Coverage XML của phần này (đường dẫn theo checkout)
+        run: |
+          mkdir -p coverage-out
+          sed "s#/home/runner/frappe-bench/apps/tracecore#${GITHUB_WORKSPACE}#g" \
+            /home/runner/frappe-bench/sites/coverage.xml > coverage-out/coverage-${{ matrix.shard }}.xml
+          if [ -f agent-coverage.xml ]; then cp agent-coverage.xml coverage-out/; fi
+
+      - name: Upload coverage của phần này
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}
+          path: coverage-out/
+
+  coverage:
+    # giữ tên check cũ: gộp coverage 4 phần và kiểm >= 70 % dòng đổi; phần nào đỏ thì job này đỏ (không bị "skipped")
+    name: test (FrappeTestCase + coverage changed-code >= 70%)
+    runs-on: ubuntu-22.04
+    needs: test
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - name: Mọi phần test phải xanh
+        if: needs.test.result != 'success'
+        run: |
+          echo "Một hoặc nhiều phần test không xanh: ${{ needs.test.result }}"
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-shard-*
+          path: coverage-in
+          merge-multiple: true
+      - name: Coverage on changed lines (diff-cover >= 70%)
+        run: |
+          pip install diff-cover
+          # diff-cover gộp nhiều báo cáo: một dòng tính là đã chạy nếu được chạy ở bất kỳ phần nào
+          BASE=origin/${{ github.base_ref || 'main' }}
+          diff-cover coverage-in/coverage-*.xml coverage-in/agent-coverage.xml --compare-branch="$BASE" --fail-under=70
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage-in/
+
+  e2e:
+    name: "e2e (Playwright, kiosk 1366x768: smoke FEAT-001 + T4 FEAT-018 + Desk FEAT-002 + thiết bị FEAT-038 + nhãn QR FEAT-005)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: --health-cmd="mariadb-admin ping" --health-interval=5s --health-timeout=2s --health-retries=5
+      redis-cache:
+        image: redis:7-alpine
+        ports: ["13000:6379"]
+      redis-queue:
+        image: redis:7-alpine
+        ports: ["11000:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - uses: ./.github/actions/setup-bench
+
+      - name: Build assets
+        working-directory: /home/runner/frappe-bench
+        run: bench build
+
+      - name: Prepare site (setup wizard, user trạm TR-003 + TR-004 + R10, Set Unit demo, dữ liệu demo T4)
+        env:
+          BENCH_DIR: /home/runner/frappe-bench
+          TC_E2E_ENV: ${{ runner.temp }}/e2e.env
+          TC_E2E_ALLOW_TEST_SITE: "1" # site CI dựng mới cho job này, bỏ đi sau job
+        run: bash scripts/e2e_prepare.sh test_site
+
+      - name: Start server và worker (nhãn QR đối tượng đi đường server, worker gửi ZPL tới socket giả của test)
+        working-directory: /home/runner/frappe-bench
+        run: |
+          nohup bench --site test_site serve --port 8000 --noreload > /tmp/serve.log 2>&1 &
+          nohup bench worker --queue short,default > /tmp/worker.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8000/api/method/ping > /dev/null && exit 0
+            sleep 2
+          done
+          cat /tmp/serve.log
+          exit 1
+
+      - name: Playwright (smoke + T4 + Desk)
+        working-directory: tests_e2e
+        env:
+          TC_BASE_URL: http://127.0.0.1:8000
+        run: |
+          pip install pytest-playwright openpyxl pyotp
+          python -m playwright install --with-deps chromium
+          set -a; . "${{ runner.temp }}/e2e.env"; set +a
+          python -m pytest -q --screenshot only-on-failure --output test-results
+
+      - name: Upload e2e artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            tests_e2e/test-results
+            /tmp/serve.log
+            /tmp/worker.log

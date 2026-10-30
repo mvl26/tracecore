@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:type_name",
+ "creation": "2026-10-29 10:00:00.000000",
+ "description": "Linen type catalogue (FEAT-033, FR-M3-02): standard weight per piece, department quotas and value per piece. Inactive types stay for history.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "type_name",
+  "std_weight_kg",
+  "unit_value",
+  "is_active",
+  "description",
+  "quotas"
+ ],
+ "fields": [
+  {
+   "fieldname": "type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Linen Type Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "Standard weight of one piece in kg; must be greater than 0.",
+   "fieldname": "std_weight_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Standard Weight (kg)",
+   "precision": "3",
+   "reqd": 1
+  },
+  {
+   "fieldname": "unit_value",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Value per Piece",
+   "options": "VND",
+   "precision": "0"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "quotas",
+   "fieldtype": "Table",
+   "label": "Department Quotas",
+   "options": "Linen Dept Quota"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-29 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Linen",
+ "name": "Linen Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "type_name"
+}

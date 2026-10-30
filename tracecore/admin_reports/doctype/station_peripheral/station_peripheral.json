@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "creation": "2026-10-20 16:00:00.000000",
+ "description": "Scanner or scale attached to a station (FEAT-002): connection USB HID, Serial or TCP.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "peripheral_type",
+  "model",
+  "connection",
+  "host",
+  "port",
+  "serial_port",
+  "baud_rate",
+  "is_active",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "peripheral_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Peripheral Type",
+   "options": "Scanner\nScale",
+   "reqd": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Model"
+  },
+  {
+   "fieldname": "connection",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Connection",
+   "options": "USB HID\nSerial\nTCP",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.connection==\"TCP\"",
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "label": "Host",
+   "mandatory_depends_on": "eval:doc.connection==\"TCP\""
+  },
+  {
+   "depends_on": "eval:doc.connection==\"TCP\"",
+   "description": "1 to 65535.",
+   "fieldname": "port",
+   "fieldtype": "Int",
+   "label": "Port",
+   "mandatory_depends_on": "eval:doc.connection==\"TCP\""
+  },
+  {
+   "depends_on": "eval:doc.connection==\"Serial\"",
+   "description": "For example COM3 or /dev/ttyUSB0.",
+   "fieldname": "serial_port",
+   "fieldtype": "Data",
+   "label": "Serial Port",
+   "mandatory_depends_on": "eval:doc.connection==\"Serial\""
+  },
+  {
+   "depends_on": "eval:doc.connection==\"Serial\"",
+   "description": "Default 9600.",
+   "fieldname": "baud_rate",
+   "fieldtype": "Int",
+   "label": "Baud Rate"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-20 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "Station Peripheral",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

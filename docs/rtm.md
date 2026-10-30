@@ -10,33 +10,33 @@
 | Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
 | :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
 | FR-M1-01 | Khai báo dụng cụ đơn lẻ | Must | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 | _TBD_ |
-| FR-M1-02 | Mã DataMatrix dụng cụ đơn lẻ (giai đoạn 2 sẵn sàng) | Should | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 | _TBD_ |
-| FR-M1-03 | Định nghĩa loại bộ dụng cụ (BOM) | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | _TBD_ |
-| FR-M1-04 | Phiên bản BOM và khoa sở hữu | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | _TBD_ |
-| FR-M1-05 | Cấp Set ID vĩnh viễn (GS1) | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-004; ADR-006 | FEAT-016 | _TBD_ |
-| FR-M1-06 | Vòng đời bộ dụng cụ vật lý | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-003; ADR-005 | FEAT-009; FEAT-016; FEAT-023 | _TBD_ |
+| FR-M1-02 | Mã DataMatrix dụng cụ đơn lẻ (giai đoạn 2 sẵn sàng) | Should | Active | BR-M1 (BRD #02) | UC-01 | _TBD_ | FEAT-014 (FR-M1-02, .1, .3); FEAT-020 (FR-M1-02.2, .4) | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) (FR-M1-02.2, .4) |
+| FR-M1-03 | Định nghĩa loại bộ dụng cụ (BOM) | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | `tracecore/instrument/tests/test_set_type.py`, `test_shelf_life.py`, `test_set_type_photos.py`, `test_count_sheet.py`; `tracecore/instrument/doctype/instrument_set_type/test_instrument_set_type.py` (dự kiến, FEAT-015) |
+| FR-M1-04 | Phiên bản BOM và khoa sở hữu | Must | Active | BR-M1 (BRD #02) | UC-02 | _TBD_ | FEAT-015 | `tracecore/instrument/tests/test_bom_versions.py`, `test_bom_compare.py`, `test_bom_pinning.py`; `tracecore/instrument/doctype/set_bom_item/test_set_bom_item.py` (dự kiến, FEAT-015) |
+| FR-M1-05 | Cấp Set ID vĩnh viễn (GS1) | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-004; ADR-006 | FEAT-016 | `tracecore/core/tests/test_code_registry.py`, `tracecore/core/tests/test_gs1.py`, `tracecore/instrument/tests/test_set_units.py`, `test_set_tags.py`, `test_set_tag_printing.py`; `tracecore/tracecore/doctype/label_template/test_set_templates.py`; `tracecore/v1/tests/test_set_unit_api.py` (dự kiến, FEAT-016) |
+| FR-M1-06 | Vòng đời bộ dụng cụ vật lý | Must | Active | BR-M1 (BRD #02) | UC-03 | ADR-003; ADR-005 | FEAT-009; FEAT-016; FEAT-023 | `tracecore/instrument/tests/test_set_units.py`, `test_set_unit_history.py`; `tracecore/core/tests/test_step_gate.py` (thứ tự theo client_ts, FR-M1-06.4); `tracecore/v1/tests/test_set_unit_api.py` (dự kiến, FEAT-016) |
 | FR-M1-07 | Nhập và trả dụng cụ mượn | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
 | FR-M1-08 | Chặn cấp phát bộ mượn chưa tái xử lý | Should | Active | BR-M1 (BRD #02) | UC-04 | _TBD_ | FEAT-017 | _TBD_ |
 | FR-M1-09 | Ngưỡng bảo dưỡng dụng cụ (tra dầu, bảo trì) | Must | Active | CHG-024 (review v1.10, kế thừa BR-M1) | UC-01 | _TBD_ | FEAT-014; FEAT-018 | _TBD_ |
-| FR-M2-01 | Tiếp nhận bằng quét mã bộ + quét thẻ nhân viên giao | Must | Active | BR-M2 (BRD #02) | UC-05 | _TBD_ | FEAT-019 | _TBD_ |
-| FR-M2-02 | Kiểm tra chiều luồng tại tiếp nhận | Must | Active | BR-M2 (BRD #02) | UC-05 | ADR-005 | FEAT-019 | _TBD_ |
-| FR-M2-23 | Xác nhận thành phần bộ tại tiếp nhận (từng dòng hoặc tất cả) + ghi chú bất thường | Must | Active | CHG-024 (review v1.10, kế thừa BR-M2) | UC-05 | _TBD_ | FEAT-019 | _TBD_ |
+| FR-M2-01 | Tiếp nhận bằng quét mã bộ + quét thẻ nhân viên giao | Must | Active | BR-M2 (BRD #02) | UC-05 | _TBD_ | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
+| FR-M2-02 | Kiểm tra chiều luồng tại tiếp nhận | Must | Active | BR-M2 (BRD #02) | UC-05 | ADR-005 | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
+| FR-M2-23 | Xác nhận thành phần bộ tại tiếp nhận (từng dòng hoặc tất cả) + ghi chú bất thường | Must | Active | CHG-024 (review v1.10, kế thừa BR-M2) | UC-05 | _TBD_ | FEAT-019 | `tracecore/reprocessing/tests/test_receiving_open.py`, `test_receiving_scan.py`, `test_receiving_confirm.py`, `test_receiving_submit.py`, `tracecore/v1/tests/test_receive_api.py`, `tests_e2e/test_station_t1.py` |
 | FR-M2-03 | Nạp lô rửa: quét mã máy + quét từng bộ, mã lô sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-06 | ADR-005 | FEAT-021 | _TBD_ |
 | FR-M2-24 | Mã mẻ gắn toàn bộ bộ dụng cụ và dữ liệu báo cáo của máy | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-007 | FEAT-021; FEAT-024 | _TBD_ |
-| FR-M2-25 | Cổng kiểm soát từng bước và xử lý lại | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-005 | FEAT-018; FEAT-019; FEAT-020; FEAT-021; FEAT-023 | _TBD_ |
+| FR-M2-25 | Cổng kiểm soát từng bước và xử lý lại | Must | Active | CHG-025 (review v1.10, kế thừa BR-M2) | UC-06 | ADR-005 | FEAT-018; FEAT-019; FEAT-020; FEAT-021; FEAT-023 | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) (cổng T3) |
 | FR-M2-04 | Dỡ lô: quét mã máy + mã lô, kết quả áp cho toàn bộ bộ trong lô | Must | Active | BR-M2 (BRD #02) | UC-06 | ADR-007 | FEAT-021 | _TBD_ |
-| FR-M2-05 | Kiểm đếm theo BOM có ảnh chụp thực tế | Must | Active | BR-M2 (BRD #02) | UC-07 | ADR-005 | FEAT-020 | _TBD_ |
-| FR-M2-06 | Chặn đóng gói khi thiếu chưa xác nhận | Must | Active | BR-M2 (BRD #02) | UC-07 | _TBD_ | FEAT-020 | _TBD_ |
-| FR-M2-07 | Xác nhận hoàn thành đóng gói → hệ thống tự sinh mã vạch một lần (Cycle ID) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-003; ADR-004; ADR-005 | FEAT-009; FEAT-018 | _TBD_ |
+| FR-M2-05 | Kiểm đếm theo BOM có ảnh chụp thực tế | Must | Active | BR-M2 (BRD #02) | UC-07 | ADR-005 | FEAT-020 | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) |
+| FR-M2-06 | Chặn đóng gói khi thiếu chưa xác nhận | Must | Active | BR-M2 (BRD #02) | UC-07 | ADR-005 | FEAT-020 | [FEAT-020 evidence](superpowers/reviews/FEAT-020-acceptance-evidence.md) |
+| FR-M2-07 | Xác nhận hoàn thành đóng gói → hệ thống tự sinh mã vạch một lần (Cycle ID) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-003; ADR-004; ADR-005 | FEAT-009; FEAT-018 | `tracecore/reprocessing/tests/test_packing.py`, `test_packing_offline.py`; `tracecore/v1/tests/test_pack_api.py`; `tests_e2e/test_station_t4.py`, `test_station_offline.py` |
 | FR-M2-08 | In nhãn theo phương pháp (2 loại nhãn) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-006 | FEAT-002; FEAT-018 | _TBD_ |
 | FR-M2-09 | Nạp mẻ tiệt khuẩn: quét mã máy + quét từng gói, mã mẻ sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-005 | FEAT-022 | _TBD_ |
 | FR-M2-10 | Nhập tay dữ liệu máy có xác nhận người dùng | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-007 | FEAT-022 | _TBD_ |
 | FR-M2-11 | Dỡ mẻ: quét mã máy + mã mẻ, kết quả mẻ áp cho toàn bộ gói; nhập chỉ thị và giải phóng | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-007 | FEAT-023 | _TBD_ |
 | FR-M2-12 | Cách ly mẻ và xử lý mẻ không đạt | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-014 | FEAT-023 | _TBD_ |
-| FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | _TBD_ |
-| FR-M2-14 | Xử lý gói hết hạn hoặc hư hỏng | Must | Active | BR-M2 (BRD #02) | UC-11 | _TBD_ | FEAT-025 | _TBD_ |
-| FR-M2-15 | Cấp phát cho khoa và ký điện tử | Must | Active | BR-M2 (BRD #02) | UC-12 | _TBD_ | FEAT-026 | _TBD_ |
-| FR-M2-16 | Kiểm tra cơ số khoa khi cấp phát | Must | Active | BR-M2 (BRD #02) | UC-12 | _TBD_ | FEAT-026 | _TBD_ |
+| FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
+| FR-M2-14 | Xử lý gói hết hạn hoặc hư hỏng | Must | Active | BR-M2 (BRD #02) | UC-11 | _TBD_ | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
+| FR-M2-15 | Cấp phát cho khoa và ký điện tử | Must | Active | BR-M2 (BRD #02) | UC-12 | ADR-001, ADR-005 | FEAT-026 | [FEAT-026 evidence](superpowers/reviews/FEAT-026-acceptance-evidence.md) |
+| FR-M2-16 | Kiểm tra cơ số khoa khi cấp phát | Must | Active | BR-M2 (BRD #02) | UC-12 | ADR-001 | FEAT-026 | [FEAT-026 evidence](superpowers/reviews/FEAT-026-acceptance-evidence.md) |
 | FR-M2-17 | Quét sử dụng và gắn bệnh nhân | Must | Active | BR-M2 (BRD #02) | UC-13 | ADR-010 | FEAT-027 | _TBD_ |
 | FR-M2-18 | Chặn quét mã hết hiệu lực | Must | Active | BR-M2 (BRD #02) | UC-13 | ADR-008 | FEAT-027 | _TBD_ |
 | FR-M2-19 | Tra cứu truy xuất hai chiều | Must | Active | BR-M2 (BRD #02) | UC-14 | _TBD_ | FEAT-028 | _TBD_ |
@@ -45,47 +45,47 @@
 | FR-M2-22 | CAPA và theo dõi đóng | Should | Active | BR-M2 (BRD #02) | UC-15 | _TBD_ | FEAT-030 | _TBD_ |
 | FR-M3-01 | Nhập lượt thu gom đồ vải | Must | Active | BR-M3 (BRD #02) | UC-16 | ADR-006 | FEAT-033 | _TBD_ |
 | FR-M3-02 | Danh mục loại đồ vải và khối lượng chuẩn | Must | Active | BR-M3 (BRD #02) | UC-16 | _TBD_ | FEAT-033 | _TBD_ |
-| FR-M3-03 | Tạo lô giặt | Must | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
-| FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | _TBD_ | FEAT-034 | _TBD_ |
-| FR-M3-05 | Cấp phát đồ vải theo khoa | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
-| FR-M3-06 | Đối chiếu thu – trả và định mức | Must | Active | BR-M3 (BRD #02) | UC-18 | _TBD_ | FEAT-035 | _TBD_ |
-| FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | _TBD_ |
-| FR-M4-02 | Chứng chỉ và cảnh báo hết hạn | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-014 | FEAT-036 | _TBD_ |
-| FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | _TBD_ |
-| FR-M4-04 | Phân ca và sản lượng theo người | Should | Active | BR-M4 (BRD #02) | UC-20 | ADR-009 | FEAT-037 | _TBD_ |
+| FR-M3-03 | Tạo lô giặt | Must | Active | BR-M3 (BRD #02) | UC-17 | A-50 | FEAT-034 | `linen/tests/test_laundry.py`, `v1/tests/test_laundry_api.py` |
+| FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | A-50 | FEAT-034 | `inventory/tests/test_consume_laundry.py`, `costing/tests/test_from_laundry.py`, `linen/tests/test_laundry_cost_report.py` |
+| FR-M3-05 | Cấp phát đồ vải theo khoa | Must | Active | BR-M3 (BRD #02) | UC-18 | A-51 | FEAT-035 | `linen/tests/test_linen_issue.py`, `v1/tests/test_linen_issue_api.py` |
+| FR-M3-06 | Đối chiếu thu – trả và định mức | Must | Active | BR-M3 (BRD #02) | UC-18 | A-51 | FEAT-035 | `linen/tests/test_reconcile.py` |
+| FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | [FEAT-003 Employee subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| FR-M4-02 | Chứng chỉ và cảnh báo hết hạn | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-014 | FEAT-036 | `hr/tests/test_certificates.py`, `v1/tests/test_staff_api.py` |
+| FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | [FEAT-003 competency subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| FR-M4-04 | Phân ca và sản lượng theo người | Should | Active | BR-M4 (BRD #02) | UC-20 | ADR-009 | FEAT-037 | `hr/tests/test_competency.py`, `hr/tests/test_shifts.py`, `v1/tests/test_competency_api.py` |
 | FR-M5-01 | Hồ sơ thiết bị theo khu | Must | Active | BR-M5 (BRD #02) | UC-21 | ADR-009 | FEAT-038 | _TBD_ |
 | FR-M5-02 | Danh mục chương trình xử lý theo máy | Must | Active | BR-M5 (BRD #02) | UC-21 | _TBD_ | FEAT-038 | _TBD_ |
 | FR-M5-03 | Lịch bảo trì, kiểm định, hiệu chuẩn | Must | Active | BR-M5 (BRD #02) | UC-22 | ADR-014 | FEAT-039 | _TBD_ |
 | FR-M5-04 | Sự cố và sửa chữa thiết bị | Must | Active | BR-M5 (BRD #02) | UC-22 | _TBD_ | FEAT-039 | _TBD_ |
 | FR-M5-05 | Test hằng ngày theo máy | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
 | FR-M5-06 | Khóa máy tự động | Must | Active | BR-M5 (BRD #02) | UC-23 | _TBD_ | FEAT-040 | _TBD_ |
-| FR-M6-01 | Nhập kho theo lô/hạn | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009 | FEAT-041 | _TBD_ |
-| FR-M6-02 | Danh mục vật tư tiêu hao tái xử lý | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009 | FEAT-041 | _TBD_ |
-| FR-M6-03 | Tiêu hao tự động theo mẻ/lô | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
-| FR-M6-04 | Xuất kho thủ công và FEFO | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | _TBD_ |
-| FR-M6-05 | Kiểm kê định kỳ | Should | Active | BR-M6 (BRD #02) | UC-26 | ADR-009 | FEAT-043 | _TBD_ |
-| FR-M6-06 | Cảnh báo tồn tối thiểu và sắp hết hạn | Must | Active | BR-M6 (BRD #02) | UC-26 | ADR-009; ADR-014 | FEAT-043 | _TBD_ |
+| FR-M6-01 | Nhập kho theo lô/hạn | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009; A-07 | FEAT-041 | _TBD_ |
+| FR-M6-02 | Danh mục vật tư tiêu hao tái xử lý | Must | Active | BR-M6 (BRD #02) | UC-24 | ADR-009; A-07 | FEAT-041 | _TBD_ |
+| FR-M6-03 | Tiêu hao tự động theo mẻ/lô | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | `inventory/tests/test_consume.py`, `inventory/tests/test_manual_issue.py`, `v1/tests/test_stock_api.py` |
+| FR-M6-04 | Xuất kho thủ công và FEFO | Must | Active | BR-M6 (BRD #02) | UC-25 | ADR-009 | FEAT-042 | `inventory/tests/test_consume.py`, `inventory/tests/test_manual_issue.py`, `v1/tests/test_stock_api.py` |
+| FR-M6-05 | Kiểm kê định kỳ | Should | Active | BR-M6 (BRD #02) | UC-26 | ADR-009; A-52 | FEAT-043 | `inventory/tests/test_count.py`, `inventory/tests/test_count_print.py` |
+| FR-M6-06 | Cảnh báo tồn tối thiểu và sắp hết hạn | Must | Active | BR-M6 (BRD #02) | UC-26 | ADR-009; ADR-014; A-52 | FEAT-043 | `inventory/tests/test_alerts.py`, `inventory/tests/test_stock_alerts_report.py`, `v1/tests/test_purchase_request_api.py` |
 | FR-M7-01 | Nhập chi phí theo khoản mục | Must | Active | BR-M7 (BRD #02) | UC-27 | _TBD_ | FEAT-044 | _TBD_ |
 | FR-M7-02 | Gắn chi phí với đối tượng phân bổ | Must | Active | BR-M7 (BRD #02) | UC-27 | _TBD_ | FEAT-044 | _TBD_ |
-| FR-M7-03 | Bảng định giá vật tư có phiên bản | Must | Active | BR-M7 (BRD #02) | UC-28 | _TBD_ | FEAT-045 | _TBD_ |
-| FR-M7-04 | Định mức tiêu hao theo chương trình | Must | Active | BR-M7 (BRD #02) | UC-28 | _TBD_ | FEAT-045 | _TBD_ |
+| FR-M7-03 | Bảng định giá vật tư có phiên bản | Must | Active | BR-M7 (BRD #02) | UC-28 | A-48 | FEAT-045 | `tracecore/costing/tests/test_cost_rate_version.py`, `test_rates.py`, `test_rate_at_rpc.py`, `test_cost_rate_version_desk_assets.py` |
+| FR-M7-04 | Định mức tiêu hao theo chương trình | Must | Active | BR-M7 (BRD #02) | UC-28 | A-48 | FEAT-045 | `tracecore/costing/tests/test_rates.py` (định mức loại gói, cảnh báo 0 và chương trình thiếu định mức); `tracecore/equipment/tests/test_norms.py` (định mức theo chương trình, FEAT-038) |
 | FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
 | FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
-| FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | _TBD_ |
-| FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | _TBD_ |
-| FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | _TBD_ |
-| FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | _TBD_ |
+| FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | `tracecore/par/tests/test_config.py`, `tracecore/par/tests/test_par_desk_assets.py`; e2e `tests_e2e/test_desk_par.py` (FEAT-031) |
+| FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | `tracecore/par/tests/test_config.py` (FR-M8-02, .1, .3; FEAT-031); `tracecore/par/tests/test_stock.py` (áp cơ số khoa khi cấp phát, FEAT-026); FR-M8-02.2 (báo cáo tồn khoa so cơ số) chưa có: tồn khoa đã có từ `Issue Note` (A-11 G3, A-17 C4), báo cáo làm ở FEAT riêng |
+| FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | `tracecore/par/tests/test_check.py`, `tracecore/core/tests/test_step_gate.py`, `tracecore/v1/tests/test_par_api.py` (FR-M8-03.1–.3; FEAT-032); bộ đếm tăng khi giải phóng → FEAT-023 (A-18 G2) |
+| FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | `tracecore/par/tests/test_override.py`, `tracecore/par/doctype/par_override/test_par_override.py`, `tracecore/v1/tests/test_par_api.py`, `tracecore/par/report/par_override_report/test_par_override_report.py`, `tracecore/par/tests/test_par_override_desk_assets.py` (FEAT-032) |
 | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-006 | _TBD_ |
 | FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-007 | _TBD_ |
 | FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
 | FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | _TBD_ | FEAT-008 | _TBD_ |
-| FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | _TBD_ |
+| FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-07 | Hệ thống sinh mã định danh cho mọi đối tượng quét | Must | Active | CHG-032 (review v1.10, kế thừa BR-M9) | UC-33 | ADR-004 | FEAT-001; FEAT-005 | _TBD_ |
-| FR-M9-06 | Chế độ offline tại trạm (Must từ v1.11 theo NFR-AVAIL-02, chốt 2026-10-17) | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-003 | FEAT-009 | _TBD_ |
-| FR-M9-08 | Đăng xuất / kết thúc phiên trạm, một thẻ – một phiên | Must | Active | Catalog gap v1.11 | UC-33 | ADR-008 | FEAT-003 | _TBD_ |
-| FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | _TBD_ |
-| FR-M9-10 | Trung tâm thông báo: kênh, người nhận theo loại sự kiện, trạng thái gửi/đọc | Must | Active | Catalog gap v1.11 | UC-38 | ADR-014 | FEAT-010 | _TBD_ |
-| FR-M9-11 | Import danh mục ban đầu theo lô từ Excel mẫu, kiểm tra từng dòng, import ảnh hàng loạt | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-011 | _TBD_ |
+| FR-M9-06 | Chế độ offline tại trạm (Must từ v1.11 theo NFR-AVAIL-02, chốt 2026-10-17) | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-003 | FEAT-009 | `tracecore/core/tests/test_code_range.py`, `test_sync.py`; `tracecore/v1/tests/test_sync_api.py`; `tests_e2e/test_station_offline.py`, `test_station_t1.py` |
+| FR-M9-08 | Đăng xuất / kết thúc phiên trạm, một thẻ – một phiên | Must | Active | Catalog gap v1.11 | UC-33 | ADR-008 | FEAT-003 | [FEAT-003 session evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | [FEAT-003 account evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| FR-M9-10 | Trung tâm thông báo: kênh, người nhận theo loại sự kiện, trạng thái gửi/đọc | Must | Active | Catalog gap v1.11 | UC-38 | ADR-014 | FEAT-010 | `core/tests/test_notification.py`, `v1/tests/test_notification_api.py` |
+| FR-M9-11 | Import danh mục ban đầu theo lô từ Excel mẫu, kiểm tra từng dòng, import ảnh hàng loạt | Must | Active | Catalog gap v1.11 | UC-39 | ADR-002; A-41 | FEAT-011 | `tracecore/core/tests/test_importer.py`; `tracecore/{admin_reports,instrument,equipment,inventory,par}/tests/test_imports.py`; `tracecore/instrument/tests/test_photo_import.py`; `tracecore/v1/tests/test_imports_api.py`; `tests_e2e/test_desk_import.py` |
 | FR-M9-12 | Xuất hồ sơ tiệt khuẩn theo kỳ (PDF + Excel/CSV) phục vụ lưu trữ ≥ 10 năm | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-012 | _TBD_ |
 | FR-M9-13 | Tìm kiếm, lọc, sắp xếp, phân trang trên mọi danh sách; ô quét là phím tắt | Must | Active | Catalog gap v1.11 | UC-32 | ADR-001 | FEAT-006 | _TBD_ |
 | FR-M9-14 | Trạng thái màn hình trạm/PDA: rỗng / đang tải / lỗi kèm hành động kế tiếp | Must | Active | Catalog gap v1.11 | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36) | ADR-002 | FEAT-001; Foundations | _TBD_ |
@@ -111,10 +111,10 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-PERF-01 | Hiệu năng — Phản hồi quét: Thời gian từ quét đến phản hồi màn hình ≤ 1 giây với 95% giao dịch. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-13, UC-14, UC-15, UC-30, UC-31) | ADR-005; ADR-012 | FEAT-018; FEAT-019; FEAT-022; FEAT-027; Foundations | _TBD_ |
 | NFR-PERF-02 | Hiệu năng — Tải đồng thời: ≥ 40 trạm/thiết bị cầm tay hoạt động đồng thời, ≥ 600 mẻ/tháng, ≥ 3.000 Cycle ID/ngày. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M6; tham chiếu UC-24, UC-25, UC-26) | ADR-012 | Foundations | _TBD_ |
 | NFR-AVAIL-01 | Sẵn sàng — Uptime: ≥ 99,5%/tháng trong giờ vận hành 24/7; bảo trì có kế hoạch ngoài giờ cao điểm. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M9; tham chiếu UC-32, UC-33) | ADR-001; ADR-011 | Foundations | _TBD_ |
-| NFR-AVAIL-02 | Sẵn sàng — Offline tại trạm: Trạm tiếp tục quét ≥ 4 giờ khi mất mạng; đồng bộ tự động khi kết nối lại (FR-M9-06 = Must từ v1.11). | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-13, UC-14, UC-15) | ADR-003; ADR-012 | FEAT-009 | _TBD_ |
-| NFR-SEC-01 | Bảo mật — Xác thực: Đăng nhập bằng tài khoản hoặc quét thẻ nhân viên; khóa sau 5 lần sai; phiên trạm tự khóa sau 10 phút. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M4, M9; tham chiếu UC-19, UC-20, UC-32, UC-33) | ADR-010 | FEAT-003; Foundations | _TBD_ |
+| NFR-AVAIL-02 | Sẵn sàng — Offline tại trạm: Trạm tiếp tục quét ≥ 4 giờ khi mất mạng; đồng bộ tự động khi kết nối lại (FR-M9-06 = Must từ v1.11). | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-13, UC-14, UC-15) | ADR-003; ADR-012 | FEAT-009 | `tracecore/reprocessing/tests/test_packing_offline.py`, `test_receiving_offline.py`; `tracecore/v1/tests/test_usage_offline.py`; `tests_e2e/test_station_offline.py` |
+| NFR-SEC-01 | Bảo mật — Xác thực: Đăng nhập bằng tài khoản hoặc quét thẻ nhân viên; khóa sau 5 lần sai; phiên trạm tự khóa sau 10 phút. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M4, M9; tham chiếu UC-19, UC-20, UC-32, UC-33) | ADR-010 | FEAT-003; Foundations | [FEAT-003 authentication evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | NFR-SEC-02 | Bảo mật — Dữ liệu bệnh nhân: Mã bệnh nhân mã hóa khi lưu, ẩn một phần khi hiển thị; chỉ vai trò được phép xem. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng Toàn hệ thống; tham chiếu UC-13) | ADR-010 | FEAT-027 | _TBD_ |
-| NFR-SEC-03 | Bảo mật — Audit trail bất biến: Mọi thao tác ghi người – thời điểm – trạm – giá trị trước/sau; không xóa, chỉ vô hiệu. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8, M9; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-30, UC-31, UC-32, UC-33) | ADR-005; ADR-008 | FEAT-004; Foundations | _TBD_ |
+| NFR-SEC-03 | Bảo mật — Audit trail bất biến: Mọi thao tác ghi người – thời điểm – trạm – giá trị trước/sau; không xóa, chỉ vô hiệu. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M8, M9; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-30, UC-31, UC-32, UC-33) | ADR-005; ADR-008 | FEAT-004; Foundations | [FEAT-003 auth audit subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | NFR-USAB-01 | Khả dụng — Giao diện trạm: Nút ≥ 48px, thao tác được khi đeo găng, màn hình ướt; tối đa 3 chạm cho thao tác chính. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M3; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-16, UC-17, UC-18) | ADR-002; ADR-013 | FEAT-018; FEAT-019; FEAT-027; Foundations | _TBD_ |
 | NFR-USAB-02 | Khả dụng — Ngôn ngữ: Tiếng Việt là chính, thuật ngữ theo QĐ 3671/QĐ-BYT; hỗ trợ tiếng Anh cho nhãn. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng Toàn hệ thống) | ADR-002 | Foundations | _TBD_ |
 | NFR-COMP-01 | Tuân thủ — Quy định KSNK: TT 16/2018/TT-BYT, QĐ 3671/QĐ-BYT; lưu hồ sơ tiệt khuẩn ≥ 10 năm; sổ tiệt khuẩn điện tử in được. | Must | Active | Catalog ISO 25010 / BA #05 | — (áp dụng M2, M4, M5; tham chiếu UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-14, UC-15, UC-19, UC-20, UC-21, UC-22, UC-23) | ADR-005; ADR-007; ADR-008; ADR-013 | FEAT-007; FEAT-012; Foundations | _TBD_ |
@@ -131,8 +131,8 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-SEC-04 | Bảo mật — Không lỗ hổng High/Critical theo OWASP Top 10 / ASVS L2 trước go-live; Medium ≤ 30 ngày. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
 | NFR-SEC-05 | Bảo mật — Bản vá ≤ 30 ngày (Critical ≤ 7 ngày), thử trên staging. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
 | NFR-SEC-06 | Bảo mật — Secret ngoài mã nguồn, không ghi log; API key xoay 90 ngày; quy trình khóa AES-256. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | Foundations | _TBD_ |
-| NFR-SEC-07 | Bảo mật — RBAC 10 vai trò × DocType theo #13; R08 chỉ dữ liệu khoa mình; 100% ô ma trận test tại CI. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010; ADR-012; ADR-013 | FEAT-003; Foundations | _TBD_ |
-| NFR-SEC-08 | Bảo mật — Vô hiệu tài khoản nghỉ việc trong ngày; rà soát quyền hằng quý; cảnh báo đăng nhập bất thường ≤ 5 phút. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | FEAT-003; FEAT-036 | _TBD_ |
+| NFR-SEC-07 | Bảo mật — RBAC 10 vai trò × DocType theo #13; R08 chỉ dữ liệu khoa mình; 100% ô ma trận test tại CI. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010; ADR-012; ADR-013 | FEAT-003; Foundations | [FEAT-003 matrix subset; future R08 limits](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
+| NFR-SEC-08 | Bảo mật — Vô hiệu tài khoản nghỉ việc trong ngày; rà soát quyền hằng quý; cảnh báo đăng nhập bất thường ≤ 5 phút. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | FEAT-003; FEAT-036 | [FEAT-003 disable subset; review/alert pending](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | NFR-OBS-01 | Giám sát — Health check mọi dịch vụ và station agent; cảnh báo R10 ≤ 5 phút khi down hoặc hàng đợi offline > 4 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011; ADR-014 | Foundations | _TBD_ |
 | NFR-OBS-02 | Giám sát — Log JSON có cấu trúc, lưu ≥ 12 tháng, không chứa mã bệnh nhân dạng rõ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-008 | Foundations | _TBD_ |
 | NFR-MAINT-02 | Bảo trì — Test tự động độ phủ ≥ 70%, 100% BRU có test; CI trước mỗi merge. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
@@ -152,7 +152,7 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | FR-M1-01 | — | SCR-01 | API-M1-01, API-M1-06 | TC-01-01, TC-01-02 | US-01 | — |
 | FR-M1-02 | — | SCR-01 | API-M1-01, API-M1-06 | TC-01-01, TC-01-02 | US-01 | — |
-| FR-M1-03 | — | SCR-02 | API-M1-02 | TC-02-01, TC-02-02 | US-02 | — |
+| FR-M1-03 | BRU-REP-009 | SCR-02 | API-M1-02 | TC-02-01, TC-02-02 | US-02 | — |
 | FR-M1-04 | — | SCR-02 | API-M1-02 | TC-02-01, TC-02-02 | US-02 | — |
 | FR-M1-05 | BRU-ID-001, BRU-ID-006 | SCR-03 | API-M1-03, API-M1-04 | TC-03-01, TC-03-02 | US-03 | WF-01 |
 | FR-M1-06 | BRU-ID-001, BRU-ID-006 | SCR-03 | API-M1-03, API-M1-04 | TC-03-01, TC-03-02 | US-03 | WF-01 |

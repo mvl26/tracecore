@@ -1,0 +1,13 @@
+# MariaDB cho TraceCore production (ADR-011): utf8mb4 + binlog ROW để phục hồi tới điểm thời gian.
+[mysqld]
+character-set-client-handshake = FALSE
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+innodb_buffer_pool_size = 6G
+log_bin = /var/log/mysql/mariadb-bin
+binlog_format = ROW
+expire_logs_days = 14
+max_binlog_size = 256M
+
+[mysql]
+default-character-set = utf8mb4

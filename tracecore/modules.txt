@@ -1,1 +1,11 @@
 TraceCore
+Instrument
+Reprocessing
+Linen
+Equipment
+Inventory
+Costing
+Par
+Admin Reports
+Waste
+UI

@@ -1,0 +1,368 @@
+{
+ "actions": [],
+ "creation": "2026-10-20 15:00:00.000000",
+ "description": "One packed set in one cycle, named by its Cycle ID (FEAT-018, UC-08). Created and submitted by the packing service; it is voided by status, never cancelled or deleted (WF-02).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "set_type",
+  "set_name",
+  "department",
+  "column_break_set",
+  "cycle_no",
+  "assembly",
+  "method",
+  "bom_version",
+  "section_packing",
+  "pack_type",
+  "ci_batch",
+  "column_break_packing",
+  "expiry",
+  "shelf_life_days_applied",
+  "shelf_life_source",
+  "section_packer",
+  "packed_by_user",
+  "packed_by",
+  "column_break_packer",
+  "packed_at",
+  "client_ts",
+  "station",
+  "section_label",
+  "gtin",
+  "label_type",
+  "column_break_label",
+  "label_print_count",
+  "barcode_payload",
+  "section_status",
+  "status",
+  "location",
+  "load",
+  "column_break_status",
+  "void_reason",
+  "void_note",
+  "section_confirmation",
+  "instruments_confirmed",
+  "maint_done"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "description": "Always taken from the Set Unit.",
+   "fetch_from": "set_unit.set_type",
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "set_type.set_type_name",
+   "fetch_if_empty": 1,
+   "fieldname": "set_name",
+   "fieldtype": "Data",
+   "label": "Set Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "set_unit.department",
+   "fetch_if_empty": 1,
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "column_break_set",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Sequence number of the cycle this pack belongs to.",
+   "fieldname": "cycle_no",
+   "fieldtype": "Int",
+   "label": "Cycle No",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "assembly",
+   "fieldtype": "Link",
+   "label": "Assembly Record",
+   "options": "Assembly Record"
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sterilization Method",
+   "options": "Steam\nPlasma",
+   "reqd": 1
+  },
+  {
+   "description": "BOM version the set was checked against when it was packed.",
+   "fieldname": "bom_version",
+   "fieldtype": "Int",
+   "label": "BOM Version",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "section_packing",
+   "fieldtype": "Section Break",
+   "label": "Packing"
+  },
+  {
+   "fieldname": "pack_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Pack Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "description": "Chemical indicator lot placed in the pack.",
+   "fieldname": "ci_batch",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Chemical Indicator Lot",
+   "options": "Batch"
+  },
+  {
+   "fieldname": "column_break_packing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expiry",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Expiry Date",
+   "reqd": 1
+  },
+  {
+   "description": "Snapshot: shelf life used when the pack was made. Later changes to the catalog do not alter it.",
+   "fieldname": "shelf_life_days_applied",
+   "fieldtype": "Int",
+   "label": "Shelf Life Applied (Days)",
+   "non_negative": 1
+  },
+  {
+   "description": "Snapshot: whether the pack type or the set type override decided the shelf life.",
+   "fieldname": "shelf_life_source",
+   "fieldtype": "Select",
+   "label": "Shelf Life Source",
+   "options": "Pack Type\nSet Type"
+  },
+  {
+   "fieldname": "section_packer",
+   "fieldtype": "Section Break",
+   "label": "Packer"
+  },
+  {
+   "description": "Station account that signed in when the pack was made.",
+   "fieldname": "packed_by_user",
+   "fieldtype": "Link",
+   "label": "Packed By (User)",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "description": "Employee who badged in at the station (filled once badge sign-in exists).",
+   "fieldname": "packed_by",
+   "fieldtype": "Link",
+   "label": "Packed By (Employee)",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "column_break_packer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "packed_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Packed At",
+   "reqd": 1
+  },
+  {
+   "description": "Device time of the action, in UTC.",
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Client Time (UTC)"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station"
+  },
+  {
+   "fieldname": "section_label",
+   "fieldtype": "Section Break",
+   "label": "Label"
+  },
+  {
+   "description": "Snapshot of the set type GTIN-14 used in the Cycle ID label.",
+   "fieldname": "gtin",
+   "fieldtype": "Data",
+   "label": "GTIN-14"
+  },
+  {
+   "fieldname": "label_type",
+   "fieldtype": "Link",
+   "label": "Label Type",
+   "options": "Item"
+  },
+  {
+   "fieldname": "column_break_label",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "label_print_count",
+   "fieldtype": "Int",
+   "label": "Label Print Count",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "barcode_payload",
+   "fieldtype": "Small Text",
+   "label": "Barcode Payload"
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Packed",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Packed\nIn Load\nQuarantine\nReleased\nIn Sterile Stock\nIssued\nUsed\nRecalled\nVoid",
+   "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.",
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Storage Location",
+   "options": "Sterile Location",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Sterilization load the pack went into (FEAT-022). Set only by the sterilizing service when loading is completed.",
+   "fieldname": "load",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Sterilization Load",
+   "options": "Sterilization Load",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.status=='Void'",
+   "fieldname": "void_reason",
+   "fieldtype": "Select",
+   "label": "Void Reason",
+   "options": "\nUsed\nExpired\nTorn\nLoad Failed\nReturned Unused\nLabel Damaged"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.status=='Void'",
+   "fieldname": "void_note",
+   "fieldtype": "Small Text",
+   "label": "Void Note"
+  },
+  {
+   "fieldname": "section_confirmation",
+   "fieldtype": "Section Break",
+   "label": "Confirmation"
+  },
+  {
+   "fieldname": "instruments_confirmed",
+   "fieldtype": "Table",
+   "label": "Instruments Confirmed",
+   "options": "Pack Instrument Confirmed"
+  },
+  {
+   "fieldname": "maint_done",
+   "fieldtype": "Table",
+   "label": "Maintenance Done",
+   "options": "Pack Maintenance Done"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-20 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Pack",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "TC R04",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  }
+ ],
+ "search_fields": "set_unit,set_name,status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

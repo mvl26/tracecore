@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "CP-.YYYY.-.#####",
+ "creation": "2026-10-29 09:00:00.000000",
+ "description": "A cost of the reprocessing department for a period (FEAT-044, UC-27): category, amount, period, document and source, allocated to machines, zones or process programs by percentage that must total 100.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "category",
+  "amount",
+  "source",
+  "column_break_head",
+  "period_from",
+  "period_to",
+  "section_meter",
+  "opening_reading",
+  "closing_reading",
+  "column_break_meter",
+  "unit",
+  "quantity",
+  "section_document",
+  "document_no",
+  "document_date",
+  "column_break_document",
+  "cost_center",
+  "description",
+  "section_allocation",
+  "allocations",
+  "source_doctype",
+  "source_name",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "Cost Category",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "precision": "0",
+   "reqd": 1
+  },
+  {
+   "default": "Invoice",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Source",
+   "options": "Invoice\nNorm\nMeter",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "period_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Period From",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "period_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period To",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.source=='Meter'",
+   "fieldname": "section_meter",
+   "fieldtype": "Section Break",
+   "label": "Meter Readings"
+  },
+  {
+   "fieldname": "opening_reading",
+   "fieldtype": "Float",
+   "label": "Opening Reading"
+  },
+  {
+   "fieldname": "closing_reading",
+   "fieldtype": "Float",
+   "label": "Closing Reading"
+  },
+  {
+   "fieldname": "column_break_meter",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit"
+  },
+  {
+   "description": "Closing reading minus opening reading.",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Consumption",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_document",
+   "fieldtype": "Section Break",
+   "label": "Document"
+  },
+  {
+   "fieldname": "document_no",
+   "fieldtype": "Data",
+   "label": "Document No"
+  },
+  {
+   "fieldname": "document_date",
+   "fieldtype": "Date",
+   "label": "Document Date"
+  },
+  {
+   "fieldname": "column_break_document",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "section_allocation",
+   "fieldtype": "Section Break",
+   "label": "Allocation"
+  },
+  {
+   "fieldname": "allocations",
+   "fieldtype": "Table",
+   "label": "Allocation Targets",
+   "options": "Cost Allocation"
+  },
+  {
+   "description": "Document this entry was created from (for example a maintenance record).",
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Source DocType",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Source Document",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Cost Entry",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-29 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Entry",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "category",
+ "track_changes": 1
+}

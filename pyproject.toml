@@ -9,6 +9,8 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
+    "pylibdmtx~=0.1.10",  # DataMatrix GS1 (cần libdmtx0b trên hệ điều hành)
+    "PyQRCode~=1.2.1",  # QR nội bộ mã đối tượng (đã có sẵn qua Frappe, A-05 R5)
 ]
 
 [build-system]
@@ -21,7 +23,7 @@ build-backend = "flit_core.buildapi"
 
 # These apt dependencies will be installed from Ubuntu repositories when you host your app on Frappe Cloud
 [deploy.dependencies.apt]
-packages = []
+packages = ["libdmtx0b"]
 
 [tool.ruff]
 line-length = 110
@@ -53,6 +55,9 @@ ignore = [
     "W191", # indentation contains tabs
 ]
 typing-modules = ["frappe.types.DF"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "tests_e2e", "tracecore_agent/tests", "node_modules"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "creation": "2026-10-23 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "pack",
+  "set_unit",
+  "set_type",
+  "set_name",
+  "expiry",
+  "fefo_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cycle ID",
+   "options": "Pack",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Set ID",
+   "options": "Set Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "set_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expiry",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Use-by Date",
+   "read_only": 1
+  },
+  {
+   "description": "Why a pack with a later use-by date was issued (the department asked for this Set ID).",
+   "fieldname": "fefo_note",
+   "fieldtype": "Small Text",
+   "label": "FEFO Note",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-23 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Issue Note Pack",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,22 @@
+# Mẫu systemd unit cho TraceCore Station Agent trên mini PC Ubuntu (ADR-006). Chỉ là mẫu — chưa triển khai.
+# Cài: sudo cp deploy/systemd/tracecore-agent.service /etc/systemd/system/
+#       sudo systemctl daemon-reload && sudo systemctl enable --now tracecore-agent
+[Unit]
+Description=TraceCore Station Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tracecore
+Group=tracecore
+WorkingDirectory=/opt/tracecore
+ExecStart=/usr/bin/python3 -m tracecore_agent --config /home/tracecore/.tracecore-agent/agent.ini serve
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

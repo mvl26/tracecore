@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "creation": "2026-10-28 09:00:00.000000",
+ "description": "Wash batch or sterilization load that was running on the machine when an incident was recorded (FEAT-039, FR-M5-04.2); written by the incident service.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "load_doctype",
+  "load",
+  "flagged_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "load_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Load Type",
+   "options": "Sterilization Load\nWash Batch",
+   "reqd": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "load",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Load",
+   "options": "load_doctype",
+   "reqd": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "flagged_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Flagged At",
+   "read_only": 1,
+   "columns": 3
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-28 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Equipment",
+ "name": "Maintenance Affected Load",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

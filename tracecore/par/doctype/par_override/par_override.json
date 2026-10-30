@@ -1,0 +1,264 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "GD-.YYYY.-.#####",
+ "creation": "2026-10-23 10:00:00.000000",
+ "description": "Approved override of a set that reached its reprocessing cycle limit (FEAT-032, FR-M8-04, WF-08). Requested (draft) -> Approved or Rejected (submitted) -> Expired; cancelling revokes an approved override.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "set_type",
+  "department",
+  "column_break_status",
+  "status",
+  "station",
+  "section_request",
+  "reason",
+  "requested_by",
+  "requested_at",
+  "column_break_snapshot",
+  "cycles_used",
+  "max_cycles",
+  "exceeded_instruments",
+  "section_decision",
+  "extra_cycles",
+  "valid_until",
+  "decision_reason",
+  "column_break_decision",
+  "decided_by",
+  "decided_by_employee",
+  "decided_at",
+  "pin_verified",
+  "section_usage",
+  "cycles_consumed",
+  "last_cycle_no",
+  "column_break_usage",
+  "expiry_cause",
+  "expired_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "set_unit.set_type",
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "set_unit.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Requested",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Requested\nApproved\nRejected\nExpired\nCancelled",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_request",
+   "fieldtype": "Section Break",
+   "label": "Request"
+  },
+  {
+   "description": "Why the set is needed although it reached its cycle limit.",
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Request",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "label": "Requested At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_snapshot",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cycles_used",
+   "fieldtype": "Int",
+   "label": "Cycles Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_cycles",
+   "fieldtype": "Int",
+   "label": "Max Cycles",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exceeded_instruments",
+   "fieldtype": "Small Text",
+   "label": "Instruments at Their Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_decision",
+   "fieldtype": "Section Break",
+   "label": "Decision"
+  },
+  {
+   "description": "Reprocessing cycles allowed beyond the limit.",
+   "fieldname": "extra_cycles",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Extra Cycles",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Valid Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decision_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Decision",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_decision",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "decided_by",
+   "fieldtype": "Link",
+   "label": "Decided By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decided_by_employee",
+   "fieldtype": "Link",
+   "label": "Decided By (Employee)",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decided_at",
+   "fieldtype": "Datetime",
+   "label": "Decided At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "pin_verified",
+   "fieldtype": "Check",
+   "label": "PIN Verified",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_usage",
+   "fieldtype": "Section Break",
+   "label": "Usage"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "cycles_consumed",
+   "fieldtype": "Int",
+   "label": "Cycles Consumed",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "description": "Cycle number of the last Cycle ID issued under this override; packing the same cycle again does not consume another cycle.",
+   "fieldname": "last_cycle_no",
+   "fieldtype": "Int",
+   "label": "Last Cycle No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_usage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "expiry_cause",
+   "fieldtype": "Select",
+   "label": "Expiry Cause",
+   "options": "\nCycles Used\nDate Passed",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "expired_at",
+   "fieldtype": "Datetime",
+   "label": "Expired At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-23 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Par",
+ "name": "Par Override",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "set_unit",
+ "track_changes": 1
+}

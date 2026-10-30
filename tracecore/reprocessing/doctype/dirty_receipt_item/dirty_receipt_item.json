@@ -1,0 +1,143 @@
+{
+ "actions": [],
+ "creation": "2026-10-24 09:00:00.000000",
+ "description": "One set unit received on a dirty receipt: BOM version shown, confirmation state and abnormal note (FR-M2-01, FR-M2-23).",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "set_type",
+  "set_name",
+  "status_before",
+  "bom_version",
+  "received_at",
+  "confirmed",
+  "needs_review",
+  "abnormal_note",
+  "abnormal_photo",
+  "forced",
+  "force_reason",
+  "forced_by",
+  "cycle_no",
+  "voided_pack"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "set_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Name",
+   "read_only": 1
+  },
+  {
+   "description": "Status of the set when it was scanned.",
+   "fieldname": "status_before",
+   "fieldtype": "Data",
+   "label": "Status Before Receipt",
+   "read_only": 1
+  },
+  {
+   "description": "BOM version in force on the day the set was received.",
+   "fieldname": "bom_version",
+   "fieldtype": "Int",
+   "label": "BOM Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "label": "Scanned At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "confirmed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Set Confirmed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "The set has an abnormal note, so assembly checks it in detail (FR-M2-23.3).",
+   "fieldname": "needs_review",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Needs Review",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abnormal_note",
+   "fieldtype": "Small Text",
+   "label": "Abnormal Note"
+  },
+  {
+   "fieldname": "abnormal_photo",
+   "fieldtype": "Attach Image",
+   "label": "Abnormal Photo"
+  },
+  {
+   "default": "0",
+   "fieldname": "forced",
+   "fieldtype": "Check",
+   "label": "Forced Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "force_reason",
+   "fieldtype": "Small Text",
+   "label": "Force Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "forced_by",
+   "fieldtype": "Link",
+   "label": "Forced By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "description": "Reprocessing cycle opened for the set when the receipt was submitted.",
+   "fieldname": "cycle_no",
+   "fieldtype": "Int",
+   "label": "Cycle No",
+   "read_only": 1
+  },
+  {
+   "description": "Cycle ID that was still valid and unused; it was voided at receipt (FR-M2-01.3).",
+   "fieldname": "voided_pack",
+   "fieldtype": "Link",
+   "label": "Voided Cycle ID",
+   "options": "Pack",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-24 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Dirty Receipt Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

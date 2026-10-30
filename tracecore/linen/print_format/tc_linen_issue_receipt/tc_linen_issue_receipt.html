@@ -1,0 +1,91 @@
+{#- Linen issue receipt (FEAT-035, FR-M3-05.1; UC-18 step 4). Data: tracecore.ui.linen_print.tc_linen_issue_context
+    (hook jinja.methods). Every dynamic value goes through |e except the signature image (data URI checked by the
+    service: PNG prefix only); colours and sizes come from tokens.css (tc.*). Layout uses tables (wkhtmltopdf). -#}
+{%- set cs = tc_linen_issue_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Linen Issue Receipt" -%}
+<style>
+.tc-li { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-li table { width: 100%; border-collapse: collapse; }
+.tc-li td, .tc-li th { vertical-align: top; }
+.tc-li .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-li h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-li .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-li .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-li .tc-facts td.tc-label { color: {{ tc.muted }}; width: 40mm; white-space: nowrap; }
+.tc-li table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-li table.tc-lines thead { display: table-header-group; }
+.tc-li table.tc-lines tr { page-break-inside: avoid; }
+.tc-li table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-li table.tc-lines th, .tc-li table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-li table.tc-lines .tc-num { text-align: right; width: 18mm; }
+.tc-li table.tc-lines tfoot td { font-weight: {{ tc.fw_bold }}; background: {{ tc.zebra }}; }
+.tc-li .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-li .tc-sign td { width: 50%; text-align: center; padding-bottom: {{ tc.sp_4 }}; font-weight: {{ tc.fw_bold }}; }
+.tc-li .tc-sign img { max-width: 60mm; max-height: 25mm; }
+</style>
+<div class="tc-li">
+	<h1>{{ (_("Linen disposal record", context=T) if cs.kind == "Dispose" else _("Linen issue receipt", context=T)) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}
+	<div class="tc-draft">{{ _("Not recorded yet", context=T) | e }}</div>
+	{%- endif %}
+	{%- if cs.cancelled %}
+	<div class="tc-draft">{{ _("Cancelled", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Department", context=T) | e }}</td><td>{{ cs.department | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Issued at", context=T) | e }}</td><td>{{ cs.issued_at | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Issued by (CSSD)", context=T) | e }}</td><td>{{ cs.issued_by | e }}</td></tr>
+		{%- if cs.kind != "Dispose" %}
+		<tr><td class="tc-label">{{ _("Received by", context=T) | e }}</td><td>{{ cs.recipient | e }}</td></tr>
+		{%- else %}
+		<tr><td class="tc-label">{{ _("Reason", context=T) | e }}</td><td>{{ cs.reason | e }}</td></tr>
+		{%- endif %}
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Linen type", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Pieces", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Weight (kg)", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td class="tc-num">{{ row.index | e }}</td>
+				<td>{{ row.name | e }}{% if row.variance_note %}<br>{{ row.variance_note | e }}{% endif %}</td>
+				<td class="tc-num">{{ row.qty | e }}</td>
+				<td class="tc-num">{{ row.weight | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td></td>
+				<td>{{ _("Total", context=T) | e }}</td>
+				<td class="tc-num">{{ cs.total_qty | e }}</td>
+				<td class="tc-num">{{ cs.total_weight | e }}</td>
+			</tr>
+		</tfoot>
+	</table>
+	{%- if cs.quota_warning %}
+	<p>{{ cs.quota_warning | e }}</p>
+	{%- endif %}
+	{%- if cs.note %}
+	<p>{{ cs.note | e }}</p>
+	{%- endif %}
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Issued by (CSSD)", context=T) | e }}</td>
+			<td>{{ (_("Approved by", context=T) if cs.kind == "Dispose" else _("Received by", context=T)) | e }}</td>
+		</tr>
+		{%- if cs.signature %}
+		<tr><td></td><td><img src="{{ cs.signature | e }}" alt=""></td></tr>
+		{%- elif cs.sign_method == "Card" %}
+		<tr><td></td><td>{{ _("Signed with card", context=T) | e }}</td></tr>
+		{%- endif %}
+	</table>
+</div>

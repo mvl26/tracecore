@@ -1,0 +1,56 @@
+; Cấu hình TraceCore Station Agent — chép thành ~/.tracecore-agent/agent.ini (chmod 600).
+; Không commit file thật: api_key/api_secret là bí mật. Tạo tự động bằng:
+;   bench --site <SITE> execute tracecore.setup.provision.agent_user \
+;     --kwargs "{'station': 'TR-004', 'config_path': '~/.tracecore-agent/agent.ini', 'server_url': 'https://<site>'}"
+
+[server]
+url = https://tracecore.example.internal
+api_key = <api-key>
+api_secret = <api-secret>
+
+[station]
+id = TR-004
+
+[printer]
+; Để trống host = chế độ File: ghi <job>.zpl + <job>.png vào output_dir (khi trạm chưa có máy in)
+host =
+port = 9100
+
+[agent]
+listen_host = 127.0.0.1
+listen_port = 8765
+output_dir = ~/.tracecore-agent/labels
+db_path = ~/.tracecore-agent/queue.sqlite3
+
+; Cân điện tử RS-232/USB (FEAT-033, EI-HW-004): kiosk gọi GET http://127.0.0.1:8765/scale. Bỏ mục này nếu trạm không
+; có cân (kiosk chuyển sang nhập tay có xác nhận). Cần `pip install pyserial` trên máy trạm.
+;[scale]
+;port = COM3
+;baudrate = 9600
+;timeout = 2
+; Regex tùy chọn: nhóm 1 là số, nhóm 2 (nếu có) là đơn vị kg hoặc g
+;pattern =
+; Lệnh gửi trước khi đọc nếu cân không tự phát (dùng \r \n)
+;request =
+
+; Dữ liệu máy tự động (FEAT-024, ADR-007): một mục cho mỗi máy kết nối được (Equipment.is_connected = 1) cùng khu với
+; trạm này. Đặt tên chu trình trên máy = mã lô/mẻ (LR-…/ME-…) để khớp chính xác; không có thì khớp theo giờ bắt đầu.
+; Thử một lượt: python3 -m tracecore_agent machines
+;[machine:TB-0015]
+;driver = csv_generic
+;path = /mnt/sterilizer-export
+;glob = *.csv
+;delimiter = ;
+;time_format = %d/%m/%Y %H:%M
+;timezone = +07:00
+;col.cycle_ref = Cycle
+;col.load_id = Batch
+;col.program = Program
+;col.started_at = Start
+;col.ended_at = End
+;col.result = Status
+;col.alerts = Alarm
+;result.pass = OK
+;result.fail = FAIL
+;param.Nhiệt độ = Temp
+;param.Áp suất = Pressure

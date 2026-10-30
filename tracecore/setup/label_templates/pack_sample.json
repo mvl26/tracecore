@@ -1,0 +1,15 @@
+{
+ "set_id": "9520000TST000001",
+ "cycle_id": "CY-261020-0001",
+ "set_name": "Bộ phẫu thuật chấn thương chỉnh hình lớn",
+ "dept": "Khoa Phẫu thuật chỉnh hình",
+ "packer": "Nguyễn Thị Hồng Nhung",
+ "packed_at": "20/10/2026 08:30",
+ "expiry": "19/11/2026",
+ "method_label": "Hấp hơi nước 134°C",
+ "pack_type": "Vải không dệt hai lớp",
+ "ci_lot": "CI-261015-A",
+ "bom_version": 3,
+ "is_loaner": false,
+ "warning": ""
+}

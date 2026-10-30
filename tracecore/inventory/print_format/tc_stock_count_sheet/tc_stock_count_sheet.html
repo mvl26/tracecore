@@ -1,0 +1,73 @@
+{#- Stock count sheet (FEAT-043, FR-M6-05; UC-26). Data: tracecore.ui.stock_count_print.tc_stock_count_context (hook
+    jinja.methods). Every dynamic value goes through |e; colours and sizes come from tokens.css (tc.*).
+    Layout uses tables (the WebKit of wkhtmltopdf has no flex/grid). -#}
+{%- set cs = tc_stock_count_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Stock Count Sheet" -%}
+<style>
+.tc-sc { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-sc table { width: 100%; border-collapse: collapse; }
+.tc-sc td, .tc-sc th { vertical-align: top; }
+.tc-sc .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-sc h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-sc .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-sc .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-sc .tc-facts td.tc-label { color: {{ tc.muted }}; width: 40mm; white-space: nowrap; }
+.tc-sc table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-sc table.tc-lines thead { display: table-header-group; }
+.tc-sc table.tc-lines tr { page-break-inside: avoid; }
+.tc-sc table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-sc table.tc-lines th, .tc-sc table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-sc table.tc-lines .tc-num { text-align: right; width: 18mm; }
+.tc-sc .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-sc .tc-sign td { width: 50%; text-align: center; padding-bottom: 25mm; font-weight: {{ tc.fw_bold }}; }
+</style>
+<div class="tc-sc">
+	<h1>{{ _("Stock count sheet", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}
+	<div class="tc-draft">{{ _("Not approved yet", context=T) | e }}</div>
+	{%- endif %}
+	{%- if cs.cancelled %}
+	<div class="tc-draft">{{ _("Cancelled", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Warehouse", context=T) | e }}</td><td>{{ cs.warehouses | join(", ") | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Date", context=T) | e }}</td><td>{{ cs.posting_date | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Company", context=T) | e }}</td><td>{{ cs.company | e }}</td></tr>
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Item", context=T) | e }}</th>
+				<th>{{ _("Batch", context=T) | e }}</th>
+				<th>{{ _("Expiry date", context=T) | e }}</th>
+				<th class="tc-num">{{ _("System", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Counted", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Difference", context=T) | e }}</th>
+				<th>{{ _("Reason", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td class="tc-num">{{ row.index | e }}</td>
+				<td>{{ row.item | e }}{% if row.item_name and row.item_name != row.item %}<br>{{ row.item_name | e }}{% endif %}</td>
+				<td class="tc-code">{{ row.batch | e }}</td>
+				<td>{{ row.expiry | e }}</td>
+				<td class="tc-num">{{ row.system | e }}</td>
+				<td class="tc-num">{{ row.counted | e }}</td>
+				<td class="tc-num">{{ row.difference | e }}</td>
+				<td>{{ row.reason | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Counted by (warehouse)", context=T) | e }}</td>
+			<td>{{ _("Approved by (R02 / R09)", context=T) | e }}</td>
+		</tr>
+	</table>
+</div>

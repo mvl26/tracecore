@@ -26,8 +26,8 @@ Trả lời người dùng bằng tiếng Việt; thuật ngữ kỹ thuật gi�
 - **Lập kế hoạch theo FEAT** bằng `writing-plans`, đầu vào là mục FEAT trong implementation-plan §3, acceptance criteria EARS và handoff detailed-design / ui-design. Lưu tại `docs/superpowers/plans/FEAT-NNN-<slug>.md`. Mỗi task ghi rõ FR / BRU / AC mà nó đáp ứng.
 - **Không dùng git worktree.** App phải nằm ở `apps/tracecore` trong bench thì mới chạy được `bench run-tests`. Làm trên nhánh `feat/FEAT-NNN-<slug>` ngay trong `apps/tracecore`.
 - **TDD bắt buộc** (`test-driven-development`): viết test `FrappeTestCase` trước, thấy fail, rồi mới code. Mỗi BRU có ít nhất 1 test gắn marker `@bru("BRU-XXX-NNN")`.
-- **Xong** nghĩa là: test pass, coverage changed-code ≥ 70 %, lint sạch, mọi AC của FEAT đạt. Chạy lệnh thật và dán kết quả trước khi báo xong.
-- **Kết thúc nhánh**: mở PR vào `main` (Conventional Commits). Không merge thẳng; `main` cần CI xanh và 1 review.
+- **Xong** nghĩa là: test `FrappeTestCase` pass, coverage changed-code ≥ 70 %, lint sạch, mọi AC của FEAT đạt. Chạy lệnh thật và dán kết quả trước khi báo xong. **Không chạy E2E (Playwright)** trừ khi người dùng bảo chạy.
+- **Kết thúc nhánh**: merge vào `develop` (Conventional Commits). **Không tự tạo Pull Request**; chỉ tạo PR khi người dùng bảo.
 
 ## Môi trường và lệnh
 
@@ -44,7 +44,7 @@ bench --site <TEST_SITE> run-tests --app tracecore --coverage
 bench --site <TEST_SITE> run-tests --module tracecore.<module>.doctype.<doctype>.test_<doctype>
 
 # Coverage changed-code (ngưỡng CI)
-diff-cover coverage.xml --compare-branch=origin/main --fail-under=70
+diff-cover coverage.xml --compare-branch=origin/develop --fail-under=70
 
 # Sau khi đổi DocType / fixtures / assets
 bench --site <SITE> migrate
@@ -54,12 +54,18 @@ bench build --app tracecore
 pre-commit run --all-files
 ```
 
-- E2E: Playwright for Python (`pytest-playwright`), viewport kiosk 1366×768 và PDA 412×915, offline bằng `context.set_offline(True)`. Không dùng Cypress.
+- E2E: Playwright for Python (`pytest-playwright`), viewport kiosk 1366×768 và PDA 412×915, offline bằng `context.set_offline(True)`. Không dùng Cypress. Chỉ chạy khi người dùng bảo.
 - Tokens: `scripts/build_tokens.py` sinh `tracecore/public/css/tokens.css` từ `docs/tokens.json` (F-11). Không sửa tay `tokens.css`.
 
 ## Quy tắc kiến trúc — không được vi phạm
 
 - Module Frappe = phân hệ: `core`, `instrument` (M1), `reprocessing` (M2), `linen` (M3), `hr` (M4), `equipment` (M5), `inventory` (M6), `costing` (M7), `par` (M8), `admin_reports` (M9), `waste` (M10), `ui`.
+- **Amendment 2026-10-19 (tên module, architecture §5.2):** Module Def `Core` đã thuộc frappe, `HR` đã thuộc hrms, nên không đăng ký trùng tên. Thực tế trong repo:
+  - Dịch vụ `core` ở package Python thường `tracecore/core/` (giữ đường dẫn ADR: `tracecore.core.gs1`, `tracecore.core.audit`, `tracecore.core.idempotency.idempotent`, `tracecore.core.step_gate`…).
+  - DocType nền xuyên suốt (Audit Log, Code Registry, Idempotency Key, Print Job…) ở module Frappe `TraceCore` (thư mục `tracecore/tracecore/`).
+  - Zone Station ở `Admin Reports` (M9); Page `station` ở `UI`.
+  - M4 `hr` hiện chỉ là package `tracecore/hr/`, chưa đăng ký Module Def; khi M4 có DocType đầu tiên phải đặt tên module khác `HR` qua amendment.
+  - Module Def đã đăng ký: `TraceCore, Instrument, Reprocessing, Linen, Equipment, Inventory, Costing, Par, Admin Reports, Waste, UI`.
 - Không import chéo giữa M1–M10; chỉ đi qua `core` hoặc Link/hook.
 - **Chỉ `core.step_gate` được đổi trạng thái Set Unit / chuyển bước.** Không `set_value('Set Unit', …, 'status')` ở nơi khác. Frappe Workflow chỉ để hiển thị.
 - Chứng từ đi Nháp → Ghi sổ → Hủy, không xóa (`is_submittable=1`). `Audit Log` append-only, cấm delete ở permission và hook.

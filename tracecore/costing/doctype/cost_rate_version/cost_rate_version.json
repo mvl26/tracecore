@@ -1,0 +1,130 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "DG-.YYYY.-.#####",
+ "creation": "2026-10-28 09:00:00.000000",
+ "description": "A versioned price list for reprocessing costs (FEAT-045, UC-28): unit prices and pack norms that take effect from a date once approved by the head of department.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "version_label",
+  "effective_from",
+  "effective_to",
+  "column_break_head",
+  "approved_by",
+  "approved_on",
+  "note",
+  "section_rates",
+  "rates",
+  "section_norms",
+  "pack_norms",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "version_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Effective From",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "description": "Set by the system when a newer version is approved.",
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Effective To",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "section_rates",
+   "fieldtype": "Section Break",
+   "label": "Unit Prices"
+  },
+  {
+   "fieldname": "rates",
+   "fieldtype": "Table",
+   "label": "Unit Prices",
+   "options": "Cost Rate Line"
+  },
+  {
+   "description": "Norms per process program are kept on the process program.",
+   "fieldname": "section_norms",
+   "fieldtype": "Section Break",
+   "label": "Pack Norms"
+  },
+  {
+   "fieldname": "pack_norms",
+   "fieldtype": "Table",
+   "label": "Pack Norms",
+   "options": "Cost Norm Line"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Cost Rate Version",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-28 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Rate Version",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "version_label",
+ "track_changes": 1
+}

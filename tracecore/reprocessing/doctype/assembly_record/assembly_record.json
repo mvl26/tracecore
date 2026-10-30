@@ -1,0 +1,251 @@
+{
+ "actions": [],
+ "autoname": "AS-.YYYY.-.#####",
+ "creation": "2026-10-20 12:00:00.000000",
+ "description": "Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_unit",
+  "cycle_no",
+  "set_type",
+  "bom_version",
+  "column_break_result",
+  "result",
+  "station",
+  "assembled_by_user",
+  "assembled_at",
+  "client_ts",
+  "section_lines",
+  "lines",
+  "notes",
+  "section_shortage",
+  "has_shortage",
+  "shortage_summary",
+  "nc_pending",
+  "foreign_instruments",
+  "column_break_shortage",
+  "shortage_confirmed",
+  "shortage_reason",
+  "shortage_confirmed_by",
+  "shortage_confirmed_at",
+  "shortage_confirmed_for",
+  "section_branch",
+  "branch",
+  "branch_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "cycle_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Cycle No",
+   "non_negative": 1,
+   "read_only": 1,
+   "description": "Taken from the Set Unit when the record is created."
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bom_version",
+   "fieldtype": "Int",
+   "label": "BOM Version",
+   "read_only": 1,
+   "non_negative": 1,
+   "description": "BOM version pinned for this cycle and counted against."
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Result",
+   "options": "\nPass\nFail"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assembled_by_user",
+   "fieldtype": "Link",
+   "label": "Assembled By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assembled_at",
+   "fieldtype": "Datetime",
+   "label": "Assembled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Client Timestamp",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "section_lines",
+   "fieldtype": "Section Break",
+   "label": "BOM Count"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Lines",
+   "options": "Assembly Line"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_shortage",
+   "fieldtype": "Section Break",
+   "label": "Shortage"
+  },
+  {
+   "fieldname": "has_shortage",
+   "fieldtype": "Check",
+   "label": "Has Shortage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shortage_summary",
+   "fieldtype": "Small Text",
+   "label": "Missing Instruments",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nc_pending",
+   "fieldtype": "Check",
+   "label": "Non-conformance Pending",
+   "read_only": 1,
+   "description": "Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030."
+  },
+  {
+   "fieldname": "foreign_instruments",
+   "fieldtype": "Small Text",
+   "label": "Foreign Instruments",
+   "read_only": 1,
+   "description": "Instrument codes scanned at T3 that are not in the BOM."
+  },
+  {
+   "fieldname": "column_break_shortage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shortage_confirmed",
+   "fieldtype": "Check",
+   "label": "Shortage Confirmed by R02",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shortage_reason",
+   "fieldtype": "Small Text",
+   "label": "Shortage Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shortage_confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shortage_confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shortage_confirmed_for",
+   "fieldtype": "Small Text",
+   "label": "Confirmed Shortage",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "section_branch",
+   "fieldtype": "Section Break",
+   "label": "Damage Branch"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Select",
+   "label": "Branch",
+   "options": "\nRepair\nDisposal"
+  },
+  {
+   "fieldname": "branch_reason",
+   "fieldtype": "Small Text",
+   "label": "Branch Reason"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-24 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Assembly Record",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "TC R04",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "TC R02"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

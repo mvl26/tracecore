@@ -1,0 +1,37 @@
+{
+ "Equipment": {
+  "code": "TB-0001",
+  "title": "Máy tiệt khuẩn hơi nước hai cửa số 1",
+  "subtitle": "Khu đóng gói - tiệt khuẩn"
+ },
+ "Station": {
+  "code": "TR-001",
+  "title": "Trạm tiếp nhận dụng cụ bẩn",
+  "subtitle": "Khu bẩn - T1"
+ },
+ "Roll": {
+  "code": "CN-00001",
+  "title": "Cuộn nhãn hấp hơi nước 60 x 40 mm",
+  "subtitle": "Nhãn tiệt khuẩn"
+ },
+ "Employee Card": {
+  "code": "NV-00001",
+  "title": "Nguyễn Thị Hồng Nhung",
+  "subtitle": "Khoa Kiểm soát nhiễm khuẩn"
+ },
+ "Location": {
+  "code": "KE-0001",
+  "title": "Kệ vô khuẩn A1 - tầng 2",
+  "subtitle": "Kho vô khuẩn"
+ },
+ "Wash Batch": {
+  "code": "LR-261022-01",
+  "title": "Máy rửa khử khuẩn số 1 - Chương trình thường",
+  "subtitle": "22/10/2026 09:41"
+ },
+ "Sterilization Load": {
+  "code": "ME-261023-01",
+  "title": "Máy hấp hơi nước số 1 - Dụng cụ 134 độ",
+  "subtitle": "23/10/2026 09:41"
+ }
+}

@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "creation": "2026-10-27 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "row_no",
+  "code",
+  "result",
+  "field",
+  "error_code",
+  "ref_doctype",
+  "ref_name",
+  "message"
+ ],
+ "fields": [
+  {
+   "fieldname": "row_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Excel Row",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Result",
+   "options": "Created\nExisting\nError",
+   "read_only": 1
+  },
+  {
+   "fieldname": "field",
+   "fieldtype": "Data",
+   "label": "Column",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_code",
+   "fieldtype": "Data",
+   "label": "Error Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "label": "Record Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ref_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Record",
+   "options": "ref_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Message",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-27 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Import Batch Row",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
