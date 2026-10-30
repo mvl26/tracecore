@@ -6173,6 +6173,164 @@ Waste Type Name,Tên loại chất thải,Waste Type
 Waste Type Rate,Đơn giá loại chất thải
 Waste Type,Loại chất thải,Waste Collection Line
 Waste Type,Loại chất thải,Waste Container
+Confirm the typed weight,Xác nhận kg nhập tay,
+Weigh,Cân,
+values must be an object.,values phải là một object.,
+Waste Treatment Vendor,Đơn vị xử lý chất thải,
+Waste Handover,Phiếu bàn giao chất thải,
+Vendor Permitted Waste Type,Loại chất thải được phép của đơn vị,
+Vendor Contract,Hợp đồng đơn vị xử lý,
+Waste Handover Line,Dòng phiếu bàn giao,
+Waste Handover Container,Túi/thùng của phiếu bàn giao,
+Handed Over,Đã bàn giao,Waste Container
+Handover,Bàn giao,Waste Container
+Vendor Name,Tên đơn vị,Waste Treatment Vendor
+Tax ID,Mã số thuế,Waste Treatment Vendor
+Environmental License,Giấy phép môi trường,
+License No,Số giấy phép,
+License Valid To,Giấy phép hiệu lực đến,
+License File,Tệp giấy phép,
+Contracts,Hợp đồng,Waste Treatment Vendor
+Contract No,Số hợp đồng,
+Valid From,Hiệu lực từ,Vendor Contract
+Valid To,Hiệu lực đến,Vendor Contract
+Rate per kg,Đơn giá/kg,
+Contract File,Tệp hợp đồng,
+"Licensed waste transport or treatment vendor with its contracts (FEAT-049, FR-M10-05).","Đơn vị vận chuyển, xử lý chất thải có giấy phép và hợp đồng.",
+"Handover of stored waste to a licensed vendor (FEAT-049, FR-M10-04).",Bàn giao chất thải đang lưu giữ cho đơn vị có giấy phép.,
+"Waste type a treatment vendor is licensed to take (FEAT-049, FR-M10-05).",Loại chất thải đơn vị xử lý được phép nhận.,
+"Contract price per kg of one waste type, by validity period (FEAT-049, FR-M10-05, .4).",Đơn giá hợp đồng/kg của một loại theo thời hạn.,
+"One waste type of a handover (FEAT-049, FR-M10-04).",Một loại chất thải của phiếu bàn giao.,
+"A bag or bin of a handover (FEAT-049, FR-M10-04).",Một túi/thùng của phiếu bàn giao.,
+Treatment Vendor,Đơn vị xử lý,
+Handed Over At,Giờ bàn giao,
+Prepared By,Người lập,Waste Handover
+Handed Over (kg),Kg bàn giao,
+Treatment Cost,Chi phí xử lý,
+Waste Types,Loại chất thải,
+Difference (kg),Chênh lệch (kg),
+Difference (%),Chênh lệch (%),
+Weight Confirmed,Đã xác nhận kg,
+Checks,Kiểm tra,Waste Handover
+Weight Difference Reason,Lý do chênh lệch kg,
+Difference Approved By,Người duyệt chênh lệch,
+Reason for Skipping Older Bags,Lý do bỏ qua túi cũ hơn,
+Hazardous Waste Document,Chứng từ chất thải nguy hại,
+Document Comes Later,Chờ chứng từ,
+Hazardous Waste Document No,Số chứng từ chất thải nguy hại,
+Transporter,Đơn vị vận chuyển,Waste Handover
+Document Scan,Bản scan chứng từ,
+Pending Document Reminded,Đã nhắc chứng từ chờ,
+Signatures,Chữ ký,Waste Handover
+Vehicle Plate,Biển số xe,
+Signed By,Người ký,Waste Handover
+Vendor Representative,Đại diện đơn vị xử lý,
+Vendor Signature,Chữ ký đơn vị xử lý,
+Signed Minutes Photo,Ảnh biên bản đã ký,
+Handover Weight Difference (%),Ngưỡng chênh lệch kg bàn giao (%),
+A larger difference between collected and handed over weight needs a reason and R02 approval (FR-M10-04.1). Default 5.,Chênh lệch kg lớn hơn ngưỡng này cần lý do và R02 duyệt. Mặc định 5.,
+Waste Weight Variance,Chênh lệch khối lượng chất thải,Incident CAPA
+Waste handover {0} differs from the collected weight: {1}. Reason: {2},Phiếu bàn giao {0} chênh lệch so với kg thu gom: {1}. Lý do: {2},
+Waste handover posted,Phiếu bàn giao chất thải đã ghi sổ,
+Hazardous waste document still pending,Chứng từ chất thải nguy hại vẫn đang chờ,
+Waste vendor license or contract expiring,Giấy phép hoặc hợp đồng đơn vị xử lý sắp hết hạn,
+From {0} {1}.,Từ {0} {1}.,
+No cost entry was created because the cost period is closed. Enter the cost manually.,Chưa tạo chi phí vì kỳ chi phí đã khóa. Hãy nhập chi phí thủ công.,
+Cost entry {0} was not cancelled because the cost period is closed.,Chưa hủy chi phí {0} vì kỳ chi phí đã khóa.,
+"Enter the license number, its validity and the waste types allowed.","Nhập số giấy phép, hiệu lực và các loại chất thải được phép.",
+"Contract {0} covers {1}, which is not an allowed waste type.","Hợp đồng {0} có {1}, không thuộc loại được phép.",
+Contract {0} ends before it starts.,Hợp đồng {0} kết thúc trước khi bắt đầu.,
+{0}: {1} ends in {2} days ({3}).,{0}: {1} hết hạn sau {2} ngày ({3}).,
+the environmental license,giấy phép môi trường,
+a contract,một hợp đồng,
+Waste vendor {0} is close to expiry,Đơn vị xử lý {0} sắp hết hiệu lực,
+Handover {0} is still waiting for its hazardous waste document,Phiếu bàn giao {0} vẫn chờ chứng từ chất thải nguy hại,
+The vendor cannot take this waste,Đơn vị không được nhận chất thải này,
+{0} has no valid license and contract for: {1}.,{0} không có giấy phép và hợp đồng còn hiệu lực cho: {1}.,
+"Choose another vendor, or ask R09 to update the license and contract.","Chọn đơn vị khác, hoặc nhờ R09 cập nhật giấy phép và hợp đồng.",
+Handover is not open,Phiếu bàn giao không còn mở,
+Handover {0} cannot be changed.,Không thể sửa phiếu bàn giao {0}.,
+Start a new handover.,Lập phiếu bàn giao mới.,
+Bag is not in the store,Túi không có trong kho,
+Bag {0} is not stored.,Túi {0} chưa nhập kho.,
+"Store the bag first, or check the code.","Nhập kho túi trước, hoặc kiểm tra lại mã.",
+Bag is already on a handover,Túi đã nằm trên phiếu bàn giao,
+Bag {0} is already on an open handover.,Túi {0} đã nằm trên một phiếu đang mở.,
+Remove it from that handover first.,Bỏ túi khỏi phiếu đó trước.,
+Nothing to hand over,Không có gì để bàn giao,
+The handover has no bag.,Phiếu chưa có túi nào.,
+"Scan the bags, or add a waste type from the store.","Quét túi, hoặc thêm một loại từ kho.",
+Handed over weight is missing,Thiếu kg bàn giao,
+Every waste type needs the weight handed over.,Mỗi loại cần có kg bàn giao.,
+"Weigh each type, or type the weight and confirm it.","Cân từng loại, hoặc nhập tay và xác nhận.",
+Older bags were skipped,Đã bỏ qua túi cũ hơn,
+Bags collected earlier stay in the store: {0}.,Túi thu gom sớm hơn còn trong kho: {0}.,
+"Add the older bags, or enter the reason for skipping them.","Thêm các túi cũ hơn, hoặc nhập lý do bỏ qua.",
+Weight difference needs a reason,Chênh lệch kg cần lý do,
+Difference above the limit: {0}.,Chênh lệch vượt ngưỡng: {0}.,
+"Enter the reason, then ask R02 to approve.",Nhập lý do rồi nhờ R02 duyệt.,
+R02 must approve the weight difference,R02 phải duyệt chênh lệch kg,
+Ask R02 to scan their card and enter their PIN on this station.,Nhờ R02 quét thẻ và nhập PIN tại trạm này.,
+Hazardous waste document is missing,Thiếu chứng từ chất thải nguy hại,
+Missing: {0}.,Còn thiếu: {0}.,
+"Enter the document, or tick that the document comes later.","Nhập chứng từ, hoặc đánh dấu chờ chứng từ.",
+Enter the document number and attach the scan.,Nhập số chứng từ và đính bản scan.,
+"Enter the document, then save again.",Nhập chứng từ rồi lưu lại.,
+Signatures are missing,Thiếu chữ ký,
+"The handover needs the signature of R07 and of the vendor, or a photo of the signed minutes.","Phiếu cần chữ ký của R07 và đơn vị xử lý, hoặc ảnh biên bản đã ký.",
+Ask the vendor representative to sign.,Nhờ đại diện đơn vị xử lý ký.,
+Waste handover {0} posted,Phiếu bàn giao {0} đã ghi sổ,
+"{0} bags, {1} kg to {2}.","{0} túi, {1} kg cho {2}.",
+The weight difference must be above 0.,Ngưỡng chênh lệch kg phải lớn hơn 0.,
+Waste handover,Phiếu bàn giao chất thải,TC Waste Handover
+Not recorded yet,Chưa ghi sổ,TC Waste Handover
+Cancelled,Đã hủy,TC Waste Handover
+Treatment vendor,Đơn vị xử lý,TC Waste Handover
+Handed over at,Giờ bàn giao,TC Waste Handover
+Vehicle plate,Biển số xe,TC Waste Handover
+Hazardous waste document,Chứng từ chất thải nguy hại,TC Waste Handover
+Comes later,Chờ chứng từ,TC Waste Handover
+Transporter,Đơn vị vận chuyển,TC Waste Handover
+Contract no.,Số hợp đồng,TC Waste Handover
+Difference reason,Lý do chênh lệch,TC Waste Handover
+Waste type,Loại chất thải,TC Waste Handover
+Bags,Số túi,TC Waste Handover
+Collected (kg),Kg thu gom,TC Waste Handover
+Handed over (kg),Kg bàn giao,TC Waste Handover
+Difference (kg),Chênh lệch (kg),TC Waste Handover
+Amount (VND),Thành tiền (VND),TC Waste Handover
+Total,Tổng,TC Waste Handover
+Handed over by,Người giao,TC Waste Handover
+Vendor representative,Đại diện đơn vị xử lý,TC Waste Handover
+Handover,Bàn giao,
+This account cannot use waste handover at this station.,Tài khoản này không được bàn giao chất thải tại trạm này.,
+Waste handover needs a network connection.,Bàn giao chất thải cần kết nối mạng.,
+Choose the treatment vendor,Chọn đơn vị xử lý,
+No valid vendor,Không có đơn vị còn hiệu lực,
+No vendor has a valid license and contract.,Không có đơn vị nào còn giấy phép và hợp đồng hiệu lực.,
+Ask R09 to update the vendors.,Nhờ R09 cập nhật danh mục đơn vị xử lý.,
+Start handover,Bắt đầu bàn giao,
+Scan a waste bag to add it...,Quét túi chất thải để thêm...,
+Scan a CT- bag code.,Quét mã túi CT-.,
+Suggested first (oldest first),Đề xuất trước (cũ nhất trước),
+Add all of {0},Thêm tất cả {0},
+Remove,Bỏ,Waste Handover
+Bags on this handover,Túi trên phiếu này,
+Older bags stay in the store: {0}.,Túi cũ hơn còn trong kho: {0}.,
+Handed over (kg),Kg bàn giao,
+Above the difference limit,Vượt ngưỡng chênh lệch,
+Document comes later,Chờ chứng từ,
+Scan and minutes photo are attached on the Desk form.,Bản scan và ảnh biên bản được đính trên Desk.,
+Vendor signature box,Ô chữ ký đơn vị xử lý,
+Clear signature,Xóa chữ ký,
+R02 card,Thẻ R02,
+Approve and record,Duyệt và ghi sổ,
+Record handover,Ghi sổ bàn giao,
+Handover {0} recorded,Đã ghi sổ phiếu {0},
+Treatment cost: {0} VND.,Chi phí xử lý: {0} VND.,
+Print handover,In phiếu bàn giao,
+New handover,Phiếu bàn giao mới,
+Waste bag code expected,Cần mã túi chất thải,
 Waste Storage Location,Vị trí kho chất thải,
 Waste Storage Location Type,Loại chất thải của vị trí kho,
 Waste Storage Stock,Tồn kho chất thải,

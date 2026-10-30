@@ -1,0 +1,260 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 20:00:00.000000",
+ "description": "Handover of stored waste to a licensed vendor (FEAT-049, FR-M10-04).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vendor",
+  "handover_at",
+  "station",
+  "prepared_by",
+  "column_break_main",
+  "total_containers",
+  "total_collected_kg",
+  "total_handover_kg",
+  "total_cost",
+  "cost_entry",
+  "section_lines",
+  "lines",
+  "containers",
+  "section_check",
+  "variance_reason",
+  "variance_approved_by",
+  "fifo_reason",
+  "section_document",
+  "document_pending",
+  "hazard_document_no",
+  "transporter",
+  "contract_no",
+  "hazard_document_scan",
+  "document_pending_reminded",
+  "section_sign",
+  "vehicle_plate",
+  "signed_by",
+  "vendor_signer",
+  "vendor_signature",
+  "minutes_photo",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "vendor",
+   "fieldtype": "Link",
+   "options": "Waste Treatment Vendor",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Treatment Vendor"
+  },
+  {
+   "fieldname": "handover_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Handed Over At"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "options": "Zone Station",
+   "label": "Station"
+  },
+  {
+   "fieldname": "prepared_by",
+   "fieldtype": "Link",
+   "options": "Employee",
+   "read_only": 1,
+   "label": "Prepared By"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_containers",
+   "fieldtype": "Int",
+   "read_only": 1,
+   "in_list_view": 1,
+   "label": "Bags or Bins"
+  },
+  {
+   "fieldname": "total_collected_kg",
+   "fieldtype": "Float",
+   "precision": "3",
+   "read_only": 1,
+   "label": "Collected (kg)"
+  },
+  {
+   "fieldname": "total_handover_kg",
+   "fieldtype": "Float",
+   "precision": "3",
+   "read_only": 1,
+   "in_list_view": 1,
+   "label": "Handed Over (kg)"
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "precision": "0",
+   "read_only": 1,
+   "label": "Treatment Cost"
+  },
+  {
+   "fieldname": "cost_entry",
+   "fieldtype": "Link",
+   "options": "Cost Entry",
+   "read_only": 1,
+   "no_copy": 1,
+   "label": "Cost Entry"
+  },
+  {
+   "fieldname": "section_lines",
+   "fieldtype": "Section Break",
+   "label": "Waste Types"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "options": "Waste Handover Line",
+   "label": "Waste Types"
+  },
+  {
+   "fieldname": "containers",
+   "fieldtype": "Table",
+   "options": "Waste Handover Container",
+   "label": "Bags or Bins"
+  },
+  {
+   "fieldname": "section_check",
+   "fieldtype": "Section Break",
+   "label": "Checks"
+  },
+  {
+   "fieldname": "variance_reason",
+   "fieldtype": "Small Text",
+   "label": "Weight Difference Reason"
+  },
+  {
+   "fieldname": "variance_approved_by",
+   "fieldtype": "Link",
+   "options": "Employee",
+   "read_only": 1,
+   "label": "Difference Approved By"
+  },
+  {
+   "fieldname": "fifo_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for Skipping Older Bags"
+  },
+  {
+   "fieldname": "section_document",
+   "fieldtype": "Section Break",
+   "label": "Hazardous Waste Document"
+  },
+  {
+   "fieldname": "document_pending",
+   "fieldtype": "Check",
+   "default": "0",
+   "in_standard_filter": 1,
+   "label": "Document Comes Later"
+  },
+  {
+   "fieldname": "hazard_document_no",
+   "fieldtype": "Data",
+   "allow_on_submit": 1,
+   "in_standard_filter": 1,
+   "label": "Hazardous Waste Document No"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Data",
+   "allow_on_submit": 1,
+   "label": "Transporter"
+  },
+  {
+   "fieldname": "contract_no",
+   "fieldtype": "Data",
+   "allow_on_submit": 1,
+   "label": "Contract No"
+  },
+  {
+   "fieldname": "hazard_document_scan",
+   "fieldtype": "Attach",
+   "allow_on_submit": 1,
+   "label": "Document Scan"
+  },
+  {
+   "fieldname": "document_pending_reminded",
+   "fieldtype": "Check",
+   "default": "0",
+   "hidden": 1,
+   "no_copy": 1,
+   "label": "Pending Document Reminded"
+  },
+  {
+   "fieldname": "section_sign",
+   "fieldtype": "Section Break",
+   "label": "Signatures"
+  },
+  {
+   "fieldname": "vehicle_plate",
+   "fieldtype": "Data",
+   "label": "Vehicle Plate"
+  },
+  {
+   "fieldname": "signed_by",
+   "fieldtype": "Link",
+   "options": "Employee",
+   "read_only": 1,
+   "label": "Signed By"
+  },
+  {
+   "fieldname": "vendor_signer",
+   "fieldtype": "Data",
+   "label": "Vendor Representative"
+  },
+  {
+   "fieldname": "vendor_signature",
+   "fieldtype": "Signature",
+   "label": "Vendor Signature"
+  },
+  {
+   "fieldname": "minutes_photo",
+   "fieldtype": "Attach Image",
+   "label": "Signed Minutes Photo"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "options": "Waste Handover",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1,
+   "label": "Amended From"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Handover",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "autoname": "BG-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "is_submittable": 1,
+ "track_changes": 1
+}

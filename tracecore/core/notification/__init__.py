@@ -64,6 +64,22 @@ EVENTS = {
 	"WASTE_STORAGE_DUE": ("Waste bags close to the storage limit", "Normal", 0, 0, ("TC R07", FALLBACK_ROLE)),
 	"WASTE_STORAGE_OVERDUE": ("Waste bags past the storage limit", "Urgent", 0, 0, ("TC R07", FALLBACK_ROLE)),
 	"WASTE_COLD_BREACH": ("Waste cold room above the limit", "Urgent", 0, 0, ("TC R07", FALLBACK_ROLE)),
+	# FEAT-049: phiếu bàn giao ghi sổ, chứng từ CTNH chờ quá hạn, giấy phép/hợp đồng đơn vị xử lý sắp hết (FR-M10-04, FR-M10-05.2)
+	"WASTE_HANDOVER_POSTED": ("Waste handover posted", "Normal", 0, 0, (FALLBACK_ROLE, "TC R09")),
+	"WASTE_DOCUMENT_PENDING": (
+		"Hazardous waste document still pending",
+		"Normal",
+		0,
+		0,
+		("TC R07", "TC R09"),
+	),
+	"WASTE_VENDOR_EXPIRING": (
+		"Waste vendor license or contract expiring",
+		"Normal",
+		1,
+		0,
+		(FALLBACK_ROLE, "TC R09"),
+	),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

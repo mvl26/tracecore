@@ -10,6 +10,7 @@ import json
 import frappe
 from frappe import _
 
+from tracecore.core import station_auth
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
@@ -22,11 +23,12 @@ from tracecore.v1._common import (
 	station_session,
 )
 from tracecore.waste import collection as service
-from tracecore.waste import storage
+from tracecore.waste import handover, storage, vendors
 
 STEP = "WST"
 RELEASE_ROLES = ("TC R02", "System Manager")
 THRESHOLD_ROLES = ("TC R02", "TC R10", "System Manager")
+DOCUMENT_ROLES = ("TC R07", "TC R09", "TC R02", "System Manager")
 
 
 def _text(value, name):
@@ -195,14 +197,135 @@ def thresholds():
 
 
 @frappe.whitelist(methods=["POST"])
-def set_thresholds(warn_percent=None, cold_limit_c=None, breach_hours=None):
+def set_thresholds(warn_percent=None, cold_limit_c=None, breach_hours=None, variance_percent=None):
 	"""R02/R10 hiệu chỉnh ngưỡng từ Desk (UC-35 Open issues, A-61)."""
 	require_any_role(*THRESHOLD_ROLES)
 	try:
-		return {"ok": True, "thresholds": storage.set_thresholds(warn_percent, cold_limit_c, breach_hours)}
+		return {
+			"ok": True,
+			"thresholds": storage.set_thresholds(warn_percent, cold_limit_c, breach_hours, variance_percent),
+		}
 	except BlockedError as error:
 		frappe.local.response["http_status_code"] = error.block.http_status
 		return {"ok": False, "error": error.block.as_dict()}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+def handover_vendors(station, client_ts=None, token=None):
+	"""Đơn vị xử lý chọn được và FIFO từng loại (SCR-40, FEAT-049, UC-36 bước 1, 2, A-62)."""
+	require_any_role(*WASTE_ROLES)
+
+	def call():
+		rows = vendors.selectable()
+		waste_types = sorted({waste_type for row in rows for waste_type in row["waste_types"]})
+		return {"ok": True, "vendors": rows, "fifo": {name: handover.fifo(name) for name in waste_types}}
+
+	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+
+
+def _handover_call(station, client_ts, name, call):
+	return run_at_step(
+		STEP,
+		station,
+		parse_client_ts(client_ts),
+		lambda: {"ok": True, "handover": handover.view(call())},
+		"Waste Handover",
+		name,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def handover_create(station, vendor=None, client_ts=None, token=None):
+	"""Lập phiếu bàn giao Nháp cho đơn vị đã chọn."""
+	require_any_role(*WASTE_ROLES)
+	vendor = _text(vendor, "vendor")
+	employee = current_station_session().employee
+	return _handover_call(station, client_ts, None, lambda: handover.create(station, employee, vendor))
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def handover_add(station, handover_name=None, container=None, waste_type=None, client_ts=None, token=None):
+	"""Thêm một túi đã quét, hoặc cả tồn của một loại theo FIFO."""
+	require_any_role(*WASTE_ROLES)
+	name = _text(handover_name, "handover_name")
+	container = _text(container, "container")
+	waste_type = _text(waste_type, "waste_type")
+	return _handover_call(
+		station,
+		client_ts,
+		name,
+		lambda: handover.add_type(name, waste_type) if waste_type else handover.add(name, container),
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def handover_remove(station, handover_name=None, container=None, client_ts=None, token=None):
+	"""Bỏ một túi khỏi phiếu Nháp."""
+	require_any_role(*WASTE_ROLES)
+	name = _text(handover_name, "handover_name")
+	container = _text(container, "container")
+	return _handover_call(station, client_ts, name, lambda: handover.remove(name, container))
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def handover_sign(
+	station, handover_name=None, weights=None, document_pending=None, values=None, client_ts=None, token=None
+):
+	"""Ghi kg, chứng từ và chữ ký; R07 ký bằng thẻ của phiên trạm (FR-M10-04.2, .3)."""
+	require_any_role(*WASTE_ROLES)
+	name = _text(handover_name, "handover_name")
+	weights = _lines(weights)
+	if isinstance(values, str):
+		values = frappe.parse_json(values)
+	if values is not None and not isinstance(values, dict):
+		raise BadRequestError(_("values must be an object."))
+	employee = current_station_session().employee
+	fields = {key: value for key, value in (values or {}).items() if key in handover.SIGN_FIELDS}
+	return _handover_call(
+		station,
+		client_ts,
+		name,
+		lambda: handover.sign(name, employee, weights=weights, document_pending=document_pending, **fields),
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def handover_submit(station, handover_name=None, approver_proof=None, client_ts=None, token=None):
+	"""Ghi sổ phiếu; chênh lệch vượt ngưỡng cần proof của R02 từ `v1.station.verify_approver` (FR-M10-04.1)."""
+	require_any_role(*WASTE_ROLES)
+	name = _text(handover_name, "handover_name")
+	session = current_station_session()
+
+	def call():
+		approver = None
+		if approver_proof:
+			approver = station_auth.consume_approver_proof(session.name, approver_proof).employee
+		return handover.submit(name, approver)
+
+	return _handover_call(station, client_ts, name, call)
+
+
+@frappe.whitelist(methods=["POST"])
+def attach_document(handover_name, document_no=None, scan=None, transporter=None, contract_no=None):
+	"""R07/R09 đính chứng từ CTNH gửi sau từ Desk (UC-36 A4)."""
+	require_any_role(*DOCUMENT_ROLES)
+	try:
+		doc = handover.attach_document(handover_name, document_no, scan, transporter, contract_no)
+	except BlockedError as error:
+		frappe.local.response["http_status_code"] = error.block.http_status
+		return {"ok": False, "error": error.block.as_dict()}
+	return {"ok": True, "document_pending": doc.document_pending}
 
 
 @frappe.whitelist(methods=["POST"])

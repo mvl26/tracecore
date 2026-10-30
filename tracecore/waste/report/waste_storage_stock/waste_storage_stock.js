@@ -38,6 +38,13 @@ frappe.query_reports["Waste Storage Stock"] = {
 							reqd: 1,
 							default: values.breach_hours,
 						},
+						{
+							fieldname: "variance_percent",
+							fieldtype: "Float",
+							label: __("Handover Weight Difference (%)"),
+							reqd: 1,
+							default: values.variance_percent,
+						},
 					],
 					(saved) =>
 						frappe

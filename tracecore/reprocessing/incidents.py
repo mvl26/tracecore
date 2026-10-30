@@ -456,6 +456,17 @@ def remind_overdue():
 def on_waste_nc(ctx):
 	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai (FEAT-047, FR-M10-02.4, A-60 W3) hoặc quá hạn lưu
 	(`kind` = overdue, FEAT-048, FR-M10-03.4, A-61) → NC; FEAT-050 mở rộng."""
+	if ctx.get("kind") == "variance":
+		return _auto(
+			"Waste Handover",
+			ctx["handover"],
+			"Waste Weight Variance",
+			"Medium",
+			_("Waste handover {0} differs from the collected weight: {1}. Reason: {2}").format(
+				ctx["handover"], ctx.get("detail") or "-", ctx.get("reason") or "-"
+			),
+			{"employee": ctx.get("employee")},
+		)
 	if ctx.get("kind") == "overdue":
 		return _auto(
 			"Waste Container",

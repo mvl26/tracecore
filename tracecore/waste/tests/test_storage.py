@@ -367,10 +367,16 @@ class TestStock(StorageCase):
 
 class TestThresholds(StorageCase):
 	def test_defaults_apply_when_unset(self):
-		self.assertEqual(storage.thresholds(), {"warn_percent": 80, "cold_limit_c": 8, "breach_hours": 2})
+		self.assertEqual(
+			storage.thresholds(),
+			{"warn_percent": 80, "cold_limit_c": 8, "breach_hours": 2, "variance_percent": 5},
+		)
 
 	def test_set_thresholds_validates_and_saves(self):
 		storage.set_thresholds(70, 7.5, 3)
-		self.assertEqual(storage.thresholds(), {"warn_percent": 70, "cold_limit_c": 7.5, "breach_hours": 3})
+		self.assertEqual(
+			storage.thresholds(),
+			{"warn_percent": 70, "cold_limit_c": 7.5, "breach_hours": 3, "variance_percent": 5},
+		)
 		for values in ((0, 8, 2), (100, 8, 2), (80, 8, 0), ("x", 8, 2)):
 			self.assert_blocked("WASTE_THRESHOLD_INVALID", storage.set_thresholds, *values)

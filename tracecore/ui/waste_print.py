@@ -55,3 +55,42 @@ def tc_waste_receipt_context(name: str) -> dict:
 			for row in doc.lines
 		],
 	}
+
+
+def tc_waste_handover_context(name: str) -> dict:
+	"""Phiếu bàn giao chất thải (FEAT-049, FR-M10-04.5, A-62)."""
+	doc = frappe.get_doc("Waste Handover", name)
+	doc.check_permission("read")
+	return {
+		"tc": token_values(),
+		"name": doc.name,
+		"draft": doc.docstatus == 0,
+		"cancelled": doc.docstatus == 2,
+		"vendor": doc.vendor,
+		"tax_id": frappe.db.get_value("Waste Treatment Vendor", doc.vendor, "tax_id") or "",
+		"handover_at": _at(doc.handover_at),
+		"plate": doc.vehicle_plate or "",
+		"document_no": doc.hazard_document_no or "",
+		"document_pending": cint(doc.document_pending),
+		"transporter": doc.transporter or "",
+		"contract_no": doc.contract_no or "",
+		"signed_by": _employee(doc.signed_by),
+		"vendor_signer": doc.vendor_signer or "",
+		"vendor_signature": doc.vendor_signature or "",
+		"variance_reason": doc.variance_reason or "",
+		"total_qty": cint(doc.total_containers),
+		"total_collected": _kg(doc.total_collected_kg),
+		"total_handover": _kg(doc.total_handover_kg),
+		"total_cost": f"{round(flt(doc.total_cost)):,}".replace(",", "."),
+		"items": [
+			{
+				"name": row.waste_type,
+				"qty": cint(row.qty),
+				"collected": _kg(row.collected_kg),
+				"handover": _kg(row.handover_kg),
+				"difference": _kg(row.difference_kg),
+				"amount": f"{round(flt(row.amount)):,}".replace(",", "."),
+			}
+			for row in doc.lines
+		],
+	}

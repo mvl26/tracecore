@@ -96,6 +96,8 @@ page_js = {
 		"public/js/station_waste.js",
 		# FEAT-048: tab Kho lưu giữ tạm (SCR-39) và thanh chuyển tab của trạm chất thải
 		"public/js/station_waste_store.js",
+		# FEAT-049: tab Bàn giao (SCR-40)
+		"public/js/station_waste_handover.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -155,6 +157,8 @@ jinja = {
 		"tracecore.ui.linen_print.tc_linen_issue_context",
 		# Print Format "TC Waste Receipt" (FEAT-047, FR-M10-02.6): biên nhận thu gom chất thải
 		"tracecore.ui.waste_print.tc_waste_receipt_context",
+		# Print Format "TC Waste Handover" (FEAT-049, FR-M10-04.5): phiếu bàn giao chất thải
+		"tracecore.ui.waste_print.tc_waste_handover_context",
 		# Print Format "TC Stock Count Sheet" (FEAT-043, FR-M6-05): phiếu kiểm kê kho
 		"tracecore.ui.stock_count_print.tc_stock_count_context",
 	]
@@ -332,6 +336,8 @@ doc_events = {
 	"Waste Collection": dict(_AUDIT_EVENTS),
 	"Waste Container": dict(_AUDIT_EVENTS),
 	"Waste Storage Location": dict(_AUDIT_EVENTS),  # FEAT-048, A-61
+	"Waste Treatment Vendor": dict(_AUDIT_EVENTS),  # FEAT-049, A-62
+	"Waste Handover": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -423,6 +429,9 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
 # M10 phân loại sai (FEAT-047, A-60 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
 tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
+# M10 ghi sổ / hủy phiếu bàn giao (FEAT-049, A-62): (doc) -> tên Cost Entry | None; M7 lập chi phí thuê ngoài, M10 không import M7
+tracecore_after_waste_handover = ["tracecore.costing.from_waste.on_handover"]
+tracecore_after_waste_handover_cancel = ["tracecore.costing.from_waste.on_handover_cancel"]
 # M1 cấp Set ID (FEAT-016, A-13 G5): (ctx {set_type}) -> {value, source} | None, cơ số tối đa nguồn của loại bộ;
 # M8 trả Par Level riêng của loại bộ, nếu không thì cơ số thấp nhất của dụng cụ trong BOM (không import chéo M1 ↔ M8).
 tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]
@@ -546,6 +555,8 @@ scheduler_events = {
 		"tracecore.core.idempotency.purge_expired",
 		# FEAT-039, FR-M5-03: nhắc R02 và R10 trước 30 và 7 ngày khi hồ sơ bảo trì/kiểm định/hiệu chuẩn đến hạn
 		"tracecore.equipment.maintenance.remind_due",
+		# FEAT-049, FR-M10-05.2, .3: giấy phép/hợp đồng đơn vị xử lý 60/30/7 ngày, chứng từ CTNH chờ quá 7 ngày
+		"tracecore.waste.vendors.run_daily",
 		# FEAT-030, FR-M2-22.1: nhắc hành động CAPA quá hạn (người phụ trách + R02)
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày

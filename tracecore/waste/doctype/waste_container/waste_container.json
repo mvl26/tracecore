@@ -18,6 +18,7 @@
   "cold_voided",
   "due_warned_at",
   "overdue_at",
+  "handover",
   "misclass_note",
   "released_by",
   "release_note"
@@ -39,7 +40,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Collected\nHeld\nStored\nCancelled",
+   "options": "Collected\nHeld\nStored\nHanded Over\nCancelled",
    "read_only": 1
   },
   {
@@ -126,6 +127,14 @@
    "read_only": 1
   },
   {
+   "fieldname": "handover",
+   "fieldtype": "Link",
+   "options": "Waste Handover",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "label": "Handover"
+  },
+  {
    "fieldname": "misclass_note",
    "fieldtype": "Small Text",
    "label": "Misclassification Note",
@@ -147,7 +156,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 18:00:00.000000",
+ "modified": "2026-10-30 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Container",

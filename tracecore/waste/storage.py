@@ -27,6 +27,7 @@ COLD_EVENT = "WASTE_COLD_BREACH"
 DEFAULT_WARN_PERCENT = 80
 DEFAULT_COLD_LIMIT_C = 8
 DEFAULT_BREACH_HOURS = 2
+DEFAULT_VARIANCE_PERCENT = 5
 READING_WINDOW = 100
 OK, DUE_SOON, OVERDUE = "OK", "Due Soon", "Overdue"
 NOTICE_CODES = 10
@@ -47,6 +48,7 @@ def thresholds():
 		"warn_percent": cint(get(SETTINGS, "waste_warn_percent")) or DEFAULT_WARN_PERCENT,
 		"cold_limit_c": flt(get(SETTINGS, "waste_cold_limit_c")) or DEFAULT_COLD_LIMIT_C,
 		"breach_hours": flt(get(SETTINGS, "waste_cold_breach_hours")) or DEFAULT_BREACH_HOURS,
+		"variance_percent": flt(get(SETTINGS, "waste_variance_percent")) or DEFAULT_VARIANCE_PERCENT,
 	}
 
 
@@ -58,7 +60,7 @@ def _threshold_number(value):
 		return None
 
 
-def set_thresholds(warn_percent, cold_limit_c, breach_hours):
+def set_thresholds(warn_percent, cold_limit_c, breach_hours, variance_percent=None):
 	"""R02/R10 hiệu chỉnh ngưỡng (UC-35 Open issues); lưu qua document để có Audit Log."""
 	percent, limit, hours = (_threshold_number(value) for value in (warn_percent, cold_limit_c, breach_hours))
 	if percent is None or limit is None or hours is None or not 0 < percent < 100 or limit <= 0 or hours <= 0:
@@ -68,7 +70,17 @@ def set_thresholds(warn_percent, cold_limit_c, breach_hours):
 			_("The warning must be between 1 and 99 %; the temperature and the hours must be above 0."),
 			_("Correct the values, then save again."),
 		)
+	variance = _threshold_number(variance_percent) if variance_percent not in (None, "") else None
+	if variance_percent not in (None, "") and (variance is None or variance <= 0):
+		raise _blocked(
+			"WASTE_THRESHOLD_INVALID",
+			_("Storage thresholds are not valid"),
+			_("The weight difference must be above 0."),
+			_("Correct the values, then save again."),
+		)
 	doc = frappe.get_doc(SETTINGS)
+	if variance is not None:
+		doc.waste_variance_percent = variance
 	doc.update(
 		{"waste_warn_percent": int(percent), "waste_cold_limit_c": limit, "waste_cold_breach_hours": hours}
 	)

@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc, TcWeighLine, WasteCollect */
+/* global uuid4, clientTs, esc, TcWeighLine, WasteCollect, WasteHandoverScreen */
 // Màn kho lưu giữ tạm chất thải (SCR-39, FEAT-048, UC-35, A-61) và thanh tab của trạm chất thải (bước WST).
 // Frappe nối file này sau station_waste.js (hook page_js) nên dùng chung uuid4/clientTs/esc/WasteCollect.
 // Ô quét luôn ở đầu: quét vị trí KE- rồi quét từng túi CT-; quét phiếu TG- để nhập cả phiếu vào vị trí mặc định.
@@ -18,7 +18,10 @@ function wasteTabs(active) {
 			label
 		)}</button>`;
 	return `<div class="tc-linen-tabs" role="group" aria-label="${esc(__("Waste station"))}">
-		${tab("collect", __("Collection"))}${tab("store", __("Waste store"))}
+		${tab("collect", __("Collection"))}${tab("store", __("Waste store"))}${tab(
+		"handover",
+		__("Handover")
+	)}
 	</div>`;
 }
 
@@ -476,6 +479,7 @@ class WasteStation {
 		this.station = station;
 		this.collect = new WasteCollect(station);
 		this.store = new WasteStore(station);
+		this.handover = new WasteHandoverScreen(station); // FEAT-049, SCR-40
 		this.active = this.collect;
 	}
 
@@ -490,6 +494,7 @@ class WasteStation {
 	clearSession() {
 		this.collect.clearSession();
 		this.store.clearSession();
+		this.handover.clearSession();
 		this.active = this.collect;
 	}
 
@@ -500,6 +505,7 @@ class WasteStation {
 	setOffline(offline) {
 		this.collect.offline = offline;
 		this.store.offline = offline;
+		this.handover.offline = offline;
 		return this.active.show();
 	}
 
@@ -510,7 +516,7 @@ class WasteStation {
 	onAction(action, button) {
 		if (action === "waste-mode") {
 			if (this.active.busy) return true;
-			this.active = this[button.dataset.mode] || this.collect; // collect | store
+			this.active = this[button.dataset.mode] || this.collect; // collect | store | handover
 			this.active.notice = null;
 			if (this.active === this.store) this.store.data = null;
 			this.active.show();

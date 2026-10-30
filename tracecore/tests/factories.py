@@ -1383,6 +1383,35 @@ def make_waste_location(waste_types, default=False, is_cold=0, zone=None):
 	)
 
 
+def make_waste_vendor(waste_types, rate=1000, license_no="GP-1", license_valid_to=None):
+	"""Đơn vị xử lý có giấy phép và hợp đồng còn hiệu lực cho các loại `waste_types` (FEAT-049)."""
+	valid_to = license_valid_to or add_days(today(), 365)
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Waste Treatment Vendor",
+				"vendor_name": "Vendor " + frappe.generate_hash(length=8),
+				"tax_id": "0101234567",
+				"license_no": license_no,
+				"license_valid_to": valid_to,
+				"permitted_types": [{"waste_type": waste_type} for waste_type in waste_types],
+				"contracts": [
+					{
+						"contract_no": "HD-1",
+						"waste_type": waste_type,
+						"valid_from": add_days(today(), -30),
+						"valid_to": add_days(today(), 365),
+						"rate_per_kg": rate,
+					}
+					for waste_type in waste_types
+				],
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
 def make_waste_container():
 	"""Một túi `Waste Container` (dịch vụ mới được tạo: cờ `tc_waste`); dùng ở test NC của M2."""
 	doc = frappe.get_doc(

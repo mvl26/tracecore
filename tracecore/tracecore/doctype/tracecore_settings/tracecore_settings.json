@@ -20,6 +20,7 @@
   "waste_warn_percent",
   "waste_cold_limit_c",
   "waste_cold_breach_hours",
+  "waste_variance_percent",
   "section_reports",
   "report_locked_until"
  ],
@@ -118,6 +119,13 @@
    "fieldname": "waste_cold_breach_hours",
    "fieldtype": "Float",
    "label": "Hours Above the Limit"
+  },
+  {
+   "fieldname": "waste_variance_percent",
+   "fieldtype": "Float",
+   "default": "5",
+   "description": "A larger difference between collected and handed over weight needs a reason and R02 approval (FR-M10-04.1). Default 5.",
+   "label": "Handover Weight Difference (%)"
   },
   {
    "fieldname": "section_reports",

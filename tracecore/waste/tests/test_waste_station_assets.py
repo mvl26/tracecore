@@ -86,6 +86,8 @@ class TestWasteStationAssets(FrappeTestCase):
 				"Waste Container",
 				"Waste Storage Location",
 				"report:Waste Storage Stock",
+				"Waste Treatment Vendor",
+				"Waste Handover",
 			),
 		)
 

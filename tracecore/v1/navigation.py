@@ -101,6 +101,8 @@ MANAGEMENT_GROUPS = (
 			"Waste Container",
 			"Waste Storage Location",  # FEAT-048
 			"report:Waste Storage Stock",
+			"Waste Treatment Vendor",  # FEAT-049
+			"Waste Handover",
 		),
 	),
 	# FEAT-033 thu gom; FEAT-034 lô giặt và báo cáo chi phí/kg; FEAT-035 thêm cấp phát
