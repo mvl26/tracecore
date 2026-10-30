@@ -29,11 +29,24 @@ class TestLauncher(FrappeTestCase):
 			links = get_context()["management"]
 		routes = {link["route"] for link in links}
 		self.assertTrue({"/app/department", "/app/user", "/app/tc-import"} <= routes)
-		self.assertEqual(links[0]["group"], "Organization and staff")
+		# FEAT-006: dashboard vận hành đứng đầu, sau đó mới đến thiết lập tổ chức và người
+		self.assertEqual(links[0]["route"], "/app/tc-dashboard")
+		self.assertEqual(links[1]["group"], "Organization and staff")
 		self.assertTrue(all(link["label"] and link["group"] for link in links))
 		# nhóm liền nhau, không lặp lại sau khi đã sang nhóm khác
 		groups = [link["group"] for link in links]
 		self.assertEqual(groups, sorted(groups, key=groups.index))
+
+	def test_dashboard_link_follows_the_page_roles(self):
+		for roles, expected in ((["TC R09"], True), (["TC R04"], False)):
+			with (
+				patch("frappe.session", frappe._dict(user="dash@example.test")),
+				patch("frappe.get_roles", return_value=roles),
+				patch("frappe.get_list", return_value=[]),
+				patch("frappe.has_permission", return_value=True),
+			):
+				routes = {link["route"] for link in get_context()["management"]}
+			self.assertEqual("/app/tc-dashboard" in routes, expected, roles)
 
 	def test_notification_center_and_rules_are_reachable_from_the_launcher(self):
 		with (
