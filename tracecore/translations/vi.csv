@@ -4958,6 +4958,10 @@ Cost sheets cannot be deleted.,Không thể xóa phiếu giá thành.,
 Cost sheets are built for sterilization loads and wash batches only.,Phiếu giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
 Cost sheet {0} is unpriced,Phiếu giá thành {0} chưa định giá,
 Cost sheet unpriced,Phiếu giá thành chưa định giá,
+Currently locked until {0}.,Đang khóa đến ngày {0}.,
+No report period is locked yet.,Chưa khóa kỳ báo cáo nào.,
+Reports locked until {0}.,Đã khóa báo cáo đến ngày {0}.,
+The lock date cannot be in the future.,Ngày khóa không được ở tương lai.,
 Pass,Đạt,Sterilization Log
 Fail,Không đạt,Sterilization Log
 Pending,Chờ kết quả,Sterilization Log
@@ -5069,7 +5073,6 @@ Period: {0} to {1},Kỳ: {0} đến {1},
 Prepared by,Người lập,
 Recall orders,Lệnh thu hồi,
 Replacement Price (VND),Giá thay thế (VND),
-Report period locked.,Đã khóa kỳ báo cáo.,
 Reports Locked Until,Báo cáo khóa đến ngày,
 Reports Locked Until,Báo cáo khóa đến ngày,TraceCore Settings
 "Reports and the sterilization log of a period ending on or before this date are final; later periods are printed with a PROVISIONAL stamp (FR-M9-02.1). Only TC R01 sets it, with Lock Report Period on the reports.","Báo cáo và sổ tiệt khuẩn của kỳ kết thúc trước hoặc đúng ngày này là bản chính thức; kỳ sau ngày này in kèm dấu TẠM (FR-M9-02.1). Chỉ TC R01 đặt ngày này, bằng nút Khóa kỳ báo cáo trên các báo cáo.",TraceCore Settings

@@ -23,30 +23,41 @@ tracecore.report_export.setup = function (report, kind, { lockable = true } = {}
 	});
 	if (lockable && frappe.user.has_role("TC R01")) {
 		report.page.add_inner_button(__("Lock Report Period"), () => {
-			frappe.prompt(
-				{
-					fieldname: "until",
-					fieldtype: "Date",
-					label: __("Reports Locked Until"),
-					reqd: 1,
-					default: report.get_filter_value("to_date"),
-				},
-				(values) =>
-					frappe
-						.call({
-							method: "tracecore.v1.report.lock_period",
-							args: { until: values.until },
-						})
-						.then(() => {
-							frappe.show_alert({
-								message: __("Report period locked."),
-								indicator: "green",
-							});
-							report.refresh();
-						}),
-				__("Lock Report Period"),
-				__("Lock")
-			);
+			// hiện ngày đang khóa, không điền sẵn "đến ngày" của bộ lọc: người dùng phải thấy ngày thật đã lưu
+			frappe.call({ method: "tracecore.v1.report.lock_status", type: "GET" }).then((r) => {
+				const locked = r.message && r.message.locked_until;
+				frappe.prompt(
+					{
+						fieldname: "until",
+						fieldtype: "Date",
+						label: __("Reports Locked Until"),
+						reqd: 1,
+						default: locked || frappe.datetime.get_today(),
+						description: locked
+							? __("Currently locked until {0}.", [
+									frappe.datetime.str_to_user(locked),
+							  ])
+							: __("No report period is locked yet."),
+					},
+					(values) =>
+						frappe
+							.call({
+								method: "tracecore.v1.report.lock_period",
+								args: { until: values.until },
+							})
+							.then((saved) => {
+								frappe.show_alert({
+									message: __("Reports locked until {0}.", [
+										frappe.datetime.str_to_user(saved.message.locked_until),
+									]),
+									indicator: "green",
+								});
+								report.refresh();
+							}),
+					__("Lock Report Period"),
+					__("Lock")
+				);
+			});
 		});
 	}
 	if (!tracecore.report_export._listening) {
