@@ -1,4 +1,4 @@
-"""Waste Collection: phiếu thu gom chất thải theo khoa (FEAT-047, UC-34, FR-M10-02, A-59); luật ở `waste.collection`.
+"""Waste Collection: phiếu thu gom chất thải theo khoa (FEAT-047, UC-34, FR-M10-02, A-60); luật ở `waste.collection`.
 
 Sửa phiếu đã ghi sổ = Hủy rồi Sửa đổi; không xóa (hook `on_trash`).
 """

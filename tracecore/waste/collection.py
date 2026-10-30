@@ -1,4 +1,4 @@
-"""Thu gom chất thải theo khoa (FEAT-047, UC-34, FR-M10-02, .1, .3-.6, FR-M10-01.5, A-59 W1, W3, W4, W9-W12).
+"""Thu gom chất thải theo khoa (FEAT-047, UC-34, FR-M10-02, .1, .3-.6, FR-M10-01.5, A-60 W1, W3, W4, W9-W12).
 
 Cùng cách làm với thu gom đồ vải nhưng không import M3 (R1). Người giao và khoa lấy từ thẻ, người thu gom là Employee
 của phiên thẻ. Ghi sổ phiếu sinh một `Waste Container` mã `CT-` cho từng túi, in nhãn, bắt đầu tính giờ lưu từ lúc thu

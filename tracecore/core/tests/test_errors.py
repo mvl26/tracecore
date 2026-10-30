@@ -235,7 +235,7 @@ class TestErrors(FrappeTestCase):
 		table.update({"NOTE_REQUIRED": 422, "COST_SOURCE_NOT_FOUND": 404})
 		# FEAT-008 A-55 D4
 		table["ENV_READING_INVALID"] = 422
-		# FEAT-047 A-59: thu gom chất thải
+		# FEAT-047 A-60: thu gom chất thải
 		table.update(
 			{
 				"WASTE_EMPTY": 422,

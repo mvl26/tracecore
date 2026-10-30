@@ -14,7 +14,7 @@ STEP_ROLES = {
 	"T7": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
 	"T8": {"TC R08"},
 	"LIN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
-	"WST": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-59 W5)
+	"WST": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)
 }
 # Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
 IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "LIN", "WST"}

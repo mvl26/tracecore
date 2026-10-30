@@ -36,7 +36,7 @@ RELEASE_ROLES = ("TC R05", "TC R02", "TC R01", "System Manager")
 RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 # FEAT-033 (A-49): trạm đồ vải do R07 (actor chính UC-16); R02 hỗ trợ
 LINEN_ROLES = ("TC R07", "TC R02", "System Manager")
-# FEAT-047 (A-59): trạm thu gom chất thải do R07 (actor chính UC-34); R02 hỗ trợ
+# FEAT-047 (A-60): trạm thu gom chất thải do R07 (actor chính UC-34); R02 hỗ trợ
 WASTE_ROLES = ("TC R07", "TC R02", "System Manager")
 SESSION_FLAG = "tc_station_session"
 

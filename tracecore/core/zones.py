@@ -13,7 +13,7 @@ STEPS_BY_ZONE_TYPE: dict[str, tuple[str, ...]] = {
 	"Sterile": ("T5b", "T6", "T7"),
 	"Department": ("T8",),
 	"Linen": ("LIN",),  # FEAT-033 A-49 L1: trạm đồ vải không có cổng 5 bước
-	"Waste": ("WST",),  # FEAT-047 A-59 W5: trạm thu gom chất thải không có cổng 5 bước
+	"Waste": ("WST",),  # FEAT-047 A-60 W5: trạm thu gom chất thải không có cổng 5 bước
 }
 # Chiều đi của dụng cụ qua máy hai cửa: Bẩn → Sạch → Vô khuẩn.
 ZONE_FLOW: tuple[str, ...] = ("Dirty", "Clean", "Sterile")

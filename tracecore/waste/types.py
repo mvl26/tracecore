@@ -1,4 +1,4 @@
-"""Luật Loại chất thải (FEAT-047, FR-M10-01, .1-.4, BRU-WST-001, BRU-WST-002, A-59 W6-W8)."""
+"""Luật Loại chất thải (FEAT-047, FR-M10-01, .1-.4, BRU-WST-001, BRU-WST-002, A-60 W6-W8)."""
 
 import frappe
 from frappe import _

@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.waste.* (FEAT-047, UC-34, FR-M10-02, .5, .6, A-59 W4, W14): phiên thẻ R07, idempotent, Audit từ chối."""
+"""RPC tracecore.v1.waste.* (FEAT-047, UC-34, FR-M10-02, .5, .6, A-60 W4, W14): phiên thẻ R07, idempotent, Audit từ chối."""
 
 import uuid
 from datetime import timedelta

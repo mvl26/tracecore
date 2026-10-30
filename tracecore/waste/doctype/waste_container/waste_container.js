@@ -1,4 +1,4 @@
-// Desk: túi/thùng chất thải (FEAT-047, FR-M10-02.4, A-59 W12). Túi bị giữ vì phân loại sai: R02 xác nhận đã phân loại lại;
+// Desk: túi/thùng chất thải (FEAT-047, FR-M10-02.4, A-60 W12). Túi bị giữ vì phân loại sai: R02 xác nhận đã phân loại lại;
 // quy tắc nằm ở server (tracecore.v1.waste.release_held), lỗi chặn hiện kết quả → lý do → hành động trong hộp thoại.
 
 const TC_WASTE_RELEASE = "tracecore.v1.waste.release_held";

@@ -1,9 +1,9 @@
 /* global uuid4, clientTs, esc, TcWeighLine */
-// Màn thu gom chất thải theo khoa (SCR-38, FEAT-047, UC-34, A-59) trên Page station, trạm bước WST (kiosk và PDA).
+// Màn thu gom chất thải theo khoa (SCR-38, FEAT-047, UC-34, A-60) trên Page station, trạm bước WST (kiosk và PDA).
 // Frappe nối file này sau tc_weigh_line.js (hook page_js) nên dùng chung uuid4/clientTs/esc/TcWeighLine.
 // Ô quét luôn ở đầu: quét thẻ người giao trước (khoa lấy từ thẻ), rồi quét hoặc gõ tên loại để thêm dòng; sau khi ghi sổ
 // quét lại thẻ để xác nhận biên nhận. Mỗi dòng đúng một loại (BRU-WST-001). Lỗi chặn = alert-error inline (kết quả → lý
-// do → hành động). Không offline: mất mạng thì báo và không ghi (A-59 W2).
+// do → hành động). Không offline: mất mạng thì báo và không ghi (A-60 W2).
 
 const WST_CATALOG = "tracecore.v1.waste.catalog";
 const WST_GIVER = "tracecore.v1.waste.giver";

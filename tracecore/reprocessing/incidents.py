@@ -453,7 +453,7 @@ def remind_overdue():
 
 
 def on_waste_nc(ctx):
-	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai → NC (FEAT-047, FR-M10-02.4, A-59 W3); FEAT-050 mở rộng."""
+	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai → NC (FEAT-047, FR-M10-02.4, A-60 W3); FEAT-050 mở rộng."""
 	return _auto(
 		"Waste Container",
 		ctx["container"],

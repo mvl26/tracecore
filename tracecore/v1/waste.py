@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.waste.* — màn thu gom chất thải (SCR-38, FEAT-047, UC-34, FR-M10-02, A-59).
+"""RPC tracecore.v1.waste.* — màn thu gom chất thải (SCR-38, FEAT-047, UC-34, FR-M10-02, A-60).
 
 Lớp mỏng trên `tracecore.waste.collection`, theo khuôn `v1.linen`: phiên thẻ nhân viên → `@idempotent` với RPC ghi →
 kiểm định dạng tham số (400) → dịch vụ. Từ chối nghiệp vụ thành ``{"ok": false, "error": {...}}`` kèm Audit `Reject`
@@ -104,7 +104,7 @@ def collect(station, card=None, lines=None, total_kg=None, note=None, client_ts=
 @station_session(*WASTE_ROLES)
 @idempotent
 def acknowledge(station, collection=None, card=None, client_ts=None, token=None):
-	"""Biên nhận với khoa: người giao hoặc đồng nghiệp cùng khoa quét lại thẻ (A-59 W4)."""
+	"""Biên nhận với khoa: người giao hoặc đồng nghiệp cùng khoa quét lại thẻ (A-60 W4)."""
 	require_any_role(*WASTE_ROLES)
 	collection = _text(collection, "collection")
 	card = _text(card, "card")
@@ -118,7 +118,7 @@ def acknowledge(station, collection=None, card=None, client_ts=None, token=None)
 
 @frappe.whitelist(methods=["POST"])
 def release_held(container, note=None):
-	"""R02 mở túi bị giữ vì phân loại sai, từ Desk (FR-M10-02.4, A-59 W12)."""
+	"""R02 mở túi bị giữ vì phân loại sai, từ Desk (FR-M10-02.4, A-60 W12)."""
 	require_any_role(*RELEASE_ROLES)
 	try:
 		service.release_held(container, note, frappe.session.user)

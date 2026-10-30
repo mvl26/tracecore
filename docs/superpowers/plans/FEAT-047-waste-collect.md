@@ -6,9 +6,9 @@
 
 **Spec:** `docs/implementation-plan.md` §3 dòng FEAT-047; `docs/srs.md` FR-M10-01 (.1–.5), FR-M10-02 (.1–.6), BRU-WST-001, BRU-WST-002, BRU-ID-006; `docs/use-cases.md` UC-34; `docs/ux-foundations.md` SCR-38; `docs/architecture.md` §5.3 (Waste Type, Waste Container, Waste Collection), §5.3.3 (`CT-`, `TG-`), ADR-013.
 
-**Nhánh:** `feat/FEAT-047-waste-collect` cắt từ `develop` (b7c87f8), bench `~/tracecore-f043`, site test `test_f043`. Không đụng `~/tracecore-dev` (tab song song). Số amendment: **A-59** (A-55 FEAT-008, A-56 FEAT-013, A-57 FEAT-007, A-58 FEAT-012).
+**Nhánh:** `feat/FEAT-047-waste-collect` cắt từ `develop` (b7c87f8), bench `~/tracecore-f043`, site test `test_f043`. Không đụng `~/tracecore-dev` (tab song song). Số amendment: **A-60** (A-55 FEAT-008, A-56 FEAT-013, A-57 FEAT-007, A-58 FEAT-012, A-59 loại chứng chỉ tự điền).
 
-## Quyết định (Amendment A-59)
+## Quyết định (Amendment A-60)
 
 Người dùng chốt W1–W4 ngày 30/10/2026; W5–W14 là chi tiết hiện thực theo tài liệu, chủ đầu tư chưa duyệt.
 
@@ -31,7 +31,7 @@ Người dùng chốt W1–W4 ngày 30/10/2026; W5–W14 là chi tiết hiện t
 
 ## Tasks
 
-- [x] **Task 0 — Tài liệu:** A-59, ghi chú dòng FEAT-047 trong implementation-plan, plan này.
+- [x] **Task 0 — Tài liệu:** A-60, ghi chú dòng FEAT-047 trong implementation-plan, plan này.
 - [x] **Task 1 — Nền:** bước `WST`, `next_container_code`, nhãn `Waste Container` + patch mẫu nhãn, loại NC + hook (FR-M10-01.5, FR-M10-02.4, BRU-ID-006).
 - [x] **Task 2 — `Waste Type` + `Waste Type Rate`** (FR-M10-01, .1–.4; BRU-WST-001, BRU-WST-002).
 - [x] **Task 3 — `Waste Collection`, Line, `Waste Container`, dịch vụ `waste/collection.py`** (FR-M10-02, .1, .3–.6; BRU-WST-001, BRU-WST-002).
@@ -57,5 +57,6 @@ Người dùng chốt W1–W4 ngày 30/10/2026; W5–W14 là chi tiết hiện t
 - **Mã màu chỉ bằng chữ:** palette `--tc-*` không có màu riêng cho từng nhóm TT 20/2021, nên màn hiện chữ cỡ lớn (Vàng/Đen/Xanh/Trắng), không có ô màu.
 - **`test_errors` có sẵn đỏ trên develop:** FEAT-008 thêm `ENV_READING_INVALID` thiếu trong bảng test; đã thêm.
 - **Chưa làm (gap có chủ đích):** offline và dải mã `CT-` cấp trước (W2); nhãn in trước UC-34 A1; ảnh dòng phiếu trên kiosk (W13). Màn JS chỉ có test tĩnh, chưa xem trên trình duyệt, chưa E2E.
+- **Exit code của test:** `bench run-tests --coverage` trả 0 dù có test fail; phải đọc dòng `FAILED`/`OK` trong log, không tin exit code.
 - **Bài hướng dẫn trạm WST:** FEAT-013 chưa merge; khi gộp phải thêm khóa `WST` vào `station_help.STATION_KEYS`, bài mặc định và option `tc_station_key`.
 

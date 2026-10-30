@@ -1,4 +1,4 @@
-"""Asset màn thu gom chất thải (SCR-38, FEAT-047, UC-34, FR-M9-14, A-59 W2, W4): kiểm tĩnh, không chạy E2E."""
+"""Asset màn thu gom chất thải (SCR-38, FEAT-047, UC-34, FR-M9-14, A-60 W2, W4): kiểm tĩnh, không chạy E2E."""
 
 import re
 from pathlib import Path

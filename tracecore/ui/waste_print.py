@@ -1,4 +1,4 @@
-"""Ngữ cảnh Print Format "TC Waste Receipt": biên nhận thu gom chất thải (FEAT-047, FR-M10-02.6, UC-34 bước 6; A-59 W4).
+"""Ngữ cảnh Print Format "TC Waste Receipt": biên nhận thu gom chất thải (FEAT-047, FR-M10-02.6, UC-34 bước 6; A-60 W4).
 
 Hàm được đăng ký ở `hooks.jinja`. Chỉ người đọc được phiếu mới in được. Số kg dùng dấu phẩy thập phân (NFR-L10N-01).
 """

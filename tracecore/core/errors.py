@@ -272,7 +272,7 @@ HTTP_STATUS: dict[str, int] = {
 	# FEAT-008 A-55 D4: số đo môi trường sai (khu chưa theo dõi dùng mặc định 409)
 	"ENV_READING_INVALID": 422,
 	"COST_SOURCE_NOT_FOUND": 404,
-	# FEAT-047 A-59: thu gom chất thải
+	# FEAT-047 A-60: thu gom chất thải
 	"WASTE_EMPTY": 422,
 	"WASTE_TYPE_INVALID": 422,
 	"WASTE_QTY_INVALID": 422,

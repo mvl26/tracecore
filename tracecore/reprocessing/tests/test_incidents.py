@@ -264,7 +264,7 @@ class TestOverdue(IncidentCase):
 class TestWasteNc(IncidentCase):
 	@bru("BRU-WST-001")
 	def test_waste_misclassification_creates_one_incident_per_container(self):
-		"""M10 báo qua hook, M2 tạo NC (FEAT-047, FR-M10-02.4, A-59 W3)."""
+		"""M10 báo qua hook, M2 tạo NC (FEAT-047, FR-M10-02.4, A-60 W3)."""
 		employee = factories.make_employee(first_name="Waste NC").name
 		container = factories.make_waste_container()
 		ctx = {
