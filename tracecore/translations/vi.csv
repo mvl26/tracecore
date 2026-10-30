@@ -6173,6 +6173,56 @@ Waste Type Name,Tên loại chất thải,Waste Type
 Waste Type Rate,Đơn giá loại chất thải
 Waste Type,Loại chất thải,Waste Collection Line
 Waste Type,Loại chất thải,Waste Container
+Waste Alerts,Cảnh báo chất thải,
+Bags close to the storage limit,Túi sắp quá hạn lưu,
+Bags past the storage limit,Túi quá hạn lưu,
+Departments with unusual waste,Khoa phát sinh bất thường,
+Handovers waiting for a document,Phiếu bàn giao chờ chứng từ,
+Kg today,Kg hôm nay,
+Waste type,Loại chất thải,
+Waste Quota,Định mức chất thải,
+Waste Report,Báo cáo chất thải,
+Bag or Bin Item,Vật tư túi/thùng,
+Bags per Day,Số túi/ngày,
+Kg per Bed per Day,Kg/giường/ngày,
+"Bags per day and reference kg per bed per day of a department and waste type (FEAT-050, FR-M10-08).",Số túi/ngày và kg/giường/ngày tham chiếu theo khoa và loại chất thải.,
+This department and waste type already have a quota from that date.,Khoa và loại này đã có định mức từ ngày đó.,
+Incident Category,Nhóm sự cố,
+Waste,Chất thải,Incident CAPA
+Waste Spill,Tràn đổ chất thải,Incident CAPA
+Sharps Exposure,Phơi nhiễm vật sắc nhọn,Incident CAPA
+Waste Source Document,Phiếu nguồn chất thải,
+Exposure Source,Nguồn phơi nhiễm,
+Follow the post-exposure procedure of Circular 16/2018/TT-BYT right away.,Thực hiện ngay quy trình xử lý sau phơi nhiễm theo Thông tư 16/2018/TT-BYT.,
+Exposure details are required,Cần thông tin phơi nhiễm,
+A sharps exposure needs the exposed employee and the source.,Phơi nhiễm vật sắc nhọn cần ghi nhân viên bị phơi nhiễm và nguồn.,
+"Enter both, then follow the post-exposure procedure of Circular 16/2018/TT-BYT.",Nhập đủ rồi thực hiện quy trình xử lý sau phơi nhiễm theo Thông tư 16/2018/TT-BYT.,
+Unusual waste from a department,Khoa phát sinh chất thải bất thường,
+Repeated waste misclassification,Phân loại sai chất thải lặp lại,
+Unusual waste from {0}: {1},Chất thải bất thường từ {0}: {1},
+{0} on {1}: {2} kg against an average of {3} kg ({4} %).,{0} ngày {1}: {2} kg so với trung bình {3} kg ({4} %).,
+{0} Not enough data yet.,{0} Chưa đủ dữ liệu.,
+{0} has repeated waste misclassification,{0} phân loại sai chất thải lặp lại,
+{0} misclassifications in {1} days.,{0} lần phân loại sai trong {1} ngày.,
+Repeated Misclassification Count,Số lần phân loại sai lặp lại,
+Repeated Misclassification Days,Số ngày xét phân loại sai,
+Unusual Department Weight (%),Ngưỡng kg bất thường của khoa (%),
+This many misclassifications of a department within the days below alert R01 (FR-M10-06.2). Default 3.,Số lần phân loại sai của khoa trong số ngày bên dưới để báo R01. Mặc định 3.,
+Default 30.,Mặc định 30.,
+A daily weight this far from the department average alerts R02 (FR-M10-08.1). Default 30.,Kg trong ngày lệch trung bình của khoa quá mức này thì báo R02. Mặc định 30.,
+Storage Compliance (%),Tuân thủ hạn lưu (%),
+Period Status,Trạng thái kỳ,
+No quota,Thiếu định mức,
+Repeated misclassification,Phân loại sai lặp lại,
+Provisional,Tạm,Waste Report
+Final,Chính thức,Waste Report
+Medical waste,Chất thải y tế,Operations Dashboard
+Bags past the storage limit,Túi quá hạn lưu,Operations Dashboard
+Bags close to the storage limit,Túi sắp quá hạn lưu,Operations Dashboard
+Handovers waiting for a document,Phiếu bàn giao chờ chứng từ,Operations Dashboard
+Departments with unusual waste,Khoa phát sinh bất thường,Operations Dashboard
+Waste type,Loại chất thải,Operations Dashboard
+Kg today,Kg hôm nay,Operations Dashboard
 Confirm the typed weight,Xác nhận kg nhập tay,
 Weigh,Cân,
 values must be an object.,values phải là một object.,

@@ -22,8 +22,8 @@ from tracecore.v1._common import (
 	run_at_step,
 	station_session,
 )
+from tracecore.waste import analysis, handover, storage, vendors
 from tracecore.waste import collection as service
-from tracecore.waste import handover, storage, vendors
 
 STEP = "WST"
 RELEASE_ROLES = ("TC R02", "System Manager")
@@ -326,6 +326,16 @@ def attach_document(handover_name, document_no=None, scan=None, transporter=None
 		frappe.local.response["http_status_code"] = error.block.http_status
 		return {"ok": False, "error": error.block.as_dict()}
 	return {"ok": True, "document_pending": doc.document_pending}
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def my_department(from_date, to_date):
+	"""R08 xem kg và NC phân loại sai của đúng khoa mình (FR-M10-07.3, NFR-SEC-07); chưa có Portal nên chỉ là RPC (A-63)."""
+	require_any_role("TC R08", "TC R01", "TC R02", "System Manager")
+	department = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "department")
+	if not department:
+		return {"rows": [], "misclassifications": []}
+	return analysis.department_summary(department, from_date, to_date)
 
 
 @frappe.whitelist(methods=["POST"])

@@ -338,6 +338,7 @@ doc_events = {
 	"Waste Storage Location": dict(_AUDIT_EVENTS),  # FEAT-048, A-61
 	"Waste Treatment Vendor": dict(_AUDIT_EVENTS),  # FEAT-049, A-62
 	"Waste Handover": dict(_AUDIT_EVENTS),
+	"Waste Quota": dict(_AUDIT_EVENTS),  # FEAT-050, A-63
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -557,6 +558,8 @@ scheduler_events = {
 		"tracecore.equipment.maintenance.remind_due",
 		# FEAT-049, FR-M10-05.2, .3: giấy phép/hợp đồng đơn vị xử lý 60/30/7 ngày, chứng từ CTNH chờ quá 7 ngày
 		"tracecore.waste.vendors.run_daily",
+		# FEAT-050, FR-M10-06.2: khoa phân loại sai lặp lại → báo R01
+		"tracecore.waste.analysis.run_daily",
 		# FEAT-030, FR-M2-22.1: nhắc hành động CAPA quá hạn (người phụ trách + R02)
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày

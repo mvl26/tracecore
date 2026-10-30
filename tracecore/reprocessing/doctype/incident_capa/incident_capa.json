@@ -9,6 +9,7 @@
  "field_order": [
   "incident_type",
   "severity",
+  "incident_category",
   "column_break_status",
   "status",
   "occurred_at",
@@ -27,6 +28,9 @@
   "employee",
   "department",
   "station",
+  "waste_type",
+  "waste_source_doc",
+  "exposure_source",
   "section_source",
   "is_auto",
   "source_doctype",
@@ -48,7 +52,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Incident Type",
-   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nSync Conflict\nWaste Misclassification\nWaste Storage Overdue\nWaste Weight Variance\nOther",
+   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nSync Conflict\nWaste Misclassification\nWaste Storage Overdue\nWaste Weight Variance\nWaste Spill\nSharps Exposure\nOther",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -62,6 +66,14 @@
    "options": "Low\nMedium\nHigh",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "incident_category",
+   "fieldtype": "Select",
+   "options": "\nWaste",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "label": "Incident Category"
   },
   {
    "fieldname": "column_break_status",
@@ -175,6 +187,26 @@
    "fieldtype": "Link",
    "label": "Station",
    "options": "Zone Station"
+  },
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "options": "Waste Type",
+   "in_standard_filter": 1,
+   "label": "Waste Type"
+  },
+  {
+   "fieldname": "waste_source_doc",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "label": "Waste Source Document"
+  },
+  {
+   "fieldname": "exposure_source",
+   "fieldtype": "Data",
+   "depends_on": "eval:doc.incident_type==\"Sharps Exposure\"",
+   "description": "Follow the post-exposure procedure of Circular 16/2018/TT-BYT right away.",
+   "label": "Exposure Source"
   },
   {
    "collapsible": 1,

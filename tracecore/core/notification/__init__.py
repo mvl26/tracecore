@@ -80,6 +80,9 @@ EVENTS = {
 		0,
 		(FALLBACK_ROLE, "TC R09"),
 	),
+	# FEAT-050: khoa phát sinh bất thường (FR-M10-08.1) và phân loại sai lặp lại (FR-M10-06.2)
+	"WASTE_ANOMALY": ("Unusual waste from a department", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"WASTE_MISCLASS_REPEAT": ("Repeated waste misclassification", "Normal", 0, 0, ("TC R01",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

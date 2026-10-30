@@ -21,6 +21,9 @@
   "waste_cold_limit_c",
   "waste_cold_breach_hours",
   "waste_variance_percent",
+  "waste_misclass_count",
+  "waste_misclass_days",
+  "waste_anomaly_percent",
   "section_reports",
   "report_locked_until"
  ],
@@ -126,6 +129,27 @@
    "default": "5",
    "description": "A larger difference between collected and handed over weight needs a reason and R02 approval (FR-M10-04.1). Default 5.",
    "label": "Handover Weight Difference (%)"
+  },
+  {
+   "fieldname": "waste_misclass_count",
+   "fieldtype": "Int",
+   "default": "3",
+   "description": "This many misclassifications of a department within the days below alert R01 (FR-M10-06.2). Default 3.",
+   "label": "Repeated Misclassification Count"
+  },
+  {
+   "fieldname": "waste_misclass_days",
+   "fieldtype": "Int",
+   "default": "30",
+   "description": "Default 30.",
+   "label": "Repeated Misclassification Days"
+  },
+  {
+   "fieldname": "waste_anomaly_percent",
+   "fieldtype": "Float",
+   "default": "30",
+   "description": "A daily weight this far from the department average alerts R02 (FR-M10-08.1). Default 30.",
+   "label": "Unusual Department Weight (%)"
   },
   {
    "fieldname": "section_reports",

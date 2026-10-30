@@ -16,9 +16,10 @@ from tracecore.inventory import alerts as inventory_alerts
 from tracecore.reprocessing import storage
 from tracecore.v1 import par
 from tracecore.v1._common import BadRequestError, require_any_role, server_time
+from tracecore.waste import analysis as waste_analysis
 
 ALL_ROLES = ("TC R01", "TC R02", "System Manager")
-DASHBOARD_ROLES = (*ALL_ROLES, "TC R09", "TC R10")
+DASHBOARD_ROLES = (*ALL_ROLES, "TC R07", "TC R09", "TC R10")
 CACHE_PREFIX = "tc_dashboard"
 CACHE_SECONDS = 30
 PAR_LIMIT = 50
@@ -34,10 +35,12 @@ BLOCK_SOURCES = {
 	"certificates": "Certificate",
 	"equipment": "Equipment",
 	"stock": "Item",
+	"waste": "Waste Container",  # FEAT-050, FR-M10-07.1
 }
 ROLE_BLOCKS = {
 	"TC R09": ("sterile", "stock", "par"),
 	"TC R10": ("equipment", "certificates"),
+	"TC R07": ("waste",),
 }
 # D11: List View có ô quét; trường mã ngoài `name` (Set ID, mã dụng cụ, mã lô)
 SCAN_DOCTYPES = {
@@ -125,6 +128,7 @@ def _build(block, start, end, filters):
 		"sterile": _sterile,
 		"par": _par,
 		"stock": _stock,
+		"waste": waste_analysis.dashboard,
 		"overrides": board.pending_overrides,
 		"recalls": board.open_recalls,
 		"certificates": board.expiring_certificates,

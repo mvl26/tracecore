@@ -269,7 +269,7 @@ class TestWasteNc(IncidentCase):
 		container = factories.make_waste_container()
 		ctx = {
 			"container": container,
-			"waste_type": "Sharp",
+			"waste_type": frappe.db.get_value("Waste Container", container, "waste_type"),
 			"department": None,
 			"employee": employee,
 			"station": None,
