@@ -14,7 +14,7 @@
 
 - **D1 DocType:** `Cost Sheet` (DT-COSTSHEET, module Costing, naming `GT-.YYYY.-.#####`, không submittable vì UC-29 "Workflow —"; chỉ `costing.sheet` ghi; không xóa). Child `Cost Sheet Line` = từng khoản chi phí của mẻ/lô; child mới `Cost Sheet Pack` = giá thành từng gói (cùng DT-COSTSHEET). Quyền theo permission_matrix: R01 đọc, R02 đọc, R09 đọc + ghi (tính lại), R10 đọc.
 - **D2 Nguồn:** `source_doctype` = Sterilization Load hoặc Wash Batch (OQ-26: chi phí lô rửa thuộc FEAT-046). Một Cost Sheet chính cho mỗi nguồn (idempotent theo nguồn); tính lại tạo Cost Sheet mới `is_recalculation=1`, không đổi Cost Sheet chính.
-- **D3 Khoản chi phí của mẻ/lô:** Khấu hao máy = `Equipment.depreciation_per_load` (FR-M5-01.2); Điện = `kwh_per_cycle` × giá Electricity; Nước = `water_l_per_cycle` × giá Tap Water; Hơi = `steam_kg_per_cycle` × giá Steam; Hóa chất và chỉ thị = dòng Stock Entry ghi sổ có `tc_source_*` = nguồn (FEAT-042), không có thì theo định mức `Program Consumable` (qty_per_load + qty_per_pack × số gói), × giá Item; Nhân công = `duration_min` / 60 × giá Labor (giờ); Bảo trì phân bổ = tổng tiền/ngày của Cost Entry đã ghi sổ phân bổ cho máy (`entry.allocated_to` ngày mẻ) ÷ số mẻ/lô của máy trong ngày đó.
+- **D3 Khoản chi phí của mẻ/lô:** Khấu hao máy = `Equipment.depreciation_per_load` (FR-M5-01.2); Điện = `kwh_per_cycle` × giá Electricity; Nước = `water_l_per_cycle` × giá Tap Water; Hơi = `steam_kg_per_cycle` × giá Steam; Hóa chất và chỉ thị = dòng Stock Entry ghi sổ có `tc_source_*` = nguồn (FEAT-042), không có thì theo định mức `Program Consumable` (qty_per_load + qty_per_pack × số gói), × giá Item; Nhân công = `duration_min` / 60 × giá Labor (giờ); Bảo trì phân bổ = tổng tiền/ngày của Cost Entry đã ghi sổ phân bổ cho máy (`entry.allocated_to` ngày mẻ) ÷ số mẻ/lô kế hoạch/ngày của máy (`planned_loads_year` ÷ 365, tối thiểu 1; sửa A-53 ngày 30/10/2026).
 - **D4 Ngày giá:** ngày giải phóng (`released_at`), không có thì ngày kết thúc / bắt đầu; lô rửa theo `ended_at`. Giá đã chụp vào Cost Sheet, đổi bảng giá sau không tính lại (FR-M7-03.1, FR-M7-04.1).
 - **D5 Chưa định giá (FR-M7-05.2):** thiếu phiên bản giá hoặc thiếu giá một khoản có số lượng > 0 → khoản đó 0 đ, Cost Sheet `status = Unpriced`, `missing_rates` liệt kê, thông báo R09 sự kiện `COST_SHEET_UNPRICED`.
 - **D6 Mẻ Không đạt (FR-M7-05.1):** vẫn lập Cost Sheet, `is_quality_cost = 1`, không chia gói (gói đã Hủy).
@@ -59,3 +59,24 @@ Files: `tracecore/costing/report/set_cost_report/`, `tracecore/v1/navigation.py`
 
 ### Task 6: Hoàn tất
 Full suite, diff-cover ≥ 70 %, pre-commit, RTM FR-M7-05/06, review cả nhánh, sửa, merge develop local, push nhánh.
+
+## Ghi chú hiện thực
+
+**Kết quả (30/10/2026):**
+- Gộp `origin/develop` (a1c17ba) vào nhánh; xung đột `hr/tests/test_shifts.py` lấy bản develop (cùng một sửa).
+- Lần chạy đầu đỏ hàng loạt vì Redis của bench tắt làm `migrate` không chạy (chưa có DocType Cost Sheet); bật lại Redis, migrate: xanh.
+- Test sau sửa review: toàn bộ `costing/tests` (17 module), `test_set_cost_report`, `reprocessing.test_releasing`, `test_washing_result`, `test_tracecore`, `test_station_page`: OK.
+- Coverage các file `.py` đã đổi (không tính test): 96 % (411 dòng, 15 thiếu); 246 test chạy dưới coverage đều pass. Đo theo cả file vì `diff-cover` chưa cài.
+- `pre-commit run --all-files` sạch.
+- Chưa chạy lại full suite: máy 3,7 GB, lần full suite trước làm MariaDB bị OOM-kill.
+
+**Review độc lập (sub-agent, chỉ đọc) và đã sửa (TDD, test đỏ trước):**
+- Job xếp sau commit vẫn chạy khi `release`/`reject`/`bi_result` hoàn tác về savepoint (Frappe v15 không xóa `after_commit` lúc rollback savepoint) → `build` đọc lại trạng thái, mẻ chưa Giải phóng/Không đạt hoặc lô rửa chưa kết thúc thì không lập (`sheet.finished`, RPC tính lại dùng chung).
+- Phần lô rửa chia bằng `//` làm rơi vài đồng → chia bằng `split()` theo thứ tự bộ trong lô, bộ cuối nhận phần dư; lô rửa chưa có Cost Sheet thì ghi vào khoản thiếu giá (Unpriced) thay vì im lặng 0 đ.
+- Đơn giá 0 đ bị đánh dấu thiếu giá → `priced` theo có/không có dòng giá.
+- Báo cáo bình quân/gói còn số lẻ → làm tròn VND.
+- Bảo trì chia theo số mẻ kế hoạch/ngày, lệch A-53(b) → người dùng chọn giữ code, sửa A-53(b) và D3.
+
+**Còn lại / ghi nhận:**
+- RPC `recalculate` không chặn bấm hai lần (tạo hai bản tính lại); RPC Desk nên không bắt buộc `@idempotent`.
+- Phí bộ mượn = 0 (chưa có trường); phút chuẩn các trạm khác T3 chưa có nên không cộng; chia theo thể tích (OQ-20) chưa làm.
