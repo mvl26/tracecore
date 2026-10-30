@@ -176,7 +176,8 @@ def summary(period="day", zone=None, equipment=None, department=None):
 def find_in_list(doctype, code):
 	"""Ô quét List View (D11): mã khớp đúng một bản ghi của `doctype` → ``name`` để mở form; không → ``name: None``.
 
-	``code`` trả lại là mã đã làm sạch (bỏ AIM/FNC1, AI 8004 hoặc nhãn gói → Set ID / Cycle ID) để client lọc danh sách.
+	``code`` trả lại là mã đã làm sạch (bỏ AIM/FNC1, AI 8004 hoặc nhãn gói → Set ID / Cycle ID) và ``field`` là trường
+	mã để client lọc danh sách khi không khớp đúng một bản ghi.
 	"""
 	if doctype not in SCAN_DOCTYPES:
 		raise BadRequestError(_("Scanning is not available for {0}.").format(doctype))
@@ -190,4 +191,4 @@ def find_in_list(doctype, code):
 	matches = frappe.get_list(doctype, filters={"name": value}, pluck="name", limit=2)
 	if not matches and field:
 		matches = frappe.get_list(doctype, filters={field: value}, pluck="name", limit=2)
-	return {"ok": True, "name": matches[0] if len(matches) == 1 else None, "code": value}
+	return {"ok": True, "name": matches[0] if len(matches) == 1 else None, "code": value, "field": field or "name"}

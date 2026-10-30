@@ -131,13 +131,17 @@ class TestFindInList(IsolatedTestCase):
 
 	def test_exact_set_id_and_gs1_scan_open_the_record(self):
 		set_id = self.unit.set_id or self.unit.name
-		self.assertEqual(api.find_in_list("Set Unit", set_id), {"ok": True, "name": self.unit.name, "code": set_id})
+		self.assertEqual(
+			api.find_in_list("Set Unit", set_id),
+			{"ok": True, "name": self.unit.name, "code": set_id, "field": "set_id"},
+		)
 		scan = gs1.giai_payload(set_id)
 		self.assertEqual(api.find_in_list("Set Unit", scan)["name"], self.unit.name)
 
 	def test_unknown_code_returns_no_name_but_the_cleaned_code(self):
 		result = api.find_in_list("Set Unit", "  NOTHING-123 \r\n")
-		self.assertEqual(result, {"ok": True, "name": None, "code": "NOTHING-123"})
+		self.assertEqual(result, {"ok": True, "name": None, "code": "NOTHING-123", "field": "set_id"})
+		self.assertEqual(api.find_in_list("Wash Batch", "LR-NONE")["field"], "name")
 
 	def test_doctype_outside_the_list_or_without_read_is_refused(self):
 		with self.assertRaises(api.BadRequestError):
