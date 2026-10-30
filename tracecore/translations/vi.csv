@@ -4958,6 +4958,77 @@ Cost sheets cannot be deleted.,Không thể xóa phiếu giá thành.,
 Cost sheets are built for sterilization loads and wash batches only.,Phiếu giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
 Cost sheet {0} is unpriced,Phiếu giá thành {0} chưa định giá,
 Cost sheet unpriced,Phiếu giá thành chưa định giá,
+Pass,Đạt,Sterilization Log
+Fail,Không đạt,Sterilization Log
+Pending,Chờ kết quả,Sterilization Log
+Released,Đã giải phóng,Sterilization Log
+Failed,Không đạt,Sterilization Log
+Quarantine,Cách ly,Sterilization Log
+Cycle Complete,Hoàn tất chu trình,Sterilization Log
+Date,Ngày,Sterilization Log
+Load,Mẻ,Sterilization Log
+Machine,Máy,Sterilization Log
+Program,Chương trình,Sterilization Log
+Started At,Bắt đầu lúc,Sterilization Log
+Ended At,Kết thúc lúc,Sterilization Log
+Packs,Số gói,Sterilization Log
+Sets,Bộ dụng cụ,Sterilization Log
+Operator,Người vận hành,Sterilization Log
+Released By,Người giải phóng,Sterilization Log
+Released At,Giải phóng lúc,Sterilization Log
+Result,Kết quả,Sterilization Log
+Type,Loại máy,Sterilization Log
+Loads,Số mẻ,Sterilization Log
+Passed,Đạt,Sterilization Log
+Month,Tháng,Sterilization Log
+Set ID,Set ID,Sterilization Log
+Set Type,Loại bộ,Sterilization Log
+Department,Khoa,Sterilization Log
+Grand Total,Tổng cộng,Sterilization Log
+An archive export cannot be changed after it is created.,Phiếu xuất hồ sơ không sửa được sau khi tạo.,
+Archive Export,Xuất hồ sơ lưu trữ,
+Archive File,Tệp gói hồ sơ,Archive Export
+Archive export failed,Xuất hồ sơ lưu trữ bị lỗi,
+Archive export {0} failed,Xuất hồ sơ {0} bị lỗi,
+Archive export {0} is ready,Gói hồ sơ {0} đã sẵn sàng,
+Choose at least one kind of record to export.,Chọn ít nhất một loại hồ sơ để xuất.,
+Choose the recall order to export.,Chọn lệnh thu hồi cần xuất.,
+Choose the sterilization load to export.,Chọn mẻ tiệt khuẩn cần xuất.,
+Download Archive,Tải gói hồ sơ,
+Enter the reason for exporting full patient codes.,Nhập lý do xuất mã bệnh nhân đầy đủ.,
+Export Full Patient Codes,Xuất mã bệnh nhân đầy đủ,Archive Export
+File Size (bytes),Dung lượng tệp (byte),Archive Export
+Generated At,Thời điểm tạo,Archive Export
+Issues to Departments,Cấp phát cho khoa,Archive Export
+Manifest,Bảng kê tệp (manifest),Archive Export
+Only the head of infection control (R01) can export full patient codes.,Chỉ Trưởng khoa KSNK (R01) được xuất mã bệnh nhân đầy đủ.,
+Patient Codes,Mã bệnh nhân,Archive Export
+Patient codes are masked unless TC R01 exports them in full with a reason (recorded in the Audit Log).,"Mã bệnh nhân được che, trừ khi TC R01 xuất đầy đủ kèm lý do (ghi vào Audit Log).",Archive Export
+Provisional,Tạm,Archive Export
+Reason for Full Patient Codes,Lý do xuất mã bệnh nhân đầy đủ,Archive Export
+SHA-256,Mã kiểm tra SHA-256,Archive Export
+The archive file does NOT match its SHA-256 checksum.,Tệp gói hồ sơ KHÔNG khớp mã kiểm tra SHA-256: tệp đã bị thay đổi.,
+The archive file matches its SHA-256 checksum.,Tệp gói hồ sơ khớp mã kiểm tra SHA-256.,
+Unknown scope: {0},Không có phạm vi: {0},
+Verify Checksum,Kiểm tra mã SHA-256,
+include must be a list of: {0},include phải là danh sách gồm: {0},
+Scope,Phạm vi,Archive Export
+Period,Theo kỳ,Archive Export
+Load,Theo mẻ,Archive Export
+Recall Order,Theo lệnh thu hồi,Archive Export
+Content,Nội dung,Archive Export
+Loads,Mẻ tiệt khuẩn,Archive Export
+Indicators,Chỉ thị,Archive Export
+Machine Data,Dữ liệu máy,Archive Export
+Usage,Sử dụng,Archive Export
+Audit Trail,Nhật ký thao tác,Archive Export
+Result,Kết quả,Archive Export
+Queued,Chờ chạy,Archive Export
+Running,Đang chạy,Archive Export
+Completed,Hoàn tất,Archive Export
+Failed,Lỗi,Archive Export
+Requested By,Người yêu cầu,Archive Export
+Error,Lỗi,Archive Export
 Environment Monthly Report,Báo cáo tháng môi trường khu,
 (signature and full name),"(ký, ghi rõ họ tên)",
 Biological,Sinh học,
@@ -6000,3 +6071,5 @@ Zone is not monitored,Khu chưa bật theo dõi môi trường,
 {0} {1} {2} is above the maximum {3},{0} {1} {2} vượt mức tối đa {3},
 {0} {1} {2} is below the minimum {3},{0} {1} {2} dưới mức tối thiểu {3},
 {0}: the minimum is greater than the maximum.,{0}: mức tối thiểu lớn hơn mức tối đa.,
+Type the certificate type; types already used are suggested.,Tự điền loại chứng chỉ; các loại đã dùng sẽ được gợi ý.,
+No certificate types yet. Record a certificate for an employee first.,Chưa có loại chứng chỉ nào. Hãy ghi chứng chỉ cho nhân viên trước.,

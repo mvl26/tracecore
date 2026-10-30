@@ -43,5 +43,6 @@ DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,FEAT-046 A-53 D1
 DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
 DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
 DT-ZONE,Zone Station,R,R,R,R,R,R,,,R,RW,A-03 overrides BA baseline; FEAT-008 A-55 Q4: R03-R06 đọc để chọn khu khi ghi nhật ký môi trường
+DT-ARCHIVE,Archive Export,RW,,,,,,,,,RW,FEAT-012 A-58 D2: R01 và R10 tạo/đọc phiếu xuất hồ sơ lưu trữ; phiếu không sửa sau khi tạo
 DT-ENVLOG,Environment Log,R,RWSA,RWS,RWS,RWS,RWS,,,,R,FEAT-008 A-55 Q4: R02-R06 ghi sổ; R02 hủy/sửa đổi; R01 và R10 chỉ đọc
 DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

@@ -92,6 +92,8 @@ MANAGEMENT_GROUPS = (
 			"report:Set Cost Report",
 		),
 	),
+	# FEAT-047 thu gom chất thải; FEAT-048..050 thêm kho, bàn giao, báo cáo
+	("Medical waste", ("Waste Type", "Waste Collection", "Waste Container")),
 	# FEAT-033 thu gom; FEAT-034 lô giặt và báo cáo chi phí/kg; FEAT-035 thêm cấp phát
 	(
 		"Linen",
@@ -132,6 +134,7 @@ MANAGEMENT_GROUPS = (
 		"Data and audit",
 		(
 			"tc-import",
+			"Archive Export",  # FEAT-012: xuất gói hồ sơ tiệt khuẩn lưu trữ (SCR-43)
 			"notifications",
 			"Notification Rule",
 			"Audit Log",

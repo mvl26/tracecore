@@ -182,6 +182,108 @@ class TestLifeForecast(ReportCase):
 		self.assertGreaterEqual(total["price"], 250000)
 
 
+class TestPrintLanguage(ReportCase):
+	"""Job RQ chạy không có ngôn ngữ của request: bản PDF phải theo ngôn ngữ người xuất, không ra tiếng Anh."""
+
+	def setUp(self):
+		super().setUp()
+		import frappe.translate
+
+		frappe.translate.clear_cache()
+		lang = frappe.local.lang
+		self.addCleanup(setattr, frappe.local, "lang", lang)
+		frappe.local.lang = "en"  # như worker RQ
+
+	def export_html(self, kind, lang="vi"):
+		import io
+
+		from pypdf import PdfWriter
+
+		writer, blank = PdfWriter(), io.BytesIO()
+		writer.add_blank_page(10, 10)
+		writer.write(blank)
+		with patch("frappe.utils.pdf.get_pdf", return_value=blank.getvalue()) as get_pdf:
+			slog.build_export(kind, self.filters, "Administrator", lang=lang)
+		return get_pdf.call_args.args[0], get_pdf.call_args.args[1]
+
+	def test_log_is_in_the_language_of_the_requester(self):
+		load = make_released_load()
+		indicator(load, "chemical_class_5", "Pass", "CI-07")
+		html, _options = self.export_html("sterilization_log")
+		for text in (
+			"Sổ tiệt khuẩn điện tử",
+			"TẠM",
+			"Hóa học loại 5: Đạt",
+			"Người vận hành",
+			"Máy",
+			"Kết quả",
+		):
+			self.assertIn(text, html)
+		for text in (
+			"Electronic Sterilization Log",
+			"PROVISIONAL",
+			"Vượt qua",
+			"Máy móc",
+			"Operator",
+			"Released By",
+		):
+			self.assertNotIn(text, html)
+
+	def test_other_prints_are_in_vietnamese(self):
+		make_released_load()
+		html, _options = self.export_html("ksnk_summary")
+		self.assertIn("Báo cáo tổng hợp kiểm soát nhiễm khuẩn", html)
+		self.assertNotIn("Sterilization loads by machine", html)
+		html, _options = self.export_html("life_forecast")
+		self.assertIn("Dự báo bộ dụng cụ hết vòng đời", html)
+		self.assertNotIn("Prepared by", html)
+
+	def test_wide_prints_are_scaled_to_fit_the_page(self):
+		_html, options = self.export_html("sterilization_log")
+		self.assertEqual(options["orientation"], "Landscape")
+		self.assertTrue(options["zoom"])
+
+	def test_real_pdf_keeps_the_result_column_on_the_page(self):
+		import io
+
+		from pypdf import PdfReader
+
+		make_released_load()
+		frappe.local.lang = "vi"
+		pdf = slog.render_pdf("sterilization_log", self.filters)
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		found = []
+
+		def visit(text, cm, tm, _font, _size):
+			if text.strip():
+				found.append((text.strip(), cm[0] * tm[4] + cm[4]))
+
+		page.extract_text(visitor_text=visit)
+		result_x = [x for text, x in found if "Kết quả" in text]
+		self.assertTrue(result_x, found)
+		# chữ của cột cuối phải nằm trong khổ giấy, không bị cắt
+		self.assertLess(max(x for _text, x in found), float(page.mediabox.width) - 20)
+		self.assertLess(max(result_x), float(page.mediabox.width) - 40)
+
+	def test_rpc_and_archive_pass_the_language_to_the_job(self):
+		from tracecore.v1 import report as report_api
+
+		frappe.local.lang = "vi"
+		with patch("frappe.enqueue") as enqueue:
+			report_api.export("sterilization_log", frappe.as_json(self.filters))
+		self.assertEqual(enqueue.call_args.kwargs["lang"], "vi")
+		with patch("frappe.enqueue") as enqueue:
+			frappe.get_doc(
+				{
+					"doctype": "Archive Export",
+					"scope_type": "Period",
+					"from_date": today(),
+					"to_date": today(),
+				}
+			).insert()
+		self.assertEqual(enqueue.call_args.kwargs["lang"], "vi")
+
+
 class TestPrintAndExport(ReportCase):
 	def test_provisional_until_the_period_is_locked(self):
 		stamp = 'class="tc-provisional"'

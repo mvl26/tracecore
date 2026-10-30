@@ -4,8 +4,10 @@ import frappe
 from frappe.utils import add_days, today
 
 from tracecore.hr import certificates, employees, reminders
+from tracecore.patches.v0_1 import rename_certificate_types
 from tracecore.tests.factories import make_employee, make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.v1 import staff as staff_api
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 USERS = ["cert-r02@example.com", "cert-r10@example.com", "cert-r04@example.com", "cert-r03@example.com"]
@@ -233,3 +235,50 @@ class TestEmployeeCode(IsolatedTestCase):
 		employee = self.new_employee()
 		employees.register_code(employee)  # gọi lại không lỗi và không nhân đôi
 		self.assertEqual(frappe.db.count("Code Registry", {"code": employee.name}), 1)
+
+
+class TestFreeTextCertificateType(IsolatedTestCase):
+	"""Loại chứng chỉ tự điền, gợi ý từ các loại đã dùng (A-59, FR-M4-02)."""
+
+	def setUp(self):
+		super().setUp()
+		self.staff = make_employee(first_name="Nhân viên chứng chỉ").name
+		self.addCleanup(frappe.set_user, "Administrator")
+
+	def test_new_type_is_accepted_and_suggested_afterwards(self):
+		self.assertNotIn("Lái xe nâng", certificates.certificate_types())
+		make_certificate(self.staff, 30, certificate_type="Lái xe nâng")
+		self.assertIn("Lái xe nâng", certificates.certificate_types())
+
+	def test_spaces_are_cleaned_and_casing_follows_the_type_already_used(self):
+		make_certificate(self.staff, 30, certificate_type="Lái xe nâng")
+		other = make_certificate(self.staff, 30, certificate_type="  lái   XE nâng ")
+		self.assertEqual(other.certificate_type, "Lái xe nâng")
+		self.assertEqual(certificates.certificate_types().count("Lái xe nâng"), 1)
+
+	def test_blank_type_is_refused(self):
+		with self.assertRaises(frappe.MandatoryError):
+			make_certificate(self.staff, 30, certificate_type="   ")
+
+	def test_renewal_typed_in_another_casing_is_the_same_type(self):
+		old = make_certificate(self.staff, 5, certificate_type="Lái xe nâng")
+		new = make_certificate(self.staff, 400, certificate_type="lái xe nâng", renews=old.name)
+		self.assertEqual(new.renews, old.name)
+
+	def test_suggestion_rpc_needs_read_permission(self):
+		make_certificate(self.staff, 30, certificate_type="Lái xe nâng")
+		reader = make_user("cert-r02-types@example.com", ["TC R02"])
+		other = make_user("cert-r04-types@example.com", ["TC R04"])
+		frappe.set_user(reader)
+		self.assertIn("Lái xe nâng", staff_api.certificate_types())
+		frappe.set_user(other)
+		with self.assertRaises(frappe.PermissionError):
+			staff_api.certificate_types()
+
+	def test_patch_turns_the_old_english_values_into_vietnamese(self):
+		cert = make_certificate(self.staff, 30)
+		frappe.db.set_value("Certificate", cert.name, "certificate_type", "Practice License")
+		rename_certificate_types.execute()
+		self.assertEqual(
+			frappe.db.get_value("Certificate", cert.name, "certificate_type"), "Chứng chỉ hành nghề (CCHN)"
+		)

@@ -68,3 +68,13 @@ class TestWasteStationAssets(FrappeTestCase):
 	def test_strings_are_translated_english_sources(self):
 		code = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", self.js, flags=re.S))
 		self.assertNotRegex(code, r"[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]")
+
+	def test_desk_button_releases_held_containers_for_r02(self):
+		desk = (APP / "waste/doctype/waste_container/waste_container.js").read_text(encoding="utf-8")
+		self.assertIn('"tracecore.v1.waste.release_held"', desk)
+		self.assertIn('frm.doc.status !== "Held"', desk)
+
+	def test_launcher_links_waste_doctypes(self):
+		links = dict(navigation.MANAGEMENT_GROUPS)["Medical waste"]
+		self.assertEqual(links, ("Waste Type", "Waste Collection", "Waste Container"))
+

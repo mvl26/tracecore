@@ -18,7 +18,7 @@ frappe.query_reports["Sterilization Log"] = {
 		},
 		{
 			fieldname: "equipment",
-			label: __("Machine"),
+			label: __("Machine", null, "Sterilization Log"),
 			fieldtype: "Link",
 			options: "Equipment",
 			get_query: () => ({

@@ -31,6 +31,7 @@ def export(kind, filters=None):
 		kind=kind,
 		filters=dict(filters),
 		user=frappe.session.user,
+		lang=frappe.local.lang,
 	)
 	return {"ok": True, "job": getattr(job, "id", None)}
 
