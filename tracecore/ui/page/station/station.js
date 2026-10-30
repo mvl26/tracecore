@@ -6,7 +6,7 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, TcOutbox, tcSync, TC_SNAPSHOT_MS */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, TcOutbox, tcSync, TC_SNAPSHOT_MS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -888,6 +888,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.receive.") ||
 			method.startsWith("tracecore.v1.linen.") ||
 			method.startsWith("tracecore.v1.laundry.") ||
+			method.startsWith("tracecore.v1.waste.") ||
 			method.startsWith("tracecore.v1.sync.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
 			method === "tracecore.v1.printer.set_roll" ||
@@ -1028,6 +1029,8 @@ class TraceCoreStation {
 					typeof LinenStation !== "undefined"
 						? new LinenStation(this)
 						: new LinenCollect(this);
+			} else if (station.step === "WST" && typeof WasteCollect !== "undefined") {
+				this.screen = new WasteCollect(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;

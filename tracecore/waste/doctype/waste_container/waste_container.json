@@ -103,7 +103,13 @@
  "module": "Waste",
  "name": "Waste Container",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -92,6 +92,8 @@ page_js = {
 		"public/js/station_laundry.js",
 		# FEAT-035: cấp phát đồ vải (SCR-18), lớp con của LinenCollect nên nạp sau station_linen.js
 		"public/js/station_linen_issue.js",
+		# FEAT-047: thu gom chất thải (SCR-38), trạm bước WST; dùng tc_weigh_line.js
+		"public/js/station_waste.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -149,6 +151,8 @@ jinja = {
 		"tracecore.ui.linen_print.tc_linen_receipt_context",
 		# Print Format "TC Linen Issue Receipt" (FEAT-035, FR-M3-05.1): biên nhận cấp phát đồ vải
 		"tracecore.ui.linen_print.tc_linen_issue_context",
+		# Print Format "TC Waste Receipt" (FEAT-047, FR-M10-02.6): biên nhận thu gom chất thải
+		"tracecore.ui.waste_print.tc_waste_receipt_context",
 		# Print Format "TC Stock Count Sheet" (FEAT-043, FR-M6-05): phiếu kiểm kê kho
 		"tracecore.ui.stock_count_print.tc_stock_count_context",
 	]

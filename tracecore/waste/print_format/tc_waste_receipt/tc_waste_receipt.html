@@ -1,0 +1,83 @@
+{#- Waste collection receipt, A5 (FEAT-047, FR-M10-02.6; UC-34 step 6). Data: tracecore.ui.waste_print.tc_waste_receipt_context
+    (hook jinja.methods). Every dynamic value goes through |e; colours and sizes come from tokens.css (tc.*).
+    Layout uses tables (the WebKit of wkhtmltopdf has no flex/grid). -#}
+{%- set cs = tc_waste_receipt_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Waste Receipt" -%}
+<style>
+@page { size: A5; }
+.tc-wr { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-wr table { width: 100%; border-collapse: collapse; }
+.tc-wr td, .tc-wr th { vertical-align: top; }
+.tc-wr .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-wr h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-wr .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-wr .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-wr .tc-facts td.tc-label { color: {{ tc.muted }}; width: 40mm; white-space: nowrap; }
+.tc-wr table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-wr table.tc-lines tr { page-break-inside: avoid; }
+.tc-wr table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-wr table.tc-lines th, .tc-wr table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-wr table.tc-lines .tc-num { text-align: right; width: 16mm; }
+.tc-wr table.tc-lines tfoot td { font-weight: {{ tc.fw_bold }}; background: {{ tc.zebra }}; }
+.tc-wr .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-wr .tc-sign td { width: 50%; text-align: center; padding-bottom: 20mm; font-weight: {{ tc.fw_bold }}; }
+</style>
+<div class="tc-wr">
+	<h1>{{ _("Waste collection receipt", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}
+	<div class="tc-draft">{{ _("Not recorded yet", context=T) | e }}</div>
+	{%- endif %}
+	{%- if cs.cancelled %}
+	<div class="tc-draft">{{ _("Cancelled", context=T) | e }}</div>
+	{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Department", context=T) | e }}</td><td>{{ cs.department | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Collected at", context=T) | e }}</td><td>{{ cs.collected_at | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Delivered by", context=T) | e }}</td><td>{{ cs.delivered_by | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Collected by", context=T) | e }}</td><td>{{ cs.collected_by | e }}</td></tr>
+		{%- if cs.acknowledged_by %}
+		<tr><td class="tc-label">{{ _("Acknowledged by", context=T) | e }}</td><td>{{ cs.acknowledged_by | e }} ({{ cs.acknowledged_at | e }})</td></tr>
+		{%- endif %}
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th class="tc-num">{{ _("No.", context=T) | e }}</th>
+				<th>{{ _("Waste type", context=T) | e }}</th>
+				<th>{{ _("Color", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Bags", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Weight (kg)", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td class="tc-num">{{ row.index | e }}</td>
+				<td>{{ row.name | e }}{% if row.misclassified %}<br>{{ _("Misclassified - on hold", context=T) | e }}: {{ row.misclass_note | e }}{% endif %}</td>
+				<td>{{ _(row.color) | e }}</td>
+				<td class="tc-num">{{ row.qty | e }}</td>
+				<td class="tc-num">{{ row.weight | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td></td>
+				<td colspan="2">{{ _("Total collected", context=T) | e }}</td>
+				<td class="tc-num">{{ cs.total_qty | e }}</td>
+				<td class="tc-num">{{ cs.total_weight | e }}</td>
+			</tr>
+		</tfoot>
+	</table>
+	{%- if cs.note %}
+	<p>{{ cs.note | e }}</p>
+	{%- endif %}
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Delivered by", context=T) | e }}</td>
+			<td>{{ _("Collected by", context=T) | e }}</td>
+		</tr>
+	</table>
+</div>
