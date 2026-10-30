@@ -1302,3 +1302,61 @@ def make_par_level(target_doctype, target, par_kind="Reprocessing", **values):
 			**values,
 		}
 	).insert()
+
+
+WASTE_STATION = "TR-WST"
+WASTE_PACKAGING = "VT-TUI-VANG"
+
+
+def make_waste_station():
+	"""Khu Waste và trạm thu gom `TR-WST` (bước WST, FEAT-047); không có trong dữ liệu khởi tạo, R10 tạo trên Desk."""
+	if not frappe.db.exists("Zone Station", WASTE_STATION):
+		zone = frappe.get_doc(
+			{"doctype": "Zone Station", "zone_station_name": "Waste zone", "is_zone": 1, "zone_type": "Waste"}
+		).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"is_zone": 0,
+				"is_active": 1,
+				"zone_station_name": "Waste collection",
+				"parent_zone": zone.name,
+				"station_step": "WST",
+			}
+		).insert(ignore_permissions=True, set_name=WASTE_STATION)
+	return WASTE_STATION
+
+
+def make_waste_type(type_name=None, waste_group="Sharp Infectious", std_weight_kg=2, **kwargs):
+	"""Loại chất thải hợp lệ; bao bì là Item có sẵn của test (không kiểm Link để không phụ thuộc Item Group)."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Waste Type",
+			"type_name": type_name or "Waste " + frappe.generate_hash(length=8),
+			"waste_group": waste_group,
+			"packaging": WASTE_PACKAGING,
+			"std_weight_kg": std_weight_kg,
+			"max_storage_hours": 48,
+			"is_active": 1,
+			**kwargs,
+		}
+	)
+	doc.flags.ignore_links = True
+	return doc.insert(ignore_permissions=True)
+
+
+def make_waste_container():
+	"""Một túi `Waste Container` (dịch vụ mới được tạo: cờ `tc_waste`); dùng ở test NC của M2."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Waste Container",
+			"waste_type": make_waste_type().name,
+			"weight_kg": 1,
+			"status": "Held",
+			"collected_at": now_datetime(),
+		}
+	)
+	doc.flags.tc_waste = True
+	doc.flags.ignore_links = True
+	return doc.insert(ignore_permissions=True, set_name="CT-261030-" + frappe.generate_hash(length=5)).name
+

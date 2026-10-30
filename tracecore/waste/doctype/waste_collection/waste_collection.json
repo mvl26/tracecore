@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "delivered_by",
+  "department",
+  "collected_at",
+  "column_break_1",
+  "collected_by",
+  "station",
+  "lines_section",
+  "lines",
+  "total_containers",
+  "total_weight_kg",
+  "held_kg",
+  "note",
+  "receipt_section",
+  "acknowledged_by",
+  "acknowledged_at",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "delivered_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Delivered By",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "collected_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Collected At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collected_by",
+   "fieldtype": "Link",
+   "label": "Collected By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lines_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Lines",
+   "options": "Waste Collection Line",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_containers",
+   "fieldtype": "Int",
+   "label": "Total Bags or Bins",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_weight_kg",
+   "fieldtype": "Float",
+   "label": "Total Weight (kg)",
+   "precision": "3",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "held_kg",
+   "fieldtype": "Float",
+   "label": "Held Weight (kg)",
+   "precision": "3",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "receipt_section",
+   "fieldtype": "Section Break",
+   "label": "Receipt"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "acknowledged_by",
+   "fieldtype": "Link",
+   "label": "Acknowledged By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "acknowledged_at",
+   "fieldtype": "Datetime",
+   "label": "Acknowledged At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Waste Collection",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Collection",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "TG-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "is_submittable": 1,
+ "title_field": "department",
+ "description": "Waste collection by department (FEAT-047, UC-34, FR-M10-02)."
+}

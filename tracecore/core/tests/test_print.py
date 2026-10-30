@@ -861,3 +861,14 @@ class TestRenderLabel(IsolatedTestCase):
 		) as spy:
 			core_print.render_test_label("TR-004")
 		self.assertEqual(spy.call_args.args[2], (core_print.LABEL_WIDTH_DOTS, core_print.LABEL_HEIGHT_DOTS))
+
+
+class TestWasteContainerLabel(FrappeTestCase):
+	def test_waste_container_label_accepts_only_container_codes(self):
+		"""Nhãn QR túi/thùng chất thải (FEAT-047, FR-M10-01.5)."""
+		self.assertEqual(core_print.OBJECT_SCAN_TYPES["Waste Container"], "container")
+		self.assertIsNone(core_print.object_code_problem("Waste Container", "CT-261030-00001"))
+		self.assertTrue(core_print.object_code_problem("Waste Container", "TB-0001"))
+		options = frappe.get_meta("Label Template").get_field("label_object").options.split("\n")
+		self.assertIn("Waste Container", options)
+

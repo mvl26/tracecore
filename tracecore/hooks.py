@@ -321,6 +321,10 @@ doc_events = {
 	"Linen Collection": dict(_AUDIT_EVENTS),
 	"Laundry Batch": dict(_AUDIT_EVENTS),  # FEAT-034, A-50: lô giặt ghi vết, không xóa
 	"Linen Issue": dict(_AUDIT_EVENTS),  # FEAT-035, A-51
+	# chất thải (FEAT-047, A-59): loại, phiếu thu gom và túi/thùng ghi vết, không xóa
+	"Waste Type": dict(_AUDIT_EVENTS),
+	"Waste Collection": dict(_AUDIT_EVENTS),
+	"Waste Container": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -410,6 +414,8 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 # M1 trả bộ mượn thiếu dụng cụ (FEAT-017, A-38 e): (ctx {loaner, set_unit, missing[{instrument, name, qty}], note})
 # -> tên Incident CAPA; M2 tạo NC Missing Instrument (M1 không import M2).
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
+# M10 phân loại sai (FEAT-047, A-59 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
+tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
 # M1 cấp Set ID (FEAT-016, A-13 G5): (ctx {set_type}) -> {value, source} | None, cơ số tối đa nguồn của loại bộ;
 # M8 trả Par Level riêng của loại bộ, nếu không thì cơ số thấp nhất của dụng cụ trong BOM (không import chéo M1 ↔ M8).
 tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]

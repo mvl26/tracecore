@@ -450,3 +450,18 @@ def remind_overdue():
 		frappe.db.set_value(ACTION_DOCTYPE, row.name, "last_reminded_on", today(), update_modified=False)
 		count += 1
 	return count
+
+
+def on_waste_nc(ctx):
+	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai → NC (FEAT-047, FR-M10-02.4, A-59 W3); FEAT-050 mở rộng."""
+	return _auto(
+		"Waste Container",
+		ctx["container"],
+		"Waste Misclassification",
+		"Medium",
+		_("Waste container {0} ({1}) was marked as misclassified: {2}.").format(
+			ctx["container"], ctx.get("waste_type"), ctx.get("note") or "-"
+		),
+		{"employee": ctx.get("employee"), "department": ctx.get("department"), "station": ctx.get("station")},
+	)
+

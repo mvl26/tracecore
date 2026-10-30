@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "waste_type",
+  "status",
+  "weight_kg",
+  "collection",
+  "department",
+  "column_break_1",
+  "collected_at",
+  "storage_due",
+  "misclass_note",
+  "released_by",
+  "release_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Waste Type",
+   "options": "Waste Type",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Collected\nHeld\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weight_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Weight (kg)",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "collection",
+   "fieldtype": "Link",
+   "label": "Collection",
+   "options": "Waste Collection",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collected_at",
+   "fieldtype": "Datetime",
+   "label": "Collected At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "storage_due",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Storage Due",
+   "read_only": 1
+  },
+  {
+   "fieldname": "misclass_note",
+   "fieldtype": "Small Text",
+   "label": "Misclassification Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_by",
+   "fieldtype": "Link",
+   "label": "Released By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "release_note",
+   "fieldtype": "Small Text",
+   "label": "Release Note",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Container",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "prompt",
+ "naming_rule": "Set by user",
+ "description": "Waste bag or bin with a system CT- code (FEAT-047, FR-M10-01.5); created only by a collection."
+}

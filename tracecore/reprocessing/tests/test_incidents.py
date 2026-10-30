@@ -7,7 +7,7 @@ from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import incidents
 from tracecore.tests import factories
 from tracecore.tests.factories import make_user
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, bru
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
@@ -259,3 +259,30 @@ class TestOverdue(IncidentCase):
 		self.assertEqual(incidents.remind_overdue(), 0)
 		self.assertIn(doc.name, self.notices(self.responsible))
 		self.assertGreaterEqual(self.notices(self.r02).count(doc.name), 2)  # lúc tạo + nhắc quá hạn
+
+
+class TestWasteNc(IncidentCase):
+	@bru("BRU-WST-001")
+	def test_waste_misclassification_creates_one_incident_per_container(self):
+		"""M10 báo qua hook, M2 tạo NC (FEAT-047, FR-M10-02.4, A-59 W3)."""
+		employee = factories.make_employee(first_name="Waste NC").name
+		container = factories.make_waste_container()
+		ctx = {
+			"container": container,
+			"waste_type": "Sharp",
+			"department": None,
+			"employee": employee,
+			"station": None,
+			"note": "Sharps outside the box",
+		}
+		name = incidents.on_waste_nc(ctx)
+		self.assertEqual(incidents.on_waste_nc(ctx), name)
+		doc = frappe.get_doc("Incident CAPA", name)
+		self.assertEqual(doc.incident_type, "Waste Misclassification")
+		self.assertEqual((doc.source_doctype, doc.source_name), ("Waste Container", ctx["container"]))
+		self.assertEqual(doc.employee, employee)
+		self.assertIn("Sharps outside the box", doc.description)
+
+	def test_hook_is_registered(self):
+		self.assertIn("tracecore.reprocessing.incidents.on_waste_nc", frappe.get_hooks("tracecore_waste_nc"))
+
