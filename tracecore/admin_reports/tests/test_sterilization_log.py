@@ -293,6 +293,23 @@ class TestPrintAndExport(ReportCase):
 		self.assertNotIn(stamp, slog.render_html("sterilization_log", self.filters))
 		self.assertFalse(slog.is_locked(add_days(today(), 1)))
 
+	def test_lock_status_reports_the_stored_date(self):
+		from tracecore.v1 import report as report_api
+
+		frappe.db.set_single_value("TraceCore Settings", "report_locked_until", None)
+		self.assertIsNone(report_api.lock_status()["locked_until"])
+		report_api.lock_period(add_days(today(), -7))
+		self.assertEqual(report_api.lock_status()["locked_until"], add_days(today(), -7))
+
+	def test_future_date_cannot_be_locked(self):
+		from tracecore.v1 import report as report_api
+
+		frappe.db.set_single_value("TraceCore Settings", "report_locked_until", None)
+		with self.assertRaises(frappe.ValidationError):
+			report_api.lock_period(add_days(today(), 1))
+		self.assertIsNone(report_api.lock_status()["locked_until"])
+		self.assertEqual(report_api.lock_period(today())["locked_until"], today())
+
 	def test_print_has_exporter_time_and_signature(self):
 		make_released_load()
 		html = slog.render_html("sterilization_log", self.filters)

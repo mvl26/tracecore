@@ -41,6 +41,17 @@ def sterilization_log(filters=None):
 	return export("sterilization_log", filters)
 
 
+@frappe.whitelist(methods=["GET"])
+def lock_status():
+	"""Ngày khóa báo cáo đang lưu (None = chưa khóa), để hộp thoại Khóa kỳ hiện đúng ngày."""
+	if LOCK_ROLE not in frappe.get_roles():
+		raise frappe.PermissionError(
+			_("Only the head of infection control (R01) can lock the report period.")
+		)
+	locked = slog.locked_until()
+	return {"locked_until": str(locked) if locked else None}
+
+
 @frappe.whitelist(methods=["POST"])
 def lock_period(until):
 	"""R01 đặt ngày khóa báo cáo: kỳ kết thúc trước hoặc bằng ngày này in bản chính thức (FR-M9-02.1)."""
