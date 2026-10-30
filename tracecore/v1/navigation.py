@@ -17,8 +17,9 @@ STEP_ROLES = {
 }
 # Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
 IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "LIN"}
-# Nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
+# Dashboard vận hành đứng đầu; sau đó nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
+	("Overview", ("tc-dashboard",)),  # FEAT-006 SCR-32
 	(
 		"Organization and staff",
 		(
@@ -111,6 +112,7 @@ MANAGEMENT_GROUPS = (
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
 MANAGEMENT_PAGES = {
+	"tc-dashboard": "Operations Dashboard",
 	"tc-import": "Catalog Import",
 	"notifications": "Notification Center",
 	"competency-matrix": "Competency Matrix",

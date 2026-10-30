@@ -4839,3 +4839,60 @@ Batch {0} of {1} expires on {2} ({3} in stock),Lô {0} của {1} hết hạn ng�
 This count was abandoned and cannot be posted. Untick Abandoned first.,Phiếu kiểm kê này đã bỏ dở nên không ghi sổ được. Hãy bỏ dấu Bỏ dở trước.,
 Only a draft purchase request can be deleted.,Chỉ xóa được đề nghị mua còn Nháp.,
 Abandoned,Bỏ dở,Stock Reconciliation
+All machines,Tất cả máy
+All zones,Tất cả khu
+Ask R10 to grant the role that matches your work.,Đề nghị R10 cấp vai trò đúng với công việc của bạn.
+Batches expiring within 30 days,Lô vật tư hết hạn trong 30 ngày
+Cannot load the dashboard,Không tải được dashboard
+Certificates expiring within 60 days,Chứng chỉ hết hạn trong 60 ngày
+Connect to the network to see the dashboard.,Kết nối mạng để xem dashboard.
+Due in (days),Đến hạn sau (ngày)
+Expires on,Hết hạn ngày
+Failed batches,Mẻ không đạt
+Follow up,Theo dõi
+In stock / minimum,Tồn / tối thiểu
+Items below minimum stock,Vật tư dưới mức tồn tối thiểu
+Loading dashboard…,Đang tải dashboard…
+Machines needing attention,Máy cần xử lý
+Near par,Sắp hết cơ số
+Nearest expiry,Hạn gần nhất
+Needs action,Cần xử lý
+No dashboard block for your role,Vai trò của bạn chưa có khối dashboard nào
+No data — {0},Không có dữ liệu — {0}
+Open recalls,Lệnh thu hồi đang mở
+Operations Dashboard,Tổng quan vận hành
+Out of par,Hết cơ số
+Output in period,Sản lượng trong kỳ
+Packs in sterile store,Gói trong kho vô khuẩn
+Par overrides awaiting approval,Đề nghị ghi đè cơ số chờ duyệt
+Passed gates,Số lần qua cổng Đạt
+Period must be one of {0}.,Kỳ phải là một trong {0}.
+Recall,Thu hồi
+Requested at,Đề nghị lúc
+Review and approve,Xem và duyệt
+Scan or type a code,Quét hoặc nhập mã
+Scanning is not available for {0}.,Danh sách {0} không có ô quét.
+Sets by status,Bộ theo trạng thái
+Sets near or over their par,Bộ sắp hết hoặc đã hết cơ số
+Staff,Nhân viên
+Sterile store,Kho vô khuẩn
+Sterilization loads,Mẻ tiệt khuẩn
+Sterilization loads failed,Mẻ tiệt khuẩn không đạt
+This week,Tuần này
+Updated at {0},Cập nhật lúc {0}
+View all,Xem tất cả
+Wash batches,Lô rửa
+Wash batches failed,Lô rửa không đạt
+code must be a non-empty scanned code.,code phải là mã quét không rỗng.
+no batch expiring,không có lô sắp hết hạn
+no batch started in this period,không có lô/mẻ nào bắt đầu trong kỳ
+no certificate expiring,không có chứng chỉ sắp hết hạn
+no item below minimum,không có vật tư dưới tối thiểu
+no machine locked or due,không có máy bị khóa hay sắp đến hạn
+no open recall,không có lệnh thu hồi đang mở
+no packs in the sterile store,kho vô khuẩn chưa có gói
+no passed gate in this period,chưa có lần qua cổng Đạt trong kỳ
+no request waiting,không có đề nghị chờ duyệt
+no set near its par,không có bộ sắp hết cơ số
+period must be one of {0}.,period phải là một trong {0}.
+{0} to handle,{0} cần xử lý

@@ -31,17 +31,12 @@ def by_key(rows, key):
 class TestPeriodRange(IsolatedTestCase):
 	def test_day_week_month_ranges_end_exclusive(self):
 		on = datetime(2026, 10, 29, 15, 30)  # thứ Năm
+		self.assertEqual(dashboard.period_range("day", on), (datetime(2026, 10, 29), datetime(2026, 10, 30)))
+		self.assertEqual(dashboard.period_range("week", on), (datetime(2026, 10, 26), datetime(2026, 11, 2)))
+		self.assertEqual(dashboard.period_range("month", on), (datetime(2026, 10, 1), datetime(2026, 11, 1)))
 		self.assertEqual(
-			dashboard.period_range("day", on), (datetime(2026, 10, 29), datetime(2026, 10, 30))
-		)
-		self.assertEqual(
-			dashboard.period_range("week", on), (datetime(2026, 10, 26), datetime(2026, 11, 2))
-		)
-		self.assertEqual(
-			dashboard.period_range("month", on), (datetime(2026, 10, 1), datetime(2026, 11, 1))
-		)
-		self.assertEqual(
-			dashboard.period_range("month", datetime(2026, 12, 5)), (datetime(2026, 12, 1), datetime(2027, 1, 1))
+			dashboard.period_range("month", datetime(2026, 12, 5)),
+			(datetime(2026, 12, 1), datetime(2027, 1, 1)),
 		)
 
 	def test_unknown_period_is_rejected(self):
@@ -102,7 +97,9 @@ class TestOutput(IsolatedTestCase):
 		zone = frappe.db.get_value("Zone Station", self.station, "parent_zone")
 		other = next(z for z in ("ZONE-DIRTY", "ZONE-STERILE") if z != zone)
 		self.gate()
-		self.assertIn(self.station, by_key(dashboard.output_by_station(self.start, self.end, zone=zone), "station"))
+		self.assertIn(
+			self.station, by_key(dashboard.output_by_station(self.start, self.end, zone=zone), "station")
+		)
 		self.assertNotIn(
 			self.station, by_key(dashboard.output_by_station(self.start, self.end, zone=other), "station")
 		)
@@ -117,16 +114,25 @@ class TestOutput(IsolatedTestCase):
 
 	def test_equipment_counts_wash_batches_and_loads_started_in_the_period(self):
 		washer = make_equipment(
-			name="Máy rửa dash", equipment_type="Washer-Disinfector", serial="WD-" + frappe.generate_hash(length=6)
+			name="Máy rửa dash",
+			equipment_type="Washer-Disinfector",
+			serial="WD-" + frappe.generate_hash(length=6),
 		).name
 		sterilizer = make_equipment(name="Máy hấp dash", serial="ST-" + frappe.generate_hash(length=6)).name
 		insert("Wash Batch", equipment=washer, status="Passed", started_at=self.now)
 		insert("Wash Batch", equipment=washer, status="Running", started_at=self.now)
 		insert("Sterilization Load", equipment=sterilizer, status="Released", started_at=self.now)
-		insert("Sterilization Load", equipment=sterilizer, status="Released", started_at=self.start - timedelta(days=1))
+		insert(
+			"Sterilization Load",
+			equipment=sterilizer,
+			status="Released",
+			started_at=self.start - timedelta(days=1),
+		)
 		rows = by_key(dashboard.output_by_equipment(self.start, self.end), "equipment")
 		self.assertEqual((rows[washer]["wash"], rows[washer]["load"], rows[washer]["count"]), (2, 0, 2))
-		self.assertEqual((rows[sterilizer]["wash"], rows[sterilizer]["load"], rows[sterilizer]["count"]), (0, 1, 1))
+		self.assertEqual(
+			(rows[sterilizer]["wash"], rows[sterilizer]["load"], rows[sterilizer]["count"]), (0, 1, 1)
+		)
 		self.assertEqual(rows[washer]["equipment_name"], "Máy rửa dash")
 		only = dashboard.output_by_equipment(self.start, self.end, equipment=washer)
 		self.assertEqual([row["equipment"] for row in only], [washer])
@@ -136,9 +142,13 @@ class TestFailureRates(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		self.start, self.end = dashboard.period_range("day")
-		self.sterilizer = make_equipment(name="Máy hấp lỗi", serial="SF-" + frappe.generate_hash(length=6)).name
+		self.sterilizer = make_equipment(
+			name="Máy hấp lỗi", serial="SF-" + frappe.generate_hash(length=6)
+		).name
 		self.washer = make_equipment(
-			name="Máy rửa lỗi", equipment_type="Washer-Disinfector", serial="WF-" + frappe.generate_hash(length=6)
+			name="Máy rửa lỗi",
+			equipment_type="Washer-Disinfector",
+			serial="WF-" + frappe.generate_hash(length=6),
 		).name
 
 	def test_rates_count_finished_loads_and_batches_only(self):
@@ -170,7 +180,9 @@ class TestActionLists(IsolatedTestCase):
 
 	def test_open_recalls_with_unconfirmed_packs(self):
 		before = dashboard.open_recalls()["count"]
-		pending = insert("Recall Order", status="Open", pack_count=4, confirmed_count=2, opened_at=now_datetime())
+		pending = insert(
+			"Recall Order", status="Open", pack_count=4, confirmed_count=2, opened_at=now_datetime()
+		)
 		insert("Recall Order", status="Open", pack_count=3, confirmed_count=3, opened_at=now_datetime())
 		insert("Recall Order", status="Closed", pack_count=3, confirmed_count=1, opened_at=now_datetime())
 		result = dashboard.open_recalls()
@@ -180,11 +192,19 @@ class TestActionLists(IsolatedTestCase):
 	def test_certificates_expiring_or_expired_of_active_staff(self):
 		staff = make_employee(first_name="Dash cert").name
 		left = make_employee(first_name="Dash left", status="Left", relieving_date=today()).name
-		soon = insert("Certificate", employee=staff, status="Valid", no_expiry=0, expires_on=add_days(today(), 20))
-		gone = insert("Certificate", employee=staff, status="Expired", no_expiry=0, expires_on=add_days(today(), -3))
-		far = insert("Certificate", employee=staff, status="Valid", no_expiry=0, expires_on=add_days(today(), 200))
+		soon = insert(
+			"Certificate", employee=staff, status="Valid", no_expiry=0, expires_on=add_days(today(), 20)
+		)
+		gone = insert(
+			"Certificate", employee=staff, status="Expired", no_expiry=0, expires_on=add_days(today(), -3)
+		)
+		far = insert(
+			"Certificate", employee=staff, status="Valid", no_expiry=0, expires_on=add_days(today(), 200)
+		)
 		forever = insert("Certificate", employee=staff, status="Valid", no_expiry=1)
-		of_left = insert("Certificate", employee=left, status="Expired", no_expiry=0, expires_on=add_days(today(), -3))
+		of_left = insert(
+			"Certificate", employee=left, status="Expired", no_expiry=0, expires_on=add_days(today(), -3)
+		)
 		names = [row["name"] for row in dashboard.expiring_certificates(limit=500)["rows"]]
 		self.assertIn(soon, names)
 		self.assertIn(gone, names)
@@ -194,7 +214,9 @@ class TestActionLists(IsolatedTestCase):
 		self.assertEqual(row["days_left"], 20)
 
 	def test_equipment_needing_attention(self):
-		locked = make_equipment(name="Máy khóa", serial="LK-" + frappe.generate_hash(length=6), daily_tested=False)
+		locked = make_equipment(
+			name="Máy khóa", serial="LK-" + frappe.generate_hash(length=6), daily_tested=False
+		)
 		frappe.db.set_value("Equipment", locked.name, {"status": "Locked", "lock_reason": "Daily Test"})
 		due = make_equipment(
 			name="Máy sắp kiểm định",
@@ -202,10 +224,14 @@ class TestActionLists(IsolatedTestCase):
 			inspection_due=add_days(today(), 10),
 		)
 		fine = make_equipment(
-			name="Máy ổn", serial="OK-" + frappe.generate_hash(length=6), inspection_due=add_days(today(), 300)
+			name="Máy ổn",
+			serial="OK-" + frappe.generate_hash(length=6),
+			inspection_due=add_days(today(), 300),
 		)
 		retired = make_equipment(name="Máy thanh lý", serial="RT-" + frappe.generate_hash(length=6))
-		frappe.db.set_value("Equipment", retired.name, {"status": "Retired", "inspection_due": add_days(today(), 1)})
+		frappe.db.set_value(
+			"Equipment", retired.name, {"status": "Retired", "inspection_due": add_days(today(), 1)}
+		)
 		rows = by_key(dashboard.equipment_attention(limit=500)["rows"], "name")
 		self.assertIn(locked.name, rows)
 		self.assertEqual(rows[due.name]["due_in"], 10)

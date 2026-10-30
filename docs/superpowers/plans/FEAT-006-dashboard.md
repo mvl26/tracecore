@@ -62,4 +62,22 @@ FR/BRU đáp ứng: FR-M9-01, FR-M9-01.1, FR-M9-01.2, FR-M9-13. Không có BRU g
 
 ## Ghi chú hiện thực
 
-_(điền khi xong)_
+- **Task 1** `tracecore/admin_reports/dashboard.py`: hàm tổng hợp chỉ truy vấn theo tên DocType (R1), mỗi khối một
+  `GROUP BY`. `open_recalls` lọc `confirmed_count < pack_count` trong Python vì số lệnh Open nhỏ.
+- **Task 2** `tracecore/v1/dashboard.py`:
+  - Lệch plan: khối máy dùng `admin_reports.dashboard.equipment_attention` (Locked/Repair, kiểm định/hiệu chuẩn đến
+    hạn trong 30 ngày), không gọi `equipment.daily_test.overview`. Hàm đó trả tình trạng test hằng ngày của từng
+    máy, không phải danh sách "cần xử lý" theo D7(4).
+  - Cache Redis đọc bằng `frappe.cache.get_value(key, expires=True)`. Khóa có hạn (setex) đọc không có cờ này thì
+    Frappe v15 trả None, tức là cache không bao giờ trúng.
+  - `find_in_list` trả thêm `field` (trường mã) để client lọc List View khi không khớp đúng một bản ghi.
+  - Test số truy vấn đặt trần 400, không so bằng nhau, vì `par.check` đánh giá từng bộ (tối đa 50, D13).
+- **Task 3** Page `tc-dashboard` (module UI): KPI theo design §4.6, bảng theo §4.10. Bộ lọc lưu `localStorage`
+  trong try/catch. Polling 60 s dừng khi rời trang hoặc tab ẩn.
+- **Task 4** `public/js/tc_list_scan.js`: bọc `frappe.views.ListView.prototype.after_render` để gắn ô quét cho 14
+  DocType D11. Danh sách DocType ở client được test so khớp với `SCAN_DOCTYPES` ở server.
+- **Task 5**:
+  - Launcher có nhóm mới "Overview" đứng đầu, link "Operations Dashboard" (vi: "Tổng quan vận hành").
+  - 57 dòng `vi.csv` không context. Frappe/erpnext/hrms chưa có các chuỗi này nên không đè bản dịch của chúng.
+  - `rtm.md` cập nhật FR-M9-01 và FR-M9-13.
+- File plan trong bench từng bị mất ký tự "r" khi chép từ Windows (commit 3e670bc). Đã khôi phục ở commit ea97132.

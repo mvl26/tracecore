@@ -16,14 +16,19 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		title: __("Operations Dashboard"),
 		single_column: true,
 	});
-	const root = $("<section class='tc-dash-page' data-surface='WEB'></section>").appendTo(page.main);
+	const root = $("<section class='tc-dash-page' data-surface='WEB'></section>").appendTo(
+		page.main
+	);
 	const state = { data: null, request: 0, timer: null, filters: savedFilters() };
 	const visible = () => frappe.get_route()[0] === "tc-dashboard" && !document.hidden;
 
 	function savedFilters() {
 		const fallback = { period: "day", zone: "", equipment: "", department: "" };
 		try {
-			return Object.assign(fallback, JSON.parse(localStorage.getItem(DASH_FILTER_KEY) || "{}"));
+			return Object.assign(
+				fallback,
+				JSON.parse(localStorage.getItem(DASH_FILTER_KEY) || "{}")
+			);
 		} catch (error) {
 			return fallback;
 		}
@@ -108,9 +113,14 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 
 	function loading() {
 		root.empty();
-		$("<p class='tc-dash-empty' role='status'></p>").text(__("Loading dashboard…")).appendTo(root);
+		$("<p class='tc-dash-empty' role='status'></p>")
+			.text(__("Loading dashboard…"))
+			.appendTo(root);
 		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(root);
-		for (let i = 0; i < 4; i++) $("<div class='tc-dash-kpi is-loading'><span class='tc-dash-skeleton'></span></div>").appendTo(grid);
+		for (let i = 0; i < 4; i++)
+			$(
+				"<div class='tc-dash-kpi is-loading'><span class='tc-dash-skeleton'></span></div>"
+			).appendTo(grid);
 	}
 
 	function route(doctype, filters) {
@@ -119,7 +129,9 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 	}
 
 	function kpi(parent, value, label, variant, onOpen) {
-		const tile = $("<div class='tc-dash-kpi'></div>").addClass(variant ? "is-" + variant : "").appendTo(parent);
+		const tile = $("<div class='tc-dash-kpi'></div>")
+			.addClass(variant ? "is-" + variant : "")
+			.appendTo(parent);
 		$("<b></b>").text(value).appendTo(tile);
 		$("<small></small>").text(label).appendTo(tile);
 		if (onOpen) {
@@ -144,7 +156,9 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		const wrap = $("<div class='tc-dash-table-wrap'></div>").appendTo(parent);
 		const tbl = $("<table class='tc-dash-table'></table>").appendTo(wrap);
 		const head = $("<tr></tr>").appendTo($("<thead></thead>").appendTo(tbl));
-		columns.forEach((col) => $("<th></th>").toggleClass("is-num", !!col.num).text(col.label).appendTo(head));
+		columns.forEach((col) =>
+			$("<th></th>").toggleClass("is-num", !!col.num).text(col.label).appendTo(head)
+		);
 		const body = $("<tbody></tbody>").appendTo(tbl);
 		if (!rows.length) {
 			$("<td></td>")
@@ -156,7 +170,10 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		rows.forEach((row) => {
 			const tr = $("<tr></tr>").appendTo(body);
 			columns.forEach((col) => {
-				const td = $("<td></td>").toggleClass("is-num", !!col.num).toggleClass("is-code", !!col.code).appendTo(tr);
+				const td = $("<td></td>")
+					.toggleClass("is-num", !!col.num)
+					.toggleClass("is-code", !!col.code)
+					.appendTo(tr);
 				const value = col.value(row);
 				if (value instanceof jQuery) td.append(value);
 				else td.text(value === null || value === undefined ? "" : value);
@@ -197,8 +214,21 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		const box = section(__("Sets by status", null, DASH_CTX));
 		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(box);
 		sets.forEach((row) =>
-			kpi(grid, row.count, __(row.status, null, "Set Unit"), row.status === "Reprocess" && row.count ? "warn" : "", () =>
-				route("Set Unit", Object.assign({ status: row.status }, state.filters.department ? { department: state.filters.department } : {}))
+			kpi(
+				grid,
+				row.count,
+				__(row.status, null, "Set Unit"),
+				row.status === "Reprocess" && row.count ? "warn" : "",
+				() =>
+					route(
+						"Set Unit",
+						Object.assign(
+							{ status: row.status },
+							state.filters.department
+								? { department: state.filters.department }
+								: {}
+						)
+					)
 			)
 		);
 	}
@@ -207,7 +237,11 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		const box = section(__("Failed batches", null, DASH_CTX));
 		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(box);
 		[
-			[failures.load, __("Sterilization loads failed", null, DASH_CTX), "Sterilization Load"],
+			[
+				failures.load,
+				__("Sterilization loads failed", null, DASH_CTX),
+				"Sterilization Load",
+			],
 			[failures.wash, __("Wash batches failed", null, DASH_CTX), "Wash Batch"],
 		].forEach(([rate, label, doctype]) =>
 			kpi(
@@ -223,7 +257,9 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 	function renderSterile(sterile) {
 		const box = section(__("Sterile store", null, DASH_CTX));
 		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(box);
-		kpi(grid, sterile.total, __("Packs in sterile store", null, DASH_CTX), "", () => route("Pack", { status: "In Sterile Stock" }));
+		kpi(grid, sterile.total, __("Packs in sterile store", null, DASH_CTX), "", () =>
+			route("Pack", { status: "In Sterile Stock" })
+		);
 		kpi(
 			grid,
 			sterile.expiring.length,
@@ -235,7 +271,10 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 			[
 				{ label: __("Set type", null, DASH_CTX), value: (r) => r.set_name || r.set_type },
 				{ label: __("Packs", null, DASH_CTX), num: true, value: (r) => r.count },
-				{ label: __("Nearest expiry", null, DASH_CTX), value: (r) => date(r.nearest_expiry) },
+				{
+					label: __("Nearest expiry", null, DASH_CTX),
+					value: (r) => date(r.nearest_expiry),
+				},
 			],
 			sterile.by_set_type,
 			__("no packs in the sterile store", null, DASH_CTX)
@@ -245,7 +284,11 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 	function renderOutput(output) {
 		const box = section(__("Output in period", null, DASH_CTX));
 		const cols = $("<div class='tc-dash-columns'></div>").appendTo(box);
-		const count = { label: __("Passed gates", null, DASH_CTX), num: true, value: (r) => r.count };
+		const count = {
+			label: __("Passed gates", null, DASH_CTX),
+			num: true,
+			value: (r) => r.count,
+		};
 		table(
 			$("<div></div>").appendTo(cols),
 			[{ label: __("Station", null, DASH_CTX), value: (r) => r.station_name }, count],
@@ -263,7 +306,11 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 			[
 				{ label: __("Machine", null, DASH_CTX), value: (r) => r.equipment_name },
 				{ label: __("Wash batches", null, DASH_CTX), num: true, value: (r) => r.wash },
-				{ label: __("Sterilization loads", null, DASH_CTX), num: true, value: (r) => r.load },
+				{
+					label: __("Sterilization loads", null, DASH_CTX),
+					num: true,
+					value: (r) => r.load,
+				},
 			],
 			output.equipment,
 			__("no batch started in this period", null, DASH_CTX)
@@ -284,8 +331,19 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				{ status: "Requested" },
 				[
 					{ label: __("Set ID", null, DASH_CTX), code: true, value: (r) => r.set_unit },
-					{ label: __("Requested at", null, DASH_CTX), value: (r) => date(r.requested_at) },
-					{ label: "", value: (r) => openButton(__("Review and approve", null, DASH_CTX), "Par Override", r.name) },
+					{
+						label: __("Requested at", null, DASH_CTX),
+						value: (r) => date(r.requested_at),
+					},
+					{
+						label: "",
+						value: (r) =>
+							openButton(
+								__("Review and approve", null, DASH_CTX),
+								"Par Override",
+								r.name
+							),
+					},
 				],
 				blocks.overrides.rows,
 				__("no request waiting", null, DASH_CTX)
@@ -299,8 +357,16 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				{ status: "Open" },
 				[
 					{ label: __("Recall", null, DASH_CTX), code: true, value: (r) => r.name },
-					{ label: __("Confirmed", null, DASH_CTX), num: true, value: (r) => r.confirmed_count + "/" + r.pack_count },
-					{ label: "", value: (r) => openButton(__("Follow up", null, DASH_CTX), "Recall Order", r.name) },
+					{
+						label: __("Confirmed", null, DASH_CTX),
+						num: true,
+						value: (r) => r.confirmed_count + "/" + r.pack_count,
+					},
+					{
+						label: "",
+						value: (r) =>
+							openButton(__("Follow up", null, DASH_CTX), "Recall Order", r.name),
+					},
 				],
 				blocks.recalls.rows,
 				__("no open recall", null, DASH_CTX)
@@ -314,10 +380,17 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				null,
 				[
 					{ label: __("Set ID", null, DASH_CTX), code: true, value: (r) => r.set_unit },
-					{ label: __("Cycles", null, DASH_CTX), num: true, value: (r) => r.cycles_used + "/" + r.max_cycles },
+					{
+						label: __("Cycles", null, DASH_CTX),
+						num: true,
+						value: (r) => r.cycles_used + "/" + r.max_cycles,
+					},
 					{
 						label: __("State", null, DASH_CTX),
-						value: (r) => (r.state === "blocked" ? __("Out of par", null, DASH_CTX) : __("Near par", null, DASH_CTX)),
+						value: (r) =>
+							r.state === "blocked"
+								? __("Out of par", null, DASH_CTX)
+								: __("Near par", null, DASH_CTX),
 					},
 					{ label: "", value: (r) => openButton(__("Open"), "Set Unit", r.set_unit) },
 				],
@@ -332,12 +405,19 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				"Equipment",
 				{ status: ["!=", "Retired"] },
 				[
-					{ label: __("Machine", null, DASH_CTX), value: (r) => r.equipment_name || r.name },
-					{ label: __("Status", null, DASH_CTX), value: (r) => __(r.status, null, "Equipment") },
+					{
+						label: __("Machine", null, DASH_CTX),
+						value: (r) => r.equipment_name || r.name,
+					},
+					{
+						label: __("Status", null, DASH_CTX),
+						value: (r) => __(r.status, null, "Equipment"),
+					},
 					{
 						label: __("Due in (days)", null, DASH_CTX),
 						num: true,
-						value: (r) => (r.due_in === null || r.due_in === undefined ? "" : r.due_in),
+						value: (r) =>
+							r.due_in === null || r.due_in === undefined ? "" : r.due_in,
 					},
 					{ label: "", value: (r) => openButton(__("Open"), "Equipment", r.name) },
 				],
@@ -352,9 +432,16 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				"Certificate",
 				{ status: ["in", ["Valid", "Expired"]] },
 				[
-					{ label: __("Staff", null, DASH_CTX), value: (r) => r.employee_name || r.employee },
+					{
+						label: __("Staff", null, DASH_CTX),
+						value: (r) => r.employee_name || r.employee,
+					},
 					{ label: __("Expires on", null, DASH_CTX), value: (r) => date(r.expires_on) },
-					{ label: __("Days left", null, DASH_CTX), num: true, value: (r) => r.days_left },
+					{
+						label: __("Days left", null, DASH_CTX),
+						num: true,
+						value: (r) => r.days_left,
+					},
 					{ label: "", value: (r) => openButton(__("Open"), "Certificate", r.name) },
 				],
 				blocks.certificates.rows,
@@ -370,7 +457,11 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				[
 					{ label: __("Item", null, DASH_CTX), value: (r) => r.item_name || r.item },
 					{ label: __("Warehouse", null, DASH_CTX), value: (r) => r.warehouse },
-					{ label: __("In stock / minimum", null, DASH_CTX), num: true, value: (r) => r.qty + "/" + r.minimum },
+					{
+						label: __("In stock / minimum", null, DASH_CTX),
+						num: true,
+						value: (r) => r.qty + "/" + r.minimum,
+					},
 				],
 				blocks.stock.below_minimum.slice(0, 5),
 				__("no item below minimum", null, DASH_CTX)
@@ -397,7 +488,17 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		const blocks = data.blocks;
 		root.empty();
 		$("<p class='tc-dash-updated' role='status'></p>")
-			.text(__("Updated at {0}", [frappe.datetime.str_to_user(data.generated_at.slice(0, 19).replace("T", " "))], DASH_CTX))
+			.text(
+				__(
+					"Updated at {0}",
+					[
+						frappe.datetime.str_to_user(
+							data.generated_at.slice(0, 19).replace("T", " ")
+						),
+					],
+					DASH_CTX
+				)
+			)
 			.appendTo(root);
 		if (!Object.keys(blocks).length) {
 			message(
@@ -429,7 +530,12 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 			});
 			if (current !== state.request) return;
 			state.data = data;
-			setOptions(fields.zone, { value: "", label: __("All zones", null, DASH_CTX) }, data.options.zones, state.filters.zone);
+			setOptions(
+				fields.zone,
+				{ value: "", label: __("All zones", null, DASH_CTX) },
+				data.options.zones,
+				state.filters.zone
+			);
 			setOptions(
 				fields.equipment,
 				{ value: "", label: __("All machines", null, DASH_CTX) },

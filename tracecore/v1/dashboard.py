@@ -67,7 +67,11 @@ def _blocks_for(roles):
 		wanted = list(BLOCK_SOURCES)
 	else:
 		wanted = [block for role, blocks in ROLE_BLOCKS.items() if role in roles for block in blocks]
-	return [block for block in BLOCK_SOURCES if block in wanted and frappe.has_permission(BLOCK_SOURCES[block], "read")]
+	return [
+		block
+		for block in BLOCK_SOURCES
+		if block in wanted and frappe.has_permission(BLOCK_SOURCES[block], "read")
+	]
 
 
 def _filters(period, zone, equipment, department):
@@ -79,7 +83,12 @@ def _filters(period, zone, equipment, department):
 		raise BadRequestError(_("Equipment {0} does not exist.").format(equipment))
 	if department and not frappe.db.exists("Department", department):
 		raise BadRequestError(_("Department {0} does not exist.").format(department))
-	return {"period": period, "zone": zone or None, "equipment": equipment or None, "department": department or None}
+	return {
+		"period": period,
+		"zone": zone or None,
+		"equipment": equipment or None,
+		"department": department or None,
+	}
 
 
 def _sterile():
@@ -129,7 +138,10 @@ def _options():
 		"zones": [
 			{"value": row.name, "label": row.zone_station_name or row.name}
 			for row in frappe.get_all(
-				"Zone Station", filters={"is_zone": 1}, fields=["name", "zone_station_name"], order_by="name asc"
+				"Zone Station",
+				filters={"is_zone": 1},
+				fields=["name", "zone_station_name"],
+				order_by="name asc",
 			)
 		],
 		"equipment": [
@@ -152,7 +164,7 @@ def summary(period="day", zone=None, equipment=None, department=None):
 	"""
 	require_any_role(*DASHBOARD_ROLES)
 	filters = _filters(period, zone, equipment, department)
-	digest = hashlib.sha1(json.dumps(filters, sort_keys=True).encode()).hexdigest()[:16]  # noqa: S324
+	digest = hashlib.sha256(json.dumps(filters, sort_keys=True).encode()).hexdigest()[:16]
 	key = f"{CACHE_PREFIX}:{frappe.session.user}:{digest}"
 	# khóa có hạn (setex) chỉ đọc được với expires=True: không thì Frappe v15 tra cache cục bộ và luôn trả None
 	cached = frappe.cache.get_value(key, expires=True)
@@ -164,7 +176,9 @@ def summary(period="day", zone=None, equipment=None, department=None):
 		"period": filters["period"],
 		"range": [str(start), str(end)],
 		"filters": filters,
-		"blocks": {block: _build(block, start, end, filters) for block in _blocks_for(set(frappe.get_roles()))},
+		"blocks": {
+			block: _build(block, start, end, filters) for block in _blocks_for(set(frappe.get_roles()))
+		},
 		"options": _options(),
 		"generated_at": server_time(),
 	}
@@ -191,4 +205,9 @@ def find_in_list(doctype, code):
 	matches = frappe.get_list(doctype, filters={"name": value}, pluck="name", limit=2)
 	if not matches and field:
 		matches = frappe.get_list(doctype, filters={field: value}, pluck="name", limit=2)
-	return {"ok": True, "name": matches[0] if len(matches) == 1 else None, "code": value, "field": field or "name"}
+	return {
+		"ok": True,
+		"name": matches[0] if len(matches) == 1 else None,
+		"code": value,
+		"field": field or "name",
+	}

@@ -33,7 +33,7 @@ EQUIPMENT_DAYS = 30
 
 
 def period_range(period, on=None):
-	"""Khoảng ``[start, end)`` của kỳ ``day`` / ``week`` (thứ Hai–Chủ nhật) / ``month`` chứa thời điểm `on` (giờ hệ thống)."""
+	"""Khoảng ``[start, end)`` của kỳ ``day`` / ``week`` (thứ Hai đến Chủ nhật) / ``month`` chứa thời điểm `on` (giờ hệ thống)."""
 	if period not in PERIODS:
 		frappe.throw(_("Period must be one of {0}.").format(", ".join(PERIODS)))
 	day = getdate(on or now_datetime())
@@ -44,7 +44,11 @@ def period_range(period, on=None):
 		start -= timedelta(days=start.weekday())
 		return start, start + timedelta(days=7)
 	start = start.replace(day=1)
-	end = start.replace(year=start.year + 1, month=1) if start.month == 12 else start.replace(month=start.month + 1)
+	end = (
+		start.replace(year=start.year + 1, month=1)
+		if start.month == 12
+		else start.replace(month=start.month + 1)
+	)
 	return start, end
 
 
@@ -120,13 +124,20 @@ def output_by_user(start, end, zone=None, limit=TOP):
 
 
 def _count_by_equipment(doctype, start, end, equipment, statuses=None):
-	filters = {"started_at": ["between", [start, end - timedelta(microseconds=1)]], "equipment": ["is", "set"]}
+	filters = {
+		"started_at": ["between", [start, end - timedelta(microseconds=1)]],
+		"equipment": ["is", "set"],
+	}
 	if equipment:
 		filters["equipment"] = equipment
 	if statuses:
 		filters["status"] = ["in", statuses]
 	rows = frappe.get_all(
-		doctype, filters=filters, fields=["equipment", "count(name) as n"], group_by="equipment", order_by=None
+		doctype,
+		filters=filters,
+		fields=["equipment", "count(name) as n"],
+		group_by="equipment",
+		order_by=None,
 	)
 	return {row.equipment: row.n for row in rows}
 
@@ -237,7 +248,7 @@ def expiring_certificates(days=CERTIFICATE_DAYS, limit=LIST_LIMIT):
 
 
 def equipment_attention(days=EQUIPMENT_DAYS, limit=LIST_LIMIT):
-	"""Máy khóa / đang sửa, hoặc kiểm định – hiệu chuẩn hết hạn trong `days` ngày; bỏ máy thanh lý (D7)."""
+	"""Máy khóa / đang sửa, hoặc kiểm định, hiệu chuẩn hết hạn trong `days` ngày; bỏ máy thanh lý (D7)."""
 	horizon = getdate(add_days(today(), days))
 	rows = frappe.get_all(
 		"Equipment",
@@ -259,5 +270,10 @@ def equipment_attention(days=EQUIPMENT_DAYS, limit=LIST_LIMIT):
 		if row.status in ("Locked", "Repair") or (nearest and nearest <= horizon):
 			row["due_in"] = date_diff(nearest, today()) if nearest else None
 			result.append(row)
-	result.sort(key=lambda row: (row.status not in ("Locked", "Repair"), row["due_in"] if row["due_in"] is not None else 0))
+	result.sort(
+		key=lambda row: (
+			row.status not in ("Locked", "Repair"),
+			row["due_in"] if row["due_in"] is not None else 0,
+		)
+	)
 	return {"count": len(result), "rows": result[:limit]}

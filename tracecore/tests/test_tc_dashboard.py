@@ -44,7 +44,7 @@ class TestDashboardPage(FrappeTestCase):
 		):
 			self.assertIn(text, script)
 		self.assertIn("navigator.onLine", script)
-		self.assertIn("role\", kind === \"error\" ? \"alert\"", script)
+		self.assertIn('role", kind === "error" ? "alert"', script)
 
 	def test_shown_strings_go_through_translation(self):
 		script = _read("tc_dashboard.js")
