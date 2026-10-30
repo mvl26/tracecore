@@ -161,6 +161,27 @@ class TestLauncher(FrappeTestCase):
 		quality = [link["route"] for link in links if link["group"] == "Quality and traceability"]
 		self.assertEqual(quality[0], "/app/query-report/Pack Trace")
 
+	def test_sterilization_reports_and_environment_log_are_reachable(self):
+		# FEAT-007 (sổ tiệt khuẩn, báo cáo KSNK, dự báo) và FEAT-008 (nhật ký môi trường) mở được từ trang chủ
+		with (
+			patch("frappe.session", frappe._dict(user="r01@example.test")),
+			patch("frappe.get_roles", return_value=["TC R01"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+			patch("tracecore.v1.navigation._roles_permit", return_value=True),
+		):
+			links = get_context()["management"]
+		routes = {link["route"] for link in links}
+		expected = {
+			"/app/query-report/Sterilization Log",
+			"/app/query-report/KSNK Summary Report",
+			"/app/query-report/Instrument Life Forecast",
+			"/app/environment-log",
+			"/app/query-report/Environment Monthly Report",
+			"/app/archive-export",  # FEAT-012
+		}
+		self.assertFalse(expected - routes, sorted(expected - routes))
+
 	def test_catalog_import_follows_page_roles(self):
 		# Page tc-import chỉ cho R02 / R10 / System Manager; R01 quản lý nhưng không thấy link import
 		with (

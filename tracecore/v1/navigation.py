@@ -34,7 +34,18 @@ MANAGEMENT_GROUPS = (
 			"report:Station Output",
 		),
 	),
-	("Zones, stations and printing", ("Zone Station", "Printer", "Label Template", "Print Job")),
+	(
+		"Zones, stations and printing",
+		(
+			"Zone Station",
+			# FEAT-008: nhật ký môi trường khu và báo cáo tháng
+			"Environment Log",
+			"report:Environment Monthly Report",
+			"Printer",
+			"Label Template",
+			"Print Job",
+		),
+	),
 	(
 		"Equipment",
 		("Equipment", "Process Program", "Equipment Type Norm", "Daily Test", "Maintenance Record"),
@@ -49,6 +60,7 @@ MANAGEMENT_GROUPS = (
 			"Loaner Set",
 			"Instrument Maintenance",
 			"report:Instrument Data Gaps",
+			"report:Instrument Life Forecast",  # FEAT-007: bộ sắp hết vòng đời kèm giá
 		),
 	),
 	(
@@ -104,11 +116,22 @@ MANAGEMENT_GROUPS = (
 			"Usage Record",
 		),
 	),
-	("Quality and traceability", ("report:Pack Trace", "Incident CAPA", "Recall Order")),
+	(
+		"Quality and traceability",
+		(
+			"report:Pack Trace",
+			"Incident CAPA",
+			"Recall Order",
+			# FEAT-007: sổ tiệt khuẩn điện tử và báo cáo KSNK (in PDF có chữ ký Trưởng khoa)
+			"report:Sterilization Log",
+			"report:KSNK Summary Report",
+		),
+	),
 	(
 		"Data and audit",
 		(
 			"tc-import",
+			"Archive Export",  # FEAT-012: xuất gói hồ sơ tiệt khuẩn lưu trữ (SCR-43)
 			"notifications",
 			"Notification Rule",
 			"Audit Log",

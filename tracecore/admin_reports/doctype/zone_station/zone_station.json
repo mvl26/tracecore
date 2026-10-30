@@ -12,6 +12,16 @@
   "parent_zone",
   "station_step",
   "description",
+  "environment_section",
+  "env_monitored",
+  "temp_min",
+  "temp_max",
+  "column_break_env_1",
+  "humidity_min",
+  "humidity_max",
+  "column_break_env_2",
+  "pressure_min",
+  "pressure_max",
   "peripherals_section",
   "peripherals"
  ],
@@ -72,6 +82,65 @@
    "label": "Description"
   },
   {
+   "collapsible": 1,
+   "depends_on": "eval:doc.is_zone",
+   "fieldname": "environment_section",
+   "fieldtype": "Section Break",
+   "label": "Environment Monitoring",
+   "description": "Leave empty to skip this check."
+  },
+  {
+   "default": "0",
+   "description": "Record temperature, humidity and pressure difference for this zone (FR-M9-04). Missing readings are reminded at the times set in TraceCore Settings.",
+   "fieldname": "env_monitored",
+   "fieldtype": "Check",
+   "label": "Monitor Environment"
+  },
+  {
+   "depends_on": "eval:doc.is_zone && doc.env_monitored",
+   "fieldname": "temp_min",
+   "fieldtype": "Data",
+   "label": "Minimum Temperature (°C)"
+  },
+  {
+   "depends_on": "eval:doc.is_zone && doc.env_monitored",
+   "fieldname": "temp_max",
+   "fieldtype": "Data",
+   "label": "Maximum Temperature (°C)"
+  },
+  {
+   "fieldname": "column_break_env_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.is_zone && doc.env_monitored",
+   "fieldname": "humidity_min",
+   "fieldtype": "Data",
+   "label": "Minimum Humidity (%)"
+  },
+  {
+   "depends_on": "eval:doc.is_zone && doc.env_monitored",
+   "fieldname": "humidity_max",
+   "fieldtype": "Data",
+   "label": "Maximum Humidity (%)"
+  },
+  {
+   "fieldname": "column_break_env_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.is_zone && doc.env_monitored",
+   "fieldname": "pressure_min",
+   "fieldtype": "Data",
+   "label": "Minimum Pressure Difference (Pa)"
+  },
+  {
+   "depends_on": "eval:doc.is_zone && doc.env_monitored",
+   "fieldname": "pressure_max",
+   "fieldtype": "Data",
+   "label": "Maximum Pressure Difference (Pa)"
+  },
+  {
    "depends_on": "eval:!doc.is_zone",
    "fieldname": "peripherals_section",
    "fieldtype": "Section Break",
@@ -93,7 +162,7 @@
    "link_fieldname": "station"
   }
  ],
- "modified": "2026-10-21 10:00:00.000000",
+ "modified": "2026-10-30 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Zone Station",

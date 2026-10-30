@@ -4958,6 +4958,133 @@ Cost sheets cannot be deleted.,Không thể xóa phiếu giá thành.,
 Cost sheets are built for sterilization loads and wash batches only.,Phiếu giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
 Cost sheet {0} is unpriced,Phiếu giá thành {0} chưa định giá,
 Cost sheet unpriced,Phiếu giá thành chưa định giá,
+Pass,Đạt,Sterilization Log
+Fail,Không đạt,Sterilization Log
+Pending,Chờ kết quả,Sterilization Log
+Released,Đã giải phóng,Sterilization Log
+Failed,Không đạt,Sterilization Log
+Quarantine,Cách ly,Sterilization Log
+Cycle Complete,Hoàn tất chu trình,Sterilization Log
+Date,Ngày,Sterilization Log
+Load,Mẻ,Sterilization Log
+Machine,Máy,Sterilization Log
+Program,Chương trình,Sterilization Log
+Started At,Bắt đầu lúc,Sterilization Log
+Ended At,Kết thúc lúc,Sterilization Log
+Packs,Số gói,Sterilization Log
+Sets,Bộ dụng cụ,Sterilization Log
+Operator,Người vận hành,Sterilization Log
+Released By,Người giải phóng,Sterilization Log
+Released At,Giải phóng lúc,Sterilization Log
+Result,Kết quả,Sterilization Log
+Type,Loại máy,Sterilization Log
+Loads,Số mẻ,Sterilization Log
+Passed,Đạt,Sterilization Log
+Month,Tháng,Sterilization Log
+Set ID,Set ID,Sterilization Log
+Set Type,Loại bộ,Sterilization Log
+Department,Khoa,Sterilization Log
+Grand Total,Tổng cộng,Sterilization Log
+An archive export cannot be changed after it is created.,Phiếu xuất hồ sơ không sửa được sau khi tạo.,
+Archive Export,Xuất hồ sơ lưu trữ,
+Archive File,Tệp gói hồ sơ,Archive Export
+Archive export failed,Xuất hồ sơ lưu trữ bị lỗi,
+Archive export {0} failed,Xuất hồ sơ {0} bị lỗi,
+Archive export {0} is ready,Gói hồ sơ {0} đã sẵn sàng,
+Choose at least one kind of record to export.,Chọn ít nhất một loại hồ sơ để xuất.,
+Choose the recall order to export.,Chọn lệnh thu hồi cần xuất.,
+Choose the sterilization load to export.,Chọn mẻ tiệt khuẩn cần xuất.,
+Download Archive,Tải gói hồ sơ,
+Enter the reason for exporting full patient codes.,Nhập lý do xuất mã bệnh nhân đầy đủ.,
+Export Full Patient Codes,Xuất mã bệnh nhân đầy đủ,Archive Export
+File Size (bytes),Dung lượng tệp (byte),Archive Export
+Generated At,Thời điểm tạo,Archive Export
+Issues to Departments,Cấp phát cho khoa,Archive Export
+Manifest,Bảng kê tệp (manifest),Archive Export
+Only the head of infection control (R01) can export full patient codes.,Chỉ Trưởng khoa KSNK (R01) được xuất mã bệnh nhân đầy đủ.,
+Patient Codes,Mã bệnh nhân,Archive Export
+Patient codes are masked unless TC R01 exports them in full with a reason (recorded in the Audit Log).,"Mã bệnh nhân được che, trừ khi TC R01 xuất đầy đủ kèm lý do (ghi vào Audit Log).",Archive Export
+Provisional,Tạm,Archive Export
+Reason for Full Patient Codes,Lý do xuất mã bệnh nhân đầy đủ,Archive Export
+SHA-256,Mã kiểm tra SHA-256,Archive Export
+The archive file does NOT match its SHA-256 checksum.,Tệp gói hồ sơ KHÔNG khớp mã kiểm tra SHA-256: tệp đã bị thay đổi.,
+The archive file matches its SHA-256 checksum.,Tệp gói hồ sơ khớp mã kiểm tra SHA-256.,
+Unknown scope: {0},Không có phạm vi: {0},
+Verify Checksum,Kiểm tra mã SHA-256,
+include must be a list of: {0},include phải là danh sách gồm: {0},
+Scope,Phạm vi,Archive Export
+Period,Theo kỳ,Archive Export
+Load,Theo mẻ,Archive Export
+Recall Order,Theo lệnh thu hồi,Archive Export
+Content,Nội dung,Archive Export
+Loads,Mẻ tiệt khuẩn,Archive Export
+Indicators,Chỉ thị,Archive Export
+Machine Data,Dữ liệu máy,Archive Export
+Usage,Sử dụng,Archive Export
+Audit Trail,Nhật ký thao tác,Archive Export
+Result,Kết quả,Archive Export
+Queued,Chờ chạy,Archive Export
+Running,Đang chạy,Archive Export
+Completed,Hoàn tất,Archive Export
+Failed,Lỗi,Archive Export
+Requested By,Người yêu cầu,Archive Export
+Error,Lỗi,Archive Export
+Environment Monthly Report,Báo cáo tháng môi trường khu,
+(signature and full name),"(ký, ghi rõ họ tên)",
+Biological,Sinh học,
+Biological indicator tests,Số lần thử chỉ thị sinh học,
+Biological indicators positive,Chỉ thị sinh học dương tính,
+Chemical (Plasma),Hóa học (plasma),
+Chemical Class 5,Hóa học loại 5,
+Choose the period (from date and to date).,Chọn kỳ (từ ngày và đến ngày).,
+Cycle Parameters,Thông số chu trình,
+Cycles Remaining,Số chu trình còn lại,
+Cycles Used / Max,Chu trình đã dùng / tối đa,
+Cycles per Month,Số chu trình mỗi tháng,
+Detail,Chi tiết,
+Electronic Sterilization Log,Sổ tiệt khuẩn điện tử,
+Export PDF,Xuất PDF,
+Exported by {0} at {1},"Người xuất {0}, lúc {1}",
+Failure Rate (%),Tỷ lệ không đạt (%),
+Head of Infection Control,Trưởng khoa Kiểm soát nhiễm khuẩn,
+Incidents and non-conformities,Sự cố và điểm không phù hợp,
+Indicators,Chỉ thị,
+"Indicators, washing and packs","Chỉ thị, rửa và gói",
+Infection Control Summary Report,Báo cáo tổng hợp kiểm soát nhiễm khuẩn,
+Instrument Life Forecast,Dự báo bộ dụng cụ hết vòng đời,
+KSNK Summary Report,Báo cáo tổng hợp KSNK,
+Loads,Số mẻ,
+Lock Report Period,Khóa kỳ báo cáo,
+Machine: {0},Máy: {0},
+No incident in this period.,Không có sự cố trong kỳ.,
+No pack issued in this period.,Không có gói nào được cấp phát trong kỳ.,
+No set is expected to reach its maximum cycles in the next 12 months.,Không có bộ nào dự kiến đạt số chu trình tối đa trong 12 tháng tới.,
+No sterilization load in this period.,Không có mẻ tiệt khuẩn trong kỳ.,
+Only the head of infection control (R01) can lock the report period.,Chỉ Trưởng khoa KSNK (R01) được khóa kỳ báo cáo.,
+PROVISIONAL,TẠM,
+Packs issued by department,Gói cấp phát theo khoa,
+Packs sterilized,Số gói đã tiệt khuẩn,
+"Passed {0}, failed {1}, failure rate {2} %","Đạt {0}, không đạt {1}, tỷ lệ không đạt {2} %",
+Period: {0} to {1},Kỳ: {0} đến {1},
+Prepared by,Người lập,
+Recall orders,Lệnh thu hồi,
+Replacement Price (VND),Giá thay thế (VND),
+Report period locked.,Đã khóa kỳ báo cáo.,
+Reports Locked Until,Báo cáo khóa đến ngày,
+Reports Locked Until,Báo cáo khóa đến ngày,TraceCore Settings
+"Reports and the sterilization log of a period ending on or before this date are final; later periods are printed with a PROVISIONAL stamp (FR-M9-02.1). Only TC R01 sets it, with Lock Report Period on the reports.","Báo cáo và sổ tiệt khuẩn của kỳ kết thúc trước hoặc đúng ngày này là bản chính thức; kỳ sau ngày này in kèm dấu TẠM (FR-M9-02.1). Chỉ TC R01 đặt ngày này, bằng nút Khóa kỳ báo cáo trên các báo cáo.",TraceCore Settings
+Set End-of-Life Forecast,Dự báo bộ dụng cụ hết vòng đời,
+Start / End,Bắt đầu / Kết thúc,
+Sterilization Log,Sổ tiệt khuẩn,
+Sterilization loads by machine,Mẻ tiệt khuẩn theo máy,
+The PDF is being prepared. You will be notified when it is ready.,Đang tạo PDF. Bạn sẽ được báo khi xong.,
+The from date is after the to date.,Từ ngày đang sau Đến ngày.,
+The lock date must be a date (YYYY-MM-DD).,Ngày khóa phải là một ngày (YYYY-MM-DD).,
+Total {0},Tổng {0},
+Unknown report: {0},Không có báo cáo: {0},
+Wash batches (passed / failed),Lô rửa (đạt / không đạt),
+You cannot export this report.,Bạn không có quyền xuất báo cáo này.,
+{0} is ready to download,{0} đã sẵn sàng để tải,
 Load or wash batch not found,Không tìm thấy mẻ hoặc lô rửa,
 Choose an existing sterilization load or wash batch.,Chọn mẻ tiệt khuẩn hoặc lô rửa đang có.,
 Rate version not approved,Phiên bản bảng giá chưa duyệt,
@@ -5888,6 +6015,62 @@ Report an Issue,Báo lỗi,
 Toggle Full Width,Bật/tắt toàn chiều rộng,
 Toggle Theme,Đổi giao diện sáng/tối,
 User Forum,Diễn đàn người dùng,
+"Check the values and the time of the reading, then record it again.","Kiểm tra lại các chỉ số và giờ đo, rồi ghi lại.",
+"Choose a monitored zone, or ask R10 to turn on Monitor Environment for the zone.","Chọn khu đang theo dõi môi trường, hoặc đề nghị R10 bật Theo dõi môi trường cho khu.",
+Choose a month and a year.,Chọn tháng và năm.,
+"Enter at least one of temperature, humidity or pressure difference.","Nhập ít nhất một chỉ số: nhiệt độ, độ ẩm hoặc áp suất chênh.",
+Environment Log,Nhật ký môi trường,
+Environment Monitoring,Môi trường khu,Zone Station
+Environment Reminder Times,Giờ nhắc ghi môi trường,TraceCore Settings
+Environment out of range in {0},Môi trường vượt ngưỡng tại {0},
+Environment reading is not valid,Số đo môi trường không hợp lệ,
+Environment reading missing: {0},Thiếu số đo môi trường: {0},
+Environment reading out of range,Số đo môi trường vượt ngưỡng,
+Environment reading missing,Thiếu số đo môi trường,
+Humidity,Độ ẩm,
+Pressure Difference,Áp suất chênh,
+Humidity (%),Độ ẩm (%),Environment Log
+Temperature (°C),Nhiệt độ (°C),Environment Log
+Pressure Difference (Pa),Áp suất chênh (Pa),Environment Log
+Humidity must be between 0 and 100 %.,Độ ẩm phải từ 0 đến 100 %.,
+Leave empty to skip this check.,Để trống nếu không kiểm ngưỡng này.,Zone Station
+Leave empty when not measured.,Để trống nếu không đo.,Environment Log
+Max Humidity (%),Độ ẩm cao nhất (%),
+Max Pressure Difference (Pa),Áp suất chênh cao nhất (Pa),
+Max Temperature (°C),Nhiệt độ cao nhất (°C),
+Min Humidity (%),Độ ẩm thấp nhất (%),
+Min Pressure Difference (Pa),Áp suất chênh thấp nhất (Pa),
+Min Temperature (°C),Nhiệt độ thấp nhất (°C),
+Maximum Humidity (%),Độ ẩm tối đa (%),Zone Station
+Maximum Pressure Difference (Pa),Áp suất chênh tối đa (Pa),Zone Station
+Maximum Temperature (°C),Nhiệt độ tối đa (°C),Zone Station
+Minimum Humidity (%),Độ ẩm tối thiểu (%),Zone Station
+Minimum Pressure Difference (Pa),Áp suất chênh tối thiểu (Pa),Zone Station
+Minimum Temperature (°C),Nhiệt độ tối thiểu (°C),Zone Station
+Measured At,Giờ đo,Environment Log
+Missing Times,Số mốc thiếu số đo,
+Monitor Environment,Theo dõi môi trường,Zone Station
+No environment reading in {0} from {1} to {2} on {3}.,{0} chưa có số đo môi trường từ {1} đến {2} ngày {3}.,
+Out of Range,Vượt ngưỡng,
+Out of Range,Vượt ngưỡng,Environment Log
+Out-of-Range Codes,Mã chỉ số vượt ngưỡng,Environment Log
+Out-of-Range Readings,Chỉ số vượt ngưỡng,Environment Log
+"Record temperature, humidity and pressure difference for this zone (FR-M9-04). Missing readings are reminded at the times set in TraceCore Settings.","Ghi nhiệt độ, độ ẩm và áp suất chênh của khu này (FR-M9-04). Khu thiếu số đo được nhắc vào các mốc giờ đặt trong Cài đặt TraceCore.",Zone Station
+Sensor,Cảm biến,Environment Log
+Manual,Nhập tay,Environment Log
+Readings,Số lần đo,Environment Log
+The measuring time {0} is in the future.,Giờ đo {0} ở tương lai.,
+"Times of day (HH:MM, comma separated) at which a monitored zone with no reading since the previous time is reminded (FR-M9-04.2). Leave empty to turn reminders off.","Các mốc giờ trong ngày (HH:MM, cách nhau bằng dấu phẩy). Đến mỗi mốc, khu đang theo dõi chưa có số đo kể từ mốc trước sẽ được nhắc (FR-M9-04.2). Để trống để tắt nhắc.",TraceCore Settings
+Zone Environment,Môi trường khu,TraceCore Settings
+Zone Name,Tên khu,
+Zone is not monitored,Khu chưa bật theo dõi môi trường,
+{0} is not a time of day (HH:MM).,{0} không phải giờ trong ngày (HH:MM).,
+{0} is not a zone with environment monitoring turned on.,{0} không phải khu đã bật theo dõi môi trường.,
+{0} must be a number.,{0} phải là số.,
+{0} must be a number: {1},{0} phải là số: {1},
+{0} {1} {2} is above the maximum {3},{0} {1} {2} vượt mức tối đa {3},
+{0} {1} {2} is below the minimum {3},{0} {1} {2} dưới mức tối thiểu {3},
+{0}: the minimum is greater than the maximum.,{0}: mức tối thiểu lớn hơn mức tối đa.,
 A station guide needs {0} to {1} numbered steps; this one has {2}.,Hướng dẫn trạm cần từ {0} đến {1} bước đánh số; bài này có {2} bước.
 All stations,Mọi trạm
 Ask R10 to add the steps for this station.,Đề nghị R10 bổ sung các bước cho trạm này.
