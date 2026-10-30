@@ -259,8 +259,11 @@ class TestPrintLanguage(ReportCase):
 				found.append((text.strip(), cm[0] * tm[4] + cm[4]))
 
 		page.extract_text(visitor_text=visit)
-		result_x = [x for text, x in found if "Kết quả" in text]
-		self.assertTrue(result_x, found)
+		# font thiếu dấu tiếng Việt thì wkhtmltopdf đổi font giữa chữ, một nhãn tách thành nhiều mảnh
+		chars = [(char, x) for text, x in found for char in text if not char.isspace()]
+		start = "".join(char for char, _x in chars).find("Kếtquả")
+		self.assertGreaterEqual(start, 0, found)
+		result_x = [x for _char, x in chars[start : start + len("Kếtquả")]]
 		# chữ của cột cuối phải nằm trong khổ giấy, không bị cắt
 		self.assertLess(max(x for _text, x in found), float(page.mediabox.width) - 20)
 		self.assertLess(max(result_x), float(page.mediabox.width) - 40)
