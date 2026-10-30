@@ -552,7 +552,7 @@ class TraceCoreStation {
 				${field("confirm_pin", __("Enter the new PIN again"))}
 				<div class="tc-modal-actions">
 					<button type="submit" class="tc-btn tc-btn-primary"${busy ? " disabled" : ""}>${esc(
-			busy ? __("Saving...") : __("Change PIN")
+			busy ? __("Saving...", null, "Change PIN") : __("Change PIN")
 		)}</button>
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">${esc(
 						__("Log out")
