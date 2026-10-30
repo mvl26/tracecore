@@ -135,8 +135,8 @@ class TestShiftAssignment(ShiftCase):
 class TestShiftSchedule(ShiftCase):
 	def test_week_schedule_lists_each_day_of_each_assignment(self):
 		monday = add_days(getdate(today()), -getdate(today()).weekday())
-		# Năng lực phải phủ cả các ngày đã qua của tuần, nếu không test fail từ thứ Năm trở đi
-		self.grant(valid_from=f"{monday} 00:00:00")
+		# thứ Hai đầu tuần có thể đã qua: năng lực phải có hiệu lực từ trước đó mới xếp ca được
+		self.grant(valid_from=add_days(monday, -1))
 		assignment(self.employee.name, self.shift, self.zone, start=monday, end=add_days(monday, 2))
 		columns, rows = shift_schedule.execute({"from_date": monday, "to_date": add_days(monday, 6)})
 		mine = [row for row in rows if row["employee"] == self.employee.name]
