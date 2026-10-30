@@ -299,5 +299,44 @@
   "in_list_view": 1,
   "in_standard_filter": 1,
   "description": "Station step whose Help button shows this guide (3 to 5 numbered steps). General is shown where no step guide exists."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Issue",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "name": "Issue-tc_station",
+  "fieldname": "tc_station",
+  "fieldtype": "Link",
+  "options": "Zone Station",
+  "label": "TraceCore Station",
+  "insert_after": "issue_type",
+  "description": "Station that sent this feedback."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Issue",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "name": "Issue-tc_employee",
+  "fieldname": "tc_employee",
+  "fieldtype": "Link",
+  "options": "Employee",
+  "label": "TraceCore Employee",
+  "insert_after": "tc_station",
+  "description": "Employee whose card session sent this feedback."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Issue",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "name": "Issue-tc_feedback_kind",
+  "fieldname": "tc_feedback_kind",
+  "fieldtype": "Select",
+  "options": "\nBug\nSuggestion",
+  "label": "Feedback Type",
+  "insert_after": "tc_employee",
+  "in_list_view": 1
  }
 ]

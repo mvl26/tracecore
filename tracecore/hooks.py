@@ -30,6 +30,7 @@ fixtures = [
 			["name", "like", "Stock Reconciliation Item-tc_%"],  # FEAT-043: lý do chênh lệch kiểm kê
 			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
 			["name", "like", "Help Article-tc_%"],  # FEAT-013: hướng dẫn theo bước trạm
+			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -170,6 +171,9 @@ after_migrate = [
 	"tracecore.hr.permissions.ensure_permissions",
 	# FEAT-013: hướng dẫn mặc định theo trạm (Help Article), không ghi đè bài R10 đã sửa
 	"tracecore.ui.station_help.ensure_station_help",
+	# FEAT-013: quyền R10 cho Issue / Help Article và Issue Type phản hồi phần mềm
+	"tracecore.ui.permissions.ensure_permissions",
+	"tracecore.ui.feedback.ensure_issue_type",
 ]
 
 # Uninstallation

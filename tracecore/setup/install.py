@@ -6,6 +6,8 @@ import frappe
 from tracecore.core.notification import ensure_default_rules
 from tracecore.costing.setup import ensure_categories
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
+from tracecore.ui.permissions import ensure_permissions as ensure_ui_permissions
+from tracecore.ui.station_help import ensure_station_help
 from tracecore.inventory.permissions import ensure_permissions
 from tracecore.setup.label_templates import (
 	ensure_object_templates,
@@ -44,6 +46,8 @@ def after_install():
 	ensure_default_rules()
 	ensure_hr_permissions()
 	ensure_categories()
+	ensure_ui_permissions()
+	ensure_station_help()
 
 
 TEST_GENDERS = ("Male", "Female", "Other")
