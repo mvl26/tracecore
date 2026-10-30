@@ -53,7 +53,12 @@ def catalog(station, client_ts=None, token=None):
 	"""Loại chất thải đang dùng: ``{"ok": true, "types": [...]}``."""
 	require_any_role(*WASTE_ROLES)
 	return run_at_step(
-		STEP, station, parse_client_ts(client_ts), lambda: {"ok": True, "types": service.catalog()}, None, None
+		STEP,
+		station,
+		parse_client_ts(client_ts),
+		lambda: {"ok": True, "types": service.catalog()},
+		None,
+		None,
 	)
 
 
@@ -64,7 +69,12 @@ def giver(station, card=None, client_ts=None, token=None):
 	require_any_role(*WASTE_ROLES)
 	card = _text(card, "card")
 	return run_at_step(
-		STEP, station, parse_client_ts(client_ts), lambda: {"ok": True, "giver": service.giver(card)}, None, None
+		STEP,
+		station,
+		parse_client_ts(client_ts),
+		lambda: {"ok": True, "giver": service.giver(card)},
+		None,
+		None,
 	)
 
 

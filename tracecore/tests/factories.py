@@ -1359,4 +1359,3 @@ def make_waste_container():
 	doc.flags.tc_waste = True
 	doc.flags.ignore_links = True
 	return doc.insert(ignore_permissions=True, set_name="CT-261030-" + frappe.generate_hash(length=5)).name
-

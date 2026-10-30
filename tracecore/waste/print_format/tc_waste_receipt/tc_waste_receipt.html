@@ -56,7 +56,7 @@
 			<tr>
 				<td class="tc-num">{{ row.index | e }}</td>
 				<td>{{ row.name | e }}{% if row.misclassified %}<br>{{ _("Misclassified - on hold", context=T) | e }}: {{ row.misclass_note | e }}{% endif %}</td>
-				<td>{{ _(row.color) | e }}</td>
+				<td>{{ _(row.color, context="Waste Type") | e }}</td>
 				<td class="tc-num">{{ row.qty | e }}</td>
 				<td class="tc-num">{{ row.weight | e }}</td>
 			</tr>

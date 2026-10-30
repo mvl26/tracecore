@@ -464,4 +464,3 @@ def on_waste_nc(ctx):
 		),
 		{"employee": ctx.get("employee"), "department": ctx.get("department"), "station": ctx.get("station")},
 	)
-

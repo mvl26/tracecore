@@ -20,7 +20,9 @@ INSTRUMENT_GIAI_PREFIX = (
 ROLL_PREFIX = "CN"  # cuộn nhãn `CN-#####` do FEAT-005 cấp, ref_doctype = Item nhãn (D2)
 CYCLE_PREFIX = "CY"  # Cycle ID `CY-YYMMDD-NNNN` của gói, ref_doctype = Pack (§5.3.3)
 CYCLE_SERIAL_DIGITS = 4
-CONTAINER_PREFIX = "CT"  # túi/thùng chất thải `CT-YYMMDD-NNNNN`, ref_doctype = Waste Container (§5.3.3, FEAT-047)
+CONTAINER_PREFIX = (
+	"CT"  # túi/thùng chất thải `CT-YYMMDD-NNNNN`, ref_doctype = Waste Container (§5.3.3, FEAT-047)
+)
 CONTAINER_SERIAL_DIGITS = 5
 # Mã đối tượng QR nội bộ (§5.3.3): prefix sổ → (khóa series, số chữ số). Khóa series trùng naming series
 # của DocType (vd Equipment `TB-.####`) nên hai đường cấp dùng chung một bộ đếm.
@@ -303,4 +305,3 @@ def next_container_code(collected_at, station=None):
 		if not is_issued(code):
 			register(code, CONTAINER_PREFIX, "Waste Container", code, station)
 			return code
-

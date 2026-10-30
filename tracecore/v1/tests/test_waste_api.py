@@ -68,7 +68,13 @@ class TestWasteApi(IsolatedTestCase):
 		result = self.call(api.catalog)
 		self.assertTrue(result["ok"])
 		self.assertIn(self.waste, [row["name"] for row in result["types"]])
-		self.assertFalse([row for row in result["types"] if not frappe.db.get_value("Waste Type", row["name"], "is_active")])
+		self.assertFalse(
+			[
+				row
+				for row in result["types"]
+				if not frappe.db.get_value("Waste Type", row["name"], "is_active")
+			]
+		)
 
 	def test_giver_card_shows_department(self):
 		result = self.call(api.giver, card=GIVER)
@@ -79,7 +85,9 @@ class TestWasteApi(IsolatedTestCase):
 		self.assertEqual((result["ok"], result["error"]["code"]), (False, "WASTE_GIVER_INVALID"))
 		self.assertEqual(frappe.local.response.get("http_status_code"), 403)
 		self.assertTrue(
-			frappe.db.exists("Audit Log", {"action": "Reject", "station": self.station, "reason": "WASTE_GIVER_INVALID"})
+			frappe.db.exists(
+				"Audit Log", {"action": "Reject", "station": self.station, "reason": "WASTE_GIVER_INVALID"}
+			)
 		)
 
 	def test_collect_runs_as_r07_and_returns_containers(self):
@@ -88,7 +96,9 @@ class TestWasteApi(IsolatedTestCase):
 		collection = result["collection"]
 		self.assertEqual(len(collection["containers"]), 2)
 		doc = frappe.get_doc("Waste Collection", collection["name"])
-		self.assertEqual((doc.collected_by, doc.department, doc.owner), (self.collector, self.department, self.user))
+		self.assertEqual(
+			(doc.collected_by, doc.department, doc.owner), (self.collector, self.department, self.user)
+		)
 
 	def test_collect_replay_creates_one_collection(self):
 		key = str(uuid.uuid4())
@@ -117,10 +127,11 @@ class TestWasteApi(IsolatedTestCase):
 	def test_release_held_is_for_r02(self):
 		result = self.call(api.collect, card=GIVER, lines=self.lines(misclassified=1, misclass_note="Mixed"))
 		container = result["collection"]["containers"][0]["name"]
+		r02 = make_user("waste-r02@example.com", ["TC R02"])
 		frappe.set_user(self.user)
 		with self.assertRaises(frappe.PermissionError):
 			api.release_held(container, "Sorted")
-		frappe.set_user(make_user("waste-r02@example.com", ["TC R02"]))
+		frappe.set_user(r02)
 		self.assertTrue(api.release_held(container, "Sorted")["ok"])
 		self.assertEqual(api.release_held(container, "Sorted")["error"]["code"], "WASTE_NOT_HELD")
 

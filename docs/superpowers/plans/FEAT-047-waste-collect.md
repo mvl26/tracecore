@@ -31,13 +31,13 @@ Người dùng chốt W1–W4 ngày 30/10/2026; W5–W14 là chi tiết hiện t
 
 ## Tasks
 
-- [ ] **Task 0 — Tài liệu:** A-59, ghi chú dòng FEAT-047 trong implementation-plan, plan này.
-- [ ] **Task 1 — Nền:** bước `WST`, `next_container_code`, nhãn `Waste Container` + patch mẫu nhãn, loại NC + hook (FR-M10-01.5, FR-M10-02.4, BRU-ID-006).
-- [ ] **Task 2 — `Waste Type` + `Waste Type Rate`** (FR-M10-01, .1–.4; BRU-WST-001, BRU-WST-002).
-- [ ] **Task 3 — `Waste Collection`, Line, `Waste Container`, dịch vụ `waste/collection.py`** (FR-M10-02, .1, .3–.6; BRU-WST-001, BRU-WST-002).
-- [ ] **Task 4 — RPC `v1/waste.py`, quyền, Print Format biên nhận** (FR-M10-02.5, .6; W4, W14).
-- [ ] **Task 5 — Màn trạm `station_waste.js`** (SCR-38, FR-M9-14). Test tĩnh viết trước.
-- [ ] **Task 6 — Hoàn thiện:** `vi.csv`, `rtm.md`, launcher, ghi chú hiện thực; full test + diff-cover ≥ 70 %, lint; merge `develop` trước khi push.
+- [x] **Task 0 — Tài liệu:** A-59, ghi chú dòng FEAT-047 trong implementation-plan, plan này.
+- [x] **Task 1 — Nền:** bước `WST`, `next_container_code`, nhãn `Waste Container` + patch mẫu nhãn, loại NC + hook (FR-M10-01.5, FR-M10-02.4, BRU-ID-006).
+- [x] **Task 2 — `Waste Type` + `Waste Type Rate`** (FR-M10-01, .1–.4; BRU-WST-001, BRU-WST-002).
+- [x] **Task 3 — `Waste Collection`, Line, `Waste Container`, dịch vụ `waste/collection.py`** (FR-M10-02, .1, .3–.6; BRU-WST-001, BRU-WST-002).
+- [x] **Task 4 — RPC `v1/waste.py`, quyền, Print Format biên nhận** (FR-M10-02.5, .6; W4, W14).
+- [x] **Task 5 — Màn trạm `station_waste.js`** (SCR-38, FR-M9-14). Test tĩnh viết trước.
+- [x] **Task 6 — Hoàn thiện:** `vi.csv`, `rtm.md`, launcher, ghi chú hiện thực; full test + diff-cover ≥ 70 %, lint; merge `develop` trước khi push.
 
 ## Acceptance (EARS, theo FR)
 
@@ -51,4 +51,11 @@ Người dùng chốt W1–W4 ngày 30/10/2026; W5–W14 là chi tiết hiện t
 
 ## Ghi chú hiện thực
 
-_(điền khi xong)_
+- **Lệch so với W12:** dùng `held_kg` thay `released_kg`: phiếu giữ riêng kg bị giữ; mở túi thì trừ `held_kg`, cộng `total_weight_kg`.
+- **User Permission:** Employee gắn User sinh User Permission theo chính nhân viên đó, R07 không tạo được phiếu có `delivered_by` là người khác; `delivered_by`, `acknowledged_by` bật `ignore_user_permissions`.
+- **Xác nhận cân nhập tay:** kiểm cả ở server (`WASTE_WEIGHT_UNCONFIRMED`), chặt hơn đồ vải; nguồn lạ tính là nhập tay.
+- **Mã màu chỉ bằng chữ:** palette `--tc-*` không có màu riêng cho từng nhóm TT 20/2021, nên màn hiện chữ cỡ lớn (Vàng/Đen/Xanh/Trắng), không có ô màu.
+- **`test_errors` có sẵn đỏ trên develop:** FEAT-008 thêm `ENV_READING_INVALID` thiếu trong bảng test; đã thêm.
+- **Chưa làm (gap có chủ đích):** offline và dải mã `CT-` cấp trước (W2); nhãn in trước UC-34 A1; ảnh dòng phiếu trên kiosk (W13). Màn JS chỉ có test tĩnh, chưa xem trên trình duyệt, chưa E2E.
+- **Bài hướng dẫn trạm WST:** FEAT-013 chưa merge; khi gộp phải thêm khóa `WST` vào `station_help.STATION_KEYS`, bài mặc định và option `tc_station_key`.
+

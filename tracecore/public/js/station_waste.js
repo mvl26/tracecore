@@ -584,7 +584,9 @@ class WasteCollect {
 		if (!this.catalog.types.length) return "";
 		if (!this.form.giver) {
 			return `<section class="tc-t6-block">
-				<p class="tc-t6-hint">${esc(__("Scan the employee card of the person handing over the waste."))}</p>
+				<p class="tc-t6-hint">${esc(
+					__("Scan the employee card of the person handing over the waste.")
+				)}</p>
 			</section>`;
 		}
 		const giver = this.form.giver;
@@ -633,7 +635,9 @@ class WasteCollect {
 	// Mã màu luôn là chữ cỡ lớn, không chỉ bằng màu; palette không có màu riêng cho từng nhóm TT 20/2021
 	colorHtml(line) {
 		const info = this.typeInfo(line.waste_type);
-		return info ? `<span class="tc-waste-color">${esc(__(info.color_code))}</span>` : "";
+		return info
+			? `<span class="tc-waste-color">${esc(__(info.color_code, null, "Waste Type"))}</span>`
+			: "";
 	}
 
 	lineHtml(line) {

@@ -871,4 +871,3 @@ class TestWasteContainerLabel(FrappeTestCase):
 		self.assertTrue(core_print.object_code_problem("Waste Container", "TB-0001"))
 		options = frappe.get_meta("Label Template").get_field("label_object").options.split("\n")
 		self.assertIn("Waste Container", options)
-

@@ -148,7 +148,9 @@ def _prepare_line(row):
 			_("A weight typed by hand needs the confirmation tick."),
 			_("Tick the confirmation or take the weight from the scale."),
 		)
-	line.update(weight_kg=weight, weight_source=SCALE if source == SCALE else MANUAL, weight_confirmed=confirmed)
+	line.update(
+		weight_kg=weight, weight_source=SCALE if source == SCALE else MANUAL, weight_confirmed=confirmed
+	)
 	return line
 
 
@@ -213,7 +215,9 @@ def validate(doc):
 	doc.department = frappe.db.get_value("Employee", doc.delivered_by, "department")
 	doc.collected_at = doc.collected_at or now_datetime()
 	doc.total_containers = sum(cint(row.qty) for row in doc.lines)
-	doc.total_weight_kg = round(sum(flt(row.weight_kg) for row in doc.lines if not row.misclassified), WEIGHT_DIGITS)
+	doc.total_weight_kg = round(
+		sum(flt(row.weight_kg) for row in doc.lines if not row.misclassified), WEIGHT_DIGITS
+	)
 	doc.held_kg = round(sum(flt(row.weight_kg) for row in doc.lines if row.misclassified), WEIGHT_DIGITS)
 
 
@@ -350,7 +354,11 @@ def _queue_label(doc, line, container):
 	"""Print Job nhãn QR của túi. Không có máy in hoặc không dựng được nhãn → `Waiting` kèm cảnh báo; phiếu vẫn ghi sổ."""
 	station, printer = _printer_station(doc.station)
 	if not station:
-		return {"print_job": None, "status": None, "warning": None}  # lập trên Desk không có trạm: in lại từ Desk
+		return {
+			"print_job": None,
+			"status": None,
+			"warning": None,
+		}  # lập trên Desk không có trạm: in lại từ Desk
 	job = {
 		"station": station,
 		"data": {"label_object": LABEL_OBJECT, "code": container.name},
@@ -372,7 +380,9 @@ def _queue_label(doc, line, container):
 				LABEL_OBJECT,
 				container.name,
 				line.waste_type,
-				f"{doc.collected_at:%d/%m/%Y %H:%M}" if hasattr(doc.collected_at, "strftime") else str(doc.collected_at),
+				f"{doc.collected_at:%d/%m/%Y %H:%M}"
+				if hasattr(doc.collected_at, "strftime")
+				else str(doc.collected_at),
 				printer=printer,
 				with_template=True,
 			)
@@ -387,7 +397,9 @@ def _queue_label(doc, line, container):
 	if zpl is None:
 		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
 		return {"print_job": name, "status": "Waiting", "warning": warning}
-	name = core_print.create_job(zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job)
+	name = core_print.create_job(
+		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
+	)
 	return {"print_job": name, "status": "Queued", "warning": None}
 
 

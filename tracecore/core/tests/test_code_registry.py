@@ -452,4 +452,3 @@ class TestContainerCode(FrappeTestCase):
 		self.assertNotEqual(first, second)
 		self.assertTrue(code_registry.is_issued(first))
 		self.assertEqual(gs1.parse_scan(first)["type"], "container")
-

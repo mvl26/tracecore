@@ -285,4 +285,3 @@ class TestWasteNc(IncidentCase):
 
 	def test_hook_is_registered(self):
 		self.assertIn("tracecore.reprocessing.incidents.on_waste_nc", frappe.get_hooks("tracecore_waste_nc"))
-

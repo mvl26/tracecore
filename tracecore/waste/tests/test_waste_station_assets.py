@@ -20,7 +20,9 @@ class TestWasteStationAssets(FrappeTestCase):
 
 	def test_script_loads_after_the_shared_weigh_line(self):
 		scripts = hooks.page_js["station"]
-		self.assertLess(scripts.index("public/js/tc_weigh_line.js"), scripts.index("public/js/station_waste.js"))
+		self.assertLess(
+			scripts.index("public/js/tc_weigh_line.js"), scripts.index("public/js/station_waste.js")
+		)
 
 	def test_station_opens_the_screen_for_step_wst(self):
 		self.assertIn('station.step === "WST" && typeof WasteCollect !== "undefined"', self.station_js)
@@ -77,4 +79,3 @@ class TestWasteStationAssets(FrappeTestCase):
 	def test_launcher_links_waste_doctypes(self):
 		links = dict(navigation.MANAGEMENT_GROUPS)["Medical waste"]
 		self.assertEqual(links, ("Waste Type", "Waste Collection", "Waste Container"))
-

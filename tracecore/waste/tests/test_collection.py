@@ -82,13 +82,15 @@ class TestRecord(WasteCase):
 		doc = self.record()
 		for row in self.containers(doc):
 			self.assertEqual(get_datetime(row.collected_at), get_datetime(doc.collected_at))
-			self.assertEqual(get_datetime(row.storage_due), add_to_date(get_datetime(doc.collected_at), hours=48))
+			self.assertEqual(
+				get_datetime(row.storage_due), add_to_date(get_datetime(doc.collected_at), hours=48)
+			)
 
 	def test_container_cannot_be_created_by_hand(self):
 		with self.assertRaises(frappe.ValidationError):
-			frappe.get_doc(
-				{"doctype": "Waste Container", "waste_type": self.waste, "weight_kg": 1}
-			).insert(ignore_permissions=True)
+			frappe.get_doc({"doctype": "Waste Container", "waste_type": self.waste, "weight_kg": 1}).insert(
+				ignore_permissions=True
+			)
 
 	@bru("BRU-WST-001")
 	def test_each_line_has_exactly_one_type(self):
@@ -126,9 +128,7 @@ class TestRecord(WasteCase):
 	def test_total_weight_is_allocated_by_standard_weight(self):
 		"""UC-34 A2: chỉ có cân tổng của xe."""
 		other = make_waste_type(std_weight_kg=1).name
-		doc = self.record(
-			[{"waste_type": self.waste, "qty": 1}, {"waste_type": other, "qty": 2}], total_kg=8
-		)
+		doc = self.record([{"waste_type": self.waste, "qty": 1}, {"waste_type": other, "qty": 2}], total_kg=8)
 		self.assertEqual([row.weight_kg for row in doc.lines], [4, 4])
 		self.assertEqual({row.weight_source for row in doc.lines}, {"Converted"})
 		self.assert_blocked("WASTE_TOTAL_INVALID", total_kg=-1)
@@ -236,7 +236,9 @@ class TestLabels(WasteCase):
 	def jobs(self, doc):
 		names = [row.name for row in self.containers(doc)]
 		return frappe.get_all(
-			"Print Job", filters={"ref_doctype": "Waste Container", "ref_name": ["in", names]}, fields=["status", "station"]
+			"Print Job",
+			filters={"ref_doctype": "Waste Container", "ref_name": ["in", names]},
+			fields=["status", "station"],
 		)
 
 	def test_no_printer_keeps_collection_and_waits_with_warning(self):
@@ -262,9 +264,11 @@ class TestLabels(WasteCase):
 		from unittest.mock import patch
 
 		printers = {other: {"name": "PR-1"}}
-		with patch("tracecore.core.print.object_printer", side_effect=printers.get), patch(
-			"tracecore.core.print.render_object", return_value=("^XA^XZ", frappe._dict(name="T"))
-		), patch("tracecore.core.print.create_job", return_value="JOB") as job:
+		with (
+			patch("tracecore.core.print.object_printer", side_effect=printers.get),
+			patch("tracecore.core.print.render_object", return_value=("^XA^XZ", frappe._dict(name="T"))),
+			patch("tracecore.core.print.create_job", return_value="JOB") as job,
+		):
 			self.record()
 		self.assertEqual({call.kwargs["station"] for call in job.call_args_list}, {other})
 		self.assertEqual({call.kwargs["status"] for call in job.call_args_list}, {"Queued"})
