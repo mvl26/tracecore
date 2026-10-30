@@ -57,6 +57,9 @@ EVENTS = {
 	"BATCH_EXPIRING": ("Batch expiring soon", "Normal", 1, 0, ("TC R09",)),
 	# FEAT-046: Cost Sheet thiếu đơn giá (FR-M7-05.2), kế toán vật tư (R09) bổ sung bảng giá
 	"COST_SHEET_UNPRICED": ("Cost sheet unpriced", "Normal", 0, 0, ("TC R09",)),
+	# FEAT-008: chỉ số môi trường khu vượt ngưỡng (FR-M9-04.1), khu thiếu số liệu trước mốc giờ nhắc (FR-M9-04.2)
+	"ENV_OUT_OF_RANGE": ("Environment reading out of range", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"ENV_LOG_MISSING": ("Environment reading missing", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

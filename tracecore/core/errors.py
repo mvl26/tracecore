@@ -269,6 +269,8 @@ HTTP_STATUS: dict[str, int] = {
 	),
 	# FEAT-046 A-53 i: tính lại giá thành cần ghi chú và mẻ/lô có thật
 	"NOTE_REQUIRED": 422,
+	# FEAT-008 A-55 D4: số đo môi trường sai (khu chưa theo dõi dùng mặc định 409)
+	"ENV_READING_INVALID": 422,
 	"COST_SOURCE_NOT_FOUND": 404,
 }
 DEFAULT_HTTP_STATUS = 409
