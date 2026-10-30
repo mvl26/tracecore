@@ -153,6 +153,7 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | FEAT-048 | Kho lưu giữ tạm: quét túi + vị trí KE- theo loại, thời gian lưu còn lại, cảnh báo 80 % / quá hạn + NC, nhiệt độ kho lạnh | FR-M10-03 | UC-35 | SCR-39 (STN; view WEB) | `v1.waste.store`; scheduler 15 phút; `core.notification` | W: Waste Container, Waste Storage Location, Environment Log, Incident CAPA | 013, 014 | M | S5b |
 | FEAT-049 | Đơn vị xử lý (MST, giấy phép, loại được phép, hợp đồng/đơn giá) + Phiếu bàn giao (quét túi/theo loại, kg bàn giao, chênh lệch > ngưỡng → lý do + NC, chứng từ CTNH, chữ ký 2 bên, PDF) → Cost Entry thuê ngoài | FR-M10-04, FR-M10-05 | UC-36 | SCR-40 (STN bàn giao + WEB danh mục) | `v1.waste.handover.create/add/sign/submit`; Print Format | W: Waste Treatment Vendor, Vendor Permitted Waste Type, Vendor Contract, Waste Handover, Waste Handover Line, Waste Handover Container, Waste Container, Cost Entry | 013 | L | S5b |
 | FEAT-050 | Báo cáo chất thải (kg theo khoa/loại/kỳ, chênh lệch, chi phí/kg, PDF/Excel, view khoa trên DEPT) + sự cố chất thải qua NC chung + định mức túi/thùng & kg/giường/ngày | FR-M10-06, FR-M10-07, FR-M10-08 | UC-37 | SCR-41 (WEB; view DEPT), SCR-32 (khối chất thải), SCR-15 (loại Chất thải) | Script Report + Print Format; `Incident CAPA` (`incident_category=Chất thải`); Desk form Waste Quota | W: Waste Quota, Incident CAPA; R: Waste Collection, Waste Handover, Waste Container, Item | 013 | M | S5b |
+| FEAT-051 | Cấu hình vùng, trạm, chức năng trạm thay vì cố định T1–T8 (Amendment A-64): `Station Function`, `Zone Type`, `station_no`, màn theo chức năng, migration site đang chạy | FR-M2-00.4, FR-M9-03 | UC-33 |
 
 ### 3.1 Coverage ledger
 
@@ -242,6 +243,7 @@ graph LR
     F048["FEAT-048<br/>Kho chất thải"]
     F049["FEAT-049<br/>Bàn giao chất thải"]
     F050["FEAT-050<br/>Báo cáo chất thải"]
+    F051["FEAT-051<br/>Cấu hình trạm"]
 
     F001 --> F018
     F001 --> F002
@@ -294,6 +296,7 @@ graph LR
     F005 --> F047
     F033 --> F047
     F047 --> F048 --> F049 --> F050
+    F002 --> F051
 
     classDef risk fill:#c0392b,stroke:#7b241c,color:#fff
     class F018,F009,F024 risk
