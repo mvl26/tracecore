@@ -33,9 +33,7 @@ class TestHelpGet(IsolatedTestCase):
 		self.assertTrue(result["ok"])
 		self.assertEqual(result["key"], "T4")
 		self.assertEqual(result["article"]["title"], "API guide T4")
-		self.assertEqual(
-			result["article"]["steps"][0], {"text": "One", "image": "/files/one.png"}
-		)
+		self.assertEqual(result["article"]["steps"][0], {"text": "One", "image": "/files/one.png"})
 		self.assertNotIn("content", result["article"])
 
 	def test_no_guide_returns_empty_article(self):

@@ -24,6 +24,8 @@ test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 STATION = "TR-004"
 CARD = "FEEDBACK-CARD"
 CLIENT_TS = "2026-10-30T09:00:00+07:00"
+
+
 def image_bytes(fmt):
 	buffer = io.BytesIO()
 	Image.new("RGB", (8, 8), (200, 200, 200)).save(buffer, format=fmt)
@@ -112,7 +114,9 @@ class TestFeedbackCreate(IsolatedTestCase):
 		result = self.create(screenshot=None, kind="Suggestion", description="Please make the font larger")
 		self.assertTrue(result["ok"])
 		self.assertFalse(
-			frappe.get_all("File", filters={"attached_to_doctype": "Issue", "attached_to_name": result["issue"]})
+			frappe.get_all(
+				"File", filters={"attached_to_doctype": "Issue", "attached_to_name": result["issue"]}
+			)
 		)
 
 	def test_r10_is_notified(self):

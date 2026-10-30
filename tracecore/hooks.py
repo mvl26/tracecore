@@ -94,6 +94,8 @@ page_js = {
 		"public/js/station_laundry.js",
 		# FEAT-035: cấp phát đồ vải (SCR-18), lớp con của LinenCollect nên nạp sau station_linen.js
 		"public/js/station_linen_issue.js",
+		# FEAT-013: trợ giúp theo trạm và báo sự cố kèm ảnh màn hình (mọi bước trạm, cả trước khi quét thẻ)
+		"public/js/station_help.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]

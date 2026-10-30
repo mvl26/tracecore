@@ -69,9 +69,9 @@ class TestValidateArticle(IsolatedTestCase):
 	def test_station_article_refuses_private_or_external_images(self):
 		for src in ("/private/files/x.png", "https://example.com/x.png"):
 			with self.assertRaises(frappe.ValidationError):
-				_article(
-					"T2", content=f'<ol><li>A <img src="{src}"></li><li>B</li><li>C</li></ol>'
-				).insert(ignore_permissions=True)
+				_article("T2", content=f'<ol><li>A <img src="{src}"></li><li>B</li><li>C</li></ol>').insert(
+					ignore_permissions=True
+				)
 
 	def test_plain_help_article_is_not_checked(self):
 		doc = _article(None, content="<p>Free text</p>")
@@ -113,7 +113,9 @@ class TestSeed(IsolatedTestCase):
 
 	def test_seed_creates_one_article_per_key_and_keeps_edits(self):
 		station_help.ensure_station_help()
-		rows = frappe.get_all("Help Article", filters={"tc_station_key": ["is", "set"]}, fields=["name", "tc_station_key"])
+		rows = frappe.get_all(
+			"Help Article", filters={"tc_station_key": ["is", "set"]}, fields=["name", "tc_station_key"]
+		)
 		self.assertEqual(sorted(row.tc_station_key for row in rows), sorted(station_help.STATION_KEYS))
 		for key in station_help.STATION_KEYS:
 			self.assertTrue(3 <= len(station_help.article_for_key(key)["steps"]) <= 5, key)
