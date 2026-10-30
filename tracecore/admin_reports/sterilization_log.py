@@ -10,6 +10,7 @@ import math
 import re
 
 import frappe
+import frappe.translate
 from frappe import _
 from frappe.utils import (
 	add_days,
@@ -26,6 +27,10 @@ from frappe.utils import (
 from tracecore.core import audit, print_tokens
 
 LOAD = "Sterilization Load"
+# ngữ cảnh dịch: "Pass" chung của Frappe là "Vượt qua", "Machine" là "Máy móc"
+CONTEXT = "Sterilization Log"
+# 12 cột trên A4 ngang: thu nhỏ khi in, cỡ chữ vẫn theo token
+PDF_ZOOM = "0.68"
 RUNNING, RELEASED, FAILED = "Running", "Released", "Failed"
 INACTIVE_SET_STATUSES = ("Disposed", "Returned")
 END_OF_LIFE = "End of Life"
@@ -204,7 +209,7 @@ def log_rows(filters):
 				"ended_at": load.ended_at,
 				"params": _params_text(load.params),
 				"indicators": "; ".join(
-					f"{_(INDICATORS.get(row.indicator, row.indicator))}: {_(row.result)}"
+					f"{_(INDICATORS.get(row.indicator, row.indicator))}: {_(row.result, context=CONTEXT)}"
 					+ (f" ({row.lot})" if row.lot else "")
 					for row in indicators.get(load.name, [])
 				),
@@ -463,11 +468,19 @@ def render_pdf(kind, filters, user=None):
 	from frappe.utils.pdf import get_pdf
 
 	options = {"page-size": "A4", "orientation": "Landscape" if KINDS[kind]["landscape"] else "Portrait"}
+	if KINDS[kind]["landscape"]:
+		options["zoom"] = PDF_ZOOM
 	return get_pdf(render_html(kind, filters, user), options)
 
 
-def build_export(kind, filters, user):
+def use_language(lang, user):
+	"""Job RQ không mang ngôn ngữ của request: đặt ngôn ngữ người xuất để bản in không ra tiếng Anh."""
+	frappe.local.lang = lang or frappe.translate.get_user_lang(user)
+
+
+def build_export(kind, filters, user, lang=None):
 	"""Job RQ ``long``: sinh PDF, lưu File riêng tư, báo người xuất (chuông Desk + realtime). Trả tên File."""
+	use_language(lang, user)
 	filters = frappe._dict(frappe.parse_json(filters) if isinstance(filters, str) else (filters or {}))
 	pdf = render_pdf(kind, filters, user)
 	suffix = (

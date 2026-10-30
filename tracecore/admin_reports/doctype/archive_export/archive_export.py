@@ -58,7 +58,9 @@ class ArchiveExport(Document):
 		audit.log("Create", self.doctype, self.name, new={"scope_type": self.scope_type})
 		if self.full_patient_code:
 			audit.log("View Patient Code", self.doctype, self.name, reason=self.patient_code_reason.strip())
-		frappe.enqueue(JOB, queue="long", timeout=1800, enqueue_after_commit=True, name=self.name)
+		frappe.enqueue(
+			JOB, queue="long", timeout=1800, enqueue_after_commit=True, name=self.name, lang=frappe.local.lang
+		)
 
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")

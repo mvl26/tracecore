@@ -2,6 +2,7 @@
     Data: tracecore.admin_reports.sterilization_log.render_html (r). Every dynamic value goes through |e; colours and
     sizes come from the generated tokens.css (r.tc); tables only (wkhtmltopdf WebKit has no flex/grid). -#}
 {%- set tc = r.tc -%}
+{%- set T = "Sterilization Log" -%}
 <style>
 .tc-rp { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_xs }}; line-height: {{ tc.lh_snug }}; position: relative; }
 .tc-rp h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
@@ -33,18 +34,18 @@
 	{%- if r.rows %}
 	<table class="tc-grid">
 		<thead><tr>
-			<th>{{ _("Date") | e }}</th>
-			<th>{{ _("Load") | e }}</th>
-			<th>{{ _("Machine") | e }}</th>
-			<th>{{ _("Program") | e }}</th>
+			<th>{{ _("Date", context=T) | e }}</th>
+			<th>{{ _("Load", context=T) | e }}</th>
+			<th>{{ _("Machine", context=T) | e }}</th>
+			<th>{{ _("Program", context=T) | e }}</th>
 			<th>{{ _("Start / End") | e }}</th>
 			<th>{{ _("Cycle Parameters") | e }}</th>
 			<th>{{ _("Indicators") | e }}</th>
-			<th class="tc-num">{{ _("Packs") | e }}</th>
-			<th>{{ _("Sets") | e }}</th>
-			<th>{{ _("Operator") | e }}</th>
-			<th>{{ _("Released By") | e }}</th>
-			<th>{{ _("Result") | e }}</th>
+			<th class="tc-num">{{ _("Packs", context=T) | e }}</th>
+			<th>{{ _("Sets", context=T) | e }}</th>
+			<th>{{ _("Operator", context=T) | e }}</th>
+			<th>{{ _("Released By", context=T) | e }}</th>
+			<th>{{ _("Result", context=T) | e }}</th>
 		</tr></thead>
 		<tbody>
 		{%- for row in r.rows %}
@@ -60,7 +61,7 @@
 				<td class="tc-code">{{ row.sets | e }}</td>
 				<td>{{ (row.operator_name or "") | e }}</td>
 				<td>{{ (row.released_by_name or "") | e }}<br>{{ r.fmt_datetime(row.released_at) | e }}</td>
-				<td>{{ _(row.result) | e }}</td>
+				<td>{{ _(row.result, context=T) | e }}</td>
 			</tr>
 		{%- endfor %}
 		</tbody>
@@ -74,9 +75,9 @@
 	<h2>{{ _("Sterilization loads by machine") | e }}</h2>
 	<table class="tc-grid">
 		<thead><tr>
-			<th>{{ _("Machine") | e }}</th><th>{{ _("Type") | e }}</th>
-			<th class="tc-num">{{ _("Loads") | e }}</th><th class="tc-num">{{ _("Passed") | e }}</th>
-			<th class="tc-num">{{ _("Failed") | e }}</th><th class="tc-num">{{ _("Failure Rate (%)") | e }}</th>
+			<th>{{ _("Machine", context=T) | e }}</th><th>{{ _("Type", context=T) | e }}</th>
+			<th class="tc-num">{{ _("Loads", context=T) | e }}</th><th class="tc-num">{{ _("Passed", context=T) | e }}</th>
+			<th class="tc-num">{{ _("Failed", context=T) | e }}</th><th class="tc-num">{{ _("Failure Rate (%)") | e }}</th>
 		</tr></thead>
 		<tbody>
 		{%- for row in s.equipment %}
@@ -125,8 +126,8 @@
 	{%- if r.months %}
 	<table class="tc-grid">
 		<thead><tr>
-			<th>{{ _("Month") | e }}</th><th>{{ _("Set ID") | e }}</th><th>{{ _("Set Type") | e }}</th>
-			<th>{{ _("Department") | e }}</th><th class="tc-num">{{ _("Cycles Used / Max") | e }}</th>
+			<th>{{ _("Month", context=T) | e }}</th><th>{{ _("Set ID", context=T) | e }}</th><th>{{ _("Set Type", context=T) | e }}</th>
+			<th>{{ _("Department", context=T) | e }}</th><th class="tc-num">{{ _("Cycles Used / Max") | e }}</th>
 			<th class="tc-num">{{ _("Cycles per Month") | e }}</th><th class="tc-num">{{ _("Replacement Price (VND)") | e }}</th>
 		</tr></thead>
 		<tbody>
@@ -141,7 +142,7 @@
 			{%- endfor %}
 			<tr class="tc-total"><td colspan="6">{{ _("Total {0}").format(month.month) | e }}</td><td class="tc-num">{{ r.fmt_money(month.total) }}</td></tr>
 		{%- endfor %}
-			<tr class="tc-total"><td colspan="6">{{ _("Grand Total") | e }}</td><td class="tc-num">{{ r.fmt_money(r.grand_total) }}</td></tr>
+			<tr class="tc-total"><td colspan="6">{{ _("Grand Total", context=T) | e }}</td><td class="tc-num">{{ r.fmt_money(r.grand_total) }}</td></tr>
 		</tbody>
 	</table>
 	{%- else %}

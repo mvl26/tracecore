@@ -4958,6 +4958,33 @@ Cost sheets cannot be deleted.,Không thể xóa phiếu giá thành.,
 Cost sheets are built for sterilization loads and wash batches only.,Phiếu giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
 Cost sheet {0} is unpriced,Phiếu giá thành {0} chưa định giá,
 Cost sheet unpriced,Phiếu giá thành chưa định giá,
+Pass,Đạt,Sterilization Log
+Fail,Không đạt,Sterilization Log
+Pending,Chờ kết quả,Sterilization Log
+Released,Đã giải phóng,Sterilization Log
+Failed,Không đạt,Sterilization Log
+Quarantine,Cách ly,Sterilization Log
+Cycle Complete,Hoàn tất chu trình,Sterilization Log
+Date,Ngày,Sterilization Log
+Load,Mẻ,Sterilization Log
+Machine,Máy,Sterilization Log
+Program,Chương trình,Sterilization Log
+Started At,Bắt đầu lúc,Sterilization Log
+Ended At,Kết thúc lúc,Sterilization Log
+Packs,Số gói,Sterilization Log
+Sets,Bộ dụng cụ,Sterilization Log
+Operator,Người vận hành,Sterilization Log
+Released By,Người giải phóng,Sterilization Log
+Released At,Giải phóng lúc,Sterilization Log
+Result,Kết quả,Sterilization Log
+Type,Loại máy,Sterilization Log
+Loads,Số mẻ,Sterilization Log
+Passed,Đạt,Sterilization Log
+Month,Tháng,Sterilization Log
+Set ID,Set ID,Sterilization Log
+Set Type,Loại bộ,Sterilization Log
+Department,Khoa,Sterilization Log
+Grand Total,Tổng cộng,Sterilization Log
 An archive export cannot be changed after it is created.,Phiếu xuất hồ sơ không sửa được sau khi tạo.,
 Archive Export,Xuất hồ sơ lưu trữ,
 Archive File,Tệp gói hồ sơ,Archive Export
