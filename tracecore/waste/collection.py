@@ -155,7 +155,7 @@ def _prepare_line(row):
 
 
 def _allocate(lines, total_kg):
-	"""UC-34 A2: chia kg tổng của xe theo `qty × kg chuẩn`; phần dư vào dòng cuối để tổng khớp."""
+	"""UC-34 A2: chia kg tổng của xe theo số túi nhân kg chuẩn; phần dư vào dòng cuối để tổng khớp."""
 	total = _number(total_kg)
 	shares = [line["std_weight_kg"] * line["qty"] for line in lines]
 	if total is None or total <= 0 or sum(shares) <= 0:
