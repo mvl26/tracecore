@@ -178,6 +178,7 @@ class TestLauncher(FrappeTestCase):
 			"/app/query-report/Instrument Life Forecast",
 			"/app/environment-log",
 			"/app/query-report/Environment Monthly Report",
+			"/app/archive-export",  # FEAT-012
 		}
 		self.assertFalse(expected - routes, sorted(expected - routes))
 

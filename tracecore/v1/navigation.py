@@ -131,6 +131,7 @@ MANAGEMENT_GROUPS = (
 		"Data and audit",
 		(
 			"tc-import",
+			"Archive Export",  # FEAT-012: xuất gói hồ sơ tiệt khuẩn lưu trữ (SCR-43)
 			"notifications",
 			"Notification Rule",
 			"Audit Log",
