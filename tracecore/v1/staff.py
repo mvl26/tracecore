@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 from frappe.utils import date_diff, today
 
+from tracecore.hr import certificates as hr_certificates
 from tracecore.hr import reminders
 
 EXPIRING_WITHIN_DAYS = max(reminders.THRESHOLDS)
@@ -22,6 +23,14 @@ FIELDS = [
 	"renews",
 	"scan",
 ]
+
+
+@frappe.whitelist()
+def certificate_types():
+	"""Gợi ý cho ô Loại chứng chỉ: các loại đã dùng (A-59). Ô Autocomplete của Frappe gọi bằng POST."""
+	if not frappe.has_permission("Certificate", "read"):
+		frappe.throw(_("Not permitted to read certificates."), frappe.PermissionError)
+	return hr_certificates.certificate_types()
 
 
 @frappe.whitelist(methods=["GET"])

@@ -18,13 +18,6 @@ DOCTYPE = "Station Competency"
 MANAGERS = ("TC R02", "TC R10", "System Manager")
 READERS = (*MANAGERS, "TC R01")
 TEMPORARY_MAX_HOURS = 24
-CERTIFICATE_TYPES = (
-	"Practice License",
-	"Infection Control",
-	"Sterilization",
-	"Pressure Equipment Operation",
-	"Other",
-)
 
 
 def _blocked(code, title, reason, action):
@@ -112,8 +105,9 @@ def grant(
 			_("{0} is not an active station.").format(station),
 			_("Choose an active station, not a zone."),
 		)
-	types = list(dict.fromkeys(required_certificates or ()))
-	unknown = [value for value in types if value not in CERTIFICATE_TYPES]
+	types = list(dict.fromkeys(certificates.normalize_type(value) for value in required_certificates or ()))
+	known = certificates.certificate_types()
+	unknown = [value for value in types if value not in known]
 	if unknown:
 		raise _blocked(
 			"CERTIFICATE_TYPE_INVALID",
@@ -286,6 +280,7 @@ def matrix(zone=None):
 			for row in stations
 		],
 		"employees": employees,
+		"certificate_types": certificates.certificate_types(),
 		"can_edit": _has_any_role(MANAGERS),
 	}
 

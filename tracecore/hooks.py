@@ -96,6 +96,8 @@ page_js = {
 		"public/js/station_linen_issue.js",
 		# FEAT-013: trợ giúp theo trạm và báo sự cố kèm ảnh màn hình (mọi bước trạm, cả trước khi quét thẻ)
 		"public/js/station_help.js",
+		# FEAT-047: thu gom chất thải (SCR-38), trạm bước WST; dùng tc_weigh_line.js
+		"public/js/station_waste.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -153,6 +155,8 @@ jinja = {
 		"tracecore.ui.linen_print.tc_linen_receipt_context",
 		# Print Format "TC Linen Issue Receipt" (FEAT-035, FR-M3-05.1): biên nhận cấp phát đồ vải
 		"tracecore.ui.linen_print.tc_linen_issue_context",
+		# Print Format "TC Waste Receipt" (FEAT-047, FR-M10-02.6): biên nhận thu gom chất thải
+		"tracecore.ui.waste_print.tc_waste_receipt_context",
 		# Print Format "TC Stock Count Sheet" (FEAT-043, FR-M6-05): phiếu kiểm kê kho
 		"tracecore.ui.stock_count_print.tc_stock_count_context",
 	]
@@ -332,6 +336,10 @@ doc_events = {
 	"Linen Collection": dict(_AUDIT_EVENTS),
 	"Laundry Batch": dict(_AUDIT_EVENTS),  # FEAT-034, A-50: lô giặt ghi vết, không xóa
 	"Linen Issue": dict(_AUDIT_EVENTS),  # FEAT-035, A-51
+	# chất thải (FEAT-047, A-60): loại, phiếu thu gom và túi/thùng ghi vết, không xóa
+	"Waste Type": dict(_AUDIT_EVENTS),
+	"Waste Collection": dict(_AUDIT_EVENTS),
+	"Waste Container": dict(_AUDIT_EVENTS),
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -421,6 +429,8 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 # M1 trả bộ mượn thiếu dụng cụ (FEAT-017, A-38 e): (ctx {loaner, set_unit, missing[{instrument, name, qty}], note})
 # -> tên Incident CAPA; M2 tạo NC Missing Instrument (M1 không import M2).
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
+# M10 phân loại sai (FEAT-047, A-60 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
+tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
 # M1 cấp Set ID (FEAT-016, A-13 G5): (ctx {set_type}) -> {value, source} | None, cơ số tối đa nguồn của loại bộ;
 # M8 trả Par Level riêng của loại bộ, nếu không thì cơ số thấp nhất của dụng cụ trong BOM (không import chéo M1 ↔ M8).
 tracecore_set_type_cap = ["tracecore.par.config.set_type_cap"]

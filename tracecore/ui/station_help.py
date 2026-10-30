@@ -1,6 +1,6 @@
 """Hướng dẫn theo trạm (FEAT-013, FR-M9-15, A-56 D2, D4, D5): nội dung là Frappe `Help Article` có sẵn.
 
-Bài gắn trạm qua Custom Field `tc_station_key` (bước trạm T1…T8, T5b, LIN hoặc General). Bước = mục `<li>` của danh
+Bài gắn trạm qua Custom Field `tc_station_key` (bước trạm T1…T8, T5b, LIN, WST hoặc General). Bước = mục `<li>` của danh
 sách đầu tiên trong `content`, ảnh = `<img>` đầu tiên của mục; kiosk chỉ nhận chữ thuần và đường dẫn ảnh công khai,
 không nhận HTML của bài. R10 sửa chữ và tải ảnh thật trên Desk; `ensure_station_help` chỉ tạo bài còn thiếu.
 """
@@ -13,7 +13,7 @@ from frappe import _
 
 CATEGORY = "TraceCore Stations"
 GENERAL = "General"
-STATION_KEYS = ("T1", "T2", "T3", "T4", "T5", "T5b", "T6", "T7", "T8", "LIN", GENERAL)
+STATION_KEYS = ("T1", "T2", "T3", "T4", "T5", "T5b", "T6", "T7", "T8", "LIN", "WST", GENERAL)
 MIN_STEPS, MAX_STEPS = 3, 5
 # ảnh bước chỉ là file công khai của site: kiosk chưa quét thẻ vẫn xem được, không dẫn ra ngoài
 _PUBLIC_FILE = re.compile(r"^/files/[^/?#\\]+$")
@@ -73,6 +73,11 @@ DEFAULT_STEPS = {
 		"Choose Collect or Laundry at the top of the screen.",
 		"Weigh the linen and choose the linen type.",
 		"Check the quantity and confirm.",
+	),
+	"WST": (
+		"Scan the card of the person handing over the waste.",
+		"Choose the waste type, then enter the number of bags and the weight.",
+		"Confirm, then scan the card again to acknowledge the receipt.",
 	),
 	GENERAL: (
 		"Scan your employee card to open the station.",

@@ -5,12 +5,12 @@
  "engine": "InnoDB",
  "field_order": ["certificate_type"],
  "fields": [
-  {"fieldname": "certificate_type", "fieldtype": "Select", "in_list_view": 1, "label": "Certificate Type", "options": "Practice License\nInfection Control\nSterilization\nPressure Equipment Operation\nOther", "reqd": 1}
+  {"fieldname": "certificate_type", "fieldtype": "Autocomplete", "in_list_view": 1, "label": "Certificate Type", "reqd": 1}
  ],
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-29 14:00:00.000000",
+ "modified": "2026-10-30 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Competency Required Cert",

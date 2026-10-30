@@ -6,12 +6,13 @@ from frappe.utils import add_days, add_to_date, now_datetime, today
 from tracecore.core import station_auth
 from tracecore.core.errors import BlockedError
 from tracecore.hr import certificates, competency, reminders
-from tracecore.tests.factories import make_user
+from tracecore.tests.factories import make_employee, make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
 from tracecore.v1.tests.station_fixtures import make_station_employee
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 STATION = "TR-004"  # T4, khu Sạch
+KNOWN_TYPES = ["Practice License", "Infection Control", "Sterilization", "Pressure Equipment Operation"]
 USERS = ["comp-r02@example.com", "comp-r10@example.com", "comp-r04@example.com", "comp-r05@example.com"]
 
 
@@ -43,6 +44,9 @@ class CompetencyCase(IsolatedTestCase):
 		self.r04 = make_user(USERS[2], ["TC R04"])
 		self.worker_user = make_user(USERS[3], ["TC R04"])
 		self.employee = make_station_employee(self.worker_user)
+		holder = make_employee(first_name="Người giữ chứng chỉ").name
+		for certificate_type in KNOWN_TYPES:
+			make_certificate(holder, certificate_type, None)
 		self.addCleanup(frappe.set_user, "Administrator")
 		frappe.set_user(self.r02)
 
@@ -105,6 +109,26 @@ class TestGrantAndRevoke(CompetencyCase):
 			"CERTIFICATE_TYPE_INVALID",
 		)
 		self.assertEqual(self.reject_code(grant, "NV-NOBODY"), "EMPLOYEE_INVALID")
+
+	def test_required_types_follow_the_types_already_used(self):
+		doc = grant(self.employee.name, required_certificates=[" sterilization ", "Sterilization"])
+		self.assertEqual([row.certificate_type for row in doc.required_certificates], ["Sterilization"])
+		self.assertEqual(
+			self.reject_code(
+				grant, self.employee.name, station="TR-005", required_certificates=["Lái xe nâng"]
+			),
+			"CERTIFICATE_TYPE_INVALID",
+		)
+		make_certificate(self.employee.name, "Lái xe nâng", 30)
+		self.assertEqual(
+			competency.required_types(
+				grant(self.employee.name, station="TR-005", required_certificates=["Lái xe nâng"]).name
+			),
+			["Lái xe nâng"],
+		)
+
+	def test_matrix_offers_the_types_already_used(self):
+		self.assertLessEqual(set(KNOWN_TYPES), set(competency.matrix()["certificate_types"]))
 
 	@bru("BRU-HR-001")
 	def test_temporary_access_needs_a_reason_and_is_limited_to_24_hours(self):

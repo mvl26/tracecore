@@ -4958,6 +4958,10 @@ Cost sheets cannot be deleted.,Không thể xóa phiếu giá thành.,
 Cost sheets are built for sterilization loads and wash batches only.,Phiếu giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
 Cost sheet {0} is unpriced,Phiếu giá thành {0} chưa định giá,
 Cost sheet unpriced,Phiếu giá thành chưa định giá,
+Currently locked until {0}.,Đang khóa đến ngày {0}.,
+No report period is locked yet.,Chưa khóa kỳ báo cáo nào.,
+Reports locked until {0}.,Đã khóa báo cáo đến ngày {0}.,
+The lock date cannot be in the future.,Ngày khóa không được ở tương lai.,
 Pass,Đạt,Sterilization Log
 Fail,Không đạt,Sterilization Log
 Pending,Chờ kết quả,Sterilization Log
@@ -5069,7 +5073,6 @@ Period: {0} to {1},Kỳ: {0} đến {1},
 Prepared by,Người lập,
 Recall orders,Lệnh thu hồi,
 Replacement Price (VND),Giá thay thế (VND),
-Report period locked.,Đã khóa kỳ báo cáo.,
 Reports Locked Until,Báo cáo khóa đến ngày,
 Reports Locked Until,Báo cáo khóa đến ngày,TraceCore Settings
 "Reports and the sterilization log of a period ending on or before this date are final; later periods are printed with a PROVISIONAL stamp (FR-M9-02.1). Only TC R01 sets it, with Lock Report Period on the reports.","Báo cáo và sổ tiệt khuẩn của kỳ kết thúc trước hoặc đúng ngày này là bản chính thức; kỳ sau ngày này in kèm dấu TẠM (FR-M9-02.1). Chỉ TC R01 đặt ngày này, bằng nút Khóa kỳ báo cáo trên các báo cáo.",TraceCore Settings
@@ -6163,3 +6166,133 @@ Check the quantity and confirm.,Kiểm tra số lượng rồi xác nhận.
 Scan the code in the box at the top of the screen.,Quét mã vào ô ở đầu màn hình.
 Read the result: a red message means stop and follow the action shown.,Đọc kết quả: thông báo đỏ nghĩa là dừng lại và làm theo hướng dẫn hiện ra.
 Press Help and then Report a problem if the screen does not work as expected.,Bấm Trợ giúp rồi Báo sự cố nếu màn hình không chạy như mong đợi.
+Type the certificate type; types already used are suggested.,Tự điền loại chứng chỉ; các loại đã dùng sẽ được gợi ý.,
+No certificate types yet. Record a certificate for an employee first.,Chưa có loại chứng chỉ nào. Hãy ghi chứng chỉ cho nhân viên trước.,
+A misclassified bag needs a note on what is wrong.,Túi phân loại sai cần ghi rõ sai ở đâu.
+A weight typed by hand needs the confirmation tick.,Khối lượng nhập tay cần tick xác nhận.
+Acknowledged At,Xác nhận lúc,Waste Collection
+Acknowledged By,Người xác nhận,Waste Collection
+Add at least one waste type with its bags.,Thêm ít nhất một loại chất thải kèm số túi.
+Add at least one waste type.,Thêm ít nhất một loại chất thải.
+Anatomical,Chất thải giải phẫu,Waste Type
+Ask R02 to add waste types in the Waste Type list.,Đề nghị R02 thêm loại trong danh mục Loại chất thải.
+"Ask R10 to add a printer to a waste station, then print the labels again.",Đề nghị R10 thêm máy in cho trạm chất thải rồi in lại nhãn.
+"Ask R10 to fix the label template of waste containers, then print the labels again.",Đề nghị R10 sửa mẫu nhãn túi/thùng chất thải rồi in lại nhãn.
+"Ask the ward staff for their employee card, or call R02.","Đề nghị nhân viên khoa đưa thẻ nhân viên, hoặc gọi R02."
+"Ask the ward staff to scan their card, then print the receipt.","Đề nghị nhân viên khoa quét thẻ, rồi in biên nhận."
+Bags must be a whole number above 0 and weight cannot be negative.,Số túi phải là số nguyên lớn hơn 0 và khối lượng không được âm.
+Bags or Bins,Số túi/thùng
+Bags or Bins,Số túi/thùng,Waste Collection Line
+Check the container code.,Kiểm tra lại mã túi/thùng.
+Choose a waste type for every line.,Chọn loại chất thải cho mọi dòng.
+Choose one active waste type for this line.,Chọn một loại chất thải đang dùng cho dòng này.
+Choose the waste type,Chọn loại chất thải
+Choose the waste type from the list on the line.,Chọn loại chất thải từ danh sách trên dòng.
+Collection {0} is kept; its labels are waiting.,Phiếu {0} vẫn được lưu; nhãn đang chờ in.
+Color Code,Mã màu,Waste Type
+Confirm sorted again,Xác nhận đã phân loại lại
+Container Code,Mã túi/thùng
+Container is not on hold,Túi/thùng không ở trạng thái bị giữ
+Correct the bags and the weight of the line.,Sửa số túi và khối lượng của dòng.
+Default 168 hours (7 days) at 8 degrees C or below.,Mặc định 168 giờ (7 ngày) ở nhiệt độ từ 8°C trở xuống.,Waste Type
+Default 48 hours.,Mặc định 48 giờ.,Waste Type
+Delivering card is not valid,Thẻ người giao không hợp lệ
+Describe what is misclassified in {0}.,Ghi rõ phần phân loại sai của {0}.
+Enter how the bag was sorted again.,Ghi rõ túi đã được phân loại lại thế nào.
+Enter the bags of {0}.,Nhập số túi của {0}.
+Enter the missing fields: {0}.,Nhập các trường còn thiếu: {0}.
+"Enter the note, then confirm again.",Nhập ghi chú rồi xác nhận lại.
+Enter the reason for a storage time other than the default.,Nhập lý do khi thời gian lưu giữ khác mặc định.
+Enter the weight of the whole cart.,Nhập khối lượng của cả xe.
+Existing rates are kept. Add a new rate with its effective date instead.,Đơn giá đã có được giữ nguyên. Hãy thêm đơn giá mới kèm ngày hiệu lực.
+Hazardous Non-infectious,Chất thải nguy hại không lây nhiễm,Waste Type
+Held Weight (kg),Khối lượng bị giữ (kg),Waste Collection
+Held,Bị giữ,Waste Container
+High-risk Infectious,Chất thải có nguy cơ lây nhiễm cao,Waste Type
+Manual Weight Confirmed,Đã xác nhận khối lượng nhập tay,Waste Collection Line
+Manual weight is not confirmed,Khối lượng nhập tay chưa được xác nhận
+Maximum Cold Storage (hours),Thời gian lưu lạnh tối đa (giờ),Waste Type
+Maximum Storage (hours),Thời gian lưu giữ tối đa (giờ),Waste Type
+Maximum storage hours must be greater than 0.,Thời gian lưu giữ tối đa phải lớn hơn 0.
+Medical waste,Chất thải y tế
+Misclassification Note,Ghi chú phân loại sai
+Misclassification Note,Ghi chú phân loại sai,Waste Collection Line
+Misclassification Note,Ghi chú phân loại sai,Waste Container
+Misclassified,Phân loại sai
+Misclassified,Phân loại sai,Waste Collection Line
+No waste type in use is called {0}.,Không có loại chất thải đang dùng nào tên {0}.
+No waste types yet,Chưa có loại chất thải
+Non-sharp Infectious,Chất thải lây nhiễm không sắc nhọn,Waste Type
+On hold,Bị giữ
+Rate per kg,Đơn giá/kg,Waste Type Rate
+Rate per kg cannot be negative.,Đơn giá/kg không được âm.
+Reason for Other Storage Time,Lý do thời gian lưu giữ khác mặc định,Waste Type
+Recording waste collections needs a network connection.,Ghi phiếu thu gom chất thải cần có mạng.
+Recyclable,Chất thải tái chế,Waste Type
+Release Note,Ghi chú mở túi,Waste Container
+Releasing a held bag needs a note.,Mở túi bị giữ cần có ghi chú.
+Scan the card of the ward staff...,Quét thẻ nhân viên khoa...
+Scan the employee card of the person handing over the waste.,Quét thẻ nhân viên của người giao chất thải.
+Scan the ward card to acknowledge...,Quét thẻ nhân viên khoa để xác nhận...
+Set from the waste group (Circular 20/2021/TT-BYT).,Gán theo nhóm chất thải (Thông tư 20/2021/TT-BYT).,Waste Type
+Sharp Infectious,Chất thải lây nhiễm sắc nhọn,Waste Type
+Standard Packaging,Bao bì chuẩn,Waste Type
+Standard Weight per Bag (kg),Khối lượng chuẩn mỗi túi (kg),Waste Type
+Standard weight per bag must be greater than 0.,Khối lượng chuẩn mỗi túi phải lớn hơn 0.
+Storage Due,Hạn lưu giữ,Waste Container
+Storage Time,Thời gian lưu giữ,Waste Type
+The card does not belong to an active employee of a ward.,Thẻ không thuộc nhân viên đang làm việc của một khoa.
+The catalogue has no waste type in use.,Danh mục chưa có loại chất thải đang dùng.
+The collection has no line.,Phiếu thu gom chưa có dòng nào.
+The total weight must be greater than 0.,Tổng khối lượng phải lớn hơn 0.
+The ward acknowledged this collection.,Khoa đã xác nhận phiếu thu gom này.
+This account cannot record waste collections at this station.,Tài khoản này không được ghi phiếu thu gom chất thải tại trạm này.
+Tick the confirmation or take the weight from the scale.,Tick xác nhận hoặc lấy khối lượng từ cân.
+Total Bags or Bins,Tổng số túi/thùng,Waste Collection
+Total weight is not valid,Tổng khối lượng không hợp lệ
+Treatment Rates,Đơn giá xử lý,Waste Type
+Two rates cannot start on the same date.,Hai đơn giá không thể có cùng ngày hiệu lực.
+Type or scan a waste type name to add a line...,Gõ hoặc quét tên loại chất thải để thêm dòng...
+WST,Thu gom chất thải (WST),Zone Station
+Waste Collection,Phiếu thu gom chất thải
+Waste Collection Line,Dòng phiếu thu gom chất thải
+Waste Container,Túi/thùng chất thải
+Waste Container,Túi/thùng chất thải,Label Template
+Waste Group,Nhóm chất thải,Waste Type
+Waste Misclassification,Phân loại sai chất thải,Incident CAPA
+Waste Type,Loại chất thải
+Waste Type Name,Tên loại chất thải,Waste Type
+Waste Type Rate,Đơn giá loại chất thải
+Waste Type,Loại chất thải,Waste Collection Line
+Waste Type,Loại chất thải,Waste Container
+Waste collection,Thu gom chất thải
+Waste container {0} ({1}) was marked as misclassified: {2}.,Túi/thùng chất thải {0} ({1}) bị đánh dấu phân loại sai: {2}.
+Waste container {0} is not waiting for confirmation.,Túi/thùng chất thải {0} không chờ xác nhận.
+Waste containers are created by a waste collection.,Túi/thùng chất thải chỉ được tạo từ phiếu thu gom.
+Waste type is not valid,Loại chất thải không hợp lệ
+Waste type not found,Không tìm thấy loại chất thải
+Waste type {0} is not an active type. A line holds exactly one type.,Loại {0} không đang dùng. Mỗi dòng chỉ có đúng một loại.
+{0} Collection {1} is kept; its labels are waiting.,{0} Phiếu {1} vẫn được lưu; nhãn đang chờ in.
+"{0} bags, {1} kg from {2}.","{0} túi, {1} kg từ {2}."
+Yellow,Vàng,Waste Type
+Black,Đen,Waste Type
+Green,Xanh,Waste Type
+White,Trắng,Waste Type
+Waste collection receipt,Biên nhận thu gom chất thải,TC Waste Receipt
+Not recorded yet,Chưa ghi sổ,TC Waste Receipt
+Cancelled,Đã hủy,TC Waste Receipt
+Department,Khoa,TC Waste Receipt
+Collected at,Thu gom lúc,TC Waste Receipt
+Delivered by,Người giao,TC Waste Receipt
+Collected by,Người thu gom,TC Waste Receipt
+Acknowledged by,Người xác nhận,TC Waste Receipt
+No.,STT,TC Waste Receipt
+Waste type,Loại chất thải,TC Waste Receipt
+Color,Màu,TC Waste Receipt
+Bags,Số túi,TC Waste Receipt
+Weight (kg),Khối lượng (kg),TC Waste Receipt
+Misclassified - on hold,Phân loại sai - đang giữ,TC Waste Receipt
+Total collected,Tổng đã thu gom,TC Waste Receipt
+Scan the card of the person handing over the waste.,Quét thẻ người giao chất thải.,
+"Choose the waste type, then enter the number of bags and the weight.","Chọn loại chất thải, rồi nhập số túi và khối lượng.",
+"Confirm, then scan the card again to acknowledge the receipt.","Xác nhận, rồi quét lại thẻ để xác nhận biên nhận.",

@@ -294,7 +294,7 @@
   "fieldname": "tc_station_key",
   "fieldtype": "Select",
   "label": "TraceCore Station Step",
-  "options": "\nT1\nT2\nT3\nT4\nT5\nT5b\nT6\nT7\nT8\nLIN\nGeneral",
+  "options": "\nT1\nT2\nT3\nT4\nT5\nT5b\nT6\nT7\nT8\nLIN\nWST\nGeneral",
   "insert_after": "category",
   "in_list_view": 1,
   "in_standard_filter": 1,

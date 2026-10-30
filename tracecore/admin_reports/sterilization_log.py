@@ -83,9 +83,15 @@ def period(filters):
 	return start, end
 
 
+def locked_until():
+	"""Ngày khóa báo cáo đang lưu; chưa đặt → None (Single trả ``0001-01-01`` cho ô Date trống)."""
+	value = frappe.db.get_single_value(SETTINGS, "report_locked_until")
+	return getdate(value) if value and getdate(value).year > 1 else None
+
+
 def is_locked(to_date):
 	"""Kỳ kết thúc ``to_date`` đã khóa (≤ ngày khóa báo cáo); chưa khóa thì bản xuất có dấu TẠM (FR-M9-02.1)."""
-	locked = frappe.db.get_single_value(SETTINGS, "report_locked_until")
+	locked = locked_until()
 	return bool(locked) and getdate(to_date) <= getdate(locked)
 
 
@@ -94,7 +100,9 @@ def lock_period(until):
 	if not isinstance(until, str) or not _ISO_DATE.match(until):
 		frappe.throw(_("The lock date must be a date (YYYY-MM-DD)."))
 	until = getdate(until)
-	old = frappe.db.get_single_value(SETTINGS, "report_locked_until")
+	if until > getdate():
+		frappe.throw(_("The lock date cannot be in the future."))
+	old = locked_until()
 	frappe.db.set_single_value(SETTINGS, "report_locked_until", until)
 	audit.log(
 		"Update",

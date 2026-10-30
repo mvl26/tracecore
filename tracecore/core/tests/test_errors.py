@@ -237,6 +237,19 @@ class TestErrors(FrappeTestCase):
 		table["ENV_READING_INVALID"] = 422
 		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
 		table.update({"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429})
+		# FEAT-047 A-60: thu gom chất thải
+		table.update(
+			{
+				"WASTE_EMPTY": 422,
+				"WASTE_TYPE_INVALID": 422,
+				"WASTE_QTY_INVALID": 422,
+				"WASTE_TOTAL_INVALID": 422,
+				"WASTE_WEIGHT_UNCONFIRMED": 422,
+				"WASTE_NOTE_REQUIRED": 422,
+				"WASTE_GIVER_INVALID": 403,
+				"WASTE_NOT_HELD": 409,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):
