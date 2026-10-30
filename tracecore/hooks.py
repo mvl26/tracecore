@@ -29,6 +29,8 @@ fixtures = [
 			["name", "like", "Shift Assignment-tc_%"],  # FEAT-037: Khu làm việc của ca
 			["name", "like", "Stock Reconciliation Item-tc_%"],  # FEAT-043: lý do chênh lệch kiểm kê
 			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
+			["name", "like", "Help Article-tc_%"],  # FEAT-013: hướng dẫn theo bước trạm
+			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -92,6 +94,8 @@ page_js = {
 		"public/js/station_laundry.js",
 		# FEAT-035: cấp phát đồ vải (SCR-18), lớp con của LinenCollect nên nạp sau station_linen.js
 		"public/js/station_linen_issue.js",
+		# FEAT-013: trợ giúp theo trạm và báo sự cố kèm ảnh màn hình (mọi bước trạm, cả trước khi quét thẻ)
+		"public/js/station_help.js",
 		# FEAT-047: thu gom chất thải (SCR-38), trạm bước WST; dùng tc_weigh_line.js
 		"public/js/station_waste.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
@@ -171,6 +175,11 @@ after_migrate = [
 	"tracecore.core.notification.ensure_default_rules",
 	# FEAT-037: quyền R02/R10/R01 cho HRMS Shift Assignment và Shift Type
 	"tracecore.hr.permissions.ensure_permissions",
+	# FEAT-013: hướng dẫn mặc định theo trạm (Help Article), không ghi đè bài R10 đã sửa
+	"tracecore.ui.station_help.ensure_station_help",
+	# FEAT-013: quyền R10 cho Issue / Help Article và Issue Type phản hồi phần mềm
+	"tracecore.ui.permissions.ensure_permissions",
+	"tracecore.ui.feedback.ensure_issue_type",
 ]
 
 # Uninstallation
@@ -253,6 +262,8 @@ _AUDIT_EVENTS = {
 }
 
 doc_events = {
+	# FEAT-013 (A-56 D4): bài hướng dẫn gắn trạm có 3 đến 5 bước, ảnh chỉ là file công khai
+	"Help Article": {"validate": "tracecore.ui.station_help.validate_article"},
 	"User": {
 		"before_validate": "tracecore.core.account.validate_user",
 		"after_insert": "tracecore.core.account.user_updated",

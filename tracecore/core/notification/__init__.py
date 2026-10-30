@@ -60,6 +60,8 @@ EVENTS = {
 	# FEAT-008: chỉ số môi trường khu vượt ngưỡng (FR-M9-04.1), khu thiếu số liệu trước mốc giờ nhắc (FR-M9-04.2)
 	"ENV_OUT_OF_RANGE": ("Environment reading out of range", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	"ENV_LOG_MISSING": ("Environment reading missing", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	# FEAT-013 A-56 D8: phản hồi / báo lỗi phần mềm gửi từ trạm, R10 xử lý
+	"SOFTWARE_FEEDBACK": ("Software feedback from a station", "Normal", 0, 0, (ADMIN_ROLE,)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

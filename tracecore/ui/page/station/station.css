@@ -1394,6 +1394,107 @@ body.tc-kiosk .layout-main-section {
 	flex: 1 1 var(--tc-photo-big);
 }
 
+/* trợ giúp theo trạm (FEAT-013, FR-M9-15): nút ở thanh tiêu đề, modal §4.13 có bước kèm ảnh và form báo sự cố */
+.tc-help-btn {
+	min-height: var(--tc-touch-min);
+	margin-left: auto;
+}
+
+.tc-help-box {
+	width: min(calc(var(--tc-modal-w) * 1.5), 92vw);
+	max-height: 92vh;
+	overflow-y: auto;
+}
+
+.tc-help-steps {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-help-step {
+	display: flex;
+	gap: var(--tc-sp-3);
+	padding: var(--tc-sp-3) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-help-num {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: var(--tc-touch-min);
+	height: var(--tc-touch-min);
+	border-radius: var(--tc-r-lg);
+	background: var(--tc-primary);
+	color: var(--tc-text-inverse);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-help-body p {
+	margin: 0 0 var(--tc-sp-2);
+}
+
+.tc-help-body img,
+.tc-help-shot {
+	display: block;
+	max-width: 100%;
+	max-height: var(--tc-photo-big);
+	border: var(--tc-bw-hair) solid var(--tc-photo-border);
+	border-radius: var(--tc-r-sm);
+}
+
+.tc-help-state {
+	margin: var(--tc-sp-3) 0;
+	color: var(--tc-text-2);
+}
+
+.tc-help-kinds {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+	margin: 0 0 var(--tc-sp-3);
+	padding: 0;
+	border: 0;
+}
+
+.tc-help-kinds legend {
+	margin-bottom: var(--tc-sp-1);
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-2xs);
+}
+
+.tc-help-kind,
+.tc-help-attach {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--tc-sp-2);
+	min-height: var(--tc-touch-min);
+	padding: 0 var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-sm);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-help-attach {
+	margin-bottom: var(--tc-sp-2);
+}
+
+.tc-help-kind input,
+.tc-help-attach input {
+	width: var(--tc-sp-6-5);
+	height: var(--tc-sp-6-5);
+}
+
+.tc-help-count {
+	margin: var(--tc-sp-1) 0 0;
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-sm);
+	text-align: right;
+}
+/* end trợ giúp */
 /* thu gom chất thải (SCR-38, FEAT-047): mã màu TT 20/2021 luôn là chữ cỡ lớn */
 .tc-waste-color {
 	display: inline-block;

@@ -6074,6 +6074,98 @@ Zone is not monitored,Khu chưa bật theo dõi môi trường,
 {0} {1} {2} is above the maximum {3},{0} {1} {2} vượt mức tối đa {3},
 {0} {1} {2} is below the minimum {3},{0} {1} {2} dưới mức tối thiểu {3},
 {0}: the minimum is greater than the maximum.,{0}: mức tối thiểu lớn hơn mức tối đa.,
+A station guide needs {0} to {1} numbered steps; this one has {2}.,Hướng dẫn trạm cần từ {0} đến {1} bước đánh số; bài này có {2} bước.
+All stations,Mọi trạm
+Ask R10 to add the steps for this station.,Đề nghị R10 bổ sung các bước cho trạm này.
+Attach screenshot,Đính kèm ảnh chụp màn hình
+Back to the guide,Quay lại hướng dẫn
+Bug,Lỗi phần mềm,Issue
+Cannot load the guide,Không tải được hướng dẫn
+Choose Bug or Suggestion.,Chọn Lỗi phần mềm hoặc Góp ý.
+Close Help and scan your card.,Đóng Trợ giúp rồi quét thẻ nhân viên.
+Describe what you did and what went wrong.,Ghi rõ bạn đã làm gì và lỗi xảy ra thế nào.
+Feedback Type,Loại phản hồi,Issue
+Feedback is sent under your name.,Phản hồi được gửi đứng tên bạn.
+Feedback needs the network,Gửi phản hồi cần có mạng
+Feedback not sent,Chưa gửi được phản hồi
+Feedback sent,Đã gửi phản hồi
+Loading the guide…,Đang tải hướng dẫn…
+No guide for this station yet,Trạm này chưa có hướng dẫn
+Offline - no saved guide,Mất mạng - chưa có hướng dẫn đã lưu
+Offline - showing the saved guide,Mất mạng - đang hiện hướng dẫn đã lưu
+Press Send again or tell R10 directly.,Bấm Gửi lại hoặc báo trực tiếp R10.
+Press Try again or ask R02 at this station.,Bấm Thử lại hoặc hỏi R02 tại trạm.
+R10 received report {0}.,R10 đã nhận phản hồi {0}.
+Reconnect to load the guide.,Kết nối mạng để tải hướng dẫn.
+"Reconnect, then press Send again.",Kết nối mạng rồi bấm Gửi lại.
+"Reconnect, then send the report.",Kết nối mạng rồi gửi phản hồi.
+Report a problem,Báo sự cố
+Scan your employee card first,Hãy quét thẻ nhân viên trước
+Screenshot not accepted,Ảnh chụp màn hình không hợp lệ
+Screenshot not available,Không có ảnh chụp màn hình
+Screenshot preview,Xem trước ảnh chụp màn hình
+Send to R10,Gửi R10
+Sending…,Đang gửi…
+Software feedback and bug reports sent from TraceCore stations.,Phản hồi và báo lỗi phần mềm gửi từ các trạm TraceCore.
+Something does not work,Có chức năng không chạy
+Station guide,Hướng dẫn trạm
+Station guide: {0},Hướng dẫn trạm: {0}
+Step images must be public files uploaded to this site (/files/…).,Ảnh của bước phải là tệp công khai tải lên hệ thống này (/files/…).
+Step {0},Bước {0}
+Step-by-step guides shown on TraceCore stations.,Hướng dẫn từng bước hiện trên các trạm TraceCore.
+Suggestion,Góp ý
+Suggestion,Góp ý,Issue
+Taking the screenshot…,Đang chụp màn hình…
+The description must have {0} to {1} characters.,Mô tả phải có từ {0} đến {1} ký tự.
+The feedback type is not valid.,Loại phản hồi không hợp lệ.
+The screenshot must be a PNG or JPEG image of at most {0} MB.,"Ảnh chụp màn hình phải là ảnh PNG hoặc JPEG, tối đa {0} MB."
+The server could not save the report.,Máy chủ không lưu được phản hồi.
+The server did not answer as expected.,Máy chủ không phản hồi như mong đợi.
+The station lost the network connection.,Trạm mất kết nối mạng.
+TraceCore Employee,Nhân viên gửi,Issue
+TraceCore Station Step,Bước trạm,Help Article
+TraceCore Station,Trạm gửi,Issue
+Untick Attach screenshot and send again.,Bỏ chọn Đính kèm ảnh chụp màn hình rồi gửi lại.
+Wait a while or tell R10 directly.,Chờ một lúc hoặc báo trực tiếp R10.
+What happened?,Đã xảy ra chuyện gì?
+You have sent {0} reports in the last hour.,Bạn đã gửi {0} phản hồi trong một giờ qua.
+[{0}] {1}: {2},[{0}] {1}: {2}
+Scan your employee card to open the station.,Quét thẻ nhân viên để mở trạm.
+Scan the Set ID on each returned set.,Quét Set ID trên từng bộ được trả về.
+Check the receipt details and mark missing or damaged instruments.,"Kiểm tra thông tin tiếp nhận, đánh dấu dụng cụ thiếu hoặc hỏng."
+Confirm to send the set to washing.,Xác nhận để chuyển bộ sang rửa.
+"Choose the washer and the wash program, then scan the chemical lot.","Chọn máy rửa và chương trình rửa, rồi quét lô hóa chất."
+Scan each set into the wash batch and start the batch.,Quét từng bộ vào lô rửa rồi chạy lô.
+"When the cycle ends, record the result before unloading.","Hết chu trình, ghi kết quả trước khi dỡ."
+Scan the Set ID of the washed set.,Quét Set ID của bộ đã rửa.
+Count each instrument against the checklist and its photo.,Đếm từng dụng cụ theo danh mục và ảnh của dụng cụ.
+Mark missing or damaged instruments.,Đánh dấu dụng cụ thiếu hoặc hỏng.
+Confirm the assembly result.,Xác nhận kết quả kiểm đếm.
+Scan the Set ID of the assembled set.,Quét Set ID của bộ đã kiểm đếm.
+Check that every gate shows Pass.,Kiểm tra mọi cổng đều Đạt.
+Print the pack label and stick it on the pack.,In nhãn gói và dán lên gói.
+Confirm to finish packing.,Xác nhận để hoàn tất đóng gói.
+Scan the sterilizer and choose the program.,Quét máy tiệt khuẩn và chọn chương trình.
+Scan each pack into the load.,Quét từng gói vào mẻ.
+Start the load and keep the indicators with it.,Chạy mẻ và để chỉ thị cùng mẻ.
+Scan the finished load.,Quét mẻ đã chạy xong.
+Record the result of every indicator.,Ghi kết quả của từng chỉ thị.
+Ask R02 to release the load with a PIN.,Đề nghị R02 nhập PIN để giải phóng mẻ.
+Scan the pack from the released load.,Quét gói từ mẻ đã giải phóng.
+Scan the shelf location.,Quét vị trí kệ.
+Confirm to put the pack away.,Xác nhận để cất gói vào kệ.
+Choose the department request to fill.,Chọn yêu cầu của khoa cần cấp.
+Scan each pack you hand over.,Quét từng gói bàn giao.
+Confirm and print the issue note.,Xác nhận và in phiếu cấp phát.
+Scan the Cycle ID on the pack before use.,Quét Cycle ID trên gói trước khi dùng.
+Enter the patient code and the surgery code.,Nhập mã bệnh nhân và mã ca phẫu thuật.
+Confirm the use of the pack.,Xác nhận sử dụng gói.
+Choose Collect or Laundry at the top of the screen.,Chọn Thu gom hoặc Giặt ở đầu màn hình.
+Weigh the linen and choose the linen type.,Cân đồ vải và chọn loại đồ vải.
+Check the quantity and confirm.,Kiểm tra số lượng rồi xác nhận.
+Scan the code in the box at the top of the screen.,Quét mã vào ô ở đầu màn hình.
+Read the result: a red message means stop and follow the action shown.,Đọc kết quả: thông báo đỏ nghĩa là dừng lại và làm theo hướng dẫn hiện ra.
+Press Help and then Report a problem if the screen does not work as expected.,Bấm Trợ giúp rồi Báo sự cố nếu màn hình không chạy như mong đợi.
 Type the certificate type; types already used are suggested.,Tự điền loại chứng chỉ; các loại đã dùng sẽ được gợi ý.,
 No certificate types yet. Record a certificate for an employee first.,Chưa có loại chứng chỉ nào. Hãy ghi chứng chỉ cho nhân viên trước.,
 A misclassified bag needs a note on what is wrong.,Túi phân loại sai cần ghi rõ sai ở đâu.
@@ -6201,3 +6293,7 @@ Bags,Số túi,TC Waste Receipt
 Weight (kg),Khối lượng (kg),TC Waste Receipt
 Misclassified - on hold,Phân loại sai - đang giữ,TC Waste Receipt
 Total collected,Tổng đã thu gom,TC Waste Receipt
+Scan the card of the person handing over the waste.,Quét thẻ người giao chất thải.,
+"Choose the waste type, then enter the number of bags and the weight.","Chọn loại chất thải, rồi nhập số túi và khối lượng.",
+"Confirm, then scan the card again to acknowledge the receipt.","Xác nhận, rồi quét lại thẻ để xác nhận biên nhận.",
+WST,Thu gom chất thải (WST),Help Article
