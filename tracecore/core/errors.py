@@ -262,9 +262,14 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
 			"CODE_RANGE_INVALID",
 			"CODE_RANGE_EXHAUSTED",
+			# FEAT-046 A-53 i: tính lại giá thành chỉ với phiên bản giá đã duyệt
+			"RATE_VERSION_NOT_APPROVED",
 		),
 		409,
 	),
+	# FEAT-046 A-53 i: tính lại giá thành cần ghi chú và mẻ/lô có thật
+	"NOTE_REQUIRED": 422,
+	"COST_SOURCE_NOT_FOUND": 404,
 }
 DEFAULT_HTTP_STATUS = 409
 

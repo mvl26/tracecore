@@ -226,9 +226,13 @@ class TestErrors(FrappeTestCase):
 				"PURCHASE_NOT_NEEDED",
 				"CODE_RANGE_INVALID",
 				"CODE_RANGE_EXHAUSTED",
+				# FEAT-046 A-53 i
+				"RATE_VERSION_NOT_APPROVED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
+		# FEAT-046 A-53 i: tính lại giá thành
+		table.update({"NOTE_REQUIRED": 422, "COST_SOURCE_NOT_FOUND": 404})
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

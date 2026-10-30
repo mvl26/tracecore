@@ -36,7 +36,7 @@ DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,FEAT-044 A-47 C12
 DT-COSTCAT,Cost Category,R,R,,,,,,,RW,R,FEAT-044 A-47 C12
 DT-COSTSET,Cost Settings,RW,,,,,,,,R,,FEAT-044 A-47 C6
 DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D5: R01 duyệt (Ghi sổ/Hủy) theo UC-28 bước 4 (Frappe cần W để Ghi sổ); R09 lập Nháp
-DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
+DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,FEAT-046 A-53 D1
 DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
 DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
 DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
