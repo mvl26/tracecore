@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "function_code",
+  "function_name",
+  "process_order",
+  "gate_step",
+  "screen_key",
+  "is_required",
+  "is_system",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "function_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Function Code",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "function_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Function Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "process_order",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Process Order",
+   "non_negative": 1,
+   "description": "Order in the reprocessing flow. Fixed for system functions."
+  },
+  {
+   "fieldname": "gate_step",
+   "fieldtype": "Select",
+   "label": "Gate",
+   "options": "\nT1\nT2\nT3\nT4\nT5",
+   "read_only": 1,
+   "description": "Control gate recorded by this function. Set by the system."
+  },
+  {
+   "fieldname": "screen_key",
+   "fieldtype": "Data",
+   "label": "Screen",
+   "read_only": 1,
+   "description": "Business screen. Functions without a screen open the general set lookup."
+  },
+  {
+   "default": "0",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "label": "Required In Flow",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_system",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "System Function",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Active"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "Station Function",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:function_code",
+ "naming_rule": "By fieldname",
+ "title_field": "function_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "function_name",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R10",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R01",
+   "read": 1
+  },
+  {
+   "role": "TC R02",
+   "read": 1
+  },
+  {
+   "role": "TC R09",
+   "read": 1
+  }
+ ],
+ "description": "Catalog of station functions (A-64). Functions with new behaviour still need code."
+}

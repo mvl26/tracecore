@@ -1,64 +1,172 @@
-"""Quy tắc khu - trạm: chức năng (bước T1-T8) theo loại khu và máy hai cửa (FEAT-002 E3, E5).
+"""Quy tắc vùng - trạm - chức năng đọc từ cấu hình (FEAT-002 E3, E5; A-64, FEAT-051).
 
-Nơi duy nhất giữ bảng "chức năng trạm theo loại khu"; Desk/JS lấy từ server, không chép lại.
-Chỉ ``check_pass_through`` đọc DB (hai dòng Zone Station); phần còn lại thuần Python.
+``Zone Type`` giữ chức năng được phép và chiều đi qua máy hai cửa; ``Station Function`` giữ màn và cổng của chức năng;
+trạm giữ danh sách chức năng ở bảng con. Desk/JS lấy từ server, không chép lại. Mã cổng T1..T5 của ``core.step_gate`` là
+mã nội bộ: màn hình dùng ``gate_label``.
 """
 
 import frappe
 from frappe import _
-
-STEPS_BY_ZONE_TYPE: dict[str, tuple[str, ...]] = {
-	"Dirty": ("T1", "T2"),
-	"Clean": ("T3", "T4", "T5"),
-	"Sterile": ("T5b", "T6", "T7"),
-	"Department": ("T8",),
-	"Linen": ("LIN",),  # FEAT-033 A-49 L1: trạm đồ vải không có cổng 5 bước
-	"Waste": ("WST",),  # FEAT-047 A-60 W5: trạm thu gom chất thải không có cổng 5 bước
-}
-# Chiều đi của dụng cụ qua máy hai cửa: Bẩn → Sạch → Vô khuẩn.
-ZONE_FLOW: tuple[str, ...] = ("Dirty", "Clean", "Sterile")
-
-
-def next_zone_type(zone_type: str | None) -> str | None:
-	"""Loại khu kế tiếp theo ``ZONE_FLOW``; khu cuối hoặc loại ngoài luồng → ``None``."""
-	if zone_type not in ZONE_FLOW:
-		return None
-	index = ZONE_FLOW.index(zone_type) + 1
-	return ZONE_FLOW[index] if index < len(ZONE_FLOW) else None
-
-
-def allowed_steps(zone_type: str) -> tuple[str, ...]:
-	"""Các bước trạm được phép đặt trong khu loại ``zone_type``; loại lạ → ``()``."""
-	return STEPS_BY_ZONE_TYPE.get(zone_type, ())
+from frappe.utils import cint
 
 
 def _zone_type_label(zone_type: str | None) -> str:
 	return _(zone_type, context="Zone Station") if zone_type else ""
 
 
-def check_step(zone_type: str | None, step: str | None) -> None:
-	"""Chặn bước nằm ngoài chức năng của khu; bước ``None``/rỗng luôn hợp lệ, khu chưa có loại không có chức năng."""
-	if not step:
+def _functions_in_order(names) -> list[str]:
+	"""``names`` theo ``process_order``; tên không có trong danh mục bị bỏ."""
+	if not names:
+		return []
+	return frappe.get_all(
+		"Station Function",
+		filters={"name": ["in", list(names)]},
+		pluck="name",
+		order_by="process_order asc, name asc",
+	)
+
+
+def function_label(function: str) -> str:
+	name = frappe.db.get_value("Station Function", function, "function_name")
+	return _(name) if name else function
+
+
+def allowed_functions(zone_type: str | None) -> tuple[str, ...]:
+	"""Chức năng được đặt trong loại vùng ``zone_type``, theo thứ tự quy trình; loại lạ → ``()``."""
+	if not zone_type:
+		return ()
+	rows = frappe.get_all(
+		"Zone Type Function",
+		filters={"parent": zone_type, "parenttype": "Zone Type"},
+		pluck="station_function",
+	)
+	return tuple(_functions_in_order(rows))
+
+
+def check_functions(zone_type: str | None, functions) -> None:
+	"""Chặn chức năng ngoài danh sách cho phép của loại vùng; danh sách rỗng luôn hợp lệ."""
+	functions = [function for function in functions or () if function]
+	if not functions:
 		return
-	steps = allowed_steps(zone_type or "")
-	if step in steps:
+	allowed = allowed_functions(zone_type)
+	wrong = [function for function in functions if function not in allowed]
+	if not wrong:
 		return
 	zone_label = _zone_type_label(zone_type)
-	if not steps:
+	wrong_labels = ", ".join(function_label(function) for function in wrong)
+	if not allowed:
 		frappe.throw(
-			_("Zone {0} has no station functions yet, so step {1} cannot be set.").format(zone_label, step),
+			_("Zone {0} has no station functions yet, so {1} cannot be set.").format(zone_label, wrong_labels),
 			frappe.ValidationError,
 		)
 	frappe.throw(
-		_("Zone {0} only has these functions: {1}. Step {2} cannot be set.").format(
-			zone_label, ", ".join(steps), step
+		_("Zone {0} only allows these functions: {1}. {2} cannot be set.").format(
+			zone_label, ", ".join(function_label(function) for function in allowed), wrong_labels
 		),
 		frappe.ValidationError,
 	)
 
 
+def station_functions(station: str | None) -> list[str]:
+	"""Chức năng của trạm theo thứ tự quy trình; khu hoặc tên lạ → ``[]``."""
+	if not station or not isinstance(station, str):
+		return []
+	rows = frappe.get_all(
+		"Zone Station Function",
+		filters={"parent": station, "parenttype": "Zone Station"},
+		pluck="station_function",
+	)
+	return _functions_in_order(rows)
+
+
+def station_has_function(station: str | None, *functions: str) -> bool:
+	"""Trạm có ít nhất một trong ``functions``. Chỉ kiểm chức năng; ``is_active`` do nơi gọi kiểm."""
+	if not station or not isinstance(station, str):
+		return False
+	return bool(
+		frappe.db.exists(
+			"Zone Station Function",
+			{"parent": station, "parenttype": "Zone Station", "station_function": ["in", list(functions)]},
+		)
+	)
+
+
+def stations_with_function(function: str, zone: str | None = None) -> list[str]:
+	"""Trạm đang hoạt động có ``function``, theo số trạm (trạm chưa đánh số xếp sau) rồi theo tên."""
+	parents = frappe.get_all(
+		"Zone Station Function",
+		filters={"station_function": function, "parenttype": "Zone Station"},
+		pluck="parent",
+	)
+	if not parents:
+		return []
+	filters = {"name": ["in", parents], "is_zone": 0, "is_active": 1}
+	if zone:
+		filters["parent_zone"] = zone
+	rows = frappe.get_all("Zone Station", filters=filters, fields=["name", "station_no"])
+	rows.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
+	return [row.name for row in rows]
+
+
+def missing_functions() -> list[str]:
+	"""Chức năng bắt buộc của chuỗi quy trình chưa có trạm hoạt động: bộ sẽ kẹt nếu đi tới đó."""
+	required = frappe.get_all(
+		"Station Function",
+		filters={"is_required": 1},
+		pluck="name",
+		order_by="process_order asc, name asc",
+	)
+	return [function for function in required if not stations_with_function(function)]
+
+
+def station_screens(functions) -> list[str]:
+	"""Màn nghiệp vụ của danh sách chức năng, theo thứ tự quy trình, không trùng; không có màn → ``[]``."""
+	if not functions:
+		return []
+	rows = frappe.get_all(
+		"Station Function",
+		filters={"name": ["in", list(functions)], "screen_key": ["is", "set"]},
+		pluck="screen_key",
+		order_by="process_order asc, name asc",
+	)
+	return list(dict.fromkeys(rows))
+
+
+def gate_labels() -> dict[str, str]:
+	"""Tên hiển thị của các cổng: ``{"T1": "Tiếp nhận", ...}``."""
+	rows = frappe.get_all(
+		"Station Function", filters={"gate_step": ["is", "set"]}, fields=["gate_step", "function_name"]
+	)
+	return {row.gate_step: _(row.function_name) for row in rows}
+
+
+def gate_label(step: str) -> str:
+	"""Tên hiển thị của một cổng; cổng lạ giữ nguyên mã."""
+	name = frappe.db.get_value("Station Function", {"gate_step": step}, "function_name")
+	return _(name) if name else step
+
+
+def _flow_order(zone_type: str | None) -> int:
+	return cint(frappe.db.get_value("Zone Type", zone_type, "flow_order")) if zone_type else 0
+
+
+def next_zone_type(zone_type: str | None) -> str | None:
+	"""Loại vùng kế tiếp theo ``flow_order``; vùng cuối hoặc ngoài luồng → ``None``."""
+	order = _flow_order(zone_type)
+	if not order:
+		return None
+	rows = frappe.get_all(
+		"Zone Type",
+		filters={"flow_order": [">", order]},
+		pluck="name",
+		order_by="flow_order asc",
+		limit=1,
+	)
+	return rows[0] if rows else None
+
+
 def _zone_type_of(zone: str | None) -> str | None:
-	"""Loại khu của ``zone`` nếu nó là một khu (``is_zone``); ngược lại ném ``ValidationError``."""
+	"""Loại vùng của ``zone`` nếu nó là một vùng (``is_zone``); ngược lại ném ``ValidationError``."""
 	row = frappe.db.get_value("Zone Station", zone, ["is_zone", "zone_type"], as_dict=True) if zone else None
 	if not row or not row.is_zone:
 		frappe.throw(_("{0} is not a zone.").format(zone or _("(empty)")), frappe.ValidationError)
@@ -66,22 +174,20 @@ def _zone_type_of(zone: str | None) -> str | None:
 
 
 def check_pass_through(zone_in: str, zone_out: str | None) -> None:
-	"""Máy hai cửa: cửa ra phải là khu kế tiếp của cửa vào theo chiều Bẩn → Sạch → Vô khuẩn.
+	"""Máy hai cửa: cửa ra phải là vùng kế tiếp của cửa vào theo ``Zone Type.flow_order``.
 
-	``zone_out`` rỗng = máy một cửa (luôn hợp lệ nếu ``zone_in`` là khu). Tham số là tên Zone Station
-	loại khu; trạm hoặc tên không tồn tại bị từ chối.
+	``zone_out`` rỗng = máy một cửa (luôn hợp lệ nếu ``zone_in`` là vùng). Tham số là tên Zone Station
+	loại vùng; trạm hoặc tên không tồn tại bị từ chối.
 	"""
 	type_in = _zone_type_of(zone_in)
 	if not zone_out:
 		return
 	type_out = _zone_type_of(zone_out)
-	if type_in in ZONE_FLOW:
-		index = ZONE_FLOW.index(type_in)
-		if index + 1 < len(ZONE_FLOW) and ZONE_FLOW[index + 1] == type_out:
-			return
+	if type_out and next_zone_type(type_in) == type_out:
+		return
 	frappe.throw(
 		_(
-			"A two-door machine must go from zone {0} to the next zone in the order Dirty, Clean, Sterile, not to zone {1}."
+			"A two-door machine must go from zone {0} to the next zone in the configured flow, not to zone {1}."
 		).format(_zone_type_label(type_in), _zone_type_label(type_out)),
 		frappe.ValidationError,
 	)

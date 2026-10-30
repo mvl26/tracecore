@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "type_name",
+  "zone_color",
+  "flow_order",
+  "functions"
+ ],
+ "fields": [
+  {
+   "fieldname": "type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zone Type",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "web",
+   "fieldname": "zone_color",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Zone Color",
+   "options": "web\ndirty\nclean\nsterile\ndept\nwaste"
+  },
+  {
+   "fieldname": "flow_order",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Flow Order",
+   "non_negative": 1,
+   "description": "Order of the instrument flow through two-door machines. Leave 0 for zones outside the flow."
+  },
+  {
+   "fieldname": "functions",
+   "fieldtype": "Table",
+   "label": "Allowed Functions",
+   "options": "Zone Type Function"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "Zone Type",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:type_name",
+ "naming_rule": "By fieldname",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R10",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R01",
+   "read": 1
+  },
+  {
+   "role": "TC R02",
+   "read": 1
+  },
+  {
+   "role": "TC R09",
+   "read": 1
+  }
+ ],
+ "description": "Zone types and the station functions allowed in each (A-64)."
+}
