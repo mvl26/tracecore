@@ -22,9 +22,11 @@ from tracecore.v1._common import (
 	station_session,
 )
 from tracecore.waste import collection as service
+from tracecore.waste import storage
 
 STEP = "WST"
 RELEASE_ROLES = ("TC R02", "System Manager")
+THRESHOLD_ROLES = ("TC R02", "TC R10", "System Manager")
 
 
 def _text(value, name):
@@ -114,6 +116,93 @@ def acknowledge(station, collection=None, card=None, client_ts=None, token=None)
 		return {"ok": True, "acknowledged_by": doc.acknowledged_by}
 
 	return run_at_step(STEP, station, parse_client_ts(client_ts), call, "Waste Collection", collection)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+def stock(station, client_ts=None, token=None):
+	"""Tồn kho chất thải, túi gấp nhất trước và nhiệt độ kho lạnh (SCR-39, FEAT-048, A-61)."""
+	require_any_role(*WASTE_ROLES)
+	return run_at_step(
+		STEP, station, parse_client_ts(client_ts), lambda: {"ok": True, **storage.stock()}, None, None
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+def check_location(station, location=None, client_ts=None, token=None):
+	"""Quét mã vị trí `KE-` (UC-35 bước 1): ``{"ok": true, "location": {name, location_name, is_cold}}``."""
+	require_any_role(*WASTE_ROLES)
+	location = _text(location, "location")
+
+	def call():
+		room = storage._location(location)
+		return {
+			"ok": True,
+			"location": {"name": room.name, "location_name": room.location_name, "is_cold": room.is_cold},
+		}
+
+	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def store(station, location=None, container=None, collection=None, client_ts=None, token=None):
+	"""Quét túi + vị trí (nhập kho, chuyển vị trí) hoặc quét phiếu thu gom để nhập cả phiếu (FR-M10-03, UC-35 A1, A2)."""
+	require_any_role(*WASTE_ROLES)
+	location = _text(location, "location")
+	container = _text(container, "container")
+	collection = _text(collection, "collection")
+
+	def call():
+		if collection:
+			return {"ok": True, **storage.store_collection(collection)}
+		doc = storage.store(container, location)
+		return {
+			"ok": True,
+			"container": {
+				"name": doc.name,
+				"waste_type": doc.waste_type,
+				"location": doc.storage_location,
+				"storage_due": doc.storage_due,
+				"cold_storage": doc.cold_storage,
+			},
+		}
+
+	return run_at_step(STEP, station, parse_client_ts(client_ts), call, "Waste Container", container)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
+@idempotent
+def record_temperature(station, location=None, temperature=None, client_ts=None, token=None):
+	"""R07 ghi nhiệt độ kho lạnh theo ca (FR-M10-03.2, UC-35 bước 4)."""
+	require_any_role(*WASTE_ROLES)
+	location = _text(location, "location")
+
+	def call():
+		return {"ok": True, "log": storage.record_temperature(location, temperature).name}
+
+	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def thresholds():
+	"""Ngưỡng hạn lưu và kho lạnh đang dùng (UC-35 Open issues, A-61)."""
+	require_any_role(*THRESHOLD_ROLES)
+	return storage.thresholds()
+
+
+@frappe.whitelist(methods=["POST"])
+def set_thresholds(warn_percent=None, cold_limit_c=None, breach_hours=None):
+	"""R02/R10 hiệu chỉnh ngưỡng từ Desk (UC-35 Open issues, A-61)."""
+	require_any_role(*THRESHOLD_ROLES)
+	try:
+		return {"ok": True, "thresholds": storage.set_thresholds(warn_percent, cold_limit_c, breach_hours)}
+	except BlockedError as error:
+		frappe.local.response["http_status_code"] = error.block.http_status
+		return {"ok": False, "error": error.block.as_dict()}
 
 
 @frappe.whitelist(methods=["POST"])

@@ -6,7 +6,7 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, TcOutbox, tcSync, TC_SNAPSHOT_MS */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -1030,7 +1030,11 @@ class TraceCoreStation {
 						? new LinenStation(this)
 						: new LinenCollect(this);
 			} else if (station.step === "WST" && typeof WasteCollect !== "undefined") {
-				this.screen = new WasteCollect(this);
+				// trạm chất thải: thu gom + kho lưu giữ tạm (FEAT-048) chuyển bằng tab
+				this.screen =
+					typeof WasteStation !== "undefined"
+						? new WasteStation(this)
+						: new WasteCollect(this);
 			}
 		}
 		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;

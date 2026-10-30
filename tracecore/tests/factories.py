@@ -1345,6 +1345,44 @@ def make_waste_type(type_name=None, waste_group="Sharp Infectious", std_weight_k
 	return doc.insert(ignore_permissions=True)
 
 
+def make_waste_zone(monitored=False):
+	"""Khu Waste riêng cho một kho (kho lạnh gắn với khu để ghi nhật ký nhiệt độ, FEAT-048)."""
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"zone_station_name": "Waste room " + frappe.generate_hash(length=6),
+				"is_zone": 1,
+				"zone_type": "Waste",
+				"env_monitored": 1 if monitored else 0,
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
+def make_waste_location(waste_types, default=False, is_cold=0, zone=None):
+	"""Vị trí kho `KE-` nhận các loại `waste_types`; `default=True` làm vị trí mặc định của các loại đó (FEAT-048)."""
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Waste Storage Location",
+				"location_name": "Waste shelf " + frappe.generate_hash(length=6),
+				"is_cold": is_cold,
+				"zone_station": zone,
+				"is_active": 1,
+				"allowed_types": [
+					{"waste_type": waste_type, "is_default": 1 if default else 0}
+					for waste_type in waste_types
+				],
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
 def make_waste_container():
 	"""Một túi `Waste Container` (dịch vụ mới được tạo: cờ `tc_waste`); dùng ở test NC của M2."""
 	doc = frappe.get_doc(

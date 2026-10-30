@@ -16,6 +16,10 @@
   "sms_sender",
   "section_environment",
   "env_reminder_times",
+  "section_waste",
+  "waste_warn_percent",
+  "waste_cold_limit_c",
+  "waste_cold_breach_hours",
   "section_reports",
   "report_locked_until"
  ],
@@ -90,6 +94,32 @@
    "label": "Environment Reminder Times"
   },
   {
+   "fieldname": "section_waste",
+   "fieldtype": "Section Break",
+   "label": "Medical Waste"
+  },
+  {
+   "default": "80",
+   "description": "Warn when this share of the maximum storage time has passed (FR-M10-03.3). Default 80.",
+   "fieldname": "waste_warn_percent",
+   "fieldtype": "Int",
+   "label": "Storage Warning (%)"
+  },
+  {
+   "default": "8",
+   "description": "Cold room limit (FR-M10-03.2). Default 8.",
+   "fieldname": "waste_cold_limit_c",
+   "fieldtype": "Float",
+   "label": "Cold Room Limit (°C)"
+  },
+  {
+   "default": "2",
+   "description": "Hours above the limit before bags go back to the normal storage time (FR-M10-03.2). Default 2.",
+   "fieldname": "waste_cold_breach_hours",
+   "fieldtype": "Float",
+   "label": "Hours Above the Limit"
+  },
+  {
    "fieldname": "section_reports",
    "fieldtype": "Section Break",
    "label": "Reports"
@@ -105,7 +135,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-30 14:00:00.000000",
+ "modified": "2026-10-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

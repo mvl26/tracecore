@@ -78,4 +78,25 @@ class TestWasteStationAssets(FrappeTestCase):
 
 	def test_launcher_links_waste_doctypes(self):
 		links = dict(navigation.MANAGEMENT_GROUPS)["Medical waste"]
-		self.assertEqual(links, ("Waste Type", "Waste Collection", "Waste Container"))
+		self.assertEqual(
+			links,
+			(
+				"Waste Type",
+				"Waste Collection",
+				"Waste Container",
+				"Waste Storage Location",
+				"report:Waste Storage Stock",
+			),
+		)
+
+	def test_store_tab_scans_location_then_bag(self):
+		store = (APP / "public/js/station_waste_store.js").read_text(encoding="utf-8")
+		for method in ("stock", "check_location", "store", "record_temperature"):
+			self.assertIn(f'"tracecore.v1.waste.{method}"', store)
+		self.assertIn('wasteTabs("store")', store)
+		self.assertIn('wasteTabs("collect")', self.js)
+		self.assertIn("new WasteStation(this)", self.station_js)
+		self.assertIn("public/js/station_waste_store.js", hooks.page_js["station"])
+		for marker in ('setState("offline"', "renderLoading()", '"empty"', '"error"', "tc-alert-${variant}"):
+			self.assertIn(marker, store)
+		self.assertNotIn("frappe.msgprint", store)

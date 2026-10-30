@@ -94,6 +94,8 @@ page_js = {
 		"public/js/station_linen_issue.js",
 		# FEAT-047: thu gom chất thải (SCR-38), trạm bước WST; dùng tc_weigh_line.js
 		"public/js/station_waste.js",
+		# FEAT-048: tab Kho lưu giữ tạm (SCR-39) và thanh chuyển tab của trạm chất thải
+		"public/js/station_waste_store.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	]
@@ -329,6 +331,7 @@ doc_events = {
 	"Waste Type": dict(_AUDIT_EVENTS),
 	"Waste Collection": dict(_AUDIT_EVENTS),
 	"Waste Container": dict(_AUDIT_EVENTS),
+	"Waste Storage Location": dict(_AUDIT_EVENTS),  # FEAT-048, A-61
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
@@ -518,6 +521,8 @@ scheduler_events = {
 			"tracecore.reprocessing.recall.remind_pending",
 			# FEAT-008, FR-M9-04.2: khu theo dõi chưa có lần đo môi trường trước mốc giờ nhắc → nhắc R02
 			"tracecore.admin_reports.environment.remind_missing",
+			# FEAT-048, FR-M10-03.2-.4: nhiệt độ kho lạnh và hạn lưu chất thải
+			"tracecore.waste.storage.run_checks",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],

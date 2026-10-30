@@ -12,6 +12,12 @@
   "column_break_1",
   "collected_at",
   "storage_due",
+  "storage_location",
+  "stored_at",
+  "cold_storage",
+  "cold_voided",
+  "due_warned_at",
+  "overdue_at",
   "misclass_note",
   "released_by",
   "release_note"
@@ -33,7 +39,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Collected\nHeld\nCancelled",
+   "options": "Collected\nHeld\nStored\nCancelled",
    "read_only": 1
   },
   {
@@ -74,6 +80,49 @@
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Storage Due",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "storage_location",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Storage Location",
+   "options": "Waste Storage Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stored_at",
+   "fieldtype": "Datetime",
+   "label": "Stored At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "cold_storage",
+   "fieldtype": "Check",
+   "label": "Cold Storage",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "The cold room went above the limit, so the normal storage time applies.",
+   "fieldname": "cold_voided",
+   "fieldtype": "Check",
+   "label": "Cold Storage Lost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "due_warned_at",
+   "fieldtype": "Datetime",
+   "label": "Due Warning Sent At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "overdue_at",
+   "fieldtype": "Datetime",
+   "label": "Overdue Since",
    "read_only": 1
   },
   {
@@ -98,7 +147,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 15:00:00.000000",
+ "modified": "2026-10-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Container",

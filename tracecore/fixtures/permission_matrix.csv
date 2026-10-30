@@ -24,6 +24,7 @@ DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
 DT-WASTETYPE,Waste Type,R,RW,,,,,R,,R,RW,FEAT-047 A-60 W14: danh mục; R02 và R10 cấu hình
 DT-WASTECOL,Waste Collection,R,RWSA,,,,,RWS,,R,R,FEAT-047 A-60 W14: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
 DT-WASTECON,Waste Container,R,R,,,,,R,,R,R,FEAT-047 A-60 W14: chỉ dịch vụ thu gom tạo và đổi
+DT-WASTELOC,Waste Storage Location,R,RW,,,,,R,,,RW,FEAT-048 A-61: R10 và R02 cấu hình vị trí kho; R07 chỉ đọc
 DT-EMP,Employee,R,RWS,,,,,,,,RW,
 DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
 DT-COMP,Station Competency,R,RWS,,,,,,,,RW,

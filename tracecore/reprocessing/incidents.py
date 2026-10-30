@@ -29,6 +29,7 @@ LINK_FIELDS = (
 	"sterilization_load",
 	"equipment",
 	"employee",
+	"department",
 )
 # Trường chỉ dịch vụ được đổi; sửa tay trên form bị chặn
 PROTECTED = (
@@ -453,7 +454,19 @@ def remind_overdue():
 
 
 def on_waste_nc(ctx):
-	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai → NC (FEAT-047, FR-M10-02.4, A-60 W3); FEAT-050 mở rộng."""
+	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai (FEAT-047, FR-M10-02.4, A-60 W3) hoặc quá hạn lưu
+	(`kind` = overdue, FEAT-048, FR-M10-03.4, A-61) → NC; FEAT-050 mở rộng."""
+	if ctx.get("kind") == "overdue":
+		return _auto(
+			"Waste Container",
+			ctx["container"],
+			"Waste Storage Overdue",
+			"Medium",
+			_("Waste container {0} ({1}) is past its storage limit {2}.").format(
+				ctx["container"], ctx.get("waste_type"), ctx.get("due") or "-"
+			),
+			{"department": ctx.get("department")},
+		)
 	return _auto(
 		"Waste Container",
 		ctx["container"],
