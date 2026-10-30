@@ -33,6 +33,8 @@ fixtures = [
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
 	{"dt": "Property Setter", "filters": [["name", "like", "Employee-naming_series-%"]]},
+	# Phân ca: ẩn Shift Location (chấm công GPS của HRMS); khu của ca là tc_zone
+	{"dt": "Property Setter", "filters": [["name", "=", "Shift Assignment-shift_location-hidden"]]},
 ]
 
 # Each item in the list will be shown as an app in the apps page

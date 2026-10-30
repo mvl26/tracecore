@@ -132,6 +132,22 @@ class TestShiftAssignment(ShiftCase):
 			assignment(self.employee.name, shift_type(), self.zone)
 
 
+class TestShiftAssignmentForm(IsolatedTestCase):
+	def test_shift_location_is_hidden(self):
+		"""Shift Location (chấm công GPS của HRMS) không dùng ở TraceCore; khu của ca là `tc_zone` nên ẩn để khỏi tạo nhầm."""
+		self.assertTrue(frappe.get_meta("Shift Assignment").get_field("shift_location").hidden)
+
+	def test_hidden_shift_location_ships_as_fixture(self):
+		from tracecore import hooks
+
+		names = [
+			row["filters"][0][2]
+			for row in hooks.fixtures
+			if row["dt"] == "Property Setter" and "filters" in row
+		]
+		self.assertIn("Shift Assignment-shift_location-hidden", names)
+
+
 class TestShiftSchedule(ShiftCase):
 	def test_week_schedule_lists_each_day_of_each_assignment(self):
 		monday = add_days(getdate(today()), -getdate(today()).weekday())
