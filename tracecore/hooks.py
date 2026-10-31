@@ -81,6 +81,8 @@ page_js = {
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
+		# A-68: chọn tay thiết bị và bộ/gói khi máy quét hỏng (shell gọi qua TcPicker)
+		"public/js/station_picker.js",
 		"public/js/station_t3.js",
 		"public/js/station_t5.js",
 		"public/js/station_t5b.js",

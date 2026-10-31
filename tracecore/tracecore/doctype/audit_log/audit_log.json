@@ -67,7 +67,7 @@
    "read_only": 1
   },
   {
-   "description": "Cách nhập mã trên trạm: quét hoặc chọn tay (A-68).",
+   "description": "How the code was entered at the station: scanned or chosen by hand (A-68).",
    "fieldname": "entry_mode",
    "fieldtype": "Select",
    "in_standard_filter": 1,
