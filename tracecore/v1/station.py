@@ -41,6 +41,20 @@ def login(card_id=None, station=None, client_ts=None):
 	)
 
 
+@frappe.whitelist(methods=["POST"])
+def switch_station(token=None, station=None, client_ts=None):
+	"""Admin đã quét thẻ chuyển sang trạm khác không cần quét lại (NAV-03); cần cả tài khoản Desk System Manager."""
+	require_role("System Manager")
+	timestamp = parse_client_ts(client_ts)
+	if not isinstance(station, str):
+		raise BadRequestError(_("station must be a string."))
+	return _session_response(
+		lambda: {"ok": True, "session": station_auth.switch_station(token, station, timestamp)},
+		station,
+		timestamp,
+	)
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def logout(token=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)

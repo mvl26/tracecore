@@ -7169,3 +7169,7 @@ Dirty zone,Khu bẩn,TraceCore Launcher
 Clean zone,Khu sạch,TraceCore Launcher
 Sterile zone,Khu vô khuẩn,TraceCore Launcher
 Department zone,Khoa,TraceCore Launcher
+Online,Trực tuyến,
+No card scanned,Chưa quét thẻ,
+{0} transaction(s) waiting,{0} giao dịch chờ đồng bộ,
+station must be a string.,station phải là chuỗi.,
