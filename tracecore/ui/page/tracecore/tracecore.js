@@ -74,43 +74,14 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			);
 		});
 	}
-	function render_stations(body, data) {
-		const zones = new Map();
-		data.stations.forEach((item) => {
-			const zone = __(item.zone || "Other stations", null, "TraceCore Launcher");
-			if (!zones.has(zone)) zones.set(zone, []);
-			zones.get(zone).push(item);
-		});
-		if (!zones.size)
-			$("<p class='tc-launcher-note'></p>").text(__("No available station")).appendTo(body);
-		zones.forEach((items, zone) => {
-			const grid = section(body, zone, items.length);
-			items.forEach((item) => {
-				const badge = $("<span class='tc-admin-badge'></span>").addClass(
-					`tc-admin-zone-${item.zone_color}`
-				);
-				if (item.station_no) badge.text(`T${item.station_no}`);
-				else badge.append(icon("scan"));
-				// tên trạm cấu hình thường đã có số ("T1 Tiếp nhận"); ô số đã hiện nên không lặp
-				const full = __(item.label);
-				const name = full.replace(new RegExp(`^T${item.station_no}\\s+`), "") || full;
-				const label = item.implemented ? name : `${name} — ${__("Not implemented yet")}`;
-				const route = item.implemented
-					? `/app/station?station=${encodeURIComponent(item.name)}`
-					: null;
-				// router Desk bỏ ?station= khi bấm <a>; Page station đọc mã từ URL lúc nạp nên phải nạp lại trang
-				tile(grid, label, route, badge).on("click", (event) => {
-					if (!route) return;
-					event.preventDefault();
-					event.stopPropagation();
-					window.location.assign(route);
-				});
-			});
-		});
-		if (data.department)
-			$("<p class='tc-launcher-note'></p>")
-				.text(__("Department portal is not implemented yet."))
-				.appendTo(body);
+	// không có màn chọn trạm: vào thẳng trạm đầu, đổi trạm bằng cột trạm trên trang trạm (NAV-03)
+	function open_first_station(data) {
+		const first = data.stations.find((item) => item.implemented);
+		if (!first) return false;
+		const route = `/app/station?station=${encodeURIComponent(first.name)}`;
+		// Page station đọc mã từ URL lúc nạp nên phải nạp lại trang
+		window.location.assign(route);
+		return true;
 	}
 	function render_admin(data) {
 		root.empty();
@@ -119,7 +90,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			cluster: "operations",
 			label: "Stations",
 			icon: "scan",
-			description: "Choose a station, then scan your employee card.",
+			description: "No available station",
 		};
 		const modules = [...data.admin_modules];
 		const last_operation = modules.findLastIndex((module) => module.cluster === "operations");
@@ -143,8 +114,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			$("<h2></h2>").text(__(module.label, null, "TraceCore Launcher")).appendTo(text);
 			$("<p></p>").text(__(module.description, null, "TraceCore Launcher")).appendTo(text);
 			const body = $("<div class='tc-admin-body'></div>").appendTo(main);
-			if (module.key === STATIONS.key) render_stations(body, data);
-			else render_module(body, module);
+			if (module.key !== STATIONS.key) render_module(body, module);
 		}
 		let cluster = modules[0].cluster;
 		modules.forEach((module) => {
@@ -156,7 +126,10 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 				.data("key", module.key)
 				.append(icon(module.icon))
 				.append($("<span></span>").text(__(module.label, null, "TraceCore Launcher")))
-				.on("click", () => show(module))
+				.on("click", () => {
+					if (module.key === STATIONS.key && open_first_station(data)) return;
+					show(module);
+				})
 				.appendTo(nav);
 		});
 		show(modules.find((module) => module.key === selected_module));

@@ -368,7 +368,7 @@ def context():
 		rows = frappe.get_list(
 			"Zone Station",
 			filters={"is_zone": 0, "is_active": 1},
-			fields=["name", "zone_station_name", "station_no", "parent_zone"],
+			fields=["name", "zone_station_name", "station_no"],
 			limit_page_length=0,
 		)
 		rows.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
@@ -376,34 +376,20 @@ def context():
 			functions = zones.station_functions(row.name)
 			# chức năng do R10 tạo không có trong FUNCTION_ROLES: chỉ người quản lý thấy trạm đó
 			if set(functions) & allowed or (see_all and functions):
-				station = {
-					"name": row.name,
-					"label": row.zone_station_name,
-					"station_no": cint(row.station_no),
-					"functions": functions,
-					"implemented": bool(zones.station_screen_tabs(functions)),
-				}
-				if admin:
-					station.update(_station_zone(row.get("parent_zone")))
-				stations.append(station)
+				stations.append(
+					{
+						"name": row.name,
+						"label": row.zone_station_name,
+						"station_no": cint(row.station_no),
+						"functions": functions,
+						"implemented": bool(zones.station_screen_tabs(functions)),
+					}
+				)
 	return {
 		"stations": stations,
 		"management": _management_links() if manager else [],
 		"department": admin or "TC R08" in roles,
 		"admin_modules": _admin_modules() if admin else [],
-	}
-
-
-def _station_zone(parent_zone):
-	"""Tên và màu khu của trạm để sidebar admin nhóm trạm theo khu."""
-	zone = (
-		frappe.db.get_value("Zone Station", parent_zone, ["zone_station_name", "zone_type"], as_dict=True)
-		if parent_zone
-		else None
-	)
-	return {
-		"zone": zone.zone_station_name if zone else None,
-		"zone_color": zones.zone_color_class(zone.zone_type if zone else None),
 	}
 
 

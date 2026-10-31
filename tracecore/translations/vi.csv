@@ -7142,7 +7142,6 @@ Documents,Chứng từ,TraceCore Launcher
 Reports,Báo cáo,TraceCore Launcher
 Overview,Tổng quan,TraceCore Launcher
 Stations,Trạm,TraceCore Launcher
-Other stations,Trạm khác,TraceCore Launcher
 Instruments and sets,Dụng cụ và bộ,TraceCore Launcher
 Reprocessing and traceability,"Tái xử lý, truy xuất",TraceCore Launcher
 Linen,Đồ vải,TraceCore Launcher
@@ -7165,10 +7164,6 @@ Par levels by department and over-par approvals.,Cơ số theo khoa và duyệt 
 "Waste collection, storage and handover.","Thu gom, lưu giữ và bàn giao chất thải.",TraceCore Launcher
 "Departments, accounts, zones and stations, labels, data and audit.","Khoa, tài khoản, khu trạm, nhãn, dữ liệu và nhật ký.",TraceCore Launcher
 Notifications sent to your account.,Thông báo gửi đến tài khoản của bạn.,TraceCore Launcher
-Dirty zone,Khu bẩn,TraceCore Launcher
-Clean zone,Khu sạch,TraceCore Launcher
-Sterile zone,Khu vô khuẩn,TraceCore Launcher
-Department zone,Khoa,TraceCore Launcher
 Online,Trực tuyến,
 No card scanned,Chưa quét thẻ,
 {0} transaction(s) waiting,{0} giao dịch chờ đồng bộ,

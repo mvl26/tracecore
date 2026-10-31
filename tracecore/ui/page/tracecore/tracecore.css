@@ -178,12 +178,6 @@ a.tc-admin-tile:hover {
 .tc-admin-kind-page, .tc-admin-kind-catalog { color: var(--tc-info-text); background: var(--tc-info-tint); }
 .tc-admin-kind-document { color: var(--tc-pass-text); background: var(--tc-pass-tint); }
 .tc-admin-kind-report { color: var(--tc-warn-text); background: var(--tc-warn-tint); }
-.tc-admin-zone-web { background: var(--tc-zone-web); }
-.tc-admin-zone-dirty { background: var(--tc-zone-dirty); }
-.tc-admin-zone-clean { background: var(--tc-warn-fill); }
-.tc-admin-zone-sterile { background: var(--tc-zone-sterile); }
-.tc-admin-zone-dept { background: var(--tc-zone-dept); }
-.tc-admin-zone-waste { background: var(--tc-zone-waste); }
 @media (prefers-reduced-motion: reduce) {
 	.tc-admin-nav button, .tc-admin-tile { transition: none; }
 }
