@@ -83,6 +83,13 @@ class TestConsumeFor(ConsumeCase):
 		self.assertEqual({(row.batch_no, row.qty) for row in doc.items}, {(self.near, 5), (self.far, 3)})
 		self.assertEqual(stock_of(ITEM), 7)
 
+	def test_company_comes_from_the_warehouse_when_user_has_no_default(self):
+		# chạy bằng Administrator hoặc user không có Company mặc định, site nhiều bệnh viện không đặt mặc định chung
+		with patch("erpnext.get_default_company", return_value=None):
+			result = consume.consume_for("Wash Batch", "WB-F42-CO", [{"item": ITEM, "qty": 1}], reason="Auto")
+		company = frappe.db.get_value("Warehouse", self.warehouse, "company")
+		self.assertEqual(frappe.db.get_value("Stock Entry", result["entry"], "company"), company)
+
 	def test_same_source_is_issued_once(self):
 		first = consume.consume_for("Wash Batch", "WB-F42-2", [{"item": ITEM, "qty": 2}], reason="Auto")
 		second = consume.consume_for("Wash Batch", "WB-F42-2", [{"item": ITEM, "qty": 2}], reason="Auto")
