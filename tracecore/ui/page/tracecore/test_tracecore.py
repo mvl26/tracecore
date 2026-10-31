@@ -326,6 +326,12 @@ class TestStationNavigation(FrappeTestCase):
 		with open(frappe.get_app_path("tracecore", *path), encoding="utf-8") as handle:
 			return handle.read()
 
+	def test_stations_menu_opens_the_first_station_directly(self):
+		# không có màn chọn trạm: bấm Trạm vào thẳng trạm đầu, đổi trạm bằng cột trạm trên trang trạm
+		source = self._source("ui", "page", "tracecore", "tracecore.js")
+		self.assertIn("data.stations.find((item) => item.implemented)", source)
+		self.assertNotIn("tc-admin-zone-", source)
+
 	def test_admin_station_tile_reloads_to_keep_station_code(self):
 		# router Desk bỏ ?station= khi bấm <a>, Page station đọc mã từ URL lúc nạp nên phải nạp lại trang
 		source = self._source("ui", "page", "tracecore", "tracecore.js")
@@ -398,21 +404,6 @@ class TestAdminModules(FrappeTestCase):
 			self.assertTrue(module["sections"], module["key"])
 			for section in module["sections"]:
 				self.assertTrue(section["links"], (module["key"], section["kind"]))
-
-	def test_admin_stations_carry_their_zone(self):
-		rows = [frappe._dict(name="TR-001", station_no=1, zone_station_name="T1", parent_zone="ZONE-X")]
-		with (
-			patch("tracecore.core.zones.station_functions", return_value=["RECEIVE"]),
-			patch("tracecore.core.zones.station_screen_tabs", return_value=[{"key": "s"}]),
-			patch("tracecore.core.zones.zone_color_class", return_value="dirty"),
-			patch(
-				"frappe.db.get_value",
-				return_value=frappe._dict(zone_station_name="Khu bẩn", zone_type="Dirty"),
-			),
-		):
-			station = self._context("Administrator", [], rows=rows)["stations"][0]
-		self.assertEqual(station["zone"], "Khu bẩn")
-		self.assertEqual(station["zone_color"], "dirty")
 
 	def test_module_texts_have_vietnamese_translation(self):
 		from tracecore.tests.test_station_page import other_app_translations, vi_translations
