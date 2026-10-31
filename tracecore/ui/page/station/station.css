@@ -33,6 +33,18 @@ body.tc-kiosk .layout-main-section {
 	background: var(--tc-zone-web);
 }
 
+.tc-brand-bar {
+	max-width: calc(var(--tc-rail-w) * 5);
+	margin-inline: auto;
+	padding: var(--tc-sp-2) var(--tc-sp-6) 0;
+}
+
+.tc-brand {
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-primary);
+}
+
 .tc-zone-dirty {
 	background: var(--tc-zone-dirty);
 }
@@ -85,6 +97,8 @@ body.tc-kiosk .layout-main-section {
 }
 
 .tc-main {
+	max-width: calc(var(--tc-rail-w) * 5);
+	margin-inline: auto;
 	padding: var(--tc-sp-5) var(--tc-sp-6-5) var(--tc-sp-22);
 }
 

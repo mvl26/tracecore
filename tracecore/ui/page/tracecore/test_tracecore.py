@@ -321,6 +321,26 @@ class TestLauncher(FrappeTestCase):
 		self.assertEqual([link["doctype"] for link in context["management"] if link["doctype"]], ["Pack"])
 
 
+class TestStationNavigation(FrappeTestCase):
+	def _source(self, *path):
+		with open(frappe.get_app_path("tracecore", *path), encoding="utf-8") as handle:
+			return handle.read()
+
+	def test_admin_station_tile_reloads_to_keep_station_code(self):
+		# router Desk bỏ ?station= khi bấm <a>, Page station đọc mã từ URL lúc nạp nên phải nạp lại trang
+		source = self._source("ui", "page", "tracecore", "tracecore.js")
+		self.assertIn("window.location.assign(route)", source)
+
+	def test_leaving_station_page_restores_desk_chrome(self):
+		# Frappe v15 không gọi on_page_hide của Page, chỉ phát sự kiện "hide"; thiếu thì body.tc-kiosk còn mãi
+		source = self._source("ui", "page", "station", "station.js")
+		self.assertIn('$(wrapper).on("hide"', source)
+
+	def test_station_page_and_desk_navbar_show_the_wordmark(self):
+		self.assertIn('class="tc-brand"', self._source("ui", "page", "station", "station.html"))
+		self.assertIn("tc-navbar-brand", self._source("public", "js", "tc_launcher.js"))
+
+
 class TestAdminModules(FrappeTestCase):
 	def _context(self, user, roles, **patches):
 		with (
