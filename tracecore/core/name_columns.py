@@ -44,7 +44,7 @@ CODE_IS_NAME = frozenset(
 )
 
 # Đích không có trường tên
-NO_NAME_FIELD = frozenset({"Sterilization Load", "Pack", "Waste Container"})
+NO_NAME_FIELD = frozenset({"Sterilization Load", "Pack", "Wash Batch", "Waste Container"})
 
 # Đã có sẵn cột tên (không fetch được hoặc đặt tên khác): giữ nguyên, không thêm trường trùng
 EXISTING_NAME_COLUMN = {

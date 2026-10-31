@@ -9,7 +9,7 @@ from tracecore.tests.factories import make_batch, make_item, make_wash_ready_set
 from tracecore.tests.utils import bru
 from tracecore.v1 import wash as wash_api
 from tracecore.v1._common import BadRequestError
-from tracecore.v1.tests.test_wash_api import STATION, WashApiCase, call, http_status
+from tracecore.v1.tests.test_wash_api import STATION, WashApiCase, call, http_status, now_ts
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
@@ -86,10 +86,12 @@ class TestWashIndicatorApi(WashApiCase):
 
 	def test_replay_same_key_does_not_record_twice(self):
 		batch, _set_id = self.awaiting()
+		# cùng client_ts: phát lại cùng khóa phải là đúng yêu cầu cũ, lệch giây thì thành xung đột khóa
 		args = {
 			"result": "Pass",
 			"clean_test": None,
 			"indicator": self.indicator(),
+			"client_ts": now_ts(),
 			**self.unload_args(batch),
 		}
 		key = str(uuid.uuid4())
