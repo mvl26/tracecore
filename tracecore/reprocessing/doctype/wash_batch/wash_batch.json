@@ -34,6 +34,7 @@
   "result_section",
   "unload_scan_equipment",
   "unload_scan_at",
+  "unloaded_by",
   "clean_test_result",
   "column_break_result",
   "cycle_result",
@@ -240,6 +241,13 @@
    "fieldname": "unload_scan_at",
    "fieldtype": "Datetime",
    "label": "Unload Scanned At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unloaded_by",
+   "fieldtype": "Link",
+   "label": "Unloaded By",
+   "options": "Employee",
    "read_only": 1
   },
   {

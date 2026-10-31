@@ -11,6 +11,7 @@ from frappe import _
 from frappe.utils import add_days, get_datetime, getdate
 
 from tracecore.core import crypto
+from tracecore.reprocessing import cycle_time
 
 MAX_CHAINS = 50
 ALL_ROLES = ("TC R01", "TC R02", "System Manager")
@@ -128,6 +129,28 @@ def _event(step, at, user, station, ref_doctype, ref_name, **extra):
 	}
 
 
+def cycle_detail(ref_doctype, ref_name):
+	"""Giờ bắt đầu/kết thúc, thời lượng so với chuẩn, người nạp và người dỡ của lô rửa / mẻ tiệt khuẩn (A-73); {} nếu khác."""
+	if ref_doctype not in EQUIPMENT_REFS or not ref_name:
+		return {}
+	unloader_field = "unloaded_by" if ref_doctype == "Wash Batch" else "released_by"
+	doc = frappe.db.get_value(
+		ref_doctype,
+		ref_name,
+		["program", "operator", "started_at", "ended_at", unloader_field],
+		as_dict=True,
+	)
+	if not doc:
+		return {}
+	return {
+		"operator": doc.operator,
+		"unloaded_by": doc[unloader_field],
+		"started_at": doc.started_at,
+		"ended_at": doc.ended_at,
+		"duration": cycle_time.for_doc(doc),
+	}
+
+
 def _equipment(ref_doctype, ref_name):
 	if ref_doctype in EQUIPMENT_REFS and ref_name:
 		return frappe.db.get_value(ref_doctype, ref_name, "equipment")
@@ -220,6 +243,7 @@ def _chain(set_unit, cycle_no):
 				gate.ref_name,
 				result=gate.result,
 				equipment=_equipment(gate.ref_doctype, gate.ref_name),
+				**cycle_detail(gate.ref_doctype, gate.ref_name),
 			)
 		)
 	packs = frappe.get_all(

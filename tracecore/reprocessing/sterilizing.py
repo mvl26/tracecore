@@ -24,6 +24,7 @@ from frappe.utils.data import get_system_timezone
 from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
+from tracecore.reprocessing import cycle_time
 
 STEP = "T5"  # mã cổng trong step_gate
 FUNCTION = "STERI_LOAD"
@@ -674,6 +675,7 @@ def _describe(doc):
 		"machine_report": doc.machine_report,
 		"manual_confirmed_by": _employee(doc.manual_confirmed_by),
 		"manual_confirmed_at": doc.manual_confirmed_at,
+		"duration": cycle_time.for_doc(doc),
 	}
 
 
@@ -933,6 +935,7 @@ def save_manual_data(
 		"needs_review": doc.needs_review,
 		"status": doc.status,
 		"params": parameters,
+		"duration": cycle_time.for_doc(doc),
 	}
 
 
