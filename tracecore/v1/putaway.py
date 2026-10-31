@@ -17,7 +17,7 @@ from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import storage
 from tracecore.v1._common import STORAGE_ROLES, require_any_role, run_at_step, station_session
 
-STEP = storage.STEP  # màn kho vô khuẩn chỉ chạy ở trạm bước T6
+FUNCTION = storage.FUNCTION
 READ_ROLES = (*STORAGE_ROLES, "TC R02")
 
 
@@ -44,7 +44,7 @@ def _route(scanned, raw, station, open_pack, client_ts):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*STORAGE_ROLES)
 @idempotent
-def scan(raw, station, open_pack=None, client_ts=None, token=None):
+def scan(raw, station, open_pack=None, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Xử lý một lần quét ở màn T6 (cần phiên trạm đúng trạm, A-08). Trả ``{"ok": true, "kind": ..., <kind>: ...}``:
 
 	- ``pack`` (Cycle ID hoặc DataMatrix nhãn): thẻ gói kèm năm cổng của bộ;
@@ -58,13 +58,15 @@ def scan(raw, station, open_pack=None, client_ts=None, token=None):
 	scanned = gs1.parse_scan(raw)
 	ref = {"pack": "Pack", "location": "Sterile Location"}.get(scanned["type"])
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: _route(scanned, raw, station, open_pack, timestamp),
 		ref,
 		scanned["id"] if ref else None,
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 

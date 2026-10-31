@@ -7,13 +7,37 @@
  "field_order": [
   "section_instrument",
   "enable_instrument_giai",
+  "section_gs1",
+  "gs1_company_prefix",
+  "gtin_indicator_digit",
+  "column_break_gs1",
+  "gtin_next_item_ref",
+  "gs1_actions",
   "section_par",
   "par_override_delegate",
   "section_sms",
   "enable_sms",
   "sms_gateway_url",
   "sms_api_token",
-  "sms_sender"
+  "sms_sender",
+  "section_environment",
+  "env_reminder_times",
+  "section_waste",
+  "waste_warn_percent",
+  "waste_cold_limit_c",
+  "waste_cold_breach_hours",
+  "waste_variance_percent",
+  "waste_misclass_count",
+  "waste_misclass_days",
+  "waste_anomaly_percent",
+  "section_daily_test",
+  "daily_test_mode",
+  "daily_test_steam_leak",
+  "daily_test_plasma",
+  "section_reports",
+  "report_locked_until",
+  "section_error_codes",
+  "error_rules"
  ],
  "fields": [
   {
@@ -27,6 +51,41 @@
    "fieldname": "enable_instrument_giai",
    "fieldtype": "Check",
    "label": "Enable Instrument GIAI"
+  },
+  {
+   "fieldname": "section_gs1",
+   "fieldtype": "Section Break",
+   "label": "GS1"
+  },
+  {
+   "description": "7-11 digits, assigned by GS1 Vietnam. Used for both GTIN-14 and Set ID. Locked once a real prefix has issued a code.",
+   "fieldname": "gs1_company_prefix",
+   "fieldtype": "Data",
+   "label": "GS1 Company Prefix"
+  },
+  {
+   "default": "0",
+   "description": "First digit of the GTIN-14. Default 0.",
+   "fieldname": "gtin_indicator_digit",
+   "fieldtype": "Select",
+   "label": "GTIN Indicator Digit",
+   "options": "0\n1\n2\n3\n4\n5\n6\n7\n8"
+  },
+  {
+   "fieldname": "column_break_gs1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Counter of the declared prefix, read-only.",
+   "fieldname": "gtin_next_item_ref",
+   "fieldtype": "Data",
+   "label": "Next GTIN Item Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gs1_actions",
+   "fieldtype": "HTML",
+   "label": "GS1 Actions"
   },
   {
    "fieldname": "section_par",
@@ -72,12 +131,131 @@
    "fieldname": "sms_sender",
    "fieldtype": "Data",
    "label": "SMS Sender Name"
+  },
+  {
+   "fieldname": "section_environment",
+   "fieldtype": "Section Break",
+   "label": "Zone Environment"
+  },
+  {
+   "default": "11:00, 17:00",
+   "description": "Times of day (HH:MM, comma separated) at which a monitored zone with no reading since the previous time is reminded (FR-M9-04.2). Leave empty to turn reminders off.",
+   "fieldname": "env_reminder_times",
+   "fieldtype": "Data",
+   "label": "Environment Reminder Times"
+  },
+  {
+   "fieldname": "section_waste",
+   "fieldtype": "Section Break",
+   "label": "Medical Waste"
+  },
+  {
+   "default": "80",
+   "description": "Warn when this share of the maximum storage time has passed (FR-M10-03.3). Default 80.",
+   "fieldname": "waste_warn_percent",
+   "fieldtype": "Int",
+   "label": "Storage Warning (%)"
+  },
+  {
+   "default": "8",
+   "description": "Cold room limit (FR-M10-03.2). Default 8.",
+   "fieldname": "waste_cold_limit_c",
+   "fieldtype": "Float",
+   "label": "Cold Room Limit (°C)"
+  },
+  {
+   "default": "2",
+   "description": "Hours above the limit before bags go back to the normal storage time (FR-M10-03.2). Default 2.",
+   "fieldname": "waste_cold_breach_hours",
+   "fieldtype": "Float",
+   "label": "Hours Above the Limit"
+  },
+  {
+   "fieldname": "waste_variance_percent",
+   "fieldtype": "Float",
+   "default": "5",
+   "description": "A larger difference between collected and handed over weight needs a reason and R02 approval (FR-M10-04.1). Default 5.",
+   "label": "Handover Weight Difference (%)"
+  },
+  {
+   "fieldname": "waste_misclass_count",
+   "fieldtype": "Int",
+   "default": "3",
+   "description": "This many misclassifications of a department within the days below alert R01 (FR-M10-06.2). Default 3.",
+   "label": "Repeated Misclassification Count"
+  },
+  {
+   "fieldname": "waste_misclass_days",
+   "fieldtype": "Int",
+   "default": "30",
+   "description": "Default 30.",
+   "label": "Repeated Misclassification Days"
+  },
+  {
+   "fieldname": "waste_anomaly_percent",
+   "fieldtype": "Float",
+   "default": "30",
+   "description": "A daily weight this far from the department average alerts R02 (FR-M10-08.1). Default 30.",
+   "label": "Unusual Department Weight (%)"
+  },
+  {
+   "fieldname": "section_daily_test",
+   "fieldtype": "Section Break",
+   "label": "Daily Test Rules"
+  },
+  {
+   "default": "All Sterilizers",
+   "description": "Which sterilizers must pass a daily test before loading. Other machines are never locked or blocked for a daily test. A change applies at once.",
+   "fieldname": "daily_test_mode",
+   "fieldtype": "Select",
+   "label": "Daily Test Requirement",
+   "options": "Not Required\nAll Sterilizers\nSelected Sterilizers",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.daily_test_mode != \"Not Required\"",
+   "description": "Steam sterilizers must also pass a leak test each day, besides the Bowie-Dick test.",
+   "fieldname": "daily_test_steam_leak",
+   "fieldtype": "Check",
+   "label": "Require Leak Test"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.daily_test_mode != \"Not Required\"",
+   "description": "Plasma sterilizers must pass a daily test according to the hospital rules.",
+   "fieldname": "daily_test_plasma",
+   "fieldtype": "Check",
+   "label": "Require Plasma Daily Test"
+  },
+  {
+   "fieldname": "section_reports",
+   "fieldtype": "Section Break",
+   "label": "Reports"
+  },
+  {
+   "description": "Reports and the sterilization log of a period ending on or before this date are final; later periods are printed with a PROVISIONAL stamp (FR-M9-02.1). Only TC R01 sets it, with Lock Report Period on the reports.",
+   "fieldname": "report_locked_until",
+   "fieldtype": "Date",
+   "label": "Reports Locked Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_error_codes",
+   "fieldtype": "Section Break",
+   "label": "Error codes"
+  },
+  {
+   "fieldname": "error_rules",
+   "fieldtype": "Table",
+   "label": "Error code settings",
+   "options": "TraceCore Error Rule"
   }
  ],
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-21 12:00:00.000000",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

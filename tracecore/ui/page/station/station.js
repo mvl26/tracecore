@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton, tcWarningsHtml */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
@@ -6,19 +7,41 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, TcOutbox, tcSync, TC_SNAPSHOT_MS */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
 const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
-const ZONE_CLASS = {
-	Dirty: "dirty",
-	Clean: "clean",
-	Sterile: "sterile",
-	Department: "dept",
-	Waste: "waste",
-};
+// Lớp màn theo Station Function.screen_key; lớp nằm ở các file nối sau qua page_js nên kiểm typeof lúc chạy.
+function tcScreenClass(key) {
+	switch (key) {
+		case "receive":
+			return typeof T1Receiving !== "undefined" ? T1Receiving : null;
+		case "wash":
+			return typeof T2Wash !== "undefined" ? T2Wash : null;
+		case "assembly":
+			return typeof T3Assembly !== "undefined" ? T3Assembly : null;
+		case "pack":
+			return typeof T4Packing !== "undefined" ? T4Packing : null;
+		case "sterilize":
+			return typeof T5Load !== "undefined" ? T5Load : null;
+		case "storage":
+			return typeof T6Storage !== "undefined" ? T6Storage : null;
+		case "issue":
+			return typeof T7Issue !== "undefined" ? T7Issue : null;
+		case "usage":
+			return typeof T8Usage !== "undefined" ? T8Usage : null;
+		case "linen":
+			if (typeof LinenStation !== "undefined") return LinenStation; // thu gom + lô giặt (FEAT-034)
+			return typeof LinenCollect !== "undefined" ? LinenCollect : null;
+		case "waste":
+			if (typeof WasteStation !== "undefined") return WasteStation; // thu gom + kho tạm (FEAT-048)
+			return typeof WasteCollect !== "undefined" ? WasteCollect : null;
+		default:
+			return null;
+	}
+}
 const ZONE_LABEL = {
 	Dirty: "Dirty zone",
 	Clean: "Clean zone",
@@ -101,6 +124,21 @@ class TraceCoreStation {
 
 		$(wrapper).html(frappe.render_template("station", {}));
 		this.root = wrapper.querySelector(".tc-station");
+		// máy kiosk chỉ hiện tên; riêng admin có đường về trang chủ, nạp lại để bỏ ?station= khỏi URL
+		const roles = frappe.user_roles || [];
+		this.adminMode = roles.includes("System Manager");
+		// role làm tại trạm có cột trạm của mình; role văn phòng có đường về trang chủ (NAV-04)
+		this.railMode = this.adminMode || roles.some((role) => /^TC R0[2-8]$/.test(role));
+		const hasHome = this.adminMode || roles.some((role) => /^TC R(01|02|09|10)$/.test(role));
+		for (const brand of this.root.querySelectorAll(".tc-brand")) {
+			if (hasHome)
+				brand.addEventListener("click", (event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					window.location.assign(brand.getAttribute("href"));
+				});
+			else brand.removeAttribute("href");
+		}
 		this.zonebar = this.root.querySelector(".tc-zonebar");
 		this.banner = this.root.querySelector(".tc-offline-banner");
 		this.form = this.root.querySelector(".tc-work .tc-scan");
@@ -117,6 +155,7 @@ class TraceCoreStation {
 		this.offlineData = null; // snapshot đọc offline của trạm (FEAT-009): T1/T4/T8
 		this.snapshotAt = 0;
 
+		this.setupAdminRail();
 		this.bind();
 		this.addManifestLink();
 		this.registerServiceWorker();
@@ -127,6 +166,90 @@ class TraceCoreStation {
 			tcSync.refreshCount();
 			tcSync.replay();
 		}
+	}
+
+	// ---- cột trạm của admin (ux-foundations NAV-03): đổi trạm tại chỗ, thao tác vẫn theo thẻ đã quét ----
+	setupAdminRail() {
+		if (!this.railMode) return;
+		this.root.classList.add("tc-rail-station");
+		this.root.classList.toggle("tc-admin-station", this.adminMode);
+		this.root.querySelector(".tc-rail").hidden = false;
+		this.root.querySelector(".tc-crumb").hidden = false;
+		this.root.querySelector(".tc-station-pills").hidden = false;
+		this.renderRailPerson();
+		this.renderRailFoot(0);
+		frappe
+			.call({ method: "tracecore.v1.navigation.context", type: "GET" })
+			.then((response) => this.renderRailStations(response.message.stations))
+			.catch(() => {}); // không có danh sách thì vẫn làm được trạm hiện tại
+	}
+
+	renderRailStations(stations) {
+		const buttons = stations
+			.filter((station) => station.implemented)
+			.map((station) => {
+				const full = __(station.label);
+				const hasNumber = !station.station_no || full.startsWith(`T${station.station_no}`);
+				const label = hasNumber ? full : `T${station.station_no} ${full}`;
+				const current = station.name === this.station ? ' aria-current="page"' : "";
+				return `<button type="button" data-action="tc-switch-station"
+					data-station="${esc(station.name)}"${current}>${esc(label)}</button>`;
+			})
+			.join("");
+		this.root.querySelector(".tc-rail-stations").innerHTML = buttons;
+		this.root.querySelector(".tc-station-pills").innerHTML = buttons;
+	}
+
+	renderRailPerson() {
+		if (!this.railMode) return;
+		const session = this.session;
+		this.root.querySelector(".tc-rail-person").textContent = session
+			? `${session.employee_name || session.employee} · ${session.employee}`
+			: __("No card scanned");
+		this.root.querySelector(".tc-rail-context").textContent = session ? session.station : "";
+	}
+
+	renderRailFoot(queued) {
+		if (!this.railMode) return;
+		this.root.querySelector(".tc-rail-foot").textContent = `${
+			this.isOffline() ? __("Offline", null, "TraceCore Launcher") : __("Online")
+		} · ${__("{0} transaction(s) waiting", [queued || 0])}`;
+	}
+
+	async switchStation(station) {
+		if (!station || station === this.station || this.switching) return;
+		const target = `/app/station?station=${encodeURIComponent(station)}`;
+		if (!this.session) return window.location.assign(target);
+		if (this.isOffline() || (this.screen && this.screen.busy)) return;
+		if (this.pendingScans && this.pendingScans.length) return;
+		this.switching = true;
+		try {
+			const result = await this.rpc("tracecore.v1.station.switch_station", {
+				token: this.session.token,
+				station,
+				client_ts: clientTs(),
+			});
+			if (!result.ok) {
+				this.authResult.innerHTML = this.blockHtml(result.error);
+				return;
+			}
+			// phiên cũ đã đóng; trang mới của trạm đích khôi phục phiên từ token này
+			this.storedToken(null);
+			sessionStorage.setItem(`tc-station-session:${station}`, result.session.token);
+			window.location.assign(target);
+		} catch (error) {
+			this.handleFailure(error);
+		} finally {
+			this.switching = false;
+		}
+	}
+
+	blockHtml(error) {
+		return `<div class="tc-card tc-alert tc-alert-error" role="alert">
+				<p class="tc-alert-title">${esc(tcErrorTitle(error))}</p>
+				<p class="tc-alert-reason">${esc(error.reason)}</p>
+				<p class="tc-alert-action">${esc(error.action)}</p>
+				${tcGuideButton(error)}</div>`;
 	}
 
 	// ---- vòng đời Page ----
@@ -190,7 +313,13 @@ class TraceCoreStation {
 	focus(force = false) {
 		if (!this.ownsPage()) return;
 		// dialog đang mở giữ focus cho ô nhập của nó; đóng dialog thì focus về ô quét
-		if ((this.screen && this.screen.dialogOpen) || this.pinChange) return;
+		if (
+			(this.screen && this.screen.dialogOpen) ||
+			this.pinChange ||
+			(this.help && this.help.isOpen) ||
+			(this.picker && this.picker.isOpen)
+		)
+			return;
 		// Preserve keyboard navigation and deliberate focus on every interactive control.
 		if (
 			!force &&
@@ -262,7 +391,25 @@ class TraceCoreStation {
 	}
 
 	onAction(action, button) {
+		// Trợ giúp theo trạm (FEAT-013, public/js/station_help.js): mở được cả trước khi quét thẻ
+		if (action === "open-help" && typeof TcStationHelp !== "undefined") {
+			this.help = this.help || new TcStationHelp(this);
+			return this.help.open();
+		}
+		if (this.help && this.help.onAction(action, button)) return;
+		if (
+			this.session &&
+			action.startsWith("pick-") &&
+			this.picker &&
+			this.picker.onAction(action, button)
+		)
+			return;
+		if (this.session && action === "manual-pick" && typeof TcPicker !== "undefined") {
+			this.picker = this.picker || new TcPicker(this);
+			return this.picker.onAction(action, button);
+		}
 		if (action === "logout" || action === "rescan-card") return this.endSession();
+		if (action === "tc-switch-station") return this.switchStation(button.dataset.station);
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
 		if (!this.session) {
@@ -272,6 +419,7 @@ class TraceCoreStation {
 			}
 			return;
 		}
+		if (action === "tc-screen") return this.switchScreen(button.dataset.screen);
 		if (this.screen && this.screen.onAction(action, button)) return;
 		if (action === "retry") {
 			this.manualOffline = false;
@@ -311,16 +459,23 @@ class TraceCoreStation {
 		return null;
 	}
 
+	// FEAT-052 A-71: cảnh báo không chặn thao tác; nằm trên khối kết quả, thay khi có giao dịch ghi tiếp theo
+	showWarnings(body, isWrite) {
+		const warnings = (body && body.warnings) || [];
+		if (!warnings.length && !isWrite) return;
+		if (!this.warningBar) {
+			this.warningBar = document.createElement("div");
+			this.warningBar.className = "tc-warnings";
+			this.result.parentElement.insertBefore(this.warningBar, this.result);
+		}
+		this.warningBar.innerHTML = tcWarningsHtml(warnings);
+	}
+
 	renderLogin(error) {
 		this.authForm.hidden = false;
 		this.work.hidden = true;
 		this.sessionBar.hidden = true;
-		this.authResult.innerHTML = error
-			? `<div class="tc-card tc-alert tc-alert-error" role="alert">
-				<p class="tc-alert-title">${esc(error.title)}</p>
-				<p class="tc-alert-reason">${esc(error.reason)}</p>
-				<p class="tc-alert-action">${esc(error.action)}</p></div>`
-			: "";
+		this.authResult.innerHTML = error ? this.blockHtml(error) : "";
 		this.focus();
 	}
 
@@ -342,11 +497,17 @@ class TraceCoreStation {
 		this.lastRaw = null;
 		this.input.value = "";
 		this.cardInput.value = "";
-		if (this.screen && this.screen.clearSession) this.screen.clearSession();
+		for (const screen of Object.values(this.screens || {})) {
+			if (screen.clearSession) screen.clearSession();
+		}
+		if (this.screenTabs) this.screenTabs.hidden = true;
+		if (this.picker) this.picker.reset();
+		this.manualEntry = null;
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
 		this.closePinChange();
+		if (this.help) this.help.sessionChanged();
 		for (const selector of [
 			".tc-session-person",
 			".tc-session-station",
@@ -355,6 +516,7 @@ class TraceCoreStation {
 		])
 			this.root.querySelector(selector).textContent = "";
 		this.resetNotifications();
+		this.renderRailPerson();
 		this.renderLogin(error);
 	}
 
@@ -492,6 +654,7 @@ class TraceCoreStation {
 		this.root.querySelector(".tc-session-expiry").textContent = __("Session expires: {0}", [
 			this.formatExpiry(session.expires_at),
 		]);
+		this.renderRailPerson();
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
 		this.focus(true);
@@ -651,7 +814,9 @@ class TraceCoreStation {
 		return (
 			typeof TcOutbox !== "undefined" &&
 			Boolean(window.indexedDB) &&
-			["T1", "T4", "T8"].includes(this.stationInfo && this.stationInfo.step)
+			((this.stationInfo && this.stationInfo.functions) || []).some((code) =>
+				["RECEIVE", "PACK", "USE"].includes(code)
+			)
 		);
 	}
 
@@ -695,6 +860,7 @@ class TraceCoreStation {
 	}
 
 	renderSync(state) {
+		this.renderRailFoot(state.queued);
 		if (!this.syncBar) return;
 		let text = "";
 		if (state.sending)
@@ -858,6 +1024,7 @@ class TraceCoreStation {
 	setOffline(offline) {
 		this.banner.hidden = !offline;
 		this.root.dataset.offline = offline ? "1" : "0";
+		this.renderRailFoot(typeof tcSync !== "undefined" ? tcSync.state.queued : 0);
 		if (!offline && typeof tcSync !== "undefined") tcSync.replay();
 		if (!this.session) {
 			if (offline)
@@ -888,8 +1055,11 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.receive.") ||
 			method.startsWith("tracecore.v1.linen.") ||
 			method.startsWith("tracecore.v1.laundry.") ||
+			method.startsWith("tracecore.v1.waste.") ||
 			method.startsWith("tracecore.v1.sync.") ||
+			method.startsWith("tracecore.v1.lookup.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
+			method.startsWith("tracecore.v1.feedback.") ||
 			method === "tracecore.v1.printer.set_roll" ||
 			method === "tracecore.v1.account.change_pin";
 		const version = this.sessionVersion;
@@ -905,6 +1075,13 @@ class TraceCoreStation {
 			if (!this.ownsPage() || !this.session) throw ended();
 			args = { ...args, token: this.session.token };
 		}
+		// chọn tay (A-68): RPC quét trong lúc đang xử lý mã chọn tay mang cách nhập và lý do
+		if (
+			this.manualEntry &&
+			typeof PICK_SCAN_METHODS !== "undefined" &&
+			PICK_SCAN_METHODS.includes(method)
+		)
+			args = { ...args, entry_mode: "Manual", manual_reason: this.manualEntry.reason };
 		const controller = new AbortController();
 		controller.stationMethod = method;
 		this.controllers.add(controller);
@@ -957,6 +1134,7 @@ class TraceCoreStation {
 				error.status = response.status;
 				throw error;
 			}
+			this.showWarnings(data.message, idempotencyKey);
 			return data.message;
 		} catch (error) {
 			if (error.name === "AbortError" || error instanceof TypeError) error.offline = true;
@@ -1003,42 +1181,79 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
-		// màn riêng của bước (this.screen): T1 tiếp nhận, T2 lô rửa, T3 kiểm đếm, T4 đóng gói, T6 kho vô khuẩn; bước khác
-		// dùng tra cứu Set ID chung
-		if (this.session && !this.screen) {
-			if (station.step === "T4" && typeof T4Packing !== "undefined") {
-				this.screen = this.t4 = new T4Packing(this);
-			} else if (station.step === "T6" && typeof T6Storage !== "undefined") {
-				this.screen = new T6Storage(this);
-			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
-				this.screen = new T2Wash(this);
-			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
-				this.screen = new T7Issue(this);
-			} else if (station.step === "T8" && typeof T8Usage !== "undefined") {
-				this.screen = new T8Usage(this);
-			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
-				this.screen = new T5Load(this);
-			} else if (station.step === "T3" && typeof T3Assembly !== "undefined") {
-				this.screen = new T3Assembly(this);
-			} else if (station.step === "T1" && typeof T1Receiving !== "undefined") {
-				this.screen = new T1Receiving(this);
-			} else if (station.step === "LIN" && typeof LinenCollect !== "undefined") {
-				// trạm đồ vải: thu gom + lô giặt (FEAT-034) chuyển bằng tab; không có station_laundry.js thì chỉ thu gom
-				this.screen =
-					typeof LinenStation !== "undefined"
-						? new LinenStation(this)
-						: new LinenCollect(this);
-			}
-		}
-		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
+		// màn nghiệp vụ theo chức năng của trạm (A-64); trạm không có màn dùng tra cứu Set ID chung
+		window.tcGateLabels = station.gate_labels || {};
+		if (this.session && !this.screen) this.openScreen((station.screens || [])[0]);
+		this.renderScreenTabs();
+		this.zonebar.className = `tc-zonebar tc-zone-${station.zone_color || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
 		// context "Zone Station": khu khoa là "Khoa", không lấy bản dịch chung "Department" của Frappe ("Cục")
 		this.root.querySelector(".tc-zone-label").textContent = __(
-			ZONE_LABEL[station.zone_type] || "Station",
+			ZONE_LABEL[station.zone_type] || station.zone_type || "Station",
 			null,
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
+		if (this.railMode)
+			this.root.querySelector(".tc-crumb").textContent = [
+				__("Home"),
+				__("Station"),
+				station.label,
+			].join(" › ");
+	}
+
+	// Mỗi màn giữ một instance: đổi tab không mất giỏ đang nạp dở (A-64).
+	openScreen(tab) {
+		if (!tab) return;
+		this.screens = this.screens || {};
+		if (!this.screens[tab.key]) {
+			const Screen = tcScreenClass(tab.key);
+			if (!Screen) return;
+			this.screens[tab.key] = new Screen(this);
+		}
+		this.screen = this.screens[tab.key];
+		this.activeTab = tab.key;
+	}
+
+	switchScreen(key) {
+		const tab = ((this.stationInfo && this.stationInfo.screens) || []).find(
+			(row) => row.key === key
+		);
+		if (!tab || key === this.activeTab) return;
+		if ((this.screen && this.screen.busy) || (this.pendingScans && this.pendingScans.length))
+			return;
+		if (this.picker) this.picker.reset();
+		this.openScreen(tab);
+		this.renderScreenTabs();
+		this.result.innerHTML = "";
+		this.screen.setOffline(this.isOffline());
+		this.screen.show();
+		this.input.focus();
+	}
+
+	renderScreenTabs() {
+		if (!this.screenTabs) {
+			this.screenTabs = document.createElement("div");
+			this.screenTabs.className = "tc-chips tc-screen-tabs";
+			this.screenTabs.setAttribute("role", "group");
+			this.screenTabs.setAttribute("aria-label", __("Station screens"));
+			this.result.before(this.screenTabs);
+		}
+		const tabs = (this.stationInfo && this.stationInfo.screens) || [];
+		const visible = this.session && tabs.length > 1;
+		this.screenTabs.hidden = !visible;
+		this.screenTabs.innerHTML = visible
+			? tabs
+					.map(
+						(tab) =>
+							`<button type="button" class="tc-chip" data-action="tc-screen" data-screen="${esc(
+								tab.key
+							)}" aria-pressed="${
+								tab.key === this.activeTab ? "true" : "false"
+							}">${esc(tab.label)}</button>`
+					)
+					.join("")
+			: "";
 	}
 
 	// quét lần lượt các mã giữ lại khi màn của bước hết chờ máy chủ; đổi phiên hoặc chờ quá lâu thì bỏ hàng đợi
@@ -1064,6 +1279,23 @@ class TraceCoreStation {
 			});
 		};
 		this.scanTimer = setTimeout(tick, 100);
+	}
+
+	// khoa đang giao của phiếu T1 đang mở: danh sách chọn tay ưu tiên bộ của khoa đó
+	pickDepartment() {
+		const receipt = this.screen && this.screen.receipt;
+		return (receipt && receipt.department) || null;
+	}
+
+	busyForPick() {
+		return Boolean(this.screen && this.screen.busy) || this.pendingScans.length > 0;
+	}
+
+	// chờ màn xử lý xong mã vừa chọn (kể cả mã xếp hàng nội bộ) để RPC sau còn mang cách nhập chọn tay
+	async waitIdle() {
+		const started = Date.now();
+		while (Date.now() - started < 2 * RPC_TIMEOUT_MS && this.busyForPick())
+			await new Promise((resolve) => setTimeout(resolve, 100));
 	}
 
 	async scan(raw, retry = false) {
@@ -1161,9 +1393,10 @@ class TraceCoreStation {
 		this.setState(
 			"error",
 			`<div class="tc-alert tc-alert-error" role="alert">
-				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(error.title)}</p>
+				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(tcErrorTitle(error))}</p>
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
 				<p class="tc-alert-action">${esc(error.action)}</p>
+				${tcGuideButton(error)}
 				<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
 						__("Retry")
@@ -1247,6 +1480,8 @@ frappe.pages["station"].on_page_load = function (wrapper) {
 	const previous = frappe.tc_station;
 	const barrier = previous ? previous.dispose() : Promise.resolve();
 	frappe.tc_station = new TraceCoreStation(wrapper, barrier);
+	// Frappe v15 không gọi on_page_hide của Page, chỉ phát sự kiện "hide" trên wrapper
+	$(wrapper).on("hide", () => frappe.pages["station"].on_page_hide());
 };
 
 frappe.pages["station"].on_page_show = function () {

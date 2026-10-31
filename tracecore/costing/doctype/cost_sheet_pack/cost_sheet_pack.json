@@ -1,0 +1,122 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 23:30:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pack",
+  "set_unit",
+  "set_unit_name",
+  "set_type",
+  "department",
+  "method",
+  "load_share",
+  "wash_share",
+  "assembly_cost",
+  "packaging_cost",
+  "instrument_depreciation",
+  "total"
+ ],
+ "fields": [
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "label": "Cycle ID",
+   "options": "Pack",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "label": "Set Unit",
+   "options": "Set Unit",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
+   "columns": 2
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Data",
+   "label": "Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "load_share",
+   "fieldtype": "Currency",
+   "label": "Load Share",
+   "read_only": 1
+  },
+  {
+   "fieldname": "wash_share",
+   "fieldtype": "Currency",
+   "label": "Wash Share",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assembly_cost",
+   "fieldtype": "Currency",
+   "label": "Assembly Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "packaging_cost",
+   "fieldtype": "Currency",
+   "label": "Packaging Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "instrument_depreciation",
+   "fieldtype": "Currency",
+   "label": "Instrument Depreciation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Pack Cost",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 2
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 09:51:28.498903",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Sheet Pack",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 0,
+ "permissions": []
+}

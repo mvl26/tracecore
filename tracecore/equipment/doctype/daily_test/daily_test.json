@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "equipment",
+  "equipment_name",
   "test_type",
   "result",
   "test_date",
@@ -33,11 +34,21 @@
    "reqd": 1
   },
   {
+   "fetch_from": "equipment.equipment_name",
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "test_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Test Type",
-   "options": "bowie_dick\nleak\nwasher_cleaning",
+   "options": "bowie_dick\nleak\nplasma_daily\nwasher_cleaning",
    "read_only": 1,
    "reqd": 1
   },
@@ -128,7 +139,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-25 11:00:00.000000",
+ "modified": "2026-10-31 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",

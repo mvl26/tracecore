@@ -12,6 +12,7 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from tracecore.core import extension, gs1
+from tracecore.core.client_time import to_system_time
 
 REPLAY_HEADER = "X-TC-Replay"
 RESOLVE_ROLES = ("TC R02", "TC R01", "System Manager")
@@ -65,7 +66,8 @@ def record_conflict(
 			"user": user,
 			"endpoint": endpoint,
 			"idempotency_key": key,
-			"client_ts": client_ts,
+			# giờ hệ thống (A-74): form Desk hiển thị thẳng, lưu UTC thì lệch 7 giờ
+			"client_ts": to_system_time(client_ts) if client_ts else None,
 			"synced_at": now_datetime(),
 			"http_status": http_status,
 			"error_code": (error or {}).get("code"),
@@ -106,3 +108,56 @@ def resolve(name, note):
 	doc.flags.ignore_links = True  # ref của xung đột có thể là gói chưa từng được tạo
 	doc.save(ignore_permissions=True)
 	return doc.name
+
+
+# --- Trang Xung đột đồng bộ cho người dùng khoa (A-74): câu dễ hiểu thay cho JSON ------------------------------
+
+_OPERATIONS = {
+	"tracecore.v1.pack.generate_cycle_id": "Packing: creating the pack code",
+	"tracecore.v1.receive.submit_offline": "Receiving: recording the receipt",
+	"tracecore.v1.usage.confirm": "Usage: recording that a pack was used",
+}
+_TODO = {
+	"SESSION_INVALID": "The staff member was not signed in properly at that moment. Sign in again with the employee card, do this step again at the station, then press Resolve and write what was done.",
+	"SESSION_EXPIRED": "The staff member was not signed in properly at that moment. Sign in again with the employee card, do this step again at the station, then press Resolve and write what was done.",
+}
+_DEFAULT_TODO = "Check the set or pack at the station. If the step was not done, do it again. Then press Resolve and write what was done."
+_DETAILS = (
+	("set_id", "Set"),
+	("raw", "Scanned code"),
+	("receipt", "Receipt"),
+	("offline_cycle_id", "Pack code"),
+	("pack_type", "Pack type"),
+	("ci_batch", "Chemical indicator lot"),
+	("confirmed_lines", "Instruments checked"),
+)
+
+
+def _loads(text) -> dict:
+	try:
+		value = json.loads(text or "{}")
+	except ValueError:
+		return {}
+	return value if isinstance(value, dict) else {}
+
+
+def readable(doc) -> dict:
+	"""Nội dung dễ hiểu của một xung đột: thao tác, kết quả, lý do, việc cần làm và các thông tin đã nhập."""
+	args, error = _loads(doc.client_state), _loads(doc.server_state)
+	details = []
+	for key, label in _DETAILS:
+		value = args.get(key)
+		if isinstance(value, list):
+			value = ", ".join(str(item) for item in value)
+		if value:
+			details.append({"label": _(label), "value": str(value)})
+	return {
+		"operation": _(_OPERATIONS.get(doc.endpoint, "A step done while the station was offline")),
+		"outcome": _("This step was NOT recorded in the system."),
+		"reason": " ".join(
+			text for text in (_(error.get("title") or ""), _(error.get("reason") or "")) if text
+		)
+		or _("The server refused this step."),
+		"todo": _(_TODO.get(error.get("code"), _DEFAULT_TODO)),
+		"details": details,
+	}

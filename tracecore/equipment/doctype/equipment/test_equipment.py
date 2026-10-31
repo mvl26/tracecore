@@ -5,7 +5,7 @@ from tracecore.equipment.status import set_status
 from tracecore.tests.factories import make_equipment
 from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
 
-test_ignore = ["Asset", "Item", "User"]
+test_ignore = ["Asset", "Batch", "Item", "User"]
 
 
 class TestEquipment(IsolatedTestCase):

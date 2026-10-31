@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "department",
+  "department_name",
   "collected_at",
   "delivered_by",
   "received_by",
@@ -29,6 +30,16 @@
    "options": "Department",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "collected_at",
@@ -106,7 +117,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-29 10:00:00.000000",
+ "modified": "2026-10-31 09:51:28.504501",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Linen Collection",

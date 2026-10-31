@@ -87,6 +87,15 @@ class WashApiCase(IsolatedTestCase):
 			station=station,
 		)
 
+	def spare_washer(self):
+		"""Máy rửa và chương trình khác: máy còn lô `Running` chưa dỡ thì không nạp tiếp được (A-73)."""
+		machine = make_wash_machine(has_printout=1)
+		return machine, make_wash_program(machine.name, chemical=CHEMICAL, parameters=PARAMETERS)
+
+	def complete_elsewhere(self, sets, washer=None):
+		machine, program = washer or self.spare_washer()
+		return self.complete(sets, program=program, machine=machine)
+
 	def unload_args(self, batch, machine=None, station=STATION):
 		return {
 			"batch": batch,
@@ -201,7 +210,7 @@ class TestWashLoadApi(WashApiCase):
 	def test_complete_with_new_key_for_same_sets_rejected(self):
 		unit = make_wash_ready_set()
 		self.complete([unit.name])
-		result = self.complete([unit.name])
+		result = self.complete_elsewhere([unit.name])
 		self.assert_rejection(result, "BATCH_EMPTY", 422)
 		self.assertEqual(result["error"]["items"][0]["code"], "SET_IN_OTHER_BATCH")
 
@@ -249,8 +258,9 @@ class TestWashLoadApi(WashApiCase):
 	def test_roles_complete_allows_r03_r05_denies_r06(self):
 		for role in ("TC R03", "TC R05"):
 			unit = make_wash_ready_set()
+			washer = self.spare_washer()  # tạo bằng Administrator trước khi đổi sang user vai trò
 			self.as_user(f"wash-{role[-3:].lower()}@test.local", (role,))
-			self.assertIs(self.complete([unit.name])["ok"], True, msg=role)
+			self.assertIs(self.complete_elsewhere([unit.name], washer)["ok"], True, msg=role)
 			frappe.set_user("Administrator")
 		unit = make_wash_ready_set()
 		self.as_user("wash-r06@test.local", ("TC R06",))
@@ -292,6 +302,16 @@ class TestWashLoadApi(WashApiCase):
 		batch = self.complete([make_wash_ready_set().name])["batch"]
 		queue = call(wash_api.redo_queue, station=STATION)
 		self.assertIn(batch, [row["batch"] for row in queue["running"]])
+
+	def test_redo_queue_endpoint_also_lists_sets_waiting_to_wash(self):
+		waiting, loaded = make_wash_ready_set(), make_wash_ready_set()
+		self.complete([loaded.name])
+		before = counts()
+		queue = call(wash_api.redo_queue, station=STATION)
+		names = [row["set_id"] for row in queue["waiting"]]
+		self.assertIn(waiting.name, names)
+		self.assertNotIn(loaded.name, names)
+		self.assertEqual(counts(), before)
 
 
 class TestWashUnloadApi(WashApiCase):
@@ -377,3 +397,53 @@ class TestWashUnloadApi(WashApiCase):
 		)
 		self.assertIs(done["ok"], True, msg=done)
 		self.assertEqual(frappe.db.get_value("Wash Batch", batch, "reviewer"), user)
+
+
+class TestWashRefreshAndDraft(WashApiCase):
+	"""Tra lại lô hóa chất và nháp danh sách đang nạp theo phiên trạm (A-72)."""
+
+	def draft_payload(self, sets=("S-1",)):
+		return {
+			"machine": {"name": self.machine.name},
+			"program": self.program.name,
+			"lot": self.lot.name,
+			"sets": [{"set_id": set_id, "set_name": "Bộ", "gates": []} for set_id in sets],
+		}
+
+	def test_refresh_lots_returns_a_lot_received_after_the_scan(self):
+		started = call(wash_api.start, raw=self.machine.name, station=STATION)
+		new_lot = make_chemical_batch(CHEMICAL, expiry_days=10, qty=3)
+		refreshed = call(wash_api.refresh_lots, equipment=self.machine.name, station=STATION)
+		self.assertIs(refreshed["ok"], True)
+		self.assertIn(new_lot.name, [lot["batch_no"] for lot in refreshed["chemical_lots"]])
+		self.assertNotIn(new_lot.name, [lot["batch_no"] for lot in started["chemical_lots"]])
+		program = refreshed["programs"][0]
+		self.assertEqual(program["chemicals"][0]["item"], CHEMICAL)
+
+	def test_refresh_lots_needs_a_t2_station(self):
+		self.login("Administrator", CLEAN_STATION)
+		result = call(wash_api.refresh_lots, equipment=self.machine.name, station=CLEAN_STATION)
+		self.assert_rejection(result, "STATION_WRONG_STEP", 422)
+
+	def test_draft_survives_between_calls_of_the_same_session(self):
+		saved = call(wash_api.save_draft, draft=self.draft_payload(("S-1", "S-2")), station=STATION)
+		self.assertIs(saved["ok"], True)
+		loaded = call(wash_api.draft, station=STATION)
+		self.assertEqual([row["set_id"] for row in loaded["draft"]["sets"]], ["S-1", "S-2"])
+		self.assertEqual(loaded["draft"]["machine"]["name"], self.machine.name)
+
+	def test_empty_draft_clears_it(self):
+		call(wash_api.save_draft, draft=self.draft_payload(), station=STATION)
+		call(wash_api.save_draft, draft=None, station=STATION)
+		self.assertIsNone(call(wash_api.draft, station=STATION)["draft"])
+
+	def test_draft_must_be_an_object_with_a_machine_and_a_list_of_sets(self):
+		for bad in ("[]", '{"sets": []}', '{"machine": {"name": "x"}, "sets": "S-1"}', "not json"):
+			with self.assertRaises(BadRequestError):
+				call(wash_api.save_draft, draft=bad, station=STATION)
+
+	def test_complete_clears_the_draft(self):
+		unit = make_wash_ready_set()
+		call(wash_api.save_draft, draft=self.draft_payload((unit.name,)), station=STATION)
+		self.assertIs(self.complete([unit.name])["ok"], True)
+		self.assertIsNone(call(wash_api.draft, station=STATION)["draft"])

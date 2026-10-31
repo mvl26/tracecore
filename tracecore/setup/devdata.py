@@ -1197,7 +1197,7 @@ def _ensure_daily_tests(equipment):
 	"""
 	from tracecore.equipment import daily_test
 
-	kind = frappe.db.get_value("Equipment", equipment, "equipment_type")
+	kind, selected = frappe.db.get_value("Equipment", equipment, ["equipment_type", "daily_test_required"])
 	done = set(
 		frappe.get_all(
 			"Daily Test",
@@ -1205,7 +1205,7 @@ def _ensure_daily_tests(equipment):
 			pluck="test_type",
 		)
 	)
-	for test_type in daily_test.required_tests(kind):
+	for test_type in daily_test.required_tests(kind, selected):
 		if test_type in done:
 			continue
 		row = frappe.get_doc(

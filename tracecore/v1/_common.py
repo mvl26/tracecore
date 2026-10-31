@@ -14,7 +14,7 @@ from frappe.auth import SAFE_HTTP_METHODS
 from frappe.utils import cint, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import audit, gs1
+from tracecore.core import audit, error_codes, gs1, zones
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 
@@ -36,6 +36,8 @@ RELEASE_ROLES = ("TC R05", "TC R02", "TC R01", "System Manager")
 RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 # FEAT-033 (A-49): trạm đồ vải do R07 (actor chính UC-16); R02 hỗ trợ
 LINEN_ROLES = ("TC R07", "TC R02", "System Manager")
+# FEAT-047 (A-60): trạm thu gom chất thải do R07 (actor chính UC-34); R02 hỗ trợ
+WASTE_ROLES = ("TC R07", "TC R02", "System Manager")
 SESSION_FLAG = "tc_station_session"
 
 
@@ -102,9 +104,10 @@ def _run_as_session(fn, roles, kwargs, session):
 		frappe.flags[SESSION_FLAG] = previous
 
 
-def _block_body(block):
+def _block_body(block, station=None, client_ts=None):
 	if getattr(frappe.local, "request", None):
 		frappe.local.response["http_status_code"] = block.http_status
+	error_codes.log_block(block, station, client_ts)
 	return {"ok": False, "error": block.as_dict()}
 
 
@@ -131,7 +134,10 @@ def _replay(fn, endpoint, roles, kwargs, token, timestamp):
 	session = None
 	try:
 		with station_auth.as_replay_user(token, kwargs.get("station"), timestamp) as session:
-			result = _run_as_session(fn, roles, kwargs, session)
+			try:
+				result = error_codes.attach_warnings(_run_as_session(fn, roles, kwargs, session))
+			except BlockedError as error:
+				result = _block_body(error.block, kwargs.get("station"), timestamp)
 	except BlockedError as error:
 		result = _block_body(error.block)
 	except frappe.PermissionError:
@@ -183,7 +189,10 @@ def _live(fn, roles, kwargs, token, timestamp):
 
 	try:
 		with station_auth.as_session_user(token, client_ts=timestamp) as session:
-			return _run_as_session(fn, roles, kwargs, session)
+			try:
+				return error_codes.attach_warnings(_run_as_session(fn, roles, kwargs, session))
+			except BlockedError as error:
+				return _block_body(error.block, kwargs.get("station"), timestamp)
 	except BlockedError as error:
 		return _block_body(error.block)
 
@@ -260,30 +269,31 @@ def require_agent_for(station):
 
 
 def require_step(station, step):
-	"""Block nếu `station` không phải trạm đang hoạt động của bước `step`; đúng thì None.
+	"""Block nếu `station` không phải trạm đang hoạt động có chức năng `step`; đúng thì None.
 
-	Thứ tự kiểm: tồn tại → `is_active` (STATION_INACTIVE) → bước (STATION_WRONG_STEP).
-	`step=None` bỏ qua kiểm bước (đường Desk của R10: chỉ cần trạm tồn tại và đang hoạt động).
+	`step` là mã chức năng hoặc tuple mã (có một trong số đó là đạt; A-64). Thứ tự kiểm: tồn tại → `is_active`
+	(STATION_INACTIVE) → chức năng (STATION_WRONG_STEP). `step=None` bỏ qua kiểm chức năng (đường Desk của R10: chỉ cần
+	trạm tồn tại và đang hoạt động).
 	"""
+	functions = () if step is None else ((step,) if isinstance(step, str) else tuple(step))
+	label = zones.function_label(functions[0]) if functions else ""
 	row = None
 	if isinstance(station, str) and station:
-		row = frappe.db.get_value(
-			"Zone Station", station, ["is_zone", "is_active", "station_step"], as_dict=True
-		)
+		row = frappe.db.get_value("Zone Station", station, ["is_zone", "is_active"], as_dict=True)
 	if row and not cint(row.is_zone):
 		if not cint(row.is_active):
 			return station_inactive_block(station)
-		if step is None or row.station_step == step:
+		if not functions or zones.station_has_function(station, *functions):
 			return None
 	return Block(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} station.").format(station, step)
+		_("{0} is not a {1} station.").format(station, label)
 		if row
 		else _("Station {0} does not exist.").format(
 			station if isinstance(station, str) and station else "-"
 		),
-		_("Open this screen on a {0} station.").format(step),
+		_("Open this screen on a {0} station.").format(label),
 	)
 
 
@@ -307,7 +317,9 @@ def reject_block(block, ref_doctype=None, ref_name=None, raw=None, *, station=No
 		reason=block.code,
 		station=station,
 		client_ts=client_ts,
+		entry_mode=frappe.flags.get(ENTRY_MODE_FLAG),
 	)
+	error_codes.log_block(block, station, client_ts)
 	request = getattr(frappe.local, "request", None)
 	if request:
 		frappe.local.response["http_status_code"] = block.http_status
@@ -368,18 +380,57 @@ def job_names(names, limit):
 	return [_job_name(name) for name in names]
 
 
-def run_at_step(step, station, client_ts, call, ref_doctype=None, ref_name=None, raw=None):
+ENTRY_MODES = ("Scan", "Manual")
+ENTRY_MODE_FLAG = "tc_entry_mode"
+MAX_MANUAL_REASON = 140
+
+
+def entry_mode_of(entry_mode, manual_reason):
+	"""Chuẩn hóa cách nhập (A-68): ``(None, None)`` nếu RPC không phải thao tác nhập mã; mode sai → 400.
+
+	Chọn tay (``Manual``) cần lý do; thiếu lý do không ném lỗi ở đây mà để `run_at_step` từ chối `MANUAL_REASON_REQUIRED`.
+	"""
+	if entry_mode is None:
+		return None, None
+	if entry_mode not in ENTRY_MODES:
+		raise BadRequestError(_("entry_mode must be Scan or Manual."))
+	if entry_mode == "Scan":
+		return "Scan", None
+	if manual_reason is not None and not isinstance(manual_reason, str):
+		raise BadRequestError(_("manual_reason must be a string."))
+	return "Manual", (manual_reason or "").strip()[:MAX_MANUAL_REASON]
+
+
+def run_at_step(
+	step,
+	station,
+	client_ts,
+	call,
+	ref_doctype=None,
+	ref_name=None,
+	raw=None,
+	entry_mode=None,
+	manual_reason=None,
+):
 	"""Chạy `call()` cho một trạm của bước `step`; mọi từ chối nghiệp vụ thành body lỗi qua `reject_block`.
 
 	Trạm sai bước, hoặc `call` ném `BlockedError`, thì trả body lỗi (không ném lại). Ném lại sẽ làm Frappe hoàn tác
 	cả request và mất dòng Audit Log lẫn Idempotency Key. Domain function đã hoàn tác phần ghi dở của nó (savepoint)
 	trước khi ném. Lỗi khác (PermissionError, ValidationError…) vẫn lan ra để Frappe trả 4xx/5xx tương ứng.
 	`client_ts` là datetime UTC đã qua `parse_client_ts`.
+
+	`entry_mode` / `manual_reason` (A-68): cách nhập mã của RPC quét. Chọn tay ghi một dòng Audit Log `Manual Entry`
+	(kèm lý do) trước khi chạy `call`, rồi đi qua đúng `call` như khi quét: không có đường tắt.
 	"""
+	mode, reason = entry_mode_of(entry_mode, manual_reason)
+	previous = frappe.flags.get(ENTRY_MODE_FLAG)
+	frappe.flags[ENTRY_MODE_FLAG] = mode
 	try:
 		block = require_step(station, step)
 		if block:
 			raise BlockedError(block)
+		if mode == "Manual":
+			_log_manual_entry(reason, ref_doctype, ref_name, raw, station, client_ts)
 		return call()
 	except BlockedError as error:
 		return reject_block(
@@ -390,3 +441,27 @@ def run_at_step(step, station, client_ts, call, ref_doctype=None, ref_name=None,
 			station=station if isinstance(station, str) else None,
 			client_ts=client_ts,
 		)
+	finally:
+		frappe.flags[ENTRY_MODE_FLAG] = previous
+
+
+def _log_manual_entry(reason, ref_doctype, ref_name, raw, station, client_ts):
+	if not reason:
+		raise BlockedError(
+			Block(
+				"MANUAL_REASON_REQUIRED",
+				_("Reason required"),
+				_("Choosing a code by hand needs a reason."),
+				_("Choose a reason (scanner broken, label unreadable or other), then select again."),
+			)
+		)
+	audit.log(
+		"Manual Entry",
+		ref_doctype,
+		str(ref_name)[: gs1.MAX_SCAN_LENGTH] if ref_name else None,
+		new={"raw": str(raw)[: gs1.MAX_SCAN_LENGTH]} if raw else None,
+		reason=reason,
+		station=station if isinstance(station, str) else None,
+		client_ts=client_ts,
+		entry_mode="Manual",
+	)

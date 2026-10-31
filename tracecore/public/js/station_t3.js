@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T3 kiểm tra – lắp ráp theo BOM (SCR-07, FEAT-020) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -32,15 +33,7 @@ function t3Disabled(flag) {
 }
 
 function t3GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 function t3LineLabel(status) {
@@ -533,10 +526,11 @@ class T3Assembly {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}
@@ -898,6 +892,12 @@ class T3Assembly {
 	shortageHtml() {
 		const asm = this.asm;
 		if (!asm.has_shortage || asm.docstatus === 1) return "";
+		// FEAT-052 A-71: DC-001 viện đặt Cảnh báo thì ghi sổ được, nhãn in dòng THIẾU, không cần gọi R02
+		if (!asm.shortage_blocking && !asm.shortage_confirmed) {
+			return `<div class="tc-alert tc-alert-warn" role="status"><p class="tc-alert-title"><span aria-hidden="true">!</span> ${esc(
+				__("Missing instruments: the set can be recorded, and the label will list them")
+			)}</p></div>`;
+		}
 		if (asm.shortage_confirmed) {
 			return this.alertHtml({
 				variant: "ok",
@@ -940,7 +940,7 @@ class T3Assembly {
 			return this.alertHtml({
 				variant: "ok",
 				title: __("Packing: ready"),
-				reason: __("Assembly is recorded. The set can go to packing (T4)."),
+				reason: __("Assembly is recorded. The set can go to packing."),
 			});
 		}
 		const reasons = {
@@ -961,7 +961,8 @@ class T3Assembly {
 		if (asm.docstatus === 0) {
 			if (asm.uncounted.length)
 				missing.push(__("{0} line(s) not counted", [asm.uncounted.length]));
-			if (asm.has_shortage && !asm.shortage_confirmed) missing.push(__("R02 confirmation"));
+			if (asm.has_shortage && !asm.shortage_confirmed && asm.shortage_blocking)
+				missing.push(__("R02 confirmation"));
 		}
 		const done = asm.docstatus === 1;
 		const next = done && asm.next_station;

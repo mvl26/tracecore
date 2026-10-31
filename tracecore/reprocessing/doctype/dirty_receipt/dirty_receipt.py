@@ -8,11 +8,15 @@ dịch vụ (ghi sổ phiếu là lúc mở chu trình và ghi cổng T1 cho t�
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cint
 
 
 class DirtyReceipt(Document):
 	def before_insert(self):
 		self._require_service()
+		if cint(self.needs_card):
+			# người giao không thẻ chỉ có tên; Desk có thể tự điền deliverer bằng nhân viên của người tạo (FR-M2-01.7)
+			self.deliverer = None
 
 	def validate(self):
 		self._require_service()

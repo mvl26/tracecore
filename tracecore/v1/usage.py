@@ -23,7 +23,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = usage_service.STEP  # màn sử dụng chỉ chạy ở trạm bước T8
+FUNCTION = usage_service.FUNCTION
 REVEAL_ROLES = ("TC R01", "TC R02", "System Manager")
 
 
@@ -32,16 +32,28 @@ def _employee():
 	return session.employee if session else None
 
 
-def _run(station, client_ts, call, ref_doctype=None, ref_name=None, raw=None):
+def _run(
+	station, client_ts, call, ref_doctype=None, ref_name=None, raw=None, entry_mode=None, manual_reason=None
+):
 	"""Chạy `call()` ở trạm T8; trả ``{"ok": true, **kết quả}`` hoặc body từ chối nghiệp vụ."""
 	timestamp = parse_client_ts(client_ts)
-	result = run_at_step(STEP, station, timestamp, lambda: call(timestamp), ref_doctype, ref_name, raw)
+	result = run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: call(timestamp),
+		ref_doctype,
+		ref_name,
+		raw,
+		entry_mode,
+		manual_reason,
+	)
 	return result if "ok" in result else {"ok": True, **result}
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*USAGE_ROLES)
-def scan(raw, station, client_ts=None, token=None):
+def scan(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét Cycle ID (SCR-37 bước 1): kiểm hiệu lực rồi trả ``{"ok": true, "card": {...}}`` kèm cảnh báo khác khoa.
 
 	Chỉ đọc nhưng mọi lần quét bị chặn đều ghi Audit `Reject` (FR-M2-18.2): 404 không có gói, 409 Đã dùng/Thu
@@ -57,6 +69,8 @@ def scan(raw, station, client_ts=None, token=None):
 		ref,
 		scanned["id"] if ref else None,
 		raw,
+		entry_mode,
+		manual_reason,
 	)
 
 

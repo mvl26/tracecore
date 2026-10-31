@@ -4,7 +4,7 @@ UC-10; BRU-REP-005, BRU-REP-006, BRU-REP-007, BRU-REP-015, BRU-REP-016, BRU-FLOW
 from unittest.mock import patch
 
 import frappe
-from frappe.utils import add_to_date, now_datetime, today
+from frappe.utils import add_to_date, get_datetime, now_datetime, today
 
 from tracecore.core import client_time, station_auth, step_gate
 from tracecore.core.errors import BlockedError
@@ -55,7 +55,8 @@ class ReleaseCase(IsolatedTestCase):
 			equipment_raw=self.machine.name,
 			load_raw=self.load.name,
 			values=[{"parameter_name": key, "value": value} for key, value in values.items()],
-			started_at=str(add_to_date(now_datetime(), hours=-1)),
+			# không lùi qua 00:00 hôm nay: mẻ lấy test hằng ngày theo ngày bắt đầu, chạy test lúc 00:30 vẫn đúng ngày
+			started_at=str(max(add_to_date(now_datetime(), hours=-1), get_datetime(today()))),
 			ended_at=str(now_datetime()),
 			machine_alerts=None,
 			machine_report="/files/printout.png",
@@ -389,3 +390,45 @@ class TestBowieDickFromDailyTest(ReleaseCase):
 		self.daily("Fail")
 		ctx = releasing.context(self.load.name, self.machine.name, self.load.name, STATION)
 		self.assertEqual(ctx["indicator_state"]["bowie_dick"], "Fail")
+
+
+class TestBowieDickOutOfScope(ReleaseCase):
+	"""A-70: máy ngoài diện test hằng ngày không cần Bowie-Dick để giải phóng; Không đạt vẫn chặn."""
+
+	def setUp(self):
+		super().setUp()
+		frappe.db.set_single_value("TraceCore Settings", "daily_test_mode", "Not Required")
+		frappe.db.delete("Daily Test", {"equipment": self.machine.name})
+		self.save_data()
+
+	@bru("BRU-EQP-001")
+	def test_bowie_dick_is_optional_and_chemical_stays_required(self):
+		ctx = releasing.context(**self.scans())
+		self.assertEqual(ctx["indicator_state"]["bowie_dick"], "Optional")
+		self.assertEqual(ctx["indicator_state"]["chemical_class_5"], "Missing")
+		self.assertIn("chemical_class_5", ctx["missing"])
+		self.assertNotIn("bowie_dick", ctx["missing"])
+
+	@bru("BRU-EQP-001")
+	def test_load_is_released_without_any_daily_test(self):
+		self.result()
+		self.indicator("chemical_class_5")
+		self.assertEqual(self.release()["status"], "Released")
+
+	@bru("BRU-EQP-001")
+	def test_a_recorded_failure_still_blocks(self):
+		self.indicator("bowie_dick", result="Fail", test_date=today())
+		ctx = releasing.context(**self.scans())
+		self.assertEqual(ctx["indicator_state"]["bowie_dick"], "Fail")
+		self.assertIn("bowie_dick", ctx["missing"])
+
+	def test_t5_indicator_list_follows_the_mode(self):
+		self.assertEqual(
+			sterilizing._indicators(self.machine.name, "Steam Sterilizer", 0), ["chemical_class_5"]
+		)
+		frappe.db.set_single_value("TraceCore Settings", "daily_test_mode", "All Sterilizers")
+		self.assertEqual(
+			sterilizing._indicators(self.machine.name, "Steam Sterilizer", 0),
+			["chemical_class_5", "bowie_dick"],
+		)
+		self.assertEqual(releasing.context(**self.scans())["indicator_state"]["bowie_dick"], "Missing")

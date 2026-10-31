@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
 // Frappe nối file này sau station_t5.js (hook page_js) nên dùng chung uuid4/clientTs/esc/t5Kind/t5IndicatorLabel.
@@ -335,7 +336,7 @@ class T5Release {
 					action:
 						res.status === "Quarantine"
 							? __("Read the biological indicator, then record it with Read BI.")
-							: __("The packs can now go to the sterile store (T6)."),
+							: __("The packs can now go to the sterile store."),
 				};
 				this.show();
 			}
@@ -520,10 +521,11 @@ class T5Release {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}
@@ -598,6 +600,7 @@ class T5Release {
 				Pass: __("Pass", null, "Step Gate Result"),
 				Fail: __("Fail", null, "Step Gate Result"),
 				Missing: __("Not recorded"),
+				Optional: __("Not required"),
 				Pending: __("Waiting to be read"),
 			}[value] || value
 		);
@@ -769,8 +772,20 @@ class T5Release {
 			<h3>${esc(__("Reject the load"))}</h3>
 			<p class="tc-t6-hint">${esc(__("Use it when the cycle or an indicator failed."))}</p>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Restart from"))}">
-				${this.chip("t5b-redo", "redo", "T4", __("Restart from T4"), form.redo === "T4")}
-				${this.chip("t5b-redo", "redo", "T2", __("Restart from T2"), form.redo === "T2")}
+				${this.chip(
+					"t5b-redo",
+					"redo",
+					"T4",
+					__("Restart from {0}", [(window.tcGateLabels || {}).T4 || "T4"]),
+					form.redo === "T4"
+				)}
+				${this.chip(
+					"t5b-redo",
+					"redo",
+					"T2",
+					__("Restart from {0}", [(window.tcGateLabels || {}).T2 || "T2"]),
+					form.redo === "T2"
+				)}
 			</div>
 			<div class="tc-field">
 				<label for="tc-t5b-reject">${esc(__("Reason"))}</label>

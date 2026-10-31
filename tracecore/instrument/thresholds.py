@@ -174,7 +174,7 @@ def warn_rule_change(doc) -> list[dict] | None:
 		)
 		frappe.msgprint(
 			"{}<ul>{}</ul>{}".format(
-				escape_html(_("After this change, these sets need maintenance at the next packing (T4):")),
+				escape_html(_("After this change, these sets need maintenance at the next packing:")),
 				lines,
 				escape_html(_("Cycle counters are kept; nothing was reset.")),
 			),

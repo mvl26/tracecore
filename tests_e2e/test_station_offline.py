@@ -17,7 +17,7 @@ def wait_offline_data(page):
 	"""Snapshot T4 (bộ sẵn sàng, lô chỉ thị, dải mã) đã tải vào trang sau đăng nhập thẻ."""
 	page.wait_for_function(
 		"() => frappe.tc_station && frappe.tc_station.offlineData"
-		" && frappe.tc_station.offlineData.step === 'T4'"
+		" && frappe.tc_station.offlineData.function === 'PACK'"
 		" && (frappe.tc_station.offlineData.ranges || []).length > 0",
 		timeout=30000,
 	)
@@ -52,7 +52,7 @@ def test_t4_offline_pack_then_sync(t4_page, t4_demo):
 
 	# quét lại đúng bộ đó khi vẫn offline: không cho đóng gói lần hai
 	scan(page, t4_demo["set_offline_1"])
-	expect(page.locator(".tc-alert-error")).to_contain_text("đã đóng gói offline")
+	expect(page.locator(".tc-alert-error")).to_contain_text("đã đóng gói khi ngoại tuyến")
 
 	# có mạng: tự phát lại theo client_ts, server nhận đúng mã offline và tạo nhãn
 	page.context.set_offline(False)

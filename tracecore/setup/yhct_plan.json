@@ -1,0 +1,103 @@
+[
+ [
+  1,
+  "TR-001",
+  "Dirty",
+  "Tiếp nhận dụng cụ bẩn",
+  [
+   "RECEIVE"
+  ]
+ ],
+ [
+  2,
+  "TR-002",
+  "Dirty",
+  "Xử lý dụng cụ thủ công",
+  [
+   "MANUAL_WASH"
+  ]
+ ],
+ [
+  3,
+  "TR-003",
+  "Dirty",
+  "Nạp đồ vào máy rửa khử khuẩn",
+  [
+   "WASH_LOAD"
+  ]
+ ],
+ [
+  4,
+  "TR-004",
+  "Clean",
+  "Dỡ đồ khỏi máy rửa khử khuẩn",
+  [
+   "WASH_UNLOAD"
+  ]
+ ],
+ [
+  5,
+  "TR-005",
+  "Clean",
+  "Đóng gói 1",
+  [
+   "ASSEMBLE",
+   "PACK"
+  ]
+ ],
+ [
+  6,
+  "TR-006",
+  "Clean",
+  "Đóng gói 2",
+  [
+   "ASSEMBLE",
+   "PACK"
+  ]
+ ],
+ [
+  7,
+  "TR-007",
+  "Clean",
+  "Nạp đồ vào máy tiệt trùng",
+  [
+   "STERI_LOAD"
+  ]
+ ],
+ [
+  8,
+  "TR-008",
+  "Sterile",
+  "Dỡ đồ khỏi máy tiệt trùng",
+  [
+   "STERI_UNLOAD"
+  ]
+ ],
+ [
+  9,
+  "TR-009",
+  "Sterile",
+  "Xếp đồ lên giá kệ kho vô trùng",
+  [
+   "PUTAWAY"
+  ]
+ ],
+ [
+  10,
+  "TR-010",
+  "Sterile",
+  "Cấp phát đồ cho khoa sử dụng",
+  [
+   "ISSUE"
+  ]
+ ],
+ [
+  0,
+  "TR-011",
+  "Department",
+  "Quét sử dụng tại khoa",
+  [
+   "USE"
+  ]
+ ]
+]

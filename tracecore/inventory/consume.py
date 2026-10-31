@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate
+from frappe.utils import flt, getdate, strip_html_tags
 
 from tracecore.core import notification
 from tracecore.inventory.receipt import today_vn
@@ -22,6 +22,11 @@ ISSUE = "Material Issue"
 SAVEPOINT = "tc_consume"
 NO_EXPIRY = getdate("9999-12-31")
 PRECISION = 6
+RETRY_SOURCES = ("Wash Batch",)
+
+
+class UomConversionMissing(frappe.ValidationError):
+	"""Định mức khai theo ĐVT mà Item chưa có dòng quy đổi sang ĐVT tồn kho."""
 
 
 @dataclass(frozen=True)
@@ -169,28 +174,78 @@ def _norms(program):
 	return frappe.get_all(
 		"Program Consumable",
 		filters={"parent": program, "parenttype": "Process Program"},
-		fields=["item", "qty_per_load", "qty_per_pack", "qty_per_kg"],
+		fields=["item", "uom", "qty_per_load", "qty_per_pack", "qty_per_kg"],
 		order_by="idx",
 	)
+
+
+def stock_qty_of(item, qty, uom=None):
+	"""Số lượng `qty` tính theo `uom` đổi sang ĐVT tồn kho của `item` (bỏ trống `uom` = đã là ĐVT tồn kho)."""
+	stock_uom = frappe.db.get_value("Item", item, "stock_uom")
+	if not uom or uom == stock_uom:
+		return flt(qty, PRECISION)
+	factor = frappe.db.get_value(
+		"UOM Conversion Detail", {"parent": item, "parenttype": "Item", "uom": uom}, "conversion_factor"
+	)
+	if not flt(factor):
+		raise UomConversionMissing(
+			_(
+				"Item {0} has no conversion from {1} to {2}. Add it to the unit of measure table of the item."
+			).format(item, uom, stock_uom)
+		)
+	return flt(qty * flt(factor), PRECISION)
 
 
 def _norm_qty(norm, units, kg=0):
 	return flt(norm.qty_per_load) + flt(norm.qty_per_pack) * units + flt(norm.qty_per_kg) * kg
 
 
-def _notify(event, source_doctype, source_name, subject):
+def _norm_stock_qty(norm, units, kg=0):
+	"""Định mức của mẻ đổi sang ĐVT tồn kho: định mức khai theo `norm.uom` (ml, Can…), kho trừ theo ĐVT tồn kho."""
+	return stock_qty_of(norm.item, _norm_qty(norm, units, kg), norm.get("uom"))
+
+
+def _doc_link(source_doctype, source_name):
+	return "/app/{}/{}".format(frappe.scrub(source_doctype).replace("_", "-"), source_name)
+
+
+def _notify(event, source_doctype, source_name, subject, message=None):
 	"""Báo R09; lỗi gửi thông báo không được làm hỏng mẻ đang giải phóng."""
 	try:
-		notification.emit(event, frappe._dict(doctype=source_doctype, name=source_name), subject)
+		notification.emit(
+			event,
+			frappe._dict(doctype=source_doctype, name=source_name),
+			subject,
+			message=message,
+			link=_doc_link(source_doctype, source_name),
+		)
 	except Exception:
 		frappe.log_error(title=f"FEAT-042 notify {event} {source_doctype} {source_name}")
 
 
-def _run(source_doctype, source_name, lines, reason):
-	"""Trừ kho, không bao giờ làm hỏng bước gọi: lỗi được ghi Error Log và báo R09.
+def _cause(error):
+	return strip_html_tags(str(error)).strip() or type(error).__name__
+
+
+def _notify_failed(source_doctype, source_name, error, items):
+	_notify(
+		"CONSUMPTION_FAILED",
+		source_doctype,
+		source_name,
+		_("Automatic consumption for {0} {1} failed. Issue the supplies by hand.").format(
+			source_doctype, source_name
+		),
+		message=_(
+			"Cause: {0} Items: {1}. Fix the cause (for example the unit of measure of the item), then open {2} and choose Retry consumption."
+		).format(_cause(error), ", ".join(sorted(items)), source_name),
+	)
+
+
+def _run(source_doctype, source_name, lines, reason, strict=False):
+	"""Trừ kho, không bao giờ làm hỏng bước gọi: lỗi được ghi Error Log và báo R09 kèm nguyên nhân.
 
 	Không dòng nào có số lượng dương (chương trình không có định mức, hóa chất ghi 0) cũng là "không có định mức"
-	(UC-25 E2; FEAT-043 K13).
+	(UC-25 E2; FEAT-043 K13). `strict` (xử lý lại bằng tay): lỗi được ném lại cho người bấm thay vì chỉ báo.
 	"""
 	if not any(flt(line.get("qty"), PRECISION) > 0 for line in lines):
 		_notify(
@@ -205,16 +260,18 @@ def _run(source_doctype, source_name, lines, reason):
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		result = consume_for(source_doctype, source_name, lines, reason)
-	except Exception:
+	except Exception as error:
 		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.log_error(title=f"FEAT-042 consume {source_doctype} {source_name}")
-		_notify(
-			"CONSUMPTION_FAILED",
-			source_doctype,
-			source_name,
-			_("Automatic consumption for {0} {1} failed. Issue the supplies by hand.").format(
-				source_doctype, source_name
-			),
+		if strict:
+			frappe.throw(
+				_("Automatic consumption for {0} {1} failed: {2}").format(
+					source_doctype, source_name, _cause(error)
+				),
+				title=_("Consumption failed"),
+			)
+		_notify_failed(
+			source_doctype, source_name, error, {line["item"] for line in lines if flt(line.get("qty")) > 0}
 		)
 		return None
 	if result["short"]:
@@ -231,10 +288,8 @@ def _run(source_doctype, source_name, lines, reason):
 	return result
 
 
-def on_wash_complete(ctx):
-	"""Lô rửa Đạt: hóa chất theo lô và số lượng đã ghi (0 → định mức), cộng các vật tư khác của chương trình."""
-	if ctx.get("result") != "Pass":
-		return
+def _wash_lines(ctx):
+	"""Dòng trừ kho của lô rửa Đạt: hóa chất theo lô và số lượng đã ghi (0 → định mức), cộng vật tư khác của chương trình."""
 	norms = _norms(ctx.get("program"))
 	units = len(ctx.get("sets") or [])
 	by_item = {norm.item: norm for norm in norms}
@@ -242,13 +297,73 @@ def on_wash_complete(ctx):
 	covered = set()
 	for chemical in ctx.get("chemicals") or []:
 		norm = by_item.get(chemical["item"])
-		qty = flt(chemical.get("qty")) or (_norm_qty(norm, units) if norm else 0)
+		qty = flt(chemical.get("qty")) or (_norm_stock_qty(norm, units) if norm else 0)
 		lines.append({"item": chemical["item"], "qty": qty, "batch": chemical.get("lot")})
 		covered.add(chemical["item"])
 	lines += [
-		{"item": norm.item, "qty": _norm_qty(norm, units)} for norm in norms if norm.item not in covered
+		{"item": norm.item, "qty": _norm_stock_qty(norm, units)} for norm in norms if norm.item not in covered
 	]
-	_run("Wash Batch", ctx["batch"], lines, _("Automatic consumption of wash batch {0}").format(ctx["batch"]))
+	return lines
+
+
+def _wash_reason(ctx):
+	return _("Automatic consumption of wash batch {0}").format(ctx["batch"])
+
+
+def on_wash_complete(ctx):
+	"""Lô rửa Đạt: hóa chất theo lô và số lượng đã ghi (0 → định mức), cộng các vật tư khác của chương trình."""
+	if ctx.get("result") != "Pass":
+		return
+	lines = _lines_or_notify("Wash Batch", ctx["batch"], lambda: _wash_lines(ctx), _norms(ctx.get("program")))
+	if lines is None:
+		return
+	_run("Wash Batch", ctx["batch"], lines, _wash_reason(ctx))
+
+
+def _lines_or_notify(source_doctype, source_name, build, norms):
+	"""``build()`` dựng dòng trừ kho; định mức không đổi được ĐVT thì báo CONSUMPTION_FAILED và trả None, không làm hỏng mẻ."""
+	try:
+		return build()
+	except Exception as error:
+		frappe.log_error(title=f"FEAT-042 consume {source_doctype} {source_name}")
+		_notify_failed(source_doctype, source_name, error, {norm.item for norm in norms})
+		return None
+
+
+def wash_context(batch):
+	"""Ngữ cảnh hook `tracecore_after_wash_complete` dựng lại từ hồ sơ lô rửa đã ghi sổ."""
+	doc = frappe.get_doc("Wash Batch", batch)
+	return {
+		"batch": doc.name,
+		"equipment": doc.equipment,
+		"program": doc.program,
+		"sets": [row.set_unit for row in doc.set_units],
+		"chemicals": [{"item": row.item, "lot": row.lot, "qty": flt(row.qty)} for row in doc.chemicals],
+		"result": doc.cycle_result,
+	}
+
+
+def retry(source_doctype, source_name):
+	"""Chạy lại tiêu hao tự động của một lô đã Đạt mà lần đầu bị lỗi (R09/R02 bấm "Retry consumption").
+
+	Nguồn đã có phiếu xuất còn hiệu lực thì không trừ thêm (``created = False``). Lỗi được ném lại kèm nguyên nhân.
+	"""
+	if source_doctype not in RETRY_SOURCES:
+		frappe.throw(_("Consumption cannot be retried for {0}.").format(source_doctype))
+	ctx = wash_context(source_name)
+	if ctx["result"] != "Pass":
+		frappe.throw(_("Wash batch {0} did not pass, so nothing is consumed for it.").format(source_name))
+	try:
+		lines = _wash_lines(ctx)
+	except Exception as error:
+		frappe.throw(
+			_("Automatic consumption for {0} {1} failed: {2}").format(
+				source_doctype, source_name, _cause(error)
+			),
+			title=_("Consumption failed"),
+		)
+	result = _run(source_doctype, source_name, lines, _wash_reason(ctx), strict=True)
+	return result or {"entry": None, "created": False, "lots": [], "short": []}
 
 
 def on_laundry_complete(ctx):
@@ -259,15 +374,23 @@ def on_laundry_complete(ctx):
 	kg = flt(ctx.get("kg"))
 	norms = _norms(ctx["program"])
 	by_item = {norm.item: norm for norm in norms}
-	lines, covered = [], set()
-	for chemical in ctx.get("chemicals") or []:
-		norm = by_item.get(chemical["item"])
-		qty = flt(chemical.get("qty")) or (_norm_qty(norm, 0, kg) if norm else 0)
-		lines.append({"item": chemical["item"], "qty": qty})
-		covered.add(chemical["item"])
-	lines += [
-		{"item": norm.item, "qty": _norm_qty(norm, 0, kg)} for norm in norms if norm.item not in covered
-	]
+
+	def build():
+		lines, covered = [], set()
+		for chemical in ctx.get("chemicals") or []:
+			norm = by_item.get(chemical["item"])
+			qty = flt(chemical.get("qty")) or (_norm_stock_qty(norm, 0, kg) if norm else 0)
+			lines.append({"item": chemical["item"], "qty": qty})
+			covered.add(chemical["item"])
+		return lines + [
+			{"item": norm.item, "qty": _norm_stock_qty(norm, 0, kg)}
+			for norm in norms
+			if norm.item not in covered
+		]
+
+	lines = _lines_or_notify("Laundry Batch", ctx["batch"], build, norms)
+	if lines is None:
+		return
 	_run(
 		"Laundry Batch",
 		ctx["batch"],
@@ -279,7 +402,15 @@ def on_laundry_complete(ctx):
 def on_load_release(ctx):
 	"""Mẻ tiệt khuẩn giải phóng: định mức chương trình x số gói, lô theo FEFO."""
 	packs = len(ctx.get("packs") or [])
-	lines = [{"item": norm.item, "qty": _norm_qty(norm, packs)} for norm in _norms(ctx.get("program"))]
+	norms = _norms(ctx.get("program"))
+	lines = _lines_or_notify(
+		"Sterilization Load",
+		ctx["load"],
+		lambda: [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in norms],
+		norms,
+	)
+	if lines is None:
+		return
 	_run(
 		"Sterilization Load",
 		ctx["load"],

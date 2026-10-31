@@ -8,7 +8,7 @@ from tracecore.core import print as core_print
 from tracecore.patches.v0_1 import create_sample_label_templates
 from tracecore.setup import install
 from tracecore.setup.label_templates import SAMPLE_TEMPLATES, ensure_sample_templates, sample_pack_context
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter
 
 BODY = "^XA^FD{{ text(doc.set_name) }}^FS^XZ"
 # ^FO x,y [^A0N h,w] [^FB width,lines,spacing,justify,indent] ^FD text ^FS
@@ -122,7 +122,7 @@ class TestLabelTemplate(IsolatedTestCase):
 				_template(f"Zero {field}", is_active=0, **{field: 0}).insert()
 
 	def test_template_cannot_be_deleted(self):
-		with self.assertRaises(frappe.ValidationError):
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
 			frappe.delete_doc("Label Template", "Pack label - Steam", ignore_permissions=True)
 
 	def test_audit_log_records_template_edit(self):

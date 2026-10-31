@@ -22,6 +22,7 @@ class TestErrors(FrappeTestCase):
 				"SESSION_STATION_MISMATCH",
 				"CARD_INVALID",
 				"COMPETENCY_REQUIRED",
+				"CERTIFICATE_REQUIRED",
 				"PIN_INVALID",
 				"PIN_PROOF_INVALID",
 				"CARD_MISMATCH",
@@ -84,6 +85,12 @@ class TestErrors(FrappeTestCase):
 				"BATCH_EMPTY",
 				"DATA_INCOMPLETE",
 				"RESULT_INVALID",
+				# A-77: chỉ thị rửa
+				"INDICATOR_REQUIRED",
+				"INDICATOR_LOT_MISSING",
+				"INDICATOR_LOT_INVALID",
+				"INDICATOR_EXPIRED",
+				"INDICATOR_PHOTO_MISSING",
 				# FEAT-026 A-17: cấp phát T7
 				"RECIPIENT_INVALID",
 				"SIGNATURE_INVALID",
@@ -125,6 +132,7 @@ class TestErrors(FrappeTestCase):
 			),
 			404: (
 				"SET_NOT_FOUND",
+				"ERROR_CODE_NOT_FOUND",
 				"PACK_NOT_FOUND",
 				"ROLL_NOT_FOUND",
 				"EQUIPMENT_NOT_FOUND",
@@ -151,6 +159,10 @@ class TestErrors(FrappeTestCase):
 				"ACTIVE_CYCLE_EXISTS",
 				"GATE_PREV_NOT_PASSED",
 				"SET_TYPE_GTIN_MISSING",
+				"GTIN_BACKFILL_STALE",
+				"GTIN_NOT_LOCKED",
+				"GTIN_RANGE_EXHAUSTED",
+				"GS1_PREFIX_NOT_DECLARED",
 				"PAR_EXCEEDED",
 				"MAINT_OVERDUE",
 				"REPRINT_WINDOW_EXPIRED",
@@ -226,9 +238,30 @@ class TestErrors(FrappeTestCase):
 				"PURCHASE_NOT_NEEDED",
 				"CODE_RANGE_INVALID",
 				"CODE_RANGE_EXHAUSTED",
+				# FEAT-046 A-53 i
+				"RATE_VERSION_NOT_APPROVED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
+		# FEAT-046 A-53 i: tính lại giá thành
+		table.update({"NOTE_REQUIRED": 422, "COST_SOURCE_NOT_FOUND": 404})
+		# FEAT-008 A-55 D4
+		table["ENV_READING_INVALID"] = 422
+		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
+		table.update({"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429})
+		# FEAT-047 A-60: thu gom chất thải
+		table.update(
+			{
+				"WASTE_EMPTY": 422,
+				"WASTE_TYPE_INVALID": 422,
+				"WASTE_QTY_INVALID": 422,
+				"WASTE_TOTAL_INVALID": 422,
+				"WASTE_WEIGHT_UNCONFIRMED": 422,
+				"WASTE_NOTE_REQUIRED": 422,
+				"WASTE_GIVER_INVALID": 403,
+				"WASTE_NOT_HELD": 409,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):
@@ -292,6 +325,12 @@ class TestErrors(FrappeTestCase):
 		for code, status in expected.items():
 			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
 
+	def test_http_status_feedback_codes(self):
+		# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
+		expected = {"FEEDBACK_INVALID": 422, "SCREENSHOT_INVALID": 422, "FEEDBACK_RATE_LIMIT": 429}
+		for code, status in expected.items():
+			self.assertEqual(Block(code, "t", "r", "a").http_status, status, msg=code)
+
 	def test_block_as_dict(self):
 		self.assertEqual(
 			Block("X", "t", "r", "a").as_dict(),
@@ -300,8 +339,8 @@ class TestErrors(FrappeTestCase):
 
 	def test_block_as_dict_keeps_optional_keys_when_set(self):
 		block = Block("BOM_INCOMPLETE", "t", "r", "a", items=[{"instrument": "KC-1"}], redo_step="T3")
-		self.assertEqual(
-			block.as_dict(),
+		# A-71 thêm khóa danh mục; khóa cũ giữ nguyên
+		self.assertLessEqual(
 			{
 				"code": "BOM_INCOMPLETE",
 				"title": "t",
@@ -310,7 +349,8 @@ class TestErrors(FrappeTestCase):
 				"http_status": 422,
 				"items": [{"instrument": "KC-1"}],
 				"redo_step": "T3",
-			},
+			}.items(),
+			block.as_dict().items(),
 		)
 		# danh sách rỗng vẫn là giá trị (khác None)
 		self.assertEqual(Block("X", "t", "r", "a", items=[]).as_dict()["items"], [])

@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "effective_from",
+  "rate_per_kg"
+ ],
+ "fields": [
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Effective From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rate_per_kg",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate per kg",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Type Rate",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "description": "Treatment rate per kg of a waste type; rows are only added (FEAT-047, FR-M10-01.4)."
+}

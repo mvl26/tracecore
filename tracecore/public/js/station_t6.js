@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T6 kho vô khuẩn (SCR-11, FEAT-025) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -30,15 +31,7 @@ function t6Date(value) {
 }
 
 function t6GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 class T6Storage {
@@ -319,10 +312,11 @@ class T6Storage {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}

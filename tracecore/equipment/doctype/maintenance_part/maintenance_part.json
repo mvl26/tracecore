@@ -8,6 +8,7 @@
  "field_order": [
   "part_name",
   "item",
+  "item_name",
   "qty",
   "rate",
   "amount"
@@ -19,7 +20,7 @@
    "in_list_view": 1,
    "label": "Part",
    "reqd": 1,
-   "columns": 3
+   "columns": 2
   },
   {
    "fieldname": "item",
@@ -27,6 +28,17 @@
    "in_list_view": 1,
    "label": "Item",
    "options": "Item",
+   "columns": 2
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
    "columns": 2
   },
   {
@@ -51,11 +63,11 @@
    "in_list_view": 1,
    "label": "Amount",
    "read_only": 1,
-   "columns": 2
+   "columns": 1
   }
  ],
  "istable": 1,
- "modified": "2026-10-28 09:00:00.000000",
+ "modified": "2026-10-31 09:51:28.499670",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Maintenance Part",

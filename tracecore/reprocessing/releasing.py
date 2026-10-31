@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, now_datetime, today
 
-from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate
+from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import sterilizing, storage
 
@@ -31,6 +31,7 @@ RESULTS = ("Pass", "Fail")
 REDO_STEPS = ("T4", "T2")
 BIOLOGICAL = "biological"
 BOWIE_DICK = "bowie_dick"
+OPTIONAL = "Optional"  # chỉ thị không bắt buộc của máy ngoài diện test hằng ngày và chưa có kết quả (A-70)
 INDICATOR_KINDS = ("bowie_dick", "chemical_class_5", "chemical_plasma", BIOLOGICAL)
 AFTER_RELEASE_HOOK = "tracecore_after_release"  # M1 (FEAT-014): +1 bộ đếm bảo dưỡng, mỗi bộ một lần
 AFTER_LOAD_RELEASE_HOOK = "tracecore_after_load_release"  # M6/M7 (FEAT-042/046) tiêu hao và chi phí mẻ
@@ -39,8 +40,8 @@ BI_POSITIVE_HOOK = "tracecore_bi_positive"  # FEAT-029 thu hồi, FEAT-010 thôn
 DAILY_INDICATOR_HOOK = "tracecore_load_daily_indicator"  # M5 (FEAT-040, A-23): Bowie-Dick từ test hằng ngày
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _now(client_ts):
@@ -98,6 +99,7 @@ def _indicator_state(doc, machine, daily=None):
 	"""Trạng thái từng chỉ thị; kết quả ghi theo mẻ thắng, chưa ghi thì lấy test hằng ngày của máy (A-23)."""
 	rows = _rows(doc.name)
 	packs = [row.pack for row in doc.packs]
+	optional = sterilizing.optional_indicators(doc.equipment)
 	kinds = [*required_indicators(machine), *([BIOLOGICAL] if cint(doc.requires_bi) else [])]
 	state = {}
 	for kind in kinds:
@@ -107,12 +109,14 @@ def _indicator_state(doc, machine, daily=None):
 		state[kind] = _status_of(kind, rows, packs)
 		if state[kind] == "Missing" and kind in (daily or {}) and daily[kind]["result"] in RESULTS:
 			state[kind] = daily[kind]["result"]
+		if state[kind] == "Missing" and kind in optional:
+			state[kind] = OPTIONAL
 	return state
 
 
 def context(load, equipment_raw, load_raw, station):
 	"""Màn dỡ mẻ sau khi quét QR máy và QR mẻ: thẻ mẻ, chỉ thị đã ghi, trạng thái từng chỉ thị và điều kiện còn thiếu."""
-	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station)
+	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, unload_only=True)
 	daily = _daily_indicators(doc, machine)
 	state = _indicator_state(doc, machine, daily)
 	return {
@@ -143,7 +147,9 @@ def set_cycle_result(
 	Chưa có dữ liệu chu trình đầy đủ (`data_complete`) hoặc chưa tick xác nhận → DATA_INCOMPLETE; kết quả khác Đạt/Không
 	đạt → RESULT_INVALID. Mẻ vẫn mở, chưa giải phóng.
 	"""
-	doc, _machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+	doc, _machine = sterilizing._open_for_data(
+		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+	)
 	if result not in RESULTS:
 		raise _blocked(
 			"RESULT_INVALID",
@@ -204,7 +210,9 @@ def record_indicator(
 	Chỉ thị phải thuộc loại máy (hơi nước: hóa học 5, Bowie-Dick; plasma: hóa học plasma; sinh học khi mẻ cần BI);
 	Bowie-Dick cần ngày thử là hôm nay; sinh học tạo ``Pending`` kèm lô và tủ ủ, đọc sau bằng `bi_result`.
 	"""
-	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+	doc, machine = sterilizing._open_for_data(
+		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+	)
 	allowed = set(required_indicators(machine))
 	if cint(doc.requires_bi):
 		allowed.add(BIOLOGICAL)
@@ -251,7 +259,7 @@ def _missing(doc, state, review_confirmed):
 		items.append("cycle_result")
 	if cint(doc.needs_review) and not review_confirmed:
 		items.append("review")
-	items += [kind for kind, value in state.items() if kind != BIOLOGICAL and value != "Pass"]
+	items += [kind for kind, value in state.items() if kind != BIOLOGICAL and value not in ("Pass", OPTIONAL)]
 	return items
 
 
@@ -322,7 +330,9 @@ def release(
 def _release(
 	load, station, equipment_raw, load_raw, session, pin_proof, review_confirmed, emergency_reason, client_ts
 ):
-	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+	doc, machine = sterilizing._open_for_data(
+		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+	)
 	if not cint(doc.data_complete):
 		raise _blocked(
 			"DATA_INCOMPLETE",
@@ -346,6 +356,8 @@ def _release(
 			if failed
 			else _("Record the missing results, then ask R02 to release the load."),
 			items=missing,
+			object_type="Sterilization Load",
+			object_name=doc.name,
 		)
 	approver, emergency = _approver(session, pin_proof, emergency_reason)
 	employee = _employee(approver)
@@ -479,12 +491,16 @@ def reject(
 		raise _blocked(
 			"RESULT_INVALID",
 			_("Result is not valid"),
-			_("Restart from T4 or from T2."),
-			_("Choose T4 or T2 to restart the sets from."),
+			_("Restart from {0} or from {1}.").format(zones.gate_label("T4"), zones.gate_label("T2")),
+			_("Choose {0} or {1} to restart the sets from.").format(
+				zones.gate_label("T4"), zones.gate_label("T2")
+			),
 		)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		doc, _machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+		doc, _machine = sterilizing._open_for_data(
+			load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+		)
 		return _reject_load(doc, station, redo_from, reason, client_ts)
 	except Exception:
 		with contextlib.suppress(Exception):
@@ -559,7 +575,7 @@ def bi_result(load, result, station, read_at=None, employee=None, client_ts=None
 		machine = frappe.db.get_value(
 			"Equipment", doc.equipment, list(sterilizing.EQUIPMENT_FIELDS), as_dict=True
 		)
-		sterilizing._check_data_station(station, machine)
+		sterilizing._check_data_station(station, machine, unload_only=True)
 		pending = frappe.get_all(
 			"Load Indicator Result",
 			filters={"load": doc.name, "indicator": BIOLOGICAL, "result": "Pending"},

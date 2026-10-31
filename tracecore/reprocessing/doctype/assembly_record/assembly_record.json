@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "set_unit",
+  "set_unit_name",
   "cycle_no",
   "set_type",
   "bom_version",
@@ -30,6 +31,7 @@
   "shortage_confirmed_by",
   "shortage_confirmed_at",
   "shortage_confirmed_for",
+  "shortage_accepted",
   "section_branch",
   "branch",
   "branch_reason"
@@ -44,6 +46,16 @@
    "options": "Set Unit",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "cycle_no",
@@ -192,6 +204,13 @@
    "hidden": 1
   },
   {
+   "fieldname": "shortage_accepted",
+   "fieldtype": "Check",
+   "label": "Shortage accepted without confirmation (DC-001 warning)",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
    "fieldname": "section_branch",
    "fieldtype": "Section Break",
    "label": "Damage Branch"
@@ -211,7 +230,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-24 12:00:00.000000",
+ "modified": "2026-10-31 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Assembly Record",

@@ -1,0 +1,159 @@
+{#- Print of the electronic sterilization log / infection control summary / end-of-life forecast (FEAT-007; FR-M9-02, FR-M9-02.1, OTH-LEG-001).
+    Data: tracecore.admin_reports.sterilization_log.render_html (r). Every dynamic value goes through |e; colours and
+    sizes come from the generated tokens.css (r.tc); tables only (wkhtmltopdf WebKit has no flex/grid). -#}
+{%- set tc = r.tc -%}
+{%- set T = "Sterilization Log" -%}
+<style>
+.tc-rp { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_xs }}; line-height: {{ tc.lh_snug }}; position: relative; }
+.tc-rp h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-rp h2 { font-size: {{ tc.fs_md }}; font-weight: {{ tc.fw_bold }}; margin: {{ tc.sp_3 }} 0 {{ tc.sp_1 }} 0; }
+.tc-rp .tc-meta { color: {{ tc.muted }}; margin-bottom: {{ tc.sp_2 }}; }
+.tc-rp .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-rp table.tc-grid { width: 100%; border-collapse: collapse; }
+.tc-rp table.tc-grid thead { display: table-header-group; }
+.tc-rp table.tc-grid tr { page-break-inside: avoid; }
+.tc-rp table.tc-grid th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-rp table.tc-grid th, .tc-rp table.tc-grid td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }}; vertical-align: top; }
+.tc-rp table.tc-grid td.tc-num, .tc-rp table.tc-grid th.tc-num { text-align: right; white-space: nowrap; }
+.tc-rp tr.tc-total td { font-weight: {{ tc.fw_bold }}; }
+.tc-rp .tc-provisional { border: {{ tc.bw_thick }} solid {{ tc.heading }}; color: {{ tc.heading }}; font-size: {{ tc.fs_lg }}; font-weight: {{ tc.fw_bold }}; padding: {{ tc.sp_1 }} {{ tc.sp_3 }}; float: right; }
+.tc-rp .tc-empty { padding: {{ tc.sp_3 }}; border: {{ tc.bw_hair }} solid {{ tc.border }}; }
+.tc-rp .tc-sign { width: 100%; margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-rp .tc-sign td { width: 50%; text-align: center; padding-bottom: 18mm; font-weight: {{ tc.fw_bold }}; font-size: {{ tc.fs_sm }}; }
+.tc-rp .tc-sign span { display: block; font-weight: normal; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
+</style>
+<div class="tc-rp">
+	{%- if r.provisional %}<div class="tc-provisional">{{ _("PROVISIONAL") | e }}</div>{% endif %}
+	<h1>{{ r.title | e }}</h1>
+	<div class="tc-meta">
+		{%- if r.filter_text %}{{ r.filter_text | e }}<br>{% endif %}
+		{{ _("Exported by {0} at {1}").format(r.exported_by, r.exported_at) | e }}
+	</div>
+
+{%- if r.kind == "sterilization_log" %}
+	{%- if r.rows %}
+	<table class="tc-grid">
+		<thead><tr>
+			<th>{{ _("Date", context=T) | e }}</th>
+			<th>{{ _("Load", context=T) | e }}</th>
+			<th>{{ _("Machine", context=T) | e }}</th>
+			<th>{{ _("Program", context=T) | e }}</th>
+			<th>{{ _("Start / End") | e }}</th>
+			<th>{{ _("Cycle Parameters") | e }}</th>
+			<th>{{ _("Indicators") | e }}</th>
+			<th class="tc-num">{{ _("Packs", context=T) | e }}</th>
+			<th>{{ _("Sets", context=T) | e }}</th>
+			<th>{{ _("Operator", context=T) | e }}</th>
+			<th>{{ _("Released By", context=T) | e }}</th>
+			<th>{{ _("Result", context=T) | e }}</th>
+		</tr></thead>
+		<tbody>
+		{%- for row in r.rows %}
+			<tr>
+				<td>{{ r.fmt_date(row.date) | e }}</td>
+				<td class="tc-code">{{ row.load | e }}</td>
+				<td>{{ row.equipment_name | e }}</td>
+				<td>{{ row.program_name | e }}</td>
+				<td>{{ r.fmt_datetime(row.started_at) | e }}<br>{{ r.fmt_datetime(row.ended_at) | e }}</td>
+				<td>{{ row.params | e }}</td>
+				<td>{{ row.indicators | e }}</td>
+				<td class="tc-num">{{ row.pack_count }}</td>
+				<td class="tc-code">{{ row.sets | e }}</td>
+				<td>{{ (row.operator_name or "") | e }}</td>
+				<td>{{ (row.released_by_name or "") | e }}<br>{{ r.fmt_datetime(row.released_at) | e }}</td>
+				<td>{{ _(row.result, context=T) | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	{%- else %}
+	<div class="tc-empty">{{ _("No sterilization load in this period.") | e }}</div>
+	{%- endif %}
+
+{%- elif r.kind == "ksnk_summary" %}
+	{%- set s = r.summary %}
+	<h2>{{ _("Sterilization loads by machine") | e }}</h2>
+	<table class="tc-grid">
+		<thead><tr>
+			<th>{{ _("Machine", context=T) | e }}</th><th>{{ _("Type", context=T) | e }}</th>
+			<th class="tc-num">{{ _("Loads", context=T) | e }}</th><th class="tc-num">{{ _("Passed", context=T) | e }}</th>
+			<th class="tc-num">{{ _("Failed", context=T) | e }}</th><th class="tc-num">{{ _("Failure Rate (%)") | e }}</th>
+		</tr></thead>
+		<tbody>
+		{%- for row in s.equipment %}
+			<tr>
+				<td>{{ row.equipment_name | e }}</td><td>{{ _(row.equipment_type or "") | e }}</td>
+				<td class="tc-num">{{ row.loads }}</td><td class="tc-num">{{ row.passed }}</td>
+				<td class="tc-num">{{ row.failed }}</td><td class="tc-num">{{ row.fail_rate }}</td>
+			</tr>
+		{%- else %}
+			<tr><td colspan="6">{{ _("No sterilization load in this period.") | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<h2>{{ _("Indicators, washing and packs") | e }}</h2>
+	<table class="tc-grid">
+		<tbody>
+			<tr><td>{{ _("Biological indicator tests") | e }}</td><td class="tc-num">{{ s.biological.tests }}</td></tr>
+			<tr><td>{{ _("Biological indicators positive") | e }}</td><td class="tc-num">{{ s.biological.positive }}</td></tr>
+			<tr><td>{{ _("Wash batches (passed / failed)") | e }}</td><td class="tc-num">{{ s.wash.batches }} ({{ s.wash.passed }} / {{ s.wash.failed }})</td></tr>
+			<tr><td>{{ _("Packs sterilized") | e }}</td><td class="tc-num">{{ s.packs_sterilized }}</td></tr>
+			<tr><td>{{ _("Recall orders") | e }}</td><td class="tc-num">{{ s.recalls }}</td></tr>
+		</tbody>
+	</table>
+	<h2>{{ _("Packs issued by department") | e }}</h2>
+	<table class="tc-grid">
+		<tbody>
+		{%- for row in s.issued %}
+			<tr><td>{{ row.department | e }}</td><td class="tc-num">{{ row.packs }}</td></tr>
+		{%- else %}
+			<tr><td colspan="2">{{ _("No pack issued in this period.") | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<h2>{{ _("Incidents and non-conformities") | e }}</h2>
+	<table class="tc-grid">
+		<tbody>
+		{%- for row in s.incidents %}
+			<tr><td>{{ _(row.incident_type or "") | e }}</td><td class="tc-num">{{ row.count }}</td></tr>
+		{%- else %}
+			<tr><td colspan="2">{{ _("No incident in this period.") | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+
+{%- else %}
+	{%- if r.months %}
+	<table class="tc-grid">
+		<thead><tr>
+			<th>{{ _("Month", context=T) | e }}</th><th>{{ _("Set ID", context=T) | e }}</th><th>{{ _("Set Type", context=T) | e }}</th>
+			<th>{{ _("Department", context=T) | e }}</th><th class="tc-num">{{ _("Cycles Used / Max") | e }}</th>
+			<th class="tc-num">{{ _("Cycles per Month") | e }}</th><th class="tc-num">{{ _("Replacement Price (VND)") | e }}</th>
+		</tr></thead>
+		<tbody>
+		{%- for month in r.months %}
+			{%- for row in month.rows %}
+			<tr>
+				<td>{{ month.month | e }}</td><td class="tc-code">{{ (row.set_id or row.set_unit) | e }}</td>
+				<td>{{ row.set_type_name | e }}</td><td>{{ (row.department or "") | e }}</td>
+				<td class="tc-num">{{ row.cycles_used }} / {{ row.max_cycles }}</td>
+				<td class="tc-num">{{ row.cycles_per_month }}</td><td class="tc-num">{{ r.fmt_money(row.price) }}</td>
+			</tr>
+			{%- endfor %}
+			<tr class="tc-total"><td colspan="6">{{ _("Total {0}").format(month.month) | e }}</td><td class="tc-num">{{ r.fmt_money(month.total) }}</td></tr>
+		{%- endfor %}
+			<tr class="tc-total"><td colspan="6">{{ _("Grand Total", context=T) | e }}</td><td class="tc-num">{{ r.fmt_money(r.grand_total) }}</td></tr>
+		</tbody>
+	</table>
+	{%- else %}
+	<div class="tc-empty">{{ _("No set is expected to reach its maximum cycles in the next 12 months.") | e }}</div>
+	{%- endif %}
+{%- endif %}
+
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Prepared by") | e }}<span>{{ r.exported_by | e }}</span></td>
+			<td>{{ _("Head of Infection Control") | e }}<span>{{ _("(signature and full name)") | e }}</span></td>
+		</tr>
+	</table>
+</div>

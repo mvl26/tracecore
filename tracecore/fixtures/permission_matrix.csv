@@ -16,11 +16,18 @@ DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-027
 DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
 DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-029
 DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
-DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-030
+DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,RW,RW,R,R,FEAT-030; FEAT-050 A-63: R07 ghi sự cố chất thải (UC-37 bước 4)
 DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
 DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
 DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
 DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
+DT-WASTETYPE,Waste Type,R,RW,,,,,R,,R,RW,FEAT-047 A-60 W14: danh mục; R02 và R10 cấu hình
+DT-WASTECOL,Waste Collection,R,RWSA,,,,,RWS,,R,R,FEAT-047 A-60 W14: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
+DT-WASTECON,Waste Container,R,R,,,,,R,,R,R,FEAT-047 A-60 W14: chỉ dịch vụ thu gom tạo và đổi
+DT-WASTELOC,Waste Storage Location,R,RW,,,,,R,,,RW,FEAT-048 A-61: R10 và R02 cấu hình vị trí kho; R07 chỉ đọc
+DT-WASTEVENDOR,Waste Treatment Vendor,R,RW,,,,,R,,RW,R,FEAT-049 A-62: R09 và R02 quản lý đơn vị xử lý và hợp đồng; R07 đọc để chọn
+DT-WASTEHANDOVER,Waste Handover,R,RWSA,,,,,RWS,,RW,R,FEAT-049 A-62: R07 lập và ghi sổ; R02 hủy; R09 bổ sung chứng từ
+DT-WASTEQUOTA,Waste Quota,R,RW,,,,,,,R,R,FEAT-050 A-63: R02 cấu hình định mức
 DT-EMP,Employee,R,RWS,,,,,,,,RW,
 DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
 DT-COMP,Station Competency,R,RWS,,,,,,,,RW,
@@ -36,8 +43,12 @@ DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,FEAT-044 A-47 C12
 DT-COSTCAT,Cost Category,R,R,,,,,,,RW,R,FEAT-044 A-47 C12
 DT-COSTSET,Cost Settings,RW,,,,,,,,R,,FEAT-044 A-47 C6
 DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D5: R01 duyệt (Ghi sổ/Hủy) theo UC-28 bước 4 (Frappe cần W để Ghi sổ); R09 lập Nháp
-DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,future FEAT-046
+DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,FEAT-046 A-53 D1
 DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
 DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
-DT-ZONE,Zone Station,R,R,,,,,,,R,RW,A-03 overrides BA baseline
+DT-ZONE,Zone Station,R,R,R,R,R,R,,,R,RW,A-03 overrides BA baseline; FEAT-008 A-55 Q4: R03-R06 đọc để chọn khu khi ghi nhật ký môi trường
+DT-ZONETYPE,Zone Type,R,R,,,,,,,R,RW,A-64: danh mục loại vùng
+DT-STFUNC,Station Function,R,R,,,,,,,R,RW,A-64: danh mục chức năng trạm
+DT-ARCHIVE,Archive Export,RW,,,,,,,,,RW,FEAT-012 A-58 D2: R01 và R10 tạo/đọc phiếu xuất hồ sơ lưu trữ; phiếu không sửa sau khi tạo
+DT-ENVLOG,Environment Log,R,RWSA,RWS,RWS,RWS,RWS,,,,R,FEAT-008 A-55 Q4: R02-R06 ghi sổ; R02 hủy/sửa đổi; R01 và R10 chỉ đọc
 DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped

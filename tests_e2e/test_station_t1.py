@@ -226,13 +226,14 @@ def test_t1_offline_continues_on_device(t1_page):
 	"""FEAT-009 (A-40 Q1, D3): mất mạng thì T1 tiếp nhận tiếp trên thiết bị theo snapshot, phiếu chờ đồng bộ."""
 	page = t1_page
 	page.wait_for_function(
-		"() => frappe.tc_station.offlineData && frappe.tc_station.offlineData.step === 'T1'", timeout=30000
+		"() => frappe.tc_station.offlineData && frappe.tc_station.offlineData.function === 'RECEIVE'",
+		timeout=30000,
 	)
 	page.context.set_offline(True)
 	page.evaluate("window.dispatchEvent(new Event('offline'))")
 	expect(page.locator(".tc-result")).to_contain_text("Tiếp nhận tiếp theo dữ liệu đã tải", timeout=15000)
 	scan(page, "NV-00001")  # thẻ người giao chỉ kiểm khi đồng bộ
-	expect(page.locator(".tc-t1-head")).to_contain_text("Phiếu offline")
+	expect(page.locator(".tc-t1-head")).to_contain_text("Phiếu ngoại tuyến")
 	expect(page.locator(".tc-t1-head")).to_contain_text("NV-00001")
 	page.locator("[data-action='discard']").click()
 	page.locator("[data-action='discard']").click()  # bỏ phiếu offline: không gì vào hàng đợi

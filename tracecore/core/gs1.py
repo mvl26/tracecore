@@ -4,7 +4,7 @@ Nơi duy nhất tạo Set ID GIAI và mã GIAI dụng cụ (AI 8004) và payload
 mã phiên bản BOM trên phiếu kiểm đếm (``BOM-<mã loại bộ>-V<n>``, không phải GS1), kiểm GTIN-14, phân tích chuỗi quét
 từ máy quét HID
 và mã hóa DataMatrix (ảnh PNG qua libdmtx, lệnh ZPL ``^BXN`` cho máy in).
-Hàm ở đây thuần Python, không đọc/ghi DB.
+Hàm ở đây thuần Python, không ghi DB; chỉ các hàm đọc cấu hình mới đọc Settings/site_config.
 """
 
 import ctypes
@@ -20,6 +20,7 @@ AI_GTIN = "01"
 AI_PACKED = "11"
 AI_EXPIRY = "17"
 AI_SERIAL = "21"
+SETTINGS = "TraceCore Settings"
 DEFAULT_COMPANY_PREFIX = "9520000"  # prefix GS1 "952" dành cho demo — chỉ dev/staging (OQ-05)
 TEST_GTIN_PREFIX = "0952"  # chỉ thị 0 + prefix demo 952: GTIN-14 do make_test_gtin14 sinh
 MAX_GIAI_LENGTH = 30
@@ -43,6 +44,9 @@ CSET82 = frozenset(string.ascii_letters + string.digits + "!\"%&'()*+,-./:;<=>?_
 
 _AIM_PREFIX = re.compile(r"^\][A-Za-z][0-9A-Za-z]")
 _GTIN14 = re.compile(r"[0-9]{14}")
+_GTIN_PREFIX = re.compile(r"[0-9]{7,11}")
+GTIN_BODY_DIGITS = 12  # mã doanh nghiệp + mã tham chiếu
+GTIN_INDICATORS = tuple("012345678")
 _GTIN_BODY = re.compile(r"[0-9]{13}")
 # Cycle ID: thứ tự AI cố định 01 → 11 → 17 → 21, (21) cuối nên chạy tới hết dữ liệu (không cần GS)
 _PACK_HRI = re.compile(r"\(01\)([0-9]{14})\(11\)([0-9]{6})\(17\)([0-9]{6})\(21\)(.+)")
@@ -72,11 +76,34 @@ class GS1Error(ValueError):
 		self.code = code
 
 
-def configured_company_prefix():
-	"""Tiền tố GS1 của bệnh viện từ site_config (``tc_gs1_company_prefix``)."""
+def _setting(field):
+	# đọc thẳng dòng Singles: được gọi cả khi migrate chưa có trường trong meta, và không qua cache của form Settings
 	import frappe
 
-	return str(frappe.conf.get("tc_gs1_company_prefix") or DEFAULT_COMPANY_PREFIX)
+	return str(
+		frappe.db.get_value("Singles", {"doctype": SETTINGS, "field": field}, "value", order_by=None) or ""
+	)
+
+
+def declared_company_prefix():
+	"""Mã doanh nghiệp GS1 viện khai trong TraceCore Settings; chưa khai → ``""`` (A-76)."""
+	return _setting("gs1_company_prefix")
+
+
+def gtin_indicator_digit():
+	"""Số chỉ thị GTIN-14 khai trong TraceCore Settings, mặc định ``0``."""
+	return _setting("gtin_indicator_digit") or "0"
+
+
+def configured_company_prefix():
+	"""Nguồn prefix duy nhất cho GIAI (A-76): Settings → ``tc_gs1_company_prefix`` của site_config → prefix demo."""
+	import frappe
+
+	return (
+		declared_company_prefix()
+		or str(frappe.conf.get("tc_gs1_company_prefix") or "")
+		or DEFAULT_COMPANY_PREFIX
+	)
 
 
 def make_giai(prefix, asset_ref):
@@ -175,6 +202,33 @@ def is_valid_gtin14(value):
 	)
 
 
+def is_valid_gtin_prefix(prefix):
+	"""Mã doanh nghiệp dùng cấp GTIN-14: 7-11 chữ số ASCII (A-76)."""
+	return isinstance(prefix, str) and _GTIN_PREFIX.fullmatch(prefix) is not None
+
+
+def gtin_ref_capacity(prefix):
+	"""Số mã tham chiếu cấp được của prefix: độ dài 12 - độ dài prefix, bắt đầu từ 1."""
+	return 10 ** (GTIN_BODY_DIGITS - len(prefix)) - 1
+
+
+def make_gtin14(indicator, prefix, item_ref):
+	"""GTIN-14 = số chỉ thị + mã doanh nghiệp + mã tham chiếu đệm 0 bên trái + số kiểm tra GS1 mod 10 (A-76)."""
+	indicator = str(indicator)
+	if indicator not in GTIN_INDICATORS:
+		raise GS1Error("GS1_INDICATOR", f"GTIN indicator must be 0-8: {indicator!r}")
+	if not is_valid_gtin_prefix(prefix):
+		raise GS1Error("GS1_PREFIX", f"GTIN company prefix must be 7-11 digits: {prefix!r}")
+	if (
+		isinstance(item_ref, bool)
+		or not isinstance(item_ref, int)
+		or not 1 <= item_ref <= gtin_ref_capacity(prefix)
+	):
+		raise GS1Error("GS1_ITEM_REF", f"Item reference out of range for prefix {prefix}: {item_ref!r}")
+	body = f"{indicator}{prefix}{item_ref:0{GTIN_BODY_DIGITS - len(prefix)}d}"
+	return body + gtin_check_digit(body)
+
+
 def make_test_gtin14(serial):
 	"""GTIN-14 TEST: ``0`` + prefix demo + serial 5 chữ số + check digit.
 
@@ -188,8 +242,8 @@ def make_test_gtin14(serial):
 
 
 def is_test_gtin(gtin):
-	"""``True`` nếu GTIN thuộc dải TEST (``0952…``) — nhãn phải in dòng ``TEST``."""
-	return isinstance(gtin, str) and gtin.startswith(TEST_GTIN_PREFIX)
+	"""``True`` nếu sau số chỉ thị là dải demo ``952``, số chỉ thị nào cũng vậy (A-76): nhãn phải in dòng ``TEST``."""
+	return isinstance(gtin, str) and is_demo_prefix(gtin[1:])
 
 
 def _is_valid_serial(value):

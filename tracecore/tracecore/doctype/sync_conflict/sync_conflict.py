@@ -2,9 +2,14 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from tracecore.core import sync
+
 
 class SyncConflict(Document):
 	"""Xung đột khi phát lại offline (A-40); chỉ `core.sync` tạo và đóng, không xóa."""
+
+	def onload(self):
+		self.set_onload("readable", sync.readable(self))
 
 	def validate(self):
 		if not self.is_new() and not self.flags.tc_sync:

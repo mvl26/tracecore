@@ -8,11 +8,13 @@
  "field_order": [
   "receipt_section",
   "department",
+  "department_name",
   "deliverer",
   "deliverer_name",
   "needs_card",
   "column_break_receipt",
   "receiver",
+  "receiver_name",
   "station",
   "opened_at",
   "received_at",
@@ -40,9 +42,20 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Returning Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "description": "Employee of the department who handed the sets over, from the scanned employee card. Empty when the deliverer has no card.",
    "fieldname": "deliverer",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Deliverer",
    "options": "Employee",
    "set_only_once": 1
@@ -75,6 +88,16 @@
    "options": "Employee",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "receiver.employee_name",
+   "fieldname": "receiver_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Receiver Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "station",
@@ -142,7 +165,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-24 09:00:00.000000",
+ "modified": "2026-10-31 09:51:28.507350",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Dirty Receipt",

@@ -33,6 +33,8 @@ SERVICE_FIELDS = (
 	"machine_files",
 	"unload_scan_equipment",
 	"unload_scan_at",
+	"indicator_required",
+	"indicator_photo_required",
 	"clean_test_result",
 	"cycle_result",
 	"result_source",

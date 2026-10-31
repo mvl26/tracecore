@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "creation": "2026-10-31 12:00:00.000000",
+ "description": "Each occurrence of an error code (FEAT-052, A-71, FR-M9-20). Written by the service only; never deleted.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "error_code",
+  "error_name",
+  "status",
+  "block_code",
+  "column_break_a",
+  "station",
+  "station_name",
+  "user",
+  "occurred_at",
+  "client_ts",
+  "section_object",
+  "object_type",
+  "object_name",
+  "detail",
+  "section_approval",
+  "approved_by",
+  "valid_until",
+  "approval_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "error_code",
+   "fieldtype": "Link",
+   "label": "Error code",
+   "options": "TraceCore Error Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "fetch_from": "error_code.error_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nResolved\nTemporarily Allowed",
+   "default": "Open",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "block_code",
+   "fieldtype": "Data",
+   "label": "Internal code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "Zone Station",
+   "in_standard_filter": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "station.zone_station_name",
+   "fieldname": "station_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Station Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "occurred_at",
+   "fieldtype": "Datetime",
+   "label": "Occurred at",
+   "in_list_view": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Device time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_object",
+   "fieldtype": "Section Break",
+   "label": "Object"
+  },
+  {
+   "fieldname": "object_type",
+   "fieldtype": "Data",
+   "label": "Object type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "object_name",
+   "fieldtype": "Data",
+   "label": "Object",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "detail",
+   "fieldtype": "Small Text",
+   "label": "Detail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_approval",
+   "fieldtype": "Section Break",
+   "label": "Temporary access"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Datetime",
+   "label": "Valid until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 16:15:32.412687",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "TraceCore Error Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R01",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R02",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R10",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "occurred_at",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "LOI-.#########",
+ "naming_rule": "Expression (old style)",
+ "in_create": 1
+}

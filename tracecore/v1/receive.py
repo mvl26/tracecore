@@ -24,7 +24,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = receiving.STEP
+FUNCTION = receiving.FUNCTION
 TRUE_STRINGS = ("1", "true", "yes", "on")
 
 
@@ -83,6 +83,34 @@ def _receipt_ref(receipt):
 # --- Mở, tiếp tục, hủy phiếu ----------------------------------------------------------------------------
 
 
+# --- Phiếu đã tiếp nhận hôm nay (A-67), chỉ đọc -------------------------------------------------------------------
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*RECEIVE_ROLES)
+def received_today(station, client_ts=None, token=None):
+	"""Khối "Phiếu đã tiếp nhận hôm nay" của màn T1: phiếu đã ghi sổ hôm nay tại trạm (của mọi người nhận) kèm tổng."""
+	require_any_role(*RECEIVE_ROLES)
+	parse_client_ts(client_ts)
+	return run_at_step(FUNCTION, station, None, lambda: {"ok": True, **receiving.received_today(station)})
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*RECEIVE_ROLES)
+def receipt_sets(receipt, station, client_ts=None, token=None):
+	"""Xem nhanh các bộ trong một phiếu đã ghi sổ: mã bộ, tên bộ dụng cụ, trạng thái hiện tại."""
+	require_any_role(*RECEIVE_ROLES)
+	receipt = _text(receipt, "receipt", required=True)
+	parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		None,
+		lambda: {"ok": True, "sets": receiving.receipt_sets(receipt, station)},
+		*_receipt_ref(receipt),
+	)
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RECEIVE_ROLES)
 @idempotent
@@ -104,7 +132,7 @@ def open(station, raw=None, department=None, deliverer_name=None, client_ts=None
 		return {"ok": True, **opened}
 
 	return run_at_step(
-		STEP, station, timestamp, call, None, None, gs1.parse_scan(raw)["raw"] if raw else None
+		FUNCTION, station, timestamp, call, None, None, gs1.parse_scan(raw)["raw"] if raw else None
 	)
 
 
@@ -121,7 +149,7 @@ def discard(receipt, station, client_ts=None, token=None):
 		receiving.discard(receipt, station, _receiver())
 		return {"ok": True, "receipt": None, "departments": receiving.departments()}
 
-	return run_at_step(STEP, station, timestamp, call, *_receipt_ref(receipt))
+	return run_at_step(FUNCTION, station, timestamp, call, *_receipt_ref(receipt))
 
 
 # --- Quét bộ, xác nhận, ghi sổ ---------------------------------------------------------------------------
@@ -130,7 +158,17 @@ def discard(receipt, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RECEIVE_ROLES)
 @idempotent
-def scan_set(receipt, raw, station, force_reason=None, reviewer_proof=None, client_ts=None, token=None):
+def scan_set(
+	receipt,
+	raw,
+	station,
+	force_reason=None,
+	reviewer_proof=None,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+):
 	"""Quét một Set ID vào phiếu: trả ``{"ok": true, "duplicate", "item", "summary"}``; `item` có đủ dòng BOM + ảnh.
 
 	`force_reason` + `reviewer_proof` (PIN proof của R02 đang đăng nhập, `v1.station.verify_pin`) chỉ dùng để tiếp nhận
@@ -145,7 +183,7 @@ def scan_set(receipt, raw, station, force_reason=None, reviewer_proof=None, clie
 	session = current_station_session()
 	ref_doctype, ref_name, shown = _set_ref(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -164,6 +202,8 @@ def scan_set(receipt, raw, station, force_reason=None, reviewer_proof=None, clie
 		ref_doctype,
 		ref_name,
 		shown,
+		entry_mode,
+		manual_reason,
 	)
 
 
@@ -189,7 +229,7 @@ def confirm_line(
 	rows, note = _lines(lines), _text(note, "note")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -221,7 +261,7 @@ def attach_photo(receipt, set_id, file_name, content, station, client_ts=None, t
 	file_name, content = _text(file_name, "file_name"), _text(content, "content", required=True)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -241,7 +281,7 @@ def submit(receipt, station, client_ts=None, token=None):
 	receipt = _text(receipt, "receipt", required=True)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **receiving.submit(receipt, station, _receiver(), timestamp)},
@@ -289,7 +329,7 @@ def submit_offline(station, receipt, client_ts=None, token=None):
 	payload = _offline_receipt(receipt)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **receiving.submit_offline(station, _receiver(), timestamp, payload)},

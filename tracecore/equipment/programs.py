@@ -36,7 +36,7 @@ SCALAR_FIELDS = (
 	"use_default_norms",
 )
 CHILD_FIELDS = {
-	"consumables": ("item", "qty_per_load", "qty_per_pack"),
+	"consumables": ("item", "uom", "qty_per_load", "qty_per_pack"),
 	"compatible_pack_types": ("pack_type",),
 	"parameters": ("parameter_name", "unit", "min_value", "max_value", "required"),
 }

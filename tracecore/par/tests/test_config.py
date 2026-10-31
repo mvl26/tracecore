@@ -11,7 +11,7 @@ from tracecore.tests.factories import (
 	make_set_unit,
 	make_user,
 )
-from tracecore.tests.utils import assert_permission_matrix, bru
+from tracecore.tests.utils import as_non_deleter, assert_permission_matrix, bru
 
 # Par Level liên kết Instrument/Instrument Set Type (→ Department, Item); CI chưa có Setup Wizard
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
@@ -134,8 +134,8 @@ class TestParLevel(FrappeTestCase):
 	def test_no_delete_for_anyone(self):
 		make_instrument("PL-INS8")
 		par = make_par_level("Instrument", "PL-INS8", max_cycles=500)
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc("Par Level", par.name, force=True)
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc("Par Level", par.name, force=True, ignore_permissions=True)
 
 	def test_par_changes_are_audited(self):
 		make_instrument("PL-INS9")

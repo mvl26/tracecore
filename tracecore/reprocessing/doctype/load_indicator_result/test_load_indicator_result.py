@@ -19,6 +19,14 @@ class TestLoadIndicatorResult(IsolatedTestCase):
 		meta = frappe.get_meta("Load Indicator Result")
 		self.assertEqual(
 			meta.get_field("indicator").options.split("\n"),
-			["bowie_dick", "chemical_class_5", "chemical_plasma", "biological"],
+			["bowie_dick", "chemical_class_5", "chemical_plasma", "biological", "wash_indicator"],
 		)
 		self.assertEqual(meta.get_field("result").options.split("\n"), ["Pending", "Pass", "Fail"])
+
+	def test_belongs_to_exactly_one_load_or_wash_batch(self):
+		doc = frappe.get_doc(
+			{"doctype": "Load Indicator Result", "indicator": "wash_indicator", "result": "Pass"}
+		)
+		doc.flags.tc_washing = True
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert(ignore_permissions=True)

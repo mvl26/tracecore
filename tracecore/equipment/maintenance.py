@@ -11,8 +11,10 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, add_months, cint, date_diff, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import extension, notification
+from tracecore.core import error_codes, extension, notification
 from tracecore.equipment.status import set_status
+
+PRESSURE_TYPES = ("Steam Sterilizer",)
 
 DOCTYPE = "Maintenance Record"
 INCIDENT_HOOK = "tracecore_equipment_incident"
@@ -242,6 +244,28 @@ def _notify(event, users, subject, doctype, name):
 	notification.emit(event, frappe._dict(doctype=doctype, name=name), subject, users=users)
 
 
+def _only_warning(equipment_type, reason) -> bool:
+	"""FEAT-052 A-71: TB-002 viện đặt Cảnh báo/tắt thì không khóa máy; kiểm định máy áp lực (TB-004) luôn khóa."""
+	if reason == "Inspection Expired" and equipment_type in PRESSURE_TYPES:
+		return False
+	return not error_codes.is_blocking("TB-002")
+
+
+def release_downgraded() -> list[str]:
+	"""Hook `tracecore_error_rules_changed`: máy đã khóa vì TB-002 được mở ngay khi viện hạ mức (đổi cấu hình có hiệu lực ngay)."""
+	released = []
+	for row in frappe.get_all(
+		"Equipment",
+		filters={"status": "Locked", "lock_reason": ["in", list(EXPIRY_REASONS.values())]},
+		fields=["name", "equipment_type", "lock_reason"],
+		order_by="name asc",
+	):
+		if _only_warning(row.equipment_type, row.lock_reason):
+			_save_machine(row.name, status="Ready", lock_reason=None)
+			released.append(row.name)
+	return released
+
+
 def lock_overdue():
 	"""Việc 00:00 (FR-M5-03.1, BRU-EQP-002): máy Sẵn sàng có kiểm định/hiệu chuẩn đã quá ngày → Khóa; trả tên các máy bị khóa.
 
@@ -254,7 +278,7 @@ def lock_overdue():
 		"Equipment",
 		filters={"status": "Ready"},
 		or_filters=[["inspection_due", "<", day], ["calibration_due", "<", day]],
-		fields=["name", "inspection_due", "calibration_due", "unlock_until"],
+		fields=["name", "equipment_type", "inspection_due", "calibration_due", "unlock_until"],
 		order_by="name asc",
 	)
 	locked = []
@@ -263,7 +287,7 @@ def lock_overdue():
 		if row.unlock_until and get_datetime(row.unlock_until) > now:
 			continue
 		reason = expired_reason(row)
-		if not reason:
+		if not reason or _only_warning(row.equipment_type, reason):
 			continue
 		_save_machine(row.name, status="Locked", lock_reason=reason)
 		locked.append(row.name)

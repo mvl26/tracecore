@@ -38,7 +38,7 @@ jobs:
     # và site test riêng, ghi coverage của phần mình; job `coverage` gộp lại để kiểm diff-cover như cũ
     name: test (FrappeTestCase, phần ${{ matrix.shard }}/4)
     runs-on: ubuntu-22.04
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:

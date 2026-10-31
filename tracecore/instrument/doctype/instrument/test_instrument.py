@@ -3,6 +3,7 @@ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.tests.factories import make_instrument, make_item, make_user
+from tracecore.tests.utils import as_non_deleter
 
 # Instrument liên kết Item (ERPNext) và User (owner); site CI mới chưa chạy Setup Wizard nên bỏ phụ thuộc
 # tạo bản ghi test tự động (dữ liệu tạo qua tracecore/tests/factories.py).
@@ -111,8 +112,8 @@ class TestInstrument(FrappeTestCase):
 		self.assertEqual(snapshot["manufacturer"], "Aesculap")
 		self.assertEqual(snapshot["spaulding_class"], "Critical")
 		self.assertEqual([row["method"] for row in snapshot["compatible_methods"]], ["Steam 134"])
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc("Instrument", doc.name)
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc("Instrument", doc.name, ignore_permissions=True)
 		self.assertTrue(frappe.db.exists("Instrument", doc.name))
 
 	def test_required_fields_listed_in_one_message(self):

@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 18:00:00.000000",
+ "description": "Shelf or room of the temporary waste store, identified by a KE- QR code (FEAT-048, FR-M10-03).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "location_name",
+  "zone_station",
+  "column_break_main",
+  "is_active",
+  "is_cold",
+  "cold_breach_since",
+  "section_types",
+  "allowed_types"
+ ],
+ "fields": [
+  {
+   "fieldname": "location_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Location Name",
+   "reqd": 1
+  },
+  {
+   "description": "Waste zone of this location. A cold room needs its own zone: temperatures are logged per zone.",
+   "fieldname": "zone_station",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Zone Station",
+   "mandatory_depends_on": "is_cold",
+   "options": "Zone Station"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "default": "0",
+   "description": "Stored at 8 degrees C or below: bags use the cold storage time of their waste type.",
+   "fieldname": "is_cold",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Cold Room"
+  },
+  {
+   "depends_on": "is_cold",
+   "fieldname": "cold_breach_since",
+   "fieldtype": "Datetime",
+   "label": "Above the Limit Since",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_types",
+   "fieldtype": "Section Break",
+   "label": "Waste Types Allowed"
+  },
+  {
+   "fieldname": "allowed_types",
+   "fieldtype": "Table",
+   "label": "Waste Types Allowed",
+   "options": "Waste Storage Location Type",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Storage Location",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "KE-.####",
+ "naming_rule": "Expression",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "search_fields": "location_name,zone_station",
+ "title_field": "location_name",
+ "track_changes": 1
+}

@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 20:00:00.000000",
+ "description": "Waste type a treatment vendor is licensed to take (FEAT-049, FR-M10-05).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "waste_type"
+ ],
+ "fields": [
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "options": "Waste Type",
+   "reqd": 1,
+   "in_list_view": 1,
+   "label": "Waste Type"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Vendor Permitted Waste Type",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "permissions": [],
+ "istable": 1
+}

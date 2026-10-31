@@ -21,11 +21,15 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate
+from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
+from tracecore.reprocessing import cycle_time
 
-STEP = "T5"
+STEP = "T5"  # mã cổng trong step_gate
+FUNCTION = "STERI_LOAD"
+UNLOAD_FUNCTION = "STERI_UNLOAD"
+LOAD_OR_UNLOAD = (FUNCTION, UNLOAD_FUNCTION)
 SAVEPOINT = "tc_load_complete"
 # loại máy tiệt khuẩn → phương pháp của gói nhận được (Pack.method)
 STERILIZER_TYPES = {"Steam Sterilizer": "Steam", "Plasma Sterilizer": "Plasma"}
@@ -45,14 +49,15 @@ MISSING_CARD = "card"
 EQUIPMENT_FIELDS = (
 	"name equipment_name equipment_type status zone_in zone_out is_connected has_printout capacity".split()
 )
+OPTIONAL_INDICATORS_HOOK = "tracecore_load_optional_indicators"
 INDICATORS = {
 	"Steam": ("chemical_class_5", "bowie_dick"),
 	"Plasma": ("chemical_plasma",),
 }
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _today():
@@ -100,6 +105,8 @@ def check_equipment_ready(equipment):
 			_("Sterilizer is not ready"),
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another sterilizer, or call R02 to check the daily test and the inspection."),
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	running = frappe.db.get_value(
 		"Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0}, "name"
@@ -145,8 +152,14 @@ def _compatible_pack_types(program):
 	)
 
 
-def _indicators(equipment_type, requires_bi):
-	codes = list(INDICATORS[STERILIZER_TYPES[equipment_type]])
+def optional_indicators(equipment):
+	"""Chỉ thị không bắt buộc của máy theo cấu hình test hằng ngày, qua hook của M5 (A-70; M2 không import M5)."""
+	return {kind for kinds in extension.run(OPTIONAL_INDICATORS_HOOK, equipment) for kind in kinds}
+
+
+def _indicators(equipment, equipment_type, requires_bi):
+	optional = optional_indicators(equipment)
+	codes = [code for code in INDICATORS[STERILIZER_TYPES[equipment_type]] if code not in optional]
 	if cint(requires_bi):
 		codes.append("biological")
 	return codes
@@ -182,7 +195,7 @@ def scan_machine(raw):
 			"requires_bi": cint(row.requires_bi),
 			"compatible_pack_types": _compatible_pack_types(row.name),
 			"parameters": _parameters(row.name),
-			"indicators": _indicators(equipment.equipment_type, row.requires_bi),
+			"indicators": _indicators(equipment.name, equipment.equipment_type, row.requires_bi),
 		}
 		for row in frappe.get_all(
 			"Process Program",
@@ -645,7 +658,7 @@ def _describe(doc):
 			"name": doc.program,
 			"program_name": frappe.db.get_value("Process Program", doc.program, "program_name"),
 		},
-		"indicators": _indicators(equipment_type, doc.requires_bi)
+		"indicators": _indicators(doc.equipment, equipment_type, doc.requires_bi)
 		if equipment_type in STERILIZER_TYPES
 		else [],
 		"requires_bi": cint(doc.requires_bi),
@@ -664,6 +677,7 @@ def _describe(doc):
 		"machine_report": doc.machine_report,
 		"manual_confirmed_by": _employee(doc.manual_confirmed_by),
 		"manual_confirmed_at": doc.manual_confirmed_at,
+		"duration": cycle_time.for_doc(doc),
 	}
 
 
@@ -686,24 +700,34 @@ def lookup(raw):
 # --- Dữ liệu chu trình nhập tay có xác nhận (FR-M2-10, BRU-REP-015) -----------------------------------------
 
 
-def _check_data_station(station, machine):
-	"""Trạm nhập dữ liệu: trạm T5, T5b hoặc trạm đang hoạt động thuộc khu cửa ra của máy (zone_out, rỗng thì zone_in)."""
+def _check_data_station(station, machine, unload_only=False):
+	"""Trạm nhập dữ liệu: trạm nạp, trạm dỡ hoặc trạm đang hoạt động thuộc khu cửa ra của máy (zone_out, rỗng thì zone_in).
+
+	`unload_only`: dỡ mẻ và giải phóng thì trạm chỉ có chức năng nạp không được làm (A-64).
+	"""
 	row = None
 	if isinstance(station, str) and station:
 		row = frappe.db.get_value(
-			"Zone Station", station, ["is_zone", "is_active", "station_step", "parent_zone"], as_dict=True
+			"Zone Station", station, ["is_zone", "is_active", "parent_zone"], as_dict=True
 		)
+	functions = (UNLOAD_FUNCTION,) if unload_only else LOAD_OR_UNLOAD
 	exit_zone = machine.zone_out or machine.zone_in
 	if row and not cint(row.is_zone) and cint(row.is_active):
-		if row.station_step in (STEP, "T5b") or (exit_zone and row.parent_zone == exit_zone):
+		if zones.station_has_function(station, *functions) or (exit_zone and row.parent_zone == exit_zone):
 			return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
 		_(
-			"Station {0} cannot enter data for sterilizer {1}: use a T5 station or a station at the exit door."
-		).format(station if isinstance(station, str) and station else "-", machine.name),
-		_("Enter the cycle data at a T5 station or at a station in zone {0}.").format(exit_zone or "-"),
+			"Station {0} cannot enter data for sterilizer {1}: use a {2} station or a station at the exit door."
+		).format(
+			station if isinstance(station, str) and station else "-",
+			machine.name,
+			zones.function_label(functions[-1]),
+		),
+		_("Enter the cycle data at a {0} station or at a station in zone {1}.").format(
+			zones.function_label(functions[-1]), exit_zone or "-"
+		),
 	)
 
 
@@ -747,11 +771,11 @@ def _scan_kind(doc, raw):
 	)
 
 
-def _open_for_data(load, equipment_raw, load_raw, station, for_update=False):
+def _open_for_data(load, equipment_raw, load_raw, station, for_update=False, unload_only=False):
 	"""Mẻ còn mở đã kiểm trạm và CẢ HAI mã quét (server không tin kiosk, Q10); trả ``(doc, máy)``."""
 	doc = _load_doc(load, for_update=for_update)
 	machine = frappe.db.get_value("Equipment", doc.equipment, list(EQUIPMENT_FIELDS), as_dict=True)
-	_check_data_station(station, machine)
+	_check_data_station(station, machine, unload_only=unload_only)
 	_require_open(doc)
 	if _scan_kind(doc, equipment_raw) != "equipment" or _scan_kind(doc, load_raw) != "load":
 		raise _blocked(
@@ -913,6 +937,7 @@ def save_manual_data(
 		"needs_review": doc.needs_review,
 		"status": doc.status,
 		"params": parameters,
+		"duration": cycle_time.for_doc(doc),
 	}
 
 

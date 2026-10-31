@@ -1,40 +1,138 @@
 import frappe
-from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import errors, zones
-from tracecore.tests.utils import bru
+from tracecore.tests.utils import IsolatedTestCase, bru
 
 
-class TestZones(FrappeTestCase):
-	def test_allowed_steps_by_zone_type(self):
-		self.assertEqual(zones.allowed_steps("Dirty"), ("T1", "T2"))
-		self.assertEqual(zones.allowed_steps("Clean"), ("T3", "T4", "T5"))
-		self.assertEqual(zones.allowed_steps("Sterile"), ("T5b", "T6", "T7"))
-		self.assertEqual(zones.allowed_steps("Department"), ("T8",))
-		self.assertEqual(zones.allowed_steps("Linen"), ("LIN",))
-		self.assertEqual(zones.allowed_steps("Waste"), ())
-		self.assertEqual(zones.allowed_steps("Unknown"), ())
-		self.assertEqual(zones.ZONE_FLOW, ("Dirty", "Clean", "Sterile"))
+class TestZones(IsolatedTestCase):
+	def test_default_catalog_matches_a64(self):
+		self.assertEqual(
+			zones.allowed_functions("Dirty"), ("RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD")
+		)
+		self.assertEqual(
+			zones.allowed_functions("Clean"),
+			("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD"),
+		)
+		self.assertEqual(zones.allowed_functions("Sterile"), ("STERI_UNLOAD", "PUTAWAY", "ISSUE"))
+		self.assertEqual(zones.allowed_functions("Department"), ("USE",))
+		self.assertEqual(zones.allowed_functions("Linen"), ("LINEN",))
+		self.assertEqual(zones.allowed_functions("Waste"), ("WASTE",))
+		self.assertEqual(zones.allowed_functions("Unknown"), ())
+
+	def test_manual_wash_has_no_screen_and_no_gate(self):
+		row = frappe.db.get_value("Station Function", "MANUAL_WASH", ["screen_key", "gate_step"])
+		self.assertEqual((row[0] or None, row[1] or None), (None, None))
+		self.assertEqual(zones.station_screen_tabs(["MANUAL_WASH"]), [])
+
+	def test_gate_of_each_function_is_fixed_by_catalog(self):
+		gates = dict(frappe.get_all("Station Function", fields=["name", "gate_step"], as_list=True))
+		self.assertEqual(
+			{name: gate for name, gate in gates.items() if gate},
+			{"RECEIVE": "T1", "WASH_UNLOAD": "T2", "ASSEMBLE": "T3", "PACK": "T4", "STERI_UNLOAD": "T5"},
+		)
+		self.assertEqual(set(zones.gate_labels()), {"T1", "T2", "T3", "T4", "T5"})
+		self.assertEqual(zones.gate_label("T4"), frappe._("Packing"))
 
 	@bru("BRU-FLOW-001")
-	def test_check_step_rejects_step_outside_zone(self):
+	def test_check_functions_reads_rules_from_config(self):
 		with self.assertRaises(frappe.ValidationError) as ctx:
-			zones.check_step("Dirty", "T4")
-		self.assertIn("T1", str(ctx.exception))
-		self.assertIn("T2", str(ctx.exception))
-		self.assertIsNone(zones.check_step("Clean", "T4"))
-		with self.assertRaises(frappe.ValidationError) as ctx:
-			zones.check_step("Linen", "T1")
-		self.assertNotIn("T1,", str(ctx.exception))
-		self.assertIsNone(zones.check_step("Clean", None))
-		self.assertIsNone(zones.check_step("Clean", ""))
+			zones.check_functions("Dirty", ["PACK"])
+		message = str(ctx.exception)
+		self.assertIn(frappe._("Packing"), message)
+		self.assertIn(frappe._("Receiving"), message)
+		self.assertIsNone(zones.check_functions("Clean", ["PACK", "ASSEMBLE"]))
+		self.assertIsNone(zones.check_functions("Clean", []))
+		zone_type = frappe.get_doc("Zone Type", "Dirty")
+		zone_type.append("functions", {"station_function": "PACK"})
+		zone_type.save(ignore_permissions=True)
+		self.assertIsNone(zones.check_functions("Dirty", ["PACK"]))
 
-	def test_check_step_with_empty_zone_type_gives_validation_error(self):
-		"""Khu chưa có loại (None/rỗng): báo lỗi nghiệp vụ, không lỗi lập trình."""
+	def test_check_functions_with_empty_zone_type_gives_validation_error(self):
 		for zone_type in (None, ""):
 			with self.subTest(zone_type=zone_type), self.assertRaises(frappe.ValidationError):
-				zones.check_step(zone_type, "T4")
-		self.assertEqual(zones._zone_type_label(None), "")
+				zones.check_functions(zone_type, ["PACK"])
+
+	def test_config_decides_next_zone_type(self):
+		self.assertEqual(zones.next_zone_type("Dirty"), "Clean")
+		self.assertEqual(zones.next_zone_type("Clean"), "Sterile")
+		self.assertIsNone(zones.next_zone_type("Sterile"))
+		self.assertIsNone(zones.next_zone_type("Linen"))
+		frappe.get_doc(
+			{"doctype": "Zone Type", "type_name": "TEST Quarantine", "next_zone_type": "Sterile"}
+		).insert(ignore_permissions=True)
+		clean = frappe.get_doc("Zone Type", "Clean")
+		clean.next_zone_type = "TEST Quarantine"
+		clean.save(ignore_permissions=True)
+		self.assertEqual(zones.next_zone_type("Clean"), "TEST Quarantine")
+
+	def test_next_zone_cannot_make_a_loop(self):
+		sterile = frappe.get_doc("Zone Type", "Sterile")
+		sterile.next_zone_type = "Dirty"
+		with self.assertRaises(frappe.ValidationError):
+			sterile.save(ignore_permissions=True)
+		dirty = frappe.get_doc("Zone Type", "Dirty")
+		dirty.next_zone_type = "Dirty"
+		with self.assertRaises(frappe.ValidationError):
+			dirty.save(ignore_permissions=True)
+
+	def test_header_color_maps_to_css_class(self):
+		self.assertEqual(zones.zone_color_class("Dirty"), "dirty")
+		self.assertEqual(zones.zone_color_class("Department"), "dept")
+		self.assertEqual(zones.zone_color_class("Linen"), "web")
+		self.assertEqual(zones.zone_color_class(None), "web")
+
+	def test_station_functions_and_lookup(self):
+		self.assertEqual(zones.station_functions("TR-002"), ["WASH_LOAD", "WASH_UNLOAD"])
+		self.assertTrue(zones.station_has_function("TR-004", "PACK"))
+		self.assertTrue(zones.station_has_function("TR-004", "ISSUE", "PACK"))
+		self.assertFalse(zones.station_has_function("TR-004", "ISSUE"))
+		self.assertFalse(zones.station_has_function("ZONE-CLEAN", "PACK"))
+		self.assertFalse(zones.station_has_function(None, "PACK"))
+		self.assertIn("TR-004", zones.stations_with_function("PACK"))
+		self.assertEqual(zones.stations_with_function("PACK", zone="ZONE-DIRTY"), [])
+
+	def test_missing_functions_lists_required_chain_without_station(self):
+		self.assertEqual(zones.missing_functions(), [])
+		frappe.db.set_value("Zone Station", "TR-006", "is_active", 0)
+		self.assertEqual(zones.missing_functions(), ["PUTAWAY"])
+
+	def test_disabling_function_in_use_is_refused(self):
+		doc = frappe.get_doc("Station Function", "PACK")
+		doc.is_active = 0
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc.save(ignore_permissions=True)
+		self.assertIn("TR-004", str(ctx.exception))
+
+	def test_system_function_keeps_gate_and_screen(self):
+		for field, value in (("gate_step", "T3"), ("screen_key", "wash"), ("process_order", 1)):
+			doc = frappe.get_doc("Station Function", "PACK")
+			doc.set(field, value)
+			with self.subTest(field=field), self.assertRaises(frappe.ValidationError):
+				doc.save(ignore_permissions=True)
+		doc = frappe.get_doc("Station Function", "PACK")
+		doc.function_name = "Đóng gói bàn A"
+		doc.save(ignore_permissions=True)
+
+	def test_custom_function_has_no_gate_or_screen(self):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Station Function",
+				"function_code": "TEST_NOTE",
+				"function_name": "Note",
+				"process_order": 15,
+			}
+		).insert(ignore_permissions=True)
+		self.assertEqual((doc.gate_step or None, doc.screen_key or None, doc.is_system), (None, None, 0))
+		doc.gate_step = "T3"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save(ignore_permissions=True)
+
+	def test_removing_allowed_function_used_by_active_station_is_refused(self):
+		zone_type = frappe.get_doc("Zone Type", "Clean")
+		zone_type.functions = [row for row in zone_type.functions if row.station_function != "PACK"]
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			zone_type.save(ignore_permissions=True)
+		self.assertIn("TR-004", str(ctx.exception))
 
 	@bru("BRU-FLOW-001")
 	def test_pass_through_must_go_to_next_zone(self):

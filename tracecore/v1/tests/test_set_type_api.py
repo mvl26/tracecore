@@ -387,6 +387,7 @@ class TestSetTypeBomRpc(IsolatedTestCase):
 				"ok",
 				"set_type",
 				"effective_version",
+				"gtin",
 				"versions",
 				"shelf_life",
 				"usable_pack_types",

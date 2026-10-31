@@ -17,7 +17,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Target Type",
-   "options": "Equipment\nZone Station\nProcess Program",
+   "options": "Equipment\nZone Station\nProcess Program\nDepartment",
    "reqd": 1,
    "columns": 3
   },

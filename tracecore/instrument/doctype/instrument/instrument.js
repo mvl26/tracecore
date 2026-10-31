@@ -447,7 +447,7 @@ function tc_instr_init_dialog(frm, ctx) {
 			reason: __(
 				"Every set with this instrument already has maintenance history at T4, or no set contains it in its current BOM."
 			),
-			action: __("Counters now change only at packing (T4) and release."),
+			action: __("Counters now change only at packing and release."),
 		});
 		return;
 	}

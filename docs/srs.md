@@ -26,7 +26,13 @@
 | 1.11 A-10 | 2026-10-22 | Miyano (dev lead) + Claude Code; D1 chủ đầu tư/người dùng chốt 22/10/2026; D2–D7 dev lead xác nhận | Ghi chú theo Amendment A-10 của `docs/architecture.md` (FEAT-025, quyết định D1–D7), không thêm/bớt ID FR hay BRU: FR-M2-13 (nhập kho theo vị trí `KE-`, FEFO), FR-M2-14 (quá hạn = hạn dùng < hôm nay, chạy 00:00; rách/ướt/mở cần lý do; Set Unit → `Awaiting Receipt`); mâu thuẫn số 4 ở §3.1.11 đã chốt (D1). Chi tiết xem architecture.md, Revision History A-10. |
 | 1.11 A-12 | 2026-10-22 | Miyano (dev lead) + Claude Code; Q1, Q5, Q11, Q13, Q23 tạm — chờ chủ đầu tư duyệt; Q17, Q22 đã chốt (người dùng xác nhận 22/10/2026); các Q còn lại dev lead xác nhận | Ghi chú theo Amendment A-12 của `docs/architecture.md` (FEAT-021, quyết định Q1–Q23), không thêm/bớt ID FR hay BRU: FR-M2-03.1–.6, FR-M2-04.1–.7, FR-M2-24 (chỉ nguồn Nhập tay có xác nhận), FR-M2-25 (T2); mã lô chỉ sinh khi Hoàn thành nạp; `wash.complete` nhận một phần; mã HTTP 423 cho máy không sẵn sàng; NC tự tạo, trừ hóa chất, chi phí lô đạt từng phần. Chi tiết xem architecture.md và `docs/superpowers/plans/FEAT-021-t2-wash-batch.md`. |
 | 1.11 A-13 | 2026-10-22 | Miyano (dev lead) + Claude Code; G1–G10, G14 tạm — chờ chủ đầu tư duyệt (người dùng đã duyệt kế hoạch 22/10/2026, chủ đầu tư chưa); G11–G13, G15–G17 dev lead xác nhận | Ghi chú theo Amendment A-13 của `docs/architecture.md` (FEAT-016, quyết định G1–G17), không thêm/bớt ID FR hay BRU và không đổi câu EARS: FR-M1-05 (tạo chỉ qua cấp Set ID, tiền tố GS1 là cấu hình site, mẫu thẻ = chọn loại bản in, điều kiện cấp, nguồn bộ), FR-M1-05.1 (1–100 bộ, nguyên tử, serial liên tiếp, GIAI không check digit, hết dải, chặn tiền tố demo), FR-M1-05.3 (in lại có lý do, số lần in suy ra từ Print Job), FR-M1-05.4 (một Print Job mỗi nhãn, Set ID giữ khi máy in lỗi), FR-M1-06 và FR-M1-06.2 (lịch sử vòng đời từ Audit Log kèm sự kiện, thanh lý, hiển thị nguồn số chu trình). Chi tiết xem architecture.md, Revision History A-13. |
+| 1.11 A-59 | 2026-10-30 | Miyano (dev lead, người dùng yêu cầu 30/10/2026) + Claude Code; chủ đầu tư chưa xác nhận | Ghi chú theo Amendment A-59 của `docs/architecture.md`, không thêm/bớt ID FR hay BRU: FR-M4-02, loại chứng chỉ tự điền và gợi ý từ các loại đã dùng; bốn loại nêu trong FR là ví dụ, không còn là danh sách cố định. |
+| 1.11 A-77 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Theo Amendment A-77 của `docs/architecture.md`: thêm FR-M2-04.8 đến FR-M2-04.10 (chỉ thị rửa bắt buộc theo chương trình, trạng thái Chờ đọc chỉ thị); ghi chú FR-M2-04. |
+| 1.11 A-70 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Theo Amendment A-70 của `docs/architecture.md`: test hằng ngày cấu hình theo từng viện (3 chế độ trong `TraceCore Settings`), sửa FR-M5-05, FR-M5-05.1, .2, .3, FR-M5-06, FR-M2-09.3, ghi chú FR-M2-11. Không thêm/bớt ID FR hay BRU. |
 | 1.11-draft | 2026-10-17 | Nhóm SRS (Claude Code, chế độ IMPORT) | Chuẩn hóa sang SRS pipeline (ISO/IEC/IEEE 29148), yêu cầu chức năng viết theo EARS, giữ nguyên toàn bộ ID gốc. Bổ sung mục giao diện ngoài có ID (EI-*), NFR đề xuất lấp khoảng trống catalog (chờ duyệt), Appendix B gom vấn đề mở. |
+| 1.11 A-64 | 2026-10-30 | Miyano (dev lead, người dùng duyệt ngày 30/10/2026; chủ đầu tư chưa) + Claude Code | Sửa nội dung FR-M2-00.4 (đủ thứ tự chức năng thay cho 8 trạm), ghi chú FR-M9-03, FR-M9-03.2, không thêm/bớt ID FR hay BRU. Chi tiết xem architecture.md, Revision History A-64. |
+| 1.11 A-71 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Khung mã lỗi: thêm FR-M9-17..21, FR-M5-07; sửa FR-M4-03.1 (ngoại lệ cho phép tạm NS-001). Xem Amendment A-71 của `docs/architecture.md`. |
+| 1.11 A-76 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Theo Amendment A-76 của `docs/architecture.md`: mã doanh nghiệp GS1 khai trong `TraceCore Settings`, tự cấp GTIN-14 cho loại bộ, cấp bù, mở khóa có lý do. Ghi chú OQ-05 (chốt công thức; giá trị prefix thật còn mở). Không thêm/bớt ID FR hay BRU. |
 
 ---
 
@@ -54,7 +60,7 @@ Tài liệu này **kế thừa và thay thế về cấu trúc** cho #05 SRS v1.
 **Tầm nhìn.** TraceCore là phần mềm kết hợp **truy xuất dụng cụ (instrument tracking)** + **quản lý đồ vải** + **ERP nội bộ khoa** (nhân sự, thiết bị, kho, chi phí, cơ số), trong đó:
 
 - Mỗi bộ dụng cụ mang **Set ID vĩnh viễn** (GS1 DataMatrix GIAI) và mỗi chu trình đóng gói sinh một **Cycle ID** dùng một lần (mã vạch hai tầng).
-- Chuỗi tái xử lý **8 trạm T1–T8** được ghi nhận đầy đủ với **cổng kiểm soát 5 bước**: bước trước phải Đạt mới ghi nhận bước sau; bộ chỉ Vô khuẩn và vào kho khi đủ 5 cổng.
+- Chuỗi tái xử lý **8 trạm (cấu hình mặc định, A-64) T1–T8** được ghi nhận đầy đủ với **cổng kiểm soát 5 bước**: bước trước phải Đạt mới ghi nhận bước sau; bộ chỉ Vô khuẩn và vào kho khi đủ 5 cổng.
 - Mỗi mẻ tiệt khuẩn / lô rửa mang **mã mẻ / mã lô** tự sinh khi Hoàn thành nạp, là nơi gắn toàn bộ dữ liệu máy (tự động qua API với máy kết nối được, hoặc nhập tay bắt buộc có xác nhận người vận hành).
 - **Chặn sinh Cycle ID khi bộ dụng cụ vượt cơ số**; ghi đè phải có phê duyệt.
 - Đồ vải quản lý theo **khoa – loại – số lượng – cân nặng**, không theo từng chiếc.
@@ -68,7 +74,7 @@ Tài liệu này **kế thừa và thay thế về cấu trúc** cho #05 SRS v1.
 | Phân hệ | Nội dung chính trong phạm vi |
 | --- | --- |
 | M1 Danh mục dụng cụ | Dụng cụ đơn lẻ, loại bộ (BOM có phiên bản), bộ vật lý Set ID, thẻ DataMatrix, dụng cụ mượn, vật tư tái sử dụng. |
-| M2 Chuỗi tái xử lý | 8 trạm quét, Cycle ID, lô rửa, mẻ tiệt khuẩn (Load ID), chỉ thị, giải phóng/cách ly, kho vô khuẩn FEFO, cấp phát ký điện tử, quét sử dụng, truy xuất, thu hồi, sự cố – CAPA. |
+| M2 Chuỗi tái xử lý | 8 trạm (cấu hình mặc định, A-64) quét, Cycle ID, lô rửa, mẻ tiệt khuẩn (Load ID), chỉ thị, giải phóng/cách ly, kho vô khuẩn FEFO, cấp phát ký điện tử, quét sử dụng, truy xuất, thu hồi, sự cố – CAPA. |
 | M3 Đồ vải | Thu gom – lô giặt – cấp phát theo khoa, loại, số chiếc, cân nặng; đối chiếu thu – trả; định mức; bộ săng mổ tiệt khuẩn đi theo M2. |
 | M4 Nhân sự | Hồ sơ, CCHN, chứng chỉ, khám sức khỏe, tiêm chủng, ma trận năng lực gắn quyền trạm, phân ca. |
 | M5 Thiết bị | Hồ sơ thiết bị theo khu, chương trình xử lý có định mức, bảo trì – kiểm định – hiệu chuẩn, sự cố, test hằng ngày, khóa máy. |
@@ -94,7 +100,7 @@ Tài liệu này **kế thừa và thay thế về cấu trúc** cho #05 SRS v1.
 | Sprint | Phạm vi | Ghi chú |
 | --- | --- | --- |
 | 1 | M1 danh mục (ảnh thực tế, BOM, Set ID GS1, ngưỡng bảo dưỡng); M9 khu/trạm/người dùng/audit; đăng nhập thẻ | Nền tảng |
-| 2 | M2 chuỗi 8 trạm với cổng kiểm soát, mã lô/mã mẻ tự sinh, nhập tay có xác nhận, Cycle ID, 2 loại nhãn; M8 cơ số/ghi đè | Lõi truy xuất |
+| 2 | M2 chuỗi 8 trạm (cấu hình mặc định, A-64) với cổng kiểm soát, mã lô/mã mẻ tự sinh, nhập tay có xác nhận, Cycle ID, 2 loại nhãn; M8 cơ số/ghi đè | Lõi truy xuất |
 | 3 | M3 đồ vải; M4 nhân sự – năng lực | |
 | 4 | M5 thiết bị – chương trình – test ngày – khóa máy; M6 kho vật tư – tiêu hao theo mẻ | |
 | 5 | M7 chi phí – giá thành; báo cáo; sổ tiệt khuẩn điện tử; offline trạm (Must từ v1.11) | |
@@ -106,7 +112,7 @@ Tài liệu này **kế thừa và thay thế về cấu trúc** cho #05 SRS v1.
 
 | # | Mục tiêu | Chỉ số đo | Thời điểm |
 | --- | --- | --- | --- |
-| O1 | Truy xuất 100% bộ dụng cụ tái xử lý tới bệnh nhân và mẻ tiệt khuẩn | Tỷ lệ gói có đủ chuỗi 8 trạm ≥ 99%; thời gian tra cứu thu hồi < 5 phút | Go-live + 3 tháng |
+| O1 | Truy xuất 100% bộ dụng cụ tái xử lý tới bệnh nhân và mẻ tiệt khuẩn | Tỷ lệ gói có đủ chuỗi 8 trạm (cấu hình mặc định, A-64) ≥ 99%; thời gian tra cứu thu hồi < 5 phút | Go-live + 3 tháng |
 | O2 | Loại bỏ sổ giấy tiệt khuẩn và sổ cấp phát | Sổ tiệt khuẩn điện tử in được theo mẫu; 0 sổ giấy song song | Go-live + 1 tháng |
 | O3 | Kiểm soát vòng đời dụng cụ theo cơ số IFU | 0 bộ dụng cụ vượt cơ số được cấp phát mà không có phê duyệt ghi đè | Go-live |
 | O4 | Tính được giá thành tái xử lý từng bộ dụng cụ | 100% mẻ có bảng giá thành; sai lệch so với kế toán ≤ 5% | Go-live + 2 tháng |
@@ -128,7 +134,7 @@ Tài liệu này **kế thừa và thay thế về cấu trúc** cho #05 SRS v1.
 
 | KPI | Công thức | Mục tiêu | Nguồn dữ liệu | Tần suất |
 | --- | --- | --- | --- | --- |
-| Tỷ lệ gói có chuỗi truy xuất đầy đủ | Gói có đủ 8 trạm ÷ tổng gói đã dùng | ≥ 99% | DT-PACK, DT-USAGE | Tháng |
+| Tỷ lệ gói có chuỗi truy xuất đầy đủ | Gói có đủ 8 trạm (cấu hình mặc định, A-64) ÷ tổng gói đã dùng | ≥ 99% | DT-PACK, DT-USAGE | Tháng |
 | Tỷ lệ mẻ không đạt | Mẻ Không đạt ÷ tổng mẻ | ≤ 1% | DT-LOAD | Tháng |
 | Tỷ lệ bộ thiếu dụng cụ khi lắp ráp | Phiếu lắp ráp có thiếu ÷ tổng phiếu | ≤ 3% | DT-ASSEMBLY | Tuần |
 | Thời gian chu trình trung bình | T8 (trả) → T7 (cấp phát tiếp theo) | ≤ 8 giờ (thường), ≤ 4 giờ (ưu tiên) | DT-PACK | Tuần |
@@ -160,7 +166,7 @@ Các thuật ngữ cốt lõi dùng xuyên suốt tài liệu (Glossary đầy �
 | **Mã lô (lô rửa) / Mã mẻ (Load ID)** | Mã tự sinh khi Hoàn thành nạp máy rửa / máy tiệt khuẩn, chứa toàn bộ bộ/gói trong lô/mẻ; nơi gắn mọi dữ liệu máy. Load ID `ME-YYMMDD-NN`; lô rửa tiền tố `LR-`. |
 | **Cổng kiểm soát (step gate)** | Kết quả Đạt/Không đạt của từng bước T1–T5 cho từng bộ trong chu trình; trạm kế tiếp từ chối quét nếu bước trước chưa Đạt; đủ 5 cổng Đạt → Vô khuẩn. |
 | **Khu bẩn / khu sạch / khu vô khuẩn** | Ba khu vật lý một chiều: Decontamination (T1, T2) / Preparation & Packing (T3, T4, T5) / Sterile Storage & Dispatch (T5b, T6, T7). Khoa sử dụng là T8. |
-| **T1–T8** | T1 Tiếp nhận · T2 Rửa – khử khuẩn · T3 Kiểm tra – lắp ráp · T4 Đóng gói · T5 Nạp mẻ tiệt khuẩn (T5b Dỡ mẻ – giải phóng) · T6 Kho vô khuẩn · T7 Cấp phát · T8 Sử dụng. |
+| **T1–T8** (cấu hình mặc định, A-64: số trạm và chức năng do cấu hình) | T1 Tiếp nhận · T2 Rửa – khử khuẩn · T3 Kiểm tra – lắp ráp · T4 Đóng gói · T5 Nạp mẻ tiệt khuẩn (T5b Dỡ mẻ – giải phóng) · T6 Kho vô khuẩn · T7 Cấp phát · T8 Sử dụng. |
 | **R01–R10** | 10 vai trò người dùng (xem §2.3). |
 | **GS1 GIAI** | Global Individual Asset Identifier — định danh tài sản cá thể theo GS1, AI 8004; là AI duy nhất dùng cho Set ID (không dùng SGTIN (01)+(21)). |
 | **Chất thải y tế (M10)** | Chất thải rắn phát sinh trong khuôn viên bệnh viện, phân loại theo TT 20/2021/TT-BYT: lây nhiễm (vàng), nguy hại không lây nhiễm (đen), thông thường (xanh), tái chế (trắng); mỗi túi/thùng mang mã QR hệ thống sinh (tiền tố `CT-`). |
@@ -183,7 +189,7 @@ Các thuật ngữ cốt lõi dùng xuyên suốt tài liệu (Glossary đầy �
 | Tài liệu | Áp dụng cho |
 | --- | --- |
 | Thông tư 16/2018/TT-BYT — Quy định về kiểm soát nhiễm khuẩn trong các cơ sở khám bệnh, chữa bệnh | Hồ sơ nhân sự, đồ vải nhiễm, giám sát tuân thủ, lưu hồ sơ. |
-| Quyết định 3671/QĐ-BYT — Hướng dẫn khử khuẩn, tiệt khuẩn dụng cụ trong các cơ sở khám bệnh, chữa bệnh | Chỉ thị hóa học/sinh học, Bowie-Dick, giải phóng mẻ, hạn lưu, thứ tự 8 trạm, thuật ngữ tiếng Việt. |
+| Quyết định 3671/QĐ-BYT — Hướng dẫn khử khuẩn, tiệt khuẩn dụng cụ trong các cơ sở khám bệnh, chữa bệnh | Chỉ thị hóa học/sinh học, Bowie-Dick, giải phóng mẻ, hạn lưu, thứ tự 8 trạm (cấu hình mặc định, A-64), thuật ngữ tiếng Việt. |
 | Quy định kiểm định thiết bị áp lực | Khóa máy khi quá hạn kiểm định. |
 | Thông tư 20/2021/TT-BYT — Quy định về quản lý chất thải y tế trong phạm vi khuôn viên cơ sở y tế | M10: phân loại & mã màu, bao bì/thùng, thời gian lưu giữ, bàn giao, báo cáo định kỳ (FR-M10-01..08). |
 | Nghị định 08/2022/NĐ-CP — Quy định chi tiết một số điều của Luật Bảo vệ môi trường (chứng từ chất thải nguy hại, giấy phép môi trường) | M10: chứng từ chất thải nguy hại, đơn vị vận chuyển/xử lý có giấy phép (FR-M10-04, FR-M10-05). |
@@ -266,7 +272,7 @@ TraceCore là hệ thống **độc lập, on-premise**, không tích hợp HIS/
 | Mã | Viết tắt | Phân hệ | Phạm vi | UC | FR |
 | --- | --- | --- | --- | --- | --- |
 | `M1` | MD | Danh mục dụng cụ & bộ dụng cụ | Master data dụng cụ đơn lẻ, BOM bộ dụng cụ có phiên bản, Set ID vĩnh viễn, dụng cụ mượn, vật tư tái sử dụng, ngưỡng bảo dưỡng. | 4 (UC-01..04) | 9 (FR-M1-01..09) |
-| `M2` | REP | Chuỗi tái xử lý & truy xuất | 8 trạm quét; Cycle ID; lô rửa, mẻ tiệt khuẩn; cổng kiểm soát; dữ liệu máy; kho vô khuẩn FEFO; cấp phát; sử dụng; truy xuất; thu hồi; sự cố – CAPA. | 11 (UC-05..15) | 25 (FR-M2-01..25) |
+| `M2` | REP | Chuỗi tái xử lý & truy xuất | 8 trạm (cấu hình mặc định, A-64) quét; Cycle ID; lô rửa, mẻ tiệt khuẩn; cổng kiểm soát; dữ liệu máy; kho vô khuẩn FEFO; cấp phát; sử dụng; truy xuất; thu hồi; sự cố – CAPA. | 11 (UC-05..15) | 25 (FR-M2-01..25) |
 | `M3` | LIN | Quản lý đồ vải | Thu gom – giặt – cấp phát theo khoa, loại, số lượng, cân nặng; đối chiếu thu – trả. | 3 (UC-16..18) | 6 (FR-M3-01..06) |
 | `M4` | HR | Nhân sự & chứng chỉ | Hồ sơ, CCHN, chứng chỉ KSNK, ma trận năng lực gắn quyền trạm, phân ca. | 2 (UC-19..20) | 4 (FR-M4-01..04) |
 | `M5` | EQP | Thiết bị & bảo trì | Hồ sơ thiết bị, chương trình xử lý theo máy, bảo trì – kiểm định, test hằng ngày, khóa máy. | 3 (UC-21..23) | 6 (FR-M5-01..06) |
@@ -318,7 +324,7 @@ Từ #01 §7 (Ràng buộc), #02 §5, #05 §4.
 | Loại | Ràng buộc | Ảnh hưởng thiết kế |
 | --- | --- | --- |
 | Pháp lý | TT 16/2018/TT-BYT về kiểm soát nhiễm khuẩn | Hồ sơ nhân sự, đồ vải nhiễm, giám sát tuân thủ. |
-| Pháp lý | QĐ 3671/QĐ-BYT hướng dẫn khử khuẩn, tiệt khuẩn | Chỉ thị hóa học/sinh học, Bowie-Dick, giải phóng mẻ, hạn lưu, thứ tự 8 trạm, thuật ngữ. |
+| Pháp lý | QĐ 3671/QĐ-BYT hướng dẫn khử khuẩn, tiệt khuẩn | Chỉ thị hóa học/sinh học, Bowie-Dick, giải phóng mẻ, hạn lưu, thứ tự 8 trạm (cấu hình mặc định, A-64), thuật ngữ. |
 | Pháp lý | Quy định kiểm định thiết bị áp lực | Khóa máy khi quá hạn kiểm định; không mở khóa tạm với quá hạn kiểm định áp lực (BRU-EQP-002). |
 | Pháp lý | Hồ sơ tiệt khuẩn lưu ≥ 10 năm | Lưu trữ, audit không xóa, chỉ vô hiệu. |
 | Pháp lý [v1.11] | TT 20/2021/TT-BYT quản lý chất thải y tế; NĐ 08/2022/NĐ-CP chứng từ chất thải nguy hại | M10: nhóm & mã màu cố định theo TT; thời gian lưu giữ tối đa tham số; chỉ bàn giao đơn vị có giấy phép còn hiệu lực; chứng từ bắt buộc với chất thải nguy hại. |
@@ -437,7 +443,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M2-00.1 | Khi Set ID hoặc Cycle ID được quét tại một trạm, hệ thống phải chỉ chấp nhận nếu trạng thái hiện tại của bộ/gói hợp lệ với trạm đó (ví dụ trạm cấp phát T7 chỉ nhận gói ở trạng thái Trong kho vô khuẩn). | Must | Active | BRU-FLOW-002 (chặn thao tác ngược chiều); áp dụng UC-05..UC-13 |
 | FR-M2-00.2 | Nếu trạng thái của bộ/gói không hợp lệ với trạm đang quét, thì hệ thống phải báo lỗi kèm lý do và ghi audit. | Must | Active | BRU-FLOW-002 |
 | FR-M2-00.3 | Khi R02 chuyển trạng thái bộ/gói thủ công trong tình huống sự cố hệ thống, hệ thống phải yêu cầu lý do và mã ticket sự cố, ghi audit và tạo NC. | Must | Active | BRU-FLOW-002 ngoại lệ; d04 mục 3 |
-| FR-M2-00.4 | Hệ thống phải buộc mọi chu trình tái xử lý đi qua đủ thứ tự 8 trạm Tiếp nhận → Rửa → Lắp ráp → Đóng gói → Tiệt khuẩn → Kho vô khuẩn → Cấp phát → Sử dụng và không cho bỏ qua trạm. | Must | Active | BRU-FLOW-003 |
+| FR-M2-00.4 | Hệ thống phải buộc mọi chu trình tái xử lý đi qua đủ thứ tự chức năng Tiếp nhận → Rửa → Lắp ráp → Đóng gói → Tiệt khuẩn → Kho vô khuẩn → Cấp phát → Sử dụng và không cho bỏ qua chức năng; số lượng và số thứ tự trạm thực hiện mỗi chức năng do cấu hình (A-64). | Must | Active | BRU-FLOW-003 |
 | FR-M2-00.5 | Khi bộ bị phát hiện hư hỏng tại trạm lắp ráp T3, hệ thống phải cho phép rẽ nhánh bộ sang Sửa chữa/Thanh lý thay cho các trạm kế tiếp. | Must | Active | BRU-FLOW-003 ngoại lệ; liên kết FR-M2-05 |
 
 | ID | Requirement (EARS) | Priority | Status | Notes / rules |
@@ -488,6 +494,9 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M2-04.5 | Khi máy rửa kết nối API, hệ thống phải tự điền kết quả chu trình và chỉ yêu cầu người dỡ xác nhận dỡ; khi máy không kết nối, hệ thống phải yêu cầu chọn Đạt/Không đạt và tick xác nhận. | Must | Active | TCCN 3 |
 | FR-M2-04.6 | Nếu thiếu kết quả test làm sạch hoặc thiếu dữ liệu chu trình, thì hệ thống phải không cho đóng lô. | Must | Active | Xử lý lỗi; BRU-REP-015 |
 | FR-M2-04.7 | Khi máy rửa là máy hai cửa, hệ thống phải cho thao tác dỡ thực hiện tại cửa ra (khu sạch) bởi nhân viên khu đó. | Must | Active | BRU-REP-016 ngoại lệ; BRU-FLOW-001 |
+| FR-M2-04.8 | Khi chương trình rửa bật bắt buộc chỉ thị và người dỡ đã quét đủ QR máy và QR mã lô, hệ thống phải chuyển lô sang Chờ đọc chỉ thị, giải phóng máy và không ghi cổng T2 của bộ nào cho đến khi có kết quả. | Must | Active | A-77 |
+| FR-M2-04.9 | Nếu chỉ thị rửa thiếu vật tư, lô hoặc hạn dùng, đã hết hạn tại ngày lô bắt đầu chạy, hoặc thiếu ảnh khi chương trình bắt buộc ảnh, thì hệ thống phải không cho ghi Đạt. | Must | Active | A-77 |
+| FR-M2-04.10 | Hệ thống phải ghi kết quả chỉ thị rửa theo lô gồm vật tư, lô, hạn dùng, kết quả, ảnh, người đọc, giờ đọc; kết quả Không đạt áp dụng như FR-M2-04.4; truy vết theo Set ID phải hiện các thông tin này. | Must | Active | A-77 |
 | FR-M2-05 | Khi Set ID được quét tại T3, hệ thống phải hiển thị BOM phiên bản áp dụng kèm ảnh chụp thực tế từng dụng cụ, ảnh bộ đã sắp xếp hoàn chỉnh và ghi chú bất thường từ tiếp nhận (cờ Cần xem xét), cho phép tick/nhập số lượng thực tế từng dòng, đánh dấu hỏng, thay dụng cụ từ kho dự phòng, đính ảnh, và lập phiếu lắp ráp cùng phiếu kiểm đếm in kèm gói. | Must | Active | UC-07; SCR-07; API-M2-04; BRU-FLOW-002/003/004, BRU-REP-003; phụ thuộc FR-M2-06, FR-M4-03. Nguồn: BR-M2 |
 | FR-M2-05.1 | Khi số lượng thực tế được nhập, hệ thống phải hiển thị đủ/thiếu/thừa từng dòng bằng màu và đối chiếu với ghi chú kiểm đếm tại tiếp nhận. | Must | Active | TCCN 1 |
 | FR-M2-05.2 | Khi dụng cụ được đánh dấu hỏng và thay từ kho dự phòng, hệ thống phải ghi dụng cụ thay thế vào bộ và chuyển dụng cụ hỏng sang Sửa chữa/Thanh lý. | Must | Active | TCCN 2 |
@@ -523,7 +532,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M2-09 | Khi KTV tiệt khuẩn (R05) quét QR máy tiệt khuẩn, chọn chương trình, quét nối tiếp Cycle ID của từng gói đưa vào máy rồi thực hiện Hoàn thành nạp, hệ thống phải tự sinh mã mẻ định dạng ME-YYMMDD-NN chứa toàn bộ gói/bộ, thiết bị, chương trình, người vận hành; in nhãn QR mẻ; chuyển Load sang Đang chạy và Pack sang Trong mẻ. | Must | Active | UC-09; SCR-09, SCR-35; API-M2-07, API-M2-08, API-M2-17; BRU-REP-004, BRU-REP-015, BRU-REP-016, BRU-FLOW-004; phụ thuộc FR-M2-10, FR-M4-03. Nguồn: BR-M2 |
 | FR-M2-09.1 | Trong khi chưa quét QR máy tiệt khuẩn, hệ thống phải khóa ô quét gói; hệ thống phải không cho nhập tay mã mẻ và chỉ sinh mã mẻ khi Hoàn thành nạp. | Must | Active | TCCN 1; BRU-REP-016 |
 | FR-M2-09.2 | Khi mã mẻ được quét, hệ thống phải hiển thị danh sách gói/bộ, chương trình và chỉ thị của mẻ. | Must | Active | TCCN 1 |
-| FR-M2-09.3 | Khi chọn máy tiệt khuẩn cho mẻ, hệ thống phải chỉ cho chọn máy ở trạng thái Sẵn sàng, có test ngày Đạt và kiểm định/hiệu chuẩn còn hạn. | Must | Active | TCCN 2; BRU-EQP-001, BRU-EQP-002; liên kết FR-M5-06 |
+| FR-M2-09.3 | Khi chọn máy tiệt khuẩn cho mẻ, hệ thống phải chỉ cho chọn máy ở trạng thái Sẵn sàng, có test ngày Đạt (nếu thuộc diện bắt buộc, A-70) và kiểm định/hiệu chuẩn còn hạn. | Must | Active | TCCN 2; BRU-EQP-001, BRU-EQP-002; liên kết FR-M5-06 |
 | FR-M2-09.4 | Nếu gói quét vào mẻ có phương pháp tiệt khuẩn không tương thích với chương trình máy (gói nhiệt độ thấp vào máy hấp hoặc ngược lại), hoặc bộ chưa qua cổng T4 Đạt, thì hệ thống phải từ chối gói kèm lý do. | Must | Active | TCCN 2; BRU-REP-004, BRU-FLOW-004 |
 | FR-M2-09.5 | Nếu số gói trong mẻ vượt dung tích máy cấu hình, thì hệ thống phải từ chối quét thêm gói. | Must | Active | TCCN 3 |
 | FR-M2-09.6 | Nếu gói quét vào đang thuộc mẻ khác, thì hệ thống phải từ chối. | Must | Active | Xử lý lỗi |
@@ -532,7 +541,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M2-10.2 | Khi thiết bị được khai báo là có bản in, hệ thống phải bắt buộc đính ảnh bản in/biểu đồ; khi thiết bị không có bản in, hệ thống phải không bắt buộc ảnh. | Must | Active | TCCN 2 |
 | FR-M2-10.3 | Nếu tham số nhập tay nằm ngoài dải của chương trình, thì hệ thống phải cảnh báo đỏ, vẫn lưu, đánh dấu mẻ Cần xem xét và yêu cầu R02 xác nhận khi giải phóng. | Must | Active | TCCN 3 |
 | FR-M2-10.4 | Nếu máy kết nối được nhưng mất dữ liệu chu trình, thì hệ thống phải cho phép chuyển sang nhập tay có xác nhận và yêu cầu ghi lý do. | Must | Active | Xử lý lỗi |
-| FR-M2-11 | Khi máy tiệt khuẩn kết thúc và người dỡ quét QR máy và QR mã mẻ, hệ thống phải liệt kê toàn bộ gói/bộ trong mẻ, nhận một kết quả chu trình Đạt/Không đạt (nhập tay có xác nhận hoặc tự động qua API máy) ghi đồng thời cho mọi gói, nhận kết quả Bowie-Dick (ngày), chỉ thị loại 5/6 (từng gói hoặc theo mẻ), chỉ thị sinh học (lô, tủ ủ, giờ đọc, người đọc) và cập nhật Load → Đã giải phóng / Cách ly / Không đạt cùng cổng T5 của mọi bộ. | Must | Active | UC-10; SCR-10; API-M2-09, API-M2-10; BRU-REP-005, BRU-REP-006, BRU-REP-015, BRU-REP-016, BRU-FLOW-004; phụ thuộc FR-M2-12. Nguồn: BR-M2 |
+| FR-M2-11 | Khi máy tiệt khuẩn kết thúc và người dỡ quét QR máy và QR mã mẻ, hệ thống phải liệt kê toàn bộ gói/bộ trong mẻ, nhận một kết quả chu trình Đạt/Không đạt (nhập tay có xác nhận hoặc tự động qua API máy) ghi đồng thời cho mọi gói, nhận kết quả Bowie-Dick (ngày), chỉ thị loại 5/6 (từng gói hoặc theo mẻ), chỉ thị sinh học (lô, tủ ủ, giờ đọc, người đọc) và cập nhật Load → Đã giải phóng / Cách ly / Không đạt cùng cổng T5 của mọi bộ. | Must | Active | UC-10; SCR-10; API-M2-09, API-M2-10; BRU-REP-005, BRU-REP-006, BRU-REP-015, BRU-REP-016, BRU-FLOW-004; phụ thuộc FR-M2-12. Nguồn: BR-M2; A-70: máy ngoài diện test hằng ngày thì Bowie-Dick không bắt buộc, Không đạt vẫn chặn giải phóng |
 | FR-M2-11.1 | Trong khi chưa quét đủ QR máy và QR mã mẻ, hệ thống phải không mở màn dỡ mẻ. | Must | Active | TCCN 1 |
 | FR-M2-11.2 | Nếu QR máy quét khi dỡ không khớp máy của mã mẻ, thì hệ thống phải từ chối dỡ. | Must | Active | TCCN 1; BRU-REP-016 |
 | FR-M2-11.3 | Khi máy tiệt khuẩn kết nối API, hệ thống phải tự điền kết quả chu trình và yêu cầu người dỡ xác nhận; khi máy không kết nối, hệ thống phải yêu cầu chọn Đạt/Không đạt và tick xác nhận. | Must | Active | TCCN 2 |
@@ -635,13 +644,13 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M4-01.3 | Nếu mã thẻ nhập trùng với mã thẻ đã có, thì hệ thống phải chặn lưu. | Must | Active | TCCN 1; Xử lý lỗi |
 | FR-M4-01.4 | Khi khám sức khỏe hoặc tiêm chủng của nhân viên tới ngày hết hạn, hệ thống phải nhắc nhân viên và R02. | Must | Active | TCCN 2 |
 | FR-M4-01.5 | Khi nhân viên được đánh dấu Nghỉ việc, hệ thống phải vô hiệu thẻ ngay nhưng vẫn giữ tra cứu lịch sử của nhân viên. | Must | Active | TCCN 3; BRU-ID-006 |
-| FR-M4-02 | Khi người dùng ghi chứng chỉ (CCHN, KSNK, tiệt khuẩn, vận hành thiết bị áp lực) với số, nơi cấp, ngày cấp, hạn và file scan, hệ thống phải tạo bản ghi Certificate gắn nhân viên. | Must | Active | UC-19; SCR-19; API-M4-01; BRU-HR-002; phụ thuộc FR-M4-01. Nguồn: BR-M4 |
+| FR-M4-02 | Khi người dùng ghi chứng chỉ (loại tự điền, có gợi ý từ các loại đã dùng, ví dụ CCHN, KSNK, tiệt khuẩn, vận hành thiết bị áp lực; A-59) với số, nơi cấp, ngày cấp, hạn và file scan, hệ thống phải tạo bản ghi Certificate gắn nhân viên. | Must | Active | UC-19; SCR-19; API-M4-01; BRU-HR-002; phụ thuộc FR-M4-01. Nguồn: BR-M4 |
 | FR-M4-02.1 | Khi còn 60, 30 và 7 ngày trước hạn chứng chỉ, và khi chứng chỉ hết hạn, hệ thống phải gửi thông báo cho nhân viên và R02. | Must | Active | TCCN 1; BRU-HR-002 |
 | FR-M4-02.2 | Khi chứng chỉ hết hạn, hệ thống phải tự vô hiệu mọi năng lực trạm yêu cầu chứng chỉ đó. | Must | Active | TCCN 2; BRU-HR-002 |
 | FR-M4-02.3 | Khi chứng chỉ được gia hạn, hệ thống phải tạo bản ghi Certificate mới và giữ lịch sử bản ghi cũ. | Must | Active | TCCN 3 |
 | FR-M4-02.4 | Khi chứng chỉ không có hạn (vĩnh viễn), hệ thống phải đánh dấu Không hết hạn và không phát cảnh báo. | Must | Active | Xử lý lỗi |
 | FR-M4-03 | Khi R02 gán năng lực cho nhân viên theo trạm với chứng chỉ yêu cầu, người đánh giá, ngày và hiệu lực, hệ thống phải tạo Competency dùng để kiểm tra khi đăng nhập trạm. | Must | Active | UC-20; SCR-20; API-M4-02; BRU-HR-001; phụ thuộc FR-M4-04. Nguồn: BR-M4 |
-| FR-M4-03.1 | Khi nhân viên đăng nhập trạm, hệ thống phải chỉ cho phép nếu nhân viên có năng lực của trạm đó và mọi chứng chỉ bắt buộc của trạm còn hạn. | Must | Active | BRU-HR-001 |
+| FR-M4-03.1 | Khi nhân viên đăng nhập trạm, hệ thống phải chỉ cho phép nếu nhân viên có năng lực của trạm đó và mọi chứng chỉ bắt buộc của trạm còn hạn. | Must | Active | BRU-HR-001; A-71: ngoại lệ khi có cho phép tạm NS-001 còn hiệu lực do R01/R02 duyệt, tối đa 24 giờ, có lý do, không tự duyệt |
 | FR-M4-03.2 | Nếu nhân viên thiếu năng lực hoặc chứng chỉ hết hạn khi đăng nhập trạm, thì hệ thống phải từ chối, hiển thị rõ lý do và ghi audit. | Must | Active | TCCN 1; Xử lý lỗi |
 | FR-M4-03.3 | Khi R02 cấp quyền trạm tạm thời cho tình huống thiếu người, hệ thống phải giới hạn hiệu lực 24 giờ và ghi audit. | Must | Active | TCCN 2; BRU-HR-001 ngoại lệ |
 | FR-M4-03.4 | Khi người dùng mở ma trận năng lực, hệ thống phải hiển thị toàn bộ nhân viên × trạm trên một màn hình. | Must | Active | TCCN 3 |
@@ -672,13 +681,14 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M5-04.2 | Khi sự cố được ghi cho máy đang có mẻ chạy, hệ thống phải tự đánh dấu mẻ đó Cần xem xét. | Must | Active | TCCN 2 |
 | FR-M5-04.3 | Khi chi phí sửa chữa được ghi, hệ thống phải tạo Cost Entry tương ứng trong M7. | Must | Active | TCCN 3; liên kết FR-M7-01 |
 | FR-M5-04.4 | Nếu sự cố được đóng mà chưa có kết quả kiểm tra sau sửa, thì hệ thống phải không cho đóng. | Must | Active | Xử lý lỗi |
-| FR-M5-05 | Khi người vận hành ghi test hằng ngày cho máy (Bowie-Dick, leak test, test làm sạch máy rửa) với kết quả, ảnh, lô test, người và giờ, hệ thống phải tạo Daily Test và mở khóa máy nếu kết quả Đạt. | Must | Active | UC-23; SCR-23; API-M5-02; BRU-EQP-001; phụ thuộc FR-M5-06. Nguồn: BR-M5 |
-| FR-M5-05.1 | Khi tạo mẻ đầu tiên trong ngày trên máy hấp, hệ thống phải yêu cầu Bowie-Dick và leak test Đạt trong ngày; trên máy rửa, hệ thống phải yêu cầu test làm sạch Đạt trong ngày. | Must | Active | TCCN 1, 2; BRU-EQP-001 |
-| FR-M5-05.2 | Khi máy là plasma H2O2, hệ thống phải không yêu cầu Bowie-Dick nhưng phải yêu cầu chỉ thị hóa học từng mẻ. | Must | Active | TCCN 3; BRU-EQP-001 ngoại lệ |
-| FR-M5-05.3 | Nếu test hằng ngày Không đạt, thì hệ thống phải chuyển máy sang Khóa và tự tạo NC. | Must | Active | Xử lý lỗi |
-| FR-M5-06 | Nếu máy chưa có test ngày Đạt, quá hạn kiểm định/hiệu chuẩn hoặc đang Sửa chữa, thì hệ thống phải khóa tạo mẻ/lô trên máy đó và hiển thị lý do khóa tại màn tạo mẻ. | Must | Active | UC-23; SCR-23; API-M5-02; BRU-EQP-001, BRU-EQP-002; phụ thuộc FR-M5-05. Nguồn: BR-M5 |
+| FR-M5-05 | Khi người vận hành ghi test hằng ngày cho máy (Bowie-Dick, leak test, test máy plasma; test làm sạch máy rửa là tự nguyện, A-70) với kết quả, ảnh, lô test, người và giờ, hệ thống phải tạo Daily Test và mở khóa máy nếu kết quả Đạt. | Must | Active | UC-23; SCR-23; API-M5-02; BRU-EQP-001; phụ thuộc FR-M5-06. Nguồn: BR-M5 |
+| FR-M5-05.1 | Khi tạo mẻ trên máy tiệt khuẩn thuộc diện bắt buộc theo `TraceCore Settings` (Không bắt buộc / Tất cả máy tiệt khuẩn / Chỉ máy được chọn; A-70), hệ thống phải yêu cầu test bắt buộc Đạt trong ngày: máy hấp là Bowie-Dick và leak test (nếu viện yêu cầu). Máy rửa và thiết bị khác không bao giờ bị yêu cầu test hằng ngày. | Must | Active | TCCN 1, 2; BRU-EQP-001 |
+| FR-M5-05.2 | Khi máy là plasma H2O2, hệ thống phải không yêu cầu Bowie-Dick, phải yêu cầu chỉ thị hóa học từng mẻ và, nếu máy thuộc diện bắt buộc và viện bật test plasma, phải yêu cầu test hằng ngày máy plasma Đạt trong ngày (A-70). | Must | Active | TCCN 3; BRU-EQP-001 ngoại lệ |
+| FR-M5-05.3 | Nếu test hằng ngày bắt buộc của máy Không đạt, thì hệ thống phải chuyển máy sang Khóa và tự tạo NC; test tự nguyện của máy ngoài diện không khóa máy (A-70). | Must | Active | Xử lý lỗi |
+| FR-M5-06 | Nếu máy thuộc diện bắt buộc chưa có test ngày Đạt (A-70), quá hạn kiểm định/hiệu chuẩn hoặc đang Sửa chữa, thì hệ thống phải khóa tạo mẻ/lô trên máy đó và hiển thị lý do khóa tại màn tạo mẻ. | Must | Active | UC-23; SCR-23; API-M5-02; BRU-EQP-001, BRU-EQP-002; phụ thuộc FR-M5-05. Nguồn: BR-M5 |
 | FR-M5-06.1 | Khi R02 mở khóa tạm một máy, hệ thống phải yêu cầu lý do và thời hạn ≤ 24 giờ, ghi audit; hệ thống phải không cho vai trò khác mở khóa. | Must | Active | TCCN 2, 3; BRU-EQP-002 |
 | FR-M5-06.2 | Nếu máy bị khóa do quá hạn kiểm định thiết bị áp lực, thì hệ thống phải không cho bất kỳ vai trò nào mở khóa tạm. | Must | Active | TCCN 2; Xử lý lỗi; BRU-EQP-002 |
+| FR-M5-07 | Trong khi loại máy yêu cầu lô hóa chất mà máy chưa khai báo lô đang dùng hoặc lô đã hết hạn, hệ thống phải chặn tạo lô/mẻ trên máy đó và hiển thị HC-003 hoặc HC-001 kèm mã máy, mã lô; hệ thống phải cảnh báo HC-002 khi lô còn dưới số ngày cấu hình. | Must | Active | A-71; BRU-INV-001 |
 
 #### 3.1.6 M6 — Kho vật tư tiêu hao
 
@@ -732,7 +742,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M7-05 | Khi mẻ được giải phóng, hệ thống phải lập Cost Sheet mẻ với chi phí mẻ = khấu hao máy/mẻ + điện + nước + hóa chất + chỉ thị + nhân công (phút chuẩn × đơn giá) + bảo trì phân bổ, và chia cho các gói theo số gói (mặc định) hoặc theo thể tích gói (tùy chọn). | Must | Active | UC-29; SCR-29; API-M7-02; BRU-CST-001; phụ thuộc FR-M7-06, FR-M5-02, FR-M7-04. Nguồn: BR-M7 |
 | FR-M7-05.1 | Khi mẻ bị kết luận Không đạt, hệ thống phải vẫn ghi nhận chi phí mẻ và tính vào chi phí chất lượng. | Must | Active | TCCN 3; BRU-CST-001 ngoại lệ |
 | FR-M7-05.2 | Nếu thiếu đơn giá cho một khoản của mẻ, thì hệ thống phải ghi Cost Sheet là Chưa định giá và cảnh báo. | Must | Active | Xử lý lỗi |
-| FR-M7-06 | Khi tính giá thành tái xử lý của một bộ cho một chu trình, hệ thống phải cộng dồn chi phí gói qua 8 trạm và khấu hao dụng cụ/chu trình = giá trị bộ ÷ cơ số tái xử lý tối đa. | Must | Active | UC-29; SCR-29; API-M7-02; BRU-CST-001, BRU-CST-003; phụ thuộc FR-M7-05. Nguồn: BR-M7 |
+| FR-M7-06 | Khi tính giá thành tái xử lý của một bộ cho một chu trình, hệ thống phải cộng dồn chi phí gói qua 8 trạm (cấu hình mặc định, A-64) và khấu hao dụng cụ/chu trình = giá trị bộ ÷ cơ số tái xử lý tối đa. | Must | Active | UC-29; SCR-29; API-M7-02; BRU-CST-001, BRU-CST-003; phụ thuộc FR-M7-05. Nguồn: BR-M7 |
 | FR-M7-06.1 | Khi người dùng yêu cầu, hệ thống phải xuất báo cáo giá thành theo bộ, Cycle ID, khoa, phương pháp và tháng, kèm so sánh với tháng trước. | Must | Active | TCCN 2, 3 |
 | FR-M7-06.2 | Khi bộ là bộ mượn, hệ thống phải không tính khấu hao dụng cụ và tính phí mượn nếu có. | Must | Active | Xử lý lỗi; BRU-CST-003 ngoại lệ |
 
@@ -770,7 +780,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M9-02.1 | Nếu kỳ báo cáo chưa được khóa, thì hệ thống phải đóng dấu Tạm trên bản xuất. | Must | Active | Xử lý lỗi |
 | FR-M9-03 | Khi R10 khai báo khu (bẩn, sạch, vô khuẩn), trạm quét, chức năng trạm và thiết bị ngoại vi (máy quét, in nhãn, cân; IP/cổng), hệ thống phải tạo Zone Station với mỗi trạm thuộc đúng một khu, chức năng giới hạn theo khu và thiết bị ngoại vi gán theo trạm. | Must | Active | UC-33; SCR-33; API-M9-02; BRU-FLOW-001, BRU-ID-006; phụ thuộc FR-M9-04, FR-M9-05, FR-M9-07, FR-M9-06. Nguồn: BR-M9; xem A-03 (E1–E8): khu `ZONE-.##`, chức năng trạm theo loại khu (`core.zones.STEPS_BY_ZONE_TYPE`), ngoại vi quét/cân là child `Station Peripheral`, máy in là DocType `Printer`, trạm chưa gán khu không hoạt động (`STATION_INACTIVE`) |
 | FR-M9-03.1 | Khi trạm được tạo, hệ thống phải tự sinh mã trạm duy nhất tiền tố TR- và cho in nhãn QR trạm. | Must | Active | BRU-ID-006; xem A-03 (E1, E6): khu `ZONE-.##`, trạm `TR-.###` ghi `Code Registry`, nhãn QR trạm để FEAT-005 |
-| FR-M9-03.2 | Khi thiết bị hai cửa được gán, hệ thống phải cho khai báo cửa vào ở khu này và cửa ra ở khu kế tiếp. | Must | Active | BRU-FLOW-001 ngoại lệ; xem A-03 (E5): `core.zones.check_pass_through`, cửa ra là khu kế tiếp theo chiều Bẩn → Sạch → Vô khuẩn |
+| FR-M9-03.2 | Khi thiết bị hai cửa được gán, hệ thống phải cho khai báo cửa vào ở khu này và cửa ra ở khu kế tiếp. | Must | Active | BRU-FLOW-001 ngoại lệ; xem A-03 (E5): `core.zones.check_pass_through`, cửa ra là khu kế tiếp theo chiều Bẩn → Sạch → Vô khuẩn; A-64: theo `Zone Type.next_zone_type` |
 | FR-M9-03.3 | Nếu trạm chưa được gán khu, thì hệ thống phải không kích hoạt trạm. | Must | Active | Xử lý lỗi; xem A-03 (E2): trạm lưu được với `is_active = 0`, RPC từ chối `STATION_INACTIVE` |
 | FR-M9-04 | Khi tính năng kiểm soát môi trường khu được bật, hệ thống phải ghi nhật ký nhiệt độ, độ ẩm, áp suất chênh theo khu từ nhập tay (2 lần/ngày) hoặc từ cảm biến, và xuất báo cáo tháng. | Should | Active | UC-33; SCR-33; API-M9-02; phụ thuộc FR-M9-03, FR-M9-05, FR-M9-07, FR-M9-06. Nguồn: BR-M9 |
 | FR-M9-04.1 | Nếu một chỉ số môi trường vượt ngưỡng cấu hình, thì hệ thống phải cảnh báo R02. | Should | Active | TCCN 2 |
@@ -803,6 +813,11 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M9-14 | Khi một màn hình trạm/PDA không có dữ liệu, đang tải, hoặc gặp lỗi (mạng, máy in, thiết bị ngoại vi), hệ thống phải hiển thị trạng thái rõ ràng bằng tiếng Việt, kèm hành động kế tiếp (thử lại, chuyển offline, gọi R02). | Must | Active | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36); mọi SCR trạm/PDA; [NEW v1.11] duyệt chủ đầu tư 2026-10-17. Catalog: Empty/error/loading states as requirements |
 | FR-M9-15 | Khi người dùng cần trợ giúp tại trạm, hệ thống phải hiển thị hướng dẫn thao tác theo trạm (3–5 bước, ảnh) và cho phép gửi phản hồi/báo lỗi phần mềm tới R10 kèm ảnh chụp màn hình. | Could | Active | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36); mọi SCR trạm/PDA; [NEW v1.11] duyệt chủ đầu tư 2026-10-17. Catalog: Help & support |
 | FR-M9-16 | Khi tạo/sửa/xóa bản ghi danh mục, hệ thống phải xóa mềm (vô hiệu) thay vì xóa cứng với mọi đối tượng đã có giao dịch; chỉ R10 mới xóa cứng bản ghi chưa có giao dịch. | Must | Active | UC-33; SCR-33 (áp dụng mọi danh mục M1, M3–M7, M10); [NEW v1.11] duyệt chủ đầu tư 2026-10-17. Catalog: Soft-delete vs hard-delete (catalog); mở rộng NFR-SEC-03 cho master data |
+| FR-M9-17 | Hệ thống phải có sẵn danh mục mã lỗi `<NHÓM>-<3 số>` khi cài app, mỗi mã có tên, mô tả, điều kiện phát sinh, trạm áp dụng, mức độ, hành động hệ thống, cách gỡ và hướng dẫn xử lý; viện sửa được nội dung, nâng cấp không ghi đè. | Must | Active | A-71 |
+| FR-M9-18 | Khi R10 đổi cấu hình mã lỗi (bật/tắt, mức độ, số ngày cảnh báo, vai trò duyệt), hệ thống phải áp dụng ngay; hệ thống phải từ chối đổi mức độ hoặc tắt mã bị khóa. | Must | Active | A-71; OTH-LEG-003 |
+| FR-M9-19 | Khi chặn hoặc cảnh báo theo mã lỗi ở trạm hoặc màn đăng nhập trạm, hệ thống phải hiển thị [Mã] – Tên – đối tượng liên quan và cách mở Hướng dẫn xử lý của mã. | Must | Active | A-71 |
+| FR-M9-20 | Khi một mã lỗi phát sinh, hệ thống phải ghi Nhật ký lỗi gồm mã, trạm, người dùng, đối tượng, thời điểm, trạng thái, người duyệt, thời hạn; hệ thống phải có báo cáo thống kê theo mã, trạm, thời gian cho R01. | Must | Active | A-71 |
+| FR-M9-21 | Hệ thống phải in được Danh mục mã lỗi theo trạm, lọc theo trạm hoặc mã, kèm Hướng dẫn xử lý. | Must | Active | A-71 |
 
 #### 3.1.10 M10 — Quản lý chất thải y tế [NEW v1.11]
 
@@ -982,7 +997,7 @@ Nguồn: #05 §3. Cột *Requirement* giữ nguyên ngưỡng gốc; dòng có `
 | NFR-SCAL-01 | Scalability / capacity | Hệ thống hỗ trợ 25–40 người dùng đăng nhập đồng thời (theo #01 §1) và tối đa 40 trạm/PDA (NFR-PERF-02) trên cấu hình server 8 vCPU/16 GB (#12 §5); mở rộng lên 80 người dùng `[đề xuất]` bằng nâng tài nguyên VM, không đổi kiến trúc. | Must | Active | #01 §1; #12 §5; catalog: concurrent users |
 | NFR-SCAL-02 | Scalability / capacity | Dung lượng thiết kế: ≥ 3.000 Cycle ID/ngày × 365 × 10 năm ≈ 11 triệu bản ghi DT-PACK và ≥ 50 triệu bản ghi DT-AUDIT `[đề xuất]` không suy giảm NFR-PERF-01; ảnh thực tế lưu ở file storage với chính sách dung lượng ≥ 500 GB `[đề xuất]`. | Should | Active | NFR-PERF-02 × lưu trữ 10 năm (NFR-COMP-01) |
 | NFR-AVAIL-03 | Reliability (availability) | Cửa sổ bảo trì có kế hoạch ≤ 4 giờ/tháng `[đề xuất]`, ngoài khung 06:00–20:00 `[đề xuất]`, báo trước R02/R10 ≥ 24 giờ; trong bảo trì, trạm/PDA chạy chế độ offline (NFR-AVAIL-02). | Should | Active | NFR-AVAIL-01 "bảo trì ngoài giờ cao điểm" chưa đo được |
-| NFR-AVAIL-04 | Reliability (fault tolerance) | Khi một thiết bị ngoại vi (máy in, cân, agent) lỗi, trạm vẫn ghi nhận giao dịch nghiệp vụ; lệnh in vào hàng đợi, số cân cho nhập tay có đánh dấu nguồn; không thiết bị ngoại vi nào là single point of failure của chuỗi 8 trạm. | Must | Active | FR-M1-05, FR-M2-08, FR-M3-01 ngoại lệ; catalog: graceful degradation |
+| NFR-AVAIL-04 | Reliability (fault tolerance) | Khi một thiết bị ngoại vi (máy in, cân, agent) lỗi, trạm vẫn ghi nhận giao dịch nghiệp vụ; lệnh in vào hàng đợi, số cân cho nhập tay có đánh dấu nguồn; không thiết bị ngoại vi nào là single point of failure của chuỗi 8 trạm (cấu hình mặc định, A-64). | Must | Active | FR-M1-05, FR-M2-08, FR-M3-01 ngoại lệ; catalog: graceful degradation |
 | NFR-SEC-04 | Security | Ứng dụng tùy biến `tracecore` không có lỗ hổng mức High/Critical theo OWASP Top 10 / ASVS Level 2 `[đề xuất]` tại kiểm thử thâm nhập nội bộ trước go-live; lỗ hổng Medium khắc phục trong 30 ngày `[đề xuất]`. | Must | Active | #13 §3 "kiểm thử thâm nhập nội bộ" chưa có ngưỡng; catalog: OWASP |
 | NFR-SEC-05 | Security | Bản vá bảo mật Frappe/ERPNext/HRMS và hệ điều hành áp dụng ≤ 30 ngày sau phát hành `[đề xuất]` (Critical ≤ 7 ngày `[đề xuất]`), có thử trên môi trường staging trước. | Should | Active | Catalog: vulnerability/patch policy |
 | NFR-SEC-06 | Security | Mọi secret (API Key/Secret station agent, SMTP, SMS gateway, khóa mã hóa trường) lưu ngoài mã nguồn (site_config/vault), không ghi vào log; API key xoay 90 ngày (#13 §3); khóa AES-256 mã bệnh nhân có quy trình quản lý/xoay khóa được R10 phê duyệt. | Must | Active | #13 §3; catalog: secrets management |
@@ -1083,7 +1098,7 @@ Nguồn: #05 §3. Cột *Requirement* giữ nguyên ngưỡng gốc; dòng có `
 | **Sổ tiệt khuẩn điện tử** | Print Format theo mẫu BYT thay sổ giấy; in PDF/Excel; R01 ký xác nhận. | FR-M9-02. |
 | **ST-SU-REDO** | Trạng thái "Xử lý lại" của bộ trong WF-01. | #16. |
 | **Station agent** | Dịch vụ Python trên PC trạm: cân RS-232/USB, in ZPL/TSPL qua TCP 9100, đọc CSV/API máy kết nối được. | #12 §2, §5.4. |
-| **T1–T8** | 8 trạm: T1 Tiếp nhận · T2 Rửa – khử khuẩn · T3 Kiểm tra – lắp ráp · T4 Đóng gói · T5 Nạp mẻ tiệt khuẩn · T5b Dỡ mẻ – giải phóng · T6 Kho vô khuẩn · T7 Cấp phát · T8 Sử dụng. | #03 §3.1. |
+| **T1–T8** | 8 trạm (cấu hình mặc định, A-64): T1 Tiếp nhận · T2 Rửa – khử khuẩn · T3 Kiểm tra – lắp ráp · T4 Đóng gói · T5 Nạp mẻ tiệt khuẩn · T5b Dỡ mẻ – giải phóng · T6 Kho vô khuẩn · T7 Cấp phát · T8 Sử dụng. | #03 §3.1. |
 | **Thu hồi (recall)** | Lệnh tự lập khi mẻ Không đạt / BI dương: liệt kê mọi Cycle ID trong mẻ; gói ở kho → khóa, đã cấp → thu hồi, đã dùng → báo bác sĩ; đóng khi 100% gói xác nhận + CAPA. | FR-M2-20; DT-RECALL; BRU-REP-007. |
 | **Tiêu hao tự động theo mẻ** | Khi hoàn tất lô rửa/mẻ/lô giặt, hệ thống trừ tồn vật tư theo định mức chương trình (Stock Entry Material Issue). | BRU-INV-002; FR-M6-03. |
 | **TSPL / ZPL** | Ngôn ngữ lệnh máy in nhãn (TSC / Zebra). | EI-HW-002. |
@@ -1110,7 +1125,7 @@ Gom từ các mục "Vấn đề mở" (#06 trường 25), rủi ro (#01 §8, #0
 | OQ-02 | **Định mức điện – nước – hóa chất – tiêu hao theo chương trình và đơn giá thực tế** chưa có; dùng mặc định theo loại máy, hiệu chỉnh sau 2 tháng bằng đồng hồ đo. | #06 UC M3–M9 "Vấn đề mở"; RK-04; BRK-04 | FR-M5-02, FR-M7-04, FR-M7-05, O4 | R09 + R02 | Trước go-live; hiệu chỉnh go-live + 2 tháng |
 | OQ-03 | **Mâu thuẫn phạm vi tích hợp máy tiệt khuẩn/máy rửa:** #01 §1, §4.2 và NFR-INT-01 ghi "giai đoạn 2 / PLC không kết nối"; #12 §4, FR-M2-24, FR-M2-04/11 cho phép nhận CSV/API qua station agent với máy kết nối được ngay v1.0 ("Tùy máy"). Cần chốt: v1.0 có hiện thực đọc CSV/API cho máy nào (theo danh sách D-04) hay chỉ nhập tay có xác nhận. | #01 §1, §4.2; #05 NFR-INT-01; #12 §4; FR-M2-24 | EI-SW-001, NFR-INT-01, Sprint 2 | R10 + Medcons PM | Trước Sprint 2 |
 | OQ-04 | **Danh sách thiết bị kết nối được / có bản in** (`is_connected`, `has_printout`) chưa bàn giao. | cover.md "Yêu cầu bàn giao" | FR-M2-10, FR-M2-24 | R10 + R05 | Trước Sprint 1 |
-| OQ-05 | **Tiền tố GS1 của bệnh viện** — #05 §4 ghi "đã chốt" nhưng cover.md vẫn liệt kê trong hạng mục bàn giao trước Sprint 1; cần xác nhận giá trị thực tế và mã loại bộ (01) GTIN hay mã nội bộ trong (01). ✅ Đã chốt 2026-10-17 (phần Set ID): Set ID = GIAI AI 8004 duy nhất; **còn mở:** giá trị tiền tố GS1 thực tế và nội dung (01) của nhãn Cycle ID. **Amendment A-02 (2026-10-20, D6): vẫn mở.** FEAT-018 dùng GTIN test (tiền tố demo `952`, chỉ do devdata/factory gán); `Instrument Set Type.gtin` do R10 nhập (14 chữ số, check digit đúng, duy nhất), nhãn mang GTIN test in thêm dòng `TEST`. R10/BA phải cung cấp GS1 Company Prefix thật và quy tắc cấp GTIN-14 cho từng loại bộ trước UAT và trước khi in nhãn thật. | #05 §4; cover.md | FR-M1-05, EI-SW-003 | R10 | Trước UAT và trước khi in nhãn thật (A-02) |
+| OQ-05 | **Tiền tố GS1 của bệnh viện** — #05 §4 ghi "đã chốt" nhưng cover.md vẫn liệt kê trong hạng mục bàn giao trước Sprint 1; cần xác nhận giá trị thực tế và mã loại bộ (01) GTIN hay mã nội bộ trong (01). ✅ Đã chốt 2026-10-17 (phần Set ID): Set ID = GIAI AI 8004 duy nhất; **còn mở:** giá trị tiền tố GS1 thực tế và nội dung (01) của nhãn Cycle ID. **Amendment A-02 (2026-10-20, D6): vẫn mở.** FEAT-018 dùng GTIN test (tiền tố demo `952`, chỉ do devdata/factory gán); `Instrument Set Type.gtin` do R10 nhập (14 chữ số, check digit đúng, duy nhất), nhãn mang GTIN test in thêm dòng `TEST`. R10/BA phải cung cấp GS1 Company Prefix thật và quy tắc cấp GTIN-14 cho từng loại bộ trước UAT và trước khi in nhãn thật. **Amendment A-76 (2026-10-31): đã chốt quy tắc cấp GTIN-14;** bệnh viện vẫn phải cung cấp giá trị prefix thật. | #05 §4; cover.md | FR-M1-05, EI-SW-003 | R10 | Trước UAT và trước khi in nhãn thật (A-02) |
 | OQ-06 | **Định dạng mã Cycle ID trên nhãn:** NFR-COMP-02 và #05 §4 cho phép "Code-128 hoặc DataMatrix", trong khi BRU-ID-002 và FR-M2-07 quy định GS1 DataMatrix (01)(11)(17)(21). ✅ Đã chốt 2026-10-17: Cycle ID = GS1 DataMatrix (01)(11)(17)(21) duy nhất; đã sửa NFR-COMP-02, §2.5, EI-SW-003 (có thể in thêm dòng chữ người đọc). | #05 NFR-COMP-02, §4; #04 BRU-ID-002 | FR-M2-07/08, EI-SW-003 | R02 + DEV | Đã chốt |
 | OQ-07 | **Cơ số IFU không có cho dụng cụ cũ:** để trống (Chưa xác định, chỉ cảnh báo) hay cơ số mặc định theo nhóm? Danh mục cần bổ sung trước Sprint 1. | BRK-02; FR-M1-01, FR-M8-01; UC-01 A2; UC-31 E3 | FR-M8-01/03, O3 | R01 | Trước Sprint 1 **Trạng thái 21/10/2026 (A-06, I4):** vẫn mở; FEAT-014 không có cơ số mặc định, `Instrument.max_cycles` trống = Chưa xác định. |
 | OQ-08 | **Mâu thuẫn ưu tiên offline trạm:** NFR-AVAIL-02 = Must, BR-M9 tiêu chí nghiệm thu yêu cầu offline 4 giờ, nhưng FR-M9-06 = Should và cover.md xếp "offline trạm" vào Sprint 5 (cuối). ✅ Đã chốt 2026-10-17: FR-M9-06 và mọi dòng con = Must theo NFR-AVAIL-02; sprint thực hiện do Medcons PM xếp khi lập kế hoạch (Sprint 5 trong cover.md có thể kéo sớm). | #05 NFR-AVAIL-02, FR-M9-06; #02 §7; cover.md | FR-M9-06, EI-COM-004, kế hoạch | R01 + Medcons PM | Đã chốt (ưu tiên) |

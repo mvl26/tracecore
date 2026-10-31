@@ -29,6 +29,7 @@ LINK_FIELDS = (
 	"sterilization_load",
 	"equipment",
 	"employee",
+	"department",
 )
 # Trường chỉ dịch vụ được đổi; sửa tay trên form bị chặn
 PROTECTED = (
@@ -45,6 +46,14 @@ PROTECTED = (
 )
 ACTION_PROTECTED = ("status", "result", "done_at", "last_reminded_on")
 OPEN = ("New", "Analysis", "CAPA", "Verification")
+WASTE_TYPES = (
+	"Waste Misclassification",
+	"Waste Storage Overdue",
+	"Waste Weight Variance",
+	"Waste Spill",
+	"Sharps Exposure",
+)
+SHARPS = "Sharps Exposure"
 NC_TYPES = {"Shortage": "Missing Instrument", "Foreign Instrument": "Foreign Instrument"}
 
 
@@ -103,6 +112,10 @@ def validate(doc):
 	else:
 		_guard_changes(doc)
 	doc.description = cstr(doc.description).strip()
+	if doc.incident_type in WASTE_TYPES:
+		doc.incident_category = "Waste"
+	if doc.incident_type == SHARPS:
+		_check_sharps(doc)
 	if not any(doc.get(field) for field in LINK_FIELDS):
 		raise _blocked(
 			"INCIDENT_LINK_REQUIRED",
@@ -112,6 +125,18 @@ def validate(doc):
 			),
 			_("Choose at least one linked object, then save."),
 		)
+
+
+def _check_sharps(doc):
+	"""FR-M10-06.1: phơi nhiễm vật sắc nhọn cần người bị phơi nhiễm và nguồn; mức High để báo R01, R02 ngay."""
+	if not doc.employee or not cstr(doc.exposure_source).strip():
+		raise _blocked(
+			"SHARPS_DETAILS_REQUIRED",
+			_("Exposure details are required"),
+			_("A sharps exposure needs the exposed employee and the source."),
+			_("Enter both, then follow the post-exposure procedure of Circular 16/2018/TT-BYT."),
+		)
+	doc.severity = "High"
 
 
 def _guard_changes(doc):
@@ -450,3 +475,50 @@ def remind_overdue():
 		frappe.db.set_value(ACTION_DOCTYPE, row.name, "last_reminded_on", today(), update_modified=False)
 		count += 1
 	return count
+
+
+def on_waste_nc(ctx):
+	"""Hook ``tracecore_waste_nc``: túi/thùng phân loại sai (FEAT-047, FR-M10-02.4, A-60 W3) hoặc quá hạn lưu
+	(`kind` = overdue, FEAT-048, FR-M10-03.4, A-61) → NC; FEAT-050 mở rộng."""
+	if ctx.get("kind") == "variance":
+		return _auto(
+			"Waste Handover",
+			ctx["handover"],
+			"Waste Weight Variance",
+			"Medium",
+			_("Waste handover {0} differs from the collected weight: {1}. Reason: {2}").format(
+				ctx["handover"], ctx.get("detail") or "-", ctx.get("reason") or "-"
+			),
+			{"employee": ctx.get("employee"), "waste_source_doc": ctx["handover"]},
+		)
+	if ctx.get("kind") == "overdue":
+		return _auto(
+			"Waste Container",
+			ctx["container"],
+			"Waste Storage Overdue",
+			"Medium",
+			_("Waste container {0} ({1}) is past its storage limit {2}.").format(
+				ctx["container"], ctx.get("waste_type"), ctx.get("due") or "-"
+			),
+			{
+				"department": ctx.get("department"),
+				"waste_type": ctx.get("waste_type"),
+				"waste_source_doc": ctx["container"],
+			},
+		)
+	return _auto(
+		"Waste Container",
+		ctx["container"],
+		"Waste Misclassification",
+		"Medium",
+		_("Waste container {0} ({1}) was marked as misclassified: {2}.").format(
+			ctx["container"], ctx.get("waste_type"), ctx.get("note") or "-"
+		),
+		{
+			"employee": ctx.get("employee"),
+			"department": ctx.get("department"),
+			"station": ctx.get("station"),
+			"waste_type": ctx.get("waste_type"),
+			"waste_source_doc": ctx["container"],
+		},
+	)

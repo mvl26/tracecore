@@ -1,9 +1,9 @@
 """RPC tracecore.v1.competency.* — ma trận năng lực SCR-20 trên Desk (FEAT-037, FR-M4-03.4, API-M4-02)."""
 
 import frappe
-from frappe.utils import add_days, now_datetime
+from frappe.utils import add_days, now_datetime, today
 
-from tracecore.tests.factories import make_user
+from tracecore.tests.factories import make_employee, make_user
 from tracecore.tests.utils import IsolatedTestCase
 from tracecore.v1 import competency as api
 from tracecore.v1.tests.station_fixtures import make_station_employee
@@ -32,7 +32,18 @@ class TestCompetencyApi(IsolatedTestCase):
 		self.assertIn(self.employee, [row["employee"] for row in result["employees"]])
 
 	def test_grant_and_revoke_round_trip(self):
+		frappe.get_doc(
+			{
+				"doctype": "Certificate",
+				"employee": make_employee(first_name="Người giữ chứng chỉ").name,
+				"certificate_type": "Sterilization",
+				"certificate_no": "CC-" + frappe.generate_hash(length=8),
+				"issued_on": today(),
+				"no_expiry": 1,
+			}
+		).insert(ignore_permissions=True)
 		frappe.set_user(self.r02)
+		self.assertIn("Sterilization", api.matrix()["certificate_types"])
 		granted = api.grant(self.employee, STATION, self.until(), required_certificates='["Sterilization"]')
 		self.assertTrue(granted["ok"])
 		cell = next(r for r in api.matrix()["employees"] if r["employee"] == self.employee)["cells"][STATION]

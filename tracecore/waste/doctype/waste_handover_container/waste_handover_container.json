@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 20:00:00.000000",
+ "description": "A bag or bin of a handover (FEAT-049, FR-M10-04).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "container",
+  "waste_type",
+  "weight_kg",
+  "department",
+  "collected_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "options": "Waste Container",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Container Code"
+  },
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "options": "Waste Type",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Waste Type"
+  },
+  {
+   "fieldname": "weight_kg",
+   "fieldtype": "Float",
+   "precision": "3",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Weight (kg)"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "options": "Department",
+   "read_only": 1,
+   "label": "Department"
+  },
+  {
+   "fieldname": "collected_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Collected At"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Handover Container",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "permissions": [],
+ "istable": 1
+}
