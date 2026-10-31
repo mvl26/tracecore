@@ -1520,3 +1520,96 @@ body.tc-kiosk .layout-main-section {
 	font-size: var(--tc-fs-lg);
 	font-weight: var(--tc-fw-bold);
 }
+
+/* chọn tay thiết bị và bộ/gói khi máy quét hỏng (A-68): panel dưới ô quét, nút >= 48 px, không hover-only */
+.tc-pick-button {
+	min-width: var(--tc-touch-station);
+}
+
+.tc-picker {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-touch-gap);
+	padding: var(--tc-sp-4);
+}
+
+.tc-picker-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-picker-head h3 {
+	margin: 0;
+	font-size: var(--tc-fs-xl);
+}
+
+.tc-picker-hint {
+	margin: 0;
+	color: var(--tc-text-2);
+}
+
+.tc-picker-need {
+	margin: 0;
+	color: var(--tc-warn-text);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-picker-reasons,
+.tc-picker-kinds {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-pick-chip {
+	background: var(--tc-card);
+	border: var(--tc-bw-thick) solid var(--tc-border-strong);
+	color: var(--tc-text);
+}
+
+.tc-pick-chip.is-active {
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+}
+
+.tc-pick-search {
+	min-height: var(--tc-touch-min);
+	padding: 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-lg);
+	border: var(--tc-bw-thick) solid var(--tc-border-input);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-pick-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-pick-item {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-sp-3);
+	width: 100%;
+	text-align: left;
+	background: var(--tc-card);
+	border: var(--tc-bw-thick) solid var(--tc-line);
+	color: var(--tc-text);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-pick-item[disabled] {
+	color: var(--tc-text-2);
+	cursor: not-allowed;
+}
+
+.tc-pick-more {
+	align-self: flex-start;
+}

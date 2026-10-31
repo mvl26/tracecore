@@ -32,15 +32,7 @@ function t3Disabled(flag) {
 }
 
 function t3GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 function t3LineLabel(status) {
@@ -940,7 +932,7 @@ class T3Assembly {
 			return this.alertHtml({
 				variant: "ok",
 				title: __("Packing: ready"),
-				reason: __("Assembly is recorded. The set can go to packing (T4)."),
+				reason: __("Assembly is recorded. The set can go to packing."),
 			});
 		}
 		const reasons = {

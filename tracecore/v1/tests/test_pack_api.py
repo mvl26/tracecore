@@ -252,7 +252,7 @@ class TestScan(PackApiCase):
 					"SESSION_STATION_MISMATCH",
 					403,
 				)
-				for station in ("TR-999", "ZONE-CLEAN", None, {"station_step": "T4"})
+				for station in ("TR-999", "ZONE-CLEAN", None, {"functions": [{"station_function": "PACK"}]})
 			],
 			("garbage", pack_api.scan, {"raw": "XYZ-123", "station": STATION}, "SCAN_INVALID", 422),
 			(

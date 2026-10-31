@@ -25,7 +25,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
-from tracecore.core import extension
+from tracecore.core import extension, zones
 from tracecore.core.client_time import to_system_time
 from tracecore.core.errors import Block, BlockedError
 
@@ -245,7 +245,7 @@ def check(set_unit, step, for_update=False):
 			_("Set {0} is {1}; station {2} accepts only sets that are {3}.").format(
 				set_unit,
 				_(status, context="Set Unit"),
-				step,
+				zones.gate_label(step),
 				", ".join(_(s, context="Set Unit") for s in allowed),
 			),
 			_("Check the set status, then take the set to the station that matches it."),
@@ -259,8 +259,10 @@ def check(set_unit, step, for_update=False):
 		return Block(
 			"GATE_PREV_NOT_PASSED",
 			_("Previous step has not passed"),
-			_("Step {0} has not passed in cycle {1}.").format(previous, cycle_no),
-			_("Send the set back to step {0} and complete it before continuing.").format(previous),
+			_("Step {0} has not passed in cycle {1}.").format(zones.gate_label(previous), cycle_no),
+			_("Send the set back to step {0} and complete it before continuing.").format(
+				zones.gate_label(previous)
+			),
 			redo_step=previous,
 		)
 	return None
@@ -399,8 +401,12 @@ def check_stored(set_unit):
 	return Block(
 		"GATE_PREV_NOT_PASSED",
 		_("Set is not sterile yet"),
-		_("Set {0} has not passed step(s) {1}.").format(set_unit, ", ".join(missing)),
-		_("Send the set back to step {0} and complete it before storing the pack.").format(missing[0]),
+		_("Set {0} has not passed step(s) {1}.").format(
+			set_unit, ", ".join(zones.gate_label(step) for step in missing)
+		),
+		_("Send the set back to step {0} and complete it before storing the pack.").format(
+			zones.gate_label(missing[0])
+		),
 		items=missing,
 		redo_step=missing[0],
 	)

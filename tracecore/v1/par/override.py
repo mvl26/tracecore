@@ -16,7 +16,7 @@ from tracecore.par import override as service
 from tracecore.reprocessing import packing
 from tracecore.v1._common import reject_block, require_any_role, run_at_step, station_session
 
-STEP = packing.STEP  # đề nghị từ màn đóng gói T4
+FUNCTION = packing.FUNCTION  # đề nghị từ màn đóng gói
 REQUEST_ROLES = ("TC R04", "TC R02", "System Manager")
 DESK_REQUEST_ROLES = ("TC R01", "TC R02", "TC R04", "System Manager")
 DECIDE_ROLES = ("TC R01", "TC R02")  # R02 chỉ khi được ủy quyền (service.is_approver)
@@ -66,7 +66,7 @@ def request(set_id, reason, station, client_ts=None, token=None):
 		return {"ok": True, "override": _summary(service.request(scanned["id"], reason, station))}
 
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		call,

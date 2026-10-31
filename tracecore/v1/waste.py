@@ -25,7 +25,7 @@ from tracecore.v1._common import (
 from tracecore.waste import analysis, handover, storage, vendors
 from tracecore.waste import collection as service
 
-STEP = "WST"
+FUNCTION = "WASTE"
 RELEASE_ROLES = ("TC R02", "System Manager")
 THRESHOLD_ROLES = ("TC R02", "TC R10", "System Manager")
 DOCUMENT_ROLES = ("TC R07", "TC R09", "TC R02", "System Manager")
@@ -57,7 +57,7 @@ def catalog(station, client_ts=None, token=None):
 	"""Loại chất thải đang dùng: ``{"ok": true, "types": [...]}``."""
 	require_any_role(*WASTE_ROLES)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		parse_client_ts(client_ts),
 		lambda: {"ok": True, "types": service.catalog()},
@@ -73,7 +73,7 @@ def giver(station, card=None, client_ts=None, token=None):
 	require_any_role(*WASTE_ROLES)
 	card = _text(card, "card")
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		parse_client_ts(client_ts),
 		lambda: {"ok": True, "giver": service.giver(card)},
@@ -101,7 +101,7 @@ def collect(station, card=None, lines=None, total_kg=None, note=None, client_ts=
 		doc = service.record(station, employee, card, lines, total_kg, note)
 		return {"ok": True, "collection": service.view(doc)}
 
-	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+	return run_at_step(FUNCTION, station, parse_client_ts(client_ts), call, None, None)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -117,7 +117,7 @@ def acknowledge(station, collection=None, card=None, client_ts=None, token=None)
 		doc = service.acknowledge(collection, card)
 		return {"ok": True, "acknowledged_by": doc.acknowledged_by}
 
-	return run_at_step(STEP, station, parse_client_ts(client_ts), call, "Waste Collection", collection)
+	return run_at_step(FUNCTION, station, parse_client_ts(client_ts), call, "Waste Collection", collection)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -126,7 +126,7 @@ def stock(station, client_ts=None, token=None):
 	"""Tồn kho chất thải, túi gấp nhất trước và nhiệt độ kho lạnh (SCR-39, FEAT-048, A-61)."""
 	require_any_role(*WASTE_ROLES)
 	return run_at_step(
-		STEP, station, parse_client_ts(client_ts), lambda: {"ok": True, **storage.stock()}, None, None
+		FUNCTION, station, parse_client_ts(client_ts), lambda: {"ok": True, **storage.stock()}, None, None
 	)
 
 
@@ -144,7 +144,7 @@ def check_location(station, location=None, client_ts=None, token=None):
 			"location": {"name": room.name, "location_name": room.location_name, "is_cold": room.is_cold},
 		}
 
-	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+	return run_at_step(FUNCTION, station, parse_client_ts(client_ts), call, None, None)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -172,7 +172,7 @@ def store(station, location=None, container=None, collection=None, client_ts=Non
 			},
 		}
 
-	return run_at_step(STEP, station, parse_client_ts(client_ts), call, "Waste Container", container)
+	return run_at_step(FUNCTION, station, parse_client_ts(client_ts), call, "Waste Container", container)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -186,7 +186,7 @@ def record_temperature(station, location=None, temperature=None, client_ts=None,
 	def call():
 		return {"ok": True, "log": storage.record_temperature(location, temperature).name}
 
-	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+	return run_at_step(FUNCTION, station, parse_client_ts(client_ts), call, None, None)
 
 
 @frappe.whitelist(methods=["GET", "POST"])
@@ -221,12 +221,12 @@ def handover_vendors(station, client_ts=None, token=None):
 		waste_types = sorted({waste_type for row in rows for waste_type in row["waste_types"]})
 		return {"ok": True, "vendors": rows, "fifo": {name: handover.fifo(name) for name in waste_types}}
 
-	return run_at_step(STEP, station, parse_client_ts(client_ts), call, None, None)
+	return run_at_step(FUNCTION, station, parse_client_ts(client_ts), call, None, None)
 
 
 def _handover_call(station, client_ts, name, call):
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		parse_client_ts(client_ts),
 		lambda: {"ok": True, "handover": handover.view(call())},

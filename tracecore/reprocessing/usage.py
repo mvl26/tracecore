@@ -13,11 +13,11 @@ from frappe import _
 from frappe.utils import add_to_date, cint, formatdate, getdate, now_datetime, today
 from frappe.utils.password import get_decrypted_password
 
-from tracecore.core import audit, gs1, step_gate
+from tracecore.core import audit, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import storage
 
-STEP = "T8"
+FUNCTION = "USE"
 ISSUED = "Issued"
 USED = "Used"
 EMERGENCY_HOURS = 24  # FR-M2-17.2
@@ -32,21 +32,17 @@ def _blocked(code, title, reason, action, items=None):
 
 
 def _require_station(station):
-	"""Trạm (không phải khu) của bước T8; ngược lại STATION_WRONG_STEP."""
-	row = (
-		frappe.db.get_value("Zone Station", station, ["is_zone", "station_step"], as_dict=True)
-		if station
-		else None
-	)
-	if row and not cint(row.is_zone) and row.station_step == STEP:
+	"""Trạm (không phải khu) có chức năng ``FUNCTION``; ngược lại STATION_WRONG_STEP."""
+	row = frappe.db.get_value("Zone Station", station, "is_zone", as_dict=True) if station else None
+	if row and not cint(row.is_zone) and zones.station_has_function(station, FUNCTION):
 		return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} usage station.").format(station, STEP)
+		_("{0} is not a {1} station.").format(station, zones.function_label(FUNCTION))
 		if row
 		else _("Station {0} does not exist.").format(station or "-"),
-		_("Open the usage screen on a T8 station in a department."),
+		_("Open this screen on a {0} station.").format(zones.function_label(FUNCTION)),
 	)
 
 
@@ -141,7 +137,7 @@ def _check_usable(pack, on=None):
 			_("Set {0} is {1}; station {2} accepts only sets that are {3}.").format(
 				pack.set_unit,
 				_(set_status, context="Set Unit"),
-				STEP,
+				zones.function_label(FUNCTION),
 				_("At Department", context="Set Unit"),
 			),
 			_("Check the set status, or call R02."),

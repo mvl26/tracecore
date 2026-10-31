@@ -4,7 +4,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.core import code_registry
-from tracecore.tests.utils import bru
+from tracecore.tests.utils import as_non_deleter, bru
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
@@ -56,8 +56,8 @@ class TestSterileLocation(FrappeTestCase):
 				{"ref_doctype": "Sterile Location", "ref_name": location.name, "action": "Create"},
 			)
 		)
-		with self.assertRaises(frappe.ValidationError):
-			location.delete()
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			location.delete(ignore_permissions=True)
 
 	def test_permissions(self):
 		meta = frappe.get_meta("Sterile Location")

@@ -203,7 +203,7 @@ class TcStationHelp {
 		const info = this.station.stationInfo || {};
 		const alert = this.station.result && this.station.result.querySelector(".tc-alert-title");
 		return {
-			screen: info.step || info.zone_type || "",
+			screen: (info.functions && info.functions[0]) || info.zone_type || "",
 			step: this.station.result ? this.station.result.dataset.state || "" : "",
 			online: !this.station.isOffline(),
 			last_error: alert ? alert.textContent.trim() : "",

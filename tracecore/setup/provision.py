@@ -12,10 +12,26 @@ from frappe import _
 from frappe.core.doctype.user.user import generate_keys
 from frappe.utils.password import update_password
 
+from tracecore.core import zones
+
 # Frappe không chấp nhận email "x@local" (thiếu dấu chấm ở domain)
 USER_DOMAIN = "tracecore.local"
-# T8 quét sử dụng ở khu khoa (FEAT-027): nhân viên khoa dùng R08
-STATION_ROLE_BY_ZONE = {"Dirty": "TC R03", "Clean": "TC R04", "Sterile": "TC R06", "Department": "TC R08"}
+# Role kiosk theo chức năng đầu tiên của trạm (A-64); quét sử dụng ở khu khoa (FEAT-027) do nhân viên khoa R08
+STATION_ROLE_BY_FUNCTION = {
+	"RECEIVE": "TC R03",
+	"MANUAL_WASH": "TC R03",
+	"WASH_LOAD": "TC R03",
+	"WASH_UNLOAD": "TC R04",
+	"ASSEMBLE": "TC R04",
+	"PACK": "TC R04",
+	"STERI_LOAD": "TC R04",
+	"STERI_UNLOAD": "TC R06",
+	"PUTAWAY": "TC R06",
+	"ISSUE": "TC R06",
+	"USE": "TC R08",
+	"LINEN": "TC R07",
+	"WASTE": "TC R07",
+}
 
 
 def agent_user_email(station):
@@ -25,7 +41,7 @@ def agent_user_email(station):
 
 def _station(station):
 	row = frappe.db.get_value(
-		"Zone Station", {"name": station, "is_zone": 0}, ["name", "station_step", "zone_type"], as_dict=True
+		"Zone Station", {"name": station, "is_zone": 0}, ["name", "station_no"], as_dict=True
 	)
 	if not row:
 		frappe.throw(_("Station {0} does not exist.").format(station))
@@ -77,19 +93,17 @@ def agent_user(station, config_path, server_url="http://127.0.0.1:8000"):
 
 
 def station_user(station, password):
-	"""User station-<bước>@… cho kiosk (role theo khu của trạm)."""
+	"""User station-t<số trạm>@… cho kiosk, trạm chưa đánh số dùng mã trạm (role theo chức năng của trạm)."""
 	from tracecore.core.account import validate_password
 
 	validate_password(password)
 	row = _station(station)
-	role = STATION_ROLE_BY_ZONE.get(row.zone_type)
+	functions = zones.station_functions(row.name)
+	role = STATION_ROLE_BY_FUNCTION.get(functions[0]) if functions else None
 	if not role:
-		frappe.throw(_("No station role is defined for zone type {0}.").format(row.zone_type))
-	user = _ensure_user(
-		f"station-{(row.station_step or row.name).lower()}@{USER_DOMAIN}",
-		f"Station {row.station_step}",
-		[role],
-	)
+		frappe.throw(_("No station role is defined for station {0}.").format(row.name))
+	label = f"t{row.station_no}" if row.station_no else row.name.lower()
+	user = _ensure_user(f"station-{label}@{USER_DOMAIN}", f"Station {label.upper()}", [role])
 	update_password(user, password)
 	frappe.db.set_value("User", user, "last_password_reset_date", frappe.utils.today())
 	return user

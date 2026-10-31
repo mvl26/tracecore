@@ -6,19 +6,41 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
 const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
-const ZONE_CLASS = {
-	Dirty: "dirty",
-	Clean: "clean",
-	Sterile: "sterile",
-	Department: "dept",
-	Waste: "waste",
-};
+// Lớp màn theo Station Function.screen_key; lớp nằm ở các file nối sau qua page_js nên kiểm typeof lúc chạy.
+function tcScreenClass(key) {
+	switch (key) {
+		case "receive":
+			return typeof T1Receiving !== "undefined" ? T1Receiving : null;
+		case "wash":
+			return typeof T2Wash !== "undefined" ? T2Wash : null;
+		case "assembly":
+			return typeof T3Assembly !== "undefined" ? T3Assembly : null;
+		case "pack":
+			return typeof T4Packing !== "undefined" ? T4Packing : null;
+		case "sterilize":
+			return typeof T5Load !== "undefined" ? T5Load : null;
+		case "storage":
+			return typeof T6Storage !== "undefined" ? T6Storage : null;
+		case "issue":
+			return typeof T7Issue !== "undefined" ? T7Issue : null;
+		case "usage":
+			return typeof T8Usage !== "undefined" ? T8Usage : null;
+		case "linen":
+			if (typeof LinenStation !== "undefined") return LinenStation; // thu gom + lô giặt (FEAT-034)
+			return typeof LinenCollect !== "undefined" ? LinenCollect : null;
+		case "waste":
+			if (typeof WasteStation !== "undefined") return WasteStation; // thu gom + kho tạm (FEAT-048)
+			return typeof WasteCollect !== "undefined" ? WasteCollect : null;
+		default:
+			return null;
+	}
+}
 const ZONE_LABEL = {
 	Dirty: "Dirty zone",
 	Clean: "Clean zone",
@@ -193,7 +215,8 @@ class TraceCoreStation {
 		if (
 			(this.screen && this.screen.dialogOpen) ||
 			this.pinChange ||
-			(this.help && this.help.isOpen)
+			(this.help && this.help.isOpen) ||
+			(this.picker && this.picker.isOpen)
 		)
 			return;
 		// Preserve keyboard navigation and deliberate focus on every interactive control.
@@ -273,6 +296,17 @@ class TraceCoreStation {
 			return this.help.open();
 		}
 		if (this.help && this.help.onAction(action, button)) return;
+		if (
+			this.session &&
+			action.startsWith("pick-") &&
+			this.picker &&
+			this.picker.onAction(action, button)
+		)
+			return;
+		if (this.session && action === "manual-pick" && typeof TcPicker !== "undefined") {
+			this.picker = this.picker || new TcPicker(this);
+			return this.picker.onAction(action, button);
+		}
 		if (action === "logout" || action === "rescan-card") return this.endSession();
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
@@ -283,6 +317,7 @@ class TraceCoreStation {
 			}
 			return;
 		}
+		if (action === "tc-screen") return this.switchScreen(button.dataset.screen);
 		if (this.screen && this.screen.onAction(action, button)) return;
 		if (action === "retry") {
 			this.manualOffline = false;
@@ -353,7 +388,12 @@ class TraceCoreStation {
 		this.lastRaw = null;
 		this.input.value = "";
 		this.cardInput.value = "";
-		if (this.screen && this.screen.clearSession) this.screen.clearSession();
+		for (const screen of Object.values(this.screens || {})) {
+			if (screen.clearSession) screen.clearSession();
+		}
+		if (this.screenTabs) this.screenTabs.hidden = true;
+		if (this.picker) this.picker.reset();
+		this.manualEntry = null;
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
@@ -663,7 +703,9 @@ class TraceCoreStation {
 		return (
 			typeof TcOutbox !== "undefined" &&
 			Boolean(window.indexedDB) &&
-			["T1", "T4", "T8"].includes(this.stationInfo && this.stationInfo.step)
+			((this.stationInfo && this.stationInfo.functions) || []).some((code) =>
+				["RECEIVE", "PACK", "USE"].includes(code)
+			)
 		);
 	}
 
@@ -902,6 +944,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.laundry.") ||
 			method.startsWith("tracecore.v1.waste.") ||
 			method.startsWith("tracecore.v1.sync.") ||
+			method.startsWith("tracecore.v1.lookup.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
 			method.startsWith("tracecore.v1.feedback.") ||
 			method === "tracecore.v1.printer.set_roll" ||
@@ -919,6 +962,13 @@ class TraceCoreStation {
 			if (!this.ownsPage() || !this.session) throw ended();
 			args = { ...args, token: this.session.token };
 		}
+		// chọn tay (A-68): RPC quét trong lúc đang xử lý mã chọn tay mang cách nhập và lý do
+		if (
+			this.manualEntry &&
+			typeof PICK_SCAN_METHODS !== "undefined" &&
+			PICK_SCAN_METHODS.includes(method)
+		)
+			args = { ...args, entry_mode: "Manual", manual_reason: this.manualEntry.reason };
 		const controller = new AbortController();
 		controller.stationMethod = method;
 		this.controllers.add(controller);
@@ -1017,48 +1067,73 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
-		// màn riêng của bước (this.screen): T1 tiếp nhận, T2 lô rửa, T3 kiểm đếm, T4 đóng gói, T6 kho vô khuẩn; bước khác
-		// dùng tra cứu Set ID chung
-		if (this.session && !this.screen) {
-			if (station.step === "T4" && typeof T4Packing !== "undefined") {
-				this.screen = this.t4 = new T4Packing(this);
-			} else if (station.step === "T6" && typeof T6Storage !== "undefined") {
-				this.screen = new T6Storage(this);
-			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
-				this.screen = new T2Wash(this);
-			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
-				this.screen = new T7Issue(this);
-			} else if (station.step === "T8" && typeof T8Usage !== "undefined") {
-				this.screen = new T8Usage(this);
-			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
-				this.screen = new T5Load(this);
-			} else if (station.step === "T3" && typeof T3Assembly !== "undefined") {
-				this.screen = new T3Assembly(this);
-			} else if (station.step === "T1" && typeof T1Receiving !== "undefined") {
-				this.screen = new T1Receiving(this);
-			} else if (station.step === "LIN" && typeof LinenCollect !== "undefined") {
-				// trạm đồ vải: thu gom + lô giặt (FEAT-034) chuyển bằng tab; không có station_laundry.js thì chỉ thu gom
-				this.screen =
-					typeof LinenStation !== "undefined"
-						? new LinenStation(this)
-						: new LinenCollect(this);
-			} else if (station.step === "WST" && typeof WasteCollect !== "undefined") {
-				// trạm chất thải: thu gom + kho lưu giữ tạm (FEAT-048) chuyển bằng tab
-				this.screen =
-					typeof WasteStation !== "undefined"
-						? new WasteStation(this)
-						: new WasteCollect(this);
-			}
-		}
-		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
+		// màn nghiệp vụ theo chức năng của trạm (A-64); trạm không có màn dùng tra cứu Set ID chung
+		window.tcGateLabels = station.gate_labels || {};
+		if (this.session && !this.screen) this.openScreen((station.screens || [])[0]);
+		this.renderScreenTabs();
+		this.zonebar.className = `tc-zonebar tc-zone-${station.zone_color || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
 		// context "Zone Station": khu khoa là "Khoa", không lấy bản dịch chung "Department" của Frappe ("Cục")
 		this.root.querySelector(".tc-zone-label").textContent = __(
-			ZONE_LABEL[station.zone_type] || "Station",
+			ZONE_LABEL[station.zone_type] || station.zone_type || "Station",
 			null,
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
+	}
+
+	// Mỗi màn giữ một instance: đổi tab không mất giỏ đang nạp dở (A-64).
+	openScreen(tab) {
+		if (!tab) return;
+		this.screens = this.screens || {};
+		if (!this.screens[tab.key]) {
+			const Screen = tcScreenClass(tab.key);
+			if (!Screen) return;
+			this.screens[tab.key] = new Screen(this);
+		}
+		this.screen = this.screens[tab.key];
+		this.activeTab = tab.key;
+	}
+
+	switchScreen(key) {
+		const tab = ((this.stationInfo && this.stationInfo.screens) || []).find(
+			(row) => row.key === key
+		);
+		if (!tab || key === this.activeTab) return;
+		if ((this.screen && this.screen.busy) || (this.pendingScans && this.pendingScans.length))
+			return;
+		if (this.picker) this.picker.reset();
+		this.openScreen(tab);
+		this.renderScreenTabs();
+		this.result.innerHTML = "";
+		this.screen.setOffline(this.isOffline());
+		this.screen.show();
+		this.input.focus();
+	}
+
+	renderScreenTabs() {
+		if (!this.screenTabs) {
+			this.screenTabs = document.createElement("div");
+			this.screenTabs.className = "tc-chips tc-screen-tabs";
+			this.screenTabs.setAttribute("role", "group");
+			this.screenTabs.setAttribute("aria-label", __("Station screens"));
+			this.result.before(this.screenTabs);
+		}
+		const tabs = (this.stationInfo && this.stationInfo.screens) || [];
+		const visible = this.session && tabs.length > 1;
+		this.screenTabs.hidden = !visible;
+		this.screenTabs.innerHTML = visible
+			? tabs
+					.map(
+						(tab) =>
+							`<button type="button" class="tc-chip" data-action="tc-screen" data-screen="${esc(
+								tab.key
+							)}" aria-pressed="${
+								tab.key === this.activeTab ? "true" : "false"
+							}">${esc(tab.label)}</button>`
+					)
+					.join("")
+			: "";
 	}
 
 	// quét lần lượt các mã giữ lại khi màn của bước hết chờ máy chủ; đổi phiên hoặc chờ quá lâu thì bỏ hàng đợi
@@ -1084,6 +1159,23 @@ class TraceCoreStation {
 			});
 		};
 		this.scanTimer = setTimeout(tick, 100);
+	}
+
+	// khoa đang giao của phiếu T1 đang mở: danh sách chọn tay ưu tiên bộ của khoa đó
+	pickDepartment() {
+		const receipt = this.screen && this.screen.receipt;
+		return (receipt && receipt.department) || null;
+	}
+
+	busyForPick() {
+		return Boolean(this.screen && this.screen.busy) || this.pendingScans.length > 0;
+	}
+
+	// chờ màn xử lý xong mã vừa chọn (kể cả mã xếp hàng nội bộ) để RPC sau còn mang cách nhập chọn tay
+	async waitIdle() {
+		const started = Date.now();
+		while (Date.now() - started < 2 * RPC_TIMEOUT_MS && this.busyForPick())
+			await new Promise((resolve) => setTimeout(resolve, 100));
 	}
 
 	async scan(raw, retry = false) {

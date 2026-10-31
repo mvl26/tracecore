@@ -12,19 +12,20 @@ test_ignore = ["User"]
 class TestAllowedSteps(IsolatedTestCase):
 	@bru("BRU-FLOW-001")
 	def test_allowed_steps_rpc(self):
-		self.assertEqual(zone_api.allowed_steps("ZONE-CLEAN"), ["T3", "T4", "T5"])
-		self.assertEqual(zone_api.allowed_steps("ZONE-DIRTY"), ["T1", "T2"])
-		self.assertEqual(zone_api.allowed_steps("ZONE-STERILE"), ["T5b", "T6", "T7"])
+		codes = lambda zone: [row["value"] for row in zone_api.allowed_functions(zone)]  # noqa: E731
+		self.assertEqual(codes("ZONE-DIRTY"), ["RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD"])
+		self.assertEqual(codes("ZONE-STERILE"), ["STERI_UNLOAD", "PUTAWAY", "ISSUE"])
+		self.assertEqual(zone_api.chain_status(), {"missing": []})
 
 	def test_not_a_zone_gives_empty_list(self):
-		self.assertEqual(zone_api.allowed_steps("TR-004"), [])
-		self.assertEqual(zone_api.allowed_steps("ZONE-NOPE"), [])
-		self.assertEqual(zone_api.allowed_steps(None), [])
-		self.assertEqual(zone_api.allowed_steps(["ZONE-CLEAN"]), [])
+		self.assertEqual(zone_api.allowed_functions("TR-004"), [])
+		self.assertEqual(zone_api.allowed_functions("ZONE-NOPE"), [])
+		self.assertEqual(zone_api.allowed_functions(None), [])
+		self.assertEqual(zone_api.allowed_functions(["ZONE-CLEAN"]), [])
 
 	def test_zone_without_functions_gives_empty_list(self):
 		frappe.db.set_value("Zone Station", "ZONE-CLEAN", "zone_type", "Unknown")
-		self.assertEqual(zone_api.allowed_steps("ZONE-CLEAN"), [])
+		self.assertEqual(zone_api.allowed_functions("ZONE-CLEAN"), [])
 
 
 class TestNextZone(IsolatedTestCase):

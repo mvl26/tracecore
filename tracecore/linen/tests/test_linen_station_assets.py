@@ -71,7 +71,7 @@ class TestLinenStationWiring(FrappeTestCase):
 
 	def test_station_routes_the_lin_step_to_linen_collect(self):
 		source = _read(STATION_JS)
-		self.assertIn('station.step === "LIN"', source)
+		self.assertIn('case "linen":', source)
 		self.assertIn("new LinenCollect(this)", source)
 		self.assertIn('method.startsWith("tracecore.v1.linen.")', source)  # RPC gắn token phiên thẻ
 

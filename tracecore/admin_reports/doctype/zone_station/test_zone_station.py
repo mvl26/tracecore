@@ -3,9 +3,9 @@ import json
 import frappe
 from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
-from tracecore.core import code_registry
+from tracecore.core import code_registry, zones
 from tracecore.patches.v0_1 import activate_existing_stations, register_station_codes
-from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter, assert_permission_matrix, bru
 
 test_ignore = ["User"]
 
@@ -24,14 +24,14 @@ def make_zone(zone_type="Clean", **kwargs):
 	).insert()
 
 
-def make_station(zone, step=None, **kwargs):
+def make_station(zone, *functions, **kwargs):
 	return frappe.get_doc(
 		{
 			"doctype": "Zone Station",
 			"zone_station_name": "Test station",
 			"is_zone": 0,
 			"parent_zone": zone,
-			"station_step": step,
+			"functions": [{"station_function": function} for function in functions],
 			**kwargs,
 		}
 	).insert()
@@ -52,14 +52,15 @@ class TestZoneStation(IsolatedTestCase):
 		self.assertEqual(station.is_zone, 0)
 		self.assertEqual(station.parent_zone, "ZONE-CLEAN")
 		self.assertEqual(station.zone_type, "Clean")
-		self.assertEqual(station.station_step, "T4")
+		self.assertEqual([row.station_function for row in station.functions], ["PACK"])
+		self.assertEqual(station.station_no, 4)
 		self.assertEqual(station.is_active, 1)
 
 	def test_is_zone_cannot_change_after_creation(self):
 		"""F3: khu không thành trạm và ngược lại (set_only_once + chặn ở server)."""
 		self.assertEqual(frappe.get_meta("Zone Station").get_field("is_zone").set_only_once, 1)
 		zone = make_zone("Clean")
-		station = make_station(zone.name, "T4")
+		station = make_station(zone.name, "PACK")
 		for doc, value in ((zone, 0), (station, 1)):
 			with self.subTest(doc=doc.name):
 				doc.reload()
@@ -70,7 +71,7 @@ class TestZoneStation(IsolatedTestCase):
 
 	def test_is_zone_guard_in_controller(self):
 		"""Chặn ở validate kể cả khi set_only_once của Frappe bị bỏ qua (ví dụ đổi meta)."""
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		station.is_zone = 1
 		with self.assertRaises(frappe.ValidationError) as raised:
 			station.run_method("validate")
@@ -82,7 +83,7 @@ class TestZoneStation(IsolatedTestCase):
 		self.assertIn(("Printer", "station"), links)
 
 	def test_station_takes_zone_type_from_parent(self):
-		doc = make_station("ZONE-STERILE", "T6", zone_type="Dirty")
+		doc = make_station("ZONE-STERILE", "PUTAWAY", zone_type="Dirty")
 		self.assertTrue(doc.name.startswith("TR-"))
 		self.assertEqual(doc.zone_type, "Sterile")
 
@@ -107,7 +108,7 @@ class TestZoneStation(IsolatedTestCase):
 
 	@bru("BRU-ID-006")
 	def test_station_code_registered(self):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		row = frappe.db.get_value(
 			"Code Registry", station.name, ["prefix", "ref_doctype", "ref_name", "status"], as_dict=True
 		)
@@ -118,7 +119,7 @@ class TestZoneStation(IsolatedTestCase):
 		)
 
 	def test_code_registration_idempotent(self):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		station.run_method("after_insert")
 		self.assertEqual(frappe.db.count("Code Registry", {"code": station.name}), 1)
 
@@ -155,17 +156,17 @@ class TestZoneStation(IsolatedTestCase):
 	@bru("BRU-FLOW-001")
 	def test_station_step_must_match_zone(self):
 		with self.assertRaises(frappe.ValidationError):
-			make_station("ZONE-DIRTY", "T4")
-		make_station("ZONE-DIRTY", "T2")
+			make_station("ZONE-DIRTY", "PACK")
+		make_station("ZONE-DIRTY", "WASH_LOAD")
 
 	def test_moving_station_to_other_zone_type_checks_step(self):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		station.parent_zone = "ZONE-DIRTY"
 		with self.assertRaises(frappe.ValidationError):
 			station.save()
 
 	def test_removing_zone_deactivates_station(self):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		self.assertEqual(station.is_active, 1)
 		station.parent_zone = None
 		station.save()
@@ -175,7 +176,7 @@ class TestZoneStation(IsolatedTestCase):
 
 	def test_zone_type_change_blocked_when_stations_conflict(self):
 		zone = make_zone("Clean")
-		station = make_station(zone.name, "T4")
+		station = make_station(zone.name, "PACK")
 		zone.zone_type = "Dirty"
 		with self.assertRaises(frappe.ValidationError):
 			zone.save()
@@ -194,7 +195,7 @@ class TestZoneStation(IsolatedTestCase):
 
 	def test_zone_type_change_allowed_when_steps_valid(self):
 		zone = make_zone("Dirty")
-		make_station(zone.name, "T1")
+		make_station(zone.name, "RECEIVE")
 		zone.zone_type = "Department"
 		with self.assertRaises(frappe.ValidationError):
 			zone.save()
@@ -212,15 +213,83 @@ class TestZoneStation(IsolatedTestCase):
 		self.assertEqual(json.loads(log[0].old_value), {"zone_type": "Dirty"})
 		self.assertEqual(json.loads(log[0].new_value), {"zone_type": "Sterile"})
 
+	def test_station_no_unique_among_active_stations(self):
+		with self.assertRaises(frappe.ValidationError) as raised:
+			make_station("ZONE-CLEAN", "PACK", station_no=4)
+		self.assertIn("TR-004", str(raised.exception))
+		make_station("ZONE-CLEAN", "PACK", station_no=4, is_active=0)
+		make_station("ZONE-CLEAN", "PACK", station_no=11)
+		make_station("ZONE-CLEAN", "PACK")  # không đánh số: không trùng
+
+	def test_two_stations_same_function_and_station_with_two_functions(self):
+		first = make_station("ZONE-CLEAN", "ASSEMBLE", "PACK", station_no=12)
+		second = make_station("ZONE-CLEAN", "ASSEMBLE", "PACK", station_no=13)
+		self.assertLess(
+			zones.stations_with_function("PACK").index(first.name),
+			zones.stations_with_function("PACK").index(second.name),
+		)
+		with self.assertRaises(frappe.ValidationError):
+			make_station("ZONE-CLEAN", "PACK", "PACK")
+
+	def test_number_against_process_only_warns(self):
+		frappe.clear_messages()
+		station = make_station("ZONE-DIRTY", "RECEIVE", station_no=40)
+		self.assertTrue(station.name)
+		self.assertTrue(any("40" in str(message) for message in frappe.get_message_log()))
+
+	@bru("BRU-FLOW-001")
+	def test_new_zone_type_and_function_work_by_config_only(self):
+		frappe.get_doc(
+			{
+				"doctype": "Zone Type",
+				"type_name": "TEST Vùng đồ vải",
+				"functions": [{"station_function": "LINEN"}, {"station_function": "RECEIVE"}],
+			}
+		).insert()
+		zone = make_zone("TEST Vùng đồ vải", zone_station_name="Vùng đồ vải")
+		station = make_station(zone.name, "LINEN", station_no=21)
+		self.assertEqual(station.zone_type, "TEST Vùng đồ vải")
+		with self.assertRaises(frappe.ValidationError):
+			make_station(zone.name, "PACK")
+
+	def test_zone_in_use_cannot_be_turned_off(self):
+		zone = frappe.get_doc("Zone Station", "ZONE-CLEAN")
+		zone.is_active = 0
+		with self.assertRaises(frappe.ValidationError) as raised:
+			zone.save()
+		self.assertIn("TR-004", str(raised.exception))
+		empty = make_zone("Clean")
+		empty.is_active = 0
+		empty.save()
+		with self.assertRaises(frappe.ValidationError):
+			make_station(empty.name, "PACK")
+
+	def test_locations_follow_allowed_functions_of_zone_type(self):
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_doc(
+				{"doctype": "Sterile Location", "location_name": "Bad", "zone_station": "ZONE-CLEAN"}
+			).insert()
+		frappe.get_doc(
+			{
+				"doctype": "Zone Type",
+				"type_name": "TEST Kho phụ",
+				"functions": [{"station_function": "PUTAWAY"}],
+			}
+		).insert()
+		zone = make_zone("TEST Kho phụ")
+		frappe.get_doc(
+			{"doctype": "Sterile Location", "location_name": "Good", "zone_station": zone.name}
+		).insert()
+
 	@bru("BRU-ID-006")
 	def test_zone_station_cannot_be_deleted(self):
-		station = make_station("ZONE-CLEAN", "T4")
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc("Zone Station", station.name, force=True)
+		station = make_station("ZONE-CLEAN", "PACK")
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc("Zone Station", station.name, force=True, ignore_permissions=True)
 		self.assertTrue(frappe.db.exists("Zone Station", station.name))
 
 	def test_creating_station_writes_audit_log(self):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		self.assertTrue(
 			frappe.db.exists(
 				"Audit Log", {"ref_doctype": "Zone Station", "ref_name": station.name, "action": "Create"}
@@ -261,7 +330,7 @@ def peripheral(**kwargs):
 
 class TestStationPeripheral(IsolatedTestCase):
 	def _station(self, *rows):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		for row in rows:
 			station.append("peripherals", row)
 		return station
@@ -337,7 +406,7 @@ class TestStationPeripheral(IsolatedTestCase):
 		self._station(peripheral(peripheral_type="Scale", connection="Serial", serial_port="COM4")).save()
 
 	def test_peripheral_change_audited(self):
-		station = make_station("ZONE-CLEAN", "T4")
+		station = make_station("ZONE-CLEAN", "PACK")
 		station.append("peripherals", peripheral(model="Zebra DS2208"))
 		station.save()
 		logs = frappe.get_all(

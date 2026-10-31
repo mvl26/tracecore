@@ -11,6 +11,7 @@
   "user_name",
   "station",
   "device",
+  "entry_mode",
   "column_break_ref",
   "action",
   "ref_doctype",
@@ -66,6 +67,15 @@
    "read_only": 1
   },
   {
+   "description": "How the code was entered at the station: scanned or chosen by hand (A-68).",
+   "fieldname": "entry_mode",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Entry Mode",
+   "options": "\nScan\nManual",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_ref",
    "fieldtype": "Column Break"
   },
@@ -75,7 +85,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Create\nUpdate\nSubmit\nCancel\nDelete\nLogin\nReject\nOverride\nView Patient Code\nSync",
+   "options": "Create\nUpdate\nSubmit\nCancel\nDelete\nLogin\nReject\nOverride\nView Patient Code\nSync\nManual Entry",
    "read_only": 1,
    "reqd": 1
   },

@@ -335,7 +335,7 @@ class T5Release {
 					action:
 						res.status === "Quarantine"
 							? __("Read the biological indicator, then record it with Read BI.")
-							: __("The packs can now go to the sterile store (T6)."),
+							: __("The packs can now go to the sterile store."),
 				};
 				this.show();
 			}
@@ -770,8 +770,20 @@ class T5Release {
 			<h3>${esc(__("Reject the load"))}</h3>
 			<p class="tc-t6-hint">${esc(__("Use it when the cycle or an indicator failed."))}</p>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Restart from"))}">
-				${this.chip("t5b-redo", "redo", "T4", __("Restart from T4"), form.redo === "T4")}
-				${this.chip("t5b-redo", "redo", "T2", __("Restart from T2"), form.redo === "T2")}
+				${this.chip(
+					"t5b-redo",
+					"redo",
+					"T4",
+					__("Restart from {0}", [(window.tcGateLabels || {}).T4 || "T4"]),
+					form.redo === "T4"
+				)}
+				${this.chip(
+					"t5b-redo",
+					"redo",
+					"T2",
+					__("Restart from {0}", [(window.tcGateLabels || {}).T2 || "T2"]),
+					form.redo === "T2"
+				)}
 			</div>
 			<div class="tc-field">
 				<label for="tc-t5b-reject">${esc(__("Reason"))}</label>

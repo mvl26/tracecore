@@ -106,9 +106,9 @@ def request(set_unit, reason):
 		raise _blocked(
 			"DISPOSAL_NOT_ELIGIBLE",
 			_("Set cannot be disposed"),
-			_("Set {0} is {1}; only a set at end of life or sent to disposal at T3 can be disposed.").format(
-				unit.name, _(unit.status, context=DOCTYPE)
-			),
+			_(
+				"Set {0} is {1}; only a set at end of life or sent to disposal at assembly can be disposed."
+			).format(unit.name, _(unit.status, context=DOCTYPE)),
 			_("Check the set status before requesting a disposal."),
 		)
 	_save(

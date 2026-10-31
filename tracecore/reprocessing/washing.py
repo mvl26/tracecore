@@ -21,11 +21,14 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate
+from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 
-STEP = "T2"
+STEP = "T2"  # mã cổng trong step_gate
+FUNCTION = "WASH_LOAD"
+UNLOAD_FUNCTION = "WASH_UNLOAD"
+LOAD_OR_UNLOAD = (FUNCTION, UNLOAD_FUNCTION)
 SAVEPOINT = "tc_wash_start"
 RESULT_SAVEPOINT = "tc_wash_result"
 WASH_EQUIPMENT_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
@@ -705,23 +708,29 @@ def lookup(raw):
 
 
 def _check_unload_station(station, machine):
-	"""Trạm dỡ: trạm T2, hoặc trạm đang hoạt động thuộc khu cửa ra của máy (zone_out, rỗng thì zone_in) — Q5."""
+	"""Trạm dỡ: trạm có chức năng dỡ, hoặc trạm đang hoạt động thuộc khu cửa ra của máy (zone_out, rỗng thì zone_in) — Q5."""
 	row = None
 	if isinstance(station, str) and station:
 		row = frappe.db.get_value(
-			"Zone Station", station, ["is_zone", "is_active", "station_step", "parent_zone"], as_dict=True
+			"Zone Station", station, ["is_zone", "is_active", "parent_zone"], as_dict=True
 		)
 	exit_zone = machine.zone_out or machine.zone_in
 	if row and not cint(row.is_zone) and cint(row.is_active):
-		if row.station_step == STEP or (exit_zone and row.parent_zone == exit_zone):
+		if zones.station_has_function(station, UNLOAD_FUNCTION) or (
+			exit_zone and row.parent_zone == exit_zone
+		):
 			return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("Station {0} cannot unload washer {1}: use a T2 station or a station at the exit door.").format(
-			station if isinstance(station, str) and station else "-", machine.name
+		_("Station {0} cannot unload washer {1}: use a {2} station or a station at the exit door.").format(
+			station if isinstance(station, str) and station else "-",
+			machine.name,
+			zones.function_label(UNLOAD_FUNCTION),
 		),
-		_("Unload the batch at a T2 station or at a station in zone {0}.").format(exit_zone or "-"),
+		_("Unload the batch at a {0} station or at a station in zone {1}.").format(
+			zones.function_label(UNLOAD_FUNCTION), exit_zone or "-"
+		),
 	)
 
 

@@ -11,7 +11,7 @@ import contextlib
 import frappe
 from frappe.utils import cint, getdate, today
 
-from tracecore.core import code_range, crypto, extension, step_gate, sync
+from tracecore.core import code_range, crypto, extension, step_gate, sync, zones
 from tracecore.core.client_time import parse_client_ts, to_system_time
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing, receiving, usage
@@ -24,6 +24,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
+OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE")  # chức năng có màn chạy offline (A-40)
 SNAPSHOT_ROLES = tuple(dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES)))
 STATUS_ROLES = ("TC R02", "TC R01", "TC R10", "System Manager")
 SAVEPOINT = "tc_sync_snapshot"
@@ -174,20 +175,21 @@ def _t8(employee):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*SNAPSHOT_ROLES)
 def snapshot(station, client_ts=None, token=None):
-	"""Dữ liệu đọc offline của trạm theo bước (A-40 D4): ``{"ok": true, "step", ...}``."""
+	"""Dữ liệu đọc offline của trạm theo chức năng (A-40 D4, A-64): ``{"ok": true, "function", ...}``."""
 	require_any_role(*SNAPSHOT_ROLES)
-	step = frappe.db.get_value("Zone Station", station, "station_step")
+	functions = zones.station_functions(station)
+	function = next((code for code in OFFLINE_FUNCTIONS if code in functions), None)
 	on = to_system_time(parse_client_ts(client_ts))
 	session = current_station_session()
-	if step == "T1":
+	if function == "RECEIVE":
 		data = _t1(on)
-	elif step == "T4":
+	elif function == "PACK":
 		data = _t4(station, on.date(), session.name if session else None)
-	elif step == "T8":
+	elif function == "USE":
 		data = _t8(session.employee if session else None)
 	else:
-		return {"ok": True, "step": step, "offline": False}
-	return {"ok": True, "step": step, "offline": True, **data}
+		return {"ok": True, "function": functions[0] if functions else None, "offline": False}
+	return {"ok": True, "function": function, "offline": True, **data}
 
 
 @frappe.whitelist(methods=["GET", "POST"])

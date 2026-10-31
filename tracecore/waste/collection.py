@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, cstr, flt, now_datetime
 
-from tracecore.core import code_registry, extension, station_auth
+from tracecore.core import code_registry, extension, station_auth, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 
@@ -17,7 +17,7 @@ WEIGHT_DIGITS = 3
 SCALE, MANUAL, CONVERTED = "Scale", "Manual", "Converted"
 COLLECTED, HELD, CANCELLED = "Collected", "Held", "Cancelled"
 NC_HOOK = "tracecore_waste_nc"
-WASTE_STEP = "WST"
+WASTE_FUNCTION = "WASTE"
 LABEL_OBJECT = "Waste Container"
 
 
@@ -338,12 +338,9 @@ def _printer_station(station):
 	printer = core_print.object_printer(station) if station else None
 	if printer:
 		return station, printer
-	for other in frappe.get_all(
-		"Zone Station",
-		filters={"is_zone": 0, "is_active": 1, "station_step": WASTE_STEP, "name": ["!=", station or ""]},
-		pluck="name",
-		order_by="name asc",
-	):
+	for other in zones.stations_with_function(WASTE_FUNCTION):
+		if other == station:
+			continue
 		printer = core_print.object_printer(other)
 		if printer:
 			return other, printer

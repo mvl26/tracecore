@@ -20,14 +20,26 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = issuing.STEP  # màn cấp phát chỉ chạy ở trạm bước T7
+FUNCTION = issuing.FUNCTION
 ISSUE_ROLES = STORAGE_ROLES  # R06 (KTV kho vô khuẩn / cấp phát) và System Manager
 
 
-def _run(station, client_ts, call, ref_doctype=None, ref_name=None, raw=None):
+def _run(
+	station, client_ts, call, ref_doctype=None, ref_name=None, raw=None, entry_mode=None, manual_reason=None
+):
 	"""Chạy `call()` ở trạm T7; trả ``{"ok": true, **kết quả}`` hoặc body từ chối nghiệp vụ."""
 	timestamp = parse_client_ts(client_ts)
-	result = run_at_step(STEP, station, timestamp, lambda: call(timestamp), ref_doctype, ref_name, raw)
+	result = run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: call(timestamp),
+		ref_doctype,
+		ref_name,
+		raw,
+		entry_mode,
+		manual_reason,
+	)
 	return result if "ok" in result else {"ok": True, **result}
 
 
@@ -68,7 +80,17 @@ def create(department, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ISSUE_ROLES)
 @idempotent
-def add_pack(issue_note, raw, station, note=None, move=0, client_ts=None, token=None):
+def add_pack(
+	issue_note,
+	raw,
+	station,
+	note=None,
+	move=0,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+):
 	"""Quét một gói vào phiếu (Cycle ID hoặc DataMatrix). Gói hạn xa hơn gói FEFO cần `note`; `move` chuyển gói từ phiếu
 	nháp khác sang."""
 	require_any_role(*ISSUE_ROLES)
@@ -81,6 +103,8 @@ def add_pack(issue_note, raw, station, note=None, move=0, client_ts=None, token=
 		ref,
 		scanned["id"] if ref else None,
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 

@@ -60,8 +60,11 @@ def log(
 	station=None,
 	device=None,
 	client_ts=None,
+	entry_mode=None,
 ):
-	"""Ghi một dòng Audit Log; trạm/thiết bị/request lấy từ header nếu không truyền."""
+	"""Ghi một dòng Audit Log; trạm/thiết bị/request lấy từ header nếu không truyền.
+
+	`entry_mode` (Scan / Manual, A-68) chỉ có ở thao tác nhập mã trên trạm."""
 	station = station or _header("X-TC-Station")
 	if station and not frappe.db.exists("Zone Station", station):
 		station = None
@@ -72,6 +75,7 @@ def log(
 			"user": frappe.session.user,
 			"station": station,
 			"device": device or _header("X-TC-Device"),
+			"entry_mode": entry_mode,
 			"request_id": _header("X-Request-ID"),
 			"action": action,
 			"ref_doctype": ref_doctype,
@@ -130,7 +134,8 @@ def on_document_event(doc, method):
 		log(action, doc.doctype, doc.name, new={"docstatus": doc.docstatus})
 
 
-# Danh mục R10 được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16); người khác chỉ ngừng dùng
+# Danh mục R10 và Administrator được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16, A-64);
+# người khác chỉ ngừng dùng
 MASTER_DOCTYPES = frozenset(
 	{
 		"Instrument",
@@ -141,6 +146,8 @@ MASTER_DOCTYPES = frozenset(
 		"Printer",
 		"Label Template",
 		"Zone Station",
+		"Zone Type",
+		"Station Function",
 		"Equipment",
 		"Process Program",
 		"Equipment Type Norm",
@@ -150,11 +157,13 @@ MASTER_DELETE_ROLE = "TC R10"
 
 
 def _may_delete_master(doc):
-	"""R10 thật (không phải Administrator, vốn mang mọi role) xóa danh mục chưa có giao dịch liên kết."""
+	"""R10 hoặc Administrator xóa danh mục chưa có giao dịch liên kết; chức năng hệ thống không xóa được (A-64)."""
 	user = frappe.session.user
-	if doc.doctype not in MASTER_DOCTYPES or user == "Administrator":
+	if doc.doctype not in MASTER_DOCTYPES or doc.get("is_system"):
 		return False
-	if not frappe.db.exists("Has Role", {"parent": user, "parenttype": "User", "role": MASTER_DELETE_ROLE}):
+	if user != "Administrator" and not frappe.db.exists(
+		"Has Role", {"parent": user, "parenttype": "User", "role": MASTER_DELETE_ROLE}
+	):
 		return False
 	check_if_doc_is_linked(doc)
 	check_if_doc_is_dynamically_linked(doc)

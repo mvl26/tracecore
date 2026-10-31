@@ -44,6 +44,20 @@ def local_context(**values):
 
 
 @contextmanager
+def as_non_deleter():
+	"""Người dùng không phải R10: xóa danh mục luôn bị chặn (A-37 d). Administrator xóa được danh mục chưa dùng (A-64)."""
+	from tracecore.tests.factories import make_user
+
+	user = make_user("non-deleter@example.com", ["TC R02"])
+	previous = frappe.session.user
+	frappe.set_user(user)
+	try:
+		yield
+	finally:
+		frappe.set_user(previous)
+
+
+@contextmanager
 def fixture_r10():
 	"""Explicit authority for Administrator-only test fixture creation, always restored.
 

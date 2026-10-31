@@ -20,7 +20,8 @@ from frappe.utils import add_days, cint, get_datetime, today
 from tracecore.core import client_time, extension, gs1, station_auth, step_gate
 from tracecore.core.errors import Block, BlockedError
 
-STEP = "T1"
+STEP = "T1"  # mã cổng trong step_gate
+FUNCTION = "RECEIVE"
 SAVEPOINT = "tc_receipt_submit"
 OFFLINE_SAVEPOINT = (
 	"tc_receipt_offline"  # phiếu offline phát lại (FEAT-009): hoàn tác cả phiếu khi một bộ lỗi

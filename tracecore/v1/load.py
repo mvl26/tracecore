@@ -24,7 +24,7 @@ from tracecore.v1._common import (
 )
 from tracecore.v1.wash import _codes, _flag, _optional_str, _required_str, _run, _values
 
-STEP = sterilizing.STEP
+FUNCTION = sterilizing.FUNCTION
 
 
 def _session_employee():
@@ -43,27 +43,39 @@ def _load_ref(load):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def create(raw, station, client_ts=None, token=None):
+def create(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét QR máy tiệt khuẩn: máy, chương trình đang dùng của máy, chỉ thị theo chương trình (FR-M2-09.1, .3)."""
 	require_any_role(*LOAD_ROLES)
 	raw = _required_str(raw, "raw")
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **sterilizing.scan_machine(raw)},
 		"Equipment" if scanned["type"] == "equipment" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def add_pack(raw, equipment, program, queued, station, client_ts=None, token=None):
+def add_pack(
+	raw,
+	equipment,
+	program,
+	queued,
+	station,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+):
 	"""Kiểm một Cycle ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (A-16, Q1)."""
 	require_any_role(*LOAD_ROLES)
 	raw = _required_str(raw, "raw")
@@ -73,13 +85,15 @@ def add_pack(raw, equipment, program, queued, station, client_ts=None, token=Non
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **sterilizing.admit_pack(raw, equipment, program, queue)},
 		"Pack" if scanned["type"] == "pack" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
@@ -94,7 +108,7 @@ def complete(equipment, program, packs, station, is_priority=0, client_ts=None, 
 	codes = _codes(packs, "packs")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -114,7 +128,12 @@ def overview(station, client_ts=None, token=None):
 	"""Bảng phụ của màn T5, chỉ đọc: mẻ đang chạy / đã có dữ liệu chưa dỡ (``running``)."""
 	require_any_role(*LOAD_ROLES)
 	parse_client_ts(client_ts)
-	return run_at_step(STEP, station, None, lambda: {"ok": True, "running": sterilizing.running_loads()})
+	return run_at_step(
+		sterilizing.LOAD_OR_UNLOAD,
+		station,
+		None,
+		lambda: {"ok": True, "running": sterilizing.running_loads()},
+	)
 
 
 # --- Tra cứu, dữ liệu chu trình --------------------------------------------------------------------------------

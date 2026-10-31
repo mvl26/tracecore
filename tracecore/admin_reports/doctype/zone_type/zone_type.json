@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "type_name",
+  "zone_color",
+  "next_zone_type",
+  "functions"
+ ],
+ "fields": [
+  {
+   "fieldname": "type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zone Type",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Default color",
+   "fieldname": "zone_color",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Header Color",
+   "options": "Default color\nDirty zone\nClean zone\nSterile zone\nDepartment zone\nWaste zone",
+   "description": "Color of the header bar on station screens."
+  },
+  {
+   "description": "Zone that two-door machines open into from this zone. Leave empty for the last zone or zones outside the flow.",
+   "fieldname": "next_zone_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Next Zone Through Two-Door Machine",
+   "options": "Zone Type"
+  },
+  {
+   "fieldname": "functions",
+   "fieldtype": "Table",
+   "label": "Allowed Functions",
+   "options": "Zone Type Function"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "Zone Type",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:type_name",
+ "naming_rule": "By fieldname",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R10",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R01",
+   "read": 1
+  },
+  {
+   "role": "TC R02",
+   "read": 1
+  },
+  {
+   "role": "TC R09",
+   "read": 1
+  }
+ ],
+ "description": "Zone types and the station functions allowed in each (A-64)."
+}

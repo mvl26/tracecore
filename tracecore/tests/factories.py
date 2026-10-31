@@ -477,7 +477,7 @@ def make_linen_station():
 				"is_active": 1,
 				"zone_station_name": "Linen collection",
 				"parent_zone": zone.name,
-				"station_step": "LIN",
+				"functions": [{"station_function": "LINEN"}],
 			}
 		).insert(ignore_permissions=True, set_name=LINEN_STATION)
 	return LINEN_STATION
@@ -1321,7 +1321,7 @@ def make_waste_station():
 				"is_active": 1,
 				"zone_station_name": "Waste collection",
 				"parent_zone": zone.name,
-				"station_step": "WST",
+				"functions": [{"station_function": "WASTE"}],
 			}
 		).insert(ignore_permissions=True, set_name=WASTE_STATION)
 	return WASTE_STATION

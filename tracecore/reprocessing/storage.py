@@ -10,10 +10,10 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, getdate, now_datetime, today
 
-from tracecore.core import code_registry, gs1, step_gate
+from tracecore.core import code_registry, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 
-STEP = "T6"
+FUNCTION = "PUTAWAY"
 EXPIRING_DAYS = 7  # FR-M2-13.2: dashboard kho liệt kê gói hết hạn trong 7 ngày tới
 IN_STOCK = "In Sterile Stock"
 VOID_EXPIRED = "Expired"
@@ -27,21 +27,17 @@ def _blocked(code, title, reason, action, items=None):
 
 
 def _require_station(station):
-	"""Trạm (không phải khu) của bước T6; ngược lại STATION_WRONG_STEP."""
-	row = (
-		frappe.db.get_value("Zone Station", station, ["is_zone", "station_step"], as_dict=True)
-		if station
-		else None
-	)
-	if row and not cint(row.is_zone) and row.station_step == STEP:
+	"""Trạm (không phải khu) có chức năng ``FUNCTION``; ngược lại STATION_WRONG_STEP."""
+	row = frappe.db.get_value("Zone Station", station, "is_zone", as_dict=True) if station else None
+	if row and not cint(row.is_zone) and zones.station_has_function(station, FUNCTION):
 		return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} sterile storage station.").format(station, STEP)
+		_("{0} is not a {1} station.").format(station, zones.function_label(FUNCTION))
 		if row
 		else _("Station {0} does not exist.").format(station or "-"),
-		_("Open the sterile storage screen on a T6 station."),
+		_("Open this screen on a {0} station.").format(zones.function_label(FUNCTION)),
 	)
 
 

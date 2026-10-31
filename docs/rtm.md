@@ -77,7 +77,7 @@
 | FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | `tracecore/par/tests/test_override.py`, `tracecore/par/doctype/par_override/test_par_override.py`, `tracecore/v1/tests/test_par_api.py`, `tracecore/par/report/par_override_report/test_par_override_report.py`, `tracecore/par/tests/test_par_override_desk_assets.py` (FEAT-032) |
 | FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | ADR-002; A-54 | FEAT-006 | `admin_reports/tests/test_dashboard.py`, `v1/tests/test_dashboard_api.py`, `tests/test_tc_dashboard.py` |
 | FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | A-57 | FEAT-007 | `admin_reports/tests/test_sterilization_log.py` |
-| FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
+| FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002, FEAT-051 | `core/tests/test_zones.py`, `test_zone_station.py` |
 | FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | A-55 | FEAT-008 | `admin_reports/tests/test_environment.py`, `admin_reports/tests/test_environment_report.py`, `v1/tests/test_env_api.py` |
 | FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-07 | Hệ thống sinh mã định danh cho mọi đối tượng quét | Must | Active | CHG-032 (review v1.10, kế thừa BR-M9) | UC-33 | ADR-004 | FEAT-001; FEAT-005 | _TBD_ |
@@ -127,7 +127,7 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-SCAL-01 | Mở rộng — 25–40 người dùng đồng thời, 40 trạm/PDA trên 8 vCPU/16 GB; lên 80 người dùng bằng nâng VM. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-001; ADR-011 | Foundations | _TBD_ |
 | NFR-SCAL-02 | Mở rộng — Dung lượng 10 năm: ≈ 11 triệu DT-PACK, ≥ 50 triệu DT-AUDIT; file storage ≥ 500 GB. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-008; ADR-011 | Foundations | _TBD_ |
 | NFR-AVAIL-03 | Sẵn sàng — Cửa sổ bảo trì ≤ 4 giờ/tháng ngoài 06:00–20:00, báo trước ≥ 24 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-011 | Foundations | _TBD_ |
-| NFR-AVAIL-04 | Sẵn sàng — Thiết bị ngoại vi lỗi không chặn giao dịch; không single point of failure trong chuỗi 8 trạm. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-006; ADR-014 | FEAT-018; FEAT-033; Foundations | _TBD_ |
+| NFR-AVAIL-04 | Sẵn sàng — Thiết bị ngoại vi lỗi không chặn giao dịch; không single point of failure trong chuỗi 8 trạm (cấu hình mặc định, A-64). | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-006; ADR-014 | FEAT-018; FEAT-033; Foundations | _TBD_ |
 | NFR-SEC-04 | Bảo mật — Không lỗ hổng High/Critical theo OWASP Top 10 / ASVS L2 trước go-live; Medium ≤ 30 ngày. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
 | NFR-SEC-05 | Bảo mật — Bản vá ≤ 30 ngày (Critical ≤ 7 ngày), thử trên staging. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
 | NFR-SEC-06 | Bảo mật — Secret ngoài mã nguồn, không ghi log; API key xoay 90 ngày; quy trình khóa AES-256. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | Foundations | _TBD_ |

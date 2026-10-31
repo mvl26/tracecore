@@ -112,16 +112,17 @@ class TestStationConfig(IsolatedTestCase):
 		station.save()
 		frappe.set_user(self.agent)
 		result = call("TR-004")
+		info = result["station"]
 		self.assertEqual(
-			result["station"],
-			{
-				"name": "TR-004",
-				"label": "T4 Packing",
-				"zone": station.parent_zone,
-				"zone_type": "Clean",
-				"step": "T4",
-				"is_active": 1,
-			},
+			(
+				info["name"],
+				info["label"],
+				info["zone"],
+				info["zone_type"],
+				info["functions"],
+				info["is_active"],
+			),
+			("TR-004", "T4 Packing", station.parent_zone, "Clean", ["PACK"], 1),
 		)
 		self.assertEqual(
 			[(row["peripheral_type"], row["model"], row["connection"]) for row in result["peripherals"]],

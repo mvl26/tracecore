@@ -11,6 +11,7 @@
 | 23/10/2026 | Amendment HOME-01, người dùng yêu cầu thay Home mẫu bằng chức năng TraceCore: tài khoản TC/System Manager vào Home hoặc Workspace sẽ chuyển tới `/app/tracecore`; các List/Form ERPNext dùng trong nghiệp vụ được giữ nguyên, không thay quyền. Tài khoản khác giữ Workspace sẵn có. |
 | 23/10/2026 | Amendment NAV-01, người dùng duyệt trong chat: Home có liên kết “Mở TraceCore” tới Page `/app/tracecore`, chọn không gian quản lý / trạm / khoa theo quyền. Trang chỉ điều hướng; xác thực thẻ/PIN vẫn tại đích. Các màn chưa triển khai hiển thị trạng thái và không có đích giả. Không hiện thực SCR-44..46. Kế hoạch: `superpowers/plans/tracecore-launcher.md`. |
 | 29/10/2026 | Amendment PIN-01, người dùng duyệt trong chat (FR-M9-09, FR-M9-09.1, UC-33 A3): PIN trạm do R10/R02 đặt trên Desk là PIN tạm. Trên STN/PDA (Page `station`), quét thẻ mà phiên báo `pin_change_required` thì mở modal §4.13 **bắt buộc** (không Esc, không Hủy): PIN tạm · PIN mới · nhập lại PIN mới; lỗi là alert-error trong modal; lối ra duy nhất là Đăng xuất. Đổi xong mới vào màn trạm. RPC `tracecore.v1.account.change_pin` (token trong body, không `@idempotent` vì băm tham số lộ PIN, giống `station.verify_pin`). Không thêm SCR mới. |
+| 30/10/2026 | Amendment A-64, người dùng duyệt trong chat: số trạm T1…Tn và chức năng trạm do cấu hình. Stepper, gate panel và thông báo hiện tên chức năng, không hiện mã cổng; “nhãn T1–T8” ở mục 8 và mục Consistency đọc là “số trạm và tên chức năng theo cấu hình”. Trạm nhiều màn hiện tab, nút ≥ 48 px. |
 
 ## 1. Overview
 

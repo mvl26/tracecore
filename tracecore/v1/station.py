@@ -5,7 +5,7 @@ from frappe import _
 from frappe.utils import cint
 
 from tracecore.core import print as core_print
-from tracecore.core import station_auth
+from tracecore.core import station_auth, zones
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.v1._common import (
@@ -109,15 +109,20 @@ def _station_row(station):
 	row = frappe.db.get_value(
 		"Zone Station",
 		station,
-		["name", "zone_station_name", "parent_zone", "zone_type", "station_step", "is_active"],
+		["name", "zone_station_name", "parent_zone", "zone_type", "station_no", "is_active"],
 		as_dict=True,
 	)
+	functions = zones.station_functions(row.name)
 	return {
 		"name": row.name,
 		"label": _(row.zone_station_name),
 		"zone": row.parent_zone,
 		"zone_type": row.zone_type,
-		"step": row.station_step,
+		"zone_color": zones.zone_color_class(row.zone_type),
+		"functions": functions,
+		"station_no": cint(row.station_no),
+		"screens": zones.station_screen_tabs(functions),
+		"gate_labels": zones.gate_labels(),
 		"is_active": cint(row.is_active),
 	}
 

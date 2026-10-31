@@ -104,7 +104,7 @@ frappe.pages["competency-matrix"].on_page_load = function (wrapper) {
 		$("<th class='tc-cm-person'></th>").text(__("Employee")).appendTo(head);
 		data.stations.forEach((station) =>
 			$("<th></th>")
-				.append($("<span></span>").text(`${station.step || ""} ${station.label}`.trim()))
+				.append($("<span></span>").text(`${station.number || ""} ${station.label}`.trim()))
 				.append($("<span class='tc-cm-zone'></span>").text(station.zone_label || ""))
 				.appendTo(head)
 		);

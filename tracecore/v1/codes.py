@@ -186,13 +186,18 @@ def _object_details(label_object, code, ref_doctype, ref_name):
 		row = frappe.db.get_value(
 			"Zone Station",
 			{"name": code, "is_zone": 0},
-			["zone_station_name", "parent_zone", "station_step"],
+			["zone_station_name", "parent_zone", "station_no"],
 			as_dict=True,
 		)
 		if not row:
 			raise _not_found(label_object, code)
 		zone = _ref_title("Zone Station", row.parent_zone)
-		return "Zone Station", code, row.zone_station_name, " - ".join(filter(None, (zone, row.station_step)))
+		return (
+			"Zone Station",
+			code,
+			row.zone_station_name,
+			" - ".join(filter(None, (zone, f"T{row.station_no}" if row.station_no else ""))),
+		)
 	if label_object == "Roll":
 		if not _is_label_item(ref_name):
 			raise _block(

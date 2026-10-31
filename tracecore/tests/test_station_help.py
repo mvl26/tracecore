@@ -62,16 +62,16 @@ class TestValidateArticle(IsolatedTestCase):
 	def test_station_article_needs_three_to_five_steps(self):
 		for count in (2, 6):
 			with self.assertRaises(frappe.ValidationError):
-				_article("T4", content=_steps(count)).insert(ignore_permissions=True)
+				_article("PACK", content=_steps(count)).insert(ignore_permissions=True)
 		for count in (3, 5):
-			_article("T4", content=_steps(count), title=f"T4 {count}").insert(ignore_permissions=True)
+			_article("PACK", content=_steps(count), title=f"T4 {count}").insert(ignore_permissions=True)
 
 	def test_station_article_refuses_private_or_external_images(self):
 		for src in ("/private/files/x.png", "https://example.com/x.png"):
 			with self.assertRaises(frappe.ValidationError):
-				_article("T2", content=f'<ol><li>A <img src="{src}"></li><li>B</li><li>C</li></ol>').insert(
-					ignore_permissions=True
-				)
+				_article(
+					"WASH_LOAD", content=f'<ol><li>A <img src="{src}"></li><li>B</li><li>C</li></ol>'
+				).insert(ignore_permissions=True)
 
 	def test_plain_help_article_is_not_checked(self):
 		doc = _article(None, content="<p>Free text</p>")
@@ -85,10 +85,10 @@ class TestArticleForStation(IsolatedTestCase):
 		frappe.db.delete("Help Article", {"tc_station_key": ["is", "set"]})
 
 	def test_station_step_article(self):
-		_article("T4").insert(ignore_permissions=True)
+		_article("PACK").insert(ignore_permissions=True)
 		_article("General", content=_steps(3)).insert(ignore_permissions=True)
 		article = station_help.article_for("TR-004")
-		self.assertEqual(article["key"], "T4")
+		self.assertEqual(article["key"], "PACK")
 		self.assertEqual(len(article["steps"]), 3)
 		self.assertTrue(article["modified"])
 
@@ -98,11 +98,11 @@ class TestArticleForStation(IsolatedTestCase):
 		self.assertEqual(station_help.article_for("TR-004")["key"], "General")
 
 	def test_unpublished_article_is_ignored(self):
-		_article("T4", published=0).insert(ignore_permissions=True)
+		_article("PACK", published=0).insert(ignore_permissions=True)
 		self.assertIsNone(station_help.article_for("TR-004"))
 
 	def test_station_key_of_station(self):
-		self.assertEqual(station_help.station_key("TR-004"), "T4")
+		self.assertEqual(station_help.station_key("TR-004"), "PACK")
 		self.assertEqual(station_help.station_key(None), "General")
 
 
@@ -119,16 +119,14 @@ class TestSeed(IsolatedTestCase):
 		self.assertEqual(sorted(row.tc_station_key for row in rows), sorted(station_help.STATION_KEYS))
 		for key in station_help.STATION_KEYS:
 			self.assertTrue(3 <= len(station_help.article_for_key(key)["steps"]) <= 5, key)
-		edited = next(row.name for row in rows if row.tc_station_key == "T1")
+		edited = next(row.name for row in rows if row.tc_station_key == "RECEIVE")
 		frappe.db.set_value("Help Article", edited, "title", "Edited by R10")
 		station_help.ensure_station_help()
 		self.assertEqual(frappe.db.get_value("Help Article", edited, "title"), "Edited by R10")
 		self.assertEqual(frappe.db.count("Help Article", {"tc_station_key": ["is", "set"]}), len(rows))
 
 	def test_keys_match_station_steps(self):
-		options = frappe.get_meta("Zone Station").get_field("station_step").options.split("\n")
-		self.assertEqual(
-			set(station_help.STATION_KEYS) - {"General"}, {option for option in options if option}
-		)
+		screens = frappe.get_all("Station Function", filters={"screen_key": ["is", "set"]}, pluck="name")
+		self.assertEqual(set(station_help.STATION_KEYS) - {"General"}, set(screens))
 		field_options = frappe.get_meta("Help Article").get_field("tc_station_key").options.split("\n")
 		self.assertEqual({option for option in field_options if option}, set(station_help.STATION_KEYS))
