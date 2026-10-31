@@ -349,6 +349,45 @@ class TestStationNavigation(FrappeTestCase):
 		self.assertIn("tc-navbar-brand", self._source("public", "js", "tc_launcher.js"))
 
 
+class TestR10ReadsSetupRecords(FrappeTestCase):
+	"""R10 đọc được Khoa và Lệnh in để hai link trong menu của R10 hiện ra (NAV-04)."""
+
+	def test_r10_reads_but_cannot_change_department_and_print_job(self):
+		from tracecore.tests.factories import make_user
+		from tracecore.ui import permissions
+
+		permissions.ensure_permissions()
+		admin = make_user("r10.setup@example.test", ("TC R10",))
+		other = make_user("r03.setup@example.test", ("TC R03",))
+		self.addCleanup(frappe.set_user, "Administrator")
+		for doctype in ("Department", "Print Job"):
+			frappe.set_user(admin)
+			self.assertTrue(frappe.has_permission(doctype, "read"), doctype)
+			self.assertFalse(frappe.has_permission(doctype, "write"), doctype)
+			self.assertFalse(frappe.has_permission(doctype, "create"), doctype)
+			self.assertFalse(frappe.has_permission(doctype, "delete"), doctype)
+			frappe.set_user(other)
+			self.assertFalse(frappe.has_permission(doctype, "read"), doctype)
+			frappe.set_user("Administrator")
+
+	def test_standard_rights_are_kept(self):
+		from tracecore.ui import permissions
+
+		permissions.ensure_permissions()
+		self.assertTrue(
+			frappe.db.exists("Custom DocPerm", {"parent": "Print Job", "role": "TC Agent", "read": 1})
+		)
+		self.assertTrue(
+			frappe.db.exists("Custom DocPerm", {"parent": "Print Job", "role": "System Manager", "write": 1})
+		)
+		self.assertGreater(
+			frappe.db.count(
+				"Custom DocPerm", {"parent": "Department", "role": ["not like", "TC %"], "read": 1}
+			),
+			0,
+		)
+
+
 class TestRoleModules(FrappeTestCase):
 	def _context(self, roles, rows=None, functions=None):
 		with (

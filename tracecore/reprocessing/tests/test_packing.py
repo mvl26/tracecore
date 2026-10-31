@@ -311,6 +311,17 @@ class TestGenerate(IsolatedTestCase):
 		png = base64.b64decode(result["datamatrix_png_b64"])
 		self.assertEqual(gs1.decode_datamatrix_png(png), pack.barcode_payload)
 
+	def test_label_uses_gtin_issued_from_declared_prefix(self):
+		# A-76: loại bộ tự cấp GTIN từ mã doanh nghiệp; nhãn Cycle ID và Pack lấy đúng GTIN đó, không dòng TEST
+		frappe.db.set_single_value("TraceCore Settings", "gs1_company_prefix", "8930001")
+		ready = make_t4_ready_set(gtin=None)
+		gtin = frappe.db.get_value("Instrument Set Type", ready.set_type, "gtin")
+		self.assertEqual(gtin[1:8], "8930001")
+		pack = frappe.get_doc("Pack", _generate(ready)["pack"]["cycle_id"])
+		self.assertEqual(pack.gtin, gtin)
+		self.assertEqual(gs1.parse_scan(pack.barcode_payload)["gtin"], gtin)
+		self.assertFalse(gs1.is_test_gtin(pack.gtin))
+
 	@bru("BRU-FLOW-004")
 	def test_generate_records_t4_pass_and_binds_cycle(self):
 		ready = make_t4_ready_set()

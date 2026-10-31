@@ -98,7 +98,7 @@
    "label": "Packing"
   },
   {
-   "description": "Entered by R10: 14 digits with a valid check digit, unique. Blank until a real GS1 prefix is assigned; a pack cannot be issued without it.",
+   "description": "Issued automatically when the GS1 company prefix is declared in TraceCore Settings; can be entered by hand (14 digits, valid check digit, unique). A pack cannot be issued without it. Locked once a pack has been labelled.",
    "fieldname": "gtin",
    "fieldtype": "Data",
    "label": "GTIN-14",

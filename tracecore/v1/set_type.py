@@ -18,6 +18,7 @@ from tracecore.core.errors import BlockedError
 from tracecore.instrument import bom as bom_service
 from tracecore.instrument import bom_versions, media, shelf_life
 from tracecore.instrument import count_sheet as count_sheet_service
+from tracecore.instrument import gtin as gtin_rules
 from tracecore.instrument import set_type as set_type_rules
 from tracecore.v1._common import BadRequestError, reject_block
 from tracecore.v1.set_type_admin import ADMIN_ROLES
@@ -234,6 +235,7 @@ def form_context(set_type=None):
 		"derived_max_cycles": set_type_rules.derived_max_cycles(name),
 		"photos": photos,
 		"missing": _missing(name, photos),
+		"gtin": gtin_rules.context(name),
 		"permissions": {
 			"can_edit": admin and bool(frappe.has_permission(SET_TYPE, "write", doc=name)),
 			"can_set_shelf_life": admin,
