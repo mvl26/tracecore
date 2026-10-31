@@ -67,6 +67,28 @@ body.tc-kiosk .layout-main-section {
 	left: var(--tc-rail-w);
 }
 
+/* PDA không có rail (ux-foundations B3): đổi trạm bằng hàng nút */
+@media (max-width: 480px) {
+	.tc-rail-station {
+		padding-left: 0;
+	}
+	.tc-rail-station .tc-rail {
+		display: none;
+	}
+	.tc-rail-station .tc-actionsbar {
+		left: 0;
+	}
+	/* bảng các bộ của T1 không được tràn ngang trên PDA */
+	.tc-t1 .tc-t2-table {
+		table-layout: fixed;
+		width: 100%;
+	}
+	.tc-t1 .tc-t2-table th,
+	.tc-t1 .tc-t2-table td {
+		overflow-wrap: anywhere;
+	}
+}
+
 .tc-rail {
 	position: fixed;
 	top: 0;

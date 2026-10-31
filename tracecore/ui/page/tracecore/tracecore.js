@@ -141,7 +141,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	function render(data) {
 		if (data.admin_modules.length || data.role_modules.length) return render_admin(data);
 		// role làm tại trạm không có menu quản lý: vào thẳng trạm đầu, đổi trạm bằng cột trạm (NAV-04)
-		if (open_first_station(data)) return;
+		if (!data.management.length && open_first_station(data)) return;
 		root.empty();
 		$("<h1>TraceCore</h1>").appendTo(root);
 		$("<p class='tc-launcher-intro'></p>")

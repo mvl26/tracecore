@@ -43,6 +43,7 @@ def mount(page, fail=False):
 				return {message: {
 					// cùng dạng navigation.context: link theo nhóm {group, label, route}
 					management: [{group: 'Reprocessing', label: 'Pack', route: '/app/pack'}], department: true,
+					admin_modules: [], role_modules: [],
 					stations: [
 						{name: 'TR-123', label: 'T2 Washing', step: 'T2', implemented: true},
 						{name: 'TR-999', label: 'T1 Receiving', step: 'T1', implemented: false}
@@ -81,7 +82,9 @@ def test_launcher_cards_and_station_link(page, viewport):
 def test_launcher_error_retry_and_offline(page):
 	mount(page, fail=True)
 	expect(page.get_by_role("alert")).to_contain_text("Cannot load workspaces")
-	page.evaluate("frappe.call = async () => ({message: {management: [], stations: [], department: false}})")
+	page.evaluate(
+		"frappe.call = async () => ({message: {management: [], stations: [], department: false, admin_modules: [], role_modules: []}})"
+	)
 	page.get_by_role("button", name="Try again").click()
 	expect(page.get_by_role("button", name="Enter station")).to_be_disabled()
 	page.context.set_offline(True)
@@ -118,6 +121,7 @@ def test_tracecore_home_replaces_sample_workspaces(page, roles, route, redirect)
 	)
 	page.add_script_tag(content=(ROOT / "tracecore/public/js/tc_launcher.js").read_text())
 	page.wait_for_function("document.readyState === 'complete'")
+	page.evaluate("$(document).trigger('app_ready')")
 	if redirect:
 		page.wait_for_function("window.destination !== undefined", timeout=2000)
 		assert page.evaluate("window.destination") == ["tracecore"]

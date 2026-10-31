@@ -59,7 +59,7 @@ def test_t3_set_without_passed_wash_is_blocked_inline(t3_page, t3_demo):
 	expect(result).to_be_visible(timeout=15000)
 	alert = result.locator(".tc-alert-error")
 	expect(alert.locator(".tc-alert-title")).not_to_be_empty()
-	expect(alert.locator(".tc-alert-reason")).to_contain_text("T2")
+	expect(alert.locator(".tc-alert-reason")).to_contain_text("Dỡ máy rửa")
 	expect(alert.locator(".tc-alert-action")).not_to_be_empty()
 	expect(page.locator(".tc-t3 .tc-ins")).to_have_count(0)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()

@@ -482,6 +482,15 @@ class TestRoleModules(FrappeTestCase):
 			self.assertEqual([s["name"] for s in context["stations"]], expected, roles)
 
 
+class TestDeskStartup(FrappeTestCase):
+	def test_launcher_survives_a_null_route_at_app_ready(self):
+		# get_route() trả null lúc khởi động làm frappe.Application dừng giữa chừng, mất cả Ctrl+S (CI PR 28)
+		with open(
+			frappe.get_app_path("tracecore", "public", "js", "tc_launcher.js"), encoding="utf-8"
+		) as handle:
+			self.assertIn("(frappe.get_route() || [])[0]", handle.read())
+
+
 class TestAdminModules(FrappeTestCase):
 	def _context(self, user, roles, **patches):
 		with (
