@@ -82,7 +82,9 @@ def test_launcher_cards_and_station_link(page, viewport):
 def test_launcher_error_retry_and_offline(page):
 	mount(page, fail=True)
 	expect(page.get_by_role("alert")).to_contain_text("Cannot load workspaces")
-	page.evaluate("frappe.call = async () => ({message: {management: [], stations: [], department: false}})")
+	page.evaluate(
+		"frappe.call = async () => ({message: {management: [], stations: [], department: false, admin_modules: [], role_modules: []}})"
+	)
 	page.get_by_role("button", name="Try again").click()
 	expect(page.get_by_role("button", name="Enter station")).to_be_disabled()
 	page.context.set_offline(True)

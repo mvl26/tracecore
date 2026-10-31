@@ -28,7 +28,15 @@ def auth_shell():
 			requests.append((method, args, route.request.headers))
 			status = 200
 			if method == "tracecore.v1.ping":
-				body = {"station": {"name": station, "label": "Packing", "step": "T4", "zone_type": "Clean"}}
+				body = {
+					"station": {
+						"name": station,
+						"label": "Packing",
+						"zone_type": "Clean",
+						"functions": ["PACK"],
+						"screens": [{"key": "pack", "label": "Packing"}],
+					}
+				}
 			elif method.endswith("station.login"):
 				serial += 1
 				token = f"browser-private-{serial}"
@@ -99,6 +107,10 @@ def auth_shell():
 					c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))},
 				render_template: () => template};
 			window.$ = node => ({html: html => node.innerHTML = html, on: () => {}});
+			// station_errors.js (A-71) không nạp trong shell này
+			window.tcErrorTitle = error => error.title;
+			window.tcGuideButton = () => '';
+			window.tcWarningsHtml = () => '';
 		} """,
 			template,
 		)
@@ -174,11 +186,11 @@ def test_session_end_clears_sensitive_work_and_pending_dialog(page, auth_shell, 
 	login(page)
 	page.evaluate("""() => {
 		const s = frappe.tc_station;
-		s.t4.ctx = {set:{set_id:'PRIVATE-SET'}};
-		s.t4.pending = {raw:'PRIVATE-SET'};
-		s.t4.dialog = document.createElement('div');
-		s.t4.dialog.className = 'tc-modal-overlay';
-		s.root.append(s.t4.dialog);
+		s.screen.ctx = {set:{set_id:'PRIVATE-SET'}};
+		s.screen.pending = {raw:'PRIVATE-SET'};
+		s.screen.dialog = document.createElement('div');
+		s.screen.dialog.className = 'tc-modal-overlay';
+		s.root.append(s.screen.dialog);
 		s.result.innerHTML = 'PRIVATE-SET';
 	}""")
 	if end == "idle":
@@ -193,7 +205,7 @@ def test_session_end_clears_sensitive_work_and_pending_dialog(page, auth_shell, 
 	expect(page.locator(".tc-work")).to_be_hidden()
 	expect(page.locator(".tc-modal-overlay")).to_have_count(0)
 	assert "PRIVATE-SET" not in page.content()
-	assert page.evaluate("frappe.tc_station.t4.pending === null && frappe.tc_station.t4.ctx === null")
+	assert page.evaluate("frappe.tc_station.screen.pending === null && frappe.tc_station.screen.ctx === null")
 	assert page.evaluate("sessionStorage.length") == 0
 
 
@@ -203,7 +215,7 @@ def test_indicator_lot_has_dedicated_form_and_restores_main_scan_focus(page, aut
 	auth_shell(page)
 	login(page)
 	page.evaluate("""() => {
-		const t = frappe.tc_station.t4;
+		const t = frappe.tc_station.screen;
 		t.ctx = {set:{set_id:'SET',set_name:'Synthetic set',method:'Steam',status:'Processing',
 			cycles_used:0,max_cycles:100},bom:[],maintenance:[],pack_types:[],
 			ci:{classes:['5','6'],method:'Steam'}};
