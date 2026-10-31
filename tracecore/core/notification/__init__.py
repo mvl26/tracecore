@@ -36,6 +36,7 @@ EVENTS = {
 	"SET_DISPOSAL_REQUESTED": ("Set disposal requested", "Normal", 0, 0, ()),
 	"SET_DISPOSAL_DECIDED": ("Set disposal decided", "Normal", 0, 0, ()),
 	"LOANER_OVERDUE": ("Loaner set overdue", "Normal", 0, 0, ()),
+	"GTIN_RANGE_LOW": ("GS1 item references running low", "Normal", 0, 0, (ADMIN_ROLE,)),  # A-76
 	"PAR_OVERRIDE_REQUESTED": ("Par override requested", "Normal", 0, 0, ()),
 	"PAR_OVERRIDE_REPORT": ("Monthly par override report", "Normal", 0, 0, ()),
 	"EQUIPMENT_LOCKED": ("Equipment locked for expired inspection or calibration", "Normal", 0, 0, ()),

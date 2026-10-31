@@ -7,6 +7,12 @@
  "field_order": [
   "section_instrument",
   "enable_instrument_giai",
+  "section_gs1",
+  "gs1_company_prefix",
+  "gtin_indicator_digit",
+  "column_break_gs1",
+  "gtin_next_item_ref",
+  "gs1_actions",
   "section_par",
   "par_override_delegate",
   "section_sms",
@@ -45,6 +51,41 @@
    "fieldname": "enable_instrument_giai",
    "fieldtype": "Check",
    "label": "Enable Instrument GIAI"
+  },
+  {
+   "fieldname": "section_gs1",
+   "fieldtype": "Section Break",
+   "label": "GS1"
+  },
+  {
+   "description": "7-11 digits, assigned by GS1 Vietnam. Used for both GTIN-14 and Set ID. Locked once a real prefix has issued a code.",
+   "fieldname": "gs1_company_prefix",
+   "fieldtype": "Data",
+   "label": "GS1 Company Prefix"
+  },
+  {
+   "default": "0",
+   "description": "First digit of the GTIN-14. Default 0.",
+   "fieldname": "gtin_indicator_digit",
+   "fieldtype": "Select",
+   "label": "GTIN Indicator Digit",
+   "options": "0\n1\n2\n3\n4\n5\n6\n7\n8"
+  },
+  {
+   "fieldname": "column_break_gs1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Counter of the declared prefix, read-only.",
+   "fieldname": "gtin_next_item_ref",
+   "fieldtype": "Data",
+   "label": "Next GTIN Item Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gs1_actions",
+   "fieldtype": "HTML",
+   "label": "GS1 Actions"
   },
   {
    "fieldname": "section_par",
@@ -214,7 +255,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

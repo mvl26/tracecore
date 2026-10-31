@@ -20,6 +20,8 @@ INSTRUMENT_GIAI_PREFIX = (
 ROLL_PREFIX = "CN"  # cuộn nhãn `CN-#####` do FEAT-005 cấp, ref_doctype = Item nhãn (D2)
 CYCLE_PREFIX = "CY"  # Cycle ID `CY-YYMMDD-NNNN` của gói, ref_doctype = Pack (§5.3.3)
 CYCLE_SERIAL_DIGITS = 4
+GTIN_SERIES = "GTIN"  # bộ đếm `GTIN<prefix>` và dòng sổ của GTIN-14 tự cấp (A-76)
+GTIN_LOW_PERCENT = 10  # cảnh báo R10 khi số mã tham chiếu còn lại dưới 10 % dải
 CONTAINER_PREFIX = (
 	"CT"  # túi/thùng chất thải `CT-YYMMDD-NNNNN`, ref_doctype = Waste Container (§5.3.3, FEAT-047)
 )
@@ -194,6 +196,141 @@ def next_set_id(type_code):
 		if not is_issued(code):
 			register(code, series_key, "Set Unit", code)
 			return code
+
+
+def gtin_series_key(prefix):
+	"""Bộ đếm mã tham chiếu theo từng mã doanh nghiệp: đổi prefix rồi quay lại vẫn không cấp trùng (A-76)."""
+	return f"{GTIN_SERIES}{prefix}"
+
+
+def gtin_range(lock=False):
+	"""Dải mã tham chiếu của prefix đã khai, hoặc ``None`` khi chưa khai. `lock` giữ dòng bộ đếm tới hết transaction.
+
+	Bộ đếm nằm ở ``tabSeries``, không ở Singles: lưu form Settings ghi lại cả Single nên sẽ đè số mới bằng số cũ.
+	"""
+	prefix = gs1.declared_company_prefix()
+	if not gs1.is_valid_gtin_prefix(prefix):
+		return None
+	if lock:
+		_ensure_gtin_series(prefix)
+	suffix = " FOR UPDATE" if lock else ""
+	found = frappe.db.sql(f"SELECT current FROM `tabSeries` WHERE name=%s{suffix}", gtin_series_key(prefix))  # nosec B608
+	current = found[0][0] if found and found[0][0] else 0
+	capacity = gs1.gtin_ref_capacity(prefix)
+	remaining = max(capacity - current, 0)
+	return {
+		"prefix": prefix,
+		"indicator": gs1.gtin_indicator_digit(),
+		"next_ref": current + 1,
+		"capacity": capacity,
+		"remaining": remaining,
+		"low": _gtin_low(remaining, capacity),
+	}
+
+
+def _ensure_gtin_series(prefix):
+	# dòng phải có trước khi khóa: FOR UPDATE trên dòng chưa có là gap lock, hai người cùng cấp mã đầu tiên sẽ deadlock
+	frappe.db.sql("INSERT IGNORE INTO `tabSeries` (name, current) VALUES (%s, 0)", gtin_series_key(prefix))
+
+
+def _gtin_low(remaining, capacity):
+	return remaining * 100 < capacity * GTIN_LOW_PERCENT
+
+
+def _gtin_taken(gtin, doctype):
+	return is_issued(gtin) or bool(frappe.db.exists(doctype, {"gtin": gtin}))
+
+
+def next_gtin(ref_doctype, ref_name):
+	"""Cấp GTIN-14 kế tiếp và ghi sổ; chưa khai prefix → ``None``, giữ hành vi nhập tay (A-76).
+
+	`getseries` khóa dòng ``tabSeries`` tới commit nên hai người tạo cùng lúc không ra trùng. Mã đã có trong sổ hoặc đã
+	nằm trên bản ghi (nhập tay) thì bỏ qua. Hết dải → `SeriesExhaustedError`. Vừa xuống dưới 10 % dải thì báo R10 một lần.
+	"""
+	state = gtin_range()
+	if not state:
+		return None
+	prefix, capacity = state["prefix"], state["capacity"]
+	key = gtin_series_key(prefix)
+	_ensure_gtin_series(prefix)
+	while True:
+		item_ref = int(getseries(key, len(str(capacity))))
+		if item_ref > capacity:
+			frappe.throw(
+				_(
+					"GS1 item references of prefix {0} are used up. Enter the GTIN-14 by hand or ask R10 for another prefix."
+				).format(prefix),
+				SeriesExhaustedError,
+			)
+		gtin = gs1.make_gtin14(state["indicator"], prefix, item_ref)
+		if _gtin_taken(gtin, ref_doctype):
+			continue
+		register(gtin, key, ref_doctype, ref_name)
+		remaining = capacity - item_ref
+		if _gtin_low(remaining, capacity) and not state["low"]:
+			_notify_gtin_low(prefix, remaining, capacity)
+		return gtin
+
+
+def peek_gtins(ref_doctype, count):
+	"""`count` mã sẽ được cấp tiếp, không ghi gì, cho màn xem trước. Chưa khai prefix hoặc không đủ dải → `BlockedError`."""
+	state = gtin_range()
+	if not state:
+		raise BlockedError(prefix_not_declared_block())
+	result = []
+	item_ref = state["next_ref"]
+	while len(result) < count:
+		if item_ref > state["capacity"]:
+			raise BlockedError(
+				Block(
+					"GTIN_RANGE_EXHAUSTED",
+					_("GTIN-14 not issued"),
+					_("Only {0} item references are left for prefix {1}, {2} are needed.").format(
+						len(result), state["prefix"], count
+					),
+					_("Enter the remaining GTIN-14 by hand."),
+				)
+			)
+		gtin = gs1.make_gtin14(state["indicator"], state["prefix"], item_ref)
+		if not _gtin_taken(gtin, ref_doctype):
+			result.append(gtin)
+		item_ref += 1
+	return result
+
+
+def retire_gtin(gtin, ref_doctype, ref_name):
+	"""GTIN đã in lên nhãn rồi bị thay: ghi vào sổ để bộ đếm không bao giờ cấp lại."""
+	if gtin and not is_issued(gtin):
+		register(gtin, GTIN_SERIES, ref_doctype, ref_name)
+
+
+def prefix_not_declared_block():
+	return Block(
+		"GS1_PREFIX_NOT_DECLARED",
+		_("GS1 company prefix not declared"),
+		_("GTIN-14 cannot be issued without the hospital's GS1 company prefix."),
+		_("Enter it in the GS1 section of TraceCore Settings, save, then try again."),
+	)
+
+
+def prefix_in_use(prefix):
+	"""Prefix thật đã có GTIN hoặc mã GIAI được cấp: không đổi nữa. Prefix demo luôn thay được bằng prefix thật."""
+	if not prefix or gs1.is_demo_prefix(prefix):
+		return False
+	if frappe.db.get_value("Series", gtin_series_key(prefix), "current", order_by=None):
+		return True
+	return bool(frappe.db.exists("Code Registry", {"code": ("like", f"{prefix}%")}))
+
+
+def _notify_gtin_low(prefix, remaining, capacity):
+	from tracecore.core import notification
+
+	notification.emit(
+		"GTIN_RANGE_LOW",
+		subject=_("GS1 item references are running low"),
+		message=_("Prefix {0} has {1} of {2} item references left.").format(prefix, remaining, capacity),
+		link="/app/tracecore-settings",
+	)
 
 
 def demo_prefix_allowed():
