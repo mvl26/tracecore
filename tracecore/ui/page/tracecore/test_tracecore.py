@@ -319,3 +319,92 @@ class TestLauncher(FrappeTestCase):
 			context = get_context()
 		# link DocType theo quyền DocType; link Page (Trung tâm thông báo) theo role của Page
 		self.assertEqual([link["doctype"] for link in context["management"] if link["doctype"]], ["Pack"])
+
+
+class TestAdminModules(FrappeTestCase):
+	def _context(self, user, roles, **patches):
+		with (
+			patch("frappe.session", frappe._dict(user=user)),
+			patch("frappe.get_roles", return_value=roles),
+			patch("frappe.get_list", return_value=patches.get("rows", [])),
+			patch("frappe.has_permission", side_effect=patches.get("allow", lambda dt, **kw: True)),
+			patch("tracecore.v1.navigation._roles_permit", return_value=True),
+		):
+			return get_context()
+
+	def test_every_management_target_sits_in_exactly_one_module(self):
+		from tracecore.v1 import navigation
+
+		placed = [
+			target
+			for module in navigation.ADMIN_MODULES
+			for _kind, targets in module["sections"]
+			for target in targets
+		]
+		expected = [target for _group, targets in navigation.MANAGEMENT_GROUPS for target in targets]
+		self.assertEqual(len(placed), len(set(placed)), "có link lặp ở hai phân hệ")
+		self.assertEqual(set(placed), set(expected))
+
+	def test_only_administrator_and_system_manager_get_modules(self):
+		for user, roles, expected in (
+			("Administrator", [], True),
+			("sm@example.test", ["System Manager"], True),
+			("r10@example.test", ["TC R10"], False),
+			("r01@example.test", ["TC R01"], False),
+			("r03@example.test", ["TC R03"], False),
+		):
+			modules = self._context(user, roles)["admin_modules"]
+			self.assertEqual(bool(modules), expected, roles or user)
+
+	def test_module_groups_links_by_kind(self):
+		modules = self._context("Administrator", [])["admin_modules"]
+		reprocessing = next(module for module in modules if module["key"] == "reprocessing")
+		self.assertEqual(reprocessing["cluster"], "business")
+		self.assertTrue(reprocessing["icon"] and reprocessing["description"])
+		self.assertEqual([section["kind"] for section in reprocessing["sections"]], ["document", "report"])
+		routes = {link["route"] for link in reprocessing["sections"][0]["links"]}
+		self.assertIn("/app/dirty-receipt", routes)
+
+	def test_links_without_permission_drop_empty_sections_and_modules(self):
+		modules = self._context(
+			"sm@example.test",
+			["System Manager"],
+			allow=lambda dt, **kw: dt == "Pack",
+		)["admin_modules"]
+		reprocessing = next(module for module in modules if module["key"] == "reprocessing")
+		links = [link["doctype"] for link in reprocessing["sections"][0]["links"]]
+		self.assertEqual(links, ["Pack"])
+		for module in modules:
+			self.assertTrue(module["sections"], module["key"])
+			for section in module["sections"]:
+				self.assertTrue(section["links"], (module["key"], section["kind"]))
+
+	def test_admin_stations_carry_their_zone(self):
+		rows = [frappe._dict(name="TR-001", station_no=1, zone_station_name="T1", parent_zone="ZONE-X")]
+		with (
+			patch("tracecore.core.zones.station_functions", return_value=["RECEIVE"]),
+			patch("tracecore.core.zones.station_screen_tabs", return_value=[{"key": "s"}]),
+			patch("tracecore.core.zones.zone_color_class", return_value="dirty"),
+			patch(
+				"frappe.db.get_value",
+				return_value=frappe._dict(zone_station_name="Khu bẩn", zone_type="Dirty"),
+			),
+		):
+			station = self._context("Administrator", [], rows=rows)["stations"][0]
+		self.assertEqual(station["zone"], "Khu bẩn")
+		self.assertEqual(station["zone_color"], "dirty")
+
+	def test_module_texts_have_vietnamese_translation(self):
+		from tracecore.tests.test_station_page import other_app_translations, vi_translations
+		from tracecore.v1 import navigation
+
+		ours, others = vi_translations(), other_app_translations()
+		texts = list(navigation.ADMIN_SECTION_LABELS.values())
+		for module in navigation.ADMIN_MODULES:
+			texts += [module["label"], module["description"]]
+		missing = [
+			text
+			for text in texts
+			if not (ours.get(f"{text}:TraceCore Launcher") or ours.get(text) or others.get(text))
+		]
+		self.assertFalse(missing, f"thiếu dòng vi.csv {missing}")

@@ -7136,3 +7136,36 @@ Chemical Name,Tên hóa chất,Equipment Chemical Lot
 Error code Name,Tên mã lỗi,TraceCore Error Rule
 Station Function Name,Tên chức năng trạm,Zone Station Function
 Station Function Name,Tên chức năng trạm,Zone Type Function
+Pages,Trang,TraceCore Launcher
+Catalogs,Danh mục,TraceCore Launcher
+Documents,Chứng từ,TraceCore Launcher
+Reports,Báo cáo,TraceCore Launcher
+Overview,Tổng quan,TraceCore Launcher
+Stations,Trạm,TraceCore Launcher
+Other stations,Trạm khác,TraceCore Launcher
+Instruments and sets,Dụng cụ và bộ,TraceCore Launcher
+Reprocessing and traceability,"Tái xử lý, truy xuất",TraceCore Launcher
+Linen,Đồ vải,TraceCore Launcher
+Human resources,Nhân sự,TraceCore Launcher
+Supplies stock,Kho vật tư,TraceCore Launcher
+Par levels,Cơ số,TraceCore Launcher
+Medical waste,Chất thải y tế,TraceCore Launcher
+Reports and administration,"Báo cáo, quản trị",TraceCore Launcher
+Notifications,Thông báo,TraceCore Launcher
+Today's operations at a glance.,Tình hình vận hành trong ngày.,TraceCore Launcher
+"Choose a station, then scan your employee card.",Chọn trạm rồi quét thẻ nhân viên để vào.,TraceCore Launcher
+"Instruments, instrument sets and loaner sets.","Dụng cụ, bộ dụng cụ và dụng cụ mượn.",TraceCore Launcher
+"Station records, traceability, incidents and recalls.","Chứng từ từng trạm, truy xuất, sự cố và thu hồi.",TraceCore Launcher
+"Linen collection, laundry and issue.","Thu gom, giặt và cấp phát đồ vải.",TraceCore Launcher
+"Staff, certificates, competency and shifts.","Nhân viên, chứng chỉ, năng lực và phân ca.",TraceCore Launcher
+"Machines, process programs, daily tests and maintenance.","Máy, chương trình xử lý, test hằng ngày và bảo trì.",TraceCore Launcher
+"Supplies, batches, stock entries and stock counts.","Vật tư, lô, phiếu kho và kiểm kê.",TraceCore Launcher
+"Cost entries, rates and unit costs.","Khoản chi phí, bảng giá và giá thành.",TraceCore Launcher
+Par levels by department and over-par approvals.,Cơ số theo khoa và duyệt vượt cơ số.,TraceCore Launcher
+"Waste collection, storage and handover.","Thu gom, lưu giữ và bàn giao chất thải.",TraceCore Launcher
+"Departments, accounts, zones and stations, labels, data and audit.","Khoa, tài khoản, khu trạm, nhãn, dữ liệu và nhật ký.",TraceCore Launcher
+Notifications sent to your account.,Thông báo gửi đến tài khoản của bạn.,TraceCore Launcher
+Dirty zone,Khu bẩn,TraceCore Launcher
+Clean zone,Khu sạch,TraceCore Launcher
+Sterile zone,Khu vô khuẩn,TraceCore Launcher
+Department zone,Khoa,TraceCore Launcher
