@@ -19,8 +19,8 @@ class TestPermissionMatrix(FrappeTestCase):
 		rows = load_permission_matrix(MATRIX_PATH)
 		self.assertEqual(tuple(rows.roles), ROLE_CODES)
 		# 40 DocType của BA #13 + Cost Category và Cost Settings (FEAT-044, A-47 C3, C6) + Environment Log (FEAT-008, A-55 Q4) + Archive Export (FEAT-012, A-58 D2) + 3 DocType chất thải (FEAT-047, A-60) + Waste Storage Location (FEAT-048, A-61) + Waste Treatment Vendor, Waste Handover (FEAT-049, A-62) + Waste Quota (FEAT-050, A-63)
-		self.assertEqual(len(rows), 51)
-		self.assertEqual(len({row.code for row in rows}), 51)
+		self.assertEqual(len(rows), 53)
+		self.assertEqual(len({row.code for row in rows}), 53)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

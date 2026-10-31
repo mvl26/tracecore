@@ -98,7 +98,7 @@ class TestLaundryStationWiring(FrappeTestCase):
 
 	def test_station_routes_the_lin_step_to_the_linen_station(self):
 		source = _read(STATION_JS)
-		self.assertIn("new LinenStation(this)", source)
+		self.assertIn('if (typeof LinenStation !== "undefined") return LinenStation;', source)
 		self.assertIn("new LinenCollect(this)", source)  # còn dự phòng khi thiếu station_laundry.js
 		self.assertIn('method.startsWith("tracecore.v1.laundry.")', source)  # RPC gắn token phiên thẻ
 

@@ -18,10 +18,12 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
-from tracecore.core import audit, client_time, extension, gs1, station_auth, step_gate
+from tracecore.core import audit, client_time, extension, gs1, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 
-STEP = "T3"
+STEP = "T3"  # mã cổng trong step_gate
+FUNCTION = "ASSEMBLE"
+PACK_FUNCTION = "PACK"
 SAVEPOINT = "tc_assembly_submit"
 REVIEWER_ROLE = "TC R02"
 CONTEXT_HOOK = "tracecore_assembly_context"
@@ -51,21 +53,17 @@ def _blocked(code, title, reason, action, items=None):
 
 
 def _require_station(station):
-	"""Trạm (không phải khu) của bước T3; ngược lại STATION_WRONG_STEP."""
-	row = (
-		frappe.db.get_value("Zone Station", station, ["is_zone", "station_step"], as_dict=True)
-		if station
-		else None
-	)
-	if row and not cint(row.is_zone) and row.station_step == STEP:
+	"""Trạm (không phải khu) có chức năng ``FUNCTION``; ngược lại STATION_WRONG_STEP."""
+	row = frappe.db.get_value("Zone Station", station, "is_zone", as_dict=True) if station else None
+	if row and not cint(row.is_zone) and zones.station_has_function(station, FUNCTION):
 		return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} assembly station.").format(station, STEP)
+		_("{0} is not a {1} station.").format(station, zones.function_label(FUNCTION))
 		if row
 		else _("Station {0} does not exist.").format(station or "-"),
-		_("Open the assembly screen on a T3 station."),
+		_("Open this screen on a {0} station.").format(zones.function_label(FUNCTION)),
 	)
 
 
@@ -167,7 +165,7 @@ def open_set(raw, station, client_ts=None):
 			"STEP_ALREADY_PASSED",
 			_("Assembly already recorded"),
 			_("Set {0} already passed assembly in cycle {1}.").format(unit.name, cint(unit.current_cycle_no)),
-			_("Take the set to the packing station (T4)."),
+			_("Take the set to the packing station."),
 		)
 	ctx = _context(unit, station)
 	if not ctx.get("bom"):
@@ -607,14 +605,12 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 
 
 def _next_station(station):
-	"""Trạm T4 đang hoạt động cùng khu với `station`, hoặc None."""
+	"""Trạm đóng gói đang hoạt động cùng khu với `station` (chính nó nếu nó cũng đóng gói), hoặc None."""
+	if zones.station_has_function(station, PACK_FUNCTION):
+		return station
 	zone = frappe.db.get_value("Zone Station", station, "parent_zone")
-	return frappe.db.get_value(
-		"Zone Station",
-		{"is_zone": 0, "is_active": 1, "station_step": "T4", "parent_zone": zone},
-		"name",
-		order_by="name asc",
-	)
+	found = zones.stations_with_function(PACK_FUNCTION, zone=zone)
+	return found[0] if found else None
 
 
 # --- Ngữ cảnh trả về trạm -----------------------------------------------------------------------------

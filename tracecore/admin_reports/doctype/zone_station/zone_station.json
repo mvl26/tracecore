@@ -10,7 +10,9 @@
   "is_active",
   "zone_type",
   "parent_zone",
-  "station_step",
+  "station_no",
+  "functions",
+  "legacy_step",
   "description",
   "environment_section",
   "env_monitored",
@@ -43,8 +45,7 @@
   },
   {
    "default": "1",
-   "depends_on": "eval:!doc.is_zone",
-   "description": "A station without a zone cannot be active.",
+   "description": "A station without a zone cannot be active. A zone with active stations, machines or locations cannot be turned off.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -53,12 +54,12 @@
   },
   {
    "fieldname": "zone_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Zone Type",
    "mandatory_depends_on": "eval:doc.is_zone",
-   "options": "\nDirty\nClean\nSterile\nDepartment\nLinen\nWaste",
+   "options": "Zone Type",
    "read_only_depends_on": "eval:!doc.is_zone"
   },
   {
@@ -70,11 +71,26 @@
   },
   {
    "depends_on": "eval:!doc.is_zone",
-   "fieldname": "station_step",
-   "fieldtype": "Select",
+   "description": "Shown as T1, T2… Leave 0 for stations outside the numbered flow.",
+   "fieldname": "station_no",
+   "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Station Step",
-   "options": "\nT1\nT2\nT3\nT4\nT5\nT5b\nT6\nT7\nT8\nLIN\nWST"
+   "label": "Station No",
+   "non_negative": 1
+  },
+  {
+   "depends_on": "eval:!doc.is_zone",
+   "fieldname": "functions",
+   "fieldtype": "Table",
+   "label": "Station Functions",
+   "options": "Zone Station Function"
+  },
+  {
+   "fieldname": "legacy_step",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Legacy Step",
+   "read_only": 1
   },
   {
    "fieldname": "description",
@@ -162,7 +178,7 @@
    "link_fieldname": "station"
   }
  ],
- "modified": "2026-10-30 10:00:00.000000",
+ "modified": "2026-10-30 11:00:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Zone Station",

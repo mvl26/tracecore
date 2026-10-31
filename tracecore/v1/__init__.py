@@ -2,9 +2,11 @@
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 from frappe.utils.data import get_system_timezone
 
 import tracecore
+from tracecore.core import zones
 from tracecore.v1._common import server_time, station_inactive_block
 
 AGENT_HEARTBEAT_CACHE = "tc_agent_heartbeat"
@@ -14,7 +16,7 @@ def _station_info(station):
 	row = frappe.db.get_value(
 		"Zone Station",
 		{"name": station, "is_zone": 0},
-		["name", "zone_station_name", "station_step", "zone_type", "is_active"],
+		["name", "zone_station_name", "station_no", "zone_type", "is_active"],
 		as_dict=True,
 	)
 	if not row:
@@ -32,11 +34,16 @@ def _station_info(station):
 			"reason": block.reason,
 			"action": block.action,
 		}
+	functions = zones.station_functions(row.name)
 	return {
 		"name": row.name,
 		"label": _(row.zone_station_name),
-		"step": row.station_step,
+		"functions": functions,
+		"station_no": cint(row.station_no),
+		"screens": zones.station_screen_tabs(functions),
+		"gate_labels": zones.gate_labels(),
 		"zone_type": row.zone_type,
+		"zone_color": zones.zone_color_class(row.zone_type),
 	}, None
 
 

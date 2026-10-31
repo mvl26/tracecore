@@ -4,7 +4,7 @@ import frappe
 from frappe.permissions import get_doc_permissions
 
 from tracecore.tests.factories import make_instrument_group
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter
 
 
 class TestInstrumentGroup(IsolatedTestCase):
@@ -36,8 +36,8 @@ class TestInstrumentGroup(IsolatedTestCase):
 
 	def test_group_cannot_be_deleted_or_renamed(self):
 		name = make_instrument_group("IG-KEEP")
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc("Instrument Group", name)
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc("Instrument Group", name, ignore_permissions=True)
 		self.assertTrue(frappe.db.exists("Instrument Group", name))
 		meta = frappe.get_meta("Instrument Group")
 		self.assertFalse(meta.allow_rename)

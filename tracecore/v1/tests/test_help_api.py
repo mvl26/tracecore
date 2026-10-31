@@ -27,18 +27,18 @@ class TestHelpGet(IsolatedTestCase):
 		self.addCleanup(frappe.set_user, "Administrator")
 
 	def test_guest_reads_guide_of_station_step(self):
-		_article("T4", "API guide T4")
+		_article("PACK", "API guide T4")
 		frappe.set_user("Guest")
 		result = api.get("TR-004")
 		self.assertTrue(result["ok"])
-		self.assertEqual(result["key"], "T4")
+		self.assertEqual(result["key"], "PACK")
 		self.assertEqual(result["article"]["title"], "API guide T4")
 		self.assertEqual(result["article"]["steps"][0], {"text": "One", "image": "/files/one.png"})
 		self.assertNotIn("content", result["article"])
 
 	def test_no_guide_returns_empty_article(self):
 		result = api.get("TR-004")
-		self.assertEqual((result["ok"], result["key"], result["article"]), (True, "T4", None))
+		self.assertEqual((result["ok"], result["key"], result["article"]), (True, "PACK", None))
 
 	def test_unknown_station_is_refused(self):
 		with self.assertRaises(frappe.ValidationError):

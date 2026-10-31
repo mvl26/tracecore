@@ -24,7 +24,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = receiving.STEP
+FUNCTION = receiving.FUNCTION
 TRUE_STRINGS = ("1", "true", "yes", "on")
 
 
@@ -104,7 +104,7 @@ def open(station, raw=None, department=None, deliverer_name=None, client_ts=None
 		return {"ok": True, **opened}
 
 	return run_at_step(
-		STEP, station, timestamp, call, None, None, gs1.parse_scan(raw)["raw"] if raw else None
+		FUNCTION, station, timestamp, call, None, None, gs1.parse_scan(raw)["raw"] if raw else None
 	)
 
 
@@ -121,7 +121,7 @@ def discard(receipt, station, client_ts=None, token=None):
 		receiving.discard(receipt, station, _receiver())
 		return {"ok": True, "receipt": None, "departments": receiving.departments()}
 
-	return run_at_step(STEP, station, timestamp, call, *_receipt_ref(receipt))
+	return run_at_step(FUNCTION, station, timestamp, call, *_receipt_ref(receipt))
 
 
 # --- Quét bộ, xác nhận, ghi sổ ---------------------------------------------------------------------------
@@ -145,7 +145,7 @@ def scan_set(receipt, raw, station, force_reason=None, reviewer_proof=None, clie
 	session = current_station_session()
 	ref_doctype, ref_name, shown = _set_ref(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -189,7 +189,7 @@ def confirm_line(
 	rows, note = _lines(lines), _text(note, "note")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -221,7 +221,7 @@ def attach_photo(receipt, set_id, file_name, content, station, client_ts=None, t
 	file_name, content = _text(file_name, "file_name"), _text(content, "content", required=True)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -241,7 +241,7 @@ def submit(receipt, station, client_ts=None, token=None):
 	receipt = _text(receipt, "receipt", required=True)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **receiving.submit(receipt, station, _receiver(), timestamp)},
@@ -289,7 +289,7 @@ def submit_offline(station, receipt, client_ts=None, token=None):
 	payload = _offline_receipt(receipt)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **receiving.submit_offline(station, _receiver(), timestamp, payload)},

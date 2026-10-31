@@ -26,7 +26,7 @@ from tracecore.v1._common import (
 )
 from tracecore.v1.printer import change_roll
 
-STEP = packing.STEP  # màn đóng gói chỉ chạy ở trạm bước T4
+FUNCTION = packing.FUNCTION
 MAINT_KEYS = ("instrument", "action", "oil_batch", "reason")
 REF_BY_KIND = {"set": "Set Unit", "pack": "Pack"}
 
@@ -141,7 +141,7 @@ def scan(raw, station, open_set=None, client_ts=None, token=None):
 	if not (ref_doctype and ref_name):
 		ref_doctype = ref_name = None
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: _route(scanned, raw, station, open_set),
@@ -167,7 +167,7 @@ def resolve_ci(raw, station, open_set, client_ts=None, token=None):
 
 	scanned = gs1.parse_scan(open_set)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		resolve,
@@ -210,7 +210,7 @@ def generate_cycle_id(
 	scanned = gs1.parse_scan(set_id)
 	is_set = scanned["type"] == "set"
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -233,7 +233,7 @@ def reprint_label(cycle_id, reason, station, client_ts=None, token=None):
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **packing.reprint(cycle_id, reason, station)},
@@ -250,7 +250,7 @@ def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **packing.void(cycle_id, reason, station, note)},
@@ -271,7 +271,7 @@ def mark_damaged(cycle_id, reason, station, client_ts=None, token=None):
 	require_any_role(*STORAGE_ROLES)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		storage.STEP,
+		storage.FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **storage.mark_damaged(cycle_id, reason, station, timestamp)},

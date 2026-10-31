@@ -6,7 +6,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.core import step_gate
+from tracecore.core import step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.tests.factories import make_assembly_record, make_cycle, make_set_unit
 from tracecore.tests.utils import bru
@@ -156,8 +156,8 @@ class TestStepGate(FrappeTestCase):
 		self.assertIsInstance(block, Block)
 		self.assertEqual(block.code, "GATE_PREV_NOT_PASSED")
 		self.assertEqual(block.redo_step, "T3")
-		self.assertIn("T3", block.reason)
-		self.assertIn("T3", block.action)
+		self.assertIn(zones.gate_label("T3"), block.reason)
+		self.assertIn(zones.gate_label("T3"), block.action)
 		self.assertEqual(block.http_status, 409)
 		step_gate.record(su, "T3", "Pass")
 		self.assertIsNone(step_gate.check(su, "T4"))

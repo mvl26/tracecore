@@ -258,7 +258,7 @@ class TestLabels(WasteCase):
 				"is_active": 1,
 				"zone_station_name": "Waste printer",
 				"parent_zone": zone,
-				"station_step": "WST",
+				"functions": [{"station_function": "WASTE"}],
 			}
 		).insert(ignore_permissions=True, set_name=other)
 		from unittest.mock import patch

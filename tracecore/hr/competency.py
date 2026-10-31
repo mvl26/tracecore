@@ -218,9 +218,9 @@ def matrix(zone=None):
 	stations = frappe.get_all(
 		"Zone Station",
 		filters=filters,
-		fields=["name", "zone_station_name", "station_step", "parent_zone"],
-		order_by="station_step asc, name asc",
+		fields=["name", "zone_station_name", "station_no", "parent_zone"],
 	)
+	stations.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
 	if zone:
 		stations = [row for row in stations if row.parent_zone == zone]
 	names = [row.name for row in stations]
@@ -273,7 +273,7 @@ def matrix(zone=None):
 			{
 				"name": row.name,
 				"label": row.zone_station_name,
-				"step": row.station_step,
+				"number": f"T{row.station_no}" if row.station_no else "",
 				"zone": row.parent_zone,
 				"zone_label": zone_labels.get(row.parent_zone) or row.parent_zone,
 			}
