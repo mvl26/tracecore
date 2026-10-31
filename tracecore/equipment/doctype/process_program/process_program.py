@@ -69,7 +69,7 @@ class ProcessProgram(Document):
 			)
 
 	def _normalize_wash_indicator(self):
-		# chỉ thị rửa chỉ có nghĩa với máy rửa/siêu âm (A-257); ảnh chỉ bắt buộc khi chỉ thị bắt buộc
+		# chỉ thị rửa chỉ có nghĩa với máy rửa/siêu âm (A-77); ảnh chỉ bắt buộc khi chỉ thị bắt buộc
 		if norms.equipment_type_of(self) not in WASH_TYPES:
 			self.requires_wash_indicator = 0
 		if not cint(self.requires_wash_indicator):

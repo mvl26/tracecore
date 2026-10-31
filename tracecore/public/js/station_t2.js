@@ -109,7 +109,7 @@ class T2Wash {
 		this.unload = null; // {batch, equipmentRaw, batchRaw, context, saved, result}
 		this.form = null;
 		this.verdict = null;
-		this.indicator = null; // {item, lot, expiry, result, photo, uploading, fromStock} khi chương trình bắt buộc chỉ thị (A-257)
+		this.indicator = null; // {item, lot, expiry, result, photo, uploading, fromStock} khi chương trình bắt buộc chỉ thị (A-77)
 	}
 
 	clearSession() {
@@ -664,7 +664,7 @@ class T2Wash {
 		if (res.kind === "equipment") unload.equipmentRaw = raw;
 		else unload.batchRaw = raw;
 		this.lookup = null;
-		// lô chờ đọc chỉ thị (A-257): đã dỡ rồi, đọc sau chỉ cần QR lô
+		// lô chờ đọc chỉ thị (A-77): đã dỡ rồi, đọc sau chỉ cần QR lô
 		if ((unload.equipmentRaw || res.awaiting) && unload.batchRaw) return this.fetchContext();
 		this.notice = {
 			variant: "info",
@@ -748,7 +748,7 @@ class T2Wash {
 		});
 	}
 
-	// Quét lô chỉ thị: có trong kho thì tự điền vật tư và hạn, không có thì KTV nhập tay (A-257)
+	// Quét lô chỉ thị: có trong kho thì tự điền vật tư và hạn, không có thì KTV nhập tay (A-77)
 	scanIndicatorLot(raw) {
 		return this.request(T2_INDICATOR_LOT, { raw, station: this.station.station }, (res) => {
 			if (!this.indicator) return;
@@ -1706,7 +1706,7 @@ class T2Wash {
 		return rows.map((row) => this.batchCardHtml(row)).join("");
 	}
 
-	// Lô đã dỡ, chờ đọc chỉ thị (A-257): quét QR lô để mở form đọc
+	// Lô đã dỡ, chờ đọc chỉ thị (A-77): quét QR lô để mở form đọc
 	awaitingHtml(skip) {
 		const rows = ((this.overview && this.overview.awaiting) || []).filter(
 			(row) => row.batch !== skip
@@ -1951,7 +1951,7 @@ class T2Wash {
 		</section>`;
 	}
 
-	// Form Đọc chỉ thị mẻ rửa (A-257); người đọc là thẻ đang đăng nhập, giờ đọc do server ghi lúc bấm Ghi kết quả
+	// Form Đọc chỉ thị mẻ rửa (A-77); người đọc là thẻ đang đăng nhập, giờ đọc do server ghi lúc bấm Ghi kết quả
 	indicatorHtml(context) {
 		const row = this.indicator;
 		const session = this.station.session || {};

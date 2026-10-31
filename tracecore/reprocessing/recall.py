@@ -69,7 +69,7 @@ def _notify(users, subject, doc):
 
 
 def _loads_of_lot(lot):
-	# chỉ thị rửa (A-257) không gắn mẻ: lệnh thu hồi theo lô chỉ thị chỉ áp cho mẻ tiệt khuẩn
+	# chỉ thị rửa (A-77) không gắn mẻ: lệnh thu hồi theo lô chỉ thị chỉ áp cho mẻ tiệt khuẩn
 	return frappe.get_all(
 		"Load Indicator Result", filters={"lot": lot, "load": ("is", "set")}, pluck="load", distinct=True
 	)

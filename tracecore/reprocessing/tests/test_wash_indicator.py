@@ -1,4 +1,4 @@
-"""Chỉ thị rửa theo lô và trạng thái Chờ đọc chỉ thị (A-257, FR-M2-04.8 đến .10, UC-06 A5, E6)."""
+"""Chỉ thị rửa theo lô và trạng thái Chờ đọc chỉ thị (A-77, FR-M2-04.8 đến .10, UC-06 A5, E6)."""
 
 import frappe
 from frappe.utils import add_days, getdate, today

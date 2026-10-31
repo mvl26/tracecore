@@ -1,4 +1,4 @@
-"""RPC chỉ thị rửa (A-257): dỡ lô đổi trạng thái, `wash.result` nhận chỉ thị, tra lô, bảng phụ T2, quyền trạm."""
+"""RPC chỉ thị rửa (A-77): dỡ lô đổi trạng thái, `wash.result` nhận chỉ thị, tra lô, bảng phụ T2, quyền trạm."""
 
 import uuid
 

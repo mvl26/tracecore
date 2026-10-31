@@ -150,12 +150,12 @@ def cycle_detail(ref_doctype, ref_name):
 		"duration": cycle_time.for_doc(doc),
 	}
 	if ref_doctype == "Wash Batch":
-		detail["indicator"] = washing.wash_indicator_of(ref_name)  # A-257
+		detail["indicator"] = washing.wash_indicator_of(ref_name)  # A-77
 	return detail
 
 
 def wash_indicator_line(indicator):
-	"""Một dòng chữ về chỉ thị rửa cho báo cáo: vật tư · lô · hạn · kết quả · người đọc · giờ đọc (A-257)."""
+	"""Một dòng chữ về chỉ thị rửa cho báo cáo: vật tư · lô · hạn · kết quả · người đọc · giờ đọc (A-77)."""
 	if not indicator:
 		return None
 	parts = [
@@ -170,7 +170,7 @@ def wash_indicator_line(indicator):
 
 
 def wash_indicator_text(set_unit, cycle_no):
-	"""Dòng chỉ thị rửa của chu trình `cycle_no` của bộ `set_unit`, hoặc None (dòng lệnh thu hồi, A-257)."""
+	"""Dòng chỉ thị rửa của chu trình `cycle_no` của bộ `set_unit`, hoặc None (dòng lệnh thu hồi, A-77)."""
 	batch = frappe.db.get_value(
 		"Step Gate Result",
 		{"set_unit": set_unit, "cycle_no": cycle_no, "step": "T2", "ref_doctype": "Wash Batch"},

@@ -12,7 +12,7 @@ from frappe.utils import format_datetime, today
 from tracecore.core import step_gate
 from tracecore.core.pick_page import join_label, like, page_of
 
-OPEN_BATCH = ("Running", "Awaiting Result")  # lô rửa còn giữ bộ (A-257)
+OPEN_BATCH = ("Running", "Awaiting Result")  # lô rửa còn giữ bộ (A-77)
 # bước → (trạng thái Pack, cột thời điểm)
 PACK_STEPS = {
 	"T5": ("Packed", "pack.packed_at"),

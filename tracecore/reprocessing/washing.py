@@ -4,7 +4,7 @@
   `redo_queue`, `waiting_sets`.
 - Dịch vụ trạm T2: `start` (Hoàn thành nạp: sinh mã lô, gắn bộ, in nhãn QR); `lookup` (tra cứu lô);
   `scan_unload`, `unload_context` (dỡ lô: QR máy + QR lô; chương trình bắt buộc chỉ thị thì lô sang Chờ đọc chỉ thị,
-  A-257), `save_manual_data` (dữ liệu chu trình nhập tay có xác nhận), `indicator_lot` (tra lô chỉ thị), `set_result`
+  A-77), `save_manual_data` (dữ liệu chu trình nhập tay có xác nhận), `indicator_lot` (tra lô chỉ thị), `set_result`
   (kết luận Đạt/Không đạt áp cho mọi bộ, ghi chỉ thị, đóng lô).
 
 M2 không import `tracecore.equipment`/`tracecore.inventory` (lint R1): máy, chương trình, lô hóa chất đọc bằng tên
@@ -36,7 +36,7 @@ RESULT_SAVEPOINT = "tc_wash_result"
 WASH_EQUIPMENT_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
 EQUIPMENT_CHECKS_HOOK = "tracecore_wash_equipment_checks"
 RUNNING = "Running"
-AWAITING = "Awaiting Result"  # đã dỡ, chờ đọc chỉ thị (A-257): máy rảnh, bộ vẫn thuộc lô, chưa có cổng T2
+AWAITING = "Awaiting Result"  # đã dỡ, chờ đọc chỉ thị (A-77): máy rảnh, bộ vẫn thuộc lô, chưa có cổng T2
 OPEN_STATUSES = (RUNNING, AWAITING)
 RESULTS = ("Pass", "Fail")
 WASH_INDICATOR = "wash_indicator"
@@ -419,7 +419,7 @@ def running_batches():
 
 
 def awaiting_batches():
-	"""Lô đã dỡ, chờ đọc chỉ thị (A-257), cùng dạng `running_batches`."""
+	"""Lô đã dỡ, chờ đọc chỉ thị (A-77), cùng dạng `running_batches`."""
 	return _batches_in(AWAITING)
 
 
@@ -963,7 +963,7 @@ def scan_unload(batch, raw, station):
 def unload_context(batch, equipment_raw, batch_raw, station, employee=None, client_ts=None):
 	"""Ngữ cảnh dỡ lô sau khi đã quét QR máy và QR lô: `lookup` + ``parameter_schema`` của chương trình.
 
-	Chương trình bắt buộc chỉ thị (A-257): lô `Running` sang `Awaiting Result`, ghi người và giờ dỡ, chốt cấu hình vào lô;
+	Chương trình bắt buộc chỉ thị (A-77): lô `Running` sang `Awaiting Result`, ghi người và giờ dỡ, chốt cấu hình vào lô;
 	máy rảnh để nạp lô mới nhưng bộ vẫn thuộc lô và chưa có cổng T2 nên `step_gate` chặn T3. Gọi lại không đổi gì thêm.
 	"""
 	doc, _machine = _open_for_unload(batch, equipment_raw, batch_raw, station, for_update=True)
@@ -977,7 +977,7 @@ def unload_context(batch, equipment_raw, batch_raw, station, employee=None, clie
 
 
 def _program_indicator(program):
-	"""``(bắt buộc chỉ thị, bắt buộc ảnh)`` của chương trình rửa, 0/1 (A-257)."""
+	"""``(bắt buộc chỉ thị, bắt buộc ảnh)`` của chương trình rửa, 0/1 (A-77)."""
 	row = frappe.db.get_value(
 		"Process Program", program, ["requires_wash_indicator", "requires_wash_indicator_photo"]
 	)
@@ -1000,7 +1000,7 @@ def _mark_unloaded(doc, employee, client_ts):
 	doc.save(ignore_permissions=True)
 
 
-# --- Chỉ thị rửa (A-257, FR-M2-04.8 đến .10) -------------------------------------------------------------------
+# --- Chỉ thị rửa (A-77, FR-M2-04.8 đến .10) -------------------------------------------------------------------
 
 
 def _indicator_items():
@@ -1294,7 +1294,7 @@ def set_result(
 	lô (A-73, giữ người đã ghi lúc dỡ nếu lô đang chờ đọc) và người đọc chỉ thị. Lỗi giữa chừng hoàn tác về savepoint:
 	không bộ nào có cổng mới, lô giữ nguyên trạng thái.
 
-	`indicator` (A-257) là ``{"item", "lot", "lot_expiry", "result", "photo"}``: kết quả chỉ thị thay `clean_test`, Không đạt
+	`indicator` (A-77) là ``{"item", "lot", "lot_expiry", "result", "photo"}``: kết quả chỉ thị thay `clean_test`, Không đạt
 	làm cả lô Không đạt. Chương trình bắt buộc chỉ thị mà chưa có → INDICATOR_REQUIRED khi ghi Đạt; xem `_checked_indicator`.
 
 	Trả ``{"batch", "result", "sets": [{"set_id", "status", "redo_count"}], "incident_id"}``; ``incident_id`` là NC tự

@@ -130,7 +130,7 @@ def _flag(value):
 
 
 def _indicator(value):
-	"""Chỉ thị rửa: dict hoặc chuỗi JSON của dict; rỗng = không gửi (A-257)."""
+	"""Chỉ thị rửa: dict hoặc chuỗi JSON của dict; rỗng = không gửi (A-77)."""
 	message = _("indicator must be an object with a result.")
 	if value in (None, "", "null"):
 		return None
@@ -307,7 +307,7 @@ def save_draft(draft, station, client_ts=None, token=None):
 @station_session(*WASH_LOAD_ROLES)
 def redo_queue(station, client_ts=None, token=None):
 	"""Bảng phụ của màn T2, chỉ đọc: hàng đợi xử lý lại (``sets``, FR-M2-25.2, Q16), lô đang chạy (``running``) và bộ chờ rửa
-	(``waiting``, A-66), lô chờ đọc chỉ thị (``awaiting``, A-257)."""
+	(``waiting``, A-66), lô chờ đọc chỉ thị (``awaiting``, A-77)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	parse_client_ts(client_ts)
 	return run_at_step(
@@ -348,7 +348,7 @@ def lookup(raw, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_UNLOAD_ROLES)
 def indicator_lot(raw, station, client_ts=None, token=None):
-	"""Tra lô chỉ thị vừa quét để tự điền vật tư và hạn (A-257); chỉ đọc."""
+	"""Tra lô chỉ thị vừa quét để tự điền vật tư và hạn (A-77); chỉ đọc."""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	raw = _required_str(raw, "raw")
 	timestamp = parse_client_ts(client_ts)
@@ -380,7 +380,7 @@ def unload(batch, raw, station, client_ts=None, token=None):
 @idempotent
 def unload_context(batch, equipment_raw, batch_raw, station, client_ts=None, token=None):
 	"""Ngữ cảnh dỡ lô sau khi đã quét đủ hai mã: thẻ lô + `parameter_schema`; chương trình bắt buộc chỉ thị thì lô sang
-	Chờ đọc chỉ thị (A-257), khi đó đọc sau chỉ cần `batch_raw`."""
+	Chờ đọc chỉ thị (A-77), khi đó đọc sau chỉ cần `batch_raw`."""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")
 	equipment_raw = _optional_str(equipment_raw, "equipment_raw") or ""
@@ -482,7 +482,7 @@ def result(
 	"""Kết luận lô: một kết quả Đạt/Không đạt cho mọi bộ, đóng lô (FR-M2-04.3 đến .6, BRU-REP-002); xem `washing.set_result`.
 
 	`reviewer_proof` là PIN proof (`v1.station.verify_pin`) của R02 trên phiên này, cần cho Đạt ở máy cũ (Q7). `indicator`
-	là kết quả chỉ thị rửa (A-257), khi có thì thay `clean_test`.
+	là kết quả chỉ thị rửa (A-77), khi có thì thay `clean_test`.
 	"""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")

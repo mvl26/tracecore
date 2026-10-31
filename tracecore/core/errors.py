@@ -95,7 +95,7 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
 			"RESULT_INVALID",
-			# A-257: chỉ thị rửa
+			# A-77: chỉ thị rửa
 			"INDICATOR_REQUIRED",
 			"INDICATOR_LOT_MISSING",
 			"INDICATOR_LOT_INVALID",

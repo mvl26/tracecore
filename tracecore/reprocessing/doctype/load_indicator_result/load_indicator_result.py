@@ -1,4 +1,4 @@
-"""Load Indicator Result: kết quả chỉ thị của mẻ tiệt khuẩn hoặc lô rửa (FEAT-023, UC-10, A-257, architecture §5.3 DT-LOADTEST).
+"""Load Indicator Result: kết quả chỉ thị của mẻ tiệt khuẩn hoặc lô rửa (FEAT-023, UC-10, A-77, architecture §5.3 DT-LOADTEST).
 
 Chỉ dịch vụ giải phóng (`reprocessing.releasing`, cờ ``doc.flags.tc_releasing``) và dịch vụ rửa
 (`reprocessing.washing`, cờ ``doc.flags.tc_washing``) ghi. Mỗi dòng thuộc đúng một mẻ hoặc một lô. Chỉ thị sinh học tạo
