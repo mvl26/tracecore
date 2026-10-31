@@ -2103,6 +2103,8 @@ Confirmation tick is required,Bắt buộc đánh dấu ô xác nhận kết qu�
 "{0} - wash again, attempt {1}: scan it into a new batch.",{0} — rửa lại lần {1}: quét vào lô mới.,
 "None.","Không có.",""
 "Reprocessing queue at T2","Hàng đợi xử lý lại tại T2",""
+"Sets waiting to wash ({0})","Bộ chờ rửa ({0})",""
+"No set is waiting to wash.","Không có bộ nào chờ rửa.",""
 "No running wash batch.","Không có lô rửa đang chạy.",""
 "Wash batch · {0} · {1}","Lô rửa · {0} · {1}",""
 "Sets in batch ({0}): {1}","Bộ trong lô ({0}): {1}",""
@@ -6676,3 +6678,16 @@ Location Name,Tên vị trí,Sterile Putaway
 Recipient Name,Tên người nhận,Notification Delivery
 Employee Name,Tên nhân viên,Station Competency
 Employee Name,Tên nhân viên,Station Session
+"{0} sets, {1}/{2} instruments confirmed","{0} bộ, {1}/{2} dụng cụ đã xác nhận",
+{0}/{1} confirmed,{0}/{1} đã xác nhận,
+View by set,Xem theo bộ,
+View combined list,Xem danh sách gộp,
+Qty,SL,Dirty Receipt
+Needs Review,Cần xem lại,Dirty Receipt Set
+"Receipts received today ({0} receipts, {1} sets)","Phiếu đã tiếp nhận hôm nay ({0} phiếu, {1} bộ)",""
+"No receipt has been received today.","Hôm nay chưa tiếp nhận phiếu nào.",""
+"Could not load the receipts received today.","Không tải được danh sách phiếu đã tiếp nhận hôm nay.",""
+"Could not load the sets of this receipt.","Không tải được các bộ của phiếu này.",""
+"This receipt has no set.","Phiếu này không có bộ nào.",""
+"Received at","Giờ nhận",""
+"Receipt","Phiếu","Dirty Receipt"

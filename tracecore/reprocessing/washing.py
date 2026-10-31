@@ -1,7 +1,7 @@
 """Lô rửa tại T2 (M2, FEAT-021, UC-06): quy tắc máy, nạp bộ, hóa chất; dịch vụ nạp, dỡ và kết luận lô.
 
 - Quy tắc: `check_equipment_ready`, `scan_machine`, `admit_set`, `suggest_chemical_lots`, `check_chemical_lot`,
-  `redo_queue`.
+  `redo_queue`, `waiting_sets`.
 - Dịch vụ trạm T2: `start` (Hoàn thành nạp: sinh mã lô, gắn bộ, in nhãn QR); `lookup` (tra cứu lô);
   `scan_unload`, `unload_context` (dỡ lô: QR máy + QR lô), `save_manual_data` (dữ liệu chu trình nhập tay có xác
   nhận), `set_result` (kết luận Đạt/Không đạt áp cho mọi bộ, đóng lô).
@@ -258,6 +258,37 @@ def redo_queue():
 		}
 		for set_unit, redo_count, set_type in rows
 	]
+
+
+def waiting_sets():
+	"""Bộ chờ rửa (A-66, UC-06 A4): T1 Đạt trong chu trình hiện hành, hợp trạm T2, cổng T2 chưa có kết quả, không ở lô đang chạy.
+
+	Cùng điều kiện nhận của `admit_set`; bộ T2 Không đạt nằm ở `redo_queue`. Chỉ để hiển thị, KTV vẫn quét từng bộ.
+	"""
+	return frappe.db.sql(
+		"""select unit.name as set_id, set_type.set_type_name as set_name, department.department_name
+		from `tabSet Unit` unit
+		join `tabStep Gate Result` t1 on t1.set_unit = unit.name and t1.cycle_no = unit.current_cycle_no
+			and t1.step = 'T1' and t1.result = 'Pass'
+		left join `tabStep Gate Result` t2 on t2.set_unit = unit.name and t2.cycle_no = unit.current_cycle_no
+			and t2.step = %(step)s
+		left join `tabInstrument Set Type` set_type on set_type.name = unit.set_type
+		left join `tabDepartment` department on department.name = unit.department
+		where unit.status in %(statuses)s and ifnull(t2.result, %(pending)s) = %(pending)s
+			and not exists (
+				select 1 from `tabWash Batch Set Unit` row
+				join `tabWash Batch` batch on batch.name = row.parent
+				where row.set_unit = unit.name and batch.status = %(running)s and batch.docstatus = 0
+			)
+		order by unit.name asc""",
+		{
+			"step": STEP,
+			"statuses": step_gate.STATION_STATUSES[STEP],
+			"pending": step_gate.PENDING,
+			"running": RUNNING,
+		},
+		as_dict=True,
+	)
 
 
 def running_batches():

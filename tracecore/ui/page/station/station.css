@@ -1306,6 +1306,24 @@ body.tc-kiosk .layout-main-section {
 	overflow-wrap: anywhere;
 }
 
+/* Phiếu đã tiếp nhận hôm nay (A-67) */
+.tc-t1-today {
+	margin-top: var(--tc-sp-4);
+}
+
+.tc-t1-today-sets td {
+	background: var(--tc-bg);
+}
+
+.tc-t1-today-list {
+	display: grid;
+	gap: var(--tc-sp-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--tc-fs-md);
+}
+
 /* Thu gom đồ vải (SCR-16, FEAT-033) và dòng cân tc-weigh-line dùng chung */
 .tc-linen-head {
 	display: grid;

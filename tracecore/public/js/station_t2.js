@@ -91,7 +91,7 @@ class T2Wash {
 		this.pending = null; // yêu cầu chưa có câu trả lời dứt khoát: Thử lại gửi lại y nguyên key + client_ts
 		this.busy = null;
 		this.offline = false;
-		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy}
+		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy, waiting: bộ chờ rửa}
 		this.overviewBusy = false;
 		this.reset();
 		this.load = this.restoreLoad();
@@ -319,6 +319,7 @@ class T2Wash {
 	}
 
 	onMachine(res) {
+		this.loadOverview(true); // bộ chờ rửa mới nhất khi bắt đầu nạp lô
 		const programs = res.programs || [];
 		this.load = {
 			machine: res.equipment,
@@ -503,7 +504,11 @@ class T2Wash {
 			});
 			if (version !== this.station.sessionVersion) return;
 			if (res && res.ok)
-				this.overview = { sets: res.sets || [], running: res.running || [] };
+				this.overview = {
+					sets: res.sets || [],
+					running: res.running || [],
+					waiting: res.waiting || [],
+				};
 		} catch (error) {
 			if (error.sessionEnded) return;
 		} finally {
@@ -910,6 +915,7 @@ class T2Wash {
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.lookup ? this.lookupHtml(this.lookup) : ""}
 				${body}
+				${this.mode === "load" ? this.waitingHtml() : ""}
 				${this.redoHtml()}
 				${this.mode === "load" ? this.loadBarHtml() : ""}
 			</div>`
@@ -1314,6 +1320,33 @@ class T2Wash {
 			? __("Automatic (station agent), incomplete")
 			: __("Manual entry, incomplete");
 		return batch.needs_review ? `${text} · ${__("Needs review")}` : text;
+	}
+
+	// Bộ chờ rửa (A-66): chỉ để xem, vẫn quét từng Set ID; bộ vừa quét vào lô đang nạp không còn chờ
+	waitingHtml() {
+		if (!this.overview)
+			return `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
+				__("Loading...")
+			)}</p></section>`;
+		const queued = new Set(((this.load && this.load.sets) || []).map((row) => row.set_id));
+		const rows = (this.overview.waiting || []).filter((row) => !queued.has(row.set_id));
+		const title = __("Sets waiting to wash ({0})", [rows.length]);
+		const body = rows.length
+			? rows
+					.map((row) => {
+						const detail = [row.set_name, row.department_name]
+							.filter(Boolean)
+							.join(" · ");
+						return `<p data-set="${esc(row.set_id)}"><b class="tc-code">${esc(
+							row.set_id
+						)}</b> ${esc(detail)}</p>`;
+					})
+					.join("")
+			: `<p class="tc-empty">${esc(__("No set is waiting to wash."))}</p>`;
+		return `<section class="tc-t4-block tc-t2-waiting" aria-label="${esc(title)}">
+			<h3>${esc(title)}</h3>
+			${body}
+		</section>`;
 	}
 
 	redoHtml() {
