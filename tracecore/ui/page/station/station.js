@@ -125,9 +125,13 @@ class TraceCoreStation {
 		$(wrapper).html(frappe.render_template("station", {}));
 		this.root = wrapper.querySelector(".tc-station");
 		// máy kiosk chỉ hiện tên; riêng admin có đường về trang chủ, nạp lại để bỏ ?station= khỏi URL
-		this.adminMode = (frappe.user_roles || []).includes("System Manager");
+		const roles = frappe.user_roles || [];
+		this.adminMode = roles.includes("System Manager");
+		// role làm tại trạm có cột trạm của mình; role văn phòng có đường về trang chủ (NAV-04)
+		this.railMode = this.adminMode || roles.some((role) => /^TC R0[2-8]$/.test(role));
+		const hasHome = this.adminMode || roles.some((role) => /^TC R(01|02|09|10)$/.test(role));
 		for (const brand of this.root.querySelectorAll(".tc-brand")) {
-			if (this.adminMode)
+			if (hasHome)
 				brand.addEventListener("click", (event) => {
 					event.preventDefault();
 					event.stopPropagation();
@@ -166,8 +170,9 @@ class TraceCoreStation {
 
 	// ---- cột trạm của admin (ux-foundations NAV-03): đổi trạm tại chỗ, thao tác vẫn theo thẻ đã quét ----
 	setupAdminRail() {
-		if (!this.adminMode) return;
-		this.root.classList.add("tc-admin-station");
+		if (!this.railMode) return;
+		this.root.classList.add("tc-rail-station");
+		this.root.classList.toggle("tc-admin-station", this.adminMode);
 		this.root.querySelector(".tc-rail").hidden = false;
 		this.root.querySelector(".tc-crumb").hidden = false;
 		this.root.querySelector(".tc-station-pills").hidden = false;
@@ -196,7 +201,7 @@ class TraceCoreStation {
 	}
 
 	renderRailPerson() {
-		if (!this.adminMode) return;
+		if (!this.railMode) return;
 		const session = this.session;
 		this.root.querySelector(".tc-rail-person").textContent = session
 			? `${session.employee_name || session.employee} · ${session.employee}`
@@ -205,7 +210,7 @@ class TraceCoreStation {
 	}
 
 	renderRailFoot(queued) {
-		if (!this.adminMode) return;
+		if (!this.railMode) return;
 		this.root.querySelector(".tc-rail-foot").textContent = `${
 			this.isOffline() ? __("Offline", null, "TraceCore Launcher") : __("Online")
 		} · ${__("{0} transaction(s) waiting", [queued || 0])}`;
@@ -1189,7 +1194,7 @@ class TraceCoreStation {
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
-		if (this.adminMode)
+		if (this.railMode)
 			this.root.querySelector(".tc-crumb").textContent = [
 				__("Home"),
 				__("Station"),

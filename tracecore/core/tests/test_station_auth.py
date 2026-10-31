@@ -223,15 +223,27 @@ class TestSwitchStation(IsolatedTestCase):
 			station_auth.switch_station("no-such-token", "TR-003")
 		self.assertEqual(caught.exception.block.code, "SESSION_INVALID")
 
-	def test_api_requires_system_manager(self):
-		self._allow_station("TR-003")
+	def test_api_rejects_a_station_outside_the_desk_role(self):
+		# R04 không có chức năng nào ở T5: có năng lực trên thẻ cũng không được chuyển
+		self._allow_station("TR-005")
 		frappe.set_user(self.user)
 		try:
 			with self.assertRaises(frappe.PermissionError):
-				station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
+				station_api.switch_station(token=self.login["token"], station="TR-005", client_ts=self.ts)
 		finally:
 			frappe.set_user("Administrator")
 		self.assertEqual(station_auth.authenticate_session(self.login["token"]).station, "TR-004")
+
+	def test_api_allows_a_station_of_the_desk_role(self):
+		self._allow_station("TR-003")
+		frappe.set_user(self.user)
+		try:
+			switched = station_api.switch_station(
+				token=self.login["token"], station="TR-003", client_ts=self.ts
+			)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertTrue(switched["ok"])
 
 	def test_api_returns_new_session_or_block_for_admin(self):
 		blocked = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)

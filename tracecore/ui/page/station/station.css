@@ -52,18 +52,18 @@ body.tc-kiosk .layout-main-section {
 	display: none;
 }
 
-.tc-admin-station {
+.tc-rail-station {
 	padding-left: var(--tc-rail-w);
 }
 
-.tc-admin-station .tc-brand-bar,
+.tc-rail-station .tc-brand-bar,
 .tc-admin-station .tc-session [data-action="logout"],
-.tc-admin-station .tc-session-person,
-.tc-admin-station .tc-session-station {
+.tc-rail-station .tc-session-person,
+.tc-rail-station .tc-session-station {
 	display: none;
 }
 
-.tc-admin-station .tc-actionsbar {
+.tc-rail-station .tc-actionsbar {
 	left: var(--tc-rail-w);
 }
 

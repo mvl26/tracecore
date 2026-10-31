@@ -8,6 +8,7 @@ from tracecore.core import error_codes, station_auth, zones
 from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
+from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	AGENT_ROLE,
 	BadRequestError,
@@ -43,11 +44,12 @@ def login(card_id=None, station=None, client_ts=None):
 
 @frappe.whitelist(methods=["POST"])
 def switch_station(token=None, station=None, client_ts=None):
-	"""Admin đã quét thẻ chuyển sang trạm khác không cần quét lại (NAV-03); cần cả tài khoản Desk System Manager."""
-	require_role("System Manager")
+	"""Đã quét thẻ thì chuyển sang trạm khác không cần quét lại (NAV-03, NAV-04); tài khoản Desk phải có role của trạm đó."""
 	timestamp = parse_client_ts(client_ts)
 	if not isinstance(station, str):
 		raise BadRequestError(_("station must be a string."))
+	if not navigation.can_open_station(station):
+		raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
 	return _session_response(
 		lambda: {"ok": True, "session": station_auth.switch_station(token, station, timestamp)},
 		station,

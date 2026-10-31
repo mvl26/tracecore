@@ -7170,3 +7170,26 @@ No card scanned,Chưa quét thẻ,
 station must be a string.,station phải là chuỗi.,
 Instrument sets,Bộ dụng cụ,Operations Dashboard
 Output,Sản lượng,Operations Dashboard
+Approvals,Duyệt,TraceCore Launcher
+Traceability and reports,"Truy xuất, báo cáo",TraceCore Launcher
+Reprocessing supervision,Giám sát tái xử lý,TraceCore Launcher
+Incidents and recalls,"Sự cố, thu hồi",TraceCore Launcher
+Stock counts,Kiểm kê,TraceCore Launcher
+Unit costs,Giá thành,TraceCore Launcher
+Organization and accounts,"Tổ chức, tài khoản",TraceCore Launcher
+Zones and stations,"Khu, trạm",TraceCore Launcher
+Labels and printing,In nhãn,TraceCore Launcher
+Data and settings,"Dữ liệu, cài đặt",TraceCore Launcher
+Audit,Nhật ký,TraceCore Launcher
+Approve requests and close cases.,Duyệt đề nghị và đóng sự việc.,TraceCore Launcher
+Trace packs and prepare compliance records.,Truy xuất gói và lập hồ sơ tuân thủ.,TraceCore Launcher
+"Sterilization loads, station output and sync conflicts.","Mẻ tiệt khuẩn, sản lượng trạm và xung đột đồng bộ.",TraceCore Launcher
+"Nonconformities, corrective actions and recalls.","Không phù hợp, khắc phục và thu hồi.",TraceCore Launcher
+Count stock and reconcile differences.,Kiểm kê và đối chiếu chênh lệch.,TraceCore Launcher
+Cost per load and per set.,Giá thành theo mẻ và theo bộ.,TraceCore Launcher
+"Departments, staff and user accounts.","Khoa, nhân viên và tài khoản.",TraceCore Launcher
+"Zones, stations and station functions.","Khu, trạm và chức năng trạm.",TraceCore Launcher
+"Printers, label templates and code ranges.","Máy in, mẫu nhãn và dải mã.",TraceCore Launcher
+"Catalog import, notifications and settings.","Import danh mục, thông báo và cài đặt.",TraceCore Launcher
+Audit log and audit trail.,Nhật ký và vết kiểm toán.,TraceCore Launcher
+This account cannot open station {0}.,Tài khoản này không được mở trạm {0}.,
