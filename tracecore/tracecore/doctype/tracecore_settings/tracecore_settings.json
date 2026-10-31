@@ -29,7 +29,9 @@
   "daily_test_steam_leak",
   "daily_test_plasma",
   "section_reports",
-  "report_locked_until"
+  "report_locked_until",
+  "section_error_codes",
+  "error_rules"
  ],
  "fields": [
   {
@@ -196,6 +198,17 @@
    "fieldtype": "Date",
    "label": "Reports Locked Until",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_error_codes",
+   "fieldtype": "Section Break",
+   "label": "Error codes"
+  },
+  {
+   "fieldname": "error_rules",
+   "fieldtype": "Table",
+   "label": "Error code settings",
+   "options": "TraceCore Error Rule"
   }
  ],
  "index_web_pages_for_search": 0,

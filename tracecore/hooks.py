@@ -77,6 +77,8 @@ app_include_js = ["tracecore.bundle.js"]
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
+		# FEAT-052 A-71: tiêu đề mã lỗi và Hướng dẫn xử lý dùng chung, nạp trước các màn
+		"public/js/station_error.js",
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
@@ -189,6 +191,8 @@ after_migrate = [
 	# FEAT-013: quyền R10 cho Issue / Help Article và Issue Type phản hồi phần mềm
 	"tracecore.ui.permissions.ensure_permissions",
 	"tracecore.ui.feedback.ensure_issue_type",
+	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
+	"tracecore.setup.error_codes.ensure_error_codes",
 ]
 
 # Uninstallation
@@ -481,6 +485,10 @@ tracecore_issue_par_check = ["tracecore.par.stock.issue_par"]
 tracecore_load_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
 #  - wash_equipment_checks: (equipment) -> Block | None, như load_equipment_checks cho máy rửa (T2)
 tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_block"]
+# FEAT-052 A-71: lô hóa chất khai trên máy; hạ mức TB-002 mở ngay máy đã khóa; chứng chỉ sắp hết hạn khi đăng nhập trạm
+tracecore_equipment_chemical_lots = ["tracecore.equipment.chemical_lots.default_rows"]
+tracecore_error_rules_changed = ["tracecore.equipment.maintenance.release_downgraded"]
+tracecore_competency_expiring_certificates = ["tracecore.hr.competency.expiring_certificates"]
 #  - load_daily_indicator: (equipment, indicator, on) -> dict | None, chỉ thị của mẻ lấy từ test hằng ngày của máy trong
 #    ngày chạy mẻ (A-23: Bowie-Dick không nhập lại ở T5b)
 tracecore_load_daily_indicator = ["tracecore.equipment.daily_test.load_indicator"]

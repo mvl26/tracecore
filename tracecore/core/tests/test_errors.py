@@ -22,6 +22,7 @@ class TestErrors(FrappeTestCase):
 				"SESSION_STATION_MISMATCH",
 				"CARD_INVALID",
 				"COMPETENCY_REQUIRED",
+				"CERTIFICATE_REQUIRED",
 				"PIN_INVALID",
 				"PIN_PROOF_INVALID",
 				"CARD_MISMATCH",
@@ -125,6 +126,7 @@ class TestErrors(FrappeTestCase):
 			),
 			404: (
 				"SET_NOT_FOUND",
+				"ERROR_CODE_NOT_FOUND",
 				"PACK_NOT_FOUND",
 				"ROLL_NOT_FOUND",
 				"EQUIPMENT_NOT_FOUND",
@@ -327,8 +329,8 @@ class TestErrors(FrappeTestCase):
 
 	def test_block_as_dict_keeps_optional_keys_when_set(self):
 		block = Block("BOM_INCOMPLETE", "t", "r", "a", items=[{"instrument": "KC-1"}], redo_step="T3")
-		self.assertEqual(
-			block.as_dict(),
+		# A-71 thêm khóa danh mục; khóa cũ giữ nguyên
+		self.assertLessEqual(
 			{
 				"code": "BOM_INCOMPLETE",
 				"title": "t",
@@ -337,7 +339,8 @@ class TestErrors(FrappeTestCase):
 				"http_status": 422,
 				"items": [{"instrument": "KC-1"}],
 				"redo_step": "T3",
-			},
+			}.items(),
+			block.as_dict().items(),
 		)
 		# danh sách rỗng vẫn là giá trị (khác None)
 		self.assertEqual(Block("X", "t", "r", "a", items=[]).as_dict()["items"], [])

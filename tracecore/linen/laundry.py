@@ -28,8 +28,8 @@ AFTER_COMPLETE_HOOK = "tracecore_after_laundry_complete"
 EQUIPMENT_LABELS = {WASHER_TYPE: "laundry washer", DRYER_TYPE: "dryer"}
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _number(value):

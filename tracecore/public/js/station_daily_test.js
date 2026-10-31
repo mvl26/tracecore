@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, T5Load, T2Wash */
 // Màn SCR-23 test hằng ngày và khóa máy (FEAT-040, UC-23) trên Page station: chế độ "Test hằng ngày" của màn T5 và T2.
 // Frappe nối file này sau station_t5.js và station_t2.js (hook page_js). T5Load/T2Wash đổi `station.screen` sang
@@ -328,9 +329,10 @@ class DailyTestScreen {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}

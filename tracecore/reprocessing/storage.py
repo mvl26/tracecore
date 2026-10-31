@@ -10,7 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, getdate, now_datetime, today
 
-from tracecore.core import code_registry, gs1, step_gate, zones
+from tracecore.core import code_registry, error_codes, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 
 FUNCTION = "PUTAWAY"
@@ -22,8 +22,8 @@ SAVEPOINT = "tc_storage_expire"
 SUMMARY_FIELDS = ("name", "set_unit", "set_type", "set_name", "expiry", "location", "method")
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _require_station(station):
@@ -166,6 +166,9 @@ def putaway(pack_raw, location_raw, station, client_ts=None):
 				pack.name, _(pack.status, context="Pack")
 			),
 			_("Check the sterilization load result, or call R02."),
+			object_type="Pack",
+			object_name=pack.name,
+			error_code=error_codes.pack_error_code(pack),
 		)
 	if getdate(pack.expiry) < getdate(today()):
 		raise _blocked(
@@ -173,6 +176,8 @@ def putaway(pack_raw, location_raw, station, client_ts=None):
 			_("Pack has expired"),
 			_("Pack {0} expired on {1}.").format(pack.name, frappe.utils.formatdate(pack.expiry)),
 			_("Do not store the pack; send it back to the dirty zone."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	gate = step_gate.check_stored(pack.set_unit)
 	if gate:

@@ -6778,6 +6778,275 @@ Counters now change only at packing and release.,Từ nay bộ đếm chỉ thay
 Pack {0} is {1}; only a packed pack can be voided at packing.,Gói {0} đang ở trạng thái {1}; chỉ hủy được gói Đã đóng gói.
 A sterilization load is created only when loading is completed on the sterilizer loading screen.,Mẻ tiệt khuẩn chỉ được tạo khi hoàn thành nạp trên màn nạp máy tiệt khuẩn.
 A sterilization load is changed only by the sterilizer loading service.,Mẻ tiệt khuẩn chỉ được thay đổi qua màn hình T5.
+"<GROUP>-<3 digits>: HC, TB, NS, CT, DC, QT","<NHÓM>-<3 số>: HC, TB, NS, CT, DC, QT",TraceCore Error Code
+A certificate required for this station is not valid: {0}.,Chứng chỉ bắt buộc của trạm này không còn hiệu lực: {0}.
+A reason is required.,Cần nhập lý do.
+ASSEMBLE,Lắp ráp,Help Article
+Allow temporary access,Cho phép tạm
+Approval,Cần phê duyệt,TraceCore Error Code
+Approval possible,Có thể phê duyệt cho phép tạm
+Approver roles (one per line),Vai trò được duyệt (mỗi dòng một vai trò),TraceCore Error Rule
+Ask a person with an approver role.,Nhờ người có vai trò được duyệt.
+Ask another approver.,Nhờ một người duyệt khác.
+Ask the stores for a replacement lot in time.,Đề nghị kho cấp lô thay thế kịp thời.
+Block,Chặn,TraceCore Error Code
+Block,Chặn,TraceCore Error Rule
+Business screen. Functions without a screen open the general set lookup.,Màn nghiệp vụ. Chức năng không có màn sẽ mở màn tra cứu bộ chung.,Station Function
+CT,CT,TraceCore Error Code
+Certificate expires soon,Chứng chỉ sắp hết hạn
+Certificate has expired,Chứng chỉ đã hết hạn
+Certificates that expire soon: {0}.,Chứng chỉ sắp hết hạn: {0}.
+Check the code in the message.,Kiểm tra lại mã trong thông báo.
+Chemical lot expires soon,Lô hóa chất sắp hết hạn
+Chemical lot {0} is declared on machine {1},Đã khai lô hóa chất {0} trên máy {1}
+Chemical lots in use,Lô hóa chất đang dùng,Equipment
+Clears when fixed,Tự hết khi khắc phục
+Continue loading.,Tiếp tục nạp.
+Control gate recorded by this function. Set by the system.,Cổng kiểm soát do chức năng này ghi nhận. Hệ thống tự đặt.,Station Function
+"Correct the request, then approve again.",Sửa lại yêu cầu rồi duyệt lại.
+DC,DC,TraceCore Error Code
+Days of warning before expiry,Số ngày cảnh báo trước hạn,TraceCore Error Rule
+Declared at,Thời điểm khai,Equipment Chemical Lot
+Declared by,Người khai,Equipment Chemical Lot
+Default severity,Mức độ mặc định,TraceCore Error Code
+Device time,Giờ thiết bị,TraceCore Error Log
+Equipment Chemical Lot,Lô hóa chất trên máy
+Error code,Mã lỗi,TraceCore Error Log
+Error code,Mã lỗi,TraceCore Error Rule
+Error code catalog,Danh mục mã lỗi
+Error code not found,Không tìm thấy mã lỗi
+Error code settings,Cấu hình mã lỗi,TraceCore Settings
+Error code {0} is a safety control: it cannot be turned off or changed.,Mã lỗi {0} là kiểm soát an toàn: không được tắt hay đổi mức độ.
+Error code {0} is not in the catalog.,Mã lỗi {0} không có trong danh mục.
+"Error code {0} must look like HC-001: a group (HC, TB, NS, CT, DC, QT) and 3 digits.","Mã lỗi {0} phải có dạng HC-001: nhóm (HC, TB, NS, CT, DC, QT) và 3 chữ số."
+Error codes,Mã lỗi,TraceCore Settings
+From date,Từ ngày
+Gate,Cổng,Station Function
+HC,HC,TraceCore Error Code
+Handling guide,Hướng dẫn xử lý
+Handling guide,Hướng dẫn xử lý,TraceCore Error Code
+How it clears,Cách gỡ
+How it clears,Cách gỡ,TraceCore Error Code
+ISSUE,Cấp phát,Help Article
+Internal code,Mã nội bộ,TraceCore Error Log
+Internal codes (one per line),Mã nội bộ (mỗi dòng một mã),TraceCore Error Code
+LINEN,Đồ vải,Help Article
+Legacy Step,Bước cũ,Zone Station
+"Load a valid lot, then scan the lot code here.","Nạp lô còn hạn, rồi quét mã lô tại đây."
+Lot {0} is not a chemical lot.,Lô {0} không phải lô hóa chất.
+Machine has no declared chemical lot,Máy chưa khai báo lô hóa chất
+"Machine {0} is using lot {1}, which expired on {2}.","Máy {0} đang dùng lô {1}, đã hết hạn ngày {2}."
+"Machine {0} is using lot {1}, which expires on {2}.","Máy {0} đang dùng lô {1}, hết hạn ngày {2}."
+"Machine {0} needs a chemical lot, and none is declared.",Máy {0} cần lô hóa chất nhưng chưa khai báo.
+NS,NS,TraceCore Error Code
+Needs a declared chemical lot,Cần khai báo lô hóa chất,Equipment Type Norm
+Not allowed to approve,Không được phép duyệt
+Not assigned to this station,Không được phân công tại trạm này
+Object,Đối tượng,TraceCore Error Log
+Object type,Loại đối tượng,TraceCore Error Log
+Occurred at,Thời điểm phát sinh,TraceCore Error Log
+Only an open certificate error can get temporary access.,Chỉ lỗi chứng chỉ đang mở mới được cho phép tạm.
+Open handling guide,Mở Hướng dẫn xử lý
+Order in the reprocessing flow. Fixed for system functions.,Thứ tự trong quy trình tái xử lý. Cố định với chức năng hệ thống.,Station Function
+PACK,Đóng gói,Help Article
+PUTAWAY,Kho vô khuẩn,Help Article
+Plan the renewal with your supervisor.,Lên kế hoạch gia hạn cùng người phụ trách.
+QT,QT,TraceCore Error Code
+RECEIVE,Tiếp nhận,Help Article
+"Renew the certificate, or ask an approver for temporary access.","Gia hạn chứng chỉ, hoặc đề nghị người duyệt cho phép tạm."
+Required In Flow,Bắt buộc trong quy trình,Station Function
+Role {0} does not exist.,Vai trò {0} không tồn tại.
+Row {0}: function {1} is listed twice.,Dòng {0}: chức năng {1} bị lặp.
+STERI_LOAD,Nạp máy tiệt khuẩn,Help Article
+STERI_UNLOAD,Dỡ máy tiệt khuẩn,Help Article
+Scan the code of the lot loaded on the machine.,Quét mã lô đang nạp trên máy.
+Scan the lot of a chemical that is still valid.,Quét lô hóa chất còn hạn.
+Screen,Màn hình,Station Function
+Severity locked (safety control),Khóa mức độ (kiểm soát an toàn),TraceCore Error Code
+Stations,Trạm áp dụng
+Stations,Trạm áp dụng,TraceCore Error Code
+System Function,Chức năng hệ thống,Station Function
+System action,Hành động hệ thống
+System action,Hành động hệ thống,TraceCore Error Code
+TB,TB,TraceCore Error Code
+Temporarily Allowed,Được phép tạm,TraceCore Error Log
+Temporarily allowed,Được phép tạm
+Temporary access,Cho phép tạm,TraceCore Error Log
+Temporary access is not valid,Cho phép tạm không hợp lệ
+The error log cannot be deleted.,Không được xóa Nhật ký lỗi.
+The guide cannot be opened while offline. Call R02.,Không mở được hướng dẫn khi mất mạng. Gọi R02.
+This request is for your own account.,Yêu cầu này là của chính tài khoản bạn.
+To date,Đến ngày
+TraceCore Error Code,Mã lỗi TraceCore
+TraceCore Error Code Station,Trạm của mã lỗi
+TraceCore Error Log,Nhật ký lỗi TraceCore
+TraceCore Error Rule,Cấu hình mã lỗi
+USE,Sử dụng,Help Article
+"Use a station you are assigned to, or ask the supervisor.","Dùng trạm bạn được phân công, hoặc hỏi người phụ trách."
+Valid until,Hiệu lực đến,TraceCore Error Log
+WASH_LOAD,Nạp máy rửa,Help Article
+WASH_UNLOAD,Dỡ máy rửa,Help Article
+WASTE,Chất thải,Help Article
+You cannot approve your own access,Bạn không thể tự duyệt cho mình
+You have no active competency for this station.,Bạn chưa có năng lực còn hiệu lực cho trạm này.
+Your role cannot approve temporary access for {0}.,Vai trò của bạn không được duyệt cho phép tạm mã {0}.
+"<GROUP>-<3 digits>: HC, TB, NS, CT, DC, QT","<NHÓM>-<3 số>: HC, TB, NS, CT, DC, QT"
+Approver roles (one per line),Vai trò được duyệt (mỗi dòng một vai trò)
+Business screen. Functions without a screen open the general set lookup.,Màn nghiệp vụ. Chức năng không có màn sẽ mở màn tra cứu bộ chung.
+Chemical lots in use,Lô hóa chất đang dùng
+Control gate recorded by this function. Set by the system.,Cổng kiểm soát do chức năng này ghi nhận. Hệ thống tự đặt.
+Days of warning before expiry,Số ngày cảnh báo trước hạn
+Declared at,Thời điểm khai
+Declared by,Người khai
+Default severity,Mức độ mặc định
+Device time,Giờ thiết bị
+Error code,Mã lỗi
+Error Code Catalog,Danh mục mã lỗi
+Error Log Statistics,Thống kê nhật ký lỗi
+Error code settings,Cấu hình mã lỗi
+Error codes,Mã lỗi
+Internal code,Mã nội bộ
+Internal codes (one per line),Mã nội bộ (mỗi dòng một mã)
+Legacy Step,Bước cũ
+Needs a declared chemical lot,Cần khai báo lô hóa chất
+Object type,Loại đối tượng
+Occurred at,Thời điểm phát sinh
+Order in the reprocessing flow. Fixed for system functions.,Thứ tự trong quy trình tái xử lý. Cố định với chức năng hệ thống.
+Required In Flow,Bắt buộc trong quy trình
+Severity locked (safety control),Khóa mức độ (kiểm soát an toàn)
+System Function,Chức năng hệ thống
+Temporarily Allowed,Được phép tạm
+Temporary access,Cho phép tạm
+Valid until,Hiệu lực đến
+"The chemical lot in use on the machine, or chosen for the batch, is past its expiry date.","Lô hóa chất đang dùng trên máy, hoặc chọn cho lô rửa, đã quá hạn dùng."
+"The declared lot, or the lot chosen when loading, has an expiry date before today.",Lô đã khai hoặc lô chọn khi nạp có hạn dùng trước hôm nay.
+Locks the machine for new batches and refuses to record the batch.,Khóa máy với lô mới và không cho ghi nhận lô.
+<ol><li>Stop using the expired lot and set it aside.</li><li>Declare a valid lot on the machine.</li><li>Scan the machine again. The lock clears on its own.</li></ol>,<ol><li>Ngừng dùng lô đã hết hạn và để riêng.</li><li>Khai lô còn hạn trên máy.</li><li>Quét lại máy. Khóa tự hết.</li></ol>
+The chemical lot in use expires within the configured number of days.,Lô hóa chất đang dùng sẽ hết hạn trong số ngày đã cấu hình.
+Days to expiry of the declared lot are at or below the configured limit.,Số ngày còn lại của lô đã khai không quá ngưỡng cấu hình.
+Allows the operation and records a warning.,Cho thao tác và ghi nhận cảnh báo.
+<ol><li>Finish the current lot if possible.</li><li>Ask the stores for a replacement lot in time.</li></ol>,<ol><li>Dùng hết lô hiện tại nếu được.</li><li>Đề nghị kho cấp lô thay thế kịp thời.</li></ol>
+Machine has no declared chemical lot.,Máy chưa khai báo lô hóa chất.
+"The machine type needs a chemical lot, but no lot in use has been declared on the machine.",Loại máy cần lô hóa chất nhưng máy chưa khai lô đang dùng.
+The machine type requires a chemical lot and the machine has no declared lot.,Loại máy yêu cầu lô hóa chất và máy chưa có lô đã khai.
+Refuses to start a batch on the machine.,Không cho chạy lô trên máy.
+<ol><li>Scan the lot of the chemical loaded on the machine.</li><li>Scan the machine again.</li></ol>,<ol><li>Quét lô hóa chất đang nạp trên máy.</li><li>Quét lại máy.</li></ol>
+Chemical or material lot is not valid,Lô hóa chất hoặc vật tư không hợp lệ
+"The lot is disabled, has no expiry date, or does not belong to the required item.","Lô đã bị vô hiệu, không có hạn dùng, hoặc không thuộc vật tư yêu cầu."
+The scanned lot fails the check against the program or the item.,Lô quét vào không đạt khi đối chiếu với chương trình hoặc vật tư.
+Refuses the lot.,Từ chối lô.
+<ol><li>Check the label of the lot.</li><li>Choose a lot of the item that the program uses.</li></ol>,<ol><li>Kiểm tra nhãn lô.</li><li>Chọn lô của vật tư mà chương trình dùng.</li></ol>
+Stock lot has expired,Lô tồn kho đã hết hạn
+A manual stock issue chose a lot that is past its expiry date.,Phiếu xuất kho thủ công chọn lô đã quá hạn.
+The lot chosen for a manual issue has an expiry date before today.,Lô chọn để xuất thủ công có hạn dùng trước hôm nay.
+Refuses the stock issue.,Từ chối xuất kho.
+<ol><li>Choose a lot that is still valid.</li><li>Report the expired lot to the stores.</li></ol>,<ol><li>Chọn lô còn hạn.</li><li>Báo kho về lô đã hết hạn.</li></ol>
+Laundry program does not disinfect,Chương trình giặt không đủ khử khuẩn
+Contaminated linen needs a hot enough program or a disinfectant.,Đồ vải nhiễm cần chương trình đủ nhiệt hoặc có hóa chất khử khuẩn.
+The program is below the required temperature and no disinfectant was added.,Chương trình dưới nhiệt độ yêu cầu và không có hóa chất khử khuẩn.
+Refuses the laundry batch.,Từ chối lô giặt.
+"<ol><li>Choose a hotter program, or add a disinfectant.</li><li>Record the batch again.</li></ol>","<ol><li>Chọn chương trình nhiệt cao hơn, hoặc thêm hóa chất khử khuẩn.</li><li>Ghi nhận lại lô.</li></ol>"
+A certificate required for this station is no longer valid.,Chứng chỉ bắt buộc của trạm này không còn hiệu lực.
+"The employee has the station competency, but a required certificate has expired.",Nhân viên có năng lực trạm nhưng chứng chỉ bắt buộc đã hết hạn.
+Refuses the station login until the certificate is renewed or an approver allows temporary access.,Không cho đăng nhập trạm cho tới khi gia hạn chứng chỉ hoặc người duyệt cho phép tạm.
+"<ol><li>Renew the certificate and have it recorded.</li><li>If work cannot wait, ask an approver for temporary access. It is limited in time and the approver is recorded.</li></ol>","<ol><li>Gia hạn chứng chỉ và cập nhật vào hệ thống.</li><li>Nếu công việc không chờ được, đề nghị người duyệt cho phép tạm. Có thời hạn và ghi lại người duyệt.</li></ol>"
+A certificate required for this station expires within the configured number of days.,Chứng chỉ bắt buộc của trạm sẽ hết hạn trong số ngày đã cấu hình.
+Days to expiry of a required certificate are at or below the configured limit.,Số ngày còn lại của chứng chỉ bắt buộc không quá ngưỡng cấu hình.
+"Allows the login, warns the employee and notifies the supervisor.","Cho đăng nhập, cảnh báo nhân viên và báo người phụ trách."
+<ol><li>Plan the renewal with your supervisor.</li><li>Record the new certificate when you receive it.</li></ol>,<ol><li>Lên kế hoạch gia hạn cùng người phụ trách.</li><li>Cập nhật chứng chỉ mới khi nhận được.</li></ol>
+The employee has no active competency for this station.,Nhân viên chưa có năng lực còn hiệu lực cho trạm này.
+No active Station Competency matches the employee and the station at this time.,Không có năng lực trạm còn hiệu lực cho nhân viên và trạm này tại thời điểm đăng nhập.
+Refuses the station login.,Không cho đăng nhập trạm.
+<ol><li>Use a station you are assigned to.</li><li>Ask the supervisor to check the competency matrix.</li></ol>,<ol><li>Dùng trạm bạn được phân công.</li><li>Đề nghị người phụ trách kiểm tra ma trận năng lực.</li></ol>
+Authorized person is required,Cần người có thẩm quyền
+This step needs the confirmation of a person with the required role.,Bước này cần người có vai trò phù hợp xác nhận.
+"The person confirming lacks the role, or the scanned card is not the signed-in employee.","Người xác nhận không có vai trò, hoặc thẻ quét không phải của nhân viên đang đăng nhập."
+Refuses the step until an authorized person confirms it.,Từ chối bước này cho tới khi người có thẩm quyền xác nhận.
+<ol><li>Call the supervisor.</li><li>The supervisor confirms with card and PIN.</li></ol>,<ol><li>Gọi người phụ trách.</li><li>Người phụ trách xác nhận bằng thẻ và PIN.</li></ol>
+The machine has no passed daily test today.,Hôm nay máy chưa có test hằng ngày đạt.
+A required daily test for the machine has not passed today.,Một test hằng ngày bắt buộc của máy chưa đạt trong hôm nay.
+Refuses to load a batch on the machine.,Không cho nạp mẻ trên máy.
+"<ol><li>Run and record the daily test.</li><li>If work cannot wait, call the supervisor for a temporary unlock of up to 24 hours.</li></ol>","<ol><li>Chạy và ghi nhận test hằng ngày.</li><li>Nếu công việc không chờ được, gọi người phụ trách mở khóa tạm tối đa 24 giờ.</li></ol>"
+Maintenance or calibration is overdue,Quá hạn bảo trì hoặc hiệu chuẩn
+The machine is past its calibration or inspection date. Pressure equipment uses TB-004.,Máy đã quá hạn hiệu chuẩn hoặc kiểm định. Thiết bị áp lực dùng mã TB-004.
+The calibration or inspection due date of the machine is before today.,Hạn hiệu chuẩn hoặc kiểm định của máy trước hôm nay.
+"Blocks the machine, or warns when the hospital configured this code as a warning.","Chặn máy, hoặc chỉ cảnh báo nếu viện cấu hình mã này là Cảnh báo."
+"<ol><li>Use another machine.</li><li>Arrange the service, then record it.</li><li>If work cannot wait, call the supervisor for a temporary unlock of up to 24 hours.</li></ol>","<ol><li>Dùng máy khác.</li><li>Sắp xếp bảo trì, hiệu chuẩn rồi ghi nhận.</li><li>Nếu công việc không chờ được, gọi người phụ trách mở khóa tạm tối đa 24 giờ.</li></ol>"
+Machine is locked or out of service,Máy bị khóa hoặc ngừng hoạt động
+"The machine is Locked, under Repair or Retired.","Máy ở trạng thái Khóa, Đang sửa chữa hoặc Ngừng sử dụng."
+The machine status is not Ready.,Trạng thái máy không phải Sẵn sàng.
+Refuses to use the machine.,Không cho dùng máy.
+<ol><li>Use another machine.</li><li>Call the supervisor to check why the machine is out of service.</li></ol>,<ol><li>Dùng máy khác.</li><li>Gọi người phụ trách kiểm tra lý do máy ngừng hoạt động.</li></ol>
+Pressure equipment inspection has expired,Thiết bị áp lực quá hạn kiểm định
+Pressure equipment past its legal inspection date must not run. Nobody can unlock it.,Thiết bị áp lực quá hạn kiểm định theo luật không được vận hành. Không ai được mở khóa.
+A steam sterilizer has an inspection due date before today.,Máy tiệt khuẩn hơi nước có hạn kiểm định trước hôm nay.
+Locks the machine. No temporary unlock is possible.,Khóa máy. Không có mở khóa tạm.
+<ol><li>Use another machine.</li><li>Arrange the legal inspection.</li><li>Record the new inspection date.</li></ol>,<ol><li>Dùng máy khác.</li><li>Sắp xếp kiểm định theo quy định.</li><li>Ghi nhận hạn kiểm định mới.</li></ol>
+Wrong machine or program,Sai máy hoặc chương trình
+"The machine does not fit this step, or the program does not belong to it.","Máy không phù hợp với bước này, hoặc chương trình không thuộc máy."
+"The scanned machine has the wrong type or differs from the batch, or the program is not on the machine.","Máy quét vào sai loại hoặc khác máy của mẻ, hoặc chương trình không có trên máy."
+Refuses the machine or the program.,Từ chối máy hoặc chương trình.
+<ol><li>Check the QR code on the machine.</li><li>Choose a program of that machine.</li></ol>,<ol><li>Kiểm tra mã QR trên máy.</li><li>Chọn chương trình của máy đó.</li></ol>
+Machine is busy or over capacity,Máy đang bận hoặc vượt công suất
+"The machine has an unfinished load, or the load exceeds its capacity.","Máy còn mẻ chưa xong, hoặc mẻ vượt công suất."
+"A running load exists on the machine, or the load is above the machine capacity.","Máy có mẻ đang chạy, hoặc mẻ vượt công suất của máy."
+Refuses to add to the load.,Không cho thêm vào mẻ.
+<ol><li>Finish the running load first.</li><li>Split the load if it is over capacity.</li></ol>,<ol><li>Hoàn tất mẻ đang chạy trước.</li><li>Chia mẻ nếu vượt công suất.</li></ol>
+Load indicator did not pass,Chỉ thị của mẻ không đạt
+"A chemical or biological indicator of the load failed or is pending, or the pack was recalled.","Chỉ thị hóa học hoặc sinh học của mẻ không đạt hay đang chờ, hoặc gói đã bị thu hồi."
+"The load has a failed cycle or indicator, is awaiting its biological indicator, or its packs were recalled.","Mẻ có chu trình hoặc chỉ thị không đạt, đang chờ chỉ thị sinh học, hoặc gói đã bị thu hồi."
+"Refuses sterile storage, issue and use of packs in the load.","Không cho nhập kho vô khuẩn, cấp phát và sử dụng gói trong mẻ."
+<ol><li>Do not use the packs.</li><li>Set them aside and call the supervisor.</li><li>Follow the reprocessing or recall procedure.</li></ol>,<ol><li>Không sử dụng các gói.</li><li>Để riêng và gọi người phụ trách.</li><li>Làm theo quy trình tái xử lý hoặc thu hồi.</li></ol>
+Indicator or test lot has expired,Lô chỉ thị hoặc test đã hết hạn
+The indicator or test lot is past its expiry date.,Lô chỉ thị hoặc test đã quá hạn dùng.
+The scanned lot has an expiry date before the day of use.,Lô quét vào có hạn dùng trước ngày sử dụng.
+<ol><li>Stop using the expired lot.</li><li>Scan a lot that is still valid.</li></ol>,<ol><li>Ngừng dùng lô đã hết hạn.</li><li>Quét lô còn hạn.</li></ol>
+Indicator or test is not valid,Chỉ thị hoặc test không hợp lệ
+"The indicator or test does not fit the method, or its required details are missing.","Chỉ thị hoặc test không hợp phương pháp, hoặc thiếu thông tin bắt buộc."
+"The class, method or details of the indicator fail the check.","Loại, phương pháp hoặc thông tin của chỉ thị không đạt khi kiểm tra."
+Refuses the indicator or test.,Từ chối chỉ thị hoặc test.
+<ol><li>Check the indicator type against the sterilization method.</li><li>Enter the missing details.</li></ol>,<ol><li>Đối chiếu loại chỉ thị với phương pháp tiệt khuẩn.</li><li>Nhập thông tin còn thiếu.</li></ol>
+Set is missing instruments,Bộ thiếu dụng cụ
+Instruments in the set do not match the bill of materials.,Dụng cụ trong bộ không khớp định mức.
+Lines are short and unconfirmed at assembly.,Có dòng thiếu chưa được xác nhận khi lắp ráp.
+"<ol><li>Count the set again.</li><li>Add what is missing, or call the supervisor to confirm the shortage.</li></ol>","<ol><li>Đếm lại bộ.</li><li>Bổ sung phần thiếu, hoặc gọi người phụ trách xác nhận thiếu.</li></ol>"
+Pack sterility has expired,Gói quá hạn vô khuẩn
+The pack is past its sterile expiry date.,Gói đã quá hạn vô khuẩn.
+The pack expiry date is before today.,Hạn dùng của gói trước hôm nay.
+"Refuses loading, storage, issue and use of the pack.","Không cho nạp, nhập kho, cấp phát và sử dụng gói."
+<ol><li>Do not use the pack.</li><li>Send it back to the dirty zone for reprocessing.</li></ol>,<ol><li>Không sử dụng gói.</li><li>Chuyển về khu bẩn để tái xử lý.</li></ol>
+Instrument maintenance is overdue,Dụng cụ quá hạn bảo dưỡng
+An instrument in the set needs maintenance that can no longer be deferred.,Dụng cụ trong bộ cần bảo dưỡng và không thể hoãn thêm.
+The instrument cycle counter passed the maintenance limit.,Bộ đếm chu trình của dụng cụ đã vượt ngưỡng bảo dưỡng.
+Refuses to pack the set.,Không cho đóng gói bộ.
+<ol><li>Maintain the instrument.</li><li>Confirm the maintenance as done.</li></ol>,<ol><li>Bảo dưỡng dụng cụ.</li><li>Xác nhận đã bảo dưỡng.</li></ol>
+Set reached its reprocessing limit,Bộ đã đạt giới hạn tái xử lý
+"The set or an instrument reached its cycle limit, or the department is above its par level.","Bộ hoặc dụng cụ đạt giới hạn chu trình, hoặc khoa vượt cơ số."
+"The cycle count reached the limit, or the issue exceeds the par level without approval.","Số chu trình đạt giới hạn, hoặc cấp phát vượt cơ số chưa được duyệt."
+Refuses the step until an approved override exists.,Từ chối cho tới khi có ghi đè được duyệt.
+<ol><li>Stop using the set.</li><li>Ask the supervisor to request an override or to dispose of the set.</li></ol>,<ol><li>Ngừng dùng bộ.</li><li>Đề nghị người phụ trách xin ghi đè hoặc thanh lý bộ.</li></ol>
+Pack cannot be used at this step,Gói không dùng được ở bước này
+"The pack does not fit the load, is already used, voided or in another document.","Gói không hợp mẻ, đã dùng, đã hủy hoặc đang thuộc chứng từ khác."
+"The pack status, its method or its document does not allow this step.","Trạng thái, phương pháp hoặc chứng từ của gói không cho phép bước này."
+Refuses the pack.,Từ chối gói.
+"<ol><li>Check the pack label and status.</li><li>Use another pack, or call the supervisor.</li></ol>","<ol><li>Kiểm tra nhãn và trạng thái gói.</li><li>Dùng gói khác, hoặc gọi người phụ trách.</li></ol>"
+Wrong station order,Sai thứ tự trạm
+The set or pack is not at the right step for this station.,Bộ hoặc gói chưa đúng bước của trạm này.
+"A previous gate has not passed, or the status does not fit this station.","Cổng trước chưa đạt, hoặc trạng thái không hợp trạm này."
+Refuses the scan at this station.,Từ chối quét tại trạm này.
+"<ol><li>Check the step the set is at.</li><li>Take it to that station, or redo the step shown.</li></ol>","<ol><li>Kiểm tra bộ đang ở bước nào.</li><li>Chuyển tới trạm đó, hoặc làm lại bước được báo.</li></ol>"
+Step data is incomplete,Thiếu dữ liệu của bước
+The step cannot finish because required data is missing.,Không hoàn tất được bước vì thiếu dữ liệu bắt buộc.
+"Lines are uncounted, the set has no bill of materials, or cycle data is incomplete.","Có dòng chưa đếm, bộ chưa có định mức, hoặc thiếu dữ liệu chu trình."
+Refuses to finish the step.,Không cho hoàn tất bước.
+<ol><li>Complete the items listed in the message.</li><li>Finish the step again.</li></ol>,<ol><li>Hoàn tất các mục trong thông báo.</li><li>Hoàn tất lại bước.</li></ol>
+Reason or patient code is required,Cần lý do hoặc mã bệnh nhân
+"This exception needs a reason, or the patient code must be recorded.","Ngoại lệ này cần lý do, hoặc phải ghi mã bệnh nhân."
+"An earlier pack was skipped, the department differs, a receipt is incomplete, or the patient code is missing.","Bỏ qua gói hạn sớm hơn, khác khoa, phiếu nhận chưa đủ, hoặc thiếu mã bệnh nhân."
+Refuses the step until the reason or the code is entered.,Từ chối bước cho tới khi nhập lý do hoặc mã.
+<ol><li>Enter the reason or the patient code.</li><li>Confirm the step again.</li></ol>,<ol><li>Nhập lý do hoặc mã bệnh nhân.</li><li>Xác nhận lại bước.</li></ol>
+Zone Station Function,Chức năng của trạm
+Zone Type Function,Chức năng của loại vùng
 "Washer is still running a batch","Máy rửa đang chạy một lô",
 "Batch {0} on washer {1} has not been unloaded yet.","Lô {0} trên máy rửa {1} chưa được dỡ.",
 "Unload batch {0} first, then load this washer again.","Hãy dỡ lô {0} trước, rồi nạp lại máy rửa này.",
@@ -6826,3 +7095,10 @@ Only used when the Daily Test Requirement in TraceCore Settings is Selected Ster
 plasma_daily,Test hằng ngày máy plasma,
 Plasma daily test,Test hằng ngày máy plasma,
 Not required,Không bắt buộc,
+Scan the washer again to continue.,Quét lại máy rửa để tiếp tục.
+The machine still needs a valid lot for another chemical.,Máy còn cần lô còn hạn của hóa chất khác.
+"Missing instruments: the set can be recorded, and the label will list them","Thiếu dụng cụ: vẫn ghi sổ được, nhãn sẽ in dòng thiếu"
+Shortage accepted without confirmation (DC-001 warning),Nhận thiếu không cần xác nhận (DC-001 Cảnh báo),Assembly Record
+Detail,Chi tiết,TraceCore Error Log
+Scan the code of a valid lot loaded on the machine.,Quét mã lô còn hạn đang nạp trên máy.
+Unloaded By,Người dỡ,Wash Batch

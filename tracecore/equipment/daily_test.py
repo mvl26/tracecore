@@ -12,8 +12,9 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import audit
+from tracecore.core import audit, error_codes
 from tracecore.core.errors import Block, BlockedError
+from tracecore.equipment import chemical_lots
 
 SETTINGS = "TraceCore Settings"
 MODE_NONE = "Not Required"
@@ -41,8 +42,8 @@ LOCK_DAILY_TEST = "Daily Test"
 PHOTO_MISSING = "photo_missing"
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _setting(field):
@@ -255,15 +256,8 @@ def _calibration_expired(row):
 	return bool(row.calibration_due and getdate(row.calibration_due) < getdate(today()))
 
 
-def equipment_block(equipment):
-	"""Hàm của hook ``tracecore_load_equipment_checks`` / ``tracecore_wash_equipment_checks``: Block hoặc None (FR-M5-06).
-
-	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; quá hạn hiệu chuẩn → ``EQUIPMENT_CALIBRATION_EXPIRED`` (A-43 M5);
-	thiếu test bắt buộc theo cấu hình → ``DAILY_TEST_REQUIRED`` kèm danh sách. Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ
-	qua test ngày và hiệu chuẩn quá hạn, và bỏ qua kiểm định quá hạn nếu không phải thiết bị áp lực. Máy
-	``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.
-	"""
-	row = frappe.db.get_value(
+def _machine_row(equipment):
+	return frappe.db.get_value(
 		"Equipment",
 		equipment,
 		[
@@ -276,27 +270,54 @@ def equipment_block(equipment):
 		],
 		as_dict=True,
 	)
+
+
+def equipment_block(equipment):
+	"""Hàm của hook ``tracecore_load_equipment_checks`` / ``tracecore_wash_equipment_checks``: Block hoặc None (FR-M5-06).
+
+	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; quá hạn hiệu chuẩn → ``EQUIPMENT_CALIBRATION_EXPIRED`` (A-43 M5);
+	thiếu test bắt buộc theo cấu hình → ``DAILY_TEST_REQUIRED`` kèm danh sách. Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ
+	qua test ngày và hiệu chuẩn quá hạn, và bỏ qua kiểm định quá hạn nếu không phải thiết bị áp lực. Máy
+	``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.
+	"""
+	row = _machine_row(equipment)
 	if not row:
 		return None
+	# FEAT-052 A-71: HC-001/HC-003 không có mở khóa tạm, nên kiểm trước `unlock_until`
+	block = chemical_lots.chemical_block(equipment, row.equipment_type)
+	if block:
+		return block
 	unlocked = bool(row.unlock_until and get_datetime(row.unlock_until) > now_datetime())
 	if _inspection_expired(row) and not (unlocked and row.equipment_type not in PRESSURE_TYPES):
-		return Block(
+		block = Block(
 			"EQUIPMENT_INSPECTION_EXPIRED",
 			_("Inspection has expired"),
 			_("Equipment {0} was due for inspection on {1}.").format(
 				equipment, frappe.utils.formatdate(row.inspection_due)
 			),
 			_("Use another machine. Call R02 about the inspection."),
+			object_type="Equipment",
+			object_name=equipment,
+			error_code="TB-004" if row.equipment_type in PRESSURE_TYPES else None,
 		)
+		# máy áp lực: TB-004 khóa cứng; còn lại TB-002 theo cấu hình viện
+		block = error_codes.check(block)
+		if block:
+			return block
 	if _calibration_expired(row) and not unlocked:
-		return Block(
+		block = Block(
 			"EQUIPMENT_CALIBRATION_EXPIRED",
 			_("Calibration has expired"),
 			_("Equipment {0} was due for calibration on {1}.").format(
 				equipment, frappe.utils.formatdate(row.calibration_due)
 			),
 			_("Use another machine, or call R02 for a temporary unlock."),
+			object_type="Equipment",
+			object_name=equipment,
 		)
+		block = error_codes.check(block)
+		if block:
+			return block
 	if unlocked:
 		return None
 	missing = missing_tests(equipment, row.equipment_type, row.daily_test_required)
@@ -307,6 +328,8 @@ def equipment_block(equipment):
 			_("Equipment {0} has no passed daily test today: {1}.").format(equipment, ", ".join(missing)),
 			_("Record the daily test first, or call R02 for a temporary unlock."),
 			items=missing,
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	return None
 
@@ -349,6 +372,7 @@ def unlock_temp(equipment, reason, hours, station=None, client_ts=None):
 		unlocked_by=frappe.session.user,
 		unlock_reason=text,
 	)
+	error_codes.allow_open(("TB-001", "TB-002"), "Equipment", machine.name, until, text)
 	audit.log(
 		"Override",
 		"Equipment",

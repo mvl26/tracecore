@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton, tcWarningsHtml */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
@@ -357,15 +358,28 @@ class TraceCoreStation {
 		return null;
 	}
 
+	// FEAT-052 A-71: cảnh báo không chặn thao tác; nằm trên khối kết quả, thay khi có giao dịch ghi tiếp theo
+	showWarnings(body, isWrite) {
+		const warnings = (body && body.warnings) || [];
+		if (!warnings.length && !isWrite) return;
+		if (!this.warningBar) {
+			this.warningBar = document.createElement("div");
+			this.warningBar.className = "tc-warnings";
+			this.result.parentElement.insertBefore(this.warningBar, this.result);
+		}
+		this.warningBar.innerHTML = tcWarningsHtml(warnings);
+	}
+
 	renderLogin(error) {
 		this.authForm.hidden = false;
 		this.work.hidden = true;
 		this.sessionBar.hidden = true;
 		this.authResult.innerHTML = error
 			? `<div class="tc-card tc-alert tc-alert-error" role="alert">
-				<p class="tc-alert-title">${esc(error.title)}</p>
+				<p class="tc-alert-title">${esc(tcErrorTitle(error))}</p>
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
-				<p class="tc-alert-action">${esc(error.action)}</p></div>`
+				<p class="tc-alert-action">${esc(error.action)}</p>
+				${tcGuideButton(error)}</div>`
 			: "";
 		this.focus();
 	}
@@ -1021,6 +1035,7 @@ class TraceCoreStation {
 				error.status = response.status;
 				throw error;
 			}
+			this.showWarnings(data.message, idempotencyKey);
 			return data.message;
 		} catch (error) {
 			if (error.name === "AbortError" || error instanceof TypeError) error.offline = true;
@@ -1273,9 +1288,10 @@ class TraceCoreStation {
 		this.setState(
 			"error",
 			`<div class="tc-alert tc-alert-error" role="alert">
-				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(error.title)}</p>
+				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(tcErrorTitle(error))}</p>
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
 				<p class="tc-alert-action">${esc(error.action)}</p>
+				${tcGuideButton(error)}
 				<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
 						__("Retry")

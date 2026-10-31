@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 import frappe
 
+from tracecore.core import error_codes
+
 # 422: đúng cú pháp nhưng dữ liệu sai; 404: không tìm thấy; 409: xung đột trạng thái nghiệp vụ.
 # 400 (sai định dạng) và 403 (thiếu quyền) không phải Block: do IdempotencyKeyError, ClientTimestampError,
 # thiếu tham số và frappe.PermissionError đảm nhiệm.
@@ -17,6 +19,7 @@ HTTP_STATUS: dict[str, int] = {
 		(
 			"CARD_INVALID",
 			"COMPETENCY_REQUIRED",
+			"CERTIFICATE_REQUIRED",  # FEAT-052 A-71: NS-001
 			"PIN_INVALID",
 			"PIN_PROOF_INVALID",
 			"SESSION_STATION_MISMATCH",
@@ -142,6 +145,7 @@ HTTP_STATUS: dict[str, int] = {
 	**dict.fromkeys(
 		(
 			"SET_NOT_FOUND",
+			"ERROR_CODE_NOT_FOUND",  # FEAT-052 A-71
 			"PACK_NOT_FOUND",
 			"ROLL_NOT_FOUND",
 			"EQUIPMENT_NOT_FOUND",
@@ -299,6 +303,11 @@ class Block:
 	action: str
 	items: list | None = None
 	redo_step: str | None = None
+	# FEAT-052 A-71: mã danh mục khi không suy được từ `code`, và đối tượng liên quan (mã máy, lô, gói...)
+	error_code: str | None = None
+	object_type: str | None = None
+	object_name: str | None = None
+	object_label: str | None = None
 
 	@property
 	def http_status(self) -> int:
@@ -314,6 +323,11 @@ class Block:
 			"items": self.items,
 			"redo_step": self.redo_step,
 		}
+		catalog = error_codes.catalog_of(self.code, self.error_code)
+		if catalog:
+			data.update(
+				catalog, object_name=self.object_name, object_label=self.object_label or self.object_name
+			)
 		return {key: value for key, value in data.items() if value is not None}
 
 
