@@ -9,6 +9,21 @@ const TC_DASH_REFRESH_MS = 60000;
 // ngữ cảnh dịch cho từ chung (Ngày, Tuần, Máy…) để không đè bản dịch của Frappe ở chỗ khác
 const DASH_CTX = "Operations Dashboard";
 const DASH_FILTER_KEY = "tc_dashboard_filters";
+const DASH_SECTION_KEY = "tc_dashboard_section";
+// mục của sidebar (ux-foundations DASH-01): mỗi lần chỉ hiện một mục; khối nào do server chọn theo role
+const DASH_SECTIONS = [
+	{
+		key: "actions",
+		label: "Needs action",
+		icon: "notification",
+		blocks: ["overrides", "recalls", "par", "equipment", "certificates", "stock"],
+	},
+	{ key: "sets", label: "Instrument sets", icon: "tool", blocks: ["sets"] },
+	{ key: "failures", label: "Failed batches", icon: "solid-warning", blocks: ["failures"] },
+	{ key: "sterile", label: "Sterile store", icon: "stock", blocks: ["sterile"] },
+	{ key: "waste", label: "Medical waste", icon: "delete", blocks: ["waste"] },
+	{ key: "output", label: "Output", icon: "chart", blocks: ["output"] },
+];
 
 frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
@@ -16,10 +31,19 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		title: __("Operations Dashboard"),
 		single_column: true,
 	});
-	const root = $("<section class='tc-dash-page' data-surface='WEB'></section>").appendTo(
-		page.main
-	);
-	const state = { data: null, request: 0, timer: null, filters: savedFilters() };
+	const shell = $("<div class='tc-dash-shell' data-surface='WEB'></div>").appendTo(page.main);
+	const nav = $("<nav class='tc-dash-nav'></nav>")
+		.attr("aria-label", __("Operations Dashboard"))
+		.appendTo(shell);
+	const content = $("<div class='tc-dash-content'></div>").appendTo(shell);
+	const root = $("<section class='tc-dash-page'></section>").appendTo(content);
+	const state = {
+		data: null,
+		request: 0,
+		timer: null,
+		filters: savedFilters(),
+		section: savedSection(),
+	};
 	const visible = () => frappe.get_route()[0] === "tc-dashboard" && !document.hidden;
 
 	function savedFilters() {
@@ -32,6 +56,24 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		} catch (error) {
 			return fallback;
 		}
+	}
+
+	function savedSection() {
+		try {
+			return localStorage.getItem(DASH_SECTION_KEY);
+		} catch (error) {
+			return null;
+		}
+	}
+
+	function selectSection(key) {
+		state.section = key;
+		try {
+			localStorage.setItem(DASH_SECTION_KEY, key);
+		} catch (error) {
+			/* chỉ là tiện ích: không lưu được thì thôi */
+		}
+		render();
 	}
 
 	function saveFilters() {
@@ -79,6 +121,8 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		}),
 	};
 	page.set_secondary_action(__("Refresh"), () => load(true), "refresh");
+	// bộ lọc dùng chung cho mọi mục, đặt ở vùng nội dung cạnh sidebar
+	page.page_form.prependTo(content);
 
 	function setFilter(name) {
 		const value = fields[name].get_value() || "";
@@ -147,9 +191,9 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 	}
 
 	function section(title) {
-		const box = $("<section class='tc-dash-section'></section>").appendTo(root);
-		$("<h3></h3>").text(title).appendTo(box);
-		return box;
+		return $("<section class='tc-dash-section'></section>")
+			.attr("aria-label", title)
+			.appendTo(root);
 	}
 
 	function table(parent, columns, rows, emptyHint) {
@@ -529,6 +573,39 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		}
 	}
 
+	function actionCount(blocks) {
+		const count = (block) => (block ? block.count : 0);
+		const stock = blocks.stock
+			? blocks.stock.below_minimum.length + blocks.stock.expiring.length
+			: 0;
+		return (
+			count(blocks.overrides) +
+			count(blocks.recalls) +
+			count(blocks.par) +
+			count(blocks.equipment) +
+			count(blocks.certificates) +
+			stock
+		);
+	}
+
+	function renderNav(sections, blocks) {
+		nav.empty();
+		sections.forEach((item) => {
+			const button = $("<button type='button'></button>")
+				.attr("aria-current", item.key === state.section ? "page" : null)
+				.append($(frappe.utils.icon(item.icon, "md")).attr("aria-hidden", "true"))
+				.append($("<span></span>").text(__(item.label, null, DASH_CTX)))
+				.on("click", () => selectSection(item.key))
+				.appendTo(nav);
+			const count = item.key === "actions" ? actionCount(blocks) : 0;
+			if (count)
+				$("<span class='tc-dash-nav-count'></span>")
+					.text(count)
+					.attr("aria-label", __("{0} to handle", [count], DASH_CTX))
+					.appendTo(button);
+		});
+	}
+
 	function render() {
 		const data = state.data;
 		const blocks = data.blocks;
@@ -546,19 +623,27 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 				)
 			)
 			.appendTo(root);
-		if (!Object.keys(blocks).length) {
+		const sections = DASH_SECTIONS.filter((item) => item.blocks.some((name) => blocks[name]));
+		if (!sections.some((item) => item.key === state.section))
+			state.section = sections.length ? sections[0].key : null;
+		renderNav(sections, blocks);
+		if (!sections.length) {
 			message(
 				__("No dashboard block for your role"),
 				__("Ask R10 to grant the role that matches your work.")
 			);
 			return;
 		}
-		if (blocks.sets) renderSets(blocks.sets);
-		if (blocks.failures) renderFailures(blocks.failures);
-		if (blocks.sterile) renderSterile(blocks.sterile);
-		if (blocks.waste) renderWaste(blocks.waste);
-		renderActions(blocks);
-		if (blocks.output) renderOutput(blocks.output);
+		const current = sections.find((item) => item.key === state.section);
+		page.set_title(__(current.label, null, DASH_CTX));
+		({
+			actions: () => renderActions(blocks),
+			sets: () => renderSets(blocks.sets),
+			failures: () => renderFailures(blocks.failures),
+			sterile: () => renderSterile(blocks.sterile),
+			waste: () => renderWaste(blocks.waste),
+			output: () => renderOutput(blocks.output),
+		}[current.key]());
 	}
 
 	async function load(showLoading) {

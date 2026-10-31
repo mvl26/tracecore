@@ -57,3 +57,36 @@ class TestDashboardPage(FrappeTestCase):
 		body = re.sub(r"@media[^{]*\{", "{", css)
 		self.assertIsNone(re.search(r"(?<![\w-])\d+(?:\.\d+)?px\b", body))
 		self.assertIn("var(--tc-bw-kpi)", css)
+
+
+class TestDashboardSidebar(FrappeTestCase):
+	"""Trang Tổng quan vận hành chia theo mục ở sidebar (ux-foundations DASH-01)."""
+
+	def _source(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "tc_dashboard", "tc_dashboard.js"),
+			encoding="utf-8",
+		) as handle:
+			return handle.read()
+
+	def test_every_block_belongs_to_exactly_one_section(self):
+		from tracecore.v1.dashboard import BLOCK_SOURCES
+
+		match = re.search(r"const DASH_SECTIONS = \[(.*?)\n\];", self._source(), re.S)
+		self.assertTrue(match, "thiếu DASH_SECTIONS")
+		placed = re.findall(r'"([a-z]+)"', "".join(re.findall(r"blocks: \[(.*?)\]", match.group(1), re.S)))
+		self.assertEqual(sorted(placed), sorted(BLOCK_SOURCES))
+
+	def test_section_labels_are_translated(self):
+		from tracecore.tests.test_station_page import vi_translations
+
+		match = re.search(r"const DASH_SECTIONS = \[(.*?)\n\];", self._source(), re.S)
+		ours = vi_translations()
+		for label in re.findall(r'label: "([^"]+)"', match.group(1)):
+			self.assertTrue(ours.get(f"{label}:Operations Dashboard") or ours.get(label), label)
+
+	def test_only_the_selected_section_is_rendered(self):
+		source = self._source()
+		self.assertIn("tc-dash-nav", source)
+		self.assertIn("DASH_SECTION_KEY", source)
+		self.assertNotIn("if (blocks.sets) renderSets(blocks.sets);", source)
