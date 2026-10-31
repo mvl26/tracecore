@@ -194,7 +194,7 @@ def test_t2_pass_blocked_until_manual_data_confirmed(t2_page, t2_demo):
 	inputs.nth(0).fill("93")
 	inputs.nth(1).fill("6")
 	form.locator("[data-action='t2-save-data']").click()  # chưa tick, chưa ảnh
-	expect(page.locator(".tc-t2 .tc-alert-error")).to_contain_text("tick xác nhận", timeout=15000)
+	expect(page.locator(".tc-t2 .tc-alert-error")).to_contain_text("ô đánh dấu xác nhận", timeout=15000)
 	form.locator("#tc-t2-file").set_input_files(
 		{"name": "printout.png", "mimeType": "image/png", "buffer": PNG_1PX}
 	)
@@ -215,7 +215,7 @@ def test_t2_close_requires_clean_test_and_confirm_tick_then_fail_returns_all_set
 	verdict.locator("[data-field='result'][data-value='Fail']").click()
 	verdict.locator("[data-field='clean'][data-value='Fail']").click()
 	verdict.locator("[data-action='t2-record']").click()
-	expect(page.locator(".tc-t2 .tc-alert-error")).to_contain_text("tick xác nhận")
+	expect(page.locator(".tc-t2 .tc-alert-error")).to_contain_text("đánh dấu ô xác nhận")
 	verdict.locator("[data-verdict='confirmed']").check()
 	verdict.locator("[data-action='t2-record']").click()
 	summary = page.locator(".tc-t2-result[data-result='Fail']")

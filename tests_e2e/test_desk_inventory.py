@@ -164,13 +164,13 @@ def open_excel_dialog(page):
 	page.get_by_role("button", name="Nhập từ Excel").click()
 	dialog = modal(page, "Nhập kho từ Excel")
 	expect(dialog.get_by_role("button", name="Ghi sổ nhập kho")).to_be_disabled()
-	expect(dialog.get_by_role("button", name="Kiểm tra file")).to_be_disabled()
+	expect(dialog.get_by_role("button", name="Kiểm tra tệp")).to_be_disabled()
 	return dialog
 
 
 def choose_file(page, dialog, path):
 	"""Chọn file .xlsx qua FileUploader (riêng tư) và chờ hộp thoại nhập Excel hiện tên file."""
-	dialog.get_by_role("button", name="Chọn file Excel").click()
+	dialog.get_by_role("button", name="Chọn tệp Excel").click()
 	uploader = page.locator(".modal.show .file-uploader").last
 	expect(uploader).to_be_visible(timeout=10000)
 	uploader.locator("input[type=file]").first.set_input_files(path)
@@ -181,7 +181,7 @@ def choose_file(page, dialog, path):
 
 
 def check_file(dialog):
-	dialog.get_by_role("button", name="Kiểm tra file").click()
+	dialog.get_by_role("button", name="Kiểm tra tệp").click()
 
 
 def good_rows(inv, document_no, lot, expiry):
@@ -220,7 +220,7 @@ def test_item_form_shows_fields_by_group(inv_page):
 	# tồn tối thiểu theo kho
 	reorder = page.locator("div.frappe-control[data-fieldname='reorder_levels']:visible")
 	expect(reorder).to_have_count(1)
-	page.get_by_role("tab", name="Thu mua").click()
+	page.get_by_role("tab", name="Mua hàng").click()
 	# nhà cung cấp
 	suppliers = page.locator("div.frappe-control[data-fieldname='supplier_items']:visible")
 	expect(suppliers).to_have_count(1)
@@ -322,7 +322,7 @@ def test_excel_dialog_reports_row_errors_then_posts_clean_file(inv_page, inv_dem
 	choose_file(page, dialog, good)
 	expect(dialog.get_by_role("button", name="Ghi sổ nhập kho")).to_be_disabled()  # đổi file → phải kiểm lại
 	check_file(dialog)
-	expect(dialog.locator(".tc-inv-alert-ok")).to_contain_text("File hợp lệ", timeout=15000)
+	expect(dialog.locator(".tc-inv-alert-ok")).to_contain_text("Tệp hợp lệ", timeout=15000)
 	post = dialog.get_by_role("button", name="Ghi sổ nhập kho")
 	expect(post).to_be_enabled()
 	post.click()
@@ -349,7 +349,7 @@ def test_excel_dialog_double_click_posts_once(inv_page, inv_demo, tmp_path):
 	dialog = open_excel_dialog(page)
 	choose_file(page, dialog, good)
 	check_file(dialog)
-	expect(dialog.locator(".tc-inv-alert-ok")).to_contain_text("File hợp lệ", timeout=15000)
+	expect(dialog.locator(".tc-inv-alert-ok")).to_contain_text("Tệp hợp lệ", timeout=15000)
 	dialog.get_by_role("button", name="Ghi sổ nhập kho").dblclick()
 	expect(dialog.locator(".tc-inv-alert-ok", has_text="Đã ghi sổ phiếu nhập")).to_be_visible(timeout=30000)
 	assert len(imports) == 1, [request.url for request in imports]

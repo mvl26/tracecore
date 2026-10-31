@@ -209,7 +209,7 @@ def test_t5_manual_data_requires_confirmation_card_and_photo(t5_page, t5_demo):
 	inputs.nth(2).fill("4")
 	form.locator("[data-action='t5-save-data']").click()  # chưa tick, chưa quét thẻ, chưa ảnh
 	alert = page.locator(".tc-t5 .tc-alert-error")
-	expect(alert).to_contain_text("tick xác nhận", timeout=15000)
+	expect(alert).to_contain_text("ô đánh dấu xác nhận", timeout=15000)
 	expect(alert).to_contain_text("quét thẻ")
 	form.locator("#tc-t5-file").set_input_files(
 		{"name": "printout.png", "mimeType": "image/png", "buffer": PNG_1PX}
