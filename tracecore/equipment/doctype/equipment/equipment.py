@@ -14,6 +14,7 @@ from frappe.model.naming import make_autoname
 from frappe.utils import cint, flt, getdate, today
 
 from tracecore.core import audit, code_registry, zones
+from tracecore.equipment import daily_test
 
 CODE_PREFIX = "TB"
 CONTROLLED_FIELDS = (
@@ -51,6 +52,7 @@ class Equipment(Document):
 	def validate(self):
 		self._guard_controlled_fields()
 		self._guard_equipment_type()
+		self._apply_daily_test_tick()
 		self.serial_no = (self.serial_no or "").strip()
 		self._validate_serial()
 		self._validate_cost()
@@ -77,6 +79,20 @@ class Equipment(Document):
 		before = None if self.is_new() else self.get_doc_before_save()
 		if before and before.equipment_type != self.equipment_type:
 			frappe.throw(_("Equipment Type cannot be changed after the equipment is created."))
+
+	def _apply_daily_test_tick(self):
+		# ô tick chỉ dành cho máy tiệt khuẩn; bỏ tick thì máy đang khóa vì test mở lại ngay nếu không còn thiếu test (A-70)
+		if self.equipment_type not in daily_test.STERILIZERS:
+			self.daily_test_required = 0
+		if (
+			not self.is_new()
+			and self.has_value_changed("daily_test_required")
+			and self.status == "Locked"
+			and self.lock_reason == daily_test.LOCK_DAILY_TEST
+			and not daily_test.missing_tests(self.name, self.equipment_type, self.daily_test_required)
+		):
+			self.status = "Ready"
+			self.lock_reason = None
 
 	def _recompute_programs(self):
 		"""Dải an toàn đổi: lưu lại mọi chương trình của máy qua validate để cờ ngoài dải và định mức tính lại, có audit.

@@ -6778,3 +6778,18 @@ Counters now change only at packing and release.,Từ nay bộ đếm chỉ thay
 Pack {0} is {1}; only a packed pack can be voided at packing.,Gói {0} đang ở trạng thái {1}; chỉ hủy được gói Đã đóng gói.
 A sterilization load is created only when loading is completed on the sterilizer loading screen.,Mẻ tiệt khuẩn chỉ được tạo khi hoàn thành nạp trên màn nạp máy tiệt khuẩn.
 A sterilization load is changed only by the sterilizer loading service.,Mẻ tiệt khuẩn chỉ được thay đổi qua màn hình T5.
+Daily Test Rules,Test hàng ngày,
+Daily Test Requirement,Chế độ test hàng ngày,
+Not Required,Không bắt buộc,
+All Sterilizers,Bắt buộc tất cả máy tiệt khuẩn,
+Selected Sterilizers,Chỉ các máy được chọn,
+Which sterilizers must pass a daily test before loading. Other machines are never locked or blocked for a daily test. A change applies at once.,Những máy tiệt khuẩn phải có test hằng ngày Đạt trước khi nạp mẻ. Thiết bị khác không bao giờ bị khóa hay chặn vì test hằng ngày. Thay đổi có hiệu lực ngay.,
+Require Leak Test,Bắt buộc test rò khí,
+"Steam sterilizers must also pass a leak test each day, besides the Bowie-Dick test.","Máy hấp hơi nước phải có thêm test rò khí Đạt mỗi ngày, ngoài test Bowie-Dick.",
+Require Plasma Daily Test,Máy plasma phải test hàng ngày,
+Plasma sterilizers must pass a daily test according to the hospital rules.,Máy tiệt khuẩn plasma phải có test hằng ngày Đạt theo quy định của viện.,
+Daily Test Required,Yêu cầu test hàng ngày,
+Only used when the Daily Test Requirement in TraceCore Settings is Selected Sterilizers.,Chỉ có tác dụng khi Chế độ test hàng ngày trong Cài đặt TraceCore là Chỉ các máy được chọn.,
+plasma_daily,Test hằng ngày máy plasma,
+Plasma daily test,Test hằng ngày máy plasma,
+Not required,Không bắt buộc,
