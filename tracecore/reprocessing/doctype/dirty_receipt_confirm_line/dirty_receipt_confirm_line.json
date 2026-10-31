@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "set_unit",
+  "set_unit_name",
   "instrument",
   "instrument_name",
   "qty",
@@ -20,7 +21,19 @@
    "in_list_view": 1,
    "label": "Set Unit",
    "options": "Set Unit",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
+  },
+  {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
+   "columns": 2
   },
   {
    "fieldname": "instrument",
@@ -28,13 +41,17 @@
    "in_list_view": 1,
    "label": "Instrument",
    "options": "Instrument",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
   },
   {
    "fieldname": "instrument_name",
    "fieldtype": "Data",
    "label": "Instrument Name",
-   "read_only": 1
+   "read_only": 1,
+   "in_list_view": 1,
+   "fetch_from": "instrument.instrument_name",
+   "columns": 2
   },
   {
    "description": "Quantity required by the BOM version in force.",
@@ -54,13 +71,14 @@
    "fieldname": "confirmed",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Confirmed"
+   "label": "Confirmed",
+   "columns": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-24 09:00:00.000000",
+ "modified": "2026-10-31 09:51:28.507626",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Dirty Receipt Confirm Line",

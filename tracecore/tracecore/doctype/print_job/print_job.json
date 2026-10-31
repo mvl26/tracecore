@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "station",
+  "station_name",
   "printer",
   "template",
   "status",
@@ -32,6 +33,16 @@
    "label": "Station",
    "options": "Zone Station",
    "reqd": 1
+  },
+  {
+   "fetch_from": "station.zone_station_name",
+   "fieldname": "station_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Station Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "printer",
@@ -131,7 +142,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-24 10:00:00.000000",
+ "modified": "2026-10-31 09:51:28.514939",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Print Job",

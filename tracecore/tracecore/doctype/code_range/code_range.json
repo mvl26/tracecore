@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "station",
+  "station_name",
   "prefix",
   "range_date",
   "column_break_numbers",
@@ -27,6 +28,16 @@
    "options": "Zone Station",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "station.zone_station_name",
+   "fieldname": "station_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Station Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "prefix",
@@ -94,7 +105,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-26 10:00:00.000000",
+ "modified": "2026-10-31 09:51:28.513558",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Code Range",

@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "set_unit",
+  "set_unit_name",
   "cycle_no",
   "step",
   "column_break_result",
@@ -31,6 +32,16 @@
    "read_only": 1,
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "cycle_no",
@@ -125,7 +136,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-31 09:51:28.515951",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Step Gate Result",

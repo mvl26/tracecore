@@ -9,7 +9,9 @@
   "machine_section",
   "batch_type",
   "equipment",
+  "equipment_name",
   "program",
+  "program_name",
   "operator",
   "column_break_run",
   "status",
@@ -71,6 +73,16 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "equipment.equipment_name",
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "program",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -78,6 +90,16 @@
    "options": "Process Program",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "program.program_name",
+   "fieldname": "program_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Process Program Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "description": "Employee who completed loading, taken from the card session.",
@@ -289,7 +311,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-22 16:00:00.000000",
+ "modified": "2026-10-31 09:51:28.512354",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

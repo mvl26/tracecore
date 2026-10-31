@@ -6612,3 +6612,67 @@ Scan the card of the person handing over the waste.,Quét thẻ người giao ch
 "Choose the waste type, then enter the number of bags and the weight.","Chọn loại chất thải, rồi nhập số túi và khối lượng.",
 "Confirm, then scan the card again to acknowledge the receipt.","Xác nhận, rồi quét lại thẻ để xác nhận biên nhận.",
 WST,Thu gom chất thải (WST),Help Article
+Zone Name,Tên khu,Environment Log
+Pack Type Name,Tên loại gói,Cost Norm Line
+Item Name,Tên vật tư,Cost Norm Line
+Item Name,Tên vật tư,Cost Rate Line
+Item Name,Tên vật tư,Cost Sheet Line
+Set Unit Name,Tên bộ dụng cụ,Cost Sheet Pack
+Equipment Name,Tên thiết bị,Daily Test
+Item Name,Tên vật tư,Maintenance Part
+Equipment Name,Tên thiết bị,Maintenance Record
+Equipment Name,Tên thiết bị,Process Program
+Pack Type Name,Tên loại gói,Program Compatible Pack Type
+Item Name,Tên vật tư,Program Consumable
+Set Unit Name,Tên bộ dụng cụ,Instrument Maintenance
+Instrument Name,Tên dụng cụ,Instrument Maintenance
+Vendor Name,Tên hãng cho mượn,Loaner Set
+Set Type Name,Tên loại bộ,Set BOM Item
+Instrument Name,Tên dụng cụ,Set BOM Item
+Set Type Name,Tên loại bộ,Set Unit
+Item Name,Tên vật tư,Laundry Batch Chemical
+Department Name,Tên khoa,Linen Collection
+Department Name,Tên khoa,Linen Dept Quota
+Department Name,Tên khoa,Linen Issue
+Department Name,Tên khoa,Par Level
+Changed By Name,Tên người thay đổi,Par Level History
+Set Unit Name,Tên bộ dụng cụ,Par Override
+Set Unit Name,Tên bộ dụng cụ,Assembly Record
+Responsible Name,Tên người phụ trách,CAPA Action
+Returning Department Name,Tên khoa trả,Dirty Receipt
+Receiver Name,Tên người nhận,Dirty Receipt
+Set Unit Name,Tên bộ dụng cụ,Dirty Receipt Confirm Line
+Instrument Name,Tên dụng cụ,Dirty Receipt Confirm Line
+Department Name,Tên khoa,Issue Note
+Set Unit Name,Tên bộ dụng cụ,Load Pack
+Set Unit Name,Tên bộ dụng cụ,Pack
+Pack Type Name,Tên loại gói,Pack
+Instrument Name,Tên dụng cụ,Pack Instrument Confirmed
+Instrument Name,Tên dụng cụ,Pack Maintenance Done
+Department Name,Tên khoa,Recall Order Pack
+Zone Station Name,Tên khu – trạm,Sterile Location
+Equipment Name,Tên thiết bị,Sterilization Load
+Process Program Name,Tên chương trình xử lý,Sterilization Load
+Department Name,Tên khoa,Usage Record
+Equipment Name,Tên thiết bị,Wash Batch
+Process Program Name,Tên chương trình xử lý,Wash Batch
+Item Name,Tên vật tư,Wash Batch Chemical
+Set Unit Name,Tên bộ dụng cụ,Wash Batch Set Unit
+User Name,Tên người dùng,Audit Log
+Station Name,Tên trạm,Code Range
+User Name,Tên người dùng,Notification Rule Recipient
+Station Name,Tên trạm,Print Job
+Station Name,Tên trạm,Printer
+Label Type Loaded Name,Tên loại nhãn đang lắp,Printer
+Station Name,Tên trạm,Station Competency
+Station Name,Tên trạm,Station Session
+Set Unit Name,Tên bộ dụng cụ,Step Gate Result
+Station Name,Tên trạm,Sync Conflict
+Delivered By Name,Tên người giao,Waste Collection
+Department Name,Tên khoa,Waste Collection
+Storage Location Name,Tên vị trí lưu kho,Waste Container
+Department Name,Tên khoa,Waste Quota
+Location Name,Tên vị trí,Sterile Putaway
+Recipient Name,Tên người nhận,Notification Delivery
+Employee Name,Tên nhân viên,Station Competency
+Employee Name,Tên nhân viên,Station Session
