@@ -92,7 +92,7 @@ def received_today(station, client_ts=None, token=None):
 	"""Khối "Phiếu đã tiếp nhận hôm nay" của màn T1: phiếu đã ghi sổ hôm nay tại trạm (của mọi người nhận) kèm tổng."""
 	require_any_role(*RECEIVE_ROLES)
 	parse_client_ts(client_ts)
-	return run_at_step(STEP, station, None, lambda: {"ok": True, **receiving.received_today(station)})
+	return run_at_step(FUNCTION, station, None, lambda: {"ok": True, **receiving.received_today(station)})
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -103,7 +103,7 @@ def receipt_sets(receipt, station, client_ts=None, token=None):
 	receipt = _text(receipt, "receipt", required=True)
 	parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		None,
 		lambda: {"ok": True, "sets": receiving.receipt_sets(receipt, station)},
