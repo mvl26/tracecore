@@ -7168,3 +7168,5 @@ Online,Trực tuyến,
 No card scanned,Chưa quét thẻ,
 {0} transaction(s) waiting,{0} giao dịch chờ đồng bộ,
 station must be a string.,station phải là chuỗi.,
+Instrument sets,Bộ dụng cụ,Operations Dashboard
+Output,Sản lượng,Operations Dashboard
