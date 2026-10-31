@@ -124,6 +124,15 @@ class TraceCoreStation {
 
 		$(wrapper).html(frappe.render_template("station", {}));
 		this.root = wrapper.querySelector(".tc-station");
+		// máy kiosk chỉ hiện tên; riêng admin có đường về trang chủ, nạp lại để bỏ ?station= khỏi URL
+		const brand = this.root.querySelector(".tc-brand");
+		if (frappe.user_roles.includes("System Manager"))
+			brand.addEventListener("click", (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				window.location.assign(brand.getAttribute("href"));
+			});
+		else brand.removeAttribute("href");
 		this.zonebar = this.root.querySelector(".tc-zonebar");
 		this.banner = this.root.querySelector(".tc-offline-banner");
 		this.form = this.root.querySelector(".tc-work .tc-scan");
@@ -1375,6 +1384,8 @@ frappe.pages["station"].on_page_load = function (wrapper) {
 	const previous = frappe.tc_station;
 	const barrier = previous ? previous.dispose() : Promise.resolve();
 	frappe.tc_station = new TraceCoreStation(wrapper, barrier);
+	// Frappe v15 không gọi on_page_hide của Page, chỉ phát sự kiện "hide" trên wrapper
+	$(wrapper).on("hide", () => frappe.pages["station"].on_page_hide());
 };
 
 frappe.pages["station"].on_page_show = function () {

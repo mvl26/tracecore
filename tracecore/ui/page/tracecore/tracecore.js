@@ -95,14 +95,16 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 				const full = __(item.label);
 				const name = full.replace(new RegExp(`^T${item.station_no}\\s+`), "") || full;
 				const label = item.implemented ? name : `${name} — ${__("Not implemented yet")}`;
-				tile(
-					grid,
-					label,
-					item.implemented
-						? `/app/station?station=${encodeURIComponent(item.name)}`
-						: null,
-					badge
-				);
+				const route = item.implemented
+					? `/app/station?station=${encodeURIComponent(item.name)}`
+					: null;
+				// router Desk bỏ ?station= khi bấm <a>; Page station đọc mã từ URL lúc nạp nên phải nạp lại trang
+				tile(grid, label, route, badge).on("click", (event) => {
+					if (!route) return;
+					event.preventDefault();
+					event.stopPropagation();
+					window.location.assign(route);
+				});
 			});
 		});
 		if (data.department)
