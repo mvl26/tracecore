@@ -19,6 +19,7 @@
   "zone_out",
   "is_connected",
   "has_printout",
+  "daily_test_required",
   "commissioned_on",
   "inspection_due",
   "calibration_due",
@@ -138,6 +139,14 @@
    "fieldname": "has_printout",
    "fieldtype": "Check",
    "label": "Has Printout"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.equipment_type=='Steam Sterilizer' || doc.equipment_type=='Plasma Sterilizer'",
+   "description": "Only used when the Daily Test Requirement in TraceCore Settings is Selected Sterilizers.",
+   "fieldname": "daily_test_required",
+   "fieldtype": "Check",
+   "label": "Daily Test Required"
   },
   {
    "fieldname": "commissioned_on",

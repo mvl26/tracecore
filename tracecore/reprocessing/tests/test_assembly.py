@@ -419,6 +419,11 @@ class TestConfirmShortage(AssemblyCase):
 		self.assertEqual(error_codes.pop_warnings()[0]["error_code"], "DC-001")
 		self.assertEqual(frappe.db.count("TraceCore Error Log", {"error_code": "DC-001"}), before + 1)
 		self.assertIn("T3-KEO", packing.confirmed_shortage(frappe.get_doc("Set Unit", su)))
+		# viện đổi lại Chặn sau đó: bộ đã nhận thiếu vẫn giữ dòng thiếu, không bị ghi đủ số lượng
+		settings = frappe.get_doc("TraceCore Settings")
+		next(row for row in settings.error_rules if row.error_code == "DC-001").severity = "Block"
+		settings.save(ignore_permissions=True)
+		self.assertIn("T3-KEO", packing.confirmed_shortage(frappe.get_doc("Set Unit", su)))
 
 	@bru("BRU-REP-003")
 	def test_pin_proof_is_single_use_and_wrong_pin_locks_for_five_minutes(self):

@@ -5,6 +5,7 @@ import frappe
 
 from tracecore.core.notification import ensure_default_rules
 from tracecore.costing.setup import ensure_categories
+from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_settings
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
 from tracecore.inventory.permissions import ensure_permissions
 from tracecore.setup.error_codes import ensure_error_codes
@@ -50,6 +51,7 @@ def after_install():
 	ensure_ui_permissions()
 	ensure_station_help()
 	ensure_error_codes()
+	ensure_daily_test_settings()
 
 
 TEST_GENDERS = ("Male", "Female", "Other")

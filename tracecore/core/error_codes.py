@@ -6,7 +6,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, cint, get_datetime, now_datetime
+from frappe.utils import add_to_date, cint, getdate, now_datetime
 
 CODE_DOCTYPE = "TraceCore Error Code"
 LOG_DOCTYPE = "TraceCore Error Log"
@@ -250,7 +250,15 @@ def _block_map() -> dict:
 
 
 def error_code_of(block_code: str, explicit: str | None = None) -> str | None:
-	return explicit or _block_map().get(block_code)
+	if explicit:
+		return explicit
+	try:
+		return _block_map().get(block_code)
+	except Exception as error:
+		# code mới, chưa migrate: thiếu bảng không được biến mọi lời từ chối thành lỗi 500
+		if frappe.db.is_table_missing(error):
+			return None
+		raise
 
 
 def catalog_of(block_code: str, explicit: str | None = None) -> dict | None:
@@ -278,12 +286,16 @@ def rule_of(code: str) -> dict | None:
 		return None
 	settings = frappe.get_cached_doc(SETTINGS)
 	rule = next((item for item in settings.get("error_rules") or [] if item.error_code == code), None)
+	locked = bool(cint(row.severity_locked))
 	return {
-		"enabled": bool(cint(rule.enabled)) if rule else True,
-		"severity": (rule.severity if rule else None) or row.default_severity,
+		# mã khóa luôn theo mặc định, kể cả khi thiếu dòng cấu hình hoặc dòng bị sửa bằng đường khác
+		"enabled": True if locked or not rule else bool(cint(rule.enabled)),
+		"severity": row.default_severity
+		if locked
+		else (rule.severity if rule else None) or row.default_severity,
 		"warn_days": cint(rule.warn_days) if rule else 0,
 		"approver_roles": (rule.approver_roles or "").split("\n") if rule and rule.approver_roles else [],
-		"locked": bool(cint(row.severity_locked)),
+		"locked": locked,
 	}
 
 
@@ -318,6 +330,7 @@ def record(
 	block_code=None,
 	status=OPEN,
 	user=None,
+	detail=None,
 ) -> str:
 	"""Ghi một lần phát sinh vào Nhật ký lỗi; trả tên bản ghi."""
 	if station and not frappe.db.exists("Zone Station", station):
@@ -334,6 +347,7 @@ def record(
 			"occurred_at": now_datetime(),
 			"client_ts": client_ts,
 			"status": status,
+			"detail": detail,
 		}
 	)
 	doc.insert(ignore_permissions=True)
@@ -355,6 +369,7 @@ def record_block(block, station=None, client_ts=None) -> str | None:
 		station=station if isinstance(station, str) else None,
 		client_ts=client_ts,
 		block_code=block.code,
+		detail="\n".join(item for item in block.items or [] if isinstance(item, str)) or None,
 	)
 
 
@@ -391,7 +406,7 @@ def is_blocking(code: str) -> bool:
 	return not rule or (rule["enabled"] and rule["severity"] == BLOCK)
 
 
-def check(block):
+def check(block, station=None):
 	"""Áp cấu hình viện lên một `Block`: Chặn trả lại `block`; Cảnh báo/Thông tin ghi Nhật ký, gom vào `warnings`, trả None; mã tắt trả None."""
 	code = error_code_of(block.code, block.error_code)
 	rule = rule_of(code) if code else None
@@ -401,9 +416,33 @@ def check(block):
 		return None
 	if rule["severity"] == BLOCK:
 		return block
-	log_block(block)
+	station = station or _current_station()
+	if not _warned_today(code, block.object_name):
+		log_block(block, station)
 	frappe.flags.setdefault("tc_error_warnings", []).append(block.as_dict())
 	return None
+
+
+def _current_station():
+	session = frappe.flags.get("tc_station_session")
+	return frappe.db.get_value("Station Session", session, "station") if session else None
+
+
+def _warned_today(code, object_name) -> bool:
+	"""Một cảnh báo chỉ ghi một dòng mỗi ngày cho mỗi đối tượng: kiểm tra máy chạy ở từng lần quét, không phải từng lần phát sinh."""
+	if not object_name:
+		return False
+	return bool(
+		frappe.db.exists(
+			LOG_DOCTYPE,
+			{
+				"error_code": code,
+				"object_name": object_name,
+				"status": OPEN,
+				"occurred_at": [">=", getdate(now_datetime())],
+			},
+		)
+	)
 
 
 def pop_warnings() -> list:
@@ -503,23 +542,27 @@ def grant_permit(error_log, hours, reason, client_ts=None) -> dict:
 	return {"error_log": row.name, "status": ALLOWED, "valid_until": until}
 
 
-def active_permit(error_code, object_type, object_name) -> dict | None:
-	"""Cho phép tạm còn hiệu lực của đối tượng; hết hạn thì không tính."""
+def active_permit(error_code, object_type, object_name, station=None, needed=()) -> dict | None:
+	"""Cho phép tạm còn hiệu lực, đúng trạm được duyệt và phủ đủ `needed` (loại chứng chỉ đang thiếu)."""
+	filters = {
+		"error_code": error_code,
+		"object_type": object_type,
+		"object_name": object_name,
+		"status": ALLOWED,
+		"valid_until": [">", now_datetime()],
+	}
+	if station:
+		filters["station"] = station
 	rows = frappe.get_all(
 		LOG_DOCTYPE,
-		filters={
-			"error_code": error_code,
-			"object_type": object_type,
-			"object_name": object_name,
-			"status": ALLOWED,
-		},
-		fields=["name", "valid_until", "approved_by"],
+		filters=filters,
+		fields=["name", "valid_until", "approved_by", "detail"],
 		order_by="valid_until desc",
-		limit=1,
 	)
-	if not rows or not rows[0].valid_until or get_datetime(rows[0].valid_until) <= now_datetime():
-		return None
-	return rows[0]
+	for row in rows:
+		if set(needed) <= set((row.detail or "").split("\n")):
+			return row
+	return None
 
 
 def allow_open(error_codes_list, object_type, object_name, until, reason) -> int:

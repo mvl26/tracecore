@@ -17,6 +17,7 @@
   "section_object",
   "object_type",
   "object_name",
+  "detail",
   "section_approval",
   "approved_by",
   "valid_until",
@@ -113,6 +114,12 @@
    "search_index": 1
   },
   {
+   "fieldname": "detail",
+   "fieldtype": "Small Text",
+   "label": "Detail",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_approval",
    "fieldtype": "Section Break",
    "label": "Temporary access"
@@ -139,7 +146,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-10-31 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Error Log",

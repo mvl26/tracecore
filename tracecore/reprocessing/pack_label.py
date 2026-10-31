@@ -65,10 +65,12 @@ def _shortage_warning(pack):
 
 	Nhãn luôn in tiếng Việt (mẫu nhãn cố định), nên dịch sang ``vi`` bất kể ngôn ngữ của người dùng đang thao tác.
 	"""
-	accepted = not error_codes.is_blocking("DC-001")  # FEAT-052 A-71: DC-001 là Cảnh báo
-	if not pack.assembly or not (
-		accepted or frappe.db.get_value("Assembly Record", pack.assembly, "shortage_confirmed")
-	):
+	flags = (
+		frappe.db.get_value("Assembly Record", pack.assembly, ["shortage_confirmed", "shortage_accepted"])
+		if pack.assembly
+		else None
+	)
+	if not flags or not any(flags):  # FEAT-052 A-71: nhận thiếu theo DC-001 Cảnh báo được lưu lúc ghi T3
 		return ""
 	names = frappe.get_all(
 		"Assembly Line",

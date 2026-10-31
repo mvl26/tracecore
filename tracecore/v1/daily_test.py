@@ -26,7 +26,7 @@ def _employee():
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*DAILY_TEST_ROLES)
 def overview(station, client_ts=None, token=None):
-	"""Máy cần test hằng ngày và tình trạng hôm nay (chỉ đọc)."""
+	"""Máy có test hằng ngày và tình trạng hôm nay (chỉ đọc)."""
 	require_any_role(*DAILY_TEST_ROLES)
 	timestamp = parse_client_ts(client_ts)
 	return _run(station, timestamp, lambda: {"ok": True, "equipment": daily_test.overview()})
@@ -47,7 +47,7 @@ def record(
 	client_ts=None,
 	token=None,
 ):
-	"""Ghi một test hằng ngày (Bowie-Dick, leak, test làm sạch): Đạt mở máy, Không đạt khóa máy (FR-M5-05)."""
+	"""Ghi một test hằng ngày: test bắt buộc Đạt mở máy, Không đạt khóa máy; máy ngoài diện chỉ lưu lại (FR-M5-05, A-70)."""
 	require_any_role(*DAILY_TEST_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	test_type = _required_str(test_type, "test_type")

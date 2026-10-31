@@ -212,7 +212,7 @@ def _active_competencies(employee: str, station: str, now) -> list[str]:
 	)
 
 
-def _expiring_warnings(employee: str, competency: str) -> None:
+def _expiring_warnings(employee: str, competency: str, station: str | None = None) -> None:
 	"""NS-002: chứng chỉ bắt buộc sắp hết hạn trong số ngày cấu hình: cảnh báo, vẫn cho vào (hook của M4)."""
 	rule = error_codes.rule_of("NS-002")
 	if not rule or not rule["enabled"]:
@@ -234,7 +234,8 @@ def _expiring_warnings(employee: str, competency: str) -> None:
 			_("Plan the renewal with your supervisor."),
 			object_type="Employee",
 			object_name=employee,
-		)
+		),
+		station,
 	)
 
 
@@ -250,13 +251,13 @@ def _require_competency(employee: str, station: str, client_ts=None):
 	if passing:
 		error_codes.mark_resolved("NS-001", "Employee", employee)
 		error_codes.mark_resolved("NS-003", "Employee", employee)
-		_expiring_warnings(employee, passing)
+		_expiring_warnings(employee, passing, station)
 		return None
 	missing = sorted(
 		{certificate_type for missing in missing_by_name.values() for certificate_type in missing}
 	)
 	if names:
-		permit = error_codes.active_permit("NS-001", "Employee", employee)
+		permit = error_codes.active_permit("NS-001", "Employee", employee, station, missing)
 		if permit:
 			return permit["valid_until"]
 	# FR-M4-03.2: ghi lý do cụ thể vào Audit Log

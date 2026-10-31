@@ -325,7 +325,9 @@ class Block:
 		}
 		catalog = error_codes.catalog_of(self.code, self.error_code)
 		if catalog:
-			data.update(catalog, object_label=self.object_label or self.object_name)
+			data.update(
+				catalog, object_name=self.object_name, object_label=self.object_label or self.object_name
+			)
 		return {key: value for key, value in data.items() if value is not None}
 
 

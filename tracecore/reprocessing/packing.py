@@ -500,8 +500,12 @@ def confirmed_shortage(unit):
 	hoặc phiếu không có xác nhận thiếu → ``{}``.
 	"""
 	name = _assembly(unit)
-	accepted = not error_codes.is_blocking("DC-001")  # FEAT-052 A-71: DC-001 là Cảnh báo
-	if not name or not (accepted or frappe.db.get_value("Assembly Record", name, "shortage_confirmed")):
+	flags = (
+		frappe.db.get_value("Assembly Record", name, ["shortage_confirmed", "shortage_accepted"])
+		if name
+		else None
+	)
+	if not flags or not any(flags):  # FEAT-052 A-71: nhận thiếu theo DC-001 Cảnh báo được lưu lúc ghi T3
 		return {}
 	rows = frappe.get_all(
 		"Assembly Line",

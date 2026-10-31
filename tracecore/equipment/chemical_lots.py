@@ -74,6 +74,17 @@ def chemical_block(equipment, equipment_type) -> Block | None:
 	error_codes.mark_resolved(MISSING, "Equipment", equipment)
 	expiries = [(row.lot, _expiry(row.lot)) for row in lots]
 	for lot, expiry in expiries:
+		if cint(frappe.db.get_value("Batch", lot, "disabled")):
+			return Block(
+				"CHEMICAL_LOT_INVALID",
+				_("Chemical lot is not valid"),
+				_("Lot {0} has been disabled.").format(lot),
+				_("Scan the code of a valid lot loaded on the machine."),
+				error_code=EXPIRED,
+				object_type="Equipment",
+				object_name=equipment,
+				object_label=f"{equipment} / {lot}",
+			)
 		if not expiry or expiry < getdate(today()):
 			return _expired_block(equipment, lot, expiry or today())
 	error_codes.mark_resolved(EXPIRED, "Equipment", equipment)
@@ -100,6 +111,7 @@ def _invalid(reason):
 
 def declare(equipment, lot, client_ts=None) -> dict:
 	"""Khai lô đang dùng trên máy; mỗi hóa chất giữ một lô, khai lô mới thay lô cũ. Lô hết hạn bị từ chối."""
+	lot = (lot or "").strip()
 	batch = frappe.db.get_value("Batch", lot, ["name", "item", "expiry_date", "disabled"], as_dict=True)
 	if not batch or frappe.db.get_value("Item", batch.item, "tc_item_group_cssd") != CHEMICAL_GROUP:
 		raise _invalid(_("Lot {0} is not a chemical lot.").format(lot or "-"))

@@ -438,7 +438,7 @@ def _reviewer(session, proof):
 	return reviewer
 
 
-def _shortage_block(items):
+def _shortage_block(items, set_unit=None):
 	return Block(
 		"SHORTAGE_UNCONFIRMED",
 		_("Missing instruments are not confirmed"),
@@ -447,6 +447,8 @@ def _shortage_block(items):
 		),
 		_("Add the instruments from the spare stock, or ask R02 to confirm with the PIN."),
 		items=items,
+		object_type="Set Unit",
+		object_name=set_unit,
 	)
 
 
@@ -555,9 +557,10 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 		if cint(doc.has_shortage) and not cint(doc.shortage_confirmed):
 			items = _shortage_items(doc)
 			# FEAT-052 A-71: DC-001 viện đặt Cảnh báo thì ghi nhận và đi tiếp; nhãn vẫn in dòng THIẾU
-			block = error_codes.check(_shortage_block(items))
+			block = error_codes.check(_shortage_block(items, doc.set_unit))
 			if block:
 				raise BlockedError(block)
+			doc.shortage_accepted = 1
 	doc.update(
 		{
 			"result": "Fail" if branch else "Pass",
@@ -693,6 +696,7 @@ def _summary(doc, ctx=None):
 		"notes": doc.notes,
 		"uncounted": uncounted,
 		"ready_to_submit": lock == "NOT_RECORDED",
+		"shortage_blocking": error_codes.is_blocking("DC-001"),
 		"pack_locked": not passed,
 		"pack_lock_reason": lock,
 	}

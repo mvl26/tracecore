@@ -214,6 +214,16 @@ class TestChemicalLots(ErrorCodeCase):
 			self.assertIsNone(chemical_lots.chemical_block("M-1", self.type_name))
 		self.assertEqual(frappe.db.get_value("TraceCore Error Log", name, "status"), "Resolved")
 
+	@bru("BRU-INV-001")
+	def test_disabled_lot_blocks_machine(self):
+		lot = factories.make_chemical_batch(batch_id="F052-LOT-5")
+		machine = factories.make_wash_machine()
+		chemical_lots.declare(machine.name, lot.name)
+		frappe.db.set_value("Batch", lot.name, "disabled", 1)
+		kind = frappe.db.get_value("Equipment", machine.name, "equipment_type")
+		frappe.db.set_value("Equipment Type Norm", kind, "requires_chemical_lot", 1)
+		self.assertEqual(chemical_lots.chemical_block(machine.name, kind).as_dict()["error_code"], "HC-001")
+
 	def test_declare_rejects_unknown_lot(self):
 		with self.assertRaises(BlockedError) as caught:
 			chemical_lots.declare("M-1", "NO-SUCH-LOT")
@@ -320,7 +330,13 @@ class TestStationLogin(ErrorCodeCase):
 	def test_permit_lets_login_pass_and_caps_session(self):
 		until = add_to_date(now_datetime(), hours=2)
 		a, b, c, d = self._competency(["C-1"], ["BLS"])
-		with a, b, c, d, patch.object(error_codes, "active_permit", return_value={"valid_until": until}):
+		with (
+			a,
+			b,
+			c,
+			d,
+			patch.object(error_codes, "active_permit", return_value={"valid_until": until, "detail": "BLS"}),
+		):
 			self.assertEqual(station_auth._require_competency("EMP-X", "ST-1"), until)
 
 	@bru("BRU-HR-002")
@@ -411,3 +427,93 @@ class TestChemicalLotsOnRealMachine(ErrorCodeCase):
 		program = frappe._dict(name="P", chemical=lot.item)
 		rows = washing._chemical_rows(program, [], self.machine.name)
 		self.assertEqual(rows[0]["lot"], lot.name)
+		frappe.db.set_value("Batch", lot.name, "disabled", 1)
+		with self.assertRaises(BlockedError):
+			washing._chemical_rows(program, [], self.machine.name)
+
+
+class TestReviewFixes(ErrorCodeCase):
+	def test_locked_severity_cannot_change_on_the_catalog(self):
+		doc = frappe.get_doc("TraceCore Error Code", "TB-004")
+		doc.default_severity = "Warning"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save(ignore_permissions=True)
+
+	def test_locked_flag_cannot_be_cleared(self):
+		doc = frappe.get_doc("TraceCore Error Code", "CT-001")
+		doc.severity_locked = 0
+		with self.assertRaises(frappe.ValidationError):
+			doc.save(ignore_permissions=True)
+
+	def test_locked_guide_stays_editable(self):
+		doc = frappe.get_doc("TraceCore Error Code", "TB-004")
+		doc.guide = "<p>viện sửa</p>"
+		doc.save(ignore_permissions=True)
+
+	def test_locked_rule_ignores_edited_row(self):
+		settings = frappe.get_doc("TraceCore Settings")
+		next(row for row in settings.error_rules if row.error_code == "TB-004").severity = "Warning"
+		frappe.db.set_value(
+			"TraceCore Error Rule",
+			{"parent": "TraceCore Settings", "error_code": "TB-004"},
+			"severity",
+			"Warning",
+		)
+		error_codes.clear_cache()
+		self.assertEqual(error_codes.rule_of("TB-004")["severity"], "Block")
+		self.assertTrue(error_codes.is_blocking("TB-004"))
+
+	def test_payload_has_object_name_for_t2(self):
+		data = _block("EQUIPMENT_NO_CHEMICAL_LOT").as_dict()
+		self.assertEqual(data["object_name"], "M-1")
+
+	def test_t2_lot_scan_comes_before_the_set_branch(self):
+		from pathlib import Path
+
+		text = (Path(frappe.get_app_path("tracecore")) / "public/js/station_t2.js").read_text(encoding="utf8")
+		self.assertIn('!["batch", "equipment"].includes(code.kind)', text)
+
+	def test_permit_bound_to_station_and_certificates(self):
+		name = error_codes.record("NS-001", "Employee", "EMP-Y", station=None, user="Guest", detail="BLS")
+		frappe.db.set_value(
+			"TraceCore Error Log",
+			name,
+			{
+				"status": "Temporarily Allowed",
+				"valid_until": add_to_date(now_datetime(), hours=2),
+				"station": "ST-A",
+			},
+		)
+		self.assertIsNotNone(error_codes.active_permit("NS-001", "Employee", "EMP-Y", "ST-A", ["BLS"]))
+		self.assertIsNone(error_codes.active_permit("NS-001", "Employee", "EMP-Y", "ST-B", ["BLS"]))
+		self.assertIsNone(error_codes.active_permit("NS-001", "Employee", "EMP-Y", "ST-A", ["BLS", "ACLS"]))
+
+	def test_warning_logged_once_a_day_per_object(self):
+		self.set_rule("TB-002", severity="Warning")
+		before = frappe.db.count("TraceCore Error Log", {"error_code": "TB-002", "object_name": "M-1"})
+		error_codes.check(_block())
+		error_codes.check(_block())
+		self.assertEqual(
+			frappe.db.count("TraceCore Error Log", {"error_code": "TB-002", "object_name": "M-1"}), before + 1
+		)
+		self.assertEqual(len(error_codes.pop_warnings()), 2)
+
+	def test_warning_log_has_station(self):
+		self.set_rule("TB-002", severity="Warning")
+		station = frappe.get_all("Zone Station", filters={"is_zone": 0}, pluck="name", limit=1)
+		if not station:
+			self.skipTest("no station")
+		error_codes.check(_block(), station[0])
+		self.assertEqual(
+			frappe.db.get_value(
+				"TraceCore Error Log", {"error_code": "TB-002", "object_name": "M-1"}, "station"
+			),
+			station[0],
+		)
+
+	def test_missing_table_does_not_break_refusals(self):
+		with (
+			patch.object(error_codes, "_block_map", side_effect=frappe.db.TableMissingError("x", "y")),
+			patch.object(frappe.db, "is_table_missing", return_value=True),
+		):
+			self.assertIsNone(error_codes.error_code_of("PACK_EXPIRED"))

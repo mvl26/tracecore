@@ -600,6 +600,7 @@ class T5Release {
 				Pass: __("Pass", null, "Step Gate Result"),
 				Fail: __("Fail", null, "Step Gate Result"),
 				Missing: __("Not recorded"),
+				Optional: __("Not required"),
 				Pending: __("Waiting to be read"),
 			}[value] || value
 		);
