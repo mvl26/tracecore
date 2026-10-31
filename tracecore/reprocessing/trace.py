@@ -8,10 +8,10 @@ thiết bị: cổng T1 đến T5 từ ``Step Gate Result``, T6 nhập kho, T7 c
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, get_datetime, getdate
+from frappe.utils import add_days, format_datetime, formatdate, get_datetime, getdate
 
 from tracecore.core import crypto
-from tracecore.reprocessing import cycle_time
+from tracecore.reprocessing import cycle_time, washing
 
 MAX_CHAINS = 50
 ALL_ROLES = ("TC R01", "TC R02", "System Manager")
@@ -142,13 +142,41 @@ def cycle_detail(ref_doctype, ref_name):
 	)
 	if not doc:
 		return {}
-	return {
+	detail = {
 		"operator": doc.operator,
 		"unloaded_by": doc[unloader_field],
 		"started_at": doc.started_at,
 		"ended_at": doc.ended_at,
 		"duration": cycle_time.for_doc(doc),
 	}
+	if ref_doctype == "Wash Batch":
+		detail["indicator"] = washing.wash_indicator_of(ref_name)  # A-77
+	return detail
+
+
+def wash_indicator_line(indicator):
+	"""Một dòng chữ về chỉ thị rửa cho báo cáo: vật tư · lô · hạn · kết quả · người đọc · giờ đọc (A-77)."""
+	if not indicator:
+		return None
+	parts = [
+		indicator["item"],
+		_("Lot {0}").format(indicator["lot"]) if indicator["lot"] else None,
+		_("Expires {0}").format(formatdate(indicator["lot_expiry"])) if indicator["lot_expiry"] else None,
+		_(indicator["result"]),
+		indicator["read_by_name"] or indicator["read_by"],
+		format_datetime(indicator["read_at"], "dd/MM/yyyy HH:mm") if indicator["read_at"] else None,
+	]
+	return " · ".join(part for part in parts if part)
+
+
+def wash_indicator_text(set_unit, cycle_no):
+	"""Dòng chỉ thị rửa của chu trình `cycle_no` của bộ `set_unit`, hoặc None (dòng lệnh thu hồi, A-77)."""
+	batch = frappe.db.get_value(
+		"Step Gate Result",
+		{"set_unit": set_unit, "cycle_no": cycle_no, "step": "T2", "ref_doctype": "Wash Batch"},
+		"ref_name",
+	)
+	return wash_indicator_line(washing.wash_indicator_of(batch)) if batch else None
 
 
 def _equipment(ref_doctype, ref_name):

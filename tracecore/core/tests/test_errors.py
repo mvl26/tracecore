@@ -85,6 +85,12 @@ class TestErrors(FrappeTestCase):
 				"BATCH_EMPTY",
 				"DATA_INCOMPLETE",
 				"RESULT_INVALID",
+				# A-77: chỉ thị rửa
+				"INDICATOR_REQUIRED",
+				"INDICATOR_LOT_MISSING",
+				"INDICATOR_LOT_INVALID",
+				"INDICATOR_EXPIRED",
+				"INDICATOR_PHOTO_MISSING",
 				# FEAT-026 A-17: cấp phát T7
 				"RECIPIENT_INVALID",
 				"SIGNATURE_INVALID",

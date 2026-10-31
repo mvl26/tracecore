@@ -12,6 +12,7 @@ const T2_AGENT_TIMEOUT_MS = 5000;
 const T2_COMPLETE = "tracecore.v1.wash.complete";
 const T2_RESULT = "tracecore.v1.wash.result";
 const T2_SAVE = "tracecore.v1.wash.manual_data";
+const T2_INDICATOR_LOT = "tracecore.v1.wash.indicator_lot";
 // từ chối làm lô đang dỡ không còn dùng được → bỏ trạng thái dỡ để quét lô khác
 const T2_UNLOAD_RESET_CODES = ["WASH_BATCH_NOT_FOUND", "BATCH_NOT_RUNNING", "STATION_WRONG_STEP"];
 
@@ -108,6 +109,7 @@ class T2Wash {
 		this.unload = null; // {batch, equipmentRaw, batchRaw, context, saved, result}
 		this.form = null;
 		this.verdict = null;
+		this.indicator = null; // {item, lot, expiry, result, photo, uploading, fromStock} khi chương trình bắt buộc chỉ thị (A-77)
 	}
 
 	clearSession() {
@@ -596,6 +598,7 @@ class T2Wash {
 				this.overview = {
 					sets: res.sets || [],
 					running: res.running || [],
+					awaiting: res.awaiting || [],
 					waiting: res.waiting || [],
 				};
 		} catch (error) {
@@ -620,6 +623,7 @@ class T2Wash {
 
 	unloadScan(raw) {
 		const code = t2Kind(raw);
+		if (code.kind === "set" && this.indicator) return this.scanIndicatorLot(raw);
 		if (code.kind === "set") {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -660,7 +664,8 @@ class T2Wash {
 		if (res.kind === "equipment") unload.equipmentRaw = raw;
 		else unload.batchRaw = raw;
 		this.lookup = null;
-		if (unload.equipmentRaw && unload.batchRaw) return this.fetchContext();
+		// lô chờ đọc chỉ thị (A-77): đã dỡ rồi, đọc sau chỉ cần QR lô
+		if ((unload.equipmentRaw || res.awaiting) && unload.batchRaw) return this.fetchContext();
 		this.notice = {
 			variant: "info",
 			title:
@@ -705,18 +710,78 @@ class T2Wash {
 				confirmed: false,
 			};
 			this.verdict = { result: "", clean: "", confirmed: false, pin: "" };
-			this.notice = notice || {
-				variant: "ok",
-				title: __("Scanned washer QR {0} and batch QR {1}", [
-					context.equipment.name,
-					context.batch,
-				]),
-				reason: __("The result below applies to all {0} set(s) in the batch.", [
-					context.sets.length,
-				]),
-			};
+			this.indicator = context.indicator_required
+				? {
+						item: "",
+						lot: "",
+						expiry: "",
+						result: "",
+						photo: "",
+						uploading: false,
+						fromStock: false,
+				  }
+				: null;
+			const awaiting = context.status === "Awaiting Result";
+			this.notice =
+				notice ||
+				(awaiting
+					? {
+							variant: "warn",
+							title: __("Batch {0} is waiting for its indicator to be read", [
+								context.batch,
+							]),
+							reason: __("The sets do not go to assembly until a Pass is recorded."),
+					  }
+					: {
+							variant: "ok",
+							title: __("Scanned washer QR {0} and batch QR {1}", [
+								context.equipment.name,
+								context.batch,
+							]),
+							reason: __(
+								"The result below applies to all {0} set(s) in the batch.",
+								[context.sets.length]
+							),
+					  });
+			if (awaiting) this.loadOverview(true);
 			this.show();
 		});
+	}
+
+	// Quét lô chỉ thị: có trong kho thì tự điền vật tư và hạn, không có thì KTV nhập tay (A-77)
+	scanIndicatorLot(raw) {
+		return this.request(T2_INDICATOR_LOT, { raw, station: this.station.station }, (res) => {
+			if (!this.indicator) return;
+			this.indicator.lot = res.lot;
+			this.indicator.fromStock = Boolean(res.found && res.expiry_date);
+			if (res.found) {
+				this.indicator.item = res.item;
+				this.indicator.expiry = res.expiry_date || "";
+				this.notice = {
+					variant: "ok",
+					title: __("Indicator lot {0} scanned", [res.lot]),
+				};
+			} else {
+				this.indicator.expiry = "";
+				this.notice = {
+					variant: "info",
+					title: __("Lot {0} is not in stock", [res.lot]),
+					action: __("Choose the item and enter the expiry date."),
+				};
+			}
+			this.show();
+		});
+	}
+
+	indicatorArgs() {
+		const row = this.indicator;
+		return {
+			item: row.item || null,
+			lot: row.lot || null,
+			lot_expiry: row.expiry || null,
+			result: row.result,
+			photo: row.photo || null,
+		};
 	}
 
 	oldMachine() {
@@ -816,11 +881,11 @@ class T2Wash {
 		);
 	}
 
-	async uploadFile(input) {
+	async uploadFile(input, holder = this.form, key = "file") {
 		const file = input.files && input.files[0];
-		if (!file || !this.form) return;
+		if (!file || !holder) return;
 		const version = this.station.sessionVersion;
-		this.form.uploading = true;
+		holder.uploading = true;
 		this.show();
 		try {
 			const body = new FormData();
@@ -836,7 +901,7 @@ class T2Wash {
 			const data = await response.json().catch(() => ({}));
 			if (version !== this.station.sessionVersion || !this.form) return;
 			if (!response.ok || !data.message || !data.message.file_url) throw new Error("upload");
-			this.form.file = data.message.file_url;
+			holder[key] = data.message.file_url;
 			this.notice = { variant: "ok", title: __("Photo attached: {0}", [file.name]) };
 		} catch (error) {
 			if (version !== this.station.sessionVersion || !this.form) return;
@@ -847,7 +912,7 @@ class T2Wash {
 				action: __("Check the connection and choose the photo again."),
 			};
 		} finally {
-			if (this.form) this.form.uploading = false;
+			holder.uploading = false;
 		}
 		this.show();
 	}
@@ -855,7 +920,16 @@ class T2Wash {
 	async recordResult() {
 		if (!this.unload || !this.unload.context || this.busy || this.offline) return;
 		const verdict = this.verdict;
-		if (!verdict.result || !verdict.clean) {
+		const indicator = this.indicator;
+		if (indicator && (!verdict.result || !indicator.result)) {
+			return this.blocked({
+				title: __("Choose the result"),
+				reason: __("Choose Pass or Fail for the cycle and for the indicator."),
+				action: __("Tap the result buttons, then record again."),
+			});
+		}
+		if (indicator && indicator.uploading) return;
+		if (!indicator && (!verdict.result || !verdict.clean)) {
 			return this.blocked({
 				title: __("Choose the result"),
 				reason: __("Choose Pass or Fail for the cycle and for the cleaning test."),
@@ -872,7 +946,8 @@ class T2Wash {
 			});
 		}
 		let proof = null;
-		if (verdict.result === "Pass" && this.oldMachine()) {
+		const allPass = verdict.result === "Pass" && (!indicator || indicator.result === "Pass");
+		if (allPass && this.oldMachine()) {
 			proof = await this.reviewerProof();
 			if (!proof) return;
 		}
@@ -881,7 +956,8 @@ class T2Wash {
 			{
 				...this.unloadArgs(),
 				result: verdict.result,
-				clean_test: verdict.clean,
+				clean_test: indicator ? null : verdict.clean,
+				indicator: indicator ? this.indicatorArgs() : null,
 				reviewer_proof: proof,
 				note: null,
 			},
@@ -889,6 +965,7 @@ class T2Wash {
 				this.unload = { batch: res.batch, result: res };
 				this.form = null;
 				this.verdict = null;
+				this.indicator = null;
 				this.notice = null;
 				this.loadOverview(true);
 				this.show();
@@ -945,9 +1022,15 @@ class T2Wash {
 				this.verdict[data.field] = data.value;
 				this.show();
 			},
+			"t2-indicator-result": () => {
+				if (!this.indicator) return;
+				this.indicator.result = data.value;
+				this.show();
+			},
 			"t2-record": () => this.recordResult(),
 			"t2-unload-reset": () => {
 				this.unload = null;
+				this.indicator = null;
 				this.notice = null;
 				this.show();
 			},
@@ -971,6 +1054,10 @@ class T2Wash {
 			this.show();
 		} else if (target.id === "tc-t2-file") {
 			this.uploadFile(target);
+		} else if (target.id === "tc-t2-indicator-photo") {
+			this.uploadFile(target, this.indicator, "photo");
+		} else if (target.dataset.indicator && this.indicator) {
+			this.indicator[target.dataset.indicator] = target.value;
 		} else if (target.dataset.form && this.form) {
 			const field = target.dataset.form;
 			this.form[field] = target.type === "checkbox" ? target.checked : target.value;
@@ -996,6 +1083,8 @@ class T2Wash {
 			this.form[target.dataset.form] = target.value;
 		} else if (target.dataset.verdict && this.verdict && target.type !== "checkbox") {
 			this.verdict[target.dataset.verdict] = target.value;
+		} else if (target.dataset.indicator && this.indicator) {
+			this.indicator[target.dataset.indicator] = target.value;
 		}
 	}
 
@@ -1039,7 +1128,8 @@ class T2Wash {
 
 	updatePlaceholder() {
 		let text = __("Scan the washer QR code...");
-		if (this.mode === "unload")
+		if (this.mode === "unload" && this.indicator) text = __("Scan the indicator lot...");
+		else if (this.mode === "unload")
 			text = __("Scan the washer QR code, then the batch QR code...");
 		else if (this.load)
 			text = __("Scan each Set ID into the washer... (scan HOAN-THANH-NAP when done)");
@@ -1468,6 +1558,7 @@ class T2Wash {
 		)}</dd>
 				<dt>${esc(__("Chemicals"))}</dt><dd>${esc(chemicals || "-")}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(this.dataText(batch))}</dd>
+				${this.indicatorRowsHtml(batch.indicator)}
 				${
 					batch.cycle_result
 						? `<dt>${esc(__("Result"))}</dt><dd>${esc(
@@ -1479,8 +1570,34 @@ class T2Wash {
 		</section>`;
 	}
 
+	indicatorRowsHtml(row) {
+		if (!row) return "";
+		const lot = [
+			row.item,
+			row.lot,
+			row.lot_expiry ? __("expires {0}", [t2Date(row.lot_expiry)]) : "",
+		]
+			.filter(Boolean)
+			.join(" · ");
+		const reader = [row.read_by_name || row.read_by, t2DateTime(row.read_at)]
+			.filter(Boolean)
+			.join(" · ");
+		return `<dt>${esc(__("Wash indicator"))}</dt><dd>${esc(
+			__(row.result, null, "Step Gate Result")
+		)} · <span class="tc-mono">${esc(lot)}</span></dd>
+			<dt>${esc(__("Read by"))}</dt><dd>${esc(reader)}</dd>
+			${
+				row.photo
+					? `<dt>${esc(__("Indicator photo"))}</dt><dd><a href="${esc(
+							row.photo
+					  )}" target="_blank" rel="noopener">${esc(__("Open photo"))}</a></dd>`
+					: ""
+			}`;
+	}
+
 	statusBadge(status) {
-		const variant = { Running: "", Passed: "g", Failed: "r" }[status] || "";
+		const variant =
+			{ Running: "", "Awaiting Result": "o", Passed: "g", Failed: "r" }[status] || "";
 		return `<span class="tc-badge${variant ? " tc-badge-" + variant : ""}">${esc(
 			__(status, null, "Wash Batch")
 		)}</span>`;
@@ -1552,11 +1669,11 @@ class T2Wash {
 	}
 
 	// -- chế độ dỡ --
-	batchCardHtml(row) {
+	batchCardHtml(row, status = "Running") {
 		return `<section class="tc-t4-block tc-t2-batch" data-batch="${esc(row.batch)}">
 			<div class="tc-res-head">
 				<b class="tc-code">${esc(row.batch)}</b>
-				${this.statusBadge("Running")}
+				${this.statusBadge(status)}
 			</div>
 			<p>${esc(
 				__("Wash batch · {0} · {1}", [
@@ -1589,11 +1706,26 @@ class T2Wash {
 		return rows.map((row) => this.batchCardHtml(row)).join("");
 	}
 
+	// Lô đã dỡ, chờ đọc chỉ thị (A-77): quét QR lô để mở form đọc
+	awaitingHtml(skip) {
+		const rows = ((this.overview && this.overview.awaiting) || []).filter(
+			(row) => row.batch !== skip
+		);
+		if (!rows.length) return "";
+		return `<section class="tc-t4-block tc-t2-awaiting">
+			<h3>${esc(
+				__("Batches waiting for the indicator ({0}) - scan the batch QR code to read", [
+					rows.length,
+				])
+			)}</h3>
+		</section>${rows.map((row) => this.batchCardHtml(row, "Awaiting Result")).join("")}`;
+	}
+
 	// Lô vừa quét (form nhập tay / kết luận / kết quả) nằm ngay dưới ô quét, trên các lô đang chạy khác:
 	// KTV không phải cuộn qua danh sách và không xác nhận nhầm lô (≤ 3 chạm sau quét).
 	unloadHtml() {
 		const unload = this.unload;
-		const list = (skip) => `<section class="tc-t4-block">
+		const list = (skip) => `${this.awaitingHtml(skip)}<section class="tc-t4-block">
 			<h3>${esc(__("Running batches - unload: scan the washer QR code, then the batch QR code"))}</h3>
 		</section>${this.runningHtml(skip)}`;
 		if (!unload) return list();
@@ -1602,17 +1734,22 @@ class T2Wash {
 	}
 
 	activeUnloadHtml(unload) {
-		const row = ((this.overview && this.overview.running) || []).find(
-			(item) => item.batch === unload.batch
-		);
-		let html = row ? this.batchCardHtml(row) : "";
+		const awaiting = unload.context && unload.context.status === "Awaiting Result";
+		const row = ((this.overview && this.overview.running) || [])
+			.concat((this.overview && this.overview.awaiting) || [])
+			.find((item) => item.batch === unload.batch);
+		let html = row ? this.batchCardHtml(row, awaiting ? "Awaiting Result" : "Running") : "";
 		const scanned = `<section class="tc-t4-block tc-t2-unload">
 			<h3>${esc(__("Unloading batch {0}", [unload.batch]))}</h3>
-			<p>${esc(__("Washer QR code"))}: <b>${esc(
-			unload.equipmentRaw ? __("Scanned") : __("Not scanned")
-		)}</b> · ${esc(__("Batch QR code"))}: <b>${esc(
-			unload.batchRaw ? __("Scanned") : __("Not scanned")
-		)}</b></p>
+			${
+				awaiting
+					? ""
+					: `<p>${esc(__("Washer QR code"))}: <b>${esc(
+							unload.equipmentRaw ? __("Scanned") : __("Not scanned")
+					  )}</b> · ${esc(__("Batch QR code"))}: <b>${esc(
+							unload.batchRaw ? __("Scanned") : __("Not scanned")
+					  )}</b></p>`
+			}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-unload-reset">${esc(
 				__("Choose another batch")
 			)}</button></div>
@@ -1763,7 +1900,9 @@ class T2Wash {
 		const pass = __("Pass", null, "Step Gate Result");
 		const fail = __("Fail", null, "Step Gate Result");
 		const pin =
-			this.oldMachine() && verdict.result === "Pass"
+			this.oldMachine() &&
+			verdict.result === "Pass" &&
+			(!this.indicator || this.indicator.result === "Pass")
 				? `<div class="tc-field">
 					<label for="tc-t2-pin">${esc(__("R02 PIN (washer without connection or printout)"))}</label>
 					<input id="tc-t2-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off"
@@ -1784,10 +1923,14 @@ class T2Wash {
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cycle result (applies to every set)"))}">
 				${chip("result", "Pass", pass)}${chip("result", "Fail", fail)}
 			</div>
-			<h3>${esc(__("Cleaning test"))}</h3>
+			${
+				this.indicator
+					? this.indicatorHtml(context)
+					: `<h3>${esc(__("Cleaning test"))}</h3>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cleaning test"))}">
 				${chip("clean", "Pass", pass)}${chip("clean", "Fail", fail)}
-			</div>
+			</div>`
+			}
 			${pin}
 			<label class="tc-t2-confirm">
 				<input type="checkbox" class="tc-check" data-verdict="confirmed"${
@@ -1806,6 +1949,77 @@ class T2Wash {
 				)}>${esc(label)}</button>
 			</div>
 		</section>`;
+	}
+
+	// Form Đọc chỉ thị mẻ rửa (A-77); người đọc là thẻ đang đăng nhập, giờ đọc do server ghi lúc bấm Ghi kết quả
+	indicatorHtml(context) {
+		const row = this.indicator;
+		const session = this.station.session || {};
+		const items = (context.indicator_items || []).slice();
+		if (row.item && !items.some((entry) => entry.item === row.item))
+			items.push({ item: row.item, item_name: "" });
+		const options = items
+			.map(
+				(entry) =>
+					`<option value="${esc(entry.item)}"${
+						entry.item === row.item ? " selected" : ""
+					}>${esc([entry.item, entry.item_name].filter(Boolean).join(" "))}</option>`
+			)
+			.join("");
+		const readonly = row.fromStock ? " readonly" : "";
+		const chip = (value, label) =>
+			`<button type="button" class="tc-chip" data-action="t2-indicator-result" data-value="${value}"
+				aria-pressed="${row.result === value ? "true" : "false"}">${esc(label)}</button>`;
+		const required = Boolean(context.indicator_photo_required);
+		return `<div class="tc-t2-indicator">
+			<h3>${esc(__("Read the wash indicator"))}</h3>
+			<div class="tc-t4-row">
+				<div class="tc-field">
+					<label for="tc-t2-indicator-item">${esc(__("Indicator item"))} *</label>
+					<select id="tc-t2-indicator-item" data-indicator="item"${t2Disabled(row.fromStock)}>
+						<option value="">${esc(__("Choose"))}</option>${options}
+					</select>
+				</div>
+				<div class="tc-field">
+					<label for="tc-t2-indicator-lot">${esc(__("Lot"))} *</label>
+					<input id="tc-t2-indicator-lot" type="text" autocomplete="off" data-indicator="lot"
+						value="${esc(row.lot)}"${readonly}>
+				</div>
+				<div class="tc-field">
+					<label for="tc-t2-indicator-expiry">${esc(__("Lot expiry date"))} *</label>
+					<input id="tc-t2-indicator-expiry" type="date" data-indicator="expiry"
+						value="${esc(row.expiry)}"${readonly}>
+				</div>
+			</div>
+			<h3>${esc(__("Indicator result"))}</h3>
+			<div class="tc-chips" role="group" aria-label="${esc(__("Indicator result"))}">
+				${chip("Pass", __("Pass", null, "Step Gate Result"))}${chip(
+			"Fail",
+			__("Fail", null, "Step Gate Result")
+		)}
+			</div>
+			<div class="tc-field">
+				<label for="tc-t2-indicator-photo">${esc(__("Indicator photo"))}${
+			required ? " *" : ` (${esc(__("optional"))})`
+		}</label>
+				<input id="tc-t2-indicator-photo" type="file" accept="image/*" capture="environment"${t2Disabled(
+					row.uploading || this.offline
+				)}>
+				${
+					row.photo
+						? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
+								__("Photo attached")
+						  )}</p>`
+						: ""
+				}
+			</div>
+			<p>${esc(
+				__(
+					"Read by {0} {1} (card signed in); the reading time is recorded with the result.",
+					[session.employee || "", session.employee_name || ""]
+				)
+			)}</p>
+		</div>`;
 	}
 
 	resultSummaryHtml(res) {

@@ -3,8 +3,9 @@
 - Quy tắc: `check_equipment_ready`, `scan_machine`, `admit_set`, `suggest_chemical_lots`, `check_chemical_lot`,
   `redo_queue`, `waiting_sets`.
 - Dịch vụ trạm T2: `start` (Hoàn thành nạp: sinh mã lô, gắn bộ, in nhãn QR); `lookup` (tra cứu lô);
-  `scan_unload`, `unload_context` (dỡ lô: QR máy + QR lô), `save_manual_data` (dữ liệu chu trình nhập tay có xác
-  nhận), `set_result` (kết luận Đạt/Không đạt áp cho mọi bộ, đóng lô).
+  `scan_unload`, `unload_context` (dỡ lô: QR máy + QR lô; chương trình bắt buộc chỉ thị thì lô sang Chờ đọc chỉ thị,
+  A-77), `save_manual_data` (dữ liệu chu trình nhập tay có xác nhận), `indicator_lot` (tra lô chỉ thị), `set_result`
+  (kết luận Đạt/Không đạt áp cho mọi bộ, ghi chỉ thị, đóng lô).
 
 M2 không import `tracecore.equipment`/`tracecore.inventory` (lint R1): máy, chương trình, lô hóa chất đọc bằng tên
 DocType, như `packing.resolve_ci_batch`. Trạng thái Set Unit chỉ đổi qua `core.step_gate`; lô chỉ đổi ở đây bằng cờ
@@ -35,7 +36,11 @@ RESULT_SAVEPOINT = "tc_wash_result"
 WASH_EQUIPMENT_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
 EQUIPMENT_CHECKS_HOOK = "tracecore_wash_equipment_checks"
 RUNNING = "Running"
+AWAITING = "Awaiting Result"  # đã dỡ, chờ đọc chỉ thị (A-77): máy rảnh, bộ vẫn thuộc lô, chưa có cổng T2
+OPEN_STATUSES = (RUNNING, AWAITING)
 RESULTS = ("Pass", "Fail")
+WASH_INDICATOR = "wash_indicator"
+INDICATOR_GROUPS = ("Chemical Indicator", "Test")  # Item.tc_item_group_cssd chọn được làm chỉ thị rửa
 CLOSED_STATUS = {"Pass": "Passed", "Fail": "Failed"}
 REVIEWER_ROLE = "TC R02"  # xác nhận Đạt cho máy cũ không kết nối, không bản in (Q7)
 AFTER_COMPLETE_HOOK = "tracecore_after_wash_complete"
@@ -281,18 +286,20 @@ def _t2_result(set_unit):
 
 
 def _running_batch_of(set_unit, for_update=False):
-	"""Tên lô rửa đang chạy chứa `set_unit`, hoặc None.
+	"""Tên lô rửa đang chạy hoặc chờ đọc chỉ thị chứa `set_unit`, hoặc None.
 
 	for_update: đọc có khóa để thấy lô vừa được request khác commit (snapshot REPEATABLE READ có thể cũ, xem
 	docstring của `core.step_gate`); nơi gọi đã khóa Set Unit trước nên chỉ một request vào được tại đây.
 	"""
-	rows = frappe.db.sql(_RUNNING_BATCH_LOCKED_SQL if for_update else _RUNNING_BATCH_SQL, (set_unit, RUNNING))
+	rows = frappe.db.sql(
+		_RUNNING_BATCH_LOCKED_SQL if for_update else _RUNNING_BATCH_SQL, (set_unit, OPEN_STATUSES)
+	)
 	return rows[0][0] if rows else None
 
 
 _RUNNING_BATCH_SQL = """select batch.name from `tabWash Batch Set Unit` row
 	join `tabWash Batch` batch on batch.name = row.parent
-	where row.set_unit = %s and batch.status = %s and batch.docstatus = 0
+	where row.set_unit = %s and batch.status in %s and batch.docstatus = 0
 	limit 1"""
 _RUNNING_BATCH_LOCKED_SQL = _RUNNING_BATCH_SQL + " for update"
 
@@ -393,14 +400,14 @@ def waiting_sets():
 			and not exists (
 				select 1 from `tabWash Batch Set Unit` row
 				join `tabWash Batch` batch on batch.name = row.parent
-				where row.set_unit = unit.name and batch.status = %(running)s and batch.docstatus = 0
+				where row.set_unit = unit.name and batch.status in %(open)s and batch.docstatus = 0
 			)
 		order by unit.name asc""",
 		{
 			"step": STEP,
 			"statuses": step_gate.STATION_STATUSES[STEP],
 			"pending": step_gate.PENDING,
-			"running": RUNNING,
+			"open": OPEN_STATUSES,
 		},
 		as_dict=True,
 	)
@@ -408,9 +415,18 @@ def waiting_sets():
 
 def running_batches():
 	"""Lô đang chạy (chưa dỡ) để màn T2 hiện thẻ "Lô đang chạy" (SCR-06): máy, chương trình, bộ, dữ liệu."""
+	return _batches_in(RUNNING)
+
+
+def awaiting_batches():
+	"""Lô đã dỡ, chờ đọc chỉ thị (A-77), cùng dạng `running_batches`."""
+	return _batches_in(AWAITING)
+
+
+def _batches_in(status):
 	rows = frappe.get_all(
 		"Wash Batch",
-		filters={"status": RUNNING, "docstatus": 0},
+		filters={"status": status, "docstatus": 0},
 		fields=["name", "equipment", "program", "load_completed_at", "data_complete", "needs_review"],
 		order_by="load_completed_at asc, name asc",
 	)
@@ -805,6 +821,9 @@ def _describe(doc):
 		"clean_test_result": doc.clean_test_result,
 		"unloaded_at": doc.unload_scan_at,
 		"unloaded_by": _employee(doc.unloaded_by),
+		"indicator_required": cint(doc.indicator_required),
+		"indicator_photo_required": cint(doc.indicator_photo_required),
+		"indicator": wash_indicator_of(doc.name),
 		"duration": cycle_time.for_doc(doc),
 		"reviewer": doc.reviewer,
 		"result_note": doc.result_note,
@@ -858,8 +877,8 @@ def _check_unload_station(station, machine):
 	)
 
 
-def _require_running(doc):
-	if doc.status != RUNNING or doc.docstatus != 0:
+def _require_open(doc):
+	if doc.status not in OPEN_STATUSES or doc.docstatus != 0:
 		raise _blocked(
 			"BATCH_NOT_RUNNING",
 			_("Wash batch is closed"),
@@ -899,7 +918,10 @@ def _open_for_unload(batch, equipment_raw, batch_raw, station, for_update=False)
 	doc = _batch_doc(batch, for_update=for_update)
 	machine = frappe.db.get_value("Equipment", doc.equipment, list(EQUIPMENT_FIELDS), as_dict=True)
 	_check_unload_station(station, machine)
-	_require_running(doc)
+	_require_open(doc)
+	if doc.status == AWAITING:  # đã kiểm QR máy lúc dỡ; đọc sau chỉ cần QR lô vì máy có thể đang chạy lô khác
+		_require_batch_qr(doc, batch_raw)
+		return doc, machine
 	if _scan_kind(doc, equipment_raw) != "equipment" or _scan_kind(doc, batch_raw) != "wash_batch":
 		raise _blocked(
 			"SCAN_INVALID",
@@ -912,6 +934,16 @@ def _open_for_unload(batch, equipment_raw, batch_raw, station, for_update=False)
 	return doc, machine
 
 
+def _require_batch_qr(doc, batch_raw):
+	if _scan_kind(doc, batch_raw) != "wash_batch":
+		raise _blocked(
+			"SCAN_INVALID",
+			_("Scan the batch code"),
+			_("Batch {0} is waiting for its indicator; its QR code is needed to read it.").format(doc.name),
+			_("Scan the QR code of batch {0}.").format(doc.name),
+		)
+
+
 def scan_unload(batch, raw, station):
 	"""Kiểm MỘT mã quét khi dỡ lô `batch` (Q15): ``{"ok": True, "kind": "equipment" | "wash_batch"}``.
 
@@ -921,14 +953,176 @@ def scan_unload(batch, raw, station):
 	doc = _batch_doc(batch)
 	machine = frappe.db.get_value("Equipment", doc.equipment, list(EQUIPMENT_FIELDS), as_dict=True)
 	_check_unload_station(station, machine)
-	_require_running(doc)
-	return {"ok": True, "kind": _scan_kind(doc, raw)}
+	_require_open(doc)
+	kind = _scan_kind(doc, raw)
+	if doc.status == AWAITING:
+		return {"ok": True, "kind": kind, "awaiting": True}  # đọc sau: màn T2 mở form ngay sau QR lô
+	return {"ok": True, "kind": kind}
 
 
-def unload_context(batch, equipment_raw, batch_raw, station):
-	"""Ngữ cảnh dỡ lô sau khi đã quét QR máy và QR lô: `lookup` + ``parameter_schema`` của chương trình."""
-	doc, _machine = _open_for_unload(batch, equipment_raw, batch_raw, station)
-	return {**_describe(doc), "parameter_schema": _parameters(doc.program)}
+def unload_context(batch, equipment_raw, batch_raw, station, employee=None, client_ts=None):
+	"""Ngữ cảnh dỡ lô sau khi đã quét QR máy và QR lô: `lookup` + ``parameter_schema`` của chương trình.
+
+	Chương trình bắt buộc chỉ thị (A-77): lô `Running` sang `Awaiting Result`, ghi người và giờ dỡ, chốt cấu hình vào lô;
+	máy rảnh để nạp lô mới nhưng bộ vẫn thuộc lô và chưa có cổng T2 nên `step_gate` chặn T3. Gọi lại không đổi gì thêm.
+	"""
+	doc, _machine = _open_for_unload(batch, equipment_raw, batch_raw, station, for_update=True)
+	if doc.status == RUNNING and _program_indicator(doc.program)[0]:
+		_mark_unloaded(doc, employee, client_ts or client_time.utc_now())
+	return {
+		**_describe(doc),
+		"parameter_schema": _parameters(doc.program),
+		"indicator_items": _indicator_items() if cint(doc.indicator_required) else [],
+	}
+
+
+def _program_indicator(program):
+	"""``(bắt buộc chỉ thị, bắt buộc ảnh)`` của chương trình rửa, 0/1 (A-77)."""
+	row = frappe.db.get_value(
+		"Process Program", program, ["requires_wash_indicator", "requires_wash_indicator_photo"]
+	)
+	return (cint(row[0]), cint(row[1])) if row else (0, 0)
+
+
+def _mark_unloaded(doc, employee, client_ts):
+	required, photo = _program_indicator(doc.program)
+	doc.update(
+		{
+			"status": AWAITING,
+			"indicator_required": required,
+			"indicator_photo_required": photo,
+			"unload_scan_equipment": doc.equipment,
+			"unload_scan_at": _system_time(client_ts),
+			"unloaded_by": employee,
+		}
+	)
+	doc.flags.tc_washing = True
+	doc.save(ignore_permissions=True)
+
+
+# --- Chỉ thị rửa (A-77, FR-M2-04.8 đến .10) -------------------------------------------------------------------
+
+
+def _indicator_items():
+	return [
+		{"item": row.name, "item_name": row.item_name}
+		for row in frappe.get_all(
+			"Item",
+			filters={"tc_item_group_cssd": ("in", INDICATOR_GROUPS), "disabled": 0},
+			fields=["name", "item_name"],
+			order_by="name asc",
+		)
+	]
+
+
+def indicator_lot(raw):
+	"""Tra lô chỉ thị quét trên màn T2: có trong ERPNext thì tự điền vật tư và hạn, không có thì KTV nhập tay."""
+	lot = raw.strip() if isinstance(raw, str) else ""
+	row = frappe.db.get_value("Batch", lot, ["name", "item", "expiry_date"], as_dict=True) if lot else None
+	if not row:
+		return {"found": False, "lot": lot}
+	return {
+		"found": True,
+		"lot": row.name,
+		"item": row.item,
+		"item_name": frappe.db.get_value("Item", row.item, "item_name"),
+		"expiry_date": row.expiry_date,
+	}
+
+
+def wash_indicator_of(batch):
+	"""Kết quả chỉ thị của lô rửa `batch` (dict) hoặc None; dùng ở thẻ lô và truy vết."""
+	row = frappe.db.get_value(
+		"Load Indicator Result",
+		{"wash_batch": batch},
+		["indicator_item", "lot", "lot_expiry", "result", "photo", "read_by", "read_at"],
+		as_dict=True,
+	)
+	if not row:
+		return None
+	return {
+		"item": row.indicator_item,
+		"lot": row.lot,
+		"lot_expiry": row.lot_expiry,
+		"result": row.result,
+		"photo": row.photo,
+		"read_by": row.read_by,
+		"read_by_name": frappe.db.get_value("Employee", row.read_by, "employee_name")
+		if row.read_by
+		else None,
+		"read_at": row.read_at,
+	}
+
+
+def _lot_missing():
+	return _blocked(
+		"INDICATOR_LOT_MISSING",
+		_("A Pass cannot be recorded"),
+		_("The indicator item, lot or expiry date is missing."),
+		_("Scan the indicator lot, or enter the item, the lot and the expiry date."),
+	)
+
+
+def _checked_indicator(doc, indicator, photo_required):
+	"""Chỉ thị đã kiểm cho lô `doc`: Đạt cần vật tư, lô, hạn còn đến ngày lô chạy và ảnh nếu bắt buộc; Không đạt ghi được ngay."""
+	result = indicator.get("result")
+	if result not in RESULTS:
+		raise _result_invalid(_("The indicator result must be Pass or Fail."))
+	item = indicator.get("item") or None
+	lot = (indicator.get("lot") or "").strip() or None
+	photo = indicator.get("photo") or None
+	expiry = None
+	with contextlib.suppress(Exception):
+		expiry = getdate(indicator["lot_expiry"]) if indicator.get("lot_expiry") else None
+	batch = frappe.db.get_value("Batch", lot, ["item", "expiry_date"], as_dict=True) if lot else None
+	if batch:  # lô có trong kho: hạn và vật tư theo kho, không theo màn hình
+		if item and item != batch.item:
+			raise _blocked(
+				"INDICATOR_LOT_INVALID",
+				_("Indicator lot is not valid"),
+				_("Lot {0} belongs to item {1}, not {2}.").format(lot, batch.item, item),
+				_("Scan a lot of the indicator in use, or choose the right item."),
+			)
+		item = batch.item
+		expiry = getdate(batch.expiry_date) if batch.expiry_date else expiry
+	if result == "Pass":
+		if not (item and lot and expiry):
+			raise _lot_missing()
+		used_on = getdate(doc.started_at)
+		if expiry < used_on:
+			raise _blocked(
+				"INDICATOR_EXPIRED",
+				_("A Pass cannot be recorded"),
+				_("Indicator lot {0} expired on {1}, before the batch ran on {2}.").format(
+					lot, formatdate(expiry), formatdate(used_on)
+				),
+				_("Use an indicator that has not expired: wash the batch again or record Fail."),
+			)
+		if photo_required and not photo:
+			raise _blocked(
+				"INDICATOR_PHOTO_MISSING",
+				_("A Pass cannot be recorded"),
+				_("This program requires a photo of the indicator."),
+				_("Take a photo of the indicator, then record the result."),
+			)
+	return {"result": result, "indicator_item": item, "lot": lot, "lot_expiry": expiry, "photo": photo}
+
+
+def _record_indicator(doc, checked, reader, station, at):
+	row = frappe.get_doc(
+		{
+			"doctype": "Load Indicator Result",
+			"wash_batch": doc.name,
+			"indicator": WASH_INDICATOR,
+			"read_at": at,
+			"read_by": reader,
+			"recorded_by_user": frappe.session.user,
+			"station": station if isinstance(station, str) else None,
+			**checked,
+		}
+	)
+	row.flags.tc_washing = True
+	row.insert(ignore_permissions=True)
 
 
 # --- Dữ liệu chu trình nhập tay có xác nhận (FR-M2-24.3/.5, BRU-REP-015) --------------------------------------
@@ -1089,14 +1283,19 @@ def set_result(
 	client_ts=None,
 	session=None,
 	unloaded_by=None,
+	indicator=None,
 ):
-	"""Kết luận lô `Running`: ghi cổng T2 cùng một kết quả cho MỌI bộ và đóng lô (ghi sổ) trong một savepoint.
+	"""Kết luận lô `Running` hoặc `Awaiting Result`: ghi cổng T2 cùng một kết quả cho MỌI bộ và đóng lô (ghi sổ) trong một savepoint.
 
 	Kiểm lại trạm và hai mã quét (Q15); chưa đủ dữ liệu chu trình → DATA_INCOMPLETE cho cả Đạt lẫn Không đạt (Q6,
 	FR-M2-04.6). Đạt cần test làm sạch Đạt (Q14) và, với máy không kết nối và không bản in, PIN proof của R02 trên
 	phiên `session` (Q7). Không đạt: mọi bộ về Xử lý lại, ``nc_pending = 1``, Audit Log ``WashFailed`` và hook
-	`tracecore_after_wash_failed` (NC tự tạo là FEAT-030, Q22); Đạt gọi `tracecore_after_wash_complete`. `unloaded_by` là Employee dỡ lô (A-73). Lỗi giữa
-	chừng hoàn tác về savepoint: không bộ nào có cổng mới, lô vẫn `Running`.
+	`tracecore_after_wash_failed` (NC tự tạo là FEAT-030, Q22); Đạt gọi `tracecore_after_wash_complete`. `unloaded_by` là Employee đang thao tác: người dỡ
+	lô (A-73, giữ người đã ghi lúc dỡ nếu lô đang chờ đọc) và người đọc chỉ thị. Lỗi giữa chừng hoàn tác về savepoint:
+	không bộ nào có cổng mới, lô giữ nguyên trạng thái.
+
+	`indicator` (A-77) là ``{"item", "lot", "lot_expiry", "result", "photo"}``: kết quả chỉ thị thay `clean_test`, Không đạt
+	làm cả lô Không đạt. Chương trình bắt buộc chỉ thị mà chưa có → INDICATOR_REQUIRED khi ghi Đạt; xem `_checked_indicator`.
 
 	Trả ``{"batch", "result", "sets": [{"set_id", "status", "redo_count"}], "incident_id"}``; ``incident_id`` là NC tự
 	tạo khi Không đạt (FEAT-030), None khi Đạt.
@@ -1117,6 +1316,7 @@ def set_result(
 			client_ts,
 			session,
 			unloaded_by,
+			indicator,
 		)
 	except Exception:
 		with contextlib.suppress(Exception):
@@ -1136,8 +1336,18 @@ def _set_result(
 	client_ts,
 	session,
 	unloaded_by,
+	indicator,
 ):
 	doc, machine = _open_for_unload(batch, equipment_raw, batch_raw, station, for_update=True)
+	if doc.status == AWAITING:
+		required, photo_required = cint(doc.indicator_required), cint(doc.indicator_photo_required)
+	else:
+		required, photo_required = _program_indicator(doc.program)
+	checked = _checked_indicator(doc, indicator, photo_required) if indicator else None
+	if checked:
+		clean_test = checked["result"]
+		if checked["result"] == "Fail":
+			result = "Fail"
 	if result not in RESULTS or clean_test not in RESULTS:
 		raise _result_invalid(_("The result and the cleaning test must each be Pass or Fail."))
 	if not cint(doc.data_complete):
@@ -1152,6 +1362,13 @@ def _set_result(
 				"Enter the cycle data from the washer screen or printout and confirm it, then record the result."
 			),
 			items=(data or {}).get("missing") or [_("cycle data")],
+		)
+	if required and result == "Pass" and not checked:
+		raise _blocked(
+			"INDICATOR_REQUIRED",
+			_("Wash indicator is required"),
+			_("Wash batch {0} has no indicator result yet, so it cannot pass.").format(doc.name),
+			_("Read the indicator and record the result."),
 		)
 	reviewer = None
 	if result == "Pass":
@@ -1170,14 +1387,16 @@ def _set_result(
 			"clean_test_result": clean_test,
 			"result_source": "Manual",
 			"unload_scan_equipment": doc.equipment,
-			"unload_scan_at": at,
-			"unloaded_by": unloaded_by,
+			"unload_scan_at": doc.unload_scan_at or at,
+			"unloaded_by": doc.unloaded_by or unloaded_by,
 			"result_note": note or None,
 			"reviewer": reviewer,
 			"reviewed_at": at if reviewer else None,
 			"nc_pending": 1 if result == "Fail" else 0,
 		}
 	)
+	if checked:
+		_record_indicator(doc, checked, unloaded_by, station, at)
 	doc.flags.tc_washing = True
 	doc.flags.ignore_permissions = True  # quyền thao tác đã kiểm ở RPC theo role trạm (Q20)
 	doc.submit()

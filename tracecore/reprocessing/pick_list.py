@@ -12,7 +12,7 @@ from frappe.utils import format_datetime, today
 from tracecore.core import step_gate
 from tracecore.core.pick_page import join_label, like, page_of
 
-RUNNING = "Running"
+OPEN_BATCH = ("Running", "Awaiting Result")  # lô rửa còn giữ bộ (A-77)
 # bước → (trạng thái Pack, cột thời điểm)
 PACK_STEPS = {
 	"T5": ("Packed", "pack.packed_at"),
@@ -56,8 +56,8 @@ def _set_query(step, department):
 		if step == "T2":  # bộ trong lô rửa đang chạy không chọn lại được
 			sql += """ and not exists (
 				select 1 from `tabWash Batch Set Unit` row join `tabWash Batch` batch on batch.name = row.parent
-				where row.set_unit = unit.name and batch.status = %(running)s and batch.docstatus = 0)"""
-			values["running"] = RUNNING
+				where row.set_unit = unit.name and batch.status in %(open_batch)s and batch.docstatus = 0)"""
+			values["open_batch"] = OPEN_BATCH
 		if step == "T4":  # đã có Cycle ID hiệu lực thì phải in lại / hủy nhãn, không đóng gói tiếp
 			sql += " and ifnull(unit.active_cycle_id, '') = ''"
 	search = ("unit.name", "set_type.set_type_name")

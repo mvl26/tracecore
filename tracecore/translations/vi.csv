@@ -7193,6 +7193,59 @@ Cost per load and per set.,Giá thành theo mẻ và theo bộ.,TraceCore Launch
 "Catalog import, notifications and settings.","Import danh mục, thông báo và cài đặt.",TraceCore Launcher
 Audit log and audit trail.,Nhật ký và vết kiểm toán.,TraceCore Launcher
 This account cannot open station {0}.,Tài khoản này không được mở trạm {0}.,
+Awaiting Result,Chờ đọc chỉ thị,Wash Batch
+Requires Wash Indicator,Bắt buộc chỉ thị rửa,Process Program
+Requires Wash Indicator Photo,Bắt buộc ảnh chỉ thị rửa,Process Program
+Washers only. Off by default: unloading a batch then waits for the wash indicator to be read before the sets can go to assembly.,"Chỉ dùng cho máy rửa. Mặc định tắt: khi bật, dỡ lô xong phải chờ đọc chỉ thị rồi các bộ mới sang lắp ráp.",Process Program
+Wash Indicator Required,Bắt buộc chỉ thị rửa,Wash Batch
+Wash Indicator Photo Required,Bắt buộc ảnh chỉ thị rửa,Wash Batch
+Copied from the program when the batch is unloaded.,Lấy từ chương trình lúc dỡ lô.,Wash Batch
+Wash Batch,Lô rửa,Load Indicator Result
+Indicator Item,Vật tư chỉ thị,Load Indicator Result
+Lot Expiry,Hạn dùng của lô,Load Indicator Result
+Indicator Photo,Ảnh chỉ thị,Load Indicator Result
+Wash Indicator,Chỉ thị rửa,Recall Order Pack
+Wash indicator of the wash batch of this set in this cycle.,Chỉ thị rửa của lô rửa chứa bộ này trong chu trình này.,Recall Order Pack
+Wash Indicator,Chỉ thị rửa,Pack Trace
+Indicator Photo,Ảnh chỉ thị,Pack Trace
+An indicator result can only be recorded by the release or wash service.,Kết quả chỉ thị chỉ do dịch vụ giải phóng mẻ hoặc dịch vụ rửa ghi.,
+An indicator result belongs to exactly one load or one wash batch.,Mỗi kết quả chỉ thị thuộc đúng một mẻ hoặc một lô rửa.,
+Scan the batch code,Quét mã lô,
+Batch {0} is waiting for its indicator; its QR code is needed to read it.,Lô {0} đang chờ đọc chỉ thị; cần quét QR của lô để đọc.,
+Scan the QR code of batch {0}.,Quét QR của lô {0}.,
+A Pass cannot be recorded,Không ghi được Đạt,
+"The indicator item, lot or expiry date is missing.","Thiếu vật tư, lô hoặc hạn dùng của chỉ thị.",
+"Scan the indicator lot, or enter the item, the lot and the expiry date.","Quét mã lô chỉ thị, hoặc nhập vật tư, lô và hạn dùng.",
+The indicator result must be Pass or Fail.,Kết quả chỉ thị phải là Đạt hoặc Không đạt.,
+"Lot {0} belongs to item {1}, not {2}.","Lô {0} thuộc vật tư {1}, không phải {2}.",
+"Scan a lot of the indicator in use, or choose the right item.",Quét đúng lô của chỉ thị đang dùng hoặc chọn đúng vật tư.,
+"Indicator lot {0} expired on {1}, before the batch ran on {2}.","Chỉ thị lô {0} hết hạn ngày {1}, trước ngày lô chạy {2}.",
+Use an indicator that has not expired: wash the batch again or record Fail.,Dùng chỉ thị còn hạn: rửa lại lô hoặc ghi Không đạt.,
+This program requires a photo of the indicator.,Chương trình này bắt buộc ảnh chỉ thị.,
+"Take a photo of the indicator, then record the result.",Chụp ảnh chỉ thị rồi ghi kết quả.,
+Wash indicator is required,Bắt buộc có chỉ thị rửa,
+"Wash batch {0} has no indicator result yet, so it cannot pass.",Lô rửa {0} chưa có kết quả chỉ thị nên chưa ghi Đạt được.,
+Read the indicator and record the result.,Đọc chỉ thị rồi ghi kết quả.,
+indicator must be an object with a result.,indicator phải là đối tượng có result.,
+Lot {0},Lô {0},
+Batch {0} is waiting for its indicator to be read,Lô {0} đang chờ đọc chỉ thị,
+The sets do not go to assembly until a Pass is recorded.,Các bộ chưa sang lắp ráp cho đến khi ghi Đạt.,
+Indicator lot {0} scanned,Đã quét lô chỉ thị {0},
+Lot {0} is not in stock,Lô {0} không có trong kho,
+Choose the item and enter the expiry date.,Chọn vật tư và nhập hạn dùng.,
+Choose Pass or Fail for the cycle and for the indicator.,Chọn Đạt hoặc Không đạt cho chu trình và chỉ thị.,
+Scan the indicator lot...,Quét mã lô chỉ thị...,
+expires {0},HSD {0},
+Wash indicator,Chỉ thị rửa,
+Read by,Người đọc,
+Indicator photo,Ảnh chỉ thị,
+Open photo,Mở ảnh,
+Batches waiting for the indicator ({0}) - scan the batch QR code to read,Lô chờ đọc chỉ thị ({0}) - quét QR lô để đọc,
+Read the wash indicator,Đọc chỉ thị mẻ rửa,
+Indicator item,Vật tư chỉ thị,
+Indicator result,Kết quả chỉ thị,
+Read by {0} {1} (card signed in); the reading time is recorded with the result.,Người đọc {0} {1} (thẻ đang đăng nhập); giờ đọc ghi cùng kết quả.,
+wash_indicator,Chỉ thị rửa,Load Indicator Result
 GS1 Company Prefix,Mã doanh nghiệp GS1,
 GTIN Indicator Digit,Số chỉ thị GTIN,
 Next GTIN Item Reference,Mã tham chiếu tiếp theo,

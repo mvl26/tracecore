@@ -9,6 +9,7 @@
   "pack",
   "set_unit",
   "load",
+  "wash_indicator",
   "status_at_recall",
   "action",
   "department",
@@ -43,6 +44,13 @@
    "fieldtype": "Link",
    "label": "Sterilization Load",
    "options": "Sterilization Load",
+   "read_only": 1
+  },
+  {
+   "description": "Wash indicator of the wash batch of this set in this cycle.",
+   "fieldname": "wash_indicator",
+   "fieldtype": "Data",
+   "label": "Wash Indicator",
    "read_only": 1
   },
   {
@@ -124,7 +132,7 @@
   }
  ],
  "istable": 1,
- "modified": "2026-10-31 09:51:28.510143",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Recall Order Pack",

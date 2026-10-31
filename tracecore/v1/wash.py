@@ -129,6 +129,24 @@ def _flag(value):
 	return False
 
 
+def _indicator(value):
+	"""Chỉ thị rửa: dict hoặc chuỗi JSON của dict; rỗng = không gửi (A-77)."""
+	message = _("indicator must be an object with a result.")
+	if value in (None, "", "null"):
+		return None
+	if isinstance(value, str):
+		try:
+			value = json.loads(value)
+		except ValueError:
+			raise BadRequestError(message) from None
+	if not isinstance(value, dict):
+		raise BadRequestError(message)
+	for key in ("item", "lot", "lot_expiry", "result", "photo"):
+		if value.get(key) is not None and not isinstance(value[key], str):
+			raise BadRequestError(message)
+	return value
+
+
 def _session_employee():
 	session = current_station_session()
 	return session.employee if session else None
@@ -289,7 +307,7 @@ def save_draft(draft, station, client_ts=None, token=None):
 @station_session(*WASH_LOAD_ROLES)
 def redo_queue(station, client_ts=None, token=None):
 	"""Bảng phụ của màn T2, chỉ đọc: hàng đợi xử lý lại (``sets``, FR-M2-25.2, Q16), lô đang chạy (``running``) và bộ chờ rửa
-	(``waiting``, A-66)."""
+	(``waiting``, A-66), lô chờ đọc chỉ thị (``awaiting``, A-77)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	parse_client_ts(client_ts)
 	return run_at_step(
@@ -300,6 +318,7 @@ def redo_queue(station, client_ts=None, token=None):
 			"ok": True,
 			"sets": washing.redo_queue(),
 			"running": washing.running_batches(),
+			"awaiting": washing.awaiting_batches(),
 			"waiting": washing.waiting_sets(),
 		},
 	)
@@ -328,6 +347,16 @@ def lookup(raw, station, client_ts=None, token=None):
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_UNLOAD_ROLES)
+def indicator_lot(raw, station, client_ts=None, token=None):
+	"""Tra lô chỉ thị vừa quét để tự điền vật tư và hạn (A-77); chỉ đọc."""
+	require_any_role(*WASH_UNLOAD_ROLES)
+	raw = _required_str(raw, "raw")
+	timestamp = parse_client_ts(client_ts)
+	return _run(station, timestamp, lambda: {"ok": True, **washing.indicator_lot(raw)})
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_UNLOAD_ROLES)
 @idempotent
 def unload(batch, raw, station, client_ts=None, token=None):
 	"""Kiểm một mã quét khi dỡ lô `batch`: QR máy của lô hoặc QR lô (Q15, FR-M2-04.1/.2)."""
@@ -350,7 +379,8 @@ def unload(batch, raw, station, client_ts=None, token=None):
 @station_session(*WASH_UNLOAD_ROLES)
 @idempotent
 def unload_context(batch, equipment_raw, batch_raw, station, client_ts=None, token=None):
-	"""Ngữ cảnh dỡ lô sau khi đã quét đủ hai mã: thẻ lô + `parameter_schema` của chương trình."""
+	"""Ngữ cảnh dỡ lô sau khi đã quét đủ hai mã: thẻ lô + `parameter_schema`; chương trình bắt buộc chỉ thị thì lô sang
+	Chờ đọc chỉ thị (A-77), khi đó đọc sau chỉ cần `batch_raw`."""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")
 	equipment_raw = _optional_str(equipment_raw, "equipment_raw") or ""
@@ -360,7 +390,17 @@ def unload_context(batch, equipment_raw, batch_raw, station, client_ts=None, tok
 	return _run(
 		station,
 		timestamp,
-		lambda: {"ok": True, "batch": washing.unload_context(batch, equipment_raw, batch_raw, station)},
+		lambda: {
+			"ok": True,
+			"batch": washing.unload_context(
+				batch,
+				equipment_raw,
+				batch_raw,
+				station,
+				employee=_session_employee(),
+				client_ts=timestamp,
+			),
+		},
 		ref_doctype,
 		ref_name,
 	)
@@ -431,21 +471,24 @@ def result(
 	result,
 	equipment_raw,
 	batch_raw,
-	clean_test,
 	station,
+	clean_test=None,
 	reviewer_proof=None,
 	note=None,
+	indicator=None,
 	client_ts=None,
 	token=None,
 ):
 	"""Kết luận lô: một kết quả Đạt/Không đạt cho mọi bộ, đóng lô (FR-M2-04.3 đến .6, BRU-REP-002); xem `washing.set_result`.
 
-	`reviewer_proof` là PIN proof (`v1.station.verify_pin`) của R02 trên phiên này, cần cho Đạt ở máy cũ (Q7).
+	`reviewer_proof` là PIN proof (`v1.station.verify_pin`) của R02 trên phiên này, cần cho Đạt ở máy cũ (Q7). `indicator`
+	là kết quả chỉ thị rửa (A-77), khi có thì thay `clean_test`.
 	"""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")
 	result = _required_str(result, "result")
-	clean_test = _required_str(clean_test, "clean_test")
+	clean_test = _optional_str(clean_test, "clean_test")
+	indicator = _indicator(indicator)
 	equipment_raw = _optional_str(equipment_raw, "equipment_raw") or ""
 	batch_raw = _optional_str(batch_raw, "batch_raw") or ""
 	reviewer_proof = _optional_str(reviewer_proof, "reviewer_proof")
@@ -470,6 +513,7 @@ def result(
 				client_ts=timestamp,
 				session=session.name if session else None,
 				unloaded_by=_session_employee(),
+				indicator=indicator,
 			),
 		},
 		ref_doctype,
