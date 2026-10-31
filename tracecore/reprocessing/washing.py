@@ -49,8 +49,8 @@ EQUIPMENT_FIELDS = (
 )
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _today():
@@ -90,6 +90,8 @@ def check_equipment_ready(equipment):
 			_("Washer is not ready"),
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another washer, or call R02 to check the daily test and the inspection."),
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
 		if isinstance(block, Block):
@@ -378,6 +380,8 @@ def check_chemical_lot(item, batch_no):
 			_("Chemical lot has expired"),
 			_("Lot {0} expired on {1}.").format(batch.name, formatdate(expiry)),
 			_("Choose another lot that is still valid."),
+			object_type="Batch",
+			object_name=batch.name,
 		)
 	return None
 

@@ -188,6 +188,8 @@ after_migrate = [
 	# FEAT-013: quyền R10 cho Issue / Help Article và Issue Type phản hồi phần mềm
 	"tracecore.ui.permissions.ensure_permissions",
 	"tracecore.ui.feedback.ensure_issue_type",
+	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
+	"tracecore.setup.error_codes.ensure_error_codes",
 ]
 
 # Uninstallation

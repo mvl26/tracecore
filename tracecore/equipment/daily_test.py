@@ -30,8 +30,8 @@ LOCK_DAILY_TEST = "Daily Test"
 PHOTO_MISSING = "photo_missing"
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def required_tests(equipment_type):
@@ -226,6 +226,9 @@ def equipment_block(equipment):
 				equipment, frappe.utils.formatdate(row.inspection_due)
 			),
 			_("Use another machine. Call R02 about the inspection."),
+			object_type="Equipment",
+			object_name=equipment,
+			error_code="TB-004" if row.equipment_type in PRESSURE_TYPES else None,
 		)
 	if _calibration_expired(row) and not unlocked:
 		return Block(
@@ -235,6 +238,8 @@ def equipment_block(equipment):
 				equipment, frappe.utils.formatdate(row.calibration_due)
 			),
 			_("Use another machine, or call R02 for a temporary unlock."),
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	if unlocked:
 		return None
@@ -246,6 +251,8 @@ def equipment_block(equipment):
 			_("Equipment {0} has no passed daily test today: {1}.").format(equipment, ", ".join(missing)),
 			_("Record the daily test first, or call R02 for a temporary unlock."),
 			items=missing,
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	return None
 

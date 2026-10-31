@@ -27,8 +27,8 @@ MAX_NAME = 140
 MAX_REASON = 500
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _require_station(station):
@@ -89,6 +89,8 @@ def _check_usable(pack, on=None):
 			_("Pack recalled"),
 			_("Cycle ID {0} was recalled on {1}.").format(pack.name, _date(pack.modified)),
 			_("Do not use this pack. Return it to the sterile store and call R02."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	if status == "Void" and pack.void_reason == "Expired":
 		raise _blocked(
@@ -96,6 +98,8 @@ def _check_usable(pack, on=None):
 			_("Pack has expired"),
 			_("Pack {0} expired on {1}.").format(pack.name, _date(pack.expiry)),
 			_("Do not use this pack; send it back to the dirty zone."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	if status == "Void":
 		raise _blocked(
@@ -105,6 +109,8 @@ def _check_usable(pack, on=None):
 				pack.name, _date(pack.modified), _(pack.void_reason or "Void", context="Pack")
 			),
 			_("Do not use this pack; call R02 if you think this is a mistake."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	if status != ISSUED:
 		raise _blocked(
@@ -121,6 +127,8 @@ def _check_usable(pack, on=None):
 			_("Pack has expired"),
 			_("Pack {0} expired on {1}.").format(pack.name, _date(pack.expiry)),
 			_("Do not use this pack; send it back to the dirty zone."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	set_status = frappe.db.get_value("Set Unit", pack.set_unit, "status")
 	if set_status == "End of Life":

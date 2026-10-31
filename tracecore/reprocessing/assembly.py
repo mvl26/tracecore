@@ -45,8 +45,8 @@ LINE_FIELDS = (
 ).split()
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 # --- Trạm, mã quét, bản nháp ---------------------------------------------------------------------

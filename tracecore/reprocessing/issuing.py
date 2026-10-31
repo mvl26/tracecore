@@ -11,7 +11,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, cstr, getdate, now_datetime, today
 
-from tracecore.core import audit, extension, gs1, station_auth, step_gate, zones
+from tracecore.core import audit, error_codes, extension, gs1, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import storage
 
@@ -27,8 +27,8 @@ SIGNATURE_MAX_LENGTH = 200_000  # ảnh chữ ký PNG ≤ ~150 KB sau base64 (C7
 SAVEPOINT = "tc_issue_submit"
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _require_station(station):
@@ -313,6 +313,9 @@ def _check_issuable(pack):
 				pack.name, _(pack.status, context="Pack")
 			),
 			_("Store the pack in sterile storage first, or check its status with R02."),
+			object_type="Pack",
+			object_name=pack.name,
+			error_code=error_codes.pack_error_code(pack),
 		)
 	if getdate(pack.expiry) < getdate(today()):
 		raise _blocked(
@@ -320,6 +323,8 @@ def _check_issuable(pack):
 			_("Pack has expired"),
 			_("Pack {0} expired on {1}.").format(pack.name, frappe.utils.formatdate(pack.expiry)),
 			_("Do not issue the pack; send it back to the dirty zone."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	status = frappe.db.get_value("Set Unit", pack.set_unit, "status")
 	if status != "Sterile":

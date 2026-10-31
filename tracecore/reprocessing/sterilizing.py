@@ -54,8 +54,8 @@ INDICATORS = {
 }
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _today():
@@ -103,6 +103,8 @@ def check_equipment_ready(equipment):
 			_("Sterilizer is not ready"),
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another sterilizer, or call R02 to check the daily test and the inspection."),
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	running = frappe.db.get_value(
 		"Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0}, "name"

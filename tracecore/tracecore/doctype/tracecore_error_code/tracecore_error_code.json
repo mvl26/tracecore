@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "creation": "2026-10-31 12:00:00.000000",
+ "description": "Error code catalog: the source of the handbook by station and by code (FEAT-052, A-71).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "code",
+  "error_group",
+  "error_name",
+  "default_severity",
+  "severity_locked",
+  "column_break_a",
+  "release_method",
+  "system_action",
+  "block_codes",
+  "section_detail",
+  "description",
+  "trigger_condition",
+  "stations",
+  "section_guide",
+  "guide"
+ ],
+ "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "set_only_once": 1,
+   "description": "<GROUP>-<3 digits>: HC, TB, NS, CT, DC, QT"
+  },
+  {
+   "fieldname": "error_group",
+   "fieldtype": "Select",
+   "label": "Group",
+   "options": "HC\nTB\nNS\nCT\nDC\nQT",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "error_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "default_severity",
+   "fieldtype": "Select",
+   "label": "Default severity",
+   "options": "Block\nWarning\nInfo",
+   "default": "Block",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "severity_locked",
+   "fieldtype": "Check",
+   "label": "Severity locked (safety control)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "release_method",
+   "fieldtype": "Select",
+   "label": "How it clears",
+   "options": "Auto\nApproval",
+   "default": "Auto"
+  },
+  {
+   "fieldname": "system_action",
+   "fieldtype": "Small Text",
+   "label": "System action"
+  },
+  {
+   "fieldname": "block_codes",
+   "fieldtype": "Small Text",
+   "label": "Internal codes (one per line)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "trigger_condition",
+   "fieldtype": "Small Text",
+   "label": "Condition"
+  },
+  {
+   "fieldname": "stations",
+   "fieldtype": "Table",
+   "label": "Stations",
+   "options": "TraceCore Error Code Station"
+  },
+  {
+   "fieldname": "section_guide",
+   "fieldtype": "Section Break",
+   "label": "Handling guide"
+  },
+  {
+   "fieldname": "guide",
+   "fieldtype": "Text Editor",
+   "label": "Handling guide"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "TraceCore Error Code",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R10",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R01",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R02",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R03",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R04",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R05",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R06",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R07",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R08",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "TC R09",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:code",
+ "naming_rule": "By fieldname",
+ "title_field": "error_name",
+ "show_title_field_in_link": 1,
+ "track_changes": 1
+}

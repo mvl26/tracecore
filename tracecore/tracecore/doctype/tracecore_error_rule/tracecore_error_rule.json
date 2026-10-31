@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "creation": "2026-10-31 12:00:00.000000",
+ "description": "Per-hospital setting of an error code (FEAT-052, A-71).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "error_code",
+  "enabled",
+  "severity",
+  "warn_days",
+  "approver_roles"
+ ],
+ "fields": [
+  {
+   "fieldname": "error_code",
+   "fieldtype": "Link",
+   "label": "Error code",
+   "options": "TraceCore Error Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Block\nWarning\nInfo",
+   "default": "Block",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "warn_days",
+   "fieldtype": "Int",
+   "label": "Days of warning before expiry",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "approver_roles",
+   "fieldtype": "Small Text",
+   "label": "Approver roles (one per line)",
+   "in_list_view": 1,
+   "columns": 3
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "TraceCore Error Rule",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

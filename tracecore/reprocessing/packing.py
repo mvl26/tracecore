@@ -43,8 +43,8 @@ SET_TYPE_FIELDS = tuple(
 LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 # --- Hạn dùng (D4, BRU-REP-009) -----------------------------------------------------------------
@@ -164,6 +164,8 @@ def resolve_ci_batch(raw, method, on_date):
 			_("Indicator lot has expired"),
 			_("Lot {0} expired on {1}.").format(batch.name, formatdate(expiry)),
 			_("Scan another indicator lot that is still valid."),
+			object_type="Batch",
+			object_name=batch.name,
 		)
 	return {"batch": batch.name, "item": batch.item, "expiry_date": expiry, "ci_class": item.tc_ci_class}
 
@@ -208,6 +210,7 @@ def _bom_incomplete(missing):
 			", ".join(f"{line['instrument_name']} ({line['instrument']})" for line in missing)
 		),
 		_("Check each missing instrument in the tray and tick it, then confirm again."),
+		error_code="DC-001",
 		items=[{key: line[key] for key in ("instrument", "instrument_name", "qty")} for line in missing],
 	)
 

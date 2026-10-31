@@ -11,6 +11,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from tracecore.core import error_codes
+
 _TIME = re.compile(r"^(\d{1,2}):(\d{2})$")
 
 
@@ -32,3 +34,4 @@ class TraceCoreSettings(Document):
 	def validate(self):
 		# giờ nhắc nhật ký môi trường: lưu dạng chuẩn "HH:MM, HH:MM"
 		self.env_reminder_times = ", ".join(t.strftime("%H:%M") for t in parse_times(self.env_reminder_times))
+		error_codes.validate_rules(self)

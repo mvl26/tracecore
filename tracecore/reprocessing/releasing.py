@@ -39,8 +39,8 @@ BI_POSITIVE_HOOK = "tracecore_bi_positive"  # FEAT-029 thu hồi, FEAT-010 thôn
 DAILY_INDICATOR_HOOK = "tracecore_load_daily_indicator"  # M5 (FEAT-040, A-23): Bowie-Dick từ test hằng ngày
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _now(client_ts):
@@ -352,6 +352,8 @@ def _release(
 			if failed
 			else _("Record the missing results, then ask R02 to release the load."),
 			items=missing,
+			object_type="Sterilization Load",
+			object_name=doc.name,
 		)
 	approver, emergency = _approver(session, pin_proof, emergency_reason)
 	employee = _employee(approver)
