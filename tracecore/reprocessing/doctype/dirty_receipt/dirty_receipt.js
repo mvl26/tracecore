@@ -64,7 +64,7 @@ function tc_receipt_table(lines) {
 		<thead><tr>
 			<th>${tc_receipt_escape(__("No."))}</th>
 			<th>${tc_receipt_escape(__("Instrument"))}</th>
-			<th>${tc_receipt_escape(__("Qty"))}</th>
+			<th>${tc_receipt_escape(__("Qty", null, "Dirty Receipt"))}</th>
 			<th>${tc_receipt_escape(__("Confirmation"))}</th>
 		</tr></thead>
 		<tbody>${rows}</tbody>
