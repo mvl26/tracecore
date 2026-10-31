@@ -178,6 +178,19 @@ class TestResolveCiBatch(IsolatedTestCase):
 		self.assertEqual(packing.resolve_ci_batch(plasma5, "Plasma", self.on_date)["batch"], plasma5)
 
 	@bru("BRU-REP-013")
+	@bru("BRU-REP-013")
+	def test_wrong_method_is_the_reason_given_even_for_a_wrong_class(self):  # #1843 T4-06
+		plasma4 = make_ci_batch("Plasma", "4", batch_id="LOT-PLASMA-4")
+		block = _block(self, packing.resolve_ci_batch, plasma4, "Steam", self.on_date)
+		self.assertEqual(block.code, "CI_LOT_INVALID")
+		self.assertIn("Wrong sterilization method", block.reason)
+		self.assertIn("Plasma", block.reason)
+		self.assertIn("Steam", block.reason)
+		self.assertNotIn("class", block.reason)
+		# đúng phương pháp mà sai loại thì vẫn nói về loại
+		steam4 = make_ci_batch("Steam", "4", batch_id="LOT-STEAM-4")
+		self.assertIn("class 4", _block(self, packing.resolve_ci_batch, steam4, "Steam", self.on_date).reason)
+
 	def test_resolve_ci_batch_rejects_wrong_method_class_or_item(self):
 		plasma = make_ci_batch("Plasma", "5", batch_id="LOT-PLASMA")
 		class4 = make_ci_batch("Steam", "4", batch_id="LOT-CLASS4")

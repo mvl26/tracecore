@@ -1760,3 +1760,13 @@ body.tc-kiosk .layout-main-section {
 .tc-pick-more {
 	align-self: flex-start;
 }
+
+/* thao tác nguy hiểm tách khỏi thanh thao tác chính (#1843 T4-07, #1834 T3-05) */
+.tc-danger-zone {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--tc-touch-gap);
+	margin-top: var(--tc-sp-8);
+}
