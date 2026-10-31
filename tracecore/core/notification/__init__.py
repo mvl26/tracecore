@@ -85,6 +85,8 @@ EVENTS = {
 	"WASTE_MISCLASS_REPEAT": ("Repeated waste misclassification", "Normal", 0, 0, ("TC R01",)),
 	# FEAT-013 A-56 D8: phản hồi / báo lỗi phần mềm gửi từ trạm, R10 xử lý
 	"SOFTWARE_FEEDBACK": ("Software feedback from a station", "Normal", 0, 0, (ADMIN_ROLE,)),
+	# A-75: R10 sửa dải mã offline làm hai dải giao nhau
+	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }
