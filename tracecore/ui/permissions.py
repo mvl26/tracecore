@@ -15,6 +15,9 @@ PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 	"Issue": {"TC R10": ("read", "write", "report", "print")},
 	"Help Article": {"TC R10": (*_EDIT, "report")},
 	"Help Category": {"TC R10": _EDIT},
+	# NAV-04: R10 chỉ đọc để mở hai màn này từ menu; không tạo, sửa, xóa
+	"Department": {"TC R10": ("read", "report", "print")},
+	"Print Job": {"TC R10": ("read", "report", "print")},
 }
 
 
