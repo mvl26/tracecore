@@ -48,6 +48,7 @@ MISSING_CARD = "card"
 EQUIPMENT_FIELDS = (
 	"name equipment_name equipment_type status zone_in zone_out is_connected has_printout capacity".split()
 )
+OPTIONAL_INDICATORS_HOOK = "tracecore_load_optional_indicators"
 INDICATORS = {
 	"Steam": ("chemical_class_5", "bowie_dick"),
 	"Plasma": ("chemical_plasma",),
@@ -148,8 +149,14 @@ def _compatible_pack_types(program):
 	)
 
 
-def _indicators(equipment_type, requires_bi):
-	codes = list(INDICATORS[STERILIZER_TYPES[equipment_type]])
+def optional_indicators(equipment):
+	"""Chỉ thị không bắt buộc của máy theo cấu hình test hằng ngày, qua hook của M5 (A-70; M2 không import M5)."""
+	return {kind for kinds in extension.run(OPTIONAL_INDICATORS_HOOK, equipment) for kind in kinds}
+
+
+def _indicators(equipment, equipment_type, requires_bi):
+	optional = optional_indicators(equipment)
+	codes = [code for code in INDICATORS[STERILIZER_TYPES[equipment_type]] if code not in optional]
 	if cint(requires_bi):
 		codes.append("biological")
 	return codes
@@ -185,7 +192,7 @@ def scan_machine(raw):
 			"requires_bi": cint(row.requires_bi),
 			"compatible_pack_types": _compatible_pack_types(row.name),
 			"parameters": _parameters(row.name),
-			"indicators": _indicators(equipment.equipment_type, row.requires_bi),
+			"indicators": _indicators(equipment.name, equipment.equipment_type, row.requires_bi),
 		}
 		for row in frappe.get_all(
 			"Process Program",
@@ -648,7 +655,7 @@ def _describe(doc):
 			"name": doc.program,
 			"program_name": frappe.db.get_value("Process Program", doc.program, "program_name"),
 		},
-		"indicators": _indicators(equipment_type, doc.requires_bi)
+		"indicators": _indicators(doc.equipment, equipment_type, doc.requires_bi)
 		if equipment_type in STERILIZER_TYPES
 		else [],
 		"requires_bi": cint(doc.requires_bi),

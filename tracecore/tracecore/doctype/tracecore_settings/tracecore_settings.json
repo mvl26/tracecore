@@ -24,6 +24,10 @@
   "waste_misclass_count",
   "waste_misclass_days",
   "waste_anomaly_percent",
+  "section_daily_test",
+  "daily_test_mode",
+  "daily_test_steam_leak",
+  "daily_test_plasma",
   "section_reports",
   "report_locked_until"
  ],
@@ -152,6 +156,36 @@
    "label": "Unusual Department Weight (%)"
   },
   {
+   "fieldname": "section_daily_test",
+   "fieldtype": "Section Break",
+   "label": "Daily Test Rules"
+  },
+  {
+   "default": "All Sterilizers",
+   "description": "Which sterilizers must pass a daily test before loading. Other machines are never locked or blocked for a daily test. A change applies at once.",
+   "fieldname": "daily_test_mode",
+   "fieldtype": "Select",
+   "label": "Daily Test Requirement",
+   "options": "Not Required\nAll Sterilizers\nSelected Sterilizers",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.daily_test_mode != \"Not Required\"",
+   "description": "Steam sterilizers must also pass a leak test each day, besides the Bowie-Dick test.",
+   "fieldname": "daily_test_steam_leak",
+   "fieldtype": "Check",
+   "label": "Require Leak Test"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.daily_test_mode != \"Not Required\"",
+   "description": "Plasma sterilizers must pass a daily test according to the hospital rules.",
+   "fieldname": "daily_test_plasma",
+   "fieldtype": "Check",
+   "label": "Require Plasma Daily Test"
+  },
+  {
    "fieldname": "section_reports",
    "fieldtype": "Section Break",
    "label": "Reports"
@@ -167,7 +201,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-30 18:00:00.000000",
+ "modified": "2026-10-31 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

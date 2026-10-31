@@ -987,8 +987,9 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-22; API API-M5-03; DocType D
 6. Dashboard hiển thị máy chưa test.
 
 **Alternate flows**
-- A1. Máy plasma: chỉ thị hóa học từng mẻ, không Bowie-Dick.
+- A1. Máy plasma: chỉ thị hóa học từng mẻ, không Bowie-Dick; có test hằng ngày máy plasma nếu thuộc diện bắt buộc [A-70].
 - A2. R02 mở khóa tạm ≤ 24 giờ có lý do (trừ quá hạn kiểm định).
+- A3. [A-70] Diện bắt buộc theo `TraceCore Settings` (Không bắt buộc / Tất cả máy tiệt khuẩn / Chỉ máy được chọn). Máy rửa và máy ngoài diện không bị khóa, chặn hay nhắc; vẫn ghi test tự nguyện được.
 
 **Exception flows**
 - E1. Chưa test mà tạo mẻ → chặn với lý do.
