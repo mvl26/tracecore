@@ -7101,3 +7101,4 @@ The machine still needs a valid lot for another chemical.,Máy còn cần lô c�
 Shortage accepted without confirmation (DC-001 warning),Nhận thiếu không cần xác nhận (DC-001 Cảnh báo),Assembly Record
 Detail,Chi tiết,TraceCore Error Log
 Scan the code of a valid lot loaded on the machine.,Quét mã lô còn hạn đang nạp trên máy.
+Unloaded By,Người dỡ,Wash Batch
