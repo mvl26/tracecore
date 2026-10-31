@@ -258,6 +258,21 @@ class TestResolve(ReplayCase):
 		self.assertTrue(doc.resolved_at)
 
 
+TECHNICAL_FIELDS = (
+	"section_request",
+	"endpoint",
+	"idempotency_key",
+	"ref_doctype",
+	"ref_name",
+	"column_break_error",
+	"http_status",
+	"error_code",
+	"section_state",
+	"client_state",
+	"server_state",
+)
+
+
 class TestReadableConflict(IsolatedTestCase):
 	"""Trang Xung đột đồng bộ cho người dùng khoa: câu dễ hiểu, không JSON, không lộ dữ liệu kỹ thuật."""
 
@@ -329,7 +344,8 @@ class TestReadableConflict(IsolatedTestCase):
 		doc.run_method("onload")
 		self.assertIn("readable", doc.get_onload())
 
-	def test_technical_sections_are_collapsed(self):
+	def test_technical_fields_are_hidden(self):
 		meta = frappe.get_meta("Sync Conflict")
-		for field in ("section_request", "section_state"):
-			self.assertTrue(meta.get_field(field).collapsible, field)
+		for field in TECHNICAL_FIELDS:
+			self.assertTrue(meta.get_field(field).hidden, field)
+		self.assertFalse(meta.get_field("incident").hidden)

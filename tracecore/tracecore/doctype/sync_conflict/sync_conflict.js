@@ -24,7 +24,7 @@ frappe.ui.form.on("Sync Conflict", {
 	},
 });
 
-// A-74: bác sĩ, KTV đọc được ngay; JSON và mã kỹ thuật nằm trong mục thu gọn cuối trang.
+// A-74: bác sĩ, KTV đọc được ngay; JSON và mã kỹ thuật vẫn lưu nhưng không hiện trên trang.
 function render_readable(frm) {
 	const data = frm.doc.__onload && frm.doc.__onload.readable;
 	const field = frm.get_field("readable_html");
