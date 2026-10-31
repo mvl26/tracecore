@@ -7314,3 +7314,10 @@ Leave blank to issue the next GTIN-14 automatically.,Để trống để tự c�
 7,7,TraceCore Settings
 8,8,TraceCore Settings
 GS1,GS1,TraceCore Settings
+"Cannot tell which hospital this issue belongs to: the supplies are in stock at {0}. Link the machine to an asset of the right company, then retry.","Không xác định được phiếu xuất thuộc bệnh viện nào: vật tư đang có tồn ở {0}. Gắn máy với tài sản của đúng công ty rồi xử lý lại.",
+One issue cannot take stock from more than one hospital: {0}.,Một phiếu xuất không được lấy tồn của nhiều bệnh viện: {0}.,
+"Sterilization load {0} has not been released, so nothing is consumed for it yet.","Mẻ tiệt khuẩn {0} chưa giải phóng nên chưa có tiêu hao.",
+"Laundry batch {0} is outsourced, still running or has no program: nothing to consume.","Lô giặt {0} thuê ngoài, đang chạy hoặc không có chương trình: không có gì để tiêu hao.",
+Item {0} is in stock at {1}.,Vật tư {0} đang có tồn ở {1}.,
+"Choose lots of one hospital, or ask R10 to set your default company.","Chọn lô của một bệnh viện, hoặc nhờ R10 đặt công ty mặc định cho tài khoản.",
+The chosen lots belong to more than one hospital: {0}.,Các lô đã chọn thuộc nhiều bệnh viện: {0}.,

@@ -89,7 +89,8 @@ def create_purchase_request(item=None, warehouse=None, client_ts=None):
 
 @frappe.whitelist(methods=["POST"])
 def retry_consumption(source_doctype=None, source_name=None):
-	"""Chạy lại tiêu hao tự động của lô rửa đã Đạt mà lần đầu bị lỗi (nút "Retry consumption" trên form Wash Batch).
+	"""Chạy lại tiêu hao tự động của lô/mẻ mà lần đầu bị lỗi (nút "Retry consumption" trên form Wash Batch,
+	Sterilization Load, Laundry Batch; A-78).
 
 	Trả ``{"ok", "entry", "created", "short"}``; ``created = False`` khi lô đã có phiếu xuất (không trừ hai lần). Lỗi
 	thì ném ValidationError kèm nguyên nhân.

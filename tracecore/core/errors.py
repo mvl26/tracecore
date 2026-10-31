@@ -113,6 +113,8 @@ HTTP_STATUS: dict[str, int] = {
 			"QTY_INVALID",
 			"BRANCH_INVALID",
 			"PHOTO_INVALID",
+			# A-78: xuất thủ công không xác định được bệnh viện
+			"ISSUE_COMPANY_AMBIGUOUS",
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",
