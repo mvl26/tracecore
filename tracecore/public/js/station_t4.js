@@ -937,10 +937,19 @@ class T4Packing {
 			printer: () => this.printerHtml(),
 			print: () => this.printNoteHtml(),
 		};
+		// vẽ lại vùng lô chỉ thị (vd ảnh BOM vừa tải xong) không được làm mất mã máy quét đang nhập
+		const typing = this.result.querySelector("#tc-ci-input");
+		const typed = typing ? typing.value : "";
+		const focused = typing && document.activeElement === typing;
 		this.result.querySelectorAll("[data-region]").forEach((node) => {
 			const build = regions[node.dataset.region];
 			if (build) node.innerHTML = build();
 		});
+		const field = this.result.querySelector("#tc-ci-input");
+		if (field) {
+			field.value = typed;
+			if (focused) field.focus();
+		}
 		this.result.dataset.state = this.viewState();
 		this.markScanBox();
 	}
