@@ -256,3 +256,80 @@ class TestResolve(ReplayCase):
 		doc = frappe.get_doc("Sync Conflict", name)
 		self.assertEqual((doc.status, doc.resolved_by), ("Resolved", "Administrator"))
 		self.assertTrue(doc.resolved_at)
+
+
+class TestReadableConflict(IsolatedTestCase):
+	"""Trang Xung đột đồng bộ cho người dùng khoa: câu dễ hiểu, không JSON, không lộ dữ liệu kỹ thuật."""
+
+	def _conflict(self, args=None, error=None, endpoint="tracecore.v1.pack.generate_cycle_id"):
+		name = sync.record_conflict(
+			endpoint=endpoint,
+			key=frappe.generate_hash(length=20),
+			client_ts=datetime(2026, 10, 27, 10, 47),
+			args=args
+			if args is not None
+			else {
+				"set_id": "S-READ-1",
+				"pack_type": "GOI",
+				"ci_batch": "CI-1",
+				"confirmed_lines": ["KC-1", "KC-2"],
+				"client_ts": "2026-10-27T17:47:13+07:00",
+				"station": "TR-004",
+				"maint_actions": [],
+			},
+			error=error
+			or {
+				"code": "SESSION_INVALID",
+				"title": "Station session is invalid",
+				"reason": "r",
+				"action": "a",
+			},
+			http_status=401,
+			session={"station": None, "employee": None, "user": "Administrator"},
+		)
+		return frappe.get_doc("Sync Conflict", name)
+
+	def test_client_time_is_stored_in_system_time(self):
+		doc = self._conflict()
+		self.assertEqual(get_datetime(doc.client_ts), datetime(2026, 10, 27, 17, 47))
+
+	def test_readable_has_sentences_and_no_raw_keys(self):
+		data = sync.readable(self._conflict())
+		for key in ("operation", "outcome", "reason", "todo"):
+			self.assertTrue(data[key], key)
+		text = frappe.as_json(data)
+		for raw in (
+			"ci_batch",
+			"pack_type",
+			"confirmed_lines",
+			"SESSION_INVALID",
+			"tracecore.v1",
+			"maint_actions",
+		):
+			self.assertNotIn(raw, text)
+
+	def test_details_list_known_values_only(self):
+		values = {row["value"] for row in sync.readable(self._conflict())["details"]}
+		self.assertIn("GOI", values)
+		self.assertIn("CI-1", values)
+		self.assertIn("KC-1, KC-2", values)
+		self.assertNotIn("2026-10-27T17:47:13+07:00", values)
+
+	def test_unknown_endpoint_and_broken_state_still_readable(self):
+		doc = self._conflict(args={}, endpoint="tracecore.v1.other.thing")
+		doc.server_state = "not json"
+		doc.client_state = "not json"
+		data = sync.readable(doc)
+		self.assertTrue(data["operation"])
+		self.assertTrue(data["reason"])
+		self.assertEqual(data["details"], [])
+
+	def test_form_sends_readable_on_load(self):
+		doc = self._conflict()
+		doc.run_method("onload")
+		self.assertIn("readable", doc.get_onload())
+
+	def test_technical_sections_are_collapsed(self):
+		meta = frappe.get_meta("Sync Conflict")
+		for field in ("section_request", "section_state"):
+			self.assertTrue(meta.get_field(field).collapsible, field)

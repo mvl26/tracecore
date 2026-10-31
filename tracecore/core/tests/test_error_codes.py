@@ -7,6 +7,7 @@ import frappe
 from frappe.utils import now_datetime
 
 from tracecore.core import error_codes
+from tracecore.core.client_time import to_system_time
 from tracecore.core.errors import HTTP_STATUS, Block
 from tracecore.setup.error_codes import DEFAULT_CODES, ensure_error_codes
 from tracecore.tests.utils import IsolatedTestCase
@@ -138,7 +139,9 @@ class TestErrorLog(ErrorCodeCase):
 	def test_record_uses_client_ts(self):
 		moment = now_datetime().replace(microsecond=0)
 		name = error_codes.record("TB-003", "Equipment", "TB-X", client_ts=moment)
-		self.assertEqual(frappe.db.get_value("TraceCore Error Log", name, "client_ts"), moment)
+		self.assertEqual(
+			frappe.db.get_value("TraceCore Error Log", name, "client_ts"), to_system_time(moment)
+		)
 
 	def test_mark_resolved_closes_open_rows(self):
 		first = error_codes.record("TB-003", "Equipment", "TB-X")
