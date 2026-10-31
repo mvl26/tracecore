@@ -655,7 +655,7 @@ def _summary(doc, ctx=None):
 		lock = "BRANCH" if doc.branch else "ASSEMBLY_FAILED"
 	elif uncounted:
 		lock = "LINES_NOT_COUNTED"
-	elif cint(doc.has_shortage) and not cint(doc.shortage_confirmed):
+	elif cint(doc.has_shortage) and not cint(doc.shortage_confirmed) and error_codes.is_blocking("DC-001"):
 		lock = "SHORTAGE_UNCONFIRMED"
 	else:
 		lock = "NOT_RECORDED"

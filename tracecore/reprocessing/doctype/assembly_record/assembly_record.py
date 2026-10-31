@@ -12,7 +12,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint
 
-from tracecore.core import step_gate
+from tracecore.core import error_codes, step_gate
 
 FLAG = "tc_assembly"
 CONFIRM_FIELDS = (
@@ -180,7 +180,8 @@ class AssemblyRecord(Document):
 			uncounted = [line.instrument for line in lines if not line.counted]
 			if uncounted:
 				frappe.throw(_("Count every BOM line first; not counted: {0}.").format(", ".join(uncounted)))
-			if self.has_shortage and not self.shortage_confirmed:
+			# FEAT-052 A-71: DC-001 viện đặt Cảnh báo thì không cần R02 xác nhận; nhãn vẫn in dòng THIẾU
+			if self.has_shortage and not self.shortage_confirmed and error_codes.is_blocking("DC-001"):
 				frappe.throw(
 					_("Missing instruments need the confirmation of R02 before the set can be packed.")
 				)
