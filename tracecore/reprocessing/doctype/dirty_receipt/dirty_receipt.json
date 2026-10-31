@@ -43,6 +43,7 @@
    "description": "Employee of the department who handed the sets over, from the scanned employee card. Empty when the deliverer has no card.",
    "fieldname": "deliverer",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Deliverer",
    "options": "Employee",
    "set_only_once": 1

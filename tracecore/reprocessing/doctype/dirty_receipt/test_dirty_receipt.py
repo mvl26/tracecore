@@ -93,3 +93,20 @@ class TestDirtyReceipt(FrappeTestCase):
 		self.assertTrue(all(not r.get("delete") for r in records))
 		self.assertFalse(re.search("R07", " ".join(r["role"] for r in records)))
 		assert_permission_matrix(self, "Dirty Receipt")
+
+
+class TestDirtyReceiptDeliverer(FrappeTestCase):
+	@bru("BRU-REP-012")
+	def test_deliverer_without_card_stays_empty(self):  # FR-M2-01.7, A-30
+		doc = make_receipt(needs_card=1, deliverer=make_employee().name, deliverer_name="Người giao")
+		self.assertIsNone(frappe.db.get_value("Dirty Receipt", doc.name, "deliverer"))
+		self.assertEqual(frappe.db.get_value("Dirty Receipt", doc.name, "deliverer_name"), "Người giao")
+
+	def test_deliverer_with_card_is_kept(self):
+		deliverer = make_employee().name
+		doc = make_receipt(needs_card=0, deliverer=deliverer)
+		self.assertEqual(frappe.db.get_value("Dirty Receipt", doc.name, "deliverer"), deliverer)
+
+	def test_desk_does_not_fill_deliverer_from_user_permission(self):
+		field = frappe.get_meta("Dirty Receipt").get_field("deliverer")
+		self.assertTrue(field.ignore_user_permissions)
