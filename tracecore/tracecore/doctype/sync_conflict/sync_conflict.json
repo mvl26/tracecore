@@ -6,6 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "readable_html",
+  "section_general",
   "naming_series",
   "status",
   "station",
@@ -16,6 +18,10 @@
   "client_ts",
   "synced_at",
   "incident",
+  "section_resolution",
+  "resolution_note",
+  "resolved_by",
+  "resolved_at",
   "section_request",
   "endpoint",
   "idempotency_key",
@@ -26,13 +32,19 @@
   "error_code",
   "section_state",
   "client_state",
-  "server_state",
-  "section_resolution",
-  "resolution_note",
-  "resolved_by",
-  "resolved_at"
+  "server_state"
  ],
  "fields": [
+  {
+   "fieldname": "readable_html",
+   "fieldtype": "HTML",
+   "label": "What happened"
+  },
+  {
+   "fieldname": "section_general",
+   "fieldtype": "Section Break",
+   "label": "Who and when"
+  },
   {
    "default": "SC-.YYYY.-.#####",
    "fieldname": "naming_series",
@@ -93,7 +105,7 @@
    "fieldname": "client_ts",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Client Time (UTC)",
+   "label": "Time at the station",
    "read_only": 1
   },
   {
@@ -112,7 +124,8 @@
   {
    "fieldname": "section_request",
    "fieldtype": "Section Break",
-   "label": "Request"
+   "label": "Technical details",
+   "collapsible": 1
   },
   {
    "fieldname": "endpoint",
@@ -163,7 +176,8 @@
   {
    "fieldname": "section_state",
    "fieldtype": "Section Break",
-   "label": "State"
+   "label": "Technical data",
+   "collapsible": 1
   },
   {
    "fieldname": "client_state",
@@ -207,7 +221,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.516246",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Sync Conflict",

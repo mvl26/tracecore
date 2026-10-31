@@ -8,6 +8,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, getdate, now_datetime
 
+from tracecore.core import client_time
+
 CODE_DOCTYPE = "TraceCore Error Code"
 LOG_DOCTYPE = "TraceCore Error Log"
 SETTINGS = "TraceCore Settings"
@@ -345,7 +347,7 @@ def record(
 			"station": station,
 			"user": user or frappe.session.user,
 			"occurred_at": now_datetime(),
-			"client_ts": client_ts,
+			"client_ts": client_time.to_system_time(client_ts) if client_ts else None,
 			"status": status,
 			"detail": detail,
 		}

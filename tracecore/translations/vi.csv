@@ -7102,3 +7102,25 @@ Shortage accepted without confirmation (DC-001 warning),Nhận thiếu không c�
 Detail,Chi tiết,TraceCore Error Log
 Scan the code of a valid lot loaded on the machine.,Quét mã lô còn hạn đang nạp trên máy.
 Unloaded By,Người dỡ,Wash Batch
+"Packing: creating the pack code",Đóng gói: tạo mã gói
+"Receiving: recording the receipt",Tiếp nhận: ghi phiếu tiếp nhận
+"Usage: recording that a pack was used",Sử dụng: ghi nhận gói đã dùng
+A step done while the station was offline,Một thao tác làm khi trạm mất mạng
+This step was NOT recorded in the system.,Thao tác này CHƯA được ghi nhận vào hệ thống.
+The server refused this step.,Hệ thống đã từ chối thao tác này.
+"The staff member was not signed in properly at that moment. Sign in again with the employee card, do this step again at the station, then press Resolve and write what was done.","Lúc đó nhân viên chưa đăng nhập hợp lệ. Quẹt thẻ đăng nhập lại, làm lại thao tác này tại trạm, rồi bấm Xử lý và ghi rõ đã làm gì."
+"Check the set or pack at the station. If the step was not done, do it again. Then press Resolve and write what was done.","Kiểm tra bộ hoặc gói tại trạm. Nếu thao tác chưa thực hiện thì làm lại. Sau đó bấm Xử lý và ghi rõ đã làm gì."
+The session was not valid at the time of this offline transaction.,Phiên làm việc không hợp lệ vào thời điểm thực hiện thao tác khi mất mạng.
+Station session is invalid,Phiên trạm không hợp lệ
+Scanned code,Mã đã quét
+Pack code,Mã gói
+Chemical indicator lot,Lô chỉ thị hóa học
+Instruments checked,Dụng cụ đã kiểm
+What happened,Chuyện gì đã xảy ra
+Result,Kết quả
+What to do,Cần làm gì
+What happened,Chuyện gì đã xảy ra,Sync Conflict
+Who and when,Người và thời điểm,Sync Conflict
+Time at the station,Giờ tại trạm,Sync Conflict
+Technical details,Thông tin kỹ thuật,Sync Conflict
+Technical data,Dữ liệu kỹ thuật,Sync Conflict

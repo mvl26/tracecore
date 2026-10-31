@@ -33,3 +33,4 @@ tracecore.patches.v0_1.a64_zone_type_next_zone
 tracecore.patches.v0_1.a64_catalog_manual_wash
 tracecore.patches.v0_1.daily_test_config
 tracecore.patches.v0_1.chemical_norms_to_ml
+tracecore.patches.v0_1.client_ts_to_system_time
