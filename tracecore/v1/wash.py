@@ -81,6 +81,32 @@ def _values(value):
 	return rows
 
 
+DRAFT_MAX_CHARS = 65536
+
+
+def _draft(value):
+	"""Nháp lô đang nạp dở: dict (hoặc chuỗi JSON của dict) có ``machine`` và danh sách ``sets``; rỗng = xóa nháp."""
+	message = _("draft must be an object with a machine and a list of sets.")
+	if value in (None, "", "null"):
+		return None
+	if isinstance(value, str):
+		if len(value) > DRAFT_MAX_CHARS:
+			raise BadRequestError(message)
+		try:
+			value = json.loads(value)
+		except ValueError:
+			raise BadRequestError(message) from None
+	if not (
+		isinstance(value, dict)
+		and isinstance(value.get("machine"), dict)
+		and isinstance(value.get("sets"), list)
+	):
+		raise BadRequestError(message)
+	if len(json.dumps(value)) > DRAFT_MAX_CHARS:
+		raise BadRequestError(message)
+	return value
+
+
 def _optional_str(value, name):
 	if value is not None and not isinstance(value, str):
 		raise BadRequestError(_("{0} must be a string.").format(name))
@@ -106,6 +132,11 @@ def _flag(value):
 def _session_employee():
 	session = current_station_session()
 	return session.employee if session else None
+
+
+def _session_name():
+	session = current_station_session()
+	return session.name if session else None
 
 
 def _run(station, timestamp, call, ref_doctype=None, ref_name=None, raw=None):
@@ -194,12 +225,63 @@ def complete(equipment, program, sets, chemicals, station, client_ts=None, token
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {
-			"ok": True,
-			**washing.start(equipment, program, codes, rows, station, timestamp, _session_employee()),
-		},
+		lambda: _completed(equipment, program, codes, rows, station, timestamp),
 		"Equipment",
 		equipment,
+	)
+
+
+def _completed(equipment, program, codes, rows, station, timestamp):
+	result = washing.start(equipment, program, codes, rows, station, timestamp, _session_employee())
+	session = current_station_session()
+	if session:
+		washing.save_draft(session.name, None)  # lô đã có mã: danh sách nạp dở không còn
+	return {"ok": True, **result}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
+def refresh_lots(equipment, station, client_ts=None, token=None):
+	"""Tra lại chương trình, hóa chất và lô FEFO của máy đang nạp, không đổi danh sách bộ (lô mới nhập sau khi quét máy)."""
+	require_any_role(*WASH_LOAD_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, **washing.refresh_lots(equipment)},
+		"Equipment",
+		equipment,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
+def draft(station, client_ts=None, token=None):
+	"""Nháp danh sách bộ đang nạp dở của phiên trạm này (``draft`` là None nếu chưa có); chỉ đọc."""
+	require_any_role(*WASH_LOAD_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, "draft": washing.get_draft(_session_name())},
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
+def save_draft(draft, station, client_ts=None, token=None):
+	"""Lưu nháp danh sách bộ đang nạp dở theo phiên trạm để tải lại trang không mất bộ đã quét; rỗng = xóa nháp."""
+	require_any_role(*WASH_LOAD_ROLES)
+	value = _draft(draft)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, "draft": washing.save_draft(_session_name(), value)},
 	)
 
 
