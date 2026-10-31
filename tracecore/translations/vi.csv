@@ -6612,3 +6612,9 @@ Scan the card of the person handing over the waste.,Quét thẻ người giao ch
 "Choose the waste type, then enter the number of bags and the weight.","Chọn loại chất thải, rồi nhập số túi và khối lượng.",
 "Confirm, then scan the card again to acknowledge the receipt.","Xác nhận, rồi quét lại thẻ để xác nhận biên nhận.",
 WST,Thu gom chất thải (WST),Help Article
+"{0} sets, {1}/{2} instruments confirmed","{0} bộ, {1}/{2} dụng cụ đã xác nhận",
+{0}/{1} confirmed,{0}/{1} đã xác nhận,
+View by set,Xem theo bộ,
+View combined list,Xem danh sách gộp,
+Qty,SL,
+Needs Review,Cần xem lại,Dirty Receipt Set
