@@ -3,7 +3,6 @@
 from datetime import timedelta
 
 import frappe
-from frappe.tests.utils import freeze_time
 from frappe.utils import get_datetime, now_datetime, nowdate
 
 from tracecore.reprocessing import receiving
@@ -88,11 +87,11 @@ class TestReceivedToday(ReceivingCase):
 		for name in (draft, dropped, cancelled, elsewhere, yesterday):
 			self.assertNotIn(name, rows)
 
-	@freeze_time("2026-06-15 00:02:00")  # ngay sau nửa đêm: lùi giờ nhận không được rơi sang hôm qua
 	def test_shows_receipts_of_every_receiver_newest_first(self):
 		first, _units = self.submitted()
 		other = make_employee(first_name="Other receiver").name
 		second, _units = self.submitted(receiver=other)
+		# đầu ngày thay vì lùi vài phút: chạy ngay sau nửa đêm thì lùi sẽ rơi sang hôm qua
 		older = get_datetime(nowdate())
 		frappe.db.set_value("Dirty Receipt", first, "received_at", older, update_modified=False)
 		names = [row["receipt"] for row in self.today()["receipts"]]
