@@ -12,7 +12,7 @@ const T3_CONFIRM = "tracecore.v1.assembly.confirm_shortage";
 const T3_SUBMIT = "tracecore.v1.assembly.submit";
 const T3_VERIFY_PIN = "tracecore.v1.station.verify_pin";
 const T3_QUEUE_MAX = 20;
-// từ chối làm bản nháp đang mở không còn dùng được → bỏ để quét lại Set ID
+// từ chối của thao tác trên bản nháp làm nó không còn dùng được → bỏ để quét lại Set ID (từ chối khi quét mở bộ không tính)
 const T3_RESET_CODES = [
 	"ASSEMBLY_NOT_FOUND",
 	"ASSEMBLY_CLOSED",
@@ -80,9 +80,12 @@ class T3Assembly {
 	}
 
 	updatePlaceholder() {
-		const text = this.asm
-			? __("Scan the instrument code or the next Set ID...")
-			: __("Scan Set ID...");
+		let text = __("Scan Set ID...");
+		if (this.asm) {
+			text = this.asm.instrument_scan
+				? __("Scan the instrument code or the next Set ID...")
+				: __("Scan the next Set ID...");
+		}
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
 	}
@@ -199,8 +202,8 @@ class T3Assembly {
 	}
 
 	reject(error, method) {
-		// lỗi của lần mở bộ (Set ID lạ, chưa rửa Đạt, thiếu BOM...) không giữ bản nháp cũ; lỗi dòng giữ để sửa tiếp
-		if (method === T3_OPEN || T3_RESET_CODES.includes(error.code)) this.asm = null;
+		// lỗi của lần quét mở bộ (mã lạ, chưa rửa Đạt, thiếu BOM...) chỉ nói về mã vừa quét: giữ bộ đang đếm và số đã đếm
+		if (method !== T3_OPEN && T3_RESET_CODES.includes(error.code)) this.asm = null;
 		this.notice = { variant: "error", ...error };
 		this.show();
 	}
@@ -839,14 +842,13 @@ class T3Assembly {
 			</figure>`
 			)
 			.join("");
-		const counted = asm.lines.filter((row) => row.counted).length;
 		return `<section class="tc-t4-block" aria-label="${esc(__("BOM Count"))}">
 			<h3>${esc(__("Set components (BOM v{0})", [asm.bom_version]))}</h3>
 			<div class="tc-bom${trays ? " has-tray" : ""}">
 				${trays ? `<div>${trays}</div>` : ""}
 				<div class="tc-inst">${asm.lines.map((row) => this.lineHtml(row)).join("")}</div>
 			</div>
-			<p class="tc-hint">${esc(__("Counted {0}/{1} lines", [counted, asm.lines.length]))}</p>
+			<p class="tc-hint" data-region="tally">${esc(t3TallyText(asm.tally))}</p>
 		</section>`;
 	}
 
@@ -1132,6 +1134,17 @@ class T3Assembly {
 			}
 		</div>`;
 	}
+}
+
+function t3TallyText(tally) {
+	// dòng tổng theo kết quả (#1842); chữ, không chỉ màu
+	const parts = [__("Enough {0}/{1}", [tally.enough, tally.total])];
+	if (tally.short) parts.push(__("Short {0}", [tally.short]));
+	if (tally.damaged) parts.push(__("Damaged {0}", [tally.damaged]));
+	if (tally.over) parts.push(__("Over {0}", [tally.over]));
+	const left = tally.total - tally.counted;
+	if (left) parts.push(__("Not counted {0}", [left]));
+	return parts.join(" · ");
 }
 
 function t3ItemText(item) {

@@ -670,6 +670,21 @@ def _next_station(station):
 # --- Ngữ cảnh trả về trạm -----------------------------------------------------------------------------
 
 
+def _tally(lines):
+	"""Số dòng theo kết quả cho dòng tổng màn T3 (A-80): dòng thiếu do hỏng tính Hỏng, hỏng đã thay đủ tính Đủ."""
+	counted = [line for line in lines if line["counted"]]
+	short = [line for line in counted if line["line_status"] == "Short"]
+	damaged = [line for line in short if cint(line["damaged_qty"])]
+	return {
+		"total": len(lines),
+		"counted": len(counted),
+		"enough": sum(line["line_status"] == "Enough" for line in counted),
+		"short": len(short) - len(damaged),
+		"damaged": len(damaged),
+		"over": sum(line["line_status"] == "Over" for line in counted),
+	}
+
+
 def _summary(doc, ctx=None):
 	"""Ngữ cảnh màn T3 của `doc`: bộ, dòng kiểm đếm kèm ảnh/cơ số, cổng, thiếu/NC, khóa Đóng gói; chỉ đọc."""
 	unit = frappe.db.get_value("Set Unit", doc.set_unit, SET_FIELDS, as_dict=True)
@@ -743,6 +758,10 @@ def _summary(doc, ctx=None):
 		"notes": doc.notes,
 		"uncounted": uncounted,
 		"unexplained": unexplained,
+		"tally": _tally(lines),
+		"instrument_scan": bool(
+			cint(frappe.db.get_single_value("TraceCore Settings", "enable_instrument_giai"))
+		),
 		"ready_to_submit": lock == "NOT_RECORDED",
 		"shortage_blocking": error_codes.is_blocking("DC-001"),
 		"pack_locked": not passed,

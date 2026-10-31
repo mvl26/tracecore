@@ -407,6 +407,43 @@ class TestScanInstrument(AssemblyCase):
 		self.assertEqual(done["result"], "Fail")
 
 
+class TestScreenSummary(AssemblyCase):
+	"""Số liệu dòng tổng và ô quét của màn T3 (#1842, A-80)."""
+
+	def test_tally_reflects_enough_short_damaged_and_over(self):
+		name = self.open(self.washed_set())["assembly"]
+		tally = self.line(name, instrument="T3-KEP", actual_qty=1)["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 1, "enough": 1, "short": 0, "damaged": 0, "over": 0})
+		tally = self.short_line(name, "T3-KEO", 1)["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 2, "enough": 1, "short": 1, "damaged": 0, "over": 0})
+		tally = self.line(
+			name, instrument="T3-DAO", actual_qty=2, damaged_qty=1, disposition="Repair", note="Mẻ"
+		)["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 3, "enough": 1, "short": 1, "damaged": 1, "over": 0})
+
+	def test_replaced_damage_counts_as_enough_and_over_is_separate(self):
+		name = self.open(self.washed_set())["assembly"]
+		self.line(
+			name, instrument="T3-KEO", actual_qty=2, damaged_qty=1, replaced_qty=1, disposition="Repair"
+		)
+		tally = self.line(name, instrument="T3-KEP", actual_qty=2, note="Dư")["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 2, "enough": 1, "short": 0, "damaged": 0, "over": 1})
+
+	def test_screen_knows_whether_instrument_codes_can_be_scanned(self):
+		su = self.washed_set()
+		frappe.db.set_single_value("TraceCore Settings", "enable_instrument_giai", 0)
+		self.assertFalse(self.open(su)["instrument_scan"])
+		frappe.db.set_single_value("TraceCore Settings", "enable_instrument_giai", 1)
+		self.assertTrue(self.open(su)["instrument_scan"])
+
+	def test_rejected_scan_changes_nothing_in_the_open_draft(self):
+		su = self.washed_set()
+		name = self.open(su)["assembly"]
+		before = self.line(name, instrument="T3-KEP", actual_qty=1)["tally"]
+		self.assertEqual(_code(self.open, "DC-0026"), "SCAN_INVALID")
+		self.assertEqual(self.open(su)["tally"], before)
+
+
 class TestResetPatch(AssemblyCase):
 	def line_row(self, name, code):
 		return frappe.db.get_value(
