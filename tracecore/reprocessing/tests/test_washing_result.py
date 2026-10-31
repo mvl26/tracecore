@@ -129,7 +129,11 @@ class TestWashUnload(WashResultCase):
 			{"ok": True, "kind": "equipment"},
 		)
 		self.assertEqual(washing.scan_unload(batch, batch, STATION), {"ok": True, "kind": "wash_batch"})
-		other_batch, _ = self.load()
+		elsewhere = make_wash_machine(has_printout=1)
+		other_batch, _ = self.load(
+			machine=elsewhere,
+			program=make_wash_program(elsewhere.name, chemical=CHEMICAL, parameters=PARAMETERS),
+		)
 		self.assertEqual(_code(washing.scan_unload, batch, other_batch, STATION), "SCAN_INVALID")
 		self.assertEqual(_code(washing.scan_unload, batch, "TR-002", STATION), "SCAN_INVALID")
 		self.assertEqual(
@@ -178,10 +182,10 @@ class TestWashUnload(WashResultCase):
 		self.assertEqual(context["equipment"]["has_printout"], 1)
 
 	def test_running_batches_list_open_batches_only(self):
-		batch, sets = self.load()
 		closed, _ = self.load()
 		self.save_data(closed)
 		self.close(closed)
+		batch, sets = self.load()  # máy chỉ nhận lô mới sau khi lô trước đã dỡ (A-73)
 		rows = {row["batch"]: row for row in washing.running_batches()}
 		self.assertIn(batch, rows)
 		self.assertNotIn(closed, rows)

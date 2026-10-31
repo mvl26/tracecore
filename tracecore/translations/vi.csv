@@ -6778,3 +6778,8 @@ Counters now change only at packing and release.,Từ nay bộ đếm chỉ thay
 Pack {0} is {1}; only a packed pack can be voided at packing.,Gói {0} đang ở trạng thái {1}; chỉ hủy được gói Đã đóng gói.
 A sterilization load is created only when loading is completed on the sterilizer loading screen.,Mẻ tiệt khuẩn chỉ được tạo khi hoàn thành nạp trên màn nạp máy tiệt khuẩn.
 A sterilization load is changed only by the sterilizer loading service.,Mẻ tiệt khuẩn chỉ được thay đổi qua màn hình T5.
+"Washer is still running a batch","Máy rửa đang chạy một lô",
+"Batch {0} on washer {1} has not been unloaded yet.","Lô {0} trên máy rửa {1} chưa được dỡ.",
+"Unload batch {0} first, then load this washer again.","Hãy dỡ lô {0} trước, rồi nạp lại máy rửa này.",
+"Actual {0} min, standard {1} min ({2} %)","Thực tế {0} phút, chuẩn {1} phút (chênh {2} %)",
+"Abnormal duration","Thời lượng bất thường",

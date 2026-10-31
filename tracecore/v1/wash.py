@@ -387,6 +387,7 @@ def result(
 				note=note,
 				client_ts=timestamp,
 				session=session.name if session else None,
+				unloaded_by=_session_employee(),
 			),
 		},
 		ref_doctype,
