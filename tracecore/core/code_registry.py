@@ -230,7 +230,10 @@ def gtin_range(lock=False):
 
 def _ensure_gtin_series(prefix):
 	# dòng phải có trước khi khóa: FOR UPDATE trên dòng chưa có là gap lock, hai người cùng cấp mã đầu tiên sẽ deadlock
-	frappe.db.sql("INSERT IGNORE INTO `tabSeries` (name, current) VALUES (%s, 0)", gtin_series_key(prefix))
+	# dòng đã có thì không INSERT: INSERT IGNORE trùng khóa giữ shared lock, hai người cùng nâng lên FOR UPDATE sẽ deadlock
+	key = gtin_series_key(prefix)
+	if not frappe.db.sql("SELECT 1 FROM `tabSeries` WHERE name=%s", key):
+		frappe.db.sql("INSERT IGNORE INTO `tabSeries` (name, current) VALUES (%s, 0)", key)
 
 
 def _gtin_low(remaining, capacity):
