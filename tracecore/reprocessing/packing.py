@@ -20,6 +20,7 @@ from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import (
+	audit,
 	client_time,
 	code_range,
 	code_registry,
@@ -146,20 +147,21 @@ def resolve_ci_batch(raw, method, on_date):
 	)
 	if item.tc_item_group_cssd != "Chemical Indicator":
 		raise _invalid_lot(_("Lot {0} is not a chemical indicator lot.").format(batch.name))
-	if item.tc_ci_class not in CI_CLASSES:
-		raise _invalid_lot(
-			_("Lot {0} is a class {1} indicator; only class 5 or 6 can be used.").format(
-				batch.name, item.tc_ci_class or "-"
-			)
-		)
 	if not item.tc_compatible_method:
 		raise _invalid_lot(
 			_("The indicator item of lot {0} has no sterilization method set.").format(batch.name)
 		)
+	# nêu lý do chính trước: sai phương pháp quan trọng hơn sai loại (#1843 T4-06)
 	if item.tc_compatible_method != method:
 		raise _invalid_lot(
-			_("Lot {0} is for {1} sterilization, not {2}.").format(
+			_("Wrong sterilization method: lot {0} is a {1} indicator, this set uses {2}.").format(
 				batch.name, _(item.tc_compatible_method), _(method)
+			)
+		)
+	if item.tc_ci_class not in CI_CLASSES:
+		raise _invalid_lot(
+			_("Lot {0} is a class {1} indicator; only class 5 or 6 can be used.").format(
+				batch.name, item.tc_ci_class or "-"
 			)
 		)
 	if cint(batch.disabled):
@@ -375,7 +377,15 @@ def _with_expected_expiry(row, set_type):
 
 
 def generate(
-	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+	set_id,
+	station,
+	confirmed,
+	ci_batch,
+	pack_type,
+	maint_actions,
+	client_ts,
+	offline_cycle_id=None,
+	employee=None,
 ):
 	"""Sinh Cycle ID cho bộ tại T4 trong MỘT transaction; trả gói, HRI, ảnh DataMatrix và lệnh in.
 
@@ -391,7 +401,7 @@ def generate(
 
 	`offline_cycle_id` (FEAT-009, A-40): gói đóng khi mất mạng, phát lại sau đó — dùng mã kiosk lấy từ Code Range
 	(`code_range.claim` kiểm đúng trạm, đúng ngày `packed_at`, chưa dùng) thay cho series; `client_ts` có thể cũ
-	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`.
+	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`. `employee`: nhân viên của phiên trạm (A-81).
 	"""
 	if offline_cycle_id:
 		client_time.check_not_future(client_ts)
@@ -400,7 +410,15 @@ def generate(
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		return _generate(
-			set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id
+			set_id,
+			station,
+			confirmed,
+			ci_batch,
+			pack_type,
+			maint_actions,
+			client_ts,
+			offline_cycle_id,
+			employee,
 		)
 	except Exception:
 		# Sau deadlock, InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
@@ -410,7 +428,15 @@ def generate(
 
 
 def _generate(
-	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+	set_id,
+	station,
+	confirmed,
+	ci_batch,
+	pack_type,
+	maint_actions,
+	client_ts,
+	offline_cycle_id=None,
+	employee=None,
 ):
 	unit, set_type, ctx = _open(set_id, station, for_update=True, maint_actions=maint_actions)
 	_raise_first("tracecore_pack_checks", ctx)
@@ -448,6 +474,7 @@ def _generate(
 			"shelf_life_days_applied": expiry["days"],
 			"shelf_life_source": expiry["source"],
 			"packed_by_user": frappe.session.user,
+			"packed_by": employee,  # người quét thẻ ở trạm (A-81)
 			"packed_at": packed_at,
 			"client_ts": client_ts,  # ADR-003: thời điểm client lưu UTC
 			"station": station,
@@ -618,13 +645,14 @@ def reprint(cycle_id, reason, station):
 	return pack_label.pack_result(pack, pack_label.queue_label(pack, station, printer, reprint_reason=reason))
 
 
-def void(cycle_id, reason, station, note=None):
+def void(cycle_id, reason, station, note=None, employee=None):
 	"""Hủy hiệu lực Cycle ID tại T4 (D12): gói Void, mã bị vô hiệu trong Code Registry, cổng T4 Không đạt.
 
 	`reason` phải là một option `void_reason` của Pack (REASON_REQUIRED); chỉ gói Packed (PACK_NOT_VOIDABLE).
 	Nhãn còn chờ in (Print Job Waiting) của gói chuyển Failed để `set_roll` không bao giờ in mã đã hủy.
 	T4 Fail (``redo_count + 1``, Set Unit → Reprocess) khi gói thuộc chu trình hiện hành của bộ; bỏ Cycle ID hiện
-	hành của bộ khi đó chính là mã bị hủy. Trả ``{"cycle_id", "set_id", "status", "void_reason"}``.
+	hành của bộ khi đó chính là mã bị hủy. Audit Log ghi người hủy (`employee` của phiên trạm) và lý do.
+	Trả ``{"cycle_id", "set_id", "status", "void_reason"}``.
 	"""
 	_require_station(station)
 	reasons = [o for o in (frappe.get_meta("Pack").get_field("void_reason").options or "").split("\n") if o]
@@ -665,6 +693,14 @@ def void(cycle_id, reason, station, note=None):
 		step_gate.record(unit.name, STEP, "Fail", "Pack", pack.name, station)
 	if unit.active_cycle_id == pack.name:
 		step_gate.release_cycle(unit.name)
+	audit.log(
+		"Update",
+		"Pack",
+		pack.name,
+		new={"event": "PackVoided", "void_reason": reason, "note": note, "employee": employee},
+		reason="PackVoided",
+		station=station,
+	)
 	return {"cycle_id": pack.name, "set_id": unit.name, "status": pack.status, "void_reason": reason}
 
 

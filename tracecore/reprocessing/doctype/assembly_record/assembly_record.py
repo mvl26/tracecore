@@ -22,7 +22,14 @@ CONFIRM_FIELDS = (
 	"shortage_confirmed_at",
 	"shortage_confirmed_for",
 )
-SERVICE_FIELDS = ("shortage_accepted", "nc_pending", "foreign_instruments", "station", "assembled_by_user")
+SERVICE_FIELDS = (
+	"shortage_accepted",
+	"nc_pending",
+	"foreign_instruments",
+	"station",
+	"assembled_by_user",
+	"assembled_by",
+)
 
 
 class AssemblyRecord(Document):

@@ -653,8 +653,12 @@ class TestT3DemoData(IsolatedTestCase):
 		from tracecore.reprocessing import assembly
 
 		first = devdata.ensure_t3_demo()
-		name = assembly.open_set(first["set_full"], "TR-003")["assembly"]
-		assembly.line(name, "TR-003", client_time.utc_now(), all_ok=True)
+		opened = assembly.open_set(first["set_full"], "TR-003")
+		name = opened["assembly"]
+		for row in opened["lines"]:
+			assembly.line(
+				name, "TR-003", client_time.utc_now(), instrument=row["instrument"], actual_qty=row["bom_qty"]
+			)
 		assembly.submit(name, "TR-003", client_time.utc_now())
 		second = devdata.ensure_t3_demo()
 		ready = {second[key] for key in devdata.T3_READY}

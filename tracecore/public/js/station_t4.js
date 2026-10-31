@@ -918,6 +918,7 @@ class T4Packing {
 			`<div class="tc-t4" data-view="${esc(key.split(":")[0])}">
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${body}
+				<div data-region="danger">${this.dangerHtml()}</div>
 				<div data-region="bar">${this.barHtml()}</div>
 			</div>`
 		);
@@ -929,6 +930,7 @@ class T4Packing {
 		if (!this.result.querySelector(".tc-t4")) return this.show();
 		const regions = {
 			notice: () => this.noticeHtml(),
+			danger: () => this.dangerHtml(),
 			bar: () => this.barHtml(),
 			maint: () => this.maintHtml(),
 			bomfoot: () => this.bomFootHtml(),
@@ -1441,6 +1443,24 @@ class T4Packing {
 			${warning}`;
 	}
 
+	dangerHtml() {
+		// #1843 T4-07: nút hủy tách khỏi thanh thao tác và xa nút In lại; hủy vẫn qua hộp thoại xác nhận + lý do
+		if (!this.done) return "";
+		const blocked = Boolean(this.busy) || this.offline || Boolean(this.done.offline);
+		return `<section class="tc-t4-block tc-danger-zone" aria-label="${esc(
+			__("Void Cycle ID")
+		)}">
+			<p class="tc-hint">${esc(
+				__(
+					"Void only if this pack cannot be used. You will be asked to confirm and give a reason."
+				)
+			)}</p>
+			<button type="button" class="tc-btn tc-btn-danger" data-action="void"${t4Disabled(blocked)}>${esc(
+			__("Void Cycle ID")
+		)}</button>
+		</section>`;
+	}
+
 	barHtml() {
 		if (this.done) {
 			// gói offline chưa lên server: chưa in lại / hủy được (A-40 D1)
@@ -1455,9 +1475,6 @@ class T4Packing {
 				<button type="button" class="tc-btn tc-btn-secondary" data-action="reprint"${t4Disabled(
 					blocked || waiting
 				)}>${esc(__("Reprint (reason)"))}</button>
-				<button type="button" class="tc-btn tc-btn-danger" data-action="void"${t4Disabled(blocked)}>${esc(
-				__("Void Cycle ID")
-			)}</button>
 				${waitingHint}
 				<span class="tc-hint">${esc(__("Scan the Set ID of the next set to pack"))}</span>
 			</div>`;

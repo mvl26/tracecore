@@ -24,7 +24,6 @@ from tracecore.v1._common import (
 FUNCTION = service.FUNCTION
 ASSEMBLY_ROLES = ("TC R04", "TC R02", "System Manager")
 CONFIRM_ROLES = ("TC R02", "System Manager")
-TRUE_STRINGS = ("1", "true", "yes", "on")
 REF = "Assembly Record"
 
 
@@ -44,14 +43,6 @@ def _quantity(value):
 	if isinstance(value, str) and value.strip().lstrip("-").isdigit():
 		return int(value.strip())
 	return value
-
-
-def _flag(value):
-	if isinstance(value, bool):
-		return value
-	if isinstance(value, int):
-		return value != 0
-	return isinstance(value, str) and value.strip().lower() in TRUE_STRINGS
 
 
 # --- RPC --------------------------------------------------------------------------------------------------
@@ -96,11 +87,11 @@ def line(
 	replacement_instrument=None,
 	note=None,
 	photo=None,
-	all_ok=0,
+	variance=None,
 	client_ts=None,
 	token=None,
 ):
-	"""Ghi một dòng kiểm đếm, quét mã dụng cụ (`raw`, FR-M1-02.2/.4) hoặc đánh dấu đủ hết (`all_ok`); xem `assembly.line`."""
+	"""Ghi một dòng kiểm đếm hoặc quét mã dụng cụ (`raw`, FR-M1-02.2/.4); `variance` = ``Short`` khi thiếu (A-79); xem `assembly.line`."""
 	require_any_role(*ASSEMBLY_ROLES)
 	name = _string(assembly, "assembly")
 	instrument = _string(instrument, "instrument", required=False)
@@ -109,6 +100,7 @@ def line(
 	replacement_instrument = _string(replacement_instrument, "replacement_instrument", required=False)
 	note = _string(note, "note", required=False)
 	photo = _string(photo, "photo", required=False)
+	variance = _string(variance, "variance", required=False)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
@@ -129,7 +121,7 @@ def line(
 				replacement_instrument=replacement_instrument,
 				note=note,
 				photo=photo,
-				all_ok=_flag(all_ok),
+				variance=variance,
 			),
 		},
 		REF,
@@ -175,13 +167,22 @@ def submit(assembly, station, notes=None, branch=None, branch_reason=None, clien
 	branch = _string(branch, "branch", required=False)
 	branch_reason = _string(branch_reason, "branch_reason", required=False)
 	timestamp = parse_client_ts(client_ts)
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
 			"ok": True,
-			**service.submit(name, station, timestamp, notes, branch or None, branch_reason),
+			**service.submit(
+				name,
+				station,
+				timestamp,
+				notes,
+				branch or None,
+				branch_reason,
+				session.employee if session else None,
+			),
 		},
 		REF,
 		name,

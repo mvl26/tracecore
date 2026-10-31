@@ -15,6 +15,7 @@ from tracecore.setup.label_templates import sample_pack_context
 from tracecore.tests.factories import (
 	make_assembly_record,
 	make_ci_batch,
+	make_employee,
 	make_instrument,
 	make_label_items,
 	make_maintenance,
@@ -868,3 +869,16 @@ class TestLabelContext(IsolatedTestCase):
 		self.assertEqual(context["hri"], result["hri"])
 		self.assertEqual(context["warning"], "")
 		self.assertTrue(result["pack"]["is_loaner"])
+
+
+class TestPackerName(IsolatedTestCase):
+	"""Tên trên nhãn và tóm tắt: nhân viên của phiên; gói cũ chưa có `packed_by` lấy theo user (#1841, A-81)."""
+
+	def test_employee_name_wins_and_old_packs_fall_back_to_the_user(self):
+		employee = make_employee(first_name="Nhân Viên Thẻ")
+		pack = frappe._dict(packed_by=employee.name, packed_by_user="Administrator")
+		self.assertEqual(pack_label.packer_name(pack), employee.employee_name)
+		old = frappe._dict(packed_by=None, packed_by_user="Administrator")
+		self.assertEqual(pack_label.packer_name(old), get_fullname("Administrator"))
+		gone = frappe._dict(packed_by="HR-EMP-KHONG-CO", packed_by_user="Administrator")
+		self.assertEqual(pack_label.packer_name(gone), get_fullname("Administrator"))

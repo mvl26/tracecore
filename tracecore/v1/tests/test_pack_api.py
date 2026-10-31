@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import frappe
 
 from tracecore.core import gs1
-from tracecore.reprocessing import packing
+from tracecore.reprocessing import pack_label, packing
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_assembly_record,
@@ -927,3 +927,45 @@ class TestGeneratePerformance(PackApiCase):
 		p95 = sorted(durations)[18]  # 20 lần đo: phần tử thứ 19 là P95
 		print(f"\nAC-15 generate_cycle_id: P95 = {p95 * 1000:.0f} ms, max = {max(durations) * 1000:.0f} ms")
 		self.assertLess(p95, 1.0)
+
+
+class TestPackerIsTheBadgedEmployee(PackApiCase):
+	"""Người đóng gói theo thẻ đã quét, không theo user của phiên (#1841, A-81)."""
+
+	def test_generate_records_the_session_employee_on_pack_label_and_summary(self):
+		employee = frappe.db.get_value(
+			"Station Session", {"user": frappe.session.user, "station": STATION, "is_open": 1}, "employee"
+		)
+		frappe.db.set_value("Employee", employee, "employee_name", "Nhân Viên Thẻ", update_modified=False)
+		result = call(pack_api.generate_cycle_id, **generate_args(make_t4_ready_set()))
+		self.assertIs(result["ok"], True, msg=result)
+		cycle_id = result["pack"]["cycle_id"]
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "packed_by"), employee)
+		self.assertEqual(result["pack"]["packer"], "Nhân Viên Thẻ")
+		pack = frappe.get_doc("Pack", cycle_id)
+		self.assertEqual(pack_label.label_context(pack)["packer"], "Nhân Viên Thẻ")
+		self.assertEqual(packing.lookup(cycle_id)["packer"], "Nhân Viên Thẻ")
+
+
+class TestVoidIsLogged(PackApiCase):
+	"""Hủy Cycle ID ghi rõ người hủy và lý do (#1843 T4-07)."""
+
+	def test_void_writes_who_and_why_to_the_audit_log(self):
+		employee = frappe.db.get_value(
+			"Station Session", {"user": frappe.session.user, "station": STATION, "is_open": 1}, "employee"
+		)
+		made = call(pack_api.generate_cycle_id, **generate_args(make_t4_ready_set()))
+		cycle_id = made["pack"]["cycle_id"]
+		result = call(pack_api.void, cycle_id=cycle_id, reason="Used", note="Nhòe", station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		row = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Pack", "ref_name": cycle_id, "reason": "PackVoided"},
+			fields=["user", "station", "new_value"],
+		)
+		self.assertEqual(len(row), 1)
+		self.assertEqual((row[0].user, row[0].station), (frappe.session.user, STATION))
+		logged = frappe.parse_json(row[0].new_value)
+		self.assertEqual(
+			(logged["void_reason"], logged["note"], logged["employee"]), ("Used", "Nhòe", employee)
+		)

@@ -110,9 +110,12 @@ HTTP_STATUS: dict[str, int] = {
 			"LOAD_EMPTY",
 			# FEAT-020 A-35: kiểm đếm lắp ráp T3
 			"LINES_NOT_COUNTED",
+			"LINE_VARIANCE_REQUIRED",  # A-79
 			"QTY_INVALID",
 			"BRANCH_INVALID",
 			"PHOTO_INVALID",
+			# A-78: xuất thủ công không xác định được bệnh viện
+			"ISSUE_COMPANY_AMBIGUOUS",
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",

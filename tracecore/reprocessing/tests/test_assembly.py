@@ -9,6 +9,7 @@ from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import assembly
 from tracecore.tests.factories import (
 	make_cycle,
+	make_employee,
 	make_set_type,
 	make_set_unit,
 	make_user,
@@ -66,7 +67,16 @@ class AssemblyCase(IsolatedTestCase):
 	def count_all(self, name, **short):
 		"""Đếm đủ mọi dòng BOM, trừ các dòng trong `short` ({mã: số lượng thực tế})."""
 		for code, qty in BOM:
-			self.line(name, instrument=code, actual_qty=short.get(code, qty))
+			if code in short:
+				self.short_line(name, code, short[code])
+			else:
+				self.line(name, instrument=code, actual_qty=qty)
+
+	def short_line(self, name, code, qty, **fields):
+		"""Ghi dòng thiếu đúng thủ tục A-79: chọn Thiếu và có ghi chú."""
+		return self.line(
+			name, instrument=code, actual_qty=qty, variance="Short", note="Thiếu khi đếm", **fields
+		)
 
 	def r02_proof(self, email="t3-r02@test.local"):
 		"""(session, proof) của R02 đã nhập đúng PIN tại trạm T3."""
@@ -170,24 +180,67 @@ class TestLine(AssemblyCase):
 	@bru("BRU-REP-003")
 	def test_line_status_enough_short_over(self):
 		name = self.open(self.washed_set())["assembly"]
-		self.line(name, instrument="T3-KEO", actual_qty=1)
+		self.short_line(name, "T3-KEO", 1)
 		self.line(name, instrument="T3-KEP", actual_qty=1)
-		ctx = self.line(name, instrument="T3-DAO", actual_qty=4)
+		ctx = self.line(name, instrument="T3-DAO", actual_qty=4, note="Thừa một dao")
 		status = {l["instrument"]: (l["line_status"], l["missing_qty"]) for l in ctx["lines"]}
 		self.assertEqual(status, {"T3-KEO": ("Short", 1), "T3-KEP": ("Enough", 0), "T3-DAO": ("Over", 0)})
 		self.assertTrue(ctx["has_shortage"])
 		self.assertEqual([i["instrument"] for i in ctx["shortage_items"]], ["T3-KEO"])
 		self.assertTrue(ctx["pack_locked"])
 
-	def test_all_ok_counts_every_pending_line_at_bom_quantity(self):
+	def test_there_is_no_way_to_count_every_line_at_once(self):  # A-79, FR-M2-05.5
+		import inspect
+
+		self.assertNotIn("all_ok", inspect.signature(assembly.line).parameters)
 		name = self.open(self.washed_set())["assembly"]
-		self.line(name, instrument="T3-KEO", actual_qty=1)
-		ctx = self.line(name, all_ok=True)
+		with self.assertRaises(TypeError):
+			self.line(name, all_ok=True)
+
+	@bru("BRU-REP-003")
+	def test_new_draft_starts_with_nothing_counted(self):  # A-79, FR-M2-05.5
+		ctx = self.open(self.washed_set())
 		self.assertEqual(
-			{l["instrument"]: l["actual_qty"] for l in ctx["lines"]},
-			{"T3-KEO": 1, "T3-KEP": 1, "T3-DAO": 3},  # dòng đã đếm giữ nguyên
+			{(l["counted"], l["line_status"], l["actual_qty"]) for l in ctx["lines"]}, {(0, None, 0)}
 		)
-		self.assertTrue(all(l["counted"] for l in ctx["lines"]))
+		self.assertEqual(ctx["uncounted"], [code for code, _q in BOM])
+		self.assertFalse(ctx["ready_to_submit"])
+
+	@bru("BRU-REP-003")
+	def test_short_line_needs_the_short_or_damaged_choice_and_a_note(self):  # A-79, FR-M2-05.6
+		name = self.open(self.washed_set())["assembly"]
+		self.assertEqual(
+			_code(self.line, name, instrument="T3-KEO", actual_qty=1, note="Thiếu"), "LINE_VARIANCE_REQUIRED"
+		)
+		self.assertEqual(
+			_code(self.line, name, instrument="T3-KEO", actual_qty=1, variance="Short"),
+			"LINE_VARIANCE_REQUIRED",
+		)
+		self.assertEqual(
+			_code(self.line, name, instrument="T3-KEO", actual_qty=1, damaged_qty=1, disposition="Repair"),
+			"LINE_VARIANCE_REQUIRED",
+		)
+		self.assertFalse(
+			frappe.db.get_value("Assembly Line", {"parent": name, "instrument": "T3-KEO"}, "counted")
+		)
+		ctx = self.line(
+			name, instrument="T3-KEO", actual_qty=1, damaged_qty=1, disposition="Repair", note="Gãy"
+		)
+		self.assertEqual(ctx["lines"][0]["line_status"], "Short")
+		self.assertEqual(self.short_line(name, "T3-KEP", 0)["unexplained"], [])
+
+	def test_over_count_needs_a_note_but_no_choice(self):  # A-79, FR-M2-05.6
+		name = self.open(self.washed_set())["assembly"]
+		self.assertEqual(_code(self.line, name, instrument="T3-KEP", actual_qty=2), "LINE_VARIANCE_REQUIRED")
+		self.assertEqual(self.line(name, instrument="T3-KEP", actual_qty=2, note="Dư 1")["unexplained"], [])
+
+	def test_exact_count_and_replaced_damage_need_no_note(self):  # A-79
+		name = self.open(self.washed_set())["assembly"]
+		self.line(name, instrument="T3-KEP", actual_qty=1)
+		ctx = self.line(
+			name, instrument="T3-KEO", actual_qty=2, damaged_qty=1, replaced_qty=1, disposition="Repair"
+		)
+		self.assertEqual(ctx["unexplained"], [])
 
 	@bru("BRU-REP-003")
 	def test_damaged_and_replaced_from_spare_stock(self):
@@ -241,7 +294,7 @@ class TestLine(AssemblyCase):
 	def test_photo_must_be_an_uploaded_file(self):
 		name = self.open(self.washed_set())["assembly"]
 		self.assertEqual(
-			_code(self.line, name, instrument="T3-KEO", actual_qty=1, photo="/files/none.png"),
+			_code(self.line, name, instrument="T3-KEO", actual_qty=2, photo="/files/none.png"),
 			"PHOTO_INVALID",
 		)
 		frappe.get_doc(
@@ -253,7 +306,7 @@ class TestLine(AssemblyCase):
 				"is_private": 0,
 			}
 		).insert(ignore_permissions=True)
-		ctx = self.line(name, instrument="T3-KEO", actual_qty=1, photo=PHOTO)
+		ctx = self.line(name, instrument="T3-KEO", actual_qty=2, photo=PHOTO)
 		self.assertEqual(ctx["lines"][0]["photo"], PHOTO)
 
 	def test_unknown_or_closed_assembly(self):
@@ -275,8 +328,8 @@ class TestLine(AssemblyCase):
 		name = self.open(self.washed_set())["assembly"]
 		patcher, calls = _hook_calls(assembly.NC_HOOK)
 		with patcher:
-			self.line(name, instrument="T3-KEO", actual_qty=0)
-			self.line(name, instrument="T3-KEP", actual_qty=0)  # vẫn thiếu: không bắn hook lần hai
+			self.short_line(name, "T3-KEO", 0)
+			self.short_line(name, "T3-KEP", 0)  # vẫn thiếu: không bắn hook lần hai
 		self.assertEqual(len(calls), 1)
 		self.assertEqual((calls[0]["assembly"], calls[0]["kind"]), (name, "Shortage"))
 		self.assertEqual(frappe.db.get_value("Assembly Record", name, "nc_pending"), 1)
@@ -339,6 +392,100 @@ class TestScanInstrument(AssemblyCase):
 		)
 		self.set_flag(0)
 		self.assertEqual(_code(self.line, self.name, raw=self.codes["T3-KEO"]), "FEATURE_DISABLED")
+
+	@bru("BRU-REP-003")
+	def test_scanned_short_line_blocks_submit_until_explained(self):  # A-79, FR-M2-05.6
+		ctx = self.line(self.name, raw=self.codes["T3-KEO"])  # BOM 2, mới quét 1
+		self.assertEqual(ctx["unexplained"], ["T3-KEO"])
+		self.line(self.name, instrument="T3-KEP", actual_qty=1)
+		ctx = self.line(self.name, instrument="T3-DAO", actual_qty=3)
+		self.assertEqual(ctx["pack_lock_reason"], "LINE_VARIANCE_REQUIRED")
+		self.assertFalse(ctx["ready_to_submit"])
+		self.assertEqual(_code(assembly.submit, self.name, STATION, self.ts), "LINE_VARIANCE_REQUIRED")
+		self.assertEqual(frappe.db.get_value("Assembly Record", self.name, "docstatus"), 0)
+		# rẽ nhánh Sửa chữa/Thanh lý không cần đếm xong
+		done = assembly.submit(self.name, STATION, self.ts, branch="Repair", branch_reason="Gãy")
+		self.assertEqual(done["result"], "Fail")
+
+
+class TestScreenSummary(AssemblyCase):
+	"""Số liệu dòng tổng và ô quét của màn T3 (#1842, A-80)."""
+
+	def test_tally_reflects_enough_short_damaged_and_over(self):
+		name = self.open(self.washed_set())["assembly"]
+		tally = self.line(name, instrument="T3-KEP", actual_qty=1)["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 1, "enough": 1, "short": 0, "damaged": 0, "over": 0})
+		tally = self.short_line(name, "T3-KEO", 1)["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 2, "enough": 1, "short": 1, "damaged": 0, "over": 0})
+		tally = self.line(
+			name, instrument="T3-DAO", actual_qty=2, damaged_qty=1, disposition="Repair", note="Mẻ"
+		)["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 3, "enough": 1, "short": 1, "damaged": 1, "over": 0})
+
+	def test_replaced_damage_counts_as_enough_and_over_is_separate(self):
+		name = self.open(self.washed_set())["assembly"]
+		self.line(
+			name, instrument="T3-KEO", actual_qty=2, damaged_qty=1, replaced_qty=1, disposition="Repair"
+		)
+		tally = self.line(name, instrument="T3-KEP", actual_qty=2, note="Dư")["tally"]
+		self.assertEqual(tally, {"total": 3, "counted": 2, "enough": 1, "short": 0, "damaged": 0, "over": 1})
+
+	def test_screen_knows_whether_instrument_codes_can_be_scanned(self):
+		su = self.washed_set()
+		frappe.db.set_single_value("TraceCore Settings", "enable_instrument_giai", 0)
+		self.assertFalse(self.open(su)["instrument_scan"])
+		frappe.db.set_single_value("TraceCore Settings", "enable_instrument_giai", 1)
+		self.assertTrue(self.open(su)["instrument_scan"])
+
+	def test_rejected_scan_changes_nothing_in_the_open_draft(self):
+		su = self.washed_set()
+		name = self.open(su)["assembly"]
+		before = self.line(name, instrument="T3-KEP", actual_qty=1)["tally"]
+		self.assertEqual(_code(self.open, "DC-0026"), "SCAN_INVALID")
+		self.assertEqual(self.open(su)["tally"], before)
+
+
+class TestResetPatch(AssemblyCase):
+	def line_row(self, name, code):
+		return frappe.db.get_value(
+			"Assembly Line", {"parent": name, "instrument": code}, ["counted", "actual_qty", "line_status"]
+		)
+
+	@bru("BRU-REP-003")
+	def test_patch_uncounts_enough_lines_of_drafts_only(self):  # A-79
+		from tracecore.patches.v0_1 import reset_unverified_assembly_counts as patch_module
+
+		draft = self.open(self.washed_set())["assembly"]
+		self.line(draft, instrument="T3-KEO", actual_qty=2)  # giống nút cũ để lại: Đủ, không dấu vết
+		self.short_line(draft, "T3-KEP", 0)  # thiếu có chủ ý: giữ
+		self.line(draft, instrument="T3-DAO", actual_qty=3, note="Đã soi kỹ")  # có ghi chú: giữ
+		closed = self.open(self.washed_set("T3B"))["assembly"]
+		self.count_all(closed)
+		assembly.submit(closed, STATION, self.ts)
+
+		patch_module.execute()
+
+		self.assertEqual(self.line_row(draft, "T3-KEO"), (0, 0, None))
+		self.assertEqual(self.line_row(draft, "T3-KEP"), (1, 0, "Short"))
+		self.assertEqual(self.line_row(draft, "T3-DAO"), (1, 3, "Enough"))
+		self.assertEqual(self.line_row(closed, "T3-KEO"), (1, 2, "Enough"))
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log",
+				{"ref_doctype": "Assembly Record", "ref_name": draft, "reason": "AssemblyCountsReset"},
+			)
+		)
+		self.assertFalse(
+			frappe.db.exists(
+				"Audit Log",
+				{"ref_doctype": "Assembly Record", "ref_name": closed, "reason": "AssemblyCountsReset"},
+			)
+		)
+		ctx = assembly.open_set(frappe.db.get_value("Assembly Record", draft, "set_unit"), STATION, self.ts)
+		self.assertEqual(ctx["uncounted"], ["T3-KEO"])
+
+		patch_module.execute()  # chạy lại không đổi gì thêm
+		self.assertEqual(self.line_row(draft, "T3-DAO"), (1, 3, "Enough"))
 
 
 class TestConfirmShortage(AssemblyCase):
@@ -413,7 +560,7 @@ class TestConfirmShortage(AssemblyCase):
 		next(row for row in settings.error_rules if row.error_code == "DC-001").severity = "Warning"
 		settings.save(ignore_permissions=True)
 		before = frappe.db.count("TraceCore Error Log", {"error_code": "DC-001"})
-		self.assertTrue(self.line(name, instrument="T3-KEO", actual_qty=0)["ready_to_submit"])
+		self.assertTrue(self.short_line(name, "T3-KEO", 0)["ready_to_submit"])
 		done = assembly.submit(name, STATION, self.ts)
 		self.assertEqual((done["result"], done["pack_locked"]), ("Pass", False))
 		self.assertEqual(error_codes.pop_warnings()[0]["error_code"], "DC-001")
@@ -449,7 +596,7 @@ class TestConfirmShortage(AssemblyCase):
 		_su, name = self.short_draft()
 		session, proof, _user = self.r02_proof()
 		self.confirm(name, proof=proof, session=session)
-		ctx = self.line(name, instrument="T3-KEO", actual_qty=1)  # vẫn thiếu nhưng khác lúc xác nhận
+		ctx = self.short_line(name, "T3-KEO", 1)  # vẫn thiếu nhưng khác lúc xác nhận
 		self.assertFalse(ctx["shortage_confirmed"])
 		self.assertEqual(_code(assembly.submit, name, STATION, self.ts), "SHORTAGE_UNCONFIRMED")
 
@@ -474,6 +621,14 @@ class TestSubmit(AssemblyCase):
 		self.assertFalse(done["pack_locked"])
 		self.assertEqual(done["next_station"], T4_STATION)
 
+	def test_submit_records_the_session_employee(self):  # #1841, A-81
+		employee = make_employee(first_name="Thẻ Lắp Bộ").name
+		su = self.washed_set()
+		name = self.open(su)["assembly"]
+		self.count_all(name)
+		assembly.submit(name, STATION, self.ts, employee=employee)
+		self.assertEqual(frappe.db.get_value("Assembly Record", name, "assembled_by"), employee)
+
 	def test_submit_requires_every_line_counted(self):
 		su = self.washed_set()
 		name = self.open(su)["assembly"]
@@ -492,7 +647,9 @@ class TestSubmit(AssemblyCase):
 	def test_branch_sends_set_to_repair_or_disposal_via_failed_t3(self):
 		su = self.washed_set()
 		name = self.open(su)["assembly"]
-		self.line(name, instrument="T3-KEO", actual_qty=0, damaged_qty=2, disposition="Dispose")
+		self.line(
+			name, instrument="T3-KEO", actual_qty=0, damaged_qty=2, disposition="Dispose", note="Gãy cả hai"
+		)
 		self.assertEqual(
 			_code(assembly.submit, name, STATION, self.ts, branch="Burn", branch_reason="x"), "BRANCH_INVALID"
 		)

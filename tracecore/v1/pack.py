@@ -20,6 +20,7 @@ from tracecore.v1._common import (
 	PACKING_ROLES,
 	STORAGE_ROLES,
 	BadRequestError,
+	current_station_session,
 	require_any_role,
 	run_at_step,
 	station_session,
@@ -211,6 +212,7 @@ def generate_cycle_id(
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(set_id)
 	is_set = scanned["type"] == "set"
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
@@ -218,7 +220,15 @@ def generate_cycle_id(
 		lambda: {
 			"ok": True,
 			**packing.generate(
-				set_id, station, confirmed, ci_batch, pack_type, actions, timestamp, offline_cycle_id
+				set_id,
+				station,
+				confirmed,
+				ci_batch,
+				pack_type,
+				actions,
+				timestamp,
+				offline_cycle_id,
+				session.employee if session else None,
 			),
 		},
 		"Set Unit" if is_set else None,
@@ -251,11 +261,15 @@ def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
 	"""Hủy Cycle ID tại T4 (D12): `reason` là một lý do hủy của Pack; bộ về Reprocess để đóng gói lại."""
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {"ok": True, **packing.void(cycle_id, reason, station, note)},
+		lambda: {
+			"ok": True,
+			**packing.void(cycle_id, reason, station, note, session.employee if session else None),
+		},
 		"Pack",
 		cycle_id,
 	)

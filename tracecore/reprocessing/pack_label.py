@@ -32,6 +32,12 @@ def label_items(method):
 	)
 
 
+def packer_name(pack):
+	"""Họ tên người đóng gói: nhân viên của phiên trạm (A-81); gói cũ chưa có `packed_by` lấy theo user."""
+	name = pack.packed_by and frappe.db.get_value("Employee", pack.packed_by, "employee_name")
+	return name or get_fullname(pack.packed_by_user)
+
+
 def label_context(pack):
 	"""`doc` của mẫu nhãn gói, đúng bộ khóa của `sample_pack_context`; dùng cho Print Job và khi in lại.
 
@@ -45,7 +51,7 @@ def label_context(pack):
 		"cycle_id": pack.name,
 		"set_name": pack.set_name or "",
 		"dept": department or pack.department or "",
-		"packer": get_fullname(pack.packed_by_user),
+		"packer": packer_name(pack),
 		"packed_at": f"{packed_at:%d/%m/%Y %H:%M}",
 		"expiry": f"{expiry:%d/%m/%Y}",
 		"method_label": _(pack.method),
@@ -209,7 +215,7 @@ def pack_summary(pack):
 		"expiry": str(getdate(pack.expiry)),
 		"shelf_life_days_applied": cint(pack.shelf_life_days_applied),
 		"packed_at": f"{get_datetime(pack.packed_at):%Y-%m-%d %H:%M:%S}",
-		"packer": get_fullname(pack.packed_by_user),
+		"packer": packer_name(pack),
 		"ci_batch": pack.ci_batch,
 		"bom_version": cint(pack.bom_version),
 		"label_type": pack.label_type,

@@ -470,17 +470,40 @@ def mark_read(names):
 		)
 		if not row:
 			continue
-		frappe.db.set_value(
-			"Notification Delivery",
-			row.name,
-			{"status": "Read", "read_at": now_datetime()},
-			update_modified=False,
-		)
-		if row.bell_log and frappe.db.exists("Notification Log", row.bell_log):
-			frappe.db.set_value("Notification Log", row.bell_log, "read", 1, update_modified=False)
+		_set_read(row)
 		audit.log("Update", "Notification Delivery", row.name, new={"event": "Notification Read"})
 		changed += 1
 	return changed
+
+
+def resolve(event_code, ref_doctype, ref_name):
+	"""Sự kiện đã xử lý xong: mọi thông báo chưa đọc của chứng từ này, của mọi người nhận, chuyển Đã đọc. Trả số dòng đã đổi."""
+	rows = frappe.get_all(
+		"Notification Delivery",
+		filters={
+			"event_code": event_code,
+			"ref_doctype": ref_doctype,
+			"ref_name": ref_name,
+			"channel": IN_APP,
+			"status": "Sent",
+		},
+		fields=["name", "bell_log"],
+	)
+	for row in rows:
+		_set_read(row)
+		audit.log("Update", "Notification Delivery", row.name, new={"event": "Notification Resolved"})
+	return len(rows)
+
+
+def _set_read(row):
+	frappe.db.set_value(
+		"Notification Delivery",
+		row.name,
+		{"status": "Read", "read_at": now_datetime()},
+		update_modified=False,
+	)
+	if row.bell_log and frappe.db.exists("Notification Log", row.bell_log):
+		frappe.db.set_value("Notification Log", row.bell_log, "read", 1, update_modified=False)
 
 
 def mark_all_read(event_code=None):
