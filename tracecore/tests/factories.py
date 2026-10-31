@@ -413,7 +413,7 @@ def record_daily_tests(equipment):
 	"""Ghi test hằng ngày Đạt của hôm nay cho mọi test bắt buộc của máy (không qua dịch vụ, không khóa/mở máy)."""
 	from tracecore.equipment import daily_test
 
-	for test_type in daily_test.required_tests(equipment.equipment_type):
+	for test_type in daily_test.required_tests(equipment.equipment_type, equipment.daily_test_required):
 		row = frappe.get_doc(
 			{
 				"doctype": "Daily Test",

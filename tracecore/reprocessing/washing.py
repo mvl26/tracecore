@@ -137,10 +137,15 @@ def scan_machine(raw):
 	equipment = frappe.db.get_value("Equipment", scanned["id"], list(EQUIPMENT_FIELDS), as_dict=True)
 	equipment.is_connected = cint(equipment.is_connected)
 	equipment.has_printout = cint(equipment.has_printout)
+	return {"equipment": equipment, **_programs_and_lots(equipment.name)}
+
+
+def _programs_and_lots(equipment):
+	"""Chương trình đang dùng của máy (kèm hóa chất và tình trạng tồn) và lô hóa chất gợi ý FEFO."""
 	programs, lots, seen = [], [], set()
 	for row in frappe.get_all(
 		"Process Program",
-		filters={"equipment": equipment.name, "is_active": 1},
+		filters={"equipment": equipment, "is_active": 1},
 		fields=["name", "program_name", "requires_bi", "chemical"],
 		order_by="program_name asc",
 	):
@@ -150,13 +155,107 @@ def scan_machine(raw):
 				"program_name": row.program_name,
 				"requires_bi": cint(row.requires_bi),
 				"chemical": row.chemical,
+				"chemicals": program_chemicals(row.name),
 				"parameters": _parameters(row.name),
 			}
 		)
 		if row.chemical and row.chemical not in seen:
 			seen.add(row.chemical)
 			lots.extend(suggest_chemical_lots(row.chemical))
-	return {"equipment": equipment, "programs": programs, "chemical_lots": lots}
+	return {"programs": programs, "chemical_lots": lots}
+
+
+def refresh_lots(equipment):
+	"""Tra lại chương trình, hóa chất và lô FEFO của máy `equipment` (lô mới nhập sau khi quét máy; A-72)."""
+	block = check_equipment_ready(equipment)
+	if block:
+		raise BlockedError(block)
+	return _programs_and_lots(equipment)
+
+
+def _stock_factor(item, uom):
+	"""Hệ số đổi `uom` sang ĐVT tồn kho của `item` (1 nếu `uom` trống hoặc là ĐVT tồn kho)."""
+	if not uom or uom == frappe.db.get_value("Item", item, "stock_uom"):
+		return 1.0
+	return flt(
+		frappe.db.get_value(
+			"UOM Conversion Detail", {"parent": item, "parenttype": "Item", "uom": uom}, "conversion_factor"
+		)
+	)
+
+
+def program_chemicals(program):
+	"""Hóa chất của chương trình rửa kèm tình trạng tồn, để màn T2 nêu rõ hóa chất nào thiếu (A-72, FR-M2-03.5).
+
+	Gồm hóa chất chính của chương trình và các vật tư nhóm Chemical trong định mức, theo thứ tự khai báo. Mỗi dòng
+	``{"item", "item_name", "uom", "required", "qty", "status", "expiry_date"}``: ``qty`` là tồn của các lô còn hạn,
+	``required`` là định mức một chu trình theo ĐVT tồn kho; ``status`` là ``ok`` (đủ), ``short`` (thiếu hoặc hết) hoặc
+	``expired`` (còn tồn nhưng mọi lô đã hết hạn).
+	"""
+	chemical = frappe.db.get_value("Process Program", program, "chemical")
+	norms = frappe.get_all(
+		"Program Consumable",
+		filters={"parent": program, "parenttype": "Process Program"},
+		fields=["item", "uom", "qty_per_load"],
+		order_by="idx asc",
+	)
+	need = {norm.item: flt(norm.qty_per_load) * _stock_factor(norm.item, norm.uom) for norm in norms}
+	items = [chemical] if chemical else []
+	items += [
+		norm.item
+		for norm in norms
+		if norm.item not in items
+		and frappe.db.get_value("Item", norm.item, "tc_item_group_cssd") == CHEMICAL_GROUP
+	]
+	rows = []
+	for item in items:
+		valid = suggest_chemical_lots(item)
+		qty = sum(lot["qty"] for lot in valid)
+		required = flt(need.get(item), 6)
+		if valid and qty >= required:
+			status = "ok"
+		elif not valid and frappe.db.exists(
+			"Batch",
+			{"item": item, "disabled": 0, "batch_qty": [">", 0], "expiry_date": ["<", _today()]},
+		):
+			status = "expired"
+		else:
+			status = "short"
+		rows.append(
+			{
+				"item": item,
+				"item_name": frappe.db.get_value("Item", item, "item_name"),
+				"uom": frappe.db.get_value("Item", item, "stock_uom"),
+				"required": required,
+				"qty": flt(qty, 6),
+				"status": status,
+				"expiry_date": valid[0]["expiry_date"] if valid else None,
+			}
+		)
+	return rows
+
+
+# --- Nháp danh sách đang nạp (lưu theo phiên trạm, A-72) ----------------------------------------------------
+
+
+def get_draft(session):
+	"""Nháp lô đang nạp dở của phiên trạm `session` (dict) hoặc None."""
+	raw = frappe.db.get_value("Station Session", session, "wash_draft") if session else None
+	return frappe.parse_json(raw) if raw else None
+
+
+def save_draft(session, draft):
+	"""Lưu (hoặc xóa khi `draft` rỗng) nháp lô đang nạp dở của phiên trạm; trả nháp đã lưu."""
+	if not session:
+		return None
+	frappe.db.set_value(
+		"Station Session",
+		session,
+		"wash_draft",
+		frappe.as_json(draft) if draft else None,
+		update_modified=False,
+	)
+	return draft or None
 
 
 # --- Nạp bộ vào lô (FR-M2-03.6, FR-M2-25) -----------------------------------------------------------

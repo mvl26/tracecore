@@ -116,6 +116,7 @@ page_js = {
 doctype_js = {
 	"Item": "public/js/item.js",
 	"Stock Entry": "public/js/stock_entry.js",
+	"Wash Batch": "public/js/wash_batch.js",
 	"Employee": "public/js/employee.js",
 }
 doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
@@ -355,7 +356,14 @@ doc_events = {
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
-	"TraceCore Settings": dict(_AUDIT_EVENTS),
+	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
+	"TraceCore Settings": {
+		**_AUDIT_EVENTS,
+		"on_update": [
+			"tracecore.core.audit.on_document_event",
+			"tracecore.equipment.daily_test.on_settings_update",
+		],
+	},
 	# vật tư tiêu hao CSSD trên Item ERPNext (FEAT-041, A-07): chặn trùng mã; nhóm, nhãn, hạn dùng, tồn tối thiểu
 	"Item": {
 		"before_insert": "tracecore.inventory.items.check_duplicate_code",
@@ -476,6 +484,9 @@ tracecore_wash_equipment_checks = ["tracecore.equipment.daily_test.equipment_blo
 #  - load_daily_indicator: (equipment, indicator, on) -> dict | None, chỉ thị của mẻ lấy từ test hằng ngày của máy trong
 #    ngày chạy mẻ (A-23: Bowie-Dick không nhập lại ở T5b)
 tracecore_load_daily_indicator = ["tracecore.equipment.daily_test.load_indicator"]
+#  - load_optional_indicators: (equipment) -> [indicator], chỉ thị không bắt buộc để giải phóng mẻ vì máy ngoài diện test
+#    hằng ngày (A-70)
+tracecore_load_optional_indicators = ["tracecore.equipment.daily_test.optional_indicators"]
 # M5 (FEAT-039, A-43 M8) gọi khi lưu hồ sơ sự cố thiết bị: (equipment, record) -> [{load_doctype, load}], M2 đánh dấu mẻ/lô
 # chưa dỡ trên máy `needs_review` và trả danh sách để ghi vào hồ sơ (FR-M5-04.2); M5 không import M2
 tracecore_equipment_incident = ["tracecore.reprocessing.equipment_incident.flag_open_on"]

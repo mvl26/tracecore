@@ -11,6 +11,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.inventory import alerts as stock_alerts
+from tracecore.inventory import consume
 from tracecore.inventory import manual
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
@@ -18,6 +19,7 @@ ISSUE_ROLES = ("TC R05", "TC R06", "TC R09", "TC R02", "System Manager")
 # FEAT-043: xem cảnh báo tồn (R06 kiểm kê, R01 xem); chỉ R09 và R02 lập đề nghị mua
 ALERT_ROLES = ("TC R09", "TC R02", "TC R01", "TC R06", "System Manager")
 PURCHASE_ROLES = ("TC R09", "TC R02", "System Manager")
+RETRY_ROLES = ("TC R09", "TC R02", "System Manager")  # xử lý lại tiêu hao tự động bị lỗi (CONSUMPTION_FAILED)
 
 
 def _lots(value):
@@ -84,3 +86,17 @@ def create_purchase_request(item=None, warehouse=None, client_ts=None):
 		"ok": True,
 		"request": {"name": doc.name, "item": line.item_code, "warehouse": line.warehouse, "qty": line.qty},
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def retry_consumption(source_doctype=None, source_name=None):
+	"""Chạy lại tiêu hao tự động của lô rửa đã Đạt mà lần đầu bị lỗi (nút "Retry consumption" trên form Wash Batch).
+
+	Trả ``{"ok", "entry", "created", "short"}``; ``created = False`` khi lô đã có phiếu xuất (không trừ hai lần). Lỗi
+	thì ném ValidationError kèm nguyên nhân.
+	"""
+	require_any_role(*RETRY_ROLES)
+	if not (isinstance(source_doctype, str) and isinstance(source_name, str)):
+		raise BadRequestError(_("source_doctype and source_name must be strings."))
+	result = consume.retry(source_doctype, source_name)
+	return {"ok": True, "entry": result["entry"], "created": result["created"], "short": result["short"]}

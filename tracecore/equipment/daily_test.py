@@ -1,7 +1,8 @@
 """Test hằng ngày và khóa máy (M5, FEAT-040; FR-M5-05 .1-.3, FR-M5-06 .1-.2; UC-23; BRU-EQP-001, BRU-EQP-002).
 
-`record` ghi một Daily Test (Bowie-Dick, leak, test làm sạch máy rửa): Đạt mở máy cho ngày, Không đạt khóa máy và đánh
-dấu NC chờ tạo (FEAT-030). `equipment_block` là hàm của hook ``tracecore_load_equipment_checks`` (T5) và
+`record` ghi một Daily Test: test bắt buộc Đạt mở máy cho ngày, Không đạt khóa máy và đánh dấu NC chờ tạo (FEAT-030); test
+của máy ngoài diện là tự nguyện, không khóa. Diện bắt buộc cấu hình theo từng viện trong TraceCore Settings (A-70).
+`equipment_block` là hàm của hook ``tracecore_load_equipment_checks`` (T5) và
 ``tracecore_wash_equipment_checks`` (T2): chặn tạo mẻ/lô khi quá hạn kiểm định hoặc thiếu test ngày, M2 không import M5.
 `unlock_temp` là mở khóa tạm của R02 (quyền kiểm ở RPC): lý do, 1-24 giờ, không với thiết bị áp lực quá hạn kiểm định.
 Trạng thái máy chỉ đổi bằng cờ ``flags.tc_equipment`` (xem `equipment.py`).
@@ -14,9 +15,19 @@ from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime,
 from tracecore.core import audit
 from tracecore.core.errors import Block, BlockedError
 
-# test bắt buộc theo loại máy; plasma không có test ngày (chỉ thị hóa học từng mẻ, FR-M5-05.2)
-REQUIRED = {
-	"Steam Sterilizer": ("bowie_dick", "leak"),
+SETTINGS = "TraceCore Settings"
+MODE_NONE = "Not Required"
+MODE_ALL = "All Sterilizers"
+MODE_SELECTED = "Selected Sterilizers"
+MODES = (MODE_NONE, MODE_ALL, MODE_SELECTED)
+STEAM = "Steam Sterilizer"
+PLASMA = "Plasma Sterilizer"
+STERILIZERS = (STEAM, PLASMA)  # chỉ máy tiệt khuẩn có thể thuộc diện bắt buộc (A-70)
+LEAK = "leak"
+# test ghi được theo loại máy; test nào bắt buộc do `required_tests` quyết định theo cấu hình
+TESTS = {
+	STEAM: ("bowie_dick", LEAK),
+	PLASMA: ("plasma_daily",),
 	"Washer-Disinfector": ("washer_cleaning",),
 	"Ultrasonic Cleaner": ("washer_cleaning",),
 }
@@ -34,8 +45,39 @@ def _blocked(code, title, reason, action, items=None):
 	return BlockedError(Block(code, title, reason, action, items=items))
 
 
-def required_tests(equipment_type):
-	return list(REQUIRED.get(equipment_type, ()))
+def _setting(field):
+	# không qua cache: đổi Cài đặt có hiệu lực ngay (A-70)
+	return frappe.db.get_single_value(SETTINGS, field, cache=False)
+
+
+def mode():
+	return _setting("daily_test_mode") or MODE_ALL
+
+
+def ensure_settings():
+	"""Ghi giá trị mặc định còn thiếu của mục Test hàng ngày (A-70); không đổi lựa chọn đã có của viện. Idempotent."""
+	current = frappe.db.get_singles_dict(SETTINGS)
+	defaults = {"daily_test_mode": MODE_ALL, "daily_test_steam_leak": 1, "daily_test_plasma": 1}
+	for field, value in defaults.items():
+		if current.get(field) in (None, ""):
+			frappe.db.set_single_value(SETTINGS, field, value)
+
+
+def required_tests(equipment_type, selected=0):
+	"""Test bắt buộc của máy theo cấu hình; `selected` là ô tick trên phiếu máy, chỉ có tác dụng ở chế độ chọn máy."""
+	current = mode()
+	if (
+		equipment_type not in STERILIZERS
+		or current == MODE_NONE
+		or (current == MODE_SELECTED and not cint(selected))
+	):
+		return []
+	if equipment_type == PLASMA and not cint(_setting("daily_test_plasma")):
+		return []
+	tests = list(TESTS[equipment_type])
+	if LEAK in tests and not cint(_setting("daily_test_steam_leak")):
+		tests.remove(LEAK)
+	return tests
 
 
 def _equipment(name, for_update=False):
@@ -99,8 +141,17 @@ def load_indicator(equipment, indicator, on=None):
 	}
 
 
-def missing_tests(equipment, equipment_type):
-	return [test for test in required_tests(equipment_type) if not passed_today(equipment, test)]
+def optional_indicators(equipment):
+	"""Hook ``tracecore_load_optional_indicators`` (A-70): chỉ thị lấy từ test ngày mà máy không bắt buộc theo cấu hình."""
+	row = frappe.db.get_value("Equipment", equipment, ["equipment_type", "daily_test_required"], as_dict=True)
+	if not row:
+		return []
+	required = required_tests(row.equipment_type, row.daily_test_required)
+	return [kind for kind in DAILY_INDICATORS if kind not in required]
+
+
+def missing_tests(equipment, equipment_type, selected=0):
+	return [test for test in required_tests(equipment_type, selected) if not passed_today(equipment, test)]
 
 
 def _apply(equipment, status=None, **fields):
@@ -129,11 +180,12 @@ def record(
 	"""Ghi một test hằng ngày (FR-M5-05); trả ``{"daily_test", "result", "locked", "unlocked", "warnings"}``.
 
 	Loại test phải thuộc bộ test của loại máy, kết quả Đạt/Không đạt, lô test bắt buộc và còn hạn (E2). Thiếu ảnh
-	Bowie-Dick chỉ cảnh báo ``photo_missing`` (UC-23 E3). Không đạt khóa máy (``lock_reason = Daily Test``) và đặt
-	``nc_pending``; Đạt đủ bộ test của ngày thì mở lại máy đang bị khóa vì test.
+	Bowie-Dick bắt buộc chỉ cảnh báo ``photo_missing`` (UC-23 E3). Test bắt buộc Không đạt khóa máy
+	(``lock_reason = Daily Test``) và đặt ``nc_pending``; Đạt đủ bộ test của ngày thì mở lại máy đang bị khóa vì test.
+	Test tự nguyện của máy ngoài diện chỉ được lưu lại (A-70).
 	"""
 	machine = _equipment(equipment, for_update=True)
-	if test_type not in required_tests(machine.equipment_type):
+	if test_type not in TESTS.get(machine.equipment_type, ()):
 		raise _invalid(
 			_("Test {0} does not apply to {1}.").format(
 				test_type, _(machine.equipment_type, context="Equipment")
@@ -152,6 +204,8 @@ def record(
 			_("Use a test pack from a lot that has not expired."),
 		)
 	now = now_datetime()
+	mandatory = test_type in required_tests(machine.equipment_type, machine.daily_test_required)
+	failed = result == "Fail" and mandatory
 	row = frappe.get_doc(
 		{
 			"doctype": "Daily Test",
@@ -167,20 +221,20 @@ def record(
 			"tested_by": employee,
 			"tested_at": now,
 			"note": (note or "").strip()[:MAX_REASON] or None,
-			"nc_pending": 1 if result == "Fail" else 0,
+			"nc_pending": 1 if failed else 0,
 		}
 	)
 	row.flags.tc_daily_test = True
 	row.insert(ignore_permissions=True)
 	locked = unlocked = False
-	if result == "Fail":
+	if failed:
 		if machine.status == "Ready":
 			_apply(machine.name, status="Locked", lock_reason=LOCK_DAILY_TEST)
 		locked = True
 	elif (
 		machine.status == "Locked"
 		and machine.lock_reason == LOCK_DAILY_TEST
-		and not missing_tests(machine.name, machine.equipment_type)
+		and not missing_tests(machine.name, machine.equipment_type, machine.daily_test_required)
 	):
 		_apply(machine.name, status="Ready", lock_reason=None)
 		unlocked = True
@@ -189,7 +243,7 @@ def record(
 		"result": result,
 		"locked": locked,
 		"unlocked": unlocked,
-		"warnings": [PHOTO_MISSING] if test_type == "bowie_dick" and not photo else [],
+		"warnings": [PHOTO_MISSING] if mandatory and test_type == "bowie_dick" and not photo else [],
 	}
 
 
@@ -205,14 +259,21 @@ def equipment_block(equipment):
 	"""Hàm của hook ``tracecore_load_equipment_checks`` / ``tracecore_wash_equipment_checks``: Block hoặc None (FR-M5-06).
 
 	Quá hạn kiểm định → ``EQUIPMENT_INSPECTION_EXPIRED``; quá hạn hiệu chuẩn → ``EQUIPMENT_CALIBRATION_EXPIRED`` (A-43 M5);
-	thiếu test ngày → ``DAILY_TEST_REQUIRED`` kèm danh sách. Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ
+	thiếu test bắt buộc theo cấu hình → ``DAILY_TEST_REQUIRED`` kèm danh sách. Máy đang được R02 mở khóa tạm (``unlock_until`` chưa hết) bỏ
 	qua test ngày và hiệu chuẩn quá hạn, và bỏ qua kiểm định quá hạn nếu không phải thiết bị áp lực. Máy
 	``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.
 	"""
 	row = frappe.db.get_value(
 		"Equipment",
 		equipment,
-		["equipment_type", "status", "inspection_due", "calibration_due", "unlock_until"],
+		[
+			"equipment_type",
+			"status",
+			"inspection_due",
+			"calibration_due",
+			"unlock_until",
+			"daily_test_required",
+		],
 		as_dict=True,
 	)
 	if not row:
@@ -238,7 +299,7 @@ def equipment_block(equipment):
 		)
 	if unlocked:
 		return None
-	missing = missing_tests(equipment, row.equipment_type)
+	missing = missing_tests(equipment, row.equipment_type, row.daily_test_required)
 	if missing:
 		return Block(
 			"DAILY_TEST_REQUIRED",
@@ -309,11 +370,30 @@ def _unlock_invalid(reason):
 	)
 
 
+def release_stale_locks():
+	"""Mở máy đang khóa vì ``Daily Test`` mà không còn thiếu test bắt buộc nào (đổi cấu hình, patch; A-70); trả tên máy."""
+	released = []
+	for row in frappe.get_all(
+		"Equipment",
+		filters={"status": "Locked", "lock_reason": LOCK_DAILY_TEST},
+		fields=["name", "equipment_type", "daily_test_required"],
+	):
+		if not missing_tests(row.name, row.equipment_type, row.daily_test_required):
+			_apply(row.name, status="Ready", lock_reason=None)
+			released.append(row.name)
+	return released
+
+
+def on_settings_update(doc=None, method=None):
+	"""doc_events của TraceCore Settings: đổi chế độ có hiệu lực ngay với cả máy đang khóa (A-70)."""
+	release_stale_locks()
+
+
 def overview():
-	"""Máy cần test hằng ngày và tình trạng hôm nay (cho màn SCR-23 và dashboard): danh sách ``dict``."""
+	"""Máy có test hằng ngày và tình trạng hôm nay (cho màn SCR-23): ``required`` theo cấu hình, ``optional`` là tự nguyện."""
 	rows = frappe.get_all(
 		"Equipment",
-		filters={"equipment_type": ["in", list(REQUIRED)], "status": ["!=", "Retired"]},
+		filters={"equipment_type": ["in", list(TESTS)], "status": ["!=", "Retired"]},
 		fields=[
 			"name",
 			"equipment_name",
@@ -323,12 +403,14 @@ def overview():
 			"inspection_due",
 			"calibration_due",
 			"unlock_until",
+			"daily_test_required",
 		],
 		order_by="equipment_type asc, name asc",
 	)
 	for row in rows:
-		row["required"] = required_tests(row.equipment_type)
-		row["missing"] = missing_tests(row.name, row.equipment_type)
+		row["required"] = required_tests(row.equipment_type, row.daily_test_required)
+		row["optional"] = [test for test in TESTS[row.equipment_type] if test not in row["required"]]
+		row["missing"] = [test for test in row["required"] if not passed_today(row.name, test)]
 		row["inspection_expired"] = _inspection_expired(row)
 		row["calibration_expired"] = _calibration_expired(row)
 		row["unlocked"] = bool(row.unlock_until and get_datetime(row.unlock_until) > now_datetime())

@@ -15,6 +15,7 @@ function dtTestLabel(type) {
 		{
 			bowie_dick: __("Bowie-Dick test"),
 			leak: __("Leak test"),
+			plasma_daily: __("Plasma daily test"),
 			washer_cleaning: __("Washer cleaning test"),
 		}[type] || type
 	);
@@ -440,11 +441,13 @@ class DailyTestScreen {
 		const machine = this.machine();
 		if (!machine) return "";
 		const form = this.form;
-		// loại test phải thuộc máy đang chọn; máy chỉ có một loại test (máy rửa) thì chọn sẵn, đỡ một chạm
-		if (!machine.required.includes(form.test_type)) {
+		// loại test phải thuộc máy đang chọn; máy chỉ có một test bắt buộc thì chọn sẵn, đỡ một chạm; máy ngoài diện vẫn
+		// ghi được test tự nguyện (A-70)
+		const tests = machine.required.concat(machine.optional || []);
+		if (!tests.includes(form.test_type)) {
 			form.test_type = machine.required.length === 1 ? machine.required[0] : "";
 		}
-		const types = machine.required
+		const types = tests
 			.map((type) => this.chip("dt-type", type, dtTestLabel(type), form.test_type === type))
 			.join("");
 		const field = (name, label, type, extra = "") =>
@@ -455,7 +458,7 @@ class DailyTestScreen {
 		return `<section class="tc-t4-block" data-region="dt-form">
 			<h3>${esc(__("Daily test of {0}", [machine.name]))}</h3>
 			${
-				machine.required.length
+				tests.length
 					? `<div class="tc-chips" role="group" aria-label="${esc(
 							__("Test type")
 					  )}">${types}</div>

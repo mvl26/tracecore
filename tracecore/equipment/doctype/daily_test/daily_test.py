@@ -1,4 +1,4 @@
-"""Daily Test: test hằng ngày của máy tiệt khuẩn/máy rửa (FEAT-040, UC-23, architecture §5.3 DT-DAILYTEST).
+"""Daily Test: test hằng ngày của máy tiệt khuẩn, test tự nguyện của máy rửa (FEAT-040, UC-23, architecture §5.3 DT-DAILYTEST).
 
 Chỉ dịch vụ test hằng ngày (`equipment.daily_test`) ghi, bằng cờ ``doc.flags.tc_daily_test``; không sửa sau khi lưu,
 không xóa.
