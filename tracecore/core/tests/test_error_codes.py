@@ -36,6 +36,7 @@ class ErrorCodeCase(IsolatedTestCase):
 		ensure_error_codes()
 		frappe.clear_document_cache("TraceCore Settings", "TraceCore Settings")
 		self.addCleanup(error_codes.clear_cache)
+		error_codes.pop_warnings()
 
 	def set_rule(self, code, **values):
 		settings = frappe.get_doc("TraceCore Settings")
@@ -206,6 +207,10 @@ class TestBlockMapping(ErrorCodeCase):
 
 	def test_unmapped_block_has_no_error_code(self):
 		self.assertNotIn("error_code", Block("SCAN_INVALID", "T", "R", "A").as_dict())
+
+	def test_daily_test_block_is_tb001(self):
+		data = Block("DAILY_TEST_REQUIRED", "T", "R", "A", object_name="M-1").as_dict()
+		self.assertEqual((data["error_code"], data["object_label"]), ("TB-001", "M-1"))
 
 	def test_explicit_error_code_wins(self):
 		data = Block("EQUIPMENT_INSPECTION_EXPIRED", "T", "R", "A", error_code="TB-004").as_dict()
