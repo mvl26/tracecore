@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, tcScanId, tcLocalDay */
 // Màn T8 quét sử dụng (SCR-37, FEAT-027, UC-13) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.

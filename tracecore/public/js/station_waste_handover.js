@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, TcWeighLine, wasteTabs */
 // Màn bàn giao chất thải (SCR-40, FEAT-049, UC-36, A-62) trên Page station, trạm bước WST, tab Bàn giao.
 // Frappe nối file này sau station_waste_store.js (hook page_js). Chọn đơn vị → quét túi hoặc thêm cả loại theo FIFO → kg theo

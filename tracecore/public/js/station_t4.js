@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.

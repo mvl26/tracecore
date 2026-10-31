@@ -9,6 +9,7 @@ from tracecore.core import error_codes, station_auth
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.tests.test_error_codes import ErrorCodeCase
 from tracecore.equipment import chemical_lots, daily_test, maintenance
+from tracecore.tests import factories
 from tracecore.tests.utils import bru
 
 
@@ -357,3 +358,56 @@ class TestStationLogin(ErrorCodeCase):
 		body = _session_response(refuse)
 		self.assertFalse(body["ok"])
 		self.assertEqual(frappe.db.count("TraceCore Error Log", {"error_code": "NS-003"}), before + 1)
+
+
+class TestChemicalLotsOnRealMachine(ErrorCodeCase):
+	"""Nghiệm thu A-71: lô hết hạn thì máy bị chặn, thông báo HC-001 kèm mã máy và mã lô; thay lô thì tự hết."""
+
+	def setUp(self):
+		super().setUp()
+		self.machine = factories.make_wash_machine()
+		kind = frappe.db.get_value("Equipment", self.machine.name, "equipment_type")
+		if not frappe.db.exists("Equipment Type Norm", kind):
+			frappe.get_doc({"doctype": "Equipment Type Norm", "equipment_type": kind}).insert(
+				ignore_permissions=True
+			)
+		frappe.db.set_value("Equipment Type Norm", kind, "requires_chemical_lot", 1)
+		self.kind = kind
+
+	def _block(self):
+		return chemical_lots.chemical_block(self.machine.name, self.kind)
+
+	@bru("BRU-INV-001")
+	def test_declare_expire_replace_flow(self):
+		self.assertEqual(self._block().as_dict()["error_code"], "HC-003")
+		first = factories.make_chemical_batch(batch_id="F052-LOT-1")
+		self.assertTrue(chemical_lots.declare(self.machine.name, first.name)["cleared"])
+		self.assertIsNone(self._block())
+		frappe.db.set_value("Batch", first.name, "expiry_date", add_days(today(), -1))
+		data = self._block().as_dict()
+		self.assertEqual(data["error_code"], "HC-001")
+		self.assertIn(self.machine.name, data["object_label"])
+		self.assertIn(first.name, data["object_label"])
+		self.assertEqual(frappe.db.get_value("Equipment", self.machine.name, "status"), "Ready")
+		second = factories.make_chemical_batch(batch_id="F052-LOT-2")
+		self.assertTrue(chemical_lots.declare(self.machine.name, second.name)["cleared"])
+		rows = chemical_lots.declared_lots(self.machine.name)
+		self.assertEqual([row.lot for row in rows], [second.name])
+
+	@bru("BRU-INV-001")
+	def test_declare_refuses_expired_lot(self):
+		lot = factories.make_chemical_batch(batch_id="F052-LOT-3")
+		frappe.db.set_value("Batch", lot.name, "expiry_date", add_days(today(), -1))
+		with self.assertRaises(BlockedError) as caught:
+			chemical_lots.declare(self.machine.name, lot.name)
+		self.assertEqual(caught.exception.block.as_dict()["error_code"], "HC-001")
+
+	@bru("BRU-INV-001")
+	def test_wash_batch_uses_declared_lot(self):
+		from tracecore.reprocessing import washing
+
+		lot = factories.make_chemical_batch(batch_id="F052-LOT-4")
+		chemical_lots.declare(self.machine.name, lot.name)
+		program = frappe._dict(name="P", chemical=lot.item)
+		rows = washing._chemical_rows(program, [], self.machine.name)
+		self.assertEqual(rows[0]["lot"], lot.name)

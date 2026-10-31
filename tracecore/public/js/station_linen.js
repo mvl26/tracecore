@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, TcWeighLine, linenTabs */
 // Màn thu gom đồ vải theo khoa (SCR-16, FEAT-033, UC-16) trên Page station, trạm bước LIN.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.

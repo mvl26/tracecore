@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
 // Frappe nối file này sau station_t5.js (hook page_js) nên dùng chung uuid4/clientTs/esc/t5Kind/t5IndicatorLabel.

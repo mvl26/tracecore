@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton, tcWarningsHtml */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).

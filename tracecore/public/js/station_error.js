@@ -15,7 +15,9 @@
 		if (!notice || !notice.error_code || !notice.has_guide) return "";
 		return `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-tc-guide="${escape(
 			notice.error_code
-		)}">${escape(__("Open handling guide"))}</button></div><div class="tc-error-guide" hidden></div>`;
+		)}">${escape(
+			__("Open handling guide")
+		)}</button></div><div class="tc-error-guide" hidden></div>`;
 	};
 
 	window.tcWarningsHtml = function (warnings) {

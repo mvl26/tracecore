@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, tcScanId */
 // Màn T1 tiếp nhận đồ bẩn (SCR-05 STN, SCR-34 PDA, FEAT-019) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.

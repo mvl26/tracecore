@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, TcWeighLine, WasteCollect, WasteHandoverScreen */
 // Màn kho lưu giữ tạm chất thải (SCR-39, FEAT-048, UC-35, A-61) và thanh tab của trạm chất thải (bước WST).
 // Frappe nối file này sau station_waste.js (hook page_js) nên dùng chung uuid4/clientTs/esc/WasteCollect.
