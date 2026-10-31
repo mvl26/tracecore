@@ -31,6 +31,7 @@ RESULTS = ("Pass", "Fail")
 REDO_STEPS = ("T4", "T2")
 BIOLOGICAL = "biological"
 BOWIE_DICK = "bowie_dick"
+OPTIONAL = "Optional"  # chỉ thị không bắt buộc của máy ngoài diện test hằng ngày và chưa có kết quả (A-70)
 INDICATOR_KINDS = ("bowie_dick", "chemical_class_5", "chemical_plasma", BIOLOGICAL)
 AFTER_RELEASE_HOOK = "tracecore_after_release"  # M1 (FEAT-014): +1 bộ đếm bảo dưỡng, mỗi bộ một lần
 AFTER_LOAD_RELEASE_HOOK = "tracecore_after_load_release"  # M6/M7 (FEAT-042/046) tiêu hao và chi phí mẻ
@@ -98,6 +99,7 @@ def _indicator_state(doc, machine, daily=None):
 	"""Trạng thái từng chỉ thị; kết quả ghi theo mẻ thắng, chưa ghi thì lấy test hằng ngày của máy (A-23)."""
 	rows = _rows(doc.name)
 	packs = [row.pack for row in doc.packs]
+	optional = sterilizing.optional_indicators(doc.equipment)
 	kinds = [*required_indicators(machine), *([BIOLOGICAL] if cint(doc.requires_bi) else [])]
 	state = {}
 	for kind in kinds:
@@ -107,6 +109,8 @@ def _indicator_state(doc, machine, daily=None):
 		state[kind] = _status_of(kind, rows, packs)
 		if state[kind] == "Missing" and kind in (daily or {}) and daily[kind]["result"] in RESULTS:
 			state[kind] = daily[kind]["result"]
+		if state[kind] == "Missing" and kind in optional:
+			state[kind] = OPTIONAL
 	return state
 
 
@@ -251,7 +255,7 @@ def _missing(doc, state, review_confirmed):
 		items.append("cycle_result")
 	if cint(doc.needs_review) and not review_confirmed:
 		items.append("review")
-	items += [kind for kind, value in state.items() if kind != BIOLOGICAL and value != "Pass"]
+	items += [kind for kind, value in state.items() if kind != BIOLOGICAL and value not in ("Pass", OPTIONAL)]
 	return items
 
 
