@@ -29,6 +29,7 @@
 | 1.11 A-59 | 2026-10-30 | Miyano (dev lead, người dùng yêu cầu 30/10/2026) + Claude Code; chủ đầu tư chưa xác nhận | Ghi chú theo Amendment A-59 của `docs/architecture.md`, không thêm/bớt ID FR hay BRU: FR-M4-02, loại chứng chỉ tự điền và gợi ý từ các loại đã dùng; bốn loại nêu trong FR là ví dụ, không còn là danh sách cố định. |
 | 1.11-draft | 2026-10-17 | Nhóm SRS (Claude Code, chế độ IMPORT) | Chuẩn hóa sang SRS pipeline (ISO/IEC/IEEE 29148), yêu cầu chức năng viết theo EARS, giữ nguyên toàn bộ ID gốc. Bổ sung mục giao diện ngoài có ID (EI-*), NFR đề xuất lấp khoảng trống catalog (chờ duyệt), Appendix B gom vấn đề mở. |
 | 1.11 A-64 | 2026-10-30 | Miyano (dev lead, người dùng duyệt ngày 30/10/2026; chủ đầu tư chưa) + Claude Code | Sửa nội dung FR-M2-00.4 (đủ thứ tự chức năng thay cho 8 trạm), ghi chú FR-M9-03, FR-M9-03.2, không thêm/bớt ID FR hay BRU. Chi tiết xem architecture.md, Revision History A-64. |
+| 1.11 A-71 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Khung mã lỗi: thêm FR-M9-17..21, FR-M5-07; sửa FR-M4-03.1 (ngoại lệ cho phép tạm NS-001). Xem Amendment A-71 của `docs/architecture.md`. |
 
 ---
 
@@ -643,7 +644,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M4-02.3 | Khi chứng chỉ được gia hạn, hệ thống phải tạo bản ghi Certificate mới và giữ lịch sử bản ghi cũ. | Must | Active | TCCN 3 |
 | FR-M4-02.4 | Khi chứng chỉ không có hạn (vĩnh viễn), hệ thống phải đánh dấu Không hết hạn và không phát cảnh báo. | Must | Active | Xử lý lỗi |
 | FR-M4-03 | Khi R02 gán năng lực cho nhân viên theo trạm với chứng chỉ yêu cầu, người đánh giá, ngày và hiệu lực, hệ thống phải tạo Competency dùng để kiểm tra khi đăng nhập trạm. | Must | Active | UC-20; SCR-20; API-M4-02; BRU-HR-001; phụ thuộc FR-M4-04. Nguồn: BR-M4 |
-| FR-M4-03.1 | Khi nhân viên đăng nhập trạm, hệ thống phải chỉ cho phép nếu nhân viên có năng lực của trạm đó và mọi chứng chỉ bắt buộc của trạm còn hạn. | Must | Active | BRU-HR-001 |
+| FR-M4-03.1 | Khi nhân viên đăng nhập trạm, hệ thống phải chỉ cho phép nếu nhân viên có năng lực của trạm đó và mọi chứng chỉ bắt buộc của trạm còn hạn. | Must | Active | BRU-HR-001; A-71: ngoại lệ khi có cho phép tạm NS-001 còn hiệu lực do R01/R02 duyệt, tối đa 24 giờ, có lý do, không tự duyệt |
 | FR-M4-03.2 | Nếu nhân viên thiếu năng lực hoặc chứng chỉ hết hạn khi đăng nhập trạm, thì hệ thống phải từ chối, hiển thị rõ lý do và ghi audit. | Must | Active | TCCN 1; Xử lý lỗi |
 | FR-M4-03.3 | Khi R02 cấp quyền trạm tạm thời cho tình huống thiếu người, hệ thống phải giới hạn hiệu lực 24 giờ và ghi audit. | Must | Active | TCCN 2; BRU-HR-001 ngoại lệ |
 | FR-M4-03.4 | Khi người dùng mở ma trận năng lực, hệ thống phải hiển thị toàn bộ nhân viên × trạm trên một màn hình. | Must | Active | TCCN 3 |
@@ -681,6 +682,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M5-06 | Nếu máy chưa có test ngày Đạt, quá hạn kiểm định/hiệu chuẩn hoặc đang Sửa chữa, thì hệ thống phải khóa tạo mẻ/lô trên máy đó và hiển thị lý do khóa tại màn tạo mẻ. | Must | Active | UC-23; SCR-23; API-M5-02; BRU-EQP-001, BRU-EQP-002; phụ thuộc FR-M5-05. Nguồn: BR-M5 |
 | FR-M5-06.1 | Khi R02 mở khóa tạm một máy, hệ thống phải yêu cầu lý do và thời hạn ≤ 24 giờ, ghi audit; hệ thống phải không cho vai trò khác mở khóa. | Must | Active | TCCN 2, 3; BRU-EQP-002 |
 | FR-M5-06.2 | Nếu máy bị khóa do quá hạn kiểm định thiết bị áp lực, thì hệ thống phải không cho bất kỳ vai trò nào mở khóa tạm. | Must | Active | TCCN 2; Xử lý lỗi; BRU-EQP-002 |
+| FR-M5-07 | Trong khi loại máy yêu cầu lô hóa chất mà máy chưa khai báo lô đang dùng hoặc lô đã hết hạn, hệ thống phải chặn tạo lô/mẻ trên máy đó và hiển thị HC-003 hoặc HC-001 kèm mã máy, mã lô; hệ thống phải cảnh báo HC-002 khi lô còn dưới số ngày cấu hình. | Must | Active | A-71; BRU-INV-001 |
 
 #### 3.1.6 M6 — Kho vật tư tiêu hao
 
@@ -805,6 +807,11 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M9-14 | Khi một màn hình trạm/PDA không có dữ liệu, đang tải, hoặc gặp lỗi (mạng, máy in, thiết bị ngoại vi), hệ thống phải hiển thị trạng thái rõ ràng bằng tiếng Việt, kèm hành động kế tiếp (thử lại, chuyển offline, gọi R02). | Must | Active | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36); mọi SCR trạm/PDA; [NEW v1.11] duyệt chủ đầu tư 2026-10-17. Catalog: Empty/error/loading states as requirements |
 | FR-M9-15 | Khi người dùng cần trợ giúp tại trạm, hệ thống phải hiển thị hướng dẫn thao tác theo trạm (3–5 bước, ảnh) và cho phép gửi phản hồi/báo lỗi phần mềm tới R10 kèm ảnh chụp màn hình. | Could | Active | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36); mọi SCR trạm/PDA; [NEW v1.11] duyệt chủ đầu tư 2026-10-17. Catalog: Help & support |
 | FR-M9-16 | Khi tạo/sửa/xóa bản ghi danh mục, hệ thống phải xóa mềm (vô hiệu) thay vì xóa cứng với mọi đối tượng đã có giao dịch; chỉ R10 mới xóa cứng bản ghi chưa có giao dịch. | Must | Active | UC-33; SCR-33 (áp dụng mọi danh mục M1, M3–M7, M10); [NEW v1.11] duyệt chủ đầu tư 2026-10-17. Catalog: Soft-delete vs hard-delete (catalog); mở rộng NFR-SEC-03 cho master data |
+| FR-M9-17 | Hệ thống phải có sẵn danh mục mã lỗi `<NHÓM>-<3 số>` khi cài app, mỗi mã có tên, mô tả, điều kiện phát sinh, trạm áp dụng, mức độ, hành động hệ thống, cách gỡ và hướng dẫn xử lý; viện sửa được nội dung, nâng cấp không ghi đè. | Must | Active | A-71 |
+| FR-M9-18 | Khi R10 đổi cấu hình mã lỗi (bật/tắt, mức độ, số ngày cảnh báo, vai trò duyệt), hệ thống phải áp dụng ngay; hệ thống phải từ chối đổi mức độ hoặc tắt mã bị khóa. | Must | Active | A-71; OTH-LEG-003 |
+| FR-M9-19 | Khi chặn hoặc cảnh báo theo mã lỗi ở trạm hoặc màn đăng nhập trạm, hệ thống phải hiển thị [Mã] – Tên – đối tượng liên quan và cách mở Hướng dẫn xử lý của mã. | Must | Active | A-71 |
+| FR-M9-20 | Khi một mã lỗi phát sinh, hệ thống phải ghi Nhật ký lỗi gồm mã, trạm, người dùng, đối tượng, thời điểm, trạng thái, người duyệt, thời hạn; hệ thống phải có báo cáo thống kê theo mã, trạm, thời gian cho R01. | Must | Active | A-71 |
+| FR-M9-21 | Hệ thống phải in được Danh mục mã lỗi theo trạm, lọc theo trạm hoặc mã, kèm Hướng dẫn xử lý. | Must | Active | A-71 |
 
 #### 3.1.10 M10 — Quản lý chất thải y tế [NEW v1.11]
 

@@ -228,6 +228,10 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M9-11, FR-M9-12 | — | SCR-43 (mới) | — (v1.11) | — | — | — |
 | FR-M9-13 | — | SCR-32 và mọi danh sách | — (v1.11) | — | — | — |
 | FR-M9-14, FR-M9-15 | — | mọi SCR trạm/PDA | — (v1.11) | — | — | — |
+| FR-M9-17, FR-M9-18 | — | Desk TraceCore Settings, danh mục mã lỗi | — (A-71) | FEAT-052 | — | — |
+| FR-M9-19 | — | mọi SCR trạm/PDA, màn đăng nhập trạm | — (A-71) | FEAT-052 | — | — |
+| FR-M9-20, FR-M9-21 | — | Desk Nhật ký lỗi, báo cáo | — (A-71) | FEAT-052 | — | — |
+| FR-M5-07 | — | SCR-06 | — (A-71) | FEAT-052 | — | — |
 | FR-M10-01, FR-M10-02 | BRU-WST-001, BRU-WST-002, BRU-ID-006 | SCR-38 (mới) | — (v1.11) | — | — | — |
 | FR-M10-03 | BRU-WST-001, BRU-WST-002 | SCR-39 (mới) | — (v1.11) | — | — | — |
 | FR-M10-04, FR-M10-05 | BRU-WST-003, BRU-WST-004, BRU-CST-002 | SCR-40 (mới) | — (v1.11) | — | — | WF-06 (NC) |
