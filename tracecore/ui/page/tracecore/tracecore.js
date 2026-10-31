@@ -29,7 +29,138 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		$("<p></p>").text(description).appendTo(item);
 		return item;
 	}
+	// Trang chủ admin có sidebar (ux-foundations NAV-02)
+	const KIND_ICONS = {
+		page: "external-link",
+		catalog: "folder-normal",
+		document: "file",
+		report: "chart",
+	};
+	let selected_module = null;
+	function icon(name, size = "md") {
+		return $(frappe.utils.icon(name, size)).attr("aria-hidden", "true");
+	}
+	function tile(grid, label, route, badge) {
+		const item = $(
+			route ? "<a class='tc-admin-tile'></a>" : "<div class='tc-admin-tile'></div>"
+		)
+			.append(badge)
+			.append($("<span class='tc-admin-tile-label'></span>").text(label))
+			.appendTo(grid);
+		if (route) item.attr("href", route).append(icon("right", "sm"));
+		return item;
+	}
+	function section(body, title, count) {
+		const block = $("<section class='tc-admin-section'></section>").appendTo(body);
+		$("<h3></h3>").text(title).append($("<span></span>").text(count)).appendTo(block);
+		return $("<div class='tc-admin-grid'></div>").appendTo(block);
+	}
+	function render_module(body, module) {
+		module.sections.forEach((group) => {
+			const grid = section(
+				body,
+				__(group.label, null, "TraceCore Launcher"),
+				group.links.length
+			);
+			group.links.forEach((link) =>
+				tile(
+					grid,
+					__(link.label, null, "TraceCore Launcher"),
+					link.route,
+					$("<span class='tc-admin-badge'></span>")
+						.addClass(`tc-admin-kind-${group.kind}`)
+						.append(icon(KIND_ICONS[group.kind]))
+				)
+			);
+		});
+	}
+	function render_stations(body, data) {
+		const zones = new Map();
+		data.stations.forEach((item) => {
+			const zone = __(item.zone || "Other stations", null, "TraceCore Launcher");
+			if (!zones.has(zone)) zones.set(zone, []);
+			zones.get(zone).push(item);
+		});
+		if (!zones.size)
+			$("<p class='tc-launcher-note'></p>").text(__("No available station")).appendTo(body);
+		zones.forEach((items, zone) => {
+			const grid = section(body, zone, items.length);
+			items.forEach((item) => {
+				const badge = $("<span class='tc-admin-badge'></span>").addClass(
+					`tc-admin-zone-${item.zone_color}`
+				);
+				if (item.station_no) badge.text(`T${item.station_no}`);
+				else badge.append(icon("scan"));
+				// tên trạm cấu hình thường đã có số ("T1 Tiếp nhận"); ô số đã hiện nên không lặp
+				const full = __(item.label);
+				const name = full.replace(new RegExp(`^T${item.station_no}\\s+`), "") || full;
+				const label = item.implemented ? name : `${name} — ${__("Not implemented yet")}`;
+				tile(
+					grid,
+					label,
+					item.implemented
+						? `/app/station?station=${encodeURIComponent(item.name)}`
+						: null,
+					badge
+				);
+			});
+		});
+		if (data.department)
+			$("<p class='tc-launcher-note'></p>")
+				.text(__("Department portal is not implemented yet."))
+				.appendTo(body);
+	}
+	function render_admin(data) {
+		root.empty();
+		const STATIONS = {
+			key: "stations",
+			cluster: "operations",
+			label: "Stations",
+			icon: "scan",
+			description: "Choose a station, then scan your employee card.",
+		};
+		const modules = [...data.admin_modules];
+		const last_operation = modules.findLastIndex((module) => module.cluster === "operations");
+		modules.splice(last_operation + 1, 0, STATIONS);
+		if (!modules.some((module) => module.key === selected_module))
+			selected_module = modules[0].key;
+		const shell = $("<div class='tc-admin'></div>").appendTo(root);
+		const nav = $("<nav class='tc-admin-nav'></nav>")
+			.attr("aria-label", __("CSSD management"))
+			.appendTo(shell);
+		const main = $("<div class='tc-admin-main'></div>").appendTo(shell);
+		function show(module) {
+			selected_module = module.key;
+			nav.find("button").each(function () {
+				$(this).attr("aria-current", $(this).data("key") === module.key ? "page" : null);
+			});
+			main.empty();
+			const head = $("<header class='tc-admin-head'></header>").appendTo(main);
+			$("<span class='tc-admin-head-icon'></span>").append(icon(module.icon)).appendTo(head);
+			const text = $("<div></div>").appendTo(head);
+			$("<h2></h2>").text(__(module.label, null, "TraceCore Launcher")).appendTo(text);
+			$("<p></p>").text(__(module.description, null, "TraceCore Launcher")).appendTo(text);
+			const body = $("<div class='tc-admin-body'></div>").appendTo(main);
+			if (module.key === STATIONS.key) render_stations(body, data);
+			else render_module(body, module);
+		}
+		let cluster = modules[0].cluster;
+		modules.forEach((module) => {
+			if (module.cluster !== cluster) {
+				cluster = module.cluster;
+				$("<div class='tc-admin-nav-gap'></div>").appendTo(nav);
+			}
+			$("<button type='button'></button>")
+				.data("key", module.key)
+				.append(icon(module.icon))
+				.append($("<span></span>").text(__(module.label, null, "TraceCore Launcher")))
+				.on("click", () => show(module))
+				.appendTo(nav);
+		});
+		show(modules.find((module) => module.key === selected_module));
+	}
 	function render(data) {
+		if (data.admin_modules.length) return render_admin(data);
 		root.empty();
 		$("<h1>TraceCore</h1>").appendTo(root);
 		$("<p class='tc-launcher-intro'></p>")
