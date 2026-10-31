@@ -12,7 +12,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, now_datetime
 
-from tracecore.core import code_registry
+from tracecore.core import code_registry, notification
 from tracecore.core.errors import Block, BlockedError
 
 SIZE = 200
@@ -28,6 +28,67 @@ def prefix_for(station: str, on: date) -> str:
 	if not match:
 		frappe.throw(_("Station {0} has no TR-NNN code for offline Cycle IDs.").format(station))
 	return f"{code_registry.CYCLE_PREFIX}-{getdate(on):%y%m%d}-T{match.group(1)}-"
+
+
+def _overlapping(doc) -> list[dict]:
+	"""Dải khác cùng tiền tố (cùng trạm, cùng ngày) có số giao với dải `doc`."""
+	return frappe.get_all(
+		"Code Range",
+		filters={
+			"prefix": doc.prefix,
+			"name": ("!=", doc.name),
+			"from_no": ("<=", cint(doc.to_no)),
+			"to_no": (">=", cint(doc.from_no)),
+		},
+		fields=["name", "from_no", "to_no"],
+		order_by="from_no asc",
+	)
+
+
+def validate_edit(doc) -> None:
+	"""Luật khi R10 sửa dải trên Desk (A-75): số hợp lệ, trạm/tiền tố/ngày không đổi; trùng dải khác chỉ cảnh báo.
+
+	Mã vẫn không bao giờ trùng vì Code Registry từ chối mã đã ghi sổ (`claim` → CODE_RANGE_INVALID).
+	"""
+	if doc.is_new():
+		return
+	for field in ("station", "prefix", "range_date"):
+		if doc.has_value_changed(field):
+			frappe.throw(
+				_("{0} cannot be changed. Ask the station for a new range instead.").format(
+					_(doc.meta.get_label(field), context="Code Range")
+				)
+			)
+	from_no, to_no = cint(doc.from_no), cint(doc.to_no)
+	if from_no < 1 or to_no < from_no or to_no > MAX_NO:
+		frappe.throw(_("The range must satisfy 1 <= from <= to <= {0}.").format(MAX_NO))
+	doc.flags.tc_overlaps = _overlapping(doc)
+	if doc.flags.tc_overlaps:
+		frappe.msgprint(
+			_("This range overlaps {0}. The numbers are still saved; R10 is notified.").format(
+				", ".join(f"{row.name} ({row.from_no}-{row.to_no})" for row in doc.flags.tc_overlaps)
+			),
+			indicator="orange",
+		)
+
+
+def report_overlap(doc) -> None:
+	"""Báo R10/R02 khi dải vừa sửa giao với dải khác (A-75); không chặn."""
+	rows = doc.flags.get("tc_overlaps")
+	if not rows:
+		return
+	notification.emit(
+		"CODE_RANGE_OVERLAP",
+		doc,
+		_("Offline code range {0} overlaps another range").format(doc.name),
+		message=_("Range {0} ({1}-{2}) of station {3} overlaps: {4}.").format(
+			doc.name,
+			doc.from_no,
+			doc.to_no,
+			doc.station,
+			", ".join(f"{row.name} ({row.from_no}-{row.to_no})" for row in rows),
+		),
+	)
 
 
 def _invalid(code):
