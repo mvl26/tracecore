@@ -173,6 +173,75 @@ class TestStationAuth(IsolatedTestCase):
 		self.assertEqual(failed["error"]["code"], "SESSION_INVALID")
 
 
+class TestSwitchStation(IsolatedTestCase):
+	"""Admin chuyển trạm trong màn có cột trạm (ux-foundations NAV-03): giữ người đã quét thẻ, vẫn kiểm năng lực."""
+
+	def setUp(self):
+		super().setUp()
+		setup_operator(self)
+		self.login = station_auth.login("NV-AUTH-001", "TR-004")
+		self.ts = now_datetime().isoformat() + "+07:00"
+
+	def _allow_station(self, station):
+		start = now_datetime()
+		frappe.get_doc(
+			{
+				"doctype": "Station Competency",
+				"employee": self.employee.name,
+				"station": station,
+				"valid_from": add_to_date(start, hours=-1),
+				"valid_until": add_to_date(start, hours=8),
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_switch_replaces_session_and_keeps_person_and_expiry(self):
+		self._allow_station("TR-003")
+		old = frappe.get_doc("Station Session", self.login["session"])
+		result = station_auth.switch_station(self.login["token"], "TR-003")
+		self.assertEqual(result["station"], "TR-003")
+		self.assertEqual(result["employee"], self.employee.name)
+		self.assertNotEqual(result["token"], self.login["token"])
+		self.assertEqual(
+			frappe.get_doc("Station Session", result["session"]).absolute_expires_at,
+			old.absolute_expires_at,
+		)
+		old.reload()
+		self.assertEqual(old.is_open, 0)
+		self.assertEqual(old.end_reason, "Replaced")
+		with self.assertRaises(BlockedError):
+			station_auth.authenticate_session(self.login["token"])
+
+	def test_switch_without_competency_is_blocked_and_keeps_current_session(self):
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.switch_station(self.login["token"], "TR-003")
+		self.assertEqual(caught.exception.block.as_dict()["error_code"], "NS-003")
+		self.assertEqual(station_auth.authenticate_session(self.login["token"]).station, "TR-004")
+
+	def test_switch_rejects_invalid_token(self):
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.switch_station("no-such-token", "TR-003")
+		self.assertEqual(caught.exception.block.code, "SESSION_INVALID")
+
+	def test_api_requires_system_manager(self):
+		self._allow_station("TR-003")
+		frappe.set_user(self.user)
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual(station_auth.authenticate_session(self.login["token"]).station, "TR-004")
+
+	def test_api_returns_new_session_or_block_for_admin(self):
+		blocked = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
+		self.assertFalse(blocked["ok"])
+		self._allow_station("TR-003")
+		switched = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
+		self.assertTrue(switched["ok"])
+		self.assertEqual(switched["session"]["station"], "TR-003")
+
+
 class TestApproverProof(IsolatedTestCase):
 	"""R02 quét thẻ + PIN trên kiosk của người khác (architecture C6, UC-12 A1): proof dùng một lần gắn với phiên đó."""
 

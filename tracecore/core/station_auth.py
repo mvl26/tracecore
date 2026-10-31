@@ -346,6 +346,29 @@ def _login(card_id: str, station: str, client_ts=None) -> dict:
 	_require_station(station)
 	employee = _active_employee(card_id, client_ts)
 	permit_until = _require_competency(employee.name, station, client_ts)
+	return _open_session(
+		employee, station, _session_expiry(now_datetime(), permit_until), "LOGIN_OK", client_ts
+	)
+
+
+def switch_station(token: str, station: str, client_ts=None) -> dict:
+	"""Chuyển phiên đang mở sang trạm khác mà không quét lại thẻ (NAV-03); giữ người và hạn phiên, vẫn kiểm năng lực."""
+	current = authenticate_session(token, client_ts=client_ts)
+	_require_station(station)
+	permit_until = _require_competency(current.employee, station, client_ts)
+	expires = get_datetime(current.absolute_expires_at)
+	if permit_until and get_datetime(permit_until) < expires:
+		expires = get_datetime(permit_until)
+	employee = frappe.db.get_value(
+		"Employee",
+		current.employee,
+		["name", "employee_name", "user_id", "tc_pin_reset_required"],
+		as_dict=True,
+	)
+	return _open_session(employee, station, expires, "STATION_SWITCH", client_ts)
+
+
+def _open_session(employee, station: str, expires, code: str, client_ts=None) -> dict:
 	frappe.db.sql(
 		"select name from `tabStation Session` where employee=%s and is_open=1 for update", employee.name
 	)
@@ -361,14 +384,14 @@ def _login(card_id: str, station: str, client_ts=None) -> dict:
 			"token_hash": _token_hash(token),
 			"started_at": started,
 			"last_activity_at": started,
-			"absolute_expires_at": _session_expiry(started, permit_until),
+			"absolute_expires_at": expires,
 		}
 	).insert(ignore_permissions=True)
 	_audit(
 		"Login",
 		employee=employee.name,
 		station=station,
-		code="LOGIN_OK",
+		code=code,
 		session=doc.name,
 		client_ts=client_ts,
 	)

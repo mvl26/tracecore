@@ -45,6 +45,117 @@ body.tc-kiosk .layout-main-section {
 	color: var(--tc-primary);
 }
 
+/* màn trạm của admin: cột trạm cố định, thao tác giống kiosk (NAV-03) */
+.tc-rail[hidden],
+.tc-crumb[hidden],
+.tc-station-pills[hidden] {
+	display: none;
+}
+
+.tc-admin-station {
+	padding-left: var(--tc-rail-w);
+}
+
+.tc-admin-station .tc-brand-bar,
+.tc-admin-station .tc-session [data-action="logout"],
+.tc-admin-station .tc-session-person,
+.tc-admin-station .tc-session-station {
+	display: none;
+}
+
+.tc-admin-station .tc-actionsbar {
+	left: var(--tc-rail-w);
+}
+
+.tc-rail {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	z-index: var(--tc-z-rail);
+	display: flex;
+	flex-direction: column;
+	width: var(--tc-rail-w);
+	background: var(--tc-card);
+	border-right: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-rail-head {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-1);
+	padding: var(--tc-sp-3) var(--tc-sp-4);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-rail-person {
+	color: var(--tc-primary);
+}
+
+.tc-rail-context,
+.tc-rail-foot,
+.tc-crumb {
+	font-size: var(--tc-fs-xs);
+	color: var(--tc-text-2);
+}
+
+.tc-rail-stations {
+	flex: 1;
+	overflow-y: auto;
+	padding: var(--tc-sp-2) 0;
+}
+
+.tc-rail-stations button {
+	display: block;
+	width: 100%;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2) var(--tc-sp-4);
+	text-align: left;
+	color: var(--tc-text-nav);
+	background: transparent;
+	border: 0;
+	border-left: var(--tc-bw-accent) solid transparent;
+}
+
+.tc-rail-stations button[aria-current] {
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-primary);
+	background: var(--tc-primary-soft);
+	border-left-color: var(--tc-primary);
+}
+
+.tc-rail-foot {
+	padding: var(--tc-sp-3) var(--tc-sp-4);
+	border-top: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-crumb {
+	margin: 0 0 var(--tc-sp-1);
+}
+
+.tc-station-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-2);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-station-pills button {
+	min-height: var(--tc-touch-min);
+	padding: 0 var(--tc-sp-3-5);
+	color: var(--tc-text-nav);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-full);
+}
+
+.tc-station-pills button[aria-current] {
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-on-primary);
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+}
+
 .tc-zone-dirty {
 	background: var(--tc-zone-dirty);
 }
