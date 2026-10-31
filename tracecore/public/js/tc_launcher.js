@@ -17,7 +17,8 @@ $(document).on("app_ready", () => {
 			.appendTo(home);
 	}
 	function update() {
-		if (frappe.get_route()[0] === "Workspaces") frappe.set_route("tracecore");
+		// lúc Desk khởi động route có thể chưa có; lỗi ở đây làm hỏng cả frappe.Application
+		if ((frappe.get_route() || [])[0] === "Workspaces") frappe.set_route("tracecore");
 	}
 	show_brand();
 	frappe.router.on("change", update);

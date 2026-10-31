@@ -3,7 +3,7 @@ import os
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.core import code_registry, gs1, print_server, step_gate
+from tracecore.core import code_registry, gs1, print_server, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing
@@ -699,12 +699,10 @@ class TestT3DemoData(IsolatedTestCase):
 	def test_smoke_station_is_a_clean_zone_station_without_a_step(self):
 		name = devdata.ensure_smoke_station("TR-090")
 		self.assertEqual(name, devdata.ensure_smoke_station("TR-090"))
-		row = frappe.db.get_value(
-			"Zone Station", name, ["is_zone", "is_active", "station_step", "zone_type"], as_dict=True
-		)
+		row = frappe.db.get_value("Zone Station", name, ["is_zone", "is_active", "parent_zone"], as_dict=True)
 		self.assertEqual((row.is_zone, row.is_active), (0, 1))
-		self.assertFalse(row.station_step)
-		self.assertEqual(row.zone_type, "Clean")
+		self.assertEqual(zones.station_functions(name), [])
+		self.assertEqual(row.parent_zone, "ZONE-CLEAN")
 
 	def test_t3_demo_refused_outside_developer_or_test_site(self):
 		original = (frappe.conf.get("developer_mode"), frappe.conf.get("allow_tests"))

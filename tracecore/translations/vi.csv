@@ -7277,7 +7277,7 @@ GTIN-14 backfill,Cấp bù GTIN-14,
 The GTIN-14 of set type {0} is not locked.,GTIN-14 của loại bộ {0} chưa bị khóa.,
 Edit it on the form.,Sửa trực tiếp trên form.,
 GTIN-14 {0} does not start with the declared GS1 company prefix {1}.,GTIN-14 {0} không bắt đầu bằng mã doanh nghiệp GS1 đã khai {1}.,
-None,Chưa có,
+None,Chưa có,GTIN
 "Test code, {0} packs labelled","Mã thử, {0} gói đã in nhãn",
 Test code,Mã thử,
 Current GTIN,GTIN hiện tại,
@@ -7304,3 +7304,13 @@ Reason (required),Lý do (bắt buộc),
 Change GTIN,Đổi GTIN,
 GTIN-14 of {0} changed to {1}.,Đã đổi GTIN-14 của {0} thành {1}.,
 Leave blank to issue the next GTIN-14 automatically.,Để trống để tự cấp GTIN-14 kế tiếp.,
+0,0,TraceCore Settings
+1,1,TraceCore Settings
+2,2,TraceCore Settings
+3,3,TraceCore Settings
+4,4,TraceCore Settings
+5,5,TraceCore Settings
+6,6,TraceCore Settings
+7,7,TraceCore Settings
+8,8,TraceCore Settings
+GS1,GS1,TraceCore Settings

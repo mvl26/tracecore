@@ -191,7 +191,7 @@ def test_t4_gate_not_passed_shows_full_alert(t4_page, t4_demo):
 	alert = result.locator(".tc-alert-error")
 	expect(alert).to_be_visible()
 	# kết quả -> lý do -> hành động: đủ cả ba khối và có chữ (không chỉ màu)
-	expect(alert.locator(".tc-alert-title")).to_contain_text("chưa đạt")
+	expect(alert.locator(".tc-alert-title")).to_contain_text("Sai thứ tự trạm")
 	expect(alert.locator(".tc-alert-reason")).not_to_be_empty()
 	expect(alert.locator(".tc-alert-action")).not_to_be_empty()
 	assert result.locator("[data-action='confirm-pack']").count() == 0

@@ -17,7 +17,7 @@ def wait_offline_data(page):
 	"""Snapshot T4 (bộ sẵn sàng, lô chỉ thị, dải mã) đã tải vào trang sau đăng nhập thẻ."""
 	page.wait_for_function(
 		"() => frappe.tc_station && frappe.tc_station.offlineData"
-		" && frappe.tc_station.offlineData.step === 'T4'"
+		" && frappe.tc_station.offlineData.function === 'PACK'"
 		" && (frappe.tc_station.offlineData.ranges || []).length > 0",
 		timeout=30000,
 	)

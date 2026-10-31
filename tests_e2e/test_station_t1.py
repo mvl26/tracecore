@@ -226,7 +226,8 @@ def test_t1_offline_continues_on_device(t1_page):
 	"""FEAT-009 (A-40 Q1, D3): mất mạng thì T1 tiếp nhận tiếp trên thiết bị theo snapshot, phiếu chờ đồng bộ."""
 	page = t1_page
 	page.wait_for_function(
-		"() => frappe.tc_station.offlineData && frappe.tc_station.offlineData.step === 'T1'", timeout=30000
+		"() => frappe.tc_station.offlineData && frappe.tc_station.offlineData.function === 'RECEIVE'",
+		timeout=30000,
 	)
 	page.context.set_offline(True)
 	page.evaluate("window.dispatchEvent(new Event('offline'))")

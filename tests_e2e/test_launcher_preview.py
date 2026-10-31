@@ -43,6 +43,7 @@ def mount(page, fail=False):
 				return {message: {
 					// cùng dạng navigation.context: link theo nhóm {group, label, route}
 					management: [{group: 'Reprocessing', label: 'Pack', route: '/app/pack'}], department: true,
+					admin_modules: [], role_modules: [],
 					stations: [
 						{name: 'TR-123', label: 'T2 Washing', step: 'T2', implemented: true},
 						{name: 'TR-999', label: 'T1 Receiving', step: 'T1', implemented: false}
@@ -118,6 +119,7 @@ def test_tracecore_home_replaces_sample_workspaces(page, roles, route, redirect)
 	)
 	page.add_script_tag(content=(ROOT / "tracecore/public/js/tc_launcher.js").read_text())
 	page.wait_for_function("document.readyState === 'complete'")
+	page.evaluate("$(document).trigger('app_ready')")
 	if redirect:
 		page.wait_for_function("window.destination !== undefined", timeout=2000)
 		assert page.evaluate("window.destination") == ["tracecore"]

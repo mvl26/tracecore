@@ -98,7 +98,7 @@ def auth_shell():
 				utils:{escape_html: value => String(value).replace(/[&<>\"']/g,
 					c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))},
 				render_template: () => template};
-			window.$ = node => ({html: html => node.innerHTML = html});
+			window.$ = node => ({html: html => node.innerHTML = html, on: () => {}});
 		} """,
 			template,
 		)

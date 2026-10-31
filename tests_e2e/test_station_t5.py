@@ -96,7 +96,7 @@ def test_t5_pack_without_t4_pass_is_rejected(t5_page, t5_demo):
 	scan(page, t5_demo["pack_no_t4"])
 	alert = page.locator(".tc-result[data-state='error'] .tc-alert-error")
 	expect(alert).to_be_visible(timeout=15000)
-	expect(alert.locator(".tc-alert-reason")).to_contain_text("T4")
+	expect(alert.locator(".tc-alert-reason")).to_contain_text("Đóng gói")
 	expect(page.locator(".tc-t5-pack")).to_have_count(0)
 
 
@@ -218,7 +218,7 @@ def test_t5_manual_data_requires_confirmation_card_and_photo(t5_page, t5_demo):
 	form.locator("[data-form='confirmed']").check()
 	form.locator("#tc-t5-card").fill("THE-SAI-0000")
 	form.locator("[data-action='t5-save-data']").click()
-	expect(page.locator(".tc-t5 .tc-alert-error")).to_contain_text("Thẻ không khớp", timeout=15000)
+	expect(page.locator(".tc-t5 .tc-alert-error")).to_contain_text("Thẻ vừa quét không phải", timeout=15000)
 
 
 def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
