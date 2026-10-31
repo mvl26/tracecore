@@ -143,15 +143,16 @@ def consume_for(source_doctype, source_name, lines, reason):
 
 
 def submit_issue(rows, source_doctype, source_name, reason):
-	"""Lập và ghi sổ Stock Entry ``Material Issue`` từ các dòng ``issue_row``; trả tên phiếu."""
-	import erpnext
+	"""Lập và ghi sổ Stock Entry ``Material Issue`` từ các dòng ``issue_row``; trả tên phiếu.
 
+	Company theo kho xuất: site nhiều bệnh viện không có Company mặc định chung, user cũng có thể không có.
+	"""
 	doc = frappe.get_doc(
 		{
 			"doctype": "Stock Entry",
 			"stock_entry_type": ISSUE,
 			"purpose": ISSUE,
-			"company": erpnext.get_default_company(),
+			"company": frappe.db.get_value("Warehouse", rows[0]["s_warehouse"], "company"),
 			"posting_date": today_vn(),
 			"tc_source_doctype": source_doctype,
 			"tc_source_name": source_name,
