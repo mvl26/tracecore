@@ -2073,7 +2073,7 @@ Confirmation tick is required,Bắt buộc đánh dấu ô xác nhận kết qu�
 "Load washer - scan the washer QR code first, then scan each set","Nạp máy rửa — quét QR máy trước, rồi quét từng bộ",""
 "Only sets that passed T1 (receiving count) and are not in another batch are accepted.","Chỉ nhận bộ đã qua cổng T1 (kiểm đếm tiếp nhận) và chưa ở lô khác.",""
 "This program uses no chemical.","Chương trình này không dùng hóa chất.",""
-"Chemical (FEFO suggestion)","Hóa chất (gợi ý FEFO)",""
+"Chemical (FEFO suggestion)","Hóa chất (gợi ý: lô hết hạn trước dùng trước)",""
 "{0} lot {1} · expires {2} · {3} {4} left","{0} lô {1} · hạn {2} · còn {3} {4}",""
 "No valid lot of chemical {0}","Không có lô hợp lệ của hóa chất {0}",""
 "Every lot of this chemical has expired or is out of stock.","Mọi lô của hóa chất này đã hết hạn hoặc hết tồn.",""
