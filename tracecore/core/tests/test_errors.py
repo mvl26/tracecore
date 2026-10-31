@@ -126,6 +126,7 @@ class TestErrors(FrappeTestCase):
 			),
 			404: (
 				"SET_NOT_FOUND",
+				"ERROR_CODE_NOT_FOUND",
 				"PACK_NOT_FOUND",
 				"ROLL_NOT_FOUND",
 				"EQUIPMENT_NOT_FOUND",

@@ -363,9 +363,10 @@ class TraceCoreStation {
 		this.sessionBar.hidden = true;
 		this.authResult.innerHTML = error
 			? `<div class="tc-card tc-alert tc-alert-error" role="alert">
-				<p class="tc-alert-title">${esc(error.title)}</p>
+				<p class="tc-alert-title">${esc(tcErrorTitle(error))}</p>
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
-				<p class="tc-alert-action">${esc(error.action)}</p></div>`
+				<p class="tc-alert-action">${esc(error.action)}</p>
+				${tcGuideButton(error)}</div>`
 			: "";
 		this.focus();
 	}
@@ -1273,9 +1274,10 @@ class TraceCoreStation {
 		this.setState(
 			"error",
 			`<div class="tc-alert tc-alert-error" role="alert">
-				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(error.title)}</p>
+				<p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(tcErrorTitle(error))}</p>
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
 				<p class="tc-alert-action">${esc(error.action)}</p>
+				${tcGuideButton(error)}
 				<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
 						__("Retry")

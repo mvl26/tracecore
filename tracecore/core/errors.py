@@ -145,6 +145,7 @@ HTTP_STATUS: dict[str, int] = {
 	**dict.fromkeys(
 		(
 			"SET_NOT_FOUND",
+			"ERROR_CODE_NOT_FOUND",  # FEAT-052 A-71
 			"PACK_NOT_FOUND",
 			"ROLL_NOT_FOUND",
 			"EQUIPMENT_NOT_FOUND",

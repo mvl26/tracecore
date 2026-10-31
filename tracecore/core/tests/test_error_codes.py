@@ -247,6 +247,73 @@ class TestBlockMapping(ErrorCodeCase):
 			self.assertEqual(block.object_name, "M-1")
 
 
+class TestGuideAndReports(ErrorCodeCase):
+	def test_guide_html_sanitized(self):
+		from tracecore.v1.error_code import guide
+
+		frappe.db.set_value("TraceCore Error Code", "QT-001", "guide", "<p>ok</p><script>alert(1)</script>")
+		html = guide("QT-001")["guide_html"]
+		self.assertIn("ok", html)
+		self.assertNotIn("<script", html)
+
+	def test_unknown_code_rejected(self):
+		from tracecore.v1.error_code import guide
+
+		self.assertEqual(guide("ZZ-999")["error"]["code"], "ERROR_CODE_NOT_FOUND")
+		self.assertFalse(guide(None)["ok"])
+
+	def _catalog(self, **filters):
+		from tracecore.admin_reports.report.error_code_catalog.error_code_catalog import execute
+
+		return {row["code"]: row for row in execute(filters)[1]}
+
+	def test_catalog_filter_by_station(self):
+		rows = self._catalog(station="USE")
+		self.assertIn("DC-002", rows)
+		self.assertNotIn("TB-004", rows)
+
+	def test_catalog_filter_by_code(self):
+		self.assertEqual(list(self._catalog(code="TB-004")), ["TB-004"])
+
+	def test_catalog_includes_guide(self):
+		self.assertIn("<ol>", self._catalog(code="TB-004")["TB-004"]["guide"])
+
+	def test_catalog_print_template_has_guide(self):
+		path = (
+			Path(frappe.get_app_path("tracecore"))
+			/ "admin_reports/report/error_code_catalog/error_code_catalog.html"
+		)
+		self.assertIn("row.guide", path.read_text(encoding="utf8"))
+
+	def test_statistics_group_by_code_station(self):
+		from tracecore.admin_reports.report.error_log_statistics.error_log_statistics import execute
+
+		error_codes.record("TB-003", "Equipment", "M")
+		error_codes.mark_resolved("TB-003", "Equipment", "M")
+		error_codes.record("TB-003", "Equipment", "M")
+		today = frappe.utils.today()
+		rows = execute({"error_code": "TB-003", "from_date": today, "to_date": today})[1]
+		self.assertGreaterEqual(rows[0]["total"], 2)
+		self.assertGreaterEqual(rows[0]["resolved"], 1)
+		self.assertGreaterEqual(rows[0]["open"], 1)
+
+	def test_statistics_date_filter(self):
+		from tracecore.admin_reports.report.error_log_statistics.error_log_statistics import execute
+
+		error_codes.record("TB-003", "Equipment", "M")
+		rows = execute({"error_code": "TB-003", "from_date": "2000-01-01", "to_date": "2000-01-02"})[1]
+		self.assertEqual(rows, [])
+
+	def test_statistics_only_managers_can_read(self):
+		roles = {row.role for row in frappe.get_doc("Report", "Error Log Statistics").roles}
+		self.assertEqual(roles, {"System Manager", "TC R01", "TC R02", "TC R10"})
+
+	def test_every_station_screen_uses_shared_title(self):
+		root = Path(frappe.get_app_path("tracecore")) / "public/js"
+		for path in root.glob("station_*.js"):
+			self.assertNotIn("${esc(notice.title)}</p>", path.read_text(encoding="utf8"), path.name)
+
+
 def _codes_in_source():
 	root = Path(frappe.get_app_path("tracecore"))
 	pattern = re.compile(r"(?:\bBlock|_blocked|_block|rejection|reject)\(\s*\"([A-Z][A-Z0-9_]+)\"")

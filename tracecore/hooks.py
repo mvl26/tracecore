@@ -77,6 +77,8 @@ app_include_js = ["tracecore.bundle.js"]
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 page_js = {
 	"station": [
+		# FEAT-052 A-71: tiêu đề mã lỗi và Hướng dẫn xử lý dùng chung, nạp trước các màn
+		"public/js/station_error.js",
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
 		"public/js/station_t2.js",
