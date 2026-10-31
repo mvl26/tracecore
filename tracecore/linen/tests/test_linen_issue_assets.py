@@ -33,6 +33,8 @@ def _node(script):
 const fs = require('fs');
 const __ = (text, args) => args ? text.replace(/\\{{(\\d+)\\}}/g, (m, i) => String(args[i])) : text;
 const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
+globalThis.tcErrorTitle = (notice) => (notice && notice.title) || '';
+globalThis.tcGuideButton = () => '';
 const uuid4 = () => 'key';
 const clientTs = () => '2026-10-29T09:00:00+07:00';
 const load = (path, name, deps) => new Function(...Object.keys(deps),

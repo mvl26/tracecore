@@ -27,7 +27,7 @@ class TestWasteStationAssets(FrappeTestCase):
 	def test_station_opens_the_screen_for_step_wst(self):
 		self.assertIn('case "waste":', self.station_js)
 		self.assertIn('method.startsWith("tracecore.v1.waste.")', self.station_js)
-		self.assertIn("WST", navigation.IMPLEMENTED_STEPS)
+		self.assertIn("WASTE", navigation.FUNCTION_ROLES)
 
 	def test_calls_waste_rpcs_and_reuses_key_on_retry(self):
 		for method in ("catalog", "giver", "collect", "acknowledge"):

@@ -1,6 +1,6 @@
 """RPC tracecore.v1.equipment.*: tra thiết bị theo mã QR và chương trình đang dùng (FR-M5-02.2, FEAT-038).
 
-Chỉ đọc, không `@idempotent`. Từ chối nghiệp vụ qua `reject_block` (Audit Log `Reject`); thiết bị đã ngừng sử dụng
+`get` chỉ đọc, không `@idempotent`; `declare_chemical_lot` ghi nên có (A-71). Từ chối nghiệp vụ qua `reject_block` (Audit Log `Reject`); thiết bị đã ngừng sử dụng
 là cảnh báo trong body thành công chứ không phải lỗi HTTP.
 """
 

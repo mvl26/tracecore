@@ -7130,3 +7130,9 @@ This range overlaps {0}. The numbers are still saved; R10 is notified.,Dải nà
 Offline code range {0} overlaps another range,Dải mã offline {0} trùng với dải khác,
 Range {0} ({1}-{2}) of station {3} overlaps: {4}.,Dải {0} ({1}-{2}) của trạm {3} trùng với: {4}.,
 Offline code ranges overlap,Dải mã offline bị trùng,
+Declared by Name,Tên người khai,Equipment Chemical Lot
+Station Name,Tên trạm,TraceCore Error Log
+Chemical Name,Tên hóa chất,Equipment Chemical Lot
+Error code Name,Tên mã lỗi,TraceCore Error Rule
+Station Function Name,Tên chức năng trạm,Zone Station Function
+Station Function Name,Tên chức năng trạm,Zone Type Function
