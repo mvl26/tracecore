@@ -167,13 +167,22 @@ def submit(assembly, station, notes=None, branch=None, branch_reason=None, clien
 	branch = _string(branch, "branch", required=False)
 	branch_reason = _string(branch_reason, "branch_reason", required=False)
 	timestamp = parse_client_ts(client_ts)
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
 			"ok": True,
-			**service.submit(name, station, timestamp, notes, branch or None, branch_reason),
+			**service.submit(
+				name,
+				station,
+				timestamp,
+				notes,
+				branch or None,
+				branch_reason,
+				session.employee if session else None,
+			),
 		},
 		REF,
 		name,

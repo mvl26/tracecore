@@ -203,7 +203,7 @@
    "reqd": 1
   },
   {
-   "description": "Employee who badged in at the station (filled once badge sign-in exists).",
+   "description": "Employee who badged in at the station; printed on the label.",
    "fieldname": "packed_by",
    "fieldtype": "Link",
    "label": "Packed By (Employee)",

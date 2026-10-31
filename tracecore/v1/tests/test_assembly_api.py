@@ -152,6 +152,17 @@ class TestAssemblyFlow(AssemblyApiCase):
 		self.assertEqual((done["ok"], done["result"]), (True, "Pass"))
 		self.assertTrue(packing.get_context(self.set_id, T4_STATION))
 
+	def test_rpc_records_the_employee_of_the_station_session(self):  # #1841, A-81
+		name = self.open()["assembly"]
+		self.count(name)
+		employee = frappe.db.get_value(
+			"Station Session", {"user": frappe.session.user, "station": STATION, "is_open": 1}, "employee"
+		)
+		self.assertTrue(employee)
+		done = call(assembly_api.submit, assembly=name, station=STATION)
+		self.assertIs(done["ok"], True, msg=done)
+		self.assertEqual(frappe.db.get_value("Assembly Record", name, "assembled_by"), employee)
+
 	def test_branch_via_rpc_fails_t3(self):
 		name = self.open()["assembly"]
 		done = call(

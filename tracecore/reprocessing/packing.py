@@ -375,7 +375,15 @@ def _with_expected_expiry(row, set_type):
 
 
 def generate(
-	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+	set_id,
+	station,
+	confirmed,
+	ci_batch,
+	pack_type,
+	maint_actions,
+	client_ts,
+	offline_cycle_id=None,
+	employee=None,
 ):
 	"""Sinh Cycle ID cho bộ tại T4 trong MỘT transaction; trả gói, HRI, ảnh DataMatrix và lệnh in.
 
@@ -391,7 +399,7 @@ def generate(
 
 	`offline_cycle_id` (FEAT-009, A-40): gói đóng khi mất mạng, phát lại sau đó — dùng mã kiosk lấy từ Code Range
 	(`code_range.claim` kiểm đúng trạm, đúng ngày `packed_at`, chưa dùng) thay cho series; `client_ts` có thể cũ
-	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`.
+	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`. `employee`: nhân viên của phiên trạm (A-81).
 	"""
 	if offline_cycle_id:
 		client_time.check_not_future(client_ts)
@@ -400,7 +408,15 @@ def generate(
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		return _generate(
-			set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id
+			set_id,
+			station,
+			confirmed,
+			ci_batch,
+			pack_type,
+			maint_actions,
+			client_ts,
+			offline_cycle_id,
+			employee,
 		)
 	except Exception:
 		# Sau deadlock, InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
@@ -410,7 +426,15 @@ def generate(
 
 
 def _generate(
-	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+	set_id,
+	station,
+	confirmed,
+	ci_batch,
+	pack_type,
+	maint_actions,
+	client_ts,
+	offline_cycle_id=None,
+	employee=None,
 ):
 	unit, set_type, ctx = _open(set_id, station, for_update=True, maint_actions=maint_actions)
 	_raise_first("tracecore_pack_checks", ctx)
@@ -448,6 +472,7 @@ def _generate(
 			"shelf_life_days_applied": expiry["days"],
 			"shelf_life_source": expiry["source"],
 			"packed_by_user": frappe.session.user,
+			"packed_by": employee,  # người quét thẻ ở trạm (A-81)
 			"packed_at": packed_at,
 			"client_ts": client_ts,  # ADR-003: thời điểm client lưu UTC
 			"station": station,

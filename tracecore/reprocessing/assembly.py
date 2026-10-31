@@ -542,7 +542,7 @@ def confirm_shortage(assembly, reason, station, reviewer_proof=None, session=Non
 # --- Ghi sổ (FR-M2-06, FR-M2-00.5, FR-M2-25) ----------------------------------------------------------
 
 
-def submit(assembly, station, client_ts=None, notes=None, branch=None, branch_reason=None):
+def submit(assembly, station, client_ts=None, notes=None, branch=None, branch_reason=None, employee=None):
 	"""Ghi sổ bản nháp và ghi cổng T3 trong một savepoint; trả ngữ cảnh đã ghi sổ + ``next_station`` (trạm T4 cùng khu).
 
 	Không rẽ nhánh: mọi dòng phải đã đếm (``LINES_NOT_COUNTED``), dòng lệch có ghi chú (``LINE_VARIANCE_REQUIRED``) và thiếu phải đã R02 xác nhận
@@ -553,14 +553,14 @@ def submit(assembly, station, client_ts=None, notes=None, branch=None, branch_re
 	client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		return _submit(assembly, station, client_ts, notes, branch, branch_reason)
+		return _submit(assembly, station, client_ts, notes, branch, branch_reason, employee)
 	except Exception:
 		with contextlib.suppress(Exception):
 			frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 
 
-def _submit(assembly, station, client_ts, notes, branch, branch_reason):
+def _submit(assembly, station, client_ts, notes, branch, branch_reason, employee=None):
 	_require_station(station)
 	doc = _draft(assembly, for_update=True)
 	frappe.db.get_value("Set Unit", doc.set_unit, "name", for_update=True)
@@ -613,6 +613,7 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 			"client_ts": client_ts,
 			"assembled_at": client_time.to_system_time(client_ts),
 			"assembled_by_user": frappe.session.user,
+			"assembled_by": employee,  # người quét thẻ ở trạm (A-81)
 			"station": station,
 		}
 	)

@@ -9,6 +9,7 @@ from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import assembly
 from tracecore.tests.factories import (
 	make_cycle,
+	make_employee,
 	make_set_type,
 	make_set_unit,
 	make_user,
@@ -619,6 +620,14 @@ class TestSubmit(AssemblyCase):
 		self.assertIsNone(step_gate.check(su, "T4"))
 		self.assertFalse(done["pack_locked"])
 		self.assertEqual(done["next_station"], T4_STATION)
+
+	def test_submit_records_the_session_employee(self):  # #1841, A-81
+		employee = make_employee(first_name="Thẻ Lắp Bộ").name
+		su = self.washed_set()
+		name = self.open(su)["assembly"]
+		self.count_all(name)
+		assembly.submit(name, STATION, self.ts, employee=employee)
+		self.assertEqual(frappe.db.get_value("Assembly Record", name, "assembled_by"), employee)
 
 	def test_submit_requires_every_line_counted(self):
 		su = self.washed_set()

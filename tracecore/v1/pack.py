@@ -20,6 +20,7 @@ from tracecore.v1._common import (
 	PACKING_ROLES,
 	STORAGE_ROLES,
 	BadRequestError,
+	current_station_session,
 	require_any_role,
 	run_at_step,
 	station_session,
@@ -211,6 +212,7 @@ def generate_cycle_id(
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(set_id)
 	is_set = scanned["type"] == "set"
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
@@ -218,7 +220,15 @@ def generate_cycle_id(
 		lambda: {
 			"ok": True,
 			**packing.generate(
-				set_id, station, confirmed, ci_batch, pack_type, actions, timestamp, offline_cycle_id
+				set_id,
+				station,
+				confirmed,
+				ci_batch,
+				pack_type,
+				actions,
+				timestamp,
+				offline_cycle_id,
+				session.employee if session else None,
 			),
 		},
 		"Set Unit" if is_set else None,
