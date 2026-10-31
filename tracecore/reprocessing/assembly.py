@@ -18,7 +18,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
-from tracecore.core import audit, client_time, extension, gs1, station_auth, step_gate, zones
+from tracecore.core import audit, client_time, error_codes, extension, gs1, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 
 STEP = "T3"  # mã cổng trong step_gate
@@ -438,6 +438,18 @@ def _reviewer(session, proof):
 	return reviewer
 
 
+def _shortage_block(items):
+	return Block(
+		"SHORTAGE_UNCONFIRMED",
+		_("Missing instruments are not confirmed"),
+		_("Missing: {0}. Packing stays locked.").format(
+			", ".join(f"{item['instrument_name']} ({item['instrument']})" for item in items)
+		),
+		_("Add the instruments from the spare stock, or ask R02 to confirm with the PIN."),
+		items=items,
+	)
+
+
 def confirm_shortage(assembly, reason, station, reviewer_proof=None, session=None, client_ts=None):
 	"""R02 xác nhận đóng gói thiếu: lý do 1-500 ký tự + PIN proof của phiên `session`; mở khóa Đóng gói.
 
@@ -542,15 +554,10 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 			)
 		if cint(doc.has_shortage) and not cint(doc.shortage_confirmed):
 			items = _shortage_items(doc)
-			raise _blocked(
-				"SHORTAGE_UNCONFIRMED",
-				_("Missing instruments are not confirmed"),
-				_("Missing: {0}. Packing stays locked.").format(
-					", ".join(f"{item['instrument_name']} ({item['instrument']})" for item in items)
-				),
-				_("Add the instruments from the spare stock, or ask R02 to confirm with the PIN."),
-				items=items,
-			)
+			# FEAT-052 A-71: DC-001 viện đặt Cảnh báo thì ghi nhận và đi tiếp; nhãn vẫn in dòng THIẾU
+			block = error_codes.check(_shortage_block(items))
+			if block:
+				raise BlockedError(block)
 	doc.update(
 		{
 			"result": "Fail" if branch else "Pass",

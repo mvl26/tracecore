@@ -11,8 +11,9 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import audit
+from tracecore.core import audit, error_codes
 from tracecore.core.errors import Block, BlockedError
+from tracecore.equipment import chemical_lots
 
 # test bắt buộc theo loại máy; plasma không có test ngày (chỉ thị hóa học từng mẻ, FR-M5-05.2)
 REQUIRED = {
@@ -201,6 +202,15 @@ def _calibration_expired(row):
 	return bool(row.calibration_due and getdate(row.calibration_due) < getdate(today()))
 
 
+def _machine_row(equipment):
+	return frappe.db.get_value(
+		"Equipment",
+		equipment,
+		["equipment_type", "status", "inspection_due", "calibration_due", "unlock_until"],
+		as_dict=True,
+	)
+
+
 def equipment_block(equipment):
 	"""Hàm của hook ``tracecore_load_equipment_checks`` / ``tracecore_wash_equipment_checks``: Block hoặc None (FR-M5-06).
 
@@ -209,17 +219,16 @@ def equipment_block(equipment):
 	qua test ngày và hiệu chuẩn quá hạn, và bỏ qua kiểm định quá hạn nếu không phải thiết bị áp lực. Máy
 	``Locked``/``Repair`` đã bị chặn trước đó bởi ``EQUIPMENT_NOT_READY``.
 	"""
-	row = frappe.db.get_value(
-		"Equipment",
-		equipment,
-		["equipment_type", "status", "inspection_due", "calibration_due", "unlock_until"],
-		as_dict=True,
-	)
+	row = _machine_row(equipment)
 	if not row:
 		return None
+	# FEAT-052 A-71: HC-001/HC-003 không có mở khóa tạm, nên kiểm trước `unlock_until`
+	block = chemical_lots.chemical_block(equipment, row.equipment_type)
+	if block:
+		return block
 	unlocked = bool(row.unlock_until and get_datetime(row.unlock_until) > now_datetime())
 	if _inspection_expired(row) and not (unlocked and row.equipment_type not in PRESSURE_TYPES):
-		return Block(
+		block = Block(
 			"EQUIPMENT_INSPECTION_EXPIRED",
 			_("Inspection has expired"),
 			_("Equipment {0} was due for inspection on {1}.").format(
@@ -230,8 +239,12 @@ def equipment_block(equipment):
 			object_name=equipment,
 			error_code="TB-004" if row.equipment_type in PRESSURE_TYPES else None,
 		)
+		# máy áp lực: TB-004 khóa cứng; còn lại TB-002 theo cấu hình viện
+		block = error_codes.check(block)
+		if block:
+			return block
 	if _calibration_expired(row) and not unlocked:
-		return Block(
+		block = Block(
 			"EQUIPMENT_CALIBRATION_EXPIRED",
 			_("Calibration has expired"),
 			_("Equipment {0} was due for calibration on {1}.").format(
@@ -241,6 +254,9 @@ def equipment_block(equipment):
 			object_type="Equipment",
 			object_name=equipment,
 		)
+		block = error_codes.check(block)
+		if block:
+			return block
 	if unlocked:
 		return None
 	missing = missing_tests(equipment, row.equipment_type)
@@ -295,6 +311,7 @@ def unlock_temp(equipment, reason, hours, station=None, client_ts=None):
 		unlocked_by=frappe.session.user,
 		unlock_reason=text,
 	)
+	error_codes.allow_open(("TB-001", "TB-002"), "Equipment", machine.name, until, text)
 	audit.log(
 		"Override",
 		"Equipment",

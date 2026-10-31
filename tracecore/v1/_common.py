@@ -135,7 +135,7 @@ def _replay(fn, endpoint, roles, kwargs, token, timestamp):
 	try:
 		with station_auth.as_replay_user(token, kwargs.get("station"), timestamp) as session:
 			try:
-				result = _run_as_session(fn, roles, kwargs, session)
+				result = error_codes.attach_warnings(_run_as_session(fn, roles, kwargs, session))
 			except BlockedError as error:
 				result = _block_body(error.block, kwargs.get("station"), timestamp)
 	except BlockedError as error:
@@ -190,7 +190,7 @@ def _live(fn, roles, kwargs, token, timestamp):
 	try:
 		with station_auth.as_session_user(token, client_ts=timestamp) as session:
 			try:
-				return _run_as_session(fn, roles, kwargs, session)
+				return error_codes.attach_warnings(_run_as_session(fn, roles, kwargs, session))
 			except BlockedError as error:
 				return _block_body(error.block, kwargs.get("station"), timestamp)
 	except BlockedError as error:

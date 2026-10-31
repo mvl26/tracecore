@@ -152,6 +152,13 @@ class T2Wash {
 		if (this.mode === "unload") return this.unloadScan(raw);
 		if (raw.toUpperCase() === T2_COMPLETE_CODE) return this.complete();
 		const code = t2Kind(raw);
+		// FEAT-052 A-71: máy đang báo HC-001/HC-003, mã quét không phải máy/bộ/lô rửa là lô hóa chất đang dùng
+		if (
+			this.notice &&
+			["HC-001", "HC-003"].includes(this.notice.error_code) &&
+			!["batch", "equipment", "set"].includes(code.kind)
+		)
+			return this.declareChemicalLot(raw);
 		if (code.kind === "batch") return this.lookupBatch(raw);
 		if (code.kind === "equipment") {
 			if (this.load && this.load.sets.length && this.load.machine.name !== code.id) {
@@ -290,6 +297,22 @@ class T2Wash {
 		}
 		this.notice = { variant: "error", technical: true, ...notice };
 		this.show();
+	}
+
+	declareChemicalLot(lot) {
+		const equipment = this.notice.object_name;
+		return this.request(
+			"tracecore.v1.equipment.declare_chemical_lot",
+			{ equipment, lot, station: this.station.station },
+			() => {
+				this.notice = {
+					variant: "ok",
+					title: __("Chemical lot {0} is declared on machine {1}", [lot, equipment]),
+					action: __("Continue loading."),
+				};
+				this.show();
+			}
+		);
 	}
 
 	reject(error, method) {

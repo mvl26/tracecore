@@ -19,7 +19,16 @@ from frappe import _
 from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, code_range, code_registry, extension, gs1, step_gate, zones
+from tracecore.core import (
+	client_time,
+	code_range,
+	code_registry,
+	error_codes,
+	extension,
+	gs1,
+	step_gate,
+	zones,
+)
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -210,7 +219,6 @@ def _bom_incomplete(missing):
 			", ".join(f"{line['instrument_name']} ({line['instrument']})" for line in missing)
 		),
 		_("Check each missing instrument in the tray and tick it, then confirm again."),
-		error_code="DC-001",
 		items=[{key: line[key] for key in ("instrument", "instrument_name", "qty")} for line in missing],
 	)
 
@@ -492,7 +500,8 @@ def confirmed_shortage(unit):
 	hoặc phiếu không có xác nhận thiếu → ``{}``.
 	"""
 	name = _assembly(unit)
-	if not name or not frappe.db.get_value("Assembly Record", name, "shortage_confirmed"):
+	accepted = not error_codes.is_blocking("DC-001")  # FEAT-052 A-71: DC-001 là Cảnh báo
+	if not name or not (accepted or frappe.db.get_value("Assembly Record", name, "shortage_confirmed")):
 		return {}
 	rows = frappe.get_all(
 		"Assembly Line",

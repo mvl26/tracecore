@@ -237,10 +237,11 @@ class TestBlockMapping(ErrorCodeCase):
 
 		row = dict(status="Ready", inspection_due="2020-01-01", calibration_due=None, unlock_until=None)
 		for equipment_type, expected in (("Steam Sterilizer", "TB-004"), ("Washer-Disinfector", "TB-002")):
-			with patch.object(
-				daily_test.frappe.db,
-				"get_value",
-				return_value=frappe._dict(row, equipment_type=equipment_type),
+			with (
+				patch.object(
+					daily_test, "_machine_row", return_value=frappe._dict(row, equipment_type=equipment_type)
+				),
+				patch.object(daily_test.chemical_lots, "chemical_block", return_value=None),
 			):
 				block = daily_test.equipment_block("M-1")
 			self.assertEqual(error_codes.error_code_of(block.code, block.error_code), expected)

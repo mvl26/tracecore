@@ -6,7 +6,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import cint, now_datetime
+from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
 CODE_DOCTYPE = "TraceCore Error Code"
 LOG_DOCTYPE = "TraceCore Error Log"
@@ -136,6 +136,8 @@ UNMAPPED_BLOCK_CODES = frozenset(
 		"PATIENT_CODE_ALREADY_SET",
 		"PATIENT_CODE_UNREADABLE",
 		"PERMISSION_DENIED",
+		"SELF_APPROVAL_NOT_ALLOWED",
+		"PERMIT_INVALID",
 		"PHOTO_INVALID",
 		"PIN_CHANGE_REQUIRED",
 		"PIN_FORMAT_INVALID",
@@ -378,4 +380,169 @@ def mark_resolved(error_code, object_type, object_name) -> int:
 	)
 	for name in names:
 		frappe.db.set_value(LOG_DOCTYPE, name, "status", RESOLVED, update_modified=False)
+	return len(names)
+
+
+# --- mức độ cấu hình được (FR-M9-18) ------------------------------------------------------------------------
+
+
+def is_blocking(code: str) -> bool:
+	rule = rule_of(code)
+	return not rule or (rule["enabled"] and rule["severity"] == BLOCK)
+
+
+def check(block):
+	"""Áp cấu hình viện lên một `Block`: Chặn trả lại `block`; Cảnh báo/Thông tin ghi Nhật ký, gom vào `warnings`, trả None; mã tắt trả None."""
+	code = error_code_of(block.code, block.error_code)
+	rule = rule_of(code) if code else None
+	if not rule:
+		return block
+	if not rule["enabled"]:
+		return None
+	if rule["severity"] == BLOCK:
+		return block
+	log_block(block)
+	frappe.flags.setdefault("tc_error_warnings", []).append(block.as_dict())
+	return None
+
+
+def pop_warnings() -> list:
+	return frappe.flags.pop("tc_error_warnings", None) or []
+
+
+def attach_warnings(result):
+	"""Đưa cảnh báo đã gom vào body RPC; thao tác vẫn thành công."""
+	warnings = pop_warnings()
+	if warnings and isinstance(result, dict):
+		result["warnings"] = warnings
+	return result
+
+
+# --- cho phép tạm (FR-M4-03.1, A-71 e) ----------------------------------------------------------------------
+
+PERMIT_CODES = ("NS-001",)
+MAX_PERMIT_HOURS = 24
+
+
+def _permit_error(reason):
+	from tracecore.core.errors import Block, BlockedError
+
+	return BlockedError(
+		Block(
+			"PERMIT_INVALID",
+			_("Temporary access is not valid"),
+			reason,
+			_("Correct the request, then approve again."),
+		)
+	)
+
+
+def _employee_user(employee):
+	return frappe.db.get_value("Employee", employee, "user_id")
+
+
+def _require_approver(row):
+	from tracecore.core.errors import Block, BlockedError
+
+	allowed = set((rule_of(row.error_code) or {}).get("approver_roles") or [])
+	if not allowed & set(frappe.get_roles()):
+		raise BlockedError(
+			Block(
+				"APPROVER_NOT_ALLOWED",
+				_("Not allowed to approve"),
+				_("Your role cannot approve temporary access for {0}.").format(row.error_code),
+				_("Ask a person with an approver role."),
+			)
+		)
+	if row.object_type == "Employee" and _employee_user(row.object_name) == frappe.session.user:
+		raise BlockedError(
+			Block(
+				"SELF_APPROVAL_NOT_ALLOWED",
+				_("You cannot approve your own access"),
+				_("This request is for your own account."),
+				_("Ask another approver."),
+			)
+		)
+
+
+def grant_permit(error_log, hours, reason, client_ts=None) -> dict:
+	"""Duyệt cho phép tạm từ một dòng Nhật ký Đang mở: tối đa 24 giờ, có lý do, ghi người duyệt và Audit `Override`."""
+	from tracecore.core import audit
+
+	row = frappe.db.get_value(
+		LOG_DOCTYPE, error_log, ["name", "error_code", "object_type", "object_name", "status"], as_dict=True
+	)
+	if not row or row.error_code not in PERMIT_CODES or row.status != OPEN:
+		raise _permit_error(_("Only an open certificate error can get temporary access."))
+	text = reason.strip() if isinstance(reason, str) else ""
+	if not text:
+		raise _permit_error(_("A reason is required."))
+	value = str(hours).strip()
+	if not value.isdigit() or not 1 <= int(value) <= MAX_PERMIT_HOURS:
+		raise _permit_error(_("Enter the number of hours, from 1 to {0}.").format(MAX_PERMIT_HOURS))
+	_require_approver(row)
+	until = add_to_date(now_datetime(), hours=int(value))
+	frappe.db.set_value(
+		LOG_DOCTYPE,
+		row.name,
+		{
+			"status": ALLOWED,
+			"approved_by": frappe.session.user,
+			"valid_until": until,
+			"approval_reason": text,
+		},
+	)
+	audit.log(
+		"Override",
+		LOG_DOCTYPE,
+		row.name,
+		new={"event": "TemporaryAccess", "employee": row.object_name, "hours": int(value), "reason": text},
+		reason="TemporaryAccess",
+		client_ts=client_ts,
+	)
+	return {"error_log": row.name, "status": ALLOWED, "valid_until": until}
+
+
+def active_permit(error_code, object_type, object_name) -> dict | None:
+	"""Cho phép tạm còn hiệu lực của đối tượng; hết hạn thì không tính."""
+	rows = frappe.get_all(
+		LOG_DOCTYPE,
+		filters={
+			"error_code": error_code,
+			"object_type": object_type,
+			"object_name": object_name,
+			"status": ALLOWED,
+		},
+		fields=["name", "valid_until", "approved_by"],
+		order_by="valid_until desc",
+		limit=1,
+	)
+	if not rows or not rows[0].valid_until or get_datetime(rows[0].valid_until) <= now_datetime():
+		return None
+	return rows[0]
+
+
+def allow_open(error_codes_list, object_type, object_name, until, reason) -> int:
+	"""R02 mở khóa tạm máy (`unlock_temp`): các dòng Đang mở của máy thành Được phép tạm, ghi người duyệt và thời hạn."""
+	names = frappe.get_all(
+		LOG_DOCTYPE,
+		filters={
+			"error_code": ["in", error_codes_list],
+			"object_type": object_type,
+			"object_name": object_name,
+			"status": OPEN,
+		},
+		pluck="name",
+	)
+	for name in names:
+		frappe.db.set_value(
+			LOG_DOCTYPE,
+			name,
+			{
+				"status": ALLOWED,
+				"approved_by": frappe.session.user,
+				"valid_until": until,
+				"approval_reason": reason,
+			},
+		)
 	return len(names)

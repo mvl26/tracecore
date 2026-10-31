@@ -8,9 +8,12 @@ import frappe
 from frappe import _
 
 from tracecore.core import gs1
+from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block
-from tracecore.equipment import programs
-from tracecore.v1._common import reject_block
+from tracecore.core.idempotency import idempotent
+from tracecore.equipment import chemical_lots, programs
+from tracecore.v1._common import reject_block, require_any_role, station_session
+from tracecore.v1.wash import _required_str, _run
 
 FIELDS = (
 	"name",
@@ -69,3 +72,21 @@ def get(qr, client_ts=None):
 		"programs": [] if retired else programs.active_programs(row.name),
 		"warning": warning,
 	}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session("TC R03", "TC R05", "TC R02", "System Manager")
+@idempotent
+def declare_chemical_lot(equipment, lot, station, client_ts=None, token=None):
+	"""Khai lô hóa chất đang dùng trên máy ở T2 (FEAT-052, A-71, FR-M5-07): giải HC-001/HC-003."""
+	require_any_role("TC R03", "TC R05", "TC R02", "System Manager")
+	equipment = _required_str(equipment, "equipment")
+	lot = _required_str(lot, "lot")
+	timestamp = parse_client_ts(client_ts)
+	return _run(
+		station,
+		timestamp,
+		lambda: {"ok": True, **chemical_lots.declare(equipment, lot, timestamp)},
+		"Equipment",
+		equipment,
+	)

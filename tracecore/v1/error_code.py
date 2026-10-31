@@ -7,8 +7,9 @@ import frappe
 from frappe import _
 from frappe.utils.html_utils import clean_html
 
-from tracecore.core.errors import Block
-from tracecore.v1._common import _block_body
+from tracecore.core import error_codes
+from tracecore.core.errors import Block, BlockedError
+from tracecore.v1._common import _block_body, reject_block
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
@@ -33,3 +34,12 @@ def guide(error_code=None):
 		"name": _(row.error_name),
 		"guide_html": clean_html(row.guide or ""),
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def grant_permit(error_log, hours, reason, client_ts=None):
+	"""R01/R02 (theo cấu hình) cho phép tạm NS-001 từ dòng Nhật ký trên Desk: tối đa 24 giờ, có lý do."""
+	try:
+		return {"ok": True, **error_codes.grant_permit(error_log, hours, reason)}
+	except BlockedError as error:
+		return reject_block(error.block, "TraceCore Error Log", error_log, client_ts=None)

@@ -422,7 +422,7 @@ def _program(equipment, program):
 	return row
 
 
-def _chemical_rows(program, chemicals):
+def _chemical_rows(program, chemicals, equipment=None):
 	"""Dòng hóa chất đã kiểm của lô (Q23): lô còn hạn, đúng hóa chất của chương trình, ít nhất một lô nếu có khai."""
 	rows = []
 	for entry in chemicals or []:
@@ -439,6 +439,10 @@ def _chemical_rows(program, chemicals):
 		if block:
 			raise BlockedError(block)
 		rows.append({"item": item, "lot": lot, "qty": flt(entry.get("qty"))})
+	if program.chemical and not rows and equipment:
+		# FEAT-052 A-71: chưa chọn lô thì dùng lô đã khai trên máy
+		for found in extension.run("tracecore_equipment_chemical_lots", equipment, program.chemical):
+			rows.extend(found)
 	if program.chemical and not rows:
 		raise BlockedError(
 			_invalid_chemical(
@@ -503,7 +507,7 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator):
 		raise BlockedError(block)
 	machine = frappe.db.get_value("Equipment", equipment, ["equipment_name", "equipment_type"], as_dict=True)
 	program = _program(equipment, program)
-	chemical_rows = _chemical_rows(program, chemicals)
+	chemical_rows = _chemical_rows(program, chemicals, equipment)
 	accepted, rejected = _admit_all(sets, equipment)
 	if not accepted:
 		raise _blocked(

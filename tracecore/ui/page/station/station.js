@@ -357,6 +357,18 @@ class TraceCoreStation {
 		return null;
 	}
 
+	// FEAT-052 A-71: cảnh báo không chặn thao tác; nằm trên khối kết quả, thay khi có giao dịch ghi tiếp theo
+	showWarnings(body, isWrite) {
+		const warnings = (body && body.warnings) || [];
+		if (!warnings.length && !isWrite) return;
+		if (!this.warningBar) {
+			this.warningBar = document.createElement("div");
+			this.warningBar.className = "tc-warnings";
+			this.result.parentElement.insertBefore(this.warningBar, this.result);
+		}
+		this.warningBar.innerHTML = tcWarningsHtml(warnings);
+	}
+
 	renderLogin(error) {
 		this.authForm.hidden = false;
 		this.work.hidden = true;
@@ -1022,6 +1034,7 @@ class TraceCoreStation {
 				error.status = response.status;
 				throw error;
 			}
+			this.showWarnings(data.message, idempotencyKey);
 			return data.message;
 		} catch (error) {
 			if (error.name === "AbortError" || error instanceof TypeError) error.offline = true;

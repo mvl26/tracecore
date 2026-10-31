@@ -11,7 +11,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from tracecore.core import error_codes
+from tracecore.core import error_codes, extension
 
 _TIME = re.compile(r"^(\d{1,2}):(\d{2})$")
 
@@ -35,3 +35,8 @@ class TraceCoreSettings(Document):
 		# giờ nhắc nhật ký môi trường: lưu dạng chuẩn "HH:MM, HH:MM"
 		self.env_reminder_times = ", ".join(t.strftime("%H:%M") for t in parse_times(self.env_reminder_times))
 		error_codes.validate_rules(self)
+
+	def on_update(self):
+		# đổi cấu hình mã lỗi có hiệu lực ngay (FR-M9-18): máy đã khóa vì TB-002 được mở khi viện hạ mức
+		error_codes.clear_cache()
+		extension.run("tracecore_error_rules_changed")
