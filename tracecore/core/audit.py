@@ -60,8 +60,11 @@ def log(
 	station=None,
 	device=None,
 	client_ts=None,
+	entry_mode=None,
 ):
-	"""Ghi một dòng Audit Log; trạm/thiết bị/request lấy từ header nếu không truyền."""
+	"""Ghi một dòng Audit Log; trạm/thiết bị/request lấy từ header nếu không truyền.
+
+	`entry_mode` (Scan / Manual, A-68) chỉ có ở thao tác nhập mã trên trạm."""
 	station = station or _header("X-TC-Station")
 	if station and not frappe.db.exists("Zone Station", station):
 		station = None
@@ -72,6 +75,7 @@ def log(
 			"user": frappe.session.user,
 			"station": station,
 			"device": device or _header("X-TC-Device"),
+			"entry_mode": entry_mode,
 			"request_id": _header("X-Request-ID"),
 			"action": action,
 			"ref_doctype": ref_doctype,

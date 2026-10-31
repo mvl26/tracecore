@@ -134,7 +134,7 @@ def _batch_ref(batch):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
-def start(raw, station, client_ts=None, token=None):
+def start(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét QR máy rửa: máy, chương trình đang dùng của máy, lô hóa chất gợi ý FEFO (FR-M2-03.1, .4, .5)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	raw = _required_str(raw, "raw")
@@ -148,13 +148,17 @@ def start(raw, station, client_ts=None, token=None):
 		"Equipment" if scanned["type"] == "equipment" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
-def add_set(raw, equipment, queued, station, client_ts=None, token=None):
+def add_set(
+	raw, equipment, queued, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None
+):
 	"""Kiểm một Set ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (Q1)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	raw = _required_str(raw, "raw")
@@ -170,6 +174,8 @@ def add_set(raw, equipment, queued, station, client_ts=None, token=None):
 		"Set Unit" if scanned["type"] == "set" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
