@@ -54,6 +54,45 @@ class TestProcessProgram(IsolatedTestCase):
 		)
 		self.assertEqual(len(doc.consumables), 1)
 
+	def test_consumable_unit_needs_a_conversion_row_on_the_item(self):
+		item = make_item("PP-CI-2", "Chemical Indicator")
+		if not frappe.db.exists("UOM", "ml"):
+			frappe.get_doc({"doctype": "UOM", "uom_name": "ml"}).insert(ignore_permissions=True)
+		with self.assertRaises(frappe.ValidationError) as raised:
+			make_program(
+				self.equipment.name,
+				code="U-1",
+				consumables=[{"item": item.name, "uom": "ml", "qty_per_load": 150}],
+			)
+		self.assertIn("ml", str(raised.exception))
+		self.assertIn(item.name, str(raised.exception))
+		item.append("uoms", {"uom": "ml", "conversion_factor": 0.0002})
+		item.save(ignore_permissions=True)
+		doc = make_program(
+			self.equipment.name,
+			code="U-2",
+			consumables=[{"item": item.name, "uom": "ml", "qty_per_load": 150}],
+		)
+		self.assertEqual(doc.consumables[0].uom, "ml")
+
+	def test_fraction_of_a_whole_number_unit_warns_when_the_program_is_saved(self):
+		item = make_item("PP-CI-3", "Chemical Indicator")
+		if not frappe.db.exists("UOM", "ml"):
+			frappe.get_doc({"doctype": "UOM", "uom_name": "ml"}).insert(ignore_permissions=True)
+		item.append("uoms", {"uom": "ml", "conversion_factor": 0.0002})
+		item.save(ignore_permissions=True)
+		frappe.db.set_value("UOM", item.stock_uom, "must_be_whole_number", 1)
+		frappe.clear_cache(doctype="UOM")
+		frappe.local.message_log = []
+		make_program(
+			self.equipment.name,
+			code="U-3",
+			consumables=[{"item": item.name, "uom": "ml", "qty_per_load": 150}],
+		)
+		self.assertTrue(
+			any(item.name in str(message) and "whole" in str(message) for message in frappe.local.message_log)
+		)
+
 	def test_parameter_min_not_above_max(self):
 		def params(*rows):
 			return [{"parameter_name": n, "min_value": lo, "max_value": hi} for n, lo, hi in rows]

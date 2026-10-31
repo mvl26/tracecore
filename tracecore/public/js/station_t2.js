@@ -85,6 +85,8 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy, waiting: bộ chờ rửa}
 		this.overviewBusy = false;
+		this.draftChecked = false; // nháp phía server (theo phiên trạm) chỉ hỏi một lần mỗi phiên
+		this.draftTimer = null;
 		this.reset();
 		this.load = this.restoreLoad();
 		this.result.addEventListener("change", (event) => this.onChange(event));
@@ -113,6 +115,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null;
 		this.overviewBusy = false;
+		this.draftChecked = false;
 		this.reset();
 		this.saveLoad();
 		this.input.placeholder = __("Scan Set ID...");
@@ -141,6 +144,53 @@ class T2Wash {
 		} catch (error) {
 			// kiosk tắt storage: danh sách chỉ còn trong bộ nhớ
 		}
+		this.syncDraft();
+	}
+
+	// Nháp phía server theo phiên trạm (A-72): tải lại trang hay đổi tab không mất bộ đã quét.
+	syncDraft() {
+		if (!this.station.session || this.station.isOffline()) return;
+		clearTimeout(this.draftTimer);
+		const version = this.station.sessionVersion;
+		const draft = this.load ? JSON.stringify(this.load) : "";
+		this.draftTimer = setTimeout(async () => {
+			if (version !== this.station.sessionVersion || !this.station.session) return;
+			try {
+				await this.station.rpc("tracecore.v1.wash.save_draft", {
+					draft,
+					station: this.station.station,
+					client_ts: clientTs(),
+				});
+			} catch (error) {
+				// nháp chỉ là tiện ích: mất mạng thì danh sách vẫn còn trên kiosk
+			}
+		}, 300);
+	}
+
+	async restoreDraft() {
+		this.draftChecked = true;
+		if (this.load || !this.canLoad() || this.station.isOffline()) return;
+		const version = this.station.sessionVersion;
+		let res = null;
+		try {
+			res = await this.station.rpc("tracecore.v1.wash.draft", {
+				station: this.station.station,
+				client_ts: clientTs(),
+			});
+		} catch (error) {
+			return;
+		}
+		if (version !== this.station.sessionVersion || this.load) return;
+		if (!(res && res.ok && res.draft && res.draft.machine && Array.isArray(res.draft.sets)))
+			return;
+		this.load = res.draft;
+		this.saveLoad();
+		this.notice = {
+			variant: "info",
+			title: __("The list of sets was restored from this station session"),
+		};
+		this.show();
+		this.refreshLots(true);
 	}
 
 	// ---- quét ----
@@ -339,6 +389,27 @@ class T2Wash {
 		};
 		this.saveLoad();
 		this.show();
+	}
+
+	refreshLots(quiet = false) {
+		if (!this.load || this.busy) return;
+		return this.request(
+			"tracecore.v1.wash.refresh_lots",
+			{ equipment: this.load.machine.name, station: this.station.station },
+			(res) => {
+				if (!this.load) return;
+				this.load.programs = res.programs || [];
+				this.load.lots = res.chemical_lots || [];
+				if (!this.programRow())
+					this.load.program = this.load.programs.length
+						? this.load.programs[0].program_code
+						: null;
+				this.pickLot();
+				if (!quiet) this.notice = { variant: "ok", title: __("Chemical lots reloaded") };
+				this.saveLoad();
+				this.show();
+			}
+		);
 	}
 
 	pickLot() {
@@ -823,6 +894,7 @@ class T2Wash {
 			"t2-remove": () => this.removeSet(data.set),
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
+			"t2-refresh-lots": () => this.refreshLots(),
 			"t2-save-data": () => this.saveData(),
 			"t2-verdict": () => {
 				if (!this.verdict) return;
@@ -848,6 +920,7 @@ class T2Wash {
 			this.pickLot();
 			this.saveLoad();
 			this.show();
+			this.refreshLots(true); // lô mới nhập sau khi quét máy
 		} else if (target.id === "tc-t2-lot" && this.load) {
 			this.load.lot = target.value || null;
 			this.saveLoad();
@@ -900,6 +973,7 @@ class T2Wash {
 		if (!this.station.session) return;
 		this.updatePlaceholder();
 		if (!this.overview) this.loadOverview();
+		if (!this.draftChecked) this.restoreDraft();
 		const body = this.mode === "unload" ? this.unloadHtml() : this.loadHtml();
 		this.station.setState(
 			this.viewState(),
@@ -1105,9 +1179,17 @@ class T2Wash {
 						.join("")}</select>`
 				: this.alertHtml({
 						variant: "error",
-						title: __("No valid lot of chemical {0}", [program.chemical]),
-						reason: __("Every lot of this chemical has expired or is out of stock."),
-						action: __("Receive a new lot into stock or call R02."),
+						title: __("No valid lot of chemical {0} - {1}", [
+							program.chemical,
+							this.chemicalName(program, program.chemical),
+						]),
+						reason: __(
+							"Program {0} cannot start without a lot of this chemical. Check the list of chemicals below.",
+							[program.program_name]
+						),
+						action: __(
+							"Receive a new lot into stock or call R02, then tap Reload chemical lots."
+						),
 				  });
 		}
 		const rows = load.sets
@@ -1155,9 +1237,13 @@ class T2Wash {
 					<div class="tc-field">
 						<label for="tc-t2-lot">${esc(__("Chemical (FEFO suggestion)"))}</label>
 						${chemical}
+						<button type="button" class="tc-btn tc-btn-secondary" data-action="t2-refresh-lots"${t2Disabled(
+							Boolean(this.busy)
+						)}>${esc(__("Reload chemical lots"))}</button>
 					</div>
 				</div>
-			</section>
+			${this.chemicalsHtml(program)}
+				</section>
 			<section class="tc-t4-block tc-t2-sets">
 				<h3>${esc(
 					__(
@@ -1167,6 +1253,46 @@ class T2Wash {
 				)}</h3>
 				${table}
 			</section>`;
+	}
+
+	chemicalName(program, item) {
+		const row = ((program && program.chemicals) || []).find((entry) => entry.item === item);
+		return (row && row.item_name) || item;
+	}
+
+	// Hóa chất của chương trình đang chọn kèm tình trạng tồn: thiếu hóa chất nào, bao nhiêu, lô còn hạn không (A-72)
+	chemicalsHtml(program) {
+		const rows = (program && program.chemicals) || [];
+		if (!rows.length) return "";
+		const states = {
+			ok: ["&#10003; ", __("Stock enough"), "tc-t4-ok"],
+			short: ["&#10005; ", __("Stock short"), "tc-warn-text"],
+			expired: ["! ", __("Lots expired"), "tc-warn-text"],
+		};
+		const items = rows
+			.map((row) => {
+				const [mark, text, cls] = states[row.status] || states.short;
+				return `<li class="tc-chem-status" data-item="${esc(row.item)}" data-status="${esc(
+					row.status
+				)}">
+					<b class="tc-code">${esc(row.item)}</b> ${esc(row.item_name || "")}
+					<span>${esc(
+						__("Needs {0} {1} per cycle, in stock {2} {1}", [
+							row.required,
+							row.uom || "",
+							row.qty,
+						])
+					)}</span>
+					<b class="${cls}"><span aria-hidden="true">${mark}</span>${esc(text)}</b>
+				</li>`;
+			})
+			.join("");
+		return `<section class="tc-t4-block tc-t2-chemicals" aria-label="${esc(
+			__("Chemicals of program {0}", [program.program_name])
+		)}">
+			<h3>${esc(__("Chemicals of program {0}", [program.program_name]))}</h3>
+			<ul class="tc-alert-items">${items}</ul>
+		</section>`;
 	}
 
 	loadBarHtml() {
