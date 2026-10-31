@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import frappe
@@ -437,3 +438,17 @@ class TestNextSetId(FrappeTestCase):
 						),
 					)
 			self.assertIsNone(code_registry.etching_prefix_block("8930001"))
+
+
+class TestContainerCode(FrappeTestCase):
+	"""Mã túi/thùng chất thải `CT-YYMMDD-NNNNN` (FEAT-047, FR-M10-01.5, BRU-ID-006)."""
+
+	@bru("BRU-ID-006")
+	def test_next_container_code_is_dated_unique_and_registered(self):
+		day = datetime(2026, 10, 30, 9, 0)
+		first = code_registry.next_container_code(day, "TR-WST")
+		second = code_registry.next_container_code(day, "TR-WST")
+		self.assertRegex(first, r"^CT-261030-\d{5}$")
+		self.assertNotEqual(first, second)
+		self.assertTrue(code_registry.is_issued(first))
+		self.assertEqual(gs1.parse_scan(first)["type"], "container")

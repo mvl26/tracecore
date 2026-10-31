@@ -18,7 +18,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, get_datetime, get_fullname, getdate
 
-from tracecore.core import gs1
+from tracecore.core import error_codes, gs1
 from tracecore.core import print as core_print
 
 
@@ -65,7 +65,12 @@ def _shortage_warning(pack):
 
 	Nhãn luôn in tiếng Việt (mẫu nhãn cố định), nên dịch sang ``vi`` bất kể ngôn ngữ của người dùng đang thao tác.
 	"""
-	if not pack.assembly or not frappe.db.get_value("Assembly Record", pack.assembly, "shortage_confirmed"):
+	flags = (
+		frappe.db.get_value("Assembly Record", pack.assembly, ["shortage_confirmed", "shortage_accepted"])
+		if pack.assembly
+		else None
+	)
+	if not flags or not any(flags):  # FEAT-052 A-71: nhận thiếu theo DC-001 Cảnh báo được lưu lúc ghi T3
 		return ""
 	names = frappe.get_all(
 		"Assembly Line",

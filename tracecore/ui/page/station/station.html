@@ -1,15 +1,28 @@
 <div class="tc-station" data-surface="STN">
 	<div class="tc-zonebar tc-zone-web" role="presentation"></div>
+	<div class="tc-brand-bar"><a class="tc-brand" href="/app/tracecore">TraceCore</a></div>
+	<aside class="tc-rail" hidden>
+		<div class="tc-rail-head">
+			<a class="tc-brand" href="/app/tracecore">TraceCore</a>
+			<strong class="tc-rail-person"></strong>
+			<span class="tc-rail-context"></span>
+		</div>
+		<nav class="tc-rail-stations" aria-label="{%= __("Station") %}"></nav>
+		<div class="tc-rail-foot" role="status"></div>
+	</aside>
 	<div class="tc-offline-banner" role="status" hidden>
 		{%= __("Offline - transactions are kept on this device") %}
 	</div>
 	<div class="tc-sync-bar" role="status" aria-live="polite" hidden></div>
 	<main class="tc-main">
+		<p class="tc-crumb" hidden></p>
 		<header class="tc-title">
 			<h2 class="tc-station-name">{%= __("Station") %}</h2>
 			<span class="tc-tag tc-zone-label"></span>
 			<span class="tc-tag tc-station-code"></span>
+			<button type="button" class="tc-btn tc-btn-secondary tc-help-btn" data-action="open-help">{%= __("Help") %}</button>
 		</header>
+		<nav class="tc-station-pills" aria-label="{%= __("Station") %}" hidden></nav>
 		<form class="tc-auth-form tc-card tc-scan" autocomplete="off" novalidate>
 			<label class="tc-sr-only" for="tc-card-input">{%= __("Scan employee card") %}</label>
 			<input id="tc-card-input" class="tc-scan-input" type="text" inputmode="none"
@@ -46,6 +59,7 @@
 				aria-label="{%= __("Scan Set ID") %}"
 			/>
 			<button type="submit" class="tc-btn tc-btn-primary tc-scan-button">{%= __("Scan") %}</button>
+			<button type="button" class="tc-btn tc-btn-secondary tc-pick-button" data-action="manual-pick">{%= __("Choose by hand") %}</button>
 		</form>
 		<section class="tc-card tc-result" aria-live="polite" data-state="loading"></section>
 		</div>

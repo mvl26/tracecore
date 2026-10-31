@@ -16,6 +16,7 @@ from tracecore.core import audit
 from tracecore.equipment import norms
 
 PROGRAM_CODE_PATTERN = re.compile(r"[A-Z0-9-]+")
+WASH_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
 NON_NEGATIVE_FIELDS = (
 	("duration_min", "Duration (min)"),
 	("kwh_per_cycle", "Electricity per Cycle (kWh)"),
@@ -39,9 +40,11 @@ class ProcessProgram(Document):
 	def validate(self):
 		self.program_code = _normalize_code(self.program_code)
 		self._validate_equipment()
+		self._normalize_wash_indicator()
 		self._validate_norms()
 		self._apply_norms()
 		self._validate_consumables()
+		self._validate_consumable_units()
 		self._validate_pack_types()
 		self._validate_parameters()
 		self._warn_safe_range()
@@ -64,6 +67,13 @@ class ProcessProgram(Document):
 					self.equipment
 				)
 			)
+
+	def _normalize_wash_indicator(self):
+		# chỉ thị rửa chỉ có nghĩa với máy rửa/siêu âm (A-77); ảnh chỉ bắt buộc khi chỉ thị bắt buộc
+		if norms.equipment_type_of(self) not in WASH_TYPES:
+			self.requires_wash_indicator = 0
+		if not cint(self.requires_wash_indicator):
+			self.requires_wash_indicator_photo = 0
 
 	def _validate_norms(self):
 		for fieldname, label in NON_NEGATIVE_FIELDS:
@@ -108,6 +118,38 @@ class ProcessProgram(Document):
 						row.idx
 					)
 				)
+
+	def _validate_consumable_units(self):
+		"""Định mức khai theo ĐVT khác ĐVT tồn kho (vd. ml cho hóa chất tồn theo Can) cần dòng quy đổi trên Item (A-72)."""
+		for row in self.consumables:
+			stock_uom = frappe.db.get_value("Item", row.item, "stock_uom")
+			if not row.uom or row.uom == stock_uom:
+				continue
+			factor = flt(
+				frappe.db.get_value(
+					"UOM Conversion Detail",
+					{"parent": row.item, "parenttype": "Item", "uom": row.uom},
+					"conversion_factor",
+				)
+			)
+			if not factor:
+				frappe.throw(
+					_(
+						"Row {0}: item {1} has no conversion from {2} to {3}. Add it to the unit of measure table of the item."
+					).format(row.idx, row.item, row.uom, stock_uom)
+				)
+			if not frappe.db.get_value("UOM", stock_uom, "must_be_whole_number"):
+				continue
+			for qty in (row.qty_per_load, row.qty_per_pack, row.qty_per_kg):
+				stock_qty = flt(qty) * factor
+				if abs(stock_qty - round(stock_qty)) > 1e-7:
+					frappe.msgprint(
+						_(
+							"Row {0}: item {1} is stocked in {2}, which must be a whole number, so a norm of {3} {4} ({5} {2}) cannot be deducted. Turn off 'Must be Whole Number' in unit {2}."
+						).format(row.idx, row.item, stock_uom, qty, row.uom, flt(stock_qty, 6)),
+						indicator="orange",
+					)
+					break
 
 	def _validate_pack_types(self):
 		seen = set()

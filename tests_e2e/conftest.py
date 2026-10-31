@@ -55,9 +55,18 @@ def desk_login(page, prefix="TC_E2E"):
 	assert logged_in.ok and logged_in.json().get("message") == user
 
 
+BROWSER_TZ = "Asia/Ho_Chi_Minh"
+
+
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
-	return {**browser_context_args, "viewport": KIOSK_VIEWPORT, "base_url": BASE_URL}
+	# cùng múi giờ với trạm thật và server: runner CI chạy UTC, từ 00:00 đến 07:00 sẽ lệch ngày với dải mã offline
+	return {
+		**browser_context_args,
+		"viewport": KIOSK_VIEWPORT,
+		"base_url": BASE_URL,
+		"timezone_id": BROWSER_TZ,
+	}
 
 
 @pytest.fixture

@@ -1,0 +1,12 @@
+<h2>{%= __("Error code catalog") %}</h2>
+{% if (filters.station) { %}<p>{%= __("Station") %}: {%= filters.station %}</p>{% } %}
+{% for (var i = 0; i < data.length; i++) { var row = data[i]; %}
+<div style="page-break-inside: avoid">
+	<h3>[{%= row.code %}] {%= row.error_name %}</h3>
+	<p><b>{%= __("Severity") %}:</b> {%= row.severity %} · <b>{%= __("Stations") %}:</b> {%= row.stations %}</p>
+	<p><b>{%= __("Condition") %}:</b> {%= row.trigger_condition %}</p>
+	<p><b>{%= __("System action") %}:</b> {%= row.system_action %}</p>
+	<p><b>{%= __("How it clears") %}:</b> {%= row.release %}</p>
+	<div><b>{%= __("Handling guide") %}:</b>{%= row.guide %}</div>
+</div>
+{% } %}

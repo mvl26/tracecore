@@ -18,6 +18,8 @@ const TC_ST_DEPARTMENT_QUERY = "tracecore.v1.set_type.department_query";
 const TC_ST_CREATE = "tracecore.v1.set_type_admin.create";
 const TC_ST_SAVE_BOM = "tracecore.v1.set_type_admin.save_bom";
 const TC_ST_COPY = "tracecore.v1.set_type_admin.copy";
+const TC_ST_GTIN_STATUS = "tracecore.v1.gtin.status";
+const TC_ST_GTIN_CHANGE = "tracecore.v1.gtin.change_locked";
 // phần đầu gửi khi tạo loại bộ (khớp bom_versions.HEADER_FIELDS); ảnh khay tải lên sau khi loại bộ đã có
 const TC_ST_HEADER_FIELDS = [
 	"type_code",
@@ -493,15 +495,96 @@ function tc_st_render_indicators(frm, ctx) {
 	);
 }
 
+function tc_st_prefix_missing_text() {
+	return __("GS1 company prefix not declared. Ask R10 to enter it in TraceCore Settings.");
+}
+
 function tc_st_render_warnings(frm, ctx) {
-	const missing = ctx.missing || [];
-	if (!missing.length) {
+	const gtin = ctx.gtin || {};
+	const messages = (ctx.missing || []).map((item) => item.message);
+	if (!gtin.prefix) {
+		messages.push(tc_st_prefix_missing_text());
+	}
+	if (gtin.foreign_prefix) {
+		messages.push(
+			__("GTIN-14 {0} does not start with the declared GS1 company prefix {1}.", [
+				frm.doc.gtin,
+				gtin.prefix,
+			])
+		);
+	}
+	if (!messages.length) {
 		return;
 	}
 	frm.set_intro(
-		`<div>${missing.map((item) => tc_st_escape(item.message)).join("<br>")}</div>`,
+		`<div>${messages.map((message) => tc_st_escape(message)).join("<br>")}</div>`,
 		"orange"
 	);
+}
+
+// GTIN đã in lên nhãn: khóa ô nhập; R10 đổi qua hộp thoại, có lý do (A-76). Server kiểm lại quyền và GTIN.
+function tc_st_render_gtin(frm, ctx) {
+	const gtin = ctx.gtin || {};
+	frm.set_df_property("gtin", "read_only", gtin.locked ? 1 : 0);
+	frm.tc_st_gtin_help = frm.tc_st_gtin_help || frm.get_docfield("gtin").description;
+	frm.set_df_property(
+		"gtin",
+		"description",
+		gtin.locked
+			? __(
+					"Locked: {0} packs are labelled with this GTIN-14. Only R10 can unlock it, with a reason.",
+					[gtin.pack_count]
+			  )
+			: frm.tc_st_gtin_help
+	);
+	if (gtin.can_unlock && tc_st_ready()) {
+		tc_st_add_button(frm, __("Unlock GTIN"), () => tc_st_unlock_dialog(frm, gtin));
+	}
+}
+
+function tc_st_unlock_dialog(frm, gtin) {
+	const dialog = new frappe.ui.Dialog({
+		title: __("Unlock GTIN of {0}", [frm.doc.name]),
+		fields: [
+			{
+				fieldname: "intro",
+				fieldtype: "HTML",
+				options: tc_st_muted(
+					__(
+						"Packs already labelled keep the old GTIN, and the old GTIN is never issued again. This is written to the Audit Log."
+					)
+				),
+			},
+			{
+				fieldname: "gtin",
+				fieldtype: "Data",
+				label: __("New GTIN-14"),
+				default: gtin.suggested || "",
+			},
+			{ fieldname: "reason", fieldtype: "Small Text", label: __("Reason (required)") },
+			{ fieldname: "tc_error", fieldtype: "HTML" },
+		],
+		primary_action_label: __("Change GTIN"),
+		async primary_action(values) {
+			const result = await tc_st_dialog_send(dialog, TC_ST_GTIN_CHANGE, {
+				set_type: frm.doc.name,
+				gtin: values.gtin || "",
+				reason: values.reason || "",
+			});
+			if (result.ok) {
+				dialog.hide();
+				frappe.show_alert({
+					message: __("GTIN-14 of {0} changed to {1}.", [
+						frm.doc.name,
+						result.data.gtin,
+					]),
+					indicator: "green",
+				});
+				frm.reload_doc();
+			}
+		},
+	});
+	dialog.show();
 }
 
 function tc_st_render_photos(frm, ctx) {
@@ -1147,6 +1230,7 @@ async function tc_st_load(frm) {
 	tc_st_render_history(frm, ctx);
 	tc_st_remove_buttons(frm);
 	tc_st_buttons(frm, ctx);
+	tc_st_render_gtin(frm, ctx);
 	const known = tc_st_version_row(ctx, frm.tc_view_version);
 	const version = known
 		? frm.tc_view_version
@@ -1154,7 +1238,20 @@ async function tc_st_load(frm) {
 	await tc_st_show_version(frm, version);
 }
 
+async function tc_st_new_form_gtin(frm) {
+	const { ok, data: status } = await tc_st_get(TC_ST_GTIN_STATUS, {});
+	if (ok && frm.is_new()) {
+		frm.set_intro(status.prefix ? "" : tc_st_escape(tc_st_prefix_missing_text()), "orange");
+		frm.set_df_property(
+			"gtin",
+			"description",
+			status.prefix ? __("Leave blank to issue the next GTIN-14 automatically.") : ""
+		);
+	}
+}
+
 function tc_st_new_form(frm) {
+	tc_st_new_form_gtin(frm);
 	// FR-M1-03.1: loại bộ chỉ tạo cùng BOM v1 → nút lưu mặc định thay bằng hộp thoại nhập dòng BOM
 	frm.disable_save();
 	frm.tc_st_new_mode = true;

@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, tcScanId */
 // Màn T1 tiếp nhận đồ bẩn (SCR-05 STN, SCR-34 PDA, FEAT-019) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -45,6 +46,11 @@ class T1Receiving {
 		this.done = null; // kết quả ghi sổ
 		this.imagesReady = false;
 		this.lastRefused = null;
+		this.today = null; // phiếu đã tiếp nhận hôm nay {receipts, total_*}; null = chưa tải
+		this.todayFailed = false;
+		this.todayBusy = false;
+		this.todayOpen = null; // phiếu đang xem nhanh
+		this.todaySets = {}; // bộ của từng phiếu đã mở, theo tên phiếu ("loading" | danh sách | "failed")
 		this.updatePlaceholder();
 	}
 
@@ -127,6 +133,7 @@ class T1Receiving {
 		}
 		this.imagesReady = false;
 		this.show();
+		if (!this.today) this.loadToday();
 	}
 
 	addSet(raw, extra = {}, quiet = false) {
@@ -170,7 +177,7 @@ class T1Receiving {
 	// ---- offline (FEAT-009, UC-05 E3, A-40 D3): phiếu làm trên thiết bị, Ghi sổ thành một mục hàng đợi ----
 	offlineReady() {
 		const data = this.station.offlineData;
-		return Boolean(this.station.offlineCapable() && data && data.step === "T1");
+		return Boolean(this.station.offlineCapable() && data && data.function === "RECEIVE");
 	}
 
 	// phiếu offline đi hết vòng đời cục bộ (kể cả khi mạng về giữa chừng); phiếu online không chuyển sang offline
@@ -477,6 +484,8 @@ class T1Receiving {
 			"confirm-anyway": () => this.confirmSet(true),
 			photo: () => this.pickPhoto(),
 			open: () => this.openItem(button.dataset.set),
+			"today-toggle": () => this.toggleToday(button.dataset.receipt),
+			"today-retry": () => this.loadToday(),
 			submit: () => this.submit(),
 			discard: () => this.discard(),
 			force: () => this.openForce(),
@@ -630,6 +639,7 @@ class T1Receiving {
 				this.currentId = null;
 				this.notice = null;
 				this.show();
+				this.loadToday(); // phiếu vừa ghi sổ vào danh sách hôm nay
 			}
 		);
 	}
@@ -767,6 +777,143 @@ class T1Receiving {
 	}
 
 	// ---- render ----
+	// ---- phiếu đã tiếp nhận hôm nay (A-67): chỉ đọc, của mọi người nhận tại trạm ----
+	async loadToday() {
+		if (this.todayBusy || !this.station.session || this.station.isOffline()) return;
+		const version = this.station.sessionVersion;
+		this.todayBusy = true;
+		this.todayFailed = false;
+		this.todaySets = {};
+		try {
+			const res = await this.station.rpc(T1_API + "received_today", {
+				station: this.station.station,
+				client_ts: clientTs(),
+			});
+			if (version !== this.station.sessionVersion) return;
+			if (res && res.ok) this.today = res;
+			else this.todayFailed = true;
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.todayFailed = true;
+		} finally {
+			this.todayBusy = false;
+		}
+		if (version === this.station.sessionVersion) this.refreshToday();
+	}
+
+	async toggleToday(receipt) {
+		if (!receipt) return;
+		if (this.todayOpen === receipt) {
+			this.todayOpen = null;
+			return this.refreshToday();
+		}
+		this.todayOpen = receipt;
+		if (!Array.isArray(this.todaySets[receipt])) {
+			this.todaySets[receipt] = "loading";
+			this.refreshToday();
+			const version = this.station.sessionVersion;
+			let sets = "failed";
+			try {
+				const res = await this.station.rpc(T1_API + "receipt_sets", {
+					receipt,
+					station: this.station.station,
+					client_ts: clientTs(),
+				});
+				if (res && res.ok) sets = res.sets || [];
+			} catch (error) {
+				if (error.sessionEnded) return;
+			}
+			if (version !== this.station.sessionVersion) return;
+			this.todaySets[receipt] = sets;
+		}
+		this.refreshToday();
+	}
+
+	refreshToday() {
+		const node = this.result.querySelector('[data-region="today"]');
+		if (node) node.innerHTML = this.todayHtml();
+	}
+
+	todayHtml() {
+		if (!this.today) {
+			if (this.todayFailed)
+				return `<section class="tc-t4-block tc-t1-today">
+					<p class="tc-hint">${esc(__("Could not load the receipts received today."))}</p>
+					<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="today-retry">${esc(
+						__("Retry")
+					)}</button></div>
+				</section>`;
+			return `<section class="tc-t4-block tc-t1-today"><p class="tc-loading">${esc(
+				__("Loading...")
+			)}</p></section>`;
+		}
+		const today = this.today;
+		const title = __("Receipts received today ({0} receipts, {1} sets)", [
+			today.total_receipts,
+			today.total_sets,
+		]);
+		const who = (code, name) => esc([code, name].filter(Boolean).join(" · "));
+		const rows = today.receipts
+			.map((row) => {
+				const open = this.todayOpen === row.receipt;
+				const flag = row.flagged_count
+					? `<span class="tc-badge tc-badge-o"><span aria-hidden="true">!</span> ${esc(
+							row.flagged_count
+					  )}</span>`
+					: esc(row.flagged_count);
+				return `<tr data-receipt="${esc(row.receipt)}">
+					<td><button type="button" class="tc-btn tc-btn-secondary tc-mono" data-action="today-toggle" data-receipt="${esc(
+						row.receipt
+					)}" aria-expanded="${open}">${esc(row.receipt)}</button></td>
+					<td>${esc(String(row.received_at || "").slice(11, 16))}</td>
+					<td>${esc(row.department_name || row.department)}</td>
+					<td>${who(row.deliverer, row.deliverer_name)}</td>
+					<td>${who(row.receiver, row.receiver_name)}</td>
+					<td>${esc(row.set_count)}</td>
+					<td>${flag}</td>
+				</tr>${
+					open
+						? `<tr class="tc-t1-today-sets"><td colspan="7">${this.todaySetsHtml(
+								row.receipt
+						  )}</td></tr>`
+						: ""
+				}`;
+			})
+			.join("");
+		return `<section class="tc-t4-block tc-t1-today" aria-label="${esc(title)}">
+			<h3>${esc(title)}</h3>
+			${
+				rows
+					? `<table class="tc-t2-table"><thead><tr>
+						<th scope="col">${esc(__("Receipt", null, "Dirty Receipt"))}</th>
+						<th scope="col">${esc(__("Received at"))}</th>
+						<th scope="col">${esc(__("Returning Department", null, "Dirty Receipt"))}</th>
+						<th scope="col">${esc(__("Deliverer", null, "Dirty Receipt"))}</th>
+						<th scope="col">${esc(__("Receiver", null, "Dirty Receipt"))}</th>
+						<th scope="col">${esc(__("Sets"))}</th>
+						<th scope="col">${esc(__("Abnormal note"))}</th>
+					</tr></thead><tbody>${rows}</tbody></table>`
+					: `<p class="tc-empty">${esc(__("No receipt has been received today."))}</p>`
+			}
+		</section>`;
+	}
+
+	todaySetsHtml(receipt) {
+		const sets = this.todaySets[receipt];
+		if (sets === "failed")
+			return `<p class="tc-hint">${esc(__("Could not load the sets of this receipt."))}</p>`;
+		if (!Array.isArray(sets)) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		if (!sets.length) return `<p class="tc-hint">${esc(__("This receipt has no set."))}</p>`;
+		return `<ul class="tc-t1-today-list">${sets
+			.map(
+				(row) =>
+					`<li><b class="tc-mono">${esc(row.set_id)}</b> ${esc(
+						row.set_name
+					)} <span class="tc-badge">${esc(__(row.status, null, "Set Unit"))}</span></li>`
+			)
+			.join("")}</ul>`;
+	}
+
 	updatePlaceholder() {
 		const text = this.receipt
 			? __("Scan the Set ID of the next set...")
@@ -792,6 +939,7 @@ class T1Receiving {
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.done ? this.doneHtml() : ""}
 				${this.receipt ? this.receiptHtml() : this.startHtml()}
+				<div data-region="today">${this.todayHtml()}</div>
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", Boolean(error));
@@ -814,6 +962,7 @@ class T1Receiving {
 			list: () => this.listHtml(),
 			bar: () => this.barHtml(),
 			photo: () => this.photoNoteHtml(this.current()),
+			today: () => this.todayHtml(),
 		};
 		this.result.querySelectorAll("[data-region]").forEach((node) => {
 			const build = regions[node.dataset.region];
@@ -868,10 +1017,11 @@ class T1Receiving {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}

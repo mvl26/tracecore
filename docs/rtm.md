@@ -69,16 +69,16 @@
 | FR-M7-02 | Gắn chi phí với đối tượng phân bổ | Must | Active | BR-M7 (BRD #02) | UC-27 | _TBD_ | FEAT-044 | _TBD_ |
 | FR-M7-03 | Bảng định giá vật tư có phiên bản | Must | Active | BR-M7 (BRD #02) | UC-28 | A-48 | FEAT-045 | `tracecore/costing/tests/test_cost_rate_version.py`, `test_rates.py`, `test_rate_at_rpc.py`, `test_cost_rate_version_desk_assets.py` |
 | FR-M7-04 | Định mức tiêu hao theo chương trình | Must | Active | BR-M7 (BRD #02) | UC-28 | A-48 | FEAT-045 | `tracecore/costing/tests/test_rates.py` (định mức loại gói, cảnh báo 0 và chương trình thiếu định mức); `tracecore/equipment/tests/test_norms.py` (định mức theo chương trình, FEAT-038) |
-| FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
-| FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | _TBD_ | FEAT-046 | _TBD_ |
+| FR-M7-05 | Tính chi phí mẻ và phân bổ theo gói | Must | Active | BR-M7 (BRD #02) | UC-29 | ADR-009; A-53 | FEAT-046 | `tracecore/costing/tests/test_sheet.py`, `test_sheet_hooks.py`, `test_cost_sheet_doctype.py` |
+| FR-M7-06 | Giá thành tái xử lý bộ dụng cụ | Must | Active | BR-M7 (BRD #02) | UC-29 | ADR-009; A-53 | FEAT-046 | `tracecore/costing/tests/test_sheet.py` (TestPackCost), `test_recalculate_rpc.py`; `tracecore/costing/report/set_cost_report/test_set_cost_report.py` |
 | FR-M8-01 | Cấu hình cơ số tái xử lý tối đa (nhập tay) | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-031 | `tracecore/par/tests/test_config.py`, `tracecore/par/tests/test_par_desk_assets.py`; e2e `tests_e2e/test_desk_par.py` (FEAT-031) |
 | FR-M8-02 | Cấu hình cơ số tồn khoa | Must | Active | BR-M8 (BRD #02) | UC-30 | _TBD_ | FEAT-026; FEAT-031 | `tracecore/par/tests/test_config.py` (FR-M8-02, .1, .3; FEAT-031); `tracecore/par/tests/test_stock.py` (áp cơ số khoa khi cấp phát, FEAT-026); FR-M8-02.2 (báo cáo tồn khoa so cơ số) chưa có: tồn khoa đã có từ `Issue Note` (A-11 G3, A-17 C4), báo cáo làm ở FEAT riêng |
 | FR-M8-03 | Cảnh báo sớm và chặn sinh Cycle ID | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-014 | FEAT-018; FEAT-023; FEAT-032 | `tracecore/par/tests/test_check.py`, `tracecore/core/tests/test_step_gate.py`, `tracecore/v1/tests/test_par_api.py` (FR-M8-03.1–.3; FEAT-032); bộ đếm tăng khi giải phóng → FEAT-023 (A-18 G2) |
 | FR-M8-04 | Ghi đè có phê duyệt và audit | Must | Active | BR-M8 (BRD #02) | UC-31 | ADR-008 | FEAT-032 | `tracecore/par/tests/test_override.py`, `tracecore/par/doctype/par_override/test_par_override.py`, `tracecore/v1/tests/test_par_api.py`, `tracecore/par/report/par_override_report/test_par_override_report.py`, `tracecore/par/tests/test_par_override_desk_assets.py` (FEAT-032) |
-| FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-006 | _TBD_ |
-| FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | _TBD_ | FEAT-007 | _TBD_ |
-| FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002 | _TBD_ |
-| FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | _TBD_ | FEAT-008 | _TBD_ |
+| FR-M9-01 | Dashboard vận hành | Must | Active | BR-M9 (BRD #02) | UC-32 | ADR-002; A-54 | FEAT-006 | `admin_reports/tests/test_dashboard.py`, `v1/tests/test_dashboard_api.py`, `tests/test_tc_dashboard.py` |
+| FR-M9-02 | Sổ tiệt khuẩn điện tử và báo cáo BYT | Must | Active | BR-M9 (BRD #02) | UC-32 | A-57 | FEAT-007 | `admin_reports/tests/test_sterilization_log.py` |
+| FR-M9-03 | Khai báo khu vực một chiều và trạm | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-001 | FEAT-002, FEAT-051 | `core/tests/test_zones.py`, `test_zone_station.py` |
+| FR-M9-04 | Kiểm soát môi trường khu | Should | Active | BR-M9 (BRD #02) | UC-33 | A-55 | FEAT-008 | `admin_reports/tests/test_environment.py`, `admin_reports/tests/test_environment_report.py`, `v1/tests/test_env_api.py` |
 | FR-M9-05 | Người dùng, phân quyền, audit trail | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-008; ADR-010 | FEAT-003 | [FEAT-003 acceptance evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-07 | Hệ thống sinh mã định danh cho mọi đối tượng quét | Must | Active | CHG-032 (review v1.10, kế thừa BR-M9) | UC-33 | ADR-004 | FEAT-001; FEAT-005 | _TBD_ |
 | FR-M9-06 | Chế độ offline tại trạm (Must từ v1.11 theo NFR-AVAIL-02, chốt 2026-10-17) | Must | Active | BR-M9 (BRD #02) | UC-33 | ADR-003 | FEAT-009 | `tracecore/core/tests/test_code_range.py`, `test_sync.py`; `tracecore/v1/tests/test_sync_api.py`; `tests_e2e/test_station_offline.py`, `test_station_t1.py` |
@@ -86,19 +86,19 @@
 | FR-M9-09 | Đổi / đặt lại mật khẩu, PIN; vô hiệu tài khoản nghỉ việc | Must | Active | Catalog gap v1.11 | UC-33 | ADR-010 | FEAT-003 | [FEAT-003 account evidence](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M9-10 | Trung tâm thông báo: kênh, người nhận theo loại sự kiện, trạng thái gửi/đọc | Must | Active | Catalog gap v1.11 | UC-38 | ADR-014 | FEAT-010 | `core/tests/test_notification.py`, `v1/tests/test_notification_api.py` |
 | FR-M9-11 | Import danh mục ban đầu theo lô từ Excel mẫu, kiểm tra từng dòng, import ảnh hàng loạt | Must | Active | Catalog gap v1.11 | UC-39 | ADR-002; A-41 | FEAT-011 | `tracecore/core/tests/test_importer.py`; `tracecore/{admin_reports,instrument,equipment,inventory,par}/tests/test_imports.py`; `tracecore/instrument/tests/test_photo_import.py`; `tracecore/v1/tests/test_imports_api.py`; `tests_e2e/test_desk_import.py` |
-| FR-M9-12 | Xuất hồ sơ tiệt khuẩn theo kỳ (PDF + Excel/CSV) phục vụ lưu trữ ≥ 10 năm | Must | Active | Catalog gap v1.11 | UC-39 | _TBD_ | FEAT-012 | _TBD_ |
-| FR-M9-13 | Tìm kiếm, lọc, sắp xếp, phân trang trên mọi danh sách; ô quét là phím tắt | Must | Active | Catalog gap v1.11 | UC-32 | ADR-001 | FEAT-006 | _TBD_ |
+| FR-M9-12 | Xuất hồ sơ tiệt khuẩn theo kỳ (PDF + Excel/CSV) phục vụ lưu trữ ≥ 10 năm | Must | Active | Catalog gap v1.11 | UC-39 | A-58 | FEAT-012 | `admin_reports/tests/test_archive.py` |
+| FR-M9-13 | Tìm kiếm, lọc, sắp xếp, phân trang trên mọi danh sách; ô quét là phím tắt | Must | Active | Catalog gap v1.11 | UC-32 | ADR-001; A-54 | FEAT-006 | `tests/test_list_scan.py`, `v1/tests/test_dashboard_api.py` |
 | FR-M9-14 | Trạng thái màn hình trạm/PDA: rỗng / đang tải / lỗi kèm hành động kế tiếp | Must | Active | Catalog gap v1.11 | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36) | ADR-002 | FEAT-001; Foundations | _TBD_ |
-| FR-M9-15 | Trợ giúp theo trạm và gửi phản hồi/báo lỗi kèm ảnh màn hình | Could | Active | Catalog gap v1.11 | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36) | ADR-002 | FEAT-013 | _TBD_ |
+| FR-M9-15 | Trợ giúp theo trạm và gửi phản hồi/báo lỗi kèm ảnh màn hình | Could | Active | Catalog gap v1.11 | — / mọi UC trạm (UC-05..13, UC-16..18, UC-34..36) | ADR-002, A-56 | FEAT-013 | `tests/test_station_help.py`, `tests/test_station_help_assets.py`, `v1/tests/test_help_api.py`, `v1/tests/test_feedback_api.py` |
 | FR-M9-16 | Xóa mềm danh mục đã có giao dịch; chỉ R10 xóa cứng bản ghi chưa giao dịch | Must | Active | Catalog gap v1.11 | UC-33 | ADR-001; ADR-008 | FEAT-004 | _TBD_ |
-| FR-M10-01 | Danh mục loại chất thải & mã màu TT 20/2021, bao bì, khối lượng chuẩn, đơn giá/kg, thời gian lưu tối đa, QR túi/thùng | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-34 | ADR-004; ADR-013 | FEAT-047 | _TBD_ |
-| FR-M10-02 | Thu gom chất thải tại khoa: quét thẻ người giao, loại, số túi, cân; phiếu khoa – loại – số – kg; chặn trộn loại | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-34 | ADR-006; ADR-013 | FEAT-047 | _TBD_ |
-| FR-M10-03 | Lưu giữ tạm kho chất thải: vị trí theo loại, nhiệt độ kho lạnh, cảnh báo hạn lưu, FIFO | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-35 | ADR-013; ADR-014 | FEAT-048 | _TBD_ |
-| FR-M10-04 | Bàn giao đơn vị xử lý: phiếu loại – số – kg, đối chiếu kg, ký điện tử, chứng từ CTNH, chi phí = kg × đơn giá | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-36 | ADR-006; ADR-013 | FEAT-049 | _TBD_ |
-| FR-M10-05 | Danh mục đơn vị xử lý & hợp đồng, giấy phép theo loại; chặn bàn giao đơn vị không giấy phép | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-36 | ADR-013; ADR-014 | FEAT-049 | _TBD_ |
-| FR-M10-06 | Sự cố chất thải (tràn đổ, phơi nhiễm sắc nhọn, phân loại sai) → NC/CAPA dùng chung FR-M2-21/22 | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-013 | FEAT-050 | _TBD_ |
-| FR-M10-07 | Báo cáo & dashboard chất thải: kg khoa/loại/kỳ, chênh lệch thu – giao, chi phí/kg, tuân thủ hạn lưu, mẫu TT 20/2021 | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-010; ADR-013 | FEAT-050 | _TBD_ |
-| FR-M10-08 | Định mức túi/thùng theo khoa (liên kết M6), kg/giường, cảnh báo phát sinh bất thường ±30% | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-009; ADR-013 | FEAT-050 | _TBD_ |
+| FR-M10-01 | Danh mục loại chất thải & mã màu TT 20/2021, bao bì, khối lượng chuẩn, đơn giá/kg, thời gian lưu tối đa, QR túi/thùng | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-34 | ADR-004; ADR-013 | FEAT-047 | `waste/tests/test_waste_type.py`, `waste/tests/test_collection.py`, `waste/tests/test_waste_station_assets.py`, `v1/tests/test_waste_api.py` |
+| FR-M10-02 | Thu gom chất thải tại khoa: quét thẻ người giao, loại, số túi, cân; phiếu khoa – loại – số – kg; chặn trộn loại | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-34 | ADR-006; ADR-013 | FEAT-047 | `waste/tests/test_waste_type.py`, `waste/tests/test_collection.py`, `waste/tests/test_waste_station_assets.py`, `v1/tests/test_waste_api.py` |
+| FR-M10-03 | Lưu giữ tạm kho chất thải: vị trí theo loại, nhiệt độ kho lạnh, cảnh báo hạn lưu, FIFO | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-35 | ADR-013; ADR-014 | FEAT-048 | `waste/tests/test_storage.py`, `v1/tests/test_waste_store_api.py` |
+| FR-M10-04 | Bàn giao đơn vị xử lý: phiếu loại – số – kg, đối chiếu kg, ký điện tử, chứng từ CTNH, chi phí = kg × đơn giá | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-36 | ADR-006; ADR-013 | FEAT-049 | `waste/tests/test_handover.py`, `v1/tests/test_waste_handover_api.py` |
+| FR-M10-05 | Danh mục đơn vị xử lý & hợp đồng, giấy phép theo loại; chặn bàn giao đơn vị không giấy phép | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-36 | ADR-013; ADR-014 | FEAT-049 | `waste/tests/test_handover.py`, `v1/tests/test_waste_handover_api.py` |
+| FR-M10-06 | Sự cố chất thải (tràn đổ, phơi nhiễm sắc nhọn, phân loại sai) → NC/CAPA dùng chung FR-M2-21/22 | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-013 | FEAT-050 | `waste/tests/test_analysis.py` |
+| FR-M10-07 | Báo cáo & dashboard chất thải: kg khoa/loại/kỳ, chênh lệch thu – giao, chi phí/kg, tuân thủ hạn lưu, mẫu TT 20/2021 | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-010; ADR-013 | FEAT-050 | `waste/tests/test_analysis.py`, `v1/tests/test_dashboard_api.py` |
+| FR-M10-08 | Định mức túi/thùng theo khoa (liên kết M6), kg/giường, cảnh báo phát sinh bất thường ±30% | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-009; ADR-013 | FEAT-050 | `waste/tests/test_analysis.py` |
 
 FR-M9-08..16 và FR-M10-01..08 là ID mới v1.11 (chủ đầu tư duyệt 2026-10-17, srs.md Appendix C / §3.1.10); FR-M9-14/15 là yêu cầu xuyên suốt mọi màn hình trạm/PDA nên không có UC sở hữu riêng (ghi "—" kèm danh sách UC trạm tham chiếu).
 
@@ -127,7 +127,7 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-SCAL-01 | Mở rộng — 25–40 người dùng đồng thời, 40 trạm/PDA trên 8 vCPU/16 GB; lên 80 người dùng bằng nâng VM. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-001; ADR-011 | Foundations | _TBD_ |
 | NFR-SCAL-02 | Mở rộng — Dung lượng 10 năm: ≈ 11 triệu DT-PACK, ≥ 50 triệu DT-AUDIT; file storage ≥ 500 GB. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-008; ADR-011 | Foundations | _TBD_ |
 | NFR-AVAIL-03 | Sẵn sàng — Cửa sổ bảo trì ≤ 4 giờ/tháng ngoài 06:00–20:00, báo trước ≥ 24 giờ. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-011 | Foundations | _TBD_ |
-| NFR-AVAIL-04 | Sẵn sàng — Thiết bị ngoại vi lỗi không chặn giao dịch; không single point of failure trong chuỗi 8 trạm. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-006; ADR-014 | FEAT-018; FEAT-033; Foundations | _TBD_ |
+| NFR-AVAIL-04 | Sẵn sàng — Thiết bị ngoại vi lỗi không chặn giao dịch; không single point of failure trong chuỗi 8 trạm (cấu hình mặc định, A-64). | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-003; ADR-006; ADR-014 | FEAT-018; FEAT-033; Foundations | _TBD_ |
 | NFR-SEC-04 | Bảo mật — Không lỗ hổng High/Critical theo OWASP Top 10 / ASVS L2 trước go-live; Medium ≤ 30 ngày. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-012 | Foundations | _TBD_ |
 | NFR-SEC-05 | Bảo mật — Bản vá ≤ 30 ngày (Critical ≤ 7 ngày), thử trên staging. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
 | NFR-SEC-06 | Bảo mật — Secret ngoài mã nguồn, không ghi log; API key xoay 90 ngày; quy trình khóa AES-256. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-010 | Foundations | _TBD_ |
@@ -228,6 +228,10 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M9-11, FR-M9-12 | — | SCR-43 (mới) | — (v1.11) | — | — | — |
 | FR-M9-13 | — | SCR-32 và mọi danh sách | — (v1.11) | — | — | — |
 | FR-M9-14, FR-M9-15 | — | mọi SCR trạm/PDA | — (v1.11) | — | — | — |
+| FR-M9-17, FR-M9-18 | — | Desk TraceCore Settings, danh mục mã lỗi | — (A-71) | FEAT-052 | — | — |
+| FR-M9-19 | — | mọi SCR trạm/PDA, màn đăng nhập trạm | — (A-71) | FEAT-052 | — | — |
+| FR-M9-20, FR-M9-21 | — | Desk Nhật ký lỗi, báo cáo | — (A-71) | FEAT-052 | — | — |
+| FR-M5-07 | — | SCR-06 | — (A-71) | FEAT-052 | — | — |
 | FR-M10-01, FR-M10-02 | BRU-WST-001, BRU-WST-002, BRU-ID-006 | SCR-38 (mới) | — (v1.11) | — | — | — |
 | FR-M10-03 | BRU-WST-001, BRU-WST-002 | SCR-39 (mới) | — (v1.11) | — | — | — |
 | FR-M10-04, FR-M10-05 | BRU-WST-003, BRU-WST-004, BRU-CST-002 | SCR-40 (mới) | — (v1.11) | — | — | WF-06 (NC) |

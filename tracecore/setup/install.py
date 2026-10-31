@@ -5,14 +5,18 @@ import frappe
 
 from tracecore.core.notification import ensure_default_rules
 from tracecore.costing.setup import ensure_categories
+from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_settings
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
 from tracecore.inventory.permissions import ensure_permissions
+from tracecore.setup.error_codes import ensure_error_codes
 from tracecore.setup.label_templates import (
 	ensure_object_templates,
 	ensure_sample_templates,
 	ensure_set_templates,
 )
 from tracecore.setup.seed import ensure_zone_stations
+from tracecore.ui.permissions import ensure_permissions as ensure_ui_permissions
+from tracecore.ui.station_help import ensure_station_help
 
 SYSTEM_SETTINGS = {
 	"language": "vi",
@@ -44,6 +48,10 @@ def after_install():
 	ensure_default_rules()
 	ensure_hr_permissions()
 	ensure_categories()
+	ensure_ui_permissions()
+	ensure_station_help()
+	ensure_error_codes()
+	ensure_daily_test_settings()
 
 
 TEST_GENDERS = ("Male", "Female", "Other")

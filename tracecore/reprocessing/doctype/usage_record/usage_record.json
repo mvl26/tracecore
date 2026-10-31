@@ -10,6 +10,7 @@
   "set_unit",
   "set_type",
   "department",
+  "department_name",
   "pack_department",
   "department_reason",
   "column_break_head",
@@ -63,6 +64,16 @@
    "options": "Department",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "description": "Department the pack was issued to; differs from Department when it was used elsewhere.",
@@ -188,7 +199,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-25 09:00:00.000000",
+ "modified": "2026-10-31 09:51:28.511963",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Usage Record",

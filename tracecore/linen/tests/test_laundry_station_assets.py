@@ -40,6 +40,8 @@ def _node(script):
 const fs = require('fs');
 const __ = (text, args) => args ? text.replace(/\\{{(\\d+)\\}}/g, (m, i) => String(args[i])) : text;
 const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
+globalThis.tcErrorTitle = (notice) => (notice && notice.title) || '';
+globalThis.tcGuideButton = () => '';
 const uuid4 = () => 'key';
 const clientTs = () => '2026-10-29T09:00:00+07:00';
 const load = (path, names, deps) => new Function(...Object.keys(deps),
@@ -98,8 +100,10 @@ class TestLaundryStationWiring(FrappeTestCase):
 
 	def test_station_routes_the_lin_step_to_the_linen_station(self):
 		source = _read(STATION_JS)
-		self.assertIn("new LinenStation(this)", source)
-		self.assertIn("new LinenCollect(this)", source)  # còn dự phòng khi thiếu station_laundry.js
+		self.assertIn('if (typeof LinenStation !== "undefined") return LinenStation;', source)
+		self.assertIn(
+			'return typeof LinenCollect !== "undefined" ? LinenCollect : null;', source
+		)  # còn dự phòng khi thiếu station_laundry.js
 		self.assertIn('method.startsWith("tracecore.v1.laundry.")', source)  # RPC gắn token phiên thẻ
 
 	def test_rpc_names_match_the_server(self):

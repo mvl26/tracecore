@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 20:00:00.000000",
+ "description": "One waste type of a handover (FEAT-049, FR-M10-04).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "waste_type",
+  "qty",
+  "collected_kg",
+  "handover_kg",
+  "weight_source",
+  "weight_confirmed",
+  "difference_kg",
+  "difference_percent",
+  "rate_per_kg",
+  "amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "options": "Waste Type",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Waste Type"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Bags or Bins"
+  },
+  {
+   "fieldname": "collected_kg",
+   "fieldtype": "Float",
+   "precision": "3",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Collected (kg)"
+  },
+  {
+   "fieldname": "handover_kg",
+   "fieldtype": "Float",
+   "precision": "3",
+   "in_list_view": 1,
+   "label": "Handed Over (kg)"
+  },
+  {
+   "fieldname": "weight_source",
+   "fieldtype": "Select",
+   "options": "\nScale\nManual",
+   "label": "Weight Source"
+  },
+  {
+   "fieldname": "weight_confirmed",
+   "fieldtype": "Check",
+   "default": "0",
+   "label": "Weight Confirmed"
+  },
+  {
+   "fieldname": "difference_kg",
+   "fieldtype": "Float",
+   "precision": "3",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Difference (kg)"
+  },
+  {
+   "fieldname": "difference_percent",
+   "fieldtype": "Percent",
+   "read_only": 1,
+   "label": "Difference (%)"
+  },
+  {
+   "fieldname": "rate_per_kg",
+   "fieldtype": "Currency",
+   "precision": "0",
+   "read_only": 1,
+   "label": "Rate per kg"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "precision": "0",
+   "in_list_view": 1,
+   "read_only": 1,
+   "label": "Amount"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Handover Line",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "permissions": [],
+ "istable": 1
+}

@@ -286,5 +286,57 @@
   "insert_after": "posting_time",
   "no_copy": 1,
   "description": "A draft count that will not be posted: it no longer locks the warehouse and cannot be posted (FEAT-043, A-52)."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Help Article",
+  "name": "Help Article-tc_station_key",
+  "fieldname": "tc_station_key",
+  "fieldtype": "Select",
+  "label": "TraceCore Station Step",
+  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nGeneral",
+  "insert_after": "category",
+  "in_list_view": 1,
+  "in_standard_filter": 1,
+  "description": "Station step whose Help button shows this guide (3 to 5 numbered steps). General is shown where no step guide exists."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Issue",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "name": "Issue-tc_station",
+  "fieldname": "tc_station",
+  "fieldtype": "Link",
+  "options": "Zone Station",
+  "label": "TraceCore Station",
+  "insert_after": "issue_type",
+  "description": "Station that sent this feedback."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Issue",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "name": "Issue-tc_employee",
+  "fieldname": "tc_employee",
+  "fieldtype": "Link",
+  "options": "Employee",
+  "label": "TraceCore Employee",
+  "insert_after": "tc_station",
+  "description": "Employee whose card session sent this feedback."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Issue",
+  "read_only": 1,
+  "in_standard_filter": 1,
+  "name": "Issue-tc_feedback_kind",
+  "fieldname": "tc_feedback_kind",
+  "fieldtype": "Select",
+  "options": "\nBug\nSuggestion",
+  "label": "Feedback Type",
+  "insert_after": "tc_employee",
+  "in_list_view": 1
  }
 ]

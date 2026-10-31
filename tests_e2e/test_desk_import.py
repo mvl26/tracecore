@@ -23,7 +23,7 @@ def workbook(path, rows):
 
 
 def choose_file(page, path):
-	page.get_by_role("button", name="Chọn file Excel").click()
+	page.get_by_role("button", name="Chọn tệp Excel").click()
 	uploader = page.locator(".modal.show .file-uploader").last
 	expect(uploader).to_be_visible(timeout=10000)
 	uploader.locator("input[type=file]").first.set_input_files(path)
@@ -49,11 +49,11 @@ def test_import_instruments_reports_row_errors_then_skips_existing(r10_page, tmp
 		],
 	)
 	result = page.locator('[data-region="result"]')
-	save = page.get_by_role("button", name="Ghi sổ các dòng đúng")
+	save = page.get_by_role("button", name="Lưu các dòng đúng")
 	expect(save).to_be_disabled()  # chưa kiểm thì không ghi sổ được
 
 	choose_file(page, path)
-	page.get_by_role("button", name="Kiểm tra file").click()
+	page.get_by_role("button", name="Kiểm tra tệp").click()
 	expect(result).to_contain_text("Đã kiểm 3 dòng", timeout=15000)
 	expect(result.locator("table")).to_contain_text("Gamma")  # dòng 4 sai phương pháp, nêu đúng dòng Excel
 	expect(result.locator("table td").first).to_have_text("4")
@@ -63,8 +63,8 @@ def test_import_instruments_reports_row_errors_then_skips_existing(r10_page, tmp
 
 	# import lại cùng file: báo file đã import, dòng đã có được bỏ qua (UC-39 A1); không còn dòng mới nên không ghi sổ
 	choose_file(page, path)
-	page.get_by_role("button", name="Kiểm tra file").click()
-	expect(result).to_contain_text("File này đã được import", timeout=15000)
+	page.get_by_role("button", name="Kiểm tra tệp").click()
+	expect(result).to_contain_text("Tệp này đã được nhập", timeout=15000)
 	expect(result).to_contain_text("0 bản ghi sẵn sàng lưu, 2 đã có, 1 lỗi dòng.")
 	expect(result).to_contain_text(f"Đã có (bỏ qua): {codes[0]}, {codes[1]}")
 	expect(save).to_be_disabled()

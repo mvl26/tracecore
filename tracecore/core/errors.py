@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 import frappe
 
+from tracecore.core import error_codes
+
 # 422: đúng cú pháp nhưng dữ liệu sai; 404: không tìm thấy; 409: xung đột trạng thái nghiệp vụ.
 # 400 (sai định dạng) và 403 (thiếu quyền) không phải Block: do IdempotencyKeyError, ClientTimestampError,
 # thiếu tham số và frappe.PermissionError đảm nhiệm.
@@ -17,6 +19,7 @@ HTTP_STATUS: dict[str, int] = {
 		(
 			"CARD_INVALID",
 			"COMPETENCY_REQUIRED",
+			"CERTIFICATE_REQUIRED",  # FEAT-052 A-71: NS-001
 			"PIN_INVALID",
 			"PIN_PROOF_INVALID",
 			"SESSION_STATION_MISMATCH",
@@ -92,6 +95,12 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
 			"RESULT_INVALID",
+			# A-77: chỉ thị rửa
+			"INDICATOR_REQUIRED",
+			"INDICATOR_LOT_MISSING",
+			"INDICATOR_LOT_INVALID",
+			"INDICATOR_EXPIRED",
+			"INDICATOR_PHOTO_MISSING",
 			# FEAT-026 A-17: cấp phát T7
 			"RECIPIENT_INVALID",
 			"SIGNATURE_INVALID",
@@ -142,6 +151,7 @@ HTTP_STATUS: dict[str, int] = {
 	**dict.fromkeys(
 		(
 			"SET_NOT_FOUND",
+			"ERROR_CODE_NOT_FOUND",  # FEAT-052 A-71
 			"PACK_NOT_FOUND",
 			"ROLL_NOT_FOUND",
 			"EQUIPMENT_NOT_FOUND",
@@ -173,6 +183,10 @@ HTTP_STATUS: dict[str, int] = {
 			"ACTIVE_CYCLE_EXISTS",
 			"GATE_PREV_NOT_PASSED",
 			"SET_TYPE_GTIN_MISSING",
+			"GTIN_BACKFILL_STALE",  # A-76
+			"GTIN_NOT_LOCKED",
+			"GTIN_RANGE_EXHAUSTED",
+			"GS1_PREFIX_NOT_DECLARED",
 			"PAR_EXCEEDED",
 			"MAINT_OVERDUE",
 			"REPRINT_WINDOW_EXPIRED",
@@ -262,9 +276,29 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-009 A-40: mã offline ngoài dải của trạm/ngày hoặc đã dùng; hết số trong series dải của ngày
 			"CODE_RANGE_INVALID",
 			"CODE_RANGE_EXHAUSTED",
+			# FEAT-046 A-53 i: tính lại giá thành chỉ với phiên bản giá đã duyệt
+			"RATE_VERSION_NOT_APPROVED",
 		),
 		409,
 	),
+	# FEAT-046 A-53 i: tính lại giá thành cần ghi chú và mẻ/lô có thật
+	"NOTE_REQUIRED": 422,
+	# FEAT-008 A-55 D4: số đo môi trường sai (khu chưa theo dõi dùng mặc định 409)
+	"ENV_READING_INVALID": 422,
+	"COST_SOURCE_NOT_FOUND": 404,
+	# FEAT-013 A-56 D7: phản hồi/báo lỗi từ trạm
+	"FEEDBACK_INVALID": 422,
+	"SCREENSHOT_INVALID": 422,
+	"FEEDBACK_RATE_LIMIT": 429,
+	# FEAT-047 A-60: thu gom chất thải
+	"WASTE_EMPTY": 422,
+	"WASTE_TYPE_INVALID": 422,
+	"WASTE_QTY_INVALID": 422,
+	"WASTE_TOTAL_INVALID": 422,
+	"WASTE_WEIGHT_UNCONFIRMED": 422,
+	"WASTE_NOTE_REQUIRED": 422,
+	"WASTE_GIVER_INVALID": 403,
+	"WASTE_NOT_HELD": 409,
 }
 DEFAULT_HTTP_STATUS = 409
 
@@ -279,6 +313,11 @@ class Block:
 	action: str
 	items: list | None = None
 	redo_step: str | None = None
+	# FEAT-052 A-71: mã danh mục khi không suy được từ `code`, và đối tượng liên quan (mã máy, lô, gói...)
+	error_code: str | None = None
+	object_type: str | None = None
+	object_name: str | None = None
+	object_label: str | None = None
 
 	@property
 	def http_status(self) -> int:
@@ -294,6 +333,11 @@ class Block:
 			"items": self.items,
 			"redo_step": self.redo_step,
 		}
+		catalog = error_codes.catalog_of(self.code, self.error_code)
+		if catalog:
+			data.update(
+				catalog, object_name=self.object_name, object_label=self.object_label or self.object_name
+			)
 		return {key: value for key, value in data.items() if value is not None}
 
 

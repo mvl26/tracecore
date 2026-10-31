@@ -22,7 +22,7 @@ WASH = "Wash Batch"
 LOAD = "Sterilization Load"
 RESULTS = ("Pass", "Fail")
 # trạng thái chứng từ còn nhận dữ liệu máy
-OPEN_STATUSES = {WASH: ("Running",), LOAD: ("Running", sterilizing.CYCLE_COMPLETE)}
+OPEN_STATUSES = {WASH: washing.OPEN_STATUSES, LOAD: ("Running", sterilizing.CYCLE_COMPLETE)}
 MISSING_ENDED_AT = "ended_at"
 
 

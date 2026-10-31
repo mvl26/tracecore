@@ -10,10 +10,10 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, getdate, now_datetime, today
 
-from tracecore.core import code_registry, gs1, step_gate
+from tracecore.core import code_registry, error_codes, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 
-STEP = "T6"
+FUNCTION = "PUTAWAY"
 EXPIRING_DAYS = 7  # FR-M2-13.2: dashboard kho liệt kê gói hết hạn trong 7 ngày tới
 IN_STOCK = "In Sterile Stock"
 VOID_EXPIRED = "Expired"
@@ -22,26 +22,22 @@ SAVEPOINT = "tc_storage_expire"
 SUMMARY_FIELDS = ("name", "set_unit", "set_type", "set_name", "expiry", "location", "method")
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _require_station(station):
-	"""Trạm (không phải khu) của bước T6; ngược lại STATION_WRONG_STEP."""
-	row = (
-		frappe.db.get_value("Zone Station", station, ["is_zone", "station_step"], as_dict=True)
-		if station
-		else None
-	)
-	if row and not cint(row.is_zone) and row.station_step == STEP:
+	"""Trạm (không phải khu) có chức năng ``FUNCTION``; ngược lại STATION_WRONG_STEP."""
+	row = frappe.db.get_value("Zone Station", station, "is_zone", as_dict=True) if station else None
+	if row and not cint(row.is_zone) and zones.station_has_function(station, FUNCTION):
 		return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} sterile storage station.").format(station, STEP)
+		_("{0} is not a {1} station.").format(station, zones.function_label(FUNCTION))
 		if row
 		else _("Station {0} does not exist.").format(station or "-"),
-		_("Open the sterile storage screen on a T6 station."),
+		_("Open this screen on a {0} station.").format(zones.function_label(FUNCTION)),
 	)
 
 
@@ -170,6 +166,9 @@ def putaway(pack_raw, location_raw, station, client_ts=None):
 				pack.name, _(pack.status, context="Pack")
 			),
 			_("Check the sterilization load result, or call R02."),
+			object_type="Pack",
+			object_name=pack.name,
+			error_code=error_codes.pack_error_code(pack),
 		)
 	if getdate(pack.expiry) < getdate(today()):
 		raise _blocked(
@@ -177,6 +176,8 @@ def putaway(pack_raw, location_raw, station, client_ts=None):
 			_("Pack has expired"),
 			_("Pack {0} expired on {1}.").format(pack.name, frappe.utils.formatdate(pack.expiry)),
 			_("Do not store the pack; send it back to the dirty zone."),
+			object_type="Pack",
+			object_name=pack.name,
 		)
 	gate = step_gate.check_stored(pack.set_unit)
 	if gate:

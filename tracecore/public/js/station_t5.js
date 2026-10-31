@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -73,15 +74,7 @@ function t5Kind(raw) {
 }
 
 function t5GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 function t5IndicatorLabel(code) {
@@ -128,7 +121,7 @@ class T5Load {
 	}
 
 	reset() {
-		this.mode = "load";
+		this.mode = this.canLoad() ? "load" : "data";
 		this.load = null; // {machine, programs, program, priority, packs: [{cycle_id, set_id, ...}]}
 		this.done = null; // kết quả load.complete
 		this.printNote = null;
@@ -541,6 +534,7 @@ class T5Load {
 	// ---- nhập dữ liệu chu trình ----
 	setMode(mode) {
 		if (this.busy || (mode !== "load" && mode !== "data")) return;
+		if (mode === "load" && !this.canLoad()) return;
 		this.mode = mode;
 		this.notice = null;
 		this.lookup = null;
@@ -703,16 +697,34 @@ class T5Load {
 				this.data = { load: this.data.load, context: this.data.context, saved: res };
 				this.form = null;
 				this.notice = {
-					variant: res.needs_review ? "warn" : "ok",
+					variant:
+						res.needs_review || (res.duration && res.duration.abnormal)
+							? "warn"
+							: "ok",
 					title: __("Manual cycle data saved and confirmed"),
-					reason: res.needs_review
-						? __("Some values are outside the program range: Needs review by R02.")
-						: "",
+					reason: [
+						res.needs_review
+							? __("Some values are outside the program range: Needs review by R02.")
+							: "",
+						this.durationText(res.duration),
+					]
+						.filter(Boolean)
+						.join(" · "),
 				};
 				this.loadOverview(true);
 				this.show();
 			}
 		);
+	}
+
+	durationText(duration) {
+		if (!duration) return "";
+		const text = __("Actual {0} min, standard {1} min ({2} %)", [
+			duration.actual_min,
+			duration.standard_min,
+			duration.deviation_pct,
+		]);
+		return duration.abnormal ? `${__("Abnormal duration")}: ${text}` : text;
 	}
 
 	missingLabel(item) {
@@ -870,17 +882,35 @@ class T5Load {
 		this.input.setAttribute("aria-label", text);
 	}
 
+	// chế độ theo chức năng của trạm (A-64)
+	stationHas(code) {
+		const info = this.station.stationInfo;
+		return Boolean(info && (info.functions || []).includes(code));
+	}
+
+	canLoad() {
+		return this.stationHas("STERI_LOAD");
+	}
+
+	canUnload() {
+		return this.stationHas("STERI_UNLOAD");
+	}
+
 	modeHtml() {
 		const open = (this.overview && this.overview.running.length) || 0;
 		const chip = (mode, label) =>
 			`<button type="button" class="tc-chip" data-action="t5-mode" data-mode="${mode}"
 				aria-pressed="${this.mode === mode ? "true" : "false"}">${esc(label)}</button>`;
 		return `<div class="tc-chips" role="group" aria-label="${esc(__("Sterilization load"))}">
-			${chip("load", __("Load sterilizer"))}
+			${this.canLoad() ? chip("load", __("Load sterilizer")) : ""}
 			${chip("data", __("Cycle data ({0} open)", [open]))}
-			<button type="button" class="tc-chip" data-action="t5-release" aria-pressed="false">${esc(
-				__("Unload and release")
-			)}</button>
+			${
+				this.canUnload()
+					? `<button type="button" class="tc-chip" data-action="t5-release" aria-pressed="false">${esc(
+							__("Unload and release")
+					  )}</button>`
+					: ""
+			}
 			<button type="button" class="tc-chip" data-action="t5-daily-test" aria-pressed="false">${esc(
 				__("Daily test")
 			)}</button>
@@ -896,10 +926,11 @@ class T5Load {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}
@@ -1313,9 +1344,17 @@ class T5Load {
 	savedHtml(saved) {
 		return `<section class="tc-t4-block">
 			${this.alertHtml({
-				variant: saved.needs_review ? "warn" : "ok",
+				variant:
+					saved.needs_review || (saved.duration && saved.duration.abnormal)
+						? "warn"
+						: "ok",
 				title: __("Cycle data attached to the load"),
-				reason: __("The load is now {0}.", [__(saved.status, null, "Sterilization Load")]),
+				reason: [
+					__("The load is now {0}.", [__(saved.status, null, "Sterilization Load")]),
+					this.durationText(saved.duration),
+				]
+					.filter(Boolean)
+					.join(" · "),
 			})}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5-data-reset">${esc(
 				__("Done")

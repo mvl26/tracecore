@@ -101,6 +101,17 @@ class TestShiftAssignment(ShiftCase):
 
 	@bru("BRU-HR-001")
 	def test_missing_required_certificate_blocks_scheduling(self):
+		holder = factories.make_employee(first_name="Người giữ chứng chỉ").name
+		frappe.get_doc(
+			{
+				"doctype": "Certificate",
+				"employee": holder,
+				"certificate_type": "Pressure Equipment Operation",
+				"certificate_no": "CC-" + frappe.generate_hash(length=8),
+				"issued_on": today(),
+				"no_expiry": 1,
+			}
+		).insert(ignore_permissions=True)
 		self.grant(required_certificates=["Pressure Equipment Operation"])
 		with self.assertRaises(frappe.ValidationError):
 			assignment(self.employee.name, self.shift, self.zone)
@@ -130,6 +141,22 @@ class TestShiftAssignment(ShiftCase):
 		assignment(self.employee.name, self.shift, self.zone)
 		with self.assertRaises(frappe.ValidationError):
 			assignment(self.employee.name, shift_type(), self.zone)
+
+
+class TestShiftAssignmentForm(IsolatedTestCase):
+	def test_shift_location_is_hidden(self):
+		"""Shift Location (chấm công GPS của HRMS) không dùng ở TraceCore; khu của ca là `tc_zone` nên ẩn để khỏi tạo nhầm."""
+		self.assertTrue(frappe.get_meta("Shift Assignment").get_field("shift_location").hidden)
+
+	def test_hidden_shift_location_ships_as_fixture(self):
+		from tracecore import hooks
+
+		names = [
+			row["filters"][0][2]
+			for row in hooks.fixtures
+			if row["dt"] == "Property Setter" and "filters" in row
+		]
+		self.assertIn("Shift Assignment-shift_location-hidden", names)
 
 
 class TestShiftSchedule(ShiftCase):

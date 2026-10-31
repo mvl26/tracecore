@@ -6,15 +6,22 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "readable_html",
+  "section_general",
   "naming_series",
   "status",
   "station",
+  "station_name",
   "employee",
   "user",
   "column_break_time",
   "client_ts",
   "synced_at",
   "incident",
+  "section_resolution",
+  "resolution_note",
+  "resolved_by",
+  "resolved_at",
   "section_request",
   "endpoint",
   "idempotency_key",
@@ -25,13 +32,19 @@
   "error_code",
   "section_state",
   "client_state",
-  "server_state",
-  "section_resolution",
-  "resolution_note",
-  "resolved_by",
-  "resolved_at"
+  "server_state"
  ],
  "fields": [
+  {
+   "fieldname": "readable_html",
+   "fieldtype": "HTML",
+   "label": "What happened"
+  },
+  {
+   "fieldname": "section_general",
+   "fieldtype": "Section Break",
+   "label": "Who and when"
+  },
   {
    "default": "SC-.YYYY.-.#####",
    "fieldname": "naming_series",
@@ -61,6 +74,16 @@
    "read_only": 1
   },
   {
+   "fetch_from": "station.zone_station_name",
+   "fieldname": "station_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Station Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee",
@@ -82,7 +105,7 @@
    "fieldname": "client_ts",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Client Time (UTC)",
+   "label": "Time at the station",
    "read_only": 1
   },
   {
@@ -101,45 +124,52 @@
   {
    "fieldname": "section_request",
    "fieldtype": "Section Break",
-   "label": "Request"
+   "label": "Technical details",
+   "hidden": 1
   },
   {
    "fieldname": "endpoint",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Endpoint",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "idempotency_key",
    "fieldtype": "Data",
    "label": "Idempotency Key",
    "read_only": 1,
-   "unique": 1
+   "unique": 1,
+   "hidden": 1
   },
   {
    "fieldname": "ref_doctype",
    "fieldtype": "Link",
    "label": "Reference DocType",
    "options": "DocType",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "ref_name",
    "fieldtype": "Dynamic Link",
    "label": "Reference",
    "options": "ref_doctype",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "column_break_error",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1
   },
   {
    "fieldname": "http_status",
    "fieldtype": "Int",
    "label": "HTTP Status",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "error_code",
@@ -147,26 +177,30 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Error Code",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "section_state",
    "fieldtype": "Section Break",
-   "label": "State"
+   "label": "Technical data",
+   "hidden": 1
   },
   {
    "fieldname": "client_state",
    "fieldtype": "Code",
    "label": "Client State",
    "options": "JSON",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "server_state",
    "fieldtype": "Code",
    "label": "Server State",
    "options": "JSON",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "section_resolution",
@@ -196,7 +230,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-26 10:00:00.000000",
+ "modified": "2026-10-31 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Sync Conflict",

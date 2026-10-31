@@ -413,7 +413,7 @@ def record_daily_tests(equipment):
 	"""Ghi test hằng ngày Đạt của hôm nay cho mọi test bắt buộc của máy (không qua dịch vụ, không khóa/mở máy)."""
 	from tracecore.equipment import daily_test
 
-	for test_type in daily_test.required_tests(equipment.equipment_type):
+	for test_type in daily_test.required_tests(equipment.equipment_type, equipment.daily_test_required):
 		row = frappe.get_doc(
 			{
 				"doctype": "Daily Test",
@@ -477,7 +477,7 @@ def make_linen_station():
 				"is_active": 1,
 				"zone_station_name": "Linen collection",
 				"parent_zone": zone.name,
-				"station_step": "LIN",
+				"functions": [{"station_function": "LINEN"}],
 			}
 		).insert(ignore_permissions=True, set_name=LINEN_STATION)
 	return LINEN_STATION
@@ -1302,3 +1302,127 @@ def make_par_level(target_doctype, target, par_kind="Reprocessing", **values):
 			**values,
 		}
 	).insert()
+
+
+WASTE_STATION = "TR-WST"
+WASTE_PACKAGING = "VT-TUI-VANG"
+
+
+def make_waste_station():
+	"""Khu Waste và trạm thu gom `TR-WST` (bước WST, FEAT-047); không có trong dữ liệu khởi tạo, R10 tạo trên Desk."""
+	if not frappe.db.exists("Zone Station", WASTE_STATION):
+		zone = frappe.get_doc(
+			{"doctype": "Zone Station", "zone_station_name": "Waste zone", "is_zone": 1, "zone_type": "Waste"}
+		).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"is_zone": 0,
+				"is_active": 1,
+				"zone_station_name": "Waste collection",
+				"parent_zone": zone.name,
+				"functions": [{"station_function": "WASTE"}],
+			}
+		).insert(ignore_permissions=True, set_name=WASTE_STATION)
+	return WASTE_STATION
+
+
+def make_waste_type(type_name=None, waste_group="Sharp Infectious", std_weight_kg=2, **kwargs):
+	"""Loại chất thải hợp lệ; bao bì là Item có sẵn của test (không kiểm Link để không phụ thuộc Item Group)."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Waste Type",
+			"type_name": type_name or "Waste " + frappe.generate_hash(length=8),
+			"waste_group": waste_group,
+			"packaging": WASTE_PACKAGING,
+			"std_weight_kg": std_weight_kg,
+			"max_storage_hours": 48,
+			"is_active": 1,
+			**kwargs,
+		}
+	)
+	doc.flags.ignore_links = True
+	return doc.insert(ignore_permissions=True)
+
+
+def make_waste_zone(monitored=False):
+	"""Khu Waste riêng cho một kho (kho lạnh gắn với khu để ghi nhật ký nhiệt độ, FEAT-048)."""
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Zone Station",
+				"zone_station_name": "Waste room " + frappe.generate_hash(length=6),
+				"is_zone": 1,
+				"zone_type": "Waste",
+				"env_monitored": 1 if monitored else 0,
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
+def make_waste_location(waste_types, default=False, is_cold=0, zone=None):
+	"""Vị trí kho `KE-` nhận các loại `waste_types`; `default=True` làm vị trí mặc định của các loại đó (FEAT-048)."""
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Waste Storage Location",
+				"location_name": "Waste shelf " + frappe.generate_hash(length=6),
+				"is_cold": is_cold,
+				"zone_station": zone,
+				"is_active": 1,
+				"allowed_types": [
+					{"waste_type": waste_type, "is_default": 1 if default else 0}
+					for waste_type in waste_types
+				],
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
+def make_waste_vendor(waste_types, rate=1000, license_no="GP-1", license_valid_to=None):
+	"""Đơn vị xử lý có giấy phép và hợp đồng còn hiệu lực cho các loại `waste_types` (FEAT-049)."""
+	valid_to = license_valid_to or add_days(today(), 365)
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Waste Treatment Vendor",
+				"vendor_name": "Vendor " + frappe.generate_hash(length=8),
+				"tax_id": "0101234567",
+				"license_no": license_no,
+				"license_valid_to": valid_to,
+				"permitted_types": [{"waste_type": waste_type} for waste_type in waste_types],
+				"contracts": [
+					{
+						"contract_no": "HD-1",
+						"waste_type": waste_type,
+						"valid_from": add_days(today(), -30),
+						"valid_to": add_days(today(), 365),
+						"rate_per_kg": rate,
+					}
+					for waste_type in waste_types
+				],
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
+	)
+
+
+def make_waste_container():
+	"""Một túi `Waste Container` (dịch vụ mới được tạo: cờ `tc_waste`); dùng ở test NC của M2."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Waste Container",
+			"waste_type": make_waste_type().name,
+			"weight_kg": 1,
+			"status": "Held",
+			"collected_at": now_datetime(),
+		}
+	)
+	doc.flags.tc_waste = True
+	doc.flags.ignore_links = True
+	return doc.insert(ignore_permissions=True, set_name="CT-261030-" + frappe.generate_hash(length=5)).name

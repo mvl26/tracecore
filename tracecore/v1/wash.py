@@ -28,7 +28,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = washing.STEP
+FUNCTION = washing.FUNCTION
 TRUE_STRINGS = ("1", "true", "yes", "on")
 
 
@@ -81,6 +81,32 @@ def _values(value):
 	return rows
 
 
+DRAFT_MAX_CHARS = 65536
+
+
+def _draft(value):
+	"""Nháp lô đang nạp dở: dict (hoặc chuỗi JSON của dict) có ``machine`` và danh sách ``sets``; rỗng = xóa nháp."""
+	message = _("draft must be an object with a machine and a list of sets.")
+	if value in (None, "", "null"):
+		return None
+	if isinstance(value, str):
+		if len(value) > DRAFT_MAX_CHARS:
+			raise BadRequestError(message)
+		try:
+			value = json.loads(value)
+		except ValueError:
+			raise BadRequestError(message) from None
+	if not (
+		isinstance(value, dict)
+		and isinstance(value.get("machine"), dict)
+		and isinstance(value.get("sets"), list)
+	):
+		raise BadRequestError(message)
+	if len(json.dumps(value)) > DRAFT_MAX_CHARS:
+		raise BadRequestError(message)
+	return value
+
+
 def _optional_str(value, name):
 	if value is not None and not isinstance(value, str):
 		raise BadRequestError(_("{0} must be a string.").format(name))
@@ -103,9 +129,32 @@ def _flag(value):
 	return False
 
 
+def _indicator(value):
+	"""Chỉ thị rửa: dict hoặc chuỗi JSON của dict; rỗng = không gửi (A-77)."""
+	message = _("indicator must be an object with a result.")
+	if value in (None, "", "null"):
+		return None
+	if isinstance(value, str):
+		try:
+			value = json.loads(value)
+		except ValueError:
+			raise BadRequestError(message) from None
+	if not isinstance(value, dict):
+		raise BadRequestError(message)
+	for key in ("item", "lot", "lot_expiry", "result", "photo"):
+		if value.get(key) is not None and not isinstance(value[key], str):
+			raise BadRequestError(message)
+	return value
+
+
 def _session_employee():
 	session = current_station_session()
 	return session.employee if session else None
+
+
+def _session_name():
+	session = current_station_session()
+	return session.name if session else None
 
 
 def _run(station, timestamp, call, ref_doctype=None, ref_name=None, raw=None):
@@ -134,27 +183,31 @@ def _batch_ref(batch):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
-def start(raw, station, client_ts=None, token=None):
+def start(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét QR máy rửa: máy, chương trình đang dùng của máy, lô hóa chất gợi ý FEFO (FR-M2-03.1, .4, .5)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	raw = _required_str(raw, "raw")
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **washing.scan_machine(raw)},
 		"Equipment" if scanned["type"] == "equipment" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
-def add_set(raw, equipment, queued, station, client_ts=None, token=None):
+def add_set(
+	raw, equipment, queued, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None
+):
 	"""Kiểm một Set ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (Q1)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	raw = _required_str(raw, "raw")
@@ -163,13 +216,15 @@ def add_set(raw, equipment, queued, station, client_ts=None, token=None):
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **washing.admit_set(raw, equipment, queue)},
 		"Set Unit" if scanned["type"] == "set" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
@@ -185,13 +240,35 @@ def complete(equipment, program, sets, chemicals, station, client_ts=None, token
 	rows = _chemicals(chemicals)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
-		lambda: {
-			"ok": True,
-			**washing.start(equipment, program, codes, rows, station, timestamp, _session_employee()),
-		},
+		lambda: _completed(equipment, program, codes, rows, station, timestamp),
+		"Equipment",
+		equipment,
+	)
+
+
+def _completed(equipment, program, codes, rows, station, timestamp):
+	result = washing.start(equipment, program, codes, rows, station, timestamp, _session_employee())
+	session = current_station_session()
+	if session:
+		washing.save_draft(session.name, None)  # lô đã có mã: danh sách nạp dở không còn
+	return {"ok": True, **result}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
+def refresh_lots(equipment, station, client_ts=None, token=None):
+	"""Tra lại chương trình, hóa chất và lô FEFO của máy đang nạp, không đổi danh sách bộ (lô mới nhập sau khi quét máy)."""
+	require_any_role(*WASH_LOAD_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, **washing.refresh_lots(equipment)},
 		"Equipment",
 		equipment,
 	)
@@ -199,15 +276,51 @@ def complete(equipment, program, sets, chemicals, station, client_ts=None, token
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
+def draft(station, client_ts=None, token=None):
+	"""Nháp danh sách bộ đang nạp dở của phiên trạm này (``draft`` là None nếu chưa có); chỉ đọc."""
+	require_any_role(*WASH_LOAD_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, "draft": washing.get_draft(_session_name())},
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
+def save_draft(draft, station, client_ts=None, token=None):
+	"""Lưu nháp danh sách bộ đang nạp dở theo phiên trạm để tải lại trang không mất bộ đã quét; rỗng = xóa nháp."""
+	require_any_role(*WASH_LOAD_ROLES)
+	value = _draft(draft)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, "draft": washing.save_draft(_session_name(), value)},
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
 def redo_queue(station, client_ts=None, token=None):
-	"""Bảng phụ của màn T2, chỉ đọc: hàng đợi xử lý lại (``sets``, FR-M2-25.2, Q16) và lô đang chạy (``running``)."""
+	"""Bảng phụ của màn T2, chỉ đọc: hàng đợi xử lý lại (``sets``, FR-M2-25.2, Q16), lô đang chạy (``running``) và bộ chờ rửa
+	(``waiting``, A-66), lô chờ đọc chỉ thị (``awaiting``, A-77)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		washing.LOAD_OR_UNLOAD,
 		station,
 		None,
-		lambda: {"ok": True, "sets": washing.redo_queue(), "running": washing.running_batches()},
+		lambda: {
+			"ok": True,
+			"sets": washing.redo_queue(),
+			"running": washing.running_batches(),
+			"awaiting": washing.awaiting_batches(),
+			"waiting": washing.waiting_sets(),
+		},
 	)
 
 
@@ -234,6 +347,16 @@ def lookup(raw, station, client_ts=None, token=None):
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_UNLOAD_ROLES)
+def indicator_lot(raw, station, client_ts=None, token=None):
+	"""Tra lô chỉ thị vừa quét để tự điền vật tư và hạn (A-77); chỉ đọc."""
+	require_any_role(*WASH_UNLOAD_ROLES)
+	raw = _required_str(raw, "raw")
+	timestamp = parse_client_ts(client_ts)
+	return _run(station, timestamp, lambda: {"ok": True, **washing.indicator_lot(raw)})
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_UNLOAD_ROLES)
 @idempotent
 def unload(batch, raw, station, client_ts=None, token=None):
 	"""Kiểm một mã quét khi dỡ lô `batch`: QR máy của lô hoặc QR lô (Q15, FR-M2-04.1/.2)."""
@@ -256,7 +379,8 @@ def unload(batch, raw, station, client_ts=None, token=None):
 @station_session(*WASH_UNLOAD_ROLES)
 @idempotent
 def unload_context(batch, equipment_raw, batch_raw, station, client_ts=None, token=None):
-	"""Ngữ cảnh dỡ lô sau khi đã quét đủ hai mã: thẻ lô + `parameter_schema` của chương trình."""
+	"""Ngữ cảnh dỡ lô sau khi đã quét đủ hai mã: thẻ lô + `parameter_schema`; chương trình bắt buộc chỉ thị thì lô sang
+	Chờ đọc chỉ thị (A-77), khi đó đọc sau chỉ cần `batch_raw`."""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")
 	equipment_raw = _optional_str(equipment_raw, "equipment_raw") or ""
@@ -266,7 +390,17 @@ def unload_context(batch, equipment_raw, batch_raw, station, client_ts=None, tok
 	return _run(
 		station,
 		timestamp,
-		lambda: {"ok": True, "batch": washing.unload_context(batch, equipment_raw, batch_raw, station)},
+		lambda: {
+			"ok": True,
+			"batch": washing.unload_context(
+				batch,
+				equipment_raw,
+				batch_raw,
+				station,
+				employee=_session_employee(),
+				client_ts=timestamp,
+			),
+		},
 		ref_doctype,
 		ref_name,
 	)
@@ -337,21 +471,24 @@ def result(
 	result,
 	equipment_raw,
 	batch_raw,
-	clean_test,
 	station,
+	clean_test=None,
 	reviewer_proof=None,
 	note=None,
+	indicator=None,
 	client_ts=None,
 	token=None,
 ):
 	"""Kết luận lô: một kết quả Đạt/Không đạt cho mọi bộ, đóng lô (FR-M2-04.3 đến .6, BRU-REP-002); xem `washing.set_result`.
 
-	`reviewer_proof` là PIN proof (`v1.station.verify_pin`) của R02 trên phiên này, cần cho Đạt ở máy cũ (Q7).
+	`reviewer_proof` là PIN proof (`v1.station.verify_pin`) của R02 trên phiên này, cần cho Đạt ở máy cũ (Q7). `indicator`
+	là kết quả chỉ thị rửa (A-77), khi có thì thay `clean_test`.
 	"""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")
 	result = _required_str(result, "result")
-	clean_test = _required_str(clean_test, "clean_test")
+	clean_test = _optional_str(clean_test, "clean_test")
+	indicator = _indicator(indicator)
 	equipment_raw = _optional_str(equipment_raw, "equipment_raw") or ""
 	batch_raw = _optional_str(batch_raw, "batch_raw") or ""
 	reviewer_proof = _optional_str(reviewer_proof, "reviewer_proof")
@@ -375,6 +512,8 @@ def result(
 				note=note,
 				client_ts=timestamp,
 				session=session.name if session else None,
+				unloaded_by=_session_employee(),
+				indicator=indicator,
 			),
 		},
 		ref_doctype,

@@ -1,0 +1,189 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 23:30:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_doctype",
+  "source_name",
+  "status",
+  "is_quality_cost",
+  "is_recalculation",
+  "cost_date",
+  "equipment",
+  "program",
+  "rate_version",
+  "column_totals",
+  "pack_count",
+  "total_cost",
+  "cost_per_pack",
+  "missing_rates",
+  "recalc_note",
+  "supersedes",
+  "section_lines",
+  "lines",
+  "section_packs",
+  "packs"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Select",
+   "label": "Source Type",
+   "options": "Sterilization Load\nWash Batch",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Source",
+   "options": "source_doctype",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Priced\nUnpriced",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_quality_cost",
+   "fieldtype": "Check",
+   "label": "Quality Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_recalculation",
+   "fieldtype": "Check",
+   "label": "Recalculation",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_date",
+   "fieldtype": "Date",
+   "label": "Cost Date",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "equipment",
+   "fieldtype": "Link",
+   "label": "Equipment",
+   "options": "Equipment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Process Program",
+   "options": "Process Program",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate_version",
+   "fieldtype": "Link",
+   "label": "Cost Rate Version",
+   "options": "Cost Rate Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_totals",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "pack_count",
+   "fieldtype": "Int",
+   "label": "Packs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "Total Cost",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_per_pack",
+   "fieldtype": "Currency",
+   "label": "Cost per Pack",
+   "read_only": 1
+  },
+  {
+   "fieldname": "missing_rates",
+   "fieldtype": "Small Text",
+   "label": "Missing Rates",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recalc_note",
+   "fieldtype": "Small Text",
+   "label": "Recalculation Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supersedes",
+   "fieldtype": "Link",
+   "label": "Recalculation Of",
+   "options": "Cost Sheet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_lines",
+   "fieldtype": "Section Break",
+   "label": "Cost Components"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Cost Components",
+   "options": "Cost Sheet Line",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_packs",
+   "fieldtype": "Section Break",
+   "label": "Pack Costs"
+  },
+  {
+   "fieldname": "packs",
+   "fieldtype": "Table",
+   "label": "Pack Costs",
+   "options": "Cost Sheet Pack",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-29 23:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Costing",
+ "name": "Cost Sheet",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "GT-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "in_create": 1,
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "description": "Cost of one sterilization load or wash batch split into packs, and the cost of each pack (FR-M7-05, FR-M7-06, A-53)."
+}

@@ -19,6 +19,7 @@
   "zone_out",
   "is_connected",
   "has_printout",
+  "daily_test_required",
   "commissioned_on",
   "inspection_due",
   "calibration_due",
@@ -41,7 +42,9 @@
   "unlock_until",
   "column_break_unlock",
   "unlocked_by",
-  "unlock_reason"
+  "unlock_reason",
+  "section_chemical_lots",
+  "chemical_lots"
  ],
  "fields": [
   {
@@ -136,6 +139,14 @@
    "fieldname": "has_printout",
    "fieldtype": "Check",
    "label": "Has Printout"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.equipment_type=='Steam Sterilizer' || doc.equipment_type=='Plasma Sterilizer'",
+   "description": "Only used when the Daily Test Requirement in TraceCore Settings is Selected Sterilizers.",
+   "fieldname": "daily_test_required",
+   "fieldtype": "Check",
+   "label": "Daily Test Required"
   },
   {
    "fieldname": "commissioned_on",
@@ -274,11 +285,23 @@
    "fieldtype": "Small Text",
    "label": "Temporary Unlock Reason",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_chemical_lots",
+   "fieldtype": "Section Break",
+   "label": "Chemical lots in use"
+  },
+  {
+   "fieldname": "chemical_lots",
+   "fieldtype": "Table",
+   "label": "Chemical lots in use",
+   "options": "Equipment Chemical Lot",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-25 11:00:00.000000",
+ "modified": "2026-10-31 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Equipment",

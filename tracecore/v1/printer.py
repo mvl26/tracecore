@@ -16,7 +16,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = "T4"
+FUNCTION = "PACK"
 # Đường Desk (có `printer`): R10 nạp cuộn từ form Máy in, không cần đứng ở trạm T4 (ruling P1); chỉ R10 và
 # System Manager, không phát hành nhãn chờ vì trình duyệt Desk không gửi được job tới Station Agent (ruling F2)
 DESK_ROLES = ("TC R10", "System Manager")
@@ -77,7 +77,7 @@ def set_roll(roll_code, station, printer=None, client_ts=None, token=None):
 	require_any_role(*(DESK_ROLES if printer else PACKING_ROLES))
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		None if printer else STEP,
+		None if printer else FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, "roll": change_roll(roll_code, station, printer, release=not printer)},

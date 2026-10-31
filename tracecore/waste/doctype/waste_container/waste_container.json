@@ -1,0 +1,188 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "waste_type",
+  "status",
+  "weight_kg",
+  "collection",
+  "department",
+  "column_break_1",
+  "collected_at",
+  "storage_due",
+  "storage_location",
+  "storage_location_name",
+  "stored_at",
+  "cold_storage",
+  "cold_voided",
+  "due_warned_at",
+  "overdue_at",
+  "handover",
+  "misclass_note",
+  "released_by",
+  "release_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Waste Type",
+   "options": "Waste Type",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Collected\nHeld\nStored\nHanded Over\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weight_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Weight (kg)",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "collection",
+   "fieldtype": "Link",
+   "label": "Collection",
+   "options": "Waste Collection",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collected_at",
+   "fieldtype": "Datetime",
+   "label": "Collected At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "storage_due",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Storage Due",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "storage_location",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Storage Location",
+   "options": "Waste Storage Location",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "storage_location.location_name",
+   "fieldname": "storage_location_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Storage Location Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "stored_at",
+   "fieldtype": "Datetime",
+   "label": "Stored At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "cold_storage",
+   "fieldtype": "Check",
+   "label": "Cold Storage",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "The cold room went above the limit, so the normal storage time applies.",
+   "fieldname": "cold_voided",
+   "fieldtype": "Check",
+   "label": "Cold Storage Lost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "due_warned_at",
+   "fieldtype": "Datetime",
+   "label": "Due Warning Sent At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "overdue_at",
+   "fieldtype": "Datetime",
+   "label": "Overdue Since",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover",
+   "fieldtype": "Link",
+   "options": "Waste Handover",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "label": "Handover"
+  },
+  {
+   "fieldname": "misclass_note",
+   "fieldtype": "Small Text",
+   "label": "Misclassification Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_by",
+   "fieldtype": "Link",
+   "label": "Released By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "release_note",
+   "fieldtype": "Small Text",
+   "label": "Release Note",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 09:51:28.517407",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Container",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "prompt",
+ "naming_rule": "Set by user",
+ "description": "Waste bag or bin with a system CT- code (FEAT-047, FR-M10-01.5); created only by a collection."
+}

@@ -23,9 +23,20 @@ class TestPing(FrappeTestCase):
 
 	def test_ping_station_info(self):
 		result = v1.ping(station="TR-004")
+		station = result["station"]
 		self.assertEqual(
-			result["station"], {"name": "TR-004", "label": "T4 Packing", "step": "T4", "zone_type": "Clean"}
+			(
+				station["name"],
+				station["label"],
+				station["functions"],
+				station["station_no"],
+				station["zone_type"],
+			),
+			("TR-004", "T4 Packing", ["PACK"], 4, "Clean"),
 		)
+		self.assertEqual(station["zone_color"], "clean")
+		self.assertEqual(station["gate_labels"]["T4"], "Packing")
+		self.assertTrue(station["screens"])
 		self.assertIsNone(result["station_error"])
 
 	def test_ping_unknown_station(self):

@@ -101,4 +101,4 @@ class TestEquipmentApi(IsolatedTestCase):
 		self.assertIn(equipment_api.get, frappe.whitelisted)
 		self.assertEqual(frappe.allowed_http_methods_for_whitelisted_func[equipment_api.get], ["POST"])
 		# đọc thuần: không bọc @idempotent (không cần X-Idempotency-Key)
-		self.assertNotIn("core.idempotency", inspect.getsource(equipment_api))
+		self.assertNotIn("@idempotent", inspect.getsource(equipment_api.get))

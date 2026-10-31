@@ -12,6 +12,7 @@ from frappe.core.doctype.data_import.data_import import import_doc
 from frappe.utils.fixtures import sync_fixtures
 
 from tracecore import hooks
+from tracecore.core import zones
 from tracecore.patches.v0_1 import seed_zone_stations
 from tracecore.setup import install
 from tracecore.setup.seed import DEFAULT_STATIONS, DEFAULT_ZONES, ensure_zone_stations
@@ -74,7 +75,9 @@ class TestZoneStationSeed(IsolatedTestCase):
 
 	def test_seed_creates_missing_records(self):
 		"""Site mới (hoặc thiếu bản ghi): tạo khu trước, trạm sau, đúng tên/khu/bước, đang hoạt động."""
-		frappe.db.delete("Zone Station", {"name": ("in", ["ZONE-STERILE", "TR-006", "TR-007"])})
+		names = ("in", ["ZONE-STERILE", "TR-006", "TR-007"])
+		frappe.db.delete("Zone Station", {"name": names})
+		frappe.db.delete("Zone Station Function", {"parent": names})
 		created = ensure_zone_stations()
 		self.assertEqual(created, ["ZONE-STERILE", "TR-006", "TR-007"])
 		self.assertEqual(ensure_zone_stations(), [])
@@ -84,14 +87,20 @@ class TestZoneStationSeed(IsolatedTestCase):
 		for station in DEFAULT_STATIONS:
 			doc = frappe.get_doc("Zone Station", station["name"])
 			self.assertEqual(
-				(doc.is_zone, doc.is_active, doc.parent_zone, doc.station_step),
-				(0, 1, station["parent_zone"], station["station_step"]),
+				(
+					doc.is_zone,
+					doc.is_active,
+					doc.parent_zone,
+					[row.station_function for row in doc.functions],
+				),
+				(0, 1, station["parent_zone"], list(station["functions"])),
 			)
 		self.assertEqual(frappe.db.get_value("Zone Station", "TR-007", "zone_type"), "Sterile")
 		# FEAT-027: trạm T8 quét sử dụng nằm ở khu Department mặc định
 		self.assertEqual(
-			frappe.db.get_value("Zone Station", "TR-008", ["zone_type", "station_step"]), ("Department", "T8")
+			frappe.db.get_value("Zone Station", "TR-008", ["zone_type", "station_no"]), ("Department", 8)
 		)
+		self.assertEqual(zones.station_functions("TR-008"), ["USE"])
 		self.assertEqual(frappe.db.get_value("Code Registry", "TR-007", "prefix"), "TR")
 
 	def test_after_install_seeds_zone_stations(self):

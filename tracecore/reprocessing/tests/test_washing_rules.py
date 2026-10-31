@@ -124,13 +124,14 @@ class TestWashingAdmit(FrappeTestCase):
 	def test_admit_rejects_set_in_running_batch(self):
 		unit = make_wash_ready_set()
 		batch = make_wash_batch(self.machine, self.program, [unit])
+		other = make_wash_machine()  # máy của lô đang chạy thì bận (A-73): quét vào máy khác
 		with self.assertRaises(BlockedError) as caught:
-			washing.admit_set(unit.name, self.machine.name, [])
+			washing.admit_set(unit.name, other.name, [])
 		self.assertEqual(caught.exception.block.code, "SET_IN_OTHER_BATCH")
 		self.assertIn(batch.name, caught.exception.block.reason)
 		# lô đã đóng thì bộ không còn bị giữ
 		frappe.db.set_value("Wash Batch", batch.name, "status", "Passed")
-		self.assertFalse(washing.admit_set(unit.name, self.machine.name, [])["duplicate"])
+		self.assertFalse(washing.admit_set(unit.name, other.name, [])["duplicate"])
 
 	@bru("BRU-FLOW-004")
 	def test_admit_rejects_set_already_washed_pass(self):
@@ -195,6 +196,42 @@ class TestWashingAdmit(FrappeTestCase):
 		self.assertEqual({r["set_id"]: r for r in washing.redo_queue()}[failed.name]["redo_count"], 2)
 		step_gate.record(failed.name, "T2", "Pass")
 		self.assertNotIn(failed.name, {r["set_id"] for r in washing.redo_queue()})
+
+	def _waiting(self):
+		return {row["set_id"]: row for row in washing.waiting_sets()}
+
+	def test_waiting_sets_lists_set_that_passed_t1_with_its_name_and_department(self):
+		unit = make_wash_ready_set()
+		row = self._waiting()[unit.name]
+		set_name = frappe.db.get_value("Instrument Set Type", unit.set_type, "set_type_name")
+		department_name = frappe.db.get_value("Department", unit.department, "department_name")
+		self.assertEqual((row["set_name"], row["department_name"]), (set_name, department_name))
+
+	def test_waiting_sets_ignores_set_not_received_yet(self):
+		self.assertNotIn(make_set_unit().name, self._waiting())
+
+	def test_waiting_sets_ignores_set_with_a_t2_result(self):
+		washed, failed = make_wash_ready_set(), make_wash_ready_set()
+		step_gate.record(washed.name, "T2", "Pass")
+		step_gate.record(failed.name, "T2", "Fail")  # thuộc hàng đợi xử lý lại, không lặp ở đây
+		waiting = self._waiting()
+		self.assertNotIn(washed.name, waiting)
+		self.assertNotIn(failed.name, waiting)
+
+	def test_waiting_sets_ignores_set_in_a_running_batch(self):
+		unit = make_wash_ready_set()
+		make_chemical_batch(CHEMICAL)
+		program = make_wash_program(self.machine.name, chemical=CHEMICAL)
+		make_wash_batch(self.machine.name, program.name, [unit.name])
+		self.assertNotIn(unit.name, self._waiting())
+
+	def test_waiting_sets_uses_the_current_cycle_only(self):
+		unit = make_wash_ready_set()
+		step_gate.record(unit.name, "T2", "Pass")
+		step_gate.start_cycle(unit.name)  # chu trình mới chưa qua T1: T1 Đạt của chu trình cũ không tính
+		self.assertNotIn(unit.name, self._waiting())
+		step_gate.record(unit.name, "T1", "Pass")
+		self.assertIn(unit.name, self._waiting())
 
 
 class TestWashingChemicals(FrappeTestCase):

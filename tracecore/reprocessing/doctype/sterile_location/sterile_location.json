@@ -8,6 +8,7 @@
  "field_order": [
   "location_name",
   "zone_station",
+  "zone_station_name",
   "column_break_main",
   "is_active",
   "description"
@@ -30,6 +31,16 @@
    "options": "Zone Station"
   },
   {
+   "fetch_from": "zone_station.zone_station_name",
+   "fieldname": "zone_station_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zone Station Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "column_break_main",
    "fieldtype": "Column Break"
   },
@@ -50,7 +61,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 09:00:00.000000",
+ "modified": "2026-10-31 09:51:28.510656",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterile Location",

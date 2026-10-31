@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "set_unit",
+  "set_unit_name",
   "instrument",
+  "instrument_name",
   "section_counters",
   "cycles_since_maint",
   "deferred_count",
@@ -32,6 +34,16 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "instrument",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -40,6 +52,16 @@
    "options": "Instrument",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "instrument.instrument_name",
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instrument Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "section_counters",
@@ -116,7 +138,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 20:00:00.000000",
+ "modified": "2026-10-31 09:51:28.501306",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Maintenance",

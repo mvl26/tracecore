@@ -4,7 +4,7 @@ import frappe
 
 from tracecore.core import print as core_print
 from tracecore.tests.factories import make_item, make_label_items, make_printer, make_roll
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter
 
 # label_type_loaded → Item, roll_loaded_by → User kéo theo test record Item, Email Account → Company…
 # cần Setup Wizard; site CI mới chưa chạy wizard nên bỏ phụ thuộc này (dữ liệu tạo qua factories).
@@ -100,12 +100,12 @@ class TestPrinter(IsolatedTestCase):
 			fields=["old_value", "new_value"],
 		)
 		self.assertEqual(len(audit), 1)
-		self.assertEqual(json.loads(audit[0].old_value), {"label_type_loaded": self.steam})
-		self.assertEqual(json.loads(audit[0].new_value), {"label_type_loaded": self.plasma})
+		self.assertEqual(json.loads(audit[0].old_value)["label_type_loaded"], self.steam)
+		self.assertEqual(json.loads(audit[0].new_value)["label_type_loaded"], self.plasma)
 
 	def test_printer_cannot_be_deleted(self):
 		printer = make_printer("TR-004", self.steam)
-		with self.assertRaises(frappe.ValidationError):
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
 			frappe.delete_doc("Printer", printer, ignore_permissions=True)
 		self.assertTrue(frappe.db.exists("Printer", printer))
 

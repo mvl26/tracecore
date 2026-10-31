@@ -10,8 +10,11 @@
   "program_code",
   "program_name",
   "equipment",
+  "equipment_name",
   "is_active",
   "requires_bi",
+  "requires_wash_indicator",
+  "requires_wash_indicator_photo",
   "column_break_main",
   "temperature",
   "pressure",
@@ -62,6 +65,16 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "equipment.equipment_name",
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "default": "1",
    "description": "Untick to stop using the program. All its data is kept.",
    "fieldname": "is_active",
@@ -75,6 +88,20 @@
    "fieldname": "requires_bi",
    "fieldtype": "Check",
    "label": "Requires Biological Indicator"
+  },
+  {
+   "default": "0",
+   "description": "Washers only. Off by default: unloading a batch then waits for the wash indicator to be read before the sets can go to assembly.",
+   "fieldname": "requires_wash_indicator",
+   "fieldtype": "Check",
+   "label": "Requires Wash Indicator"
+  },
+  {
+   "default": "0",
+   "depends_on": "requires_wash_indicator",
+   "fieldname": "requires_wash_indicator_photo",
+   "fieldtype": "Check",
+   "label": "Requires Wash Indicator Photo"
   },
   {
    "fieldname": "column_break_main",
@@ -192,7 +219,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 13:00:00.000000",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Process Program",

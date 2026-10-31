@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 18:00:00.000000",
+ "description": "Waste type a storage location takes (FEAT-048, FR-M10-03.1).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "waste_type",
+  "is_default"
+ ],
+ "fields": [
+  {
+   "fieldname": "waste_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Waste Type",
+   "options": "Waste Type",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Bags of this type go here when a whole collection is scanned.",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Default Location"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Waste",
+ "name": "Waste Storage Location Type",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "permissions": []
+}

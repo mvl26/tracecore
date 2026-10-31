@@ -13,7 +13,7 @@ from tracecore.tests.factories import (
 	make_set_type,
 	make_user,
 )
-from tracecore.tests.utils import IsolatedTestCase
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter
 
 # Instrument Set Type liên kết Department, Item; Set BOM Item/Instrument liên kết Item, User của ERPNext;
 # site CI mới chưa chạy Setup Wizard nên bỏ phụ thuộc này (dữ liệu tạo qua tracecore/tests/factories.py).
@@ -227,8 +227,8 @@ class TestSetTypeHeader(IsolatedTestCase):
 		old, new = frappe.parse_json(updates[0].old_value), frappe.parse_json(updates[0].new_value)
 		self.assertEqual((old["shelf_life_days"], new["shelf_life_days"]), (0, 20))
 		self.assertEqual((old["method"], new["method"]), ("Steam", "Plasma"))
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc(DOCTYPE, doc.name)
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc(DOCTYPE, doc.name, ignore_permissions=True)
 
 	def test_patch_backfills_without_inventing_clinical_data(self):
 		from tracecore.patches.v0_1 import set_type_master_defaults

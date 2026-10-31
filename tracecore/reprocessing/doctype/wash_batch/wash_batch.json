@@ -9,7 +9,9 @@
   "machine_section",
   "batch_type",
   "equipment",
+  "equipment_name",
   "program",
+  "program_name",
   "operator",
   "column_break_run",
   "status",
@@ -32,6 +34,9 @@
   "result_section",
   "unload_scan_equipment",
   "unload_scan_at",
+  "unloaded_by",
+  "indicator_required",
+  "indicator_photo_required",
   "clean_test_result",
   "column_break_result",
   "cycle_result",
@@ -71,6 +76,16 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "equipment.equipment_name",
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "program",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -78,6 +93,16 @@
    "options": "Process Program",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "program.program_name",
+   "fieldname": "program_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Process Program Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "description": "Employee who completed loading, taken from the card session.",
@@ -99,7 +124,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Running\nPassed\nFailed",
+   "options": "Running\nAwaiting Result\nPassed\nFailed",
    "read_only": 1
   },
   {
@@ -221,6 +246,29 @@
    "read_only": 1
   },
   {
+   "fieldname": "unloaded_by",
+   "fieldtype": "Link",
+   "label": "Unloaded By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Copied from the program when the batch is unloaded.",
+   "fieldname": "indicator_required",
+   "fieldtype": "Check",
+   "label": "Wash Indicator Required",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Copied from the program when the batch is unloaded.",
+   "fieldname": "indicator_photo_required",
+   "fieldtype": "Check",
+   "label": "Wash Indicator Photo Required",
+   "read_only": 1
+  },
+  {
    "fieldname": "clean_test_result",
    "fieldtype": "Select",
    "label": "Cleaning Test",
@@ -289,7 +337,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-22 16:00:00.000000",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

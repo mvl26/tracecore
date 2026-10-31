@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -11,6 +12,7 @@ const T2_AGENT_TIMEOUT_MS = 5000;
 const T2_COMPLETE = "tracecore.v1.wash.complete";
 const T2_RESULT = "tracecore.v1.wash.result";
 const T2_SAVE = "tracecore.v1.wash.manual_data";
+const T2_INDICATOR_LOT = "tracecore.v1.wash.indicator_lot";
 // từ chối làm lô đang dỡ không còn dùng được → bỏ trạng thái dỡ để quét lô khác
 const T2_UNLOAD_RESET_CODES = ["WASH_BATCH_NOT_FOUND", "BATCH_NOT_RUNNING", "STATION_WRONG_STEP"];
 
@@ -72,15 +74,7 @@ function t2Kind(raw) {
 }
 
 function t2GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 class T2Wash {
@@ -91,8 +85,10 @@ class T2Wash {
 		this.pending = null; // yêu cầu chưa có câu trả lời dứt khoát: Thử lại gửi lại y nguyên key + client_ts
 		this.busy = null;
 		this.offline = false;
-		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy}
+		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy, waiting: bộ chờ rửa}
 		this.overviewBusy = false;
+		this.draftChecked = false; // nháp phía server (theo phiên trạm) chỉ hỏi một lần mỗi phiên
+		this.draftTimer = null;
 		this.reset();
 		this.load = this.restoreLoad();
 		this.result.addEventListener("change", (event) => this.onChange(event));
@@ -104,7 +100,7 @@ class T2Wash {
 	}
 
 	reset() {
-		this.mode = "load";
+		this.mode = this.canLoad() ? "load" : "unload";
 		this.load = null; // {machine, programs, lots, program, lot, sets: [{set_id, set_name, gates}]}
 		this.done = null; // kết quả wash.complete
 		this.printNote = null;
@@ -113,6 +109,7 @@ class T2Wash {
 		this.unload = null; // {batch, equipmentRaw, batchRaw, context, saved, result}
 		this.form = null;
 		this.verdict = null;
+		this.indicator = null; // {item, lot, expiry, result, photo, uploading, fromStock} khi chương trình bắt buộc chỉ thị (A-77)
 	}
 
 	clearSession() {
@@ -121,6 +118,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null;
 		this.overviewBusy = false;
+		this.draftChecked = false;
 		this.reset();
 		this.saveLoad();
 		this.input.placeholder = __("Scan Set ID...");
@@ -149,6 +147,53 @@ class T2Wash {
 		} catch (error) {
 			// kiosk tắt storage: danh sách chỉ còn trong bộ nhớ
 		}
+		this.syncDraft();
+	}
+
+	// Nháp phía server theo phiên trạm (A-72): tải lại trang hay đổi tab không mất bộ đã quét.
+	syncDraft() {
+		if (!this.station.session || this.station.isOffline()) return;
+		clearTimeout(this.draftTimer);
+		const version = this.station.sessionVersion;
+		const draft = this.load ? JSON.stringify(this.load) : "";
+		this.draftTimer = setTimeout(async () => {
+			if (version !== this.station.sessionVersion || !this.station.session) return;
+			try {
+				await this.station.rpc("tracecore.v1.wash.save_draft", {
+					draft,
+					station: this.station.station,
+					client_ts: clientTs(),
+				});
+			} catch (error) {
+				// nháp chỉ là tiện ích: mất mạng thì danh sách vẫn còn trên kiosk
+			}
+		}, 300);
+	}
+
+	async restoreDraft() {
+		this.draftChecked = true;
+		if (this.load || !this.canLoad() || this.station.isOffline()) return;
+		const version = this.station.sessionVersion;
+		let res = null;
+		try {
+			res = await this.station.rpc("tracecore.v1.wash.draft", {
+				station: this.station.station,
+				client_ts: clientTs(),
+			});
+		} catch (error) {
+			return;
+		}
+		if (version !== this.station.sessionVersion || this.load) return;
+		if (!(res && res.ok && res.draft && res.draft.machine && Array.isArray(res.draft.sets)))
+			return;
+		this.load = res.draft;
+		this.saveLoad();
+		this.notice = {
+			variant: "info",
+			title: __("The list of sets was restored from this station session"),
+		};
+		this.show();
+		this.refreshLots(true);
 	}
 
 	// ---- quét ----
@@ -160,6 +205,13 @@ class T2Wash {
 		if (this.mode === "unload") return this.unloadScan(raw);
 		if (raw.toUpperCase() === T2_COMPLETE_CODE) return this.complete();
 		const code = t2Kind(raw);
+		// FEAT-052 A-71: máy đang báo HC-001/HC-003, mã quét không phải máy/bộ/lô rửa là lô hóa chất đang dùng
+		if (
+			this.notice &&
+			["HC-001", "HC-003"].includes(this.notice.error_code) &&
+			!["batch", "equipment"].includes(code.kind)
+		)
+			return this.declareChemicalLot(raw);
 		if (code.kind === "batch") return this.lookupBatch(raw);
 		if (code.kind === "equipment") {
 			if (this.load && this.load.sets.length && this.load.machine.name !== code.id) {
@@ -300,6 +352,24 @@ class T2Wash {
 		this.show();
 	}
 
+	declareChemicalLot(lot) {
+		const equipment = this.notice.object_name;
+		return this.request(
+			"tracecore.v1.equipment.declare_chemical_lot",
+			{ equipment, lot, station: this.station.station },
+			(res) => {
+				this.notice = {
+					variant: res.cleared ? "ok" : "warn",
+					title: __("Chemical lot {0} is declared on machine {1}", [res.lot, equipment]),
+					action: res.cleared
+						? __("Scan the washer again to continue.")
+						: __("The machine still needs a valid lot for another chemical."),
+				};
+				this.show();
+			}
+		);
+	}
+
 	reject(error, method) {
 		if (this.unload && T2_UNLOAD_RESET_CODES.includes(error.code) && method !== T2_COMPLETE)
 			this.unload = null;
@@ -319,6 +389,7 @@ class T2Wash {
 	}
 
 	onMachine(res) {
+		this.loadOverview(true); // bộ chờ rửa mới nhất khi bắt đầu nạp lô
 		const programs = res.programs || [];
 		this.load = {
 			machine: res.equipment,
@@ -346,6 +417,27 @@ class T2Wash {
 		};
 		this.saveLoad();
 		this.show();
+	}
+
+	refreshLots(quiet = false) {
+		if (!this.load || this.busy) return;
+		return this.request(
+			"tracecore.v1.wash.refresh_lots",
+			{ equipment: this.load.machine.name, station: this.station.station },
+			(res) => {
+				if (!this.load) return;
+				this.load.programs = res.programs || [];
+				this.load.lots = res.chemical_lots || [];
+				if (!this.programRow())
+					this.load.program = this.load.programs.length
+						? this.load.programs[0].program_code
+						: null;
+				this.pickLot();
+				if (!quiet) this.notice = { variant: "ok", title: __("Chemical lots reloaded") };
+				this.saveLoad();
+				this.show();
+			}
+		);
 	}
 
 	pickLot() {
@@ -503,7 +595,12 @@ class T2Wash {
 			});
 			if (version !== this.station.sessionVersion) return;
 			if (res && res.ok)
-				this.overview = { sets: res.sets || [], running: res.running || [] };
+				this.overview = {
+					sets: res.sets || [],
+					running: res.running || [],
+					awaiting: res.awaiting || [],
+					waiting: res.waiting || [],
+				};
 		} catch (error) {
 			if (error.sessionEnded) return;
 		} finally {
@@ -515,6 +612,7 @@ class T2Wash {
 	// ---- dỡ lô ----
 	setMode(mode) {
 		if (this.busy || (mode !== "load" && mode !== "unload")) return;
+		if (mode === "load" ? !this.canLoad() : !this.canUnload()) return;
 		this.mode = mode;
 		this.notice = null;
 		this.lookup = null;
@@ -525,6 +623,7 @@ class T2Wash {
 
 	unloadScan(raw) {
 		const code = t2Kind(raw);
+		if (code.kind === "set" && this.indicator) return this.scanIndicatorLot(raw);
 		if (code.kind === "set") {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -565,7 +664,8 @@ class T2Wash {
 		if (res.kind === "equipment") unload.equipmentRaw = raw;
 		else unload.batchRaw = raw;
 		this.lookup = null;
-		if (unload.equipmentRaw && unload.batchRaw) return this.fetchContext();
+		// lô chờ đọc chỉ thị (A-77): đã dỡ rồi, đọc sau chỉ cần QR lô
+		if ((unload.equipmentRaw || res.awaiting) && unload.batchRaw) return this.fetchContext();
 		this.notice = {
 			variant: "info",
 			title:
@@ -610,18 +710,78 @@ class T2Wash {
 				confirmed: false,
 			};
 			this.verdict = { result: "", clean: "", confirmed: false, pin: "" };
-			this.notice = notice || {
-				variant: "ok",
-				title: __("Scanned washer QR {0} and batch QR {1}", [
-					context.equipment.name,
-					context.batch,
-				]),
-				reason: __("The result below applies to all {0} set(s) in the batch.", [
-					context.sets.length,
-				]),
-			};
+			this.indicator = context.indicator_required
+				? {
+						item: "",
+						lot: "",
+						expiry: "",
+						result: "",
+						photo: "",
+						uploading: false,
+						fromStock: false,
+				  }
+				: null;
+			const awaiting = context.status === "Awaiting Result";
+			this.notice =
+				notice ||
+				(awaiting
+					? {
+							variant: "warn",
+							title: __("Batch {0} is waiting for its indicator to be read", [
+								context.batch,
+							]),
+							reason: __("The sets do not go to assembly until a Pass is recorded."),
+					  }
+					: {
+							variant: "ok",
+							title: __("Scanned washer QR {0} and batch QR {1}", [
+								context.equipment.name,
+								context.batch,
+							]),
+							reason: __(
+								"The result below applies to all {0} set(s) in the batch.",
+								[context.sets.length]
+							),
+					  });
+			if (awaiting) this.loadOverview(true);
 			this.show();
 		});
+	}
+
+	// Quét lô chỉ thị: có trong kho thì tự điền vật tư và hạn, không có thì KTV nhập tay (A-77)
+	scanIndicatorLot(raw) {
+		return this.request(T2_INDICATOR_LOT, { raw, station: this.station.station }, (res) => {
+			if (!this.indicator) return;
+			this.indicator.lot = res.lot;
+			this.indicator.fromStock = Boolean(res.found && res.expiry_date);
+			if (res.found) {
+				this.indicator.item = res.item;
+				this.indicator.expiry = res.expiry_date || "";
+				this.notice = {
+					variant: "ok",
+					title: __("Indicator lot {0} scanned", [res.lot]),
+				};
+			} else {
+				this.indicator.expiry = "";
+				this.notice = {
+					variant: "info",
+					title: __("Lot {0} is not in stock", [res.lot]),
+					action: __("Choose the item and enter the expiry date."),
+				};
+			}
+			this.show();
+		});
+	}
+
+	indicatorArgs() {
+		const row = this.indicator;
+		return {
+			item: row.item || null,
+			lot: row.lot || null,
+			lot_expiry: row.expiry || null,
+			result: row.result,
+			photo: row.photo || null,
+		};
 	}
 
 	oldMachine() {
@@ -669,13 +829,21 @@ class T2Wash {
 			(res) => {
 				const notice = res.data_complete
 					? {
-							variant: res.needs_review ? "warn" : "ok",
+							variant:
+								res.needs_review || (res.duration && res.duration.abnormal)
+									? "warn"
+									: "ok",
 							title: __("Manual cycle data saved and confirmed"),
-							reason: res.needs_review
-								? __(
-										"Some values are outside the program range: Needs review by R02."
-								  )
-								: "",
+							reason: [
+								res.needs_review
+									? __(
+											"Some values are outside the program range: Needs review by R02."
+									  )
+									: "",
+								this.durationText(res.duration),
+							]
+								.filter(Boolean)
+								.join(" · "),
 					  }
 					: {
 							variant: "error",
@@ -693,6 +861,16 @@ class T2Wash {
 		);
 	}
 
+	durationText(duration) {
+		if (!duration) return "";
+		const text = __("Actual {0} min, standard {1} min ({2} %)", [
+			duration.actual_min,
+			duration.standard_min,
+			duration.deviation_pct,
+		]);
+		return duration.abnormal ? `${__("Abnormal duration")}: ${text}` : text;
+	}
+
 	missingLabel(item) {
 		return (
 			{
@@ -703,11 +881,11 @@ class T2Wash {
 		);
 	}
 
-	async uploadFile(input) {
+	async uploadFile(input, holder = this.form, key = "file") {
 		const file = input.files && input.files[0];
-		if (!file || !this.form) return;
+		if (!file || !holder) return;
 		const version = this.station.sessionVersion;
-		this.form.uploading = true;
+		holder.uploading = true;
 		this.show();
 		try {
 			const body = new FormData();
@@ -723,7 +901,7 @@ class T2Wash {
 			const data = await response.json().catch(() => ({}));
 			if (version !== this.station.sessionVersion || !this.form) return;
 			if (!response.ok || !data.message || !data.message.file_url) throw new Error("upload");
-			this.form.file = data.message.file_url;
+			holder[key] = data.message.file_url;
 			this.notice = { variant: "ok", title: __("Photo attached: {0}", [file.name]) };
 		} catch (error) {
 			if (version !== this.station.sessionVersion || !this.form) return;
@@ -734,7 +912,7 @@ class T2Wash {
 				action: __("Check the connection and choose the photo again."),
 			};
 		} finally {
-			if (this.form) this.form.uploading = false;
+			holder.uploading = false;
 		}
 		this.show();
 	}
@@ -742,7 +920,16 @@ class T2Wash {
 	async recordResult() {
 		if (!this.unload || !this.unload.context || this.busy || this.offline) return;
 		const verdict = this.verdict;
-		if (!verdict.result || !verdict.clean) {
+		const indicator = this.indicator;
+		if (indicator && (!verdict.result || !indicator.result)) {
+			return this.blocked({
+				title: __("Choose the result"),
+				reason: __("Choose Pass or Fail for the cycle and for the indicator."),
+				action: __("Tap the result buttons, then record again."),
+			});
+		}
+		if (indicator && indicator.uploading) return;
+		if (!indicator && (!verdict.result || !verdict.clean)) {
 			return this.blocked({
 				title: __("Choose the result"),
 				reason: __("Choose Pass or Fail for the cycle and for the cleaning test."),
@@ -759,7 +946,8 @@ class T2Wash {
 			});
 		}
 		let proof = null;
-		if (verdict.result === "Pass" && this.oldMachine()) {
+		const allPass = verdict.result === "Pass" && (!indicator || indicator.result === "Pass");
+		if (allPass && this.oldMachine()) {
 			proof = await this.reviewerProof();
 			if (!proof) return;
 		}
@@ -768,7 +956,8 @@ class T2Wash {
 			{
 				...this.unloadArgs(),
 				result: verdict.result,
-				clean_test: verdict.clean,
+				clean_test: indicator ? null : verdict.clean,
+				indicator: indicator ? this.indicatorArgs() : null,
 				reviewer_proof: proof,
 				note: null,
 			},
@@ -776,6 +965,7 @@ class T2Wash {
 				this.unload = { batch: res.batch, result: res };
 				this.form = null;
 				this.verdict = null;
+				this.indicator = null;
 				this.notice = null;
 				this.loadOverview(true);
 				this.show();
@@ -825,15 +1015,22 @@ class T2Wash {
 			"t2-remove": () => this.removeSet(data.set),
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
+			"t2-refresh-lots": () => this.refreshLots(),
 			"t2-save-data": () => this.saveData(),
 			"t2-verdict": () => {
 				if (!this.verdict) return;
 				this.verdict[data.field] = data.value;
 				this.show();
 			},
+			"t2-indicator-result": () => {
+				if (!this.indicator) return;
+				this.indicator.result = data.value;
+				this.show();
+			},
 			"t2-record": () => this.recordResult(),
 			"t2-unload-reset": () => {
 				this.unload = null;
+				this.indicator = null;
 				this.notice = null;
 				this.show();
 			},
@@ -850,12 +1047,17 @@ class T2Wash {
 			this.pickLot();
 			this.saveLoad();
 			this.show();
+			this.refreshLots(true); // lô mới nhập sau khi quét máy
 		} else if (target.id === "tc-t2-lot" && this.load) {
 			this.load.lot = target.value || null;
 			this.saveLoad();
 			this.show();
 		} else if (target.id === "tc-t2-file") {
 			this.uploadFile(target);
+		} else if (target.id === "tc-t2-indicator-photo") {
+			this.uploadFile(target, this.indicator, "photo");
+		} else if (target.dataset.indicator && this.indicator) {
+			this.indicator[target.dataset.indicator] = target.value;
 		} else if (target.dataset.form && this.form) {
 			const field = target.dataset.form;
 			this.form[field] = target.type === "checkbox" ? target.checked : target.value;
@@ -881,6 +1083,8 @@ class T2Wash {
 			this.form[target.dataset.form] = target.value;
 		} else if (target.dataset.verdict && this.verdict && target.type !== "checkbox") {
 			this.verdict[target.dataset.verdict] = target.value;
+		} else if (target.dataset.indicator && this.indicator) {
+			this.indicator[target.dataset.indicator] = target.value;
 		}
 	}
 
@@ -902,6 +1106,7 @@ class T2Wash {
 		if (!this.station.session) return;
 		this.updatePlaceholder();
 		if (!this.overview) this.loadOverview();
+		if (!this.draftChecked) this.restoreDraft();
 		const body = this.mode === "unload" ? this.unloadHtml() : this.loadHtml();
 		this.station.setState(
 			this.viewState(),
@@ -910,6 +1115,7 @@ class T2Wash {
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.lookup ? this.lookupHtml(this.lookup) : ""}
 				${body}
+				${this.mode === "load" ? this.waitingHtml() : ""}
 				${this.redoHtml()}
 				${this.mode === "load" ? this.loadBarHtml() : ""}
 			</div>`
@@ -922,12 +1128,27 @@ class T2Wash {
 
 	updatePlaceholder() {
 		let text = __("Scan the washer QR code...");
-		if (this.mode === "unload")
+		if (this.mode === "unload" && this.indicator) text = __("Scan the indicator lot...");
+		else if (this.mode === "unload")
 			text = __("Scan the washer QR code, then the batch QR code...");
 		else if (this.load)
 			text = __("Scan each Set ID into the washer... (scan HOAN-THANH-NAP when done)");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
+	}
+
+	// chế độ theo chức năng của trạm (A-64): trạm chỉ nạp hoặc chỉ dỡ không thấy chế độ kia
+	stationHas(code) {
+		const info = this.station.stationInfo;
+		return Boolean(info && (info.functions || []).includes(code));
+	}
+
+	canLoad() {
+		return this.stationHas("WASH_LOAD");
+	}
+
+	canUnload() {
+		return this.stationHas("WASH_UNLOAD");
 	}
 
 	modeHtml() {
@@ -936,8 +1157,8 @@ class T2Wash {
 			`<button type="button" class="tc-chip" data-action="t2-mode" data-mode="${mode}"
 				aria-pressed="${this.mode === mode ? "true" : "false"}">${esc(label)}</button>`;
 		return `<div class="tc-chips" role="group" aria-label="${esc(__("Wash batch"))}">
-			${chip("load", __("Load batch"))}
-			${chip("unload", __("Unload batch ({0} running)", [running]))}
+			${this.canLoad() ? chip("load", __("Load batch")) : ""}
+			${this.canUnload() ? chip("unload", __("Unload batch ({0} running)", [running])) : ""}
 			<button type="button" class="tc-chip" data-action="t2-daily-test" aria-pressed="false">${esc(
 				__("Daily test")
 			)}</button>
@@ -953,10 +1174,11 @@ class T2Wash {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}
@@ -1092,9 +1314,17 @@ class T2Wash {
 						.join("")}</select>`
 				: this.alertHtml({
 						variant: "error",
-						title: __("No valid lot of chemical {0}", [program.chemical]),
-						reason: __("Every lot of this chemical has expired or is out of stock."),
-						action: __("Receive a new lot into stock or call R02."),
+						title: __("No valid lot of chemical {0} - {1}", [
+							program.chemical,
+							this.chemicalName(program, program.chemical),
+						]),
+						reason: __(
+							"Program {0} cannot start without a lot of this chemical. Check the list of chemicals below.",
+							[program.program_name]
+						),
+						action: __(
+							"Receive a new lot into stock or call R02, then tap Reload chemical lots."
+						),
 				  });
 		}
 		const rows = load.sets
@@ -1142,9 +1372,13 @@ class T2Wash {
 					<div class="tc-field">
 						<label for="tc-t2-lot">${esc(__("Chemical (FEFO suggestion)"))}</label>
 						${chemical}
+						<button type="button" class="tc-btn tc-btn-secondary" data-action="t2-refresh-lots"${t2Disabled(
+							Boolean(this.busy)
+						)}>${esc(__("Reload chemical lots"))}</button>
 					</div>
 				</div>
-			</section>
+			${this.chemicalsHtml(program)}
+				</section>
 			<section class="tc-t4-block tc-t2-sets">
 				<h3>${esc(
 					__(
@@ -1154,6 +1388,46 @@ class T2Wash {
 				)}</h3>
 				${table}
 			</section>`;
+	}
+
+	chemicalName(program, item) {
+		const row = ((program && program.chemicals) || []).find((entry) => entry.item === item);
+		return (row && row.item_name) || item;
+	}
+
+	// Hóa chất của chương trình đang chọn kèm tình trạng tồn: thiếu hóa chất nào, bao nhiêu, lô còn hạn không (A-72)
+	chemicalsHtml(program) {
+		const rows = (program && program.chemicals) || [];
+		if (!rows.length) return "";
+		const states = {
+			ok: ["&#10003; ", __("Stock enough"), "tc-t4-ok"],
+			short: ["&#10005; ", __("Stock short"), "tc-warn-text"],
+			expired: ["! ", __("Lots expired"), "tc-warn-text"],
+		};
+		const items = rows
+			.map((row) => {
+				const [mark, text, cls] = states[row.status] || states.short;
+				return `<li class="tc-chem-status" data-item="${esc(row.item)}" data-status="${esc(
+					row.status
+				)}">
+					<b class="tc-code">${esc(row.item)}</b> ${esc(row.item_name || "")}
+					<span>${esc(
+						__("Needs {0} {1} per cycle, in stock {2} {1}", [
+							row.required,
+							row.uom || "",
+							row.qty,
+						])
+					)}</span>
+					<b class="${cls}"><span aria-hidden="true">${mark}</span>${esc(text)}</b>
+				</li>`;
+			})
+			.join("");
+		return `<section class="tc-t4-block tc-t2-chemicals" aria-label="${esc(
+			__("Chemicals of program {0}", [program.program_name])
+		)}">
+			<h3>${esc(__("Chemicals of program {0}", [program.program_name]))}</h3>
+			<ul class="tc-alert-items">${items}</ul>
+		</section>`;
 	}
 
 	loadBarHtml() {
@@ -1284,6 +1558,7 @@ class T2Wash {
 		)}</dd>
 				<dt>${esc(__("Chemicals"))}</dt><dd>${esc(chemicals || "-")}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(this.dataText(batch))}</dd>
+				${this.indicatorRowsHtml(batch.indicator)}
 				${
 					batch.cycle_result
 						? `<dt>${esc(__("Result"))}</dt><dd>${esc(
@@ -1295,8 +1570,34 @@ class T2Wash {
 		</section>`;
 	}
 
+	indicatorRowsHtml(row) {
+		if (!row) return "";
+		const lot = [
+			row.item,
+			row.lot,
+			row.lot_expiry ? __("expires {0}", [t2Date(row.lot_expiry)]) : "",
+		]
+			.filter(Boolean)
+			.join(" · ");
+		const reader = [row.read_by_name || row.read_by, t2DateTime(row.read_at)]
+			.filter(Boolean)
+			.join(" · ");
+		return `<dt>${esc(__("Wash indicator"))}</dt><dd>${esc(
+			__(row.result, null, "Step Gate Result")
+		)} · <span class="tc-mono">${esc(lot)}</span></dd>
+			<dt>${esc(__("Read by"))}</dt><dd>${esc(reader)}</dd>
+			${
+				row.photo
+					? `<dt>${esc(__("Indicator photo"))}</dt><dd><a href="${esc(
+							row.photo
+					  )}" target="_blank" rel="noopener">${esc(__("Open photo"))}</a></dd>`
+					: ""
+			}`;
+	}
+
 	statusBadge(status) {
-		const variant = { Running: "", Passed: "g", Failed: "r" }[status] || "";
+		const variant =
+			{ Running: "", "Awaiting Result": "o", Passed: "g", Failed: "r" }[status] || "";
 		return `<span class="tc-badge${variant ? " tc-badge-" + variant : ""}">${esc(
 			__(status, null, "Wash Batch")
 		)}</span>`;
@@ -1316,6 +1617,33 @@ class T2Wash {
 		return batch.needs_review ? `${text} · ${__("Needs review")}` : text;
 	}
 
+	// Bộ chờ rửa (A-66): chỉ để xem, vẫn quét từng Set ID; bộ vừa quét vào lô đang nạp không còn chờ
+	waitingHtml() {
+		if (!this.overview)
+			return `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
+				__("Loading...")
+			)}</p></section>`;
+		const queued = new Set(((this.load && this.load.sets) || []).map((row) => row.set_id));
+		const rows = (this.overview.waiting || []).filter((row) => !queued.has(row.set_id));
+		const title = __("Sets waiting to wash ({0})", [rows.length]);
+		const body = rows.length
+			? rows
+					.map((row) => {
+						const detail = [row.set_name, row.department_name]
+							.filter(Boolean)
+							.join(" · ");
+						return `<p data-set="${esc(row.set_id)}"><b class="tc-code">${esc(
+							row.set_id
+						)}</b> ${esc(detail)}</p>`;
+					})
+					.join("")
+			: `<p class="tc-empty">${esc(__("No set is waiting to wash."))}</p>`;
+		return `<section class="tc-t4-block tc-t2-waiting" aria-label="${esc(title)}">
+			<h3>${esc(title)}</h3>
+			${body}
+		</section>`;
+	}
+
 	redoHtml() {
 		const rows = (this.overview && this.overview.sets) || [];
 		const body = rows.length
@@ -1333,19 +1661,19 @@ class T2Wash {
 					.join("")
 			: `<p class="tc-empty">${esc(__("None."))}</p>`;
 		return `<section class="tc-t4-block tc-t2-redo" aria-label="${esc(
-			__("Reprocessing queue at T2")
+			__("Reprocessing queue")
 		)}">
-			<h3>${esc(__("Reprocessing queue at T2"))}</h3>
+			<h3>${esc(__("Reprocessing queue"))}</h3>
 			${this.overview ? body : `<p class="tc-loading">${esc(__("Loading..."))}</p>`}
 		</section>`;
 	}
 
 	// -- chế độ dỡ --
-	batchCardHtml(row) {
+	batchCardHtml(row, status = "Running") {
 		return `<section class="tc-t4-block tc-t2-batch" data-batch="${esc(row.batch)}">
 			<div class="tc-res-head">
 				<b class="tc-code">${esc(row.batch)}</b>
-				${this.statusBadge("Running")}
+				${this.statusBadge(status)}
 			</div>
 			<p>${esc(
 				__("Wash batch · {0} · {1}", [
@@ -1378,11 +1706,26 @@ class T2Wash {
 		return rows.map((row) => this.batchCardHtml(row)).join("");
 	}
 
+	// Lô đã dỡ, chờ đọc chỉ thị (A-77): quét QR lô để mở form đọc
+	awaitingHtml(skip) {
+		const rows = ((this.overview && this.overview.awaiting) || []).filter(
+			(row) => row.batch !== skip
+		);
+		if (!rows.length) return "";
+		return `<section class="tc-t4-block tc-t2-awaiting">
+			<h3>${esc(
+				__("Batches waiting for the indicator ({0}) - scan the batch QR code to read", [
+					rows.length,
+				])
+			)}</h3>
+		</section>${rows.map((row) => this.batchCardHtml(row, "Awaiting Result")).join("")}`;
+	}
+
 	// Lô vừa quét (form nhập tay / kết luận / kết quả) nằm ngay dưới ô quét, trên các lô đang chạy khác:
 	// KTV không phải cuộn qua danh sách và không xác nhận nhầm lô (≤ 3 chạm sau quét).
 	unloadHtml() {
 		const unload = this.unload;
-		const list = (skip) => `<section class="tc-t4-block">
+		const list = (skip) => `${this.awaitingHtml(skip)}<section class="tc-t4-block">
 			<h3>${esc(__("Running batches - unload: scan the washer QR code, then the batch QR code"))}</h3>
 		</section>${this.runningHtml(skip)}`;
 		if (!unload) return list();
@@ -1391,17 +1734,22 @@ class T2Wash {
 	}
 
 	activeUnloadHtml(unload) {
-		const row = ((this.overview && this.overview.running) || []).find(
-			(item) => item.batch === unload.batch
-		);
-		let html = row ? this.batchCardHtml(row) : "";
+		const awaiting = unload.context && unload.context.status === "Awaiting Result";
+		const row = ((this.overview && this.overview.running) || [])
+			.concat((this.overview && this.overview.awaiting) || [])
+			.find((item) => item.batch === unload.batch);
+		let html = row ? this.batchCardHtml(row, awaiting ? "Awaiting Result" : "Running") : "";
 		const scanned = `<section class="tc-t4-block tc-t2-unload">
 			<h3>${esc(__("Unloading batch {0}", [unload.batch]))}</h3>
-			<p>${esc(__("Washer QR code"))}: <b>${esc(
-			unload.equipmentRaw ? __("Scanned") : __("Not scanned")
-		)}</b> · ${esc(__("Batch QR code"))}: <b>${esc(
-			unload.batchRaw ? __("Scanned") : __("Not scanned")
-		)}</b></p>
+			${
+				awaiting
+					? ""
+					: `<p>${esc(__("Washer QR code"))}: <b>${esc(
+							unload.equipmentRaw ? __("Scanned") : __("Not scanned")
+					  )}</b> · ${esc(__("Batch QR code"))}: <b>${esc(
+							unload.batchRaw ? __("Scanned") : __("Not scanned")
+					  )}</b></p>`
+			}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-unload-reset">${esc(
 				__("Choose another batch")
 			)}</button></div>
@@ -1534,6 +1882,13 @@ class T2Wash {
 		return `<section class="tc-t4-block tc-t2-data">
 			<h3>${esc(__("Cycle data of batch {0}: confirmed manual entry", [context.batch]))}</h3>
 			<dl class="tc-res-grid">${rows}</dl>
+			${
+				context.duration
+					? `<p class="${context.duration.abnormal ? "tc-warn-text" : ""}">${esc(
+							this.durationText(context.duration)
+					  )}</p>`
+					: ""
+			}
 		</section>`;
 	}
 
@@ -1545,7 +1900,9 @@ class T2Wash {
 		const pass = __("Pass", null, "Step Gate Result");
 		const fail = __("Fail", null, "Step Gate Result");
 		const pin =
-			this.oldMachine() && verdict.result === "Pass"
+			this.oldMachine() &&
+			verdict.result === "Pass" &&
+			(!this.indicator || this.indicator.result === "Pass")
 				? `<div class="tc-field">
 					<label for="tc-t2-pin">${esc(__("R02 PIN (washer without connection or printout)"))}</label>
 					<input id="tc-t2-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off"
@@ -1566,10 +1923,14 @@ class T2Wash {
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cycle result (applies to every set)"))}">
 				${chip("result", "Pass", pass)}${chip("result", "Fail", fail)}
 			</div>
-			<h3>${esc(__("Cleaning test"))}</h3>
+			${
+				this.indicator
+					? this.indicatorHtml(context)
+					: `<h3>${esc(__("Cleaning test"))}</h3>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cleaning test"))}">
 				${chip("clean", "Pass", pass)}${chip("clean", "Fail", fail)}
-			</div>
+			</div>`
+			}
 			${pin}
 			<label class="tc-t2-confirm">
 				<input type="checkbox" class="tc-check" data-verdict="confirmed"${
@@ -1588,6 +1949,77 @@ class T2Wash {
 				)}>${esc(label)}</button>
 			</div>
 		</section>`;
+	}
+
+	// Form Đọc chỉ thị mẻ rửa (A-77); người đọc là thẻ đang đăng nhập, giờ đọc do server ghi lúc bấm Ghi kết quả
+	indicatorHtml(context) {
+		const row = this.indicator;
+		const session = this.station.session || {};
+		const items = (context.indicator_items || []).slice();
+		if (row.item && !items.some((entry) => entry.item === row.item))
+			items.push({ item: row.item, item_name: "" });
+		const options = items
+			.map(
+				(entry) =>
+					`<option value="${esc(entry.item)}"${
+						entry.item === row.item ? " selected" : ""
+					}>${esc([entry.item, entry.item_name].filter(Boolean).join(" "))}</option>`
+			)
+			.join("");
+		const readonly = row.fromStock ? " readonly" : "";
+		const chip = (value, label) =>
+			`<button type="button" class="tc-chip" data-action="t2-indicator-result" data-value="${value}"
+				aria-pressed="${row.result === value ? "true" : "false"}">${esc(label)}</button>`;
+		const required = Boolean(context.indicator_photo_required);
+		return `<div class="tc-t2-indicator">
+			<h3>${esc(__("Read the wash indicator"))}</h3>
+			<div class="tc-t4-row">
+				<div class="tc-field">
+					<label for="tc-t2-indicator-item">${esc(__("Indicator item"))} *</label>
+					<select id="tc-t2-indicator-item" data-indicator="item"${t2Disabled(row.fromStock)}>
+						<option value="">${esc(__("Choose"))}</option>${options}
+					</select>
+				</div>
+				<div class="tc-field">
+					<label for="tc-t2-indicator-lot">${esc(__("Lot"))} *</label>
+					<input id="tc-t2-indicator-lot" type="text" autocomplete="off" data-indicator="lot"
+						value="${esc(row.lot)}"${readonly}>
+				</div>
+				<div class="tc-field">
+					<label for="tc-t2-indicator-expiry">${esc(__("Lot expiry date"))} *</label>
+					<input id="tc-t2-indicator-expiry" type="date" data-indicator="expiry"
+						value="${esc(row.expiry)}"${readonly}>
+				</div>
+			</div>
+			<h3>${esc(__("Indicator result"))}</h3>
+			<div class="tc-chips" role="group" aria-label="${esc(__("Indicator result"))}">
+				${chip("Pass", __("Pass", null, "Step Gate Result"))}${chip(
+			"Fail",
+			__("Fail", null, "Step Gate Result")
+		)}
+			</div>
+			<div class="tc-field">
+				<label for="tc-t2-indicator-photo">${esc(__("Indicator photo"))}${
+			required ? " *" : ` (${esc(__("optional"))})`
+		}</label>
+				<input id="tc-t2-indicator-photo" type="file" accept="image/*" capture="environment"${t2Disabled(
+					row.uploading || this.offline
+				)}>
+				${
+					row.photo
+						? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
+								__("Photo attached")
+						  )}</p>`
+						: ""
+				}
+			</div>
+			<p>${esc(
+				__(
+					"Read by {0} {1} (card signed in); the reading time is recorded with the result.",
+					[session.employee || "", session.employee_name || ""]
+				)
+			)}</p>
+		</div>`;
 	}
 
 	resultSummaryHtml(res) {

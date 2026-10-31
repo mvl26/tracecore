@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "set_unit",
+  "set_unit_name",
   "set_type",
   "set_name",
   "department",
@@ -16,6 +17,7 @@
   "bom_version",
   "section_packing",
   "pack_type",
+  "pack_type_name",
   "ci_batch",
   "column_break_packing",
   "expiry",
@@ -43,7 +45,8 @@
   "void_note",
   "section_confirmation",
   "instruments_confirmed",
-  "maint_done"
+  "maint_done",
+  "cost_total"
  ],
  "fields": [
   {
@@ -55,6 +58,16 @@
    "options": "Set Unit",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "description": "Always taken from the Set Unit.",
@@ -131,6 +144,16 @@
    "label": "Pack Type",
    "options": "Item",
    "reqd": 1
+  },
+  {
+   "fetch_from": "pack_type.item_name",
+   "fieldname": "pack_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Pack Type Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "description": "Chemical indicator lot placed in the pack.",
@@ -316,12 +339,20 @@
    "fieldtype": "Table",
    "label": "Maintenance Done",
    "options": "Pack Maintenance Done"
+  },
+  {
+   "fieldname": "cost_total",
+   "fieldtype": "Currency",
+   "label": "Pack Cost",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Reprocessing cost of this pack for its cycle, written by the cost sheet (FEAT-046)."
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 15:00:00.000000",
+ "modified": "2026-10-31 09:51:28.509015",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Pack",

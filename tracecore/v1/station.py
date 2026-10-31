@@ -4,10 +4,11 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
+from tracecore.core import error_codes, station_auth, zones
 from tracecore.core import print as core_print
-from tracecore.core import station_auth
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
+from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	AGENT_ROLE,
 	BadRequestError,
@@ -20,12 +21,13 @@ from tracecore.v1._common import (
 PERIPHERAL_FIELDS = ["peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"]
 
 
-def _session_response(call):
+def _session_response(call, station=None, client_ts=None):
 	try:
-		return call()
+		return error_codes.attach_warnings(call())
 	except BlockedError as error:
 		if getattr(frappe.local, "request", None):
 			frappe.local.response["http_status_code"] = error.block.http_status
+		error_codes.log_block(error.block, station, client_ts)
 		return {"ok": False, "error": error.block.as_dict()}
 
 
@@ -35,7 +37,24 @@ def login(card_id=None, station=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
 	if not isinstance(card_id, str) or not isinstance(station, str):
 		raise BadRequestError(_("card_id and station must be strings."))
-	return _session_response(lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)})
+	return _session_response(
+		lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)}, station, timestamp
+	)
+
+
+@frappe.whitelist(methods=["POST"])
+def switch_station(token=None, station=None, client_ts=None):
+	"""Đã quét thẻ thì chuyển sang trạm khác không cần quét lại (NAV-03, NAV-04); tài khoản Desk phải có role của trạm đó."""
+	timestamp = parse_client_ts(client_ts)
+	if not isinstance(station, str):
+		raise BadRequestError(_("station must be a string."))
+	if not navigation.can_open_station(station):
+		raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
+	return _session_response(
+		lambda: {"ok": True, "session": station_auth.switch_station(token, station, timestamp)},
+		station,
+		timestamp,
+	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -109,15 +128,20 @@ def _station_row(station):
 	row = frappe.db.get_value(
 		"Zone Station",
 		station,
-		["name", "zone_station_name", "parent_zone", "zone_type", "station_step", "is_active"],
+		["name", "zone_station_name", "parent_zone", "zone_type", "station_no", "is_active"],
 		as_dict=True,
 	)
+	functions = zones.station_functions(row.name)
 	return {
 		"name": row.name,
 		"label": _(row.zone_station_name),
 		"zone": row.parent_zone,
 		"zone_type": row.zone_type,
-		"step": row.station_step,
+		"zone_color": zones.zone_color_class(row.zone_type),
+		"functions": functions,
+		"station_no": cint(row.station_no),
+		"screens": zones.station_screen_tabs(functions),
+		"gate_labels": zones.gate_labels(),
 		"is_active": cint(row.is_active),
 	}
 

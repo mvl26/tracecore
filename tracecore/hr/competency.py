@@ -18,13 +18,6 @@ DOCTYPE = "Station Competency"
 MANAGERS = ("TC R02", "TC R10", "System Manager")
 READERS = (*MANAGERS, "TC R01")
 TEMPORARY_MAX_HOURS = 24
-CERTIFICATE_TYPES = (
-	"Practice License",
-	"Infection Control",
-	"Sterilization",
-	"Pressure Equipment Operation",
-	"Other",
-)
 
 
 def _blocked(code, title, reason, action):
@@ -66,6 +59,26 @@ def required_types(competency_name) -> list[str]:
 			filters={"parent": competency_name, "parenttype": DOCTYPE},
 			pluck="certificate_type",
 		)
+	)
+
+
+def expiring_certificates(employee, competency_name, days) -> list[dict]:
+	"""Hàm hook `tracecore_competency_expiring_certificates`: chứng chỉ bắt buộc còn hạn nhưng hết trong `days` ngày (NS-002)."""
+	required = required_types(competency_name)
+	if not required:
+		return []
+	limit = add_to_date(getdate(today()), days=cint(days))
+	return frappe.get_all(
+		"Certificate",
+		filters={
+			"employee": employee,
+			"certificate_type": ["in", required],
+			"status": "Valid",
+			"no_expiry": 0,
+			"expires_on": ["between", [today(), limit]],
+		},
+		fields=["certificate_type", "expires_on"],
+		order_by="expires_on asc",
 	)
 
 
@@ -112,8 +125,9 @@ def grant(
 			_("{0} is not an active station.").format(station),
 			_("Choose an active station, not a zone."),
 		)
-	types = list(dict.fromkeys(required_certificates or ()))
-	unknown = [value for value in types if value not in CERTIFICATE_TYPES]
+	types = list(dict.fromkeys(certificates.normalize_type(value) for value in required_certificates or ()))
+	known = certificates.certificate_types()
+	unknown = [value for value in types if value not in known]
 	if unknown:
 		raise _blocked(
 			"CERTIFICATE_TYPE_INVALID",
@@ -224,9 +238,9 @@ def matrix(zone=None):
 	stations = frappe.get_all(
 		"Zone Station",
 		filters=filters,
-		fields=["name", "zone_station_name", "station_step", "parent_zone"],
-		order_by="station_step asc, name asc",
+		fields=["name", "zone_station_name", "station_no", "parent_zone"],
 	)
+	stations.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
 	if zone:
 		stations = [row for row in stations if row.parent_zone == zone]
 	names = [row.name for row in stations]
@@ -279,13 +293,14 @@ def matrix(zone=None):
 			{
 				"name": row.name,
 				"label": row.zone_station_name,
-				"step": row.station_step,
+				"number": f"T{row.station_no}" if row.station_no else "",
 				"zone": row.parent_zone,
 				"zone_label": zone_labels.get(row.parent_zone) or row.parent_zone,
 			}
 			for row in stations
 		],
 		"employees": employees,
+		"certificate_types": certificates.certificate_types(),
 		"can_edit": _has_any_role(MANAGERS),
 	}
 

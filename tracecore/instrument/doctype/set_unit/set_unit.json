@@ -10,6 +10,7 @@
   "section_identity",
   "set_id",
   "set_type",
+  "set_type_name",
   "department",
   "is_loaner",
   "column_break_status",
@@ -72,6 +73,16 @@
    "options": "Instrument Set Type",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "set_type.set_type_name",
+   "fieldname": "set_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Type Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "department",
@@ -254,7 +265,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-24 12:00:00.000000",
+ "modified": "2026-10-31 09:51:28.503488",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",

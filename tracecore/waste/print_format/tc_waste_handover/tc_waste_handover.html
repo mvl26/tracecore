@@ -1,0 +1,79 @@
+{#- Waste handover, A4 (FEAT-049, FR-M10-04.5; UC-36 step 6). Data: tracecore.ui.waste_print.tc_waste_handover_context
+    (hook jinja.methods). Every dynamic value goes through |e; colours and sizes come from tokens.css (tc.*). -#}
+{%- set cs = tc_waste_handover_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC Waste Handover" -%}
+<style>
+.tc-wh { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-wh table { width: 100%; border-collapse: collapse; }
+.tc-wh td, .tc-wh th { vertical-align: top; }
+.tc-wh .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-wh h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-wh .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-wh .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-wh .tc-facts td.tc-label { color: {{ tc.muted }}; width: 50mm; white-space: nowrap; }
+.tc-wh table.tc-lines { margin-top: {{ tc.sp_3 }}; }
+.tc-wh table.tc-lines tr { page-break-inside: avoid; }
+.tc-wh table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-wh table.tc-lines th, .tc-wh table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-wh table.tc-lines .tc-num { text-align: right; }
+.tc-wh table.tc-lines tfoot td { font-weight: {{ tc.fw_bold }}; background: {{ tc.zebra }}; }
+.tc-wh .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-wh .tc-sign td { width: 50%; text-align: center; font-weight: {{ tc.fw_bold }}; }
+.tc-wh .tc-sign img { max-height: 20mm; }
+</style>
+<div class="tc-wh">
+	<h1>{{ _("Waste handover", context=T) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.draft %}<div class="tc-draft">{{ _("Not recorded yet", context=T) | e }}</div>{%- endif %}
+	{%- if cs.cancelled %}<div class="tc-draft">{{ _("Cancelled", context=T) | e }}</div>{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Treatment vendor", context=T) | e }}</td><td>{{ cs.vendor | e }}{% if cs.tax_id %} ({{ cs.tax_id | e }}){% endif %}</td></tr>
+		<tr><td class="tc-label">{{ _("Handed over at", context=T) | e }}</td><td>{{ cs.handover_at | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Vehicle plate", context=T) | e }}</td><td>{{ cs.plate | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Hazardous waste document", context=T) | e }}</td><td>{% if cs.document_no %}{{ cs.document_no | e }}{% elif cs.document_pending %}{{ _("Comes later", context=T) | e }}{% endif %}</td></tr>
+		<tr><td class="tc-label">{{ _("Transporter", context=T) | e }}</td><td>{{ cs.transporter | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Contract no.", context=T) | e }}</td><td>{{ cs.contract_no | e }}</td></tr>
+		{%- if cs.variance_reason %}<tr><td class="tc-label">{{ _("Difference reason", context=T) | e }}</td><td>{{ cs.variance_reason | e }}</td></tr>{%- endif %}
+	</table>
+	<table class="tc-lines">
+		<thead>
+			<tr>
+				<th>{{ _("Waste type", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Bags", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Collected (kg)", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Handed over (kg)", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Difference (kg)", context=T) | e }}</th>
+				<th class="tc-num">{{ _("Amount (VND)", context=T) | e }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- for row in cs["items"] %}
+			<tr>
+				<td>{{ row.name | e }}</td>
+				<td class="tc-num">{{ row.qty | e }}</td>
+				<td class="tc-num">{{ row.collected | e }}</td>
+				<td class="tc-num">{{ row.handover | e }}</td>
+				<td class="tc-num">{{ row.difference | e }}</td>
+				<td class="tc-num">{{ row.amount | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td>{{ _("Total", context=T) | e }}</td>
+				<td class="tc-num">{{ cs.total_qty | e }}</td>
+				<td class="tc-num">{{ cs.total_collected | e }}</td>
+				<td class="tc-num">{{ cs.total_handover | e }}</td>
+				<td></td>
+				<td class="tc-num">{{ cs.total_cost | e }}</td>
+			</tr>
+		</tfoot>
+	</table>
+	<table class="tc-sign">
+		<tr>
+			<td>{{ _("Handed over by", context=T) | e }}<br>{{ cs.signed_by | e }}</td>
+			<td>{{ _("Vendor representative", context=T) | e }}<br>{{ cs.vendor_signer | e }}<br>{% if cs.vendor_signature %}<img src="{{ cs.vendor_signature | e }}" alt="">{% endif %}</td>
+		</tr>
+	</table>
+</div>

@@ -14,6 +14,7 @@ from tracecore.tests.utils import IsolatedTestCase, bru
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
 STATION = "TR-005"
+SETTINGS = "TraceCore Settings"
 
 
 def blocked(case, fn, *args, **kwargs):
@@ -47,14 +48,12 @@ class TestRecord(DailyTestCase):
 		self.assertIsNone(daily_test.equipment_block(machine.name))
 
 	@bru("BRU-EQP-001")
-	def test_washer_needs_cleaning_test_and_plasma_needs_none(self):
-		washer = self.washer()
-		self.assertEqual(daily_test.equipment_block(washer.name).items, ["washer_cleaning"])
-		self.record(washer, "washer_cleaning")
-		self.assertIsNone(daily_test.equipment_block(washer.name))
+	def test_plasma_needs_its_own_test_and_never_bowie_dick(self):
 		plasma = make_sterilizer(equipment_type="Plasma Sterilizer", daily_tested=False)
-		self.assertIsNone(daily_test.equipment_block(plasma.name))  # FR-M5-05.2: chỉ thị hóa học từng mẻ
+		self.assertEqual(daily_test.equipment_block(plasma.name).items, ["plasma_daily"])
 		self.assertEqual(blocked(self, self.record, plasma, "bowie_dick").code, "TEST_INVALID")
+		self.record(plasma, "plasma_daily")
+		self.assertIsNone(daily_test.equipment_block(plasma.name))
 
 	def test_test_type_lot_and_result_rules(self):
 		machine = self.steam()
@@ -199,12 +198,10 @@ class TestIntegration(DailyTestCase):
 	def test_load_and_wash_readiness_use_the_daily_test(self):
 		steam, washer = self.steam(), self.washer()
 		self.assertEqual(sterilizing.check_equipment_ready(steam.name).code, "DAILY_TEST_REQUIRED")
-		self.assertEqual(washing.check_equipment_ready(washer.name).code, "DAILY_TEST_REQUIRED")
+		self.assertIsNone(washing.check_equipment_ready(washer.name))  # máy rửa không có test bắt buộc (A-70)
 		self.record(steam, "bowie_dick")
 		self.record(steam, "leak")
-		self.record(washer, "washer_cleaning")
 		self.assertIsNone(sterilizing.check_equipment_ready(steam.name))
-		self.assertIsNone(washing.check_equipment_ready(washer.name))
 
 	def test_factory_default_records_the_required_tests(self):
 		machine = make_equipment(equipment_type="Steam Sterilizer", serial="SN-F1")
@@ -213,6 +210,175 @@ class TestIntegration(DailyTestCase):
 			sorted(frappe.get_all("Daily Test", filters={"equipment": machine.name}, pluck="test_type")),
 			["bowie_dick", "leak"],
 		)
+
+
+class TestModes(DailyTestCase):
+	"""Diện bắt buộc cấu hình theo từng viện trong TraceCore Settings (A-70)."""
+
+	def setting(self, mode=None, leak=1, plasma=1):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", mode or daily_test.MODE_ALL)
+		frappe.db.set_single_value(SETTINGS, "daily_test_steam_leak", leak)
+		frappe.db.set_single_value(SETTINGS, "daily_test_plasma", plasma)
+
+	def plasma(self, **kwargs):
+		return make_sterilizer(equipment_type="Plasma Sterilizer", daily_tested=False, **kwargs)
+
+	def others(self):
+		options = frappe.get_meta("Equipment").get_field("equipment_type").options.split("\n")
+		types = [kind for kind in options if kind and kind not in ("Steam Sterilizer", "Plasma Sterilizer")]
+		self.assertIn("Washer-Disinfector", types)
+		extra = {"Laundry Washer": {"capacity_kg": 10}, "Dryer": {"capacity_kg": 10}}
+		return [self.washer(equipment_type=kind, **extra.get(kind, {})) for kind in types]
+
+	@bru("BRU-EQP-001")
+	def test_machines_other_than_sterilizers_are_never_required_in_any_mode(self):
+		machines = self.others()
+		for mode in daily_test.MODES:
+			self.setting(mode)
+			for machine in machines:
+				with self.subTest(mode=mode, machine=machine.equipment_type):
+					self.assertIsNone(daily_test.equipment_block(machine.name))
+
+	@bru("BRU-EQP-001")
+	def test_not_required_mode_blocks_nothing(self):
+		self.setting(daily_test.MODE_NONE)
+		for machine in (self.steam(), self.plasma(), self.steam(daily_test_required=1)):
+			self.assertIsNone(sterilizing.check_equipment_ready(machine.name))
+
+	@bru("BRU-EQP-001")
+	def test_all_mode_blocks_steam_and_plasma_until_a_pass(self):
+		self.setting(daily_test.MODE_ALL)
+		steam, plasma = self.steam(), self.plasma()
+		self.assertEqual(sterilizing.check_equipment_ready(steam.name).code, "DAILY_TEST_REQUIRED")
+		self.assertEqual(sterilizing.check_equipment_ready(plasma.name).code, "DAILY_TEST_REQUIRED")
+		self.record(steam, "bowie_dick")
+		self.record(steam, "leak")
+		self.record(plasma, "plasma_daily")
+		self.assertIsNone(sterilizing.check_equipment_ready(steam.name))
+		self.assertIsNone(sterilizing.check_equipment_ready(plasma.name))
+
+	@bru("BRU-EQP-001")
+	def test_selected_mode_blocks_only_ticked_machines(self):
+		self.setting(daily_test.MODE_SELECTED)
+		ticked, plain = self.steam(daily_test_required=1), self.steam()
+		ticked_plasma, plain_plasma = self.plasma(daily_test_required=1), self.plasma()
+		self.assertEqual(daily_test.equipment_block(ticked.name).code, "DAILY_TEST_REQUIRED")
+		self.assertEqual(daily_test.equipment_block(ticked_plasma.name).code, "DAILY_TEST_REQUIRED")
+		self.assertIsNone(daily_test.equipment_block(plain.name))
+		self.assertIsNone(daily_test.equipment_block(plain_plasma.name))
+
+	def test_tick_has_no_effect_in_other_modes_and_is_cleared_on_other_types(self):
+		self.setting(daily_test.MODE_ALL)
+		self.assertEqual(daily_test.equipment_block(self.steam().name).code, "DAILY_TEST_REQUIRED")
+		washer = self.washer(daily_test_required=1)
+		self.assertEqual(frappe.db.get_value("Equipment", washer.name, "daily_test_required"), 0)
+		self.setting(daily_test.MODE_SELECTED)
+		self.assertIsNone(daily_test.equipment_block(washer.name))
+
+	def test_tick_is_only_shown_for_sterilizers(self):
+		field = frappe.get_meta("Equipment").get_field("daily_test_required")
+		self.assertIn("Steam Sterilizer", field.depends_on)
+		self.assertIn("Plasma Sterilizer", field.depends_on)
+
+	@bru("BRU-EQP-001")
+	def test_leak_and_plasma_tests_follow_the_settings(self):
+		self.setting(daily_test.MODE_ALL, leak=0, plasma=0)
+		steam, plasma = self.steam(), self.plasma()
+		self.assertEqual(daily_test.equipment_block(steam.name).items, ["bowie_dick"])
+		self.assertIsNone(daily_test.equipment_block(plasma.name))
+
+	@bru("BRU-EQP-001")
+	def test_changing_the_mode_takes_effect_at_once(self):
+		machine = self.steam()
+		self.setting(daily_test.MODE_ALL)
+		self.assertIsNotNone(daily_test.equipment_block(machine.name))
+		self.setting(daily_test.MODE_NONE)
+		self.assertIsNone(daily_test.equipment_block(machine.name))
+		self.setting(daily_test.MODE_ALL)
+		self.assertIsNotNone(daily_test.equipment_block(machine.name))
+
+	def test_voluntary_test_does_not_lock_or_warn(self):
+		washer = self.washer()
+		done = self.record(washer, "washer_cleaning", result="Fail", photo=None)
+		self.assertFalse(done["locked"])
+		self.assertEqual(frappe.db.get_value("Equipment", washer.name, "status"), "Ready")
+		self.assertEqual(frappe.db.get_value("Daily Test", done["daily_test"], "nc_pending"), 0)
+		self.setting(daily_test.MODE_NONE)
+		steam = self.steam()
+		done = self.record(steam, "bowie_dick", result="Fail", photo=None)
+		self.assertFalse(done["locked"])
+		self.assertEqual(done["warnings"], [])
+		self.assertEqual(frappe.db.get_value("Equipment", steam.name, "status"), "Ready")
+
+	@bru("BRU-EQP-001")
+	def test_failed_required_plasma_test_locks_the_machine(self):
+		plasma = self.plasma()
+		self.assertTrue(self.record(plasma, "plasma_daily", result="Fail")["locked"])
+		self.assertEqual(frappe.db.get_value("Equipment", plasma.name, "lock_reason"), "Daily Test")
+
+	def locked(self, machine):
+		daily_test._apply(machine.name, status="Locked", lock_reason=daily_test.LOCK_DAILY_TEST)
+
+	def state(self, machine):
+		return tuple(frappe.db.get_value("Equipment", machine.name, ["status", "lock_reason"]))
+
+	@bru("BRU-EQP-001")
+	def test_saving_settings_releases_locks_that_are_no_longer_required(self):
+		steam = self.steam()
+		self.locked(steam)
+		self.setting(daily_test.MODE_ALL)
+		settings = frappe.get_single(SETTINGS)
+		settings.save(ignore_permissions=True)
+		self.assertEqual(self.state(steam), ("Locked", "Daily Test"))
+		settings.daily_test_mode = daily_test.MODE_NONE
+		settings.save(ignore_permissions=True)
+		self.assertEqual(self.state(steam), ("Ready", None))
+
+	def test_unticking_a_machine_releases_its_lock(self):
+		self.setting(daily_test.MODE_SELECTED)
+		machine = self.steam(daily_test_required=1)
+		self.locked(machine)
+		doc = frappe.get_doc("Equipment", machine.name)
+		doc.daily_test_required = 0
+		doc.save(ignore_permissions=True)
+		self.assertEqual(self.state(machine), ("Ready", None))
+
+	@bru("BRU-EQP-001")
+	def test_patch_opens_machines_out_of_scope_and_keeps_the_rest(self):
+		from tracecore.patches.v0_1 import daily_test_config
+
+		self.setting(daily_test.MODE_ALL)
+		washer, steam, plasma = self.washer(), self.steam(), self.plasma()
+		other_lock = self.washer()
+		for machine in (washer, steam, plasma):
+			self.locked(machine)
+		daily_test._apply(other_lock.name, status="Locked", lock_reason="Inspection Expired")
+		daily_test_config.execute()
+		self.assertEqual(self.state(washer), ("Ready", None))
+		self.assertEqual(self.state(steam), ("Locked", "Daily Test"))
+		self.assertEqual(self.state(plasma), ("Locked", "Daily Test"))
+		self.assertEqual(self.state(other_lock), ("Locked", "Inspection Expired"))
+
+	def test_defaults_are_written_once_and_never_overwrite_a_choice(self):
+		frappe.db.delete("Singles", {"doctype": SETTINGS, "field": ["like", "daily_test_%"]})
+		daily_test.ensure_settings()
+		self.assertEqual(daily_test.mode(), daily_test.MODE_ALL)
+		self.assertIn("leak", daily_test.required_tests("Steam Sterilizer"))
+		self.setting(daily_test.MODE_NONE, leak=0)
+		daily_test.ensure_settings()
+		self.assertEqual(daily_test.mode(), daily_test.MODE_NONE)
+		self.setting(daily_test.MODE_ALL, leak=0)
+		daily_test.ensure_settings()
+		self.assertNotIn("leak", daily_test.required_tests("Steam Sterilizer"))
+
+	def test_overview_offers_voluntary_tests_without_requiring_them(self):
+		washer, plasma = self.washer(), self.plasma()
+		rows = {row["name"]: row for row in daily_test.overview()}
+		self.assertEqual(rows[washer.name]["required"], [])
+		self.assertEqual(rows[washer.name]["optional"], ["washer_cleaning"])
+		self.assertEqual(rows[washer.name]["ready_to_load"], 1)
+		self.assertEqual(rows[plasma.name]["required"], ["plasma_daily"])
+		self.assertEqual(rows[plasma.name]["ready_to_load"], 0)
 
 
 class TestLoadIndicator(IsolatedTestCase):

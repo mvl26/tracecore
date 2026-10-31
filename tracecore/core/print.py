@@ -48,12 +48,13 @@ OBJECT_LABELS = (
 	"Location",
 	"Wash Batch",
 	"Sterilization Load",
+	"Waste Container",
 )
 # Loại mã (`gs1.parse_scan`) in được cho từng đối tượng; thẻ nhân viên còn nhận thẻ có sẵn đã đăng ký (sổ CARD)
 OBJECT_SCAN_TYPES = dict(
 	zip(
 		OBJECT_LABELS,
-		("equipment", "station", "roll", "employee", "location", "wash_batch", "load"),
+		("equipment", "station", "roll", "employee", "location", "wash_batch", "load", "container"),
 		strict=True,
 	)
 )

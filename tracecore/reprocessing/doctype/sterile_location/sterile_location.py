@@ -9,7 +9,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
-from tracecore.core import audit, code_registry
+from tracecore.core import audit, code_registry, zones
 
 LOCATION_PREFIX = "KE"
 
@@ -28,7 +28,7 @@ class SterileLocation(Document):
 			frappe.throw(_("Location Name is required."), frappe.MandatoryError)
 		if self.zone_station:
 			zone_type = frappe.db.get_value("Zone Station", self.zone_station, "zone_type")
-			if zone_type != "Sterile":
+			if "PUTAWAY" not in zones.allowed_functions(zone_type):  # A-64: vùng cho phép nhập kho vô khuẩn
 				frappe.throw(_("Zone Station {0} is not in the sterile zone.").format(self.zone_station))
 
 	def after_insert(self):

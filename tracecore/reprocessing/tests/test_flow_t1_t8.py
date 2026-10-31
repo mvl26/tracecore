@@ -25,7 +25,6 @@ from tracecore.reprocessing import (
 )
 from tracecore.reprocessing.tests.test_washing_result import GOOD_VALUES, PARAMETERS, PRINTOUT
 from tracecore.tests.factories import (
-	T4_STATION,
 	deactivate_printers,
 	make_bom,
 	make_chemical_batch,
@@ -48,7 +47,6 @@ from tracecore.v1.tests.station_fixtures import make_station_session
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
-T1, T2, T3, T5, T6, T7, T8 = "TR-001", "TR-002", "TR-003", "TR-005", "TR-006", "TR-007", "TR-008"
 BOM = [("FL-KEO", 2), ("FL-KEP", 1), ("FL-DAO", 3)]
 CHEMICAL = "HC-ENZ-01"
 STERILIZE_PARAMETERS = [
@@ -62,6 +60,16 @@ def _ts():
 
 
 class TestFlowT1ToT8(IsolatedTestCase):
+	# trạm theo chức năng của cấu hình mặc định; test_flow_configured chạy cùng kịch bản trên sơ đồ khác (A-64)
+	RECEIVE = "TR-001"
+	WASH_IN = WASH_OUT = "TR-002"
+	ASSEMBLE = "TR-003"
+	PACK = "TR-004"
+	STERI_IN = STERI_OUT = "TR-005"
+	STORE = "TR-006"
+	ISSUE = "TR-007"
+	USE = "TR-008"
+
 	def setUp(self):
 		super().setUp()
 		frappe.set_user("Administrator")
@@ -106,18 +114,20 @@ class TestFlowT1ToT8(IsolatedTestCase):
 		self.assertEqual(self.state(set_id).status, "New")
 
 		# --- T1 tiếp nhận (FEAT-019) ---------------------------------------------------------------------------------
-		receipt = receiving.open_receipt(T1, self.operator, raw=self.deliverer_card, client_ts=_ts())[
-			"receipt"
-		]
-		receiving.scan_set(receipt, set_id, T1, self.operator, client_ts=_ts())
-		receiving.confirm_line(receipt, set_id, T1, self.operator, confirm_all=True, note=None, finalize=True)
-		receiving.submit(receipt, T1, self.operator, client_ts=_ts())
+		receipt = receiving.open_receipt(
+			self.RECEIVE, self.operator, raw=self.deliverer_card, client_ts=_ts()
+		)["receipt"]
+		receiving.scan_set(receipt, set_id, self.RECEIVE, self.operator, client_ts=_ts())
+		receiving.confirm_line(
+			receipt, set_id, self.RECEIVE, self.operator, confirm_all=True, note=None, finalize=True
+		)
+		receiving.submit(receipt, self.RECEIVE, self.operator, client_ts=_ts())
 		after_t1 = self.state(set_id)
 		self.assertEqual((after_t1.status, after_t1.current_cycle_no), ("Processing", 1))
 		self.assertEqual(self.gates(set_id), {"T1": "Pass"})
 
 		# --- T2 rửa (FEAT-021) ---------------------------------------------------------------------------------------
-		deactivate_printers(T2)
+		deactivate_printers(self.WASH_IN)
 		washer = make_wash_machine(has_printout=1)
 		lot = make_chemical_batch(CHEMICAL)
 		wash_program = make_wash_program(washer.name, chemical=CHEMICAL, parameters=PARAMETERS)
@@ -126,7 +136,7 @@ class TestFlowT1ToT8(IsolatedTestCase):
 			wash_program.name,
 			[set_id],
 			[{"item": CHEMICAL, "lot": lot.name}],
-			T2,
+			self.WASH_IN,
 			_ts(),
 			self.operator,
 		)
@@ -145,12 +155,12 @@ class TestFlowT1ToT8(IsolatedTestCase):
 			confirmed=True,
 			client_ts=_ts(),
 			employee=self.operator,
-			station=T2,
+			station=self.WASH_OUT,
 		)
 		washing.set_result(
 			batch=batch,
 			result="Pass",
-			station=T2,
+			station=self.WASH_OUT,
 			equipment_raw=washer.name,
 			batch_raw=batch,
 			clean_test="Pass",
@@ -159,18 +169,18 @@ class TestFlowT1ToT8(IsolatedTestCase):
 		self.assertEqual(self.gates(set_id), {"T1": "Pass", "T2": "Pass"})
 
 		# --- T3 kiểm đếm (FEAT-020) ----------------------------------------------------------------------------------
-		record = assembly.open_set(set_id, T3, _ts())["assembly"]
+		record = assembly.open_set(set_id, self.ASSEMBLE, _ts())["assembly"]
 		for code, qty in BOM:
-			assembly.line(record, T3, _ts(), instrument=code, actual_qty=qty)
-		assembly.submit(record, T3, _ts())
+			assembly.line(record, self.ASSEMBLE, _ts(), instrument=code, actual_qty=qty)
+		assembly.submit(record, self.ASSEMBLE, _ts())
 		self.assertEqual(self.gates(set_id), {"T1": "Pass", "T2": "Pass", "T3": "Pass"})
 
 		# --- T4 đóng gói + Cycle ID (FEAT-018) -----------------------------------------------------------------------
 		steam_label, _plasma = make_label_items()
-		make_printer(T4_STATION, steam_label)
+		make_printer(self.PACK, steam_label)
 		packed = packing.generate(
 			set_id=set_id,
-			station=T4_STATION,
+			station=self.PACK,
 			confirmed=[code for code, _qty in BOM],
 			ci_batch=make_ci_batch("Steam"),
 			pack_type=pack_type,
@@ -187,13 +197,13 @@ class TestFlowT1ToT8(IsolatedTestCase):
 		sterilizer = make_sterilizer()
 		program = make_sterilize_program(sterilizer.name, parameters=STERILIZE_PARAMETERS)
 		load_result = sterilizing.complete(
-			sterilizer.name, program.name, [cycle_id], T5, _ts(), self.operator
+			sterilizer.name, program.name, [cycle_id], self.STERI_IN, _ts(), self.operator
 		)
 		load = load_result["load"]
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "status"), "In Load")
 
 		# --- T5b dỡ mẻ, chỉ thị, giải phóng PIN R02 (FEAT-023) -------------------------------------------------------
-		scans = {"load": load, "station": T5, "equipment_raw": sterilizer.name, "load_raw": load}
+		scans = {"load": load, "station": self.STERI_OUT, "equipment_raw": sterilizer.name, "load_raw": load}
 		sterilizing.save_manual_data(
 			load=load,
 			equipment_raw=sterilizer.name,
@@ -211,7 +221,7 @@ class TestFlowT1ToT8(IsolatedTestCase):
 			card=frappe.db.get_value("Employee", self.operator, "tc_card_id"),
 			client_ts=_ts(),
 			employee=self.operator,
-			station=T5,
+			station=self.STERI_OUT,
 		)
 		releasing.set_cycle_result(**scans, result="Pass", confirmed=True, employee=self.operator)
 		releasing.record_indicator(
@@ -220,7 +230,7 @@ class TestFlowT1ToT8(IsolatedTestCase):
 		releasing.record_indicator(
 			**scans, indicator="bowie_dick", result="Pass", employee=self.operator, test_date=today()
 		)
-		session, proof = self.r02_proof(T5)
+		session, proof = self.r02_proof(self.STERI_OUT)
 		releasing.release(**scans, session=session, pin_proof=proof)
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "status"), "Released")
 		after_release = self.state(set_id)
@@ -228,24 +238,24 @@ class TestFlowT1ToT8(IsolatedTestCase):
 		self.assertEqual(self.gates(set_id)["T5"], "Pass")
 
 		# --- T6 nhập kho vô khuẩn (FEAT-025) -------------------------------------------------------------------------
-		shelf = make_sterile_location("Kệ tích hợp")
-		storage.putaway(cycle_id, shelf.name, T6)
+		shelf = make_sterile_location("Kệ tích hợp", zone_station=self.STORE)
+		storage.putaway(cycle_id, shelf.name, self.STORE)
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "status"), "In Sterile Stock")
 
 		# --- T7 cấp phát (FEAT-026) ----------------------------------------------------------------------------------
-		note = issuing.create(self.dept, T7)["issue_note"]
-		issuing.add_pack(note, cycle_id, T7)
-		issuing.sign(note, self.nurse.tc_card_id, T7)
-		issuing.submit(note, T7)
+		note = issuing.create(self.dept, self.ISSUE)["issue_note"]
+		issuing.add_pack(note, cycle_id, self.ISSUE)
+		issuing.sign(note, self.nurse.tc_card_id, self.ISSUE)
+		issuing.submit(note, self.ISSUE)
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "status"), "Issued")
 		self.assertEqual(self.state(set_id).status, "At Department")
 
 		# --- T8 quét sử dụng (FEAT-027) ------------------------------------------------------------------------------
-		card = usage.scan(cycle_id, T8, self.nurse.name)
+		card = usage.scan(cycle_id, self.USE, self.nurse.name)
 		self.assertFalse(card["department_mismatch"])
 		used = usage.confirm(
 			cycle_id,
-			T8,
+			self.USE,
 			self.nurse.name,
 			patient_code="BN12345678",
 			surgery_code="CA-FLOW-1",

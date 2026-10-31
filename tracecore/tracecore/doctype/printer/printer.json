@@ -8,6 +8,7 @@
  "field_order": [
   "printer_name",
   "station",
+  "station_name",
   "column_break_main",
   "is_active",
   "language",
@@ -19,6 +20,7 @@
   "port",
   "section_roll",
   "label_type_loaded",
+  "label_type_loaded_name",
   "column_break_roll",
   "roll_code",
   "roll_loaded_on",
@@ -40,6 +42,16 @@
    "label": "Station",
    "options": "Zone Station",
    "reqd": 1
+  },
+  {
+   "fetch_from": "station.zone_station_name",
+   "fieldname": "station_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Station Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "column_break_main",
@@ -113,6 +125,16 @@
    "options": "Item"
   },
   {
+   "fetch_from": "label_type_loaded.item_name",
+   "fieldname": "label_type_loaded_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label Type Loaded Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "column_break_roll",
    "fieldtype": "Column Break"
   },
@@ -138,7 +160,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-20 14:00:00.000000",
+ "modified": "2026-10-31 09:51:28.515193",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Printer",

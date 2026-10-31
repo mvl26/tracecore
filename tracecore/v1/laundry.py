@@ -23,7 +23,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = "LIN"
+FUNCTION = "LINEN"
 BATCH_TYPES = (laundry.IN_HOUSE, laundry.OUTSOURCED)
 
 
@@ -58,7 +58,7 @@ def context(station, client_ts=None, token=None):
 	"""Máy giặt/sấy Sẵn sàng, chương trình, hóa chất và lô đang chạy; chỉ đọc, không ghi Idempotency Key."""
 	require_any_role(*LINEN_ROLES)
 	timestamp = parse_client_ts(client_ts)
-	return run_at_step(STEP, station, timestamp, lambda: {"ok": True, **laundry.context()})
+	return run_at_step(FUNCTION, station, timestamp, lambda: {"ok": True, **laundry.context()})
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -107,7 +107,7 @@ def start(
 		)
 		return {"ok": True, "batch": laundry.view(doc)}
 
-	return run_at_step(STEP, station, timestamp, call, None, None)
+	return run_at_step(FUNCTION, station, timestamp, call, None, None)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -142,4 +142,4 @@ def complete(
 		)
 		return {"ok": True, "batch": laundry.view(doc)}
 
-	return run_at_step(STEP, station, timestamp, call, "Laundry Batch", batch)
+	return run_at_step(FUNCTION, station, timestamp, call, "Laundry Batch", batch)

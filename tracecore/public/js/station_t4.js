@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
@@ -42,15 +43,7 @@ function t4DateTime(iso) {
 }
 
 function t4GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 function t4Disabled(flag) {
@@ -477,7 +470,7 @@ class T4Packing {
 	// ---- offline (FEAT-009, FR-M2-07.11, A-40) ----
 	offlineReady() {
 		const data = this.station.offlineData;
-		return Boolean(this.station.offlineCapable() && data && data.step === "T4");
+		return Boolean(this.station.offlineCapable() && data && data.function === "PACK");
 	}
 
 	offlineScan(raw) {
@@ -944,10 +937,19 @@ class T4Packing {
 			printer: () => this.printerHtml(),
 			print: () => this.printNoteHtml(),
 		};
+		// vẽ lại vùng lô chỉ thị (vd ảnh BOM vừa tải xong) không được làm mất mã máy quét đang nhập
+		const typing = this.result.querySelector("#tc-ci-input");
+		const typed = typing ? typing.value : "";
+		const focused = typing && document.activeElement === typing;
 		this.result.querySelectorAll("[data-region]").forEach((node) => {
 			const build = regions[node.dataset.region];
 			if (build) node.innerHTML = build();
 		});
+		const field = this.result.querySelector("#tc-ci-input");
+		if (field) {
+			field.value = typed;
+			if (focused) field.focus();
+		}
 		this.result.dataset.state = this.viewState();
 		this.markScanBox();
 	}
@@ -1008,10 +1010,11 @@ class T4Packing {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${override}
 			${buttons}
 		</div>`;

@@ -47,6 +47,19 @@ def mock_agent(page):
 	return received
 
 
+def test_t4_refresh_keeps_the_indicator_being_scanned(t4_page, t4_demo):
+	# ảnh BOM tải xong thì màn vẽ lại vùng lô chỉ thị đúng lúc máy quét đang nhập: không được mất mã
+	page = t4_page
+	scan(page, t4_demo["set_plasma"])
+	field = page.locator("#tc-ci-input")
+	field.fill(t4_demo["ci_plasma"])
+	page.evaluate("frappe.tc_station.screen.refresh()")
+	expect(field).to_have_value(t4_demo["ci_plasma"])
+	expect(field).to_be_focused()
+	field.press("Enter")
+	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_plasma"])
+
+
 class Taps:
 	"""Đếm chạm của người dùng vào nút trên màn T4; quét bằng bàn phím không tính."""
 
@@ -191,7 +204,7 @@ def test_t4_gate_not_passed_shows_full_alert(t4_page, t4_demo):
 	alert = result.locator(".tc-alert-error")
 	expect(alert).to_be_visible()
 	# kết quả -> lý do -> hành động: đủ cả ba khối và có chữ (không chỉ màu)
-	expect(alert.locator(".tc-alert-title")).to_contain_text("chưa đạt")
+	expect(alert.locator(".tc-alert-title")).to_contain_text("Sai thứ tự trạm")
 	expect(alert.locator(".tc-alert-reason")).not_to_be_empty()
 	expect(alert.locator(".tc-alert-action")).not_to_be_empty()
 	assert result.locator("[data-action='confirm-pack']").count() == 0

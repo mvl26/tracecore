@@ -1,0 +1,109 @@
+"""Danh sách bộ / gói để chọn tay trên trạm T1-T8 (M2, A-68), chỉ đọc.
+
+Mỗi bước trả đúng những bộ/gói mà RPC quét của bước đó sẽ chấp nhận về mặt trình tự: T1 bộ đủ điều kiện tiếp nhận; T2-T4 bộ có
+cổng liền trước Đạt trong chu trình hiện hành và cổng của bước chưa có kết quả; T5-T8 gói theo trạng thái Pack. Danh sách chỉ để
+gợi ý: chọn xong, mã vẫn đi qua đúng hàm kiểm tra như khi quét. Xếp đến trước xếp trước theo thời điểm xong bước trước
+(T6-T8 lấy `modified` của Pack, là lần đổi trạng thái gần nhất).
+"""
+
+import frappe
+from frappe.utils import format_datetime, today
+
+from tracecore.core import step_gate
+from tracecore.core.pick_page import join_label, like, page_of
+
+OPEN_BATCH = ("Running", "Awaiting Result")  # lô rửa còn giữ bộ (A-77)
+# bước → (trạng thái Pack, cột thời điểm)
+PACK_STEPS = {
+	"T5": ("Packed", "pack.packed_at"),
+	"T6": ("Released", "pack.modified"),
+	"T7": ("In Sterile Stock", "pack.modified"),
+	"T8": ("Issued", "pack.modified"),
+}
+PREVIOUS = {"T2": "T1", "T3": "T2", "T4": "T3"}
+STEPS = ("T1", *PREVIOUS, *PACK_STEPS)
+
+SET_COLUMNS = """unit.name as id, set_type.set_type_name as name, unit.department as department,
+	department.department_name as department_name, {since} as since"""
+PACK_COLUMNS = """pack.name as id, pack.set_name as name, pack.department as department,
+	department.department_name as department_name, {since} as since"""
+
+
+def _set_query(step, department):
+	values = {}
+	order = ""
+	if step == "T1":
+		sql = """from `tabSet Unit` unit
+			left join `tabInstrument Set Type` set_type on set_type.name = unit.set_type
+			left join `tabDepartment` department on department.name = unit.department
+			where unit.status in %(statuses)s"""
+		values["statuses"] = step_gate.STATION_STATUSES["T1"]
+		since = "unit.modified"
+		if department:  # ưu tiên bộ thuộc khoa đang giao
+			order = "(unit.department = %(department)s) desc, "
+			values["department"] = department
+	else:
+		sql = """from `tabSet Unit` unit
+			join `tabStep Gate Result` prev on prev.set_unit = unit.name and prev.cycle_no = unit.current_cycle_no
+				and prev.step = %(previous)s and prev.result = 'Pass'
+			left join `tabStep Gate Result` this on this.set_unit = unit.name and this.cycle_no = unit.current_cycle_no
+				and this.step = %(step)s
+			left join `tabInstrument Set Type` set_type on set_type.name = unit.set_type
+			left join `tabDepartment` department on department.name = unit.department
+			where unit.status in %(statuses)s and ifnull(this.result, 'Pending') = 'Pending'"""
+		values.update(previous=PREVIOUS[step], step=step, statuses=step_gate.STATION_STATUSES[step])
+		since = "prev.recorded_at"
+		if step == "T2":  # bộ trong lô rửa đang chạy không chọn lại được
+			sql += """ and not exists (
+				select 1 from `tabWash Batch Set Unit` row join `tabWash Batch` batch on batch.name = row.parent
+				where row.set_unit = unit.name and batch.status in %(open_batch)s and batch.docstatus = 0)"""
+			values["open_batch"] = OPEN_BATCH
+		if step == "T4":  # đã có Cycle ID hiệu lực thì phải in lại / hủy nhãn, không đóng gói tiếp
+			sql += " and ifnull(unit.active_cycle_id, '') = ''"
+	search = ("unit.name", "set_type.set_type_name")
+	return sql, values, SET_COLUMNS.format(since=since), since, order, "unit.name", search
+
+
+def _pack_query(step):
+	status, since = PACK_STEPS[step]
+	sql = """from `tabPack` pack left join `tabDepartment` department on department.name = pack.department
+		where pack.docstatus = 1 and pack.status = %(status)s"""
+	values = {"status": status}
+	if step == "T7":  # gói quá hạn không cấp được
+		sql += " and pack.expiry >= %(today)s"
+		values["today"] = today()
+	search = ("pack.name", "pack.set_name", "pack.set_unit")
+	return sql, values, PACK_COLUMNS.format(since=since), since, "", "pack.name", search
+
+
+def suggest(step, q=None, department=None, start=0, page_length=20):
+	"""``{"items": [{id, raw, name, department, department_name, since, label}], "total"}`` của bước `step`."""
+	start, length = page_of(start, page_length)
+	if step not in STEPS:
+		return {"items": [], "total": 0}
+	sql, values, columns, since, order, key, search = (
+		_pack_query(step) if step in PACK_STEPS else _set_query(step, department)
+	)
+	if q and q.strip():
+		sql += " and (" + " or ".join(f"{field} like %(like)s" for field in search) + ")"
+		values["like"] = like(q.strip())
+	count_sql = f"select count(*) {sql}"  # nosec B608 - `sql` ghép từ hằng trong file này, giá trị qua tham số
+	total = frappe.db.sql(count_sql, values)[0][0]
+	page_sql = (
+		f"select {columns} {sql} order by {order}{since} asc, {key} asc limit %(length)s offset %(start)s"  # nosec B608 - như trên
+	)
+	rows = frappe.db.sql(page_sql, {**values, "length": length, "start": start}, as_dict=True)
+	return {"items": [_item(row) for row in rows], "total": total}
+
+
+def _item(row):
+	since = format_datetime(row.since, "dd/MM/yyyy HH:mm") if row.since else None
+	return {
+		"id": row.id,
+		"raw": row.id,
+		"name": row.name,
+		"department": row.department,
+		"department_name": row.department_name,
+		"since": row.since,
+		"label": join_label(row.id, row.name, row.department_name, since),
+	}

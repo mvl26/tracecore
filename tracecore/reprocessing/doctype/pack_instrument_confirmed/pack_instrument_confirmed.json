@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "instrument",
+  "instrument_name",
   "qty"
  ],
  "fields": [
@@ -16,7 +17,19 @@
    "in_list_view": 1,
    "label": "Instrument",
    "options": "Instrument",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
+  },
+  {
+   "fetch_from": "instrument.instrument_name",
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instrument Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
+   "columns": 2
   },
   {
    "default": "1",
@@ -25,13 +38,14 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Quantity",
-   "non_negative": 1
+   "non_negative": 1,
+   "columns": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-20 15:00:00.000000",
+ "modified": "2026-10-31 09:51:28.509492",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Pack Instrument Confirmed",

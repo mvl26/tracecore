@@ -227,6 +227,56 @@ class TestReceiveRejections(ReceiveApiCase):
 		)
 
 
+class TestReceiveReadOnlyLists(ReceiveApiCase):
+	"""Khối "Phiếu đã tiếp nhận hôm nay" của màn T1 (A-67): chỉ đọc, mọi người có quyền ở trạm đều xem."""
+
+	def submitted(self):
+		receipt = self.opened()
+		unit = self.new_set()
+		call(receive_api.scan_set, receipt=receipt, raw=unit)
+		call(receive_api.confirm_line, receipt=receipt, set_id=unit, confirm_all=1, finalize=1)
+		call(receive_api.submit, receipt=receipt)
+		return receipt, unit
+
+	def test_received_today_lists_the_submitted_receipt_with_totals(self):
+		receipt, _unit = self.submitted()
+		result = call(receive_api.received_today)
+		self.assertTrue(result["ok"], result)
+		self.assertIn(receipt, {row["receipt"] for row in result["receipts"]})
+		self.assertGreaterEqual(result["total_receipts"], 1)
+		self.assertGreaterEqual(result["total_sets"], 1)
+
+	def test_receipt_sets_returns_the_sets_and_rejects_unknown_receipt(self):
+		receipt, unit = self.submitted()
+		result = call(receive_api.receipt_sets, receipt=receipt)
+		self.assertEqual([row["set_id"] for row in result["sets"]], [unit])
+		self.assert_rejection(call(receive_api.receipt_sets, receipt="NO-SUCH"), "RECEIPT_NOT_FOUND", 404)
+		with self.assertRaises(BadRequestError):
+			call(receive_api.receipt_sets, receipt=None)
+
+	def test_station_user_sees_receipts_made_by_someone_else(self):
+		receipt, _unit = self.submitted()
+		user = make_user("t1-api-list-r03@test.local", roles=("TC R03",))
+		TOKENS[(user, STATION)] = make_station_session(user, station=STATION)["token"]
+		frappe.set_user(user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		self.assertIn(receipt, {row["receipt"] for row in call(receive_api.received_today)["receipts"]})
+		self.assertTrue(call(receive_api.receipt_sets, receipt=receipt)["ok"])
+
+	def test_user_without_receive_role_is_forbidden(self):
+		user = make_user("t1-api-list-r06@test.local", roles=("TC R06",))
+		TOKENS[(user, STATION)] = make_station_session(user, station=STATION)["token"]
+		frappe.set_user(user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		with self.assertRaises(frappe.PermissionError):
+			call(receive_api.received_today)
+
+	def test_wrong_step_station_is_rejected(self):
+		TOKENS[("Administrator", "TR-002")] = make_station_session("Administrator", station="TR-002")["token"]
+		result = call(receive_api.received_today, station="TR-002", station_header="TR-002")
+		self.assert_rejection(result, "STATION_WRONG_STEP", 422)
+
+
 class TestReceiveIdempotency(ReceiveApiCase):
 	@bru("BRU-REP-012")
 	def test_replay_with_the_same_key_does_not_write_twice(self):

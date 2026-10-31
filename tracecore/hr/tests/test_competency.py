@@ -1,17 +1,18 @@
 """Ma trận năng lực theo trạm (FEAT-037, FR-M4-03, UC-20, BRU-HR-001): gán/thu hồi, chứng chỉ bắt buộc, quyền tạm 24 giờ."""
 
 import frappe
-from frappe.utils import add_days, add_to_date, now_datetime, today
+from frappe.utils import add_days, add_to_date, get_datetime, now_datetime, today
 
 from tracecore.core import station_auth
 from tracecore.core.errors import BlockedError
 from tracecore.hr import certificates, competency, reminders
-from tracecore.tests.factories import make_user
+from tracecore.tests.factories import make_employee, make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
 from tracecore.v1.tests.station_fixtures import make_station_employee
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 STATION = "TR-004"  # T4, khu Sạch
+KNOWN_TYPES = ["Practice License", "Infection Control", "Sterilization", "Pressure Equipment Operation"]
 USERS = ["comp-r02@example.com", "comp-r10@example.com", "comp-r04@example.com", "comp-r05@example.com"]
 
 
@@ -43,6 +44,9 @@ class CompetencyCase(IsolatedTestCase):
 		self.r04 = make_user(USERS[2], ["TC R04"])
 		self.worker_user = make_user(USERS[3], ["TC R04"])
 		self.employee = make_station_employee(self.worker_user)
+		holder = make_employee(first_name="Người giữ chứng chỉ").name
+		for certificate_type in KNOWN_TYPES:
+			make_certificate(holder, certificate_type, None)
 		self.addCleanup(frappe.set_user, "Administrator")
 		frappe.set_user(self.r02)
 
@@ -106,6 +110,26 @@ class TestGrantAndRevoke(CompetencyCase):
 		)
 		self.assertEqual(self.reject_code(grant, "NV-NOBODY"), "EMPLOYEE_INVALID")
 
+	def test_required_types_follow_the_types_already_used(self):
+		doc = grant(self.employee.name, required_certificates=[" sterilization ", "Sterilization"])
+		self.assertEqual([row.certificate_type for row in doc.required_certificates], ["Sterilization"])
+		self.assertEqual(
+			self.reject_code(
+				grant, self.employee.name, station="TR-005", required_certificates=["Lái xe nâng"]
+			),
+			"CERTIFICATE_TYPE_INVALID",
+		)
+		make_certificate(self.employee.name, "Lái xe nâng", 30)
+		self.assertEqual(
+			competency.required_types(
+				grant(self.employee.name, station="TR-005", required_certificates=["Lái xe nâng"]).name
+			),
+			["Lái xe nâng"],
+		)
+
+	def test_matrix_offers_the_types_already_used(self):
+		self.assertLessEqual(set(KNOWN_TYPES), set(competency.matrix()["certificate_types"]))
+
 	@bru("BRU-HR-001")
 	def test_temporary_access_needs_a_reason_and_is_limited_to_24_hours(self):
 		soon = add_to_date(now_datetime(), hours=23)
@@ -156,9 +180,9 @@ class TestLoginCertificates(CompetencyCase):
 		grant(self.employee.name, required_certificates=["Pressure Equipment Operation"])
 		with self.assertRaises(BlockedError) as caught:
 			self.login()
-		self.assertEqual(
-			caught.exception.block.code, "CARD_INVALID"
-		)  # một câu trả lời công khai duy nhất (FEAT-003)
+		# A-71 (g): thẻ hợp lệ thấy NS-001 kèm loại chứng chỉ
+		self.assertEqual(caught.exception.block.as_dict()["error_code"], "NS-001")
+		self.assertEqual(caught.exception.block.items, ["Pressure Equipment Operation"])
 		reject = self.last_reject()
 		self.assertIn("CERTIFICATE_REQUIRED", reject.new_value)
 		self.assertIn("Pressure Equipment Operation", reject.new_value)
@@ -172,6 +196,36 @@ class TestLoginCertificates(CompetencyCase):
 		with self.assertRaises(BlockedError):
 			self.login()
 		self.assertIn("CERTIFICATE_REQUIRED", self.last_reject().new_value)
+
+	@bru("BRU-HR-002")
+	def test_expired_certificate_temporary_access_until_expiry(self):
+		"""Nghiệm thu A-71: hết hạn thì không vào, thấy NS-001; duyệt tạm thì vào, có log người duyệt; hết hạn duyệt thì lại không vào."""
+		from unittest.mock import patch
+
+		from tracecore.core import error_codes
+		from tracecore.setup.error_codes import ensure_error_codes
+		from tracecore.v1.station import _session_response
+
+		ensure_error_codes()
+		grant(self.employee.name, required_certificates=["Pressure Equipment Operation"])
+		body = _session_response(self.login, STATION)
+		self.assertEqual(body["error"]["error_code"], "NS-001")
+		log = frappe.get_all(
+			"TraceCore Error Log",
+			filters={"error_code": "NS-001", "object_name": self.employee.name, "status": "Open"},
+			pluck="name",
+		)[0]
+		with patch.object(error_codes.frappe, "get_roles", return_value=["TC R02"]):
+			error_codes.grant_permit(log, 2, "ca mổ cấp cứu")
+		row = frappe.get_doc("TraceCore Error Log", log)
+		self.assertEqual(row.status, "Temporarily Allowed")
+		self.assertEqual(row.approved_by, frappe.session.user)
+		session = self.login()
+		expires = frappe.db.get_value("Station Session", session["session"], "absolute_expires_at")
+		self.assertEqual(get_datetime(expires), get_datetime(row.valid_until))
+		frappe.db.set_value("TraceCore Error Log", log, "valid_until", add_to_date(now_datetime(), hours=-1))
+		with self.assertRaises(BlockedError):
+			self.login()
 
 	def test_renewal_restores_the_login(self):
 		old = make_certificate(self.employee.name, "Sterilization", -1)

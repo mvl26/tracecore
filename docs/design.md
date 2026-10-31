@@ -215,6 +215,8 @@ Khối nền `--tc-primary-soft`, border **2 px dashed** `--tc-primary`, radius 
 
 ### 4.3 Stepper T1–T8 (`stepper`, #17)
 
+> **A-64:** chuỗi bước hiện tên chức năng theo cấu hình, không hiện mã T cố định; số trạm T1…Tn do cấu hình.
+
 Flex wrap gap 4, margin 6 0 14. Mỗi bước `span` padding 5×11 (STN 10×16), 11 px (STN 16), radius 14, border 1 px `--tc-border-input`, nền trắng, chữ `--tc-text-2` = **pending**. **done**: nền `--tc-pass-strong`, border + chữ `--tc-pass`, tiền tố "✓ ". **current**: nền `--tc-primary`, chữ trắng bold, border primary. **failed**: nền `--tc-fail-tint`, border + chữ `--tc-fail`, tiền tố "✕ ". Nhãn chuẩn: `T1 Tiếp nhận · T2 Rửa · T3 Lắp ráp · T4 Đóng gói · T5 Tiệt khuẩn · T6 Kho VK · T7 Cấp phát · T8 Sử dụng`. Biến thể **workflow stepper** cho WF-01..09 dùng cùng class với nhãn trạng thái. Trên PDA: ẩn stepper đầy đủ, chỉ hiện chip current + badge.
 
 ### 4.4 Gate panel 5 cổng (`gates` / `gt`, #17)

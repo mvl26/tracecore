@@ -295,6 +295,7 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 - A1. Nhân viên giao không có thẻ (người mới): chọn khoa và ghi tên, R02 cấp thẻ sau (FR-M9-07).
 - A2. Bộ trả kèm dụng cụ rời không thuộc BOM: ghi vào Ghi chú bất thường; T3 xử lý và tạo NC.
 - A3. Dụng cụ hoặc bộ chưa có ảnh chụp thực tế: hiển thị khung Chưa có ảnh, ghi nhận thiếu ảnh để bổ sung tại danh mục.
+- A4. [A-67] Màn T1 có khối "Phiếu đã tiếp nhận hôm nay" (phiếu đã ghi sổ trong ngày tại trạm, của mọi người nhận, kèm tổng phiếu/bộ); bấm một phiếu để xem nhanh các bộ và trạng thái hiện tại; chỉ đọc, tự làm mới sau mỗi lần Ghi sổ.
 
 **Exception flows**
 - E1. Set ID ở trạng thái không hợp lệ (ví dụ Trong kho vô khuẩn) → từ chối, hiển thị trạm hiện tại; R02 có thể tiếp nhận cưỡng bức.
@@ -330,6 +331,8 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-05; API API-M2-01, API-M1-06
 - A1. Rửa thủ công/siêu âm cho dụng cụ tinh vi: lô loại Thủ công, nhập thời gian ngâm, nồng độ, nhiệt độ.
 - A2. Máy rửa hai cửa: xác nhận dỡ tại cửa khu sạch bởi R04.
 - A3. Máy không có cả màn hình lẫn bản in: nhập tay tối thiểu chương trình + giờ bắt đầu/kết thúc và xác nhận; R02 xác nhận thêm khi kết luận (BRU-REP-015).
+- A5. [A-77] Chương trình bật bắt buộc chỉ thị: quét đủ QR máy và QR mã lô thì lô sang Chờ đọc chỉ thị, máy được nạp lô mới, bộ chưa sang T3. Người đọc (quét lại QR lô nếu đọc sau) ghi vật tư, lô, hạn, kết quả, ảnh; bước 5 áp kết quả chung của chu trình và chỉ thị.
+- A4. [A-66] Màn nạp hiển thị danh sách Bộ chờ rửa (bộ đã Đạt T1, chưa có kết quả T2, chưa ở lô đang chạy) để KTV biết bộ nào cần rửa; danh sách chỉ để xem, vẫn quét Set ID từng bộ vào lô.
 
 **Exception flows**
 - E1. Máy Khóa (test/kiểm định) → không chọn được, hiển thị lý do.
@@ -337,6 +340,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-05; API API-M2-01, API-M1-06
 - E3. Lô Không đạt → toàn bộ bộ chuyển Xử lý lại (rửa), chỉ quét được tại T2, lặp tới khi Đạt; NC tự tạo.
 - E4. Chưa có dữ liệu tự động và chưa có nhập tay đã xác nhận → nút Đóng lô khóa, không kết luận Đạt được.
 - E5. Dỡ lô: quét QR máy không khớp máy của mã lô, hoặc chưa quét đủ máy + mã lô → từ chối mở màn kết quả.
+- E6. [A-77] Chỉ thị thiếu lô, hết hạn hoặc thiếu ảnh bắt buộc → không ghi được Đạt, lô vẫn Chờ đọc chỉ thị.
 
 **Open issues:** Đã chốt: Set ID GS1; 2 loại nhãn (hấp / plasma); hạn lưu loại gói và cơ số do khoa nhập tay trước Sprint 1. Còn xác nhận mẫu nhãn cụ thể tại UAT.
 
@@ -985,8 +989,9 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-22; API API-M5-03; DocType D
 6. Dashboard hiển thị máy chưa test.
 
 **Alternate flows**
-- A1. Máy plasma: chỉ thị hóa học từng mẻ, không Bowie-Dick.
+- A1. Máy plasma: chỉ thị hóa học từng mẻ, không Bowie-Dick; có test hằng ngày máy plasma nếu thuộc diện bắt buộc [A-70].
 - A2. R02 mở khóa tạm ≤ 24 giờ có lý do (trừ quá hạn kiểm định).
+- A3. [A-70] Diện bắt buộc theo `TraceCore Settings` (Không bắt buộc / Tất cả máy tiệt khuẩn / Chỉ máy được chọn). Máy rửa và máy ngoài diện không bị khóa, chặn hay nhắc; vẫn ghi test tự nguyện được.
 
 **Exception flows**
 - E1. Chưa test mà tạo mẻ → chặn với lý do.
@@ -1219,7 +1224,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-28; API API-M7-01; DocType D
 
 - **ID:** UC-29
 - **Actors:** R09 Kế toán / Vật tư (primary); R01 Trưởng khoa KSNK (secondary)
-- **Description:** Phân bổ chi phí mẻ cho từng gói, cộng dồn qua 8 trạm, cộng khấu hao dụng cụ; xuất theo bộ, Cycle ID, khoa. Kích hoạt khi: mẻ được giải phóng; cuối tháng lập báo cáo giá thành.
+- **Description:** Phân bổ chi phí mẻ cho từng gói, cộng dồn qua 8 trạm (cấu hình mặc định, A-64), cộng khấu hao dụng cụ; xuất theo bộ, Cycle ID, khoa. Kích hoạt khi: mẻ được giải phóng; cuối tháng lập báo cáo giá thành.
 - **Preconditions:** Bảng giá và định mức có; chi phí kỳ đã nhập.
 - **Postconditions (success):** Cost Sheet mẻ và giá thành gói/bộ; báo cáo.
 - **Traces to:** FR-M7-05, FR-M7-06
