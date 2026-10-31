@@ -24,6 +24,7 @@ from frappe.utils.data import get_system_timezone
 from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
+from tracecore.reprocessing import cycle_time
 
 STEP = "T2"  # mã cổng trong step_gate
 FUNCTION = "WASH_LOAD"
@@ -65,7 +66,7 @@ def check_equipment_ready(equipment):
 	"""Block nếu `equipment` không dùng được để nạp lô rửa, ngược lại None.
 
 	Thứ tự: không có máy → EQUIPMENT_NOT_FOUND; không phải máy rửa → EQUIPMENT_NOT_WASHER; trạng thái khác Sẵn
-	sàng → EQUIPMENT_NOT_READY. Test hằng ngày và kiểm định (FEAT-040) thêm điều kiện ở đây.
+	sàng → EQUIPMENT_NOT_READY; máy còn lô `Running` chưa dỡ → EQUIPMENT_BUSY (A-73: một máy chỉ chạy một lô). Test hằng ngày và kiểm định (FEAT-040) thêm điều kiện ở đây.
 	"""
 	row = frappe.db.get_value("Equipment", equipment, ["equipment_type", "status"], as_dict=True)
 	if not row:
@@ -90,6 +91,16 @@ def check_equipment_ready(equipment):
 			_("Washer is not ready"),
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another washer, or call R02 to check the daily test and the inspection."),
+		)
+	running = frappe.db.get_value(
+		"Wash Batch", {"equipment": equipment, "status": RUNNING, "docstatus": 0}, "name"
+	)
+	if running:
+		return Block(
+			"EQUIPMENT_BUSY",
+			_("Washer is still running a batch"),
+			_("Batch {0} on washer {1} has not been unloaded yet.").format(running, equipment),
+			_("Unload batch {0} first, then load this washer again.").format(running),
 		)
 	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
 		if isinstance(block, Block):
@@ -781,6 +792,8 @@ def _describe(doc):
 		"cycle_result": doc.cycle_result,
 		"clean_test_result": doc.clean_test_result,
 		"unloaded_at": doc.unload_scan_at,
+		"unloaded_by": _employee(doc.unloaded_by),
+		"duration": cycle_time.for_doc(doc),
 		"reviewer": doc.reviewer,
 		"result_note": doc.result_note,
 		"nc_pending": cint(doc.nc_pending),
@@ -1014,7 +1027,12 @@ def save_manual_data(
 	)
 	doc.flags.tc_washing = True
 	doc.save(ignore_permissions=True)
-	return {"data_complete": doc.data_complete, "needs_review": doc.needs_review, "missing": missing}
+	return {
+		"data_complete": doc.data_complete,
+		"needs_review": doc.needs_review,
+		"missing": missing,
+		"duration": cycle_time.for_doc(doc),
+	}
 
 
 # --- Kết luận lô (FR-M2-04.3/.4/.5/.6, BRU-REP-002, BRU-REP-015) ---------------------------------------------
@@ -1058,13 +1076,14 @@ def set_result(
 	note=None,
 	client_ts=None,
 	session=None,
+	unloaded_by=None,
 ):
 	"""Kết luận lô `Running`: ghi cổng T2 cùng một kết quả cho MỌI bộ và đóng lô (ghi sổ) trong một savepoint.
 
 	Kiểm lại trạm và hai mã quét (Q15); chưa đủ dữ liệu chu trình → DATA_INCOMPLETE cho cả Đạt lẫn Không đạt (Q6,
 	FR-M2-04.6). Đạt cần test làm sạch Đạt (Q14) và, với máy không kết nối và không bản in, PIN proof của R02 trên
 	phiên `session` (Q7). Không đạt: mọi bộ về Xử lý lại, ``nc_pending = 1``, Audit Log ``WashFailed`` và hook
-	`tracecore_after_wash_failed` (NC tự tạo là FEAT-030, Q22); Đạt gọi `tracecore_after_wash_complete`. Lỗi giữa
+	`tracecore_after_wash_failed` (NC tự tạo là FEAT-030, Q22); Đạt gọi `tracecore_after_wash_complete`. `unloaded_by` là Employee dỡ lô (A-73). Lỗi giữa
 	chừng hoàn tác về savepoint: không bộ nào có cổng mới, lô vẫn `Running`.
 
 	Trả ``{"batch", "result", "sets": [{"set_id", "status", "redo_count"}], "incident_id"}``; ``incident_id`` là NC tự
@@ -1085,6 +1104,7 @@ def set_result(
 			note,
 			client_ts,
 			session,
+			unloaded_by,
 		)
 	except Exception:
 		with contextlib.suppress(Exception):
@@ -1093,7 +1113,17 @@ def set_result(
 
 
 def _set_result(
-	batch, result, station, equipment_raw, batch_raw, clean_test, reviewer_proof, note, client_ts, session
+	batch,
+	result,
+	station,
+	equipment_raw,
+	batch_raw,
+	clean_test,
+	reviewer_proof,
+	note,
+	client_ts,
+	session,
+	unloaded_by,
 ):
 	doc, machine = _open_for_unload(batch, equipment_raw, batch_raw, station, for_update=True)
 	if result not in RESULTS or clean_test not in RESULTS:
@@ -1129,6 +1159,7 @@ def _set_result(
 			"result_source": "Manual",
 			"unload_scan_equipment": doc.equipment,
 			"unload_scan_at": at,
+			"unloaded_by": unloaded_by,
 			"result_note": note or None,
 			"reviewer": reviewer,
 			"reviewed_at": at if reviewer else None,

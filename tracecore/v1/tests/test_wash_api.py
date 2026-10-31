@@ -87,6 +87,15 @@ class WashApiCase(IsolatedTestCase):
 			station=station,
 		)
 
+	def spare_washer(self):
+		"""Máy rửa và chương trình khác: máy còn lô `Running` chưa dỡ thì không nạp tiếp được (A-73)."""
+		machine = make_wash_machine(has_printout=1)
+		return machine, make_wash_program(machine.name, chemical=CHEMICAL, parameters=PARAMETERS)
+
+	def complete_elsewhere(self, sets, washer=None):
+		machine, program = washer or self.spare_washer()
+		return self.complete(sets, program=program, machine=machine)
+
 	def unload_args(self, batch, machine=None, station=STATION):
 		return {
 			"batch": batch,
@@ -201,7 +210,7 @@ class TestWashLoadApi(WashApiCase):
 	def test_complete_with_new_key_for_same_sets_rejected(self):
 		unit = make_wash_ready_set()
 		self.complete([unit.name])
-		result = self.complete([unit.name])
+		result = self.complete_elsewhere([unit.name])
 		self.assert_rejection(result, "BATCH_EMPTY", 422)
 		self.assertEqual(result["error"]["items"][0]["code"], "SET_IN_OTHER_BATCH")
 
@@ -249,8 +258,9 @@ class TestWashLoadApi(WashApiCase):
 	def test_roles_complete_allows_r03_r05_denies_r06(self):
 		for role in ("TC R03", "TC R05"):
 			unit = make_wash_ready_set()
+			washer = self.spare_washer()  # tạo bằng Administrator trước khi đổi sang user vai trò
 			self.as_user(f"wash-{role[-3:].lower()}@test.local", (role,))
-			self.assertIs(self.complete([unit.name])["ok"], True, msg=role)
+			self.assertIs(self.complete_elsewhere([unit.name], washer)["ok"], True, msg=role)
 			frappe.set_user("Administrator")
 		unit = make_wash_ready_set()
 		self.as_user("wash-r06@test.local", ("TC R06",))
