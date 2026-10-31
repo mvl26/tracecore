@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "error_code",
+  "error_code_name",
   "enabled",
   "severity",
   "warn_days",
@@ -19,6 +20,17 @@
    "options": "TraceCore Error Code",
    "reqd": 1,
    "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fetch_from": "error_code.error_name",
+   "fieldname": "error_code_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Error code Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
    "columns": 2
   },
   {
@@ -50,12 +62,12 @@
    "fieldtype": "Small Text",
    "label": "Approver roles (one per line)",
    "in_list_view": 1,
-   "columns": 3
+   "columns": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-10-31 16:20:51.318309",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Error Rule",

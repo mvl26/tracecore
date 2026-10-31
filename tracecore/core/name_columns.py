@@ -22,13 +22,25 @@ TRACECORE_NAME_FIELD = {
 	"Sterile Location": "location_name",
 	"Waste Storage Location": "location_name",
 	"Set Unit": "set_type_name",
+	"TraceCore Error Code": "error_name",
+	"Station Function": "function_name",
 }
 
 NAME_FIELD = {**EXTERNAL_NAME_FIELD, **TRACECORE_NAME_FIELD}
 
 # Mã đã là tên: thêm cột sẽ lặp lại đúng giá trị
 CODE_IS_NAME = frozenset(
-	{"Batch", "Role", "Linen Type", "Cost Category", "Waste Type", "Waste Treatment Vendor", "DocType"}
+	{
+		"Batch",
+		"Role",
+		"Linen Type",
+		"Cost Category",
+		"Waste Type",
+		"Waste Treatment Vendor",
+		"DocType",
+		"UOM",
+		"Zone Type",
+	}
 )
 
 # Đích không có trường tên
@@ -40,6 +52,7 @@ EXISTING_NAME_COLUMN = {
 	("Loaner BOM Item", "instrument"): "instrument_name",
 	("Dirty Receipt Item", "set_unit"): "set_name",
 	("Issue Note Pack", "set_unit"): "set_name",
+	("TraceCore Error Log", "error_code"): "error_name",
 }
 
 # Giới hạn Frappe Grid: tổng ``columns`` của các cột hiển thị tối đa 10

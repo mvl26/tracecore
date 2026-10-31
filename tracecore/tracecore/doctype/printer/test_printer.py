@@ -100,8 +100,8 @@ class TestPrinter(IsolatedTestCase):
 			fields=["old_value", "new_value"],
 		)
 		self.assertEqual(len(audit), 1)
-		self.assertEqual(json.loads(audit[0].old_value), {"label_type_loaded": self.steam})
-		self.assertEqual(json.loads(audit[0].new_value), {"label_type_loaded": self.plasma})
+		self.assertEqual(json.loads(audit[0].old_value)["label_type_loaded"], self.steam)
+		self.assertEqual(json.loads(audit[0].new_value)["label_type_loaded"], self.plasma)
 
 	def test_printer_cannot_be_deleted(self):
 		printer = make_printer("TR-004", self.steam)

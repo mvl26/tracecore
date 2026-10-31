@@ -75,7 +75,9 @@ class TestZoneStationSeed(IsolatedTestCase):
 
 	def test_seed_creates_missing_records(self):
 		"""Site mới (hoặc thiếu bản ghi): tạo khu trước, trạm sau, đúng tên/khu/bước, đang hoạt động."""
-		frappe.db.delete("Zone Station", {"name": ("in", ["ZONE-STERILE", "TR-006", "TR-007"])})
+		names = ("in", ["ZONE-STERILE", "TR-006", "TR-007"])
+		frappe.db.delete("Zone Station", {"name": names})
+		frappe.db.delete("Zone Station Function", {"parent": names})
 		created = ensure_zone_stations()
 		self.assertEqual(created, ["ZONE-STERILE", "TR-006", "TR-007"])
 		self.assertEqual(ensure_zone_stations(), [])

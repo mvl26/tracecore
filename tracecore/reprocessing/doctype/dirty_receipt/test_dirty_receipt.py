@@ -67,7 +67,8 @@ class TestDirtyReceipt(FrappeTestCase):
 		# FR-M2-23.2: ghi bất thường chỉ có văn bản, không lưu số lượng thực nhận
 		fields = {f.fieldname for f in frappe.get_meta("Dirty Receipt Confirm Line").fields}
 		self.assertEqual(
-			fields, {"set_unit", "instrument", "instrument_name", "qty", "position", "confirmed"}
+			fields,
+			{"set_unit", "set_unit_name", "instrument", "instrument_name", "qty", "position", "confirmed"},
 		)
 
 	def test_permissions_match_ba_matrix(self):
