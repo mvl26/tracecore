@@ -38,7 +38,7 @@ def choose_printer(dialog, printer):
 	field.fill(printer)
 	dialog.page.locator("ul[role='listbox'] [role='option']", has_text=printer).first.click()
 	expect(field).to_have_value(printer)
-	expect(dialog).to_contain_text("Máy in mạng: server gửi nhãn thẳng tới máy in.", timeout=15000)
+	expect(dialog).to_contain_text("Máy in mạng: máy chủ gửi nhãn thẳng tới máy in.", timeout=15000)
 
 
 def result_row(dialog, code):
@@ -104,7 +104,9 @@ def test_issue_rolls_then_print_all(codes_page, codes_demo, fake_printer):
 	dialog = open_print_dialog(codes_page, issued.get_by_role("button", name="In tất cả").click)
 	choose_printer(dialog, codes_demo["printer"])
 	dialog.get_by_role("button", name="In 3 nhãn", exact=True).click()
-	expect(dialog).to_contain_text("Đã in 3/3 nhãn; 0 nhãn chờ agent; 0 nhãn không in được.", timeout=60000)
+	expect(dialog).to_contain_text(
+		"Đã in 3/3 nhãn; 0 nhãn chờ phần mềm trạm; 0 nhãn không in được.", timeout=60000
+	)
 	for code in codes:
 		expect(result_row(dialog, code)).to_contain_text("Đã in")
 
@@ -130,7 +132,9 @@ def test_bulk_print_from_list(codes_page, codes_demo, fake_printer):
 	choose_printer(dialog, codes_demo["printer"])
 	dialog.get_by_role("button", name="In 3 nhãn", exact=True).click()
 
-	expect(dialog).to_contain_text("Đã in 2/3 nhãn; 0 nhãn chờ agent; 1 nhãn không in được.", timeout=60000)
+	expect(dialog).to_contain_text(
+		"Đã in 2/3 nhãn; 0 nhãn chờ phần mềm trạm; 1 nhãn không in được.", timeout=60000
+	)
 	for code in ready:
 		expect(result_row(dialog, code)).to_contain_text("Đã in")
 	expect(result_row(dialog, retired)).to_contain_text("Không in được")
@@ -195,7 +199,7 @@ def test_issue_rolls_gateway_error_keeps_dialog_and_request(codes_page, codes_de
 	issue.locator("input[data-fieldname=count]").fill("2")
 	issue.get_by_role("button", name="Cấp mã", exact=True).click()
 
-	expect(issue).to_contain_text("Server không trả lời", timeout=30000)
+	expect(issue).to_contain_text("Máy chủ không trả lời", timeout=30000)
 	expect(issue).to_contain_text("HTTP 502")
 	expect(issue).to_be_visible()
 
