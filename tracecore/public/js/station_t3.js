@@ -696,7 +696,25 @@ class T3Assembly {
 			${this.formHtml()}
 			${this.shortageHtml()}
 			${this.lockHtml()}
+			${this.dangerHtml()}
 			${this.barHtml()}`;
+	}
+
+	dangerHtml() {
+		// #1834 T3-05: nút Bộ hỏng tách khỏi nút Ghi nhận kiểm đếm; bấm chỉ mở biểu mẫu chọn nhánh + lý do để xác nhận
+		if (this.asm.docstatus !== 0) return "";
+		return `<section class="tc-t4-block tc-danger-zone" aria-label="${esc(
+			__("Set is damaged: repair / disposal")
+		)}">
+			<p class="tc-hint">${esc(
+				__(
+					"Only if the whole set cannot be used. You will be asked to confirm and give a reason."
+				)
+			)}</p>
+			<button type="button" class="tc-btn tc-btn-danger" data-action="t3-branch"${t3Disabled(
+				this.busy || this.offline
+			)}>${esc(__("Set is damaged: repair / disposal"))}</button>
+		</section>`;
 	}
 
 	headHtml() {
@@ -1127,10 +1145,7 @@ class T3Assembly {
 						: ""
 					: `<button type="button" class="tc-btn tc-btn-primary" data-action="t3-submit"${t3Disabled(
 							!asm.ready_to_submit || this.busy || this.offline
-					  )}>${esc(__("Record the count"))}</button>
-					<button type="button" class="tc-btn tc-btn-danger" data-action="t3-branch"${t3Disabled(
-						this.busy || this.offline
-					)}>${esc(__("Set is damaged: repair / disposal"))}</button>`
+					  )}>${esc(__("Record the count"))}</button>`
 			}
 		</div>`;
 	}
