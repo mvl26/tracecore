@@ -1,5 +1,7 @@
 """A-64: ``Zone Type`` đổi ô số thứ tự sang vùng kế tiếp và tên màu; site đã chạy bản đầu của A-64 chuyển giá trị cũ."""
 
+from itertools import pairwise
+
 import frappe
 
 OLD_COLORS = {
@@ -20,6 +22,6 @@ def execute():
 	flow = frappe.db.sql(
 		"select name from `tabZone Type` where flow_order > 0 order by flow_order asc", pluck=True
 	)
-	for current, following in zip(flow, flow[1:], strict=False):
+	for current, following in pairwise(flow):
 		if not frappe.db.get_value("Zone Type", current, "next_zone_type"):
 			frappe.db.set_value("Zone Type", current, "next_zone_type", following, update_modified=False)

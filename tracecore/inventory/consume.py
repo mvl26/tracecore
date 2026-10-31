@@ -383,7 +383,9 @@ def on_laundry_complete(ctx):
 			lines.append({"item": chemical["item"], "qty": qty})
 			covered.add(chemical["item"])
 		return lines + [
-			{"item": norm.item, "qty": _norm_stock_qty(norm, 0, kg)} for norm in norms if norm.item not in covered
+			{"item": norm.item, "qty": _norm_stock_qty(norm, 0, kg)}
+			for norm in norms
+			if norm.item not in covered
 		]
 
 	lines = _lines_or_notify("Laundry Batch", ctx["batch"], build, norms)

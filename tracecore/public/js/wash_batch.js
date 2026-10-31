@@ -5,7 +5,9 @@
 frappe.ui.form.on("Wash Batch", {
 	refresh(frm) {
 		const roles = frappe.user_roles || [];
-		const allowed = ["TC R09", "TC R02", "System Manager"].some((role) => roles.includes(role));
+		const allowed = ["TC R09", "TC R02", "System Manager"].some((role) =>
+			roles.includes(role)
+		);
 		if (!allowed || frm.doc.docstatus !== 1 || frm.doc.cycle_result !== "Pass") return;
 		frm.add_custom_button(__("Retry consumption"), () => {
 			frappe.call({
