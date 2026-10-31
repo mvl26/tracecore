@@ -32,6 +32,13 @@ STATION_ROLE_BY_FUNCTION = {
 	"LINEN": "TC R07",
 	"WASTE": "TC R07",
 }
+# Trạm không gán chức năng (tra cứu Set ID chung): role theo loại khu của trạm
+STATION_ROLE_BY_ZONE_TYPE = {
+	"Dirty": "TC R03",
+	"Clean": "TC R04",
+	"Sterile": "TC R06",
+	"Department": "TC R08",
+}
 
 
 def agent_user_email(station):
@@ -41,7 +48,10 @@ def agent_user_email(station):
 
 def _station(station):
 	row = frappe.db.get_value(
-		"Zone Station", {"name": station, "is_zone": 0}, ["name", "station_no"], as_dict=True
+		"Zone Station",
+		{"name": station, "is_zone": 0},
+		["name", "station_no", "parent_zone"],
+		as_dict=True,
 	)
 	if not row:
 		frappe.throw(_("Station {0} does not exist.").format(station))
@@ -99,7 +109,11 @@ def station_user(station, password):
 	validate_password(password)
 	row = _station(station)
 	functions = zones.station_functions(row.name)
-	role = STATION_ROLE_BY_FUNCTION.get(functions[0]) if functions else None
+	if functions:
+		role = STATION_ROLE_BY_FUNCTION.get(functions[0])
+	else:
+		zone_type = frappe.db.get_value("Zone Station", row.parent_zone, "zone_type")
+		role = STATION_ROLE_BY_ZONE_TYPE.get(zone_type)
 	if not role:
 		frappe.throw(_("No station role is defined for station {0}.").format(row.name))
 	label = f"t{row.station_no}" if row.station_no else row.name.lower()

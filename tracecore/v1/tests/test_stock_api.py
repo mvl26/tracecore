@@ -110,7 +110,8 @@ class TestRetryConsumptionApi(ConsumeCase):
 		from unittest.mock import patch
 
 		with patch(
-			"tracecore.v1.stock.consume.retry", return_value={"entry": "MAT-X", "created": True, "lots": [], "short": []}
+			"tracecore.v1.stock.consume.retry",
+			return_value={"entry": "MAT-X", "created": True, "lots": [], "short": []},
 		) as retry:
 			result = api.retry_consumption("Wash Batch", "LR-000000-01")
 		retry.assert_called_once_with("Wash Batch", "LR-000000-01")

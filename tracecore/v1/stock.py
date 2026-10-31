@@ -11,8 +11,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.inventory import alerts as stock_alerts
-from tracecore.inventory import consume
-from tracecore.inventory import manual
+from tracecore.inventory import consume, manual
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
 ISSUE_ROLES = ("TC R05", "TC R06", "TC R09", "TC R02", "System Manager")
