@@ -158,7 +158,17 @@ def discard(receipt, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RECEIVE_ROLES)
 @idempotent
-def scan_set(receipt, raw, station, force_reason=None, reviewer_proof=None, client_ts=None, token=None):
+def scan_set(
+	receipt,
+	raw,
+	station,
+	force_reason=None,
+	reviewer_proof=None,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+):
 	"""Quét một Set ID vào phiếu: trả ``{"ok": true, "duplicate", "item", "summary"}``; `item` có đủ dòng BOM + ảnh.
 
 	`force_reason` + `reviewer_proof` (PIN proof của R02 đang đăng nhập, `v1.station.verify_pin`) chỉ dùng để tiếp nhận
@@ -192,6 +202,8 @@ def scan_set(receipt, raw, station, force_reason=None, reviewer_proof=None, clie
 		ref_doctype,
 		ref_name,
 		shown,
+		entry_mode,
+		manual_reason,
 	)
 
 

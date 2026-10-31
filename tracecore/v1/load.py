@@ -43,7 +43,7 @@ def _load_ref(load):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def create(raw, station, client_ts=None, token=None):
+def create(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét QR máy tiệt khuẩn: máy, chương trình đang dùng của máy, chỉ thị theo chương trình (FR-M2-09.1, .3)."""
 	require_any_role(*LOAD_ROLES)
 	raw = _required_str(raw, "raw")
@@ -57,13 +57,25 @@ def create(raw, station, client_ts=None, token=None):
 		"Equipment" if scanned["type"] == "equipment" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def add_pack(raw, equipment, program, queued, station, client_ts=None, token=None):
+def add_pack(
+	raw,
+	equipment,
+	program,
+	queued,
+	station,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+):
 	"""Kiểm một Cycle ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (A-16, Q1)."""
 	require_any_role(*LOAD_ROLES)
 	raw = _required_str(raw, "raw")
@@ -80,6 +92,8 @@ def add_pack(raw, equipment, program, queued, station, client_ts=None, token=Non
 		"Pack" if scanned["type"] == "pack" else None,
 		scanned["id"],
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 

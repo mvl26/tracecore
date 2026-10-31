@@ -122,7 +122,7 @@ def _route(scanned, raw, station, open_set):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*PACKING_ROLES)
 @idempotent
-def scan(raw, station, open_set=None, client_ts=None, token=None):
+def scan(raw, station, open_set=None, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Xử lý một lần quét ở màn T4. Trả ``{"ok": true, "kind": ..., <kind>: ...}``:
 
 	- ``context`` (Set ID): ngữ cảnh đóng gói của bộ (BOM, cổng, bảo dưỡng, cơ số, loại gói, máy in);
@@ -148,6 +148,8 @@ def scan(raw, station, open_set=None, client_ts=None, token=None):
 		ref_doctype,
 		ref_name,
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 

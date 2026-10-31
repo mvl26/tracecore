@@ -6,7 +6,7 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
 
 const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
@@ -193,7 +193,8 @@ class TraceCoreStation {
 		if (
 			(this.screen && this.screen.dialogOpen) ||
 			this.pinChange ||
-			(this.help && this.help.isOpen)
+			(this.help && this.help.isOpen) ||
+			(this.picker && this.picker.isOpen)
 		)
 			return;
 		// Preserve keyboard navigation and deliberate focus on every interactive control.
@@ -273,6 +274,17 @@ class TraceCoreStation {
 			return this.help.open();
 		}
 		if (this.help && this.help.onAction(action, button)) return;
+		if (
+			this.session &&
+			action.startsWith("pick-") &&
+			this.picker &&
+			this.picker.onAction(action, button)
+		)
+			return;
+		if (this.session && action === "manual-pick" && typeof TcPicker !== "undefined") {
+			this.picker = this.picker || new TcPicker(this);
+			return this.picker.onAction(action, button);
+		}
 		if (action === "logout" || action === "rescan-card") return this.endSession();
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
@@ -354,6 +366,8 @@ class TraceCoreStation {
 		this.input.value = "";
 		this.cardInput.value = "";
 		if (this.screen && this.screen.clearSession) this.screen.clearSession();
+		if (this.picker) this.picker.reset();
+		this.manualEntry = null;
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
@@ -902,6 +916,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.laundry.") ||
 			method.startsWith("tracecore.v1.waste.") ||
 			method.startsWith("tracecore.v1.sync.") ||
+			method.startsWith("tracecore.v1.lookup.") ||
 			method.startsWith("tracecore.v1.code_range.") ||
 			method.startsWith("tracecore.v1.feedback.") ||
 			method === "tracecore.v1.printer.set_roll" ||
@@ -919,6 +934,13 @@ class TraceCoreStation {
 			if (!this.ownsPage() || !this.session) throw ended();
 			args = { ...args, token: this.session.token };
 		}
+		// chọn tay (A-68): RPC quét trong lúc đang xử lý mã chọn tay mang cách nhập và lý do
+		if (
+			this.manualEntry &&
+			typeof PICK_SCAN_METHODS !== "undefined" &&
+			PICK_SCAN_METHODS.includes(method)
+		)
+			args = { ...args, entry_mode: "Manual", manual_reason: this.manualEntry.reason };
 		const controller = new AbortController();
 		controller.stationMethod = method;
 		this.controllers.add(controller);
@@ -1084,6 +1106,23 @@ class TraceCoreStation {
 			});
 		};
 		this.scanTimer = setTimeout(tick, 100);
+	}
+
+	// khoa đang giao của phiếu T1 đang mở: danh sách chọn tay ưu tiên bộ của khoa đó
+	pickDepartment() {
+		const receipt = this.screen && this.screen.receipt;
+		return (receipt && receipt.department) || null;
+	}
+
+	busyForPick() {
+		return Boolean(this.screen && this.screen.busy) || this.pendingScans.length > 0;
+	}
+
+	// chờ màn xử lý xong mã vừa chọn (kể cả mã xếp hàng nội bộ) để RPC sau còn mang cách nhập chọn tay
+	async waitIdle() {
+		const started = Date.now();
+		while (Date.now() - started < 2 * RPC_TIMEOUT_MS && this.busyForPick())
+			await new Promise((resolve) => setTimeout(resolve, 100));
 	}
 
 	async scan(raw, retry = false) {

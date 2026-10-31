@@ -44,7 +44,7 @@ def _route(scanned, raw, station, open_pack, client_ts):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*STORAGE_ROLES)
 @idempotent
-def scan(raw, station, open_pack=None, client_ts=None, token=None):
+def scan(raw, station, open_pack=None, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Xử lý một lần quét ở màn T6 (cần phiên trạm đúng trạm, A-08). Trả ``{"ok": true, "kind": ..., <kind>: ...}``:
 
 	- ``pack`` (Cycle ID hoặc DataMatrix nhãn): thẻ gói kèm năm cổng của bộ;
@@ -65,6 +65,8 @@ def scan(raw, station, open_pack=None, client_ts=None, token=None):
 		ref,
 		scanned["id"] if ref else None,
 		scanned["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 
