@@ -47,6 +47,19 @@ def mock_agent(page):
 	return received
 
 
+def test_t4_refresh_keeps_the_indicator_being_scanned(t4_page, t4_demo):
+	# ảnh BOM tải xong thì màn vẽ lại vùng lô chỉ thị đúng lúc máy quét đang nhập: không được mất mã
+	page = t4_page
+	scan(page, t4_demo["set_plasma"])
+	field = page.locator("#tc-ci-input")
+	field.fill(t4_demo["ci_plasma"])
+	page.evaluate("frappe.tc_station.screen.refresh()")
+	expect(field).to_have_value(t4_demo["ci_plasma"])
+	expect(field).to_be_focused()
+	field.press("Enter")
+	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_plasma"])
+
+
 class Taps:
 	"""Đếm chạm của người dùng vào nút trên màn T4; quét bằng bàn phím không tính."""
 
