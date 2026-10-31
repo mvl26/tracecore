@@ -15,7 +15,6 @@ CRITERIA = ("patient_code", "set_id", "cycle_id", "load", "equipment", "user", "
 COLUMNS = (
 	("cycle_id", "Cycle ID", "Link", 160, "Pack"),
 	("set_id", "Set ID", "Link", 190, "Set Unit"),
-	("step", "Step", "Data", 60, None),
 	("label", "Station Step", "Data", 130, None),
 	("at", "Time", "Datetime", 150, None),
 	("user_name", "Person", "Data", 150, None),
@@ -55,7 +54,6 @@ def execute(filters=None):
 				{
 					"cycle_id": chain["cycle_id"],
 					"set_id": chain["set_id"],
-					"step": event["step"],
 					"label": event["label"],
 					"at": event["at"],
 					"user_name": event.get("user_name") or event.get("user"),

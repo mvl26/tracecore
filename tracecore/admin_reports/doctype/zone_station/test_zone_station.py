@@ -5,7 +5,7 @@ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
 from tracecore.core import code_registry, zones
 from tracecore.patches.v0_1 import activate_existing_stations, register_station_codes
-from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter, assert_permission_matrix, bru
 
 test_ignore = ["User"]
 
@@ -277,13 +277,15 @@ class TestZoneStation(IsolatedTestCase):
 			}
 		).insert()
 		zone = make_zone("TEST Kho phụ")
-		frappe.get_doc({"doctype": "Sterile Location", "location_name": "Good", "zone_station": zone.name}).insert()
+		frappe.get_doc(
+			{"doctype": "Sterile Location", "location_name": "Good", "zone_station": zone.name}
+		).insert()
 
 	@bru("BRU-ID-006")
 	def test_zone_station_cannot_be_deleted(self):
 		station = make_station("ZONE-CLEAN", "PACK")
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc("Zone Station", station.name, force=True)
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc("Zone Station", station.name, force=True, ignore_permissions=True)
 		self.assertTrue(frappe.db.exists("Zone Station", station.name))
 
 	def test_creating_station_writes_audit_log(self):

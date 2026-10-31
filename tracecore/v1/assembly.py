@@ -21,7 +21,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = service.STEP
+FUNCTION = service.FUNCTION
 ASSEMBLY_ROLES = ("TC R04", "TC R02", "System Manager")
 CONFIRM_ROLES = ("TC R02", "System Manager")
 TRUE_STRINGS = ("1", "true", "yes", "on")
@@ -67,7 +67,7 @@ def open(raw, station, client_ts=None, token=None):  # tên RPC theo implementat
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **service.open_set(raw, station, timestamp)},
@@ -107,7 +107,7 @@ def line(
 	photo = _string(photo, "photo", required=False)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -146,7 +146,7 @@ def confirm_shortage(assembly, reason, station, reviewer_proof=None, client_ts=N
 	timestamp = parse_client_ts(client_ts)
 	session = current_station_session()
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -172,7 +172,7 @@ def submit(assembly, station, notes=None, branch=None, branch_reason=None, clien
 	branch_reason = _string(branch_reason, "branch_reason", required=False)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {

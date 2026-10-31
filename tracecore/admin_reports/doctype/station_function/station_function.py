@@ -33,7 +33,9 @@ class StationFunction(Document):
 		for fieldname in LOCKED_FIELDS:
 			if str(before.get(fieldname) or "") != str(self.get(fieldname) or ""):
 				frappe.throw(
-					_("{0} of a system function cannot be changed.").format(_(self.meta.get_label(fieldname))),
+					_("{0} of a system function cannot be changed.").format(
+						_(self.meta.get_label(fieldname))
+					),
 					frappe.ValidationError,
 				)
 

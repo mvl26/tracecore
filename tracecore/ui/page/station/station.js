@@ -12,13 +12,35 @@ const RPC_TIMEOUT_MS = 8000;
 const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
 const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
-const ZONE_CLASS = {
-	Dirty: "dirty",
-	Clean: "clean",
-	Sterile: "sterile",
-	Department: "dept",
-	Waste: "waste",
-};
+// Lớp màn theo Station Function.screen_key; lớp nằm ở các file nối sau qua page_js nên kiểm typeof lúc chạy.
+function tcScreenClass(key) {
+	switch (key) {
+		case "receive":
+			return typeof T1Receiving !== "undefined" ? T1Receiving : null;
+		case "wash":
+			return typeof T2Wash !== "undefined" ? T2Wash : null;
+		case "assembly":
+			return typeof T3Assembly !== "undefined" ? T3Assembly : null;
+		case "pack":
+			return typeof T4Packing !== "undefined" ? T4Packing : null;
+		case "sterilize":
+			return typeof T5Load !== "undefined" ? T5Load : null;
+		case "storage":
+			return typeof T6Storage !== "undefined" ? T6Storage : null;
+		case "issue":
+			return typeof T7Issue !== "undefined" ? T7Issue : null;
+		case "usage":
+			return typeof T8Usage !== "undefined" ? T8Usage : null;
+		case "linen":
+			if (typeof LinenStation !== "undefined") return LinenStation; // thu gom + lô giặt (FEAT-034)
+			return typeof LinenCollect !== "undefined" ? LinenCollect : null;
+		case "waste":
+			if (typeof WasteStation !== "undefined") return WasteStation; // thu gom + kho tạm (FEAT-048)
+			return typeof WasteCollect !== "undefined" ? WasteCollect : null;
+		default:
+			return null;
+	}
+}
 const ZONE_LABEL = {
 	Dirty: "Dirty zone",
 	Clean: "Clean zone",
@@ -283,6 +305,7 @@ class TraceCoreStation {
 			}
 			return;
 		}
+		if (action === "tc-screen") return this.switchScreen(button.dataset.screen);
 		if (this.screen && this.screen.onAction(action, button)) return;
 		if (action === "retry") {
 			this.manualOffline = false;
@@ -353,7 +376,10 @@ class TraceCoreStation {
 		this.lastRaw = null;
 		this.input.value = "";
 		this.cardInput.value = "";
-		if (this.screen && this.screen.clearSession) this.screen.clearSession();
+		for (const screen of Object.values(this.screens || {})) {
+			if (screen.clearSession) screen.clearSession();
+		}
+		if (this.screenTabs) this.screenTabs.hidden = true;
 		this.result.innerHTML = "";
 		this.result.dataset.state = "locked";
 		this.form.classList.remove("is-error");
@@ -663,7 +689,9 @@ class TraceCoreStation {
 		return (
 			typeof TcOutbox !== "undefined" &&
 			Boolean(window.indexedDB) &&
-			["T1", "T4", "T8"].includes(this.stationInfo && this.stationInfo.step)
+			((this.stationInfo && this.stationInfo.functions) || []).some((code) =>
+				["RECEIVE", "PACK", "USE"].includes(code)
+			)
 		);
 	}
 
@@ -1017,48 +1045,72 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
-		// màn riêng của bước (this.screen): T1 tiếp nhận, T2 lô rửa, T3 kiểm đếm, T4 đóng gói, T6 kho vô khuẩn; bước khác
-		// dùng tra cứu Set ID chung
-		if (this.session && !this.screen) {
-			if (station.step === "T4" && typeof T4Packing !== "undefined") {
-				this.screen = this.t4 = new T4Packing(this);
-			} else if (station.step === "T6" && typeof T6Storage !== "undefined") {
-				this.screen = new T6Storage(this);
-			} else if (station.step === "T2" && typeof T2Wash !== "undefined") {
-				this.screen = new T2Wash(this);
-			} else if (station.step === "T7" && typeof T7Issue !== "undefined") {
-				this.screen = new T7Issue(this);
-			} else if (station.step === "T8" && typeof T8Usage !== "undefined") {
-				this.screen = new T8Usage(this);
-			} else if (station.step === "T5" && typeof T5Load !== "undefined") {
-				this.screen = new T5Load(this);
-			} else if (station.step === "T3" && typeof T3Assembly !== "undefined") {
-				this.screen = new T3Assembly(this);
-			} else if (station.step === "T1" && typeof T1Receiving !== "undefined") {
-				this.screen = new T1Receiving(this);
-			} else if (station.step === "LIN" && typeof LinenCollect !== "undefined") {
-				// trạm đồ vải: thu gom + lô giặt (FEAT-034) chuyển bằng tab; không có station_laundry.js thì chỉ thu gom
-				this.screen =
-					typeof LinenStation !== "undefined"
-						? new LinenStation(this)
-						: new LinenCollect(this);
-			} else if (station.step === "WST" && typeof WasteCollect !== "undefined") {
-				// trạm chất thải: thu gom + kho lưu giữ tạm (FEAT-048) chuyển bằng tab
-				this.screen =
-					typeof WasteStation !== "undefined"
-						? new WasteStation(this)
-						: new WasteCollect(this);
-			}
-		}
-		this.zonebar.className = `tc-zonebar tc-zone-${ZONE_CLASS[station.zone_type] || "web"}`;
+		// màn nghiệp vụ theo chức năng của trạm (A-64); trạm không có màn dùng tra cứu Set ID chung
+		window.tcGateLabels = station.gate_labels || {};
+		if (this.session && !this.screen) this.openScreen((station.screens || [])[0]);
+		this.renderScreenTabs();
+		this.zonebar.className = `tc-zonebar tc-zone-${station.zone_color || "web"}`;
 		this.root.querySelector(".tc-station-name").textContent = station.label;
 		// context "Zone Station": khu khoa là "Khoa", không lấy bản dịch chung "Department" của Frappe ("Cục")
 		this.root.querySelector(".tc-zone-label").textContent = __(
-			ZONE_LABEL[station.zone_type] || "Station",
+			ZONE_LABEL[station.zone_type] || station.zone_type || "Station",
 			null,
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
+	}
+
+	// Mỗi màn giữ một instance: đổi tab không mất giỏ đang nạp dở (A-64).
+	openScreen(tab) {
+		if (!tab) return;
+		this.screens = this.screens || {};
+		if (!this.screens[tab.key]) {
+			const Screen = tcScreenClass(tab.key);
+			if (!Screen) return;
+			this.screens[tab.key] = new Screen(this);
+		}
+		this.screen = this.screens[tab.key];
+		this.activeTab = tab.key;
+	}
+
+	switchScreen(key) {
+		const tab = ((this.stationInfo && this.stationInfo.screens) || []).find(
+			(row) => row.key === key
+		);
+		if (!tab || key === this.activeTab) return;
+		if ((this.screen && this.screen.busy) || (this.pendingScans && this.pendingScans.length))
+			return;
+		this.openScreen(tab);
+		this.renderScreenTabs();
+		this.result.innerHTML = "";
+		this.screen.setOffline(this.isOffline());
+		this.screen.show();
+		this.input.focus();
+	}
+
+	renderScreenTabs() {
+		if (!this.screenTabs) {
+			this.screenTabs = document.createElement("div");
+			this.screenTabs.className = "tc-chips tc-screen-tabs";
+			this.screenTabs.setAttribute("role", "group");
+			this.screenTabs.setAttribute("aria-label", __("Station screens"));
+			this.result.before(this.screenTabs);
+		}
+		const tabs = (this.stationInfo && this.stationInfo.screens) || [];
+		const visible = this.session && tabs.length > 1;
+		this.screenTabs.hidden = !visible;
+		this.screenTabs.innerHTML = visible
+			? tabs
+					.map(
+						(tab) =>
+							`<button type="button" class="tc-chip" data-action="tc-screen" data-screen="${esc(
+								tab.key
+							)}" aria-pressed="${
+								tab.key === this.activeTab ? "true" : "false"
+							}">${esc(tab.label)}</button>`
+					)
+					.join("")
+			: "";
 	}
 
 	// quét lần lượt các mã giữ lại khi màn của bước hết chờ máy chủ; đổi phiên hoặc chờ quá lâu thì bỏ hàng đợi

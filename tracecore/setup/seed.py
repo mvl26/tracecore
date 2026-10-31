@@ -10,6 +10,14 @@ import frappe
 # (mã, tên, thứ tự quy trình, cổng, màn, bắt buộc trong chuỗi). Thứ tự và cổng cố định (FR-M2-00.4, BRU-FLOW-003).
 DEFAULT_FUNCTIONS = (
 	("RECEIVE", "Receiving", 10, "T1", "receive", 1),
+	(
+		"MANUAL_WASH",
+		"Manual washing",
+		15,
+		None,
+		None,
+		0,
+	),  # chỉ là tên công đoạn: không màn riêng, không ghi cổng
 	("WASH_LOAD", "Washer loading", 20, None, "wash", 1),
 	("WASH_UNLOAD", "Washer unloading", 25, "T2", "wash", 1),
 	("ASSEMBLE", "Assembly", 30, "T3", "assembly", 1),
@@ -23,14 +31,14 @@ DEFAULT_FUNCTIONS = (
 	("WASTE", "Waste collection", 110, None, "waste", 0),
 )
 
-# (loại vùng, màu, thứ tự qua máy hai cửa, chức năng được phép)
+# (loại vùng, màu, vùng kế tiếp qua máy hai cửa, chức năng được phép)
 DEFAULT_ZONE_TYPES = (
-	("Dirty", "dirty", 10, ("RECEIVE", "WASH_LOAD", "WASH_UNLOAD")),
-	("Clean", "clean", 20, ("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD")),
-	("Sterile", "sterile", 30, ("STERI_UNLOAD", "PUTAWAY", "ISSUE")),
-	("Department", "dept", 0, ("USE",)),
-	("Linen", "web", 0, ("LINEN",)),
-	("Waste", "waste", 0, ("WASTE",)),
+	("Dirty", "Dirty zone", "Clean", ("RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD")),
+	("Clean", "Clean zone", "Sterile", ("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD")),
+	("Sterile", "Sterile zone", None, ("STERI_UNLOAD", "PUTAWAY", "ISSUE")),
+	("Department", "Department zone", None, ("USE",)),
+	("Linen", "Default color", None, ("LINEN",)),
+	("Waste", "Waste zone", None, ("WASTE",)),
 )
 
 DEFAULT_ZONES = (
@@ -102,9 +110,11 @@ DEFAULT_STATIONS = (
 
 def ensure_station_catalog() -> None:
 	"""Tạo chức năng và loại vùng mặc định còn thiếu; bản ghi đã có (kể cả R10 đã sửa) giữ nguyên."""
+	new_functions = set()
 	for code, label, order, gate, screen, required in DEFAULT_FUNCTIONS:
 		if frappe.db.exists("Station Function", code):
 			continue
+		new_functions.add(code)
 		doc = frappe.get_doc(
 			{
 				"doctype": "Station Function",
@@ -120,18 +130,30 @@ def ensure_station_catalog() -> None:
 		)
 		doc.flags.tc_seed = True
 		doc.insert(ignore_permissions=True)
-	for type_name, color, flow_order, functions in DEFAULT_ZONE_TYPES:
+	new_types = {}
+	for type_name, color, next_type, functions in DEFAULT_ZONE_TYPES:
 		if frappe.db.exists("Zone Type", type_name):
+			# chức năng mới của bản cập nhật vào loại vùng đã có; chức năng R10 đã bỏ không thêm lại
+			added = new_functions.intersection(functions)
+			if added:
+				doc = frappe.get_doc("Zone Type", type_name)
+				for function in sorted(added):
+					doc.append("functions", {"station_function": function})
+				doc.save(ignore_permissions=True)
 			continue
 		frappe.get_doc(
 			{
 				"doctype": "Zone Type",
 				"type_name": type_name,
 				"zone_color": color,
-				"flow_order": flow_order,
 				"functions": [{"station_function": function} for function in functions],
 			}
 		).insert(ignore_permissions=True)
+		new_types[type_name] = next_type
+	# gán sau khi đủ loại vùng: Link phải trỏ tới bản ghi đã có
+	for type_name, next_type in new_types.items():
+		if next_type:
+			frappe.db.set_value("Zone Type", type_name, "next_zone_type", next_type)
 
 
 def ensure_zone_stations() -> list[str]:

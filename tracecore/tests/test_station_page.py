@@ -178,7 +178,7 @@ class TestStationPage(FrappeTestCase):
 		with open(os.path.join(APP_PATH, "ui/page/station/station.js"), encoding="utf-8") as handle:
 			source = handle.read()
 		self.assertIn('method.startsWith("tracecore.v1.wash.")', source)  # bearer trong body như T4
-		self.assertIn("new T2Wash(this)", source)
+		self.assertIn('return typeof T2Wash !== "undefined" ? T2Wash : null;', source)
 
 	def test_t2_form_times_follow_the_system_timezone_not_the_browser(self):
 		# Giờ kết thúc mặc định của form nhập tay gửi không kèm offset và server coi là giờ hệ thống: lấy theo múi giờ
@@ -197,7 +197,7 @@ class TestStationPage(FrappeTestCase):
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
 			source = handle.read()
 		self.assertIn('method.startsWith("tracecore.v1.load.")', source)  # bearer trong body như T4/T2
-		self.assertIn("new T5Load(this)", source)
+		self.assertIn('return typeof T5Load !== "undefined" ? T5Load : null;', source)
 		with open(os.path.join(APP_PATH, "public", "js", "station_t5.js"), encoding="utf-8") as handle:
 			screen = handle.read()
 		self.assertIn("clearSession() {", screen)
@@ -232,8 +232,8 @@ class TestStationPage(FrappeTestCase):
 		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t7.js")))
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
 			source = handle.read()
-		self.assertIn('station.step === "T7"', source)
-		self.assertIn("new T7Issue(this)", source)
+		self.assertIn('case "issue":', source)
+		self.assertIn('return typeof T7Issue !== "undefined" ? T7Issue : null;', source)
 
 	def test_t7_rpcs_carry_station_token_and_screen_clears_on_session_end(self):
 		# FEAT-003: rpc() gắn token phiên cho RPC issue như pack/putaway; hết phiên thì màn T7 xóa phiếu đang mở
@@ -264,7 +264,7 @@ class TestStationPage(FrappeTestCase):
 		self.assertTrue(os.path.exists(os.path.join(APP_PATH, "public", "js", "station_t1.js")))
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
 			source = handle.read()
-		self.assertIn("new T1Receiving(this)", source)
+		self.assertIn('return typeof T1Receiving !== "undefined" ? T1Receiving : null;', source)
 		self.assertIn('method.startsWith("tracecore.v1.receive.")', source)  # bearer trong body như T4
 
 	def test_t1_screen_never_drops_a_scan_and_returns_focus_to_the_scan_box(self):
@@ -380,7 +380,7 @@ class TestStationPage(FrappeTestCase):
 		self.assertEqual(ours.get("Department:Zone Station"), "Khoa")
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
 			source = re.sub(r"\s+", " ", handle.read())
-		self.assertIn('ZONE_LABEL[station.zone_type] || "Station", null, "Zone Station"', source)
+		self.assertIn('ZONE_LABEL[station.zone_type] || station.zone_type || "Station"', source)
 
 	def test_scans_while_screen_is_busy_are_kept_and_focus_leaves_the_clicked_button(self):
 		# mã quét đến khi màn đang chờ máy chủ được giữ lại và quét khi màn rảnh (màn T2, T4, T5, T5b, T6, T8, test hằng

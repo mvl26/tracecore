@@ -14,7 +14,7 @@ from frappe.auth import SAFE_HTTP_METHODS
 from frappe.utils import cint, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import audit, gs1
+from tracecore.core import audit, gs1, zones
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 
@@ -262,30 +262,31 @@ def require_agent_for(station):
 
 
 def require_step(station, step):
-	"""Block nếu `station` không phải trạm đang hoạt động của bước `step`; đúng thì None.
+	"""Block nếu `station` không phải trạm đang hoạt động có chức năng `step`; đúng thì None.
 
-	Thứ tự kiểm: tồn tại → `is_active` (STATION_INACTIVE) → bước (STATION_WRONG_STEP).
-	`step=None` bỏ qua kiểm bước (đường Desk của R10: chỉ cần trạm tồn tại và đang hoạt động).
+	`step` là mã chức năng hoặc tuple mã (có một trong số đó là đạt; A-64). Thứ tự kiểm: tồn tại → `is_active`
+	(STATION_INACTIVE) → chức năng (STATION_WRONG_STEP). `step=None` bỏ qua kiểm chức năng (đường Desk của R10: chỉ cần
+	trạm tồn tại và đang hoạt động).
 	"""
+	functions = () if step is None else ((step,) if isinstance(step, str) else tuple(step))
+	label = zones.function_label(functions[0]) if functions else ""
 	row = None
 	if isinstance(station, str) and station:
-		row = frappe.db.get_value(
-			"Zone Station", station, ["is_zone", "is_active", "station_step"], as_dict=True
-		)
+		row = frappe.db.get_value("Zone Station", station, ["is_zone", "is_active"], as_dict=True)
 	if row and not cint(row.is_zone):
 		if not cint(row.is_active):
 			return station_inactive_block(station)
-		if step is None or row.station_step == step:
+		if not functions or zones.station_has_function(station, *functions):
 			return None
 	return Block(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} station.").format(station, step)
+		_("{0} is not a {1} station.").format(station, label)
 		if row
 		else _("Station {0} does not exist.").format(
 			station if isinstance(station, str) and station else "-"
 		),
-		_("Open this screen on a {0} station.").format(step),
+		_("Open this screen on a {0} station.").format(label),
 	)
 
 

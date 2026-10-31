@@ -35,28 +35,16 @@ def set_parent_zone(page, zone, title):
 	expect(field).to_have_value(title)
 
 
-def step_options(page):
-	"""Các chức năng chọn được (bỏ dòng trống) của ô Bước của trạm."""
-	options = page.locator("select[data-fieldname='station_step'] option")
-	return [text for text in (o.strip() for o in options.all_text_contents()) if text]
+def allowed_functions(page, zone):
+	"""Chức năng được phép của vùng, đúng RPC mà form dùng để lọc ô chọn."""
+	response = page.request.get("/api/method/tracecore.v1.zone.allowed_functions", params={"zone": zone})
+	return [row["value"] for row in response.json()["message"]]
 
 
-def expect_step_options(page, expected):
-	"""Danh sách options đến từ RPC nên đợi tới khi khớp (auto-wait), không ngủ cố định."""
-	select = page.locator("select[data-fieldname='station_step']")
-	expect(select).to_be_attached()
-	for value in expected:
-		expect(select.locator(f"option[value='{value}']")).to_be_attached(timeout=15000)
-	assert step_options(page) == expected
-
-
-def test_station_step_options_follow_zone(r10_page):
-	new_station(r10_page)
-	set_parent_zone(r10_page, "ZONE-CLEAN", "Clean zone")
-	expect_step_options(r10_page, ["T3", "T4", "T5"])
-
-	set_parent_zone(r10_page, "ZONE-DIRTY", "Dirty zone")
-	expect_step_options(r10_page, ["T1", "T2"])
+def test_station_functions_follow_zone(r10_page):
+	assert "PACK" in allowed_functions(r10_page, "ZONE-CLEAN")
+	assert "PACK" not in allowed_functions(r10_page, "ZONE-DIRTY")
+	assert "RECEIVE" in allowed_functions(r10_page, "ZONE-DIRTY")
 
 
 def test_station_without_zone_shows_inactive(r10_page):

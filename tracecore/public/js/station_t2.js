@@ -72,15 +72,7 @@ function t2Kind(raw) {
 }
 
 function t2GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 class T2Wash {
@@ -104,7 +96,7 @@ class T2Wash {
 	}
 
 	reset() {
-		this.mode = "load";
+		this.mode = this.canLoad() ? "load" : "unload";
 		this.load = null; // {machine, programs, lots, program, lot, sets: [{set_id, set_name, gates}]}
 		this.done = null; // kết quả wash.complete
 		this.printNote = null;
@@ -515,6 +507,7 @@ class T2Wash {
 	// ---- dỡ lô ----
 	setMode(mode) {
 		if (this.busy || (mode !== "load" && mode !== "unload")) return;
+		if (mode === "load" ? !this.canLoad() : !this.canUnload()) return;
 		this.mode = mode;
 		this.notice = null;
 		this.lookup = null;
@@ -930,14 +923,28 @@ class T2Wash {
 		this.input.setAttribute("aria-label", text);
 	}
 
+	// chế độ theo chức năng của trạm (A-64): trạm chỉ nạp hoặc chỉ dỡ không thấy chế độ kia
+	stationHas(code) {
+		const info = this.station.stationInfo;
+		return Boolean(info && (info.functions || []).includes(code));
+	}
+
+	canLoad() {
+		return this.stationHas("WASH_LOAD");
+	}
+
+	canUnload() {
+		return this.stationHas("WASH_UNLOAD");
+	}
+
 	modeHtml() {
 		const running = (this.overview && this.overview.running.length) || 0;
 		const chip = (mode, label) =>
 			`<button type="button" class="tc-chip" data-action="t2-mode" data-mode="${mode}"
 				aria-pressed="${this.mode === mode ? "true" : "false"}">${esc(label)}</button>`;
 		return `<div class="tc-chips" role="group" aria-label="${esc(__("Wash batch"))}">
-			${chip("load", __("Load batch"))}
-			${chip("unload", __("Unload batch ({0} running)", [running]))}
+			${this.canLoad() ? chip("load", __("Load batch")) : ""}
+			${this.canUnload() ? chip("unload", __("Unload batch ({0} running)", [running])) : ""}
 			<button type="button" class="tc-chip" data-action="t2-daily-test" aria-pressed="false">${esc(
 				__("Daily test")
 			)}</button>
@@ -1333,9 +1340,9 @@ class T2Wash {
 					.join("")
 			: `<p class="tc-empty">${esc(__("None."))}</p>`;
 		return `<section class="tc-t4-block tc-t2-redo" aria-label="${esc(
-			__("Reprocessing queue at T2")
+			__("Reprocessing queue")
 		)}">
-			<h3>${esc(__("Reprocessing queue at T2"))}</h3>
+			<h3>${esc(__("Reprocessing queue"))}</h3>
 			${this.overview ? body : `<p class="tc-loading">${esc(__("Loading..."))}</p>`}
 		</section>`;
 	}

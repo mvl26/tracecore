@@ -207,7 +207,9 @@ class ZoneStation(Document):
 		if not parent or not parent.is_zone:
 			frappe.throw(_("A station must belong to a zone."))
 		if not cint(parent.is_active) and cint(self.is_active):
-			frappe.throw(_("Zone {0} is turned off, so this station cannot be active.").format(self.parent_zone))
+			frappe.throw(
+				_("Zone {0} is turned off, so this station cannot be active.").format(self.parent_zone)
+			)
 		self.zone_type = parent.zone_type
 		zones.check_functions(parent.zone_type, functions)
 		self._warn_number_against_process_order(functions)
@@ -242,9 +244,9 @@ class ZoneStation(Document):
 			other = _process_order(zones.station_functions(row.name))
 			if other and (cint(row.station_no) < number) != (min(other) < order) and min(other) != order:
 				frappe.msgprint(
-					_("Station No {0} is out of order with the process: compare station {1} (No {2}).").format(
-						number, row.name, row.station_no
-					),
+					_(
+						"Station No {0} is out of order with the process: compare station {1} (No {2})."
+					).format(number, row.name, row.station_no),
 					indicator="orange",
 				)
 				return

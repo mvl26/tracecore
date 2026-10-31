@@ -17,7 +17,7 @@ from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import storage
 from tracecore.v1._common import STORAGE_ROLES, require_any_role, run_at_step, station_session
 
-STEP = storage.STEP  # màn kho vô khuẩn chỉ chạy ở trạm bước T6
+FUNCTION = storage.FUNCTION
 READ_ROLES = (*STORAGE_ROLES, "TC R02")
 
 
@@ -58,7 +58,7 @@ def scan(raw, station, open_pack=None, client_ts=None, token=None):
 	scanned = gs1.parse_scan(raw)
 	ref = {"pack": "Pack", "location": "Sterile Location"}.get(scanned["type"])
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: _route(scanned, raw, station, open_pack, timestamp),

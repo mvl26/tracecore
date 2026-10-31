@@ -60,7 +60,9 @@ class SterilizationLoad(Document):
 	def before_insert(self):
 		if not self.flags.tc_sterilizing:
 			frappe.throw(
-				_("A sterilization load is created only when loading is completed on the T5 screen.")
+				_(
+					"A sterilization load is created only when loading is completed on the sterilizer loading screen."
+				)
 			)
 
 	def validate(self):
@@ -93,4 +95,4 @@ class SterilizationLoad(Document):
 			return
 		changed = [f for f in SERVICE_FIELDS if str(before.get(f) or "") != str(self.get(f) or "")]
 		if changed or [row.pack for row in before.packs] != [row.pack for row in self.packs]:
-			frappe.throw(_("A sterilization load is changed only by the T5 screen service."))
+			frappe.throw(_("A sterilization load is changed only by the sterilizer loading service."))

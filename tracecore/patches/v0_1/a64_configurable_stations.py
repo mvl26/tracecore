@@ -86,4 +86,6 @@ def _map_help_articles():
 	if not frappe.db.has_column("Help Article", "tc_station_key"):
 		return
 	for step, key in HELP_KEY_BY_STEP.items():
-		frappe.db.set_value("Help Article", {"tc_station_key": step}, "tc_station_key", key, update_modified=False)
+		frappe.db.set_value(
+			"Help Article", {"tc_station_key": step}, "tc_station_key", key, update_modified=False
+		)

@@ -6,15 +6,23 @@ from tracecore.tests.utils import IsolatedTestCase, bru
 
 class TestZones(IsolatedTestCase):
 	def test_default_catalog_matches_a64(self):
-		self.assertEqual(zones.allowed_functions("Dirty"), ("RECEIVE", "WASH_LOAD", "WASH_UNLOAD"))
 		self.assertEqual(
-			zones.allowed_functions("Clean"), ("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD")
+			zones.allowed_functions("Dirty"), ("RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD")
+		)
+		self.assertEqual(
+			zones.allowed_functions("Clean"),
+			("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD"),
 		)
 		self.assertEqual(zones.allowed_functions("Sterile"), ("STERI_UNLOAD", "PUTAWAY", "ISSUE"))
 		self.assertEqual(zones.allowed_functions("Department"), ("USE",))
 		self.assertEqual(zones.allowed_functions("Linen"), ("LINEN",))
 		self.assertEqual(zones.allowed_functions("Waste"), ("WASTE",))
 		self.assertEqual(zones.allowed_functions("Unknown"), ())
+
+	def test_manual_wash_has_no_screen_and_no_gate(self):
+		row = frappe.db.get_value("Station Function", "MANUAL_WASH", ["screen_key", "gate_step"])
+		self.assertEqual((row[0] or None, row[1] or None), (None, None))
+		self.assertEqual(zones.station_screen_tabs(["MANUAL_WASH"]), [])
 
 	def test_gate_of_each_function_is_fixed_by_catalog(self):
 		gates = dict(frappe.get_all("Station Function", fields=["name", "gate_step"], as_list=True))
@@ -44,15 +52,34 @@ class TestZones(IsolatedTestCase):
 			with self.subTest(zone_type=zone_type), self.assertRaises(frappe.ValidationError):
 				zones.check_functions(zone_type, ["PACK"])
 
-	def test_flow_order_decides_next_zone_type(self):
+	def test_config_decides_next_zone_type(self):
 		self.assertEqual(zones.next_zone_type("Dirty"), "Clean")
 		self.assertEqual(zones.next_zone_type("Clean"), "Sterile")
 		self.assertIsNone(zones.next_zone_type("Sterile"))
 		self.assertIsNone(zones.next_zone_type("Linen"))
-		frappe.get_doc({"doctype": "Zone Type", "type_name": "TEST Quarantine", "flow_order": 25}).insert(
-			ignore_permissions=True
-		)
+		frappe.get_doc(
+			{"doctype": "Zone Type", "type_name": "TEST Quarantine", "next_zone_type": "Sterile"}
+		).insert(ignore_permissions=True)
+		clean = frappe.get_doc("Zone Type", "Clean")
+		clean.next_zone_type = "TEST Quarantine"
+		clean.save(ignore_permissions=True)
 		self.assertEqual(zones.next_zone_type("Clean"), "TEST Quarantine")
+
+	def test_next_zone_cannot_make_a_loop(self):
+		sterile = frappe.get_doc("Zone Type", "Sterile")
+		sterile.next_zone_type = "Dirty"
+		with self.assertRaises(frappe.ValidationError):
+			sterile.save(ignore_permissions=True)
+		dirty = frappe.get_doc("Zone Type", "Dirty")
+		dirty.next_zone_type = "Dirty"
+		with self.assertRaises(frappe.ValidationError):
+			dirty.save(ignore_permissions=True)
+
+	def test_header_color_maps_to_css_class(self):
+		self.assertEqual(zones.zone_color_class("Dirty"), "dirty")
+		self.assertEqual(zones.zone_color_class("Department"), "dept")
+		self.assertEqual(zones.zone_color_class("Linen"), "web")
+		self.assertEqual(zones.zone_color_class(None), "web")
 
 	def test_station_functions_and_lookup(self):
 		self.assertEqual(zones.station_functions("TR-002"), ["WASH_LOAD", "WASH_UNLOAD"])

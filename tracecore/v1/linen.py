@@ -24,7 +24,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = "LIN"
+FUNCTION = "LINEN"
 
 
 def _text(value, name):
@@ -60,7 +60,7 @@ def catalog(station, department=None, client_ts=None, token=None):
 	department = _text(department, "department")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -83,7 +83,7 @@ def balance(station, department=None, client_ts=None, token=None):
 		collection.check_department(department)
 		return {"ok": True, "department": department, "balance": reconcile.balance(department)}
 
-	return run_at_step(STEP, station, timestamp, call)
+	return run_at_step(FUNCTION, station, timestamp, call)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -122,7 +122,7 @@ def issue(
 		)
 		return {"ok": True, "issue": issuing.view(doc)}
 
-	return run_at_step(STEP, station, timestamp, call, None, None)
+	return run_at_step(FUNCTION, station, timestamp, call, None, None)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -154,4 +154,4 @@ def collect(
 		doc = collection.record(station, _receiver(), department, delivered_by, lines, total_kg, note)
 		return {"ok": True, "collection": collection.view(doc)}
 
-	return run_at_step(STEP, station, timestamp, call, None, None)
+	return run_at_step(FUNCTION, station, timestamp, call, None, None)

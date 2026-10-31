@@ -170,7 +170,7 @@ class T1Receiving {
 	// ---- offline (FEAT-009, UC-05 E3, A-40 D3): phiếu làm trên thiết bị, Ghi sổ thành một mục hàng đợi ----
 	offlineReady() {
 		const data = this.station.offlineData;
-		return Boolean(this.station.offlineCapable() && data && data.step === "T1");
+		return Boolean(this.station.offlineCapable() && data && data.function === "RECEIVE");
 	}
 
 	// phiếu offline đi hết vòng đời cục bộ (kể cả khi mạng về giữa chừng); phiếu online không chuyển sang offline

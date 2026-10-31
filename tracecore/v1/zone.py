@@ -18,7 +18,8 @@ def allowed_functions(zone):
 	if not row:
 		return []
 	return [
-		{"value": function, "label": zones.function_label(function)} for function in zones.allowed_functions(row)
+		{"value": function, "label": zones.function_label(function)}
+		for function in zones.allowed_functions(row)
 	]
 
 

@@ -19,9 +19,9 @@ Station,Trạm,
 Scan Set ID,Quét Set ID,
 Scan Set ID...,Quét Set ID…,
 Scan,Quét,
-Dirty zone,Khu bẩn,
-Clean zone,Khu sạch,
-Sterile zone,Khu vô khuẩn,
+Dirty zone,Khu bẩn
+Clean zone,Khu sạch
+Sterile zone,Khu vô khuẩn
 Linen station,Trạm đồ vải,
 Waste station,Trạm chất thải,
 T1 Receiving,T1 Tiếp nhận,
@@ -102,7 +102,7 @@ Cycles Used,Số chu trình đã dùng,
 Max Cycles,Số chu trình tối đa,
 Name,Tên,
 Is Zone,Là khu,
-Zone Type,Loại khu,
+Zone Type,Loại khu
 Dirty,Bẩn,
 Clean,Sạch,
 Linen,Đồ vải,
@@ -604,7 +604,7 @@ Host,Địa chỉ máy,Station Peripheral
 Port,Cổng,Station Peripheral
 Serial Port,Cổng nối tiếp,Station Peripheral
 Baud Rate,Tốc độ baud,Station Peripheral
-Is Active,Đang dùng,Station Peripheral
+Is Active,Đang hoạt động,Station Peripheral
 Notes,Ghi chú,Station Peripheral
 "Scanner or scale attached to a station (FEAT-002): connection USB HID, Serial or TCP.","Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, cổng nối tiếp hoặc TCP.",
 1 to 65535.,1 đến 65535.,
@@ -5407,6 +5407,7 @@ Next Record,Phiếu kế tiếp,
 No Expiry,Không hết hạn,
 No photo of the assembled set yet,Chưa có ảnh bộ đã lắp ráp,
 No.,STT,
+No.,STT,Title of the 'row number' column
 Non-conformance Pending,Chờ xử lý không phù hợp,
 Non-conformity Pending,Chờ xử lý không phù hợp,
 Non-critical,Không thiết yếu,
@@ -6612,3 +6613,62 @@ Scan the card of the person handing over the waste.,Quét thẻ người giao ch
 "Choose the waste type, then enter the number of bags and the weight.","Chọn loại chất thải, rồi nhập số túi và khối lượng.",
 "Confirm, then scan the card again to acknowledge the receipt.","Xác nhận, rồi quét lại thẻ để xác nhận biên nhận.",
 WST,Thu gom chất thải (WST),Help Article
+Header Color,Màu thanh tiêu đề
+Color of the header bar on station screens.,Màu thanh tiêu đề trên màn trạm.
+Next Zone Through Two-Door Machine,Khu kế tiếp qua máy hai cửa
+Zone that two-door machines open into from this zone. Leave empty for the last zone or zones outside the flow.,Khu mà máy hai cửa mở sang từ khu này. Để trống với khu cuối hoặc khu ngoài luồng.
+Next zone {0} would make the flow go in a loop.,Khu kế tiếp {0} làm luồng đi thành vòng lặp.
+Default color,Mặc định
+Department zone,Khoa
+Waste zone,Chất thải
+Washer loading,Nạp máy rửa
+Washer unloading,Dỡ máy rửa
+Sterilizer loading,Nạp máy tiệt khuẩn
+Sterilizer unloading,Dỡ máy tiệt khuẩn
+Station screens,Màn của trạm
+Station No,Số trạm
+Station Functions,Chức năng trạm
+Station Function,Chức năng trạm
+Function Code,Mã chức năng
+Function Name,Tên chức năng
+Process Order,Thứ tự quy trình
+Flow Order,Thứ tự luồng
+Allowed Functions,Chức năng được phép
+Zone Color,Màu khu
+Reprocessing queue,Hàng đợi xử lý lại
+Take the set to the packing station.,Đưa bộ tới trạm đóng gói.
+Assembly is recorded. The set can go to packing.,Đã ghi kiểm đếm. Bộ có thể sang đóng gói.
+The packs can now go to the sterile store.,Các gói có thể nhập kho vô khuẩn.
+Restart from {0},Làm lại từ {0}
+Restart from {0} or from {1}.,Làm lại từ {0} hoặc từ {1}.
+Choose {0} or {1} to restart the sets from.,Chọn {0} hoặc {1} để làm lại bộ.
+Zone {0} only allows these functions: {1}. {2} cannot be set.,Khu {0} chỉ cho phép: {1}. Không thể đặt {2}.
+"Zone {0} has no station functions yet, so {1} cannot be set.",Khu {0} chưa có chức năng trạm nên không thể đặt {1}.
+"A two-door machine must go from zone {0} to the next zone in the configured flow, not to zone {1}.","Máy hai cửa phải đi từ khu {0} sang khu kế tiếp theo luồng đã cấu hình, không sang khu {1}."
+Station No {0} is already used by active station {1}.,Số trạm {0} đã được dùng cho trạm đang hoạt động {1}.
+Station No {0} is out of order with the process: compare station {1} (No {2}).,Số trạm {0} lệch thứ tự quy trình: so với trạm {1} (số {2}).
+Cannot turn off zone {0}: still used by {1}.,Không tắt được khu {0}: còn dùng bởi {1}.
+"Zone {0} is turned off, so this station cannot be active.",Khu {0} đã tắt nên trạm này không hoạt động được.
+A station cannot list the same function twice.,Một trạm không được lặp lại cùng chức năng.
+These functions have no active station yet: {0}.,Các chức năng này chưa có trạm hoạt động: {0}.
+Only system functions have a gate or a business screen.,Chỉ chức năng hệ thống mới có cổng hoặc màn nghiệp vụ.
+{0} of a system function cannot be changed.,Không đổi được {0} của chức năng hệ thống.
+Function {0} is used by active stations: {1}.,Chức năng {0} đang được trạm hoạt động dùng: {1}.
+Cannot remove functions still used by active stations: {0}.,Không bỏ được chức năng trạm hoạt động còn dùng: {0}.
+"Cannot change the zone type: active station {0} has function {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm hoạt động {0} có chức năng {1}, loại khu {2} không cho phép."
+Flow Order {0} is already used by zone type {1}.,Thứ tự luồng {0} đã dùng cho loại khu {1}.
+No station role is defined for station {0}.,Chưa có vai trò cho trạm {0}.
+Station {0} cannot unload washer {1}: use a {2} station or a station at the exit door.,Trạm {0} không dỡ được máy rửa {1}: dùng trạm {2} hoặc trạm ở cửa ra.
+Unload the batch at a {0} station or at a station in zone {1}.,Dỡ lô ở trạm {0} hoặc trạm thuộc khu {1}.
+Station {0} cannot enter data for sterilizer {1}: use a {2} station or a station at the exit door.,Trạm {0} không nhập được dữ liệu máy tiệt khuẩn {1}: dùng trạm {2} hoặc trạm ở cửa ra.
+Enter the cycle data at a {0} station or at a station in zone {1}.,Nhập dữ liệu chu trình ở trạm {0} hoặc trạm thuộc khu {1}.
+"Store the pack in sterile storage first, or check its status with R02.","Nhập gói vào kho vô khuẩn trước, hoặc hỏi R02 về trạng thái gói."
+Manual washing,Rửa thủ công
+"A station without a zone cannot be active. A zone with active stations, machines or locations cannot be turned off.","Trạm chưa có khu không thể hoạt động. Khu còn trạm, máy hoặc vị trí kệ đang hoạt động không thể tắt."
+"Shown as T1, T2… Leave 0 for stations outside the numbered flow.","Hiển thị là T1, T2… Để 0 với trạm ngoài chuỗi đánh số."
+Set {0} is {1}; only a set at end of life or sent to disposal at assembly can be disposed.,Bộ {0} đang {1}; chỉ bộ Hết vòng đời hoặc rẽ nhánh Thanh lý mới thanh lý được.
+"After this change, these sets need maintenance at the next packing:","Sau thay đổi này, các bộ sau cần bảo dưỡng ở lần đóng gói tới:"
+Counters now change only at packing and release.,Từ nay bộ đếm chỉ thay đổi khi đóng gói và khi giải phóng.
+Pack {0} is {1}; only a packed pack can be voided at packing.,Gói {0} đang ở trạng thái {1}; chỉ hủy được gói Đã đóng gói.
+A sterilization load is created only when loading is completed on the sterilizer loading screen.,Mẻ tiệt khuẩn chỉ được tạo khi hoàn thành nạp trên màn nạp máy tiệt khuẩn.
+A sterilization load is changed only by the sterilizer loading service.,Mẻ tiệt khuẩn chỉ được thay đổi qua màn hình T5.
