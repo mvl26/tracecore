@@ -13,6 +13,8 @@
   "equipment_name",
   "is_active",
   "requires_bi",
+  "requires_wash_indicator",
+  "requires_wash_indicator_photo",
   "column_break_main",
   "temperature",
   "pressure",
@@ -86,6 +88,20 @@
    "fieldname": "requires_bi",
    "fieldtype": "Check",
    "label": "Requires Biological Indicator"
+  },
+  {
+   "default": "0",
+   "description": "Washers only. Off by default: unloading a batch then waits for the wash indicator to be read before the sets can go to assembly.",
+   "fieldname": "requires_wash_indicator",
+   "fieldtype": "Check",
+   "label": "Requires Wash Indicator"
+  },
+  {
+   "default": "0",
+   "depends_on": "requires_wash_indicator",
+   "fieldname": "requires_wash_indicator_photo",
+   "fieldtype": "Check",
+   "label": "Requires Wash Indicator Photo"
   },
   {
    "fieldname": "column_break_main",
@@ -203,7 +219,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.500379",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Process Program",

@@ -21,6 +21,8 @@ COLUMNS = (
 	("station", "Station", "Link", 90, "Zone Station"),
 	("equipment", "Equipment", "Link", 100, "Equipment"),
 	("result", "Result", "Data", 80, None),
+	("wash_indicator", "Wash Indicator", "Data", 320, None),
+	("indicator_photo", "Indicator Photo", "Data", 180, None),
 	("department", "Department", "Link", 150, "Department"),
 	("patient_code_masked", "Patient Code (masked)", "Data", 130, None),
 	("ref_doctype", "Document Type", "Link", 130, "DocType"),
@@ -50,6 +52,7 @@ def execute(filters=None):
 	rows = []
 	for chain in result["chains"]:
 		for event in chain["events"]:
+			indicator = event.get("indicator")
 			rows.append(
 				{
 					"cycle_id": chain["cycle_id"],
@@ -60,6 +63,8 @@ def execute(filters=None):
 					"station": event.get("station"),
 					"equipment": event.get("equipment"),
 					"result": _(event["result"]) if event.get("result") else None,
+					"wash_indicator": trace.wash_indicator_line(indicator),
+					"indicator_photo": indicator["photo"] if indicator else None,
 					"department": event.get("department"),
 					"patient_code_masked": event.get("patient_code_masked"),
 					"ref_doctype": event.get("ref_doctype"),

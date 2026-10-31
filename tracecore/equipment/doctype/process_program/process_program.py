@@ -16,6 +16,7 @@ from tracecore.core import audit
 from tracecore.equipment import norms
 
 PROGRAM_CODE_PATTERN = re.compile(r"[A-Z0-9-]+")
+WASH_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
 NON_NEGATIVE_FIELDS = (
 	("duration_min", "Duration (min)"),
 	("kwh_per_cycle", "Electricity per Cycle (kWh)"),
@@ -39,6 +40,7 @@ class ProcessProgram(Document):
 	def validate(self):
 		self.program_code = _normalize_code(self.program_code)
 		self._validate_equipment()
+		self._normalize_wash_indicator()
 		self._validate_norms()
 		self._apply_norms()
 		self._validate_consumables()
@@ -65,6 +67,13 @@ class ProcessProgram(Document):
 					self.equipment
 				)
 			)
+
+	def _normalize_wash_indicator(self):
+		# chỉ thị rửa chỉ có nghĩa với máy rửa/siêu âm (A-257); ảnh chỉ bắt buộc khi chỉ thị bắt buộc
+		if norms.equipment_type_of(self) not in WASH_TYPES:
+			self.requires_wash_indicator = 0
+		if not cint(self.requires_wash_indicator):
+			self.requires_wash_indicator_photo = 0
 
 	def _validate_norms(self):
 		for fieldname, label in NON_NEGATIVE_FIELDS:

@@ -35,6 +35,8 @@
   "unload_scan_equipment",
   "unload_scan_at",
   "unloaded_by",
+  "indicator_required",
+  "indicator_photo_required",
   "clean_test_result",
   "column_break_result",
   "cycle_result",
@@ -122,7 +124,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Running\nPassed\nFailed",
+   "options": "Running\nAwaiting Result\nPassed\nFailed",
    "read_only": 1
   },
   {
@@ -251,6 +253,22 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Copied from the program when the batch is unloaded.",
+   "fieldname": "indicator_required",
+   "fieldtype": "Check",
+   "label": "Wash Indicator Required",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Copied from the program when the batch is unloaded.",
+   "fieldname": "indicator_photo_required",
+   "fieldtype": "Check",
+   "label": "Wash Indicator Photo Required",
+   "read_only": 1
+  },
+  {
    "fieldname": "clean_test_result",
    "fieldtype": "Select",
    "label": "Cleaning Test",
@@ -319,7 +337,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.512354",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

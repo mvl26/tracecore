@@ -331,6 +331,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-05; API API-M2-01, API-M1-06
 - A1. Rửa thủ công/siêu âm cho dụng cụ tinh vi: lô loại Thủ công, nhập thời gian ngâm, nồng độ, nhiệt độ.
 - A2. Máy rửa hai cửa: xác nhận dỡ tại cửa khu sạch bởi R04.
 - A3. Máy không có cả màn hình lẫn bản in: nhập tay tối thiểu chương trình + giờ bắt đầu/kết thúc và xác nhận; R02 xác nhận thêm khi kết luận (BRU-REP-015).
+- A5. [A-257] Chương trình bật bắt buộc chỉ thị: quét đủ QR máy và QR mã lô thì lô sang Chờ đọc chỉ thị, máy được nạp lô mới, bộ chưa sang T3. Người đọc (quét lại QR lô nếu đọc sau) ghi vật tư, lô, hạn, kết quả, ảnh; bước 5 áp kết quả chung của chu trình và chỉ thị.
 - A4. [A-66] Màn nạp hiển thị danh sách Bộ chờ rửa (bộ đã Đạt T1, chưa có kết quả T2, chưa ở lô đang chạy) để KTV biết bộ nào cần rửa; danh sách chỉ để xem, vẫn quét Set ID từng bộ vào lô.
 
 **Exception flows**
@@ -339,6 +340,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-05; API API-M2-01, API-M1-06
 - E3. Lô Không đạt → toàn bộ bộ chuyển Xử lý lại (rửa), chỉ quét được tại T2, lặp tới khi Đạt; NC tự tạo.
 - E4. Chưa có dữ liệu tự động và chưa có nhập tay đã xác nhận → nút Đóng lô khóa, không kết luận Đạt được.
 - E5. Dỡ lô: quét QR máy không khớp máy của mã lô, hoặc chưa quét đủ máy + mã lô → từ chối mở màn kết quả.
+- E6. [A-257] Chỉ thị thiếu lô, hết hạn hoặc thiếu ảnh bắt buộc → không ghi được Đạt, lô vẫn Chờ đọc chỉ thị.
 
 **Open issues:** Đã chốt: Set ID GS1; 2 loại nhãn (hấp / plasma); hạn lưu loại gói và cơ số do khoa nhập tay trước Sprint 1. Còn xác nhận mẫu nhãn cụ thể tại UAT.
 

@@ -2,17 +2,21 @@
  "actions": [],
  "autoname": "LT-.YYYY.-.#####",
  "creation": "2026-10-25 10:00:00.000000",
- "description": "One indicator result of a sterilization load: Bowie-Dick, chemical class 5/6 or biological (FEAT-023, UC-10). Written by the release service only; a biological indicator is Pending until it is read.",
+ "description": "One indicator result of a sterilization load (FEAT-023, UC-10) or of a wash batch (A-257, UC-06). Written by the release and wash services only; a biological indicator is Pending until it is read.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "load",
+  "wash_batch",
   "indicator",
   "pack",
   "result",
   "column_break_head",
   "test_date",
+  "indicator_item",
   "lot",
+  "lot_expiry",
+  "photo",
   "incubator",
   "read_at",
   "read_by",
@@ -26,15 +30,23 @@
    "in_list_view": 1,
    "label": "Load",
    "options": "Sterilization Load",
+   "read_only": 1
+  },
+  {
+   "fieldname": "wash_batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Wash Batch",
+   "options": "Wash Batch",
    "read_only": 1,
-   "reqd": 1
+   "search_index": 1
   },
   {
    "fieldname": "indicator",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Indicator",
-   "options": "bowie_dick\nchemical_class_5\nchemical_plasma\nbiological",
+   "options": "bowie_dick\nchemical_class_5\nchemical_plasma\nbiological\nwash_indicator",
    "read_only": 1,
    "reqd": 1
   },
@@ -67,9 +79,28 @@
    "read_only": 1
   },
   {
+   "fieldname": "indicator_item",
+   "fieldtype": "Link",
+   "label": "Indicator Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
    "fieldname": "lot",
    "fieldtype": "Data",
    "label": "Indicator Lot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lot_expiry",
+   "fieldtype": "Date",
+   "label": "Lot Expiry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Indicator Photo",
    "read_only": 1
   },
   {
@@ -108,7 +139,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-25 10:00:00.000000",
+ "modified": "2026-10-31 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Load Indicator Result",

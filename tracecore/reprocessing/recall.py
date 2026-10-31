@@ -15,7 +15,7 @@ from frappe.utils import add_to_date, cstr, get_datetime, now_datetime
 
 from tracecore.core import notification, step_gate
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import incidents, storage, usage
+from tracecore.reprocessing import incidents, storage, trace, usage
 
 DOCTYPE = "Recall Order"
 FLAG = "tc_recall"
@@ -69,7 +69,10 @@ def _notify(users, subject, doc):
 
 
 def _loads_of_lot(lot):
-	return frappe.get_all("Load Indicator Result", filters={"lot": lot}, pluck="load", distinct=True)
+	# chỉ thị rửa (A-257) không gắn mẻ: lệnh thu hồi theo lô chỉ thị chỉ áp cho mẻ tiệt khuẩn
+	return frappe.get_all(
+		"Load Indicator Result", filters={"lot": lot, "load": ("is", "set")}, pluck="load", distinct=True
+	)
 
 
 def _open_order(load=None, lot=None):
@@ -83,7 +86,15 @@ def _open_order(load=None, lot=None):
 
 def _line(pack):
 	"""Dòng lệnh cho một Pack; khóa gói chưa dùng (Pack Recalled, bộ ở CSSD về Chờ tiếp nhận)."""
-	row = {"pack": pack.name, "set_unit": pack.set_unit, "load": pack.load, "status_at_recall": pack.status}
+	row = {
+		"pack": pack.name,
+		"set_unit": pack.set_unit,
+		"load": pack.load,
+		"status_at_recall": pack.status,
+		"wash_indicator": trace.wash_indicator_text(
+			pack.set_unit, frappe.db.get_value("Pack", pack.name, "cycle_no")
+		),
+	}
 	if pack.status == "Used":
 		name = frappe.db.get_value("Usage Record", {"pack": pack.name}, "name")
 		used = frappe.get_doc("Usage Record", name) if name else None  # mã che là thuộc tính ảo, không có cột
