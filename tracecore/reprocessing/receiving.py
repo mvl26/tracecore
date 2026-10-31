@@ -15,7 +15,7 @@ import io
 
 import frappe
 from frappe import _
-from frappe.utils import cint
+from frappe.utils import add_days, cint, get_datetime, today
 
 from tracecore.core import client_time, extension, gs1, station_auth, step_gate
 from tracecore.core.errors import Block, BlockedError
@@ -802,3 +802,65 @@ def _receive(doc, item, station, client_ts):
 				"by": item.forced_by,
 			},
 		)
+
+
+# --- Phiếu đã tiếp nhận hôm nay (A-67): chỉ đọc, mọi người có quyền ở trạm đều xem ----------------------------------
+
+
+def received_today(station):
+	"""Phiếu đã ghi sổ hôm nay (theo ``received_at``, giờ hệ thống) tại `station`, mới nhất ở trên, kèm tổng.
+
+	Trả ``{"receipts": [...], "total_receipts", "total_sets", "total_flagged"}``. Mỗi dòng có phiếu, giờ nhận, khoa giao,
+	người giao và người nhận (mã + tên; người giao không thẻ lấy tên đã gõ), số bộ và số bộ bị gắn cờ. Không lọc theo người
+	nhận: ai có quyền ở trạm T1 cũng xem được phiếu của đồng nghiệp. Không ghi gì.
+	"""
+	start = get_datetime(today())
+	rows = frappe.db.sql(
+		"""select receipt.name as receipt, receipt.received_at, receipt.department,
+			department.department_name, receipt.deliverer,
+			coalesce(nullif(deliverer.employee_name, ''), receipt.deliverer_name) as deliverer_name,
+			receipt.receiver, receiver.employee_name as receiver_name,
+			receipt.set_count, receipt.flagged_count
+		from `tabDirty Receipt` receipt
+		left join `tabDepartment` department on department.name = receipt.department
+		left join `tabEmployee` deliverer on deliverer.name = receipt.deliverer
+		left join `tabEmployee` receiver on receiver.name = receipt.receiver
+		where receipt.docstatus = 1 and receipt.abandoned = 0 and receipt.station = %(station)s
+			and receipt.received_at >= %(start)s and receipt.received_at < %(end)s
+		order by receipt.received_at desc, receipt.name desc""",
+		{"station": station, "start": start, "end": add_days(start, 1)},
+		as_dict=True,
+	)
+	return {
+		"receipts": rows,
+		"total_receipts": len(rows),
+		"total_sets": sum(cint(row.set_count) for row in rows),
+		"total_flagged": sum(cint(row.flagged_count) for row in rows),
+	}
+
+
+def receipt_sets(receipt, station):
+	"""Bộ trong một phiếu đã ghi sổ của `station` (xem nhanh): mã bộ, tên loại bộ, trạng thái hiện tại, cờ bất thường.
+
+	Phiếu nháp, đã hủy, của trạm khác hoặc không tồn tại → RECEIPT_NOT_FOUND. Chỉ đọc.
+	"""
+	found = (
+		frappe.db.exists(
+			"Dirty Receipt", {"name": receipt, "station": station, "docstatus": 1, "abandoned": 0}
+		)
+		if isinstance(receipt, str) and receipt
+		else None
+	)
+	if not found:
+		raise _not_found(receipt)
+	return frappe.db.sql(
+		"""select item.set_unit as set_id, coalesce(nullif(item.set_name, ''), set_type.set_type_name) as set_name,
+			unit.status, item.needs_review, item.forced
+		from `tabDirty Receipt Item` item
+		left join `tabSet Unit` unit on unit.name = item.set_unit
+		left join `tabInstrument Set Type` set_type on set_type.name = item.set_type
+		where item.parent = %(receipt)s and item.parenttype = 'Dirty Receipt'
+		order by item.idx""",
+		{"receipt": receipt},
+		as_dict=True,
+	)

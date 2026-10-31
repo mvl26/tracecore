@@ -6620,3 +6620,10 @@ View by set,Xem theo bộ,
 View combined list,Xem danh sách gộp,
 Qty,SL,Dirty Receipt
 Needs Review,Cần xem lại,Dirty Receipt Set
+"Receipts received today ({0} receipts, {1} sets)","Phiếu đã tiếp nhận hôm nay ({0} phiếu, {1} bộ)",""
+"No receipt has been received today.","Hôm nay chưa tiếp nhận phiếu nào.",""
+"Could not load the receipts received today.","Không tải được danh sách phiếu đã tiếp nhận hôm nay.",""
+"Could not load the sets of this receipt.","Không tải được các bộ của phiếu này.",""
+"This receipt has no set.","Phiếu này không có bộ nào.",""
+"Received at","Giờ nhận",""
+"Receipt","Phiếu","Dirty Receipt"
