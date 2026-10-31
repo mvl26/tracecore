@@ -4,7 +4,7 @@ from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 from tracecore.equipment import norms
 from tracecore.equipment.status import set_status
 from tracecore.tests.factories import make_equipment, make_item, make_program, make_user
-from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.tests.utils import IsolatedTestCase, as_non_deleter, bru
 
 test_ignore = ["Asset", "Item", "User"]
 
@@ -158,8 +158,8 @@ class TestNorms(IsolatedTestCase):
 			make_type_norm()
 		with self.assertRaises(frappe.ValidationError):
 			make_type_norm("Dryer", kwh_per_cycle=-1)
-		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc("Equipment Type Norm", "Steam Sterilizer", force=True)
+		with self.assertRaises(frappe.ValidationError), as_non_deleter():
+			frappe.delete_doc("Equipment Type Norm", "Steam Sterilizer", force=True, ignore_permissions=True)
 
 	def test_equipment_type_norm_permissions(self):
 		validate_permissions_for_doctype("Equipment Type Norm")

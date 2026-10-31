@@ -155,7 +155,7 @@ class TestTranslations(IsolatedTestCase):
 class TestReport(TraceCase):
 	def test_report_rows_are_events_with_columns(self):
 		columns, rows, _message = pack_trace.execute({"cycle_id": self.pack.name})
-		self.assertIn("step", [column["fieldname"] for column in columns])
+		self.assertNotIn("step", [column["fieldname"] for column in columns])  # mã cổng là nội bộ (A-64)
 		self.assertGreaterEqual(len(rows), 8)
 		self.assertEqual({row["cycle_id"] for row in rows}, {self.pack.name})
 		self.assertNotIn(PATIENT, json.dumps(rows, default=str))

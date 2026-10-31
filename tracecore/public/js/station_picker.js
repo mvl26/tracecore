@@ -7,8 +7,8 @@
 const PICK_LOOKUP = "tracecore.v1.lookup.";
 const PICK_PAGE = 20;
 const PICK_DEBOUNCE_MS = 250;
-// bước có thiết bị để chọn (khớp equipment.pick.STEP_TYPES ở server)
-const PICK_EQUIPMENT_STEPS = ["T2", "T4", "T5", "LIN"];
+// màn có thiết bị để chọn (khóa màn của trạm, A-64; khớp equipment.pick.STEP_TYPES ở server)
+const PICK_EQUIPMENT_SCREENS = ["wash", "pack", "sterilize", "linen"];
 // RPC quét nhận entry_mode / manual_reason (server bỏ qua tham số này ở RPC khác sẽ báo lỗi, nên chỉ gắn cho các RPC này)
 const PICK_SCAN_METHODS = [
 	"tracecore.v1.wash.start",
@@ -48,12 +48,13 @@ class TcPicker {
 		this.el = null;
 	}
 
-	get step() {
-		return this.shell.stationInfo && this.shell.stationInfo.step;
+	// màn đang mở của trạm (một trạm có thể gộp nhiều màn)
+	get screenKey() {
+		return this.shell.activeTab;
 	}
 
 	hasEquipment() {
-		return PICK_EQUIPMENT_STEPS.includes(this.step);
+		return PICK_EQUIPMENT_SCREENS.includes(this.screenKey);
 	}
 
 	open() {
@@ -136,6 +137,7 @@ class TcPicker {
 		const method = PICK_LOOKUP + (this.kind === "equipment" ? "equipment" : "set_units");
 		const args = {
 			station: this.shell.station,
+			screen: this.screenKey,
 			q: this.query.trim() || null,
 			start: this.items.length,
 			page_length: PICK_PAGE,

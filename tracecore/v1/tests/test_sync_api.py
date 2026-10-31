@@ -47,7 +47,7 @@ class TestSnapshotT1(SnapshotCase):
 		unit = make_set_unit(ready.set_type)  # New: T1 nhận
 		result = snapshot("TR-001", self.token("TR-001"))
 		self.assertIs(result["ok"], True)
-		self.assertEqual(result["step"], "T1")
+		self.assertEqual(result["function"], "RECEIVE")
 		sets = {row["set_id"]: row for row in result["sets"]}
 		self.assertIn(unit.name, sets)
 		self.assertNotIn(ready.set_id, sets)
@@ -63,7 +63,7 @@ class TestSnapshotT4(SnapshotCase):
 		ready = make_t4_ready_set()
 		not_ready = make_set_unit(ready.set_type)  # New: chưa qua T3
 		result = snapshot("TR-004", self.token("TR-004"))
-		self.assertEqual(result["step"], "T4")
+		self.assertEqual(result["function"], "PACK")
 		sets = {row["set_id"]: row for row in result["sets"]}
 		self.assertIn(ready.set_id, sets)
 		self.assertNotIn(not_ready.name, sets)
@@ -105,7 +105,7 @@ class TestSnapshotT8(SnapshotCase):
 		token = make_station_session(user, "TR-008")["token"]
 		frappe.set_user(user)
 		result = snapshot("TR-008", token)
-		self.assertEqual(result["step"], "T8")
+		self.assertEqual(result["function"], "USE")
 		packs = {row["cycle_id"]: row for row in result["packs"]}
 		self.assertIn(mine.name, packs)
 		self.assertNotIn(theirs.name, packs)
@@ -119,7 +119,7 @@ class TestSnapshotOther(SnapshotCase):
 	def test_snapshot_other_step_offline_false(self):
 		frappe.get_doc("User", "Administrator").add_roles("TC R05")
 		result = snapshot("TR-005", self.token("TR-005"))
-		self.assertEqual(result, {"ok": True, "step": "T5", "offline": False})
+		self.assertEqual(result, {"ok": True, "function": "STERI_LOAD", "offline": False})
 
 	def test_snapshot_requires_session(self):
 		result = snapshot("TR-004", "invalid-" + uuid.uuid4().hex)

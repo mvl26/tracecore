@@ -20,7 +20,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = issuing.STEP  # màn cấp phát chỉ chạy ở trạm bước T7
+FUNCTION = issuing.FUNCTION
 ISSUE_ROLES = STORAGE_ROLES  # R06 (KTV kho vô khuẩn / cấp phát) và System Manager
 
 
@@ -30,7 +30,7 @@ def _run(
 	"""Chạy `call()` ở trạm T7; trả ``{"ok": true, **kết quả}`` hoặc body từ chối nghiệp vụ."""
 	timestamp = parse_client_ts(client_ts)
 	result = run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: call(timestamp),

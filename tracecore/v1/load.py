@@ -24,7 +24,7 @@ from tracecore.v1._common import (
 )
 from tracecore.v1.wash import _codes, _flag, _optional_str, _required_str, _run, _values
 
-STEP = sterilizing.STEP
+FUNCTION = sterilizing.FUNCTION
 
 
 def _session_employee():
@@ -50,7 +50,7 @@ def create(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, 
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **sterilizing.scan_machine(raw)},
@@ -85,7 +85,7 @@ def add_pack(
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **sterilizing.admit_pack(raw, equipment, program, queue)},
@@ -108,7 +108,7 @@ def complete(equipment, program, packs, station, is_priority=0, client_ts=None, 
 	codes = _codes(packs, "packs")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -128,7 +128,12 @@ def overview(station, client_ts=None, token=None):
 	"""Bảng phụ của màn T5, chỉ đọc: mẻ đang chạy / đã có dữ liệu chưa dỡ (``running``)."""
 	require_any_role(*LOAD_ROLES)
 	parse_client_ts(client_ts)
-	return run_at_step(STEP, station, None, lambda: {"ok": True, "running": sterilizing.running_loads()})
+	return run_at_step(
+		sterilizing.LOAD_OR_UNLOAD,
+		station,
+		None,
+		lambda: {"ok": True, "running": sterilizing.running_loads()},
+	)
 
 
 # --- Tra cứu, dữ liệu chu trình --------------------------------------------------------------------------------

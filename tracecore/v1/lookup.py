@@ -28,6 +28,18 @@ from tracecore.v1._common import (
 from tracecore.v1.assembly import ASSEMBLY_ROLES
 
 SUPERVISOR = "TC R02"
+# màn của trạm (Station Function.screen_key, A-64) -> bước dùng để chọn danh sách và vai trò
+SCREEN_STEPS = {
+	"receive": "T1",
+	"wash": "T2",
+	"assembly": "T3",
+	"pack": "T4",
+	"sterilize": "T5",
+	"storage": "T6",
+	"issue": "T7",
+	"usage": "T8",
+	"linen": "LIN",
+}
 STEP_ROLES = {
 	"T1": RECEIVE_ROLES,
 	"T2": WASH_LOAD_ROLES,
@@ -42,8 +54,12 @@ STEP_ROLES = {
 ALL_ROLES = tuple(dict.fromkeys(role for roles in STEP_ROLES.values() for role in roles))
 
 
-def _step_of(station):
-	return frappe.db.get_value("Zone Station", station, "station_step") if isinstance(station, str) else None
+def _screen(screen):
+	"""``(bước, các chức năng của màn)``; màn lạ → ``(None, ())``."""
+	if not isinstance(screen, str) or screen not in SCREEN_STEPS:
+		return None, ()
+	functions = frappe.get_all("Station Function", filters={"screen_key": screen}, pluck="name")
+	return SCREEN_STEPS[screen], tuple(functions)
 
 
 def _text(value, name):
@@ -65,10 +81,12 @@ def _wrong_step(step):
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ALL_ROLES)
-def equipment(station, q=None, purpose=None, start=0, page_length=20, client_ts=None, token=None):
+def equipment(
+	station, screen=None, q=None, purpose=None, start=0, page_length=20, client_ts=None, token=None
+):
 	"""Thiết bị đang `Ready` hợp loại máy của bước (T2 máy rửa, T5 máy tiệt khuẩn…); `purpose="daily_test"` cho test hằng ngày."""
 	timestamp = parse_client_ts(client_ts)
-	step = _step_of(station)
+	step, functions = _screen(screen)
 	require_any_role(SUPERVISOR, *STEP_ROLES.get(step, ()))
 	q, purpose = _text(q, "q"), _text(purpose, "purpose")
 
@@ -78,15 +96,17 @@ def equipment(station, q=None, purpose=None, start=0, page_length=20, client_ts=
 			raise _wrong_step(step)
 		return {"ok": True, **equipment_pick.suggest(types, q, start, page_length)}
 
-	return run_at_step(step, station, timestamp, call)
+	return run_at_step(functions or None, station, timestamp, call)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ALL_ROLES)
-def set_units(station, q=None, department=None, start=0, page_length=20, client_ts=None, token=None):
+def set_units(
+	station, screen=None, q=None, department=None, start=0, page_length=20, client_ts=None, token=None
+):
 	"""Bộ/gói đang chờ ở trạm: T1 mọi bộ đủ điều kiện tiếp nhận (ưu tiên khoa `department`), T2-T8 bộ/gói đã xong bước trước."""
 	timestamp = parse_client_ts(client_ts)
-	step = _step_of(station)
+	step, functions = _screen(screen)
 	require_any_role(SUPERVISOR, *STEP_ROLES.get(step, ()))
 	q, department = _text(q, "q"), _text(department, "department")
 
@@ -95,4 +115,4 @@ def set_units(station, q=None, department=None, start=0, page_length=20, client_
 			raise _wrong_step(step)
 		return {"ok": True, **pick_list.suggest(step, q, department, start, page_length)}
 
-	return run_at_step(step, station, timestamp, call)
+	return run_at_step(functions or None, station, timestamp, call)

@@ -134,7 +134,8 @@ def on_document_event(doc, method):
 		log(action, doc.doctype, doc.name, new={"docstatus": doc.docstatus})
 
 
-# Danh mục R10 được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16); người khác chỉ ngừng dùng
+# Danh mục R10 và Administrator được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16, A-64);
+# người khác chỉ ngừng dùng
 MASTER_DOCTYPES = frozenset(
 	{
 		"Instrument",
@@ -145,6 +146,8 @@ MASTER_DOCTYPES = frozenset(
 		"Printer",
 		"Label Template",
 		"Zone Station",
+		"Zone Type",
+		"Station Function",
 		"Equipment",
 		"Process Program",
 		"Equipment Type Norm",
@@ -154,11 +157,13 @@ MASTER_DELETE_ROLE = "TC R10"
 
 
 def _may_delete_master(doc):
-	"""R10 thật (không phải Administrator, vốn mang mọi role) xóa danh mục chưa có giao dịch liên kết."""
+	"""R10 hoặc Administrator xóa danh mục chưa có giao dịch liên kết; chức năng hệ thống không xóa được (A-64)."""
 	user = frappe.session.user
-	if doc.doctype not in MASTER_DOCTYPES or user == "Administrator":
+	if doc.doctype not in MASTER_DOCTYPES or doc.get("is_system"):
 		return False
-	if not frappe.db.exists("Has Role", {"parent": user, "parenttype": "User", "role": MASTER_DELETE_ROLE}):
+	if user != "Administrator" and not frappe.db.exists(
+		"Has Role", {"parent": user, "parenttype": "User", "role": MASTER_DELETE_ROLE}
+	):
 		return False
 	check_if_doc_is_linked(doc)
 	check_if_doc_is_dynamically_linked(doc)

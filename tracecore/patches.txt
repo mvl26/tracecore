@@ -28,3 +28,6 @@ tracecore.patches.v0_1.rename_certificate_types
 tracecore.patches.v0_1.create_waste_label_template
 tracecore.patches.v0_1.backfill_name_columns
 tracecore.patches.v0_1.clear_deliverer_without_card
+tracecore.patches.v0_1.a64_configurable_stations
+tracecore.patches.v0_1.a64_zone_type_next_zone
+tracecore.patches.v0_1.a64_catalog_manual_wash

@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 import frappe
 from frappe.utils import add_to_date, now_datetime
 
-from tracecore.core import step_gate
+from tracecore.core import step_gate, zones
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_cycle,
@@ -31,8 +31,21 @@ TIME_ZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 TOKENS = {}
 
 
+SCREENS = {
+	"T1": "receive",
+	"T2": "wash",
+	"T3": "assembly",
+	"T4": "pack",
+	"T5": "sterilize",
+	"T6": "storage",
+	"T7": "issue",
+	"T8": "usage",
+}
+
+
 def station_of(step):
-	return frappe.db.get_value("Zone Station", {"station_step": step, "is_zone": 0, "is_active": 1}, "name")
+	functions = frappe.get_all("Station Function", filters={"screen_key": SCREENS[step]}, pluck="name")
+	return zones.stations_with_function(functions[0])[0]
 
 
 def now_ts():
@@ -65,7 +78,7 @@ class LookupCase(IsolatedTestCase):
 		return station
 
 	def sets(self, step, **kwargs):
-		return call(lookup_api.set_units, self.login(step), **kwargs)
+		return call(lookup_api.set_units, self.login(step), screen=SCREENS[step], **kwargs)
 
 
 class TestLookupEquipment(LookupCase):
@@ -75,7 +88,7 @@ class TestLookupEquipment(LookupCase):
 		sterilizer = make_equipment("Máy hấp", "Steam Sterilizer", serial="SN-ST1")
 		locked = make_wash_machine()
 		frappe.db.set_value("Equipment", locked.name, "status", "Locked")
-		result = call(lookup_api.equipment, self.login("T2"))
+		result = call(lookup_api.equipment, self.login("T2"), screen="wash")
 		self.assertTrue(result["ok"])
 		found = ids(result)
 		self.assertIn(washer.name, found)
@@ -91,22 +104,22 @@ class TestLookupEquipment(LookupCase):
 		make_wash_machine()
 		station = self.login("T5")
 		self.assertEqual(
-			set(ids(call(lookup_api.equipment, station))) & {steam.name, plasma.name},
+			set(ids(call(lookup_api.equipment, station, screen="sterilize"))) & {steam.name, plasma.name},
 			{steam.name, plasma.name},
 		)
-		by_name = call(lookup_api.equipment, station, q="alpha")
+		by_name = call(lookup_api.equipment, station, screen="sterilize", q="alpha")
 		self.assertEqual(ids(by_name), [steam.name])
-		by_code = call(lookup_api.equipment, station, q=plasma.name)
+		by_code = call(lookup_api.equipment, station, screen="sterilize", q=plasma.name)
 		self.assertEqual(ids(by_code), [plasma.name])
 
 	def test_pagination_reports_total(self):
 		for index in range(3):
 			make_equipment(f"Hấp {index}", "Steam Sterilizer", serial=f"SN-P{index}")
 		station = self.login("T5")
-		page = call(lookup_api.equipment, station, page_length=2)
+		page = call(lookup_api.equipment, station, screen="sterilize", page_length=2)
 		self.assertEqual(len(page["items"]), 2)
 		self.assertGreaterEqual(page["total"], 3)
-		rest = call(lookup_api.equipment, station, start=2, page_length=2)
+		rest = call(lookup_api.equipment, station, screen="sterilize", start=2, page_length=2)
 		self.assertFalse(set(ids(page)) & set(ids(rest)))
 
 	def test_other_role_is_forbidden_and_writes_nothing(self):
@@ -116,11 +129,11 @@ class TestLookupEquipment(LookupCase):
 		frappe.set_user(user)
 		before = frappe.db.count("Audit Log")
 		with self.assertRaises(frappe.PermissionError):
-			call(lookup_api.equipment, station)
+			call(lookup_api.equipment, station, screen="wash")
 		self.assertEqual(frappe.db.count("Audit Log"), before)
 
 	def test_wrong_step_station_is_rejected(self):
-		result = call(lookup_api.equipment, self.login("T1"))
+		result = call(lookup_api.equipment, self.login("T1"), screen="receive")
 		self.assertFalse(result["ok"])
 		self.assertEqual(result["error"]["code"], "STATION_WRONG_STEP")
 
@@ -133,7 +146,7 @@ class TestLookupSetUnits(LookupCase):
 		theirs = make_set_unit(department=other)
 		done = make_wash_ready_set()  # đã qua T1: không còn tiếp nhận được
 		station = self.login("T1")
-		result = call(lookup_api.set_units, station, department=own)
+		result = call(lookup_api.set_units, station, screen="receive", department=own)
 		found = ids(result)
 		self.assertIn(mine.name, found)
 		self.assertIn(theirs.name, found)
@@ -148,8 +161,8 @@ class TestLookupSetUnits(LookupCase):
 		unit = make_set_unit()
 		other = make_set_unit()
 		station = self.login("T1")
-		self.assertEqual(ids(call(lookup_api.set_units, station, q=unit.name)), [unit.name])
-		by_name = call(lookup_api.set_units, station, q=unit.set_type_name or unit.set_type)
+		self.assertEqual(ids(call(lookup_api.set_units, station, screen="receive", q=unit.name)), [unit.name])
+		by_name = call(lookup_api.set_units, station, screen="receive", q=unit.set_type_name or unit.set_type)
 		self.assertIn(unit.name, ids(by_name))
 		self.assertIn(other.name, ids(by_name))
 
@@ -201,14 +214,14 @@ class TestLookupSetUnits(LookupCase):
 		for _i in range(3):
 			make_set_unit()
 		station = self.login("T1")
-		page = call(lookup_api.set_units, station, page_length=2)
+		page = call(lookup_api.set_units, station, screen="receive", page_length=2)
 		self.assertEqual(len(page["items"]), 2)
 		self.assertGreaterEqual(page["total"], 3)
 		user = make_user("pick-r05@tracecore.test", roles=["TC R05"])
 		TOKENS[(user, station)] = make_station_session(user, station=station)["token"]
 		frappe.set_user(user)
 		with self.assertRaises(frappe.PermissionError):
-			call(lookup_api.set_units, station)
+			call(lookup_api.set_units, station, screen="receive")
 
 
 class TestManualEntryAudit(LookupCase):

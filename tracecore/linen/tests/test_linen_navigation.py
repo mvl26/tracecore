@@ -14,13 +14,12 @@ class TestLinenNavigation(IsolatedTestCase):
 		self.addCleanup(frappe.set_user, "Administrator")
 
 	def test_linen_station_is_reserved_for_r07_and_implemented(self):
-		self.assertEqual(navigation.STEP_ROLES["LIN"], {"TC R07"})
-		self.assertIn("LIN", navigation.IMPLEMENTED_STEPS)
+		self.assertEqual(navigation.FUNCTION_ROLES["LINEN"], {"TC R07"})
 
 	def test_supervisor_sees_the_linen_station_as_implemented(self):
 		station = make_linen_station()
 		frappe.set_user(make_user("linen-nav-r02-st@example.com", roles=("TC R02",)))
-		rows = [row for row in navigation.context()["stations"] if row["step"] == "LIN"]
+		rows = [row for row in navigation.context()["stations"] if "LINEN" in row["functions"]]
 		self.assertEqual([row["name"] for row in rows], [station])
 		self.assertTrue(rows[0]["implemented"])
 

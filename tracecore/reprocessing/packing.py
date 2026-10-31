@@ -19,7 +19,7 @@ from frappe import _
 from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, code_range, code_registry, extension, gs1, step_gate
+from tracecore.core import client_time, code_range, code_registry, extension, gs1, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -27,7 +27,8 @@ from tracecore.reprocessing import pack_label
 CI_CLASSES = ("5", "6")  # FR-M2-07.2: lô chỉ thị loại 5/6 theo phương pháp
 SOURCE_PACK_TYPE = "Pack Type"
 SOURCE_SET_TYPE = "Set Type"
-STEP = "T4"
+STEP = "T4"  # mã cổng trong step_gate
+FUNCTION = "PACK"
 MAINT_ACTIONS = ("Done", "Deferred")  # option của Pack Maintenance Done.action
 # FR-M2-08.5: 10 phút kể từ khi sinh Cycle ID, đo bằng giờ server (D13) từ Pack.creation, số giây nguyên (R3)
 REPRINT_WINDOW_SECONDS = 600
@@ -217,21 +218,17 @@ def _bom_incomplete(missing):
 
 
 def _require_station(station):
-	"""Trạm (không phải khu) của bước T4; ngược lại STATION_WRONG_STEP."""
-	row = (
-		frappe.db.get_value("Zone Station", station, ["is_zone", "station_step"], as_dict=True)
-		if station
-		else None
-	)
-	if row and not cint(row.is_zone) and row.station_step == STEP:
+	"""Trạm (không phải khu) có chức năng ``FUNCTION``; ngược lại STATION_WRONG_STEP."""
+	row = frappe.db.get_value("Zone Station", station, "is_zone", as_dict=True) if station else None
+	if row and not cint(row.is_zone) and zones.station_has_function(station, FUNCTION):
 		return
 	raise _blocked(
 		"STATION_WRONG_STEP",
 		_("Wrong station"),
-		_("{0} is not a {1} packing station.").format(station, STEP)
+		_("{0} is not a {1} station.").format(station, zones.function_label(FUNCTION))
 		if row
 		else _("Station {0} does not exist.").format(station or "-"),
-		_("Open the packing screen on a T4 station."),
+		_("Open this screen on a {0} station.").format(zones.function_label(FUNCTION)),
 	)
 
 
@@ -638,7 +635,7 @@ def void(cycle_id, reason, station, note=None):
 		raise _blocked(
 			"PACK_NOT_VOIDABLE",
 			_("Pack cannot be voided"),
-			_("Pack {0} is {1}; only a packed pack can be voided at T4.").format(
+			_("Pack {0} is {1}; only a packed pack can be voided at packing.").format(
 				pack.name, _(pack.status, context="Pack")
 			),
 			_("Check the pack status, or call R02."),

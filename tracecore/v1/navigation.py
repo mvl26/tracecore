@@ -2,22 +2,25 @@
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 
-STEP_ROLES = {
-	"T1": {"TC R03"},
-	"T2": {"TC R03"},
-	"T3": {"TC R04"},
-	"T4": {"TC R04"},
-	"T5": {"TC R05"},
-	"T5b": {"TC R02", "TC R05"},
-	"T6": {"TC R06"},
-	"T7": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
-	"T8": {"TC R08"},
-	"LIN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
-	"WST": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)
+from tracecore.core import zones
+
+FUNCTION_ROLES = {
+	"RECEIVE": {"TC R03"},
+	"MANUAL_WASH": {"TC R03"},
+	"WASH_LOAD": {"TC R03"},
+	"WASH_UNLOAD": {"TC R03", "TC R04"},  # cửa ra máy hai cửa ở khu sạch (FEAT-021 Q20)
+	"ASSEMBLE": {"TC R04"},
+	"PACK": {"TC R04"},
+	"STERI_LOAD": {"TC R05"},
+	"STERI_UNLOAD": {"TC R02", "TC R05"},
+	"PUTAWAY": {"TC R06"},
+	"ISSUE": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
+	"USE": {"TC R08"},
+	"LINEN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
+	"WASTE": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)
 }
-# Bước có màn trên Page station; T5b là chế độ "Dỡ mẻ" của màn T5 nên không có trạm riêng
-IMPLEMENTED_STEPS = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "LIN", "WST"}
 # Dashboard vận hành đứng đầu; sau đó nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
 	("Overview", ("tc-dashboard",)),  # FEAT-006 SCR-32
@@ -39,6 +42,8 @@ MANAGEMENT_GROUPS = (
 		"Zones, stations and printing",
 		(
 			"Zone Station",
+			"Zone Type",  # A-64
+			"Station Function",
 			# FEAT-008: nhật ký môi trường khu và báo cáo tháng
 			"Environment Log",
 			"report:Environment Monthly Report",
@@ -176,27 +181,28 @@ def context():
 	roles = set(frappe.get_roles())
 	admin = frappe.session.user == "Administrator" or "System Manager" in roles
 	manager = admin or bool(roles & {"TC R01", "TC R02", "TC R09", "TC R10"})
-	allowed = (
-		set(STEP_ROLES)
-		if admin or roles & {"TC R01", "TC R02", "TC R10"}
-		else {step for step, required in STEP_ROLES.items() if roles & required}
-	)
+	see_all = admin or bool(roles & {"TC R01", "TC R02", "TC R10"})
+	allowed = {function for function, required in FUNCTION_ROLES.items() if see_all or roles & required}
 	stations = []
 	if allowed:
-		for row in frappe.get_list(
+		rows = frappe.get_list(
 			"Zone Station",
 			filters={"is_zone": 0, "is_active": 1},
-			fields=["name", "zone_station_name", "station_step"],
-			order_by="station_step asc, name asc",
+			fields=["name", "zone_station_name", "station_no"],
 			limit_page_length=0,
-		):
-			if row.station_step in allowed:
+		)
+		rows.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
+		for row in rows:
+			functions = zones.station_functions(row.name)
+			# chức năng do R10 tạo không có trong FUNCTION_ROLES: chỉ người quản lý thấy trạm đó
+			if set(functions) & allowed or (see_all and functions):
 				stations.append(
 					{
 						"name": row.name,
 						"label": row.zone_station_name,
-						"step": row.station_step,
-						"implemented": row.station_step in IMPLEMENTED_STEPS,
+						"station_no": cint(row.station_no),
+						"functions": functions,
+						"implemented": bool(zones.station_screen_tabs(functions)),
 					}
 				)
 	return {

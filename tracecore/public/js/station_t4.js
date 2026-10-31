@@ -42,15 +42,7 @@ function t4DateTime(iso) {
 }
 
 function t4GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 function t4Disabled(flag) {
@@ -477,7 +469,7 @@ class T4Packing {
 	// ---- offline (FEAT-009, FR-M2-07.11, A-40) ----
 	offlineReady() {
 		const data = this.station.offlineData;
-		return Boolean(this.station.offlineCapable() && data && data.step === "T4");
+		return Boolean(this.station.offlineCapable() && data && data.function === "PACK");
 	}
 
 	offlineScan(raw) {

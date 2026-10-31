@@ -8,7 +8,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
-from tracecore.core import audit, code_registry
+from tracecore.core import audit, code_registry, zones
 
 LOCATION_PREFIX = "KE"
 
@@ -36,7 +36,7 @@ class WasteStorageLocation(Document):
 				frappe.throw(_("A cold room needs a zone for its temperature log."), frappe.MandatoryError)
 			return
 		zone = frappe.db.get_value("Zone Station", self.zone_station, ["zone_type", "is_zone"], as_dict=True)
-		if not zone or zone.zone_type != "Waste":
+		if not zone or "WASTE" not in zones.allowed_functions(zone.zone_type):  # A-64
 			frappe.throw(_("Zone Station {0} is not in a waste zone.").format(self.zone_station))
 		if self.is_cold and not zone.is_zone:
 			frappe.throw(_("A cold room must be linked to a zone, not to a station."))

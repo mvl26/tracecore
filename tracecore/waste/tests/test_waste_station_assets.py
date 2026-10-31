@@ -25,7 +25,7 @@ class TestWasteStationAssets(FrappeTestCase):
 		)
 
 	def test_station_opens_the_screen_for_step_wst(self):
-		self.assertIn('station.step === "WST" && typeof WasteCollect !== "undefined"', self.station_js)
+		self.assertIn('case "waste":', self.station_js)
 		self.assertIn('method.startsWith("tracecore.v1.waste.")', self.station_js)
 		self.assertIn("WST", navigation.IMPLEMENTED_STEPS)
 
@@ -99,7 +99,7 @@ class TestWasteStationAssets(FrappeTestCase):
 			self.assertIn(f'"tracecore.v1.waste.{method}"', store)
 		self.assertIn('wasteTabs("store")', store)
 		self.assertIn('wasteTabs("collect")', self.js)
-		self.assertIn("new WasteStation(this)", self.station_js)
+		self.assertIn('if (typeof WasteStation !== "undefined") return WasteStation;', self.station_js)
 		self.assertIn("public/js/station_waste_store.js", hooks.page_js["station"])
 		for marker in ('setState("offline"', "renderLoading()", '"empty"', '"error"', "tc-alert-${variant}"):
 			self.assertIn(marker, store)

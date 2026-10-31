@@ -1,7 +1,8 @@
 """Zone Station: khu và trạm quét (FR-M9-03, FEAT-002).
 
-Khu mã ``ZONE-.##`` (loại khu bắt buộc); trạm mã ``TR-.###`` ghi Code Registry, thuộc đúng một khu,
-chức năng (bước T1-T8) giới hạn theo loại khu (``core.zones``). Trạm chưa gán khu luôn không hoạt động.
+Khu mã ``ZONE-.##`` (loại khu bắt buộc); trạm mã ``TR-.###`` ghi Code Registry, thuộc đúng một khu, có số trạm
+``station_no`` (hiển thị T{n}) và các chức năng giới hạn theo cấu hình loại khu (``core.zones``, A-64). Trạm chưa gán khu
+luôn không hoạt động.
 """
 
 import frappe
@@ -62,13 +63,39 @@ class ZoneStation(Document):
 
 	def _validate_zone(self):
 		self.parent_zone = None
-		self.station_step = None
+		self.station_no = 0
+		self.set("functions", [])
 		if not self.zone_type:
 			frappe.throw(_("Zone Type is required for a zone."))
 		self._validate_env_limits()
 		before = self.get_doc_before_save()
 		if before and before.zone_type != self.zone_type:
 			self._check_active_stations_fit_new_type()
+		if before and cint(before.is_active) and not cint(self.is_active):
+			self._check_zone_can_be_turned_off()
+
+	def _check_zone_can_be_turned_off(self):
+		"""Tắt vùng (A-64): không còn trạm, máy hay vị trí kệ đang hoạt động dùng vùng này."""
+		blockers = frappe.get_all(
+			"Zone Station", filters={"parent_zone": self.name, "is_zone": 0, "is_active": 1}, pluck="name"
+		)
+		blockers += frappe.get_all(
+			"Equipment",
+			filters={"status": ["!=", "Retired"]},
+			or_filters={"zone_in": self.name, "zone_out": self.name},
+			pluck="name",
+		)
+		for doctype in ("Sterile Location", "Waste Storage Location"):
+			blockers += frappe.get_all(
+				doctype, filters={"zone_station": self.name, "is_active": 1}, pluck="name"
+			)
+		if blockers:
+			frappe.throw(
+				_("Cannot turn off zone {0}: still used by {1}.").format(
+					self.zone_station_name, ", ".join(sorted(blockers))
+				),
+				frappe.ValidationError,
+			)
 
 	def _propagate_zone_type(self):
 		"""Chép loại khu mới xuống mọi trạm con (hoạt động hay không); db.set_value bỏ qua doc_events nên ghi Audit Log tay."""
@@ -82,18 +109,20 @@ class ZoneStation(Document):
 			)
 
 	def _check_active_stations_fit_new_type(self):
+		allowed = zones.allowed_functions(self.zone_type)
 		stations = frappe.get_all(
-			"Zone Station",
-			filters={"parent_zone": self.name, "is_zone": 0, "is_active": 1, "station_step": ("is", "set")},
-			fields=["name", "station_step"],
+			"Zone Station", filters={"parent_zone": self.name, "is_zone": 0, "is_active": 1}, pluck="name"
 		)
 		for station in stations:
-			if station.station_step not in zones.allowed_steps(self.zone_type):
-				frappe.throw(
-					_(
-						"Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow."
-					).format(station.name, station.station_step, _(self.zone_type, context="Zone Station"))
-				)
+			for function in zones.station_functions(station):
+				if function not in allowed:
+					frappe.throw(
+						_(
+							"Cannot change the zone type: active station {0} has function {1}, which zone type {2} does not allow."
+						).format(
+							station, zones.function_label(function), _(self.zone_type, context="Zone Station")
+						)
+					)
 
 	def _validate_env_limits(self):
 		"""Ngưỡng môi trường của khu (FEAT-008, A-55 Q2): ô trống = không kiểm; có cả hai thì tối thiểu ≤ tối đa.
@@ -163,15 +192,64 @@ class ZoneStation(Document):
 
 	def _validate_station(self):
 		self.env_monitored = 0  # chỉ khu có nhật ký môi trường
+		self.station_no = cint(self.station_no)
+		self._validate_station_no()
+		functions = self._function_codes()
+		if len(set(functions)) != len(functions):
+			frappe.throw(_("A station cannot list the same function twice."))
 		if not self.parent_zone:
 			self._validate_station_without_zone()
 			return
 
-		parent = frappe.db.get_value("Zone Station", self.parent_zone, ["is_zone", "zone_type"], as_dict=True)
+		parent = frappe.db.get_value(
+			"Zone Station", self.parent_zone, ["is_zone", "zone_type", "is_active"], as_dict=True
+		)
 		if not parent or not parent.is_zone:
 			frappe.throw(_("A station must belong to a zone."))
+		if not cint(parent.is_active) and cint(self.is_active):
+			frappe.throw(
+				_("Zone {0} is turned off, so this station cannot be active.").format(self.parent_zone)
+			)
 		self.zone_type = parent.zone_type
-		zones.check_step(parent.zone_type, self.station_step)
+		zones.check_functions(parent.zone_type, functions)
+		self._warn_number_against_process_order(functions)
+
+	def _function_codes(self):
+		return [row.station_function for row in self.get("functions") or []]
+
+	def _validate_station_no(self):
+		"""Số trạm: không trùng giữa các trạm đang hoạt động; 0 = không đánh số (đồ vải, chất thải, khoa)."""
+		number = cint(self.station_no)
+		if not number or not cint(self.is_active):
+			return
+		other = frappe.db.get_value(
+			"Zone Station",
+			{"is_zone": 0, "is_active": 1, "station_no": number, "name": ["!=", self.name or ""]},
+			"name",
+		)
+		if other:
+			frappe.throw(_("Station No {0} is already used by active station {1}.").format(number, other))
+
+	def _warn_number_against_process_order(self, functions):
+		"""Số trạm chỉ để hiển thị và sắp xếp: trái thứ tự quy trình thì cảnh báo, không chặn (A-64)."""
+		number = cint(self.station_no)
+		if not number or not functions or not cint(self.is_active):
+			return
+		order = min(_process_order(functions))
+		for row in frappe.get_all(
+			"Zone Station",
+			filters={"is_zone": 0, "is_active": 1, "station_no": [">", 0], "name": ["!=", self.name or ""]},
+			fields=["name", "station_no"],
+		):
+			other = _process_order(zones.station_functions(row.name))
+			if other and (cint(row.station_no) < number) != (min(other) < order) and min(other) != order:
+				frappe.msgprint(
+					_(
+						"Station No {0} is out of order with the process: compare station {1} (No {2})."
+					).format(number, row.name, row.station_no),
+					indicator="orange",
+				)
+				return
 
 	def _validate_station_without_zone(self):
 		"""Trạm chưa gán khu: lưu được nhưng không hoạt động (FR-M9-03.3)."""
@@ -187,3 +265,9 @@ class ZoneStation(Document):
 				_("Station {0} has no zone: it was deactivated.").format(self.name),
 				indicator="orange",
 			)
+
+
+def _process_order(functions):
+	return frappe.get_all(
+		"Station Function", filters={"name": ["in", list(functions)]}, pluck="process_order"
+	)

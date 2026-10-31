@@ -30,15 +30,7 @@ function t6Date(value) {
 }
 
 function t6GateLabel(step) {
-	return (
-		{
-			T1: __("T1 Reception · count"),
-			T2: __("T2 Washing – disinfection"),
-			T3: __("T3 Assembly"),
-			T4: __("T4 Packing"),
-			T5: __("T5 Sterilization · release"),
-		}[step] || step
-	);
+	return (window.tcGateLabels || {})[step] || step;
 }
 
 class T6Storage {

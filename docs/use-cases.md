@@ -1221,7 +1221,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-28; API API-M7-01; DocType D
 
 - **ID:** UC-29
 - **Actors:** R09 Kế toán / Vật tư (primary); R01 Trưởng khoa KSNK (secondary)
-- **Description:** Phân bổ chi phí mẻ cho từng gói, cộng dồn qua 8 trạm, cộng khấu hao dụng cụ; xuất theo bộ, Cycle ID, khoa. Kích hoạt khi: mẻ được giải phóng; cuối tháng lập báo cáo giá thành.
+- **Description:** Phân bổ chi phí mẻ cho từng gói, cộng dồn qua 8 trạm (cấu hình mặc định, A-64), cộng khấu hao dụng cụ; xuất theo bộ, Cycle ID, khoa. Kích hoạt khi: mẻ được giải phóng; cuối tháng lập báo cáo giá thành.
 - **Preconditions:** Bảng giá và định mức có; chi phí kỳ đã nhập.
 - **Postconditions (success):** Cost Sheet mẻ và giá thành gói/bộ; báo cáo.
 - **Traces to:** FR-M7-05, FR-M7-06

@@ -28,7 +28,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = washing.STEP
+FUNCTION = washing.FUNCTION
 TRUE_STRINGS = ("1", "true", "yes", "on")
 
 
@@ -141,7 +141,7 @@ def start(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, t
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **washing.scan_machine(raw)},
@@ -167,7 +167,7 @@ def add_set(
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {"ok": True, **washing.admit_set(raw, equipment, queue)},
@@ -191,7 +191,7 @@ def complete(equipment, program, sets, chemicals, station, client_ts=None, token
 	rows = _chemicals(chemicals)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
@@ -211,7 +211,7 @@ def redo_queue(station, client_ts=None, token=None):
 	require_any_role(*WASH_LOAD_ROLES)
 	parse_client_ts(client_ts)
 	return run_at_step(
-		STEP,
+		washing.LOAD_OR_UNLOAD,
 		station,
 		None,
 		lambda: {

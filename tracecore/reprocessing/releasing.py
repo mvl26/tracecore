@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, now_datetime, today
 
-from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate
+from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import sterilizing, storage
 
@@ -112,7 +112,7 @@ def _indicator_state(doc, machine, daily=None):
 
 def context(load, equipment_raw, load_raw, station):
 	"""Màn dỡ mẻ sau khi quét QR máy và QR mẻ: thẻ mẻ, chỉ thị đã ghi, trạng thái từng chỉ thị và điều kiện còn thiếu."""
-	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station)
+	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, unload_only=True)
 	daily = _daily_indicators(doc, machine)
 	state = _indicator_state(doc, machine, daily)
 	return {
@@ -143,7 +143,9 @@ def set_cycle_result(
 	Chưa có dữ liệu chu trình đầy đủ (`data_complete`) hoặc chưa tick xác nhận → DATA_INCOMPLETE; kết quả khác Đạt/Không
 	đạt → RESULT_INVALID. Mẻ vẫn mở, chưa giải phóng.
 	"""
-	doc, _machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+	doc, _machine = sterilizing._open_for_data(
+		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+	)
 	if result not in RESULTS:
 		raise _blocked(
 			"RESULT_INVALID",
@@ -204,7 +206,9 @@ def record_indicator(
 	Chỉ thị phải thuộc loại máy (hơi nước: hóa học 5, Bowie-Dick; plasma: hóa học plasma; sinh học khi mẻ cần BI);
 	Bowie-Dick cần ngày thử là hôm nay; sinh học tạo ``Pending`` kèm lô và tủ ủ, đọc sau bằng `bi_result`.
 	"""
-	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+	doc, machine = sterilizing._open_for_data(
+		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+	)
 	allowed = set(required_indicators(machine))
 	if cint(doc.requires_bi):
 		allowed.add(BIOLOGICAL)
@@ -322,7 +326,9 @@ def release(
 def _release(
 	load, station, equipment_raw, load_raw, session, pin_proof, review_confirmed, emergency_reason, client_ts
 ):
-	doc, machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+	doc, machine = sterilizing._open_for_data(
+		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+	)
 	if not cint(doc.data_complete):
 		raise _blocked(
 			"DATA_INCOMPLETE",
@@ -479,12 +485,16 @@ def reject(
 		raise _blocked(
 			"RESULT_INVALID",
 			_("Result is not valid"),
-			_("Restart from T4 or from T2."),
-			_("Choose T4 or T2 to restart the sets from."),
+			_("Restart from {0} or from {1}.").format(zones.gate_label("T4"), zones.gate_label("T2")),
+			_("Choose {0} or {1} to restart the sets from.").format(
+				zones.gate_label("T4"), zones.gate_label("T2")
+			),
 		)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		doc, _machine = sterilizing._open_for_data(load, equipment_raw, load_raw, station, for_update=True)
+		doc, _machine = sterilizing._open_for_data(
+			load, equipment_raw, load_raw, station, for_update=True, unload_only=True
+		)
 		return _reject_load(doc, station, redo_from, reason, client_ts)
 	except Exception:
 		with contextlib.suppress(Exception):
@@ -559,7 +569,7 @@ def bi_result(load, result, station, read_at=None, employee=None, client_ts=None
 		machine = frappe.db.get_value(
 			"Equipment", doc.equipment, list(sterilizing.EQUIPMENT_FIELDS), as_dict=True
 		)
-		sterilizing._check_data_station(station, machine)
+		sterilizing._check_data_station(station, machine, unload_only=True)
 		pending = frappe.get_all(
 			"Load Indicator Result",
 			filters={"load": doc.name, "indicator": BIOLOGICAL, "result": "Pending"},

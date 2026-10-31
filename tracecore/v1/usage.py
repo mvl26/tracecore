@@ -23,7 +23,7 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-STEP = usage_service.STEP  # màn sử dụng chỉ chạy ở trạm bước T8
+FUNCTION = usage_service.FUNCTION
 REVEAL_ROLES = ("TC R01", "TC R02", "System Manager")
 
 
@@ -38,7 +38,7 @@ def _run(
 	"""Chạy `call()` ở trạm T8; trả ``{"ok": true, **kết quả}`` hoặc body từ chối nghiệp vụ."""
 	timestamp = parse_client_ts(client_ts)
 	result = run_at_step(
-		STEP,
+		FUNCTION,
 		station,
 		timestamp,
 		lambda: call(timestamp),

@@ -202,7 +202,7 @@ class T8Usage {
 	// ---- offline (FEAT-009, UC-13 E3, A-40 D2) ----
 	offlineReady() {
 		const data = this.station.offlineData;
-		return Boolean(this.station.offlineCapable() && data && data.step === "T8");
+		return Boolean(this.station.offlineCapable() && data && data.function === "USE");
 	}
 
 	offlineScan(raw) {
