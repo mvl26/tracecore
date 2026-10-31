@@ -7124,3 +7124,9 @@ Who and when,Người và thời điểm,Sync Conflict
 Time at the station,Giờ tại trạm,Sync Conflict
 Technical details,Thông tin kỹ thuật,Sync Conflict
 Technical data,Dữ liệu kỹ thuật,Sync Conflict
+{0} cannot be changed. Ask the station for a new range instead.,Không đổi được {0}. Hãy để trạm xin dải mới.,
+The range must satisfy 1 <= from <= to <= {0}.,Dải phải thỏa 1 <= từ <= đến <= {0}.,
+This range overlaps {0}. The numbers are still saved; R10 is notified.,Dải này trùng với {0}. Số vẫn được lưu; R10 sẽ nhận thông báo.,
+Offline code range {0} overlaps another range,Dải mã offline {0} trùng với dải khác,
+Range {0} ({1}-{2}) of station {3} overlaps: {4}.,Dải {0} ({1}-{2}) của trạm {3} trùng với: {4}.,
+Offline code ranges overlap,Dải mã offline bị trùng,

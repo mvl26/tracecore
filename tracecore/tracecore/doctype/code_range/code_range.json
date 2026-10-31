@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "hash",
  "creation": "2026-10-26 10:00:00.000000",
- "description": "Offline Cycle ID ranges issued to a station for one day (ADR-003, A-40).",
+ "description": "Offline Cycle ID ranges issued to a station for one day (ADR-003, A-40). R10 may edit the numbers and expiry; overlapping ranges are reported (A-75).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -66,7 +66,6 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "From No",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -74,7 +73,6 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "To No",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -98,14 +96,13 @@
   {
    "fieldname": "expires_at",
    "fieldtype": "Datetime",
-   "label": "Expires At",
-   "read_only": 1
+   "label": "Expires At"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.513558",
+ "modified": "2026-10-31 16:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Code Range",
@@ -115,12 +112,14 @@
   {
    "read": 1,
    "report": 1,
-   "role": "System Manager"
+   "role": "System Manager",
+   "write": 1
   },
   {
    "read": 1,
    "report": 1,
-   "role": "TC R10"
+   "role": "TC R10",
+   "write": 1
   },
   {
    "read": 1,
@@ -131,5 +130,5 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 0
+ "track_changes": 1
 }
