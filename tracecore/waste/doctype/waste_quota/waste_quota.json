@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "department",
+  "department_name",
   "waste_type",
   "item",
   "column_break_main",
@@ -24,6 +25,16 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Department"
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "waste_type",
@@ -73,7 +84,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 22:00:00.000000",
+ "modified": "2026-10-31 09:51:28.518252",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Quota",

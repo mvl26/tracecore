@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "changed_by",
+  "changed_by_name",
   "changed_on",
   "field_name",
   "old_value",
@@ -19,35 +20,51 @@
    "in_list_view": 1,
    "label": "Changed By",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fetch_from": "changed_by.full_name",
+   "fieldname": "changed_by_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Changed By Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
+   "columns": 2
   },
   {
    "fieldname": "changed_on",
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Changed On",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 2
   },
   {
    "fieldname": "field_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Field",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 2
   },
   {
    "fieldname": "old_value",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Old Value",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 1
   },
   {
    "fieldname": "new_value",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "New Value",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 1
   },
   {
    "fieldname": "reason",
@@ -59,7 +76,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-22 10:00:00.000000",
+ "modified": "2026-10-31 09:51:28.505608",
  "modified_by": "Administrator",
  "module": "Par",
  "name": "Par Level History",

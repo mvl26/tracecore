@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "recipient",
+  "recipient_name",
   "event_code",
   "channel",
   "status",
@@ -28,6 +29,7 @@
  ],
  "fields": [
   {"fieldname": "recipient", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Recipient", "options": "User", "read_only": 1, "reqd": 1},
+  {"fetch_from": "recipient.full_name", "fieldname": "recipient_name", "fieldtype": "Data", "in_list_view": 1, "label": "Recipient Name", "no_copy": 1, "read_only": 1, "translatable": 0},
   {"fieldname": "event_code", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "Event Code", "read_only": 1, "reqd": 1},
   {"fieldname": "channel", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Channel", "options": "In App\nEmail\nSMS", "read_only": 1, "reqd": 1},
   {"default": "Sent", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Status", "options": "Sent\nRead\nFailed", "read_only": 1},
@@ -50,7 +52,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-28 10:00:00.000000",
+ "modified": "2026-10-31 09:51:49.834719",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Notification Delivery",

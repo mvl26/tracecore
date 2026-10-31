@@ -13,6 +13,7 @@
   "collected_at",
   "storage_due",
   "storage_location",
+  "storage_location_name",
   "stored_at",
   "cold_storage",
   "cold_voided",
@@ -94,6 +95,16 @@
    "read_only": 1
   },
   {
+   "fetch_from": "storage_location.location_name",
+   "fieldname": "storage_location_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Storage Location Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "stored_at",
    "fieldtype": "Datetime",
    "label": "Stored At",
@@ -156,7 +167,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 20:00:00.000000",
+ "modified": "2026-10-31 09:51:28.517407",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Container",

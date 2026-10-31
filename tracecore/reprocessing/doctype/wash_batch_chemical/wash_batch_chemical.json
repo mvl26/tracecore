@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "item",
+  "item_name",
   "lot",
   "qty",
   "expiry_date"
@@ -18,7 +19,19 @@
    "in_list_view": 1,
    "label": "Item",
    "options": "Item",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
+   "columns": 2
   },
   {
    "fieldname": "lot",
@@ -26,7 +39,8 @@
    "in_list_view": 1,
    "label": "Lot",
    "options": "Batch",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
   },
   {
    "description": "Quantity used; filled by the consumption feature (FEAT-042).",
@@ -34,7 +48,8 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Quantity",
-   "non_negative": 1
+   "non_negative": 1,
+   "columns": 1
   },
   {
    "fetch_from": "lot.expiry_date",
@@ -42,13 +57,14 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Expiry Date",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 2
   }
  ],
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-22 16:00:00.000000",
+ "modified": "2026-10-31 09:51:28.512630",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch Chemical",

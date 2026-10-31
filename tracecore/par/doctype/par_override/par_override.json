@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "set_unit",
+  "set_unit_name",
   "set_type",
   "department",
   "column_break_status",
@@ -48,6 +49,16 @@
    "reqd": 1,
    "search_index": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "set_unit.set_type_name",
+   "fieldname": "set_unit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Unit Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fetch_from": "set_unit.set_type",
@@ -239,7 +250,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-23 10:00:00.000000",
+ "modified": "2026-10-31 09:51:28.505905",
  "modified_by": "Administrator",
  "module": "Par",
  "name": "Par Override",

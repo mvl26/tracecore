@@ -7,8 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "set_type",
+  "set_type_name",
   "bom_version",
   "instrument",
+  "instrument_name",
   "column_break_qty",
   "qty",
   "position",
@@ -30,6 +32,16 @@
    "reqd": 1
   },
   {
+   "fetch_from": "set_type.set_type_name",
+   "fieldname": "set_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Type Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "default": "1",
    "fieldname": "bom_version",
    "fieldtype": "Int",
@@ -47,6 +59,16 @@
    "options": "Instrument",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "instrument.instrument_name",
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instrument Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "column_break_qty",
@@ -107,7 +129,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 12:00:00.000000",
+ "modified": "2026-10-31 09:51:28.502282",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set BOM Item",

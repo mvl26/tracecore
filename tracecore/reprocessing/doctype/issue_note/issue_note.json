@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "department",
+  "department_name",
   "station",
   "pack_count",
   "column_break_head",
@@ -42,6 +43,16 @@
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "station",
@@ -197,7 +208,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-25 18:41:00.641628",
+ "modified": "2026-10-31 09:51:28.508203",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Issue Note",

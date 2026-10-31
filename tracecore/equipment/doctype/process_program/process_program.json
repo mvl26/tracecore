@@ -10,6 +10,7 @@
   "program_code",
   "program_name",
   "equipment",
+  "equipment_name",
   "is_active",
   "requires_bi",
   "column_break_main",
@@ -60,6 +61,16 @@
    "options": "Equipment",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "equipment.equipment_name",
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "default": "1",
@@ -192,7 +203,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 13:00:00.000000",
+ "modified": "2026-10-31 09:51:28.500379",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Process Program",

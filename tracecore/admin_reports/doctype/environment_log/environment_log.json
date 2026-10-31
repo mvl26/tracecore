@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "zone",
+  "zone_name",
   "measured_at",
   "log_date",
   "source",
@@ -33,6 +34,16 @@
    "label": "Zone",
    "options": "Zone Station",
    "reqd": 1
+  },
+  {
+   "fetch_from": "zone.zone_station_name",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zone Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "default": "Now",
@@ -142,7 +153,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-30 10:00:00.000000",
+ "modified": "2026-10-31 09:51:28.497076",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Environment Log",

@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "equipment",
+  "equipment_name",
   "record_type",
   "status_before",
   "abandoned",
@@ -53,6 +54,16 @@
    "options": "Equipment",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "equipment.equipment_name",
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Equipment Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "default": "Preventive",
@@ -274,7 +285,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-28 09:00:00.000000",
+ "modified": "2026-10-31 09:51:28.499973",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Maintenance Record",
