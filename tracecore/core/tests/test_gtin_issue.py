@@ -181,6 +181,16 @@ class TestConcurrentIssue(FrappeTestCase):
 		frappe.db.set_single_value(SETTINGS, "gs1_company_prefix", "")
 		frappe.db.commit()
 
+	def test_existing_counter_row_gets_no_insert_before_the_lock(self):
+		# INSERT IGNORE trùng khóa giữ shared lock tới commit; hai người cùng nâng lên FOR UPDATE thì deadlock
+		self.addCleanup(self._cleanup)
+		declare(self.PREFIX)
+		code_registry._ensure_gtin_series(self.PREFIX)
+		with patch.object(frappe.db, "sql", wraps=frappe.db.sql) as sql:
+			code_registry._ensure_gtin_series(self.PREFIX)
+		statements = [str(call.args[0]).upper() for call in sql.call_args_list]
+		self.assertFalse([sql_text for sql_text in statements if "INSERT" in sql_text], statements)
+
 	def test_two_writers_never_get_the_same_gtin(self):
 		self.addCleanup(self._cleanup)
 		declare(self.PREFIX)
