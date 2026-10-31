@@ -2103,6 +2103,8 @@ Confirmation tick is required,Bắt buộc đánh dấu ô xác nhận kết qu�
 "{0} - wash again, attempt {1}: scan it into a new batch.",{0} — rửa lại lần {1}: quét vào lô mới.,
 "None.","Không có.",""
 "Reprocessing queue at T2","Hàng đợi xử lý lại tại T2",""
+"Sets waiting to wash ({0})","Bộ chờ rửa ({0})",""
+"No set is waiting to wash.","Không có bộ nào chờ rửa.",""
 "No running wash batch.","Không có lô rửa đang chạy.",""
 "Wash batch · {0} · {1}","Lô rửa · {0} · {1}",""
 "Sets in batch ({0}): {1}","Bộ trong lô ({0}): {1}",""

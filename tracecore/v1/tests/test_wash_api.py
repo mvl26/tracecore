@@ -293,6 +293,16 @@ class TestWashLoadApi(WashApiCase):
 		queue = call(wash_api.redo_queue, station=STATION)
 		self.assertIn(batch, [row["batch"] for row in queue["running"]])
 
+	def test_redo_queue_endpoint_also_lists_sets_waiting_to_wash(self):
+		waiting, loaded = make_wash_ready_set(), make_wash_ready_set()
+		self.complete([loaded.name])
+		before = counts()
+		queue = call(wash_api.redo_queue, station=STATION)
+		names = [row["set_id"] for row in queue["waiting"]]
+		self.assertIn(waiting.name, names)
+		self.assertNotIn(loaded.name, names)
+		self.assertEqual(counts(), before)
+
 
 class TestWashUnloadApi(WashApiCase):
 	def test_unload_then_manual_data_then_result(self):
