@@ -239,7 +239,9 @@ class T3Assembly {
 			"t3-dec": () => this.step(data.instrument, -1),
 			"t3-inc": () => this.step(data.instrument, 1),
 			"t3-full": () => this.setQty(data.instrument, this.line(data.instrument).bom_qty),
-			"t3-all": () => this.allOk(),
+			"t3-variance": () => this.openVariance(data.instrument),
+			"t3-variance-pick": () => this.setForm("choice", data.value),
+			"t3-variance-save": () => this.saveVariance(),
 			"t3-damage": () => this.openForm({ kind: "damage", instrument: data.instrument }),
 			"t3-disposition": () => this.setForm("disposition", data.value),
 			"t3-save-damage": () => this.saveDamage(),
@@ -259,14 +261,25 @@ class T3Assembly {
 
 	step(code, delta) {
 		const row = this.line(code);
-		if (row) this.setQty(code, Math.max(0, (row.counted ? row.actual_qty : 0) + delta));
+		if (!row) return;
+		// dòng chưa đếm tính từ định mức nhưng vẫn Chưa đếm cho tới khi người dùng lưu; lệch định mức phải giải thích (A-79)
+		const qty = Math.max(0, (row.counted ? row.actual_qty : row.bom_qty) + delta);
+		if (qty === row.bom_qty) return this.setQty(code, qty);
+		this.openVariance(code, qty);
 	}
 
-	allOk() {
-		if (!this.asm || this.busy || this.offline) return;
-		this.request(T3_LINE, { assembly: this.asm.assembly, all_ok: 1 }, (res) =>
-			this.onLine(res)
-		);
+	openVariance(code, qty) {
+		const row = this.line(code);
+		if (!row) return;
+		const current = row.counted ? row.actual_qty : Math.max(0, row.bom_qty - 1);
+		this.openForm({
+			kind: "variance",
+			instrument: code,
+			qty: qty === undefined ? current : qty,
+			choice: "",
+			disposition: row.disposition || "",
+			note: row.note || "",
+		});
 	}
 
 	openForm(form) {
@@ -307,12 +320,79 @@ class T3Assembly {
 		this.show();
 	}
 
+	saveVariance() {
+		const form = this.form;
+		if (!form || this.busy) return;
+		const row = this.line(form.instrument);
+		const qty = parseInt(form.qty, 10);
+		if (Number.isNaN(qty) || qty < 0) {
+			return this.blocked({
+				title: __("Quantity is not valid"),
+				reason: __("Enter the number of instruments you counted."),
+				action: __("Check the number, then save again."),
+			});
+		}
+		if (qty === row.bom_qty) {
+			this.form = null;
+			return this.setQty(form.instrument, qty);
+		}
+		const short = qty < row.bom_qty;
+		if (short && !form.choice) {
+			return this.blocked({
+				title: __("The count differs from the BOM"),
+				reason: __(
+					"Counted {0}, BOM {1}. Choose whether the instruments are short or damaged.",
+					[qty, row.bom_qty]
+				),
+				action: __("Tap Short or Damaged, write a note, then save."),
+			});
+		}
+		const damaged = short && form.choice === "Damaged";
+		if (damaged && !form.disposition) {
+			return this.blocked({
+				title: __("Choose repair or disposal"),
+				reason: __("A damaged instrument must go to repair or to disposal."),
+				action: __("Tap Repair or Dispose, then save."),
+			});
+		}
+		const note = (form.note || "").trim();
+		if (!note) {
+			return this.blocked({
+				title: __("Note is required"),
+				reason: __("Counted {0}, BOM {1}. A note is required.", [qty, row.bom_qty]),
+				action: __("Write a note, then save."),
+			});
+		}
+		this.form = null;
+		this.request(
+			T3_LINE,
+			{
+				assembly: this.asm.assembly,
+				instrument: form.instrument,
+				actual_qty: qty,
+				damaged_qty: damaged ? row.bom_qty - qty : 0,
+				replaced_qty: 0,
+				disposition: damaged ? form.disposition : "",
+				variance: short && !damaged ? "Short" : null,
+				note,
+			},
+			(res) => this.onLine(res)
+		);
+	}
+
 	saveDamage() {
 		const form = this.form;
 		if (!form || this.busy || form.uploading) return;
 		const row = this.line(form.instrument);
 		const damaged = Math.max(0, parseInt(form.damaged, 10) || 0);
 		const replaced = Math.max(0, parseInt(form.replaced, 10) || 0);
+		if (row.bom_qty - damaged + replaced !== row.bom_qty && !(form.note || "").trim()) {
+			return this.blocked({
+				title: __("Note is required"),
+				reason: __("The usable quantity differs from the BOM, so a note is required."),
+				action: __("Write a note, then save."),
+			});
+		}
 		if (damaged > 0 && !form.disposition) {
 			return this.blocked({
 				title: __("Choose repair or disposal"),
@@ -470,7 +550,11 @@ class T3Assembly {
 	onChange(event) {
 		const target = event.target;
 		if (target.id === "tc-t3-file") this.uploadFile(target);
-		else if (target.dataset.form && this.form) this.form[target.dataset.form] = target.value;
+		else if (target.dataset.form && this.form) {
+			this.form[target.dataset.form] = target.value;
+			// số lượng đổi quyết định có hỏi Thiếu/Hỏng hay không
+			if (this.form.kind === "variance" && target.dataset.form === "qty") this.show();
+		}
 	}
 
 	onInput(event) {
@@ -709,6 +793,11 @@ class T3Assembly {
 						__("Cycle limit is near")
 				  )}</span>`
 				: "";
+		const unexplained = (this.asm.unexplained || []).includes(row.instrument)
+			? `<span class="tc-ins-state tc-warn-text">${esc(
+					__("Differs from the BOM: choose Short or Damaged and write a note")
+			  )}</span>`
+			: "";
 		const code = esc(row.instrument);
 		return `<div class="tc-ins${cls}" data-instrument="${code}">
 			${this.photoHtml(row.thumbnail || row.image, row.instrument_name)}
@@ -722,7 +811,7 @@ class T3Assembly {
 					])
 				)}</span>
 				<span class="tc-ins-state"><span aria-hidden="true">${marks}</span>${esc(state)}</span>
-				${damaged}${par}
+				${damaged}${par}${unexplained}
 				<span class="tc-t3-qty">
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-dec"
 						data-instrument="${code}" aria-label="${esc(__("Decrease"))}"${t3Disabled(off)}>&minus;</button>
@@ -731,6 +820,8 @@ class T3Assembly {
 						data-instrument="${code}" aria-label="${esc(__("Increase"))}"${t3Disabled(off)}>+</button>
 					<button type="button" class="tc-btn tc-btn-ok" data-action="t3-full"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("All present"))}</button>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-variance"
+						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Short / other count"))}</button>
 					<button type="button" class="tc-btn tc-btn-warn" data-action="t3-damage"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Damaged / replace"))}</button>
 				</span>
@@ -749,19 +840,13 @@ class T3Assembly {
 			)
 			.join("");
 		const counted = asm.lines.filter((row) => row.counted).length;
-		const open = asm.docstatus === 0 && !this.busy && !this.offline;
 		return `<section class="tc-t4-block" aria-label="${esc(__("BOM Count"))}">
 			<h3>${esc(__("Set components (BOM v{0})", [asm.bom_version]))}</h3>
 			<div class="tc-bom${trays ? " has-tray" : ""}">
 				${trays ? `<div>${trays}</div>` : ""}
 				<div class="tc-inst">${asm.lines.map((row) => this.lineHtml(row)).join("")}</div>
 			</div>
-			<div class="tc-actions">
-				<button type="button" class="tc-btn tc-btn-ok" data-action="t3-all"${t3Disabled(!open)}>${esc(
-			__("Confirm all components")
-		)}</button>
-				<span class="tc-hint">${esc(__("Counted {0}/{1} lines", [counted, asm.lines.length]))}</span>
-			</div>
+			<p class="tc-hint">${esc(__("Counted {0}/{1} lines", [counted, asm.lines.length]))}</p>
 		</section>`;
 	}
 
@@ -769,6 +854,7 @@ class T3Assembly {
 		const form = this.form;
 		if (!form) return "";
 		if (form.kind === "damage") return this.damageFormHtml(form);
+		if (form.kind === "variance") return this.varianceFormHtml(form);
 		if (form.kind === "branch") return this.branchFormHtml(form);
 		return this.confirmFormHtml(form);
 	}
@@ -782,6 +868,57 @@ class T3Assembly {
 				)}</button>`
 			)
 			.join("")}</div>`;
+	}
+
+	varianceFormHtml(form) {
+		const row = this.line(form.instrument);
+		const qty = parseInt(form.qty, 10);
+		const short = !Number.isNaN(qty) && qty < row.bom_qty;
+		return `<section class="tc-t4-block tc-t3-form" aria-label="${esc(
+			__("Short / other count")
+		)}">
+			<h3>${esc(__("Short / other count"))}: ${esc(row.instrument_name)} (${esc(row.instrument)})</h3>
+			<p class="tc-hint">${esc(__("BOM quantity: {0}", [row.bom_qty]))}</p>
+			<div class="tc-field">
+				<label for="tc-t3-qty">${esc(__("Actual quantity"))} *</label>
+				<input id="tc-t3-qty" type="number" min="0" inputmode="numeric" data-form="qty"
+					value="${esc(form.qty)}">
+			</div>
+			${
+				short
+					? `<div class="tc-field">
+				<label>${esc(__("Reason for the difference"))} *</label>
+				${this.chips("t3-variance-pick", form.choice, [
+					["Short", __("Short", null, "Assembly Line")],
+					["Damaged", __("Damaged", null, "Assembly Line")],
+				])}
+			</div>`
+					: ""
+			}
+			${
+				short && form.choice === "Damaged"
+					? `<div class="tc-field">
+				<label>${esc(__("Disposition"))} *</label>
+				${this.chips("t3-disposition", form.disposition, [
+					["Repair", __("Repair", null, "Assembly Line")],
+					["Dispose", __("Dispose", null, "Assembly Line")],
+				])}
+			</div>`
+					: ""
+			}
+			<div class="tc-field">
+				<label for="tc-t3-variance-note">${esc(__("Note"))} *</label>
+				<textarea id="tc-t3-variance-note" rows="2" data-form="note">${esc(form.note)}</textarea>
+			</div>
+			<div class="tc-actions">
+				<button type="button" class="tc-btn tc-btn-primary" data-action="t3-variance-save"${t3Disabled(
+					this.busy
+				)}>${esc(__("Save"))}</button>
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-form-cancel">${esc(
+					__("Cancel")
+				)}</button>
+			</div>
+		</section>`;
 	}
 
 	damageFormHtml(form) {
@@ -945,6 +1082,7 @@ class T3Assembly {
 		}
 		const reasons = {
 			LINES_NOT_COUNTED: __("Count every line first."),
+			LINE_VARIANCE_REQUIRED: __("Lines that differ from the BOM need a reason and a note."),
 			SHORTAGE_UNCONFIRMED: __("Missing instruments are not confirmed."),
 			NOT_RECORDED: __("Record the count to unlock packing."),
 			BRANCH: __("The set was sent to repair or disposal."),
@@ -961,6 +1099,8 @@ class T3Assembly {
 		if (asm.docstatus === 0) {
 			if (asm.uncounted.length)
 				missing.push(__("{0} line(s) not counted", [asm.uncounted.length]));
+			if ((asm.unexplained || []).length)
+				missing.push(__("{0} line(s) without a reason", [asm.unexplained.length]));
 			if (asm.has_shortage && !asm.shortage_confirmed && asm.shortage_blocking)
 				missing.push(__("R02 confirmation"));
 		}

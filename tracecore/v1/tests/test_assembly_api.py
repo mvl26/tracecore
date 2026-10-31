@@ -79,6 +79,7 @@ class AssemblyApiCase(IsolatedTestCase):
 				instrument=code,
 				actual_qty=short.get(code, qty),
 				station=STATION,
+				**({"variance": "Short", "note": "Thiếu khi đếm"} if code in short else {}),
 			)
 			self.assertIs(result["ok"], True, msg=result)
 
@@ -113,9 +114,15 @@ class TestAssemblyFlow(AssemblyApiCase):
 		self.assertEqual([i["instrument"] for i in locked["error"]["items"]], ["API-KEO"])
 		self.assertEqual(frappe.db.get_value("Assembly Record", name, "docstatus"), 0)
 		self.assertEqual(
-			call(assembly_api.line, assembly=name, instrument="API-KEO", actual_qty=0, station=STATION)[
-				"pack_lock_reason"
-			],
+			call(
+				assembly_api.line,
+				assembly=name,
+				instrument="API-KEO",
+				actual_qty=0,
+				variance="Short",
+				note="Thiếu khi đếm",
+				station=STATION,
+			)["pack_lock_reason"],
 			"SHORTAGE_UNCONFIRMED",
 		)
 		with self.assertRaises(Exception) as caught:
@@ -173,10 +180,31 @@ class TestAssemblyFlow(AssemblyApiCase):
 		self.assertEqual(one, two)
 		self.assertEqual(step_gate.gates(self.set_id)[2], {"step": "T3", "result": "Pass", "redo_count": 0})
 
-	def test_all_ok_and_scan_arguments_are_accepted(self):
+	@bru("BRU-REP-003")
+	def test_rpc_cannot_count_every_line_at_once(self):  # A-79, FR-M2-05.5: frappe.call bỏ tham số lạ
 		name = self.open()["assembly"]
-		ctx = call(assembly_api.line, assembly=name, all_ok="1", station=STATION)
-		self.assertTrue(all(line["counted"] for line in ctx["lines"]))
+		with request_headers({"X-Idempotency-Key": str(uuid.uuid4()), "X-TC-Station": STATION}):
+			result = frappe.call(
+				assembly_api.line,
+				assembly=name,
+				all_ok="1",
+				station=STATION,
+				client_ts=now_ts(),
+				token=TOKENS.get((frappe.session.user, STATION)),
+			)
+		self.assert_rejection(result, "INSTRUMENT_NOT_FOUND", 404)
+		self.assertEqual(frappe.db.count("Assembly Line", {"parent": name, "counted": 1}), 0)
+
+	@bru("BRU-REP-003")
+	def test_rpc_refuses_variance_without_choice_and_submit_with_uncounted(self):  # A-79
+		name = self.open()["assembly"]
+		short = call(assembly_api.line, assembly=name, instrument="API-KEO", actual_qty=0, station=STATION)
+		self.assert_rejection(short, "LINE_VARIANCE_REQUIRED", 422)
+		partial = call(assembly_api.submit, assembly=name, station=STATION)
+		self.assert_rejection(partial, "LINES_NOT_COUNTED", 422)
+
+	def test_string_arguments_are_accepted(self):
+		name = self.open()["assembly"]
 		ctx = call(
 			assembly_api.line,
 			assembly=name,
@@ -185,6 +213,7 @@ class TestAssemblyFlow(AssemblyApiCase):
 			damaged_qty="1",
 			replaced_qty="1",
 			disposition="Repair",
+			note="Gãy",
 			station=STATION,
 		)
 		self.assertEqual(ctx["lines"][0]["actual_qty"], 1)

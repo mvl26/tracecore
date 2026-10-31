@@ -356,7 +356,7 @@ DEFAULT_CODES = (
 		(*DIRTY, "STERI_LOAD", "STERI_UNLOAD"),
 		"Refuses to finish the step.",
 		"<ol><li>Complete the items listed in the message.</li><li>Finish the step again.</li></ol>",
-		("BOM_INCOMPLETE", "LINES_NOT_COUNTED", "DATA_INCOMPLETE"),
+		("BOM_INCOMPLETE", "LINES_NOT_COUNTED", "LINE_VARIANCE_REQUIRED", "DATA_INCOMPLETE"),
 	),
 	_code(
 		"QT-003",
