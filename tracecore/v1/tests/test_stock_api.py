@@ -90,3 +90,28 @@ class TestStockApi(ConsumeCase):
 		frappe.set_user(self.r09)
 		with self.assertRaises(api.BadRequestError):
 			api.suggest_lots("KHONG-CO", 1)
+
+
+@bru("BRU-INV-002")
+class TestRetryConsumptionApi(ConsumeCase):
+	def setUp(self):
+		super().setUp()
+		self.r09 = make_user("stock-retry-r09@example.com", ["TC R09"])
+		self.r04 = make_user("stock-retry-r04@example.com", ["TC R04"])
+		self.addCleanup(frappe.set_user, "Administrator")
+
+	def test_role_without_permission_is_refused(self):
+		frappe.set_user(self.r04)
+		with self.assertRaises(frappe.PermissionError):
+			api.retry_consumption("Wash Batch", "LR-000000-01")
+
+	def test_accounting_calls_the_service_with_the_document(self):
+		frappe.set_user(self.r09)
+		from unittest.mock import patch
+
+		with patch(
+			"tracecore.v1.stock.consume.retry", return_value={"entry": "MAT-X", "created": True, "lots": [], "short": []}
+		) as retry:
+			result = api.retry_consumption("Wash Batch", "LR-000000-01")
+		retry.assert_called_once_with("Wash Batch", "LR-000000-01")
+		self.assertEqual((result["ok"], result["entry"], result["created"]), (True, "MAT-X", True))

@@ -8,6 +8,7 @@
  "field_order": [
   "item",
   "item_name",
+  "uom",
   "qty_per_load",
   "qty_per_pack",
   "qty_per_kg"
@@ -32,6 +33,15 @@
    "read_only": 1,
    "translatable": 0,
    "columns": 2
+  },
+  {
+   "description": "Unit the quantities below are written in (for example ml). Empty = the stock unit of the item. Needs a conversion row in the item unit table.",
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Unit of Measure",
+   "options": "UOM",
+   "columns": 1
   },
   {
    "description": "Quantity used by one load (cycle).",

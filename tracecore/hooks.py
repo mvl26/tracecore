@@ -116,6 +116,7 @@ page_js = {
 doctype_js = {
 	"Item": "public/js/item.js",
 	"Stock Entry": "public/js/stock_entry.js",
+	"Wash Batch": "public/js/wash_batch.js",
 	"Employee": "public/js/employee.js",
 }
 doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
