@@ -46,6 +46,22 @@ class TestProvision(FrappeTestCase):
 		self.assertEqual(user, "station-t8@tracecore.local")
 		self.assertIn("TC R08", frappe.get_roles(user))
 
+	def test_station_without_function_takes_the_role_of_its_zone(self):
+		# trạm tra cứu chung không gán chức năng (smoke e2e TR-090): role theo khu, như trước A-64
+		if not frappe.db.exists("Zone Station", "TR-091"):
+			frappe.get_doc(
+				{
+					"doctype": "Zone Station",
+					"is_zone": 0,
+					"is_active": 1,
+					"zone_station_name": "Set lookup (test)",
+					"parent_zone": "ZONE-CLEAN",
+				}
+			).insert(ignore_permissions=True, set_name="TR-091")
+		user = provision.station_user("TR-091", password="Kiosk-Test-2026!")
+		self.assertEqual(user, "station-tr-091@tracecore.local")
+		self.assertIn("TC R04", frappe.get_roles(user))
+
 	def test_provision_desk_user_r10(self):
 		user = provision.desk_user("TC R10", "r10-e2e", password="Desk-Test-2026!")
 		self.assertEqual(user, "r10-e2e@tracecore.local")
