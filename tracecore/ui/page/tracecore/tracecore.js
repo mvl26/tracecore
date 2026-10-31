@@ -92,9 +92,13 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			icon: "scan",
 			description: "No available station",
 		};
-		const modules = [...data.admin_modules];
-		const last_operation = modules.findLastIndex((module) => module.cluster === "operations");
-		modules.splice(last_operation + 1, 0, STATIONS);
+		const modules = [...(data.admin_modules.length ? data.admin_modules : data.role_modules)];
+		if (data.admin_modules.length || data.stations.some((item) => item.implemented)) {
+			const last_operation = modules.findLastIndex(
+				(module) => module.cluster === "operations"
+			);
+			modules.splice(last_operation + 1, 0, STATIONS);
+		}
 		if (!modules.some((module) => module.key === selected_module))
 			selected_module = modules[0].key;
 		const shell = $("<div class='tc-admin'></div>").appendTo(root);
@@ -135,7 +139,9 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		show(modules.find((module) => module.key === selected_module));
 	}
 	function render(data) {
-		if (data.admin_modules.length) return render_admin(data);
+		if (data.admin_modules.length || data.role_modules.length) return render_admin(data);
+		// role làm tại trạm không có menu quản lý: vào thẳng trạm đầu, đổi trạm bằng cột trạm (NAV-04)
+		if (open_first_station(data)) return;
 		root.empty();
 		$("<h1>TraceCore</h1>").appendTo(root);
 		$("<p class='tc-launcher-intro'></p>")

@@ -243,6 +243,8 @@ class TestLauncher(FrappeTestCase):
 			context = get_context()
 		self.assertFalse(context["stations"][0]["implemented"])
 		self.assertEqual(query.call_args.kwargs["filters"], {"is_zone": 0, "is_active": 1})
+		# R07, R08 không có quyền đọc Zone Station mà vẫn phải thấy trạm của mình
+		self.assertTrue(query.call_args.kwargs["ignore_permissions"])
 
 	def test_every_station_screen_t1_to_t8_is_implemented(self):
 		# Mọi màn đều đã có trên Page station (FEAT-019..027); launcher không được khóa trạm nào
@@ -345,6 +347,100 @@ class TestStationNavigation(FrappeTestCase):
 	def test_station_page_and_desk_navbar_show_the_wordmark(self):
 		self.assertIn('class="tc-brand"', self._source("ui", "page", "station", "station.html"))
 		self.assertIn("tc-navbar-brand", self._source("public", "js", "tc_launcher.js"))
+
+
+class TestRoleModules(FrappeTestCase):
+	def _context(self, roles, rows=None, functions=None):
+		with (
+			patch("frappe.session", frappe._dict(user="role@example.test")),
+			patch("frappe.get_roles", return_value=roles),
+			patch("frappe.get_list", return_value=rows or []),
+			patch("frappe.has_permission", return_value=True),
+			patch("tracecore.v1.navigation._roles_permit", return_value=True),
+			patch(
+				"tracecore.core.zones.station_functions",
+				side_effect=lambda name: (functions or {}).get(name, []),
+			),
+			patch("tracecore.core.zones.station_screen_tabs", return_value=[{"key": "s"}]),
+		):
+			return get_context()
+
+	def _keys(self, roles):
+		return [module["key"] for module in self._context(roles)["role_modules"]]
+
+	def test_each_office_role_gets_its_own_flows(self):
+		self.assertEqual(self._keys(["TC R01"])[:2], ["overview", "approvals"])
+		self.assertIn("staff", self._keys(["TC R02"]))
+		self.assertIn("unit_costs", self._keys(["TC R09"]))
+		self.assertIn("organization", self._keys(["TC R10"]))
+		self.assertNotIn("approvals", self._keys(["TC R09"]))
+		self.assertNotIn("unit_costs", self._keys(["TC R10"]))
+
+	def test_station_roles_have_no_flows(self):
+		for number in range(3, 9):
+			self.assertEqual(self._keys([f"TC R{number:02d}"]), [])
+
+	def test_admin_keeps_full_menu_instead_of_flows(self):
+		with (
+			patch("frappe.session", frappe._dict(user="Administrator")),
+			patch("frappe.get_roles", return_value=["System Manager"]),
+			patch("frappe.get_list", return_value=[]),
+			patch("frappe.has_permission", return_value=True),
+			patch("tracecore.v1.navigation._roles_permit", return_value=True),
+		):
+			context = get_context()
+		self.assertEqual(context["role_modules"], [])
+		self.assertTrue(context["admin_modules"])
+
+	def test_user_with_two_roles_sees_merged_flows_without_duplicates(self):
+		modules = self._context(["TC R01", "TC R02"])["role_modules"]
+		keys = [module["key"] for module in modules]
+		self.assertEqual(len(keys), len(set(keys)))
+		overview = next(module for module in modules if module["key"] == "overview")
+		routes = [link["route"] for section in overview["sections"] for link in section["links"]]
+		self.assertEqual(len(routes), len(set(routes)))
+		self.assertTrue({"approvals", "staff"} <= set(keys))
+
+	def test_flows_only_use_existing_screens(self):
+		from tracecore.v1 import navigation
+
+		known = {target for _group, targets in navigation.MANAGEMENT_GROUPS for target in targets}
+		for role, flows in navigation.ROLE_FLOWS.items():
+			for key, sections in flows:
+				self.assertIn(key, navigation.FLOWS, role)
+				for kind, targets in sections:
+					self.assertIn(kind, navigation.ADMIN_SECTION_LABELS)
+					self.assertFalse(set(targets) - known, (role, key))
+
+	def test_flow_texts_are_translated(self):
+		from tracecore.tests.test_station_page import other_app_translations, vi_translations
+		from tracecore.v1 import navigation
+
+		ours, others = vi_translations(), other_app_translations()
+		texts = [text for flow in navigation.FLOWS.values() for text in (flow["label"], flow["description"])]
+		missing = [
+			text
+			for text in texts
+			if not (ours.get(f"{text}:TraceCore Launcher") or ours.get(text) or others.get(text))
+		]
+		self.assertFalse(missing, f"thiếu dòng vi.csv {missing}")
+
+	def test_stations_follow_the_role_not_management_rights(self):
+		rows = [
+			frappe._dict(name="TR-001", station_no=1, zone_station_name="T1"),
+			frappe._dict(name="TR-005", station_no=5, zone_station_name="T5"),
+		]
+		functions = {"TR-001": ["RECEIVE"], "TR-005": ["STERI_LOAD", "STERI_UNLOAD"]}
+		for roles, expected in (
+			(["TC R01"], []),
+			(["TC R09"], []),
+			(["TC R10"], []),
+			(["TC R02"], ["TR-005"]),
+			(["TC R03"], ["TR-001"]),
+			(["TC R05"], ["TR-005"]),
+		):
+			context = self._context(roles, rows, functions)
+			self.assertEqual([s["name"] for s in context["stations"]], expected, roles)
 
 
 class TestAdminModules(FrappeTestCase):

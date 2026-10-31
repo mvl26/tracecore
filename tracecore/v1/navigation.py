@@ -179,6 +179,219 @@ ADMIN_SECTION_LABELS = {
 	"document": "Documents",
 	"report": "Reports",
 }
+# Luồng công việc theo role văn phòng (ux-foundations NAV-04), theo trách nhiệm trong use-cases §2; chỉ dùng màn có sẵn
+FLOWS = {
+	"overview": {
+		"cluster": "operations",
+		"label": "Overview",
+		"icon": "dashboard",
+		"description": "Today's operations at a glance.",
+	},
+	"approvals": {
+		"cluster": "business",
+		"label": "Approvals",
+		"icon": "check",
+		"description": "Approve requests and close cases.",
+	},
+	"traceability": {
+		"cluster": "business",
+		"label": "Traceability and reports",
+		"icon": "search",
+		"description": "Trace packs and prepare compliance records.",
+	},
+	"staff": {
+		"cluster": "business",
+		"label": "Human resources",
+		"icon": "users",
+		"description": "Staff, certificates, competency and shifts.",
+	},
+	"instruments": {
+		"cluster": "business",
+		"label": "Instruments and sets",
+		"icon": "tool",
+		"description": "Instruments, instrument sets and loaner sets.",
+	},
+	"supervision": {
+		"cluster": "business",
+		"label": "Reprocessing supervision",
+		"icon": "refresh",
+		"description": "Sterilization loads, station output and sync conflicts.",
+	},
+	"incidents": {
+		"cluster": "business",
+		"label": "Incidents and recalls",
+		"icon": "solid-warning",
+		"description": "Nonconformities, corrective actions and recalls.",
+	},
+	"equipment": {
+		"cluster": "business",
+		"label": "Equipment",
+		"icon": "customization",
+		"description": "Machines, process programs, daily tests and maintenance.",
+	},
+	"stock": {
+		"cluster": "business",
+		"label": "Supplies stock",
+		"icon": "stock",
+		"description": "Supplies, batches, stock entries and stock counts.",
+	},
+	"stock_count": {
+		"cluster": "business",
+		"label": "Stock counts",
+		"icon": "list-alt",
+		"description": "Count stock and reconcile differences.",
+	},
+	"par": {
+		"cluster": "business",
+		"label": "Par levels",
+		"icon": "list",
+		"description": "Par levels by department and over-par approvals.",
+	},
+	"costs": {
+		"cluster": "business",
+		"label": "Costs",
+		"icon": "money-coins-1",
+		"description": "Cost entries, rates and unit costs.",
+	},
+	"unit_costs": {
+		"cluster": "business",
+		"label": "Unit costs",
+		"icon": "chart",
+		"description": "Cost per load and per set.",
+	},
+	"waste": {
+		"cluster": "business",
+		"label": "Medical waste",
+		"icon": "delete",
+		"description": "Waste collection, storage and handover.",
+	},
+	"organization": {
+		"cluster": "business",
+		"label": "Organization and accounts",
+		"icon": "organization",
+		"description": "Departments, staff and user accounts.",
+	},
+	"zones": {
+		"cluster": "business",
+		"label": "Zones and stations",
+		"icon": "map",
+		"description": "Zones, stations and station functions.",
+	},
+	"labels": {
+		"cluster": "business",
+		"label": "Labels and printing",
+		"icon": "printer",
+		"description": "Printers, label templates and code ranges.",
+	},
+	"data": {
+		"cluster": "system",
+		"label": "Data and settings",
+		"icon": "setting",
+		"description": "Catalog import, notifications and settings.",
+	},
+	"audit": {
+		"cluster": "system",
+		"label": "Audit",
+		"icon": "permission",
+		"description": "Audit log and audit trail.",
+	},
+}
+ROLE_FLOWS = {
+	"TC R01": (
+		("overview", (("page", ("tc-dashboard", "notifications")),)),
+		("approvals", (("document", ("Par Override", "Recall Order", "Incident CAPA")),)),
+		(
+			"traceability",
+			(
+				("report", ("report:Pack Trace", "report:Sterilization Log", "report:KSNK Summary Report")),
+				("document", ("Archive Export",)),
+			),
+		),
+		("par", (("catalog", ("Par Level",)), ("report", ("report:Par Override Report",)))),
+		(
+			"unit_costs",
+			(("document", ("Cost Sheet",)), ("report", ("report:Cost by Target", "report:Set Cost Report"))),
+		),
+		("waste", (("report", ("report:Waste Report",)),)),
+	),
+	"TC R02": (
+		("overview", (("page", ("tc-dashboard", "notifications")),)),
+		(
+			"staff",
+			(
+				("catalog", ("Employee", "Certificate", "competency-matrix")),
+				("document", ("Shift Assignment",)),
+				("report", ("report:Shift Schedule",)),
+			),
+		),
+		(
+			"instruments",
+			(
+				("catalog", ("Instrument", "Instrument Set Type", "Set Unit")),
+				("document", ("Loaner Set",)),
+			),
+		),
+		(
+			"supervision",
+			(
+				("document", ("Sterilization Load", "Sync Conflict")),
+				("report", ("report:Station Output",)),
+			),
+		),
+		(
+			"incidents",
+			(("document", ("Incident CAPA", "Recall Order")), ("report", ("report:Pack Trace",))),
+		),
+		("equipment", (("catalog", ("Equipment",)), ("document", ("Daily Test", "Maintenance Record")))),
+		("par", (("catalog", ("Par Level",)), ("document", ("Stock Reconciliation", "Par Override")))),
+		(
+			"waste",
+			(("catalog", ("Waste Type",)), ("report", ("report:Waste Storage Stock", "report:Waste Report"))),
+		),
+	),
+	"TC R09": (
+		("overview", (("page", ("tc-dashboard", "notifications")),)),
+		(
+			"stock",
+			(
+				("catalog", ("Item", "Batch")),
+				("document", ("Stock Entry", "Material Request")),
+				("report", ("report:Stock Alerts",)),
+			),
+		),
+		("stock_count", (("document", ("Stock Reconciliation",)),)),
+		(
+			"costs",
+			(
+				("document", ("Cost Entry",)),
+				("catalog", ("Cost Category", "Cost Rate Version", "Cost Settings")),
+			),
+		),
+		(
+			"unit_costs",
+			(("document", ("Cost Sheet",)), ("report", ("report:Set Cost Report", "report:Cost by Target"))),
+		),
+		("waste", (("catalog", ("Waste Treatment Vendor",)), ("document", ("Waste Handover",)))),
+	),
+	"TC R10": (
+		("organization", (("catalog", ("Department", "User", "Employee")),)),
+		("zones", (("catalog", ("Zone Station", "Zone Type", "Station Function")),)),
+		("equipment", (("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),)),
+		(
+			"labels",
+			(("catalog", ("Printer", "Label Template", "Code Range")), ("document", ("Print Job",))),
+		),
+		(
+			"data",
+			(
+				("document", ("tc-import",)),
+				("catalog", ("TraceCore Settings", "Notification Rule")),
+				("page", ("notifications",)),
+			),
+		),
+		("audit", (("report", ("Audit Log", "report:Audit Trail")),)),
+	),
+}
 ADMIN_MODULES = (
 	{
 		"key": "overview",
@@ -361,8 +574,8 @@ def context():
 	roles = set(frappe.get_roles())
 	admin = frappe.session.user == "Administrator" or "System Manager" in roles
 	manager = admin or bool(roles & {"TC R01", "TC R02", "TC R09", "TC R10"})
-	see_all = admin or bool(roles & {"TC R01", "TC R02", "TC R10"})
-	allowed = {function for function, required in FUNCTION_ROLES.items() if see_all or roles & required}
+	see_all = admin
+	allowed = allowed_functions(roles, admin)
 	stations = []
 	if allowed:
 		rows = frappe.get_list(
@@ -370,6 +583,8 @@ def context():
 			filters={"is_zone": 0, "is_active": 1},
 			fields=["name", "zone_station_name", "station_no"],
 			limit_page_length=0,
+			# R07, R08 không đọc được Zone Station; chỉ trả tên trạm đúng chức năng của role
+			ignore_permissions=True,
 		)
 		rows.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
 		for row in rows:
@@ -390,7 +605,45 @@ def context():
 		"management": _management_links() if manager else [],
 		"department": admin or "TC R08" in roles,
 		"admin_modules": _admin_modules() if admin else [],
+		"role_modules": [] if admin else _role_modules(roles),
 	}
+
+
+def allowed_functions(roles, admin=False):
+	"""Chức năng trạm mà role được làm; admin làm được mọi chức năng."""
+	return {function for function, required in FUNCTION_ROLES.items() if admin or roles & required}
+
+
+def can_open_station(station):
+	"""Tài khoản Desk hiện tại có được mở ``station`` theo role không (cột trạm, NAV-04)."""
+	roles = set(frappe.get_roles())
+	if frappe.session.user == "Administrator" or "System Manager" in roles:
+		return True
+	return bool(set(zones.station_functions(station)) & allowed_functions(roles))
+
+
+def _role_modules(roles):
+	"""Luồng của các role văn phòng; nhiều role thì gộp theo luồng, bỏ màn lặp, bỏ link không có quyền."""
+	merged = {}
+	for role, flows in ROLE_FLOWS.items():
+		if role not in roles:
+			continue
+		for key, sections in flows:
+			flow_sections = merged.setdefault(key, {})
+			for kind, targets in sections:
+				bucket = flow_sections.setdefault(kind, [])
+				bucket.extend(target for target in targets if target not in bucket)
+	modules = []
+	for key, flow_sections in merged.items():
+		sections = []
+		for kind, targets in flow_sections.items():
+			links = [link for link in map(_link, targets) if link]
+			if links:
+				sections.append({"kind": kind, "label": ADMIN_SECTION_LABELS[kind], "links": links})
+		if sections:
+			modules.append({"key": key, **FLOWS[key], "sections": sections})
+	order = {"operations": 0, "business": 1, "system": 2}
+	return sorted(modules, key=lambda module: order[module["cluster"]])
 
 
 def _management_links():
