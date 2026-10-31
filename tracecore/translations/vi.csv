@@ -7047,6 +7047,11 @@ Refuses the step until the reason or the code is entered.,Từ chối bước ch
 <ol><li>Enter the reason or the patient code.</li><li>Confirm the step again.</li></ol>,<ol><li>Nhập lý do hoặc mã bệnh nhân.</li><li>Xác nhận lại bước.</li></ol>
 Zone Station Function,Chức năng của trạm
 Zone Type Function,Chức năng của loại vùng
+"Washer is still running a batch","Máy rửa đang chạy một lô",
+"Batch {0} on washer {1} has not been unloaded yet.","Lô {0} trên máy rửa {1} chưa được dỡ.",
+"Unload batch {0} first, then load this washer again.","Hãy dỡ lô {0} trước, rồi nạp lại máy rửa này.",
+"Actual {0} min, standard {1} min ({2} %)","Thực tế {0} phút, chuẩn {1} phút (chênh {2} %)",
+"Abnormal duration","Thời lượng bất thường",
 Reload chemical lots,Tải lại lô hóa chất,
 Chemical lots reloaded,Đã tải lại lô hóa chất,
 Chemicals of program {0},Hóa chất của chương trình {0},

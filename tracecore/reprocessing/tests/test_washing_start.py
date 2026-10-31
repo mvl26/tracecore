@@ -46,6 +46,12 @@ class TestWashingStart(FrappeTestCase):
 			operator or self.employee.name,
 		)
 
+	def start_elsewhere(self, sets):
+		"""Lô ở máy rửa khác: máy này còn lô `Running` thì không nạp tiếp được (A-73)."""
+		machine = make_wash_machine()
+		program = make_wash_program(machine.name, chemical=CHEMICAL)
+		return self.start(sets, program=program.name, equipment=machine.name)
+
 	def code_of(self, **kwargs):
 		with self.assertRaises(BlockedError) as caught:
 			self.start(**kwargs)
@@ -99,7 +105,7 @@ class TestWashingStart(FrappeTestCase):
 	@bru("BRU-FLOW-004")
 	def test_start_returns_rejected_list_and_accepts_the_rest(self):
 		good1, good2, taken = make_wash_ready_set(), make_wash_ready_set(), make_wash_ready_set()
-		other = self.start([taken.name])["batch"]
+		other = self.start_elsewhere([taken.name])["batch"]
 		no_t1 = make_wash_ready_set()
 		step_gate.start_cycle(no_t1.name)  # chu trình mới, cổng T1 chưa Đạt
 		result = self.start([good1.name, taken.name, no_t1.name, "TB-0001", good2.name])
@@ -131,7 +137,7 @@ class TestWashingStart(FrappeTestCase):
 
 	def test_second_start_with_same_set_rejected(self):
 		unit = make_wash_ready_set()
-		first = self.start([unit.name])["batch"]
+		first = self.start_elsewhere([unit.name])["batch"]
 		before = self.batch_count()
 		self.assertEqual(
 			self.code_of(sets=[unit.name]), "BATCH_EMPTY"

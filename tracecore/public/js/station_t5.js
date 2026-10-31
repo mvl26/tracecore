@@ -697,16 +697,34 @@ class T5Load {
 				this.data = { load: this.data.load, context: this.data.context, saved: res };
 				this.form = null;
 				this.notice = {
-					variant: res.needs_review ? "warn" : "ok",
+					variant:
+						res.needs_review || (res.duration && res.duration.abnormal)
+							? "warn"
+							: "ok",
 					title: __("Manual cycle data saved and confirmed"),
-					reason: res.needs_review
-						? __("Some values are outside the program range: Needs review by R02.")
-						: "",
+					reason: [
+						res.needs_review
+							? __("Some values are outside the program range: Needs review by R02.")
+							: "",
+						this.durationText(res.duration),
+					]
+						.filter(Boolean)
+						.join(" · "),
 				};
 				this.loadOverview(true);
 				this.show();
 			}
 		);
+	}
+
+	durationText(duration) {
+		if (!duration) return "";
+		const text = __("Actual {0} min, standard {1} min ({2} %)", [
+			duration.actual_min,
+			duration.standard_min,
+			duration.deviation_pct,
+		]);
+		return duration.abnormal ? `${__("Abnormal duration")}: ${text}` : text;
 	}
 
 	missingLabel(item) {
@@ -1326,9 +1344,17 @@ class T5Load {
 	savedHtml(saved) {
 		return `<section class="tc-t4-block">
 			${this.alertHtml({
-				variant: saved.needs_review ? "warn" : "ok",
+				variant:
+					saved.needs_review || (saved.duration && saved.duration.abnormal)
+						? "warn"
+						: "ok",
 				title: __("Cycle data attached to the load"),
-				reason: __("The load is now {0}.", [__(saved.status, null, "Sterilization Load")]),
+				reason: [
+					__("The load is now {0}.", [__(saved.status, null, "Sterilization Load")]),
+					this.durationText(saved.duration),
+				]
+					.filter(Boolean)
+					.join(" · "),
 			})}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5-data-reset">${esc(
 				__("Done")

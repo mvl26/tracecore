@@ -124,13 +124,14 @@ class TestWashingAdmit(FrappeTestCase):
 	def test_admit_rejects_set_in_running_batch(self):
 		unit = make_wash_ready_set()
 		batch = make_wash_batch(self.machine, self.program, [unit])
+		other = make_wash_machine()  # máy của lô đang chạy thì bận (A-73): quét vào máy khác
 		with self.assertRaises(BlockedError) as caught:
-			washing.admit_set(unit.name, self.machine.name, [])
+			washing.admit_set(unit.name, other.name, [])
 		self.assertEqual(caught.exception.block.code, "SET_IN_OTHER_BATCH")
 		self.assertIn(batch.name, caught.exception.block.reason)
 		# lô đã đóng thì bộ không còn bị giữ
 		frappe.db.set_value("Wash Batch", batch.name, "status", "Passed")
-		self.assertFalse(washing.admit_set(unit.name, self.machine.name, [])["duplicate"])
+		self.assertFalse(washing.admit_set(unit.name, other.name, [])["duplicate"])
 
 	@bru("BRU-FLOW-004")
 	def test_admit_rejects_set_already_washed_pass(self):

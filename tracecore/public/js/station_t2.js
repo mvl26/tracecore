@@ -764,13 +764,21 @@ class T2Wash {
 			(res) => {
 				const notice = res.data_complete
 					? {
-							variant: res.needs_review ? "warn" : "ok",
+							variant:
+								res.needs_review || (res.duration && res.duration.abnormal)
+									? "warn"
+									: "ok",
 							title: __("Manual cycle data saved and confirmed"),
-							reason: res.needs_review
-								? __(
-										"Some values are outside the program range: Needs review by R02."
-								  )
-								: "",
+							reason: [
+								res.needs_review
+									? __(
+											"Some values are outside the program range: Needs review by R02."
+									  )
+									: "",
+								this.durationText(res.duration),
+							]
+								.filter(Boolean)
+								.join(" · "),
 					  }
 					: {
 							variant: "error",
@@ -786,6 +794,16 @@ class T2Wash {
 				this.show();
 			}
 		);
+	}
+
+	durationText(duration) {
+		if (!duration) return "";
+		const text = __("Actual {0} min, standard {1} min ({2} %)", [
+			duration.actual_min,
+			duration.standard_min,
+			duration.deviation_pct,
+		]);
+		return duration.abnormal ? `${__("Abnormal duration")}: ${text}` : text;
 	}
 
 	missingLabel(item) {
@@ -1727,6 +1745,13 @@ class T2Wash {
 		return `<section class="tc-t4-block tc-t2-data">
 			<h3>${esc(__("Cycle data of batch {0}: confirmed manual entry", [context.batch]))}</h3>
 			<dl class="tc-res-grid">${rows}</dl>
+			${
+				context.duration
+					? `<p class="${context.duration.abnormal ? "tc-warn-text" : ""}">${esc(
+							this.durationText(context.duration)
+					  )}</p>`
+					: ""
+			}
 		</section>`;
 	}
 
