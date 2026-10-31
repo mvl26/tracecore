@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, TcWeighLine, wasteTabs */
 // Màn thu gom chất thải theo khoa (SCR-38, FEAT-047, UC-34, A-60) trên Page station, trạm bước WST (kiosk và PDA).
 // Frappe nối file này sau tc_weigh_line.js (hook page_js) nên dùng chung uuid4/clientTs/esc/TcWeighLine.
@@ -517,10 +518,11 @@ class WasteCollect {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}

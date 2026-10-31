@@ -66,11 +66,12 @@ class TestStationAuth(IsolatedTestCase):
 		self.competency.save(ignore_permissions=True)
 		with self.assertRaises(BlockedError) as caught:
 			station_auth.login("NV-AUTH-001", "TR-004")
-		# Public code and text must not reveal that the card itself exists; the audit keeps the cause.
-		self.assertEqual(caught.exception.block.code, "CARD_INVALID")
+		# A-71 (g): thẻ hợp lệ thấy NS-003; thẻ lạ vẫn CARD_INVALID nên quét không dò được thẻ.
+		self.assertEqual(caught.exception.block.as_dict()["error_code"], "NS-003")
 		with self.assertRaises(BlockedError) as unknown:
 			station_auth.login("NV-NO-SUCH-CARD", "TR-004")
-		self.assertEqual(unknown.exception.block.as_dict(), caught.exception.block.as_dict())
+		self.assertEqual(unknown.exception.block.code, "CARD_INVALID")
+		self.assertNotIn("error_code", unknown.exception.block.as_dict())
 		reasons = frappe.get_all(
 			"Audit Log", filters={"ref_name": self.employee.name, "action": "Reject"}, pluck="new_value"
 		)

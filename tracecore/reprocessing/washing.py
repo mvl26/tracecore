@@ -50,8 +50,8 @@ EQUIPMENT_FIELDS = (
 )
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 def _today():
@@ -91,6 +91,8 @@ def check_equipment_ready(equipment):
 			_("Washer is not ready"),
 			_("Equipment {0} is {1}.").format(equipment, _(row.status, context="Equipment")),
 			_("Use another washer, or call R02 to check the daily test and the inspection."),
+			object_type="Equipment",
+			object_name=equipment,
 		)
 	running = frappe.db.get_value(
 		"Wash Batch", {"equipment": equipment, "status": RUNNING, "docstatus": 0}, "name"
@@ -488,6 +490,8 @@ def check_chemical_lot(item, batch_no):
 			_("Chemical lot has expired"),
 			_("Lot {0} expired on {1}.").format(batch.name, formatdate(expiry)),
 			_("Choose another lot that is still valid."),
+			object_type="Batch",
+			object_name=batch.name,
 		)
 	return None
 
@@ -528,7 +532,7 @@ def _program(equipment, program):
 	return row
 
 
-def _chemical_rows(program, chemicals):
+def _chemical_rows(program, chemicals, equipment=None):
 	"""Dòng hóa chất đã kiểm của lô (Q23): lô còn hạn, đúng hóa chất của chương trình, ít nhất một lô nếu có khai."""
 	rows = []
 	for entry in chemicals or []:
@@ -545,6 +549,14 @@ def _chemical_rows(program, chemicals):
 		if block:
 			raise BlockedError(block)
 		rows.append({"item": item, "lot": lot, "qty": flt(entry.get("qty"))})
+	if program.chemical and not rows and equipment:
+		# FEAT-052 A-71: chưa chọn lô thì dùng lô đã khai trên máy
+		for found in extension.run("tracecore_equipment_chemical_lots", equipment, program.chemical):
+			for row in found:
+				block = check_chemical_lot(row["item"], row["lot"])
+				if block:
+					raise BlockedError(block)
+				rows.append(row)
 	if program.chemical and not rows:
 		raise BlockedError(
 			_invalid_chemical(
@@ -609,7 +621,7 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator):
 		raise BlockedError(block)
 	machine = frappe.db.get_value("Equipment", equipment, ["equipment_name", "equipment_type"], as_dict=True)
 	program = _program(equipment, program)
-	chemical_rows = _chemical_rows(program, chemicals)
+	chemical_rows = _chemical_rows(program, chemicals, equipment)
 	accepted, rejected = _admit_all(sets, equipment)
 	if not accepted:
 		raise _blocked(

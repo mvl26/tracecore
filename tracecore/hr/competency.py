@@ -62,6 +62,26 @@ def required_types(competency_name) -> list[str]:
 	)
 
 
+def expiring_certificates(employee, competency_name, days) -> list[dict]:
+	"""Hàm hook `tracecore_competency_expiring_certificates`: chứng chỉ bắt buộc còn hạn nhưng hết trong `days` ngày (NS-002)."""
+	required = required_types(competency_name)
+	if not required:
+		return []
+	limit = add_to_date(getdate(today()), days=cint(days))
+	return frappe.get_all(
+		"Certificate",
+		filters={
+			"employee": employee,
+			"certificate_type": ["in", required],
+			"status": "Valid",
+			"no_expiry": 0,
+			"expires_on": ["between", [today(), limit]],
+		},
+		fields=["certificate_type", "expires_on"],
+		order_by="expires_on asc",
+	)
+
+
 def missing_certificate_types(employee, competency_name, at=None) -> list[str]:
 	"""Loại chứng chỉ bắt buộc của năng lực mà `employee` chưa có bản còn hạn vào thời điểm `at` (mặc định bây giờ).
 

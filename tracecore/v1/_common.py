@@ -14,7 +14,7 @@ from frappe.auth import SAFE_HTTP_METHODS
 from frappe.utils import cint, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import audit, gs1, zones
+from tracecore.core import audit, error_codes, gs1, zones
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 
@@ -104,9 +104,10 @@ def _run_as_session(fn, roles, kwargs, session):
 		frappe.flags[SESSION_FLAG] = previous
 
 
-def _block_body(block):
+def _block_body(block, station=None, client_ts=None):
 	if getattr(frappe.local, "request", None):
 		frappe.local.response["http_status_code"] = block.http_status
+	error_codes.log_block(block, station, client_ts)
 	return {"ok": False, "error": block.as_dict()}
 
 
@@ -133,7 +134,10 @@ def _replay(fn, endpoint, roles, kwargs, token, timestamp):
 	session = None
 	try:
 		with station_auth.as_replay_user(token, kwargs.get("station"), timestamp) as session:
-			result = _run_as_session(fn, roles, kwargs, session)
+			try:
+				result = error_codes.attach_warnings(_run_as_session(fn, roles, kwargs, session))
+			except BlockedError as error:
+				result = _block_body(error.block, kwargs.get("station"), timestamp)
 	except BlockedError as error:
 		result = _block_body(error.block)
 	except frappe.PermissionError:
@@ -185,7 +189,10 @@ def _live(fn, roles, kwargs, token, timestamp):
 
 	try:
 		with station_auth.as_session_user(token, client_ts=timestamp) as session:
-			return _run_as_session(fn, roles, kwargs, session)
+			try:
+				return error_codes.attach_warnings(_run_as_session(fn, roles, kwargs, session))
+			except BlockedError as error:
+				return _block_body(error.block, kwargs.get("station"), timestamp)
 	except BlockedError as error:
 		return _block_body(error.block)
 
@@ -312,6 +319,7 @@ def reject_block(block, ref_doctype=None, ref_name=None, raw=None, *, station=No
 		client_ts=client_ts,
 		entry_mode=frappe.flags.get(ENTRY_MODE_FLAG),
 	)
+	error_codes.log_block(block, station, client_ts)
 	request = getattr(frappe.local, "request", None)
 	if request:
 		frappe.local.response["http_status_code"] = block.http_status

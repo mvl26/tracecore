@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, TcWeighLine, WasteCollect, WasteHandoverScreen */
 // Màn kho lưu giữ tạm chất thải (SCR-39, FEAT-048, UC-35, A-61) và thanh tab của trạm chất thải (bước WST).
 // Frappe nối file này sau station_waste.js (hook page_js) nên dùng chung uuid4/clientTs/esc/WasteCollect.
@@ -291,9 +292,10 @@ class WasteStore {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}

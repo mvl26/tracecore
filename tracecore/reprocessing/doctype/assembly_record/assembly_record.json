@@ -31,6 +31,7 @@
   "shortage_confirmed_by",
   "shortage_confirmed_at",
   "shortage_confirmed_for",
+  "shortage_accepted",
   "section_branch",
   "branch",
   "branch_reason"
@@ -203,6 +204,13 @@
    "hidden": 1
   },
   {
+   "fieldname": "shortage_accepted",
+   "fieldtype": "Check",
+   "label": "Shortage accepted without confirmation (DC-001 warning)",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
    "fieldname": "section_branch",
    "fieldtype": "Section Break",
    "label": "Damage Branch"
@@ -222,7 +230,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.506805",
+ "modified": "2026-10-31 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Assembly Record",

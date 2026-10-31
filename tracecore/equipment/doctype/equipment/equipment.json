@@ -42,7 +42,9 @@
   "unlock_until",
   "column_break_unlock",
   "unlocked_by",
-  "unlock_reason"
+  "unlock_reason",
+  "section_chemical_lots",
+  "chemical_lots"
  ],
  "fields": [
   {
@@ -282,6 +284,18 @@
    "fieldname": "unlock_reason",
    "fieldtype": "Small Text",
    "label": "Temporary Unlock Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_chemical_lots",
+   "fieldtype": "Section Break",
+   "label": "Chemical lots in use"
+  },
+  {
+   "fieldname": "chemical_lots",
+   "fieldtype": "Table",
+   "label": "Chemical lots in use",
+   "options": "Equipment Chemical Lot",
    "read_only": 1
   }
  ],

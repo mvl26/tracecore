@@ -4,8 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
+from tracecore.core import error_codes, station_auth, zones
 from tracecore.core import print as core_print
-from tracecore.core import station_auth, zones
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.v1._common import (
@@ -20,12 +20,13 @@ from tracecore.v1._common import (
 PERIPHERAL_FIELDS = ["peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"]
 
 
-def _session_response(call):
+def _session_response(call, station=None, client_ts=None):
 	try:
-		return call()
+		return error_codes.attach_warnings(call())
 	except BlockedError as error:
 		if getattr(frappe.local, "request", None):
 			frappe.local.response["http_status_code"] = error.block.http_status
+		error_codes.log_block(error.block, station, client_ts)
 		return {"ok": False, "error": error.block.as_dict()}
 
 
@@ -35,7 +36,9 @@ def login(card_id=None, station=None, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
 	if not isinstance(card_id, str) or not isinstance(station, str):
 		raise BadRequestError(_("card_id and station must be strings."))
-	return _session_response(lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)})
+	return _session_response(
+		lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)}, station, timestamp
+	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

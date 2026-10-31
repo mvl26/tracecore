@@ -18,7 +18,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, now_datetime
 
-from tracecore.core import audit, client_time, extension, gs1, station_auth, step_gate, zones
+from tracecore.core import audit, client_time, error_codes, extension, gs1, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
 
 STEP = "T3"  # mã cổng trong step_gate
@@ -45,8 +45,8 @@ LINE_FIELDS = (
 ).split()
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 # --- Trạm, mã quét, bản nháp ---------------------------------------------------------------------
@@ -438,6 +438,20 @@ def _reviewer(session, proof):
 	return reviewer
 
 
+def _shortage_block(items, set_unit=None):
+	return Block(
+		"SHORTAGE_UNCONFIRMED",
+		_("Missing instruments are not confirmed"),
+		_("Missing: {0}. Packing stays locked.").format(
+			", ".join(f"{item['instrument_name']} ({item['instrument']})" for item in items)
+		),
+		_("Add the instruments from the spare stock, or ask R02 to confirm with the PIN."),
+		items=items,
+		object_type="Set Unit",
+		object_name=set_unit,
+	)
+
+
 def confirm_shortage(assembly, reason, station, reviewer_proof=None, session=None, client_ts=None):
 	"""R02 xác nhận đóng gói thiếu: lý do 1-500 ký tự + PIN proof của phiên `session`; mở khóa Đóng gói.
 
@@ -542,15 +556,11 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 			)
 		if cint(doc.has_shortage) and not cint(doc.shortage_confirmed):
 			items = _shortage_items(doc)
-			raise _blocked(
-				"SHORTAGE_UNCONFIRMED",
-				_("Missing instruments are not confirmed"),
-				_("Missing: {0}. Packing stays locked.").format(
-					", ".join(f"{item['instrument_name']} ({item['instrument']})" for item in items)
-				),
-				_("Add the instruments from the spare stock, or ask R02 to confirm with the PIN."),
-				items=items,
-			)
+			# FEAT-052 A-71: DC-001 viện đặt Cảnh báo thì ghi nhận và đi tiếp; nhãn vẫn in dòng THIẾU
+			block = error_codes.check(_shortage_block(items, doc.set_unit))
+			if block:
+				raise BlockedError(block)
+			doc.shortage_accepted = 1
 	doc.update(
 		{
 			"result": "Fail" if branch else "Pass",
@@ -648,7 +658,7 @@ def _summary(doc, ctx=None):
 		lock = "BRANCH" if doc.branch else "ASSEMBLY_FAILED"
 	elif uncounted:
 		lock = "LINES_NOT_COUNTED"
-	elif cint(doc.has_shortage) and not cint(doc.shortage_confirmed):
+	elif cint(doc.has_shortage) and not cint(doc.shortage_confirmed) and error_codes.is_blocking("DC-001"):
 		lock = "SHORTAGE_UNCONFIRMED"
 	else:
 		lock = "NOT_RECORDED"
@@ -686,6 +696,7 @@ def _summary(doc, ctx=None):
 		"notes": doc.notes,
 		"uncounted": uncounted,
 		"ready_to_submit": lock == "NOT_RECORDED",
+		"shortage_blocking": error_codes.is_blocking("DC-001"),
 		"pack_locked": not passed,
 		"pack_lock_reason": lock,
 	}

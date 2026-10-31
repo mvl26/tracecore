@@ -15,7 +15,7 @@ from frappe.utils import add_to_date, get_datetime, now_datetime
 from frappe.utils.password import get_decrypted_password, set_encrypted_password
 from passlib.hash import bcrypt
 
-from tracecore.core import audit, extension
+from tracecore.core import audit, error_codes, extension
 from tracecore.core.errors import Block, BlockedError
 
 SESSION_HOURS = 8
@@ -198,9 +198,8 @@ def _missing_certificates(employee: str, competency: str, at) -> list[str]:
 	return sorted({certificate_type for result in results for certificate_type in result})
 
 
-def _require_competency(employee: str, station: str, client_ts=None) -> None:
-	now = now_datetime()
-	names = frappe.get_all(
+def _active_competencies(employee: str, station: str, now) -> list[str]:
+	return frappe.get_all(
 		"Station Competency",
 		filters={
 			"employee": employee,
@@ -211,13 +210,57 @@ def _require_competency(employee: str, station: str, client_ts=None) -> None:
 		},
 		pluck="name",
 	)
-	missing_by_name = {name: _missing_certificates(employee, name, now) for name in names}
-	if any(not missing for missing in missing_by_name.values()):
+
+
+def _expiring_warnings(employee: str, competency: str, station: str | None = None) -> None:
+	"""NS-002: chứng chỉ bắt buộc sắp hết hạn trong số ngày cấu hình: cảnh báo, vẫn cho vào (hook của M4)."""
+	rule = error_codes.rule_of("NS-002")
+	if not rule or not rule["enabled"]:
 		return
+	found = extension.run(
+		"tracecore_competency_expiring_certificates", employee, competency, rule["warn_days"]
+	)
+	rows = [row for result in found for row in result]
+	if not rows:
+		return
+	listed = ", ".join(
+		f"{row['certificate_type']} ({frappe.utils.formatdate(row['expires_on'])})" for row in rows
+	)
+	error_codes.check(
+		Block(
+			"CERTIFICATE_EXPIRING",
+			_("Certificate expires soon"),
+			_("Certificates that expire soon: {0}.").format(listed),
+			_("Plan the renewal with your supervisor."),
+			object_type="Employee",
+			object_name=employee,
+		),
+		station,
+	)
+
+
+def _require_competency(employee: str, station: str, client_ts=None):
+	"""Năng lực và chứng chỉ của trạm (FR-M4-03.1); trả hạn cho phép tạm NS-001 nếu đang dùng, ngược lại None.
+
+	A-71 (g): thẻ hợp lệ thấy lý do cụ thể; thẻ lạ/không hoạt động vẫn `CARD_INVALID` nên quét không dò được thẻ.
+	"""
+	now = now_datetime()
+	names = _active_competencies(employee, station, now)
+	missing_by_name = {name: _missing_certificates(employee, name, now) for name in names}
+	passing = next((name for name, missing in missing_by_name.items() if not missing), None)
+	if passing:
+		error_codes.mark_resolved("NS-001", "Employee", employee)
+		error_codes.mark_resolved("NS-003", "Employee", employee)
+		_expiring_warnings(employee, passing, station)
+		return None
 	missing = sorted(
 		{certificate_type for missing in missing_by_name.values() for certificate_type in missing}
 	)
-	# FR-M4-03.2: ghi lý do cụ thể vào Audit Log; người quẹt thẻ chỉ thấy một câu trả lời chung (ADR-006, FEAT-003)
+	if names:
+		permit = error_codes.active_permit("NS-001", "Employee", employee, station, missing)
+		if permit:
+			return permit["valid_until"]
+	# FR-M4-03.2: ghi lý do cụ thể vào Audit Log
 	_audit(
 		"Login Reject",
 		employee=employee,
@@ -226,7 +269,28 @@ def _require_competency(employee: str, station: str, client_ts=None) -> None:
 		client_ts=client_ts,
 		detail={"missing_certificates": missing} if missing else None,
 	)
-	raise _card_rejected()
+	if names:
+		raise BlockedError(
+			Block(
+				"CERTIFICATE_REQUIRED",
+				_("Certificate has expired"),
+				_("A certificate required for this station is not valid: {0}.").format(", ".join(missing)),
+				_("Renew the certificate, or ask an approver for temporary access."),
+				items=missing,
+				object_type="Employee",
+				object_name=employee,
+			)
+		)
+	raise BlockedError(
+		Block(
+			"COMPETENCY_REQUIRED",
+			_("Not assigned to this station"),
+			_("You have no active competency for this station."),
+			_("Use a station you are assigned to, or ask the supervisor."),
+			object_type="Employee",
+			object_name=employee,
+		)
+	)
 
 
 def _close_session(doc, reason: str, client_ts=None) -> None:
@@ -270,10 +334,18 @@ def login(card_id: str, station: str, client_ts=None) -> dict:
 		raise
 
 
+def _session_expiry(started, permit_until=None):
+	"""Phiên mở theo cho phép tạm không kéo dài quá hạn được duyệt (A-71 e)."""
+	expiry = add_to_date(started, hours=SESSION_HOURS)
+	if permit_until and get_datetime(permit_until) < get_datetime(expiry):
+		return get_datetime(permit_until)
+	return expiry
+
+
 def _login(card_id: str, station: str, client_ts=None) -> dict:
 	_require_station(station)
 	employee = _active_employee(card_id, client_ts)
-	_require_competency(employee.name, station, client_ts)
+	permit_until = _require_competency(employee.name, station, client_ts)
 	frappe.db.sql(
 		"select name from `tabStation Session` where employee=%s and is_open=1 for update", employee.name
 	)
@@ -289,7 +361,7 @@ def _login(card_id: str, station: str, client_ts=None) -> dict:
 			"token_hash": _token_hash(token),
 			"started_at": started,
 			"last_activity_at": started,
-			"absolute_expires_at": add_to_date(started, hours=SESSION_HOURS),
+			"absolute_expires_at": _session_expiry(started, permit_until),
 		}
 	).insert(ignore_permissions=True)
 	_audit(

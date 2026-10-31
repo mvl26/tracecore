@@ -1,3 +1,4 @@
+/* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -202,6 +203,13 @@ class T2Wash {
 		if (this.mode === "unload") return this.unloadScan(raw);
 		if (raw.toUpperCase() === T2_COMPLETE_CODE) return this.complete();
 		const code = t2Kind(raw);
+		// FEAT-052 A-71: máy đang báo HC-001/HC-003, mã quét không phải máy/bộ/lô rửa là lô hóa chất đang dùng
+		if (
+			this.notice &&
+			["HC-001", "HC-003"].includes(this.notice.error_code) &&
+			!["batch", "equipment"].includes(code.kind)
+		)
+			return this.declareChemicalLot(raw);
 		if (code.kind === "batch") return this.lookupBatch(raw);
 		if (code.kind === "equipment") {
 			if (this.load && this.load.sets.length && this.load.machine.name !== code.id) {
@@ -340,6 +348,24 @@ class T2Wash {
 		}
 		this.notice = { variant: "error", technical: true, ...notice };
 		this.show();
+	}
+
+	declareChemicalLot(lot) {
+		const equipment = this.notice.object_name;
+		return this.request(
+			"tracecore.v1.equipment.declare_chemical_lot",
+			{ equipment, lot, station: this.station.station },
+			(res) => {
+				this.notice = {
+					variant: res.cleared ? "ok" : "warn",
+					title: __("Chemical lot {0} is declared on machine {1}", [res.lot, equipment]),
+					action: res.cleared
+						? __("Scan the washer again to continue.")
+						: __("The machine still needs a valid lot for another chemical."),
+				};
+				this.show();
+			}
+		);
 	}
 
 	reject(error, method) {
@@ -1058,10 +1084,11 @@ class T2Wash {
 		return `<div class="tc-alert tc-alert-${variant}" role="${
 			variant === "error" ? "alert" : "status"
 		}">
-			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
+			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${items ? `<ul class="tc-alert-items">${items}</ul>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
+			${tcGuideButton(notice)}
 			${buttons}
 		</div>`;
 	}

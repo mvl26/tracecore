@@ -19,7 +19,16 @@ from frappe import _
 from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, code_range, code_registry, extension, gs1, step_gate, zones
+from tracecore.core import (
+	client_time,
+	code_range,
+	code_registry,
+	error_codes,
+	extension,
+	gs1,
+	step_gate,
+	zones,
+)
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -43,8 +52,8 @@ SET_TYPE_FIELDS = tuple(
 LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
 
-def _blocked(code, title, reason, action, items=None):
-	return BlockedError(Block(code, title, reason, action, items=items))
+def _blocked(code, title, reason, action, items=None, **fields):
+	return BlockedError(Block(code, title, reason, action, items=items, **fields))
 
 
 # --- Hạn dùng (D4, BRU-REP-009) -----------------------------------------------------------------
@@ -164,6 +173,8 @@ def resolve_ci_batch(raw, method, on_date):
 			_("Indicator lot has expired"),
 			_("Lot {0} expired on {1}.").format(batch.name, formatdate(expiry)),
 			_("Scan another indicator lot that is still valid."),
+			object_type="Batch",
+			object_name=batch.name,
 		)
 	return {"batch": batch.name, "item": batch.item, "expiry_date": expiry, "ci_class": item.tc_ci_class}
 
@@ -489,7 +500,12 @@ def confirmed_shortage(unit):
 	hoặc phiếu không có xác nhận thiếu → ``{}``.
 	"""
 	name = _assembly(unit)
-	if not name or not frappe.db.get_value("Assembly Record", name, "shortage_confirmed"):
+	flags = (
+		frappe.db.get_value("Assembly Record", name, ["shortage_confirmed", "shortage_accepted"])
+		if name
+		else None
+	)
+	if not flags or not any(flags):  # FEAT-052 A-71: nhận thiếu theo DC-001 Cảnh báo được lưu lúc ghi T3
 		return {}
 	rows = frappe.get_all(
 		"Assembly Line",

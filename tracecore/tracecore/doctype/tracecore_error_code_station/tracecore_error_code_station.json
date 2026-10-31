@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "creation": "2026-10-31 12:00:00.000000",
+ "description": "Station of an error code: a Station Function code, or LOGIN (FEAT-052, A-71).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "station_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "station_key",
+   "fieldtype": "Data",
+   "label": "Station",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-31 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "TraceCore Error Code Station",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

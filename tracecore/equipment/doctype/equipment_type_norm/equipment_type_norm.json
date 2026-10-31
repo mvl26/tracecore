@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "equipment_type",
+  "requires_chemical_lot",
   "notes",
   "norms_section",
   "duration_min",
@@ -26,6 +27,12 @@
    "reqd": 1,
    "set_only_once": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "requires_chemical_lot",
+   "fieldtype": "Check",
+   "label": "Needs a declared chemical lot",
+   "default": "0"
   },
   {
    "fieldname": "notes",
@@ -71,22 +78,55 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 14:00:00.000000",
+ "modified": "2026-10-31 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Equipment Type Norm",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "read": 1, "report": 1, "role": "System Manager", "write": 1},
-  {"create": 1, "read": 1, "report": 1, "role": "TC R10", "write": 1},
-  {"read": 1, "role": "TC R01"},
-  {"read": 1, "role": "TC R02"},
-  {"read": 1, "role": "TC R03"},
-  {"read": 1, "role": "TC R04"},
-  {"read": 1, "role": "TC R05"},
-  {"read": 1, "role": "TC R06"},
-  {"read": 1, "role": "TC R09"}
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "TC R10",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "TC R01"
+  },
+  {
+   "read": 1,
+   "role": "TC R02"
+  },
+  {
+   "read": 1,
+   "role": "TC R03"
+  },
+  {
+   "read": 1,
+   "role": "TC R04"
+  },
+  {
+   "read": 1,
+   "role": "TC R05"
+  },
+  {
+   "read": 1,
+   "role": "TC R06"
+  },
+  {
+   "read": 1,
+   "role": "TC R09"
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
