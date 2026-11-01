@@ -1329,6 +1329,11 @@ body.tc-kiosk .layout-main-section {
 	display: block;
 }
 
+.tc-t3 .tc-ins-pos + .tc-ins-state {
+	display: inline;
+	margin-left: var(--tc-sp-2);
+}
+
 /* kiosk 1366x768: thấy ít nhất 4 dòng dụng cụ không cần cuộn (#1827) */
 .tc-t3 .tc-ins {
 	padding-block: var(--tc-sp-1);
@@ -1344,6 +1349,9 @@ body.tc-kiosk .layout-main-section {
 }
 
 .tc-t3 .tc-gate {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-1);
 	padding: var(--tc-sp-1) var(--tc-sp-2);
 }
 
