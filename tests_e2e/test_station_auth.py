@@ -462,9 +462,9 @@ def test_replaced_page_disposes_old_reader_listeners_and_timer(page, auth_shell)
 def test_roles_are_translated_on_login_restore_and_cleared_at_logout(page, auth_shell):
 	auth_shell(page)
 	login(page)
-	expect(page.locator(".tc-session-roles")).to_have_text("Roles: Translated packing role")
+	expect(page.locator(".tc-session-roles")).to_have_text("Role: Translated packing role")
 	auth_shell(page)
-	expect(page.locator(".tc-session-roles")).to_have_text("Roles: Translated packing role")
+	expect(page.locator(".tc-session-roles")).to_have_text("Role: Translated packing role")
 	page.locator("[data-action='logout']").click()
 	expect(page.locator(".tc-session-roles")).to_have_text("")
 

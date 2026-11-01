@@ -567,7 +567,9 @@ class T7Issue {
 		if (this.notice) {
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;

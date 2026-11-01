@@ -33,51 +33,23 @@ body.tc-kiosk .layout-main-section {
 	background: var(--tc-zone-web);
 }
 
-.tc-brand-bar {
-	max-width: calc(var(--tc-rail-w) * 5);
-	margin-inline: auto;
-	padding: var(--tc-sp-2) var(--tc-sp-6) 0;
-}
-
 .tc-brand {
 	font-size: var(--tc-fs-lg);
 	font-weight: var(--tc-fw-bold);
 	color: var(--tc-primary);
 }
 
-/* màn trạm của admin: cột trạm cố định, thao tác giống kiosk (NAV-03) */
-.tc-rail[hidden],
-.tc-crumb[hidden],
-.tc-station-pills[hidden] {
+.tc-station-pills[hidden],
+.tc-session-details[hidden] {
 	display: none;
 }
 
-.tc-rail-station {
-	padding-left: var(--tc-rail-w);
-}
-
-.tc-rail-station .tc-brand-bar,
-.tc-admin-station .tc-session [data-action="logout"],
-.tc-rail-station .tc-session-person,
-.tc-rail-station .tc-session-station {
+/* admin không có nút Đăng xuất ở thanh phiên (NAV-03) */
+.tc-admin-station .tc-session [data-action="logout"] {
 	display: none;
 }
 
-.tc-rail-station .tc-actionsbar {
-	left: var(--tc-rail-w);
-}
-
-/* PDA không có rail (ux-foundations B3): đổi trạm bằng hàng nút */
 @media (max-width: 480px) {
-	.tc-rail-station {
-		padding-left: 0;
-	}
-	.tc-rail-station .tc-rail {
-		display: none;
-	}
-	.tc-rail-station .tc-actionsbar {
-		left: 0;
-	}
 	/* bảng các bộ của T1 không được tràn ngang trên PDA */
 	.tc-t1 .tc-t2-table {
 		table-layout: fixed;
@@ -89,70 +61,14 @@ body.tc-kiosk .layout-main-section {
 	}
 }
 
-.tc-rail {
-	position: fixed;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	z-index: var(--tc-z-rail);
-	display: flex;
-	flex-direction: column;
-	width: var(--tc-rail-w);
-	background: var(--tc-card);
-	border-right: var(--tc-bw-hair) solid var(--tc-line);
+.tc-net-status {
+	color: var(--tc-text-mute);
+	font-size: var(--tc-fs-sm);
 }
 
-.tc-rail-head {
-	display: flex;
-	flex-direction: column;
-	gap: var(--tc-sp-1);
-	padding: var(--tc-sp-3) var(--tc-sp-4);
-	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
-}
-
-.tc-rail-person {
-	color: var(--tc-primary);
-}
-
-.tc-rail-context,
-.tc-rail-foot,
-.tc-crumb {
-	font-size: var(--tc-fs-xs);
-	color: var(--tc-text-2);
-}
-
-.tc-rail-stations {
-	flex: 1;
-	overflow-y: auto;
-	padding: var(--tc-sp-2) 0;
-}
-
-.tc-rail-stations button {
-	display: block;
-	width: 100%;
-	min-height: var(--tc-touch-min);
-	padding: var(--tc-sp-2) var(--tc-sp-4);
-	text-align: left;
-	color: var(--tc-text-nav);
-	background: transparent;
-	border: 0;
-	border-left: var(--tc-bw-accent) solid transparent;
-}
-
-.tc-rail-stations button[aria-current] {
-	font-weight: var(--tc-fw-bold);
-	color: var(--tc-primary);
-	background: var(--tc-primary-soft);
-	border-left-color: var(--tc-primary);
-}
-
-.tc-rail-foot {
-	padding: var(--tc-sp-3) var(--tc-sp-4);
-	border-top: var(--tc-bw-hair) solid var(--tc-line);
-}
-
-.tc-crumb {
-	margin: 0 0 var(--tc-sp-1);
+.tc-session-details {
+	margin: 0 0 var(--tc-sp-3);
+	color: var(--tc-text-mute);
 }
 
 .tc-station-pills {
@@ -283,6 +199,13 @@ body.tc-kiosk .layout-main-section {
 	border-radius: var(--tc-r-xl);
 }
 
+/* ô quét luôn ở đầu màn khi cuộn (ticket 1827) */
+.tc-work > .tc-scan {
+	position: sticky;
+	top: 0;
+	z-index: var(--tc-z-actions);
+}
+
 .tc-scan.is-error {
 	background: var(--tc-fail-tint);
 	border: var(--tc-bw-thick) solid var(--tc-fail);
@@ -323,6 +246,11 @@ body.tc-kiosk .layout-main-section {
 }
 
 .tc-notify-banner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--tc-touch-gap);
 	margin-bottom: var(--tc-sp-3);
 	padding: var(--tc-sp-3) var(--tc-sp-4);
 	background: var(--tc-warn-tint);
@@ -330,6 +258,17 @@ body.tc-kiosk .layout-main-section {
 	color: var(--tc-warn-text);
 	font-size: var(--tc-fs-md);
 	font-weight: var(--tc-fw-bold);
+}
+
+.tc-notify-who {
+	display: block;
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-notify-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
 }
 
 .tc-notify-panel {
@@ -1369,9 +1308,66 @@ body.tc-kiosk .layout-main-section {
 	margin: 0 0 var(--tc-sp-1);
 }
 
+/* ticket 1827, ticket 1834 T3-07: mỗi dụng cụ một dòng ngang (ảnh, tên, số lượng, nút), danh sách là phần chính của màn */
+.tc-t3 .tc-inst {
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--tc-sp-2);
+}
+
 .tc-t3 .tc-ins {
-	align-items: flex-start;
+	flex-wrap: wrap;
 	cursor: default;
+}
+
+.tc-t3 .tc-ins-text {
+	display: block;
+	flex: 1 1 var(--tc-inst-min);
+}
+
+.tc-t3 .tc-ins-name,
+.tc-t3 .tc-ins-state {
+	display: block;
+}
+
+.tc-t3 .tc-ins-pos + .tc-ins-state {
+	display: inline;
+	margin-left: var(--tc-sp-2);
+}
+
+/* kiosk 1366x768: thấy ít nhất 4 dòng dụng cụ không cần cuộn (ticket 1827) */
+.tc-t3 .tc-ins {
+	padding-block: var(--tc-sp-1);
+}
+
+.tc-t3 .tc-t4-block {
+	margin-bottom: var(--tc-sp-2);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+}
+
+.tc-t3 .tc-gates {
+	margin-top: var(--tc-sp-1);
+}
+
+.tc-t3 .tc-gate {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-1);
+	padding: var(--tc-sp-1) var(--tc-sp-2);
+}
+
+.tc-photo-btn {
+	flex: none;
+	padding: 0;
+	background: none;
+	border: 0;
+	cursor: zoom-in;
+}
+
+.tc-photo-zoom img {
+	display: block;
+	max-width: 100%;
+	max-height: 70vh;
+	margin-inline: auto;
 }
 
 .tc-ins.is-short,
@@ -1400,7 +1396,6 @@ body.tc-kiosk .layout-main-section {
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--tc-touch-gap);
-	margin-top: var(--tc-sp-2);
 }
 
 .tc-t3-count {
@@ -1680,6 +1675,59 @@ body.tc-kiosk .layout-main-section {
 	margin-bottom: var(--tc-sp-2);
 	font-size: var(--tc-fs-lg);
 	font-weight: var(--tc-fw-bold);
+}
+
+/* PDA, điện thoại (A-92, ticket 1828): ô quét ở đầu màn; hàng nút trạm và dòng phiên vào menu */
+.tc-menu-btn {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.tc-main {
+		display: flex;
+		flex-direction: column;
+		padding: var(--tc-sp-2) var(--tc-sp-3) var(--tc-sp-22);
+	}
+	.tc-title {
+		margin-bottom: var(--tc-sp-2);
+	}
+	.tc-title h2 {
+		flex: 1;
+		font-size: var(--tc-fs-lg);
+	}
+	.tc-title .tc-brand,
+	.tc-title .tc-tag,
+	.tc-title .tc-net-status {
+		display: none;
+	}
+	.tc-menu-btn {
+		display: inline-flex;
+	}
+	.tc-station-pills,
+	.tc-session,
+	.tc-session-details {
+		display: none;
+	}
+	.tc-menu-open .tc-station-pills:not([hidden]),
+	.tc-menu-open .tc-session:not([hidden]) {
+		display: flex;
+	}
+	.tc-menu-open .tc-session-details:not([hidden]) {
+		display: block;
+	}
+	.tc-notify-banner {
+		order: 2;
+	}
+	.tc-scan {
+		flex-wrap: wrap;
+		padding: var(--tc-sp-2);
+	}
+	.tc-scan .tc-scan-input {
+		flex: 1 1 100%;
+	}
+	.tc-scan .tc-btn {
+		flex: 1;
+	}
 }
 
 /* chọn tay thiết bị và bộ/gói khi máy quét hỏng (A-68): panel dưới ô quét, nút >= 48 px, không hover-only */

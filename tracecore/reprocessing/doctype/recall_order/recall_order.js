@@ -52,7 +52,7 @@ function tc_recall_confirm(frm) {
 				})),
 				reqd: 1,
 			},
-			{ fieldname: "note", label: __("Note"), fieldtype: "Small Text" },
+			{ fieldname: "note", label: __("Note", null, "Station"), fieldtype: "Small Text" },
 		],
 		primary_action_label: __("Confirm"),
 		primary_action(values) {

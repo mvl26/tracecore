@@ -458,6 +458,54 @@ def inbox(only_unread=0, event_code=None, surface=None, start=0, limit=50):
 	return {"rows": rows, "unread": unread_count(surface), "has_more": has_more}
 
 
+def _zones_of_station(station):
+	return {frappe.db.get_value("Zone Station", station, "parent_zone")} - {None, ""}
+
+
+def _zones_of_ref(ref_doctype, ref_name):
+	"""Khu của chứng từ: theo trường ``station``, hoặc cửa vào/ra của máy; không xác định được thì rỗng."""
+	if not ref_doctype or not ref_name or not frappe.db.exists("DocType", ref_doctype):
+		return set()
+	meta = frappe.get_meta(ref_doctype)
+	if ref_doctype == "Equipment":
+		equipment = ref_name
+	elif meta.has_field("station"):
+		station = frappe.db.get_value(ref_doctype, ref_name, "station")
+		return _zones_of_station(station) if station else set()
+	elif meta.has_field("equipment"):
+		equipment = frappe.db.get_value(ref_doctype, ref_name, "equipment")
+	else:
+		return set()
+	row = (
+		frappe.db.get_value("Equipment", equipment, ["zone_in", "zone_out"], as_dict=True)
+		if equipment
+		else None
+	)
+	return {row.zone_in, row.zone_out} - {None, ""} if row else set()
+
+
+def relevant_to_station(row, station):
+	"""Banner khẩn của trạm (A-91, #1831 S-06): chỉ bỏ thông báo chắc chắn thuộc khu khác, không rõ khu thì vẫn hiện."""
+	ref_zones = _zones_of_ref(row.get("ref_doctype"), row.get("ref_name"))
+	own = _zones_of_station(station)
+	return not ref_zones or not own or bool(ref_zones & own)
+
+
+def handled_by(event_code):
+	"""Ai cần xử lý thông báo: tên role hoặc người nhận theo Notification Rule; trống thì là người đang nhận."""
+	labels = []
+	for row in frappe.get_all(
+		"Notification Rule Recipient",
+		filters={"parent": event_code, "parenttype": "Notification Rule"},
+		fields=["recipient_type", "role", "user_name"],
+		order_by="idx asc",
+	):
+		label = _(row.role) if row.recipient_type == "Role" and row.role else row.user_name
+		if label and label not in labels:
+			labels.append(label)
+	return labels
+
+
 def mark_read(names):
 	"""Đánh dấu Đã đọc các thông báo của chính người dùng (kèm chuông Desk và Audit Log). Trả số dòng đã đổi."""
 	changed = 0

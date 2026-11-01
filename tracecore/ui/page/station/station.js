@@ -10,6 +10,7 @@
 /* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
 
 const RPC_TIMEOUT_MS = 8000;
+const RPC_READ_RETRY_MS = 600;
 const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
 const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
@@ -109,6 +110,76 @@ function tcPackLabelHtml(row) {
 	return names ? `${esc(names)} (${code})` : code;
 }
 
+// Hàng đợi bộ của bước hiện trên màn chính (#1834 T3-03, #1835 T4-01): chỉ để xem, vẫn quét từng Set ID như T2.
+// eslint-disable-next-line no-unused-vars
+class TcStepQueue {
+	constructor(station, screen) {
+		this.station = station;
+		this.screen = screen;
+		this.reset();
+	}
+
+	reset() {
+		this.items = null;
+		this.total = 0;
+		this.failed = null;
+		this.busy = false;
+	}
+
+	async load(done) {
+		const station = this.station;
+		if (this.busy || !station.session || station.isOffline()) return;
+		const version = station.sessionVersion;
+		this.busy = true;
+		this.failed = null;
+		try {
+			const res = await station.rpcRead("tracecore.v1.lookup.set_units", {
+				station: station.station,
+				screen: this.screen,
+				page_length: 20,
+				client_ts: clientTs(),
+			});
+			if (version !== station.sessionVersion) return;
+			if (res && res.ok !== false) {
+				this.items = res.items || [];
+				this.total = res.total || 0;
+			} else this.failed = station.failureCause(null, res);
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.failed = station.failureCause(error);
+		} finally {
+			this.busy = false;
+		}
+		if (version === station.sessionVersion) done();
+	}
+
+	html(title, empty) {
+		if (this.failed)
+			return `<section class="tc-t4-block tc-step-queue">
+				<p class="tc-hint">${esc(this.failed)}</p>
+			</section>`;
+		if (!this.items)
+			return `<section class="tc-t4-block tc-step-queue"><p class="tc-loading">${esc(
+				__("Loading...")
+			)}</p></section>`;
+		const heading = title(this.total);
+		const body = this.items.length
+			? this.items
+					.map((row) => {
+						const detail = [row.name, row.department_name].filter(Boolean).join(" · ");
+						return `<p data-set="${esc(row.id)}"><b class="tc-code">${esc(
+							row.id
+						)}</b> ${esc(detail)}</p>`;
+					})
+					.join("")
+			: `<p class="tc-empty">${esc(empty)}</p>`;
+		return `<section class="tc-t4-block tc-step-queue" aria-label="${esc(heading)}">
+			<h3>${esc(heading)}</h3>
+			${body}
+		</section>`;
+	}
+}
+
 class TraceCoreStation {
 	constructor(wrapper, authBarrier = Promise.resolve()) {
 		this.wrapper = wrapper;
@@ -146,7 +217,7 @@ class TraceCoreStation {
 		// máy kiosk chỉ hiện tên; riêng admin có đường về trang chủ, nạp lại để bỏ ?station= khỏi URL
 		const roles = frappe.user_roles || [];
 		this.adminMode = roles.includes("System Manager");
-		// role làm tại trạm có cột trạm của mình; role văn phòng có đường về trang chủ (NAV-04)
+		// role làm tại trạm có hàng nút trạm; role văn phòng có đường về trang chủ (NAV-04)
 		this.railMode = this.adminMode || roles.some((role) => /^TC R0[2-8]$/.test(role));
 		const hasHome = this.adminMode || roles.some((role) => /^TC R(01|02|09|10)$/.test(role));
 		for (const brand of this.root.querySelectorAll(".tc-brand")) {
@@ -174,11 +245,15 @@ class TraceCoreStation {
 		this.offlineData = null; // snapshot đọc offline của trạm (FEAT-009): T1/T4/T8
 		this.snapshotAt = 0;
 
-		this.setupAdminRail();
+		this.renderNetStatus(0);
+		this.setupStationNav();
 		this.bind();
 		this.addManifestLink();
 		this.registerServiceWorker();
-		this.renderLogin();
+		this.notice = this.takeNotice();
+		// còn token của trạm này (tải lại trang, đổi trạm): hiện khung xương, không nháy màn quét thẻ
+		if (this.storedToken() && !this.notice) this.renderResuming();
+		else this.renderLogin(this.notice);
 		this.initialHandshake = Promise.resolve();
 		if (typeof tcSync !== "undefined") {
 			this.unsubscribeSync = tcSync.onChange((state) => this.renderSync(state));
@@ -187,25 +262,47 @@ class TraceCoreStation {
 		}
 	}
 
-	// ---- cột trạm của admin (ux-foundations NAV-03): đổi trạm tại chỗ, thao tác vẫn theo thẻ đã quét ----
-	setupAdminRail() {
+	// ---- hàng nút trạm (A-91): một thanh điều hướng, đổi trạm tại chỗ, thao tác vẫn theo thẻ đã quét ----
+	setupStationNav() {
 		if (!this.railMode) return;
-		this.root.classList.add("tc-rail-station");
 		this.root.classList.toggle("tc-admin-station", this.adminMode);
-		this.root.querySelector(".tc-rail").hidden = false;
-		this.root.querySelector(".tc-crumb").hidden = false;
-		this.root.querySelector(".tc-station-pills").hidden = false;
-		this.renderRailPerson();
-		this.renderRailFoot(0);
 		frappe
 			.call({ method: "tracecore.v1.navigation.context", type: "GET" })
-			.then((response) => this.renderRailStations(response.message.stations))
+			.then((response) => {
+				this.deskStations = this.deskVisibleStations(response.message);
+				if (!this.session) this.renderStationPills(this.deskStations);
+			})
 			.catch(() => {}); // không có danh sách thì vẫn làm được trạm hiện tại
 	}
 
-	renderRailStations(stations) {
+	// trước khi quét thẻ: theo tài khoản Desk; role không quản lý chỉ thấy khu của trạm đang mở (A-91)
+	deskVisibleStations(context) {
+		const stations = context.stations.filter((station) => station.implemented);
+		if (context.see_all_stations) return stations;
+		const own = stations.find((station) => station.name === this.station);
+		return own ? stations.filter((station) => station.zone === own.zone) : [];
+	}
+
+	// sau khi quét thẻ: theo thẻ (A-91); lỗi mạng thì giữ hàng nút đang có
+	async loadCardStations() {
+		if (!this.railMode || !this.session) return;
+		const version = this.sessionVersion;
+		try {
+			const result = await this.rpc("tracecore.v1.station.stations", {
+				token: this.session.token,
+			});
+			if (version === this.sessionVersion && result && result.ok)
+				this.renderStationPills(result.stations);
+		} catch (error) {
+			// hàng nút không được làm hỏng màn quét
+		}
+	}
+
+	renderStationPills(stations) {
+		const pills = this.root.querySelector(".tc-station-pills");
+		// chỉ có trạm hiện tại thì không có gì để đổi
+		pills.hidden = stations.filter((station) => station.name !== this.station).length === 0;
 		const buttons = stations
-			.filter((station) => station.implemented)
 			.map((station) => {
 				const full = __(station.label);
 				const hasNumber = !station.station_no || full.startsWith(`T${station.station_no}`);
@@ -215,33 +312,55 @@ class TraceCoreStation {
 					data-station="${esc(station.name)}"${current}>${esc(label)}</button>`;
 			})
 			.join("");
-		this.root.querySelector(".tc-rail-stations").innerHTML = buttons;
-		this.root.querySelector(".tc-station-pills").innerHTML = buttons;
+		pills.innerHTML = buttons;
 	}
 
-	renderRailPerson() {
-		if (!this.railMode) return;
-		const session = this.session;
-		this.root.querySelector(".tc-rail-person").textContent = session
-			? `${session.employee_name || session.employee} · ${session.employee}`
-			: __("No card scanned");
-		this.root.querySelector(".tc-rail-context").textContent = session ? session.station : "";
-	}
-
-	renderRailFoot(queued) {
-		if (!this.railMode) return;
-		this.root.querySelector(".tc-rail-foot").textContent = `${
+	renderNetStatus(queued) {
+		this.root.querySelector(".tc-net-status").textContent = `${
 			this.isOffline() ? __("Offline", null, "TraceCore Launcher") : __("Online")
 		} · ${__("{0} transaction(s) waiting", [queued || 0])}`;
 	}
 
-	async switchStation(station) {
+	// Đổi trạm không tải lại trang (A-91): bỏ instance cũ, dựng instance mới trên cùng wrapper. Instance mới đi đúng đường
+	// của tải lại trang (ping, heartbeat kiểm lại năng lực), mọi màn, giỏ và bộ đếm thuộc trạm cũ được bỏ theo instance cũ.
+	openStation(station, label, notice) {
+		if (notice) this.storeNotice(notice);
+		// phiên trên máy chủ đã đóng hoặc đã chuyển: dispose không được thu hồi token
+		this.session = null;
+		this.restoreCandidate = null;
+		window.history.replaceState(
+			window.history.state,
+			"",
+			`/app/station?station=${encodeURIComponent(station)}`
+		);
+		const pills = this.root.querySelector(".tc-station-pills").innerHTML;
+		const next = new TraceCoreStation(this.wrapper, this.dispose());
+		frappe.tc_station = next;
+		if (label) next.root.querySelector(".tc-station-name").textContent = label;
+		const nav = next.root.querySelector(".tc-station-pills");
+		if (next.railMode && pills) nav.innerHTML = pills;
+		next.show();
+		return next;
+	}
+
+	// đưa kết quả lên ngay dưới ô quét (ô quét dính ở đầu màn), không cuộn tay qua phần đầu trang (#1827)
+	scrollResultIntoView() {
+		const top = this.result.getBoundingClientRect().top;
+		window.scrollTo({ top: window.scrollY + top - this.form.offsetHeight });
+	}
+
+	renderSwitching() {
+		this.authResult.innerHTML = `<div class="tc-skeleton" aria-busy="true"><span></span><span></span><span></span></div>
+			<span class="tc-sr-only">${esc(__("Loading..."))}</span>`;
+	}
+
+	async switchStation(station, label) {
 		if (!station || station === this.station || this.switching) return;
-		const target = `/app/station?station=${encodeURIComponent(station)}`;
-		if (!this.session) return window.location.assign(target);
+		if (!this.session) return this.openStation(station, label);
 		if (this.isOffline() || (this.screen && this.screen.busy)) return;
 		if (this.pendingScans && this.pendingScans.length) return;
 		this.switching = true;
+		this.renderSwitching();
 		try {
 			const result = await this.rpc("tracecore.v1.station.switch_station", {
 				token: this.session.token,
@@ -249,18 +368,60 @@ class TraceCoreStation {
 				client_ts: clientTs(),
 			});
 			if (!result.ok) {
+				// khác khu (A-90): máy chủ đã đóng phiên, trạm đích hiện màn quét thẻ kèm lý do
+				if (result.error.code === "STATION_ZONE_RESCAN") {
+					this.storedToken(null);
+					return this.openStation(station, label, result.error);
+				}
 				this.authResult.innerHTML = this.blockHtml(result.error);
 				return;
 			}
 			// phiên cũ đã đóng; trang mới của trạm đích khôi phục phiên từ token này
 			this.storedToken(null);
 			sessionStorage.setItem(`tc-station-session:${station}`, result.session.token);
-			window.location.assign(target);
+			this.openStation(station, label);
 		} catch (error) {
+			this.authResult.innerHTML = "";
 			this.handleFailure(error);
 		} finally {
 			this.switching = false;
 		}
+	}
+
+	storeNotice(error) {
+		try {
+			sessionStorage.setItem("tc-station-notice", JSON.stringify(error));
+		} catch (failure) {
+			// PDA tắt storage: trạm đích vẫn hiện màn quét thẻ, chỉ thiếu lý do
+		}
+	}
+
+	takeNotice() {
+		try {
+			const raw = sessionStorage.getItem("tc-station-notice");
+			sessionStorage.removeItem("tc-station-notice");
+			return raw ? JSON.parse(raw) : null;
+		} catch (failure) {
+			return null;
+		}
+	}
+
+	// Nút của lỗi nghiệp vụ (A-93): mở trạm của bước phải làm lại, gọi giám sát; không Thử lại, không ngoại tuyến.
+	businessButtons(notice) {
+		if (!notice || !notice.code || (notice.variant && notice.variant !== "error")) return "";
+		const stations = (this.stationInfo && this.stationInfo.gate_stations) || {};
+		const redo = notice.redo_step && stations[notice.redo_step];
+		const open =
+			redo && redo.name !== this.station
+				? `<button type="button" class="tc-btn tc-btn-primary" data-action="tc-switch-station" data-station="${esc(
+						redo.name
+				  )}">${esc(__("Open station {0}", [redo.label]))}</button>`
+				: "";
+		return `<div class="tc-actions">${open}
+			<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
+				__("Call R02")
+			)}</button>
+		</div>`;
 	}
 
 	blockHtml(error) {
@@ -428,7 +589,14 @@ class TraceCoreStation {
 			return this.picker.onAction(action, button);
 		}
 		if (action === "logout" || action === "rescan-card") return this.endSession();
-		if (action === "tc-switch-station") return this.switchStation(button.dataset.station);
+		if (action === "tc-switch-station")
+			return this.switchStation(button.dataset.station, button.textContent);
+		if (action === "toggle-session-details") return this.toggleSessionDetails();
+		if (action === "toggle-station-menu") {
+			const open = this.root.classList.toggle("tc-menu-open");
+			button.setAttribute("aria-expanded", String(open));
+			return;
+		}
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
 		if (!this.session) {
@@ -490,6 +658,13 @@ class TraceCoreStation {
 		this.warningBar.innerHTML = tcWarningsHtml(warnings);
 	}
 
+	renderResuming() {
+		this.authForm.hidden = true;
+		this.work.hidden = true;
+		this.sessionBar.hidden = true;
+		this.renderSwitching();
+	}
+
 	renderLogin(error) {
 		this.authForm.hidden = false;
 		this.work.hidden = true;
@@ -527,16 +702,20 @@ class TraceCoreStation {
 		this.form.classList.remove("is-error");
 		this.closePinChange();
 		if (this.help) this.help.sessionChanged();
-		for (const selector of [
-			".tc-session-person",
-			".tc-session-station",
-			".tc-session-expiry",
-			".tc-session-roles",
-		])
+		for (const selector of [".tc-session-person", ".tc-session-expiry", ".tc-session-roles"])
 			this.root.querySelector(selector).textContent = "";
+		this.toggleSessionDetails(false);
 		this.resetNotifications();
-		this.renderRailPerson();
+		if (this.deskStations) this.renderStationPills(this.deskStations);
 		this.renderLogin(error);
+	}
+
+	toggleSessionDetails(open) {
+		const details = this.root.querySelector(".tc-session-details");
+		details.hidden = open === undefined ? !details.hidden : !open;
+		this.root
+			.querySelector(".tc-session-more")
+			.setAttribute("aria-expanded", String(!details.hidden));
 	}
 
 	// ---- thông báo (FEAT-010, SCR-42 trên trạm/PDA) ----
@@ -567,8 +746,25 @@ class TraceCoreStation {
 		button.hidden = false;
 		button.querySelector(".tc-notify-count").textContent = String(summary.unread);
 		banner.hidden = !summary.urgent;
-		banner.textContent = summary.urgent ? __("Urgent: {0}", [summary.urgent.subject]) : "";
+		banner.innerHTML = summary.urgent ? this.urgentHtml(summary.urgent) : "";
 		if (!this.root.querySelector(".tc-notify-panel").hidden) this.loadNotificationPanel();
+	}
+
+	// #1831 S-06: thông báo khẩn nói rõ ai xử lý; Xử lý mở chứng từ ở tab mới để không mất phiên trạm
+	urgentHtml(urgent) {
+		const who = (urgent.handled_by || []).join(", ") || __("You");
+		const open =
+			urgent.link && urgent.link.startsWith("/")
+				? `<a class="tc-btn tc-btn-primary" href="${esc(
+						urgent.link
+				  )}" target="_blank" rel="noopener">${esc(__("Handle"))}</a>`
+				: "";
+		return `<span><span>${esc(__("Urgent: {0}", [urgent.subject]))}</span>
+				<span class="tc-notify-who">${esc(__("To be handled by: {0}", [who]))}</span></span>
+			<span class="tc-notify-actions">${open}
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="read-notification" data-name="${esc(
+					urgent.name
+				)}">${esc(__("Seen"))}</button></span>`;
 	}
 
 	async loadNotificationPanel() {
@@ -660,26 +856,48 @@ class TraceCoreStation {
 		this.lastActivity = Date.now();
 		this.heartbeatActivity = this.lastActivity;
 		this.heartbeatAttempt = Date.now();
+		this.notice = null;
 		this.authForm.hidden = true;
 		this.authResult.innerHTML = "";
 		this.sessionBar.hidden = false;
 		this.work.hidden = false;
 		this.root.querySelector(".tc-session-person").textContent =
 			session.employee_name || session.employee;
-		this.root.querySelector(".tc-session-station").textContent = session.station;
-		this.root.querySelector(".tc-session-roles").textContent = __("Roles: {0}", [
-			(session.roles || []).map((role) => __(role)).join(", "),
-		]);
+		// #1831 S-02: chỉ vai trò chính tại trạm; mã nhân viên và đủ vai trò mở bằng nút Chi tiết
+		const main = session.station_role || (session.roles || [])[0];
+		this.root.querySelector(".tc-session-roles").textContent = main
+			? __("Role: {0}", [__(main)])
+			: "";
+		this.root.querySelector(".tc-session-details").textContent = [
+			__("Employee ID: {0}", [session.employee]),
+			__("Roles: {0}", [(session.roles || []).map((role) => __(role)).join(", ")]),
+		].join(" · ");
 		this.root.querySelector(".tc-session-expiry").textContent = __("Session expires: {0}", [
 			this.formatExpiry(session.expires_at),
 		]);
-		this.renderRailPerson();
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
 		this.focus(true);
 		if (session.pin_change_required) this.openPinChange();
-		this.loadOfflineData();
-		this.refreshNotifications();
+		this.loadBackground();
+	}
+
+	// Dữ liệu nền chạy lần lượt (#1825): mỗi RPC theo token khóa dòng Employee, chạy song song với khối của màn làm đầy worker
+	// và làm RPC của màn chạm giới hạn 8 giây trên máy chủ ít worker.
+	async loadBackground() {
+		const version = this.sessionVersion;
+		for (const load of [
+			() => this.loadCardStations(),
+			() => this.refreshNotifications(),
+			() => this.loadOfflineData(),
+		]) {
+			if (version !== this.sessionVersion || !this.ownsPage()) return;
+			try {
+				await load();
+			} catch (error) {
+				// dữ liệu nền không được làm hỏng màn quét
+			}
+		}
 	}
 
 	// ---- đổi PIN tạm bắt buộc ngay sau quét thẻ (FR-M9-09, FR-M9-09.1, UC-33 A3) ----
@@ -879,7 +1097,7 @@ class TraceCoreStation {
 	}
 
 	renderSync(state) {
-		this.renderRailFoot(state.queued);
+		this.renderNetStatus(state.queued);
 		if (!this.syncBar) return;
 		let text = "";
 		if (state.sending)
@@ -967,6 +1185,7 @@ class TraceCoreStation {
 				{
 					token,
 					client_ts: clientTs(),
+					recheck: 1, // tải lại trang hay đổi trạm đều kiểm lại năng lực (A-90)
 				},
 				undefined,
 				candidate
@@ -1043,7 +1262,7 @@ class TraceCoreStation {
 	setOffline(offline) {
 		this.banner.hidden = !offline;
 		this.root.dataset.offline = offline ? "1" : "0";
-		this.renderRailFoot(typeof tcSync !== "undefined" ? tcSync.state.queued : 0);
+		this.renderNetStatus(typeof tcSync !== "undefined" ? tcSync.state.queued : 0);
 		if (!offline && typeof tcSync !== "undefined") tcSync.replay();
 		if (!this.session) {
 			if (offline)
@@ -1086,6 +1305,7 @@ class TraceCoreStation {
 			!candidate &&
 			(protectedCall ||
 				method === "tracecore.v1.station.heartbeat" ||
+				method === "tracecore.v1.station.switch_station" ||
 				method === "tracecore.v1.set_unit.get");
 		const activeToken = this.session && this.session.token;
 		const ended = () =>
@@ -1164,6 +1384,41 @@ class TraceCoreStation {
 		}
 	}
 
+	// RPC chỉ đọc của khối dữ liệu mở cùng trạm (#1825): tự thử lại 1 lần trước khi báo lỗi cho người dùng.
+	// Từ chối nghiệp vụ cũng thử lại vì phiên vừa mở có thể chưa ổn định; hết phiên thì dừng ngay.
+	async rpcRead(method, args) {
+		const version = this.sessionVersion;
+		let first = true;
+		for (;;) {
+			let result;
+			let failure = null;
+			try {
+				result = await this.rpc(method, args);
+				if (!result || result.ok !== false) return result;
+			} catch (error) {
+				if (error.sessionEnded) throw error;
+				failure = error;
+			}
+			if (!first || version !== this.sessionVersion || this.isOffline()) {
+				if (failure) throw failure;
+				return result;
+			}
+			first = false;
+			await new Promise((resolve) => setTimeout(resolve, RPC_READ_RETRY_MS));
+			if (version !== this.sessionVersion)
+				throw Object.assign(new Error("Station session ended"), { sessionEnded: true });
+		}
+	}
+
+	// câu nêu nguyên nhân cho khối dữ liệu không tải được: mất mạng, hết phiên, lỗi máy chủ, hoặc lý do từ chối
+	failureCause(error, result) {
+		if (result && result.error && result.error.reason) return result.error.reason;
+		if (error && error.offline)
+			return __("Cause: no connection to the server, or the server answered too slowly.");
+		if (error && error.status === 401) return __("Cause: the station session has ended.");
+		return __("Cause: server error ({0}).", [(error && error.status) || "?"]);
+	}
+
 	async handshake() {
 		if (!this.ownsPage()) return;
 		const generation = this.authGeneration;
@@ -1185,7 +1440,7 @@ class TraceCoreStation {
 			if (!this.session) {
 				const token = this.storedToken();
 				if (token && !this.authBusy) await this.restoreSession(token);
-				else if (!this.authBusy) this.renderLogin();
+				else if (!this.authBusy) this.renderLogin(this.notice);
 			} else {
 				const session = this.session;
 				await this.heartbeat();
@@ -1213,12 +1468,6 @@ class TraceCoreStation {
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
-		if (this.railMode)
-			this.root.querySelector(".tc-crumb").textContent = [
-				__("Home"),
-				__("Station"),
-				station.label,
-			].join(" › ");
 	}
 
 	// Mỗi màn giữ một instance: đổi tab không mất giỏ đang nạp dở (A-64).
@@ -1319,6 +1568,7 @@ class TraceCoreStation {
 
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
+		this.authResult.innerHTML = "";
 		if (this.screen) {
 			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới
 			// cũng xếp sau các mã còn chờ để giữ đúng thứ tự quét)
@@ -1416,7 +1666,10 @@ class TraceCoreStation {
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
 				<p class="tc-alert-action">${esc(error.action)}</p>
 				${tcGuideButton(error)}
-				<div class="tc-actions">
+				${
+					error.code
+						? this.businessButtons(error)
+						: `<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
 						__("Retry")
 					)}</button>
@@ -1426,7 +1679,8 @@ class TraceCoreStation {
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
 						__("Call R02")
 					)}</button>
-				</div>
+				</div>`
+				}
 			</div>`
 		);
 	}

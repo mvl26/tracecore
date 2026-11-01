@@ -498,7 +498,9 @@ class LaundryBatch {
 		if (this.notice)
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		if (this.ctx && !this.washers().length && this.mode === "start") {
 			html += this.alertHtml({
@@ -610,7 +612,7 @@ class LaundryBatch {
 			<div data-hint="batch">${this.hintHtml()}</div>
 			${outsourced ? "" : this.chemicalsHtml()}
 			<div class="tc-field">
-				<label for="tc-lau-note">${esc(__("Note"))}</label>
+				<label for="tc-lau-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-lau-note" rows="2" data-lf="note">${esc(form.note)}</textarea>
 			</div>
 			<div class="tc-actions">
@@ -771,7 +773,7 @@ class LaundryBatch {
 				${result("dry_ok", __("Dry"), finish.dry_ok)}
 			</div>
 			<div class="tc-field">
-				<label for="tc-lau-fin-note">${esc(__("Note"))}</label>
+				<label for="tc-lau-fin-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-lau-fin-note" rows="2" data-lf="fin_note">${esc(finish.note)}</textarea>
 			</div>
 			<div class="tc-actions">

@@ -472,7 +472,9 @@ class DailyTestScreen {
 		if (this.notice) {
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -484,7 +486,7 @@ class DailyTestScreen {
 			return `<span class="tc-badge tc-badge-o">${esc(
 				row.running_load
 					? t5MachineState(row.running_status, row.running_load)
-					: __("Testing")
+					: __("Testing", null, "Daily Test")
 			)}</span>`;
 		}
 		const label = ok
@@ -510,7 +512,7 @@ class DailyTestScreen {
 						const run = (row.runs || {})[type];
 						return `<span class="tc-tag">${esc(dtTestLabel(type))}: ${esc(
 							run === "Running"
-								? __("Testing")
+								? __("Testing", null, "Daily Test")
 								: run === "Ended"
 								? __("Waiting to be read")
 								: missing
@@ -583,7 +585,7 @@ class DailyTestScreen {
 			</div>
 			${field("lot", __("Test pack lot"), "text")}
 			${field("lot_expiry", __("Lot expiry date"), "date")}
-			${field("note", __("Note"), "text")}
+			${field("note", __("Note", null, "Daily Test"), "text")}
 			<div class="tc-field"><label for="tc-dt-photo">${esc(__("Test result photo"))}</label>
 				<input id="tc-dt-photo" type="file" accept="image/*" capture="environment"${
 					form.uploading || this.offline ? " disabled" : ""

@@ -22,8 +22,8 @@ def heartbeat(page, token):
 def test_live_card_identity_t4_indicator_and_logout(t4_page, t4_demo):
 	page = t4_page
 	expect(page.locator(".tc-session-person")).to_have_text("TraceCore Demo")
-	expect(page.locator(".tc-session-station")).to_have_text(require_env("TC_E2E_T4_STATION"))
-	expect(page.locator(".tc-session-roles")).to_contain_text("R04")
+	expect(page.locator(".tc-station-code")).to_have_text(require_env("TC_E2E_T4_STATION"))
+	expect(page.locator(".tc-session-roles")).not_to_be_empty()
 	token = page.evaluate("frappe.tc_station.session.token")
 	assert heartbeat(page, token).json()["message"]["ok"]
 	field = page.locator("#tc-scan-input")

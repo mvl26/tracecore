@@ -42,6 +42,7 @@ def _station_info(station):
 		"station_no": cint(row.station_no),
 		"screens": zones.station_screen_tabs(functions),
 		"gate_labels": zones.gate_labels(),
+		"gate_stations": zones.gate_stations(),
 		"zone_type": row.zone_type,
 		"zone_color": zones.zone_color_class(row.zone_type),
 	}, None

@@ -337,6 +337,83 @@ class TestStationPage(FrappeTestCase):
 		):
 			self.assertTrue(translations.get(source), msg=source)
 
+	def test_pda_menu_hides_navigation_and_keeps_scan_on_top(self):
+		"""#1828, A-92: ≤ 768 px hàng nút trạm và dòng phiên vào menu; không còn cột trạm đẩy ô quét."""
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.css"), encoding="utf-8") as handle:
+			css = handle.read()
+		rules = css[css.index("@media (max-width: 768px)", css.index("A-92")) :]
+		self.assertIn(".tc-station-pills,\n\t.tc-session,", rules)
+		self.assertIn(".tc-menu-open .tc-station-pills", rules)
+		with open(
+			os.path.join(APP_PATH, "ui", "page", "station", "station.html"), encoding="utf-8"
+		) as handle:
+			html = handle.read()
+		self.assertIn('data-action="toggle-station-menu"', html)
+		self.assertNotIn("tc-rail", html)
+
+	def test_t3_open_closes_picker_and_brings_set_to_top(self):
+		"""#1827, #1834 T3-04, T3-07."""
+		with open(os.path.join(APP_PATH, "public", "js", "station_t3.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		on_open = source[source.index("onOpen(res) {") : source.index("onLine(res) {")]
+		self.assertIn("picker.close()", on_open)
+		self.assertIn("scrollResultIntoView()", on_open)
+		self.assertIn('data-action="t3-zoom"', source)
+
+	def test_technician_wording_has_no_assembly_or_bom(self):
+		"""#1834 T3-06: "Lắp bộ", "Danh mục bộ" thay cho Assembly, BOM trên màn T3."""
+		ours = vi_translations()
+		self.assertEqual(ours.get("Assembly:Station Function"), "Lắp bộ")
+		self.assertEqual(ours.get("T3 Assembly"), "T3 Lắp bộ")
+		for source in (
+			"BOM v{0}",
+			"Set components (BOM v{0})",
+			"Scan the Set ID to count its instruments against the BOM.",
+		):
+			self.assertNotIn("BOM", ours.get(source, ""), source)
+
+	def test_t3_has_waiting_queue(self):
+		"""#1834 T3-03: hàng đợi Bộ chờ lắp ngay trên màn chính."""
+		with open(os.path.join(APP_PATH, "public", "js", "station_t3.js"), encoding="utf-8") as handle:
+			self.assertIn('new TcStepQueue(station, "assembly")', handle.read())
+
+	def test_business_errors_have_no_retry_or_offline(self):
+		"""#1835 T4-02, A-93: chỉ lỗi kỹ thuật có Thử lại, ngoại tuyến; không màn nào còn hiện nút đó cho lỗi nghiệp vụ."""
+		folder = os.path.join(APP_PATH, "public", "js")
+		for name in os.listdir(folder):
+			if name.startswith("station"):
+				with open(os.path.join(folder, name), encoding="utf-8") as handle:
+					self.assertNotIn("|| standalone ? this.standardButtons()", handle.read(), name)
+		ours = vi_translations()
+		self.assertEqual(ours.get("Call R02"), "Gọi giám sát CSSD")
+		self.assertEqual(ours.get("Open station {0}"), "Mở trạm {0}")
+
+	def test_t4_has_waiting_queue(self):
+		with open(os.path.join(APP_PATH, "public", "js", "station_t4.js"), encoding="utf-8") as handle:
+			self.assertIn('new TcStepQueue(this.station, "pack")', handle.read())
+
+	def test_read_blocks_retry_once_and_state_the_cause(self):
+		"""#1825: khối dữ liệu đọc khi mở trạm tự thử lại một lần, lỗi nói rõ nguyên nhân mất mạng, hết phiên hay lỗi máy chủ."""
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			shell = handle.read()
+		self.assertIn("async rpcRead(", shell)
+		self.assertIn("failureCause(", shell)
+		for path, call in (
+			("station_t1.js", 'rpcRead(T1_API + "received_today"'),
+			("station_t1.js", 'rpcRead(T1_API + "receipt_sets"'),
+			("station_t2.js", 'rpcRead("tracecore.v1.wash.redo_queue"'),
+			("station_t5.js", 'rpcRead("tracecore.v1.load.overview"'),
+		):
+			with open(os.path.join(APP_PATH, "public", "js", path), encoding="utf-8") as handle:
+				self.assertIn(call, handle.read(), path)
+		ours = vi_translations()
+		for source in (
+			"Cause: no connection to the server, or the server answered too slowly.",
+			"Cause: the station session has ended.",
+			"Cause: server error ({0}).",
+		):
+			self.assertTrue(ours.get(source), source)
+
 	def test_vi_translations_do_not_override_other_apps(self):
 		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms, trừ tên DocType
 		bị dịch sai đã duyệt trong ``GLOBAL_OVERRIDES`` (tên DocType trên tiêu đề, breadcrumb không có context)."""

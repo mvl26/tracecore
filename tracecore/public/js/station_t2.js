@@ -578,7 +578,7 @@ class T2Wash {
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
 		try {
-			const res = await this.station.rpc("tracecore.v1.wash.redo_queue", {
+			const res = await this.station.rpcRead("tracecore.v1.wash.redo_queue", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});
@@ -1264,7 +1264,9 @@ class T2Wash {
 			// lỗi kỹ thuật (mạng, máy chủ) có Thử lại; từ chối nghiệp vụ chỉ có kết quả → lý do → hành động
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -1919,8 +1921,8 @@ class T2Wash {
 				<input type="checkbox" class="tc-check" data-form="confirmed"${form.confirmed ? " checked" : ""}>
 				<span>${esc(
 					__(
-						"I, {0} {1}, confirm that the values above match the screen/printout of washer {2}.",
-						[session.employee || "", session.employee_name || "", machine.name]
+						"I, {0}, confirm that the values above match the screen/printout of washer {1}.",
+						[session.employee_name || "", machine.name]
 					)
 				)}</span>
 			</label>
@@ -2105,10 +2107,9 @@ class T2Wash {
 				}
 			</div>
 			<p>${esc(
-				__(
-					"Read by {0} {1} (card signed in); the reading time is recorded with the result.",
-					[session.employee || "", session.employee_name || ""]
-				)
+				__("Read by {0} (card signed in); the reading time is recorded with the result.", [
+					session.employee_name || "",
+				])
 			)}</p>
 		</div>`;
 	}

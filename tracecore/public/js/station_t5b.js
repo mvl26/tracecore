@@ -604,10 +604,11 @@ class T5Release {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.ctx && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -815,7 +816,7 @@ class T5Release {
 		}</dd>
 				${
 					ctx.duration
-						? `<dt>${esc(__("Duration"))}</dt><dd>${esc(
+						? `<dt>${esc(__("Duration", null, "Sterilization Load"))}</dt><dd>${esc(
 								this.back.durationText(ctx.duration)
 						  )}${
 								ctx.duration.abnormal

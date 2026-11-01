@@ -785,16 +785,16 @@ class T1Receiving {
 		this.todayFailed = false;
 		this.todaySets = {};
 		try {
-			const res = await this.station.rpc(T1_API + "received_today", {
+			const res = await this.station.rpcRead(T1_API + "received_today", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});
 			if (version !== this.station.sessionVersion) return;
 			if (res && res.ok) this.today = res;
-			else this.todayFailed = true;
+			else this.todayFailed = this.station.failureCause(null, res);
 		} catch (error) {
 			if (error.sessionEnded) return;
-			this.todayFailed = true;
+			this.todayFailed = this.station.failureCause(error);
 		} finally {
 			this.todayBusy = false;
 		}
@@ -814,7 +814,7 @@ class T1Receiving {
 			const version = this.station.sessionVersion;
 			let sets = "failed";
 			try {
-				const res = await this.station.rpc(T1_API + "receipt_sets", {
+				const res = await this.station.rpcRead(T1_API + "receipt_sets", {
 					receipt,
 					station: this.station.station,
 					client_ts: clientTs(),
@@ -839,6 +839,7 @@ class T1Receiving {
 			if (this.todayFailed)
 				return `<section class="tc-t4-block tc-t1-today">
 					<p class="tc-hint">${esc(__("Could not load the receipts received today."))}</p>
+					<p class="tc-hint">${esc(this.todayFailed)}</p>
 					<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="today-retry">${esc(
 						__("Retry")
 					)}</button></div>
@@ -1076,6 +1077,7 @@ class T1Receiving {
 		if (this.notice) {
 			let buttons = "";
 			if (this.notice.technical) buttons = this.standardButtons();
+			else if (this.notice.code) buttons = this.station.businessButtons(this.notice);
 			else if (this.notice.code === "CONFIRM_INCOMPLETE")
 				buttons = `<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-warn" data-action="confirm-anyway">${esc(

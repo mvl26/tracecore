@@ -567,7 +567,9 @@ class LinenCollect {
 		if (this.notice)
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		if (this.catalog && !this.catalog.types.length) {
 			html += this.alertHtml({
@@ -616,7 +618,7 @@ class LinenCollect {
 				)}</button>
 			</div>
 			<div class="tc-field">
-				<label for="tc-lin-note">${esc(__("Note"))}</label>
+				<label for="tc-lin-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-lin-note" rows="2" data-field="note">${esc(this.form.note)}</textarea>
 			</div>
 			<div class="tc-actions">

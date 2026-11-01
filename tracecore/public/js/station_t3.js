@@ -1,5 +1,5 @@
 /* global tcErrorTitle, tcGuideButton */
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, TcStepQueue */
 // Màn T3 kiểm tra – lắp ráp theo BOM (SCR-07, FEAT-020) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Ô quét của shell luôn ở đầu và có focus: quét Set ID mở bản nháp kiểm đếm (BOM kèm ảnh), quét mã GIAI dụng cụ tự tick
@@ -55,6 +55,7 @@ class T3Assembly {
 		this.busy = null;
 		this.offline = false;
 		this.scanQueue = []; // mã quét đến khi đang chờ máy chủ: không được mất (chạy lần lượt khi xong)
+		this.queue = new TcStepQueue(station, "assembly"); // #1834 T3-03
 		this.reset();
 		this.result.addEventListener("change", (event) => this.onChange(event));
 		this.result.addEventListener("input", (event) => this.onInput(event));
@@ -76,6 +77,8 @@ class T3Assembly {
 		this.offline = false;
 		this.scanQueue = [];
 		this.reset();
+		this.zoom = null;
+		this.queue.reset();
 		this.updatePlaceholder();
 	}
 
@@ -212,7 +215,10 @@ class T3Assembly {
 		this.asm = res;
 		this.notice = null;
 		this.form = null;
+		// #1827, #1834 T3-04: quét được bộ thì đóng Chọn tay, đưa bộ lên ngay dưới ô quét
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.show();
+		this.station.scrollResultIntoView();
 	}
 
 	onLine(res) {
@@ -256,6 +262,8 @@ class T3Assembly {
 			"t3-form-cancel": () => this.closeForm(),
 			"t3-submit": () => this.submit(),
 			"t3-next": () => this.goNext(),
+			"t3-zoom": () => this.setZoom(data.src, data.alt),
+			"t3-zoom-close": () => this.setZoom(null),
 		};
 		if (!handlers[action]) return false; // offline, call-r02: TraceCoreStation xử lý
 		handlers[action]();
@@ -506,7 +514,14 @@ class T3Assembly {
 		this.asm = res;
 		this.form = null;
 		this.notice = null;
+		this.queue.reset(); // bộ vừa ghi nhận rời hàng đợi
 		this.show();
+	}
+
+	setZoom(src, alt) {
+		this.zoom = src ? { src, alt } : null;
+		this.show();
+		if (!src) this.station.focus(true);
 	}
 
 	goNext() {
@@ -582,7 +597,7 @@ class T3Assembly {
 				"empty",
 				`<div class="tc-t3"><p class="tc-empty">${esc(
 					__("Scan the Set ID to count its instruments against the BOM.")
-				)}</p></div>`
+				)}</p>${this.queueHtml()}</div>`
 			);
 		}
 		let state = this.notice && this.notice.variant === "error" ? "error" : "result";
@@ -591,7 +606,9 @@ class T3Assembly {
 			state,
 			`<div class="tc-t3">
 				<div data-region="notice">${this.noticeHtml()}</div>
-				${this.asm ? this.asmHtml() : ""}
+				${this.asm ? this.asmHtml() : this.queueHtml()}
+				${this.asm && this.asm.docstatus === 1 ? this.queueHtml() : ""}
+				${this.zoomHtml()}
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
@@ -602,6 +619,16 @@ class T3Assembly {
 				field.focus();
 			}
 		}
+	}
+
+	// #1834 T3-03: bộ chờ lắp hiện sẵn khi chưa mở bộ nào; lần đầu tải rồi vẽ lại, offline thì không tải
+	queueHtml() {
+		if (!this.queue.items && !this.queue.failed && !this.offline)
+			this.queue.load(() => this.show());
+		return this.queue.html(
+			(count) => __("Sets waiting for assembly ({0})", [count]),
+			__("No set is waiting for assembly.")
+		);
 	}
 
 	alertHtml(notice, buttons = "") {
@@ -664,10 +691,11 @@ class T3Assembly {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.asm && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -783,10 +811,28 @@ class T3Assembly {
 		});
 	}
 
+	// #1834 T3-07: ảnh to hơn, chạm để phóng
 	photoHtml(url, alt) {
 		return url
-			? `<img class="tc-photo" src="${esc(url)}" alt="${esc(alt)}">`
+			? `<button type="button" class="tc-photo-btn" data-action="t3-zoom" data-src="${esc(
+					url
+			  )}" data-alt="${esc(alt)}" aria-label="${esc(__("Enlarge photo: {0}", [alt]))}">
+					<img class="tc-photo" src="${esc(url)}" alt="${esc(alt)}"></button>`
 			: `<span class="tc-photo tc-photo-empty">${esc(__("No photo"))}</span>`;
+	}
+
+	zoomHtml() {
+		if (!this.zoom) return "";
+		return `<div class="tc-modal tc-photo-zoom" role="dialog" aria-modal="true" aria-label="${esc(
+			this.zoom.alt
+		)}">
+			<div class="tc-modal-box">
+				<img src="${esc(this.zoom.src)}" alt="${esc(this.zoom.alt)}">
+				<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t3-zoom-close">${esc(
+					__("Close")
+				)}</button></div>
+			</div>
+		</div>`;
 	}
 
 	lineHtml(row) {
@@ -833,7 +879,8 @@ class T3Assembly {
 				)}</span>
 				<span class="tc-ins-state"><span aria-hidden="true">${marks}</span>${esc(state)}</span>
 				${damaged}${par}${unexplained}
-				<span class="tc-t3-qty">
+			</span>
+			<span class="tc-t3-qty">
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-dec"
 						data-instrument="${code}" aria-label="${esc(__("Decrease"))}"${t3Disabled(off)}>&minus;</button>
 					<b class="tc-t3-count" data-qty="${code}">${row.counted ? row.actual_qty : "-"}</b>
@@ -845,7 +892,6 @@ class T3Assembly {
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Short / other count"))}</button>
 					<button type="button" class="tc-btn tc-btn-warn" data-action="t3-damage"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Damaged / replace"))}</button>
-				</span>
 			</span>
 		</div>`;
 	}
@@ -927,7 +973,7 @@ class T3Assembly {
 					: ""
 			}
 			<div class="tc-field">
-				<label for="tc-t3-variance-note">${esc(__("Note"))} *</label>
+				<label for="tc-t3-variance-note">${esc(__("Note", null, "Station"))} *</label>
 				<textarea id="tc-t3-variance-note" rows="2" data-form="note">${esc(form.note)}</textarea>
 			</div>
 			<div class="tc-actions">
@@ -967,7 +1013,7 @@ class T3Assembly {
 				])}
 			</div>
 			<div class="tc-field">
-				<label for="tc-t3-note">${esc(__("Note"))}</label>
+				<label for="tc-t3-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-t3-note" rows="2" data-form="note">${esc(form.note)}</textarea>
 			</div>
 			<div class="tc-field">
