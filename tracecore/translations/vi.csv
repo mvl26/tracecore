@@ -7539,3 +7539,14 @@ Load {0} is waiting for the CSSD supervisor to release it,Mẻ {0} đang chờ g
 "Released by {0} at {1}.","Người giải phóng: {0}, lúc {1}.",
 "Released by {0}.","Người giải phóng: {0}.",
 "Released at {0}.","Giải phóng lúc {0}.",
+"Set is not received yet, it cannot be washed yet","Bộ chưa tiếp nhận xong, chưa rửa được"
+"Set is not washed yet, it cannot be assembled yet","Bộ chưa rửa xong, chưa lắp được"
+"Set is not assembled yet, it cannot be packed yet","Bộ chưa lắp xong, chưa đóng gói được"
+"Set is not packed yet, it cannot be sterilized yet","Bộ chưa đóng gói xong, chưa tiệt khuẩn được"
+Set {0} has not finished step {1}.,Bộ {0} chưa hoàn thành bước {1}
+Open station {0} to finish this step.,Mở trạm {0} để làm xong bước này
+Quantity differs from the set list,Số lượng khác danh mục bộ
+The set quantity differs; assembly will check it.,"Bộ lệch số lượng, khâu lắp ráp sẽ kiểm tra"
+{0} sets received · {1} need review,Đã nhận {0} bộ · {1} bộ cần xem xét
+{0} set(s) are waiting for washing; {1} need review.,{0} bộ đang chờ rửa; {1} bộ cần xem xét
+"No printer at this station, the label is waiting","Trạm chưa có máy in, nhãn đang chờ"

@@ -170,6 +170,31 @@ class TestSeed(IsolatedTestCase):
 class TestStationHelpTitles(IsolatedTestCase):
 	"""#1831 S-03: tên bài hướng dẫn không để lộ khóa kỹ thuật."""
 
+	def test_title_is_station_number_dash_name(self):
+		from tracecore.core import zones
+
+		self.assertEqual(
+			station_help.article_title("RECEIVE"), f"T1 \u2013 {zones.function_label('RECEIVE')}"
+		)
+
+	def test_unedited_titles_show_the_station_name(self):
+		expected = station_help.article_title("RECEIVE")
+		for stored in (
+			"Hướng dẫn trạm: T1",
+			"Station guide: T1",
+			"Station guide: RECEIVE",
+			"Hướng dẫn trạm T1 \u2013 Tiếp nhận",
+			"Station guide T1 - Receiving",
+			"T1 \u2013 Receiving",
+		):
+			with self.subTest(stored=stored):
+				self.assertEqual(station_help.display_title("RECEIVE", stored), expected)
+
+	def test_edited_titles_are_kept(self):
+		for stored in ("Edited by R10", "Hướng dẫn trạm: Lắp bộ mới", "T1 riêng của viện"):
+			with self.subTest(stored=stored):
+				self.assertEqual(station_help.display_title("RECEIVE", stored), stored)
+
 	def test_title_uses_station_number_and_function_name(self):
 		title = station_help.article_title("RECEIVE")
 		self.assertNotIn("RECEIVE", title)

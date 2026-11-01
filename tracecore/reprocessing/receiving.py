@@ -586,7 +586,7 @@ def confirm_line(
 		if pending and not item.abnormal_note and not ack_incomplete:
 			raise _blocked(
 				"CONFIRM_INCOMPLETE",
-				_("Some components are not confirmed"),
+				_("Quantity differs from the set list"),
 				_(
 					"{0} component(s) of set {1} differ from the BOM quantity and there is no abnormal note."
 				).format(len(pending), item.set_unit),

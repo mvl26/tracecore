@@ -900,7 +900,7 @@ class T4Packing {
 		if (!this.queue) this.queue = new TcStepQueue(this.station, "pack");
 		if (!this.queue.items && !this.queue.failed && !this.offline)
 			this.queue.load(() => {
-				if (!this.done && !this.ctx && !this.notice && !this.lookup) this.show();
+				if (!this.done && !this.ctx) this.show();
 			});
 		return this.queue.html(
 			(count) => __("Sets waiting for packing ({0})", [count]),
@@ -930,6 +930,8 @@ class T4Packing {
 		let body = "";
 		if (this.done) body = this.done.offline ? this.offlineDoneHtml() : this.doneHtml();
 		else if (this.ctx) body = this.ctxHtml();
+		// chưa mở bộ nào: hàng chờ vẫn hiện cạnh thông báo lỗi (#1835 T4-01)
+		else body = `<div data-region="queue">${this.queueHtml()}</div>`;
 		this.station.setState(
 			this.viewState(),
 			`<div class="tc-t4" data-view="${esc(key.split(":")[0])}">
@@ -946,6 +948,7 @@ class T4Packing {
 	refresh() {
 		if (!this.result.querySelector(".tc-t4")) return this.show();
 		const regions = {
+			queue: () => this.queueHtml(),
 			notice: () => this.noticeHtml(),
 			danger: () => this.dangerHtml(),
 			bar: () => this.barHtml(),
@@ -976,9 +979,8 @@ class T4Packing {
 	markScanBox() {
 		const error = Boolean(this.notice && this.notice.variant === "error");
 		this.station.form.classList.toggle("is-error", error);
-		// lỗi mới (vd bấm Xác nhận ở cuối trang): cuộn về đầu để thấy ô quét và alert-error ngay dưới
-		if (error && this.shownNotice !== this.notice) window.scrollTo({ top: 0 });
-		this.shownNotice = this.notice;
+		// lỗi mới (vd bấm Xác nhận ở cuối trang): đưa alert-error vào khung nhìn
+		this.station.revealNotice(this.notice);
 	}
 
 	updatePlaceholder() {

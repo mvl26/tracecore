@@ -162,6 +162,40 @@ class TestStepGate(FrappeTestCase):
 		step_gate.record(su, "T3", "Pass")
 		self.assertIsNone(step_gate.check(su, "T4"))
 
+	def test_gate_message_tells_the_technician_what_to_do(self):
+		"""QT-001 nói bộ nào, còn thiếu bước nào, mở trạm nào; vẫn giữ mã nhỏ và nút mở trạm."""
+		unit = make_set_unit()
+		step_gate.start_cycle(unit.name)
+		frappe.local.lang = "vi"
+		try:
+			out = step_gate.check(unit.name, "T4").as_dict()
+		finally:
+			frappe.local.lang = "en"
+		self.assertEqual(out["error_code"], "QT-001")
+		self.assertEqual(out["error_name"], out["title"])
+		self.assertEqual(out["title"], "Bộ chưa lắp xong, chưa đóng gói được")
+		name = frappe.db.get_value("Instrument Set Type", unit.set_type, "set_type_name")
+		self.assertIn(unit.name, out["reason"])
+		self.assertIn(name, out["reason"])
+		self.assertIn("chưa hoàn thành bước Lắp bộ", out["reason"])
+		self.assertTrue(out["action"].startswith("Mở trạm "))
+		self.assertTrue(out["action"].endswith("để làm xong bước này"))
+		self.assertEqual(out["redo_step"], "T3")
+
+	def test_every_gate_has_its_own_title(self):
+		titles = {step: step_gate._gate_title(step) for step in ("T2", "T3", "T4", "T5")}
+		self.assertEqual(len(set(titles.values())), 4)
+
+	def test_stored_gate_message_names_the_set(self):
+		unit = make_set_unit()
+		out = step_gate.check_stored(unit.name).as_dict()
+		self.assertEqual(out["error_name"], out["title"])
+		self.assertIn(unit.name, out["reason"])
+		self.assertIn(
+			frappe.db.get_value("Instrument Set Type", unit.set_type, "set_type_name"), out["reason"]
+		)
+		self.assertEqual(out["redo_step"], "T1")
+
 	@bru("BRU-FLOW-004")
 	def test_check_blocks_when_previous_step_failed(self):
 		su = make_set_unit().name

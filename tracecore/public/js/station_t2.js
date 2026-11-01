@@ -77,6 +77,16 @@ function t2GateLabel(step) {
 	return (window.tcGateLabels || {})[step] || step;
 }
 
+// ticket 1836: "Tên bộ (mã)", mã dùng font mã định danh; hàng chỉ có mã thì hiện mã
+function t2SetsHtml(rows) {
+	return rows
+		.map((row) => {
+			const code = `<span class="tc-mono">${esc(row.set_id || row)}</span>`;
+			return row.set_name ? `${esc(row.set_name)} (${code})` : code;
+		})
+		.join(", ");
+}
+
 class T2Wash {
 	constructor(station) {
 		this.station = station;
@@ -523,6 +533,7 @@ class T2Wash {
 					...res,
 					machine: load.machine,
 					program_name: program.program_name,
+					set_rows: load.sets.filter((row) => res.sets.includes(row.set_id)),
 					at: t2NowInput().replace("T", " "),
 				};
 				this.load = null;
@@ -712,10 +723,10 @@ class T2Wash {
 			const prefill = context.prefill || {};
 			const values = {};
 			Object.entries(prefill.values || {}).forEach(([name, value]) => {
-				values[name] = String(value);
+				values[name] = window.tcDecimal(value);
 			});
 			(data.parameters || []).forEach((row) => {
-				values[row.parameter_name] = String(row.value);
+				values[row.parameter_name] = window.tcDecimal(row.value);
 			});
 			this.form = {
 				values,
@@ -1447,9 +1458,9 @@ class T2Wash {
 					<b class="tc-code">${esc(row.item)}</b> ${esc(row.item_name || "")}
 					<span>${esc(
 						__("Needs {0} {1} per cycle, in stock {2} {1}", [
-							row.required,
+							window.tcDecimal(row.required),
 							row.uom || "",
-							row.qty,
+							window.tcDecimal(row.qty),
 						])
 					)}</span>
 					<b class="${cls}"><span aria-hidden="true">${mark}</span>${esc(text)}</b>
@@ -1516,7 +1527,7 @@ class T2Wash {
 			done.machine.name
 		)}</span></dd>
 						<dt>${esc(__("Program"))}</dt><dd>${esc(done.program_name)}</dd>
-						<dt>${esc(__("Sets in batch"))}</dt><dd class="tc-mono">${esc(done.sets.join(", "))}</dd>
+						<dt>${esc(__("Sets in batch"))}</dt><dd>${t2SetsHtml(done.set_rows || done.sets)}</dd>
 					</dl>
 					${this.printNoteHtml()}
 				</div>
@@ -1578,7 +1589,10 @@ class T2Wash {
 		const warning = print.warning || {};
 		return this.alertHtml({
 			variant: "warn",
-			title: __("Batch code kept - check the Station Agent, then print again"),
+			title:
+				warning.code === "NO_PRINTER_AT_STATION"
+					? __("No printer at this station, the label is waiting")
+					: __("Batch code kept - check the Station Agent, then print again"),
 			reason: [warning.reason, __("Print job {0}", [print.print_job])]
 				.filter(Boolean)
 				.join(" "),
@@ -1587,7 +1601,6 @@ class T2Wash {
 	}
 
 	lookupHtml(batch) {
-		const sets = batch.sets.map((row) => row.set_id).join(", ");
 		const chemicals = batch.chemicals
 			.map((row) => __("{0} lot {1}", [row.item, row.lot]))
 			.join(", ");
@@ -1607,9 +1620,7 @@ class T2Wash {
 				<dt>${esc(__("Loaded at"))}</dt><dd>${esc(t2DateTime(batch.load_completed_at))} · ${esc(
 			(batch.operator && (batch.operator.employee_name || batch.operator.name)) || "-"
 		)}</dd>
-				<dt>${esc(__("Sets in batch ({0})", [batch.sets.length]))}</dt><dd class="tc-mono">${esc(
-			sets
-		)}</dd>
+				<dt>${esc(__("Sets in batch ({0})", [batch.sets.length]))}</dt><dd>${t2SetsHtml(batch.sets)}</dd>
 				<dt>${esc(__("Chemicals"))}</dt><dd>${esc(chemicals || "-")}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(this.dataText(batch))}</dd>
 				${this.indicatorRowsHtml(batch.indicator)}
@@ -1738,7 +1749,9 @@ class T2Wash {
 				])
 			)}
 				<span class="tc-mono">${esc(row.equipment)}</span></p>
-			<p>${esc(__("Sets in batch ({0}): {1}", [row.sets.length, row.sets.join(", ")]))}</p>
+			<p>${esc(__("Sets in batch ({0})", [row.sets.length]))}: ${t2SetsHtml(
+			row.set_rows || row.sets
+		)}</p>
 			${
 				row.data_complete
 					? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
@@ -1840,8 +1853,8 @@ class T2Wash {
 				const value = form.values[param.parameter_name] || "";
 				const review = this.paramState(param, value) === "review";
 				const range = [
-					Number(param.min_value) ? `≥ ${param.min_value}` : "",
-					Number(param.max_value) ? `≤ ${param.max_value}` : "",
+					Number(param.min_value) ? `≥ ${window.tcDecimal(param.min_value)}` : "",
+					Number(param.max_value) ? `≤ ${window.tcDecimal(param.max_value)}` : "",
 				]
 					.filter(Boolean)
 					.join(" · ");
@@ -1857,7 +1870,7 @@ class T2Wash {
 				${
 					param.default_value != null
 						? `<p class="tc-hint">${esc(
-								__("Program default: {0}", [param.default_value])
+								__("Program default: {0}", [window.tcDecimal(param.default_value)])
 						  )}</p>`
 						: ""
 				}

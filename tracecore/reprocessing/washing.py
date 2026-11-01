@@ -414,6 +414,11 @@ def waiting_sets():
 	)
 
 
+def _set_type_name(set_id):
+	set_type = frappe.db.get_value("Set Unit", set_id, "set_type")
+	return frappe.db.get_value("Instrument Set Type", set_type, "set_type_name") if set_type else None
+
+
 def running_batches():
 	"""Lô đang chạy (chưa dỡ) để màn T2 hiện thẻ "Lô đang chạy" (SCR-06): máy, chương trình, bộ, dữ liệu."""
 	return _batches_in(RUNNING)
@@ -450,6 +455,7 @@ def _batches_in(status):
 				"data_complete": cint(row.data_complete),
 				"needs_review": cint(row.needs_review),
 				"sets": sets,
+				"set_rows": [{"set_id": set_id, "set_name": _set_type_name(set_id)} for set_id in sets],
 			}
 		)
 	return out

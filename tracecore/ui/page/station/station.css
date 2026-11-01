@@ -1345,7 +1345,32 @@ html:has(.tc-work) {
 	display: flex;
 	flex-direction: column;
 	gap: var(--tc-sp-3);
-	padding-bottom: var(--tc-sp-12);
+	/* đủ để dòng cuối không nằm dưới thanh cố định đáy (#1827) */
+	padding-bottom: calc(var(--tc-touch-station) + var(--tc-sp-2-5) * 2 + var(--tc-sp-3));
+}
+
+/* tên bộ và trạng thái dính ngay dưới ô quét (#1827); --tc-scan-h do station.js đo */
+.tc-t3-setbar {
+	position: sticky;
+	top: var(--tc-scan-h, calc(var(--tc-touch-station) * 2 + var(--tc-sp-3) * 3));
+	z-index: var(--tc-z-actions);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-2);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-t3-setname {
+	font-weight: var(--tc-fw-bold);
+}
+
+/* thông báo tại biểu mẫu: không nằm khuất sau dòng tên bộ khi được cuộn tới */
+.tc-t3-form .tc-alert {
+	scroll-margin-top: calc(var(--tc-touch-min) + var(--tc-sp-3));
 }
 
 .tc-t3 [data-region="notice"] {
