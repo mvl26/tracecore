@@ -178,7 +178,8 @@ class TraceCoreStation {
 		this.bind();
 		this.addManifestLink();
 		this.registerServiceWorker();
-		this.renderLogin();
+		this.notice = this.takeNotice();
+		this.renderLogin(this.notice);
 		this.initialHandshake = Promise.resolve();
 		if (typeof tcSync !== "undefined") {
 			this.unsubscribeSync = tcSync.onChange((state) => this.renderSync(state));
@@ -249,6 +250,13 @@ class TraceCoreStation {
 				client_ts: clientTs(),
 			});
 			if (!result.ok) {
+				// khác khu (A-90): máy chủ đã đóng phiên, trạm đích hiện màn quét thẻ kèm lý do
+				if (result.error.code === "STATION_ZONE_RESCAN") {
+					this.storedToken(null);
+					this.session = null;
+					this.storeNotice(result.error);
+					return window.location.assign(target);
+				}
 				this.authResult.innerHTML = this.blockHtml(result.error);
 				return;
 			}
@@ -260,6 +268,24 @@ class TraceCoreStation {
 			this.handleFailure(error);
 		} finally {
 			this.switching = false;
+		}
+	}
+
+	storeNotice(error) {
+		try {
+			sessionStorage.setItem("tc-station-notice", JSON.stringify(error));
+		} catch (failure) {
+			// PDA tắt storage: trạm đích vẫn hiện màn quét thẻ, chỉ thiếu lý do
+		}
+	}
+
+	takeNotice() {
+		try {
+			const raw = sessionStorage.getItem("tc-station-notice");
+			sessionStorage.removeItem("tc-station-notice");
+			return raw ? JSON.parse(raw) : null;
+		} catch (failure) {
+			return null;
 		}
 	}
 
@@ -660,6 +686,7 @@ class TraceCoreStation {
 		this.lastActivity = Date.now();
 		this.heartbeatActivity = this.lastActivity;
 		this.heartbeatAttempt = Date.now();
+		this.notice = null;
 		this.authForm.hidden = true;
 		this.authResult.innerHTML = "";
 		this.sessionBar.hidden = false;
@@ -967,6 +994,7 @@ class TraceCoreStation {
 				{
 					token,
 					client_ts: clientTs(),
+					recheck: 1, // tải lại trang hay đổi trạm đều kiểm lại năng lực (A-90)
 				},
 				undefined,
 				candidate
@@ -1185,7 +1213,7 @@ class TraceCoreStation {
 			if (!this.session) {
 				const token = this.storedToken();
 				if (token && !this.authBusy) await this.restoreSession(token);
-				else if (!this.authBusy) this.renderLogin();
+				else if (!this.authBusy) this.renderLogin(this.notice);
 			} else {
 				const session = this.session;
 				await this.heartbeat();

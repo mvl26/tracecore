@@ -44,17 +44,21 @@ def login(card_id=None, station=None, client_ts=None):
 
 @frappe.whitelist(methods=["POST"])
 def switch_station(token=None, station=None, client_ts=None):
-	"""Đã quét thẻ thì chuyển sang trạm khác không cần quét lại (NAV-03, NAV-04); tài khoản Desk phải có role của trạm đó."""
+	"""Đã quét thẻ thì chuyển sang trạm cùng khu không cần quét lại (A-90); tài khoản Desk phải có role của trạm đó.
+
+	Khác khu thì trả khối `STATION_ZONE_RESCAN` trước khi xét role: máy trạm về màn quét thẻ của trạm đích.
+	"""
 	timestamp = parse_client_ts(client_ts)
 	if not isinstance(station, str):
 		raise BadRequestError(_("station must be a string."))
-	if not navigation.can_open_station(station):
-		raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
-	return _session_response(
-		lambda: {"ok": True, "session": station_auth.switch_station(token, station, timestamp)},
-		station,
-		timestamp,
-	)
+
+	def call():
+		station_auth.require_same_zone(token, station, timestamp)
+		if not navigation.can_open_station(station):
+			raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
+		return {"ok": True, "session": station_auth.switch_station(token, station, timestamp)}
+
+	return _session_response(call, station, timestamp)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -69,11 +73,12 @@ def logout(token=None, client_ts=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def heartbeat(token=None, client_ts=None):
+def heartbeat(token=None, client_ts=None, recheck=None):
+	"""`recheck`: máy trạm gửi 1 khi khôi phục phiên sau khi tải lại trang hoặc đổi trạm (A-90)."""
 	timestamp = parse_client_ts(client_ts)
 
 	def call():
-		doc = station_auth.heartbeat(token, timestamp)
+		doc = station_auth.heartbeat(token, timestamp, recheck=bool(cint(recheck)))
 		employee = frappe.db.get_value(
 			"Employee", doc.employee, ["employee_name", "tc_pin_reset_required"], as_dict=True
 		)

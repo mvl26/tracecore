@@ -351,11 +351,39 @@ def _login(card_id: str, station: str, client_ts=None) -> dict:
 	)
 
 
-def switch_station(token: str, station: str, client_ts=None) -> dict:
-	"""Chuyển phiên đang mở sang trạm khác mà không quét lại thẻ (NAV-03); giữ người và hạn phiên, vẫn kiểm năng lực."""
+def require_same_zone(token: str, station: str, client_ts=None):
+	"""Đổi trạm khác khu phải quét lại thẻ, mọi role (A-90, #1822): đóng phiên đang mở rồi trả khối để máy trạm về màn quét."""
 	current = authenticate_session(token, client_ts=client_ts)
 	_require_station(station)
-	permit_until = _require_competency(current.employee, station, client_ts)
+	zones_of = dict(
+		frappe.get_all(
+			"Zone Station",
+			filters={"name": ["in", [current.station, station]]},
+			fields=["name", "parent_zone"],
+			as_list=True,
+		)
+	)
+	target_zone = zones_of.get(station)
+	if target_zone and target_zone == zones_of.get(current.station):
+		return current
+	_close_session(current, "Logout", client_ts)
+	raise _block(
+		"STATION_ZONE_RESCAN",
+		"Scan your card for this zone",
+		"This station is in another zone, so the previous station session has ended.",
+		"Scan your employee card at this station.",
+	)
+
+
+def switch_station(token: str, station: str, client_ts=None) -> dict:
+	"""Chuyển phiên sang trạm cùng khu mà không quét lại thẻ (A-90); giữ người và hạn phiên, vẫn kiểm năng lực."""
+	current = require_same_zone(token, station, client_ts)
+	try:
+		permit_until = _require_competency(current.employee, station, client_ts)
+	except BlockedError as error:
+		if error.block.code in ("COMPETENCY_REQUIRED", "CERTIFICATE_REQUIRED"):
+			error.block.action = _("Ask a person assigned to that station to scan their card there.")
+		raise
 	expires = get_datetime(current.absolute_expires_at)
 	if permit_until and get_datetime(permit_until) < expires:
 		expires = get_datetime(permit_until)
@@ -463,8 +491,16 @@ def authenticate_session(token: str, touch: bool = False, client_ts=None):
 	return doc
 
 
-def heartbeat(token: str, client_ts=None):
-	return authenticate_session(token, touch=True, client_ts=client_ts)
+def heartbeat(token: str, client_ts=None, recheck: bool = False):
+	"""``recheck``: khôi phục phiên sau khi tải lại trang kiểm lại năng lực như lúc đổi trạm (A-90); thiếu thì đóng phiên."""
+	doc = authenticate_session(token, touch=True, client_ts=client_ts)
+	if recheck:
+		try:
+			_require_competency(doc.employee, doc.station, client_ts)
+		except BlockedError:
+			_close_session(doc, "Logout", client_ts)
+			raise
+	return doc
 
 
 def logout(token: str, client_ts=None) -> None:

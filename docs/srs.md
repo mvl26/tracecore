@@ -45,6 +45,7 @@
 | 1.11 A-87 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Ghi chú theo Amendment A-87 của `docs/architecture.md` (#1818, #1819): FR-M2-04.1 và FR-M2-11 khi chọn tay dùng danh sách lô/mẻ chờ dỡ, không dùng danh sách bộ; chọn tay một dòng gửi cả mã lô/mẻ và mã máy, ghi Audit Log `Manual Entry`. |
 | 1.11 A-88 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Ghi chú theo Amendment A-88 của `docs/architecture.md` (#1844, #1836, D7): đổi chương trình tại T5 giữ gói và kiểm lại, gói không hợp đánh dấu đỏ; giao diện không còn mã nội bộ FEAT-/BRU-; gói hiển thị theo `Tên bộ – Khoa (CY-…)`. |
 | 1.11 A-89 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-89 của `docs/architecture.md` (#1815, D4): sửa FR-M2-10.3 và Q8: tham số ngoài dải chặn kết luận Đạt, không còn cho R02 xác nhận để giải phóng; form dữ liệu chu trình điền sẵn theo chương trình, lưu giá trị mặc định và trường đã sửa; `data_source` thêm `Manual Default`. |
+| 1.11 A-90 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-90 của `docs/architecture.md`: đổi trạm khác khu phải quét lại thẻ; cùng khu giữ phiên nếu đủ năng lực (FR-M4-03.1, FR-M9-08.1). Không đổi mã FR. |
 
 ---
 

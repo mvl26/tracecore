@@ -7461,3 +7461,7 @@ Row {0}: Default Value of parameter {1} must be a number.,Dòng {0}: Giá trị 
 Row {0}: Default Value of parameter {1} is outside its range.,Dòng {0}: Giá trị mặc định của tham số {1} nằm ngoài khoảng.,
 Ended,Đã kết thúc,Daily Test
 Recorded,Đã ghi kết quả,Daily Test
+Scan your card for this zone,Quét lại thẻ cho khu này,
+"This station is in another zone, so the previous station session has ended.",Trạm này ở khu khác nên phiên trạm trước đã kết thúc.,
+Scan your employee card at this station.,Quét thẻ nhân viên tại trạm này.,
+Ask a person assigned to that station to scan their card there.,Mời người được phân công ở trạm đó quét thẻ tại đó.,

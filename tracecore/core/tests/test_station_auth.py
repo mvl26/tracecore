@@ -218,6 +218,59 @@ class TestSwitchStation(IsolatedTestCase):
 		self.assertEqual(caught.exception.block.as_dict()["error_code"], "NS-003")
 		self.assertEqual(station_auth.authenticate_session(self.login["token"]).station, "TR-004")
 
+	def test_switch_without_competency_tells_another_person_to_scan(self):
+		"""#1822: cùng khu, thiếu năng lực thì báo rõ và yêu cầu người khác quét thẻ; giữ phiên hiện tại."""
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.switch_station(self.login["token"], "TR-003")
+		self.assertEqual(caught.exception.block.code, "COMPETENCY_REQUIRED")
+		self.assertEqual(
+			caught.exception.block.action,
+			frappe._("Ask a person assigned to that station to scan their card there."),
+		)
+
+	def test_switch_to_another_zone_needs_a_new_card_scan(self):
+		"""#1822, D2: khác khu luôn phải quét lại thẻ, kể cả có năng lực và kể cả admin; phiên cũ đóng ngay."""
+		self._allow_station("TR-006")
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.switch_station(self.login["token"], "TR-006")
+		self.assertEqual(caught.exception.block.code, "STATION_ZONE_RESCAN")
+		self.assertEqual(
+			frappe.db.get_value("Station Session", self.login["session"], "is_open"), 0, "phiên cũ phải đóng"
+		)
+		with self.assertRaises(BlockedError) as again:
+			station_auth.authenticate_session(self.login["token"])
+		self.assertEqual(again.exception.block.code, "SESSION_INVALID")
+
+	def test_api_another_zone_returns_the_block_for_admin_and_for_a_role_without_that_station(self):
+		"""Khác khu trả khối để máy trạm về màn quét thẻ, không phải 403 như thiếu role cùng khu."""
+		self._allow_station("TR-006")
+		blocked = station_api.switch_station(token=self.login["token"], station="TR-006", client_ts=self.ts)
+		self.assertFalse(blocked["ok"])
+		self.assertEqual(blocked["error"]["code"], "STATION_ZONE_RESCAN")
+		other = station_auth.login("NV-AUTH-001", "TR-004")
+		frappe.set_user(self.user)
+		try:
+			blocked = station_api.switch_station(token=other["token"], station="TR-006", client_ts=self.ts)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual(blocked["error"]["code"], "STATION_ZONE_RESCAN")
+
+	def test_reload_rechecks_competency(self):
+		"""#1822: tải lại trang và bấm nút cùng một luật; heartbeat khi khôi phục phiên kiểm lại năng lực."""
+		frappe.db.set_value(
+			"Station Competency", {"employee": self.employee.name, "station": "TR-004"}, "is_active", 0
+		)
+		plain = station_api.heartbeat(token=self.login["token"], client_ts=self.ts)
+		self.assertTrue(plain["ok"], "heartbeat định kỳ không kiểm lại")
+		restored = station_api.heartbeat(token=self.login["token"], client_ts=self.ts, recheck=1)
+		self.assertFalse(restored["ok"])
+		self.assertEqual(restored["error"]["code"], "COMPETENCY_REQUIRED")
+		self.assertEqual(frappe.db.get_value("Station Session", self.login["session"], "is_open"), 0)
+
+	def test_reload_with_valid_competency_keeps_the_session(self):
+		restored = station_api.heartbeat(token=self.login["token"], client_ts=self.ts, recheck=1)
+		self.assertTrue(restored["ok"])
+
 	def test_switch_rejects_invalid_token(self):
 		with self.assertRaises(BlockedError) as caught:
 			station_auth.switch_station("no-such-token", "TR-003")
