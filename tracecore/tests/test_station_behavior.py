@@ -535,7 +535,7 @@ class TestScanShell(FrappeTestCase):
 class TestT5ReleaseBlockByRole(FrappeTestCase):
 	"""Khối giải phóng theo role phiên, khớp `releasing._approver`: chỉ R02, R01 mới có PIN và nút."""
 
-	def html(self, roles):
+	def html(self, roles, needs_review=False):
 		return run_js(
 			self,
 			[ERR, T5, "public/js/station_t5b.js"],
@@ -545,7 +545,7 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			const station = makeStation();
 			station.session = {{token: "tok", roles: {roles!r}}};
 			const screen = new T5Release(station, {{}});
-			emit(screen.releaseHtml({{name: "ME-261101-09"}}, []));
+			emit(screen.releaseHtml({{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}}, []));
 			""",
 		)
 
@@ -571,6 +571,10 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 				for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
 					self.assertIn(shown, html)
 				self.assertNotIn("A CSSD supervisor must release the load", html)
+
+	def test_review_tick_only_for_those_who_can_release(self):
+		self.assertNotIn("data-t5b-review", self.html(["TC R05"], needs_review=True))
+		self.assertIn("data-t5b-review", self.html(["TC R02"], needs_review=True))
 
 	def test_message_is_translated_without_role_codes(self):
 		with open(frappe.get_app_path("tracecore", "translations", "vi.csv"), encoding="utf-8") as handle:

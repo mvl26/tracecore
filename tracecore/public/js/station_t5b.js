@@ -890,13 +890,14 @@ class T5Release {
 
 	releaseHtml(ctx, missing) {
 		const form = this.form;
-		const review = ctx.needs_review
-			? `<label class="tc-t2-confirm"><input type="checkbox" class="tc-check" data-t5b-review${
-					form.review ? " checked" : ""
-			  }><span>${esc(
-					__("R02 reviewed the parameters outside the program range.")
-			  )}</span></label>`
-			: "";
+		const review =
+			ctx.needs_review && this.canRelease()
+				? `<label class="tc-t2-confirm"><input type="checkbox" class="tc-check" data-t5b-review${
+						form.review ? " checked" : ""
+				  }><span>${esc(
+						__("R02 reviewed the parameters outside the program range.")
+				  )}</span></label>`
+				: "";
 		const waiting = missing.length
 			? `<p class="tc-t6-hint">${esc(
 					__("Still missing: {0}.", [
