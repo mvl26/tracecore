@@ -145,7 +145,9 @@ class TestProgramNorm(NormCase):
 
 	def test_norm_quantities_convert_the_line_unit_to_the_stock_unit(self):
 		stock_uom = frappe.db.get_value("Item", SOAP, "stock_uom")
-		other = next(uom for uom in frappe.get_all("UOM", pluck="name", limit=50) if uom != stock_uom)
+		other = "TC Norm Unit"  # site CI mới chỉ có ĐVT tồn kho
+		if not frappe.db.exists("UOM", other):
+			frappe.get_doc({"doctype": "UOM", "uom_name": other}).insert(ignore_permissions=True)
 		item = frappe.get_doc("Item", SOAP)
 		item.append("uoms", {"uom": other, "conversion_factor": 0.001})
 		item.save()

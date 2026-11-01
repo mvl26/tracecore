@@ -235,7 +235,7 @@ def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
 	inputs = form.locator("input[data-param]")
 	inputs.nth(0).fill("120")  # dưới dải 132-138
 	expect(form.locator(".tc-t5-review").first).to_be_visible()
-	expect(form.locator(".tc-t5-review").first).to_contain_text("không được kết luận Đạt")
+	expect(form.locator(".tc-t5-review").first).to_contain_text("cần trưởng khoa duyệt")
 	inputs.nth(1).fill("2,1")
 	inputs.nth(2).fill("4")
 	form.locator("#tc-t5-file").set_input_files(
@@ -246,7 +246,7 @@ def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
 	form.locator("#tc-t5-card").fill(os.environ["TC_E2E_T5_CARD_ID"])
 	form.locator("[data-action='t5-save-data']").click()
 	saved = page.locator(".tc-t5 .tc-alert-warn")
-	expect(saved.first).to_contain_text("không được kết luận Đạt", timeout=15000)
+	expect(saved.first).to_contain_text("cần trưởng khoa duyệt", timeout=15000)
 	expect(page.locator(".tc-t5")).to_contain_text("Hoàn tất chu trình")
 
 

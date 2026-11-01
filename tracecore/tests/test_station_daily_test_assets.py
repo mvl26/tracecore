@@ -26,7 +26,7 @@ class TestStationDailyTestAssets(FrappeTestCase):
 		self.assertGreater(position, scripts.index("public/js/station_t5.js"))
 		self.assertGreater(position, scripts.index("public/js/station_t2.js"))
 		self.assertIn('method.startsWith("tracecore.v1.daily_test.")', _read(*STATION_JS))
-		self.assertIn('"t5-daily-test": () => this.openDailyTest()', _read(*T5_JS))
+		self.assertRegex(_read(*T5_JS), r'"t5-daily-test": \(\) => \{\s+this\.openDailyTest\(\);')
 		self.assertIn('"t2-daily-test": () => this.openDailyTest()', _read(*T2_JS))
 		script = _read(*DT_JS)
 		self.assertIn("T5Load.prototype.openDailyTest", script)

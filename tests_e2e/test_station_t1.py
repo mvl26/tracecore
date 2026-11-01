@@ -133,8 +133,8 @@ def test_t1_receipt_of_several_sets_end_to_end(t1_page, t1_demo):
 	page.locator("#tc-t1-note").fill("Thiếu 1 kẹp, có vật lạ")
 	confirm_set(page)
 	expect(page.locator(LIST_ROWS)).to_have_count(2)
-	expect(page.locator(LIST_ROWS).nth(1)).to_contain_text("Ghi chú bất thường")
-	expect(page.locator(".tc-t1 h3").filter(has_text="2 bộ")).to_contain_text("1 bộ có ghi chú bất thường")
+	expect(page.locator(LIST_ROWS).nth(1)).to_contain_text("Cần xem xét")
+	expect(page.locator(".tc-t1 h3").filter(has_text="2 bộ")).to_contain_text("1 bộ cần xem xét")
 
 	# quét trùng: cảnh báo, không thêm dòng (FR-M2-01.6)
 	scan_settled(page, first)
@@ -160,7 +160,7 @@ def test_t1_receipt_of_several_sets_end_to_end(t1_page, t1_demo):
 	submit.click()
 	done = page.locator(".tc-t1 .tc-alert-ok")
 	expect(done).to_contain_text("Đã ghi sổ phiếu RC-", timeout=15000)
-	expect(done).to_contain_text("4 bộ đang chờ rửa; 1 bộ có ghi chú bất thường")
+	expect(done).to_contain_text("4 bộ đang chờ rửa; 1 bộ cần xem xét")
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	for set_id in (first, second, third, extra):
 		status, cycle_no = set_status(page, set_id)

@@ -52,7 +52,7 @@
    "options": "Batch",
    "read_only": 1,
    "in_list_view": 1,
-   "columns": 2
+   "columns": 1
   },
   {
    "fieldname": "uom",
@@ -100,7 +100,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-01 18:00:00.000000",
+ "modified": "2026-11-01 20:30:00.000000",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Laundry Batch Chemical",
