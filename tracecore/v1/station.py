@@ -68,8 +68,9 @@ def switch_station(token=None, station=None, client_ts=None):
 		raise BadRequestError(_("station must be a string."))
 
 	def call():
-		station_auth.require_same_zone(token, station, timestamp)
-		if not navigation.can_open_station(station):
+		current = station_auth.require_same_zone(token, station, timestamp)
+		# thẻ quản lý không bị tài khoản Desk giới hạn (A-91); năng lực trạm vẫn do station_auth.switch_station kiểm
+		if not _overview_card(current.user) and not navigation.can_open_station(station):
 			raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
 		return {
 			"ok": True,
@@ -79,13 +80,20 @@ def switch_station(token=None, station=None, client_ts=None):
 	return _session_response(call, station, timestamp)
 
 
+def _overview_card(user):
+	"""Thẻ quản lý theo role của chính người trên thẻ; thẻ không gắn user không bao giờ là thẻ quản lý."""
+	if not user:
+		return False
+	roles = set(frappe.get_roles(user))
+	return bool(roles & navigation.OVERVIEW_ROLES) or "System Manager" in roles
+
+
 def _visible_stations(session):
 	"""Trạm trên hàng nút sau khi quét thẻ (A-91): theo thẻ, không theo tài khoản Desk.
 
-	KTV: cùng khu và có năng lực. Thẻ quản lý: đủ trạm. Trạm cùng khu tài khoản Desk không mở được thì không hiện vì bấm sẽ 403.
+	KTV: cùng khu và có năng lực; trạm cùng khu tài khoản Desk không mở được thì không hiện vì bấm sẽ 403. Thẻ quản lý: đủ trạm.
 	"""
-	roles = set(frappe.get_roles(session.user))
-	overview = bool(roles & navigation.OVERVIEW_ROLES) or "System Manager" in roles
+	overview = _overview_card(session.user)
 	rows = frappe.get_all(
 		"Zone Station",
 		filters={"is_zone": 0, "is_active": 1},
@@ -101,7 +109,7 @@ def _visible_stations(session):
 		show = row.name == session.station or overview
 		if same_zone and not show:
 			show = station_auth.can_work_at(session.employee, row.name)
-		if same_zone and row.name != session.station:
+		if same_zone and row.name != session.station and not overview:
 			show = show and navigation.can_open_station(row.name)
 		if show:
 			visible.append(

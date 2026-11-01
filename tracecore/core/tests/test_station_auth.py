@@ -355,6 +355,65 @@ class TestStationNavigation(IsolatedTestCase):
 		self.assertIn("TR-001", names)
 		self.assertIn("TR-006", names)
 
+	def test_supervisor_card_sees_its_zone_whatever_the_desk_account(self):
+		"""A-91: thẻ quản lý thấy đủ trạm, kể cả trạm cùng khu mà tài khoản Desk không có role."""
+		frappe.get_doc("User", self.user).add_roles("TC R02")
+		frappe.set_user("Guest")
+		try:
+			names = self._names()
+		finally:
+			frappe.set_user("Administrator")
+		self.assertIn("TR-003", names)
+		self.assertIn("TR-005", names)
+
+	def test_technician_card_on_a_limited_desk_stays_limited(self):
+		self._allow_station("TR-003")
+		frappe.set_user("Guest")
+		try:
+			self.assertEqual(self._names(), ["TR-004"])
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_supervisor_card_passes_the_desk_guard_but_not_competency(self):
+		frappe.get_doc("User", self.user).add_roles("TC R02")
+		ts = now_datetime().isoformat() + "+07:00"
+		frappe.set_user("Guest")
+		try:
+			blocked = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=ts)
+			self.assertEqual(blocked["error"]["code"], "COMPETENCY_REQUIRED")
+		finally:
+			frappe.set_user("Administrator")
+		login = station_auth.login("NV-AUTH-001", "TR-004")
+		self._allow_station("TR-003")
+		frappe.set_user("Guest")
+		try:
+			switched = station_api.switch_station(token=login["token"], station="TR-003", client_ts=ts)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertTrue(switched["ok"])
+
+	def test_technician_card_cannot_use_the_supervisor_path(self):
+		self._allow_station("TR-003")
+		ts = now_datetime().isoformat() + "+07:00"
+		frappe.set_user("Guest")
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=ts)
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_competency_block_names_the_employee_not_the_code(self):
+		frappe.db.set_value("Station Competency", self.competency.name, "is_active", 0)
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.login("NV-AUTH-001", "TR-004")
+		out = caught.exception.block.as_dict()
+		self.assertEqual(out["error_code"], "NS-003")
+		self.assertEqual(out["object_label"], self.employee.employee_name)
+		self.assertEqual(out["object_name"], self.employee.name)
+		with self.assertRaises(BlockedError) as unknown:
+			station_auth.login("NV-NO-SUCH-CARD", "TR-004")
+		self.assertNotIn("object_label", unknown.exception.block.as_dict())
+
 	def test_invalid_token_gets_a_block(self):
 		result = station_api.stations(token="no-such-token")
 		self.assertEqual(result["error"]["code"], "SESSION_INVALID")

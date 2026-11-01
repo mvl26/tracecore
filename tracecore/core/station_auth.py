@@ -269,6 +269,8 @@ def _require_competency(employee: str, station: str, client_ts=None):
 		client_ts=client_ts,
 		detail={"missing_certificates": missing} if missing else None,
 	)
+	# thẻ hợp lệ, đang quét tại máy: hiện tên người; mã nhân viên chỉ để ghi Nhật ký lỗi
+	employee_name = frappe.db.get_value("Employee", employee, "employee_name")
 	if names:
 		raise BlockedError(
 			Block(
@@ -279,6 +281,7 @@ def _require_competency(employee: str, station: str, client_ts=None):
 				items=missing,
 				object_type="Employee",
 				object_name=employee,
+				object_label=employee_name,
 			)
 		)
 	raise BlockedError(
@@ -289,6 +292,7 @@ def _require_competency(employee: str, station: str, client_ts=None):
 			_("Use a station you are assigned to, or ask the supervisor."),
 			object_type="Employee",
 			object_name=employee,
+			object_label=employee_name,
 		)
 	)
 
