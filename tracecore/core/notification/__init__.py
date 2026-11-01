@@ -14,7 +14,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
-from tracecore.core import audit
+from tracecore.core import audit, zones
 from tracecore.core.notification import sms
 
 IN_APP, EMAIL, SMS = "In App", "Email", "SMS"
@@ -163,6 +163,10 @@ def _rule_recipients(rule_name, doc):
 		elif row.recipient_type == "Department of document" and doc is not None:
 			users += _department_users(doc.get("department"))
 	return users
+
+
+USE_FUNCTION = "USE"
+DEPARTMENT_ROLE = "TC R08"
 
 
 def _link(doc, link):
@@ -484,8 +488,30 @@ def _zones_of_ref(ref_doctype, ref_name):
 	return {row.zone_in, row.zone_out} - {None, ""} if row else set()
 
 
+def _rule_roles(event_code):
+	"""Role người nhận của Notification Rule; rule có người nhận đích danh thì coi như không giới hạn theo role."""
+	rows = frappe.get_all(
+		"Notification Rule Recipient",
+		filters={"parent": event_code, "parenttype": "Notification Rule"},
+		fields=["recipient_type", "role"],
+	)
+	if any(row.recipient_type != "Role" for row in rows):
+		return []
+	return [row.role for row in rows if row.role]
+
+
+def _only_for_cssd(event_code, station):
+	"""A-96, #1838 T8-02: ở trạm khoa (chức năng USE) bỏ thông báo chỉ gửi cho role khác R08."""
+	if not event_code or USE_FUNCTION not in zones.station_functions(station):
+		return False
+	roles = _rule_roles(event_code)
+	return bool(roles) and DEPARTMENT_ROLE not in roles
+
+
 def relevant_to_station(row, station):
 	"""Banner khẩn của trạm (A-91, #1831 S-06): chỉ bỏ thông báo chắc chắn thuộc khu khác, không rõ khu thì vẫn hiện."""
+	if _only_for_cssd(row.get("event_code"), station):
+		return False
 	ref_zones = _zones_of_ref(row.get("ref_doctype"), row.get("ref_name"))
 	own = _zones_of_station(station)
 	return not ref_zones or not own or bool(ref_zones & own)

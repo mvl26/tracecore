@@ -126,6 +126,7 @@ class TestT1ScanLabel(FrappeTestCase):
 
 T6 = "public/js/station_t6.js"
 T7 = "public/js/station_t7.js"
+T8 = "public/js/station_t8.js"
 DAILY = "public/js/station_daily_test.js"
 MACHINE = {"name": "TB-1", "equipment_name": "May", "required": ["bowie_dick"], "missing": [], "runs": {}}
 
@@ -228,6 +229,56 @@ class TestT7Departments(FrappeTestCase):
 		self.assertIn("Bo A", out)
 		self.assertEqual(out.count('data-dept="K1"'), 1)
 		self.assertEqual(out.count('data-dept="K2"'), 1)
+
+
+class TestT8Idle(FrappeTestCase):
+	def idle(self, overview):
+		import json
+
+		return run_js(
+			self,
+			[T8],
+			[["T8Usage"]],
+			FAKE_STATION
+			+ f"""
+			const t8 = Object.create(T8Usage.prototype);
+			t8.waiting = [];
+			t8.station = {{session: {{department_name: "Khoa Noi"}}}};
+			t8.overview = {json.dumps(overview)};
+			emit(t8.idleHtml());
+			""",
+		)
+
+	def test_shows_department_packs_expiry_and_waiting_return(self):
+		out = self.idle(
+			{
+				"at_department": [
+					{
+						"cycle_id": "CY-1",
+						"set_name": "Bo A",
+						"expiry": "2026-11-04",
+						"days_left": 3,
+						"expiring": True,
+					},
+				],
+				"waiting_return": [
+					{"cycle_id": "CY-2", "set_name": "Bo B", "used_at": "2026-11-01 08:00:00"}
+				],
+			}
+		)
+		self.assertIn("Khoa Noi", out)
+		self.assertIn("Packs at the department (1)", out)
+		self.assertIn("04/11/2026", out)
+		self.assertIn("Expiring soon", out)
+		self.assertIn("Used, waiting to return (1)", out)
+		self.assertIn("CY-2", out)
+		self.assertIn("Scan the code on the pack.", out)
+		self.assertNotIn("Cycle ID", out)
+
+	def test_empty_lists_say_so(self):
+		out = self.idle({"at_department": [], "waiting_return": []})
+		self.assertIn("No pack is at the department.", out)
+		self.assertIn("No used pack is waiting to return.", out)
 
 
 class TestT1Today(FrappeTestCase):

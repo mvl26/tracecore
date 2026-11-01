@@ -37,6 +37,8 @@ async function t8Encrypt(pem, text) {
 	return btoa(String.fromCharCode(...new Uint8Array(cipher)));
 }
 
+const T8_OVERVIEW = "tracecore.v1.usage.overview";
+
 class T8Usage {
 	constructor(station) {
 		this.station = station;
@@ -70,8 +72,10 @@ class T8Usage {
 		this.waiting = [];
 		this.codeFor = null;
 		this.fieldError = null;
-		this.input.placeholder = __("Scan the Cycle ID of the pack to use...");
-		this.input.setAttribute("aria-label", __("Scan the Cycle ID of the pack to use..."));
+		this.overview = null;
+		this.overviewFailed = null;
+		this.input.placeholder = __("Scan the code on the pack...");
+		this.input.setAttribute("aria-label", __("Scan the code on the pack..."));
 	}
 
 	// ---- quét và gọi RPC ----
@@ -326,6 +330,7 @@ class T8Usage {
 			});
 			this.draft = Object.fromEntries(T8_KEEP.map((name) => [name, this.draft[name]]));
 			this.card = null;
+			this.overview = null; // gói vừa dùng chuyển sang Đã dùng, chờ trả
 			this.emergency = false;
 			if (emergency)
 				this.waiting.push({
@@ -447,7 +452,7 @@ class T8Usage {
 	}
 
 	updatePlaceholder() {
-		const text = __("Scan the Cycle ID of the pack to use...");
+		const text = __("Scan the code on the pack...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
 	}
@@ -611,8 +616,92 @@ class T8Usage {
 		</section>`;
 	}
 
+	// A-96: gói tại khoa và gói đã dùng chờ trả; chỉ đọc, lỗi không chặn quét
+	async loadOverview() {
+		const station = this.station;
+		if (this.overviewBusy || !station.session || station.isOffline()) return;
+		const version = station.sessionVersion;
+		this.overviewBusy = true;
+		this.overviewFailed = null;
+		try {
+			const res = await station.rpcRead(T8_OVERVIEW, {
+				station: station.station,
+				client_ts: clientTs(),
+			});
+			if (version !== station.sessionVersion) return;
+			if (res && res.ok !== false) this.overview = res;
+			else this.overviewFailed = station.failureCause(null, res);
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.overviewFailed = station.failureCause(error);
+		} finally {
+			this.overviewBusy = false;
+		}
+		if (version === station.sessionVersion && !this.card && !this.codeFor) this.show();
+	}
+
+	overviewHtml() {
+		if (this.overviewFailed) return `<p class="tc-hint">${esc(this.overviewFailed)}</p>`;
+		const data = this.overview;
+		if (!data) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		const held = data.at_department
+			.map(
+				(row) => `<tr>
+					<td><b class="tc-code">${esc(row.cycle_id)}</b> ${esc(row.set_name || "")}</td>
+					<td>${esc(t8Date(row.expiry))}${
+					row.expiring
+						? ` <span class="tc-badge tc-badge-${
+								row.days_left < 0 ? "r" : "o"
+						  }"><span aria-hidden="true">!</span> ${esc(
+								row.days_left < 0 ? __("Expired") : __("Expiring soon")
+						  )}</span>`
+						: ""
+				}</td>
+				</tr>`
+			)
+			.join("");
+		const heldTitle = __("Packs at the department ({0})", [data.at_department.length]);
+		const backTitle = __("Used, waiting to return ({0})", [data.waiting_return.length]);
+		return `<section class="tc-t6-block" aria-label="${esc(heldTitle)}">
+				<h3>${esc(heldTitle)}</h3>
+				${
+					held
+						? `<table class="tc-t6-table"><thead><tr>
+							<th scope="col">${esc(__("Pack"))}</th>
+							<th scope="col">${esc(__("Use-by date"))}</th>
+						</tr></thead><tbody>${held}</tbody></table>`
+						: `<p class="tc-t6-hint">${esc(__("No pack is at the department."))}</p>`
+				}
+			</section>
+			<section class="tc-t6-block" aria-label="${esc(backTitle)}">
+				<h3>${esc(backTitle)}</h3>
+				${
+					data.waiting_return.length
+						? `<ul>${data.waiting_return
+								.map(
+									(row) =>
+										`<li><b class="tc-code">${esc(row.cycle_id)}</b> ${esc(
+											row.set_name || ""
+										)}</li>`
+								)
+								.join("")}</ul>`
+						: `<p class="tc-t6-hint">${esc(
+								__("No used pack is waiting to return.")
+						  )}</p>`
+				}
+			</section>`;
+	}
+
 	idleHtml() {
-		let html = `<p class="tc-empty">${esc(__("Scan the Cycle ID of the pack to use."))}</p>`;
+		const session = this.station.session || {};
+		if (!this.overview && !this.overviewFailed) this.loadOverview();
+		let html = session.department_name
+			? `<h3 class="tc-t8-dept">${esc(
+					__("Department: {0}", [session.department_name])
+			  )}</h3>`
+			: "";
+		html += `<p class="tc-empty">${esc(__("Scan the code on the pack."))}</p>`;
+		html += this.overviewHtml();
 		if (this.waiting.length) {
 			html += `<section class="tc-t6-block">
 				<h3>${esc(__("Emergency cases waiting for the patient code"))}</h3>
