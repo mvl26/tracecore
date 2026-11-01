@@ -25,7 +25,8 @@ class TestStationT5bAssets(FrappeTestCase):
 		self.assertIn(
 			'method.startsWith("tracecore.v1.release.")', _read(*STATION_JS)
 		)  # RPC cần token phiên thẻ
-		self.assertIn('"t5-release": () => this.openRelease()', _read(*T5_JS))
+		self.assertIn('"t5-step": () => this.goStep(Number(data.step))', _read(*T5_JS))
+		self.assertIn('"t5-step": () => this.back.goStep(Number(data.step))', _read(*T5B_JS))
 		self.assertIn("T5Load.prototype.openRelease", _read(*T5B_JS))
 
 	def test_every_string_has_a_vietnamese_translation(self):

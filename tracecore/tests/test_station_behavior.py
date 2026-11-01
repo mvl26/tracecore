@@ -795,17 +795,20 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			+ """
 			const station = makeStation();
 			station.session = {token: "tok", roles: ["TC R05"]};
-			const screen = new T5Release(station, {});
+			let step = null;
+			let notice = null;
+			const screen = new T5Release(station, {goStep(number, options) { step = number; notice = options.notice; }});
 			screen.show = () => {};
 			screen.ctx = {load: "ME-261101-09"};
 			screen.scans = {equipment_raw: "TB-1", load_raw: "ME-261101-09"};
 			const handled = screen.onAction("t5b-finish", {dataset: {}});
-			emit({handled, ctx: screen.ctx, scans: screen.scans, notice: screen.notice});
+			emit({handled, ctx: screen.ctx, scans: screen.scans, step, notice});
 			""",
 		)
 		self.assertTrue(out["handled"])
 		self.assertIsNone(out["ctx"])
 		self.assertEqual(out["scans"], {"equipment_raw": "", "load_raw": ""})
+		self.assertEqual(out["step"], 1)  # A-103: KTV xong phần mình thì về bước Nạp máy
 		self.assertEqual(out["notice"]["variant"], "ok")
 		self.assertIn("ME-261101-09", out["notice"]["title"])
 
@@ -1437,10 +1440,9 @@ class TestT5UnloadLists(FrappeTestCase):
 	"""A-102: tab Dỡ mẻ tách Mẻ chờ dỡ và Mẻ chờ giải phóng."""
 
 	BODY = """
-	const screen = new T5Release(makeStation());
 	const row = (id, unloaded) => ({id, equipment: "M", equipment_name: "May", program: "P", started_at: null,
 		status: "Cycle Complete", count: 1, requires_bi: 0, unloaded});
-	screen.running = ROWS;
+	const screen = new T5Release(makeStation(), {queues: {unload: ROWS, bi: []}});
 	emit(screen.waitingHtml());
 	"""
 
@@ -1663,3 +1665,664 @@ class TestOpenStationByUrl(FrappeTestCase):
 		)
 		self.assertFalse(out["done"])
 		self.assertIsNone(out["active"])
+
+
+# --- T5 theo bước (#1846, A-103) ---------------------------------------------------------------------------------
+T5_FLOW = """
+globalThis.performance = {now: () => 0};
+globalThis.sessionStorage = {getItem: () => null, setItem() {}, removeItem() {}};
+globalThis.tcPackLabelHtml = (row) => String(row.cycle_id || "");
+globalThis.tcPackLabel = (row) => String(row.cycle_id || "");
+globalThis.tcIsSetOrPackCode = (raw) => /^CY-/.test(raw);
+globalThis.tcPrintLabelPdf = async () => ({ok: true, filename: "x.pdf"});
+globalThis.tcPdfRetryButton = () => "";
+window.tcGateLabels = {};
+window.tcDecimal = (value) => String(value);
+globalThis.frappe = {boot: {time_zone: {system: "Asia/Ho_Chi_Minh"}}, csrf_token: "x"};
+const LOAD = "ME-261101-01";
+const MACHINE = "TB-0014";
+const flush = async () => { for (let i = 0; i < 60; i += 1) await null; };
+const row = (id, equipment, status, unloaded = false, requires_bi = 0) => ({
+	id, raw: id, equipment, equipment_name: "May " + equipment, program: "P", program_name: "Chuong trinh",
+	started_at: "2026-11-01 08:00:00", status, count: 2, requires_bi, unloaded});
+const context = (over = {}) => ({
+	load: LOAD, status: "Running", equipment: {name: MACHINE, equipment_name: "May"}, program: {program_name: "P"},
+	packs: [{cycle_id: "CY-1", set_id: "S1"}], data_complete: 0, needs_review: 0, requires_bi: 0, cycle_result: null,
+	indicator_state: {}, daily_indicators: {}, indicator_rows: [], missing: ["cycle_result"], ...over});
+function flow({roles = ["TC R02"], functions = ["STERI_LOAD", "STERI_UNLOAD"], unload = [], bi = [], ctx = context(),
+		replies = {}} = {}) {
+	const station = makeStation();
+	station.station = "TR-005";
+	station.stationInfo = {functions};
+	station.session = {token: "tok", roles};
+	station.form = element();
+	station.banner = element();
+	station.root = element();
+	station.revealNotice = () => {};
+	station.setOffline = (offline) => station.screen.setOffline(offline);
+	station.states = [];
+	station.setState = (state, html) => { station.state = state; station.html = html; station.states.push(state); };
+	station.queues = {unload, bi};
+	station.ctx = ctx;
+	station.calls = [];
+	station.rpcRead = async () => ({ok: true, running: []});
+	station.rpc = async (method, args) => {
+		station.calls.push({method, args});
+		if (replies[method]) return replies[method](args);
+		if (method === "tracecore.v1.lookup.batches") {
+			if (station.queueError) throw Object.assign(new Error("x"), {status: 500});
+			return {ok: true, items: station.queues[args.purpose] || []};
+		}
+		if (method === "tracecore.v1.release.context") return {ok: true, load: station.ctx};
+		if (method === "tracecore.v1.load.complete") return {
+			load: LOAD, packs: ["CY-1"], pack_rows: [{cycle_id: "CY-1"}], rejected: [], qr_png_b64: "QQ==",
+			print: {status: "Waiting", print_job: "PJ-1", warning: {code: "NO_PRINTER_AT_STATION"}}};
+		if (method === "tracecore.v1.load.data_context") return {ok: true, load: {...station.ctx,
+			parameter_schema: [], prefill: {}, params: [], machine_alerts: null, equipment: {name: MACHINE}}};
+		if (method === "tracecore.v1.load.manual_data") {
+			station.ctx = {...station.ctx, status: "Cycle Complete", data_complete: 1};
+			return {ok: true, status: "Cycle Complete", needs_review: 0};
+		}
+		if (method === "tracecore.v1.release.cycle_result") {
+			station.ctx = {...station.ctx, cycle_result: "Pass", missing: []};
+			return {ok: true};
+		}
+		if (method === "tracecore.v1.station.verify_pin") return {ok: true, proof: "PROOF"};
+		if (method === "tracecore.v1.release.release") return {ok: true, load: LOAD,
+			status: station.ctx.requires_bi ? "Quarantine" : "Released", sets: ["S1"]};
+		if (method === "tracecore.v1.release.bi_result") return {ok: true, load: LOAD, status: "Released"};
+		if (method === "tracecore.v1.release.reject") return {ok: true, load: LOAD, status: "Failed"};
+		return {ok: true};
+	};
+	const t5 = new T5Load(station);
+	station.screen = t5;
+	return {station, t5, screens: () => station.screen};
+}
+const loaded = (t5) => {
+	t5.load = {machine: {name: MACHINE, equipment_name: "May"}, programs: [{program_code: "P", program_name: "P"}],
+		program: "P", priority: false, packs: [{cycle_id: "CY-1", set_id: "S1"}]};
+};
+const stepOf = (html) => {
+	const m = /aria-current="step"[^>]*data-step="(\\d)"|data-step="(\\d)"[^>]*aria-current="step"/.exec(html);
+	return m ? Number(m[1] || m[2]) : null;
+};
+const count = (html, text) => html.split(text).length - 1;
+"""
+
+
+def t5_run(testcase, body):
+	return run_js(
+		testcase,
+		[ERR, T5, T5B],
+		[[], ["T5Load", "t5DefaultStep"], ["T5Release"]],
+		FAKE_STATION + T5_FLOW + body,
+	)
+
+
+class TestT5DefaultStep(FrappeTestCase):
+	"""Bước mặc định suy từ dữ liệu mẻ, không lưu theo tab."""
+
+	def test_step_comes_from_the_data(self):
+		out = t5_run(
+			self,
+			"""
+			const running = [row("A", "M1", "Running")];
+			const waiting = [row("B", "M1", "Cycle Complete")];
+			const release = [row("C", "M1", "Cycle Complete", true)];
+			const quarantine = [row("D", "M1", "Quarantine")];
+			emit({
+				nothing: t5DefaultStep({unload: [], bi: []}),
+				draft: t5DefaultStep({draft: true, unload: waiting, bi: quarantine}),
+				running: t5DefaultStep({unload: running, bi: []}),
+				waiting: t5DefaultStep({unload: waiting, bi: quarantine}),
+				release: t5DefaultStep({unload: release, bi: []}),
+				quarantine: t5DefaultStep({unload: [], bi: quarantine}),
+				bi_before_running: t5DefaultStep({unload: running, bi: quarantine}),
+			});
+			""",
+		)
+		self.assertEqual(
+			out,
+			{
+				"nothing": 1,
+				"draft": 1,
+				"running": 2,
+				"waiting": 2,
+				"release": 2,
+				"quarantine": 3,
+				"bi_before_running": 3,
+			},
+		)
+
+	def test_opening_the_screen_goes_to_the_derived_step_once(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({bi: [row("ME-261101-07", "M1", "Quarantine", true, 1)]});
+			t5.show();
+			await flush();
+			const first = {step: stepOf(station.html), screen: station.screen === t5 ? "load" : "release"};
+			station.screen.onAction("t5-step", {dataset: {step: "1"}});
+			await flush();
+			emit({first, step: stepOf(station.html), back: station.screen === t5});
+			""",
+		)
+		self.assertEqual(out["first"], {"step": 3, "screen": "release"})
+		self.assertEqual(out["step"], 1)  # đã chọn bước thì không bị kéo về
+		self.assertTrue(out["back"])
+
+
+class TestT5StepFlow(FrappeTestCase):
+	"""Chạy trọn một mẻ không chọn tab: nạp → dỡ → BI (tiêu chí nghiệm thu #1846)."""
+
+	def test_three_step_chips_replace_the_tabs_and_daily_test_stays_a_link(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow();
+			t5.stepSettled = true;
+			t5.show();
+			await flush();
+			const one = station.html;
+			t5.goStep(2);
+			await flush();
+			const two = station.html;
+			station.screen.onAction("t5-step", {dataset: {step: "3"}});
+			await flush();
+			emit({one, two, three: station.html});
+			""",
+		)
+		for number, html in enumerate((out["one"], out["two"], out["three"]), 1):
+			with self.subTest(step=number):
+				self.assertEqual(html.count('data-action="t5-step"'), 3)
+				self.assertIn(f'data-step="{number}"', html)
+				self.assertEqual(html.count('aria-current="step"'), 1)
+				self.assertIn('data-action="t5-daily-test"', html)
+				self.assertNotIn('data-action="t5-mode"', html)
+				self.assertNotIn('data-action="t5b-mode"', html)
+				self.assertNotIn('data-action="t5-release"', html)
+				self.assertEqual(html.count("tc-t5-instruction"), 1)
+		self.assertIn("Load sterilizer", out["one"])
+		self.assertIn("Unload and release", out["one"])
+		self.assertIn("Read BI", out["one"])
+		# bước đã qua có dấu, không chỉ bằng màu
+		self.assertIn("&#10003;", out["two"])
+		self.assertIn("is-done", out["three"])
+
+	def test_load_complete_hides_the_block_and_opens_that_load_without_a_scan(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow();
+			t5.stepSettled = true;
+			loaded(t5);
+			t5.show();
+			const placeholder1 = station.input.placeholder;
+			t5.onAction("t5-complete", {dataset: {}});
+			await flush();
+			const open = station.calls.find((call) => call.method === "tracecore.v1.release.context");
+			emit({html: station.html, step: stepOf(station.html), isRelease: station.screen !== t5, args: open && open.args,
+				load: t5.load, placeholder1, placeholder2: station.input.placeholder});
+			""",
+		)
+		self.assertTrue(out["isRelease"])
+		self.assertEqual(out["step"], 2)
+		self.assertIsNone(out["load"])
+		self.assertNotIn("t5-complete", out["html"])
+		self.assertNotIn("tc-t2-machine", out["html"])
+		self.assertNotIn("tc-t2-sets", out["html"])
+		self.assertEqual(out["args"]["load"], "ME-261101-01")
+		self.assertEqual(out["args"]["equipment_raw"], "TB-0014")
+		self.assertEqual(out["args"]["load_raw"], "ME-261101-01")
+		# không quét thì ghi vết Manual Entry, không giả là đã quét
+		self.assertEqual(out["args"]["entry_mode"], "Manual")
+		self.assertTrue(out["args"]["manual_reason"])
+		# thẻ mã mẻ, nhãn và cảnh báo in vẫn thấy sau khi chuyển bước (A-99, A-101)
+		self.assertIn("tc-t2-done", out["html"])
+		self.assertIn("tc-label-qr", out["html"])
+		self.assertIn("No printer at this station", out["html"])
+		self.assertNotEqual(out["placeholder1"], out["placeholder2"])
+
+	def test_station_without_unload_stays_on_step_one_with_the_result(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({functions: ["STERI_LOAD"]});
+			t5.stepSettled = true;
+			loaded(t5);
+			t5.onAction("t5-complete", {dataset: {}});
+			await flush();
+			emit({same: station.screen === t5, html: station.html,
+				opened: station.calls.some((call) => call.method === "tracecore.v1.release.context")});
+			""",
+		)
+		self.assertTrue(out["same"])
+		self.assertFalse(out["opened"])
+		self.assertIn("tc-t2-done", out["html"])
+
+	def test_whole_load_with_bi_runs_without_choosing_a_tab(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({ctx: context({requires_bi: 1})});
+			t5.stepSettled = true;
+			loaded(t5);
+			t5.onAction("t5-complete", {dataset: {}});
+			await flush();
+			const steps = [stepOf(station.html)];
+			const noData = station.html;
+			// dữ liệu chu trình nằm trong bước 2, không phải quét lại
+			station.screen.onAction("t5b-open-data", {dataset: {}});
+			await flush();
+			steps.push(stepOf(station.html));
+			const form = station.html;
+			t5.form.confirmed = true;
+			t5.form.card = "THE";
+			t5.onAction("t5-save-data", {dataset: {}});
+			await flush();
+			steps.push(stepOf(station.html));
+			const release = station.screen;
+			const afterData = station.html;
+			release.form.result = "Pass";
+			release.form.confirmed = true;
+			release.onAction("t5b-record-result", {dataset: {}});
+			await flush();
+			const ready = station.html;
+			release.form.pin = "123456";
+			release.onAction("t5b-release", {dataset: {}});
+			await flush();
+			steps.push(stepOf(station.html));
+			const bi = station.html;
+			const scansAtBi = release.biLoad;
+			release.onAction("t5b-bi-result", {dataset: {value: "Pass"}});
+			release.onAction("t5b-bi-record", {dataset: {}});
+			await flush();
+			steps.push(stepOf(station.html));
+			const sent = station.calls.find((call) => call.method === "tracecore.v1.release.bi_result");
+			emit({steps, noData, form, afterData, ready, bi, scansAtBi, sent: sent.args, end: station.html,
+				endOnLoad: station.screen === t5, scanned: station.calls.filter((c) => c.method === "tracecore.v1.load.data_scan").length});
+			""",
+		)
+		self.assertEqual(out["steps"], [2, 2, 2, 3, 1])
+		self.assertEqual(out["scanned"], 0)
+		self.assertIn('data-action="t5b-open-data"', out["noData"])
+		self.assertIn("tc-t2-form", out["form"])
+		self.assertIn("Manual cycle data saved and confirmed", out["afterData"])
+		self.assertIn("ME-261101-01", out["bi"])
+		self.assertEqual(out["scansAtBi"], "ME-261101-01")
+		self.assertEqual(out["sent"]["load"], "ME-261101-01")
+		self.assertEqual(out["sent"]["result"], "Pass")
+		self.assertEqual(out["sent"]["entry_mode"], "Manual")
+		self.assertTrue(out["endOnLoad"])
+		self.assertIn("released", out["end"])
+
+	def test_release_without_bi_goes_back_to_loading(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({ctx: context({data_complete: 1, cycle_result: "Pass", missing: []})});
+			t5.stepSettled = true;
+			t5.goStep(2, {load: LOAD, equipment: MACHINE});
+			await flush();
+			const release = station.screen;
+			release.form.pin = "123456";
+			release.onAction("t5b-release", {dataset: {}});
+			await flush();
+			const sent = station.calls.find((call) => call.method === "tracecore.v1.release.release");
+			emit({step: stepOf(station.html), html: station.html, onLoad: station.screen === t5, proof: sent.args.pin_proof});
+			""",
+		)
+		self.assertEqual(out["step"], 1)
+		self.assertTrue(out["onLoad"])
+		self.assertEqual(out["proof"], "PROOF")  # PIN R02 đổi thành proof như cũ
+		self.assertIn("released", out["html"])
+
+	def test_technician_waits_at_step_two_then_finish_returns_to_step_one(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({roles: ["TC R05"],
+				ctx: context({data_complete: 1, cycle_result: "Pass", missing: [], status: "Cycle Complete"})});
+			t5.stepSettled = true;
+			t5.goStep(2, {load: LOAD, equipment: MACHINE});
+			await flush();
+			const waiting = station.html;
+			const step = stepOf(waiting);
+			station.screen.onAction("t5b-finish", {dataset: {}});
+			await flush();
+			emit({waiting, step, end: stepOf(station.html), html: station.html, onLoad: station.screen === t5});
+			""",
+		)
+		self.assertEqual(out["step"], 2)
+		self.assertIn('data-action="t5b-finish"', out["waiting"])
+		self.assertNotIn("tc-t5b-pin", out["waiting"])
+		self.assertNotIn("t5b-reject", out["waiting"])
+		self.assertEqual(out["end"], 1)
+		self.assertTrue(out["onLoad"])
+		self.assertIn("is waiting for the CSSD supervisor", out["html"])
+
+	def test_reject_goes_back_to_loading(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({ctx: context({data_complete: 1, cycle_result: "Fail", missing: ["cycle_result"]})});
+			t5.stepSettled = true;
+			t5.goStep(2, {load: LOAD, equipment: MACHINE});
+			await flush();
+			const before = station.html;
+			station.screen.onAction("t5b-reject", {dataset: {}});
+			await flush();
+			emit({before, step: stepOf(station.html), html: station.html});
+			""",
+		)
+		self.assertIn('data-action="t5b-reject"', out["before"])
+		self.assertEqual(out["step"], 1)
+		self.assertIn("tc-alert-warn", out["html"])
+
+	def test_one_primary_action_per_stage(self):
+		out = t5_run(
+			self,
+			"""
+			const stages = {
+				data: context(),
+				result: context({data_complete: 1}),
+				indicator: context({data_complete: 1, cycle_result: "Pass", indicator_state: {chemical_class_5: "Missing"},
+					missing: ["chemical_class_5"]}),
+				release: context({data_complete: 1, cycle_result: "Pass", indicator_state: {chemical_class_5: "Pass"}, missing: []}),
+				incubate: context({data_complete: 1, cycle_result: "Pass", requires_bi: 1, missing: [],
+					indicator_state: {biological: "Missing"}}),
+				incubating: context({data_complete: 1, cycle_result: "Pass", requires_bi: 1, missing: [],
+					indicator_state: {biological: "Pending"}}),
+			};
+			const out = {};
+			for (const [name, ctx] of Object.entries(stages)) {
+				const {station, t5} = flow({ctx});
+				t5.stepSettled = true;
+				t5.goStep(2, {load: LOAD, equipment: MACHINE});
+				await flush();
+				out[name] = station.html;
+			}
+			emit(out);
+			""",
+		)
+		expected = {
+			"data": "t5b-open-data",
+			"result": "t5b-record-result",
+			"indicator": "t5b-record-ind",
+			"release": "t5b-release",
+			"incubate": "t5b-record-ind",  # mẻ có BI chưa ủ: vào cách ly sẽ không đọc được (BI_NOT_PENDING)
+			"incubating": "t5b-release",
+		}
+		for stage, action in expected.items():
+			with self.subTest(stage=stage):
+				html = out[stage]
+				self.assertEqual(html.count("tc-btn-primary"), 1, html)
+				self.assertRegex(html, rf'tc-btn-primary"[^>]*data-action="{action}"')
+		# chưa có dữ liệu chu trình thì chưa hiện kết quả, chỉ thị, giải phóng; R02 vẫn loại được mẻ
+		self.assertNotIn("t5b-record-result", out["data"])
+		self.assertNotIn("tc-t5b-pin", out["data"])
+		self.assertIn("t5b-reject", out["data"])
+		self.assertIn("t5b-refresh", out["data"])
+		# mẻ đã có dữ liệu vẫn sửa được dữ liệu chu trình (thay tab Dữ liệu chu trình)
+		self.assertIn("t5b-open-data", out["result"])
+
+	def test_technician_must_start_the_incubation_before_finish(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({roles: ["TC R05"], ctx: context({data_complete: 1, cycle_result: "Pass",
+				requires_bi: 1, missing: [], indicator_state: {biological: "Missing"}})});
+			t5.stepSettled = true;
+			t5.goStep(2, {load: LOAD, equipment: MACHINE});
+			await flush();
+			emit(station.html);
+			""",
+		)
+		self.assertNotIn("t5b-finish", out)
+		self.assertEqual(out.count("tc-btn-primary"), 1)
+		self.assertRegex(out, r'tc-btn-primary"[^>]*data-action="t5b-record-ind"')
+
+	def test_another_load_can_be_picked_from_the_lists_and_back_keeps_the_load(self):
+		out = t5_run(
+			self,
+			"""
+			const unload = [row("ME-261101-01", "TB-0014", "Running"), row("ME-261101-02", "TB-0015", "Cycle Complete"),
+				row("ME-261101-03", "TB-0016", "Cycle Complete", true)];
+			const {station, t5} = flow({unload, bi: [row("ME-261101-04", "TB-0017", "Quarantine", true, 1)]});
+			t5.stepSettled = true;
+			await t5.loadQueues(true);
+			t5.goStep(2);
+			await flush();
+			const lists = station.html;
+			const release = station.screen;
+			release.onAction("t5b-pick", {dataset: {load: "ME-261101-02", equipment: "TB-0015"}});
+			await flush();
+			const picked = station.calls.filter((c) => c.method === "tracecore.v1.release.context").pop().args;
+			const opened = station.html;
+			release.onAction("t5-step", {dataset: {step: "1"}});
+			await flush();
+			const counts = station.html;
+			t5.onAction("t5-step", {dataset: {step: "2"}});
+			await flush();
+			const again = release.scans.load_raw;
+			release.onAction("t5b-reset", {dataset: {}});
+			emit({lists, picked, opened, counts, again, list: station.html});
+			""",
+		)
+		self.assertIn("Loads waiting to unload (2)", out["lists"])
+		self.assertIn("Loads waiting for release (1)", out["lists"])
+		self.assertEqual(out["lists"].count('data-action="t5b-pick"'), 3)
+		self.assertEqual(out["picked"]["load"], "ME-261101-02")
+		self.assertEqual(out["picked"]["equipment_raw"], "TB-0015")
+		self.assertEqual(out["picked"]["entry_mode"], "Manual")
+		self.assertTrue(out["picked"]["manual_reason"])
+		self.assertIn('data-action="t5b-reset"', out["opened"])
+		# đếm theo trạng thái ngay trên thanh bước, thấy được khi đang ở bước khác
+		self.assertIn("(3)", out["counts"])
+		self.assertIn("(1)", out["counts"])
+		self.assertEqual(out["again"], "ME-261101-02")
+		self.assertIn("Loads waiting to unload (2)", out["list"])
+
+	def test_scanning_uses_the_known_lists_and_a_free_machine_starts_loading(self):
+		out = t5_run(
+			self,
+			"""
+			const unload = [row("ME-261101-01", "TB-0014", "Running")];
+			const {station, t5} = flow({unload, replies: {
+				"tracecore.v1.load.create": () => ({equipment: {name: "TB-0099", equipment_name: "May"}, programs: []}),
+			}});
+			t5.stepSettled = true;
+			await t5.loadQueues(true);
+			t5.goStep(2);
+			await flush();
+			const release = station.screen;
+			await release.scan("ME-261101-01");
+			await flush();
+			const byLoad = station.calls.filter((c) => c.method === "tracecore.v1.release.context").pop().args;
+			const pickKnown = release.pickCodes({id: "ME-261101-01", equipment: "TB-0014"});
+			release.onAction("t5b-reset", {dataset: {}});
+			await release.scan("TB-0014");
+			await flush();
+			const byMachine = station.calls.filter((c) => c.method === "tracecore.v1.release.context").pop().args;
+			release.onAction("t5b-reset", {dataset: {}});
+			await release.scan("TB-0099");
+			await flush();
+			emit({byLoad, byMachine, pickKnown, onLoad: station.screen === t5, machine: t5.load && t5.load.machine.name,
+				step: stepOf(station.html)});
+			""",
+		)
+		self.assertEqual(out["byLoad"]["equipment_raw"], "TB-0014")
+		self.assertEqual(out["byLoad"]["load_raw"], "ME-261101-01")
+		self.assertNotIn("entry_mode", out["byLoad"])  # có quét mã mẻ thật
+		self.assertEqual(out["byMachine"]["load_raw"], "ME-261101-01")
+		self.assertEqual(out["pickKnown"], ["ME-261101-01"])
+		self.assertTrue(out["onLoad"])
+		self.assertEqual(out["machine"], "TB-0099")
+		self.assertEqual(out["step"], 1)
+
+	def test_machine_busy_is_still_shown_on_step_one(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow({replies: {"tracecore.v1.load.create": () => ({ok: false, error: {
+				code: "EQUIPMENT_BUSY", title: "May ban", reason: "R", action: "A"}})}});
+			t5.stepSettled = true;
+			await t5.scan("TB-0014");
+			await flush();
+			emit({html: station.html, step: stepOf(station.html), load: t5.load, state: station.state});
+			""",
+		)
+		self.assertEqual(out["step"], 1)
+		self.assertIsNone(out["load"])
+		self.assertEqual(out["state"], "error")
+		self.assertIn("May ban", out["html"])
+
+	def test_daily_test_returns_to_the_step_it_was_opened_from(self):
+		out = t5_run(
+			self,
+			"""
+			const {station, t5} = flow();
+			t5.stepSettled = true;
+			t5.goStep(3);
+			await flush();
+			const release = station.screen;
+			const daily = {back: t5, reset() {}, show() {}};
+			t5.dailyTestScreen = daily;
+			T5Load.prototype.openDailyTest = function () { station.screen = daily; };
+			release.onAction("t5-daily-test", {dataset: {}});
+			emit({opened: station.screen === daily, backIsRelease: daily.back === release});
+			""",
+		)
+		self.assertTrue(out["opened"])
+		self.assertTrue(out["backIsRelease"])
+
+	def test_all_four_states(self):
+		out = t5_run(
+			self,
+			"""
+			const out = {};
+			const one = flow();
+			one.t5.stepSettled = true;
+			one.t5.goStep(2);
+			out.loading = {state: one.station.state, html: one.station.html};
+			await flush();
+			out.empty = {state: one.station.state, html: one.station.html};
+			const two = flow();
+			two.t5.stepSettled = true;
+			two.station.queueError = true;
+			two.t5.goStep(3);
+			await flush();
+			out.error = {state: two.station.state, html: two.station.html};
+			two.station.queueError = false;
+			two.station.screen.onAction("retry", {dataset: {}});
+			await flush();
+			out.retried = {state: two.station.state};
+			const three = flow();
+			three.t5.stepSettled = true;
+			three.t5.goStep(2);
+			await flush();
+			three.station.screen.setOffline(true);
+			out.offline = {state: three.station.state, html: three.station.html};
+			emit(out);
+			""",
+		)
+		self.assertEqual(out["loading"]["state"], "loading")
+		self.assertIn("tc-loading", out["loading"]["html"])
+		self.assertEqual(out["empty"]["state"], "empty")
+		self.assertIn("No load is waiting.", out["empty"]["html"])
+		self.assertEqual(out["error"]["state"], "error")
+		self.assertIn('data-action="retry"', out["error"]["html"])
+		self.assertEqual(out["retried"]["state"], "empty")
+		self.assertEqual(out["offline"]["state"], "offline")
+		self.assertIn("Station offline", out["offline"]["html"])
+		for state in ("loading", "empty", "error", "offline"):
+			self.assertIn('data-action="t5-step"', out[state]["html"])  # thanh bước luôn thấy
+
+
+class TestT5ReadBiMessages(FrappeTestCase):
+	"""T5-11: không báo đỏ trước khi thao tác, một dòng hướng dẫn."""
+
+	OPEN = """
+	const {station, t5} = flow({bi: [row(LOAD, MACHINE, "Quarantine", true, 1)]});
+	t5.stepSettled = true;
+	await t5.loadQueues(true);
+	t5.goStep(3);
+	await flush();
+	const release = station.screen;
+	"""
+
+	def test_no_red_alert_and_one_instruction_before_any_action(self):
+		out = t5_run(
+			self,
+			self.OPEN
+			+ """
+			const list = {html: station.html, state: station.state};
+			release.onAction("t5b-pick", {dataset: {load: LOAD, equipment: MACHINE}});
+			await flush();
+			emit({list, chosen: {html: station.html, state: station.state}, form: station.form.classList.contains("is-error")});
+			""",
+		)
+		for name in ("list", "chosen"):
+			with self.subTest(view=name):
+				html = out[name]["html"]
+				self.assertNotIn("tc-alert-error", html)
+				self.assertNotEqual(out[name]["state"], "error")
+				self.assertEqual(html.count("tc-t5-instruction"), 1)
+				self.assertEqual(html.count("Scan the QR code on the load label"), 1 if name == "list" else 0)
+		chosen = out["chosen"]["html"]
+		self.assertNotIn("is not chosen", chosen)
+		self.assertIn("Negative (Pass)", chosen)
+		self.assertEqual(chosen.count("tc-btn-primary"), 1)
+		self.assertRegex(chosen, r'tc-btn-primary"[^>]*data-action="t5b-bi-record"')
+
+	def test_error_only_after_pressing_record_and_gone_after_choosing(self):
+		out = t5_run(
+			self,
+			self.OPEN
+			+ """
+			release.onAction("t5b-pick", {dataset: {load: LOAD, equipment: MACHINE}});
+			await flush();
+			release.onAction("t5b-bi-record", {dataset: {}});
+			await flush();
+			const pressed = {html: station.html, state: station.state,
+				sent: station.calls.some((c) => c.method === "tracecore.v1.release.bi_result")};
+			release.onAction("t5b-bi-result", {dataset: {value: "Fail"}});
+			emit({pressed, chosen: station.html, state: station.state});
+			""",
+		)
+		self.assertFalse(out["pressed"]["sent"])
+		self.assertEqual(out["pressed"]["state"], "error")
+		self.assertEqual(out["pressed"]["html"].count("tc-alert-error"), 1)
+		self.assertIn("Biological indicator result is not chosen", out["pressed"]["html"])
+		self.assertNotIn("tc-alert-error", out["chosen"])
+		self.assertNotEqual(out["state"], "error")
+
+	def test_another_load_clears_the_chosen_result(self):
+		out = t5_run(
+			self,
+			self.OPEN
+			+ """
+			release.onAction("t5b-pick", {dataset: {load: LOAD, equipment: MACHINE}});
+			await flush();
+			release.onAction("t5b-bi-result", {dataset: {value: "Pass"}});
+			release.onAction("t5b-reset", {dataset: {}});
+			emit({biLoad: release.biLoad, biResult: release.biResult, html: station.html});
+			""",
+		)
+		self.assertEqual(out["biLoad"], "")
+		self.assertEqual(out["biResult"], "")
+		self.assertIn('data-action="t5b-pick"', out["html"])
+
+
+class TestT5StepTranslations(FrappeTestCase):
+	def test_strings_of_both_t5_scripts_have_a_vietnamese_translation(self):
+		import re
+
+		with open(
+			frappe.get_app_path("tracecore", "translations", "vi.csv"), encoding="utf-8", newline=""
+		) as handle:
+			known = {row[0] for row in csv.reader(handle) if row}
+		for path in (T5, T5B):
+			with open(frappe.get_app_path("tracecore", *path.split("/")), encoding="utf-8") as handle:
+				sources = re.findall(r'__\(\s*"((?:[^"\\]|\\.)*)"', handle.read())
+			self.assertEqual([text for text in sources if text not in known], [], path)

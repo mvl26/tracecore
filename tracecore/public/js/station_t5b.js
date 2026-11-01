@@ -1,9 +1,10 @@
 /* global t5MachineState, t5DateTime, t5RejectNotice, t5SetCodeNotice, tcIsSetOrPackCode, tcPackLabelHtml */
+/* global t5StepsHtml, t5InstructionHtml */
 /* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
 // Frappe nối file này sau station_t5.js (hook page_js) nên dùng chung uuid4/clientTs/esc/t5Kind/t5IndicatorLabel.
-// T5Load đổi `station.screen` sang T5Release khi người dùng chọn "Dỡ mẻ / giải phóng"; nút "Nạp mẻ" trả màn về T5Load.
+// Bước 2 (dỡ mẻ, giải phóng) và bước 3 (đọc BI) của thanh bước T5 (A-103); T5Load đổi `station.screen` sang T5Release.
 // Quét QR máy và QR mã mẻ (hai mã, thứ tự bất kỳ, server kiểm lại) mở mẻ: kết quả chu trình, chỉ thị, giải phóng bằng PIN
 // R02 (hoặc R01 kèm lý do khẩn), mẻ Không đạt, đọc BI. Lỗi chặn = alert-error inline (kết quả → lý do → hành động).
 
@@ -42,11 +43,17 @@ class T5Release {
 	}
 
 	reset() {
-		this.running = null; // mẻ chưa dỡ, tải lại mỗi lần mở màn
 		this.mode = "unload"; // unload | bi
 		this.scans = { equipment_raw: "", load_raw: "" };
 		this.ctx = null; // kết quả release.context
 		this.notice = null;
+		this.resetDraft();
+		this.biLoad = "";
+		this.biResult = "";
+		this.biManual = null;
+	}
+
+	resetDraft() {
 		this.form = {
 			result: "",
 			confirmed: false,
@@ -57,9 +64,44 @@ class T5Release {
 			reject: "",
 		};
 		this.indicator = {}; // nháp từng chỉ thị: {kind: {result, test_date, lot, incubator}}
-		this.biLoad = "";
-		this.biResult = "";
-		this.finished = null;
+	}
+
+	closeLoad() {
+		this.ctx = null;
+		this.scans = { equipment_raw: "", load_raw: "" };
+		this.resetDraft();
+	}
+
+	// Mẻ theo trạng thái do T5Load giữ (A-103), nguồn của thanh bước và danh sách chọn nhanh
+	get queues() {
+		return this.back && this.back.queues;
+	}
+
+	// A-103: vào bước; `load` đã biết thì mở luôn, `reason` là vết Manual Entry vì không có lần quét nào
+	open({
+		mode = "unload",
+		load = null,
+		equipment = null,
+		loadRaw = null,
+		notice = null,
+		reason = null,
+	} = {}) {
+		this.station.screen = this;
+		this.offline = this.station.isOffline();
+		this.mode = mode;
+		this.notice = notice;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
+		this.back.loadQueues(true);
+		if (mode === "unload" && load) {
+			if (this.ctx && this.ctx.load !== load) this.closeLoad();
+			this.scans = { equipment_raw: equipment, load_raw: loadRaw || load };
+			this.openLoad(reason);
+		} else if (mode === "unload" && this.ctx) {
+			this.openLoad(); // quay lại bước: đọc lại mẻ đang mở
+		} else {
+			this.show();
+		}
+		this.station.focus(true);
 	}
 
 	clearSession() {
@@ -85,6 +127,7 @@ class T5Release {
 		if (this.mode === "bi") {
 			if (code.kind !== "load") return this.blocked(this.scanHint());
 			this.biLoad = raw;
+			this.biResult = "";
 			// bi_result gửi sau khi chọn kết quả, lúc đó đã hết cửa sổ chọn tay nên giữ lý do tại đây (A-87)
 			this.biManual = this.station.manualEntry ? this.station.manualEntry.reason : null;
 			this.notice = null;
@@ -92,9 +135,26 @@ class T5Release {
 		}
 		if (code.kind !== "equipment" && code.kind !== "load")
 			return this.blocked(this.scanHint());
-		this.finished = null;
-		this.scans[code.kind === "equipment" ? "equipment_raw" : "load_raw"] = raw;
 		this.notice = null;
+		const rows = (this.queues && this.queues.unload) || [];
+		if (code.kind === "load") {
+			if (this.ctx && this.ctx.load !== code.id) this.closeLoad();
+			this.scans.load_raw = raw;
+			// A-103: máy của mẻ đã biết từ danh sách thì không quét lại; máy chủ vẫn kiểm cặp mã
+			const row = rows.find((item) => item.id === code.id);
+			if (!this.scans.equipment_raw && row) this.scans.equipment_raw = row.equipment;
+		} else {
+			if (this.ctx && (!this.ctx.equipment || this.ctx.equipment.name !== code.id))
+				this.closeLoad();
+			const open = rows.filter((item) => item.equipment === code.id);
+			// máy không có mẻ mở là máy để nạp: sang bước 1 với đúng mã vừa quét
+			if (!open.length && this.queues && !this.scans.load_raw && this.back.canLoad()) {
+				this.back.openLoadStep();
+				return this.back.scan(raw);
+			}
+			this.scans.equipment_raw = raw;
+			if (!this.scans.load_raw && open.length === 1) this.scans.load_raw = open[0].id;
+		}
 		if (this.scans.equipment_raw && this.scans.load_raw) return this.openLoad();
 		this.show();
 	}
@@ -108,6 +168,8 @@ class T5Release {
 
 	pickCodes(item) {
 		if (this.mode === "bi" || this.scans.equipment_raw) return [item.id];
+		const rows = (this.queues && this.queues.unload) || [];
+		if (rows.some((row) => row.id === item.id)) return [item.id]; // scan() tự lấy máy từ danh sách
 		return [item.id, item.equipment];
 	}
 
@@ -135,8 +197,11 @@ class T5Release {
 		};
 	}
 
-	openLoad() {
-		this.request(T5B_CONTEXT, this.args(), (res) => {
+	openLoad(manualReason = null) {
+		const extra = manualReason ? { entry_mode: "Manual", manual_reason: manualReason } : {};
+		const previous = this.ctx && this.ctx.load;
+		this.request(T5B_CONTEXT, this.args(extra), (res) => {
+			if (previous !== res.load.load) this.resetDraft();
 			this.ctx = res.load;
 			this.show();
 		});
@@ -151,6 +216,7 @@ class T5Release {
 		}
 		const pending = this.pending;
 		this.busy = method;
+		this.show();
 		let response = null;
 		let failure = null;
 		const started = performance.now();
@@ -183,6 +249,10 @@ class T5Release {
 		const pending = this.pending;
 		if (pending) return this.request(pending.method, pending.args, pending.onOk);
 		this.notice = null;
+		if (this.back) {
+			this.back.queuesError = false;
+			this.back.loadQueues(true);
+		}
 		this.show();
 	}
 
@@ -232,23 +302,24 @@ class T5Release {
 	}
 
 	// ---- thao tác ----
-	setMode(mode) {
-		if (this.busy || (mode !== "unload" && mode !== "bi")) return;
-		this.mode = mode;
-		this.running = null;
-		this.notice = null;
-		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
-		this.show();
-		this.station.focus(true);
+	currentStep() {
+		return this.mode === "bi" ? 3 : 2;
 	}
 
-	backToLoad() {
+	// Chọn nhanh trong danh sách: không quét nên ghi vết Manual Entry với lý do cố định (A-103)
+	pickLoad(load, equipment) {
 		if (this.busy) return;
-		this.station.screen = this.back;
-		this.back.mode = "load";
-		this.back.notice = null;
-		this.back.show();
-		this.station.focus(true);
+		const reason = __("Chosen from the T5 load list, no scan");
+		this.notice = null;
+		if (this.mode === "bi") {
+			this.biLoad = load;
+			this.biResult = "";
+			this.biManual = reason;
+			return this.show();
+		}
+		if (this.ctx && this.ctx.load !== load) this.closeLoad();
+		this.scans = { equipment_raw: equipment, load_raw: load };
+		this.openLoad(reason);
 	}
 
 	// Tham số ngoài dải của mẻ đang mở: chặn kết quả Đạt, server kiểm lại (A-89)
@@ -348,26 +419,32 @@ class T5Release {
 				emergency_reason: this.form.reason || "",
 			}),
 			(res) => {
-				this.finished = res;
-				this.ctx = null;
-				this.running = null;
-				this.scans = { equipment_raw: "", load_raw: "" };
-				this.notice = {
-					variant: "ok",
-					title:
-						res.status === "Quarantine"
-							? __(
-									"Load {0} is in quarantine until the biological indicator is read",
-									[res.load]
-							  )
-							: __("Load {0} released", [res.load]),
-					reason: __("{0} set(s) updated.", [(res.sets || []).length]),
-					action:
-						res.status === "Quarantine"
-							? __("Read the biological indicator, then record it with Read BI.")
-							: __("The packs can now go to the sterile store."),
-				};
-				this.show();
+				this.closeLoad();
+				if (res.status === "Quarantine") {
+					// A-103: mẻ có BI sang thẳng bước Đọc BI của đúng mẻ, không quét lại
+					this.mode = "bi";
+					this.biLoad = res.load;
+					this.biResult = "";
+					this.biManual = __("Load known from the previous step, no scan");
+					this.notice = {
+						variant: "ok",
+						title: __(
+							"Load {0} is in quarantine until the biological indicator is read",
+							[res.load]
+						),
+						reason: __("{0} set(s) updated.", [(res.sets || []).length]),
+					};
+					this.back.loadQueues(true);
+					return this.show();
+				}
+				this.back.goStep(1, {
+					notice: {
+						variant: "ok",
+						title: __("Load {0} released", [res.load]),
+						reason: __("{0} set(s) updated.", [(res.sets || []).length]),
+						action: __("The packs can now go to the sterile store."),
+					},
+				});
 			}
 		);
 	}
@@ -377,28 +454,27 @@ class T5Release {
 			T5B_REJECT,
 			this.args({ reason: this.form.reject || "", redo_from: this.form.redo }),
 			(res) => {
-				this.ctx = null;
-				this.running = null;
-				this.scans = { equipment_raw: "", load_raw: "" };
-				this.notice = {
-					variant: "warn",
-					title: __("Load {0} failed", [res.load]),
-					reason: __(
-						"Every pack of the load is no longer valid; the sets go back to reprocessing."
-					),
-					action: __("Take the packs back to the dirty zone."),
-				};
-				this.show();
+				this.closeLoad();
+				this.back.goStep(1, {
+					notice: {
+						variant: "warn",
+						title: __("Load {0} failed", [res.load]),
+						reason: __(
+							"Every pack of the load is no longer valid; the sets go back to reprocessing."
+						),
+						action: __("Take the packs back to the dirty zone."),
+					},
+				});
 			}
 		);
 	}
 
 	recordBi() {
+		// T5-11: lỗi này chỉ sinh ra khi bấm Ghi, không có kết quả → lý do → hành động lặp lại dòng hướng dẫn
 		if (!this.biResult || !this.biLoad) {
 			return this.blocked({
 				title: __("Biological indicator result is not chosen"),
-				reason: __("Scan the load and choose negative (Pass) or positive (Fail)."),
-				action: __("Scan the QR code on the load label, then choose the result."),
+				action: __("Choose Negative or Positive, then record it."),
 			});
 		}
 		this.request(
@@ -411,27 +487,27 @@ class T5Release {
 			},
 			(res) => {
 				const failed = res.status === "Failed" || res.recall_needed;
-				this.running = null;
 				this.biManual = null;
-				this.notice = {
-					variant: failed ? "warn" : "ok",
-					title: res.recall_needed
-						? __("Positive indicator after release: recall needed")
-						: res.status === "Failed"
-						? __("Load {0} failed", [res.load])
-						: __("Load {0} released", [res.load]),
-					reason: res.recall
-						? __("Recall order {0} was opened for the packs of this load. Call R01.", [
-								res.recall,
-						  ])
-						: res.recall_needed
-						? __("Call R01: packs of this load may already be issued or used.")
-						: __("The biological indicator was recorded."),
-					action: __("Scan the next load."),
-				};
 				this.biLoad = "";
 				this.biResult = "";
-				this.show();
+				this.back.goStep(1, {
+					notice: {
+						variant: failed ? "warn" : "ok",
+						title: res.recall_needed
+							? __("Positive indicator after release: recall needed")
+							: res.status === "Failed"
+							? __("Load {0} failed", [res.load])
+							: __("Load {0} released", [res.load]),
+						reason: res.recall
+							? __(
+									"Recall order {0} was opened for the packs of this load. Call R01.",
+									[res.recall]
+							  )
+							: res.recall_needed
+							? __("Call R01: packs of this load may already be issued or used.")
+							: __("The biological indicator was recorded."),
+					},
+				});
 			}
 		);
 	}
@@ -440,8 +516,23 @@ class T5Release {
 		const data = (button && button.dataset) || {};
 		const handlers = {
 			retry: () => this.retry(),
-			"t5b-mode": () => this.setMode(data.mode),
-			"t5b-back": () => this.backToLoad(),
+			"t5-step": () => this.back.goStep(Number(data.step)),
+			"t5-daily-test": () => {
+				if (this.busy) return;
+				this.back.openDailyTest();
+				if (this.back.dailyTestScreen) this.back.dailyTestScreen.back = this;
+			},
+			"t5-label-pdf-retry": () => this.back.printLabelPdf(),
+			"t5b-pick": () => this.pickLoad(data.load, data.equipment),
+			"t5b-open-data": () => {
+				if (this.busy || !this.ctx) return;
+				this.back.openDataKnown(
+					this.ctx.load,
+					this.scans.equipment_raw,
+					this.scans.load_raw
+				);
+			},
+			"t5b-refresh": () => this.openLoad(),
 			"t5b-result": () => {
 				if (data.value === "Pass" && this.outsideNames().length) return;
 				this.form.result = data.value;
@@ -465,13 +556,18 @@ class T5Release {
 			"t5b-finish": () => this.finishChecking(),
 			"t5b-bi-result": () => {
 				this.biResult = data.value;
+				if (this.notice && this.notice.variant === "error") this.notice = null;
 				this.show();
 			},
 			"t5b-bi-record": () => this.recordBi(),
 			"t5b-reset": () => {
-				this.ctx = null;
-				this.scans = { equipment_raw: "", load_raw: "" };
+				if (this.busy) return;
+				this.closeLoad();
+				this.biLoad = "";
+				this.biResult = "";
+				this.biManual = null;
 				this.notice = null;
+				this.back.loadQueues(true);
 				this.show();
 			},
 		};
@@ -516,37 +612,100 @@ class T5Release {
 
 	// ---- render ----
 	show() {
-		const text = this.ctx
-			? __("Scan Set ID...")
-			: this.mode === "bi"
-			? __("Scan the QR code on the load label...")
-			: __("Scan the sterilizer QR code and the load QR code...");
+		const text =
+			this.mode === "bi"
+				? this.biLoad
+					? __("Scan another load...")
+					: __("Scan the load code...")
+				: this.ctx
+				? __("Scan another sterilizer or load...")
+				: __("Scan the sterilizer or load QR code...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
-		if (this.offline && !this.ctx) return this.station.setState("offline", this.offlineHtml());
-		const state = this.notice && this.notice.variant === "error" ? "error" : "result";
+		const offline = this.offline && !this.ctx;
+		const state = offline ? "offline" : this.viewState();
 		this.station.setState(
 			state,
 			`<div class="tc-t2 tc-t5 tc-t5b" data-mode="${esc(this.mode)}">
-				${this.modeHtml()}
-				<div data-region="notice">${this.noticeHtml()}</div>
-				${this.mode === "bi" ? this.biHtml() : this.ctx ? this.contextHtml() : this.idleHtml()}
+				${t5StepsHtml(this.currentStep(), this.back)}
+				${t5InstructionHtml(this.instructionText())}
+				${
+					offline
+						? this.offlineHtml()
+						: `<div data-region="notice">${this.noticeHtml()}</div>
+				${this.doneHtml()}
+				${this.mode === "bi" ? this.biHtml() : this.ctx ? this.contextHtml() : this.idleHtml()}`
+				}
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
+		if (this.station.revealNotice) this.station.revealNotice(this.notice);
 	}
 
-	modeHtml() {
-		const chip = (mode, label) =>
-			`<button type="button" class="tc-chip" data-action="t5b-mode" data-mode="${mode}"
-				aria-pressed="${this.mode === mode ? "true" : "false"}">${esc(label)}</button>`;
-		return `<div class="tc-chips" role="group" aria-label="${esc(__("Unload and release"))}">
-			<button type="button" class="tc-chip" data-action="t5b-back" aria-pressed="false">${esc(
-				__("Load sterilizer")
-			)}</button>
-			${chip("unload", __("Unload and release"))}
-			${chip("bi", __("Read BI"))}
-		</div>`;
+	viewState() {
+		if (this.notice && (this.notice.variant || "error") === "error") return "error";
+		if (this.ctx || (this.mode === "bi" && this.biLoad)) return "result";
+		const queues = this.queues;
+		if (!queues) return this.back && this.back.queuesError ? "error" : "loading";
+		if (this.busy) return "loading";
+		const rows = this.mode === "bi" ? queues.bi : queues.unload;
+		return rows.length || this.notice || this.doneHtml() ? "result" : "empty";
+	}
+
+	// Thẻ mã mẻ vừa nạp (nhãn, cảnh báo in) đi cùng mẻ sang bước dỡ (A-99, A-101, A-103)
+	doneHtml() {
+		const done = this.back && this.back.done;
+		if (!done || this.mode !== "unload" || (this.ctx && this.ctx.load !== done.load))
+			return "";
+		return this.back.doneHtml();
+	}
+
+	// Một dòng hướng dẫn cho mỗi trạng thái của bước, không lặp ở chỗ khác (T5-11)
+	instructionText() {
+		if (this.mode === "bi") {
+			return this.biLoad
+				? __("Load {0}: choose Negative or Positive, then press Record.", [
+						t5Kind(this.biLoad).id || this.biLoad,
+				  ])
+				: __("Scan the QR code on the load label, or choose a load from the list.");
+		}
+		const ctx = this.ctx;
+		if (!ctx)
+			return __("Scan the sterilizer or load QR code, or choose a load from the list.");
+		const stage = this.stageOf(ctx);
+		if (stage === "data")
+			return __("Load {0}: enter the cycle data when the sterilizer has finished.", [
+				ctx.load,
+			]);
+		if (stage === "result")
+			return __(
+				"Load {0}: choose the cycle result, tick the confirmation, then record it.",
+				[ctx.load]
+			);
+		if (stage === "failed")
+			return this.canRelease()
+				? __("Load {0} did not pass: reject the load.", [ctx.load])
+				: __("Load {0} did not pass: finish checking.", [ctx.load]);
+		if (stage === "release")
+			return this.canRelease()
+				? __("Load {0}: enter the PIN, then release the load.", [ctx.load])
+				: __("Load {0} is waiting for release: finish checking.", [ctx.load]);
+		return __("Load {0}: record {1}.", [ctx.load, t5IndicatorLabel(stage)]);
+	}
+
+	// Việc kế tiếp của mẻ đang mở: data | failed | result | <mã chỉ thị> | release. Chỉ việc này có nút chính.
+	stageOf(ctx) {
+		if (!ctx.data_complete) return "data";
+		if (
+			ctx.cycle_result === "Fail" ||
+			Object.values(ctx.indicator_state || {}).includes("Fail")
+		)
+			return "failed";
+		const next = (ctx.missing || []).find((code) => code !== "review");
+		if (next) return next === "cycle_result" ? "result" : next;
+		// A-103: mẻ có BI mà chưa ủ thì vào cách ly sẽ không đọc được (BI_NOT_PENDING): ủ BI là việc kế tiếp, máy chủ không đổi
+		const biological = (ctx.indicator_state || {}).biological;
+		return ctx.requires_bi && biological === "Missing" ? "biological" : "release";
 	}
 
 	alertHtml(notice, buttons = "") {
@@ -600,6 +759,7 @@ class T5Release {
 
 	noticeHtml() {
 		let html = "";
+		if (this.offline) html += this.offlineHtml();
 		if (this.busy) {
 			html += `<p class="tc-loading" role="status" aria-busy="true">${esc(
 				__("Loading...")
@@ -617,43 +777,37 @@ class T5Release {
 	}
 
 	// Mẻ chờ dỡ / chờ đọc BI (A-84, A-87), cùng nguồn với danh sách Chọn tay nên R01 cũng xem được
-	async loadRunning() {
-		if (this.runningBusy || this.running || !this.station.session || this.station.isOffline())
-			return;
-		this.runningBusy = true;
-		const version = this.station.sessionVersion;
-		const mode = this.mode;
-		try {
-			const res = await this.station.rpc("tracecore.v1.lookup.batches", {
-				station: this.station.station,
-				screen: "sterilize",
-				purpose: mode === "bi" ? "bi" : "unload",
-				page_length: 50,
-				client_ts: clientTs(),
-			});
-			if (version === this.station.sessionVersion && res && res.ok && mode === this.mode) {
-				this.running = res.items || [];
-				if (this.station.screen === this && !this.ctx && !this.busy) this.show();
-			}
-		} catch (error) {
-			this.running = null;
-		} finally {
-			this.runningBusy = false;
-		}
-	}
-
 	waitingHtml() {
-		if (!this.running) {
-			this.loadRunning();
+		const queues = this.queues;
+		if (!queues) {
+			if (this.back && this.back.queuesError) {
+				return this.alertHtml(
+					{
+						variant: "error",
+						title: __("The load list could not be loaded"),
+						reason: __("Scanning still works."),
+						action: __("Retry, or call R02 if it happens again."),
+					},
+					`<div class="tc-actions">
+						<button type="button" class="tc-btn tc-btn-secondary" data-action="retry">${esc(
+							__("Retry")
+						)}</button>
+						<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
+							__("Call R02")
+						)}</button>
+					</div>`
+				);
+			}
+			if (this.back && this.back.loadQueues) this.back.loadQueues();
 			return `<p class="tc-loading" role="status">${esc(__("Loading..."))}</p>`;
 		}
-		const rows = this.running;
 		if (this.mode === "bi") {
 			return this.waitingSectionHtml(
-				__("Loads waiting for the biological indicator ({0})", [rows.length]),
-				rows
+				__("Loads waiting for the biological indicator ({0})", [queues.bi.length]),
+				queues.bi
 			);
 		}
+		const rows = queues.unload;
 		// A-102: mẻ đã dỡ, chưa giải phóng tách khỏi mẻ còn trong máy
 		const toUnload = rows.filter((row) => !row.unloaded);
 		const toRelease = rows.filter((row) => row.unloaded);
@@ -690,6 +844,8 @@ class T5Release {
 					__("Started at")
 			  )}</th><th scope="col">${esc(__("Status"))}</th><th scope="col">${esc(
 					__("Packs")
+			  )}</th><th scope="col">${esc(
+					__("Actions", null, "Sterilization Load")
 			  )}</th></tr></thead>
 				<tbody>${rows
 					.map(
@@ -712,6 +868,13 @@ class T5Release {
 							)}${cell(
 								__("Packs"),
 								`${esc(row.count)}${row.requires_bi ? ` · ${esc(__("BI"))}` : ""}`
+							)}${cell(
+								__("Actions", null, "Sterilization Load"),
+								`<button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-pick" data-load="${esc(
+									row.id
+								)}" data-equipment="${esc(row.equipment)}">${esc(
+									__("Choose")
+								)}</button>`
 							)}</tr>`
 					)
 					.join("")}</tbody>
@@ -728,14 +891,14 @@ class T5Release {
 			`<li>${esc(label)}: <b>${
 				value ? "&#10003; " + esc(value) : esc(__("not scanned"))
 			}</b></li>`;
-		return `<p class="tc-empty">${esc(
-			__("Scan the sterilizer QR code and the load QR code.")
-		)}</p>
-			<ul class="tc-t6-hint">
+		const scanned =
+			this.scans.equipment_raw || this.scans.load_raw
+				? `<ul class="tc-t6-hint">
 				${have(this.scans.equipment_raw, __("Sterilizer"))}
 				${have(this.scans.load_raw, __("Load"))}
-			</ul>
-			${this.waitingHtml()}`;
+			</ul>`
+				: "";
+		return `${scanned}${this.waitingHtml()}`;
 	}
 
 	statusText(value) {
@@ -817,10 +980,11 @@ class T5Release {
 		}
 		const choose =
 			kind === "biological" ? "" : this.passFail("t5b-ind-result", kind, draft.result);
+		const primary = this.stageOf(this.ctx) === kind ? "tc-btn-primary" : "tc-btn-secondary";
 		return `<section class="tc-t4-block">
 			<h3>${esc(t5IndicatorLabel(kind))} ${badge}</h3>
 			${choose}${fields}
-			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-record-ind" data-kind="${kind}">${esc(
+			<div class="tc-actions"><button type="button" class="tc-btn ${primary}" data-action="t5b-record-ind" data-kind="${kind}">${esc(
 			kind === "biological" ? __("Start incubation") : __("Record indicator")
 		)}</button></div>
 		</section>`;
@@ -833,7 +997,8 @@ class T5Release {
 		const indicators = Object.entries(ctx.indicator_state || {})
 			.map(([kind, state]) => this.indicatorHtml(kind, state))
 			.join("");
-		return `<section class="tc-t4-block" aria-label="${esc(__("Load"))}">
+		const stage = this.stageOf(ctx);
+		const card = `<section class="tc-t4-block" aria-label="${esc(__("Load"))}">
 			<div class="tc-res-head">
 				<b class="tc-code">${esc(ctx.load)}</b>
 				<span class="tc-badge">${esc(__(ctx.status, null, "Sterilization Load"))}</span>
@@ -876,8 +1041,27 @@ class T5Release {
 				}
 			</dl>
 			${this.packsHtml(ctx)}
-		</section>
-		<section class="tc-t4-block">
+			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-reset">${esc(
+				__("Choose another load")
+			)}</button></div>
+		</section>`;
+		// A-103: chưa có dữ liệu chu trình thì kết quả và giải phóng chưa ghi được (máy chủ cũng chặn): chỉ một việc là nhập dữ liệu
+		if (stage === "data") {
+			return `${card}<section class="tc-t4-block tc-t5b-data">
+				<h3>${esc(__("Cycle data"))} <span class="tc-badge">${esc(__("Not entered yet"))}</span></h3>
+				<div class="tc-actions">
+					<button type="button" class="tc-btn tc-btn-primary" data-action="t5b-open-data">${esc(
+						__("Enter cycle data")
+					)}</button>
+					<button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-refresh">${esc(
+						__("Check the load again")
+					)}</button>
+				</div>
+			</section>
+			${this.canRelease() ? this.rejectHtml() : ""}`;
+		}
+		const resultButton = stage === "result" ? "tc-btn-primary" : "tc-btn-secondary";
+		return `${card}<section class="tc-t4-block">
 			<h3>${esc(__("Cycle result (applies to every pack)"))}
 				<span class="tc-badge${
 					ctx.cycle_result === "Pass"
@@ -906,7 +1090,7 @@ class T5Release {
 								this.outsideNames().join(", "),
 							]),
 							action: __(
-								"Correct the data in the Cycle data tab if it was entered wrong; otherwise record Fail."
+								"Correct the cycle data if it was entered wrong; otherwise record Fail."
 							),
 					  })
 					: ""
@@ -917,9 +1101,14 @@ class T5Release {
 			}><span>${esc(
 			__("I confirm that the result above matches the sterilizer printout or screen.")
 		)}</span></label>
-			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-record-result">${esc(
-				__("Record cycle result")
-			)}</button></div>
+			<div class="tc-actions">
+				<button type="button" class="tc-btn ${resultButton}" data-action="t5b-record-result">${esc(
+			__("Record cycle result")
+		)}</button>
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-open-data">${esc(
+					__("Enter cycle data")
+				)}</button>
+			</div>
 		</section>
 		${indicators}
 		${this.releaseHtml(ctx, missing)}`;
@@ -945,9 +1134,21 @@ class T5Release {
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Release", null, "Sterilization Load"))}</h3>
 			${waiting}${review}
-			${this.canRelease() ? this.releaseControlsHtml() : this.releaseElsewhereHtml(missing, ctx)}
+			${
+				this.canRelease()
+					? this.releaseControlsHtml(this.releaseReady(ctx, missing))
+					: this.releaseElsewhereHtml(missing, ctx)
+			}
 		</section>
 		${this.canRelease() ? this.rejectHtml() : ""}`;
+	}
+
+	releaseReady(ctx, missing) {
+		const failed =
+			ctx.cycle_result === "Fail" ||
+			Object.values(ctx.indicator_state || {}).includes("Fail");
+		if (failed || missing.filter((code) => code !== "review").length) return false;
+		return !(ctx.requires_bi && (ctx.indicator_state || {}).biological === "Missing");
 	}
 
 	// A-102: chỉ R02, R01 loại mẻ; máy chủ cũng từ chối vai trò khác
@@ -1005,7 +1206,8 @@ class T5Release {
 				__("Finish checking")
 			)}</button></div>`;
 		}
-		if (missing.length) {
+		const incubate = ctx.requires_bi && (ctx.indicator_state || {}).biological === "Missing";
+		if (missing.length || incubate) {
 			return this.alertHtml({
 				variant: "info",
 				title: __("A CSSD supervisor must release the load"),
@@ -1027,17 +1229,17 @@ class T5Release {
 	// Không đổi trạng thái mẻ: kết quả đã lưu khi ghi, nút chỉ đóng mẻ để KTV làm mẻ khác
 	finishChecking() {
 		const load = this.ctx && this.ctx.load;
-		this.ctx = null;
-		this.running = null;
-		this.scans = { equipment_raw: "", load_raw: "" };
-		this.notice = {
-			variant: "ok",
-			title: __("Load {0} is waiting for the CSSD supervisor to release it", [load]),
-		};
-		this.show();
+		this.closeLoad();
+		// A-103: KTV xong phần mình thì về bước 1, mẻ nằm ở danh sách Mẻ chờ giải phóng
+		this.back.goStep(1, {
+			notice: {
+				variant: "ok",
+				title: __("Load {0} is waiting for the CSSD supervisor to release it", [load]),
+			},
+		});
 	}
 
-	releaseControlsHtml() {
+	releaseControlsHtml(ready = true) {
 		return `<div class="tc-field">
 				<label for="tc-t5b-pin">${esc(__("R02 PIN"))}</label>
 				<input id="tc-t5b-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" data-t5b-pin value="">
@@ -1049,9 +1251,9 @@ class T5Release {
 				<label for="tc-t5b-reason">${esc(__("Emergency release reason (R01 only)"))}</label>
 				<textarea id="tc-t5b-reason" rows="2" data-t5b-reason>${esc(this.form.reason)}</textarea>
 			</div>
-			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5b-release">${esc(
-				__("Release the load")
-			)}</button></div>`;
+			<div class="tc-actions"><button type="button" class="tc-btn ${
+				ready ? "tc-btn-primary" : "tc-btn-secondary"
+			}" data-action="t5b-release">${esc(__("Release the load"))}</button></div>`;
 	}
 
 	missingLabel(code) {
@@ -1064,37 +1266,35 @@ class T5Release {
 
 	biHtml() {
 		const chosen = this.biLoad ? t5Kind(this.biLoad).id || this.biLoad : "";
-		const row = (this.running || []).find((item) => item.id === chosen);
+		if (!chosen) return this.waitingHtml();
+		const row = ((this.queues && this.queues.bi) || []).find((item) => item.id === chosen);
 		const facts = row
 			? ` · ${row.equipment_name || row.equipment} · ${
 					row.program_name || row.program || ""
 			  } · ${__("{0} pack(s)", [row.count])}`
 			: "";
-		return `${this.biLoad ? "" : this.waitingHtml()}<section class="tc-t4-block">
+		return `<section class="tc-t4-block">
 			<h3>${esc(__("Biological indicator of a load in quarantine"))}</h3>
-			<p class="tc-t6-hint">${esc(
-				this.biLoad
-					? `${__("Load {0}", [chosen])}${facts}`
-					: __("Scan the QR code on the load label.")
-			)}</p>
+			<p>${esc(`${__("Load {0}", [chosen])}${facts}`)}</p>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Biological indicator"))}">
 				${this.chip("t5b-bi-result", "bi", "Pass", __("Negative (Pass)"), this.biResult === "Pass")}
 				${this.chip("t5b-bi-result", "bi", "Fail", __("Positive (Fail)"), this.biResult === "Fail")}
 			</div>
-			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5b-bi-record">${esc(
-				__("Record the biological indicator")
-			)}</button></div>
+			<div class="tc-actions">
+				<button type="button" class="tc-btn tc-btn-primary" data-action="t5b-bi-record">${esc(
+					__("Record the biological indicator")
+				)}</button>
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="t5b-reset">${esc(
+					__("Choose another load")
+				)}</button>
+			</div>
 		</section>`;
 	}
 }
 
-// T5Load mở chế độ dỡ mẻ qua nút "Dỡ mẻ / giải phóng" (xem station_t5.js)
-T5Load.prototype.openRelease = function () {
+// T5Load chuyển sang bước 2, 3 của thanh bước (xem station_t5.js)
+T5Load.prototype.openRelease = function (options = {}) {
 	if (this.busy || typeof T5Release === "undefined") return;
 	this.releaseScreen = this.releaseScreen || new T5Release(this.station, this);
-	const screen = this.releaseScreen;
-	screen.reset();
-	this.station.screen = screen;
-	screen.show();
-	this.station.focus(true);
+	this.releaseScreen.open(options);
 };
