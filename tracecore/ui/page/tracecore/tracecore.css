@@ -85,6 +85,11 @@
 	outline-offset: var(--tc-sp-0-5);
 }
 .tc-admin-nav-gap { height: var(--tc-sp-2-5); }
+.tc-admin.is-collapsed .tc-admin-nav { display: none; }
+.tc-admin-toggle { flex: none; margin-right: var(--tc-sp-2); }
+.tc-admin-toggle[hidden] { display: none; }
+.tc-admin-toggle:focus-visible { outline: var(--tc-bw-thick) solid var(--tc-focus); outline-offset: var(--tc-sp-0-5); }
+.page-title:has(.tc-admin-toggle) { display: flex; align-items: center; }
 .tc-admin-main {
 	flex: 999 1 calc(var(--tc-rail-w) * 2);
 	min-width: 0;
