@@ -971,7 +971,7 @@ class T5Release {
 
 	// Không đổi trạng thái mẻ: kết quả đã lưu khi ghi, nút chỉ đóng mẻ để KTV làm mẻ khác
 	finishChecking() {
-		const load = this.ctx && this.ctx.name;
+		const load = this.ctx && this.ctx.load;
 		this.ctx = null;
 		this.running = null;
 		this.scans = { equipment_raw: "", load_raw: "" };

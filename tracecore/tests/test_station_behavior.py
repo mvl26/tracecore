@@ -594,7 +594,7 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			station.session = {token: "tok", roles: ["TC R05"]};
 			const screen = new T5Release(station, {});
 			screen.show = () => {};
-			screen.ctx = {name: "ME-261101-09"};
+			screen.ctx = {load: "ME-261101-09"};
 			screen.scans = {equipment_raw: "TB-1", load_raw: "ME-261101-09"};
 			const handled = screen.onAction("t5b-finish", {dataset: {}});
 			emit({handled, ctx: screen.ctx, scans: screen.scans, notice: screen.notice});
