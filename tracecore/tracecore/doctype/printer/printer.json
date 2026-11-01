@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "PRN-.###",
  "creation": "2026-10-20 14:00:00.000000",
- "description": "Label printer of a station (FR-M9-03). The loaded label roll decides which label type it can print.",
+ "description": "Label printer of a station. The loaded label roll decides which label type it can print.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -160,7 +160,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.515193",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Printer",

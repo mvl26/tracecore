@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-21 12:00:00.000000",
- "description": "Site-wide TraceCore feature switches (A-06 I7). Only TC R10 and System Manager can change them; every change is written to the Audit Log.",
+ "description": "Site-wide TraceCore feature switches. Only TC R10 and System Manager can change them; every change is written to the Audit Log.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -49,7 +49,7 @@
   },
   {
    "default": "0",
-   "description": "Allow assigning laser-etched GS1 GIAI codes to single instruments (FR-M1-02). Turning it off keeps existing codes and does not affect T1-T7.",
+   "description": "Allow assigning laser-etched GS1 GIAI codes to single instruments. Turning it off keeps existing codes and does not affect T1-T7.",
    "fieldname": "enable_instrument_giai",
    "fieldtype": "Check",
    "label": "Enable Instrument GIAI"
@@ -95,7 +95,7 @@
    "label": "Par Levels"
   },
   {
-   "description": "A TC R02 user who may approve or reject par overrides on behalf of R01 (FR-M8-04.1). Leave empty to let only R01 decide.",
+   "description": "A TC R02 user who may approve or reject par overrides on behalf of R01. Leave empty to let only R01 decide.",
    "fieldname": "par_override_delegate",
    "fieldtype": "Link",
    "label": "Par Override Delegate (R02)",
@@ -108,7 +108,7 @@
   },
   {
    "default": "0",
-   "description": "Send SMS for notification rules that use the SMS channel (FR-M9-10). Off until the hospital SMS gateway is configured.",
+   "description": "Send SMS for notification rules that use the SMS channel. Off until the hospital SMS gateway is configured.",
    "fieldname": "enable_sms",
    "fieldtype": "Check",
    "label": "Enable SMS"
@@ -141,7 +141,7 @@
   },
   {
    "default": "11:00, 17:00",
-   "description": "Times of day (HH:MM, comma separated) at which a monitored zone with no reading since the previous time is reminded (FR-M9-04.2). Leave empty to turn reminders off.",
+   "description": "Times of day (HH:MM, comma separated) at which a monitored zone with no reading since the previous time is reminded. Leave empty to turn reminders off.",
    "fieldname": "env_reminder_times",
    "fieldtype": "Data",
    "label": "Environment Reminder Times"
@@ -153,21 +153,21 @@
   },
   {
    "default": "80",
-   "description": "Warn when this share of the maximum storage time has passed (FR-M10-03.3). Default 80.",
+   "description": "Warn when this share of the maximum storage time has passed. Default 80.",
    "fieldname": "waste_warn_percent",
    "fieldtype": "Int",
    "label": "Storage Warning (%)"
   },
   {
    "default": "8",
-   "description": "Cold room limit (FR-M10-03.2). Default 8.",
+   "description": "Cold room limit. Default 8.",
    "fieldname": "waste_cold_limit_c",
    "fieldtype": "Float",
    "label": "Cold Room Limit (°C)"
   },
   {
    "default": "2",
-   "description": "Hours above the limit before bags go back to the normal storage time (FR-M10-03.2). Default 2.",
+   "description": "Hours above the limit before bags go back to the normal storage time. Default 2.",
    "fieldname": "waste_cold_breach_hours",
    "fieldtype": "Float",
    "label": "Hours Above the Limit"
@@ -176,14 +176,14 @@
    "fieldname": "waste_variance_percent",
    "fieldtype": "Float",
    "default": "5",
-   "description": "A larger difference between collected and handed over weight needs a reason and R02 approval (FR-M10-04.1). Default 5.",
+   "description": "A larger difference between collected and handed over weight needs a reason and R02 approval. Default 5.",
    "label": "Handover Weight Difference (%)"
   },
   {
    "fieldname": "waste_misclass_count",
    "fieldtype": "Int",
    "default": "3",
-   "description": "This many misclassifications of a department within the days below alert R01 (FR-M10-06.2). Default 3.",
+   "description": "This many misclassifications of a department within the days below alert R01. Default 3.",
    "label": "Repeated Misclassification Count"
   },
   {
@@ -197,7 +197,7 @@
    "fieldname": "waste_anomaly_percent",
    "fieldtype": "Float",
    "default": "30",
-   "description": "A daily weight this far from the department average alerts R02 (FR-M10-08.1). Default 30.",
+   "description": "A daily weight this far from the department average alerts R02. Default 30.",
    "label": "Unusual Department Weight (%)"
   },
   {
@@ -236,7 +236,7 @@
    "label": "Reports"
   },
   {
-   "description": "Reports and the sterilization log of a period ending on or before this date are final; later periods are printed with a PROVISIONAL stamp (FR-M9-02.1). Only TC R01 sets it, with Lock Report Period on the reports.",
+   "description": "Reports and the sterilization log of a period ending on or before this date are final; later periods are printed with a PROVISIONAL stamp. Only TC R01 sets it, with Lock Report Period on the reports.",
    "fieldname": "report_locked_until",
    "fieldtype": "Date",
    "label": "Reports Locked Until",
@@ -263,13 +263,13 @@
    "fieldtype": "Float",
    "default": "10",
    "label": "Laundry Norm Deviation (%)",
-   "description": "A laundry batch whose actual water, power or chemical differs from the norm by more than this needs a reason (A-104). Default 10; 0 also means 10."
+   "description": "A laundry batch whose actual water, power or chemical differs from the norm by more than this needs a reason. Default 10; 0 also means 10."
   }
  ],
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-01 18:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

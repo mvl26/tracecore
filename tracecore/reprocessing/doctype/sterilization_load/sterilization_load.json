@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "ME-.YY.MM.DD.-.##",
  "creation": "2026-10-23 10:00:00.000000",
- "description": "Sterilization load on a steam or plasma sterilizer (UC-09, WF-03). Created by the sterilizing service when loading is completed.",
+ "description": "Sterilization load on a steam or plasma sterilizer. Created by the sterilizing service when loading is completed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -323,7 +323,7 @@
    "label": "Release"
   },
   {
-   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3).",
+   "description": "R02 confirmed a load whose manual parameters were outside the program range.",
    "fieldname": "review_confirmed",
    "fieldtype": "Check",
    "label": "Review Confirmed",
@@ -357,7 +357,7 @@
    "read_only": 1
   },
   {
-   "description": "Out-of-range values someone chose to accept when recording Pass (A-106).",
+   "description": "Out-of-range values someone chose to accept when recording Pass.",
    "fieldname": "out_of_range_accepted",
    "fieldtype": "JSON",
    "label": "Out-of-range Values Accepted",
@@ -387,7 +387,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-01 20:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterilization Load",

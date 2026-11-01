@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "US-.YYYY.-.#####",
  "creation": "2026-10-25 09:00:00.000000",
- "description": "One scan of a sterile pack used on a patient at a department (T8 usage station, UC-13). Created and submitted by the usage service only; the patient code is stored encrypted.",
+ "description": "One scan of a sterile pack used on a patient at a department (T8 usage station). Created and submitted by the usage service only; the patient code is stored encrypted.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -199,7 +199,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.511963",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Usage Record",

@@ -3,7 +3,7 @@
  "allow_import": 0,
  "autoname": "BT-.YYYY.-.#####",
  "creation": "2026-10-28 09:00:00.000000",
- "description": "Maintenance, inspection, calibration or incident record of one machine (UC-22). Submitting it closes the record, updates the validity dates of the machine and plans the next record; saving an incident puts the machine under repair.",
+ "description": "Maintenance, inspection, calibration or incident record of one machine. Submitting it closes the record, updates the validity dates of the machine and plans the next record; saving an incident puts the machine under repair.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -285,7 +285,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.499973",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Maintenance Record",

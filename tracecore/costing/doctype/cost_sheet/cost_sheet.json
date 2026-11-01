@@ -164,7 +164,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-29 23:30:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Cost Sheet",
@@ -185,5 +185,5 @@
    "print": 1
   }
  ],
- "description": "Cost of one sterilization load or wash batch split into packs, and the cost of each pack (FR-M7-05, FR-M7-06, A-53)."
+ "description": "Cost of one sterilization load or wash batch split into packs, and the cost of each pack."
 }
