@@ -4,10 +4,11 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_to_date, now_datetime, today
 
-from tracecore.core import station_auth
+from tracecore.core import notification, station_auth
 from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.v1 import notification as notification_api
 from tracecore.v1 import station as station_api
 
 test_dependencies = ["Company"]
@@ -305,6 +306,91 @@ class TestSwitchStation(IsolatedTestCase):
 		switched = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
 		self.assertTrue(switched["ok"])
 		self.assertEqual(switched["session"]["station"], "TR-003")
+
+
+class TestStationNavigation(IsolatedTestCase):
+	"""Hàng nút trạm theo thẻ đã quét (#1831 S-01, A-91), vai trò chính (S-02), banner khẩn (S-06)."""
+
+	def setUp(self):
+		super().setUp()
+		setup_operator(self)
+		self.login = station_auth.login("NV-AUTH-001", "TR-004")
+
+	def _allow_station(self, station):
+		start = now_datetime()
+		frappe.get_doc(
+			{
+				"doctype": "Station Competency",
+				"employee": self.employee.name,
+				"station": station,
+				"valid_from": add_to_date(start, hours=-1),
+				"valid_until": add_to_date(start, hours=8),
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	def _names(self):
+		result = station_api.stations(token=self.login["token"])
+		self.assertTrue(result["ok"])
+		return [row["name"] for row in result["stations"]]
+
+	def test_technician_sees_only_competent_stations_of_own_zone(self):
+		self.assertEqual(self._names(), ["TR-004"])
+		self._allow_station("TR-003")
+		self._allow_station("TR-006")  # có năng lực nhưng khác khu: không hiện
+		self.assertEqual(self._names(), ["TR-003", "TR-004"])
+
+	def test_supervisor_card_sees_all_stations(self):
+		frappe.get_doc("User", self.user).add_roles("TC R02")
+		names = self._names()
+		self.assertIn("TR-001", names)
+		self.assertIn("TR-006", names)
+
+	def test_invalid_token_gets_a_block(self):
+		result = station_api.stations(token="no-such-token")
+		self.assertEqual(result["error"]["code"], "SESSION_INVALID")
+
+	def test_session_reports_main_role_at_station(self):
+		frappe.get_doc("User", self.user).add_roles("TC R02", "TC R05", "TC R10")
+		ts = now_datetime().isoformat() + "+07:00"
+		login = station_api.login(card_id="NV-AUTH-001", station="TR-004", client_ts=ts)
+		self.assertEqual(login["session"]["station_role"], "TC R04")
+		restored = station_api.heartbeat(token=login["session"]["token"], client_ts=ts)
+		self.assertEqual(restored["station_role"], "TC R04")
+
+	def _urgent(self, subject, ref_name=None, event="RECALL_ORDER"):
+		return frappe.get_doc(
+			{
+				"doctype": "Notification Delivery",
+				"recipient": self.user,
+				"event_code": event,
+				"channel": "In App",
+				"status": "Sent",
+				"urgency": "Urgent",
+				"subject": subject,
+				"ref_doctype": "Station Session" if ref_name else None,
+				"ref_name": ref_name,
+				"link": "/app/station-session/x",
+				"sent_at": now_datetime(),
+			}
+		).insert(ignore_permissions=True)
+
+	def test_urgent_banner_skips_documents_of_another_zone(self):
+		other = station_auth.login("NV-AUTH-001", "TR-004")["session"]
+		frappe.db.set_value("Station Session", other, "station", "TR-001", update_modified=False)
+		self.login = station_auth.login("NV-AUTH-001", "TR-004")
+		self._urgent("Khu khác", other)
+		self.assertIsNone(notification_api.station_summary(token=self.login["token"])["urgent"])
+
+	def test_urgent_banner_shows_same_zone_and_unknown_with_handler(self):
+		self._urgent("Không rõ khu")
+		urgent = notification_api.station_summary(token=self.login["token"])["urgent"]
+		self.assertEqual(urgent["subject"], "Không rõ khu")
+		self.assertEqual(urgent["link"], "/app/station-session/x")
+		self.assertIn("handled_by", urgent)
+
+	def test_relevance_by_equipment_zone(self):
+		self.assertTrue(notification.relevant_to_station(frappe._dict(), "TR-004"))
 
 
 class TestApproverProof(IsolatedTestCase):

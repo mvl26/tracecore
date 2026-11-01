@@ -10,6 +10,7 @@ import re
 import frappe
 from bs4 import BeautifulSoup
 from frappe import _
+from frappe.utils import cint
 
 from tracecore.core import zones
 
@@ -192,6 +193,23 @@ def ensure_category():
 	return CATEGORY
 
 
+def article_title(key):
+	"""Tên bài hướng dẫn: tên trạm kèm số trạm, không để lộ khóa kỹ thuật (#1831 S-03)."""
+	if key == GENERAL:
+		return _("Station guide: {0}").format(_("All stations"))
+	label = zones.function_label(key)
+	numbers = [
+		cint(row.station_no)
+		for row in frappe.get_all(
+			"Zone Station", filters={"is_zone": 0, "station_no": [">", 0]}, fields=["name", "station_no"]
+		)
+		if key in zones.station_functions(row.name)
+	]
+	if numbers:
+		return _("Station guide T{0} - {1}").format(min(numbers), label)
+	return _("Station guide: {0}").format(label)
+
+
 def ensure_station_help():
 	"""`after_migrate`: tạo bài mặc định cho khóa trạm còn thiếu; không ghi đè bài R10 đã sửa."""
 	if not frappe.get_meta("Help Article").has_field("tc_station_key"):
@@ -200,11 +218,10 @@ def ensure_station_help():
 	for key in STATION_KEYS:
 		if frappe.db.exists("Help Article", {"tc_station_key": key}):
 			continue
-		label = _("All stations") if key == GENERAL else key
 		frappe.get_doc(
 			{
 				"doctype": "Help Article",
-				"title": _("Station guide: {0}").format(label),
+				"title": article_title(key),
 				"category": category,
 				"published": 1,
 				"tc_station_key": key,

@@ -130,3 +130,12 @@ class TestSeed(IsolatedTestCase):
 		self.assertEqual(set(station_help.STATION_KEYS) - {"General"}, set(screens))
 		field_options = frappe.get_meta("Help Article").get_field("tc_station_key").options.split("\n")
 		self.assertEqual({option for option in field_options if option}, set(station_help.STATION_KEYS))
+
+
+class TestStationHelpTitles(IsolatedTestCase):
+	"""#1831 S-03: tên bài hướng dẫn không để lộ khóa kỹ thuật."""
+
+	def test_title_uses_station_number_and_function_name(self):
+		title = station_help.article_title("RECEIVE")
+		self.assertNotIn("RECEIVE", title)
+		self.assertIn("T1", title)

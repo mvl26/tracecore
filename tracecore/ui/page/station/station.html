@@ -1,25 +1,16 @@
 <div class="tc-station" data-surface="STN">
 	<div class="tc-zonebar tc-zone-web" role="presentation"></div>
-	<div class="tc-brand-bar"><a class="tc-brand" href="/app/tracecore">TraceCore</a></div>
-	<aside class="tc-rail" hidden>
-		<div class="tc-rail-head">
-			<a class="tc-brand" href="/app/tracecore">TraceCore</a>
-			<strong class="tc-rail-person"></strong>
-			<span class="tc-rail-context"></span>
-		</div>
-		<nav class="tc-rail-stations" aria-label="{%= __("Station") %}"></nav>
-		<div class="tc-rail-foot" role="status"></div>
-	</aside>
 	<div class="tc-offline-banner" role="status" hidden>
 		{%= __("Offline - transactions are kept on this device") %}
 	</div>
 	<div class="tc-sync-bar" role="status" aria-live="polite" hidden></div>
 	<main class="tc-main">
-		<p class="tc-crumb" hidden></p>
 		<header class="tc-title">
+			<a class="tc-brand" href="/app/tracecore">TraceCore</a>
 			<h2 class="tc-station-name">{%= __("Station") %}</h2>
 			<span class="tc-tag tc-zone-label"></span>
 			<span class="tc-tag tc-station-code"></span>
+			<span class="tc-net-status" role="status"></span>
 			<button type="button" class="tc-btn tc-btn-secondary tc-help-btn" data-action="open-help">{%= __("Help") %}</button>
 		</header>
 		<nav class="tc-station-pills" aria-label="{%= __("Station") %}" hidden></nav>
@@ -33,8 +24,8 @@
 		<section class="tc-auth-result" aria-live="polite"></section>
 		<div class="tc-session" hidden>
 			<span class="tc-session-person"></span>
-			<span class="tc-session-station tc-mono"></span>
 			<span class="tc-session-roles"></span>
+			<button type="button" class="tc-btn tc-btn-secondary tc-session-more" data-action="toggle-session-details" aria-expanded="false">{%= __("Details") %}</button>
 			<span class="tc-session-expiry"></span>
 			<button type="button" class="tc-btn tc-btn-secondary tc-notify-btn" data-action="toggle-notifications" aria-expanded="false" hidden>
 				{%= __("Notifications") %} <span class="tc-badge tc-notify-count">0</span>
@@ -42,6 +33,7 @@
 			<button type="button" class="tc-btn tc-btn-secondary" data-action="rescan-card">{%= __("Scan another card") %}</button>
 			<button type="button" class="tc-btn tc-btn-secondary" data-action="logout">{%= __("Log out") %}</button>
 		</div>
+		<p class="tc-session-details" hidden></p>
 		<section class="tc-notify-banner" role="alert" hidden></section>
 		<section class="tc-notify-panel tc-card" aria-label="{%= __("Notifications") %}" hidden></section>
 		<div class="tc-work" hidden>

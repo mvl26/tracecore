@@ -146,7 +146,7 @@ class TraceCoreStation {
 		// máy kiosk chỉ hiện tên; riêng admin có đường về trang chủ, nạp lại để bỏ ?station= khỏi URL
 		const roles = frappe.user_roles || [];
 		this.adminMode = roles.includes("System Manager");
-		// role làm tại trạm có cột trạm của mình; role văn phòng có đường về trang chủ (NAV-04)
+		// role làm tại trạm có hàng nút trạm; role văn phòng có đường về trang chủ (NAV-04)
 		this.railMode = this.adminMode || roles.some((role) => /^TC R0[2-8]$/.test(role));
 		const hasHome = this.adminMode || roles.some((role) => /^TC R(01|02|09|10)$/.test(role));
 		for (const brand of this.root.querySelectorAll(".tc-brand")) {
@@ -174,12 +174,15 @@ class TraceCoreStation {
 		this.offlineData = null; // snapshot đọc offline của trạm (FEAT-009): T1/T4/T8
 		this.snapshotAt = 0;
 
-		this.setupAdminRail();
+		this.renderNetStatus(0);
+		this.setupStationNav();
 		this.bind();
 		this.addManifestLink();
 		this.registerServiceWorker();
 		this.notice = this.takeNotice();
-		this.renderLogin(this.notice);
+		// còn token của trạm này (tải lại trang, đổi trạm): hiện khung xương, không nháy màn quét thẻ
+		if (this.storedToken() && !this.notice) this.renderResuming();
+		else this.renderLogin(this.notice);
 		this.initialHandshake = Promise.resolve();
 		if (typeof tcSync !== "undefined") {
 			this.unsubscribeSync = tcSync.onChange((state) => this.renderSync(state));
@@ -188,25 +191,47 @@ class TraceCoreStation {
 		}
 	}
 
-	// ---- cột trạm của admin (ux-foundations NAV-03): đổi trạm tại chỗ, thao tác vẫn theo thẻ đã quét ----
-	setupAdminRail() {
+	// ---- hàng nút trạm (A-91): một thanh điều hướng, đổi trạm tại chỗ, thao tác vẫn theo thẻ đã quét ----
+	setupStationNav() {
 		if (!this.railMode) return;
-		this.root.classList.add("tc-rail-station");
 		this.root.classList.toggle("tc-admin-station", this.adminMode);
-		this.root.querySelector(".tc-rail").hidden = false;
-		this.root.querySelector(".tc-crumb").hidden = false;
-		this.root.querySelector(".tc-station-pills").hidden = false;
-		this.renderRailPerson();
-		this.renderRailFoot(0);
 		frappe
 			.call({ method: "tracecore.v1.navigation.context", type: "GET" })
-			.then((response) => this.renderRailStations(response.message.stations))
+			.then((response) => {
+				this.deskStations = this.deskVisibleStations(response.message);
+				if (!this.session) this.renderStationPills(this.deskStations);
+			})
 			.catch(() => {}); // không có danh sách thì vẫn làm được trạm hiện tại
 	}
 
-	renderRailStations(stations) {
+	// trước khi quét thẻ: theo tài khoản Desk; role không quản lý chỉ thấy khu của trạm đang mở (A-91)
+	deskVisibleStations(context) {
+		const stations = context.stations.filter((station) => station.implemented);
+		if (context.see_all_stations) return stations;
+		const own = stations.find((station) => station.name === this.station);
+		return own ? stations.filter((station) => station.zone === own.zone) : [];
+	}
+
+	// sau khi quét thẻ: theo thẻ (A-91); lỗi mạng thì giữ hàng nút đang có
+	async loadCardStations() {
+		if (!this.railMode || !this.session) return;
+		const version = this.sessionVersion;
+		try {
+			const result = await this.rpc("tracecore.v1.station.stations", {
+				token: this.session.token,
+			});
+			if (version === this.sessionVersion && result && result.ok)
+				this.renderStationPills(result.stations);
+		} catch (error) {
+			// hàng nút không được làm hỏng màn quét
+		}
+	}
+
+	renderStationPills(stations) {
+		const pills = this.root.querySelector(".tc-station-pills");
+		// chỉ có trạm hiện tại thì không có gì để đổi
+		pills.hidden = stations.filter((station) => station.name !== this.station).length === 0;
 		const buttons = stations
-			.filter((station) => station.implemented)
 			.map((station) => {
 				const full = __(station.label);
 				const hasNumber = !station.station_no || full.startsWith(`T${station.station_no}`);
@@ -216,33 +241,49 @@ class TraceCoreStation {
 					data-station="${esc(station.name)}"${current}>${esc(label)}</button>`;
 			})
 			.join("");
-		this.root.querySelector(".tc-rail-stations").innerHTML = buttons;
-		this.root.querySelector(".tc-station-pills").innerHTML = buttons;
+		pills.innerHTML = buttons;
 	}
 
-	renderRailPerson() {
-		if (!this.railMode) return;
-		const session = this.session;
-		this.root.querySelector(".tc-rail-person").textContent = session
-			? `${session.employee_name || session.employee} · ${session.employee}`
-			: __("No card scanned");
-		this.root.querySelector(".tc-rail-context").textContent = session ? session.station : "";
-	}
-
-	renderRailFoot(queued) {
-		if (!this.railMode) return;
-		this.root.querySelector(".tc-rail-foot").textContent = `${
+	renderNetStatus(queued) {
+		this.root.querySelector(".tc-net-status").textContent = `${
 			this.isOffline() ? __("Offline", null, "TraceCore Launcher") : __("Online")
 		} · ${__("{0} transaction(s) waiting", [queued || 0])}`;
 	}
 
-	async switchStation(station) {
+	// Đổi trạm không tải lại trang (A-91): bỏ instance cũ, dựng instance mới trên cùng wrapper. Instance mới đi đúng đường
+	// của tải lại trang (ping, heartbeat kiểm lại năng lực), mọi màn, giỏ và bộ đếm thuộc trạm cũ được bỏ theo instance cũ.
+	openStation(station, label, notice) {
+		if (notice) this.storeNotice(notice);
+		// phiên trên máy chủ đã đóng hoặc đã chuyển: dispose không được thu hồi token
+		this.session = null;
+		this.restoreCandidate = null;
+		window.history.replaceState(
+			window.history.state,
+			"",
+			`/app/station?station=${encodeURIComponent(station)}`
+		);
+		const pills = this.root.querySelector(".tc-station-pills").innerHTML;
+		const next = new TraceCoreStation(this.wrapper, this.dispose());
+		frappe.tc_station = next;
+		if (label) next.root.querySelector(".tc-station-name").textContent = label;
+		const nav = next.root.querySelector(".tc-station-pills");
+		if (next.railMode && pills) nav.innerHTML = pills;
+		next.show();
+		return next;
+	}
+
+	renderSwitching() {
+		this.authResult.innerHTML = `<div class="tc-skeleton" aria-busy="true"><span></span><span></span><span></span></div>
+			<span class="tc-sr-only">${esc(__("Loading..."))}</span>`;
+	}
+
+	async switchStation(station, label) {
 		if (!station || station === this.station || this.switching) return;
-		const target = `/app/station?station=${encodeURIComponent(station)}`;
-		if (!this.session) return window.location.assign(target);
+		if (!this.session) return this.openStation(station, label);
 		if (this.isOffline() || (this.screen && this.screen.busy)) return;
 		if (this.pendingScans && this.pendingScans.length) return;
 		this.switching = true;
+		this.renderSwitching();
 		try {
 			const result = await this.rpc("tracecore.v1.station.switch_station", {
 				token: this.session.token,
@@ -253,9 +294,7 @@ class TraceCoreStation {
 				// khác khu (A-90): máy chủ đã đóng phiên, trạm đích hiện màn quét thẻ kèm lý do
 				if (result.error.code === "STATION_ZONE_RESCAN") {
 					this.storedToken(null);
-					this.session = null;
-					this.storeNotice(result.error);
-					return window.location.assign(target);
+					return this.openStation(station, label, result.error);
 				}
 				this.authResult.innerHTML = this.blockHtml(result.error);
 				return;
@@ -263,8 +302,9 @@ class TraceCoreStation {
 			// phiên cũ đã đóng; trang mới của trạm đích khôi phục phiên từ token này
 			this.storedToken(null);
 			sessionStorage.setItem(`tc-station-session:${station}`, result.session.token);
-			window.location.assign(target);
+			this.openStation(station, label);
 		} catch (error) {
+			this.authResult.innerHTML = "";
 			this.handleFailure(error);
 		} finally {
 			this.switching = false;
@@ -454,7 +494,9 @@ class TraceCoreStation {
 			return this.picker.onAction(action, button);
 		}
 		if (action === "logout" || action === "rescan-card") return this.endSession();
-		if (action === "tc-switch-station") return this.switchStation(button.dataset.station);
+		if (action === "tc-switch-station")
+			return this.switchStation(button.dataset.station, button.textContent);
+		if (action === "toggle-session-details") return this.toggleSessionDetails();
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
 		if (!this.session) {
@@ -516,6 +558,13 @@ class TraceCoreStation {
 		this.warningBar.innerHTML = tcWarningsHtml(warnings);
 	}
 
+	renderResuming() {
+		this.authForm.hidden = true;
+		this.work.hidden = true;
+		this.sessionBar.hidden = true;
+		this.renderSwitching();
+	}
+
 	renderLogin(error) {
 		this.authForm.hidden = false;
 		this.work.hidden = true;
@@ -553,16 +602,20 @@ class TraceCoreStation {
 		this.form.classList.remove("is-error");
 		this.closePinChange();
 		if (this.help) this.help.sessionChanged();
-		for (const selector of [
-			".tc-session-person",
-			".tc-session-station",
-			".tc-session-expiry",
-			".tc-session-roles",
-		])
+		for (const selector of [".tc-session-person", ".tc-session-expiry", ".tc-session-roles"])
 			this.root.querySelector(selector).textContent = "";
+		this.toggleSessionDetails(false);
 		this.resetNotifications();
-		this.renderRailPerson();
+		if (this.deskStations) this.renderStationPills(this.deskStations);
 		this.renderLogin(error);
+	}
+
+	toggleSessionDetails(open) {
+		const details = this.root.querySelector(".tc-session-details");
+		details.hidden = open === undefined ? !details.hidden : !open;
+		this.root
+			.querySelector(".tc-session-more")
+			.setAttribute("aria-expanded", String(!details.hidden));
 	}
 
 	// ---- thông báo (FEAT-010, SCR-42 trên trạm/PDA) ----
@@ -593,8 +646,25 @@ class TraceCoreStation {
 		button.hidden = false;
 		button.querySelector(".tc-notify-count").textContent = String(summary.unread);
 		banner.hidden = !summary.urgent;
-		banner.textContent = summary.urgent ? __("Urgent: {0}", [summary.urgent.subject]) : "";
+		banner.innerHTML = summary.urgent ? this.urgentHtml(summary.urgent) : "";
 		if (!this.root.querySelector(".tc-notify-panel").hidden) this.loadNotificationPanel();
+	}
+
+	// #1831 S-06: thông báo khẩn nói rõ ai xử lý; Xử lý mở chứng từ ở tab mới để không mất phiên trạm
+	urgentHtml(urgent) {
+		const who = (urgent.handled_by || []).join(", ") || __("You");
+		const open =
+			urgent.link && urgent.link.startsWith("/")
+				? `<a class="tc-btn tc-btn-primary" href="${esc(
+						urgent.link
+				  )}" target="_blank" rel="noopener">${esc(__("Handle"))}</a>`
+				: "";
+		return `<span><span>${esc(__("Urgent: {0}", [urgent.subject]))}</span>
+				<span class="tc-notify-who">${esc(__("To be handled by: {0}", [who]))}</span></span>
+			<span class="tc-notify-actions">${open}
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="read-notification" data-name="${esc(
+					urgent.name
+				)}">${esc(__("Seen"))}</button></span>`;
 	}
 
 	async loadNotificationPanel() {
@@ -693,14 +763,19 @@ class TraceCoreStation {
 		this.work.hidden = false;
 		this.root.querySelector(".tc-session-person").textContent =
 			session.employee_name || session.employee;
-		this.root.querySelector(".tc-session-station").textContent = session.station;
-		this.root.querySelector(".tc-session-roles").textContent = __("Roles: {0}", [
-			(session.roles || []).map((role) => __(role)).join(", "),
-		]);
+		// #1831 S-02: chỉ vai trò chính tại trạm; mã nhân viên và đủ vai trò mở bằng nút Chi tiết
+		const main = session.station_role || (session.roles || [])[0];
+		this.root.querySelector(".tc-session-roles").textContent = main
+			? __("Role: {0}", [__(main)])
+			: "";
+		this.root.querySelector(".tc-session-details").textContent = [
+			__("Employee ID: {0}", [session.employee]),
+			__("Roles: {0}", [(session.roles || []).map((role) => __(role)).join(", ")]),
+		].join(" · ");
 		this.root.querySelector(".tc-session-expiry").textContent = __("Session expires: {0}", [
 			this.formatExpiry(session.expires_at),
 		]);
-		this.renderRailPerson();
+		this.loadCardStations();
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
 		this.focus(true);
@@ -906,7 +981,7 @@ class TraceCoreStation {
 	}
 
 	renderSync(state) {
-		this.renderRailFoot(state.queued);
+		this.renderNetStatus(state.queued);
 		if (!this.syncBar) return;
 		let text = "";
 		if (state.sending)
@@ -1071,7 +1146,7 @@ class TraceCoreStation {
 	setOffline(offline) {
 		this.banner.hidden = !offline;
 		this.root.dataset.offline = offline ? "1" : "0";
-		this.renderRailFoot(typeof tcSync !== "undefined" ? tcSync.state.queued : 0);
+		this.renderNetStatus(typeof tcSync !== "undefined" ? tcSync.state.queued : 0);
 		if (!offline && typeof tcSync !== "undefined") tcSync.replay();
 		if (!this.session) {
 			if (offline)
@@ -1114,6 +1189,7 @@ class TraceCoreStation {
 			!candidate &&
 			(protectedCall ||
 				method === "tracecore.v1.station.heartbeat" ||
+				method === "tracecore.v1.station.switch_station" ||
 				method === "tracecore.v1.set_unit.get");
 		const activeToken = this.session && this.session.token;
 		const ended = () =>
@@ -1241,12 +1317,6 @@ class TraceCoreStation {
 			"Zone Station"
 		);
 		this.root.querySelector(".tc-station-code").textContent = station.name;
-		if (this.railMode)
-			this.root.querySelector(".tc-crumb").textContent = [
-				__("Home"),
-				__("Station"),
-				station.label,
-			].join(" › ");
 	}
 
 	// Mỗi màn giữ một instance: đổi tab không mất giỏ đang nạp dở (A-64).
@@ -1347,6 +1417,7 @@ class TraceCoreStation {
 
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
+		this.authResult.innerHTML = "";
 		if (this.screen) {
 			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới
 			// cũng xếp sau các mã còn chờ để giữ đúng thứ tự quét)

@@ -334,6 +334,17 @@ def login(card_id: str, station: str, client_ts=None) -> dict:
 		raise
 
 
+def can_work_at(employee: str, station: str) -> bool:
+	"""Như `_require_competency` nhưng chỉ đọc: dùng để lọc hàng nút trạm, không ghi nhật ký, không cảnh báo."""
+	now = now_datetime()
+	names = _active_competencies(employee, station, now)
+	missing_by_name = {name: _missing_certificates(employee, name, now) for name in names}
+	if any(not missing for missing in missing_by_name.values()):
+		return True
+	missing = sorted({item for values in missing_by_name.values() for item in values})
+	return bool(names and error_codes.active_permit("NS-001", "Employee", employee, station, missing))
+
+
 def _session_expiry(started, permit_until=None):
 	"""Phiên mở theo cho phép tạm không kéo dài quá hạn được duyệt (A-71 e)."""
 	expiry = add_to_date(started, hours=SESSION_HOURS)

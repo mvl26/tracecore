@@ -1407,16 +1407,16 @@ Valid Until,Có hiệu lực đến,Station Competency
 card_id and station must be strings.,card_id và station phải là chuỗi.,
 pin must be a string.,pin phải là chuỗi.,
 Roles: {0},Vai trò: {0},
-TC R01,R01 · Trưởng khoa KSNK,
-TC R02,R02 · Điều dưỡng trưởng / Giám sát CSSD,
-TC R03,R03 · KTV khu bẩn,
-TC R04,R04 · KTV khu sạch,
-TC R05,R05 · KTV tiệt khuẩn,
-TC R06,R06 · KTV kho vô khuẩn / cấp phát,
-TC R07,R07 · Nhân viên đồ vải và chất thải,
-TC R08,R08 · Nhân viên khoa sử dụng,
-TC R09,R09 · Kế toán / Vật tư,
-TC R10,R10 · Quản trị hệ thống,
+TC R01,Trưởng khoa KSNK,
+TC R02,Điều dưỡng trưởng / Giám sát CSSD,
+TC R03,KTV khu bẩn,
+TC R04,KTV khu sạch,
+TC R05,KTV tiệt khuẩn,
+TC R06,KTV kho vô khuẩn / cấp phát,
+TC R07,Nhân viên đồ vải và chất thải,
+TC R08,Nhân viên khoa sử dụng,
+TC R09,Kế toán / Vật tư,
+TC R10,Quản trị hệ thống,
 Employee {0} does not exist.,Nhân viên {0} không tồn tại.,
 "The card is invalid, inactive or not authorised for this station.","Thẻ không hợp lệ, đã bị vô hiệu hoặc chưa được phép dùng ở trạm này.",
 "Use an active employee card, or ask R02 to check your station competency.","Dùng thẻ nhân viên đang hoạt động, hoặc nhờ R02 kiểm tra năng lực trạm của bạn.",
@@ -2120,7 +2120,7 @@ Batch QR code,mã QR của lô,
 "Printout / chart photo","Ảnh bản in / biểu đồ",""
 "required: this washer has a printout","bắt buộc: máy này có bản in",""
 "Photo attached","Đã đính ảnh",""
-"I, {0} {1}, confirm that the values above match the screen/printout of washer {2}.","Tôi, {0} {1}, xác nhận các tham số trên đúng với màn hình/bản in của máy {2}.",""
+"I, {0}, confirm that the values above match the screen/printout of washer {1}.","Tôi, {0}, xác nhận các tham số trên đúng với màn hình/bản in của máy {1}.",""
 "Save manual data and confirm","Lưu dữ liệu nhập tay và xác nhận",""
 "Cycle data of batch {0}: confirmed manual entry","Dữ liệu chu trình của lô {0}: nhập tay có xác nhận",""
 "R02 PIN (washer without connection or printout)","PIN R02 (máy không kết nối, không bản in)",""
@@ -7240,7 +7240,7 @@ Batches waiting for the indicator ({0}) - scan the batch QR code to read,Lô ch�
 Read the wash indicator,Đọc chỉ thị mẻ rửa,
 Indicator item,Vật tư chỉ thị,
 Indicator result,Kết quả chỉ thị,
-Read by {0} {1} (card signed in); the reading time is recorded with the result.,Người đọc {0} {1} (thẻ đang đăng nhập); giờ đọc ghi cùng kết quả.,
+Read by {0} (card signed in); the reading time is recorded with the result.,Người đọc {0} (thẻ đang đăng nhập); giờ đọc ghi cùng kết quả.,
 wash_indicator,Chỉ thị rửa,Load Indicator Result
 GS1 Company Prefix,Mã doanh nghiệp GS1,
 GTIN Indicator Digit,Số chỉ thị GTIN,
@@ -7465,3 +7465,10 @@ Scan your card for this zone,Quét lại thẻ cho khu này,
 "This station is in another zone, so the previous station session has ended.",Trạm này ở khu khác nên phiên trạm trước đã kết thúc.,
 Scan your employee card at this station.,Quét thẻ nhân viên tại trạm này.,
 Ask a person assigned to that station to scan their card there.,Mời người được phân công ở trạm đó quét thẻ tại đó.,
+You,Bạn,
+Handle,Xử lý,
+Seen,Đã xem,
+To be handled by: {0},Cần xử lý: {0},
+Role: {0},Vai trò: {0},
+Employee ID: {0},Mã nhân viên: {0},
+Station guide T{0} - {1},Hướng dẫn trạm T{0} – {1},
