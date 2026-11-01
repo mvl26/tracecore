@@ -78,7 +78,7 @@ def test_t3_full_count_is_recorded_within_three_taps(t3_page, t3_demo):
 
 	taps = Taps()
 	lines = page.locator(".tc-t3 .tc-ins").count()
-	expect(page.locator("[data-action='t3-all']")).to_have_count(0)  # A-79: không có xác nhận tất cả
+	expect(page.locator("[data-action='t3-all']")).to_have_count(1)  # A-102 đảo A-79: có lại xác nhận tất cả
 	expect(page.locator("[data-region='tally']")).to_contain_text(f"Đủ 0/{lines}")
 	for index in range(lines):
 		taps.tap(page.locator(".tc-t3 .tc-ins").nth(index).locator("[data-action='t3-full']"))

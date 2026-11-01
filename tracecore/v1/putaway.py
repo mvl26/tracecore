@@ -25,7 +25,7 @@ def _route(scanned, raw, station, open_pack, client_ts):
 	"""Ô quét duy nhất của màn T6: Cycle ID mở thẻ gói; mã kệ `KE-` sau khi đã mở gói thì nhập kho/chuyển vị trí."""
 	kind = scanned["type"]
 	if kind == "pack":
-		return {"ok": True, "kind": "pack", "pack": storage.pack_card(raw)}
+		return {"ok": True, "kind": "pack", "pack": storage.scan_pack(raw)}
 	if kind == "location" and open_pack:
 		return {
 			"ok": True,

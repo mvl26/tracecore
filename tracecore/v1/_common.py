@@ -32,6 +32,8 @@ WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")
 LOAD_ROLES = ("TC R05", "TC R02", "System Manager")
 # T5b dỡ mẻ và giải phóng (FEAT-023): R05 dỡ và ghi chỉ thị, R02 giải phóng (PIN), R01 giải phóng khẩn (lý do)
 RELEASE_ROLES = ("TC R05", "TC R02", "TC R01", "System Manager")
+# A-102: KTV ghi Không đạt được, việc loại mẻ do giám sát CSSD hoặc trưởng khoa
+REJECT_ROLES = ("TC R02", "TC R01", "System Manager")
 # FEAT-019 (A-31): tiếp nhận T1 do R03 (actor chính UC-05); R02 cũng làm được và là người duy nhất tiếp nhận cưỡng bức
 RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 # FEAT-033 (A-49): trạm đồ vải do R07 (actor chính UC-16); R02 hỗ trợ

@@ -293,6 +293,8 @@ HTTP_STATUS: dict[str, int] = {
 			"NO_PRINTER_FOR_METHOD",
 			"LABEL_NOT_QUEUED",
 			"LABEL_PDF_FAILED",
+			# A-102: gói của khoa khác khoa nhận cần xác nhận kèm lý do
+			"PACK_DEPT_MISMATCH",
 		),
 		409,
 	),

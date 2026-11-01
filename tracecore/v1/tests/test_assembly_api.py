@@ -192,19 +192,12 @@ class TestAssemblyFlow(AssemblyApiCase):
 		self.assertEqual(step_gate.gates(self.set_id)[2], {"step": "T3", "result": "Pass", "redo_count": 0})
 
 	@bru("BRU-REP-003")
-	def test_rpc_cannot_count_every_line_at_once(self):  # A-79, FR-M2-05.5: frappe.call bỏ tham số lạ
+	def test_rpc_all_ok_counts_every_line(self):  # A-102 đảo A-79, FR-M2-05.5
 		name = self.open()["assembly"]
-		with request_headers({"X-Idempotency-Key": str(uuid.uuid4()), "X-TC-Station": STATION}):
-			result = frappe.call(
-				assembly_api.line,
-				assembly=name,
-				all_ok="1",
-				station=STATION,
-				client_ts=now_ts(),
-				token=TOKENS.get((frappe.session.user, STATION)),
-			)
-		self.assert_rejection(result, "INSTRUMENT_NOT_FOUND", 404)
-		self.assertEqual(frappe.db.count("Assembly Line", {"parent": name, "counted": 1}), 0)
+		result = call(assembly_api.line, assembly=name, all_ok="1", station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertFalse(result["uncounted"])
+		self.assertEqual(frappe.db.count("Assembly Line", {"parent": name, "counted": 0}), 0)
 
 	@bru("BRU-REP-003")
 	def test_rpc_refuses_variance_without_choice_and_submit_with_uncounted(self):  # A-79

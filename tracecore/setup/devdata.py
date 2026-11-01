@@ -405,12 +405,19 @@ def _demo_department():
 	return factories.make_department(_("Demo operating theatre", lang="vi"))
 
 
+# A-102: loại gói demo khai phương pháp, không thì A-97 hiện cho mọi bộ (Tyvek không dùng cho hấp)
+DEMO_PACK_METHODS = {"DEMO-T4-GOI-CREPE": "Steam", "DEMO-T4-GOI-TYVEK": "Plasma"}
+
+
 def _ensure_pack_type(pack_type):
-	"""Item loại gói demo ``(mã, tên, hạn lưu)`` (tạo một lần); trả mã Item."""
+	"""Item loại gói demo ``(mã, tên, hạn lưu)`` (tạo một lần, bù phương pháp nếu còn trống); trả mã Item."""
 	pack_code, pack_name, days = pack_type
 	if not frappe.db.exists("Item", pack_code):
 		factories.make_item(pack_code, "Packaging", shelf_life_days=days)
 		frappe.db.set_value("Item", pack_code, "item_name", pack_name)
+	method = DEMO_PACK_METHODS.get(pack_code)
+	if method and not frappe.db.get_value("Item", pack_code, "tc_compatible_method"):
+		frappe.db.set_value("Item", pack_code, "tc_compatible_method", method)
 	return pack_code
 
 

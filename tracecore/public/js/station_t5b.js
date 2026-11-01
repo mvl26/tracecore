@@ -647,12 +647,43 @@ class T5Release {
 			this.loadRunning();
 			return `<p class="tc-loading" role="status">${esc(__("Loading..."))}</p>`;
 		}
-		const title =
-			this.mode === "bi"
-				? __("Loads waiting for the biological indicator ({0})", [this.running.length])
-				: __("Loads waiting to unload ({0})", [this.running.length]);
-		const body = this.running.length
-			? `<table class="tc-t6-table">
+		const rows = this.running;
+		if (this.mode === "bi") {
+			return this.waitingSectionHtml(
+				__("Loads waiting for the biological indicator ({0})", [rows.length]),
+				rows
+			);
+		}
+		// A-102: mẻ đã dỡ, chưa giải phóng tách khỏi mẻ còn trong máy
+		const toUnload = rows.filter((row) => !row.unloaded);
+		const toRelease = rows.filter((row) => row.unloaded);
+		const unloadList =
+			toUnload.length || !toRelease.length
+				? this.waitingSectionHtml(
+						__("Loads waiting to unload ({0})", [toUnload.length]),
+						toUnload
+				  )
+				: "";
+		const releaseList = toRelease.length
+			? this.waitingSectionHtml(
+					__("Loads waiting for release ({0})", [toRelease.length]),
+					toRelease
+			  )
+			: "";
+		return unloadList + releaseList;
+	}
+
+	waitingSectionHtml(title, rows) {
+		const cell = (label, html, cls = "") =>
+			`<td data-label="${esc(label)}"${cls ? ` class="${cls}"` : ""}>${html}</td>`;
+		const state = (row) =>
+			row.status === "Quarantine"
+				? __(row.status, null, "Sterilization Load")
+				: row.unloaded
+				? __("Waiting for release")
+				: t5MachineState(row.status, row.id, row.unloaded);
+		const body = rows.length
+			? `<table class="tc-t6-table tc-t5b-waiting">
 				<thead><tr><th scope="col">${esc(__("Load"))}</th><th scope="col">${esc(
 					__("Sterilizer")
 			  )}</th><th scope="col">${esc(__("Program"))}</th><th scope="col">${esc(
@@ -660,24 +691,28 @@ class T5Release {
 			  )}</th><th scope="col">${esc(__("Status"))}</th><th scope="col">${esc(
 					__("Packs")
 			  )}</th></tr></thead>
-				<tbody>${this.running
+				<tbody>${rows
 					.map(
 						(row) =>
-							`<tr data-load="${esc(row.id)}"><td class="tc-mono">${esc(
-								row.id
-							)}</td><td>${esc(
-								row.equipment_name || ""
-							)} <span class="tc-mono">${esc(row.equipment)}</span></td><td>${esc(
-								row.program_name || row.program || ""
-							)}</td><td>${esc(
-								t5DateTime(row.started_at)
-							)}</td><td><span class="tc-badge tc-badge-o">${esc(
-								row.status === "Quarantine"
-									? __(row.status, null, "Sterilization Load")
-									: t5MachineState(row.status, row.id, row.unloaded)
-							)}</span></td><td>${esc(row.count)}${
-								row.requires_bi ? ` · ${esc(__("BI"))}` : ""
-							}</td></tr>`
+							`<tr data-load="${esc(row.id)}">${cell(
+								__("Load"),
+								esc(row.id),
+								"tc-mono"
+							)}${cell(
+								__("Sterilizer"),
+								`${esc(row.equipment_name || "")} <span class="tc-mono">${esc(
+									row.equipment
+								)}</span>`
+							)}${cell(
+								__("Program"),
+								esc(row.program_name || row.program || "")
+							)}${cell(__("Started at"), esc(t5DateTime(row.started_at)))}${cell(
+								__("Status"),
+								`<span class="tc-badge tc-badge-o">${esc(state(row))}</span>`
+							)}${cell(
+								__("Packs"),
+								`${esc(row.count)}${row.requires_bi ? ` · ${esc(__("BI"))}` : ""}`
+							)}</tr>`
 					)
 					.join("")}</tbody>
 			</table>`
@@ -910,9 +945,15 @@ class T5Release {
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Release", null, "Sterilization Load"))}</h3>
 			${waiting}${review}
-			${this.canRelease() ? this.releaseControlsHtml() : this.releaseElsewhereHtml(missing)}
+			${this.canRelease() ? this.releaseControlsHtml() : this.releaseElsewhereHtml(missing, ctx)}
 		</section>
-		<section class="tc-t4-block">
+		${this.canRelease() ? this.rejectHtml() : ""}`;
+	}
+
+	// A-102: chỉ R02, R01 loại mẻ; máy chủ cũng từ chối vai trò khác
+	rejectHtml() {
+		const form = this.form;
+		return `<section class="tc-t4-block">
 			<h3>${esc(__("Reject the load"))}</h3>
 			<p class="tc-t6-hint">${esc(__("Use it when the cycle or an indicator failed."))}</p>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Restart from"))}">
@@ -947,10 +988,23 @@ class T5Release {
 		return roles.includes("TC R02") || roles.includes("TC R01");
 	}
 
-	releaseElsewhereHtml(missing) {
+	releaseElsewhereHtml(missing, ctx = {}) {
 		const action = __(
 			"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN."
 		);
+		const failed =
+			ctx.cycle_result === "Fail" ||
+			Object.values(ctx.indicator_state || {}).includes("Fail");
+		if (failed) {
+			return `${this.alertHtml({
+				variant: "warn",
+				title: __("A CSSD supervisor must handle this load"),
+				action,
+			})}
+			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5b-finish">${esc(
+				__("Finish checking")
+			)}</button></div>`;
+		}
 		if (missing.length) {
 			return this.alertHtml({
 				variant: "info",

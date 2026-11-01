@@ -125,6 +125,20 @@ class TestScan(PutawayApiCase):
 		self.assertEqual(frappe.db.count("Audit Log", {"action": "Reject"}), before + 1)
 
 	@bru("BRU-FLOW-004")
+	def test_scanning_an_unreleased_pack_blocks_at_once(self):
+		"""A-102: chặn ngay lúc quét gói, không chờ tới mã kệ; không trả thẻ gói."""
+		pack = make_released_pack(status="Quarantine")
+		res = call(putaway_api.scan, raw=pack.name, station=STATION)
+		self.assertEqual(res["error"]["code"], "PACK_NOT_RELEASED")
+		self.assertEqual(http_status(), 409)
+		self.assertNotIn("pack", res)
+
+	def test_scanning_a_pack_in_stock_still_opens_the_card(self):
+		pack = make_released_pack(status="In Sterile Stock")
+		res = call(putaway_api.scan, raw=pack.name, station=STATION)
+		self.assertEqual(res["kind"], "pack")
+
+	@bru("BRU-FLOW-004")
 	def test_unreleased_pack_is_409(self):
 		pack = make_released_pack(status="Quarantine")
 		res = call(putaway_api.scan, raw=self.shelf.name, station=STATION, open_pack=pack.name)

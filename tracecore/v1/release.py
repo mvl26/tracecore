@@ -13,7 +13,13 @@ from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import releasing
-from tracecore.v1._common import RELEASE_ROLES, current_station_session, require_any_role, station_session
+from tracecore.v1._common import (
+	REJECT_ROLES,
+	RELEASE_ROLES,
+	current_station_session,
+	require_any_role,
+	station_session,
+)
 from tracecore.v1.wash import _flag, _optional_str, _required_str, _run
 
 
@@ -187,11 +193,11 @@ def release(
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@station_session(*RELEASE_ROLES)
+@station_session(*REJECT_ROLES)
 @idempotent
 def reject(load, equipment_raw, load_raw, station, reason=None, redo_from="T4", client_ts=None, token=None):
-	"""Mẻ Không đạt: gói hết hiệu lực, bộ về xử lý lại từ T4 (mặc định) hoặc T2 (FR-M2-12.2)."""
-	require_any_role(*RELEASE_ROLES)
+	"""Mẻ Không đạt: gói hết hiệu lực, bộ về xử lý lại từ T4 (mặc định) hoặc T2 (FR-M2-12.2); chỉ R02, R01 (A-102)."""
+	require_any_role(*REJECT_ROLES)
 	load, equipment_raw, load_raw = _scans(load, equipment_raw, load_raw)
 	reason = _optional_str(reason, "reason")
 	redo_from = _required_str(redo_from, "redo_from")

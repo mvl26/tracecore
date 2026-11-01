@@ -147,6 +147,11 @@ class TestReleaseApi(ReleaseApiCase):
 	@bru("BRU-REP-007")
 	def test_reject_sends_the_sets_back(self):
 		call(release_api.cycle_result, result="Fail", confirmed=1, **self.scans())
+		# A-102: KTV ghi Không đạt được nhưng không loại mẻ
+		with self.assertRaises(frappe.PermissionError):
+			call(release_api.reject, reason="Chu trình lỗi", redo_from="T2", **self.scans())
+		self.assertEqual(frappe.db.get_value("Pack", self.pack.name, "status"), "In Load")
+		self.as_user("giam-sat-loai@example.com", ["TC R02"])
 		done = call(release_api.reject, reason="Chu trình lỗi", redo_from="T2", **self.scans())
 		self.assertEqual(done["status"], "Failed")
 		self.assertEqual(frappe.db.get_value("Pack", self.pack.name, "status"), "Void")

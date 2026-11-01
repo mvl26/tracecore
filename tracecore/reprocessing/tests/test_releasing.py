@@ -543,3 +543,53 @@ class TestUnload(ReleaseCase):
 		doc = frappe.get_doc("Sterilization Load", self.load.name)
 		self.assertTrue(doc.unload_scan_at)
 		self.assertEqual(doc.unloaded_by, doc.released_by)
+
+
+class TestReleasedByOnlyAtRelease(ReleaseCase):
+	"""A-102: `released_by` chỉ có khi mẻ thật sự được giải phóng; cách ly chờ BI chưa phải giải phóng."""
+
+	def quarantined(self):
+		frappe.db.set_value("Sterilization Load", self.load.name, "requires_bi", 1)
+		self.ready()
+		self.assertEqual(self.release()["status"], "Quarantine")
+		return frappe.get_doc("Sterilization Load", self.load.name)
+
+	def test_quarantine_does_not_store_released_by(self):
+		doc = self.quarantined()
+		self.assertFalse(doc.released_by)
+		self.assertFalse(doc.released_at)
+		self.assertTrue(doc.unloaded_by)
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log",
+				{
+					"ref_doctype": "Sterilization Load",
+					"ref_name": self.load.name,
+					"reason": "QuarantineApproved",
+				},
+			)
+		)
+
+	def test_patch_clears_released_by_of_unreleased_loads_and_keeps_the_person_as_unloader(self):
+		from tracecore.patches.v0_1 import clear_unreleased_released_by as patch_module
+
+		frappe.db.set_value(
+			"Sterilization Load",
+			self.load.name,
+			{"released_by": self.employee.name, "released_at": None, "unloaded_by": None},
+		)
+		patch_module.execute()
+		row = frappe.db.get_value(
+			"Sterilization Load", self.load.name, ["released_by", "unloaded_by"], as_dict=True
+		)
+		self.assertFalse(row.released_by)
+		self.assertEqual(row.unloaded_by, self.employee.name)
+
+	def test_patch_keeps_released_loads(self):
+		from tracecore.patches.v0_1 import clear_unreleased_released_by as patch_module
+
+		self.ready()
+		self.release()
+		before = frappe.db.get_value("Sterilization Load", self.load.name, "released_by")
+		patch_module.execute()
+		self.assertEqual(frappe.db.get_value("Sterilization Load", self.load.name, "released_by"), before)

@@ -107,7 +107,7 @@ function t5IndicatorLabel(code) {
 
 // A-84: trạng thái máy theo mẻ chưa dỡ, dùng chung ở mọi tab của T5
 function t5MachineState(status, load, unloaded) {
-	if (unloaded) return __("Unloaded - {0}", [load]);
+	if (unloaded) return __("Waiting for release - {0}", [load]);
 	return status === "Running"
 		? __("Running - {0}", [load])
 		: status === "Cycle Complete"
@@ -1566,7 +1566,7 @@ class T5Load {
 			<div class="tc-field">
 				<label for="tc-t5-alerts">${esc(__("Machine alerts observed"))}</label>
 				<select id="tc-t5-alerts" data-form="alerts">
-					<option value="no"${form.alerts === "no" ? " selected" : ""}>${esc(__("None"))}</option>
+					<option value="no"${form.alerts === "no" ? " selected" : ""}>${esc(__("No"))}</option>
 					<option value="yes"${form.alerts === "yes" ? " selected" : ""}>${esc(
 			__("Yes - describe")
 		)}</option>

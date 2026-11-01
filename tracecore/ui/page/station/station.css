@@ -717,6 +717,47 @@ html:has(.tc-work) {
 	font-weight: 600;
 }
 
+/* danh sách mẻ T5 (A-102): không ngắt giữa từ; màn hẹp mỗi mẻ là một thẻ có nhãn từng ô */
+.tc-t5b-waiting td {
+	overflow-wrap: normal;
+	word-break: normal;
+}
+
+.tc-t5b-waiting .tc-mono {
+	white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+	.tc-t5b-waiting thead {
+		display: none;
+	}
+
+	.tc-t5b-waiting,
+	.tc-t5b-waiting tbody,
+	.tc-t5b-waiting tr,
+	.tc-t5b-waiting td {
+		display: block;
+		width: 100%;
+	}
+
+	.tc-t5b-waiting tr {
+		padding: var(--tc-sp-3) 0;
+		border-bottom: var(--tc-bw-hair) solid var(--tc-border-input);
+	}
+
+	.tc-t5b-waiting td {
+		padding: var(--tc-sp-1) 0;
+		border-bottom: 0;
+	}
+
+	.tc-t5b-waiting td::before {
+		content: attr(data-label) ": ";
+		color: var(--tc-text-2);
+		font-weight: 600;
+		font-family: var(--tc-font-sans);
+	}
+}
+
 /* thanh cơ số §4.11 */
 .tc-par-row {
 	display: flex;

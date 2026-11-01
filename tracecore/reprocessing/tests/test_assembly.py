@@ -189,13 +189,25 @@ class TestLine(AssemblyCase):
 		self.assertEqual([i["instrument"] for i in ctx["shortage_items"]], ["T3-KEO"])
 		self.assertTrue(ctx["pack_locked"])
 
-	def test_there_is_no_way_to_count_every_line_at_once(self):  # A-79, FR-M2-05.5
-		import inspect
-
-		self.assertNotIn("all_ok", inspect.signature(assembly.line).parameters)
+	def test_all_ok_counts_uncounted_lines_at_bom_qty(self):  # A-102 đảo A-79, FR-M2-05.5
 		name = self.open(self.washed_set())["assembly"]
-		with self.assertRaises(TypeError):
-			self.line(name, all_ok=True)
+		ctx = self.line(name, all_ok=True)
+		self.assertEqual({(l["counted"], l["line_status"]) for l in ctx["lines"]}, {(1, "Enough")})
+		self.assertFalse(ctx["uncounted"])
+
+	def test_all_ok_keeps_lines_already_counted_differently(self):  # A-102: quy tắc lệch định mức giữ nguyên
+		name = self.open(self.washed_set())["assembly"]
+		self.line(name, instrument="T3-DAO", actual_qty=4, note="Thừa một dao")
+		ctx = self.line(name, all_ok=True)
+		status = {l["instrument"]: (l["actual_qty"], l["line_status"]) for l in ctx["lines"]}
+		self.assertEqual(status["T3-DAO"], (4, "Over"))
+
+	def test_line_differing_from_bom_is_still_refused_without_a_reason(self):  # A-79 (c) giữ nguyên
+		name = self.open(self.washed_set())["assembly"]
+		self.line(name, all_ok=True)
+		with self.assertRaises(BlockedError) as caught:
+			self.line(name, instrument="T3-DAO", actual_qty=0)
+		self.assertEqual(caught.exception.block.code, "LINE_VARIANCE_REQUIRED")
 
 	@bru("BRU-REP-003")
 	def test_new_draft_starts_with_nothing_counted(self):  # A-79, FR-M2-05.5

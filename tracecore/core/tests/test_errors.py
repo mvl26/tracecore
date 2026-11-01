@@ -253,6 +253,7 @@ class TestErrors(FrappeTestCase):
 				"NO_PRINTER_FOR_METHOD",
 				"LABEL_NOT_QUEUED",
 				"LABEL_PDF_FAILED",
+				"PACK_DEPT_MISMATCH",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

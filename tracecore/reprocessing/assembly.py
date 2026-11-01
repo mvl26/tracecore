@@ -4,7 +4,7 @@ Dịch vụ trạm T3 (RPC `tracecore.v1.assembly` bọc từng hàm):
 
 - `open_set`: quét Set ID → mở (hoặc mở lại) bản nháp `Assembly Record` của (bộ, chu trình hiện hành) với đủ dòng BOM;
 - `line`: ghi một dòng (số lượng thực tế, hỏng/thay, ảnh, Thiếu/Hỏng + ghi chú khi lệch định mức) hoặc quét mã GIAI dụng
-  cụ tự tick (FR-M1-02.2/.4); không có "đủ hết": mỗi dòng phải được đếm (A-79);
+  cụ tự tick (FR-M1-02.2/.4), hoặc "đủ hết" cho các dòng chưa đếm (A-102, người dùng đảo A-79);
 - `confirm_shortage`: R02 xác nhận đóng gói thiếu bằng PIN proof + lý do (FR-M2-06.1);
 - `submit`: ghi sổ chứng từ và ghi cổng T3 qua `core.step_gate` (Đạt, hoặc Không đạt khi rẽ nhánh Sửa chữa/Thanh lý).
 
@@ -255,6 +255,7 @@ def line(
 	note=None,
 	photo=None,
 	variance=None,
+	all_ok=False,
 ):
 	"""Ghi vào bản nháp `assembly`: một dòng (`instrument` + các trường truyền vào) hoặc quét mã dụng cụ (`raw`).
 
@@ -268,6 +269,10 @@ def line(
 	extra = {}
 	if raw is not None:
 		extra = _scan_instrument(doc, raw, station, client_ts)
+	elif all_ok:  # dòng đã đếm giữ nguyên; lệch định mức sau đó vẫn qua `_check_variance`
+		for row in doc.lines:
+			if not cint(row.counted):
+				row.counted, row.actual_qty = 1, cint(row.bom_qty)
 	else:
 		_apply_line(
 			doc,

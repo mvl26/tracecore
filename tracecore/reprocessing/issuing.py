@@ -363,7 +363,7 @@ def _other_draft(pack_name, note_name):
 	)
 
 
-def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None):
+def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None, department_reason=None):
 	"""Quét một gói vào phiếu nháp (C9). Quét lặp gói đã có: không lỗi, trả phiếu.
 
 	`note`: ghi chú khi khoa chỉ định gói hạn xa hơn gói FEFO (C8). `move`: gói đang nằm ở phiếu nháp khác thì
@@ -384,6 +384,7 @@ def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None):
 			_("Pack {0} is already on draft issue note {1}.").format(name, other),
 			_("Move the pack to this issue note, or remove it from {0}.").format(other),
 		)
+	_check_pack_department(pack, doc, department_reason, station, client_ts)
 	note = cstr(note).strip()
 	warning = storage.fefo_check(name, exclude=[row.pack for row in doc.packs])
 	if warning and not note:
@@ -413,6 +414,41 @@ def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None):
 	_clear_signature(doc)
 	_save(doc)
 	return view(doc)
+
+
+def _department_name(department):
+	return frappe.db.get_value("Department", department, "department_name") or department
+
+
+def _check_pack_department(pack, doc, reason, station, client_ts):
+	"""Gói của khoa khác khoa nhận (A-102): cảnh báo, chỉ đi tiếp khi người cấp xác nhận kèm lý do; ghi Audit Log."""
+	if not pack.department or pack.department == doc.department:
+		return
+	reason = cstr(reason).strip()
+	if not reason:
+		raise _blocked(
+			"PACK_DEPT_MISMATCH",
+			_("Pack belongs to another department"),
+			_("Pack {0} belongs to {1}; this issue note is for {2}.").format(
+				pack.name, _department_name(pack.department), _department_name(doc.department)
+			),
+			_("Check the department. To issue it anyway, enter the reason and confirm."),
+		)
+	audit.log(
+		"Override",
+		"Pack",
+		pack.name,
+		new={
+			"event": "PackOfOtherDepartment",
+			"issue_note": doc.name,
+			"pack_department": pack.department,
+			"issue_department": doc.department,
+			"note": reason,
+		},
+		reason="PackOfOtherDepartment",
+		station=station,
+		client_ts=client_ts,
+	)
 
 
 def _drop_pack(doc, cycle_id):

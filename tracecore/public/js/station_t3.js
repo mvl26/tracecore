@@ -256,6 +256,7 @@ class T3Assembly {
 			"t3-dec": () => this.step(data.instrument, -1),
 			"t3-inc": () => this.step(data.instrument, 1),
 			"t3-full": () => this.setQty(data.instrument, this.line(data.instrument).bom_qty),
+			"t3-all": () => this.allOk(),
 			"t3-variance": () => this.openVariance(data.instrument),
 			"t3-variance-pick": () => this.setForm("choice", data.value),
 			"t3-variance-save": () => this.saveVariance(),
@@ -289,6 +290,14 @@ class T3Assembly {
 		const qty = Math.max(0, base + delta);
 		if (qty === row.bom_qty) return this.setQty(code, qty);
 		this.openVariance(code, qty);
+	}
+
+	// A-102: một chạm ghi mọi dòng chưa đếm theo định mức, người dùng quyết định đảo A-79
+	allOk() {
+		if (!this.asm || this.busy || this.offline) return;
+		this.request(T3_LINE, { assembly: this.asm.assembly, all_ok: 1 }, (res) =>
+			this.onLine(res)
+		);
 	}
 
 	openVariance(code, qty) {
@@ -932,6 +941,13 @@ class T3Assembly {
 				${trays ? `<div>${trays}</div>` : ""}
 				<div class="tc-inst">${asm.lines.map((row) => this.lineHtml(row)).join("")}</div>
 			</div>
+			${
+				asm.docstatus === 0
+					? `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-ok" data-action="t3-all"${t3Disabled(
+							this.busy || this.offline
+					  )}>${esc(__("Confirm all components"))}</button></div>`
+					: ""
+			}
 			<p class="tc-hint" data-region="tally">${esc(t3TallyText(asm.tally))}</p>
 		</section>`;
 	}

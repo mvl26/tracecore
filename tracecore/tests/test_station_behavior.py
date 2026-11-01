@@ -763,10 +763,9 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 					html,
 				)
 				self.assertIn("tc-alert-info", html)
-				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release"):
+				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release", "t5b-reject"):
 					self.assertNotIn(hidden, html)
 				self.assertNotRegex(html, r"R0\d")
-				self.assertIn("t5b-reject", html)  # mẻ Không đạt giữ nguyên
 
 	def test_r02_and_r01_keep_pin_reason_and_button(self):
 		for role in ("TC R02", "TC R01"):
@@ -1395,3 +1394,272 @@ class TestT5ConfirmLine(FrappeTestCase):
 		)
 		self.assertIn("I, An Nguyen, confirm", out)
 		self.assertNotIn("NV-00009", out)
+
+
+T5B = "public/js/station_t5b.js"
+T6 = "public/js/station_t6.js"
+T7 = "public/js/station_t7.js"
+T3 = "public/js/station_t3.js"
+SHELL = "ui/page/station/station.js"
+
+
+class TestT5RejectBlock(FrappeTestCase):
+	"""A-102: khối Loại mẻ chỉ cho R02, R01; KTV ghi Không đạt thấy cần giám sát CSSD xử lý."""
+
+	CTX = """
+	const station = makeStation();
+	station.session = {roles: ROLES};
+	const screen = new T5Release(station);
+	const ctx = {load: "ME-1", cycle_result: RESULT, indicator_state: {}, needs_review: 0};
+	emit(screen.releaseHtml(ctx, []));
+	"""
+
+	def html(self, roles, result="Fail"):
+		body = self.CTX.replace("ROLES", repr(list(roles))).replace("RESULT", repr(result))
+		return run_js(self, [ERR, T5, T5B], [[], ["T5Load"], ["T5Release"]], FAKE_STATION + body)
+
+	def test_supervisors_see_the_reject_block(self):
+		for role in ("TC R02", "TC R01"):
+			self.assertIn('data-action="t5b-reject"', self.html([role]))
+
+	def test_technician_sees_who_must_handle_a_failed_load(self):
+		out = self.html(["TC R05"])
+		self.assertNotIn("t5b-reject", out)
+		self.assertIn("A CSSD supervisor must handle this load", out)
+
+	def test_technician_with_a_passed_load_has_no_such_message(self):
+		out = self.html(["TC R05"], "Pass")
+		self.assertNotIn("t5b-reject", out)
+		self.assertNotIn("A CSSD supervisor must handle this load", out)
+
+
+class TestT5UnloadLists(FrappeTestCase):
+	"""A-102: tab Dỡ mẻ tách Mẻ chờ dỡ và Mẻ chờ giải phóng."""
+
+	BODY = """
+	const screen = new T5Release(makeStation());
+	const row = (id, unloaded) => ({id, equipment: "M", equipment_name: "May", program: "P", started_at: null,
+		status: "Cycle Complete", count: 1, requires_bi: 0, unloaded});
+	screen.running = ROWS;
+	emit(screen.waitingHtml());
+	"""
+
+	def html(self, rows):
+		return run_js(
+			self,
+			[ERR, T5, T5B],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION + self.BODY.replace("ROWS", rows),
+		)
+
+	def test_two_lists_and_the_status_label(self):
+		out = self.html('[row("ME-A", false), row("ME-B", true)]')
+		self.assertIn("Loads waiting to unload (1)", out)
+		self.assertIn("Loads waiting for release (1)", out)
+		self.assertIn("Waiting for release", out)
+		self.assertNotIn("Unloaded", out)
+		self.assertLess(out.index("ME-A"), out.index("Loads waiting for release"))
+		self.assertLess(out.index("Loads waiting for release"), out.index("ME-B"))
+
+	def test_each_cell_has_its_label_for_the_narrow_layout(self):
+		out = self.html('[row("ME-A", false)]')
+		self.assertIn('class="tc-t6-table tc-t5b-waiting"', out)
+		self.assertIn('data-label="Sterilizer"', out)
+
+	def test_only_waiting_for_release_has_no_empty_unload_list_twice(self):
+		out = self.html('[row("ME-B", true)]')
+		self.assertNotIn("No load is waiting.", out)  # không hiện danh sách chờ dỡ rỗng cạnh danh sách có mẻ
+		self.assertIn("Loads waiting for release (1)", out)
+
+	def test_css_keeps_words_whole_and_stacks_on_narrow_screens(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "station", "station.css"), encoding="utf-8"
+		) as handle:
+			css = handle.read()
+		self.assertIn(".tc-t5b-waiting td::before", css)
+		self.assertRegex(css, r"\.tc-t5b-waiting[^{]*\{[^}]*overflow-wrap: normal")
+
+
+class TestT5AlertsOption(FrappeTestCase):
+	def test_t5_uses_the_same_no_as_t2_not_the_none_string(self):
+		with open(frappe.get_app_path("tracecore", *T5.split("/")), encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertNotIn('__("None")', source)
+		self.assertRegex(source, r'value="no"[^\n]*__\("No"\)')
+
+
+class TestT6BlockedScan(FrappeTestCase):
+	def test_block_drops_the_open_pack_so_no_shelf_prompt_shows(self):
+		out = run_js(
+			self,
+			[T6],
+			[["T6Storage"]],
+			FAKE_STATION
+			+ """
+			const t6 = new T6Storage(makeStation());
+			t6.show = () => {};
+			t6.pack = {cycle_id: "CY-OLD", status: "Released"};
+			t6.reject({code: "PACK_NOT_RELEASED", title: "t", reason: "r", action: "a"});
+			emit({pack: t6.pack, notice: t6.notice.code});
+			""",
+		)
+		self.assertIsNone(out["pack"])
+		self.assertEqual(out["notice"], "PACK_NOT_RELEASED")
+
+
+class TestT7DepartmentWarning(FrappeTestCase):
+	BODY = """
+	const t7 = new T7Issue(makeStation());
+	t7.station.station = "TR-7";
+	t7.show = () => {};
+	t7.issue = {issue_note: "IN-1", packs: []};
+	const calls = [];
+	t7.request = (name, args) => calls.push([name, args]);
+	t7.reject({code: "PACK_DEPT_MISMATCH", title: "t", reason: "r", action: "a"}, {args: {raw: "CY-1", note: "ghi chu"}});
+	"""
+
+	def run_t7(self, body):
+		return run_js(self, [T7], [["T7Issue"]], FAKE_STATION + self.BODY + body)
+
+	def test_dialog_asks_for_a_reason_and_resends_with_it(self):
+		out = self.run_t7(
+			"""
+			const dialog = t7.dialogsHtml();
+			const variant = t7.notice.variant;
+			t7.field = () => "Khoa muon";
+			t7.onAction("dept-mismatch-submit", element());
+			emit({dialog, calls, variant});
+			"""
+		)
+		self.assertIn("tc-t7-dept-reason", out["dialog"])
+		self.assertEqual(out["variant"], "warn")
+		self.assertEqual(out["calls"][0][0], "add_pack")
+		args = out["calls"][0][1]
+		self.assertEqual(
+			(args["raw"], args["department_reason"], args["note"]), ("CY-1", "Khoa muon", "ghi chu")
+		)
+
+	def test_empty_reason_sends_nothing(self):
+		out = self.run_t7(
+			"""
+			t7.field = () => "";
+			t7.markInvalid = () => {};
+			t7.onAction("dept-mismatch-submit", element());
+			emit({calls});
+			"""
+		)
+		self.assertEqual(out["calls"], [])
+
+
+class TestT3ConfirmAll(FrappeTestCase):
+	BODY = """
+	window.TcStepQueue = class { reset() {} };
+	const t3 = new T3Assembly(makeStation());
+	t3.show = () => {};
+	t3.asm = {assembly: "AS-1", bom_version: 1, docstatus: 0, lines: [], tray_images: [], tally: {}};
+	"""
+
+	def test_button_and_request(self):
+		out = run_js(
+			self,
+			[T3],
+			[["T3Assembly"]],
+			FAKE_STATION
+			+ self.BODY
+			+ """
+			const html = t3.linesHtml();
+			const calls = [];
+			t3.request = (name, args) => calls.push(args);
+			t3.onAction("t3-all", element());
+			emit({html, calls});
+			""",
+		)
+		self.assertIn('data-action="t3-all"', out["html"])
+		self.assertIn("Confirm all components", out["html"])
+		self.assertEqual(out["calls"], [{"assembly": "AS-1", "all_ok": 1}])
+
+	def test_no_button_on_a_recorded_assembly(self):
+		out = run_js(
+			self,
+			[T3],
+			[["T3Assembly"]],
+			FAKE_STATION + self.BODY + "t3.asm.docstatus = 1; emit(t3.linesHtml());",
+		)
+		self.assertNotIn("t3-all", out)
+
+
+class TestOpenStationByUrl(FrappeTestCase):
+	"""A-102, #1822: mở trạm khác bằng URL đi đúng đường của nút chuyển trạm khi phiên thẻ còn."""
+
+	FAKE = """
+	const store = {};
+	sessionStorage = window.sessionStorage = {
+		getItem: (key) => (key in store ? store[key] : null),
+		setItem: (key, value) => { store[key] = value; },
+		removeItem: (key) => { delete store[key]; },
+	};
+	store["tc-station-active"] = JSON.stringify({station: "TR-3", token: "old"});
+	const calls = [];
+	let answer = {ok: true, session: {token: "new"}};
+	const shell = {
+		station: "TR-4",
+		rpc: async (method, args) => { calls.push([method, args]); return answer; },
+		storedToken(value) { if (value) store["tc-station-session:TR-4"] = value; return store["tc-station-session:TR-4"]; },
+		restoreSession: async (token) => calls.push(["restore", token]),
+		renderLogin: (error) => calls.push(["login", error ? error.code : null]),
+		activeSession: TraceCoreStation.prototype.activeSession,
+		rememberActive: TraceCoreStation.prototype.rememberActive,
+	};
+	const adopt = () => TraceCoreStation.prototype.adoptSession.call(shell);
+	"""
+
+	def run_shell(self, body):
+		return run_js(self, [SHELL], [["TraceCoreStation"]], self.FAKE + body)
+
+	def test_valid_same_zone_session_uses_switch_station_then_restores(self):
+		out = self.run_shell("const done = await adopt(); emit({done, calls});")
+		self.assertTrue(out["done"])
+		self.assertEqual(out["calls"][0][0], "tracecore.v1.station.switch_station")
+		self.assertEqual((out["calls"][0][1]["token"], out["calls"][0][1]["station"]), ("old", "TR-4"))
+		self.assertEqual(out["calls"][1], ["restore", "new"])
+
+	def test_no_session_elsewhere_means_card_screen(self):
+		out = self.run_shell(
+			'delete store["tc-station-active"]; const done = await adopt(); emit({done, calls});'
+		)
+		self.assertFalse(out["done"])
+		self.assertEqual(out["calls"], [])
+
+	def test_other_zone_goes_to_rescan_with_the_reason_and_forgets_the_token(self):
+		out = self.run_shell(
+			"""
+			answer = {ok: false, error: {code: "STATION_ZONE_RESCAN", reason: "r", action: "a"}};
+			const done = await adopt();
+			emit({done, calls, active: store["tc-station-active"] || null});
+			"""
+		)
+		self.assertTrue(out["done"])
+		self.assertEqual(out["calls"][-1], ["login", "STATION_ZONE_RESCAN"])
+		self.assertIsNone(out["active"])
+
+	def test_missing_competency_shows_the_block_and_keeps_the_old_session(self):
+		out = self.run_shell(
+			"""
+			answer = {ok: false, error: {code: "COMPETENCY_REQUIRED", reason: "r", action: "a"}};
+			await adopt();
+			emit({calls, active: store["tc-station-active"] || null});
+			"""
+		)
+		self.assertEqual(out["calls"][-1], ["login", "COMPETENCY_REQUIRED"])
+		self.assertTrue(out["active"])
+
+	def test_expired_session_is_plain_card_screen(self):
+		out = self.run_shell(
+			"""
+			answer = {ok: false, error: {code: "SESSION_EXPIRED", reason: "r", action: "a"}};
+			const done = await adopt();
+			emit({done, active: store["tc-station-active"] || null});
+			"""
+		)
+		self.assertFalse(out["done"])
+		self.assertIsNone(out["active"])
