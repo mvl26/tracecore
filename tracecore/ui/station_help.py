@@ -32,6 +32,22 @@ STATION_KEYS = (
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
+_LEGACY_CODES = {
+	"RECEIVE": "T1",
+	"WASH_LOAD": "T2",
+	"ASSEMBLE": "T3",
+	"PACK": "T4",
+	"STERI_LOAD": "T5",
+	"STERI_UNLOAD": "T5b",
+	"PUTAWAY": "T6",
+	"ISSUE": "T7",
+	"USE": "T8",
+	"LINEN": "LIN",
+	"WASTE": "WST",
+}
+# "<Station guide> T1 - Receiving" (cả bản dịch) và tên ngắn dùng gạch dài
+_EN_DASH = "\u2013"
+_NUMBERED_TITLE = re.compile(r"^(?:(?P<prefix>.+) )?T\d+ (?P<dash>[-\u2013]) .+$")
 # ảnh bước chỉ là file công khai của site: kiosk chưa quét thẻ vẫn xem được, không dẫn ra ngoài
 _PUBLIC_FILE = re.compile(r"^/files/[^/?#\\]+$")
 
@@ -170,7 +186,7 @@ def article_for_key(key):
 	return {
 		"name": row.name,
 		"key": key,
-		"title": row.title,
+		"title": display_title(key, row.title),
 		"steps": steps_from_html(row.content),
 		"modified": str(row.modified),
 	}
@@ -207,8 +223,27 @@ def article_title(key):
 		if key in zones.station_functions(row.name)
 	]
 	if numbers:
-		return _("Station guide T{0} - {1}").format(min(numbers), label)
+		return f"T{min(numbers)} {_EN_DASH} {label}"
 	return _("Station guide: {0}").format(label)
+
+
+def display_title(key, stored):
+	"""Tên mặc định chưa sửa (mọi đời, kể cả tạo lúc migrate bằng tiếng Anh) hiện tên trạm theo ngôn ngữ người xem (#1831 S-03).
+
+	Bài R10 đã đặt tên thì giữ nguyên; đổi lúc đọc nên không cần patch dữ liệu.
+	"""
+	if key == GENERAL or not stored:
+		return stored
+	prefixes = ("Station guide", _("Station guide", lang="vi"))
+	numbered = _NUMBERED_TITLE.match(stored)
+	if numbered and (
+		numbered["prefix"] in prefixes or (numbered["prefix"] is None and numbered["dash"] == _EN_DASH)
+	):
+		return article_title(key)
+	codes = (key, _LEGACY_CODES.get(key))
+	if stored in {f"{prefix}: {code}" for prefix in prefixes for code in codes if code}:
+		return article_title(key)
+	return stored
 
 
 def default_content(steps, lang=None):
