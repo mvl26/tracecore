@@ -337,6 +337,20 @@ class TestStationPage(FrappeTestCase):
 		):
 			self.assertTrue(translations.get(source), msg=source)
 
+	def test_pda_menu_hides_navigation_and_keeps_scan_on_top(self):
+		"""#1828, A-92: ≤ 768 px hàng nút trạm và dòng phiên vào menu; không còn cột trạm đẩy ô quét."""
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.css"), encoding="utf-8") as handle:
+			css = handle.read()
+		rules = css[css.index("@media (max-width: 768px)", css.index("A-92")) :]
+		self.assertIn(".tc-station-pills,\n\t.tc-session,", rules)
+		self.assertIn(".tc-menu-open .tc-station-pills", rules)
+		with open(
+			os.path.join(APP_PATH, "ui", "page", "station", "station.html"), encoding="utf-8"
+		) as handle:
+			html = handle.read()
+		self.assertIn('data-action="toggle-station-menu"', html)
+		self.assertNotIn("tc-rail", html)
+
 	def test_read_blocks_retry_once_and_state_the_cause(self):
 		"""#1825: khối dữ liệu đọc khi mở trạm tự thử lại một lần, lỗi nói rõ nguyên nhân mất mạng, hết phiên hay lỗi máy chủ."""
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:

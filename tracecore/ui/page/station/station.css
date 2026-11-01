@@ -1716,3 +1716,56 @@ body.tc-kiosk .layout-main-section {
 	gap: var(--tc-touch-gap);
 	margin-top: var(--tc-sp-8);
 }
+
+/* PDA, điện thoại (A-92, #1828): ô quét ở đầu màn; hàng nút trạm và dòng phiên vào menu */
+.tc-menu-btn {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.tc-main {
+		display: flex;
+		flex-direction: column;
+		padding: var(--tc-sp-2) var(--tc-sp-3) var(--tc-sp-22);
+	}
+	.tc-title {
+		margin-bottom: var(--tc-sp-2);
+	}
+	.tc-title h2 {
+		flex: 1;
+		font-size: var(--tc-fs-lg);
+	}
+	.tc-title .tc-brand,
+	.tc-title .tc-tag,
+	.tc-title .tc-net-status {
+		display: none;
+	}
+	.tc-menu-btn {
+		display: inline-flex;
+	}
+	.tc-station-pills,
+	.tc-session,
+	.tc-session-details {
+		display: none;
+	}
+	.tc-menu-open .tc-station-pills:not([hidden]),
+	.tc-menu-open .tc-session:not([hidden]) {
+		display: flex;
+	}
+	.tc-menu-open .tc-session-details:not([hidden]) {
+		display: block;
+	}
+	.tc-notify-banner {
+		order: 2;
+	}
+	.tc-scan {
+		flex-wrap: wrap;
+		padding: var(--tc-sp-2);
+	}
+	.tc-scan .tc-scan-input {
+		flex: 1 1 100%;
+	}
+	.tc-scan .tc-btn {
+		flex: 1;
+	}
+}

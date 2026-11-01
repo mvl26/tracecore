@@ -498,6 +498,11 @@ class TraceCoreStation {
 		if (action === "tc-switch-station")
 			return this.switchStation(button.dataset.station, button.textContent);
 		if (action === "toggle-session-details") return this.toggleSessionDetails();
+		if (action === "toggle-station-menu") {
+			const open = this.root.classList.toggle("tc-menu-open");
+			button.setAttribute("aria-expanded", String(open));
+			return;
+		}
 		if (action === "toggle-notifications") return this.toggleNotifications();
 		if (action === "read-notification") return this.readNotification(button.dataset.name);
 		if (!this.session) {

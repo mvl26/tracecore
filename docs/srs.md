@@ -47,6 +47,7 @@
 | 1.11 A-89 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-89 của `docs/architecture.md` (#1815, D4): sửa FR-M2-10.3 và Q8: tham số ngoài dải chặn kết luận Đạt, không còn cho R02 xác nhận để giải phóng; form dữ liệu chu trình điền sẵn theo chương trình, lưu giá trị mặc định và trường đã sửa; `data_source` thêm `Manual Default`. |
 | 1.11 A-90 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-90 của `docs/architecture.md`: đổi trạm khác khu phải quét lại thẻ; cùng khu giữ phiên nếu đủ năng lực (FR-M4-03.1, FR-M9-08.1). Không đổi mã FR. |
 | 1.11 A-91 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-91 của `docs/architecture.md`: khung trạm một thanh điều hướng, danh sách trạm theo thẻ, đổi trạm không tải lại trang, banner khẩn có hành động (FR-M9-10, FR-M9-14). Không đổi mã FR. |
+| 1.11 A-92 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-92 của `docs/architecture.md`: ô quét luôn ở đầu màn trên PDA, điều hướng và thông tin phiên vào menu. Không đổi mã FR. |
 
 ---
 
