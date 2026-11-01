@@ -1876,7 +1876,7 @@ class TestT5DefaultStep(FrappeTestCase):
 			},
 		)
 
-	def test_opening_the_screen_goes_to_the_derived_step_once(self):
+	def test_opening_the_screen_stays_on_load_step_until_a_step_is_chosen(self):
 		out = t5_run(
 			self,
 			"""
@@ -1884,14 +1884,14 @@ class TestT5DefaultStep(FrappeTestCase):
 			t5.show();
 			await flush();
 			const first = {step: stepOf(station.html), screen: station.screen === t5 ? "load" : "release"};
-			station.screen.onAction("t5-step", {dataset: {step: "1"}});
+			station.screen.onAction("t5-step", {dataset: {step: "3"}});
 			await flush();
-			emit({first, step: stepOf(station.html), back: station.screen === t5});
+			emit({first, step: stepOf(station.html), moved: station.screen !== t5});
 			""",
 		)
-		self.assertEqual(out["first"], {"step": 3, "screen": "release"})
-		self.assertEqual(out["step"], 1)  # đã chọn bước thì không bị kéo về
-		self.assertTrue(out["back"])
+		self.assertEqual(out["first"], {"step": 1, "screen": "load"})  # A-108
+		self.assertEqual(out["step"], 3)
+		self.assertTrue(out["moved"])
 
 
 class TestT5StepFlow(FrappeTestCase):
