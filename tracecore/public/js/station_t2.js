@@ -1,4 +1,4 @@
-/* global tcPdfRetryButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -95,6 +95,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy, waiting: bộ chờ rửa}
 		this.overviewBusy = false;
+		this.overviewFailed = null; // nguyên nhân tải lỗi: show() không tự tải lại, chờ người dùng bấm Tải lại
 		this.draftChecked = false; // nháp phía server (theo phiên trạm) chỉ hỏi một lần mỗi phiên
 		this.draftTimer = null;
 		this.reset();
@@ -126,6 +127,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null;
 		this.overviewBusy = false;
+		this.overviewFailed = null;
 		this.draftChecked = false;
 		this.reset();
 		this.saveLoad();
@@ -543,17 +545,17 @@ class T2Wash {
 		);
 	}
 
-	// A-101: có máy in thì nhãn ra file PDF, không qua Station Agent; chưa có máy in thì giữ Waiting và cảnh báo
+	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; chưa có máy in thì giữ Waiting và cảnh báo
 	async handlePrint(print) {
-		if (print && print.status === "Queued") return this.printLabelPdf();
-		this.printNote = { kind: "waiting" };
+		this.printNote = { kind: print && print.status === "Queued" ? "ready" : "waiting" };
 		this.show();
 	}
 
 	async printLabelPdf() {
 		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		this.printNote = { kind: "sending" };
+		const printed = Boolean(this.printNote && this.printNote.printed);
+		this.printNote = { kind: "sending", printed };
 		this.show();
 		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.wash.label_pdf", {
 			batch: this.done.batch,
@@ -561,8 +563,8 @@ class T2Wash {
 		});
 		if (result.ended || version !== this.station.sessionVersion) return;
 		this.printNote = result.ok
-			? { kind: "pdf", filename: result.filename }
-			: { kind: "pdf-failed", reason: result.reason };
+			? { kind: "pdf", filename: result.filename, printed: true }
+			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
 
@@ -572,6 +574,7 @@ class T2Wash {
 		if (this.station.isOffline()) return;
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
+		this.overviewFailed = null;
 		try {
 			const res = await this.station.rpcRead("tracecore.v1.wash.redo_queue", {
 				station: this.station.station,
@@ -585,8 +588,10 @@ class T2Wash {
 					awaiting: res.awaiting || [],
 					waiting: res.waiting || [],
 				};
+			else this.overviewFailed = this.station.failureCause(null, res);
 		} catch (error) {
 			if (error.sessionEnded) return;
+			this.overviewFailed = this.station.failureCause(error);
 		} finally {
 			this.overviewBusy = false;
 		}
@@ -1035,6 +1040,7 @@ class T2Wash {
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
 			"t2-refresh-lots": () => this.refreshLots(),
+			"t2-overview-retry": () => this.loadOverview(true),
 			"t2-save-data": () => this.saveData(),
 			"t2-edit-data": () => {
 				if (!this.form) return;
@@ -1054,7 +1060,7 @@ class T2Wash {
 				this.show();
 			},
 			"t2-record": () => this.recordResult(),
-			"t2-label-pdf-retry": () => this.printLabelPdf(),
+			"t2-label-pdf": () => this.printLabelPdf(),
 			"t2-unload-reset": () => {
 				this.unload = null;
 				this.indicator = null;
@@ -1132,7 +1138,7 @@ class T2Wash {
 	show() {
 		if (!this.station.session) return;
 		this.updatePlaceholder();
-		if (!this.overview) this.loadOverview();
+		if (!this.overview && !this.overviewFailed) this.loadOverview();
 		if (!this.draftChecked) this.restoreDraft();
 		const body = this.mode === "unload" ? this.unloadHtml() : this.loadHtml();
 		this.station.setState(
@@ -1141,6 +1147,7 @@ class T2Wash {
 				${this.modeHtml()}
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.lookup ? this.lookupHtml(this.lookup) : ""}
+				${this.overviewFailedHtml()}
 				${body}
 				${this.mode === "load" ? this.waitingHtml() : ""}
 				${this.redoHtml()}
@@ -1540,12 +1547,18 @@ class T2Wash {
 		if (!note || !print) return "";
 		if (note.kind === "sending")
 			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
+		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
+		const button = tcLabelButton("t2-label-pdf", note.printed, this.busy || this.offline);
+		if (note.kind === "ready") return button;
 		if (note.kind === "pdf") {
-			return this.alertHtml({
-				variant: "ok",
-				title: __("Label printed to PDF file: {0}", [note.filename]),
-				reason: __("Print job {0}", [print.print_job]),
-			});
+			return this.alertHtml(
+				{
+					variant: "ok",
+					title: __("Label printed to PDF file: {0}", [note.filename]),
+					reason: __("Print job {0}", [print.print_job]),
+				},
+				button
+			);
 		}
 		if (note.kind === "pdf-failed") {
 			return this.alertHtml(
@@ -1556,7 +1569,7 @@ class T2Wash {
 						.filter(Boolean)
 						.join(" "),
 				},
-				tcPdfRetryButton("t2-label-pdf-retry", this.busy || this.offline)
+				button
 			);
 		}
 		const warning = print.warning || {};
@@ -1658,11 +1671,29 @@ class T2Wash {
 	}
 
 	// Bộ chờ rửa (A-66): chỉ để xem, vẫn quét từng Set ID; bộ vừa quét vào lô đang nạp không còn chờ
+	overviewPlaceholder() {
+		return this.overviewFailed ? "" : `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+	}
+
+	overviewFailedHtml() {
+		if (!this.overviewFailed) return "";
+		return `<section class="tc-t4-block">
+			<p class="tc-hint">${esc(__("The waiting lists could not be loaded."))} ${esc(
+			this.overviewFailed
+		)}</p>
+			<div class="tc-actions"><button type="button" class="tc-btn" data-action="t2-overview-retry">${esc(
+				__("Retry")
+			)}</button></div>
+		</section>`;
+	}
+
 	waitingHtml() {
 		if (!this.overview)
-			return `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
-				__("Loading...")
-			)}</p></section>`;
+			return this.overviewFailed
+				? ""
+				: `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
+						__("Loading...")
+				  )}</p></section>`;
 		const queued = new Set(((this.load && this.load.sets) || []).map((row) => row.set_id));
 		const rows = (this.overview.waiting || []).filter((row) => !queued.has(row.set_id));
 		const title = __("Sets waiting to wash ({0})", [rows.length]);
@@ -1704,7 +1735,7 @@ class T2Wash {
 			__("Reprocessing queue")
 		)}">
 			<h3>${esc(__("Reprocessing queue"))}</h3>
-			${this.overview ? body : `<p class="tc-loading">${esc(__("Loading..."))}</p>`}
+			${this.overview ? body : this.overviewPlaceholder()}
 		</section>`;
 	}
 
@@ -1742,7 +1773,7 @@ class T2Wash {
 
 	// `skip`: lô đang dỡ đã hiện ở trên cùng, không lặp lại trong danh sách
 	runningHtml(skip) {
-		if (!this.overview) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		if (!this.overview) return this.overviewPlaceholder();
 		const rows = (this.overview.running || []).filter((row) => row.batch !== skip);
 		if (!rows.length) return `<p class="tc-empty">${esc(__("No running wash batch."))}</p>`;
 		return rows.map((row) => this.batchCardHtml(row)).join("");

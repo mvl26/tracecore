@@ -1006,7 +1006,13 @@ def save_manual_data(
 	for row in values or []:
 		if isinstance(row, dict) and row.get("parameter_name"):
 			given[row["parameter_name"]] = row.get("value")
-	parameters, missing, review = [], [], False
+	# A-106: cờ Cần xem xét không do ngoài dải (sự cố máy, khớp theo giờ) không mất khi lưu lại dữ liệu, kẻo KTV tự giải phóng
+	old_params = frappe.parse_json(doc.params) if doc.params else []
+	parameters, missing, review = (
+		[],
+		[],
+		bool(cint(doc.needs_review) and not cycle_defaults.outside_names(old_params)),
+	)
 	for schema in cycle_defaults.parameter_schema(doc.program):
 		value = _number(given.get(schema.parameter_name))
 		if value is None:

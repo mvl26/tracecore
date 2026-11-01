@@ -3,8 +3,8 @@
 Lớp mỏng trên `tracecore.reprocessing.releasing`, theo khuôn `v1.wash` (kết luận lô): phiên thẻ nhân viên
 (`station_session`, token trong body) → `@idempotent` → kiểm định dạng tham số (400) → gọi dịch vụ. Từ chối nghiệp vụ
 (`BlockedError`) thành ``{"ok": false, "error": {...}}`` kèm mã HTTP và Audit Log `Reject`. Trạm do dịch vụ kiểm (T5 hoặc
-trạm khu cửa ra của máy, FR-M2-11.9). Giải phóng nhận `pin_proof` của R02 (`v1.station.verify_pin`) trên phiên hiện tại;
-R01 giải phóng khẩn thêm `emergency_reason`.
+trạm khu cửa ra của máy, FR-M2-11.9). Giải phóng theo A-106: trong dải không cần PIN; ngoài dải R01 gửi `pin_proof`
+(`v1.station.verify_pin`) trên phiên hiện tại và `out_of_range_reason`; R01 giải phóng khẩn gửi `pin_proof`, `emergency_reason`.
 """
 
 import frappe
@@ -67,8 +67,18 @@ def context(
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RELEASE_ROLES)
 @idempotent
-def cycle_result(load, equipment_raw, load_raw, result, confirmed, station, client_ts=None, token=None):
-	"""Ghi kết quả chu trình Đạt/Không đạt (nhập tay có xác nhận, FR-M2-11.3)."""
+def cycle_result(
+	load,
+	equipment_raw,
+	load_raw,
+	result,
+	confirmed,
+	station,
+	accept_out_of_range=0,
+	client_ts=None,
+	token=None,
+):
+	"""Ghi kết quả chu trình Đạt/Không đạt (nhập tay có xác nhận, FR-M2-11.3); Đạt ngoài dải cần lựa chọn Vẫn chấp nhận (A-106)."""
 	require_any_role(*RELEASE_ROLES)
 	load, equipment_raw, load_raw = _scans(load, equipment_raw, load_raw)
 	result = _required_str(result, "result")
@@ -88,6 +98,7 @@ def cycle_result(load, equipment_raw, load_raw, result, confirmed, station, clie
 				_flag(confirmed),
 				employee=_employee(),
 				client_ts=timestamp,
+				accept_out_of_range=_flag(accept_out_of_range),
 			),
 		},
 		ref_doctype,
@@ -159,14 +170,16 @@ def release(
 	pin_proof=None,
 	review_confirmed=0,
 	emergency_reason=None,
+	out_of_range_reason=None,
 	client_ts=None,
 	token=None,
 ):
-	"""Giải phóng mẻ (R02 + PIN proof; R01 kèm lý do khẩn): Đã giải phóng hoặc Cách ly chờ BI (FR-M2-11.4, FR-M2-12)."""
+	"""Giải phóng mẻ theo quy tắc A-106: Đã giải phóng hoặc Cách ly chờ BI (FR-M2-11.4, FR-M2-12)."""
 	require_any_role(*RELEASE_ROLES)
 	load, equipment_raw, load_raw = _scans(load, equipment_raw, load_raw)
 	pin_proof = _optional_str(pin_proof, "pin_proof")
 	emergency_reason = _optional_str(emergency_reason, "emergency_reason")
+	out_of_range_reason = _optional_str(out_of_range_reason, "out_of_range_reason")
 	timestamp = parse_client_ts(client_ts)
 	session = current_station_session()
 	ref_doctype, ref_name = _load_ref(load)
@@ -185,6 +198,7 @@ def release(
 				review_confirmed=_flag(review_confirmed),
 				emergency_reason=emergency_reason,
 				client_ts=timestamp,
+				out_of_range_reason=out_of_range_reason,
 			),
 		},
 		ref_doctype,

@@ -637,7 +637,7 @@ def submit(issue_note, station, approver_proof=None, session=None, client_ts=Non
 			}
 		)
 		doc.flags.tc_issuing = True
-		doc.flags.ignore_permissions = True  # người cấp đã qua phiên trạm và role R06 ở tầng RPC
+		doc.flags.ignore_permissions = True  # người cấp đã qua phiên trạm và role cấp phát ở tầng RPC
 		doc.submit()
 		_log_par(doc, current["par"], approved_by, station, client_ts)
 	except Exception:

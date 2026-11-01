@@ -17,6 +17,8 @@ const stub = () => new Proxy(function () {}, {
 });
 const sandbox = {
 	console,
+	performance,
+	crypto: require("crypto").webcrypto,
 	URLSearchParams,
 	addEventListener: () => {},
 	setTimeout: () => 0,
@@ -66,6 +68,7 @@ function element() {
 	};
 }
 sandbox.element = element;
+sandbox.stub = stub;
 """
 
 

@@ -60,6 +60,8 @@ class T5Release {
 			pin: "",
 			review: false,
 			reason: "",
+			accept: false, // Vẫn chấp nhận Đạt khi ngoài dải (A-106)
+			outOfRangeReason: "",
 			redo: "T4",
 			reject: "",
 		};
@@ -322,7 +324,7 @@ class T5Release {
 		this.openLoad(reason);
 	}
 
-	// Tham số ngoài dải của mẻ đang mở: chặn kết quả Đạt, server kiểm lại (A-89)
+	// Tham số ngoài dải của mẻ đang mở: Đạt chỉ qua Vẫn chấp nhận, server kiểm lại (A-89, A-106)
 	outsideNames() {
 		return ((this.ctx && this.ctx.params) || [])
 			.filter((row) => row.outside_range)
@@ -337,9 +339,22 @@ class T5Release {
 				action: __("Choose Pass or Fail, tick the confirmation, then record the result."),
 			});
 		}
+		if (this.form.result === "Pass" && this.outsideNames().length && !this.form.accept) {
+			return this.blocked({
+				title: __("A Pass needs a deliberate choice"),
+				reason: __("Values outside the program range: {0}.", [
+					this.outsideNames().join(", "),
+				]),
+				action: __("Tick Accept anyway, correct the cycle data, or record Fail."),
+			});
+		}
 		this.request(
 			T5B_RESULT,
-			this.args({ result: this.form.result, confirmed: this.form.confirmed ? 1 : 0 }),
+			this.args({
+				result: this.form.result,
+				confirmed: this.form.confirmed ? 1 : 0,
+				accept_out_of_range: this.form.accept ? 1 : 0,
+			}),
 			() => this.afterWrite(__("Cycle result recorded"))
 		);
 	}
@@ -383,10 +398,8 @@ class T5Release {
 		if (!/^\d{6}$/.test(pin)) {
 			this.blocked({
 				title: __("PIN is required"),
-				reason: __("Only R02 releases a load with the PIN; R01 releases in an emergency."),
-				action: __(
-					"R02 signs in with the card at this station and enters the 6-digit PIN."
-				),
+				reason: __("This release needs the PIN of the person signed in at this station."),
+				action: __("Enter the 6-digit PIN."),
 			});
 			return null;
 		}
@@ -409,44 +422,50 @@ class T5Release {
 
 	async release() {
 		if (this.busy) return;
-		const proof = await this.verifiedProof();
-		if (!proof) return;
-		this.request(
-			T5B_RELEASE,
-			this.args({
-				pin_proof: proof,
-				review_confirmed: this.form.review ? 1 : 0,
-				emergency_reason: this.form.reason || "",
-			}),
-			(res) => {
-				this.closeLoad();
-				if (res.status === "Quarantine") {
-					// A-103: mẻ có BI sang thẳng bước Đọc BI của đúng mẻ, không quét lại
-					this.mode = "bi";
-					this.biLoad = res.load;
-					this.biResult = "";
-					this.biManual = __("Load known from the previous step, no scan");
-					this.notice = {
-						variant: "ok",
-						title: __(
-							"Load {0} is in quarantine until the biological indicator is read",
-							[res.load]
-						),
-						reason: __("{0} set(s) updated.", [(res.sets || []).length]),
-					};
-					this.back.loadQueues(true);
-					return this.show();
-				}
-				this.back.goStep(1, {
-					notice: {
-						variant: "ok",
-						title: __("Load {0} released", [res.load]),
-						reason: __("{0} set(s) updated.", [(res.sets || []).length]),
-						action: __("The packs can now go to the sterile store."),
-					},
+		const extra = { review_confirmed: this.form.review ? 1 : 0 };
+		if (this.releaseRule() === "head") {
+			if (!(this.form.outOfRangeReason || "").trim()) {
+				return this.blocked({
+					title: __("Reason is required"),
+					reason: __("A reason is required to accept cycle data outside the range."),
+					action: __("Enter the reason, then release the load."),
 				});
 			}
-		);
+			extra.pin_proof = await this.verifiedProof();
+			if (!extra.pin_proof) return;
+			extra.out_of_range_reason = this.form.outOfRangeReason;
+		} else if (this.emergencyAllowed() && (this.form.reason || "").trim()) {
+			extra.pin_proof = await this.verifiedProof();
+			if (!extra.pin_proof) return;
+			extra.emergency_reason = this.form.reason;
+		}
+		this.request(T5B_RELEASE, this.args(extra), (res) => {
+			this.closeLoad();
+			if (res.status === "Quarantine") {
+				// A-103: mẻ có BI sang thẳng bước Đọc BI của đúng mẻ, không quét lại
+				this.mode = "bi";
+				this.biLoad = res.load;
+				this.biResult = "";
+				this.biManual = __("Load known from the previous step, no scan");
+				this.notice = {
+					variant: "ok",
+					title: __("Load {0} is in quarantine until the biological indicator is read", [
+						res.load,
+					]),
+					reason: __("{0} set(s) updated.", [(res.sets || []).length]),
+				};
+				this.back.loadQueues(true);
+				return this.show();
+			}
+			this.back.goStep(1, {
+				notice: {
+					variant: "ok",
+					title: __("Load {0} released", [res.load]),
+					reason: __("{0} set(s) updated.", [(res.sets || []).length]),
+					action: __("The packs can now go to the sterile store."),
+				},
+			});
+		});
 	}
 
 	rejectLoad() {
@@ -522,7 +541,7 @@ class T5Release {
 				this.back.openDailyTest();
 				if (this.back.dailyTestScreen) this.back.dailyTestScreen.back = this;
 			},
-			"t5-label-pdf-retry": () => this.back.printLabelPdf(),
+			"t5-label-pdf": () => this.back.printLabelPdf(),
 			"t5b-pick": () => this.pickLoad(data.load, data.equipment),
 			"t5b-open-data": () => {
 				if (this.busy || !this.ctx) return;
@@ -534,7 +553,6 @@ class T5Release {
 			},
 			"t5b-refresh": () => this.openLoad(),
 			"t5b-result": () => {
-				if (data.value === "Pass" && this.outsideNames().length) return;
 				this.form.result = data.value;
 				this.show();
 			},
@@ -594,6 +612,9 @@ class T5Release {
 		if (this.station.screen !== this) return;
 		const target = event.target;
 		if (target.dataset.t5bPin !== undefined) this.form.pin = target.value;
+		else if (target.dataset.t5bAccept !== undefined) this.form.accept = target.checked;
+		else if (target.dataset.t5bOutReason !== undefined)
+			this.form.outOfRangeReason = target.value;
 		else if (target.dataset.t5bReason !== undefined) this.form.reason = target.value;
 		else if (target.dataset.t5bRejectReason !== undefined) this.form.reject = target.value;
 		else if (target.dataset.t5bInd) {
@@ -683,12 +704,19 @@ class T5Release {
 				[ctx.load]
 			);
 		if (stage === "failed")
-			return this.canRelease()
+			return this.isSupervisor()
 				? __("Load {0} did not pass: reject the load.", [ctx.load])
 				: __("Load {0} did not pass: finish checking.", [ctx.load]);
 		if (stage === "release")
+			if (this.releaseRule() === "head")
+				return this.canRelease()
+					? __("Load {0}: enter the PIN and the reason, then release the load.", [
+							ctx.load,
+					  ])
+					: __("Load {0} is waiting for the head of KSNK.", [ctx.load]);
+		if (stage === "release")
 			return this.canRelease()
-				? __("Load {0}: enter the PIN, then release the load.", [ctx.load])
+				? __("Load {0}: release the load.", [ctx.load])
 				: __("Load {0} is waiting for release: finish checking.", [ctx.load]);
 		return __("Load {0}: record {1}.", [ctx.load, t5IndicatorLabel(stage)]);
 	}
@@ -1083,16 +1111,21 @@ class T5Release {
 			}
 			${
 				this.outsideNames().length
-					? this.alertHtml({
-							variant: "error",
-							title: __("A Pass cannot be recorded"),
+					? `${this.alertHtml({
+							variant: "warn",
+							title: __("A Pass needs head of KSNK approval"),
 							reason: __("Values outside the program range: {0}.", [
 								this.outsideNames().join(", "),
 							]),
 							action: __(
-								"Correct the cycle data if it was entered wrong; otherwise record Fail."
+								"Correct the cycle data if it was entered wrong, record Fail, or choose Accept anyway."
 							),
-					  })
+					  })}
+					<label class="tc-t2-confirm"><input type="checkbox" class="tc-check" data-t5b-accept${
+						form.accept ? " checked" : ""
+					}><span>${esc(
+							__("Accept anyway: record Pass with values outside the program range.")
+					  )}</span></label>`
 					: ""
 			}
 			${this.passFail("t5b-result", "result", form.result)}
@@ -1117,12 +1150,10 @@ class T5Release {
 	releaseHtml(ctx, missing) {
 		const form = this.form;
 		const review =
-			ctx.needs_review && this.canRelease()
+			ctx.needs_review && this.releaseRule() === "supervisor" && this.isSupervisor()
 				? `<label class="tc-t2-confirm"><input type="checkbox" class="tc-check" data-t5b-review${
 						form.review ? " checked" : ""
-				  }><span>${esc(
-						__("R02 reviewed the parameters outside the program range.")
-				  )}</span></label>`
+				  }><span>${esc(__("The CSSD supervisor reviewed this load."))}</span></label>`
 				: "";
 		const waiting = missing.length
 			? `<p class="tc-t6-hint">${esc(
@@ -1131,16 +1162,21 @@ class T5Release {
 					])
 			  )}</p>`
 			: "";
+		const failed =
+			ctx.cycle_result === "Fail" ||
+			Object.values(ctx.indicator_state || {}).includes("Fail");
+		// mẻ không đạt không giải phóng được: KTV không có nút, chỉ R02, R01 loại mẻ
+		const controls = this.canRelease() && (!failed || this.isSupervisor());
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Release", null, "Sterilization Load"))}</h3>
 			${waiting}${review}
 			${
-				this.canRelease()
+				controls
 					? this.releaseControlsHtml(this.releaseReady(ctx, missing))
 					: this.releaseElsewhereHtml(missing, ctx)
 			}
 		</section>
-		${this.canRelease() ? this.rejectHtml() : ""}`;
+		${this.isSupervisor() ? this.rejectHtml() : ""}`;
 	}
 
 	releaseReady(ctx, missing) {
@@ -1183,10 +1219,32 @@ class T5Release {
 		</section>`;
 	}
 
-	// Cùng quy tắc với `releasing._approver`: chỉ phiên có role R02 hoặc R01 mới giải phóng được
-	canRelease() {
-		const roles = (this.station.session && this.station.session.roles) || [];
+	sessionRoles() {
+		return (this.station.session && this.station.session.roles) || [];
+	}
+
+	isSupervisor() {
+		const roles = this.sessionRoles();
 		return roles.includes("TC R02") || roles.includes("TC R01");
+	}
+
+	// Quy tắc máy chủ tính (`releasing.release_rule`, A-106): technician | supervisor | head
+	releaseRule() {
+		const ctx = this.ctx || {};
+		return ctx.release_rule || (ctx.needs_review ? "supervisor" : "technician");
+	}
+
+	emergencyAllowed() {
+		const roles = this.sessionRoles();
+		return roles.includes("TC R01") && !roles.includes("TC R02");
+	}
+
+	canRelease() {
+		const roles = this.sessionRoles();
+		const rule = this.releaseRule();
+		if (rule === "head") return roles.includes("TC R01");
+		if (rule === "supervisor") return this.isSupervisor();
+		return this.isSupervisor() || roles.includes("TC R05");
 	}
 
 	releaseElsewhereHtml(missing, ctx = {}) {
@@ -1196,6 +1254,19 @@ class T5Release {
 		const failed =
 			ctx.cycle_result === "Fail" ||
 			Object.values(ctx.indicator_state || {}).includes("Fail");
+		if (failed && this.isSupervisor()) return "";
+		if (!failed && this.releaseRule() === "head") {
+			return this.alertHtml({
+				variant: "warn",
+				title: __(
+					"Head of KSNK approval is needed because the cycle data is outside the range: {0}",
+					[(ctx.out_of_range_names || this.outsideNames()).join(", ")]
+				),
+				action: __(
+					"The head of KSNK signs in with the card at this station, enters the PIN and the reason."
+				),
+			});
+		}
 		if (failed) {
 			return `${this.alertHtml({
 				variant: "warn",
@@ -1239,18 +1310,39 @@ class T5Release {
 		});
 	}
 
-	releaseControlsHtml(ready = true) {
+	pinFieldHtml(hint) {
 		return `<div class="tc-field">
-				<label for="tc-t5b-pin">${esc(__("R02 PIN"))}</label>
+				<label for="tc-t5b-pin">${esc(__("PIN"))}</label>
 				<input id="tc-t5b-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" data-t5b-pin value="">
-				<p class="tc-hint">${esc(
-					__("R02 signs in with the card at this station and enters the 6-digit PIN.")
-				)}</p>
-			</div>
+				<p class="tc-hint">${esc(hint)}</p>
+			</div>`;
+	}
+
+	releaseControlsHtml(ready = true) {
+		let fields = "";
+		if (this.releaseRule() === "head") {
+			fields = `${this.alertHtml({
+				variant: "warn",
+				title: __("Cycle data outside the program range: {0}", [
+					this.outsideNames().join(", "),
+				]),
+				action: __("Your PIN and reason are recorded as the approval of this load."),
+			})}
 			<div class="tc-field">
+				<label for="tc-t5b-out-reason">${esc(__("Reason for accepting the values"))}</label>
+				<textarea id="tc-t5b-out-reason" rows="2" data-t5b-out-reason>${esc(
+					this.form.outOfRangeReason
+				)}</textarea>
+			</div>
+			${this.pinFieldHtml(__("Enter your 6-digit PIN."))}`;
+		} else if (this.emergencyAllowed()) {
+			fields = `<div class="tc-field">
 				<label for="tc-t5b-reason">${esc(__("Emergency release reason (R01 only)"))}</label>
 				<textarea id="tc-t5b-reason" rows="2" data-t5b-reason>${esc(this.form.reason)}</textarea>
 			</div>
+			${this.pinFieldHtml(__("An emergency release skips the BI wait and needs your PIN."))}`;
+		}
+		return `${fields}
 			<div class="tc-actions"><button type="button" class="tc-btn ${
 				ready ? "tc-btn-primary" : "tc-btn-secondary"
 			}" data-action="t5b-release">${esc(__("Release the load"))}</button></div>`;

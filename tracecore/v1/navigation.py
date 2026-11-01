@@ -16,7 +16,9 @@ FUNCTION_ROLES = {
 	"STERI_LOAD": {"TC R05"},
 	"STERI_UNLOAD": {"TC R02", "TC R05"},
 	"PUTAWAY": {"TC R06"},
-	"ISSUE": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
+	"ISSUE": {
+		"TC R06"
+	},  # cấp phát do KTV kho vô khuẩn; R07 là đồ vải; R02 mở trạm qua OVERVIEW_ROLES (A-91, A-105)
 	"USE": {"TC R08"},
 	"LINEN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
 	"WASTE": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)

@@ -1157,6 +1157,7 @@ class TraceCoreStation {
 		else if (state.label_error)
 			text = __("Labels of offline packs were not printed: {0}", [state.label_error]);
 		else if (state.label_file) text = __("Label printed to PDF file: {0}", [state.label_file]);
+		else if (state.waiting_labels) text = __("Labels of offline packs are ready to print.");
 		else if (state.conflicts)
 			text = __("Synced · {0} transaction(s) sent to R02 as sync conflicts", [
 				state.conflicts,
@@ -1164,6 +1165,15 @@ class TraceCoreStation {
 		else if (state.synced_at) text = __("All offline transactions are synced");
 		this.syncBar.hidden = !text;
 		this.syncBar.textContent = text;
+		// A-107: nhãn gói phát lại chỉ ra file khi bấm
+		if (state.waiting_labels && !state.queued) {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "tc-btn tc-btn-primary";
+			button.textContent = __("Print {0} waiting label(s)", [state.waiting_labels]);
+			button.addEventListener("click", () => tcSync.printWaitingLabels());
+			this.syncBar.appendChild(button);
+		}
 		this.syncBar.dataset.state = state.conflicts ? "warn" : state.queued ? "queued" : "ok";
 	}
 

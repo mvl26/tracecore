@@ -39,6 +39,7 @@ class T7Issue {
 		this.busy = null;
 		this.queuedScan = null; // mã quét đến khi đang chờ máy chủ: giữ lại, quét sau khi xong
 		this.departments = null;
+		this.departmentsTried = false; // đã tự tải một lần: lỗi thì chờ người dùng bấm Thử lại, show() không tải lại
 		this.context = null; // tồn khoa, cơ số, tồn kho vô khuẩn theo loại bộ của khoa đang chọn
 		this.dept = null;
 		this.issue = null; // phiếu nháp (issuing.view)
@@ -200,6 +201,7 @@ class T7Issue {
 		if (pending)
 			return this.request(pending.method.slice(T7_API.length), pending.args, pending.onOk);
 		this.notice = null;
+		this.departmentsTried = false;
 		this.show();
 	}
 
@@ -472,7 +474,9 @@ class T7Issue {
 
 	loadDepartments() {
 		if (this.busy) return;
+		this.departmentsTried = true;
 		this.request("departments", { station: this.station.station }, (res) => {
+			this.notice = null;
 			this.departments = res.departments;
 			this.show();
 		});
@@ -500,7 +504,7 @@ class T7Issue {
 		if (this.offline && !this.issue) {
 			return this.station.setState("offline", this.offlineHtml());
 		}
-		if (!this.departments && !this.issue && !this.busy) {
+		if (!this.departments && !this.issue && !this.busy && !this.departmentsTried) {
 			this.loadDepartments();
 			return this.station.renderLoading();
 		}
@@ -607,7 +611,13 @@ class T7Issue {
 
 	// ---- chọn khoa ----
 	departmentsHtml() {
-		const list = this.departments || [];
+		if (!this.departments) {
+			// lỗi kỹ thuật đã có Thử lại ở khối lỗi; từ chối nghiệp vụ hoặc thông báo khác đè lên thì vẫn phải tải lại được
+			if (this.busy || (this.notice && this.notice.technical)) return "";
+			return `<p class="tc-hint">${esc(__("The department list could not be loaded."))}</p>
+				<div class="tc-actions">${this.button("retry", __("Retry"), "primary")}</div>`;
+		}
+		const list = this.departments;
 		if (!list.length) {
 			return `<p class="tc-empty">${esc(__("No department is available to issue to."))}</p>`;
 		}

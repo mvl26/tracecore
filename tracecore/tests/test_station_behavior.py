@@ -460,61 +460,117 @@ SCREENS = (
 )
 
 
+TICKS = "for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();"
+
+
 class TestLabelPrintsToPdf(FrappeTestCase):
-	"""A-101: T2, T5, T4 có máy in thì tự lưu PDF nhãn, không gọi Station Agent; không có nút Lưu PDF."""
+	"""A-107: T2, T5, T4 không tự lưu PDF; có máy in thì bấm In nhãn mới lưu, không gọi Station Agent."""
 
 	def run_screen(self, screen, body):
 		name, path, cls, done = screen[:4]
 		return run_js(self, [ERR, path], [[], [cls]], FAKE_STATION + done + PDF_STUBS + body)
 
-	def test_queued_label_is_fetched_saved_once_and_never_sent_to_the_agent(self):
-		for screen in SCREENS:
-			out = self.run_screen(
-				screen,
-				"""
-				await screen.handlePrint(screen.done.print);
-				emit({reads, saved, agent, note: screen.printNoteHtml()});
-				""",
-			)
-			[[method, args]] = out["reads"]
-			self.assertEqual(method, screen[4])
-			self.assertEqual({key: args[key] for key in screen[5]}, screen[5])
-			self.assertEqual(out["saved"], [["JVBERg==", "X.pdf"]])
-			self.assertEqual(out["agent"], [])
-			self.assertIn("tc-alert-ok", out["note"])
-			self.assertIn("Label printed to PDF file: X.pdf", out["note"])
+	def click(self, screen):
+		return f'screen.onAction("{screen[0]}-label-pdf", element()); {TICKS}'
 
-	def test_failure_warns_inline_keeps_the_code_and_retry_saves(self):
+	def test_label_is_not_saved_until_the_button_is_clicked(self):
 		for screen in SCREENS:
-			out = self.run_screen(
-				screen,
-				f"""
-				answer = {{ok: false, error: {{code: "LABEL_PDF_FAILED", reason: "no tool"}}}};
-				await screen.handlePrint(screen.done.print);
-				const failed = screen.printNoteHtml();
-				const savedBefore = saved.length;
-				answer = {{ok: true, pdf_b64: "JVBERg==", filename: "X.pdf", print_job: "PJ-1"}};
-				screen.onAction("{screen[0]}-label-pdf-retry", element());
-				for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();
-				emit({{failed, savedBefore, saved, note: screen.printNoteHtml(), reads: reads.length}});
-				""",
-			)
-			self.assertIn("tc-alert-warn", out["failed"])
-			self.assertIn("no tool", out["failed"])
-			self.assertRegex(out["failed"], rf'data-action="{screen[0]}-label-pdf-retry"')
-			self.assertEqual(out["savedBefore"], 0)
-			self.assertEqual(len(out["saved"]), 1)
-			self.assertIn("tc-alert-ok", out["note"])
-			self.assertEqual(out["reads"], 2)
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					await screen.handlePrint(screen.done.print);
+					const before = {{reads: reads.length, saved: saved.length, note: screen.printNoteHtml()}};
+					{self.click(screen)}
+					emit({{before, reads, saved, agent, note: screen.printNoteHtml()}});
+					""",
+				)
+				self.assertEqual((out["before"]["reads"], out["before"]["saved"]), (0, 0))
+				self.assertIn(f'data-action="{screen[0]}-label-pdf"', out["before"]["note"])
+				self.assertIn("tc-btn-primary", out["before"]["note"])
+				self.assertIn("Print label", out["before"]["note"])
+				[[method, args]] = out["reads"]
+				self.assertEqual(method, screen[4])
+				self.assertEqual({key: args[key] for key in screen[5]}, screen[5])
+				self.assertEqual(out["saved"], [["JVBERg==", "X.pdf"]])
+				self.assertEqual(out["agent"], [])
+				self.assertIn("tc-alert-ok", out["note"])
+				self.assertIn("Label printed to PDF file: X.pdf", out["note"])
+				self.assertIn("Reprint", out["note"])
+				self.assertNotIn("Print label", out["note"])
+
+	def test_plain_reprint_at_t2_and_t5_saves_again(self):
+		for screen in SCREENS[:2]:
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					await screen.handlePrint(screen.done.print);
+					{self.click(screen)}
+					{self.click(screen)}
+					emit({{saved, note: screen.printNoteHtml()}});
+					""",
+				)
+				self.assertEqual(len(out["saved"]), 2)
+				self.assertIn('-label-pdf"', out["note"])
+
+	def test_t4_reprint_asks_the_reason_then_saves(self):
+		out = self.run_screen(
+			SCREENS[2],
+			f"""
+			await screen.handlePrint(screen.done.print);
+			{self.click(SCREENS[2])}
+			let dialog = null;
+			const calls = [];
+			screen.openDialog = (d) => {{ dialog = d; }};
+			screen.request = (method, args, ok) => {{ calls.push([method, args.reason]); return ok({{print: {{status: "Queued", print_job: "PJ-9"}}}}); }};
+			const note = screen.printNoteHtml();
+			screen.onAction("reprint", element());
+			const beforeReason = saved.length;
+			dialog.onSubmit({{reason: "Nhãn rách"}});
+			{TICKS}
+			emit({{note, calls, beforeReason, saved}});
+			""",
+		)
+		self.assertIn('data-action="reprint"', out["note"])
+		self.assertEqual(out["beforeReason"], 1)
+		self.assertEqual(out["calls"], [["tracecore.v1.pack.reprint_label", "Nhãn rách"]])
+		self.assertEqual(len(out["saved"]), 2)
+
+	def test_failure_warns_inline_keeps_the_code_and_the_button_stays(self):
+		for screen in SCREENS:
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					answer = {{ok: false, error: {{code: "LABEL_PDF_FAILED", reason: "no tool"}}}};
+					await screen.handlePrint(screen.done.print);
+					{self.click(screen)}
+					const failed = screen.printNoteHtml();
+					const savedBefore = saved.length;
+					answer = {{ok: true, pdf_b64: "JVBERg==", filename: "X.pdf", print_job: "PJ-1"}};
+					{self.click(screen)}
+					emit({{failed, savedBefore, saved, note: screen.printNoteHtml(), reads: reads.length}});
+					""",
+				)
+				self.assertIn("tc-alert-warn", out["failed"])
+				self.assertIn("no tool", out["failed"])
+				self.assertIn(f'data-action="{screen[0]}-label-pdf"', out["failed"])
+				self.assertIn("Print label", out["failed"])
+				self.assertEqual(out["savedBefore"], 0)
+				self.assertEqual(len(out["saved"]), 1)
+				self.assertIn("tc-alert-ok", out["note"])
+				self.assertEqual(out["reads"], 2)
 
 	def test_network_error_is_a_warning_not_an_exception(self):
 		for screen in SCREENS:
 			out = self.run_screen(
 				screen,
-				"""
+				f"""
 				answer = new Error("boom");
 				await screen.handlePrint(screen.done.print);
-				emit({note: screen.printNoteHtml(), saved});
+				{self.click(screen)}
+				emit({{note: screen.printNoteHtml(), saved}});
 				""",
 			)
 			self.assertIn("net down", out["note"])
@@ -524,11 +580,11 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		for screen in SCREENS:
 			out = self.run_screen(
 				screen,
-				"""
-				answer = Object.assign(new Error("ended"), {sessionEnded: true});
-				screen.printNote = null;
+				f"""
+				answer = Object.assign(new Error("ended"), {{sessionEnded: true}});
 				await screen.handlePrint(screen.done.print);
-				emit({saved});
+				{self.click(screen)}
+				emit({{saved}});
 				""",
 			)
 			self.assertEqual(out["saved"], [])
@@ -545,6 +601,7 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 			)
 			self.assertEqual((out["reads"], out["saved"], out["agent"]), ([], [], []))
 			self.assertIn("No printer r", out["note"])
+			self.assertNotIn("label-pdf", out["note"])
 
 	def test_cards_have_no_label_pdf_button_and_only_the_code(self):
 		for screen in SCREENS[:2]:
@@ -562,18 +619,24 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 			for gone in ("tcCodeWithPdfHtml", "sendToAgent", "8765", "AGENT_URL"):
 				self.assertNotIn(gone, source, msg=f"{path}: {gone}")
 
-	def test_t4_roll_release_makes_one_merged_pdf_call(self):
+	def test_t4_roll_release_waits_for_the_button_then_makes_one_merged_pdf_call(self):
 		out = self.run_screen(
 			SCREENS[2],
-			"""
-			answer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf",
-				print_jobs: ["PJ-1", "PJ-2"], skipped: []};
-			await t4.onRoll({printer: "P", method: "Steam", label_type: "L",
-				released_jobs: [{print_job: "PJ-1", zpl: "z", printer: "P"}, {print_job: "PJ-2", zpl: "z", printer: "P"}],
-				failed_jobs: []}, "CN-00001");
-			emit({reads, saved, agent, notice: t4.notice, note: t4.printNoteHtml()});
+			f"""
+			answer = {{ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf",
+				print_jobs: ["PJ-1", "PJ-2"], skipped: []}};
+			await t4.onRoll({{printer: "P", method: "Steam", label_type: "L",
+				released_jobs: [{{print_job: "PJ-1", zpl: "z", printer: "P"}}, {{print_job: "PJ-2", zpl: "z", printer: "P"}}],
+				failed_jobs: []}}, "CN-00001");
+			const before = {{reads: reads.length, saved: saved.length, html: t4.noticeHtml()}};
+			t4.onAction("t4-roll-pdf", element());
+			{TICKS}
+			emit({{before, reads, saved, agent, notice: t4.notice, note: t4.printNoteHtml()}});
 			""",
 		)
+		self.assertEqual((out["before"]["reads"], out["before"]["saved"]), (0, 0))
+		self.assertIn('data-action="t4-roll-pdf"', out["before"]["html"])
+		self.assertIn("Print 2 waiting label(s)", out["before"]["html"])
 		[[method, args]] = out["reads"]
 		self.assertEqual(method, "tracecore.v1.pack.waiting_labels_pdf")
 		self.assertEqual(args["print_jobs"], ["PJ-1", "PJ-2"])
@@ -583,26 +646,45 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		self.assertIn("labels.pdf", out["notice"]["reason"])
 		self.assertIn("tc-alert-ok", out["note"])
 
-	def test_t4_roll_failure_warns_and_offers_retry(self):
+	def test_t4_roll_failure_warns_and_keeps_the_button(self):
 		out = self.run_screen(
 			SCREENS[2],
-			"""
-			answer = {ok: false, error: {reason: "no tool"}};
-			await t4.onRoll({printer: "P", method: "Steam", label_type: "L",
-				released_jobs: [{print_job: "PJ-1", zpl: "z", printer: "P"}], failed_jobs: []}, "CN-00001");
+			f"""
+			answer = {{ok: false, error: {{reason: "no tool"}}}};
+			await t4.onRoll({{printer: "P", method: "Steam", label_type: "L",
+				released_jobs: [{{print_job: "PJ-1", zpl: "z", printer: "P"}}], failed_jobs: []}}, "CN-00001");
+			t4.onAction("t4-roll-pdf", element());
+			{TICKS}
 			const failed = t4.noticeHtml();
-			answer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []};
-			t4.onAction("t4-roll-pdf-retry", element());
-			for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();
-			emit({failed, reads: reads.length, saved, notice: t4.notice});
+			answer = {{ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []}};
+			t4.onAction("t4-roll-pdf", element());
+			{TICKS}
+			emit({{failed, reads: reads.length, saved, notice: t4.notice}});
 			""",
 		)
 		self.assertIn("tc-alert-warn", out["failed"])
 		self.assertIn("no tool", out["failed"])
-		self.assertIn('data-action="t4-roll-pdf-retry"', out["failed"])
+		self.assertIn('data-action="t4-roll-pdf"', out["failed"])
 		self.assertEqual(out["reads"], 2)
 		self.assertEqual(len(out["saved"]), 1)
 		self.assertEqual(out["notice"]["variant"], "info")
+
+	def test_t5_step_two_load_card_has_the_button(self):
+		out = run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION
+			+ T5_DONE
+			+ PDF_STUBS
+			+ """
+			await screen.handlePrint(screen.done.print);
+			const release = new T5Release(station, screen);
+			release.ctx = null;
+			emit(release.doneHtml());
+			""",
+		)
+		self.assertIn('data-action="t5-label-pdf"', out)
 
 	def test_strings_are_translated(self):
 		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
@@ -611,7 +693,11 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		for text in (
 			"Label printed to PDF file: {0}",
 			"Creating the label PDF...",
-			"Print again",
+			"Print label",
+			"Reprint",
+			"Print {0} waiting label(s)",
+			"{0} waiting label(s) ready to print.",
+			"Labels of offline packs are ready to print.",
 			"Label PDF was not created; code {0} is kept.",
 			"Created {0} waiting label(s) in one PDF file: {1}",
 			"{0} waiting label(s) have no PDF yet.",
@@ -649,41 +735,43 @@ class TestReplayedLabels(FrappeTestCase):
 	def run_outbox(self, body):
 		return run_js(self, ["public/js/tc_outbox.js"], [["tcSync", "TcOutbox"]], OUTBOX_STUBS + body)
 
-	def test_one_pdf_for_the_whole_replay_pass(self):
+	def test_replay_saves_nothing_until_the_button_then_one_pdf(self):
 		out = self.run_outbox(
 			"""
 			entries.push(entry("PJ-1"), entry("PJ-2"));
 			await tcSync.replayAll();
-			emit({posts, saved, state: tcSync.state});
+			const before = {posts: posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length,
+				saved: saved.length, waiting: tcSync.state.waiting_labels};
+			await tcSync.printWaitingLabels();
+			emit({before, posts, saved, state: tcSync.state});
 			"""
 		)
+		self.assertEqual(out["before"], {"posts": 0, "saved": 0, "waiting": 2})
 		pdf_calls = [post for post in out["posts"] if post[0].endswith("waiting_labels_pdf")]
 		self.assertEqual(len(pdf_calls), 1)
 		self.assertEqual(pdf_calls[0][1]["print_jobs"], ["PJ-1", "PJ-2"])
 		self.assertEqual((pdf_calls[0][1]["station"], pdf_calls[0][1]["token"]), ("TR-4", "tok"))
 		self.assertEqual(out["saved"], [["JVBERg==", "labels.pdf"]])
 		self.assertEqual(out["state"]["label_file"], "labels.pdf")
+		self.assertEqual(out["state"]["waiting_labels"], 0)
 		self.assertFalse(any("8765" in post[0] for post in out["posts"]))
 
-	def test_failure_retries_on_the_next_pass_then_reports(self):
+	def test_failure_keeps_the_labels_for_the_next_click(self):
 		out = self.run_outbox(
 			"""
 			entries.push(entry("PJ-1"));
 			pdfAnswer = {ok: false, error: {reason: "no tool"}};
 			await tcSync.replayAll();
-			const first = tcSync.state.label_error;
-			await tcSync.replayAll();
-			await tcSync.replayAll();
-			const count = posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length;
-			await tcSync.replayAll();
-			const after = posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length;
-			emit({first, count, after, saved});
+			await tcSync.printWaitingLabels();
+			const failed = {error: tcSync.state.label_error, waiting: tcSync.state.waiting_labels};
+			pdfAnswer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []};
+			await tcSync.printWaitingLabels();
+			emit({failed, saved, waiting: tcSync.state.waiting_labels});
 			"""
 		)
-		self.assertEqual(out["first"], "no tool")
-		self.assertEqual(out["count"], 3)
-		self.assertEqual(out["after"], 3)  # hết lượt thử: nhãn nằm lại Print Job Queued, không gọi mãi
-		self.assertEqual(out["saved"], [])
+		self.assertEqual(out["failed"], {"error": "no tool", "waiting": 1})
+		self.assertEqual(len(out["saved"]), 1)
+		self.assertEqual(out["waiting"], 0)
 
 
 class TestScanShell(FrappeTestCase):
@@ -740,42 +828,36 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			const station = makeStation();
 			station.session = {{token: "tok", roles: {roles!r}}};
 			const screen = new T5Release(station, {{}});
-			emit(screen.releaseHtml({{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}}, {list(missing)!r}));
+			screen.ctx = {{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}};
+			emit(screen.releaseHtml(screen.ctx, {list(missing)!r}));
 			""",
 		)
 
-	def test_technician_sees_the_message_and_no_release_controls(self):
-		for roles in (["TC R05"], []):  # [] : System Manager không có role TC, server cũng từ chối
-			with self.subTest(roles=roles):
-				html = self.html(roles, missing=["cycle_result"])
-				self.assertIn("A CSSD supervisor must release the load", html)
-				self.assertIn(
-					"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN.",
-					html,
-				)
-				self.assertIn("tc-alert-info", html)
-				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release", "t5b-reject"):
-					self.assertNotIn(hidden, html)
-				self.assertNotRegex(html, r"R0\d")
+	def test_role_without_release_right_sees_the_message_and_no_controls(self):
+		html = self.html([], missing=["cycle_result"])  # System Manager không có role TC, server cũng từ chối
+		self.assertIn("A CSSD supervisor must release the load", html)
+		self.assertIn("tc-alert-info", html)
+		for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release", "t5b-reject"):
+			self.assertNotIn(hidden, html)
+		self.assertNotRegex(html, r"R0\d")
 
-	def test_r02_and_r01_keep_pin_reason_and_button(self):
-		for role in ("TC R02", "TC R01"):
+	def test_in_range_technician_and_r02_release_without_pin(self):
+		for role in ("TC R05", "TC R02"):
 			with self.subTest(role=role):
 				html = self.html([role])
-				for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
-					self.assertIn(shown, html)
-				self.assertNotIn("A CSSD supervisor must release the load", html)
+				self.assertIn('data-action="t5b-release"', html)
+				self.assertIn('tc-btn-primary" data-action="t5b-release"', html)
+				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-finish", "must release the load"):
+					self.assertNotIn(hidden, html)
 
-	def test_technician_gets_a_finish_button_when_nothing_is_missing(self):
-		html = self.html(["TC R05"])
-		self.assertIn('data-action="t5b-finish"', html)
-		self.assertIn("Checks are finished", html)
+	def test_technician_cannot_reject_but_the_supervisor_can(self):
+		self.assertNotIn("t5b-reject", self.html(["TC R05"]))
+		self.assertIn("t5b-reject", self.html(["TC R02"]))
 
-	def test_no_finish_button_while_something_is_missing_or_for_the_supervisor(self):
-		missing = self.html(["TC R05"], missing=["cycle_result"])
-		self.assertNotIn("t5b-finish", missing)
-		self.assertIn("A CSSD supervisor must release the load", missing)
-		self.assertNotIn("t5b-finish", self.html(["TC R02"]))
+	def test_r01_alone_can_add_an_emergency_reason_with_pin(self):
+		html = self.html(["TC R01"])
+		for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
+			self.assertIn(shown, html)
 
 	def test_finish_closes_the_load_and_says_it_waits_for_release(self):
 		out = run_js(
@@ -1960,20 +2042,22 @@ class TestT5StepFlow(FrappeTestCase):
 			release.onAction("t5b-release", {dataset: {}});
 			await flush();
 			const sent = station.calls.find((call) => call.method === "tracecore.v1.release.release");
-			emit({step: stepOf(station.html), html: station.html, onLoad: station.screen === t5, proof: sent.args.pin_proof});
+			emit({step: stepOf(station.html), html: station.html, onLoad: station.screen === t5, proof: sent.args.pin_proof || null});
 			""",
 		)
 		self.assertEqual(out["step"], 1)
 		self.assertTrue(out["onLoad"])
-		self.assertEqual(out["proof"], "PROOF")  # PIN R02 đổi thành proof như cũ
+		self.assertIsNone(out["proof"])  # A-106: trong dải không cần PIN
 		self.assertIn("released", out["html"])
 
 	def test_technician_waits_at_step_two_then_finish_returns_to_step_one(self):
+		# A-106: chỉ còn với mẻ Cần xem xét do sự cố máy
 		out = t5_run(
 			self,
 			"""
 			const {station, t5} = flow({roles: ["TC R05"],
-				ctx: context({data_complete: 1, cycle_result: "Pass", missing: [], status: "Cycle Complete"})});
+				ctx: context({data_complete: 1, cycle_result: "Pass", missing: [], status: "Cycle Complete",
+					needs_review: 1, release_rule: "supervisor"})});
 			t5.stepSettled = true;
 			t5.goStep(2, {load: LOAD, equipment: MACHINE});
 			await flush();
@@ -2317,3 +2401,190 @@ class TestT5StepTranslations(FrappeTestCase):
 			with open(frappe.get_app_path("tracecore", *path.split("/")), encoding="utf-8") as handle:
 				sources = re.findall(r'__\(\s*"((?:[^"\\]|\\.)*)"', handle.read())
 			self.assertEqual([text for text in sources if text not in known], [], path)
+
+
+# Mọi màn trạm tự tải dữ liệu khi mở: (file, tên lớp). LinenIssue kế thừa LinenCollect nên nạp sau.
+LOAD_SCREENS = [
+	("public/js/station_t4.js", "T4Packing"),
+	("public/js/station_t2.js", "T2Wash"),
+	("public/js/station_t1.js", "T1Receiving"),
+	("public/js/station_t3.js", "T3Assembly"),
+	("public/js/station_t5.js", "T5Load"),
+	("public/js/station_t5b.js", "T5Release"),
+	("public/js/station_daily_test.js", "DailyTestScreen"),
+	("public/js/station_t6.js", "T6Storage"),
+	("public/js/station_t7.js", "T7Issue"),
+	("public/js/station_t8.js", "T8Usage"),
+	("public/js/tc_weigh_line.js", None),
+	("public/js/station_linen.js", "LinenCollect"),
+	("public/js/station_laundry.js", "LaundryBatch"),
+	("public/js/station_linen_issue.js", "LinenIssue"),
+	("public/js/station_waste.js", "WasteCollect"),
+	("public/js/station_waste_store.js", "WasteStore"),
+	("public/js/station_waste_handover.js", "WasteHandoverScreen"),
+]
+# Máy chủ trả lỗi cố định; đo số lần gọi của từng RPC và màn cuối cùng sau khi mọi promise đã xong
+FAILING_STATION = """
+// station.js dùng frappe.utils.escape_html (stub trong harness): đọc được chữ trên màn
+globalThis.esc = (value) => String(value === null || value === undefined ? "" : value);
+const settle = async () => { for (let i = 0; i < 400; i++) await null; };
+const failingStation = (failure) => {
+	const calls = {};
+	const states = [];
+	const base = {
+		result: element(), input: element(), form: element(), banner: element(), root: element(),
+		session: {roles: ["TC R02"], token: "t"}, sessionVersion: 1, station: "TR-007",
+		listen() {}, isOffline: () => false, focus() {}, setOffline() {},
+		setState(state, html) { states.push({state, html}); },
+		renderLoading() { states.push({state: "loading", html: ""}); },
+		businessButtons: () => "",
+		failureCause: () => "Cause: refused by the server",
+		calls, states,
+		rpc(method) {
+			calls[method] = (calls[method] || 0) + 1;
+			// vòng lặp thật không bao giờ dừng: ngắt để test báo fail thay vì treo Node
+			if (calls[method] > 20) return new Promise(() => {});
+			return failure.body ? Promise.resolve(failure.body) : Promise.reject(failure.error);
+		},
+	};
+	base.rpcRead = base.rpc;
+	return new Proxy(base, { get: (t, key) => (key in t ? t[key] : stub()) });
+};
+const openScreen = async (Screen, failure) => {
+	const station = failingStation(failure);
+	const screen = new Screen(station);
+	screen.show();
+	await settle();
+	const last = station.states[station.states.length - 1] || {};
+	return {calls: station.calls, state: last.state, html: last.html || ""};
+};
+"""
+FAILURES = {
+	"403": "{error: {status: 403}}",
+	"500": "{error: {status: 500}}",
+	"refused": """{body: {ok: false, error: {code: "X", title: "Refused", reason: "Refused by rule", action: "Ask"}}}""",
+}
+
+
+class TestLoadFailureDoesNotLoop(FrappeTestCase):
+	"""Lỗi tải khi mở màn: đúng một lần gọi mỗi RPC, không tự tải lại từ show() (T7 từng gọi >1500 lần trong 7 giây)."""
+
+	def open_all(self, failure):
+		files = ["ui/page/station/station.js", ERR, *[path for path, _name in LOAD_SCREENS]]
+		names = [[], [], *[[name] if name else [] for _path, name in LOAD_SCREENS]]
+		classes = ", ".join(f"{name}: {name}" for _path, name in LOAD_SCREENS if name)
+		return run_js(
+			self,
+			files,
+			names,
+			FAILING_STATION
+			+ f"""
+			const screens = {{{classes}}};
+			const out = {{}};
+			for (const [name, Screen] of Object.entries(screens)) out[name] = await openScreen(Screen, {failure});
+			emit(out);
+			""",
+		)
+
+	def test_each_screen_calls_each_rpc_once_after_a_failed_load(self):
+		for label, failure in FAILURES.items():
+			out = self.open_all(failure)
+			self.assertEqual({name for _path, name in LOAD_SCREENS if name}, set(out))
+			for name, seen in out.items():
+				for method, count in seen["calls"].items():
+					# T5 đọc hai danh sách mẻ bằng một RPC (dỡ mẻ, BI)
+					limit = 2 if method == "tracecore.v1.lookup.batches" else 1
+					with self.subTest(failure=label, screen=name, method=method):
+						self.assertLessEqual(count, limit)
+
+	def test_t7_shows_the_cause_and_a_retry_button_inline(self):
+		for label, reason in (("403", "cannot issue packs"), ("500", "could not process")):
+			seen = self.open_all(FAILURES[label])["T7Issue"]
+			with self.subTest(failure=label):
+				self.assertEqual(seen["state"], "error")
+				self.assertIn(reason, seen["html"])
+				self.assertIn('data-action="retry"', seen["html"])
+
+	def test_t7_retry_loads_once_more_and_recovers(self):
+		out = run_js(
+			self,
+			[ERR, "public/js/station_t7.js"],
+			[[], ["T7Issue"]],
+			FAILING_STATION
+			+ """
+			const failure = {error: {status: 403}};
+			const station = failingStation(failure);
+			const t7 = new T7Issue(station);
+			t7.show();
+			await settle();
+			const first = station.calls["tracecore.v1.issue.departments"];
+			failure.error = null;
+			failure.body = {ok: true, departments: [{name: "K1", department_name: "Khoa 1", shortage: []}]};
+			t7.retry();
+			await settle();
+			const last = station.states[station.states.length - 1];
+			emit({first, second: station.calls["tracecore.v1.issue.departments"], state: last.state, html: last.html});
+			""",
+		)
+		self.assertEqual(out["first"], 1)
+		self.assertEqual(out["second"], 2)
+		self.assertEqual(out["state"], "result")
+		self.assertIn('data-dept="K1"', out["html"])
+
+	def test_t7_failed_list_never_claims_there_are_no_departments(self):
+		seen = self.open_all(FAILURES["500"])["T7Issue"]
+		self.assertNotIn("No department is available", seen["html"])
+
+	def test_t2_failed_overview_says_why_and_offers_reload(self):
+		seen = self.open_all(FAILURES["403"])["T2Wash"]
+		self.assertIn("Cause: refused by the server", seen["html"])
+		self.assertIn('data-action="t2-overview-retry"', seen["html"])
+
+
+class TestT5OutOfRangeScreen(FrappeTestCase):
+	"""A-106: màn T5 theo quy tắc máy chủ trả về; T2 giữ nguyên."""
+
+	def render(self, roles, **ctx):
+		return run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION
+			+ f"""
+			const station = makeStation();
+			station.session = {{token: "tok", roles: {roles!r}}};
+			const screen = new T5Release(station, {{}});
+			screen.ctx = Object.assign({{load: "ME-1", data_complete: 1, cycle_result: "Pass", missing: [],
+				indicator_state: {{}}, params: [{{parameter_name: "Temperature", value: 150, outside_range: 1}}],
+				out_of_range_names: ["Temperature"], release_rule: "head"}}, {ctx!r});
+			emit(screen.releaseHtml(screen.ctx, []));
+			""",
+		)
+
+	def test_r02_and_technician_see_why_and_cannot_release(self):
+		for role in ("TC R02", "TC R05"):
+			with self.subTest(role=role):
+				html = self.render([role])
+				self.assertIn("Head of KSNK approval is needed", html)
+				self.assertIn("Temperature", html)
+				self.assertNotIn("t5b-release", html)
+				self.assertNotIn("tc-t5b-pin", html)
+
+	def test_r01_gets_pin_reason_and_button(self):
+		html = self.render(["TC R01"])
+		for shown in ("tc-t5b-pin", "tc-t5b-out-reason", 'data-action="t5b-release"'):
+			self.assertIn(shown, html)
+
+	def test_form_messages_differ_between_t5_and_t2(self):
+		read = lambda path: open(frappe.get_app_path("tracecore", path), encoding="utf-8").read()  # noqa: E731
+		self.assertIn("a Pass needs head of KSNK approval", read(T5))
+		self.assertNotIn("a Pass is not allowed", read(T5))
+		self.assertIn("a Pass is not allowed", read(T2))
+
+	def test_vi_message_names_the_head(self):
+		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
+		rows = {row[0]: row[1] for row in csv.reader(open(path, encoding="utf-8")) if len(row) > 1}
+		self.assertEqual(
+			rows["Head of KSNK approval is needed because the cycle data is outside the range: {0}"],
+			"Cần trưởng khoa duyệt vì dữ liệu chu trình ngoài dải: {0}",
+		)
