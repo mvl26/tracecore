@@ -51,7 +51,7 @@ function screen() {{
 	const input = {{ setAttribute() {{}}, value: '' }};
 	const station = {{
 		result: {{ querySelector: () => null, dataset: {{}} }}, input, listen() {{}}, session: {{}}, sessionVersion: 1,
-		station: 'TR-LIN', focus() {{}}, form: {{ classList: {{ toggle() {{}} }} }},
+		station: 'TR-LIN', focus() {{}}, form: {{ classList: {{ toggle() {{}} }} }}, businessButtons: () => '',
 		setState(state, html) {{ station.state = state; station.html = html; }}, renderLoading() {{}},
 		rpc: async (method, args, key) => {{ calls.push({{ method, args, key }}); return {{ ok: true, issue: {{ lines: [], balance: [] }} }}; }},
 	}};

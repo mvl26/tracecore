@@ -10,7 +10,8 @@ import re
 from playwright.sync_api import expect
 
 SCAN_INPUT = "#tc-scan-input"
-LIST_ROWS = ".tc-t1 .tc-t2-table tbody tr"
+# danh sách bộ của phiếu đang mở: không tính bảng dòng BOM của bộ đang kiểm và bảng phiếu hôm nay
+LIST_ROWS = ".tc-t1 :not(.tc-t1-today) > .tc-t2-table:not(.tc-t1-lines) tbody tr"
 
 
 def scan(page, raw):
@@ -198,11 +199,12 @@ def test_t1_pda_viewport_reminds_before_confirming_an_unchecked_set(t1_pda_page,
 	small = [font for font in measured["fonts"] if font["size"] < 16]
 	assert not small, small[:5]
 
-	# còn dòng chưa tick và không ghi chú: nhắc trước khi cho xác nhận (FR-M2-23.6), xác nhận vẫn được
+	# dòng lệch số BOM và không ghi chú: nhắc trước khi cho xác nhận (FR-M2-23.6, A-94), xác nhận vẫn được
+	page.locator(".tc-t1-item .tc-t1-actual").nth(0).fill("0")
 	page.locator("[data-action='confirm-set']").click()
 	reminder = page.locator(".tc-t1 .tc-alert-warn")
 	expect(reminder).to_be_visible()
-	expect(reminder.locator(".tc-alert-items li")).to_have_count(4)
+	expect(reminder.locator(".tc-alert-items li")).to_have_count(1)
 	expect(page.locator(LIST_ROWS).filter(has_text="Đã xác nhận")).to_have_count(0)
 	page.locator("[data-action='confirm-anyway']").click()
 	expect(page.locator(".tc-t1 .tc-loading")).to_have_count(0, timeout=15000)

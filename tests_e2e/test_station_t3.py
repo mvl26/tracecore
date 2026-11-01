@@ -155,7 +155,7 @@ def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo,
 	page.locator("#tc-t3-pin").fill(t3_r02["pin"])
 	page.locator("[data-action='t3-confirm-save']").click()
 	expect(page.locator(".tc-t3 [data-region='notice'] .tc-alert-ok")).to_contain_text(
-		"R02 đã xác nhận thiếu", timeout=15000
+		"Giám sát CSSD đã xác nhận thiếu", timeout=15000
 	)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	submit = page.locator("[data-action='t3-submit']")

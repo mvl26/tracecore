@@ -220,7 +220,7 @@ def test_t2_close_requires_clean_test_and_confirm_tick_then_fail_returns_all_set
 	verdict.locator("[data-action='t2-record']").click()
 	summary = page.locator(".tc-t2-result[data-result='Fail']")
 	expect(summary).to_be_visible(timeout=15000)
-	expect(summary).to_contain_text("FEAT-030")
+	expect(summary).to_contain_text("phiếu không phù hợp")
 	expect(summary.locator("tbody tr")).to_have_count(len(t2_demo["sets"]))
 	expect(summary).to_contain_text("Xử lý lại")
 

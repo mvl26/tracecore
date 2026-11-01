@@ -50,7 +50,7 @@ def assert_full_alert(alert):
 def test_t6_scan_box_on_top_with_stock_by_location_and_expiring(t6_page, t6_demo):
 	page = t6_page
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("Cycle ID"))
+	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("mã gói"))
 	# ô quét nằm trên khối kết quả
 	scan_box = page.locator(SCAN_INPUT).bounding_box()
 	result_box = page.locator(".tc-result .tc-t6").bounding_box()
@@ -77,9 +77,10 @@ def test_t6_putaway_released_pack_without_taps(t6_page, t6_demo):
 	scan_settled(page, location)
 
 	ok = page.locator(".tc-t6 .tc-alert-ok")
-	expect(ok).to_contain_text(f"Đã nhập kho gói {t6_demo['pack_released']} vào {location}", timeout=15000)
+	expect(ok).to_contain_text("Đã nhập kho gói", timeout=15000)
+	expect(ok).to_contain_text(f"{t6_demo['pack_released']}) vào {location}")
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("Cycle ID"))
+	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("mã gói"))
 	# tồn theo vị trí cập nhật sau khi nhập kho (overview tải lại); 0 chạm sau quét
 	expect(by_location.locator("td").last).to_have_text(str(before + 1), timeout=15000)
 

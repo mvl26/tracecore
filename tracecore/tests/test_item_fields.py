@@ -22,7 +22,7 @@ class TestItemFields(FrappeTestCase):
 		self.assertEqual(
 			fields["tc_item_group_cssd"].options,
 			"\nPackaging\nChemical Indicator\nLabel\nLubricant"
-			"\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther",
+			"\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther\nPackaging Accessory",
 		)
 		self.assertEqual(fields["tc_compatible_method"].fieldtype, "Select")
 		self.assertEqual(fields["tc_compatible_method"].options, "\nSteam\nPlasma")

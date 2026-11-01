@@ -53,7 +53,7 @@ def test_live_second_station_replaces_first_and_idle_revokes(t4_page, browser, b
 		second.goto(f"/app/station?station={station}")
 		second.locator("#tc-card-input").fill(require_env("TC_E2E_T4_CARD_ID"))
 		second.locator("#tc-card-input").press("Enter")
-		expect(second.locator(".tc-session-station")).to_have_text(station)
+		expect(second.locator(".tc-station-code")).to_have_text(station)
 		assert heartbeat(page, old_token).json()["message"]["error"]["code"] == "SESSION_INVALID"
 		page.evaluate("frappe.tc_station.heartbeat()")
 		expect(page.locator("#tc-card-input")).to_be_visible()
