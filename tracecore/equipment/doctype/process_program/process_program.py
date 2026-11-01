@@ -18,6 +18,8 @@ from tracecore.equipment import norms
 PROGRAM_CODE_PATTERN = re.compile(r"[A-Z0-9-]+")
 WASH_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
 STERILIZER_TYPES = ("Steam Sterilizer", "Plasma Sterilizer")
+LAUNDRY_TYPES = ("Laundry Washer", "Dryer")
+DRYER_TYPE = "Dryer"
 KIND_REGULAR, KIND_TEST = "Regular", "Test"
 PACKAGING_GROUP = "Packaging"
 NON_NEGATIVE_FIELDS = (
@@ -46,8 +48,10 @@ class ProcessProgram(Document):
 		self._normalize_kind()
 		self._normalize_wash_indicator()
 		self._validate_norms()
+		self._validate_laundry()
 		self._apply_norms()
 		self._validate_consumables()
+		self._default_unit_prices()
 		self._validate_consumable_units()
 		self._validate_pack_types()
 		self._validate_parameters()
@@ -91,6 +95,33 @@ class ProcessProgram(Document):
 		for fieldname, label in NON_NEGATIVE_FIELDS:
 			if flt(self.get(fieldname)) < 0:
 				frappe.throw(_("{0} cannot be negative.").format(_(label)))
+
+	def _validate_laundry(self):
+		"""Chương trình giặt/sấy (A-104): tải tối đa không vượt tải máy; máy sấy không dùng nước (BRU-LIN-005)."""
+		equipment_type = norms.equipment_type_of(self)
+		if equipment_type not in LAUNDRY_TYPES:
+			return
+		load = flt(self.get("max_load_kg"))
+		if load < 0:
+			frappe.throw(_("{0} cannot be negative.").format(_("Max Load per Batch (kg)")))
+		capacity = flt(frappe.db.get_value("Equipment", self.equipment, "capacity_kg"))
+		if capacity and load > capacity:
+			frappe.throw(
+				_("Max load {0} kg is above the {1} kg capacity of machine {2}.").format(
+					load, capacity, self.equipment
+				)
+			)
+		if equipment_type == DRYER_TYPE and flt(self.water_l_per_cycle) > 0:
+			frappe.throw(_("A dryer program uses no water: set Water per Cycle to 0."))
+
+	def _default_unit_prices(self):
+		"""Dòng định mức của chương trình giặt/sấy chưa có đơn giá thì lấy giá trị tồn kho của vật tư; đã nhập thì giữ (A-104)."""
+		laundry = norms.equipment_type_of(self) in LAUNDRY_TYPES
+		for row in self.consumables:
+			if flt(row.get("unit_price")) < 0:
+				frappe.throw(_("Row {0}: the unit price cannot be negative.").format(row.idx))
+			if laundry and not flt(row.get("unit_price")):
+				row.unit_price = flt(frappe.db.get_value("Item", row.item, "valuation_rate"), 0)
 
 	def _apply_norms(self):
 		if cint(self.use_default_norms) and not norms.default_norm(norms.equipment_type_of(self)):

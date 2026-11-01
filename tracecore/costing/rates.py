@@ -212,15 +212,23 @@ def fill_from_stock(doc):
 	for row in doc.rates:
 		if row.rate_type != "Item" or not row.item:
 			continue
-		bins = frappe.get_all(
-			"Bin",
-			filters={"item_code": row.item, "actual_qty": [">", 0]},
-			fields=["actual_qty", "stock_value"],
-		)
-		qty = sum(flt(b.actual_qty) for b in bins)
-		if qty <= 0:
+		rate = stock_rate(row.item)
+		if rate is None:
 			skipped.append(row.item)
 			continue
-		row.rate = flt(sum(flt(b.stock_value) for b in bins) / qty, 0)
+		row.rate = rate
 		updated.append(row.item)
 	return {"updated": updated, "skipped": skipped}
+
+
+def stock_rate(item):
+	"""Giá bình quân tồn kho của `item` (tổng giá trị ÷ tổng tồn qua mọi kho, VND không lẻ); None khi không còn tồn."""
+	bins = frappe.get_all(
+		"Bin",
+		filters={"item_code": item, "actual_qty": [">", 0]},
+		fields=["actual_qty", "stock_value"],
+	)
+	qty = sum(flt(b.actual_qty) for b in bins)
+	if qty <= 0:
+		return None
+	return flt(sum(flt(b.stock_value) for b in bins) / qty, 0)

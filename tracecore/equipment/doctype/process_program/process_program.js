@@ -27,6 +27,79 @@ function program_client_ts() {
 	)}`;
 }
 
+const PROGRAM_NORM = "tracecore.v1.laundry.program_norm";
+const PROGRAM_LAUNDRY_TYPES = ["Laundry Washer", "Dryer"];
+
+function program_money(value) {
+	return format_currency(value || 0, "VND", 0);
+}
+
+// Chi phí định mức của chương trình giặt/sấy theo mẻ và theo kg (#1847 DV-02, A-104); server tính, JS chỉ trình bày.
+function program_norm_html(norm) {
+	const esc = frappe.utils.escape_html;
+	const row = (label, value) =>
+		`<tr><th scope="row">${esc(label)}</th><td>${esc(value)}</td></tr>`;
+	const sources = {
+		"Price list": __("Approved price list"),
+		Program: __("Program price"),
+		"Stock valuation": __("Stock valuation"),
+	};
+	const chemicals = (norm.lines || [])
+		.map(
+			(line) => `<tr>
+				<td>${esc(line.item)}</td>
+				<td>${esc(format_number(line.qty, null, 3))} ${esc(line.uom || "")}</td>
+				<td>${esc(program_money(line.unit_price))}</td>
+				<td>${esc(program_money(line.amount))}</td>
+				<td>${esc(line.price_source ? sources[line.price_source] : __("No price"))}</td>
+			</tr>`
+		)
+		.join("");
+	const missing = (norm.missing || []).length
+		? `<p class="text-danger">${esc(__("No rate for: {0}", [norm.missing.join(", ")]))}</p>`
+		: "";
+	return `${missing}
+		<p>${esc(__("Reference load: {0} kg", [format_number(norm.kg || 0, null, 3)]))}</p>
+		<table class="table table-bordered">
+			<thead><tr>
+				<th>${esc(__("Chemical"))}</th><th>${esc(__("Quantity"))}</th><th>${esc(__("Unit Price"))}</th>
+				<th>${esc(__("Amount"))}</th><th>${esc(__("Price source"))}</th>
+			</tr></thead>
+			<tbody>${chemicals}</tbody>
+		</table>
+		<table class="table table-bordered"><tbody>
+			${row(__("Chemicals"), program_money(norm.chemical))}
+			${row(
+				__("Water ({0} L, {1} per m3)", [
+					format_number(norm.water_l || 0, null, 1),
+					program_money(norm.water_rate_m3),
+				]),
+				program_money(norm.water)
+			)}
+			${row(
+				__("Electricity ({0} kWh)", [format_number(norm.kwh || 0, null, 2)]),
+				program_money(norm.electricity)
+			)}
+			${row(__("Labor"), program_money(norm.labor))}
+			${row(__("Norm cost per batch"), program_money(norm.total))}
+			${row(__("Norm cost per kg"), program_money(norm.per_kg))}
+		</tbody></table>`;
+}
+
+function program_show_norm_cost(frm) {
+	const field = frm.fields_dict.norm_cost_html;
+	if (!field) return;
+	if (frm.is_new() || !PROGRAM_LAUNDRY_TYPES.includes(frm.doc.equipment_type)) {
+		field.$wrapper.empty();
+		return;
+	}
+	frappe.call({
+		method: PROGRAM_NORM,
+		args: { program: frm.doc.name },
+		callback: (r) => field.$wrapper.html(program_norm_html(r.message || {})),
+	});
+}
+
 function program_indicator(frm) {
 	if (frm.is_new()) {
 		return;
@@ -158,6 +231,7 @@ frappe.ui.form.on("Process Program", {
 
 	refresh(frm) {
 		program_indicator(frm);
+		program_show_norm_cost(frm);
 		if (frm.is_new() || !frm.doc.equipment || !frappe.user.has_role(PROGRAM_ADMIN_ROLES)) {
 			return;
 		}

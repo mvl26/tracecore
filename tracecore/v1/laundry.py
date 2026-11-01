@@ -13,6 +13,7 @@ from frappe import _
 
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
+from tracecore.costing import from_laundry
 from tracecore.linen import laundry
 from tracecore.v1._common import (
 	LINEN_ROLES,
@@ -143,3 +144,12 @@ def complete(
 		return {"ok": True, "batch": laundry.view(doc)}
 
 	return run_at_step(FUNCTION, station, timestamp, call, "Laundry Batch", batch)
+
+
+@frappe.whitelist()
+def program_norm(program=None):
+	"""Định mức và chi phí định mức theo mẻ, theo kg của chương trình giặt/sấy tại hôm nay (Desk, #1847 DV-02); chỉ đọc."""
+	frappe.has_permission("Process Program", "read", throw=True)
+	if not _text(program, "program") or not frappe.db.exists("Process Program", program):
+		raise BadRequestError(_("Program {0} does not exist.").format(program or "-"))
+	return from_laundry.norm_breakdown([program])
