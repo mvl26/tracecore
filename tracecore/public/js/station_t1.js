@@ -853,7 +853,9 @@ class T1Receiving {
 			today.total_receipts,
 			today.total_sets,
 		]);
-		const who = (code, name) => esc([code, name].filter(Boolean).join(" · "));
+		// #1831 S-04: chỉ họ tên, mã nhân viên để tooltip
+		const who = (code, name) =>
+			`<td${name && code ? ` title="${esc(code)}"` : ""}>${esc(name || code)}</td>`;
 		const rows = today.receipts
 			.map((row) => {
 				const open = this.todayOpen === row.receipt;
@@ -868,8 +870,8 @@ class T1Receiving {
 					)}" aria-expanded="${open}">${esc(row.receipt)}</button></td>
 					<td>${esc(String(row.received_at || "").slice(11, 16))}</td>
 					<td>${esc(row.department_name || row.department)}</td>
-					<td>${who(row.deliverer, row.deliverer_name)}</td>
-					<td>${who(row.receiver, row.receiver_name)}</td>
+					${who(row.deliverer, row.deliverer_name)}
+					${who(row.receiver, row.receiver_name)}
 					<td>${esc(row.set_count)}</td>
 					<td>${flag}</td>
 				</tr>${
