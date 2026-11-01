@@ -1296,6 +1296,20 @@ body.tc-kiosk .layout-main-section {
 	font-size: var(--tc-fs-md);
 }
 
+/* gói không hợp chương trình mới (A-88): nền, viền đỏ và chữ lý do, không chỉ bằng màu */
+.tc-t5-pack.is-bad {
+	padding: var(--tc-sp-3);
+	background: var(--tc-fail-tint);
+	border: var(--tc-bw-hair) solid var(--tc-fail);
+}
+
+.tc-t5-pack-reason {
+	grid-column: 1 / -1;
+	margin: 0;
+	color: var(--tc-fail-text);
+	font-weight: var(--tc-fw-bold);
+}
+
 .tc-t5-pack-id {
 	display: flex;
 	flex-direction: column;

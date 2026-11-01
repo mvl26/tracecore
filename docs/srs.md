@@ -43,6 +43,7 @@
 | 1.11 A-71 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Khung mã lỗi: thêm FR-M9-17..21, FR-M5-07; sửa FR-M4-03.1 (ngoại lệ cho phép tạm NS-001). Xem Amendment A-71 của `docs/architecture.md`. |
 | 1.11 A-76 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Theo Amendment A-76 của `docs/architecture.md`: mã doanh nghiệp GS1 khai trong `TraceCore Settings`, tự cấp GTIN-14 cho loại bộ, cấp bù, mở khóa có lý do. Ghi chú OQ-05 (chốt công thức; giá trị prefix thật còn mở). Không thêm/bớt ID FR hay BRU. |
 | 1.11 A-87 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Ghi chú theo Amendment A-87 của `docs/architecture.md` (#1818, #1819): FR-M2-04.1 và FR-M2-11 khi chọn tay dùng danh sách lô/mẻ chờ dỡ, không dùng danh sách bộ; chọn tay một dòng gửi cả mã lô/mẻ và mã máy, ghi Audit Log `Manual Entry`. |
+| 1.11 A-88 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Ghi chú theo Amendment A-88 của `docs/architecture.md` (#1844, #1836, D7): đổi chương trình tại T5 giữ gói và kiểm lại, gói không hợp đánh dấu đỏ; giao diện không còn mã nội bộ FEAT-/BRU-; gói hiển thị theo `Tên bộ – Khoa (CY-…)`. |
 
 ---
 

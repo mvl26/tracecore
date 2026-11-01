@@ -387,6 +387,26 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 	return _admitted(pack, duplicate=False, count=len(queue) + 1, capacity=capacity)
 
 
+def recheck_packs(equipment, program, packs):
+	"""Kiểm lại gói đang nạp khi đổi chương trình (A-88, #1844), không ghi; trả ``[{"cycle_id", "ok", "code", "reason"}]``.
+
+	Đi qua đúng `admit_pack`. `queued` chỉ gồm các gói đã đạt trước đó, không có chính gói đang kiểm: có nó thì
+	`admit_pack` coi là quét lặp và bỏ qua mọi kiểm tra; gói không đạt cũng không chiếm dung tích.
+	"""
+	accepted, rows = [], []
+	for cycle_id in packs or []:
+		try:
+			admit_pack(cycle_id, equipment, program, accepted)
+		except BlockedError as error:
+			rows.append(
+				{"cycle_id": cycle_id, "ok": False, "code": error.block.code, "reason": error.block.reason}
+			)
+			continue
+		accepted.append(cycle_id)
+		rows.append({"cycle_id": cycle_id, "ok": True, "code": None, "reason": None})
+	return rows
+
+
 def _admitted(pack, duplicate, count, capacity):
 	set_type = frappe.db.get_value("Set Unit", pack.set_unit, "set_type")
 	return {

@@ -238,7 +238,9 @@ class T5Load {
 				raw,
 				equipment: this.load.machine.name,
 				program: program.program_code,
-				queued: this.load.packs.map((row) => row.cycle_id),
+				queued: this.load.packs
+					.filter((row) => !row.incompatible)
+					.map((row) => row.cycle_id),
 				station: this.station.station,
 			},
 			(res) => this.onPack(res)
@@ -376,24 +378,7 @@ class T5Load {
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		const max = res.equipment.max_packs;
-		this.notice = {
-			variant: "ok",
-			title: __("Sterilizer {0} scanned · {1}", [
-				res.equipment.name,
-				res.equipment.equipment_name,
-			]),
-			reason: [
-				max
-					? __("Up to {0} pack(s) per load.", [max])
-					: __("Capacity not set for this sterilizer."),
-				res.equipment.is_connected
-					? __(
-							"API connected - automatic data comes with FEAT-024; enter data by hand with confirmation."
-					  )
-					: __("Not connected - enter the cycle data by hand with confirmation."),
-			].join(" "),
-		};
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (#1844)
 		this.saveLoad();
 		this.show();
 	}
@@ -435,6 +420,55 @@ class T5Load {
 		this.saveLoad();
 		this.notice = { variant: "info", title: __("Removed {0} from the list", [cycleId]) };
 		this.show();
+		// bỏ một gói có thể trả lại dung tích cho gói đang bị đánh dấu
+		if (this.load.packs.some((row) => row.incompatible)) this.recheckPacks();
+	}
+
+	// Đổi chương trình (#1844): giữ gói đã quét, kiểm lại từng gói; gói không hợp đánh dấu đỏ kèm lý do
+	recheckPacks() {
+		const program = this.programRow();
+		if (!this.load || !this.load.packs.length || !program) return;
+		this.load.rechecking = true;
+		this.saveLoad();
+		this.request(
+			"tracecore.v1.load.recheck",
+			{
+				equipment: this.load.machine.name,
+				program: program.program_code,
+				packs: this.load.packs.map((row) => row.cycle_id),
+				station: this.station.station,
+			},
+			(res) => this.onRecheck(res)
+		);
+		this.show();
+	}
+
+	onRecheck(res) {
+		if (!this.load) return;
+		const rows = {};
+		(res.packs || []).forEach((row) => {
+			rows[row.cycle_id] = row;
+		});
+		this.load.packs.forEach((pack) => {
+			const row = rows[pack.cycle_id];
+			pack.incompatible = row && !row.ok ? { code: row.code, reason: row.reason } : null;
+		});
+		this.load.rechecking = false;
+		const bad = this.load.packs.filter((row) => row.incompatible).length;
+		this.notice = bad
+			? {
+					variant: "warn",
+					title: __("{0} pack(s) do not fit the new program", [bad]),
+					action: __("Remove the packs marked in red, or choose another program."),
+			  }
+			: {
+					variant: "ok",
+					title: __("All {0} pack(s) still fit the new program", [
+						this.load.packs.length,
+					]),
+			  };
+		this.saveLoad();
+		this.show();
 	}
 
 	cancelLoad() {
@@ -454,6 +488,10 @@ class T5Load {
 		if (!this.load) out.push(__("sterilizer"));
 		if (!this.load || !this.load.packs.length) out.push(__("at least 1 pack"));
 		if (this.load && !this.programRow()) out.push(__("program"));
+		if (this.load && this.load.rechecking)
+			out.push(__("check of the packs against the program"));
+		if (this.load && this.load.packs.some((row) => row.incompatible))
+			out.push(__("removing the packs marked in red"));
 		return out;
 	}
 
@@ -826,6 +864,7 @@ class T5Load {
 			"t5-release": () => this.openRelease(),
 			"t5-daily-test": () => this.openDailyTest(),
 			"t5-remove": () => this.removePack(data.pack),
+			"t5-recheck": () => this.recheckPacks(),
 			"t5-complete": () => this.complete(),
 			"t5-cancel": () => this.cancelLoad(),
 			"t5-open-data": () => this.openData(data.load),
@@ -845,11 +884,10 @@ class T5Load {
 	onChange(event) {
 		const target = event.target;
 		if (target.id === "tc-t5-program" && this.load) {
-			// đổi chương trình xóa danh sách đã quét: tương thích phải kiểm lại theo chương trình mới (mockup t5)
 			this.load.program = target.value;
-			this.load.packs = [];
 			this.saveLoad();
 			this.show();
+			this.recheckPacks();
 		} else if (target.id === "tc-t5-priority" && this.load) {
 			this.load.priority = target.checked;
 			this.saveLoad();
@@ -1093,7 +1131,7 @@ class T5Load {
 		const max = load.machine.max_packs;
 		const rows = load.packs
 			.map(
-				(row) => `<li class="tc-t5-pack">
+				(row) => `<li class="tc-t5-pack${row.incompatible ? " is-bad" : ""}">
 					<div class="tc-t5-pack-id"><span class="tc-mono">${esc(row.cycle_id)}</span>
 						<span>${esc(row.set_id)} · ${esc(row.set_name || "-")}</span></div>
 					<div>${esc(__(row.method, null, "Pack"))} · ${esc(row.pack_type_name || "-")} · ${esc(
@@ -1104,6 +1142,13 @@ class T5Load {
 						data-pack="${esc(row.cycle_id)}"${t5Disabled(Boolean(this.busy))}>${esc(
 					__("Remove from the list")
 				)}</button>
+					${
+						row.incompatible
+							? `<p class="tc-t5-pack-reason"><span aria-hidden="true">&#10005;</span> ${esc(
+									row.incompatible.reason || row.incompatible.code
+							  )}</p>`
+							: ""
+					}
 				</li>`
 			)
 			.join("");
@@ -1114,6 +1159,12 @@ class T5Load {
 						"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004)."
 					)
 			  )}</p>`;
+		const recheck =
+			load.rechecking && !this.busy
+				? `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5-recheck">${esc(
+						__("Check the packs again")
+				  )}</button></div>`
+				: "";
 		return `${html}<section class="tc-t4-block tc-t2-machine">
 				<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
 					__("Sterilizer {0} scanned · {1}", [
@@ -1124,6 +1175,10 @@ class T5Load {
 			load.machine.is_connected
 				? __("API connected - automatic data comes with FEAT-024")
 				: __("not connected - enter the cycle data by hand with confirmation")
+		)} · ${esc(
+			max
+				? __("Up to {0} pack(s) per load.", [max])
+				: __("Capacity not set for this sterilizer.")
 		)}</p>
 				<div class="tc-t4-row">
 					<div class="tc-field">
@@ -1147,6 +1202,7 @@ class T5Load {
 					)
 				)}</h3>
 				${list}
+				${recheck}
 			</section>`;
 	}
 

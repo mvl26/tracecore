@@ -403,18 +403,7 @@ class T2Wash {
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		this.notice = {
-			variant: "ok",
-			title: __("Washer {0} scanned · {1}", [
-				res.equipment.name,
-				res.equipment.equipment_name,
-			]),
-			reason: res.equipment.is_connected
-				? __(
-						"API connected - automatic data comes with FEAT-024; unload with confirmed manual entry."
-				  )
-				: __("Not connected - unload with confirmed manual entry."),
-		};
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (#1844)
 		this.saveLoad();
 		this.show();
 	}

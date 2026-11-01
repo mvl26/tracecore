@@ -99,6 +99,25 @@ def add_pack(
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
+def recheck(equipment, program, packs, station, client_ts=None, token=None):
+	"""Kiểm lại danh sách gói đang nạp theo chương trình mới (A-88); chỉ đọc nên không ghi Audit Log từ chối."""
+	require_any_role(*LOAD_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	program = _required_str(program, "program")
+	codes = _codes(packs, "packs")
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, "packs": sterilizing.recheck_packs(equipment, program, codes)},
+		"Equipment",
+		equipment,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LOAD_ROLES)
 @idempotent
 def complete(equipment, program, packs, station, is_priority=0, client_ts=None, token=None):
 	"""Hoàn thành nạp: sinh mã mẻ `ME-`, gắn gói, in nhãn QR (FR-M2-09, FR-M2-24.1); trả cả gói bị loại."""
