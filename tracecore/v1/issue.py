@@ -90,6 +90,7 @@ def add_pack(
 	manual_reason=None,
 	client_ts=None,
 	token=None,
+	department_reason=None,
 ):
 	"""Quét một gói vào phiếu (Cycle ID hoặc DataMatrix). Gói hạn xa hơn gói FEFO cần `note`; `move` chuyển gói từ phiếu
 	nháp khác sang."""
@@ -99,7 +100,7 @@ def add_pack(
 	return _run(
 		station,
 		client_ts,
-		lambda ts: {"issue": issuing.add_pack(issue_note, raw, station, note, move, ts)},
+		lambda ts: {"issue": issuing.add_pack(issue_note, raw, station, note, move, ts, department_reason)},
 		ref,
 		scanned["id"] if ref else None,
 		scanned["raw"],

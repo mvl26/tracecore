@@ -119,9 +119,11 @@ MANAGEMENT_GROUPS = (
 		"Linen",
 		(
 			"Linen Type",
+			"laundry-equipment",
 			"Linen Collection",
 			"Laundry Batch",
 			"report:Laundry Cost per Kg",
+			"report:Laundry Equipment Norms",
 			"Linen Issue",
 			"report:Linen Reconciliation",
 		),
@@ -166,6 +168,14 @@ MANAGEMENT_GROUPS = (
 	),
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
+# Danh sách DocType lọc sẵn trong menu (A-104): khóa → (nhãn, DocType, chuỗi lọc). Không thêm DocType mới cho một góc nhìn.
+FILTERED_LISTS = {
+	"laundry-equipment": (
+		"Laundry equipment",
+		"Equipment",
+		'equipment_type=["in",["Laundry Washer","Dryer"]]',
+	),
+}
 MANAGEMENT_PAGES = {
 	"tc-dashboard": "Operations Dashboard",
 	"tc-import": "Catalog Import",
@@ -447,9 +457,16 @@ ADMIN_MODULES = (
 		"icon": "retail",
 		"description": "Linen collection, laundry and issue.",
 		"sections": (
-			("catalog", ("Linen Type",)),
+			("catalog", ("Linen Type", "laundry-equipment")),
 			("document", ("Linen Collection", "Laundry Batch", "Linen Issue")),
-			("report", ("report:Laundry Cost per Kg", "report:Linen Reconciliation")),
+			(
+				"report",
+				(
+					"report:Laundry Cost per Kg",
+					"report:Laundry Equipment Norms",
+					"report:Linen Reconciliation",
+				),
+			),
 		),
 	},
 	{
@@ -691,6 +708,11 @@ def _link(target):
 		report = target[len(REPORT_PREFIX) :]
 		if _roles_permit("Report", report):
 			return {"label": report, "doctype": None, "route": "/app/query-report/" + report}
+	elif target in FILTERED_LISTS:
+		label, doctype, query = FILTERED_LISTS[target]
+		if frappe.has_permission(doctype, ptype="read"):
+			route = "/app/" + frappe.scrub(doctype).replace("_", "-") + "?" + query
+			return {"label": label, "doctype": None, "route": route}
 	elif target in MANAGEMENT_PAGES:
 		if _roles_permit("Page", target):
 			return {"label": MANAGEMENT_PAGES[target], "doctype": None, "route": "/app/" + target}

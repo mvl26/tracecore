@@ -48,6 +48,7 @@ class T7Issue {
 		this.recipientCard = null; // thẻ đã quét, chờ vẽ chữ ký (chế độ Touch)
 		this.mismatch = null; // thẻ người nhận lệch khoa chờ lý do
 		this.fefo = null; // gói bị FEFO chặn chờ ghi chú
+		this.deptMismatch = null; // gói của khoa khác chờ xác nhận kèm lý do (A-102)
 		this.move = null; // gói nằm ở phiếu nháp khác chờ xác nhận chuyển
 		this.approval = false;
 		this.done = null;
@@ -56,7 +57,9 @@ class T7Issue {
 	}
 
 	get dialogOpen() {
-		return Boolean(this.mismatch || this.fefo || this.approval || this.recipientCard);
+		return Boolean(
+			this.mismatch || this.deptMismatch || this.fefo || this.approval || this.recipientCard
+		);
 	}
 
 	// Hết phiên trạm (rút thẻ, idle 10 phút, đổi người): xóa phiếu, khoa và yêu cầu dở của người trước
@@ -92,6 +95,7 @@ class T7Issue {
 	addPack(raw, extra = {}) {
 		this.fefo = null;
 		this.move = null;
+		this.deptMismatch = null;
 		return this.request(
 			"add_pack",
 			{ issue_note: this.issue.issue_note, raw, station: this.station.station, ...extra },
@@ -233,12 +237,20 @@ class T7Issue {
 	// Từ chối nghiệp vụ: một số mã cần người dùng bổ sung (ghi chú FEFO, lý do khác khoa, R02 duyệt, chuyển phiếu)
 	reject(error, pending) {
 		this.notice = {
-			variant: error.code === "FEFO_NOTE_REQUIRED" ? "warn" : "error",
+			variant: ["FEFO_NOTE_REQUIRED", "PACK_DEPT_MISMATCH"].includes(error.code)
+				? "warn"
+				: "error",
 			...error,
 		};
 		const args = pending ? pending.args : {};
-		if (error.code === "FEFO_NOTE_REQUIRED") this.fefo = { raw: args.raw };
-		else if (error.code === "PACK_IN_OTHER_ISSUE") this.move = { raw: args.raw };
+		// giữ lựa chọn đã xác nhận (chuyển phiếu, ghi chú, lý do khoa) khi máy chủ hỏi tiếp điều kiện khác
+		const carry = {};
+		for (const key of ["move", "note", "department_reason"]) {
+			if (args && args[key]) carry[key] = args[key];
+		}
+		if (error.code === "FEFO_NOTE_REQUIRED") this.fefo = { raw: args.raw, carry };
+		else if (error.code === "PACK_IN_OTHER_ISSUE") this.move = { raw: args.raw, carry };
+		else if (error.code === "PACK_DEPT_MISMATCH") this.deptMismatch = { raw: args.raw, carry };
 		else if (error.code === "RECIPIENT_DEPT_MISMATCH") {
 			this.mismatch = { card: args.card, method: args.method, signature: args.signature };
 		} else if (T7_APPROVAL_CODES.includes(error.code))
@@ -260,6 +272,8 @@ class T7Issue {
 			"sign-clear": () => this.clearPad(),
 			"sign-confirm": () => this.confirmTouch(),
 			"fefo-submit": () => this.submitFefo(),
+			"dept-mismatch-submit": () => this.submitDeptMismatch(),
+			"dept-mismatch-cancel": () => this.cancelDialog("deptMismatch"),
 			"move-submit": () => this.submitMove(),
 			"mismatch-submit": () => this.submitMismatch(),
 			"mismatch-cancel": () => this.cancelDialog("mismatch"),
@@ -327,11 +341,18 @@ class T7Issue {
 	submitFefo() {
 		const note = this.field("tc-t7-fefo-note");
 		if (!note) return this.markInvalid("tc-t7-fefo-note", __("Required"));
-		this.addPack(this.fefo.raw, { note });
+		this.addPack(this.fefo.raw, { ...this.fefo.carry, note });
+	}
+
+	submitDeptMismatch() {
+		const reason = this.field("tc-t7-dept-reason");
+		if (!reason) return this.markInvalid("tc-t7-dept-reason", __("Required"));
+		const { raw, carry } = this.deptMismatch;
+		this.addPack(raw, { ...carry, department_reason: reason });
 	}
 
 	submitMove() {
-		this.addPack(this.move.raw, { move: 1 });
+		this.addPack(this.move.raw, { ...this.move.carry, move: 1 });
 	}
 
 	submitMismatch() {
@@ -875,6 +896,23 @@ class T7Issue {
 		const errText = (id) =>
 			err && err.id === id ? `<p class="tc-field-error">${esc(err.message)}</p>` : "";
 		let html = "";
+		if (this.deptMismatch) {
+			html += `<div class="tc-t7-dialog" role="group" aria-label="${esc(
+				__("Pack belongs to another department")
+			)}">
+				<div class="tc-field">
+					<label for="tc-t7-dept-reason">${esc(__("Why issue this pack to this department?"))} *</label>
+					<textarea id="tc-t7-dept-reason" rows="2" data-dialog-focus${invalid(
+						"tc-t7-dept-reason"
+					)}></textarea>
+					${errText("tc-t7-dept-reason")}
+				</div>
+				<div class="tc-actions">
+					${this.button("dept-mismatch-submit", __("Issue this pack anyway"), "warn")}
+					${this.button("dept-mismatch-cancel", __("Cancel"))}
+				</div>
+			</div>`;
+		}
 		if (this.fefo) {
 			html += `<div class="tc-t7-dialog" role="group" aria-label="${esc(__("FEFO note"))}">
 				<div class="tc-field">

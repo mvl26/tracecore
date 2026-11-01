@@ -717,6 +717,47 @@ html:has(.tc-work) {
 	font-weight: 600;
 }
 
+/* danh sách mẻ T5 (A-102): không ngắt giữa từ; màn hẹp mỗi mẻ là một thẻ có nhãn từng ô */
+.tc-t5b-waiting td {
+	overflow-wrap: normal;
+	word-break: normal;
+}
+
+.tc-t5b-waiting .tc-mono {
+	white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+	.tc-t5b-waiting thead {
+		display: none;
+	}
+
+	.tc-t5b-waiting,
+	.tc-t5b-waiting tbody,
+	.tc-t5b-waiting tr,
+	.tc-t5b-waiting td {
+		display: block;
+		width: 100%;
+	}
+
+	.tc-t5b-waiting tr {
+		padding: var(--tc-sp-3) 0;
+		border-bottom: var(--tc-bw-hair) solid var(--tc-border-input);
+	}
+
+	.tc-t5b-waiting td {
+		padding: var(--tc-sp-1) 0;
+		border-bottom: 0;
+	}
+
+	.tc-t5b-waiting td::before {
+		content: attr(data-label) ": ";
+		color: var(--tc-text-2);
+		font-weight: 600;
+		font-family: var(--tc-font-sans);
+	}
+}
+
 /* thanh cơ số §4.11 */
 .tc-par-row {
 	display: flex;
@@ -943,19 +984,6 @@ html:has(.tc-work) {
 	font-size: var(--tc-fs-4xl);
 	font-weight: var(--tc-fw-bold);
 	letter-spacing: var(--tc-ls-code);
-}
-
-/* mã mẻ/lô kèm nút Lưu PDF nhãn (A-99) */
-.tc-code-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--tc-touch-gap);
-	margin-bottom: var(--tc-sp-3);
-}
-
-.tc-code-row .tc-cycle {
-	margin: 0;
 }
 
 .tc-t4-done-grid {
@@ -1270,6 +1298,63 @@ html:has(.tc-work) {
 		flex: 1 1 100%;
 	}
 }
+/* T5 theo bước (A-103), màu stepper design §4.3: đã qua có dấu, đang làm in đậm, trạng thái không chỉ bằng màu */
+.tc-t5-steps {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-t5-step {
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2-5) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-pill);
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-md);
+	cursor: pointer;
+}
+
+.tc-t5-step.is-done {
+	background: var(--tc-pass-strong);
+	border-color: var(--tc-pass);
+	color: var(--tc-pass);
+}
+
+.tc-t5-step.is-current {
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-t5-step:disabled {
+	cursor: not-allowed;
+	text-decoration: line-through;
+}
+
+.tc-t5-steps .tc-t5-daily {
+	margin-left: auto;
+}
+
+.tc-t5-instruction {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-bold);
+}
+
+[data-surface="PDA"] .tc-t5-step {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+[data-surface="PDA"] .tc-t5-steps .tc-t5-daily {
+	margin-left: 0;
+}
+
 /* T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022): dùng lại khối .tc-t2; thêm danh sách gói */
 .tc-t5-label {
 	display: block;

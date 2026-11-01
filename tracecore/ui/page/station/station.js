@@ -119,6 +119,8 @@ function tcStationTitle(station) {
 	return `${prefix}${label} – TraceCore`;
 }
 
+const STATION_ACTIVE_KEY = "tc-station-active";
+
 class TcStepQueue {
 	constructor(station, screen) {
 		this.station = station;
@@ -407,6 +409,7 @@ class TraceCoreStation {
 				// khác khu (A-90): máy chủ đã đóng phiên, trạm đích hiện màn quét thẻ kèm lý do
 				if (result.error.code === "STATION_ZONE_RESCAN") {
 					this.storedToken(null);
+					this.rememberActive(null);
 					return this.openStation(station, label, result.error);
 				}
 				this.authResult.innerHTML = this.blockHtml(result.error);
@@ -728,6 +731,7 @@ class TraceCoreStation {
 		// A retired instance may share this storage key with its replacement.
 		if (!this.disposed && frappe.tc_station === this && token && this.storedToken() === token)
 			this.storedToken(null);
+		if (token && (this.activeSession() || {}).token === token) this.rememberActive(null);
 		this.pending = null;
 		this.lastRaw = null;
 		this.input.value = "";
@@ -894,6 +898,7 @@ class TraceCoreStation {
 	activateSession(session) {
 		this.session = session;
 		this.storedToken(session.token);
+		this.rememberActive({ station: this.station, token: session.token });
 		this.lastActivity = Date.now();
 		this.heartbeatActivity = this.lastActivity;
 		this.heartbeatAttempt = Date.now();
@@ -1149,6 +1154,9 @@ class TraceCoreStation {
 				state.error,
 			]);
 		else if (state.queued) text = __("Offline – {0} transaction(s) waiting", [state.queued]);
+		else if (state.label_error)
+			text = __("Labels of offline packs were not printed: {0}", [state.label_error]);
+		else if (state.label_file) text = __("Label printed to PDF file: {0}", [state.label_file]);
 		else if (state.conflicts)
 			text = __("Synced · {0} transaction(s) sent to R02 as sync conflicts", [
 				state.conflicts,
@@ -1215,6 +1223,51 @@ class TraceCoreStation {
 
 	isCurrentAuth(attempt) {
 		return this.ownsPage() && attempt === this.authGeneration;
+	}
+
+	// A-102 (#1822): phiên thẻ đang mở của tab này, để mở trạm khác bằng URL đi đúng đường của nút chuyển trạm
+	activeSession() {
+		try {
+			return JSON.parse(sessionStorage.getItem(STATION_ACTIVE_KEY) || "null");
+		} catch (failure) {
+			return null;
+		}
+	}
+
+	rememberActive(value) {
+		try {
+			if (value) sessionStorage.setItem(STATION_ACTIVE_KEY, JSON.stringify(value));
+			else sessionStorage.removeItem(STATION_ACTIVE_KEY);
+		} catch (failure) {
+			// PDA tắt storage: mở bằng URL phải quét thẻ lại
+		}
+	}
+
+	// true: đã xử lý xong (khôi phục phiên, hoặc màn thẻ kèm lý do); false: hiện màn quét thẻ như thường
+	async adoptSession() {
+		const active = this.activeSession();
+		if (!active || !active.token || active.station === this.station) return false;
+		let result;
+		try {
+			result = await this.rpc("tracecore.v1.station.switch_station", {
+				token: active.token,
+				station: this.station,
+				client_ts: clientTs(),
+			});
+		} catch (failure) {
+			return false; // mất mạng không nói gì về phiên: quét thẻ như thường
+		}
+		if (result.ok) {
+			this.storedToken(result.session.token);
+			await this.restoreSession(result.session.token);
+			return true;
+		}
+		const code = (result.error && result.error.code) || "";
+		if (code === "STATION_ZONE_RESCAN" || code.startsWith("SESSION_"))
+			this.rememberActive(null);
+		if (code.startsWith("SESSION_")) return false;
+		this.renderLogin(result.error);
+		return true;
 	}
 
 	async restoreSession(token) {
@@ -1481,7 +1534,8 @@ class TraceCoreStation {
 			if (!this.session) {
 				const token = this.storedToken();
 				if (token && !this.authBusy) await this.restoreSession(token);
-				else if (!this.authBusy) this.renderLogin(this.notice);
+				else if (!this.authBusy && (this.notice || !(await this.adoptSession())))
+					this.renderLogin(this.notice);
 			} else {
 				const session = this.session;
 				await this.heartbeat();

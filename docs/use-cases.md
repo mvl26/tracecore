@@ -361,7 +361,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-06; API API-M2-02, API-M2-03
 
 **Main success scenario**
 1. R04 quét Set ID; hệ thống hiển thị BOM phiên bản áp dụng kèm ảnh lắp ráp.
-2. Kiểm tra từng dụng cụ (sạch, khô, chức năng), tick hoặc nhập số lượng thực tế từng dòng; mọi dòng bắt đầu ở Chưa đếm, không có xác nhận tất cả. [A-79] Số lượng khác định mức: thiếu phải chọn Thiếu/Hỏng và ghi chú, dư phải ghi chú.
+2. Kiểm tra từng dụng cụ (sạch, khô, chức năng), tick hoặc nhập số lượng thực tế từng dòng; mọi dòng bắt đầu ở Chưa đếm; có nút Xác nhận tất cả thành phần ghi mọi dòng chưa đếm theo định mức. [A-79, A-102 đảo phần xác nhận tất cả] Số lượng khác định mức: thiếu phải chọn Thiếu/Hỏng và ghi chú, dư phải ghi chú.
 3. Ghi dụng cụ hỏng, chọn dụng cụ thay từ kho dự phòng; dụng cụ hỏng chuyển Sửa chữa/Thanh lý.
 4. Hệ thống hiển thị cảnh báo sớm cơ số (bộ và từng dụng cụ).
 5. Xác nhận đủ; in phiếu kiểm đếm kèm gói.
@@ -728,6 +728,8 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-16; API API-M3-01; DocType D
 - **Screens:** SCR-17
 - **Priority:** Must · Frequency: 8–15 lô/ngày.
 - **Related NFR:** NFR-USAB-01, NFR-INT-01
+
+- **A-104 (#1847):** chọn chương trình thì hệ thống điền hóa chất, nước, điện theo định mức; khi hoàn tất, số thực tế lệch quá ngưỡng phải có lý do; lô lưu cả định mức và thực tế.
 
 **Main success scenario**
 1. R07 tạo lô: chọn máy, chương trình, nhóm nhiễm/không nhiễm.

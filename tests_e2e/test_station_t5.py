@@ -29,6 +29,13 @@ def scan_settled(page, raw):
 	expect(page.locator(".tc-t5 .tc-loading")).to_have_count(0, timeout=15000)
 
 
+def open_cycle_data(page, load):
+	"""A-103: dữ liệu chu trình nằm trong bước 2; quét mã mẻ là đủ vì máy đã biết từ danh sách, máy chủ vẫn kiểm cặp mã."""
+	page.locator("[data-action='t5-step'][data-step='2']").click()
+	scan_settled(page, load)
+	page.locator("[data-action='t5b-open-data']").first.click()
+
+
 def mock_agent(page):
 	received = []
 
@@ -154,7 +161,7 @@ def test_t5_touch_targets_and_font_sizes(t5_page, t5_demo):
 
 def test_t5_load_happy_path_within_three_taps(t5_page, t5_demo):
 	page = t5_page
-	mock_agent(page)
+	sent = mock_agent(page)  # A-101: nhãn ra PDF, Agent giả phải không nhận gì
 	taps = Taps()
 	load_machine(page, t5_demo["machine"])
 	for cycle_id in t5_demo["packs"]:
@@ -164,7 +171,12 @@ def test_t5_load_happy_path_within_three_taps(t5_page, t5_demo):
 	code = page.locator(".tc-t2-done .tc-cycle")
 	expect(code).to_have_text(re.compile(r"^ME-\d{6}-\d{2}$"), timeout=15000)
 	expect(page.locator(".tc-label .tc-label-qr")).to_be_visible()
+	# A-103: nạp xong tự sang bước Dỡ mẻ với đúng mẻ này, khối nạp ẩn, không phải quét lại
+	expect(page.locator("[data-action='t5-step'][data-step='2'][aria-current='step']")).to_be_visible()
+	expect(page.locator(".tc-t2-machine")).to_have_count(0)
+	expect(page.locator("[data-action='t5b-open-data']")).to_be_visible()
 	assert taps.count <= 3
+	assert sent == []
 	STATE["load"] = code.inner_text()
 
 
@@ -192,15 +204,7 @@ def test_t5_scanning_load_code_opens_lookup(t5_page, t5_demo):
 
 def test_t5_manual_data_requires_confirmation_card_and_photo(t5_page, t5_demo):
 	page = t5_page
-	load = t5_demo["load_running"]
-	page.locator("[data-action='t5-mode'][data-mode='data']").click()
-	# QR mẻ trước rồi QR máy (nhận cả hai thứ tự); máy sai bị từ chối ngay
-	scan_settled(page, load)
-	scan_settled(page, t5_demo["machine_plasma"])
-	expect(page.locator(".tc-t5 .tc-alert-error")).to_contain_text("không khớp", timeout=15000)
-	expect(page.locator(".tc-t2-form")).to_have_count(0)
-	scan_settled(page, load)
-	scan_settled(page, t5_demo["machine_running"])
+	open_cycle_data(page, t5_demo["load_running"])
 	form = page.locator(".tc-t2-form")
 	expect(form).to_be_visible(timeout=15000)
 	inputs = form.locator("input[data-param]")
@@ -225,10 +229,7 @@ def test_t5_manual_data_saved_flags_out_of_range_for_review(t5_page, t5_demo):
 	import os
 
 	page = t5_page
-	load = t5_demo["load_running"]
-	page.locator("[data-action='t5-mode'][data-mode='data']").click()
-	scan_settled(page, load)
-	scan_settled(page, t5_demo["machine_running"])
+	open_cycle_data(page, t5_demo["load_running"])
 	form = page.locator(".tc-t2-form")
 	expect(form).to_be_visible(timeout=15000)
 	inputs = form.locator("input[data-param]")

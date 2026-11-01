@@ -11,7 +11,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, now_datetime
 
-from tracecore.core import extension
+from tracecore.core import extension, program_norm
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Laundry Batch"
@@ -25,6 +25,8 @@ FAILED = "Failed"
 MIN_CONTAMINATED_C = 71  # FR-M3-03.2: đồ nhiễm giặt dưới 71 °C phải có hóa chất khử khuẩn
 WEIGHT_DIGITS = 3
 AFTER_COMPLETE_HOOK = "tracecore_after_laundry_complete"
+DEFAULT_DEVIATION_PERCENT = 10  # FR-M3-09.1: dùng khi TraceCore Settings chưa khai
+DEVIATION_DIGITS = 2
 EQUIPMENT_LABELS = {WASHER_TYPE: "laundry washer", DRYER_TYPE: "dryer"}
 
 
@@ -126,10 +128,13 @@ def _chemicals(rows):
 	return prepared
 
 
-def _program(program, equipment):
+def _program(program, equipment, action=None):
 	row = (
 		frappe.db.get_value(
-			"Process Program", program, ["equipment", "is_active", "temperature", "chemical"], as_dict=True
+			"Process Program",
+			program,
+			["equipment", "is_active", "temperature", "duration_min", "chemical", "max_load_kg"],
+			as_dict=True,
 		)
 		if isinstance(program, str) and program
 		else None
@@ -139,7 +144,7 @@ def _program(program, equipment):
 			"LAUNDRY_PROGRAM_INVALID",
 			_("Program is not valid"),
 			_("Program {0} is not an active program of machine {1}.").format(program or "-", equipment),
-			_("Choose a program of this washer."),
+			action or _("Choose a program of this washer."),
 		)
 	return row
 
@@ -174,6 +179,52 @@ def _check_redo(redo_of):
 		)
 
 
+def _check_in_house(equipment, program, weight, contaminated, chemicals):
+	"""Quy tắc của lô tự giặt, dùng chung cho trạm và form Desk (FR-M3-03.2-.4, FR-M3-09.2)."""
+	washer = check_equipment(equipment, WASHER_TYPE)
+	if washer.capacity_kg and weight > washer.capacity_kg:
+		raise _blocked(
+			"LAUNDRY_OVER_CAPACITY",
+			_("Weight is over the machine capacity"),
+			_("The load is {0} kg but machine {1} takes {2} kg.").format(
+				weight, equipment, washer.capacity_kg
+			),
+			_("Reduce the load or use a larger washer."),
+		)
+	row = _program(program, equipment)
+	if row.max_load_kg and weight > row.max_load_kg:
+		raise _blocked(
+			"LAUNDRY_OVER_PROGRAM_LOAD",
+			_("Weight is over the program load"),
+			_("The load is {0} kg but program {1} takes {2} kg.").format(weight, program, row.max_load_kg),
+			_("Reduce the load or choose another program."),
+		)
+	if (
+		contaminated
+		and (row.temperature or 0) < MIN_CONTAMINATED_C
+		and not _has_disinfectant(program, row, chemicals)
+	):
+		raise _blocked(
+			"LAUNDRY_TEMP_TOO_LOW",
+			_("Program is too cool for contaminated linen"),
+			_("Program {0} washes at {1} C, below {2} C, and the batch has no disinfectant.").format(
+				program, row.temperature or 0, MIN_CONTAMINATED_C
+			),
+			_("Choose a program of {0} C or more, or add a disinfectant chemical.").format(
+				MIN_CONTAMINATED_C
+			),
+		)
+
+
+def _check_dry(dryer, dry_program):
+	"""Máy sấy phải Sẵn sàng; chương trình sấy phải của đúng máy sấy và cần có máy sấy (A-104 D6). Trả dòng chương trình."""
+	if dryer or dry_program:
+		check_equipment(dryer, DRYER_TYPE)
+	if dry_program:
+		return _program(dry_program, dryer, _("Choose a program of this dryer."))
+	return None
+
+
 def start(
 	station,
 	operator,
@@ -186,8 +237,13 @@ def start(
 	price_per_kg=None,
 	redo_of=None,
 	note=None,
+	dryer=None,
+	dry_program=None,
 ):
-	"""Tạo lô giặt Đang chạy (UC-17 bước 1-3): kiểm kg, trộn nhiễm, máy, tải máy, chương trình, nhiệt độ (FR-M3-03.1-.4)."""
+	"""Tạo lô giặt Đang chạy (UC-17 bước 1-3): kiểm kg, trộn nhiễm, máy, tải máy, chương trình, nhiệt độ (FR-M3-03.1-.4).
+
+	Máy sấy và chương trình sấy chọn được ngay hoặc khi hoàn tất; định mức do `validate_batch` điền vào lô (A-104).
+	"""
 	weight, contaminated = _weight_and_flag(loads)
 	chemicals = _chemicals(chemicals)
 	_check_redo(redo_of)
@@ -214,37 +270,156 @@ def start(
 			)
 		values.update(vendor=vendor, price_per_kg=price)
 	else:
-		washer = check_equipment(equipment, WASHER_TYPE)
-		if washer.capacity_kg and weight > washer.capacity_kg:
-			raise _blocked(
-				"LAUNDRY_OVER_CAPACITY",
-				_("Weight is over the machine capacity"),
-				_("The load is {0} kg but machine {1} takes {2} kg.").format(
-					weight, equipment, washer.capacity_kg
-				),
-				_("Reduce the load or use a larger washer."),
-			)
-		row = _program(program, equipment)
-		if (
-			contaminated
-			and (row.temperature or 0) < MIN_CONTAMINATED_C
-			and not _has_disinfectant(program, row, chemicals)
-		):
-			raise _blocked(
-				"LAUNDRY_TEMP_TOO_LOW",
-				_("Program is too cool for contaminated linen"),
-				_("Program {0} washes at {1} C, below {2} C, and the batch has no disinfectant.").format(
-					program, row.temperature or 0, MIN_CONTAMINATED_C
-				),
-				_("Choose a program of {0} C or more, or add a disinfectant chemical.").format(
-					MIN_CONTAMINATED_C
-				),
-			)
-		values.update(equipment=equipment, program=program)
+		_check_in_house(equipment, program, weight, contaminated, chemicals)
+		_check_dry(dryer, dry_program)
+		values.update(equipment=equipment, program=program, dryer=dryer, dry_program=dry_program)
 	doc = frappe.get_doc(values)
+	doc.flags.tc_service = True
 	for chemical in chemicals:
 		doc.append("chemicals", chemical)
 	return doc.insert(ignore_permissions=True)
+
+
+# --- Định mức và thực tế (A-104) --------------------------------------------------------------------------
+
+
+def deviation_threshold():
+	"""Ngưỡng % lệch định mức phải có lý do (FR-M3-09.1)."""
+	value = frappe.db.get_single_value("TraceCore Settings", "laundry_norm_deviation_percent")
+	return flt(value) or DEFAULT_DEVIATION_PERCENT
+
+
+def _follow(actual, old_norm, new_norm):
+	"""Số thực tế đi theo định mức cho đến khi người dùng sửa (A-104 D4)."""
+	return new_norm if flt(actual) in (0, flt(old_norm)) else flt(actual)
+
+
+def _fill_chemicals(doc, lines):
+	"""Dòng hóa chất theo định mức: dòng đã có giữ số người dùng sửa, dòng 0 → định mức (như trừ kho, A-50), dòng định mức
+	bị xóa được thêm lại để chi phí, trừ kho và báo cáo cùng một số."""
+	wanted = {(line["item"], line["program"]): line for line in lines}
+	for row in list(doc.chemicals):
+		key = (row.item, row.program) if row.program else next((k for k in wanted if k[0] == row.item), None)
+		line = wanted.pop(key, None) if key else None
+		if not line:
+			if row.program and flt(row.qty) == flt(row.norm_qty):
+				doc.remove(row)  # dòng tự điền của chương trình đã đổi, chưa ai sửa
+				continue
+			row.update({"program": None, "norm_qty": 0})
+		else:
+			if flt(row.qty) in (0, flt(row.norm_qty)):
+				row.qty = line["qty"]
+			row.update({"program": line["program"], "norm_qty": line["qty"]})
+		row.uom = frappe.db.get_value("Item", row.item, "stock_uom")
+	for line in wanted.values():
+		doc.append(
+			"chemicals",
+			{
+				"item": line["item"],
+				"program": line["program"],
+				"uom": line["uom"],
+				"qty": line["qty"],
+				"norm_qty": line["qty"],
+			},
+		)
+
+
+def _deviation(doc):
+	"""% lệch lớn nhất trên điện, nước, từng dòng hóa chất có định mức > 0 (A-104 D5)."""
+	pairs = [
+		(doc.actual_kwh, doc.norm_kwh),
+		(doc.actual_dry_kwh, doc.norm_dry_kwh),
+		(doc.actual_water_l, doc.norm_water_l),
+		*((row.qty, row.norm_qty) for row in doc.chemicals),
+	]
+	gaps = [abs(flt(actual) - flt(norm)) / flt(norm) * 100 for actual, norm in pairs if flt(norm) > 0]
+	return round(max(gaps, default=0), DEVIATION_DIGITS)
+
+
+def fill_norm(doc):
+	"""Ghi định mức của chương trình giặt, sấy vào lô và tính mức lệch; lô thuê ngoài không có định mức."""
+	if doc.batch_type != IN_HOUSE or not doc.program:
+		return
+	kg = flt(doc.weight_kg)
+	wash = program_norm.of(doc.program, kg)
+	dry = program_norm.of(doc.dry_program, kg) if doc.dry_program else None
+	dry_kwh = dry["kwh"] if dry else 0
+	doc.update(
+		{
+			"actual_kwh": _follow(doc.actual_kwh, doc.norm_kwh, wash["kwh"]),
+			"norm_kwh": wash["kwh"],
+			"actual_water_l": _follow(doc.actual_water_l, doc.norm_water_l, wash["water_l"]),
+			"norm_water_l": wash["water_l"],
+			"actual_dry_kwh": _follow(doc.actual_dry_kwh, doc.norm_dry_kwh, dry_kwh),
+			"norm_dry_kwh": dry_kwh,
+		}
+	)
+	_fill_chemicals(doc, wash["lines"] + (dry["lines"] if dry else []))
+	doc.norm_deviation_pct = _deviation(doc)
+
+
+def _changed(doc, fields):
+	return doc.is_new() or any(doc.has_value_changed(field) for field in fields)
+
+
+def _desk_error(doc, error):
+	"""Trạm nhận `BlockedError` để trả mã lỗi; form Desk cần thông báo hiện trên màn."""
+	if doc.flags.tc_service:
+		raise error
+	block = error.block
+	frappe.throw(" ".join((block.reason, block.action)), title=block.title)
+
+
+def before_insert_batch(doc):
+	doc.status = doc.status or RUNNING
+	doc.started_at = doc.started_at or now_datetime()
+
+
+def validate_batch(doc):
+	"""Controller Laundry Batch: quy tắc khi lô đổi máy, chương trình, kg (form Desk; trạm đã kiểm), rồi điền định mức.
+
+	Máy khóa giữa chừng không chặn lưu hay hoàn tất lô đang chạy: chỉ kiểm khi giá trị đổi.
+	"""
+	if doc.batch_type != IN_HOUSE:
+		return
+	try:
+		if not doc.flags.tc_service:
+			if _changed(doc, ("equipment", "program", "weight_kg", "contaminated")):
+				rows = [{"item": row.item, "qty": row.qty} for row in doc.chemicals]
+				_check_in_house(doc.equipment, doc.program, flt(doc.weight_kg), doc.contaminated, rows)
+			if _changed(doc, ("dryer", "dry_program")):
+				_check_dry(doc.dryer, doc.dry_program)
+	except BlockedError as error:
+		_desk_error(doc, error)
+	fill_norm(doc)
+
+
+def before_submit_batch(doc):
+	"""Lô chỉ ghi sổ qua Hoàn tất (hook trừ kho, chi phí luôn chạy; A-104 D8); lệch quá ngưỡng phải có lý do (BRU-LIN-006)."""
+	try:
+		if doc.status == RUNNING:
+			raise _blocked(
+				"LAUNDRY_USE_COMPLETE",
+				_("Batch is still running"),
+				_("Laundry batch {0} is still running.").format(doc.name),
+				_("Use Complete batch so that stock and cost are recorded."),
+			)
+		threshold = deviation_threshold()
+		if (
+			doc.batch_type == IN_HOUSE
+			and flt(doc.norm_deviation_pct) > threshold
+			and not (doc.deviation_reason or "").strip()
+		):
+			raise _blocked(
+				"LAUNDRY_DEVIATION_REASON_REQUIRED",
+				_("Reason for the deviation is required"),
+				_("Actual use differs from the norm by {0}%, above the {1}% threshold.").format(
+					doc.norm_deviation_pct, threshold
+				),
+				_("Enter why the batch used a different amount."),
+			)
+	except BlockedError as error:
+		_desk_error(doc, error)
 
 
 # --- Hoàn tất --------------------------------------------------------------------------------------------
@@ -266,8 +441,37 @@ def _required_check(value, name):
 	return _flag(value)
 
 
-def complete(batch, dryer=None, dry_temp_c=None, dry_minutes=None, clean_ok=None, dry_ok=None, note=None):
-	"""Hoàn tất lô: ghi bước sấy và kết quả, ghi sổ rồi chạy hook trừ hóa chất và chi phí (UC-17 bước 4-6, FR-M3-04)."""
+def _actual(value):
+	"""Số thực tế người dùng nhập: bỏ trống → None (giữ số trên lô); âm hoặc không phải số → LAUNDRY_ACTUAL_INVALID."""
+	if value is None or value == "":
+		return None
+	number = _number(value)
+	if number is None or number < 0:
+		raise _blocked(
+			"LAUNDRY_ACTUAL_INVALID",
+			_("Actual use is not valid"),
+			_("Actual water and power must be numbers of 0 or more."),
+			_("Enter the actual water in litres and the actual power in kWh."),
+		)
+	return number
+
+
+def complete(
+	batch,
+	dryer=None,
+	dry_temp_c=None,
+	dry_minutes=None,
+	clean_ok=None,
+	dry_ok=None,
+	note=None,
+	dry_program=None,
+	actual_kwh=None,
+	actual_dry_kwh=None,
+	actual_water_l=None,
+	deviation_reason=None,
+):
+	"""Hoàn tất lô: ghi bước sấy, số thực tế và kết quả, ghi sổ rồi chạy hook trừ hóa chất và chi phí (UC-17 bước 4-6, FR-M3-04,
+	FR-M3-09). Tham số bỏ trống giữ giá trị đã có trên lô; nhiệt độ và thời gian sấy mặc định theo chương trình sấy."""
 	row = (
 		frappe.db.get_value(DOCTYPE, batch, ["status", "docstatus"], as_dict=True, for_update=True)
 		if isinstance(batch, str) and batch
@@ -290,7 +494,13 @@ def complete(batch, dryer=None, dry_temp_c=None, dry_minutes=None, clean_ok=None
 	doc = frappe.get_doc(DOCTYPE, batch)
 	clean, dry = _required_check(clean_ok, _("clean")), _required_check(dry_ok, _("dry"))
 	if doc.batch_type == IN_HOUSE:
+		dryer = dryer or doc.dryer
+		dry_program = dry_program or doc.dry_program
 		check_equipment(dryer, DRYER_TYPE)
+		dry_row = _check_dry(dryer, dry_program)
+		if dry_row:
+			dry_temp_c = dry_temp_c or dry_row.temperature
+			dry_minutes = dry_minutes or dry_row.duration_min
 		temperature, minutes = _positive_int(dry_temp_c), _positive_int(dry_minutes)
 		if temperature is None or minutes is None:
 			raise _blocked(
@@ -299,7 +509,19 @@ def complete(batch, dryer=None, dry_temp_c=None, dry_minutes=None, clean_ok=None
 				_("The drying temperature and time must be whole numbers greater than 0."),
 				_("Enter the dryer temperature in C and the time in minutes."),
 			)
-		doc.update({"dryer": dryer, "dry_temp_c": temperature, "dry_minutes": minutes})
+		doc.update(
+			{"dryer": dryer, "dry_program": dry_program, "dry_temp_c": temperature, "dry_minutes": minutes}
+		)
+		for field, value in (
+			("actual_kwh", actual_kwh),
+			("actual_dry_kwh", actual_dry_kwh),
+			("actual_water_l", actual_water_l),
+		):
+			number = _actual(value)
+			if number is not None:
+				doc.set(field, number)
+		if deviation_reason:
+			doc.deviation_reason = deviation_reason
 	doc.update(
 		{
 			"clean_ok": clean,
@@ -313,6 +535,7 @@ def complete(batch, dryer=None, dry_temp_c=None, dry_minutes=None, clean_ok=None
 	if doc.batch_type == OUTSOURCED:
 		doc.cost_total = flt(doc.weight_kg * doc.price_per_kg)
 		doc.cost_per_kg = flt(doc.price_per_kg)
+	doc.flags.tc_service = True
 	doc.submit()
 	extension.run(AFTER_COMPLETE_HOOK, _context(doc))
 	doc.reload()
@@ -339,7 +562,9 @@ def view(doc):
 	"""Lô giặt cho màn trạm: trạng thái, kg, thiết bị, chi phí và chi phí/kg."""
 	fields = (
 		"name status batch_type weight_kg contaminated equipment program dryer started_at ended_at "
-		"cost_electricity cost_water cost_chemical cost_labor cost_total cost_per_kg cost_note redo_of vendor price_per_kg"
+		"cost_electricity cost_water cost_chemical cost_labor cost_total cost_per_kg cost_note redo_of vendor price_per_kg "
+		"dry_program norm_kwh actual_kwh norm_dry_kwh actual_dry_kwh norm_water_l actual_water_l norm_deviation_pct "
+		"deviation_reason norm_cost_electricity norm_cost_water norm_cost_chemical norm_cost_total norm_cost_per_kg"
 	).split()
 	return {field: doc.get(field) for field in fields}
 
@@ -353,10 +578,17 @@ def context():
 		order_by="equipment_name asc",
 	)
 	washers = [row.name for row in machines if row.equipment_type == WASHER_TYPE]
+	dryers = [row.name for row in machines if row.equipment_type == DRYER_TYPE]
 	programs = frappe.get_all(
 		"Process Program",
 		filters={"equipment": ["in", washers or [""]], "is_active": 1},
-		fields=["name", "program_name", "equipment", "temperature", "duration_min"],
+		fields=["name", "program_name", "equipment", "temperature", "duration_min", "max_load_kg"],
+		order_by="program_code asc",
+	)
+	dry_programs = frappe.get_all(
+		"Process Program",
+		filters={"equipment": ["in", dryers or [""]], "is_active": 1},
+		fields=["name", "program_name", "equipment", "temperature", "duration_min", "kwh_per_cycle"],
 		order_by="program_code asc",
 	)
 	norms = frappe.get_all(
@@ -371,6 +603,8 @@ def context():
 		"washers": [row for row in machines if row.equipment_type == WASHER_TYPE],
 		"dryers": [row for row in machines if row.equipment_type == DRYER_TYPE],
 		"programs": programs,
+		"dry_programs": dry_programs,
+		"deviation_percent": deviation_threshold(),
 		"chemicals": frappe.get_all(
 			"Item",
 			filters={"tc_item_group_cssd": "Chemical", "disabled": 0},
@@ -380,7 +614,21 @@ def context():
 		"running": frappe.get_all(
 			DOCTYPE,
 			filters={"status": RUNNING, "docstatus": 0},
-			fields=["name", "weight_kg", "contaminated", "equipment", "program", "batch_type", "started_at"],
+			fields=[
+				"name",
+				"weight_kg",
+				"contaminated",
+				"equipment",
+				"program",
+				"batch_type",
+				"started_at",
+				"dryer",
+				"dry_program",
+				"norm_kwh",
+				"actual_kwh",
+				"norm_water_l",
+				"actual_water_l",
+			],
 			order_by="started_at asc",
 		),
 	}

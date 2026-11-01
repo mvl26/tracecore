@@ -83,8 +83,8 @@ Test hằng ngày máy rửa: ✅ đã ghi hôm nay (bỏ qua).
 4. `CY-…` (Cycle ID từ T4)
 5. Bấm **Hoàn thành nạp → sinh mã mẻ** → **ghi lại `ME-…`**
 
-**Dữ liệu chu trình** (chip "Dữ liệu chu trình")
-6. `TB-0014` → `ME-…`
+**Dữ liệu chu trình** (màn tự sang bước 2 với đúng mẻ vừa nạp, không quét lại)
+6. Bấm **Nhập dữ liệu chu trình**
 7. Temperature `134` · Pressure `2,1` · giờ kết thúc · tick xác nhận · gõ thẻ **`THE-KTV-01`** vào ô "Quét thẻ nhân viên để xác nhận" → **Lưu dữ liệu nhập tay và xác nhận**
 
 ✔ Kết quả: mẻ **Hoàn tất chu trình**, gói "Trong mẻ".
@@ -94,14 +94,14 @@ Test hằng ngày máy rửa: ✅ đã ghi hôm nay (bỏ qua).
 ## T5b Dỡ mẻ – giải phóng — vẫn `?station=TR-005`
 
 **Phần KTV** (đang đăng nhập `THE-KTV-01`)
-1. Bấm **Dỡ và giải phóng** → `TB-0014` → `ME-…`
+1. Lưu dữ liệu xong màn về đúng mẻ ở bước 2. Mẻ khác: bấm bước **2. Dỡ mẻ / giải phóng**, quét `ME-…` hoặc bấm **Chọn** ở danh sách
 2. Kết quả chu trình **Đạt** · tick xác nhận → **Ghi kết quả chu trình**
 3. **Chỉ thị hóa học loại 5 = Đạt** → **Ghi chỉ thị**
 4. Bowie-Dick: màn tự lấy từ test hằng ngày (không cần ghi lại)
 
 **Phần giám sát R02**
 5. Bấm **Log out** → gõ thẻ **`THE-R02-01`**
-6. **Dỡ và giải phóng** → `TB-0014` → `ME-…`
+6. Màn mở bước 2: quét `ME-…` hoặc bấm **Chọn** ở Mẻ chờ giải phóng
 7. Ô **PIN R02**: `246810` → **Giải phóng mẻ**
 
 ✔ Kết quả: gói **Đã giải phóng**, cổng **T5 = Đạt**, bộ chuyển **Vô khuẩn**.

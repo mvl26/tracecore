@@ -49,6 +49,10 @@
 | FR-M3-04 | Tiêu hao và chi phí lô giặt | Should | Active | BR-M3 (BRD #02) | UC-17 | A-50 | FEAT-034 | `inventory/tests/test_consume_laundry.py`, `costing/tests/test_from_laundry.py`, `linen/tests/test_laundry_cost_report.py` |
 | FR-M3-05 | Cấp phát đồ vải theo khoa | Must | Active | BR-M3 (BRD #02) | UC-18 | A-51 | FEAT-035 | `linen/tests/test_linen_issue.py`, `v1/tests/test_linen_issue_api.py` |
 | FR-M3-06 | Đối chiếu thu – trả và định mức | Must | Active | BR-M3 (BRD #02) | UC-18 | A-51 | FEAT-035 | `linen/tests/test_reconcile.py` |
+| FR-M3-07 | Danh mục thiết bị giặt là | Must | Active | #1847 | UC-17 | A-104 | #1847 | `linen/tests/test_laundry_equipment.py` |
+| FR-M3-08 | Định mức theo mẻ của chương trình giặt, sấy | Must | Active | #1847 | UC-17 | A-104 | #1847 | `linen/tests/test_laundry_equipment.py` |
+| FR-M3-09 | Lô giặt: định mức và thực tế | Must | Active | #1847 | UC-17 | A-104 | #1847 | `linen/tests/test_laundry_norm.py`, `v1/tests/test_laundry_api.py` |
+| FR-M3-10 | Góc máy và báo cáo định mức | Should | Active | #1847 | UC-17 | A-104 | #1847 | `linen/tests/test_machine_usage.py` |
 | FR-M4-01 | Hồ sơ nhân sự | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-002; ADR-009 | FEAT-003; FEAT-036 | [FEAT-003 Employee subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
 | FR-M4-02 | Chứng chỉ và cảnh báo hết hạn | Must | Active | BR-M4 (BRD #02) | UC-19 | ADR-014 | FEAT-036 | `hr/tests/test_certificates.py`, `v1/tests/test_staff_api.py` |
 | FR-M4-03 | Ma trận năng lực theo trạm | Must | Active | BR-M4 (BRD #02) | UC-20 | ADR-008 | FEAT-003; FEAT-037 | [FEAT-003 competency subset](superpowers/reviews/FEAT-003-acceptance-evidence.md) |
@@ -190,6 +194,10 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M3-04 | BRU-LIN-001, BRU-LIN-003 | SCR-17 | API-M3-02 | TC-17-01, TC-17-02 | US-17 | WF-04 |
 | FR-M3-05 | BRU-LIN-001, BRU-LIN-004 | SCR-18 | API-M3-03, API-M3-04 | TC-18-01, TC-18-02 | US-18 | — |
 | FR-M3-06 | BRU-LIN-001, BRU-LIN-004 | SCR-18 | API-M3-03, API-M3-04 | TC-18-01, TC-18-02 | US-18 | — |
+| FR-M3-07 | BRU-EQP-002 | SCR-21 | — | — | — | — |
+| FR-M3-08 | BRU-LIN-005 | SCR-21 | — | — | — | — |
+| FR-M3-09 | BRU-LIN-006, BRU-LIN-007 | SCR-17 | API-M3-02 | — | — | WF-04 |
+| FR-M3-10 | — | SCR-21 | — | — | — | — |
 | FR-M4-01 | BRU-ID-006 | SCR-19 | API-M4-01 | TC-19-01, TC-19-02 | US-19 | — |
 | FR-M4-02 | BRU-ID-006, BRU-HR-002 | SCR-19 | API-M4-01 | TC-19-01, TC-19-02 | US-19 | — |
 | FR-M4-03 | BRU-HR-001 | SCR-20 | API-M4-02 | TC-20-01, TC-20-02 | US-20 | — |

@@ -129,6 +129,10 @@ class TestErrors(FrappeTestCase):
 				"LAUNDRY_REDO_INVALID",
 				"LAUNDRY_RESULT_REQUIRED",
 				"LAUNDRY_DRY_INVALID",
+				"LAUNDRY_OVER_PROGRAM_LOAD",
+				"LAUNDRY_ACTUAL_INVALID",
+				"LAUNDRY_DEVIATION_REASON_REQUIRED",
+				"LAUNDRY_USE_COMPLETE",
 				"LINEN_ISSUE_KIND_INVALID",
 				"LINEN_RECIPIENT_INVALID",
 				"LINEN_SIGNATURE_INVALID",
@@ -250,6 +254,10 @@ class TestErrors(FrappeTestCase):
 				"RATE_VERSION_NOT_APPROVED",
 				# A-100: Lưu PDF nhãn cần máy in hoạt động ở trạm
 				"NO_PRINTER_AT_STATION",
+				"NO_PRINTER_FOR_METHOD",
+				"LABEL_NOT_QUEUED",
+				"LABEL_PDF_FAILED",
+				"PACK_DEPT_MISMATCH",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

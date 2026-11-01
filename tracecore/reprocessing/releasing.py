@@ -427,7 +427,16 @@ def _quarantine(doc, station, employee):
 		pack.update({"status": QUARANTINE})
 		storage._save(pack)
 	_mark_unloaded(doc, employee, now_datetime())
-	doc.update({"status": QUARANTINE, "bi_result": doc.bi_result or "Pending", "released_by": employee})
+	# A-102: cách ly chưa phải giải phóng, `released_by` chỉ ghi ở `_finalize`; người duyệt cách ly nằm ở Audit Log
+	doc.update({"status": QUARANTINE, "bi_result": doc.bi_result or "Pending"})
+	audit.log(
+		"Update",
+		"Sterilization Load",
+		doc.name,
+		new={"event": "QuarantineApproved", "employee": employee},
+		reason="QuarantineApproved",
+		station=station,
+	)
 	doc.flags.tc_sterilizing = True
 	doc.flags.ignore_permissions = True
 	doc.save()

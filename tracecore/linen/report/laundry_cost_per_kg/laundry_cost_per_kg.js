@@ -15,5 +15,11 @@ frappe.query_reports["Laundry Cost per Kg"] = {
 			default: frappe.datetime.year_end(),
 			reqd: 1,
 		},
+		{
+			fieldname: "machine_detail",
+			label: __("Machine detail"),
+			fieldtype: "Check",
+			default: 1,
+		},
 	],
 };

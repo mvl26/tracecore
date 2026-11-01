@@ -10,6 +10,8 @@
   active theo đối tượng + ngôn ngữ máy in. Ảnh xem trước ở `core.print_preview`.
 - **Chọn máy in** (BRU-REP-011): theo trạm và phương pháp của cuộn nhãn đang lắp (`Printer.label_type_loaded`).
 - **Đổi cuộn** (`set_roll`): cập nhật loại nhãn đang lắp và đưa các Print Job `Waiting` khớp phương pháp vào hàng đợi.
+- **Nhãn ra PDF** (A-101, T2/T5/T4): job vẫn tạo như cũ làm vết kiểm toán; PDF xong thì `mark_file_output` ghi `Printed`/`File`.
+  Job này không mang dấu đường server nên cron `print_server.dispatch_pending` không bao giờ gửi, còn `Printed` thì `_dispatch` bỏ qua.
 """
 
 import unicodedata
@@ -660,6 +662,60 @@ def create_job(
 		}
 	).insert(ignore_permissions=True)
 	return str(doc.name)
+
+
+def _label_not_queued(ref_name):
+	return BlockedError(
+		Block(
+			"LABEL_NOT_QUEUED",
+			_("Label is not ready to print"),
+			_("{0} has no label ready to print at this station.").format(ref_name),
+			_("Load the right label roll into the printer, or ask R10 to check the label template."),
+		)
+	)
+
+
+def _can_output_file(job, station):
+	"""Job in ra PDF được: của trạm này, đang `Queued`, hoặc đã xuất file (bù trả lời bị mất, người dùng bấm In lại)."""
+	if job.station != station:
+		return False
+	return job.status == "Queued" or (job.status == "Printed" and job.output_mode == "File")
+
+
+def label_output_job(ref_doctype, ref_name, station):
+	"""Print Job mới nhất của chứng từ tại trạm để in ra PDF, đã khóa dòng; `Waiting`, chưa có job, job khác → LABEL_NOT_QUEUED."""
+	names = frappe.get_all(
+		"Print Job",
+		filters={"ref_doctype": ref_doctype, "ref_name": ref_name, "station": station},
+		pluck="name",
+		order_by="creation desc, name desc",
+		limit=1,
+	)
+	job = frappe.get_doc("Print Job", names[0], for_update=True) if names else None
+	if job is None or not _can_output_file(job, station):
+		raise _label_not_queued(ref_name)
+	return job
+
+
+def file_output_jobs(names, ref_doctype, station):
+	"""Các Print Job trong `names` in ra PDF được (đã khóa dòng), giữ thứ tự, và tên các job bị bỏ qua."""
+	jobs, skipped = [], []
+	for name in names:
+		job = (
+			frappe.get_doc("Print Job", name, for_update=True)
+			if frappe.db.exists("Print Job", name)
+			else None
+		)
+		if job is not None and job.ref_doctype == ref_doctype and _can_output_file(job, station):
+			jobs.append(job)
+		else:
+			skipped.append(name)
+	return jobs, skipped
+
+
+def mark_file_output(job, filename):
+	"""Ghi kết quả thật của lệnh in ra PDF: `Printed`, nơi xuất `File`, `output_ref` là tên file; `attempts` đếm số lần xuất."""
+	return ack(job, "Printed", "File", output_ref=filename)
 
 
 def ack(job, status, output_mode, output_ref=None, error=None):

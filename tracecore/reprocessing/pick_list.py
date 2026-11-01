@@ -182,6 +182,8 @@ def _batch_item(row, doctype):
 			f"{row.equipment_name or ''} ({row.equipment})",
 			row.program_name or row.program,
 			started,
-			_(row.status, context=doctype),
+			_("Waiting for release")
+			if doctype == "Sterilization Load" and row.unload_scan_at and row.status != "Quarantine"
+			else _(row.status, context=doctype),
 		),
 	}

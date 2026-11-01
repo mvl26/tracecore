@@ -158,7 +158,10 @@ def overview(station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 def label_pdf(load, station, client_ts=None, token=None):
-	"""PDF nhãn QR của mẻ, máy trạm tự lưu thành file (A-99); chỉ đọc, trạm phải có máy in hoạt động (A-100)."""
+	"""PDF nhãn QR của mẻ, máy trạm tự lưu thành file (A-99, A-101); trạm phải có máy in hoạt động (A-100).
+
+	Không `@idempotent`: gọi lại chỉ xuất lại đúng job đó (A-101), không sinh chứng từ, và không lưu PDF vào Idempotency Key.
+	"""
 	require_any_role(*LOAD_ROLES)
 	load = _required_str(load, "load")
 	timestamp = parse_client_ts(client_ts)

@@ -139,6 +139,28 @@ def pack_card(raw):
 	}
 
 
+def _pack_not_released(pack):
+	return _blocked(
+		"PACK_NOT_RELEASED",
+		_("Pack is not released"),
+		_("Pack {0} is {1}; only a released pack can be stored.").format(
+			pack.name, _(pack.status, context="Pack")
+		),
+		_("Check the sterilization load result, or call R02."),
+		object_type="Pack",
+		object_name=pack.name,
+		error_code=error_codes.pack_error_code(pack),
+	)
+
+
+def scan_pack(raw):
+	"""Quét gói ở màn T6 (A-102): gói chưa giải phóng hoặc đã rời kho bị chặn ngay, không hỏi mã kệ; còn lại trả thẻ gói."""
+	card = pack_card(raw)
+	if card["status"] not in ("Released", IN_STOCK):
+		raise _pack_not_released(frappe.get_doc("Pack", card["cycle_id"]))
+	return card
+
+
 # --- Nhập kho và chuyển vị trí (FR-M2-13) ---------------------------------------------------------------
 
 
@@ -161,17 +183,7 @@ def putaway(pack_raw, location_raw, station, client_ts=None):
 	location = _location(location_code)
 	pack = _lock_pack(name)
 	if pack.status not in ("Released", IN_STOCK):
-		raise _blocked(
-			"PACK_NOT_RELEASED",
-			_("Pack is not released"),
-			_("Pack {0} is {1}; only a released pack can be stored.").format(
-				pack.name, _(pack.status, context="Pack")
-			),
-			_("Check the sterilization load result, or call R02."),
-			object_type="Pack",
-			object_name=pack.name,
-			error_code=error_codes.pack_error_code(pack),
-		)
+		raise _pack_not_released(pack)
 	if getdate(pack.expiry) < getdate(today()):
 		raise _blocked(
 			"PACK_EXPIRED",

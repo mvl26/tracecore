@@ -1,4 +1,4 @@
-/* global esc */
+/* global esc, clientTs */
 // Khung mã lỗi (FEAT-052, A-71, FR-M9-19): tiêu đề "[Mã] – Tên – đối tượng" và nút mở Hướng dẫn xử lý, dùng chung mọi màn trạm.
 // Hướng dẫn hiện inline ngay dưới khối lỗi; bản đã tải giữ lại trong trình duyệt để mở được khi mất mạng.
 (function () {
@@ -18,20 +18,28 @@
 		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	};
 
-	// A-99: mã mẻ/lô kèm nút Lưu PDF nhãn; không có mạng thì nút tắt và ghi lý do
-	// A-100: chưa có máy in ở trạm (hoặc nhãn không dựng được) thì chỉ có dòng mã, không có nút
-	window.tcCodeWithPdfHtml = function (code, action, { busy, offline, printer }) {
-		if (!printer) return `<p class="tc-cycle">${esc(code)}</p>`;
-		const off = busy || offline ? " disabled" : "";
-		const reason = offline
-			? `<p class="tc-hint">${esc(__("Saving a label PDF needs a network connection."))}</p>`
-			: "";
-		return `<div class="tc-code-row">
-			<p class="tc-cycle">${esc(code)}</p>
-			<button type="button" class="tc-btn tc-btn-secondary" data-action="${esc(action)}"${off}>${esc(
-			__("Save label PDF")
-		)}</button>
-		</div>${reason}`;
+	// A-101: lấy PDF nhãn từ máy chủ rồi lưu một file; không ném lỗi. Trả {ok, filename, res} hoặc {ok: false, reason}.
+	// Phiên trạm vừa kết thúc → {ended: true}: màn đã đổi, không báo gì thêm.
+	window.tcPrintLabelPdf = async function (station, method, args) {
+		let res = null;
+		try {
+			res = await station.rpcRead(method, { ...args, client_ts: clientTs() });
+			if (res && res.ok && res.pdf_b64) {
+				window.tcSavePdf(res.pdf_b64, res.filename);
+				return { ok: true, filename: res.filename, res };
+			}
+		} catch (error) {
+			if (error.sessionEnded) return { ok: false, ended: true };
+			return { ok: false, reason: station.failureCause(error) };
+		}
+		return { ok: false, reason: station.failureCause(null, res) };
+	};
+
+	// A-101: nút In lại của khối cảnh báo khi chưa tạo được PDF
+	window.tcPdfRetryButton = function (action, disabled) {
+		return `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="${esc(
+			action
+		)}"${disabled ? " disabled" : ""}>${esc(__("Print again"))}</button></div>`;
 	};
 
 	// #1832 cho mọi màn: nhãn liên kết của ô quét luôn theo placeholder mà màn đang đặt

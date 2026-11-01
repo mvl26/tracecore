@@ -145,6 +145,11 @@ HTTP_STATUS: dict[str, int] = {
 			"LAUNDRY_REDO_INVALID",
 			"LAUNDRY_RESULT_REQUIRED",
 			"LAUNDRY_DRY_INVALID",
+			# #1847 A-104: định mức và thực tế của lô giặt
+			"LAUNDRY_OVER_PROGRAM_LOAD",
+			"LAUNDRY_ACTUAL_INVALID",
+			"LAUNDRY_DEVIATION_REASON_REQUIRED",
+			"LAUNDRY_USE_COMPLETE",
 			# FEAT-035 A-51: cấp phát đồ vải (UC-18)
 			"LINEN_ISSUE_KIND_INVALID",
 			"LINEN_RECIPIENT_INVALID",
@@ -288,8 +293,13 @@ HTTP_STATUS: dict[str, int] = {
 			"CODE_RANGE_EXHAUSTED",
 			# FEAT-046 A-53 i: tính lại giá thành chỉ với phiên bản giá đã duyệt
 			"RATE_VERSION_NOT_APPROVED",
-			# A-100: Lưu PDF nhãn cần máy in hoạt động ở trạm
+			# A-100, A-101: nhãn ra PDF cần máy in hoạt động ở trạm, job sẵn sàng và công cụ sinh PDF
 			"NO_PRINTER_AT_STATION",
+			"NO_PRINTER_FOR_METHOD",
+			"LABEL_NOT_QUEUED",
+			"LABEL_PDF_FAILED",
+			# A-102: gói của khoa khác khoa nhận cần xác nhận kèm lý do
+			"PACK_DEPT_MISMATCH",
 		),
 		409,
 	),

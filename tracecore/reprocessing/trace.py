@@ -133,7 +133,7 @@ def cycle_detail(ref_doctype, ref_name):
 	"""Giờ bắt đầu/kết thúc, thời lượng so với chuẩn, người nạp và người dỡ của lô rửa / mẻ tiệt khuẩn (A-73); {} nếu khác."""
 	if ref_doctype not in EQUIPMENT_REFS or not ref_name:
 		return {}
-	# mẻ tiệt khuẩn cũ chưa có `unloaded_by`: người giải phóng (A-86)
+	# mẻ tiệt khuẩn cũ đã giải phóng, chưa có `unloaded_by`: người giải phóng (A-86); `released_by` chỉ có khi đã giải phóng (A-102)
 	fallback = [] if ref_doctype == "Wash Batch" else ["released_by"]
 	doc = frappe.db.get_value(
 		ref_doctype,

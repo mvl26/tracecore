@@ -63,8 +63,12 @@ class LaundryBatch {
 		return {
 			batch,
 			dryer: "",
+			dry_program: "",
 			dry_temp: "",
 			dry_minutes: "",
+			actual_kwh: "",
+			actual_water: "",
+			deviation_reason: "",
 			clean_ok: "",
 			dry_ok: "",
 			note: "",
@@ -182,8 +186,26 @@ class LaundryBatch {
 		else if (field === "note") this.form.note = value;
 		else if (field === "chem_item" && row) row.item = value;
 		else if (field === "chem_qty" && row) row.qty = value;
-		else if (field.startsWith("fin_")) this.finish[field.slice(4)] = value;
+		else if (field === "fin_dryer") {
+			this.finish.dryer = value;
+			this.finish.dry_program = "";
+			return this.show();
+		} else if (field === "fin_dry_program") {
+			this.selectDryProgram(value);
+			return this.show();
+		} else if (field.startsWith("fin_")) this.finish[field.slice(4)] = value;
 		this.refreshHint();
+	}
+
+	// Chương trình sấy điền sẵn nhiệt độ và thời gian (A-104); người dùng vẫn sửa được
+	selectDryProgram(name) {
+		this.finish.dry_program = name;
+		const row = ((this.ctx && this.ctx.dry_programs) || []).find((item) => item.name === name);
+		if (!row) return;
+		this.finish.dry_temp = row.temperature ? String(row.temperature) : this.finish.dry_temp;
+		this.finish.dry_minutes = row.duration_min
+			? String(row.duration_min)
+			: this.finish.dry_minutes;
 	}
 
 	// Gợi ý theo chương trình và kg; dựng lại riêng vùng đó khi số đổi
@@ -403,6 +425,12 @@ class LaundryBatch {
 			const minutes = TcWeighLine.parse(finish.dry_minutes);
 			if (!temp || temp <= 0) items.push(__("Enter the drying temperature in C."));
 			if (!minutes || minutes <= 0) items.push(__("Enter the drying time in minutes."));
+			for (const value of [finish.actual_kwh, finish.actual_water]) {
+				if (value.trim() && TcWeighLine.parse(value) === null) {
+					items.push(__("Actual water and power must be numbers of 0 or more."));
+					break;
+				}
+			}
 		}
 		if (finish.clean_ok === "") items.push(__("Record whether the linen is clean."));
 		if (finish.dry_ok === "") items.push(__("Record whether the linen is dry."));
@@ -433,6 +461,14 @@ class LaundryBatch {
 			args.dryer = finish.dryer;
 			args.dry_temp_c = TcWeighLine.parse(finish.dry_temp);
 			args.dry_minutes = TcWeighLine.parse(finish.dry_minutes);
+			if (finish.dry_program) args.dry_program = finish.dry_program;
+			if (finish.actual_kwh.trim()) args.actual_kwh = TcWeighLine.parse(finish.actual_kwh);
+			if (finish.actual_water.trim()) {
+				args.actual_water_l = TcWeighLine.parse(finish.actual_water);
+			}
+			if (finish.deviation_reason.trim()) {
+				args.deviation_reason = finish.deviation_reason.trim();
+			}
 		}
 		if (finish.note.trim()) args.note = finish.note.trim();
 		this.request(LAU_COMPLETE, args, (res) => {
@@ -733,6 +769,16 @@ class LaundryBatch {
 				this.option(row.name, row.equipment_name || row.name, finish.dryer === row.name)
 			)
 			.join("");
+		const dryPrograms = ((this.ctx && this.ctx.dry_programs) || [])
+			.filter((row) => row.equipment === finish.dryer)
+			.map((row) =>
+				this.option(
+					row.name,
+					`${row.program_name || row.name} (${row.temperature || 0} C)`,
+					finish.dry_program === row.name
+				)
+			)
+			.join("");
 		const result = (field, label, value) => `<div class="tc-field">
 				<label for="tc-lau-${field}">${esc(label)} *</label>
 				<select id="tc-lau-${field}" data-lf="fin_${field}">
@@ -752,6 +798,12 @@ class LaundryBatch {
 						</select>
 					</div>
 					<div class="tc-field">
+						<label for="tc-lau-dry-program">${esc(__("Dry Program"))}</label>
+						<select id="tc-lau-dry-program" data-lf="fin_dry_program">
+							<option value="">${esc(__("No dry program"))}</option>${dryPrograms}
+						</select>
+					</div>
+					<div class="tc-field">
 						<label for="tc-lau-dry-temp">${esc(__("Dry Temperature (C)"))} *</label>
 						<input id="tc-lau-dry-temp" type="text" inputmode="numeric" autocomplete="off" data-lf="fin_dry_temp" value="${esc(
 							finish.dry_temp
@@ -763,6 +815,38 @@ class LaundryBatch {
 							finish.dry_minutes
 						)}">
 					</div>
+				</div>
+				<div class="tc-linen-head">
+					<div class="tc-field">
+						<label for="tc-lau-actual-kwh">${esc(
+							__("Washer power actual (kWh), norm {0}", [
+								TcWeighLine.format((batch && batch.norm_kwh) || 0),
+							])
+						)}</label>
+						<input id="tc-lau-actual-kwh" type="text" inputmode="decimal" autocomplete="off" data-lf="fin_actual_kwh" value="${esc(
+							finish.actual_kwh
+						)}">
+					</div>
+					<div class="tc-field">
+						<label for="tc-lau-actual-water">${esc(
+							__("Water actual (L), norm {0}", [
+								TcWeighLine.format((batch && batch.norm_water_l) || 0),
+							])
+						)}</label>
+						<input id="tc-lau-actual-water" type="text" inputmode="decimal" autocomplete="off" data-lf="fin_actual_water" value="${esc(
+							finish.actual_water
+						)}">
+					</div>
+				</div>
+				<div class="tc-field">
+					<label for="tc-lau-deviation">${esc(
+						__("Deviation reason (needed above {0}%)", [
+							(this.ctx && this.ctx.deviation_percent) || 10,
+						])
+					)}</label>
+					<textarea id="tc-lau-deviation" rows="2" data-lf="fin_deviation_reason">${esc(
+						finish.deviation_reason
+					)}</textarea>
 				</div>`;
 		const weight = batch ? ` &middot; ${esc(TcWeighLine.format(batch.weight_kg))} kg` : "";
 		return `<section class="tc-t6-block" aria-label="${esc(__("Complete the batch"))}">
@@ -828,6 +912,7 @@ class LaundryBatch {
 					${line(__("Labor"), done.cost_labor)}
 					${line(__("Total Cost"), done.cost_total)}
 					${line(__("Cost per kg"), done.cost_per_kg)}
+					${done.batch_type === "Outsourced" ? "" : line(__("Norm Total Cost"), done.norm_cost_total)}
 				</tbody>
 			</table>
 			${note}

@@ -165,6 +165,8 @@ class Equipment(Document):
 	def _validate_cost(self):
 		if flt(self.purchase_value) < 0:
 			frappe.throw(_("Purchase Value cannot be negative."))
+		if flt(self.get("rated_power_kw")) < 0:
+			frappe.throw(_("Rated Power cannot be negative."))
 		if cint(self.depreciation_years) < 1:
 			frappe.throw(_("Depreciation Years must be at least 1."))
 		if cint(self.planned_loads_year) < 1:

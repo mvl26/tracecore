@@ -24,6 +24,7 @@ from tracecore.v1._common import (
 FUNCTION = service.FUNCTION
 ASSEMBLY_ROLES = ("TC R04", "TC R02", "System Manager")
 CONFIRM_ROLES = ("TC R02", "System Manager")
+TRUE_STRINGS = ("1", "true", "yes", "on")
 REF = "Assembly Record"
 
 
@@ -43,6 +44,14 @@ def _quantity(value):
 	if isinstance(value, str) and value.strip().lstrip("-").isdigit():
 		return int(value.strip())
 	return value
+
+
+def _flag(value):
+	if isinstance(value, bool):
+		return value
+	if isinstance(value, int):
+		return value != 0
+	return isinstance(value, str) and value.strip().lower() in TRUE_STRINGS
 
 
 # --- RPC --------------------------------------------------------------------------------------------------
@@ -90,6 +99,7 @@ def line(
 	variance=None,
 	client_ts=None,
 	token=None,
+	all_ok=0,
 ):
 	"""Ghi một dòng kiểm đếm hoặc quét mã dụng cụ (`raw`, FR-M1-02.2/.4); `variance` = ``Short`` khi thiếu (A-79); xem `assembly.line`."""
 	require_any_role(*ASSEMBLY_ROLES)
@@ -122,6 +132,7 @@ def line(
 				note=note,
 				photo=photo,
 				variance=variance,
+				all_ok=_flag(all_ok),
 			),
 		},
 		REF,

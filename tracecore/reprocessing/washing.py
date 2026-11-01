@@ -855,9 +855,10 @@ def lookup(raw):
 
 
 def label_pdf(batch, station):
-	"""PDF nhãn QR của lô để máy trạm lưu (A-99); chỉ đọc, không tạo Print Job.
+	"""PDF nhãn QR của lô để máy trạm lưu (A-99, A-101): dùng Print Job có sẵn, xong ghi `Printed`/`File`.
 
-	Không có lô → WASH_BATCH_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100).
+	Không có lô → WASH_BATCH_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100). Nhãn còn `Waiting`
+	→ LABEL_NOT_QUEUED. Không sinh được PDF → LABEL_PDF_FAILED, job giữ `Queued`.
 	"""
 	doc = _batch_doc(batch)
 	if core_print.object_printer(station) is None:
@@ -869,9 +870,10 @@ def label_pdf(batch, station):
 			),
 			_("Ask R10 to add a printer to this station, then print the batch label again."),
 		)
+	job = core_print.label_output_job("Wash Batch", doc.name, station)
 	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
 	program = frappe.db.get_value("Process Program", doc.program, "program_name")
-	return core_label_pdf.render(
+	result = core_label_pdf.render(
 		doc.name,
 		_("Wash batch"),
 		[
@@ -880,6 +882,8 @@ def label_pdf(batch, station):
 			_("{0} set(s)").format(len(doc.set_units)),
 		],
 	)
+	core_print.mark_file_output(job.name, result["filename"])
+	return {**result, "print_job": str(job.name)}
 
 
 # --- Dỡ lô (FR-M2-04.1/.2/.7, BRU-REP-016) ------------------------------------------------------------------
