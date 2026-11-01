@@ -535,7 +535,7 @@ class TestScanShell(FrappeTestCase):
 class TestT5ReleaseBlockByRole(FrappeTestCase):
 	"""Khối giải phóng theo role phiên, khớp `releasing._approver`: chỉ R02, R01 mới có PIN và nút."""
 
-	def html(self, roles, needs_review=False):
+	def html(self, roles, needs_review=False, missing=()):
 		return run_js(
 			self,
 			[ERR, T5, "public/js/station_t5b.js"],
@@ -545,14 +545,14 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			const station = makeStation();
 			station.session = {{token: "tok", roles: {roles!r}}};
 			const screen = new T5Release(station, {{}});
-			emit(screen.releaseHtml({{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}}, []));
+			emit(screen.releaseHtml({{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}}, {list(missing)!r}));
 			""",
 		)
 
 	def test_technician_sees_the_message_and_no_release_controls(self):
 		for roles in (["TC R05"], []):  # [] : System Manager không có role TC, server cũng từ chối
 			with self.subTest(roles=roles):
-				html = self.html(roles)
+				html = self.html(roles, missing=["cycle_result"])
 				self.assertIn("A CSSD supervisor must release the load", html)
 				self.assertIn(
 					"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN.",
@@ -571,6 +571,40 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 				for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
 					self.assertIn(shown, html)
 				self.assertNotIn("A CSSD supervisor must release the load", html)
+
+	def test_technician_gets_a_finish_button_when_nothing_is_missing(self):
+		html = self.html(["TC R05"])
+		self.assertIn('data-action="t5b-finish"', html)
+		self.assertIn("Checks are finished", html)
+
+	def test_no_finish_button_while_something_is_missing_or_for_the_supervisor(self):
+		missing = self.html(["TC R05"], missing=["cycle_result"])
+		self.assertNotIn("t5b-finish", missing)
+		self.assertIn("A CSSD supervisor must release the load", missing)
+		self.assertNotIn("t5b-finish", self.html(["TC R02"]))
+
+	def test_finish_closes_the_load_and_says_it_waits_for_release(self):
+		out = run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION
+			+ """
+			const station = makeStation();
+			station.session = {token: "tok", roles: ["TC R05"]};
+			const screen = new T5Release(station, {});
+			screen.show = () => {};
+			screen.ctx = {name: "ME-261101-09"};
+			screen.scans = {equipment_raw: "TB-1", load_raw: "ME-261101-09"};
+			const handled = screen.onAction("t5b-finish", {dataset: {}});
+			emit({handled, ctx: screen.ctx, scans: screen.scans, notice: screen.notice});
+			""",
+		)
+		self.assertTrue(out["handled"])
+		self.assertIsNone(out["ctx"])
+		self.assertEqual(out["scans"], {"equipment_raw": "", "load_raw": ""})
+		self.assertEqual(out["notice"]["variant"], "ok")
+		self.assertIn("ME-261101-09", out["notice"]["title"])
 
 	def test_review_tick_only_for_those_who_can_release(self):
 		self.assertNotIn("data-t5b-review", self.html(["TC R05"], needs_review=True))
