@@ -95,6 +95,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy, waiting: bộ chờ rửa}
 		this.overviewBusy = false;
+		this.overviewFailed = null; // nguyên nhân tải lỗi: show() không tự tải lại, chờ người dùng bấm Tải lại
 		this.draftChecked = false; // nháp phía server (theo phiên trạm) chỉ hỏi một lần mỗi phiên
 		this.draftTimer = null;
 		this.reset();
@@ -126,6 +127,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null;
 		this.overviewBusy = false;
+		this.overviewFailed = null;
 		this.draftChecked = false;
 		this.reset();
 		this.saveLoad();
@@ -572,6 +574,7 @@ class T2Wash {
 		if (this.station.isOffline()) return;
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
+		this.overviewFailed = null;
 		try {
 			const res = await this.station.rpcRead("tracecore.v1.wash.redo_queue", {
 				station: this.station.station,
@@ -585,8 +588,10 @@ class T2Wash {
 					awaiting: res.awaiting || [],
 					waiting: res.waiting || [],
 				};
+			else this.overviewFailed = this.station.failureCause(null, res);
 		} catch (error) {
 			if (error.sessionEnded) return;
+			this.overviewFailed = this.station.failureCause(error);
 		} finally {
 			this.overviewBusy = false;
 		}
@@ -1035,6 +1040,7 @@ class T2Wash {
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
 			"t2-refresh-lots": () => this.refreshLots(),
+			"t2-overview-retry": () => this.loadOverview(true),
 			"t2-save-data": () => this.saveData(),
 			"t2-edit-data": () => {
 				if (!this.form) return;
@@ -1132,7 +1138,7 @@ class T2Wash {
 	show() {
 		if (!this.station.session) return;
 		this.updatePlaceholder();
-		if (!this.overview) this.loadOverview();
+		if (!this.overview && !this.overviewFailed) this.loadOverview();
 		if (!this.draftChecked) this.restoreDraft();
 		const body = this.mode === "unload" ? this.unloadHtml() : this.loadHtml();
 		this.station.setState(
@@ -1141,6 +1147,7 @@ class T2Wash {
 				${this.modeHtml()}
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.lookup ? this.lookupHtml(this.lookup) : ""}
+				${this.overviewFailedHtml()}
 				${body}
 				${this.mode === "load" ? this.waitingHtml() : ""}
 				${this.redoHtml()}
@@ -1658,11 +1665,29 @@ class T2Wash {
 	}
 
 	// Bộ chờ rửa (A-66): chỉ để xem, vẫn quét từng Set ID; bộ vừa quét vào lô đang nạp không còn chờ
+	overviewPlaceholder() {
+		return this.overviewFailed ? "" : `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+	}
+
+	overviewFailedHtml() {
+		if (!this.overviewFailed) return "";
+		return `<section class="tc-t4-block">
+			<p class="tc-hint">${esc(__("The waiting lists could not be loaded."))} ${esc(
+			this.overviewFailed
+		)}</p>
+			<div class="tc-actions"><button type="button" class="tc-btn" data-action="t2-overview-retry">${esc(
+				__("Retry")
+			)}</button></div>
+		</section>`;
+	}
+
 	waitingHtml() {
 		if (!this.overview)
-			return `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
-				__("Loading...")
-			)}</p></section>`;
+			return this.overviewFailed
+				? ""
+				: `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
+						__("Loading...")
+				  )}</p></section>`;
 		const queued = new Set(((this.load && this.load.sets) || []).map((row) => row.set_id));
 		const rows = (this.overview.waiting || []).filter((row) => !queued.has(row.set_id));
 		const title = __("Sets waiting to wash ({0})", [rows.length]);
@@ -1704,7 +1729,7 @@ class T2Wash {
 			__("Reprocessing queue")
 		)}">
 			<h3>${esc(__("Reprocessing queue"))}</h3>
-			${this.overview ? body : `<p class="tc-loading">${esc(__("Loading..."))}</p>`}
+			${this.overview ? body : this.overviewPlaceholder()}
 		</section>`;
 	}
 
@@ -1742,7 +1767,7 @@ class T2Wash {
 
 	// `skip`: lô đang dỡ đã hiện ở trên cùng, không lặp lại trong danh sách
 	runningHtml(skip) {
-		if (!this.overview) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		if (!this.overview) return this.overviewPlaceholder();
 		const rows = (this.overview.running || []).filter((row) => row.batch !== skip);
 		if (!rows.length) return `<p class="tc-empty">${esc(__("No running wash batch."))}</p>`;
 		return rows.map((row) => this.batchCardHtml(row)).join("");

@@ -18,7 +18,7 @@ from tracecore.reprocessing import storage
 from tracecore.v1._common import STORAGE_ROLES, require_any_role, run_at_step, station_session
 
 FUNCTION = storage.FUNCTION
-READ_ROLES = (*STORAGE_ROLES, "TC R02")
+READ_ROLES = STORAGE_ROLES
 
 
 def _route(scanned, raw, station, open_pack, client_ts):

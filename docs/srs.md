@@ -59,6 +59,7 @@
 | 1.11 A-100 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-100 của `docs/architecture.md`: Nút Lưu PDF nhãn T5, T2 chỉ có khi trạm có máy in hoạt động, đảo phần "chạy được khi không có máy in" của A-99; máy chủ chặn bằng `NO_PRINTER_AT_STATION`. Không đổi mã FR. |
 | 1.11 A-99 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-99 của `docs/architecture.md`: Nút Lưu PDF nhãn trên thẻ Hoàn thành nạp T5, T2; bổ sung FR-M2-09, FR-M2-03.2, không đổi mã FR. |
 | 1.11 A-98 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-98 của `docs/architecture.md`: Tiêu đề tab theo trạm, Tổng quan hiện số liệu ngay, thương hiệu đăng nhập là bước tay. Không đổi mã FR. |
+| 1.11 A-105 | 2026-11-01 | Miyano (dev lead, người dùng quyết định ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-105 của `docs/architecture.md`: R02 chạy RPC T4, T6, T7, T8 theo ma trận phân quyền, thay phần A-91, NAV-04 giới hạn R02 ở giải phóng; lỗi tải khi mở màn không tự gọi lại. Không đổi mã FR. |
 
 ---
 

@@ -21,7 +21,7 @@ from tracecore.v1._common import (
 )
 
 FUNCTION = issuing.FUNCTION
-ISSUE_ROLES = STORAGE_ROLES  # R06 (KTV kho vô khuẩn / cấp phát) và System Manager
+ISSUE_ROLES = STORAGE_ROLES  # R06 (KTV kho vô khuẩn / cấp phát), R02 (A-105) và System Manager
 
 
 def _run(

@@ -2317,3 +2317,141 @@ class TestT5StepTranslations(FrappeTestCase):
 			with open(frappe.get_app_path("tracecore", *path.split("/")), encoding="utf-8") as handle:
 				sources = re.findall(r'__\(\s*"((?:[^"\\]|\\.)*)"', handle.read())
 			self.assertEqual([text for text in sources if text not in known], [], path)
+
+
+# Mọi màn trạm tự tải dữ liệu khi mở: (file, tên lớp). LinenIssue kế thừa LinenCollect nên nạp sau.
+LOAD_SCREENS = [
+	("public/js/station_t4.js", "T4Packing"),
+	("public/js/station_t2.js", "T2Wash"),
+	("public/js/station_t1.js", "T1Receiving"),
+	("public/js/station_t3.js", "T3Assembly"),
+	("public/js/station_t5.js", "T5Load"),
+	("public/js/station_t5b.js", "T5Release"),
+	("public/js/station_daily_test.js", "DailyTestScreen"),
+	("public/js/station_t6.js", "T6Storage"),
+	("public/js/station_t7.js", "T7Issue"),
+	("public/js/station_t8.js", "T8Usage"),
+	("public/js/tc_weigh_line.js", None),
+	("public/js/station_linen.js", "LinenCollect"),
+	("public/js/station_laundry.js", "LaundryBatch"),
+	("public/js/station_linen_issue.js", "LinenIssue"),
+	("public/js/station_waste.js", "WasteCollect"),
+	("public/js/station_waste_store.js", "WasteStore"),
+	("public/js/station_waste_handover.js", "WasteHandoverScreen"),
+]
+# Máy chủ trả lỗi cố định; đo số lần gọi của từng RPC và màn cuối cùng sau khi mọi promise đã xong
+FAILING_STATION = """
+// station.js dùng frappe.utils.escape_html (stub trong harness): đọc được chữ trên màn
+globalThis.esc = (value) => String(value === null || value === undefined ? "" : value);
+const settle = async () => { for (let i = 0; i < 400; i++) await null; };
+const failingStation = (failure) => {
+	const calls = {};
+	const states = [];
+	const base = {
+		result: element(), input: element(), form: element(), banner: element(), root: element(),
+		session: {roles: ["TC R02"], token: "t"}, sessionVersion: 1, station: "TR-007",
+		listen() {}, isOffline: () => false, focus() {}, setOffline() {},
+		setState(state, html) { states.push({state, html}); },
+		renderLoading() { states.push({state: "loading", html: ""}); },
+		businessButtons: () => "",
+		failureCause: () => "Cause: refused by the server",
+		calls, states,
+		rpc(method) {
+			calls[method] = (calls[method] || 0) + 1;
+			// vòng lặp thật không bao giờ dừng: ngắt để test báo fail thay vì treo Node
+			if (calls[method] > 20) return new Promise(() => {});
+			return failure.body ? Promise.resolve(failure.body) : Promise.reject(failure.error);
+		},
+	};
+	base.rpcRead = base.rpc;
+	return new Proxy(base, { get: (t, key) => (key in t ? t[key] : stub()) });
+};
+const openScreen = async (Screen, failure) => {
+	const station = failingStation(failure);
+	const screen = new Screen(station);
+	screen.show();
+	await settle();
+	const last = station.states[station.states.length - 1] || {};
+	return {calls: station.calls, state: last.state, html: last.html || ""};
+};
+"""
+FAILURES = {
+	"403": "{error: {status: 403}}",
+	"500": "{error: {status: 500}}",
+	"refused": """{body: {ok: false, error: {code: "X", title: "Refused", reason: "Refused by rule", action: "Ask"}}}""",
+}
+
+
+class TestLoadFailureDoesNotLoop(FrappeTestCase):
+	"""Lỗi tải khi mở màn: đúng một lần gọi mỗi RPC, không tự tải lại từ show() (T7 từng gọi >1500 lần trong 7 giây)."""
+
+	def open_all(self, failure):
+		files = ["ui/page/station/station.js", ERR, *[path for path, _name in LOAD_SCREENS]]
+		names = [[], [], *[[name] if name else [] for _path, name in LOAD_SCREENS]]
+		classes = ", ".join(f"{name}: {name}" for _path, name in LOAD_SCREENS if name)
+		return run_js(
+			self,
+			files,
+			names,
+			FAILING_STATION
+			+ f"""
+			const screens = {{{classes}}};
+			const out = {{}};
+			for (const [name, Screen] of Object.entries(screens)) out[name] = await openScreen(Screen, {failure});
+			emit(out);
+			""",
+		)
+
+	def test_each_screen_calls_each_rpc_once_after_a_failed_load(self):
+		for label, failure in FAILURES.items():
+			out = self.open_all(failure)
+			self.assertEqual({name for _path, name in LOAD_SCREENS if name}, set(out))
+			for name, seen in out.items():
+				for method, count in seen["calls"].items():
+					# T5 đọc hai danh sách mẻ bằng một RPC (dỡ mẻ, BI)
+					limit = 2 if method == "tracecore.v1.lookup.batches" else 1
+					with self.subTest(failure=label, screen=name, method=method):
+						self.assertLessEqual(count, limit)
+
+	def test_t7_shows_the_cause_and_a_retry_button_inline(self):
+		for label, reason in (("403", "cannot issue packs"), ("500", "could not process")):
+			seen = self.open_all(FAILURES[label])["T7Issue"]
+			with self.subTest(failure=label):
+				self.assertEqual(seen["state"], "error")
+				self.assertIn(reason, seen["html"])
+				self.assertIn('data-action="retry"', seen["html"])
+
+	def test_t7_retry_loads_once_more_and_recovers(self):
+		out = run_js(
+			self,
+			[ERR, "public/js/station_t7.js"],
+			[[], ["T7Issue"]],
+			FAILING_STATION
+			+ """
+			const failure = {error: {status: 403}};
+			const station = failingStation(failure);
+			const t7 = new T7Issue(station);
+			t7.show();
+			await settle();
+			const first = station.calls["tracecore.v1.issue.departments"];
+			failure.error = null;
+			failure.body = {ok: true, departments: [{name: "K1", department_name: "Khoa 1", shortage: []}]};
+			t7.retry();
+			await settle();
+			const last = station.states[station.states.length - 1];
+			emit({first, second: station.calls["tracecore.v1.issue.departments"], state: last.state, html: last.html});
+			""",
+		)
+		self.assertEqual(out["first"], 1)
+		self.assertEqual(out["second"], 2)
+		self.assertEqual(out["state"], "result")
+		self.assertIn('data-dept="K1"', out["html"])
+
+	def test_t7_failed_list_never_claims_there_are_no_departments(self):
+		seen = self.open_all(FAILURES["500"])["T7Issue"]
+		self.assertNotIn("No department is available", seen["html"])
+
+	def test_t2_failed_overview_says_why_and_offers_reload(self):
+		seen = self.open_all(FAILURES["403"])["T2Wash"]
+		self.assertIn("Cause: refused by the server", seen["html"])
+		self.assertIn('data-action="t2-overview-retry"', seen["html"])
