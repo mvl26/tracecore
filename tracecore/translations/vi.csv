@@ -7351,7 +7351,7 @@ Employee who badged in at the station; printed on the label.,Nhân viên đã qu
 Void only if this pack cannot be used. You will be asked to confirm and give a reason.,Chỉ hủy khi gói này không dùng được. Hệ thống sẽ hỏi xác nhận và lý do.,
 Only if the whole set cannot be used. You will be asked to confirm and give a reason.,Chỉ dùng khi cả bộ không dùng được. Hệ thống sẽ hỏi xác nhận và lý do.,
 Program Kind,Loại chương trình,
-Regular,Tiệt khuẩn thường,
+Regular,Tiệt khuẩn thường,Process Program
 "Test: Bowie-Dick, leak or vacuum test program of a sterilizer. It never takes packs and is run from the Daily Test tab.","Chương trình test: Bowie-Dick, rò rỉ hoặc chân không của máy tiệt khuẩn. Không nhận gói dụng cụ, chạy ở tab Kiểm tra hằng ngày.",
 Default Program,Chương trình mặc định,
 Program selected first after scanning this sterilizer at the loading station.,Chương trình được chọn sẵn sau khi quét máy ở tab Nạp máy.,
@@ -7395,7 +7395,7 @@ The machine cannot be loaded while the test runs.,"Trong lúc chạy test, máy 
 End the test when the machine finishes.,Bấm Kết thúc khi máy chạy xong.,
 Test ended on machine {0},Đã kết thúc test trên máy {0},
 Read the result and record it.,Đọc kết quả và ghi lại.,
-Testing,Đang test,
+Testing,Đang test,Daily Test
 Run the test on an empty machine. The result can be recorded after the test ends.,Chạy test khi máy rỗng. Kết quả chỉ ghi được sau khi test kết thúc.,
 Start the test,Bắt đầu test,
 End the test,Kết thúc test,
@@ -7410,12 +7410,15 @@ Not applicable,Không áp dụng,
 Load {0} on sterilizer {1} has not been unloaded yet.,Mẻ {0} trên máy {1} chưa dỡ.,
 "Enter the cycle data of load {0} and unload it first, then load this sterilizer again.","Nhập dữ liệu chu trình của mẻ {0} và dỡ mẻ trước, rồi mới nạp lại máy này.",
 Unloaded - {0},Đã dỡ – {0},
-Duration,Thời lượng,
+Duration,Thời lượng,Sterilization Load
 Loaded by,Người nạp,
-Test,Chương trình test,
-Note,Ghi chú,
-Started At,Giờ bắt đầu,
-Ended At,Giờ kết thúc,
+Test,Chương trình test,Process Program
+Note,Ghi chú,Station
+Note,Ghi chú,Daily Test
+Started At,Giờ bắt đầu,Daily Test
+Started At,Giờ bắt đầu,Sterilization Load
+Ended At,Giờ kết thúc,Daily Test
+Ended At,Giờ kết thúc,Sterilization Load
 Unloaded By,Người dỡ,
 This is an instrument set code - please scan the batch code (LR-...),Đây là mã bộ dụng cụ – vui lòng quét mã lô (LR-…),
 This is an instrument set code - please scan the load code (ME-...),Đây là mã bộ dụng cụ – vui lòng quét mã mẻ (ME-…),

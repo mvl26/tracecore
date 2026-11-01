@@ -13,7 +13,12 @@ frappe.ui.form.on("Waste Container", {
 				title: __("Confirm sorted again"),
 				fields: [
 					{ fieldname: "error", fieldtype: "HTML" },
-					{ fieldname: "note", fieldtype: "Small Text", label: __("Note"), reqd: 1 },
+					{
+						fieldname: "note",
+						fieldtype: "Small Text",
+						label: __("Note", null, "Station"),
+						reqd: 1,
+					},
 				],
 				primary_action_label: __("Confirm"),
 				primary_action: async ({ note }) => {

@@ -616,7 +616,7 @@ class LinenCollect {
 				)}</button>
 			</div>
 			<div class="tc-field">
-				<label for="tc-lin-note">${esc(__("Note"))}</label>
+				<label for="tc-lin-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-lin-note" rows="2" data-field="note">${esc(this.form.note)}</textarea>
 			</div>
 			<div class="tc-actions">

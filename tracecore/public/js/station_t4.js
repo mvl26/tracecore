@@ -760,7 +760,7 @@ class T4Packing {
 					required: true,
 					options: T4_VOID_REASONS.map((value) => [value, __(value, null, "Pack")]),
 				},
-				{ name: "note", label: __("Note"), type: "textarea" },
+				{ name: "note", label: __("Note", null, "Station"), type: "textarea" },
 			],
 			submitLabel: __("Void Cycle ID"),
 			onSubmit: (values) =>

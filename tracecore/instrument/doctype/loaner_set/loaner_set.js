@@ -97,7 +97,7 @@ function tc_loaner_return(frm) {
 					},
 					{
 						fieldname: "note",
-						label: __("Note"),
+						label: __("Note", null, "Station"),
 						fieldtype: "Data",
 						in_list_view: 1,
 						columns: 3,

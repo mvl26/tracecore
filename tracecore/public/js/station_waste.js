@@ -612,7 +612,7 @@ class WasteCollect {
 				)}</button>
 			</div>
 			<div class="tc-field">
-				<label for="tc-wst-note">${esc(__("Note"))}</label>
+				<label for="tc-wst-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-wst-note" rows="2" data-field="note">${esc(this.form.note)}</textarea>
 			</div>
 			<div class="tc-actions">

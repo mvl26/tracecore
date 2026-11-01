@@ -927,7 +927,7 @@ class T3Assembly {
 					: ""
 			}
 			<div class="tc-field">
-				<label for="tc-t3-variance-note">${esc(__("Note"))} *</label>
+				<label for="tc-t3-variance-note">${esc(__("Note", null, "Station"))} *</label>
 				<textarea id="tc-t3-variance-note" rows="2" data-form="note">${esc(form.note)}</textarea>
 			</div>
 			<div class="tc-actions">
@@ -967,7 +967,7 @@ class T3Assembly {
 				])}
 			</div>
 			<div class="tc-field">
-				<label for="tc-t3-note">${esc(__("Note"))}</label>
+				<label for="tc-t3-note">${esc(__("Note", null, "Station"))}</label>
 				<textarea id="tc-t3-note" rows="2" data-form="note">${esc(form.note)}</textarea>
 			</div>
 			<div class="tc-field">
