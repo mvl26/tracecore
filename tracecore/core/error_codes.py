@@ -21,6 +21,10 @@ _BLOCK_MAP_KEY = "tracecore_error_block_map"
 # Thêm mã `Block` mới phải chọn: gán vào `setup.error_codes` hoặc ghi vào đây (test_every_block_code_mapped_or_excluded).
 UNMAPPED_BLOCK_CODES = frozenset(
 	{
+		"LAUNDRY_ACTUAL_INVALID",
+		"LAUNDRY_DEVIATION_REASON_REQUIRED",
+		"LAUNDRY_OVER_PROGRAM_LOAD",
+		"LAUNDRY_USE_COMPLETE",
 		"ASSEMBLY_CLOSED",
 		"ASSEMBLY_NOT_FOUND",
 		"BATCH_EMPTY",
