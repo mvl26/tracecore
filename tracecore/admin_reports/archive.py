@@ -143,6 +143,10 @@ def _loads_csv(rel):
 		"released_by",
 		"released_at",
 		"release_reason",
+		"out_of_range_accepted",
+		"out_of_range_accepted_by",
+		"out_of_range_approved_by",
+		"out_of_range_reason",
 	]
 	rows = frappe.get_all(
 		LOAD,

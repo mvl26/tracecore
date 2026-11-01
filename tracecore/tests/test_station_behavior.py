@@ -744,38 +744,31 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			""",
 		)
 
-	def test_technician_sees_the_message_and_no_release_controls(self):
-		for roles in (["TC R05"], []):  # [] : System Manager không có role TC, server cũng từ chối
-			with self.subTest(roles=roles):
-				html = self.html(roles, missing=["cycle_result"])
-				self.assertIn("A CSSD supervisor must release the load", html)
-				self.assertIn(
-					"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN.",
-					html,
-				)
-				self.assertIn("tc-alert-info", html)
-				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release", "t5b-reject"):
-					self.assertNotIn(hidden, html)
-				self.assertNotRegex(html, r"R0\d")
+	def test_role_without_release_right_sees_the_message_and_no_controls(self):
+		html = self.html([], missing=["cycle_result"])  # System Manager không có role TC, server cũng từ chối
+		self.assertIn("A CSSD supervisor must release the load", html)
+		self.assertIn("tc-alert-info", html)
+		for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release", "t5b-reject"):
+			self.assertNotIn(hidden, html)
+		self.assertNotRegex(html, r"R0\d")
 
-	def test_r02_and_r01_keep_pin_reason_and_button(self):
-		for role in ("TC R02", "TC R01"):
+	def test_in_range_technician_and_r02_release_without_pin(self):
+		for role in ("TC R05", "TC R02"):
 			with self.subTest(role=role):
 				html = self.html([role])
-				for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
-					self.assertIn(shown, html)
-				self.assertNotIn("A CSSD supervisor must release the load", html)
+				self.assertIn('data-action="t5b-release"', html)
+				self.assertIn('tc-btn-primary" data-action="t5b-release"', html)
+				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-finish", "must release the load"):
+					self.assertNotIn(hidden, html)
 
-	def test_technician_gets_a_finish_button_when_nothing_is_missing(self):
-		html = self.html(["TC R05"])
-		self.assertIn('data-action="t5b-finish"', html)
-		self.assertIn("Checks are finished", html)
+	def test_technician_cannot_reject_but_the_supervisor_can(self):
+		self.assertNotIn("t5b-reject", self.html(["TC R05"]))
+		self.assertIn("t5b-reject", self.html(["TC R02"]))
 
-	def test_no_finish_button_while_something_is_missing_or_for_the_supervisor(self):
-		missing = self.html(["TC R05"], missing=["cycle_result"])
-		self.assertNotIn("t5b-finish", missing)
-		self.assertIn("A CSSD supervisor must release the load", missing)
-		self.assertNotIn("t5b-finish", self.html(["TC R02"]))
+	def test_r01_alone_can_add_an_emergency_reason_with_pin(self):
+		html = self.html(["TC R01"])
+		for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
+			self.assertIn(shown, html)
 
 	def test_finish_closes_the_load_and_says_it_waits_for_release(self):
 		out = run_js(
@@ -1960,20 +1953,22 @@ class TestT5StepFlow(FrappeTestCase):
 			release.onAction("t5b-release", {dataset: {}});
 			await flush();
 			const sent = station.calls.find((call) => call.method === "tracecore.v1.release.release");
-			emit({step: stepOf(station.html), html: station.html, onLoad: station.screen === t5, proof: sent.args.pin_proof});
+			emit({step: stepOf(station.html), html: station.html, onLoad: station.screen === t5, proof: sent.args.pin_proof || null});
 			""",
 		)
 		self.assertEqual(out["step"], 1)
 		self.assertTrue(out["onLoad"])
-		self.assertEqual(out["proof"], "PROOF")  # PIN R02 đổi thành proof như cũ
+		self.assertIsNone(out["proof"])  # A-106: trong dải không cần PIN
 		self.assertIn("released", out["html"])
 
 	def test_technician_waits_at_step_two_then_finish_returns_to_step_one(self):
+		# A-106: chỉ còn với mẻ Cần xem xét do sự cố máy
 		out = t5_run(
 			self,
 			"""
 			const {station, t5} = flow({roles: ["TC R05"],
-				ctx: context({data_complete: 1, cycle_result: "Pass", missing: [], status: "Cycle Complete"})});
+				ctx: context({data_complete: 1, cycle_result: "Pass", missing: [], status: "Cycle Complete",
+					needs_review: 1, release_rule: "supervisor"})});
 			t5.stepSettled = true;
 			t5.goStep(2, {load: LOAD, equipment: MACHINE});
 			await flush();
@@ -2455,3 +2450,52 @@ class TestLoadFailureDoesNotLoop(FrappeTestCase):
 		seen = self.open_all(FAILURES["403"])["T2Wash"]
 		self.assertIn("Cause: refused by the server", seen["html"])
 		self.assertIn('data-action="t2-overview-retry"', seen["html"])
+
+
+class TestT5OutOfRangeScreen(FrappeTestCase):
+	"""A-106: màn T5 theo quy tắc máy chủ trả về; T2 giữ nguyên."""
+
+	def render(self, roles, **ctx):
+		return run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION
+			+ f"""
+			const station = makeStation();
+			station.session = {{token: "tok", roles: {roles!r}}};
+			const screen = new T5Release(station, {{}});
+			screen.ctx = Object.assign({{load: "ME-1", data_complete: 1, cycle_result: "Pass", missing: [],
+				indicator_state: {{}}, params: [{{parameter_name: "Temperature", value: 150, outside_range: 1}}],
+				out_of_range_names: ["Temperature"], release_rule: "head"}}, {ctx!r});
+			emit(screen.releaseHtml(screen.ctx, []));
+			""",
+		)
+
+	def test_r02_and_technician_see_why_and_cannot_release(self):
+		for role in ("TC R02", "TC R05"):
+			with self.subTest(role=role):
+				html = self.render([role])
+				self.assertIn("Head of KSNK approval is needed", html)
+				self.assertIn("Temperature", html)
+				self.assertNotIn("t5b-release", html)
+				self.assertNotIn("tc-t5b-pin", html)
+
+	def test_r01_gets_pin_reason_and_button(self):
+		html = self.render(["TC R01"])
+		for shown in ("tc-t5b-pin", "tc-t5b-out-reason", 'data-action="t5b-release"'):
+			self.assertIn(shown, html)
+
+	def test_form_messages_differ_between_t5_and_t2(self):
+		read = lambda path: open(frappe.get_app_path("tracecore", path), encoding="utf-8").read()  # noqa: E731
+		self.assertIn("a Pass needs head of KSNK approval", read(T5))
+		self.assertNotIn("a Pass is not allowed", read(T5))
+		self.assertIn("a Pass is not allowed", read(T2))
+
+	def test_vi_message_names_the_head(self):
+		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
+		rows = {row[0]: row[1] for row in csv.reader(open(path, encoding="utf-8")) if len(row) > 1}
+		self.assertEqual(
+			rows["Head of KSNK approval is needed because the cycle data is outside the range: {0}"],
+			"Cần trưởng khoa duyệt vì dữ liệu chu trình ngoài dải: {0}",
+		)

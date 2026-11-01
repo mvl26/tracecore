@@ -26,9 +26,11 @@ class TestTestCards(IsolatedTestCase):
 	def test_creates_a_card_per_role_with_different_competency(self):
 		result = self.run_it()
 		self.assertEqual(result["count"], len(test_cards.SPECS))
-		self.assertGreaterEqual(result["count"], 7)
+		self.assertGreaterEqual(result["count"], 8)
 		rows = {row["role"]: row for row in self.entries()}
-		self.assertEqual(set(rows), {"TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R08", "TC R09"})
+		self.assertEqual(
+			set(rows), {"TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R08", "TC R09"}
+		)
 		r03 = frappe.db.get_value("Employee", {"tc_card_id": rows["TC R03"]["card"]}, "name")
 		self.assertTrue(station_auth.can_work_at(r03, "TR-001"))
 		self.assertFalse(station_auth.can_work_at(r03, "TR-004"))
@@ -71,3 +73,7 @@ class TestTestCards(IsolatedTestCase):
 	def test_output_file_must_be_outside_the_public_site_files(self):
 		with self.assertRaises(frappe.ValidationError):
 			test_cards.create_test_cards(out_path=frappe.get_site_path("public", "files", "cards.json"))
+
+	def test_r01_card_can_work_at_the_sterilization_unload_stations(self):
+		spec = next(row for row in test_cards.SPECS if row[0] == "TC R01")
+		self.assertEqual(spec[2], ("STERI_UNLOAD",))

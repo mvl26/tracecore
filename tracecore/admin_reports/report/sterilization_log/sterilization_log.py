@@ -72,6 +72,12 @@ def _columns():
 			"fieldtype": "Datetime",
 			"width": 140,
 		},
+		{
+			"fieldname": "out_of_range_note",
+			"label": _("Out of Range Accepted", context=CONTEXT),
+			"fieldtype": "Data",
+			"width": 260,
+		},
 		{"fieldname": "result", "label": _("Result", context=CONTEXT), "fieldtype": "Data", "width": 100},
 	]
 

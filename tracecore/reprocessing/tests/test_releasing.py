@@ -262,25 +262,12 @@ class TestRelease(ReleaseCase):
 		self.assertEqual(blocked(self, self.release).items, ["bowie_dick"])
 		self.assertEqual(self.statuses(), ["In Load", "In Load"])  # không đổi gì
 
-	def test_only_r02_with_a_valid_proof_releases(self):
-		self.ready()
-		session, _proof = self.proof_of(self.r02)
-		self.assertEqual(
-			blocked(self, releasing.release, **self.scans(), session=session, pin_proof="sai").code,
-			"R02_CONFIRM_REQUIRED",
-		)
-		self.assertEqual(blocked(self, self.release, self.r05).code, "R02_CONFIRM_REQUIRED")
-		self.assertEqual(
-			blocked(self, self.release, self.r01).code, "R02_CONFIRM_REQUIRED"
-		)  # R01 cần lý do khẩn
-		self.assertEqual(self.statuses(), ["In Load", "In Load"])
-
 	@bru("BRU-REP-015")
 	def test_review_flag_needs_r02_confirmation(self):
 		self.save_data()
 		self.result()
 		self.good_steam_indicators()
-		# Cần xem xét do sự cố máy: R02 xác nhận khi giải phóng; ngoài dải chặn Đạt từ trước (A-89)
+		# Cần xem xét do sự cố máy: R02 xác nhận khi giải phóng (A-106)
 		frappe.db.set_value("Sterilization Load", self.load.name, "needs_review", 1)
 		self.assertEqual(blocked(self, self.release).items, ["review"])
 		self.assertEqual(self.release(review_confirmed=True)["status"], "Released")
@@ -288,9 +275,9 @@ class TestRelease(ReleaseCase):
 	@bru("BRU-REP-005")
 	def test_r01_emergency_release_needs_a_reason(self):
 		self.ready()
-		self.assertEqual(
-			blocked(self, self.release, self.r01, emergency_reason=" ").code, "R02_CONFIRM_REQUIRED"
-		)
+		session = make_station_session(self.r01, station=STATION)["session"]
+		no_pin = blocked(self, releasing.release, **self.scans(), session=session, emergency_reason="Khẩn")
+		self.assertEqual(no_pin.code, "R02_CONFIRM_REQUIRED")
 		done = self.release(self.r01, emergency_reason="Ca mổ khẩn không chờ được")
 		self.assertEqual(done["status"], "Released")
 		self.assertIn(
@@ -593,3 +580,191 @@ class TestReleasedByOnlyAtRelease(ReleaseCase):
 		before = frappe.db.get_value("Sterilization Load", self.load.name, "released_by")
 		patch_module.execute()
 		self.assertEqual(frappe.db.get_value("Sterilization Load", self.load.name, "released_by"), before)
+
+
+class TestT5ReleaseRule(ReleaseCase):
+	"""A-106: trong dải KTV, R02, R01 tự giải phóng không PIN; ngoài dải chỉ R01 tại trạm, có PIN và lý do."""
+
+	def session_of(self, user):
+		return make_station_session(user, station=STATION)["session"]
+
+	def bare_release(self, user, **extra):
+		return releasing.release(**self.scans(), session=self.session_of(user), **extra)
+
+	def employee_of(self, user):
+		return frappe.db.get_value("Employee", {"user_id": user}, "name")
+
+	def out_of_range_ready(self):
+		self.save_data(Temperature="150")
+		releasing.set_cycle_result(
+			**self.scans(),
+			result="Pass",
+			confirmed=True,
+			employee=self.employee.name,
+			accept_out_of_range=True,
+		)
+		self.good_steam_indicators()
+
+	def field(self, name):
+		return frappe.db.get_value("Sterilization Load", self.load.name, name)
+
+	@bru("BRU-REP-005")
+	def test_in_range_each_release_role_needs_no_pin_and_is_recorded(self):
+		for user in (self.r02, self.r05):
+			self.setUp_new_load()
+			self.ready()
+			done = self.bare_release(user)
+			self.assertEqual(done["status"], "Released")
+			self.assertEqual(self.field("released_by"), self.employee_of(user))
+
+	def setUp_new_load(self):
+		self.packs = [make_load_ready_pack(), make_load_ready_pack()]
+		self.load = make_load(self.machine, self.program, self.packs, operator=self.employee.name)
+
+	def test_in_range_r01_releases_without_pin_or_reason(self):
+		self.ready()
+		self.assertEqual(self.bare_release(self.r01)["status"], "Released")
+		self.assertFalse(self.field("release_reason"))
+
+	def test_in_range_other_role_is_refused(self):
+		self.ready()
+		other = make_user("rel-r06@test.local", roles=("TC R06",))
+		self.assertEqual(blocked(self, self.bare_release, other).code, "R02_CONFIRM_REQUIRED")
+		self.assertEqual(self.statuses(), ["In Load", "In Load"])
+
+	def test_other_gates_still_stop_the_technician(self):
+		frappe.db.delete("Daily Test", {"equipment": self.machine.name})
+		self.save_data()
+		self.result()
+		block = blocked(self, self.bare_release, self.r05)
+		self.assertEqual(block.code, "LOAD_NOT_RELEASABLE")
+		self.assertCountEqual(block.items, ["chemical_class_5", "bowie_dick"])
+
+	@bru("BRU-REP-015")
+	def test_needs_review_from_a_machine_incident_keeps_the_supervisor(self):
+		self.ready()
+		frappe.db.set_value("Sterilization Load", self.load.name, "needs_review", 1)
+		self.assertEqual(blocked(self, self.bare_release, self.r05).code, "R02_CONFIRM_REQUIRED")
+		self.assertEqual(blocked(self, self.bare_release, self.r02).items, ["review"])
+		self.assertEqual(self.bare_release(self.r02, review_confirmed=True)["status"], "Released")
+
+	def test_saving_data_again_does_not_wipe_a_machine_incident_flag(self):
+		self.save_data()
+		frappe.db.set_value("Sterilization Load", self.load.name, "needs_review", 1)
+		self.save_data()
+		self.assertEqual(self.field("needs_review"), 1)
+
+	def test_requires_bi_still_goes_to_quarantine_for_the_technician(self):
+		frappe.db.set_value("Sterilization Load", self.load.name, "requires_bi", 1)
+		self.ready()
+		self.assertEqual(self.bare_release(self.r05)["status"], "Quarantine")
+
+	def test_out_of_range_pass_needs_the_deliberate_choice(self):
+		self.save_data(Temperature="150")
+		self.assertEqual(blocked(self, self.result).code, "CYCLE_DATA_OUT_OF_RANGE")
+		self.assertEqual(self.result("Fail")["cycle_result"], "Fail")
+
+	def test_machine_pass_on_out_of_range_data_is_not_accepted_silently(self):
+		self.save_data(Temperature="150")
+		frappe.db.set_value("Sterilization Load", self.load.name, "cycle_result", "Pass")
+		self.good_steam_indicators()
+		session, proof = self.proof_of(self.r01)
+		block = blocked(
+			self, releasing.release, **self.scans(), session=session, pin_proof=proof, out_of_range_reason="x"
+		)
+		self.assertEqual(block.code, "CYCLE_DATA_OUT_OF_RANGE")
+
+	def test_out_of_range_r02_and_technician_are_refused_and_told_why(self):
+		self.out_of_range_ready()
+		for user in (self.r02, self.r05):
+			session, proof = self.proof_of(user)
+			block = blocked(
+				self,
+				releasing.release,
+				**self.scans(),
+				session=session,
+				pin_proof=proof,
+				out_of_range_reason="x",
+			)
+			self.assertEqual((block.code, block.http_status), ("HEAD_APPROVAL_REQUIRED", 409))
+			self.assertIn("Temperature", block.reason)
+		self.assertEqual(self.statuses(), ["In Load", "In Load"])
+
+	def test_out_of_range_r01_needs_both_pin_and_reason(self):
+		self.out_of_range_ready()
+		session, proof = self.proof_of(self.r01)
+		attempts = (
+			{"out_of_range_reason": "Đã kiểm tra chỉ thị"},
+			{"pin_proof": "sai", "out_of_range_reason": "Đã kiểm tra chỉ thị"},
+			{"pin_proof": proof, "out_of_range_reason": "  "},
+		)
+		for extra in attempts:
+			with self.subTest(extra=extra):
+				block = blocked(self, releasing.release, **self.scans(), session=session, **extra)
+				self.assertEqual(block.code, "HEAD_APPROVAL_REQUIRED")
+		self.assertEqual(self.statuses(), ["In Load", "In Load"])
+
+	@bru("BRU-REP-015")
+	def test_out_of_range_r01_with_pin_and_reason_releases_and_audits(self):
+		self.out_of_range_ready()
+		session, proof = self.proof_of(self.r01)
+		done = releasing.release(
+			**self.scans(), session=session, pin_proof=proof, out_of_range_reason="Indicators passed"
+		)
+		self.assertEqual(done["status"], "Released")
+		approver = self.employee_of(self.r01)
+		self.assertEqual(self.field("released_by"), approver)
+		self.assertEqual(self.field("out_of_range_approved_by"), approver)
+		self.assertEqual(self.field("out_of_range_reason"), "Indicators passed")
+		names = frappe.get_all(
+			"Audit Log",
+			filters={"ref_name": self.load.name, "action": "Override", "reason": "OutOfRangeApproved"},
+			pluck="name",
+		)
+		self.assertEqual(len(names), 1)
+		text = frappe.as_json(frappe.get_doc("Audit Log", names[0]).as_dict())
+		for piece in (approver, "Indicators passed", "Temperature", "150"):
+			self.assertIn(piece, text)
+
+	def test_out_of_range_keeps_the_bi_gate_even_with_an_emergency_reason(self):
+		frappe.db.set_value("Sterilization Load", self.load.name, "requires_bi", 1)
+		self.out_of_range_ready()
+		session, proof = self.proof_of(self.r01)
+		done = releasing.release(
+			**self.scans(),
+			session=session,
+			pin_proof=proof,
+			out_of_range_reason="Lý do",
+			emergency_reason="Khẩn",
+		)
+		self.assertEqual(done["status"], "Quarantine")
+
+	def test_edit_back_in_range_returns_to_the_simple_rule(self):
+		self.out_of_range_ready()
+		self.save_data()
+		self.assertEqual(self.bare_release(self.r05)["status"], "Released")
+		self.assertFalse(self.field("out_of_range_approved_by"))
+		self.assertFalse(self.field("out_of_range_accepted"))
+
+	def test_edit_to_another_out_of_range_value_must_be_accepted_again(self):
+		self.out_of_range_ready()
+		self.save_data(Temperature="151")
+		session, proof = self.proof_of(self.r01)
+		block = blocked(
+			self, releasing.release, **self.scans(), session=session, pin_proof=proof, out_of_range_reason="x"
+		)
+		self.assertEqual(block.code, "CYCLE_DATA_OUT_OF_RANGE")
+
+	def test_reject_of_an_out_of_range_load_needs_no_approval(self):
+		self.out_of_range_ready()
+		self.assertEqual(releasing.reject(**self.scans(), reason="Ngoài dải")["status"], "Failed")
+
+	def test_context_tells_the_screen_which_rule_applies(self):
+		self.ready()
+		self.assertEqual(releasing.context(**self.scans())["release_rule"], "technician")
+		frappe.db.set_value("Sterilization Load", self.load.name, "needs_review", 1)
+		self.assertEqual(releasing.context(**self.scans())["release_rule"], "supervisor")
+		self.save_data(Temperature="150")
+		seen = releasing.context(**self.scans())
+		self.assertEqual(seen["release_rule"], "head")
+		self.assertEqual(seen["out_of_range_names"], ["Temperature"])

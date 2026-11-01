@@ -36,6 +36,8 @@ SPECS = (
 		("RECEIVE", "WASH_LOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD", "PUTAWAY", "ISSUE"),
 	),
 	("TC R09", "Kho vật tư", ()),
+	# A-106: trưởng khoa KSNK duyệt mẻ ngoài dải bằng thẻ và PIN tại trạm dỡ mẻ
+	("TC R01", "Trưởng khoa KSNK", ("STERI_UNLOAD",)),
 )
 
 

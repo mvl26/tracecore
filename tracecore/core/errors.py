@@ -232,6 +232,7 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_NOT_RUNNING",
 			"EQUIPMENT_MISMATCH",
 			"R02_CONFIRM_REQUIRED",
+			"HEAD_APPROVAL_REQUIRED",  # A-106
 			# FEAT-026 A-17: cấp phát T7
 			"PACK_IN_OTHER_ISSUE",
 			# FEAT-027 A-19: Cycle ID không dùng được ở T8 (FR-M2-18)

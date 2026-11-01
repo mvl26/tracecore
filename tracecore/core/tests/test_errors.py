@@ -207,6 +207,7 @@ class TestErrors(FrappeTestCase):
 				"BATCH_NOT_RUNNING",
 				"EQUIPMENT_MISMATCH",
 				"R02_CONFIRM_REQUIRED",
+				"HEAD_APPROVAL_REQUIRED",
 				# FEAT-026 A-17: cấp phát T7
 				"PACK_IN_OTHER_ISSUE",
 				"PACK_NOT_ISSUED",

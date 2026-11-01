@@ -975,7 +975,7 @@ class T5Load {
 					reason: [
 						res.needs_review
 							? __(
-									"Some values are outside the program range: a Pass is not allowed."
+									"Some values are outside the program range: a Pass needs head of KSNK approval."
 							  )
 							: "",
 						this.durationText(res.duration),
@@ -1719,7 +1719,7 @@ class T5Load {
 					)}" type="text" inputmode="decimal" autocomplete="off"
 						data-param="${esc(param.parameter_name)}" value="${esc(form.values[param.parameter_name] || "")}">
 					<p class="tc-t5-review tc-t2-review"${state === "review" ? "" : " hidden"}>${esc(
-					__("Outside the program range - a Pass is not allowed")
+					__("Outside the program range - a Pass needs head of KSNK approval")
 				)}</p>
 				${
 					param.default_value != null
