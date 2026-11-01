@@ -26,12 +26,24 @@
   "chemicals",
   "section_drying",
   "dryer",
+  "dry_program",
   "dry_temp_c",
   "dry_minutes",
   "column_break_result",
   "clean_ok",
   "dry_ok",
   "result_note",
+  "section_norm",
+  "norm_preview_html",
+  "norm_kwh",
+  "actual_kwh",
+  "norm_dry_kwh",
+  "actual_dry_kwh",
+  "column_break_norm",
+  "norm_water_l",
+  "actual_water_l",
+  "norm_deviation_pct",
+  "deviation_reason",
   "section_cost",
   "cost_electricity",
   "cost_water",
@@ -41,6 +53,13 @@
   "cost_total",
   "cost_per_kg",
   "cost_note",
+  "section_norm_cost",
+  "norm_cost_electricity",
+  "norm_cost_water",
+  "norm_cost_chemical",
+  "column_break_norm_cost",
+  "norm_cost_total",
+  "norm_cost_per_kg",
   "amended_from"
  ],
  "fields": [
@@ -86,14 +105,16 @@
    "fieldtype": "Link",
    "label": "Washer",
    "options": "Equipment",
-   "depends_on": "eval:doc.batch_type=='In-house'"
+   "depends_on": "eval:doc.batch_type=='In-house'",
+   "mandatory_depends_on": "eval:doc.batch_type=='In-house'"
   },
   {
    "fieldname": "program",
    "fieldtype": "Link",
    "label": "Process Program",
    "options": "Process Program",
-   "depends_on": "eval:doc.batch_type=='In-house'"
+   "depends_on": "eval:doc.batch_type=='In-house'",
+   "mandatory_depends_on": "eval:doc.batch_type=='In-house'"
   },
   {
    "fieldname": "operator",
@@ -159,7 +180,8 @@
    "fieldname": "chemicals",
    "fieldtype": "Table",
    "label": "Chemicals",
-   "options": "Laundry Batch Chemical"
+   "options": "Laundry Batch Chemical",
+   "description": "Filled from the norm of the program. Change the quantity if the batch really used another amount."
   },
   {
    "fieldname": "section_drying",
@@ -171,7 +193,7 @@
    "fieldtype": "Link",
    "label": "Dryer",
    "options": "Equipment",
-   "read_only": 1
+   "depends_on": "eval:doc.batch_type=='In-house'"
   },
   {
    "fieldname": "dry_temp_c",
@@ -269,12 +291,140 @@
    "read_only": 1,
    "no_copy": 1,
    "print_hide": 1
+  },
+  {
+   "fieldname": "dry_program",
+   "fieldtype": "Link",
+   "label": "Dry Program",
+   "options": "Process Program",
+   "depends_on": "eval:doc.batch_type=='In-house'"
+  },
+  {
+   "fieldname": "section_norm",
+   "fieldtype": "Section Break",
+   "label": "Norm and Actual",
+   "depends_on": "eval:doc.batch_type=='In-house'"
+  },
+  {
+   "fieldname": "norm_preview_html",
+   "fieldtype": "HTML",
+   "label": "Norm cost"
+  },
+  {
+   "fieldname": "norm_kwh",
+   "fieldtype": "Float",
+   "label": "Washer Power Norm (kWh)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "actual_kwh",
+   "fieldtype": "Float",
+   "label": "Washer Power Actual (kWh)",
+   "non_negative": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "norm_dry_kwh",
+   "fieldtype": "Float",
+   "label": "Dryer Power Norm (kWh)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "actual_dry_kwh",
+   "fieldtype": "Float",
+   "label": "Dryer Power Actual (kWh)",
+   "non_negative": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_norm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "norm_water_l",
+   "fieldtype": "Float",
+   "label": "Water Norm (L)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "actual_water_l",
+   "fieldtype": "Float",
+   "label": "Water Actual (L)",
+   "non_negative": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "norm_deviation_pct",
+   "fieldtype": "Percent",
+   "label": "Largest Deviation from Norm",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "deviation_reason",
+   "fieldtype": "Small Text",
+   "label": "Deviation Reason",
+   "no_copy": 1,
+   "description": "Required to complete the batch when the deviation is above the threshold in TraceCore Settings."
+  },
+  {
+   "fieldname": "section_norm_cost",
+   "fieldtype": "Section Break",
+   "label": "Norm Cost",
+   "depends_on": "eval:doc.batch_type=='In-house'"
+  },
+  {
+   "fieldname": "norm_cost_electricity",
+   "fieldtype": "Currency",
+   "label": "Norm Electricity",
+   "precision": "0",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "norm_cost_water",
+   "fieldtype": "Currency",
+   "label": "Norm Water",
+   "precision": "0",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "norm_cost_chemical",
+   "fieldtype": "Currency",
+   "label": "Norm Chemicals",
+   "precision": "0",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_norm_cost",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "norm_cost_total",
+   "fieldtype": "Currency",
+   "label": "Norm Total Cost",
+   "precision": "0",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "norm_cost_per_kg",
+   "fieldtype": "Currency",
+   "label": "Norm Cost per kg",
+   "precision": "0",
+   "read_only": 1,
+   "no_copy": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-29 12:00:00.000000",
+ "modified": "2026-11-01 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Laundry Batch",

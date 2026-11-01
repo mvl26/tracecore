@@ -31,6 +31,7 @@ class LaundryCostCase(IsolatedTestCase):
 			minutes=45,
 			kwh=2,
 			water=100,
+			temperature=75,
 			consumables=[
 				{"item": DISINFECTANT, "qty_per_load": 1, "qty_per_kg": 0.5},
 				{"item": DETERGENT, "qty_per_kg": 0.1},
@@ -134,7 +135,9 @@ class TestLaundryCost(LaundryCostCase):
 
 	def test_program_without_norm_is_costed_without_chemicals(self):  # FR-M3-04.2
 		self.rates()
-		bare = factories.make_program(self.washer.name, code="MG-BARE", minutes=60, kwh=1, water=0)
+		bare = factories.make_program(
+			self.washer.name, code="MG-BARE", minutes=60, kwh=1, water=0, temperature=75
+		)
 		batch = self.batch(program=bare.name)
 		from_laundry.on_laundry_complete(self.ctx(batch))
 		cost = self.cost_of(batch)
