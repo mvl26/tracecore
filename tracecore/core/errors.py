@@ -313,6 +313,8 @@ HTTP_STATUS: dict[str, int] = {
 	"WASTE_NOT_HELD": 409,
 }
 DEFAULT_HTTP_STATUS = 409
+# Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ
+TITLE_OVER_CATALOG_NAME = frozenset({"QT-001"})
 
 
 @dataclass
@@ -350,6 +352,8 @@ class Block:
 			data.update(
 				catalog, object_name=self.object_name, object_label=self.object_label or self.object_name
 			)
+			if catalog["error_code"] in TITLE_OVER_CATALOG_NAME:
+				data["error_name"] = self.title
 		return {key: value for key, value in data.items() if value is not None}
 
 
