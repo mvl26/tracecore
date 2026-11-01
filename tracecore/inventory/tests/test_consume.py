@@ -83,6 +83,13 @@ class TestConsumeFor(ConsumeCase):
 		self.assertEqual({(row.batch_no, row.qty) for row in doc.items}, {(self.near, 5), (self.far, 3)})
 		self.assertEqual(stock_of(ITEM), 7)
 
+	def test_company_comes_from_the_warehouse_when_user_has_no_default(self):
+		# chạy bằng Administrator hoặc user không có Company mặc định, site nhiều bệnh viện không đặt mặc định chung
+		with patch("erpnext.get_default_company", return_value=None):
+			result = consume.consume_for("Wash Batch", "WB-F42-CO", [{"item": ITEM, "qty": 1}], reason="Auto")
+		company = frappe.db.get_value("Warehouse", self.warehouse, "company")
+		self.assertEqual(frappe.db.get_value("Stock Entry", result["entry"], "company"), company)
+
 	def test_same_source_is_issued_once(self):
 		first = consume.consume_for("Wash Batch", "WB-F42-2", [{"item": ITEM, "qty": 2}], reason="Auto")
 		second = consume.consume_for("Wash Batch", "WB-F42-2", [{"item": ITEM, "qty": 2}], reason="Auto")
@@ -229,6 +236,37 @@ class TestLoadRelease(ProgramCase):
 		):
 			consume.on_load_release(self.ctx())
 		self.assertEqual(emit.call_args.args[0], "CONSUMPTION_FAILED")
+
+
+class TestConsumptionFailedNotice(IsolatedTestCase):
+	def notice(self):
+		frappe.translate.clear_cache()
+		previous = frappe.local.lang
+		frappe.local.lang = "vi"
+		try:
+			with patch("tracecore.inventory.consume.notification.emit") as emit:
+				consume._notify_failed("Wash Batch", "LR-1", ValueError("Thiếu Công ty"), ["HC-1"])
+		finally:
+			frappe.local.lang = previous
+		return emit.call_args
+
+	def test_subject_is_vietnamese_and_names_the_cause(self):
+		subject = self.notice().args[2]
+		self.assertIn("Lô rửa LR-1", subject)
+		self.assertNotIn("Wash Batch", subject)
+		self.assertIn("Thiếu Công ty", subject)
+
+	def test_button_opens_a_new_material_issue_for_the_source(self):
+		link = self.notice().kwargs["link"]
+		self.assertTrue(link.startswith("/app/stock-entry/new?"), link)
+		self.assertIn("stock_entry_type=Material%20Issue", link)
+		self.assertIn("tc_source_name=LR-1", link)
+
+	def test_a_long_cause_is_cut_in_the_subject_but_kept_in_the_message(self):
+		with patch("tracecore.inventory.consume.notification.emit") as emit:
+			consume._notify_failed("Wash Batch", "LR-1", ValueError("x" * 500), ["HC-1"])
+		self.assertLess(len(emit.call_args.args[2]), 300)
+		self.assertIn("x" * 500, emit.call_args.kwargs["message"])
 
 
 class TestHooksWiring(IsolatedTestCase):

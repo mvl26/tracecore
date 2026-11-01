@@ -193,6 +193,9 @@ def t5_page(page):
 	page.goto(f"/app/station?station={station}")
 	page.locator("#tc-card-input").fill(card)
 	page.locator("#tc-card-input").press("Enter")
+	# A-103: bước mặc định suy từ dữ liệu (demo có mẻ đang chạy nên mở bước 2); các test bắt đầu ở bước Nạp máy
+	page.locator(".tc-result .tc-t5").wait_for(timeout=30000)
+	page.locator("[data-action='t5-step'][data-step='1']").click()
 	page.locator(".tc-result[data-state='empty'] .tc-t5").wait_for(timeout=30000)
 	return page
 

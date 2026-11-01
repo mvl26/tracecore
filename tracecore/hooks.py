@@ -75,6 +75,9 @@ app_include_js = ["tracecore.bundle.js"]
 # T1 tiếp nhận (SCR-05, SCR-34, FEAT-019), T3 kiểm đếm (SCR-07, FEAT-020), T5 nạp mẻ (SCR-09, SCR-35, FEAT-022),
 # T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023), T7 cấp phát (SCR-12/SCR-36, FEAT-026) và T8 quét sử dụng (SCR-37,
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
+# mã trạm đổi thì bỏ script Page trạm trong localStorage của trình duyệt (tc_page_cache.js)
+extend_bootinfo = "tracecore.ui.page_cache.extend_bootinfo"
+
 page_js = {
 	"station": [
 		# FEAT-052 A-71: tiêu đề mã lỗi và Hướng dẫn xử lý dùng chung, nạp trước các màn
@@ -119,6 +122,8 @@ doctype_js = {
 	"Item": "public/js/item.js",
 	"Stock Entry": "public/js/stock_entry.js",
 	"Wash Batch": "public/js/wash_batch.js",
+	"Sterilization Load": "public/js/sterilization_load.js",
+	"Laundry Batch": "public/js/laundry_batch.js",
 	"Employee": "public/js/employee.js",
 }
 doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}

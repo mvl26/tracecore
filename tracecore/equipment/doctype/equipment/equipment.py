@@ -53,6 +53,7 @@ class Equipment(Document):
 		self._guard_controlled_fields()
 		self._guard_equipment_type()
 		self._apply_daily_test_tick()
+		self._validate_default_program()
 		self.serial_no = (self.serial_no or "").strip()
 		self._validate_serial()
 		self._validate_cost()
@@ -79,6 +80,22 @@ class Equipment(Document):
 		before = None if self.is_new() else self.get_doc_before_save()
 		if before and before.equipment_type != self.equipment_type:
 			frappe.throw(_("Equipment Type cannot be changed after the equipment is created."))
+
+	def _validate_default_program(self):
+		# chương trình chọn sẵn ở T5 (A-83): chỉ máy tiệt khuẩn, chương trình thường còn dùng của chính máy
+		if self.equipment_type not in daily_test.STERILIZERS:
+			self.default_program = None
+		if not self.default_program:
+			return
+		row = frappe.db.get_value(
+			"Process Program", self.default_program, ["equipment", "is_active", "program_kind"], as_dict=True
+		)
+		if not row or row.equipment != self.name or not row.is_active or row.program_kind == "Test":
+			frappe.throw(
+				_("Default Program must be an active regular program of this equipment: {0}.").format(
+					self.default_program
+				)
+			)
 
 	def _apply_daily_test_tick(self):
 		# ô tick chỉ dành cho máy tiệt khuẩn; bỏ tick thì máy đang khóa vì test mở lại ngay nếu không còn thiếu test (A-70)
@@ -148,6 +165,8 @@ class Equipment(Document):
 	def _validate_cost(self):
 		if flt(self.purchase_value) < 0:
 			frappe.throw(_("Purchase Value cannot be negative."))
+		if flt(self.get("rated_power_kw")) < 0:
+			frappe.throw(_("Rated Power cannot be negative."))
 		if cint(self.depreciation_years) < 1:
 			frappe.throw(_("Depreciation Years must be at least 1."))
 		if cint(self.planned_loads_year) < 1:

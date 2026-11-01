@@ -114,18 +114,13 @@ class TestReleaseApi(ReleaseApiCase):
 				**self.scans(),
 			)["ok"]
 		)
-		# người dỡ (R05) không giải phóng được; R02 đăng nhập cùng trạm và nhập PIN
-		blocked = call(release_api.release, **self.scans())
-		self.assertEqual(blocked["error"]["code"], "R02_CONFIRM_REQUIRED")
-		self.assertEqual(frappe.local.response.get("http_status_code"), blocked["error"]["http_status"])
-		r02 = self.as_user("giam-sat@example.com", ["TC R02"])
-		self.assertEqual(frappe.session.user, r02)
+		# A-106: dữ liệu trong dải, R02 giải phóng không PIN
+		self.as_user("giam-sat@example.com", ["TC R02"])
 		key = str(uuid.uuid4())
 		stamp = now_ts()
-		proof = self.pin_proof(r02)
-		done = call(release_api.release, key, pin_proof=proof, client_ts=stamp, **self.scans())
+		done = call(release_api.release, key, client_ts=stamp, **self.scans())
 		self.assertEqual((done["ok"], done["status"]), (True, "Released"))
-		replay = call(release_api.release, key, pin_proof=proof, client_ts=stamp, **self.scans())
+		replay = call(release_api.release, key, client_ts=stamp, **self.scans())
 		self.assertEqual(replay["status"], "Released")
 		self.assertEqual(frappe.db.get_value("Set Unit", self.pack.set_unit, "cycles_used"), 1)  # đếm một lần
 
@@ -147,6 +142,11 @@ class TestReleaseApi(ReleaseApiCase):
 	@bru("BRU-REP-007")
 	def test_reject_sends_the_sets_back(self):
 		call(release_api.cycle_result, result="Fail", confirmed=1, **self.scans())
+		# A-102: KTV ghi Không đạt được nhưng không loại mẻ
+		with self.assertRaises(frappe.PermissionError):
+			call(release_api.reject, reason="Chu trình lỗi", redo_from="T2", **self.scans())
+		self.assertEqual(frappe.db.get_value("Pack", self.pack.name, "status"), "In Load")
+		self.as_user("giam-sat-loai@example.com", ["TC R02"])
 		done = call(release_api.reject, reason="Chu trình lỗi", redo_from="T2", **self.scans())
 		self.assertEqual(done["status"], "Failed")
 		self.assertEqual(frappe.db.get_value("Pack", self.pack.name, "status"), "Void")
@@ -157,3 +157,58 @@ class TestReleaseApi(ReleaseApiCase):
 		result = call(release_api.bi_result, load=self.load.name, result="Pass", station=STATION)
 		self.assertEqual(result["error"]["code"], "BI_NOT_PENDING")
 		self.assertEqual(frappe.local.response.get("http_status_code"), 409)
+
+
+class TestOutOfRangeOverRpc(ReleaseApiCase):
+	def out_of_range_ready(self):
+		frappe.set_user("Administrator")
+		sterilizing.save_manual_data(
+			load=self.load.name,
+			equipment_raw=self.machine.name,
+			load_raw=self.load.name,
+			values=[{"parameter_name": "Temperature", "value": "150"}],
+			started_at=str(add_to_date(now_datetime(), hours=-1)),
+			ended_at=str(now_datetime()),
+			machine_alerts=None,
+			machine_report="/files/p.png",
+			reason=None,
+			confirmed=True,
+			card=self.employee.tc_card_id,
+			client_ts=client_time.utc_now(),
+			employee=self.employee.name,
+			station=STATION,
+		)
+		frappe.set_user(self.technician)
+		accepted = call(
+			release_api.cycle_result, result="Pass", confirmed=1, accept_out_of_range=1, **self.scans()
+		)
+		self.assertTrue(accepted["ok"])
+		call(release_api.indicator, indicator="chemical_class_5", result="Pass", **self.scans())
+		call(release_api.indicator, indicator="bowie_dick", result="Pass", test_date=today(), **self.scans())
+
+	def test_technician_releases_an_in_range_load_without_pin(self):
+		call(release_api.cycle_result, result="Pass", confirmed=1, **self.scans())
+		call(release_api.indicator, indicator="chemical_class_5", result="Pass", **self.scans())
+		call(release_api.indicator, indicator="bowie_dick", result="Pass", test_date=today(), **self.scans())
+		done = call(release_api.release, **self.scans())
+		self.assertEqual((done["ok"], done["status"]), (True, "Released"))
+
+	def test_r02_is_refused_and_r01_with_pin_and_reason_passes(self):
+		self.out_of_range_ready()
+		self.as_user("giam-sat@example.com", ["TC R02"])
+		refused = call(release_api.release, **self.scans())
+		self.assertEqual(refused["error"]["code"], "HEAD_APPROVAL_REQUIRED")
+		r01 = self.as_user("truong-khoa@example.com", ["TC R01"])
+		missing = call(release_api.release, out_of_range_reason="Lý do", **self.scans())
+		self.assertEqual(missing["error"]["code"], "HEAD_APPROVAL_REQUIRED")
+		done = call(
+			release_api.release, pin_proof=self.pin_proof(r01), out_of_range_reason="Lý do", **self.scans()
+		)
+		self.assertEqual((done["ok"], done["status"]), (True, "Released"))
+
+	def test_replay_header_cannot_skip_the_approval(self):
+		self.out_of_range_ready()
+		self.as_user("giam-sat@example.com", ["TC R02"])
+		with request_headers({"X-TC-Replay": "1"}):
+			refused = call(release_api.release, **self.scans())
+		self.assertEqual(refused["error"]["code"], "HEAD_APPROVAL_REQUIRED")

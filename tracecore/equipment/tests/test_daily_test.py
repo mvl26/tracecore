@@ -6,9 +6,16 @@ import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today
 
 from tracecore.core.errors import BlockedError
-from tracecore.equipment import daily_test
+from tracecore.equipment import daily_test, pick
 from tracecore.reprocessing import sterilizing, washing
-from tracecore.tests.factories import make_equipment, make_sterilizer, make_wash_machine
+from tracecore.tests.factories import (
+	make_equipment,
+	make_load,
+	make_load_ready_pack,
+	make_sterilize_program,
+	make_sterilizer,
+	make_wash_machine,
+)
 from tracecore.tests.utils import IsolatedTestCase, bru
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
@@ -32,7 +39,190 @@ class DailyTestCase(IsolatedTestCase):
 
 	def record(self, machine, test_type, result="Pass", **extra):
 		values = {"lot": "TEST-LOT-1", "lot_expiry": add_days(today(), 30), "photo": "/files/t.png", **extra}
+		if test_type in daily_test.RUN_TESTS:
+			self.run_test(machine, test_type)
 		return daily_test.record(machine.name, test_type, result, STATION, **values)
+
+	def run_test(self, machine, test_type):
+		daily_test.start_run(machine.name, test_type, STATION)
+		daily_test.end_run(machine.name, test_type)
+
+
+class TestRun(DailyTestCase):
+	"""#1823 (A-84): lần chạy test có bắt đầu, kết thúc; kết quả chỉ ghi sau khi kết thúc."""
+
+	def values(self):
+		return {"lot": "L1", "lot_expiry": add_days(today(), 30), "photo": "/files/t.png"}
+
+	def overview_row(self, machine):
+		return next(row for row in daily_test.overview() if row["name"] == machine.name)
+
+	def test_result_cannot_be_recorded_before_the_run_ends(self):
+		machine = self.steam()
+		block = blocked(self, daily_test.record, machine.name, "bowie_dick", "Pass", STATION, **self.values())
+		self.assertEqual(block.code, "DAILY_TEST_RUN_NOT_ENDED")
+		daily_test.start_run(machine.name, "bowie_dick", STATION)
+		block = blocked(self, daily_test.record, machine.name, "bowie_dick", "Pass", STATION, **self.values())
+		self.assertEqual((block.code, block.http_status), ("DAILY_TEST_RUN_NOT_ENDED", 409))
+		daily_test.end_run(machine.name, "bowie_dick")
+		done = daily_test.record(
+			machine.name, "bowie_dick", "Pass", STATION, employee=None, note=" đọc ", **self.values()
+		)
+		row = frappe.get_doc("Daily Test", done["daily_test"])
+		self.assertEqual((row.run_status, row.result, row.note), ("Recorded", "Pass", "đọc"))
+		self.assertTrue(row.started_at and row.ended_at and row.tested_at and row.photo)
+		self.assertEqual(frappe.db.count("Daily Test", {"equipment": machine.name}), 1)
+
+	def test_machine_shows_testing_and_cannot_be_loaded_during_the_run(self):
+		machine = self.steam()
+		daily_test.start_run(machine.name, "bowie_dick", STATION)
+		row = self.overview_row(machine)
+		self.assertEqual((row["testing"], row["ready_to_load"]), ("bowie_dick", 0))
+		self.assertEqual(row["runs"], {"bowie_dick": "Running"})
+		self.assertEqual(sterilizing.check_equipment_ready(machine.name).code, "EQUIPMENT_TESTING")
+		frappe.db.set_value("Equipment", machine.name, "unlock_until", add_to_date(now_datetime(), hours=2))
+		self.assertEqual(sterilizing.check_equipment_ready(machine.name).code, "EQUIPMENT_TESTING")
+		daily_test.end_run(machine.name, "bowie_dick")
+		row = self.overview_row(machine)
+		self.assertIsNone(row["testing"])
+		self.assertEqual(row["runs"], {"bowie_dick": "Ended"})
+
+	def test_a_new_run_hides_an_earlier_pass_until_it_is_read(self):
+		machine = self.steam()
+		self.record(machine, "bowie_dick")
+		self.assertTrue(daily_test.passed_today(machine.name, "bowie_dick"))
+		self.run_test(machine, "bowie_dick")
+		self.assertFalse(daily_test.passed_today(machine.name, "bowie_dick"))
+
+	def test_recorded_row_cannot_be_changed_and_abandoned_run_can_be_repeated(self):
+		machine = self.steam()
+		self.run_test(machine, "leak")
+		done = self.record(machine, "leak")
+		row = frappe.get_doc("Daily Test", done["daily_test"])
+		row.flags.tc_daily_test = True
+		row.note = "sửa"
+		self.assertRaises(frappe.ValidationError, row.save)
+		self.assertEqual(frappe.db.count("Daily Test", {"equipment": machine.name, "test_type": "leak"}), 2)
+
+	def test_only_one_run_at_a_time_and_not_while_a_load_is_unloaded(self):
+		machine = self.steam()
+		daily_test.start_run(machine.name, "bowie_dick", STATION)
+		self.assertEqual(
+			blocked(self, daily_test.start_run, machine.name, "leak", STATION).code, "DAILY_TEST_RUN_OPEN"
+		)
+		daily_test.end_run(machine.name, "bowie_dick")
+		pack = make_load_ready_pack()
+		make_load(machine, make_sterilize_program(machine.name), [pack])
+		self.assertEqual(
+			blocked(self, daily_test.start_run, machine.name, "leak", STATION).code, "EQUIPMENT_BUSY"
+		)
+
+	def test_end_without_a_run_and_wrong_type_are_refused(self):
+		machine = self.steam()
+		self.assertEqual(
+			blocked(self, daily_test.end_run, machine.name, "leak").code, "DAILY_TEST_RUN_NOT_ENDED"
+		)
+		self.assertEqual(
+			blocked(self, daily_test.start_run, machine.name, "plasma_daily", STATION).code, "TEST_INVALID"
+		)
+		washer = self.washer()
+		self.assertEqual(
+			blocked(self, daily_test.start_run, washer.name, "washer_cleaning", STATION).code, "TEST_INVALID"
+		)
+
+	def test_failed_read_locks_the_machine(self):
+		machine = self.steam()
+		self.assertTrue(self.record(machine, "bowie_dick", result="Fail")["locked"])
+		self.assertEqual(sterilizing.check_equipment_ready(machine.name).code, "EQUIPMENT_NOT_READY")
+
+	def test_load_indicator_skips_a_run_without_a_result(self):
+		machine = self.steam()
+		self.record(machine, "bowie_dick")
+		self.run_test(machine, "bowie_dick")
+		self.assertEqual(daily_test.load_indicator(machine.name, "bowie_dick")["result"], "Pass")
+
+	def test_machine_shows_the_running_load_on_every_status_until_unloaded(self):
+		machine = self.steam()
+		self.record(machine, "bowie_dick")
+		self.record(machine, "leak")
+		self.assertEqual(self.overview_row(machine)["ready_to_load"], 1)
+		load = make_load(machine, make_sterilize_program(machine.name), [make_load_ready_pack()])
+		row = self.overview_row(machine)
+		self.assertEqual(
+			(row["running_load"], row["running_status"], row["ready_to_load"]), (load.name, "Running", 0)
+		)
+		frappe.db.set_value("Sterilization Load", load.name, "status", "Cycle Complete")
+		self.assertEqual(self.overview_row(machine)["running_status"], "Cycle Complete")
+		frappe.db.set_value("Sterilization Load", load.name, "unload_scan_at", now_datetime())
+		self.assertIsNone(self.overview_row(machine)["running_load"])
+
+
+class TestStationFilter(DailyTestCase):
+	"""#1826 (A-85): mỗi trạm chỉ thấy máy của mình, máy tiệt khuẩn theo cấu hình."""
+
+	WASH, STERI = "TR-002", "TR-005"
+
+	def setUp(self):
+		super().setUp()
+		self.steam_machine, self.washer_machine = self.steam(), self.washer()
+
+	def names(self, station, **kwargs):
+		return {row["name"] for row in daily_test.overview(station, **kwargs)}
+
+	def test_wash_station_lists_only_washers_with_no_required_test(self):
+		names = self.names(self.WASH)
+		self.assertIn(self.washer_machine.name, names)
+		self.assertNotIn(self.steam_machine.name, names)
+		row = next(r for r in daily_test.overview(self.WASH) if r["name"] == self.washer_machine.name)
+		self.assertEqual((row["required"], row["optional"]), ([], ["washer_cleaning"]))
+
+	def test_sterilize_station_lists_only_required_sterilizers(self):
+		names = self.names(self.STERI)
+		self.assertIn(self.steam_machine.name, names)
+		self.assertNotIn(self.washer_machine.name, names)
+
+	def test_changing_the_configuration_changes_the_list(self):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_NONE)
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "daily_test_mode", daily_test.MODE_ALL)
+		self.assertNotIn(self.steam_machine.name, self.names(self.STERI))
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_SELECTED)
+		self.assertNotIn(self.steam_machine.name, self.names(self.STERI))
+		frappe.db.set_value("Equipment", self.steam_machine.name, "daily_test_required", 1)
+		self.assertIn(self.steam_machine.name, self.names(self.STERI))
+
+	def test_scanning_a_non_required_sterilizer_still_opens_it_but_not_a_washer(self):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_NONE)
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "daily_test_mode", daily_test.MODE_ALL)
+		self.assertIn(self.steam_machine.name, self.names(self.STERI, include=self.steam_machine.name))
+		self.assertNotIn(self.washer_machine.name, self.names(self.STERI, include=self.washer_machine.name))
+
+	def test_voluntary_run_in_progress_stays_listed(self):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_NONE)
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "daily_test_mode", daily_test.MODE_ALL)
+		daily_test.start_run(self.steam_machine.name, "bowie_dick", STATION)
+		self.assertIn(self.steam_machine.name, self.names(self.STERI))
+
+	def test_station_of_another_step_lists_nothing(self):
+		self.assertEqual(daily_test.overview("TR-006"), [])
+
+
+class TestPickTypes(DailyTestCase):
+	"""#1806: gợi ý chọn tay cho test hằng ngày dùng loại máy có test (`TESTS`), và theo đúng loại máy của bước."""
+
+	def test_daily_test_purpose_lists_the_machine_types_of_the_step(self):
+		self.assertEqual(
+			set(pick.types_for("T5", pick.PURPOSE_DAILY_TEST)), {"Steam Sterilizer", "Plasma Sterilizer"}
+		)
+		self.assertEqual(
+			set(pick.types_for("T2", pick.PURPOSE_DAILY_TEST)), {"Washer-Disinfector", "Ultrasonic Cleaner"}
+		)
+
+	def test_daily_test_purpose_without_a_step_lists_every_machine_type_with_a_test(self):
+		self.assertEqual(set(pick.types_for(None, pick.PURPOSE_DAILY_TEST)), set(daily_test.TESTS))
+
+	def test_other_purposes_keep_the_types_of_the_step(self):
+		self.assertEqual(pick.types_for("T4"), ("Sealer",))
+		self.assertEqual(pick.types_for("T4", pick.PURPOSE_DAILY_TEST), ())
 
 
 class TestRecord(DailyTestCase):
@@ -64,7 +254,10 @@ class TestRecord(DailyTestCase):
 			blocked(self, self.record, machine, "leak", lot_expiry=add_days(today(), -1)).code,
 			"TEST_LOT_EXPIRED",
 		)
-		self.assertEqual(frappe.db.count("Daily Test", {"equipment": machine.name}), 0)
+		# chỉ còn dòng lần chạy đã kết thúc, chưa có kết quả nào được ghi
+		self.assertEqual(
+			frappe.db.count("Daily Test", {"equipment": machine.name, "run_status": "Recorded"}), 0
+		)
 
 	def test_missing_bowie_dick_photo_is_a_warning_not_a_block(self):
 		machine = self.steam()
@@ -102,6 +295,15 @@ class TestInspectionAndUnlock(DailyTestCase):
 		self.assertEqual(daily_test.equipment_block(washer.name).code, "EQUIPMENT_INSPECTION_EXPIRED")
 
 	@bru("BRU-EQP-002")
+	def test_overview_says_who_unlocked_why_and_until_when(self):
+		machine = self.steam()
+		daily_test.unlock_temp(machine.name, "Ca khẩn", 2, STATION)
+		row = next(row for row in daily_test.overview() if row["name"] == machine.name)
+		self.assertTrue(row["unlocked"])
+		self.assertEqual(row["unlock_reason"], "Ca khẩn")
+		self.assertTrue(row["unlocked_by_name"])
+		self.assertTrue(row["unlock_until"])
+
 	def test_temporary_unlock_bypasses_tests_until_it_expires(self):
 		machine = self.steam()
 		result = daily_test.unlock_temp(machine.name, "Ca khẩn", 2, STATION)

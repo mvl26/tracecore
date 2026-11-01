@@ -18,14 +18,14 @@ from tracecore.reprocessing import storage
 from tracecore.v1._common import STORAGE_ROLES, require_any_role, run_at_step, station_session
 
 FUNCTION = storage.FUNCTION
-READ_ROLES = (*STORAGE_ROLES, "TC R02")
+READ_ROLES = STORAGE_ROLES
 
 
 def _route(scanned, raw, station, open_pack, client_ts):
 	"""Ô quét duy nhất của màn T6: Cycle ID mở thẻ gói; mã kệ `KE-` sau khi đã mở gói thì nhập kho/chuyển vị trí."""
 	kind = scanned["type"]
 	if kind == "pack":
-		return {"ok": True, "kind": "pack", "pack": storage.pack_card(raw)}
+		return {"ok": True, "kind": "pack", "pack": storage.scan_pack(raw)}
 	if kind == "location" and open_pack:
 		return {
 			"ok": True,

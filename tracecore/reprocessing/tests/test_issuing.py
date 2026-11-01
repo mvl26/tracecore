@@ -70,6 +70,22 @@ class IssuingCase(IsolatedTestCase):
 		return name, items
 
 
+class TestDepartmentShortage(IssuingCase):
+	def row(self):
+		return next(row for row in issuing.departments() if row.name == self.dept)
+
+	def test_department_below_par_lists_the_shortage(self):
+		self.par(min_qty=3, max_qty=5)
+		self.stocked()
+		shortage = self.row()["shortage"]
+		self.assertEqual([row["set_type"] for row in shortage], [self.set_type])
+		self.assertEqual(shortage[0]["suggest"], 3)
+		self.assertEqual(shortage[0]["available"], 1)
+
+	def test_department_without_par_has_no_shortage(self):
+		self.assertEqual(self.row()["shortage"], [])
+
+
 class TestCreate(IssuingCase):
 	def test_create_opens_draft_for_department(self):
 		view = issuing.create(self.dept, STATION, client_ts=None)

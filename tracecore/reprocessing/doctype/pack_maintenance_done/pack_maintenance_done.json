@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-20 15:00:00.000000",
- "description": "Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason (FR-M1-09, BRU-REP-014).",
+ "description": "Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason (FR-M1-09).",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

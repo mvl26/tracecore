@@ -476,7 +476,7 @@ def test_in_flight_set_keeps_old_bom_at_t4(settype_page, settype_demo, other_use
 	t4.keyboard.type(set_id)
 	t4.keyboard.press("Enter")
 	expect(t4.locator(".tc-t4[data-view='ctx'] .tc-code").first).to_have_text(set_id, timeout=15000)
-	expect(t4.locator("h3", has_text="Thành phần bộ")).to_contain_text(f"BOM v{pinned})")
+	expect(t4.locator("h3", has_text="Thành phần bộ")).to_contain_text(f"danh mục bộ v{pinned})")
 	shown = sorted(t4.locator(".tc-ins .tc-ins-name").all_inner_texts())
 	assert shown == names(pinned), shown
 	expect(t4.locator(SCAN_INPUT)).to_be_focused()

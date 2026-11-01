@@ -1,16 +1,23 @@
 """RPC tracecore.v1.load.* (FEAT-022 Task 5): phiên trạm thẻ, quyền, mã HTTP theo loại lỗi, replay idempotent."""
 
+import base64
+import io
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.utils import add_to_date, now_datetime
+from frappe.utils import add_to_date, get_datetime, now_datetime
+from pypdf import PdfReader
 
+from tracecore.core import gs1, print_server, qr
 from tracecore.tests.factories import (
 	deactivate_printers,
+	make_label_items,
 	make_load,
 	make_load_ready_pack,
+	make_printer,
 	make_sterilize_program,
 	make_sterilizer,
 	make_user,
@@ -201,8 +208,10 @@ class TestLoadApi(LoadApiCase):
 		pack = make_load_ready_pack()
 		first = self.complete([pack.name])["load"]
 		frappe.db.set_value(
-			"Sterilization Load", first, "status", "Cycle Complete"
-		)  # máy nạp tiếp được (A-22)
+			"Sterilization Load",
+			first,
+			{"status": "Cycle Complete", "unload_scan_at": frappe.utils.now_datetime()},
+		)  # đã dỡ thì máy nạp tiếp được (A-86)
 		result = self.complete([pack.name])
 		self.assert_rejection(result, "LOAD_EMPTY", 422)
 		self.assertEqual(result["error"]["items"][0]["code"], "PACK_IN_OTHER_LOAD")
@@ -254,7 +263,11 @@ class TestLoadApi(LoadApiCase):
 			done = self.complete([pack.name])
 			self.assertIs(done["ok"], True, msg=role)
 			frappe.set_user("Administrator")
-			frappe.db.set_value("Sterilization Load", done["load"], "status", "Cycle Complete")  # A-22
+			frappe.db.set_value(
+				"Sterilization Load",
+				done["load"],
+				{"status": "Cycle Complete", "unload_scan_at": frappe.utils.now_datetime()},
+			)  # A-86
 		pack = make_load_ready_pack()
 		self.as_user("load-r03@test.local", ("TC R03",))
 		before = counts()
@@ -337,6 +350,145 @@ class TestLoadDataApi(LoadApiCase):
 	def test_closed_load_is_409(self):
 		pack = make_load_ready_pack()
 		load = make_load(self.machine, self.program, [pack])
-		frappe.db.set_value("Sterilization Load", load.name, "status", "Released")
+		frappe.db.set_value("Sterilization Load", load.name, "status", "Failed")
 		result = call(load_api.data_scan, load=load.name, raw=self.machine.name, station=STATION)
 		self.assert_rejection(result, "LOAD_NOT_OPEN", 409)
+
+	def test_released_load_is_409_without_catalog_code_and_stays_audited(self):
+		pack = make_load_ready_pack()
+		load = make_load(self.machine, self.program, [pack])
+		frappe.db.set_value("Sterilization Load", load.name, "status", "Released")
+		result = call(load_api.data_scan, load=load.name, raw=self.machine.name, station=STATION)
+		self.assertIs(result["ok"], False, msg=result)
+		self.assertEqual(result["error"]["code"], "LOAD_ALREADY_RELEASED")
+		self.assertEqual(http_status(), 409)
+		self.assertNotIn("error_code", result["error"])
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log",
+				{
+					"action": "Reject",
+					"reason": "LOAD_ALREADY_RELEASED",
+					"ref_doctype": "Sterilization Load",
+					"ref_name": load.name,
+				},
+			)
+		)
+
+
+class TestLoadLabelPdf(LoadApiCase):
+	def done_load(self):
+		return self.complete([make_load_ready_pack().name])
+
+	def test_no_active_printer_refuses_without_a_pdf(self):
+		"""A-100: trạm chưa có máy in hoạt động thì không có PDF nhãn, kể cả khi mẻ đã có mã."""
+		done = self.done_load()
+		self.assertEqual(done["print"]["warning"]["code"], "NO_PRINTER_AT_STATION")
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assert_rejection(result, "NO_PRINTER_AT_STATION", 409)
+		self.assertNotIn("pdf_b64", result)
+
+	def test_deactivated_printer_counts_as_no_printer(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_load()
+		deactivate_printers(STATION)
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assert_rejection(result, "NO_PRINTER_AT_STATION", 409)
+
+	def test_returns_pdf_named_after_the_load_with_its_qr_and_text(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_load()
+		before = frappe.db.count("Print Job")
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(result["filename"], f"{done['load']}.pdf")
+		pdf = base64.b64decode(result["pdf_b64"])
+		self.assertTrue(pdf.startswith(b"%PDF"))
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		decoded = qr.decode_png(page.images[0].data)
+		self.assertEqual(decoded, done["load"])
+		self.assertEqual(gs1.parse_scan(decoded)["type"], "load")
+		text = page.extract_text()
+		started = frappe.db.get_value("Sterilization Load", done["load"], "started_at")
+		self.assertIn(done["load"], text)
+		self.assertIn(get_datetime(started).strftime("%d/%m/%Y %H:%M"), text)
+		self.assertEqual(frappe.db.count("Print Job"), before)  # không đụng luồng in
+
+	def test_pdf_marks_the_print_job_printed_to_file(self):
+		"""A-101: job giữ làm vết kiểm toán, trạng thái ghi đúng sự thật; không tạo job thứ hai."""
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_load()
+		job = done["print"]["print_job"]
+		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Queued")
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assertEqual(result["print_job"], job)
+		row = frappe.db.get_value(
+			"Print Job", job, ["status", "output_mode", "output_ref", "printed_at", "attempts"], as_dict=True
+		)
+		self.assertEqual(
+			(row.status, row.output_mode, row.output_ref, row.attempts),
+			("Printed", "File", result["filename"], 1),
+		)
+		self.assertTrue(row.printed_at)
+
+	def test_cron_never_sends_a_job_output_as_pdf(self):
+		make_printer(STATION, make_label_items()[0], host="10.0.0.9")
+		done = self.done_load()
+		job = done["print"]["print_job"]
+		frappe.db.set_value(
+			"Print Job", job, "modified", add_to_date(now_datetime(), minutes=-5), update_modified=False
+		)
+		self.assertNotIn(
+			job, print_server._pending_jobs(50)
+		)  # job của trạm chưa xuất cũng không đi đường server
+		call(load_api.label_pdf, load=done["load"], station=STATION)
+		frappe.db.set_value(
+			"Print Job", job, "modified", add_to_date(now_datetime(), minutes=-5), update_modified=False
+		)
+		self.assertNotIn(job, print_server._pending_jobs(50))
+		with patch.object(print_server, "_send") as send:
+			self.assertEqual(print_server.dispatch_job(job)["status"], "Printed")
+		send.assert_not_called()
+
+	def test_retry_after_lost_response_returns_the_same_job(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_load()
+		before = frappe.db.count("Print Job")
+		call(load_api.label_pdf, load=done["load"], station=STATION)
+		again = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assertIs(again["ok"], True, msg=again)
+		self.assertEqual(frappe.db.count("Print Job"), before)
+		self.assertEqual(frappe.db.get_value("Print Job", again["print_job"], "attempts"), 2)
+
+	def test_missing_pdf_tool_blocks_and_keeps_the_job_queued(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_load()
+		with patch("frappe.utils.pdf.get_pdf", side_effect=OSError("No wkhtmltopdf executable found")):
+			result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assertEqual(result["error"]["code"], "LABEL_PDF_FAILED")
+		self.assertNotIn("pdf_b64", result)
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Queued")
+		self.assertTrue(frappe.db.exists("Sterilization Load", done["load"]))
+
+	def test_waiting_label_stays_waiting_when_a_printer_appears_later(self):
+		done = self.done_load()
+		make_printer(STATION, make_label_items()[0])
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assertEqual(result["error"]["code"], "LABEL_NOT_QUEUED")
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Waiting")
+
+	def test_unknown_or_foreign_code_is_not_found(self):
+		for code in ("ME-000000-99", "LR-000000-99"):
+			self.assert_rejection(call(load_api.label_pdf, load=code, station=STATION), "LOAD_NOT_FOUND", 404)
+
+	def test_wrong_session_station_is_refused(self):
+		done = self.done_load()
+		token = TOKENS[("Administrator", STATION)]
+		result = call(load_api.label_pdf, load=done["load"], station=OTHER_STATION, token=token)
+		self.assertEqual(result["error"]["code"], "SESSION_STATION_MISMATCH")
+
+	def test_station_of_another_step_is_refused(self):
+		done = self.done_load()
+		self.login("Administrator", OTHER_STATION)
+		result = call(load_api.label_pdf, load=done["load"], station=OTHER_STATION)
+		self.assertEqual(result["error"]["code"], "STATION_WRONG_STEP")

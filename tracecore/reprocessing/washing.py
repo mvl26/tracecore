@@ -23,9 +23,10 @@ from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datet
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate, zones
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import cycle_time
+from tracecore.reprocessing import cycle_defaults, cycle_time
 
 STEP = "T2"  # mã cổng trong step_gate
 FUNCTION = "WASH_LOAD"
@@ -413,6 +414,11 @@ def waiting_sets():
 	)
 
 
+def _set_type_name(set_id):
+	set_type = frappe.db.get_value("Set Unit", set_id, "set_type")
+	return frappe.db.get_value("Instrument Set Type", set_type, "set_type_name") if set_type else None
+
+
 def running_batches():
 	"""Lô đang chạy (chưa dỡ) để màn T2 hiện thẻ "Lô đang chạy" (SCR-06): máy, chương trình, bộ, dữ liệu."""
 	return _batches_in(RUNNING)
@@ -449,6 +455,7 @@ def _batches_in(status):
 				"data_complete": cint(row.data_complete),
 				"needs_review": cint(row.needs_review),
 				"sets": sets,
+				"set_rows": [{"set_id": set_id, "set_name": _set_type_name(set_id)} for set_id in sets],
 			}
 		)
 	return out
@@ -847,6 +854,38 @@ def lookup(raw):
 	return _describe(_batch_doc(scanned["id"]))
 
 
+def label_pdf(batch, station):
+	"""PDF nhãn QR của lô để máy trạm lưu (A-99, A-101): dùng Print Job có sẵn, xong ghi `Printed`/`File`.
+
+	Không có lô → WASH_BATCH_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100). Nhãn còn `Waiting`
+	→ LABEL_NOT_QUEUED. Không sinh được PDF → LABEL_PDF_FAILED, job giữ `Queued`.
+	"""
+	doc = _batch_doc(batch)
+	if core_print.object_printer(station) is None:
+		raise _blocked(
+			"NO_PRINTER_AT_STATION",
+			_("No printer at this station"),
+			_("Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.").format(
+				station, doc.name
+			),
+			_("Ask R10 to add a printer to this station, then print the batch label again."),
+		)
+	job = core_print.label_output_job("Wash Batch", doc.name, station)
+	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
+	program = frappe.db.get_value("Process Program", doc.program, "program_name")
+	result = core_label_pdf.render(
+		doc.name,
+		_("Wash batch"),
+		[
+			" - ".join(part for part in (machine, program) if part),
+			get_datetime(doc.started_at).strftime(core_label_pdf.DATETIME_FORMAT),
+			_("{0} set(s)").format(len(doc.set_units)),
+		],
+	)
+	core_print.mark_file_output(job.name, result["filename"])
+	return {**result, "print_job": str(job.name)}
+
+
 # --- Dỡ lô (FR-M2-04.1/.2/.7, BRU-REP-016) ------------------------------------------------------------------
 
 
@@ -903,6 +942,15 @@ def _scan_kind(doc, raw):
 		return "equipment"
 	if scanned["type"] == "wash_batch" and scanned["id"] == doc.name:
 		return "wash_batch"
+	if scanned["type"] in ("set", "pack"):  # #1818: dỡ theo mã lô, không theo bộ
+		raise _blocked(
+			"SCAN_INVALID",
+			_("This is an instrument set code - please scan the batch code (LR-...)"),
+			_("Code {0} is a set or pack code; unloading works on the whole batch {1}.").format(
+				scanned["raw"], doc.name
+			),
+			_("Scan the QR code of batch {0}.").format(doc.name),
+		)
 	raise _blocked(
 		"SCAN_INVALID",
 		_("Invalid code"),
@@ -971,7 +1019,8 @@ def unload_context(batch, equipment_raw, batch_raw, station, employee=None, clie
 		_mark_unloaded(doc, employee, client_ts or client_time.utc_now())
 	return {
 		**_describe(doc),
-		"parameter_schema": _parameters(doc.program),
+		"parameter_schema": cycle_defaults.parameter_schema(doc.program),
+		"prefill": cycle_defaults.prefill(doc),
 		"indicator_items": _indicator_items() if cint(doc.indicator_required) else [],
 	}
 
@@ -1172,8 +1221,8 @@ def save_manual_data(
 	"""Lưu dữ liệu chu trình nhập tay của lô `Running` (nguồn `Manual`); trả ``{"data_complete", "needs_review",
 	"missing"}``.
 
-	`values` là ``[{"parameter_name", "value"}]`` theo chương trình; giá trị ngoài dải không chặn mà đặt
-	``needs_review`` (Q8). `reported_result` (kết quả máy báo) chỉ là thông tin (Q14). `started_at`/`ended_at` là giờ
+	`values` là ``[{"parameter_name", "value"}]`` theo chương trình; giá trị ngoài dải vẫn lưu, đặt ``needs_review`` và
+	chặn kết luận Đạt ở `set_result` (A-89, sửa Q8); giá trị mặc định và trường đã sửa ghi trong `machine_data`. `reported_result` (kết quả máy báo) chỉ là thông tin (Q14). `started_at`/`ended_at` là giờ
 	hệ thống. Dữ liệu đủ (Q6) khi: mọi tham số `required` có giá trị, có giờ kết thúc không trước giờ bắt đầu, có ảnh
 	bản in nếu máy có bản in, và người nhập (`employee`, Employee của phiên) đã tick xác nhận. Lưu lại được nhiều lần
 	trước khi kết luận.
@@ -1185,7 +1234,7 @@ def save_manual_data(
 		if isinstance(row, dict) and row.get("parameter_name"):
 			given[row["parameter_name"]] = row.get("value")
 	parameters, missing, review = [], [], False
-	for schema in _parameters(doc.program):
+	for schema in cycle_defaults.parameter_schema(doc.program):
 		value = _number(given.get(schema.parameter_name))
 		if value is None:
 			if cint(schema.required):
@@ -1211,10 +1260,12 @@ def save_manual_data(
 		missing.append(MISSING_PRINTOUT)
 	if not confirmed:
 		missing.append(MISSING_CONFIRMATION)
+	source, trace = cycle_defaults.trace(doc, parameters, started, ended)
 	doc.update(
 		{
 			"machine_data": frappe.as_json(
 				{
+					**trace,
 					"parameters": parameters,
 					"alerts": machine_alerts or None,
 					"reported_result": reported_result if reported_result in RESULTS else None,
@@ -1224,7 +1275,7 @@ def save_manual_data(
 			"machine_files": machine_file or None,
 			"started_at": started,
 			"ended_at": ended,
-			"data_source": "Manual",
+			"data_source": source,
 			"data_complete": 0 if missing else 1,
 			"needs_review": 1 if review else 0,
 			"manual_confirmed_by": employee if confirmed else None,
@@ -1363,6 +1414,9 @@ def _set_result(
 			),
 			items=(data or {}).get("missing") or [_("cycle data")],
 		)
+	if result == "Pass":
+		data = frappe.parse_json(doc.machine_data) if doc.machine_data else {}
+		cycle_defaults.check_inside_range((data or {}).get("parameters"), _("Wash batch"), doc.name)
 	if required and result == "Pass" and not checked:
 		raise _blocked(
 			"INDICATOR_REQUIRED",

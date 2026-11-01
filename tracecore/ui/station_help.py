@@ -10,6 +10,7 @@ import re
 import frappe
 from bs4 import BeautifulSoup
 from frappe import _
+from frappe.utils import cint
 
 from tracecore.core import zones
 
@@ -31,6 +32,22 @@ STATION_KEYS = (
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
+_LEGACY_CODES = {
+	"RECEIVE": "T1",
+	"WASH_LOAD": "T2",
+	"ASSEMBLE": "T3",
+	"PACK": "T4",
+	"STERI_LOAD": "T5",
+	"STERI_UNLOAD": "T5b",
+	"PUTAWAY": "T6",
+	"ISSUE": "T7",
+	"USE": "T8",
+	"LINEN": "LIN",
+	"WASTE": "WST",
+}
+# "<Station guide> T1 - Receiving" (cả bản dịch) và tên ngắn dùng gạch dài
+_EN_DASH = "\u2013"
+_NUMBERED_TITLE = re.compile(r"^(?:(?P<prefix>.+) )?T\d+ (?P<dash>[-\u2013]) .+$")
 # ảnh bước chỉ là file công khai của site: kiosk chưa quét thẻ vẫn xem được, không dẫn ra ngoài
 _PUBLIC_FILE = re.compile(r"^/files/[^/?#\\]+$")
 
@@ -38,9 +55,10 @@ _PUBLIC_FILE = re.compile(r"^/files/[^/?#\\]+$")
 DEFAULT_STEPS = {
 	"RECEIVE": (
 		"Scan your employee card to open the station.",
-		"Scan the Set ID on each returned set.",
-		"Check the receipt details and mark missing or damaged instruments.",
-		"Confirm to send the set to washing.",
+		"Scan the card of the person handing over the sets, or choose Deliverer has no card.",
+		"Scan each returned set.",
+		"Count each line against the quantity in the set, correct the actual quantity and note missing or damaged instruments.",
+		"Confirm each set, then submit the receipt.",
 	),
 	"WASH_LOAD": (
 		"Scan your employee card to open the station.",
@@ -168,7 +186,7 @@ def article_for_key(key):
 	return {
 		"name": row.name,
 		"key": key,
-		"title": row.title,
+		"title": display_title(key, row.title),
 		"steps": steps_from_html(row.content),
 		"modified": str(row.modified),
 	}
@@ -192,6 +210,48 @@ def ensure_category():
 	return CATEGORY
 
 
+def article_title(key):
+	"""Tên bài hướng dẫn: tên trạm kèm số trạm, không để lộ khóa kỹ thuật (#1831 S-03)."""
+	if key == GENERAL:
+		return _("Station guide: {0}").format(_("All stations"))
+	label = zones.function_label(key)
+	numbers = [
+		cint(row.station_no)
+		for row in frappe.get_all(
+			"Zone Station", filters={"is_zone": 0, "station_no": [">", 0]}, fields=["name", "station_no"]
+		)
+		if key in zones.station_functions(row.name)
+	]
+	if numbers:
+		return f"T{min(numbers)} {_EN_DASH} {label}"
+	return _("Station guide: {0}").format(label)
+
+
+def display_title(key, stored):
+	"""Tên mặc định chưa sửa (mọi đời, kể cả tạo lúc migrate bằng tiếng Anh) hiện tên trạm theo ngôn ngữ người xem (#1831 S-03).
+
+	Bài R10 đã đặt tên thì giữ nguyên; đổi lúc đọc nên không cần patch dữ liệu.
+	"""
+	if key == GENERAL or not stored:
+		return stored
+	prefixes = ("Station guide", _("Station guide", lang="vi"))
+	numbered = _NUMBERED_TITLE.match(stored)
+	if numbered and (
+		numbered["prefix"] in prefixes or (numbered["prefix"] is None and numbered["dash"] == _EN_DASH)
+	):
+		return article_title(key)
+	codes = (key, _LEGACY_CODES.get(key))
+	if stored in {f"{prefix}: {code}" for prefix in prefixes for code in codes if code}:
+		return article_title(key)
+	return stored
+
+
+def default_content(steps, lang=None):
+	"""HTML bài mặc định từ các bước nguồn tiếng Anh."""
+	items = "".join(f"<li>{frappe.utils.escape_html(_(step, lang=lang))}</li>" for step in steps)
+	return f"<ol>{items}</ol>"
+
+
 def ensure_station_help():
 	"""`after_migrate`: tạo bài mặc định cho khóa trạm còn thiếu; không ghi đè bài R10 đã sửa."""
 	if not frappe.get_meta("Help Article").has_field("tc_station_key"):
@@ -200,16 +260,13 @@ def ensure_station_help():
 	for key in STATION_KEYS:
 		if frappe.db.exists("Help Article", {"tc_station_key": key}):
 			continue
-		label = _("All stations") if key == GENERAL else key
 		frappe.get_doc(
 			{
 				"doctype": "Help Article",
-				"title": _("Station guide: {0}").format(label),
+				"title": article_title(key),
 				"category": category,
 				"published": 1,
 				"tc_station_key": key,
-				"content": "<ol>"
-				+ "".join(f"<li>{frappe.utils.escape_html(_(step))}</li>" for step in DEFAULT_STEPS[key])
-				+ "</ol>",
+				"content": default_content(DEFAULT_STEPS[key]),
 			}
 		).insert(ignore_permissions=True)

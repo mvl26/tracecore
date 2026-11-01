@@ -13,7 +13,7 @@ from frappe.utils import cint, cstr, getdate, now_datetime, today
 
 from tracecore.core import audit, error_codes, extension, gs1, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import storage
+from tracecore.reprocessing import pack_display, storage
 
 FUNCTION = "ISSUE"
 ISSUED = "Issued"
@@ -53,13 +53,26 @@ def departments():
 	"""Khoa nhận cấp phát (Department không phải nhóm, đang dùng), theo tên.
 
 	Chỉ khoa đánh dấu `tc_is_ward` (A-22): phòng ban mặc định của ERPNext (Accounts, Sales…) không phải khoa.
+	Mỗi khoa kèm `shortage`, loại bộ đang thiếu cơ số.
 	"""
-	return frappe.get_all(
+	rows = frappe.get_all(
 		"Department",
 		filters={"is_group": 0, "disabled": 0, "tc_is_ward": 1},
 		fields=["name", "department_name"],
 		order_by="department_name asc, name asc",
 	)
+	for row in rows:
+		row["shortage"] = _shortage(row.name)
+	return rows
+
+
+def _shortage(department):
+	"""Loại bộ khoa đang thiếu so với cơ số tối thiểu (D10, A-95): chỉ từ Par Level có sẵn."""
+	return [
+		{key: par[key] for key in ("set_type", "set_name", "stock", "suggest", "available")}
+		for par in _par_rows(department, {})
+		if par["suggest"] > 0
+	]
 
 
 def _department(department):
@@ -239,6 +252,7 @@ def view(note):
 				"set_id": row.set_unit,
 				"set_type": row.set_type,
 				"set_name": row.set_name,
+				"department_name": pack_display.row_of(row.pack)["department_name"],
 				"expiry": getdate(row.expiry) if row.expiry else None,
 				"fefo_note": row.fefo_note,
 			}
@@ -349,7 +363,7 @@ def _other_draft(pack_name, note_name):
 	)
 
 
-def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None):
+def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None, department_reason=None):
 	"""Quét một gói vào phiếu nháp (C9). Quét lặp gói đã có: không lỗi, trả phiếu.
 
 	`note`: ghi chú khi khoa chỉ định gói hạn xa hơn gói FEFO (C8). `move`: gói đang nằm ở phiếu nháp khác thì
@@ -370,6 +384,7 @@ def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None):
 			_("Pack {0} is already on draft issue note {1}.").format(name, other),
 			_("Move the pack to this issue note, or remove it from {0}.").format(other),
 		)
+	_check_pack_department(pack, doc, department_reason, station, client_ts)
 	note = cstr(note).strip()
 	warning = storage.fefo_check(name, exclude=[row.pack for row in doc.packs])
 	if warning and not note:
@@ -399,6 +414,41 @@ def add_pack(issue_note, raw, station, note=None, move=False, client_ts=None):
 	_clear_signature(doc)
 	_save(doc)
 	return view(doc)
+
+
+def _department_name(department):
+	return frappe.db.get_value("Department", department, "department_name") or department
+
+
+def _check_pack_department(pack, doc, reason, station, client_ts):
+	"""Gói của khoa khác khoa nhận (A-102): cảnh báo, chỉ đi tiếp khi người cấp xác nhận kèm lý do; ghi Audit Log."""
+	if not pack.department or pack.department == doc.department:
+		return
+	reason = cstr(reason).strip()
+	if not reason:
+		raise _blocked(
+			"PACK_DEPT_MISMATCH",
+			_("Pack belongs to another department"),
+			_("Pack {0} belongs to {1}; this issue note is for {2}.").format(
+				pack.name, _department_name(pack.department), _department_name(doc.department)
+			),
+			_("Check the department. To issue it anyway, enter the reason and confirm."),
+		)
+	audit.log(
+		"Override",
+		"Pack",
+		pack.name,
+		new={
+			"event": "PackOfOtherDepartment",
+			"issue_note": doc.name,
+			"pack_department": pack.department,
+			"issue_department": doc.department,
+			"note": reason,
+		},
+		reason="PackOfOtherDepartment",
+		station=station,
+		client_ts=client_ts,
+	)
 
 
 def _drop_pack(doc, cycle_id):
@@ -587,7 +637,7 @@ def submit(issue_note, station, approver_proof=None, session=None, client_ts=Non
 			}
 		)
 		doc.flags.tc_issuing = True
-		doc.flags.ignore_permissions = True  # người cấp đã qua phiên trạm và role R06 ở tầng RPC
+		doc.flags.ignore_permissions = True  # người cấp đã qua phiên trạm và role cấp phát ở tầng RPC
 		doc.submit()
 		_log_par(doc, current["par"], approved_by, station, client_ts)
 	except Exception:

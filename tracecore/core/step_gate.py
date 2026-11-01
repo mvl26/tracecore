@@ -258,14 +258,37 @@ def check(set_unit, step, for_update=False):
 	if result != "Pass":
 		return Block(
 			"GATE_PREV_NOT_PASSED",
-			_("Previous step has not passed"),
-			_("Step {0} has not passed in cycle {1}.").format(zones.gate_label(previous), cycle_no),
-			_("Send the set back to step {0} and complete it before continuing.").format(
-				zones.gate_label(previous)
-			),
+			_gate_title(step),
+			_("Set {0} has not finished step {1}.").format(_set_label(set_unit), zones.gate_label(previous)),
+			_open_step_action(previous),
 			redo_step=previous,
 		)
 	return None
+
+
+def _gate_title(step):
+	"""Tiêu đề từ chối theo bước đang vào (#1807 giữ mã, câu nói bằng lời của KTV); nguyên câu để dịch tự nhiên."""
+	titles = {
+		"T2": _("Set is not received yet, it cannot be washed yet"),
+		"T3": _("Set is not washed yet, it cannot be assembled yet"),
+		"T4": _("Set is not assembled yet, it cannot be packed yet"),
+		"T5": _("Set is not packed yet, it cannot be sterilized yet"),
+	}
+	return titles.get(step) or _("Previous step has not passed")
+
+
+def _set_label(set_unit):
+	"""``mã (tên loại bộ)`` khi biết tên; chỉ dùng trên đường từ chối nên thêm truy vấn không đáng kể."""
+	set_type = frappe.db.get_value("Set Unit", set_unit, "set_type")
+	name = set_type and frappe.db.get_value("Instrument Set Type", set_type, "set_type_name")
+	return f"{set_unit} ({name})" if name else set_unit
+
+
+def _open_step_action(step):
+	station = zones.gate_stations().get(step)
+	return _("Open station {0} to finish this step.").format(
+		station["label"] if station else zones.gate_label(step)
+	)
 
 
 def record(set_unit, step, result, ref_doctype=None, ref_name=None, station=None, client_ts=None):
@@ -401,12 +424,10 @@ def check_stored(set_unit):
 	return Block(
 		"GATE_PREV_NOT_PASSED",
 		_("Set is not sterile yet"),
-		_("Set {0} has not passed step(s) {1}.").format(
-			set_unit, ", ".join(zones.gate_label(step) for step in missing)
+		_("Set {0} has not finished step {1}.").format(
+			_set_label(set_unit), ", ".join(zones.gate_label(step) for step in missing)
 		),
-		_("Send the set back to step {0} and complete it before storing the pack.").format(
-			zones.gate_label(missing[0])
-		),
+		_open_step_action(missing[0]),
 		items=missing,
 		redo_step=missing[0],
 	)

@@ -31,10 +31,11 @@ def test_unknown_code_shows_vietnamese_error(station_page):
 	alert = page.locator(".tc-result[data-state='error'] .tc-alert-error")
 	expect(alert).to_contain_text("Mã không hợp lệ")
 	expect(alert).to_contain_text("XYZ-123")
-	for action in ("retry", "offline", "call-r02"):
-		button = alert.locator(f"[data-action='{action}']")
-		expect(button).to_be_visible()
-		assert button.bounding_box()["height"] >= 48
+	# A-93: lỗi nghiệp vụ chỉ có nút gọi giám sát; Thử lại và Ngoại tuyến chỉ dành cho lỗi mạng
+	button = alert.locator("[data-action='call-r02']")
+	expect(button).to_be_visible()
+	assert button.bounding_box()["height"] >= 48
+	expect(alert.locator("[data-action='retry'], [data-action='offline']")).to_have_count(0)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 
 

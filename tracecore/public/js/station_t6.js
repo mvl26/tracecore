@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcPackLabel, tcPackLabelHtml, tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T6 kho vô khuẩn (SCR-11, FEAT-025) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -63,8 +63,11 @@ class T6Storage {
 		this.notice = null;
 		this.damaging = false;
 		this.reasonError = false;
-		this.input.placeholder = __("Scan the Cycle ID of the pack...");
-		this.input.setAttribute("aria-label", __("Scan the Cycle ID of the pack..."));
+		this.input.placeholder = __("Scan the pack code (post-sterilization label)...");
+		this.input.setAttribute(
+			"aria-label",
+			__("Scan the pack code (post-sterilization label)...")
+		);
 	}
 
 	openPack() {
@@ -185,8 +188,8 @@ class T6Storage {
 				variant: "ok",
 				title:
 					done.action === "Move"
-						? __("Pack {0} moved to {1}", [done.cycle_id, done.location])
-						: __("Pack {0} stored on {1}", [done.cycle_id, done.location]),
+						? __("Pack {0} moved to {1}", [this.packName(done), done.location])
+						: __("Pack {0} stored on {1}", [this.packName(done), done.location]),
 				reason: __("Use-by date {0}", [t6Date(done.expiry)]),
 				action: __("Scan the next pack."),
 			};
@@ -300,7 +303,7 @@ class T6Storage {
 	updatePlaceholder() {
 		const text = this.pack
 			? __("Scan the shelf code (KE-)...")
-			: __("Scan the Cycle ID of the pack...");
+			: __("Scan the pack code (post-sterilization label)...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
 	}
@@ -363,10 +366,11 @@ class T6Storage {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.pack && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -403,7 +407,7 @@ class T6Storage {
 			</div>
 			<dl class="tc-res-grid">
 				<dt>${esc(__("Set ID"))}</dt><dd class="tc-mono">${esc(pack.set_id)}</dd>
-				<dt>${esc(__("Set Name"))}</dt><dd>${esc(pack.set_name)}</dd>
+				<dt>${esc(__("Pack"))}</dt><dd>${tcPackLabelHtml(pack)}</dd>
 				<dt>${esc(__("Use-by date"))}</dt><dd><b>${esc(t6Date(pack.expiry))}</b></dd>
 				<dt>${esc(__("Storage Location"))}</dt><dd class="tc-mono">${esc(pack.location || "-")}</dd>
 			</dl>
@@ -453,10 +457,15 @@ class T6Storage {
 	overviewHtml() {
 		const data = this.overview;
 		if (!data) {
-			return `<p class="tc-empty">${esc(__("Scan the Cycle ID of the pack to store."))}</p>`;
+			return `<p class="tc-empty">${esc(
+				__("Scan the pack code (post-sterilization label).")
+			)}</p>`;
 		}
 		const empty = !data.by_set_type.length;
-		return `<p class="tc-empty">${esc(__("Scan the Cycle ID of the pack to store."))}</p>
+		return `<p class="tc-empty">${esc(
+			__("Scan the pack code (post-sterilization label).")
+		)}</p>
+			${this.pendingHtml(data.pending)}
 			<section class="tc-t6-block">
 				<h3>${esc(__("Sterile stock by set type"))}</h3>
 				${
@@ -476,29 +485,28 @@ class T6Storage {
 			</section>
 			<section class="tc-t6-block">
 				<h3>${esc(__("Stock by location"))}</h3>
-				${this.tableHtml(
-					[__("Location"), __("Packs")],
-					data.by_location.map((row) => [
-						`<span class="tc-mono">${esc(row.location)}</span> ${esc(
-							row.location_name || ""
-						)}`,
-						String(row.count),
-					])
-				)}
+				${
+					data.by_location.length
+						? this.tableHtml(
+								[__("Location"), __("Packs")],
+								data.by_location.map((row) => [
+									`<span class="tc-mono">${esc(row.location)}</span> ${esc(
+										row.location_name || ""
+									)}`,
+									String(row.count),
+								])
+						  )
+						: `<p class="tc-t6-hint">${esc(__("No pack in storage yet."))}</p>`
+				}
 			</section>
 			<section class="tc-t6-block">
 				<h3>${esc(__("Packs expiring within 7 days"))}</h3>
 				${
 					data.expiring.length
 						? this.tableHtml(
-								[
-									__("Cycle ID"),
-									__("Use-by date"),
-									__("Days left"),
-									__("Location"),
-								],
+								[__("Pack"), __("Use-by date"), __("Days left"), __("Location")],
 								data.expiring.map((row) => [
-									`<span class="tc-mono">${esc(row.cycle_id)}</span>`,
+									tcPackLabelHtml(row),
 									t6Date(row.expiry),
 									String(row.days_left),
 									`<span class="tc-mono">${esc(row.location || "-")}</span>`,
@@ -514,15 +522,9 @@ class T6Storage {
 				${
 					data.return_list.length
 						? this.tableHtml(
-								[
-									__("Cycle ID"),
-									__("Set Name"),
-									__("Void Reason"),
-									__("Location"),
-								],
+								[__("Pack"), __("Void Reason"), __("Location")],
 								data.return_list.map((row) => [
-									`<span class="tc-mono">${esc(row.cycle_id)}</span>`,
-									esc(row.set_name || ""),
+									tcPackLabelHtml(row),
 									esc(__(row.void_reason, null, "Pack")),
 									`<span class="tc-mono">${esc(row.location || "-")}</span>`,
 								])
@@ -530,6 +532,32 @@ class T6Storage {
 						: `<p class="tc-t6-hint">${esc(__("No packs are waiting to return."))}</p>`
 				}
 			</section>`;
+	}
+
+	// nhãn gói vừa cất: dữ liệu tên, khoa lấy từ thẻ gói đang mở (A-88)
+	packName(done) {
+		const pack = this.pack && this.pack.cycle_id === done.cycle_id ? this.pack : {};
+		return tcPackLabel({ ...pack, cycle_id: done.cycle_id });
+	}
+
+	// #1837 T6-03: gói đã giải phóng, chưa nhập kho
+	pendingHtml(pending) {
+		const items = (pending && pending.items) || [];
+		const title = __("Packs waiting for storage ({0})", [(pending && pending.total) || 0]);
+		return `<section class="tc-t6-block" aria-label="${esc(title)}">
+			<h3>${esc(title)}</h3>
+			${
+				items.length
+					? this.tableHtml(
+							[__("Pack"), __("Department")],
+							items.map((row) => [
+								`<b class="tc-code">${esc(row.id)}</b> ${esc(row.name || "")}`,
+								esc(row.department_name || ""),
+							])
+					  )
+					: `<p class="tc-t6-hint">${esc(__("No pack is waiting for storage."))}</p>`
+			}
+		</section>`;
 	}
 
 	// ô bảng nhận HTML đã escape ở nơi gọi; tiêu đề cột là chuỗi thường

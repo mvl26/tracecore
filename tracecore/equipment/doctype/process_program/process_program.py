@@ -17,6 +17,11 @@ from tracecore.equipment import norms
 
 PROGRAM_CODE_PATTERN = re.compile(r"[A-Z0-9-]+")
 WASH_TYPES = ("Washer-Disinfector", "Ultrasonic Cleaner")
+STERILIZER_TYPES = ("Steam Sterilizer", "Plasma Sterilizer")
+LAUNDRY_TYPES = ("Laundry Washer", "Dryer")
+DRYER_TYPE = "Dryer"
+KIND_REGULAR, KIND_TEST = "Regular", "Test"
+PACKAGING_GROUP = "Packaging"
 NON_NEGATIVE_FIELDS = (
 	("duration_min", "Duration (min)"),
 	("kwh_per_cycle", "Electricity per Cycle (kWh)"),
@@ -40,10 +45,13 @@ class ProcessProgram(Document):
 	def validate(self):
 		self.program_code = _normalize_code(self.program_code)
 		self._validate_equipment()
+		self._normalize_kind()
 		self._normalize_wash_indicator()
 		self._validate_norms()
+		self._validate_laundry()
 		self._apply_norms()
 		self._validate_consumables()
+		self._default_unit_prices()
 		self._validate_consumable_units()
 		self._validate_pack_types()
 		self._validate_parameters()
@@ -68,6 +76,14 @@ class ProcessProgram(Document):
 				)
 			)
 
+	def _normalize_kind(self):
+		# chương trình test chỉ có ở máy tiệt khuẩn và không bao giờ nhận gói (A-83)
+		if norms.equipment_type_of(self) not in STERILIZER_TYPES:
+			self.program_kind = KIND_REGULAR
+		self.program_kind = self.program_kind or KIND_REGULAR
+		if self.program_kind == KIND_TEST:
+			self.compatible_pack_types = []
+
 	def _normalize_wash_indicator(self):
 		# chỉ thị rửa chỉ có nghĩa với máy rửa/siêu âm (A-77); ảnh chỉ bắt buộc khi chỉ thị bắt buộc
 		if norms.equipment_type_of(self) not in WASH_TYPES:
@@ -79,6 +95,33 @@ class ProcessProgram(Document):
 		for fieldname, label in NON_NEGATIVE_FIELDS:
 			if flt(self.get(fieldname)) < 0:
 				frappe.throw(_("{0} cannot be negative.").format(_(label)))
+
+	def _validate_laundry(self):
+		"""Chương trình giặt/sấy (A-104): tải tối đa không vượt tải máy; máy sấy không dùng nước (BRU-LIN-005)."""
+		equipment_type = norms.equipment_type_of(self)
+		if equipment_type not in LAUNDRY_TYPES:
+			return
+		load = flt(self.get("max_load_kg"))
+		if load < 0:
+			frappe.throw(_("{0} cannot be negative.").format(_("Max Load per Batch (kg)")))
+		capacity = flt(frappe.db.get_value("Equipment", self.equipment, "capacity_kg"))
+		if capacity and load > capacity:
+			frappe.throw(
+				_("Max load {0} kg is above the {1} kg capacity of machine {2}.").format(
+					load, capacity, self.equipment
+				)
+			)
+		if equipment_type == DRYER_TYPE and flt(self.water_l_per_cycle) > 0:
+			frappe.throw(_("A dryer program uses no water: set Water per Cycle to 0."))
+
+	def _default_unit_prices(self):
+		"""Dòng định mức của chương trình giặt/sấy chưa có đơn giá thì lấy giá trị tồn kho của vật tư; đã nhập thì giữ (A-104)."""
+		laundry = norms.equipment_type_of(self) in LAUNDRY_TYPES
+		for row in self.consumables:
+			if flt(row.get("unit_price")) < 0:
+				frappe.throw(_("Row {0}: the unit price cannot be negative.").format(row.idx))
+			if laundry and not flt(row.get("unit_price")):
+				row.unit_price = flt(frappe.db.get_value("Item", row.item, "valuation_rate"), 0)
 
 	def _apply_norms(self):
 		if cint(self.use_default_norms) and not norms.default_norm(norms.equipment_type_of(self)):
@@ -157,6 +200,18 @@ class ProcessProgram(Document):
 			if row.pack_type in seen:
 				frappe.throw(_("Row {0}: pack type {1} is listed twice.").format(row.idx, row.pack_type))
 			seen.add(row.pack_type)
+		if norms.equipment_type_of(self) not in STERILIZER_TYPES or self.program_kind == KIND_TEST:
+			return
+		for row in self.compatible_pack_types:
+			if frappe.db.get_value("Item", row.pack_type, "tc_item_group_cssd") != PACKAGING_GROUP:
+				frappe.throw(_("Row {0}: item {1} is not a packaging item.").format(row.idx, row.pack_type))
+		# chương trình đã ngừng dùng vẫn lưu được; nhập từ file chưa có cột loại gói, danh sách rỗng thì chưa nhận gói (A-83)
+		if cint(self.is_active) and not self.compatible_pack_types and not self.flags.tc_import_no_pack_types:
+			frappe.throw(
+				_(
+					"Program {0} is a regular sterilization program: list at least one compatible pack type."
+				).format(self.program_code)
+			)
 
 	def _validate_parameters(self):
 		seen = set()
@@ -176,3 +231,25 @@ class ProcessProgram(Document):
 						row.idx, row.parameter_name
 					)
 				)
+			self._validate_default_value(row, low, high)
+
+	def _validate_default_value(self, row, low, high):
+		# A-89: giá trị điền sẵn form chu trình; rỗng = không có mặc định
+		text = (row.default_value or "").strip().replace(",", ".")
+		row.default_value = text or None
+		if not text:
+			return
+		try:
+			value = float(text)
+		except ValueError:
+			frappe.throw(
+				_("Row {0}: Default Value of parameter {1} must be a number.").format(
+					row.idx, row.parameter_name
+				)
+			)
+		if (low > 0 and value < low) or (high > 0 and value > high):
+			frappe.throw(
+				_("Row {0}: Default Value of parameter {1} is outside its range.").format(
+					row.idx, row.parameter_name
+				)
+			)

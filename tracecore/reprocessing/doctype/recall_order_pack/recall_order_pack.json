@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-26 14:00:00.000000",
- "description": "One pack of a Recall Order with what must be done for it (FEAT-029, FR-M2-20.1).",
+ "description": "One pack of a Recall Order with what must be done for it (FR-M2-20.1).",
  "doctype": "DocType",
  "editable_grid": 0,
  "engine": "InnoDB",

@@ -21,7 +21,25 @@ const PICK_SCAN_METHODS = [
 	"tracecore.v1.receive.scan_set",
 	"tracecore.v1.assembly.open",
 	"tracecore.v1.issue.add_pack",
+	// A-87: dỡ lô, nhập dữ liệu mẻ, mở mẻ để dỡ
+	"tracecore.v1.wash.unload",
+	"tracecore.v1.load.data_scan",
+	"tracecore.v1.release.context",
 ];
+
+// Mã bộ / gói theo dạng (Cycle ID, GS1 của nhãn gói, GIAI): chỉ để báo đúng lời ở bước dỡ; server luôn kiểm lại (A-87)
+function tcIsSetOrPackCode(raw) {
+	const value = String(raw || "")
+		.trim()
+		.toUpperCase()
+		.replace(/^\][A-Z]\d/, "");
+	return (
+		/^CY-\d{6}-\d+/.test(value) ||
+		/^\(?01\)?\d{14}/.test(value) ||
+		/^\(?8004\)?/.test(value) ||
+		/^\d{7,}[A-Z0-9]*\d{3,}$/.test(value)
+	);
+}
 
 function pickReasons() {
 	return [
@@ -57,10 +75,21 @@ class TcPicker {
 		return PICK_EQUIPMENT_SCREENS.includes(this.screenKey);
 	}
 
+	// bước dỡ: màn đang mở cho biết danh sách là lô/mẻ, không phải bộ/gói (A-87); null = bước bình thường
+	get context() {
+		const screen = this.shell.screen;
+		return screen && screen.pickContext ? screen.pickContext() : null;
+	}
+
+	defaultKind() {
+		if (this.context) return "batch";
+		return this.hasEquipment() ? "equipment" : "set";
+	}
+
 	open() {
 		if (this.isOpen) return this.close();
 		this.isOpen = true;
-		this.kind = this.hasEquipment() ? "equipment" : "set";
+		this.kind = this.defaultKind();
 		this.query = "";
 		this.el = document.createElement("section");
 		this.el.className = "tc-card tc-picker";
@@ -134,7 +163,10 @@ class TcPicker {
 			this.render();
 		}
 		this.busy = true;
-		const method = PICK_LOOKUP + (this.kind === "equipment" ? "equipment" : "set_units");
+		const context = this.context;
+		if (context ? this.kind === "set" : this.kind === "batch") this.kind = this.defaultKind();
+		const methods = { equipment: "equipment", batch: "batches", set: "set_units" };
+		const method = PICK_LOOKUP + methods[this.kind];
 		const args = {
 			station: this.shell.station,
 			screen: this.screenKey,
@@ -145,6 +177,10 @@ class TcPicker {
 		};
 		const department = this.kind === "set" ? this.shell.pickDepartment() : null;
 		if (department) args.department = department;
+		if (this.kind === "batch") {
+			args.purpose = context.purpose || null;
+			args.equipment = context.equipment || null;
+		}
 		let response = null;
 		let failure = null;
 		try {
@@ -177,12 +213,21 @@ class TcPicker {
 		if (!raw || this.busy || this.shell.busyForPick()) return;
 		if (!this.reason) return this.render();
 		const reason = this.reason;
+		// chọn một lô/mẻ thay cho hai lần quét (mã lô + QR máy): màn quyết định gửi mã nào (A-87), server kiểm cặp mã
+		const screen = this.shell.screen;
+		const item = this.items.find((row) => (row.raw || row.id) === raw);
+		const codes =
+			this.kind === "batch" && item && screen.pickCodes ? screen.pickCodes(item) : [raw];
 		// một màn quét có thể gọi nhiều RPC; mọi RPC quét trong lúc này gắn entry_mode Manual (shell.rpc)
 		this.shell.manualEntry = { reason };
 		this.close();
 		try {
-			await this.shell.scan(raw);
-			await this.shell.waitIdle();
+			for (const code of codes) {
+				await this.shell.scan(code);
+				await this.shell.waitIdle();
+				const notice = this.shell.screen && this.shell.screen.notice;
+				if (notice && notice.variant === "error") break;
+			}
 		} finally {
 			this.shell.manualEntry = null;
 		}
@@ -238,7 +283,8 @@ class TcPicker {
 	}
 
 	kindHtml() {
-		if (!this.hasEquipment()) return "";
+		const context = this.context;
+		if (context ? context.noEquipment : !this.hasEquipment()) return "";
 		const tab = (kind, label) =>
 			`<button type="button" class="tc-btn tc-pick-chip${
 				this.kind === kind ? " is-active" : ""
@@ -247,7 +293,9 @@ class TcPicker {
 			}">${esc(label)}</button>`;
 		return `<div class="tc-picker-kinds" role="group" aria-label="${esc(
 			__("What to choose")
-		)}">${tab("equipment", __("Equipment"))}${tab("set", __("Sets and packs"))}</div>`;
+		)}">${tab("equipment", __("Equipment"))}${
+			context ? tab("batch", context.label) : tab("set", __("Sets and packs"))
+		}</div>`;
 	}
 
 	listHtml() {

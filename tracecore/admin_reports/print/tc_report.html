@@ -60,7 +60,7 @@
 				<td class="tc-num">{{ row.pack_count }}</td>
 				<td class="tc-code">{{ row.sets | e }}</td>
 				<td>{{ (row.operator_name or "") | e }}</td>
-				<td>{{ (row.released_by_name or "") | e }}<br>{{ r.fmt_datetime(row.released_at) | e }}</td>
+				<td>{{ (row.released_by_name or "") | e }}<br>{{ r.fmt_datetime(row.released_at) | e }}{% if row.out_of_range_note %}<br>{{ row.out_of_range_note | e }}{% endif %}</td>
 				<td>{{ _(row.result, context=T) | e }}</td>
 			</tr>
 		{%- endfor %}

@@ -286,7 +286,7 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 **Main success scenario**
 1. R03 quét mã thẻ của nhân viên khoa mang dụng cụ tới; hệ thống hiển thị tên và khoa trả (một lần cho cả phiếu).
 2. Quét mã vạch bộ dụng cụ thứ nhất; hệ thống kiểm tra trạng thái hợp lệ (BRU-FLOW-002), hủy Cycle ID cũ nếu chưa dùng và hiện danh sách thành phần bộ: từng loại dụng cụ, số lượng theo BOM, ảnh chụp thực tế, ảnh bộ đã sắp xếp.
-3. R03 tick xác nhận từng dòng hoặc bấm Xác nhận tất cả; nếu có bất thường (thiếu, hỏng, vật lạ, sắc nhọn) ghi vào ô Ghi chú bất thường, chụp ảnh nếu cần — không nhập số lượng.
+3. R03 kiểm đếm theo bảng: cột Số lượng thực tế điền sẵn theo BOM, sửa dòng nào lệch (A-94); nếu có bất thường (thiếu, hỏng, vật lạ, sắc nhọn) ghi vào ô Ghi chú bất thường, chụp ảnh nếu cần.
 4. Bấm Xác nhận bộ; hệ thống lưu xác nhận và ghi chú, chuyển bộ sang Chờ rửa (cờ Cần xem xét nếu có ghi chú) và quay lại ô quét chờ bộ kế tiếp.
 5. Lặp lại bước 2–4 cho mọi bộ trong xe trả; phiếu hiển thị số bộ đã nhận và số bộ có ghi chú.
 6. Ghi sổ phiếu; hệ thống ghi người giao, người nhận, giờ, trạm, khoa; in hoặc gửi biên nhận; ghi chú hiển thị đỏ tại T3 để kiểm tra chi tiết và tạo NC nếu có hỏng/thất lạc.
@@ -361,7 +361,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-06; API API-M2-02, API-M2-03
 
 **Main success scenario**
 1. R04 quét Set ID; hệ thống hiển thị BOM phiên bản áp dụng kèm ảnh lắp ráp.
-2. Kiểm tra từng dụng cụ (sạch, khô, chức năng), tick hoặc nhập số lượng thực tế.
+2. Kiểm tra từng dụng cụ (sạch, khô, chức năng), tick hoặc nhập số lượng thực tế từng dòng; mọi dòng bắt đầu ở Chưa đếm; có nút Xác nhận tất cả thành phần ghi mọi dòng chưa đếm theo định mức. [A-79, A-102 đảo phần xác nhận tất cả] Số lượng khác định mức: thiếu phải chọn Thiếu/Hỏng và ghi chú, dư phải ghi chú.
 3. Ghi dụng cụ hỏng, chọn dụng cụ thay từ kho dự phòng; dụng cụ hỏng chuyển Sửa chữa/Thanh lý.
 4. Hệ thống hiển thị cảnh báo sớm cơ số (bộ và từng dụng cụ).
 5. Xác nhận đủ; in phiếu kiểm đếm kèm gói.
@@ -457,9 +457,9 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-09; API API-M2-07, API-M2-08
 ### UC-10: Giải phóng mẻ và cách ly chờ chỉ thị sinh học
 
 - **ID:** UC-10
-- **Actors:** R02 Điều dưỡng trưởng / Giám sát CSSD (primary); R05 KTV tiệt khuẩn (secondary)
+- **Actors:** R05 KTV tiệt khuẩn, R02 Điều dưỡng trưởng / Giám sát CSSD (primary); R01 Trưởng khoa KSNK (duyệt mẻ ngoài dải, A-106)
 - **Description:** Nhập kết quả chỉ thị, giải phóng mẻ có kiểm soát, cách ly mẻ cấy ghép chờ BI, xử lý mẻ không đạt. Kích hoạt khi: mẻ Hoàn tất chu trình.
-- **Preconditions:** Đã quét QR máy và QR mã mẻ khi dỡ; kết quả chu trình và tham số đã có (tự động hoặc nhập tay có xác nhận); chỉ thị hóa học đã đọc. R02 có mặt để giải phóng.
+- **Preconditions:** Đã quét QR máy và QR mã mẻ khi dỡ; kết quả chu trình và tham số đã có (tự động hoặc nhập tay có xác nhận); chỉ thị hóa học đã đọc. Mẻ ngoài dải cần R01 có mặt tại trạm (A-106).
 - **Postconditions (success):** Load → Đã giải phóng (cổng T5 Đạt cho từng bộ; bộ đủ 5 cổng → Vô khuẩn, được vào kho) hoặc Cách ly chờ BI hoặc Không đạt (cổng T5 Không đạt → Xử lý lại từ T4 hoặc T2). Bộ đếm chu trình tăng 1 khi Đạt; chi phí mẻ tính; tiêu hao trừ.
 - **Traces to:** FR-M2-11, FR-M2-12
 - **Business rules:** BRU-FLOW-002, BRU-FLOW-003, BRU-REP-005, BRU-REP-006, BRU-FLOW-004, BRU-REP-015, BRU-REP-016
@@ -470,14 +470,15 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-09; API API-M2-07, API-M2-08
 **Main success scenario**
 1. Khi máy kết thúc, R05 quét QR máy và QR mã mẻ tại cửa ra; hệ thống liệt kê toàn bộ gói/bộ trong mẻ; kết quả chu trình tự điền nếu máy kết nối API, ngược lại R05 nhập tay có xác nhận; kết quả áp cho mọi gói.
 2. R05 nhập kết quả chỉ thị hóa học từng gói/mẻ, Bowie-Dick ngày; hệ thống đối chiếu tham số với chương trình.
-3. R02 xem tổng hợp, giải phóng bằng thẻ/PIN.
+3. Dữ liệu trong dải: R05, R02 hoặc R01 của phiên trạm giải phóng, không PIN; mẻ Cần xem xét do sự cố máy hoặc dữ liệu khớp theo giờ thì R02, R01 xác nhận (A-106).
 4. Nếu mẻ có BI: chuyển Cách ly, đặt giờ đọc BI.
 5. Khi BI âm tính → Đã giải phóng; gói chuyển kho vô khuẩn.
 6. Hệ thống tính chi phí mẻ, trừ tiêu hao, tăng bộ đếm chu trình.
 
 **Alternate flows**
 - A1. Cấp trước kết quả BI cho ca không hoãn được: R01 phê duyệt, gói đánh dấu Chờ BI, theo dõi.
-- A2. Giải phóng khẩn bởi R01 với lý do.
+- A2. Giải phóng khẩn bởi R01 với PIN và lý do, chỉ khi dữ liệu trong dải.
+- A3. Dữ liệu ngoài dải (A-106): người ghi kết quả chọn Vẫn chấp nhận; R01 đăng nhập bằng thẻ tại trạm, nhập PIN và lý do để giải phóng; R02, R05 thấy `Cần trưởng khoa duyệt vì dữ liệu chu trình ngoài dải: <tên thông số>`. Cổng BI giữ nguyên. Sửa dữ liệu về trong dải thì về luồng chính.
 
 **Exception flows**
 - E1. Chỉ thị hóa học không đạt, hoặc chưa có dữ liệu máy (tự động hoặc nhập tay đã xác nhận) → không giải phóng; mẻ Không đạt → gói hết hiệu lực, bộ về Xử lý lại từ T4 (mặc định) hoặc T2 (R02 chọn), NC.
@@ -729,6 +730,8 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-16; API API-M3-01; DocType D
 - **Priority:** Must · Frequency: 8–15 lô/ngày.
 - **Related NFR:** NFR-USAB-01, NFR-INT-01
 
+- **A-104 (#1847):** chọn chương trình thì hệ thống điền hóa chất, nước, điện theo định mức; khi hoàn tất, số thực tế lệch quá ngưỡng phải có lý do; lô lưu cả định mức và thực tế.
+
 **Main success scenario**
 1. R07 tạo lô: chọn máy, chương trình, nhóm nhiễm/không nhiễm.
 2. Nhập kg nạp (≤ tải máy); chọn hóa chất theo FEFO.
@@ -973,7 +976,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-22; API API-M5-03; DocType D
 - **Actors:** R05 KTV tiệt khuẩn (primary); R02 Điều dưỡng trưởng / Giám sát CSSD (secondary)
 - **Description:** Nhập Bowie-Dick, leak test, test máy rửa; máy chỉ được tạo mẻ khi test ngày đạt và kiểm định còn hạn. Kích hoạt khi: đầu ca làm việc mỗi ngày trước mẻ đầu tiên.
 - **Preconditions:** Máy đã khai báo; có gói test trong hạn.
-- **Postconditions (success):** Daily Test lưu; máy Sẵn sàng hoặc Khóa.
+- **Postconditions (success):** Daily Test lưu; máy Sẵn sàng hoặc Khóa. [A-84] Test chạy máy: bấm Bắt đầu (máy Đang test, không nạp được), bấm Kết thúc, rồi mới ghi kết quả, lô, ảnh, ghi chú.
 - **Traces to:** FR-M5-05, FR-M5-06
 - **Business rules:** BRU-EQP-001
 - **Screens:** SCR-23

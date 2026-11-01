@@ -7,7 +7,7 @@ from frappe.utils import add_days, add_to_date, now_datetime, today
 
 from tracecore.core import step_gate
 from tracecore.core.errors import BlockedError
-from tracecore.reprocessing import storage, usage
+from tracecore.reprocessing import pick_list, storage, usage
 from tracecore.tests.factories import make_department, make_employee, make_stocked_pack
 from tracecore.tests.utils import IsolatedTestCase, bru
 
@@ -63,6 +63,40 @@ class UsageCase(IsolatedTestCase):
 			**kwargs,
 		}
 		return usage.confirm((pack or self.pack).name, STATION, self.nurse, **values)
+
+
+class TestDepartmentOverview(UsageCase):
+	def test_packs_at_department_with_expiry_and_used_waiting_return(self):
+		used = self.new_pack()
+		self.confirm(used)
+		other = issue(make_stocked_pack(), make_department("Khoa khác T8"))
+		data = usage.department_overview(self.dept)
+		held = {row["cycle_id"]: row for row in data["at_department"]}
+		self.assertIn(self.pack.name, held)
+		self.assertNotIn(used.name, held)
+		self.assertNotIn(other.name, held)
+		self.assertIn("expiry", held[self.pack.name])
+		self.assertEqual([row["cycle_id"] for row in data["waiting_return"]], [used.name])
+
+	def test_pack_expiring_soon_is_flagged(self):
+		frappe.db.set_value("Pack", self.pack.name, "expiry", add_days(today(), 3))
+		row = next(
+			row
+			for row in usage.department_overview(self.dept)["at_department"]
+			if row["cycle_id"] == self.pack.name
+		)
+		self.assertEqual(row["days_left"], 3)
+		self.assertTrue(row["expiring"])
+
+	def test_no_department_returns_empty_lists(self):
+		data = usage.department_overview(None)
+		self.assertEqual((data["at_department"], data["waiting_return"]), ([], []))
+
+	def test_pick_list_of_t8_only_shows_packs_of_the_department(self):
+		other = issue(make_stocked_pack(), make_department("Khoa khác T8"))
+		ids = [row["id"] for row in pick_list.suggest("T8", department=self.dept, page_length=100)["items"]]
+		self.assertIn(self.pack.name, ids)
+		self.assertNotIn(other.name, ids)
 
 
 class TestScan(UsageCase):

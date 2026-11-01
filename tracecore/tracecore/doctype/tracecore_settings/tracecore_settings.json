@@ -30,6 +30,8 @@
   "waste_misclass_count",
   "waste_misclass_days",
   "waste_anomaly_percent",
+  "section_laundry",
+  "laundry_norm_deviation_percent",
   "section_daily_test",
   "daily_test_mode",
   "daily_test_steam_leak",
@@ -250,12 +252,24 @@
    "fieldtype": "Table",
    "label": "Error code settings",
    "options": "TraceCore Error Rule"
+  },
+  {
+   "fieldname": "section_laundry",
+   "fieldtype": "Section Break",
+   "label": "Laundry"
+  },
+  {
+   "fieldname": "laundry_norm_deviation_percent",
+   "fieldtype": "Float",
+   "default": "10",
+   "label": "Laundry Norm Deviation (%)",
+   "description": "A laundry batch whose actual water, power or chemical differs from the norm by more than this needs a reason (A-104). Default 10; 0 also means 10."
   }
  ],
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-31 18:00:00.000000",
+ "modified": "2026-11-01 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

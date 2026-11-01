@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-29 14:00:00.000000",
- "description": "One line of a linen issue: type, pieces, kg (FEAT-035, FR-M3-05).",
+ "description": "One line of a linen issue: type, pieces, kg (FR-M3-05).",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

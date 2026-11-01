@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "ME-.YY.MM.DD.-.##",
  "creation": "2026-10-23 10:00:00.000000",
- "description": "Sterilization load on a steam or plasma sterilizer (FEAT-022, UC-09, WF-03). Created by the sterilizing service when loading is completed.",
+ "description": "Sterilization load on a steam or plasma sterilizer (UC-09, WF-03). Created by the sterilizing service when loading is completed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -31,12 +31,14 @@
   "manual_confirmed_by",
   "manual_confirmed_at",
   "params",
+  "machine_data",
   "machine_alerts",
   "machine_report",
   "chart_files",
   "result_section",
   "unload_scan_equipment",
   "unload_scan_at",
+  "unloaded_by",
   "column_break_result",
   "cycle_result",
   "result_source",
@@ -47,7 +49,11 @@
   "bi_result",
   "column_break_release",
   "redo_from",
-  "release_reason"
+  "release_reason",
+  "out_of_range_accepted",
+  "out_of_range_accepted_by",
+  "out_of_range_approved_by",
+  "out_of_range_reason"
  ],
  "fields": [
   {
@@ -177,7 +183,7 @@
    "fieldname": "data_source",
    "fieldtype": "Select",
    "label": "Data Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {
@@ -227,6 +233,13 @@
    "read_only": 1
   },
   {
+   "description": "Program defaults offered to the operator and the fields changed from them.",
+   "fieldname": "machine_data",
+   "fieldtype": "JSON",
+   "label": "Machine Data",
+   "read_only": 1
+  },
+  {
    "description": "Alerts the operator saw on the machine during the cycle.",
    "fieldname": "machine_alerts",
    "fieldtype": "JSON",
@@ -265,6 +278,14 @@
    "read_only": 1
   },
   {
+   "description": "Employee who unloaded the sterilizer, taken from the card session.",
+   "fieldname": "unloaded_by",
+   "fieldtype": "Link",
+   "label": "Unloaded By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_result",
    "fieldtype": "Column Break"
   },
@@ -280,7 +301,7 @@
    "fieldname": "result_source",
    "fieldtype": "Select",
    "label": "Result Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {
@@ -302,44 +323,71 @@
    "label": "Release"
   },
   {
+   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3).",
    "fieldname": "review_confirmed",
    "fieldtype": "Check",
    "label": "Review Confirmed",
-   "read_only": 1,
-   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3)."
+   "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "bi_result",
    "fieldtype": "Select",
    "label": "Biological Indicator Result",
    "options": "\nPending\nPass\nFail",
-   "read_only": 1,
-   "allow_on_submit": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_release",
    "fieldtype": "Column Break"
   },
   {
+   "description": "Step the sets of a failed load restart from (default T4).",
    "fieldname": "redo_from",
    "fieldtype": "Select",
    "label": "Redo From",
    "options": "\nT4\nT2",
-   "read_only": 1,
-   "description": "Step the sets of a failed load restart from (default T4)."
+   "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "release_reason",
    "fieldtype": "Small Text",
    "label": "Release or Rejection Reason",
-   "read_only": 1,
-   "allow_on_submit": 1
+   "read_only": 1
+  },
+  {
+   "description": "Out-of-range values someone chose to accept when recording Pass (A-106).",
+   "fieldname": "out_of_range_accepted",
+   "fieldtype": "JSON",
+   "label": "Out-of-range Values Accepted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "out_of_range_accepted_by",
+   "fieldtype": "Link",
+   "label": "Accepted By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "out_of_range_approved_by",
+   "fieldtype": "Link",
+   "label": "Out-of-range Approved By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "out_of_range_reason",
+   "fieldtype": "Small Text",
+   "label": "Out-of-range Approval Reason",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.511511",
+ "modified": "2026-11-01 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterilization Load",

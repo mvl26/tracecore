@@ -96,11 +96,12 @@ def line(
 	replacement_instrument=None,
 	note=None,
 	photo=None,
-	all_ok=0,
+	variance=None,
 	client_ts=None,
 	token=None,
+	all_ok=0,
 ):
-	"""Ghi một dòng kiểm đếm, quét mã dụng cụ (`raw`, FR-M1-02.2/.4) hoặc đánh dấu đủ hết (`all_ok`); xem `assembly.line`."""
+	"""Ghi một dòng kiểm đếm hoặc quét mã dụng cụ (`raw`, FR-M1-02.2/.4); `variance` = ``Short`` khi thiếu (A-79); xem `assembly.line`."""
 	require_any_role(*ASSEMBLY_ROLES)
 	name = _string(assembly, "assembly")
 	instrument = _string(instrument, "instrument", required=False)
@@ -109,6 +110,7 @@ def line(
 	replacement_instrument = _string(replacement_instrument, "replacement_instrument", required=False)
 	note = _string(note, "note", required=False)
 	photo = _string(photo, "photo", required=False)
+	variance = _string(variance, "variance", required=False)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
@@ -129,6 +131,7 @@ def line(
 				replacement_instrument=replacement_instrument,
 				note=note,
 				photo=photo,
+				variance=variance,
 				all_ok=_flag(all_ok),
 			),
 		},
@@ -175,13 +178,22 @@ def submit(assembly, station, notes=None, branch=None, branch_reason=None, clien
 	branch = _string(branch, "branch", required=False)
 	branch_reason = _string(branch_reason, "branch_reason", required=False)
 	timestamp = parse_client_ts(client_ts)
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
 		lambda: {
 			"ok": True,
-			**service.submit(name, station, timestamp, notes, branch or None, branch_reason),
+			**service.submit(
+				name,
+				station,
+				timestamp,
+				notes,
+				branch or None,
+				branch_reason,
+				session.employee if session else None,
+			),
 		},
 		REF,
 		name,

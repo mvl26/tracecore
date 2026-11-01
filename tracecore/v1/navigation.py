@@ -16,11 +16,15 @@ FUNCTION_ROLES = {
 	"STERI_LOAD": {"TC R05"},
 	"STERI_UNLOAD": {"TC R02", "TC R05"},
 	"PUTAWAY": {"TC R06"},
-	"ISSUE": {"TC R06"},  # cấp phát do KTV kho vô khuẩn (ISSUE_ROLES = STORAGE_ROLES); R07 là đồ vải
+	"ISSUE": {
+		"TC R06"
+	},  # cấp phát do KTV kho vô khuẩn; R07 là đồ vải; R02 mở trạm qua OVERVIEW_ROLES (A-91, A-105)
 	"USE": {"TC R08"},
 	"LINEN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
 	"WASTE": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)
 }
+# thẻ, tài khoản thấy đủ trạm trên hàng nút (A-91, #1831 S-01); bấm trạm khác khu vẫn phải quét lại thẻ (A-90)
+OVERVIEW_ROLES = {"TC R01", "TC R02", "TC R10"}
 # Dashboard vận hành đứng đầu; sau đó nhóm theo thứ tự thiết lập ban đầu: tổ chức và người → khu trạm → máy → dụng cụ → kho và cơ số → chứng từ → dữ liệu
 MANAGEMENT_GROUPS = (
 	("Overview", ("tc-dashboard",)),  # FEAT-006 SCR-32
@@ -117,9 +121,11 @@ MANAGEMENT_GROUPS = (
 		"Linen",
 		(
 			"Linen Type",
+			"laundry-equipment",
 			"Linen Collection",
 			"Laundry Batch",
 			"report:Laundry Cost per Kg",
+			"report:Laundry Equipment Norms",
 			"Linen Issue",
 			"report:Linen Reconciliation",
 		),
@@ -164,6 +170,14 @@ MANAGEMENT_GROUPS = (
 	),
 )
 # Page Desk (không phải DocType) trong menu: quyền theo role của Page
+# Danh sách DocType lọc sẵn trong menu (A-104): khóa → (nhãn, DocType, chuỗi lọc). Không thêm DocType mới cho một góc nhìn.
+FILTERED_LISTS = {
+	"laundry-equipment": (
+		"Laundry equipment",
+		"Equipment",
+		'equipment_type=["in",["Laundry Washer","Dryer"]]',
+	),
+}
 MANAGEMENT_PAGES = {
 	"tc-dashboard": "Operations Dashboard",
 	"tc-import": "Catalog Import",
@@ -445,9 +459,16 @@ ADMIN_MODULES = (
 		"icon": "retail",
 		"description": "Linen collection, laundry and issue.",
 		"sections": (
-			("catalog", ("Linen Type",)),
+			("catalog", ("Linen Type", "laundry-equipment")),
 			("document", ("Linen Collection", "Laundry Batch", "Linen Issue")),
-			("report", ("report:Laundry Cost per Kg", "report:Linen Reconciliation")),
+			(
+				"report",
+				(
+					"report:Laundry Cost per Kg",
+					"report:Laundry Equipment Norms",
+					"report:Linen Reconciliation",
+				),
+			),
 		),
 	},
 	{
@@ -581,7 +602,7 @@ def context():
 		rows = frappe.get_list(
 			"Zone Station",
 			filters={"is_zone": 0, "is_active": 1},
-			fields=["name", "zone_station_name", "station_no"],
+			fields=["name", "zone_station_name", "station_no", "parent_zone"],
 			limit_page_length=0,
 			# R07, R08 không đọc được Zone Station; chỉ trả tên trạm đúng chức năng của role
 			ignore_permissions=True,
@@ -596,12 +617,14 @@ def context():
 						"name": row.name,
 						"label": row.zone_station_name,
 						"station_no": cint(row.station_no),
+						"zone": row.parent_zone,
 						"functions": functions,
 						"implemented": bool(zones.station_screen_tabs(functions)),
 					}
 				)
 	return {
 		"stations": stations,
+		"see_all_stations": admin or bool(roles & OVERVIEW_ROLES),
 		"management": _management_links() if manager else [],
 		"department": admin or "TC R08" in roles,
 		"admin_modules": _admin_modules() if admin else [],
@@ -612,6 +635,16 @@ def context():
 def allowed_functions(roles, admin=False):
 	"""Chức năng trạm mà role được làm; admin làm được mọi chức năng."""
 	return {function for function, required in FUNCTION_ROLES.items() if admin or roles & required}
+
+
+def main_role(roles, functions):
+	"""Vai trò chính của thẻ tại trạm: role làm được nhiều chức năng của trạm nhất; không có thì None (A-91, S-02)."""
+	counts = {}
+	for function in functions:
+		for role in FUNCTION_ROLES.get(function, ()):
+			if role in roles:
+				counts[role] = counts.get(role, 0) + 1
+	return min(counts, key=lambda role: (-counts[role], role)) if counts else None
 
 
 def can_open_station(station):
@@ -677,6 +710,11 @@ def _link(target):
 		report = target[len(REPORT_PREFIX) :]
 		if _roles_permit("Report", report):
 			return {"label": report, "doctype": None, "route": "/app/query-report/" + report}
+	elif target in FILTERED_LISTS:
+		label, doctype, query = FILTERED_LISTS[target]
+		if frappe.has_permission(doctype, ptype="read"):
+			route = "/app/" + frappe.scrub(doctype).replace("_", "-") + "?" + query
+			return {"label": label, "doctype": None, "route": route}
 	elif target in MANAGEMENT_PAGES:
 		if _roles_permit("Page", target):
 			return {"label": MANAGEMENT_PAGES[target], "doctype": None, "route": "/app/" + target}

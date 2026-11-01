@@ -133,24 +133,38 @@ def cycle_detail(ref_doctype, ref_name):
 	"""Giờ bắt đầu/kết thúc, thời lượng so với chuẩn, người nạp và người dỡ của lô rửa / mẻ tiệt khuẩn (A-73); {} nếu khác."""
 	if ref_doctype not in EQUIPMENT_REFS or not ref_name:
 		return {}
-	unloader_field = "unloaded_by" if ref_doctype == "Wash Batch" else "released_by"
+	# mẻ tiệt khuẩn cũ đã giải phóng, chưa có `unloaded_by`: người giải phóng (A-86); `released_by` chỉ có khi đã giải phóng (A-102)
+	fallback = (
+		[]
+		if ref_doctype == "Wash Batch"
+		else ["released_by", "out_of_range_accepted", "out_of_range_approved_by", "out_of_range_reason"]
+	)
 	doc = frappe.db.get_value(
 		ref_doctype,
 		ref_name,
-		["program", "operator", "started_at", "ended_at", unloader_field],
+		["program", "operator", "started_at", "ended_at", "unloaded_by", *fallback],
 		as_dict=True,
 	)
 	if not doc:
 		return {}
 	detail = {
 		"operator": doc.operator,
-		"unloaded_by": doc[unloader_field],
+		"unloaded_by": doc.unloaded_by or doc.get("released_by"),
 		"started_at": doc.started_at,
 		"ended_at": doc.ended_at,
 		"duration": cycle_time.for_doc(doc),
 	}
 	if ref_doctype == "Wash Batch":
 		detail["indicator"] = washing.wash_indicator_of(ref_name)  # A-77
+	elif doc.get("out_of_range_approved_by"):  # A-106
+		detail["out_of_range"] = {
+			"params": frappe.parse_json(doc.out_of_range_accepted) or [],
+			"approved_by": doc.out_of_range_approved_by,
+			"approved_by_name": frappe.db.get_value(
+				"Employee", doc.out_of_range_approved_by, "employee_name"
+			),
+			"reason": doc.out_of_range_reason,
+		}
 	return detail
 
 

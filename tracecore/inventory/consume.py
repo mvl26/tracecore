@@ -2,7 +2,8 @@
 
 M2 gọi hook ``tracecore_after_wash_complete`` / ``tracecore_after_load_release``; hàm ``on_*`` ở đây là người nghe
 (M2 không import M6). Mỗi nguồn (lô rửa, mẻ) chỉ có một Stock Entry ``Material Issue`` còn hiệu lực
-(``tc_source_doctype`` + ``tc_source_name``), nên hook chạy lại không trừ kho hai lần.
+(``tc_source_doctype`` + ``tc_source_name``), nên hook chạy lại không trừ kho hai lần. Mỗi phiếu chỉ lấy lô của một
+Company (A-78): site có thể chứa nhiều bệnh viện, FEFO không được trộn tồn của hai bệnh viện vào một phiếu.
 
 Tồn không đủ (FR-M6-03.2): trừ phần đang có, ghi phần thiếu vào lý do của phiếu và báo R09 xuất bù khi nhập hàng
 (ERPNext chặn tồn âm theo lô nên không trừ vượt). Lỗi bất ngờ không được làm hỏng mẻ.
@@ -10,6 +11,7 @@ Tồn không đủ (FR-M6-03.2): trừ phần đang có, ghi phần thiếu vào
 
 from collections import defaultdict
 from dataclasses import dataclass
+from urllib.parse import quote, urlencode
 
 import frappe
 from frappe import _
@@ -22,7 +24,12 @@ ISSUE = "Material Issue"
 SAVEPOINT = "tc_consume"
 NO_EXPIRY = getdate("9999-12-31")
 PRECISION = 6
-RETRY_SOURCES = ("Wash Batch",)
+WASH, LOAD, LAUNDRY = "Wash Batch", "Sterilization Load", "Laundry Batch"
+RETRY_SOURCES = (WASH, LOAD, LAUNDRY)
+
+
+class CompanyUndetermined(frappe.ValidationError):
+	"""Không xác định được phiếu xuất thuộc Company nào, hoặc các dòng của phiếu thuộc nhiều Company."""
 
 
 class UomConversionMissing(frappe.ValidationError):
@@ -37,8 +44,8 @@ class Lot:
 	expiry: object = None
 
 
-def _stock_by_lot(item):
-	"""Lô còn tồn dương của `item` theo kho: ``[Lot]`` chưa sắp thứ tự."""
+def _stock_by_lot(item, company=None):
+	"""Lô còn tồn dương của `item` theo kho: ``[Lot]`` chưa sắp thứ tự; `company` chỉ giữ kho của Company đó."""
 	from erpnext.stock.doctype.batch.batch import get_batch_qty
 
 	rows = get_batch_qty(item_code=item, for_stock_levels=True) or []
@@ -50,25 +57,51 @@ def _stock_by_lot(item):
 			fields=["name", "expiry_date"],
 		)
 	}
-	return [
+	lots = [
 		Lot(row["batch_no"], row.get("warehouse"), flt(row["qty"], PRECISION), expiry.get(row["batch_no"]))
 		for row in rows
 		if flt(row.get("qty"), PRECISION) > 0
 	]
+	if company:
+		warehouses = set(frappe.get_all("Warehouse", filters={"company": company}, pluck="name"))
+		lots = [lot for lot in lots if lot.warehouse in warehouses]
+	return lots
 
 
-def pick_lots(item, qty, batch=None, taken=None):
+def _usable(lot, today):
+	return lot.expiry is None or getdate(lot.expiry) >= today
+
+
+def warehouse_companies(warehouses):
+	"""Tập Company của các kho `warehouses`."""
+	return {frappe.db.get_value("Warehouse", warehouse, "company") for warehouse in set(warehouses)} - {None}
+
+
+def stock_companies(items, batch=None):
+	"""Tập Company đang có tồn còn hạn của `items`; `batch` chỉ xét đúng lô đó."""
+	today = today_vn()
+	warehouses = [
+		lot.warehouse
+		for item in items
+		for lot in _stock_by_lot(item)
+		if (batch is None or lot.batch == batch) and _usable(lot, today)
+	]
+	return warehouse_companies(warehouses)
+
+
+def pick_lots(item, qty, batch=None, taken=None, company=None):
 	"""Chọn lô theo FEFO cho `qty` của `item`: ``([Lot(qty lấy)], phần thiếu)``.
 
 	Chỉ lấy lô còn hạn (hạn ≥ hôm nay giờ VN), hạn gần trước, lô không hạn sau cùng. `batch` ghim một lô cụ thể
 	(người vận hành đã quét lô hóa chất). `taken` (``{(lô, kho): đã lấy}``) cộng dồn qua nhiều dòng của cùng một phiếu.
+	`company` chỉ lấy lô ở kho của Company đó (A-78).
 	"""
 	taken = taken if taken is not None else defaultdict(float)
 	today = today_vn()
 	candidates = [
 		lot
-		for lot in _stock_by_lot(item)
-		if (batch is None or lot.batch == batch) and (lot.expiry is None or getdate(lot.expiry) >= today)
+		for lot in _stock_by_lot(item, company)
+		if (batch is None or lot.batch == batch) and _usable(lot, today)
 	]
 	candidates.sort(key=lambda lot: (getdate(lot.expiry) if lot.expiry else NO_EXPIRY, lot.batch))
 	need = flt(qty, PRECISION)
@@ -86,14 +119,69 @@ def pick_lots(item, qty, batch=None, taken=None):
 	return picked, max(need, 0)
 
 
-def _existing_entry(source_doctype, source_name):
+def _entry_of(source_doctype, source_name, docstatus):
 	names = frappe.get_all(
 		"Stock Entry",
-		filters={"tc_source_doctype": source_doctype, "tc_source_name": source_name, "docstatus": ["<", 2]},
+		filters={"tc_source_doctype": source_doctype, "tc_source_name": source_name, "docstatus": docstatus},
 		pluck="name",
+		order_by="creation asc",
 		limit=1,
 	)
 	return names[0] if names else None
+
+
+def _existing_entry(source_doctype, source_name):
+	"""Phiếu đã ghi sổ của nguồn. Phiếu Nháp chưa trừ kho nên không tính (xem `_draft_entry`)."""
+	return _entry_of(source_doctype, source_name, 1)
+
+
+def _draft_entry(source_doctype, source_name):
+	"""Phiếu Nháp còn sót của nguồn (lần chạy trước dừng giữa chừng): dùng lại thay vì sinh phiếu thứ hai."""
+	return _entry_of(source_doctype, source_name, 0)
+
+
+def _machine_company(source_doctype, source_name):
+	"""Company theo tài sản của máy chạy lô; căn cứ chính vì máy thuộc đúng một bệnh viện."""
+	if source_doctype not in RETRY_SOURCES:
+		return None
+	equipment = frappe.db.get_value(source_doctype, source_name, "equipment")
+	asset = equipment and frappe.db.get_value("Equipment", equipment, "asset")
+	return (asset and frappe.db.get_value("Asset", asset, "company")) or None
+
+
+def _operator_company(source_doctype, source_name):
+	if source_doctype not in RETRY_SOURCES:
+		return None
+	operator = frappe.db.get_value(source_doctype, source_name, "operator")
+	return (operator and frappe.db.get_value("Employee", operator, "company")) or None
+
+
+def _company_for(source_doctype, source_name, lines):
+	"""Company của phiếu xuất (A-78): máy → lô đã ghim → Company duy nhất có tồn → người vận hành nếu có tồn.
+
+	Chưa có tồn ở đâu cả → None (không có dòng nào để xuất). Nhiều Company mà không chốt được → `CompanyUndetermined`.
+	"""
+	company = _machine_company(source_doctype, source_name)
+	if company:
+		return company
+	wanted = [line for line in lines if flt(line.get("qty"), PRECISION) > 0]
+	pinned = set()
+	for line in wanted:
+		if line.get("batch"):
+			pinned |= stock_companies([line["item"]], line["batch"])
+	if len(pinned) == 1:
+		return next(iter(pinned))
+	holders = stock_companies({line["item"] for line in wanted})
+	if len(holders) <= 1:
+		return next(iter(holders), None)
+	operator = _operator_company(source_doctype, source_name)
+	if operator in holders:
+		return operator
+	raise CompanyUndetermined(
+		_(
+			"Cannot tell which hospital this issue belongs to: the supplies are in stock at {0}. Link the machine to an asset of the right company, then retry."
+		).format(", ".join(sorted(holders)))
+	)
 
 
 def issue_row(item, qty, batch, warehouse):
@@ -114,11 +202,13 @@ def consume_for(source_doctype, source_name, lines, reason):
 	"""Một Stock Entry ``Material Issue`` đã ghi sổ cho nguồn ``(source_doctype, source_name)``.
 
 	`lines`: ``[{"item", "qty", "batch"?}]`; dòng qty ≤ 0 bị bỏ. Trả ``{"entry", "created", "lots", "short"}``;
-	``entry`` là None khi không có dòng nào. Nguồn đã có phiếu còn hiệu lực thì trả phiếu đó, không tạo thêm.
+	``entry`` là None khi không có dòng nào. Nguồn đã có phiếu đã ghi sổ thì trả phiếu đó, không tạo thêm; phiếu Nháp còn
+	sót được cập nhật theo tồn hiện tại rồi ghi sổ.
 	"""
 	existing = _existing_entry(source_doctype, source_name)
 	if existing:
 		return {"entry": existing, "created": False, "lots": [], "short": []}
+	company = _company_for(source_doctype, source_name, lines)
 	taken = defaultdict(float)
 	rows, lots, short = [], [], []
 	for line in lines:
@@ -126,7 +216,7 @@ def consume_for(source_doctype, source_name, lines, reason):
 		if qty <= 0:
 			continue
 		item, batch = line["item"], line.get("batch")
-		picked, missing = pick_lots(item, qty, batch, taken)
+		picked, missing = pick_lots(item, qty, batch, taken, company)
 		rows += [issue_row(item, lot.qty, lot.batch, lot.warehouse) for lot in picked]
 		lots += [{"item": item, "batch": lot.batch, "qty": lot.qty} for lot in picked]
 		if missing > 0:
@@ -138,29 +228,38 @@ def consume_for(source_doctype, source_name, lines, reason):
 			reason,
 			_("Short, not issued: {0}").format(", ".join(f"{row['item']}: {row['qty']}" for row in short)),
 		)
-	entry = submit_issue(rows, source_doctype, source_name, reason)
+	draft = _draft_entry(source_doctype, source_name)
+	entry = submit_issue(rows, source_doctype, source_name, reason, draft)
 	return {"entry": entry, "created": True, "lots": lots, "short": short}
 
 
-def submit_issue(rows, source_doctype, source_name, reason):
-	"""Lập và ghi sổ Stock Entry ``Material Issue`` từ các dòng ``issue_row``; trả tên phiếu."""
-	import erpnext
+def submit_issue(rows, source_doctype, source_name, reason, draft=None):
+	"""Lập (hoặc cập nhật phiếu Nháp `draft`) và ghi sổ Stock Entry ``Material Issue`` từ các dòng ``issue_row``; trả tên phiếu.
 
-	doc = frappe.get_doc(
-		{
-			"doctype": "Stock Entry",
-			"stock_entry_type": ISSUE,
-			"purpose": ISSUE,
-			"company": erpnext.get_default_company(),
-			"posting_date": today_vn(),
-			"tc_source_doctype": source_doctype,
-			"tc_source_name": source_name,
-			"tc_reason": reason,
-			"items": rows,
-		}
-	)
+	Company theo kho xuất: site nhiều bệnh viện không có Company mặc định chung, user cũng có thể không có. Các dòng phải
+	cùng một Company, ngược lại `CompanyUndetermined`.
+	"""
+	companies = warehouse_companies(row["s_warehouse"] for row in rows)
+	if len(companies) != 1:
+		raise CompanyUndetermined(
+			_("One issue cannot take stock from more than one hospital: {0}.").format(
+				", ".join(sorted(companies)) or "-"
+			)
+		)
+	values = {
+		"stock_entry_type": ISSUE,
+		"purpose": ISSUE,
+		"company": next(iter(companies)),
+		"posting_date": today_vn(),
+		"tc_source_doctype": source_doctype,
+		"tc_source_name": source_name,
+		"tc_reason": reason,
+	}
+	doc = frappe.get_doc("Stock Entry", draft) if draft else frappe.new_doc("Stock Entry")
+	doc.update(values)
+	doc.set("items", rows)
 	doc.flags.ignore_permissions = True
-	doc.insert()
+	doc.save()
 	doc.submit()
 	return doc.name
 
@@ -209,7 +308,21 @@ def _doc_link(source_doctype, source_name):
 	return "/app/{}/{}".format(frappe.scrub(source_doctype).replace("_", "-"), source_name)
 
 
-def _notify(event, source_doctype, source_name, subject, message=None):
+def _manual_issue_link(source_doctype, source_name):
+	"""#1833 T2-02: nút Xử lý mở phiếu xuất vật tư mới, đã điền chứng từ nguồn."""
+	query = urlencode(
+		{
+			"stock_entry_type": ISSUE,
+			"purpose": ISSUE,
+			"tc_source_doctype": source_doctype,
+			"tc_source_name": source_name,
+		},
+		quote_via=quote,
+	)
+	return f"/app/stock-entry/new?{query}"
+
+
+def _notify(event, source_doctype, source_name, subject, message=None, link=None):
 	"""Báo R09; lỗi gửi thông báo không được làm hỏng mẻ đang giải phóng."""
 	try:
 		notification.emit(
@@ -217,10 +330,13 @@ def _notify(event, source_doctype, source_name, subject, message=None):
 			frappe._dict(doctype=source_doctype, name=source_name),
 			subject,
 			message=message,
-			link=_doc_link(source_doctype, source_name),
+			link=link or _doc_link(source_doctype, source_name),
 		)
 	except Exception:
 		frappe.log_error(title=f"FEAT-042 notify {event} {source_doctype} {source_name}")
+
+
+MAX_SUBJECT_CAUSE = 200  # banner một dòng; đủ nguyên nhân ở message
 
 
 def _cause(error):
@@ -232,12 +348,13 @@ def _notify_failed(source_doctype, source_name, error, items):
 		"CONSUMPTION_FAILED",
 		source_doctype,
 		source_name,
-		_("Automatic consumption for {0} {1} failed. Issue the supplies by hand.").format(
-			source_doctype, source_name
+		_("Automatic consumption for {0} {1} failed: {2}").format(
+			_(source_doctype), source_name, _cause(error)[:MAX_SUBJECT_CAUSE]
 		),
 		message=_(
 			"Cause: {0} Items: {1}. Fix the cause (for example the unit of measure of the item), then open {2} and choose Retry consumption."
 		).format(_cause(error), ", ".join(sorted(items)), source_name),
+		link=_manual_issue_link(source_doctype, source_name),
 	)
 
 
@@ -343,18 +460,49 @@ def wash_context(batch):
 	}
 
 
-def retry(source_doctype, source_name):
-	"""Chạy lại tiêu hao tự động của một lô đã Đạt mà lần đầu bị lỗi (R09/R02 bấm "Retry consumption").
+def _retry_plan(source_doctype, source_name):
+	"""``(dựng dòng trừ kho, lý do)`` của nguồn đủ điều kiện xử lý lại; chưa đủ điều kiện thì báo lỗi rõ."""
+	if source_doctype == WASH:
+		ctx = wash_context(source_name)
+		if ctx["result"] != "Pass":
+			frappe.throw(_("Wash batch {0} did not pass, so nothing is consumed for it.").format(source_name))
+		return lambda: _wash_lines(ctx), _wash_reason(ctx)
+	doc = frappe.get_doc(source_doctype, source_name)
+	if source_doctype == LOAD:
+		if doc.status != "Released":
+			frappe.throw(
+				_("Sterilization load {0} has not been released, so nothing is consumed for it yet.").format(
+					source_name
+				)
+			)
+		ctx = {"load": doc.name, "program": doc.program, "packs": [row.pack for row in doc.packs]}
+		return lambda: _load_lines(ctx), _load_reason(ctx)
+	if doc.batch_type == "Outsourced" or doc.status == "Running" or not doc.program:
+		frappe.throw(
+			_("Laundry batch {0} is outsourced, still running or has no program: nothing to consume.").format(
+				source_name
+			)
+		)
+	ctx = {
+		"batch": doc.name,
+		"program": doc.program,
+		"kg": doc.weight_kg,
+		"chemicals": [{"item": row.item, "qty": row.qty} for row in doc.chemicals],
+	}
+	return lambda: _laundry_lines(ctx), _laundry_reason(ctx)
 
-	Nguồn đã có phiếu xuất còn hiệu lực thì không trừ thêm (``created = False``). Lỗi được ném lại kèm nguyên nhân.
+
+def retry(source_doctype, source_name):
+	"""Chạy lại tiêu hao tự động của một lô/mẻ mà lần đầu bị lỗi (R09/R02 bấm "Retry consumption").
+
+	Nguồn đã có phiếu đã ghi sổ thì không trừ thêm (``created = False``). Có phiếu đã ghi sổ thì đóng các cảnh báo
+	CONSUMPTION_FAILED của nguồn. Lỗi được ném lại kèm nguyên nhân và cảnh báo giữ nguyên.
 	"""
 	if source_doctype not in RETRY_SOURCES:
 		frappe.throw(_("Consumption cannot be retried for {0}.").format(source_doctype))
-	ctx = wash_context(source_name)
-	if ctx["result"] != "Pass":
-		frappe.throw(_("Wash batch {0} did not pass, so nothing is consumed for it.").format(source_name))
+	build, reason = _retry_plan(source_doctype, source_name)
 	try:
-		lines = _wash_lines(ctx)
+		lines = build()
 	except Exception as error:
 		frappe.throw(
 			_("Automatic consumption for {0} {1} failed: {2}").format(
@@ -362,8 +510,31 @@ def retry(source_doctype, source_name):
 			),
 			title=_("Consumption failed"),
 		)
-	result = _run(source_doctype, source_name, lines, _wash_reason(ctx), strict=True)
-	return result or {"entry": None, "created": False, "lots": [], "short": []}
+	result = _run(source_doctype, source_name, lines, reason, strict=True)
+	result = result or {"entry": None, "created": False, "lots": [], "short": []}
+	if result["entry"]:
+		notification.resolve("CONSUMPTION_FAILED", source_doctype, source_name)
+	return result
+
+
+def _laundry_lines(ctx):
+	"""Dòng trừ kho của lô giặt: số người vận hành nhập (0 → định mức), cộng các vật tư khác của chương trình theo kg."""
+	kg = flt(ctx.get("kg"))
+	norms = _norms(ctx["program"])
+	by_item = {norm.item: norm for norm in norms}
+	lines, covered = [], set()
+	for chemical in ctx.get("chemicals") or []:
+		norm = by_item.get(chemical["item"])
+		qty = flt(chemical.get("qty")) or (_norm_stock_qty(norm, 0, kg) if norm else 0)
+		lines.append({"item": chemical["item"], "qty": qty})
+		covered.add(chemical["item"])
+	return lines + [
+		{"item": norm.item, "qty": _norm_stock_qty(norm, 0, kg)} for norm in norms if norm.item not in covered
+	]
+
+
+def _laundry_reason(ctx):
+	return _("Automatic consumption of laundry batch {0}").format(ctx["batch"])
 
 
 def on_laundry_complete(ctx):
@@ -371,49 +542,24 @@ def on_laundry_complete(ctx):
 	nhập thay định mức của đúng vật tư đó (0 → định mức). Lô thuê ngoài không trừ kho; lô hóa chất theo FEFO."""
 	if ctx.get("batch_type") == "Outsourced" or not ctx.get("program"):
 		return
-	kg = flt(ctx.get("kg"))
-	norms = _norms(ctx["program"])
-	by_item = {norm.item: norm for norm in norms}
-
-	def build():
-		lines, covered = [], set()
-		for chemical in ctx.get("chemicals") or []:
-			norm = by_item.get(chemical["item"])
-			qty = flt(chemical.get("qty")) or (_norm_stock_qty(norm, 0, kg) if norm else 0)
-			lines.append({"item": chemical["item"], "qty": qty})
-			covered.add(chemical["item"])
-		return lines + [
-			{"item": norm.item, "qty": _norm_stock_qty(norm, 0, kg)}
-			for norm in norms
-			if norm.item not in covered
-		]
-
-	lines = _lines_or_notify("Laundry Batch", ctx["batch"], build, norms)
+	lines = _lines_or_notify(LAUNDRY, ctx["batch"], lambda: _laundry_lines(ctx), _norms(ctx["program"]))
 	if lines is None:
 		return
-	_run(
-		"Laundry Batch",
-		ctx["batch"],
-		lines,
-		_("Automatic consumption of laundry batch {0}").format(ctx["batch"]),
-	)
+	_run(LAUNDRY, ctx["batch"], lines, _laundry_reason(ctx))
+
+
+def _load_lines(ctx):
+	packs = len(ctx.get("packs") or [])
+	return [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in _norms(ctx.get("program"))]
+
+
+def _load_reason(ctx):
+	return _("Automatic consumption of sterilization load {0}").format(ctx["load"])
 
 
 def on_load_release(ctx):
 	"""Mẻ tiệt khuẩn giải phóng: định mức chương trình x số gói, lô theo FEFO."""
-	packs = len(ctx.get("packs") or [])
-	norms = _norms(ctx.get("program"))
-	lines = _lines_or_notify(
-		"Sterilization Load",
-		ctx["load"],
-		lambda: [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in norms],
-		norms,
-	)
+	lines = _lines_or_notify(LOAD, ctx["load"], lambda: _load_lines(ctx), _norms(ctx.get("program")))
 	if lines is None:
 		return
-	_run(
-		"Sterilization Load",
-		ctx["load"],
-		lines,
-		_("Automatic consumption of sterilization load {0}").format(ctx["load"]),
-	)
+	_run(LOAD, ctx["load"], lines, _load_reason(ctx))

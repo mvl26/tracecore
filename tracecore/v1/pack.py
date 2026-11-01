@@ -20,6 +20,7 @@ from tracecore.v1._common import (
 	PACKING_ROLES,
 	STORAGE_ROLES,
 	BadRequestError,
+	current_station_session,
 	require_any_role,
 	run_at_step,
 	station_session,
@@ -29,6 +30,7 @@ from tracecore.v1.printer import change_roll
 FUNCTION = packing.FUNCTION
 MAINT_KEYS = ("instrument", "action", "oil_batch", "reason")
 REF_BY_KIND = {"set": "Set Unit", "pack": "Pack"}
+MAX_LABEL_JOBS = 50  # cùng giới hạn lô in của Desk (tracecore.codes.MAX_BULK)
 
 
 # --- Định dạng tham số (400) -------------------------------------------------------------------------
@@ -211,6 +213,7 @@ def generate_cycle_id(
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(set_id)
 	is_set = scanned["type"] == "set"
+	session = current_station_session()
 	return run_at_step(
 		FUNCTION,
 		station,
@@ -218,7 +221,15 @@ def generate_cycle_id(
 		lambda: {
 			"ok": True,
 			**packing.generate(
-				set_id, station, confirmed, ci_batch, pack_type, actions, timestamp, offline_cycle_id
+				set_id,
+				station,
+				confirmed,
+				ci_batch,
+				pack_type,
+				actions,
+				timestamp,
+				offline_cycle_id,
+				session.employee if session else None,
 			),
 		},
 		"Set Unit" if is_set else None,
@@ -246,16 +257,62 @@ def reprint_label(cycle_id, reason, station, client_ts=None, token=None):
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*PACKING_ROLES)
-@idempotent
-def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
-	"""Hủy Cycle ID tại T4 (D12): `reason` là một lý do hủy của Pack; bộ về Reprocess để đóng gói lại."""
+def label_pdf(cycle_id, station, client_ts=None, token=None):
+	"""PDF nhãn của gói, máy trạm tự lưu thành file (A-101). Trả ``pdf_b64``, ``filename``, ``print_job``.
+
+	Không `@idempotent` như `load.label_pdf`: gọi lại chỉ xuất lại đúng job đó, không sinh chứng từ, không tăng số lần in.
+	"""
 	require_any_role(*PACKING_ROLES)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {"ok": True, **packing.void(cycle_id, reason, station, note)},
+		lambda: {"ok": True, **packing.label_pdf(cycle_id, station)},
+		"Pack",
+		cycle_id,
+	)
+
+
+def _print_jobs(value):
+	message = _("print_jobs must be a list of print job names.")
+	jobs = _json_list(value, message)
+	if not jobs or len(jobs) > MAX_LABEL_JOBS or not all(isinstance(job, str) for job in jobs):
+		raise BadRequestError(message)
+	return jobs
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
+def waiting_labels_pdf(print_jobs, station, client_ts=None, token=None):
+	"""Một file PDF cho các nhãn vừa phát hành khi đổi cuộn hoặc phát lại offline (A-101): một thao tác, một lần tải."""
+	require_any_role(*PACKING_ROLES)
+	jobs = _print_jobs(print_jobs)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, **packing.waiting_labels_pdf(jobs, station)},
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PACKING_ROLES)
+@idempotent
+def void(cycle_id, reason, station, note=None, client_ts=None, token=None):
+	"""Hủy Cycle ID tại T4 (D12): `reason` là một lý do hủy của Pack; bộ về Reprocess để đóng gói lại."""
+	require_any_role(*PACKING_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	session = current_station_session()
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {
+			"ok": True,
+			**packing.void(cycle_id, reason, station, note, session.employee if session else None),
+		},
 		"Pack",
 		cycle_id,
 	)

@@ -22,9 +22,10 @@ from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datet
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import cycle_time
+from tracecore.reprocessing import cycle_defaults, cycle_time, pack_display
 
 STEP = "T5"  # mã cổng trong step_gate
 FUNCTION = "STERI_LOAD"
@@ -36,7 +37,10 @@ STERILIZER_TYPES = {"Steam Sterilizer": "Steam", "Plasma Sterilizer": "Plasma"}
 RUNNING = "Running"
 CYCLE_COMPLETE = "Cycle Complete"
 OPEN_STATUSES = (RUNNING, CYCLE_COMPLETE)
+RELEASED = "Released"
+CANCELLED = 2  # docstatus
 LOADABLE = "Packed"
+TEST_PROGRAM = "Test"  # Process Program.program_kind: chạy ở tab Kiểm tra hằng ngày, không nhận gói (A-83)
 IN_LOAD = "In Load"
 EQUIPMENT_CHECKS_HOOK = "tracecore_load_equipment_checks"
 AFTER_COMPLETE_HOOK = "tracecore_after_load_complete"
@@ -78,8 +82,8 @@ def check_equipment_ready(equipment):
 	"""Block nếu `equipment` không dùng được để nạp mẻ, ngược lại None.
 
 	Thứ tự: không có máy → EQUIPMENT_NOT_FOUND; không phải máy hấp hơi nước/plasma → EQUIPMENT_NOT_STERILIZER; trạng thái
-	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa xong chu trình (`Running`) → EQUIPMENT_BUSY (A-22: một máy chỉ
-	chạy một mẻ); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
+	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa dỡ (`Running`, `Cycle Complete` chưa có `unload_scan_at`) →
+	EQUIPMENT_BUSY (A-86, sửa A-22); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
 	thì chặn (A-16, Q3).
 	"""
 	row = frappe.db.get_value("Equipment", equipment, ["equipment_type", "status"], as_dict=True)
@@ -109,14 +113,23 @@ def check_equipment_ready(equipment):
 			object_name=equipment,
 		)
 	running = frappe.db.get_value(
-		"Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0}, "name"
+		"Sterilization Load",
+		{
+			"equipment": equipment,
+			"status": ["in", OPEN_STATUSES],
+			"docstatus": 0,
+			"unload_scan_at": ["is", "not set"],
+		},
+		"name",
 	)
 	if running:
 		return Block(
 			"EQUIPMENT_BUSY",
 			_("Sterilizer is still running a load"),
-			_("Load {0} on sterilizer {1} has no cycle data yet.").format(running, equipment),
-			_("Enter the cycle data of load {0} first, then load this sterilizer again.").format(running),
+			_("Load {0} on sterilizer {1} has not been unloaded yet.").format(running, equipment),
+			_(
+				"Enter the cycle data of load {0} and unload it first, then load this sterilizer again."
+			).format(running),
 		)
 	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
 		if isinstance(block, Block):
@@ -168,9 +181,10 @@ def _indicators(equipment, equipment_type, requires_bi):
 def scan_machine(raw):
 	"""Mở phiên nạp từ mã QR máy: máy, chương trình đang dùng của máy (FR-M2-09.1, .3).
 
-	``{"equipment": {..., "method", "max_packs"}, "programs": [...]}``; mỗi chương trình có ``compatible_pack_types``,
-	``parameters`` (param_schema) và ``indicators``. Mã không phải máy → SCAN_INVALID; máy không dùng được →
-	`check_equipment_ready`.
+	``{"equipment": {..., "method", "max_packs", "default_program"}, "programs": [...]}``; mỗi chương trình có
+	``compatible_pack_types``, ``parameters`` (param_schema) và ``indicators``. Chương trình test không vào danh sách;
+	``default_program`` chỉ có khi nó nằm trong danh sách (A-83). Mã không phải máy → SCAN_INVALID; máy không dùng được
+	→ `check_equipment_ready`.
 	"""
 	scanned = gs1.parse_scan(raw)
 	if scanned["type"] != "equipment":
@@ -199,20 +213,22 @@ def scan_machine(raw):
 		}
 		for row in frappe.get_all(
 			"Process Program",
-			filters={"equipment": equipment.name, "is_active": 1},
+			filters={"equipment": equipment.name, "is_active": 1, "program_kind": ["!=", TEST_PROGRAM]},
 			fields=["name", "program_name", "requires_bi"],
 			order_by="program_name asc",
 		)
 	]
+	default = frappe.db.get_value("Equipment", equipment.name, "default_program")
+	equipment.default_program = default if default in [row["program_code"] for row in programs] else None
 	return {"equipment": equipment, "programs": programs}
 
 
 def _program(equipment, program):
-	"""Chương trình `program` của máy `equipment` còn dùng, hoặc PROGRAM_INVALID."""
+	"""Chương trình `program` của máy `equipment` còn dùng và nhận gói; ngược lại PROGRAM_INVALID, PROGRAM_TEST_ONLY."""
 	row = frappe.db.get_value(
 		"Process Program",
 		program,
-		["name", "program_name", "equipment", "is_active", "requires_bi"],
+		["name", "program_name", "equipment", "is_active", "requires_bi", "program_kind"],
 		as_dict=True,
 	)
 	if not row or row.equipment != equipment or not cint(row.is_active):
@@ -221,6 +237,15 @@ def _program(equipment, program):
 			_("Program is not valid"),
 			_("Program {0} is not an active program of equipment {1}.").format(program or "-", equipment),
 			_("Choose a program from the list of this sterilizer."),
+		)
+	if row.program_kind == TEST_PROGRAM:
+		raise _blocked(
+			"PROGRAM_TEST_ONLY",
+			_("Test program cannot take packs"),
+			_("Program {0} is a test program: it runs without instrument packs.").format(row.program_name),
+			_("Choose a sterilization program for the packs. Run the test from the Daily test tab."),
+			object_type="Process Program",
+			object_name=row.name,
 		)
 	return row
 
@@ -262,7 +287,14 @@ def _check_compatible(pack, equipment_type, program):
 			_("Load the pack into a {0} sterilizer.").format(_(pack.method)),
 		)
 	allowed = _compatible_pack_types(program)
-	if allowed and pack.pack_type not in allowed:
+	if not allowed:  # danh sách rỗng = không nhận gói nào (A-83, D5)
+		return Block(
+			"PACK_INCOMPATIBLE",
+			_("Program takes no pack type"),
+			_("Program {0} has no compatible pack type, so it takes no pack.").format(program),
+			_("Choose another program, or ask R10 to list the compatible pack types of this program."),
+		)
+	if pack.pack_type not in allowed:
 		return Block(
 			"PACK_INCOMPATIBLE",
 			_("Pack does not fit this program"),
@@ -358,12 +390,33 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 	return _admitted(pack, duplicate=False, count=len(queue) + 1, capacity=capacity)
 
 
+def recheck_packs(equipment, program, packs):
+	"""Kiểm lại gói đang nạp khi đổi chương trình (A-88, #1844), không ghi; trả ``[{"cycle_id", "ok", "code", "reason"}]``.
+
+	Đi qua đúng `admit_pack`. `queued` chỉ gồm các gói đã đạt trước đó, không có chính gói đang kiểm: có nó thì
+	`admit_pack` coi là quét lặp và bỏ qua mọi kiểm tra; gói không đạt cũng không chiếm dung tích.
+	"""
+	accepted, rows = [], []
+	for cycle_id in packs or []:
+		try:
+			admit_pack(cycle_id, equipment, program, accepted)
+		except BlockedError as error:
+			rows.append(
+				{"cycle_id": cycle_id, "ok": False, "code": error.block.code, "reason": error.block.reason}
+			)
+			continue
+		accepted.append(cycle_id)
+		rows.append({"cycle_id": cycle_id, "ok": True, "code": None, "reason": None})
+	return rows
+
+
 def _admitted(pack, duplicate, count, capacity):
 	set_type = frappe.db.get_value("Set Unit", pack.set_unit, "set_type")
 	return {
 		"cycle_id": pack.name,
 		"set_id": pack.set_unit,
 		"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name"),
+		"department_name": pack_display.row_of(pack.name)["department_name"],
 		"method": pack.method,
 		"pack_type": pack.pack_type,
 		"pack_type_name": frappe.db.get_value("Item", pack.pack_type, "item_name"),
@@ -390,6 +443,7 @@ def running_loads():
 			"needs_review",
 			"requires_bi",
 			"is_priority",
+			"unload_scan_at",
 		],
 		order_by="load_completed_at asc, name asc",
 	)
@@ -404,13 +458,23 @@ def running_loads():
 			"load_completed_at": row.load_completed_at,
 			"data_complete": cint(row.data_complete),
 			"needs_review": cint(row.needs_review),
+			"unloaded": bool(row.unload_scan_at),
 			"requires_bi": cint(row.requires_bi),
 			"is_priority": cint(row.is_priority),
-			"packs": frappe.get_all(
-				"Load Pack", filters={"parent": row.name, "parenttype": "Sterilization Load"}, pluck="pack"
-			),
+			"packs": packs,
+			"pack_rows": [pack_display.row_of(pack) for pack in packs],
 		}
-		for row in rows
+		for row, packs in (
+			(
+				row,
+				frappe.get_all(
+					"Load Pack",
+					filters={"parent": row.name, "parenttype": "Sterilization Load"},
+					pluck="pack",
+				),
+			)
+			for row in rows
+		)
 	]
 
 
@@ -535,6 +599,7 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 	return {
 		"load": load.name,
 		"packs": accepted,
+		"pack_rows": [pack_display.row_of(pack) for pack in accepted],
 		"rejected": rejected,
 		"print": label,
 		# label preview §4.12 trên kiosk: QR thật của mã mẻ (máy in nhận ZPL riêng)
@@ -634,6 +699,7 @@ def _pack_rows(doc):
 				"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name")
 				if set_type
 				else None,
+				"department_name": pack_display.row_of(row.pack)["department_name"],
 				"method": pack.method if pack else None,
 				"pack_type": pack.pack_type if pack else None,
 				"expiry": pack.expiry if pack else None,
@@ -678,6 +744,8 @@ def _describe(doc):
 		"manual_confirmed_by": _employee(doc.manual_confirmed_by),
 		"manual_confirmed_at": doc.manual_confirmed_at,
 		"duration": cycle_time.for_doc(doc),
+		"unloaded_by": _employee(doc.unloaded_by),
+		"unload_scan_at": doc.unload_scan_at,
 	}
 
 
@@ -695,6 +763,38 @@ def lookup(raw):
 			_("Scan the QR code on the sterilization load label."),
 		)
 	return _describe(_load_doc(scanned["id"]))
+
+
+def label_pdf(load, station):
+	"""PDF nhãn QR của mẻ để máy trạm lưu (A-99, A-101): dùng Print Job có sẵn, xong ghi `Printed`/`File`.
+
+	Không có mẻ → LOAD_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100). Nhãn còn `Waiting` →
+	LABEL_NOT_QUEUED. Không sinh được PDF → LABEL_PDF_FAILED, job giữ `Queued`.
+	"""
+	doc = _load_doc(load)
+	if core_print.object_printer(station) is None:
+		raise _blocked(
+			"NO_PRINTER_AT_STATION",
+			_("No printer at this station"),
+			_(
+				"Station {0} has no active printer. Sterilization load {1} is kept; its label is waiting."
+			).format(station, doc.name),
+			_("Ask R10 to add a printer to this station, then print the load label again."),
+		)
+	job = core_print.label_output_job("Sterilization Load", doc.name, station)
+	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
+	program = frappe.db.get_value("Process Program", doc.program, "program_name")
+	result = core_label_pdf.render(
+		doc.name,
+		_("Sterilization load"),
+		[
+			" - ".join(part for part in (machine, program) if part),
+			get_datetime(doc.started_at).strftime(core_label_pdf.DATETIME_FORMAT),
+			_("{0} pack(s)").format(len(doc.packs)),
+		],
+	)
+	core_print.mark_file_output(job.name, result["filename"])
+	return {**result, "print_job": str(job.name)}
 
 
 # --- Dữ liệu chu trình nhập tay có xác nhận (FR-M2-10, BRU-REP-015) -----------------------------------------
@@ -731,7 +831,26 @@ def _check_data_station(station, machine, unload_only=False):
 	)
 
 
+def _released_by_line(doc):
+	"""Ai giải phóng và lúc nào: chỉ tên nhân viên, không mã HR; thiếu thông tin nào thì bỏ phần đó."""
+	who = (_employee(doc.released_by) or {}).get("employee_name")
+	when = get_datetime(doc.released_at).strftime("%d/%m/%Y %H:%M") if doc.released_at else None
+	if who and when:
+		return _("Released by {0} at {1}.").format(who, when)
+	if who:
+		return _("Released by {0}.").format(who)
+	return _("Released at {0}.").format(when) if when else ""
+
+
 def _require_open(doc):
+	# Mẻ đã giải phóng là kết quả bình thường, không phải sai quy trình: mã riêng, trạm hiện thông báo, mọi thao tác ghi vẫn bị từ chối
+	if doc.status == RELEASED and doc.docstatus != CANCELLED:
+		raise _blocked(
+			"LOAD_ALREADY_RELEASED",
+			_("Load {0} has been released, packs moved to sterile storage").format(doc.name),
+			_released_by_line(doc),
+			"",
+		)
 	if doc.status not in OPEN_STATUSES or doc.docstatus != 0:
 		raise _blocked(
 			"LOAD_NOT_OPEN",
@@ -759,6 +878,15 @@ def _scan_kind(doc, raw):
 		return "equipment"
 	if scanned["type"] == "load" and scanned["id"] == doc.name:
 		return "load"
+	if scanned["type"] in ("set", "pack"):  # #1819: dỡ theo mã mẻ, không theo gói
+		raise _blocked(
+			"SCAN_INVALID",
+			_("This is an instrument set code - please scan the load code (ME-...)"),
+			_("Code {0} is a set or pack code; unloading works on the whole load {1}.").format(
+				scanned["raw"], doc.name
+			),
+			_("Scan the QR code of load {0}.").format(doc.name),
+		)
 	raise _blocked(
 		"SCAN_INVALID",
 		_("Invalid code"),
@@ -793,7 +921,7 @@ def scan_for_data(load, raw, station):
 	"""Kiểm MỘT mã quét khi nhập dữ liệu mẻ `load`: ``{"ok": True, "kind": "equipment" | "load"}``.
 
 	Máy khác máy của mẻ → EQUIPMENT_MISMATCH ngay; mã mẻ khác hoặc mã loại khác → SCAN_INVALID; mẻ đã đóng →
-	LOAD_NOT_OPEN; trạm không phải T5/cửa ra → STATION_WRONG_STEP. Không ghi.
+	LOAD_NOT_OPEN (đã giải phóng → LOAD_ALREADY_RELEASED); trạm không phải T5/cửa ra → STATION_WRONG_STEP. Không ghi.
 	"""
 	doc = _load_doc(load)
 	machine = frappe.db.get_value("Equipment", doc.equipment, list(EQUIPMENT_FIELDS), as_dict=True)
@@ -805,7 +933,11 @@ def scan_for_data(load, raw, station):
 def data_context(load, equipment_raw, load_raw, station):
 	"""Ngữ cảnh nhập dữ liệu sau khi đã quét QR máy và QR mẻ: `lookup` + ``parameter_schema`` của chương trình."""
 	doc, _machine = _open_for_data(load, equipment_raw, load_raw, station)
-	return {**_describe(doc), "parameter_schema": _parameters(doc.program)}
+	return {
+		**_describe(doc),
+		"parameter_schema": cycle_defaults.parameter_schema(doc.program),
+		"prefill": cycle_defaults.prefill(doc),
+	}
 
 
 def _number(value):
@@ -866,7 +998,7 @@ def save_manual_data(
 	thiếu tham số `required`, giờ kết thúc (hoặc trước giờ bắt đầu), ảnh bản in (máy có bản in, FR-M2-10.2), lý do
 	(máy kết nối được mà nhập tay, FR-M2-10.4), chưa tick xác nhận hoặc chưa quét thẻ. Thẻ quét phải là thẻ của
 	`employee` (Employee của phiên) — khác → CARD_MISMATCH (A-16, Q11). Giá trị ngoài dải vẫn lưu, đặt
-	``needs_review`` (FR-M2-10.3). Đủ dữ liệu → ``status = Cycle Complete``. Sửa lại được khi mẻ còn mở.
+	``needs_review`` và chặn kết quả Đạt (FR-M2-10.3, A-89); giá trị mặc định, trường đã sửa ghi ở `params`, `machine_data`. Đủ dữ liệu → ``status = Cycle Complete``. Sửa lại được khi mẻ còn mở.
 	"""
 	client_time.check_skew(client_ts)
 	doc, machine = _open_for_data(load, equipment_raw, load_raw, station, for_update=True)
@@ -874,8 +1006,14 @@ def save_manual_data(
 	for row in values or []:
 		if isinstance(row, dict) and row.get("parameter_name"):
 			given[row["parameter_name"]] = row.get("value")
-	parameters, missing, review = [], [], False
-	for schema in _parameters(doc.program):
+	# A-106: cờ Cần xem xét không do ngoài dải (sự cố máy, khớp theo giờ) không mất khi lưu lại dữ liệu, kẻo KTV tự giải phóng
+	old_params = frappe.parse_json(doc.params) if doc.params else []
+	parameters, missing, review = (
+		[],
+		[],
+		bool(cint(doc.needs_review) and not cycle_defaults.outside_names(old_params)),
+	)
+	for schema in cycle_defaults.parameter_schema(doc.program):
 		value = _number(given.get(schema.parameter_name))
 		if value is None:
 			if cint(schema.required):
@@ -914,14 +1052,16 @@ def save_manual_data(
 		)
 	if missing:
 		raise _incomplete(doc, missing)
+	source, trace = cycle_defaults.trace(doc, parameters, started, ended)
 	doc.update(
 		{
 			"params": frappe.as_json(parameters),
+			"machine_data": frappe.as_json(trace),
 			"machine_alerts": frappe.as_json({"text": machine_alerts}) if machine_alerts else None,
 			"machine_report": machine_report or None,
 			"started_at": started,
 			"ended_at": ended,
-			"data_source": "Manual",
+			"data_source": source,
 			"data_complete": 1,
 			"needs_review": 1 if review else 0,
 			"manual_reason": (reason or "").strip() or None,

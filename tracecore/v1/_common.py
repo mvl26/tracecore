@@ -19,12 +19,12 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 
 AGENT_ROLE = "TC Agent"
-# R04 là role của user kiosk T4; System Manager để R10 xử lý trên Desk
-PACKING_ROLES = ("TC R04", "System Manager")
-# R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025)
-STORAGE_ROLES = ("TC R06", "System Manager")
-# T8 quét sử dụng tại khoa (FEAT-027): nhân viên khoa R08
-USAGE_ROLES = ("TC R08", "System Manager")
+# R04 là role của user kiosk T4; R02 theo ma trận phân quyền (A-105); System Manager để R10 xử lý trên Desk
+PACKING_ROLES = ("TC R04", "TC R02", "System Manager")
+# R06 là role của user kiosk T6 kho vô khuẩn (FEAT-025); R02 theo ma trận (A-105)
+STORAGE_ROLES = ("TC R06", "TC R02", "System Manager")
+# T8 quét sử dụng tại khoa (FEAT-027): nhân viên khoa R08; R02 theo ma trận (A-105)
+USAGE_ROLES = ("TC R08", "TC R02", "System Manager")
 # FEAT-021 Q20: nạp lô rửa do R03 (actor chính UC-06), R05, R02; dỡ/nhập dữ liệu/kết luận thêm R04 (cửa ra máy hai cửa)
 WASH_LOAD_ROLES = ("TC R03", "TC R05", "TC R02", "System Manager")
 WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")
@@ -32,6 +32,8 @@ WASH_UNLOAD_ROLES = ("TC R03", "TC R04", "TC R05", "TC R02", "System Manager")
 LOAD_ROLES = ("TC R05", "TC R02", "System Manager")
 # T5b dỡ mẻ và giải phóng (FEAT-023): R05 dỡ và ghi chỉ thị, R02 giải phóng (PIN), R01 giải phóng khẩn (lý do)
 RELEASE_ROLES = ("TC R05", "TC R02", "TC R01", "System Manager")
+# A-102: KTV ghi Không đạt được, việc loại mẻ do giám sát CSSD hoặc trưởng khoa
+REJECT_ROLES = ("TC R02", "TC R01", "System Manager")
 # FEAT-019 (A-31): tiếp nhận T1 do R03 (actor chính UC-05); R02 cũng làm được và là người duy nhất tiếp nhận cưỡng bức
 RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 # FEAT-033 (A-49): trạm đồ vải do R07 (actor chính UC-16); R02 hỗ trợ

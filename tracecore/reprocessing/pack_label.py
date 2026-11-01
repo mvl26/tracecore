@@ -8,6 +8,7 @@ Tách khỏi `packing` (dịch vụ sinh/in lại/hủy/tra cứu gọi các hà
 - `pack_summary(pack)`, `pack_result(pack, printed)`: dữ liệu gói trả về cho trạm.
 - `label_items(method)`: Item nhãn của phương pháp.
 - `cancel_waiting_jobs(pack, reason)`: hủy nhãn còn chờ in của gói vừa hủy hiệu lực.
+- `label_rows(pack)`, `pack_pdf(pack)`: nhãn gói ra PDF cùng nội dung bản xem trước T4 (A-101).
 
 Chỉ import `tracecore.core` (lint R1); in không bao giờ làm mất Cycle ID.
 """
@@ -19,6 +20,7 @@ from frappe import _
 from frappe.utils import cint, get_datetime, get_fullname, getdate
 
 from tracecore.core import error_codes, gs1
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 
 
@@ -30,6 +32,12 @@ def label_items(method):
 		fields=["name", "item_name"],
 		order_by="name asc",
 	)
+
+
+def packer_name(pack):
+	"""Họ tên người đóng gói: nhân viên của phiên trạm (A-81); gói cũ chưa có `packed_by` lấy theo user."""
+	name = pack.packed_by and frappe.db.get_value("Employee", pack.packed_by, "employee_name")
+	return name or get_fullname(pack.packed_by_user)
 
 
 def label_context(pack):
@@ -45,7 +53,7 @@ def label_context(pack):
 		"cycle_id": pack.name,
 		"set_name": pack.set_name or "",
 		"dept": department or pack.department or "",
-		"packer": get_fullname(pack.packed_by_user),
+		"packer": packer_name(pack),
 		"packed_at": f"{packed_at:%d/%m/%Y %H:%M}",
 		"expiry": f"{expiry:%d/%m/%Y}",
 		"method_label": _(pack.method),
@@ -58,6 +66,41 @@ def label_context(pack):
 		"payload": pack.barcode_payload,
 		"hri": _hri(pack),
 	}
+
+
+def label_rows(pack):
+	"""Các dòng chữ nhãn PDF, đúng thứ tự và nội dung bản xem trước T4 (`labelHtml`); dòng THIẾU như nhãn in (FR-M2-06.1)."""
+	context = label_context(pack)
+
+	def optional(condition, row):
+		return [row] if condition else []
+
+	return [
+		(pack.name, "code"),
+		(context["hri"], ""),
+		(pack.set_unit, "mono"),
+		(context["set_name"], "title"),
+		*optional(context["dept"], (_("Department: {0}").format(context["dept"]), "")),
+		(_("Method: {0}").format(context["method_label"]), ""),
+		(_("Pack type: {0}").format(context["pack_type"]), ""),
+		(_("Packed: {0} · {1}").format(context["packer"], context["packed_at"]), ""),
+		(_("Indicator: lot {0} · BOM v{1}").format(context["ci_lot"], context["bom_version"]), ""),
+		*optional(context["is_loaner"], (_("LOANER"), "title")),
+		*optional(context["is_test"], (_("TEST"), "title")),
+		(_("EXPIRY DATE / EXP: {0}").format(context["expiry"]), "title"),
+		(
+			_("Plasma H2O2 label / Plasma label")
+			if pack.method == "Plasma"
+			else _("Steam 134°C label / Steam label"),
+			"",
+		),
+		*optional(context["warning"], (context["warning"], "title")),
+	]
+
+
+def pack_pdf(pack):
+	"""Bytes PDF nhãn gói; không sinh được → `BlockedError(LABEL_PDF_FAILED)`, gói và job giữ nguyên."""
+	return core_label_pdf.pack_pdf(pack.name, pack.barcode_payload, label_rows(pack))
 
 
 def _shortage_warning(pack):
@@ -209,7 +252,7 @@ def pack_summary(pack):
 		"expiry": str(getdate(pack.expiry)),
 		"shelf_life_days_applied": cint(pack.shelf_life_days_applied),
 		"packed_at": f"{get_datetime(pack.packed_at):%Y-%m-%d %H:%M:%S}",
-		"packer": get_fullname(pack.packed_by_user),
+		"packer": packer_name(pack),
 		"ci_batch": pack.ci_batch,
 		"bom_version": cint(pack.bom_version),
 		"label_type": pack.label_type,

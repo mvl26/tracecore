@@ -258,6 +258,57 @@ class TestRejections(IssueApiCase):
 		assert_block(self, result, "ISSUE_NOT_FOUND", 404)
 
 
+class TestPackOfAnotherDepartment(IssueApiCase):
+	"""A-102: gói của khoa khác: cảnh báo, phải xác nhận kèm lý do, ghi Audit Log; không chặn hẳn."""
+
+	def other_pack(self):
+		pack = self.stocked()
+		other = as_administrator(make_department, "Khoa API khác")
+		as_administrator(frappe.db.set_value, "Pack", pack.name, "department", other)
+		return pack
+
+	def test_first_scan_warns_and_nothing_is_added(self):
+		note, pack = self.open_draft(), self.other_pack()
+		result = call(issue_api.add_pack, issue_note=note, raw=pack.name, station=STATION)
+		assert_block(self, result, "PACK_DEPT_MISMATCH", 409)
+		self.assertEqual(frappe.db.count("Issue Note Pack", {"parent": note}), 0)
+
+	def test_reason_adds_the_pack_and_is_audited(self):
+		note, pack = self.open_draft(), self.other_pack()
+		result = call(
+			issue_api.add_pack,
+			issue_note=note,
+			raw=pack.name,
+			station=STATION,
+			department_reason="Khoa mượn gấp",
+		)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual([row["cycle_id"] for row in result["issue"]["packs"]], [pack.name])
+		log = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Pack", "ref_name": pack.name, "reason": "PackOfOtherDepartment"},
+			fields=["new_value"],
+		)
+		self.assertEqual(len(log), 1)
+		self.assertEqual(frappe.parse_json(log[0].new_value)["note"], "Khoa mượn gấp")
+
+	def test_blank_reason_is_not_a_confirmation(self):
+		note, pack = self.open_draft(), self.other_pack()
+		result = call(
+			issue_api.add_pack, issue_note=note, raw=pack.name, station=STATION, department_reason="  "
+		)
+		assert_block(self, result, "PACK_DEPT_MISMATCH", 409)
+
+	def test_pack_of_same_department_or_without_department_has_no_warning(self):
+		note = self.open_draft()
+		same, blank = self.stocked(), self.stocked()
+		as_administrator(frappe.db.set_value, "Pack", same.name, "department", self.dept)
+		as_administrator(frappe.db.set_value, "Pack", blank.name, "department", None)
+		for pack in (same, blank):
+			result = call(issue_api.add_pack, issue_note=note, raw=pack.name, station=STATION)
+			self.assertEqual(result.get("error", {}).get("code") == "PACK_DEPT_MISMATCH", False, msg=result)
+
+
 class TestSecurity(IssueApiCase):
 	def test_all_rpcs_are_post_only(self):
 		for fn in (

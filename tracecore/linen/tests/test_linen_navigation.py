@@ -38,9 +38,11 @@ class TestLinenNavigation(IsolatedTestCase):
 			linen,
 			[
 				"/app/linen-type",
+				'/app/equipment?equipment_type=["in",["Laundry Washer","Dryer"]]',
 				"/app/linen-collection",
 				"/app/laundry-batch",
 				"/app/query-report/Laundry Cost per Kg",
+				"/app/query-report/Laundry Equipment Norms",
 				"/app/linen-issue",
 				"/app/query-report/Linen Reconciliation",
 			],

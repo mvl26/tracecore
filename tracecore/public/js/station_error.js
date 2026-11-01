@@ -1,8 +1,73 @@
+/* global esc, clientTs */
 // Khung mã lỗi (FEAT-052, A-71, FR-M9-19): tiêu đề "[Mã] – Tên – đối tượng" và nút mở Hướng dẫn xử lý, dùng chung mọi màn trạm.
 // Hướng dẫn hiện inline ngay dưới khối lỗi; bản đã tải giữ lại trong trình duyệt để mở được khi mất mạng.
 (function () {
 	const CACHE_PREFIX = "tc_error_guide_";
 	const escape = (value) => frappe.utils.escape_html(value == null ? "" : String(value));
+
+	// A-99: lưu PDF nhãn máy chủ trả về (base64) thành file trên máy trạm
+	window.tcSavePdf = function (b64, filename) {
+		const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
+		const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	};
+
+	// A-101: lấy PDF nhãn từ máy chủ rồi lưu một file; không ném lỗi. Trả {ok, filename, res} hoặc {ok: false, reason}.
+	// Phiên trạm vừa kết thúc → {ended: true}: màn đã đổi, không báo gì thêm.
+	window.tcPrintLabelPdf = async function (station, method, args) {
+		let res = null;
+		try {
+			res = await station.rpcRead(method, { ...args, client_ts: clientTs() });
+			if (res && res.ok && res.pdf_b64) {
+				window.tcSavePdf(res.pdf_b64, res.filename);
+				return { ok: true, filename: res.filename, res };
+			}
+		} catch (error) {
+			if (error.sessionEnded) return { ok: false, ended: true };
+			return { ok: false, reason: station.failureCause(error) };
+		}
+		return { ok: false, reason: station.failureCause(null, res) };
+	};
+
+	const labelButton = function (action, text, disabled) {
+		return `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="${esc(
+			action
+		)}"${disabled ? " disabled" : ""}>${esc(text)}</button></div>`;
+	};
+
+	// A-107: nhãn chỉ ra file khi người dùng bấm; in rồi thì cùng nút thành In lại
+	window.tcLabelButton = function (action, printed, disabled) {
+		return labelButton(action, printed ? __("Reprint") : __("Print label"), disabled);
+	};
+
+	// A-107: các nhãn chờ (đổi cuộn, gói phát lại) gộp một file khi bấm
+	window.tcWaitingLabelsButton = function (action, count, disabled) {
+		return labelButton(action, __("Print {0} waiting label(s)", [count]), disabled);
+	};
+
+	// #1832 cho mọi màn: nhãn liên kết của ô quét luôn theo placeholder mà màn đang đặt
+	window.tcBindScanLabel = function (input) {
+		const sync = () => {
+			for (const label of input.labels || []) label.textContent = input.placeholder;
+		};
+		sync();
+		new MutationObserver(sync).observe(input, {
+			attributes: true,
+			attributeFilter: ["placeholder"],
+		});
+	};
+
+	// Dấu phẩy thập phân khi hiển thị số (CLAUDE.md); máy chủ nhận cả phẩy nên ô điền sẵn gửi lại nguyên chuỗi được
+	window.tcDecimal = function (value) {
+		if (value === null || value === undefined) return "";
+		return String(value).replace(/^(-?\d+)\.(\d+)$/, "$1,$2");
+	};
 
 	window.tcErrorTitle = function (notice) {
 		if (!notice || !notice.error_code) return (notice && notice.title) || "";

@@ -405,12 +405,19 @@ def _demo_department():
 	return factories.make_department(_("Demo operating theatre", lang="vi"))
 
 
+# A-102: loại gói demo khai phương pháp, không thì A-97 hiện cho mọi bộ (Tyvek không dùng cho hấp)
+DEMO_PACK_METHODS = {"DEMO-T4-GOI-CREPE": "Steam", "DEMO-T4-GOI-TYVEK": "Plasma"}
+
+
 def _ensure_pack_type(pack_type):
-	"""Item loại gói demo ``(mã, tên, hạn lưu)`` (tạo một lần); trả mã Item."""
+	"""Item loại gói demo ``(mã, tên, hạn lưu)`` (tạo một lần, bù phương pháp nếu còn trống); trả mã Item."""
 	pack_code, pack_name, days = pack_type
 	if not frappe.db.exists("Item", pack_code):
 		factories.make_item(pack_code, "Packaging", shelf_life_days=days)
 		frappe.db.set_value("Item", pack_code, "item_name", pack_name)
+	method = DEMO_PACK_METHODS.get(pack_code)
+	if method and not frappe.db.get_value("Item", pack_code, "tc_compatible_method"):
+		frappe.db.set_value("Item", pack_code, "tc_compatible_method", method)
 	return pack_code
 
 
@@ -1398,8 +1405,12 @@ T5_READY_PACKS = 3
 
 
 def _has_running_load(equipment):
+	# A-86: máy bận tới khi dỡ mẻ, kể cả mẻ đã xong chu trình
 	return bool(
-		frappe.db.exists("Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0})
+		frappe.db.exists(
+			"Sterilization Load",
+			{"equipment": equipment, "docstatus": ["<", 2], "unload_scan_at": ["is", "not set"]},
+		)
 	)
 
 
@@ -1407,7 +1418,7 @@ def _t5_machine(key, equipment_type, free=False, **fields):
 	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại), đã test hằng ngày hôm nay
 	(trừ máy ngừng sử dụng); trả TB-####.
 
-	`free`: máy để e2e nạp mẻ phải trống (A-22: còn mẻ ``Running`` thì không nạp được). Lượt e2e trước để lại mẻ
+	`free`: máy để e2e nạp mẻ phải trống (A-86: còn mẻ chưa dỡ thì không nạp được). Lượt e2e trước để lại mẻ
 	đang chạy (mẻ không xóa được) thì dùng máy demo kế tiếp ``<serial>-2``, ``-3``… (tạo nếu chưa có).
 	"""
 	for index in range(1, 100):
@@ -1437,10 +1448,21 @@ def _t5_program(equipment):
 	name = frappe.db.get_value(
 		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="name asc"
 	)
+	# danh sách rỗng không nhận gói (A-83): khai mọi loại gói demo của T4 và loại gói mặc định của factory
+	pack_types = [factories.make_pack_type()]
+	pack_types += [_ensure_pack_type(spec["pack_type"]) for spec in _t4_catalog().values()]
 	if name:
+		doc = frappe.get_doc("Process Program", name)
+		if not doc.compatible_pack_types:
+			# chương trình demo tạo trước A-83 chưa khai loại gói
+			for pack_type in dict.fromkeys(pack_types):
+				doc.append("compatible_pack_types", {"pack_type": pack_type})
+			doc.save(ignore_permissions=True)
 		return name
 	code = "DEMO-T5-" + equipment.replace("TB-", "")
-	return factories.make_sterilize_program(equipment, code=code, parameters=T5_PARAMETERS).name
+	return factories.make_sterilize_program(
+		equipment, pack_types=pack_types, code=code, parameters=T5_PARAMETERS
+	).name
 
 
 def _t5_loadable(set_type, with_t4):

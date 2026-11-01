@@ -12,6 +12,7 @@ from frappe.utils import add_days, cint, getdate, now_datetime, today
 
 from tracecore.core import code_registry, error_codes, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
+from tracecore.reprocessing import pack_display, pick_list
 
 FUNCTION = "PUTAWAY"
 EXPIRING_DAYS = 7  # FR-M2-13.2: dashboard kho liệt kê gói hết hạn trong 7 ngày tới
@@ -19,7 +20,7 @@ IN_STOCK = "In Sterile Stock"
 VOID_EXPIRED = "Expired"
 VOID_TORN = "Torn"
 SAVEPOINT = "tc_storage_expire"
-SUMMARY_FIELDS = ("name", "set_unit", "set_type", "set_name", "expiry", "location", "method")
+SUMMARY_FIELDS = ("name", "set_unit", "set_type", "set_name", "department", "expiry", "location", "method")
 
 
 def _blocked(code, title, reason, action, items=None, **fields):
@@ -102,6 +103,7 @@ def _summary(pack):
 		"set_id": pack["set_unit"],
 		"set_type": pack["set_type"],
 		"set_name": pack["set_name"],
+		"department_name": pack_display.department_name(pack["department"]),
 		"method": pack["method"],
 		"expiry": getdate(pack["expiry"]),
 		"location": pack["location"],
@@ -137,6 +139,28 @@ def pack_card(raw):
 	}
 
 
+def _pack_not_released(pack):
+	return _blocked(
+		"PACK_NOT_RELEASED",
+		_("Pack is not released"),
+		_("Pack {0} is {1}; only a released pack can be stored.").format(
+			pack.name, _(pack.status, context="Pack")
+		),
+		_("Check the sterilization load result, or call R02."),
+		object_type="Pack",
+		object_name=pack.name,
+		error_code=error_codes.pack_error_code(pack),
+	)
+
+
+def scan_pack(raw):
+	"""Quét gói ở màn T6 (A-102): gói chưa giải phóng hoặc đã rời kho bị chặn ngay, không hỏi mã kệ; còn lại trả thẻ gói."""
+	card = pack_card(raw)
+	if card["status"] not in ("Released", IN_STOCK):
+		raise _pack_not_released(frappe.get_doc("Pack", card["cycle_id"]))
+	return card
+
+
 # --- Nhập kho và chuyển vị trí (FR-M2-13) ---------------------------------------------------------------
 
 
@@ -159,17 +183,7 @@ def putaway(pack_raw, location_raw, station, client_ts=None):
 	location = _location(location_code)
 	pack = _lock_pack(name)
 	if pack.status not in ("Released", IN_STOCK):
-		raise _blocked(
-			"PACK_NOT_RELEASED",
-			_("Pack is not released"),
-			_("Pack {0} is {1}; only a released pack can be stored.").format(
-				pack.name, _(pack.status, context="Pack")
-			),
-			_("Check the sterilization load result, or call R02."),
-			object_type="Pack",
-			object_name=pack.name,
-			error_code=error_codes.pack_error_code(pack),
-		)
+		raise _pack_not_released(pack)
 	if getdate(pack.expiry) < getdate(today()):
 		raise _blocked(
 			"PACK_EXPIRED",
@@ -352,7 +366,7 @@ def run_expiry():
 
 
 def overview(on=None):
-	"""Dashboard kho (FR-M2-13.2): tồn theo loại bộ, theo vị trí và gói hết hạn trong 7 ngày tới (sớm nhất trước)."""
+	"""Dashboard kho (FR-M2-13.2): tồn theo loại bộ, theo vị trí, gói hết hạn trong 7 ngày tới, gói chờ nhập kho (A-95)."""
 	reference = getdate(on or today())
 	horizon = getdate(add_days(reference, EXPIRING_DAYS))
 	rows = _stock_rows()
@@ -377,6 +391,7 @@ def overview(on=None):
 		"by_set_type": sorted(by_type.values(), key=lambda e: (e["set_name"] or "", e["set_type"])),
 		"by_location": sorted(by_location.values(), key=lambda e: e["location"] or ""),
 		"expiring": sorted(expiring, key=lambda e: (e["expiry"], e["cycle_id"])),
+		"pending": pick_list.suggest("T6"),
 	}
 
 
@@ -421,10 +436,11 @@ def return_list():
 	"""Gói hết hiệu lực (quá hạn hoặc rách) mà bộ còn chờ về khu bẩn (FR-M2-14.2), mới nhất trước."""
 	return frappe.db.sql(
 		"""
-		select p.name as cycle_id, p.set_unit as set_id, p.set_type, p.set_name, p.location,
-			p.void_reason, p.void_note, p.expiry
+				select p.name as cycle_id, p.set_unit as set_id, p.set_type, p.set_name, p.location,
+			p.void_reason, p.void_note, p.expiry, department.department_name
 		from `tabPack` p
 		join `tabSet Unit` s on s.name = p.set_unit and s.current_cycle_no = p.cycle_no
+		left join `tabDepartment` department on department.name = p.department
 		where p.docstatus = 1 and p.status = 'Void' and p.void_reason in (%s, %s)
 			and s.status = 'Awaiting Receipt'
 		order by p.modified desc, p.name

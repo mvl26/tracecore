@@ -100,6 +100,10 @@ class TestErrors(FrappeTestCase):
 				"EXTRA_CYCLES_INVALID",
 				"VALID_UNTIL_INVALID",
 				"LINES_NOT_COUNTED",
+				"LINE_VARIANCE_REQUIRED",
+				"PROGRAM_TEST_ONLY",  # A-83
+				"CYCLE_DATA_OUT_OF_RANGE",  # A-89
+				"ISSUE_COMPANY_AMBIGUOUS",
 				"QTY_INVALID",
 				"BRANCH_INVALID",
 				"PHOTO_INVALID",
@@ -125,6 +129,10 @@ class TestErrors(FrappeTestCase):
 				"LAUNDRY_REDO_INVALID",
 				"LAUNDRY_RESULT_REQUIRED",
 				"LAUNDRY_DRY_INVALID",
+				"LAUNDRY_OVER_PROGRAM_LOAD",
+				"LAUNDRY_ACTUAL_INVALID",
+				"LAUNDRY_DEVIATION_REASON_REQUIRED",
+				"LAUNDRY_USE_COMPLETE",
 				"LINEN_ISSUE_KIND_INVALID",
 				"LINEN_RECIPIENT_INVALID",
 				"LINEN_SIGNATURE_INVALID",
@@ -155,6 +163,9 @@ class TestErrors(FrappeTestCase):
 			),
 			423: ("EQUIPMENT_NOT_READY",),
 			409: (
+				"EQUIPMENT_TESTING",
+				"DAILY_TEST_RUN_OPEN",
+				"DAILY_TEST_RUN_NOT_ENDED",
 				"STATUS_INVALID_FOR_STATION",
 				"ACTIVE_CYCLE_EXISTS",
 				"GATE_PREV_NOT_PASSED",
@@ -196,6 +207,7 @@ class TestErrors(FrappeTestCase):
 				"BATCH_NOT_RUNNING",
 				"EQUIPMENT_MISMATCH",
 				"R02_CONFIRM_REQUIRED",
+				"HEAD_APPROVAL_REQUIRED",
 				# FEAT-026 A-17: cấp phát T7
 				"PACK_IN_OTHER_ISSUE",
 				"PACK_NOT_ISSUED",
@@ -214,6 +226,7 @@ class TestErrors(FrappeTestCase):
 				"PACK_NOT_LOADABLE",
 				"LOAD_CAPACITY_EXCEEDED",
 				"LOAD_NOT_OPEN",
+				"LOAD_ALREADY_RELEASED",
 				"DAILY_TEST_REQUIRED",
 				"EQUIPMENT_INSPECTION_EXPIRED",
 				"EQUIPMENT_CALIBRATION_EXPIRED",
@@ -240,6 +253,12 @@ class TestErrors(FrappeTestCase):
 				"CODE_RANGE_EXHAUSTED",
 				# FEAT-046 A-53 i
 				"RATE_VERSION_NOT_APPROVED",
+				# A-100: Lưu PDF nhãn cần máy in hoạt động ở trạm
+				"NO_PRINTER_AT_STATION",
+				"NO_PRINTER_FOR_METHOD",
+				"LABEL_NOT_QUEUED",
+				"LABEL_PDF_FAILED",
+				"PACK_DEPT_MISMATCH",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}
@@ -320,6 +339,7 @@ class TestErrors(FrappeTestCase):
 			"PACK_NOT_LOADABLE": 409,
 			"LOAD_CAPACITY_EXCEEDED": 409,
 			"LOAD_NOT_OPEN": 409,
+			"LOAD_ALREADY_RELEASED": 409,
 			"CARD_MISMATCH": 403,
 		}
 		for code, status in expected.items():

@@ -12,15 +12,19 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.equipment import pick as equipment_pick
 from tracecore.reprocessing import pick_list
+from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	LINEN_ROLES,
 	LOAD_ROLES,
 	PACKING_ROLES,
 	RECEIVE_ROLES,
+	RELEASE_ROLES,
 	STORAGE_ROLES,
 	USAGE_ROLES,
 	WASH_LOAD_ROLES,
+	WASH_UNLOAD_ROLES,
 	BadRequestError,
+	current_station_session,
 	require_any_role,
 	run_at_step,
 	station_session,
@@ -52,6 +56,9 @@ STEP_ROLES = {
 	"LIN": LINEN_ROLES,
 }
 ALL_ROLES = tuple(dict.fromkeys(role for roles in STEP_ROLES.values() for role in roles))
+# ai dỡ được lô/mẻ thì chọn được lô/mẻ (A-87), rộng hơn vai trò nạp của bước
+BATCH_ROLES = {"T2": WASH_UNLOAD_ROLES, "T5": tuple(dict.fromkeys((*LOAD_ROLES, *RELEASE_ROLES)))}
+ALL_BATCH_ROLES = tuple(dict.fromkeys((*ALL_ROLES, *WASH_UNLOAD_ROLES, *RELEASE_ROLES)))
 
 
 def _screen(screen):
@@ -99,6 +106,15 @@ def equipment(
 	return run_at_step(functions or None, station, timestamp, call)
 
 
+def _t8_department():
+	"""A-96: thẻ không có quyền tổng quan chỉ chọn được gói của khoa mình; thẻ quản lý thấy mọi khoa."""
+	roles = set(frappe.get_roles())
+	if roles & navigation.OVERVIEW_ROLES or "System Manager" in roles:
+		return None
+	session = current_station_session()
+	return frappe.db.get_value("Employee", session.employee, "department") if session else None
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ALL_ROLES)
 def set_units(
@@ -113,6 +129,36 @@ def set_units(
 	def call():
 		if step not in pick_list.STEPS:
 			raise _wrong_step(step)
+		if step == "T8":
+			department_of_card = _t8_department()
+			return {"ok": True, **pick_list.suggest(step, q, department_of_card, start, page_length)}
 		return {"ok": True, **pick_list.suggest(step, q, department, start, page_length)}
+
+	return run_at_step(functions or None, station, timestamp, call)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*ALL_BATCH_ROLES)
+def batches(
+	station,
+	screen=None,
+	purpose=None,
+	equipment=None,
+	q=None,
+	start=0,
+	page_length=20,
+	client_ts=None,
+	token=None,
+):
+	"""Lô rửa / mẻ tiệt khuẩn chờ dỡ để chọn tay ở bước dỡ và đọc BI (A-87); bước khác không có danh sách này."""
+	timestamp = parse_client_ts(client_ts)
+	step, functions = _screen(screen)
+	require_any_role(SUPERVISOR, *BATCH_ROLES.get(step, STEP_ROLES.get(step, ())))
+	q, purpose, equipment = _text(q, "q"), _text(purpose, "purpose"), _text(equipment, "equipment")
+
+	def call():
+		if step not in pick_list.BATCH_STEPS:
+			raise _wrong_step(step)
+		return {"ok": True, **pick_list.batches(step, purpose, equipment, q, start, page_length)}
 
 	return run_at_step(functions or None, station, timestamp, call)

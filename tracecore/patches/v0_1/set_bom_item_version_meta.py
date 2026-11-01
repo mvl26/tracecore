@@ -28,7 +28,7 @@ SET_TYPE = "Instrument Set Type"
 
 
 def _reason():
-	return _("BOM version data filled in by the FEAT-015 data patch")
+	return _("BOM version data filled in by the data patch")
 
 
 def execute():

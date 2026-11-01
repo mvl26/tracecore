@@ -34,5 +34,5 @@ def execute():
 			row.name,
 			old={field: None for field in values},
 			new=values,
-			reason=_("Set type header defaults filled in by the FEAT-015 data patch"),
+			reason=_("Set type header defaults filled in by the data patch"),
 		)

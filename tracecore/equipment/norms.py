@@ -3,6 +3,7 @@
 Hàm thuần trên tài liệu và đọc DB; không import phân hệ nghiệp vụ khác.
 
 * ``Complete``: phút > 0, kWh > 0, có ít nhất một dòng tiêu hao và, với loại máy dùng nước, nước > 0.
+  Máy sấy không dùng nước và thường không dùng hóa chất nên không cần dòng tiêu hao (A-104).
 * ``Default``: chưa đủ nhưng ``use_default_norms`` bật, loại máy có dòng ``Equipment Type Norm`` và sau khi
   điền số thiếu từ dòng đó thì đủ điều kiện trên (tiêu hao không bao giờ được mặc định). Chương trình đã
   ``Default`` ở lần lưu trước và còn đủ thì giữ ``Default`` để trạng thái không nhảy sang ``Complete``
@@ -16,6 +17,7 @@ from frappe import _
 from frappe.utils import cint, flt
 
 WATER_EQUIPMENT_TYPES = ("Steam Sterilizer", "Washer-Disinfector", "Laundry Washer", "Ultrasonic Cleaner")
+NO_CONSUMABLE_TYPES = ("Dryer",)
 NORM_FIELDS = ("duration_min", "kwh_per_cycle", "water_l_per_cycle", "steam_kg_per_cycle")
 
 
@@ -36,7 +38,7 @@ def default_norm(equipment_type):
 def _meets(values, consumable_count, equipment_type):
 	if flt(values.get("duration_min")) <= 0 or flt(values.get("kwh_per_cycle")) <= 0:
 		return False
-	if not consumable_count:
+	if not consumable_count and equipment_type not in NO_CONSUMABLE_TYPES:
 		return False
 	if equipment_type in WATER_EQUIPMENT_TYPES and flt(values.get("water_l_per_cycle")) <= 0:
 		return False

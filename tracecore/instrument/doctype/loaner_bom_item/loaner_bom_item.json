@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-26 20:00:00.000000",
- "description": "Line of a loaner BOM (FEAT-017, A-38): instrument name and quantity received; returned and damaged quantities are written by the return action.",
+ "description": "Line of a loaner BOM (A-38): instrument name and quantity received; returned and damaged quantities are written by the return action.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

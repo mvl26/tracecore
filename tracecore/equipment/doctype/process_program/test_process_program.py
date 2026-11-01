@@ -2,7 +2,14 @@ import frappe
 from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 
 from tracecore.equipment.status import set_status
-from tracecore.tests.factories import make_equipment, make_item, make_program, make_user
+from tracecore.tests.factories import (
+	make_equipment,
+	make_item,
+	make_program,
+	make_sterilizer,
+	make_user,
+	make_wash_machine,
+)
 from tracecore.tests.utils import IsolatedTestCase, as_non_deleter, assert_permission_matrix, bru
 
 test_ignore = ["Asset", "Item", "User"]
@@ -125,6 +132,52 @@ class TestProcessProgram(IsolatedTestCase):
 				code="P-6",
 				parameters=[{"parameter_name": "Cả hai", "min_value": 5, "max_value": 4}],
 			)
+
+	def test_regular_sterilizer_program_needs_a_packaging_pack_type(self):
+		steam = make_sterilizer(serial="PK-" + frappe.generate_hash(length=6))
+		pack = make_item("PP-PACK-2", "Packaging")
+		other = make_item("PP-CHEM-2", "Chemical")
+		doc = frappe.get_doc(
+			{
+				"doctype": "Process Program",
+				"program_code": "PK-" + frappe.generate_hash(length=5).upper(),
+				"program_name": "134 C",
+				"equipment": steam.name,
+				"duration_min": 5,
+			}
+		)
+		self.assertRaises(frappe.ValidationError, doc.insert)
+		doc.append("compatible_pack_types", {"pack_type": other.name})
+		self.assertRaises(frappe.ValidationError, doc.insert)
+		doc.compatible_pack_types = []
+		doc.append("compatible_pack_types", {"pack_type": pack.name})
+		doc.insert()
+		doc.compatible_pack_types = []
+		self.assertRaises(frappe.ValidationError, doc.save)
+		doc.reload()
+		doc.compatible_pack_types = []
+		doc.is_active = 0  # ngừng dùng thì lưu được: không khóa đường tắt chương trình
+		doc.save()
+
+	def test_test_program_has_no_pack_types(self):
+		steam = make_sterilizer(serial="PK-" + frappe.generate_hash(length=6))
+		pack = make_item("PP-PACK-3", "Packaging")
+		doc = make_program(
+			steam.name,
+			code="BD-" + frappe.generate_hash(length=5).upper(),
+			program_kind="Test",
+			compatible_pack_types=[{"pack_type": pack.name}],
+		)
+		self.assertEqual(doc.program_kind, "Test")
+		self.assertEqual(doc.compatible_pack_types, [])
+
+	def test_wash_program_is_always_regular_and_needs_no_pack_type(self):
+		washer = make_wash_machine(serial="PK-" + frappe.generate_hash(length=6))
+		doc = make_program(
+			washer.name, code="W-" + frappe.generate_hash(length=5).upper(), program_kind="Test"
+		)
+		self.assertEqual(doc.program_kind, "Regular")
+		self.assertEqual(doc.compatible_pack_types, [])
 
 	def test_duplicate_pack_type_rejected(self):
 		pack = make_item("PP-PACK-1", "Packaging")

@@ -32,11 +32,13 @@ SERVICE_FIELDS = (
 	"manual_confirmed_by",
 	"manual_confirmed_at",
 	"params",
+	"machine_data",
 	"machine_alerts",
 	"machine_report",
 	"chart_files",
 	"unload_scan_equipment",
 	"unload_scan_at",
+	"unloaded_by",
 	"cycle_result",
 	"result_source",
 	"released_by",
@@ -66,6 +68,7 @@ class SterilizationLoad(Document):
 			)
 
 	def validate(self):
+		self._validate_program()
 		self._validate_rows()
 		if not self.flags.tc_sterilizing:
 			self._guard_service_fields()
@@ -83,6 +86,17 @@ class SterilizationLoad(Document):
 
 	def before_cancel(self):
 		frappe.throw(_("A sterilization load cannot be cancelled."))
+
+	def _validate_program(self):
+		# mẻ chỉ dùng cho dụng cụ; lần chạy test ghi ở Daily Test (A-83, D1). `load_repair` đóng mẻ cũ bằng cờ riêng
+		if self.flags.tc_load_repair:
+			return
+		if frappe.db.get_value("Process Program", self.program, "program_kind") == "Test":
+			frappe.throw(
+				_("Program {0} is a test program: it cannot be used for a sterilization load.").format(
+					self.program
+				)
+			)
 
 	def _validate_rows(self):
 		packs = [row.pack for row in self.packs]

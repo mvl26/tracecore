@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcPackLabel, tcPackLabelHtml, tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, tcScanId, tcLocalDay */
 // Màn T8 quét sử dụng (SCR-37, FEAT-027, UC-13) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -37,6 +37,8 @@ async function t8Encrypt(pem, text) {
 	return btoa(String.fromCharCode(...new Uint8Array(cipher)));
 }
 
+const T8_OVERVIEW = "tracecore.v1.usage.overview";
+
 class T8Usage {
 	constructor(station) {
 		this.station = station;
@@ -70,8 +72,10 @@ class T8Usage {
 		this.waiting = [];
 		this.codeFor = null;
 		this.fieldError = null;
-		this.input.placeholder = __("Scan the Cycle ID of the pack to use...");
-		this.input.setAttribute("aria-label", __("Scan the Cycle ID of the pack to use..."));
+		this.overview = null;
+		this.overviewFailed = null;
+		this.input.placeholder = __("Scan the code on the pack...");
+		this.input.setAttribute("aria-label", __("Scan the code on the pack..."));
 	}
 
 	// ---- quét và gọi RPC ----
@@ -326,8 +330,14 @@ class T8Usage {
 			});
 			this.draft = Object.fromEntries(T8_KEEP.map((name) => [name, this.draft[name]]));
 			this.card = null;
+			this.overview = null; // gói vừa dùng chuyển sang Đã dùng, chờ trả
 			this.emergency = false;
-			if (emergency) this.waiting.push({ usage: res.usage, cycle_id: cycleId });
+			if (emergency)
+				this.waiting.push({
+					usage: res.usage,
+					cycle_id: cycleId,
+					label: tcPackLabel({ ...this.card, cycle_id: cycleId }),
+				});
 			this.notice = {
 				variant: "ok",
 				title: __("Pack {0} recorded as used", [cycleId]),
@@ -442,7 +452,7 @@ class T8Usage {
 	}
 
 	updatePlaceholder() {
-		const text = __("Scan the Cycle ID of the pack to use...");
+		const text = __("Scan the code on the pack...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
 	}
@@ -512,10 +522,11 @@ class T8Usage {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.card && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -541,7 +552,7 @@ class T8Usage {
 			</div>
 			<dl class="tc-res-grid">
 				<dt>${esc(__("Set ID"))}</dt><dd class="tc-mono">${esc(card.set_id)}</dd>
-				<dt>${esc(__("Set Name"))}</dt><dd>${esc(card.set_name)}</dd>
+				<dt>${esc(__("Pack"))}</dt><dd>${tcPackLabelHtml(card)}</dd>
 				<dt>${esc(__("Use-by date"))}</dt><dd><b>${esc(t8Date(card.expiry))}</b></dd>
 			</dl>
 			${
@@ -605,8 +616,92 @@ class T8Usage {
 		</section>`;
 	}
 
+	// A-96: gói tại khoa và gói đã dùng chờ trả; chỉ đọc, lỗi không chặn quét
+	async loadOverview() {
+		const station = this.station;
+		if (this.overviewBusy || !station.session || station.isOffline()) return;
+		const version = station.sessionVersion;
+		this.overviewBusy = true;
+		this.overviewFailed = null;
+		try {
+			const res = await station.rpcRead(T8_OVERVIEW, {
+				station: station.station,
+				client_ts: clientTs(),
+			});
+			if (version !== station.sessionVersion) return;
+			if (res && res.ok !== false) this.overview = res;
+			else this.overviewFailed = station.failureCause(null, res);
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.overviewFailed = station.failureCause(error);
+		} finally {
+			this.overviewBusy = false;
+		}
+		if (version === station.sessionVersion && !this.card && !this.codeFor) this.show();
+	}
+
+	overviewHtml() {
+		if (this.overviewFailed) return `<p class="tc-hint">${esc(this.overviewFailed)}</p>`;
+		const data = this.overview;
+		if (!data) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		const held = data.at_department
+			.map(
+				(row) => `<tr>
+					<td><b class="tc-code">${esc(row.cycle_id)}</b> ${esc(row.set_name || "")}</td>
+					<td>${esc(t8Date(row.expiry))}${
+					row.expiring
+						? ` <span class="tc-badge tc-badge-${
+								row.days_left < 0 ? "r" : "o"
+						  }"><span aria-hidden="true">!</span> ${esc(
+								row.days_left < 0 ? __("Expired") : __("Expiring soon")
+						  )}</span>`
+						: ""
+				}</td>
+				</tr>`
+			)
+			.join("");
+		const heldTitle = __("Packs at the department ({0})", [data.at_department.length]);
+		const backTitle = __("Used, waiting to return ({0})", [data.waiting_return.length]);
+		return `<section class="tc-t6-block" aria-label="${esc(heldTitle)}">
+				<h3>${esc(heldTitle)}</h3>
+				${
+					held
+						? `<table class="tc-t6-table"><thead><tr>
+							<th scope="col">${esc(__("Pack"))}</th>
+							<th scope="col">${esc(__("Use-by date"))}</th>
+						</tr></thead><tbody>${held}</tbody></table>`
+						: `<p class="tc-t6-hint">${esc(__("No pack is at the department."))}</p>`
+				}
+			</section>
+			<section class="tc-t6-block" aria-label="${esc(backTitle)}">
+				<h3>${esc(backTitle)}</h3>
+				${
+					data.waiting_return.length
+						? `<ul>${data.waiting_return
+								.map(
+									(row) =>
+										`<li><b class="tc-code">${esc(row.cycle_id)}</b> ${esc(
+											row.set_name || ""
+										)}</li>`
+								)
+								.join("")}</ul>`
+						: `<p class="tc-t6-hint">${esc(
+								__("No used pack is waiting to return.")
+						  )}</p>`
+				}
+			</section>`;
+	}
+
 	idleHtml() {
-		let html = `<p class="tc-empty">${esc(__("Scan the Cycle ID of the pack to use."))}</p>`;
+		const session = this.station.session || {};
+		if (!this.overview && !this.overviewFailed) this.loadOverview();
+		let html = session.department_name
+			? `<h3 class="tc-t8-dept">${esc(
+					__("Department: {0}", [session.department_name])
+			  )}</h3>`
+			: "";
+		html += `<p class="tc-empty">${esc(__("Scan the code on the pack."))}</p>`;
+		html += this.overviewHtml();
 		if (this.waiting.length) {
 			html += `<section class="tc-t6-block">
 				<h3>${esc(__("Emergency cases waiting for the patient code"))}</h3>
@@ -620,9 +715,7 @@ class T8Usage {
 		if (this.codeFor === row.usage) {
 			const error = this.fieldError === "PATIENT_CODE_REQUIRED";
 			return `<div class="tc-field">
-				<label for="tc-t8-late-code">${esc(__("Patient code"))} * <span class="tc-mono">${esc(
-				row.cycle_id
-			)}</span></label>
+				<label for="tc-t8-late-code">${esc(__("Patient code"))} * ${esc(row.label || row.cycle_id)}</label>
 				<input id="tc-t8-late-code" type="password" autocomplete="off"${
 					error ? ' class="is-error" aria-invalid="true"' : ""
 				}>
@@ -637,7 +730,7 @@ class T8Usage {
 			</div>`;
 		}
 		return `<div class="tc-actions">
-			<span class="tc-mono">${esc(row.cycle_id)}</span>
+						<span>${esc(row.label || row.cycle_id)}</span>
 			<button type="button" class="tc-btn tc-btn-secondary" data-action="late-code" data-usage="${esc(
 				row.usage
 			)}">${esc(__("Enter patient code"))}</button>

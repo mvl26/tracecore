@@ -4,10 +4,11 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_to_date, now_datetime, today
 
-from tracecore.core import station_auth
+from tracecore.core import notification, station_auth, zones
 from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.v1 import notification as notification_api
 from tracecore.v1 import station as station_api
 
 test_dependencies = ["Company"]
@@ -218,6 +219,59 @@ class TestSwitchStation(IsolatedTestCase):
 		self.assertEqual(caught.exception.block.as_dict()["error_code"], "NS-003")
 		self.assertEqual(station_auth.authenticate_session(self.login["token"]).station, "TR-004")
 
+	def test_switch_without_competency_tells_another_person_to_scan(self):
+		"""#1822: cùng khu, thiếu năng lực thì báo rõ và yêu cầu người khác quét thẻ; giữ phiên hiện tại."""
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.switch_station(self.login["token"], "TR-003")
+		self.assertEqual(caught.exception.block.code, "COMPETENCY_REQUIRED")
+		self.assertEqual(
+			caught.exception.block.action,
+			frappe._("Ask a person assigned to that station to scan their card there."),
+		)
+
+	def test_switch_to_another_zone_needs_a_new_card_scan(self):
+		"""#1822, D2: khác khu luôn phải quét lại thẻ, kể cả có năng lực và kể cả admin; phiên cũ đóng ngay."""
+		self._allow_station("TR-006")
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.switch_station(self.login["token"], "TR-006")
+		self.assertEqual(caught.exception.block.code, "STATION_ZONE_RESCAN")
+		self.assertEqual(
+			frappe.db.get_value("Station Session", self.login["session"], "is_open"), 0, "phiên cũ phải đóng"
+		)
+		with self.assertRaises(BlockedError) as again:
+			station_auth.authenticate_session(self.login["token"])
+		self.assertEqual(again.exception.block.code, "SESSION_INVALID")
+
+	def test_api_another_zone_returns_the_block_for_admin_and_for_a_role_without_that_station(self):
+		"""Khác khu trả khối để máy trạm về màn quét thẻ, không phải 403 như thiếu role cùng khu."""
+		self._allow_station("TR-006")
+		blocked = station_api.switch_station(token=self.login["token"], station="TR-006", client_ts=self.ts)
+		self.assertFalse(blocked["ok"])
+		self.assertEqual(blocked["error"]["code"], "STATION_ZONE_RESCAN")
+		other = station_auth.login("NV-AUTH-001", "TR-004")
+		frappe.set_user(self.user)
+		try:
+			blocked = station_api.switch_station(token=other["token"], station="TR-006", client_ts=self.ts)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual(blocked["error"]["code"], "STATION_ZONE_RESCAN")
+
+	def test_reload_rechecks_competency(self):
+		"""#1822: tải lại trang và bấm nút cùng một luật; heartbeat khi khôi phục phiên kiểm lại năng lực."""
+		frappe.db.set_value(
+			"Station Competency", {"employee": self.employee.name, "station": "TR-004"}, "is_active", 0
+		)
+		plain = station_api.heartbeat(token=self.login["token"], client_ts=self.ts)
+		self.assertTrue(plain["ok"], "heartbeat định kỳ không kiểm lại")
+		restored = station_api.heartbeat(token=self.login["token"], client_ts=self.ts, recheck=1)
+		self.assertFalse(restored["ok"])
+		self.assertEqual(restored["error"]["code"], "COMPETENCY_REQUIRED")
+		self.assertEqual(frappe.db.get_value("Station Session", self.login["session"], "is_open"), 0)
+
+	def test_reload_with_valid_competency_keeps_the_session(self):
+		restored = station_api.heartbeat(token=self.login["token"], client_ts=self.ts, recheck=1)
+		self.assertTrue(restored["ok"])
+
 	def test_switch_rejects_invalid_token(self):
 		with self.assertRaises(BlockedError) as caught:
 			station_auth.switch_station("no-such-token", "TR-003")
@@ -252,6 +306,195 @@ class TestSwitchStation(IsolatedTestCase):
 		switched = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
 		self.assertTrue(switched["ok"])
 		self.assertEqual(switched["session"]["station"], "TR-003")
+
+
+class TestGateStations(IsolatedTestCase):
+	def test_gate_station_points_to_assembly_station(self):
+		"""A-93: nút Mở trạm của lỗi Sai thứ tự trạm cần trạm của cổng."""
+		self.assertEqual(zones.gate_stations()["T3"]["name"], "TR-003")
+
+	def test_station_info_carries_gate_stations(self):
+		self.assertIn("T3", station_api._station_row("TR-004")["gate_stations"])
+
+
+class TestStationNavigation(IsolatedTestCase):
+	"""Hàng nút trạm theo thẻ đã quét (#1831 S-01, A-91), vai trò chính (S-02), banner khẩn (S-06)."""
+
+	def setUp(self):
+		super().setUp()
+		setup_operator(self)
+		self.login = station_auth.login("NV-AUTH-001", "TR-004")
+
+	def _allow_station(self, station):
+		start = now_datetime()
+		frappe.get_doc(
+			{
+				"doctype": "Station Competency",
+				"employee": self.employee.name,
+				"station": station,
+				"valid_from": add_to_date(start, hours=-1),
+				"valid_until": add_to_date(start, hours=8),
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	def _names(self):
+		result = station_api.stations(token=self.login["token"])
+		self.assertTrue(result["ok"])
+		return [row["name"] for row in result["stations"]]
+
+	def test_technician_sees_only_competent_stations_of_own_zone(self):
+		self.assertEqual(self._names(), ["TR-004"])
+		self._allow_station("TR-003")
+		self._allow_station("TR-006")  # có năng lực nhưng khác khu: không hiện
+		self.assertEqual(self._names(), ["TR-003", "TR-004"])
+
+	def test_supervisor_card_sees_all_stations(self):
+		frappe.get_doc("User", self.user).add_roles("TC R02")
+		names = self._names()
+		self.assertIn("TR-001", names)
+		self.assertIn("TR-006", names)
+
+	def test_supervisor_card_sees_its_zone_whatever_the_desk_account(self):
+		"""A-91: thẻ quản lý thấy đủ trạm, kể cả trạm cùng khu mà tài khoản Desk không có role."""
+		frappe.get_doc("User", self.user).add_roles("TC R02")
+		frappe.set_user("Guest")
+		try:
+			names = self._names()
+		finally:
+			frappe.set_user("Administrator")
+		self.assertIn("TR-003", names)
+		self.assertIn("TR-005", names)
+
+	def test_technician_card_on_a_limited_desk_stays_limited(self):
+		self._allow_station("TR-003")
+		frappe.set_user("Guest")
+		try:
+			self.assertEqual(self._names(), ["TR-004"])
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_supervisor_card_passes_the_desk_guard_but_not_competency(self):
+		frappe.get_doc("User", self.user).add_roles("TC R02")
+		ts = now_datetime().isoformat() + "+07:00"
+		frappe.set_user("Guest")
+		try:
+			blocked = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=ts)
+			self.assertEqual(blocked["error"]["code"], "COMPETENCY_REQUIRED")
+		finally:
+			frappe.set_user("Administrator")
+		login = station_auth.login("NV-AUTH-001", "TR-004")
+		self._allow_station("TR-003")
+		frappe.set_user("Guest")
+		try:
+			switched = station_api.switch_station(token=login["token"], station="TR-003", client_ts=ts)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertTrue(switched["ok"])
+
+	def test_technician_card_cannot_use_the_supervisor_path(self):
+		self._allow_station("TR-003")
+		ts = now_datetime().isoformat() + "+07:00"
+		frappe.set_user("Guest")
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=ts)
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_competency_block_names_the_employee_not_the_code(self):
+		frappe.db.set_value("Station Competency", self.competency.name, "is_active", 0)
+		with self.assertRaises(BlockedError) as caught:
+			station_auth.login("NV-AUTH-001", "TR-004")
+		out = caught.exception.block.as_dict()
+		self.assertEqual(out["error_code"], "NS-003")
+		self.assertEqual(out["object_label"], self.employee.employee_name)
+		self.assertEqual(out["object_name"], self.employee.name)
+		with self.assertRaises(BlockedError) as unknown:
+			station_auth.login("NV-NO-SUCH-CARD", "TR-004")
+		self.assertNotIn("object_label", unknown.exception.block.as_dict())
+
+	def test_invalid_token_gets_a_block(self):
+		result = station_api.stations(token="no-such-token")
+		self.assertEqual(result["error"]["code"], "SESSION_INVALID")
+
+	def test_session_reports_main_role_at_station(self):
+		frappe.get_doc("User", self.user).add_roles("TC R02", "TC R05", "TC R10")
+		ts = now_datetime().isoformat() + "+07:00"
+		login = station_api.login(card_id="NV-AUTH-001", station="TR-004", client_ts=ts)
+		self.assertEqual(login["session"]["station_role"], "TC R04")
+		restored = station_api.heartbeat(token=login["session"]["token"], client_ts=ts)
+		self.assertEqual(restored["station_role"], "TC R04")
+
+	def _urgent(self, subject, ref_name=None, event="RECALL_ORDER"):
+		return frappe.get_doc(
+			{
+				"doctype": "Notification Delivery",
+				"recipient": self.user,
+				"event_code": event,
+				"channel": "In App",
+				"status": "Sent",
+				"urgency": "Urgent",
+				"subject": subject,
+				"ref_doctype": "Station Session" if ref_name else None,
+				"ref_name": ref_name,
+				"link": "/app/station-session/x",
+				"sent_at": now_datetime(),
+			}
+		).insert(ignore_permissions=True)
+
+	def test_urgent_banner_skips_documents_of_another_zone(self):
+		other = station_auth.login("NV-AUTH-001", "TR-004")["session"]
+		frappe.db.set_value("Station Session", other, "station", "TR-001", update_modified=False)
+		self.login = station_auth.login("NV-AUTH-001", "TR-004")
+		self._urgent("Khu khác", other)
+		self.assertIsNone(notification_api.station_summary(token=self.login["token"])["urgent"])
+
+	def test_urgent_banner_shows_same_zone_and_unknown_with_handler(self):
+		self._urgent("Không rõ khu")
+		urgent = notification_api.station_summary(token=self.login["token"])["urgent"]
+		self.assertEqual(urgent["subject"], "Không rõ khu")
+		self.assertEqual(urgent["link"], "/app/station-session/x")
+		self.assertIn("handled_by", urgent)
+
+	def test_relevance_by_equipment_zone(self):
+		self.assertTrue(notification.relevant_to_station(frappe._dict(), "TR-004"))
+
+	def test_department_card_sees_only_the_department_station(self):
+		from unittest.mock import patch
+
+		from tracecore.v1 import station as station_rpc
+
+		session = frappe._dict(user="r08@test", employee="HR-EMP-X", station="TR-008")
+		with (
+			patch("frappe.get_roles", return_value=["TC R08"]),
+			patch.object(station_rpc.station_auth, "can_work_at", return_value=True),
+			patch.object(station_rpc.navigation, "can_open_station", return_value=True),
+		):
+			visible = station_rpc._visible_stations(session)
+		self.assertEqual([row["name"] for row in visible], ["TR-008"])
+
+	def test_session_says_which_department_the_card_belongs_to(self):
+		from tracecore.tests.factories import make_department, make_employee
+		from tracecore.v1 import station as station_rpc
+
+		department = make_department("Khoa phiên T8")
+		employee = make_employee(first_name="Điều dưỡng phiên", department=department).name
+		session = station_rpc._with_station_role({"station": "TR-008", "employee": employee, "roles": []})
+		self.assertEqual(session["department"], department)
+		self.assertTrue(session["department_name"])
+
+	def test_department_station_hides_notices_meant_only_for_cssd(self):
+		from unittest.mock import patch
+
+		row = frappe._dict(event_code="CONSUMPTION_FAILED")
+		with patch.object(notification, "_rule_roles", return_value=["TC R09"]):
+			self.assertFalse(notification.relevant_to_station(row, "TR-008"))
+			self.assertTrue(notification.relevant_to_station(row, "TR-002"))
+		with patch.object(notification, "_rule_roles", return_value=["TC R08", "TC R09"]):
+			self.assertTrue(notification.relevant_to_station(row, "TR-008"))
+		with patch.object(notification, "_rule_roles", return_value=[]):
+			self.assertTrue(notification.relevant_to_station(row, "TR-008"))
 
 
 class TestApproverProof(IsolatedTestCase):

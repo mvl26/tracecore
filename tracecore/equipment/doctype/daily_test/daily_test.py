@@ -15,7 +15,9 @@ class DailyTest(Document):
 	def validate(self):
 		if not self.flags.tc_daily_test:
 			frappe.throw(_("A daily test can only be recorded by the daily test service."))
-		if not self.is_new():
+		# dòng được tạo lúc bắt đầu lần chạy, ghi kết quả một lần (A-84)
+		before = None if self.is_new() else self.get_doc_before_save()
+		if before and (before.result or before.run_status == "Recorded" or not before.run_status):
 			frappe.throw(_("A daily test cannot be changed after it is recorded."))
 
 	def on_trash(self):

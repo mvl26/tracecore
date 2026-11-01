@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-29 10:00:00.000000",
- "description": "One line of a linen collection: type, pieces, kg, contaminated flag (FEAT-033, FR-M3-01).",
+ "description": "One line of a linen collection: type, pieces, kg, contaminated flag (FR-M3-01).",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

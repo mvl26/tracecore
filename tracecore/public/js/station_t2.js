@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -7,8 +7,6 @@
 // server sinh mã lô LR- khi Hoàn thành nạp. Lỗi chặn = alert-error inline; RPC do shell gắn bearer trong body.
 
 const T2_COMPLETE_CODE = "HOAN-THANH-NAP";
-const T2_AGENT_URL = "http://127.0.0.1:8765/print";
-const T2_AGENT_TIMEOUT_MS = 5000;
 const T2_COMPLETE = "tracecore.v1.wash.complete";
 const T2_RESULT = "tracecore.v1.wash.result";
 const T2_SAVE = "tracecore.v1.wash.manual_data";
@@ -77,6 +75,16 @@ function t2GateLabel(step) {
 	return (window.tcGateLabels || {})[step] || step;
 }
 
+// ticket 1836: "Tên bộ (mã)", mã dùng font mã định danh; hàng chỉ có mã thì hiện mã
+function t2SetsHtml(rows) {
+	return rows
+		.map((row) => {
+			const code = `<span class="tc-mono">${esc(row.set_id || row)}</span>`;
+			return row.set_name ? `${esc(row.set_name)} (${code})` : code;
+		})
+		.join(", ");
+}
+
 class T2Wash {
 	constructor(station) {
 		this.station = station;
@@ -87,6 +95,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null; // {sets: hàng đợi xử lý lại, running: lô đang chạy, waiting: bộ chờ rửa}
 		this.overviewBusy = false;
+		this.overviewFailed = null; // nguyên nhân tải lỗi: show() không tự tải lại, chờ người dùng bấm Tải lại
 		this.draftChecked = false; // nháp phía server (theo phiên trạm) chỉ hỏi một lần mỗi phiên
 		this.draftTimer = null;
 		this.reset();
@@ -118,6 +127,7 @@ class T2Wash {
 		this.offline = false;
 		this.overview = null;
 		this.overviewBusy = false;
+		this.overviewFailed = null;
 		this.draftChecked = false;
 		this.reset();
 		this.saveLoad();
@@ -403,18 +413,7 @@ class T2Wash {
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		this.notice = {
-			variant: "ok",
-			title: __("Washer {0} scanned · {1}", [
-				res.equipment.name,
-				res.equipment.equipment_name,
-			]),
-			reason: res.equipment.is_connected
-				? __(
-						"API connected - automatic data comes with FEAT-024; unload with confirmed manual entry."
-				  )
-				: __("Not connected - unload with confirmed manual entry."),
-		};
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (ticket 1844)
 		this.saveLoad();
 		this.show();
 	}
@@ -534,6 +533,7 @@ class T2Wash {
 					...res,
 					machine: load.machine,
 					program_name: program.program_name,
+					set_rows: load.sets.filter((row) => res.sets.includes(row.set_id)),
 					at: t2NowInput().replace("T", " "),
 				};
 				this.load = null;
@@ -545,40 +545,26 @@ class T2Wash {
 		);
 	}
 
-	async sendToAgent(job) {
-		if (!this.station.session) return false;
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), T2_AGENT_TIMEOUT_MS);
-		try {
-			const response = await fetch(T2_AGENT_URL, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					zpl: job.zpl,
-					print_job: job.print_job,
-					printer: job.printer,
-				}),
-				signal: controller.signal,
-			});
-			return response.ok;
-		} catch (error) {
-			return false;
-		} finally {
-			clearTimeout(timer);
-		}
+	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; chưa có máy in thì giữ Waiting và cảnh báo
+	async handlePrint(print) {
+		this.printNote = { kind: print && print.status === "Queued" ? "ready" : "waiting" };
+		this.show();
 	}
 
-	async handlePrint(print) {
+	async printLabelPdf() {
+		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		if (print && print.status === "Queued" && print.zpl) {
-			this.printNote = { kind: "sending" };
-			this.show();
-			const ok = await this.sendToAgent(print);
-			if (version !== this.station.sessionVersion) return;
-			this.printNote = { kind: ok ? "sent" : "agent-failed" };
-		} else {
-			this.printNote = { kind: "waiting" };
-		}
+		const printed = Boolean(this.printNote && this.printNote.printed);
+		this.printNote = { kind: "sending", printed };
+		this.show();
+		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.wash.label_pdf", {
+			batch: this.done.batch,
+			station: this.station.station,
+		});
+		if (result.ended || version !== this.station.sessionVersion) return;
+		this.printNote = result.ok
+			? { kind: "pdf", filename: result.filename, printed: true }
+			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
 
@@ -588,8 +574,9 @@ class T2Wash {
 		if (this.station.isOffline()) return;
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
+		this.overviewFailed = null;
 		try {
-			const res = await this.station.rpc("tracecore.v1.wash.redo_queue", {
+			const res = await this.station.rpcRead("tracecore.v1.wash.redo_queue", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});
@@ -601,8 +588,10 @@ class T2Wash {
 					awaiting: res.awaiting || [],
 					waiting: res.waiting || [],
 				};
+			else this.overviewFailed = this.station.failureCause(null, res);
 		} catch (error) {
 			if (error.sessionEnded) return;
+			this.overviewFailed = this.station.failureCause(error);
 		} finally {
 			this.overviewBusy = false;
 		}
@@ -617,13 +606,38 @@ class T2Wash {
 		this.notice = null;
 		this.lookup = null;
 		if (mode === "load") this.unload = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.loadOverview(true);
 		this.show();
+	}
+
+	// Chọn tay ở tab Dỡ lô (A-87): danh sách là lô chờ dỡ của máy đã quét hoặc của trạm, không có mã bộ
+	pickContext() {
+		if (this.mode !== "unload") return null;
+		const raw = this.unload && !this.unload.result && this.unload.equipmentRaw;
+		return { label: __("Wash batches"), equipment: raw ? t2Kind(raw).id : null };
+	}
+
+	// Lô chờ đọc chỉ thị đã kiểm QR máy lúc dỡ: chỉ cần mã lô; lô đang chạy cần cả mã lô và QR máy (Q15)
+	pickCodes(item) {
+		const current = this.unload;
+		if (item.status === "Awaiting Result") return [item.id];
+		if (current && current.batch === item.id && current.equipmentRaw) return [item.id];
+		return [item.id, item.equipment];
 	}
 
 	unloadScan(raw) {
 		const code = t2Kind(raw);
 		if (code.kind === "set" && this.indicator) return this.scanIndicatorLot(raw);
+		if (code.kind === "set" && tcIsSetOrPackCode(raw)) {
+			return this.blocked({
+				title: __("This is an instrument set code - please scan the batch code (LR-...)"),
+				reason: __("Code {0} is a set or pack code; unloading works on the whole batch.", [
+					raw,
+				]),
+				action: __("Scan the washer QR code, then the batch QR code."),
+			});
+		}
 		if (code.kind === "set") {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -694,9 +708,14 @@ class T2Wash {
 			const context = res.batch;
 			this.unload.context = context;
 			const data = context.machine_data || {};
+			// máy không đẩy dữ liệu: điền sẵn theo chương trình, KTV kiểm tra và sửa được (A-89)
+			const prefill = context.prefill || {};
 			const values = {};
+			Object.entries(prefill.values || {}).forEach(([name, value]) => {
+				values[name] = window.tcDecimal(value);
+			});
 			(data.parameters || []).forEach((row) => {
-				values[row.parameter_name] = String(row.value);
+				values[row.parameter_name] = window.tcDecimal(row.value);
 			});
 			this.form = {
 				values,
@@ -704,7 +723,12 @@ class T2Wash {
 				alertsText: data.alerts || "",
 				reported: data.reported_result || "",
 				started: t2LocalInput(context.started_at),
-				ended: t2LocalInput(context.ended_at) || t2NowInput(),
+				ended:
+					t2LocalInput(context.ended_at) ||
+					t2LocalInput(prefill.ended_at) ||
+					t2NowInput(),
+				chemicalName: prefill.chemical_name || prefill.chemical || "",
+				editing: false,
 				file: context.machine_files || "",
 				uploading: false,
 				confirmed: false,
@@ -1016,9 +1040,17 @@ class T2Wash {
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
 			"t2-refresh-lots": () => this.refreshLots(),
+			"t2-overview-retry": () => this.loadOverview(true),
 			"t2-save-data": () => this.saveData(),
+			"t2-edit-data": () => {
+				if (!this.form) return;
+				this.form.editing = true;
+				this.show();
+			},
 			"t2-verdict": () => {
 				if (!this.verdict) return;
+				if (data.value === "Pass" && data.field === "result" && this.outsideNames().length)
+					return;
 				this.verdict[data.field] = data.value;
 				this.show();
 			},
@@ -1028,6 +1060,7 @@ class T2Wash {
 				this.show();
 			},
 			"t2-record": () => this.recordResult(),
+			"t2-label-pdf": () => this.printLabelPdf(),
 			"t2-unload-reset": () => {
 				this.unload = null;
 				this.indicator = null;
@@ -1105,7 +1138,7 @@ class T2Wash {
 	show() {
 		if (!this.station.session) return;
 		this.updatePlaceholder();
-		if (!this.overview) this.loadOverview();
+		if (!this.overview && !this.overviewFailed) this.loadOverview();
 		if (!this.draftChecked) this.restoreDraft();
 		const body = this.mode === "unload" ? this.unloadHtml() : this.loadHtml();
 		this.station.setState(
@@ -1114,6 +1147,7 @@ class T2Wash {
 				${this.modeHtml()}
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.lookup ? this.lookupHtml(this.lookup) : ""}
+				${this.overviewFailedHtml()}
 				${body}
 				${this.mode === "load" ? this.waitingHtml() : ""}
 				${this.redoHtml()}
@@ -1233,7 +1267,9 @@ class T2Wash {
 			// lỗi kỹ thuật (mạng, máy chủ) có Thử lại; từ chối nghiệp vụ chỉ có kết quả → lý do → hành động
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -1361,7 +1397,7 @@ class T2Wash {
 					])
 				)} · ${esc(
 			load.machine.is_connected
-				? __("API connected - automatic data comes with FEAT-024")
+				? __("API connected - data comes automatically from the station agent")
 				: __("not connected - unload with confirmed manual entry")
 		)}</p>
 				<div class="tc-t4-row">
@@ -1413,9 +1449,9 @@ class T2Wash {
 					<b class="tc-code">${esc(row.item)}</b> ${esc(row.item_name || "")}
 					<span>${esc(
 						__("Needs {0} {1} per cycle, in stock {2} {1}", [
-							row.required,
+							window.tcDecimal(row.required),
 							row.uom || "",
-							row.qty,
+							window.tcDecimal(row.qty),
 						])
 					)}</span>
 					<b class="${cls}"><span aria-hidden="true">${mark}</span>${esc(text)}</b>
@@ -1478,7 +1514,7 @@ class T2Wash {
 			done.machine.name
 		)}</span></dd>
 						<dt>${esc(__("Program"))}</dt><dd>${esc(done.program_name)}</dd>
-						<dt>${esc(__("Sets in batch"))}</dt><dd class="tc-mono">${esc(done.sets.join(", "))}</dd>
+						<dt>${esc(__("Sets in batch"))}</dt><dd>${t2SetsHtml(done.set_rows || done.sets)}</dd>
 					</dl>
 					${this.printNoteHtml()}
 				</div>
@@ -1510,21 +1546,39 @@ class T2Wash {
 		const print = this.done && this.done.print;
 		if (!note || !print) return "";
 		if (note.kind === "sending")
-			return this.alertHtml({
-				variant: "info",
-				title: __("Sending the label to printer {0}...", [print.printer]),
-			});
-		if (note.kind === "sent") {
-			return this.alertHtml({
-				variant: "ok",
-				title: __("Label sent to printer {0}.", [print.printer]),
-				reason: __("Print job {0}", [print.print_job]),
-			});
+			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
+		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
+		const button = tcLabelButton("t2-label-pdf", note.printed, this.busy || this.offline);
+		if (note.kind === "ready") return button;
+		if (note.kind === "pdf") {
+			return this.alertHtml(
+				{
+					variant: "ok",
+					title: __("Label printed to PDF file: {0}", [note.filename]),
+					reason: __("Print job {0}", [print.print_job]),
+				},
+				button
+			);
+		}
+		if (note.kind === "pdf-failed") {
+			return this.alertHtml(
+				{
+					variant: "warn",
+					title: __("Label PDF was not created; code {0} is kept.", [this.done.batch]),
+					reason: [note.reason, __("Print job {0}", [print.print_job])]
+						.filter(Boolean)
+						.join(" "),
+				},
+				button
+			);
 		}
 		const warning = print.warning || {};
 		return this.alertHtml({
 			variant: "warn",
-			title: __("Batch code kept - check the Station Agent, then print again"),
+			title:
+				warning.code === "NO_PRINTER_AT_STATION"
+					? __("No printer at this station, the label is waiting")
+					: __("Batch code kept, the label was not printed"),
 			reason: [warning.reason, __("Print job {0}", [print.print_job])]
 				.filter(Boolean)
 				.join(" "),
@@ -1533,7 +1587,6 @@ class T2Wash {
 	}
 
 	lookupHtml(batch) {
-		const sets = batch.sets.map((row) => row.set_id).join(", ");
 		const chemicals = batch.chemicals
 			.map((row) => __("{0} lot {1}", [row.item, row.lot]))
 			.join(", ");
@@ -1553,9 +1606,7 @@ class T2Wash {
 				<dt>${esc(__("Loaded at"))}</dt><dd>${esc(t2DateTime(batch.load_completed_at))} · ${esc(
 			(batch.operator && (batch.operator.employee_name || batch.operator.name)) || "-"
 		)}</dd>
-				<dt>${esc(__("Sets in batch ({0})", [batch.sets.length]))}</dt><dd class="tc-mono">${esc(
-			sets
-		)}</dd>
+				<dt>${esc(__("Sets in batch ({0})", [batch.sets.length]))}</dt><dd>${t2SetsHtml(batch.sets)}</dd>
 				<dt>${esc(__("Chemicals"))}</dt><dd>${esc(chemicals || "-")}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(this.dataText(batch))}</dd>
 				${this.indicatorRowsHtml(batch.indicator)}
@@ -1610,6 +1661,8 @@ class T2Wash {
 		const text = batch.data_complete
 			? auto
 				? __("Automatic (station agent)")
+				: batch.data_source === "Manual Default"
+				? __("Manual entry from program defaults, confirmed")
 				: __("Manual entry, confirmed")
 			: auto
 			? __("Automatic (station agent), incomplete")
@@ -1618,11 +1671,29 @@ class T2Wash {
 	}
 
 	// Bộ chờ rửa (A-66): chỉ để xem, vẫn quét từng Set ID; bộ vừa quét vào lô đang nạp không còn chờ
+	overviewPlaceholder() {
+		return this.overviewFailed ? "" : `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+	}
+
+	overviewFailedHtml() {
+		if (!this.overviewFailed) return "";
+		return `<section class="tc-t4-block">
+			<p class="tc-hint">${esc(__("The waiting lists could not be loaded."))} ${esc(
+			this.overviewFailed
+		)}</p>
+			<div class="tc-actions"><button type="button" class="tc-btn" data-action="t2-overview-retry">${esc(
+				__("Retry")
+			)}</button></div>
+		</section>`;
+	}
+
 	waitingHtml() {
 		if (!this.overview)
-			return `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
-				__("Loading...")
-			)}</p></section>`;
+			return this.overviewFailed
+				? ""
+				: `<section class="tc-t4-block tc-t2-waiting"><p class="tc-loading">${esc(
+						__("Loading...")
+				  )}</p></section>`;
 		const queued = new Set(((this.load && this.load.sets) || []).map((row) => row.set_id));
 		const rows = (this.overview.waiting || []).filter((row) => !queued.has(row.set_id));
 		const title = __("Sets waiting to wash ({0})", [rows.length]);
@@ -1664,7 +1735,7 @@ class T2Wash {
 			__("Reprocessing queue")
 		)}">
 			<h3>${esc(__("Reprocessing queue"))}</h3>
-			${this.overview ? body : `<p class="tc-loading">${esc(__("Loading..."))}</p>`}
+			${this.overview ? body : this.overviewPlaceholder()}
 		</section>`;
 	}
 
@@ -1682,7 +1753,9 @@ class T2Wash {
 				])
 			)}
 				<span class="tc-mono">${esc(row.equipment)}</span></p>
-			<p>${esc(__("Sets in batch ({0}): {1}", [row.sets.length, row.sets.join(", ")]))}</p>
+			<p>${esc(__("Sets in batch ({0})", [row.sets.length]))}: ${t2SetsHtml(
+			row.set_rows || row.sets
+		)}</p>
 			${
 				row.data_complete
 					? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
@@ -1691,7 +1764,7 @@ class T2Wash {
 					: this.alertHtml({
 							variant: "warn",
 							title: __(
-								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)"
+								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass"
 							),
 					  })
 			}
@@ -1700,7 +1773,7 @@ class T2Wash {
 
 	// `skip`: lô đang dỡ đã hiện ở trên cùng, không lặp lại trong danh sách
 	runningHtml(skip) {
-		if (!this.overview) return `<p class="tc-loading">${esc(__("Loading..."))}</p>`;
+		if (!this.overview) return this.overviewPlaceholder();
 		const rows = (this.overview.running || []).filter((row) => row.batch !== skip);
 		if (!rows.length) return `<p class="tc-empty">${esc(__("No running wash batch."))}</p>`;
 		return rows.map((row) => this.batchCardHtml(row)).join("");
@@ -1757,11 +1830,22 @@ class T2Wash {
 		html += scanned;
 		const context = unload.context;
 		if (!context) return html;
-		html += context.data_complete
-			? this.dataSummaryHtml(context)
-			: this.manualFormHtml(context);
-		if (context.data_complete) html += this.verdictHtml(context);
+		const editing = this.form && this.form.editing;
+		html +=
+			context.data_complete && !editing
+				? this.dataSummaryHtml(context)
+				: this.manualFormHtml(context);
+		if (context.data_complete && !editing) html += this.verdictHtml(context);
 		return html;
+	}
+
+	// Tham số ngoài dải của dữ liệu đã lưu: chặn kết luận Đạt, server kiểm lại (A-89)
+	outsideNames() {
+		const context = this.unload && this.unload.context;
+		const data = (context && context.machine_data) || {};
+		return (data.parameters || [])
+			.filter((row) => row.outside_range)
+			.map((row) => row.parameter_name);
 	}
 
 	manualFormHtml(context) {
@@ -1773,8 +1857,8 @@ class T2Wash {
 				const value = form.values[param.parameter_name] || "";
 				const review = this.paramState(param, value) === "review";
 				const range = [
-					Number(param.min_value) ? `≥ ${param.min_value}` : "",
-					Number(param.max_value) ? `≤ ${param.max_value}` : "",
+					Number(param.min_value) ? `≥ ${window.tcDecimal(param.min_value)}` : "",
+					Number(param.max_value) ? `≤ ${window.tcDecimal(param.max_value)}` : "",
 				]
 					.filter(Boolean)
 					.join(" · ");
@@ -1784,9 +1868,16 @@ class T2Wash {
 				}${param.required ? " *" : ""}${range ? ` · ${esc(range)}` : ""}</label>
 					<input id="tc-t2-param-${index}" type="text" inputmode="decimal" autocomplete="off"
 						data-param="${esc(param.parameter_name)}" value="${esc(value)}">
-					<p class="tc-t2-review" ${review ? "" : "hidden"}><span aria-hidden="true">!</span> ${esc(
-					__("Needs review")
+				<p class="tc-t2-review" ${review ? "" : "hidden"}><span aria-hidden="true">!</span> ${esc(
+					__("Outside the program range - a Pass is not allowed")
 				)}</p>
+				${
+					param.default_value != null
+						? `<p class="tc-hint">${esc(
+								__("Program default: {0}", [window.tcDecimal(param.default_value)])
+						  )}</p>`
+						: ""
+				}
 				</div>`;
 			})
 			.join("");
@@ -1797,6 +1888,22 @@ class T2Wash {
 		const fileRequired = Boolean(machine.has_printout);
 		return `<section class="tc-t4-block tc-t2-form">
 			<h3>${esc(__("Manual cycle data for batch {0}", [context.batch]))}</h3>
+			${
+				context.prefill
+					? `<p class="tc-hint">${esc(
+							__(
+								"Filled in from the program: check against the washer, change what differs, then confirm."
+							)
+					  )}</p>`
+					: ""
+			}
+			${
+				form.chemicalName
+					? `<p>${esc(__("Chemical of the program"))}: <b>${esc(
+							form.chemicalName
+					  )}</b></p>`
+					: ""
+			}
 			<div class="tc-t4-row">${params}</div>
 			<div class="tc-t4-row">
 				<div class="tc-field">
@@ -1852,15 +1959,15 @@ class T2Wash {
 				<input type="checkbox" class="tc-check" data-form="confirmed"${form.confirmed ? " checked" : ""}>
 				<span>${esc(
 					__(
-						"I, {0} {1}, confirm that the values above match the screen/printout of washer {2}.",
-						[session.employee || "", session.employee_name || "", machine.name]
+						"I, {0}, confirm that the values above match the screen/printout of washer {1}.",
+						[session.employee_name || "", machine.name]
 					)
 				)}</span>
 			</label>
 			<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="t2-save-data"${t2Disabled(
 					Boolean(this.busy) || this.offline || form.uploading
-				)}>${esc(__("Save manual data and confirm"))}</button>
+				)}>${esc(__("Confirm cycle data"))}</button>
 			</div>
 		</section>`;
 	}
@@ -1889,13 +1996,23 @@ class T2Wash {
 					  )}</p>`
 					: ""
 			}
+			${
+				this.outsideNames().length
+					? `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-edit-data">${esc(
+							__("Correct cycle data")
+					  )}</button></div>`
+					: ""
+			}
 		</section>`;
 	}
 
 	verdictHtml(context) {
 		const verdict = this.verdict || { result: "", clean: "", confirmed: false, pin: "" };
+		const outside = this.outsideNames();
 		const chip = (field, value, label) =>
-			`<button type="button" class="tc-chip" data-action="t2-verdict" data-field="${field}" data-value="${value}"
+			`<button type="button" class="tc-chip" data-action="t2-verdict" data-field="${field}" data-value="${value}"${t2Disabled(
+				field === "result" && value === "Pass" && outside.length > 0
+			)}
 				aria-pressed="${verdict[field] === value ? "true" : "false"}">${esc(label)}</button>`;
 		const pass = __("Pass", null, "Step Gate Result");
 		const fail = __("Fail", null, "Step Gate Result");
@@ -1920,6 +2037,20 @@ class T2Wash {
 				: __("Record the result for {0} set(s)", [context.sets.length]);
 		return `<section class="tc-t4-block tc-t2-verdict">
 			<h3>${esc(__("Cycle result (applies to every set)"))}</h3>
+			${
+				outside.length
+					? this.alertHtml({
+							variant: "error",
+							title: __("A Pass cannot be recorded"),
+							reason: __("Values outside the program range: {0}.", [
+								outside.join(", "),
+							]),
+							action: __(
+								"Correct the data if it was entered wrong; otherwise record Fail."
+							),
+					  })
+					: ""
+			}
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cycle result (applies to every set)"))}">
 				${chip("result", "Pass", pass)}${chip("result", "Fail", fail)}
 			</div>
@@ -2014,10 +2145,9 @@ class T2Wash {
 				}
 			</div>
 			<p>${esc(
-				__(
-					"Read by {0} {1} (card signed in); the reading time is recorded with the result.",
-					[session.employee || "", session.employee_name || ""]
-				)
+				__("Read by {0} (card signed in); the reading time is recorded with the result.", [
+					session.employee_name || "",
+				])
 			)}</p>
 		</div>`;
 	}
@@ -2051,9 +2181,7 @@ class T2Wash {
 								res.batch,
 							]),
 							reason: __("Every set goes back to reprocessing."),
-							action: __(
-								"Marked as needing a nonconformity (automatic NC comes with FEAT-030)."
-							),
+							action: __("Marked as needing a nonconformity."),
 					  }
 			)}
 			<table class="tc-t2-table">

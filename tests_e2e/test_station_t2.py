@@ -152,7 +152,7 @@ def test_t2_touch_targets_and_font_sizes(t2_page, t2_demo):
 
 def test_t2_load_happy_path_within_three_taps(t2_page, t2_demo):
 	page = t2_page
-	mock_agent(page)
+	sent = mock_agent(page)  # A-101, A-107: nhãn chỉ ra PDF khi bấm In nhãn, Agent giả phải không nhận gì
 	taps = Taps()
 	load_machine(page, t2_demo["machine"])
 	for set_id in t2_demo["sets"]:
@@ -163,6 +163,7 @@ def test_t2_load_happy_path_within_three_taps(t2_page, t2_demo):
 	expect(code).to_have_text(re.compile(r"^LR-\d{6}-\d{2}$"), timeout=15000)
 	expect(page.locator(".tc-label .tc-label-qr")).to_be_visible()
 	assert taps.count <= 3
+	assert sent == []
 	STATE["batch"] = code.inner_text()
 
 
@@ -220,7 +221,7 @@ def test_t2_close_requires_clean_test_and_confirm_tick_then_fail_returns_all_set
 	verdict.locator("[data-action='t2-record']").click()
 	summary = page.locator(".tc-t2-result[data-result='Fail']")
 	expect(summary).to_be_visible(timeout=15000)
-	expect(summary).to_contain_text("FEAT-030")
+	expect(summary).to_contain_text("phiếu không phù hợp")
 	expect(summary.locator("tbody tr")).to_have_count(len(t2_demo["sets"]))
 	expect(summary).to_contain_text("Xử lý lại")
 

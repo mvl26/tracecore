@@ -90,10 +90,12 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-021 A-12: lô rửa T2
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
+			"PROGRAM_TEST_ONLY",  # A-83: chương trình test không nhận gói
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
+			"CYCLE_DATA_OUT_OF_RANGE",  # A-89
 			"RESULT_INVALID",
 			# A-77: chỉ thị rửa
 			"INDICATOR_REQUIRED",
@@ -110,9 +112,12 @@ HTTP_STATUS: dict[str, int] = {
 			"LOAD_EMPTY",
 			# FEAT-020 A-35: kiểm đếm lắp ráp T3
 			"LINES_NOT_COUNTED",
+			"LINE_VARIANCE_REQUIRED",  # A-79
 			"QTY_INVALID",
 			"BRANCH_INVALID",
 			"PHOTO_INVALID",
+			# A-78: xuất thủ công không xác định được bệnh viện
+			"ISSUE_COMPANY_AMBIGUOUS",
 			# FEAT-032 A-18: ghi đè cơ số
 			"EXTRA_CYCLES_INVALID",
 			"VALID_UNTIL_INVALID",
@@ -140,6 +145,11 @@ HTTP_STATUS: dict[str, int] = {
 			"LAUNDRY_REDO_INVALID",
 			"LAUNDRY_RESULT_REQUIRED",
 			"LAUNDRY_DRY_INVALID",
+			# #1847 A-104: định mức và thực tế của lô giặt
+			"LAUNDRY_OVER_PROGRAM_LOAD",
+			"LAUNDRY_ACTUAL_INVALID",
+			"LAUNDRY_DEVIATION_REASON_REQUIRED",
+			"LAUNDRY_USE_COMPLETE",
 			# FEAT-035 A-51: cấp phát đồ vải (UC-18)
 			"LINEN_ISSUE_KIND_INVALID",
 			"LINEN_RECIPIENT_INVALID",
@@ -222,6 +232,7 @@ HTTP_STATUS: dict[str, int] = {
 			"BATCH_NOT_RUNNING",
 			"EQUIPMENT_MISMATCH",
 			"R02_CONFIRM_REQUIRED",
+			"HEAD_APPROVAL_REQUIRED",  # A-106
 			# FEAT-026 A-17: cấp phát T7
 			"PACK_IN_OTHER_ISSUE",
 			# FEAT-027 A-19: Cycle ID không dùng được ở T8 (FR-M2-18)
@@ -242,6 +253,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PACK_NOT_LOADABLE",
 			"LOAD_CAPACITY_EXCEEDED",
 			"LOAD_NOT_OPEN",
+			"LOAD_ALREADY_RELEASED",
 			"DAILY_TEST_REQUIRED",
 			"EQUIPMENT_INSPECTION_EXPIRED",
 			# FEAT-039 A-43 M5: quá hạn hiệu chuẩn chặn tạo mẻ/lô, R02 mở khóa tạm được
@@ -249,6 +261,10 @@ HTTP_STATUS: dict[str, int] = {
 			"UNLOCK_NOT_ALLOWED",
 			# A-22: máy tiệt khuẩn còn mẻ chưa xong chu trình
 			"EQUIPMENT_BUSY",
+			# A-84: lần chạy test hằng ngày
+			"EQUIPMENT_TESTING",
+			"DAILY_TEST_RUN_OPEN",
+			"DAILY_TEST_RUN_NOT_ENDED",
 			# FEAT-023 A-20: giải phóng mẻ và BI
 			"LOAD_NOT_RELEASABLE",
 			"BI_NOT_PENDING",
@@ -278,6 +294,13 @@ HTTP_STATUS: dict[str, int] = {
 			"CODE_RANGE_EXHAUSTED",
 			# FEAT-046 A-53 i: tính lại giá thành chỉ với phiên bản giá đã duyệt
 			"RATE_VERSION_NOT_APPROVED",
+			# A-100, A-101: nhãn ra PDF cần máy in hoạt động ở trạm, job sẵn sàng và công cụ sinh PDF
+			"NO_PRINTER_AT_STATION",
+			"NO_PRINTER_FOR_METHOD",
+			"LABEL_NOT_QUEUED",
+			"LABEL_PDF_FAILED",
+			# A-102: gói của khoa khác khoa nhận cần xác nhận kèm lý do
+			"PACK_DEPT_MISMATCH",
 		),
 		409,
 	),
@@ -301,6 +324,8 @@ HTTP_STATUS: dict[str, int] = {
 	"WASTE_NOT_HELD": 409,
 }
 DEFAULT_HTTP_STATUS = 409
+# Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ
+TITLE_OVER_CATALOG_NAME = frozenset({"QT-001"})
 
 
 @dataclass
@@ -338,6 +363,8 @@ class Block:
 			data.update(
 				catalog, object_name=self.object_name, object_label=self.object_label or self.object_name
 			)
+			if catalog["error_code"] in TITLE_OVER_CATALOG_NAME:
+				data["error_name"] = self.title
 		return {key: value for key, value in data.items() if value is not None}
 
 

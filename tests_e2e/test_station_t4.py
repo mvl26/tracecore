@@ -112,7 +112,7 @@ def assert_touch_and_font(page):
 
 def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	page = t4_page
-	sent = mock_agent(page)  # không bao giờ chạm agent thật ở 127.0.0.1:8765
+	sent = mock_agent(page)  # A-101: nhãn ra PDF, Agent giả phải không nhận gì
 	taps = Taps()
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 
@@ -149,9 +149,10 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expect(label.locator(".tc-label-dm")).to_be_visible()
 	expect(label.locator(".tc-label-dm")).to_have_attribute("alt", re.compile(r"^DataMatrix CY-"))
 	expect(page.locator(".tc-res-grid")).to_contain_text(expected_text)
-	# Agent giả nhận đúng 1 job (không phụ thuộc agent trên CI)
-	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_be_visible(timeout=15000)
-	assert len(sent) == 1
+	# A-107: bấm In nhãn mới lưu đúng 1 file PDF, không gửi Station Agent
+	page.locator("[data-action='t4-label-pdf']").click()
+	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_contain_text("file PDF", timeout=15000)
+	assert sent == []
 	assert page.locator("[data-region='print'] .tc-alert-error").count() == 0
 
 	# AC-15: đường chính sau quét <= 3 chạm; thực tế 2 (xác nhận tất cả + xác nhận hoàn thành)
@@ -204,7 +205,7 @@ def test_t4_gate_not_passed_shows_full_alert(t4_page, t4_demo):
 	alert = result.locator(".tc-alert-error")
 	expect(alert).to_be_visible()
 	# kết quả -> lý do -> hành động: đủ cả ba khối và có chữ (không chỉ màu)
-	expect(alert.locator(".tc-alert-title")).to_contain_text("Sai thứ tự trạm")
+	expect(alert.locator(".tc-alert-title")).to_contain_text("Bộ chưa lắp xong")
 	expect(alert.locator(".tc-alert-reason")).not_to_be_empty()
 	expect(alert.locator(".tc-alert-action")).not_to_be_empty()
 	assert result.locator("[data-action='confirm-pack']").count() == 0
@@ -240,15 +241,15 @@ def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
 	assert sent == [], "không được in tạm nhãn plasma trên cuộn nhãn hấp"
 	# nhãn còn chờ máy in thì chưa in lại được: nút khóa kèm lý do (không tạo nhãn thứ hai cùng Cycle ID)
 	reprint = page.locator("[data-action='reprint']")
-	expect(reprint).to_be_disabled()
+	expect(reprint).to_have_count(0)  # A-107: In lại chỉ hiện sau khi đã in
 	expect(page.locator(".tc-actionsbar")).to_contain_text("Chỉ in lại được sau khi nhãn đang chờ đã được in")
 	assert_touch_and_font(page)
 
-	# Đổi cuộn: quét mã cuộn plasma -> alert-info, đúng 1 job chờ được giải phóng và gửi tới agent (AC-9)
+	# Đổi cuộn: quét mã cuộn plasma -> alert-info, đúng 1 job chờ, bấm In 1 nhãn chờ ra file PDF (AC-9, A-107)
 	scan(page, t4_demo["roll_plasma"])
 	expect(page.locator(".tc-alert-info")).to_contain_text(t4_demo["roll_plasma"], timeout=15000)
-	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_be_visible(timeout=15000)
-	assert len(sent) == 1, f"phải giải phóng đúng 1 job, thực tế {len(sent)}"
-	assert sent[0].get("print_job") and sent[0].get("zpl")
+	page.locator("[data-action='t4-roll-pdf']").click()
+	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_contain_text("file PDF", timeout=15000)
+	assert sent == [], "A-101: nhãn phát hành khi đổi cuộn không gửi Station Agent"
 	expect(reprint).to_be_enabled()
 	expect(page.locator(SCAN_INPUT)).to_be_focused()

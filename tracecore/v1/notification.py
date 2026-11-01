@@ -60,10 +60,10 @@ def mark_all_read(event_code=None):
 
 
 def _as_station(token, call, touch=False):
-	"""Chạy `call` với tư cách người đăng nhập bằng thẻ; đọc thì không tính là hoạt động (không kéo dài phiên)."""
+	"""Chạy `call(phiên)` với tư cách người đăng nhập bằng thẻ; đọc thì không tính là hoạt động (không kéo dài phiên)."""
 	try:
-		with station_auth.as_session_user(token, touch=touch):
-			return call()
+		with station_auth.as_session_user(token, touch=touch) as session:
+			return call(session)
 	except BlockedError as error:
 		if getattr(frappe.local, "request", None):
 			frappe.local.response["http_status_code"] = error.block.http_status
@@ -74,13 +74,16 @@ def _as_station(token, call, touch=False):
 def station_summary(token=None):
 	"""Chuông trạm/PDA: số chưa đọc và thông báo khẩn mới nhất của người đang đăng nhập bằng thẻ."""
 
-	def call():
+	def call(session):
 		rows = notification.inbox(only_unread=1, limit=50)["rows"]
 		urgent = next(
 			(
-				{key: row[key] for key in ("name", "subject", "link", "sent_at")}
+				{
+					**{key: row[key] for key in ("name", "subject", "link", "sent_at")},
+					"handled_by": notification.handled_by(row["event_code"]),
+				}
 				for row in rows
-				if row["urgency"] == "Urgent"
+				if row["urgency"] == "Urgent" and notification.relevant_to_station(row, session.station)
 			),
 			None,
 		)
@@ -93,7 +96,7 @@ def station_summary(token=None):
 def station_inbox(token=None, limit=20):
 	"""Danh sách thông báo chưa đọc trên màn trạm/PDA (SCR-42), mới nhất trước."""
 	return _as_station(
-		token, lambda: {"ok": True, **notification.inbox(only_unread=1, surface=None, limit=limit)}
+		token, lambda _session: {"ok": True, **notification.inbox(only_unread=1, surface=None, limit=limit)}
 	)
 
 
@@ -103,6 +106,10 @@ def station_mark_read(token=None, names=None):
 	names = _names(names)
 	return _as_station(
 		token,
-		lambda: {"ok": True, "changed": notification.mark_read(names), "unread": notification.unread_count()},
+		lambda _session: {
+			"ok": True,
+			"changed": notification.mark_read(names),
+			"unread": notification.unread_count(),
+		},
 		touch=True,
 	)

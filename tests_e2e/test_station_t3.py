@@ -77,17 +77,19 @@ def test_t3_full_count_is_recorded_within_three_taps(t3_page, t3_demo):
 	measure_touch_and_font(page)
 
 	taps = Taps()
-	taps.tap(page.locator("[data-action='t3-all']"))
-	expect(page.locator(".tc-t3 .tc-ins.is-done")).to_have_count(
-		page.locator(".tc-t3 .tc-ins").count(), timeout=15000
-	)
+	lines = page.locator(".tc-t3 .tc-ins").count()
+	expect(page.locator("[data-action='t3-all']")).to_have_count(1)  # A-102 đảo A-79: có lại xác nhận tất cả
+	expect(page.locator("[data-region='tally']")).to_contain_text(f"Đủ 0/{lines}")
+	for index in range(lines):
+		taps.tap(page.locator(".tc-t3 .tc-ins").nth(index).locator("[data-action='t3-full']"))
+		expect(page.locator(".tc-t3 .tc-ins.is-done")).to_have_count(index + 1, timeout=15000)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	taps.tap(submit)
 	expect(recorded(page)).to_be_visible(timeout=15000)
 	expect(page.locator(".tc-alert-ok")).to_contain_text("Đóng gói: sẵn sàng")
 	expect(page.locator(".tc-gates .tc-gate-ok").nth(2)).to_contain_text("Đạt")
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	assert taps.count <= 3, taps.count
+	assert taps.count <= lines + 1, taps.count  # một chạm mỗi dòng, một chạm ghi nhận
 
 
 def measure_touch_and_font(page):
@@ -113,11 +115,17 @@ def measure_touch_and_font(page):
 def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo, t3_r02):
 	page = t3_page
 	open_set(page, t3_demo["set_short"])
-	page.locator("[data-action='t3-all']").click()
+	for index in range(page.locator(".tc-t3 .tc-ins").count()):
+		page.locator(".tc-t3 .tc-ins").nth(index).locator("[data-action='t3-full']").click()
+		expect(page.locator(".tc-t3 .tc-ins.is-done")).to_have_count(index + 1, timeout=15000)
 	short = line(page, t3_demo["short_instrument"])
 	expect(short.locator(".tc-t3-count")).to_have_text("2", timeout=15000)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	short.locator("[data-action='t3-dec']").click()
+	# A-79: lệch định mức phải chọn Thiếu/Hỏng và ghi chú
+	page.locator("[data-action='t3-variance-pick'][data-value='Short']").click()
+	page.locator("#tc-t3-variance-note").fill("Thiếu 1 khi đếm")
+	page.locator("[data-action='t3-variance-save']").click()
 	# thiếu 1: chữ + ký hiệu (không chỉ màu), Đóng gói khóa, nút ghi nhận khóa, R04 không tự xác nhận được
 	expect(short.locator(".tc-ins-state").first).to_contain_text("Thiếu (-1)", timeout=15000)
 	expect(page.locator(".tc-t3 .tc-alert-error")).to_contain_text("Dụng cụ thiếu")
@@ -147,7 +155,7 @@ def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo,
 	page.locator("#tc-t3-pin").fill(t3_r02["pin"])
 	page.locator("[data-action='t3-confirm-save']").click()
 	expect(page.locator(".tc-t3 [data-region='notice'] .tc-alert-ok")).to_contain_text(
-		"R02 đã xác nhận thiếu", timeout=15000
+		"Giám sát CSSD đã xác nhận thiếu", timeout=15000
 	)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	submit = page.locator("[data-action='t3-submit']")

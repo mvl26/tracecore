@@ -81,5 +81,5 @@
  "sort_order": "DESC",
  "states": [],
  "istable": 1,
- "description": "One waste type per line (BRU-WST-001, FEAT-047)."
+ "description": "One waste type per line."
 }

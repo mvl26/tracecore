@@ -6,7 +6,7 @@
   "fieldname": "tc_item_group_cssd",
   "fieldtype": "Select",
   "label": "CSSD Item Group",
-  "options": "\nPackaging\nChemical Indicator\nLabel\nLubricant\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther",
+  "options": "\nPackaging\nChemical Indicator\nLabel\nLubricant\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther\nPackaging Accessory",
   "insert_after": "item_group"
  },
  {
@@ -263,7 +263,7 @@
   "fieldtype": "Check",
   "label": "Disinfectant",
   "depends_on": "eval:doc.tc_item_group_cssd=='Chemical'",
-  "description": "Counts as a disinfectant for contaminated laundry washed below 71 C (FEAT-034, FR-M3-03.2).",
+  "description": "Counts as a disinfectant for contaminated laundry washed below 71 C (FR-M3-03.2).",
   "insert_after": "tc_shelf_life_days"
  },
  {
@@ -274,7 +274,7 @@
   "fieldtype": "Data",
   "label": "Variance Reason",
   "insert_after": "quantity_difference",
-  "description": "Required when the counted quantity differs from the system quantity by more than 10 % (FEAT-043, UC-26 E1)."
+  "description": "Required when the counted quantity differs from the system quantity by more than 10 % (UC-26 E1)."
  },
  {
   "doctype": "Custom Field",
@@ -285,7 +285,7 @@
   "label": "Abandoned",
   "insert_after": "posting_time",
   "no_copy": 1,
-  "description": "A draft count that will not be posted: it no longer locks the warehouse and cannot be posted (FEAT-043, A-52)."
+  "description": "A draft count that will not be posted: it no longer locks the warehouse and cannot be posted (A-52)."
  },
  {
   "doctype": "Custom Field",

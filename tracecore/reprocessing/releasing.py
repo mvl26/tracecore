@@ -1,8 +1,9 @@
 """Dỡ mẻ, chỉ thị, giải phóng và cách ly chờ BI (T5b, FEAT-023; FR-M2-11, FR-M2-12.2, FR-M2-25; UC-10; WF-03).
 
 Theo khuôn `washing.set_result`: kiểm lại trạm và CẢ HAI mã quét ở server, mọi ghi nhiều bước nằm trong một savepoint.
-Người dỡ ghi kết quả chu trình (`set_cycle_result`, nhập tay có xác nhận) và chỉ thị (`record_indicator`); R02 giải phóng
-bằng PIN proof của chính phiên (`release`) hoặc R01 giải phóng khẩn kèm lý do. Mẻ cần BI sang Cách ly cho tới khi
+Người dỡ ghi kết quả chu trình (`set_cycle_result`, nhập tay có xác nhận) và chỉ thị (`record_indicator`). Giải phóng theo
+A-106: dữ liệu trong dải thì R05, R02, R01 của phiên tự giải phóng, không PIN (mẻ Cần xem xét: R02, R01); dữ liệu ngoài dải
+chỉ R01 tại trạm, có PIN proof của chính phiên và lý do. R01 giải phóng khẩn kèm PIN và lý do khi dữ liệu trong dải. Mẻ cần BI sang Cách ly cho tới khi
 `bi_result` đọc kết quả. Mẻ Không đạt (`reject`) trả bộ về xử lý lại. Chỉ `core.step_gate` đổi trạng thái và bộ đếm
 chu trình của Set Unit; Pack đổi trạng thái qua `storage._save`.
 
@@ -27,6 +28,14 @@ FAILED = "Failed"
 SAVEPOINT = "tc_load_release"
 APPROVER_ROLE = "TC R02"
 EMERGENCY_ROLE = "TC R01"
+TECHNICIAN_ROLE = "TC R05"
+# quy tắc giải phóng của mẻ (A-106): ai bấm được Giải phóng mẻ
+RULE_TECHNICIAN, RULE_SUPERVISOR, RULE_HEAD = "technician", "supervisor", "head"
+RULE_ROLES = {
+	RULE_TECHNICIAN: {TECHNICIAN_ROLE, APPROVER_ROLE, EMERGENCY_ROLE},
+	RULE_SUPERVISOR: {APPROVER_ROLE, EMERGENCY_ROLE},
+	RULE_HEAD: {EMERGENCY_ROLE},
+}
 RESULTS = ("Pass", "Fail")
 REDO_STEPS = ("T4", "T2")
 BIOLOGICAL = "biological"
@@ -126,7 +135,49 @@ def context(load, equipment_raw, load_raw, station):
 		"daily_indicators": daily,
 		"indicator_rows": _rows(doc.name),
 		"missing": _missing(doc, state, review_confirmed=bool(cint(doc.review_confirmed))),
+		"release_rule": release_rule(doc),
+		"out_of_range_names": [row["parameter_name"] for row in _outside_rows(doc)],
+		"out_of_range_accepted": _accepted_current(doc),
 	}
+
+
+def _outside_rows(doc):
+	"""Tham số ngoài dải của chương trình trong dữ liệu chu trình hiện tại của mẻ."""
+	rows = frappe.parse_json(doc.params) if doc.params else []
+	return [
+		{key: row.get(key) for key in ("parameter_name", "unit", "value", "min_value", "max_value")}
+		for row in rows or []
+		if row.get("outside_range")
+	]
+
+
+def release_rule(doc):
+	"""A-106: ngoài dải → trưởng khoa; Cần xem xét do sự cố máy, khớp theo giờ → giám sát; còn lại → KTV tự giải phóng."""
+	if _outside_rows(doc):
+		return RULE_HEAD
+	return RULE_SUPERVISOR if cint(doc.needs_review) else RULE_TECHNICIAN
+
+
+def _accepted_current(doc):
+	"""Lựa chọn Vẫn chấp nhận còn hiệu lực: đúng các giá trị ngoài dải đang có; sửa số liệu thì phải chọn lại."""
+	if not doc.out_of_range_accepted:
+		return False
+	return frappe.parse_json(doc.out_of_range_accepted) == _outside_rows(doc)
+
+
+def _needs_acceptance(doc):
+	names = [row["parameter_name"] for row in _outside_rows(doc)]
+	return _blocked(
+		"CYCLE_DATA_OUT_OF_RANGE",
+		_("A Pass needs a deliberate choice"),
+		_("{0} {1} has values outside the program range: {2}.").format(
+			_("Sterilization load"), doc.name, ", ".join(names)
+		),
+		_(
+			"Correct the data if it was entered wrong, record Fail, or choose Accept anyway; the head of KSNK then approves the release."
+		),
+		items=names,
+	)
 
 
 def _confirmation_needed(items):
@@ -140,12 +191,21 @@ def _confirmation_needed(items):
 
 
 def set_cycle_result(
-	load, station, equipment_raw, load_raw, result, confirmed, employee=None, client_ts=None
+	load,
+	station,
+	equipment_raw,
+	load_raw,
+	result,
+	confirmed,
+	employee=None,
+	client_ts=None,
+	accept_out_of_range=False,
 ):
 	"""Ghi kết quả chu trình Đạt/Không đạt (nhập tay có xác nhận, FR-M2-11.3) áp cho mọi gói của mẻ.
 
-	Chưa có dữ liệu chu trình đầy đủ (`data_complete`) hoặc chưa tick xác nhận → DATA_INCOMPLETE; kết quả khác Đạt/Không
-	đạt → RESULT_INVALID. Mẻ vẫn mở, chưa giải phóng.
+		Chưa có dữ liệu chu trình đầy đủ (`data_complete`) hoặc chưa tick xác nhận → DATA_INCOMPLETE; kết quả khác Đạt/Không
+		đạt → RESULT_INVALID. Đạt khi có tham số ngoài dải chỉ qua lựa chọn `accept_out_of_range` (A-106), giải phóng sau đó cần
+	trưởng khoa. Mẻ vẫn mở, chưa giải phóng.
 	"""
 	doc, _machine = sterilizing._open_for_data(
 		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
@@ -167,12 +227,28 @@ def set_cycle_result(
 		)
 	if not confirmed:
 		raise _confirmation_needed([sterilizing.MISSING_CONFIRMATION])
+	outside = _outside_rows(doc) if result == "Pass" else []
+	if outside and not accept_out_of_range:
+		raise _needs_acceptance(doc)
+	if outside:
+		audit.log(
+			"Override",
+			"Sterilization Load",
+			doc.name,
+			new={"event": "OutOfRangeAccepted", "employee": employee, "params": outside},
+			reason="OutOfRangeAccepted",
+			station=station,
+			client_ts=client_ts,
+		)
 	doc.update(
 		{
 			"cycle_result": result,
+			"out_of_range_accepted": frappe.as_json(outside) if outside else None,
+			"out_of_range_accepted_by": employee if outside else None,
 			"result_source": "Manual",
 			"unload_scan_equipment": doc.equipment,
 			"unload_scan_at": _now(client_ts),
+			"unloaded_by": doc.unloaded_by or employee,  # A-86
 		}
 	)
 	doc.flags.tc_sterilizing = True
@@ -263,25 +339,73 @@ def _missing(doc, state, review_confirmed):
 	return items
 
 
-def _approver(session, proof, emergency_reason):
-	"""R02 đã xác nhận PIN (hoặc R01 kèm lý do khẩn) bằng proof của phiên `session`; ngược lại R02_CONFIRM_REQUIRED."""
-	user = None
-	if proof:
-		with contextlib.suppress(BlockedError):
-			user = station_auth.consume_session_pin_proof(session, proof).user
-	roles = frappe.get_roles(user) if user else []
-	reason = emergency_reason.strip() if isinstance(emergency_reason, str) else ""
-	if user and APPROVER_ROLE in roles:
-		return user, None
-	if user and EMERGENCY_ROLE in roles and reason:
-		return user, reason
-	raise _blocked(
+def _clean(text):
+	return text.strip() if isinstance(text, str) else ""
+
+
+def _session_person(session):
+	"""(user, employee) của phiên trạm; gọi không qua phiên trạm thì người dùng hiện tại."""
+	row = (
+		frappe.db.get_value("Station Session", session, ["user", "employee"], as_dict=True)
+		if session
+		else None
+	)
+	if row and row.user:
+		return row.user, row.employee or _employee(row.user)
+	return frappe.session.user, _employee(frappe.session.user)
+
+
+def _proof_matches(session, proof, user):
+	"""PIN proof còn hiệu lực của đúng người đang đăng nhập phiên trạm; không có PIN không thẻ (A-106)."""
+	if not proof or not session:
+		return False
+	with contextlib.suppress(BlockedError):
+		return station_auth.consume_session_pin_proof(session, proof).user == user
+	return False
+
+
+def _supervisor_needed():
+	return _blocked(
 		"R02_CONFIRM_REQUIRED",
-		_("R02 confirmation required"),
-		_("Only R02 can release a sterilization load, with the card and PIN."),
-		_(
-			"Ask R02 to sign in at this station and enter the PIN. R01 needs a reason for an emergency release."
+		_("A CSSD supervisor must release the load"),
+		_("This load needs a review by the CSSD supervisor or the head of KSNK before release."),
+		_("Log out, then the CSSD supervisor signs in with the card at this station."),
+	)
+
+
+def _head_needed(rows, doc, reason=None):
+	names = ", ".join(row["parameter_name"] for row in rows)
+	return _blocked(
+		"HEAD_APPROVAL_REQUIRED",
+		_("Head of KSNK approval required"),
+		reason
+		or _("Head of KSNK approval is needed because the cycle data is outside the range: {0}").format(
+			names
 		),
+		_("The head of KSNK signs in with the card at this station, enters the PIN and the reason."),
+		items=[row["parameter_name"] for row in rows],
+		object_type="Sterilization Load",
+		object_name=doc.name,
+	)
+
+
+def _approve_out_of_range(doc, rows, user, employee, session, proof, reason, station, client_ts):
+	"""Quy tắc B của A-106: chỉ R01 đăng nhập bằng thẻ tại trạm, có PIN và lý do; ghi người duyệt lên mẻ và Audit Log."""
+	if EMERGENCY_ROLE not in frappe.get_roles(user):
+		raise _head_needed(rows, doc)
+	if not reason:
+		raise _head_needed(rows, doc, _("A reason is required to accept cycle data outside the range."))
+	if not _proof_matches(session, proof, user):
+		raise _head_needed(rows, doc, _("The PIN of the head of KSNK signed in at this station is required."))
+	doc.update({"out_of_range_approved_by": employee, "out_of_range_reason": reason})
+	audit.log(
+		"Override",
+		"Sterilization Load",
+		doc.name,
+		new={"event": "OutOfRangeApproved", "approver": employee, "reason": reason, "params": rows},
+		reason="OutOfRangeApproved",
+		station=station,
+		client_ts=client_ts,
 	)
 
 
@@ -299,11 +423,14 @@ def release(
 	review_confirmed=False,
 	emergency_reason=None,
 	client_ts=None,
+	out_of_range_reason=None,
 ):
-	"""Giải phóng mẻ (R02 + PIN proof; R01 kèm lý do là giải phóng khẩn, FR-M2-11.4, .8): Đã giải phóng hoặc Cách ly.
+	"""Giải phóng mẻ theo A-106 (FR-M2-11.4, .8): Đã giải phóng hoặc Cách ly.
 
-	Điều kiện (không đổi gì nếu thiếu → LOAD_NOT_RELEASABLE kèm danh sách thiếu): có kết quả chu trình Đạt, đủ chỉ
-	thị bắt buộc Đạt, mẻ Cần xem xét được R02 xác nhận. Mẻ cần BI mà chưa có BI âm tính sang Cách ly chờ đọc (trừ
+	Trong dải: R05, R02, R01 của phiên, không PIN; `released_by` là nhân viên của phiên. Cần xem xét: R02, R01 xác nhận.
+	Ngoài dải: chỉ R01, `pin_proof` của chính phiên và `out_of_range_reason`, không có giải phóng khẩn. R01 trong dải kèm
+	`emergency_reason` là giải phóng khẩn, cần PIN và không chờ BI. Điều kiện (không đổi gì nếu thiếu →
+	LOAD_NOT_RELEASABLE kèm danh sách thiếu): có kết quả chu trình Đạt, đủ chỉ thị bắt buộc Đạt. Mẻ cần BI mà chưa có BI âm tính sang Cách ly chờ đọc (trừ
 	giải phóng khẩn). Giải phóng Đạt: Pack ``Released``, cổng T5 Đạt từng bộ (đủ 5 cổng → Vô khuẩn), +1 chu trình, hook
 	`tracecore_after_release` mỗi bộ và `tracecore_after_load_release`, mẻ ghi sổ. Trả ``{"load", "status", "sets"}``.
 	"""
@@ -320,6 +447,7 @@ def release(
 			review_confirmed,
 			emergency_reason,
 			client_ts,
+			out_of_range_reason,
 		)
 	except Exception:
 		with contextlib.suppress(Exception):
@@ -328,7 +456,16 @@ def release(
 
 
 def _release(
-	load, station, equipment_raw, load_raw, session, pin_proof, review_confirmed, emergency_reason, client_ts
+	load,
+	station,
+	equipment_raw,
+	load_raw,
+	session,
+	pin_proof,
+	review_confirmed,
+	emergency_reason,
+	client_ts,
+	out_of_range_reason=None,
 ):
 	doc, machine = sterilizing._open_for_data(
 		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
@@ -341,26 +478,68 @@ def _release(
 			_("Enter the cycle data and confirm it, then record the result."),
 			items=[_("cycle data")],
 		)
+	outside = _outside_rows(doc)
+	# kết quả máy báo hoặc dữ liệu sửa sau khi ghi Đạt: chưa ai chọn Vẫn chấp nhận đúng các giá trị này (A-89, A-106)
+	if doc.cycle_result == "Pass" and outside and not _accepted_current(doc):
+		raise _needs_acceptance(doc)
 	daily = _daily_indicators(doc, machine)
 	state = _indicator_state(doc, machine, daily)
-	missing = _missing(doc, state, bool(cint(review_confirmed)))
-	if missing:
+	# ngoài dải: trưởng khoa duyệt thay cho ô xác nhận của giám sát
+	reviewed = bool(cint(review_confirmed)) or bool(outside)
+	missing = _missing(doc, state, reviewed)
+	blocking = [code for code in missing if code != "review"]
+	if blocking:
 		failed = doc.cycle_result == "Fail" or "Fail" in state.values()
 		raise _blocked(
 			"LOAD_NOT_RELEASABLE",
 			_("Load cannot be released"),
 			_("A failed cycle or indicator cannot be released; reject the load.")
 			if failed
-			else _("Sterilization load {0} still lacks: {1}.").format(doc.name, ", ".join(missing)),
+			else _("Sterilization load {0} still lacks: {1}.").format(doc.name, ", ".join(blocking)),
 			_("Reject the load so its sets are reprocessed.")
 			if failed
-			else _("Record the missing results, then ask R02 to release the load."),
-			items=missing,
+			else _("Record the missing results, then release the load."),
+			items=blocking,
 			object_type="Sterilization Load",
 			object_name=doc.name,
 		)
-	approver, emergency = _approver(session, pin_proof, emergency_reason)
-	employee = _employee(approver)
+	user, employee = _session_person(session)
+	roles = set(frappe.get_roles(user))
+	emergency = None
+	if outside:
+		_approve_out_of_range(
+			doc, outside, user, employee, session, pin_proof, _clean(out_of_range_reason), station, client_ts
+		)
+	else:
+		if not roles & RULE_ROLES[release_rule(doc)]:
+			raise _supervisor_needed()
+		if "review" in missing:
+			raise _blocked(
+				"LOAD_NOT_RELEASABLE",
+				_("Load cannot be released"),
+				_("Sterilization load {0} still lacks: {1}.").format(doc.name, "review"),
+				_("Tick the review confirmation, then release the load."),
+				items=["review"],
+				object_type="Sterilization Load",
+				object_name=doc.name,
+			)
+		if _clean(emergency_reason) and EMERGENCY_ROLE in roles and APPROVER_ROLE not in roles:
+			if not _proof_matches(session, pin_proof, user):
+				raise _blocked(
+					"R02_CONFIRM_REQUIRED",
+					_("PIN is required"),
+					_("An emergency release needs the PIN of the head of KSNK signed in at this station."),
+					_("Enter the 6-digit PIN, or clear the emergency reason."),
+				)
+			emergency = _clean(emergency_reason)
+		doc.update(
+			{
+				"out_of_range_accepted": None,
+				"out_of_range_accepted_by": None,
+				"out_of_range_approved_by": None,
+				"out_of_range_reason": None,
+			}
+		)
 	_keep_daily_indicators(doc, daily, station)
 	needs_bi = cint(doc.requires_bi) and state.get(BIOLOGICAL) != "Pass" and not emergency
 	doc.review_confirmed = 1 if cint(doc.needs_review) else 0
@@ -376,6 +555,15 @@ def _release(
 		)
 	if needs_bi:
 		return _quarantine(doc, station, employee)
+	audit.log(
+		"Update",
+		"Sterilization Load",
+		doc.name,
+		new={"event": "LoadReleased", "employee": employee, "rule": release_rule(doc)},
+		reason="LoadReleased",
+		station=station,
+		client_ts=client_ts,
+	)
 	return _finalize(doc, station, client_ts, employee, emergency)
 
 
@@ -403,12 +591,29 @@ def _keep_daily_indicators(doc, daily, station):
 		result.insert(ignore_permissions=True)
 
 
+def _mark_unloaded(doc, employee, at):
+	"""Mẻ có kết quả tự động từ máy chưa qua bước ghi kết quả: giải phóng hoặc cách ly là đã dỡ (A-86)."""
+	if not doc.unload_scan_at:
+		doc.update({"unload_scan_equipment": doc.equipment, "unload_scan_at": at})
+	doc.unloaded_by = doc.unloaded_by or employee
+
+
 def _quarantine(doc, station, employee):
 	for row in doc.packs:
 		pack = storage._lock_pack(row.pack)
 		pack.update({"status": QUARANTINE})
 		storage._save(pack)
-	doc.update({"status": QUARANTINE, "bi_result": doc.bi_result or "Pending", "released_by": employee})
+	_mark_unloaded(doc, employee, now_datetime())
+	# A-102: cách ly chưa phải giải phóng, `released_by` chỉ ghi ở `_finalize`; người duyệt cách ly nằm ở Audit Log
+	doc.update({"status": QUARANTINE, "bi_result": doc.bi_result or "Pending"})
+	audit.log(
+		"Update",
+		"Sterilization Load",
+		doc.name,
+		new={"event": "QuarantineApproved", "employee": employee},
+		reason="QuarantineApproved",
+		station=station,
+	)
 	doc.flags.tc_sterilizing = True
 	doc.flags.ignore_permissions = True
 	doc.save()
@@ -448,6 +653,7 @@ def _finalize(doc, station, client_ts, employee, reason):
 			},
 		)
 		sets.append(row.set_unit)
+	_mark_unloaded(doc, employee, at)
 	doc.update(
 		{
 			"status": RELEASED,

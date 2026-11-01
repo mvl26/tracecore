@@ -50,7 +50,7 @@ def _flag(value):
 
 
 def _lines(value):
-	"""`lines` là list (hoặc chuỗi JSON của list) các ``{"instrument": str, "confirmed": bool/int}``; không có → None."""
+	"""`lines` là list (hoặc chuỗi JSON của list) các ``{"instrument": str, "confirmed": bool/int, "actual_qty"?}``; không có → None."""
 	if value is None:
 		return None
 	message = _("lines must be a list of objects with an instrument and a confirmed flag.")
@@ -63,7 +63,14 @@ def _lines(value):
 		isinstance(row, dict) and isinstance(row.get("instrument"), str) for row in value
 	):
 		raise BadRequestError(message)
-	return [{"instrument": row["instrument"], "confirmed": _flag(row.get("confirmed", 1))} for row in value]
+	return [
+		{
+			"instrument": row["instrument"],
+			"confirmed": _flag(row.get("confirmed", 1)),
+			"actual_qty": row.get("actual_qty"),
+		}
+		for row in value
+	]
 
 
 def _receiver():

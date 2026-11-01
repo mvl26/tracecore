@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-29 10:00:00.000000",
- "description": "Per-department min/max pieces of a linen type (FEAT-033, FR-M3-02); used by the reconciliation of FEAT-035.",
+ "description": "Per-department min/max pieces of a linen type (FR-M3-02); used by the linen reconciliation.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

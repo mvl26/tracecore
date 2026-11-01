@@ -1,16 +1,22 @@
 """RPC tracecore.v1.wash.* (FEAT-021 Task 5): phiên trạm thẻ, quyền, mã HTTP theo loại lỗi, replay idempotent."""
 
+import base64
+import io
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.utils import add_to_date, now_datetime
+from frappe.utils import add_to_date, get_datetime, now_datetime
+from pypdf import PdfReader
 
-from tracecore.core import station_auth, step_gate
+from tracecore.core import gs1, print_server, qr, station_auth, step_gate
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_chemical_batch,
+	make_label_items,
+	make_printer,
 	make_set_unit,
 	make_user,
 	make_wash_machine,
@@ -447,3 +453,121 @@ class TestWashRefreshAndDraft(WashApiCase):
 		call(wash_api.save_draft, draft=self.draft_payload((unit.name,)), station=STATION)
 		self.assertIs(self.complete([unit.name])["ok"], True)
 		self.assertIsNone(call(wash_api.draft, station=STATION)["draft"])
+
+
+class TestWashLabelPdf(WashApiCase):
+	def done_batch(self):
+		return self.complete([make_wash_ready_set().name])
+
+	def assert_no_printer(self, result):
+		self.assertIs(result["ok"], False, msg=result)
+		self.assertEqual(result["error"]["code"], "NO_PRINTER_AT_STATION")
+		self.assertEqual(frappe.local.response.get("http_status_code"), 409)
+		for key in ("title", "reason", "action"):
+			self.assertTrue(result["error"][key], msg=key)
+		self.assertNotIn("pdf_b64", result)
+
+	def test_no_active_printer_refuses_without_a_pdf(self):
+		"""A-100: trạm chưa có máy in hoạt động thì không có PDF nhãn, kể cả khi lô đã có mã."""
+		done = self.done_batch()
+		self.assertEqual(done["print"]["warning"]["code"], "NO_PRINTER_AT_STATION")
+		self.assert_no_printer(call(wash_api.label_pdf, batch=done["batch"], station=STATION))
+
+	def test_deactivated_printer_counts_as_no_printer(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_batch()
+		deactivate_printers(STATION)
+		self.assert_no_printer(call(wash_api.label_pdf, batch=done["batch"], station=STATION))
+
+	def test_returns_pdf_named_after_the_batch_with_its_qr_and_text(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_batch()
+		before = frappe.db.count("Print Job")
+		result = call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(result["filename"], f"{done['batch']}.pdf")
+		pdf = base64.b64decode(result["pdf_b64"])
+		self.assertTrue(pdf.startswith(b"%PDF"))
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		decoded = qr.decode_png(page.images[0].data)
+		self.assertEqual(decoded, done["batch"])
+		self.assertEqual(gs1.parse_scan(decoded)["type"], "wash_batch")
+		text = page.extract_text()
+		started = frappe.db.get_value("Wash Batch", done["batch"], "started_at")
+		self.assertIn(done["batch"], text)
+		self.assertIn(get_datetime(started).strftime("%d/%m/%Y %H:%M"), text)
+		self.assertEqual(frappe.db.count("Print Job"), before)
+
+	def test_pdf_marks_the_print_job_printed_to_file(self):
+		"""A-101: job giữ làm vết kiểm toán, trạng thái ghi đúng sự thật; không tạo job thứ hai."""
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_batch()
+		job = done["print"]["print_job"]
+		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Queued")
+		result = call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		self.assertEqual(result["print_job"], job)
+		row = frappe.db.get_value(
+			"Print Job", job, ["status", "output_mode", "output_ref", "printed_at", "attempts"], as_dict=True
+		)
+		self.assertEqual(
+			(row.status, row.output_mode, row.output_ref, row.attempts),
+			("Printed", "File", result["filename"], 1),
+		)
+		self.assertTrue(row.printed_at)
+
+	def test_cron_never_sends_a_job_output_as_pdf(self):
+		make_printer(STATION, make_label_items()[0], host="10.0.0.9")
+		done = self.done_batch()
+		job = done["print"]["print_job"]
+		frappe.db.set_value(
+			"Print Job", job, "modified", add_to_date(now_datetime(), minutes=-5), update_modified=False
+		)
+		self.assertNotIn(
+			job, print_server._pending_jobs(50)
+		)  # job của trạm chưa xuất cũng không đi đường server
+		call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		frappe.db.set_value(
+			"Print Job", job, "modified", add_to_date(now_datetime(), minutes=-5), update_modified=False
+		)
+		self.assertNotIn(job, print_server._pending_jobs(50))
+		with patch.object(print_server, "_send") as send:
+			self.assertEqual(print_server.dispatch_job(job)["status"], "Printed")
+		send.assert_not_called()
+
+	def test_retry_after_lost_response_returns_the_same_job(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_batch()
+		before = frappe.db.count("Print Job")
+		call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		again = call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		self.assertIs(again["ok"], True, msg=again)
+		self.assertEqual(frappe.db.count("Print Job"), before)
+		self.assertEqual(frappe.db.get_value("Print Job", again["print_job"], "attempts"), 2)
+
+	def test_missing_pdf_tool_blocks_and_keeps_the_job_queued(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_batch()
+		with patch("frappe.utils.pdf.get_pdf", side_effect=OSError("No wkhtmltopdf executable found")):
+			result = call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		self.assertEqual(result["error"]["code"], "LABEL_PDF_FAILED")
+		self.assertNotIn("pdf_b64", result)
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Queued")
+		self.assertTrue(frappe.db.exists("Wash Batch", done["batch"]))
+
+	def test_waiting_label_stays_waiting_when_a_printer_appears_later(self):
+		done = self.done_batch()
+		make_printer(STATION, make_label_items()[0])
+		result = call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		self.assertEqual(result["error"]["code"], "LABEL_NOT_QUEUED")
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Waiting")
+
+	def test_unknown_code_is_not_found(self):
+		result = call(wash_api.label_pdf, batch="LR-000000-99", station=STATION)
+		self.assertEqual(result["error"]["code"], "WASH_BATCH_NOT_FOUND")
+		self.assertEqual(frappe.local.response.get("http_status_code"), 404)
+
+	def test_wrong_session_station_is_refused(self):
+		done = self.done_batch()
+		token = TOKENS[("Administrator", STATION)]
+		result = call(wash_api.label_pdf, batch=done["batch"], station=CLEAN_STATION, token=token)
+		self.assertEqual(result["error"]["code"], "SESSION_STATION_MISMATCH")

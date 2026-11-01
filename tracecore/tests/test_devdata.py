@@ -653,8 +653,12 @@ class TestT3DemoData(IsolatedTestCase):
 		from tracecore.reprocessing import assembly
 
 		first = devdata.ensure_t3_demo()
-		name = assembly.open_set(first["set_full"], "TR-003")["assembly"]
-		assembly.line(name, "TR-003", client_time.utc_now(), all_ok=True)
+		opened = assembly.open_set(first["set_full"], "TR-003")
+		name = opened["assembly"]
+		for row in opened["lines"]:
+			assembly.line(
+				name, "TR-003", client_time.utc_now(), instrument=row["instrument"], actual_qty=row["bom_qty"]
+			)
 		assembly.submit(name, "TR-003", client_time.utc_now())
 		second = devdata.ensure_t3_demo()
 		ready = {second[key] for key in devdata.T3_READY}
@@ -1315,3 +1319,20 @@ class TestDemoMachinesDailyTest(FrappeTestCase):
 				msg=key,
 			)
 		self.assertEqual(devdata.ensure_t5_demo(), again)  # vẫn idempotent khi máy trống
+
+
+class TestDemoPackTypeMethod(IsolatedTestCase):
+	"""A-102: gói demo khai phương pháp nên Tyvek không hiện cho bộ hấp; Item để trống vẫn hiện (A-97)."""
+
+	def test_demo_pack_types_declare_their_method(self):
+		catalog = devdata._t4_catalog()
+		for method, spec in catalog.items():
+			code = devdata._ensure_pack_type(spec["pack_type"])
+			self.assertEqual(frappe.db.get_value("Item", code, "tc_compatible_method"), method)
+
+	def test_existing_blank_demo_item_is_repaired(self):
+		spec = devdata._t4_catalog()["Plasma"]["pack_type"]
+		code = devdata._ensure_pack_type(spec)
+		frappe.db.set_value("Item", code, "tc_compatible_method", None)
+		devdata._ensure_pack_type(spec)
+		self.assertEqual(frappe.db.get_value("Item", code, "tc_compatible_method"), "Plasma")

@@ -176,8 +176,13 @@ def log_rows(filters):
 			"started_at",
 			"ended_at",
 			"params",
+			"unloaded_by",
 			"released_by",
 			"released_at",
+			"out_of_range_accepted",
+			"out_of_range_accepted_by",
+			"out_of_range_approved_by",
+			"out_of_range_reason",
 		],
 	)
 	names = [load.name for load in loads]
@@ -201,7 +206,13 @@ def log_rows(filters):
 	equipment = _names("Equipment", [load.equipment for load in loads], "equipment_name")
 	programs = _names("Process Program", [load.program for load in loads], "program_name")
 	people = _names(
-		"Employee", [p for load in loads for p in (load.operator, load.released_by)], "employee_name"
+		"Employee",
+		[
+			p
+			for load in loads
+			for p in (load.operator, load.unloaded_by, load.released_by, load.out_of_range_approved_by)
+		],
+		"employee_name",
 	)
 	rows = []
 	for load in loads:
@@ -225,13 +236,30 @@ def log_rows(filters):
 				"sets": ", ".join(set_ids.get(unit) or unit for unit in packs.get(load.name, [])),
 				"operator": load.operator,
 				"operator_name": people.get(load.operator) or load.operator,
+				"unloaded_by": load.unloaded_by or load.released_by,
+				"unloaded_by_name": people.get(load.unloaded_by or load.released_by)
+				or load.unloaded_by
+				or load.released_by,
 				"released_by": load.released_by,
 				"released_by_name": people.get(load.released_by) or load.released_by,
 				"released_at": load.released_at,
+				"out_of_range_note": _out_of_range_note(load, people),
 				"result": load.status,
 			}
 		)
 	return rows
+
+
+def _out_of_range_note(load, people):
+	"""Mẻ ngoài dải được chấp nhận (A-106): thông số, giá trị, người duyệt và lý do; mẻ khác để trống."""
+	if not load.out_of_range_approved_by:
+		return ""
+	values = ", ".join(
+		f"{row.get('parameter_name')} {row.get('value')}"
+		for row in frappe.parse_json(load.out_of_range_accepted) or []
+	)
+	who = people.get(load.out_of_range_approved_by) or load.out_of_range_approved_by
+	return _("Out of range accepted: {0}. Approved by {1}: {2}").format(values, who, load.out_of_range_reason)
 
 
 # --- báo cáo KSNK tổng hợp (Q2) -----------------------------------------------------------------------------------

@@ -21,6 +21,19 @@ from tracecore.v1._common import (
 PERIPHERAL_FIELDS = ["peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"]
 
 
+def _with_station_role(session):
+	"""Vai trò chính tại trạm cho dòng phiên (A-91, S-02)."""
+	session["station_role"] = navigation.main_role(
+		set(session.get("roles") or ()), zones.station_functions(session["station"])
+	)
+	department = frappe.db.get_value("Employee", session.get("employee"), "department")
+	session["department"] = department
+	session["department_name"] = (
+		frappe.db.get_value("Department", department, "department_name") if department else None
+	)
+	return session
+
+
 def _session_response(call, station=None, client_ts=None):
 	try:
 		return error_codes.attach_warnings(call())
@@ -38,23 +51,81 @@ def login(card_id=None, station=None, client_ts=None):
 	if not isinstance(card_id, str) or not isinstance(station, str):
 		raise BadRequestError(_("card_id and station must be strings."))
 	return _session_response(
-		lambda: {"ok": True, "session": station_auth.login(card_id, station, timestamp)}, station, timestamp
+		lambda: {"ok": True, "session": _with_station_role(station_auth.login(card_id, station, timestamp))},
+		station,
+		timestamp,
 	)
 
 
 @frappe.whitelist(methods=["POST"])
 def switch_station(token=None, station=None, client_ts=None):
-	"""Đã quét thẻ thì chuyển sang trạm khác không cần quét lại (NAV-03, NAV-04); tài khoản Desk phải có role của trạm đó."""
+	"""Đã quét thẻ thì chuyển sang trạm cùng khu không cần quét lại (A-90); tài khoản Desk phải có role của trạm đó.
+
+	Khác khu thì trả khối `STATION_ZONE_RESCAN` trước khi xét role: máy trạm về màn quét thẻ của trạm đích.
+	"""
 	timestamp = parse_client_ts(client_ts)
 	if not isinstance(station, str):
 		raise BadRequestError(_("station must be a string."))
-	if not navigation.can_open_station(station):
-		raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
-	return _session_response(
-		lambda: {"ok": True, "session": station_auth.switch_station(token, station, timestamp)},
-		station,
-		timestamp,
+
+	def call():
+		current = station_auth.require_same_zone(token, station, timestamp)
+		# thẻ quản lý không bị tài khoản Desk giới hạn (A-91); năng lực trạm vẫn do station_auth.switch_station kiểm
+		if not _overview_card(current.user) and not navigation.can_open_station(station):
+			raise frappe.PermissionError(_("This account cannot open station {0}.").format(station))
+		return {
+			"ok": True,
+			"session": _with_station_role(station_auth.switch_station(token, station, timestamp)),
+		}
+
+	return _session_response(call, station, timestamp)
+
+
+def _overview_card(user):
+	"""Thẻ quản lý theo role của chính người trên thẻ; thẻ không gắn user không bao giờ là thẻ quản lý."""
+	if not user:
+		return False
+	roles = set(frappe.get_roles(user))
+	return bool(roles & navigation.OVERVIEW_ROLES) or "System Manager" in roles
+
+
+def _visible_stations(session):
+	"""Trạm trên hàng nút sau khi quét thẻ (A-91): theo thẻ, không theo tài khoản Desk.
+
+	KTV: cùng khu và có năng lực; trạm cùng khu tài khoản Desk không mở được thì không hiện vì bấm sẽ 403. Thẻ quản lý: đủ trạm.
+	"""
+	overview = _overview_card(session.user)
+	rows = frappe.get_all(
+		"Zone Station",
+		filters={"is_zone": 0, "is_active": 1},
+		fields=["name", "zone_station_name", "station_no", "parent_zone"],
 	)
+	rows.sort(key=lambda row: (not cint(row.station_no), cint(row.station_no), row.name))
+	own_zone = next((row.parent_zone for row in rows if row.name == session.station), None)
+	visible = []
+	for row in rows:
+		if not zones.station_screen_tabs(zones.station_functions(row.name)):
+			continue
+		same_zone = bool(own_zone) and row.parent_zone == own_zone
+		show = row.name == session.station or overview
+		if same_zone and not show:
+			show = station_auth.can_work_at(session.employee, row.name)
+		if same_zone and row.name != session.station and not overview:
+			show = show and navigation.can_open_station(row.name)
+		if show:
+			visible.append(
+				{"name": row.name, "label": row.zone_station_name, "station_no": cint(row.station_no)}
+			)
+	return visible
+
+
+@frappe.whitelist(methods=["POST"])
+def stations(token=None):
+	"""Danh sách trạm cho hàng nút trên màn trạm (A-91, #1831); chỉ đọc, không tính là hoạt động."""
+
+	def call():
+		return {"ok": True, "stations": _visible_stations(station_auth.authenticate_session(token))}
+
+	return _session_response(call)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -69,25 +140,28 @@ def logout(token=None, client_ts=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def heartbeat(token=None, client_ts=None):
+def heartbeat(token=None, client_ts=None, recheck=None):
+	"""`recheck`: máy trạm gửi 1 khi khôi phục phiên sau khi tải lại trang hoặc đổi trạm (A-90)."""
 	timestamp = parse_client_ts(client_ts)
 
 	def call():
-		doc = station_auth.heartbeat(token, timestamp)
+		doc = station_auth.heartbeat(token, timestamp, recheck=bool(cint(recheck)))
 		employee = frappe.db.get_value(
 			"Employee", doc.employee, ["employee_name", "tc_pin_reset_required"], as_dict=True
 		)
-		return {
-			"ok": True,
-			"session": doc.name,
-			"employee": doc.employee,
-			"employee_name": employee.employee_name,
-			"roles": sorted(role for role in frappe.get_roles(doc.user) if role.startswith("TC R")),
-			"station": doc.station,
-			"expires_at": doc.absolute_expires_at,
-			# khôi phục phiên sau khi tải lại trang vẫn phải mở lại modal đổi PIN tạm
-			"pin_change_required": cint(employee.tc_pin_reset_required),
-		}
+		return _with_station_role(
+			{
+				"ok": True,
+				"session": doc.name,
+				"employee": doc.employee,
+				"employee_name": employee.employee_name,
+				"roles": sorted(role for role in frappe.get_roles(doc.user) if role.startswith("TC R")),
+				"station": doc.station,
+				"expires_at": doc.absolute_expires_at,
+				# khôi phục phiên sau khi tải lại trang vẫn phải mở lại modal đổi PIN tạm
+				"pin_change_required": cint(employee.tc_pin_reset_required),
+			}
+		)
 
 	return _session_response(call)
 
@@ -142,6 +216,7 @@ def _station_row(station):
 		"station_no": cint(row.station_no),
 		"screens": zones.station_screen_tabs(functions),
 		"gate_labels": zones.gate_labels(),
+		"gate_stations": zones.gate_stations(),
 		"is_active": cint(row.is_active),
 	}
 

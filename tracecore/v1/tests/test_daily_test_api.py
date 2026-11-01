@@ -59,6 +59,17 @@ class TestDailyTestApi(IsolatedTestCase):
 			**extra,
 		}
 
+	def run_test(self, test_type):
+		for method in (api.start_run, api.end_run):
+			done = call(method, equipment=self.machine.name, test_type=test_type, station=STATION)
+			self.assertTrue(done["ok"], done)
+
+	def test_record_before_the_run_ends_is_refused_with_http_409(self):
+		call(api.start_run, equipment=self.machine.name, test_type="leak", station=STATION)
+		bad = call(api.record, test_type="leak", result="Pass", **self.args_for())
+		self.assertEqual(bad["error"]["code"], "DAILY_TEST_RUN_NOT_ENDED")
+		self.assertEqual(frappe.local.response.get("http_status_code"), 409)
+
 	@bru("BRU-EQP-001")
 	def test_record_both_tests_opens_the_machine_for_loading(self):
 		self.assertEqual(sterilizing.check_equipment_ready(self.machine.name).code, "DAILY_TEST_REQUIRED")
@@ -68,6 +79,7 @@ class TestDailyTestApi(IsolatedTestCase):
 			[["bowie_dick", "leak"]],
 		)
 		for test_type in ("bowie_dick", "leak"):
+			self.run_test(test_type)
 			done = call(
 				api.record, test_type=test_type, result="Pass", photo="/files/x.png", **self.args_for()
 			)
@@ -75,6 +87,7 @@ class TestDailyTestApi(IsolatedTestCase):
 		self.assertIsNone(sterilizing.check_equipment_ready(self.machine.name))
 
 	def test_record_rejects_expired_lot_with_http_422(self):
+		self.run_test("leak")
 		bad = call(
 			api.record, test_type="leak", result="Pass", **self.args_for(lot_expiry=add_days(today(), -1))
 		)
@@ -82,6 +95,7 @@ class TestDailyTestApi(IsolatedTestCase):
 		self.assertEqual(frappe.local.response.get("http_status_code"), 422)
 
 	def test_replay_with_same_key_records_one_test(self):
+		self.run_test("leak")
 		key, stamp = str(uuid.uuid4()), now_ts()
 		args = self.args_for(test_type="leak", result="Pass", client_ts=stamp)
 		first = call(api.record, key, **args)

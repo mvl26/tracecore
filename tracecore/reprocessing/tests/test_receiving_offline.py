@@ -46,6 +46,21 @@ class TestSubmitOffline(ReceivingCase):
 		self.assertEqual((doc.needs_card, doc.deliverer_name), (1, "Điều dưỡng A"))
 		self.assertEqual(doc.items[0].abnormal_note, "Thiếu nắp hộp")
 
+	def test_submit_offline_keeps_actual_quantity(self):
+		unit = self.new_set()
+		lines = [{"instrument": code, "actual_qty": max(qty - 1, 1)} for code, qty in BOM]
+		payload = {
+			"department": self.department,
+			"deliverer_name": "Điều dưỡng B",
+			"items": [{"set_id": unit, "lines": lines, "note": "Thiếu"}],
+		}
+		result = receiving.submit_offline(STATION, self.receiver, self.now(), payload)
+		doc = frappe.get_doc("Dirty Receipt", result["receipt"])
+		self.assertEqual(
+			{row.instrument: row.actual_qty for row in doc.confirm_lines},
+			{code: max(qty - 1, 1) for code, qty in BOM},
+		)
+
 	def test_submit_offline_rolls_back_on_one_bad_set(self):
 		good, bad = self.new_set(), self.new_set("Sterile")
 		receipts = frappe.db.count("Dirty Receipt")

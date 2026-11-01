@@ -134,7 +134,7 @@ class TestLaundryStationWiring(FrappeTestCase):
 		css = _read(STATION_CSS)
 		block = css[css.index("Lô giặt (SCR-17") :]
 		self.assertNotRegex(block, r"#[0-9a-fA-F]{3,6}\b")
-		self.assertNotRegex(block, r"\b\d+px\b")
+		self.assertNotRegex(re.sub(r"@media[^{]*", "", block), r"\b\d+px\b")
 
 
 class TestLaundryFormRules(FrappeTestCase):

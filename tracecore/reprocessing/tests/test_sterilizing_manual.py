@@ -140,7 +140,7 @@ class TestSterilizingManual(FrappeTestCase):
 			(result["data_complete"], result["needs_review"], result["status"]), (1, 0, "Cycle Complete")
 		)
 		load = frappe.get_doc("Sterilization Load", self.load.name)
-		self.assertEqual(load.data_source, "Manual")
+		self.assertEqual(load.data_source, "Manual Default")
 		self.assertEqual(load.manual_confirmed_by, self.employee.name)
 		self.assertIsNotNone(load.manual_confirmed_at)
 		self.assertEqual(load.machine_report, "/files/printout.png")
@@ -184,6 +184,9 @@ class TestSterilizingManual(FrappeTestCase):
 	def test_manual_data_not_saved_for_closed_load(self):
 		frappe.db.set_value("Sterilization Load", self.load.name, "status", "Released")
 		block = self.code_of(lambda: self.save())
+		self.assertEqual((block.code, block.http_status), ("LOAD_ALREADY_RELEASED", 409))
+		frappe.db.set_value("Sterilization Load", self.load.name, "status", "Failed")
+		block = self.code_of(lambda: self.save())
 		self.assertEqual((block.code, block.http_status), ("LOAD_NOT_OPEN", 409))
 
 	def test_skewed_client_ts_is_rejected(self):
@@ -224,7 +227,7 @@ class TestSterilizingManual(FrappeTestCase):
 		frappe.db.set_value("Sterilization Load", self.load.name, "status", "Released")
 		self.assertEqual(
 			self.code_of(lambda: sterilizing.scan_for_data(self.load.name, self.machine.name, STATION)).code,
-			"LOAD_NOT_OPEN",
+			"LOAD_ALREADY_RELEASED",
 		)
 		self.assertEqual(
 			self.code_of(lambda: sterilizing.scan_for_data("ME-991231-99", self.machine.name, STATION)).code,

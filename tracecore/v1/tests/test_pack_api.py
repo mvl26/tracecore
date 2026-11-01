@@ -3,7 +3,9 @@
 Kiểm mã HTTP theo loại lỗi (D3), Audit Log `Reject`, replay idempotent giữ mã HTTP và quyền của trạm T4.
 """
 
+import base64
 import inspect
+import io
 import json
 import re
 import time
@@ -13,9 +15,10 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import frappe
+from pypdf import PdfReader
 
-from tracecore.core import gs1
-from tracecore.reprocessing import packing
+from tracecore.core import gs1, print_server
+from tracecore.reprocessing import pack_label, packing
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_assembly_record,
@@ -62,6 +65,8 @@ def call(fn, key=None, station_header=STATION, **kwargs):
 		pack_api.generate_cycle_id,
 		pack_api.reprint_label,
 		pack_api.void,
+		pack_api.label_pdf,
+		pack_api.waiting_labels_pdf,
 		printer_api.set_roll,
 	):
 		kwargs.setdefault("token", SESSION_TOKENS.get(frappe.session.user))
@@ -688,6 +693,182 @@ class TestReprintAndVoid(PackApiCase):
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "status"), "Packed")
 
 
+class TestLabelPdf(PackApiCase):
+	"""A-101: nhãn gói T4 ra PDF, lấy từ máy chủ; Print Job giữ làm vết kiểm toán."""
+
+	def packed(self, **kwargs):
+		ready = make_t4_ready_set(**kwargs)
+		return ready, call(pack_api.generate_cycle_id, **generate_args(ready))
+
+	def page(self, result):
+		return PdfReader(io.BytesIO(base64.b64decode(result["pdf_b64"]))).pages[0]
+
+	def test_pdf_has_the_real_datamatrix_and_all_preview_text(self):
+		_ready, done = self.packed()
+		cycle_id = done["pack"]["cycle_id"]
+		result = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(result["filename"], f"{cycle_id}.pdf")
+		page = self.page(result)
+		payload = frappe.db.get_value("Pack", cycle_id, "barcode_payload")
+		self.assertEqual(gs1.decode_datamatrix_png(page.images[0].data), payload)
+		text = page.extract_text()
+		pack = done["pack"]
+		expiry = frappe.utils.getdate(pack["expiry"]).strftime("%d/%m/%Y")
+		for part in (
+			cycle_id,
+			done["hri"],
+			pack["set_id"],
+			pack["set_name"],
+			pack["pack_type_name"],
+			pack["packer"],
+			pack["ci_batch"],
+			f"BOM v{pack['bom_version']}",
+			expiry,
+			"Steam",
+		):
+			self.assertIn(part, text.replace("\n", " "), msg=part)
+
+	def test_pdf_marks_the_job_and_generate_print_count_is_unchanged(self):
+		_ready, done = self.packed()
+		cycle_id, job = done["pack"]["cycle_id"], done["print"]["print_job"]
+		result = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		self.assertEqual(result["print_job"], job)
+		row = frappe.db.get_value("Print Job", job, ["status", "output_mode", "output_ref"], as_dict=True)
+		self.assertEqual(
+			(row.status, row.output_mode, row.output_ref), ("Printed", "File", result["filename"])
+		)
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 1)
+		self.assertEqual(
+			len(frappe.get_all("Print Job", filters={"ref_doctype": "Pack", "ref_name": cycle_id})), 1
+		)
+		with patch.object(print_server, "_send") as send:
+			print_server.dispatch_job(job)
+		send.assert_not_called()
+
+	def test_reprint_needs_reason_then_pdf_uses_the_new_job(self):
+		_ready, done = self.packed()
+		cycle_id = done["pack"]["cycle_id"]
+		call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		reprinted = call(pack_api.reprint_label, cycle_id=cycle_id, reason="Nhãn bị nhòe", station=STATION)
+		new_job = reprinted["print"]["print_job"]
+		self.assertNotEqual(new_job, done["print"]["print_job"])
+		result = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		self.assertEqual(result["print_job"], new_job)
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
+		self.assertEqual(frappe.db.get_value("Print Job", new_job, "reprint_reason"), "Nhãn bị nhòe")
+
+	def test_output_label_cannot_be_refetched_after_the_reprint_window(self):
+		"""Lấy lại PDF đã xuất chỉ để bù trả lời bị mất; quá 10 phút thì phải theo quy tắc in lại."""
+		_ready, done = self.packed()
+		cycle_id = done["pack"]["cycle_id"]
+		call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		again = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		self.assertIs(again["ok"], True, msg=again)
+		printed = frappe.utils.get_datetime(
+			frappe.db.get_value("Print Job", again["print_job"], "printed_at")
+		)
+		with patch.object(packing, "now_datetime", return_value=printed + timedelta(seconds=601)):
+			late = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		assert_rejection(self, late, "REPRINT_WINDOW_EXPIRED", 409)
+
+	def test_waiting_label_is_refused_and_stays_waiting(self):
+		"""F3: nhãn còn chờ máy in không ra PDF; đổi cuộn mới phát hành."""
+		_ready, done = self.packed(method="Plasma", with_printer=False)
+		result = call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
+		assert_rejection(self, result, "NO_PRINTER_FOR_METHOD", 409)
+		make_printer(STATION, make_label_items()[1])  # có máy in rồi vẫn chờ: chỉ quét cuộn mới phát hành
+		refused = call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
+		assert_rejection(self, refused, "LABEL_NOT_QUEUED", 409)
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Waiting")
+
+	def test_deactivated_printer_refuses_the_pdf(self):
+		_ready, done = self.packed()
+		deactivate_printers(STATION)
+		result = call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
+		assert_rejection(self, result, "NO_PRINTER_FOR_METHOD", 409)
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Queued")
+
+	def test_voided_pack_has_no_label(self):
+		_ready, done = self.packed()
+		cycle_id = done["pack"]["cycle_id"]
+		call(pack_api.void, cycle_id=cycle_id, reason="Torn", station=STATION)
+		result = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+		assert_rejection(self, result, "STATUS_INVALID_FOR_STATION", 409)
+
+	def test_missing_library_is_a_clear_block_and_keeps_the_pack(self):
+		_ready, done = self.packed()
+		cycle_id = done["pack"]["cycle_id"]
+		for target, error in (
+			("frappe.utils.pdf.get_pdf", OSError("No wkhtmltopdf executable found")),
+			("tracecore.core.gs1.encode_datamatrix_png", ImportError("libdmtx")),
+		):
+			with self.subTest(target=target), patch(target, side_effect=error):
+				result = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
+				assert_rejection(self, result, "LABEL_PDF_FAILED", 409)
+				self.assertIn(cycle_id, result["error"]["reason"])
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "status"), "Packed")
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Queued")
+
+	def test_unknown_cycle_id_and_wrong_station(self):
+		assert_rejection(
+			self, call(pack_api.label_pdf, cycle_id="CY-000000-0000", station=STATION), "PACK_NOT_FOUND", 404
+		)
+		result = call(pack_api.label_pdf, cycle_id="CY-000000-0000", station="TR-002")
+		self.assertEqual(result["error"]["code"], "SESSION_STATION_MISMATCH")
+
+	def test_requires_the_packing_role(self):
+		_ready, done = self.packed()
+		self.as_user("label-pdf-outsider@test.local", roles=("TC R05",))
+		with self.assertRaises(frappe.PermissionError):
+			call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
+
+	def released(self, count):
+		"""`count` nhãn chờ cùng được phát hành bởi một lần quét cuộn."""
+		steam_label, plasma_label = make_label_items()
+		make_printer(STATION, steam_label)
+		cycle_ids = []
+		for _index in range(count):
+			ready = make_t4_ready_set("Plasma", with_printer=False)
+			cycle_ids.append(call(pack_api.generate_cycle_id, **generate_args(ready))["pack"]["cycle_id"])
+		result = call(printer_api.set_roll, roll_code=make_roll(plasma_label), station=STATION)
+		return cycle_ids, [row["print_job"] for row in result["roll"]["released_jobs"]]
+
+	def test_released_jobs_become_one_pdf_with_one_page_each(self):
+		cycle_ids, jobs = self.released(2)
+		self.assertEqual(len(jobs), 2)
+		result = call(pack_api.waiting_labels_pdf, print_jobs=jobs, station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		pages = PdfReader(io.BytesIO(base64.b64decode(result["pdf_b64"]))).pages
+		self.assertEqual(len(pages), 2)
+		self.assertEqual(sorted(result["print_jobs"]), sorted(jobs))
+		self.assertEqual(result["skipped"], [])
+		decoded = {gs1.decode_datamatrix_png(page.images[0].data) for page in pages}
+		self.assertEqual(
+			decoded, {frappe.db.get_value("Pack", cycle_id, "barcode_payload") for cycle_id in cycle_ids}
+		)
+		for job in jobs:
+			self.assertEqual(frappe.db.get_value("Print Job", job, "output_mode"), "File")
+
+	def test_single_released_job_is_named_after_its_cycle_id(self):
+		cycle_ids, jobs = self.released(1)
+		result = call(pack_api.waiting_labels_pdf, print_jobs=json.dumps(jobs), station=STATION)
+		self.assertEqual(result["filename"], f"{cycle_ids[0]}.pdf")
+
+	def test_voided_or_foreign_jobs_are_skipped_not_printed(self):
+		cycle_ids, jobs = self.released(2)
+		call(pack_api.void, cycle_id=cycle_ids[0], reason="Torn", station=STATION)
+		frappe.db.set_value("Print Job", jobs[1], "station", "TR-002")
+		result = call(pack_api.waiting_labels_pdf, print_jobs=jobs, station=STATION)
+		assert_rejection(self, result, "LABEL_NOT_QUEUED", 409)
+		self.assertEqual(frappe.db.get_value("Print Job", jobs[0], "status"), "Queued")
+
+	def test_print_jobs_must_be_a_short_list_of_names(self):
+		for bad in ("not json", [1], ["PJ"] * 51, []):
+			with self.subTest(bad=bad), self.assertRaises(BadRequestError):
+				call(pack_api.waiting_labels_pdf, print_jobs=bad, station=STATION)
+
+
 class TestSetRoll(PackApiCase):
 	@bru("BRU-REP-011")
 	def test_set_roll_releases_the_waiting_label(self):
@@ -927,3 +1108,45 @@ class TestGeneratePerformance(PackApiCase):
 		p95 = sorted(durations)[18]  # 20 lần đo: phần tử thứ 19 là P95
 		print(f"\nAC-15 generate_cycle_id: P95 = {p95 * 1000:.0f} ms, max = {max(durations) * 1000:.0f} ms")
 		self.assertLess(p95, 1.0)
+
+
+class TestPackerIsTheBadgedEmployee(PackApiCase):
+	"""Người đóng gói theo thẻ đã quét, không theo user của phiên (#1841, A-81)."""
+
+	def test_generate_records_the_session_employee_on_pack_label_and_summary(self):
+		employee = frappe.db.get_value(
+			"Station Session", {"user": frappe.session.user, "station": STATION, "is_open": 1}, "employee"
+		)
+		frappe.db.set_value("Employee", employee, "employee_name", "Nhân Viên Thẻ", update_modified=False)
+		result = call(pack_api.generate_cycle_id, **generate_args(make_t4_ready_set()))
+		self.assertIs(result["ok"], True, msg=result)
+		cycle_id = result["pack"]["cycle_id"]
+		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "packed_by"), employee)
+		self.assertEqual(result["pack"]["packer"], "Nhân Viên Thẻ")
+		pack = frappe.get_doc("Pack", cycle_id)
+		self.assertEqual(pack_label.label_context(pack)["packer"], "Nhân Viên Thẻ")
+		self.assertEqual(packing.lookup(cycle_id)["packer"], "Nhân Viên Thẻ")
+
+
+class TestVoidIsLogged(PackApiCase):
+	"""Hủy Cycle ID ghi rõ người hủy và lý do (#1843 T4-07)."""
+
+	def test_void_writes_who_and_why_to_the_audit_log(self):
+		employee = frappe.db.get_value(
+			"Station Session", {"user": frappe.session.user, "station": STATION, "is_open": 1}, "employee"
+		)
+		made = call(pack_api.generate_cycle_id, **generate_args(make_t4_ready_set()))
+		cycle_id = made["pack"]["cycle_id"]
+		result = call(pack_api.void, cycle_id=cycle_id, reason="Used", note="Nhòe", station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		row = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Pack", "ref_name": cycle_id, "reason": "PackVoided"},
+			fields=["user", "station", "new_value"],
+		)
+		self.assertEqual(len(row), 1)
+		self.assertEqual((row[0].user, row[0].station), (frappe.session.user, STATION))
+		logged = frappe.parse_json(row[0].new_value)
+		self.assertEqual(
+			(logged["void_reason"], logged["note"], logged["employee"]), ("Used", "Nhòe", employee)
+		)

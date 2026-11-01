@@ -20,6 +20,7 @@ from frappe.utils import cint, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import (
+	audit,
 	client_time,
 	code_range,
 	code_registry,
@@ -29,6 +30,7 @@ from tracecore.core import (
 	step_gate,
 	zones,
 )
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -41,6 +43,7 @@ FUNCTION = "PACK"
 MAINT_ACTIONS = ("Done", "Deferred")  # option của Pack Maintenance Done.action
 # FR-M2-08.5: 10 phút kể từ khi sinh Cycle ID, đo bằng giờ server (D13) từ Pack.creation, số giây nguyên (R3)
 REPRINT_WINDOW_SECONDS = 600
+NO_LABEL_STATUSES = ("Void", "Recalled")  # gói hết hiệu lực không được ra nhãn PDF (A-101)
 SAVEPOINT = "tc_pack_generate"
 # ctx["set_unit"] của hook (D9) là các trường này trừ department
 SET_FIELDS = tuple(
@@ -88,6 +91,20 @@ def _pack_type_days(item_code):
 	)
 
 
+def check_pack_method(pack_type, method):
+	"""Loại gói khác phương pháp tiệt khuẩn của bộ → PACK_TYPE_INVALID (A-97); để trống là dùng được cho mọi phương pháp."""
+	allowed = frappe.db.get_value("Item", pack_type, "tc_compatible_method")
+	if allowed and allowed != method:
+		raise _blocked(
+			"PACK_TYPE_INVALID",
+			_("Pack type cannot be used"),
+			_("Pack type {0} is for {1}; this set is sterilized by {2}.").format(
+				pack_type, _(allowed), _(method)
+			),
+			_("Choose a pack type for the method of this set."),
+		)
+
+
 def compute_expiry(packed_on, pack_type, set_type):
 	"""Hạn dùng = ngày đóng gói + min(hạn loại gói, hạn ghi đè của loại bộ) (D4).
 
@@ -105,7 +122,7 @@ def compute_expiry(packed_on, pack_type, set_type):
 
 
 def pack_types(set_type):
-	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng và có hạn lưu > 0.
+	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng, có hạn lưu > 0, đúng phương pháp của bộ (A-97).
 
 	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days"}``; loại gói mặc định của loại bộ (nếu còn
 	dùng được) đứng đầu, các loại khác theo tên.
@@ -113,10 +130,11 @@ def pack_types(set_type):
 	rows = frappe.get_all(
 		"Item",
 		filters={"tc_item_group_cssd": "Packaging", "disabled": 0, "tc_shelf_life_days": [">", 0]},
-		fields=["name", "item_name", "tc_shelf_life_days"],
+		fields=["name", "item_name", "tc_shelf_life_days", "tc_compatible_method"],
 		order_by="item_name asc, name asc",
 	)
-	default = frappe.db.get_value("Instrument Set Type", set_type, "default_pack_type")
+	default, method = frappe.db.get_value("Instrument Set Type", set_type, ["default_pack_type", "method"])
+	rows = [row for row in rows if not row.tc_compatible_method or row.tc_compatible_method == method]
 	rows.sort(key=lambda row: row.name != default)  # ổn định: mặc định lên đầu, giữ thứ tự tên
 	return [
 		{"item": row.name, "item_name": row.item_name, "shelf_life_days": cint(row.tc_shelf_life_days)}
@@ -146,20 +164,21 @@ def resolve_ci_batch(raw, method, on_date):
 	)
 	if item.tc_item_group_cssd != "Chemical Indicator":
 		raise _invalid_lot(_("Lot {0} is not a chemical indicator lot.").format(batch.name))
-	if item.tc_ci_class not in CI_CLASSES:
-		raise _invalid_lot(
-			_("Lot {0} is a class {1} indicator; only class 5 or 6 can be used.").format(
-				batch.name, item.tc_ci_class or "-"
-			)
-		)
 	if not item.tc_compatible_method:
 		raise _invalid_lot(
 			_("The indicator item of lot {0} has no sterilization method set.").format(batch.name)
 		)
+	# nêu lý do chính trước: sai phương pháp quan trọng hơn sai loại (#1843 T4-06)
 	if item.tc_compatible_method != method:
 		raise _invalid_lot(
-			_("Lot {0} is for {1} sterilization, not {2}.").format(
+			_("Wrong sterilization method: lot {0} is a {1} indicator, this set uses {2}.").format(
 				batch.name, _(item.tc_compatible_method), _(method)
+			)
+		)
+	if item.tc_ci_class not in CI_CLASSES:
+		raise _invalid_lot(
+			_("Lot {0} is a class {1} indicator; only class 5 or 6 can be used.").format(
+				batch.name, item.tc_ci_class or "-"
 			)
 		)
 	if cint(batch.disabled):
@@ -375,7 +394,15 @@ def _with_expected_expiry(row, set_type):
 
 
 def generate(
-	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+	set_id,
+	station,
+	confirmed,
+	ci_batch,
+	pack_type,
+	maint_actions,
+	client_ts,
+	offline_cycle_id=None,
+	employee=None,
 ):
 	"""Sinh Cycle ID cho bộ tại T4 trong MỘT transaction; trả gói, HRI, ảnh DataMatrix và lệnh in.
 
@@ -391,7 +418,7 @@ def generate(
 
 	`offline_cycle_id` (FEAT-009, A-40): gói đóng khi mất mạng, phát lại sau đó — dùng mã kiosk lấy từ Code Range
 	(`code_range.claim` kiểm đúng trạm, đúng ngày `packed_at`, chưa dùng) thay cho series; `client_ts` có thể cũ
-	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`.
+	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`. `employee`: nhân viên của phiên trạm (A-81).
 	"""
 	if offline_cycle_id:
 		client_time.check_not_future(client_ts)
@@ -400,7 +427,15 @@ def generate(
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		return _generate(
-			set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id
+			set_id,
+			station,
+			confirmed,
+			ci_batch,
+			pack_type,
+			maint_actions,
+			client_ts,
+			offline_cycle_id,
+			employee,
 		)
 	except Exception:
 		# Sau deadlock, InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
@@ -410,7 +445,15 @@ def generate(
 
 
 def _generate(
-	set_id, station, confirmed, ci_batch, pack_type, maint_actions, client_ts, offline_cycle_id=None
+	set_id,
+	station,
+	confirmed,
+	ci_batch,
+	pack_type,
+	maint_actions,
+	client_ts,
+	offline_cycle_id=None,
+	employee=None,
 ):
 	unit, set_type, ctx = _open(set_id, station, for_update=True, maint_actions=maint_actions)
 	_raise_first("tracecore_pack_checks", ctx)
@@ -423,6 +466,7 @@ def _generate(
 		raise _bom_incomplete(missing)
 	packed_at = _system_time(client_ts)
 	ci = resolve_ci_batch(ci_batch, set_type.method, packed_at.date())
+	check_pack_method(pack_type, set_type.method)
 	expiry = compute_expiry(packed_at.date(), pack_type, set_type.name)
 	printer = core_print.select_printer(station, set_type.method)
 
@@ -448,6 +492,7 @@ def _generate(
 			"shelf_life_days_applied": expiry["days"],
 			"shelf_life_source": expiry["source"],
 			"packed_by_user": frappe.session.user,
+			"packed_by": employee,  # người quét thẻ ở trạm (A-81)
 			"packed_at": packed_at,
 			"client_ts": client_ts,  # ADR-003: thời điểm client lưu UTC
 			"station": station,
@@ -618,13 +663,107 @@ def reprint(cycle_id, reason, station):
 	return pack_label.pack_result(pack, pack_label.queue_label(pack, station, printer, reprint_reason=reason))
 
 
-def void(cycle_id, reason, station, note=None):
+def _check_label_output(pack, station):
+	"""Điều kiện ra PDF nhãn gói (A-101): gói còn hiệu lực, trạm còn máy in đúng loại nhãn."""
+	if pack.status in NO_LABEL_STATUSES:
+		raise _blocked(
+			"STATUS_INVALID_FOR_STATION",
+			_("Label cannot be printed"),
+			_("Pack {0} is {1}; its label can no longer be printed.").format(
+				pack.name, _(pack.status, context="Pack")
+			),
+			_("Scan the label of a valid pack, or call R02."),
+		)
+	if core_print.select_printer(station, pack.method) is None:
+		raise _blocked(
+			"NO_PRINTER_FOR_METHOD",
+			_("No printer has the right labels"),
+			_(
+				"No active printer at station {0} has {1} labels loaded. Cycle ID {2} is kept; its label is waiting."
+			).format(station, _(pack.method), pack.name),
+			_(
+				"Load the right label roll into a printer at this station, then scan the roll code (CN-#####)."
+			),
+		)
+
+
+def _check_refetch(pack, job):
+	"""Job đã xuất file chỉ lấy lại được trong cửa sổ in lại, để bù trả lời bị mất; không thành đường in lại không lý do (AC-10)."""
+	if job.status != "Printed":
+		return
+	elapsed = math.floor((now_datetime() - get_datetime(job.printed_at)).total_seconds())
+	if elapsed > REPRINT_WINDOW_SECONDS:
+		raise _blocked(
+			"REPRINT_WINDOW_EXPIRED",
+			_("Reprint window has passed"),
+			_(
+				"The label of Cycle ID {0} was output {1} minutes ago; print it again with Reprint and a reason."
+			).format(pack.name, elapsed // 60),
+			_("Use Reprint within 10 minutes of packing, or void the Cycle ID and pack the set again."),
+		)
+
+
+def label_pdf(cycle_id, station):
+	"""PDF nhãn của gói cho T4 (A-101): Print Job mới nhất của gói ở trạm, xong ghi `Printed`/`File`; trả ``pdf_b64``, ``filename``, ``print_job``.
+
+	Nhãn còn `Waiting` (F3) → LABEL_NOT_QUEUED: chỉ quét cuộn đúng loại mới phát hành; in lại vẫn qua `reprint` có lý do.
+	"""
+	_require_station(station)
+	pack = frappe.get_doc("Pack", _pack_name(cycle_id))
+	_check_label_output(pack, station)
+	job = core_print.label_output_job("Pack", pack.name, station)
+	_check_refetch(pack, job)
+	filename = f"{pack.name}.pdf"
+	result = core_label_pdf.encode(pack_label.pack_pdf(pack), filename)
+	core_print.mark_file_output(job.name, filename)
+	return {**result, "print_job": str(job.name)}
+
+
+def waiting_labels_pdf(print_jobs, station):
+	"""Một file PDF cho các nhãn vừa phát hành (đổi cuộn, phát lại offline), mỗi nhãn một trang (A-101).
+
+	Job không in được (của trạm khác, gói đã hủy, hết cửa sổ…) bị bỏ qua và nêu trong ``skipped``; không còn nhãn nào →
+	LABEL_NOT_QUEUED. Chỉ ghi `Printed`/`File` sau khi có đủ PDF, lỗi sinh PDF thì mọi job giữ nguyên.
+	"""
+	_require_station(station)
+	jobs, skipped = core_print.file_output_jobs(print_jobs, "Pack", station)
+	printable = []
+	for job in jobs:
+		pack = frappe.get_doc("Pack", job.ref_name)
+		try:
+			_check_label_output(pack, station)
+			_check_refetch(pack, job)
+		except BlockedError:
+			skipped.append(str(job.name))
+			continue
+		printable.append((job, pack))
+	if not printable:
+		raise _blocked(
+			"LABEL_NOT_QUEUED",
+			_("Label is not ready to print"),
+			_("None of the {0} released label(s) can be printed at this station.").format(len(print_jobs)),
+			_("Reprint from the pack, or call R02."),
+		)
+	pdf = core_label_pdf.merge([pack_label.pack_pdf(pack) for _job, pack in printable])
+	first = printable[0][1].name
+	filename = f"{first}.pdf" if len(printable) == 1 else f"{first}-{len(printable)}.pdf"
+	for job, _pack in printable:
+		core_print.mark_file_output(job.name, filename)
+	return {
+		**core_label_pdf.encode(pdf, filename),
+		"print_jobs": [str(job.name) for job, _pack in printable],
+		"skipped": skipped,
+	}
+
+
+def void(cycle_id, reason, station, note=None, employee=None):
 	"""Hủy hiệu lực Cycle ID tại T4 (D12): gói Void, mã bị vô hiệu trong Code Registry, cổng T4 Không đạt.
 
 	`reason` phải là một option `void_reason` của Pack (REASON_REQUIRED); chỉ gói Packed (PACK_NOT_VOIDABLE).
 	Nhãn còn chờ in (Print Job Waiting) của gói chuyển Failed để `set_roll` không bao giờ in mã đã hủy.
 	T4 Fail (``redo_count + 1``, Set Unit → Reprocess) khi gói thuộc chu trình hiện hành của bộ; bỏ Cycle ID hiện
-	hành của bộ khi đó chính là mã bị hủy. Trả ``{"cycle_id", "set_id", "status", "void_reason"}``.
+	hành của bộ khi đó chính là mã bị hủy. Audit Log ghi người hủy (`employee` của phiên trạm) và lý do.
+	Trả ``{"cycle_id", "set_id", "status", "void_reason"}``.
 	"""
 	_require_station(station)
 	reasons = [o for o in (frappe.get_meta("Pack").get_field("void_reason").options or "").split("\n") if o]
@@ -665,6 +804,14 @@ def void(cycle_id, reason, station, note=None):
 		step_gate.record(unit.name, STEP, "Fail", "Pack", pack.name, station)
 	if unit.active_cycle_id == pack.name:
 		step_gate.release_cycle(unit.name)
+	audit.log(
+		"Update",
+		"Pack",
+		pack.name,
+		new={"event": "PackVoided", "void_reason": reason, "note": note, "employee": employee},
+		reason="PackVoided",
+		station=station,
+	)
 	return {"cycle_id": pack.name, "set_id": unit.name, "status": pack.status, "void_reason": reason}
 
 

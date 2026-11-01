@@ -111,6 +111,7 @@ def auth_shell():
 			window.tcErrorTitle = error => error.title;
 			window.tcGuideButton = () => '';
 			window.tcWarningsHtml = () => '';
+			window.tcBindScanLabel = () => {};
 		} """,
 			template,
 		)
@@ -144,7 +145,7 @@ def test_card_login_identity_body_token_and_logout(page, auth_shell, viewport):
 	expect(page.locator(".tc-work")).to_be_hidden()
 	login(page)
 	expect(page.locator(".tc-session")).to_contain_text("Operator")
-	expect(page.locator(".tc-session")).to_contain_text("TR-004")
+	expect(page.locator(".tc-station-code")).to_have_text("TR-004")
 	expect(page.locator(".tc-session")).to_contain_text("2099")
 	page.locator("#tc-scan-input").fill("SET-TEST")
 	page.locator("#tc-scan-input").press("Enter")
@@ -156,6 +157,8 @@ def test_card_login_identity_body_token_and_logout(page, auth_shell, viewport):
 	assert "browser-private-" not in page.content()
 	assert page.evaluate("localStorage.length") == 0
 	assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+	if page.locator(".tc-menu-btn").is_visible():  # A-92: PDA để dòng phiên trong menu
+		page.locator(".tc-menu-btn").click()
 	page.locator("[data-action='logout']").click()
 	expect(page.locator(".tc-work")).to_be_hidden()
 	expect(page.locator("#tc-card-input")).to_be_focused()
@@ -462,9 +465,9 @@ def test_replaced_page_disposes_old_reader_listeners_and_timer(page, auth_shell)
 def test_roles_are_translated_on_login_restore_and_cleared_at_logout(page, auth_shell):
 	auth_shell(page)
 	login(page)
-	expect(page.locator(".tc-session-roles")).to_have_text("Roles: Translated packing role")
+	expect(page.locator(".tc-session-roles")).to_have_text("Role: Translated packing role")
 	auth_shell(page)
-	expect(page.locator(".tc-session-roles")).to_have_text("Roles: Translated packing role")
+	expect(page.locator(".tc-session-roles")).to_have_text("Role: Translated packing role")
 	page.locator("[data-action='logout']").click()
 	expect(page.locator(".tc-session-roles")).to_have_text("")
 

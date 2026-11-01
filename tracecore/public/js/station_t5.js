@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
 /* global uuid4, clientTs, esc */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -8,13 +8,22 @@
 // gắn bearer trong body. Màn hẹp (≤ 480 px) chuyển surface sang PDA: một cột, nút full-width.
 
 const T5_COMPLETE_CODE = "HOAN-THANH-NAP";
-const T5_AGENT_URL = "http://127.0.0.1:8765/print";
-const T5_AGENT_TIMEOUT_MS = 5000;
 const T5_COMPLETE = "tracecore.v1.load.complete";
 const T5_SAVE = "tracecore.v1.load.manual_data";
 const T5_PDA_QUERY = "(max-width: 480px)";
+const T5_LOOKUP = "tracecore.v1.lookup.batches";
 // từ chối làm mẻ đang nhập dữ liệu không còn dùng được → bỏ trạng thái nhập để quét mẻ khác
-const T5_DATA_RESET_CODES = ["LOAD_NOT_FOUND", "LOAD_NOT_OPEN", "STATION_WRONG_STEP"];
+const T5_DATA_RESET_CODES = [
+	"LOAD_NOT_FOUND",
+	"LOAD_NOT_OPEN",
+	"LOAD_ALREADY_RELEASED",
+	"STATION_WRONG_STEP",
+];
+
+// Mẻ đã giải phóng là thông báo, không phải lỗi: không tô đỏ, không nút gọi giám sát
+function t5RejectNotice(error) {
+	return { variant: error.code === "LOAD_ALREADY_RELEASED" ? "info" : "error", ...error };
+}
 
 function t5Date(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
@@ -73,6 +82,15 @@ function t5Kind(raw) {
 	return { kind: "pack", id: String(raw || "").trim() };
 }
 
+// Mã bộ/gói quét ở bước cần mã mẻ (ticket 1819), dùng chung tab dữ liệu chu trình, dỡ mẻ, đọc BI
+function t5SetCodeNotice(raw) {
+	return {
+		title: __("This is an instrument set code - please scan the load code (ME-...)"),
+		reason: __("Code {0} is a set or pack code; unloading works on the whole load.", [raw]),
+		action: __("Scan the QR code on the sterilization load label."),
+	};
+}
+
 function t5GateLabel(step) {
 	return (window.tcGateLabels || {})[step] || step;
 }
@@ -88,6 +106,59 @@ function t5IndicatorLabel(code) {
 	);
 }
 
+// A-84: trạng thái máy theo mẻ chưa dỡ, dùng chung ở mọi tab của T5
+function t5MachineState(status, load, unloaded) {
+	if (unloaded) return __("Waiting for release - {0}", [load]);
+	return status === "Running"
+		? __("Running - {0}", [load])
+		: status === "Cycle Complete"
+		? __("Waiting to unload - {0}", [load])
+		: load;
+}
+
+// A-108: trạm có chức năng nạp luôn mở ở bước 1, số mẻ chờ nằm trên thanh bước. Trạm chỉ dỡ thì chọn theo dữ liệu mẻ (A-103).
+function t5DefaultStep({ draft, unload = [], bi = [], canLoad = true, canUnload = true }) {
+	if (draft || canLoad) return 1;
+	if (canUnload) {
+		if (unload.some((row) => row.status !== "Running" || row.unloaded)) return 2;
+		if (bi.length) return 3;
+		if (unload.length) return 2;
+	}
+	return canLoad ? 1 : 2;
+}
+
+// Thanh bước 1-2-3 (A-103): luôn có chữ và ký hiệu, bấm được để quay lại bước trước hoặc sang bước có mẻ đang chờ
+function t5StepsHtml(current, hub = {}) {
+	const can = (name) => !hub[name] || hub[name]();
+	const queues = hub.queues;
+	const steps = [
+		{ label: __("Load sterilizer"), enabled: can("canLoad") },
+		{ label: __("Unload and release"), enabled: true, count: queues && queues.unload.length },
+		{ label: __("Read BI"), enabled: can("canUnload"), count: queues && queues.bi.length },
+	];
+	const buttons = steps
+		.map((step, index) => {
+			const number = index + 1;
+			const state =
+				number === current ? "is-current" : number < current ? "is-done" : "is-pending";
+			return `<button type="button" class="tc-t5-step ${state}" data-action="t5-step" data-step="${number}"${
+				number === current ? ' aria-current="step"' : ""
+			}${step.enabled ? "" : " disabled"}>${
+				number < current ? '<span aria-hidden="true">&#10003; </span>' : ""
+			}${number}. ${esc(step.label)}${step.count ? ` (${esc(step.count)})` : ""}</button>`;
+		})
+		.join("");
+	return `<div class="tc-t5-steps" data-region="t5-steps" role="group" aria-label="${esc(
+		__("Sterilization load")
+	)}">${buttons}<button type="button" class="tc-btn tc-btn-secondary tc-t5-daily" data-action="t5-daily-test">${esc(
+		__("Daily test")
+	)}</button></div>`;
+}
+
+function t5InstructionHtml(text) {
+	return `<p class="tc-t5-instruction">${esc(text)}</p>`;
+}
+
 class T5Load {
 	constructor(station) {
 		this.station = station;
@@ -98,6 +169,10 @@ class T5Load {
 		this.offline = false;
 		this.overview = null; // {running: mẻ đang chạy}
 		this.overviewBusy = false;
+		this.queues = null; // {unload, bi}: mẻ theo trạng thái, nguồn của bước mặc định và danh sách chọn nhanh
+		this.queuesBusy = false;
+		this.queuesError = false;
+		this.stepSettled = false; // đã vào bước mặc định hoặc người dùng đã thao tác
 		this.reset();
 		this.load = this.restoreLoad();
 		this.result.addEventListener("change", (event) => this.onChange(event));
@@ -137,7 +212,18 @@ class T5Load {
 		this.offline = false;
 		this.overview = null;
 		this.overviewBusy = false;
+		this.queues = null;
+		this.queuesBusy = false;
+		this.queuesAgain = false;
+		this.queuesError = false;
+		this.stepSettled = false;
 		this.reset();
+		if (this.releaseScreen) {
+			this.releaseScreen.pending = null;
+			this.releaseScreen.busy = null;
+			this.releaseScreen.offline = false;
+			this.releaseScreen.reset();
+		}
 		this.saveLoad();
 		this.input.placeholder = __("Scan Set ID...");
 		this.input.setAttribute("aria-label", __("Scan Set ID"));
@@ -173,6 +259,7 @@ class T5Load {
 		this.input.value = "";
 		if (!raw) return this.station.focus();
 		if (this.station.isOffline()) return this.station.setOffline(true);
+		this.stepSettled = true;
 		if (this.mode === "data") return this.dataScan(raw);
 		if (raw.toUpperCase() === T5_COMPLETE_CODE) return this.complete();
 		const code = t5Kind(raw);
@@ -219,7 +306,9 @@ class T5Load {
 				raw,
 				equipment: this.load.machine.name,
 				program: program.program_code,
-				queued: this.load.packs.map((row) => row.cycle_id),
+				queued: this.load.packs
+					.filter((row) => !row.incompatible)
+					.map((row) => row.cycle_id),
 				station: this.station.station,
 			},
 			(res) => this.onPack(res)
@@ -286,7 +375,9 @@ class T5Load {
 		const pending = this.pending;
 		if (pending) return this.request(pending.method, pending.args, pending.onOk);
 		this.notice = null;
-		this.loadOverview(true);
+		this.queuesError = false;
+		this.loadQueues(true);
+		if (this.mode === "data") this.loadOverview(true);
 		this.show();
 	}
 
@@ -332,7 +423,7 @@ class T5Load {
 	reject(error, method) {
 		if (this.data && T5_DATA_RESET_CODES.includes(error.code) && method !== T5_COMPLETE)
 			this.data = null;
-		this.notice = { variant: "error", ...error };
+		this.notice = t5RejectNotice(error);
 		this.show();
 	}
 
@@ -347,31 +438,17 @@ class T5Load {
 		this.load = {
 			machine: res.equipment,
 			programs,
-			program: programs.length ? programs[0].program_code : null,
+			// A-83: chương trình mặc định của máy, không có thì chương trình đầu (danh sách không có chương trình test)
+			program:
+				res.equipment.default_program ||
+				(programs.length ? programs[0].program_code : null),
 			priority: false,
 			packs: [],
 		};
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		const max = res.equipment.max_packs;
-		this.notice = {
-			variant: "ok",
-			title: __("Sterilizer {0} scanned · {1}", [
-				res.equipment.name,
-				res.equipment.equipment_name,
-			]),
-			reason: [
-				max
-					? __("Up to {0} pack(s) per load.", [max])
-					: __("Capacity not set for this sterilizer."),
-				res.equipment.is_connected
-					? __(
-							"API connected - automatic data comes with FEAT-024; enter data by hand with confirmation."
-					  )
-					: __("Not connected - enter the cycle data by hand with confirmation."),
-			].join(" "),
-		};
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (ticket 1844)
 		this.saveLoad();
 		this.show();
 	}
@@ -387,6 +464,7 @@ class T5Load {
 				cycle_id: res.cycle_id,
 				set_id: res.set_id,
 				set_name: res.set_name,
+				department_name: res.department_name,
 				method: res.method,
 				pack_type_name: res.pack_type_name || res.pack_type,
 				expiry: res.expiry,
@@ -395,7 +473,7 @@ class T5Load {
 			this.notice = {
 				variant: "ok",
 				title: __("Scanned {0} into sterilizer {1} ({2} pack(s))", [
-					res.cycle_id,
+					tcPackLabel(res),
 					this.load.machine.name,
 					this.load.packs.length,
 				]),
@@ -412,6 +490,55 @@ class T5Load {
 		this.load.packs = this.load.packs.filter((row) => row.cycle_id !== cycleId);
 		this.saveLoad();
 		this.notice = { variant: "info", title: __("Removed {0} from the list", [cycleId]) };
+		this.show();
+		// bỏ một gói có thể trả lại dung tích cho gói đang bị đánh dấu
+		if (this.load.packs.some((row) => row.incompatible)) this.recheckPacks();
+	}
+
+	// Đổi chương trình (ticket 1844): giữ gói đã quét, kiểm lại từng gói; gói không hợp đánh dấu đỏ kèm lý do
+	recheckPacks() {
+		const program = this.programRow();
+		if (!this.load || !this.load.packs.length || !program) return;
+		this.load.rechecking = true;
+		this.saveLoad();
+		this.request(
+			"tracecore.v1.load.recheck",
+			{
+				equipment: this.load.machine.name,
+				program: program.program_code,
+				packs: this.load.packs.map((row) => row.cycle_id),
+				station: this.station.station,
+			},
+			(res) => this.onRecheck(res)
+		);
+		this.show();
+	}
+
+	onRecheck(res) {
+		if (!this.load) return;
+		const rows = {};
+		(res.packs || []).forEach((row) => {
+			rows[row.cycle_id] = row;
+		});
+		this.load.packs.forEach((pack) => {
+			const row = rows[pack.cycle_id];
+			pack.incompatible = row && !row.ok ? { code: row.code, reason: row.reason } : null;
+		});
+		this.load.rechecking = false;
+		const bad = this.load.packs.filter((row) => row.incompatible).length;
+		this.notice = bad
+			? {
+					variant: "warn",
+					title: __("{0} pack(s) do not fit the new program", [bad]),
+					action: __("Remove the packs marked in red, or choose another program."),
+			  }
+			: {
+					variant: "ok",
+					title: __("All {0} pack(s) still fit the new program", [
+						this.load.packs.length,
+					]),
+			  };
+		this.saveLoad();
 		this.show();
 	}
 
@@ -432,6 +559,10 @@ class T5Load {
 		if (!this.load) out.push(__("sterilizer"));
 		if (!this.load || !this.load.packs.length) out.push(__("at least 1 pack"));
 		if (this.load && !this.programRow()) out.push(__("program"));
+		if (this.load && this.load.rechecking)
+			out.push(__("check of the packs against the program"));
+		if (this.load && this.load.packs.some((row) => row.incompatible))
+			out.push(__("removing the packs marked in red"));
 		return out;
 	}
 
@@ -467,47 +598,153 @@ class T5Load {
 				this.load = null;
 				this.saveLoad();
 				this.notice = null;
-				this.loadOverview(true);
+				this.stepSettled = true;
+				// A-103: nạp xong thì sang bước dỡ với đúng mẻ này; trạm chỉ có chức năng nạp ở lại, thẻ mã mẻ vẫn hiện
+				if (this.canUnload())
+					this.openRelease({
+						load: res.load,
+						equipment: load.machine.name,
+						reason: __("Load known from the previous step, no scan"),
+					});
+				else this.loadQueues(true);
 				this.handlePrint(res.print);
 			}
 		);
 	}
 
-	async sendToAgent(job) {
-		if (!this.station.session) return false;
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), T5_AGENT_TIMEOUT_MS);
-		try {
-			const response = await fetch(T5_AGENT_URL, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					zpl: job.zpl,
-					print_job: job.print_job,
-					printer: job.printer,
-				}),
-				signal: controller.signal,
-			});
-			return response.ok;
-		} catch (error) {
-			return false;
-		} finally {
-			clearTimeout(timer);
-		}
+	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; chưa có máy in thì giữ Waiting và cảnh báo
+	async handlePrint(print) {
+		this.printNote = { kind: print && print.status === "Queued" ? "ready" : "waiting" };
+		this.show();
 	}
 
-	async handlePrint(print) {
+	async printLabelPdf() {
+		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		if (print && print.status === "Queued" && print.zpl) {
-			this.printNote = { kind: "sending" };
-			this.show();
-			const ok = await this.sendToAgent(print);
-			if (version !== this.station.sessionVersion) return;
-			this.printNote = { kind: ok ? "sent" : "agent-failed" };
-		} else {
-			this.printNote = { kind: "waiting" };
-		}
+		const printed = Boolean(this.printNote && this.printNote.printed);
+		this.printNote = { kind: "sending", printed };
 		this.show();
+		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.load.label_pdf", {
+			load: this.done.load,
+			station: this.station.station,
+		});
+		if (result.ended || version !== this.station.sessionVersion) return;
+		this.printNote = result.ok
+			? { kind: "pdf", filename: result.filename, printed: true }
+			: { kind: "pdf-failed", reason: result.reason, printed };
+		this.show();
+	}
+
+	// ---- các bước (A-103) ----
+	async loadQueues(force = false) {
+		if (!this.station.session || this.station.isOffline()) return;
+		if (this.queuesBusy) {
+			if (force) this.queuesAgain = true;
+			return;
+		}
+		if (this.queues && !force) return;
+		const version = this.station.sessionVersion;
+		this.queuesBusy = true;
+		const read = (purpose) =>
+			this.station.rpc(T5_LOOKUP, {
+				station: this.station.station,
+				screen: "sterilize",
+				purpose,
+				page_length: 50,
+				client_ts: clientTs(),
+			});
+		let failed = false;
+		try {
+			const [unload, bi] = await Promise.all([read("unload"), read("bi")]);
+			if (version !== this.station.sessionVersion) return;
+			if (unload && unload.ok && bi && bi.ok) {
+				this.queues = { unload: unload.items || [], bi: bi.items || [] };
+				this.queuesError = false;
+			} else failed = true;
+		} catch (error) {
+			if (error.sessionEnded || version !== this.station.sessionVersion) return;
+			failed = true;
+		} finally {
+			this.queuesBusy = false;
+		}
+		if (failed) this.queuesError = true;
+		if (this.queuesAgain) {
+			this.queuesAgain = false;
+			return this.loadQueues(true);
+		}
+		this.onQueues();
+	}
+
+	onQueues() {
+		if (!this.stepSettled && this.queues) {
+			this.stepSettled = true;
+			const idle = !this.load && !this.done && !this.notice && !this.busy && !this.data;
+			const step = t5DefaultStep({
+				draft: Boolean(this.load),
+				unload: this.queues.unload,
+				bi: this.queues.bi,
+				canLoad: this.canLoad(),
+				canUnload: this.canUnload(),
+			});
+			if (idle && step !== 1 && this.station.screen === this) return this.goStep(step);
+		}
+		this.repaintSteps();
+	}
+
+	// Không vẽ lại cả màn khi người dùng đang nhập: PIN, thẻ, chương trình giữ nguyên, chỉ cập nhật số mẻ trên thanh bước
+	repaintSteps() {
+		const screen = this.station.screen || this;
+		const release = this.releaseScreen;
+		if (screen !== this && screen !== release) return;
+		const typing =
+			screen === this ? this.load || this.form || this.busy : release.ctx || release.busy;
+		if (!typing) return screen.show();
+		const node = this.result.querySelector('[data-region="t5-steps"]');
+		if (node) node.outerHTML = t5StepsHtml(screen.currentStep(), this);
+	}
+
+	currentStep() {
+		return this.mode === "data" ? 2 : 1;
+	}
+
+	goStep(step, options = {}) {
+		if (this.busy || (this.releaseScreen && this.releaseScreen.busy)) return;
+		this.stepSettled = true;
+		if (step === 1) return this.openLoadStep(options.notice);
+		if (!this.canUnload()) {
+			if (step === 2) this.setMode("data");
+			return;
+		}
+		this.openRelease({ ...options, mode: step === 3 ? "bi" : "unload" });
+	}
+
+	openLoadStep(notice = null) {
+		if (!this.canLoad()) return;
+		this.station.screen = this;
+		this.offline = this.station.isOffline();
+		this.mode = "load";
+		this.data = null;
+		this.form = null;
+		this.lookup = null;
+		if (this.canUnload()) this.done = null; // thẻ mã mẻ đã hiện ở bước dỡ
+		this.notice = notice;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
+		this.loadQueues(true);
+		this.show();
+		this.station.focus(true);
+	}
+
+	// Dữ liệu chu trình trong bước 2: mẻ đã biết từ màn dỡ, máy chủ vẫn kiểm cặp mã (Q10)
+	openDataKnown(load, equipmentRaw, loadRaw) {
+		this.station.screen = this;
+		this.offline = this.station.isOffline();
+		this.mode = "data";
+		this.data = { load, equipmentRaw, loadRaw, known: true };
+		this.form = null;
+		this.notice = null;
+		this.lookup = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
+		return this.fetchContext();
 	}
 
 	// ---- bảng phụ: mẻ đang chạy ----
@@ -517,18 +754,19 @@ class T5Load {
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
 		try {
-			const res = await this.station.rpc("tracecore.v1.load.overview", {
+			const res = await this.station.rpcRead("tracecore.v1.load.overview", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});
 			if (version !== this.station.sessionVersion) return;
-			if (res && res.ok) this.overview = { running: res.running || [] };
+			this.overview = { running: (res && res.ok && res.running) || [] };
 		} catch (error) {
 			if (error.sessionEnded) return;
+			this.overview = { running: [] }; // không tải lại liên tục khi vai trò không xem được; Thử lại tải lại
 		} finally {
 			this.overviewBusy = false;
 		}
-		if (version === this.station.sessionVersion && !this.busy) this.show();
+		if (version === this.station.sessionVersion && !this.busy && !this.form) this.show();
 	}
 
 	// ---- nhập dữ liệu chu trình ----
@@ -539,6 +777,7 @@ class T5Load {
 		this.notice = null;
 		this.lookup = null;
 		if (mode === "load") this.data = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.loadOverview(true);
 		this.show();
 		// nút đổi chế độ vừa bị render lại: trả focus về ô quét để mã quét ngay sau đó không bị mất
@@ -559,8 +798,27 @@ class T5Load {
 		this.station.focus(true);
 	}
 
+	// Chọn tay ở tab Dữ liệu chu trình (A-87): danh sách là mẻ còn mở; tab Nạp máy vẫn chọn gói
+	pickContext() {
+		if (this.mode !== "data") return null;
+		const raw = this.data && !this.data.saved && this.data.equipmentRaw;
+		return {
+			label: __("Loads"),
+			purpose: "unload",
+			equipment: raw ? t5Kind(raw).id : null,
+		};
+	}
+
+	pickCodes(item) {
+		const current = this.data;
+		if (current && current.load === item.id && current.equipmentRaw) return [item.id];
+		return [item.id, item.equipment];
+	}
+
 	dataScan(raw) {
 		const code = t5Kind(raw);
+		if (code.kind === "pack" && tcIsSetOrPackCode(raw))
+			return this.blocked(t5SetCodeNotice(raw));
 		if (code.kind === "pack") {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -630,9 +888,14 @@ class T5Load {
 		return this.request("tracecore.v1.load.data_context", this.dataArgs(), (res) => {
 			const context = res.load;
 			this.data.context = context;
+			// máy không đẩy dữ liệu: điền sẵn theo chương trình, KTV kiểm tra và sửa được (A-89)
+			const prefill = context.prefill || {};
 			const values = {};
+			Object.entries(prefill.values || {}).forEach(([name, value]) => {
+				values[name] = window.tcDecimal(value);
+			});
 			(context.params || []).forEach((row) => {
-				values[row.parameter_name] = String(row.value);
+				values[row.parameter_name] = window.tcDecimal(row.value);
 			});
 			const alerts = context.machine_alerts && context.machine_alerts.text;
 			this.form = {
@@ -640,23 +903,29 @@ class T5Load {
 				alerts: alerts ? "yes" : "no",
 				alertsText: alerts || "",
 				started: t5LocalInput(context.started_at),
-				ended: t5LocalInput(context.ended_at) || t5NowInput(),
+				ended:
+					t5LocalInput(context.ended_at) ||
+					t5LocalInput(prefill.ended_at) ||
+					t5NowInput(),
+				chemicalName: prefill.chemical_name || prefill.chemical || "",
 				file: context.machine_report || "",
 				reason: context.manual_reason || "",
 				uploading: false,
 				confirmed: false,
 				card: "",
 			};
-			this.notice = {
-				variant: "ok",
-				title: __("Scanned sterilizer QR {0} and load QR {1}", [
-					context.equipment.name,
-					context.load,
-				]),
-				reason: __("The data below is attached to all {0} pack(s) of the load.", [
-					context.packs.length,
-				]),
-			};
+			this.notice = this.data.known
+				? null
+				: {
+						variant: "ok",
+						title: __("Scanned sterilizer QR {0} and load QR {1}", [
+							context.equipment.name,
+							context.load,
+						]),
+						reason: __("The data below is attached to all {0} pack(s) of the load.", [
+							context.packs.length,
+						]),
+				  };
 			this.show();
 		});
 	}
@@ -694,9 +963,10 @@ class T5Load {
 				reason: form.reason || null,
 			},
 			(res) => {
-				this.data = { load: this.data.load, context: this.data.context, saved: res };
+				const known = this.data;
+				this.data = { load: known.load, context: known.context, saved: res };
 				this.form = null;
-				this.notice = {
+				const notice = {
 					variant:
 						res.needs_review || (res.duration && res.duration.abnormal)
 							? "warn"
@@ -704,13 +974,26 @@ class T5Load {
 					title: __("Manual cycle data saved and confirmed"),
 					reason: [
 						res.needs_review
-							? __("Some values are outside the program range: Needs review by R02.")
+							? __(
+									"Some values are outside the program range: a Pass needs head of KSNK approval."
+							  )
 							: "",
 						this.durationText(res.duration),
 					]
 						.filter(Boolean)
 						.join(" · "),
 				};
+				// A-103: lưu xong về đúng mẻ ở bước dỡ, không phải bấm thêm hay quét lại
+				if (known.known && this.canUnload()) {
+					this.data = null;
+					return this.openRelease({
+						load: known.load,
+						equipment: known.equipmentRaw,
+						loadRaw: known.loadRaw,
+						notice,
+					});
+				}
+				this.notice = notice;
 				this.loadOverview(true);
 				this.show();
 			}
@@ -780,11 +1063,15 @@ class T5Load {
 		const data = (button && button.dataset) || {};
 		const handlers = {
 			retry: () => this.retry(),
-			"t5-mode": () => this.setMode(data.mode),
-			"t5-release": () => this.openRelease(),
-			"t5-daily-test": () => this.openDailyTest(),
+			"t5-step": () => this.goStep(Number(data.step)),
+			"t5-daily-test": () => {
+				this.openDailyTest();
+				if (this.dailyTestScreen) this.dailyTestScreen.back = this;
+			},
 			"t5-remove": () => this.removePack(data.pack),
+			"t5-recheck": () => this.recheckPacks(),
 			"t5-complete": () => this.complete(),
+			"t5-label-pdf": () => this.printLabelPdf(),
 			"t5-cancel": () => this.cancelLoad(),
 			"t5-open-data": () => this.openData(data.load),
 			"t5-save-data": () => this.saveData(),
@@ -792,6 +1079,7 @@ class T5Load {
 				this.data = null;
 				this.form = null;
 				this.notice = null;
+				if (this.canUnload()) return this.goStep(2);
 				this.show();
 			},
 		};
@@ -803,11 +1091,10 @@ class T5Load {
 	onChange(event) {
 		const target = event.target;
 		if (target.id === "tc-t5-program" && this.load) {
-			// đổi chương trình xóa danh sách đã quét: tương thích phải kiểm lại theo chương trình mới (mockup t5)
 			this.load.program = target.value;
-			this.load.packs = [];
 			this.saveLoad();
 			this.show();
+			this.recheckPacks();
 		} else if (target.id === "tc-t5-priority" && this.load) {
 			this.load.priority = target.checked;
 			this.saveLoad();
@@ -852,24 +1139,42 @@ class T5Load {
 
 	show() {
 		if (!this.station.session) return;
+		// câu trả lời muộn (nhãn PDF, danh sách mẻ) khi màn đang ở bước khác của T5, hoặc ở Kiểm tra hằng ngày
+		if (this.station.screen && this.station.screen !== this) {
+			if (this.station.screen === this.releaseScreen) this.releaseScreen.show();
+			return;
+		}
 		this.updatePlaceholder();
-		if (!this.overview) this.loadOverview();
+		if (!this.queues && !this.queuesError) this.loadQueues();
+		if (!this.overview && this.mode === "data") this.loadOverview();
 		const body = this.mode === "data" ? this.dataHtml() : this.loadHtml();
 		this.station.setState(
 			this.viewState(),
 			`<div class="tc-t2 tc-t5" data-mode="${esc(this.mode)}">
-				${this.modeHtml()}
+				${t5StepsHtml(this.currentStep(), this)}
+				${t5InstructionHtml(this.instructionText())}
 				<div data-region="notice">${this.noticeHtml()}</div>
 				${this.lookup ? this.lookupHtml(this.lookup) : ""}
 				${body}
-				${this.mode === "load" ? this.runningHtml() : ""}
 				${this.mode === "load" ? this.loadBarHtml() : ""}
 			</div>`
 		);
 		const error = Boolean(this.notice && this.notice.variant === "error");
 		this.station.form.classList.toggle("is-error", error);
-		if (error && this.shownNotice !== this.notice) window.scrollTo({ top: 0 });
-		this.shownNotice = this.notice;
+		this.station.revealNotice(this.notice);
+	}
+
+	instructionText() {
+		if (this.mode === "data") {
+			return this.data && this.data.load
+				? __("Load {0}: enter the cycle data, then confirm.", [this.data.load])
+				: __("Scan the sterilizer QR code, then the load QR code.");
+		}
+		return this.load
+			? __("Scan each pack into sterilizer {0}, then press Complete loading.", [
+					this.load.machine.name,
+			  ])
+			: __("Scan the sterilizer QR code, then scan each pack.");
 	}
 
 	updatePlaceholder() {
@@ -894,27 +1199,6 @@ class T5Load {
 
 	canUnload() {
 		return this.stationHas("STERI_UNLOAD");
-	}
-
-	modeHtml() {
-		const open = (this.overview && this.overview.running.length) || 0;
-		const chip = (mode, label) =>
-			`<button type="button" class="tc-chip" data-action="t5-mode" data-mode="${mode}"
-				aria-pressed="${this.mode === mode ? "true" : "false"}">${esc(label)}</button>`;
-		return `<div class="tc-chips" role="group" aria-label="${esc(__("Sterilization load"))}">
-			${this.canLoad() ? chip("load", __("Load sterilizer")) : ""}
-			${chip("data", __("Cycle data ({0} open)", [open]))}
-			${
-				this.canUnload()
-					? `<button type="button" class="tc-chip" data-action="t5-release" aria-pressed="false">${esc(
-							__("Unload and release")
-					  )}</button>`
-					: ""
-			}
-			<button type="button" class="tc-chip" data-action="t5-daily-test" aria-pressed="false">${esc(
-				__("Daily test")
-			)}</button>
-		</div>`;
 	}
 
 	alertHtml(notice, buttons = "") {
@@ -985,7 +1269,9 @@ class T5Load {
 			// lỗi kỹ thuật (mạng, máy chủ) có Thử lại; từ chối nghiệp vụ chỉ có kết quả → lý do → hành động
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -1031,10 +1317,9 @@ class T5Load {
 		const load = this.load;
 		if (!load) {
 			return `${html}<section class="tc-t4-block tc-t2-start">
-				<h3>${esc(__("Load sterilizer - scan the sterilizer QR code first, then scan each pack"))}</h3>
 				<p class="tc-empty">${esc(
 					__(
-						"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004)."
+						"Only packs that finished packing and fit the program of this sterilizer are accepted."
 					)
 				)}</p>
 			</section>`;
@@ -1051,9 +1336,9 @@ class T5Load {
 		const max = load.machine.max_packs;
 		const rows = load.packs
 			.map(
-				(row) => `<li class="tc-t5-pack">
-					<div class="tc-t5-pack-id"><span class="tc-mono">${esc(row.cycle_id)}</span>
-						<span>${esc(row.set_id)} · ${esc(row.set_name || "-")}</span></div>
+				(row) => `<li class="tc-t5-pack${row.incompatible ? " is-bad" : ""}">
+					<div class="tc-t5-pack-id"><span>${tcPackLabelHtml(row)}</span>
+						<span class="tc-mono">${esc(row.set_id)}</span></div>
 					<div>${esc(__(row.method, null, "Pack"))} · ${esc(row.pack_type_name || "-")} · ${esc(
 					__("Expires {0}", [t5Date(row.expiry)])
 				)}</div>
@@ -1062,6 +1347,13 @@ class T5Load {
 						data-pack="${esc(row.cycle_id)}"${t5Disabled(Boolean(this.busy))}>${esc(
 					__("Remove from the list")
 				)}</button>
+					${
+						row.incompatible
+							? `<p class="tc-t5-pack-reason"><span aria-hidden="true">&#10005;</span> ${esc(
+									row.incompatible.reason || row.incompatible.code
+							  )}</p>`
+							: ""
+					}
 				</li>`
 			)
 			.join("");
@@ -1069,9 +1361,15 @@ class T5Load {
 			? `<ul class="tc-t5-packs">${rows}</ul>`
 			: `<p class="tc-empty">${esc(
 					__(
-						"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004)."
+						"Only packs that finished packing and fit the program of this sterilizer are accepted."
 					)
 			  )}</p>`;
+		const recheck =
+			load.rechecking && !this.busy
+				? `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5-recheck">${esc(
+						__("Check the packs again")
+				  )}</button></div>`
+				: "";
 		return `${html}<section class="tc-t4-block tc-t2-machine">
 				<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
 					__("Sterilizer {0} scanned · {1}", [
@@ -1080,8 +1378,12 @@ class T5Load {
 					])
 				)} · ${esc(
 			load.machine.is_connected
-				? __("API connected - automatic data comes with FEAT-024")
+				? __("API connected - data comes automatically from the station agent")
 				: __("not connected - enter the cycle data by hand with confirmation")
+		)} · ${esc(
+			max
+				? __("Up to {0} pack(s) per load.", [max])
+				: __("Capacity not set for this sterilizer.")
 		)}</p>
 				<div class="tc-t4-row">
 					<div class="tc-field">
@@ -1105,6 +1407,7 @@ class T5Load {
 					)
 				)}</h3>
 				${list}
+				${recheck}
 			</section>`;
 	}
 
@@ -1156,7 +1459,9 @@ class T5Load {
 			done.machine.equipment_name
 		)} <span class="tc-mono">${esc(done.machine.name)}</span></dd>
 						<dt>${esc(__("Program"))}</dt><dd>${esc(done.program_name)}</dd>
-						<dt>${esc(__("Packs in load"))}</dt><dd class="tc-mono">${esc(done.packs.join(", "))}</dd>
+						<dt>${esc(__("Packs in load"))}</dt><dd>${(done.pack_rows || [])
+			.map((row) => tcPackLabelHtml(row))
+			.join(", ")}</dd>
 					</dl>
 					${this.printNoteHtml()}
 				</div>
@@ -1188,21 +1493,39 @@ class T5Load {
 		const print = this.done && this.done.print;
 		if (!note || !print) return "";
 		if (note.kind === "sending")
-			return this.alertHtml({
-				variant: "info",
-				title: __("Sending the label to printer {0}...", [print.printer]),
-			});
-		if (note.kind === "sent") {
-			return this.alertHtml({
-				variant: "ok",
-				title: __("Label sent to printer {0}.", [print.printer]),
-				reason: __("Print job {0}", [print.print_job]),
-			});
+			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
+		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
+		const button = tcLabelButton("t5-label-pdf", note.printed, this.busy || this.offline);
+		if (note.kind === "ready") return button;
+		if (note.kind === "pdf") {
+			return this.alertHtml(
+				{
+					variant: "ok",
+					title: __("Label printed to PDF file: {0}", [note.filename]),
+					reason: __("Print job {0}", [print.print_job]),
+				},
+				button
+			);
+		}
+		if (note.kind === "pdf-failed") {
+			return this.alertHtml(
+				{
+					variant: "warn",
+					title: __("Label PDF was not created; code {0} is kept.", [this.done.load]),
+					reason: [note.reason, __("Print job {0}", [print.print_job])]
+						.filter(Boolean)
+						.join(" "),
+				},
+				button
+			);
 		}
 		const warning = print.warning || {};
 		return this.alertHtml({
 			variant: "warn",
-			title: __("Load code kept - check the Station Agent, then print again"),
+			title:
+				warning.code === "NO_PRINTER_AT_STATION"
+					? __("No printer at this station, the label is waiting")
+					: __("Load code kept, the label was not printed"),
 			reason: [warning.reason, __("Print job {0}", [print.print_job])]
 				.filter(Boolean)
 				.join(" "),
@@ -1230,6 +1553,8 @@ class T5Load {
 		const text = load.data_complete
 			? auto
 				? __("Automatic (station agent)")
+				: load.data_source === "Manual Default"
+				? __("Manual entry from program defaults, confirmed")
 				: __("Manual entry, confirmed")
 			: auto
 			? __("Automatic (station agent), incomplete")
@@ -1238,7 +1563,7 @@ class T5Load {
 	}
 
 	lookupHtml(load) {
-		const packs = load.packs.map((row) => `${row.cycle_id} (${row.set_id})`).join(", ");
+		const packs = load.packs.map((row) => tcPackLabelHtml(row)).join(", ");
 		return `<section class="tc-t4-block tc-t2-lookup" aria-label="${esc(
 			__("Sterilization load lookup")
 		)}">
@@ -1256,9 +1581,7 @@ class T5Load {
 				<dt>${esc(__("Loaded at"))}</dt><dd>${esc(t5DateTime(load.load_completed_at))} · ${esc(
 			(load.operator && (load.operator.employee_name || load.operator.name)) || "-"
 		)}</dd>
-				<dt>${esc(__("Packs in load ({0})", [load.packs.length]))}</dt><dd class="tc-mono">${esc(
-			packs
-		)}</dd>
+				<dt>${esc(__("Packs in load ({0})", [load.packs.length]))}</dt><dd>${packs}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(this.dataText(load))}</dd>
 			</dl>
 		</section>`;
@@ -1277,7 +1600,9 @@ class T5Load {
 						)}">
 				<div class="tc-res-head">
 					<b class="tc-code">${esc(row.load)}</b>
-					${this.statusBadge(row.status)}
+					<span class="tc-badge${row.unloaded ? "" : " tc-badge-o"}">${esc(
+							t5MachineState(row.status, row.load, row.unloaded)
+						)}</span>
 				</div>
 				<p>${esc(
 					__("Sterilization load · {0} · {1}", [
@@ -1285,9 +1610,9 @@ class T5Load {
 						row.program_name || row.program,
 					])
 				)} <span class="tc-mono">${esc(row.equipment)}</span></p>
-				<p>${esc(__("Packs in load ({0})", [row.packs.length]))}: <span class="tc-mono">${esc(
-							row.packs.join(", ")
-						)}</span></p>
+				<p>${esc(__("Packs in load ({0})", [row.packs.length]))}: ${(row.pack_rows || [])
+							.map((pack) => tcPackLabelHtml(pack))
+							.join(", ")}</p>
 				${
 					row.data_complete
 						? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
@@ -1316,6 +1641,16 @@ class T5Load {
 		</section>`;
 	}
 
+	// Dòng thông tin mẻ sau khi quét/chọn (ticket 1819): số bộ trong mẻ, có cần BI
+	loadFactsText(load) {
+		return [
+			__("{0} pack(s)", [(load.packs || []).length]),
+			load.requires_bi
+				? __("Biological indicator required")
+				: __("No biological indicator required"),
+		].join(" · ");
+	}
+
 	// -- chế độ nhập dữ liệu --
 	dataHtml() {
 		const data = this.data;
@@ -1328,13 +1663,18 @@ class T5Load {
 		if (data.saved) return html + this.savedHtml(data.saved);
 		html = `<section class="tc-t4-block tc-t2-unload">
 			<h3>${esc(__("Entering data for load {0}", [data.load]))}</h3>
-			<p>${esc(__("Sterilizer QR code"))}: <b>${esc(
-			data.equipmentRaw ? __("Scanned") : __("Not scanned")
-		)}</b> · ${esc(__("Load QR code"))}: <b>${esc(
-			data.loadRaw ? __("Scanned") : __("Not scanned")
-		)}</b></p>
+			${
+				data.known
+					? ""
+					: `<p>${esc(__("Sterilizer QR code"))}: <b>${esc(
+							data.equipmentRaw ? __("Scanned") : __("Not scanned")
+					  )}</b> · ${esc(__("Load QR code"))}: <b>${esc(
+							data.loadRaw ? __("Scanned") : __("Not scanned")
+					  )}</b></p>`
+			}
+			${data.context ? `<p>${esc(this.loadFactsText(data.context))}</p>` : ""}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5-data-reset">${esc(
-				__("Choose another load")
+				data.known ? __("Back to unloading") : __("Choose another load")
 			)}</button></div>
 		</section>`;
 		if (!data.context || !this.form) return html;
@@ -1372,9 +1712,10 @@ class T5Load {
 				const low = Number(param.min_value) || 0;
 				const high = Number(param.max_value) || 0;
 				let range = "";
-				if (low && high) range = `${low} – ${high}`;
-				else if (low) range = `≥ ${low}`;
-				else if (high) range = `≤ ${high}`;
+				const [lowText, highText] = [low, high].map(window.tcDecimal);
+				if (low && high) range = `${lowText} – ${highText}`;
+				else if (low) range = `≥ ${lowText}`;
+				else if (high) range = `≤ ${highText}`;
 				return `<div class="tc-field${state === "review" ? " is-review" : ""}">
 					<label for="tc-t5-param-${esc(param.parameter_name)}">${esc(param.parameter_name)}${
 					param.unit ? ` (${esc(param.unit)})` : ""
@@ -1384,8 +1725,15 @@ class T5Load {
 					)}" type="text" inputmode="decimal" autocomplete="off"
 						data-param="${esc(param.parameter_name)}" value="${esc(form.values[param.parameter_name] || "")}">
 					<p class="tc-t5-review tc-t2-review"${state === "review" ? "" : " hidden"}>${esc(
-					__("Outside the program range - Needs review")
+					__("Outside the program range - a Pass needs head of KSNK approval")
 				)}</p>
+				${
+					param.default_value != null
+						? `<p class="tc-hint">${esc(
+								__("Program default: {0}", [window.tcDecimal(param.default_value)])
+						  )}</p>`
+						: ""
+				}
 				</div>`;
 			})
 			.join("");
@@ -1399,10 +1747,18 @@ class T5Load {
 				</div>`
 			: "";
 		const session = this.station.session || {};
-		const who =
-			[session.employee, session.employee_name].filter(Boolean).join(" ") || __("operator");
+		const who = session.employee_name || __("operator");
 		return `<section class="tc-t4-block tc-t2-form">
 			<h3>${esc(__("Manual cycle data - confirmed by the operator"))}</h3>
+			${
+				context.prefill
+					? `<p class="tc-hint">${esc(
+							__(
+								"Filled in from the program: check against the sterilizer, change what differs, then confirm."
+							)
+					  )}</p>`
+					: ""
+			}
 			<div class="tc-t4-row">${fields}</div>
 			<div class="tc-t4-row">
 				<div class="tc-field">
@@ -1417,7 +1773,7 @@ class T5Load {
 			<div class="tc-field">
 				<label for="tc-t5-alerts">${esc(__("Machine alerts observed"))}</label>
 				<select id="tc-t5-alerts" data-form="alerts">
-					<option value="no"${form.alerts === "no" ? " selected" : ""}>${esc(__("None"))}</option>
+					<option value="no"${form.alerts === "no" ? " selected" : ""}>${esc(__("No"))}</option>
 					<option value="yes"${form.alerts === "yes" ? " selected" : ""}>${esc(
 			__("Yes - describe")
 		)}</option>
@@ -1462,7 +1818,7 @@ class T5Load {
 				<button type="button" class="tc-btn tc-btn-primary" data-action="t5-save-data"${t5Disabled(
 					Boolean(this.busy) || this.offline || form.uploading
 				)}>${esc(
-			this.busy === T5_SAVE ? __("Recording...") : __("Save manual data and confirm")
+			this.busy === T5_SAVE ? __("Recording...") : __("Confirm cycle data")
 		)}</button>
 			</div>
 		</section>`;

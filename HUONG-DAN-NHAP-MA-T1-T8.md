@@ -107,8 +107,7 @@ Kết quả: gói **Đã đóng gói**, hạn = hôm nay + 30 ngày, cổng **T4
 | 4 | **Nạp mẻ** | QR máy hấp, chọn chương trình `HAP-TEST-134` | `TB-0014` |
 | 5 | Nạp mẻ | Cycle ID | `CY-…` (từ T4) |
 | 6 | Nạp mẻ | Bấm **Hoàn thành nạp → sinh mã mẻ** → **ghi lại mã mẻ** | → `ME-…` |
-| 7 | **Dữ liệu chu trình** | QR máy hấp | `TB-0014` |
-| 8 | Dữ liệu chu trình | Mã mẻ | `ME-…` |
+| 7 | Bước 2 (tự sang, đúng mẻ vừa nạp) | Bấm **Nhập dữ liệu chu trình**, không quét lại | — |
 | 9 | Dữ liệu chu trình | Temperature `134` · Pressure `2,1` · giờ kết thúc · tick xác nhận | — |
 | 10 | Dữ liệu chu trình | Ô **"Quét thẻ nhân viên để xác nhận"** → **Lưu dữ liệu nhập tay và xác nhận** | `THE-KTV-01` |
 
@@ -120,8 +119,7 @@ Kết quả: mẻ **Hoàn tất chu trình**.
 
 | # | Người | Nhập / bấm | Mã |
 | --- | --- | --- | --- |
-| 1 | KTV | Bấm **Dỡ và giải phóng** → QR máy hấp | `TB-0014` |
-| 2 | KTV | Mã mẻ | `ME-…` |
+| 1 | KTV | Lưu dữ liệu xong màn về đúng mẻ ở bước 2. Mẻ khác: bấm bước **2. Dỡ mẻ / giải phóng**, rồi quét mã mẻ hoặc bấm **Chọn** | `ME-…` |
 | 3 | KTV | Kết quả chu trình **Đạt** · tick → **Ghi kết quả chu trình** | — |
 | 4 | KTV | **Chỉ thị hóa học loại 5 = Đạt** → **Ghi chỉ thị** (Bowie-Dick tự lấy từ test hằng ngày) | — |
 | 5 | — | Bấm **Log out** | — |

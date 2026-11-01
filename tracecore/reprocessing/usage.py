@@ -15,7 +15,7 @@ from frappe.utils.password import get_decrypted_password
 
 from tracecore.core import audit, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import storage
+from tracecore.reprocessing import pack_display, storage
 
 FUNCTION = "USE"
 ISSUED = "Issued"
@@ -48,6 +48,46 @@ def _require_station(station):
 
 def _scanner_department(employee):
 	return frappe.db.get_value("Employee", employee, "department") if employee else None
+
+
+OVERVIEW_LIMIT = 50
+
+
+def department_overview(department, on=None):
+	"""Màn T8 khi chưa mở gói (A-96): gói đang tại khoa kèm hạn dùng, gói đã dùng mà bộ chưa trả về T1."""
+	if not department:
+		return {"department": None, "department_name": None, "at_department": [], "waiting_return": []}
+	reference = getdate(on or today())
+	held = frappe.db.sql(
+		"""select pack.name as cycle_id, pack.set_name, pack.expiry
+		from `tabIssue Note Pack` row
+		join `tabIssue Note` note on note.name = row.parent and row.parenttype = 'Issue Note'
+		join `tabPack` pack on pack.name = row.pack
+		where note.docstatus = 1 and note.department = %s and pack.docstatus = 1 and pack.status = 'Issued'
+		order by pack.expiry asc, pack.name asc limit %s""",
+		(department, OVERVIEW_LIMIT),
+		as_dict=True,
+	)
+	for row in held:
+		row["days_left"] = (getdate(row.expiry) - reference).days
+		row["expiring"] = row["days_left"] <= storage.EXPIRING_DAYS
+	waiting = frappe.db.sql(
+		"""select pack.name as cycle_id, pack.set_name, record.used_at
+		from `tabUsage Record` record
+		join `tabPack` pack on pack.name = record.pack
+		join `tabSet Unit` unit on unit.name = record.set_unit
+		where record.docstatus = 1 and record.department = %s and pack.status = %s
+			and unit.status = 'Awaiting Receipt'
+		order by record.used_at asc, pack.name asc limit %s""",
+		(department, USED, OVERVIEW_LIMIT),
+		as_dict=True,
+	)
+	return {
+		"department": department,
+		"department_name": frappe.db.get_value("Department", department, "department_name"),
+		"at_department": held,
+		"waiting_return": waiting,
+	}
 
 
 def _pack_department(pack):
@@ -178,6 +218,7 @@ def _card(pack, employee):
 		"set_id": pack.set_unit,
 		"set_type": pack.set_type,
 		"set_name": pack.set_name,
+		"department_name": pack_display.department_name(pack_department),
 		"method": pack.method,
 		"expiry": getdate(pack.expiry),
 		"pack_department": pack_department,

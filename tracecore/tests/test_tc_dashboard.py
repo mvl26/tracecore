@@ -85,6 +85,15 @@ class TestDashboardSidebar(FrappeTestCase):
 		for label in re.findall(r'label: "([^"]+)"', match.group(1)):
 			self.assertTrue(ours.get(f"{label}:Operations Dashboard") or ours.get(label), label)
 
+	def test_linen_and_waste_sections_have_overview_action_and_detail(self):  # DASH-02
+		source = self._source()
+		for text in ("renderLinen", "renderWaste", "Overview", "Needs action", "Details"):
+			self.assertIn(text, source)
+		self.assertIn("linen: () => renderLinen(blocks.linen)", source)
+		self.assertIn("Kg by waste type", source)
+		# màu túi luôn kèm tên loại, không chỉ bằng màu
+		self.assertIn("tc-dash-bar-label", source)
+
 	def test_only_the_selected_section_is_rendered(self):
 		source = self._source()
 		self.assertIn("tc-dash-nav", source)

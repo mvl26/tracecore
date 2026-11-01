@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-20 15:00:00.000000",
- "description": "One packed set in one cycle, named by its Cycle ID (FEAT-018, UC-08). Created and submitted by the packing service; it is voided by status, never cancelled or deleted (WF-02).",
+ "description": "One packed set in one cycle, named by its Cycle ID (UC-08). Created and submitted by the packing service; it is voided by status, never cancelled or deleted (WF-02).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -203,7 +203,7 @@
    "reqd": 1
   },
   {
-   "description": "Employee who badged in at the station (filled once badge sign-in exists).",
+   "description": "Employee who badged in at the station; printed on the label.",
    "fieldname": "packed_by",
    "fieldtype": "Link",
    "label": "Packed By (Employee)",
@@ -284,7 +284,7 @@
   },
   {
    "allow_on_submit": 1,
-   "description": "Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.",
+   "description": "Shelf the pack is stored on. Changed only by the sterile storage service.",
    "fieldname": "location",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -295,7 +295,7 @@
   },
   {
    "allow_on_submit": 1,
-   "description": "Sterilization load the pack went into (FEAT-022). Set only by the sterilizing service when loading is completed.",
+   "description": "Sterilization load the pack went into. Set only by the sterilizing service when loading is completed.",
    "fieldname": "load",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -346,7 +346,7 @@
    "label": "Pack Cost",
    "read_only": 1,
    "no_copy": 1,
-   "description": "Reprocessing cost of this pack for its cycle, written by the cost sheet (FEAT-046)."
+   "description": "Reprocessing cost of this pack for its cycle, written by the cost sheet."
   }
  ],
  "index_web_pages_for_search": 0,

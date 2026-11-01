@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "IS-.YYYY.-.#####",
  "creation": "2026-10-23 09:00:00.000000",
- "description": "Issue note of the T7 issuing station: several sterile packs handed to one department, signed by the recipient (FEAT-026, UC-12). Created, filled and submitted by the issuing service only.",
+ "description": "Issue note of the T7 issuing station: several sterile packs handed to one department, signed by the recipient (UC-12). Created, filled and submitted by the issuing service only.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

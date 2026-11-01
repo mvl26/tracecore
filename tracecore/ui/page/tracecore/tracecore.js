@@ -1,3 +1,4 @@
+/* global tracecore */
 frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
@@ -29,6 +30,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		$("<p></p>").text(description).appendTo(item);
 		return item;
 	}
+	const OVERVIEW = "overview";
 	// Trang chủ admin có sidebar (ux-foundations NAV-02)
 	const KIND_ICONS = {
 		page: "external-link",
@@ -99,8 +101,11 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			);
 			modules.splice(last_operation + 1, 0, STATIONS);
 		}
-		if (!modules.some((module) => module.key === selected_module))
-			selected_module = modules[0].key;
+		// #1830 G-03: Tổng quan mở thẳng bảng vận hành nên không phải mô-đun mặc định, tránh vòng lặp khi bấm Back
+		const opens_here = (module) => module.key !== OVERVIEW && module.key !== STATIONS.key;
+		const landing = modules.find(opens_here) || modules[0];
+		if (!modules.some((module) => module.key === selected_module && opens_here(module)))
+			selected_module = landing.key;
 		const shell = $("<div class='tc-admin'></div>").appendTo(root);
 		const nav = $("<nav class='tc-admin-nav'></nav>")
 			.attr("aria-label", __("CSSD management"))
@@ -118,6 +123,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			$("<h2></h2>").text(__(module.label, null, "TraceCore Launcher")).appendTo(text);
 			$("<p></p>").text(__(module.description, null, "TraceCore Launcher")).appendTo(text);
 			const body = $("<div class='tc-admin-body'></div>").appendTo(main);
+			document.title = `${__(module.label, null, "TraceCore Launcher")} – TraceCore`;
 			if (module.key !== STATIONS.key) render_module(body, module);
 		}
 		let cluster = modules[0].cluster;
@@ -131,6 +137,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 				.append(icon(module.icon))
 				.append($("<span></span>").text(__(module.label, null, "TraceCore Launcher")))
 				.on("click", () => {
+					if (module.key === OVERVIEW) return frappe.set_route("tc-dashboard");
 					if (module.key === STATIONS.key && open_first_station(data)) return;
 					show(module);
 				})

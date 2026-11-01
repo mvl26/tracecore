@@ -3,7 +3,8 @@
 Dịch vụ trạm T3 (RPC `tracecore.v1.assembly` bọc từng hàm):
 
 - `open_set`: quét Set ID → mở (hoặc mở lại) bản nháp `Assembly Record` của (bộ, chu trình hiện hành) với đủ dòng BOM;
-- `line`: ghi một dòng (số lượng thực tế, hỏng/thay, ảnh), quét mã GIAI dụng cụ tự tick (FR-M1-02.2/.4), hoặc "đủ hết";
+- `line`: ghi một dòng (số lượng thực tế, hỏng/thay, ảnh, Thiếu/Hỏng + ghi chú khi lệch định mức) hoặc quét mã GIAI dụng
+  cụ tự tick (FR-M1-02.2/.4), hoặc "đủ hết" cho các dòng chưa đếm (A-102, người dùng đảo A-79);
 - `confirm_shortage`: R02 xác nhận đóng gói thiếu bằng PIN proof + lý do (FR-M2-06.1);
 - `submit`: ghi sổ chứng từ và ghi cổng T3 qua `core.step_gate` (Đạt, hoặc Không đạt khi rẽ nhánh Sửa chữa/Thanh lý).
 
@@ -31,6 +32,7 @@ NC_HOOK = "tracecore_assembly_nc"
 AFTER_HOOK = "tracecore_after_assembly"
 BRANCHES = ("Repair", "Disposal")
 DISPOSITIONS = ("Repair", "Dispose")
+VARIANCE_SHORT = "Short"
 MAX_QTY = 9999
 REASON_MAX = 500
 SET_FIELDS = tuple(
@@ -252,12 +254,14 @@ def line(
 	replacement_instrument=None,
 	note=None,
 	photo=None,
+	variance=None,
 	all_ok=False,
 ):
-	"""Ghi vào bản nháp `assembly`: một dòng (`instrument` + các trường truyền vào), quét mã dụng cụ (`raw`) hoặc đủ hết.
+	"""Ghi vào bản nháp `assembly`: một dòng (`instrument` + các trường truyền vào) hoặc quét mã dụng cụ (`raw`).
 
-	`actual_qty` đặt thì dòng được tính là đã đếm; `all_ok` đếm mọi dòng chưa đếm đủ theo BOM (nút "Xác nhận tất cả").
-	Số lượng sai → ``QTY_INVALID`` (không ghi gì). Trả ngữ cảnh như `open_set`; quét dụng cụ lạ trả thêm ``warning``.
+	`actual_qty` đặt thì dòng được tính là đã đếm. Số lượng sai → ``QTY_INVALID``; lệch định mức mà chưa nói rõ Thiếu/Hỏng
+	(`variance`, `damaged_qty`) hoặc chưa ghi chú → ``LINE_VARIANCE_REQUIRED`` (A-79); cả hai không ghi gì. Trả ngữ cảnh như
+	`open_set`; quét dụng cụ lạ trả thêm ``warning``.
 	"""
 	_require_station(station)
 	doc = _draft(assembly, for_update=True)
@@ -265,7 +269,7 @@ def line(
 	extra = {}
 	if raw is not None:
 		extra = _scan_instrument(doc, raw, station, client_ts)
-	elif all_ok:
+	elif all_ok:  # dòng đã đếm giữ nguyên; lệch định mức sau đó vẫn qua `_check_variance`
 		for row in doc.lines:
 			if not cint(row.counted):
 				row.counted, row.actual_qty = 1, cint(row.bom_qty)
@@ -282,13 +286,50 @@ def line(
 				"note": note,
 				"photo": photo,
 			},
+			variance,
 		)
 	doc.save(ignore_permissions=True)
 	_sync_nc(doc, had_shortage, station, client_ts)
 	return {**_summary(doc), **extra}
 
 
-def _apply_line(doc, instrument, values):
+def _variance_block(reason, items=None):
+	return _blocked(
+		"LINE_VARIANCE_REQUIRED",
+		_("The count differs from the BOM"),
+		reason,
+		_("Choose Short or Damaged and write a note, then save the line."),
+		items=items,
+	)
+
+
+def _check_variance(row, variance):
+	"""Số lượng khác định mức (A-79): thiếu phải nói rõ Thiếu hay Hỏng, mọi trường hợp lệch phải có ghi chú."""
+	actual, bom = cint(row.actual_qty), cint(row.bom_qty)
+	if actual == bom:
+		return
+	if actual < bom and not cint(row.damaged_qty) and variance != VARIANCE_SHORT:
+		raise _variance_block(
+			_("{0}: counted {1}, BOM {2}. Choose whether the instruments are short or damaged.").format(
+				row.instrument, actual, bom
+			)
+		)
+	if not (row.note or "").strip():
+		raise _variance_block(
+			_("{0}: counted {1}, BOM {2}. A note is required.").format(row.instrument, actual, bom)
+		)
+
+
+def _unexplained(doc):
+	"""Dòng đã đếm, lệch định mức mà chưa có ghi chú (quét mã GIAI cộng dần nên chưa qua `_check_variance`)."""
+	return [
+		row.instrument
+		for row in doc.lines
+		if cint(row.counted) and cint(row.actual_qty) != cint(row.bom_qty) and not (row.note or "").strip()
+	]
+
+
+def _apply_line(doc, instrument, values, variance=None):
 	row = next((r for r in doc.lines if r.instrument == instrument), None)
 	if not row:
 		raise _blocked(
@@ -322,6 +363,8 @@ def _apply_line(doc, instrument, values):
 		)
 	if damaged and cint(row.counted) and not row.disposition:
 		raise _qty_error(_("{0}: choose Repair or Dispose for the damaged instrument(s).").format(instrument))
+	if values["actual_qty"] is not None:
+		_check_variance(row, variance)
 
 
 def _scan_instrument(doc, raw, station, client_ts):
@@ -504,10 +547,10 @@ def confirm_shortage(assembly, reason, station, reviewer_proof=None, session=Non
 # --- Ghi sổ (FR-M2-06, FR-M2-00.5, FR-M2-25) ----------------------------------------------------------
 
 
-def submit(assembly, station, client_ts=None, notes=None, branch=None, branch_reason=None):
+def submit(assembly, station, client_ts=None, notes=None, branch=None, branch_reason=None, employee=None):
 	"""Ghi sổ bản nháp và ghi cổng T3 trong một savepoint; trả ngữ cảnh đã ghi sổ + ``next_station`` (trạm T4 cùng khu).
 
-	Không rẽ nhánh: mọi dòng phải đã đếm (``LINES_NOT_COUNTED``) và thiếu phải đã R02 xác nhận
+	Không rẽ nhánh: mọi dòng phải đã đếm (``LINES_NOT_COUNTED``), dòng lệch có ghi chú (``LINE_VARIANCE_REQUIRED``) và thiếu phải đã R02 xác nhận
 	(``SHORTAGE_UNCONFIRMED``) thì cổng T3 Đạt. ``branch`` (``Repair``/``Disposal``) + lý do: cổng T3 Không đạt, bộ về Xử lý
 	lại (FR-M2-00.5); Set Unit không đổi trạng thái nào khác (thanh lý chờ FEAT-032). Lỗi giữa chừng hoàn tác về savepoint.
 	"""
@@ -515,14 +558,14 @@ def submit(assembly, station, client_ts=None, notes=None, branch=None, branch_re
 	client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		return _submit(assembly, station, client_ts, notes, branch, branch_reason)
+		return _submit(assembly, station, client_ts, notes, branch, branch_reason, employee)
 	except Exception:
 		with contextlib.suppress(Exception):
 			frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 
 
-def _submit(assembly, station, client_ts, notes, branch, branch_reason):
+def _submit(assembly, station, client_ts, notes, branch, branch_reason, employee=None):
 	_require_station(station)
 	doc = _draft(assembly, for_update=True)
 	frappe.db.get_value("Set Unit", doc.set_unit, "name", for_update=True)
@@ -554,6 +597,12 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 				_("Tick or enter the quantity of each line, then record the assembly."),
 				items=uncounted,
 			)
+		unexplained = _unexplained(doc)
+		if unexplained:
+			raise _variance_block(
+				_("Lines that differ from the BOM have no note: {0}.").format(", ".join(unexplained)),
+				items=unexplained,
+			)
 		if cint(doc.has_shortage) and not cint(doc.shortage_confirmed):
 			items = _shortage_items(doc)
 			# FEAT-052 A-71: DC-001 viện đặt Cảnh báo thì ghi nhận và đi tiếp; nhãn vẫn in dòng THIẾU
@@ -569,6 +618,7 @@ def _submit(assembly, station, client_ts, notes, branch, branch_reason):
 			"client_ts": client_ts,
 			"assembled_at": client_time.to_system_time(client_ts),
 			"assembled_by_user": frappe.session.user,
+			"assembled_by": employee,  # người quét thẻ ở trạm (A-81)
 			"station": station,
 		}
 	)
@@ -626,6 +676,21 @@ def _next_station(station):
 # --- Ngữ cảnh trả về trạm -----------------------------------------------------------------------------
 
 
+def _tally(lines):
+	"""Số dòng theo kết quả cho dòng tổng màn T3 (A-80): dòng thiếu do hỏng tính Hỏng, hỏng đã thay đủ tính Đủ."""
+	counted = [line for line in lines if line["counted"]]
+	short = [line for line in counted if line["line_status"] == "Short"]
+	damaged = [line for line in short if cint(line["damaged_qty"])]
+	return {
+		"total": len(lines),
+		"counted": len(counted),
+		"enough": sum(line["line_status"] == "Enough" for line in counted),
+		"short": len(short) - len(damaged),
+		"damaged": len(damaged),
+		"over": sum(line["line_status"] == "Over" for line in counted),
+	}
+
+
 def _summary(doc, ctx=None):
 	"""Ngữ cảnh màn T3 của `doc`: bộ, dòng kiểm đếm kèm ảnh/cơ số, cổng, thiếu/NC, khóa Đóng gói; chỉ đọc."""
 	unit = frappe.db.get_value("Set Unit", doc.set_unit, SET_FIELDS, as_dict=True)
@@ -652,12 +717,15 @@ def _summary(doc, ctx=None):
 	passed = closed and doc.result == "Pass"
 	uncounted = [line["instrument"] for line in lines if not line["counted"]]
 	shortage = _shortage_items(doc)
+	unexplained = _unexplained(doc)
 	if passed:
 		lock = None
 	elif closed:
 		lock = "BRANCH" if doc.branch else "ASSEMBLY_FAILED"
 	elif uncounted:
 		lock = "LINES_NOT_COUNTED"
+	elif unexplained:
+		lock = "LINE_VARIANCE_REQUIRED"
 	elif cint(doc.has_shortage) and not cint(doc.shortage_confirmed) and error_codes.is_blocking("DC-001"):
 		lock = "SHORTAGE_UNCONFIRMED"
 	else:
@@ -695,6 +763,11 @@ def _summary(doc, ctx=None):
 		"branch_reason": doc.branch_reason,
 		"notes": doc.notes,
 		"uncounted": uncounted,
+		"unexplained": unexplained,
+		"tally": _tally(lines),
+		"instrument_scan": bool(
+			cint(frappe.db.get_single_value("TraceCore Settings", "enable_instrument_giai"))
+		),
 		"ready_to_submit": lock == "NOT_RECORDED",
 		"shortage_blocking": error_codes.is_blocking("DC-001"),
 		"pack_locked": not passed,

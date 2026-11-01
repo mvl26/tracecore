@@ -55,6 +55,12 @@ def _columns():
 			"width": 130,
 		},
 		{
+			"fieldname": "unloaded_by_name",
+			"label": _("Unloaded By", context=CONTEXT),
+			"fieldtype": "Data",
+			"width": 130,
+		},
+		{
 			"fieldname": "released_by_name",
 			"label": _("Released By", context=CONTEXT),
 			"fieldtype": "Data",
@@ -65,6 +71,12 @@ def _columns():
 			"label": _("Released At", context=CONTEXT),
 			"fieldtype": "Datetime",
 			"width": 140,
+		},
+		{
+			"fieldname": "out_of_range_note",
+			"label": _("Out of Range Accepted", context=CONTEXT),
+			"fieldtype": "Data",
+			"width": 260,
 		},
 		{"fieldname": "result", "label": _("Result", context=CONTEXT), "fieldtype": "Data", "width": 100},
 	]

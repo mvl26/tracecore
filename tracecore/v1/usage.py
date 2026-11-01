@@ -32,6 +32,28 @@ def _employee():
 	return session.employee if session else None
 
 
+def _scanner_employee():
+	"""Người quét T8. A-105: R02 không thuộc khoa thì T8 không biết ghi sử dụng cho khoa nào, chặn rõ thay vì đoán."""
+	employee = _employee()
+	roles = set(frappe.get_roles())
+	if (
+		"TC R02" in roles
+		and not roles & {"TC R08", "System Manager"}
+		and not usage_service._scanner_department(employee)
+	):
+		raise BlockedError(
+			Block(
+				"SCANNER_DEPARTMENT_REQUIRED",
+				_("Your card has no department"),
+				_(
+					"Usage is recorded for the department of the employee on the card, and this employee has none."
+				),
+				_("Ask R10 to set the department on the employee record, then scan your card again."),
+			)
+		)
+	return employee
+
+
 def _run(
 	station, client_ts, call, ref_doctype=None, ref_name=None, raw=None, entry_mode=None, manual_reason=None
 ):
@@ -53,6 +75,18 @@ def _run(
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*USAGE_ROLES)
+def overview(station, client_ts=None, token=None):
+	"""Gói tại khoa của thẻ và gói đã dùng chờ trả (A-96, #1838 T8-03), chỉ đọc."""
+	require_any_role(*USAGE_ROLES)
+	return _run(
+		station,
+		client_ts,
+		lambda _ts: usage_service.department_overview(usage_service._scanner_department(_scanner_employee())),
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*USAGE_ROLES)
 def scan(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét Cycle ID (SCR-37 bước 1): kiểm hiệu lực rồi trả ``{"ok": true, "card": {...}}`` kèm cảnh báo khác khoa.
 
@@ -65,7 +99,7 @@ def scan(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, to
 	return _run(
 		station,
 		client_ts,
-		lambda _ts: {"card": usage_service.scan(raw, station, _employee())},
+		lambda _ts: {"card": usage_service.scan(raw, station, _scanner_employee())},
 		ref,
 		scanned["id"] if ref else None,
 		raw,
@@ -105,7 +139,7 @@ def confirm(
 		return usage_service.confirm(
 			cycle_id,
 			station,
-			_employee(),
+			_scanner_employee(),
 			code,
 			surgery_code,
 			surgeon,

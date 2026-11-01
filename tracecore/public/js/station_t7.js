@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcPackLabelHtml, tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T7 cấp phát (SCR-12 kiosk, SCR-36 PDA, FEAT-026) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -39,6 +39,7 @@ class T7Issue {
 		this.busy = null;
 		this.queuedScan = null; // mã quét đến khi đang chờ máy chủ: giữ lại, quét sau khi xong
 		this.departments = null;
+		this.departmentsTried = false; // đã tự tải một lần: lỗi thì chờ người dùng bấm Thử lại, show() không tải lại
 		this.context = null; // tồn khoa, cơ số, tồn kho vô khuẩn theo loại bộ của khoa đang chọn
 		this.dept = null;
 		this.issue = null; // phiếu nháp (issuing.view)
@@ -48,6 +49,7 @@ class T7Issue {
 		this.recipientCard = null; // thẻ đã quét, chờ vẽ chữ ký (chế độ Touch)
 		this.mismatch = null; // thẻ người nhận lệch khoa chờ lý do
 		this.fefo = null; // gói bị FEFO chặn chờ ghi chú
+		this.deptMismatch = null; // gói của khoa khác chờ xác nhận kèm lý do (A-102)
 		this.move = null; // gói nằm ở phiếu nháp khác chờ xác nhận chuyển
 		this.approval = false;
 		this.done = null;
@@ -56,7 +58,9 @@ class T7Issue {
 	}
 
 	get dialogOpen() {
-		return Boolean(this.mismatch || this.fefo || this.approval || this.recipientCard);
+		return Boolean(
+			this.mismatch || this.deptMismatch || this.fefo || this.approval || this.recipientCard
+		);
 	}
 
 	// Hết phiên trạm (rút thẻ, idle 10 phút, đổi người): xóa phiếu, khoa và yêu cầu dở của người trước
@@ -92,6 +96,7 @@ class T7Issue {
 	addPack(raw, extra = {}) {
 		this.fefo = null;
 		this.move = null;
+		this.deptMismatch = null;
 		return this.request(
 			"add_pack",
 			{ issue_note: this.issue.issue_note, raw, station: this.station.station, ...extra },
@@ -196,6 +201,7 @@ class T7Issue {
 		if (pending)
 			return this.request(pending.method.slice(T7_API.length), pending.args, pending.onOk);
 		this.notice = null;
+		this.departmentsTried = false;
 		this.show();
 	}
 
@@ -233,12 +239,20 @@ class T7Issue {
 	// Từ chối nghiệp vụ: một số mã cần người dùng bổ sung (ghi chú FEFO, lý do khác khoa, R02 duyệt, chuyển phiếu)
 	reject(error, pending) {
 		this.notice = {
-			variant: error.code === "FEFO_NOTE_REQUIRED" ? "warn" : "error",
+			variant: ["FEFO_NOTE_REQUIRED", "PACK_DEPT_MISMATCH"].includes(error.code)
+				? "warn"
+				: "error",
 			...error,
 		};
 		const args = pending ? pending.args : {};
-		if (error.code === "FEFO_NOTE_REQUIRED") this.fefo = { raw: args.raw };
-		else if (error.code === "PACK_IN_OTHER_ISSUE") this.move = { raw: args.raw };
+		// giữ lựa chọn đã xác nhận (chuyển phiếu, ghi chú, lý do khoa) khi máy chủ hỏi tiếp điều kiện khác
+		const carry = {};
+		for (const key of ["move", "note", "department_reason"]) {
+			if (args && args[key]) carry[key] = args[key];
+		}
+		if (error.code === "FEFO_NOTE_REQUIRED") this.fefo = { raw: args.raw, carry };
+		else if (error.code === "PACK_IN_OTHER_ISSUE") this.move = { raw: args.raw, carry };
+		else if (error.code === "PACK_DEPT_MISMATCH") this.deptMismatch = { raw: args.raw, carry };
 		else if (error.code === "RECIPIENT_DEPT_MISMATCH") {
 			this.mismatch = { card: args.card, method: args.method, signature: args.signature };
 		} else if (T7_APPROVAL_CODES.includes(error.code))
@@ -260,6 +274,8 @@ class T7Issue {
 			"sign-clear": () => this.clearPad(),
 			"sign-confirm": () => this.confirmTouch(),
 			"fefo-submit": () => this.submitFefo(),
+			"dept-mismatch-submit": () => this.submitDeptMismatch(),
+			"dept-mismatch-cancel": () => this.cancelDialog("deptMismatch"),
 			"move-submit": () => this.submitMove(),
 			"mismatch-submit": () => this.submitMismatch(),
 			"mismatch-cancel": () => this.cancelDialog("mismatch"),
@@ -327,11 +343,18 @@ class T7Issue {
 	submitFefo() {
 		const note = this.field("tc-t7-fefo-note");
 		if (!note) return this.markInvalid("tc-t7-fefo-note", __("Required"));
-		this.addPack(this.fefo.raw, { note });
+		this.addPack(this.fefo.raw, { ...this.fefo.carry, note });
+	}
+
+	submitDeptMismatch() {
+		const reason = this.field("tc-t7-dept-reason");
+		if (!reason) return this.markInvalid("tc-t7-dept-reason", __("Required"));
+		const { raw, carry } = this.deptMismatch;
+		this.addPack(raw, { ...carry, department_reason: reason });
 	}
 
 	submitMove() {
-		this.addPack(this.move.raw, { move: 1 });
+		this.addPack(this.move.raw, { ...this.move.carry, move: 1 });
 	}
 
 	submitMismatch() {
@@ -451,7 +474,9 @@ class T7Issue {
 
 	loadDepartments() {
 		if (this.busy) return;
+		this.departmentsTried = true;
 		this.request("departments", { station: this.station.station }, (res) => {
+			this.notice = null;
 			this.departments = res.departments;
 			this.show();
 		});
@@ -479,7 +504,7 @@ class T7Issue {
 		if (this.offline && !this.issue) {
 			return this.station.setState("offline", this.offlineHtml());
 		}
-		if (!this.departments && !this.issue && !this.busy) {
+		if (!this.departments && !this.issue && !this.busy && !this.departmentsTried) {
 			this.loadDepartments();
 			return this.station.renderLoading();
 		}
@@ -567,7 +592,9 @@ class T7Issue {
 		if (this.notice) {
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;
@@ -584,22 +611,51 @@ class T7Issue {
 
 	// ---- chọn khoa ----
 	departmentsHtml() {
-		const list = this.departments || [];
+		if (!this.departments) {
+			// lỗi kỹ thuật đã có Thử lại ở khối lỗi; từ chối nghiệp vụ hoặc thông báo khác đè lên thì vẫn phải tải lại được
+			if (this.busy || (this.notice && this.notice.technical)) return "";
+			return `<p class="tc-hint">${esc(__("The department list could not be loaded."))}</p>
+				<div class="tc-actions">${this.button("retry", __("Retry"), "primary")}</div>`;
+		}
+		const list = this.departments;
 		if (!list.length) {
 			return `<p class="tc-empty">${esc(__("No department is available to issue to."))}</p>`;
 		}
-		return `<section class="tc-t6-block" aria-label="${esc(__("Department"))}">
-			<h3>${esc(__("Choose the department that receives the packs"))}</h3>
-			<div class="tc-t7-depts">${list
-				.map((d) =>
-					this.button(
-						"pick-dept",
-						d.department_name || d.name,
-						"secondary",
-						` data-dept="${esc(d.name)}"`
+		// #1837 T7-02: khoa thiếu cơ số nằm ở bảng riêng, khoa còn lại chọn ở hàng nút
+		const short = list.filter((d) => (d.shortage || []).length);
+		const others = list.filter((d) => !(d.shortage || []).length);
+		const pick = (d) =>
+			this.button(
+				"pick-dept",
+				d.department_name || d.name,
+				"secondary",
+				` data-dept="${esc(d.name)}"`
+			);
+		const shortage = short.length
+			? `<section class="tc-t6-block" aria-label="${esc(__("Par shortage by department"))}">
+				<h3>${esc(__("Par shortage by department"))}</h3>
+				${short
+					.map(
+						(d) =>
+							`<div class="tc-t7-short">${pick(d)}<ul>${d.shortage
+								.map(
+									(row) =>
+										`<li>${esc(
+											__("{0}: short {1}, sterile store has {2}", [
+												row.set_name || row.set_type,
+												row.suggest,
+												row.available,
+											])
+										)}</li>`
+								)
+								.join("")}</ul></div>`
 					)
-				)
-				.join("")}</div>
+					.join("")}
+			</section>`
+			: `<p class="tc-t6-hint">${esc(__("No department is short of its par level."))}</p>`;
+		return `${shortage}<section class="tc-t6-block" aria-label="${esc(__("Department"))}">
+			<h3>${esc(__("Choose the department that receives the packs"))}</h3>
+			<div class="tc-t7-depts">${others.map(pick).join("")}</div>
 		</section>`;
 	}
 
@@ -676,11 +732,10 @@ class T7Issue {
 		const packs = this.issue.packs;
 		const body = packs.length
 			? this.tableHtml(
-					[__("Cycle ID"), __("Set ID"), __("Set Name"), __("Use-by date"), ""],
+					[__("Pack"), __("Set ID"), __("Use-by date"), ""],
 					packs.map((p) => [
-						`<span class="tc-mono">${esc(p.cycle_id)}</span>`,
+						tcPackLabelHtml(p),
 						`<span class="tc-mono">${esc(p.set_id)}</span>`,
-						esc(p.set_name || ""),
 						`<b>${esc(t7Date(p.expiry))}</b>${
 							p.fefo_note ? ` <span class="tc-tag">${esc(p.fefo_note)}</span>` : ""
 						}`,
@@ -851,6 +906,23 @@ class T7Issue {
 		const errText = (id) =>
 			err && err.id === id ? `<p class="tc-field-error">${esc(err.message)}</p>` : "";
 		let html = "";
+		if (this.deptMismatch) {
+			html += `<div class="tc-t7-dialog" role="group" aria-label="${esc(
+				__("Pack belongs to another department")
+			)}">
+				<div class="tc-field">
+					<label for="tc-t7-dept-reason">${esc(__("Why issue this pack to this department?"))} *</label>
+					<textarea id="tc-t7-dept-reason" rows="2" data-dialog-focus${invalid(
+						"tc-t7-dept-reason"
+					)}></textarea>
+					${errText("tc-t7-dept-reason")}
+				</div>
+				<div class="tc-actions">
+					${this.button("dept-mismatch-submit", __("Issue this pack anyway"), "warn")}
+					${this.button("dept-mismatch-cancel", __("Cancel"))}
+				</div>
+			</div>`;
+		}
 		if (this.fefo) {
 			html += `<div class="tc-t7-dialog" role="group" aria-label="${esc(__("FEFO note"))}">
 				<div class="tc-field">

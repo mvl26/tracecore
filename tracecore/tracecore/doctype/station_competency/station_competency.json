@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "COMP-.#####",
  "creation": "2026-10-21 16:00:00.000000",
- "description": "Station competency validity, required certificates and temporary access (FEAT-003, FEAT-037). Granted and revoked from the Competency Matrix.",
+ "description": "Station competency validity, required certificates and temporary access. Granted and revoked from the Competency Matrix.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": ["employee", "employee_name", "station", "station_name", "valid_from", "valid_until", "evaluator", "evaluated_on", "is_temporary", "temporary_reason", "approved_by", "is_active", "revoke_reason", "section_certs", "required_certificates"],

@@ -21,6 +21,7 @@ const DASH_SECTIONS = [
 	{ key: "sets", label: "Instrument sets", icon: "tool", blocks: ["sets"] },
 	{ key: "failures", label: "Failed batches", icon: "solid-warning", blocks: ["failures"] },
 	{ key: "sterile", label: "Sterile store", icon: "stock", blocks: ["sterile"] },
+	{ key: "linen", label: "Linen", icon: "list", blocks: ["linen"] },
 	{ key: "waste", label: "Medical waste", icon: "delete", blocks: ["waste"] },
 	{ key: "output", label: "Output", icon: "chart", blocks: ["output"] },
 ];
@@ -298,23 +299,171 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		);
 	}
 
-	// Khối chất thải (FEAT-050, FR-M10-07.1): chữ và số, không chỉ màu
+	// Tầng Cần xử lý của mục Đồ vải, Chất thải (DASH-02): chỉ hiện việc còn tồn, nhãn luôn có chữ và ký hiệu
+	function actionList(parent, items) {
+		const box = $("<div class='tc-dash-actions'></div>").appendTo(parent);
+		const pending = items.filter((item) => item.count > 0);
+		if (!pending.length) {
+			$("<p class='tc-dash-empty'></p>")
+				.text(__("Nothing to handle", null, DASH_CTX))
+				.appendTo(box);
+			return;
+		}
+		pending.forEach((item) => {
+			const row = $("<button type='button' class='tc-dash-action'></button>")
+				.on("click", item.open)
+				.appendTo(box);
+			$("<span></span>").text(item.label).appendTo(row);
+			$("<span class='tc-dash-badge'></span>")
+				.addClass(item.alert ? "is-alert" : "is-warn")
+				.text(`${item.alert ? "✕" : "!"} ${item.badge}`)
+				.appendTo(row);
+		});
+	}
+
+	function heading(parent, text) {
+		$("<h3></h3>").text(text).appendTo(parent);
+	}
+
+	function card(parent, title) {
+		const box = $("<article class='tc-dash-panel'></article>").appendTo(parent);
+		$("<h4></h4>").text(title).appendTo(box);
+		return box;
+	}
+
+	function kg(value) {
+		return format_number(value, null, 1);
+	}
+
+	function report(name) {
+		return () => frappe.set_route("query-report", name);
+	}
+
+	// Mục Đồ vải (DASH-02)
+	function renderLinen(linen) {
+		const overview = section(__("Linen", null, DASH_CTX));
+		heading(overview, __("Overview", null, DASH_CTX));
+		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(overview);
+		kpi(
+			grid,
+			kg(linen.collected_kg),
+			__("Kg of linen collected", null, DASH_CTX),
+			"",
+			report("Linen Reconciliation")
+		);
+		kpi(
+			grid,
+			kg(linen.returned_kg),
+			__("Kg returned to departments", null, DASH_CTX),
+			"",
+			report("Linen Reconciliation")
+		);
+		kpi(
+			grid,
+			linen.running,
+			__("Laundry batches running", null, DASH_CTX),
+			linen.running ? "warn" : "ok",
+			() => route("Laundry Batch", { status: "Running" })
+		);
+		kpi(
+			grid,
+			__("{0} đ", [format_number(linen.cost_per_kg, null, 0)], DASH_CTX),
+			__("Laundry cost per kg", null, DASH_CTX),
+			"ok",
+			report("Laundry Cost per Kg")
+		);
+		const actions = section(__("Needs action", null, DASH_CTX));
+		heading(actions, __("Needs action", null, DASH_CTX));
+		actionList(actions, [
+			{
+				label: __("Failed laundry batches waiting for a rewash", null, DASH_CTX),
+				count: linen.failed_waiting.length,
+				badge: __("{0} batches", [linen.failed_waiting.length], DASH_CTX),
+				alert: true,
+				open: () => route("Laundry Batch", { name: ["in", linen.failed_waiting] }),
+			},
+			{
+				label: __("Laundry batches over the norm deviation limit", null, DASH_CTX),
+				count: linen.over_deviation.length,
+				badge: __("{0} batches", [linen.over_deviation.length], DASH_CTX),
+				open: () => route("Laundry Batch", { name: ["in", linen.over_deviation] }),
+			},
+			{
+				label: __("Departments issued over their quota", null, DASH_CTX),
+				count: linen.over_quota_departments.length,
+				badge: __("{0} departments", [linen.over_quota_departments.length], DASH_CTX),
+				open: report("Linen Reconciliation"),
+			},
+		]);
+		const details = section(__("Details", null, DASH_CTX));
+		heading(details, __("Details", null, DASH_CTX));
+		const cols = $("<div class='tc-dash-columns'></div>").appendTo(details);
+		table(
+			card(cols, __("Collected and returned by department (kg)", null, DASH_CTX)),
+			[
+				{ label: __("Department", null, DASH_CTX), value: (r) => r.department_name },
+				{
+					label: __("Collected", null, DASH_CTX),
+					num: true,
+					value: (r) => kg(r.collected_kg),
+				},
+				{
+					label: __("Returned", null, DASH_CTX),
+					num: true,
+					value: (r) => kg(r.returned_kg),
+				},
+				{
+					label: __("Variance", null, DASH_CTX),
+					num: true,
+					value: (r) => kg(r.variance_kg),
+				},
+			],
+			linen.by_department,
+			__("no linen in this period", null, DASH_CTX)
+		);
+		table(
+			card(cols, __("Washers and dryers", null, DASH_CTX)),
+			[
+				{ label: __("Machine", null, DASH_CTX), value: (r) => r.machine_name },
+				{ label: __("Batches", null, DASH_CTX), num: true, value: (r) => r.batches },
+				{ label: __("Kg", null, DASH_CTX), num: true, value: (r) => kg(r.weight_kg) },
+				{
+					label: __("Cost", null, DASH_CTX),
+					num: true,
+					value: (r) => format_number(r.cost, null, 0),
+				},
+			],
+			linen.machines,
+			__("no laundry batch in this period", null, DASH_CTX)
+		);
+	}
+
+	// Mục Chất thải (FEAT-050, FR-M10-07.1, DASH-02): màu túi luôn kèm tên loại, không chỉ màu
 	function renderWaste(waste) {
-		const box = section(__("Medical waste", null, DASH_CTX));
-		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(box);
+		const stock = report("Waste Storage Stock");
+		const overview = section(__("Medical waste", null, DASH_CTX));
+		heading(overview, __("Overview", null, DASH_CTX));
+		const grid = $("<div class='tc-dash-kpis'></div>").appendTo(overview);
+		kpi(
+			grid,
+			kg(waste.kg_total),
+			__("Kg of waste collected", null, DASH_CTX),
+			"",
+			report("Waste Report")
+		);
 		kpi(
 			grid,
 			waste.overdue,
 			__("Bags past the storage limit", null, DASH_CTX),
 			waste.overdue ? "alert" : "ok",
-			() => frappe.set_route("query-report", "Waste Storage Stock")
+			stock
 		);
 		kpi(
 			grid,
 			waste.due_soon,
 			__("Bags close to the storage limit", null, DASH_CTX),
 			waste.due_soon ? "warn" : "ok",
-			() => frappe.set_route("query-report", "Waste Storage Stock")
+			stock
 		);
 		kpi(
 			grid,
@@ -323,24 +472,77 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 			waste.pending_documents ? "warn" : "ok",
 			() => route("Waste Handover", { document_pending: 1, docstatus: 1 })
 		);
-		kpi(
-			grid,
-			waste.unusual_departments.length,
-			__("Departments with unusual waste", null, DASH_CTX),
-			waste.unusual_departments.length ? "warn" : "ok",
-			() => frappe.set_route("query-report", "Waste Report")
-		);
+		const actions = section(__("Needs action", null, DASH_CTX));
+		heading(actions, __("Needs action", null, DASH_CTX));
+		const names = (rows) => rows.join(", ");
+		actionList(actions, [
+			{
+				label: __("Bags past the storage limit", null, DASH_CTX),
+				count: waste.overdue,
+				badge: __("{0} bags", [waste.overdue], DASH_CTX),
+				alert: true,
+				open: stock,
+			},
+			{
+				label: `${__("Departments with unusual waste", null, DASH_CTX)}: ${names(
+					waste.unusual_departments
+				)}`,
+				count: waste.unusual_departments.length,
+				badge: __("{0} departments", [waste.unusual_departments.length], DASH_CTX),
+				open: report("Waste Report"),
+			},
+			{
+				label: `${__("Departments repeating misclassification", null, DASH_CTX)}: ${names(
+					waste.repeat_departments
+				)}`,
+				count: waste.repeat_departments.length,
+				badge: __("{0} departments", [waste.repeat_departments.length], DASH_CTX),
+				open: report("Waste Report"),
+			},
+		]);
+		const details = section(__("Details", null, DASH_CTX));
+		heading(details, __("Details", null, DASH_CTX));
+		const cols = $("<div class='tc-dash-columns'></div>").appendTo(details);
+		const bars = card(cols, __("Kg by waste type", null, DASH_CTX));
+		const largest = Math.max(0, ...waste.by_type.map((row) => row.kg));
+		if (!waste.by_type.length)
+			$("<p class='tc-dash-empty'></p>")
+				.text(
+					__("No data — {0}", [__("no waste in this period", null, DASH_CTX)], DASH_CTX)
+				)
+				.appendTo(bars);
+		waste.by_type.forEach((row) => {
+			const line = $("<div class='tc-dash-bar'></div>").appendTo(bars);
+			$("<span class='tc-dash-bar-label'></span>").text(row.label).appendTo(line);
+			const track = $("<span class='tc-dash-bar-track'></span>").appendTo(line);
+			$("<i></i>")
+				.addClass("is-" + (row.color_code || "none").toLowerCase())
+				.css("width", largest ? `${(row.kg * 100) / largest}%` : 0)
+				.appendTo(track);
+			$("<span class='is-num'></span>")
+				.text(__("{0} kg", [kg(row.kg)], DASH_CTX))
+				.appendTo(line);
+		});
 		table(
-			box,
+			card(cols, __("Storage stock and on-time rate", null, DASH_CTX)),
 			[
-				{ label: __("Waste type", null, DASH_CTX), value: (r) => r.waste_type },
+				{ label: __("Waste type", null, DASH_CTX), value: (r) => r.label },
 				{
-					label: __("Kg today", null, DASH_CTX),
+					label: __("Bags in store", null, DASH_CTX),
 					num: true,
-					value: (r) => format_number(r.kg, null, 1),
+					value: (r) => r.stock_bags,
+				},
+				{
+					label: __("On time", null, DASH_CTX),
+					num: true,
+					value: (r) =>
+						r.compliance_percent === null
+							? ""
+							: format_number(r.compliance_percent, null, 1) + " %",
 				},
 			],
-			waste.kg_today
+			waste.by_type,
+			__("no waste in this period", null, DASH_CTX)
 		);
 	}
 
@@ -636,11 +838,13 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		}
 		const current = sections.find((item) => item.key === state.section);
 		page.set_title(__(current.label, null, DASH_CTX));
+		document.title = `${__(current.label, null, DASH_CTX)} – TraceCore`;
 		({
 			actions: () => renderActions(blocks),
 			sets: () => renderSets(blocks.sets),
 			failures: () => renderFailures(blocks.failures),
 			sterile: () => renderSterile(blocks.sterile),
+			linen: () => renderLinen(blocks.linen),
 			waste: () => renderWaste(blocks.waste),
 			output: () => renderOutput(blocks.output),
 		}[current.key]());

@@ -18,10 +18,13 @@ from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.reprocessing import washing
 from tracecore.v1._common import (
+	ENTRY_MODE_FLAG,
 	WASH_LOAD_ROLES,
 	WASH_UNLOAD_ROLES,
 	BadRequestError,
+	_log_manual_entry,
 	current_station_session,
+	entry_mode_of,
 	reject_block,
 	require_any_role,
 	run_at_step,
@@ -157,9 +160,16 @@ def _session_name():
 	return session.name if session else None
 
 
-def _run(station, timestamp, call, ref_doctype=None, ref_name=None, raw=None):
-	"""Như `run_at_step` cho thao tác dỡ lô: trạm do dịch vụ kiểm (T2 hoặc cửa ra, Q5)."""
+def _run(
+	station, timestamp, call, ref_doctype=None, ref_name=None, raw=None, entry_mode=None, manual_reason=None
+):
+	"""Như `run_at_step` cho thao tác dỡ lô: trạm do dịch vụ kiểm (T2 hoặc cửa ra, Q5); chọn tay ghi Audit Log (A-87)."""
+	mode, reason = entry_mode_of(entry_mode, manual_reason)
+	previous = frappe.flags.get(ENTRY_MODE_FLAG)
+	frappe.flags[ENTRY_MODE_FLAG] = mode
 	try:
+		if mode == "Manual":
+			_log_manual_entry(reason, ref_doctype, ref_name, raw, station, timestamp)
 		return call()
 	except BlockedError as error:
 		return reject_block(
@@ -170,6 +180,8 @@ def _run(station, timestamp, call, ref_doctype=None, ref_name=None, raw=None):
 			station=station if isinstance(station, str) else None,
 			client_ts=timestamp,
 		)
+	finally:
+		frappe.flags[ENTRY_MODE_FLAG] = previous
 
 
 def _batch_ref(batch):
@@ -255,6 +267,25 @@ def _completed(equipment, program, codes, rows, station, timestamp):
 	if session:
 		washing.save_draft(session.name, None)  # lô đã có mã: danh sách nạp dở không còn
 	return {"ok": True, **result}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
+def label_pdf(batch, station, client_ts=None, token=None):
+	"""PDF nhãn QR của lô, máy trạm tự lưu thành file (A-99); chỉ đọc, trạm phải có máy in hoạt động (A-100)."""
+	require_any_role(*WASH_LOAD_ROLES)
+	batch = _required_str(batch, "batch")
+	timestamp = parse_client_ts(client_ts)
+	ref_doctype, ref_name = _batch_ref(batch)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, **washing.label_pdf(batch, station)},
+		ref_doctype,
+		ref_name,
+		batch,
+	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -358,7 +389,7 @@ def indicator_lot(raw, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_UNLOAD_ROLES)
 @idempotent
-def unload(batch, raw, station, client_ts=None, token=None):
+def unload(batch, raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Kiểm một mã quét khi dỡ lô `batch`: QR máy của lô hoặc QR lô (Q15, FR-M2-04.1/.2)."""
 	require_any_role(*WASH_UNLOAD_ROLES)
 	batch = _required_str(batch, "batch")
@@ -372,6 +403,8 @@ def unload(batch, raw, station, client_ts=None, token=None):
 		ref_doctype,
 		ref_name,
 		gs1.parse_scan(raw)["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 

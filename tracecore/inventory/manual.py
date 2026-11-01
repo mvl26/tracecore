@@ -18,7 +18,7 @@ def _block(code, title, reason, action):
 
 def suggest(item, qty):
 	"""Gợi ý lô FEFO cho `qty`: ``{"lots": [{batch, warehouse, qty, expiry_date}], "short"}``."""
-	lots, short = consume.pick_lots(item, flt(qty))
+	lots, short = consume.pick_lots(item, flt(qty), company=_company_of(item))
 	return {
 		"lots": [
 			{
@@ -35,6 +35,26 @@ def suggest(item, qty):
 
 def _title():
 	return _("Cannot issue these supplies")
+
+
+def _company_of(item):
+	"""Company lấy lô FEFO (A-78): Company duy nhất có tồn, hoặc Company mặc định của người dùng nếu nó có tồn."""
+	holders = consume.stock_companies([item])
+	if len(holders) <= 1:
+		return next(iter(holders), None)
+	default = frappe.defaults.get_user_default("Company")
+	if default in holders:
+		return default
+	raise _company_ambiguous(_("Item {0} is in stock at {1}.").format(item, ", ".join(sorted(holders))))
+
+
+def _company_ambiguous(reason):
+	return _block(
+		"ISSUE_COMPANY_AMBIGUOUS",
+		_title(),
+		reason,
+		_("Choose lots of one hospital, or ask R10 to set your default company."),
+	)
 
 
 def _check_request(item, qty, reason):
@@ -64,7 +84,7 @@ def _check_request(item, qty, reason):
 def _chosen_lots(item, qty, lots):
 	"""Lô người dùng chọn (hoặc gợi ý FEFO nếu không chọn) đã kiểm: thuộc Item, còn hạn, đủ tồn, cộng đúng `qty`."""
 	if not lots:
-		picked, short = consume.pick_lots(item, qty)
+		picked, short = consume.pick_lots(item, qty, company=_company_of(item))
 		if short > 0:
 			raise _insufficient(item, short)
 		return picked
@@ -99,6 +119,11 @@ def _chosen_lots(item, qty, lots):
 			_title(),
 			_("The lot quantities add up to {0}, not {1}.").format(sum(lot.qty for lot in result), qty),
 			_("Make the lot quantities add up to the quantity to issue."),
+		)
+	companies = consume.warehouse_companies(lot.warehouse for lot in result)
+	if len(companies) > 1:
+		raise _company_ambiguous(
+			_("The chosen lots belong to more than one hospital: {0}.").format(", ".join(sorted(companies)))
 		)
 	return result
 

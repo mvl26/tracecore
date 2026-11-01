@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-30 18:00:00.000000",
- "description": "Waste type a storage location takes (FEAT-048, FR-M10-03.1).",
+ "description": "Waste type a storage location takes (FR-M10-03.1).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

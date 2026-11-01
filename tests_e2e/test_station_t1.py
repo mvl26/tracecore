@@ -10,7 +10,8 @@ import re
 from playwright.sync_api import expect
 
 SCAN_INPUT = "#tc-scan-input"
-LIST_ROWS = ".tc-t1 .tc-t2-table tbody tr"
+# danh sách bộ của phiếu đang mở: không tính bảng dòng BOM của bộ đang kiểm và bảng phiếu hôm nay
+LIST_ROWS = ".tc-t1 :not(.tc-t1-today) > .tc-t2-table:not(.tc-t1-lines) tbody tr"
 
 
 def scan(page, raw):
@@ -44,14 +45,11 @@ def open_receipt(page, demo):
 
 
 def tick_all(page):
-	"""Xác nhận tất cả thành phần: chỉ bật khi mọi ảnh BOM đã tải xong (D1)."""
-	button = page.locator("[data-action='confirm-all']")
-	expect(button).to_be_enabled(timeout=15000)
-	lines = page.locator(".tc-t1-item .tc-check")
+	"""A-94: số lượng thực tế điền sẵn theo BOM, không phải tick."""
+	lines = page.locator(".tc-t1-item .tc-t1-actual")
+	expect(lines.first).to_be_visible(timeout=15000)
 	total = lines.count()
 	assert total >= 1
-	button.click()
-	expect(page.locator(".tc-t1-item .tc-check:checked")).to_have_count(total)
 	return total
 
 
@@ -117,27 +115,26 @@ def test_t1_receipt_of_several_sets_end_to_end(t1_page, t1_demo):
 	extra = t1_demo["set_new"]
 	open_receipt(page, t1_demo)
 
-	# bộ 1: BOM có ảnh, Xác nhận tất cả một chạm, Xác nhận bộ
+	# bộ 1: BOM có ảnh, số thực tế điền sẵn, Xác nhận bộ
 	scan_settled(page, first)
 	item = page.locator(".tc-t1-item")
 	expect(item.locator(".tc-code")).to_have_text(first)
-	expect(item.locator(".tc-ins")).to_have_count(4)
-	expect(item.locator(".tc-ins img.tc-photo")).to_have_count(4)  # mỗi dụng cụ có ảnh
+	expect(item.locator(".tc-t1-lines tbody tr")).to_have_count(4)
+	expect(item.locator(".tc-t1-lines img.tc-photo")).to_have_count(4)  # mỗi dụng cụ có ảnh
 	tick_all(page)
 	confirm_set(page)
 	expect(page.locator(LIST_ROWS)).to_have_count(1)
 	expect(page.locator(LIST_ROWS).first).to_contain_text("Đã xác nhận")
 	expect(page.locator(".tc-t1 .tc-alert-ok")).to_contain_text(first)
 
-	# bộ 2: tick hai dòng và ghi chú bất thường (không nhập số lượng) → xác nhận không bị nhắc
+	# bộ 2: sửa số thực tế một dòng và ghi chú bất thường → xác nhận không bị nhắc
 	scan_settled(page, second)
-	page.locator(".tc-t1-item .tc-check").nth(0).check()
-	page.locator(".tc-t1-item .tc-check").nth(1).check()
+	page.locator(".tc-t1-item .tc-t1-actual").nth(0).fill("0")
 	page.locator("#tc-t1-note").fill("Thiếu 1 kẹp, có vật lạ")
 	confirm_set(page)
 	expect(page.locator(LIST_ROWS)).to_have_count(2)
-	expect(page.locator(LIST_ROWS).nth(1)).to_contain_text("Ghi chú bất thường")
-	expect(page.locator(".tc-t1 h3").filter(has_text="2 bộ")).to_contain_text("1 bộ có ghi chú bất thường")
+	expect(page.locator(LIST_ROWS).nth(1)).to_contain_text("Cần xem xét")
+	expect(page.locator(".tc-t1 h3").filter(has_text="2 bộ")).to_contain_text("1 bộ cần xem xét")
 
 	# quét trùng: cảnh báo, không thêm dòng (FR-M2-01.6)
 	scan_settled(page, first)
@@ -163,7 +160,7 @@ def test_t1_receipt_of_several_sets_end_to_end(t1_page, t1_demo):
 	submit.click()
 	done = page.locator(".tc-t1 .tc-alert-ok")
 	expect(done).to_contain_text("Đã ghi sổ phiếu RC-", timeout=15000)
-	expect(done).to_contain_text("4 bộ đang chờ rửa; 1 bộ có ghi chú bất thường")
+	expect(done).to_contain_text("4 bộ đang chờ rửa; 1 bộ cần xem xét")
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	for set_id in (first, second, third, extra):
 		status, cycle_no = set_status(page, set_id)
@@ -202,11 +199,12 @@ def test_t1_pda_viewport_reminds_before_confirming_an_unchecked_set(t1_pda_page,
 	small = [font for font in measured["fonts"] if font["size"] < 16]
 	assert not small, small[:5]
 
-	# còn dòng chưa tick và không ghi chú: nhắc trước khi cho xác nhận (FR-M2-23.6), xác nhận vẫn được
+	# dòng lệch số BOM và không ghi chú: nhắc trước khi cho xác nhận (FR-M2-23.6, A-94), xác nhận vẫn được
+	page.locator(".tc-t1-item .tc-t1-actual").nth(0).fill("0")
 	page.locator("[data-action='confirm-set']").click()
 	reminder = page.locator(".tc-t1 .tc-alert-warn")
 	expect(reminder).to_be_visible()
-	expect(reminder.locator(".tc-alert-items li")).to_have_count(4)
+	expect(reminder.locator(".tc-alert-items li")).to_have_count(1)
 	expect(page.locator(LIST_ROWS).filter(has_text="Đã xác nhận")).to_have_count(0)
 	page.locator("[data-action='confirm-anyway']").click()
 	expect(page.locator(".tc-t1 .tc-loading")).to_have_count(0, timeout=15000)

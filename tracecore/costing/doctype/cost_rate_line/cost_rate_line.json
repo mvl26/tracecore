@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-28 09:00:00.000000",
- "description": "One unit price of a cost rate version (FEAT-045, FR-M7-03): a supply item, or labor per hour, electricity per kWh, water per litre or steam per kg.",
+ "description": "One unit price of a cost rate version (FR-M7-03): a supply item, or labor per hour, electricity per kWh, water per litre or steam per kg.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

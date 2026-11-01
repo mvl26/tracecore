@@ -50,7 +50,7 @@ def assert_full_alert(alert):
 def test_t6_scan_box_on_top_with_stock_by_location_and_expiring(t6_page, t6_demo):
 	page = t6_page
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("Cycle ID"))
+	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("mã gói"))
 	# ô quét nằm trên khối kết quả
 	scan_box = page.locator(SCAN_INPUT).bounding_box()
 	result_box = page.locator(".tc-result .tc-t6").bounding_box()
@@ -77,9 +77,10 @@ def test_t6_putaway_released_pack_without_taps(t6_page, t6_demo):
 	scan_settled(page, location)
 
 	ok = page.locator(".tc-t6 .tc-alert-ok")
-	expect(ok).to_contain_text(f"Đã nhập kho gói {t6_demo['pack_released']} vào {location}", timeout=15000)
+	expect(ok).to_contain_text("Đã nhập kho gói", timeout=15000)
+	expect(ok).to_contain_text(f"{t6_demo['pack_released']}) vào {location}")
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("Cycle ID"))
+	expect(page.locator(SCAN_INPUT)).to_have_attribute("placeholder", re.compile("mã gói"))
 	# tồn theo vị trí cập nhật sau khi nhập kho (overview tải lại); 0 chạm sau quét
 	expect(by_location.locator("td").last).to_have_text(str(before + 1), timeout=15000)
 
@@ -91,13 +92,12 @@ def test_t6_putaway_released_pack_without_taps(t6_page, t6_demo):
 
 def test_t6_pack_not_released_is_blocked_with_inline_red_alert(t6_page, t6_demo):
 	page = t6_page
-	open_pack(page, t6_demo["pack_not_released"])
-	scan_settled(page, t6_demo["location"])
+	scan_settled(page, t6_demo["pack_not_released"])  # bị chặn ngay khi quét, không mở thẻ gói
 	result = page.locator(".tc-result[data-state='error']")
 	expect(result).to_be_visible(timeout=15000)
 	alert = result.locator(".tc-alert-error")
 	assert_full_alert(alert)
-	expect(alert.locator(".tc-alert-title")).to_contain_text("Sai thứ tự trạm")
+	expect(alert.locator(".tc-alert-title")).to_contain_text("Gói chưa được giải phóng")
 	expect(alert.locator(".tc-alert-title")).to_contain_text(t6_demo["pack_not_released"])
 	# lỗi chặn không dùng modal hay toast
 	expect(page.locator(".modal.show, .msgprint, .toast, [role='dialog']:visible")).to_have_count(0)
@@ -158,9 +158,9 @@ def test_t6_report_torn_requires_reason_then_voids_pack(t6_page, t6_demo):
 	returns = stock_rows(page, "Gói cần đưa về khu bẩn").filter(has_text=cycle_id)
 	expect(returns).to_have_count(1, timeout=15000)
 
-	open_pack(page, cycle_id)
-	card = page.locator(".tc-t6-block").first
-	expect(card.locator(".tc-badge")).to_have_text("Đã hủy hiệu lực")
+	scan_settled(page, cycle_id)
+	alert = page.locator(".tc-result[data-state='error'] .tc-alert-error")
+	expect(alert.locator(".tc-alert-reason")).to_contain_text("Đã hủy hiệu lực", timeout=15000)
 	expect(page.locator("[data-action='damaged']")).to_have_count(0)  # chỉ gói đang trong kho mới báo rách
 
 

@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "KE-.####",
  "creation": "2026-10-22 09:00:00.000000",
- "description": "A shelf or bay in the sterile store, identified by a KE- QR code (FEAT-025, UC-11).",
+ "description": "A shelf or bay in the sterile store, identified by a KE- QR code (UC-11).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

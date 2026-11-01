@@ -63,12 +63,21 @@ class TestDirtyReceipt(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.cancel()
 
-	def test_confirm_line_keeps_no_received_quantity(self):
-		# FR-M2-23.2: ghi bất thường chỉ có văn bản, không lưu số lượng thực nhận
+	def test_confirm_line_keeps_actual_quantity_per_line(self):
+		# FR-M2-23.2 (A-94): số lượng thực tế theo dòng lưu riêng trên dòng xác nhận của phiếu
 		fields = {f.fieldname for f in frappe.get_meta("Dirty Receipt Confirm Line").fields}
 		self.assertEqual(
 			fields,
-			{"set_unit", "set_unit_name", "instrument", "instrument_name", "qty", "position", "confirmed"},
+			{
+				"set_unit",
+				"set_unit_name",
+				"instrument",
+				"instrument_name",
+				"qty",
+				"actual_qty",
+				"position",
+				"confirmed",
+			},
 		)
 
 	def test_permissions_match_ba_matrix(self):

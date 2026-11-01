@@ -14,7 +14,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
-from tracecore.core import audit
+from tracecore.core import audit, zones
 from tracecore.core.notification import sms
 
 IN_APP, EMAIL, SMS = "In App", "Email", "SMS"
@@ -163,6 +163,10 @@ def _rule_recipients(rule_name, doc):
 		elif row.recipient_type == "Department of document" and doc is not None:
 			users += _department_users(doc.get("department"))
 	return users
+
+
+USE_FUNCTION = "USE"
+DEPARTMENT_ROLE = "TC R08"
 
 
 def _link(doc, link):
@@ -458,6 +462,76 @@ def inbox(only_unread=0, event_code=None, surface=None, start=0, limit=50):
 	return {"rows": rows, "unread": unread_count(surface), "has_more": has_more}
 
 
+def _zones_of_station(station):
+	return {frappe.db.get_value("Zone Station", station, "parent_zone")} - {None, ""}
+
+
+def _zones_of_ref(ref_doctype, ref_name):
+	"""Khu của chứng từ: theo trường ``station``, hoặc cửa vào/ra của máy; không xác định được thì rỗng."""
+	if not ref_doctype or not ref_name or not frappe.db.exists("DocType", ref_doctype):
+		return set()
+	meta = frappe.get_meta(ref_doctype)
+	if ref_doctype == "Equipment":
+		equipment = ref_name
+	elif meta.has_field("station"):
+		station = frappe.db.get_value(ref_doctype, ref_name, "station")
+		return _zones_of_station(station) if station else set()
+	elif meta.has_field("equipment"):
+		equipment = frappe.db.get_value(ref_doctype, ref_name, "equipment")
+	else:
+		return set()
+	row = (
+		frappe.db.get_value("Equipment", equipment, ["zone_in", "zone_out"], as_dict=True)
+		if equipment
+		else None
+	)
+	return {row.zone_in, row.zone_out} - {None, ""} if row else set()
+
+
+def _rule_roles(event_code):
+	"""Role người nhận của Notification Rule; rule có người nhận đích danh thì coi như không giới hạn theo role."""
+	rows = frappe.get_all(
+		"Notification Rule Recipient",
+		filters={"parent": event_code, "parenttype": "Notification Rule"},
+		fields=["recipient_type", "role"],
+	)
+	if any(row.recipient_type != "Role" for row in rows):
+		return []
+	return [row.role for row in rows if row.role]
+
+
+def _only_for_cssd(event_code, station):
+	"""A-96, #1838 T8-02: ở trạm khoa (chức năng USE) bỏ thông báo chỉ gửi cho role khác R08."""
+	if not event_code or USE_FUNCTION not in zones.station_functions(station):
+		return False
+	roles = _rule_roles(event_code)
+	return bool(roles) and DEPARTMENT_ROLE not in roles
+
+
+def relevant_to_station(row, station):
+	"""Banner khẩn của trạm (A-91, #1831 S-06): chỉ bỏ thông báo chắc chắn thuộc khu khác, không rõ khu thì vẫn hiện."""
+	if _only_for_cssd(row.get("event_code"), station):
+		return False
+	ref_zones = _zones_of_ref(row.get("ref_doctype"), row.get("ref_name"))
+	own = _zones_of_station(station)
+	return not ref_zones or not own or bool(ref_zones & own)
+
+
+def handled_by(event_code):
+	"""Ai cần xử lý thông báo: tên role hoặc người nhận theo Notification Rule; trống thì là người đang nhận."""
+	labels = []
+	for row in frappe.get_all(
+		"Notification Rule Recipient",
+		filters={"parent": event_code, "parenttype": "Notification Rule"},
+		fields=["recipient_type", "role", "user_name"],
+		order_by="idx asc",
+	):
+		label = _(row.role) if row.recipient_type == "Role" and row.role else row.user_name
+		if label and label not in labels:
+			labels.append(label)
+	return labels
+
+
 def mark_read(names):
 	"""Đánh dấu Đã đọc các thông báo của chính người dùng (kèm chuông Desk và Audit Log). Trả số dòng đã đổi."""
 	changed = 0
@@ -470,17 +544,40 @@ def mark_read(names):
 		)
 		if not row:
 			continue
-		frappe.db.set_value(
-			"Notification Delivery",
-			row.name,
-			{"status": "Read", "read_at": now_datetime()},
-			update_modified=False,
-		)
-		if row.bell_log and frappe.db.exists("Notification Log", row.bell_log):
-			frappe.db.set_value("Notification Log", row.bell_log, "read", 1, update_modified=False)
+		_set_read(row)
 		audit.log("Update", "Notification Delivery", row.name, new={"event": "Notification Read"})
 		changed += 1
 	return changed
+
+
+def resolve(event_code, ref_doctype, ref_name):
+	"""Sự kiện đã xử lý xong: mọi thông báo chưa đọc của chứng từ này, của mọi người nhận, chuyển Đã đọc. Trả số dòng đã đổi."""
+	rows = frappe.get_all(
+		"Notification Delivery",
+		filters={
+			"event_code": event_code,
+			"ref_doctype": ref_doctype,
+			"ref_name": ref_name,
+			"channel": IN_APP,
+			"status": "Sent",
+		},
+		fields=["name", "bell_log"],
+	)
+	for row in rows:
+		_set_read(row)
+		audit.log("Update", "Notification Delivery", row.name, new={"event": "Notification Resolved"})
+	return len(rows)
+
+
+def _set_read(row):
+	frappe.db.set_value(
+		"Notification Delivery",
+		row.name,
+		{"status": "Read", "read_at": now_datetime()},
+		update_modified=False,
+	)
+	if row.bell_log and frappe.db.exists("Notification Log", row.bell_log):
+		frappe.db.set_value("Notification Log", row.bell_log, "read", 1, update_modified=False)
 
 
 def mark_all_read(event_code=None):

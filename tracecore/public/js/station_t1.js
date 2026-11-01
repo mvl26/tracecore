@@ -203,7 +203,7 @@ class T1Receiving {
 			forced: 0,
 			lines_total: row.bom.length,
 			lines_confirmed: 0,
-			lines: row.bom.map((line) => ({ ...line, confirmed: 0 })),
+			lines: row.bom.map((line) => ({ ...line, actual_qty: line.qty, confirmed: 0 })),
 			tray_images: [],
 			note: "",
 			photo: null,
@@ -311,6 +311,7 @@ class T1Receiving {
 				lines: item.lines.map((line) => ({
 					instrument: line.instrument,
 					confirmed: line.confirmed ? 1 : 0,
+					actual_qty: line.actual_qty,
 				})),
 				note: item.note || null,
 				ack_incomplete: item.ack_incomplete ? 1 : 0,
@@ -479,7 +480,6 @@ class T1Receiving {
 			manual: () => this.toggleManual(true),
 			"manual-cancel": () => this.toggleManual(false),
 			"manual-open": () => this.openManual(),
-			"confirm-all": () => this.confirmAll(),
 			"confirm-set": () => this.confirmSet(false),
 			"confirm-anyway": () => this.confirmSet(true),
 			photo: () => this.pickPhoto(),
@@ -517,25 +517,24 @@ class T1Receiving {
 		if (!this.current() && this.receipt) this.addSet(setId, {}, true);
 	}
 
-	confirmAll() {
-		const item = this.current();
-		if (!item) return;
-		item.lines.forEach((line) => (line.confirmed = 1));
-		this.refresh();
-	}
-
-	onChange(event) {
-		const box = event.target.closest(".tc-check");
-		const item = this.current();
-		if (!box || !item) return;
-		const line = item.lines[Number(box.dataset.line)];
-		if (line) line.confirmed = box.checked ? 1 : 0;
-		this.refresh();
-	}
-
 	onInput(event) {
+		if (event.target.matches(".tc-t1-actual")) return this.onActual(event.target);
 		if (event.target.id !== "tc-t1-note" || !this.currentId) return;
 		this.notes[this.currentId] = event.target.value;
+	}
+
+	// Không vẽ lại bảng khi đang gõ: giữ focus và con trỏ của ô số lượng
+	onActual(box) {
+		const item = this.current();
+		const line = item && item.lines[Number(box.dataset.line)];
+		if (!line) return;
+		const raw = String(box.value).trim();
+		line.actual_qty = raw === "" ? null : Number(raw);
+		line.confirmed = line.actual_qty === line.qty ? 1 : 0;
+		const row = box.closest("tr");
+		if (row) row.classList.toggle("is-diff", !line.confirmed);
+		const foot = this.result.querySelector("[data-region='foot']");
+		if (foot) foot.innerHTML = this.footHtml(item);
 	}
 
 	noteOf(item) {
@@ -543,26 +542,36 @@ class T1Receiving {
 	}
 
 	unticked(item) {
-		return item.lines.filter((line) => !line.confirmed);
+		return item.lines.filter((line) => line.actual_qty !== line.qty);
 	}
 
 	confirmSet(anyway) {
 		const item = this.current();
 		if (!item) return;
 		const note = this.noteOf(item).trim();
+		if (item.lines.some((line) => line.actual_qty === null || Number.isNaN(line.actual_qty))) {
+			this.notice = {
+				variant: "error",
+				title: __("Actual quantity is missing"),
+				reason: __("Every component needs an actual quantity."),
+				action: __("Enter the actual quantity, then confirm the set."),
+			};
+			return this.show();
+		}
 		const missing = this.unticked(item);
 		if (missing.length && !note && !anyway) {
 			// nhắc trước khi cho xác nhận (FR-M2-23.6); server vẫn kiểm lại
 			this.notice = {
 				variant: "warn",
 				code: "CONFIRM_INCOMPLETE",
-				title: __("Some components are not confirmed"),
-				reason: __("{0} component(s) are not ticked and there is no abnormal note.", [
-					missing.length,
-				]),
+				title: __("Quantity differs from the set list"),
+				reason: __(
+					"{0} component(s) differ from the BOM quantity and there is no abnormal note.",
+					[missing.length]
+				),
 				items: missing.map((line) => `${line.instrument_name} (${line.instrument})`),
 				action: __(
-					"Tick the missing components, write an abnormal note, or confirm the set anyway."
+					"Correct the actual quantity, write an abnormal note, or confirm the set anyway."
 				),
 			};
 			return this.show();
@@ -576,7 +585,8 @@ class T1Receiving {
 				station: this.station.station,
 				lines: item.lines.map((line) => ({
 					instrument: line.instrument,
-					confirmed: line.confirmed ? 1 : 0,
+					confirmed: line.actual_qty === line.qty ? 1 : 0,
+					actual_qty: line.actual_qty,
 				})),
 				note,
 				finalize: 1,
@@ -591,9 +601,11 @@ class T1Receiving {
 				this.notice = {
 					variant: "ok",
 					title: __("Set {0} confirmed", [res.item.set_id]),
-					reason: res.item.needs_review
-						? __("The set has an abnormal note; assembly will check it in detail.")
-						: "",
+					reason: !res.item.needs_review
+						? ""
+						: anyway && !note
+						? __("The set quantity differs; assembly will check it.")
+						: __("The set has an abnormal note; assembly will check it in detail."),
 					action: __("Scan the next set, or submit the receipt."),
 				};
 				this.imagesReady = false;
@@ -785,16 +797,16 @@ class T1Receiving {
 		this.todayFailed = false;
 		this.todaySets = {};
 		try {
-			const res = await this.station.rpc(T1_API + "received_today", {
+			const res = await this.station.rpcRead(T1_API + "received_today", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});
 			if (version !== this.station.sessionVersion) return;
 			if (res && res.ok) this.today = res;
-			else this.todayFailed = true;
+			else this.todayFailed = this.station.failureCause(null, res);
 		} catch (error) {
 			if (error.sessionEnded) return;
-			this.todayFailed = true;
+			this.todayFailed = this.station.failureCause(error);
 		} finally {
 			this.todayBusy = false;
 		}
@@ -814,7 +826,7 @@ class T1Receiving {
 			const version = this.station.sessionVersion;
 			let sets = "failed";
 			try {
-				const res = await this.station.rpc(T1_API + "receipt_sets", {
+				const res = await this.station.rpcRead(T1_API + "receipt_sets", {
 					receipt,
 					station: this.station.station,
 					client_ts: clientTs(),
@@ -839,6 +851,7 @@ class T1Receiving {
 			if (this.todayFailed)
 				return `<section class="tc-t4-block tc-t1-today">
 					<p class="tc-hint">${esc(__("Could not load the receipts received today."))}</p>
+					<p class="tc-hint">${esc(this.todayFailed)}</p>
 					<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="today-retry">${esc(
 						__("Retry")
 					)}</button></div>
@@ -852,7 +865,9 @@ class T1Receiving {
 			today.total_receipts,
 			today.total_sets,
 		]);
-		const who = (code, name) => esc([code, name].filter(Boolean).join(" · "));
+		// #1831 S-04: chỉ họ tên, mã nhân viên để tooltip
+		const who = (code, name) =>
+			`<td${name && code ? ` title="${esc(code)}"` : ""}>${esc(name || code)}</td>`;
 		const rows = today.receipts
 			.map((row) => {
 				const open = this.todayOpen === row.receipt;
@@ -867,8 +882,8 @@ class T1Receiving {
 					)}" aria-expanded="${open}">${esc(row.receipt)}</button></td>
 					<td>${esc(String(row.received_at || "").slice(11, 16))}</td>
 					<td>${esc(row.department_name || row.department)}</td>
-					<td>${who(row.deliverer, row.deliverer_name)}</td>
-					<td>${who(row.receiver, row.receiver_name)}</td>
+					${who(row.deliverer, row.deliverer_name)}
+					${who(row.receiver, row.receiver_name)}
 					<td>${esc(row.set_count)}</td>
 					<td>${flag}</td>
 				</tr>${
@@ -920,6 +935,8 @@ class T1Receiving {
 			: __("Scan the employee card of the deliverer...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
+		// #1832 T1-03: nhãn liên kết của ô quét theo đúng bước
+		for (const label of this.input.labels || []) label.textContent = text;
 	}
 
 	show() {
@@ -944,7 +961,7 @@ class T1Receiving {
 		);
 		this.station.form.classList.toggle("is-error", Boolean(error));
 		this.watchImages();
-		if (error) window.scrollTo({ top: 0 });
+		this.station.revealNotice(this.notice);
 	}
 
 	loadResume() {
@@ -1084,6 +1101,7 @@ class T1Receiving {
 				</div>`;
 			else if (this.notice.code === "STATUS_INVALID_FOR_STATION" && this.lastRefused)
 				buttons = this.forceButton();
+			else if (this.notice.code) buttons = this.station.businessButtons(this.notice);
 			else if (!this.receipt && this.notice.variant === "error")
 				buttons = `<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
@@ -1223,51 +1241,43 @@ class T1Receiving {
 
 	linesHtml(item) {
 		if (!item) return "";
-		const lines = item.lines
+		if (!item.lines.length)
+			return `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		const rows = item.lines
 			.map((line, index) => {
-				const checked = Boolean(line.confirmed);
-				return `<label class="tc-ins${checked ? " is-done" : ""}">
-					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
-					<span class="tc-ins-text">
-						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
-						<span class="tc-ins-pos">${esc(
-							__("Position {0} · × {1} · {2}", [
-								line.position,
-								line.qty,
-								line.instrument,
-							])
-						)}</span>
-						<span class="tc-ins-state">${esc(
-							checked
-								? __("Confirmed", null, "Dirty Receipt Item")
-								: __("Not confirmed")
-						)}</span>
-					</span>
-					<input type="checkbox" class="tc-check" data-line="${index}"${
-					checked ? " checked" : ""
-				} aria-label="${esc(
-					`${line.instrument_name}: ${__("Confirmed", null, "Dirty Receipt Item")}`
-				)}">
-				</label>`;
+				const differs = line.actual_qty !== line.qty;
+				const label = `${line.instrument_name}: ${__("Actual quantity")}`;
+				return `<tr class="${differs ? "is-diff" : ""}">
+					<td>${index + 1}</td>
+					<td><span class="tc-t1-line-name" title="${esc(line.instrument)}">${this.photoHtml(
+					line.thumbnail || line.image,
+					line.instrument_name
+				)}<span class="tc-ins-name">${esc(line.instrument_name)}</span></span></td>
+					<td>${esc(line.qty)}</td>
+					<td><input class="tc-t1-actual" type="number" min="0" max="9999" step="1" inputmode="numeric" data-line="${index}" aria-label="${esc(
+					label
+				)}" value="${esc(line.actual_qty === null ? "" : line.actual_qty)}"></td>
+				</tr>`;
 			})
 			.join("");
-		return lines || `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		return `<table class="tc-t2-table tc-t1-lines"><thead><tr>
+				<th scope="col">${esc(__("No."))}</th>
+				<th scope="col">${esc(__("Instrument name"))}</th>
+				<th scope="col">${esc(__("Quantity in set"))}</th>
+				<th scope="col">${esc(__("Actual quantity"))}</th>
+			</tr></thead><tbody>${rows}</tbody></table>`;
 	}
 
 	footHtml(item) {
-		if (!item) return "";
-		const total = item.lines.length;
-		const done = item.lines.filter((line) => line.confirmed).length;
-		const ready = this.imagesReady && total > 0;
-		return `<div class="tc-actions">
-			<button type="button" class="tc-btn tc-btn-ok" data-action="confirm-all"${
-				!ready || done === total ? " disabled" : ""
-			}>${esc(__("Confirm all components"))}</button>
-			<span class="tc-hint">${done === total ? `<span aria-hidden="true">&#10003;</span> ` : ""}${esc(
-			__("Confirmed {0}/{1} lines", [done, total])
-		)}</span>
-			${ready ? "" : `<span class="tc-hint">${esc(__("Loading instrument photos..."))}</span>`}
-		</div>`;
+		if (!item || !item.lines.length) return "";
+		const differs = this.unticked(item).length;
+		return `<div class="tc-actions"><span class="tc-hint">${
+			differs
+				? `<span aria-hidden="true">!</span> ${esc(
+						__("{0} line(s) differ from the BOM", [differs])
+				  )}`
+				: `<span aria-hidden="true">&#10003;</span> ${esc(__("All lines match the BOM"))}`
+		}</span></div>`;
 	}
 
 	photoNoteHtml(item) {
@@ -1301,7 +1311,7 @@ class T1Receiving {
 					  )}">${esc(__("Open"))}</button>`;
 				const flag = row.needs_review
 					? `<span class="tc-badge tc-badge-o"><span aria-hidden="true">!</span> ${esc(
-							__("Abnormal note")
+							__("Needs review")
 					  )}</span>`
 					: "";
 				return `<tr>
@@ -1312,7 +1322,7 @@ class T1Receiving {
 			})
 			.join("");
 		return `<h3>${esc(
-			__("{0} sets received · {1} with abnormal note", [
+			__("{0} sets received · {1} need review", [
 				receipt.items.length,
 				receipt.items.filter((row) => row.needs_review).length,
 			])
@@ -1386,7 +1396,7 @@ class T1Receiving {
 				title: done.offline
 					? __("Receipt kept on this device; it is sent when the connection returns")
 					: __("Receipt {0} submitted", [done.receipt]),
-				reason: __("{0} set(s) are waiting for washing; {1} have an abnormal note.", [
+				reason: __("{0} set(s) are waiting for washing; {1} need review.", [
 					done.sets.length,
 					done.flagged.length,
 				]),

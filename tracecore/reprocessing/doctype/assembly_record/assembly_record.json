@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "AS-.YYYY.-.#####",
  "creation": "2026-10-20 12:00:00.000000",
- "description": "Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.",
+ "description": "Count of one set unit against its pinned BOM at station T3. Submitting it records the T3 step gate.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -15,6 +15,7 @@
   "result",
   "station",
   "assembled_by_user",
+  "assembled_by",
   "assembled_at",
   "client_ts",
   "section_lines",
@@ -103,8 +104,16 @@
   {
    "fieldname": "assembled_by_user",
    "fieldtype": "Link",
-   "label": "Assembled By",
+   "label": "Assembled By (User)",
    "options": "User",
+   "read_only": 1
+  },
+  {
+   "description": "Employee who badged in at the station.",
+   "fieldname": "assembled_by",
+   "fieldtype": "Link",
+   "label": "Assembled By (Employee)",
+   "options": "Employee",
    "read_only": 1
   },
   {
@@ -158,7 +167,7 @@
    "fieldtype": "Check",
    "label": "Non-conformance Pending",
    "read_only": 1,
-   "description": "Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030."
+   "description": "Set while the record has a shortage or a foreign instrument; the Incident CAPA is created automatically."
   },
   {
    "fieldname": "foreign_instruments",
@@ -230,7 +239,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 15:00:00.000000",
+ "modified": "2026-11-01 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Assembly Record",
