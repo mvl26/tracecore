@@ -46,6 +46,15 @@ class TestTestCards(IsolatedTestCase):
 			self.assertNotIn(pin, text)
 		self.assertEqual(os.stat(self.path).st_mode & 0o777, 0o600)
 
+	def test_runs_outside_the_test_runner_as_administrator(self):
+		# bench execute: không có cờ in_test nên hook account đòi R10 khi tạo User
+		frappe.set_user("Administrator")
+		frappe.flags.in_test = False
+		self.addCleanup(setattr, frappe.flags, "in_test", True)
+		result = self.run_it()
+		self.assertEqual(result["count"], len(test_cards.SPECS))
+		self.assertFalse(frappe.db.exists("Has Role", {"parent": "Administrator", "role": "TC R10"}))
+
 	def test_second_run_keeps_cards_and_pins(self):
 		self.run_it()
 		first = self.entries()

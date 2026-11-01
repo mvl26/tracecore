@@ -11,6 +11,7 @@ Site không phải developer/test phải truyền `allow_production=1`, tức ng
 import json
 import os
 import secrets
+from contextlib import contextmanager
 
 import frappe
 from frappe import _
@@ -71,6 +72,20 @@ def _write(path, rows):
 	with os.fdopen(descriptor, "w", encoding="utf8") as handle:
 		json.dump(rows, handle, ensure_ascii=False, indent=1)
 	os.chmod(path, 0o600)
+
+
+@contextmanager
+def _temporary_r10():
+	"""Hook account chỉ cho R10 tạo User: Administrator mang R10 trong lúc chạy rồi trả lại, không commit bên trong."""
+	admin = frappe.get_doc("User", "Administrator")
+	had_r10 = any(row.role == "TC R10" for row in admin.roles)
+	try:
+		if not had_r10:
+			admin.add_roles("TC R10")
+		yield
+	finally:
+		if not had_r10:
+			admin.remove_roles("TC R10")
 
 
 def _pin():
@@ -162,7 +177,8 @@ def create_test_cards(out_path=None, allow_production=False):
 		card = old.get("card") or station_auth.normalize_card_id(f"TEST-{code}-{secrets.token_hex(6)}")
 		pin = old.get("pin") or _pin()
 		password = old.get("password") or secrets.token_urlsafe(PASSWORD_BYTES)
-		_ensure_user(email, role, full_name, password)
+		with _temporary_r10():
+			_ensure_user(email, role, full_name, password)
 		employee = _ensure_employee(email, full_name, role, card)
 		station_auth.set_pin(employee.name, pin)
 		frappe.db.set_value("Employee", employee.name, "tc_pin_reset_required", 0)

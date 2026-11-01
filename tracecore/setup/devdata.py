@@ -1437,12 +1437,18 @@ def _t5_program(equipment):
 	name = frappe.db.get_value(
 		"Process Program", {"equipment": equipment, "is_active": 1}, "name", order_by="name asc"
 	)
-	if name:
-		return name
-	code = "DEMO-T5-" + equipment.replace("TB-", "")
 	# danh sách rỗng không nhận gói (A-83): khai mọi loại gói demo của T4 và loại gói mặc định của factory
 	pack_types = [factories.make_pack_type()]
 	pack_types += [_ensure_pack_type(spec["pack_type"]) for spec in _t4_catalog().values()]
+	if name:
+		doc = frappe.get_doc("Process Program", name)
+		if not doc.compatible_pack_types:
+			# chương trình demo tạo trước A-83 chưa khai loại gói
+			for pack_type in dict.fromkeys(pack_types):
+				doc.append("compatible_pack_types", {"pack_type": pack_type})
+			doc.save(ignore_permissions=True)
+		return name
+	code = "DEMO-T5-" + equipment.replace("TB-", "")
 	return factories.make_sterilize_program(
 		equipment, pack_types=pack_types, code=code, parameters=T5_PARAMETERS
 	).name
