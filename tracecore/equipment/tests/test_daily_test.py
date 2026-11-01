@@ -6,7 +6,7 @@ import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today
 
 from tracecore.core.errors import BlockedError
-from tracecore.equipment import daily_test
+from tracecore.equipment import daily_test, pick
 from tracecore.reprocessing import sterilizing, washing
 from tracecore.tests.factories import make_equipment, make_sterilizer, make_wash_machine
 from tracecore.tests.utils import IsolatedTestCase, bru
@@ -33,6 +33,25 @@ class DailyTestCase(IsolatedTestCase):
 	def record(self, machine, test_type, result="Pass", **extra):
 		values = {"lot": "TEST-LOT-1", "lot_expiry": add_days(today(), 30), "photo": "/files/t.png", **extra}
 		return daily_test.record(machine.name, test_type, result, STATION, **values)
+
+
+class TestPickTypes(DailyTestCase):
+	"""#1806: gợi ý chọn tay cho test hằng ngày dùng loại máy có test (`TESTS`), và theo đúng loại máy của bước."""
+
+	def test_daily_test_purpose_lists_the_machine_types_of_the_step(self):
+		self.assertEqual(
+			set(pick.types_for("T5", pick.PURPOSE_DAILY_TEST)), {"Steam Sterilizer", "Plasma Sterilizer"}
+		)
+		self.assertEqual(
+			set(pick.types_for("T2", pick.PURPOSE_DAILY_TEST)), {"Washer-Disinfector", "Ultrasonic Cleaner"}
+		)
+
+	def test_daily_test_purpose_without_a_step_lists_every_machine_type_with_a_test(self):
+		self.assertEqual(set(pick.types_for(None, pick.PURPOSE_DAILY_TEST)), set(daily_test.TESTS))
+
+	def test_other_purposes_keep_the_types_of_the_step(self):
+		self.assertEqual(pick.types_for("T4"), ("Sealer",))
+		self.assertEqual(pick.types_for("T4", pick.PURPOSE_DAILY_TEST), ())
 
 
 class TestRecord(DailyTestCase):

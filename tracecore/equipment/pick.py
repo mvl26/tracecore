@@ -19,9 +19,14 @@ PURPOSE_DAILY_TEST = "daily_test"
 
 
 def types_for(step, purpose=None):
-	"""Loại máy gợi ý cho bước `step`; mục đích ``daily_test`` là mọi loại máy có test hằng ngày. Không có → ``()``."""
+	"""Loại máy gợi ý cho bước `step`; mục đích ``daily_test``: loại máy có test hằng ngày của bước, không rõ bước thì mọi loại.
+
+	Không có → ``()``.
+	"""
 	if purpose == PURPOSE_DAILY_TEST:
-		return tuple(daily_test.REQUIRED)
+		if step is None:
+			return tuple(daily_test.TESTS)
+		return tuple(kind for kind in STEP_TYPES.get(step, ()) if kind in daily_test.TESTS)
 	return STEP_TYPES.get(step, ())
 
 
