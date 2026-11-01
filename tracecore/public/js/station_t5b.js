@@ -461,6 +461,7 @@ class T5Release {
 				this.show();
 			},
 			"t5b-reject": () => this.rejectLoad(),
+			"t5b-finish": () => this.finishChecking(),
 			"t5b-bi-result": () => {
 				this.biResult = data.value;
 				this.show();
@@ -908,7 +909,7 @@ class T5Release {
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Release", null, "Sterilization Load"))}</h3>
 			${waiting}${review}
-			${this.canRelease() ? this.releaseControlsHtml() : this.releaseElsewhereHtml()}
+			${this.canRelease() ? this.releaseControlsHtml() : this.releaseElsewhereHtml(missing)}
 		</section>
 		<section class="tc-t4-block">
 			<h3>${esc(__("Reject the load"))}</h3>
@@ -945,14 +946,40 @@ class T5Release {
 		return roles.includes("TC R02") || roles.includes("TC R01");
 	}
 
-	releaseElsewhereHtml() {
-		return this.alertHtml({
-			variant: "info",
-			title: __("A CSSD supervisor must release the load"),
-			action: __(
-				"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN."
+	releaseElsewhereHtml(missing) {
+		const action = __(
+			"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN."
+		);
+		if (missing.length) {
+			return this.alertHtml({
+				variant: "info",
+				title: __("A CSSD supervisor must release the load"),
+				action,
+			});
+		}
+		return `${this.alertHtml({
+			variant: "ok",
+			title: __(
+				"Checks are finished. The load waits for the CSSD supervisor to release it."
 			),
-		});
+			action,
+		})}
+		<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5b-finish">${esc(
+			__("Finish checking")
+		)}</button></div>`;
+	}
+
+	// Không đổi trạng thái mẻ: kết quả đã lưu khi ghi, nút chỉ đóng mẻ để KTV làm mẻ khác
+	finishChecking() {
+		const load = this.ctx && this.ctx.name;
+		this.ctx = null;
+		this.running = null;
+		this.scans = { equipment_raw: "", load_raw: "" };
+		this.notice = {
+			variant: "ok",
+			title: __("Load {0} is waiting for the CSSD supervisor to release it", [load]),
+		};
+		this.show();
 	}
 
 	releaseControlsHtml() {
