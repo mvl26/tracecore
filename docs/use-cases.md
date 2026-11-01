@@ -729,6 +729,8 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-16; API API-M3-01; DocType D
 - **Priority:** Must · Frequency: 8–15 lô/ngày.
 - **Related NFR:** NFR-USAB-01, NFR-INT-01
 
+- **A-104 (#1847):** chọn chương trình thì hệ thống điền hóa chất, nước, điện theo định mức; khi hoàn tất, số thực tế lệch quá ngưỡng phải có lý do; lô lưu cả định mức và thực tế.
+
 **Main success scenario**
 1. R07 tạo lô: chọn máy, chương trình, nhóm nhiễm/không nhiễm.
 2. Nhập kg nạp (≤ tải máy); chọn hóa chất theo FEFO.
