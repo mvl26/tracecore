@@ -318,13 +318,15 @@ class TestDocumentTitles(FrappeTestCase):
 		)
 
 	def test_station_title_has_number_name_and_app(self):
-		self.assertEqual(self.title({"label": "Tiếp nhận", "station_no": 1}), "T1 Tiếp nhận 2013 TraceCore")
+		self.assertEqual(self.title({"label": "Tiếp nhận", "station_no": 1}), "T1 Tiếp nhận \u2013 TraceCore")
 
 	def test_station_title_does_not_repeat_the_number(self):
-		self.assertEqual(self.title({"label": "T4 Đóng gói", "station_no": 4}), "T4 Đóng gói 2013 TraceCore")
+		self.assertEqual(
+			self.title({"label": "T4 Đóng gói", "station_no": 4}), "T4 Đóng gói \u2013 TraceCore"
+		)
 
 	def test_station_without_number(self):
-		self.assertEqual(self.title({"label": "Giặt", "station_no": 0}), "Giặt 2013 TraceCore")
+		self.assertEqual(self.title({"label": "Giặt", "station_no": 0}), "Giặt \u2013 TraceCore")
 
 
 class TestOverviewTiles(FrappeTestCase):
