@@ -587,7 +587,7 @@ A station without a zone cannot be active.,Trạm chưa gán khu thì không th�
 A station without a zone cannot be activated.,Trạm chưa gán khu không kích hoạt được.,
 Station {0} has no zone: it was deactivated.,Trạm {0} chưa gán khu nên đã chuyển sang không hoạt động.,
 "Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm {0} đang hoạt động có bước {1}, loại khu {2} không cho phép.",
-"Zone and station configuration : zone type, station function by zone, active flag.","Cấu hình khu và trạm : loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
+"Zone and station configuration: zone type, station function by zone, active flag.","Cấu hình khu và trạm: loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
 Station Peripheral,Thiết bị ngoại vi của trạm,
 Peripherals,Thiết bị ngoại vi,Zone Station
 Peripheral Type,Loại thiết bị,Station Peripheral
@@ -604,7 +604,7 @@ Serial Port,Cổng nối tiếp,Station Peripheral
 Baud Rate,Tốc độ baud,Station Peripheral
 Is Active,Đang hoạt động,Station Peripheral
 Notes,Ghi chú,Station Peripheral
-"Scanner or scale attached to a station : connection USB HID, Serial or TCP.","Máy quét hoặc cân gắn với trạm : kết nối USB HID, cổng nối tiếp hoặc TCP.",
+"Scanner or scale attached to a station: connection USB HID, Serial or TCP.","Máy quét hoặc cân gắn với trạm: kết nối USB HID, cổng nối tiếp hoặc TCP.",
 1 to 65535.,1 đến 65535.,
 For example COM3 or /dev/ttyUSB0.,Ví dụ COM3 hoặc /dev/ttyUSB0.,
 Default 9600.,Mặc định 9600.,
@@ -5258,7 +5258,7 @@ Entry Zone,Khu cửa vào,
 Equipment Depreciation,Khấu hao thiết bị,
 Equipment Name,Tên thiết bị,
 Equipment Type,Loại thiết bị,
-"Equipment record : TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.","Hồ sơ thiết bị : mã TB-, khu cửa vào/ra, khấu hao mỗi mẻ, khoảng an toàn, trạng thái kiểm soát.",
+"Equipment record: TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.","Hồ sơ thiết bị: mã TB-, khu cửa vào/ra, khấu hao mỗi mẻ, khoảng an toàn, trạng thái kiểm soát.",
 Error Code,Mã lỗi,
 Escalate After (minutes),Báo cấp trên sau (phút),
 Escalated,Đã báo cấp trên,
@@ -7424,7 +7424,7 @@ Code {0} is a set or pack code; unloading works on the whole load {1}.,Mã {0} l
 Code {0} is a set or pack code; unloading works on the whole batch.,Mã {0} là mã bộ hoặc gói; dỡ theo cả lô.,
 Code {0} is a set or pack code; unloading works on the whole load.,Mã {0} là mã bộ hoặc gói; dỡ theo cả mẻ.,
 Scan the QR code of load {0}.,Quét mã QR của mẻ {0}.,
-Batches,Lô,
+Wash batches,Lô,
 BI,BI,
 Biological indicator required,Cần chỉ thị sinh học (BI),
 No biological indicator required,Không cần chỉ thị sinh học (BI),
@@ -7456,3 +7456,5 @@ Correct cycle data,Sửa dữ liệu chu trình,
 "Manual entry from program defaults, confirmed","Nhập tay từ mặc định của chương trình, đã xác nhận",
 Row {0}: Default Value of parameter {1} must be a number.,Dòng {0}: Giá trị mặc định của tham số {1} phải là số.,
 Row {0}: Default Value of parameter {1} is outside its range.,Dòng {0}: Giá trị mặc định của tham số {1} nằm ngoài khoảng.,
+Ended,Đã kết thúc,Daily Test
+Recorded,Đã ghi kết quả,Daily Test

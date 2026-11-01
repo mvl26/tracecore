@@ -73,7 +73,7 @@ function t5Kind(raw) {
 	return { kind: "pack", id: String(raw || "").trim() };
 }
 
-// Mã bộ/gói quét ở bước cần mã mẻ (#1819), dùng chung tab dữ liệu chu trình, dỡ mẻ, đọc BI
+// Mã bộ/gói quét ở bước cần mã mẻ (ticket 1819), dùng chung tab dữ liệu chu trình, dỡ mẻ, đọc BI
 function t5SetCodeNotice(raw) {
 	return {
 		title: __("This is an instrument set code - please scan the load code (ME-...)"),
@@ -378,7 +378,7 @@ class T5Load {
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (#1844)
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (ticket 1844)
 		this.saveLoad();
 		this.show();
 	}
@@ -425,7 +425,7 @@ class T5Load {
 		if (this.load.packs.some((row) => row.incompatible)) this.recheckPacks();
 	}
 
-	// Đổi chương trình (#1844): giữ gói đã quét, kiểm lại từng gói; gói không hợp đánh dấu đỏ kèm lý do
+	// Đổi chương trình (ticket 1844): giữ gói đã quét, kiểm lại từng gói; gói không hợp đánh dấu đỏ kèm lý do
 	recheckPacks() {
 		const program = this.programRow();
 		if (!this.load || !this.load.packs.length || !program) return;
@@ -1430,7 +1430,7 @@ class T5Load {
 		</section>`;
 	}
 
-	// Dòng thông tin mẻ sau khi quét/chọn (#1819): số bộ trong mẻ, có cần BI
+	// Dòng thông tin mẻ sau khi quét/chọn (ticket 1819): số bộ trong mẻ, có cần BI
 	loadFactsText(load) {
 		return [
 			__("{0} pack(s)", [(load.packs || []).length]),

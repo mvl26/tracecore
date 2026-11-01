@@ -403,7 +403,7 @@ class T2Wash {
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (#1844)
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (ticket 1844)
 		this.saveLoad();
 		this.show();
 	}
@@ -615,7 +615,7 @@ class T2Wash {
 	pickContext() {
 		if (this.mode !== "unload") return null;
 		const raw = this.unload && !this.unload.result && this.unload.equipmentRaw;
-		return { label: __("Batches"), equipment: raw ? t2Kind(raw).id : null };
+		return { label: __("Wash batches"), equipment: raw ? t2Kind(raw).id : null };
 	}
 
 	// Lô chờ đọc chỉ thị đã kiểm QR máy lúc dỡ: chỉ cần mã lô; lô đang chạy cần cả mã lô và QR máy (Q15)

@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "TB-.####",
  "creation": "2026-10-21 12:00:00.000000",
- "description": "Equipment record : TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.",
+ "description": "Equipment record: TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
