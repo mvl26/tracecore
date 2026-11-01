@@ -1398,8 +1398,12 @@ T5_READY_PACKS = 3
 
 
 def _has_running_load(equipment):
+	# A-86: máy bận tới khi dỡ mẻ, kể cả mẻ đã xong chu trình
 	return bool(
-		frappe.db.exists("Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0})
+		frappe.db.exists(
+			"Sterilization Load",
+			{"equipment": equipment, "docstatus": ["<", 2], "unload_scan_at": ["is", "not set"]},
+		)
 	)
 
 
@@ -1407,7 +1411,7 @@ def _t5_machine(key, equipment_type, free=False, **fields):
 	"""Máy tiệt khuẩn demo theo serial cố định (Equipment không xóa được nên dùng lại), đã test hằng ngày hôm nay
 	(trừ máy ngừng sử dụng); trả TB-####.
 
-	`free`: máy để e2e nạp mẻ phải trống (A-22: còn mẻ ``Running`` thì không nạp được). Lượt e2e trước để lại mẻ
+	`free`: máy để e2e nạp mẻ phải trống (A-86: còn mẻ chưa dỡ thì không nạp được). Lượt e2e trước để lại mẻ
 	đang chạy (mẻ không xóa được) thì dùng máy demo kế tiếp ``<serial>-2``, ``-3``… (tạo nếu chưa có).
 	"""
 	for index in range(1, 100):
