@@ -350,26 +350,16 @@ class TestDocumentTitles(FrappeTestCase):
 		self.assertEqual(self.title({"label": "Giặt", "station_no": 0}), "Giặt \u2013 TraceCore")
 
 
-class TestOverviewTiles(FrappeTestCase):
-	def test_summary_blocks_become_tiles_with_counts_and_routes(self):
-		out = run_js(
-			self,
-			[LAUNCHER],
-			[["tcOverviewTiles"]],
-			"""emit(tcOverviewTiles({
-				sets: [{status: "Sterile", count: 5}],
-				failures: {load: {failed: 1, finished: 4, percent: 25}, wash: {failed: 0, finished: 2, percent: 0}},
-			}));""",
-		)
-		self.assertEqual(out[0]["value"], 5)
-		self.assertEqual(out[0]["route"], "/app/set-unit?status=Sterile")
-		self.assertEqual(out[1]["value"], "1/4")
-		self.assertEqual(out[1]["route"], "/app/sterilization-load?status=Failed")
-		self.assertEqual(out[2]["route"], "/app/wash-batch?status=Failed")
-
-	def test_role_without_blocks_gets_no_tile(self):
-		out = run_js(self, [LAUNCHER], [["tcOverviewTiles"]], "emit(tcOverviewTiles({}));")
-		self.assertEqual(out, [])
+class TestOverviewOpensDashboard(FrappeTestCase):
+	def test_overview_routes_to_the_dashboard_without_figures_on_the_launcher(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.js"), encoding="utf-8"
+		) as handle:
+			source = handle.read()
+		self.assertIn('if (module.key === OVERVIEW) return frappe.set_route("tc-dashboard");', source)
+		self.assertNotIn("dashboard.summary", source)
+		self.assertNotIn("tcOverviewTiles", source)
+		self.assertIn("module.key !== OVERVIEW", source)
 
 
 class TestT1Today(FrappeTestCase):
