@@ -88,6 +88,15 @@ function t5IndicatorLabel(code) {
 	);
 }
 
+// A-84: trạng thái máy theo mẻ chưa dỡ, dùng chung ở mọi tab của T5
+function t5MachineState(status, load) {
+	return status === "Running"
+		? __("Running - {0}", [load])
+		: status === "Cycle Complete"
+		? __("Waiting to unload - {0}", [load])
+		: load;
+}
+
 class T5Load {
 	constructor(station) {
 		this.station = station;
@@ -1280,7 +1289,7 @@ class T5Load {
 						)}">
 				<div class="tc-res-head">
 					<b class="tc-code">${esc(row.load)}</b>
-					${this.statusBadge(row.status)}
+					<span class="tc-badge tc-badge-o">${esc(t5MachineState(row.status, row.load))}</span>
 				</div>
 				<p>${esc(
 					__("Sterilization load · {0} · {1}", [

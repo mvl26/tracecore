@@ -230,6 +230,16 @@ DEFAULT_CODES = (
 		("EQUIPMENT_BUSY", "LOAD_CAPACITY_EXCEEDED", "LAUNDRY_OVER_CAPACITY"),
 	),
 	_code(
+		"TB-007",
+		"Daily test is running",
+		"The machine is running a daily test, or the test has not ended yet.",
+		"A test run has started on the machine and has not ended, or a result is entered before the run ends.",
+		("WASH_LOAD", "STERI_LOAD"),
+		"Refuses to load the machine and to record the result.",
+		"<ol><li>Let the test finish and end it on the Daily test tab.</li><li>Read and record the result.</li></ol>",
+		("EQUIPMENT_TESTING", "DAILY_TEST_RUN_OPEN", "DAILY_TEST_RUN_NOT_ENDED"),
+	),
+	_code(
 		"CT-001",
 		"Load indicator did not pass",
 		"A chemical or biological indicator of the load failed or is pending, or the pack was recalled.",

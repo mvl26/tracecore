@@ -35,6 +35,42 @@ def overview(station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*DAILY_TEST_ROLES)
 @idempotent
+def start_run(equipment, test_type, station, client_ts=None, token=None):
+	"""Bắt đầu một lần chạy test: máy Đang test, không nạp được (A-84)."""
+	require_any_role(*DAILY_TEST_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	test_type = _required_str(test_type, "test_type")
+	timestamp = parse_client_ts(client_ts)
+	return _run(
+		station,
+		timestamp,
+		lambda: {"ok": True, **daily_test.start_run(equipment, test_type, station, employee=_employee())},
+		"Equipment",
+		equipment,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*DAILY_TEST_ROLES)
+@idempotent
+def end_run(equipment, test_type, station, client_ts=None, token=None):
+	"""Kết thúc lần chạy test; sau đó mới ghi được kết quả (A-84)."""
+	require_any_role(*DAILY_TEST_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	test_type = _required_str(test_type, "test_type")
+	timestamp = parse_client_ts(client_ts)
+	return _run(
+		station,
+		timestamp,
+		lambda: {"ok": True, **daily_test.end_run(equipment, test_type)},
+		"Equipment",
+		equipment,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*DAILY_TEST_ROLES)
+@idempotent
 def record(
 	equipment,
 	test_type,

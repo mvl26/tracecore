@@ -4,6 +4,7 @@
 của máy ngoài diện là tự nguyện, không khóa. Diện bắt buộc cấu hình theo từng viện trong TraceCore Settings (A-70).
 `equipment_block` là hàm của hook ``tracecore_load_equipment_checks`` (T5) và
 ``tracecore_wash_equipment_checks`` (T2): chặn tạo mẻ/lô khi quá hạn kiểm định hoặc thiếu test ngày, M2 không import M5.
+Test chạy máy đi theo `start_run` → `end_run` → `record` (A-84): trong lúc chạy máy không nạp được, kết quả chỉ ghi sau khi kết thúc.
 `unlock_temp` là mở khóa tạm của R02 (quyền kiểm ở RPC): lý do, 1-24 giờ, không với thiết bị áp lực quá hạn kiểm định.
 Trạng thái máy chỉ đổi bằng cờ ``flags.tc_equipment`` (xem `equipment.py`).
 """
@@ -32,6 +33,9 @@ TESTS = {
 	"Washer-Disinfector": ("washer_cleaning",),
 	"Ultrasonic Cleaner": ("washer_cleaning",),
 }
+# test phải chạy máy nên có lần chạy (A-84); washer_cleaning tự nguyện ghi thẳng
+RUN_TESTS = ("bowie_dick", LEAK, "plasma_daily")
+RUN_RUNNING, RUN_ENDED, RUN_RECORDED = "Running", "Ended", "Recorded"
 RESULTS = ("Pass", "Fail")
 PRESSURE_TYPES = (
 	"Steam Sterilizer",
@@ -126,7 +130,12 @@ def load_indicator(equipment, indicator, on=None):
 		return None
 	row = frappe.db.get_value(
 		"Daily Test",
-		{"equipment": equipment, "test_type": indicator, "test_date": getdate(on or today())},
+		{
+			"equipment": equipment,
+			"test_type": indicator,
+			"test_date": getdate(on or today()),
+			"result": ["is", "set"],  # lần chạy chưa đọc kết quả không che kết quả đã có (A-84)
+		},
 		["name", "result", "test_date", "tested_at", "tested_by"],
 		as_dict=True,
 		order_by="creation desc, name desc",
@@ -166,6 +175,139 @@ def _apply(equipment, status=None, **fields):
 	return doc
 
 
+def open_run(equipment):
+	"""Lần chạy test đang chạy của máy: ``{"name", "test_type", "started_at"}`` hoặc None."""
+	return frappe.db.get_value(
+		"Daily Test",
+		{"equipment": equipment, "run_status": RUN_RUNNING},
+		["name", "test_type", "started_at"],
+		as_dict=True,
+		order_by="creation desc, name desc",
+	)
+
+
+def unloaded_load(equipment):
+	"""Mẻ chưa dỡ hoặc lô đang chạy trên máy: ``{"name", "status"}`` hoặc None. Đọc theo tên DocType, M5 không import M2."""
+	load = frappe.db.get_value(
+		"Sterilization Load",
+		{
+			"equipment": equipment,
+			"status": ["in", ("Running", "Cycle Complete")],
+			"docstatus": 0,
+			"unload_scan_at": ["is", "not set"],
+		},
+		["name", "status"],
+		as_dict=True,
+		order_by="creation asc, name asc",
+	)
+	if load:
+		return load
+	return frappe.db.get_value(
+		"Wash Batch", {"equipment": equipment, "status": "Running"}, ["name", "status"], as_dict=True
+	)
+
+
+def _latest_run(equipment, test_type):
+	return frappe.db.get_value(
+		"Daily Test",
+		{"equipment": equipment, "test_type": test_type},
+		["name", "run_status", "result"],
+		as_dict=True,
+		order_by="creation desc, name desc",
+	)
+
+
+def _check_run_test(machine, test_type):
+	if test_type not in TESTS.get(machine.equipment_type, ()) or test_type not in RUN_TESTS:
+		raise _invalid(
+			_("Test {0} does not apply to {1}.").format(
+				test_type, _(machine.equipment_type, context="Equipment")
+			)
+		)
+
+
+def start_run(equipment, test_type, station, employee=None):
+	"""Bắt đầu một lần chạy test (A-84): máy Đang test, không nạp được; trả ``{"daily_test", "started_at"}``.
+
+	Máy còn mẻ chưa dỡ → EQUIPMENT_BUSY; máy đang chạy test khác → DAILY_TEST_RUN_OPEN.
+	"""
+	machine = _equipment(equipment, for_update=True)
+	_check_run_test(machine, test_type)
+	busy = unloaded_load(machine.name)
+	if busy:
+		raise _blocked(
+			"EQUIPMENT_BUSY",
+			_("Machine is still running a load"),
+			_("Load {0} on machine {1} has not been unloaded.").format(busy.name, machine.name),
+			_("Unload the load first, then start the test."),
+			object_type="Equipment",
+			object_name=machine.name,
+		)
+	running = open_run(machine.name)
+	if running:
+		raise _blocked(
+			"DAILY_TEST_RUN_OPEN",
+			_("A test is already running"),
+			_("Machine {0} is running test {1}.").format(machine.name, running.test_type),
+			_("End that test first."),
+			object_type="Equipment",
+			object_name=machine.name,
+		)
+	now = now_datetime()
+	row = frappe.get_doc(
+		{
+			"doctype": "Daily Test",
+			"equipment": machine.name,
+			"test_type": test_type,
+			"test_date": today(),
+			"run_status": RUN_RUNNING,
+			"started_at": now,
+			"station": station,
+			"tested_by_user": frappe.session.user,
+			"tested_by": employee,
+		}
+	)
+	row.flags.tc_daily_test = True
+	row.insert(ignore_permissions=True)
+	return {"daily_test": row.name, "started_at": now}
+
+
+def end_run(equipment, test_type):
+	"""Kết thúc lần chạy test đang chạy; trả ``{"daily_test", "ended_at"}``. Không có lần chạy → DAILY_TEST_RUN_NOT_ENDED."""
+	machine = _equipment(equipment, for_update=True)
+	_check_run_test(machine, test_type)
+	latest = _latest_run(machine.name, test_type)
+	if not latest or latest.run_status != RUN_RUNNING:
+		raise _run_not_ended(machine.name, test_type, _("Test {0} of machine {1} is not running."))
+	row = frappe.get_doc("Daily Test", latest.name)
+	now = now_datetime()
+	row.update({"run_status": RUN_ENDED, "ended_at": now})
+	row.flags.tc_daily_test = True
+	row.save(ignore_permissions=True)
+	return {"daily_test": row.name, "ended_at": now}
+
+
+def _run_not_ended(equipment, test_type, reason):
+	return _blocked(
+		"DAILY_TEST_RUN_NOT_ENDED",
+		_("Test result cannot be recorded yet"),
+		reason.format(test_type, equipment),
+		_("Start the test, let it finish, end it, then read and record the result."),
+		object_type="Equipment",
+		object_name=equipment,
+	)
+
+
+def _ended_run(equipment, test_type):
+	"""Dòng lần chạy mới nhất đã kết thúc và chưa có kết quả của loại test, hoặc DAILY_TEST_RUN_NOT_ENDED."""
+	latest = _latest_run(equipment, test_type)
+	if latest and latest.run_status == RUN_RUNNING:
+		raise _run_not_ended(equipment, test_type, _("Test {0} of machine {1} is still running."))
+	if not latest or latest.run_status != RUN_ENDED or latest.result:
+		raise _run_not_ended(equipment, test_type, _("Test {0} of machine {1} has not been started."))
+	return latest.name
+
+
 def record(
 	equipment,
 	test_type,
@@ -180,7 +322,8 @@ def record(
 ):
 	"""Ghi một test hằng ngày (FR-M5-05); trả ``{"daily_test", "result", "locked", "unlocked", "warnings"}``.
 
-	Loại test phải thuộc bộ test của loại máy, kết quả Đạt/Không đạt, lô test bắt buộc và còn hạn (E2). Thiếu ảnh
+	Test chạy máy phải có lần chạy đã kết thúc (A-84), kết quả ghi vào đúng dòng đó và `tested_by`, `tested_at` là người
+	đọc, giờ đọc. Loại test phải thuộc bộ test của loại máy, kết quả Đạt/Không đạt, lô test bắt buộc và còn hạn (E2). Thiếu ảnh
 	Bowie-Dick bắt buộc chỉ cảnh báo ``photo_missing`` (UC-23 E3). Test bắt buộc Không đạt khóa máy
 	(``lock_reason = Daily Test``) và đặt ``nc_pending``; Đạt đủ bộ test của ngày thì mở lại máy đang bị khóa vì test.
 	Test tự nguyện của máy ngoài diện chỉ được lưu lại (A-70).
@@ -194,6 +337,7 @@ def record(
 		)
 	if result not in RESULTS:
 		raise _invalid(_("The result must be Pass or Fail."))
+	run = _ended_run(machine.name, test_type) if test_type in RUN_TESTS else None
 	lot = lot.strip() if isinstance(lot, str) else ""
 	if not lot or not lot_expiry:
 		raise _invalid(_("Enter the lot of the test pack and its expiry date."))
@@ -207,26 +351,29 @@ def record(
 	now = now_datetime()
 	mandatory = test_type in required_tests(machine.equipment_type, machine.daily_test_required)
 	failed = result == "Fail" and mandatory
-	row = frappe.get_doc(
-		{
-			"doctype": "Daily Test",
-			"equipment": machine.name,
-			"test_type": test_type,
-			"result": result,
-			"test_date": today(),
-			"lot": lot,
-			"lot_expiry": lot_expiry,
-			"photo": photo or None,
-			"station": station,
-			"tested_by_user": frappe.session.user,
-			"tested_by": employee,
-			"tested_at": now,
-			"note": (note or "").strip()[:MAX_REASON] or None,
-			"nc_pending": 1 if failed else 0,
-		}
-	)
+	values = {
+		"result": result,
+		"test_date": today(),
+		"run_status": RUN_RECORDED,
+		"lot": lot,
+		"lot_expiry": lot_expiry,
+		"photo": photo or None,
+		"station": station,
+		"tested_by_user": frappe.session.user,
+		"tested_by": employee,
+		"tested_at": now,
+		"note": (note or "").strip()[:MAX_REASON] or None,
+		"nc_pending": 1 if failed else 0,
+	}
+	if run:
+		row = frappe.get_doc("Daily Test", run)
+		row.update(values)
+	else:
+		row = frappe.get_doc(
+			{"doctype": "Daily Test", "equipment": machine.name, "test_type": test_type, **values}
+		)
 	row.flags.tc_daily_test = True
-	row.insert(ignore_permissions=True)
+	row.save(ignore_permissions=True)
 	locked = unlocked = False
 	if failed:
 		if machine.status == "Ready":
@@ -283,6 +430,17 @@ def equipment_block(equipment):
 	row = _machine_row(equipment)
 	if not row:
 		return None
+	# A-84: máy đang chạy test thì không nạp, kể cả đang mở khóa tạm
+	running = open_run(equipment)
+	if running:
+		return Block(
+			"EQUIPMENT_TESTING",
+			_("Machine is running a test"),
+			_("Machine {0} is running test {1}.").format(equipment, running.test_type),
+			_("End the test and record its result, then load the machine."),
+			object_type="Equipment",
+			object_name=equipment,
+		)
 	# FEAT-052 A-71: HC-001/HC-003 không có mở khóa tạm, nên kiểm trước `unlock_until`
 	block = chemical_lots.chemical_block(equipment, row.equipment_type)
 	if block:
@@ -413,6 +571,16 @@ def on_settings_update(doc=None, method=None):
 	release_stale_locks()
 
 
+def _open_runs(equipment, tests):
+	"""``{loại test: Running | Ended}`` của lần chạy mới nhất chưa có kết quả."""
+	runs = {}
+	for test in tests:
+		latest = _latest_run(equipment, test)
+		if latest and latest.run_status in (RUN_RUNNING, RUN_ENDED) and not latest.result:
+			runs[test] = latest.run_status
+	return runs
+
+
 def overview():
 	"""Máy có test hằng ngày và tình trạng hôm nay (cho màn SCR-23): ``required`` theo cấu hình, ``optional`` là tự nguyện."""
 	rows = frappe.get_all(
@@ -438,8 +606,17 @@ def overview():
 		row["inspection_expired"] = _inspection_expired(row)
 		row["calibration_expired"] = _calibration_expired(row)
 		row["unlocked"] = bool(row.unlock_until and get_datetime(row.unlock_until) > now_datetime())
+		busy = unloaded_load(row.name)
+		running = open_run(row.name)
+		row["running_load"] = busy.name if busy else None
+		row["running_status"] = busy.status if busy else None
+		row["testing"] = running.test_type if running else None
+		row["run_tests"] = [test for test in TESTS[row.equipment_type] if test in RUN_TESTS]
+		row["runs"] = _open_runs(row.name, row["run_tests"])
 		row["ready_to_load"] = cint(
 			row.status == "Ready"
+			and not busy
+			and not running
 			and not row["missing"]
 			and not row["inspection_expired"]
 			and not row["calibration_expired"]

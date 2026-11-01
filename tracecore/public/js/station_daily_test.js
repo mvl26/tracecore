@@ -1,14 +1,17 @@
 /* global tcErrorTitle, tcGuideButton */
-/* global uuid4, clientTs, esc, T5Load, T2Wash */
+/* global uuid4, clientTs, esc, T5Load, T2Wash, t5MachineState */
 // Màn SCR-23 test hằng ngày và khóa máy (FEAT-040, UC-23) trên Page station: chế độ "Test hằng ngày" của màn T5 và T2.
 // Frappe nối file này sau station_t5.js và station_t2.js (hook page_js). T5Load/T2Wash đổi `station.screen` sang
 // DailyTestScreen; nút "Quay lại" trả màn về màn nạp mẻ/lô. Quét QR máy hoặc chọn máy trong danh sách, chọn loại test,
 // kết quả Đạt/Không đạt, nhập lô test và hạn lô. Test Không đạt khóa máy. R02 mở khóa tạm ≤ 24 giờ kèm lý do.
-// Lỗi chặn = alert-error inline (kết quả → lý do → hành động). Ảnh bản in/biểu đồ chưa đính ở màn này (gap).
+// Test chạy máy (A-84): Bắt đầu → Kết thúc → ghi kết quả, lô, ảnh, ghi chú. Trong lúc chạy máy hiện Đang test và không nạp được.
+// Lỗi chặn = alert-error inline (kết quả → lý do → hành động).
 
 const DT_OVERVIEW = "tracecore.v1.daily_test.overview";
 const DT_RECORD = "tracecore.v1.daily_test.record";
 const DT_UNLOCK = "tracecore.v1.daily_test.unlock_temp";
+const DT_START = "tracecore.v1.daily_test.start_run";
+const DT_END = "tracecore.v1.daily_test.end_run";
 const DT_MAX_HOURS = 24;
 
 function dtTestLabel(type) {
@@ -33,6 +36,7 @@ class DailyTestScreen {
 		this.offline = false;
 		this.reset();
 		this.result.addEventListener("input", (event) => this.onInput(event));
+		this.result.addEventListener("change", (event) => this.onChange(event));
 	}
 
 	get dialogOpen() {
@@ -44,7 +48,17 @@ class DailyTestScreen {
 		this.selected = null; // tên máy đang chọn
 		this.scrollToForm = false; // vừa chọn máy: cuộn tới form của máy một lần sau khi vẽ
 		this.notice = null;
-		this.form = { test_type: "", result: "", lot: "", lot_expiry: "", reason: "", hours: "" };
+		this.form = {
+			test_type: "",
+			result: "",
+			lot: "",
+			lot_expiry: "",
+			note: "",
+			photo: "",
+			uploading: false,
+			reason: "",
+			hours: "",
+		};
 	}
 
 	clearSession() {
@@ -173,6 +187,62 @@ class DailyTestScreen {
 		this.station.focus(true);
 	}
 
+	// A-84: Bắt đầu / Kết thúc một lần chạy test
+	runStep(method, notice) {
+		const form = this.form;
+		if (!this.selected || !form.test_type) {
+			return this.blocked({
+				title: __("Test is not complete"),
+				reason: __("Choose the machine and the test."),
+				action: __("Choose the missing items, then try again."),
+			});
+		}
+		const machine = this.selected;
+		this.request(
+			method,
+			{ equipment: machine, test_type: form.test_type, station: this.station.station },
+			() => {
+				this.notice = notice(machine);
+				this.load();
+			}
+		);
+	}
+
+	async uploadPhoto(input) {
+		const file = input.files && input.files[0];
+		if (!file) return;
+		const version = this.station.sessionVersion;
+		this.form.uploading = true;
+		this.show();
+		try {
+			const body = new FormData();
+			body.append("file", file, file.name);
+			body.append("is_private", "1");
+			body.append("folder", "Home");
+			const response = await fetch("/api/method/upload_file", {
+				method: "POST",
+				headers: { Accept: "application/json", "X-Frappe-CSRF-Token": frappe.csrf_token },
+				body,
+				credentials: "same-origin",
+			});
+			const data = await response.json().catch(() => ({}));
+			if (version !== this.station.sessionVersion) return;
+			if (!response.ok || !data.message || !data.message.file_url) throw new Error("upload");
+			this.form.photo = data.message.file_url;
+			this.notice = { variant: "ok", title: __("Photo attached: {0}", [file.name]) };
+		} catch (error) {
+			if (version !== this.station.sessionVersion) return;
+			this.notice = {
+				variant: "error",
+				title: __("Photo could not be attached"),
+				reason: __("The file {0} was not uploaded.", [file.name]),
+				action: __("Check the connection and choose the photo again."),
+			};
+		}
+		this.form.uploading = false;
+		this.show();
+	}
+
 	recordTest() {
 		const form = this.form;
 		if (!this.selected || !form.test_type || !form.result) {
@@ -190,6 +260,8 @@ class DailyTestScreen {
 				result: form.result,
 				lot: form.lot,
 				lot_expiry: form.lot_expiry,
+				photo: form.photo,
+				note: form.note,
 				station: this.station.station,
 			},
 			(res) => {
@@ -209,7 +281,7 @@ class DailyTestScreen {
 						? __("Do not load this machine.")
 						: __("Scan the next machine."),
 				};
-				this.form = { ...this.form, result: "", test_type: "" };
+				this.form = { ...this.form, result: "", test_type: "", note: "", photo: "" };
 				this.load();
 			}
 		);
@@ -268,6 +340,19 @@ class DailyTestScreen {
 				this.form.result = data.value;
 				this.show();
 			},
+			"dt-start": () =>
+				this.runStep(DT_START, (machine) => ({
+					variant: "ok",
+					title: __("Testing on machine {0}", [machine]),
+					reason: __("The machine cannot be loaded while the test runs."),
+					action: __("End the test when the machine finishes."),
+				})),
+			"dt-end": () =>
+				this.runStep(DT_END, (machine) => ({
+					variant: "ok",
+					title: __("Test ended on machine {0}", [machine]),
+					action: __("Read the result and record it."),
+				})),
 			"dt-record": () => this.recordTest(),
 			"dt-unlock": () => this.unlock(),
 		};
@@ -280,6 +365,11 @@ class DailyTestScreen {
 		if (this.station.screen !== this) return;
 		const field = event.target.dataset.dtField;
 		if (field) this.form[field] = event.target.value;
+	}
+
+	onChange(event) {
+		if (this.station.screen !== this) return;
+		if (event.target.id === "tc-dt-photo") this.uploadPhoto(event.target);
 	}
 
 	setOffline(offline) {
@@ -378,6 +468,13 @@ class DailyTestScreen {
 
 	statusBadge(row) {
 		const ok = row.ready_to_load;
+		if (row.running_load || row.testing) {
+			return `<span class="tc-badge tc-badge-o">${esc(
+				row.running_load
+					? t5MachineState(row.running_status, row.running_load)
+					: __("Testing")
+			)}</span>`;
+		}
 		const label = ok
 			? __("Ready to load")
 			: row.status !== "Ready"
@@ -398,8 +495,15 @@ class DailyTestScreen {
 				const tests = row.required
 					.map((type) => {
 						const missing = row.missing.includes(type);
+						const run = (row.runs || {})[type];
 						return `<span class="tc-tag">${esc(dtTestLabel(type))}: ${esc(
-							missing ? __("Not passed today") : __("Pass", null, "Step Gate Result")
+							run === "Running"
+								? __("Testing")
+								: run === "Ended"
+								? __("Waiting to be read")
+								: missing
+								? __("Not passed today")
+								: __("Pass", null, "Step Gate Result")
 						)}</span>`;
 					})
 					.join(" ");
@@ -432,6 +536,50 @@ class DailyTestScreen {
 		</section>`;
 	}
 
+	// Theo lần chạy của test đang chọn (A-84): chưa chạy → Bắt đầu; đang chạy → Kết thúc; đã kết thúc hoặc test ghi thẳng → form kết quả
+	runHtml(machine, field) {
+		const form = this.form;
+		const type = form.test_type;
+		const needsRun = (machine.run_tests || []).includes(type);
+		const run = (machine.runs || {})[type];
+		const button = (action, label) =>
+			`<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="${action}">${esc(
+				label
+			)}</button></div>`;
+		if (needsRun && !run) {
+			return `<p class="tc-t6-hint">${esc(
+				__(
+					"Run the test on an empty machine. The result can be recorded after the test ends."
+				)
+			)}</p>${button("dt-start", __("Start the test"))}`;
+		}
+		if (needsRun && run === "Running") {
+			return `<p class="tc-t6-hint">${esc(
+				__("The machine cannot be loaded while the test runs.")
+			)}</p>${button("dt-end", __("End the test"))}`;
+		}
+		return `<div class="tc-chips" role="group" aria-label="${esc(__("Result"))}">
+				${this.chip("dt-result", "Pass", __("Pass", null, "Step Gate Result"), form.result === "Pass")}
+				${this.chip("dt-result", "Fail", __("Fail", null, "Step Gate Result"), form.result === "Fail")}
+			</div>
+			${field("lot", __("Test pack lot"), "text")}
+			${field("lot_expiry", __("Lot expiry date"), "date")}
+			${field("note", __("Note"), "text")}
+			<div class="tc-field"><label for="tc-dt-photo">${esc(__("Test result photo"))}</label>
+				<input id="tc-dt-photo" type="file" accept="image/*" capture="environment"${
+					form.uploading || this.offline ? " disabled" : ""
+				}>
+				${
+					form.photo
+						? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
+								__("Photo attached")
+						  )}</p>`
+						: ""
+				}
+			</div>
+			${button("dt-record", __("Record the daily test"))}`;
+	}
+
 	chip(action, value, label, active) {
 		return `<button type="button" class="tc-chip" data-action="${action}" data-value="${esc(
 			value
@@ -446,8 +594,10 @@ class DailyTestScreen {
 		// loại test phải thuộc máy đang chọn; máy chỉ có một test bắt buộc thì chọn sẵn, đỡ một chạm; máy ngoài diện vẫn
 		// ghi được test tự nguyện (A-70)
 		const tests = machine.required.concat(machine.optional || []);
+		const runs = machine.runs || {};
+		const openRun = tests.find((type) => runs[type] === "Running" || runs[type] === "Ended");
 		if (!tests.includes(form.test_type)) {
-			form.test_type = machine.required.length === 1 ? machine.required[0] : "";
+			form.test_type = openRun || (machine.required.length === 1 ? machine.required[0] : "");
 		}
 		const types = tests
 			.map((type) => this.chip("dt-type", type, dtTestLabel(type), form.test_type === type))
@@ -464,15 +614,7 @@ class DailyTestScreen {
 					? `<div class="tc-chips" role="group" aria-label="${esc(
 							__("Test type")
 					  )}">${types}</div>
-				<div class="tc-chips" role="group" aria-label="${esc(__("Result"))}">
-					${this.chip("dt-result", "Pass", __("Pass", null, "Step Gate Result"), form.result === "Pass")}
-					${this.chip("dt-result", "Fail", __("Fail", null, "Step Gate Result"), form.result === "Fail")}
-				</div>
-				${field("lot", __("Test pack lot"), "text")}
-				${field("lot_expiry", __("Lot expiry date"), "date")}
-				<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="dt-record">${esc(
-					__("Record the daily test")
-				)}</button></div>`
+				${this.runHtml(machine, field)}`
 					: `<p class="tc-t6-hint">${esc(__("This machine needs no daily test."))}</p>`
 			}
 		</section>

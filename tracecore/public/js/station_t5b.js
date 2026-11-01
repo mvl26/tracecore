@@ -1,3 +1,4 @@
+/* global t5MachineState */
 /* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
@@ -40,6 +41,7 @@ class T5Release {
 	}
 
 	reset() {
+		this.running = null; // mẻ chưa dỡ, tải lại mỗi lần mở màn
 		this.mode = "unload"; // unload | bi
 		this.scans = { equipment_raw: "", load_raw: "" };
 		this.ctx = null; // kết quả release.context
@@ -580,6 +582,49 @@ class T5Release {
 		return html;
 	}
 
+	// A-84: máy đang có mẻ chưa dỡ, như các tab khác của T5
+	async loadRunning() {
+		if (this.runningBusy || this.running || !this.station.session || this.station.isOffline())
+			return;
+		this.runningBusy = true;
+		const version = this.station.sessionVersion;
+		try {
+			const res = await this.station.rpc("tracecore.v1.load.overview", {
+				station: this.station.station,
+				client_ts: clientTs(),
+			});
+			if (version === this.station.sessionVersion && res && res.ok) {
+				this.running = res.running || [];
+				if (this.station.screen === this && !this.ctx && !this.busy) this.show();
+			}
+		} catch (error) {
+			this.running = null;
+		} finally {
+			this.runningBusy = false;
+		}
+	}
+
+	runningHtml() {
+		if (!this.running) {
+			this.loadRunning();
+			return "";
+		}
+		if (!this.running.length) return "";
+		const rows = this.running
+			.map(
+				(row) =>
+					`<li><span class="tc-mono">${esc(row.equipment)}</span> ${esc(
+						row.equipment_name || ""
+					)}: <span class="tc-badge tc-badge-o">${esc(
+						t5MachineState(row.status, row.load)
+					)}</span></li>`
+			)
+			.join("");
+		return `<ul class="tc-t6-hint" aria-label="${esc(
+			__("Open sterilization loads")
+		)}">${rows}</ul>`;
+	}
+
 	idleHtml() {
 		const have = (value, label) =>
 			`<li>${esc(label)}: <b>${
@@ -591,7 +636,8 @@ class T5Release {
 			<ul class="tc-t6-hint">
 				${have(this.scans.equipment_raw, __("Sterilizer"))}
 				${have(this.scans.load_raw, __("Load"))}
-			</ul>`;
+			</ul>
+			${this.runningHtml()}`;
 	}
 
 	statusText(value) {
