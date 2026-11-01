@@ -792,6 +792,15 @@ def _scan_kind(doc, raw):
 		return "equipment"
 	if scanned["type"] == "load" and scanned["id"] == doc.name:
 		return "load"
+	if scanned["type"] in ("set", "pack"):  # #1819: dỡ theo mã mẻ, không theo gói
+		raise _blocked(
+			"SCAN_INVALID",
+			_("This is an instrument set code - please scan the load code (ME-...)"),
+			_("Code {0} is a set or pack code; unloading works on the whole load {1}.").format(
+				scanned["raw"], doc.name
+			),
+			_("Scan the QR code of load {0}.").format(doc.name),
+		)
 	raise _blocked(
 		"SCAN_INVALID",
 		_("Invalid code"),

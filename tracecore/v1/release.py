@@ -38,7 +38,9 @@ def _scans(load, equipment_raw, load_raw):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RELEASE_ROLES)
 @idempotent
-def context(load, equipment_raw, load_raw, station, client_ts=None, token=None):
+def context(
+	load, equipment_raw, load_raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None
+):
 	"""Mở màn dỡ mẻ sau khi quét QR máy và QR mẻ: thẻ mẻ, chỉ thị đã ghi và điều kiện còn thiếu (FR-M2-11.1, .2)."""
 	require_any_role(*RELEASE_ROLES)
 	load, equipment_raw, load_raw = _scans(load, equipment_raw, load_raw)
@@ -50,6 +52,9 @@ def context(load, equipment_raw, load_raw, station, client_ts=None, token=None):
 		lambda: {"ok": True, "load": releasing.context(load, equipment_raw, load_raw, station)},
 		ref_doctype,
 		ref_name,
+		load_raw,
+		entry_mode,
+		manual_reason,
 	)
 
 
@@ -216,7 +221,7 @@ def reject(load, equipment_raw, load_raw, station, reason=None, redo_from="T4", 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*RELEASE_ROLES)
 @idempotent
-def bi_result(load, result, station, client_ts=None, token=None):
+def bi_result(load, result, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Đọc kết quả BI của mẻ: Cách ly → giải phóng hoặc Không đạt; đã giải phóng mà dương tính → hook thu hồi (FR-M2-11.7)."""
 	require_any_role(*RELEASE_ROLES)
 	load = _required_str(load, "load")
@@ -232,4 +237,7 @@ def bi_result(load, result, station, client_ts=None, token=None):
 		},
 		ref_doctype,
 		ref_name,
+		load,
+		entry_mode,
+		manual_reason,
 	)

@@ -160,7 +160,7 @@ def lookup(raw, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def data_scan(load, raw, station, client_ts=None, token=None):
+def data_scan(load, raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Kiểm một mã quét khi nhập dữ liệu mẻ `load`: QR máy của mẻ hoặc QR mẻ (A-16, Q10)."""
 	require_any_role(*LOAD_ROLES)
 	load = _required_str(load, "load")
@@ -174,6 +174,8 @@ def data_scan(load, raw, station, client_ts=None, token=None):
 		ref_doctype,
 		ref_name,
 		gs1.parse_scan(raw)["raw"],
+		entry_mode,
+		manual_reason,
 	)
 
 

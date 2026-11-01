@@ -7,7 +7,8 @@ gợi ý: chọn xong, mã vẫn đi qua đúng hàm kiểm tra như khi quét. 
 """
 
 import frappe
-from frappe.utils import format_datetime, today
+from frappe import _
+from frappe.utils import cint, format_datetime, today
 
 from tracecore.core import step_gate
 from tracecore.core.pick_page import join_label, like, page_of
@@ -22,6 +23,15 @@ PACK_STEPS = {
 }
 PREVIOUS = {"T2": "T1", "T3": "T2", "T4": "T3"}
 STEPS = ("T1", *PREVIOUS, *PACK_STEPS)
+# lô/mẻ chờ dỡ để chọn tay ở bước dỡ (A-87): bước → (DocType, bảng con, ``mục đích → trạng thái``)
+BATCH_STEPS = {
+	"T2": ("Wash Batch", "Wash Batch Set Unit", {None: ("Running", "Awaiting Result")}),
+	"T5": (
+		"Sterilization Load",
+		"Load Pack",
+		{"unload": ("Running", "Cycle Complete"), "bi": ("Quarantine",)},
+	),
+}
 
 SET_COLUMNS = """unit.name as id, set_type.set_type_name as name, unit.department as department,
 	department.department_name as department_name, {since} as since"""
@@ -106,4 +116,67 @@ def _item(row):
 		"department_name": row.department_name,
 		"since": row.since,
 		"label": join_label(row.id, row.name, row.department_name, since),
+	}
+
+
+def batches(step, purpose=None, equipment=None, q=None, start=0, page_length=20):
+	"""Lô rửa / mẻ tiệt khuẩn chờ dỡ của bước `step` (A-87, #1818, #1819), chỉ đọc.
+
+	T2: lô `Running`, `Awaiting Result`. T5: `purpose="unload"` mẻ `Running`, `Cycle Complete`; `purpose="bi"` mẻ `Quarantine`.
+	`equipment` giới hạn theo máy đã quét. Trả ``{"items": [{id, raw, equipment, equipment_name, program, program_name,
+	started_at, status, count, requires_bi, unloaded, label}], "total"}``; không bao giờ có mã bộ/gói.
+	"""
+	start, length = page_of(start, page_length)
+	config = BATCH_STEPS.get(step)
+	statuses = config[2].get(purpose) if config else None
+	if not statuses:
+		return {"items": [], "total": 0}
+	doctype, child, _statuses = config
+	is_load = doctype == "Sterilization Load"
+	sql = f"""from `tab{doctype}` doc
+		left join `tabEquipment` machine on machine.name = doc.equipment
+		left join `tabProcess Program` program on program.name = doc.program
+		where doc.docstatus < 2 and doc.status in %(statuses)s"""
+	values = {"statuses": statuses}
+	if equipment:
+		sql += " and doc.equipment = %(equipment)s"
+		values["equipment"] = equipment
+	if q and q.strip():
+		sql += """ and (doc.name like %(like)s or doc.equipment like %(like)s
+			or machine.equipment_name like %(like)s or program.program_name like %(like)s)"""
+		values["like"] = like(q.strip())
+	count_sql = f"select count(*) {sql}"  # nosec B608 - `sql` ghép từ hằng trong file này, giá trị qua tham số
+	total = frappe.db.sql(count_sql, values)[0][0]
+	extra = "doc.requires_bi as requires_bi" if is_load else "0 as requires_bi"
+	page_sql = f"""select doc.name as id, doc.equipment, machine.equipment_name, doc.program, program.program_name,
+		doc.started_at, doc.status, doc.unload_scan_at, {extra},
+		(select count(*) from `tab{child}` row where row.parent = doc.name and row.parenttype = %(doctype)s) as count
+		{sql} order by doc.started_at asc, doc.name asc limit %(length)s offset %(start)s"""  # nosec B608 - như trên
+	rows = frappe.db.sql(
+		page_sql, {**values, "doctype": doctype, "length": length, "start": start}, as_dict=True
+	)
+	return {"items": [_batch_item(row, doctype) for row in rows], "total": total}
+
+
+def _batch_item(row, doctype):
+	started = format_datetime(row.started_at, "dd/MM/yyyy HH:mm") if row.started_at else None
+	return {
+		"id": row.id,
+		"raw": row.id,
+		"equipment": row.equipment,
+		"equipment_name": row.equipment_name,
+		"program": row.program,
+		"program_name": row.program_name,
+		"started_at": row.started_at,
+		"status": row.status,
+		"count": cint(row.count),
+		"requires_bi": cint(row.requires_bi),
+		"unloaded": bool(row.unload_scan_at),
+		"label": join_label(
+			row.id,
+			f"{row.equipment_name or ''} ({row.equipment})",
+			row.program_name or row.program,
+			started,
+			_(row.status, context=doctype),
+		),
 	}

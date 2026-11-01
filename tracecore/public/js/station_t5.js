@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -71,6 +71,15 @@ function t5Kind(raw) {
 	m = /TB-\d{4}/.exec(value);
 	if (m) return { kind: "equipment", id: m[0] };
 	return { kind: "pack", id: String(raw || "").trim() };
+}
+
+// Mã bộ/gói quét ở bước cần mã mẻ (#1819), dùng chung tab dữ liệu chu trình, dỡ mẻ, đọc BI
+function t5SetCodeNotice(raw) {
+	return {
+		title: __("This is an instrument set code - please scan the load code (ME-...)"),
+		reason: __("Code {0} is a set or pack code; unloading works on the whole load.", [raw]),
+		action: __("Scan the QR code on the sterilization load label."),
+	};
 }
 
 function t5GateLabel(step) {
@@ -552,6 +561,7 @@ class T5Load {
 		this.notice = null;
 		this.lookup = null;
 		if (mode === "load") this.data = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.loadOverview(true);
 		this.show();
 		// nút đổi chế độ vừa bị render lại: trả focus về ô quét để mã quét ngay sau đó không bị mất
@@ -572,8 +582,27 @@ class T5Load {
 		this.station.focus(true);
 	}
 
+	// Chọn tay ở tab Dữ liệu chu trình (A-87): danh sách là mẻ còn mở; tab Nạp máy vẫn chọn gói
+	pickContext() {
+		if (this.mode !== "data") return null;
+		const raw = this.data && !this.data.saved && this.data.equipmentRaw;
+		return {
+			label: __("Loads"),
+			purpose: "unload",
+			equipment: raw ? t5Kind(raw).id : null,
+		};
+	}
+
+	pickCodes(item) {
+		const current = this.data;
+		if (current && current.load === item.id && current.equipmentRaw) return [item.id];
+		return [item.id, item.equipment];
+	}
+
 	dataScan(raw) {
 		const code = t5Kind(raw);
+		if (code.kind === "pack" && tcIsSetOrPackCode(raw))
+			return this.blocked(t5SetCodeNotice(raw));
 		if (code.kind === "pack") {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -1331,6 +1360,16 @@ class T5Load {
 		</section>`;
 	}
 
+	// Dòng thông tin mẻ sau khi quét/chọn (#1819): số bộ trong mẻ, có cần BI
+	loadFactsText(load) {
+		return [
+			__("{0} pack(s)", [(load.packs || []).length]),
+			load.requires_bi
+				? __("Biological indicator required")
+				: __("No biological indicator required"),
+		].join(" · ");
+	}
+
 	// -- chế độ nhập dữ liệu --
 	dataHtml() {
 		const data = this.data;
@@ -1348,6 +1387,7 @@ class T5Load {
 		)}</b> · ${esc(__("Load QR code"))}: <b>${esc(
 			data.loadRaw ? __("Scanned") : __("Not scanned")
 		)}</b></p>
+			${data.context ? `<p>${esc(this.loadFactsText(data.context))}</p>` : ""}
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t5-data-reset">${esc(
 				__("Choose another load")
 			)}</button></div>

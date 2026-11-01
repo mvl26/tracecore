@@ -42,6 +42,7 @@
 | 1.11 A-64 | 2026-10-30 | Miyano (dev lead, người dùng duyệt ngày 30/10/2026; chủ đầu tư chưa) + Claude Code | Sửa nội dung FR-M2-00.4 (đủ thứ tự chức năng thay cho 8 trạm), ghi chú FR-M9-03, FR-M9-03.2, không thêm/bớt ID FR hay BRU. Chi tiết xem architecture.md, Revision History A-64. |
 | 1.11 A-71 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Khung mã lỗi: thêm FR-M9-17..21, FR-M5-07; sửa FR-M4-03.1 (ngoại lệ cho phép tạm NS-001). Xem Amendment A-71 của `docs/architecture.md`. |
 | 1.11 A-76 | 2026-10-31 | Miyano (dev lead, người dùng duyệt ngày 31/10/2026; chủ đầu tư chưa) + Claude Code | Theo Amendment A-76 của `docs/architecture.md`: mã doanh nghiệp GS1 khai trong `TraceCore Settings`, tự cấp GTIN-14 cho loại bộ, cấp bù, mở khóa có lý do. Ghi chú OQ-05 (chốt công thức; giá trị prefix thật còn mở). Không thêm/bớt ID FR hay BRU. |
+| 1.11 A-87 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Ghi chú theo Amendment A-87 của `docs/architecture.md` (#1818, #1819): FR-M2-04.1 và FR-M2-11 khi chọn tay dùng danh sách lô/mẻ chờ dỡ, không dùng danh sách bộ; chọn tay một dòng gửi cả mã lô/mẻ và mã máy, ghi Audit Log `Manual Entry`. |
 
 ---
 

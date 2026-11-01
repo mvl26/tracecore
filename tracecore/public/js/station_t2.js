@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -617,13 +617,38 @@ class T2Wash {
 		this.notice = null;
 		this.lookup = null;
 		if (mode === "load") this.unload = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.loadOverview(true);
 		this.show();
+	}
+
+	// Chọn tay ở tab Dỡ lô (A-87): danh sách là lô chờ dỡ của máy đã quét hoặc của trạm, không có mã bộ
+	pickContext() {
+		if (this.mode !== "unload") return null;
+		const raw = this.unload && !this.unload.result && this.unload.equipmentRaw;
+		return { label: __("Batches"), equipment: raw ? t2Kind(raw).id : null };
+	}
+
+	// Lô chờ đọc chỉ thị đã kiểm QR máy lúc dỡ: chỉ cần mã lô; lô đang chạy cần cả mã lô và QR máy (Q15)
+	pickCodes(item) {
+		const current = this.unload;
+		if (item.status === "Awaiting Result") return [item.id];
+		if (current && current.batch === item.id && current.equipmentRaw) return [item.id];
+		return [item.id, item.equipment];
 	}
 
 	unloadScan(raw) {
 		const code = t2Kind(raw);
 		if (code.kind === "set" && this.indicator) return this.scanIndicatorLot(raw);
+		if (code.kind === "set" && tcIsSetOrPackCode(raw)) {
+			return this.blocked({
+				title: __("This is an instrument set code - please scan the batch code (LR-...)"),
+				reason: __("Code {0} is a set or pack code; unloading works on the whole batch.", [
+					raw,
+				]),
+				action: __("Scan the washer QR code, then the batch QR code."),
+			});
+		}
 		if (code.kind === "set") {
 			return this.blocked({
 				title: __("Invalid code"),

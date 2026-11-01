@@ -1,4 +1,4 @@
-/* global t5MachineState */
+/* global t5MachineState, t5DateTime, t5SetCodeNotice, tcIsSetOrPackCode */
 /* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
@@ -79,9 +79,13 @@ class T5Release {
 		if (!raw) return this.station.focus();
 		if (this.station.isOffline()) return this.station.setOffline(true);
 		const code = t5Kind(raw);
+		if (code.kind === "pack" && tcIsSetOrPackCode(raw))
+			return this.blocked(t5SetCodeNotice(raw));
 		if (this.mode === "bi") {
 			if (code.kind !== "load") return this.blocked(this.scanHint());
 			this.biLoad = raw;
+			// bi_result gửi sau khi chọn kết quả, lúc đó đã hết cửa sổ chọn tay nên giữ lý do tại đây (A-87)
+			this.biManual = this.station.manualEntry ? this.station.manualEntry.reason : null;
 			this.notice = null;
 			return this.show();
 		}
@@ -92,6 +96,18 @@ class T5Release {
 		this.notice = null;
 		if (this.scans.equipment_raw && this.scans.load_raw) return this.openLoad();
 		this.show();
+	}
+
+	// Chọn tay (A-87): tab Dỡ mẻ theo mẻ chờ dỡ của máy đã quét hoặc của trạm; tab Đọc BI theo mẻ cách ly, không cần máy
+	pickContext() {
+		if (this.mode === "bi") return { label: __("Loads"), purpose: "bi", noEquipment: true };
+		const raw = this.scans.equipment_raw;
+		return { label: __("Loads"), purpose: "unload", equipment: raw ? t5Kind(raw).id : null };
+	}
+
+	pickCodes(item) {
+		if (this.mode === "bi" || this.scans.equipment_raw) return [item.id];
+		return [item.id, item.equipment];
 	}
 
 	scanHint() {
@@ -218,7 +234,9 @@ class T5Release {
 	setMode(mode) {
 		if (this.busy || (mode !== "unload" && mode !== "bi")) return;
 		this.mode = mode;
+		this.running = null;
 		this.notice = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.show();
 		this.station.focus(true);
 	}
@@ -324,6 +342,7 @@ class T5Release {
 			(res) => {
 				this.finished = res;
 				this.ctx = null;
+				this.running = null;
 				this.scans = { equipment_raw: "", load_raw: "" };
 				this.notice = {
 					variant: "ok",
@@ -351,6 +370,7 @@ class T5Release {
 			this.args({ reason: this.form.reject || "", redo_from: this.form.redo }),
 			(res) => {
 				this.ctx = null;
+				this.running = null;
 				this.scans = { equipment_raw: "", load_raw: "" };
 				this.notice = {
 					variant: "warn",
@@ -379,9 +399,12 @@ class T5Release {
 				load: t5Kind(this.biLoad).id || "",
 				result: this.biResult,
 				station: this.station.station,
+				...(this.biManual ? { entry_mode: "Manual", manual_reason: this.biManual } : {}),
 			},
 			(res) => {
 				const failed = res.status === "Failed" || res.recall_needed;
+				this.running = null;
+				this.biManual = null;
 				this.notice = {
 					variant: failed ? "warn" : "ok",
 					title: res.recall_needed
@@ -582,19 +605,23 @@ class T5Release {
 		return html;
 	}
 
-	// A-84: máy đang có mẻ chưa dỡ, như các tab khác của T5
+	// Mẻ chờ dỡ / chờ đọc BI (A-84, A-87), cùng nguồn với danh sách Chọn tay nên R01 cũng xem được
 	async loadRunning() {
 		if (this.runningBusy || this.running || !this.station.session || this.station.isOffline())
 			return;
 		this.runningBusy = true;
 		const version = this.station.sessionVersion;
+		const mode = this.mode;
 		try {
-			const res = await this.station.rpc("tracecore.v1.load.overview", {
+			const res = await this.station.rpc("tracecore.v1.lookup.batches", {
 				station: this.station.station,
+				screen: "sterilize",
+				purpose: mode === "bi" ? "bi" : "unload",
+				page_length: 50,
 				client_ts: clientTs(),
 			});
-			if (version === this.station.sessionVersion && res && res.ok) {
-				this.running = res.running || [];
+			if (version === this.station.sessionVersion && res && res.ok && mode === this.mode) {
+				this.running = res.items || [];
 				if (this.station.screen === this && !this.ctx && !this.busy) this.show();
 			}
 		} catch (error) {
@@ -604,25 +631,50 @@ class T5Release {
 		}
 	}
 
-	runningHtml() {
+	waitingHtml() {
 		if (!this.running) {
 			this.loadRunning();
-			return "";
+			return `<p class="tc-loading" role="status">${esc(__("Loading..."))}</p>`;
 		}
-		if (!this.running.length) return "";
-		const rows = this.running
-			.map(
-				(row) =>
-					`<li><span class="tc-mono">${esc(row.equipment)}</span> ${esc(
-						row.equipment_name || ""
-					)}: <span class="tc-badge tc-badge-o">${esc(
-						t5MachineState(row.status, row.load, row.unloaded)
-					)}</span></li>`
-			)
-			.join("");
-		return `<ul class="tc-t6-hint" aria-label="${esc(
-			__("Open sterilization loads")
-		)}">${rows}</ul>`;
+		const title =
+			this.mode === "bi"
+				? __("Loads waiting for the biological indicator ({0})", [this.running.length])
+				: __("Loads waiting to unload ({0})", [this.running.length]);
+		const body = this.running.length
+			? `<table class="tc-t6-table">
+				<thead><tr><th scope="col">${esc(__("Load"))}</th><th scope="col">${esc(
+					__("Sterilizer")
+			  )}</th><th scope="col">${esc(__("Program"))}</th><th scope="col">${esc(
+					__("Started at")
+			  )}</th><th scope="col">${esc(__("Status"))}</th><th scope="col">${esc(
+					__("Packs")
+			  )}</th></tr></thead>
+				<tbody>${this.running
+					.map(
+						(row) =>
+							`<tr data-load="${esc(row.id)}"><td class="tc-mono">${esc(
+								row.id
+							)}</td><td>${esc(
+								row.equipment_name || ""
+							)} <span class="tc-mono">${esc(row.equipment)}</span></td><td>${esc(
+								row.program_name || row.program || ""
+							)}</td><td>${esc(
+								t5DateTime(row.started_at)
+							)}</td><td><span class="tc-badge tc-badge-o">${esc(
+								row.status === "Quarantine"
+									? __(row.status, null, "Sterilization Load")
+									: t5MachineState(row.status, row.id, row.unloaded)
+							)}</span></td><td>${esc(row.count)}${
+								row.requires_bi ? ` · ${esc(__("BI"))}` : ""
+							}</td></tr>`
+					)
+					.join("")}</tbody>
+			</table>`
+			: `<p class="tc-empty">${esc(__("No load is waiting."))}</p>`;
+		return `<section class="tc-t4-block" aria-label="${esc(title)}">
+			<h3>${esc(title)}</h3>
+			${body}
+		</section>`;
 	}
 
 	idleHtml() {
@@ -637,7 +689,7 @@ class T5Release {
 				${have(this.scans.equipment_raw, __("Sterilizer"))}
 				${have(this.scans.load_raw, __("Load"))}
 			</ul>
-			${this.runningHtml()}`;
+			${this.waitingHtml()}`;
 	}
 
 	statusText(value) {
@@ -745,6 +797,9 @@ class T5Release {
 			<dl class="tc-res-grid">
 				<dt>${esc(__("Sterilizer"))}</dt><dd>${esc(ctx.equipment ? ctx.equipment.equipment_name : "")}</dd>
 				<dt>${esc(__("Program"))}</dt><dd>${esc(ctx.program ? ctx.program.program_name : "")}</dd>
+				<dt>${esc(__("Packs in load ({0})", [(ctx.packs || []).length]))}</dt><dd>${esc(
+			this.back.loadFactsText(ctx)
+		)}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(
 			ctx.data_complete ? __("Entered and confirmed") : __("Not entered yet")
 		)}${
@@ -884,11 +939,18 @@ class T5Release {
 	}
 
 	biHtml() {
-		return `<section class="tc-t4-block">
+		const chosen = this.biLoad ? t5Kind(this.biLoad).id || this.biLoad : "";
+		const row = (this.running || []).find((item) => item.id === chosen);
+		const facts = row
+			? ` · ${row.equipment_name || row.equipment} · ${
+					row.program_name || row.program || ""
+			  } · ${__("{0} pack(s)", [row.count])}`
+			: "";
+		return `${this.biLoad ? "" : this.waitingHtml()}<section class="tc-t4-block">
 			<h3>${esc(__("Biological indicator of a load in quarantine"))}</h3>
 			<p class="tc-t6-hint">${esc(
 				this.biLoad
-					? __("Load {0}", [t5Kind(this.biLoad).id || this.biLoad])
+					? `${__("Load {0}", [chosen])}${facts}`
 					: __("Scan the QR code on the load label.")
 			)}</p>
 			<div class="tc-chips" role="group" aria-label="${esc(__("Biological indicator"))}">

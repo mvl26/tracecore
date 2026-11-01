@@ -903,6 +903,15 @@ def _scan_kind(doc, raw):
 		return "equipment"
 	if scanned["type"] == "wash_batch" and scanned["id"] == doc.name:
 		return "wash_batch"
+	if scanned["type"] in ("set", "pack"):  # #1818: dỡ theo mã lô, không theo bộ
+		raise _blocked(
+			"SCAN_INVALID",
+			_("This is an instrument set code - please scan the batch code (LR-...)"),
+			_("Code {0} is a set or pack code; unloading works on the whole batch {1}.").format(
+				scanned["raw"], doc.name
+			),
+			_("Scan the QR code of batch {0}.").format(doc.name),
+		)
 	raise _blocked(
 		"SCAN_INVALID",
 		_("Invalid code"),
