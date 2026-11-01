@@ -19,20 +19,25 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			return false;
 		}
 	};
-	const toggle = $(
-		"<button type='button' class='btn btn-default icon-btn tc-admin-toggle' hidden></button>"
-	)
-		.append($(frappe.utils.icon("menu", "md")).attr("aria-hidden", "true"))
-		.on("click", () => {
-			const collapsed = !root.find(".tc-admin").hasClass("is-collapsed");
-			try {
-				localStorage.setItem(NAV_COLLAPSED_KEY, collapsed ? "1" : "0");
-			} catch (error) {
-				/* chỉ là tiện ích: không lưu được thì thôi */
-			}
-			apply_collapsed(collapsed);
-		});
-	page.wrapper.find(".page-title").prepend(toggle);
+	let toggle = null;
+	// tạo khi vẽ sidebar lần đầu: trang không có sidebar không cần nút, cũng không cần bộ icon của Desk
+	function ensure_toggle() {
+		if (toggle) return;
+		toggle = $(
+			"<button type='button' class='btn btn-default icon-btn tc-admin-toggle' hidden></button>"
+		)
+			.append(icon("menu"))
+			.on("click", () => {
+				const collapsed = !root.find(".tc-admin").hasClass("is-collapsed");
+				try {
+					localStorage.setItem(NAV_COLLAPSED_KEY, collapsed ? "1" : "0");
+				} catch (error) {
+					/* chỉ là tiện ích: không lưu được thì thôi */
+				}
+				apply_collapsed(collapsed);
+			});
+		page.wrapper.find(".page-title").prepend(toggle);
+	}
 	function apply_collapsed(collapsed) {
 		root.find(".tc-admin").toggleClass("is-collapsed", collapsed);
 		const label = collapsed
@@ -175,6 +180,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 				.appendTo(nav);
 		});
 		show(modules.find((module) => module.key === selected_module));
+		ensure_toggle();
 		toggle.prop("hidden", false);
 		apply_collapsed(nav_collapsed());
 	}
@@ -281,7 +287,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	}
 	async function load() {
 		const current = ++request;
-		toggle.prop("hidden", true);
+		if (toggle) toggle.prop("hidden", true);
 		if (!navigator.onLine) {
 			message(
 				__("Offline", null, "TraceCore Launcher"),
