@@ -15,7 +15,7 @@ from frappe.utils.password import get_decrypted_password
 
 from tracecore.core import audit, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import storage
+from tracecore.reprocessing import pack_display, storage
 
 FUNCTION = "USE"
 ISSUED = "Issued"
@@ -178,6 +178,7 @@ def _card(pack, employee):
 		"set_id": pack.set_unit,
 		"set_type": pack.set_type,
 		"set_name": pack.set_name,
+		"department_name": pack_display.department_name(pack_department),
 		"method": pack.method,
 		"expiry": getdate(pack.expiry),
 		"pack_department": pack_department,

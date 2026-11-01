@@ -24,7 +24,7 @@ from frappe.utils.data import get_system_timezone
 from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import cycle_time
+from tracecore.reprocessing import cycle_time, pack_display
 
 STEP = "T5"  # mã cổng trong step_gate
 FUNCTION = "STERI_LOAD"
@@ -413,6 +413,7 @@ def _admitted(pack, duplicate, count, capacity):
 		"cycle_id": pack.name,
 		"set_id": pack.set_unit,
 		"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name"),
+		"department_name": pack_display.row_of(pack.name)["department_name"],
 		"method": pack.method,
 		"pack_type": pack.pack_type,
 		"pack_type_name": frappe.db.get_value("Item", pack.pack_type, "item_name"),
@@ -457,11 +458,20 @@ def running_loads():
 			"unloaded": bool(row.unload_scan_at),
 			"requires_bi": cint(row.requires_bi),
 			"is_priority": cint(row.is_priority),
-			"packs": frappe.get_all(
-				"Load Pack", filters={"parent": row.name, "parenttype": "Sterilization Load"}, pluck="pack"
-			),
+			"packs": packs,
+			"pack_rows": [pack_display.row_of(pack) for pack in packs],
 		}
-		for row in rows
+		for row, packs in (
+			(
+				row,
+				frappe.get_all(
+					"Load Pack",
+					filters={"parent": row.name, "parenttype": "Sterilization Load"},
+					pluck="pack",
+				),
+			)
+			for row in rows
+		)
 	]
 
 
@@ -586,6 +596,7 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 	return {
 		"load": load.name,
 		"packs": accepted,
+		"pack_rows": [pack_display.row_of(pack) for pack in accepted],
 		"rejected": rejected,
 		"print": label,
 		# label preview §4.12 trên kiosk: QR thật của mã mẻ (máy in nhận ZPL riêng)
@@ -685,6 +696,7 @@ def _pack_rows(doc):
 				"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name")
 				if set_type
 				else None,
+				"department_name": pack_display.row_of(row.pack)["department_name"],
 				"method": pack.method if pack else None,
 				"pack_type": pack.pack_type if pack else None,
 				"expiry": pack.expiry if pack else None,

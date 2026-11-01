@@ -1,4 +1,4 @@
-/* global t5MachineState, t5DateTime, t5SetCodeNotice, tcIsSetOrPackCode */
+/* global t5MachineState, t5DateTime, t5SetCodeNotice, tcIsSetOrPackCode, tcPackLabelHtml */
 /* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
@@ -720,16 +720,14 @@ class T5Release {
 
 	packsHtml(ctx) {
 		return `<table class="tc-t6-table">
-			<thead><tr><th scope="col">${esc(__("Cycle ID"))}</th><th scope="col">${esc(
+			<thead><tr><th scope="col">${esc(__("Pack"))}</th><th scope="col">${esc(
 			__("Set ID")
-		)}</th><th scope="col">${esc(__("Set Name"))}</th></tr></thead>
+		)}</th></tr></thead>
 			<tbody>${(ctx.packs || [])
 				.map(
 					(row) =>
-						`<tr><td class="tc-mono">${esc(
-							row.cycle_id
-						)}</td><td class="tc-mono">${esc(row.set_id)}</td><td>${esc(
-							row.set_name || ""
+						`<tr><td>${tcPackLabelHtml(row)}</td><td class="tc-mono">${esc(
+							row.set_id
 						)}</td></tr>`
 				)
 				.join("")}</tbody>

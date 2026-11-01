@@ -2109,7 +2109,7 @@ Confirmation tick is required,Bắt buộc đánh dấu ô xác nhận kết qu�
 "Wash batch · {0} · {1}","Lô rửa · {0} · {1}",""
 "Sets in batch ({0}): {1}","Bộ trong lô ({0}): {1}",""
 "Cycle data: confirmed manual entry","Dữ liệu chu trình: nhập tay có xác nhận",""
-"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)","Chưa có dữ liệu chu trình — cần dữ liệu tự động hoặc nhập tay có xác nhận trước khi kết luận Đạt (BRU-REP-015)",""
+"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass","Chưa có dữ liệu chu trình — cần dữ liệu tự động hoặc nhập tay có xác nhận trước khi kết luận Đạt",""
 "Running batches - unload: scan the washer QR code, then the batch QR code",Lô đang chạy — dỡ máy: quét QR máy rồi mã QR của lô,
 "Unloading batch {0}","Đang dỡ lô {0}",""
 "Washer QR code","QR máy",""
@@ -2503,7 +2503,7 @@ Load {0} needs the sterilizer QR code and the load QR code.,Mẻ {0} cần QR m�
 "None of the scanned packs can go into a sterilization load on {0}.","Không gói nào trong số đã quét nạp được vào mẻ tiệt khuẩn trên máy {0}.",""
 "Not a sterilizer","Không phải máy tiệt khuẩn",""
 "Not connected - enter the cycle data by hand with confirmation.","Không kết nối — nhập tay dữ liệu chu trình có xác nhận.",""
-"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004).","Chỉ nhận gói đã qua cổng T4 và hợp chương trình (BRU-FLOW-004, BRU-REP-004).",""
+Only packs that finished packing and fit the program of this sterilizer are accepted.,Chỉ nhận gói đã đóng gói xong và đúng chương trình máy.,
 "Open sterilization loads","Mẻ tiệt khuẩn đang mở",""
 "Outside the program range - Needs review","Ngoài dải của chương trình — Cần xem xét",""
 "Pack cannot be loaded","Không nạp được gói",""

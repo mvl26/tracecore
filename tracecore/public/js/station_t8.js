@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcPackLabel, tcPackLabelHtml, tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, tcScanId, tcLocalDay */
 // Màn T8 quét sử dụng (SCR-37, FEAT-027, UC-13) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -327,7 +327,12 @@ class T8Usage {
 			this.draft = Object.fromEntries(T8_KEEP.map((name) => [name, this.draft[name]]));
 			this.card = null;
 			this.emergency = false;
-			if (emergency) this.waiting.push({ usage: res.usage, cycle_id: cycleId });
+			if (emergency)
+				this.waiting.push({
+					usage: res.usage,
+					cycle_id: cycleId,
+					label: tcPackLabel({ ...this.card, cycle_id: cycleId }),
+				});
 			this.notice = {
 				variant: "ok",
 				title: __("Pack {0} recorded as used", [cycleId]),
@@ -541,7 +546,7 @@ class T8Usage {
 			</div>
 			<dl class="tc-res-grid">
 				<dt>${esc(__("Set ID"))}</dt><dd class="tc-mono">${esc(card.set_id)}</dd>
-				<dt>${esc(__("Set Name"))}</dt><dd>${esc(card.set_name)}</dd>
+				<dt>${esc(__("Pack"))}</dt><dd>${tcPackLabelHtml(card)}</dd>
 				<dt>${esc(__("Use-by date"))}</dt><dd><b>${esc(t8Date(card.expiry))}</b></dd>
 			</dl>
 			${
@@ -620,9 +625,7 @@ class T8Usage {
 		if (this.codeFor === row.usage) {
 			const error = this.fieldError === "PATIENT_CODE_REQUIRED";
 			return `<div class="tc-field">
-				<label for="tc-t8-late-code">${esc(__("Patient code"))} * <span class="tc-mono">${esc(
-				row.cycle_id
-			)}</span></label>
+				<label for="tc-t8-late-code">${esc(__("Patient code"))} * ${esc(row.label || row.cycle_id)}</label>
 				<input id="tc-t8-late-code" type="password" autocomplete="off"${
 					error ? ' class="is-error" aria-invalid="true"' : ""
 				}>
@@ -637,7 +640,7 @@ class T8Usage {
 			</div>`;
 		}
 		return `<div class="tc-actions">
-			<span class="tc-mono">${esc(row.cycle_id)}</span>
+						<span>${esc(row.label || row.cycle_id)}</span>
 			<button type="button" class="tc-btn tc-btn-secondary" data-action="late-code" data-usage="${esc(
 				row.usage
 			)}">${esc(__("Enter patient code"))}</button>

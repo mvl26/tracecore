@@ -1705,7 +1705,7 @@ class T2Wash {
 					: this.alertHtml({
 							variant: "warn",
 							title: __(
-								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)"
+								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass"
 							),
 					  })
 			}

@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
 /* global uuid4, clientTs, esc */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -394,6 +394,7 @@ class T5Load {
 				cycle_id: res.cycle_id,
 				set_id: res.set_id,
 				set_name: res.set_name,
+				department_name: res.department_name,
 				method: res.method,
 				pack_type_name: res.pack_type_name || res.pack_type,
 				expiry: res.expiry,
@@ -402,7 +403,7 @@ class T5Load {
 			this.notice = {
 				variant: "ok",
 				title: __("Scanned {0} into sterilizer {1} ({2} pack(s))", [
-					res.cycle_id,
+					tcPackLabel(res),
 					this.load.machine.name,
 					this.load.packs.length,
 				]),
@@ -1114,7 +1115,7 @@ class T5Load {
 				<h3>${esc(__("Load sterilizer - scan the sterilizer QR code first, then scan each pack"))}</h3>
 				<p class="tc-empty">${esc(
 					__(
-						"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004)."
+						"Only packs that finished packing and fit the program of this sterilizer are accepted."
 					)
 				)}</p>
 			</section>`;
@@ -1132,8 +1133,8 @@ class T5Load {
 		const rows = load.packs
 			.map(
 				(row) => `<li class="tc-t5-pack${row.incompatible ? " is-bad" : ""}">
-					<div class="tc-t5-pack-id"><span class="tc-mono">${esc(row.cycle_id)}</span>
-						<span>${esc(row.set_id)} · ${esc(row.set_name || "-")}</span></div>
+					<div class="tc-t5-pack-id"><span>${tcPackLabelHtml(row)}</span>
+						<span class="tc-mono">${esc(row.set_id)}</span></div>
 					<div>${esc(__(row.method, null, "Pack"))} · ${esc(row.pack_type_name || "-")} · ${esc(
 					__("Expires {0}", [t5Date(row.expiry)])
 				)}</div>
@@ -1156,7 +1157,7 @@ class T5Load {
 			? `<ul class="tc-t5-packs">${rows}</ul>`
 			: `<p class="tc-empty">${esc(
 					__(
-						"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004)."
+						"Only packs that finished packing and fit the program of this sterilizer are accepted."
 					)
 			  )}</p>`;
 		const recheck =
@@ -1254,7 +1255,9 @@ class T5Load {
 			done.machine.equipment_name
 		)} <span class="tc-mono">${esc(done.machine.name)}</span></dd>
 						<dt>${esc(__("Program"))}</dt><dd>${esc(done.program_name)}</dd>
-						<dt>${esc(__("Packs in load"))}</dt><dd class="tc-mono">${esc(done.packs.join(", "))}</dd>
+						<dt>${esc(__("Packs in load"))}</dt><dd>${(done.pack_rows || [])
+			.map((row) => tcPackLabelHtml(row))
+			.join(", ")}</dd>
 					</dl>
 					${this.printNoteHtml()}
 				</div>
@@ -1336,7 +1339,7 @@ class T5Load {
 	}
 
 	lookupHtml(load) {
-		const packs = load.packs.map((row) => `${row.cycle_id} (${row.set_id})`).join(", ");
+		const packs = load.packs.map((row) => tcPackLabelHtml(row)).join(", ");
 		return `<section class="tc-t4-block tc-t2-lookup" aria-label="${esc(
 			__("Sterilization load lookup")
 		)}">
@@ -1354,9 +1357,7 @@ class T5Load {
 				<dt>${esc(__("Loaded at"))}</dt><dd>${esc(t5DateTime(load.load_completed_at))} · ${esc(
 			(load.operator && (load.operator.employee_name || load.operator.name)) || "-"
 		)}</dd>
-				<dt>${esc(__("Packs in load ({0})", [load.packs.length]))}</dt><dd class="tc-mono">${esc(
-			packs
-		)}</dd>
+				<dt>${esc(__("Packs in load ({0})", [load.packs.length]))}</dt><dd>${packs}</dd>
 				<dt>${esc(__("Cycle data"))}</dt><dd>${esc(this.dataText(load))}</dd>
 			</dl>
 		</section>`;
@@ -1385,9 +1386,9 @@ class T5Load {
 						row.program_name || row.program,
 					])
 				)} <span class="tc-mono">${esc(row.equipment)}</span></p>
-				<p>${esc(__("Packs in load ({0})", [row.packs.length]))}: <span class="tc-mono">${esc(
-							row.packs.join(", ")
-						)}</span></p>
+				<p>${esc(__("Packs in load ({0})", [row.packs.length]))}: ${(row.pack_rows || [])
+							.map((pack) => tcPackLabelHtml(pack))
+							.join(", ")}</p>
 				${
 					row.data_complete
 						? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(

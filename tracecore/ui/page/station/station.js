@@ -90,6 +90,25 @@ function esc(value) {
 	return frappe.utils.escape_html(value == null ? "" : String(value));
 }
 
+// Nhãn gói dùng chung các màn T5-T8 (A-88, #1836): "Tên bộ – Khoa (CY-…)"; thiếu tên thì chỉ còn mã
+function tcPackNames(row) {
+	return [row.set_name, row.department_name].filter(Boolean).join(" – ");
+}
+
+// eslint-disable-next-line no-unused-vars
+function tcPackLabel(row) {
+	const names = [row.set_name, row.department_name].filter(Boolean).join(" – ");
+	return names ? `${names} (${row.cycle_id})` : row.cycle_id || "";
+}
+
+// Như `tcPackLabel` nhưng mã dùng font mã định danh
+// eslint-disable-next-line no-unused-vars
+function tcPackLabelHtml(row) {
+	const names = tcPackNames(row);
+	const code = `<span class="tc-mono">${esc(row.cycle_id)}</span>`;
+	return names ? `${esc(names)} (${code})` : code;
+}
+
 class TraceCoreStation {
 	constructor(wrapper, authBarrier = Promise.resolve()) {
 		this.wrapper = wrapper;
