@@ -238,6 +238,37 @@ class TestLoadRelease(ProgramCase):
 		self.assertEqual(emit.call_args.args[0], "CONSUMPTION_FAILED")
 
 
+class TestConsumptionFailedNotice(IsolatedTestCase):
+	def notice(self):
+		frappe.translate.clear_cache()
+		previous = frappe.local.lang
+		frappe.local.lang = "vi"
+		try:
+			with patch("tracecore.inventory.consume.notification.emit") as emit:
+				consume._notify_failed("Wash Batch", "LR-1", ValueError("Thiếu Công ty"), ["HC-1"])
+		finally:
+			frappe.local.lang = previous
+		return emit.call_args
+
+	def test_subject_is_vietnamese_and_names_the_cause(self):
+		subject = self.notice().args[2]
+		self.assertIn("Lô rửa LR-1", subject)
+		self.assertNotIn("Wash Batch", subject)
+		self.assertIn("Thiếu Công ty", subject)
+
+	def test_button_opens_a_new_material_issue_for_the_source(self):
+		link = self.notice().kwargs["link"]
+		self.assertTrue(link.startswith("/app/stock-entry/new?"), link)
+		self.assertIn("stock_entry_type=Material%20Issue", link)
+		self.assertIn("tc_source_name=LR-1", link)
+
+	def test_a_long_cause_is_cut_in_the_subject_but_kept_in_the_message(self):
+		with patch("tracecore.inventory.consume.notification.emit") as emit:
+			consume._notify_failed("Wash Batch", "LR-1", ValueError("x" * 500), ["HC-1"])
+		self.assertLess(len(emit.call_args.args[2]), 300)
+		self.assertIn("x" * 500, emit.call_args.kwargs["message"])
+
+
 class TestHooksWiring(IsolatedTestCase):
 	def test_m2_events_are_wired_to_the_inventory_module(self):
 		hooks = frappe.get_hooks()

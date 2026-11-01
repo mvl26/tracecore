@@ -615,6 +615,8 @@ def overview(station=None, include=None):
 			"inspection_due",
 			"calibration_due",
 			"unlock_until",
+			"unlocked_by",
+			"unlock_reason",
 			"daily_test_required",
 		],
 		order_by="equipment_type asc, name asc",
@@ -626,6 +628,9 @@ def overview(station=None, include=None):
 		row["inspection_expired"] = _inspection_expired(row)
 		row["calibration_expired"] = _calibration_expired(row)
 		row["unlocked"] = bool(row.unlock_until and get_datetime(row.unlock_until) > now_datetime())
+		row["unlocked_by_name"] = (
+			frappe.utils.get_fullname(row.unlocked_by) if row["unlocked"] and row.unlocked_by else None
+		)
 		busy = unloaded_load(row.name)
 		running = open_run(row.name)
 		row["running_load"] = busy.name if busy else None

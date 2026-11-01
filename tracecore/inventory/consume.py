@@ -11,6 +11,7 @@ Tồn không đủ (FR-M6-03.2): trừ phần đang có, ghi phần thiếu vào
 
 from collections import defaultdict
 from dataclasses import dataclass
+from urllib.parse import quote, urlencode
 
 import frappe
 from frappe import _
@@ -307,7 +308,21 @@ def _doc_link(source_doctype, source_name):
 	return "/app/{}/{}".format(frappe.scrub(source_doctype).replace("_", "-"), source_name)
 
 
-def _notify(event, source_doctype, source_name, subject, message=None):
+def _manual_issue_link(source_doctype, source_name):
+	"""#1833 T2-02: nút Xử lý mở phiếu xuất vật tư mới, đã điền chứng từ nguồn."""
+	query = urlencode(
+		{
+			"stock_entry_type": ISSUE,
+			"purpose": ISSUE,
+			"tc_source_doctype": source_doctype,
+			"tc_source_name": source_name,
+		},
+		quote_via=quote,
+	)
+	return f"/app/stock-entry/new?{query}"
+
+
+def _notify(event, source_doctype, source_name, subject, message=None, link=None):
 	"""Báo R09; lỗi gửi thông báo không được làm hỏng mẻ đang giải phóng."""
 	try:
 		notification.emit(
@@ -315,10 +330,13 @@ def _notify(event, source_doctype, source_name, subject, message=None):
 			frappe._dict(doctype=source_doctype, name=source_name),
 			subject,
 			message=message,
-			link=_doc_link(source_doctype, source_name),
+			link=link or _doc_link(source_doctype, source_name),
 		)
 	except Exception:
 		frappe.log_error(title=f"FEAT-042 notify {event} {source_doctype} {source_name}")
+
+
+MAX_SUBJECT_CAUSE = 200  # banner một dòng; đủ nguyên nhân ở message
 
 
 def _cause(error):
@@ -330,12 +348,13 @@ def _notify_failed(source_doctype, source_name, error, items):
 		"CONSUMPTION_FAILED",
 		source_doctype,
 		source_name,
-		_("Automatic consumption for {0} {1} failed. Issue the supplies by hand.").format(
-			source_doctype, source_name
+		_("Automatic consumption for {0} {1} failed: {2}").format(
+			_(source_doctype), source_name, _cause(error)[:MAX_SUBJECT_CAUSE]
 		),
 		message=_(
 			"Cause: {0} Items: {1}. Fix the cause (for example the unit of measure of the item), then open {2} and choose Retry consumption."
 		).format(_cause(error), ", ".join(sorted(items)), source_name),
+		link=_manual_issue_link(source_doctype, source_name),
 	)
 
 

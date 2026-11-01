@@ -112,7 +112,7 @@ class TestFailureTellsTheCause(UomCase):
 		allow_fractions(False)
 		with patch("tracecore.inventory.consume.notification.emit") as emit:
 			consume.on_wash_complete(self.ctx())
-		self.assertEqual(emit.call_args.kwargs["link"], "/app/wash-batch/WB-UOM-1")
+		self.assertIn("tc_source_name=WB-UOM-1", emit.call_args.kwargs["link"])  # #1833: nút mở phiếu xuất
 		self.assertIn("retry", emit.call_args.kwargs["message"].lower())
 
 

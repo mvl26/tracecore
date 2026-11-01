@@ -124,6 +124,49 @@ class TestT1ScanLabel(FrappeTestCase):
 		self.assertIn("Set ID", out["second"][0])
 
 
+DAILY = "public/js/station_daily_test.js"
+MACHINE = {"name": "TB-1", "equipment_name": "May", "required": ["bowie_dick"], "missing": [], "runs": {}}
+
+
+class TestDailyTestList(FrappeTestCase):
+	def html(self, row):
+		import json
+
+		return run_js(
+			self,
+			[DAILY],
+			[["DailyTestScreen"]],
+			FAKE_STATION
+			+ f"""
+			const screen = Object.create(DailyTestScreen.prototype);
+			screen.list = [{json.dumps(row)}];
+			screen.statusBadge = () => "";
+			emit(screen.listHtml());
+			""",
+		)
+
+	def test_result_is_a_coloured_badge_with_text_not_a_tag(self):
+		passed = self.html(MACHINE)
+		self.assertRegex(passed, r"tc-badge tc-badge-g[^>]*>[^<]*(<[^>]+>[^<]*</[^>]+> )?[^<]*Pass")
+		self.assertNotIn('class="tc-tag"', passed)
+		failed = self.html({**MACHINE, "missing": ["bowie_dick"]})
+		self.assertRegex(failed, r"tc-badge tc-badge-r")
+
+	def test_unlock_shows_person_reason_and_end(self):
+		out = self.html(
+			{
+				**MACHINE,
+				"unlocked": 1,
+				"unlocked_by_name": "Giam Sat",
+				"unlock_reason": "Ca khan",
+				"unlock_until": "2026-11-01 15:30:00",
+			}
+		)
+		self.assertIn("Giam Sat", out)
+		self.assertIn("Ca khan", out)
+		self.assertIn("01/11/2026 15:30", out)
+
+
 class TestT1Today(FrappeTestCase):
 	def test_today_block_shows_only_names_with_code_as_tooltip(self):
 		out = run_js(

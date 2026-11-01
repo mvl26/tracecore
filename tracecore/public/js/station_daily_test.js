@@ -14,6 +14,11 @@ const DT_START = "tracecore.v1.daily_test.start_run";
 const DT_END = "tracecore.v1.daily_test.end_run";
 const DT_MAX_HOURS = 24;
 
+function dtDateTime(iso) {
+	const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(iso || "");
+	return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : "-";
+}
+
 function dtTestLabel(type) {
 	return (
 		{
@@ -510,7 +515,11 @@ class DailyTestScreen {
 					.map((type) => {
 						const missing = row.missing.includes(type);
 						const run = (row.runs || {})[type];
-						return `<span class="tc-tag">${esc(dtTestLabel(type))}: ${esc(
+						const variant =
+							run === "Running" || run === "Ended" ? "o" : missing ? "r" : "g";
+						return `<span class="tc-badge tc-badge-${variant}">${esc(
+							dtTestLabel(type)
+						)}: ${esc(
 							run === "Running"
 								? __("Testing", null, "Daily Test")
 								: run === "Ended"
@@ -540,7 +549,13 @@ class DailyTestScreen {
 					row.unlocked
 						? ` <span class="tc-badge tc-badge-o">${esc(
 								__("Unlocked temporarily")
-						  )}</span>`
+						  )}</span><p class="tc-hint">${esc(
+								__("Unlocked by {0} until {1}. Reason: {2}", [
+									row.unlocked_by_name || "-",
+									dtDateTime(row.unlock_until),
+									row.unlock_reason || "-",
+								])
+						  )}</p>`
 						: ""
 				}</td>
 					<td>${tests}${noTest}</td>

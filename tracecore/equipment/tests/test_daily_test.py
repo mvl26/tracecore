@@ -295,6 +295,15 @@ class TestInspectionAndUnlock(DailyTestCase):
 		self.assertEqual(daily_test.equipment_block(washer.name).code, "EQUIPMENT_INSPECTION_EXPIRED")
 
 	@bru("BRU-EQP-002")
+	def test_overview_says_who_unlocked_why_and_until_when(self):
+		machine = self.steam()
+		daily_test.unlock_temp(machine.name, "Ca khẩn", 2, STATION)
+		row = next(row for row in daily_test.overview() if row["name"] == machine.name)
+		self.assertTrue(row["unlocked"])
+		self.assertEqual(row["unlock_reason"], "Ca khẩn")
+		self.assertTrue(row["unlocked_by_name"])
+		self.assertTrue(row["unlock_until"])
+
 	def test_temporary_unlock_bypasses_tests_until_it_expires(self):
 		machine = self.steam()
 		result = daily_test.unlock_temp(machine.name, "Ca khẩn", 2, STATION)

@@ -22,6 +22,8 @@ const sandbox = {
 	clearTimeout: () => 0,
 	setInterval: () => 0,
 	clearInterval: () => 0,
+	T5Load: stub(),
+	T2Wash: stub(),
 	frappe: stub(),
 	document: stub(),
 	navigator: { onLine: true },

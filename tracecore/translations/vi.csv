@@ -7504,3 +7504,6 @@ Component line of a received set with the counted quantity (FR-M2-23).,Dòng th�
 Scan each returned set.,Quét từng bộ được trả.,
 "Count each line against the quantity in the set, correct the actual quantity and note missing or damaged instruments.","Kiểm đếm từng dòng theo số lượng trong bộ, sửa số lượng thực tế và ghi chú dụng cụ thiếu, hỏng.",
 "Confirm each set, then submit the receipt.","Xác nhận từng bộ, rồi ghi sổ phiếu.",
+Unlocked by {0} until {1}. Reason: {2},{0} mở khóa đến {1}. Lý do: {2},
+Wash Batch,Lô rửa,
+Sterilization Load,Mẻ tiệt khuẩn,
