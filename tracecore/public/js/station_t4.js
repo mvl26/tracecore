@@ -89,6 +89,7 @@ class T4Packing {
 		this.printNote = null; // {kind: sending | sent | agent-failed | waiting}
 		this.notice = null; // {variant, title, reason, action, items, code, technical}
 		this.lookup = null;
+		if (this.queue) this.queue.reset(); // màn trống kế tiếp tải lại hàng đợi, không dùng danh sách cũ
 	}
 
 	clearSession() {
@@ -363,6 +364,7 @@ class T4Packing {
 	onGenerated(res) {
 		this.notice = null;
 		this.done = res;
+		if (this.queue) this.queue.reset(); // bộ vừa đóng gói rời hàng đợi
 		this.handlePrint(res.print);
 	}
 
