@@ -360,6 +360,7 @@ class TestOverviewOpensDashboard(FrappeTestCase):
 		self.assertNotIn("dashboard.summary", source)
 		self.assertNotIn("tcOverviewTiles", source)
 		self.assertIn("module.key !== OVERVIEW", source)
+		self.assertIn("module.key !== STATIONS.key;", source)
 
 
 class TestT1Today(FrappeTestCase):

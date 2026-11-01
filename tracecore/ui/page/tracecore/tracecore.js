@@ -102,8 +102,9 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			modules.splice(last_operation + 1, 0, STATIONS);
 		}
 		// #1830 G-03: Tổng quan mở thẳng bảng vận hành nên không phải mô-đun mặc định, tránh vòng lặp khi bấm Back
-		const landing = modules.find((module) => module.key !== OVERVIEW) || modules[0];
-		if (!modules.some((module) => module.key === selected_module && module.key !== OVERVIEW))
+		const opens_here = (module) => module.key !== OVERVIEW && module.key !== STATIONS.key;
+		const landing = modules.find(opens_here) || modules[0];
+		if (!modules.some((module) => module.key === selected_module && opens_here(module)))
 			selected_module = landing.key;
 		const shell = $("<div class='tc-admin'></div>").appendTo(root);
 		const nav = $("<nav class='tc-admin-nav'></nav>")
