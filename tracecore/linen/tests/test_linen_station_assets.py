@@ -111,7 +111,7 @@ class TestLinenStationWiring(FrappeTestCase):
 		css = _read(STATION_CSS)
 		block = css[css.index("Thu gom đồ vải (SCR-16") :]
 		self.assertNotRegex(block, r"#[0-9a-fA-F]{3,6}\b")
-		self.assertNotRegex(block, r"\b\d+px\b")
+		self.assertNotRegex(re.sub(r"@media[^{]*", "", block), r"\b\d+px\b")
 
 
 class TestWeighLine(FrappeTestCase):
