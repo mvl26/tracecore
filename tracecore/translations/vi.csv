@@ -7729,3 +7729,62 @@ Print label,In nhãn,
 Print {0} waiting label(s),In {0} nhãn chờ,
 {0} waiting label(s) ready to print.,{0} nhãn chờ sẵn sàng để in.,
 Labels of offline packs are ready to print.,Nhãn của các gói đóng offline đã sẵn sàng để in.,
+Linen,Đồ vải,Operations Dashboard
+Overview,Tổng quan,Operations Dashboard
+Details,Chi tiết,Operations Dashboard
+Nothing to handle,Không có việc cần xử lý,Operations Dashboard
+Kg of linen collected,Kg đồ vải thu gom,Operations Dashboard
+Kg returned to departments,Kg đã cấp trả khoa,Operations Dashboard
+Laundry batches running,Lô giặt đang chạy,Operations Dashboard
+Laundry cost per kg,Chi phí giặt mỗi kg,Operations Dashboard
+{0} đ,{0} đ,Operations Dashboard
+Failed laundry batches waiting for a rewash,"Lô giặt Không đạt, chờ giặt lại",Operations Dashboard
+Laundry batches over the norm deviation limit,Lô giặt lệch định mức vượt ngưỡng,Operations Dashboard
+Departments issued over their quota,Khoa cấp trả vượt định mức,Operations Dashboard
+{0} batches,{0} lô,Operations Dashboard
+{0} departments,{0} khoa,Operations Dashboard
+{0} bags,{0} túi,Operations Dashboard
+{0} kg,{0} kg,Operations Dashboard
+Collected and returned by department (kg),Thu gom và cấp trả theo khoa (kg),Operations Dashboard
+Department,Khoa,Operations Dashboard
+Collected,Thu,Operations Dashboard
+Returned,Trả,Operations Dashboard
+Variance,Chênh,Operations Dashboard
+Washers and dryers,"Máy giặt, máy sấy",Operations Dashboard
+Batches,Lô,Operations Dashboard
+Kg,Kg,Operations Dashboard
+Cost,Chi phí,Operations Dashboard
+no linen in this period,không có đồ vải trong kỳ,Operations Dashboard
+no laundry batch in this period,không có lô giặt trong kỳ,Operations Dashboard
+Kg of waste collected,Kg chất thải thu gom,Operations Dashboard
+Departments repeating misclassification,Khoa phân loại sai lặp lại,Operations Dashboard
+Kg by waste type,Kg theo loại chất thải,Operations Dashboard
+Storage stock and on-time rate,"Tồn kho tạm, tuân thủ hạn lưu",Operations Dashboard
+Bags in store,Túi tồn,Operations Dashboard
+On time,Đúng hạn,Operations Dashboard
+no waste in this period,không có chất thải trong kỳ,Operations Dashboard
+Bags in store,Túi tồn
+Collected and returned by department (kg),Thu gom và cấp trả theo khoa (kg)
+Departments issued over their quota,Khoa cấp trả vượt định mức
+Departments repeating misclassification,Khoa phân loại sai lặp lại
+Failed laundry batches waiting for a rewash,"Lô giặt Không đạt, chờ giặt lại"
+Kg,Kg
+Kg by waste type,Kg theo loại chất thải
+Kg of linen collected,Kg đồ vải thu gom
+Kg of waste collected,Kg chất thải thu gom
+Kg returned to departments,Kg đã cấp trả khoa
+Laundry batches over the norm deviation limit,Lô giặt lệch định mức vượt ngưỡng
+Laundry batches running,Lô giặt đang chạy
+Laundry cost per kg,Chi phí giặt mỗi kg
+Nothing to handle,Không có việc cần xử lý
+On time,Đúng hạn
+Storage stock and on-time rate,"Tồn kho tạm, tuân thủ hạn lưu"
+Washers and dryers,"Máy giặt, máy sấy"
+no laundry batch in this period,không có lô giặt trong kỳ
+no linen in this period,không có đồ vải trong kỳ
+no waste in this period,không có chất thải trong kỳ
+{0} bags,{0} túi
+{0} batches,{0} lô
+{0} departments,{0} khoa
+{0} kg,{0} kg
+{0} đ,{0} đ

@@ -5,6 +5,8 @@ ghi sổ phiếu thu gom; `run_daily` cảnh báo khoa phân loại sai lặp l�
 định. Túi tuân thủ hạn lưu là túi không bị đánh dấu quá hạn (`overdue_at`).
 """
 
+from datetime import datetime, timedelta
+
 import frappe
 from frappe import _
 from frappe.utils import add_days, add_to_date, cint, flt, get_datetime, getdate, now_datetime, today
@@ -280,9 +282,68 @@ def incidents(from_date, to_date, department=None):
 # --- khối dashboard (FR-M10-07.1) -------------------------------------------------------------------------------------
 
 
-def dashboard(now=None):
+def _kg_in_period(start, end, department):
+	"""{loại: kg} đã ghi sổ trong ``[start, end)``; túi bị giữ không tính."""
+	clause = "and c.department = %(department)s" if department else ""
+	return {
+		row.waste_type: flt(row.kg)
+		for row in frappe.db.sql(
+			f"""select l.waste_type, sum(l.weight_kg) as kg
+			from `tabWaste Collection Line` l
+			inner join `tabWaste Collection` c on c.name = l.parent and l.parenttype = 'Waste Collection'
+			where c.docstatus = 1 and l.misclassified = 0 and c.collected_at >= %(start)s
+				and c.collected_at < %(end)s {clause}
+			group by l.waste_type""",  # nosec B608 - chỉ ghép điều kiện cố định, giá trị qua tham số
+			{"start": start, "end": end, "department": department},
+			as_dict=True,
+		)
+	}
+
+
+def _by_type(start, end, department):
+	"""Bảng theo loại của DASH-02: kg trong kỳ, túi đang tồn, tỷ lệ túi đúng hạn trong kỳ; loại không có số thì không hiện."""
+	kg = _kg_in_period(start, end, department)
+	stock = {}
+	filters = {"status": ["in", [COLLECTED, STORED, HELD]]}
+	if department:
+		filters["department"] = department
+	for waste_type in frappe.get_all(CONTAINER, filters=filters, pluck="waste_type"):
+		stock[waste_type] = stock.get(waste_type, 0) + 1
+	on_time = {}
+	last_day = getdate(end - timedelta(days=1))
+	for row in report_rows(getdate(start), last_day, department):
+		total = on_time.setdefault(row["waste_type"], [0, 0])
+		total[0] += row["on_time"]
+		total[1] += row["bags"]
+	names = sorted(set(kg) | set(stock) | set(on_time))
+	types = {
+		row.name: row
+		for row in frappe.get_all(
+			"Waste Type",
+			filters={"name": ["in", names or [""]]},
+			fields=["name", "type_name", "color_code"],
+		)
+	}
+	return [
+		{
+			"waste_type": name,
+			"label": types[name].type_name or name,
+			"color_code": types[name].color_code,
+			"kg": round(kg.get(name, 0), 3),
+			"stock_bags": stock.get(name, 0),
+			"compliance_percent": round(on_time[name][0] * 100 / on_time[name][1], 1)
+			if on_time.get(name, [0, 0])[1]
+			else None,
+		}
+		for name in names
+	]
+
+
+def dashboard(now=None, start=None, end=None, department=None):
 	now = get_datetime(now) if now else now_datetime()
 	day = getdate(now)
+	start = start or datetime(day.year, day.month, day.day)
+	end = end or start + timedelta(days=1)
 	percent = thresholds()["warn_percent"]
 	kg = frappe.db.sql(
 		"""select l.waste_type, sum(l.weight_kg) as kg
@@ -294,17 +355,16 @@ def dashboard(now=None):
 		as_dict=True,
 	)
 	due_soon = overdue = 0
-	for row in frappe.get_all(
-		CONTAINER,
-		filters={"status": ["in", [COLLECTED, STORED, HELD]], "storage_due": ["is", "set"]},
-		fields=["collected_at", "storage_due"],
-	):
+	due_filters = {"status": ["in", [COLLECTED, STORED, HELD]], "storage_due": ["is", "set"]}
+	if department:
+		due_filters["department"] = department
+	for row in frappe.get_all(CONTAINER, filters=due_filters, fields=["collected_at", "storage_due"]):
 		due = get_datetime(row.storage_due)
 		if now >= due:
 			overdue += 1
 		else:
-			start = get_datetime(row.collected_at)
-			if now >= start + (due - start) * percent / 100:
+			collected = get_datetime(row.collected_at)
+			if now >= collected + (due - collected) * percent / 100:
 				due_soon += 1
 	pending = frappe.db.count("Waste Handover", {"docstatus": 1, "document_pending": 1})
 	since = f"{day} 00:00:00"
@@ -314,8 +374,16 @@ def dashboard(now=None):
 		distinct=True,
 		pluck="ref_name",
 	)
+	by_type = _by_type(start, end, department)
+	repeat = repeat_departments()
+	if department:
+		unusual = [name for name in unusual if name == department]
+		repeat = {name: times for name, times in repeat.items() if name == department}
 	return {
 		"kg_today": [{"waste_type": row.waste_type, "kg": flt(row.kg)} for row in kg],
+		"kg_total": round(sum(row["kg"] for row in by_type), 3),
+		"by_type": by_type,
+		"repeat_departments": sorted(repeat),
 		"due_soon": due_soon,
 		"overdue": overdue,
 		"pending_documents": pending,

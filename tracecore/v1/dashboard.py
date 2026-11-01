@@ -13,6 +13,7 @@ from frappe import _
 from tracecore.admin_reports import dashboard as board
 from tracecore.core import gs1
 from tracecore.inventory import alerts as inventory_alerts
+from tracecore.linen import analysis as linen_analysis
 from tracecore.reprocessing import storage
 from tracecore.v1 import par
 from tracecore.v1._common import BadRequestError, require_any_role, server_time
@@ -36,11 +37,12 @@ BLOCK_SOURCES = {
 	"equipment": "Equipment",
 	"stock": "Item",
 	"waste": "Waste Container",  # FEAT-050, FR-M10-07.1
+	"linen": "Laundry Batch",  # DASH-02
 }
 ROLE_BLOCKS = {
 	"TC R09": ("sterile", "stock", "par"),
 	"TC R10": ("equipment", "certificates"),
-	"TC R07": ("waste",),
+	"TC R07": ("waste", "linen"),
 }
 # D11: List View có ô quét; trường mã ngoài `name` (Set ID, mã dụng cụ, mã lô)
 SCAN_DOCTYPES = {
@@ -124,11 +126,14 @@ def _build(block, start, end, filters):
 		}
 	if block == "failures":
 		return board.failure_rates(start, end, filters["equipment"])
+	if block == "waste":
+		return waste_analysis.dashboard(start=start, end=end, department=filters["department"])
+	if block == "linen":
+		return linen_analysis.dashboard(start, end, filters["department"], filters["equipment"])
 	builders = {
 		"sterile": _sterile,
 		"par": _par,
 		"stock": _stock,
-		"waste": waste_analysis.dashboard,
 		"overrides": board.pending_overrides,
 		"recalls": board.open_recalls,
 		"certificates": board.expiring_certificates,

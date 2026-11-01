@@ -1,7 +1,9 @@
 """Báo cáo, sự cố và định mức chất thải (FEAT-050, UC-37, FR-M10-06, .1-.3, FR-M10-07, .1-.3, FR-M10-08, .1, .3, .4, BRU-WST-001, A-63)."""
 
+from datetime import datetime, timedelta
+
 import frappe
-from frappe.utils import add_days, add_to_date, flt, now_datetime, today
+from frappe.utils import add_days, add_to_date, flt, getdate, now_datetime, today
 
 from tracecore.core import notification
 from tracecore.reprocessing import incidents
@@ -246,6 +248,30 @@ class TestBlocks(AnalysisCase):
 		self.assertIn({"waste_type": self.waste, "kg": 4}, block["kg_today"])
 		self.assertGreaterEqual(block["overdue"], 1)
 		self.assertEqual(flt(block["pending_documents"]) >= 0, True)
+
+	def test_dashboard_period_department_type_table_and_repeat(self):  # DASH-02
+		doc, _bags = self.collect(kg=4)
+		self.collect(kg=1, days_ago=2)
+		day = getdate(today())
+		start = datetime(day.year, day.month, day.day)
+		block = analysis.dashboard(
+			start=start - timedelta(days=7), end=start + timedelta(days=1), department=self.department
+		)
+		row = next(row for row in block["by_type"] if row["waste_type"] == self.waste)
+		self.assertEqual(row["kg"], 5)
+		self.assertEqual(row["color_code"], "Green")
+		self.assertEqual(row["stock_bags"], 2)
+		self.assertEqual(row["compliance_percent"], 100)
+		self.assertEqual(block["kg_total"], 5)
+		self.assertEqual(block["repeat_departments"], [])
+		today_only = analysis.dashboard(
+			start=start, end=start + timedelta(days=1), department=self.department
+		)
+		self.assertEqual(today_only["kg_total"], 4)
+		other = analysis.dashboard(
+			start=start, end=start + timedelta(days=1), department=make_department("Khoa Khac Han")
+		)
+		self.assertEqual((other["kg_total"], other["by_type"]), (0, []))
 
 	def test_ward_sees_only_its_own_department(self):
 		self.collect(kg=4)
