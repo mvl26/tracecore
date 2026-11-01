@@ -1,4 +1,4 @@
-/* global tcCodeWithPdfHtml, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
+/* global tcPdfRetryButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
 /* global uuid4, clientTs, esc */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -8,8 +8,6 @@
 // gắn bearer trong body. Màn hẹp (≤ 480 px) chuyển surface sang PDA: một cột, nút full-width.
 
 const T5_COMPLETE_CODE = "HOAN-THANH-NAP";
-const T5_AGENT_URL = "http://127.0.0.1:8765/print";
-const T5_AGENT_TIMEOUT_MS = 5000;
 const T5_COMPLETE = "tracecore.v1.load.complete";
 const T5_SAVE = "tracecore.v1.load.manual_data";
 const T5_PDA_QUERY = "(max-width: 480px)";
@@ -544,40 +542,26 @@ class T5Load {
 		);
 	}
 
-	async sendToAgent(job) {
-		if (!this.station.session) return false;
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), T5_AGENT_TIMEOUT_MS);
-		try {
-			const response = await fetch(T5_AGENT_URL, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					zpl: job.zpl,
-					print_job: job.print_job,
-					printer: job.printer,
-				}),
-				signal: controller.signal,
-			});
-			return response.ok;
-		} catch (error) {
-			return false;
-		} finally {
-			clearTimeout(timer);
-		}
+	// A-101: có máy in thì nhãn ra file PDF, không qua Station Agent; chưa có máy in thì giữ Waiting và cảnh báo
+	async handlePrint(print) {
+		if (print && print.status === "Queued") return this.printLabelPdf();
+		this.printNote = { kind: "waiting" };
+		this.show();
 	}
 
-	async handlePrint(print) {
+	async printLabelPdf() {
+		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		if (print && print.status === "Queued" && print.zpl) {
-			this.printNote = { kind: "sending" };
-			this.show();
-			const ok = await this.sendToAgent(print);
-			if (version !== this.station.sessionVersion) return;
-			this.printNote = { kind: ok ? "sent" : "agent-failed" };
-		} else {
-			this.printNote = { kind: "waiting" };
-		}
+		this.printNote = { kind: "sending" };
+		this.show();
+		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.load.label_pdf", {
+			load: this.done.load,
+			station: this.station.station,
+		});
+		if (result.ended || version !== this.station.sessionVersion) return;
+		this.printNote = result.ok
+			? { kind: "pdf", filename: result.filename }
+			: { kind: "pdf-failed", reason: result.reason };
 		this.show();
 	}
 
@@ -888,7 +872,7 @@ class T5Load {
 			"t5-remove": () => this.removePack(data.pack),
 			"t5-recheck": () => this.recheckPacks(),
 			"t5-complete": () => this.complete(),
-			"t5-label-pdf": () => this.saveLabelPdf(),
+			"t5-label-pdf-retry": () => this.printLabelPdf(),
 			"t5-cancel": () => this.cancelLoad(),
 			"t5-open-data": () => this.openData(data.load),
 			"t5-save-data": () => this.saveData(),
@@ -1268,11 +1252,7 @@ class T5Load {
 				variant: "ok",
 				title: __("Load code generated for {0} pack(s)", [done.packs.length]),
 			})}
-			${tcCodeWithPdfHtml(done.load, "t5-label-pdf", {
-				busy: Boolean(this.busy),
-				offline: this.offline || this.station.isOffline(),
-				printer: done.print && done.print.printer,
-			})}
+			<p class="tc-cycle">${esc(done.load)}</p>
 			${rejected}
 			<div class="tc-t4-done-grid">
 				${this.labelHtml()}
@@ -1290,22 +1270,6 @@ class T5Load {
 				</div>
 			</div>
 		</section>`;
-	}
-
-	// A-99: PDF nhãn lưu về máy, không tạo lệnh in; A-100: trạm phải có máy in
-	saveLabelPdf() {
-		if (!this.done || this.offline) return;
-		if (!this.done.print || !this.done.print.printer) return;
-		const load = this.done.load;
-		this.request(
-			"tracecore.v1.load.label_pdf",
-			{ load, station: this.station.station },
-			(res) => {
-				this.notice = null;
-				window.tcSavePdf(res.pdf_b64, res.filename);
-				this.show();
-			}
-		);
 	}
 
 	labelHtml() {
@@ -1332,16 +1296,25 @@ class T5Load {
 		const print = this.done && this.done.print;
 		if (!note || !print) return "";
 		if (note.kind === "sending")
-			return this.alertHtml({
-				variant: "info",
-				title: __("Sending the label to printer {0}...", [print.printer]),
-			});
-		if (note.kind === "sent") {
+			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
+		if (note.kind === "pdf") {
 			return this.alertHtml({
 				variant: "ok",
-				title: __("Label sent to printer {0}.", [print.printer]),
+				title: __("Label printed to PDF file: {0}", [note.filename]),
 				reason: __("Print job {0}", [print.print_job]),
 			});
+		}
+		if (note.kind === "pdf-failed") {
+			return this.alertHtml(
+				{
+					variant: "warn",
+					title: __("Label PDF was not created; code {0} is kept.", [this.done.load]),
+					reason: [note.reason, __("Print job {0}", [print.print_job])]
+						.filter(Boolean)
+						.join(" "),
+				},
+				tcPdfRetryButton("t5-label-pdf-retry", this.busy || this.offline)
+			);
 		}
 		const warning = print.warning || {};
 		return this.alertHtml({
@@ -1349,7 +1322,7 @@ class T5Load {
 			title:
 				warning.code === "NO_PRINTER_AT_STATION"
 					? __("No printer at this station, the label is waiting")
-					: __("Load code kept - check the Station Agent, then print again"),
+					: __("Load code kept, the label was not printed"),
 			reason: [warning.reason, __("Print job {0}", [print.print_job])]
 				.filter(Boolean)
 				.join(" "),

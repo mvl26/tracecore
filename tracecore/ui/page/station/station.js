@@ -1149,6 +1149,9 @@ class TraceCoreStation {
 				state.error,
 			]);
 		else if (state.queued) text = __("Offline – {0} transaction(s) waiting", [state.queued]);
+		else if (state.label_error)
+			text = __("Labels of offline packs were not printed: {0}", [state.label_error]);
+		else if (state.label_file) text = __("Label printed to PDF file: {0}", [state.label_file]);
 		else if (state.conflicts)
 			text = __("Synced · {0} transaction(s) sent to R02 as sync conflicts", [
 				state.conflicts,

@@ -402,7 +402,7 @@ const t5 = new T5Load(station);
 t5.done = {load: "ME-261101-02", packs: ["CY-1"], pack_rows: [], rejected: [], qr_png_b64: "QQ==",
 	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00",
 	print: {print_job: "PJ-1", status: "Queued", printer: "PRN-001", zpl: "^XA^XZ", warning: null}};
-t5.printNoteHtml = () => "";
+const screen = t5;
 """
 T2_DONE = """
 const station = makeStation();
@@ -410,100 +410,289 @@ const t2 = new T2Wash(station);
 t2.done = {batch: "LR-261101-07", sets: ["S1"], rejected: [], chemicals: [], qr_png_b64: "QQ==",
 	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00",
 	print: {print_job: "PJ-1", status: "Queued", printer: "PRN-001", zpl: "^XA^XZ", warning: null}};
-t2.printNoteHtml = () => "";
+const screen = t2;
 """
+T4_DONE = """
+const station = makeStation();
+const t4 = new T4Packing(station);
+t4.done = {pack: {cycle_id: "CY-261101-0001", set_id: "S1", set_name: "Bo", method: "Steam", expiry: "2027-01-01",
+		packed_at: "2026-11-01 08:00:00", packer: "A", ci_batch: "L", bom_version: 1, pack_type: "T",
+		shelf_life_days_applied: 30},
+	hri: "H", datamatrix_png_b64: "QQ==",
+	print: {print_job: "PJ-1", status: "Queued", printer: "PRN-001", zpl: "^XA^XZ", warning: null}};
+const screen = t4;
+"""
+PDF_STUBS = """
+station.station = "TR-X";
+screen.show = () => {};
+const reads = [];
+let answer = {ok: true, pdf_b64: "JVBERg==", filename: "X.pdf", print_job: "PJ-1"};
+station.rpcRead = async (method, args) => {
+	reads.push([method, args]);
+	if (answer instanceof Error) throw answer;
+	return answer;
+};
+station.failureCause = (error, result) => (result && result.error ? result.error.reason : "net down");
+const saved = [];
+window.tcSavePdf = (b64, name) => saved.push([b64, name]);
+const agent = [];
+window.fetch = async (url) => { agent.push(url); return {ok: true}; };
+fetch = window.fetch;
+const WAITING = {print_job: "PJ-1", status: "Waiting", printer: null, zpl: null,
+	warning: {code: "NO_PRINTER_AT_STATION", title: "t", reason: "No printer r", action: "a"}};
+"""
+SCREENS = (
+	(
+		"t5",
+		T5,
+		"T5Load",
+		T5_DONE,
+		"tracecore.v1.load.label_pdf",
+		{"load": "ME-261101-02", "station": "TR-X"},
+	),
+	(
+		"t2",
+		T2,
+		"T2Wash",
+		T2_DONE,
+		"tracecore.v1.wash.label_pdf",
+		{"batch": "LR-261101-07", "station": "TR-X"},
+	),
+	(
+		"t4",
+		T4,
+		"T4Packing",
+		T4_DONE,
+		"tracecore.v1.pack.label_pdf",
+		{"cycle_id": "CY-261101-0001", "station": "TR-X"},
+	),
+)
 
 
-class TestLabelPdfButton(FrappeTestCase):
-	"""A-99, A-100: nút Lưu PDF nhãn trên thẻ Hoàn thành nạp T5, T2 khi trạm có máy in; T4 không có."""
+class TestLabelPrintsToPdf(FrappeTestCase):
+	"""A-101: T2, T5, T4 có máy in thì tự lưu PDF nhãn, không gọi Station Agent; không có nút Lưu PDF."""
 
-	def t5(self, body):
-		return run_js(self, [ERR, T5], [[], ["T5Load"]], FAKE_STATION + T5_DONE + body)
+	def run_screen(self, screen, body):
+		name, path, cls, done = screen[:4]
+		return run_js(self, [ERR, path], [[], [cls]], FAKE_STATION + done + PDF_STUBS + body)
 
-	def t2(self, body):
-		return run_js(self, [ERR, T2], [[], ["T2Wash"]], FAKE_STATION + T2_DONE + body)
+	def test_queued_label_is_fetched_saved_once_and_never_sent_to_the_agent(self):
+		for screen in SCREENS:
+			out = self.run_screen(
+				screen,
+				"""
+				await screen.handlePrint(screen.done.print);
+				emit({reads, saved, agent, note: screen.printNoteHtml()});
+				""",
+			)
+			[[method, args]] = out["reads"]
+			self.assertEqual(method, screen[4])
+			self.assertEqual({key: args[key] for key in screen[5]}, screen[5])
+			self.assertEqual(out["saved"], [["JVBERg==", "X.pdf"]])
+			self.assertEqual(out["agent"], [])
+			self.assertIn("tc-alert-ok", out["note"])
+			self.assertIn("Label printed to PDF file: X.pdf", out["note"])
 
-	def test_t5_card_has_the_enabled_button_online(self):
-		out = self.t5("emit(t5.doneHtml());")
-		self.assertRegex(out, r'<button[^>]*data-action="t5-label-pdf"')
-		self.assertNotRegex(out, r'data-action="t5-label-pdf"[^>]*disabled')
+	def test_failure_warns_inline_keeps_the_code_and_retry_saves(self):
+		for screen in SCREENS:
+			out = self.run_screen(
+				screen,
+				f"""
+				answer = {{ok: false, error: {{code: "LABEL_PDF_FAILED", reason: "no tool"}}}};
+				await screen.handlePrint(screen.done.print);
+				const failed = screen.printNoteHtml();
+				const savedBefore = saved.length;
+				answer = {{ok: true, pdf_b64: "JVBERg==", filename: "X.pdf", print_job: "PJ-1"}};
+				screen.onAction("{screen[0]}-label-pdf-retry", element());
+				for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();
+				emit({{failed, savedBefore, saved, note: screen.printNoteHtml(), reads: reads.length}});
+				""",
+			)
+			self.assertIn("tc-alert-warn", out["failed"])
+			self.assertIn("no tool", out["failed"])
+			self.assertRegex(out["failed"], rf'data-action="{screen[0]}-label-pdf-retry"')
+			self.assertEqual(out["savedBefore"], 0)
+			self.assertEqual(len(out["saved"]), 1)
+			self.assertIn("tc-alert-ok", out["note"])
+			self.assertEqual(out["reads"], 2)
 
-	def test_no_printer_shows_only_the_code_and_the_click_does_nothing(self):
-		"""A-100: không có máy in, hoặc nhãn không dựng được: chỉ còn dòng mã như trước A-99."""
-		for card, runner, code in (("t5", self.t5, "ME-261101-02"), ("t2", self.t2, "LR-261101-07")):
-			with self.subTest(card=card):
-				out = runner(
-					f"""
-					{card}.done.print = {{print_job: "PJ-1", status: "Waiting", printer: null, zpl: null,
-						warning: {{code: "NO_PRINTER_AT_STATION", title: "t", reason: "r", action: "a"}}}};
-					const html = {card}.doneHtml();
-					const calls = [];
-					{card}.request = (rpc) => calls.push(rpc);
-					{card}.show = () => {{}};
-					{card}.saveLabelPdf();
-					emit({{html, calls}});
-					"""
-				)
-				self.assertNotIn(f"{card}-label-pdf", out["html"])
-				self.assertNotIn("Save label PDF", out["html"])
-				self.assertNotIn("tc-code-row", out["html"])
-				self.assertIn(f'<p class="tc-cycle">{code}</p>', out["html"])
-				self.assertEqual(out["calls"], [])
+	def test_network_error_is_a_warning_not_an_exception(self):
+		for screen in SCREENS:
+			out = self.run_screen(
+				screen,
+				"""
+				answer = new Error("boom");
+				await screen.handlePrint(screen.done.print);
+				emit({note: screen.printNoteHtml(), saved});
+				""",
+			)
+			self.assertIn("net down", out["note"])
+			self.assertEqual(out["saved"], [])
 
-	def test_t5_offline_disables_the_button_with_a_reason(self):
-		out = self.t5("t5.offline = true; emit(t5.doneHtml());")
-		self.assertRegex(out, r'data-action="t5-label-pdf"[^>]*disabled')
-		self.assertIn("network connection", out)
+	def test_ended_session_during_the_request_changes_nothing(self):
+		for screen in SCREENS:
+			out = self.run_screen(
+				screen,
+				"""
+				answer = Object.assign(new Error("ended"), {sessionEnded: true});
+				screen.printNote = null;
+				await screen.handlePrint(screen.done.print);
+				emit({saved});
+				""",
+			)
+			self.assertEqual(out["saved"], [])
 
-	def test_t5_click_requests_the_rpc_and_saves_the_file(self):
-		out = self.t5(
+	def test_no_printer_means_no_request_no_file_and_the_warning(self):
+		for screen in SCREENS:
+			out = self.run_screen(
+				screen,
+				"""
+				screen.done.print = WAITING;
+				await screen.handlePrint(WAITING);
+				emit({reads, saved, agent, note: screen.printNoteHtml()});
+				""",
+			)
+			self.assertEqual((out["reads"], out["saved"], out["agent"]), ([], [], []))
+			self.assertIn("No printer r", out["note"])
+
+	def test_cards_have_no_label_pdf_button_and_only_the_code(self):
+		for screen in SCREENS[:2]:
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(screen, "screen.printNoteHtml = () => ''; emit(screen.doneHtml());")
+				self.assertNotIn("Save label PDF", out)
+				self.assertNotIn("tc-code-row", out)
+				self.assertNotIn("label-pdf", out)
+				self.assertIn('class="tc-cycle"', out)
+
+	def test_button_helper_and_agent_code_are_gone(self):
+		for path in (T2, T5, T4, "public/js/tc_outbox.js", ERR):
+			with open(frappe.get_app_path("tracecore", *path.split("/")), encoding="utf-8") as handle:
+				source = handle.read()
+			for gone in ("tcCodeWithPdfHtml", "sendToAgent", "8765", "AGENT_URL"):
+				self.assertNotIn(gone, source, msg=f"{path}: {gone}")
+
+	def test_t4_roll_release_makes_one_merged_pdf_call(self):
+		out = self.run_screen(
+			SCREENS[2],
 			"""
-			const calls = [];
-			t5.request = (method, args, onOk) => { calls.push([method, args]);
-				onOk({ok: true, pdf_b64: "JVBERg==", filename: "ME-261101-02.pdf"}); };
-			const saved = [];
-			window.tcSavePdf = (b64, name) => saved.push([b64, name]);
-			station.station = "TR-005";
-			t5.show = () => {};
-			t5.onAction("t5-label-pdf", element());
-			emit({calls, saved});
-			"""
+			answer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf",
+				print_jobs: ["PJ-1", "PJ-2"], skipped: []};
+			await t4.onRoll({printer: "P", method: "Steam", label_type: "L",
+				released_jobs: [{print_job: "PJ-1", zpl: "z", printer: "P"}, {print_job: "PJ-2", zpl: "z", printer: "P"}],
+				failed_jobs: []}, "CN-00001");
+			emit({reads, saved, agent, notice: t4.notice, note: t4.printNoteHtml()});
+			""",
 		)
-		self.assertEqual(
-			out["calls"], [["tracecore.v1.load.label_pdf", {"load": "ME-261101-02", "station": "TR-005"}]]
-		)
-		self.assertEqual(out["saved"], [["JVBERg==", "ME-261101-02.pdf"]])
+		[[method, args]] = out["reads"]
+		self.assertEqual(method, "tracecore.v1.pack.waiting_labels_pdf")
+		self.assertEqual(args["print_jobs"], ["PJ-1", "PJ-2"])
+		self.assertEqual(out["saved"], [["JVBERg==", "labels.pdf"]])
+		self.assertEqual(out["agent"], [])
+		self.assertEqual(out["notice"]["variant"], "info")
+		self.assertIn("labels.pdf", out["notice"]["reason"])
+		self.assertIn("tc-alert-ok", out["note"])
 
-	def test_t2_card_and_click(self):
-		out = self.t2(
+	def test_t4_roll_failure_warns_and_offers_retry(self):
+		out = self.run_screen(
+			SCREENS[2],
 			"""
-			const html = t2.doneHtml();
-			const calls = [];
-			t2.request = (method, args) => calls.push([method, args]);
-			station.station = "TR-002";
-			t2.onAction("t2-label-pdf", element());
-			t2.offline = true;
-			emit({html, calls, off: t2.doneHtml()});
-			"""
+			answer = {ok: false, error: {reason: "no tool"}};
+			await t4.onRoll({printer: "P", method: "Steam", label_type: "L",
+				released_jobs: [{print_job: "PJ-1", zpl: "z", printer: "P"}], failed_jobs: []}, "CN-00001");
+			const failed = t4.noticeHtml();
+			answer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []};
+			t4.onAction("t4-roll-pdf-retry", element());
+			for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();
+			emit({failed, reads: reads.length, saved, notice: t4.notice});
+			""",
 		)
-		self.assertIn('data-action="t2-label-pdf"', out["html"])
-		self.assertEqual(
-			out["calls"], [["tracecore.v1.wash.label_pdf", {"batch": "LR-261101-07", "station": "TR-002"}]]
-		)
-		self.assertRegex(out["off"], r'data-action="t2-label-pdf"[^>]*disabled')
-
-	def test_t4_has_no_label_pdf_button(self):
-		with open(
-			frappe.get_app_path("tracecore", "public", "js", "station_t4.js"), encoding="utf-8"
-		) as handle:
-			self.assertNotIn("label_pdf", handle.read())
+		self.assertIn("tc-alert-warn", out["failed"])
+		self.assertIn("no tool", out["failed"])
+		self.assertIn('data-action="t4-roll-pdf-retry"', out["failed"])
+		self.assertEqual(out["reads"], 2)
+		self.assertEqual(len(out["saved"]), 1)
+		self.assertEqual(out["notice"]["variant"], "info")
 
 	def test_strings_are_translated(self):
 		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
 		with open(path, encoding="utf-8", newline="") as handle:
 			translated = {row[0]: row[1] for row in csv.reader(handle) if row}
-		for text in ("Save label PDF", "Saving a label PDF needs a network connection."):
+		for text in (
+			"Label printed to PDF file: {0}",
+			"Creating the label PDF...",
+			"Print again",
+			"Label PDF was not created; code {0} is kept.",
+			"Created {0} waiting label(s) in one PDF file: {1}",
+			"{0} waiting label(s) have no PDF yet.",
+			"Label PDF could not be created",
+			"Label is not ready to print",
+		):
 			self.assertTrue(translated.get(text), msg=text)
+		self.assertNotIn("Save label PDF", translated)
+
+
+OUTBOX_STUBS = """
+const entries = [];
+TcOutbox.list = async () => entries.slice();
+TcOutbox.count = async () => entries.length;
+TcOutbox.remove = async (key) => { entries.splice(entries.findIndex((e) => e.key === key), 1); };
+TcOutbox.put = async () => {};
+const posts = [];
+const saved = [];
+window.tcSavePdf = (b64, name) => saved.push([b64, name]);
+let pdfAnswer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1", "PJ-2"], skipped: []};
+fetch = window.fetch = async (url, init) => {
+	const body = JSON.parse(init.body);
+	posts.push([url, body]);
+	if (url.endsWith("waiting_labels_pdf")) return {status: 200, json: async () => ({message: pdfAnswer})};
+	return {status: 200, json: async () => ({message: {ok: true, print: {status: "Queued", print_job: body.job, zpl: "z", printer: "P"}}})};
+};
+const entry = (job) => ({key: job, endpoint: "tracecore.v1.pack.generate_cycle_id", station: "TR-4",
+	args: {job, token: "tok", client_ts: "x"}});
+"""
+
+
+class TestReplayedLabels(FrappeTestCase):
+	"""A-101: gói T4 đóng offline, khi có mạng nhãn ra một file PDF cho cả lượt phát lại."""
+
+	def run_outbox(self, body):
+		return run_js(self, ["public/js/tc_outbox.js"], [["tcSync", "TcOutbox"]], OUTBOX_STUBS + body)
+
+	def test_one_pdf_for_the_whole_replay_pass(self):
+		out = self.run_outbox(
+			"""
+			entries.push(entry("PJ-1"), entry("PJ-2"));
+			await tcSync.replayAll();
+			emit({posts, saved, state: tcSync.state});
+			"""
+		)
+		pdf_calls = [post for post in out["posts"] if post[0].endswith("waiting_labels_pdf")]
+		self.assertEqual(len(pdf_calls), 1)
+		self.assertEqual(pdf_calls[0][1]["print_jobs"], ["PJ-1", "PJ-2"])
+		self.assertEqual((pdf_calls[0][1]["station"], pdf_calls[0][1]["token"]), ("TR-4", "tok"))
+		self.assertEqual(out["saved"], [["JVBERg==", "labels.pdf"]])
+		self.assertEqual(out["state"]["label_file"], "labels.pdf")
+		self.assertFalse(any("8765" in post[0] for post in out["posts"]))
+
+	def test_failure_retries_on_the_next_pass_then_reports(self):
+		out = self.run_outbox(
+			"""
+			entries.push(entry("PJ-1"));
+			pdfAnswer = {ok: false, error: {reason: "no tool"}};
+			await tcSync.replayAll();
+			const first = tcSync.state.label_error;
+			await tcSync.replayAll();
+			await tcSync.replayAll();
+			const count = posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length;
+			await tcSync.replayAll();
+			const after = posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length;
+			emit({first, count, after, saved});
+			"""
+		)
+		self.assertEqual(out["first"], "no tool")
+		self.assertEqual(out["count"], 3)
+		self.assertEqual(out["after"], 3)  # hết lượt thử: nhãn nằm lại Print Job Queued, không gọi mãi
+		self.assertEqual(out["saved"], [])
 
 
 class TestScanShell(FrappeTestCase):
@@ -1025,7 +1214,7 @@ class TestT1DifferingQuantityWording(FrappeTestCase):
 
 
 class TestPrintWarningTitle(FrappeTestCase):
-	"""Trạm chưa có máy in thì nói đúng thế; lỗi gửi phần mềm trạm giữ nguyên lời."""
+	"""Trạm chưa có máy in thì nói đúng thế; nhãn không dựng được thì nói mã vẫn giữ, không nhắc phần mềm trạm (A-101)."""
 
 	CASES = (("T5Load", T5, "ME-1", "load"), ("T2Wash", T2, "LR-1", "batch"))
 
@@ -1051,10 +1240,12 @@ class TestPrintWarningTitle(FrappeTestCase):
 				self.assertIn("No printer at this station, the label is waiting", out)
 				self.assertNotIn("Station Agent", out)
 
-	def test_agent_failure_wording_stays(self):
+	def test_render_failure_wording(self):
 		for cls, path, _code, key in self.CASES:
 			with self.subTest(cls=cls):
-				self.assertIn("Station Agent", self.note(cls, path, key, "LABEL_RENDER_FAILED"))
+				out = self.note(cls, path, key, "LABEL_RENDER_FAILED")
+				self.assertIn("kept, the label was not printed", out)
+				self.assertNotIn("Station Agent", out)
 
 
 class TestDecimalDisplay(FrappeTestCase):

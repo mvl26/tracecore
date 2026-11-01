@@ -1,4 +1,4 @@
-/* global tcCodeWithPdfHtml, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcPdfRetryButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -7,8 +7,6 @@
 // server sinh mã lô LR- khi Hoàn thành nạp. Lỗi chặn = alert-error inline; RPC do shell gắn bearer trong body.
 
 const T2_COMPLETE_CODE = "HOAN-THANH-NAP";
-const T2_AGENT_URL = "http://127.0.0.1:8765/print";
-const T2_AGENT_TIMEOUT_MS = 5000;
 const T2_COMPLETE = "tracecore.v1.wash.complete";
 const T2_RESULT = "tracecore.v1.wash.result";
 const T2_SAVE = "tracecore.v1.wash.manual_data";
@@ -545,40 +543,26 @@ class T2Wash {
 		);
 	}
 
-	async sendToAgent(job) {
-		if (!this.station.session) return false;
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), T2_AGENT_TIMEOUT_MS);
-		try {
-			const response = await fetch(T2_AGENT_URL, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					zpl: job.zpl,
-					print_job: job.print_job,
-					printer: job.printer,
-				}),
-				signal: controller.signal,
-			});
-			return response.ok;
-		} catch (error) {
-			return false;
-		} finally {
-			clearTimeout(timer);
-		}
+	// A-101: có máy in thì nhãn ra file PDF, không qua Station Agent; chưa có máy in thì giữ Waiting và cảnh báo
+	async handlePrint(print) {
+		if (print && print.status === "Queued") return this.printLabelPdf();
+		this.printNote = { kind: "waiting" };
+		this.show();
 	}
 
-	async handlePrint(print) {
+	async printLabelPdf() {
+		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		if (print && print.status === "Queued" && print.zpl) {
-			this.printNote = { kind: "sending" };
-			this.show();
-			const ok = await this.sendToAgent(print);
-			if (version !== this.station.sessionVersion) return;
-			this.printNote = { kind: ok ? "sent" : "agent-failed" };
-		} else {
-			this.printNote = { kind: "waiting" };
-		}
+		this.printNote = { kind: "sending" };
+		this.show();
+		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.wash.label_pdf", {
+			batch: this.done.batch,
+			station: this.station.station,
+		});
+		if (result.ended || version !== this.station.sessionVersion) return;
+		this.printNote = result.ok
+			? { kind: "pdf", filename: result.filename }
+			: { kind: "pdf-failed", reason: result.reason };
 		this.show();
 	}
 
@@ -1070,7 +1054,7 @@ class T2Wash {
 				this.show();
 			},
 			"t2-record": () => this.recordResult(),
-			"t2-label-pdf": () => this.saveLabelPdf(),
+			"t2-label-pdf-retry": () => this.printLabelPdf(),
 			"t2-unload-reset": () => {
 				this.unload = null;
 				this.indicator = null;
@@ -1513,11 +1497,7 @@ class T2Wash {
 				variant: "ok",
 				title: __("Batch code generated for {0} set(s)", [done.sets.length]),
 			})}
-			${tcCodeWithPdfHtml(done.batch, "t2-label-pdf", {
-				busy: Boolean(this.busy),
-				offline: this.offline || this.station.isOffline(),
-				printer: done.print && done.print.printer,
-			})}
+			<p class="tc-cycle">${esc(done.batch)}</p>
 			${rejected}
 			<div class="tc-t4-done-grid">
 				${this.labelHtml()}
@@ -1533,22 +1513,6 @@ class T2Wash {
 				</div>
 			</div>
 		</section>`;
-	}
-
-	// A-99: PDF nhãn lưu về máy, không tạo lệnh in; A-100: trạm phải có máy in
-	saveLabelPdf() {
-		if (!this.done || this.offline) return;
-		if (!this.done.print || !this.done.print.printer) return;
-		const batch = this.done.batch;
-		this.request(
-			"tracecore.v1.wash.label_pdf",
-			{ batch, station: this.station.station },
-			(res) => {
-				this.notice = null;
-				window.tcSavePdf(res.pdf_b64, res.filename);
-				this.show();
-			}
-		);
 	}
 
 	labelHtml() {
@@ -1575,16 +1539,25 @@ class T2Wash {
 		const print = this.done && this.done.print;
 		if (!note || !print) return "";
 		if (note.kind === "sending")
-			return this.alertHtml({
-				variant: "info",
-				title: __("Sending the label to printer {0}...", [print.printer]),
-			});
-		if (note.kind === "sent") {
+			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
+		if (note.kind === "pdf") {
 			return this.alertHtml({
 				variant: "ok",
-				title: __("Label sent to printer {0}.", [print.printer]),
+				title: __("Label printed to PDF file: {0}", [note.filename]),
 				reason: __("Print job {0}", [print.print_job]),
 			});
+		}
+		if (note.kind === "pdf-failed") {
+			return this.alertHtml(
+				{
+					variant: "warn",
+					title: __("Label PDF was not created; code {0} is kept.", [this.done.batch]),
+					reason: [note.reason, __("Print job {0}", [print.print_job])]
+						.filter(Boolean)
+						.join(" "),
+				},
+				tcPdfRetryButton("t2-label-pdf-retry", this.busy || this.offline)
+			);
 		}
 		const warning = print.warning || {};
 		return this.alertHtml({
@@ -1592,7 +1565,7 @@ class T2Wash {
 			title:
 				warning.code === "NO_PRINTER_AT_STATION"
 					? __("No printer at this station, the label is waiting")
-					: __("Batch code kept - check the Station Agent, then print again"),
+					: __("Batch code kept, the label was not printed"),
 			reason: [warning.reason, __("Print job {0}", [print.print_job])]
 				.filter(Boolean)
 				.join(" "),

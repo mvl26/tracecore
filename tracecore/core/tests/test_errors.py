@@ -250,6 +250,9 @@ class TestErrors(FrappeTestCase):
 				"RATE_VERSION_NOT_APPROVED",
 				# A-100: Lưu PDF nhãn cần máy in hoạt động ở trạm
 				"NO_PRINTER_AT_STATION",
+				"NO_PRINTER_FOR_METHOD",
+				"LABEL_NOT_QUEUED",
+				"LABEL_PDF_FAILED",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

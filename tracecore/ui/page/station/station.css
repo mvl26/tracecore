@@ -945,19 +945,6 @@ html:has(.tc-work) {
 	letter-spacing: var(--tc-ls-code);
 }
 
-/* mã mẻ/lô kèm nút Lưu PDF nhãn (A-99) */
-.tc-code-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--tc-touch-gap);
-	margin-bottom: var(--tc-sp-3);
-}
-
-.tc-code-row .tc-cycle {
-	margin: 0;
-}
-
 .tc-t4-done-grid {
 	display: flex;
 	flex-wrap: wrap;

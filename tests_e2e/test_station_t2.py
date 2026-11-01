@@ -152,7 +152,7 @@ def test_t2_touch_targets_and_font_sizes(t2_page, t2_demo):
 
 def test_t2_load_happy_path_within_three_taps(t2_page, t2_demo):
 	page = t2_page
-	mock_agent(page)
+	sent = mock_agent(page)  # A-101: nhãn ra PDF, Agent giả phải không nhận gì
 	taps = Taps()
 	load_machine(page, t2_demo["machine"])
 	for set_id in t2_demo["sets"]:
@@ -163,6 +163,7 @@ def test_t2_load_happy_path_within_three_taps(t2_page, t2_demo):
 	expect(code).to_have_text(re.compile(r"^LR-\d{6}-\d{2}$"), timeout=15000)
 	expect(page.locator(".tc-label .tc-label-qr")).to_be_visible()
 	assert taps.count <= 3
+	assert sent == []
 	STATE["batch"] = code.inner_text()
 
 

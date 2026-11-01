@@ -18,6 +18,7 @@ const stub = () => new Proxy(function () {}, {
 const sandbox = {
 	console,
 	URLSearchParams,
+	addEventListener: () => {},
 	setTimeout: () => 0,
 	clearTimeout: () => 0,
 	setInterval: () => 0,

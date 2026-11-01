@@ -8,6 +8,7 @@ Tách khỏi `packing` (dịch vụ sinh/in lại/hủy/tra cứu gọi các hà
 - `pack_summary(pack)`, `pack_result(pack, printed)`: dữ liệu gói trả về cho trạm.
 - `label_items(method)`: Item nhãn của phương pháp.
 - `cancel_waiting_jobs(pack, reason)`: hủy nhãn còn chờ in của gói vừa hủy hiệu lực.
+- `label_rows(pack)`, `pack_pdf(pack)`: nhãn gói ra PDF cùng nội dung bản xem trước T4 (A-101).
 
 Chỉ import `tracecore.core` (lint R1); in không bao giờ làm mất Cycle ID.
 """
@@ -19,6 +20,7 @@ from frappe import _
 from frappe.utils import cint, get_datetime, get_fullname, getdate
 
 from tracecore.core import error_codes, gs1
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 
 
@@ -64,6 +66,41 @@ def label_context(pack):
 		"payload": pack.barcode_payload,
 		"hri": _hri(pack),
 	}
+
+
+def label_rows(pack):
+	"""Các dòng chữ nhãn PDF, đúng thứ tự và nội dung bản xem trước T4 (`labelHtml`); dòng THIẾU như nhãn in (FR-M2-06.1)."""
+	context = label_context(pack)
+
+	def optional(condition, row):
+		return [row] if condition else []
+
+	return [
+		(pack.name, "code"),
+		(context["hri"], ""),
+		(pack.set_unit, "mono"),
+		(context["set_name"], "title"),
+		*optional(context["dept"], (_("Department: {0}").format(context["dept"]), "")),
+		(_("Method: {0}").format(context["method_label"]), ""),
+		(_("Pack type: {0}").format(context["pack_type"]), ""),
+		(_("Packed: {0} · {1}").format(context["packer"], context["packed_at"]), ""),
+		(_("Indicator: lot {0} · BOM v{1}").format(context["ci_lot"], context["bom_version"]), ""),
+		*optional(context["is_loaner"], (_("LOANER"), "title")),
+		*optional(context["is_test"], (_("TEST"), "title")),
+		(_("EXPIRY DATE / EXP: {0}").format(context["expiry"]), "title"),
+		(
+			_("Plasma H2O2 label / Plasma label")
+			if pack.method == "Plasma"
+			else _("Steam 134°C label / Steam label"),
+			"",
+		),
+		*optional(context["warning"], (context["warning"], "title")),
+	]
+
+
+def pack_pdf(pack):
+	"""Bytes PDF nhãn gói; không sinh được → `BlockedError(LABEL_PDF_FAILED)`, gói và job giữ nguyên."""
+	return core_label_pdf.pack_pdf(pack.name, pack.barcode_payload, label_rows(pack))
 
 
 def _shortage_warning(pack):

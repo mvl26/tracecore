@@ -1,12 +1,10 @@
-/* global tcErrorTitle, tcGuideButton, TcStepQueue */
+/* global tcErrorTitle, tcGuideButton, TcStepQueue, tcPdfRetryButton, tcPrintLabelPdf */
 /* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
 // Ô chính quét Set/Cycle/cuộn nhãn; lô chỉ thị dùng ô riêng và RPC resolve_ci.
 // Lỗi chặn = alert-error inline; mọi RPC người dùng do shell gắn bearer trong body.
 
-const T4_AGENT_URL = "http://127.0.0.1:8765/print";
-const T4_AGENT_TIMEOUT_MS = 5000;
 const T4_VOID_REASONS = [
 	"Used",
 	"Expired",
@@ -86,7 +84,8 @@ class T4Packing {
 		this.packType = null;
 		this.maint = {}; // {mã dụng cụ: {instrument, action, oil_batch?, reason?}}
 		this.done = null; // kết quả generate_cycle_id
-		this.printNote = null; // {kind: sending | sent | agent-failed | waiting}
+		this.printNote = null; // {kind: sending | pdf | pdf-failed | waiting}
+		this.rollPdf = null; // lần đổi cuộn chưa tạo được PDF: {jobs, title, broken} cho nút In lại
 		this.notice = null; // {variant, title, reason, action, items, code, technical}
 		this.lookup = null;
 		if (this.queue) this.queue.reset(); // màn trống kế tiếp tải lại hàng đợi, không dùng danh sách cũ
@@ -263,7 +262,6 @@ class T4Packing {
 	}
 
 	async onRoll(roll, raw) {
-		const version = this.station.sessionVersion;
 		if (this.ctx && this.ctx.set.method === roll.method) {
 			this.ctx.printer = { name: roll.printer, label_type: roll.label_type };
 			this.ctx.label_type = roll.label_type;
@@ -271,35 +269,63 @@ class T4Packing {
 		const jobs = roll.released_jobs || [];
 		const broken = roll.failed_jobs || []; // nhãn chờ không dựng được: vẫn Waiting, cuộn đã ghi nhận
 		const title = __("Loaded roll {0} into printer {1}.", [raw, roll.printer]);
-		this.notice = jobs.length
-			? {
-					variant: "info",
-					title,
-					reason: __("Sending {0} waiting label(s) to the printer...", [jobs.length]),
-			  }
-			: this.rollNotice(title, 0, 0, broken);
+		this.rollPdf = jobs.length ? { jobs, title, broken } : null;
+		if (!jobs.length) {
+			this.notice = this.rollNotice(title, null, broken);
+			return this.show();
+		}
+		return this.printReleasedPdf();
+	}
+
+	// A-101: các nhãn vừa phát hành gộp thành một file PDF (một thao tác chỉ một lần tải)
+	async printReleasedPdf() {
+		const pending = this.rollPdf;
+		if (!pending || pending.sending) return;
+		const version = this.station.sessionVersion;
+		const { jobs, title, broken } = pending;
+		pending.sending = true;
+		this.notice = { variant: "info", title, reason: __("Creating the label PDF...") };
 		this.show();
-		if (!jobs.length) return;
-		const results = await Promise.all(jobs.map((job) => this.sendToAgent(job)));
-		if (version !== this.station.sessionVersion) return;
-		const failed = results.filter((ok) => !ok).length;
-		this.notice = this.rollNotice(title, jobs.length, failed, broken);
+		const result = await tcPrintLabelPdf(
+			this.station,
+			"tracecore.v1.pack.waiting_labels_pdf",
+			{
+				print_jobs: jobs.map((job) => job.print_job),
+				station: this.station.station,
+			}
+		);
+		pending.sending = false;
+		if (result.ended || version !== this.station.sessionVersion) return;
+		const printed = result.ok ? result.res.print_jobs : [];
+		const missing = jobs.length - printed.length;
+		this.notice = this.rollNotice(title, { result, printed, missing }, broken);
+		this.rollPdf = missing
+			? { ...pending, jobs: jobs.filter((job) => !printed.includes(job.print_job)) }
+			: null;
 		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
 		if (mine) {
 			this.done.print = { ...this.done.print, ...mine, status: "Queued", warning: null };
-			this.printNote = { kind: results[jobs.indexOf(mine)] ? "sent" : "agent-failed" };
+			this.printNote = printed.includes(mine.print_job)
+				? { kind: "pdf", filename: result.filename }
+				: { kind: "pdf-failed", reason: result.reason };
 		}
 		this.show();
 	}
 
-	rollNotice(title, sent, failed, broken) {
+	rollNotice(title, output, broken) {
 		const reasons = [];
 		const actions = [];
-		if (failed) {
-			reasons.push(__("{0} waiting label(s) could not be sent to the printer.", [failed]));
-			actions.push(__("Check the Station Agent, then reprint."));
-		} else if (sent) {
-			reasons.push(__("Sent {0} waiting label(s) to the printer.", [sent]));
+		if (output && output.printed.length) {
+			reasons.push(
+				__("Created {0} waiting label(s) in one PDF file: {1}", [
+					output.printed.length,
+					output.result.filename,
+				])
+			);
+		}
+		if (output && output.missing) {
+			reasons.push(__("{0} waiting label(s) have no PDF yet.", [output.missing]));
+			if (output.result.reason) reasons.push(output.result.reason);
 		}
 		if (broken.length) {
 			reasons.push(
@@ -313,51 +339,38 @@ class T4Packing {
 				)
 			);
 		}
+		const missing = Boolean(output && output.missing);
 		return {
-			variant: failed || broken.length ? "warn" : "info",
+			variant: missing || broken.length ? "warn" : "info",
 			title,
 			reason: reasons.join(" "),
 			items: broken.map((job) => __("Print job {0}: {1}", [job.print_job, job.error])),
 			action: actions.join(" "),
+			rollRetry: missing,
 		};
 	}
 
-	// ---- in qua Station Agent (D11) ----
-	async sendToAgent(job) {
-		if (!this.station.session) return false;
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), T4_AGENT_TIMEOUT_MS);
-		try {
-			const response = await fetch(T4_AGENT_URL, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					zpl: job.zpl,
-					print_job: job.print_job,
-					printer: job.printer,
-				}),
-				signal: controller.signal,
-			});
-			return response.ok;
-		} catch (error) {
-			return false;
-		} finally {
-			clearTimeout(timer);
-		}
+	// A-101: có máy in thì nhãn ra file PDF, không qua Station Agent; nhãn chờ giữ Waiting tới khi quét cuộn (F3)
+	async handlePrint(print) {
+		this.done.print = print;
+		if (print.status === "Queued") return this.printLabelPdf();
+		this.printNote = { kind: "waiting" };
+		this.show();
 	}
 
-	async handlePrint(print) {
+	async printLabelPdf() {
+		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		this.done.print = print;
-		if (print.status === "Queued" && print.zpl) {
-			this.printNote = { kind: "sending" };
-			this.show();
-			const ok = await this.sendToAgent(print);
-			if (version !== this.station.sessionVersion) return;
-			this.printNote = { kind: ok ? "sent" : "agent-failed" };
-		} else {
-			this.printNote = { kind: "waiting" };
-		}
+		this.printNote = { kind: "sending" };
+		this.show();
+		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.pack.label_pdf", {
+			cycle_id: this.done.pack.cycle_id,
+			station: this.station.station,
+		});
+		if (result.ended || version !== this.station.sessionVersion) return;
+		this.printNote = result.ok
+			? { kind: "pdf", filename: result.filename }
+			: { kind: "pdf-failed", reason: result.reason };
 		this.show();
 	}
 
@@ -383,6 +396,8 @@ class T4Packing {
 				this.refresh();
 			},
 			reprint: () => this.reprint(),
+			"t4-label-pdf-retry": () => this.printLabelPdf(),
+			"t4-roll-pdf-retry": () => this.printReleasedPdf(),
 			void: () => this.voidPack(),
 			"request-override": () => this.requestOverride(),
 		};
@@ -695,6 +710,7 @@ class T4Packing {
 
 	reprint() {
 		if (!this.done || this.busy || this.offline || this.labelWaiting()) return;
+		if (this.printNote && this.printNote.kind === "sending") return;
 		const cycleId = this.done.pack.cycle_id;
 		this.openDialog({
 			title: __("Reprint label"),
@@ -1037,6 +1053,7 @@ class T4Packing {
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
 			${tcGuideButton(notice)}
 			${override}
+			${notice.rollRetry ? tcPdfRetryButton("t4-roll-pdf-retry", this.busy || this.offline) : ""}
 			${buttons}
 		</div>`;
 	}
@@ -1586,26 +1603,28 @@ class T4Packing {
 		const print = this.done.print;
 		const kind = this.printNote.kind;
 		if (kind === "sending") {
-			return this.alertHtml({
-				variant: "info",
-				title: __("Sending the label to printer {0}...", [print.printer]),
-			});
+			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
 		}
-		if (kind === "sent") {
+		if (kind === "pdf") {
 			return this.alertHtml({
 				variant: "ok",
-				title: __("Label sent to printer {0}.", [print.printer]),
+				title: __("Label printed to PDF file: {0}", [this.printNote.filename]),
 				reason: __("Print job {0}", [print.print_job]),
 			});
 		}
-		if (kind === "agent-failed") {
-			return this.alertHtml({
-				variant: "warn",
-				title: __(
-					"Not sent to the printer; the Cycle ID is kept. Check the Station Agent, then reprint."
-				),
-				reason: __("Print job {0}", [print.print_job]),
-			});
+		if (kind === "pdf-failed") {
+			return this.alertHtml(
+				{
+					variant: "warn",
+					title: __("Label PDF was not created; code {0} is kept.", [
+						this.done.pack.cycle_id,
+					]),
+					reason: [this.printNote.reason, __("Print job {0}", [print.print_job])]
+						.filter(Boolean)
+						.join(" "),
+				},
+				tcPdfRetryButton("t4-label-pdf-retry", this.busy || this.offline)
+			);
 		}
 		// Waiting (NO_PRINTER_FOR_METHOD, LABEL_TEMPLATE_MISSING, LABEL_RENDER_FAILED): hiển thị chung
 		const warning = print.warning || {};

@@ -30,6 +30,7 @@ from tracecore.core import (
 	step_gate,
 	zones,
 )
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
@@ -42,6 +43,7 @@ FUNCTION = "PACK"
 MAINT_ACTIONS = ("Done", "Deferred")  # option của Pack Maintenance Done.action
 # FR-M2-08.5: 10 phút kể từ khi sinh Cycle ID, đo bằng giờ server (D13) từ Pack.creation, số giây nguyên (R3)
 REPRINT_WINDOW_SECONDS = 600
+NO_LABEL_STATUSES = ("Void", "Recalled")  # gói hết hiệu lực không được ra nhãn PDF (A-101)
 SAVEPOINT = "tc_pack_generate"
 # ctx["set_unit"] của hook (D9) là các trường này trừ department
 SET_FIELDS = tuple(
@@ -659,6 +661,99 @@ def reprint(cycle_id, reason, station):
 	_save_packing(pack)
 	printer = core_print.select_printer(station, pack.method)
 	return pack_label.pack_result(pack, pack_label.queue_label(pack, station, printer, reprint_reason=reason))
+
+
+def _check_label_output(pack, station):
+	"""Điều kiện ra PDF nhãn gói (A-101): gói còn hiệu lực, trạm còn máy in đúng loại nhãn."""
+	if pack.status in NO_LABEL_STATUSES:
+		raise _blocked(
+			"STATUS_INVALID_FOR_STATION",
+			_("Label cannot be printed"),
+			_("Pack {0} is {1}; its label can no longer be printed.").format(
+				pack.name, _(pack.status, context="Pack")
+			),
+			_("Scan the label of a valid pack, or call R02."),
+		)
+	if core_print.select_printer(station, pack.method) is None:
+		raise _blocked(
+			"NO_PRINTER_FOR_METHOD",
+			_("No printer has the right labels"),
+			_(
+				"No active printer at station {0} has {1} labels loaded. Cycle ID {2} is kept; its label is waiting."
+			).format(station, _(pack.method), pack.name),
+			_(
+				"Load the right label roll into a printer at this station, then scan the roll code (CN-#####)."
+			),
+		)
+
+
+def _check_refetch(pack, job):
+	"""Job đã xuất file chỉ lấy lại được trong cửa sổ in lại, để bù trả lời bị mất; không thành đường in lại không lý do (AC-10)."""
+	if job.status != "Printed":
+		return
+	elapsed = math.floor((now_datetime() - get_datetime(job.printed_at)).total_seconds())
+	if elapsed > REPRINT_WINDOW_SECONDS:
+		raise _blocked(
+			"REPRINT_WINDOW_EXPIRED",
+			_("Reprint window has passed"),
+			_(
+				"The label of Cycle ID {0} was output {1} minutes ago; print it again with Reprint and a reason."
+			).format(pack.name, elapsed // 60),
+			_("Use Reprint within 10 minutes of packing, or void the Cycle ID and pack the set again."),
+		)
+
+
+def label_pdf(cycle_id, station):
+	"""PDF nhãn của gói cho T4 (A-101): Print Job mới nhất của gói ở trạm, xong ghi `Printed`/`File`; trả ``pdf_b64``, ``filename``, ``print_job``.
+
+	Nhãn còn `Waiting` (F3) → LABEL_NOT_QUEUED: chỉ quét cuộn đúng loại mới phát hành; in lại vẫn qua `reprint` có lý do.
+	"""
+	_require_station(station)
+	pack = frappe.get_doc("Pack", _pack_name(cycle_id))
+	_check_label_output(pack, station)
+	job = core_print.label_output_job("Pack", pack.name, station)
+	_check_refetch(pack, job)
+	filename = f"{pack.name}.pdf"
+	result = core_label_pdf.encode(pack_label.pack_pdf(pack), filename)
+	core_print.mark_file_output(job.name, filename)
+	return {**result, "print_job": str(job.name)}
+
+
+def waiting_labels_pdf(print_jobs, station):
+	"""Một file PDF cho các nhãn vừa phát hành (đổi cuộn, phát lại offline), mỗi nhãn một trang (A-101).
+
+	Job không in được (của trạm khác, gói đã hủy, hết cửa sổ…) bị bỏ qua và nêu trong ``skipped``; không còn nhãn nào →
+	LABEL_NOT_QUEUED. Chỉ ghi `Printed`/`File` sau khi có đủ PDF, lỗi sinh PDF thì mọi job giữ nguyên.
+	"""
+	_require_station(station)
+	jobs, skipped = core_print.file_output_jobs(print_jobs, "Pack", station)
+	printable = []
+	for job in jobs:
+		pack = frappe.get_doc("Pack", job.ref_name)
+		try:
+			_check_label_output(pack, station)
+			_check_refetch(pack, job)
+		except BlockedError:
+			skipped.append(str(job.name))
+			continue
+		printable.append((job, pack))
+	if not printable:
+		raise _blocked(
+			"LABEL_NOT_QUEUED",
+			_("Label is not ready to print"),
+			_("None of the {0} released label(s) can be printed at this station.").format(len(print_jobs)),
+			_("Reprint from the pack, or call R02."),
+		)
+	pdf = core_label_pdf.merge([pack_label.pack_pdf(pack) for _job, pack in printable])
+	first = printable[0][1].name
+	filename = f"{first}.pdf" if len(printable) == 1 else f"{first}-{len(printable)}.pdf"
+	for job, _pack in printable:
+		core_print.mark_file_output(job.name, filename)
+	return {
+		**core_label_pdf.encode(pdf, filename),
+		"print_jobs": [str(job.name) for job, _pack in printable],
+		"skipped": skipped,
+	}
 
 
 def void(cycle_id, reason, station, note=None, employee=None):

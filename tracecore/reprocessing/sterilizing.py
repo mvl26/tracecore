@@ -766,9 +766,10 @@ def lookup(raw):
 
 
 def label_pdf(load, station):
-	"""PDF nhãn QR của mẻ để máy trạm lưu (A-99); chỉ đọc, không tạo Print Job.
+	"""PDF nhãn QR của mẻ để máy trạm lưu (A-99, A-101): dùng Print Job có sẵn, xong ghi `Printed`/`File`.
 
-	Không có mẻ → LOAD_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100).
+	Không có mẻ → LOAD_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100). Nhãn còn `Waiting` →
+	LABEL_NOT_QUEUED. Không sinh được PDF → LABEL_PDF_FAILED, job giữ `Queued`.
 	"""
 	doc = _load_doc(load)
 	if core_print.object_printer(station) is None:
@@ -780,9 +781,10 @@ def label_pdf(load, station):
 			).format(station, doc.name),
 			_("Ask R10 to add a printer to this station, then print the load label again."),
 		)
+	job = core_print.label_output_job("Sterilization Load", doc.name, station)
 	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
 	program = frappe.db.get_value("Process Program", doc.program, "program_name")
-	return core_label_pdf.render(
+	result = core_label_pdf.render(
 		doc.name,
 		_("Sterilization load"),
 		[
@@ -791,6 +793,8 @@ def label_pdf(load, station):
 			_("{0} pack(s)").format(len(doc.packs)),
 		],
 	)
+	core_print.mark_file_output(job.name, result["filename"])
+	return {**result, "print_job": str(job.name)}
 
 
 # --- Dữ liệu chu trình nhập tay có xác nhận (FR-M2-10, BRU-REP-015) -----------------------------------------

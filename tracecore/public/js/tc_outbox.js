@@ -1,4 +1,3 @@
-/* global T4_AGENT_URL */
 // Hàng đợi offline của trạm/PDA (FEAT-009, ADR-003, A-40): IndexedDB `tracecore` giữ outbox, snapshot đọc và dải
 // Cycle ID cấp trước. Phát lại tuần tự theo client_ts, cùng X-Idempotency-Key, header X-TC-Replay: 2xx → xóa; 4xx →
 // xóa (server đã ghi Sync Conflict cho R02); 5xx / mất mạng → dừng, thử lại sau 15 s.
@@ -8,6 +7,7 @@ const TC_DB_NAME = "tracecore";
 const TC_DB_VERSION = 1;
 const TC_REPLAY_MS = 15000;
 const TC_SNAPSHOT_MS = 10 * 60 * 1000;
+const TC_LABEL_PDF_ATTEMPTS = 3; // nhãn gói phát lại: thử tạo PDF tối đa số lượt này rồi để nhãn lại ở Print Job
 const TC_MAX_ATTEMPTS = 5; // mục lỗi lặp lại quá số lần này được bỏ qua trong lượt phát lại (giữ lại, báo lỗi)
 // RPC ghi được xếp hàng khi mất mạng (A-40 Q1): T1 cả phiếu, T4 sinh Cycle ID, T8 xác nhận sử dụng
 const TC_QUEUEABLE = [
@@ -172,6 +172,7 @@ TcOutbox.db = null;
 const tcSync = {
 	running: null,
 	seq: 0,
+	replayedLabels: [], // A-101: nhãn của gói vừa phát lại, chờ gộp một file PDF
 	listeners: new Set(),
 	state: { queued: 0, sending: 0, conflicts: 0, error: null },
 
@@ -226,7 +227,10 @@ const tcSync = {
 		} catch (error) {
 			return;
 		}
-		if (!entries.length) return this.emit({ queued: 0, sending: 0 });
+		if (!entries.length) {
+			await this.printReplayedLabels();
+			return this.emit({ queued: 0, sending: 0 });
+		}
 		let done = 0;
 		let failed = null;
 		for (const entry of entries) {
@@ -254,7 +258,7 @@ const tcSync = {
 			const body = await response.json().catch(() => null);
 			const message = body && body.message;
 			if (message && message.ok === true) {
-				await this.printReplayed(entry, message);
+				this.noteReplayedLabel(entry, message);
 			} else if (
 				message &&
 				message.ok === false &&
@@ -271,6 +275,7 @@ const tcSync = {
 			await TcOutbox.remove(entry.key);
 			done++;
 		}
+		await this.printReplayedLabels();
 		const queued = await TcOutbox.count();
 		this.emit({
 			queued,
@@ -289,28 +294,65 @@ const tcSync = {
 		return entry.attempts >= TC_MAX_ATTEMPTS;
 	},
 
-	// gói T4 đóng offline: nhãn in khi có mạng (A-40 D1) — gửi ZPL server vừa dựng sang Station Agent như màn T4;
-	// agent lỗi thì nhãn vẫn ở Print Job, in lại từ Desk/T4 như mọi nhãn chờ
-	async printReplayed(entry, message) {
-		if (
-			entry.endpoint !== "tracecore.v1.pack.generate_cycle_id" ||
-			typeof T4_AGENT_URL === "undefined"
-		)
-			return;
+	// gói T4 đóng offline: nhãn in khi có mạng (A-40 D1); A-101: ra file PDF, không qua Station Agent
+	noteReplayedLabel(entry, message) {
+		const print = message.print;
+		if (entry.endpoint !== "tracecore.v1.pack.generate_cycle_id" || !print) return;
+		if (print.status !== "Queued") return; // nhãn chờ: giữ Waiting, quét cuộn ở T4 như mọi nhãn chờ
+		this.replayedLabels.push({
+			print_job: print.print_job,
+			station: entry.station,
+			token: entry.args.token,
+			attempts: 0,
+		});
+	},
+
+	// mỗi trạm một file PDF cho cả lượt phát lại (một thao tác chỉ một lần tải); lỗi thì thử ở lượt sau, không chặn đồng bộ
+	async printReplayedLabels() {
+		const labels = this.replayedLabels;
+		if (!labels.length) return;
+		this.replayedLabels = [];
+		for (const station of new Set(labels.map((label) => label.station))) {
+			const group = labels.filter((label) => label.station === station);
+			const reason = await this.requestLabelsPdf(station, group);
+			if (!reason) continue;
+			for (const label of group) label.attempts += 1;
+			this.replayedLabels.push(
+				...group.filter((label) => label.attempts < TC_LABEL_PDF_ATTEMPTS)
+			);
+			this.emit({ label_error: reason, label_file: null });
+		}
+	},
+
+	// trả lý do lỗi, hoặc null khi đã lưu file
+	async requestLabelsPdf(station, group) {
 		try {
-			const print = message.print;
-			if (!print || print.status !== "Queued" || !print.zpl) return;
-			await fetch(T4_AGENT_URL, {
+			const response = await fetch("/api/method/tracecore.v1.pack.waiting_labels_pdf", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "application/json",
+					"X-Frappe-CSRF-Token": frappe.csrf_token,
+					"X-TC-Station": station,
+				},
 				body: JSON.stringify({
-					zpl: print.zpl,
-					print_job: print.print_job,
-					printer: print.printer,
+					print_jobs: group.map((label) => label.print_job),
+					station,
+					token: group[group.length - 1].token,
+					client_ts: new Date().toISOString(),
 				}),
+				credentials: "same-origin",
 			});
+			const body = await response.json().catch(() => null);
+			const message = body && body.message;
+			if (message && message.ok && message.pdf_b64) {
+				window.tcSavePdf(message.pdf_b64, message.filename);
+				this.emit({ label_file: message.filename, label_error: null });
+				return null;
+			}
+			return (message && message.error && message.error.reason) || `HTTP ${response.status}`;
 		} catch (error) {
-			// không chặn đồng bộ vì máy in
+			return __("No network");
 		}
 	},
 
