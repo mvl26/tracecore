@@ -570,18 +570,23 @@ class TraceCoreStation {
 		this.listen(this.input, "blur", () => setTimeout(() => this.focus(), 150));
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
-			this.listen(
-				this.root,
-				name,
-				() => {
-					if (!this.session) return;
-					// Check the old deadline before counting the first interaction after sleep.
-					if (Date.now() - this.lastActivity >= STATION_IDLE_MS) this.checkSession();
-					else this.lastActivity = Date.now();
-				},
-				true
-			);
+			this.listen(this.root, name, (event) => this.noteActivity(event), true);
 		}
+	}
+
+	noteActivity(event) {
+		if (!this.session) return;
+		// Check the old deadline before counting the first interaction after sleep.
+		if (Date.now() - this.lastActivity < STATION_IDLE_MS) {
+			this.lastActivity = Date.now();
+			return;
+		}
+		// Chạm Đăng xuất đúng lúc quá hạn: người dùng chủ động thoát, không hiện "Phiên trạm đã bị khóa"
+		const leaving =
+			event.target.closest &&
+			event.target.closest('[data-action="logout"], [data-action="rescan-card"]');
+		if (leaving) this.endSession();
+		else this.checkSession();
 	}
 
 	bindGlobal() {

@@ -3,6 +3,7 @@
 // (FEAT-016, dùng ở list Set Unit, form Set Unit và form loại bộ); thanh lý và chuyển trạng thái thủ công
 // tracecore.admin.* (FEAT-004, form Set Unit và Pack); ô quét chung trên List View tracecore.list_scan.* (FEAT-006);
 // nút xuất PDF nền / khóa kỳ trên báo cáo sổ tiệt khuẩn tracecore.report_export.* (FEAT-007).
+import "./tc_page_cache.js";
 import "./tc_codes.js";
 import "./tc_desk_call.js";
 import "./tc_admin_actions.js";
