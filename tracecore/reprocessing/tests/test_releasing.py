@@ -189,8 +189,65 @@ class TestRelease(ReleaseCase):
 	def test_release_second_time_is_blocked_and_counts_once(self):
 		self.ready()
 		self.release()
-		self.assertEqual(blocked(self, self.release).code, "LOAD_NOT_OPEN")
+		self.assertEqual(blocked(self, self.release).code, "LOAD_ALREADY_RELEASED")
 		self.assertEqual(self.unit_state(self.packs[0]).cycles_used, 1)
+
+	def open_again(self):
+		return blocked(self, releasing.context, **self.scans())
+
+	def test_released_load_is_a_notice_with_who_and_when(self):
+		self.ready()
+		self.release()
+		doc = frappe.get_doc("Sterilization Load", self.load.name)
+		block = self.open_again()
+		self.assertEqual((block.code, block.http_status), ("LOAD_ALREADY_RELEASED", 409))
+		self.assertIn(doc.name, block.title)
+		who = frappe.db.get_value("Employee", doc.released_by, "employee_name")
+		self.assertIn(who, block.reason)
+		self.assertIn(get_datetime(doc.released_at).strftime("%d/%m/%Y %H:%M"), block.reason)
+		self.assertFalse(block.action)
+		body = block.as_dict()
+		self.assertNotIn(doc.released_by, str(body))  # chỉ tên nhân viên, không mã HR
+		for key in ("error_code", "error_name", "has_guide"):
+			self.assertNotIn(key, body)
+
+	def test_released_notice_without_recorded_person_shows_no_code(self):
+		frappe.db.set_value(
+			"Sterilization Load",
+			self.load.name,
+			{"status": "Released", "released_by": self.employee.name, "released_at": None},
+		)
+		frappe.db.set_value("Employee", self.employee.name, "employee_name", "")
+		block = self.open_again()
+		self.assertEqual(block.code, "LOAD_ALREADY_RELEASED")
+		self.assertNotIn(self.employee.name, block.reason)
+
+	def test_every_write_on_a_released_load_is_refused(self):
+		self.ready()
+		self.release()
+		before = self.statuses()
+		for attempt in (
+			self.result,
+			lambda: self.indicator("chemical_class_5"),
+			self.save_data,
+			self.release,
+			lambda: releasing.reject(**self.scans(), reason="late"),
+		):
+			self.assertEqual(blocked(self, attempt).code, "LOAD_ALREADY_RELEASED")
+		self.assertEqual(self.statuses(), before)
+		doc = frappe.get_doc("Sterilization Load", self.load.name)
+		self.assertEqual((doc.docstatus, doc.status), (1, "Released"))
+
+	def test_other_closed_states_keep_the_error_and_its_catalog_code(self):
+		frappe.db.set_value("Sterilization Load", self.load.name, "status", "Failed")
+		block = self.open_again()
+		self.assertEqual((block.code, block.http_status), ("LOAD_NOT_OPEN", 409))
+		self.assertEqual(block.as_dict().get("error_code"), "QT-001")
+		self.assertTrue(block.action)
+
+	def test_cancelled_load_is_not_reported_as_released(self):
+		frappe.db.set_value("Sterilization Load", self.load.name, {"status": "Released", "docstatus": 2})
+		self.assertEqual(self.open_again().code, "LOAD_NOT_OPEN")
 
 	@bru("BRU-REP-005")
 	def test_release_needs_result_and_every_required_indicator(self):

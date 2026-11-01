@@ -349,9 +349,30 @@ class TestLoadDataApi(LoadApiCase):
 	def test_closed_load_is_409(self):
 		pack = make_load_ready_pack()
 		load = make_load(self.machine, self.program, [pack])
-		frappe.db.set_value("Sterilization Load", load.name, "status", "Released")
+		frappe.db.set_value("Sterilization Load", load.name, "status", "Failed")
 		result = call(load_api.data_scan, load=load.name, raw=self.machine.name, station=STATION)
 		self.assert_rejection(result, "LOAD_NOT_OPEN", 409)
+
+	def test_released_load_is_409_without_catalog_code_and_stays_audited(self):
+		pack = make_load_ready_pack()
+		load = make_load(self.machine, self.program, [pack])
+		frappe.db.set_value("Sterilization Load", load.name, "status", "Released")
+		result = call(load_api.data_scan, load=load.name, raw=self.machine.name, station=STATION)
+		self.assertIs(result["ok"], False, msg=result)
+		self.assertEqual(result["error"]["code"], "LOAD_ALREADY_RELEASED")
+		self.assertEqual(http_status(), 409)
+		self.assertNotIn("error_code", result["error"])
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log",
+				{
+					"action": "Reject",
+					"reason": "LOAD_ALREADY_RELEASED",
+					"ref_doctype": "Sterilization Load",
+					"ref_name": load.name,
+				},
+			)
+		)
 
 
 class TestLoadLabelPdf(LoadApiCase):

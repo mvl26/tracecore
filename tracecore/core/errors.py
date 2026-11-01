@@ -247,6 +247,7 @@ HTTP_STATUS: dict[str, int] = {
 			"PACK_NOT_LOADABLE",
 			"LOAD_CAPACITY_EXCEEDED",
 			"LOAD_NOT_OPEN",
+			"LOAD_ALREADY_RELEASED",
 			"DAILY_TEST_REQUIRED",
 			"EQUIPMENT_INSPECTION_EXPIRED",
 			# FEAT-039 A-43 M5: quá hạn hiệu chuẩn chặn tạo mẻ/lô, R02 mở khóa tạm được

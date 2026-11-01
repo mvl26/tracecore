@@ -1,4 +1,4 @@
-/* global t5MachineState, t5DateTime, t5SetCodeNotice, tcIsSetOrPackCode, tcPackLabelHtml */
+/* global t5MachineState, t5DateTime, t5RejectNotice, t5SetCodeNotice, tcIsSetOrPackCode, tcPackLabelHtml */
 /* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
@@ -18,6 +18,7 @@ const T5B_VERIFY_PIN = "tracecore.v1.station.verify_pin";
 const T5B_RESET_CODES = [
 	"LOAD_NOT_FOUND",
 	"LOAD_NOT_OPEN",
+	"LOAD_ALREADY_RELEASED",
 	"STATION_WRONG_STEP",
 	"EQUIPMENT_MISMATCH",
 ];
@@ -221,7 +222,7 @@ class T5Release {
 			this.ctx = null;
 			this.scans = { equipment_raw: "", load_raw: "" };
 		}
-		this.notice = { variant: "error", ...error };
+		this.notice = t5RejectNotice(error);
 		this.show();
 	}
 
