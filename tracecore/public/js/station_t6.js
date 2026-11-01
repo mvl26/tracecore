@@ -63,8 +63,11 @@ class T6Storage {
 		this.notice = null;
 		this.damaging = false;
 		this.reasonError = false;
-		this.input.placeholder = __("Scan the Cycle ID of the pack...");
-		this.input.setAttribute("aria-label", __("Scan the Cycle ID of the pack..."));
+		this.input.placeholder = __("Scan the pack code (post-sterilization label)...");
+		this.input.setAttribute(
+			"aria-label",
+			__("Scan the pack code (post-sterilization label)...")
+		);
 	}
 
 	openPack() {
@@ -300,7 +303,7 @@ class T6Storage {
 	updatePlaceholder() {
 		const text = this.pack
 			? __("Scan the shelf code (KE-)...")
-			: __("Scan the Cycle ID of the pack...");
+			: __("Scan the pack code (post-sterilization label)...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
 	}
@@ -454,10 +457,15 @@ class T6Storage {
 	overviewHtml() {
 		const data = this.overview;
 		if (!data) {
-			return `<p class="tc-empty">${esc(__("Scan the Cycle ID of the pack to store."))}</p>`;
+			return `<p class="tc-empty">${esc(
+				__("Scan the pack code (post-sterilization label).")
+			)}</p>`;
 		}
 		const empty = !data.by_set_type.length;
-		return `<p class="tc-empty">${esc(__("Scan the Cycle ID of the pack to store."))}</p>
+		return `<p class="tc-empty">${esc(
+			__("Scan the pack code (post-sterilization label).")
+		)}</p>
+			${this.pendingHtml(data.pending)}
 			<section class="tc-t6-block">
 				<h3>${esc(__("Sterile stock by set type"))}</h3>
 				${
@@ -477,15 +485,19 @@ class T6Storage {
 			</section>
 			<section class="tc-t6-block">
 				<h3>${esc(__("Stock by location"))}</h3>
-				${this.tableHtml(
-					[__("Location"), __("Packs")],
-					data.by_location.map((row) => [
-						`<span class="tc-mono">${esc(row.location)}</span> ${esc(
-							row.location_name || ""
-						)}`,
-						String(row.count),
-					])
-				)}
+				${
+					data.by_location.length
+						? this.tableHtml(
+								[__("Location"), __("Packs")],
+								data.by_location.map((row) => [
+									`<span class="tc-mono">${esc(row.location)}</span> ${esc(
+										row.location_name || ""
+									)}`,
+									String(row.count),
+								])
+						  )
+						: `<p class="tc-t6-hint">${esc(__("No pack in storage yet."))}</p>`
+				}
 			</section>
 			<section class="tc-t6-block">
 				<h3>${esc(__("Packs expiring within 7 days"))}</h3>
@@ -526,6 +538,26 @@ class T6Storage {
 	packName(done) {
 		const pack = this.pack && this.pack.cycle_id === done.cycle_id ? this.pack : {};
 		return tcPackLabel({ ...pack, cycle_id: done.cycle_id });
+	}
+
+	// #1837 T6-03: gói đã giải phóng, chưa nhập kho
+	pendingHtml(pending) {
+		const items = (pending && pending.items) || [];
+		const title = __("Packs waiting for storage ({0})", [(pending && pending.total) || 0]);
+		return `<section class="tc-t6-block" aria-label="${esc(title)}">
+			<h3>${esc(title)}</h3>
+			${
+				items.length
+					? this.tableHtml(
+							[__("Pack"), __("Department")],
+							items.map((row) => [
+								`<b class="tc-code">${esc(row.id)}</b> ${esc(row.name || "")}`,
+								esc(row.department_name || ""),
+							])
+					  )
+					: `<p class="tc-t6-hint">${esc(__("No pack is waiting for storage."))}</p>`
+			}
+		</section>`;
 	}
 
 	// ô bảng nhận HTML đã escape ở nơi gọi; tiêu đề cột là chuỗi thường

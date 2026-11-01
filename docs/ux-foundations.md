@@ -21,6 +21,7 @@
 | 01/11/2026 | Amendment A-92 (#1828, sửa B3): ở ≤ 768 px, hàng nút trạm và dòng phiên nằm trong menu mở bằng nút, ô quét ở đầu màn và giữ focus; áp cho mọi trạm. 375×667 thấy ô quét không cần cuộn |
 | 01/11/2026 | Amendment A-93 (#1835, sửa FR-M9-14): lỗi nghiệp vụ có mã có nút mở trạm của bước phải làm lại và Gọi giám sát CSSD; Thử lại, Chuyển ngoại tuyến chỉ ở lỗi mạng, lỗi máy chủ. Hàng đợi Bộ chờ đóng gói trên màn T4 |
 | 01/11/2026 | Amendment A-94 (#1814, sửa SCR-05): thành phần bộ ở T1 là bảng STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế; số thực tế điền sẵn theo BOM, sửa được; bỏ ô tick và Xác nhận tất cả |
+| 01/11/2026 | Amendment A-95 (#1837, SCR T6, T7): T6 có Gói chờ nhập kho, bảng vị trí trống có câu báo; T7 có Cơ số thiếu theo khoa, chọn khoa từ đó |
 
 ## 1. Overview
 

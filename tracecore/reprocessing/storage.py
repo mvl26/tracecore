@@ -12,7 +12,7 @@ from frappe.utils import add_days, cint, getdate, now_datetime, today
 
 from tracecore.core import code_registry, error_codes, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import pack_display
+from tracecore.reprocessing import pack_display, pick_list
 
 FUNCTION = "PUTAWAY"
 EXPIRING_DAYS = 7  # FR-M2-13.2: dashboard kho liệt kê gói hết hạn trong 7 ngày tới
@@ -354,7 +354,7 @@ def run_expiry():
 
 
 def overview(on=None):
-	"""Dashboard kho (FR-M2-13.2): tồn theo loại bộ, theo vị trí và gói hết hạn trong 7 ngày tới (sớm nhất trước)."""
+	"""Dashboard kho (FR-M2-13.2): tồn theo loại bộ, theo vị trí, gói hết hạn trong 7 ngày tới, gói chờ nhập kho (A-95)."""
 	reference = getdate(on or today())
 	horizon = getdate(add_days(reference, EXPIRING_DAYS))
 	rows = _stock_rows()
@@ -379,6 +379,7 @@ def overview(on=None):
 		"by_set_type": sorted(by_type.values(), key=lambda e: (e["set_name"] or "", e["set_type"])),
 		"by_location": sorted(by_location.values(), key=lambda e: e["location"] or ""),
 		"expiring": sorted(expiring, key=lambda e: (e["expiry"], e["cycle_id"])),
+		"pending": pick_list.suggest("T6"),
 	}
 
 

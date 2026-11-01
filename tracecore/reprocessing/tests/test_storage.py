@@ -43,6 +43,17 @@ def set_status(pack):
 	return frappe.db.get_value("Set Unit", pack.set_unit, ["status", "active_cycle_id"], as_dict=True)
 
 
+class TestPendingQueue(IsolatedTestCase):
+	def test_overview_lists_released_packs_not_yet_stored(self):
+		pack = make_released_pack()
+		stocked = make_released_pack(status="In Sterile Stock")
+		pending = storage.overview()["pending"]
+		ids = [row["id"] for row in pending["items"]]
+		self.assertIn(pack.name, ids)
+		self.assertNotIn(stocked.name, ids)
+		self.assertGreaterEqual(pending["total"], 1)
+
+
 class TestPutaway(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()

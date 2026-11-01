@@ -124,6 +124,8 @@ class TestT1ScanLabel(FrappeTestCase):
 		self.assertIn("Set ID", out["second"][0])
 
 
+T6 = "public/js/station_t6.js"
+T7 = "public/js/station_t7.js"
 DAILY = "public/js/station_daily_test.js"
 MACHINE = {"name": "TB-1", "equipment_name": "May", "required": ["bowie_dick"], "missing": [], "runs": {}}
 
@@ -165,6 +167,67 @@ class TestDailyTestList(FrappeTestCase):
 		self.assertIn("Giam Sat", out)
 		self.assertIn("Ca khan", out)
 		self.assertIn("01/11/2026 15:30", out)
+
+
+class TestT6Overview(FrappeTestCase):
+	def overview(self, pending):
+		import json
+
+		data = {
+			"by_set_type": [],
+			"by_location": [],
+			"expiring": [],
+			"return_list": [],
+			"pending": pending,
+		}
+		return run_js(
+			self,
+			[T6],
+			[["T6Storage"]],
+			FAKE_STATION
+			+ f"""
+			const t6 = Object.create(T6Storage.prototype);
+			t6.overview = {json.dumps(data)};
+			emit(t6.overviewHtml());
+			""",
+		)
+
+	def test_empty_location_table_says_so(self):
+		out = self.overview({"items": [], "total": 0})
+		self.assertIn("No pack in storage yet.", out)
+		self.assertNotIn("<th", out)
+
+	def test_pending_queue_is_listed(self):
+		out = self.overview({"items": [{"id": "CY-1", "name": "Bo", "department_name": "Khoa"}], "total": 1})
+		self.assertIn("Packs waiting for storage (1)", out)
+		self.assertIn("CY-1", out)
+
+	def test_prompt_does_not_say_cycle_id(self):
+		out = self.overview({"items": [], "total": 0})
+		self.assertNotIn("Cycle ID", out)
+
+
+class TestT7Departments(FrappeTestCase):
+	def test_shortage_is_listed_and_picks_the_department(self):
+		out = run_js(
+			self,
+			[T7],
+			[["T7Issue"]],
+			FAKE_STATION
+			+ """
+			const t7 = Object.create(T7Issue.prototype);
+			t7.departments = [
+				{name: "K1", department_name: "Khoa 1", shortage: [{set_type: "A", set_name: "Bo A", suggest: 2, available: 1}]},
+				{name: "K2", department_name: "Khoa 2", shortage: []},
+			];
+			t7.button = (action, label, kind, extra) => `<button data-action="${action}"${extra}>${label}</button>`;
+			emit(t7.departmentsHtml());
+			""",
+		)
+		self.assertIn("Par shortage by department", out)
+		self.assertIn("Bo A", out)
+		self.assertEqual(out.count('data-dept="K1"'), 1)
+		self.assertEqual(out.count('data-dept="K2"'), 1)
 
 
 class TestT1Today(FrappeTestCase):
