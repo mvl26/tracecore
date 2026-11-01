@@ -247,6 +247,8 @@ class TestErrors(FrappeTestCase):
 				"CODE_RANGE_EXHAUSTED",
 				# FEAT-046 A-53 i
 				"RATE_VERSION_NOT_APPROVED",
+				# A-100: Lưu PDF nhãn cần máy in hoạt động ở trạm
+				"NO_PRINTER_AT_STATION",
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

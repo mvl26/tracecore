@@ -272,7 +272,7 @@ def _completed(equipment, program, codes, rows, station, timestamp):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 def label_pdf(batch, station, client_ts=None, token=None):
-	"""PDF nhãn QR của lô, máy trạm tự lưu thành file (A-99); chỉ đọc, chạy được khi không có máy in."""
+	"""PDF nhãn QR của lô, máy trạm tự lưu thành file (A-99); chỉ đọc, trạm phải có máy in hoạt động (A-100)."""
 	require_any_role(*WASH_LOAD_ROLES)
 	batch = _required_str(batch, "batch")
 	timestamp = parse_client_ts(client_ts)
@@ -281,7 +281,7 @@ def label_pdf(batch, station, client_ts=None, token=None):
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {"ok": True, **washing.label_pdf(batch)},
+		lambda: {"ok": True, **washing.label_pdf(batch, station)},
 		ref_doctype,
 		ref_name,
 		batch,
