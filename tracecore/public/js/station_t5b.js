@@ -1,3 +1,4 @@
+/* global t5MachineState */
 /* global tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc, t5Kind, t5Date, t5IndicatorLabel, T5Load */
 // Màn T5b dỡ mẻ và giải phóng (SCR-10, FEAT-023, UC-10) trên Page station: chế độ "Dỡ mẻ" của màn T5.
@@ -40,6 +41,7 @@ class T5Release {
 	}
 
 	reset() {
+		this.running = null; // mẻ chưa dỡ, tải lại mỗi lần mở màn
 		this.mode = "unload"; // unload | bi
 		this.scans = { equipment_raw: "", load_raw: "" };
 		this.ctx = null; // kết quả release.context
@@ -580,6 +582,49 @@ class T5Release {
 		return html;
 	}
 
+	// A-84: máy đang có mẻ chưa dỡ, như các tab khác của T5
+	async loadRunning() {
+		if (this.runningBusy || this.running || !this.station.session || this.station.isOffline())
+			return;
+		this.runningBusy = true;
+		const version = this.station.sessionVersion;
+		try {
+			const res = await this.station.rpc("tracecore.v1.load.overview", {
+				station: this.station.station,
+				client_ts: clientTs(),
+			});
+			if (version === this.station.sessionVersion && res && res.ok) {
+				this.running = res.running || [];
+				if (this.station.screen === this && !this.ctx && !this.busy) this.show();
+			}
+		} catch (error) {
+			this.running = null;
+		} finally {
+			this.runningBusy = false;
+		}
+	}
+
+	runningHtml() {
+		if (!this.running) {
+			this.loadRunning();
+			return "";
+		}
+		if (!this.running.length) return "";
+		const rows = this.running
+			.map(
+				(row) =>
+					`<li><span class="tc-mono">${esc(row.equipment)}</span> ${esc(
+						row.equipment_name || ""
+					)}: <span class="tc-badge tc-badge-o">${esc(
+						t5MachineState(row.status, row.load, row.unloaded)
+					)}</span></li>`
+			)
+			.join("");
+		return `<ul class="tc-t6-hint" aria-label="${esc(
+			__("Open sterilization loads")
+		)}">${rows}</ul>`;
+	}
+
 	idleHtml() {
 		const have = (value, label) =>
 			`<li>${esc(label)}: <b>${
@@ -591,7 +636,8 @@ class T5Release {
 			<ul class="tc-t6-hint">
 				${have(this.scans.equipment_raw, __("Sterilizer"))}
 				${have(this.scans.load_raw, __("Load"))}
-			</ul>`;
+			</ul>
+			${this.runningHtml()}`;
 	}
 
 	statusText(value) {
@@ -706,6 +752,29 @@ class T5Release {
 				? ` <span class="tc-badge tc-badge-o">${esc(__("Needs review"))}</span>`
 				: ""
 		}</dd>
+				${
+					ctx.duration
+						? `<dt>${esc(__("Duration"))}</dt><dd>${esc(
+								this.back.durationText(ctx.duration)
+						  )}${
+								ctx.duration.abnormal
+									? ` <span class="tc-badge tc-badge-o">${esc(
+											__("Abnormal duration")
+									  )}</span>`
+									: ""
+						  }</dd>`
+						: ""
+				}
+				<dt>${esc(__("Loaded by"))}</dt><dd>${esc(
+			ctx.operator ? ctx.operator.employee_name || ctx.operator.name : "-"
+		)}</dd>
+				${
+					ctx.unloaded_by
+						? `<dt>${esc(__("Unloaded By"))}</dt><dd>${esc(
+								ctx.unloaded_by.employee_name || ctx.unloaded_by.name
+						  )}</dd>`
+						: ""
+				}
 			</dl>
 			${this.packsHtml(ctx)}
 		</section>
@@ -720,6 +789,15 @@ class T5Release {
 				}">${esc(
 			ctx.cycle_result ? this.statusText(ctx.cycle_result) : this.statusText("Missing")
 		)}</span></h3>
+			${
+				ctx.duration && ctx.duration.abnormal
+					? this.alertHtml({
+							variant: "warn",
+							title: __("Abnormal duration"),
+							reason: this.back.durationText(ctx.duration),
+					  })
+					: ""
+			}
 			${this.passFail("t5b-result", "result", form.result)}
 			<label class="tc-t2-confirm"><input type="checkbox" class="tc-check" data-t5b-confirm${
 				form.confirmed ? " checked" : ""

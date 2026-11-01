@@ -90,6 +90,7 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-021 A-12: lô rửa T2
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
+			"PROGRAM_TEST_ONLY",  # A-83: chương trình test không nhận gói
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",
@@ -252,6 +253,10 @@ HTTP_STATUS: dict[str, int] = {
 			"UNLOCK_NOT_ALLOWED",
 			# A-22: máy tiệt khuẩn còn mẻ chưa xong chu trình
 			"EQUIPMENT_BUSY",
+			# A-84: lần chạy test hằng ngày
+			"EQUIPMENT_TESTING",
+			"DAILY_TEST_RUN_OPEN",
+			"DAILY_TEST_RUN_NOT_ENDED",
 			# FEAT-023 A-20: giải phóng mẻ và BI
 			"LOAD_NOT_RELEASABLE",
 			"BI_NOT_PENDING",

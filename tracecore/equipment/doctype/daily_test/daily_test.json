@@ -11,6 +11,9 @@
   "test_type",
   "result",
   "test_date",
+  "run_status",
+  "started_at",
+  "ended_at",
   "column_break_head",
   "lot",
   "lot_expiry",
@@ -57,9 +60,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Result",
-   "options": "Pass\nFail",
-   "read_only": 1,
-   "reqd": 1
+   "options": "\nPass\nFail",
+   "read_only": 1
   },
   {
    "fieldname": "test_date",
@@ -68,6 +70,27 @@
    "label": "Test Date",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "run_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Run Status",
+   "options": "\nRunning\nEnded\nRecorded",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_head",
@@ -139,7 +162,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-11-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",

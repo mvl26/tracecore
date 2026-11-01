@@ -30,6 +30,7 @@ SCALAR_FIELDS = (
 	"duration_min",
 	"chemical",
 	"requires_bi",
+	"program_kind",
 	"kwh_per_cycle",
 	"water_l_per_cycle",
 	"steam_kg_per_cycle",

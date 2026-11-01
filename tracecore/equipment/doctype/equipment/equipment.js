@@ -154,6 +154,9 @@ function equipment_print_button(frm) {
 
 frappe.ui.form.on("Equipment", {
 	setup(frm) {
+		frm.set_query("default_program", () => ({
+			filters: { equipment: frm.doc.name, is_active: 1, program_kind: "Regular" },
+		}));
 		frm.set_query("zone_in", () => ({ filters: { is_zone: 1 } }));
 		frm.set_query("zone_out", () => ({ filters: { is_zone: 1 } }));
 	},

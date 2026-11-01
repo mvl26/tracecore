@@ -139,6 +139,7 @@ def _loads_csv(rel):
 		"ended_at",
 		"data_source",
 		"manual_reason",
+		"unloaded_by",
 		"released_by",
 		"released_at",
 		"release_reason",

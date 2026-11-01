@@ -173,6 +173,7 @@ def set_cycle_result(
 			"result_source": "Manual",
 			"unload_scan_equipment": doc.equipment,
 			"unload_scan_at": _now(client_ts),
+			"unloaded_by": doc.unloaded_by or employee,  # A-86
 		}
 	)
 	doc.flags.tc_sterilizing = True
@@ -403,11 +404,19 @@ def _keep_daily_indicators(doc, daily, station):
 		result.insert(ignore_permissions=True)
 
 
+def _mark_unloaded(doc, employee, at):
+	"""Mẻ có kết quả tự động từ máy chưa qua bước ghi kết quả: giải phóng hoặc cách ly là đã dỡ (A-86)."""
+	if not doc.unload_scan_at:
+		doc.update({"unload_scan_equipment": doc.equipment, "unload_scan_at": at})
+	doc.unloaded_by = doc.unloaded_by or employee
+
+
 def _quarantine(doc, station, employee):
 	for row in doc.packs:
 		pack = storage._lock_pack(row.pack)
 		pack.update({"status": QUARANTINE})
 		storage._save(pack)
+	_mark_unloaded(doc, employee, now_datetime())
 	doc.update({"status": QUARANTINE, "bi_result": doc.bi_result or "Pending", "released_by": employee})
 	doc.flags.tc_sterilizing = True
 	doc.flags.ignore_permissions = True
@@ -448,6 +457,7 @@ def _finalize(doc, station, client_ts, employee, reason):
 			},
 		)
 		sets.append(row.set_unit)
+	_mark_unloaded(doc, employee, at)
 	doc.update(
 		{
 			"status": RELEASED,

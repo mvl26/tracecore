@@ -37,6 +37,7 @@ RUNNING = "Running"
 CYCLE_COMPLETE = "Cycle Complete"
 OPEN_STATUSES = (RUNNING, CYCLE_COMPLETE)
 LOADABLE = "Packed"
+TEST_PROGRAM = "Test"  # Process Program.program_kind: chạy ở tab Kiểm tra hằng ngày, không nhận gói (A-83)
 IN_LOAD = "In Load"
 EQUIPMENT_CHECKS_HOOK = "tracecore_load_equipment_checks"
 AFTER_COMPLETE_HOOK = "tracecore_after_load_complete"
@@ -78,8 +79,8 @@ def check_equipment_ready(equipment):
 	"""Block nếu `equipment` không dùng được để nạp mẻ, ngược lại None.
 
 	Thứ tự: không có máy → EQUIPMENT_NOT_FOUND; không phải máy hấp hơi nước/plasma → EQUIPMENT_NOT_STERILIZER; trạng thái
-	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa xong chu trình (`Running`) → EQUIPMENT_BUSY (A-22: một máy chỉ
-	chạy một mẻ); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
+	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa dỡ (`Running`, `Cycle Complete` chưa có `unload_scan_at`) →
+	EQUIPMENT_BUSY (A-86, sửa A-22); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
 	thì chặn (A-16, Q3).
 	"""
 	row = frappe.db.get_value("Equipment", equipment, ["equipment_type", "status"], as_dict=True)
@@ -109,14 +110,23 @@ def check_equipment_ready(equipment):
 			object_name=equipment,
 		)
 	running = frappe.db.get_value(
-		"Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0}, "name"
+		"Sterilization Load",
+		{
+			"equipment": equipment,
+			"status": ["in", OPEN_STATUSES],
+			"docstatus": 0,
+			"unload_scan_at": ["is", "not set"],
+		},
+		"name",
 	)
 	if running:
 		return Block(
 			"EQUIPMENT_BUSY",
 			_("Sterilizer is still running a load"),
-			_("Load {0} on sterilizer {1} has no cycle data yet.").format(running, equipment),
-			_("Enter the cycle data of load {0} first, then load this sterilizer again.").format(running),
+			_("Load {0} on sterilizer {1} has not been unloaded yet.").format(running, equipment),
+			_(
+				"Enter the cycle data of load {0} and unload it first, then load this sterilizer again."
+			).format(running),
 		)
 	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
 		if isinstance(block, Block):
@@ -168,9 +178,10 @@ def _indicators(equipment, equipment_type, requires_bi):
 def scan_machine(raw):
 	"""Mở phiên nạp từ mã QR máy: máy, chương trình đang dùng của máy (FR-M2-09.1, .3).
 
-	``{"equipment": {..., "method", "max_packs"}, "programs": [...]}``; mỗi chương trình có ``compatible_pack_types``,
-	``parameters`` (param_schema) và ``indicators``. Mã không phải máy → SCAN_INVALID; máy không dùng được →
-	`check_equipment_ready`.
+	``{"equipment": {..., "method", "max_packs", "default_program"}, "programs": [...]}``; mỗi chương trình có
+	``compatible_pack_types``, ``parameters`` (param_schema) và ``indicators``. Chương trình test không vào danh sách;
+	``default_program`` chỉ có khi nó nằm trong danh sách (A-83). Mã không phải máy → SCAN_INVALID; máy không dùng được
+	→ `check_equipment_ready`.
 	"""
 	scanned = gs1.parse_scan(raw)
 	if scanned["type"] != "equipment":
@@ -199,20 +210,22 @@ def scan_machine(raw):
 		}
 		for row in frappe.get_all(
 			"Process Program",
-			filters={"equipment": equipment.name, "is_active": 1},
+			filters={"equipment": equipment.name, "is_active": 1, "program_kind": ["!=", TEST_PROGRAM]},
 			fields=["name", "program_name", "requires_bi"],
 			order_by="program_name asc",
 		)
 	]
+	default = frappe.db.get_value("Equipment", equipment.name, "default_program")
+	equipment.default_program = default if default in [row["program_code"] for row in programs] else None
 	return {"equipment": equipment, "programs": programs}
 
 
 def _program(equipment, program):
-	"""Chương trình `program` của máy `equipment` còn dùng, hoặc PROGRAM_INVALID."""
+	"""Chương trình `program` của máy `equipment` còn dùng và nhận gói; ngược lại PROGRAM_INVALID, PROGRAM_TEST_ONLY."""
 	row = frappe.db.get_value(
 		"Process Program",
 		program,
-		["name", "program_name", "equipment", "is_active", "requires_bi"],
+		["name", "program_name", "equipment", "is_active", "requires_bi", "program_kind"],
 		as_dict=True,
 	)
 	if not row or row.equipment != equipment or not cint(row.is_active):
@@ -221,6 +234,15 @@ def _program(equipment, program):
 			_("Program is not valid"),
 			_("Program {0} is not an active program of equipment {1}.").format(program or "-", equipment),
 			_("Choose a program from the list of this sterilizer."),
+		)
+	if row.program_kind == TEST_PROGRAM:
+		raise _blocked(
+			"PROGRAM_TEST_ONLY",
+			_("Test program cannot take packs"),
+			_("Program {0} is a test program: it runs without instrument packs.").format(row.program_name),
+			_("Choose a sterilization program for the packs. Run the test from the Daily test tab."),
+			object_type="Process Program",
+			object_name=row.name,
 		)
 	return row
 
@@ -262,7 +284,14 @@ def _check_compatible(pack, equipment_type, program):
 			_("Load the pack into a {0} sterilizer.").format(_(pack.method)),
 		)
 	allowed = _compatible_pack_types(program)
-	if allowed and pack.pack_type not in allowed:
+	if not allowed:  # danh sách rỗng = không nhận gói nào (A-83, D5)
+		return Block(
+			"PACK_INCOMPATIBLE",
+			_("Program takes no pack type"),
+			_("Program {0} has no compatible pack type, so it takes no pack.").format(program),
+			_("Choose another program, or ask R10 to list the compatible pack types of this program."),
+		)
+	if pack.pack_type not in allowed:
 		return Block(
 			"PACK_INCOMPATIBLE",
 			_("Pack does not fit this program"),
@@ -390,6 +419,7 @@ def running_loads():
 			"needs_review",
 			"requires_bi",
 			"is_priority",
+			"unload_scan_at",
 		],
 		order_by="load_completed_at asc, name asc",
 	)
@@ -404,6 +434,7 @@ def running_loads():
 			"load_completed_at": row.load_completed_at,
 			"data_complete": cint(row.data_complete),
 			"needs_review": cint(row.needs_review),
+			"unloaded": bool(row.unload_scan_at),
 			"requires_bi": cint(row.requires_bi),
 			"is_priority": cint(row.is_priority),
 			"packs": frappe.get_all(
@@ -678,6 +709,8 @@ def _describe(doc):
 		"manual_confirmed_by": _employee(doc.manual_confirmed_by),
 		"manual_confirmed_at": doc.manual_confirmed_at,
 		"duration": cycle_time.for_doc(doc),
+		"unloaded_by": _employee(doc.unloaded_by),
+		"unload_scan_at": doc.unload_scan_at,
 	}
 
 

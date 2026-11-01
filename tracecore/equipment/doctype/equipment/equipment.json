@@ -20,6 +20,7 @@
   "is_connected",
   "has_printout",
   "daily_test_required",
+  "default_program",
   "commissioned_on",
   "inspection_due",
   "calibration_due",
@@ -101,8 +102,8 @@
    "label": "Capacity"
   },
   {
-   "description": "Maximum load in kg of a laundry washer or dryer; empty means not limited (FEAT-034, FR-M3-03.3).",
    "depends_on": "eval:doc.equipment_type=='Laundry Washer' || doc.equipment_type=='Dryer'",
+   "description": "Maximum load in kg of a laundry washer or dryer; empty means not limited (FEAT-034, FR-M3-03.3).",
    "fieldname": "capacity_kg",
    "fieldtype": "Float",
    "label": "Capacity (kg)",
@@ -147,6 +148,14 @@
    "fieldname": "daily_test_required",
    "fieldtype": "Check",
    "label": "Daily Test Required"
+  },
+  {
+   "depends_on": "eval:doc.equipment_type=='Steam Sterilizer' || doc.equipment_type=='Plasma Sterilizer'",
+   "description": "Program selected first after scanning this sterilizer at the loading station.",
+   "fieldname": "default_program",
+   "fieldtype": "Link",
+   "label": "Default Program",
+   "options": "Process Program"
   },
   {
    "fieldname": "commissioned_on",
@@ -256,12 +265,12 @@
    "label": "Lock"
   },
   {
+   "description": "Why the machine is Locked by the system (a failed daily test, or an inspection or calibration past its date).",
    "fieldname": "lock_reason",
    "fieldtype": "Select",
    "label": "Lock Reason",
    "options": "\nDaily Test\nInspection Expired\nCalibration Expired",
-   "read_only": 1,
-   "description": "Why the machine is Locked by the system (a failed daily test, or an inspection or calibration past its date)."
+   "read_only": 1
   },
   {
    "fieldname": "unlock_until",
@@ -301,7 +310,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-11-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Equipment",

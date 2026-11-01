@@ -973,7 +973,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-22; API API-M5-03; DocType D
 - **Actors:** R05 KTV tiệt khuẩn (primary); R02 Điều dưỡng trưởng / Giám sát CSSD (secondary)
 - **Description:** Nhập Bowie-Dick, leak test, test máy rửa; máy chỉ được tạo mẻ khi test ngày đạt và kiểm định còn hạn. Kích hoạt khi: đầu ca làm việc mỗi ngày trước mẻ đầu tiên.
 - **Preconditions:** Máy đã khai báo; có gói test trong hạn.
-- **Postconditions (success):** Daily Test lưu; máy Sẵn sàng hoặc Khóa.
+- **Postconditions (success):** Daily Test lưu; máy Sẵn sàng hoặc Khóa. [A-84] Test chạy máy: bấm Bắt đầu (máy Đang test, không nạp được), bấm Kết thúc, rồi mới ghi kết quả, lô, ảnh, ghi chú.
 - **Traces to:** FR-M5-05, FR-M5-06
 - **Business rules:** BRU-EQP-001
 - **Screens:** SCR-23

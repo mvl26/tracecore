@@ -25,11 +25,48 @@ def _employee():
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*DAILY_TEST_ROLES)
-def overview(station, client_ts=None, token=None):
-	"""Máy có test hằng ngày và tình trạng hôm nay (chỉ đọc)."""
+def overview(station, include=None, client_ts=None, token=None):
+	"""Máy có test hằng ngày của trạm và tình trạng hôm nay (chỉ đọc); `include` là máy vừa quét để ghi test tự nguyện (A-85)."""
 	require_any_role(*DAILY_TEST_ROLES)
+	include = _optional_str(include, "include")
 	timestamp = parse_client_ts(client_ts)
-	return _run(station, timestamp, lambda: {"ok": True, "equipment": daily_test.overview()})
+	return _run(station, timestamp, lambda: {"ok": True, "equipment": daily_test.overview(station, include)})
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*DAILY_TEST_ROLES)
+@idempotent
+def start_run(equipment, test_type, station, client_ts=None, token=None):
+	"""Bắt đầu một lần chạy test: máy Đang test, không nạp được (A-84)."""
+	require_any_role(*DAILY_TEST_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	test_type = _required_str(test_type, "test_type")
+	timestamp = parse_client_ts(client_ts)
+	return _run(
+		station,
+		timestamp,
+		lambda: {"ok": True, **daily_test.start_run(equipment, test_type, station, employee=_employee())},
+		"Equipment",
+		equipment,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*DAILY_TEST_ROLES)
+@idempotent
+def end_run(equipment, test_type, station, client_ts=None, token=None):
+	"""Kết thúc lần chạy test; sau đó mới ghi được kết quả (A-84)."""
+	require_any_role(*DAILY_TEST_ROLES)
+	equipment = _required_str(equipment, "equipment")
+	test_type = _required_str(test_type, "test_type")
+	timestamp = parse_client_ts(client_ts)
+	return _run(
+		station,
+		timestamp,
+		lambda: {"ok": True, **daily_test.end_run(equipment, test_type)},
+		"Equipment",
+		equipment,
+	)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

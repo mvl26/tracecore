@@ -55,6 +55,12 @@ def _columns():
 			"width": 130,
 		},
 		{
+			"fieldname": "unloaded_by_name",
+			"label": _("Unloaded By", context=CONTEXT),
+			"fieldtype": "Data",
+			"width": 130,
+		},
+		{
 			"fieldname": "released_by_name",
 			"label": _("Released By", context=CONTEXT),
 			"fieldtype": "Data",
