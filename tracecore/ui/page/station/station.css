@@ -61,6 +61,49 @@ body.tc-kiosk .layout-main-section {
 	}
 }
 
+.tc-t1-lines {
+	width: 100%;
+}
+
+.tc-t1-lines tr.is-diff td {
+	background: var(--tc-warn-tint);
+}
+
+.tc-t1-lines .tc-ins-name {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-t1-line-name {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-sp-2);
+}
+
+.tc-t1-actual {
+	width: calc(var(--tc-touch-min) * 1.75);
+	min-height: var(--tc-touch-min);
+	padding: 0 var(--tc-sp-2);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-sm);
+	font-size: var(--tc-fs-lg);
+}
+
+@media (max-width: 480px) {
+	.tc-t1 .tc-t1-lines th:nth-child(1) {
+		width: 12%;
+	}
+	.tc-t1 .tc-t1-lines th:nth-child(3) {
+		width: 20%;
+	}
+	.tc-t1 .tc-t1-lines th:nth-child(4) {
+		width: 30%;
+	}
+	.tc-t1-actual {
+		width: 100%;
+	}
+}
+
 .tc-net-status {
 	color: var(--tc-text-mute);
 	font-size: var(--tc-fs-sm);

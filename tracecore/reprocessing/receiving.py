@@ -252,6 +252,9 @@ def discard(receipt, station, receiver):
 # --- Hình dạng trả về cho kiosk ---------------------------------------------------------------------------
 
 
+MAX_ACTUAL_QTY = 9999
+
+
 def _item_lines(doc, set_unit):
 	return [line for line in doc.confirm_lines if line.set_unit == set_unit]
 
@@ -312,6 +315,7 @@ def item_detail(doc, item):
 			"instrument": row.instrument,
 			"instrument_name": row.instrument_name,
 			"qty": cint(row.qty),
+			"actual_qty": cint(row.actual_qty),
 			"position": cint(row.position),
 			"confirmed": cint(row.confirmed),
 			"thumbnail": (media.get(row.instrument) or {}).get("thumbnail"),
@@ -476,6 +480,7 @@ def scan_set(
 				"instrument": line["instrument"],
 				"instrument_name": line["instrument_name"],
 				"qty": cint(line["qty"]),
+				"actual_qty": cint(line["qty"]),  # A-94: điền sẵn theo BOM
 				"position": cint(line["position"]),
 				"confirmed": 0,
 			},
@@ -510,6 +515,25 @@ def _bom_line_invalid(instrument, set_id):
 	)
 
 
+def _actual_qty(value, instrument):
+	"""Số lượng thực tế của một dòng: số nguyên 0..9999 (A-94)."""
+	try:
+		number = int(value)
+		valid = not isinstance(value, bool) and number == float(value) and 0 <= number <= MAX_ACTUAL_QTY
+	except (TypeError, ValueError):
+		valid = False
+	if not valid:
+		raise _blocked(
+			"QTY_INVALID",
+			_("Actual quantity is not valid"),
+			_("The actual quantity of {0} must be a whole number from 0 to {1}.").format(
+				instrument, MAX_ACTUAL_QTY
+			),
+			_("Correct the actual quantity, then confirm the set."),
+		)
+	return number
+
+
 def _refresh_review(item):
 	item.needs_review = 1 if ((item.abnormal_note or "").strip() or item.abnormal_photo) else 0
 
@@ -527,9 +551,10 @@ def confirm_line(
 ):
 	"""Cập nhật xác nhận của một bộ trong phiếu nháp; trả ``item_detail``.
 
-	- `lines`: ``[{"instrument", "confirmed"}]`, đặt tick từng dòng; `confirm_all` tick mọi dòng (FR-M2-23.1).
+	- `lines`: ``[{"instrument", "actual_qty"}]`, lưu số lượng thực tế; dòng đã xác nhận khi số này bằng số BOM (A-94).
+	  Dòng chỉ có ``confirmed`` (không có số) đặt tick như cũ. `confirm_all` tick mọi dòng, đưa số thực tế về số BOM.
 	- `note`: ghi chú bất thường dạng văn bản (None = giữ nguyên, rỗng = xóa); bộ có ghi chú hoặc ảnh mang cờ Cần xem xét
-	  (FR-M2-23.2, .3). Không có trường số lượng thực nhận.
+	  (FR-M2-23.2, .3).
 	- `finalize`: "Xác nhận bộ". Còn dòng chưa tick và không có ghi chú → CONFIRM_INCOMPLETE (nhắc, FR-M2-23.6) trừ khi
 	  `ack_incomplete`. Mọi thay đổi không kèm `finalize` đưa bộ về chưa xác nhận: sửa xong phải Xác nhận bộ lại
 	  (FR-M2-23.5). Chưa đổi trạng thái Set Unit (ghi sổ phiếu mới đổi).
@@ -541,10 +566,15 @@ def confirm_line(
 		row = rows.get(entry.get("instrument"))
 		if not row:
 			raise _bom_line_invalid(entry.get("instrument"), item.set_unit)
-		row.confirmed = 1 if cint(entry.get("confirmed")) else 0
+		if entry.get("actual_qty") is None:
+			row.confirmed = 1 if cint(entry.get("confirmed")) else 0
+		else:
+			row.actual_qty = _actual_qty(entry["actual_qty"], row.instrument)
+			row.confirmed = 1 if row.actual_qty == cint(row.qty) else 0
 	if confirm_all:
 		for row in rows.values():
 			row.confirmed = 1
+			row.actual_qty = cint(row.qty)
 	if note is not None:
 		item.abnormal_note = note.strip() or None
 	_refresh_review(item)
@@ -557,10 +587,10 @@ def confirm_line(
 			raise _blocked(
 				"CONFIRM_INCOMPLETE",
 				_("Some components are not confirmed"),
-				_("{0} component(s) of set {1} are not ticked and there is no abnormal note.").format(
-					len(pending), item.set_unit
-				),
-				_("Tick the missing components, write an abnormal note, or confirm the set anyway."),
+				_(
+					"{0} component(s) of set {1} differ from the BOM quantity and there is no abnormal note."
+				).format(len(pending), item.set_unit),
+				_("Correct the actual quantity, write an abnormal note, or confirm the set anyway."),
 				items=pending,
 			)
 		item.confirmed = 1

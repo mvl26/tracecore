@@ -44,14 +44,11 @@ def open_receipt(page, demo):
 
 
 def tick_all(page):
-	"""Xác nhận tất cả thành phần: chỉ bật khi mọi ảnh BOM đã tải xong (D1)."""
-	button = page.locator("[data-action='confirm-all']")
-	expect(button).to_be_enabled(timeout=15000)
-	lines = page.locator(".tc-t1-item .tc-check")
+	"""A-94: số lượng thực tế điền sẵn theo BOM, không phải tick."""
+	lines = page.locator(".tc-t1-item .tc-t1-actual")
+	expect(lines.first).to_be_visible(timeout=15000)
 	total = lines.count()
 	assert total >= 1
-	button.click()
-	expect(page.locator(".tc-t1-item .tc-check:checked")).to_have_count(total)
 	return total
 
 
@@ -117,22 +114,21 @@ def test_t1_receipt_of_several_sets_end_to_end(t1_page, t1_demo):
 	extra = t1_demo["set_new"]
 	open_receipt(page, t1_demo)
 
-	# bộ 1: BOM có ảnh, Xác nhận tất cả một chạm, Xác nhận bộ
+	# bộ 1: BOM có ảnh, số thực tế điền sẵn, Xác nhận bộ
 	scan_settled(page, first)
 	item = page.locator(".tc-t1-item")
 	expect(item.locator(".tc-code")).to_have_text(first)
-	expect(item.locator(".tc-ins")).to_have_count(4)
-	expect(item.locator(".tc-ins img.tc-photo")).to_have_count(4)  # mỗi dụng cụ có ảnh
+	expect(item.locator(".tc-t1-lines tbody tr")).to_have_count(4)
+	expect(item.locator(".tc-t1-lines img.tc-photo")).to_have_count(4)  # mỗi dụng cụ có ảnh
 	tick_all(page)
 	confirm_set(page)
 	expect(page.locator(LIST_ROWS)).to_have_count(1)
 	expect(page.locator(LIST_ROWS).first).to_contain_text("Đã xác nhận")
 	expect(page.locator(".tc-t1 .tc-alert-ok")).to_contain_text(first)
 
-	# bộ 2: tick hai dòng và ghi chú bất thường (không nhập số lượng) → xác nhận không bị nhắc
+	# bộ 2: sửa số thực tế một dòng và ghi chú bất thường → xác nhận không bị nhắc
 	scan_settled(page, second)
-	page.locator(".tc-t1-item .tc-check").nth(0).check()
-	page.locator(".tc-t1-item .tc-check").nth(1).check()
+	page.locator(".tc-t1-item .tc-t1-actual").nth(0).fill("0")
 	page.locator("#tc-t1-note").fill("Thiếu 1 kẹp, có vật lạ")
 	confirm_set(page)
 	expect(page.locator(LIST_ROWS)).to_have_count(2)

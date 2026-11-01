@@ -6,6 +6,7 @@ import io
 import frappe
 from PIL import Image
 
+from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import receiving
 from tracecore.reprocessing.tests.receiving_case import BOM, STATION, ReceivingCase
 from tracecore.tests.utils import bru
@@ -35,6 +36,49 @@ class TestReceivingConfirm(ReceivingCase):
 			for row in frappe.get_doc("Dirty Receipt", self.receipt).confirm_lines
 			if row.set_unit == self.unit
 		}
+
+	def actual(self):
+		return {
+			row.instrument: row.actual_qty
+			for row in frappe.get_doc("Dirty Receipt", self.receipt).confirm_lines
+			if row.set_unit == self.unit
+		}
+
+	def counted(self, **changes):
+		return [
+			{"instrument": code, "actual_qty": changes.get(code.replace("-", "_"), qty)} for code, qty in BOM
+		]
+
+	@bru("BRU-REP-012")
+	def test_actual_quantity_is_prefilled_from_the_bom(self):
+		self.assertEqual(self.actual(), dict(BOM))
+		doc = frappe.get_doc("Dirty Receipt", self.receipt)
+		item = receiving.item_detail(doc, doc.items[0])
+		self.assertEqual({line["instrument"]: line["actual_qty"] for line in item["lines"]}, dict(BOM))
+
+	@bru("BRU-REP-012")
+	def test_finalize_with_prefilled_quantities_confirms_every_line(self):
+		item = self.confirm(lines=self.counted(), finalize=True)
+		self.assertEqual(item["confirmed"], 1)
+		self.assertEqual(set(self.lines().values()), {1})
+
+	@bru("BRU-REP-012")
+	def test_edited_quantity_is_saved_on_its_line(self):
+		item = self.confirm(lines=self.counted(RV_KC_03=3), note="Thiếu 1 kẹp", finalize=True)
+		self.assertEqual(self.actual(), {"RV-KC-01": 2, "RV-KC-02": 1, "RV-KC-03": 3})
+		self.assertEqual(self.lines(), {"RV-KC-01": 1, "RV-KC-02": 1, "RV-KC-03": 0})
+		self.assertEqual(item["confirmed"], 1)
+
+	def test_differing_quantity_without_note_reminds(self):
+		with self.assertRaises(BlockedError) as caught:
+			self.confirm(lines=self.counted(RV_KC_03=3), finalize=True)
+		self.assertEqual(caught.exception.block.code, "CONFIRM_INCOMPLETE")
+
+	def test_quantity_out_of_range_is_refused(self):
+		for bad in (-1, 10000, "x"):
+			with self.assertRaises(BlockedError) as caught:
+				self.confirm(lines=self.counted(RV_KC_01=bad))
+			self.assertEqual(caught.exception.block.code, "QTY_INVALID")
 
 	@bru("BRU-REP-012")
 	def test_confirm_all_ticks_every_line_in_one_call(self):

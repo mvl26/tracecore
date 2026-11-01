@@ -20,6 +20,7 @@
 | 01/11/2026 | Amendment A-91 (#1831): Page `station` bỏ cột trạm và đường dẫn, chỉ còn hàng nút trạm; danh sách trạm theo thẻ đã quét (KTV: cùng khu và có năng lực; thẻ R01, R02, R10, `System Manager`: đủ trạm, khác NAV-04 theo ticket). Đổi trạm tại chỗ có khung xương. Banner khẩn có Xử lý, Đã xem, người cần xử lý và lọc theo khu. Dòng phiên: tên, vai trò chính, chi tiết mở bằng nút |
 | 01/11/2026 | Amendment A-92 (#1828, sửa B3): ở ≤ 768 px, hàng nút trạm và dòng phiên nằm trong menu mở bằng nút, ô quét ở đầu màn và giữ focus; áp cho mọi trạm. 375×667 thấy ô quét không cần cuộn |
 | 01/11/2026 | Amendment A-93 (#1835, sửa FR-M9-14): lỗi nghiệp vụ có mã có nút mở trạm của bước phải làm lại và Gọi giám sát CSSD; Thử lại, Chuyển ngoại tuyến chỉ ở lỗi mạng, lỗi máy chủ. Hàng đợi Bộ chờ đóng gói trên màn T4 |
+| 01/11/2026 | Amendment A-94 (#1814, sửa SCR-05): thành phần bộ ở T1 là bảng STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế; số thực tế điền sẵn theo BOM, sửa được; bỏ ô tick và Xác nhận tất cả |
 
 ## 1. Overview
 
