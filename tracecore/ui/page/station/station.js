@@ -406,6 +406,24 @@ class TraceCoreStation {
 		}
 	}
 
+	// Nút của lỗi nghiệp vụ (A-93): mở trạm của bước phải làm lại, gọi giám sát; không Thử lại, không ngoại tuyến.
+	businessButtons(notice) {
+		if (!notice || !notice.code || (notice.variant && notice.variant !== "error")) return "";
+		const stations = (this.stationInfo && this.stationInfo.gate_stations) || {};
+		const redo = notice.redo_step && stations[notice.redo_step];
+		const open =
+			redo && redo.name !== this.station
+				? `<button type="button" class="tc-btn tc-btn-primary" data-action="tc-switch-station" data-station="${esc(
+						redo.name
+				  )}">${esc(__("Open station {0}", [redo.label]))}</button>`
+				: "";
+		return `<div class="tc-actions">${open}
+			<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
+				__("Call R02")
+			)}</button>
+		</div>`;
+	}
+
 	blockHtml(error) {
 		return `<div class="tc-card tc-alert tc-alert-error" role="alert">
 				<p class="tc-alert-title">${esc(tcErrorTitle(error))}</p>
@@ -1648,7 +1666,10 @@ class TraceCoreStation {
 				<p class="tc-alert-reason">${esc(error.reason)}</p>
 				<p class="tc-alert-action">${esc(error.action)}</p>
 				${tcGuideButton(error)}
-				<div class="tc-actions">
+				${
+					error.code
+						? this.businessButtons(error)
+						: `<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-primary" data-action="retry">${esc(
 						__("Retry")
 					)}</button>
@@ -1658,7 +1679,8 @@ class TraceCoreStation {
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="call-r02">${esc(
 						__("Call R02")
 					)}</button>
-				</div>
+				</div>`
+				}
 			</div>`
 		);
 	}

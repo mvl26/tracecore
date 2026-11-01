@@ -517,10 +517,11 @@ class T8Usage {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.card && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;

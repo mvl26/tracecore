@@ -19,6 +19,7 @@
 | 01/11/2026 | Amendment A-90 (#1822, thay phần đổi trạm của NAV-03/NAV-04): mọi role, kể cả `System Manager`, đổi sang trạm khác khu phải quét lại thẻ, phiên cũ đóng ngay. Cùng khu giữ phiên nếu có năng lực ở trạm đích; thiếu năng lực thì báo lỗi, giữ phiên cũ và yêu cầu người được phân công quét thẻ. Tải lại trang kiểm lại năng lực như bấm nút |
 | 01/11/2026 | Amendment A-91 (#1831): Page `station` bỏ cột trạm và đường dẫn, chỉ còn hàng nút trạm; danh sách trạm theo thẻ đã quét (KTV: cùng khu và có năng lực; thẻ R01, R02, R10, `System Manager`: đủ trạm, khác NAV-04 theo ticket). Đổi trạm tại chỗ có khung xương. Banner khẩn có Xử lý, Đã xem, người cần xử lý và lọc theo khu. Dòng phiên: tên, vai trò chính, chi tiết mở bằng nút |
 | 01/11/2026 | Amendment A-92 (#1828, sửa B3): ở ≤ 768 px, hàng nút trạm và dòng phiên nằm trong menu mở bằng nút, ô quét ở đầu màn và giữ focus; áp cho mọi trạm. 375×667 thấy ô quét không cần cuộn |
+| 01/11/2026 | Amendment A-93 (#1835, sửa FR-M9-14): lỗi nghiệp vụ có mã có nút mở trạm của bước phải làm lại và Gọi giám sát CSSD; Thử lại, Chuyển ngoại tuyến chỉ ở lỗi mạng, lỗi máy chủ. Hàng đợi Bộ chờ đóng gói trên màn T4 |
 
 ## 1. Overview
 

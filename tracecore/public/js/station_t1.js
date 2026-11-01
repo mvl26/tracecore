@@ -1077,6 +1077,7 @@ class T1Receiving {
 		if (this.notice) {
 			let buttons = "";
 			if (this.notice.technical) buttons = this.standardButtons();
+			else if (this.notice.code) buttons = this.station.businessButtons(this.notice);
 			else if (this.notice.code === "CONFIRM_INCOMPLETE")
 				buttons = `<div class="tc-actions">
 					<button type="button" class="tc-btn tc-btn-warn" data-action="confirm-anyway">${esc(

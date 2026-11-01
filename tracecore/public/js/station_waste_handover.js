@@ -394,7 +394,9 @@ class WasteHandoverScreen {
 		if (this.notice)
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		if (this.options && !this.options.vendors.length && !this.doc && !this.done) {
 			html += this.alertHtml({

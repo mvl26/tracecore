@@ -498,7 +498,9 @@ class LaundryBatch {
 		if (this.notice)
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		if (this.ctx && !this.washers().length && this.mode === "start") {
 			html += this.alertHtml({

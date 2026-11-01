@@ -160,6 +160,30 @@ def gate_labels() -> dict[str, str]:
 	return {row.gate_step: _function_name(row.function_name) for row in rows}
 
 
+def gate_stations() -> dict[str, dict]:
+	"""Trạm đầu tiên (theo số trạm) của mỗi cổng: ``{"T3": {"name": "TR-003", "label": "T3 Lắp bộ"}}`` (A-93)."""
+	steps = dict(
+		frappe.get_all(
+			"Station Function",
+			filters={"gate_step": ["is", "set"]},
+			fields=["name", "gate_step"],
+			as_list=True,
+		)
+	)
+	rows = frappe.get_all(
+		"Zone Station",
+		filters={"is_zone": 0, "is_active": 1, "station_no": [">", 0]},
+		fields=["name", "zone_station_name"],
+		order_by="station_no asc, name asc",
+	)
+	found: dict[str, dict] = {}
+	for row in rows:
+		for function in station_functions(row.name):
+			if function in steps:
+				found.setdefault(steps[function], {"name": row.name, "label": _(row.zone_station_name)})
+	return found
+
+
 def gate_label(step: str) -> str:
 	"""Tên hiển thị của một cổng; cổng lạ giữ nguyên mã."""
 	name = frappe.db.get_value("Station Function", {"gate_step": step}, "function_name")

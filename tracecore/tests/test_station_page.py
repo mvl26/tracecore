@@ -377,6 +377,21 @@ class TestStationPage(FrappeTestCase):
 		with open(os.path.join(APP_PATH, "public", "js", "station_t3.js"), encoding="utf-8") as handle:
 			self.assertIn('new TcStepQueue(station, "assembly")', handle.read())
 
+	def test_business_errors_have_no_retry_or_offline(self):
+		"""#1835 T4-02, A-93: chỉ lỗi kỹ thuật có Thử lại, ngoại tuyến; không màn nào còn hiện nút đó cho lỗi nghiệp vụ."""
+		folder = os.path.join(APP_PATH, "public", "js")
+		for name in os.listdir(folder):
+			if name.startswith("station"):
+				with open(os.path.join(folder, name), encoding="utf-8") as handle:
+					self.assertNotIn("|| standalone ? this.standardButtons()", handle.read(), name)
+		ours = vi_translations()
+		self.assertEqual(ours.get("Call R02"), "Gọi giám sát CSSD")
+		self.assertEqual(ours.get("Open station {0}"), "Mở trạm {0}")
+
+	def test_t4_has_waiting_queue(self):
+		with open(os.path.join(APP_PATH, "public", "js", "station_t4.js"), encoding="utf-8") as handle:
+			self.assertIn('new TcStepQueue(this.station, "pack")', handle.read())
+
 	def test_read_blocks_retry_once_and_state_the_cause(self):
 		"""#1825: khối dữ liệu đọc khi mở trạm tự thử lại một lần, lỗi nói rõ nguyên nhân mất mạng, hết phiên hay lỗi máy chủ."""
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:

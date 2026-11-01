@@ -203,6 +203,7 @@ def _station_row(station):
 		"station_no": cint(row.station_no),
 		"screens": zones.station_screen_tabs(functions),
 		"gate_labels": zones.gate_labels(),
+		"gate_stations": zones.gate_stations(),
 		"is_active": cint(row.is_active),
 	}
 

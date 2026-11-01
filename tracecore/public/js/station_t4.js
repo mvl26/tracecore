@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, TcStepQueue */
 /* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
@@ -893,6 +893,19 @@ class T4Packing {
 			: "result";
 	}
 
+	// #1835 T4-01: bộ đã lắp xong chờ đóng gói hiện sẵn khi chưa mở bộ nào; đóng gói xong tải lại
+	queueHtml() {
+		if (!this.queue) this.queue = new TcStepQueue(this.station, "pack");
+		if (!this.queue.items && !this.queue.failed && !this.offline)
+			this.queue.load(() => {
+				if (!this.done && !this.ctx && !this.notice && !this.lookup) this.show();
+			});
+		return this.queue.html(
+			(count) => __("Sets waiting for packing ({0})", [count]),
+			__("No set is waiting for packing.")
+		);
+	}
+
 	show() {
 		if (!this.station.session) return;
 		let key = null;
@@ -905,7 +918,9 @@ class T4Packing {
 			if (this.offline) return this.station.setState("offline", this.offlineHtml());
 			return this.station.setState(
 				"empty",
-				`<p class="tc-empty">${esc(__("Scan the Set ID of the set to pack"))}</p>`
+				`<p class="tc-empty">${esc(
+					__("Scan the Set ID of the set to pack")
+				)}</p>${this.queueHtml()}`
 			);
 		}
 		if (key === this.viewKey && this.result.querySelector(".tc-t4")) return this.refresh();
@@ -1093,10 +1108,11 @@ class T4Packing {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.ctx && !this.done && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		if (this.lookup) html += this.lookupHtml();

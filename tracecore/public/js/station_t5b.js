@@ -604,10 +604,11 @@ class T5Release {
 			)}</p>`;
 		}
 		if (this.notice) {
-			const standalone = !this.ctx && this.notice.variant === "error";
 			html += this.alertHtml(
 				this.notice,
-				this.notice.technical || standalone ? this.standardButtons() : ""
+				this.notice.technical
+					? this.standardButtons()
+					: this.station.businessButtons(this.notice)
 			);
 		}
 		return html;

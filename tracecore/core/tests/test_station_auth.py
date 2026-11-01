@@ -4,7 +4,7 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_to_date, now_datetime, today
 
-from tracecore.core import notification, station_auth
+from tracecore.core import notification, station_auth, zones
 from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import IsolatedTestCase, bru
@@ -306,6 +306,15 @@ class TestSwitchStation(IsolatedTestCase):
 		switched = station_api.switch_station(token=self.login["token"], station="TR-003", client_ts=self.ts)
 		self.assertTrue(switched["ok"])
 		self.assertEqual(switched["session"]["station"], "TR-003")
+
+
+class TestGateStations(IsolatedTestCase):
+	def test_gate_station_points_to_assembly_station(self):
+		"""A-93: nút Mở trạm của lỗi Sai thứ tự trạm cần trạm của cổng."""
+		self.assertEqual(zones.gate_stations()["T3"]["name"], "TR-003")
+
+	def test_station_info_carries_gate_stations(self):
+		self.assertIn("T3", station_api._station_row("TR-004")["gate_stations"])
 
 
 class TestStationNavigation(IsolatedTestCase):
