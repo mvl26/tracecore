@@ -87,13 +87,25 @@ class DailyTestScreen {
 		this.selected = match[0];
 		this.scrollToForm = true;
 		this.notice = null;
-		if (!this.list) return this.load();
+		if (!this.list || !this.machine()) return this.load();
 		this.show();
 	}
 
+	// `include`: máy vừa quét ngoài danh sách của trạm vẫn mở được để ghi test tự nguyện (A-85)
 	load() {
-		this.request(DT_OVERVIEW, { station: this.station.station }, (res) => {
+		const args = { station: this.station.station };
+		if (this.selected) args.include = this.selected;
+		this.request(DT_OVERVIEW, args, (res) => {
 			this.list = res.equipment;
+			if (this.selected && !this.machine()) {
+				const scanned = this.selected;
+				this.selected = null;
+				return this.blocked({
+					title: __("Machine {0} has no daily test at this station", [scanned]),
+					reason: __("This station only lists the machines of its own step."),
+					action: __("Scan a machine of this station."),
+				});
+			}
 			this.show();
 		});
 	}
@@ -507,6 +519,13 @@ class DailyTestScreen {
 						)}</span>`;
 					})
 					.join(" ");
+				const noTest = row.required.length
+					? ""
+					: `<span class="tc-tag">${esc(
+							(row.run_tests || []).length
+								? __("Not required")
+								: __("Not applicable")
+					  )}</span>`;
 				return `<tr>
 					<td><button type="button" class="tc-btn tc-btn-secondary" data-action="dt-select" data-machine="${esc(
 						row.name
@@ -522,7 +541,7 @@ class DailyTestScreen {
 						  )}</span>`
 						: ""
 				}</td>
-					<td>${tests}</td>
+					<td>${tests}${noTest}</td>
 				</tr>`;
 			})
 			.join("");

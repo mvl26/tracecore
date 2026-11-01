@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import audit, error_codes
+from tracecore.core import audit, error_codes, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.equipment import chemical_lots
 
@@ -25,6 +25,9 @@ MODES = (MODE_NONE, MODE_ALL, MODE_SELECTED)
 STEAM = "Steam Sterilizer"
 PLASMA = "Plasma Sterilizer"
 STERILIZERS = (STEAM, PLASMA)  # chỉ máy tiệt khuẩn có thể thuộc diện bắt buộc (A-70)
+WASHERS = ("Washer-Disinfector", "Ultrasonic Cleaner")
+WASH_FUNCTIONS = ("WASH_LOAD", "WASH_UNLOAD")
+STERILIZER_FUNCTIONS = ("STERI_LOAD", "STERI_UNLOAD")
 LEAK = "leak"
 # test ghi được theo loại máy; test nào bắt buộc do `required_tests` quyết định theo cấu hình
 TESTS = {
@@ -581,11 +584,28 @@ def _open_runs(equipment, tests):
 	return runs
 
 
-def overview():
-	"""Máy có test hằng ngày và tình trạng hôm nay (cho màn SCR-23): ``required`` theo cấu hình, ``optional`` là tự nguyện."""
+def _station_types(station):
+	"""Loại máy có test hằng ngày theo chức năng của trạm (A-85); trạm không rửa, không tiệt khuẩn → ``()``."""
+	kinds = ()
+	if zones.station_has_function(station, *WASH_FUNCTIONS):
+		kinds += WASHERS
+	if zones.station_has_function(station, *STERILIZER_FUNCTIONS):
+		kinds += STERILIZERS
+	return kinds
+
+
+def overview(station=None, include=None):
+	"""Máy có test hằng ngày và tình trạng hôm nay (cho màn SCR-23): ``required`` theo cấu hình, ``optional`` là tự nguyện.
+
+	Có `station` thì chỉ máy theo chức năng của trạm; máy tiệt khuẩn chỉ khi thuộc diện bắt buộc, đang có lần chạy chưa đọc
+	kết quả, hoặc là máy `include` vừa quét để ghi test tự nguyện (A-85).
+	"""
+	kinds = _station_types(station) if station else tuple(TESTS)
+	if not kinds:
+		return []
 	rows = frappe.get_all(
 		"Equipment",
-		filters={"equipment_type": ["in", list(TESTS)], "status": ["!=", "Retired"]},
+		filters={"equipment_type": ["in", list(kinds)], "status": ["!=", "Retired"]},
 		fields=[
 			"name",
 			"equipment_name",
@@ -621,4 +641,10 @@ def overview():
 			and not row["inspection_expired"]
 			and not row["calibration_expired"]
 		)
-	return rows
+	if not station:
+		return rows
+	return [
+		row
+		for row in rows
+		if row.equipment_type not in STERILIZERS or row["required"] or row["runs"] or row.name == include
+	]

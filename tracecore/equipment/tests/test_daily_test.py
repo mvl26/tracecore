@@ -157,6 +157,55 @@ class TestRun(DailyTestCase):
 		self.assertIsNone(self.overview_row(machine)["running_load"])
 
 
+class TestStationFilter(DailyTestCase):
+	"""#1826 (A-85): mỗi trạm chỉ thấy máy của mình, máy tiệt khuẩn theo cấu hình."""
+
+	WASH, STERI = "TR-002", "TR-005"
+
+	def setUp(self):
+		super().setUp()
+		self.steam_machine, self.washer_machine = self.steam(), self.washer()
+
+	def names(self, station, **kwargs):
+		return {row["name"] for row in daily_test.overview(station, **kwargs)}
+
+	def test_wash_station_lists_only_washers_with_no_required_test(self):
+		names = self.names(self.WASH)
+		self.assertIn(self.washer_machine.name, names)
+		self.assertNotIn(self.steam_machine.name, names)
+		row = next(r for r in daily_test.overview(self.WASH) if r["name"] == self.washer_machine.name)
+		self.assertEqual((row["required"], row["optional"]), ([], ["washer_cleaning"]))
+
+	def test_sterilize_station_lists_only_required_sterilizers(self):
+		names = self.names(self.STERI)
+		self.assertIn(self.steam_machine.name, names)
+		self.assertNotIn(self.washer_machine.name, names)
+
+	def test_changing_the_configuration_changes_the_list(self):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_NONE)
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "daily_test_mode", daily_test.MODE_ALL)
+		self.assertNotIn(self.steam_machine.name, self.names(self.STERI))
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_SELECTED)
+		self.assertNotIn(self.steam_machine.name, self.names(self.STERI))
+		frappe.db.set_value("Equipment", self.steam_machine.name, "daily_test_required", 1)
+		self.assertIn(self.steam_machine.name, self.names(self.STERI))
+
+	def test_scanning_a_non_required_sterilizer_still_opens_it_but_not_a_washer(self):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_NONE)
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "daily_test_mode", daily_test.MODE_ALL)
+		self.assertIn(self.steam_machine.name, self.names(self.STERI, include=self.steam_machine.name))
+		self.assertNotIn(self.washer_machine.name, self.names(self.STERI, include=self.washer_machine.name))
+
+	def test_voluntary_run_in_progress_stays_listed(self):
+		frappe.db.set_single_value(SETTINGS, "daily_test_mode", daily_test.MODE_NONE)
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "daily_test_mode", daily_test.MODE_ALL)
+		daily_test.start_run(self.steam_machine.name, "bowie_dick", STATION)
+		self.assertIn(self.steam_machine.name, self.names(self.STERI))
+
+	def test_station_of_another_step_lists_nothing(self):
+		self.assertEqual(daily_test.overview("TR-006"), [])
+
+
 class TestPickTypes(DailyTestCase):
 	"""#1806: gợi ý chọn tay cho test hằng ngày dùng loại máy có test (`TESTS`), và theo đúng loại máy của bước."""
 

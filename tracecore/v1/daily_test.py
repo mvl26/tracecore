@@ -25,11 +25,12 @@ def _employee():
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*DAILY_TEST_ROLES)
-def overview(station, client_ts=None, token=None):
-	"""Máy có test hằng ngày và tình trạng hôm nay (chỉ đọc)."""
+def overview(station, include=None, client_ts=None, token=None):
+	"""Máy có test hằng ngày của trạm và tình trạng hôm nay (chỉ đọc); `include` là máy vừa quét để ghi test tự nguyện (A-85)."""
 	require_any_role(*DAILY_TEST_ROLES)
+	include = _optional_str(include, "include")
 	timestamp = parse_client_ts(client_ts)
-	return _run(station, timestamp, lambda: {"ok": True, "equipment": daily_test.overview()})
+	return _run(station, timestamp, lambda: {"ok": True, "equipment": daily_test.overview(station, include)})
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
