@@ -167,7 +167,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.517407",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Container",
@@ -184,5 +184,5 @@
  "states": [],
  "autoname": "prompt",
  "naming_rule": "Set by user",
- "description": "Waste bag or bin with a system CT- code (FR-M10-01.5); created only by a collection."
+ "description": "Waste bag or bin with a system CT- code; created only by a collection."
 }

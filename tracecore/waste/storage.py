@@ -191,7 +191,7 @@ def store(container, location):
 			"WASTE_CONTAINER_UNKNOWN",
 			_("Waste bag not found"),
 			_("Code {0} is not a collected waste bag.").format(container or "-"),
-			_("Record a waste collection first (SCR-38)."),
+			_("Record a waste collection first."),
 		)
 	doc = frappe.get_doc(CONTAINER, container, for_update=True)
 	if doc.status not in (COLLECTED, STORED):

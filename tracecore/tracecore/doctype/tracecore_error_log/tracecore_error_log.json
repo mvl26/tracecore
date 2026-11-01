@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-31 12:00:00.000000",
- "description": "Each occurrence of an error code (A-71, FR-M9-20). Written by the service only; never deleted.",
+ "description": "Each occurrence of an error code. Written by the service only; never deleted.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -157,7 +157,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 16:15:32.412687",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Error Log",

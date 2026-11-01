@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "NT-.YYYY.-.#####",
  "creation": "2026-10-25 11:00:00.000000",
- "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
+ "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test. Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -162,7 +162,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 12:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",

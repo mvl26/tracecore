@@ -565,3 +565,29 @@ class TestAdminModules(FrappeTestCase):
 			if not (ours.get(f"{text}:TraceCore Launcher") or ours.get(text) or others.get(text))
 		]
 		self.assertFalse(missing, f"thiếu dòng vi.csv {missing}")
+
+
+class TestHomeTitle(FrappeTestCase):
+	"""Trang chủ: tiêu đề Home và nút ba gạch thu gọn sidebar."""
+
+	def _source(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.js"), encoding="utf-8"
+		) as handle:
+			return handle.read()
+
+	def test_page_title_is_home(self):
+		source = self._source()
+		self.assertIn('title: __("Home", null, "TraceCore Launcher")', source)
+		self.assertNotIn('title: "TraceCore"', source)
+
+	def test_toggle_collapses_the_sidebar_and_remembers_it(self):
+		source = self._source()
+		self.assertIn("tc-admin-toggle", source)
+		self.assertIn("aria-expanded", source)
+		self.assertIn("NAV_COLLAPSED_KEY", source)
+		self.assertIn('toggleClass("is-collapsed"', source)
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.css"), encoding="utf-8"
+		) as handle:
+			self.assertIn(".tc-admin.is-collapsed .tc-admin-nav", handle.read())

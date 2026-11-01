@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-28 09:00:00.000000",
- "description": "Wash batch or sterilization load that was running on the machine when an incident was recorded (FR-M5-04.2); written by the incident service.",
+ "description": "Wash batch or sterilization load that was running on the machine when an incident was recorded; written by the incident service.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -39,7 +39,7 @@
   }
  ],
  "istable": 1,
- "modified": "2026-10-28 09:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Maintenance Affected Load",

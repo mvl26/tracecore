@@ -1,14 +1,50 @@
 /* global tracecore */
+const NAV_COLLAPSED_KEY = "tc_home_nav_collapsed";
+
 frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: "TraceCore",
+		title: __("Home", null, "TraceCore Launcher"),
 		single_column: true,
 	});
 	const root = $("<section class='tc-launcher' data-surface='WEB'></section>").appendTo(
 		page.main
 	);
 	let request = 0;
+	// nút ba gạch cạnh tiêu đề: thu gọn sidebar của trang chủ, chỉ có khi trang có sidebar
+	const nav_collapsed = () => {
+		try {
+			return localStorage.getItem(NAV_COLLAPSED_KEY) === "1";
+		} catch (error) {
+			return false;
+		}
+	};
+	let toggle = null;
+	// tạo khi vẽ sidebar lần đầu: trang không có sidebar không cần nút, cũng không cần bộ icon của Desk
+	function ensure_toggle() {
+		if (toggle) return;
+		toggle = $(
+			"<button type='button' class='btn btn-default icon-btn tc-admin-toggle' hidden></button>"
+		)
+			.append(icon("menu"))
+			.on("click", () => {
+				const collapsed = !root.find(".tc-admin").hasClass("is-collapsed");
+				try {
+					localStorage.setItem(NAV_COLLAPSED_KEY, collapsed ? "1" : "0");
+				} catch (error) {
+					/* chỉ là tiện ích: không lưu được thì thôi */
+				}
+				apply_collapsed(collapsed);
+			});
+		page.wrapper.find(".page-title").prepend(toggle);
+	}
+	function apply_collapsed(collapsed) {
+		root.find(".tc-admin").toggleClass("is-collapsed", collapsed);
+		const label = collapsed
+			? __("Expand menu", null, "TraceCore Launcher")
+			: __("Collapse menu", null, "TraceCore Launcher");
+		toggle.attr({ "aria-expanded": String(!collapsed), "aria-label": label, title: label });
+	}
 	const visible = () => frappe.get_route()[0] === "tracecore";
 	const message = (title, reason, action, error = false) => {
 		root.empty();
@@ -144,6 +180,9 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 				.appendTo(nav);
 		});
 		show(modules.find((module) => module.key === selected_module));
+		ensure_toggle();
+		toggle.prop("hidden", false);
+		apply_collapsed(nav_collapsed());
 	}
 	function render(data) {
 		if (data.admin_modules.length || data.role_modules.length) return render_admin(data);
@@ -248,6 +287,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	}
 	async function load() {
 		const current = ++request;
+		if (toggle) toggle.prop("hidden", true);
 		if (!navigator.onLine) {
 			message(
 				__("Offline", null, "TraceCore Launcher"),

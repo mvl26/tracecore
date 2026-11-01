@@ -4,7 +4,7 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "description": "Chemical used by a laundry batch (FR-M3-04); the lot is picked FEFO when stock is issued.",
+ "description": "Chemical used by a laundry batch; the lot is picked FEFO when stock is issued.",
  "field_order": [
   "item",
   "item_name",
@@ -100,7 +100,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-01 20:30:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Laundry Batch Chemical",

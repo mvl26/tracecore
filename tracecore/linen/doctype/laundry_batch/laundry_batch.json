@@ -3,7 +3,7 @@
  "autoname": "LG-.YY.MM.DD.-.##",
  "creation": "2026-10-29 12:00:00.000000",
  "doctype": "DocType",
- "description": "Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg (UC-17, FR-M3-03/04).",
+ "description": "Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg.",
  "engine": "InnoDB",
  "field_order": [
   "batch_type",
@@ -424,7 +424,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-01 18:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Laundry Batch",
