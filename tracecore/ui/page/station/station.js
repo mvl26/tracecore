@@ -10,6 +10,7 @@
 /* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
 
 const RPC_TIMEOUT_MS = 8000;
+const RPC_READ_RETRY_MS = 600;
 const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
 const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
@@ -775,13 +776,29 @@ class TraceCoreStation {
 		this.root.querySelector(".tc-session-expiry").textContent = __("Session expires: {0}", [
 			this.formatExpiry(session.expires_at),
 		]);
-		this.loadCardStations();
 		if (this.stationInfo) this.applyStation(this.stationInfo);
 		this.renderEmpty();
 		this.focus(true);
 		if (session.pin_change_required) this.openPinChange();
-		this.loadOfflineData();
-		this.refreshNotifications();
+		this.loadBackground();
+	}
+
+	// Dữ liệu nền chạy lần lượt (#1825): mỗi RPC theo token khóa dòng Employee, chạy song song với khối của màn làm đầy worker
+	// và làm RPC của màn chạm giới hạn 8 giây trên máy chủ ít worker.
+	async loadBackground() {
+		const version = this.sessionVersion;
+		for (const load of [
+			() => this.loadCardStations(),
+			() => this.refreshNotifications(),
+			() => this.loadOfflineData(),
+		]) {
+			if (version !== this.sessionVersion || !this.ownsPage()) return;
+			try {
+				await load();
+			} catch (error) {
+				// dữ liệu nền không được làm hỏng màn quét
+			}
+		}
 	}
 
 	// ---- đổi PIN tạm bắt buộc ngay sau quét thẻ (FR-M9-09, FR-M9-09.1, UC-33 A3) ----
@@ -1266,6 +1283,41 @@ class TraceCoreStation {
 			clearTimeout(timer);
 			this.controllers.delete(controller);
 		}
+	}
+
+	// RPC chỉ đọc của khối dữ liệu mở cùng trạm (#1825): tự thử lại 1 lần trước khi báo lỗi cho người dùng.
+	// Từ chối nghiệp vụ cũng thử lại vì phiên vừa mở có thể chưa ổn định; hết phiên thì dừng ngay.
+	async rpcRead(method, args) {
+		const version = this.sessionVersion;
+		let first = true;
+		for (;;) {
+			let result;
+			let failure = null;
+			try {
+				result = await this.rpc(method, args);
+				if (!result || result.ok !== false) return result;
+			} catch (error) {
+				if (error.sessionEnded) throw error;
+				failure = error;
+			}
+			if (!first || version !== this.sessionVersion || this.isOffline()) {
+				if (failure) throw failure;
+				return result;
+			}
+			first = false;
+			await new Promise((resolve) => setTimeout(resolve, RPC_READ_RETRY_MS));
+			if (version !== this.sessionVersion)
+				throw Object.assign(new Error("Station session ended"), { sessionEnded: true });
+		}
+	}
+
+	// câu nêu nguyên nhân cho khối dữ liệu không tải được: mất mạng, hết phiên, lỗi máy chủ, hoặc lý do từ chối
+	failureCause(error, result) {
+		if (result && result.error && result.error.reason) return result.error.reason;
+		if (error && error.offline)
+			return __("Cause: no connection to the server, or the server answered too slowly.");
+		if (error && error.status === 401) return __("Cause: the station session has ended.");
+		return __("Cause: server error ({0}).", [(error && error.status) || "?"]);
 	}
 
 	async handshake() {

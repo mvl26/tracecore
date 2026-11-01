@@ -578,7 +578,7 @@ class T2Wash {
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
 		try {
-			const res = await this.station.rpc("tracecore.v1.wash.redo_queue", {
+			const res = await this.station.rpcRead("tracecore.v1.wash.redo_queue", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});

@@ -337,6 +337,28 @@ class TestStationPage(FrappeTestCase):
 		):
 			self.assertTrue(translations.get(source), msg=source)
 
+	def test_read_blocks_retry_once_and_state_the_cause(self):
+		"""#1825: khối dữ liệu đọc khi mở trạm tự thử lại một lần, lỗi nói rõ nguyên nhân mất mạng, hết phiên hay lỗi máy chủ."""
+		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
+			shell = handle.read()
+		self.assertIn("async rpcRead(", shell)
+		self.assertIn("failureCause(", shell)
+		for path, call in (
+			("station_t1.js", 'rpcRead(T1_API + "received_today"'),
+			("station_t1.js", 'rpcRead(T1_API + "receipt_sets"'),
+			("station_t2.js", 'rpcRead("tracecore.v1.wash.redo_queue"'),
+			("station_t5.js", 'rpcRead("tracecore.v1.load.overview"'),
+		):
+			with open(os.path.join(APP_PATH, "public", "js", path), encoding="utf-8") as handle:
+				self.assertIn(call, handle.read(), path)
+		ours = vi_translations()
+		for source in (
+			"Cause: no connection to the server, or the server answered too slowly.",
+			"Cause: the station session has ended.",
+			"Cause: server error ({0}).",
+		):
+			self.assertTrue(ours.get(source), source)
+
 	def test_vi_translations_do_not_override_other_apps(self):
 		"""Dòng không có context áp cho cả site: không được đổi bản dịch sẵn có của frappe/erpnext/hrms, trừ tên DocType
 		bị dịch sai đã duyệt trong ``GLOBAL_OVERRIDES`` (tên DocType trên tiêu đề, breadcrumb không có context)."""

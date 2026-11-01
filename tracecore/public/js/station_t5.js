@@ -578,7 +578,7 @@ class T5Load {
 		const version = this.station.sessionVersion;
 		this.overviewBusy = true;
 		try {
-			const res = await this.station.rpc("tracecore.v1.load.overview", {
+			const res = await this.station.rpcRead("tracecore.v1.load.overview", {
 				station: this.station.station,
 				client_ts: clientTs(),
 			});
