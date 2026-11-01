@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "LR-.YY.MM.DD.-.##",
  "creation": "2026-10-22 16:00:00.000000",
- "description": "Wash batch on a washer-disinfector or ultrasonic cleaner (UC-06, WF-04). Created by the washing service when loading is completed; submitting it closes the batch.",
+ "description": "Wash batch on a washer-disinfector or ultrasonic cleaner. Created by the washing service when loading is completed; submitting it closes the batch.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -337,7 +337,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 18:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

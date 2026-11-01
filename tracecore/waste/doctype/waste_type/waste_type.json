@@ -103,7 +103,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 15:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Type",
@@ -123,5 +123,5 @@
  "autoname": "field:type_name",
  "naming_rule": "By fieldname",
  "title_field": "type_name",
- "description": "Waste type by Circular 20/2021/TT-BYT group (FR-M10-01)."
+ "description": "Waste type by Circular 20/2021/TT-BYT group."
 }

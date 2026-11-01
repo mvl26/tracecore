@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:group_name",
  "creation": "2026-10-21 10:00:00.000000",
- "description": "Instrument group (A-06 I5): group maintenance threshold used by instruments without their own threshold.",
+ "description": "Instrument group: group maintenance threshold used by instruments without their own threshold.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -50,7 +50,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 16:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Group",

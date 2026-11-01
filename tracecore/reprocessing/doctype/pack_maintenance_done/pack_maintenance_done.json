@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-20 15:00:00.000000",
- "description": "Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason (FR-M1-09).",
+ "description": "Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -68,7 +68,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.509794",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Pack Maintenance Done",
