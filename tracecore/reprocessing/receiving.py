@@ -593,6 +593,8 @@ def confirm_line(
 				_("Correct the actual quantity, write an abnormal note, or confirm the set anyway."),
 				items=pending,
 			)
+		if pending and not item.abnormal_note:
+			item.needs_review = 1  # xác nhận lệch không ghi chú: như offline, T3 kiểm kỹ bộ này
 		item.confirmed = 1
 	_save(doc)
 	return item_detail(doc, item)
