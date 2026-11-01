@@ -1835,6 +1835,15 @@ def t5_run(testcase, body):
 class TestT5DefaultStep(FrappeTestCase):
 	"""Bước mặc định suy từ dữ liệu mẻ, không lưu theo tab."""
 
+	def test_station_that_can_load_always_opens_on_step_one(self):
+		out = t5_run(
+			self,
+			"""
+			emit(t5DefaultStep({unload: [row("B", "M1", "Cycle Complete")], bi: [row("C", "M1", "Quarantine")]}));
+			""",
+		)
+		self.assertEqual(out, 1)
+
 	def test_step_comes_from_the_data(self):
 		out = t5_run(
 			self,
@@ -1846,11 +1855,11 @@ class TestT5DefaultStep(FrappeTestCase):
 			emit({
 				nothing: t5DefaultStep({unload: [], bi: []}),
 				draft: t5DefaultStep({draft: true, unload: waiting, bi: quarantine}),
-				running: t5DefaultStep({unload: running, bi: []}),
-				waiting: t5DefaultStep({unload: waiting, bi: quarantine}),
-				release: t5DefaultStep({unload: release, bi: []}),
-				quarantine: t5DefaultStep({unload: [], bi: quarantine}),
-				bi_before_running: t5DefaultStep({unload: running, bi: quarantine}),
+				running: t5DefaultStep({unload: running, bi: [], canLoad: false}),
+				waiting: t5DefaultStep({unload: waiting, bi: quarantine, canLoad: false}),
+				release: t5DefaultStep({unload: release, bi: [], canLoad: false}),
+				quarantine: t5DefaultStep({unload: [], bi: quarantine, canLoad: false}),
+				bi_before_running: t5DefaultStep({unload: running, bi: quarantine, canLoad: false}),
 			});
 			""",
 		)
@@ -1867,7 +1876,7 @@ class TestT5DefaultStep(FrappeTestCase):
 			},
 		)
 
-	def test_opening_the_screen_goes_to_the_derived_step_once(self):
+	def test_opening_the_screen_stays_on_load_step_until_a_step_is_chosen(self):
 		out = t5_run(
 			self,
 			"""
@@ -1875,14 +1884,14 @@ class TestT5DefaultStep(FrappeTestCase):
 			t5.show();
 			await flush();
 			const first = {step: stepOf(station.html), screen: station.screen === t5 ? "load" : "release"};
-			station.screen.onAction("t5-step", {dataset: {step: "1"}});
+			station.screen.onAction("t5-step", {dataset: {step: "3"}});
 			await flush();
-			emit({first, step: stepOf(station.html), back: station.screen === t5});
+			emit({first, step: stepOf(station.html), moved: station.screen !== t5});
 			""",
 		)
-		self.assertEqual(out["first"], {"step": 3, "screen": "release"})
-		self.assertEqual(out["step"], 1)  # đã chọn bước thì không bị kéo về
-		self.assertTrue(out["back"])
+		self.assertEqual(out["first"], {"step": 1, "screen": "load"})  # A-108
+		self.assertEqual(out["step"], 3)
+		self.assertTrue(out["moved"])
 
 
 class TestT5StepFlow(FrappeTestCase):

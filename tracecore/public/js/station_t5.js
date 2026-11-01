@@ -116,9 +116,9 @@ function t5MachineState(status, load, unloaded) {
 		: load;
 }
 
-// A-103: bước mặc định suy từ dữ liệu mẻ, không lưu theo tab. Máy đã xong cần dỡ trước, rồi đến mẻ chờ BI, rồi mẻ còn chạy.
+// A-108: trạm có chức năng nạp luôn mở ở bước 1, số mẻ chờ nằm trên thanh bước. Trạm chỉ dỡ thì chọn theo dữ liệu mẻ (A-103).
 function t5DefaultStep({ draft, unload = [], bi = [], canLoad = true, canUnload = true }) {
-	if (draft) return 1;
+	if (draft || canLoad) return 1;
 	if (canUnload) {
 		if (unload.some((row) => row.status !== "Running" || row.unloaded)) return 2;
 		if (bi.length) return 3;
