@@ -357,7 +357,7 @@ class TestStationPage(FrappeTestCase):
 			source = handle.read()
 		on_open = source[source.index("onOpen(res) {") : source.index("onLine(res) {")]
 		self.assertIn("picker.close()", on_open)
-		self.assertIn("scrollResultIntoView()", on_open)
+		self.assertIn("scrollToLines()", on_open)
 		self.assertIn('data-action="t3-zoom"', source)
 
 	def test_technician_wording_has_no_assembly_or_bom(self):

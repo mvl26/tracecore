@@ -351,10 +351,38 @@ class TraceCoreStation {
 		return next;
 	}
 
-	// đưa kết quả lên ngay dưới ô quét (ô quét dính ở đầu màn), không cuộn tay qua phần đầu trang (#1827)
-	scrollResultIntoView() {
-		const top = this.result.getBoundingClientRect().top;
-		window.scrollTo({ top: window.scrollY + top - this.form.offsetHeight });
+	// đưa kết quả lên ngay dưới ô quét (ô quét dính ở đầu màn), không cuộn tay qua phần đầu trang (#1827);
+	// `below`: chiều cao khối dính thêm của màn (T3: dòng tên bộ) để nội dung không nằm khuất sau nó
+	scrollResultIntoView(target = this.result, below = 0) {
+		this.syncStickyHeight();
+		const top = target.getBoundingClientRect().top;
+		window.scrollTo({ top: window.scrollY + top - this.form.offsetHeight - below });
+	}
+
+	syncStickyHeight() {
+		this.root.style.setProperty("--tc-scan-h", `${this.form.offsetHeight}px`);
+	}
+
+	// Thông báo chặn nằm ngoài khung nhìn thì đưa vào, mỗi thông báo một lần: vẽ lại màn không được giật về thông báo cũ.
+	// Cuộn tức thì, không hiệu ứng (motion chỉ theo token); phần dính phía trên do scroll-padding, scroll-margin lo.
+	revealNotice(notice) {
+		const blocking =
+			notice &&
+			((notice.variant || "error") === "error" || notice.code === "CONFIRM_INCOMPLETE");
+		if (!blocking) {
+			this.revealed = null;
+			return;
+		}
+		if (this.revealed === notice) return;
+		this.revealed = notice;
+		const node = this.result.querySelector(
+			'.tc-t3-form .tc-alert, [data-region="notice"] .tc-alert'
+		);
+		if (!node) return;
+		this.syncStickyHeight();
+		const box = node.getBoundingClientRect();
+		if (box.top < this.form.offsetHeight || box.bottom > window.innerHeight)
+			node.scrollIntoView({ block: "start" });
 	}
 
 	renderSwitching() {

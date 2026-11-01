@@ -971,8 +971,7 @@ class T5Load {
 		);
 		const error = Boolean(this.notice && this.notice.variant === "error");
 		this.station.form.classList.toggle("is-error", error);
-		if (error && this.shownNotice !== this.notice) window.scrollTo({ top: 0 });
-		this.shownNotice = this.notice;
+		this.station.revealNotice(this.notice);
 	}
 
 	updatePlaceholder() {

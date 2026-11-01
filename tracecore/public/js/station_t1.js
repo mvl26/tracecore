@@ -959,7 +959,7 @@ class T1Receiving {
 		);
 		this.station.form.classList.toggle("is-error", Boolean(error));
 		this.watchImages();
-		if (error) window.scrollTo({ top: 0 });
+		this.station.revealNotice(this.notice);
 	}
 
 	loadResume() {

@@ -218,7 +218,14 @@ class T3Assembly {
 		// #1827, #1834 T3-04: quét được bộ thì đóng Chọn tay, đưa bộ lên ngay dưới ô quét
 		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.show();
-		this.station.scrollResultIntoView();
+		this.scrollToLines();
+	}
+
+	// #1827: dòng tên bộ dính dưới ô quét, ngay dưới đó là các dòng cần đếm; cảnh báo cơ số, ghi chú tiếp nhận (nếu có) lên trước
+	scrollToLines() {
+		const target = this.result.querySelector(".tc-t3 > .tc-alert, .tc-t3-lines");
+		const bar = this.result.querySelector(".tc-t3-setbar");
+		if (target) this.station.scrollResultIntoView(target, bar ? bar.offsetHeight : 0);
 	}
 
 	onLine(res) {
@@ -234,6 +241,7 @@ class T3Assembly {
 
 	setQty(code, qty) {
 		if (!this.asm || this.busy || this.offline || qty < 0) return;
+		this.form = null; // #1842: số đã chốt trên dòng, biểu mẫu đang mở thành cũ
 		this.request(
 			T3_LINE,
 			{ assembly: this.asm.assembly, instrument: code, actual_qty: qty },
@@ -274,7 +282,11 @@ class T3Assembly {
 		const row = this.line(code);
 		if (!row) return;
 		// dòng chưa đếm tính từ định mức nhưng vẫn Chưa đếm cho tới khi người dùng lưu; lệch định mức phải giải thích (A-79)
-		const qty = Math.max(0, (row.counted ? row.actual_qty : row.bom_qty) + delta);
+		// biểu mẫu của chính dòng này đang mở thì tính tiếp từ số trên biểu mẫu
+		const open =
+			this.form && this.form.instrument === code ? parseInt(this.form.qty, 10) : NaN;
+		const base = Number.isNaN(open) ? (row.counted ? row.actual_qty : row.bom_qty) : open;
+		const qty = Math.max(0, base + delta);
 		if (qty === row.bom_qty) return this.setQty(code, qty);
 		this.openVariance(code, qty);
 	}
@@ -612,6 +624,7 @@ class T3Assembly {
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
+		this.station.revealNotice(this.notice);
 		if (this.form) {
 			const field = this.result.querySelector("[data-form]");
 			if (field && this.form.focused !== true) {
@@ -690,7 +703,8 @@ class T3Assembly {
 				__("Loading...")
 			)}</p>`;
 		}
-		if (this.notice) {
+		// biểu mẫu đang mở: thông báo hiện ngay tại biểu mẫu (formHtml), không ở đầu trang
+		if (this.notice && !this.form) {
 			html += this.alertHtml(
 				this.notice,
 				this.notice.technical
@@ -717,7 +731,8 @@ class T3Assembly {
 	}
 
 	asmHtml() {
-		return `${this.headHtml()}
+		return `${this.setBarHtml()}
+			${this.headHtml()}
 			${this.parHtml()}
 			${this.receiptHtml()}
 			${this.linesHtml()}
@@ -745,30 +760,35 @@ class T3Assembly {
 		</section>`;
 	}
 
+	// #1827: dính ngay dưới ô quét để đếm tới dòng nào cũng thấy đang làm bộ nào, trạng thái gì
+	setBarHtml() {
+		const asm = this.asm;
+		const set = asm.set;
+		return `<div class="tc-t3-setbar">
+			<b class="tc-code">${esc(set.set_id)}</b>
+			<span class="tc-t3-setname">${esc(set.set_name)}</span>
+			<span class="tc-badge">${esc(__(set.status, null, "Set Unit"))}</span>
+			${
+				asm.docstatus === 1
+					? `<span class="tc-badge ${
+							asm.result === "Pass" ? "tc-badge-g" : "tc-badge-r"
+					  }">${esc(
+							asm.result === "Pass" ? __("Assembly recorded") : __("Assembly failed")
+					  )}</span>`
+					: `<span class="tc-badge tc-badge-o">${esc(__("Draft count"))}</span>`
+			}
+		</div>`;
+	}
+
 	headHtml() {
 		const asm = this.asm;
 		const set = asm.set;
 		return `<section class="tc-t4-block" aria-label="${esc(__("Set"))}">
 			<div class="tc-res-head">
-				<b class="tc-code">${esc(set.set_id)}</b>
-				<span class="tc-badge">${esc(__(set.status, null, "Set Unit"))}</span>
+				<span>${esc(__(set.method, null, "Instrument Set Type"))}</span>
 				<span class="tc-tag">${esc(__("BOM v{0}", [asm.bom_version]))}</span>
 				<span class="tc-tag">${esc(__("Cycle {0}", [asm.cycle_no]))}</span>
-				${
-					asm.docstatus === 1
-						? `<span class="tc-badge ${
-								asm.result === "Pass" ? "tc-badge-g" : "tc-badge-r"
-						  }">${esc(
-								asm.result === "Pass"
-									? __("Assembly recorded")
-									: __("Assembly failed")
-						  )}</span>`
-						: `<span class="tc-badge tc-badge-o">${esc(__("Draft count"))}</span>`
-				}
 			</div>
-			<p class="tc-t4-setname">${esc(set.set_name)} · ${esc(
-			__(set.method, null, "Instrument Set Type")
-		)}</p>
 			<div class="tc-gates" aria-label="${esc(__("Step gates"))}">${(asm.gates || [])
 			.map((gate) => this.gateHtml(gate))
 			.join("")}</div>
@@ -906,7 +926,7 @@ class T3Assembly {
 			</figure>`
 			)
 			.join("");
-		return `<section class="tc-t4-block" aria-label="${esc(__("BOM Count"))}">
+		return `<section class="tc-t4-block tc-t3-lines" aria-label="${esc(__("BOM Count"))}">
 			<h3>${esc(__("Set components (BOM v{0})", [asm.bom_version]))}</h3>
 			<div class="tc-bom${trays ? " has-tray" : ""}">
 				${trays ? `<div>${trays}</div>` : ""}
@@ -919,10 +939,15 @@ class T3Assembly {
 	formHtml() {
 		const form = this.form;
 		if (!form) return "";
-		if (form.kind === "damage") return this.damageFormHtml(form);
-		if (form.kind === "variance") return this.varianceFormHtml(form);
-		if (form.kind === "branch") return this.branchFormHtml(form);
-		return this.confirmFormHtml(form);
+		const build = {
+			damage: () => this.damageFormHtml(form),
+			variance: () => this.varianceFormHtml(form),
+			branch: () => this.branchFormHtml(form),
+		}[form.kind];
+		const html = build ? build() : this.confirmFormHtml(form);
+		// khối thông báo đứng đầu biểu mẫu, trước các ô nhập
+		const notice = this.notice ? this.alertHtml(this.notice) : "";
+		return html.replace(/<section [^>]*>/, (open) => open + notice);
 	}
 
 	chips(action, current, options) {

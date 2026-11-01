@@ -726,3 +726,246 @@ class TestT5LoadAlreadyReleased(FrappeTestCase):
 		out = self.data_screen("closed")
 		self.assert_is_error(out)
 		self.assertEqual(out["state"], "error")
+
+
+T3 = "public/js/station_t3.js"
+SHELL = "ui/page/station/station.js"
+T3_STATION = """
+globalThis.TcStepQueue = class {
+	constructor() { this.items = []; this.failed = null; }
+	reset() {}
+	load() {}
+	html() { return '<section class="QUEUE"></section>'; }
+};
+const station = makeStation();
+let rendered = "";
+let revealed = [];
+let scrolled = [];
+station.setState = (state, html) => { rendered = html; };
+station.form = element();
+station.revealNotice = (notice) => revealed.push(notice);
+station.scrollResultIntoView = (target, below) => scrolled.push([target, below]);
+const t3 = new T3Assembly(station);
+const line = (code, extra = {}) => ({
+	instrument: code, instrument_name: "Kep " + code, bom_qty: 2, actual_qty: 2, counted: 1,
+	line_status: "Enough", position: 1, ...extra,
+});
+const ASM = {
+	assembly: "A-1", docstatus: 0, bom_version: 1, cycle_no: 1, gates: [{step: "T1", result: "Pass"}],
+	set: {set_id: "S-1", set_name: "Bo mo", status: "Processing", method: "Steam"},
+	lines: [line("I-1"), line("I-2", {counted: 0, line_status: ""})],
+	tally: {enough: 1, total: 2, counted: 1}, uncounted: [], unexplained: [], pack_locked: true,
+};
+"""
+
+
+class TestStationQueues(FrappeTestCase):
+	"""Hàng chờ T3/T4 vẫn hiện khi chưa mở bộ, kể cả cạnh thông báo lỗi."""
+
+	def test_t4_queue_shows_beside_an_error(self):
+		out = run_js(
+			self,
+			[ERR, T4],
+			[[], ["T4Packing"]],
+			FAKE_STATION
+			+ """
+			const station = makeStation();
+			let rendered = "";
+			station.setState = (state, html) => { rendered = html; };
+			station.revealNotice = () => {};
+			station.form = element();
+			const t4 = new T4Packing(station);
+			let finished = null;
+			let items = null;
+			t4.queue = {
+				get items() { return items; },
+				failed: null,
+				load(done) { finished = done; },
+				html: () => (items ? "<section>LOADED</section>" : "<section>WAITING</section>"),
+				reset() {},
+			};
+			t4.notice = {variant: "error", title: "Bad", reason: "r", action: "a"};
+			t4.show();
+			const first = rendered;
+			items = [];
+			finished();
+			emit({first, after: rendered});
+			""",
+		)
+		self.assertIn("WAITING", out["first"])
+		self.assertIn("Bad", out["first"])
+		self.assertIn("LOADED", out["after"])
+		self.assertIn("Bad", out["after"])
+
+	def test_t3_queue_shows_beside_an_error(self):
+		out = run_js(
+			self,
+			[ERR, T3],
+			[[], ["T3Assembly"]],
+			FAKE_STATION
+			+ T3_STATION
+			+ """
+			t3.notice = {variant: "error", title: "Bad", reason: "r", action: "a"};
+			t3.show();
+			emit(rendered);
+			""",
+		)
+		self.assertIn("QUEUE", out)
+		self.assertIn("Bad", out)
+
+
+class TestT3Layout(FrappeTestCase):
+	"""#1827: tên bộ và trạng thái dính dưới ô quét; quét xong thấy ngay các dòng."""
+
+	def test_set_name_and_status_are_in_a_sticky_bar(self):
+		out = run_js(
+			self,
+			[ERR, T3],
+			[[], ["T3Assembly"]],
+			FAKE_STATION + T3_STATION + "t3.asm = ASM; t3.show(); emit(rendered);",
+		)
+		bar = out[out.index("tc-t3-setbar") : out.index("</div>", out.index("tc-t3-setbar"))]
+		self.assertIn("S-1", bar)
+		self.assertIn("Bo mo", bar)
+		self.assertIn("Processing", bar)
+		self.assertLess(out.index("tc-t3-setbar"), out.index("tc-gates"))
+
+	def test_opening_a_set_scrolls_to_the_lines_below_the_bar(self):
+		out = run_js(
+			self,
+			[ERR, T3],
+			[[], ["T3Assembly"]],
+			FAKE_STATION
+			+ T3_STATION
+			+ """
+			const bar = {offsetHeight: 60};
+			const lines = {name: "lines"};
+			station.result.querySelector = (selector) =>
+				selector === ".tc-t3-setbar" ? bar : selector.includes(".tc-t3-lines") ? lines : null;
+			t3.onOpen(ASM);
+			emit(scrolled.map(([target, below]) => [target && target.name, below]));
+			""",
+		)
+		self.assertEqual(out, [["lines", 60]])
+
+
+class TestT3VarianceForm(FrappeTestCase):
+	"""#1842: nút trên dòng đóng biểu mẫu cũ; lỗi lưu biểu mẫu hiện ngay tại biểu mẫu."""
+
+	BEFORE = (
+		FAKE_STATION
+		+ T3_STATION
+		+ """
+		t3.asm = ASM;
+		t3.request = () => {};
+		t3.openVariance("I-1", 1);
+		t3.form.note = "cu";
+		"""
+	)
+
+	def run_t3(self, body):
+		return run_js(self, [ERR, T3], [[], ["T3Assembly"]], self.BEFORE + body)
+
+	def test_all_present_closes_the_open_form(self):
+		self.assertIsNone(
+			self.run_t3('t3.onAction("t3-full", {dataset: {instrument: "I-1"}}); emit({f: t3.form});')["f"]
+		)
+
+	def test_stepping_back_to_the_bom_closes_the_open_form(self):
+		out = self.run_t3('t3.onAction("t3-inc", {dataset: {instrument: "I-1"}}); emit({f: t3.form});')
+		self.assertIsNone(out["f"])
+
+	def test_stepping_away_from_the_bom_updates_the_form_quantity(self):
+		out = self.run_t3('t3.onAction("t3-dec", {dataset: {instrument: "I-1"}}); emit(t3.form);')
+		self.assertEqual(out["qty"], 0)
+
+	def test_form_error_is_rendered_at_the_form(self):
+		out = self.run_t3(
+			"""
+			t3.form.note = "";
+			t3.form.choice = "Short";
+			t3.saveVariance();
+			emit({top: t3.noticeHtml(), html: rendered});
+			"""
+		)
+		self.assertNotIn("tc-alert-error", out["top"])
+		form = out["html"][out["html"].index("tc-t3-form") :]
+		self.assertIn("tc-alert-error", form)
+		self.assertLess(form.index("tc-alert-error"), form.index("t3-variance-save"))
+
+
+class TestRevealNotice(FrappeTestCase):
+	"""Thông báo chặn nằm ngoài khung nhìn thì cuộn tới, mỗi thông báo một lần."""
+
+	FAKE_SHELL = """
+	window.innerHeight = 768;
+	let scrolls = 0;
+	const node = {
+		top: -790,
+		getBoundingClientRect() { return {top: this.top, bottom: this.top + 100}; },
+		scrollIntoView() { scrolls += 1; },
+	};
+	const shell = {
+		result: {querySelector: () => node},
+		form: {offsetHeight: 100},
+		root: {style: {setProperty() {}}},
+		syncStickyHeight: TraceCoreStation.prototype.syncStickyHeight,
+	};
+	const reveal = (notice) => TraceCoreStation.prototype.revealNotice.call(shell, notice);
+	"""
+
+	def run_shell(self, body):
+		return run_js(self, [SHELL], [["TraceCoreStation"]], self.FAKE_SHELL + body)
+
+	def test_scrolls_once_per_notice(self):
+		out = self.run_shell(
+			"""
+			const notice = {variant: "error", title: "x"};
+			reveal(notice);
+			reveal(notice);
+			emit({scrolls});
+			"""
+		)
+		self.assertEqual(out["scrolls"], 1)
+
+	def test_visible_notice_does_not_scroll(self):
+		out = self.run_shell('node.top = 200; reveal({variant: "error"}); emit({scrolls});')
+		self.assertEqual(out["scrolls"], 0)
+
+	def test_notice_under_the_sticky_scan_box_scrolls(self):
+		out = self.run_shell('node.top = 50; reveal({variant: "error"}); emit({scrolls});')
+		self.assertEqual(out["scrolls"], 1)
+
+	def test_confirm_prompt_scrolls_but_plain_info_does_not(self):
+		out = self.run_shell(
+			"""
+			reveal({variant: "ok", title: "x"});
+			const info = scrolls;
+			reveal({variant: "warn", code: "CONFIRM_INCOMPLETE"});
+			emit({info, confirm: scrolls});
+			"""
+		)
+		self.assertEqual(out, {"info": 0, "confirm": 1})
+
+	def test_t1_confirm_prompt_is_revealed(self):
+		out = run_js(
+			self,
+			[ERR, T1],
+			[[], ["T1Receiving"]],
+			FAKE_STATION
+			+ T1_ITEM
+			+ """
+			delete t1.show;
+			let got = null;
+			t1.station.revealNotice = (notice) => { got = notice; };
+			t1.loaded = true;
+			t1.receiptHtml = () => "";
+			t1.todayHtml = () => "";
+			t1.watchImages = () => {};
+			t1.station.form = element();
+			item.lines[0].actual_qty = 1;
+			t1.confirmSet();
+			emit({code: got && got.code});
+			""",
+		)
+		self.assertEqual(out["code"], "CONFIRM_INCOMPLETE")
