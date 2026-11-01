@@ -158,7 +158,7 @@ def overview(station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 def label_pdf(load, station, client_ts=None, token=None):
-	"""PDF nhãn QR của mẻ, máy trạm tự lưu thành file (A-99); chỉ đọc, chạy được khi không có máy in."""
+	"""PDF nhãn QR của mẻ, máy trạm tự lưu thành file (A-99); chỉ đọc, trạm phải có máy in hoạt động (A-100)."""
 	require_any_role(*LOAD_ROLES)
 	load = _required_str(load, "load")
 	timestamp = parse_client_ts(client_ts)
@@ -167,7 +167,7 @@ def label_pdf(load, station, client_ts=None, token=None):
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {"ok": True, **sterilizing.label_pdf(load)},
+		lambda: {"ok": True, **sterilizing.label_pdf(load, station)},
 		ref_doctype,
 		ref_name,
 		load,

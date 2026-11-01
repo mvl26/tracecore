@@ -385,20 +385,22 @@ T5_DONE = """
 const station = makeStation();
 const t5 = new T5Load(station);
 t5.done = {load: "ME-261101-02", packs: ["CY-1"], pack_rows: [], rejected: [], qr_png_b64: "QQ==",
-	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00"};
+	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00",
+	print: {print_job: "PJ-1", status: "Queued", printer: "PRN-001", zpl: "^XA^XZ", warning: null}};
 t5.printNoteHtml = () => "";
 """
 T2_DONE = """
 const station = makeStation();
 const t2 = new T2Wash(station);
 t2.done = {batch: "LR-261101-07", sets: ["S1"], rejected: [], chemicals: [], qr_png_b64: "QQ==",
-	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00"};
+	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00",
+	print: {print_job: "PJ-1", status: "Queued", printer: "PRN-001", zpl: "^XA^XZ", warning: null}};
 t2.printNoteHtml = () => "";
 """
 
 
 class TestLabelPdfButton(FrappeTestCase):
-	"""A-99: nút Lưu PDF nhãn trên thẻ Hoàn thành nạp T5, T2; T4 không có."""
+	"""A-99, A-100: nút Lưu PDF nhãn trên thẻ Hoàn thành nạp T5, T2 khi trạm có máy in; T4 không có."""
 
 	def t5(self, body):
 		return run_js(self, [ERR, T5], [[], ["T5Load"]], FAKE_STATION + T5_DONE + body)
@@ -410,6 +412,28 @@ class TestLabelPdfButton(FrappeTestCase):
 		out = self.t5("emit(t5.doneHtml());")
 		self.assertRegex(out, r'<button[^>]*data-action="t5-label-pdf"')
 		self.assertNotRegex(out, r'data-action="t5-label-pdf"[^>]*disabled')
+
+	def test_no_printer_shows_only_the_code_and_the_click_does_nothing(self):
+		"""A-100: không có máy in, hoặc nhãn không dựng được: chỉ còn dòng mã như trước A-99."""
+		for card, runner, code in (("t5", self.t5, "ME-261101-02"), ("t2", self.t2, "LR-261101-07")):
+			with self.subTest(card=card):
+				out = runner(
+					f"""
+					{card}.done.print = {{print_job: "PJ-1", status: "Waiting", printer: null, zpl: null,
+						warning: {{code: "NO_PRINTER_AT_STATION", title: "t", reason: "r", action: "a"}}}};
+					const html = {card}.doneHtml();
+					const calls = [];
+					{card}.request = (rpc) => calls.push(rpc);
+					{card}.show = () => {{}};
+					{card}.saveLabelPdf();
+					emit({{html, calls}});
+					"""
+				)
+				self.assertNotIn(f"{card}-label-pdf", out["html"])
+				self.assertNotIn("Save label PDF", out["html"])
+				self.assertNotIn("tc-code-row", out["html"])
+				self.assertIn(f'<p class="tc-cycle">{code}</p>', out["html"])
+				self.assertEqual(out["calls"], [])
 
 	def test_t5_offline_disables_the_button_with_a_reason(self):
 		out = self.t5("t5.offline = true; emit(t5.doneHtml());")

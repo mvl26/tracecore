@@ -848,9 +848,21 @@ def lookup(raw):
 	return _describe(_batch_doc(scanned["id"]))
 
 
-def label_pdf(batch):
-	"""PDF nhãn QR của lô để máy trạm lưu (A-99); chỉ đọc, không liên quan Print Job. Không có lô → WASH_BATCH_NOT_FOUND."""
+def label_pdf(batch, station):
+	"""PDF nhãn QR của lô để máy trạm lưu (A-99); chỉ đọc, không tạo Print Job.
+
+	Không có lô → WASH_BATCH_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100).
+	"""
 	doc = _batch_doc(batch)
+	if core_print.object_printer(station) is None:
+		raise _blocked(
+			"NO_PRINTER_AT_STATION",
+			_("No printer at this station"),
+			_("Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.").format(
+				station, doc.name
+			),
+			_("Ask R10 to add a printer to this station, then print the batch label again."),
+		)
 	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
 	program = frappe.db.get_value("Process Program", doc.program, "program_name")
 	return core_label_pdf.render(

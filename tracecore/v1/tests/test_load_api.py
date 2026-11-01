@@ -13,8 +13,10 @@ from pypdf import PdfReader
 from tracecore.core import gs1, qr
 from tracecore.tests.factories import (
 	deactivate_printers,
+	make_label_items,
 	make_load,
 	make_load_ready_pack,
+	make_printer,
 	make_sterilize_program,
 	make_sterilizer,
 	make_user,
@@ -356,7 +358,23 @@ class TestLoadLabelPdf(LoadApiCase):
 	def done_load(self):
 		return self.complete([make_load_ready_pack().name])
 
+	def test_no_active_printer_refuses_without_a_pdf(self):
+		"""A-100: trạm chưa có máy in hoạt động thì không có PDF nhãn, kể cả khi mẻ đã có mã."""
+		done = self.done_load()
+		self.assertEqual(done["print"]["warning"]["code"], "NO_PRINTER_AT_STATION")
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assert_rejection(result, "NO_PRINTER_AT_STATION", 409)
+		self.assertNotIn("pdf_b64", result)
+
+	def test_deactivated_printer_counts_as_no_printer(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_load()
+		deactivate_printers(STATION)
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assert_rejection(result, "NO_PRINTER_AT_STATION", 409)
+
 	def test_returns_pdf_named_after_the_load_with_its_qr_and_text(self):
+		make_printer(STATION, make_label_items()[0])
 		done = self.done_load()
 		before = frappe.db.count("Print Job")
 		result = call(load_api.label_pdf, load=done["load"], station=STATION)

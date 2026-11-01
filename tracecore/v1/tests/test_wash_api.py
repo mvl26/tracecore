@@ -14,6 +14,8 @@ from tracecore.core import gs1, qr, station_auth, step_gate
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_chemical_batch,
+	make_label_items,
+	make_printer,
 	make_set_unit,
 	make_user,
 	make_wash_machine,
@@ -456,7 +458,28 @@ class TestWashLabelPdf(WashApiCase):
 	def done_batch(self):
 		return self.complete([make_wash_ready_set().name])
 
+	def assert_no_printer(self, result):
+		self.assertIs(result["ok"], False, msg=result)
+		self.assertEqual(result["error"]["code"], "NO_PRINTER_AT_STATION")
+		self.assertEqual(frappe.local.response.get("http_status_code"), 409)
+		for key in ("title", "reason", "action"):
+			self.assertTrue(result["error"][key], msg=key)
+		self.assertNotIn("pdf_b64", result)
+
+	def test_no_active_printer_refuses_without_a_pdf(self):
+		"""A-100: trạm chưa có máy in hoạt động thì không có PDF nhãn, kể cả khi lô đã có mã."""
+		done = self.done_batch()
+		self.assertEqual(done["print"]["warning"]["code"], "NO_PRINTER_AT_STATION")
+		self.assert_no_printer(call(wash_api.label_pdf, batch=done["batch"], station=STATION))
+
+	def test_deactivated_printer_counts_as_no_printer(self):
+		make_printer(STATION, make_label_items()[0])
+		done = self.done_batch()
+		deactivate_printers(STATION)
+		self.assert_no_printer(call(wash_api.label_pdf, batch=done["batch"], station=STATION))
+
 	def test_returns_pdf_named_after_the_batch_with_its_qr_and_text(self):
+		make_printer(STATION, make_label_items()[0])
 		done = self.done_batch()
 		before = frappe.db.count("Print Job")
 		result = call(wash_api.label_pdf, batch=done["batch"], station=STATION)

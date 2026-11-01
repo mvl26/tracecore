@@ -1,4 +1,4 @@
-"""PDF nhãn mã mẻ/lô cho máy trạm tự lưu (A-99): chỉ đọc, không tạo Print Job.
+"""PDF nhãn mã mẻ/lô cho máy trạm tự lưu (A-99): chỉ đọc, không tạo Print Job. Nơi gọi kiểm trạm có máy in (A-100).
 
 `render` dựng nhãn khổ nhỏ gồm QR (cùng `core.qr.qr_png` với hình trên màn, cùng nội dung mã) và các dòng chữ, sinh PDF
 trong bộ nhớ bằng wkhtmltopdf của Frappe, trả ``{"pdf_b64", "filename"}``. wkhtmltopdf không hiểu biến CSS nên giá trị

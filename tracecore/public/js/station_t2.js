@@ -1505,6 +1505,7 @@ class T2Wash {
 			${tcCodeWithPdfHtml(done.batch, "t2-label-pdf", {
 				busy: Boolean(this.busy),
 				offline: this.offline || this.station.isOffline(),
+				printer: done.print && done.print.printer,
 			})}
 			${rejected}
 			<div class="tc-t4-done-grid">
@@ -1523,9 +1524,10 @@ class T2Wash {
 		</section>`;
 	}
 
-	// A-99: PDF nhãn lưu về máy, độc lập với lệnh in
+	// A-99: PDF nhãn lưu về máy, không tạo lệnh in; A-100: trạm phải có máy in
 	saveLabelPdf() {
 		if (!this.done || this.offline) return;
+		if (!this.done.print || !this.done.print.printer) return;
 		const batch = this.done.batch;
 		this.request(
 			"tracecore.v1.wash.label_pdf",

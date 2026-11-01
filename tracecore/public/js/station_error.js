@@ -19,7 +19,9 @@
 	};
 
 	// A-99: mã mẻ/lô kèm nút Lưu PDF nhãn; không có mạng thì nút tắt và ghi lý do
-	window.tcCodeWithPdfHtml = function (code, action, { busy, offline }) {
+	// A-100: chưa có máy in ở trạm (hoặc nhãn không dựng được) thì chỉ có dòng mã, không có nút
+	window.tcCodeWithPdfHtml = function (code, action, { busy, offline, printer }) {
+		if (!printer) return `<p class="tc-cycle">${esc(code)}</p>`;
 		const off = busy || offline ? " disabled" : "";
 		const reason = offline
 			? `<p class="tc-hint">${esc(__("Saving a label PDF needs a network connection."))}</p>`
