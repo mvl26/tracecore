@@ -39,9 +39,10 @@ _PUBLIC_FILE = re.compile(r"^/files/[^/?#\\]+$")
 DEFAULT_STEPS = {
 	"RECEIVE": (
 		"Scan your employee card to open the station.",
-		"Scan the Set ID on each returned set.",
-		"Check the receipt details and mark missing or damaged instruments.",
-		"Confirm to send the set to washing.",
+		"Scan the card of the person handing over the sets, or choose Deliverer has no card.",
+		"Scan each returned set.",
+		"Count each line against the quantity in the set, correct the actual quantity and note missing or damaged instruments.",
+		"Confirm each set, then submit the receipt.",
 	),
 	"WASH_LOAD": (
 		"Scan your employee card to open the station.",
@@ -210,6 +211,12 @@ def article_title(key):
 	return _("Station guide: {0}").format(label)
 
 
+def default_content(steps, lang=None):
+	"""HTML bài mặc định từ các bước nguồn tiếng Anh."""
+	items = "".join(f"<li>{frappe.utils.escape_html(_(step, lang=lang))}</li>" for step in steps)
+	return f"<ol>{items}</ol>"
+
+
 def ensure_station_help():
 	"""`after_migrate`: tạo bài mặc định cho khóa trạm còn thiếu; không ghi đè bài R10 đã sửa."""
 	if not frappe.get_meta("Help Article").has_field("tc_station_key"):
@@ -225,8 +232,6 @@ def ensure_station_help():
 				"category": category,
 				"published": 1,
 				"tc_station_key": key,
-				"content": "<ol>"
-				+ "".join(f"<li>{frappe.utils.escape_html(_(step))}</li>" for step in DEFAULT_STEPS[key])
-				+ "</ol>",
+				"content": default_content(DEFAULT_STEPS[key]),
 			}
 		).insert(ignore_permissions=True)

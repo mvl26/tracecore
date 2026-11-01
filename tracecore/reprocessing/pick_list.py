@@ -74,7 +74,7 @@ def _set_query(step, department):
 	return sql, values, SET_COLUMNS.format(since=since), since, order, "unit.name", search
 
 
-def _pack_query(step):
+def _pack_query(step, department=None):
 	status, since = PACK_STEPS[step]
 	sql = """from `tabPack` pack left join `tabDepartment` department on department.name = pack.department
 		where pack.docstatus = 1 and pack.status = %(status)s"""
@@ -82,6 +82,11 @@ def _pack_query(step):
 	if step == "T7":  # gói quá hạn không cấp được
 		sql += " and pack.expiry >= %(today)s"
 		values["today"] = today()
+	if step == "T8" and department:  # A-96: gói đã cấp cho khoa
+		sql += """ and exists (
+			select 1 from `tabIssue Note Pack` row join `tabIssue Note` note on note.name = row.parent
+			where row.pack = pack.name and note.docstatus = 1 and note.department = %(department)s)"""
+		values["department"] = department
 	search = ("pack.name", "pack.set_name", "pack.set_unit")
 	return sql, values, PACK_COLUMNS.format(since=since), since, "", "pack.name", search
 
@@ -92,7 +97,7 @@ def suggest(step, q=None, department=None, start=0, page_length=20):
 	if step not in STEPS:
 		return {"items": [], "total": 0}
 	sql, values, columns, since, order, key, search = (
-		_pack_query(step) if step in PACK_STEPS else _set_query(step, department)
+		_pack_query(step, department) if step in PACK_STEPS else _set_query(step, department)
 	)
 	if q and q.strip():
 		sql += " and (" + " or ".join(f"{field} like %(like)s" for field in search) + ")"

@@ -53,13 +53,26 @@ def departments():
 	"""Khoa nhận cấp phát (Department không phải nhóm, đang dùng), theo tên.
 
 	Chỉ khoa đánh dấu `tc_is_ward` (A-22): phòng ban mặc định của ERPNext (Accounts, Sales…) không phải khoa.
+	Mỗi khoa kèm `shortage`, loại bộ đang thiếu cơ số.
 	"""
-	return frappe.get_all(
+	rows = frappe.get_all(
 		"Department",
 		filters={"is_group": 0, "disabled": 0, "tc_is_ward": 1},
 		fields=["name", "department_name"],
 		order_by="department_name asc, name asc",
 	)
+	for row in rows:
+		row["shortage"] = _shortage(row.name)
+	return rows
+
+
+def _shortage(department):
+	"""Loại bộ khoa đang thiếu so với cơ số tối thiểu (D10, A-95): chỉ từ Par Level có sẵn."""
+	return [
+		{key: par[key] for key in ("set_type", "set_name", "stock", "suggest", "available")}
+		for par in _par_rows(department, {})
+		if par["suggest"] > 0
+	]
 
 
 def _department(department):

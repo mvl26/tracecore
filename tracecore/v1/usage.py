@@ -53,6 +53,18 @@ def _run(
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*USAGE_ROLES)
+def overview(station, client_ts=None, token=None):
+	"""Gói tại khoa của thẻ và gói đã dùng chờ trả (A-96, #1838 T8-03), chỉ đọc."""
+	require_any_role(*USAGE_ROLES)
+	return _run(
+		station,
+		client_ts,
+		lambda _ts: usage_service.department_overview(usage_service._scanner_department(_employee())),
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*USAGE_ROLES)
 def scan(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None):
 	"""Quét Cycle ID (SCR-37 bước 1): kiểm hiệu lực rồi trả ``{"ok": true, "card": {...}}`` kèm cảnh báo khác khoa.
 

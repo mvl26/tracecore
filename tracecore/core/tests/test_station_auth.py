@@ -401,6 +401,42 @@ class TestStationNavigation(IsolatedTestCase):
 	def test_relevance_by_equipment_zone(self):
 		self.assertTrue(notification.relevant_to_station(frappe._dict(), "TR-004"))
 
+	def test_department_card_sees_only_the_department_station(self):
+		from unittest.mock import patch
+
+		from tracecore.v1 import station as station_rpc
+
+		session = frappe._dict(user="r08@test", employee="HR-EMP-X", station="TR-008")
+		with (
+			patch("frappe.get_roles", return_value=["TC R08"]),
+			patch.object(station_rpc.station_auth, "can_work_at", return_value=True),
+			patch.object(station_rpc.navigation, "can_open_station", return_value=True),
+		):
+			visible = station_rpc._visible_stations(session)
+		self.assertEqual([row["name"] for row in visible], ["TR-008"])
+
+	def test_session_says_which_department_the_card_belongs_to(self):
+		from tracecore.tests.factories import make_department, make_employee
+		from tracecore.v1 import station as station_rpc
+
+		department = make_department("Khoa phiên T8")
+		employee = make_employee(first_name="Điều dưỡng phiên", department=department).name
+		session = station_rpc._with_station_role({"station": "TR-008", "employee": employee, "roles": []})
+		self.assertEqual(session["department"], department)
+		self.assertTrue(session["department_name"])
+
+	def test_department_station_hides_notices_meant_only_for_cssd(self):
+		from unittest.mock import patch
+
+		row = frappe._dict(event_code="CONSUMPTION_FAILED")
+		with patch.object(notification, "_rule_roles", return_value=["TC R09"]):
+			self.assertFalse(notification.relevant_to_station(row, "TR-008"))
+			self.assertTrue(notification.relevant_to_station(row, "TR-002"))
+		with patch.object(notification, "_rule_roles", return_value=["TC R08", "TC R09"]):
+			self.assertTrue(notification.relevant_to_station(row, "TR-008"))
+		with patch.object(notification, "_rule_roles", return_value=[]):
+			self.assertTrue(notification.relevant_to_station(row, "TR-008"))
+
 
 class TestApproverProof(IsolatedTestCase):
 	"""R02 quét thẻ + PIN trên kiosk của người khác (architecture C6, UC-12 A1): proof dùng một lần gắn với phiên đó."""

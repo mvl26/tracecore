@@ -203,7 +203,7 @@ class T1Receiving {
 			forced: 0,
 			lines_total: row.bom.length,
 			lines_confirmed: 0,
-			lines: row.bom.map((line) => ({ ...line, confirmed: 0 })),
+			lines: row.bom.map((line) => ({ ...line, actual_qty: line.qty, confirmed: 0 })),
 			tray_images: [],
 			note: "",
 			photo: null,
@@ -311,6 +311,7 @@ class T1Receiving {
 				lines: item.lines.map((line) => ({
 					instrument: line.instrument,
 					confirmed: line.confirmed ? 1 : 0,
+					actual_qty: line.actual_qty,
 				})),
 				note: item.note || null,
 				ack_incomplete: item.ack_incomplete ? 1 : 0,
@@ -479,7 +480,6 @@ class T1Receiving {
 			manual: () => this.toggleManual(true),
 			"manual-cancel": () => this.toggleManual(false),
 			"manual-open": () => this.openManual(),
-			"confirm-all": () => this.confirmAll(),
 			"confirm-set": () => this.confirmSet(false),
 			"confirm-anyway": () => this.confirmSet(true),
 			photo: () => this.pickPhoto(),
@@ -517,25 +517,24 @@ class T1Receiving {
 		if (!this.current() && this.receipt) this.addSet(setId, {}, true);
 	}
 
-	confirmAll() {
-		const item = this.current();
-		if (!item) return;
-		item.lines.forEach((line) => (line.confirmed = 1));
-		this.refresh();
-	}
-
-	onChange(event) {
-		const box = event.target.closest(".tc-check");
-		const item = this.current();
-		if (!box || !item) return;
-		const line = item.lines[Number(box.dataset.line)];
-		if (line) line.confirmed = box.checked ? 1 : 0;
-		this.refresh();
-	}
-
 	onInput(event) {
+		if (event.target.matches(".tc-t1-actual")) return this.onActual(event.target);
 		if (event.target.id !== "tc-t1-note" || !this.currentId) return;
 		this.notes[this.currentId] = event.target.value;
+	}
+
+	// Không vẽ lại bảng khi đang gõ: giữ focus và con trỏ của ô số lượng
+	onActual(box) {
+		const item = this.current();
+		const line = item && item.lines[Number(box.dataset.line)];
+		if (!line) return;
+		const raw = String(box.value).trim();
+		line.actual_qty = raw === "" ? null : Number(raw);
+		line.confirmed = line.actual_qty === line.qty ? 1 : 0;
+		const row = box.closest("tr");
+		if (row) row.classList.toggle("is-diff", !line.confirmed);
+		const foot = this.result.querySelector("[data-region='foot']");
+		if (foot) foot.innerHTML = this.footHtml(item);
 	}
 
 	noteOf(item) {
@@ -543,13 +542,22 @@ class T1Receiving {
 	}
 
 	unticked(item) {
-		return item.lines.filter((line) => !line.confirmed);
+		return item.lines.filter((line) => line.actual_qty !== line.qty);
 	}
 
 	confirmSet(anyway) {
 		const item = this.current();
 		if (!item) return;
 		const note = this.noteOf(item).trim();
+		if (item.lines.some((line) => line.actual_qty === null || Number.isNaN(line.actual_qty))) {
+			this.notice = {
+				variant: "error",
+				title: __("Actual quantity is missing"),
+				reason: __("Every component needs an actual quantity."),
+				action: __("Enter the actual quantity, then confirm the set."),
+			};
+			return this.show();
+		}
 		const missing = this.unticked(item);
 		if (missing.length && !note && !anyway) {
 			// nhắc trước khi cho xác nhận (FR-M2-23.6); server vẫn kiểm lại
@@ -557,12 +565,13 @@ class T1Receiving {
 				variant: "warn",
 				code: "CONFIRM_INCOMPLETE",
 				title: __("Some components are not confirmed"),
-				reason: __("{0} component(s) are not ticked and there is no abnormal note.", [
-					missing.length,
-				]),
+				reason: __(
+					"{0} component(s) differ from the BOM quantity and there is no abnormal note.",
+					[missing.length]
+				),
 				items: missing.map((line) => `${line.instrument_name} (${line.instrument})`),
 				action: __(
-					"Tick the missing components, write an abnormal note, or confirm the set anyway."
+					"Correct the actual quantity, write an abnormal note, or confirm the set anyway."
 				),
 			};
 			return this.show();
@@ -576,7 +585,8 @@ class T1Receiving {
 				station: this.station.station,
 				lines: item.lines.map((line) => ({
 					instrument: line.instrument,
-					confirmed: line.confirmed ? 1 : 0,
+					confirmed: line.actual_qty === line.qty ? 1 : 0,
+					actual_qty: line.actual_qty,
 				})),
 				note,
 				finalize: 1,
@@ -853,7 +863,9 @@ class T1Receiving {
 			today.total_receipts,
 			today.total_sets,
 		]);
-		const who = (code, name) => esc([code, name].filter(Boolean).join(" · "));
+		// #1831 S-04: chỉ họ tên, mã nhân viên để tooltip
+		const who = (code, name) =>
+			`<td${name && code ? ` title="${esc(code)}"` : ""}>${esc(name || code)}</td>`;
 		const rows = today.receipts
 			.map((row) => {
 				const open = this.todayOpen === row.receipt;
@@ -868,8 +880,8 @@ class T1Receiving {
 					)}" aria-expanded="${open}">${esc(row.receipt)}</button></td>
 					<td>${esc(String(row.received_at || "").slice(11, 16))}</td>
 					<td>${esc(row.department_name || row.department)}</td>
-					<td>${who(row.deliverer, row.deliverer_name)}</td>
-					<td>${who(row.receiver, row.receiver_name)}</td>
+					${who(row.deliverer, row.deliverer_name)}
+					${who(row.receiver, row.receiver_name)}
 					<td>${esc(row.set_count)}</td>
 					<td>${flag}</td>
 				</tr>${
@@ -921,6 +933,8 @@ class T1Receiving {
 			: __("Scan the employee card of the deliverer...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
+		// #1832 T1-03: nhãn liên kết của ô quét theo đúng bước
+		for (const label of this.input.labels || []) label.textContent = text;
 	}
 
 	show() {
@@ -1225,51 +1239,43 @@ class T1Receiving {
 
 	linesHtml(item) {
 		if (!item) return "";
-		const lines = item.lines
+		if (!item.lines.length)
+			return `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		const rows = item.lines
 			.map((line, index) => {
-				const checked = Boolean(line.confirmed);
-				return `<label class="tc-ins${checked ? " is-done" : ""}">
-					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
-					<span class="tc-ins-text">
-						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
-						<span class="tc-ins-pos">${esc(
-							__("Position {0} · × {1} · {2}", [
-								line.position,
-								line.qty,
-								line.instrument,
-							])
-						)}</span>
-						<span class="tc-ins-state">${esc(
-							checked
-								? __("Confirmed", null, "Dirty Receipt Item")
-								: __("Not confirmed")
-						)}</span>
-					</span>
-					<input type="checkbox" class="tc-check" data-line="${index}"${
-					checked ? " checked" : ""
-				} aria-label="${esc(
-					`${line.instrument_name}: ${__("Confirmed", null, "Dirty Receipt Item")}`
-				)}">
-				</label>`;
+				const differs = line.actual_qty !== line.qty;
+				const label = `${line.instrument_name}: ${__("Actual quantity")}`;
+				return `<tr class="${differs ? "is-diff" : ""}">
+					<td>${index + 1}</td>
+					<td><span class="tc-t1-line-name" title="${esc(line.instrument)}">${this.photoHtml(
+					line.thumbnail || line.image,
+					line.instrument_name
+				)}<span class="tc-ins-name">${esc(line.instrument_name)}</span></span></td>
+					<td>${esc(line.qty)}</td>
+					<td><input class="tc-t1-actual" type="number" min="0" max="9999" step="1" inputmode="numeric" data-line="${index}" aria-label="${esc(
+					label
+				)}" value="${esc(line.actual_qty === null ? "" : line.actual_qty)}"></td>
+				</tr>`;
 			})
 			.join("");
-		return lines || `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		return `<table class="tc-t2-table tc-t1-lines"><thead><tr>
+				<th scope="col">${esc(__("No."))}</th>
+				<th scope="col">${esc(__("Instrument name"))}</th>
+				<th scope="col">${esc(__("Quantity in set"))}</th>
+				<th scope="col">${esc(__("Actual quantity"))}</th>
+			</tr></thead><tbody>${rows}</tbody></table>`;
 	}
 
 	footHtml(item) {
-		if (!item) return "";
-		const total = item.lines.length;
-		const done = item.lines.filter((line) => line.confirmed).length;
-		const ready = this.imagesReady && total > 0;
-		return `<div class="tc-actions">
-			<button type="button" class="tc-btn tc-btn-ok" data-action="confirm-all"${
-				!ready || done === total ? " disabled" : ""
-			}>${esc(__("Confirm all components"))}</button>
-			<span class="tc-hint">${done === total ? `<span aria-hidden="true">&#10003;</span> ` : ""}${esc(
-			__("Confirmed {0}/{1} lines", [done, total])
-		)}</span>
-			${ready ? "" : `<span class="tc-hint">${esc(__("Loading instrument photos..."))}</span>`}
-		</div>`;
+		if (!item || !item.lines.length) return "";
+		const differs = this.unticked(item).length;
+		return `<div class="tc-actions"><span class="tc-hint">${
+			differs
+				? `<span aria-hidden="true">!</span> ${esc(
+						__("{0} line(s) differ from the BOM", [differs])
+				  )}`
+				: `<span aria-hidden="true">&#10003;</span> ${esc(__("All lines match the BOM"))}`
+		}</span></div>`;
 	}
 
 	photoNoteHtml(item) {

@@ -1,3 +1,25 @@
+/* global tracecore */
+// #1830 G-03: số liệu mở sẵn ở mô-đun Tổng quan, lấy từ khối mà server chọn theo vai trò
+function tcOverviewTiles(blocks) {
+	const failed = (rate, label, doctype) => ({
+		value: `${rate.failed}/${rate.finished}`,
+		label,
+		route: `/app/${doctype}?status=Failed`,
+		alert: Boolean(rate.failed),
+	});
+	const tiles = (blocks.sets || []).map((row) => ({
+		value: row.count,
+		label: __(row.status, null, "Set Unit"),
+		route: `/app/set-unit?status=${encodeURIComponent(row.status)}`,
+	}));
+	if (blocks.failures)
+		tiles.push(
+			failed(blocks.failures.load, __("Sterilization loads failed"), "sterilization-load"),
+			failed(blocks.failures.wash, __("Wash batches failed"), "wash-batch")
+		);
+	return tiles;
+}
+
 frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
@@ -54,6 +76,36 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		const block = $("<section class='tc-admin-section'></section>").appendTo(body);
 		$("<h3></h3>").text(title).append($("<span></span>").text(count)).appendTo(block);
 		return $("<div class='tc-admin-grid'></div>").appendTo(block);
+	}
+	async function render_overview(body, module) {
+		const box = section(body, __("Operations today"), "");
+		$("<p class='tc-loading'></p>").text(__("Loading...")).appendTo(box);
+		render_module(body, module);
+		try {
+			const data = await tracecore.desk_get("tracecore.v1.dashboard.summary", {
+				period: "day",
+			});
+			if (selected_module !== module.key || !visible()) return;
+			box.empty();
+			const tiles = tcOverviewTiles(data.blocks || {});
+			if (!tiles.length)
+				$("<p></p>").text(__("No dashboard block for your role")).appendTo(box);
+			tiles.forEach((item) =>
+				tile(
+					box,
+					item.label,
+					item.route,
+					$("<span class='tc-admin-badge'></span>")
+						.toggleClass("tc-admin-kind-alert", Boolean(item.alert))
+						.text(item.value)
+				)
+			);
+		} catch (error) {
+			box.empty();
+			$("<p role='alert'></p>")
+				.text(__("Cannot load the operations figures."))
+				.appendTo(box);
+		}
 	}
 	function render_module(body, module) {
 		module.sections.forEach((group) => {
@@ -118,7 +170,9 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			$("<h2></h2>").text(__(module.label, null, "TraceCore Launcher")).appendTo(text);
 			$("<p></p>").text(__(module.description, null, "TraceCore Launcher")).appendTo(text);
 			const body = $("<div class='tc-admin-body'></div>").appendTo(main);
-			if (module.key !== STATIONS.key) render_module(body, module);
+			document.title = `${__(module.label, null, "TraceCore Launcher")} – TraceCore`;
+			if (module.key === "overview") render_overview(body, module);
+			else if (module.key !== STATIONS.key) render_module(body, module);
 		}
 		let cluster = modules[0].cluster;
 		modules.forEach((module) => {

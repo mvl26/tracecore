@@ -12,6 +12,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.equipment import pick as equipment_pick
 from tracecore.reprocessing import pick_list
+from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	LINEN_ROLES,
 	LOAD_ROLES,
@@ -23,6 +24,7 @@ from tracecore.v1._common import (
 	WASH_LOAD_ROLES,
 	WASH_UNLOAD_ROLES,
 	BadRequestError,
+	current_station_session,
 	require_any_role,
 	run_at_step,
 	station_session,
@@ -104,6 +106,15 @@ def equipment(
 	return run_at_step(functions or None, station, timestamp, call)
 
 
+def _t8_department():
+	"""A-96: thẻ không có quyền tổng quan chỉ chọn được gói của khoa mình; thẻ quản lý thấy mọi khoa."""
+	roles = set(frappe.get_roles())
+	if roles & navigation.OVERVIEW_ROLES or "System Manager" in roles:
+		return None
+	session = current_station_session()
+	return frappe.db.get_value("Employee", session.employee, "department") if session else None
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ALL_ROLES)
 def set_units(
@@ -118,6 +129,9 @@ def set_units(
 	def call():
 		if step not in pick_list.STEPS:
 			raise _wrong_step(step)
+		if step == "T8":
+			department_of_card = _t8_department()
+			return {"ok": True, **pick_list.suggest(step, q, department_of_card, start, page_length)}
 		return {"ok": True, **pick_list.suggest(step, q, department, start, page_length)}
 
 	return run_at_step(functions or None, station, timestamp, call)

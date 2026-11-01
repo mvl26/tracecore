@@ -590,18 +590,41 @@ class T7Issue {
 		if (!list.length) {
 			return `<p class="tc-empty">${esc(__("No department is available to issue to."))}</p>`;
 		}
-		return `<section class="tc-t6-block" aria-label="${esc(__("Department"))}">
-			<h3>${esc(__("Choose the department that receives the packs"))}</h3>
-			<div class="tc-t7-depts">${list
-				.map((d) =>
-					this.button(
-						"pick-dept",
-						d.department_name || d.name,
-						"secondary",
-						` data-dept="${esc(d.name)}"`
+		// #1837 T7-02: khoa thiếu cơ số nằm ở bảng riêng, khoa còn lại chọn ở hàng nút
+		const short = list.filter((d) => (d.shortage || []).length);
+		const others = list.filter((d) => !(d.shortage || []).length);
+		const pick = (d) =>
+			this.button(
+				"pick-dept",
+				d.department_name || d.name,
+				"secondary",
+				` data-dept="${esc(d.name)}"`
+			);
+		const shortage = short.length
+			? `<section class="tc-t6-block" aria-label="${esc(__("Par shortage by department"))}">
+				<h3>${esc(__("Par shortage by department"))}</h3>
+				${short
+					.map(
+						(d) =>
+							`<div class="tc-t7-short">${pick(d)}<ul>${d.shortage
+								.map(
+									(row) =>
+										`<li>${esc(
+											__("{0}: short {1}, sterile store has {2}", [
+												row.set_name || row.set_type,
+												row.suggest,
+												row.available,
+											])
+										)}</li>`
+								)
+								.join("")}</ul></div>`
 					)
-				)
-				.join("")}</div>
+					.join("")}
+			</section>`
+			: `<p class="tc-t6-hint">${esc(__("No department is short of its par level."))}</p>`;
+		return `${shortage}<section class="tc-t6-block" aria-label="${esc(__("Department"))}">
+			<h3>${esc(__("Choose the department that receives the packs"))}</h3>
+			<div class="tc-t7-depts">${others.map(pick).join("")}</div>
 		</section>`;
 	}
 

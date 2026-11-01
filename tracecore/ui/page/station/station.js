@@ -112,6 +112,13 @@ function tcPackLabelHtml(row) {
 
 // Hàng đợi bộ của bước hiện trên màn chính (#1834 T3-03, #1835 T4-01): chỉ để xem, vẫn quét từng Set ID như T2.
 // eslint-disable-next-line no-unused-vars
+// #1830 G-02: tiêu đề tab theo trạm; tên trạm đã có số thì không lặp số
+function tcStationTitle(station) {
+	const label = station.label || station.name || "";
+	const prefix = station.station_no && !/^T\d/.test(label) ? `T${station.station_no} ` : "";
+	return `${prefix}${label} – TraceCore`;
+}
+
 class TcStepQueue {
 	constructor(station, screen) {
 		this.station = station;
@@ -1455,6 +1462,7 @@ class TraceCoreStation {
 
 	applyStation(station) {
 		this.stationInfo = station;
+		document.title = tcStationTitle(station);
 		// màn nghiệp vụ theo chức năng của trạm (A-64); trạm không có màn dùng tra cứu Set ID chung
 		window.tcGateLabels = station.gate_labels || {};
 		if (this.session && !this.screen) this.openScreen((station.screens || [])[0]);
@@ -1759,6 +1767,9 @@ frappe.pages["station"].on_page_load = function (wrapper) {
 
 frappe.pages["station"].on_page_show = function () {
 	if (frappe.tc_station) frappe.tc_station.show();
+	// router của Frappe đặt lại tiêu đề khi quay về trang
+	if (frappe.tc_station && frappe.tc_station.stationInfo)
+		document.title = tcStationTitle(frappe.tc_station.stationInfo);
 };
 
 frappe.pages["station"].on_page_hide = function () {

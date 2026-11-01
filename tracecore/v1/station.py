@@ -26,6 +26,11 @@ def _with_station_role(session):
 	session["station_role"] = navigation.main_role(
 		set(session.get("roles") or ()), zones.station_functions(session["station"])
 	)
+	department = frappe.db.get_value("Employee", session.get("employee"), "department")
+	session["department"] = department
+	session["department_name"] = (
+		frappe.db.get_value("Department", department, "department_name") if department else None
+	)
 	return session
 
 
