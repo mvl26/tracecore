@@ -907,20 +907,7 @@ class T5Release {
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Release", null, "Sterilization Load"))}</h3>
 			${waiting}${review}
-			<div class="tc-field">
-				<label for="tc-t5b-pin">${esc(__("R02 PIN"))}</label>
-				<input id="tc-t5b-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" data-t5b-pin value="">
-				<p class="tc-hint">${esc(
-					__("R02 signs in with the card at this station and enters the 6-digit PIN.")
-				)}</p>
-			</div>
-			<div class="tc-field">
-				<label for="tc-t5b-reason">${esc(__("Emergency release reason (R01 only)"))}</label>
-				<textarea id="tc-t5b-reason" rows="2" data-t5b-reason>${esc(form.reason)}</textarea>
-			</div>
-			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5b-release">${esc(
-				__("Release the load")
-			)}</button></div>
+			${this.canRelease() ? this.releaseControlsHtml() : this.releaseElsewhereHtml()}
 		</section>
 		<section class="tc-t4-block">
 			<h3>${esc(__("Reject the load"))}</h3>
@@ -949,6 +936,39 @@ class T5Release {
 				__("Reject: the load failed")
 			)}</button></div>
 		</section>`;
+	}
+
+	// Cùng quy tắc với `releasing._approver`: chỉ phiên có role R02 hoặc R01 mới giải phóng được
+	canRelease() {
+		const roles = (this.station.session && this.station.session.roles) || [];
+		return roles.includes("TC R02") || roles.includes("TC R01");
+	}
+
+	releaseElsewhereHtml() {
+		return this.alertHtml({
+			variant: "info",
+			title: __("A CSSD supervisor must release the load"),
+			action: __(
+				"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN."
+			),
+		});
+	}
+
+	releaseControlsHtml() {
+		return `<div class="tc-field">
+				<label for="tc-t5b-pin">${esc(__("R02 PIN"))}</label>
+				<input id="tc-t5b-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" data-t5b-pin value="">
+				<p class="tc-hint">${esc(
+					__("R02 signs in with the card at this station and enters the 6-digit PIN.")
+				)}</p>
+			</div>
+			<div class="tc-field">
+				<label for="tc-t5b-reason">${esc(__("Emergency release reason (R01 only)"))}</label>
+				<textarea id="tc-t5b-reason" rows="2" data-t5b-reason>${esc(this.form.reason)}</textarea>
+			</div>
+			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="t5b-release">${esc(
+				__("Release the load")
+			)}</button></div>`;
 	}
 
 	missingLabel(code) {

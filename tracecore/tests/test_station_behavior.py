@@ -530,3 +530,55 @@ class TestScanShell(FrappeTestCase):
 			frappe.get_app_path("tracecore", "ui", "page", "station", "station.js"), encoding="utf-8"
 		) as handle:
 			self.assertIn("window.tcBindScanLabel(this.input)", handle.read())
+
+
+class TestT5ReleaseBlockByRole(FrappeTestCase):
+	"""Khối giải phóng theo role phiên, khớp `releasing._approver`: chỉ R02, R01 mới có PIN và nút."""
+
+	def html(self, roles):
+		return run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION
+			+ f"""
+			const station = makeStation();
+			station.session = {{token: "tok", roles: {roles!r}}};
+			const screen = new T5Release(station, {{}});
+			emit(screen.releaseHtml({{name: "ME-261101-09"}}, []));
+			""",
+		)
+
+	def test_technician_sees_the_message_and_no_release_controls(self):
+		for roles in (["TC R05"], []):  # [] : System Manager không có role TC, server cũng từ chối
+			with self.subTest(roles=roles):
+				html = self.html(roles)
+				self.assertIn("A CSSD supervisor must release the load", html)
+				self.assertIn(
+					"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN.",
+					html,
+				)
+				self.assertIn("tc-alert-info", html)
+				for hidden in ("tc-t5b-pin", "tc-t5b-reason", "t5b-release"):
+					self.assertNotIn(hidden, html)
+				self.assertNotRegex(html, r"R0\d")
+				self.assertIn("t5b-reject", html)  # mẻ Không đạt giữ nguyên
+
+	def test_r02_and_r01_keep_pin_reason_and_button(self):
+		for role in ("TC R02", "TC R01"):
+			with self.subTest(role=role):
+				html = self.html([role])
+				for shown in ("tc-t5b-pin", "tc-t5b-reason", 'data-action="t5b-release"'):
+					self.assertIn(shown, html)
+				self.assertNotIn("A CSSD supervisor must release the load", html)
+
+	def test_message_is_translated_without_role_codes(self):
+		with open(frappe.get_app_path("tracecore", "translations", "vi.csv"), encoding="utf-8") as handle:
+			rows = {row[0]: row[1] for row in csv.reader(handle) if len(row) >= 2}
+		self.assertEqual(rows["A CSSD supervisor must release the load"], "Cần giám sát CSSD giải phóng mẻ")
+		self.assertEqual(
+			rows[
+				"Log out, then the CSSD supervisor signs in with the card at this station and enters the PIN."
+			],
+			"Đăng xuất, giám sát CSSD đăng nhập thẻ tại trạm này rồi nhập PIN",
+		)
