@@ -22,6 +22,7 @@ from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datet
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import cycle_defaults, cycle_time, pack_display
@@ -760,6 +761,22 @@ def lookup(raw):
 			_("Scan the QR code on the sterilization load label."),
 		)
 	return _describe(_load_doc(scanned["id"]))
+
+
+def label_pdf(load):
+	"""PDF nhãn QR của mẻ để máy trạm lưu (A-99); chỉ đọc, không liên quan Print Job. Không có mẻ → LOAD_NOT_FOUND."""
+	doc = _load_doc(load)
+	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
+	program = frappe.db.get_value("Process Program", doc.program, "program_name")
+	return core_label_pdf.render(
+		doc.name,
+		_("Sterilization load"),
+		[
+			" - ".join(part for part in (machine, program) if part),
+			get_datetime(doc.started_at).strftime(core_label_pdf.DATETIME_FORMAT),
+			_("{0} pack(s)").format(len(doc.packs)),
+		],
+	)
 
 
 # --- Dữ liệu chu trình nhập tay có xác nhận (FR-M2-10, BRU-REP-015) -----------------------------------------

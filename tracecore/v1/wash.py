@@ -271,6 +271,25 @@ def _completed(equipment, program, codes, rows, station, timestamp):
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
+def label_pdf(batch, station, client_ts=None, token=None):
+	"""PDF nhãn QR của lô, máy trạm tự lưu thành file (A-99); chỉ đọc, chạy được khi không có máy in."""
+	require_any_role(*WASH_LOAD_ROLES)
+	batch = _required_str(batch, "batch")
+	timestamp = parse_client_ts(client_ts)
+	ref_doctype, ref_name = _batch_ref(batch)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, **washing.label_pdf(batch)},
+		ref_doctype,
+		ref_name,
+		batch,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASH_LOAD_ROLES)
 def refresh_lots(equipment, station, client_ts=None, token=None):
 	"""Tra lại chương trình, hóa chất và lô FEFO của máy đang nạp, không đổi danh sách bộ (lô mới nhập sau khi quét máy)."""
 	require_any_role(*WASH_LOAD_ROLES)

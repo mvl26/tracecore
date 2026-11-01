@@ -23,6 +23,7 @@ from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datet
 from frappe.utils.data import get_system_timezone
 
 from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate, zones
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import cycle_defaults, cycle_time
@@ -845,6 +846,22 @@ def lookup(raw):
 			_("Scan the QR code on the wash batch label."),
 		)
 	return _describe(_batch_doc(scanned["id"]))
+
+
+def label_pdf(batch):
+	"""PDF nhãn QR của lô để máy trạm lưu (A-99); chỉ đọc, không liên quan Print Job. Không có lô → WASH_BATCH_NOT_FOUND."""
+	doc = _batch_doc(batch)
+	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
+	program = frappe.db.get_value("Process Program", doc.program, "program_name")
+	return core_label_pdf.render(
+		doc.name,
+		_("Wash batch"),
+		[
+			" - ".join(part for part in (machine, program) if part),
+			get_datetime(doc.started_at).strftime(core_label_pdf.DATETIME_FORMAT),
+			_("{0} set(s)").format(len(doc.set_units)),
+		],
+	)
 
 
 # --- Dỡ lô (FR-M2-04.1/.2/.7, BRU-REP-016) ------------------------------------------------------------------

@@ -1,13 +1,16 @@
 """RPC tracecore.v1.wash.* (FEAT-021 Task 5): phiên trạm thẻ, quyền, mã HTTP theo loại lỗi, replay idempotent."""
 
+import base64
+import io
 import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.utils import add_to_date, now_datetime
+from frappe.utils import add_to_date, get_datetime, now_datetime
+from pypdf import PdfReader
 
-from tracecore.core import station_auth, step_gate
+from tracecore.core import gs1, qr, station_auth, step_gate
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_chemical_batch,
@@ -447,3 +450,37 @@ class TestWashRefreshAndDraft(WashApiCase):
 		call(wash_api.save_draft, draft=self.draft_payload((unit.name,)), station=STATION)
 		self.assertIs(self.complete([unit.name])["ok"], True)
 		self.assertIsNone(call(wash_api.draft, station=STATION)["draft"])
+
+
+class TestWashLabelPdf(WashApiCase):
+	def done_batch(self):
+		return self.complete([make_wash_ready_set().name])
+
+	def test_returns_pdf_named_after_the_batch_with_its_qr_and_text(self):
+		done = self.done_batch()
+		before = frappe.db.count("Print Job")
+		result = call(wash_api.label_pdf, batch=done["batch"], station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(result["filename"], f"{done['batch']}.pdf")
+		pdf = base64.b64decode(result["pdf_b64"])
+		self.assertTrue(pdf.startswith(b"%PDF"))
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		decoded = qr.decode_png(page.images[0].data)
+		self.assertEqual(decoded, done["batch"])
+		self.assertEqual(gs1.parse_scan(decoded)["type"], "wash_batch")
+		text = page.extract_text()
+		started = frappe.db.get_value("Wash Batch", done["batch"], "started_at")
+		self.assertIn(done["batch"], text)
+		self.assertIn(get_datetime(started).strftime("%d/%m/%Y %H:%M"), text)
+		self.assertEqual(frappe.db.count("Print Job"), before)
+
+	def test_unknown_code_is_not_found(self):
+		result = call(wash_api.label_pdf, batch="LR-000000-99", station=STATION)
+		self.assertEqual(result["error"]["code"], "WASH_BATCH_NOT_FOUND")
+		self.assertEqual(frappe.local.response.get("http_status_code"), 404)
+
+	def test_wrong_session_station_is_refused(self):
+		done = self.done_batch()
+		token = TOKENS[("Administrator", STATION)]
+		result = call(wash_api.label_pdf, batch=done["batch"], station=CLEAN_STATION, token=token)
+		self.assertEqual(result["error"]["code"], "SESSION_STATION_MISMATCH")
