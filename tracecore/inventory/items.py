@@ -15,6 +15,7 @@ from frappe.utils import cint, flt
 # Bốn chuỗi cũ (A-02) giữ nguyên, đứng trước, để không vỡ dữ liệu và code M1/M2.
 CSSD_GROUPS: tuple[str, ...] = (
 	"Packaging",
+	"Packaging Accessory",
 	"Chemical Indicator",
 	"Label",
 	"Lubricant",

@@ -92,9 +92,9 @@ class TestComputeExpiry(IsolatedTestCase):
 
 class TestPackTypes(IsolatedTestCase):
 	def test_pack_types_follow_the_sterilization_method_of_the_set(self):
-		steam = make_item("VT-GOI-HOI-3", "Packaging", method="Steam", shelf_life_days=30)
-		plasma = make_item("VT-GOI-PLASMA-3", "Packaging", method="Plasma", shelf_life_days=30)
-		both = make_item("VT-GOI-CHUNG-3", "Packaging", shelf_life_days=30)
+		steam = make_item("VT-GOI-HOI-3", "Packaging", method="Steam", shelf_life_days=30).name
+		plasma = make_item("VT-GOI-PLASMA-3", "Packaging", method="Plasma", shelf_life_days=30).name
+		both = make_item("VT-GOI-CHUNG-3", "Packaging", shelf_life_days=30).name
 		listed = [row["item"] for row in packing.pack_types(make_set_type("PTS", method="Steam").name)]
 		self.assertIn(steam, listed)
 		self.assertIn(both, listed)
@@ -104,12 +104,12 @@ class TestPackTypes(IsolatedTestCase):
 		self.assertNotIn(steam, listed)
 
 	def test_pack_accessory_is_not_a_pack_type(self):
-		accessory = make_item("VT-SEAL-3", "Packaging Accessory", method="Steam", shelf_life_days=30)
+		accessory = make_item("VT-SEAL-3", "Packaging Accessory", method="Steam", shelf_life_days=30).name
 		listed = [row["item"] for row in packing.pack_types(make_set_type("PTC", method="Steam").name)]
 		self.assertNotIn(accessory, listed)
 
 	def test_pack_type_of_another_method_is_refused_when_packing(self):
-		plasma = make_item("VT-GOI-PLASMA-4", "Packaging", method="Plasma", shelf_life_days=30)
+		plasma = make_item("VT-GOI-PLASMA-4", "Packaging", method="Plasma", shelf_life_days=30).name
 		with self.assertRaises(BlockedError) as caught:
 			packing.check_pack_method(plasma, "Steam")
 		self.assertEqual(caught.exception.block.code, "PACK_TYPE_INVALID")
