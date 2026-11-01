@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton, TcStepQueue, tcPdfRetryButton, tcPrintLabelPdf */
+/* global tcErrorTitle, tcGuideButton, TcStepQueue, tcLabelButton, tcPrintLabelPdf, tcWaitingLabelsButton */
 /* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
@@ -84,7 +84,7 @@ class T4Packing {
 		this.packType = null;
 		this.maint = {}; // {mã dụng cụ: {instrument, action, oil_batch?, reason?}}
 		this.done = null; // kết quả generate_cycle_id
-		this.printNote = null; // {kind: sending | pdf | pdf-failed | waiting}
+		this.printNote = null; // {kind: ready | roll | sending | pdf | pdf-failed | waiting, printed}
 		this.rollPdf = null; // lần đổi cuộn chưa tạo được PDF: {jobs, title, broken} cho nút In lại
 		this.notice = null; // {variant, title, reason, action, items, code, technical}
 		this.lookup = null;
@@ -270,14 +270,17 @@ class T4Packing {
 		const broken = roll.failed_jobs || []; // nhãn chờ không dựng được: vẫn Waiting, cuộn đã ghi nhận
 		const title = __("Loaded roll {0} into printer {1}.", [raw, roll.printer]);
 		this.rollPdf = jobs.length ? { jobs, title, broken } : null;
-		if (!jobs.length) {
-			this.notice = this.rollNotice(title, null, broken);
-			return this.show();
+		// A-107: nhãn vừa phát hành chờ người dùng bấm In n nhãn chờ, không tự tải
+		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
+		if (mine) {
+			this.done.print = { ...this.done.print, ...mine, status: "Queued", warning: null };
+			this.printNote = { kind: "roll" };
 		}
-		return this.printReleasedPdf();
+		this.notice = this.rollNotice(title, null, broken, jobs.length);
+		return this.show();
 	}
 
-	// A-101: các nhãn vừa phát hành gộp thành một file PDF (một thao tác chỉ một lần tải)
+	// A-101, A-107: bấm nút thì các nhãn vừa phát hành gộp thành một file PDF
 	async printReleasedPdf() {
 		const pending = this.rollPdf;
 		if (!pending || pending.sending) return;
@@ -298,23 +301,24 @@ class T4Packing {
 		if (result.ended || version !== this.station.sessionVersion) return;
 		const printed = result.ok ? result.res.print_jobs : [];
 		const missing = jobs.length - printed.length;
-		this.notice = this.rollNotice(title, { result, printed, missing }, broken);
+		this.notice = this.rollNotice(title, { result, printed, missing }, broken, missing);
 		this.rollPdf = missing
 			? { ...pending, jobs: jobs.filter((job) => !printed.includes(job.print_job)) }
 			: null;
 		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
 		if (mine) {
-			this.done.print = { ...this.done.print, ...mine, status: "Queued", warning: null };
 			this.printNote = printed.includes(mine.print_job)
-				? { kind: "pdf", filename: result.filename }
-				: { kind: "pdf-failed", reason: result.reason };
+				? { kind: "pdf", filename: result.filename, printed: true }
+				: { kind: "roll" };
 		}
 		this.show();
 	}
 
-	rollNotice(title, output, broken) {
+	rollNotice(title, output, broken, pending = 0) {
 		const reasons = [];
 		const actions = [];
+		if (pending && !output)
+			reasons.push(__("{0} waiting label(s) ready to print.", [pending]));
 		if (output && output.printed.length) {
 			reasons.push(
 				__("Created {0} waiting label(s) in one PDF file: {1}", [
@@ -346,22 +350,22 @@ class T4Packing {
 			reason: reasons.join(" "),
 			items: broken.map((job) => __("Print job {0}: {1}", [job.print_job, job.error])),
 			action: actions.join(" "),
-			rollRetry: missing,
+			rollPending: pending,
 		};
 	}
 
-	// A-101: có máy in thì nhãn ra file PDF, không qua Station Agent; nhãn chờ giữ Waiting tới khi quét cuộn (F3)
+	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; nhãn chờ giữ Waiting tới khi quét cuộn (F3)
 	async handlePrint(print) {
 		this.done.print = print;
-		if (print.status === "Queued") return this.printLabelPdf();
-		this.printNote = { kind: "waiting" };
+		this.printNote = { kind: print.status === "Queued" ? "ready" : "waiting" };
 		this.show();
 	}
 
 	async printLabelPdf() {
 		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		this.printNote = { kind: "sending" };
+		const printed = Boolean(this.printNote && this.printNote.printed);
+		this.printNote = { kind: "sending", printed };
 		this.show();
 		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.pack.label_pdf", {
 			cycle_id: this.done.pack.cycle_id,
@@ -369,8 +373,8 @@ class T4Packing {
 		});
 		if (result.ended || version !== this.station.sessionVersion) return;
 		this.printNote = result.ok
-			? { kind: "pdf", filename: result.filename }
-			: { kind: "pdf-failed", reason: result.reason };
+			? { kind: "pdf", filename: result.filename, printed: true }
+			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
 
@@ -396,8 +400,8 @@ class T4Packing {
 				this.refresh();
 			},
 			reprint: () => this.reprint(),
-			"t4-label-pdf-retry": () => this.printLabelPdf(),
-			"t4-roll-pdf-retry": () => this.printReleasedPdf(),
+			"t4-label-pdf": () => this.printLabelPdf(),
+			"t4-roll-pdf": () => this.printReleasedPdf(),
 			void: () => this.voidPack(),
 			"request-override": () => this.requestOverride(),
 		};
@@ -723,7 +727,11 @@ class T4Packing {
 					{ cycle_id: cycleId, reason: values.reason, station: this.station.station },
 					(res) => {
 						this.notice = null;
-						this.handlePrint(res.print);
+						this.done.print = res.print;
+						// người dùng vừa bấm In lại và nhập lý do: ra file luôn, lỗi thì nút In lại thử lại đúng nhãn này
+						if (res.print.status !== "Queued") return this.handlePrint(res.print);
+						this.printNote = { kind: "ready", printed: true };
+						return this.printLabelPdf();
 					}
 				),
 		});
@@ -1053,7 +1061,15 @@ class T4Packing {
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
 			${tcGuideButton(notice)}
 			${override}
-			${notice.rollRetry ? tcPdfRetryButton("t4-roll-pdf-retry", this.busy || this.offline) : ""}
+			${
+				notice.rollPending
+					? tcWaitingLabelsButton(
+							"t4-roll-pdf",
+							notice.rollPending,
+							this.busy || this.offline
+					  )
+					: ""
+			}
 			${buttons}
 		</div>`;
 	}
@@ -1500,8 +1516,6 @@ class T4Packing {
 
 	barHtml() {
 		if (this.done) {
-			// gói offline chưa lên server: chưa in lại / hủy được (A-40 D1)
-			const blocked = Boolean(this.busy) || this.offline || Boolean(this.done.offline);
 			const waiting = this.labelWaiting();
 			const waitingHint = waiting
 				? `<span class="tc-hint">${esc(
@@ -1509,9 +1523,6 @@ class T4Packing {
 				  )}</span>`
 				: "";
 			return `<div class="tc-actionsbar">
-				<button type="button" class="tc-btn tc-btn-secondary" data-action="reprint"${t4Disabled(
-					blocked || waiting
-				)}>${esc(__("Reprint (reason)"))}</button>
 				${waitingHint}
 				<span class="tc-hint">${esc(__("Scan the Set ID of the next set to pack"))}</span>
 			</div>`;
@@ -1605,12 +1616,21 @@ class T4Packing {
 		if (kind === "sending") {
 			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
 		}
+		if (kind === "roll") return ""; // nút In n nhãn chờ nằm ở khối thông báo đổi cuộn
+		// gói offline chưa lên server: chưa in lại được (A-40 D1)
+		const blocked = Boolean(this.busy) || this.offline || Boolean(this.done.offline);
+		if (kind === "ready")
+			return tcLabelButton("t4-label-pdf", this.printNote.printed, blocked);
 		if (kind === "pdf") {
-			return this.alertHtml({
-				variant: "ok",
-				title: __("Label printed to PDF file: {0}", [this.printNote.filename]),
-				reason: __("Print job {0}", [print.print_job]),
-			});
+			// A-107: In lại đi qua hộp lý do và quy tắc 10 phút như cũ
+			return this.alertHtml(
+				{
+					variant: "ok",
+					title: __("Label printed to PDF file: {0}", [this.printNote.filename]),
+					reason: __("Print job {0}", [print.print_job]),
+				},
+				tcLabelButton("reprint", true, blocked)
+			);
 		}
 		if (kind === "pdf-failed") {
 			return this.alertHtml(
@@ -1623,7 +1643,7 @@ class T4Packing {
 						.filter(Boolean)
 						.join(" "),
 				},
-				tcPdfRetryButton("t4-label-pdf-retry", this.busy || this.offline)
+				tcLabelButton("t4-label-pdf", this.printNote.printed, blocked)
 			);
 		}
 		// Waiting (NO_PRINTER_FOR_METHOD, LABEL_TEMPLATE_MISSING, LABEL_RENDER_FAILED): hiển thị chung

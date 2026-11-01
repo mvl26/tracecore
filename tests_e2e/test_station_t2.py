@@ -152,7 +152,7 @@ def test_t2_touch_targets_and_font_sizes(t2_page, t2_demo):
 
 def test_t2_load_happy_path_within_three_taps(t2_page, t2_demo):
 	page = t2_page
-	sent = mock_agent(page)  # A-101: nhãn ra PDF, Agent giả phải không nhận gì
+	sent = mock_agent(page)  # A-101, A-107: nhãn chỉ ra PDF khi bấm In nhãn, Agent giả phải không nhận gì
 	taps = Taps()
 	load_machine(page, t2_demo["machine"])
 	for set_id in t2_demo["sets"]:

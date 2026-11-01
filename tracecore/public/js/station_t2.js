@@ -1,4 +1,4 @@
-/* global tcPdfRetryButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -545,17 +545,17 @@ class T2Wash {
 		);
 	}
 
-	// A-101: có máy in thì nhãn ra file PDF, không qua Station Agent; chưa có máy in thì giữ Waiting và cảnh báo
+	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; chưa có máy in thì giữ Waiting và cảnh báo
 	async handlePrint(print) {
-		if (print && print.status === "Queued") return this.printLabelPdf();
-		this.printNote = { kind: "waiting" };
+		this.printNote = { kind: print && print.status === "Queued" ? "ready" : "waiting" };
 		this.show();
 	}
 
 	async printLabelPdf() {
 		if (!this.done || (this.printNote && this.printNote.kind === "sending")) return;
 		const version = this.station.sessionVersion;
-		this.printNote = { kind: "sending" };
+		const printed = Boolean(this.printNote && this.printNote.printed);
+		this.printNote = { kind: "sending", printed };
 		this.show();
 		const result = await tcPrintLabelPdf(this.station, "tracecore.v1.wash.label_pdf", {
 			batch: this.done.batch,
@@ -563,8 +563,8 @@ class T2Wash {
 		});
 		if (result.ended || version !== this.station.sessionVersion) return;
 		this.printNote = result.ok
-			? { kind: "pdf", filename: result.filename }
-			: { kind: "pdf-failed", reason: result.reason };
+			? { kind: "pdf", filename: result.filename, printed: true }
+			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
 
@@ -1060,7 +1060,7 @@ class T2Wash {
 				this.show();
 			},
 			"t2-record": () => this.recordResult(),
-			"t2-label-pdf-retry": () => this.printLabelPdf(),
+			"t2-label-pdf": () => this.printLabelPdf(),
 			"t2-unload-reset": () => {
 				this.unload = null;
 				this.indicator = null;
@@ -1547,12 +1547,18 @@ class T2Wash {
 		if (!note || !print) return "";
 		if (note.kind === "sending")
 			return this.alertHtml({ variant: "info", title: __("Creating the label PDF...") });
+		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
+		const button = tcLabelButton("t2-label-pdf", note.printed, this.busy || this.offline);
+		if (note.kind === "ready") return button;
 		if (note.kind === "pdf") {
-			return this.alertHtml({
-				variant: "ok",
-				title: __("Label printed to PDF file: {0}", [note.filename]),
-				reason: __("Print job {0}", [print.print_job]),
-			});
+			return this.alertHtml(
+				{
+					variant: "ok",
+					title: __("Label printed to PDF file: {0}", [note.filename]),
+					reason: __("Print job {0}", [print.print_job]),
+				},
+				button
+			);
 		}
 		if (note.kind === "pdf-failed") {
 			return this.alertHtml(
@@ -1563,7 +1569,7 @@ class T2Wash {
 						.filter(Boolean)
 						.join(" "),
 				},
-				tcPdfRetryButton("t2-label-pdf-retry", this.busy || this.offline)
+				button
 			);
 		}
 		const warning = print.warning || {};

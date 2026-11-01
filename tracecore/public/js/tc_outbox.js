@@ -7,7 +7,6 @@ const TC_DB_NAME = "tracecore";
 const TC_DB_VERSION = 1;
 const TC_REPLAY_MS = 15000;
 const TC_SNAPSHOT_MS = 10 * 60 * 1000;
-const TC_LABEL_PDF_ATTEMPTS = 3; // nhãn gói phát lại: thử tạo PDF tối đa số lượt này rồi để nhãn lại ở Print Job
 const TC_MAX_ATTEMPTS = 5; // mục lỗi lặp lại quá số lần này được bỏ qua trong lượt phát lại (giữ lại, báo lỗi)
 // RPC ghi được xếp hàng khi mất mạng (A-40 Q1): T1 cả phiếu, T4 sinh Cycle ID, T8 xác nhận sử dụng
 const TC_QUEUEABLE = [
@@ -172,7 +171,7 @@ TcOutbox.db = null;
 const tcSync = {
 	running: null,
 	seq: 0,
-	replayedLabels: [], // A-101: nhãn của gói vừa phát lại, chờ gộp một file PDF
+	replayedLabels: [], // A-101, A-107: nhãn của gói vừa phát lại, chờ người dùng bấm in một file PDF
 	listeners: new Set(),
 	state: { queued: 0, sending: 0, conflicts: 0, error: null },
 
@@ -228,7 +227,7 @@ const tcSync = {
 			return;
 		}
 		if (!entries.length) {
-			await this.printReplayedLabels();
+			this.noteWaitingLabels();
 			return this.emit({ queued: 0, sending: 0 });
 		}
 		let done = 0;
@@ -275,7 +274,7 @@ const tcSync = {
 			await TcOutbox.remove(entry.key);
 			done++;
 		}
-		await this.printReplayedLabels();
+		this.noteWaitingLabels();
 		const queued = await TcOutbox.count();
 		this.emit({
 			queued,
@@ -303,12 +302,16 @@ const tcSync = {
 			print_job: print.print_job,
 			station: entry.station,
 			token: entry.args.token,
-			attempts: 0,
 		});
 	},
 
-	// mỗi trạm một file PDF cho cả lượt phát lại (một thao tác chỉ một lần tải); lỗi thì thử ở lượt sau, không chặn đồng bộ
-	async printReplayedLabels() {
+	// A-107: không tự tải; báo số nhãn chờ để màn trạm hiện nút In n nhãn chờ
+	noteWaitingLabels() {
+		if (this.replayedLabels.length) this.emit({ waiting_labels: this.replayedLabels.length });
+	},
+
+	// bấm nút: mỗi trạm một file PDF cho cả lượt phát lại; lỗi thì nhãn ở lại, nút vẫn còn
+	async printWaitingLabels() {
 		const labels = this.replayedLabels;
 		if (!labels.length) return;
 		this.replayedLabels = [];
@@ -316,12 +319,10 @@ const tcSync = {
 			const group = labels.filter((label) => label.station === station);
 			const reason = await this.requestLabelsPdf(station, group);
 			if (!reason) continue;
-			for (const label of group) label.attempts += 1;
-			this.replayedLabels.push(
-				...group.filter((label) => label.attempts < TC_LABEL_PDF_ATTEMPTS)
-			);
+			this.replayedLabels.push(...group);
 			this.emit({ label_error: reason, label_file: null });
 		}
+		this.emit({ waiting_labels: this.replayedLabels.length });
 	},
 
 	// trả lý do lỗi, hoặc null khi đã lưu file

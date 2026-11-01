@@ -35,11 +35,20 @@
 		return { ok: false, reason: station.failureCause(null, res) };
 	};
 
-	// A-101: nút In lại của khối cảnh báo khi chưa tạo được PDF
-	window.tcPdfRetryButton = function (action, disabled) {
+	const labelButton = function (action, text, disabled) {
 		return `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="${esc(
 			action
-		)}"${disabled ? " disabled" : ""}>${esc(__("Print again"))}</button></div>`;
+		)}"${disabled ? " disabled" : ""}>${esc(text)}</button></div>`;
+	};
+
+	// A-107: nhãn chỉ ra file khi người dùng bấm; in rồi thì cùng nút thành In lại
+	window.tcLabelButton = function (action, printed, disabled) {
+		return labelButton(action, printed ? __("Reprint") : __("Print label"), disabled);
+	};
+
+	// A-107: các nhãn chờ (đổi cuộn, gói phát lại) gộp một file khi bấm
+	window.tcWaitingLabelsButton = function (action, count, disabled) {
+		return labelButton(action, __("Print {0} waiting label(s)", [count]), disabled);
 	};
 
 	// #1832 cho mọi màn: nhãn liên kết của ô quét luôn theo placeholder mà màn đang đặt

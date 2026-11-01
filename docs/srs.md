@@ -61,6 +61,7 @@
 | 1.11 A-98 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-98 của `docs/architecture.md`: Tiêu đề tab theo trạm, Tổng quan hiện số liệu ngay, thương hiệu đăng nhập là bước tay. Không đổi mã FR. |
 | 1.11 A-105 | 2026-11-01 | Miyano (dev lead, người dùng quyết định ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-105 của `docs/architecture.md`: R02 chạy RPC T4, T6, T7, T8 theo ma trận phân quyền, thay phần A-91, NAV-04 giới hạn R02 ở giải phóng; lỗi tải khi mở màn không tự gọi lại. Không đổi mã FR. |
 | 1.11 A-106 | 2026-11-01 | Miyano (dev lead, người dùng quyết định ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-106 của `docs/architecture.md`: sửa FR-M2-11.4, FR-M2-10.3 cho T5: KTV, R02, R01 giải phóng mẻ trong dải không PIN; mẻ ngoài dải chỉ R01 tại trạm với PIN và lý do. Rủi ro an toàn người bệnh đã nêu trong amendment. T2 không đổi. Không đổi mã FR. |
+| 1.11 A-107 | 2026-11-01 | Miyano (dev lead, người dùng quyết định ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-107 của `docs/architecture.md`, sửa A-101: nhãn T2, T5, T4 chỉ ra file PDF khi bấm In nhãn, In lại, In n nhãn chờ. Không đổi mã FR. |
 
 ---
 

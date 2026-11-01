@@ -541,7 +541,7 @@ class T5Release {
 				this.back.openDailyTest();
 				if (this.back.dailyTestScreen) this.back.dailyTestScreen.back = this;
 			},
-			"t5-label-pdf-retry": () => this.back.printLabelPdf(),
+			"t5-label-pdf": () => this.back.printLabelPdf(),
 			"t5b-pick": () => this.pickLoad(data.load, data.equipment),
 			"t5b-open-data": () => {
 				if (this.busy || !this.ctx) return;

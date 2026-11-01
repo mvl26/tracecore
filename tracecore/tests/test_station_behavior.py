@@ -460,61 +460,117 @@ SCREENS = (
 )
 
 
+TICKS = "for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();"
+
+
 class TestLabelPrintsToPdf(FrappeTestCase):
-	"""A-101: T2, T5, T4 có máy in thì tự lưu PDF nhãn, không gọi Station Agent; không có nút Lưu PDF."""
+	"""A-107: T2, T5, T4 không tự lưu PDF; có máy in thì bấm In nhãn mới lưu, không gọi Station Agent."""
 
 	def run_screen(self, screen, body):
 		name, path, cls, done = screen[:4]
 		return run_js(self, [ERR, path], [[], [cls]], FAKE_STATION + done + PDF_STUBS + body)
 
-	def test_queued_label_is_fetched_saved_once_and_never_sent_to_the_agent(self):
-		for screen in SCREENS:
-			out = self.run_screen(
-				screen,
-				"""
-				await screen.handlePrint(screen.done.print);
-				emit({reads, saved, agent, note: screen.printNoteHtml()});
-				""",
-			)
-			[[method, args]] = out["reads"]
-			self.assertEqual(method, screen[4])
-			self.assertEqual({key: args[key] for key in screen[5]}, screen[5])
-			self.assertEqual(out["saved"], [["JVBERg==", "X.pdf"]])
-			self.assertEqual(out["agent"], [])
-			self.assertIn("tc-alert-ok", out["note"])
-			self.assertIn("Label printed to PDF file: X.pdf", out["note"])
+	def click(self, screen):
+		return f'screen.onAction("{screen[0]}-label-pdf", element()); {TICKS}'
 
-	def test_failure_warns_inline_keeps_the_code_and_retry_saves(self):
+	def test_label_is_not_saved_until_the_button_is_clicked(self):
 		for screen in SCREENS:
-			out = self.run_screen(
-				screen,
-				f"""
-				answer = {{ok: false, error: {{code: "LABEL_PDF_FAILED", reason: "no tool"}}}};
-				await screen.handlePrint(screen.done.print);
-				const failed = screen.printNoteHtml();
-				const savedBefore = saved.length;
-				answer = {{ok: true, pdf_b64: "JVBERg==", filename: "X.pdf", print_job: "PJ-1"}};
-				screen.onAction("{screen[0]}-label-pdf-retry", element());
-				for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();
-				emit({{failed, savedBefore, saved, note: screen.printNoteHtml(), reads: reads.length}});
-				""",
-			)
-			self.assertIn("tc-alert-warn", out["failed"])
-			self.assertIn("no tool", out["failed"])
-			self.assertRegex(out["failed"], rf'data-action="{screen[0]}-label-pdf-retry"')
-			self.assertEqual(out["savedBefore"], 0)
-			self.assertEqual(len(out["saved"]), 1)
-			self.assertIn("tc-alert-ok", out["note"])
-			self.assertEqual(out["reads"], 2)
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					await screen.handlePrint(screen.done.print);
+					const before = {{reads: reads.length, saved: saved.length, note: screen.printNoteHtml()}};
+					{self.click(screen)}
+					emit({{before, reads, saved, agent, note: screen.printNoteHtml()}});
+					""",
+				)
+				self.assertEqual((out["before"]["reads"], out["before"]["saved"]), (0, 0))
+				self.assertIn(f'data-action="{screen[0]}-label-pdf"', out["before"]["note"])
+				self.assertIn("tc-btn-primary", out["before"]["note"])
+				self.assertIn("Print label", out["before"]["note"])
+				[[method, args]] = out["reads"]
+				self.assertEqual(method, screen[4])
+				self.assertEqual({key: args[key] for key in screen[5]}, screen[5])
+				self.assertEqual(out["saved"], [["JVBERg==", "X.pdf"]])
+				self.assertEqual(out["agent"], [])
+				self.assertIn("tc-alert-ok", out["note"])
+				self.assertIn("Label printed to PDF file: X.pdf", out["note"])
+				self.assertIn("Reprint", out["note"])
+				self.assertNotIn("Print label", out["note"])
+
+	def test_plain_reprint_at_t2_and_t5_saves_again(self):
+		for screen in SCREENS[:2]:
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					await screen.handlePrint(screen.done.print);
+					{self.click(screen)}
+					{self.click(screen)}
+					emit({{saved, note: screen.printNoteHtml()}});
+					""",
+				)
+				self.assertEqual(len(out["saved"]), 2)
+				self.assertIn('-label-pdf"', out["note"])
+
+	def test_t4_reprint_asks_the_reason_then_saves(self):
+		out = self.run_screen(
+			SCREENS[2],
+			f"""
+			await screen.handlePrint(screen.done.print);
+			{self.click(SCREENS[2])}
+			let dialog = null;
+			const calls = [];
+			screen.openDialog = (d) => {{ dialog = d; }};
+			screen.request = (method, args, ok) => {{ calls.push([method, args.reason]); return ok({{print: {{status: "Queued", print_job: "PJ-9"}}}}); }};
+			const note = screen.printNoteHtml();
+			screen.onAction("reprint", element());
+			const beforeReason = saved.length;
+			dialog.onSubmit({{reason: "Nhãn rách"}});
+			{TICKS}
+			emit({{note, calls, beforeReason, saved}});
+			""",
+		)
+		self.assertIn('data-action="reprint"', out["note"])
+		self.assertEqual(out["beforeReason"], 1)
+		self.assertEqual(out["calls"], [["tracecore.v1.pack.reprint_label", "Nhãn rách"]])
+		self.assertEqual(len(out["saved"]), 2)
+
+	def test_failure_warns_inline_keeps_the_code_and_the_button_stays(self):
+		for screen in SCREENS:
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					answer = {{ok: false, error: {{code: "LABEL_PDF_FAILED", reason: "no tool"}}}};
+					await screen.handlePrint(screen.done.print);
+					{self.click(screen)}
+					const failed = screen.printNoteHtml();
+					const savedBefore = saved.length;
+					answer = {{ok: true, pdf_b64: "JVBERg==", filename: "X.pdf", print_job: "PJ-1"}};
+					{self.click(screen)}
+					emit({{failed, savedBefore, saved, note: screen.printNoteHtml(), reads: reads.length}});
+					""",
+				)
+				self.assertIn("tc-alert-warn", out["failed"])
+				self.assertIn("no tool", out["failed"])
+				self.assertIn(f'data-action="{screen[0]}-label-pdf"', out["failed"])
+				self.assertIn("Print label", out["failed"])
+				self.assertEqual(out["savedBefore"], 0)
+				self.assertEqual(len(out["saved"]), 1)
+				self.assertIn("tc-alert-ok", out["note"])
+				self.assertEqual(out["reads"], 2)
 
 	def test_network_error_is_a_warning_not_an_exception(self):
 		for screen in SCREENS:
 			out = self.run_screen(
 				screen,
-				"""
+				f"""
 				answer = new Error("boom");
 				await screen.handlePrint(screen.done.print);
-				emit({note: screen.printNoteHtml(), saved});
+				{self.click(screen)}
+				emit({{note: screen.printNoteHtml(), saved}});
 				""",
 			)
 			self.assertIn("net down", out["note"])
@@ -524,11 +580,11 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		for screen in SCREENS:
 			out = self.run_screen(
 				screen,
-				"""
-				answer = Object.assign(new Error("ended"), {sessionEnded: true});
-				screen.printNote = null;
+				f"""
+				answer = Object.assign(new Error("ended"), {{sessionEnded: true}});
 				await screen.handlePrint(screen.done.print);
-				emit({saved});
+				{self.click(screen)}
+				emit({{saved}});
 				""",
 			)
 			self.assertEqual(out["saved"], [])
@@ -545,6 +601,7 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 			)
 			self.assertEqual((out["reads"], out["saved"], out["agent"]), ([], [], []))
 			self.assertIn("No printer r", out["note"])
+			self.assertNotIn("label-pdf", out["note"])
 
 	def test_cards_have_no_label_pdf_button_and_only_the_code(self):
 		for screen in SCREENS[:2]:
@@ -562,18 +619,24 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 			for gone in ("tcCodeWithPdfHtml", "sendToAgent", "8765", "AGENT_URL"):
 				self.assertNotIn(gone, source, msg=f"{path}: {gone}")
 
-	def test_t4_roll_release_makes_one_merged_pdf_call(self):
+	def test_t4_roll_release_waits_for_the_button_then_makes_one_merged_pdf_call(self):
 		out = self.run_screen(
 			SCREENS[2],
-			"""
-			answer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf",
-				print_jobs: ["PJ-1", "PJ-2"], skipped: []};
-			await t4.onRoll({printer: "P", method: "Steam", label_type: "L",
-				released_jobs: [{print_job: "PJ-1", zpl: "z", printer: "P"}, {print_job: "PJ-2", zpl: "z", printer: "P"}],
-				failed_jobs: []}, "CN-00001");
-			emit({reads, saved, agent, notice: t4.notice, note: t4.printNoteHtml()});
+			f"""
+			answer = {{ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf",
+				print_jobs: ["PJ-1", "PJ-2"], skipped: []}};
+			await t4.onRoll({{printer: "P", method: "Steam", label_type: "L",
+				released_jobs: [{{print_job: "PJ-1", zpl: "z", printer: "P"}}, {{print_job: "PJ-2", zpl: "z", printer: "P"}}],
+				failed_jobs: []}}, "CN-00001");
+			const before = {{reads: reads.length, saved: saved.length, html: t4.noticeHtml()}};
+			t4.onAction("t4-roll-pdf", element());
+			{TICKS}
+			emit({{before, reads, saved, agent, notice: t4.notice, note: t4.printNoteHtml()}});
 			""",
 		)
+		self.assertEqual((out["before"]["reads"], out["before"]["saved"]), (0, 0))
+		self.assertIn('data-action="t4-roll-pdf"', out["before"]["html"])
+		self.assertIn("Print 2 waiting label(s)", out["before"]["html"])
 		[[method, args]] = out["reads"]
 		self.assertEqual(method, "tracecore.v1.pack.waiting_labels_pdf")
 		self.assertEqual(args["print_jobs"], ["PJ-1", "PJ-2"])
@@ -583,26 +646,45 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		self.assertIn("labels.pdf", out["notice"]["reason"])
 		self.assertIn("tc-alert-ok", out["note"])
 
-	def test_t4_roll_failure_warns_and_offers_retry(self):
+	def test_t4_roll_failure_warns_and_keeps_the_button(self):
 		out = self.run_screen(
 			SCREENS[2],
-			"""
-			answer = {ok: false, error: {reason: "no tool"}};
-			await t4.onRoll({printer: "P", method: "Steam", label_type: "L",
-				released_jobs: [{print_job: "PJ-1", zpl: "z", printer: "P"}], failed_jobs: []}, "CN-00001");
+			f"""
+			answer = {{ok: false, error: {{reason: "no tool"}}}};
+			await t4.onRoll({{printer: "P", method: "Steam", label_type: "L",
+				released_jobs: [{{print_job: "PJ-1", zpl: "z", printer: "P"}}], failed_jobs: []}}, "CN-00001");
+			t4.onAction("t4-roll-pdf", element());
+			{TICKS}
 			const failed = t4.noticeHtml();
-			answer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []};
-			t4.onAction("t4-roll-pdf-retry", element());
-			for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();
-			emit({failed, reads: reads.length, saved, notice: t4.notice});
+			answer = {{ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []}};
+			t4.onAction("t4-roll-pdf", element());
+			{TICKS}
+			emit({{failed, reads: reads.length, saved, notice: t4.notice}});
 			""",
 		)
 		self.assertIn("tc-alert-warn", out["failed"])
 		self.assertIn("no tool", out["failed"])
-		self.assertIn('data-action="t4-roll-pdf-retry"', out["failed"])
+		self.assertIn('data-action="t4-roll-pdf"', out["failed"])
 		self.assertEqual(out["reads"], 2)
 		self.assertEqual(len(out["saved"]), 1)
 		self.assertEqual(out["notice"]["variant"], "info")
+
+	def test_t5_step_two_load_card_has_the_button(self):
+		out = run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION
+			+ T5_DONE
+			+ PDF_STUBS
+			+ """
+			await screen.handlePrint(screen.done.print);
+			const release = new T5Release(station, screen);
+			release.ctx = null;
+			emit(release.doneHtml());
+			""",
+		)
+		self.assertIn('data-action="t5-label-pdf"', out)
 
 	def test_strings_are_translated(self):
 		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
@@ -611,7 +693,11 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		for text in (
 			"Label printed to PDF file: {0}",
 			"Creating the label PDF...",
-			"Print again",
+			"Print label",
+			"Reprint",
+			"Print {0} waiting label(s)",
+			"{0} waiting label(s) ready to print.",
+			"Labels of offline packs are ready to print.",
 			"Label PDF was not created; code {0} is kept.",
 			"Created {0} waiting label(s) in one PDF file: {1}",
 			"{0} waiting label(s) have no PDF yet.",
@@ -649,41 +735,43 @@ class TestReplayedLabels(FrappeTestCase):
 	def run_outbox(self, body):
 		return run_js(self, ["public/js/tc_outbox.js"], [["tcSync", "TcOutbox"]], OUTBOX_STUBS + body)
 
-	def test_one_pdf_for_the_whole_replay_pass(self):
+	def test_replay_saves_nothing_until_the_button_then_one_pdf(self):
 		out = self.run_outbox(
 			"""
 			entries.push(entry("PJ-1"), entry("PJ-2"));
 			await tcSync.replayAll();
-			emit({posts, saved, state: tcSync.state});
+			const before = {posts: posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length,
+				saved: saved.length, waiting: tcSync.state.waiting_labels};
+			await tcSync.printWaitingLabels();
+			emit({before, posts, saved, state: tcSync.state});
 			"""
 		)
+		self.assertEqual(out["before"], {"posts": 0, "saved": 0, "waiting": 2})
 		pdf_calls = [post for post in out["posts"] if post[0].endswith("waiting_labels_pdf")]
 		self.assertEqual(len(pdf_calls), 1)
 		self.assertEqual(pdf_calls[0][1]["print_jobs"], ["PJ-1", "PJ-2"])
 		self.assertEqual((pdf_calls[0][1]["station"], pdf_calls[0][1]["token"]), ("TR-4", "tok"))
 		self.assertEqual(out["saved"], [["JVBERg==", "labels.pdf"]])
 		self.assertEqual(out["state"]["label_file"], "labels.pdf")
+		self.assertEqual(out["state"]["waiting_labels"], 0)
 		self.assertFalse(any("8765" in post[0] for post in out["posts"]))
 
-	def test_failure_retries_on_the_next_pass_then_reports(self):
+	def test_failure_keeps_the_labels_for_the_next_click(self):
 		out = self.run_outbox(
 			"""
 			entries.push(entry("PJ-1"));
 			pdfAnswer = {ok: false, error: {reason: "no tool"}};
 			await tcSync.replayAll();
-			const first = tcSync.state.label_error;
-			await tcSync.replayAll();
-			await tcSync.replayAll();
-			const count = posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length;
-			await tcSync.replayAll();
-			const after = posts.filter((post) => post[0].endsWith("waiting_labels_pdf")).length;
-			emit({first, count, after, saved});
+			await tcSync.printWaitingLabels();
+			const failed = {error: tcSync.state.label_error, waiting: tcSync.state.waiting_labels};
+			pdfAnswer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1"], skipped: []};
+			await tcSync.printWaitingLabels();
+			emit({failed, saved, waiting: tcSync.state.waiting_labels});
 			"""
 		)
-		self.assertEqual(out["first"], "no tool")
-		self.assertEqual(out["count"], 3)
-		self.assertEqual(out["after"], 3)  # hết lượt thử: nhãn nằm lại Print Job Queued, không gọi mãi
-		self.assertEqual(out["saved"], [])
+		self.assertEqual(out["failed"], {"error": "no tool", "waiting": 1})
+		self.assertEqual(len(out["saved"]), 1)
+		self.assertEqual(out["waiting"], 0)
 
 
 class TestScanShell(FrappeTestCase):
@@ -740,7 +828,8 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			const station = makeStation();
 			station.session = {{token: "tok", roles: {roles!r}}};
 			const screen = new T5Release(station, {{}});
-			emit(screen.releaseHtml({{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}}, {list(missing)!r}));
+			screen.ctx = {{name: "ME-261101-09", needs_review: {str(needs_review).lower()}}};
+			emit(screen.releaseHtml(screen.ctx, {list(missing)!r}));
 			""",
 		)
 
