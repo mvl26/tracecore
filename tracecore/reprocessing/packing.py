@@ -89,6 +89,20 @@ def _pack_type_days(item_code):
 	)
 
 
+def check_pack_method(pack_type, method):
+	"""Loại gói khác phương pháp tiệt khuẩn của bộ → PACK_TYPE_INVALID (A-97); để trống là dùng được cho mọi phương pháp."""
+	allowed = frappe.db.get_value("Item", pack_type, "tc_compatible_method")
+	if allowed and allowed != method:
+		raise _blocked(
+			"PACK_TYPE_INVALID",
+			_("Pack type cannot be used"),
+			_("Pack type {0} is for {1}; this set is sterilized by {2}.").format(
+				pack_type, _(allowed), _(method)
+			),
+			_("Choose a pack type for the method of this set."),
+		)
+
+
 def compute_expiry(packed_on, pack_type, set_type):
 	"""Hạn dùng = ngày đóng gói + min(hạn loại gói, hạn ghi đè của loại bộ) (D4).
 
@@ -106,7 +120,7 @@ def compute_expiry(packed_on, pack_type, set_type):
 
 
 def pack_types(set_type):
-	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng và có hạn lưu > 0.
+	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng, có hạn lưu > 0, đúng phương pháp của bộ (A-97).
 
 	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days"}``; loại gói mặc định của loại bộ (nếu còn
 	dùng được) đứng đầu, các loại khác theo tên.
@@ -114,10 +128,11 @@ def pack_types(set_type):
 	rows = frappe.get_all(
 		"Item",
 		filters={"tc_item_group_cssd": "Packaging", "disabled": 0, "tc_shelf_life_days": [">", 0]},
-		fields=["name", "item_name", "tc_shelf_life_days"],
+		fields=["name", "item_name", "tc_shelf_life_days", "tc_compatible_method"],
 		order_by="item_name asc, name asc",
 	)
-	default = frappe.db.get_value("Instrument Set Type", set_type, "default_pack_type")
+	default, method = frappe.db.get_value("Instrument Set Type", set_type, ["default_pack_type", "method"])
+	rows = [row for row in rows if not row.tc_compatible_method or row.tc_compatible_method == method]
 	rows.sort(key=lambda row: row.name != default)  # ổn định: mặc định lên đầu, giữ thứ tự tên
 	return [
 		{"item": row.name, "item_name": row.item_name, "shelf_life_days": cint(row.tc_shelf_life_days)}
@@ -449,6 +464,7 @@ def _generate(
 		raise _bom_incomplete(missing)
 	packed_at = _system_time(client_ts)
 	ci = resolve_ci_batch(ci_batch, set_type.method, packed_at.date())
+	check_pack_method(pack_type, set_type.method)
 	expiry = compute_expiry(packed_at.date(), pack_type, set_type.name)
 	printer = core_print.select_printer(station, set_type.method)
 

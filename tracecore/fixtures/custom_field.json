@@ -6,7 +6,7 @@
   "fieldname": "tc_item_group_cssd",
   "fieldtype": "Select",
   "label": "CSSD Item Group",
-  "options": "\nPackaging\nChemical Indicator\nLabel\nLubricant\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther",
+  "options": "\nPackaging\nPackaging Accessory\nChemical Indicator\nLabel\nLubricant\nBiological Indicator\nTest\nPouch\nFilter Box\nChemical\nOther",
   "insert_after": "item_group"
  },
  {

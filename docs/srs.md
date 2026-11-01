@@ -52,6 +52,7 @@
 | 1.11 A-94 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-94 của `docs/architecture.md`: T1 kiểm đếm bằng bảng số lượng thực tế theo dòng, thay ô tick (FR-M2-23, .1, .2, .6; BRU-REP-012; UC-05). Không đổi mã FR. |
 | 1.11 A-95 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-95 của `docs/architecture.md`: T6 có hàng đợi gói chờ nhập kho; T7 hiện cơ số thiếu theo khoa (FR-M2-13.2, UC-12). Không đổi mã FR. |
 | 1.11 A-96 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-96 của `docs/architecture.md`: T8 có tên khoa, Gói tại khoa, Đã dùng chờ trả; banner khẩn ở T8 bỏ cảnh báo chỉ dành cho CSSD. Không đổi mã FR. |
+| 1.11 A-97 | 2026-11-01 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-97 của `docs/architecture.md`: Loại gói ở T4 lọc theo phương pháp tiệt khuẩn, phụ kiện gói tách nhóm riêng. Không đổi mã FR. |
 
 ---
 
