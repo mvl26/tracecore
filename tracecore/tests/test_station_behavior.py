@@ -969,3 +969,238 @@ class TestRevealNotice(FrappeTestCase):
 			""",
 		)
 		self.assertEqual(out["code"], "CONFIRM_INCOMPLETE")
+
+
+class TestT1DifferingQuantityWording(FrappeTestCase):
+	"""Lệch số lượng không phải "chưa xác nhận"; gắn cờ do lệch không gọi là "ghi chú bất thường"."""
+
+	def confirm(self, setup):
+		return run_js(
+			self,
+			[ERR, T1],
+			[[], ["T1Receiving"]],
+			FAKE_STATION
+			+ T1_ITEM
+			+ f"""
+			t1.request = (name, args, done) => done({{item: {{set_id: "S1", needs_review: 1}}}});
+			t1.upsertSummary = () => {{}};
+			t1.waiting = [];
+			item.lines[0].actual_qty = 1;
+			{setup}
+			t1.confirmSet(true);
+			emit(t1.notice);
+			""",
+		)
+
+	def test_prompt_title_says_the_quantity_differs(self):
+		out = run_js(
+			self,
+			[ERR, T1],
+			[[], ["T1Receiving"]],
+			FAKE_STATION + T1_ITEM + "item.lines[0].actual_qty = 1; t1.confirmSet(); emit(t1.notice);",
+		)
+		self.assertEqual(out["title"], "Quantity differs from the set list")
+
+	def test_flagged_by_mismatch_without_note(self):
+		self.assertEqual(self.confirm("")["reason"], "The set quantity differs; assembly will check it.")
+
+	def test_flagged_with_a_note_keeps_abnormal_note_wording(self):
+		self.assertIn("abnormal note", self.confirm('t1.notes.S1 = "Thieu keo";')["reason"])
+
+	def test_summary_counts_sets_needing_review(self):
+		out = run_js(
+			self,
+			[ERR, T1],
+			[[], ["T1Receiving"]],
+			FAKE_STATION
+			+ T1_ITEM
+			+ """
+			t1.receipt.items = [{set_id: "S1", set_name: "Bo", needs_review: 1, confirmed: 1}];
+			emit(t1.listHtml());
+			""",
+		)
+		self.assertIn("1 sets received · 1 need review", out)
+		self.assertNotIn("abnormal note", out)
+		self.assertIn("Needs review", out)
+
+
+class TestPrintWarningTitle(FrappeTestCase):
+	"""Trạm chưa có máy in thì nói đúng thế; lỗi gửi phần mềm trạm giữ nguyên lời."""
+
+	CASES = (("T5Load", T5, "ME-1", "load"), ("T2Wash", T2, "LR-1", "batch"))
+
+	def note(self, cls, path, key, code):
+		return run_js(
+			self,
+			[ERR, path],
+			[[], [cls]],
+			FAKE_STATION
+			+ f"""
+			const screen = new {cls}(makeStation());
+			screen.done = {{{key}: "X", print: {{print_job: "PJ-1", printer: null,
+				warning: {{code: "{code}", reason: "r", action: "a"}}}}}};
+			screen.printNote = {{kind: "waiting"}};
+			emit(screen.printNoteHtml());
+			""",
+		)
+
+	def test_no_printer_title(self):
+		for cls, path, _code, key in self.CASES:
+			with self.subTest(cls=cls):
+				out = self.note(cls, path, key, "NO_PRINTER_AT_STATION")
+				self.assertIn("No printer at this station, the label is waiting", out)
+				self.assertNotIn("Station Agent", out)
+
+	def test_agent_failure_wording_stays(self):
+		for cls, path, _code, key in self.CASES:
+			with self.subTest(cls=cls):
+				self.assertIn("Station Agent", self.note(cls, path, key, "LABEL_RENDER_FAILED"))
+
+
+class TestDecimalDisplay(FrappeTestCase):
+	"""CLAUDE.md: dấu phẩy thập phân, cả số điền sẵn trong ô và nhãn dải giá trị."""
+
+	SCHEMA = """
+	frappe = {boot: {time_zone: {system: "Asia/Ho_Chi_Minh"}}};
+	const context = {
+		batch: "LR-1", sets: [], equipment: {name: "M1"}, prefill: {},
+		parameter_schema: [{parameter_name: "Nhiet do", unit: "C", required: 1, min_value: 90.5, max_value: 95.5, default_value: 92.5}],
+	};
+	"""
+
+	def test_helper(self):
+		out = run_js(
+			self,
+			[ERR],
+			[[]],
+			"""
+			emit([92.5, "92.5", "-1.25", 92, "92,5", "abc.def", null, "1.2.3"].map((value) => window.tcDecimal(value)));
+			""",
+		)
+		self.assertEqual(out, ["92,5", "92,5", "-1,25", "92", "92,5", "abc.def", "", "1.2.3"])
+
+	def test_t5_form_shows_commas(self):
+		out = run_js(
+			self,
+			[ERR, T5],
+			[[], ["T5Load"]],
+			FAKE_STATION
+			+ self.SCHEMA
+			+ """
+			const t5 = new T5Load(makeStation());
+			t5.data = {context};
+			context.equipment = {name: "M1"};
+			t5.form = {values: {"Nhiet do": window.tcDecimal(92.5)}, started: "", ended: "", alerts: "no", alertsText: "", reason: "", card: ""};
+			emit(t5.formHtml());
+			""",
+		)
+		self.assertIn('value="92,5"', out)
+		self.assertIn("90,5", out)
+		self.assertIn("95,5", out)
+		self.assertNotIn("92.5", out)
+
+	def test_t2_form_shows_commas(self):
+		out = run_js(
+			self,
+			[ERR, T2],
+			[[], ["T2Wash"]],
+			FAKE_STATION
+			+ self.SCHEMA
+			+ """
+			const t2 = new T2Wash(makeStation());
+			t2.unload = {context};
+			t2.form = {values: {"Nhiet do": window.tcDecimal(92.5)}, started: "", ended: "", alerts: "no", alertsText: "", reason: "", card: "", chemicalName: ""};
+			emit(t2.manualFormHtml(context));
+			""",
+		)
+		self.assertIn('value="92,5"', out)
+		self.assertIn("90,5", out)
+		self.assertNotIn("92.5", out)
+
+	def test_prefill_values_become_commas(self):
+		for cls, path, screen_name, args in (
+			("T5Load", T5, "t5", "t5.data = {};"),
+			("T2Wash", T2, "t2", "t2.unload = {};"),
+		):
+			with self.subTest(cls=cls):
+				out = run_js(
+					self,
+					[ERR, path],
+					[[], [cls]],
+					FAKE_STATION
+					+ f"""
+					frappe = {{boot: {{time_zone: {{system: "Asia/Ho_Chi_Minh"}}}}}};
+					const {screen_name} = new {cls}(makeStation());
+					{args}
+					{screen_name}.show = () => {{}};
+					{screen_name}.request = (method, rpc, done) => done({{
+						load: {{packs: [], sets: [], equipment: {{name: "M"}}, prefill: {{values: {{A: 92.5}}}}, params: [{{parameter_name: "B", value: 1.5}}]}},
+						batch: {{sets: [], equipment: {{name: "M"}}, prefill: {{values: {{A: 92.5}}}}, machine_data: {{parameters: [{{parameter_name: "B", value: 1.5}}]}}}},
+					}});
+					{screen_name}.fetchContext();
+					emit({screen_name}.form.values);
+					""",
+				)
+				self.assertEqual(out, {"A": "92,5", "B": "1,5"})
+
+
+class TestT2SetNames(FrappeTestCase):
+	"""#1836: Bộ trong lô hiện tên bộ kèm mã, mã giữ font mã định danh."""
+
+	EXPECTED = 'Bo mo (<span class="tc-mono">S1</span>)'
+
+	def t2(self, body):
+		return run_js(self, [ERR, T2], [[], ["T2Wash"]], FAKE_STATION + T2_DONE + body)
+
+	def test_done_card(self):
+		out = self.t2('t2.done.set_rows = [{set_id: "S1", set_name: "Bo mo"}]; emit(t2.doneHtml());')
+		self.assertIn(self.EXPECTED, out)
+
+	def test_lookup_card(self):
+		out = self.t2(
+			"""
+			emit(t2.lookupHtml({batch: "LR-1", status: "Running", equipment: {name: "M"}, program: {},
+				chemicals: [], sets: [{set_id: "S1", set_name: "Bo mo"}]}));
+			"""
+		)
+		self.assertIn(self.EXPECTED, out)
+
+	def test_running_card(self):
+		out = self.t2(
+			"""
+			t2.statusBadge = () => "";
+			emit(t2.batchCardHtml({batch: "LR-1", sets: ["S1"], set_rows: [{set_id: "S1", set_name: "Bo mo"}]}));
+			"""
+		)
+		self.assertIn(self.EXPECTED, out)
+
+	def test_code_only_when_name_unknown(self):
+		out = self.t2("emit(t2.doneHtml());")
+		self.assertIn('<span class="tc-mono">S1</span>', out)
+
+
+class TestDailyTestNoTestLabel(FrappeTestCase):
+	def test_not_applicable_uses_the_normal_font(self):
+		source = frappe.read_file(frappe.get_app_path("tracecore", "public/js/station_daily_test.js"))
+		start = source.index("const noTest")
+		self.assertNotIn("tc-tag", source[start : source.index("return `<tr>", start)])
+
+
+class TestT5ConfirmLine(FrappeTestCase):
+	def test_shows_the_employee_name_not_the_code(self):
+		out = run_js(
+			self,
+			[ERR, T5],
+			[[], ["T5Load"]],
+			FAKE_STATION
+			+ """
+			const station = makeStation();
+			station.session = {employee: "NV-00009", employee_name: "An Nguyen", roles: []};
+			const t5 = new T5Load(station);
+			t5.data = {context: {equipment: {name: "M1"}, parameter_schema: []}};
+			t5.form = {values: {}, started: "", ended: "", alerts: "no", alertsText: "", reason: "", card: ""};
+			emit(t5.formHtml());
+			""",
+		)
+		self.assertIn("I, An Nguyen, confirm", out)
+		self.assertNotIn("NV-00009", out)

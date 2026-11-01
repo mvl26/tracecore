@@ -125,6 +125,13 @@ class TestAwaitingResult(IndicatorCase):
 		self.assertIn(batch, [row["batch"] for row in washing.awaiting_batches()])
 		self.assertNotIn(batch, [row["batch"] for row in washing.running_batches()])
 
+	def test_listed_batches_carry_set_names(self):
+		"""#1836: thẻ lô đang chờ hiện tên bộ kèm mã."""
+		batch, _sets = self.awaiting(1)
+		row = next(row for row in washing.awaiting_batches() if row["batch"] == batch)
+		self.assertEqual([item["set_id"] for item in row["set_rows"]], row["sets"])
+		self.assertTrue(row["set_rows"][0]["set_name"])
+
 	def test_read_later_needs_only_the_batch_qr(self):
 		batch, _sets = self.awaiting(1)
 		self.assertEqual(

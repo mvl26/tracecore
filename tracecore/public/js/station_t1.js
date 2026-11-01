@@ -564,7 +564,7 @@ class T1Receiving {
 			this.notice = {
 				variant: "warn",
 				code: "CONFIRM_INCOMPLETE",
-				title: __("Some components are not confirmed"),
+				title: __("Quantity differs from the set list"),
 				reason: __(
 					"{0} component(s) differ from the BOM quantity and there is no abnormal note.",
 					[missing.length]
@@ -601,9 +601,11 @@ class T1Receiving {
 				this.notice = {
 					variant: "ok",
 					title: __("Set {0} confirmed", [res.item.set_id]),
-					reason: res.item.needs_review
-						? __("The set has an abnormal note; assembly will check it in detail.")
-						: "",
+					reason: !res.item.needs_review
+						? ""
+						: anyway && !note
+						? __("The set quantity differs; assembly will check it.")
+						: __("The set has an abnormal note; assembly will check it in detail."),
 					action: __("Scan the next set, or submit the receipt."),
 				};
 				this.imagesReady = false;
@@ -1309,7 +1311,7 @@ class T1Receiving {
 					  )}">${esc(__("Open"))}</button>`;
 				const flag = row.needs_review
 					? `<span class="tc-badge tc-badge-o"><span aria-hidden="true">!</span> ${esc(
-							__("Abnormal note")
+							__("Needs review")
 					  )}</span>`
 					: "";
 				return `<tr>
@@ -1320,7 +1322,7 @@ class T1Receiving {
 			})
 			.join("");
 		return `<h3>${esc(
-			__("{0} sets received · {1} with abnormal note", [
+			__("{0} sets received · {1} need review", [
 				receipt.items.length,
 				receipt.items.filter((row) => row.needs_review).length,
 			])
@@ -1394,7 +1396,7 @@ class T1Receiving {
 				title: done.offline
 					? __("Receipt kept on this device; it is sent when the connection returns")
 					: __("Receipt {0} submitted", [done.receipt]),
-				reason: __("{0} set(s) are waiting for washing; {1} have an abnormal note.", [
+				reason: __("{0} set(s) are waiting for washing; {1} need review.", [
 					done.sets.length,
 					done.flagged.length,
 				]),

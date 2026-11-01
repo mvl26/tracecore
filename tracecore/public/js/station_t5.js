@@ -725,10 +725,10 @@ class T5Load {
 			const prefill = context.prefill || {};
 			const values = {};
 			Object.entries(prefill.values || {}).forEach(([name, value]) => {
-				values[name] = String(value);
+				values[name] = window.tcDecimal(value);
 			});
 			(context.params || []).forEach((row) => {
-				values[row.parameter_name] = String(row.value);
+				values[row.parameter_name] = window.tcDecimal(row.value);
 			});
 			const alerts = context.machine_alerts && context.machine_alerts.text;
 			this.form = {
@@ -1346,7 +1346,10 @@ class T5Load {
 		const warning = print.warning || {};
 		return this.alertHtml({
 			variant: "warn",
-			title: __("Load code kept - check the Station Agent, then print again"),
+			title:
+				warning.code === "NO_PRINTER_AT_STATION"
+					? __("No printer at this station, the label is waiting")
+					: __("Load code kept - check the Station Agent, then print again"),
 			reason: [warning.reason, __("Print job {0}", [print.print_job])]
 				.filter(Boolean)
 				.join(" "),
@@ -1529,9 +1532,10 @@ class T5Load {
 				const low = Number(param.min_value) || 0;
 				const high = Number(param.max_value) || 0;
 				let range = "";
-				if (low && high) range = `${low} – ${high}`;
-				else if (low) range = `≥ ${low}`;
-				else if (high) range = `≤ ${high}`;
+				const [lowText, highText] = [low, high].map(window.tcDecimal);
+				if (low && high) range = `${lowText} – ${highText}`;
+				else if (low) range = `≥ ${lowText}`;
+				else if (high) range = `≤ ${highText}`;
 				return `<div class="tc-field${state === "review" ? " is-review" : ""}">
 					<label for="tc-t5-param-${esc(param.parameter_name)}">${esc(param.parameter_name)}${
 					param.unit ? ` (${esc(param.unit)})` : ""
@@ -1546,7 +1550,7 @@ class T5Load {
 				${
 					param.default_value != null
 						? `<p class="tc-hint">${esc(
-								__("Program default: {0}", [param.default_value])
+								__("Program default: {0}", [window.tcDecimal(param.default_value)])
 						  )}</p>`
 						: ""
 				}
@@ -1563,8 +1567,7 @@ class T5Load {
 				</div>`
 			: "";
 		const session = this.station.session || {};
-		const who =
-			[session.employee, session.employee_name].filter(Boolean).join(" ") || __("operator");
+		const who = session.employee_name || __("operator");
 		return `<section class="tc-t4-block tc-t2-form">
 			<h3>${esc(__("Manual cycle data - confirmed by the operator"))}</h3>
 			${

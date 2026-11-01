@@ -532,7 +532,7 @@ class DailyTestScreen {
 					.join(" ");
 				const noTest = row.required.length
 					? ""
-					: `<span class="tc-tag">${esc(
+					: `<span class="tc-hint">${esc(
 							(row.run_tests || []).length
 								? __("Not required")
 								: __("Not applicable")

@@ -46,6 +46,12 @@
 		});
 	};
 
+	// Dấu phẩy thập phân khi hiển thị số (CLAUDE.md); máy chủ nhận cả phẩy nên ô điền sẵn gửi lại nguyên chuỗi được
+	window.tcDecimal = function (value) {
+		if (value === null || value === undefined) return "";
+		return String(value).replace(/^(-?\d+)\.(\d+)$/, "$1,$2");
+	};
+
 	window.tcErrorTitle = function (notice) {
 		if (!notice || !notice.error_code) return (notice && notice.title) || "";
 		const parts = [`[${notice.error_code}]`, notice.error_name || notice.title];
