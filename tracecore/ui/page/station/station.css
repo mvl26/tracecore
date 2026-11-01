@@ -1320,7 +1320,18 @@ body.tc-kiosk .layout-main-section {
 }
 
 .tc-t3 .tc-ins-text {
+	display: block;
 	flex: 1 1 var(--tc-inst-min);
+}
+
+.tc-t3 .tc-ins-name,
+.tc-t3 .tc-ins-state {
+	display: block;
+}
+
+/* kiosk 1366x768: thấy ít nhất 4 dòng dụng cụ không cần cuộn (#1827) */
+.tc-t3 .tc-ins {
+	padding-block: var(--tc-sp-1);
 }
 
 .tc-t3 .tc-t4-block {
