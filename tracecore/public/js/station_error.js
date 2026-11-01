@@ -1,8 +1,48 @@
+/* global esc */
 // Khung mã lỗi (FEAT-052, A-71, FR-M9-19): tiêu đề "[Mã] – Tên – đối tượng" và nút mở Hướng dẫn xử lý, dùng chung mọi màn trạm.
 // Hướng dẫn hiện inline ngay dưới khối lỗi; bản đã tải giữ lại trong trình duyệt để mở được khi mất mạng.
 (function () {
 	const CACHE_PREFIX = "tc_error_guide_";
 	const escape = (value) => frappe.utils.escape_html(value == null ? "" : String(value));
+
+	// A-99: lưu PDF nhãn máy chủ trả về (base64) thành file trên máy trạm
+	window.tcSavePdf = function (b64, filename) {
+		const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
+		const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	};
+
+	// A-99: mã mẻ/lô kèm nút Lưu PDF nhãn; không có mạng thì nút tắt và ghi lý do
+	window.tcCodeWithPdfHtml = function (code, action, { busy, offline }) {
+		const off = busy || offline ? " disabled" : "";
+		const reason = offline
+			? `<p class="tc-hint">${esc(__("Saving a label PDF needs a network connection."))}</p>`
+			: "";
+		return `<div class="tc-code-row">
+			<p class="tc-cycle">${esc(code)}</p>
+			<button type="button" class="tc-btn tc-btn-secondary" data-action="${esc(action)}"${off}>${esc(
+			__("Save label PDF")
+		)}</button>
+		</div>${reason}`;
+	};
+
+	// #1832 cho mọi màn: nhãn liên kết của ô quét luôn theo placeholder mà màn đang đặt
+	window.tcBindScanLabel = function (input) {
+		const sync = () => {
+			for (const label of input.labels || []) label.textContent = input.placeholder;
+		};
+		sync();
+		new MutationObserver(sync).observe(input, {
+			attributes: true,
+			attributeFilter: ["placeholder"],
+		});
+	};
 
 	window.tcErrorTitle = function (notice) {
 		if (!notice || !notice.error_code) return (notice && notice.title) || "";

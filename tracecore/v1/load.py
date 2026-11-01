@@ -155,6 +155,25 @@ def overview(station, client_ts=None, token=None):
 	)
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*LOAD_ROLES)
+def label_pdf(load, station, client_ts=None, token=None):
+	"""PDF nhãn QR của mẻ, máy trạm tự lưu thành file (A-99); chỉ đọc, chạy được khi không có máy in."""
+	require_any_role(*LOAD_ROLES)
+	load = _required_str(load, "load")
+	timestamp = parse_client_ts(client_ts)
+	ref_doctype, ref_name = _load_ref(load)
+	return run_at_step(
+		FUNCTION,
+		station,
+		timestamp,
+		lambda: {"ok": True, **sterilizing.label_pdf(load)},
+		ref_doctype,
+		ref_name,
+		load,
+	)
+
+
 # --- Tra cứu, dữ liệu chu trình --------------------------------------------------------------------------------
 
 

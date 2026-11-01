@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
+/* global tcCodeWithPdfHtml, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
 /* global uuid4, clientTs, esc */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -878,6 +878,7 @@ class T5Load {
 			"t5-remove": () => this.removePack(data.pack),
 			"t5-recheck": () => this.recheckPacks(),
 			"t5-complete": () => this.complete(),
+			"t5-label-pdf": () => this.saveLabelPdf(),
 			"t5-cancel": () => this.cancelLoad(),
 			"t5-open-data": () => this.openData(data.load),
 			"t5-save-data": () => this.saveData(),
@@ -1258,7 +1259,10 @@ class T5Load {
 				variant: "ok",
 				title: __("Load code generated for {0} pack(s)", [done.packs.length]),
 			})}
-			<p class="tc-cycle">${esc(done.load)}</p>
+			${tcCodeWithPdfHtml(done.load, "t5-label-pdf", {
+				busy: Boolean(this.busy),
+				offline: this.offline || this.station.isOffline(),
+			})}
 			${rejected}
 			<div class="tc-t4-done-grid">
 				${this.labelHtml()}
@@ -1276,6 +1280,21 @@ class T5Load {
 				</div>
 			</div>
 		</section>`;
+	}
+
+	// A-99: PDF nhãn lưu về máy, độc lập với lệnh in
+	saveLabelPdf() {
+		if (!this.done || this.offline) return;
+		const load = this.done.load;
+		this.request(
+			"tracecore.v1.load.label_pdf",
+			{ load, station: this.station.station },
+			(res) => {
+				this.notice = null;
+				window.tcSavePdf(res.pdf_b64, res.filename);
+				this.show();
+			}
+		);
 	}
 
 	labelHtml() {

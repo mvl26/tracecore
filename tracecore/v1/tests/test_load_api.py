@@ -1,12 +1,16 @@
 """RPC tracecore.v1.load.* (FEAT-022 Task 5): phiên trạm thẻ, quyền, mã HTTP theo loại lỗi, replay idempotent."""
 
+import base64
+import io
 import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.utils import add_to_date, now_datetime
+from frappe.utils import add_to_date, get_datetime, now_datetime
+from pypdf import PdfReader
 
+from tracecore.core import gs1, qr
 from tracecore.tests.factories import (
 	deactivate_printers,
 	make_load,
@@ -346,3 +350,42 @@ class TestLoadDataApi(LoadApiCase):
 		frappe.db.set_value("Sterilization Load", load.name, "status", "Released")
 		result = call(load_api.data_scan, load=load.name, raw=self.machine.name, station=STATION)
 		self.assert_rejection(result, "LOAD_NOT_OPEN", 409)
+
+
+class TestLoadLabelPdf(LoadApiCase):
+	def done_load(self):
+		return self.complete([make_load_ready_pack().name])
+
+	def test_returns_pdf_named_after_the_load_with_its_qr_and_text(self):
+		done = self.done_load()
+		before = frappe.db.count("Print Job")
+		result = call(load_api.label_pdf, load=done["load"], station=STATION)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(result["filename"], f"{done['load']}.pdf")
+		pdf = base64.b64decode(result["pdf_b64"])
+		self.assertTrue(pdf.startswith(b"%PDF"))
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		decoded = qr.decode_png(page.images[0].data)
+		self.assertEqual(decoded, done["load"])
+		self.assertEqual(gs1.parse_scan(decoded)["type"], "load")
+		text = page.extract_text()
+		started = frappe.db.get_value("Sterilization Load", done["load"], "started_at")
+		self.assertIn(done["load"], text)
+		self.assertIn(get_datetime(started).strftime("%d/%m/%Y %H:%M"), text)
+		self.assertEqual(frappe.db.count("Print Job"), before)  # không đụng luồng in
+
+	def test_unknown_or_foreign_code_is_not_found(self):
+		for code in ("ME-000000-99", "LR-000000-99"):
+			self.assert_rejection(call(load_api.label_pdf, load=code, station=STATION), "LOAD_NOT_FOUND", 404)
+
+	def test_wrong_session_station_is_refused(self):
+		done = self.done_load()
+		token = TOKENS[("Administrator", STATION)]
+		result = call(load_api.label_pdf, load=done["load"], station=OTHER_STATION, token=token)
+		self.assertEqual(result["error"]["code"], "SESSION_STATION_MISMATCH")
+
+	def test_station_of_another_step_is_refused(self):
+		done = self.done_load()
+		self.login("Administrator", OTHER_STATION)
+		result = call(load_api.label_pdf, load=done["load"], station=OTHER_STATION)
+		self.assertEqual(result["error"]["code"], "STATION_WRONG_STEP")

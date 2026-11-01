@@ -240,6 +240,7 @@ class TraceCoreStation {
 		this.banner = this.root.querySelector(".tc-offline-banner");
 		this.form = this.root.querySelector(".tc-work .tc-scan");
 		this.input = this.root.querySelector("#tc-scan-input");
+		window.tcBindScanLabel(this.input);
 		this.result = this.root.querySelector(".tc-result");
 		this.authForm = this.root.querySelector(".tc-auth-form");
 		this.cardInput = this.root.querySelector("#tc-card-input");

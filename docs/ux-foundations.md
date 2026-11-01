@@ -23,6 +23,7 @@
 | 01/11/2026 | Amendment A-94 (#1814, sửa SCR-05): thành phần bộ ở T1 là bảng STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế; số thực tế điền sẵn theo BOM, sửa được; bỏ ô tick và Xác nhận tất cả |
 | 01/11/2026 | Amendment A-95 (#1837, SCR T6, T7): T6 có Gói chờ nhập kho, bảng vị trí trống có câu báo; T7 có Cơ số thiếu theo khoa, chọn khoa từ đó |
 | 01/11/2026 | Amendment A-96 (#1838, SCR-37): T8 ghi tên khoa, có Gói tại khoa với hạn dùng và Đã dùng, chờ trả; ô quét ghi Quét mã trên gói; banner khẩn bỏ cảnh báo nội bộ CSSD |
+| 01/11/2026 | Amendment A-99: thẻ Hoàn thành nạp T5 (SCR-09) và T2 (SCR-06) có nút Lưu PDF nhãn cạnh mã mẻ/lô, chạy được khi không có máy in; T4 giữ nguyên |
 | 01/11/2026 | Amendment A-98 (#1830, sửa NAV-02): Tổng quan hiện số liệu ngay, tab trình duyệt có tên trạm và TraceCore |
 
 ## 1. Overview

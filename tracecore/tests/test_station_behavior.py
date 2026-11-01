@@ -1,11 +1,17 @@
 """Hành vi màn trạm chạy thật trong Node (ticket Helpdesk 01/11/2026)."""
 
+import csv
+
+import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from tracecore.tests.js_harness import run_js
 
 T1 = "public/js/station_t1.js"
 T4 = "public/js/station_t4.js"
+T2 = "public/js/station_t2.js"
+T5 = "public/js/station_t5.js"
+ERR = "public/js/station_error.js"
 FAKE_STATION = """
 const makeStation = () => ({
 	result: element(), input: element(), session: {roles: []}, sessionVersion: 1,
@@ -373,3 +379,130 @@ class TestT1Today(FrappeTestCase):
 		self.assertNotIn("HR-EMP-00020 ·", out)
 		self.assertNotIn(">HR-EMP-00020", out)
 		self.assertIn('title="HR-EMP-00020"', out)
+
+
+T5_DONE = """
+const station = makeStation();
+const t5 = new T5Load(station);
+t5.done = {load: "ME-261101-02", packs: ["CY-1"], pack_rows: [], rejected: [], qr_png_b64: "QQ==",
+	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00"};
+t5.printNoteHtml = () => "";
+"""
+T2_DONE = """
+const station = makeStation();
+const t2 = new T2Wash(station);
+t2.done = {batch: "LR-261101-07", sets: ["S1"], rejected: [], chemicals: [], qr_png_b64: "QQ==",
+	machine: {name: "M1", equipment_name: "May 1"}, program_name: "P1", at: "2026-11-01T08:00:00+07:00"};
+t2.printNoteHtml = () => "";
+"""
+
+
+class TestLabelPdfButton(FrappeTestCase):
+	"""A-99: nút Lưu PDF nhãn trên thẻ Hoàn thành nạp T5, T2; T4 không có."""
+
+	def t5(self, body):
+		return run_js(self, [ERR, T5], [[], ["T5Load"]], FAKE_STATION + T5_DONE + body)
+
+	def t2(self, body):
+		return run_js(self, [ERR, T2], [[], ["T2Wash"]], FAKE_STATION + T2_DONE + body)
+
+	def test_t5_card_has_the_enabled_button_online(self):
+		out = self.t5("emit(t5.doneHtml());")
+		self.assertRegex(out, r'<button[^>]*data-action="t5-label-pdf"')
+		self.assertNotRegex(out, r'data-action="t5-label-pdf"[^>]*disabled')
+
+	def test_t5_offline_disables_the_button_with_a_reason(self):
+		out = self.t5("t5.offline = true; emit(t5.doneHtml());")
+		self.assertRegex(out, r'data-action="t5-label-pdf"[^>]*disabled')
+		self.assertIn("network connection", out)
+
+	def test_t5_click_requests_the_rpc_and_saves_the_file(self):
+		out = self.t5(
+			"""
+			const calls = [];
+			t5.request = (method, args, onOk) => { calls.push([method, args]);
+				onOk({ok: true, pdf_b64: "JVBERg==", filename: "ME-261101-02.pdf"}); };
+			const saved = [];
+			window.tcSavePdf = (b64, name) => saved.push([b64, name]);
+			station.station = "TR-005";
+			t5.show = () => {};
+			t5.onAction("t5-label-pdf", element());
+			emit({calls, saved});
+			"""
+		)
+		self.assertEqual(
+			out["calls"], [["tracecore.v1.load.label_pdf", {"load": "ME-261101-02", "station": "TR-005"}]]
+		)
+		self.assertEqual(out["saved"], [["JVBERg==", "ME-261101-02.pdf"]])
+
+	def test_t2_card_and_click(self):
+		out = self.t2(
+			"""
+			const html = t2.doneHtml();
+			const calls = [];
+			t2.request = (method, args) => calls.push([method, args]);
+			station.station = "TR-002";
+			t2.onAction("t2-label-pdf", element());
+			t2.offline = true;
+			emit({html, calls, off: t2.doneHtml()});
+			"""
+		)
+		self.assertIn('data-action="t2-label-pdf"', out["html"])
+		self.assertEqual(
+			out["calls"], [["tracecore.v1.wash.label_pdf", {"batch": "LR-261101-07", "station": "TR-002"}]]
+		)
+		self.assertRegex(out["off"], r'data-action="t2-label-pdf"[^>]*disabled')
+
+	def test_t4_has_no_label_pdf_button(self):
+		with open(
+			frappe.get_app_path("tracecore", "public", "js", "station_t4.js"), encoding="utf-8"
+		) as handle:
+			self.assertNotIn("label_pdf", handle.read())
+
+	def test_strings_are_translated(self):
+		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
+		with open(path, encoding="utf-8", newline="") as handle:
+			translated = {row[0]: row[1] for row in csv.reader(handle) if row}
+		for text in ("Save label PDF", "Saving a label PDF needs a network connection."):
+			self.assertTrue(translated.get(text), msg=text)
+
+
+class TestScanShell(FrappeTestCase):
+	def test_browser_scrolls_stop_below_the_sticky_scan_block(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "station", "station.css"), encoding="utf-8"
+		) as handle:
+			css = handle.read()
+		self.assertRegex(css, r"html:has\(\.tc-work\)[^}]*scroll-padding-top: calc\(")
+
+	def test_scan_label_follows_the_placeholder(self):
+		out = run_js(
+			self,
+			[ERR],
+			[[]],
+			"""
+			let fire = null;
+			globalThis.MutationObserver = class {
+				constructor(callback) { fire = callback; }
+				observe(_node, options) { this.options = options; globalThis.seen = options; }
+			};
+			const label = element();
+			const input = element();
+			input.labels = [label];
+			input.placeholder = "Scan Set ID...";
+			window.tcBindScanLabel(input);
+			const first = label.textContent;
+			input.placeholder = "Scan the sterilizer QR code...";
+			fire();
+			emit({first, second: label.textContent, filter: globalThis.seen.attributeFilter});
+			""",
+		)
+		self.assertEqual(out["first"], "Scan Set ID...")
+		self.assertEqual(out["second"], "Scan the sterilizer QR code...")
+		self.assertEqual(out["filter"], ["placeholder"])
+
+	def test_shell_binds_the_scan_label(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "station", "station.js"), encoding="utf-8"
+		) as handle:
+			self.assertIn("window.tcBindScanLabel(this.input)", handle.read())

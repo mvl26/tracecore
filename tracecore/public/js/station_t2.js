@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcCodeWithPdfHtml, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -1059,6 +1059,7 @@ class T2Wash {
 				this.show();
 			},
 			"t2-record": () => this.recordResult(),
+			"t2-label-pdf": () => this.saveLabelPdf(),
 			"t2-unload-reset": () => {
 				this.unload = null;
 				this.indicator = null;
@@ -1501,7 +1502,10 @@ class T2Wash {
 				variant: "ok",
 				title: __("Batch code generated for {0} set(s)", [done.sets.length]),
 			})}
-			<p class="tc-cycle">${esc(done.batch)}</p>
+			${tcCodeWithPdfHtml(done.batch, "t2-label-pdf", {
+				busy: Boolean(this.busy),
+				offline: this.offline || this.station.isOffline(),
+			})}
 			${rejected}
 			<div class="tc-t4-done-grid">
 				${this.labelHtml()}
@@ -1517,6 +1521,21 @@ class T2Wash {
 				</div>
 			</div>
 		</section>`;
+	}
+
+	// A-99: PDF nhãn lưu về máy, độc lập với lệnh in
+	saveLabelPdf() {
+		if (!this.done || this.offline) return;
+		const batch = this.done.batch;
+		this.request(
+			"tracecore.v1.wash.label_pdf",
+			{ batch, station: this.station.station },
+			(res) => {
+				this.notice = null;
+				window.tcSavePdf(res.pdf_b64, res.filename);
+				this.show();
+			}
+		);
 	}
 
 	labelHtml() {
