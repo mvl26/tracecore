@@ -152,6 +152,134 @@ function equipment_print_button(frm) {
 	);
 }
 
+const EQUIPMENT_USAGE = "tracecore.v1.laundry.machine_usage";
+const EQUIPMENT_LAUNDRY_TYPES = ["Laundry Washer", "Dryer"];
+
+function equipment_number(value, digits) {
+	return format_number(value || 0, null, digits);
+}
+
+function equipment_table(headers, rows) {
+	const esc = frappe.utils.escape_html;
+	const head = headers.map((text) => `<th>${esc(text)}</th>`).join("");
+	const body = rows
+		.map((cells) => `<tr>${cells.map((cell) => `<td>${esc(cell)}</td>`).join("")}</tr>`)
+		.join("");
+	return `<table class="table table-bordered"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+// Khối Sử dụng của máy giặt, máy sấy (#1847 DV-04): server tổng hợp, JS chỉ trình bày.
+function equipment_usage_html(usage) {
+	const esc = frappe.utils.escape_html;
+	const money = (value) => format_currency(value || 0, "VND", 0);
+	if (!(usage.history || []).length) {
+		return `<p>${esc(__("No batch in this period."))}</p>`;
+	}
+	const total = usage.totals;
+	const days = equipment_table(
+		[
+			__("Date"),
+			__("Program"),
+			__("Batches"),
+			__("Weight (kg)"),
+			__("Water actual (m3)"),
+			__("Power actual (kWh)"),
+			__("Actual cost"),
+		],
+		usage.days
+			.map((row) => [
+				frappe.datetime.str_to_user(row.date),
+				row.program || "-",
+				row.batches,
+				equipment_number(row.weight_kg, 2),
+				equipment_number(row.water_actual_m3, 3),
+				equipment_number(row.power_actual, 2),
+				money(row.cost_actual),
+			])
+			.concat([
+				[
+					__("Total"),
+					"",
+					total.batches,
+					equipment_number(total.weight_kg, 2),
+					equipment_number(total.water_actual_m3, 3),
+					equipment_number(total.power_actual, 2),
+					money(total.cost_actual),
+				],
+			])
+	);
+	const chemicals = equipment_table(
+		[__("Chemical"), __("Norm Quantity"), __("Actual Quantity"), __("Amount")],
+		usage.chemicals.map((row) => [
+			row.item,
+			`${equipment_number(row.norm, 3)} ${row.uom || ""}`,
+			`${equipment_number(row.actual, 3)} ${row.uom || ""}`,
+			money(row.amount),
+		])
+	);
+	const history = equipment_table(
+		[
+			__("Laundry Batch"),
+			__("Ended At"),
+			__("Program"),
+			__("Weight (kg)"),
+			__("Total Cost"),
+			__("Cost per kg"),
+		],
+		usage.history.map((row) => [
+			row.name,
+			frappe.datetime.str_to_user(row.ended_at),
+			row.program,
+			equipment_number(row.weight_kg, 2),
+			money(row.cost_total),
+			money(row.cost_per_kg),
+		])
+	);
+	return `<h5>${esc(__("Use per day"))}</h5>${days}
+		<h5>${esc(__("Chemicals used"))}</h5>${chemicals}
+		<h5>${esc(__("Batch history"))}</h5>${history}`;
+}
+
+function equipment_show_usage(frm) {
+	const field = frm.fields_dict.laundry_usage_html;
+	if (!field) return;
+	field.$wrapper.empty();
+	if (
+		frm.is_new() ||
+		!EQUIPMENT_LAUNDRY_TYPES.includes(frm.doc.equipment_type) ||
+		!frappe.model.can_read("Laundry Batch")
+	) {
+		return;
+	}
+	const filters = $(`<div class="row"></div>`).appendTo(field.$wrapper);
+	const result = $("<div></div>").appendTo(field.$wrapper);
+	const today = frappe.datetime.get_today();
+	const dates = {};
+	const load = () =>
+		frappe.call({
+			method: EQUIPMENT_USAGE,
+			args: {
+				equipment: frm.doc.name,
+				from_date: dates.from.get_value() || today,
+				to_date: dates.to.get_value() || today,
+			},
+			callback: (r) => result.html(equipment_usage_html(r.message || {})),
+		});
+	for (const [key, label] of [
+		["from", __("From Date")],
+		["to", __("To Date")],
+	]) {
+		const parent = $(`<div class="col-sm-4"></div>`).appendTo(filters);
+		dates[key] = frappe.ui.form.make_control({
+			parent,
+			df: { fieldtype: "Date", label, fieldname: `usage_${key}`, onchange: load },
+			render_input: true,
+		});
+		dates[key].set_value(today);
+	}
+	load();
+}
+
 frappe.ui.form.on("Equipment", {
 	setup(frm) {
 		frm.set_query("default_program", () => ({
@@ -163,6 +291,7 @@ frappe.ui.form.on("Equipment", {
 
 	refresh(frm) {
 		equipment_indicator(frm);
+		equipment_show_usage(frm);
 		if (
 			!frm.is_new() &&
 			frm.doc.status === "Ready" &&

@@ -10,13 +10,14 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, today
 
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.costing import from_laundry
 from tracecore.linen import laundry
+from tracecore.linen import machine_usage as usage_of_machine
 from tracecore.v1._common import (
 	LINEN_ROLES,
 	BadRequestError,
@@ -219,3 +220,15 @@ def complete_desk(
 	except BlockedError as error:
 		return reject_block(error.block, "Laundry Batch", batch, client_ts=timestamp)
 	return {"ok": True, "batch": laundry.view(doc)}
+
+
+@frappe.whitelist()
+def machine_usage(equipment=None, from_date=None, to_date=None):
+	"""Khối Sử dụng trên form máy giặt, máy sấy (#1847 DV-04); chỉ đọc, lô theo quyền người xem."""
+	frappe.has_permission("Laundry Batch", "read", throw=True)
+	frappe.has_permission("Equipment", "read", throw=True)
+	equipment = _text(equipment, "equipment")
+	if not equipment or not frappe.db.exists("Equipment", equipment):
+		raise BadRequestError(_("Equipment {0} does not exist.").format(equipment or "-"))
+	day = today()
+	return usage_of_machine.usage(equipment, from_date or day, to_date or day)

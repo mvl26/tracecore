@@ -123,6 +123,7 @@ MANAGEMENT_GROUPS = (
 			"Linen Collection",
 			"Laundry Batch",
 			"report:Laundry Cost per Kg",
+			"report:Laundry Equipment Norms",
 			"Linen Issue",
 			"report:Linen Reconciliation",
 		),
@@ -458,7 +459,14 @@ ADMIN_MODULES = (
 		"sections": (
 			("catalog", ("Linen Type", "laundry-equipment")),
 			("document", ("Linen Collection", "Laundry Batch", "Linen Issue")),
-			("report", ("report:Laundry Cost per Kg", "report:Linen Reconciliation")),
+			(
+				"report",
+				(
+					"report:Laundry Cost per Kg",
+					"report:Laundry Equipment Norms",
+					"report:Linen Reconciliation",
+				),
+			),
 		),
 	},
 	{

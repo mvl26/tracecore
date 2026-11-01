@@ -117,6 +117,8 @@ class TestLauncher(FrappeTestCase):
 			for target in targets:
 				if target.startswith(navigation.REPORT_PREFIX):
 					texts.append(target[len(navigation.REPORT_PREFIX) :])
+				elif target in navigation.FILTERED_LISTS:
+					texts.append(navigation.FILTERED_LISTS[target][0])
 				else:
 					texts.append(navigation.MANAGEMENT_PAGES.get(target, target))
 		missing = [

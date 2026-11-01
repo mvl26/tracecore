@@ -12,9 +12,15 @@ from frappe.utils import cint, flt, getdate
 from tracecore.linen.laundry import DOCTYPE
 
 
-def _columns():
+def _columns(machine_detail=False):
+	machine = (
+		[{"fieldname": "machine", "label": _("Machine"), "fieldtype": "Data", "width": 150}]
+		if machine_detail
+		else []
+	)
 	return [
 		{"fieldname": "month", "label": _("Month"), "fieldtype": "Data", "width": 100},
+		*machine,
 		{"fieldname": "batches", "label": _("Batches"), "fieldtype": "Int", "width": 90},
 		{"fieldname": "weight_kg", "label": _("Weight (kg)"), "fieldtype": "Float", "width": 120},
 		{
@@ -50,26 +56,42 @@ def execute(filters=None):
 	batches = frappe.get_list(
 		DOCTYPE,
 		filters={"docstatus": 1, "ended_at": ["between", [f"{start} 00:00:00", f"{end} 23:59:59"]]},
-		fields=["ended_at", "weight_kg", "cost_total", "cost_note"],
+		fields=["ended_at", "weight_kg", "cost_total", "cost_note", "equipment", "batch_type"],
 		order_by="ended_at asc",
 	)
-	months = {}
+	months, machines = {}, {}
 	for batch in batches:
-		row = months.setdefault(
-			batch.ended_at.strftime("%Y-%m"),
-			{"batches": 0, "weight_kg": 0, "cost_total": 0, "without_rate": 0},
-		)
-		row["batches"] += 1
-		row["weight_kg"] += flt(batch.weight_kg)
-		row["cost_total"] += flt(batch.cost_total)
-		row["without_rate"] += 1 if batch.cost_note else 0
-	rows = [
-		{
-			"month": month,
-			**row,
-			"cost_per_kg": round(row["cost_total"] / row["weight_kg"]) if row["weight_kg"] else 0,
-			"without_rate": cint(row["without_rate"]),
-		}
-		for month, row in sorted(months.items())
-	]
-	return _columns(), rows
+		month = batch.ended_at.strftime("%Y-%m")
+		_add(months.setdefault(month, _empty()), batch)
+		machine = batch.equipment or _("Outsourced batches")
+		_add(machines.setdefault(month, {}).setdefault(machine, _empty()), batch)
+	detail = cint(filters.get("machine_detail"))
+	rows = []
+	for month, row in sorted(months.items()):
+		rows.append(_result(row, month=month))
+		if detail:
+			rows += [
+				_result(cells, month=month, machine=machine)
+				for machine, cells in sorted(machines[month].items())
+			]
+	return _columns(bool(detail)), rows
+
+
+def _empty():
+	return {"batches": 0, "weight_kg": 0, "cost_total": 0, "without_rate": 0}
+
+
+def _add(row, batch):
+	row["batches"] += 1
+	row["weight_kg"] += flt(batch.weight_kg)
+	row["cost_total"] += flt(batch.cost_total)
+	row["without_rate"] += 1 if batch.cost_note else 0
+
+
+def _result(row, **keys):
+	return {
+		**keys,
+		**row,
+		"cost_per_kg": round(row["cost_total"] / row["weight_kg"]) if row["weight_kg"] else 0,
+		"without_rate": cint(row["without_rate"]),
+	}
