@@ -159,8 +159,6 @@ class TestSterilizingRules(FrappeTestCase):
 		self.blocked(
 			lambda: self.admit(make_load_ready_pack(pack_type=other), program=program), "PACK_INCOMPATIBLE"
 		)
-		# chương trình không khai loại gói: chỉ xét phương pháp
-		self.assertTrue(self.admit(make_load_ready_pack(pack_type=other)))
 
 	def test_admit_rejects_pack_in_other_load(self):
 		pack = make_load_ready_pack()

@@ -12,6 +12,7 @@
   "equipment",
   "equipment_name",
   "is_active",
+  "program_kind",
   "requires_bi",
   "requires_wash_indicator",
   "requires_wash_indicator_photo",
@@ -82,6 +83,15 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Active"
+  },
+  {
+   "default": "Regular",
+   "description": "Test: Bowie-Dick, leak or vacuum test program of a sterilizer. It never takes packs and is run from the Daily Test tab.",
+   "fieldname": "program_kind",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Program Kind",
+   "options": "Regular\nTest"
   },
   {
    "default": "0",
@@ -219,7 +229,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 18:00:00.000000",
+ "modified": "2026-11-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Process Program",

@@ -577,6 +577,14 @@ def make_program(equipment, code="MH-01-134", minutes=4, kwh=3.5, water=0, consu
 		"consumables": consumables or [],
 		**kwargs,
 	}
+	# chương trình thường của máy tiệt khuẩn phải khai loại gói (A-83): mặc định loại gói của `make_pack`
+	if (
+		not values.get("compatible_pack_types")
+		and values.get("program_kind") != "Test"
+		and frappe.db.get_value("Equipment", equipment, "equipment_type")
+		in ("Steam Sterilizer", "Plasma Sterilizer")
+	):
+		values["compatible_pack_types"] = [{"pack_type": make_pack_type()}]
 	return frappe.get_doc(values).insert()
 
 
@@ -1218,7 +1226,7 @@ def make_sterilizer(equipment_type="Steam Sterilizer", capacity=None, **kwargs):
 def make_sterilize_program(equipment, pack_types=(), **kwargs):
 	"""Chương trình tiệt khuẩn đủ định mức cho máy `equipment`, mã duy nhất mỗi lần gọi.
 
-	`pack_types`: danh sách Item loại gói tương thích (rỗng = chương trình không giới hạn loại gói).
+	`pack_types`: danh sách Item loại gói tương thích (rỗng = loại gói mặc định của `make_pack`).
 	"""
 	values = {
 		"code": "MH-" + frappe.generate_hash(length=6).upper(),

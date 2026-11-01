@@ -36,7 +36,9 @@ class TestPrograms(IsolatedTestCase):
 			},
 		)
 		self.assertEqual(result[0]["temperature"], 134)
-		self.assertEqual(result[0]["compatible_pack_types"], [])
+		self.assertEqual(
+			len(result[0]["compatible_pack_types"]), 1
+		)  # máy tiệt khuẩn phải khai loại gói (A-83)
 		self.assertEqual([r["program_code"] for r in programs.active_programs(second.name)], ["PB-1"])
 
 	@bru("BRU-EQP-003")

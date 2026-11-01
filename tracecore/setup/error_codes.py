@@ -328,6 +328,17 @@ DEFAULT_CODES = (
 		),
 	),
 	_code(
+		"DC-006",
+		"Test program cannot take packs",
+		"Bowie-Dick, leak and vacuum test programs run without instrument packs.",
+		"A pack is scanned or a load is completed with a test program of the sterilizer.",
+		("STERI_LOAD",),
+		"Refuses the pack and the load.",
+		"<ol><li>Choose a sterilization program of the machine.</li><li>Run the test from the Daily test tab, "
+		"without instrument packs.</li></ol>",
+		("PROGRAM_TEST_ONLY",),
+	),
+	_code(
 		"QT-001",
 		"Wrong station order",
 		"The set or pack is not at the right step for this station.",

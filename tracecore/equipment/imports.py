@@ -143,6 +143,7 @@ def _write_program(unit):
 			"parameters": parameters,
 		}
 	)
+	doc.flags.tc_import_no_pack_types = True  # file nhập không có cột loại gói: rỗng = chưa nhận gói (A-83)
 	return doc.insert().name
 
 

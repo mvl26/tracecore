@@ -90,6 +90,7 @@ HTTP_STATUS: dict[str, int] = {
 			# FEAT-021 A-12: lô rửa T2
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
+			"PROGRAM_TEST_ONLY",  # A-83: chương trình test không nhận gói
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",

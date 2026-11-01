@@ -347,7 +347,10 @@ class T5Load {
 		this.load = {
 			machine: res.equipment,
 			programs,
-			program: programs.length ? programs[0].program_code : null,
+			// A-83: chương trình mặc định của máy, không có thì chương trình đầu (danh sách không có chương trình test)
+			program:
+				res.equipment.default_program ||
+				(programs.length ? programs[0].program_code : null),
 			priority: false,
 			packs: [],
 		};

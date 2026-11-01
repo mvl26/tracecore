@@ -1440,7 +1440,12 @@ def _t5_program(equipment):
 	if name:
 		return name
 	code = "DEMO-T5-" + equipment.replace("TB-", "")
-	return factories.make_sterilize_program(equipment, code=code, parameters=T5_PARAMETERS).name
+	# danh sách rỗng không nhận gói (A-83): khai mọi loại gói demo của T4 và loại gói mặc định của factory
+	pack_types = [factories.make_pack_type()]
+	pack_types += [_ensure_pack_type(spec["pack_type"]) for spec in _t4_catalog().values()]
+	return factories.make_sterilize_program(
+		equipment, pack_types=pack_types, code=code, parameters=T5_PARAMETERS
+	).name
 
 
 def _t5_loadable(set_type, with_t4):
