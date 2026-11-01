@@ -182,5 +182,5 @@
  "naming_rule": "Expression (old style)",
  "is_submittable": 1,
  "title_field": "department",
- "description": "Waste collection by department (FEAT-047, UC-34, FR-M10-02)."
+ "description": "Waste collection by department (UC-34, FR-M10-02)."
 }

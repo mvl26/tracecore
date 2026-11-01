@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-31 12:00:00.000000",
- "description": "Per-hospital setting of an error code (FEAT-052, A-71).",
+ "description": "Per-hospital setting of an error code (A-71).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

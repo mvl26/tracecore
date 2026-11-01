@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-28 09:00:00.000000",
- "description": "Spare part used in a maintenance or incident record (FEAT-039, UC-22): name, quantity and rate; the amount is quantity times rate.",
+ "description": "Spare part used in a maintenance or incident record (UC-22): name, quantity and rate; the amount is quantity times rate.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-31 12:00:00.000000",
- "description": "Station of an error code: a Station Function code, or LOGIN (FEAT-052, A-71).",
+ "description": "Station of an error code: a Station Function code, or LOGIN (A-71).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

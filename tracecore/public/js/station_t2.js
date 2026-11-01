@@ -1375,7 +1375,7 @@ class T2Wash {
 					])
 				)} · ${esc(
 			load.machine.is_connected
-				? __("API connected - automatic data comes with FEAT-024")
+				? __("API connected - data comes automatically from the station agent")
 				: __("not connected - unload with confirmed manual entry")
 		)}</p>
 				<div class="tc-t4-row">
@@ -2065,9 +2065,7 @@ class T2Wash {
 								res.batch,
 							]),
 							reason: __("Every set goes back to reprocessing."),
-							action: __(
-								"Marked as needing a nonconformity (automatic NC comes with FEAT-030)."
-							),
+							action: __("Marked as needing a nonconformity."),
 					  }
 			)}
 			<table class="tc-t2-table">

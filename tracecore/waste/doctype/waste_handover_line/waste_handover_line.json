@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-30 20:00:00.000000",
- "description": "One waste type of a handover (FEAT-049, FR-M10-04).",
+ "description": "One waste type of a handover (FR-M10-04).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

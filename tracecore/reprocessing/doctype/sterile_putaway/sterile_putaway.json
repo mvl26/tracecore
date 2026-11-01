@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "SP-.YY.MM.DD.-.####",
  "creation": "2026-10-22 09:00:00.000000",
- "description": "One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves (FEAT-025, UC-11). Created and submitted by the sterile storage service only.",
+ "description": "One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves (UC-11). Created and submitted by the sterile storage service only.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

@@ -1174,7 +1174,7 @@ class T5Load {
 					])
 				)} · ${esc(
 			load.machine.is_connected
-				? __("API connected - automatic data comes with FEAT-024")
+				? __("API connected - data comes automatically from the station agent")
 				: __("not connected - enter the cycle data by hand with confirmation")
 		)} · ${esc(
 			max

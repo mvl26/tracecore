@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "AS-.YYYY.-.#####",
  "creation": "2026-10-20 12:00:00.000000",
- "description": "Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.",
+ "description": "Count of one set unit against its pinned BOM at station T3. Submitting it records the T3 step gate.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -167,7 +167,7 @@
    "fieldtype": "Check",
    "label": "Non-conformance Pending",
    "read_only": 1,
-   "description": "Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030."
+   "description": "Set while the record has a shortage or a foreign instrument; the Incident CAPA is created automatically."
   },
   {
    "fieldname": "foreign_instruments",

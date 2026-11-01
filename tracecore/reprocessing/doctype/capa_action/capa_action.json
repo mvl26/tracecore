@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-26 12:00:00.000000",
- "description": "Corrective or preventive action of an Incident CAPA (FEAT-030, FR-M2-22).",
+ "description": "Corrective or preventive action of an Incident CAPA (FR-M2-22).",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

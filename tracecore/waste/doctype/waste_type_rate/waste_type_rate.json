@@ -35,5 +35,5 @@
  "sort_order": "DESC",
  "states": [],
  "istable": 1,
- "description": "Treatment rate per kg of a waste type; rows are only added (FEAT-047, FR-M10-01.4)."
+ "description": "Treatment rate per kg of a waste type; rows are only added (FR-M10-01.4)."
 }

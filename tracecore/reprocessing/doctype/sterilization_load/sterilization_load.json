@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "ME-.YY.MM.DD.-.##",
  "creation": "2026-10-23 10:00:00.000000",
- "description": "Sterilization load on a steam or plasma sterilizer (FEAT-022, UC-09, WF-03). Created by the sterilizing service when loading is completed.",
+ "description": "Sterilization load on a steam or plasma sterilizer (UC-09, WF-03). Created by the sterilizing service when loading is completed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

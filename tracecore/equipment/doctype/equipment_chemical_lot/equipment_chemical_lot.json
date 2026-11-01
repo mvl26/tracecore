@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-31 12:00:00.000000",
- "description": "Chemical lot in use on a machine (FEAT-052, A-71).",
+ "description": "Chemical lot in use on a machine (A-71).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

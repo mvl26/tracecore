@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "LR-.YY.MM.DD.-.##",
  "creation": "2026-10-22 16:00:00.000000",
- "description": "Wash batch on a washer-disinfector or ultrasonic cleaner (FEAT-021, UC-06, WF-04). Created by the washing service when loading is completed; submitting it closes the batch.",
+ "description": "Wash batch on a washer-disinfector or ultrasonic cleaner (UC-06, WF-04). Created by the washing service when loading is completed; submitting it closes the batch.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -321,7 +321,7 @@
   },
   {
    "default": "0",
-   "description": "A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).",
+   "description": "A failed batch still needs a nonconformity; created automatically once the incident feature exists.",
    "fieldname": "nc_pending",
    "fieldtype": "Check",
    "label": "Nonconformity Pending",

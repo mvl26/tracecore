@@ -34,5 +34,5 @@ def execute():
 			row.name,
 			old={field: row.get(field) for field in values},
 			new=values,
-			reason=_("Instrument master defaults filled in by the FEAT-014 data patch"),
+			reason=_("Instrument master defaults filled in by the data patch"),
 		)

@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "LNC-.YYYY.-.#####",
  "creation": "2026-10-29 10:00:00.000000",
- "description": "Linen collection by department (FEAT-033, UC-16, FR-M3-01): lines of type, pieces, kg and contaminated flag.",
+ "description": "Linen collection by department (UC-16, FR-M3-01): lines of type, pieces, kg and contaminated flag.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

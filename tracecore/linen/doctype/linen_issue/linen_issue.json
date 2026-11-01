@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "LNI-.YYYY.-.#####",
  "creation": "2026-10-29 14:00:00.000000",
- "description": "Linen issued back to a department, new linen from stock, or linen disposed of (FEAT-035, UC-18, FR-M3-05, FR-M3-06).",
+ "description": "Linen issued back to a department, new linen from stock, or linen disposed of (UC-18, FR-M3-05, FR-M3-06).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
