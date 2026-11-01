@@ -14,7 +14,17 @@ const T5_COMPLETE = "tracecore.v1.load.complete";
 const T5_SAVE = "tracecore.v1.load.manual_data";
 const T5_PDA_QUERY = "(max-width: 480px)";
 // từ chối làm mẻ đang nhập dữ liệu không còn dùng được → bỏ trạng thái nhập để quét mẻ khác
-const T5_DATA_RESET_CODES = ["LOAD_NOT_FOUND", "LOAD_NOT_OPEN", "STATION_WRONG_STEP"];
+const T5_DATA_RESET_CODES = [
+	"LOAD_NOT_FOUND",
+	"LOAD_NOT_OPEN",
+	"LOAD_ALREADY_RELEASED",
+	"STATION_WRONG_STEP",
+];
+
+// Mẻ đã giải phóng là thông báo, không phải lỗi: không tô đỏ, không nút gọi giám sát
+function t5RejectNotice(error) {
+	return { variant: error.code === "LOAD_ALREADY_RELEASED" ? "info" : "error", ...error };
+}
 
 function t5Date(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
@@ -353,7 +363,7 @@ class T5Load {
 	reject(error, method) {
 		if (this.data && T5_DATA_RESET_CODES.includes(error.code) && method !== T5_COMPLETE)
 			this.data = null;
-		this.notice = { variant: "error", ...error };
+		this.notice = t5RejectNotice(error);
 		this.show();
 	}
 

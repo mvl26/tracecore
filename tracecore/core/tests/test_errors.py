@@ -221,6 +221,7 @@ class TestErrors(FrappeTestCase):
 				"PACK_NOT_LOADABLE",
 				"LOAD_CAPACITY_EXCEEDED",
 				"LOAD_NOT_OPEN",
+				"LOAD_ALREADY_RELEASED",
 				"DAILY_TEST_REQUIRED",
 				"EQUIPMENT_INSPECTION_EXPIRED",
 				"EQUIPMENT_CALIBRATION_EXPIRED",
@@ -329,6 +330,7 @@ class TestErrors(FrappeTestCase):
 			"PACK_NOT_LOADABLE": 409,
 			"LOAD_CAPACITY_EXCEEDED": 409,
 			"LOAD_NOT_OPEN": 409,
+			"LOAD_ALREADY_RELEASED": 409,
 			"CARD_MISMATCH": 403,
 		}
 		for code, status in expected.items():

@@ -620,3 +620,94 @@ class TestT5ReleaseBlockByRole(FrappeTestCase):
 			],
 			"Đăng xuất, giám sát CSSD đăng nhập thẻ tại trạm này rồi nhập PIN",
 		)
+
+
+T5_NOTICE_STATION = """
+const station = makeStation();
+station.session = {token: "tok", roles: ["TC R05"]};
+station.form = element();
+// như shell: lỗi nghiệp vụ có nút gọi giám sát, thông báo không phải lỗi thì không
+station.businessButtons = (notice) =>
+	notice.variant && notice.variant !== "error" ? "" : '<button data-action="call-r02">Call</button>';
+const released = {
+	code: "LOAD_ALREADY_RELEASED", http_status: 409, action: "",
+	title: "Load ME-261101-06 has been released, packs moved to sterile storage",
+	reason: "Released by An Nguyen at 01/11/2026 09:30.",
+};
+const closed = {
+	code: "LOAD_NOT_OPEN", http_status: 409, title: "Load is closed", reason: "Already failed.",
+	action: "Scan a running load.", error_code: "QT-001", error_name: "Wrong station order", has_guide: 1,
+};
+const LOADED = {name: "ME-261101-06"};
+"""
+
+
+class TestT5LoadAlreadyReleased(FrappeTestCase):
+	"""Mẻ đã giải phóng ở T5: thông báo, không phải lỗi; mẻ đóng khác giữ lỗi QT-001 và các nút."""
+
+	def run_screen(self, build):
+		return run_js(
+			self,
+			[ERR, T5, "public/js/station_t5b.js"],
+			[[], ["T5Load"], ["T5Release"]],
+			FAKE_STATION + T5_NOTICE_STATION + build,
+		)
+
+	def release_screen(self, error):
+		return self.run_screen(
+			f"""
+			const screen = new T5Release(station, {{}});
+			screen.show = () => {{}};
+			screen.ctx = LOADED;
+			screen.scans = {{equipment_raw: "SK-1", load_raw: "ME-261101-06"}};
+			screen.reject({error});
+			emit({{html: screen.noticeHtml(), ctx: screen.ctx, scans: screen.scans, variant: screen.notice.variant}});
+			"""
+		)
+
+	def data_screen(self, error):
+		return self.run_screen(
+			f"""
+			const screen = new T5Load(station);
+			screen.show = () => {{}};
+			screen.data = LOADED;
+			screen.reject({error}, "tracecore.v1.load.data_scan");
+			emit({{html: screen.noticeHtml(), data: screen.data, state: screen.viewState(), variant: screen.notice.variant}});
+			"""
+		)
+
+	def assert_is_notice(self, out):
+		self.assertEqual(out["variant"], "info")
+		self.assertIn("tc-alert-info", out["html"])
+		self.assertIn('role="status"', out["html"])
+		self.assertIn("ME-261101-06", out["html"])
+		self.assertIn("Released by An Nguyen at 01/11/2026 09:30.", out["html"])
+		self.assertNotIn("call-r02", out["html"])
+		self.assertNotIn("data-tc-guide", out["html"])
+		self.assertNotIn("tc-alert-error", out["html"])
+		self.assertNotIn("tc-alert-action", out["html"])
+
+	def assert_is_error(self, out):
+		self.assertEqual(out["variant"], "error")
+		self.assertIn("tc-alert-error", out["html"])
+		self.assertIn("[QT-001]", out["html"])
+		self.assertIn("call-r02", out["html"])
+		self.assertIn("data-tc-guide", out["html"])
+
+	def test_unload_tab_shows_a_notice_and_clears_the_scan(self):
+		out = self.release_screen("released")
+		self.assert_is_notice(out)
+		self.assertIsNone(out["ctx"])
+		self.assertEqual(out["scans"], {"equipment_raw": "", "load_raw": ""})
+
+	def test_cycle_data_tab_shows_a_notice_and_leaves_data_entry(self):
+		out = self.data_screen("released")
+		self.assert_is_notice(out)
+		self.assertIsNone(out["data"])
+		self.assertEqual(out["state"], "result")
+
+	def test_other_closed_load_stays_an_error_on_both_tabs(self):
+		self.assert_is_error(self.release_screen("closed"))
+		out = self.data_screen("closed")
+		self.assert_is_error(out)
+		self.assertEqual(out["state"], "error")

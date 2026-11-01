@@ -37,6 +37,8 @@ STERILIZER_TYPES = {"Steam Sterilizer": "Steam", "Plasma Sterilizer": "Plasma"}
 RUNNING = "Running"
 CYCLE_COMPLETE = "Cycle Complete"
 OPEN_STATUSES = (RUNNING, CYCLE_COMPLETE)
+RELEASED = "Released"
+CANCELLED = 2  # docstatus
 LOADABLE = "Packed"
 TEST_PROGRAM = "Test"  # Process Program.program_kind: chạy ở tab Kiểm tra hằng ngày, không nhận gói (A-83)
 IN_LOAD = "In Load"
@@ -825,7 +827,26 @@ def _check_data_station(station, machine, unload_only=False):
 	)
 
 
+def _released_by_line(doc):
+	"""Ai giải phóng và lúc nào: chỉ tên nhân viên, không mã HR; thiếu thông tin nào thì bỏ phần đó."""
+	who = (_employee(doc.released_by) or {}).get("employee_name")
+	when = get_datetime(doc.released_at).strftime("%d/%m/%Y %H:%M") if doc.released_at else None
+	if who and when:
+		return _("Released by {0} at {1}.").format(who, when)
+	if who:
+		return _("Released by {0}.").format(who)
+	return _("Released at {0}.").format(when) if when else ""
+
+
 def _require_open(doc):
+	# Mẻ đã giải phóng là kết quả bình thường, không phải sai quy trình: mã riêng, trạm hiện thông báo, mọi thao tác ghi vẫn bị từ chối
+	if doc.status == RELEASED and doc.docstatus != CANCELLED:
+		raise _blocked(
+			"LOAD_ALREADY_RELEASED",
+			_("Load {0} has been released, packs moved to sterile storage").format(doc.name),
+			_released_by_line(doc),
+			"",
+		)
 	if doc.status not in OPEN_STATUSES or doc.docstatus != 0:
 		raise _blocked(
 			"LOAD_NOT_OPEN",
@@ -896,7 +917,7 @@ def scan_for_data(load, raw, station):
 	"""Kiểm MỘT mã quét khi nhập dữ liệu mẻ `load`: ``{"ok": True, "kind": "equipment" | "load"}``.
 
 	Máy khác máy của mẻ → EQUIPMENT_MISMATCH ngay; mã mẻ khác hoặc mã loại khác → SCAN_INVALID; mẻ đã đóng →
-	LOAD_NOT_OPEN; trạm không phải T5/cửa ra → STATION_WRONG_STEP. Không ghi.
+	LOAD_NOT_OPEN (đã giải phóng → LOAD_ALREADY_RELEASED); trạm không phải T5/cửa ra → STATION_WRONG_STEP. Không ghi.
 	"""
 	doc = _load_doc(load)
 	machine = frappe.db.get_value("Equipment", doc.equipment, list(EQUIPMENT_FIELDS), as_dict=True)
