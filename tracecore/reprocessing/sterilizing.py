@@ -24,7 +24,7 @@ from frappe.utils.data import get_system_timezone
 from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import cycle_time
+from tracecore.reprocessing import cycle_defaults, cycle_time, pack_display
 
 STEP = "T5"  # mã cổng trong step_gate
 FUNCTION = "STERI_LOAD"
@@ -387,12 +387,33 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 	return _admitted(pack, duplicate=False, count=len(queue) + 1, capacity=capacity)
 
 
+def recheck_packs(equipment, program, packs):
+	"""Kiểm lại gói đang nạp khi đổi chương trình (A-88, #1844), không ghi; trả ``[{"cycle_id", "ok", "code", "reason"}]``.
+
+	Đi qua đúng `admit_pack`. `queued` chỉ gồm các gói đã đạt trước đó, không có chính gói đang kiểm: có nó thì
+	`admit_pack` coi là quét lặp và bỏ qua mọi kiểm tra; gói không đạt cũng không chiếm dung tích.
+	"""
+	accepted, rows = [], []
+	for cycle_id in packs or []:
+		try:
+			admit_pack(cycle_id, equipment, program, accepted)
+		except BlockedError as error:
+			rows.append(
+				{"cycle_id": cycle_id, "ok": False, "code": error.block.code, "reason": error.block.reason}
+			)
+			continue
+		accepted.append(cycle_id)
+		rows.append({"cycle_id": cycle_id, "ok": True, "code": None, "reason": None})
+	return rows
+
+
 def _admitted(pack, duplicate, count, capacity):
 	set_type = frappe.db.get_value("Set Unit", pack.set_unit, "set_type")
 	return {
 		"cycle_id": pack.name,
 		"set_id": pack.set_unit,
 		"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name"),
+		"department_name": pack_display.row_of(pack.name)["department_name"],
 		"method": pack.method,
 		"pack_type": pack.pack_type,
 		"pack_type_name": frappe.db.get_value("Item", pack.pack_type, "item_name"),
@@ -437,11 +458,20 @@ def running_loads():
 			"unloaded": bool(row.unload_scan_at),
 			"requires_bi": cint(row.requires_bi),
 			"is_priority": cint(row.is_priority),
-			"packs": frappe.get_all(
-				"Load Pack", filters={"parent": row.name, "parenttype": "Sterilization Load"}, pluck="pack"
-			),
+			"packs": packs,
+			"pack_rows": [pack_display.row_of(pack) for pack in packs],
 		}
-		for row in rows
+		for row, packs in (
+			(
+				row,
+				frappe.get_all(
+					"Load Pack",
+					filters={"parent": row.name, "parenttype": "Sterilization Load"},
+					pluck="pack",
+				),
+			)
+			for row in rows
+		)
 	]
 
 
@@ -566,6 +596,7 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 	return {
 		"load": load.name,
 		"packs": accepted,
+		"pack_rows": [pack_display.row_of(pack) for pack in accepted],
 		"rejected": rejected,
 		"print": label,
 		# label preview §4.12 trên kiosk: QR thật của mã mẻ (máy in nhận ZPL riêng)
@@ -665,6 +696,7 @@ def _pack_rows(doc):
 				"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name")
 				if set_type
 				else None,
+				"department_name": pack_display.row_of(row.pack)["department_name"],
 				"method": pack.method if pack else None,
 				"pack_type": pack.pack_type if pack else None,
 				"expiry": pack.expiry if pack else None,
@@ -792,6 +824,15 @@ def _scan_kind(doc, raw):
 		return "equipment"
 	if scanned["type"] == "load" and scanned["id"] == doc.name:
 		return "load"
+	if scanned["type"] in ("set", "pack"):  # #1819: dỡ theo mã mẻ, không theo gói
+		raise _blocked(
+			"SCAN_INVALID",
+			_("This is an instrument set code - please scan the load code (ME-...)"),
+			_("Code {0} is a set or pack code; unloading works on the whole load {1}.").format(
+				scanned["raw"], doc.name
+			),
+			_("Scan the QR code of load {0}.").format(doc.name),
+		)
 	raise _blocked(
 		"SCAN_INVALID",
 		_("Invalid code"),
@@ -838,7 +879,11 @@ def scan_for_data(load, raw, station):
 def data_context(load, equipment_raw, load_raw, station):
 	"""Ngữ cảnh nhập dữ liệu sau khi đã quét QR máy và QR mẻ: `lookup` + ``parameter_schema`` của chương trình."""
 	doc, _machine = _open_for_data(load, equipment_raw, load_raw, station)
-	return {**_describe(doc), "parameter_schema": _parameters(doc.program)}
+	return {
+		**_describe(doc),
+		"parameter_schema": cycle_defaults.parameter_schema(doc.program),
+		"prefill": cycle_defaults.prefill(doc),
+	}
 
 
 def _number(value):
@@ -899,7 +944,7 @@ def save_manual_data(
 	thiếu tham số `required`, giờ kết thúc (hoặc trước giờ bắt đầu), ảnh bản in (máy có bản in, FR-M2-10.2), lý do
 	(máy kết nối được mà nhập tay, FR-M2-10.4), chưa tick xác nhận hoặc chưa quét thẻ. Thẻ quét phải là thẻ của
 	`employee` (Employee của phiên) — khác → CARD_MISMATCH (A-16, Q11). Giá trị ngoài dải vẫn lưu, đặt
-	``needs_review`` (FR-M2-10.3). Đủ dữ liệu → ``status = Cycle Complete``. Sửa lại được khi mẻ còn mở.
+	``needs_review`` và chặn kết quả Đạt (FR-M2-10.3, A-89); giá trị mặc định, trường đã sửa ghi ở `params`, `machine_data`. Đủ dữ liệu → ``status = Cycle Complete``. Sửa lại được khi mẻ còn mở.
 	"""
 	client_time.check_skew(client_ts)
 	doc, machine = _open_for_data(load, equipment_raw, load_raw, station, for_update=True)
@@ -908,7 +953,7 @@ def save_manual_data(
 		if isinstance(row, dict) and row.get("parameter_name"):
 			given[row["parameter_name"]] = row.get("value")
 	parameters, missing, review = [], [], False
-	for schema in _parameters(doc.program):
+	for schema in cycle_defaults.parameter_schema(doc.program):
 		value = _number(given.get(schema.parameter_name))
 		if value is None:
 			if cint(schema.required):
@@ -947,14 +992,16 @@ def save_manual_data(
 		)
 	if missing:
 		raise _incomplete(doc, missing)
+	source, trace = cycle_defaults.trace(doc, parameters, started, ended)
 	doc.update(
 		{
 			"params": frappe.as_json(parameters),
+			"machine_data": frappe.as_json(trace),
 			"machine_alerts": frappe.as_json({"text": machine_alerts}) if machine_alerts else None,
 			"machine_report": machine_report or None,
 			"started_at": started,
 			"ended_at": ended,
-			"data_source": "Manual",
+			"data_source": source,
 			"data_complete": 1,
 			"needs_review": 1 if review else 0,
 			"manual_reason": (reason or "").strip() or None,

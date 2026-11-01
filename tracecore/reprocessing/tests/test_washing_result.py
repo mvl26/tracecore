@@ -296,7 +296,7 @@ class TestWashManualData(WashResultCase):
 		self.assertEqual(data["parameters"][1]["unit"], "phút")
 		values[0]["value"] = 89  # dưới min
 		self.assertEqual(self.save_data(batch, values=values)["needs_review"], 1)
-		self.assertEqual(self.close(batch)["result"], "Pass")  # Cần xem xét không chặn Đạt (Q8)
+		self.assertEqual(_code(self.close, batch), "CYCLE_DATA_OUT_OF_RANGE")  # A-89 sửa Q8
 
 	def test_end_time_and_times_are_saved(self):
 		batch, _sets = self.load()

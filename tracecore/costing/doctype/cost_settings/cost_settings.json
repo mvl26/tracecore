@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-29 09:00:00.000000",
- "description": "Settings of the costing module (FEAT-044, A-47 C6): the date up to which cost periods are closed.",
+ "description": "Settings of the costing module (A-47 C6): the date up to which cost periods are closed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

@@ -184,5 +184,5 @@
  "states": [],
  "autoname": "prompt",
  "naming_rule": "Set by user",
- "description": "Waste bag or bin with a system CT- code (FEAT-047, FR-M10-01.5); created only by a collection."
+ "description": "Waste bag or bin with a system CT- code (FR-M10-01.5); created only by a collection."
 }

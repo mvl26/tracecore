@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-20 15:00:00.000000",
- "description": "One BOM line the packer ticked as present in the tray (FR-M2-07, BRU-REP-013).",
+ "description": "One BOM line the packer ticked as present in the tray (FR-M2-07).",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",

@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcPackLabelHtml, tcErrorTitle, tcGuideButton */
 /* global uuid4, clientTs, esc */
 // Màn T7 cấp phát (SCR-12 kiosk, SCR-36 PDA, FEAT-026) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -676,11 +676,10 @@ class T7Issue {
 		const packs = this.issue.packs;
 		const body = packs.length
 			? this.tableHtml(
-					[__("Cycle ID"), __("Set ID"), __("Set Name"), __("Use-by date"), ""],
+					[__("Pack"), __("Set ID"), __("Use-by date"), ""],
 					packs.map((p) => [
-						`<span class="tc-mono">${esc(p.cycle_id)}</span>`,
+						tcPackLabelHtml(p),
 						`<span class="tc-mono">${esc(p.set_id)}</span>`,
-						esc(p.set_name || ""),
 						`<b>${esc(t7Date(p.expiry))}</b>${
 							p.fefo_note ? ` <span class="tc-tag">${esc(p.fefo_note)}</span>` : ""
 						}`,

@@ -37,7 +37,7 @@ def execute():
 			name,
 			old={"cycle_bom_version": 0},
 			new={"cycle_bom_version": version},
-			reason=_("BOM version pinned for the running cycle by the FEAT-015 data patch"),
+			reason=_("BOM version pinned for the running cycle by the data patch"),
 		)
 	if rows:
 		print(f"Pinned the BOM version of {len(rows)} set(s) in a running cycle")

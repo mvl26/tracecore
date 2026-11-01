@@ -18,7 +18,7 @@ from frappe.utils import cint, getdate, now_datetime, today
 
 from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import sterilizing, storage
+from tracecore.reprocessing import cycle_defaults, sterilizing, storage
 
 STEP = sterilizing.STEP
 RELEASED = "Released"
@@ -167,6 +167,8 @@ def set_cycle_result(
 		)
 	if not confirmed:
 		raise _confirmation_needed([sterilizing.MISSING_CONFIRMATION])
+	if result == "Pass":
+		_check_params_inside(doc)
 	doc.update(
 		{
 			"cycle_result": result,
@@ -180,6 +182,12 @@ def set_cycle_result(
 	doc.flags.ignore_permissions = True
 	doc.save()
 	return {"load": doc.name, "cycle_result": result, "needs_review": cint(doc.needs_review)}
+
+
+def _check_params_inside(doc):
+	cycle_defaults.check_inside_range(
+		frappe.parse_json(doc.params) if doc.params else [], _("Sterilization load"), doc.name
+	)
 
 
 def _invalid(reason):
@@ -342,6 +350,8 @@ def _release(
 			_("Enter the cycle data and confirm it, then record the result."),
 			items=[_("cycle data")],
 		)
+	if doc.cycle_result == "Pass":  # kết quả máy báo hoặc dữ liệu sửa sau khi ghi Đạt (A-89)
+		_check_params_inside(doc)
 	daily = _daily_indicators(doc, machine)
 	state = _indicator_state(doc, machine, daily)
 	missing = _missing(doc, state, bool(cint(review_confirmed)))

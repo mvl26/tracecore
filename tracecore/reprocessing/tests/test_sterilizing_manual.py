@@ -140,7 +140,7 @@ class TestSterilizingManual(FrappeTestCase):
 			(result["data_complete"], result["needs_review"], result["status"]), (1, 0, "Cycle Complete")
 		)
 		load = frappe.get_doc("Sterilization Load", self.load.name)
-		self.assertEqual(load.data_source, "Manual")
+		self.assertEqual(load.data_source, "Manual Default")
 		self.assertEqual(load.manual_confirmed_by, self.employee.name)
 		self.assertIsNotNone(load.manual_confirmed_at)
 		self.assertEqual(load.machine_report, "/files/printout.png")

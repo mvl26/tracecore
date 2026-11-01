@@ -200,3 +200,25 @@ class ProcessProgram(Document):
 						row.idx, row.parameter_name
 					)
 				)
+			self._validate_default_value(row, low, high)
+
+	def _validate_default_value(self, row, low, high):
+		# A-89: giá trị điền sẵn form chu trình; rỗng = không có mặc định
+		text = (row.default_value or "").strip().replace(",", ".")
+		row.default_value = text or None
+		if not text:
+			return
+		try:
+			value = float(text)
+		except ValueError:
+			frappe.throw(
+				_("Row {0}: Default Value of parameter {1} must be a number.").format(
+					row.idx, row.parameter_name
+				)
+			)
+		if (low > 0 and value < low) or (high > 0 and value > high):
+			frappe.throw(
+				_("Row {0}: Default Value of parameter {1} is outside its range.").format(
+					row.idx, row.parameter_name
+				)
+			)

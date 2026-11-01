@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-30 20:00:00.000000",
- "description": "Contract price per kg of one waste type, by validity period (FEAT-049, FR-M10-05, .4).",
+ "description": "Contract price per kg of one waste type, by validity period (FR-M10-05, .4).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

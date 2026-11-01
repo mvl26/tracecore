@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-31 12:00:00.000000",
- "description": "Error code catalog: the source of the handbook by station and by code (FEAT-052, A-71).",
+ "description": "Error code catalog: the source of the handbook by station and by code (A-71).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

@@ -3,7 +3,7 @@
  "autoname": "LG-.YY.MM.DD.-.##",
  "creation": "2026-10-29 12:00:00.000000",
  "doctype": "DocType",
- "description": "Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg (FEAT-034, UC-17, FR-M3-03/04).",
+ "description": "Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg (UC-17, FR-M3-03/04).",
  "engine": "InnoDB",
  "field_order": [
   "batch_type",

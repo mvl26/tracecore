@@ -4,7 +4,7 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "description": "Chemical used by a laundry batch (FEAT-034, FR-M3-04); the lot is picked FEFO when stock is issued.",
+ "description": "Chemical used by a laundry batch (FR-M3-04); the lot is picked FEFO when stock is issued.",
  "field_order": [
   "item",
   "item_name",

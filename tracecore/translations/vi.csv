@@ -380,7 +380,6 @@ No reason was entered for deferring the maintenance of: {0}.,Chưa nhập lý do
 "Enter the reason for the deferral, or confirm the maintenance as done.","Nhập lý do hoãn, hoặc xác nhận Đã bảo dưỡng.",
 Set has reached its cycle limit,Bộ đã hết số chu trình cho phép,
 Set {0} has used {1} of {2} reprocessing cycles.,Bộ {0} đã dùng {1}/{2} chu trình tái xử lý.,
-Do not pack this set. The override request will be available from FEAT-032.,Không đóng gói bộ này. Đề nghị ghi đè có từ FEAT-032.,
 Wrong station,Sai trạm,
 {0} is not a {1} packing station.,{0} không phải trạm đóng gói {1}.,
 Open the packing screen on a T4 station.,Mở màn đóng gói trên trạm T4.,
@@ -459,7 +458,6 @@ Demo laparoscopic grasper,Kẹp nội soi (mẫu),
 Demo laparoscopic scissors,Kéo nội soi (mẫu),
 Demo trocar,Trocar (mẫu),
 Arranged set photo,Ảnh bộ đã sắp xếp,
-Available from FEAT-032,Có từ FEAT-032,
 "Check the Station Agent, then reprint.",Kiểm tra phần mềm trạm rồi in lại.,
 Close to the cycle limit,Sắp hết số chu trình cho phép,
 Confirm all components,Xác nhận tất cả thành phần,
@@ -589,7 +587,7 @@ A station without a zone cannot be active.,Trạm chưa gán khu thì không th�
 A station without a zone cannot be activated.,Trạm chưa gán khu không kích hoạt được.,
 Station {0} has no zone: it was deactivated.,Trạm {0} chưa gán khu nên đã chuyển sang không hoạt động.,
 "Cannot change the zone type: active station {0} has step {1}, which zone type {2} does not allow.","Không đổi được loại khu: trạm {0} đang hoạt động có bước {1}, loại khu {2} không cho phép.",
-"Zone and station configuration (FEAT-002): zone type, station function by zone, active flag.","Cấu hình khu và trạm (FEAT-002): loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
+"Zone and station configuration: zone type, station function by zone, active flag.","Cấu hình khu và trạm: loại khu, chức năng trạm theo khu, trạng thái hoạt động.",
 Station Peripheral,Thiết bị ngoại vi của trạm,
 Peripherals,Thiết bị ngoại vi,Zone Station
 Peripheral Type,Loại thiết bị,Station Peripheral
@@ -606,7 +604,7 @@ Serial Port,Cổng nối tiếp,Station Peripheral
 Baud Rate,Tốc độ baud,Station Peripheral
 Is Active,Đang hoạt động,Station Peripheral
 Notes,Ghi chú,Station Peripheral
-"Scanner or scale attached to a station (FEAT-002): connection USB HID, Serial or TCP.","Máy quét hoặc cân gắn với trạm (FEAT-002): kết nối USB HID, cổng nối tiếp hoặc TCP.",
+"Scanner or scale attached to a station: connection USB HID, Serial or TCP.","Máy quét hoặc cân gắn với trạm: kết nối USB HID, cổng nối tiếp hoặc TCP.",
 1 to 65535.,1 đến 65535.,
 For example COM3 or /dev/ttyUSB0.,Ví dụ COM3 hoặc /dev/ttyUSB0.,
 Default 9600.,Mặc định 9600.,
@@ -967,7 +965,7 @@ Required fields are missing: {0}.,Thiếu trường bắt buộc: {0}.,
 Compatible method {0} is listed more than once.,Phương pháp tương thích {0} bị khai báo trùng.,
 Value cannot be negative.,Giá trị không được âm.,
 Item {0} is disabled and cannot be linked to an instrument.,"Vật tư {0} đã bị vô hiệu, không gắn được với dụng cụ.",
-Instrument master defaults filled in by the FEAT-014 data patch,Bản vá dữ liệu FEAT-014 điền giá trị mặc định cho danh mục dụng cụ,
+Instrument master defaults filled in by the data patch,Bản vá dữ liệu điền giá trị mặc định cho danh mục dụng cụ,
 Instrument Data Gaps,Dụng cụ cần bổ sung dữ liệu,
 A reason is required to retire an instrument.,Phải nhập lý do ngừng sử dụng dụng cụ.,
 Instrument {0} is already retired.,Dụng cụ {0} đã ngừng sử dụng.,
@@ -1437,7 +1435,7 @@ Packaging item in use with a shelf life; the set type shelf life defaults to it.
 "Override in days, only shorter than the default pack type shelf life. 0 = no override (the pack type shelf life applies).","Hạn lưu riêng theo ngày, chỉ được ngắn hơn hạn lưu của loại gói mặc định. 0 = không ghi đè (áp hạn lưu của loại gói).",Instrument Set Type
 BOM version in effect today; maintained by the system when BOM versions are saved.,Phiên bản BOM đang hiệu lực hôm nay; hệ thống tự cập nhật khi lưu phiên bản BOM.,Instrument Set Type
 "Standard assembly time in minutes, 0-600. 0 = not entered yet.","Thời gian lắp ráp chuẩn theo phút, 0-600. 0 = chưa nhập.",Instrument Set Type
-"Instrument set type (FEAT-001 skeleton, FEAT-018 packing data, FEAT-015 header): code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.","Loại bộ dụng cụ: mã, tên, phương pháp tiệt khuẩn, khoa sở hữu, cờ cấy ghép, thời gian lắp ráp chuẩn, GTIN-14, loại gói mặc định, hạn lưu riêng, ảnh bộ đã xếp và phiên bản BOM hiện hành.",Instrument Set Type
+"Instrument set type: code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.","Loại bộ dụng cụ: mã, tên, phương pháp tiệt khuẩn, khoa sở hữu, cờ cấy ghép, thời gian lắp ráp chuẩn, GTIN-14, loại gói mặc định, hạn lưu riêng, ảnh bộ đã xếp và phiên bản BOM hiện hành.",Instrument Set Type
 "{0} is not a packaging item, so it cannot be chosen as the pack type.","{0} không phải vật tư gói, không chọn làm loại gói được.",
 Pack type {0} is disabled and cannot be chosen.,"Loại gói {0} đã ngừng dùng, không chọn được.",
 Pack type {0} has no shelf life yet and cannot be chosen.,"Loại gói {0} chưa có hạn lưu, không chọn được.",
@@ -1450,7 +1448,7 @@ Current BOM Version is maintained by the system. Save a new BOM version to chang
 BOM version {0}: {1},Phiên bản BOM {0}: {1},
 The sterilization method cannot be changed to {0}: these BOM lines are not compatible with it.,Không đổi được phương pháp tiệt khuẩn sang {0}: các dòng BOM sau không tương thích.,
 Incompatible BOM lines,Dòng BOM không tương thích,
-Set type header defaults filled in by the FEAT-015 data patch,Bản vá dữ liệu FEAT-015 điền giá trị mặc định cho phần đầu loại bộ,
+Set type header defaults filled in by the data patch,Bản vá dữ liệu điền giá trị mặc định cho phần đầu loại bộ,
 Demo operating theatre,Phòng mổ (mẫu),
 A reason is required to save a new BOM version.,Phải nhập lý do để lưu phiên bản BOM mới.,
 A saved BOM version cannot be changed. Create a new BOM version.,"Phiên bản BOM đã lưu không sửa được, hãy tạo phiên bản mới.",
@@ -1463,7 +1461,7 @@ BOM lines can only be created through Edit BOM.,Dòng BOM chỉ tạo qua Sửa 
 "BOM lines must be a list of objects with instrument, qty and position.","Dòng BOM phải là danh sách gồm dụng cụ, số lượng và thứ tự xếp.",
 BOM not saved,Chưa lưu BOM,
 BOM too large,BOM quá lớn,
-BOM version data filled in by the FEAT-015 data patch,Bản vá dữ liệu FEAT-015 điền dữ liệu phiên bản BOM,
+BOM version data filled in by the data patch,Bản vá dữ liệu điền dữ liệu phiên bản BOM,
 "BOM version {0} saved by {1} (based on version {2}), effective from {3}. Reason: {4}","{1} lưu BOM phiên bản {0} (sửa từ phiên bản {2}), hiệu lực từ {3}. Lý do: {4}",
 Base version must be a whole number of at least 0.,Phiên bản cơ sở phải là số nguyên từ 0 trở lên.,
 Based On Version,Sửa từ phiên bản,Set BOM Item
@@ -1511,7 +1509,7 @@ scheduled BOM version {0},BOM phiên bản {0} đã lên lịch,
 {0} must be valid JSON.,{0} phải là JSON hợp lệ.,
 Cycle BOM Version,Phiên bản BOM của chu trình,
 "BOM version of the set type pinned when the current cycle started (reception); the set keeps it, also after release, until the next reception starts a new cycle. 0 = not pinned (the effective version applies). Changed only by the step gate.","Phiên bản BOM của loại bộ được ghim khi mở chu trình hiện hành (tiếp nhận); bộ giữ phiên bản này, kể cả sau khi giải phóng, tới lần tiếp nhận kế tiếp mở chu trình mới. 0 = chưa ghim (dùng phiên bản đang hiệu lực). Chỉ cổng kiểm soát được thay đổi.",
-BOM version pinned for the running cycle by the FEAT-015 data patch,Bản vá dữ liệu FEAT-015 ghim phiên bản BOM cho chu trình đang chạy,
+BOM version pinned for the running cycle by the data patch,Bản vá dữ liệu ghim phiên bản BOM cho chu trình đang chạy,
 Shelf life not changed,Chưa đổi hạn lưu,
 "{0} is not a packaging item, so it has no pack type shelf life.",{0} không phải vật tư gói nên không có hạn lưu loại gói.,
 Choose a packaging item.,Chọn một vật tư gói.,
@@ -1903,7 +1901,7 @@ Set units are created only with Issue Set IDs.,Bộ dụng cụ chỉ được t
 Estimated,Ước tính,
 Max cycles,Số chu trình tối đa,
 Packing,Đóng gói,
-"A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).","Lô không đạt vẫn cần lập phiếu không phù hợp (NC); hệ thống sẽ tự tạo khi có tính năng sự cố (FEAT-030).","Wash Batch"
+"A failed batch still needs a nonconformity; created automatically once the incident feature exists.","Lô không đạt vẫn cần lập phiếu không phù hợp (NC); hệ thống sẽ tự tạo khi có tính năng sự cố.","Wash Batch"
 "A recorded value is outside the program range; R02 should review it.","Có giá trị ghi nhận nằm ngoài dải của chương trình; R02 cần xem xét.","Wash Batch"
 "A set unit appears more than once in the wash batch.","Một bộ dụng cụ xuất hiện nhiều lần trong lô rửa.",
 "A wash batch cannot be cancelled.","Không hủy được lô rửa.",
@@ -1942,7 +1940,7 @@ Nonconformity Pending,Chờ lập phiếu không phù hợp,Wash Batch
 "Not a washer","Không phải máy rửa",
 "Parameters, alerts and the result the machine reported: [{parameter_name, unit, value, outside_range}] plus alerts and reported_result.","Tham số, cảnh báo và kết quả máy báo: [{parameter_name, unit, value, outside_range}] cùng alerts và reported_result.","Wash Batch"
 "Photo of the printout or chart of the machine.","Ảnh bản in hoặc biểu đồ của máy.","Wash Batch"
-"Quantity used; filled by the consumption feature (FEAT-042).","Số lượng đã dùng; do tính năng tiêu hao (FEAT-042) điền.","Wash Batch Chemical"
+"Quantity used; filled by the consumption feature.","Số lượng đã dùng; do tính năng tiêu hao điền.","Wash Batch Chemical"
 "R02 who confirmed a pass for a machine without connection or printout.","R02 xác nhận kết quả Đạt cho máy không kết nối và không có bản in.","Wash Batch"
 "Result Note","Ghi chú kết quả","Wash Batch"
 "Result Source","Nguồn kết quả","Wash Batch"
@@ -2021,7 +2019,6 @@ A batch can pass only when the cleaning test has passed.,Lô chỉ Đạt khi ki
 "Scan the QR code on the washer, then scan each set.","Quét QR trên máy rửa, rồi quét từng bộ.",""
 "This account cannot work with wash batches at this station.","Tài khoản này không được thao tác lô rửa tại trạm này.",""
 "Washer {0} scanned · {1}","Máy {0} đã quét · {1}",""
-"API connected - automatic data comes with FEAT-024; unload with confirmed manual entry.","Kết nối API — dữ liệu tự động có ở FEAT-024; dỡ lô nhập tay có xác nhận.",""
 "Not connected - unload with confirmed manual entry.","Không kết nối — dỡ lô nhập tay có xác nhận.",""
 "{0} is already on the list","{0} đã có trong danh sách",""
 "Scanned {0} into washer {1} ({2} set(s))","Đã quét {0} vào máy {1} ({2} bộ)",""
@@ -2078,7 +2075,7 @@ Confirmation tick is required,Bắt buộc đánh dấu ô xác nhận kết qu�
 "No valid lot of chemical {0}","Không có lô hợp lệ của hóa chất {0}",""
 "Every lot of this chemical has expired or is out of stock.","Mọi lô của hóa chất này đã hết hạn hoặc hết tồn.",""
 "Receive a new lot into stock or call R02.","Nhập kho lô mới hoặc gọi R02.",""
-"API connected - automatic data comes with FEAT-024","kết nối API — dữ liệu tự động có ở FEAT-024",""
+"API connected - data comes automatically from the station agent","kết nối API — dữ liệu tự động từ phần mềm trạm",""
 "not connected - unload with confirmed manual entry","không kết nối — dỡ lô nhập tay có xác nhận",""
 "Sets scanned into washer {0} ({1}) - the batch code is generated at Complete loading","Bộ đã quét vào máy {0} ({1}) — mã lô sẽ tự sinh khi Hoàn thành nạp",""
 "Complete loading → generate batch code","Hoàn thành nạp → sinh mã lô",""
@@ -2109,7 +2106,7 @@ Confirmation tick is required,Bắt buộc đánh dấu ô xác nhận kết qu�
 "Wash batch · {0} · {1}","Lô rửa · {0} · {1}",""
 "Sets in batch ({0}): {1}","Bộ trong lô ({0}): {1}",""
 "Cycle data: confirmed manual entry","Dữ liệu chu trình: nhập tay có xác nhận",""
-"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)","Chưa có dữ liệu chu trình — cần dữ liệu tự động hoặc nhập tay có xác nhận trước khi kết luận Đạt (BRU-REP-015)",""
+"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass","Chưa có dữ liệu chu trình — cần dữ liệu tự động hoặc nhập tay có xác nhận trước khi kết luận Đạt",""
 "Running batches - unload: scan the washer QR code, then the batch QR code",Lô đang chạy — dỡ máy: quét QR máy rồi mã QR của lô,
 "Unloading batch {0}","Đang dỡ lô {0}",""
 "Washer QR code","QR máy",""
@@ -2136,7 +2133,7 @@ Cleaning test,Kiểm tra làm sạch,
 "Recorded Pass for {0} set(s) of batch {1}","Đã ghi Đạt cho {0} bộ của lô {1}",""
 "Recorded Fail for {0} set(s) of batch {1}","Đã ghi Không đạt cho {0} bộ của lô {1}",""
 "Every set goes back to reprocessing.","Mọi bộ về Xử lý lại.",""
-Marked as needing a nonconformity (automatic NC comes with FEAT-030).,Đã đánh dấu cần lập phiếu không phù hợp (phiếu tự động có ở FEAT-030).,
+Marked as needing a nonconformity.,Đã đánh dấu cần lập phiếu không phù hợp.,
 "Next step","Bước tiếp theo",""
 "Chemicals","Hóa chất",""
 "End time","Giờ kết thúc",""
@@ -2187,7 +2184,7 @@ Send the set back to step {0} and complete it before storing the pack.,Đưa b�
 Set is not sterile yet,Bộ chưa vô khuẩn,
 Set {0} has not passed step(s) {1}.,Bộ {0} chưa đạt bước {1}.,
 Set {0} is {1}; only a sterile set can be returned for receipt.,Bộ {0} đang {1}; chỉ bộ vô khuẩn mới chuyển về chờ tiếp nhận được.,
-Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.,Kệ đang chứa gói (FEAT-025). Chỉ chức năng kho vô khuẩn được thay đổi.,Pack
+Shelf the pack is stored on. Changed only by the sterile storage service.,Kệ đang chứa gói. Chỉ chức năng kho vô khuẩn được thay đổi.,Pack
 Shelf {0} was scanned before any pack.,Kệ {0} được quét trước khi quét gói.,
 Station of the sterile zone this shelf belongs to.,Trạm của khu vô khuẩn mà kệ này thuộc về.,Sterile Location
 Sterile Location,Vị trí kho vô khuẩn,
@@ -2449,7 +2446,6 @@ Printed {0} by {1},In lúc {0} bởi {1},TC Issue Note
 "A sterilization load cannot be cancelled.","Không hủy được mẻ tiệt khuẩn.",""
 A sterilization load is changed only by the T5 screen service.,Mẻ tiệt khuẩn chỉ được thay đổi qua màn hình T5.,
 "A sterilization load is created only when loading is completed on the T5 screen.","Mẻ tiệt khuẩn chỉ được tạo khi hoàn thành nạp trên màn T5.",""
-"API connected - automatic data comes with FEAT-024; enter data by hand with confirmation.","Kết nối API — dữ liệu tự động có ở FEAT-024; nhập tay có xác nhận.",""
 "Ask R10 to add a printer to this station, then print the load label again.","Nhờ R10 thêm máy in cho trạm này, rồi in lại nhãn mẻ.",""
 "Ask R10 to add a program to the sterilizer.","Nhờ R10 thêm chương trình cho máy tiệt khuẩn.",""
 "Ask R10 to fix the label template of the sterilization load, then print the label again.","Nhờ R10 sửa mẫu nhãn mẻ tiệt khuẩn, rồi in lại nhãn.",""
@@ -2503,7 +2499,7 @@ Load {0} needs the sterilizer QR code and the load QR code.,Mẻ {0} cần QR m�
 "None of the scanned packs can go into a sterilization load on {0}.","Không gói nào trong số đã quét nạp được vào mẻ tiệt khuẩn trên máy {0}.",""
 "Not a sterilizer","Không phải máy tiệt khuẩn",""
 "Not connected - enter the cycle data by hand with confirmation.","Không kết nối — nhập tay dữ liệu chu trình có xác nhận.",""
-"Only packs that passed T4 and fit the program are accepted (BRU-FLOW-004, BRU-REP-004).","Chỉ nhận gói đã qua cổng T4 và hợp chương trình (BRU-FLOW-004, BRU-REP-004).",""
+Only packs that finished packing and fit the program of this sterilizer are accepted.,Chỉ nhận gói đã đóng gói xong và đúng chương trình máy.,
 "Open sterilization loads","Mẻ tiệt khuẩn đang mở",""
 "Outside the program range - Needs review","Ngoài dải của chương trình — Cần xem xét",""
 "Pack cannot be loaded","Không nạp được gói",""
@@ -2625,7 +2621,7 @@ Machine Scanned At Unloading,Đã quét máy khi dỡ,Sterilization Load
 "Why the cycle data of a connected machine was entered by hand.","Lý do dữ liệu chu trình của máy kết nối phải nhập tay.","Sterilization Load"
 "Sterilization Load","Mẻ tiệt khuẩn","Label Template"
 "Sterilization Load","Mẻ tiệt khuẩn","Pack"
-Sterilization load the pack went into (FEAT-022). Set only by the sterilizing service when loading is completed.,Mẻ tiệt khuẩn mà gói đã vào (FEAT-022). Chỉ được ghi qua chức năng tiệt khuẩn khi hoàn thành nạp.,Pack
+Sterilization load the pack went into. Set only by the sterilizing service when loading is completed.,Mẻ tiệt khuẩn mà gói đã vào. Chỉ được ghi qua chức năng tiệt khuẩn khi hoàn thành nạp.,Pack
 the Par Level of the set type,cơ số của loại bộ,
 the lowest max cycles of the instruments in the BOM,số chu trình tối đa thấp nhất của dụng cụ trong BOM,
 A reason of 1 to {0} characters is required for the estimated cycles used.,Phải nhập lý do từ 1 đến {0} ký tự cho số chu trình đã dùng ước tính.,
@@ -2820,7 +2816,7 @@ Emergency,Cấp cứu,
 Emergency case: the patient code may be entered up to 24 hours after the scan.,Ca cấp cứu: được nhập mã bệnh nhân trong vòng 24 giờ sau khi quét.,
 Patient Code Due,Hạn nhập mã bệnh nhân,
 Surgery Code,Mã ca mổ,
-"One scan of a sterile pack used on a patient at a department (T8 usage station, FEAT-027, UC-13). Created and submitted by the usage service only; the patient code is stored encrypted.","Một lần quét gói vô khuẩn dùng cho bệnh nhân tại khoa (trạm sử dụng T8, FEAT-027, UC-13). Chỉ chức năng ghi nhận sử dụng được tạo và ghi sổ; mã bệnh nhân được lưu mã hóa.",
+"One scan of a sterile pack used on a patient at a department (T8 usage station, UC-13). Created and submitted by the usage service only; the patient code is stored encrypted.","Một lần quét gói vô khuẩn dùng cho bệnh nhân tại khoa (trạm sử dụng T8, UC-13). Chỉ chức năng ghi nhận sử dụng được tạo và ghi sổ; mã bệnh nhân được lưu mã hóa.",
 Usage Record,Bản ghi sử dụng,
 Cycle result is not confirmed,Chưa xác nhận kết quả chu trình,
 The cycle result needs a Pass or Fail and the confirmation tick.,Kết quả chu trình cần chọn Đạt hoặc Không đạt và đánh dấu xác nhận.,
@@ -2928,7 +2924,7 @@ Test Date,Ngày thử,
 Bowie-Dick test date.,Ngày thử Bowie-Dick.,
 Read At,Thời điểm đọc,
 Read By,Người đọc,
-"One indicator result of a sterilization load: Bowie-Dick, chemical class 5/6 or biological (FEAT-023, UC-10). Written by the release service only; a biological indicator is Pending until it is read.","Một kết quả chỉ thị của mẻ tiệt khuẩn: Bowie-Dick, hóa học loại 5/6 hoặc sinh học (FEAT-023, UC-10). Chỉ được ghi qua chức năng giải phóng mẻ; chỉ thị sinh học ở trạng thái chờ cho tới khi được đọc.",
+"One indicator result of a sterilization load: Bowie-Dick, chemical class 5/6 or biological (UC-10). Written by the release service only; a biological indicator is Pending until it is read.","Một kết quả chỉ thị của mẻ tiệt khuẩn: Bowie-Dick, hóa học loại 5/6 hoặc sinh học (UC-10). Chỉ được ghi qua chức năng giải phóng mẻ; chỉ thị sinh học ở trạng thái chờ cho tới khi được đọc.",
 Load Indicator Result,Kết quả chỉ thị của mẻ,
 Review Confirmed,Đã xác nhận xem xét,
 R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3).,R02 đã xác nhận mẻ có tham số nhập tay ngoài dải của chương trình (FR-M2-10.3).,
@@ -3013,8 +3009,8 @@ Tested By (User),Người kiểm tra (tài khoản),Daily Test
 Tested By,Người kiểm tra,Daily Test
 Tested At,Thời điểm kiểm tra,Daily Test
 Non-conformity Pending,Chờ lập phiếu không phù hợp,Daily Test
-A failed test needs a non-conformity (FEAT-030 creates it).,Kiểm tra không đạt cần lập phiếu không phù hợp (FEAT-030 sẽ tự tạo).,Daily Test
-"One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (FEAT-040, UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.","Một lần kiểm tra hằng ngày của máy tiệt khuẩn hoặc máy rửa: Bowie-Dick, rò rỉ hoặc làm sạch (FEAT-040, UC-23). Chỉ được ghi qua chức năng Kiểm tra hằng ngày; Đạt thì mở máy trong ngày, Không đạt thì khóa máy.",
+A failed test needs a non-conformity.,Kiểm tra không đạt cần lập phiếu không phù hợp.,Daily Test
+"One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.","Một lần kiểm tra hằng ngày của máy tiệt khuẩn hoặc máy rửa: Bowie-Dick, rò rỉ hoặc làm sạch (UC-23). Chỉ được ghi qua chức năng Kiểm tra hằng ngày; Đạt thì mở máy trong ngày, Không đạt thì khóa máy.",
 Daily Test,Kiểm tra hằng ngày,
 bowie_dick,Bowie-Dick,Daily Test
 leak,Rò rỉ,Daily Test
@@ -3185,7 +3181,7 @@ Shortage,Thiếu dụng cụ,Assembly Record
 Has Shortage,Có thiếu,Assembly Record
 Missing Instruments,Dụng cụ thiếu,Assembly Record
 Non-conformance Pending,Chờ lập phiếu không phù hợp,Assembly Record
-Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030.,Được đánh dấu khi phiếu có dụng cụ thiếu hoặc dụng cụ lạ; sự cố kèm CAPA do FEAT-030 tạo.,Assembly Record
+Set while the record has a shortage or a foreign instrument; the Incident CAPA is created automatically.,Được đánh dấu khi phiếu có dụng cụ thiếu hoặc dụng cụ lạ; sự cố kèm CAPA do hệ thống tạo.,Assembly Record
 Foreign Instruments,Dụng cụ lạ,Assembly Record
 Instrument codes scanned at T3 that are not in the BOM.,Mã dụng cụ quét tại T3 không có trong BOM.,Assembly Record
 Shortage Confirmed by R02,R02 đã xác nhận thiếu,Assembly Record
@@ -3197,7 +3193,7 @@ Branch,Nhánh xử lý,Assembly Record
 Branch Reason,Lý do rẽ nhánh,Assembly Record
 BOM Count,Kiểm đếm BOM,Assembly Record
 Damage Branch,Nhánh xử lý hỏng,Assembly Record
-Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.,"Kiểm đếm một bộ theo BOM đã ghim tại trạm T3 (FEAT-020). Khi ghi sổ, hệ thống ghi nhận cổng kiểm soát T3.",Assembly Record
+Count of one set unit against its pinned BOM at station T3. Submitting it records the T3 step gate.,"Kiểm đếm một bộ theo BOM đã ghim tại trạm T3. Khi ghi sổ, hệ thống ghi nhận cổng kiểm soát T3.",Assembly Record
 BOM Quantity,Số lượng theo BOM,Assembly Line
 Counted,Đã đếm,Assembly Line
 Actual Quantity,Số lượng thực tế,Assembly Line
@@ -3207,7 +3203,7 @@ Replaced Quantity,Số lượng thay,Assembly Line
 Replacement Instrument,Dụng cụ thay thế,Assembly Line
 Photo,Ảnh,Assembly Line
 Disposition,Hướng xử lý,Assembly Line
-One BOM line counted at station T3 (FEAT-020).,Một dòng BOM được kiểm đếm tại trạm T3 (FEAT-020).,Assembly Line
+One BOM line counted at station T3.,Một dòng BOM được kiểm đếm tại trạm T3.,Assembly Line
 Assembly Line,Dòng kiểm đếm lắp ráp,
 Instrument Name,Tên dụng cụ,Assembly Line
 Instrument,Dụng cụ,Assembly Line
@@ -3545,7 +3541,7 @@ Usage,Sử dụng,Pack Trace
 Person,Người thực hiện,Pack Trace
 Station Step,Bước,Pack Trace
 Patient Code Hash,Mã băm của mã bệnh nhân,Usage Record
-"HMAC-SHA256 of the patient code, used to trace by patient without decrypting (FEAT-028).","HMAC-SHA256 của mã bệnh nhân, dùng để truy xuất theo bệnh nhân mà không giải mã (FEAT-028).",
+"HMAC-SHA256 of the patient code, used to trace by patient without decrypting.","HMAC-SHA256 của mã bệnh nhân, dùng để truy xuất theo bệnh nhân mà không giải mã.",
 "Only R01, R02 or department staff can trace sets.","Chỉ R01, R02 hoặc nhân viên khoa được truy xuất bộ dụng cụ.",
 Enter at least one search criterion.,Nhập ít nhất một tiêu chí tìm kiếm.,
 "No result. Check the code, try only one criterion (Set ID, Cycle ID or load), or widen the date range.","Không có kết quả. Kiểm tra lại mã, thử chỉ một tiêu chí (Set ID, Cycle ID hoặc mẻ), hoặc mở rộng khoảng ngày.",
@@ -4066,8 +4062,8 @@ Sterilization Load,Mẻ tiệt khuẩn,Maintenance Affected Load
 Wash Batch,Lô rửa,Maintenance Affected Load
 Calibration Due,Hạn hiệu chuẩn,Equipment
 Maintenance Due,Hạn bảo trì,Equipment
-Past this date the machine cannot start a load or batch; R02 can unlock it temporarily (FEAT-039).,Quá ngày này máy không bắt đầu được mẻ hoặc lô; R02 mở khóa tạm được (FEAT-039).,Equipment
-Reminder only: preventive maintenance past its date does not lock the machine (FEAT-039).,Chỉ nhắc: bảo trì phòng ngừa quá ngày không khóa máy (FEAT-039).,Equipment
+Past this date the machine cannot start a load or batch; R02 can unlock it temporarily.,Quá ngày này máy không bắt đầu được mẻ hoặc lô; R02 mở khóa tạm được.,Equipment
+Reminder only: preventive maintenance past its date does not lock the machine.,Chỉ nhắc: bảo trì phòng ngừa quá ngày không khóa máy.,Equipment
 Inspection Expired,Quá hạn kiểm định,Equipment
 Calibration Expired,Quá hạn hiệu chuẩn,Equipment
 Row {0}: quantity and rate cannot be negative.,Dòng {0}: số lượng và đơn giá không được âm.,
@@ -4262,7 +4258,7 @@ Infection Control,Kiểm soát nhiễm khuẩn,Competency Required Cert
 Sterilization,Tiệt khuẩn,Competency Required Cert
 Pressure Equipment Operation,Vận hành thiết bị áp lực,Competency Required Cert
 Other,Khác,Competency Required Cert
-"Station competency validity, required certificates and temporary access (FEAT-003, FEAT-037). Granted and revoked from the Competency Matrix.","Hiệu lực năng lực trạm, chứng chỉ bắt buộc và quyền tạm (FEAT-003, FEAT-037). Gán và thu hồi từ Ma trận năng lực.",
+"Station competency validity, required certificates and temporary access. Granted and revoked from the Competency Matrix.","Hiệu lực năng lực trạm, chứng chỉ bắt buộc và quyền tạm. Gán và thu hồi từ Ma trận năng lực.",
 Work Zone,Khu làm việc,Shift Assignment
 Zone of the shift. The employee needs a valid station competency in this zone (FR-M4-04.1).,Khu của ca. Nhân viên cần có năng lực trạm còn hiệu lực trong khu này (FR-M4-04.1).,
 "Choose a zone, not a station.","Chọn một khu, không phải một trạm.",
@@ -4678,7 +4674,7 @@ Laundry batch {0} is {1}.,Lô giặt {0} đang ở trạng thái {1}.,
 Load {0}: the weight must be a number greater than 0.,Mẻ nạp {0}: khối lượng phải là số lớn hơn 0.,
 Machine is not ready,Máy chưa sẵn sàng,
 Machine is not valid,Máy không hợp lệ,
-"Maximum load in kg of a laundry washer or dryer; empty means not limited (FEAT-034, FR-M3-03.3).","Tải tối đa (kg) của máy giặt hoặc máy sấy; để trống là không giới hạn (FEAT-034, FR-M3-03.3).",Equipment
+"Maximum load in kg of a laundry washer or dryer; empty means not limited (FR-M3-03.3).","Tải tối đa (kg) của máy giặt hoặc máy sấy; để trống là không giới hạn (FR-M3-03.3).",Equipment
 New batch,Lô mới,
 No laundry washer is ready to use.,Không có máy giặt nào sẵn sàng.,
 No machine that is ready is called {0}.,Không có máy sẵn sàng nào tên {0}.,
@@ -4954,7 +4950,7 @@ Packaging Cost,Chi phí bao gói,Cost Sheet Pack
 Instrument Depreciation,Khấu hao dụng cụ,Cost Sheet Pack
 Pack Cost,Giá thành gói,Cost Sheet Pack
 Pack Cost,Giá thành gói,Pack
-"Reprocessing cost of this pack for its cycle, written by the cost sheet (FEAT-046).","Giá thành tái xử lý của gói trong chu trình, do phiếu giá thành ghi (FEAT-046).",
+"Reprocessing cost of this pack for its cycle, written by the cost sheet.","Giá thành tái xử lý của gói trong chu trình, do phiếu giá thành ghi.",
 Cost sheets are written by the costing service only.,Phiếu giá thành chỉ do chức năng tính giá thành ghi.,
 Cost sheets cannot be deleted.,Không thể xóa phiếu giá thành.,
 Cost sheets are built for sterilization loads and wash batches only.,Phiếu giá thành chỉ lập cho mẻ tiệt khuẩn và lô rửa.,
@@ -5109,18 +5105,18 @@ Cost per Pack,Chi phí mỗi gói,
 0 = one-off; above 0 plans the next record that many months after the work is done.,0 = làm một lần; lớn hơn 0: tự lập phiếu kế tiếp sau từng ấy tháng kể từ ngày làm xong.,
 "2-8 uppercase letters or digits, used inside the GS1 GIAI Set ID.","2-8 chữ in hoa hoặc chữ số, dùng trong Set ID GS1 GIAI.",
 A TC R02 user who may approve or reject par overrides on behalf of R01 (FR-M8-04.1). Leave empty to let only R01 decide.,Người dùng TC R02 được duyệt hoặc từ chối ghi đè cơ số thay R01 (FR-M8-04.1). Để trống nếu chỉ R01 quyết định.,
-"A cost of the reprocessing department for a period (FEAT-044, UC-27): category, amount, period, document and source, allocated to machines, zones or process programs by percentage that must total 100.","Một khoản chi phí tái xử lý của khoa trong một kỳ (FEAT-044, UC-27): khoản mục, số tiền, kỳ, chứng từ và nguồn; phân bổ cho máy, khu hoặc chương trình xử lý theo tỷ lệ phần trăm, tổng phải bằng 100.",
+"A cost of the reprocessing department for a period (UC-27): category, amount, period, document and source, allocated to machines, zones or process programs by percentage that must total 100.","Một khoản chi phí tái xử lý của khoa trong một kỳ (UC-27): khoản mục, số tiền, kỳ, chứng từ và nguồn; phân bổ cho máy, khu hoặc chương trình xử lý theo tỷ lệ phần trăm, tổng phải bằng 100.",
 A deactivated shelf takes no new packs; its code stays valid for packs already on it.,Kệ đã ngừng dùng không nhận gói mới; mã kệ vẫn hợp lệ với các gói đang nằm trên đó.,
 "A draft cannot be cancelled or deleted, so a draft entered by mistake is abandoned with a reason (the record stays for the audit trail).","Phiếu nháp không hủy hay xóa được, nên phiếu nháp nhập nhầm sẽ được bỏ kèm lý do (phiếu vẫn được giữ cho nhật ký thao tác).",
-"A draft count that will not be posted: it no longer locks the warehouse and cannot be posted (FEAT-043, A-52).","Phiếu kiểm kê nháp sẽ không ghi sổ: không còn khóa kho và không thể ghi sổ (FEAT-043, A-52).",
+"A draft count that will not be posted: it no longer locks the warehouse and cannot be posted (A-52).","Phiếu kiểm kê nháp sẽ không ghi sổ: không còn khóa kho và không thể ghi sổ (A-52).",
 A draft that was dropped by the receiver; it is kept for the audit trail.,Phiếu nháp đã bị người tiếp nhận bỏ; vẫn được giữ cho nhật ký thao tác.,
-A failed batch still needs a nonconformity; created automatically once the incident feature exists (FEAT-030).,Lô không đạt vẫn cần ghi nhận không phù hợp; sẽ được tạo tự động khi có chức năng sự cố (FEAT-030).,
-A failed test needs a non-conformity (FEAT-030 creates it).,Kiểm tra không đạt cần ghi nhận không phù hợp (do FEAT-030 tạo).,
+A failed batch still needs a nonconformity; created automatically once the incident feature exists.,Lô không đạt vẫn cần ghi nhận không phù hợp; sẽ được tạo tự động khi có chức năng sự cố.,
+A failed test needs a non-conformity.,Kiểm tra không đạt cần ghi nhận không phù hợp.,
 A pack type (packaging Item) that a process program can run (FR-M5-02).,Loại gói (Item bao gói) mà chương trình xử lý chạy được (FR-M5-02).,
 A recorded value is outside the program range; R02 confirms it at release.,Có giá trị ghi nhận nằm ngoài khoảng của chương trình; R02 xác nhận khi giải phóng mẻ.,
 A recorded value is outside the program range; R02 should review it.,Có giá trị ghi nhận nằm ngoài khoảng của chương trình; R02 cần xem xét.,
-"A shelf or bay in the sterile store, identified by a KE- QR code (FEAT-025, UC-11).","Kệ hoặc ô trong kho vô khuẩn, nhận diện bằng mã QR KE- (FEAT-025, UC-11).",
-"A versioned price list for reprocessing costs (FEAT-045, UC-28): unit prices and pack norms that take effect from a date once approved by the head of department.","Bảng giá chi phí tái xử lý theo phiên bản (FEAT-045, UC-28): đơn giá và định mức theo gói, có hiệu lực từ một ngày sau khi trưởng khoa duyệt.",
+"A shelf or bay in the sterile store, identified by a KE- QR code (UC-11).","Kệ hoặc ô trong kho vô khuẩn, nhận diện bằng mã QR KE- (UC-11).",
+"A versioned price list for reprocessing costs (UC-28): unit prices and pack norms that take effect from a date once approved by the head of department.","Bảng giá chi phí tái xử lý theo phiên bản (UC-28): đơn giá và định mức theo gói, có hiệu lực từ một ngày sau khi trưởng khoa duyệt.",
 Abandon Reason,Lý do bỏ dở,
 Abnormal Note,Ghi chú bất thường,
 Abnormal Photo,Ảnh bất thường,
@@ -5136,7 +5132,7 @@ Analysis,Phân tích,
 Approved At,Duyệt lúc,
 Approved by,Người duyệt,
 Approved by (R02 / R09),Người duyệt (R02 / R09),
-"Approved override of a set that reached its reprocessing cycle limit (FEAT-032, FR-M8-04, WF-08). Requested (draft) -> Approved or Rejected (submitted) -> Expired; cancelling revokes an approved override.","Ghi đè được duyệt cho bộ đã đạt giới hạn số chu trình tái xử lý (FEAT-032, FR-M8-04, WF-08). Đã yêu cầu (nháp) -> Đã duyệt hoặc Từ chối (đã ghi sổ) -> Hết hạn; hủy là thu hồi ghi đè đã duyệt.",
+"Approved override of a set that reached its reprocessing cycle limit (FR-M8-04, WF-08). Requested (draft) -> Approved or Rejected (submitted) -> Expired; cancelling revokes an approved override.","Ghi đè được duyệt cho bộ đã đạt giới hạn số chu trình tái xử lý (FR-M8-04, WF-08). Đã yêu cầu (nháp) -> Đã duyệt hoặc Từ chối (đã ghi sổ) -> Hết hạn; hủy là thu hồi ghi đè đã duyệt.",
 Assembled At,Lắp ráp lúc,
 Assembled By,Người lắp ráp,
 Assembled set photo {0},Ảnh bộ đã lắp ráp {0},
@@ -5171,8 +5167,8 @@ Changed On,Ngày thay đổi,
 Channels,Kênh,
 Chemical Indicator Lot,Lô chỉ thị hóa học,
 Chemical indicator lot placed in the pack.,Lô chỉ thị hóa học đặt trong gói.,
-"Chemical lot used in a wash batch (FR-M2-03.5, BRU-INV-001).","Lô hóa chất dùng trong lô rửa (FR-M2-03.5, BRU-INV-001).",
-"Chemical used by a laundry batch (FEAT-034, FR-M3-04); the lot is picked FEFO when stock is issued.","Hóa chất dùng cho lô giặt (FEAT-034, FR-M3-04); lô hóa chất được chọn theo FEFO khi xuất kho.",
+"Chemical lot used in a wash batch (FR-M2-03.5).","Lô hóa chất dùng trong lô rửa (FR-M2-03.5).",
+"Chemical used by a laundry batch (FR-M3-04); the lot is picked FEFO when stock is issued.","Hóa chất dùng cho lô giặt (FR-M3-04); lô hóa chất được chọn theo FEFO khi xuất kho.",
 Cleaning Test,Kiểm tra làm sạch,
 Client State,Trạng thái trên thiết bị,
 Client Timestamp,Thời điểm trên thiết bị,
@@ -5186,22 +5182,22 @@ Component line of a received set with its tick (FR-M2-23). No received quantity 
 Confirmation,Xác nhận,
 Confirmed Shortage,Đã xác nhận thiếu,
 Connection,Kết nối,
-"Consumption norm per pack type (FEAT-045, A-48 D1): how much of a supply one pack of this type uses. Norms per program stay on the process program.","Định mức tiêu hao theo loại gói (FEAT-045, A-48 D1): lượng vật tư một gói loại này sử dụng. Định mức theo chương trình vẫn đặt ở chương trình xử lý.",
+"Consumption norm per pack type (A-48 D1): how much of a supply one pack of this type uses. Norms per program stay on the process program.","Định mức tiêu hao theo loại gói (A-48 D1): lượng vật tư một gói loại này sử dụng. Định mức theo chương trình vẫn đặt ở chương trình xử lý.",
 Contract No.,Số hợp đồng,
 Copied from the program when loading is completed.,Sao chép từ chương trình khi hoàn tất xếp mẻ.,
-"Corrective or preventive action of an Incident CAPA (FEAT-030, FR-M2-22).","Hành động khắc phục hoặc phòng ngừa của một Sự cố CAPA (FEAT-030, FR-M2-22).",
+"Corrective or preventive action of an Incident CAPA (FR-M2-22).","Hành động khắc phục hoặc phòng ngừa của một Sự cố CAPA (FR-M2-22).",
 Cost Component,Thành phần chi phí,
 Cost Components,Các thành phần chi phí,
 Cost Date,Ngày tính chi phí,
 Cost Note,Ghi chú chi phí,
 Cost and Parts,Chi phí và phụ tùng,
-Count of one set unit against its pinned BOM at station T3 (FEAT-020). Submitting it records the T3 step gate.,Kết quả đếm một bộ dụng cụ theo BOM đã cố định tại trạm T3 (FEAT-020). Ghi sổ sẽ ghi nhận cổng kiểm soát T3.,
+Count of one set unit against its pinned BOM at station T3. Submitting it records the T3 step gate.,Kết quả đếm một bộ dụng cụ theo BOM đã cố định tại trạm T3. Ghi sổ sẽ ghi nhận cổng kiểm soát T3.,
 Counted,Số đếm được,
 Counted by,Người đếm,
 Counted by (warehouse),Người đếm (kho),
 Counted qty,SL đếm được,
 Counters,Bộ đếm,
-"Counts as a disinfectant for contaminated laundry washed below 71 C (FEAT-034, FR-M3-03.2).","Được tính là hóa chất khử khuẩn cho đồ vải nhiễm bẩn giặt dưới 71 °C (FEAT-034, FR-M3-03.2).",
+"Counts as a disinfectant for contaminated laundry washed below 71 C (FR-M3-03.2).","Được tính là hóa chất khử khuẩn cho đồ vải nhiễm bẩn giặt dưới 71 °C (FR-M3-03.2).",
 Critical,Thiết yếu,
 Cycle Chart,Biểu đồ chu trình,
 Cycle Complete,Hoàn tất chu trình,
@@ -5212,7 +5208,7 @@ Cycle number of the last Cycle ID issued under this override; packing the same c
 "Cycle parameters: [{parameter_name, unit, value, min_value, max_value, outside_range}].","Thông số chu trình: [{parameter_name, unit, value, min_value, max_value, outside_range}].",
 Cycles At Action,Số chu trình lúc thực hiện,
 Cycles Source,Nguồn số chu trình,
-Cycles since the last maintenance and deferral history of one instrument in one set unit (FEAT-018 stub). One row per set unit and instrument; logic in FEAT-018 T4 and FEAT-014.,"Số chu trình kể từ lần bảo dưỡng gần nhất và lịch sử hoãn của một dụng cụ trong một bộ dụng cụ (FEAT-018, bản khung). Mỗi cặp bộ – dụng cụ một dòng; xử lý ở FEAT-018 T4 và FEAT-014.",
+Cycles since the last maintenance and deferral history of one instrument in one set unit. One row per set unit and instrument.,"Số chu trình kể từ lần bảo dưỡng gần nhất và lịch sử hoãn của một dụng cụ trong một bộ dụng cụ (bản khung). Mỗi cặp bộ – dụng cụ một dòng; xử lý ở và.",
 Cycles since the last maintenance at the moment of the action.,Số chu trình kể từ lần bảo dưỡng gần nhất tại thời điểm thực hiện.,
 Damaged,Hư hỏng,
 Damaged Count,Số lượng hư hỏng,
@@ -5234,7 +5230,7 @@ Depreciation per Load,Khấu hao mỗi mẻ,
 Desk Bell Entry,Mục chuông thông báo Desk,
 "Device time of the action, in UTC.","Thời điểm thao tác trên thiết bị, theo UTC.",
 "Device time of the confirmation, in UTC.","Thời điểm xác nhận trên thiết bị, theo UTC.",
-"Dirty-zone receiving slip for several sets in a row (FEAT-019, UC-05). Created and changed only by the receiving service; submitting it starts the cycle of each set and records gate T1.","Phiếu tiếp nhận đồ bẩn tại khu bẩn cho nhiều bộ liên tiếp (FEAT-019, UC-05). Chỉ dịch vụ tiếp nhận được tạo và sửa; ghi sổ sẽ bắt đầu chu trình của từng bộ và ghi nhận cổng T1.",
+"Dirty-zone receiving slip for several sets in a row (UC-05). Created and changed only by the receiving service; submitting it starts the cycle of each set and records gate T1.","Phiếu tiếp nhận đồ bẩn tại khu bẩn cho nhiều bộ liên tiếp (UC-05). Chỉ dịch vụ tiếp nhận được tạo và sửa; ghi sổ sẽ bắt đầu chu trình của từng bộ và ghi nhận cổng T1.",
 Disposal Decided At,Quyết định thanh lý lúc,
 Disposal Decided By,Người quyết định thanh lý,
 Disposal Requested At,Yêu cầu thanh lý lúc,
@@ -5262,7 +5258,7 @@ Entry Zone,Khu cửa vào,
 Equipment Depreciation,Khấu hao thiết bị,
 Equipment Name,Tên thiết bị,
 Equipment Type,Loại thiết bị,
-"Equipment record (FEAT-038): TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.","Hồ sơ thiết bị (FEAT-038): mã TB-, khu cửa vào/ra, khấu hao mỗi mẻ, khoảng an toàn, trạng thái kiểm soát.",
+"Equipment record: TB- code, entry/exit zone, depreciation per load, safe ranges, controlled status.","Hồ sơ thiết bị: mã TB-, khu cửa vào/ra, khấu hao mỗi mẻ, khoảng an toàn, trạng thái kiểm soát.",
 Error Code,Mã lỗi,
 Escalate After (minutes),Báo cấp trên sau (phút),
 Escalated,Đã báo cấp trên,
@@ -5273,7 +5269,7 @@ Excel Row,Dòng Excel,
 Existing,Đã có,
 Exit Zone,Khu cửa ra,
 Expected return,Dự kiến trả,
-"Expense category of a cost entry (FEAT-044, FR-M7-01.1): the 12 system categories are fixed, the accountant can add more.","Khoản mục chi phí của khoản chi phí (FEAT-044, FR-M7-01.1): 12 khoản mục của hệ thống là cố định, kế toán có thể thêm khoản mục khác.",
+"Expense category of a cost entry (FR-M7-01.1): the 12 system categories are fixed, the accountant can add more.","Khoản mục chi phí của khoản chi phí (FR-M7-01.1): 12 khoản mục của hệ thống là cố định, kế toán có thể thêm khoản mục khác.",
 Expired At,Hết hạn lúc,
 Expires At,Hết hạn lúc,
 Expiry Cause,Lý do hết hạn,
@@ -5312,7 +5308,7 @@ In Load,Trong mẻ,
 In Sterile Stock,Trong kho vô khuẩn,
 In-app,Trong ứng dụng,
 Inactive par levels are ignored. A par level is never deleted.,Cơ số ngừng dùng sẽ bị bỏ qua. Cơ số không bao giờ bị xóa.,
-"Incident / non-conformance with corrective and preventive actions (DT-INCIDENT, FEAT-030, FR-M2-21, FR-M2-22, WF-06). New -> Analysis -> CAPA -> Verification (draft) -> Closed or Cancelled (submitted).","Sự cố / không phù hợp kèm hành động khắc phục và phòng ngừa (DT-INCIDENT, FEAT-030, FR-M2-21, FR-M2-22, WF-06). Mới -> Phân tích -> CAPA -> Xác minh (nháp) -> Đóng hoặc Hủy (đã ghi sổ).",
+"Incident / non-conformance with corrective and preventive actions (DT-INCIDENT, FR-M2-21, FR-M2-22, WF-06). New -> Analysis -> CAPA -> Verification (draft) -> Closed or Cancelled (submitted).","Sự cố / không phù hợp kèm hành động khắc phục và phòng ngừa (DT-INCIDENT, FR-M2-21, FR-M2-22, WF-06). Mới -> Phân tích -> CAPA -> Xác minh (nháp) -> Đóng hoặc Hủy (đã ghi sổ).",
 Infection Control,Kiểm soát nhiễm khuẩn,
 Information,Thông tin,
 Inspection Due,Đến hạn kiểm định,
@@ -5320,14 +5316,14 @@ Inspection Expired,Hết hạn kiểm định,
 Instrument Depreciation,Khấu hao dụng cụ,
 Instrument codes scanned at T3 that are not in the BOM.,Mã dụng cụ quét tại T3 nhưng không có trong BOM.,
 Instrument group (A-06 I5): group maintenance threshold used by instruments without their own threshold.,"Nhóm dụng cụ (A-06 I5): ngưỡng bảo dưỡng của nhóm, áp dụng cho dụng cụ không có ngưỡng riêng.",
-"Instrument set type (FEAT-001 skeleton, FEAT-018 packing data, FEAT-015 header): code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.","Loại bộ dụng cụ (FEAT-001 khung, FEAT-018 dữ liệu đóng gói, FEAT-015 phần đầu): mã, tên, phương pháp tiệt khuẩn, khoa sở hữu, cờ cấy ghép, thời gian lắp ráp chuẩn, GTIN-14, loại gói mặc định, hạn dùng riêng, ảnh khay và phiên bản BOM hiện hành.",
+"Instrument set type: code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.","Loại bộ dụng cụ ( khung, dữ liệu đóng gói, phần đầu): mã, tên, phương pháp tiệt khuẩn, khoa sở hữu, cờ cấy ghép, thời gian lắp ráp chuẩn, GTIN-14, loại gói mặc định, hạn dùng riêng, ảnh khay và phiên bản BOM hiện hành.",
 Instruments,Dụng cụ,
 Instruments Confirmed,Đã xác nhận dụng cụ,
 Instruments at Their Limit,Dụng cụ đã đạt giới hạn,
 Is Connected,Có kết nối,
 Is Open,Đang mở,
 Issue note,Phiếu cấp phát,
-"Issue note of the T7 issuing station: several sterile packs handed to one department, signed by the recipient (FEAT-026, UC-12). Created, filled and submitted by the issuing service only.","Phiếu cấp phát của trạm cấp phát T7: nhiều gói vô khuẩn giao cho một khoa, có chữ ký người nhận (FEAT-026, UC-12). Chỉ dịch vụ cấp phát được tạo, điền và ghi sổ.",
+"Issue note of the T7 issuing station: several sterile packs handed to one department, signed by the recipient (UC-12). Created, filled and submitted by the issuing service only.","Phiếu cấp phát của trạm cấp phát T7: nhiều gói vô khuẩn giao cho một khoa, có chữ ký người nhận (UC-12). Chỉ dịch vụ cấp phát được tạo, điền và ghi sổ.",
 Issued At,Cấp phát lúc,
 Issued By,Người cấp phát,
 Issued By (User),Người cấp phát (Người dùng),
@@ -5345,32 +5341,32 @@ Label Type,Loại nhãn,
 Label Type Loaded,Loại nhãn đang lắp,
 "Label layout (Jinja) per label object (pack or QR object label), sterilization method and printer language. R10 edits it without code changes (FR-M2-08.4).","Bố cục nhãn (Jinja) theo đối tượng nhãn (gói hoặc nhãn QR đối tượng), phương pháp tiệt khuẩn và ngôn ngữ máy in. R10 tự chỉnh sửa, không cần sửa mã nguồn (FR-M2-08.4).",
 Label print queue entry; printed by the Station Agent (ADR-006).,Mục trong hàng đợi in nhãn; do phần mềm trạm in (ADR-006).,
-"Label printer of a station (FR-M9-03, FEAT-018). The loaded label roll decides which label type it can print (BRU-REP-011).","Máy in nhãn của trạm (FR-M9-03, FEAT-018). Cuộn nhãn đang lắp quyết định loại nhãn in được (BRU-REP-011).",
+"Label printer of a station (FR-M9-03). The loaded label roll decides which label type it can print.","Máy in nhãn của trạm (FR-M9-03). Cuộn nhãn đang lắp quyết định loại nhãn in được.",
 Laser-etched GIAI,GIAI khắc laser,
 Last Activity At,Hoạt động gần nhất lúc,
 Last Cycle No,Số chu trình cuối,
 Last Error,Lỗi gần nhất,
 Laundry Washer,Máy giặt,
-"Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg (FEAT-034, UC-17, FR-M3-03/04).","Lô giặt theo khối lượng: máy giặt, chương trình, cờ nhiễm bẩn, hóa chất, sấy, kết quả và chi phí mỗi kg (FEAT-034, UC-17, FR-M3-03/04).",
+"Laundry batch by weight: washer, program, contaminated flag, chemicals, drying, result and cost per kg (UC-17, FR-M3-03/04).","Lô giặt theo khối lượng: máy giặt, chương trình, cờ nhiễm bẩn, hóa chất, sấy, kết quả và chi phí mỗi kg (UC-17, FR-M3-03/04).",
 Leave at 0 for no lower limit.,Để 0 nếu không có giới hạn dưới.,
 Leave at 0 for no upper limit.,Để 0 nếu không có giới hạn trên.,
 "Leave empty for a one-door machine. A two-door machine exits to the next zone (Dirty, Clean, Sterile).","Để trống với máy một cửa. Máy hai cửa xuất ra khu kế tiếp (Bẩn, Sạch, Vô khuẩn).",
 Lifecycle History,Lịch sử vòng đời,
-"Line of a loaner BOM (FEAT-017, A-38): instrument name and quantity received; returned and damaged quantities are written by the return action.","Dòng BOM của bộ mượn (FEAT-017, A-38): tên dụng cụ và số lượng nhận; số lượng trả và hư hỏng do thao tác trả ghi vào.",
+"Line of a loaner BOM (A-38): instrument name and quantity received; returned and damaged quantities are written by the return action.","Dòng BOM của bộ mượn (A-38): tên dụng cụ và số lượng nhận; số lượng trả và hư hỏng do thao tác trả ghi vào.",
 Linen Type Name,Tên loại đồ vải,
-"Linen collection by department (FEAT-033, UC-16, FR-M3-01): lines of type, pieces, kg and contaminated flag.","Thu gom đồ vải theo khoa (FEAT-033, UC-16, FR-M3-01): các dòng loại, số chiếc, kg và cờ nhiễm bẩn.",
+"Linen collection by department (UC-16, FR-M3-01): lines of type, pieces, kg and contaminated flag.","Thu gom đồ vải theo khoa (UC-16, FR-M3-01): các dòng loại, số chiếc, kg và cờ nhiễm bẩn.",
 Linen collection receipt,Biên nhận thu gom đồ vải,
 Linen disposal record,Biên bản thanh lý đồ vải,
 Linen issue receipt,Biên nhận cấp phát đồ vải,
-"Linen issued back to a department, new linen from stock, or linen disposed of (FEAT-035, UC-18, FR-M3-05, FR-M3-06).","Đồ vải cấp trả lại cho khoa, đồ vải mới cấp từ kho, hoặc đồ vải thanh lý (FEAT-035, UC-18, FR-M3-05, FR-M3-06).",
+"Linen issued back to a department, new linen from stock, or linen disposed of (UC-18, FR-M3-05, FR-M3-06).","Đồ vải cấp trả lại cho khoa, đồ vải mới cấp từ kho, hoặc đồ vải thanh lý (UC-18, FR-M3-05, FR-M3-06).",
 Linen type,Loại đồ vải,
-"Linen type catalogue (FEAT-033, FR-M3-02): standard weight per piece, department quotas and value per piece. Inactive types stay for history.","Danh mục loại đồ vải (FEAT-033, FR-M3-02): khối lượng chuẩn mỗi chiếc, hạn mức theo khoa và giá trị mỗi chiếc. Loại ngừng dùng vẫn được giữ cho lịch sử.",
+"Linen type catalogue (FR-M3-02): standard weight per piece, department quotas and value per piece. Inactive types stay for history.","Danh mục loại đồ vải (FR-M3-02): khối lượng chuẩn mỗi chiếc, hạn mức theo khoa và giá trị mỗi chiếc. Loại ngừng dùng vẫn được giữ cho lịch sử.",
 Lines,Chi tiết,
 Load Share,Tỷ lệ trong mẻ,
 Load Type,Loại mẻ,
 Loaded By Scan,Xếp mẻ bằng quét,
 Loading Completed At,Hoàn tất xếp mẻ lúc,
-"Loaner set from a vendor (DT-LOANER, FEAT-017, A-38, UC-04, FR-M1-07, FR-M1-08). Submit = receive (instruments, loaner set type and an LN Set ID are created); return through the return action.","Bộ mượn từ nhà cung cấp (DT-LOANER, FEAT-017, A-38, UC-04, FR-M1-07, FR-M1-08). Ghi sổ = tiếp nhận (tạo dụng cụ, loại bộ mượn và Set ID LN); trả bộ qua thao tác trả.",
+"Loaner set from a vendor (DT-LOANER, A-38, UC-04, FR-M1-07, FR-M1-08). Submit = receive (instruments, loaner set type and an LN Set ID are created); return through the return action.","Bộ mượn từ nhà cung cấp (DT-LOANER, A-38, UC-04, FR-M1-07, FR-M1-08). Ghi sổ = tiếp nhận (tạo dụng cụ, loại bộ mượn và Set ID LN); trả bộ qua thao tác trả.",
 Lock Reason,Lý do khóa,
 Locked,Đã khóa,
 Lot,Lô,
@@ -5387,14 +5383,14 @@ Machine Status Before,Trạng thái máy trước đó,
 Machine status when an incident was opened; restored if the draft incident is cancelled.,Trạng thái máy khi mở sự cố; được khôi phục nếu hủy sự cố nháp.,
 Maintenance Done,Đã bảo dưỡng,
 Maintenance Due,Đến hạn bảo dưỡng,
-"Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason (FR-M1-09, BRU-REP-014).","Nhắc bảo dưỡng dụng cụ đã được xử lý khi đóng gói: đã làm, hoặc hoãn kèm lý do (FR-M1-09, BRU-REP-014).",
-"Maintenance, inspection, calibration or incident record of one machine (FEAT-039, UC-22). Submitting it closes the record, updates the validity dates of the machine and plans the next record; saving an incident puts the machine under repair.","Phiếu bảo dưỡng, kiểm định, hiệu chuẩn hoặc sự cố của một máy (FEAT-039, UC-22). Ghi sổ sẽ đóng phiếu, cập nhật các ngày hiệu lực của máy và lập phiếu kế tiếp; lưu phiếu sự cố sẽ chuyển máy sang trạng thái đang sửa chữa.",
+"Maintenance reminder of an instrument that was handled when the pack was made: done, or deferred with a reason (FR-M1-09).","Nhắc bảo dưỡng dụng cụ đã được xử lý khi đóng gói: đã làm, hoặc hoãn kèm lý do (FR-M1-09).",
+"Maintenance, inspection, calibration or incident record of one machine (UC-22). Submitting it closes the record, updates the validity dates of the machine and plans the next record; saving an incident puts the machine under repair.","Phiếu bảo dưỡng, kiểm định, hiệu chuẩn hoặc sự cố của một máy (UC-22). Ghi sổ sẽ đóng phiếu, cập nhật các ngày hiệu lực của máy và lập phiếu kế tiếp; lưu phiếu sự cố sẽ chuyển máy sang trạng thái đang sửa chữa.",
 Manual Data Confirmed At,Xác nhận dữ liệu nhập tay lúc,
 Manual Data Confirmed By,Người xác nhận dữ liệu nhập tay,
 Manual Entry Reason,Lý do nhập tay,
 Manual-entry Parameters,Thông số nhập tay,
 Max Cycles Status,Trạng thái số chu trình tối đa,
-"Maximum load in kg of a laundry washer or dryer; empty means not limited (FEAT-034, FR-M3-03.3).","Khối lượng tối đa (kg) của máy giặt hoặc máy sấy; để trống là không giới hạn (FEAT-034, FR-M3-03.3).",
+"Maximum load in kg of a laundry washer or dryer; empty means not limited (FR-M3-03.3).","Khối lượng tối đa (kg) của máy giặt hoặc máy sấy; để trống là không giới hạn (FR-M3-03.3).",
 Missing,Thiếu,
 Missing Count,Số lượng thiếu,
 Missing Instruments,Dụng cụ thiếu,
@@ -5425,25 +5421,25 @@ Not returned yet,Chưa trả,
 Number of times this step failed in this cycle.,Số lần bước này không đạt trong chu trình này.,
 "Offline Cycle ID ranges issued to a station for one day (ADR-003, A-40).","Dải Cycle ID ngoại tuyến cấp cho một trạm trong một ngày (ADR-003, A-40).",
 "Offline replay rejected by the server; R02 resolves it, the server record is kept (FR-M9-06.3, A-40).","Dữ liệu ngoại tuyến gửi lại bị máy chủ từ chối; R02 xử lý, bản ghi trên máy chủ được giữ nguyên (FR-M9-06.3, A-40).",
-One BOM line counted at station T3 (FEAT-020).,Một dòng BOM được đếm tại trạm T3 (FEAT-020).,
-One BOM line of a set type for one BOM version. A version is the set of lines with the same set type and version number; saved versions cannot be changed or deleted (FEAT-015). Lines are created only through Edit BOM.,Một dòng BOM của loại bộ cho một phiên bản BOM. Mỗi phiên bản là tập các dòng cùng loại bộ và số phiên bản; phiên bản đã lưu không sửa hay xóa được (FEAT-015). Dòng chỉ được tạo qua chức năng Sửa BOM.,
-"One BOM line the packer ticked as present in the tray (FR-M2-07, BRU-REP-013).","Một dòng BOM mà người đóng gói đã đánh dấu là có trong khay (FR-M2-07, BRU-REP-013).",
-"One allocation target of a cost entry (FEAT-044, FR-M7-02): a machine, a zone or a process program, with its percentage of the cost.","Một đối tượng phân bổ của khoản chi phí (FEAT-044, FR-M7-02): máy, khu hoặc chương trình xử lý, kèm tỷ lệ % chi phí.",
+One BOM line counted at station T3.,Một dòng BOM được đếm tại trạm T3.,
+One BOM line of a set type for one BOM version. A version is the set of lines with the same set type and version number; saved versions cannot be changed or deleted. Lines are created only through Edit BOM.,Một dòng BOM của loại bộ cho một phiên bản BOM. Mỗi phiên bản là tập các dòng cùng loại bộ và số phiên bản; phiên bản đã lưu không sửa hay xóa được. Dòng chỉ được tạo qua chức năng Sửa BOM.,
+"One BOM line the packer ticked as present in the tray (FR-M2-07).","Một dòng BOM mà người đóng gói đã đánh dấu là có trong khay (FR-M2-07).",
+"One allocation target of a cost entry (FR-M7-02): a machine, a zone or a process program, with its percentage of the cost.","Một đối tượng phân bổ của khoản chi phí (FR-M7-02): máy, khu hoặc chương trình xử lý, kèm tỷ lệ % chi phí.",
 "One catalog import from an Excel template and the result of each row (FR-M9-11, A-41).","Một lần nhập danh mục từ mẫu Excel và kết quả của từng dòng (FR-M9-11, A-41).",
 "One change of a par level: who, when, which field, old and new value (FR-M8-01.3, OTH-RET-002). Append-only.","Một lần thay đổi cơ số: ai, khi nào, trường nào, giá trị cũ và mới (FR-M8-01.3, OTH-RET-002). Chỉ được thêm, không sửa.",
 "One consumable (chemical, indicator) used by a process program, per load and/or per pack (FR-M5-02).","Một vật tư tiêu hao (hóa chất, chỉ thị) mà chương trình xử lý sử dụng, theo mẻ và/hoặc theo gói (FR-M5-02).",
-"One line of a linen collection: type, pieces, kg, contaminated flag (FEAT-033, FR-M3-01).","Một dòng của phiếu thu gom đồ vải: loại, số chiếc, kg, đánh dấu nhiễm khuẩn (FEAT-033, FR-M3-01).",
-"One line of a linen issue: type, pieces, kg (FEAT-035, FR-M3-05).","Một dòng của phiếu cấp phát đồ vải: loại, số chiếc, kg (FEAT-035, FR-M3-05).",
+"One line of a linen collection: type, pieces, kg, contaminated flag (FR-M3-01).","Một dòng của phiếu thu gom đồ vải: loại, số chiếc, kg, đánh dấu nhiễm khuẩn (FR-M3-01).",
+"One line of a linen issue: type, pieces, kg (FR-M3-05).","Một dòng của phiếu cấp phát đồ vải: loại, số chiếc, kg (FR-M3-05).",
 "One manual-entry parameter of a process program: name, unit, range, required (ADR-007 param_schema).","Một thông số nhập tay của chương trình xử lý: tên, đơn vị, khoảng giá trị, bắt buộc (ADR-007 param_schema).",
 "One notification for one recipient on one channel: sent / read / failed, attempts and escalation (FR-M9-10, FR-M9-10.1). Written only by core.notification.","Một thông báo gửi một người nhận qua một kênh: đã gửi / đã đọc / lỗi, số lần thử và chuyển cấp (FR-M9-10, FR-M9-10.1). Chỉ core.notification được ghi.",
 "One pack (Cycle ID) loaded into a sterilization load (FR-M2-09, UC-09).","Một gói (Cycle ID) đã xếp vào mẻ tiệt khuẩn (FR-M2-09, UC-09).",
-"One pack of a Recall Order with what must be done for it (FEAT-029, FR-M2-20.1).","Một gói thuộc lệnh thu hồi và việc cần làm với gói đó (FEAT-029, FR-M2-20.1).",
-"One packed set in one cycle, named by its Cycle ID (FEAT-018, UC-08). Created and submitted by the packing service; it is voided by status, never cancelled or deleted (WF-02).","Một bộ đã đóng gói trong một chu trình, đặt tên theo Cycle ID (FEAT-018, UC-08). Do dịch vụ đóng gói tạo và ghi sổ; vô hiệu bằng trạng thái, không bao giờ hủy hay xóa (WF-02).",
+"One pack of a Recall Order with what must be done for it (FR-M2-20.1).","Một gói thuộc lệnh thu hồi và việc cần làm với gói đó (FR-M2-20.1).",
+"One packed set in one cycle, named by its Cycle ID (UC-08). Created and submitted by the packing service; it is voided by status, never cancelled or deleted (WF-02).","Một bộ đã đóng gói trong một chu trình, đặt tên theo Cycle ID (UC-08). Do dịch vụ đóng gói tạo và ghi sổ; vô hiệu bằng trạng thái, không bao giờ hủy hay xóa (WF-02).",
 "One set unit loaded into a wash batch (FR-M2-03, UC-06).","Một bộ dụng cụ đã xếp vào lô rửa (FR-M2-03, UC-06).",
 "One set unit received on a dirty receipt: BOM version shown, confirmation state and abnormal note (FR-M2-01, FR-M2-23).","Một bộ dụng cụ tiếp nhận trên phiếu tiếp nhận đồ bẩn: phiên bản BOM hiển thị, trạng thái xác nhận và ghi chú bất thường (FR-M2-01, FR-M2-23).",
 "One sterilization method an instrument tolerates (FR-M1-01, A-06 I2). A change of the method set raises the instrument version.","Một phương pháp tiệt khuẩn mà dụng cụ chịu được (FR-M1-01, A-06 I2). Thay đổi danh sách phương pháp sẽ tăng phiên bản dụng cụ.",
-"One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves (FEAT-025, UC-11). Created and submitted by the sterile storage service only.","Một lần di chuyển gói trong kho vô khuẩn: nhập kho lên kệ hoặc chuyển giữa các kệ (FEAT-025, UC-11). Chỉ dịch vụ kho vô khuẩn được tạo và ghi sổ.",
-"One unit price of a cost rate version (FEAT-045, FR-M7-03): a supply item, or labor per hour, electricity per kWh, water per litre or steam per kg.","Một đơn giá trong phiên bản bảng giá (FEAT-045, FR-M7-03): vật tư, hoặc nhân công theo giờ, điện theo kWh, nước theo lít hay hơi nước theo kg.",
+"One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves (UC-11). Created and submitted by the sterile storage service only.","Một lần di chuyển gói trong kho vô khuẩn: nhập kho lên kệ hoặc chuyển giữa các kệ (UC-11). Chỉ dịch vụ kho vô khuẩn được tạo và ghi sổ.",
+"One unit price of a cost rate version (FR-M7-03): a supply item, or labor per hour, electricity per kWh, water per litre or steam per kg.","Một đơn giá trong phiên bản bảng giá (FR-M7-03): vật tư, hoặc nhân công theo giờ, điện theo kWh, nước theo lít hay hơi nước theo kg.",
 Optional ERPNext Item; stock is not synchronized.,Item ERPNext (không bắt buộc); tồn kho không được đồng bộ.,
 "Order of the line on the tray (1..n, numbered by the system).","Thứ tự dòng trên khay (1..n, hệ thống tự đánh số).",
 Outside Safe Range,Ngoài ngưỡng an toàn,
@@ -5469,14 +5465,14 @@ Par,Cơ số,
 Par Level Check,Kiểm tra cơ số,
 Par Levels,Cơ số,
 Par Override Delegate (R02),Người được ủy quyền ghi đè cơ số (R02),
-"Par level (FEAT-031, FR-M8-01/02): maximum reprocessing cycles of an instrument or set type, or the minimum/maximum stock of a set type in a department. Saving a reprocessing par level of an instrument updates Instrument.max_cycles.","Cơ số (FEAT-031, FR-M8-01/02): số chu trình tái xử lý tối đa của dụng cụ hoặc loại bộ dụng cụ, hoặc tồn tối thiểu/tối đa của một loại bộ dụng cụ tại khoa. Lưu cơ số tái xử lý của dụng cụ sẽ cập nhật Instrument.max_cycles.",
+"Par level (FR-M8-01/02): maximum reprocessing cycles of an instrument or set type, or the minimum/maximum stock of a set type in a department. Saving a reprocessing par level of an instrument updates Instrument.max_cycles.","Cơ số (FR-M8-01/02): số chu trình tái xử lý tối đa của dụng cụ hoặc loại bộ dụng cụ, hoặc tồn tối thiểu/tối đa của một loại bộ dụng cụ tại khoa. Lưu cơ số tái xử lý của dụng cụ sẽ cập nhật Instrument.max_cycles.",
 "Parameters, alerts and the result the machine reported: [{parameter_name, unit, value, outside_range}] plus alerts and reported_result.","Thông số, cảnh báo và kết quả máy báo về: [{parameter_name, unit, value, outside_range}] cùng alerts và reported_result.",
 Part,Phụ tùng,
 Parts,Phụ tùng,
-Past this date the machine cannot start a load or batch; R02 can unlock it temporarily (FEAT-039).,Quá ngày này máy không thể bắt đầu mẻ hoặc lô; R02 có thể mở khóa tạm thời (FEAT-039).,
+Past this date the machine cannot start a load or batch; R02 can unlock it temporarily.,Quá ngày này máy không thể bắt đầu mẻ hoặc lô; R02 có thể mở khóa tạm thời.,
 Patient Code Hash,Mã băm mã bệnh nhân,
 "Per business event: extra recipients, channels and urgency (FR-M9-10, ADR-014). People tied to the event itself are always notified.","Theo từng sự kiện nghiệp vụ: người nhận bổ sung, kênh và mức khẩn (FR-M9-10, ADR-014). Người liên quan trực tiếp đến sự kiện luôn được thông báo.",
-"Per-department min/max pieces of a linen type (FEAT-033, FR-M3-02); used by the reconciliation of FEAT-035.","Số chiếc tối thiểu/tối đa của một loại đồ vải theo từng khoa (FEAT-033, FR-M3-02); dùng khi đối chiếu ở FEAT-035.",
+"Per-department min/max pieces of a linen type (FR-M3-02); used by the linen reconciliation.","Số chiếc tối thiểu/tối đa của một loại đồ vải theo từng khoa (FR-M3-02); dùng khi đối chiếu đồ vải.",
 Performed By,Người thực hiện,
 Performed On,Ngày thực hiện,
 Peripheral Type,Loại thiết bị ngoại vi,
@@ -5484,7 +5480,7 @@ Peripherals,Thiết bị ngoại vi,
 Photo and IFU,Ảnh và IFU,
 Photo of the printout of the machine.,Ảnh phiếu in của máy.,
 Photo of the printout or chart of the machine.,Ảnh phiếu in hoặc biểu đồ của máy.,
-"Physical instrument set. The Set ID is a GS1 GIAI (AI 8004) issued by the system and never changed (FR-M1-05, BRU-ID-001).","Bộ dụng cụ vật lý. Set ID là mã GS1 GIAI (AI 8004) do hệ thống cấp và không bao giờ thay đổi (FR-M1-05, BRU-ID-001).",
+"Physical instrument set. The Set ID is a GS1 GIAI (AI 8004) issued by the system and never changed (FR-M1-05).","Bộ dụng cụ vật lý. Set ID là mã GS1 GIAI (AI 8004) do hệ thống cấp và không bao giờ thay đổi (FR-M1-05).",
 Planned Date,Ngày dự kiến,
 Planned Loads per Year,Số mẻ dự kiến mỗi năm,
 Plasma Sterilizer,Máy tiệt khuẩn plasma,
@@ -5495,7 +5491,7 @@ Pressure Equipment Operation,Vận hành thiết bị áp lực,
 Priced,Đã tính giá,
 Printed {0} by {1},In lúc {0} bởi {1},
 Priority Load,Mẻ ưu tiên,
-"Process program of one machine: parameters, norms, consumables, compatible pack types (FR-M5-02, FEAT-038).","Chương trình xử lý của một máy: thông số, định mức, vật tư tiêu hao, loại bao gói tương thích (FR-M5-02, FEAT-038).",
+"Process program of one machine: parameters, norms, consumables, compatible pack types (FR-M5-02).","Chương trình xử lý của một máy: thông số, định mức, vật tư tiêu hao, loại bao gói tương thích (FR-M5-02).",
 Program Code,Mã chương trình,
 Purchase Value,Giá trị mua,
 Putaway,Nhập kho,
@@ -5507,7 +5503,7 @@ Quantity required by the BOM version in force.,Số lượng theo phiên bản B
 Quantity used by one load (cycle).,Số lượng dùng cho một mẻ (chu trình).,
 Quantity used by one pack.,Số lượng dùng cho một gói.,
 Quantity used per kg of laundry (laundry programs).,Số lượng dùng cho mỗi kg đồ giặt (chương trình giặt).,
-Quantity used; filled by the consumption feature (FEAT-042).,Số lượng đã dùng; do chức năng tiêu hao điền (FEAT-042).,
+Quantity used; filled by the consumption feature.,Số lượng đã dùng; do chức năng tiêu hao điền.,
 Quarantine,Cách ly,
 Quota Warning,Cảnh báo định mức,
 R02 who confirmed a pass for a machine without connection or printout.,R02 đã xác nhận đạt cho máy không có kết nối hoặc phiếu in.,
@@ -5518,7 +5514,7 @@ Reason (recipient of another department),Lý do (người nhận thuộc khoa kh
 Recalculation,Tính lại,
 Recalculation Note,Ghi chú tính lại,
 Recalculation Of,Tính lại cho,
-"Recall order listing every affected pack of a sterilization load or indicator lot (DT-RECALL, FEAT-029, FR-M2-20, WF-05). Open (draft) -> Closed (submitted) when every pack is confirmed.","Lệnh thu hồi liệt kê mọi gói bị ảnh hưởng của một mẻ tiệt khuẩn hoặc lô chỉ thị (DT-RECALL, FEAT-029, FR-M2-20, WF-05). Đang mở (nháp) -> Đã đóng (đã ghi sổ) khi mọi gói đã được xác nhận.",
+"Recall order listing every affected pack of a sterilization load or indicator lot (DT-RECALL, FR-M2-20, WF-05). Open (draft) -> Closed (submitted) when every pack is confirmed.","Lệnh thu hồi liệt kê mọi gói bị ảnh hưởng của một mẻ tiệt khuẩn hoặc lô chỉ thị (DT-RECALL, FR-M2-20, WF-05). Đang mở (nháp) -> Đã đóng (đã ghi sổ) khi mọi gói đã được xác nhận.",
 Recalled,Đã thu hồi,
 Received At,Thời điểm tiếp nhận,
 Received by,Người nhận,
@@ -5541,7 +5537,7 @@ Reminded 30 Days,Đã nhắc trước 30 ngày,
 Reminded 7 Days,Đã nhắc trước 7 ngày,
 Reminder Level Sent,Mức nhắc đã gửi,
 Reminder after this many cycles since the last maintenance. Blank or 0 = no reminder.,Nhắc khi đạt số chu trình này kể từ lần bảo trì gần nhất. Để trống hoặc 0 = không nhắc.,
-Reminder only: preventive maintenance past its date does not lock the machine (FEAT-039).,Chỉ nhắc: bảo trì phòng ngừa quá hạn không khóa máy (FEAT-039).,
+Reminder only: preventive maintenance past its date does not lock the machine.,Chỉ nhắc: bảo trì phòng ngừa quá hạn không khóa máy.,
 Renews,Gia hạn cho,
 Replaced,Đã bị thay thế,
 Replaced Quantity,Số lượng thay thế,
@@ -5553,7 +5549,7 @@ Reprocessing cycles allowed beyond the limit.,Số chu trình tái xử lý đư
 Request,Yêu cầu,
 Required to submit an incident record.,Bắt buộc để ghi sổ bản ghi sự cố.,
 Required to submit an inspection or calibration record.,Bắt buộc để ghi sổ bản ghi kiểm định hoặc hiệu chuẩn.,
-"Required when the counted quantity differs from the system quantity by more than 10 % (FEAT-043, UC-26 E1).","Bắt buộc khi số lượng kiểm đếm chênh lệch với số lượng trên hệ thống quá 10 % (FEAT-043, UC-26 E1).",
+"Required when the counted quantity differs from the system quantity by more than 10 % (UC-26 E1).","Bắt buộc khi số lượng kiểm đếm chênh lệch với số lượng trên hệ thống quá 10 % (UC-26 E1).",
 Required when the entered values differ from the standard weight by more than 15 %.,Bắt buộc khi giá trị nhập chênh lệch với khối lượng chuẩn quá 15 %.,
 Required when the limit changes; recorded in the history.,Bắt buộc khi thay đổi giới hạn; được lưu vào lịch sử.,
 Requires Biological Indicator,Yêu cầu chỉ thị sinh học,
@@ -5562,7 +5558,7 @@ Resolved At,Thời điểm xử lý,
 Result Note,Ghi chú kết quả,
 Result Source,Nguồn kết quả,
 Result and Certificate,Kết quả và chứng nhận,
-"Result of one step gate (T1..T5) of one reprocessing cycle of one set unit. Written only by core.step_gate (DT-STEPGATE, FR-M2-25, BRU-FLOW-004).","Kết quả một cổng kiểm soát (T1..T5) trong một chu trình tái xử lý của một bộ dụng cụ. Chỉ core.step_gate được ghi (DT-STEPGATE, FR-M2-25, BRU-FLOW-004).",
+"Result of one step gate (T1..T5) of one reprocessing cycle of one set unit. Written only by core.step_gate (DT-STEPGATE, FR-M2-25).","Kết quả một cổng kiểm soát (T1..T5) trong một chu trình tái xử lý của một bộ dụng cụ. Chỉ core.step_gate được ghi (DT-STEPGATE, FR-M2-25).",
 Retired On,Ngày ngừng sử dụng,
 Retired Reason,Lý do ngừng sử dụng,
 Retirement,Ngừng sử dụng,
@@ -5606,18 +5602,18 @@ Set Tag,Thẻ bộ dụng cụ,
 Set Tray Label,Nhãn khay bộ dụng cụ,
 Set Units,Bộ dụng cụ,
 Set name,Tên bộ,
-Set while the record has a shortage or a foreign instrument; the Incident CAPA is created by FEAT-030.,Được đặt khi bản ghi có thiếu hụt hoặc dụng cụ lạ; sự cố CAPA do FEAT-030 tạo.,
+Set while the record has a shortage or a foreign instrument; the Incident CAPA is created automatically.,Được đặt khi bản ghi có thiếu hụt hoặc dụng cụ lạ; sự cố CAPA do hệ thống tạo.,
 Sets Received,Bộ đã tiếp nhận,
 Sets With Abnormal Note,Bộ có ghi chú bất thường,
 Sets and Chemicals,Bộ dụng cụ và hóa chất,
 Sets and Components,Bộ dụng cụ và thành phần,
-"Settings of the costing module (FEAT-044, A-47 C6): the date up to which cost periods are closed.","Cài đặt phân hệ chi phí (FEAT-044, A-47 C6): ngày mà các kỳ chi phí đến ngày đó đã khóa sổ.",
+"Settings of the costing module (A-47 C6): the date up to which cost periods are closed.","Cài đặt phân hệ chi phí (A-47 C6): ngày mà các kỳ chi phí đến ngày đó đã khóa sổ.",
 "Share above the maximum allowed without approval, up to 20 percent, emergency departments only.","Tỷ lệ được vượt mức tối đa mà không cần duyệt, tối đa 20 %, chỉ áp dụng cho khoa cấp cứu.",
 Shelf Life Applied,Thời hạn bảo quản áp dụng,
 Shelf Life Applied (Days),Thời hạn bảo quản áp dụng (ngày),
 Shelf Life Source,Nguồn thời hạn bảo quản,
 Shelf life applied,Thời hạn bảo quản áp dụng,
-Shelf the pack is stored on (FEAT-025). Changed only by the sterile storage service.,Kệ đang lưu gói (FEAT-025). Chỉ dịch vụ kho vô khuẩn được thay đổi.,
+Shelf the pack is stored on. Changed only by the sterile storage service.,Kệ đang lưu gói. Chỉ dịch vụ kho vô khuẩn được thay đổi.,
 Shortage,Thiếu hụt,
 Shortage Confirmed by R02,R02 đã xác nhận thiếu hụt,
 Shortage Reason,Lý do thiếu hụt,
@@ -5629,7 +5625,7 @@ Signed with card,Ký bằng thẻ,
 Snapshot of the set type GTIN-14 used in the Cycle ID label.,Bản lưu GTIN-14 của loại bộ dụng cụ dùng trên nhãn Cycle ID.,
 Snapshot: shelf life used when the pack was made. Later changes to the catalog do not alter it.,Bản lưu: thời hạn bảo quản dùng khi tạo gói. Thay đổi danh mục sau này không làm thay đổi giá trị này.,
 Snapshot: whether the pack type or the set type override decided the shelf life.,Bản lưu: thời hạn bảo quản được quyết định bởi loại bao gói hay giá trị ghi đè của loại bộ dụng cụ.,
-"Spare part used in a maintenance or incident record (FEAT-039, UC-22): name, quantity and rate; the amount is quantity times rate.","Phụ tùng dùng trong bản ghi bảo trì hoặc sự cố (FEAT-039, UC-22): tên, số lượng và đơn giá; thành tiền = số lượng × đơn giá.",
+"Spare part used in a maintenance or incident record (UC-22): name, quantity and rate; the amount is quantity times rate.","Phụ tùng dùng trong bản ghi bảo trì hoặc sự cố (UC-22): tên, số lượng và đơn giá; thành tiền = số lượng × đơn giá.",
 Standard Assembly Time (Minutes),Thời gian lắp ráp chuẩn (phút),
 Standard Weight (kg),Khối lượng chuẩn (kg),
 Standard assembly time,Thời gian lắp ráp chuẩn,
@@ -5647,8 +5643,8 @@ Steam 134,Hơi nước 134 °C,
 Steam Sterilizer,Máy tiệt khuẩn hơi nước,
 Steam per Cycle (kg),Hơi nước mỗi chu trình (kg),
 Sterilization,Tiệt khuẩn,
-"Sterilization load on a steam or plasma sterilizer (FEAT-022, UC-09, WF-03). Created by the sterilizing service when loading is completed.","Mẻ tiệt khuẩn trên máy tiệt khuẩn hơi nước hoặc plasma (FEAT-022, UC-09, WF-03). Do dịch vụ tiệt khuẩn tạo khi xếp mẻ xong.",
-Sterilization load the pack went into (FEAT-022). Set only by the sterilizing service when loading is completed.,Mẻ tiệt khuẩn chứa gói này (FEAT-022). Chỉ dịch vụ tiệt khuẩn đặt giá trị khi xếp mẻ xong.,
+"Sterilization load on a steam or plasma sterilizer (UC-09, WF-03). Created by the sterilizing service when loading is completed.","Mẻ tiệt khuẩn trên máy tiệt khuẩn hơi nước hoặc plasma (UC-09, WF-03). Do dịch vụ tiệt khuẩn tạo khi xếp mẻ xong.",
+Sterilization load the pack went into. Set only by the sterilizing service when loading is completed.,Mẻ tiệt khuẩn chứa gói này. Chỉ dịch vụ tiệt khuẩn đặt giá trị khi xếp mẻ xong.,
 Sterilization method,Phương pháp tiệt khuẩn,
 Stock count sheet,Phiếu kiểm kê kho,
 Stored At,Thời điểm lưu kho,
@@ -5724,8 +5720,8 @@ Voided Cycle ID,Cycle ID đã vô hiệu,
 Waiting,Đang chờ,
 "Ward or unit that receives and returns instrument sets in TraceCore (T1, T7).","Khoa hoặc đơn vị nhận và trả bộ dụng cụ trong TraceCore (T1, T7).",
 Wash Share,Phần chi phí rửa,
-"Wash batch on a washer-disinfector or ultrasonic cleaner (FEAT-021, UC-06, WF-04). Created by the washing service when loading is completed; submitting it closes the batch.","Lô rửa trên máy rửa khử khuẩn hoặc máy rửa siêu âm (FEAT-021, UC-06, WF-04). Do dịch vụ rửa tạo khi xếp lô xong; ghi sổ sẽ đóng lô.",
-"Wash batch or sterilization load that was running on the machine when an incident was recorded (FEAT-039, FR-M5-04.2); written by the incident service.","Lô rửa hoặc mẻ tiệt khuẩn đang chạy trên máy khi ghi nhận sự cố (FEAT-039, FR-M5-04.2); do dịch vụ sự cố ghi.",
+"Wash batch on a washer-disinfector or ultrasonic cleaner (UC-06, WF-04). Created by the washing service when loading is completed; submitting it closes the batch.","Lô rửa trên máy rửa khử khuẩn hoặc máy rửa siêu âm (UC-06, WF-04). Do dịch vụ rửa tạo khi xếp lô xong; ghi sổ sẽ đóng lô.",
+"Wash batch or sterilization load that was running on the machine when an incident was recorded (FR-M5-04.2); written by the incident service.","Lô rửa hoặc mẻ tiệt khuẩn đang chạy trên máy khi ghi nhận sự cố (FR-M5-04.2); do dịch vụ sự cố ghi.",
 Washer-Disinfector,Máy rửa khử khuẩn,
 Water per Cycle (L),Nước mỗi chu trình (L),
 Why a pack with a later use-by date was issued (the department asked for this Set ID).,Lý do cấp phát gói có hạn dùng muộn hơn (khoa yêu cầu đúng Set ID này).,
@@ -6280,7 +6276,7 @@ Waste Report,Báo cáo chất thải,
 Bag or Bin Item,Vật tư túi/thùng,
 Bags per Day,Số túi/ngày,
 Kg per Bed per Day,Kg/giường/ngày,
-"Bags per day and reference kg per bed per day of a department and waste type (FEAT-050, FR-M10-08).",Số túi/ngày và kg/giường/ngày tham chiếu theo khoa và loại chất thải.,
+"Bags per day and reference kg per bed per day of a department and waste type (FR-M10-08).",Số túi/ngày và kg/giường/ngày tham chiếu theo khoa và loại chất thải.,
 This department and waste type already have a quota from that date.,Khoa và loại này đã có định mức từ ngày đó.,
 Incident Category,Nhóm sự cố,
 Waste,Chất thải,Incident CAPA
@@ -6341,12 +6337,12 @@ Valid From,Hiệu lực từ,Vendor Contract
 Valid To,Hiệu lực đến,Vendor Contract
 Rate per kg,Đơn giá/kg,
 Contract File,Tệp hợp đồng,
-"Licensed waste transport or treatment vendor with its contracts (FEAT-049, FR-M10-05).","Đơn vị vận chuyển, xử lý chất thải có giấy phép và hợp đồng.",
-"Handover of stored waste to a licensed vendor (FEAT-049, FR-M10-04).",Bàn giao chất thải đang lưu giữ cho đơn vị có giấy phép.,
-"Waste type a treatment vendor is licensed to take (FEAT-049, FR-M10-05).",Loại chất thải đơn vị xử lý được phép nhận.,
-"Contract price per kg of one waste type, by validity period (FEAT-049, FR-M10-05, .4).",Đơn giá hợp đồng/kg của một loại theo thời hạn.,
-"One waste type of a handover (FEAT-049, FR-M10-04).",Một loại chất thải của phiếu bàn giao.,
-"A bag or bin of a handover (FEAT-049, FR-M10-04).",Một túi/thùng của phiếu bàn giao.,
+"Licensed waste transport or treatment vendor with its contracts (FR-M10-05).","Đơn vị vận chuyển, xử lý chất thải có giấy phép và hợp đồng.",
+"Handover of stored waste to a licensed vendor (FR-M10-04).",Bàn giao chất thải đang lưu giữ cho đơn vị có giấy phép.,
+"Waste type a treatment vendor is licensed to take (FR-M10-05).",Loại chất thải đơn vị xử lý được phép nhận.,
+"Contract price per kg of one waste type, by validity period (FR-M10-05, .4).",Đơn giá hợp đồng/kg của một loại theo thời hạn.,
+"One waste type of a handover (FR-M10-04).",Một loại chất thải của phiếu bàn giao.,
+"A bag or bin of a handover (FR-M10-04).",Một túi/thùng của phiếu bàn giao.,
 Treatment Vendor,Đơn vị xử lý,
 Handed Over At,Giờ bàn giao,
 Prepared By,Người lập,Waste Handover
@@ -6492,8 +6488,8 @@ Cold Room,Kho lạnh,
 Above the Limit Since,Vượt ngưỡng từ,
 Waste Types Allowed,Loại chất thải được phép,
 Default Location,Vị trí mặc định,
-"Waste type a storage location takes (FEAT-048, FR-M10-03.1).",Loại chất thải mà vị trí kho nhận.,
-"Shelf or room of the temporary waste store, identified by a KE- QR code (FEAT-048, FR-M10-03).","Kệ hoặc phòng của kho lưu giữ tạm chất thải, định danh bằng mã QR KE-.",
+"Waste type a storage location takes (FR-M10-03.1).",Loại chất thải mà vị trí kho nhận.,
+"Shelf or room of the temporary waste store, identified by a KE- QR code (FR-M10-03).","Kệ hoặc phòng của kho lưu giữ tạm chất thải, định danh bằng mã QR KE-.",
 Waste zone of this location. A cold room needs its own zone: temperatures are logged per zone.,Khu chất thải của vị trí này. Kho lạnh cần khu riêng vì nhiệt độ được ghi theo khu.,
 Stored at 8 degrees C or below: bags use the cold storage time of their waste type.,Lưu ở 8°C trở xuống: túi/thùng dùng thời gian lưu lạnh của loại chất thải.,
 Bags of this type go here when a whole collection is scanned.,Túi/thùng của loại này vào đây khi quét cả phiếu thu gom.,
@@ -7421,3 +7417,44 @@ Note,Ghi chú,
 Started At,Giờ bắt đầu,
 Ended At,Giờ kết thúc,
 Unloaded By,Người dỡ,
+This is an instrument set code - please scan the batch code (LR-...),Đây là mã bộ dụng cụ – vui lòng quét mã lô (LR-…),
+This is an instrument set code - please scan the load code (ME-...),Đây là mã bộ dụng cụ – vui lòng quét mã mẻ (ME-…),
+Code {0} is a set or pack code; unloading works on the whole batch {1}.,Mã {0} là mã bộ hoặc gói; dỡ theo cả lô {1}.,
+Code {0} is a set or pack code; unloading works on the whole load {1}.,Mã {0} là mã bộ hoặc gói; dỡ theo cả mẻ {1}.,
+Code {0} is a set or pack code; unloading works on the whole batch.,Mã {0} là mã bộ hoặc gói; dỡ theo cả lô.,
+Code {0} is a set or pack code; unloading works on the whole load.,Mã {0} là mã bộ hoặc gói; dỡ theo cả mẻ.,
+Scan the QR code of load {0}.,Quét mã QR của mẻ {0}.,
+Wash batches,Lô,
+BI,BI,
+Biological indicator required,Cần chỉ thị sinh học (BI),
+No biological indicator required,Không cần chỉ thị sinh học (BI),
+Loads waiting for the biological indicator ({0}),Mẻ chờ đọc chỉ thị sinh học ({0}),
+Loads waiting to unload ({0}),Mẻ chờ dỡ ({0}),
+No load is waiting.,Không có mẻ nào đang chờ.,
+{0} pack(s) do not fit the new program,{0} gói không hợp chương trình mới,
+"Remove the packs marked in red, or choose another program.",Bỏ các gói đánh dấu đỏ khỏi danh sách hoặc chọn chương trình khác.,
+All {0} pack(s) still fit the new program,Cả {0} gói vẫn hợp chương trình mới,
+check of the packs against the program,kiểm lại gói theo chương trình,
+removing the packs marked in red,bỏ các gói đánh dấu đỏ,
+Check the packs again,Kiểm lại các gói,
+Default Value,Giá trị mặc định,
+Value the cycle form is filled with when the machine sends no data. Number inside the range; empty means none.,Giá trị điền sẵn vào form chu trình khi máy không đẩy dữ liệu. Là số nằm trong khoảng; để trống là không có mặc định.,
+Program defaults offered to the operator and the fields changed from them.,Giá trị mặc định theo chương trình đã điền sẵn và các trường người dùng đã sửa.,
+Manual Default,Nhập tay (mặc định từ chương trình),
+{0} {1} has values outside the program range: {2}.,{0} {1} có giá trị ngoài khoảng của chương trình: {2}.,
+Correct the data if it was entered wrong; otherwise record Fail.,Sửa dữ liệu nếu nhập sai; nếu đúng thì ghi Không đạt.,
+Correct the data in the Cycle data tab if it was entered wrong; otherwise record Fail.,Sửa ở tab Dữ liệu chu trình nếu nhập sai; nếu đúng thì ghi Không đạt.,
+Values outside the program range: {0}.,Giá trị ngoài khoảng của chương trình: {0}.,
+Outside the program range - a Pass is not allowed,Ngoài khoảng của chương trình - không được kết luận Đạt,
+Some values are outside the program range: a Pass is not allowed.,Có giá trị ngoài khoảng của chương trình: không được kết luận Đạt.,
+Program default: {0},Mặc định theo chương trình: {0},
+"Filled in from the program: check against the washer, change what differs, then confirm.","Đã điền sẵn theo chương trình: đối chiếu với máy rửa, sửa chỗ khác thực tế rồi xác nhận.",
+"Filled in from the program: check against the sterilizer, change what differs, then confirm.","Đã điền sẵn theo chương trình: đối chiếu với máy tiệt khuẩn, sửa chỗ khác thực tế rồi xác nhận.",
+Chemical of the program,Hóa chất của chương trình,
+Confirm cycle data,Xác nhận dữ liệu chu trình,
+Correct cycle data,Sửa dữ liệu chu trình,
+"Manual entry from program defaults, confirmed","Nhập tay từ mặc định của chương trình, đã xác nhận",
+Row {0}: Default Value of parameter {1} must be a number.,Dòng {0}: Giá trị mặc định của tham số {1} phải là số.,
+Row {0}: Default Value of parameter {1} is outside its range.,Dòng {0}: Giá trị mặc định của tham số {1} nằm ngoài khoảng.,
+Ended,Đã kết thúc,Daily Test
+Recorded,Đã ghi kết quả,Daily Test

@@ -15,7 +15,7 @@ from frappe.utils import cint, cstr, flt, get_datetime
 
 from tracecore.core import client_time
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import sterilizing, washing
+from tracecore.reprocessing import cycle_defaults, sterilizing, washing
 
 MATCH_WINDOW = timedelta(minutes=30)
 WASH = "Wash Batch"
@@ -24,6 +24,9 @@ RESULTS = ("Pass", "Fail")
 # trạng thái chứng từ còn nhận dữ liệu máy
 OPEN_STATUSES = {WASH: washing.OPEN_STATUSES, LOAD: ("Running", sterilizing.CYCLE_COMPLETE)}
 MISSING_ENDED_AT = "ended_at"
+
+
+MANUAL_SOURCES = (cycle_defaults.MANUAL, cycle_defaults.MANUAL_DEFAULT)
 
 
 def _blocked(code, title, reason, action, items=None):
@@ -194,7 +197,7 @@ def ingest(station, equipment, cycle):
 	previous = _previous(doc, doctype, cycle_ref)
 	if previous:
 		return previous
-	if doc.data_source == "Manual" and cint(doc.data_complete):
+	if doc.data_source in MANUAL_SOURCES and cint(doc.data_complete):
 		raise _blocked(
 			"MACHINE_DATA_EXISTS",
 			_("Cycle data already entered"),

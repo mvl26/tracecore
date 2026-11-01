@@ -1296,6 +1296,20 @@ body.tc-kiosk .layout-main-section {
 	font-size: var(--tc-fs-md);
 }
 
+/* gói không hợp chương trình mới (A-88): nền, viền đỏ và chữ lý do, không chỉ bằng màu */
+.tc-t5-pack.is-bad {
+	padding: var(--tc-sp-3);
+	background: var(--tc-fail-tint);
+	border: var(--tc-bw-hair) solid var(--tc-fail);
+}
+
+.tc-t5-pack-reason {
+	grid-column: 1 / -1;
+	margin: 0;
+	color: var(--tc-fail-text);
+	font-weight: var(--tc-fw-bold);
+}
+
 .tc-t5-pack-id {
 	display: flex;
 	flex-direction: column;
@@ -1761,7 +1775,7 @@ body.tc-kiosk .layout-main-section {
 	align-self: flex-start;
 }
 
-/* thao tác nguy hiểm tách khỏi thanh thao tác chính (#1843 T4-07, #1834 T3-05) */
+/* thao tác nguy hiểm tách khỏi thanh thao tác chính (ticket 1843 T4-07, 1834 T3-05) */
 .tc-danger-zone {
 	display: flex;
 	flex-wrap: wrap;

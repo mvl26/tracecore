@@ -3,7 +3,7 @@
  "allow_rename": 0,
  "autoname": "TH-.YYYY.-.#####",
  "creation": "2026-10-26 14:00:00.000000",
- "description": "Recall order listing every affected pack of a sterilization load or indicator lot (DT-RECALL, FEAT-029, FR-M2-20, WF-05). Open (draft) -> Closed (submitted) when every pack is confirmed.",
+ "description": "Recall order listing every affected pack of a sterilization load or indicator lot (DT-RECALL, FR-M2-20, WF-05). Open (draft) -> Closed (submitted) when every pack is confirmed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

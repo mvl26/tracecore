@@ -14,6 +14,7 @@ from tracecore.v1 import (
 	pack,
 	putaway,
 	receive,
+	release,
 	usage,
 	wash,
 )
@@ -77,11 +78,12 @@ class TestStationPickerAssets(FrappeTestCase):
 			"putaway": putaway,
 			"usage": usage,
 			"receive": receive,
+			"release": release,
 			"assembly": assembly,
 			"issue": issue,
 		}
 		scan_methods = [m for m in listed if not m.startswith("tracecore.v1.lookup.")]
-		self.assertEqual(len(scan_methods), 10)
+		self.assertEqual(len(scan_methods), 13)
 		for method in scan_methods:
 			_, _, module, name = method.split(".")
 			fn = getattr(by_name[module], name)

@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "NT-.YYYY.-.#####",
  "creation": "2026-10-25 11:00:00.000000",
- "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (FEAT-040, UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
+ "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -153,7 +153,7 @@
   },
   {
    "default": "0",
-   "description": "A failed test needs a non-conformity (FEAT-030 creates it).",
+   "description": "A failed test needs a non-conformity.",
    "fieldname": "nc_pending",
    "fieldtype": "Check",
    "label": "Non-conformity Pending",

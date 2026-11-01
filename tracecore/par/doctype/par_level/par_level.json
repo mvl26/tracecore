@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "PAR-.#####",
  "creation": "2026-10-22 10:00:00.000000",
- "description": "Par level (FEAT-031, FR-M8-01/02): maximum reprocessing cycles of an instrument or set type, or the minimum/maximum stock of a set type in a department. Saving a reprocessing par level of an instrument updates Instrument.max_cycles.",
+ "description": "Par level (FR-M8-01/02): maximum reprocessing cycles of an instrument or set type, or the minimum/maximum stock of a set type in a department. Saving a reprocessing par level of an instrument updates Instrument.max_cycles.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

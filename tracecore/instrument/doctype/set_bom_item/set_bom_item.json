@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "hash",
  "creation": "2026-10-20 10:00:00.000000",
- "description": "One BOM line of a set type for one BOM version. A version is the set of lines with the same set type and version number; saved versions cannot be changed or deleted (FEAT-015). Lines are created only through Edit BOM.",
+ "description": "One BOM line of a set type for one BOM version. A version is the set of lines with the same set type and version number; saved versions cannot be changed or deleted. Lines are created only through Edit BOM.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

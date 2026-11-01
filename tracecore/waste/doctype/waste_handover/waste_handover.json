@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-30 20:00:00.000000",
- "description": "Handover of stored waste to a licensed vendor (FEAT-049, FR-M10-04).",
+ "description": "Handover of stored waste to a licensed vendor (FR-M10-04).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

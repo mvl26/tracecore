@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "RC-.YYYY.-.#####",
  "creation": "2026-10-24 09:00:00.000000",
- "description": "Dirty-zone receiving slip for several sets in a row (FEAT-019, UC-05). Created and changed only by the receiving service; submitting it starts the cycle of each set and records gate T1.",
+ "description": "Dirty-zone receiving slip for several sets in a row (UC-05). Created and changed only by the receiving service; submitting it starts the cycle of each set and records gate T1.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

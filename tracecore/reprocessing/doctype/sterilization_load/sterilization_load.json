@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "ME-.YY.MM.DD.-.##",
  "creation": "2026-10-23 10:00:00.000000",
- "description": "Sterilization load on a steam or plasma sterilizer (FEAT-022, UC-09, WF-03). Created by the sterilizing service when loading is completed.",
+ "description": "Sterilization load on a steam or plasma sterilizer (UC-09, WF-03). Created by the sterilizing service when loading is completed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -31,6 +31,7 @@
   "manual_confirmed_by",
   "manual_confirmed_at",
   "params",
+  "machine_data",
   "machine_alerts",
   "machine_report",
   "chart_files",
@@ -178,7 +179,7 @@
    "fieldname": "data_source",
    "fieldtype": "Select",
    "label": "Data Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {
@@ -225,6 +226,13 @@
    "fieldname": "params",
    "fieldtype": "JSON",
    "label": "Parameters",
+   "read_only": 1
+  },
+  {
+   "description": "Program defaults offered to the operator and the fields changed from them.",
+   "fieldname": "machine_data",
+   "fieldtype": "JSON",
+   "label": "Machine Data",
    "read_only": 1
   },
   {
@@ -289,7 +297,7 @@
    "fieldname": "result_source",
    "fieldtype": "Select",
    "label": "Result Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {

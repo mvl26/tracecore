@@ -12,6 +12,7 @@ from frappe.utils import add_days, cint, getdate, now_datetime, today
 
 from tracecore.core import code_registry, error_codes, gs1, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
+from tracecore.reprocessing import pack_display
 
 FUNCTION = "PUTAWAY"
 EXPIRING_DAYS = 7  # FR-M2-13.2: dashboard kho liệt kê gói hết hạn trong 7 ngày tới
@@ -19,7 +20,7 @@ IN_STOCK = "In Sterile Stock"
 VOID_EXPIRED = "Expired"
 VOID_TORN = "Torn"
 SAVEPOINT = "tc_storage_expire"
-SUMMARY_FIELDS = ("name", "set_unit", "set_type", "set_name", "expiry", "location", "method")
+SUMMARY_FIELDS = ("name", "set_unit", "set_type", "set_name", "department", "expiry", "location", "method")
 
 
 def _blocked(code, title, reason, action, items=None, **fields):
@@ -102,6 +103,7 @@ def _summary(pack):
 		"set_id": pack["set_unit"],
 		"set_type": pack["set_type"],
 		"set_name": pack["set_name"],
+		"department_name": pack_display.department_name(pack["department"]),
 		"method": pack["method"],
 		"expiry": getdate(pack["expiry"]),
 		"location": pack["location"],
@@ -421,10 +423,11 @@ def return_list():
 	"""Gói hết hiệu lực (quá hạn hoặc rách) mà bộ còn chờ về khu bẩn (FR-M2-14.2), mới nhất trước."""
 	return frappe.db.sql(
 		"""
-		select p.name as cycle_id, p.set_unit as set_id, p.set_type, p.set_name, p.location,
-			p.void_reason, p.void_note, p.expiry
+				select p.name as cycle_id, p.set_unit as set_id, p.set_type, p.set_name, p.location,
+			p.void_reason, p.void_note, p.expiry, department.department_name
 		from `tabPack` p
 		join `tabSet Unit` s on s.name = p.set_unit and s.current_cycle_no = p.cycle_no
+		left join `tabDepartment` department on department.name = p.department
 		where p.docstatus = 1 and p.status = 'Void' and p.void_reason in (%s, %s)
 			and s.status = 'Awaiting Receipt'
 		order by p.modified desc, p.name

@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "hash",
  "creation": "2026-10-30 22:00:00.000000",
- "description": "Bags per day and reference kg per bed per day of a department and waste type (FEAT-050, FR-M10-08).",
+ "description": "Bags per day and reference kg per bed per day of a department and waste type (FR-M10-08).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

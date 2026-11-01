@@ -332,8 +332,8 @@ class TestStationPage(FrappeTestCase):
 		translations = get_translation_dict_from_file(path, "vi", "tracecore", throw=True)
 		self.assertEqual(frappe.db.count("Error Log", {"method": "Error in translation file"}), before)
 		for source in (
-			"Zone and station configuration (FEAT-002): zone type, station function by zone, active flag.",
-			"Scanner or scale attached to a station (FEAT-002): connection USB HID, Serial or TCP.",
+			"Zone and station configuration: zone type, station function by zone, active flag.",
+			"Scanner or scale attached to a station: connection USB HID, Serial or TCP.",
 		):
 			self.assertTrue(translations.get(source), msg=source)
 

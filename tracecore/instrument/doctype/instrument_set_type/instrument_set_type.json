@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:type_code",
  "creation": "2026-10-19 10:00:00.000000",
- "description": "Instrument set type (FEAT-001 skeleton, FEAT-018 packing data, FEAT-015 header): code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.",
+ "description": "Instrument set type: code, name, sterilization method, owner department, implant flag, standard assembly time, GTIN-14, default pack type, shelf-life override, tray photos and current BOM version.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

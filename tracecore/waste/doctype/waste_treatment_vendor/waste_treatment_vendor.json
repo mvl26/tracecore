@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-30 20:00:00.000000",
- "description": "Licensed waste transport or treatment vendor with its contracts (FEAT-049, FR-M10-05).",
+ "description": "Licensed waste transport or treatment vendor with its contracts (FR-M10-05).",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [

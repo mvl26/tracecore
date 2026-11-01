@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -403,18 +403,7 @@ class T2Wash {
 		this.done = null;
 		this.printNote = null;
 		this.lookup = null;
-		this.notice = {
-			variant: "ok",
-			title: __("Washer {0} scanned · {1}", [
-				res.equipment.name,
-				res.equipment.equipment_name,
-			]),
-			reason: res.equipment.is_connected
-				? __(
-						"API connected - automatic data comes with FEAT-024; unload with confirmed manual entry."
-				  )
-				: __("Not connected - unload with confirmed manual entry."),
-		};
+		this.notice = null; // xác nhận máy chỉ một dòng, ở khối máy bên dưới (ticket 1844)
 		this.saveLoad();
 		this.show();
 	}
@@ -617,13 +606,38 @@ class T2Wash {
 		this.notice = null;
 		this.lookup = null;
 		if (mode === "load") this.unload = null;
+		if (this.station.picker && this.station.picker.isOpen) this.station.picker.close();
 		this.loadOverview(true);
 		this.show();
+	}
+
+	// Chọn tay ở tab Dỡ lô (A-87): danh sách là lô chờ dỡ của máy đã quét hoặc của trạm, không có mã bộ
+	pickContext() {
+		if (this.mode !== "unload") return null;
+		const raw = this.unload && !this.unload.result && this.unload.equipmentRaw;
+		return { label: __("Wash batches"), equipment: raw ? t2Kind(raw).id : null };
+	}
+
+	// Lô chờ đọc chỉ thị đã kiểm QR máy lúc dỡ: chỉ cần mã lô; lô đang chạy cần cả mã lô và QR máy (Q15)
+	pickCodes(item) {
+		const current = this.unload;
+		if (item.status === "Awaiting Result") return [item.id];
+		if (current && current.batch === item.id && current.equipmentRaw) return [item.id];
+		return [item.id, item.equipment];
 	}
 
 	unloadScan(raw) {
 		const code = t2Kind(raw);
 		if (code.kind === "set" && this.indicator) return this.scanIndicatorLot(raw);
+		if (code.kind === "set" && tcIsSetOrPackCode(raw)) {
+			return this.blocked({
+				title: __("This is an instrument set code - please scan the batch code (LR-...)"),
+				reason: __("Code {0} is a set or pack code; unloading works on the whole batch.", [
+					raw,
+				]),
+				action: __("Scan the washer QR code, then the batch QR code."),
+			});
+		}
 		if (code.kind === "set") {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -694,7 +708,12 @@ class T2Wash {
 			const context = res.batch;
 			this.unload.context = context;
 			const data = context.machine_data || {};
+			// máy không đẩy dữ liệu: điền sẵn theo chương trình, KTV kiểm tra và sửa được (A-89)
+			const prefill = context.prefill || {};
 			const values = {};
+			Object.entries(prefill.values || {}).forEach(([name, value]) => {
+				values[name] = String(value);
+			});
 			(data.parameters || []).forEach((row) => {
 				values[row.parameter_name] = String(row.value);
 			});
@@ -704,7 +723,12 @@ class T2Wash {
 				alertsText: data.alerts || "",
 				reported: data.reported_result || "",
 				started: t2LocalInput(context.started_at),
-				ended: t2LocalInput(context.ended_at) || t2NowInput(),
+				ended:
+					t2LocalInput(context.ended_at) ||
+					t2LocalInput(prefill.ended_at) ||
+					t2NowInput(),
+				chemicalName: prefill.chemical_name || prefill.chemical || "",
+				editing: false,
 				file: context.machine_files || "",
 				uploading: false,
 				confirmed: false,
@@ -1017,8 +1041,15 @@ class T2Wash {
 			"t2-cancel": () => this.cancelLoad(),
 			"t2-refresh-lots": () => this.refreshLots(),
 			"t2-save-data": () => this.saveData(),
+			"t2-edit-data": () => {
+				if (!this.form) return;
+				this.form.editing = true;
+				this.show();
+			},
 			"t2-verdict": () => {
 				if (!this.verdict) return;
+				if (data.value === "Pass" && data.field === "result" && this.outsideNames().length)
+					return;
 				this.verdict[data.field] = data.value;
 				this.show();
 			},
@@ -1361,7 +1392,7 @@ class T2Wash {
 					])
 				)} · ${esc(
 			load.machine.is_connected
-				? __("API connected - automatic data comes with FEAT-024")
+				? __("API connected - data comes automatically from the station agent")
 				: __("not connected - unload with confirmed manual entry")
 		)}</p>
 				<div class="tc-t4-row">
@@ -1610,6 +1641,8 @@ class T2Wash {
 		const text = batch.data_complete
 			? auto
 				? __("Automatic (station agent)")
+				: batch.data_source === "Manual Default"
+				? __("Manual entry from program defaults, confirmed")
 				: __("Manual entry, confirmed")
 			: auto
 			? __("Automatic (station agent), incomplete")
@@ -1691,7 +1724,7 @@ class T2Wash {
 					: this.alertHtml({
 							variant: "warn",
 							title: __(
-								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass (BRU-REP-015)"
+								"No cycle data yet - automatic data or a confirmed manual entry is needed before a Pass"
 							),
 					  })
 			}
@@ -1757,11 +1790,22 @@ class T2Wash {
 		html += scanned;
 		const context = unload.context;
 		if (!context) return html;
-		html += context.data_complete
-			? this.dataSummaryHtml(context)
-			: this.manualFormHtml(context);
-		if (context.data_complete) html += this.verdictHtml(context);
+		const editing = this.form && this.form.editing;
+		html +=
+			context.data_complete && !editing
+				? this.dataSummaryHtml(context)
+				: this.manualFormHtml(context);
+		if (context.data_complete && !editing) html += this.verdictHtml(context);
 		return html;
+	}
+
+	// Tham số ngoài dải của dữ liệu đã lưu: chặn kết luận Đạt, server kiểm lại (A-89)
+	outsideNames() {
+		const context = this.unload && this.unload.context;
+		const data = (context && context.machine_data) || {};
+		return (data.parameters || [])
+			.filter((row) => row.outside_range)
+			.map((row) => row.parameter_name);
 	}
 
 	manualFormHtml(context) {
@@ -1784,9 +1828,16 @@ class T2Wash {
 				}${param.required ? " *" : ""}${range ? ` · ${esc(range)}` : ""}</label>
 					<input id="tc-t2-param-${index}" type="text" inputmode="decimal" autocomplete="off"
 						data-param="${esc(param.parameter_name)}" value="${esc(value)}">
-					<p class="tc-t2-review" ${review ? "" : "hidden"}><span aria-hidden="true">!</span> ${esc(
-					__("Needs review")
+				<p class="tc-t2-review" ${review ? "" : "hidden"}><span aria-hidden="true">!</span> ${esc(
+					__("Outside the program range - a Pass is not allowed")
 				)}</p>
+				${
+					param.default_value != null
+						? `<p class="tc-hint">${esc(
+								__("Program default: {0}", [param.default_value])
+						  )}</p>`
+						: ""
+				}
 				</div>`;
 			})
 			.join("");
@@ -1797,6 +1848,22 @@ class T2Wash {
 		const fileRequired = Boolean(machine.has_printout);
 		return `<section class="tc-t4-block tc-t2-form">
 			<h3>${esc(__("Manual cycle data for batch {0}", [context.batch]))}</h3>
+			${
+				context.prefill
+					? `<p class="tc-hint">${esc(
+							__(
+								"Filled in from the program: check against the washer, change what differs, then confirm."
+							)
+					  )}</p>`
+					: ""
+			}
+			${
+				form.chemicalName
+					? `<p>${esc(__("Chemical of the program"))}: <b>${esc(
+							form.chemicalName
+					  )}</b></p>`
+					: ""
+			}
 			<div class="tc-t4-row">${params}</div>
 			<div class="tc-t4-row">
 				<div class="tc-field">
@@ -1860,7 +1927,7 @@ class T2Wash {
 			<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="t2-save-data"${t2Disabled(
 					Boolean(this.busy) || this.offline || form.uploading
-				)}>${esc(__("Save manual data and confirm"))}</button>
+				)}>${esc(__("Confirm cycle data"))}</button>
 			</div>
 		</section>`;
 	}
@@ -1889,13 +1956,23 @@ class T2Wash {
 					  )}</p>`
 					: ""
 			}
+			${
+				this.outsideNames().length
+					? `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-edit-data">${esc(
+							__("Correct cycle data")
+					  )}</button></div>`
+					: ""
+			}
 		</section>`;
 	}
 
 	verdictHtml(context) {
 		const verdict = this.verdict || { result: "", clean: "", confirmed: false, pin: "" };
+		const outside = this.outsideNames();
 		const chip = (field, value, label) =>
-			`<button type="button" class="tc-chip" data-action="t2-verdict" data-field="${field}" data-value="${value}"
+			`<button type="button" class="tc-chip" data-action="t2-verdict" data-field="${field}" data-value="${value}"${t2Disabled(
+				field === "result" && value === "Pass" && outside.length > 0
+			)}
 				aria-pressed="${verdict[field] === value ? "true" : "false"}">${esc(label)}</button>`;
 		const pass = __("Pass", null, "Step Gate Result");
 		const fail = __("Fail", null, "Step Gate Result");
@@ -1920,6 +1997,20 @@ class T2Wash {
 				: __("Record the result for {0} set(s)", [context.sets.length]);
 		return `<section class="tc-t4-block tc-t2-verdict">
 			<h3>${esc(__("Cycle result (applies to every set)"))}</h3>
+			${
+				outside.length
+					? this.alertHtml({
+							variant: "error",
+							title: __("A Pass cannot be recorded"),
+							reason: __("Values outside the program range: {0}.", [
+								outside.join(", "),
+							]),
+							action: __(
+								"Correct the data if it was entered wrong; otherwise record Fail."
+							),
+					  })
+					: ""
+			}
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cycle result (applies to every set)"))}">
 				${chip("result", "Pass", pass)}${chip("result", "Fail", fail)}
 			</div>
@@ -2051,9 +2142,7 @@ class T2Wash {
 								res.batch,
 							]),
 							reason: __("Every set goes back to reprocessing."),
-							action: __(
-								"Marked as needing a nonconformity (automatic NC comes with FEAT-030)."
-							),
+							action: __("Marked as needing a nonconformity."),
 					  }
 			)}
 			<table class="tc-t2-table">

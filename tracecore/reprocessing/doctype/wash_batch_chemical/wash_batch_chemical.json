@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-22 16:00:00.000000",
- "description": "Chemical lot used in a wash batch (FR-M2-03.5, BRU-INV-001).",
+ "description": "Chemical lot used in a wash batch (FR-M2-03.5).",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -43,7 +43,7 @@
    "columns": 2
   },
   {
-   "description": "Quantity used; filled by the consumption feature (FEAT-042).",
+   "description": "Quantity used; filled by the consumption feature.",
    "fieldname": "qty",
    "fieldtype": "Float",
    "in_list_view": 1,

@@ -13,7 +13,7 @@ from frappe.utils import cint, cstr, getdate, now_datetime, today
 
 from tracecore.core import audit, error_codes, extension, gs1, station_auth, step_gate, zones
 from tracecore.core.errors import Block, BlockedError
-from tracecore.reprocessing import storage
+from tracecore.reprocessing import pack_display, storage
 
 FUNCTION = "ISSUE"
 ISSUED = "Issued"
@@ -239,6 +239,7 @@ def view(note):
 				"set_id": row.set_unit,
 				"set_type": row.set_type,
 				"set_name": row.set_name,
+				"department_name": pack_display.row_of(row.pack)["department_name"],
 				"expiry": getdate(row.expiry) if row.expiry else None,
 				"fefo_note": row.fefo_note,
 			}

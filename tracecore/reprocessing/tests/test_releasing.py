@@ -220,10 +220,11 @@ class TestRelease(ReleaseCase):
 
 	@bru("BRU-REP-015")
 	def test_review_flag_needs_r02_confirmation(self):
-		self.save_data(Temperature="150")  # ngoài dải: lưu, đánh dấu Cần xem xét
+		self.save_data()
 		self.result()
 		self.good_steam_indicators()
-		self.assertEqual(frappe.db.get_value("Sterilization Load", self.load.name, "needs_review"), 1)
+		# Cần xem xét do sự cố máy: R02 xác nhận khi giải phóng; ngoài dải chặn Đạt từ trước (A-89)
+		frappe.db.set_value("Sterilization Load", self.load.name, "needs_review", 1)
 		self.assertEqual(blocked(self, self.release).items, ["review"])
 		self.assertEqual(self.release(review_confirmed=True)["status"], "Released")
 

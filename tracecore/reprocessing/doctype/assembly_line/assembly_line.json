@@ -2,7 +2,7 @@
  "actions": [],
  "creation": "2026-10-24 12:00:00.000000",
  "doctype": "DocType",
- "description": "One BOM line counted at station T3 (FEAT-020).",
+ "description": "One BOM line counted at station T3.",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
