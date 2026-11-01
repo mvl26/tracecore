@@ -23,6 +23,7 @@
 | 01/11/2026 | Amendment A-94 (#1814, sửa SCR-05): thành phần bộ ở T1 là bảng STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế; số thực tế điền sẵn theo BOM, sửa được; bỏ ô tick và Xác nhận tất cả |
 | 01/11/2026 | Amendment A-95 (#1837, SCR T6, T7): T6 có Gói chờ nhập kho, bảng vị trí trống có câu báo; T7 có Cơ số thiếu theo khoa, chọn khoa từ đó |
 | 01/11/2026 | Amendment A-96 (#1838, SCR-37): T8 ghi tên khoa, có Gói tại khoa với hạn dùng và Đã dùng, chờ trả; ô quét ghi Quét mã trên gói; banner khẩn bỏ cảnh báo nội bộ CSSD |
+| 01/11/2026 | SCR-10: phiên không có role giám sát CSSD hoặc trưởng khoa KSNK không thấy ô PIN, ô lý do khẩn và nút Giải phóng mẻ, chỉ thấy thông báo mời đăng xuất để giám sát CSSD đăng nhập thẻ (máy chủ vốn đã từ chối các phiên này; không đổi quy tắc máy chủ, FR-M2-11.4) |
 | 01/11/2026 | Amendment A-100 (đảo một phần A-99): nút Lưu PDF nhãn ở SCR-09, SCR-06 chỉ có khi trạm có máy in hoạt động; chưa có máy in thì thẻ chỉ hiện mã và cảnh báo như trước A-99 |
 | 01/11/2026 | Amendment A-99: thẻ Hoàn thành nạp T5 (SCR-09) và T2 (SCR-06) có nút Lưu PDF nhãn cạnh mã mẻ/lô, chạy được khi không có máy in; T4 giữ nguyên |
 | 01/11/2026 | Amendment A-98 (#1830, sửa NAV-02): Tổng quan hiện số liệu ngay, tab trình duyệt có tên trạm và TraceCore |
