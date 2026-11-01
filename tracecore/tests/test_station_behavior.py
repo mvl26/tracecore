@@ -1835,6 +1835,15 @@ def t5_run(testcase, body):
 class TestT5DefaultStep(FrappeTestCase):
 	"""Bước mặc định suy từ dữ liệu mẻ, không lưu theo tab."""
 
+	def test_station_that_can_load_always_opens_on_step_one(self):
+		out = t5_run(
+			self,
+			"""
+			emit(t5DefaultStep({unload: [row("B", "M1", "Cycle Complete")], bi: [row("C", "M1", "Quarantine")]}));
+			""",
+		)
+		self.assertEqual(out, 1)
+
 	def test_step_comes_from_the_data(self):
 		out = t5_run(
 			self,
@@ -1846,11 +1855,11 @@ class TestT5DefaultStep(FrappeTestCase):
 			emit({
 				nothing: t5DefaultStep({unload: [], bi: []}),
 				draft: t5DefaultStep({draft: true, unload: waiting, bi: quarantine}),
-				running: t5DefaultStep({unload: running, bi: []}),
-				waiting: t5DefaultStep({unload: waiting, bi: quarantine}),
-				release: t5DefaultStep({unload: release, bi: []}),
-				quarantine: t5DefaultStep({unload: [], bi: quarantine}),
-				bi_before_running: t5DefaultStep({unload: running, bi: quarantine}),
+				running: t5DefaultStep({unload: running, bi: [], canLoad: false}),
+				waiting: t5DefaultStep({unload: waiting, bi: quarantine, canLoad: false}),
+				release: t5DefaultStep({unload: release, bi: [], canLoad: false}),
+				quarantine: t5DefaultStep({unload: [], bi: quarantine, canLoad: false}),
+				bi_before_running: t5DefaultStep({unload: running, bi: quarantine, canLoad: false}),
 			});
 			""",
 		)
