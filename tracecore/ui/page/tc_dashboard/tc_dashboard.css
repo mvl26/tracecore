@@ -45,6 +45,20 @@
 	font-weight: var(--tc-fw-bold);
 }
 .tc-dash-badge.is-alert { background: var(--tc-fail); color: var(--tc-text-inverse); }
+.tc-dash-badge.is-warn { background: var(--tc-warn-fill); color: var(--tc-text-inverse); }
+.tc-dash-actions, .tc-dash-panel { padding: var(--tc-sp-3); background: var(--tc-card); border: var(--tc-bw-hair) solid var(--tc-line); border-radius: var(--tc-r-lg); min-width: 0; }
+.tc-dash-panel h4 { margin: 0 0 var(--tc-sp-2); color: var(--tc-text-subheading); font-size: var(--tc-fs-md); font-weight: var(--tc-fw-bold); }
+.tc-dash-action { display: flex; justify-content: space-between; align-items: center; gap: var(--tc-sp-2); width: 100%; min-height: var(--tc-touch-table); padding: var(--tc-sp-1-5) 0; text-align: left; color: var(--tc-text); background: transparent; border: 0; border-bottom: var(--tc-bw-hair) solid var(--tc-track); cursor: pointer; }
+.tc-dash-action:last-child { border-bottom: 0; }
+.tc-dash-action .tc-dash-badge { flex: none; }
+.tc-dash-bar { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 1fr); align-items: center; gap: var(--tc-sp-2); margin-bottom: var(--tc-sp-1-5); font-size: var(--tc-fs-sm); }
+.tc-dash-bar .is-num { text-align: right; }
+.tc-dash-bar-track { display: block; height: var(--tc-sp-3-5); background: var(--tc-track); }
+.tc-dash-bar-track i { display: block; height: 100%; background: var(--tc-neutral-fill); }
+.tc-dash-bar-track i.is-yellow { background: var(--tc-waste-infectious); }
+.tc-dash-bar-track i.is-black { background: var(--tc-waste-hazardous); }
+.tc-dash-bar-track i.is-green { background: var(--tc-waste-general); }
+.tc-dash-bar-track i.is-white { background: var(--tc-waste-recyclable); border: var(--tc-bw-hair) solid var(--tc-border-input); }
 .tc-dash-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-3); }
 .tc-dash-table-wrap { overflow-x: auto; }
 .tc-dash-table { width: 100%; border-collapse: collapse; font-size: var(--tc-fs-sm); }

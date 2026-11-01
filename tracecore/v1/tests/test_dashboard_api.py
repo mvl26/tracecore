@@ -20,6 +20,7 @@ ALL_BLOCKS = {
 	"equipment",
 	"stock",
 	"waste",
+	"linen",
 }
 
 
@@ -51,6 +52,9 @@ class TestSummaryByRole(DashboardCase):
 
 	def test_r10_gets_equipment_and_certificates_only(self):
 		self.assertEqual(set(self.summary_as(["TC R10"])["blocks"]), {"equipment", "certificates"})
+
+	def test_r07_gets_waste_and_linen_only(self):  # DASH-02
+		self.assertEqual(set(self.summary_as(["TC R07"])["blocks"]), {"waste", "linen"})
 
 	def test_station_roles_and_guest_are_refused(self):
 		for roles in (["TC R04"], ["TC R03", "TC R05"]):
