@@ -45,7 +45,7 @@ def test_t4_offline_pack_then_sync(t4_page, t4_demo):
 	expect(cycle).to_have_text(OFFLINE_CYCLE, timeout=15000)
 	code = cycle.inner_text()
 	expect(page.locator(".tc-t4-done")).to_contain_text("Nhãn in khi có mạng")
-	expect(page.locator("[data-action='reprint']")).to_be_disabled()  # gói chưa lên server
+	expect(page.locator("[data-action='reprint']")).to_have_count(0)  # gói chưa lên server
 	sync_bar = page.locator(".tc-sync-bar")
 	expect(sync_bar).to_contain_text("1 giao dịch chờ")
 	assert sent == []  # chưa in khi chưa có mạng
@@ -57,7 +57,7 @@ def test_t4_offline_pack_then_sync(t4_page, t4_demo):
 	# có mạng: tự phát lại theo client_ts, server nhận đúng mã offline và tạo nhãn
 	page.context.set_offline(False)
 	page.evaluate("window.dispatchEvent(new Event('online'))")
-	expect(sync_bar).to_contain_text("Đã đồng bộ", timeout=30000)
+	expect(sync_bar).to_contain_text("In 1 nhãn chờ", timeout=30000)  # A-107: đồng bộ xong có nút in nhãn chờ
 	# tra gói trên server qua RPC của trạm (phiên thẻ + CSRF như kiosk)
 	body = page.evaluate(
 		"""(code) => frappe.tc_station.rpc(
@@ -69,9 +69,9 @@ def test_t4_offline_pack_then_sync(t4_page, t4_demo):
 	)
 	assert body["kind"] == "pack" and body["pack"]["cycle_id"] == code, body
 	assert body["pack"]["set_id"] == t4_demo["set_offline_1"], body  # gói của đúng bộ vừa đóng offline
-	# nhãn của gói offline gửi sang Station Agent sau khi đồng bộ (A-40 D1)
+	# A-107: nhãn chỉ ra khi bấm nút, không tự gửi sang Station Agent
 	page.wait_for_timeout(1000)
-	assert len(sent) == 1, sent
+	assert sent == [], sent
 	expect(page.locator(".tc-sync-bar")).not_to_contain_text("xung đột")
 
 
@@ -106,4 +106,4 @@ def test_t4_offline_entry_survives_proxy_error(t4_page, t4_demo):
 
 	page.unroute("**/api/method/tracecore.v1.pack.generate_cycle_id")
 	page.evaluate("tcSync.replay()")
-	expect(sync_bar).to_contain_text("Đã đồng bộ", timeout=30000)
+	expect(sync_bar).to_contain_text("In 1 nhãn chờ", timeout=30000)
