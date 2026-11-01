@@ -249,6 +249,11 @@ body.tc-kiosk .layout-main-section {
 	z-index: var(--tc-z-actions);
 }
 
+/* cuộn do trình duyệt (Tab tới nút, scrollIntoView) dừng dưới ô quét đang dính, không để nội dung nằm khuất sau nó */
+html:has(.tc-work) {
+	scroll-padding-top: calc(var(--tc-touch-station) * 2 + var(--tc-sp-3) * 3);
+}
+
 .tc-scan.is-error {
 	background: var(--tc-fail-tint);
 	border: var(--tc-bw-thick) solid var(--tc-fail);
@@ -1777,6 +1782,10 @@ body.tc-kiosk .layout-main-section {
 	.tc-scan {
 		flex-wrap: wrap;
 		padding: var(--tc-sp-2);
+	}
+	/* màn hẹp: ô quét và hàng nút xếp thành hai dòng */
+	html:has(.tc-work) {
+		scroll-padding-top: calc(var(--tc-touch-station) * 3 + var(--tc-sp-3) * 3);
 	}
 	.tc-scan .tc-scan-input {
 		flex: 1 1 100%;
