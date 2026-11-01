@@ -199,7 +199,7 @@ body.tc-kiosk .layout-main-section {
 	border-radius: var(--tc-r-xl);
 }
 
-/* ô quét luôn ở đầu màn khi cuộn (#1827) */
+/* ô quét luôn ở đầu màn khi cuộn (ticket 1827) */
 .tc-work > .tc-scan {
 	position: sticky;
 	top: 0;
@@ -1308,7 +1308,7 @@ body.tc-kiosk .layout-main-section {
 	margin: 0 0 var(--tc-sp-1);
 }
 
-/* #1827, #1834 T3-07: mỗi dụng cụ một dòng ngang (ảnh, tên, số lượng, nút), danh sách là phần chính của màn */
+/* ticket 1827, ticket 1834 T3-07: mỗi dụng cụ một dòng ngang (ảnh, tên, số lượng, nút), danh sách là phần chính của màn */
 .tc-t3 .tc-inst {
 	grid-template-columns: minmax(0, 1fr);
 	gap: var(--tc-sp-2);
@@ -1334,7 +1334,7 @@ body.tc-kiosk .layout-main-section {
 	margin-left: var(--tc-sp-2);
 }
 
-/* kiosk 1366x768: thấy ít nhất 4 dòng dụng cụ không cần cuộn (#1827) */
+/* kiosk 1366x768: thấy ít nhất 4 dòng dụng cụ không cần cuộn (ticket 1827) */
 .tc-t3 .tc-ins {
 	padding-block: var(--tc-sp-1);
 }
@@ -1677,6 +1677,59 @@ body.tc-kiosk .layout-main-section {
 	font-weight: var(--tc-fw-bold);
 }
 
+/* PDA, điện thoại (A-92, ticket 1828): ô quét ở đầu màn; hàng nút trạm và dòng phiên vào menu */
+.tc-menu-btn {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.tc-main {
+		display: flex;
+		flex-direction: column;
+		padding: var(--tc-sp-2) var(--tc-sp-3) var(--tc-sp-22);
+	}
+	.tc-title {
+		margin-bottom: var(--tc-sp-2);
+	}
+	.tc-title h2 {
+		flex: 1;
+		font-size: var(--tc-fs-lg);
+	}
+	.tc-title .tc-brand,
+	.tc-title .tc-tag,
+	.tc-title .tc-net-status {
+		display: none;
+	}
+	.tc-menu-btn {
+		display: inline-flex;
+	}
+	.tc-station-pills,
+	.tc-session,
+	.tc-session-details {
+		display: none;
+	}
+	.tc-menu-open .tc-station-pills:not([hidden]),
+	.tc-menu-open .tc-session:not([hidden]) {
+		display: flex;
+	}
+	.tc-menu-open .tc-session-details:not([hidden]) {
+		display: block;
+	}
+	.tc-notify-banner {
+		order: 2;
+	}
+	.tc-scan {
+		flex-wrap: wrap;
+		padding: var(--tc-sp-2);
+	}
+	.tc-scan .tc-scan-input {
+		flex: 1 1 100%;
+	}
+	.tc-scan .tc-btn {
+		flex: 1;
+	}
+}
+
 /* chọn tay thiết bị và bộ/gói khi máy quét hỏng (A-68): panel dưới ô quét, nút >= 48 px, không hover-only */
 .tc-pick-button {
 	min-width: var(--tc-touch-station);
@@ -1778,57 +1831,4 @@ body.tc-kiosk .layout-main-section {
 	justify-content: space-between;
 	gap: var(--tc-touch-gap);
 	margin-top: var(--tc-sp-8);
-}
-
-/* PDA, điện thoại (A-92, #1828): ô quét ở đầu màn; hàng nút trạm và dòng phiên vào menu */
-.tc-menu-btn {
-	display: none;
-}
-
-@media (max-width: 768px) {
-	.tc-main {
-		display: flex;
-		flex-direction: column;
-		padding: var(--tc-sp-2) var(--tc-sp-3) var(--tc-sp-22);
-	}
-	.tc-title {
-		margin-bottom: var(--tc-sp-2);
-	}
-	.tc-title h2 {
-		flex: 1;
-		font-size: var(--tc-fs-lg);
-	}
-	.tc-title .tc-brand,
-	.tc-title .tc-tag,
-	.tc-title .tc-net-status {
-		display: none;
-	}
-	.tc-menu-btn {
-		display: inline-flex;
-	}
-	.tc-station-pills,
-	.tc-session,
-	.tc-session-details {
-		display: none;
-	}
-	.tc-menu-open .tc-station-pills:not([hidden]),
-	.tc-menu-open .tc-session:not([hidden]) {
-		display: flex;
-	}
-	.tc-menu-open .tc-session-details:not([hidden]) {
-		display: block;
-	}
-	.tc-notify-banner {
-		order: 2;
-	}
-	.tc-scan {
-		flex-wrap: wrap;
-		padding: var(--tc-sp-2);
-	}
-	.tc-scan .tc-scan-input {
-		flex: 1 1 100%;
-	}
-	.tc-scan .tc-btn {
-		flex: 1;
-	}
 }
