@@ -36,9 +36,14 @@ def _functions_in_order(names) -> list[str]:
 	)
 
 
+def _function_name(name: str) -> str:
+	"""Tên chức năng trên màn trạm; context riêng để "Lắp bộ" không đụng từ "Assembly" của các app khác (#1834 T3-06)."""
+	return _(name, context="Station Function")
+
+
 def function_label(function: str) -> str:
 	name = frappe.db.get_value("Station Function", function, "function_name")
-	return _(name) if name else function
+	return _function_name(name) if name else function
 
 
 def allowed_functions(zone_type: str | None) -> tuple[str, ...]:
@@ -143,7 +148,7 @@ def station_screen_tabs(functions) -> list[dict]:
 	)
 	tabs: dict[str, list[str]] = {}
 	for row in rows:
-		tabs.setdefault(row.screen_key, []).append(_(row.function_name))
+		tabs.setdefault(row.screen_key, []).append(_function_name(row.function_name))
 	return [{"key": key, "label": " / ".join(labels)} for key, labels in tabs.items()]
 
 
@@ -152,13 +157,13 @@ def gate_labels() -> dict[str, str]:
 	rows = frappe.get_all(
 		"Station Function", filters={"gate_step": ["is", "set"]}, fields=["gate_step", "function_name"]
 	)
-	return {row.gate_step: _(row.function_name) for row in rows}
+	return {row.gate_step: _function_name(row.function_name) for row in rows}
 
 
 def gate_label(step: str) -> str:
 	"""Tên hiển thị của một cổng; cổng lạ giữ nguyên mã."""
 	name = frappe.db.get_value("Station Function", {"gate_step": step}, "function_name")
-	return _(name) if name else step
+	return _function_name(name) if name else step
 
 
 def next_zone_type(zone_type: str | None) -> str | None:

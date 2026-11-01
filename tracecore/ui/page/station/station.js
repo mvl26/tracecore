@@ -110,6 +110,76 @@ function tcPackLabelHtml(row) {
 	return names ? `${esc(names)} (${code})` : code;
 }
 
+// Hàng đợi bộ của bước hiện trên màn chính (#1834 T3-03, #1835 T4-01): chỉ để xem, vẫn quét từng Set ID như T2.
+// eslint-disable-next-line no-unused-vars
+class TcStepQueue {
+	constructor(station, screen) {
+		this.station = station;
+		this.screen = screen;
+		this.reset();
+	}
+
+	reset() {
+		this.items = null;
+		this.total = 0;
+		this.failed = null;
+		this.busy = false;
+	}
+
+	async load(done) {
+		const station = this.station;
+		if (this.busy || !station.session || station.isOffline()) return;
+		const version = station.sessionVersion;
+		this.busy = true;
+		this.failed = null;
+		try {
+			const res = await station.rpcRead("tracecore.v1.lookup.set_units", {
+				station: station.station,
+				screen: this.screen,
+				page_length: 20,
+				client_ts: clientTs(),
+			});
+			if (version !== station.sessionVersion) return;
+			if (res && res.ok !== false) {
+				this.items = res.items || [];
+				this.total = res.total || 0;
+			} else this.failed = station.failureCause(null, res);
+		} catch (error) {
+			if (error.sessionEnded) return;
+			this.failed = station.failureCause(error);
+		} finally {
+			this.busy = false;
+		}
+		if (version === station.sessionVersion) done();
+	}
+
+	html(title, empty) {
+		if (this.failed)
+			return `<section class="tc-t4-block tc-step-queue">
+				<p class="tc-hint">${esc(this.failed)}</p>
+			</section>`;
+		if (!this.items)
+			return `<section class="tc-t4-block tc-step-queue"><p class="tc-loading">${esc(
+				__("Loading...")
+			)}</p></section>`;
+		const heading = title(this.total);
+		const body = this.items.length
+			? this.items
+					.map((row) => {
+						const detail = [row.name, row.department_name].filter(Boolean).join(" · ");
+						return `<p data-set="${esc(row.id)}"><b class="tc-code">${esc(
+							row.id
+						)}</b> ${esc(detail)}</p>`;
+					})
+					.join("")
+			: `<p class="tc-empty">${esc(empty)}</p>`;
+		return `<section class="tc-t4-block tc-step-queue" aria-label="${esc(heading)}">
+			<h3>${esc(heading)}</h3>
+			${body}
+		</section>`;
+	}
+}
+
 class TraceCoreStation {
 	constructor(wrapper, authBarrier = Promise.resolve()) {
 		this.wrapper = wrapper;

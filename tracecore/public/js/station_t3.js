@@ -1,5 +1,5 @@
 /* global tcErrorTitle, tcGuideButton */
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, TcStepQueue */
 // Màn T3 kiểm tra – lắp ráp theo BOM (SCR-07, FEAT-020) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Ô quét của shell luôn ở đầu và có focus: quét Set ID mở bản nháp kiểm đếm (BOM kèm ảnh), quét mã GIAI dụng cụ tự tick
@@ -55,6 +55,7 @@ class T3Assembly {
 		this.busy = null;
 		this.offline = false;
 		this.scanQueue = []; // mã quét đến khi đang chờ máy chủ: không được mất (chạy lần lượt khi xong)
+		this.queue = new TcStepQueue(station, "assembly"); // #1834 T3-03
 		this.reset();
 		this.result.addEventListener("change", (event) => this.onChange(event));
 		this.result.addEventListener("input", (event) => this.onInput(event));
@@ -77,6 +78,7 @@ class T3Assembly {
 		this.scanQueue = [];
 		this.reset();
 		this.zoom = null;
+		this.queue.reset();
 		this.updatePlaceholder();
 	}
 
@@ -512,6 +514,7 @@ class T3Assembly {
 		this.asm = res;
 		this.form = null;
 		this.notice = null;
+		this.queue.reset(); // bộ vừa ghi nhận rời hàng đợi
 		this.show();
 	}
 
@@ -594,7 +597,7 @@ class T3Assembly {
 				"empty",
 				`<div class="tc-t3"><p class="tc-empty">${esc(
 					__("Scan the Set ID to count its instruments against the BOM.")
-				)}</p></div>`
+				)}</p>${this.queueHtml()}</div>`
 			);
 		}
 		let state = this.notice && this.notice.variant === "error" ? "error" : "result";
@@ -603,7 +606,8 @@ class T3Assembly {
 			state,
 			`<div class="tc-t3">
 				<div data-region="notice">${this.noticeHtml()}</div>
-				${this.asm ? this.asmHtml() : ""}
+				${this.asm ? this.asmHtml() : this.queueHtml()}
+				${this.asm && this.asm.docstatus === 1 ? this.queueHtml() : ""}
 				${this.zoomHtml()}
 			</div>`
 		);
@@ -615,6 +619,16 @@ class T3Assembly {
 				field.focus();
 			}
 		}
+	}
+
+	// #1834 T3-03: bộ chờ lắp hiện sẵn khi chưa mở bộ nào; lần đầu tải rồi vẽ lại, offline thì không tải
+	queueHtml() {
+		if (!this.queue.items && !this.queue.failed && !this.offline)
+			this.queue.load(() => this.show());
+		return this.queue.html(
+			(count) => __("Sets waiting for assembly ({0})", [count]),
+			__("No set is waiting for assembly.")
+		);
 	}
 
 	alertHtml(notice, buttons = "") {

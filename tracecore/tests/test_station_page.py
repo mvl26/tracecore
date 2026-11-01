@@ -360,6 +360,23 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("scrollResultIntoView()", on_open)
 		self.assertIn('data-action="t3-zoom"', source)
 
+	def test_technician_wording_has_no_assembly_or_bom(self):
+		"""#1834 T3-06: "Lắp bộ", "Danh mục bộ" thay cho Assembly, BOM trên màn T3."""
+		ours = vi_translations()
+		self.assertEqual(ours.get("Assembly:Station Function"), "Lắp bộ")
+		self.assertEqual(ours.get("T3 Assembly"), "T3 Lắp bộ")
+		for source in (
+			"BOM v{0}",
+			"Set components (BOM v{0})",
+			"Scan the Set ID to count its instruments against the BOM.",
+		):
+			self.assertNotIn("BOM", ours.get(source, ""), source)
+
+	def test_t3_has_waiting_queue(self):
+		"""#1834 T3-03: hàng đợi Bộ chờ lắp ngay trên màn chính."""
+		with open(os.path.join(APP_PATH, "public", "js", "station_t3.js"), encoding="utf-8") as handle:
+			self.assertIn('new TcStepQueue(station, "assembly")', handle.read())
+
 	def test_read_blocks_retry_once_and_state_the_cause(self):
 		"""#1825: khối dữ liệu đọc khi mở trạm tự thử lại một lần, lỗi nói rõ nguyên nhân mất mạng, hết phiên hay lỗi máy chủ."""
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
