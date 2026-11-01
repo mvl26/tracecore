@@ -58,9 +58,9 @@ class TestItemRules(IsolatedTestCase):
 			options.startswith(OLD_GROUP_OPTIONS), msg=options
 		)  # bốn giá trị cũ giữ nguyên, đứng trước
 		values = set(options.split("\n")) - {""}
-		self.assertEqual(values, set(FR_GROUPS) | {"Lubricant"})  # 9 nhóm của FR + Lubricant (V1)
+		self.assertEqual(values, set(FR_GROUPS) | {"Lubricant", "Packaging Accessory"})  # + V1, A-97
 		self.assertEqual(set(items.CSSD_GROUPS), values)
-		self.assertEqual(len(items.CSSD_GROUPS), 10)
+		self.assertEqual(len(items.CSSD_GROUPS), 11)
 		self.assertEqual(meta.get_field("tc_ci_class").options, "\n1\n2\n3\n4\n5\n6")
 
 	@bru("BRU-REP-011")

@@ -25,6 +25,7 @@ CSSD_GROUPS: tuple[str, ...] = (
 	"Filter Box",
 	"Chemical",
 	"Other",
+	"Packaging Accessory",  # A-97
 )
 # V3: nhóm bắt buộc có hạn dùng (FR-M6-01.1: chỉ thị hóa học, chỉ thị sinh học, hóa chất; dầu là hóa chất)
 EXPIRY_REQUIRED_GROUPS: tuple[str, ...] = (
