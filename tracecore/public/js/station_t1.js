@@ -933,6 +933,8 @@ class T1Receiving {
 			: __("Scan the employee card of the deliverer...");
 		this.input.placeholder = text;
 		this.input.setAttribute("aria-label", text);
+		// #1832 T1-03: nhãn liên kết của ô quét theo đúng bước
+		for (const label of this.input.labels || []) label.textContent = text;
 	}
 
 	show() {

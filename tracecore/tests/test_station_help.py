@@ -6,6 +6,7 @@ phải có 3 đến 5 bước và ảnh chỉ là file công khai. Trạm không
 
 import frappe
 
+from tracecore.patches.v0_1 import receive_help_steps
 from tracecore.tests.utils import IsolatedTestCase
 from tracecore.ui import station_help
 
@@ -16,6 +17,40 @@ STEPS_HTML = (
 	'<li>Print the pack label <img src="/files/t4-3.jpg"><img src="/files/extra.png"></li>'
 	"</ol><ol><li>Not a step</li></ol>"
 )
+
+
+def _texts(html):
+	return [step["text"] for step in station_help.steps_from_html(html)]
+
+
+class TestReceiveGuidePatch(IsolatedTestCase):
+	def _receive(self, content):
+		frappe.db.delete("Help Article", {"tc_station_key": "RECEIVE"})
+		article = _article("RECEIVE", content=content, title="Help RECEIVE " + frappe.generate_hash(length=6))
+		return article.insert(ignore_permissions=True)
+
+	def test_guide_follows_the_order_on_screen(self):
+		steps = station_help.DEFAULT_STEPS["RECEIVE"]
+		self.assertEqual(len(steps), 5)
+		self.assertIn("employee card", steps[0])
+		self.assertIn("handing over", steps[1])
+		self.assertIn("Confirm", steps[4])
+
+	def test_patch_updates_an_unedited_article_in_either_language(self):
+		for lang in ("en", "vi"):
+			article = self._receive(station_help.default_content(receive_help_steps.OLD_STEPS, lang=lang))
+			receive_help_steps.execute()
+			self.assertEqual(
+				_texts(frappe.db.get_value("Help Article", article.name, "content")),
+				_texts(station_help.default_content(station_help.DEFAULT_STEPS["RECEIVE"], lang=lang)),
+			)
+
+	def test_patch_keeps_an_edited_article(self):
+		article = self._receive("<ol><li>Một</li><li>Hai</li><li>Ba</li></ol>")
+		receive_help_steps.execute()
+		self.assertEqual(
+			_texts(frappe.db.get_value("Help Article", article.name, "content")), ["Một", "Hai", "Ba"]
+		)
 
 
 def _article(key, content=STEPS_HTML, published=1, title=None):

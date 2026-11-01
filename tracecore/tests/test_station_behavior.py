@@ -100,6 +100,30 @@ class TestT1CountTable(FrappeTestCase):
 		self.assertEqual(out, {"called": False, "variant": "error"})
 
 
+class TestT1ScanLabel(FrappeTestCase):
+	def test_visible_label_follows_the_step(self):
+		out = run_js(
+			self,
+			[T1],
+			[["T1Receiving"]],
+			FAKE_STATION
+			+ """
+			const station = makeStation();
+			const label = element();
+			station.input.labels = [label];
+			const t1 = new T1Receiving(station);
+			const first = [label.textContent, station.input.attrs["aria-label"], station.input.placeholder];
+			t1.receipt = {receipt: "PT-1", items: []};
+			t1.updatePlaceholder();
+			emit({first, second: [label.textContent, station.input.attrs["aria-label"], station.input.placeholder]});
+			""",
+		)
+		self.assertEqual(len(set(out["first"])), 1)
+		self.assertEqual(len(set(out["second"])), 1)
+		self.assertIn("employee card", out["first"][0])
+		self.assertIn("Set ID", out["second"][0])
+
+
 class TestT1Today(FrappeTestCase):
 	def test_today_block_shows_only_names_with_code_as_tooltip(self):
 		out = run_js(

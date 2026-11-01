@@ -7500,3 +7500,7 @@ The actual quantity of {0} must be a whole number from 0 to {1}.,Số lượng t
 "Correct the actual quantity, then confirm the set.",Sửa số lượng thực tế rồi xác nhận bộ.,
 Quantity counted at receipt. Prefilled from the BOM quantity.,"Số lượng kiểm đếm khi tiếp nhận, điền sẵn theo danh mục bộ.",
 Component line of a received set with the counted quantity (FR-M2-23).,Dòng thành phần của bộ đã tiếp nhận kèm số lượng kiểm đếm.,
+"Scan the card of the person handing over the sets, or choose Deliverer has no card.","Quét thẻ người giao, hoặc chọn Người giao không có thẻ.",
+Scan each returned set.,Quét từng bộ được trả.,
+"Count each line against the quantity in the set, correct the actual quantity and note missing or damaged instruments.","Kiểm đếm từng dòng theo số lượng trong bộ, sửa số lượng thực tế và ghi chú dụng cụ thiếu, hỏng.",
+"Confirm each set, then submit the receipt.","Xác nhận từng bộ, rồi ghi sổ phiếu.",
