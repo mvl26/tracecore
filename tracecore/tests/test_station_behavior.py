@@ -127,6 +127,9 @@ class TestT1ScanLabel(FrappeTestCase):
 T6 = "public/js/station_t6.js"
 T7 = "public/js/station_t7.js"
 T8 = "public/js/station_t8.js"
+PACK_TRACE = "reprocessing/report/pack_trace/pack_trace.js"
+LAUNCHER = "ui/page/tracecore/tracecore.js"
+STATION = "ui/page/station/station.js"
 DAILY = "public/js/station_daily_test.js"
 MACHINE = {"name": "TB-1", "equipment_name": "May", "required": ["bowie_dick"], "missing": [], "runs": {}}
 
@@ -279,6 +282,71 @@ class TestT8Idle(FrappeTestCase):
 		out = self.idle({"at_department": [], "waiting_return": []})
 		self.assertIn("No pack is at the department.", out)
 		self.assertIn("No used pack is waiting to return.", out)
+
+
+class TestPackTracePhoto(FrappeTestCase):
+	def cell(self, value):
+		import json
+
+		return run_js(
+			self,
+			[PACK_TRACE],
+			[["tcIndicatorPhotoCell"]],
+			f"emit(tcIndicatorPhotoCell({json.dumps(value)}));",
+		)
+
+	def test_photo_opens_as_an_image_link(self):
+		out = self.cell("/private/files/chi-thi.jpg")
+		self.assertIn('href="/private/files/chi-thi.jpg"', out)
+		self.assertIn("<img", out)
+
+	def test_other_urls_and_blank_show_nothing_clickable(self):
+		self.assertEqual(self.cell(None), "")
+		self.assertNotIn("href", self.cell("javascript:alert(1)"))
+		self.assertNotIn("href", self.cell("https://evil.example/x.jpg"))
+
+
+class TestDocumentTitles(FrappeTestCase):
+	def title(self, station):
+		import json
+
+		return run_js(
+			self,
+			[STATION],
+			[["tcStationTitle"]],
+			f"emit(tcStationTitle({json.dumps(station)}));",
+		)
+
+	def test_station_title_has_number_name_and_app(self):
+		self.assertEqual(self.title({"label": "Tiếp nhận", "station_no": 1}), "T1 Tiếp nhận 2013 TraceCore")
+
+	def test_station_title_does_not_repeat_the_number(self):
+		self.assertEqual(self.title({"label": "T4 Đóng gói", "station_no": 4}), "T4 Đóng gói 2013 TraceCore")
+
+	def test_station_without_number(self):
+		self.assertEqual(self.title({"label": "Giặt", "station_no": 0}), "Giặt 2013 TraceCore")
+
+
+class TestOverviewTiles(FrappeTestCase):
+	def test_summary_blocks_become_tiles_with_counts_and_routes(self):
+		out = run_js(
+			self,
+			[LAUNCHER],
+			[["tcOverviewTiles"]],
+			"""emit(tcOverviewTiles({
+				sets: [{status: "Sterile", count: 5}],
+				failures: {load: {failed: 1, finished: 4, percent: 25}, wash: {failed: 0, finished: 2, percent: 0}},
+			}));""",
+		)
+		self.assertEqual(out[0]["value"], 5)
+		self.assertEqual(out[0]["route"], "/app/set-unit?status=Sterile")
+		self.assertEqual(out[1]["value"], "1/4")
+		self.assertEqual(out[1]["route"], "/app/sterilization-load?status=Failed")
+		self.assertEqual(out[2]["route"], "/app/wash-batch?status=Failed")
+
+	def test_role_without_blocks_gets_no_tile(self):
+		out = run_js(self, [LAUNCHER], [["tcOverviewTiles"]], "emit(tcOverviewTiles({}));")
+		self.assertEqual(out, [])
 
 
 class TestT1Today(FrappeTestCase):

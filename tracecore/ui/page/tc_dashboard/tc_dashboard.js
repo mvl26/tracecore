@@ -636,6 +636,7 @@ frappe.pages["tc-dashboard"].on_page_load = function (wrapper) {
 		}
 		const current = sections.find((item) => item.key === state.section);
 		page.set_title(__(current.label, null, DASH_CTX));
+		document.title = `${__(current.label, null, DASH_CTX)} – TraceCore`;
 		({
 			actions: () => renderActions(blocks),
 			sets: () => renderSets(blocks.sets),
