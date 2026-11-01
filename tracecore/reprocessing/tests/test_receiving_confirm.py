@@ -74,6 +74,12 @@ class TestReceivingConfirm(ReceivingCase):
 			self.confirm(lines=self.counted(RV_KC_03=3), finalize=True)
 		self.assertEqual(caught.exception.block.code, "CONFIRM_INCOMPLETE")
 
+	def test_confirming_a_differing_quantity_anyway_flags_the_set_for_review(self):
+		item = self.confirm(lines=self.counted(RV_KC_03=3), finalize=True, ack_incomplete=True)
+		self.assertEqual(item["confirmed"], 1)
+		self.assertEqual(self.actual()["RV-KC-03"], 3)
+		self.assertEqual(item["needs_review"], 1)
+
 	def test_quantity_out_of_range_is_refused(self):
 		for bad in (-1, 10000, "x"):
 			with self.assertRaises(BlockedError) as caught:

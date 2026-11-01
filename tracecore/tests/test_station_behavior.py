@@ -88,6 +88,21 @@ class TestT1CountTable(FrappeTestCase):
 		self.assertEqual(out[0]["confirmed"], 0)
 		self.assertEqual(out[1]["actual_qty"], 1)
 
+	def test_differing_quantity_offers_confirm_anyway(self):
+		out = run_js(
+			self,
+			[ERR, T1],
+			[[], ["T1Receiving"]],
+			FAKE_STATION
+			+ T1_ITEM
+			+ """
+			item.lines[0].actual_qty = 1;
+			t1.confirmSet();
+			emit(t1.noticeHtml());
+			""",
+		)
+		self.assertIn('data-action="confirm-anyway"', out)
+
 	def test_blank_quantity_blocks_inline(self):
 		out = run_js(
 			self,
