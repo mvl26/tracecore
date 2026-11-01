@@ -250,6 +250,13 @@ class T5Release {
 		this.station.focus(true);
 	}
 
+	// Tham số ngoài dải của mẻ đang mở: chặn kết quả Đạt, server kiểm lại (A-89)
+	outsideNames() {
+		return ((this.ctx && this.ctx.params) || [])
+			.filter((row) => row.outside_range)
+			.map((row) => row.parameter_name);
+	}
+
 	recordResult() {
 		if (!this.form.result) {
 			return this.blocked({
@@ -435,6 +442,7 @@ class T5Release {
 			"t5b-mode": () => this.setMode(data.mode),
 			"t5b-back": () => this.backToLoad(),
 			"t5b-result": () => {
+				if (data.value === "Pass" && this.outsideNames().length) return;
 				this.form.result = data.value;
 				this.show();
 			},
@@ -848,6 +856,20 @@ class T5Release {
 							variant: "warn",
 							title: __("Abnormal duration"),
 							reason: this.back.durationText(ctx.duration),
+					  })
+					: ""
+			}
+			${
+				this.outsideNames().length
+					? this.alertHtml({
+							variant: "error",
+							title: __("A Pass cannot be recorded"),
+							reason: __("Values outside the program range: {0}.", [
+								this.outsideNames().join(", "),
+							]),
+							action: __(
+								"Correct the data in the Cycle data tab if it was entered wrong; otherwise record Fail."
+							),
 					  })
 					: ""
 			}

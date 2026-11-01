@@ -178,7 +178,7 @@
    "fieldname": "data_source",
    "fieldtype": "Select",
    "label": "Data Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {
@@ -291,7 +291,7 @@
    "fieldname": "result_source",
    "fieldtype": "Select",
    "label": "Result Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {

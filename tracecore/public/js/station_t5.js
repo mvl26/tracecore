@@ -711,7 +711,12 @@ class T5Load {
 		return this.request("tracecore.v1.load.data_context", this.dataArgs(), (res) => {
 			const context = res.load;
 			this.data.context = context;
+			// máy không đẩy dữ liệu: điền sẵn theo chương trình, KTV kiểm tra và sửa được (A-89)
+			const prefill = context.prefill || {};
 			const values = {};
+			Object.entries(prefill.values || {}).forEach(([name, value]) => {
+				values[name] = String(value);
+			});
 			(context.params || []).forEach((row) => {
 				values[row.parameter_name] = String(row.value);
 			});
@@ -721,7 +726,11 @@ class T5Load {
 				alerts: alerts ? "yes" : "no",
 				alertsText: alerts || "",
 				started: t5LocalInput(context.started_at),
-				ended: t5LocalInput(context.ended_at) || t5NowInput(),
+				ended:
+					t5LocalInput(context.ended_at) ||
+					t5LocalInput(prefill.ended_at) ||
+					t5NowInput(),
+				chemicalName: prefill.chemical_name || prefill.chemical || "",
 				file: context.machine_report || "",
 				reason: context.manual_reason || "",
 				uploading: false,
@@ -785,7 +794,9 @@ class T5Load {
 					title: __("Manual cycle data saved and confirmed"),
 					reason: [
 						res.needs_review
-							? __("Some values are outside the program range: Needs review by R02.")
+							? __(
+									"Some values are outside the program range: a Pass is not allowed."
+							  )
 							: "",
 						this.durationText(res.duration),
 					]
@@ -1331,6 +1342,8 @@ class T5Load {
 		const text = load.data_complete
 			? auto
 				? __("Automatic (station agent)")
+				: load.data_source === "Manual Default"
+				? __("Manual entry from program defaults, confirmed")
 				: __("Manual entry, confirmed")
 			: auto
 			? __("Automatic (station agent), incomplete")
@@ -1496,8 +1509,15 @@ class T5Load {
 					)}" type="text" inputmode="decimal" autocomplete="off"
 						data-param="${esc(param.parameter_name)}" value="${esc(form.values[param.parameter_name] || "")}">
 					<p class="tc-t5-review tc-t2-review"${state === "review" ? "" : " hidden"}>${esc(
-					__("Outside the program range - Needs review")
+					__("Outside the program range - a Pass is not allowed")
 				)}</p>
+				${
+					param.default_value != null
+						? `<p class="tc-hint">${esc(
+								__("Program default: {0}", [param.default_value])
+						  )}</p>`
+						: ""
+				}
 				</div>`;
 			})
 			.join("");
@@ -1515,6 +1535,15 @@ class T5Load {
 			[session.employee, session.employee_name].filter(Boolean).join(" ") || __("operator");
 		return `<section class="tc-t4-block tc-t2-form">
 			<h3>${esc(__("Manual cycle data - confirmed by the operator"))}</h3>
+			${
+				context.prefill
+					? `<p class="tc-hint">${esc(
+							__(
+								"Filled in from the program: check against the sterilizer, change what differs, then confirm."
+							)
+					  )}</p>`
+					: ""
+			}
 			<div class="tc-t4-row">${fields}</div>
 			<div class="tc-t4-row">
 				<div class="tc-field">
@@ -1574,7 +1603,7 @@ class T5Load {
 				<button type="button" class="tc-btn tc-btn-primary" data-action="t5-save-data"${t5Disabled(
 					Boolean(this.busy) || this.offline || form.uploading
 				)}>${esc(
-			this.busy === T5_SAVE ? __("Recording...") : __("Save manual data and confirm")
+			this.busy === T5_SAVE ? __("Recording...") : __("Confirm cycle data")
 		)}</button>
 			</div>
 		</section>`;

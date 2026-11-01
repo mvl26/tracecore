@@ -31,6 +31,7 @@
   "manual_confirmed_by",
   "manual_confirmed_at",
   "params",
+  "machine_data",
   "machine_alerts",
   "machine_report",
   "chart_files",
@@ -178,7 +179,7 @@
    "fieldname": "data_source",
    "fieldtype": "Select",
    "label": "Data Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {
@@ -225,6 +226,13 @@
    "fieldname": "params",
    "fieldtype": "JSON",
    "label": "Parameters",
+   "read_only": 1
+  },
+  {
+   "description": "Program defaults offered to the operator and the fields changed from them.",
+   "fieldname": "machine_data",
+   "fieldtype": "JSON",
+   "label": "Machine Data",
    "read_only": 1
   },
   {
@@ -289,7 +297,7 @@
    "fieldname": "result_source",
    "fieldtype": "Select",
    "label": "Result Source",
-   "options": "\nManual\nAuto",
+   "options": "\nManual\nManual Default\nAuto",
    "read_only": 1
   },
   {

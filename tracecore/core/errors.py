@@ -95,6 +95,7 @@ HTTP_STATUS: dict[str, int] = {
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",
 			"DATA_INCOMPLETE",
+			"CYCLE_DATA_OUT_OF_RANGE",  # A-89
 			"RESULT_INVALID",
 			# A-77: chỉ thị rửa
 			"INDICATOR_REQUIRED",

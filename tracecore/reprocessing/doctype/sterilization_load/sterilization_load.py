@@ -32,6 +32,7 @@ SERVICE_FIELDS = (
 	"manual_confirmed_by",
 	"manual_confirmed_at",
 	"params",
+	"machine_data",
 	"machine_alerts",
 	"machine_report",
 	"chart_files",

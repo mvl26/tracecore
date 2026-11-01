@@ -708,7 +708,12 @@ class T2Wash {
 			const context = res.batch;
 			this.unload.context = context;
 			const data = context.machine_data || {};
+			// máy không đẩy dữ liệu: điền sẵn theo chương trình, KTV kiểm tra và sửa được (A-89)
+			const prefill = context.prefill || {};
 			const values = {};
+			Object.entries(prefill.values || {}).forEach(([name, value]) => {
+				values[name] = String(value);
+			});
 			(data.parameters || []).forEach((row) => {
 				values[row.parameter_name] = String(row.value);
 			});
@@ -718,7 +723,12 @@ class T2Wash {
 				alertsText: data.alerts || "",
 				reported: data.reported_result || "",
 				started: t2LocalInput(context.started_at),
-				ended: t2LocalInput(context.ended_at) || t2NowInput(),
+				ended:
+					t2LocalInput(context.ended_at) ||
+					t2LocalInput(prefill.ended_at) ||
+					t2NowInput(),
+				chemicalName: prefill.chemical_name || prefill.chemical || "",
+				editing: false,
 				file: context.machine_files || "",
 				uploading: false,
 				confirmed: false,
@@ -1031,8 +1041,15 @@ class T2Wash {
 			"t2-cancel": () => this.cancelLoad(),
 			"t2-refresh-lots": () => this.refreshLots(),
 			"t2-save-data": () => this.saveData(),
+			"t2-edit-data": () => {
+				if (!this.form) return;
+				this.form.editing = true;
+				this.show();
+			},
 			"t2-verdict": () => {
 				if (!this.verdict) return;
+				if (data.value === "Pass" && data.field === "result" && this.outsideNames().length)
+					return;
 				this.verdict[data.field] = data.value;
 				this.show();
 			},
@@ -1624,6 +1641,8 @@ class T2Wash {
 		const text = batch.data_complete
 			? auto
 				? __("Automatic (station agent)")
+				: batch.data_source === "Manual Default"
+				? __("Manual entry from program defaults, confirmed")
 				: __("Manual entry, confirmed")
 			: auto
 			? __("Automatic (station agent), incomplete")
@@ -1771,11 +1790,22 @@ class T2Wash {
 		html += scanned;
 		const context = unload.context;
 		if (!context) return html;
-		html += context.data_complete
-			? this.dataSummaryHtml(context)
-			: this.manualFormHtml(context);
-		if (context.data_complete) html += this.verdictHtml(context);
+		const editing = this.form && this.form.editing;
+		html +=
+			context.data_complete && !editing
+				? this.dataSummaryHtml(context)
+				: this.manualFormHtml(context);
+		if (context.data_complete && !editing) html += this.verdictHtml(context);
 		return html;
+	}
+
+	// Tham số ngoài dải của dữ liệu đã lưu: chặn kết luận Đạt, server kiểm lại (A-89)
+	outsideNames() {
+		const context = this.unload && this.unload.context;
+		const data = (context && context.machine_data) || {};
+		return (data.parameters || [])
+			.filter((row) => row.outside_range)
+			.map((row) => row.parameter_name);
 	}
 
 	manualFormHtml(context) {
@@ -1798,9 +1828,16 @@ class T2Wash {
 				}${param.required ? " *" : ""}${range ? ` · ${esc(range)}` : ""}</label>
 					<input id="tc-t2-param-${index}" type="text" inputmode="decimal" autocomplete="off"
 						data-param="${esc(param.parameter_name)}" value="${esc(value)}">
-					<p class="tc-t2-review" ${review ? "" : "hidden"}><span aria-hidden="true">!</span> ${esc(
-					__("Needs review")
+				<p class="tc-t2-review" ${review ? "" : "hidden"}><span aria-hidden="true">!</span> ${esc(
+					__("Outside the program range - a Pass is not allowed")
 				)}</p>
+				${
+					param.default_value != null
+						? `<p class="tc-hint">${esc(
+								__("Program default: {0}", [param.default_value])
+						  )}</p>`
+						: ""
+				}
 				</div>`;
 			})
 			.join("");
@@ -1811,6 +1848,22 @@ class T2Wash {
 		const fileRequired = Boolean(machine.has_printout);
 		return `<section class="tc-t4-block tc-t2-form">
 			<h3>${esc(__("Manual cycle data for batch {0}", [context.batch]))}</h3>
+			${
+				context.prefill
+					? `<p class="tc-hint">${esc(
+							__(
+								"Filled in from the program: check against the washer, change what differs, then confirm."
+							)
+					  )}</p>`
+					: ""
+			}
+			${
+				form.chemicalName
+					? `<p>${esc(__("Chemical of the program"))}: <b>${esc(
+							form.chemicalName
+					  )}</b></p>`
+					: ""
+			}
 			<div class="tc-t4-row">${params}</div>
 			<div class="tc-t4-row">
 				<div class="tc-field">
@@ -1874,7 +1927,7 @@ class T2Wash {
 			<div class="tc-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="t2-save-data"${t2Disabled(
 					Boolean(this.busy) || this.offline || form.uploading
-				)}>${esc(__("Save manual data and confirm"))}</button>
+				)}>${esc(__("Confirm cycle data"))}</button>
 			</div>
 		</section>`;
 	}
@@ -1903,13 +1956,23 @@ class T2Wash {
 					  )}</p>`
 					: ""
 			}
+			${
+				this.outsideNames().length
+					? `<div class="tc-actions"><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-edit-data">${esc(
+							__("Correct cycle data")
+					  )}</button></div>`
+					: ""
+			}
 		</section>`;
 	}
 
 	verdictHtml(context) {
 		const verdict = this.verdict || { result: "", clean: "", confirmed: false, pin: "" };
+		const outside = this.outsideNames();
 		const chip = (field, value, label) =>
-			`<button type="button" class="tc-chip" data-action="t2-verdict" data-field="${field}" data-value="${value}"
+			`<button type="button" class="tc-chip" data-action="t2-verdict" data-field="${field}" data-value="${value}"${t2Disabled(
+				field === "result" && value === "Pass" && outside.length > 0
+			)}
 				aria-pressed="${verdict[field] === value ? "true" : "false"}">${esc(label)}</button>`;
 		const pass = __("Pass", null, "Step Gate Result");
 		const fail = __("Fail", null, "Step Gate Result");
@@ -1934,6 +1997,20 @@ class T2Wash {
 				: __("Record the result for {0} set(s)", [context.sets.length]);
 		return `<section class="tc-t4-block tc-t2-verdict">
 			<h3>${esc(__("Cycle result (applies to every set)"))}</h3>
+			${
+				outside.length
+					? this.alertHtml({
+							variant: "error",
+							title: __("A Pass cannot be recorded"),
+							reason: __("Values outside the program range: {0}.", [
+								outside.join(", "),
+							]),
+							action: __(
+								"Correct the data if it was entered wrong; otherwise record Fail."
+							),
+					  })
+					: ""
+			}
 			<div class="tc-chips" role="group" aria-label="${esc(__("Cycle result (applies to every set)"))}">
 				${chip("result", "Pass", pass)}${chip("result", "Fail", fail)}
 			</div>
