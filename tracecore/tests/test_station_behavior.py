@@ -465,3 +465,44 @@ class TestLabelPdfButton(FrappeTestCase):
 			translated = {row[0]: row[1] for row in csv.reader(handle) if row}
 		for text in ("Save label PDF", "Saving a label PDF needs a network connection."):
 			self.assertTrue(translated.get(text), msg=text)
+
+
+class TestScanShell(FrappeTestCase):
+	def test_browser_scrolls_stop_below_the_sticky_scan_block(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "station", "station.css"), encoding="utf-8"
+		) as handle:
+			css = handle.read()
+		self.assertRegex(css, r"html:has\(\.tc-work\)[^}]*scroll-padding-top: calc\(")
+
+	def test_scan_label_follows_the_placeholder(self):
+		out = run_js(
+			self,
+			[ERR],
+			[[]],
+			"""
+			let fire = null;
+			globalThis.MutationObserver = class {
+				constructor(callback) { fire = callback; }
+				observe(_node, options) { this.options = options; globalThis.seen = options; }
+			};
+			const label = element();
+			const input = element();
+			input.labels = [label];
+			input.placeholder = "Scan Set ID...";
+			window.tcBindScanLabel(input);
+			const first = label.textContent;
+			input.placeholder = "Scan the sterilizer QR code...";
+			fire();
+			emit({first, second: label.textContent, filter: globalThis.seen.attributeFilter});
+			""",
+		)
+		self.assertEqual(out["first"], "Scan Set ID...")
+		self.assertEqual(out["second"], "Scan the sterilizer QR code...")
+		self.assertEqual(out["filter"], ["placeholder"])
+
+	def test_shell_binds_the_scan_label(self):
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "station", "station.js"), encoding="utf-8"
+		) as handle:
+			self.assertIn("window.tcBindScanLabel(this.input)", handle.read())

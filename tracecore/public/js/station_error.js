@@ -32,6 +32,18 @@
 		</div>${reason}`;
 	};
 
+	// #1832 cho mọi màn: nhãn liên kết của ô quét luôn theo placeholder mà màn đang đặt
+	window.tcBindScanLabel = function (input) {
+		const sync = () => {
+			for (const label of input.labels || []) label.textContent = input.placeholder;
+		};
+		sync();
+		new MutationObserver(sync).observe(input, {
+			attributes: true,
+			attributeFilter: ["placeholder"],
+		});
+	};
+
 	window.tcErrorTitle = function (notice) {
 		if (!notice || !notice.error_code) return (notice && notice.title) || "";
 		const parts = [`[${notice.error_code}]`, notice.error_name || notice.title];
