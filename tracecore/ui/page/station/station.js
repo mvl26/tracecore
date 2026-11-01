@@ -273,6 +273,12 @@ class TraceCoreStation {
 		return next;
 	}
 
+	// đưa kết quả lên ngay dưới ô quét (ô quét dính ở đầu màn), không cuộn tay qua phần đầu trang (#1827)
+	scrollResultIntoView() {
+		const top = this.result.getBoundingClientRect().top;
+		window.scrollTo({ top: window.scrollY + top - this.form.offsetHeight });
+	}
+
 	renderSwitching() {
 		this.authResult.innerHTML = `<div class="tc-skeleton" aria-busy="true"><span></span><span></span><span></span></div>
 			<span class="tc-sr-only">${esc(__("Loading..."))}</span>`;

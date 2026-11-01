@@ -351,6 +351,15 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn('data-action="toggle-station-menu"', html)
 		self.assertNotIn("tc-rail", html)
 
+	def test_t3_open_closes_picker_and_brings_set_to_top(self):
+		"""#1827, #1834 T3-04, T3-07."""
+		with open(os.path.join(APP_PATH, "public", "js", "station_t3.js"), encoding="utf-8") as handle:
+			source = handle.read()
+		on_open = source[source.index("onOpen(res) {") : source.index("onLine(res) {")]
+		self.assertIn("picker.close()", on_open)
+		self.assertIn("scrollResultIntoView()", on_open)
+		self.assertIn('data-action="t3-zoom"', source)
+
 	def test_read_blocks_retry_once_and_state_the_cause(self):
 		"""#1825: khối dữ liệu đọc khi mở trạm tự thử lại một lần, lỗi nói rõ nguyên nhân mất mạng, hết phiên hay lỗi máy chủ."""
 		with open(os.path.join(APP_PATH, "ui", "page", "station", "station.js"), encoding="utf-8") as handle:
