@@ -201,8 +201,10 @@ class TestLoadApi(LoadApiCase):
 		pack = make_load_ready_pack()
 		first = self.complete([pack.name])["load"]
 		frappe.db.set_value(
-			"Sterilization Load", first, "status", "Cycle Complete"
-		)  # máy nạp tiếp được (A-22)
+			"Sterilization Load",
+			first,
+			{"status": "Cycle Complete", "unload_scan_at": frappe.utils.now_datetime()},
+		)  # đã dỡ thì máy nạp tiếp được (A-86)
 		result = self.complete([pack.name])
 		self.assert_rejection(result, "LOAD_EMPTY", 422)
 		self.assertEqual(result["error"]["items"][0]["code"], "PACK_IN_OTHER_LOAD")
@@ -254,7 +256,11 @@ class TestLoadApi(LoadApiCase):
 			done = self.complete([pack.name])
 			self.assertIs(done["ok"], True, msg=role)
 			frappe.set_user("Administrator")
-			frappe.db.set_value("Sterilization Load", done["load"], "status", "Cycle Complete")  # A-22
+			frappe.db.set_value(
+				"Sterilization Load",
+				done["load"],
+				{"status": "Cycle Complete", "unload_scan_at": frappe.utils.now_datetime()},
+			)  # A-86
 		pack = make_load_ready_pack()
 		self.as_user("load-r03@test.local", ("TC R03",))
 		before = counts()

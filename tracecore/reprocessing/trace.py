@@ -133,18 +133,19 @@ def cycle_detail(ref_doctype, ref_name):
 	"""Giờ bắt đầu/kết thúc, thời lượng so với chuẩn, người nạp và người dỡ của lô rửa / mẻ tiệt khuẩn (A-73); {} nếu khác."""
 	if ref_doctype not in EQUIPMENT_REFS or not ref_name:
 		return {}
-	unloader_field = "unloaded_by" if ref_doctype == "Wash Batch" else "released_by"
+	# mẻ tiệt khuẩn cũ chưa có `unloaded_by`: người giải phóng (A-86)
+	fallback = [] if ref_doctype == "Wash Batch" else ["released_by"]
 	doc = frappe.db.get_value(
 		ref_doctype,
 		ref_name,
-		["program", "operator", "started_at", "ended_at", unloader_field],
+		["program", "operator", "started_at", "ended_at", "unloaded_by", *fallback],
 		as_dict=True,
 	)
 	if not doc:
 		return {}
 	detail = {
 		"operator": doc.operator,
-		"unloaded_by": doc[unloader_field],
+		"unloaded_by": doc.unloaded_by or doc.get("released_by"),
 		"started_at": doc.started_at,
 		"ended_at": doc.ended_at,
 		"duration": cycle_time.for_doc(doc),

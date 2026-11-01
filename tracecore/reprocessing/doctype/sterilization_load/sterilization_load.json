@@ -37,6 +37,7 @@
   "result_section",
   "unload_scan_equipment",
   "unload_scan_at",
+  "unloaded_by",
   "column_break_result",
   "cycle_result",
   "result_source",
@@ -265,6 +266,14 @@
    "read_only": 1
   },
   {
+   "description": "Employee who unloaded the sterilizer, taken from the card session.",
+   "fieldname": "unloaded_by",
+   "fieldtype": "Link",
+   "label": "Unloaded By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_result",
    "fieldtype": "Column Break"
   },
@@ -302,44 +311,44 @@
    "label": "Release"
   },
   {
+   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3).",
    "fieldname": "review_confirmed",
    "fieldtype": "Check",
    "label": "Review Confirmed",
-   "read_only": 1,
-   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3)."
+   "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "bi_result",
    "fieldtype": "Select",
    "label": "Biological Indicator Result",
    "options": "\nPending\nPass\nFail",
-   "read_only": 1,
-   "allow_on_submit": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_release",
    "fieldtype": "Column Break"
   },
   {
+   "description": "Step the sets of a failed load restart from (default T4).",
    "fieldname": "redo_from",
    "fieldtype": "Select",
    "label": "Redo From",
    "options": "\nT4\nT2",
-   "read_only": 1,
-   "description": "Step the sets of a failed load restart from (default T4)."
+   "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "release_reason",
    "fieldtype": "Small Text",
    "label": "Release or Rejection Reason",
-   "read_only": 1,
-   "allow_on_submit": 1
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.511511",
+ "modified": "2026-11-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterilization Load",

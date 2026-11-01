@@ -616,7 +616,7 @@ class T5Release {
 					`<li><span class="tc-mono">${esc(row.equipment)}</span> ${esc(
 						row.equipment_name || ""
 					)}: <span class="tc-badge tc-badge-o">${esc(
-						t5MachineState(row.status, row.load)
+						t5MachineState(row.status, row.load, row.unloaded)
 					)}</span></li>`
 			)
 			.join("");
@@ -752,6 +752,29 @@ class T5Release {
 				? ` <span class="tc-badge tc-badge-o">${esc(__("Needs review"))}</span>`
 				: ""
 		}</dd>
+				${
+					ctx.duration
+						? `<dt>${esc(__("Duration"))}</dt><dd>${esc(
+								this.back.durationText(ctx.duration)
+						  )}${
+								ctx.duration.abnormal
+									? ` <span class="tc-badge tc-badge-o">${esc(
+											__("Abnormal duration")
+									  )}</span>`
+									: ""
+						  }</dd>`
+						: ""
+				}
+				<dt>${esc(__("Loaded by"))}</dt><dd>${esc(
+			ctx.operator ? ctx.operator.employee_name || ctx.operator.name : "-"
+		)}</dd>
+				${
+					ctx.unloaded_by
+						? `<dt>${esc(__("Unloaded By"))}</dt><dd>${esc(
+								ctx.unloaded_by.employee_name || ctx.unloaded_by.name
+						  )}</dd>`
+						: ""
+				}
 			</dl>
 			${this.packsHtml(ctx)}
 		</section>
@@ -766,6 +789,15 @@ class T5Release {
 				}">${esc(
 			ctx.cycle_result ? this.statusText(ctx.cycle_result) : this.statusText("Missing")
 		)}</span></h3>
+			${
+				ctx.duration && ctx.duration.abnormal
+					? this.alertHtml({
+							variant: "warn",
+							title: __("Abnormal duration"),
+							reason: this.back.durationText(ctx.duration),
+					  })
+					: ""
+			}
 			${this.passFail("t5b-result", "result", form.result)}
 			<label class="tc-t2-confirm"><input type="checkbox" class="tc-check" data-t5b-confirm${
 				form.confirmed ? " checked" : ""

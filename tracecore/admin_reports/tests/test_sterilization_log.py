@@ -70,6 +70,9 @@ class TestSterilizationLog(ReportCase):
 		set_id = frappe.db.get_value("Set Unit", load.packs[0].set_unit, "set_id")
 		self.assertIn(set_id, row["sets"])
 		self.assertEqual((row["operator"], row["released_by"]), ("HR-EMP-TEST", "HR-EMP-TEST"))
+		self.assertEqual(
+			row["unloaded_by"], "HR-EMP-TEST"
+		)  # mẻ cũ chưa có người dỡ: lấy người giải phóng (A-86)
 
 	def test_running_loads_and_other_periods_are_left_out(self):
 		running = make_released_load(status="Running")

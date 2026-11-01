@@ -129,13 +129,21 @@ class TestSterilizingComplete(FrappeTestCase):
 	def test_second_complete_with_same_pack_rejected(self):
 		pack, extra = make_load_ready_pack(), make_load_ready_pack()
 		first = self.complete([pack])
-		# máy chỉ nạp mẻ mới khi mẻ trước xong chu trình (A-22)
-		frappe.db.set_value("Sterilization Load", first["load"], "status", "Cycle Complete")
+		# máy chỉ nạp mẻ mới khi mẻ trước đã dỡ (A-86)
+		frappe.db.set_value(
+			"Sterilization Load",
+			first["load"],
+			{"status": "Cycle Complete", "unload_scan_at": frappe.utils.now_datetime()},
+		)
 		result = self.complete([pack, extra])
 		self.assertEqual(result["packs"], [extra.name])
 		self.assertEqual(result["rejected"][0]["code"], "PACK_IN_OTHER_LOAD")
 		self.assertEqual(frappe.db.get_value("Pack", pack.name, "load"), first["load"])
-		frappe.db.set_value("Sterilization Load", result["load"], "status", "Cycle Complete")
+		frappe.db.set_value(
+			"Sterilization Load",
+			result["load"],
+			{"status": "Cycle Complete", "unload_scan_at": frappe.utils.now_datetime()},
+		)
 		self.assertEqual(self.code_of([pack]), "LOAD_EMPTY")
 		self.assertEqual(frappe.db.count("Load Pack", {"pack": pack.name}), 1)
 
@@ -150,8 +158,7 @@ class TestSterilizingComplete(FrappeTestCase):
 		self.assertEqual(self.code_of([make_load_ready_pack()]), "EQUIPMENT_NOT_READY")
 
 	def test_machine_with_a_running_load_takes_no_new_load_until_its_cycle_is_done(self):
-		# A-22: máy tiệt khuẩn chỉ chạy một mẻ; mẻ trước chưa xong chu trình (Running) thì chặn quét máy, nạp gói và
-		# hoàn thành nạp mẻ mới; có dữ liệu chu trình (Cycle Complete) thì máy nạp tiếp được
+		# A-86 (sửa A-22): máy tiệt khuẩn chỉ chạy một mẻ; mẻ trước chưa dỡ thì chặn quét máy, nạp gói và hoàn thành nạp mẻ mới
 		first = self.complete([make_load_ready_pack()])["load"]
 		waiting = make_load_ready_pack()
 		for call in (
@@ -166,6 +173,9 @@ class TestSterilizingComplete(FrappeTestCase):
 			self.assertIn(first, caught.exception.block.reason)
 		self.assertEqual(frappe.db.get_value("Pack", waiting.name, "status"), "Packed")
 		frappe.db.set_value("Sterilization Load", first, "status", "Cycle Complete")
+		block = sterilizing.check_equipment_ready(self.machine.name)
+		self.assertEqual(block.code, "EQUIPMENT_BUSY")  # A-86: có dữ liệu mà chưa dỡ vẫn bận
+		frappe.db.set_value("Sterilization Load", first, "unload_scan_at", frappe.utils.now_datetime())
 		self.assertTrue(self.complete([waiting])["load"])
 
 	def test_complete_error_rolls_back_everything(self):

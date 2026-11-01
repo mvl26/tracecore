@@ -432,3 +432,56 @@ class TestBowieDickOutOfScope(ReleaseCase):
 			["chemical_class_5", "bowie_dick"],
 		)
 		self.assertEqual(releasing.context(**self.scans())["indicator_state"]["bowie_dick"], "Missing")
+
+
+class TestUnload(ReleaseCase):
+	"""#1809 (A-86): máy bận đến khi dỡ; người dỡ; thời lượng so với chuẩn ở màn dỡ."""
+
+	def test_machine_stays_busy_until_the_load_is_unloaded(self):
+		self.assertEqual(sterilizing.check_equipment_ready(self.machine.name).code, "EQUIPMENT_BUSY")
+		self.save_data()
+		self.assertEqual(
+			frappe.db.get_value("Sterilization Load", self.load.name, "status"), "Cycle Complete"
+		)
+		block = sterilizing.check_equipment_ready(self.machine.name)
+		self.assertEqual(block.code, "EQUIPMENT_BUSY")
+		self.assertIn(self.load.name, block.reason)
+		self.result()
+		block = sterilizing.check_equipment_ready(self.machine.name)
+		self.assertTrue(block is None or block.code != "EQUIPMENT_BUSY")
+
+	def test_cycle_result_records_who_unloaded_and_the_screen_shows_it(self):
+		self.save_data()
+		self.result()
+		doc = frappe.get_doc("Sterilization Load", self.load.name)
+		self.assertEqual(doc.unloaded_by, self.employee.name)
+		self.assertTrue(doc.unload_scan_at)
+		context = releasing.context(**self.scans())
+		self.assertEqual(context["unloaded_by"]["name"], self.employee.name)
+		self.assertEqual(context["operator"]["name"], self.employee.name)
+
+	def test_first_unloader_is_kept_when_the_result_is_corrected(self):
+		self.save_data()
+		self.result()
+		other = make_employee()
+		releasing.set_cycle_result(**self.scans(), result="Pass", confirmed=True, employee=other.name)
+		self.assertEqual(
+			frappe.db.get_value("Sterilization Load", self.load.name, "unloaded_by"), self.employee.name
+		)
+
+	def test_unload_screen_compares_the_duration_with_the_standard(self):
+		frappe.db.set_value("Process Program", self.program.name, "duration_min", 10)
+		self.save_data()  # chạy khoảng một giờ so với chuẩn 10 phút
+		duration = releasing.context(**self.scans())["duration"]
+		self.assertEqual(duration["standard_min"], 10)
+		self.assertTrue(duration["abnormal"])
+
+	def test_auto_result_load_is_marked_unloaded_at_release(self):
+		self.ready()
+		frappe.db.set_value(
+			"Sterilization Load", self.load.name, {"unload_scan_at": None, "unloaded_by": None}
+		)
+		self.release()
+		doc = frappe.get_doc("Sterilization Load", self.load.name)
+		self.assertTrue(doc.unload_scan_at)
+		self.assertEqual(doc.unloaded_by, doc.released_by)

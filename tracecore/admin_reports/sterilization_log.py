@@ -176,6 +176,7 @@ def log_rows(filters):
 			"started_at",
 			"ended_at",
 			"params",
+			"unloaded_by",
 			"released_by",
 			"released_at",
 		],
@@ -201,7 +202,9 @@ def log_rows(filters):
 	equipment = _names("Equipment", [load.equipment for load in loads], "equipment_name")
 	programs = _names("Process Program", [load.program for load in loads], "program_name")
 	people = _names(
-		"Employee", [p for load in loads for p in (load.operator, load.released_by)], "employee_name"
+		"Employee",
+		[p for load in loads for p in (load.operator, load.unloaded_by, load.released_by)],
+		"employee_name",
 	)
 	rows = []
 	for load in loads:
@@ -225,6 +228,10 @@ def log_rows(filters):
 				"sets": ", ".join(set_ids.get(unit) or unit for unit in packs.get(load.name, [])),
 				"operator": load.operator,
 				"operator_name": people.get(load.operator) or load.operator,
+				"unloaded_by": load.unloaded_by or load.released_by,
+				"unloaded_by_name": people.get(load.unloaded_by or load.released_by)
+				or load.unloaded_by
+				or load.released_by,
 				"released_by": load.released_by,
 				"released_by_name": people.get(load.released_by) or load.released_by,
 				"released_at": load.released_at,

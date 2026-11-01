@@ -79,8 +79,8 @@ def check_equipment_ready(equipment):
 	"""Block nếu `equipment` không dùng được để nạp mẻ, ngược lại None.
 
 	Thứ tự: không có máy → EQUIPMENT_NOT_FOUND; không phải máy hấp hơi nước/plasma → EQUIPMENT_NOT_STERILIZER; trạng thái
-	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa xong chu trình (`Running`) → EQUIPMENT_BUSY (A-22: một máy chỉ
-	chạy một mẻ); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
+	khác Sẵn sàng → EQUIPMENT_NOT_READY; máy còn mẻ chưa dỡ (`Running`, `Cycle Complete` chưa có `unload_scan_at`) →
+	EQUIPMENT_BUSY (A-86, sửa A-22); rồi hook ``tracecore_load_equipment_checks`` (FEAT-040: test ngày, kiểm định) — hàm hook trả `Block`
 	thì chặn (A-16, Q3).
 	"""
 	row = frappe.db.get_value("Equipment", equipment, ["equipment_type", "status"], as_dict=True)
@@ -110,14 +110,23 @@ def check_equipment_ready(equipment):
 			object_name=equipment,
 		)
 	running = frappe.db.get_value(
-		"Sterilization Load", {"equipment": equipment, "status": "Running", "docstatus": 0}, "name"
+		"Sterilization Load",
+		{
+			"equipment": equipment,
+			"status": ["in", OPEN_STATUSES],
+			"docstatus": 0,
+			"unload_scan_at": ["is", "not set"],
+		},
+		"name",
 	)
 	if running:
 		return Block(
 			"EQUIPMENT_BUSY",
 			_("Sterilizer is still running a load"),
-			_("Load {0} on sterilizer {1} has no cycle data yet.").format(running, equipment),
-			_("Enter the cycle data of load {0} first, then load this sterilizer again.").format(running),
+			_("Load {0} on sterilizer {1} has not been unloaded yet.").format(running, equipment),
+			_(
+				"Enter the cycle data of load {0} and unload it first, then load this sterilizer again."
+			).format(running),
 		)
 	for block in extension.run(EQUIPMENT_CHECKS_HOOK, equipment):
 		if isinstance(block, Block):
@@ -410,6 +419,7 @@ def running_loads():
 			"needs_review",
 			"requires_bi",
 			"is_priority",
+			"unload_scan_at",
 		],
 		order_by="load_completed_at asc, name asc",
 	)
@@ -424,6 +434,7 @@ def running_loads():
 			"load_completed_at": row.load_completed_at,
 			"data_complete": cint(row.data_complete),
 			"needs_review": cint(row.needs_review),
+			"unloaded": bool(row.unload_scan_at),
 			"requires_bi": cint(row.requires_bi),
 			"is_priority": cint(row.is_priority),
 			"packs": frappe.get_all(
@@ -698,6 +709,8 @@ def _describe(doc):
 		"manual_confirmed_by": _employee(doc.manual_confirmed_by),
 		"manual_confirmed_at": doc.manual_confirmed_at,
 		"duration": cycle_time.for_doc(doc),
+		"unloaded_by": _employee(doc.unloaded_by),
+		"unload_scan_at": doc.unload_scan_at,
 	}
 
 

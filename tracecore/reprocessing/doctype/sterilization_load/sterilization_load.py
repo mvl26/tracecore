@@ -37,6 +37,7 @@ SERVICE_FIELDS = (
 	"chart_files",
 	"unload_scan_equipment",
 	"unload_scan_at",
+	"unloaded_by",
 	"cycle_result",
 	"result_source",
 	"released_by",
