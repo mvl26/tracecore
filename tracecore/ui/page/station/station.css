@@ -61,6 +61,11 @@ body.tc-kiosk .layout-main-section {
 	}
 }
 
+/* bảng thành phần bộ nằm trong .tc-inst (lưới thẻ dụng cụ của T3/T4): một cột để bảng không bị ép vào ô --tc-inst-min */
+.tc-t1 .tc-inst {
+	grid-template-columns: minmax(0, 1fr);
+}
+
 .tc-t1-lines {
 	width: 100%;
 }
