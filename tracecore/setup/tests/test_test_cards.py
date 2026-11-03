@@ -53,9 +53,13 @@ class TestTestCards(IsolatedTestCase):
 		frappe.set_user("Administrator")
 		frappe.flags.in_test = False
 		self.addCleanup(setattr, frappe.flags, "in_test", True)
+		# site test có thể đã gán R10 cho Administrator từ trước: chỉ kiểm script không tự cấp thêm
+		had_r10 = bool(frappe.db.exists("Has Role", {"parent": "Administrator", "role": "TC R10"}))
 		result = self.run_it()
 		self.assertEqual(result["count"], len(test_cards.SPECS))
-		self.assertFalse(frappe.db.exists("Has Role", {"parent": "Administrator", "role": "TC R10"}))
+		self.assertEqual(
+			bool(frappe.db.exists("Has Role", {"parent": "Administrator", "role": "TC R10"})), had_r10
+		)
 
 	def test_second_run_keeps_cards_and_pins(self):
 		self.run_it()

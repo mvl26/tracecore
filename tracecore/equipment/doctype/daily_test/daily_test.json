@@ -59,7 +59,7 @@
    "reqd": 1
   },
   {
-   "description": "Test program of the machine for this test type; its consumables are listed and deducted (A-111).",
+   "description": "Test program of the machine for this test type; its consumables are listed and deducted.",
    "fieldname": "program",
    "fieldtype": "Link",
    "label": "Test Program",
@@ -170,7 +170,7 @@
    "read_only": 1
   },
   {
-   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).",
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued.",
    "fieldname": "consumables",
    "fieldtype": "Table",
    "label": "Consumables",
@@ -188,7 +188,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-03 15:00:00.000000",
+ "modified": "2026-11-03 17:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",

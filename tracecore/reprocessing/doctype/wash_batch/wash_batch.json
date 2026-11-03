@@ -120,7 +120,7 @@
    "set_only_once": 1
   },
   {
-   "description": "Program the set types suggest on this machine when loading was completed (A-110).",
+   "description": "Program the set types suggest on this machine when loading was completed.",
    "fieldname": "suggested_program",
    "fieldtype": "Link",
    "label": "Suggested Program",
@@ -129,7 +129,7 @@
    "read_only": 1
   },
   {
-   "description": "Employee who ran a program not listed for some set types (A-110).",
+   "description": "Employee who ran a program not listed for some set types.",
    "fieldname": "program_override_by",
    "fieldtype": "Link",
    "label": "Program Overridden By",
@@ -201,7 +201,7 @@
    "options": "Wash Batch Chemical"
   },
   {
-   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).",
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued.",
    "fieldname": "consumables",
    "fieldtype": "Table",
    "label": "Consumables",
@@ -393,7 +393,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-03 16:00:00.000000",
+ "modified": "2026-11-03 17:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

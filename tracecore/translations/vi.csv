@@ -7799,7 +7799,7 @@ Set Type Program,Chương trình theo máy của loại bộ,
 Programs by Machine,Chương trình theo máy,
 Programs by Machine,Chương trình theo máy,Instrument Set Type
 Default and allowed programs of this set type on each washer and sterilizer. One default program per machine.,"Chương trình mặc định và chương trình cho phép của loại bộ trên từng máy rửa, máy tiệt khuẩn. Mỗi máy có một chương trình mặc định.",
-A program (of one machine) that a set type uses by default or is allowed to use (A-110).,Chương trình (của một máy) mà loại bộ dùng mặc định hoặc được phép dùng (A-110).,
+A program (of one machine) that a set type uses by default or is allowed to use.,Chương trình (của một máy) mà loại bộ dùng mặc định hoặc được phép dùng.,
 Program,Chương trình,Set Type Program
 Program Name,Tên chương trình,Set Type Program
 Equipment,Thiết bị,Set Type Program
@@ -7821,8 +7821,8 @@ Override,Cho ghi đè có lý do,TraceCore Settings
 Suggested Program,Chương trình gợi ý,
 Program Overridden By,Người ghi đè chương trình,
 Program Override Reason,Lý do ghi đè chương trình,
-Program the set types suggest on this machine when loading was completed (A-110).,Chương trình mà các loại bộ gợi ý trên máy này lúc Hoàn thành nạp (A-110).,
-Employee who ran a program not listed for some set types (A-110).,Nhân viên đã chạy chương trình không có trong danh sách của một số loại bộ (A-110).,
+Program the set types suggest on this machine when loading was completed.,Chương trình mà các loại bộ gợi ý trên máy này lúc Hoàn thành nạp.,
+Employee who ran a program not listed for some set types.,Nhân viên đã chạy chương trình không có trong danh sách của một số loại bộ.,
 Set Types Using This Program,Loại bộ dùng chương trình này,
 "No set type uses this program yet. Add it on the set type, tab Programs by Machine.","Chưa có loại bộ nào dùng chương trình này. Khai trên loại bộ, tab Chương trình theo máy.",
 Method does not match,Phương pháp không khớp,
@@ -7870,10 +7870,10 @@ Biological Indicator,Chỉ thị sinh học (BI),Program Consumable
 Packaging,Bao gói,Program Consumable
 Label,Nhãn – in ấn,Program Consumable
 Other,Khác,Program Consumable
-What the item is for. Chemical and biological indicators are listed at the station as a reminder only and are not deducted with the program (A-111).,"Công dụng của vật tư. Chỉ thị hóa học, sinh học chỉ hiện ở trạm để nhắc, không trừ kho theo chương trình (A-111).",
+What the item is for. Chemical and biological indicators are listed at the station as a reminder only and are not deducted with the program.,"Công dụng của vật tư. Chỉ thị hóa học, sinh học chỉ hiện ở trạm để nhắc, không trừ kho theo chương trình.",
 The operator must confirm this item before loading is completed or the test is started.,Nhân viên phải xác nhận vật tư này trước khi Hoàn thành nạp hoặc Bắt đầu test.,
 Run Consumable,Vật tư của lô/mẻ/test,
-"A consumable of the program confirmed for one wash batch, sterilization load or daily test: norm, actual quantity, lots issued, who confirmed (A-111).","Vật tư của chương trình đã xác nhận cho một lô rửa, mẻ tiệt khuẩn hoặc lần test: định mức, số thực dùng, lô đã xuất, người xác nhận (A-111).",
+"A consumable of the program confirmed for one wash batch, sterilization load or daily test: norm, actual quantity, lots issued, who confirmed.","Vật tư của chương trình đã xác nhận cho một lô rửa, mẻ tiệt khuẩn hoặc lần test: định mức, số thực dùng, lô đã xuất, người xác nhận.",
 Item,Vật tư,Run Consumable
 Item Name,Tên vật tư,Run Consumable
 Role,Vai trò,Run Consumable
@@ -7894,11 +7894,11 @@ Other,Khác,Run Consumable
 Consumables,Vật tư,Wash Batch
 Consumables,Vật tư,Sterilization Load
 Consumables,Vật tư,Daily Test
-"Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).","Vật tư của chương trình đã xác nhận tại trạm: định mức, số thực dùng, lô đã xuất (A-111).",
+"Consumables of the program confirmed at the station: norm, actual quantity, lots issued.","Vật tư của chương trình đã xác nhận tại trạm: định mức, số thực dùng, lô đã xuất.",
 Test Program,Chương trình test,
-Test program of the machine for this test type; its consumables are listed and deducted (A-111).,Chương trình test của máy cho loại test này; vật tư của chương trình được liệt kê và trừ kho (A-111).,
+Test program of the machine for this test type; its consumables are listed and deducted.,Chương trình test của máy cho loại test này; vật tư của chương trình được liệt kê và trừ kho.,
 Daily Test Type,Loại test đầu ngày,
-Daily test run with this program. The Daily Test tab lists its consumables when this test is chosen (A-111).,Test đầu ngày chạy bằng chương trình này. Tab Test hằng ngày liệt kê vật tư của chương trình khi chọn test này (A-111).,
+Daily test run with this program. The Daily Test tab lists its consumables when this test is chosen.,Test đầu ngày chạy bằng chương trình này. Tab Test hằng ngày liệt kê vật tư của chương trình khi chọn test này.,
 Daily test type {0} does not apply to equipment {1}.,Loại test đầu ngày {0} không áp dụng cho thiết bị {1}.,
 Process program {0} does not exist.,Chương trình {0} không tồn tại.,
 Consumables of program {0} can only be applied to other active programs of the same kind on the same type of machine: {1}.,"Vật tư của chương trình {0} chỉ áp được sang chương trình đang dùng khác, cùng loại chương trình và cùng loại máy: {1}.",
