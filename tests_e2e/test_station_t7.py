@@ -46,6 +46,21 @@ def sign_with_card(page, card):
 	scan_settled(page, card)
 
 
+def scan_box_above_result(page):
+	"""Ô quét nằm trên khối T7; khối có thể đang render lại ngay sau khi quét nên chờ tới khi đo được."""
+	scan, result = page.locator(SCAN_INPUT), page.locator(".tc-result .tc-t7")
+	expect(result).to_be_visible(timeout=15000)
+	boxes = (None, None)
+	for _ in range(50):
+		boxes = (scan.bounding_box(), result.bounding_box())
+		if all(boxes):
+			break
+		page.wait_for_timeout(100)
+	scan_box, result_box = boxes
+	assert scan_box and result_box, boxes
+	assert scan_box["y"] < result_box["y"], boxes
+
+
 def assert_full_alert(alert):
 	"""alert-error inline đủ ba phần theo thứ tự kết quả → lý do → hành động (design.md)."""
 	expect(alert).to_be_visible(timeout=15000)
@@ -61,9 +76,7 @@ def assert_full_alert(alert):
 def test_t7_scan_box_on_top_and_department_buttons_are_large(t7_page, t7_demo):
 	page = t7_page
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	scan_box = page.locator(SCAN_INPUT).bounding_box()
-	result_box = page.locator(".tc-result .tc-t7").bounding_box()
-	assert scan_box["y"] < result_box["y"], (scan_box, result_box)
+	scan_box_above_result(page)
 	buttons = page.locator("[data-action='pick-dept']")
 	expect(buttons.filter(has_text=t7_demo["dept_name"])).to_have_count(1)
 	heights = buttons.evaluate_all("(els) => els.map((el) => el.getBoundingClientRect().height)")
@@ -163,9 +176,7 @@ def test_t7_pda_viewport_fits_without_horizontal_scroll(t7_pda_page, t7_demo):
 	page = t7_pda_page
 	pick_department(page, t7_demo["dept_name"])
 	add_pack(page, t7_demo[pack_key("pack_6", "pack_4")], 1)
-	scan_box = page.locator(SCAN_INPUT).bounding_box()
-	result_box = page.locator(".tc-result .tc-t7").bounding_box()
-	assert scan_box["y"] < result_box["y"], (scan_box, result_box)
+	scan_box_above_result(page)
 	measured = page.evaluate(
 		"""() => {
 			const visible = (el) => el.offsetParent !== null;
