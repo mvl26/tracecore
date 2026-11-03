@@ -6,7 +6,7 @@ phải có 3 đến 5 bước và ảnh chỉ là file công khai. Trạm không
 
 import frappe
 
-from tracecore.patches.v0_1 import receive_help_steps
+from tracecore.patches.v0_1 import general_help_address, receive_help_steps
 from tracecore.tests.utils import IsolatedTestCase
 from tracecore.ui import station_help
 
@@ -48,6 +48,37 @@ class TestReceiveGuidePatch(IsolatedTestCase):
 	def test_patch_keeps_an_edited_article(self):
 		article = self._receive("<ol><li>Một</li><li>Hai</li><li>Ba</li></ol>")
 		receive_help_steps.execute()
+		self.assertEqual(
+			_texts(frappe.db.get_value("Help Article", article.name, "content")), ["Một", "Hai", "Ba"]
+		)
+
+
+class TestGeneralGuideAddress(IsolatedTestCase):
+	"""Ticket 03/11/2026: bài chung hướng dẫn mở đúng địa chỉ trạm (?station=)."""
+
+	def _general(self, content):
+		frappe.db.delete("Help Article", {"tc_station_key": "General"})
+		article = _article("General", content=content, title="Help General " + frappe.generate_hash(length=6))
+		return article.insert(ignore_permissions=True)
+
+	def test_general_guide_starts_with_the_station_address(self):
+		steps = station_help.DEFAULT_STEPS["General"]
+		self.assertLessEqual(len(steps), station_help.MAX_STEPS)
+		self.assertIn("?station=", steps[0])
+		self.assertIn("employee card", steps[1])
+
+	def test_patch_updates_an_unedited_general_guide_in_either_language(self):
+		for lang in ("en", "vi"):
+			article = self._general(station_help.default_content(general_help_address.OLD_STEPS, lang=lang))
+			general_help_address.execute()
+			self.assertEqual(
+				_texts(frappe.db.get_value("Help Article", article.name, "content")),
+				_texts(station_help.default_content(station_help.DEFAULT_STEPS["General"], lang=lang)),
+			)
+
+	def test_patch_keeps_an_edited_general_guide(self):
+		article = self._general("<ol><li>Một</li><li>Hai</li><li>Ba</li></ol>")
+		general_help_address.execute()
 		self.assertEqual(
 			_texts(frappe.db.get_value("Help Article", article.name, "content")), ["Một", "Hai", "Ba"]
 		)

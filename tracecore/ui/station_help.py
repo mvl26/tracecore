@@ -114,6 +114,7 @@ DEFAULT_STEPS = {
 		"Confirm, then scan the card again to acknowledge the receipt.",
 	),
 	GENERAL: (
+		"Open the address of your station: it ends with ?station= and the station code, for example ?station=TR-001. Ask R10 for the code if you do not know it.",
 		"Scan your employee card to open the station.",
 		"Scan the code in the box at the top of the screen.",
 		"Read the result: a red message means stop and follow the action shown.",
