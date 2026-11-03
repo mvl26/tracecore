@@ -1,0 +1,38 @@
+{# Nhãn gói đã tiệt khuẩn bằng hấp hơi nước (Label Template "Pack label - Steam"), 60 x 40 mm, 300 dpi, ZPL.
+   Gốc tọa độ ở góc trên trái; 1 mm = 11,8 dot ở 300 dpi. Lề 24 dot. DataMatrix Cycle ID ở trái trên,
+   cột chữ bên phải, hạn dùng, chuỗi người đọc (HRI) và dòng loại nhãn chạy hết bề ngang ở nửa dưới.
+
+   Mọi chữ in qua text(): giữ dấu khi Printer.supports_unicode = 1, bỏ dấu khi = 0. Không đổi phông trong mẫu:
+   máy in hỗ trợ Unicode phải ánh xạ phông mặc định (^A0) sang một phông TTF Unicode trong cấu hình máy in.
+   ^CI28 chọn UTF-8; ^FB giới hạn bề rộng và số dòng nên chuỗi dài không tràn nhãn.
+
+   Biến: doc.set_id, cycle_id, set_name, dept, packer, packed_at, expiry, method_label, pack_type, ci_lot,
+   bom_version, is_loaner, is_test, warning, payload, hri; width_dots, height_dots, dpi.
+   Hàm: text(giá trị), datamatrix(payload, x, y, module). #}
+^XA
+^CI28
+^PW{{ width_dots }}
+^LL{{ height_dots }}
+{{ datamatrix(doc.payload, 24, 24, 6) }}
+^FO200,24^A0N,30,30^FB485,2,2,L,0^FD{{ text(doc.set_name) }}^FS
+^FO200,92^A0N,24,24^FB485,1,0,L,0^FD{{ text("Set ID: " ~ doc.set_id) }}^FS
+^FO200,119^A0N,24,24^FB485,1,0,L,0^FD{{ text("Cycle ID: " ~ doc.cycle_id) }}^FS
+^FO200,146^A0N,24,24^FB485,1,0,L,0^FD{{ text("Khoa: " ~ doc.dept) }}^FS
+^FO200,173^A0N,24,24^FB485,1,0,L,0^FD{{ text("Đóng gói: " ~ doc.packed_at) }}^FS
+^FO200,200^A0N,24,24^FB485,1,0,L,0^FD{{ text("Người đóng gói: " ~ doc.packer) }}^FS
+^FO200,227^A0N,24,24^FB485,1,0,L,0^FD{{ text("Phương pháp: " ~ doc.method_label) }}^FS
+^FO200,254^A0N,24,24^FB485,1,0,L,0^FD{{ text("Loại gói: " ~ doc.pack_type) }}^FS
+^FO200,281^A0N,24,24^FB485,1,0,L,0^FD{{ text("Chỉ thị: " ~ doc.ci_lot ~ "  BOM v" ~ doc.bom_version) }}^FS
+{% if doc.is_test %}
+^FO24,196^A0N,44,44^FDTEST^FS
+{% endif %}
+{% if doc.is_loaner %}
+^FO24,252^A0N,24,24^FD{{ text("MƯỢN/LOANER") }}^FS
+{% endif %}
+{% if doc.warning %}
+^FO24,311^A0N,22,22^FB661,1,0,L,0^FD{{ text(doc.warning) }}^FS
+{% endif %}
+^FO24,340^A0N,34,34^FB661,1,0,L,0^FD{{ text("HẠN SỬ DỤNG / EXP: " ~ doc.expiry) }}^FS
+^FO24,386^A0N,20,20^FB661,1,0,L,0^FD{{ text(doc.hri) }}^FS
+^FO24,418^A0N,22,22^FB661,1,0,L,0^FD{{ text("Nhãn hấp hơi nước 134°C / Steam label") }}^FS
+^XZ

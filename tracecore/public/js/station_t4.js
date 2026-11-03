@@ -1567,30 +1567,18 @@ class T4Packing {
 	}
 
 	labelHtml() {
-		// label preview §4.12: dựng HTML từ dữ liệu gói, giữ tiếng Việt có dấu (D7); DataMatrix là PNG thật
+		// label preview §4.12 (A-109): như nhãn in, chỉ DataMatrix, tên bộ, khoa, hạn sử dụng và dòng THIẾU; giữ tiếng
+		// Việt có dấu (D7); DataMatrix là PNG thật, Cycle ID và các thông tin khác nằm ở cột bên cạnh
 		const pack = this.done.pack;
 		const plasma = pack.method === "Plasma";
 		const department = this.ctx && this.ctx.set.department;
+		const shortage = this.done.label_warning;
 		const line = (text, cls = "") => `<div${cls ? ` class="${cls}"` : ""}>${esc(text)}</div>`;
 		const lines = [
-			line(pack.cycle_id, "tc-label-code"),
-			line(this.done.hri, "tc-label-hri"),
-			line(pack.set_id, "tc-mono"),
 			line(pack.set_name, "tc-label-strong"),
 			department ? line(__("Department: {0}", [department])) : "",
-			line(__("Method: {0}", [__(pack.method)])),
-			line(__("Pack type: {0}", [pack.pack_type_name || pack.pack_type])),
-			line(__("Packed: {0} · {1}", [pack.packer, t4DateTime(pack.packed_at)])),
-			line(__("Indicator: lot {0} · BOM v{1}", [pack.ci_batch, pack.bom_version])),
-			pack.is_loaner ? line(__("LOANER"), "tc-label-strong") : "",
-			pack.is_test ? line(__("TEST"), "tc-label-strong") : "",
 			line(__("EXPIRY DATE / EXP: {0}", [t4Date(pack.expiry)]), "tc-label-strong"),
-			line(
-				plasma
-					? __("Plasma H2O2 label / Plasma label")
-					: __("Steam 134°C label / Steam label"),
-				"tc-label-type"
-			),
+			shortage ? line(shortage, "tc-label-strong") : "",
 		];
 		return `<figure class="tc-label${plasma ? " tc-label-plasma" : ""}" aria-label="${esc(
 			__("Label preview")
