@@ -61,6 +61,11 @@ body.tc-kiosk .layout-main-section {
 	}
 }
 
+/* bảng thành phần bộ nằm trong .tc-inst (lưới thẻ dụng cụ của T3/T4): một cột để bảng không bị ép vào ô --tc-inst-min */
+.tc-t1 .tc-inst {
+	grid-template-columns: minmax(0, 1fr);
+}
+
 .tc-t1-lines {
 	width: 100%;
 }
@@ -1483,6 +1488,11 @@ html:has(.tc-work) {
 .tc-t3 .tc-inst {
 	grid-template-columns: minmax(0, 1fr);
 	gap: var(--tc-sp-2);
+}
+
+/* Amendment T4-BOM-01: T4 mỗi dụng cụ một dòng, danh sách dọc như danh sách gói T5 */
+.tc-t4 .tc-inst {
+	grid-template-columns: minmax(0, 1fr);
 }
 
 .tc-t3 .tc-ins {

@@ -41,6 +41,7 @@
 | 01/11/2026 | Amendment A-100 (đảo một phần A-99): nút Lưu PDF nhãn ở SCR-09, SCR-06 chỉ có khi trạm có máy in hoạt động; chưa có máy in thì thẻ chỉ hiện mã và cảnh báo như trước A-99 |
 | 01/11/2026 | Amendment A-99: thẻ Hoàn thành nạp T5 (SCR-09) và T2 (SCR-06) có nút Lưu PDF nhãn cạnh mã mẻ/lô, chạy được khi không có máy in; T4 giữ nguyên |
 | 01/11/2026 | Amendment A-98 (#1830, sửa NAV-02): Tổng quan hiện số liệu ngay, tab trình duyệt có tên trạm và TraceCore |
+| 03/11/2026 | Amendment T4-BOM-01, người dùng duyệt trong chat: SCR-08 T4, thành phần bộ hiển thị một cột, mỗi dụng cụ một dòng (ảnh, tên, vị trí · số lượng, checkbox) xếp dọc như danh sách gói T5, thay lưới auto-fill ≥ 210 của design.md §4.11. Ảnh bộ đã sắp xếp vẫn ở cột trái khi có. Không đổi dữ liệu, không thêm SCR. |
 
 ## 1. Overview
 
