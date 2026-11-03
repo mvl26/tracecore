@@ -17,6 +17,7 @@
   "ended_at",
   "column_break_head",
   "lot",
+  "batch",
   "lot_expiry",
   "photo",
   "station",
@@ -113,6 +114,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch",
+   "description": "Lot in stock; the Lot field keeps what was typed."
+  },
+  {
    "fieldname": "lot_expiry",
    "fieldtype": "Date",
    "label": "Lot Expiry",
@@ -180,7 +188,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-03 14:00:00.000000",
+ "modified": "2026-11-03 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",

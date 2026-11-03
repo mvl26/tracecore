@@ -97,6 +97,8 @@ HTTP_STATUS: dict[str, int] = {
 			# A-111: vật tư của chương trình xác nhận tại trạm
 			"CONSUMABLES_NOT_CONFIRMED",
 			"CONSUMABLE_INVALID",
+			# A-112: lô vật tư chọn/quét trên dòng hết hạn, của vật tư khác, đã tắt hoặc không có
+			"CONSUMABLE_LOT_INVALID",
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",

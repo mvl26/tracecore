@@ -373,6 +373,10 @@ def record(
 		raise _invalid(_("The result must be Pass or Fail."))
 	run = _ended_run(machine.name, test_type) if test_type in RUN_TESTS else None
 	lot = lot.strip() if isinstance(lot, str) else ""
+	# A-112 (e): lô trùng Batch của kho thì liên kết, hạn theo Batch khi không gõ; lô khác giữ làm ghi chú
+	batch = frappe.db.get_value("Batch", lot, ["name", "expiry_date"], as_dict=True) if lot else None
+	if batch and not lot_expiry:
+		lot_expiry = batch.expiry_date
 	if not lot or not lot_expiry:
 		raise _invalid(_("Enter the lot of the test pack and its expiry date."))
 	if getdate(lot_expiry) < getdate(today()):
@@ -390,6 +394,7 @@ def record(
 		"test_date": today(),
 		"run_status": RUN_RECORDED,
 		"lot": lot,
+		"batch": batch.name if batch else None,
 		"lot_expiry": lot_expiry,
 		"photo": photo or None,
 		"station": station,

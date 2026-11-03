@@ -18,8 +18,15 @@ STRINGS = (
 	"Reminder only, not deducted",
 	"Actual quantity of {0}",
 	"Norm for this run",
-	"Leave the quantity empty to use the norm.",
+	"Leave the quantity empty to use the norm. Scan or choose the lot; the earliest expiry is suggested.",
 	"Consumables are ready and the quantities are right",
+	# A-112: cột Lô
+	"Lot of {0}",
+	"Expiry {0} · stock {1}",
+	"Expiry {0}",
+	"Expires soon",
+	"Out of stock",
+	"Not in the suggested lots: checked on save",
 )
 
 
@@ -42,6 +49,13 @@ class TestStationConsumablesAssets(FrappeTestCase):
 			self.assertIn("TcRunConsumables.payload", script, msg=parts)
 			self.assertIn("consumables_confirmed", script, msg=parts)
 			self.assertIn("TcRunConsumables.reset", script, msg=parts)
+			# A-112: ô số thực dùng và ô lô đi qua cùng một hàm
+			self.assertIn("TcRunConsumables.remember", script, msg=parts)
+
+	def test_lot_column_sends_the_chosen_lot(self):
+		helper = _read(*HELPER)
+		for part in ("data-consumable-lot", "consumables_lot", "<datalist", "batch"):
+			self.assertIn(part, helper, msg=part)
 
 	def test_strings_are_translated_and_no_colour_only_state(self):
 		path = frappe.get_app_path("tracecore", "translations", "vi.csv")

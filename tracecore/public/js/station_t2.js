@@ -1164,10 +1164,8 @@ class T2Wash {
 
 	onInput(event) {
 		const target = event.target;
-		if (target.dataset.consumable && this.load) {
-			// A-111: số thực dùng; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
-			this.load.consumables_qty = this.load.consumables_qty || {};
-			this.load.consumables_qty[target.dataset.consumable] = target.value;
+		if (this.load && TcRunConsumables.remember(this.load, target)) {
+			// A-111 số thực dùng, A-112 lô; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
 			this.saveLoad();
 			const bar = this.result.querySelector(".tc-actionsbar");
 			if (bar) bar.outerHTML = this.loadBarHtml();

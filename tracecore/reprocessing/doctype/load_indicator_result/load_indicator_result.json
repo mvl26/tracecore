@@ -15,6 +15,7 @@
   "test_date",
   "indicator_item",
   "lot",
+  "batch",
   "lot_expiry",
   "photo",
   "incubator",
@@ -92,6 +93,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch",
+   "description": "Lot in stock; the Lot field keeps what was typed."
+  },
+  {
    "fieldname": "lot_expiry",
    "fieldtype": "Date",
    "label": "Lot Expiry",
@@ -139,7 +147,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-03 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Load Indicator Result",

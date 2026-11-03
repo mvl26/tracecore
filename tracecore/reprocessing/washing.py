@@ -732,7 +732,14 @@ def _start(
 		operator,
 		override_reason,
 	)
-	used = run_consumables.rows(program.name, len(accepted), consumables, consumables_confirmed, operator)
+	used = run_consumables.rows(
+		program.name,
+		len(accepted),
+		consumables,
+		consumables_confirmed,
+		operator,
+		lots_given={row["item"]: row.get("lot") for row in chemical_rows},
+	)
 	started = _system_time(client_ts)
 	batch = frappe.get_doc(
 		{
@@ -1235,7 +1242,15 @@ def _checked_indicator(doc, indicator, photo_required):
 				_("This program requires a photo of the indicator."),
 				_("Take a photo of the indicator, then record the result."),
 			)
-	return {"result": result, "indicator_item": item, "lot": lot, "lot_expiry": expiry, "photo": photo}
+	# A-112 (c): lô có trong kho được liên kết để trừ kho đúng lô khi lô rửa Đạt
+	return {
+		"result": result,
+		"indicator_item": item,
+		"lot": lot,
+		"batch": lot if batch else None,
+		"lot_expiry": expiry,
+		"photo": photo,
+	}
 
 
 def _record_indicator(doc, checked, reader, station, at):

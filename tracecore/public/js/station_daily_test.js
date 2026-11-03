@@ -405,12 +405,8 @@ class DailyTestScreen {
 
 	onInput(event) {
 		if (this.station.screen !== this) return;
-		const consumable = event.target.dataset.consumable;
-		if (consumable) {
-			this.form.consumables_qty = this.form.consumables_qty || {};
-			this.form.consumables_qty[consumable] = event.target.value;
-			return;
-		}
+		// A-111 số thực dùng, A-112 lô
+		if (TcRunConsumables.remember(this.form, event.target)) return;
 		const field = event.target.dataset.dtField;
 		if (field) this.form[field] = event.target.value;
 	}

@@ -13,6 +13,8 @@
   "uom",
   "norm_qty",
   "actual_qty",
+  "batch",
+  "expiry_date",
   "lots",
   "confirmed_by",
   "confirmed_at"
@@ -80,6 +82,21 @@
    "read_only": 1
   },
   {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date",
+   "fetch_from": "batch.expiry_date",
+   "read_only": 1
+  },
+  {
    "columns": 2,
    "fieldname": "lots",
    "fieldtype": "Small Text",
@@ -104,7 +121,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-03 14:00:00.000000",
+ "modified": "2026-11-03 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Run Consumable",
