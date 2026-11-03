@@ -253,7 +253,7 @@ Bố cục 2 cột: trái **ảnh bộ đã sắp xếp** (`photo.big` 100 %×21
 
 ### 4.12 Label preview (`label`, #17)
 
-Khối 280 px, border 1 px `--tc-border-label`, padding 10, nền trắng, 12 px lh 1.3, chữ đen (mô phỏng nhãn in 134 °C). Góc phải `dm` 46×46 DataMatrix (render thật bằng thư viện GS1 ở build; placeholder pattern trong prototype). Dòng: Cycle ID mono bold · chuỗi GS1 `(01)…(11)…(17)…(21)…` 10 px mono · Set ID mono · tên bộ · khoa · phương pháp · loại gói · "Đóng gói: NV… · dd/mm/yyyy hh:mm" · "Chỉ thị: lô … · BOM vN" · **"HẠN SỬ DỤNG: dd/mm/yyyy"** bold · cảnh báo đỏ "THIẾU DỤNG CỤ — xem phiếu kiểm đếm" nếu có · dòng cuối loại nhãn. Biến thể **plasma** (`label.plasma`): border **dashed** `--tc-border-label-plasma`, dòng cuối "Nhãn plasma H2O2"; **hấp**: border solid, "Nhãn hấp hơi nước 134°C"; **LOANER**: thêm dòng "LOANER" bold. Nhãn có tiếng Anh phụ (NFR-USAB-02). Kèm nút secondary "In lại (lý do)".
+Khối 280 px, border 1 px `--tc-border-label`, padding 10, nền trắng, 12 px lh 1.3, chữ đen (mô phỏng nhãn in 134 °C). Góc phải `dm` 46×46 DataMatrix (render thật bằng thư viện GS1 ở build; placeholder pattern trong prototype). Dòng (A-109): tên bộ bold · khoa · **"HẠN SỬ DỤNG / EXP: dd/mm/yyyy"** bold · "THIẾU: …" bold nếu có. Không in Cycle ID, chuỗi GS1, Set ID, phương pháp, loại gói, người/ngày đóng gói, lô chỉ thị, LOANER, TEST hay dòng loại nhãn; các thông tin này nằm ở cột bên cạnh và khi quét. Biến thể **plasma** (`label.plasma`): border **dashed** `--tc-border-label-plasma`, **hấp**: border solid. Nhãn có tiếng Anh phụ (NFR-USAB-02). Kèm nút secondary "In lại (lý do)".
 
 ### 4.13 PIN modal & dialog (`#modal`, #17)
 

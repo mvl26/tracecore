@@ -28,6 +28,11 @@ SAMPLE_TEMPLATES = (
 	{"template_name": "Pack label - Plasma", "method": "Plasma", "file": "pack_plasma.zpl.jinja"},
 )
 SAMPLE_SIZE = {"width_mm": 60, "height_mm": 40, "dpi": 300}
+# Thân mẫu gói trước A-109 (D7, có Set ID, Cycle ID, người đóng gói...): patch A-109 chỉ thay mẫu còn đúng bản này
+LEGACY_PACK_FILES = {
+	"Steam": "legacy/pack_steam_a02.zpl.jinja",
+	"Plasma": "legacy/pack_plasma_a02.zpl.jinja",
+}
 SAMPLE_GTIN_SERIAL = 1
 SAMPLE_PACKED = date(2026, 10, 20)
 SAMPLE_EXPIRY = date(2026, 11, 19)
@@ -57,6 +62,41 @@ SET_TEMPLATES = (
 )
 
 
+def _read(file) -> str:
+	with open(os.path.join(TEMPLATE_DIR, file), encoding="utf-8") as handle:
+		return handle.read()
+
+
+def _sample(method) -> dict:
+	return next(sample for sample in SAMPLE_TEMPLATES if sample["method"] == method)
+
+
+def sample_pack_body(method) -> str:
+	"""Thân mẫu nhãn gói mẫu hiện hành của phương pháp `method` (A-109)."""
+	return _read(_sample(method)["file"])
+
+
+def legacy_pack_body(method) -> str:
+	"""Thân mẫu nhãn gói mẫu trước A-109 của phương pháp `method`."""
+	return _read(LEGACY_PACK_FILES[method])
+
+
+def upgrade_sample_pack_templates() -> list[str]:
+	"""A-109: thay thân mẫu nhãn gói mẫu còn đúng bản trước A-109 bằng bản rút gọn; mẫu R10 đã sửa giữ nguyên
+	(FR-M2-08.4). Trả tên các mẫu đã thay."""
+	upgraded = []
+	for sample in SAMPLE_TEMPLATES:
+		name = sample["template_name"]
+		body = frappe.db.get_value("Label Template", name, "body")
+		if body is None or body != legacy_pack_body(sample["method"]):
+			continue
+		doc = frappe.get_doc("Label Template", name)
+		doc.body = sample_pack_body(sample["method"])
+		doc.save(ignore_permissions=True)
+		upgraded.append(name)
+	return upgraded
+
+
 def _ensure_templates(rows) -> list[str]:
 	"""Tạo các mẫu (template_name, label_object, method, file, kích thước) còn thiếu; trả tên mẫu vừa tạo.
 
@@ -75,8 +115,7 @@ def _ensure_templates(rows) -> list[str]:
 			"language": "ZPL",
 			"is_active": 1,
 		}
-		with open(os.path.join(TEMPLATE_DIR, row["file"]), encoding="utf-8") as handle:
-			body = handle.read()
+		body = _read(row["file"])
 		frappe.get_doc(
 			{
 				"doctype": "Label Template",
