@@ -86,6 +86,8 @@ page_js = {
 		"public/js/station_t6.js",
 		# A-110: chương trình theo máy của loại bộ, dùng chung cho T2 và T5
 		"public/js/station_program_match.js",
+		# A-111: vật tư của chương trình, dùng chung cho T2, T5 và test đầu ngày
+		"public/js/station_consumables.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		# A-68: chọn tay thiết bị và bộ/gói khi máy quét hỏng (shell gọi qua TcPicker)
@@ -529,6 +531,8 @@ tracecore_after_load_failed = [
 	"tracecore.costing.sheet.on_load_failed",
 ]
 tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
+# M5 test đầu ngày ghi kết quả (A-111 D2): ctx {daily_test, equipment, lot}; M6 trừ vật tư đã xác nhận lúc Bắt đầu test
+tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",

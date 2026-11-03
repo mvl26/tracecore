@@ -72,6 +72,19 @@ def _chemicals(value):
 	return rows
 
 
+def _consumables(value):
+	"""A-111: ``[{"item", "qty"}]`` số thực dùng nhân viên sửa; None/rỗng = theo định mức. Số sai do dịch vụ kiểm (422)."""
+	if value in (None, ""):
+		return []
+	message = _("consumables must be a list of objects with an item and a qty.")
+	rows = []
+	for row in _json_list(value, message):
+		if not (isinstance(row, dict) and isinstance(row.get("item"), str)):
+			raise BadRequestError(message)
+		rows.append({"item": row["item"], "qty": row.get("qty")})
+	return rows
+
+
 def _values(value):
 	message = _("values must be a list of objects with a parameter_name and a value.")
 	rows = []
@@ -256,11 +269,21 @@ def add_set(
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
 def complete(
-	equipment, program, sets, chemicals, station, client_ts=None, token=None, program_override_reason=None
+	equipment,
+	program,
+	sets,
+	chemicals,
+	station,
+	client_ts=None,
+	token=None,
+	program_override_reason=None,
+	consumables=None,
+	consumables_confirmed=0,
 ):
 	"""Hoàn thành nạp: sinh mã lô `LR-`, gắn bộ, in nhãn QR (FR-M2-03.2, FR-M2-24.1); trả cả bộ bị loại (Q19).
 
 	`program_override_reason` (A-110): lý do chạy chương trình ngoài danh sách của loại bộ (mức Ghi đè có lý do).
+	`consumables`, `consumables_confirmed` (A-111): số thực dùng đã sửa và ô tick "Đã chuẩn bị đủ vật tư".
 	"""
 	require_any_role(*WASH_LOAD_ROLES)
 	equipment = _required_str(equipment, "equipment")
@@ -268,20 +291,29 @@ def complete(
 	codes = _codes(sets, "sets")
 	rows = _chemicals(chemicals)
 	reason = _optional_str(program_override_reason, "program_override_reason")
+	used = {"consumables": _consumables(consumables), "consumables_confirmed": _flag(consumables_confirmed)}
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: _completed(equipment, program, codes, rows, station, timestamp, reason),
+		lambda: _completed(equipment, program, codes, rows, station, timestamp, reason, used),
 		"Equipment",
 		equipment,
 	)
 
 
-def _completed(equipment, program, codes, rows, station, timestamp, override_reason=None):
+def _completed(equipment, program, codes, rows, station, timestamp, override_reason=None, used=None):
 	result = washing.start(
-		equipment, program, codes, rows, station, timestamp, _session_employee(), override_reason
+		equipment,
+		program,
+		codes,
+		rows,
+		station,
+		timestamp,
+		_session_employee(),
+		override_reason,
+		**(used or {}),
 	)
 	session = current_station_session()
 	if session:

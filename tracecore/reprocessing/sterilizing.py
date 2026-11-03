@@ -21,7 +21,17 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, extension, gs1, program_match, qr, station_auth, step_gate, zones
+from tracecore.core import (
+	client_time,
+	extension,
+	gs1,
+	program_match,
+	qr,
+	run_consumables,
+	station_auth,
+	step_gate,
+	zones,
+)
 from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
@@ -210,6 +220,8 @@ def scan_machine(raw):
 			"compatible_pack_types": _compatible_pack_types(row.name),
 			"parameters": _parameters(row.name),
 			"indicators": _indicators(equipment.name, equipment.equipment_type, row.requires_bi),
+			# A-111: vật tư của chương trình để màn liệt kê và nhân viên xác nhận
+			"consumables": run_consumables.payload(row.name),
 		}
 		for row in frappe.get_all(
 			"Process Program",
@@ -531,7 +543,16 @@ def _admit_all(packs, equipment, program):
 
 
 def complete(
-	equipment, program, packs, station, client_ts, operator, is_priority=False, override_reason=None
+	equipment,
+	program,
+	packs,
+	station,
+	client_ts,
+	operator,
+	is_priority=False,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
 ):
 	"""Hoàn thành nạp: sinh mã mẻ `ME-YYMMDD-NN` cho các gói quét vào máy, ghi mẻ `Running`, gói sang Trong mẻ, xếp lệnh in nhãn QR.
 
@@ -543,6 +564,8 @@ def complete(
 
 	A-110: mẻ ghi chương trình gợi ý theo loại bộ, người ghi đè và `override_reason` khi có gói ngoài danh sách của
 	chương trình; mức Ghi đè có lý do thiếu lý do → PROGRAM_OVERRIDE_REASON_REQUIRED.
+	A-111: `consumables`, `consumables_confirmed` thành bảng vật tư của mẻ theo số gói được nhận; vật tư bắt buộc chưa
+	xác nhận → CONSUMABLES_NOT_CONFIRMED.
 
 	Trả ``{"load", "packs", "rejected", "print": {"print_job", "status", "printer", "zpl", "warning"}, "qr_png_b64"}``.
 	"""
@@ -550,7 +573,16 @@ def complete(
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		return _complete(
-			equipment, program, packs, station, client_ts, operator, is_priority, override_reason
+			equipment,
+			program,
+			packs,
+			station,
+			client_ts,
+			operator,
+			is_priority,
+			override_reason,
+			consumables,
+			consumables_confirmed,
 		)
 	except Exception:
 		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
@@ -559,7 +591,18 @@ def complete(
 		raise
 
 
-def _complete(equipment, program, packs, station, client_ts, operator, is_priority, override_reason=None):
+def _complete(
+	equipment,
+	program,
+	packs,
+	station,
+	client_ts,
+	operator,
+	is_priority,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	block = check_equipment_ready(equipment)
 	if block:
 		raise BlockedError(block)
@@ -590,6 +633,7 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 		operator,
 		override_reason,
 	)
+	used = run_consumables.rows(program_row.name, len(accepted), consumables, consumables_confirmed, operator)
 	load = frappe.get_doc(
 		{
 			"doctype": "Sterilization Load",
@@ -604,6 +648,7 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 			"load_completed_at": started,
 			"started_at": started,
 			"packs": rows,
+			"consumables": used,
 		}
 	)
 	load.flags.tc_sterilizing = True

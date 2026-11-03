@@ -21,6 +21,8 @@ STERILIZER_TYPES = ("Steam Sterilizer", "Plasma Sterilizer")
 LAUNDRY_TYPES = ("Laundry Washer", "Dryer")
 DRYER_TYPE = "Dryer"
 KIND_REGULAR, KIND_TEST = "Regular", "Test"
+# A-111: loại test đầu ngày của chương trình test theo loại máy (cùng bộ test của `equipment.daily_test`)
+DAILY_TEST_TYPES = {"Steam Sterilizer": ("bowie_dick", "leak"), "Plasma Sterilizer": ("plasma_daily",)}
 PACKAGING_GROUP = "Packaging"
 NON_NEGATIVE_FIELDS = (
 	("duration_min", "Duration (min)"),
@@ -87,6 +89,16 @@ class ProcessProgram(Document):
 		self.program_kind = self.program_kind or KIND_REGULAR
 		if self.program_kind == KIND_TEST:
 			self.compatible_pack_types = []
+		# A-111 D6: chỉ chương trình test gắn loại test đầu ngày, và loại test phải thuộc bộ test của loại máy
+		if self.program_kind != KIND_TEST:
+			self.daily_test_type = None
+		allowed = DAILY_TEST_TYPES.get(norms.equipment_type_of(self), ())
+		if self.daily_test_type and self.daily_test_type not in allowed:
+			frappe.throw(
+				_("Daily test type {0} does not apply to equipment {1}.").format(
+					self.daily_test_type, self.equipment
+				)
+			)
 
 	def _normalize_wash_indicator(self):
 		# chỉ thị rửa chỉ có nghĩa với máy rửa/siêu âm (A-77); ảnh chỉ bắt buộc khi chỉ thị bắt buộc

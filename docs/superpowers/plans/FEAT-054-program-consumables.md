@@ -7,7 +7,7 @@
 
 - AC-1 (FR-M5-02.6): Khi R10 khai vật tư chương trình, hệ thống phải lưu vai trò và cờ Bắt buộc; chương trình test gắn được loại test đầu ngày đúng loại máy.
 - AC-2 (FR-M5-02.7): Khi áp vật tư sang chương trình cùng loại, bảng vật tư của chương trình đích phải giống nguồn; chương trình khác loại chương trình hoặc khác loại máy bị từ chối.
-- AC-3 (FR-M5-02.8): Chương trình có vật tư bắt buộc định mức 0 có `norm_status = Missing`; báo cáo liệt kê chương trình không có vật tư, vật tư bắt buộc thiếu số, chương trình test chưa gắn loại test.
+- AC-3 (FR-M5-02.8): Chương trình test không có gói test bắt buộc có `norm_status = Missing`; báo cáo liệt kê chương trình không có vật tư, chương trình test thiếu gói test bắt buộc hoặc chưa gắn loại test, dòng vật tư chưa phân vai trò.
 - AC-4 (FR-M2-03.9, FR-M2-09.9, FR-M5-05.5, BRU-INV-003): Chương trình có vật tư bắt buộc thì Hoàn thành nạp / Bắt đầu test thiếu xác nhận bị từ chối `CONSUMABLES_NOT_CONFIRMED`; số âm hoặc vật tư lạ bị từ chối `CONSUMABLE_INVALID`.
 - AC-5 (FR-M6-03): Lô rửa Đạt, mẻ giải phóng, test đầu ngày ghi kết quả trừ kho theo số thực dùng; CI/BI không bị trừ.
 - AC-6 (FR-M6-03.5): Dòng `Run Consumable` lưu định mức, thực dùng, người xác nhận, lô đã xuất.

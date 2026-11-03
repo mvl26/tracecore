@@ -228,6 +228,102 @@ async function program_copy(frm, values, dialog) {
 	}
 }
 
+// A-111 D4, FR-M5-02.7: áp bảng vật tư sang chương trình đang dùng cùng loại chương trình, cùng loại máy
+const PROGRAM_CONSUMABLE_TARGETS = "tracecore.v1.equipment_admin.consumable_targets";
+const PROGRAM_COPY_CONSUMABLES = "tracecore.v1.equipment_admin.copy_consumables";
+
+async function program_apply_consumables(frm, targets, dialog) {
+	frappe.dom.freeze();
+	try {
+		const response = await fetch(`/api/method/${PROGRAM_COPY_CONSUMABLES}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json",
+				"X-Frappe-CSRF-Token": frappe.csrf_token,
+				"X-Idempotency-Key": program_uuid(),
+			},
+			body: JSON.stringify({
+				program: frm.doc.name,
+				targets,
+				client_ts: program_client_ts(),
+			}),
+		});
+		const body = await response.json().catch(() => ({}));
+		const result = body.message || {};
+		dialog.hide();
+		if (result.ok) {
+			frappe.show_alert({
+				message: __("Consumables applied to {0} program(s).", [result.programs.length]),
+				indicator: "green",
+			});
+		} else {
+			program_show_block(
+				result.error || {
+					title: __("Consumables could not be applied"),
+					reason: program_server_message(body),
+					action: __("Check your permissions and try again."),
+				}
+			);
+		}
+	} catch (e) {
+		dialog.hide();
+		program_show_block({
+			title: __("Consumables could not be applied"),
+			reason: __("The server could not be reached."),
+			action: __("Try again."),
+		});
+	} finally {
+		frappe.dom.unfreeze();
+	}
+}
+
+async function program_open_consumables_dialog(frm) {
+	const r = await frappe.call({
+		method: PROGRAM_CONSUMABLE_TARGETS,
+		args: { program: frm.doc.name, client_ts: program_client_ts() },
+	});
+	const rows = (r.message && r.message.programs) || [];
+	if (!rows.length) {
+		frappe.msgprint(
+			__("No other active program of the same kind runs on this type of machine.")
+		);
+		return;
+	}
+	const dialog = new frappe.ui.Dialog({
+		title: __("Apply consumables of {0}", [frm.doc.name]),
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<p>${frappe.utils.escape_html(
+					__(
+						"The consumables of the chosen programs are replaced by this list. Later changes here are not copied again."
+					)
+				)}</p>`,
+			},
+			{
+				fieldname: "targets",
+				fieldtype: "MultiCheck",
+				label: __("Programs"),
+				reqd: 1,
+				options: rows.map((row) => ({
+					label: `${row.program_name} (${row.program}) · ${
+						row.equipment_name || row.equipment
+					}`,
+					value: row.program,
+					checked: Boolean(row.suggested),
+				})),
+			},
+		],
+		primary_action_label: __("Apply"),
+		primary_action(values) {
+			if (!(values.targets || []).length) return;
+			program_apply_consumables(frm, values.targets, dialog);
+		},
+	});
+	dialog.show();
+}
+
 function program_open_copy_dialog(frm, source) {
 	const dialog = new frappe.ui.Dialog({
 		title: __("Copy program {0}", [frm.doc.name]),
@@ -285,5 +381,10 @@ frappe.ui.form.on("Process Program", {
 			]);
 			program_open_copy_dialog(frm, source.message || {});
 		});
+		if ((frm.doc.consumables || []).length) {
+			frm.add_custom_button(__("Apply consumables to similar programs"), () =>
+				program_open_consumables_dialog(frm)
+			);
+		}
 	},
 });
