@@ -11,11 +11,13 @@ import frappe
 
 from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
+from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import machine_data, sterilizing
+from tracecore.reprocessing import machine_data, run_cancel, sterilizing
 from tracecore.v1._common import (
 	LOAD_ROLES,
 	current_station_session,
+	reject_block,
 	require_agent_for,
 	require_any_role,
 	require_station,
@@ -349,3 +351,17 @@ def ingest_machine_data(station, equipment, cycle, client_ts=None):
 		"Equipment",
 		equipment if isinstance(equipment, str) else None,
 	)
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel(load=None, reason=None):
+	"""R02 hủy mẻ tiệt khuẩn nhập sai trên Desk (A-112 D11, FR-M2-09.10): ``{"ok": true, "load", "packs"}``.
+
+	Từ chối ``RUN_CANCEL_BLOCKED`` (409, ``error.items`` là gói đã đi tiếp) hoặc ``REASON_REQUIRED`` (422) bằng body
+	``ok: false``; không phải R02 → 403. Người hủy là nhân viên của tài khoản Desk.
+	"""
+	load = _required_str(load, "load")
+	try:
+		return {"ok": True, **run_cancel.cancel_load(load, reason)}
+	except BlockedError as error:
+		return reject_block(error.block, "Sterilization Load", load)

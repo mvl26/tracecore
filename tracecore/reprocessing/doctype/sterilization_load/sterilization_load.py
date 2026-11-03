@@ -85,7 +85,9 @@ class SterilizationLoad(Document):
 		audit.block_delete(self, "on_trash")
 
 	def before_cancel(self):
-		frappe.throw(_("A sterilization load cannot be cancelled."))
+		# chỉ R02 hủy mẻ nhập sai qua reprocessing.run_cancel (A-112 D11)
+		if not self.flags.tc_run_cancel:
+			frappe.throw(_("A sterilization load cannot be cancelled."))
 
 	def _validate_program(self):
 		# mẻ chỉ dùng cho dụng cụ; lần chạy test ghi ở Daily Test (A-83, D1). `load_repair` đóng mẻ cũ bằng cờ riêng

@@ -44,3 +44,5 @@ tracecore.patches.v0_1.clear_unreleased_released_by
 tracecore.patches.v0_1.update_pack_label_templates_a109
 tracecore.patches.v0_1.a110_program_block_codes
 tracecore.patches.v0_1.general_help_address
+tracecore.patches.v0_1.link_consumable_lots_a112
+tracecore.patches.v0_1.a112_consumable_lot_block_code

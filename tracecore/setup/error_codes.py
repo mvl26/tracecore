@@ -90,7 +90,11 @@ DEFAULT_CODES = (
 		("WASH_LOAD", "PACK"),
 		"Refuses the lot.",
 		"<ol><li>Check the label of the lot.</li><li>Choose a lot of the item that the program uses.</li></ol>",
-		("CHEMICAL_LOT_INVALID", "MAINT_OIL_LOT_REQUIRED"),
+		(
+			"CHEMICAL_LOT_INVALID",
+			"MAINT_OIL_LOT_REQUIRED",
+			"CONSUMABLE_LOT_INVALID",
+		),  # A-112: lô vật tư trên dòng
 	),
 	_code(
 		"HC-005",

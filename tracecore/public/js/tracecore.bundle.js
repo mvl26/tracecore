@@ -2,7 +2,8 @@
 // hộp thoại sửa hạn lưu loại gói tracecore.shelf_life.* (FEAT-015) và hộp thoại cấp Set ID / in thẻ tracecore.set_unit.*
 // (FEAT-016, dùng ở list Set Unit, form Set Unit và form loại bộ); thanh lý và chuyển trạng thái thủ công
 // tracecore.admin.* (FEAT-004, form Set Unit và Pack); ô quét chung trên List View tracecore.list_scan.* (FEAT-006);
-// nút xuất PDF nền / khóa kỳ trên báo cáo sổ tiệt khuẩn tracecore.report_export.* (FEAT-007).
+// nút xuất PDF nền / khóa kỳ trên báo cáo sổ tiệt khuẩn tracecore.report_export.* (FEAT-007); hộp thoại R02 hủy lô rửa /
+// mẻ nhập sai tracecore.run_cancel.* (A-112).
 import "./tc_page_cache.js";
 import "./tc_codes.js";
 import "./tc_desk_call.js";
@@ -12,3 +13,4 @@ import "./tc_set_unit.js";
 import "./tc_launcher.js";
 import "./tc_list_scan.js";
 import "./tc_report_export.js";
+import "./tc_run_cancel.js";

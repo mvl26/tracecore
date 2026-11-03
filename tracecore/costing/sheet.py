@@ -233,7 +233,8 @@ def _wash_share(set_unit, before, pricer=None):
 		return 0
 	latest = frappe.get_all(
 		WASH,
-		filters={"name": ["in", batches], "started_at": ["<=", get_datetime(before)]},
+		# lô rửa đã hủy (A-112 D10) không phải lần rửa thật của bộ
+		filters={"name": ["in", batches], "started_at": ["<=", get_datetime(before)], "docstatus": ["<", 2]},
 		pluck="name",
 		order_by="started_at desc",
 		limit=1,
@@ -486,6 +487,30 @@ def on_load_failed(ctx):
 def on_wash_complete(ctx):
 	"""Hook tracecore_after_wash_complete: chi phí lô rửa, phần của mỗi bộ cộng vào giá thành gói (OQ-26)."""
 	_enqueue(WASH, ctx["batch"])
+
+
+CANCELLED = "Cancelled"
+
+
+def cancel_for(source_doctype, source_name):
+	"""Lô rửa / mẻ bị hủy (A-112 D10, D11; FR-M6-03.9): mọi Cost Sheet của nguồn sang Đã hủy (không xóa, A-53)."""
+	for name in frappe.get_all(
+		DOCTYPE, filters={"source_doctype": source_doctype, "source_name": source_name}, pluck="name"
+	):
+		doc = frappe.get_doc(DOCTYPE, name)
+		doc.status = CANCELLED
+		doc.flags.tc_cost_sheet = True
+		doc.save(ignore_permissions=True)
+
+
+def on_wash_cancel(ctx):
+	"""Hook tracecore_after_wash_cancel."""
+	cancel_for(WASH, ctx["batch"])
+
+
+def on_load_cancel(ctx):
+	"""Hook tracecore_after_load_cancel."""
+	cancel_for(LOAD, ctx["load"])
 
 
 def run_job(source_doctype, source_name):

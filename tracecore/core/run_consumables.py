@@ -8,12 +8,15 @@ M2 (T2, T5), M5 (test đầu ngày) và M6 (trừ kho) cùng gọi module này n
 * Chương trình có vật tư bắt buộc: Hoàn thành nạp / Bắt đầu test cần nhân viên xác nhận và số > 0 cho mọi vật tư bắt
   buộc (``CONSUMABLES_NOT_CONFIRMED``). Số không sửa = định mức.
 * Chỉ thị hóa học, sinh học chỉ để nhắc, không trừ kho theo chương trình (D3): CI trừ theo gói ở T4, BI theo luồng T5.
+* A-112: mỗi dòng có lô người vận hành chọn/quét (`core.lots.check`), không chọn thì lô FEFO đầu tiên; kho trừ đúng lô
+  của dòng.
 """
 
 import frappe
 from frappe import _
 from frappe.utils import cint, flt, now_datetime
 
+from tracecore.core import lots
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.program_norm import stock_factor
 
@@ -67,9 +70,24 @@ def lines_of(program, units=0, kg=0):
 	return lines
 
 
+def company_of(program):
+	"""Company của máy chạy chương trình theo tài sản của máy (A-78); máy chưa gắn tài sản → None (xét mọi kho)."""
+	equipment = program and frappe.db.get_value("Process Program", program, "equipment")
+	asset = equipment and frappe.db.get_value("Equipment", equipment, "asset")
+	return (asset and frappe.db.get_value("Asset", asset, "company")) or None
+
+
 def payload(program):
-	"""Vật tư gửi kèm danh sách chương trình cho màn trạm: hệ số theo mẻ/gói/kg để màn tự tính định mức."""
-	return [{key: value for key, value in line.items() if key != "norm_qty"} for line in lines_of(program)]
+	"""Vật tư gửi kèm danh sách chương trình cho màn trạm: hệ số theo mẻ/gói/kg để màn tự tính định mức, và các lô
+	gợi ý theo FEFO ở kho của bệnh viện của máy (``lots``, A-112)."""
+	company = company_of(program)
+	return [
+		{
+			**{key: value for key, value in line.items() if key != "norm_qty"},
+			"lots": lots.fefo(line["item"], company=company),
+		}
+		for line in lines_of(program)
+	]
 
 
 def _invalid(reason):
@@ -84,12 +102,18 @@ def _invalid(reason):
 
 
 def _given(submitted, lines):
+	"""``({vật tư: số thực dùng}, {vật tư: lô})`` từ các dòng gửi lên; mỗi dòng có thể chỉ gửi số, chỉ gửi lô, hoặc cả hai."""
 	known = {line["item"] for line in lines}
-	given = {}
+	given, chosen = {}, {}
 	for entry in submitted or []:
 		item = entry.get("item") if isinstance(entry, dict) else None
 		if item not in known:
 			raise _invalid(_("Item {0} is not a consumable of this program.").format(item or "-"))
+		batch = entry.get("batch")
+		if batch:
+			chosen[item] = batch
+		if entry.get("qty") in (None, "") and batch:
+			continue
 		try:
 			qty = flt(float(entry.get("qty")), PRECISION)
 		except (TypeError, ValueError):
@@ -97,17 +121,30 @@ def _given(submitted, lines):
 		if qty < 0:
 			raise _invalid(_("The quantity of {0} cannot be negative.").format(item))
 		given[item] = qty
-	return given
+	return given, chosen
 
 
-def rows(program, units, submitted=None, confirmed=False, operator=None, kg=0):
+def _lot_of(item, batch, company=None):
+	"""``(lô, hạn)`` của dòng: lô đã chọn được kiểm (A-112 D2), không chọn thì lô FEFO đầu tiên, không có thì None."""
+	if batch:
+		checked = lots.check(item, batch, company=company)
+		return checked["batch"], checked["expiry_date"]
+	first = next(iter(lots.fefo(item, limit=1, company=company)), None)
+	return (first["batch"], first["expiry_date"]) if first else (None, None)
+
+
+def rows(program, units, submitted=None, confirmed=False, operator=None, kg=0, lots_given=None):
 	"""Dòng `Run Consumable` của lô/mẻ/test: định mức, thực dùng (không gửi = định mức), người và giờ xác nhận.
 
-	`submitted`: ``[{"item", "qty"}]`` số thực dùng nhân viên sửa. Chương trình có vật tư bắt buộc mà chưa xác nhận, hoặc
-	vật tư bắt buộc có số 0 → ``CONSUMABLES_NOT_CONFIRMED``; vật tư lạ, số âm, không phải số → ``CONSUMABLE_INVALID``.
+	`submitted`: ``[{"item", "qty"?, "batch"?}]`` số thực dùng nhân viên sửa và lô đã chọn/quét. Chương trình có vật tư
+	bắt buộc mà chưa xác nhận, hoặc vật tư bắt buộc có số 0 → ``CONSUMABLES_NOT_CONFIRMED``; vật tư lạ, số âm, không phải
+	số → ``CONSUMABLE_INVALID``; lô hết hạn, của vật tư khác, đã tắt → ``CONSUMABLE_LOT_INVALID`` (A-112).
+	`lots_given` ``{vật tư: lô}``: lô đã chọn ở ô riêng của trạm (hóa chất T2), dùng khi dòng không gửi lô.
 	"""
 	lines = lines_of(program, units, kg)
-	given = _given(submitted, lines)
+	given, chosen = _given(submitted, lines)
+	known = {line["item"] for line in lines}
+	chosen = {**{item: lot for item, lot in (lots_given or {}).items() if item in known and lot}, **chosen}
 	required = [line for line in lines if line["is_required"]]
 	actual = {line["item"]: given.get(line["item"], line["norm_qty"]) for line in lines}
 	missing = [line["item"] for line in required if actual[line["item"]] <= 0]
@@ -128,27 +165,33 @@ def rows(program, units, submitted=None, confirmed=False, operator=None, kg=0):
 			)
 		)
 	confirmed_at = now_datetime() if cint(confirmed) else None
-	return [
-		{
-			"item": line["item"],
-			"item_name": line["item_name"],
-			"role": line["role"],
-			"is_required": line["is_required"],
-			"uom": line["uom"],
-			"norm_qty": line["norm_qty"],
-			"actual_qty": actual[line["item"]],
-			"confirmed_by": operator if cint(confirmed) else None,
-			"confirmed_at": confirmed_at,
-		}
-		for line in lines
-	]
+	company = company_of(program)
+	result = []
+	for line in lines:
+		batch, expiry = _lot_of(line["item"], chosen.get(line["item"]), company)
+		result.append(
+			{
+				"item": line["item"],
+				"item_name": line["item_name"],
+				"role": line["role"],
+				"is_required": line["is_required"],
+				"uom": line["uom"],
+				"norm_qty": line["norm_qty"],
+				"actual_qty": actual[line["item"]],
+				"batch": batch,
+				"expiry_date": expiry,
+				"confirmed_by": operator if cint(confirmed) else None,
+				"confirmed_at": confirmed_at,
+			}
+		)
+	return result
 
 
 def _saved_rows(source_doctype, source_name):
 	return frappe.get_all(
 		CHILD,
 		filters={"parent": source_name, "parenttype": source_doctype},
-		fields=["name", "item", "role", "actual_qty"],
+		fields=["name", "item", "role", "actual_qty", "batch"],
 		order_by="idx asc",
 	)
 
@@ -156,14 +199,15 @@ def _saved_rows(source_doctype, source_name):
 def issue_lines(source_doctype, source_name, pinned=None):
 	"""Dòng trừ kho ``[{"item", "qty", "batch"}]`` từ vật tư đã xác nhận; None khi nguồn chưa có dòng (dữ liệu cũ).
 
-	Bỏ chỉ thị hóa học, sinh học và dòng số 0; `pinned` ``{vật tư: lô}`` ghim lô đã chọn ở trạm (hóa chất, gói test).
+	Bỏ chỉ thị hóa học, sinh học và dòng số 0. Lô của dòng (A-112) ghim trước; dòng chưa có lô (dữ liệu trước A-112) dùng
+	`pinned` ``{vật tư: lô}`` đã chọn ở trạm (hóa chất, gói test), không có thì FEFO.
 	"""
 	saved = _saved_rows(source_doctype, source_name)
 	if not saved:
 		return None
 	pinned = pinned or {}
 	return [
-		{"item": row.item, "qty": flt(row.actual_qty, PRECISION), "batch": pinned.get(row.item)}
+		{"item": row.item, "qty": flt(row.actual_qty, PRECISION), "batch": row.batch or pinned.get(row.item)}
 		for row in saved
 		if row.role not in NOT_ISSUED_ROLES and flt(row.actual_qty) > 0
 	]

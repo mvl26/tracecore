@@ -18,6 +18,7 @@ from frappe import _
 from frappe.utils import flt, getdate, strip_html_tags
 
 from tracecore.core import notification, run_consumables
+from tracecore.core.errors import Block, BlockedError
 from tracecore.inventory.receipt import today_vn
 
 ISSUE = "Material Issue"
@@ -271,8 +272,18 @@ def submit_issue(rows, source_doctype, source_name, reason, draft=None):
 # --- người nghe hook của M2 --------------------------------------------------------------------------------------
 
 
+INDICATOR_GROUPS = ("Chemical Indicator", "Biological Indicator")
+INDICATOR_SOURCE = {WASH: "wash_batch", LOAD: "load"}
+
+
+def _is_indicator(item):
+	"""Vật tư nhóm chỉ thị hóa học, sinh học: chỉ trừ theo lô đã quét/ghi, không theo định mức (A-112 (c))."""
+	return frappe.db.get_value("Item", item, "tc_item_group_cssd") in INDICATOR_GROUPS
+
+
 def _norms(program):
-	"""Định mức của chương trình, bỏ chỉ thị hóa học, sinh học (A-111 D3: chỉ nhắc, không trừ theo chương trình)."""
+	"""Định mức của chương trình, bỏ chỉ thị hóa học, sinh học (A-111 D3: chỉ nhắc, không trừ theo chương trình); A-112
+	bỏ cả dòng cũ chưa có vai trò mà vật tư thuộc nhóm chỉ thị."""
 	if not program:
 		return []
 	rows = frappe.get_all(
@@ -282,7 +293,32 @@ def _norms(program):
 		order_by="idx",
 	)
 	# lọc ở Python: dòng cũ chưa có vai trò (NULL) phải được giữ, SQL "not in" sẽ loại mất
-	return [row for row in rows if row.role not in run_consumables.NOT_ISSUED_ROLES]
+	return [
+		row
+		for row in rows
+		if row.role not in run_consumables.NOT_ISSUED_ROLES and not _is_indicator(row.item)
+	]
+
+
+def _without_indicators(lines):
+	return [line for line in lines if not _is_indicator(line["item"])]
+
+
+def _indicator_lines(source_doctype, source_name, packs=()):
+	"""Chỉ thị trừ đúng lô (FR-M6-03.7): mỗi gói 1 cái theo `Pack.ci_batch` quét ở T4, mỗi kết quả chỉ thị của lô/mẻ có
+	lô trong kho (`Load Indicator Result.batch`) 1 cái."""
+	batches = [frappe.db.get_value("Pack", pack, "ci_batch") for pack in packs or ()] + frappe.get_all(
+		"Load Indicator Result",
+		filters={INDICATOR_SOURCE[source_doctype]: source_name, "batch": ["is", "set"]},
+		pluck="batch",
+	)
+	counts = defaultdict(float)
+	for batch in filter(None, batches):
+		counts[batch] += 1
+	return [
+		{"item": frappe.db.get_value("Batch", batch, "item"), "qty": qty, "batch": batch}
+		for batch, qty in counts.items()
+	]
 
 
 def stock_qty_of(item, qty, uom=None):
@@ -422,6 +458,7 @@ def _wash_lines(ctx):
 	trong bảng vẫn trừ như cũ. Lô cũ: hóa chất theo lô và số lượng đã ghi (0 → định mức), cộng vật tư khác của chương trình.
 	"""
 	chemicals = ctx.get("chemicals") or []
+	indicators = _indicator_lines(WASH, ctx["batch"])
 	confirmed = run_consumables.issue_lines(
 		WASH, ctx["batch"], {row["item"]: row.get("lot") for row in chemicals if row.get("lot")}
 	)
@@ -432,8 +469,9 @@ def _wash_lines(ctx):
 			)
 		)
 		extra = [row for row in chemicals if row["item"] not in listed]
-		return confirmed + _legacy_wash_lines({**ctx, "chemicals": extra}, only_chemicals=True)
-	return _legacy_wash_lines(ctx)
+		lines = confirmed + _legacy_wash_lines({**ctx, "chemicals": extra}, only_chemicals=True)
+		return _without_indicators(lines) + indicators
+	return _legacy_wash_lines(ctx) + indicators
 
 
 def _legacy_wash_lines(ctx, only_chemicals=False):
@@ -588,12 +626,15 @@ def on_laundry_complete(ctx):
 
 
 def _load_lines(ctx):
-	"""A-111: mẻ có bảng vật tư đã xác nhận thì trừ số thực dùng; mẻ cũ theo định mức x số gói (bỏ CI/BI)."""
+	"""A-111: mẻ có bảng vật tư đã xác nhận thì trừ số thực dùng; mẻ cũ theo định mức x số gói (bỏ CI/BI).
+	A-112: cộng chỉ thị theo đúng lô quét ở T4 và lô ghi ở kết quả chỉ thị của mẻ."""
+	indicators = _indicator_lines(LOAD, ctx["load"], ctx.get("packs"))
 	confirmed = run_consumables.issue_lines(LOAD, ctx["load"])
 	if confirmed is not None:
-		return confirmed
+		return _without_indicators(confirmed) + indicators
 	packs = len(ctx.get("packs") or [])
-	return [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in _norms(ctx.get("program"))]
+	norms = [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in _norms(ctx.get("program"))]
+	return norms + indicators
 
 
 def _load_reason(ctx):
@@ -618,11 +659,52 @@ def _daily_lines(ctx):
 		run_consumables.CHILD, filters={"parent": ctx["daily_test"], "parenttype": DAILY}, pluck="item"
 	)
 	pinned = {item: lot for item in items if lot and frappe.db.exists("Batch", {"name": lot, "item": item})}
-	return run_consumables.issue_lines(DAILY, ctx["daily_test"], pinned)
+	lines = run_consumables.issue_lines(DAILY, ctx["daily_test"], pinned)
+	# lô gói test ghi lúc có kết quả là gói thật đã dùng: ưu tiên hơn lô gợi ý trên dòng (A-112 E5)
+	return [{**line, "batch": pinned.get(line["item"]) or line["batch"]} for line in lines or []] or lines
 
 
 def _daily_reason(ctx):
 	return _("Automatic consumption of daily test {0}").format(ctx["daily_test"])
+
+
+def cancel_issue(source_doctype, source_name):
+	"""Lô rửa / mẻ bị hủy (A-112 D10, D11; FR-M6-03.9): hủy phiếu xuất tiêu hao đã ghi sổ của nguồn, tồn đúng lô trả về.
+
+	Nguồn còn phiếu Nháp (lần trừ kho dừng giữa chừng) thì từ chối ``RUN_CANCEL_BLOCKED``: R09 xử lý phiếu trước. Trả tên
+	các phiếu đã hủy.
+	"""
+	draft = _draft_entry(source_doctype, source_name)
+	if draft:
+		raise BlockedError(
+			Block(
+				"RUN_CANCEL_BLOCKED",
+				_("Cannot cancel"),
+				_("{0} {1} has a draft stock issue {2}.").format(_(source_doctype), source_name, draft),
+				_("Ask R09 to submit or delete the draft issue, then cancel again."),
+			)
+		)
+	cancelled = []
+	for name in frappe.get_all(
+		"Stock Entry",
+		filters={"tc_source_doctype": source_doctype, "tc_source_name": source_name, "docstatus": 1},
+		pluck="name",
+	):
+		entry = frappe.get_doc("Stock Entry", name)
+		entry.flags.ignore_permissions = True
+		entry.cancel()
+		cancelled.append(name)
+	if cancelled:
+		notification.resolve("CONSUMPTION_FAILED", source_doctype, source_name)
+	return cancelled
+
+
+def on_wash_cancel(ctx):
+	cancel_issue(WASH, ctx["batch"])
+
+
+def on_load_cancel(ctx):
+	cancel_issue(LOAD, ctx["load"])
 
 
 def on_daily_test_record(ctx):

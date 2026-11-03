@@ -21,6 +21,10 @@ _BLOCK_MAP_KEY = "tracecore_error_block_map"
 # Thêm mã `Block` mới phải chọn: gán vào `setup.error_codes` hoặc ghi vào đây (test_every_block_code_mapped_or_excluded).
 UNMAPPED_BLOCK_CODES = frozenset(
 	{
+		# A-111: xác nhận vật tư ở trạm là lỗi nhập liệu; A-112: R02 hủy lô/mẻ trên Desk là lỗi chứng từ
+		"CONSUMABLES_NOT_CONFIRMED",
+		"CONSUMABLE_INVALID",
+		"RUN_CANCEL_BLOCKED",
 		"LAUNDRY_ACTUAL_INVALID",
 		"LAUNDRY_DEVIATION_REASON_REQUIRED",
 		"LAUNDRY_OVER_PROGRAM_LOAD",
