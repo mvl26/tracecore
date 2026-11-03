@@ -1,11 +1,11 @@
 # Requirements Traceability Matrix: TraceCore
 
-> Source: docs/srs.md, docs/use-cases.md · Last updated: 2026-10-17 · Version 1.11 (Finalized)
+> Source: docs/srs.md, docs/use-cases.md · Last updated: 2026-11-03 · Version 1.12 (Amendment A-113)
 > Import & chuẩn hóa từ #15 RTM v1.10 (Medcons, 20/09/2026). Giữ nguyên ID gốc FR-Mx-NN (thứ tự theo bảng 2.1 của #05) và NFR-*.
 > Design, Plan, and Test columns are filled by downstream phases as they produce their artifacts (see Column ownership in rtm-guide: Design ref ← software-architecture / detailed-design / ui-design; Plan ref ← implementation-planning; Test ref ← acceptance-verification). Requirements-engineering owns the other columns.
 > Source = "BR-Mx (BRD #02)" cho FR kế thừa baseline; "CHG-0xx" cho FR sinh từ quyết định review v1.3–v1.10 (#00 nhật ký thay đổi); "Catalog gap v1.11" cho FR-M9-08..16 (khoảng trống catalog, duyệt 2026-10-17); "Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT" cho FR-M10-*; NFR gốc = "Catalog ISO 25010 / BA #05", NFR mới = "Catalog ISO 25010 v1.11".
 
-## 1. Functional requirements (90)
+## 1. Functional requirements (175 dòng: 94 trước A-113 + 81 FR v1.12)
 
 | Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
 | :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
@@ -104,9 +104,96 @@
 | FR-M10-07 | Báo cáo & dashboard chất thải: kg khoa/loại/kỳ, chênh lệch thu – giao, chi phí/kg, tuân thủ hạn lưu, mẫu TT 20/2021 | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-010; ADR-013 | FEAT-050 | `waste/tests/test_analysis.py`, `v1/tests/test_dashboard_api.py` |
 | FR-M10-08 | Định mức túi/thùng theo khoa (liên kết M6), kg/giường, cảnh báo phát sinh bất thường ±30% | Must | Active | Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT | UC-37 | ADR-009; ADR-013 | FEAT-050 | `waste/tests/test_analysis.py` |
 
+
+**[NEW v1.12 — Amendment A-113, 2026-11-03] 81 FR của M11–M17 và M9 mở rộng** (BA v1.12 §4–§11; người dùng duyệt D1–D11 ngày 03/11/2026, chủ đầu tư chưa xác nhận). Design ref: `ADR-015` cho FR dùng engine phiếu giám sát, `ADR-010` cho FR có mã người bệnh; các FR còn lại `_TBD_` tới detailed-design. Plan ref: FEAT-056..074 (implementation-plan §3 E-12..E-19); FR thuộc hai FEAT ghi cả hai.
+
+| Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
+| :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
+| FR-M11-01 | Cơ cấu KSNK bắt buộc theo giường, tuyến | Must | Active | BA v1.12 (A-113) | UC-40 | _TBD_ | FEAT-057 | _TBD_ |
+| FR-M11-02 | Ghi sổ Hội đồng: 1 Chủ tịch, 1 Thư ký | Must | Active | BA v1.12 (A-113) | UC-40 | _TBD_ | FEAT-057 | _TBD_ |
+| FR-M11-03 | Mạng lưới: mỗi khoa ≥ 1 BS + 1 ĐD | Must | Active | BA v1.12 (A-113) | UC-40 | _TBD_ | FEAT-057 | _TBD_ |
+| FR-M11-04 | Kế hoạch năm: R13 duyệt, một kế hoạch/năm | Must | Active | BA v1.12 (A-113) | UC-41 | _TBD_ | FEAT-058 | _TBD_ |
+| FR-M11-05 | Nhắc hoạt động kế hoạch tới hạn/quá hạn | Should | Active | BA v1.12 (A-113) | UC-41 | _TBD_ | FEAT-058 | _TBD_ |
+| FR-M11-06 | Báo cáo tổng kết KSNK năm | Must | Active | BA v1.12 (A-113) | UC-41 | _TBD_ | FEAT-058 | _TBD_ |
+| FR-M11-07 | Nhắc văn bản nội bộ hết hạn rà soát | Must | Active | BA v1.12 (A-113) | UC-41 | _TBD_ | FEAT-058 | _TBD_ |
+| FR-M11-08 | Biên bản họp Hội đồng → việc theo dõi | Should | Active | BA v1.12 (A-113) | UC-41 | _TBD_ | FEAT-058 | _TBD_ |
+| FR-M11-09 | Tỷ lệ NVYT đào tạo KSNK cơ bản theo khoa | Must | Active | BA v1.12 (A-113) | UC-42 | _TBD_ | FEAT-059 | _TBD_ |
+| FR-M11-10 | Tỷ lệ chuyên trách/Hội đồng/mạng lưới đã đào tạo | Must | Active | BA v1.12 (A-113) | UC-42 | _TBD_ | FEAT-059 | _TBD_ |
+| FR-M11-11 | Sinh viên thực tập phải đào tạo KSNK trước | Should | Active | BA v1.12 (A-113) | UC-42 | _TBD_ | FEAT-059 | _TBD_ |
+| FR-M11-12 | Dự án cải tiến chất lượng, nghiên cứu KSNK | Should | Active | BA v1.12 (A-113) | UC-42 | _TBD_ | FEAT-072 | _TBD_ |
+| FR-M11-13 | Tự đánh giá chất lượng KSNK hằng năm | Should | Active | BA v1.12 (A-113) | UC-42 | ADR-015 | FEAT-072 | _TBD_ |
+| FR-M12-01 | Mẫu phiếu duyệt → khóa phiên bản | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-02 | Bộ mẫu phiếu khởi tạo ở trạng thái Nháp | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-061 | _TBD_ |
+| FR-M12-03 | Lịch giám sát giao việc, độ bao phủ | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-04 | Ghi phiếu PDA ≤ 3 chạm, offline | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-05 | Tỷ lệ tuân thủ vệ sinh tay theo cơ hội | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-061 | _TBD_ |
+| FR-M12-06 | Điểm % theo trọng số, mục N/A loại trừ | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-07 | Gói dự phòng chấm tất-cả-hoặc-không | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-062 | _TBD_ |
+| FR-M12-08 | Phản hồi kết quả phiếu cho khoa | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-09 | Mục trọng yếu không đạt → đề nghị NC | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-10 | Chặn người giám sát tự quan sát mình | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-11 | Nhãn "Chưa đủ mẫu" khi dưới min_sample | Should | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M12-12 | Hóa chất KSNK theo khoa–tháng, 3 nguồn | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015 | FEAT-066 | _TBD_ |
+| FR-M12-13 | Nhắc giấy phép đơn vị thuê ngoài 60/30/7 ngày | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015 | FEAT-066 | _TBD_ |
+| FR-M12-14 | Báo cáo tuân thủ theo kỳ PDF/Excel | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
+| FR-M13-01 | Định nghĩa ca có phiên bản theo ngày khởi phát | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-02 | Mẫu số ngày: một bản ghi/(ngày, khoa) | Must | Active | BA v1.12 (A-113) | UC-47 | _TBD_ | FEAT-062 | _TBD_ |
+| FR-M13-03 | Nhắc 10:00 khi thiếu mẫu số hôm trước | Must | Active | BA v1.12 (A-113) | UC-47 | _TBD_ | FEAT-062 | _TBD_ |
+| FR-M13-04 | Đợt thiết bị, mã BN mã hóa, ngày thiết bị | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-010 | FEAT-062 | _TBD_ |
+| FR-M13-05 | Ca NKBV Nghi ngờ → Xác định/Loại trừ | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010 | FEAT-063 | _TBD_ |
+| FR-M13-06 | Kiểm tra ngưỡng giờ/ngày thiết bị khi xác định ca | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-07 | Đăng ký phẫu thuật, NNIS, cửa sổ theo dõi | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
+| FR-M13-08 | Lịch theo dõi NKVM sau ra viện | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
+| FR-M13-09 | Kháng sinh dự phòng: tỷ lệ có, đúng thời điểm | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
+| FR-M13-10 | Tỷ suất NKBV/1.000 ngày theo khoa và kỳ | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-11 | Khóa kỳ tháng, mở khóa có lý do | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-12 | Xuất báo cáo NKVM/NK hồi sức theo ánh xạ cột | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
+| FR-M13-13 | Cảnh báo cụm ca vượt ngưỡng | Should | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-069 | _TBD_ |
+| FR-M13-14 | Điều tra cắt ngang tỷ lệ hiện mắc | Could | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-072 | _TBD_ |
+| FR-M13-15 | Che mã BN trên danh sách, báo cáo, export M13 | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010 | FEAT-063 | _TBD_ |
+| FR-M14-01 | Import vi sinh theo hồ sơ ánh xạ, bỏ trùng | Must | Active | BA v1.12 (A-113) | UC-51 | _TBD_ | FEAT-067 | _TBD_ |
+| FR-M14-02 | Nhập tay kết quả vi sinh có xác nhận | Must | Active | BA v1.12 (A-113) | UC-51 | _TBD_ | FEAT-067 | _TBD_ |
+| FR-M14-03 | Gắn nhãn đa kháng theo MDRO Rule, chủng đầu | Must | Active | BA v1.12 (A-113) | UC-51 | _TBD_ | FEAT-067 | _TBD_ |
+| FR-M14-04 | Thông báo chủng đa kháng mới ≤ 15 phút | Must | Active | BA v1.12 (A-113) | UC-51 | _TBD_ | FEAT-067 | _TBD_ |
+| FR-M14-05 | Cảnh báo người bệnh từng đa kháng tái xuất hiện | Should | Active | BA v1.12 (A-113) | UC-51 | ADR-010 | FEAT-067 | _TBD_ |
+| FR-M14-06 | Lệnh cách ly: loại phòng ngừa, lý do, danh sách | Must | Active | BA v1.12 (A-113) | UC-52 | ADR-010 | FEAT-068 | _TBD_ |
+| FR-M14-07 | Tỷ lệ khoa có phòng cách ly đạt điều kiện | Must | Active | BA v1.12 (A-113) | UC-52 | _TBD_ | FEAT-068 | _TBD_ |
+| FR-M14-08 | Báo cáo kháng thuốc quý S/I/R | Must | Active | BA v1.12 (A-113) | UC-51 | _TBD_ | FEAT-067 | _TBD_ |
+| FR-M14-09 | Điều tra ổ dịch, đường cong dịch | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
+| FR-M14-10 | Khai báo bệnh truyền nhiễm theo hạn nhóm bệnh | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
+| FR-M15-01 | Vùng vệ sinh: mức nguy cơ, bên chịu trách nhiệm | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M15-02 | Tổng hợp tỷ lệ đạt VSMT theo mức nguy cơ, khoa | Must | Active | BA v1.12 (A-113) | UC-54 | ADR-015 | FEAT-070 | _TBD_ |
+| FR-M15-03 | Kết quả xét nghiệm môi trường so ngưỡng | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M15-04 | Mẫu Không đạt → thông báo, đề nghị NC | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M15-05 | Kế hoạch lấy mẫu giao việc, mẫu trễ hạn | Should | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M15-06 | Phiếu kiểm tra hạ tầng, hạn kế tiếp, nhắc 7 ngày | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M15-07 | Báo cáo môi trường tháng/quý | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M16-01 | Báo phơi nhiễm ban đầu ≤ 3 bước, thông báo ngay | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-02 | Sự cố sắc nhọn M10 → Occupational Exposure | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-03 | Thời gian phơi nhiễm → báo cáo → dự phòng, cờ | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-04 | Sơ cứu, dự phòng → lịch theo dõi theo mẫu | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-05 | Quyền xem hồ sơ phơi nhiễm: R01, R11, chính NV | Must | Active | BA v1.12 (A-113) | UC-55 | ADR-010 | FEAT-071 | _TBD_ |
+| FR-M16-06 | Không lưu kết quả XN/chẩn đoán nhân viên | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-07 | Tiêm chủng: next_due, nhắc, tỷ lệ bao phủ | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-08 | Cảnh báo tồn thuốc dự phòng sau phơi nhiễm | Should | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-09 | Báo cáo phơi nhiễm theo kỳ | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M17-01 | Giám sát bếp ăn bằng mẫu phiếu ATTP | Should | Active | BA v1.12 (A-113) | UC-56 | ADR-015 | FEAT-073 | _TBD_ |
+| FR-M17-02 | Nhắc hạn khám sức khỏe người chế biến | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
+| FR-M17-03 | Mẫu thực phẩm xử lý như mẫu môi trường | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
+| FR-M17-04 | Sự cố nghi ngộ độc thực phẩm → báo, NC, khai báo | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
+| FR-M17-05 | Buổi truyền thông KSNK, tổng hợp quý | Could | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
+| FR-M17-06 | Tài liệu truyền thông người bệnh có QR | Could | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
+| FR-M9-22 | Bảng chỉ số KSNK toàn viện theo kế hoạch năm | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-23 | Báo cáo Hội đồng 1 trang hằng tháng (PDF) | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-24 | Cổng khoa: chỉ số khoa cạnh trung bình toàn viện | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-25 | Khóa kỳ → tính, lưu IC Indicator Value | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
+| FR-M9-26 | Nhập file qua hồ sơ ánh xạ cột, báo lỗi dòng | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
+| FR-M9-27 | Tự đánh giá năm QĐ 38 điền sẵn | Should | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-28 | Gói xuất hồ sơ KSNK cho đoàn kiểm tra | Could | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-074 | _TBD_ |
+
 FR-M9-08..16 và FR-M10-01..08 là ID mới v1.11 (chủ đầu tư duyệt 2026-10-17, srs.md Appendix C / §3.1.10); FR-M9-14/15 là yêu cầu xuyên suốt mọi màn hình trạm/PDA nên không có UC sở hữu riêng (ghi "—" kèm danh sách UC trạm tham chiếu).
 
-## 2. Non-functional requirements (35)
+## 2. Non-functional requirements (42)
 
 NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Use case(s) ghi các UC khai báo "NFR liên quan" trong #06 (trường 22) để tham khảo, phân hệ áp dụng theo #05 §3. 21 NFR mới (NFR-PERF-03..NFR-BACKUP-02, srs.md §3.3.2) được chủ đầu tư duyệt 2026-10-17, Use case = "—" (áp dụng toàn hệ thống).
 
@@ -147,6 +234,18 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-ACC-01 | Tiếp cận — Web WCAG 2.1 AA; trạm tương phản ≥ 4,5:1, chữ ≥ 16 px, trạng thái không chỉ bằng màu. | Should | Active | Catalog ISO 25010 v1.11 | — | ADR-002 | FEAT-018; Foundations | _TBD_ |
 | NFR-COMPAT-01 | Tương thích — Chromium/Edge/Firefox 2 bản mới nhất; kiosk Windows 10+/Ubuntu 22.04; Android 12+; 1366×768–1920×1080. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-002; ADR-011 | Foundations | _TBD_ |
 | NFR-BACKUP-02 | Sao lưu — Gồm CSDL, file đính kèm, site_config, mẫu nhãn; bản ngoài site cách ly; khôi phục thử hằng quý. | Must | Active | Catalog ISO 25010 v1.11 | — | ADR-011 | Foundations | _TBD_ |
+
+**[NEW v1.12 — A-113] 7 NFR bổ sung** (BA v1.12 §12.1); NFR hiện có áp dụng nguyên cho M11–M17.
+
+| Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
+| :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
+| NFR-PRIV-01 | Security — Dữ liệu sức khỏe BN/NV là dữ liệu nhạy cảm (NĐ 356/2025): tối thiểu hóa (không họ tên BN, không kết quả XN NV), mã BN mã hóa (ADR-010), che trên danh sách/export, xem đầy đủ có lý do + Audit Log. Kiểm: test tự động mọi report/export M13, M14, M16 không chứa mã BN rõ; JSON DocType không có trường họ tên BN. | Must | Active | BA v1.12 (A-113) | UC-48, UC-51, UC-55 | ADR-010; ADR-008 | FEAT-056 (F-22); đo lại FEAT-063, FEAT-067, FEAT-071 | _TBD_ |
+| NFR-PRIV-02 | Security — Thời hạn lưu dữ liệu ca bệnh, phơi nhiễm cấu hình được; hết hạn xóa định danh, giữ số liệu tổng hợp. Kiểm: job định kỳ có test; thời hạn do bệnh viện quyết (OQ-V12-07). | Must | Active | BA v1.12 (A-113) | UC-48, UC-55 | ADR-010 | FEAT-063, FEAT-071 | _TBD_ |
+| NFR-SEC-09 | Security — Ma trận quyền mở rộng cho R11–R13 và mọi DocType mới được kiểm thử tự động từ CSV như NFR-SEC-07; R12, R08 giới hạn theo Department. Kiểm: CI chạy test ma trận. | Must | Active | BA v1.12 (A-113) | — | ADR-010 | FEAT-056 (F-22) | _TBD_ |
+| NFR-USAB-03 | Usability — Phiếu giám sát trên PDA: mỗi cơ hội vệ sinh tay ≤ 3 chạm, nút ≥ 48 px, chữ ≥ 16 px, dùng được một tay. Kiểm: E2E PDA 412×915 (khi người dùng cho chạy). | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-002; ADR-015 | FEAT-061 | _TBD_ |
+| NFR-AVAIL-05 | Reliability — Phiếu giám sát, mẫu số, báo phơi nhiễm hoạt động offline ≥ 4 giờ và đồng bộ idempotent (ADR-003, NFR-AVAIL-02). Kiểm: test mất mạng như FR-M12-04. | Must | Active | BA v1.12 (A-113) | UC-44, UC-47, UC-55 | ADR-003 | FEAT-061, FEAT-062, FEAT-071 | _TBD_ |
+| NFR-MAINT-04 | Maintainability — Tiêu chí chuyên môn (mẫu phiếu, định nghĩa ca, quy tắc đa kháng, ngưỡng môi trường, bước theo dõi phơi nhiễm) là dữ liệu cấu hình có phiên bản; nâng cấp app không ghi đè bản bệnh viện đã sửa. Kiểm: test migrate hai lần giữ bản đã sửa. | Must | Active | BA v1.12 (A-113) | UC-43, UC-48, UC-51, UC-54, UC-55 | ADR-015 | FEAT-060, FEAT-063, FEAT-067, FEAT-070, FEAT-071 | _TBD_ |
+| NFR-PERF-05 | Performance efficiency — Bảng chỉ số KSNK mở ≤ 3 giây với 24 tháng dữ liệu của bệnh viện 1.000 giường (đọc IC Indicator Value, không tính lại khi mở). Kiểm: test hiệu năng với dữ liệu sinh giả. | Must | Active | BA v1.12 (A-113) | UC-57 | ADR-015 | FEAT-065 | _TBD_ |
 
 ## 3. Tham chiếu gốc giữ lại
 
@@ -263,15 +362,16 @@ Kiểm thử NFR: 14 NFR gốc tham chiếu "#14 mục 3.1 (TC phi chức năng,
 
 | Chỉ tiêu | Kết quả |
 | :-- | :-- |
-| Dòng FR trong RTM | 90 (73 gốc + 9 FR-M9-08..16 + 8 FR-M10-01..08) |
-| Dòng NFR trong RTM | 35 (14 gốc + 21 mới v1.11) |
-| UC trong docs/use-cases.md | 39 (UC-01..33 gốc + UC-34..39 mới) |
-| SCR | 43 (SCR-01..37 gốc + SCR-38..43 mới) |
+| Dòng FR trong RTM | 175 (94 dòng trước A-113 — 73 gốc + 9 FR-M9-08..16 + 8 FR-M10-01..08 + 4 dòng amendment — + [A-113] 81 FR-M11..M17 & FR-M9-22..28) |
+| Dòng NFR trong RTM | 42 (14 gốc + 21 mới v1.11 + [A-113] 7 mới v1.12) |
+| UC trong docs/use-cases.md | 57 (UC-01..33 gốc + UC-34..39 mới + [A-113] UC-40..57) |
+| SCR | 63 đã duyệt (SCR-01..37 gốc + SCR-38..43 mới + [A-113] SCR-47..66; SCR-44..46 đề xuất chưa duyệt) |
 | FR không có UC | 0 — FR-M9-14/15 là yêu cầu xuyên suốt, ghi "—" kèm danh sách UC trạm |
 | UC không có FR | 0 — rỗng |
 | FR xuất hiện ở UC nhưng không có trong srs.md §3.1 | 0 — rỗng |
-| FR có >1 UC | 0 (mỗi FR thuộc đúng một UC sở hữu, như #15) |
+| FR có >1 UC | 0 (mỗi FR thuộc đúng một UC sở hữu, như #15; giữ nguyên cho 81 FR v1.12) |
 | Bộ Số Chuẩn BA v1.10 → v1.11 | N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43 |
+| Bộ Số Chuẩn v1.11 → v1.12 (A-113) | N_MOD 10→17, N_FR 90→171, N_NFR 35→42, N_UC 39→57, N_SCR 43→63, N_BRU 49→83, ADR 14→15, FEAT 55→74, vai trò 10→13 |
 
 **Điểm bất nhất phát hiện khi import (d05 / d06 / d15):**
 

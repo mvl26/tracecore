@@ -1,7 +1,7 @@
 # Architecture: TraceCore
 
-> Status: Draft (chờ chủ đầu tư review) · Last updated: 2026-10-22 · Author: Pipeline software-architecture (Claude) + chủ đầu tư Miyano/Medcons
-> Nguồn yêu cầu: `docs/srs.md` v1.11 Finalized (90 FR, 35 NFR) · `docs/use-cases.md` (39 UC) · BA v1.10 #08 DM, #11 API, #12 ARCH, #13 SEC, #16 WSS · `docs/.architecture-inputs.md` (quyết định chủ đầu tư 2026-10-17)
+> Status: Draft (chờ chủ đầu tư review) · Last updated: 2026-11-03 (Amendment A-113, v1.12) · Author: Pipeline software-architecture (Claude) + chủ đầu tư Miyano/Medcons
+> Nguồn yêu cầu: `docs/srs.md` v1.12 (171 FR, 42 NFR; v1.11 Finalized + Amendment A-113) · `docs/use-cases.md` (57 UC) · BA v1.10 #08 DM, #11 API, #12 ARCH, #13 SEC, #16 WSS · `docs/.architecture-inputs.md` (quyết định chủ đầu tư 2026-10-17)
 > Quy ước: tiếng Việt, thuật ngữ kỹ thuật tiếng Anh; ADR inline (§9); Mermaid dùng `flowchart`/`sequenceDiagram`/`erDiagram`. Kế thừa #12 ARCH v1.10 với hai đổi tên: app `cssd` → `tracecore`, RPC namespace `cssd.v1.*` → `tracecore.v1.*` (xem ADR-001). Mọi ID FR/NFR/UC trong tài liệu này trỏ về `docs/srs.md` và `docs/use-cases.md`.
 
 ## Revision History
@@ -110,12 +110,13 @@
 | 2026-11-01 | Amendment A-80 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Màn T3 không mất bộ đang đếm khi quét sai và dòng tổng theo kết quả (ticket #1842; FR-M2-05, SCR-07), không thêm DocType. **Nội dung:** (a) từ chối của lần quét mở bộ chỉ nói về mã vừa quét nên bản nháp đang mở và số đã đếm giữ nguyên, lỗi hiện `alert-error` inline phía trên; chỉ từ chối của thao tác trên chính bản nháp (`T3_RESET_CODES`) mới bỏ bản nháp; (b) `_summary` trả `tally` (`total, counted, enough, short, damaged, over`): dòng hỏng còn thiếu tính Hỏng, không tính Thiếu; hỏng đã thay đủ tính Đủ; dòng tổng hiện dạng "Đủ 3/4 · Thiếu 1 · Hỏng 1", phần bằng 0 được ẩn trừ Đủ; (c) `_summary` trả `instrument_scan` theo `enable_instrument_giai`, placeholder chỉ nói tới mã dụng cụ khi cờ bật; không làm quét mã `DC-` (D9). |
 | 2026-11-01 | Amendment A-79 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Kiểm đếm T3 phải đếm thật (ticket #1820, an toàn người bệnh; FR-M2-05, UC-07, SCR-07), không thêm DocType. **Nội dung:** (a) bỏ hẳn "Xác nhận tất cả" ở T3 cả trên màn hình và trên RPC (`tracecore.v1.assembly.line` không còn tham số `all_ok`), với mọi vai trò kể cả R02; quyết định này chỉ áp dụng T3, nút của T1 (FR-M2-23.1) và T4 (A-02 D1) giữ nguyên; (b) mở bộ: mọi dòng Chưa đếm, số lượng trống, 0/n; (c) số lượng khác định mức: thiếu phải chọn Thiếu hoặc Hỏng và ghi chú, dư phải ghi chú; thiếu một lý do thì chặn bằng mã mới `LINE_VARIANCE_REQUIRED` (422, thuộc QT-002) ở `line`, và chặn lại ở `submit` cho dòng quét mã GIAI còn lệch mà chưa giải thích; rẽ nhánh Sửa chữa/Thanh lý không bị chặn; (d) không thêm trường: Hỏng là `damaged_qty` > 0, Thiếu là `damaged_qty` = 0, lý do ở `Assembly Line.note`; (e) patch `reset_unverified_assembly_counts`: nút cũ không để lại dấu vết nên dòng Đủ của bản nháp không phân biệt được với đếm thật; mọi dòng Đủ không có hỏng, ghi chú, ảnh của bản nháp đưa về Chưa đếm, có Audit Log; dòng lệch và dòng có hỏng giữ nguyên. Hệ quả: nhân viên đang đếm dở phải đếm lại các dòng Đủ. |
 | 2026-11-01 | Amendment A-78 | Miyano (dev lead, người dùng yêu cầu làm theo ticket ngày 01/11/2026; chủ đầu tư chưa) + Claude Code | Tiêu hao tự động trên site nhiều bệnh viện (ticket #1816; FR-M6-03, FR-M6-04, UC-25), không thêm DocType, không đổi ADR. **Nội dung:** (a) mỗi phiếu xuất chỉ lấy lô của một Company; thứ tự xác định: `Asset.company` của máy (`Equipment.asset`) là căn cứ chính, thiếu thì Company của lô đã ghim, rồi Company duy nhất đang có tồn các vật tư cần xuất, rồi Company của người vận hành nếu nó có tồn. Zone Station không có Company nên không dùng. Vẫn không xác định được thì báo lỗi rõ (`CONSUMPTION_FAILED` kèm nguyên nhân), không xuất; (b) xuất thủ công: tồn ở nhiều Company thì lấy Company mặc định của người dùng nếu có tồn, nếu không chặn bằng mã `ISSUE_COMPANY_AMBIGUOUS` (422); lô chọn tay thuộc nhiều Company cũng bị chặn; (c) nút "Retry consumption" và `consume.retry` mở rộng cho `Sterilization Load` (đã giải phóng) và `Laundry Batch` (giặt tại chỗ đã hoàn tất), thêm nút trên form hai DocType này; (d) phiếu xuất Nháp còn sót của cùng nguồn không còn được coi là đã xuất: lần chạy sau dùng lại chính phiếu đó, cập nhật dòng và Company theo tồn hiện tại rồi ghi sổ, không xóa và không sinh phiếu thứ hai; (e) xử lý lại thành công hoặc nguồn đã có phiếu đã ghi sổ thì mọi thông báo `CONSUMPTION_FAILED` chưa đọc của nguồn đó, của mọi người nhận, chuyển Đã đọc qua `core.notification.resolve` (có Audit Log), nên cảnh báo Khẩn không còn trên trạm và không leo thang. |
+| 2026-11-03 | Amendment A-113 | Miyano (dev lead) + Claude Code; người dùng duyệt D1–D11 ngày 03/11/2026; chủ đầu tư chưa xác nhận | **SRS v1.12 — Mở rộng KSNK toàn viện** (BA v1.12 SRS-lite, 7 module mới M11–M17 + M9 mở rộng; 81 FR, 34 BRU, 7 NFR mới; quyết định D1–D11). **Nội dung kiến trúc:** (a) 7 Module Def mới `Infection Program` (M11, `tracecore/infection_program/`), `Compliance Audit` (M12), `HAI Surveillance` (M13), `Microbiology` (M14), `Environmental Hygiene` (M15), `Occupational Safety` (M16), `Food Safety` (M17); M9 `Admin Reports` thêm `IC Indicator Value`; không import chéo, chỉ qua `core`/Link/hook (§5.2). (b) ~45 DocType mới (§5.3.1 khối M11–M17, M9 mở rộng) + Custom Field trên HRMS `Training Program` (`tc_ic_category`), ERPNext `Supplier` (`tc_ic_service_type`, `tc_license_*`, `tc_contract_*`), `Item` (`tc_ic_chemical_type`), `Incident CAPA` (`incident_category` thêm Compliance / Environment / Occupational Exposure / Food Safety); `Import Batch` thêm loại import và `Import Mapping Profile`. (c) 33 naming series mới (§5.3.3: HDK-, ML-, KH-, QTK-, HH-, SV-, CI-, MP-, LGS-, GS-, HC-, DN-, MS-, DTB-, PT-, CA-, KY-, VS-, MDR-, PCL-, CL-, OD-, KB-, VV-, NG-, KLM-, XN-, PN-, TCH-, SKTP-, NDTP-, GDS-, IV-), không trùng tiền tố hiện có. (d) 3 hook mới `tracecore_ic_indicators` (mỗi module đăng ký hàm tính chỉ số cho M9), `tracecore_exposure_incident(incident)` (M10 gọi khi sự cố phơi nhiễm vật sắc nhọn; M16 đăng ký), `tracecore_mdro_detected(isolate)` (M14 gọi; M13 gắn nhãn người bệnh); 6 RPC mới `tracecore.v1.audit.record_opportunity`, `audit.submit_session`, `hai.census_upsert`, `hai.device_episode`, `exposure.report` (`@idempotent`), `indicator.values` (chỉ đọc). (e) **ADR-015 mới**: engine phiếu giám sát cấu hình được (`Audit Template` có phiên bản + `Audit Session`) dùng chung M12, M11, M13, M15, M16, M17. (f) **ADR-010 mở rộng**: RBAC 10 → **13 vai trò** (R11 Giám sát viên KSNK, R12 Mạng lưới viên KSNK, R13 Hội đồng KSNK & Ban Giám đốc); mã BN mã hóa (`patient_code` Password + `patient_code_hash`) áp dụng DocType M13/M14/M16; R12 và R08 giới hạn `User Permission` Department. **ADR-009 mở rộng**: tận dụng HRMS Training, Incident CAPA, Supplier, Environment Log, Notification Rule — không tạo DocType trùng. (g) **D3 giữ nguyên**: không tích hợp HIS/LIS (C-12 không đổi); thêm nhập file CSV/Excel xuất từ HIS (mẫu số, phẫu thuật, hóa chất) và WHONET/CSV (vi sinh) qua hồ sơ ánh xạ cột (EI-SW-007, FR-M9-26); thêm C-15 pháp lý v1.12. (h) `IC Indicator Value` tính và lưu khi khóa kỳ qua hook, bảng chỉ số chỉ đọc (NFR-PERF-05); phiếu/mẫu số/báo phơi nhiễm offline ≥ 4 giờ (NFR-AVAIL-05); nội dung chuyên môn (mẫu phiếu, định nghĩa ca, quy tắc đa kháng, ngưỡng môi trường, bước theo dõi phơi nhiễm) là fixtures Nháp có phiên bản, nâng cấp không ghi đè (NFR-MAINT-04); dữ liệu sức khỏe là dữ liệu cá nhân nhạy cảm theo NĐ 356/2025 (NFR-PRIV-01/02). (i) FEAT-056..074 trong `docs/implementation-plan.md` (số FEAT **dời +3** so với BA v1.12 vì FEAT-053..055 đã dùng cho A-110..112); giai đoạn 1 = FEAT-056..066, 2 = 067..072, 3 = 073..074. Xem §5.2, §5.3.1, §5.3.2, §5.3.3, §6.9, §6.10, §8, ADR-015, §10, §11, §12. |
 
 ---
 
 ## 1. Introduction and Goals
 
-**TraceCore** là phần mềm quản lý vận hành Khoa Kiểm soát Nhiễm khuẩn (CSSD-KSNK) của bệnh viện: truy xuất bộ dụng cụ qua chuỗi tái xử lý 8 trạm T1–T8 với mã vạch hai tầng (Set ID vĩnh viễn GS1 GIAI + Cycle ID dùng một lần), cổng kiểm soát 5 bước, quản lý đồ vải, nhân sự – chứng chỉ, thiết bị – bảo trì, kho vật tư tiêu hao, chi phí – giá thành, cơ số, báo cáo – quản trị và (từ v1.11) quản lý chất thải y tế rắn toàn bệnh viện. Hệ thống không tích hợp HIS/EMR; mã bệnh nhân nhập tay và mã hóa. Yêu cầu đầy đủ xem `docs/srs.md` (§1.2 phạm vi, §2.3 vai trò R01–R10, §3.1 FR theo M1–M10, §3.3 NFR); tài liệu này chỉ tóm tắt và tham chiếu.
+**TraceCore** là phần mềm quản lý vận hành Khoa Kiểm soát Nhiễm khuẩn (CSSD-KSNK) của bệnh viện: truy xuất bộ dụng cụ qua chuỗi tái xử lý 8 trạm T1–T8 với mã vạch hai tầng (Set ID vĩnh viễn GS1 GIAI + Cycle ID dùng một lần), cổng kiểm soát 5 bước, quản lý đồ vải, nhân sự – chứng chỉ, thiết bị – bảo trì, kho vật tư tiêu hao, chi phí – giá thành, cơ số, báo cáo – quản trị, (từ v1.11) quản lý chất thải y tế rắn toàn bệnh viện và (từ v1.12, Amendment A-113) **toàn bộ hoạt động KSNK toàn viện** theo TT 16/2018/TT-BYT: chương trình KSNK (M11), giám sát tuân thủ (M12), giám sát nhiễm khuẩn bệnh viện (M13), vi sinh – đa kháng – cách ly – ổ dịch (M14), vệ sinh môi trường (M15), an toàn nghề nghiệp (M16), an toàn thực phẩm và tư vấn người bệnh (M17), bảng chỉ số KSNK toàn viện (M9 mở rộng). Hệ thống không tích hợp HIS/EMR/LIS (D3); mã bệnh nhân nhập tay hoặc nhập file và mã hóa. Yêu cầu đầy đủ xem `docs/srs.md` (§1.2 phạm vi, §2.3 vai trò R01–R13, §3.1 FR theo M1–M17, §3.3 NFR); tài liệu này chỉ tóm tắt và tham chiếu.
 
 ### 1.1 Top quality goals (xếp hạng)
 
@@ -125,7 +126,8 @@
 | 2 | **Trạm vẫn chạy khi mất mạng** — ≥ 4 giờ offline, đồng bộ idempotent theo thời gian, Cycle ID từ dải cấp trước | NFR-AVAIL-02, NFR-AVAIL-04, FR-M9-06, FR-M2-07.11, EI-COM-004 | Offline queue IndexedDB trong Frappe PWA + `X-Idempotency-Key` + dải mã trạm (ADR-003); thiết bị ngoại vi không là SPOF (ADR-006/007) |
 | 3 | **Phản hồi quét ≤ 1 giây P95** dưới tải 40 trạm, 3.000 Cycle ID/ngày | NFR-PERF-01, NFR-PERF-02, NFR-SCAL-01 | RPC `tracecore.v1.*` mỏng, cache danh mục Redis, index theo mã quét, hook đồng bộ tối thiểu, việc nặng đẩy Redis Queue (§8.5) |
 | 4 | **Tuân thủ pháp lý và chuẩn mã** — GS1 DataMatrix, nhãn chịu hấp/plasma, TT 16/2018, QĐ 3671, TT 20/2021, NĐ 08/2022 | NFR-COMP-01, NFR-COMP-02, OTH-LEG-001..003 | GS1 encoder tại server (ADR-004); 2 loại nhãn gán theo máy in/cuộn (ADR-006); M10 cùng pattern M3 (ADR-013) |
-| 5 | **Bảo mật và bảo vệ dữ liệu bệnh nhân** — thẻ + PIN, RBAC 10 vai trò, Department permission, AES-256 | NFR-SEC-01/02/04/06/07/08, OTH-PRIV-001/002 | Frappe Role/User Permission + trường Password + hook kiểm tra khu trạm (ADR-010) |
+| 5 | **Bảo mật và bảo vệ dữ liệu bệnh nhân** — thẻ + PIN, RBAC 13 vai trò (A-113), Department permission, AES-256 | NFR-SEC-01/02/04/06/07/08/09, OTH-PRIV-001/002 | Frappe Role/User Permission + trường Password + hook kiểm tra khu trạm (ADR-010, mở rộng A-113) |
+| 5b [A-113] | **Bảo vệ dữ liệu sức khỏe là dữ liệu cá nhân nhạy cảm (NĐ 356/2025)** — tối thiểu hóa (không họ tên người bệnh, không kết quả xét nghiệm nhân viên), che mã BN trên danh sách/xuất, thời hạn lưu cấu hình được, nội dung chuyên môn có phiên bản | NFR-PRIV-01/02, NFR-MAINT-04, FR-M13-15, FR-M16-05/06 | `patient_code` Password + `patient_code_hash` trên DocType M13/M14/M16 (ADR-010 mở rộng); job xóa định danh hết hạn; fixtures Nháp không ghi đè (ADR-015, §8.2) |
 | 6 | **Vận hành được bởi đội nhỏ, cấu hình không code** | NFR-MAINT-01/02/03, NFR-PORT-01, NFR-BACKUP-01/02 | Modular monolith trên Frappe (ADR-001), tận dụng ERPNext/HRMS (ADR-009), on-prem + backup/DR (ADR-011), test + CI (ADR-012) |
 
 ### 1.2 Key stakeholders
@@ -137,6 +139,7 @@
 | R03–R08 KTV / nhân viên khoa | Quét nhanh ≤ 1 s, ≤ 3 chạm, cảnh báo đỏ rõ, dùng được khi đeo găng |
 | R09 Kế toán / Vật tư | Số liệu kho – giá thành khớp kế toán quản trị, xuất Excel |
 | R10 Phòng CNTT BV | On-prem Ubuntu, backup/DR, giám sát, vá lỗi, cấu hình không code |
+| R11 Giám sát viên KSNK · R12 Mạng lưới viên KSNK · R13 Hội đồng KSNK & Ban Giám đốc [A-113] | Phiếu giám sát ≤ 3 chạm trên PDA, offline; chỉ thấy khoa mình (R12); bảng chỉ số và báo cáo một trang không lộ từng người bệnh (R13) |
 | Miyano Dev + Claude Code | Một codebase Frappe app, test tự động, CI GitHub Actions, dev bench riêng |
 | Medcons PM/BA | Truy vết FR → ADR → feature; kiểm soát thay đổi (#00 CHG) |
 
@@ -159,9 +162,10 @@ Từ `srs.md` §2.5, §2.4 và `.architecture-inputs.md` (quyết định chủ 
 | C-09 | Mã vạch | Set ID = GS1 DataMatrix GIAI (AI 8004) duy nhất, tiền tố GS1 bệnh viện; Cycle ID = GS1 DataMatrix (01)(11)(17)(21); không Code-128 làm mã máy đọc | srs §2.5, NFR-COMP-02 | ADR-004 |
 | C-10 | Nhãn | Hai loại nhãn (hấp 134 °C / plasma H2O2) gán theo máy in/cuộn; chặn in sai loại (BRU-REP-011) | srs §2.5 | ADR-006 |
 | C-11 | Vận hành khoa | Một chiều 3 khu, máy hai cửa khai báo cửa vào/ra; mọi chứng từ Nháp → Ghi sổ → Hủy (không xóa) | srs §2.5, OTH-LEG-002 | Submittable DocType, `is_submittable=1`, cancel tạo bản ghi hủy |
-| C-12 | Tích hợp | Không tích hợp HIS/EMR; API `tracecore.v1` sẵn sàng mở; ERP BV chỉ nhận Excel/CSV | srs EI-SW-005/006 | §3, ADR-010 |
+| C-12 | Tích hợp | Không tích hợp HIS/EMR; API `tracecore.v1` sẵn sàng mở; ERP BV chỉ nhận Excel/CSV. **[A-113, D3 giữ nguyên]** không tích hợp HIS/LIS ở v1.12; mẫu số (ngày nằm viện, ngày thiết bị), danh sách phẫu thuật, hóa chất **nhập tay theo khoa hoặc nhập file CSV/Excel xuất từ HIS**; kết quả vi sinh nhập file WHONET/CSV — đều qua hồ sơ ánh xạ cột (`Import Mapping Profile`, FR-M9-26, EI-SW-007); API tích hợp chỉ mở khi chủ đầu tư quyết định riêng (FEAT-074) | srs EI-SW-005/006/007 | §3, ADR-010 |
 | C-13 | Tài chính | Bảng định giá có phiên bản; không tính lại giao dịch quá khứ (BRU-CST-002) | srs §2.5 | Domain model `Cost Rate Version` (§5.4) |
 | C-14 | Ngôn ngữ | Tiếng Việt chính, thuật ngữ QĐ 3671; bản dịch `vi` cho toàn bộ DocType/màn hình; nhãn thêm tiếng Anh | srs §2.5, NFR-USAB-02, NFR-L10N-01 | File `translations/vi.csv` trong app; Asia/Ho_Chi_Minh |
+| C-15 [A-113] | Pháp lý v1.12 | TT 16/2018/TT-BYT Điều 3–25 (tổ chức KSNK, Hội đồng, mạng lưới, giám sát, đào tạo, dịch vụ thuê ngoài); NĐ 96/2023 Điều 41; QĐ 3671 và QĐ 3916/QĐ-BYT (phòng ngừa chuẩn, giám sát NKBV, vệ sinh tay, vệ sinh bề mặt); QĐ 1526/QĐ-BYT (giám sát NKVM, NNIS, cửa sổ 30/90 ngày); QĐ 3596/QĐ-BYT (giám sát kháng thuốc, WHONET); QĐ 38/QĐ-BYT (chỉ tiêu KSNK 2025–2030); Luật Phòng bệnh 114/2025 + TT 15/2026 (khai báo bệnh truyền nhiễm); NĐ 356/2025/NĐ-CP (dữ liệu sức khỏe nhạy cảm); Luật ATTP 55/2010. **Không** dùng dự thảo thông tư thay TT 16/2018 (9/2026) làm căn cứ — chỉ để sẵn chỗ 14 nhóm biện pháp (`measure_group`) | srs v1.12 §2 | ADR-015 (tiêu chí là dữ liệu cấu hình có phiên bản, không hằng số trong code); ADR-010 mở rộng; NFR-PRIV-01/02 |
 
 ---
 
@@ -169,22 +173,23 @@ Từ `srs.md` §2.5, §2.4 và `.architecture-inputs.md` (quyết định chủ 
 
 ### 3.1 Ranh giới hệ thống
 
-Bên trong: một Frappe site chạy app `tracecore` cùng `erpnext`, `hrms` (+ `insights`, `print_designer`) với mọi lớp UI (Desk, kiosk, PDA PWA, cổng khoa), scheduler, hàng đợi, CSDL và **station agent** do dự án xây dựng. Bên ngoài: người dùng 10 vai trò, thiết bị ngoại vi (máy quét, máy in nhãn, cân, máy rửa/tiệt khuẩn, cảm biến), email/SMS gateway của bệnh viện, đơn vị xử lý chất thải (actor ngoài, ký nhận), ERP bệnh viện (nhận file). HIS/EMR **không** nằm trong ngữ cảnh (chỉ giữ API sẵn sàng).
+Bên trong: một Frappe site chạy app `tracecore` cùng `erpnext`, `hrms` (+ `insights`, `print_designer`) với mọi lớp UI (Desk, kiosk, PDA PWA, cổng khoa), scheduler, hàng đợi, CSDL và **station agent** do dự án xây dựng. Bên ngoài: người dùng 13 vai trò (R01–R10 + R11–R13 từ A-113), thiết bị ngoại vi (máy quét, máy in nhãn, cân, máy rửa/tiệt khuẩn, cảm biến), email/SMS gateway của bệnh viện, đơn vị xử lý chất thải (actor ngoài, ký nhận), ERP bệnh viện (nhận file), [A-113] HIS và phòng xét nghiệm vi sinh (chỉ **gửi file** CSV/Excel/WHONET để nhập qua hồ sơ ánh xạ cột — không tích hợp), đơn vị thuê ngoài (vệ sinh, giặt là, suất ăn — actor được giám sát, giấy phép theo dõi trên ERPNext Supplier). HIS/EMR/LIS **không** nằm trong ngữ cảnh (chỉ giữ API sẵn sàng).
 
 ### 3.2 System Context (C4 L1)
 
 ```mermaid
 flowchart TB
-    subgraph users["Người dùng (10 vai trò)"]
+    subgraph users["Người dùng (13 vai trò)"]
         r01["R01 Trưởng khoa KSNK<br/>(Desk, duyệt)"]
         r02["R02 Giám sát CSSD<br/>(Desk + mọi trạm)"]
         r0307["R03–R07 KTV trạm / đồ vải / chất thải<br/>(kiosk cảm ứng, PDA)"]
         r08["R08 Nhân viên khoa sử dụng<br/>(PDA T8, Cổng khoa)"]
         r09["R09 Kế toán / Vật tư (Desk)"]
         r10["R10 Quản trị CNTT (Desk)"]
+        r1113["R11 Giám sát viên KSNK · R12 Mạng lưới viên · R13 Hội đồng KSNK<br/>(PDA phiếu giám sát, Cổng khoa, Desk bảng chỉ số) [A-113]"]
     end
 
-    tc["<b>TraceCore</b><br/>Frappe/ERPNext v15 site · app tracecore<br/>M1–M10 · Desk · Kiosk · PDA PWA · Cổng khoa<br/>Scheduler · Queue · Audit · Print · Notification"]
+    tc["<b>TraceCore</b><br/>Frappe/ERPNext v15 site · app tracecore<br/>M1–M17 · Desk · Kiosk · PDA PWA · Cổng khoa<br/>Scheduler · Queue · Audit · Print · Notification"]
 
     subgraph periph["Thiết bị ngoại vi (qua station agent / HID)"]
         scanner["Máy quét 2D<br/>HID / serial"]
@@ -199,6 +204,7 @@ flowchart TB
         vendor["Đơn vị xử lý chất thải<br/>(ký nhận, số chứng từ CTNH)"]
         erp["ERP bệnh viện<br/>(nhận Excel/CSV)"]
         his["HIS / EMR<br/>KHÔNG tích hợp"]
+        hisfile["HIS / LIS vi sinh<br/>file CSV · Excel · WHONET (A-113)"]
     end
 
     r01 -->|"HTTPS"| tc
@@ -207,6 +213,7 @@ flowchart TB
     r08 -->|"HTTPS · PWA offline"| tc
     r09 -->|"HTTPS"| tc
     r10 -->|"HTTPS · cấu hình"| tc
+    r1113 -->|"HTTPS · PWA offline · phiếu ≤ 3 chạm"| tc
     scanner -->|"chuỗi quét"| tc
     tc -->|"lệnh in ZPL/TSPL"| printer
     scale -->|"số cân"| tc
@@ -217,13 +224,14 @@ flowchart TB
     tc -->|"phiếu bàn giao PDF"| vendor
     tc -->|"xuất file"| erp
     his -.-|"API tracecore.v1 sẵn sàng mở"| tc
+    hisfile -->|"nhập file qua Import Mapping Profile"| tc
 
     classDef person fill:#08427b,stroke:#052e56,color:#fff
     classDef internal fill:#1168bd,stroke:#0b4884,color:#fff
     classDef external fill:#999,stroke:#666,color:#fff
-    class r01,r02,r0307,r08,r09,r10 person
+    class r01,r02,r0307,r08,r09,r10,r1113 person
     class tc internal
-    class scanner,printer,scale,machine,sensor,mail,vendor,erp,his external
+    class scanner,printer,scale,machine,sensor,mail,vendor,erp,his,hisfile external
 ```
 
 ### 3.3 Giao diện ngoài chính
@@ -239,12 +247,15 @@ flowchart TB
 | Đơn vị xử lý chất thải | Ký cảm ứng (Signature) / ảnh biên bản (Attach); PDF phiếu bàn giao | Hai chiều (thủ công) | FR-M10-04 |
 | ERP bệnh viện | Xuất Excel/CSV từ Report / Data Export | Ra | EI-SW-006 |
 | HIS/EMR | Không tích hợp; REST `/api/resource` + RPC `/api/method/tracecore.v1.*` giữ sẵn | — | EI-SW-004/005 |
+| HIS (file xuất) [A-113] | File CSV/Excel do HIS xuất (mẫu số ngày theo khoa, danh sách phẫu thuật, hóa chất) → Data Import qua `Import Batch` + `Import Mapping Profile` (ánh xạ cột lưu theo nguồn, kiểm từng dòng, báo lỗi theo dòng) | Vào (thủ công, R11/R10) | EI-SW-007, FR-M9-26, FR-M13-02 |
+| Phòng xét nghiệm vi sinh (LIS) [A-113] | File WHONET/CSV (định danh, kháng sinh đồ S/I/R, MIC) → `Import Batch` loại Microbiology → `Microbiology Isolate`; không có file → nhập tay có xác nhận | Vào (thủ công) | EI-SW-007, FR-M14-01/02 |
+| Cơ quan quản lý (báo cáo KSNK) [A-113] | Xuất Excel/CSV theo ánh xạ cột cấu hình được (NKVM, NK hồi sức, kháng thuốc), PDF báo cáo Hội đồng, gói hồ sơ KSNK | Ra | FR-M13-12, FR-M14-08, FR-M9-23, FR-M9-28 |
 
 ---
 
 ## 4. Solution Strategy
 
-1. **Modular monolith trên một Frappe site** — app `tracecore` (10 module Frappe = M1–M10) cài cạnh `erpnext`, `hrms`, (`insights`, `print_designer`) trong một bench; một deployable, một CSDL MariaDB, một Redis; ranh giới module theo phân hệ, phụ thuộc hướng vào `tracecore.core` (step gate, GS1, audit, idempotency). → ADR-001.
+1. **Modular monolith trên một Frappe site** — app `tracecore` (17 module Frappe = M1–M17, [A-113]) cài cạnh `erpnext`, `hrms`, (`insights`, `print_designer`) trong một bench; một deployable, một CSDL MariaDB, một Redis; ranh giới module theo phân hệ, phụ thuộc hướng vào `tracecore.core` (step gate, GS1, audit, idempotency). → ADR-001.
 2. **Mọi UI là Frappe UI** — Desk (Workspace/DocType form/List/Report) cho R01/R02/R09/R10; **kiosk trạm** = Frappe `Page` full-screen tùy biến (JS + Frappe UI components) chạy Chromium kiosk; **PDA** = cùng Page đóng gói **PWA** (manifest + Service Worker do app `tracecore` cung cấp qua `website_route_rules`); **Cổng khoa** = Portal Page/Web Form. Không SPA riêng. → ADR-002.
 3. **Offline-first cho trạm/PDA** — hàng đợi IndexedDB, phát lại theo thứ tự thời gian với `X-Idempotency-Key`, bảng `Idempotency Key` server-side, dải Cycle ID cấp trước theo trạm (`Code Range`), xung đột → R02 qua `Sync Conflict`. → ADR-003.
 4. **Mã GS1 sinh và mã hóa tại server** — `tracecore.core.gs1` sinh GIAI/(01)(11)(17)(21), encoder DataMatrix (pylibdmtx) để nhúng ảnh vào Print Format hoặc gửi lệnh ZPL `^BX`/TSPL `DMATRIX`. → ADR-004.
@@ -253,11 +264,12 @@ flowchart TB
 7. **Dữ liệu máy hai nguồn** — `data_source` = Tự động (agent) | Nhập tay có xác nhận; `data_complete` là điều kiện đóng lô/mẻ. → ADR-007.
 8. **Audit bất biến** — DocType `Audit Log` append-only (hook `doc_events` cho mọi DocType nghiệp vụ, RPC trạm, đăng nhập/từ chối, ghi đè) + Frappe `Version` làm diff chi tiết; cấm Delete ở tầng permission và hook `on_trash`. → ADR-008.
 9. **Tận dụng ERPNext/HRMS** — Item/Batch/Warehouse/Stock Entry cho M6; Asset cho khấu hao M5/M7; Non Conformance/Quality Action cho NC-CAPA; Employee/Shift/Skill Map cho M4; Department = khoa. DocType `tracecore` chỉ mang phần nghiệp vụ CSSD. → ADR-009.
-10. **Bảo mật** — thẻ + PIN (bcrypt) tại trạm, 2FA cho web, RBAC 10 vai trò, User Permission theo Department cho R08, AES-256 (trường Password) cho mã bệnh nhân, TLS nội bộ, API key agent. → ADR-010.
+10. **Bảo mật** — thẻ + PIN (bcrypt) tại trạm, 2FA cho web, RBAC 13 vai trò (A-113), User Permission theo Department cho R08 và R12, AES-256 (trường Password) cho mã bệnh nhân, TLS nội bộ, API key agent. → ADR-010.
 11. **On-prem + backup/DR** — bench production tại BV; `bench backup --with-files` hằng ngày + binlog 15 phút + rsync ngoài site mã hóa; staging trên bench Miyano. → ADR-011.
 12. **Testing & CI** — `FrappeTestCase` (unit/integration) + Playwright (Python) E2E cho UC-05/06/08/09/10/13; coverage enforced ≥ 70% changed-code; GitHub Actions với frappe_docker. → ADR-012.
 13. **M10 chất thải dùng cùng pattern thu gom/cân/đối chiếu như M3** — `Waste Collection` ~ `Linen Collection`; thêm `Waste Container` (túi/thùng QR `CT-`), `Waste Storage Location`, `Waste Handover`, `Waste Treatment Vendor`. → ADR-013.
 14. **Notification** — Frappe `Notification` + `Email Queue` + DocType `Notification Rule`/`Notification Log` cho cấu hình người nhận theo sự kiện, trạng thái gửi/đọc, retry; SMS qua adapter. → ADR-014.
+15. **Engine phiếu giám sát cấu hình được [A-113]** — `Audit Template` có phiên bản (R01 duyệt = ghi sổ) + `Audit Session` (bản chụp phiên bản mẫu, child `Audit Answer`, `Hand Hygiene Opportunity`) dùng chung cho vệ sinh tay, phòng ngừa chuẩn, gói dự phòng, vệ sinh môi trường, đơn vị thuê ngoài, an toàn thực phẩm, tự đánh giá; chạy trên PDA/Cổng khoa offline, RPC `@idempotent`; chỉ số M9 tính qua hook `tracecore_ic_indicators` và lưu `IC Indicator Value` khi khóa kỳ. Tiêu chí chuyên môn là dữ liệu cấu hình có phiên bản, không hằng số trong code. → ADR-015.
 
 ---
 ## 5. Building Block View
@@ -351,6 +363,21 @@ App `tracecore` tổ chức theo **module Frappe = phân hệ**. Tên module (th
 > - `hr` (M4): hiện chỉ là package `tracecore/hr/`, chưa đăng ký Module Def. Khi M4 có DocType đầu tiên, đặt tên module khác `HR` qua amendment.
 > - Module Def đăng ký: `TraceCore, Instrument, Reprocessing, Linen, Equipment, Inventory, Costing, Par, Admin Reports, Waste, UI`.
 
+> **Amendment A-113 (2026-11-03) — 7 Module Def mới cho KSNK toàn viện (v1.12).** Tên chọn để không trùng Module Def của frappe/erpnext/hrms (kiểm `Module Def` trên bench trước khi tạo). Mỗi module là một package Python riêng; `modules.txt` thêm 7 dòng.
+> 
+> | Mã | Module Def | Package Python | DocType chính |
+> | --- | --- | --- | --- |
+> | M11 | `Infection Program` | `tracecore/infection_program/` | IC Program Settings, IC Committee, IC Network Member, IC Indicator, IC Annual Plan, IC Procedure Document, IC Committee Meeting, Trainee Induction, IC Improvement Project |
+> | M12 | `Compliance Audit` | `tracecore/compliance_audit/` | Audit Template, Audit Schedule, Audit Session, IC Chemical Consumption |
+> | M13 | `HAI Surveillance` | `tracecore/hai_surveillance/` | HAI Case Definition, Ward Daily Census, Device Episode, Surgical Procedure Group, Surgical Surveillance, HAI Case, IC Reporting Period |
+> | M14 | `Microbiology` | `tracecore/microbiology/` | Organism, Microbiology Isolate, MDRO Rule, Isolation Room, Isolation Order, Outbreak Investigation, Notifiable Disease Report |
+> | M15 | `Environmental Hygiene` | `tracecore/environmental_hygiene/` | Environment Zone, Environmental Limit, Sampling Plan, Environmental Sample |
+> | M16 | `Occupational Safety` | `tracecore/occupational_safety/` | Occupational Exposure, Exposure Follow-up Template, Staff Immunization, Immunization Requirement |
+> | M17 | `Food Safety` | `tracecore/food_safety/` | Food Handler Health Check, Foodborne Event, IC Education Session |
+> | M9 | `Admin Reports` (có sẵn) | `tracecore/admin_reports/` | thêm IC Indicator Value; Import Batch (module `TraceCore`) thêm loại import và `Import Mapping Profile` |
+> 
+> Quy tắc: **không import chéo** giữa M11–M17 và với M1–M10 — chỉ Link, hook hoặc dịch vụ `core`. M12 là lõi kỹ thuật (engine phiếu, ADR-015): M11 (tự đánh giá), M13 (gói dự phòng gắn `device_episode`), M15 (phiếu vệ sinh môi trường, hạ tầng), M16 (không dùng phiếu; nhận sự cố từ M10 qua hook), M17 (phiếu ATTP) dùng `Audit Template`/`Audit Session` qua Link và `audit_type`, không gọi hàm nội bộ M12. Chỉ số của mọi module đi vào M9 qua hook `tracecore_ic_indicators` (mỗi module đăng ký `(indicator_code → callable(period, department))` trong `hooks.py`); M9 không import module nghiệp vụ. Hook/RPC mới ghi ở bảng component dưới và §3.4 của BA v1.12. Module Def đăng ký sau A-113: `TraceCore, Instrument, Reprocessing, Linen, Equipment, Inventory, Costing, Par, Admin Reports, Waste, UI, Infection Program, Compliance Audit, HAI Surveillance, Microbiology, Environmental Hygiene, Occupational Safety, Food Safety`.
+
 ```mermaid
 flowchart TB
     subgraph app["app tracecore"]
@@ -362,7 +389,7 @@ flowchart TB
             auth["station_auth<br/>thẻ + PIN · năng lực · phiên 8h"]
             printsvc["print<br/>Label Template · Print Job · chọn máy in theo loại nhãn"]
             notify["notification<br/>Notification Rule · Log · SMS adapter"]
-            api["api/v1<br/>RPC tracecore.v1.* (40+ endpoint)"]
+            api["api/v1<br/>RPC tracecore.v1.* (40+ endpoint · +6 A-113: audit · hai · exposure · indicator)"]
         end
         m1["M1 instrument<br/>Instrument · Set Type · BOM · Set Unit · Loaner · Maint"]
         m2["M2 reprocessing<br/>Receipt · Wash Batch · Assembly · Pack · Load · Load Test · Sterile Location · Issue · Usage · Recall · Incident"]
@@ -374,6 +401,15 @@ flowchart TB
         m8["M8 par<br/>Par Level · Par Override"]
         m9["M9 admin_reports<br/>Zone Station · Audit Log · Dashboard · Sổ tiệt khuẩn · Import/Export"]
         m10["M10 waste<br/>Waste Type · Container · Collection · Storage · Handover · Vendor · Quota"]
+        subgraph ksnk["KSNK toàn viện (A-113)"]
+            m11["M11 infection_program<br/>IC Committee · Network · Annual Plan · Procedure Doc · Indicator"]
+            m12["M12 compliance_audit<br/>Audit Template · Schedule · Session · Chemical Consumption"]
+            m13["M13 hai_surveillance<br/>Census · Device Episode · HAI Case · Surgical · Reporting Period"]
+            m14["M14 microbiology<br/>Isolate · MDRO Rule · Isolation · Outbreak · Notifiable"]
+            m15["M15 environmental_hygiene<br/>Zone · Limit · Sampling Plan · Sample"]
+            m16["M16 occupational_safety<br/>Exposure · Follow-up · Immunization"]
+            m17["M17 food_safety<br/>Handler Health · Foodborne Event · Education"]
+        end
         ui["ui<br/>Page station · PWA sw.js · Workspace · Portal"]
     end
     erp["erpnext: Stock · Buying · Assets · Accounts · Quality"]
@@ -413,6 +449,36 @@ flowchart TB
     m1 --> audit
     m2 --> audit
     m10 --> audit
+    m11 -.->|"Link Audit Template (tự đánh giá)"| m12
+    m13 -.->|"Link device_episode"| m12
+    m15 -.->|"Link environment_zone · audit_type"| m12
+    m17 -.->|"Link Audit Session · Environmental Sample"| m12
+    m17 -.-> m15
+    m10 -.->|"hook tracecore_exposure_incident"| m16
+    m14 -.->|"hook tracecore_mdro_detected"| m13
+    m11 -.->|"hook tracecore_ic_indicators"| m9
+    m12 -.-> m9
+    m13 -.-> m9
+    m14 -.-> m9
+    m15 -.-> m9
+    m16 -.-> m9
+    m11 --> hrms
+    m12 --> erp
+    m16 --> hrms
+    api --> m12
+    api --> m13
+    api --> m16
+    m12 --> idem
+    m13 --> idem
+    m16 --> idem
+    m12 --> notify
+    m13 --> notify
+    m14 --> notify
+    m16 --> notify
+    m12 --> audit
+    m13 --> audit
+    m14 --> audit
+    m16 --> audit
 ```
 
 | Component | Trách nhiệm chính | FR chính |
@@ -425,11 +491,18 @@ flowchart TB
 | `core.print` | `Label Template` (Jinja/ZPL/TSPL theo phương pháp), `Printer` (gắn `Zone Station`, loại nhãn đang nạp), `Print Job` hàng đợi/retry; chặn in sai loại | FR-M2-08, FR-M1-05.4, EI-HW-003/008 |
 | `core.notification` | `Notification Rule` (sự kiện → vai trò/người → kênh), `Notification Log` (đã gửi/đã đọc), adapter SMS, retry | FR-M9-10 |
 | `core.api.v1` | Whitelisted methods `tracecore.v1.<domain>.<action>`; validate khu trạm; wrap idempotency; rate limit | EI-SW-004 |
-| `ui` | Page `station` (router theo trạm T1..T8, đồ vải, chất thải), `sw.js`, `manifest.json`, Workspace M1–M10, Portal khoa | EI-UI-001..004, FR-M9-14 |
+| `ui` | Page `station` (router theo trạm T1..T8, đồ vải, chất thải), `sw.js`, `manifest.json`, Workspace M1–M10 (+ M11–M17, A-113), Portal khoa (+ mẫu số ngày, đợt thiết bị, cách ly, chỉ số khoa — A-113) | EI-UI-001..004, FR-M9-14, FR-M9-24 |
+| `compliance_audit` engine [A-113] | `Audit Template` (phiên bản, `scoring_method`, `min_sample`, child `Audit Template Item` weight/is_critical), `Audit Schedule` giao việc theo kỳ, `Audit Session` (bản chụp mẫu, `Audit Answer`, `Hand Hygiene Opportunity`), tính điểm theo 3 phương pháp, phản hồi khoa, đề nghị NC khi mục trọng yếu không đạt; RPC `tracecore.v1.audit.record_opportunity` / `audit.submit_session` (`@idempotent`) | FR-M12-01..11, 14; ADR-015 |
+| `hai_surveillance` [A-113] | `Ward Daily Census` (unique ngày–khoa), `Device Episode` (ngày thiết bị), `HAI Case` (định nghĩa ca có phiên bản tại ngày khởi phát), `Surgical Surveillance` (NNIS, cửa sổ 30/90 ngày, theo dõi sau ra viện), `IC Reporting Period` (khóa kỳ); RPC `tracecore.v1.hai.census_upsert` / `hai.device_episode` (`@idempotent`); nhận `tracecore_mdro_detected` để gắn nhãn người bệnh | FR-M13-01..15 |
+| `microbiology` [A-113] | Import WHONET/CSV → `Microbiology Isolate` (+ `Isolate Susceptibility`), `MDRO Rule` có phiên bản chạy khi có chủng mới, chủng đầu tiên/người bệnh–loài, `Isolation Order`/`Isolation Room`, `Outbreak Investigation` (đường cong dịch), `Notifiable Disease Report` (hạn theo nhóm A/B/C); phát hook `tracecore_mdro_detected` | FR-M14-01..10 |
+| `environmental_hygiene` [A-113] | `Environment Zone` (mức nguy cơ, bên chịu trách nhiệm), `Environmental Limit` có phiên bản, `Sampling Plan`, `Environmental Sample` (so ngưỡng tại ngày lấy mẫu, lấy mẫu lại); phiếu VSMT/hạ tầng qua M12 | FR-M15-01..07 |
+| `occupational_safety` [A-113] | `Occupational Exposure` (báo ≤ 3 bước, thời gian đến báo cáo/dự phòng, lịch theo dõi từ `Exposure Follow-up Template`), `Staff Immunization`/`Immunization Requirement` (`next_due`, nhắc qua cơ chế FR-M4-01.4); đăng ký hook `tracecore_exposure_incident` từ M10; RPC `tracecore.v1.exposure.report` (`@idempotent`); không trường kết quả xét nghiệm/chẩn đoán | FR-M16-01..09 |
+| `infection_program` · `food_safety` [A-113] | Cơ cấu KSNK (BRU-ICP-001 theo số giường), `IC Annual Plan` (R13 ghi sổ = duyệt), `IC Procedure Document` (hạn rà soát), `IC Committee Meeting` → việc theo kết luận, đào tạo trên HRMS Training (`tc_ic_category`), `IC Improvement Project`; `Food Handler Health Check`, `Foodborne Event`, `IC Education Session` + QR tài liệu | FR-M11-01..13, FR-M17-01..06 |
+| `admin_reports.indicator` [A-113] | `IC Indicator` (danh mục, `measure_group` 14 nhóm, `source_method` = hàm đăng ký qua hook), `IC Indicator Value` materialized khi khóa kỳ (`locked`), bảng chỉ số KSNK, báo cáo một trang Hội đồng (scheduler ngày làm việc thứ 5), view Cổng khoa, tự đánh giá QĐ 38, gói hồ sơ KSNK; RPC `tracecore.v1.indicator.values` (chỉ đọc); `Import Mapping Profile` cho nhập file ngoài | FR-M9-22..28; NFR-PERF-05 |
 
 ### 5.3 Conceptual domain model
 
-Mục này là **nguồn chuẩn cho detailed-design và implementation-planning**: mọi DocType của app `tracecore` phải có ở đây (40 gốc từ #08 giữ nguyên tên EN + **23 DocType mới v1.11**). DocType mới không có trong bảng sẽ bị coi là cần amendment kiến trúc. Tên theo quy ước Frappe Title Case; child table đánh dấu *(child)*. Cột "ERPNext/HRMS" ghi DocType nền tảng được tận dụng (theo #12 §5.2–5.3, ADR-009): **Link** = trỏ tới DocType ERPNext; **Ext** = mở rộng bằng Custom Field; **Thay** = dùng DocType ERPNext thay vì tự xây.
+Mục này là **nguồn chuẩn cho detailed-design và implementation-planning**: mọi DocType của app `tracecore` phải có ở đây (40 gốc từ #08 giữ nguyên tên EN + **23 DocType mới v1.11** + **45 DocType mới v1.12 / A-113** cho M11–M17 và M9 mở rộng). DocType mới không có trong bảng sẽ bị coi là cần amendment kiến trúc. Tên theo quy ước Frappe Title Case; child table đánh dấu *(child)*. Cột "ERPNext/HRMS" ghi DocType nền tảng được tận dụng (theo #12 §5.2–5.3, ADR-009): **Link** = trỏ tới DocType ERPNext; **Ext** = mở rộng bằng Custom Field; **Thay** = dùng DocType ERPNext thay vì tự xây.
 
 #### 5.3.1 Danh sách DocType
 
@@ -714,7 +787,92 @@ Mục này là **nguồn chuẩn cho detailed-design và implementation-planning
 
 Sự cố chất thải dùng `Incident CAPA` (thêm `incident_category` = Chất thải, `waste_type`, `waste_source_doc`). Báo cáo M10 = Script Report + Print Format, không DocType.
 
-**Tổng:** 40 DocType gốc (trong đó 5 **Thay** bằng ERPNext/HRMS: Employee, Shift Assignment, Consumable Item, Stock Entry, Stock Count — phần mở rộng là Custom Field thuộc `tracecore` fixtures) + 23 DocType mới = **63 DocType khái niệm**, 58 DocType tự tạo trong app `tracecore` (chưa tính child table).
+**M11 — Chương trình KSNK (9 mới) [A-113]** — Module Def `Infection Program`. Căn cứ TT 16/2018 Điều 3, 16–22, 24; NĐ 96/2023 Điều 41; chỉ tiêu QĐ 38.
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **IC Program Settings** | — | *Single*: `bed_count`, `facility_level` (Chuyên sâu / Cơ bản / Ban đầu), `has_inpatient`, `surveillance_ratio_beds` (mặc định 150), `doc_review_months` (mặc định 12); tính cơ cấu KSNK bắt buộc theo BRU-ICP-001 và hiển thị thành phần Thiếu | — | FR-M11-01 |
+| **IC Committee** | — | Quyết định thành lập Hội đồng: `decision_no`, `decision_date`, `decision_file`, `valid_from`, `valid_to`; child **IC Committee Member** (`employee`, `committee_role` Chủ tịch / Phó Chủ tịch / Thư ký / Ủy viên, `department`, `representing` Vi sinh–Xét nghiệm / Dược / Lâm sàng nguy cơ cao / Chức năng / Khác); submittable, chặn khi không đúng 1 Chủ tịch + 1 Thư ký (BRU-ICP-002) | Link Employee, Department | FR-M11-02 |
+| **IC Network Member** | — | Mạng lưới viên: `employee`, `department`, `member_type` (Bác sĩ / Điều dưỡng / Hộ sinh / Kỹ thuật viên), `appointed_on`, `decision_no`, `is_active`; kiểm mỗi khoa ≥ 1 bác sĩ + ≥ 1 điều dưỡng/hộ sinh/KTV (BRU-ICP-003); gán Role R12 + User Permission Department | Link Employee, Department | FR-M11-03 |
+| **IC Indicator** | — | Danh mục chỉ số: `code` (PK), `indicator_name`, `measure_group` (14 nhóm — phụ lục BA §13.2), `kind` (Tỷ lệ % / Tỷ suất ‰1000 / Số đếm), `source_method` (hàm tính đăng ký qua hook `tracecore_ic_indicators`), `frequency`, `national_target`, `target_ref` (QĐ 38…) | — | FR-M9-22, FR-M9-25, FR-M11-04 |
+| **IC Annual Plan** | — | Kế hoạch KSNK năm, submittable (R13 ghi sổ = phê duyệt, BRU-ICP-004; một kế hoạch hiệu lực/năm, sửa bằng bản Amend): `year`, `objectives`; child **IC Plan Indicator** (`indicator`, `baseline`, `target`), **IC Plan Activity** (`activity`, `measure_group`, `owner`, `department`, `due_date`, `budget_vnd`, `status`, `evidence`); `approved_by`, `approved_on`, `summary` (tổng kết năm từ M9/M12/M13) | Link Employee, Department | FR-M11-04, FR-M11-05, FR-M11-06 |
+| **IC Procedure Document** | — | Sổ quy định/quy trình nội bộ: `doc_code`, `title`, `version_no`, `measure_group`, `issued_on`, `review_due`, `file`, `status` (Hiệu lực / Cần rà soát / Thay thế), `supersedes`; nhắc 30 ngày trước hạn rà soát (BRU-ICP-005); loại "Tài liệu truyền thông" dùng cho FR-M17-06 (QR) | — | FR-M11-07, FR-M17-06 |
+| **IC Committee Meeting** | — | Biên bản họp Hội đồng, submittable: `meeting_date`, `agenda`, child `attendees`, `minutes`, `minutes_file`; child **IC Resolution** (`content`, `owner`, `due_date`, `status`) → mỗi kết luận một việc có nhắc | Link Employee | FR-M11-08 |
+| **Trainee Induction** | — | Sinh viên thực tập: `full_name`, `school`, `department`, `period_from`, `period_to`, `trained_on` (≤ ngày bắt đầu), `result` | Link Department | FR-M11-11 |
+| **IC Improvement Project** | — | Dự án cải tiến chất lượng / đề tài nghiên cứu: `project_type`, `title`, `measure_group`, `lead`, `start_date`, `end_date`, `status`, `result_summary`, `attachments` | Link Employee | FR-M11-12 |
+| *HRMS Training Program / Training Event / Training Result* | — | **Thay** (ADR-009): đào tạo KSNK chạy trên HRMS; Custom Field `tc_ic_category` (KSNK cơ bản / Chuyên trách / Hội đồng–mạng lưới / Tân tuyển); M11 chỉ tính tỷ lệ đã đào tạo theo khoa/nhóm và nhắc người chưa học | Ext HRMS Training | FR-M11-09, FR-M11-10 |
+
+**M12 — Giám sát tuân thủ (4 mới) [A-113]** — Module Def `Compliance Audit`; lõi kỹ thuật v1.12 (ADR-015), các module khác dùng chung engine phiếu qua Link.
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **Audit Template** | — | Mẫu phiếu có phiên bản, submittable (ghi sổ = R01 duyệt, khóa nội dung; sửa = phiên bản mới, BRU-AUD-001): `template_code`, `title`, `audit_type` (Vệ sinh tay / Phòng ngừa chuẩn–PPE / Gói dự phòng / Vệ sinh môi trường / Cơ sở hạ tầng / Đơn vị thuê ngoài / An toàn thực phẩm / Tự đánh giá chất lượng / Khác), `version_no`, `effective_from`, `scoring_method` (Theo cơ hội / Tất cả-hoặc-không / Điểm %), `bundle_type` (VAP / CLABSI / CAUTI / SSI / Khác), `min_sample`, `legal_ref`; child **Audit Template Item** (`item_code`, `section`, `question`, `answer_type`, `options`, `weight`, `is_critical`, `guidance`). Bộ mẫu khởi tạo là fixtures Nháp (FR-M12-02, NFR-MAINT-04) | — | FR-M12-01, FR-M12-02, FR-M12-06 |
+| **Audit Schedule** | — | Lịch giám sát: `template_code`, child `departments`, `frequency` (Tuần / Tháng / Quý), `target_count`, `assignee`, `active`; scheduler giao việc đến kỳ và tính độ bao phủ | Link Department, Employee | FR-M12-03 |
+| **Audit Session** | — | Phiếu giám sát, submittable: `audit_template` (bản chụp phiên bản), `department`, `location`, `observer` (Employee; ≠ người được quan sát, BRU-AUD-004), `mode` (Công khai / Không báo trước), `started_at`, `ended_at`, `supplier` (loại thuê ngoài / suất ăn), `device_episode` (Link M13 khi loại gói dự phòng), `environment_zone` (Link M15), `next_due` (loại hạ tầng), `score_pct`, `result` (Đạt / Không đạt), `sample_flag`; child **Audit Answer** (`item_code`, `answer`, `value`, `photo`, `note`) và **Hand Hygiene Opportunity** (`subject_role`, `subject_employee`, `moment` 1–5, `action` Chà tay cồn / Rửa tay xà phòng / Không thực hiện, `technique_ok`, `glove_instead`); ghi từ PDA offline qua RPC `@idempotent` | Link Department, Employee, Supplier | FR-M12-04, FR-M12-05, FR-M12-07, FR-M12-08, FR-M12-09, FR-M12-10, FR-M12-11, FR-M11-13, FR-M15-02, FR-M15-06, FR-M17-01 |
+| **IC Chemical Consumption** | — | Hóa chất KSNK theo khoa–tháng: `period`, `department`, `item` (Item có `tc_ic_chemical_type`: Dung dịch VST nhanh / Xà phòng / Khử khuẩn bề mặt / Khử khuẩn dụng cụ / Khác), `qty`, `uom`, `source` (Stock Entry / Import / Nhập tay), `source_ref`; tính lít/1.000 ngày nằm viện | Link Department, Item; hook Stock Entry | FR-M12-12 |
+| *ERPNext Supplier* | — | **Ext**: đơn vị thuê ngoài (`tc_ic_service_type` Vệ sinh công nghiệp / Giặt là / Xử lý chất thải / Tiệt khuẩn / Suất ăn / Khác, `tc_license_no`, `tc_license_expiry`, `tc_contract_from`, `tc_contract_to`); nhắc 60/30/7 ngày và hết hạn (BRU-AUD-006: chỉ cảnh báo, không chặn) | Ext Supplier | FR-M12-13 |
+| *Incident CAPA* | — | **Ext**: `incident_category` thêm Compliance (nguồn Audit Session), Environment (M15), Occupational Exposure (M16, chỉ mô tả nguyên nhân quy trình), Food Safety (M17); `source_doctype`/`source_name` | — | FR-M12-09, FR-M15-04, FR-M16-01, FR-M17-04 |
+
+**M13 — Giám sát nhiễm khuẩn bệnh viện (7 mới) [A-113]** — Module Def `HAI Surveillance`. Mọi DocType có người bệnh dùng `patient_code` Password + `patient_code_masked` + `patient_code_hash` (ADR-010 mở rộng); **không** có trường họ tên (BRU-HAI-005, NFR-PRIV-01).
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **HAI Case Definition** | — | Định nghĩa ca có phiên bản, submittable (R01 duyệt): `def_code`, `infection_site` (NKVM nông / sâu / cơ quan–khoang / Viêm phổi thở máy / NK huyết liên quan catheter / NK tiết niệu liên quan thông tiểu / Khác), `criteria`, `device_type`, `min_hours_after_admission`, `min_device_days_before_onset`, `version_no`, `effective_from`, `legal_ref`; áp dụng phiên bản hiệu lực tại ngày khởi phát (BRU-HAI-001); fixtures Nháp | — | FR-M13-01, FR-M13-06 |
+| **Ward Daily Census** | — | Mẫu số ngày, **unique (census_date, department)** (BRU-HAI-002): `census_date`, `department`, `patient_count`, `vent_count`, `cvc_count`, `urinary_catheter_count`, `admissions`, `source` (Nhập tay / Import), `locked`; nhắc 10:00 khi thiếu ngày hôm trước; RPC `hai.census_upsert` | Link Department | FR-M13-02, FR-M13-03 |
+| **Device Episode** | — | Đợt thiết bị xâm lấn: `patient_code` (Password), `patient_code_masked`, `patient_code_hash`, `birth_year`, `sex`, `department`, `device_type` (Thở máy / Catheter TM trung tâm / Thông tiểu), `inserted_on`, `removed_on`, `status`; tính ngày thiết bị; nguồn gói dự phòng M12; RPC `hai.device_episode` | Link Department | FR-M13-04, FR-M12-07 |
+| **Surgical Procedure Group** | — | Danh mục nhóm phẫu thuật: `group_code` (PK), `group_name`, `t_time_minutes` (T của NNIS), `followup_days` (30 / 90), `is_monitored` | — | FR-M13-07 |
+| **Surgical Surveillance** | — | Ca phẫu thuật giám sát NKVM: `patient_code` (mã hóa), `birth_year`, `sex`, `department`, `procedure_group`, `surgery_date`, `asa_score` 1–5, `wound_class` (Sạch / Sạch–nhiễm / Nhiễm / Bẩn), `duration_min`, `has_implant`, `nnis_index` (tính, BRU-HAI-003), `prophylaxis_given`, `prophylaxis_minutes_before_incision`, `prophylaxis_agent`, `discharge_date`, `window_end` (tính, BRU-HAI-004); child **SSI Follow-up** (`due_date`, `method` Điện thoại / Tái khám / Hồ sơ, `done_on`, `result`); `outcome` (Đang theo dõi / Không NKVM / Có NKVM / Mất theo dõi), `hai_case` | Link Department | FR-M13-07, FR-M13-08, FR-M13-09, FR-M13-12 |
+| **HAI Case** | — | Ca NKBV, submittable: `patient_code` (mã hóa), `birth_year`, `sex`, `department`, `admission_date`, `onset_date`, `case_definition` (bản chụp phiên bản), `device_episode`, `surgical_surveillance`, child `isolates` (Link Microbiology Isolate, tùy chọn), `status` (Nghi ngờ / Xác định / Loại trừ — chỉ R11/R01 xác định), `exclusion_reason`, `confirmed_by`, `outcome`; cảnh báo cụm ca theo ngưỡng (FR-M13-13); nhãn đa kháng từ hook `tracecore_mdro_detected` | Link Department | FR-M13-05, FR-M13-06, FR-M13-10, FR-M13-13, FR-M13-14, FR-M13-15 |
+| **IC Reporting Period** | — | Kỳ báo cáo tháng: `month`, `locked_by`, `locked_on`, `unlock_reason`; khóa chặn sửa mẫu số/ca thuộc kỳ, mở khóa chỉ R01 có lý do + Audit; khóa kỳ kích hoạt tính `IC Indicator Value` | — | FR-M13-11, FR-M9-25 |
+
+**M14 — Vi sinh, đa kháng, cách ly, ổ dịch (7 mới) [A-113]** — Module Def `Microbiology`. Căn cứ QĐ 3596 (WHONET), Luật Phòng bệnh 2025 + TT 15/2026.
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **Organism** | — | Danh mục vi sinh vật: `organism_code` (theo mã WHONET, PK), `organism_name`, `organism_group` | — | FR-M14-01 |
+| **Microbiology Isolate** | — | Chủng phân lập: `lab_sample_id`, `patient_code` (mã hóa, ADR-010), `birth_year`, `sex`, `department`, `specimen_type`, `collected_on`, `organism`; child **Isolate Susceptibility** (`antibiotic`, `result` S/I/R, `mic`); `mdro_flags`, `is_first_isolate` (chủng đầu tiên/người bệnh–loài trong kỳ, BRU-MDR-002), `source` (Import / Nhập tay có xác nhận), `import_batch`; unique (`lab_sample_id`, `organism`) khi import | Link Department | FR-M14-01, FR-M14-02, FR-M14-03, FR-M14-05, FR-M14-08 |
+| **MDRO Rule** | — | Quy tắc đa kháng có phiên bản, submittable (R01 duyệt, BRU-MDR-001): `rule_code`, `label` (MRSA, ESBL, CRE…), `organisms`, `antibiotics`, `condition` (R với bất kỳ / R với tất cả / số nhóm kháng ≥ n), `precaution_type`, `alert_roles`; chạy khi có chủng mới → phát hook `tracecore_mdro_detected`, thông báo ≤ 15 phút | — | FR-M14-03, FR-M14-04 |
+| **Isolation Room** | — | Danh mục phòng cách ly: `department`, `room_code`, `room_type` (Phòng đơn / Áp lực âm / Phòng nhóm), `beds`, `meets_standard`, `checked_on`; tỷ lệ khoa có ≥ 1 phòng đạt | Link Department | FR-M14-07 |
+| **Isolation Order** | — | Lệnh cách ly: `patient_code` (mã hóa), `department`, `isolation_room`, `precaution_type` (Tiếp xúc / Giọt bắn / Không khí / Kết hợp — bắt buộc), `reason` (Vi khuẩn đa kháng / Bệnh truyền nhiễm / Nghi nhiễm — bắt buộc), `isolate`, `start_at`, `end_at`, `end_reason`, `status`; danh sách đang mở theo khoa trên Cổng khoa | Link Department | FR-M14-06 |
+| **Outbreak Investigation** | — | Điều tra ổ dịch, submittable: `title`, `organism_or_disease`, `departments`, `start_date`, `case_definition`; child **Outbreak Case** (Link HAI Case / Isolate / mã BN che, `onset_date`); `actions` (Link Incident CAPA), `status` (Đang điều tra / Đã kiểm soát / Kết thúc), `end_date`, `summary`, `external_report_ref`; đường cong dịch theo ngày khởi phát (Dashboard Chart) | — | FR-M14-09, FR-M17-04 |
+| **Notifiable Disease Report** | — | Khai báo bệnh truyền nhiễm: `patient_code` (mã hóa), `disease` (Link danh mục bệnh, nhóm A/B/C), `diagnosed_on`, `department`, `due_by` (tính theo cấu hình nhóm bệnh — OQ-V12-03), `reported_on`, `report_ref`, `reported_by`; nhắc R11 trước hạn | Link Department | FR-M14-10 |
+
+**M15 — Vệ sinh môi trường và cơ sở hạ tầng (4 mới) [A-113]** — Module Def `Environmental Hygiene`. `Environment Log` (M9) giữ nguyên cho nhiệt độ/độ ẩm/áp suất khu CSSD (FR-M9-04) — không trùng.
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **Environment Zone** | — | Vùng vệ sinh: `department`, `area_name`, `risk_level` (danh sách cấu hình theo QĐ 3916 — bắt buộc), `cleaning_frequency`, `cleaning_chemical` (Item), `responsible_party` (Khoa / Đơn vị thuê ngoài — bắt buộc), `supplier`, `min_audits_per_month`; liệt kê vùng chưa đủ số phiếu | Link Department, Item, Supplier | FR-M15-01, FR-M15-02 |
+| **Environmental Limit** | — | Ngưỡng có phiên bản, submittable (R01 duyệt): `sample_type` (Bề mặt / Không khí / Nước sinh hoạt / Nước dùng trong chuyên môn / Thực phẩm / Khác), `method` (Nuôi cấy / ATP / Huỳnh quang / Khác), `parameter`, `limit_value`, `unit`, `applies_to_risk_level`, `legal_ref`, `version_no`, `effective_from`; fixtures Nháp | — | FR-M15-03, FR-M17-03 |
+| **Sampling Plan** | — | Kế hoạch lấy mẫu: `sample_type`, child `zones`, `frequency`, `assignee`, `active`; scheduler giao việc, liệt kê mẫu trễ hạn | Link Employee | FR-M15-05 |
+| **Environmental Sample** | — | Mẫu môi trường/thực phẩm, submittable: `environment_zone`, `sample_type`, `method`, `sampled_on`, `sampled_by`, `lab`, `result_value`, `unit`, `limit_applied` (bản chụp ngưỡng hiệu lực tại ngày lấy mẫu), `result` (Đạt / Không đạt), `is_resample_of`, `attachment`; Không đạt → thông báo + đề nghị NC Environment | Link Employee | FR-M15-03, FR-M15-04, FR-M15-07, FR-M17-03 |
+
+**M16 — An toàn nghề nghiệp (4 mới) [A-113]** — Module Def `Occupational Safety`. **Không có trường** kết quả xét nghiệm hoặc chẩn đoán của nhân viên (FR-M16-06, BRU-OCC); hồ sơ chỉ R01, R11 và chính nhân viên xem.
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **Occupational Exposure** | — | Phơi nhiễm nghề nghiệp: `employee`, `department`, `occupation`, `occurred_at`, `reported_at`, `exposure_type` (Kim tiêm–vật sắc nhọn / Bắn máu–dịch vào niêm mạc / Da không lành / Hô hấp / Khác), `activity`, `device`, `source_known`, `source_patient_code` (mã hóa), `first_aid_done`, `prophylaxis` (Có / Không chỉ định / Từ chối), `prophylaxis_started_at`; child **Exposure Follow-up** (`step`, `due_date`, `done_on`); `incident_capa`, `status`; tính thời gian đến báo cáo/đến dự phòng và gắn cờ vượt ngưỡng; tạo tự động từ hook `tracecore_exposure_incident` (M10 FR-M10-06.1); RPC `exposure.report` (≤ 3 bước, offline) | Link Employee, Department | FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-09 |
+| **Exposure Follow-up Template** | — | Danh mục bước theo dõi theo loại phơi nhiễm (R01 duyệt): `exposure_type` (PK), child (`step`, `days_after`); fixtures Nháp | — | FR-M16-04 |
+| **Staff Immunization** | — | Mũi tiêm nhân viên: `employee`, `vaccine` (danh mục Viêm gan B / Cúm / Khác), `dose_no`, `given_on`, `next_due` (tính), `evidence`; nhắc nhân viên và R02 khi đến hạn (cơ chế FR-M4-01.4) | Link Employee | FR-M16-07 |
+| **Immunization Requirement** | — | Danh mục yêu cầu tiêm chủng: `vaccine` (PK), `departments` hoặc `designations` có nguy cơ, `doses_required`; tỷ lệ bao phủ theo khoa; tồn thuốc dự phòng sau phơi nhiễm theo Item đánh dấu (FR-M16-08) | Link Department, Designation; Item | FR-M16-07, FR-M16-08 |
+
+**M17 — An toàn thực phẩm và tư vấn người bệnh (3 mới) [A-113]** — Module Def `Food Safety`. Phiếu ATTP dùng `Audit Session` (audit_type An toàn thực phẩm, gắn `supplier` đơn vị suất ăn); mẫu thực phẩm dùng `Environmental Sample` (sample_type Thực phẩm).
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **Food Handler Health Check** | — | Sức khỏe người chế biến: `full_name`, `supplier` hoặc `employee`, `checked_on`, `next_due`, `fit_for_work` (Đủ / Không đủ), `evidence`; nhắc 30 ngày trước hạn/quá hạn | Link Supplier, Employee | FR-M17-02 |
+| **Foodborne Event** | — | Sự cố nghi ngộ độc thực phẩm: `event_date`, `location`, `affected_count`, `suspected_food`, `supplier`, `incident_capa`, `outbreak_investigation` (khi số người ≥ ngưỡng → mở M14), `reported_ref` | Link Supplier | FR-M17-04 |
+| **IC Education Session** | — | Buổi truyền thông KSNK: `session_date`, `audience` (Người bệnh / Người nhà / Nhân viên / Người chế biến thực phẩm / Sinh viên), `topic` (nhóm biện pháp), `department`, `attendee_count`, `materials` (Link IC Procedure Document loại Tài liệu truyền thông); tổng hợp theo quý | Link Department | FR-M17-05, FR-M17-06 |
+
+**M9 mở rộng — Bảng chỉ số KSNK toàn viện, nhập dữ liệu ngoài (1 mới + 2 mở rộng) [A-113]**
+
+| DocType | BA ID | Vai trò | ERPNext/HRMS | FR |
+| --- | --- | --- | --- | --- |
+| **IC Indicator Value** | — | Giá trị chỉ số do hệ thống ghi khi khóa kỳ (không tính lại khi mở bảng — NFR-PERF-05): `indicator`, `period`, `department` (trống = toàn viện), `numerator`, `denominator`, `value`, `sample_note` ("Chưa đủ mẫu" khi dưới `min_sample`, BRU-RPT), `computed_on`, `locked`; mẫu số = 0 → không hiển thị 0 (BRU-HAI-006); nguồn bảng chỉ số (FR-M9-22), báo cáo một trang Hội đồng (FR-M9-23), Cổng khoa (FR-M9-24), tự đánh giá QĐ 38 (FR-M9-27), gói hồ sơ KSNK (FR-M9-28) | — | FR-M9-22, FR-M9-23, FR-M9-24, FR-M9-25, FR-M9-27, FR-M9-28 |
+| *Import Batch / Import Batch Row* (module `TraceCore`) | — | **Mở rộng**: loại import mới Mẫu số ngày, Danh sách phẫu thuật, Vi sinh (WHONET/CSV), Hóa chất; child/Link **Import Mapping Profile** (hồ sơ ánh xạ cột lưu theo nguồn: `source_type`, `column_map`, `date_format`, `encoding`, mẫu Excel tải về); kiểm từng dòng, bỏ dòng trùng, báo lỗi theo dòng (cùng cơ chế FR-M9-11) | — | FR-M9-26, FR-M13-02, FR-M14-01, FR-M12-12 |
+| *Notification Rule* (ADR-014) | — | **Tái sử dụng**: sự kiện mới `audit_feedback`, `audit_critical_fail`, `census_missing`, `mdro_detected` (Urgent), `cluster_alert`, `environment_sample_failed`, `exposure_reported` (Urgent), `immunization_due`, `license_expiring`, `plan_activity_due`, `doc_review_due`, `notifiable_due`, `committee_report_ready` — gửi qua `core.notification.emit` | — | FR-M11-05/07/08, FR-M12-08/13, FR-M13-03/13, FR-M14-04/10, FR-M15-04, FR-M16-01/07, FR-M9-23 |
+
+
+**Tổng:** 40 DocType gốc (trong đó 5 **Thay** bằng ERPNext/HRMS: Employee, Shift Assignment, Consumable Item, Stock Entry, Stock Count — phần mở rộng là Custom Field thuộc `tracecore` fixtures) + 23 DocType mới v1.11 = **63 DocType khái niệm**, 58 DocType tự tạo trong app `tracecore` (chưa tính child table). **[A-113]** + 45 DocType mới v1.12 (M11: 9 · M12: 4 · M13: 7 · M14: 7 · M15: 4 · M16: 4 · M17: 3 · M9: 1, kể cả Single và danh mục; chưa tính 11 child table: IC Committee Member, IC Plan Indicator, IC Plan Activity, IC Resolution, Audit Template Item, Audit Answer, Hand Hygiene Opportunity, Isolate Susceptibility, SSI Follow-up, Outbreak Case, Exposure Follow-up; và `Import Mapping Profile`) + Custom Field trên HRMS Training Program, ERPNext Supplier, Item, Incident CAPA = **108 DocType khái niệm**, 103 DocType tự tạo. Báo cáo M11–M17 (tuân thủ, NKBV/NKVM, kháng thuốc, môi trường, phơi nhiễm, tổng kết năm) = Script Report + Print Format, không DocType.
 
 #### 5.3.2 ERD các aggregate chính
 
@@ -857,6 +1015,43 @@ erDiagram
     ENVIRONMENT_LOG }o--|| ZONE_STATION : "zone"
 ```
 
+Engine phiếu giám sát M12 (ADR-015) và giám sát NKBV M13 [A-113]:
+
+```mermaid
+erDiagram
+    AUDIT_TEMPLATE ||--o{ AUDIT_TEMPLATE_ITEM : "items (child)"
+    AUDIT_TEMPLATE ||--o{ AUDIT_SCHEDULE : "template_code"
+    AUDIT_TEMPLATE ||--o{ AUDIT_SESSION : "audit_template (bản chụp phiên bản)"
+    AUDIT_SESSION ||--o{ AUDIT_ANSWER : "answers (child)"
+    AUDIT_SESSION ||--o{ HAND_HYGIENE_OPPORTUNITY : "opportunities (child)"
+    AUDIT_SESSION }o--o| DEVICE_EPISODE : "device_episode (gói dự phòng)"
+    AUDIT_SESSION }o--o| ENVIRONMENT_ZONE : "environment_zone (M15)"
+    AUDIT_SESSION }o--o| SUPPLIER : "supplier (thuê ngoài, suất ăn)"
+    AUDIT_SESSION }o--o| INCIDENT_CAPA : "NC Compliance khi mục trọng yếu không đạt"
+    DEPARTMENT ||--o{ AUDIT_SESSION : "department"
+    EMPLOYEE ||--o{ AUDIT_SESSION : "observer"
+    AUDIT_SESSION }o--|| IC_INDICATOR_VALUE : "hook tracecore_ic_indicators khi khóa kỳ"
+```
+
+```mermaid
+erDiagram
+    HAI_CASE_DEFINITION ||--o{ HAI_CASE : "case_definition (phiên bản tại ngày khởi phát)"
+    DEPARTMENT ||--o{ WARD_DAILY_CENSUS : "department (unique ngày-khoa)"
+    DEPARTMENT ||--o{ DEVICE_EPISODE : "department"
+    DEVICE_EPISODE ||--o{ HAI_CASE : "device_episode"
+    SURGICAL_PROCEDURE_GROUP ||--o{ SURGICAL_SURVEILLANCE : "procedure_group (T, followup_days)"
+    SURGICAL_SURVEILLANCE ||--o{ SSI_FOLLOW_UP : "follow-ups (child)"
+    SURGICAL_SURVEILLANCE |o--o| HAI_CASE : "hai_case (NKVM)"
+    HAI_CASE }o--o{ MICROBIOLOGY_ISOLATE : "isolates (child Link M14)"
+    MICROBIOLOGY_ISOLATE ||--o{ ISOLATE_SUSCEPTIBILITY : "susceptibilities (child)"
+    MDRO_RULE }o--o{ MICROBIOLOGY_ISOLATE : "mdro_flags (hook tracecore_mdro_detected)"
+    IC_REPORTING_PERIOD ||--o{ WARD_DAILY_CENSUS : "khóa kỳ"
+    IC_REPORTING_PERIOD ||--o{ HAI_CASE : "khóa kỳ"
+    IC_REPORTING_PERIOD ||--o{ IC_INDICATOR_VALUE : "tính khi khóa"
+    IC_INDICATOR ||--o{ IC_INDICATOR_VALUE : "indicator"
+    OUTBREAK_INVESTIGATION ||--o{ OUTBREAK_CASE : "cases (child Link HAI Case / Isolate)"
+```
+
 #### 5.3.3 Quy ước mã và naming series
 
 | Đối tượng | Naming | Ghi chú |
@@ -872,6 +1067,16 @@ erDiagram
 | Par Override (A-18, Q10) | `GD-.YYYY.-.#####` | FR-M8-04 |
 | Zone (khu, Zone Station không phải trạm) | `ZONE-.##`; 3 khu mặc định giữ `ZONE-DIRTY/CLEAN/STERILE` (A-03, E1, đã duyệt (người dùng xác nhận 21/10/2026)) | FR-M9-03 |
 | Chứng từ khác | `<PREFIX>-.YYYY.-.#####` (RC- Receipt, AS- Assembly, IS- Issue, US- Usage, TH- Recall, NC- Incident, BT- Maintenance Record (A-43 M9), CP- Cost Entry (A-47 C1), DG- Cost Rate Version (A-48 D5), GT- Cost Sheet (A-53), LNC- Linen Collection (A-49 L2), LNI- Linen Issue (A-51 G2), MT- Environment Log (A-55 D1), XH- Archive Export (A-58), TG- Waste Collection, BG- Waste Handover) | OTH-LEG-002 |
+| M11 Chương trình KSNK [A-113] | IC Committee `HDK-.YYYY.-.##` · IC Network Member `ML-.#####` · IC Annual Plan `KH-.YYYY.-.##` · IC Procedure Document `QTK-.#####` · IC Committee Meeting `HH-.YYYY.-.###` · Trainee Induction `SV-.YYYY.-.#####` · IC Improvement Project `CI-.YYYY.-.###` · IC Indicator = `code` (danh mục, không series) · IC Program Settings = Single | FR-M11-01..13 |
+| M12 Giám sát tuân thủ [A-113] | Audit Template `MP-<template_code>-V<n>` (mã phiên bản, **không phải series**, cùng kiểu `BOM-<TYPE>-V<n>`; `make_versioned_code` trong `core`) · Audit Schedule `LGS-.YYYY.-.###` · Audit Session `GS-.YYYY.-.#####` (offline: client giữ UUID làm `X-Idempotency-Key`, `name` cấp khi server ghi — không cần Code Range vì phiếu không in mã) · IC Chemical Consumption `HC-.YYYY.-.#####` | FR-M12-01..14 |
+| M13 Giám sát NKBV [A-113] | HAI Case Definition `DN-<def_code>-V<n>` · Ward Daily Census `MS-.YYYY.-.#####` (unique `census_date` + `department`) · Device Episode `DTB-.YYYY.-.#####` · Surgical Procedure Group = `group_code` · Surgical Surveillance `PT-.YYYY.-.#####` · HAI Case `CA-.YYYY.-.#####` · IC Reporting Period `KY-.YYYY.-.##` | FR-M13-01..15 |
+| M14 Vi sinh – cách ly – ổ dịch [A-113] | Organism = mã WHONET · Microbiology Isolate `VS-.YYYY.-.#####` · MDRO Rule `MDR-<rule_code>-V<n>` · Isolation Room `PCL-.####` · Isolation Order `CL-.YYYY.-.#####` · Outbreak Investigation `OD-.YYYY.-.###` · Notifiable Disease Report `KB-.YYYY.-.#####` | FR-M14-01..10 |
+| M15 Vệ sinh môi trường [A-113] | Environment Zone `VV-.####` · Environmental Limit `NG-.####` (kèm `version_no`) · Sampling Plan `KLM-.YYYY.-.###` · Environmental Sample `XN-.YYYY.-.#####` | FR-M15-01..07 |
+| M16 An toàn nghề nghiệp [A-113] | Occupational Exposure `PN-.YYYY.-.#####` · Staff Immunization `TCH-.YYYY.-.#####` · Exposure Follow-up Template = `exposure_type` · Immunization Requirement = `vaccine` | FR-M16-01..09 |
+| M17 ATTP & truyền thông [A-113] | Food Handler Health Check `SKTP-.YYYY.-.#####` · Foodborne Event `NDTP-.YYYY.-.###` · IC Education Session `GDS-.YYYY.-.#####` | FR-M17-01..06 |
+| M9 mở rộng [A-113] | IC Indicator Value `IV-.YYYY.-.######` (hệ thống ghi khi khóa kỳ) · Import Mapping Profile = tên hồ sơ do R10 đặt | FR-M9-25, FR-M9-26 |
+
+> **[A-113] Kiểm tra trùng tiền tố:** 33 tiền tố mới (HDK, ML, KH, QTK, HH, SV, CI, MP, LGS, GS, HC, DN, MS, DTB, PT, CA, KY, VS, MDR, PCL, CL, OD, KB, VV, NG, KLM, XN, PN, TCH, SKTP, NDTP, GDS, IV) không trùng tiền tố hiện có (CY, LR, LG, ME, NV, TB, KE, TR, CN, CT, PAR, GD, ZONE, RC, AS, IS, US, TH, NC, BT, CP, DG, GT, LNC, LNI, MT, XH, TG, BG, BOM, LN, GI). `core.gs1.parse_scan` không nhận các mã này (không phải đối tượng quét trên trạm); mã `PN-` có thể in QR trên thẻ báo phơi nhiễm ở giai đoạn sau (không thuộc v1.12).
 
 ---
 ## 6. Runtime View
@@ -1205,6 +1410,73 @@ sequenceDiagram
     RPC-->>K: Đã ghi sổ · in phiếu
 ```
 
+### 6.9 UC-44 Ghi phiếu vệ sinh tay trên PDA offline → `audit.submit_session` idempotent → chỉ số [A-113]
+
+```mermaid
+sequenceDiagram
+    actor R11 as R11 Giám sát viên / R12 Mạng lưới viên
+    participant P as PDA PWA (Page station · SCR-51)
+    participant SW as Service Worker · IndexedDB outbox
+    participant RPC as tracecore.v1.audit.*
+    participant DB as MariaDB
+    participant N as core.notification
+    participant H as hook tracecore_ic_indicators
+
+    R11->>P: Mở phiếu Vệ sinh tay (Audit Template đã duyệt, cache SW), chọn khoa, chế độ
+    loop Mỗi cơ hội (≤ 3 chạm: vai trò · thời điểm 1–5 · hành động)
+        R11->>P: Chạm 3 lần
+        P->>SW: record_opportunity(session_uuid, opp_uuid, client_ts) → outbox
+        Note over P: Chặn khi subject_employee = observer [BRU-AUD-004, FR-M12-10]
+    end
+    R11->>P: Kết thúc phiếu
+    P->>SW: submit_session(session_uuid) → outbox
+    alt Online
+        SW->>RPC: audit.record_opportunity ×n · audit.submit_session (X-Idempotency-Key = uuid)
+    else Offline ≥ 4 giờ (NFR-AVAIL-05)
+        Note over SW: giữ hàng đợi, phát lại theo client_ts khi có mạng — trùng key thì trả response cũ
+    end
+    RPC->>DB: Audit Session (bản chụp phiên bản mẫu) + Hand Hygiene Opportunity · submit · Audit Log
+    RPC->>DB: tỷ lệ tuân thủ = cơ hội có hành động / tổng cơ hội [BRU-AUD-002] — dưới min_sample thì sample_flag [FR-M12-11]
+    RPC->>N: emit audit_feedback → trưởng khoa, mạng lưới viên khoa [FR-M12-08]
+    alt Mục trọng yếu không đạt (phiếu Điểm %)
+        RPC->>N: emit audit_critical_fail → R11/R01 · đề nghị mở Incident CAPA Compliance [FR-M12-09]
+    end
+    RPC-->>SW: {ok, name GS-…}
+    Note over H: Khi R01 khóa kỳ (IC Reporting Period) → M9 gọi hook, M12 trả tử số/mẫu số → IC Indicator Value
+```
+
+### 6.10 UC-48 / UC-57 Khóa kỳ → tính `IC Indicator Value` qua hook → bảng chỉ số KSNK [A-113]
+
+```mermaid
+sequenceDiagram
+    actor R01 as R01 Trưởng khoa KSNK
+    actor R13 as R13 Hội đồng KSNK
+    participant D as Desk (SCR-56 · SCR-66)
+    participant RPC as tracecore.v1.indicator.*
+    participant M9 as admin_reports.indicator
+    participant H as hook tracecore_ic_indicators (M11–M16)
+    participant DB as MariaDB
+    participant Q as Redis Queue
+    participant N as core.notification
+
+    R01->>D: Khóa kỳ tháng (IC Reporting Period)
+    D->>DB: locked=1 · chặn sửa Ward Daily Census, HAI Case thuộc kỳ [FR-M13-11] · Audit Log
+    DB->>Q: enqueue compute_indicator_values(period)
+    Q->>M9: chạy nền
+    loop Mỗi IC Indicator đang dùng × (toàn viện + từng khoa)
+        M9->>H: callable(period, department) do module đăng ký
+        H->>DB: đọc Audit Session / HAI Case / Census / Isolate / Sample / Exposure…
+        H-->>M9: {numerator, denominator}
+        M9->>DB: IC Indicator Value (value, sample_note nếu < min_sample, mẫu số 0 → không ghi 0 [BRU-HAI-006], locked)
+    end
+    M9->>N: emit committee_report_ready (ngày làm việc thứ 5) → R13 [FR-M9-23]
+    R13->>D: Mở bảng chỉ số KSNK (SCR-66)
+    D->>RPC: indicator.values(period, department=null)
+    RPC->>DB: đọc IC Indicator Value (không tính lại) → ≤ 3 giây với 24 tháng dữ liệu BV 1.000 giường [NFR-PERF-05]
+    RPC-->>D: chỉ số vs mục tiêu kế hoạch năm, xu hướng 12 kỳ, cảnh báo
+    Note over D: R12/trưởng khoa trên Cổng khoa gọi cùng RPC với department = khoa mình (User Permission) [FR-M9-24]
+```
+
 ---
 ## 7. Deployment View
 
@@ -1290,16 +1562,17 @@ Promotion: `dev` → `staging` → `production`, cùng artefact là tag Git củ
 | Xác thực web | Frappe User + mật khẩu ≥ 10 ký tự, hết hạn 90 ngày (System Settings `password_expiry`), khóa sau 5 lần sai (`allow_consecutive_login_attempts`), 2FA bắt buộc cho Role R01/R02/R09/R10 (Frappe Two Factor Auth, OTP app/email) | NFR-SEC-01, FR-M9-05.4, FR-M9-09 |
 | Xác thực trạm | Quét thẻ `NV-` → `tracecore.v1.station.login`: Employee.tc_card_id → Station Competency còn hiệu lực cho trạm + Certificate bắt buộc còn hạn → tạo `Station Session`; opaque bearer token chỉ trả một lần, DB chỉ lưu SHA-256; tuyệt đối 8 giờ, idle 10 phút ở client và server; một thẻ – một phiên (khóa hàng, đóng phiên cũ, audit). Mỗi RPC xác thực token rồi mới đặt effective user từ Employee/User, không nhận danh tính do client tự khai | FR-M4-03, FR-M9-08, EI-UI-005; A-08 |
 | PIN phê duyệt | PIN 6 số băm bcrypt lưu trong Employee (`tc_pin_hash`, Password field); verify server-side; sai 3 lần khóa 5 phút (Redis key TTL); dùng cho giải phóng mẻ, xác nhận thiếu, ghi đè, mở khóa máy, tiếp nhận cưỡng bức | FR-M2-06.3, FR-M2-11.4, #13 §2.2 |
-| RBAC | 10 Role Frappe `TC R01` … `TC R10`; Role Permission theo ma trận #13 xuất từ `permission_matrix.csv` thành fixture `custom_docperm.json`; test 100% ô chạy CI. Ma trận là baseline; amendment feature mới hơn và audit bất biến thắng khi xung đột; DocType chưa tồn tại giữ trong matrix nhưng chưa sinh DocPerm | NFR-SEC-07; A-08 |
+| RBAC | 10 Role Frappe `TC R01` … `TC R10`; Role Permission theo ma trận #13 xuất từ `permission_matrix.csv` thành fixture `custom_docperm.json`; test 100% ô chạy CI. Ma trận là baseline; amendment feature mới hơn và audit bất biến thắng khi xung đột; DocType chưa tồn tại giữ trong matrix nhưng chưa sinh DocPerm. **[A-113]** thêm `TC R11` (Giám sát viên KSNK: PDA + Desk, toàn viện, xem mã BN đầy đủ có lý do), `TC R12` (Mạng lưới viên KSNK: PDA + Cổng khoa, chỉ khoa mình), `TC R13` (Hội đồng KSNK & Ban Giám đốc: Desk bảng chỉ số, ghi sổ IC Annual Plan, không xem từng người bệnh) = 13 vai trò; ma trận mở rộng cho mọi DocType M11–M17 và M9 mở rộng (`permission_matrix.csv` thêm cột/hàng, test CI — NFR-SEC-09) | NFR-SEC-07, NFR-SEC-09; A-08, A-113 |
 | Ràng buộc khu/trạm | RPC `tracecore.v1.*` kiểm `Station Session.station.zone` khớp chức năng; thao tác ngược chiều bị chặn (BRU-FLOW-001/002) | FR-M2-00.1 |
-| Department permission | R08 là website/system user có `User Permission` trên `Department`; Pack/Issue Note/Usage Record/Linen/Waste Collection có trường `dept` tham gia permission query (`permission_query_conditions` hook) | NFR-SEC-07, FR-M10-07.3 |
-| Mã bệnh nhân | `Usage Record.patient_code` kiểu **Password** (Frappe mã hóa Fernet/AES với `encryption_key` trong `site_config.json`); hiển thị ẩn 4 ký tự giữa qua trường tính toán `patient_code_masked`; RPC `usage.reveal_patient_code(usage, reason)` chỉ R01/R02, ghi Audit; không xuất rõ ra Excel; không ghi vào log | NFR-SEC-02, OTH-PRIV-001 |
+| Department permission | R08 là website/system user có `User Permission` trên `Department`; Pack/Issue Note/Usage Record/Linen/Waste Collection có trường `dept` tham gia permission query (`permission_query_conditions` hook). **[A-113]** R12 cùng cơ chế: Audit Session, Ward Daily Census, Device Episode, HAI Case, Isolation Order, Occupational Exposure, Environment Zone, IC Indicator Value có `department` tham gia `permission_query_conditions`; R08 nhập mẫu số/đợt thiết bị/cách ly chỉ khoa mình | NFR-SEC-07, NFR-SEC-09, FR-M10-07.3 |
+| Mã bệnh nhân | `Usage Record.patient_code` kiểu **Password** (Frappe mã hóa Fernet/AES với `encryption_key` trong `site_config.json`); hiển thị ẩn 4 ký tự giữa qua trường tính toán `patient_code_masked`; RPC `usage.reveal_patient_code(usage, reason)` chỉ R01/R02, ghi Audit; không xuất rõ ra Excel; không ghi vào log. **[A-113]** cùng bộ ba trường `patient_code` / `patient_code_masked` / `patient_code_hash` (mixin `core.patient_code`) trên Device Episode, Surgical Surveillance, HAI Case, Microbiology Isolate, Isolation Order, Notifiable Disease Report, Occupational Exposure (`source_patient_code`); **không** trường họ tên người bệnh; mọi list/report/export M13/M14 chỉ hiện masked (FR-M13-15; test tự động quét JSON DocType và output export — NFR-PRIV-01); xem đầy đủ chỉ R01/R11 qua `hai.reveal_patient_code(doc, reason)` + Audit; tìm người bệnh (đa kháng tái nhập, FR-M14-05) bằng `patient_code_hash` | NFR-SEC-02, NFR-PRIV-01, OTH-PRIV-001 |
 | Audit | §8.2 + ADR-008 | NFR-SEC-03 |
 | Truyền tải | HTTPS TLS 1.2+ nội bộ (CA BV hoặc tự ký cài trên kiosk/PDA qua MDM); HSTS; Nginx rate limit 20 req/s/IP trạm | EI-COM-001 |
 | Agent | API Key/Secret của user kỹ thuật `agent-<station>@local` (Role `TC Agent` chỉ gọi được RPC `print.*`, `scale.*`, `load.ingest_machine_data`, `health`); xoay 90 ngày bằng scheduler + cảnh báo R10; key lưu trong file cấu hình agent được OS ACL bảo vệ | EI-COM-003, NFR-SEC-06 |
 | Secrets | `site_config.json` (db password, encryption_key, SMTP, SMS token) ngoài repo, quyền 600; không log; quy trình xoay `encryption_key` dùng `bench --site <site> set-config` + script re-encrypt có R10 phê duyệt | NFR-SEC-06 |
 | Vulnerability | Bandit + pip-audit + npm audit trong CI; pentest nội bộ ASVS L2 trước go-live; vá Frappe/ERPNext ≤ 30 ngày qua staging | NFR-SEC-04/05 |
 | Vận hành tài khoản | Employee Nghỉ việc → hook vô hiệu User + thẻ + đóng Station Session trong ngày; báo cáo rà soát quyền hằng quý (Script Report); ≥ 5 từ chối thẻ/15 phút hoặc đăng nhập ngoài ca → Notification Rule → R10 | NFR-SEC-08, FR-M9-09.2 |
+| Hồ sơ sức khỏe nhân viên [A-113] | `Occupational Exposure` chỉ R01, R11 và chính nhân viên (`employee.user_id`) đọc được (`has_permission` hook); không có trường kết quả xét nghiệm/chẩn đoán (FR-M16-06); `Incident CAPA` phơi nhiễm chỉ mô tả nguyên nhân quy trình; báo cáo phơi nhiễm chỉ số liệu tổng hợp (FR-M16-05) | NFR-PRIV-01, FR-M16-05/06 |
 
 ### 8.2 Data
 
@@ -1312,8 +1585,10 @@ Promotion: `dev` → `staging` → `production`, cùng artefact là tag Git củ
 | GS1 | `core.gs1`: GIAI = `8004` + GS1 Company Prefix BV + asset ref (loại bộ + số); Cycle payload `(01)GTIN-14 loại bộ(11)YYMMDD(17)YYMMDD(21)CY...`; FNC1 separator; encoder DataMatrix `pylibdmtx` → PNG base64 nhúng Print Format; ZPL `^BXN,…` / TSPL `DMATRIX` khi in trực tiếp (máy in tự mã hóa) — cả hai đường đều từ cùng payload server (ADR-004) |
 | Consistency | Giao dịch Frappe (một request = một DB transaction) cho: sinh Cycle ID + Pack + Step Gate + active_cycle_id (khóa hàng `SELECT … FOR UPDATE` trên Set Unit); release mẻ cập nhật Load/Pack/Gate/bộ đếm **trong một transaction**, còn tiêu hao M6, Cost Sheet M7, cảnh báo M8 chạy **async qua RQ** (eventual, idempotent theo `tc_source`), vì không ảnh hưởng an toàn người bệnh và tránh vượt 1 s |
 | Idempotency | Bảng `Idempotency Key` (unique key); mọi RPC trạm bọc decorator `@idempotent`; TTL 30 ngày; cùng key trả cùng response |
-| Migrations | Frappe patches (`patches.txt`) + `bench migrate`; fixtures cho Role, Custom Field, Property Setter, Workflow, Notification Rule mặc định, Label Template mẫu |
-| Retention | Không purge DocType nghiệp vụ/Audit Log trong 10 năm; `Idempotency Key`, `Error Log`, `Activity Log`, `Email Queue` purge theo lịch (30/90/365 ngày); partition `Audit Log` theo năm; `Archive Export` tạo gói PDF+CSV có checksum SHA-256 (FR-M9-12) |
+| Migrations | Frappe patches (`patches.txt`) + `bench migrate`; fixtures cho Role, Custom Field, Property Setter, Workflow, Notification Rule mặc định, Label Template mẫu; [A-113] Role R11–R13, Custom Field Supplier/Item/Training Program/Incident CAPA, fixtures chuyên môn Nháp (xem dòng dưới) |
+| Retention | Không purge DocType nghiệp vụ/Audit Log trong 10 năm; `Idempotency Key`, `Error Log`, `Activity Log`, `Email Queue` purge theo lịch (30/90/365 ngày); partition `Audit Log` theo năm; `Archive Export` tạo gói PDF+CSV có checksum SHA-256 (FR-M9-12). **[A-113, NFR-PRIV-02]** dữ liệu ca bệnh/phơi nhiễm có thời hạn lưu định danh cấu hình được (`IC Program Settings.patient_data_retention_months`, `exposure_retention_months` — giá trị do bệnh viện quyết, OQ-V12-07); job định kỳ **xóa định danh** (`patient_code`, `patient_code_hash`, `birth_year` → null; giữ `department`, ngày, kết quả để số liệu tổng hợp và `IC Indicator Value` không đổi), có test |
+| Dữ liệu cá nhân nhạy cảm [A-113] | Tình trạng sức khỏe là dữ liệu cá nhân nhạy cảm theo NĐ 356/2025: tối thiểu hóa (không họ tên BN, không kết quả xét nghiệm nhân viên), mã hóa tại trường, che trên danh sách/xuất, xem đầy đủ có lý do + Audit, thời hạn lưu; Medcons cung cấp sơ đồ luồng dữ liệu (§3, §6.9/6.10) để bệnh viện lập hồ sơ xử lý dữ liệu (khuyến nghị pháp lý, cần luật sư xác nhận) |
+| Nội dung chuyên môn có phiên bản [A-113] | Audit Template, HAI Case Definition, MDRO Rule, Environmental Limit, Exposure Follow-up Template, Surgical Procedure Group, IC Indicator là **dữ liệu cấu hình** do R01 duyệt (D10): fixtures khởi tạo ở trạng thái Nháp, `bench migrate` chỉ chèn khi chưa có (`insert_if_missing`, không `overwrite`), test migrate hai lần giữ bản bệnh viện đã sửa (NFR-MAINT-04); chứng từ lưu **bản chụp** phiên bản (`audit_template`, `case_definition`, `limit_applied`) nên đổi tiêu chí không đổi kết quả kỳ đã khóa |
 | Backup/DR | `bench backup --with-files` 02:00 hằng ngày (dump nén + files) → NAS → rsync/restic mã hóa (age/gpg) ngoài site; binlog flush 15 phút đồng bộ ra NAS/offsite → **RPO ≤ 15 phút**; restore drill hằng quý trên staging đo RTO (mục tiêu ≤ 4 giờ: restore dump ~30 phút + binlog replay + kiểm tra 1 mẻ ngẫu nhiên có đủ ảnh — NFR-BACKUP-02) |
 | Localization | Hệ thống lưu UTC (Frappe lưu theo site time zone `Asia/Ho_Chi_Minh` — chấp nhận; `client_ts` của trạm gửi ISO 8601 có offset); định dạng `dd-mm-yyyy`, số `#.###,##`, VND không lẻ trong System Settings; `translations/vi.csv` 0 chuỗi chưa dịch (NFR-USAB-02, NFR-L10N-01) |
 
@@ -1323,6 +1598,7 @@ Promotion: `dev` → `staging` → `production`, cùng artefact là tag Git củ
 | --- | --- | --- |
 | Mất mạng trạm/PDA | Service Worker precache shell + danh mục cần thiết (BOM/ảnh thu nhỏ của bộ đang xử lý, Pack đã cấp cho khoa, Code Range); mọi RPC ghi xếp vào IndexedDB `outbox` (key, endpoint, payload, client_ts); UI hiển thị trạng thái "Offline – n giao dịch chờ" (FR-M9-14); phát lại tuần tự theo `client_ts` khi online, dừng ở lỗi 5xx, bỏ qua và ghi `Sync Conflict` ở 409; ≥ 4 giờ bằng dung lượng IndexedDB (vài MB) | NFR-AVAIL-02, FR-M9-06 |
 | Cycle ID offline | `Code Range` 200 mã/trạm nạp trước mỗi ca; sinh `CY-YYMMDD-T04-NNNN`; server chấp nhận nếu trong dải chưa dùng, từ chối trùng | FR-M2-07.11, FR-M9-06.2 |
+| Phiếu giám sát / mẫu số / báo phơi nhiễm offline [A-113] | Cùng outbox IndexedDB và `@idempotent`: SW precache Audit Template đã duyệt (+ danh mục khoa, vai trò, nhóm thiết bị) và Exposure Follow-up Template; `audit.record_opportunity`, `audit.submit_session`, `hai.census_upsert`, `hai.device_episode`, `exposure.report` nhận `client_ts` + UUID; ≥ 4 giờ offline; phát lại giữ thứ tự cơ hội trong một phiếu (key phiếu trước, cơ hội sau); mẫu số trùng (ngày, khoa) khi sync → giữ bản server, ghi `Sync Conflict` cho R11 | NFR-AVAIL-05, FR-M12-04, FR-M13-02, FR-M16-01 |
 | Xung đột trạng thái khi sync | Giữ bản server, tạo `Sync Conflict` + Incident CAPA, R02 xử lý trên Desk | FR-M9-06.3 |
 | Máy in lỗi / không có cuộn đúng loại | `Print Job` trạng thái Chờ, agent retry 3 lần (backoff 5/15/60 s), cho in lại sau; không cấp mã mới; không in tạm trên nhãn khác | EI-HW-008, FR-M2-08.8 |
 | Agent mất kết nối / cân không phản hồi | Kiosk gọi `http://localhost:8765` timeout 2 s → chuyển nhập tay kg có tick xác nhận, `weight_source=Nhập tay`; dữ liệu máy → nhập tay có xác nhận (ADR-007) | NFR-AVAIL-04, FR-M10-02.1, FR-M2-10.4 |
@@ -1350,6 +1626,7 @@ Promotion: `dev` → `staging` → `production`, cùng artefact là tag Git củ
 - **Tải**: 3.000 Cycle ID/ngày ≈ 0,1 req/s trung bình; cao điểm đầu ca ~5–10 req/s toàn hệ thống — 4 gunicorn worker đủ; 40 kiosk realtime qua socketio.
 - **Dữ liệu 10 năm**: partition `Audit Log` theo năm; archive `Pack`/`Load` không cần (11 triệu dòng InnoDB với index PK là ổn); truy xuất hai chiều dùng Query Report có index (`Usage Record.pack`, `Pack.set_unit`, `Pack.load`, `Load Pack.pack`) → ≤ 10 s (NFR-PERF-04).
 - **Scale lên**: tăng vCPU/RAM, thêm gunicorn/worker (`bench setup supervisor`), tách MariaDB sang VM riêng — không đổi kiến trúc (NFR-SCAL-01).
+- **Bảng chỉ số KSNK [A-113]**: `IC Indicator Value` là bảng **materialized** — tính một lần khi khóa kỳ (job RQ `long`, hook `tracecore_ic_indicators` gọi từng module), index (`indicator`, `period`, `department`); bảng chỉ số, Cổng khoa, báo cáo Hội đồng, tự đánh giá QĐ 38 chỉ **đọc** → ≤ 3 giây với 24 tháng dữ liệu bệnh viện 1.000 giường (NFR-PERF-05, đo bằng dữ liệu sinh giả). Kỳ chưa khóa hiển thị giá trị tạm tính on-demand có nhãn Tạm, cache Redis 10 phút. Import vi sinh/mẫu số (vài nghìn dòng) chạy nền RQ `default`, báo lỗi theo dòng.
 
 ### 8.6 Testing
 
@@ -1358,7 +1635,7 @@ Promotion: `dev` → `staging` → `production`, cùng artefact là tag Git củ
 | Tầng | Phạm vi | Framework / công cụ | Nơi chạy |
 | --- | --- | --- | --- |
 | Unit (nhiều) | `core.gs1` (mã GIAI/(01)(11)(17)(21), check digit), `core.step_gate` (ma trận bước trước), tính hạn dùng, cơ số, định mức tiêu hao, chi phí, FIFO/FEFO, chênh lệch kg; 100 % BRU có test | `FrappeTestCase` (`frappe.tests.utils`), `bench --site test_site run-tests --app tracecore` (pytest-style, có thể chạy qua `pytest` với plugin frappe) | CI mỗi PR |
-| Integration (vừa) | Hook/Workflow end-to-end trong DB test: tiếp nhận → lô rửa → đóng gói → mẻ → giải phóng → tiêu hao Stock Entry → Cost Sheet; permission ma trận 10 vai trò × DocType (sinh test từ #13 §2.1, 100 % ô — NFR-SEC-07); idempotency; Department permission; audit append-only | `FrappeTestCase` + fixtures demo | CI mỗi PR |
+| Integration (vừa) | Hook/Workflow end-to-end trong DB test: tiếp nhận → lô rửa → đóng gói → mẻ → giải phóng → tiêu hao Stock Entry → Cost Sheet; permission ma trận 13 vai trò × DocType (sinh test từ #13 §2.1 + mở rộng A-113, 100 % ô — NFR-SEC-07/09); idempotency; Department permission; audit append-only | `FrappeTestCase` + fixtures demo | CI mỗi PR |
 | Contract/API | RPC `tracecore.v1.*` schema request/response (JSON schema từ #11), mã lỗi, `X-Idempotency-Key` | `FrappeTestCase` + `frappe.client` / `requests` lên site test | CI |
 | E2E (mỏng) | **Luồng tới hạn**: UC-05 tiếp nhận; UC-06 lô rửa nạp/dỡ; UC-08 đóng gói + Cycle ID (+ chặn cơ số UC-31); UC-09 nạp mẻ; UC-10 giải phóng (Đạt / Không đạt → thu hồi UC-14); UC-13 quét sử dụng online + offline replay | **Playwright (Python)** chạy Chromium kích cỡ kiosk 1366×768 và PDA 412×915 với network offline emulation; không dùng Cypress | CI nightly + trước release trên staging |
 | Phi chức năng | Load test NFR-PERF-01/02 (Locust 40 trạm, 3.000 scan/ngày nén trong 1 giờ); diễn tập offline 4 giờ; restore drill; pentest ASVS L2; kiểm nhãn sau hấp/plasma tại UAT (NFR-COMP-02) | Locust; checklist UAT (#14) | Staging / UAT |
@@ -1370,7 +1647,7 @@ Promotion: `dev` → `staging` → `production`, cùng artefact là tag Git củ
 ---
 ## 9. Architecture Decisions
 
-Mọi ADR Status **Accepted** theo quyết định chủ đầu tư 2026-10-17 (`.architecture-inputs.md`) trừ khi ghi Proposed. "Requirements addressed" trích ID thật từ `docs/srs.md` / `docs/use-cases.md`; FR được liệt kê ở đây là FR mà ADR **thiết kế trực tiếp** (dùng cho RTM Design ref).
+Mọi ADR Status **Accepted** theo quyết định chủ đầu tư 2026-10-17 (`.architecture-inputs.md`) trừ khi ghi Proposed; ADR-015 (A-113) Accepted theo người dùng duyệt 03/11/2026, chủ đầu tư chưa xác nhận. "Requirements addressed" trích ID thật từ `docs/srs.md` / `docs/use-cases.md`; FR được liệt kê ở đây là FR mà ADR **thiết kế trực tiếp** (dùng cho RTM Design ref).
 
 ### ADR-001: Frappe v15 modular monolith — một site, app `tracecore` cạnh erpnext/hrms
 
@@ -1382,7 +1659,7 @@ Mọi ADR Status **Accepted** theo quyết định chủ đầu tư 2026-10-17 (
 SRS §2.5 và chủ đầu tư ấn định Frappe v15/ERPNext v15; đội Dev Miyano mạnh Frappe; 10 phân hệ liên kết chặt qua dữ liệu (Set Unit, Pack, Load dùng chung bởi M2/M6/M7/M8); tải khiêm tốn (40 trạm, 0,1–10 req/s). Câu hỏi là một app hay nhiều app/site, và có tách service nào không. BA #12 đặt tên app `cssd`, RPC `cssd.v1.*`; sản phẩm đã đổi tên TraceCore (CHG-030).
 
 **Decision**
-Một Frappe site, một app `tracecore` gồm 11 module Frappe (`core` + M1–M10) cùng `erpnext`, `hrms`; khuyến nghị cài `insights`, `print_designer`. Đổi tên: app `cssd` → `tracecore`, namespace RPC `cssd.v1.*` → **`tracecore.v1.*`** (đường dẫn `/api/method/tracecore.v1.<domain>.<action>`), giữ nguyên 40 endpoint #11 về chức năng. Ranh giới module: module nghiệp vụ chỉ phụ thuộc `core` và ERPNext; không import chéo giữa M1–M10 ngoài Link field và `doc_events`. Không lên v16.
+Một Frappe site, một app `tracecore` gồm 11 module Frappe (`core` + M1–M10; A-113: + 7 module M11–M17 = 18) cùng `erpnext`, `hrms`; khuyến nghị cài `insights`, `print_designer`. Đổi tên: app `cssd` → `tracecore`, namespace RPC `cssd.v1.*` → **`tracecore.v1.*`** (đường dẫn `/api/method/tracecore.v1.<domain>.<action>`), giữ nguyên 40 endpoint #11 về chức năng. Ranh giới module: module nghiệp vụ chỉ phụ thuộc `core` và ERPNext; không import chéo giữa M1–M10 ngoài Link field và `doc_events`. Không lên v16.
 
 **Options considered**
 - **Modular monolith trên 1 site (chọn)** — một deploy, một transaction scope cho giải phóng mẻ, permission/audit thống nhất. Con: scale as a unit (đủ cho NFR-SCAL-01).
@@ -1405,7 +1682,7 @@ BA #12 §5.4 để mở "Frappe UI (Vue) hoặc web app riêng". Yêu cầu tr�
 - **Kiosk**: Frappe `Page` `station` (`tracecore/tracecore/page/station/station.js|html|css`) full-screen, router theo trạm (T1…T8, linen, waste), dùng `frappe.ui` controls tối thiểu + CSS riêng cho nút lớn/độ tương phản; Chromium kiosk mode mở `https://<site>/app/station?station=TR-001`.
 - **PDA**: cùng Page; app `tracecore` phục vụ `manifest.json` và `sw.js` qua `website_route_rules`/`hooks.py` (`app_include_js`, `web_include_js`); Service Worker precache shell `/app/station`, assets, danh mục tối thiểu; IndexedDB outbox (ADR-003). Cài lên màn hình chính Android (Add to Home Screen) bằng MDM.
 - **Cổng khoa**: Portal Page + Web Form (Frappe Website) cho R08.
-- **Desk**: Workspace M1–M10, Form/List mặc định + Client Script.
+- **Desk**: Workspace M1–M10 (A-113: + Workspace "KSNK toàn viện" cho M11–M17 và bảng chỉ số), Form/List mặc định + Client Script.
 Không dùng Vue SPA riêng (`frappe-ui`) và không dùng Frappe Builder cho trạm.
 
 **Options considered**
@@ -1593,6 +1870,8 @@ Truy xuất và kiểm tra tuân thủ đầy đủ. Chấp nhận chi phí lưu
 
 Không cài Healthcare, Payments, Webshop, Selling, CRM, Projects.
 
+> **Mở rộng A-113 (2026-11-03, v1.12 — D6).** KSNK toàn viện tận dụng tiếp, **không tạo DocType trùng chức năng**: đào tạo KSNK = HRMS `Training Program`/`Training Event`/`Training Result` (+ `tc_ic_category`), M11 chỉ tính tỷ lệ và nhắc; sự cố và hành động khắc phục của mọi module = `Incident CAPA` (thêm `incident_category` Compliance / Environment / Occupational Exposure / Food Safety); đơn vị thuê ngoài (vệ sinh, giặt là, suất ăn, xử lý chất thải, tiệt khuẩn) = ERPNext `Supplier` (+ `tc_ic_service_type`, giấy phép, hợp đồng) — `Waste Treatment Vendor` (ADR-013) giữ nguyên, Link Supplier; nhiệt độ/độ ẩm khu CSSD = `Environment Log` (M9, không thay bằng M15); hóa chất KSNK = ERPNext `Item` (+ `tc_ic_chemical_type`) và `Stock Entry` xuất tới kho khoa; nhắc nhở mọi loại = `Notification Rule` (ADR-014); khoa = `Department`; nhân viên = `Employee`, sinh viên thực tập = `Trainee Induction` riêng vì sinh viên không là Employee. Không cài app Healthcare: định nghĩa ca, mẫu số, chủng vi sinh là DocType `tracecore` gọn theo nghiệp vụ KSNK, không phải hồ sơ bệnh án.
+
 **Options considered**
 - **Tận dụng có chọn lọc (chọn)** — kho/lô/hạn/giá chuẩn, ít code, báo cáo tồn sẵn. Con: phụ thuộc ERPNext upgrade; UI ERPNext nặng → che bằng RPC/Page trạm.
 - **Tự xây toàn bộ 40 DocType như #08 (gồm Item/Stock Entry riêng)** — gọn, tùy biến. Con: lặp logic kho (valuation, FEFO), không có Stock Ledger chuẩn; ERPNext vẫn phải cài (constraint).
@@ -1601,7 +1880,7 @@ Không cài Healthcare, Payments, Webshop, Selling, CRM, Projects.
 **Consequences**
 Giảm ~30 % khối lượng DocType; tồn kho và đề nghị mua chuẩn ERPNext. Chấp nhận: hook của ERPNext Stock Entry phức tạp (kiểm UOM/valuation) → tiêu hao chạy async với xử lý tồn âm (FR-M6-03.2 cho phép tồn âm qua `allow_negative_stock` theo kho tiêu hao). Nâng cấp ERPNext phải regression test M6/M7.
 
-### ADR-010: Mã hóa mã bệnh nhân (trường Password/AES) và RBAC 10 vai trò + User Permission theo Department
+### ADR-010: Mã hóa mã bệnh nhân (trường Password/AES) và RBAC 10 vai trò (13 từ A-113) + User Permission theo Department
 
 **Status:** Accepted
 **Date:** 2026-10-17
@@ -1625,6 +1904,8 @@ Không tích hợp HIS; chỉ lưu mã BN/ca mổ nhập tay nhưng đó vẫn l
 
 **Consequences**
 Mã BN không bao giờ xuất hiện rõ trong DB/log/export; RBAC kiểm thử được. Chi phí: tra cứu theo mã BN qua hash (chỉ khớp chính xác). Quy trình xoay khóa cần R10 phê duyệt (NFR-SEC-06).
+
+> **Mở rộng A-113 (2026-11-03, v1.12 — D4, D7).** (a) **13 vai trò**: thêm `TC R11` Giám sát viên KSNK (TT 16/2018 Điều 22; PDA + Desk; toàn viện; xem mã BN đầy đủ có lý do + Audit), `TC R12` Mạng lưới viên KSNK (Điều 19; PDA + Cổng khoa; **User Permission Department** như R08), `TC R13` Hội đồng KSNK & Ban Giám đốc (Điều 17; Desk bảng chỉ số, ghi sổ `IC Annual Plan`; **không** quyền đọc DocType có người bệnh — chỉ `IC Indicator Value` và báo cáo tổng hợp); 2FA thêm cho R11, R13. Ma trận quyền mở rộng cho R11–R13 × DocType M11–M17 và kiểm thử tự động từ CSV như NFR-SEC-07 (NFR-SEC-09). (b) **Mã BN** áp dụng cho DocType M13/M14/M16 chứa người bệnh: `Device Episode`, `Surgical Surveillance`, `HAI Case`, `Microbiology Isolate`, `Isolation Order`, `Notifiable Disease Report`, `Occupational Exposure.source_patient_code` — cùng bộ ba `patient_code` (Password, AES-256-GCM bọc như trên) / `patient_code_masked` / `patient_code_hash` (HMAC-SHA256) qua mixin `core.patient_code`; **không lưu họ tên**, chỉ mã BN, năm sinh, giới, khoa, ngày (BRU-HAI-005); import (mẫu số không có BN; danh sách phẫu thuật, vi sinh có mã BN) mã hóa ngay khi ghi dòng, file nguồn xóa sau khi import thành công; R13 và mọi report/export chỉ thấy masked (FR-M13-15, NFR-PRIV-01 — test tự động); `hai.reveal_patient_code(doctype, name, reason)` chỉ R01/R11; tìm người bệnh đa kháng tái nhập (FR-M14-05) bằng hash. (c) Thời hạn lưu định danh cấu hình được và job xóa định danh (NFR-PRIV-02, §8.2). (d) Hồ sơ phơi nhiễm nhân viên: quyền đọc R01, R11, chính nhân viên; không trường kết quả xét nghiệm/chẩn đoán (FR-M16-05/06).
 
 ### ADR-011: Triển khai on-premise tại bệnh viện với backup/DR; dev/staging trên bench Miyano
 
@@ -1711,6 +1992,33 @@ DocType `Notification Rule` (event_code, mô tả, child `Notification Recipient
 **Consequences**
 Mọi sự kiện nghiệp vụ dùng một API `emit`; R10 cấu hình người nhận. Chi phí: SMS adapter phải viết theo gateway BV (chưa biết — giả định HTTP REST). Thông báo khẩn ≤ 1 phút (FR-M2-12.3) đạt vì in-app realtime + email ngay, không chờ scheduler.
 
+
+### ADR-015: Engine phiếu giám sát cấu hình được (`Audit Template` có phiên bản + `Audit Session`) dùng chung M12, M11, M13, M15, M16, M17
+
+**Status:** Accepted (người dùng duyệt D5, D10 ngày 03/11/2026; chủ đầu tư chưa xác nhận)
+**Date:** 2026-11-03
+**Requirements addressed:** FR-M12-01, FR-M12-02, FR-M12-03, FR-M12-04, FR-M12-05, FR-M12-06, FR-M12-07, FR-M12-08, FR-M12-09, FR-M12-10, FR-M12-11, FR-M12-14, FR-M11-13, FR-M13-14, FR-M15-02, FR-M15-06, FR-M17-01, FR-M9-25, NFR-MAINT-04, NFR-USAB-03, NFR-AVAIL-05, NFR-PERF-05; UC-43, UC-44, UC-45, UC-54, UC-56; BRU-AUD-001..005
+
+**Context**
+TT 16/2018 giao khoa KSNK giám sát tuân thủ vệ sinh tay (5 thời điểm, tính theo cơ hội — QĐ 3916), phòng ngừa chuẩn – PPE, gói dự phòng (VAP/CLABSI/CAUTI/SSI, chấm tất-cả-hoặc-không), vệ sinh môi trường theo mức nguy cơ, đơn vị thuê ngoài, an toàn thực phẩm và tự đánh giá chất lượng (TT 35/2024). Tiêu chí của từng loại phiếu **khác nhau giữa bệnh viện** và **sẽ đổi** khi thông tư thay TT 16/2018 ban hành (dự thảo 9/2026, 14 nhóm biện pháp). Mã hóa cứng từng loại phiếu thành DocType riêng tạo ≥ 7 DocType gần giống nhau, mỗi lần đổi tiêu chí phải deploy; đồng thời phiếu phải ghi trên PDA đeo găng, ≤ 3 chạm mỗi cơ hội, offline ≥ 4 giờ (NFR-USAB-03, NFR-AVAIL-05) và kết quả phải vào bảng chỉ số M9 không tính lại khi mở (NFR-PERF-05). CLAUDE.md cấm import chéo giữa module.
+
+**Decision**
+Một engine phiếu ở module `Compliance Audit` (M12), các module khác dùng qua Link và `audit_type`:
+- **`Audit Template`** (submittable; ghi sổ = R01 duyệt, **khóa nội dung**; sửa = tạo phiên bản mới `version_no + 1`, `effective_from`; mã `MP-<template_code>-V<n>`): `audit_type` (Vệ sinh tay / Phòng ngừa chuẩn–PPE / Gói dự phòng / Vệ sinh môi trường / Cơ sở hạ tầng / Đơn vị thuê ngoài / An toàn thực phẩm / Tự đánh giá chất lượng / Khác), `scoring_method` ∈ {**Theo cơ hội** (vệ sinh tay: tỷ lệ = cơ hội có hành động / tổng cơ hội, BRU-AUD-002), **Tất cả-hoặc-không** (gói dự phòng, BRU-AUD-003: mục Không áp dụng loại khỏi mẫu số), **Điểm %** (trọng số theo mục; mục `is_critical` không đạt → phiếu Không đạt + đề nghị NC, BRU-AUD-005)}, `bundle_type`, `min_sample` (dưới ngưỡng → nhãn Chưa đủ mẫu, FR-M12-11), `legal_ref`; child `Audit Template Item` (`section`, `question`, `answer_type` Có/Không / Lựa chọn / Số / Ảnh, `options`, `weight`, `is_critical`, `guidance`). Bộ mẫu khởi tạo (vệ sinh tay 5 thời điểm, phòng ngừa chuẩn–PPE, 4 gói dự phòng, VSMT theo mức nguy cơ, thuê ngoài, ATTP, tự đánh giá TT 35/2024) là **fixtures ở trạng thái Nháp**, nội dung do Medcons + chuyên gia KSNK soạn (OQ-V12-08), `migrate` không ghi đè bản bệnh viện đã sửa (NFR-MAINT-04).
+- **`Audit Schedule`**: lịch theo mẫu × khoa × tần suất × chỉ tiêu số phiếu/cơ hội; scheduler hằng ngày giao việc (Notification Rule `audit_due`) và tính độ bao phủ (FR-M12-03).
+- **`Audit Session`** (submittable): lưu **bản chụp phiên bản mẫu** (`audit_template` trỏ phiên bản, items copy vào `Audit Answer` — đổi mẫu không đổi phiếu cũ, BRU-AUD-001), `observer` ≠ người được quan sát (BRU-AUD-004, FR-M12-10 chặn tại client và server), các Link tùy loại: `device_episode` (M13, gói dự phòng), `environment_zone` + `next_due` (M15, VSMT/hạ tầng), `supplier` (thuê ngoài, suất ăn M17). Điểm tính server-side trong `validate` theo `scoring_method`; `on_submit` → phản hồi khoa (FR-M12-08), đề nghị `Incident CAPA` Compliance (FR-M12-09), Audit Log.
+- **RPC** `tracecore.v1.audit.record_opportunity(session_uuid, opportunity)` và `audit.submit_session(session_uuid, answers)` đều `@idempotent` (UUID client làm `X-Idempotency-Key`); PDA/Cổng khoa dùng Page `station` hiện có (ADR-002) với màn SCR-51 (cơ hội: 3 chạm = vai trò · thời điểm · hành động, nút ≥ 48 px) và SCR-52 (theo mục); mẫu đã duyệt precache trong Service Worker (ADR-003).
+- **Chỉ số**: M12 đăng ký hàm trong hook `tracecore_ic_indicators` (tỷ lệ tuân thủ VST theo khoa/nghề/thời điểm, tỷ lệ gói dự phòng, điểm VSMT…); M9 gọi khi khóa kỳ và ghi `IC Indicator Value` — M9 không import M12, M12 không import M9.
+- **Ranh giới**: M11 (tự đánh giá năm), M13 (phiếu gói gắn đợt thiết bị), M15 (phiếu VSMT, hạ tầng), M17 (phiếu ATTP) **chỉ** tạo/đọc `Audit Session` qua Link + `audit_type` và đọc kết quả qua `frappe.get_all`; M16 không dùng phiếu (nhận sự cố từ M10 qua hook). Thêm loại phiếu mới = thêm giá trị `audit_type` + fixture mẫu, không thêm DocType.
+
+**Options considered**
+- **Engine phiếu riêng, mẫu có phiên bản (chọn)** — tiêu chí là dữ liệu, khoa KSNK tự sửa không cần code; một đường PDA/offline/idempotent cho 7 loại phiếu; bản chụp phiên bản giữ kết quả kỳ đã khóa; thêm loại phiếu không thêm DocType. Con: builder mẫu phiếu trên Desk phức tạp hơn form cứng; logic tính điểm chung phải test kỹ 3 phương pháp; báo cáo phải pivot theo `item_code` thay vì cột cố định.
+- **Frappe Web Form + ERPNext `Quality Inspection`/`Quality Inspection Template`** — có sẵn mẫu tham số và kết quả Đạt/Không đạt. Con: không có khái niệm cơ hội vệ sinh tay (nhiều dòng/phiếu, 3 chạm), không chấm tất-cả-hoặc-không có trọng số, không phiên bản khóa nội dung, form Quality Inspection nặng trên PDA (cùng lý do ADR-009 không dùng cho `Daily Test`), Web Form không chạy offline với outbox.
+- **DocType cứng theo loại phiếu** (`Hand Hygiene Audit`, `Bundle Audit`, `Environment Audit`…) — form đơn giản, báo cáo cột cố định. Con: ≥ 7 DocType lặp nhau; mỗi bệnh viện và mỗi lần đổi thông tư phải sửa code và migrate; vi phạm D10 (nội dung chuyên môn không nằm trong code).
+
+**Consequences**
+Khoa KSNK cấu hình mẫu phiếu không cần dev; thông tư mới chỉ cần fixture mẫu mới và giá trị `measure_group`. Chi phí: builder mẫu (SCR-50) và bộ test tính điểm 3 phương pháp là việc lớn nhất của FEAT-060; báo cáo tuân thủ dựa trên `Audit Answer` pivot (Script Report) — chấp nhận vì khối lượng phiếu nhỏ (≈ 1.000 phiếu/tháng/bệnh viện 1.000 giường). Ngưỡng mặc định (`min_sample`, giờ báo phơi nhiễm, cỡ mẫu) là OQ-V12-09 — fixtures ghi giá trị đề xuất, R01 duyệt khi cài đặt. Phụ thuộc: FEAT-056 (vai trò, Module Def, `IC Indicator`) trước FEAT-060; M13/M15/M17 chỉ bắt đầu sau khi engine ghi sổ được phiếu.
+
 ---
 ## 10. Quality Requirements (kịch bản chất lượng)
 
@@ -1726,7 +2034,7 @@ Mọi sự kiện nghiệp vụ dùng một API `emit`; R10 cấu hình người
 | NFR-SEC-01 | Thẻ nhân viên hết năng lực T5 quét tại T5 → từ chối + lý do + Audit; 10 phút không thao tác → khóa; 5 lần sai mật khẩu → khóa tài khoản | §8.1 |
 | NFR-SEC-02 | Dump DB + grep log sau UAT → 0 mã BN dạng rõ; R03 mở Usage Record → ẩn 4 ký tự; R02 xem đầy đủ → Audit action Xem mã BN | ADR-010 |
 | NFR-SEC-03 | Administrator cố `DELETE`/`UPDATE` Audit Log qua Desk/API → bị từ chối; truy vấn audit theo Set ID 10 năm trả về đủ chuỗi | ADR-008 |
-| NFR-SEC-07 | CI chạy test ma trận 10 vai trò × ~60 DocType → 100 % ô đúng; R08 khoa A truy vấn Pack khoa B → rỗng | ADR-010, ADR-012 |
+| NFR-SEC-07 | CI chạy test ma trận 10 vai trò × ~60 DocType (A-113: 13 vai trò × ~105 DocType, xem NFR-SEC-09) → 100 % ô đúng; R08 khoa A truy vấn Pack khoa B → rỗng | ADR-010, ADR-012 |
 | NFR-COMP-01 / NFR-COMP-02 | Đoàn kiểm tra yêu cầu hồ sơ mẻ 3 năm trước → Archive Export PDF+CSV checksum; nhãn hấp sau 134 °C và plasma quét được 100 % mẫu (10 mẻ UAT) | ADR-004, ADR-008, Archive Export |
 | NFR-BACKUP-01 / 02 | Giả lập mất VM 10:07 → restore dump 02:00 + binlog tới 10:00 trên standby ≤ 4 giờ, mở 1 mẻ ngẫu nhiên đủ ảnh | ADR-011 |
 | NFR-MAINT-01 | R10 thêm trạm T9, máy in mới, mẫu nhãn mới, đổi hạn lưu loại gói → không deploy | Zone Station, Printer, Label Template, Setting |
@@ -1735,6 +2043,13 @@ Mọi sự kiện nghiệp vụ dùng một API `emit`; R10 cấu hình người
 | NFR-USAB-01 | 5 KTV đeo găng, màn ướt thực hiện tiếp nhận/nạp/đóng gói/cấp phát/quét sử dụng ≤ 3 chạm sau quét, nút ≥ 48 px | ADR-002; ux-foundations |
 | NFR-L10N-01 | Giao dịch 23:30 ngày 1 ghi tại trạm, sync 00:10 ngày 2 → báo cáo ngày tính theo `client_ts` Asia/Ho_Chi_Minh ngày 1 | ADR-003 client_ts |
 | NFR-PORT-01 / 02 | VM sạch Ubuntu 22.04 → `install_prod.sh` ≤ 4 giờ ra site chạy; xuất toàn bộ DocType ra CSV bằng Data Export | ADR-011; Frappe Data Export |
+| NFR-PRIV-01 [A-113] | Test tự động sau mỗi PR: quét JSON DocType M13/M14/M16 → 0 trường họ tên người bệnh, 0 trường kết quả xét nghiệm nhân viên; chạy mọi Script Report/Data Export của M13/M14/M16 với dữ liệu giả → 0 mã BN dạng rõ; R13 mở HAI Case → bị từ chối; R11 xem đầy đủ mã BN có lý do → Audit action Xem mã BN | ADR-010 mở rộng; `core.patient_code`; §8.1 |
+| NFR-PRIV-02 [A-113] | Đặt `patient_data_retention_months = 1`, tạo HAI Case 2 tháng trước, chạy job → `patient_code`/`hash`/`birth_year` null, `department`/ngày/kết quả giữ nguyên, `IC Indicator Value` kỳ đó không đổi; Audit ghi job | §8.2 Retention |
+| NFR-SEC-09 [A-113] | CI sinh test từ `permission_matrix.csv` mở rộng (13 vai trò × DocType M11–M17) → 100 % ô đúng; R12 khoa A truy vấn Audit Session/Ward Daily Census/Isolation Order khoa B → rỗng; R13 đọc Device Episode → từ chối | ADR-010 mở rộng, ADR-012 |
+| NFR-USAB-03 [A-113] | E2E PDA 412×915 (khi người dùng cho chạy): ghi 30 cơ hội vệ sinh tay, mỗi cơ hội ≤ 3 chạm (vai trò · thời điểm · hành động), nút ≥ 48 px, chữ ≥ 16 px, thao tác được một tay; không hover/swipe/long-press | ADR-002, ADR-015; SCR-51; design.md |
+| NFR-AVAIL-05 [A-113] | Tắt mạng PDA 4 giờ: ghi 2 phiếu VST (40 cơ hội), 3 mẫu số ngày, 1 báo phơi nhiễm → UI báo Offline – n giao dịch chờ; bật mạng → 100 % lên server đúng thứ tự, 0 trùng (`X-Idempotency-Key`), mẫu số trùng (ngày, khoa) → Sync Conflict cho R11 | ADR-003, ADR-015; §8.3 |
+| NFR-MAINT-04 [A-113] | Cài app → fixtures Audit Template/HAI Case Definition/MDRO Rule/Environmental Limit/Exposure Follow-up Template ở trạng thái Nháp; R01 sửa và duyệt một mẫu; `bench migrate` lần 2 → bản đã sửa giữ nguyên, không tạo bản trùng; test chạy migrate hai lần trong CI | §8.2; ADR-015 |
+| NFR-PERF-05 [A-113] | Sinh giả 24 tháng dữ liệu bệnh viện 1.000 giường (≈ 24 × 60 khoa × 40 chỉ số dòng `IC Indicator Value`, 24.000 Audit Session, 720.000 dòng mẫu số) → mở bảng chỉ số KSNK (SCR-66) và Cổng khoa ≤ 3 giây P95; khóa kỳ tính giá trị nền ≤ 5 phút | §8.5 materialized; index (indicator, period, department) |
 
 ---
 
@@ -1754,7 +2069,11 @@ Mọi sự kiện nghiệp vụ dùng một API `emit`; R10 cấu hình người
 | R-10 | **Hook ERPNext Stock Entry** nặng/thay đổi giữa minor version | Tiêu hao async lỗi, tồn âm | Test hồi quy M6 trong CI; `allow_negative_stock` kho tiêu hao; job retry | Mỗi nâng cấp |
 | R-11 | **Hai lớp mã hóa mã BN** (giả định AES-256-GCM bọc Password field) phức tạp hóa | Lỗi xoay khóa, mất khả năng giải mã | Script re-encrypt có test; backup `site_config`; xin chủ đầu tư chốt Fernet đủ hay không (OQ) | Detailed-design M2 |
 | R-12 | **SMS gateway BV** chưa rõ giao thức | FR-M9-10 kênh SMS trễ | Adapter interface; email là kênh chính; SMS Should-level thực tế | Khi BV cung cấp API |
-| R-13 | **Ma trận quyền #13 chưa có M10 và DocType mới** | Lệch quyền | Amendment #13 trong detailed-design M10; test ma trận CI | Trước M10 |
+| R-13 | **Ma trận quyền #13 chưa có M10 và DocType mới** (A-113: chưa có R11–R13 và M11–M17) | Lệch quyền | Amendment #13 trong detailed-design M10; test ma trận CI; A-113: mở rộng `permission_matrix.csv` tại FEAT-056 (NFR-SEC-09) | Trước M10; trước FEAT-056 |
+| R-14 [A-113] | **Nội dung chuyên môn khởi tạo** (mẫu phiếu, định nghĩa ca NKBV, quy tắc đa kháng, ngưỡng môi trường, bước theo dõi phơi nhiễm, ngưỡng cảnh báo mặc định) chưa có người soạn/duyệt (OQ-V12-08, OQ-V12-09) | FEAT-060/063/067/070/071 chỉ có fixtures mẫu rỗng hoặc sai chuyên môn; UAT không chạy được; sai chỉ số báo cáo BYT | Medcons + chuyên gia KSNK soạn trước FEAT-060; fixtures Nháp, R01 duyệt tại bệnh viện; ghi `legal_ref` từng mục; giá trị ngưỡng đặt trong Setting/mẫu, không trong code | Trước FEAT-060 |
+| R-15 [A-113] | **Dữ liệu sức khỏe là dữ liệu cá nhân nhạy cảm (NĐ 356/2025)**; bệnh viện là bên xử lý; mã BN nhập file từ HIS/LIS; thời hạn lưu chưa chốt (OQ-V12-07) | Vi phạm pháp lý; bệnh viện không dám triển khai M13/M14/M16 | ADR-010 mở rộng (không họ tên, mã hóa, che, hash, xem có lý do); NFR-PRIV-01 test tự động; job xóa định danh (NFR-PRIV-02); Medcons cung cấp sơ đồ luồng dữ liệu; cần luật sư xác nhận trước go-live M13 | Trước FEAT-063 |
+| R-16 [A-113] | **Định dạng file HIS/WHONET của bệnh viện thí điểm chưa biết** (OQ-V12-05); phòng xét nghiệm có thể không xuất được file | FR-M9-26, FR-M14-01 không nhập được → nhập tay toàn bộ | `Import Mapping Profile` ánh xạ cột cấu hình được; nhập tay có xác nhận là đường chính thức (FR-M13-02, FR-M14-02); xin file mẫu trước FEAT-056 | Trước FEAT-056 |
+| R-17 [A-113] | **TT 54/2015 (khai báo bệnh truyền nhiễm) có thể đã bị thay** bởi hướng dẫn Luật Phòng bệnh 2025; hạn khai báo nhóm A/B/C chưa rõ (OQ-V12-03); dự thảo thông tư thay TT 16/2018 chưa ban hành | FR-M14-10 sai hạn; `measure_group` 14 nhóm có thể đổi | Hạn theo nhóm bệnh là cấu hình (Setting), không hằng số; `measure_group` là danh mục dữ liệu; rà lại bảng căn cứ khi thông tư ban hành | Khi có văn bản |
 | Debt-1 | Transaction đồng bộ ở `load.release` cập nhật nhiều bảng (Load, N Pack, N Gate, N Set Unit) — với mẻ 50 gói có thể gần 1 s | Vượt NFR-PERF-01 ở mẻ lớn | Đo; nếu cần tách cập nhật Pack sang job ngay sau commit (trạng thái Pack "Đang giải phóng") | Sau load test |
 | Debt-2 | Dashboard làm mới 60 s bằng polling nếu socketio không ổn trên kiosk | Tải thêm | Chuyển realtime khi ổn | Sprint M9 |
 
@@ -1785,5 +2104,17 @@ Mọi sự kiện nghiệp vụ dùng một API `emit`; R10 cấu hình người
 | NC / CAPA | Không phù hợp / hành động khắc phục – phòng ngừa (Incident CAPA) |
 | CTNH | Chất thải nguy hại; chứng từ theo NĐ 08/2022/NĐ-CP |
 | TT 20/2021/TT-BYT | Thông tư quản lý chất thải y tế trong khuôn viên cơ sở y tế (mã màu vàng/đen/xanh/trắng) |
+| NKBV / HAI [A-113] | Nhiễm khuẩn bệnh viện (Healthcare-Associated Infection): nhiễm khuẩn mắc phải sau nhập viện theo định nghĩa ca có phiên bản (`HAI Case Definition`, QĐ 3916); tỷ suất ‰ ngày nằm viện / ngày thiết bị |
+| NKVM / SSI [A-113] | Nhiễm khuẩn vết mổ (Surgical Site Infection) — nông / sâu / cơ quan–khoang; cửa sổ theo dõi 30 ngày hoặc 90 ngày khi có cấy ghép (QĐ 1526) |
+| NNIS [A-113] | Chỉ số nguy cơ NKVM 0–3 = (ASA ≥ 3) + (vết mổ Nhiễm/Bẩn) + (thời gian mổ > T của nhóm phẫu thuật) — BRU-HAI-003 |
+| VAP / CLABSI / CAUTI [A-113] | Viêm phổi thở máy / NK huyết liên quan catheter trung tâm / NK tiết niệu liên quan thông tiểu — ba nhiễm khuẩn liên quan thiết bị có gói dự phòng và đợt thiết bị (`Device Episode`) |
+| MDRO / đa kháng [A-113] | Multidrug-Resistant Organism — vi khuẩn đa kháng xác định theo `MDRO Rule` đã duyệt (MRSA, ESBL, CRE…); chủng mới → hook `tracecore_mdro_detected` |
+| WHONET [A-113] | Phần mềm/định dạng dữ liệu kháng sinh đồ của WHO; QĐ 3596 yêu cầu phòng xét nghiệm báo cáo hằng tháng theo định dạng này; TraceCore chỉ **nhập file** WHONET/CSV |
+| Cơ hội vệ sinh tay [A-113] | Đơn vị đo tuân thủ VST: một thời điểm (1–5 theo WHO) cần vệ sinh tay của một người; tuân thủ = cơ hội có hành động / tổng cơ hội (BRU-AUD-002), ghi 3 chạm trên PDA |
+| Gói dự phòng (bundle) [A-113] | Bộ biện pháp bắt buộc cho người bệnh có thiết bị xâm lấn (VAP/CLABSI/CAUTI/SSI); chấm tất-cả-hoặc-không (BRU-AUD-003) |
+| Mẫu số ngày (census) [A-113] | Số người bệnh, số thở máy, số catheter TM trung tâm, số thông tiểu của một khoa trong một ngày (`Ward Daily Census`, unique ngày–khoa) — mẫu số của tỷ suất NKBV |
+| IC Indicator Value [A-113] | Giá trị chỉ số KSNK được tính và lưu khi khóa kỳ qua hook `tracecore_ic_indicators`; nguồn duy nhất của bảng chỉ số, Cổng khoa, báo cáo Hội đồng |
+| R11 / R12 / R13 [A-113] | Giám sát viên KSNK (toàn viện, PDA + Desk) / Mạng lưới viên KSNK (khoa mình, PDA + Cổng khoa) / Hội đồng KSNK & Ban Giám đốc (Desk, số liệu tổng hợp) — TT 16/2018 Điều 22, 19, 17 |
+| NĐ 356/2025/NĐ-CP [A-113] | Nghị định hướng dẫn Luật Bảo vệ dữ liệu cá nhân 2025: thông tin sức khỏe là dữ liệu cá nhân nhạy cảm → NFR-PRIV-01/02 |
 | RPO / RTO | Recovery Point / Time Objective (≤ 15 phút / ≤ 4 giờ) |
-| Modular monolith | Một deployable (Frappe site) với ranh giới module rõ (M1–M10 + core) |
+| Modular monolith | Một deployable (Frappe site) với ranh giới module rõ (M1–M17 + core) |

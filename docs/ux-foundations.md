@@ -1,7 +1,7 @@
 # UX Foundations: TraceCore
 
-> Status: Draft (chờ chủ đầu tư duyệt) · Last updated: 2026-10-17
-> Sources: docs/srs.md v1.11 (§1.2, §2.3, §2.5, §3.1, §3.2.1, §3.3) · docs/use-cases.md v1.11 (39 UC) · docs/architecture.md (**chưa tồn tại tại thời điểm viết** — surface lấy từ `.architecture-inputs.md`, cần đối chiếu lại khi có) · input/ba_md/d09.md (#09) · #17 HTML · docs/design-refs (21 ảnh)
+> Status: Draft (chờ chủ đầu tư duyệt) · Last updated: 2026-11-03 (A-113)
+> Sources: docs/srs.md v1.12 (§1.2, §2.3, §2.5, §3.1, §3.2.1, §3.3) · docs/use-cases.md v1.12 (57 UC) · BA v1.12 SRS-lite (A-113, M11–M17 + M9 mở rộng) · docs/architecture.md (**chưa tồn tại tại thời điểm viết** — surface lấy từ `.architecture-inputs.md`, cần đối chiếu lại khi có) · input/ba_md/d09.md (#09) · #17 HTML · docs/design-refs (21 ảnh)
 > Design system: **docs/design.md + docs/tokens.json** (nguồn sự thật duy nhất cho mọi giá trị thiết kế — tài liệu này chỉ tham chiếu, không lặp lại)
 
 ## Revision History
@@ -42,17 +42,18 @@
 | 01/11/2026 | Amendment A-99: thẻ Hoàn thành nạp T5 (SCR-09) và T2 (SCR-06) có nút Lưu PDF nhãn cạnh mã mẻ/lô, chạy được khi không có máy in; T4 giữ nguyên |
 | 01/11/2026 | Amendment A-98 (#1830, sửa NAV-02): Tổng quan hiện số liệu ngay, tab trình duyệt có tên trạm và TraceCore |
 | 03/11/2026 | Amendment T4-BOM-01, người dùng duyệt trong chat: SCR-08 T4, thành phần bộ hiển thị một cột, mỗi dụng cụ một dòng (ảnh, tên, vị trí · số lượng, checkbox) xếp dọc như danh sách gói T5, thay lưới auto-fill ≥ 210 của design.md §4.11. Ảnh bộ đã sắp xếp vẫn ở cột trái khi có. Không đổi dữ liệu, không thêm SCR. |
+| 03/11/2026 | **Amendment A-113 — SRS v1.12 "Mở rộng KSNK toàn viện"** (Miyano dev lead + Claude Code; người dùng duyệt D1–D11 ngày 03/11/2026; chủ đầu tư chưa xác nhận). Thêm **20 màn SCR-47..66** cho 7 phân hệ mới M11 Chương trình KSNK, M12 Giám sát tuân thủ, M13 Giám sát NKBV, M14 Vi sinh–cách ly–ổ dịch, M15 Vệ sinh môi trường, M16 An toàn nghề nghiệp, M17 ATTP & truyền thông, và M9 mở rộng (bảng chỉ số KSNK toàn viện, nhập file ngoài). Thêm 3 vai trò **R11** Giám sát viên KSNK (PDA + Desk), **R12** Mạng lưới viên KSNK (PDA + Cổng khoa, chỉ khoa mình), **R13** Hội đồng KSNK & Ban Giám đốc (Desk, chỉ số tổng hợp). PDA thêm nhóm chức năng "Giám sát KSNK" (phiếu vệ sinh tay theo cơ hội SCR-51, phiếu theo mục SCR-52, mẫu số/đợt thiết bị SCR-55, báo phơi nhiễm SCR-63) chạy offline ≥ 4 giờ (NFR-AVAIL-05). DEPT thêm mẫu số ngày & đợt thiết bị (SCR-55), phiếu gói dự phòng (SCR-52 view khoa), lệnh cách ly (SCR-60), báo phơi nhiễm (SCR-63), chỉ số khoa mình (SCR-66 view DEPT). WEB thêm 7 module sidebar + Workspace "KSNK toàn viện". Một engine phiếu giám sát (ADR-015) dùng chung PDA/DEPT/WEB; **không SPA mới** (ADR-002, D9). SCR-43 tái dùng cho hồ sơ ánh xạ cột (FR-M9-26). SCR-44..46 vẫn là đề xuất chưa duyệt, không hiện thực. N_SCR 43 → 63. |
 
 ## 1. Overview
 
-TraceCore là phần mềm quản lý vận hành khoa Kiểm soát nhiễm khuẩn (CSSD) trên Frappe v15/ERPNext: truy xuất dụng cụ hai tầng mã (Set ID vĩnh viễn + Cycle ID một lần) qua 8 trạm T1–T8 với cổng kiểm soát 5 bước, quản lý đồ vải, [v1.11] chất thải y tế rắn, và ERP nội bộ khoa (nhân sự, thiết bị, kho, chi phí, cơ số) — SRS §1.2. Tài liệu này định nghĩa cấu trúc UI cho **4 surface** (mã surface là thuộc tính của màn hình; ID màn hình giữ nguyên `SCR-NN` theo quyết định 2026-10-17):
+TraceCore là phần mềm quản lý vận hành khoa Kiểm soát nhiễm khuẩn (CSSD) trên Frappe v15/ERPNext: truy xuất dụng cụ hai tầng mã (Set ID vĩnh viễn + Cycle ID một lần) qua 8 trạm T1–T8 với cổng kiểm soát 5 bước, quản lý đồ vải, [v1.11] chất thải y tế rắn, ERP nội bộ khoa (nhân sự, thiết bị, kho, chi phí, cơ số), và [v1.12, A-113] **KSNK toàn viện**: chương trình KSNK, giám sát tuân thủ, giám sát NKBV, vi sinh–cách ly–ổ dịch, vệ sinh môi trường, an toàn nghề nghiệp, an toàn thực phẩm (M11–M17) với bảng chỉ số cho Hội đồng KSNK (M9 mở rộng) — SRS §1.2. **17 phân hệ, 13 vai trò, 63 màn hình đã duyệt** (SCR-01..43 + SCR-47..66; SCR-44..46 đề xuất). Tài liệu này định nghĩa cấu trúc UI cho **4 surface** (mã surface là thuộc tính của màn hình; ID màn hình giữ nguyên `SCR-NN` theo quyết định 2026-10-17; v1.12 không thêm surface — ADR-002, D9):
 
 | Mã | Surface | Dành cho | Nền tảng |
 | :-- | :-- | :-- | :-- |
-| `WEB` | Web desktop quản trị | R01, R02, R09, R10 — quản trị, danh mục, kho, chi phí, dashboard, báo cáo (EI-UI-001) | Frappe Desk tùy biến + Frappe page |
+| `WEB` | Web desktop quản trị | R01, R02, R09, R10 — quản trị, danh mục, kho, chi phí, dashboard, báo cáo (EI-UI-001); [v1.12] R11 cấu hình/hồ sơ ca, R13 bảng chỉ số (chỉ đọc) | Frappe Desk tùy biến + Frappe page |
 | `STN` | Trạm quét cảm ứng (kiosk) | R03–R07 tại T1–T7, trạm đồ vải, trạm/kho chất thải; R02 khi giải phóng mẻ (EI-UI-002) | Frappe page full-screen, Chromium kiosk 15–22", máy quét HID, in nhãn, cân |
-| `PDA` | PDA Android (PWA) | R03/R05/R06/R07 di động tại T1/T5/T7, thu gom; R08 tại T8 (EI-UI-003) | Frappe PWA, offline queue IndexedDB |
-| `DEPT` | Cổng khoa | R08 — xem phiếu cấp phát, cơ số khoa, thông báo thu hồi, đồ vải, chất thải khoa mình (EI-UI-004) | Frappe Website/Portal page |
+| `PDA` | PDA Android (PWA) | R03/R05/R06/R07 di động tại T1/T5/T7, thu gom; R08 tại T8 (EI-UI-003); [v1.12] R11/R12 phiếu giám sát, mẫu số, báo phơi nhiễm (NFR-USAB-03, NFR-AVAIL-05) | Frappe PWA, offline queue IndexedDB |
+| `DEPT` | Cổng khoa | R08 — xem phiếu cấp phát, cơ số khoa, thông báo thu hồi, đồ vải, chất thải khoa mình (EI-UI-004); [v1.12] R08/R12/trưởng khoa — mẫu số ngày, đợt thiết bị, gói dự phòng, cách ly, báo phơi nhiễm, chỉ số khoa mình | Frappe Website/Portal page |
 
 Design-source mode: **Ingest #09 + Extract CSS #17 + ảnh** (fidelity `mapped`) — chi tiết design.md §9.
 
@@ -76,7 +77,10 @@ Palette 7 màu thô + tint; Arial/Segoe UI với mã ở Courier New; thang 2/4 
 
 - **NFR-ACC-01** (Should, Active): WEB đạt WCAG 2.1 AA; STN/PDA tương phản ≥ 4,5:1, chữ ≥ 16 px, Đạt/Không đạt không chỉ bằng màu.
 - **NFR-USAB-01** (Must): nút ≥ 48 px, dùng được khi đeo găng/màn ướt, thao tác chính ≤ 3 chạm sau quét.
-- **NFR-USAB-02** (Must) + EI-UI-006: 100 % tiếng Việt QĐ 3671, nhãn có tiếng Anh phụ, 0 chuỗi chưa dịch trên 43 SCR.
+- **NFR-USAB-02** (Must) + EI-UI-006: 100 % tiếng Việt QĐ 3671, nhãn có tiếng Anh phụ, 0 chuỗi chưa dịch trên 63 SCR.
+- **NFR-USAB-03** (Must, [v1.12]): phiếu giám sát trên PDA — mỗi cơ hội vệ sinh tay ≤ 3 chạm, nút ≥ 48 px, chữ ≥ 16 px, dùng được một tay (SCR-51, SCR-52).
+- **NFR-AVAIL-05** (Must, [v1.12]): phiếu giám sát, mẫu số, báo phơi nhiễm hoạt động offline ≥ 4 giờ và đồng bộ idempotent (SCR-51, 52, 55, 63).
+- **NFR-PRIV-01** (Must, [v1.12]): mã người bệnh che trên mọi danh sách, báo cáo, file xuất của M13/M14; xem đầy đủ chỉ R01/R11 có lý do, ghi Audit Log (SCR-56..61, SCR-66).
 - **NFR-L10N-01** (Must): định dạng ngày/giờ/số/tiền VN, múi giờ Asia/Ho_Chi_Minh.
 - **FR-M9-14** (Must): mọi màn trạm/PDA có trạng thái loading/empty/error/offline rõ ràng kèm hành động.
 Các NFR này **ưu tiên cao hơn nguồn ingest**; 5 cặp màu gốc không đạt AA đã được điều chỉnh (design.md §2.1). Quy tắc cơ học: design.md §5.
@@ -91,6 +95,8 @@ Các NFR này **ưu tiên cao hơn nguồn ingest**; 5 cặp màu gốc không �
 6. **Thiết bị ngoại vi không chặn nghiệp vụ**: in → hàng đợi; cân → nhập tay ghi nguồn (NFR-AVAIL-04).
 7. **Một chiều theo khu**: rail STN chỉ liệt kê trạm thuộc khu của máy; R08 chỉ thấy dữ liệu khoa mình (NFR-SEC-07).
 8. **Thuật ngữ và mã nhất quán**: cùng tên trạng thái, cùng nhãn T1–T8, mã luôn mono trên mọi surface và nhãn in.
+9. **[v1.12] Một engine phiếu, nhiều nơi ghi**: mọi phiếu giám sát (vệ sinh tay, phòng ngừa chuẩn, gói dự phòng, VSMT, đơn vị thuê ngoài, ATTP, tự đánh giá) là cùng `Audit Session` trên cùng `Audit Template` có phiên bản (ADR-015); PDA/DEPT ghi, WEB cấu hình và xem; R13 chỉ xem số liệu tổng hợp.
+10. **[v1.12] Dữ liệu sức khỏe tối thiểu**: không có ô họ tên người bệnh ở bất kỳ màn nào; mã BN hiện dạng che (`***1234`) mặc định; M16 không có ô kết quả xét nghiệm/chẩn đoán nhân viên (FR-M16-06).
 
 ---
 
@@ -98,9 +104,9 @@ Các NFR này **ưu tiên cao hơn nguồn ingest**; 5 cặp màu gốc không �
 
 ### B1. Web desktop quản trị — surface code `WEB`
 
-**Users & jobs** (SRS §2.3): **R01** Trưởng khoa KSNK — duyệt ghi đè cơ số trong 5 phút, theo dõi thu hồi/sự cố, xem giá thành, báo cáo, duyệt bảng giá, cấu hình cơ số (UC-30, UC-32, UC-37). **R02** Điều dưỡng trưởng — master data M1/M3/M4/M5, giải phóng mẻ, NC-CAPA, kiểm kê, xử lý xung đột offline (UC-01..04, 10, 14, 15, 19, 20, 22, 31). **R09** Kế toán/Vật tư — chi phí, bảng giá, nhập kho theo lô/hạn, giá thành, hợp đồng đơn vị xử lý (UC-24, 27, 28, 29, 36-A1). **R10** Quản trị — khu/trạm/thiết bị/người dùng/mẫu nhãn, audit, import danh mục (UC-21, 33, 39). Bối cảnh: văn phòng, chuột + bàn phím, 25–40 người đồng thời, ưu tiên mật độ và tốc độ.
+**Users & jobs** (SRS §2.3): **R01** Trưởng khoa KSNK — duyệt ghi đè cơ số trong 5 phút, theo dõi thu hồi/sự cố, xem giá thành, báo cáo, duyệt bảng giá, cấu hình cơ số (UC-30, UC-32, UC-37). **R02** Điều dưỡng trưởng — master data M1/M3/M4/M5, giải phóng mẻ, NC-CAPA, kiểm kê, xử lý xung đột offline (UC-01..04, 10, 14, 15, 19, 20, 22, 31). **R09** Kế toán/Vật tư — chi phí, bảng giá, nhập kho theo lô/hạn, giá thành, hợp đồng đơn vị xử lý (UC-24, 27, 28, 29, 36-A1). **R10** Quản trị — khu/trạm/thiết bị/người dùng/mẫu nhãn, audit, import danh mục (UC-21, 33, 39); [v1.12] cài đặt chương trình KSNK (số giường, tuyến), hồ sơ ánh xạ cột nhập file (UC-40, UC-57). **[v1.12] R01** thêm: cơ cấu KSNK, kế hoạch năm, văn bản nội bộ, họp Hội đồng, duyệt mẫu phiếu, định nghĩa ca, khóa kỳ, điều tra ổ dịch, vùng vệ sinh (UC-40..43, 48, 53, 54). **[v1.12] R11** Giám sát viên KSNK — Desk: lịch giám sát, hồ sơ ca NKBV, NKVM, import vi sinh, mẫu môi trường, hồ sơ phơi nhiễm, báo cáo (UC-43, 45, 47..51, 54, 55); PDA khi đi khoa. **[v1.12] R13** Hội đồng KSNK & Ban Giám đốc — Desk **chỉ đọc**: bảng chỉ số, báo cáo Hội đồng, ghi sổ kế hoạch năm (UC-41, UC-57); không thấy từng người bệnh. Bối cảnh: văn phòng, chuột + bàn phím, 25–40 người đồng thời, ưu tiên mật độ và tốc độ.
 
-**IA & navigation**: Frappe Desk với sidebar module theo 10 phân hệ (M1–M10) + Workspace "Tổng quan hôm nay" cho R01/R02 (ảnh 02). Zonebar web (blue) dưới navbar. Mỗi DocType có List View (filter bar, badge, hành động hàng loạt) và Form; các màn Dashboard/Report là Frappe page/Insights. Trung tâm thông báo (SCR-42) là chuông trên navbar + trang danh sách.
+**IA & navigation**: Frappe Desk với sidebar module theo 17 phân hệ (M1–M10 + [v1.12] M11–M17) + Workspace "Tổng quan hôm nay" cho R01/R02 (ảnh 02) và [v1.12] Workspace **"KSNK toàn viện"** cho R01/R11/R13 (bảng chỉ số SCR-66, việc cần làm: phiếu chưa làm, mẫu số thiếu, cách ly đang mở, phơi nhiễm đang theo dõi, mẫu môi trường trễ). Zonebar web (blue) dưới navbar. Mỗi DocType có List View (filter bar, badge, hành động hàng loạt) và Form; các màn Dashboard/Report là Frappe page/Insights. Trung tâm thông báo (SCR-42) là chuông trên navbar + trang danh sách. [v1.12] 7 module mới trong sidebar theo tên Module Def: Infection Program, Compliance Audit, HAI Surveillance, Microbiology, Environmental Hygiene, Occupational Safety, Food Safety (nhãn hiển thị tiếng Việt qua `_()`; thứ tự sau M10, trước Báo cáo quản trị — theo NAV-02 không hiện tiền tố M11–M17).
 
 ```mermaid
 graph TD
@@ -116,6 +122,14 @@ graph TD
     root --> m8["M8 Cơ số & vượt ngưỡng"]
     root --> m9["M9 Báo cáo, quản trị"]
     root --> m10["M10 Chất thải y tế"]
+    root --> m11["M11 Chương trình KSNK (v1.12)"]
+    root --> m12["M12 Giám sát tuân thủ (v1.12)"]
+    root --> m13["M13 Giám sát NKBV (v1.12)"]
+    root --> m14["M14 Vi sinh, cách ly, ổ dịch (v1.12)"]
+    root --> m15["M15 Vệ sinh môi trường (v1.12)"]
+    root --> m16["M16 An toàn nghề nghiệp (v1.12)"]
+    root --> m17["M17 ATTP & truyền thông (v1.12)"]
+    root --> ksnk["Workspace KSNK toàn viện (v1.12)"]
     root --> notif["Thông báo (SCR-42)"]
     m1 --> s01["SCR-01 Dụng cụ"] 
     m1 --> s02["SCR-02 Loại bộ & BOM"]
@@ -142,9 +156,43 @@ graph TD
     m9 --> s43["SCR-43 Import / Export"]
     m10 --> s40b["SCR-40 Đơn vị xử lý & hợp đồng (phần danh mục)"]
     m10 --> s41["SCR-41 Báo cáo chất thải & sự cố"]
+    m11 --> s47["SCR-47 Cơ cấu KSNK: cài đặt, Hội đồng, mạng lưới"]
+    m11 --> s48["SCR-48 Kế hoạch năm, họp Hội đồng, văn bản nội bộ"]
+    m11 --> s49["SCR-49 Đào tạo, thực tập, cải tiến (báo cáo)"]
+    m12 --> s50["SCR-50 Mẫu phiếu & lịch giám sát"]
+    m12 --> s53["SCR-53 Báo cáo tuân thủ & phản hồi khoa"]
+    m12 --> s54["SCR-54 Hóa chất KSNK, đơn vị thuê ngoài"]
+    m13 --> s56["SCR-56 Ca NKBV & kỳ báo cáo"]
+    m13 --> s57["SCR-57 Giám sát NKVM"]
+    m13 --> s58["SCR-58 Báo cáo NKBV/NKVM, cụm ca, cắt ngang"]
+    m14 --> s59["SCR-59 Import vi sinh, đa kháng, kháng thuốc"]
+    m14 --> s60["SCR-60 Lệnh cách ly & phòng cách ly"]
+    m14 --> s61["SCR-61 Ổ dịch & khai báo bệnh truyền nhiễm"]
+    m15 --> s62["SCR-62 Vùng, ngưỡng, mẫu môi trường, hạ tầng"]
+    m16 --> s64["SCR-64 Hồ sơ phơi nhiễm, tiêm chủng, báo cáo"]
+    m17 --> s65["SCR-65 ATTP & truyền thông người bệnh"]
+    ksnk --> s66["SCR-66 Bảng chỉ số KSNK, báo cáo Hội đồng, QĐ 38"]
+    m9 --> s43b["SCR-43 Hồ sơ ánh xạ cột nhập file (tái dùng, FR-M9-26)"]
 ```
 
 **Key flows**
+
+*[v1.12] Duyệt mẫu phiếu → lịch giám sát → phản hồi khoa [UC-43, UC-45]* — R01 duyệt phiên bản mẫu trên SCR-50 (khóa nội dung; sửa = phiên bản mới) → R01/R02 lập lịch (mẫu, khoa, tần suất, cỡ mẫu tối thiểu, người phụ trách) → hệ thống sinh việc theo kỳ → phiếu ghi trên PDA (SCR-51/52) → ghi sổ → SCR-53 hiện điểm, mục không đạt, phản hồi gửi trưởng khoa/mạng lưới viên; mục trọng yếu không đạt → nút "Mở NC" tới SCR-15 (Incident CAPA loại Compliance). Tỷ lệ dưới `min_sample` hiện nhãn chữ "Chưa đủ mẫu" (không chỉ màu).
+
+*[v1.12] Ca NKBV → khóa kỳ → bảng chỉ số [UC-48, UC-57]*:
+
+```mermaid
+flowchart LR
+    a(["R11 tạo ca Nghi ngờ (SCR-56)"]) --> b["Đối chiếu định nghĩa ca phiên bản hiệu lực tại ngày khởi phát"]
+    b --> c{"Xác định?"}
+    c -->|"Loại trừ + lý do"| x["Ca Loại trừ · Audit Log"]
+    c -->|"Xác định (R11/R01)"| d["Ca Xác định · mã BN che"]
+    d --> e["R01 khóa kỳ tháng (SCR-56)"]
+    e --> f["Tính & lưu IC Indicator Value (locked)"]
+    f --> g["SCR-66 bảng chỉ số · báo cáo 1 trang PDF cho R13 (ngày làm việc thứ 5)"]
+    g --> h["SCR-66 view DEPT: chỉ số khoa cạnh toàn viện"]
+    e -->|"Mở khóa chỉ R01 có lý do"| e
+```
 
 *Duyệt ghi đè cơ số [UC-31, UC-38]* — R01 nhận thông báo → mở đề nghị → PIN → T4 được sinh Cycle ID.
 
@@ -166,9 +214,9 @@ flowchart LR
 
 *Import danh mục ban đầu [UC-39]* — chọn loại → tải mẫu → tải lên → xem trước lỗi theo dòng → ghi sổ dòng hợp lệ → import ảnh zip → báo mã không khớp.
 
-**Screen inventory** — xem bảng hợp nhất §B5 (lọc cột Surface = WEB: 22 màn + SCR-42 chung).
+**Screen inventory** — xem bảng hợp nhất §B5 (lọc cột Surface = WEB: 22 màn v1.11 + [v1.12] 16 màn SCR-47..50, 53, 54, 56..62, 64..66 + SCR-42 chung).
 
-**Surface-specific components**: Frappe List View/Report View với indicator màu token; Filter bar (ngày/khu/máy/khoa/trạng thái, #09); Workspace cards; Insights chart; Print Format (sổ tiệt khuẩn điện tử, báo cáo BYT/TT 20); Data Import wizard (SCR-43); Audit timeline (SCR-33); Tabs Thông tin / Chi tiết / Lịch sử (Master Form).
+**Surface-specific components**: Frappe List View/Report View với indicator màu token; Filter bar (ngày/khu/máy/khoa/trạng thái, #09); Workspace cards; Insights chart; Print Format (sổ tiệt khuẩn điện tử, báo cáo BYT/TT 20; [v1.12] báo cáo Hội đồng 1 trang, báo cáo NKVM/NK hồi sức/kháng thuốc theo ánh xạ cột); Data Import wizard (SCR-43; [v1.12] + hồ sơ ánh xạ cột lưu được, xem trước lỗi theo dòng cho mẫu số, phẫu thuật, vi sinh WHONET/CSV, hóa chất); Audit timeline (SCR-33); Tabs Thông tin / Chi tiết / Lịch sử (Master Form); [v1.12] **template builder** mẫu phiếu (bảng con mục: nhóm, trọng số, trọng yếu, "Không áp dụng" được, phiên bản chỉ đọc sau duyệt — SCR-50); **epi curve** (biểu đồ cột theo ngày khởi phát, Insights/Frappe chart, SCR-61); **ô mã BN che** (`***1234`, nút "Xem đầy đủ" mở hộp lý do, chỉ R01/R11); **bảng chỉ số** (KPI tile: giá trị kỳ gần nhất · mục tiêu · xu hướng 12 tháng dạng sparkline · cỡ mẫu; mẫu số 0 hiện chữ "Không tính" — BRU-RPT-001).
 
 **Token overrides**: row-height 34 px và `button-table` trong bảng; font body 15 px trong page tùy biến, Desk chuẩn giữ 13 px. Dark mode tùy chọn. (design.md §2.2, §4.20)
 
@@ -257,9 +305,9 @@ flowchart LR
 
 ### B3. PDA Android (PWA) — surface code `PDA`
 
-**Users & jobs**: R03 (T1 tiếp nhận tại xe trả, SCR-34), R05 (T5 quét gói vào mẻ, SCR-35), R06 (T7 cấp phát tại khoa, SCR-36), R08 (T8 quét sử dụng trước rạch da — 1 chạm, SCR-37), R07 (thu gom chất thải tại khoa với cân di động, SCR-38). Bối cảnh: di chuyển, một tay, găng; màn 5–6"; mất Wi-Fi giữa khoa → **offline queue bắt buộc** (EI-UI-003, FR-M9-06).
+**Users & jobs**: R03 (T1 tiếp nhận tại xe trả, SCR-34), R05 (T5 quét gói vào mẻ, SCR-35), R06 (T7 cấp phát tại khoa, SCR-36), R08 (T8 quét sử dụng trước rạch da — 1 chạm, SCR-37), R07 (thu gom chất thải tại khoa với cân di động, SCR-38). **[v1.12] R11** Giám sát viên KSNK (mọi khoa) và **R12** Mạng lưới viên KSNK (chỉ khoa mình) — đi buồng ghi phiếu giám sát: cơ hội vệ sinh tay (SCR-51), phiếu theo mục (SCR-52), mẫu số ngày & đợt thiết bị (SCR-55); mọi nhân viên có thẻ — báo phơi nhiễm ≤ 3 bước (SCR-63). Bối cảnh: di chuyển, **một tay**, găng; màn 5–6"; mất Wi-Fi giữa khoa → **offline queue bắt buộc** (EI-UI-003, FR-M9-06; [v1.12] NFR-AVAIL-05 ≥ 4 giờ cho phiếu, mẫu số, báo phơi nhiễm; đồng bộ idempotent qua `tracecore.v1.audit.record_opportunity` / `audit.submit_session` / `hai.census_upsert` / `hai.device_episode` / `exposure.report`). [v1.12] NFR-USAB-03: mỗi cơ hội vệ sinh tay ≤ 3 chạm, nút ≥ 48 px, chữ ≥ 16 px.
 
-**IA & navigation**: không rail; sau quét thẻ vào app là **màn chọn chức năng 2×2 nút lớn** theo vai trò; mỗi chức năng là một màn PDA Mobile (#09 archetype): top bar (giờ · người · mạng · số chờ) · zonebar · ô quét toàn rộng · thẻ kết quả · 1–2 nút lớn · footer. Luồng 3 chạm theo #09 §8.
+**IA & navigation**: không rail; sau quét thẻ vào app là **màn chọn chức năng 2×2 nút lớn** theo vai trò ([v1.12] R11/R12 thấy nhóm **"Giám sát KSNK"**: Phiếu giám sát · Mẫu số & đợt thiết bị · Báo phơi nhiễm · Hàng đợi; R12 có thêm ô "Khoa của tôi" cố định, không chọn khoa khác); mỗi chức năng là một màn PDA Mobile (#09 archetype): top bar (giờ · người · mạng · số chờ) · zonebar ([v1.12] zonebar dept navy khi ở khoa) · ô quét toàn rộng ([v1.12] phiếu giám sát không có ô quét; thay bằng **thanh ngữ cảnh** khoa · vị trí · mẫu phiên bản, cố định trên cùng) · thẻ kết quả · 1–2 nút lớn · footer. Luồng 3 chạm theo #09 §8.
 
 ```mermaid
 graph TD
@@ -273,6 +321,11 @@ graph TD
     menu --> s38["SCR-38 Thu gom chất thải (thẻ giao → loại → cân)"]
     menu --> rc["Xác nhận thu hồi tại khoa (UC-14 bước 5)"]
     menu --> q["Hàng đợi offline & đồng bộ"]
+    menu --> ic["Giám sát KSNK (v1.12, R11/R12)"]
+    ic --> s51["SCR-51 Vệ sinh tay: chọn khoa → mẫu → ghi cơ hội → Ghi sổ"]
+    ic --> s52["SCR-52 Phiếu theo mục: chọn khoa → mẫu → chấm mục → Ghi sổ"]
+    ic --> s55["SCR-55 Mẫu số ngày & đợt thiết bị"]
+    ic --> s63["SCR-63 Báo phơi nhiễm (3 bước)"]
     root --> notif["SCR-42 Thông báo (badge)"]
 ```
 
@@ -294,19 +347,40 @@ flowchart LR
 
 *Tiếp nhận di động [UC-05]*: như SCR-05 nhưng BOM hiển thị dạng danh sách dọc cuộn, ảnh 64 px, "Xác nhận tất cả" nổi trên cùng; ghi chú bất thường bằng ô text + chụp ảnh camera PDA.
 
-*Đồng bộ sau offline*: màn hàng đợi liệt kê giao dịch theo thời gian, trạng thái Chờ/Đang gửi/Lỗi; xung đột → gắn cờ, báo R02 (SCR-33).
+*Đồng bộ sau offline*: màn hàng đợi liệt kê giao dịch theo thời gian, trạng thái Chờ/Đang gửi/Lỗi; xung đột → gắn cờ, báo R02 (SCR-33); [v1.12] phiếu giám sát/mẫu số/phơi nhiễm chờ đồng bộ hiện cùng hàng đợi, xung đột (mẫu số trùng ngày–khoa) báo R11.
 
-**Screen inventory** — §B5, Surface = PDA: 4 màn chính (SCR-34..37) + SCR-38 dùng chung với STN.
+*[v1.12] Ghi cơ hội vệ sinh tay [UC-44]* (SCR-51; FR-M12-04, FR-M12-10, BRU-AUD-002/004):
 
-**Surface-specific components**: top bar PDA; menu 2×2; sheet full-screen thay modal; camera capture; rung/âm khi quét; hàng đợi offline; nút full-width 56 px; chip current thay stepper đầy đủ.
+```mermaid
+flowchart LR
+    s(["Chọn khoa · vị trí · mẫu (1 lần/phiếu)"]) --> o["Cơ hội mới: thời điểm (5 nút lớn) → nghề nghiệp (chip) → hành động (Rửa nước · Chà cồn · Không) = 3 chạm"]
+    o --> v{"Người được quan sát = người giám sát?"}
+    v -->|"có"| e["alert-error toàn khối: Không tự đánh giá (BRU-AUD-004) · không lưu"] --> o
+    v -->|"không"| k["Lưu cục bộ · bộ đếm cơ hội + tỷ lệ tạm trên thanh ngữ cảnh"]
+    k --> o
+    k --> g["Ghi sổ phiếu (n cơ hội)"]
+    g --> n{"Mạng?"}
+    n -->|"offline"| q["Hàng đợi · badge số chờ"] --> done
+    n -->|"online"| ok["submit_session idempotent · tỷ lệ tuân thủ · phản hồi khoa"] --> done(["Toast 'Đã ghi' · phiếu mới"])
+```
+
+*[v1.12] Phiếu theo mục [UC-44, UC-54, UC-56]* (SCR-52): danh sách mục cuộn dọc, mỗi mục một hàng 48 px với 3 nút chữ **Đạt / Không đạt / Không áp dụng** (không chỉ màu; mục trọng yếu có nhãn chữ "Trọng yếu"); gói dự phòng chấm tất-cả-hoặc-không gắn đợt thiết bị đang mở (chọn từ danh sách đợt của khoa); mục Không đạt bắt buộc ghi chú ngắn hoặc ảnh; nút Ghi sổ full-width 56 px cố định dưới cùng.
+
+*[v1.12] Mẫu số ngày & đợt thiết bị [UC-47]* (SCR-55): form 1 cột, ô số lớn (số BN nằm viện, số BN thở máy, CVC, thông tiểu) điền sẵn giá trị hôm qua; một bản ghi mỗi (ngày, khoa) — trùng thì hiện bản đã có để sửa; đợt thiết bị: nút "Mở đợt" / "Đóng đợt" theo mã BN che, ngày đặt/rút.
+
+*[v1.12] Báo phơi nhiễm [UC-55]* (SCR-63, FR-M16-01): 3 bước cố định — (1) loại phơi nhiễm + thời điểm, (2) nơi/thiết bị gây phơi nhiễm, (3) Gửi; sau gửi hiện quy trình xử trí ban đầu của bệnh viện (văn bản cấu hình) và thông báo R01/R11 ngay; không có ô kết quả xét nghiệm hay chẩn đoán (FR-M16-06).
+
+**Screen inventory** — §B5, Surface = PDA: 4 màn chính (SCR-34..37) + SCR-38 dùng chung với STN; [v1.12] + SCR-51 (PDA), SCR-52, SCR-55, SCR-63 (PDA + DEPT), SCR-57 (view PDA theo dõi sau ra viện).
+
+**Surface-specific components**: top bar PDA; menu 2×2; sheet full-screen thay modal; camera capture; rung/âm khi quét; hàng đợi offline; nút full-width 56 px; chip current thay stepper đầy đủ; [v1.12] **thanh ngữ cảnh phiếu** (khoa · vị trí · mẫu v.n · đếm cơ hội/mục), **bộ nút thời điểm** 5 ô lớn (5 thời điểm vệ sinh tay), hàng **Đạt / Không đạt / Không áp dụng** 3 nút chữ, ô số lớn kiểu numpad.
 
 **Token overrides**: body 21 px, nút 56 px full-width, padding 12, safe-area (tokens.json `surface-override.PDA`).
 
 ### B4. Cổng khoa — surface code `DEPT`
 
-**Users & jobs**: **R08** Nhân viên khoa sử dụng (phòng mổ/khoa lâm sàng) — người ngoài KSNK, ít thời gian, chỉ thấy khoa mình (NFR-SEC-07): xem bộ tại khoa so với cơ số, phiếu cấp phát đã nhận, **xác nhận gói thu hồi**, gửi trả đồ bẩn / đề nghị cấp, đồ vải đã nhận, kg chất thải và NC phân loại sai của khoa (FR-M10-07.3), tra cứu gói theo chuỗi 8 trạm (ảnh 21), và quét sử dụng khi dùng máy tính phòng mổ (SCR-13). Thiết bị: trình duyệt trên máy tính phòng mổ (có thể cảm ứng) hoặc PDA.
+**Users & jobs**: **R08** Nhân viên khoa sử dụng (phòng mổ/khoa lâm sàng) — người ngoài KSNK, ít thời gian, chỉ thấy khoa mình (NFR-SEC-07): xem bộ tại khoa so với cơ số, phiếu cấp phát đã nhận, **xác nhận gói thu hồi**, gửi trả đồ bẩn / đề nghị cấp, đồ vải đã nhận, kg chất thải và NC phân loại sai của khoa (FR-M10-07.3), tra cứu gói theo chuỗi 8 trạm (ảnh 21), và quét sử dụng khi dùng máy tính phòng mổ (SCR-13). **[v1.12]** R08 (điều dưỡng khoa), **R12** Mạng lưới viên KSNK và **trưởng khoa** dùng Cổng khoa để: nhập **mẫu số ngày** và mở/đóng **đợt thiết bị** (SCR-55), chấm **phiếu gói dự phòng** hằng ngày cho đợt đang mở (SCR-52 view khoa), tạo **lệnh cách ly** và xem danh sách cách ly đang mở của khoa (SCR-60), **báo phơi nhiễm** (SCR-63), xem **chỉ số KSNK của khoa mình** cạnh trung bình toàn viện và danh sách việc cần làm (SCR-66 view DEPT, FR-M9-24), nhận phản hồi phiếu giám sát của khoa (SCR-53 view DEPT). **Quy tắc phạm vi:** R08 và R12 chỉ thấy khoa mình qua User Permission `Department` (NFR-SEC-07, NFR-SEC-09); không có ô chọn khoa khác; mã BN hiện dạng che. Thiết bị: trình duyệt trên máy tính phòng mổ (có thể cảm ứng) hoặc PDA.
 
-**IA & navigation**: trang web đơn giản (Frappe Portal page), rail 7 mục theo #17 R08 (ảnh 18–21), zonebar dept (navy). Không có form phức tạp; ưu tiên bảng đọc và nút xác nhận lớn.
+**IA & navigation**: trang web đơn giản (Frappe Portal page), rail 7 mục theo #17 R08 (ảnh 18–21) + [v1.12] nhóm **"KSNK khoa"** (Mẫu số hôm nay · Gói dự phòng · Cách ly · Báo phơi nhiễm · Chỉ số khoa · Phản hồi giám sát), zonebar dept (navy). Không có form phức tạp; ưu tiên bảng đọc và nút xác nhận lớn; [v1.12] mục "Mẫu số hôm nay" có badge chữ "Thiếu" khi chưa nhập đến 10:00 (FR-M13-03).
 
 ```mermaid
 graph TD
@@ -318,20 +392,29 @@ graph TD
     root --> linen["Đồ vải đã nhận (view SCR-18)"]
     root --> waste["Chất thải khoa: kg & NC (view SCR-41, FR-M10-07.3)"]
     root --> trace["Tra cứu gói – chuỗi 8 trạm (view SCR-14)"]
+    root --> ksnk["KSNK khoa (v1.12: R08, R12, trưởng khoa)"]
+    ksnk --> s55["SCR-55 Mẫu số hôm nay & đợt thiết bị"]
+    ksnk --> s52["SCR-52 Phiếu gói dự phòng (view khoa)"]
+    ksnk --> s60["SCR-60 Lệnh cách ly của khoa"]
+    ksnk --> s63["SCR-63 Báo phơi nhiễm"]
+    ksnk --> s66["SCR-66 Chỉ số khoa mình (view DEPT)"]
+    ksnk --> s53["SCR-53 Phản hồi giám sát (view DEPT)"]
     root --> notif["SCR-42 Thông báo"]
 ```
 
 **Key flow** — *Xác nhận thu hồi tại khoa [UC-14 bước 5, UC-38]* (ảnh 20): thông báo thu hồi → danh sách gói của khoa (Trong kho tự khóa · Đã cấp chờ thu · Đã dùng báo bác sĩ, mã BN ẩn 4 ký tự) → quét/tick từng gói → Xác nhận → KSNK thấy tiến độ 2/4 trên SCR-14; quá 2 giờ chưa xác nhận → nhắc lại và báo R01.
 
-**Screen inventory**: SCR-13 là màn DEPT chính thức duy nhất trong 43; các mục rail còn lại là **view giới hạn theo khoa** của SCR-14/18/41 hoặc màn đề xuất SCR-44..46 (§B5.2).
+**[v1.12] Key flow** — *Mẫu số ngày tại khoa [UC-47]* (SCR-55): 10:00 chưa có mẫu số hôm qua → SCR-42 nhắc R12 và R11, badge "Thiếu" trên rail → R12 mở SCR-55, ô số điền sẵn giá trị hôm qua, sửa → Lưu (một bản ghi mỗi ngày–khoa; trùng thì mở bản đã có) → kỳ đã khóa thì form chỉ đọc kèm dòng "Kỳ đã khóa — liên hệ Trưởng khoa KSNK". *Lệnh cách ly [UC-52]* (SCR-60): R08 chọn mã BN che + loại phòng ngừa (bắt buộc) + lý do → danh sách cách ly đang mở của khoa với ngày bắt đầu, phòng; chủng đa kháng mới từ M14 hiện cảnh báo chữ "Đa kháng" trên dòng tương ứng (FR-M14-04/05).
 
-**Surface-specific components**: bảng tồn khoa vs cơ số với badge "Đạt / Dưới tối thiểu / Vượt"; danh sách thu hồi có checkbox lớn; khung phone (SCR-13) khi mở trên desktop; chuỗi 8 trạm dạng timeline đọc.
+**Screen inventory**: SCR-13 là màn DEPT chính thức duy nhất trong 43 của v1.11; [v1.12] thêm SCR-55 (DEPT + PDA), SCR-60 (WEB + DEPT), SCR-63 (PDA + DEPT) và view khoa của SCR-52, SCR-53, SCR-66; các mục rail còn lại là **view giới hạn theo khoa** của SCR-14/18/41 hoặc màn đề xuất SCR-44..46 (§B5.2).
+
+**Surface-specific components**: bảng tồn khoa vs cơ số với badge "Đạt / Dưới tối thiểu / Vượt"; danh sách thu hồi có checkbox lớn; khung phone (SCR-13) khi mở trên desktop; chuỗi 8 trạm dạng timeline đọc; [v1.12] KPI tile khoa vs toàn viện (hai số cạnh nhau, nhãn chữ "Cao hơn / Thấp hơn / Chưa đủ mẫu"), danh sách việc cần làm của khoa, form mẫu số ô số lớn.
 
 **Token overrides**: body 16 px, touch 48 px (tokens.json `surface-override.DEPT`).
 
-### B5. Screen inventory hợp nhất (43 màn hình, ID giữ nguyên)
+### B5. Screen inventory hợp nhất (63 màn hình, ID giữ nguyên)
 
-Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17; `ảnh NN` = có ảnh design-refs; `—` = chưa có prototype/ảnh (chỉ đặc tả #09 hoặc SRS/UC v1.11). FR chính theo use-cases.md Phụ lục A. Archetype theo #09 §5; màn mới gán theo cùng 5 archetype.
+Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17; `ảnh NN` = có ảnh design-refs; `—` = chưa có prototype/ảnh (chỉ đặc tả #09 hoặc SRS/UC v1.11); `— (v1.12, BA SRS-lite)` = màn mới A-113, chỉ có đặc tả BA v1.12 (luồng chính + FR + AC), chưa có prototype/ảnh. FR chính theo use-cases.md Phụ lục A. Archetype theo #09 §5; màn mới gán theo cùng 5 archetype. [v1.12] **SCR-43 tái dùng** cho hồ sơ ánh xạ cột nhập file (mẫu số, phẫu thuật, vi sinh WHONET/CSV, hóa chất — FR-M9-26): không tạo màn import riêng; SCR-66 chỉ liên kết sang SCR-43.
 
 | SCR | Tên màn hình | Surface | Archetype #09 | UC | FR chính | Trạng thái nguồn |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
@@ -377,15 +460,37 @@ Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17
 | SCR-40 | Bàn giao chất thải & danh mục đơn vị xử lý / hợp đồng | STN (bàn giao) + WEB (danh mục, R09) | Form chứng từ + Master Form | UC-36 | FR-M10-04, FR-M10-05 | — (v1.11) |
 | SCR-41 | Báo cáo / dashboard chất thải & sự cố, định mức | WEB (view DEPT) | Dashboard | UC-37 | FR-M10-06, FR-M10-07, FR-M10-08 | — (v1.11) |
 | SCR-42 | Trung tâm thông báo (web, trạm, PDA) | WEB + STN + PDA + DEPT | List View | UC-38 | FR-M9-10 | — (v1.11) |
-| SCR-43 | Import / Export danh mục & hồ sơ lưu trữ | WEB | List View + Form (wizard) | UC-39 | FR-M9-11, FR-M9-12 | — (v1.11) |
+| SCR-43 | Import / Export danh mục & hồ sơ lưu trữ; [v1.12] hồ sơ ánh xạ cột nhập file ngoài | WEB | List View + Form (wizard) | UC-39, UC-57 | FR-M9-11, FR-M9-12, FR-M9-26 | — (v1.11) |
+| SCR-47 | Cơ cấu KSNK: cài đặt chương trình, Hội đồng, mạng lưới | WEB | Master Form | UC-40 | FR-M11-01, FR-M11-02, FR-M11-03 | — (v1.12, BA SRS-lite) |
+| SCR-48 | Kế hoạch KSNK năm & hoạt động; biên bản họp Hội đồng; sổ văn bản nội bộ | WEB | Form chứng từ | UC-41 | FR-M11-04, FR-M11-05, FR-M11-06, FR-M11-07, FR-M11-08 | — (v1.12, BA SRS-lite) |
+| SCR-49 | Đào tạo, sinh viên thực tập, cải tiến chất lượng (báo cáo) | WEB | Dashboard | UC-42 | FR-M11-09, FR-M11-10, FR-M11-11, FR-M11-12, FR-M11-13 | — (v1.12, BA SRS-lite) |
+| SCR-50 | Mẫu phiếu giám sát (builder có phiên bản) & lịch giám sát | WEB | Master Form | UC-43 | FR-M12-01, FR-M12-02, FR-M12-03 | — (v1.12, BA SRS-lite) |
+| SCR-51 | PDA — Phiếu vệ sinh tay theo cơ hội (≤ 3 chạm, offline) | PDA | Form chứng từ (station-like) | UC-44 | FR-M12-04, FR-M12-05, FR-M12-10 | — (v1.12, BA SRS-lite) |
+| SCR-52 | PDA — Phiếu giám sát theo mục (điểm %, gói dự phòng, VSMT, ATTP, tự đánh giá) | PDA + DEPT | Form chứng từ | UC-44, UC-54, UC-56 | FR-M12-06, FR-M12-07, FR-M15-02, FR-M17-01 | — (v1.12, BA SRS-lite) |
+| SCR-53 | Báo cáo tuân thủ & phản hồi khoa; danh sách phiếu | WEB (view DEPT) | Dashboard | UC-45 | FR-M12-08, FR-M12-09, FR-M12-11, FR-M12-14 | — (v1.12, BA SRS-lite) |
+| SCR-54 | Hóa chất KSNK theo khoa–tháng; đơn vị thuê ngoài & giấy phép | WEB | List View | UC-46 | FR-M12-12, FR-M12-13 | — (v1.12, BA SRS-lite) |
+| SCR-55 | Cổng khoa — Mẫu số ngày & đợt thiết bị | DEPT + PDA | Form chứng từ | UC-47 | FR-M13-02, FR-M13-03, FR-M13-04 | — (v1.12, BA SRS-lite) |
+| SCR-56 | Ca NKBV (danh sách + hồ sơ ca, che mã BN) & kỳ báo cáo | WEB | Form chứng từ | UC-48 | FR-M13-01, FR-M13-05, FR-M13-06, FR-M13-11, FR-M13-15 | — (v1.12, BA SRS-lite) |
+| SCR-57 | Giám sát NKVM: đăng ký phẫu thuật, lịch theo dõi sau ra viện, kháng sinh dự phòng | WEB + PDA | Form chứng từ | UC-49 | FR-M13-07, FR-M13-08, FR-M13-09 | — (v1.12, BA SRS-lite) |
+| SCR-58 | Báo cáo NKBV / NKVM / NK hồi sức, cảnh báo cụm ca, điều tra cắt ngang | WEB | Dashboard | UC-48, UC-49, UC-50 | FR-M13-10, FR-M13-12, FR-M13-13, FR-M13-14 | — (v1.12, BA SRS-lite) |
+| SCR-59 | Import vi sinh & danh sách chủng, quy tắc đa kháng, báo cáo kháng thuốc | WEB | List View + wizard | UC-51 | FR-M14-01, FR-M14-02, FR-M14-03, FR-M14-04, FR-M14-05, FR-M14-08 | — (v1.12, BA SRS-lite) |
+| SCR-60 | Lệnh cách ly & phòng cách ly | WEB + DEPT | Form chứng từ | UC-52 | FR-M14-06, FR-M14-07 | — (v1.12, BA SRS-lite) |
+| SCR-61 | Điều tra ổ dịch (đường cong dịch) & khai báo bệnh truyền nhiễm | WEB | Form chứng từ + Dashboard | UC-53 | FR-M14-09, FR-M14-10 | — (v1.12, BA SRS-lite) |
+| SCR-62 | Vùng vệ sinh, ngưỡng, kế hoạch lấy mẫu, mẫu môi trường, hạ tầng, báo cáo môi trường | WEB | Master Form + Dashboard | UC-54 | FR-M15-01, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07 | — (v1.12, BA SRS-lite) |
+| SCR-63 | PDA/DEPT — Báo phơi nhiễm (≤ 3 bước) | PDA + DEPT | Form chứng từ | UC-55 | FR-M16-01, FR-M16-02 | — (v1.12, BA SRS-lite) |
+| SCR-64 | Hồ sơ phơi nhiễm & theo dõi; tiêm chủng nhân viên; báo cáo phơi nhiễm | WEB | Form chứng từ + Dashboard | UC-55 | FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | — (v1.12, BA SRS-lite) |
+| SCR-65 | An toàn thực phẩm (sức khỏe người chế biến, sự cố) & truyền thông người bệnh (QR) | WEB | List View | UC-56 | FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | — (v1.12, BA SRS-lite) |
+| SCR-66 | Bảng chỉ số KSNK toàn viện; báo cáo Hội đồng; view Cổng khoa; tự đánh giá QĐ 38; nhập file & hồ sơ ánh xạ cột (→ SCR-43); gói hồ sơ KSNK | WEB + DEPT | Dashboard | UC-57 | FR-M9-22, FR-M9-23, FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28 | — (v1.12, BA SRS-lite) |
 
-**Đếm theo surface chính**: WEB 22 (01–04, 14, 15, 19–22, 24–33, 41, 43) · STN 15 (05–12, 16–18, 23, 38–40) · PDA 4 (34–37) · DEPT 1 (13) · đa surface 1 (42) → **43**. Có prototype #17: 20 màn (05–15, 19–23, 29, 31, 32, 37); có ảnh: 16 màn; chưa có nguồn hình ảnh: 23 màn (toàn bộ M1, M3, M6, M7 nhập liệu, M8 cấu hình, M9 quản trị/import, M10, PDA 34–36, SCR-42).
+**Đếm theo surface chính**: WEB 22 (01–04, 14, 15, 19–22, 24–33, 41, 43) · STN 15 (05–12, 16–18, 23, 38–40) · PDA 4 (34–37) · DEPT 1 (13) · đa surface 1 (42) → **43** (v1.11); [v1.12] + WEB 14 (47–50, 53, 54, 56, 58, 59, 61, 62, 64, 65 và 57 WEB + PDA) · PDA 1 (51) · PDA + DEPT 3 (52, 55, 63) · WEB + DEPT 2 (60, 66) → **63**. Có prototype #17: 20 màn (05–15, 19–23, 29, 31, 32, 37); có ảnh: 16 màn; chưa có nguồn hình ảnh: 23 màn v1.11 (toàn bộ M1, M3, M6, M7 nhập liệu, M8 cấu hình, M9 quản trị/import, M10, PDA 34–36, SCR-42) + 20 màn v1.12 (SCR-47..66, chỉ có đặc tả BA SRS-lite — bước ui-design dựng từ archetype và anchor Part D).
+
+**[v1.12] Nội dung chuyên môn là dữ liệu cấu hình** (D10, NFR-MAINT-04): mục phiếu, định nghĩa ca, quy tắc đa kháng, ngưỡng môi trường, bước theo dõi phơi nhiễm hiển thị từ fixtures có phiên bản — màn hình không hard-code tiêu chí; mẫu khởi tạo ở trạng thái Nháp hiện nhãn chữ "Nháp — cần R01 duyệt".
 
 **Trạng thái màn hình bắt buộc** (FR-M9-14): mọi SCR trên STN/PDA có loading · empty · error · offline; mọi List View có empty/error; chi tiết design.md §4.19.
 
-#### B5.2 Màn hình đề xuất (chưa tính vào 43 — cần amendment SRS/UC trước khi cấp ID chính thức)
+#### B5.2 Màn hình đề xuất (chưa tính vào 63 — cần amendment SRS/UC trước khi cấp ID chính thức)
 
-#17 và EI-UI-004 mô tả Cổng khoa với các chức năng không có SCR riêng trong #09. Đề xuất cấp ID kế tiếp **SCR-44..46** sau khi chủ đầu tư duyệt; nếu không duyệt, các chức năng này là view giới hạn theo khoa của SCR hiện có.
+#17 và EI-UI-004 mô tả Cổng khoa với các chức năng không có SCR riêng trong #09. Đề xuất giữ ID **SCR-44..46** (đã dành chỗ; [v1.12] A-113 cấp màn mới từ SCR-47 để không đụng) chờ chủ đầu tư duyệt; nếu không duyệt, các chức năng này là view giới hạn theo khoa của SCR hiện có. Không hiện thực (CLAUDE.md).
 
 | ID đề xuất | Tên | Surface | Archetype | UC/FR liên quan | Nguồn |
 | :-- | :-- | :-- | :-- | :-- | :-- |
@@ -425,7 +530,41 @@ flowchart TB
 
 *Ghi đè cơ số*: STN T4 (đề nghị, lý do) → SCR-42 thông báo → WEB SCR-31 (PIN duyệt) → STN T4 mở khóa (toast + badge). *Mẻ tiệt khuẩn*: STN T5 nạp → T5b dỡ (STN hoặc R02 trên WEB SCR-10) → kho T6. *Chất thải*: PDA/STN SCR-38 tại khoa → STN SCR-39 kho → STN SCR-40 bàn giao → WEB SCR-41/M7 chi phí → DEPT xem kg khoa mình. *Thông báo* (SCR-42) hiện trên cả 4 surface: WEB chuông navbar, STN badge rail + banner khi khẩn, PDA badge top bar, DEPT badge rail.
 
-**Consistency rules** — Phải giống nhau: tên trạng thái và màu badge; nhãn T1–T8; cấu trúc lỗi chặn (kết quả → lý do → hành động); định dạng mã mono, ngày/giờ/số (NFR-L10N-01); zonebar theo khu; ô quét luôn trên cùng và có focus; offline indicator cùng câu chữ. Được phép khác: mật độ và cỡ chữ (override §2.2 design.md); điều hướng (Desk sidebar / rail trạm / menu 2×2 / rail cổng khoa); modal (WEB/STN) vs sheet (PDA); stepper đầy đủ (WEB/STN/DEPT) vs chip (PDA); bảng (WEB/STN/DEPT) vs card list (PDA).
+**[v1.12] Flows that span surfaces (A-113)**
+
+*Phiếu giám sát — một engine, ba surface [UC-43..45, UC-54, UC-56; ADR-015]*:
+
+```mermaid
+flowchart TB
+    subgraph web["WEB (R01/R02/R11)"]
+        t["SCR-50: duyệt mẫu v.n (khóa) · lập lịch giám sát"] --> j["Việc theo kỳ → SCR-42"]
+        r["SCR-53: điểm, mục không đạt, Chưa đủ mẫu · Mở NC → SCR-15"]
+        k["SCR-66: tỷ lệ tuân thủ vào bảng chỉ số khi khóa kỳ (R13 chỉ đọc)"]
+    end
+    subgraph pda["PDA (R11/R12)"]
+        p["SCR-51 cơ hội VST · SCR-52 theo mục — offline ≥ 4 giờ"]
+    end
+    subgraph dept["DEPT (R08/R12/trưởng khoa)"]
+        g["SCR-52 view khoa: gói dự phòng theo đợt thiết bị (SCR-55)"]
+        f["SCR-53 view DEPT: phản hồi khoa mình"]
+    end
+    j --> p
+    j --> g
+    p -->|"submit_session idempotent"| r
+    g --> r
+    r --> f
+    r --> k
+```
+
+*Phơi nhiễm nghề nghiệp [UC-55]*: PDA/DEPT SCR-63 báo (3 bước) hoặc STN SCR-38 sự cố chất thải sắc nhọn (hook `tracecore_exposure_incident`) → SCR-42 báo ngay R01/R11 → WEB SCR-64 R11 ghi sơ cứu, dự phòng, lịch theo dõi → PDA/DEPT nhân viên nhận nhắc mốc theo dõi; hồ sơ chỉ R01, R11 và chính nhân viên thấy. *Mẫu số → ca → chỉ số*: DEPT/PDA SCR-55 → WEB SCR-56 (ca, khóa kỳ) → WEB SCR-66 (R13) → DEPT SCR-66 view khoa. *Đa kháng → cách ly*: WEB SCR-59 import vi sinh → hook `tracecore_mdro_detected` → SCR-42 R11 + khoa trong 15 phút → DEPT/WEB SCR-60 lệnh cách ly; mã BN đã từng đa kháng xuất hiện lại ở SCR-55/56/60 hiện nhãn chữ "Đa kháng" (FR-M14-05).
+
+**[v1.12] Quy tắc riêng A-113** (áp cho mọi surface):
+- (a) **Phiếu giám sát**: cùng `Audit Template` phiên bản và `Audit Session` ở PDA/DEPT/WEB; PDA/DEPT là nơi ghi, WEB cấu hình và xem; R13 chỉ xem tổng hợp, không mở từng phiếu; phiếu đã ghi sổ hiện bản chụp phiên bản mẫu (BRU-AUD-001).
+- (b) **Che mã người bệnh**: mọi danh sách, báo cáo, file xuất của M13/M14 (và M16 không có mã BN) hiện mã BN dạng che (`***` + 4 ký tự cuối) trên **mọi** surface; "Xem đầy đủ" chỉ có trên WEB cho R01/R11, mở hộp lý do bắt buộc và ghi Audit Log (FR-M13-15, NFR-PRIV-01, ADR-010). DEPT/PDA không có nút xem đầy đủ. Không surface nào có ô họ tên người bệnh.
+- (c) **Trạng thái không chỉ bằng màu**: Đạt / Không đạt / Không áp dụng / Chưa đủ mẫu / Không tính / Đa kháng / Nghi ngờ / Xác định / Loại trừ / Thiếu luôn là badge có chữ (design.md §4), cùng tên trên PDA, DEPT, WEB và trên PDF/Excel xuất ra.
+- (d) **Kỳ đã khóa**: mẫu số, ca, giá trị chỉ số thuộc kỳ khóa hiển thị chỉ đọc kèm dòng "Kỳ đã khóa" ở mọi surface; mở khóa chỉ R01 trên WEB với lý do.
+
+**Consistency rules** — Phải giống nhau: tên trạng thái và màu badge; nhãn T1–T8; cấu trúc lỗi chặn (kết quả → lý do → hành động); định dạng mã mono, ngày/giờ/số (NFR-L10N-01); zonebar theo khu; ô quét luôn trên cùng và có focus ([v1.12] màn phiếu giám sát không có ô quét: thanh ngữ cảnh khoa · vị trí · mẫu cố định trên cùng thay thế); offline indicator cùng câu chữ. Được phép khác: mật độ và cỡ chữ (override §2.2 design.md); điều hướng (Desk sidebar / rail trạm / menu 2×2 / rail cổng khoa); modal (WEB/STN) vs sheet (PDA); stepper đầy đủ (WEB/STN/DEPT) vs chip (PDA); bảng (WEB/STN/DEPT) vs card list (PDA).
 
 ---
 
@@ -440,6 +579,14 @@ Ba màn đại diện cho ba surface thao tác và bao phủ nhiều component c
 | A3 | **SCR-37** PDA Quét sử dụng cho bệnh nhân | PDA (khoa) | Surface PDA, người dùng ngoài KSNK (R08), 1 chạm, nhập mã BN mã hóa, lỗi chặn FR-M2-18, offline queue | top bar PDA, zonebar dept, scan-box PDA, res card, alert-error toàn khối, form 1 cột, nút 56 px full-width, toast, badge số chờ | #17 `deptUse/useScan/useConfirm` · ảnh 19 |
 
 Bổ sung tùy chọn nếu ui-design cần một anchor WEB: **SCR-32** Tổng quan hôm nay (KPI tile 3 biến thể, alert có nút hành động, 2 bảng, Frappe Workspace) — ảnh 02.
+
+**[v1.12] Anchor bổ sung cho A-113** (chưa có prototype/ảnh — ui-design dựng từ archetype, token và anchor A1–A3; đối chiếu BA v1.12 luồng chính và AC):
+
+| Anchor | Màn | Surface | Vì sao | Component kiểm chứng | Nguồn đối chiếu |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| A4 | **SCR-51** PDA Phiếu vệ sinh tay theo cơ hội | PDA (khoa) | Màn tần suất cao nhất của v1.12 (hàng trăm cơ hội/tuần/giám sát viên), không có ô quét, ≤ 3 chạm/cơ hội (NFR-USAB-03), một tay, offline ≥ 4 giờ (NFR-AVAIL-05), chặn tự đánh giá (BRU-AUD-004) | thanh ngữ cảnh phiếu, bộ nút 5 thời điểm, chip nghề nghiệp, hàng 3 nút hành động, bộ đếm + tỷ lệ tạm, alert-error toàn khối, nút Ghi sổ 56 px, hàng đợi offline, toast | BA v1.12 §5.1, FR-M12-04/05/10, D9 |
+| A5 | **SCR-55** Cổng khoa Mẫu số ngày & đợt thiết bị | DEPT (+ PDA) | Người dùng ngoài KSNK (R08/R12) nhập liệu hằng ngày; ràng buộc một bản ghi/ngày–khoa, kỳ khóa chỉ đọc, mã BN che trên đợt thiết bị, badge "Thiếu" 10:00 | form 1 cột ô số lớn điền sẵn, nhãn chữ Thiếu/Kỳ đã khóa, danh sách đợt thiết bị với mã BN che, nút Mở/Đóng đợt, nhãn "Đa kháng" | BA v1.12 §6.1, FR-M13-02..04, FR-M14-05 |
+| A6 | **SCR-66** Bảng chỉ số KSNK toàn viện | WEB (+ view DEPT) | Màn đọc của R13 (chỉ đọc, không thấy người bệnh), 24 tháng dữ liệu mở ≤ 3 giây (NFR-PERF-05, đọc IC Indicator Value), lọc theo khoa, hai biến thể WEB/DEPT cùng component | KPI tile chỉ số (giá trị · mục tiêu · xu hướng 12 tháng · cỡ mẫu), nhãn chữ "Không tính" (BRU-RPT-001) / "Chưa đủ mẫu" / "Tạm", filter bar khoa–kỳ, nút Báo cáo Hội đồng PDF, danh sách việc cần làm (view DEPT), liên kết SCR-43 | BA v1.12 §11, FR-M9-22..25, 27 |
 
 Mỗi anchor phải chứng minh: contrast theo tokens (kể cả `warn-fill`/`neutral-fill` điều chỉnh), chữ ≥ 16 px và nút ≥ 48 px trên STN/PDA, ≤ 3 chạm sau quét, 4 trạng thái màn hình, và không trạng thái nào chỉ phân biệt bằng màu.
 
@@ -457,3 +604,7 @@ Mỗi anchor phải chứng minh: contrast theo tokens (kể cả `warn-fill`/`n
 8. **Kiosk timeout 10 phút** (NFR-SEC-01) vs phiếu tiếp nhận dài nhiều bộ: cần banner cảnh báo 60 s và lưu nháp cục bộ để không mất phiếu.
 9. **Frappe v15 variable names** trong ánh xạ design.md §2.3 cần xác nhận khi scaffold (khác biệt nhỏ giữa 15.x).
 10. **UAT với 5 KTV đeo găng** (NFR-USAB-01) là phép đo cuối cùng cho kích thước nút/chip 48 px và số chạm — giá trị hiện tại là thiết kế, chưa đo.
+11. **[v1.12] OQ-V12-08 — nội dung chuyên môn khởi tạo** (mẫu phiếu, định nghĩa ca, quy tắc đa kháng, ngưỡng môi trường) chưa có người soạn/duyệt (Medcons + chuyên gia KSNK): SCR-50/56/59/62 chỉ dựng được từ fixtures mẫu ở trạng thái Nháp; số mục và nhóm mục của phiếu quyết định chiều dài màn SCR-52 và bố cục 5 thời điểm của SCR-51 — nếu mẫu vệ sinh tay khác 5 thời điểm WHO, bộ nút thời điểm phải sinh từ mẫu, không cố định.
+12. **[v1.12] OQ-V12-09 — ngưỡng cảnh báo mặc định** (cụm ca N ngày, giờ báo phơi nhiễm, thời điểm kháng sinh dự phòng, `min_sample`) chưa chốt: ảnh hưởng nhãn "Chưa đủ mẫu" (SCR-53, 66), banner cảnh báo cụm ca (SCR-58) và cờ quá hạn (SCR-64); màn hiển thị ngưỡng đang áp dụng cạnh cảnh báo để người dùng hiểu vì sao.
+13. **[v1.12] Thiết bị PDA cho R12** (mạng lưới viên ở mọi khoa lâm sàng) chưa rõ bệnh viện cấp PDA hay dùng điện thoại cá nhân (PWA trên trình duyệt di động): ảnh hưởng camera, quét thẻ vào app và offline storage; nếu điện thoại cá nhân, SCR-51/52/63 phải chạy được trên viewport 360×640 và đăng nhập bằng PIN thay thẻ.
+14. **[v1.12] R13 trên Desk**: Ban Giám đốc ít dùng Frappe Desk; cân nhắc Workspace "KSNK toàn viện" mở thẳng SCR-66 làm trang chủ cho R13 (như NAV-04 cho R03–R08), tránh sidebar đầy đủ.
