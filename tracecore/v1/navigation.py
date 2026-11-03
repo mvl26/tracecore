@@ -58,7 +58,14 @@ MANAGEMENT_GROUPS = (
 	),
 	(
 		"Equipment",
-		("Equipment", "Process Program", "Equipment Type Norm", "Daily Test", "Maintenance Record"),
+		(
+			"Equipment",
+			"Process Program",
+			"Equipment Type Norm",
+			"Daily Test",
+			"Maintenance Record",
+			"report:Program Consumable Gaps",  # FEAT-054: chương trình thiếu vật tư
+		),
 	),
 	(
 		"Instruments",
@@ -356,7 +363,14 @@ ROLE_FLOWS = {
 			"incidents",
 			(("document", ("Incident CAPA", "Recall Order")), ("report", ("report:Pack Trace",))),
 		),
-		("equipment", (("catalog", ("Equipment",)), ("document", ("Daily Test", "Maintenance Record")))),
+		(
+			"equipment",
+			(
+				("catalog", ("Equipment",)),
+				("document", ("Daily Test", "Maintenance Record")),
+				("report", ("report:Program Consumable Gaps",)),
+			),
+		),
 		("par", (("catalog", ("Par Level",)), ("document", ("Stock Reconciliation", "Par Override")))),
 		(
 			"waste",
@@ -390,7 +404,13 @@ ROLE_FLOWS = {
 	"TC R10": (
 		("organization", (("catalog", ("Department", "User", "Employee")),)),
 		("zones", (("catalog", ("Zone Station", "Zone Type", "Station Function")),)),
-		("equipment", (("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),)),
+		(
+			"equipment",
+			(
+				("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),
+				("report", ("report:Program Consumable Gaps",)),
+			),
+		),
 		(
 			"labels",
 			(("catalog", ("Printer", "Label Template", "Code Range")), ("document", ("Print Job",))),
@@ -492,6 +512,7 @@ ADMIN_MODULES = (
 		"sections": (
 			("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),
 			("document", ("Daily Test", "Maintenance Record")),
+			("report", ("report:Program Consumable Gaps",)),
 		),
 	},
 	{
