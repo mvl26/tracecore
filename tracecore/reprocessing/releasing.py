@@ -284,7 +284,7 @@ def record_indicator(
 	"""Ghi kết quả một chỉ thị của mẻ (theo mẻ, hoặc theo gói khi truyền `pack`); trả ``{"indicator_result"}``.
 
 	Chỉ thị phải thuộc loại máy (hơi nước: hóa học 5, Bowie-Dick; plasma: hóa học plasma; sinh học khi mẻ cần BI);
-	Bowie-Dick cần ngày thử là hôm nay; sinh học tạo ``Pending`` kèm lô và tủ ủ, đọc sau bằng `bi_result`.
+	Bowie-Dick cần ngày thử là hôm nay; sinh học tạo ``Pending`` kèm lô và máy ủ, đọc sau bằng `bi_result`.
 	"""
 	doc, machine = sterilizing._open_for_data(
 		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
