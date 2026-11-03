@@ -7,7 +7,9 @@ $(document).on("app_ready", () => {
 	function show_brand() {
 		const home = $(".navbar-home");
 		if (!home.length || home.find(".tc-navbar-brand").length) return;
-		$("<span class='tc-navbar-brand'>TraceCore</span>")
+		// tên bệnh viện theo Website Settings › App Name của site (tracecore.ui.branding), mặc định TraceCore
+		$("<span class='tc-navbar-brand'></span>")
+			.text(frappe.boot.tc_brand || "TraceCore")
 			.css({
 				marginLeft: "var(--tc-sp-2)",
 				fontSize: "var(--tc-fs-lg)",
