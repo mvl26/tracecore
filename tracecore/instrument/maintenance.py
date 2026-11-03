@@ -565,6 +565,27 @@ def _counter_name(set_unit, instrument, for_update=False):
 	)
 
 
+def on_release_cancelled(ctx: dict) -> None:
+	"""Hook ``tracecore_after_release_cancel`` (A-112 D11): mẻ đã giải phóng bị hủy → trừ lại lần đếm của Cycle ID đó.
+
+	``ctx = {"set_unit", "cycle_id"}``. Chỉ dòng có ``last_release_cycle == cycle_id`` bị trừ 1 (không âm) và xóa
+	``last_release_cycle``, để lần giải phóng lại cùng Cycle ID được đếm lại đúng một lần.
+	"""
+	cycle_id = cstr(ctx.get("cycle_id")).strip()
+	if not cycle_id:
+		return
+	for name in frappe.get_all(
+		"Instrument Maintenance",
+		filters={"set_unit": ctx["set_unit"], "last_release_cycle": cycle_id},
+		pluck="name",
+	):
+		row = frappe.get_doc("Instrument Maintenance", name, for_update=True)
+		row.cycles_since_maint = max(cint(row.cycles_since_maint) - 1, 0)
+		row.last_release_cycle = None
+		row.flags.tc_maintenance = True
+		row.save(ignore_permissions=True)
+
+
 def _try_insert(row) -> bool:
 	"""Insert dòng Instrument Maintenance mới trong savepoint; trùng (request song song vừa tạo) → hoàn tác, ``False``."""
 	frappe.db.savepoint(INIT_SAVEPOINT)

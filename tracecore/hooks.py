@@ -531,6 +531,19 @@ tracecore_after_load_failed = [
 	"tracecore.costing.sheet.on_load_failed",
 ]
 tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
+# R02 hủy lô rửa / mẻ nhập sai (A-112 D10, D11; reprocessing.run_cancel), cùng transaction, trước khi đóng chứng từ:
+#  - wash_cancel:    (ctx {batch, equipment, program, sets, reason}) M6 hủy phiếu xuất, M7 hủy Cost Sheet
+#  - load_cancel:    (ctx {load, equipment, program, packs, reason}) như trên
+#  - release_cancel: (ctx {set_unit, cycle_id}) mỗi bộ của mẻ đã giải phóng: M1 trừ lại bộ đếm bảo dưỡng
+tracecore_after_wash_cancel = [
+	"tracecore.inventory.consume.on_wash_cancel",
+	"tracecore.costing.sheet.on_wash_cancel",
+]
+tracecore_after_load_cancel = [
+	"tracecore.inventory.consume.on_load_cancel",
+	"tracecore.costing.sheet.on_load_cancel",
+]
+tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_cancelled"]
 # M5 test đầu ngày ghi kết quả (A-111 D2): ctx {daily_test, equipment, lot}; M6 trừ vật tư đã xác nhận lúc Bắt đầu test
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)

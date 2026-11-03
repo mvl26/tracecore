@@ -18,6 +18,7 @@ from frappe import _
 from frappe.utils import flt, getdate, strip_html_tags
 
 from tracecore.core import notification, run_consumables
+from tracecore.core.errors import Block, BlockedError
 from tracecore.inventory.receipt import today_vn
 
 ISSUE = "Material Issue"
@@ -306,9 +307,7 @@ def _without_indicators(lines):
 def _indicator_lines(source_doctype, source_name, packs=()):
 	"""Chỉ thị trừ đúng lô (FR-M6-03.7): mỗi gói 1 cái theo `Pack.ci_batch` quét ở T4, mỗi kết quả chỉ thị của lô/mẻ có
 	lô trong kho (`Load Indicator Result.batch`) 1 cái."""
-	batches = [
-		frappe.db.get_value("Pack", pack, "ci_batch") for pack in packs or ()
-	] + frappe.get_all(
+	batches = [frappe.db.get_value("Pack", pack, "ci_batch") for pack in packs or ()] + frappe.get_all(
 		"Load Indicator Result",
 		filters={INDICATOR_SOURCE[source_doctype]: source_name, "batch": ["is", "set"]},
 		pluck="batch",
@@ -667,6 +666,45 @@ def _daily_lines(ctx):
 
 def _daily_reason(ctx):
 	return _("Automatic consumption of daily test {0}").format(ctx["daily_test"])
+
+
+def cancel_issue(source_doctype, source_name):
+	"""Lô rửa / mẻ bị hủy (A-112 D10, D11; FR-M6-03.9): hủy phiếu xuất tiêu hao đã ghi sổ của nguồn, tồn đúng lô trả về.
+
+	Nguồn còn phiếu Nháp (lần trừ kho dừng giữa chừng) thì từ chối ``RUN_CANCEL_BLOCKED``: R09 xử lý phiếu trước. Trả tên
+	các phiếu đã hủy.
+	"""
+	draft = _draft_entry(source_doctype, source_name)
+	if draft:
+		raise BlockedError(
+			Block(
+				"RUN_CANCEL_BLOCKED",
+				_("Cannot cancel"),
+				_("{0} {1} has a draft stock issue {2}.").format(_(source_doctype), source_name, draft),
+				_("Ask R09 to submit or delete the draft issue, then cancel again."),
+			)
+		)
+	cancelled = []
+	for name in frappe.get_all(
+		"Stock Entry",
+		filters={"tc_source_doctype": source_doctype, "tc_source_name": source_name, "docstatus": 1},
+		pluck="name",
+	):
+		entry = frappe.get_doc("Stock Entry", name)
+		entry.flags.ignore_permissions = True
+		entry.cancel()
+		cancelled.append(name)
+	if cancelled:
+		notification.resolve("CONSUMPTION_FAILED", source_doctype, source_name)
+	return cancelled
+
+
+def on_wash_cancel(ctx):
+	cancel_issue(WASH, ctx["batch"])
+
+
+def on_load_cancel(ctx):
+	cancel_issue(LOAD, ctx["load"])
 
 
 def on_daily_test_record(ctx):

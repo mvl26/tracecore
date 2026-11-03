@@ -61,8 +61,12 @@ class TestChosenLot(LotsCase):
 		program = factories.make_wash_program(
 			washer.name, consumables=[{"item": ENZYME, "role": "Other", "qty_per_load": 3}]
 		)
-		rows = run_consumables.rows(program.name, 1, [{"item": ENZYME, "batch": self.far}], True, self.employee.name)
-		batch = factories.make_wash_batch(washer, program, [factories.make_wash_ready_set()], consumables=rows)
+		rows = run_consumables.rows(
+			program.name, 1, [{"item": ENZYME, "batch": self.far}], True, self.employee.name
+		)
+		batch = factories.make_wash_batch(
+			washer, program, [factories.make_wash_ready_set()], consumables=rows
+		)
 		consume.on_wash_complete(
 			{"batch": batch.name, "program": program.name, "sets": [], "chemicals": [], "result": "Pass"}
 		)
@@ -73,8 +77,12 @@ class TestChosenLot(LotsCase):
 		program = factories.make_wash_program(
 			washer.name, consumables=[{"item": ENZYME, "role": "Other", "qty_per_load": 25}]
 		)
-		rows = run_consumables.rows(program.name, 1, [{"item": ENZYME, "batch": self.far}], True, self.employee.name)
-		batch = factories.make_wash_batch(washer, program, [factories.make_wash_ready_set()], consumables=rows)
+		rows = run_consumables.rows(
+			program.name, 1, [{"item": ENZYME, "batch": self.far}], True, self.employee.name
+		)
+		batch = factories.make_wash_batch(
+			washer, program, [factories.make_wash_ready_set()], consumables=rows
+		)
 		consume.on_wash_complete(
 			{"batch": batch.name, "program": program.name, "sets": [], "chemicals": [], "result": "Pass"}
 		)
@@ -87,7 +95,8 @@ class TestIndicatorLots(LotsCase):
 		self.machine = factories.make_sterilizer()
 		# định mức cũ không vai trò có chỉ thị: không được trừ thêm theo chương trình
 		self.program = factories.make_sterilize_program(
-			self.machine.name, consumables=[{"item": CI, "qty_per_pack": 1}, {"item": ENZYME, "qty_per_load": 1}]
+			self.machine.name,
+			consumables=[{"item": CI, "qty_per_pack": 1}, {"item": ENZYME, "qty_per_load": 1}],
 		)
 
 	def indicator(self, load, kind, batch, **fields):
@@ -181,6 +190,18 @@ class TestDailyTestLot(LotsCase):
 		frappe.db.set_value("Daily Test", test.name, "batch", None)
 		link_consumable_lots_a112.execute()
 		self.assertEqual(frappe.db.get_value("Daily Test", test.name, "batch"), self.far)
+
+	@bru("BRU-INV-004")
+	def test_no_lot_typed_takes_the_lot_of_the_test_pack_line(self):
+		test = self.run_test(None)  # dòng Gói test đã có lô FEFO lúc Bắt đầu test (A-112 D5)
+		self.assertEqual((test.lot, test.batch), (self.near, self.near))
+		self.assertEqual(issued_lots("Daily Test", test.name), {(ENZYME, self.near): 1})
+
+	def test_expiry_of_a_stock_lot_comes_from_the_batch(self):
+		expired = factories.make_chemical_batch(ENZYME, "CL-ENZ-OLD", expiry_days=-2).name
+		with self.assertRaises(frappe.ValidationError) as raised:
+			self.run_test("(01)08931234567890(10)" + expired, frappe.utils.add_days(frappe.utils.today(), 30))
+		self.assertEqual(raised.exception.block.code, "TEST_LOT_EXPIRED")
 
 	def test_free_text_lot_stays_a_note(self):
 		test = self.run_test("LOT-ON-THE-BOX", frappe.utils.add_days(frappe.utils.today(), 30))

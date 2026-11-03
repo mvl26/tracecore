@@ -264,6 +264,7 @@ class TestErrors(FrappeTestCase):
 				"LABEL_NOT_QUEUED",
 				"LABEL_PDF_FAILED",
 				"PACK_DEPT_MISMATCH",
+				"RUN_CANCEL_BLOCKED",  # A-112
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

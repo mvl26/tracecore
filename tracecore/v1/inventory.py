@@ -14,6 +14,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.inventory import receipt_import as importer
+from tracecore.inventory import usage
 from tracecore.inventory.receipt_import import ImportFileError
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
@@ -110,3 +111,14 @@ def receipt_import(file_url=None, warehouse=None, client_ts=None):
 	"""
 	timestamp = parse_client_ts(client_ts)
 	return _run(file_url, warehouse, dry_run=False, timestamp=timestamp)
+
+
+@frappe.whitelist(methods=["GET"])
+def item_usage(item=None):
+	"""Chương trình đang dùng vật tư `item` (A-112 D9, FR-M6-02.4): ``[{program, program_name, is_active, equipment,
+	equipment_name, stage, test_type, role, is_required, uom, qty_per_load, qty_per_pack, qty_per_kg}]``; chỉ đọc,
+	người gọi phải đọc được Item."""
+	if not isinstance(item, str) or not item:
+		raise BadRequestError(_("item is required."))
+	frappe.has_permission("Item", "read", doc=item, throw=True)
+	return usage.programs_using(item)

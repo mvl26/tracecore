@@ -16,7 +16,7 @@ from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import washing
+from tracecore.reprocessing import run_cancel, washing
 from tracecore.v1._common import (
 	ENTRY_MODE_FLAG,
 	WASH_LOAD_ROLES,
@@ -604,3 +604,17 @@ def result(
 		ref_doctype,
 		ref_name,
 	)
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel(batch=None, reason=None):
+	"""R02 hủy lô rửa nhập sai trên Desk (A-112 D10, FR-M2-03.10): ``{"ok": true, "batch", "sets"}``.
+
+	Từ chối ``RUN_CANCEL_BLOCKED`` (409, ``error.items`` là bộ đã đi tiếp) hoặc ``REASON_REQUIRED`` (422) bằng body
+	``ok: false``; không phải R02 → 403. Người hủy là nhân viên của tài khoản Desk.
+	"""
+	batch = _required_str(batch, "batch")
+	try:
+		return {"ok": True, **run_cancel.cancel_wash(batch, reason)}
+	except BlockedError as error:
+		return reject_block(error.block, "Wash Batch", batch)

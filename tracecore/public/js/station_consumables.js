@@ -163,11 +163,15 @@ window.TcRunConsumables = {
 			<table class="tc-t2-table">
 				<thead><tr><th>${esc(__("Item", null, "Run Consumable"))}</th><th>${esc(
 			__("Lot", null, "Run Consumable")
-		)}</th><th>${esc(__("Norm for this run"))}</th><th>${esc(__("Actual quantity"))}</th></tr></thead>
+		)}</th><th>${esc(__("Norm for this run"))}</th><th>${esc(
+			__("Actual quantity")
+		)}</th></tr></thead>
 				<tbody>${rows}</tbody>
 			</table>
 			<p class="tc-hint">${esc(
-				__("Leave the quantity empty to use the norm. Scan or choose the lot; the earliest expiry is suggested.")
+				__(
+					"Leave the quantity empty to use the norm. Scan or choose the lot; the earliest expiry is suggested."
+				)
 			)}</p>
 			<label class="tc-t2-confirm"><input type="checkbox" id="${prefix}-consumables-ok" data-consumables-confirm="1"${
 			confirmed ? " checked" : ""

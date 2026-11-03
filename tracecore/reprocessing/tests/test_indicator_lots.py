@@ -25,7 +25,9 @@ class TestLoadIndicatorLot(ReleaseCase):
 
 	def test_expired_or_non_indicator_lot_is_refused(self):
 		expired = factories.make_ci_batch("Steam", expiry_days=-3)
-		self.assertEqual(blocked(self, self.indicator, "chemical_class_5", lot=expired).code, "INDICATOR_EXPIRED")
+		self.assertEqual(
+			blocked(self, self.indicator, "chemical_class_5", lot=expired).code, "INDICATOR_EXPIRED"
+		)
 		chemical = factories.make_chemical_batch("IL-ENZ", "IL-ENZ-1", expiry_days=30, qty=0).name
 		self.assertEqual(
 			blocked(self, self.indicator, "chemical_class_5", lot=chemical).code, "INDICATOR_LOT_INVALID"
@@ -44,4 +46,6 @@ class TestLoadIndicatorLot(ReleaseCase):
 		self.assertEqual(
 			frappe.db.get_value("Load Indicator Result", old, ["batch", "indicator_item"]), (lot, "CI5-STEAM")
 		)
-		self.assertEqual(frappe.db.get_value("Load Indicator Result", note, ["lot", "batch"]), ("CHU-TREN-HOP", None))
+		self.assertEqual(
+			frappe.db.get_value("Load Indicator Result", note, ["lot", "batch"]), ("CHU-TREN-HOP", None)
+		)

@@ -50,7 +50,9 @@
   "result_note",
   "follow_up_section",
   "nc_pending",
-  "cost_total"
+  "cost_total",
+  "cancel_reason",
+  "cancelled_by"
  ],
  "fields": [
   {
@@ -369,12 +371,29 @@
    "fieldtype": "Currency",
    "label": "Batch Cost",
    "read_only": 1
+  },
+  {
+   "fieldname": "cancel_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancel Reason",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.docstatus==2"
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "Cancelled By",
+   "options": "Employee",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.docstatus==2"
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-03 14:00:00.000000",
+ "modified": "2026-11-03 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

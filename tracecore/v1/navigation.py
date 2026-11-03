@@ -86,6 +86,9 @@ MANAGEMENT_GROUPS = (
 			"Par Override",
 			"report:Par Override Report",
 			"report:Stock Alerts",
+			"report:Consumable Usage",  # A-112: định mức so với thực dùng
+			"report:Consumable Lot Trace",  # A-112: truy vết lô vật tư
+			"report:Batch-Wise Balance History",  # A-112 D13: tồn theo lô (ERPNext)
 		),
 	),
 	(
@@ -370,7 +373,15 @@ ROLE_FLOWS = {
 			(
 				("catalog", ("Item", "Batch")),
 				("document", ("Stock Entry", "Material Request")),
-				("report", ("report:Stock Alerts",)),
+				(
+					"report",
+					(
+						"report:Stock Alerts",
+						"report:Consumable Usage",
+						"report:Consumable Lot Trace",
+						"report:Batch-Wise Balance History",
+					),
+				),
 			),
 		),
 		("stock_count", (("document", ("Stock Reconciliation",)),)),
@@ -503,7 +514,15 @@ ADMIN_MODULES = (
 		"sections": (
 			("catalog", ("Item", "Batch", "Sterile Location")),
 			("document", ("Stock Entry", "Stock Reconciliation", "Material Request")),
-			("report", ("report:Stock Alerts",)),
+			(
+				"report",
+				(
+					"report:Stock Alerts",
+					"report:Consumable Usage",
+					"report:Consumable Lot Trace",
+					"report:Batch-Wise Balance History",
+				),
+			),
 		),
 	},
 	{

@@ -88,9 +88,63 @@ function tc_item_refresh_cssd(frm) {
 	tc_item_show_stock_tables(frm);
 }
 
+// 4. Khối chỉ xem "Dùng trong chương trình" (A-112 D9, FR-M6-02.4): chương trình đang có vật tư này, kèm máy, công
+//    đoạn, loại test, vai trò, định mức. Công đoạn suy ở server (tracecore.inventory.usage).
+function tc_item_norm_text(row) {
+	const parts = [];
+	if (row.qty_per_load) parts.push(__("{0} per load", [row.qty_per_load]));
+	if (row.qty_per_pack) parts.push(__("{0} per pack", [row.qty_per_pack]));
+	if (row.qty_per_kg) parts.push(__("{0} per kg", [row.qty_per_kg]));
+	return `${parts.join(" + ") || "-"} ${row.uom || ""}`;
+}
+
+function tc_item_show_usage(frm) {
+	if (frm.is_new() || !frm.doc.tc_item_group_cssd) return;
+	frappe
+		.call({
+			method: "tracecore.v1.inventory.item_usage",
+			type: "GET",
+			args: { item: frm.doc.name },
+		})
+		.then((response) => {
+			const esc = frappe.utils.escape_html;
+			const rows = response.message || [];
+			const body = rows.length
+				? `<table class="table table-bordered table-condensed"><thead><tr><th>${esc(
+						__("Program")
+				  )}</th><th>${esc(__("Machine"))}</th><th>${esc(
+						__("Stage", null, "Consumable Usage")
+				  )}</th><th>${esc(__("Test Type"))}</th><th>${esc(
+						__("Role", null, "Run Consumable")
+				  )}</th><th>${esc(__("Norm"))}</th></tr></thead><tbody>${rows
+						.map(
+							(row) =>
+								`<tr><td><a href="/app/process-program/${encodeURIComponent(
+									row.program
+								)}">${esc(row.program_name || row.program)}</a>${
+									row.is_active ? "" : ` (${esc(__("Inactive"))})`
+								}</td><td>${esc(
+									row.equipment_name || row.equipment || ""
+								)}</td><td>${esc(
+									row.stage ? __(row.stage, null, "Consumable Usage") : "-"
+								)}</td><td>${esc(
+									row.test_type ? __(row.test_type) : "-"
+								)}</td><td>${esc(
+									row.role ? __(row.role, null, "Program Consumable") : "-"
+								)}${
+									row.is_required ? ` · ${esc(__("Required"))}` : ""
+								}</td><td>${esc(tc_item_norm_text(row))}</td></tr>`
+						)
+						.join("")}</tbody></table>`
+				: `<p class="text-muted">${esc(__("No program uses this item yet."))}</p>`;
+			frm.dashboard.add_section(body, __("Used in programs"));
+		});
+}
+
 frappe.ui.form.on("Item", {
 	refresh(frm) {
 		tc_item_refresh_cssd(frm);
+		tc_item_show_usage(frm);
 		if (frm.is_new() || !(window.tracecore && tracecore.codes)) {
 			return;
 		}

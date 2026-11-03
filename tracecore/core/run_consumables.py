@@ -70,11 +70,22 @@ def lines_of(program, units=0, kg=0):
 	return lines
 
 
+def company_of(program):
+	"""Company của máy chạy chương trình theo tài sản của máy (A-78); máy chưa gắn tài sản → None (xét mọi kho)."""
+	equipment = program and frappe.db.get_value("Process Program", program, "equipment")
+	asset = equipment and frappe.db.get_value("Equipment", equipment, "asset")
+	return (asset and frappe.db.get_value("Asset", asset, "company")) or None
+
+
 def payload(program):
 	"""Vật tư gửi kèm danh sách chương trình cho màn trạm: hệ số theo mẻ/gói/kg để màn tự tính định mức, và các lô
-	gợi ý theo FEFO (``lots``, A-112)."""
+	gợi ý theo FEFO ở kho của bệnh viện của máy (``lots``, A-112)."""
+	company = company_of(program)
 	return [
-		{**{key: value for key, value in line.items() if key != "norm_qty"}, "lots": lots.fefo(line["item"])}
+		{
+			**{key: value for key, value in line.items() if key != "norm_qty"},
+			"lots": lots.fefo(line["item"], company=company),
+		}
 		for line in lines_of(program)
 	]
 
@@ -113,12 +124,12 @@ def _given(submitted, lines):
 	return given, chosen
 
 
-def _lot_of(item, batch):
-	"""``(lô, hạn)`` của dòng: lô đã chọn được kiểm (A-112 E2), không chọn thì lô FEFO đầu tiên, không có thì None."""
+def _lot_of(item, batch, company=None):
+	"""``(lô, hạn)`` của dòng: lô đã chọn được kiểm (A-112 D2), không chọn thì lô FEFO đầu tiên, không có thì None."""
 	if batch:
-		checked = lots.check(item, batch)
+		checked = lots.check(item, batch, company=company)
 		return checked["batch"], checked["expiry_date"]
-	first = next(iter(lots.fefo(item, limit=1)), None)
+	first = next(iter(lots.fefo(item, limit=1, company=company)), None)
 	return (first["batch"], first["expiry_date"]) if first else (None, None)
 
 
@@ -154,9 +165,10 @@ def rows(program, units, submitted=None, confirmed=False, operator=None, kg=0, l
 			)
 		)
 	confirmed_at = now_datetime() if cint(confirmed) else None
+	company = company_of(program)
 	result = []
 	for line in lines:
-		batch, expiry = _lot_of(line["item"], chosen.get(line["item"]))
+		batch, expiry = _lot_of(line["item"], chosen.get(line["item"]), company)
 		result.append(
 			{
 				"item": line["item"],

@@ -309,6 +309,8 @@ HTTP_STATUS: dict[str, int] = {
 			"LABEL_PDF_FAILED",
 			# A-102: gói của khoa khác khoa nhận cần xác nhận kèm lý do
 			"PACK_DEPT_MISMATCH",
+			# A-112 D10, D11: lô rửa / mẻ đã có bộ, gói đi tiếp, đã Không đạt, đã hủy, hoặc còn phiếu xuất Nháp
+			"RUN_CANCEL_BLOCKED",
 		),
 		409,
 	),

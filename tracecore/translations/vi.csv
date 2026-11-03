@@ -7950,3 +7950,45 @@ Scan or choose a lot of this item that has not expired.,Quét hoặc chọn mộ
 Scan a lot of the indicator in use.,Quét lô của chỉ thị đang dùng.,
 "Indicator lot {0} expired on {1}, before the load ran on {2}.","Lô chỉ thị {0} đã hết hạn ngày {1}, trước ngày chạy mẻ {2}.",
 Use an indicator that has not expired.,Dùng chỉ thị còn hạn.,
+"Lot {0} is only in stock at {1}, not at {2}.","Lô {0} chỉ còn tồn ở {1}, không có ở {2}.",
+Cannot cancel,Không hủy được,
+Handle the sets or packs that moved on through recall or a manual correction.,"Xử lý các bộ, gói đã đi tiếp bằng thu hồi hoặc chỉnh tay.",
+Only R02 can cancel a wash batch or a sterilization load.,Chỉ R02 được hủy lô rửa hoặc mẻ tiệt khuẩn.,
+Enter why the batch or load is cancelled.,Nhập lý do hủy lô hoặc mẻ.,
+"Enter the reason, then cancel again.",Nhập lý do rồi hủy lại.,
+{0} {1} has already been cancelled.,{0} {1} đã bị hủy.,
+{0} {1} is {2}: only a run that has not failed can be cancelled.,"{0} {1} đang {2}: chỉ hủy được lô, mẻ chưa Không đạt.",
+These sets have already reached assembly: {0}.,"Các bộ này đã sang bước kiểm tra, lắp ráp: {0}.",
+"These packs have already left the load (stored, issued, used or void): {0}.","Các gói này đã rời mẻ (đã nhập kho, cấp phát, sử dụng hoặc hết hiệu lực): {0}.",
+{0} {1} has a draft stock issue {2}.,{0} {1} còn phiếu xuất Nháp {2}.,
+"Ask R09 to submit or delete the draft issue, then cancel again.",Nhờ R09 ghi sổ hoặc xóa phiếu xuất Nháp rồi hủy lại.,
+Step {0} of set {1} was not passed by {2} {3}; it cannot be reverted.,Bước {0} của bộ {1} không do {2} {3} ghi Đạt nên không trả về được.,
+Set {0} has already passed a later step.,Bộ {0} đã Đạt một bước sau.,
+item is required.,Thiếu mã vật tư.,
+Cancel Reason,Lý do hủy,Wash Batch
+Cancelled By,Người hủy,Wash Batch
+Cancel Reason,Lý do hủy,Sterilization Load
+Cancelled By,Người hủy,Sterilization Load
+Cancelled,Đã hủy,Cost Sheet
+Cancel wash batch,Hủy lô rửa,
+Wash batch cancelled,Đã hủy lô rửa,
+Cancel load,Hủy mẻ,
+Sterilization load cancelled,Đã hủy mẻ tiệt khuẩn,
+The stock issue and cost sheet of this run are cancelled too; sets and packs go back to the step before.,"Phiếu xuất vật tư và bảng giá thành của lô/mẻ cũng bị hủy; bộ, gói trở về bước trước.",
+Used in programs,Dùng trong chương trình,
+No program uses this item yet.,Chưa có chương trình nào dùng vật tư này.,
+{0} per load,{0} mỗi mẻ,
+{0} per pack,{0} mỗi gói,
+{0} per kg,{0} mỗi kg,
+Consumable Usage,Sử dụng vật tư theo mẻ,
+Consumable Lot Trace,Truy vết lô vật tư,
+Batch-Wise Balance History,Tồn kho theo lô,TraceCore Launcher
+Washing,Rửa,Consumable Usage
+Disinfection,Khử khuẩn,Consumable Usage
+Sterilization,Tiệt khuẩn,Consumable Usage
+Test,Test,Consumable Usage
+Stage,Công đoạn,Consumable Usage
+Runs,Số lần chạy,
+Variance %,Chênh lệch %,
+Recorded Quantity,Số đã ghi,
+Issued Quantity,Số đã xuất,

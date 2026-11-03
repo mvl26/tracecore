@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import audit, error_codes, extension, run_consumables, zones
+from tracecore.core import audit, error_codes, extension, lots, run_consumables, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.equipment import chemical_lots
 
@@ -342,6 +342,20 @@ def _ended_run(equipment, test_type):
 	return latest.name
 
 
+def _test_pack_lot(run):
+	"""Lô của dòng vai trò Gói test của lần chạy `run` (A-112 D5); không có → ""."""
+	if not run:
+		return ""
+	return (
+		frappe.db.get_value(
+			run_consumables.CHILD,
+			{"parent": run, "parenttype": "Daily Test", "role": "Test Pack", "batch": ["is", "set"]},
+			"batch",
+		)
+		or ""
+	)
+
+
 def record(
 	equipment,
 	test_type,
@@ -372,10 +386,11 @@ def record(
 	if result not in RESULTS:
 		raise _invalid(_("The result must be Pass or Fail."))
 	run = _ended_run(machine.name, test_type) if test_type in RUN_TESTS else None
-	lot = lot.strip() if isinstance(lot, str) else ""
-	# A-112 (e): lô trùng Batch của kho thì liên kết, hạn theo Batch khi không gõ; lô khác giữ làm ghi chú
+	# A-112 D5: không gõ lô thì lấy lô của dòng Gói test đã chọn lúc Bắt đầu test; mã quét trên hộp đọc ra số lô
+	lot = lots.lot_code(lot) or _test_pack_lot(run)
+	# lô trùng Batch của kho thì liên kết và hạn theo Batch (D2); lô khác giữ làm ghi chú với hạn đã gõ
 	batch = frappe.db.get_value("Batch", lot, ["name", "expiry_date"], as_dict=True) if lot else None
-	if batch and not lot_expiry:
+	if batch and batch.expiry_date:
 		lot_expiry = batch.expiry_date
 	if not lot or not lot_expiry:
 		raise _invalid(_("Enter the lot of the test pack and its expiry date."))

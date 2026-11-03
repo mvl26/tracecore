@@ -17,7 +17,16 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, now_datetime, today
 
-from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate, zones
+from tracecore.core import (
+	audit,
+	client_time,
+	code_registry,
+	extension,
+	lots,
+	station_auth,
+	step_gate,
+	zones,
+)
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import sterilizing, storage
 
@@ -333,7 +342,7 @@ def record_indicator(
 		raise _invalid(_("The Bowie-Dick test date must be today."))
 	if indicator == BIOLOGICAL and result == "Pending" and not (lot and incubator):
 		raise _invalid(_("A biological indicator needs its lot and the incubator."))
-	lot = lot.strip() if isinstance(lot, str) else lot
+	lot = lots.lot_code(lot) if isinstance(lot, str) else lot  # A-112 D1: mã GS1 trên hộp → số lô
 	linked = _stock_lot(lot, getdate(doc.started_at or today()))
 	row = frappe.get_doc(
 		{
