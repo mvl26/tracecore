@@ -1,5 +1,5 @@
 /* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
-/* global uuid4, clientTs, esc, TcProgramMatch */
+/* global uuid4, clientTs, esc, TcProgramMatch, TcRunConsumables */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Ô quét chính của shell luôn ở đầu và có focus: chế độ "Nạp lô" nhận QR máy, Set ID, mã HOAN-THANH-NAP và mã lô
@@ -416,6 +416,9 @@ class T2Wash {
 			program_control: res.program_control || "Warn",
 			programTouched: false,
 			override_reason: "",
+			// A-111: số thực dùng đã gõ và ô tick vật tư của chương trình đang chọn
+			consumables_qty: {},
+			consumables_confirmed: false,
 		};
 		this.pickLot();
 		this.done = null;
@@ -467,7 +470,10 @@ class T2Wash {
 				res.set_type,
 				this.load.sets.length === 0
 			);
-			if (chosen) this.pickLot();
+			if (chosen) {
+				this.pickLot();
+				TcRunConsumables.reset(this.load);
+			}
 			this.load.sets.push({
 				set_id: res.set_id,
 				set_name: res.set_name,
@@ -525,6 +531,11 @@ class T2Wash {
 		if (program && program.chemical && !this.load.lot) out.push(__("chemical lot"));
 		if (this.load && TcProgramMatch.needsReason(this.load, this.setTypes()))
 			out.push(__("reason for the program"));
+		if (
+			program &&
+			TcRunConsumables.missing(this.load, program.consumables, this.load.sets.length)
+		)
+			out.push(__("consumables confirmation"));
 		return out;
 	}
 
@@ -536,6 +547,7 @@ class T2Wash {
 		if (!this.load || this.busy || !program) return;
 		this.load.program = program;
 		this.load.programTouched = true;
+		TcRunConsumables.reset(this.load);
 		this.pickLot();
 		this.saveLoad();
 		this.show();
@@ -567,6 +579,8 @@ class T2Wash {
 				chemicals: lot ? [{ item: lot.item, lot: lot.batch_no }] : [],
 				station: this.station.station,
 				program_override_reason: (load.override_reason || "").trim() || null,
+				consumables: TcRunConsumables.payload(load),
+				consumables_confirmed: load.consumables_confirmed ? 1 : 0,
 			},
 			(res) => {
 				this.done = {
@@ -1119,10 +1133,15 @@ class T2Wash {
 		if (target.id === "tc-t2-program" && this.load) {
 			this.load.program = target.value;
 			this.load.programTouched = true; // A-110 D5: người dùng đã chọn, không tự đổi nữa
+			TcRunConsumables.reset(this.load); // A-111: vật tư của chương trình khác
 			this.pickLot();
 			this.saveLoad();
 			this.show();
 			this.refreshLots(true); // lô mới nhập sau khi quét máy
+		} else if (target.dataset.consumablesConfirm && this.load) {
+			this.load.consumables_confirmed = target.checked;
+			this.saveLoad();
+			this.show();
 		} else if (target.id === "tc-t2-lot" && this.load) {
 			this.load.lot = target.value || null;
 			this.saveLoad();
@@ -1145,7 +1164,14 @@ class T2Wash {
 
 	onInput(event) {
 		const target = event.target;
-		if (target.dataset.programReason && this.load) {
+		if (target.dataset.consumable && this.load) {
+			// A-111: số thực dùng; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
+			this.load.consumables_qty = this.load.consumables_qty || {};
+			this.load.consumables_qty[target.dataset.consumable] = target.value;
+			this.saveLoad();
+			const bar = this.result.querySelector(".tc-actionsbar");
+			if (bar) bar.outerHTML = this.loadBarHtml();
+		} else if (target.dataset.programReason && this.load) {
 			// A-110 D7: lý do ghi đè; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
 			this.load.override_reason = target.value;
 			this.saveLoad();
@@ -1469,6 +1495,17 @@ class T2Wash {
 				</div>
 			${this.chemicalsHtml(program)}
 				</section>
+			${
+				program
+					? TcRunConsumables.html(
+							load,
+							program.consumables,
+							load.sets.length,
+							"tc-t2",
+							__("Consumables of program {0}", [program.program_name])
+					  )
+					: ""
+			}
 			<section class="tc-t4-block tc-t2-sets">
 				<h3>${esc(
 					__(

@@ -22,7 +22,7 @@ from tracecore.v1._common import (
 	run_at_step,
 	station_session,
 )
-from tracecore.v1.wash import _codes, _flag, _optional_str, _required_str, _run, _values
+from tracecore.v1.wash import _codes, _consumables, _flag, _optional_str, _required_str, _run, _values
 
 FUNCTION = sterilizing.FUNCTION
 
@@ -128,16 +128,21 @@ def complete(
 	client_ts=None,
 	token=None,
 	program_override_reason=None,
+	consumables=None,
+	consumables_confirmed=0,
 ):
 	"""Hoàn thành nạp: sinh mã mẻ `ME-`, gắn gói, in nhãn QR (FR-M2-09, FR-M2-24.1); trả cả gói bị loại.
 
 	`program_override_reason` (A-110): lý do chạy chương trình ngoài danh sách của loại bộ (mức Ghi đè có lý do).
+	`consumables`, `consumables_confirmed` (A-111): số thực dùng đã sửa và ô tick "Đã chuẩn bị đủ vật tư".
 	"""
 	require_any_role(*LOAD_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	program = _required_str(program, "program")
 	codes = _codes(packs, "packs")
 	reason = _optional_str(program_override_reason, "program_override_reason")
+	used = _consumables(consumables)
+	confirmed = _flag(consumables_confirmed)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
@@ -154,6 +159,8 @@ def complete(
 				_session_employee(),
 				_flag(is_priority),
 				reason,
+				used,
+				confirmed,
 			),
 		},
 		"Equipment",

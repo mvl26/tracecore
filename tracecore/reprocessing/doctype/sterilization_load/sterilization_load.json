@@ -25,6 +25,7 @@
   "ended_at",
   "packs_section",
   "packs",
+  "consumables",
   "data_section",
   "data_source",
   "data_complete",
@@ -201,6 +202,14 @@
    "label": "Packs",
    "options": "Load Pack",
    "reqd": 1
+  },
+  {
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Run Consumable",
+   "read_only": 1
   },
   {
    "fieldname": "data_section",
@@ -415,7 +424,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-03 10:00:00.000000",
+ "modified": "2026-11-03 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterilization Load",

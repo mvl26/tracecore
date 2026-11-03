@@ -1,5 +1,5 @@
 /* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
-/* global uuid4, clientTs, esc, TcProgramMatch */
+/* global uuid4, clientTs, esc, TcProgramMatch, TcRunConsumables */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Ô quét chính của shell luôn ở đầu và có focus: chế độ "Nạp mẻ" nhận QR máy, Cycle ID, mã HOAN-THANH-NAP và mã mẻ
@@ -449,6 +449,9 @@ class T5Load {
 			program_control: res.program_control || "Warn",
 			programTouched: false,
 			override_reason: "",
+			// A-111: số thực dùng đã gõ và ô tick vật tư của chương trình đang chọn
+			consumables_qty: {},
+			consumables_confirmed: false,
 		};
 		this.done = null;
 		this.printNote = null;
@@ -499,6 +502,7 @@ class T5Load {
 			this.saveLoad();
 			// gói đã nhận theo chương trình cũ: kiểm lại phương pháp, loại gói theo chương trình vừa chọn
 			if (chosen) {
+				TcRunConsumables.reset(this.load);
 				this.done = null;
 				this.lookup = null;
 				this.show();
@@ -518,9 +522,15 @@ class T5Load {
 		if (!this.load || this.busy || !program) return;
 		this.load.program = program;
 		this.load.programTouched = true;
+		TcRunConsumables.reset(this.load);
 		this.saveLoad();
 		this.show();
 		this.recheckPacks();
+	}
+
+	// A-111: số gói tính định mức vật tư (gói tô đỏ sẽ bị loại khi Hoàn thành nạp)
+	packCount() {
+		return this.load ? this.load.packs.filter((row) => !row.incompatible).length : 0;
 	}
 
 	removePack(cycleId) {
@@ -603,6 +613,9 @@ class T5Load {
 			out.push(__("removing the packs marked in red"));
 		if (this.load && TcProgramMatch.needsReason(this.load, this.setTypes()))
 			out.push(__("reason for the program"));
+		const program = this.programRow();
+		if (program && TcRunConsumables.missing(this.load, program.consumables, this.packCount()))
+			out.push(__("consumables confirmation"));
 		return out;
 	}
 
@@ -628,6 +641,8 @@ class T5Load {
 				is_priority: load.priority ? 1 : 0,
 				station: this.station.station,
 				program_override_reason: (load.override_reason || "").trim() || null,
+				consumables: TcRunConsumables.payload(load),
+				consumables_confirmed: load.consumables_confirmed ? 1 : 0,
 			},
 			(res) => {
 				this.done = {
@@ -1135,9 +1150,14 @@ class T5Load {
 		if (target.id === "tc-t5-program" && this.load) {
 			this.load.program = target.value;
 			this.load.programTouched = true; // A-110 D5: người dùng đã chọn, không tự đổi nữa
+			TcRunConsumables.reset(this.load); // A-111: vật tư của chương trình khác
 			this.saveLoad();
 			this.show();
 			this.recheckPacks();
+		} else if (target.dataset.consumablesConfirm && this.load) {
+			this.load.consumables_confirmed = target.checked;
+			this.saveLoad();
+			this.show();
 		} else if (target.id === "tc-t5-priority" && this.load) {
 			this.load.priority = target.checked;
 			this.saveLoad();
@@ -1152,7 +1172,14 @@ class T5Load {
 
 	onInput(event) {
 		const target = event.target;
-		if (target.dataset.programReason && this.load) {
+		if (target.dataset.consumable && this.load) {
+			// A-111: số thực dùng; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
+			this.load.consumables_qty = this.load.consumables_qty || {};
+			this.load.consumables_qty[target.dataset.consumable] = target.value;
+			this.saveLoad();
+			const bar = this.result.querySelector(".tc-actionsbar");
+			if (bar) bar.outerHTML = this.loadBarHtml();
+		} else if (target.dataset.programReason && this.load) {
 			// A-110 D7: lý do ghi đè; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
 			this.load.override_reason = target.value;
 			this.saveLoad();
@@ -1453,6 +1480,17 @@ class T5Load {
 					load.priority ? " checked" : ""
 				}> ${esc(__("Priority load"))}</label>
 			</section>
+			${
+				program
+					? TcRunConsumables.html(
+							load,
+							program.consumables,
+							this.packCount(),
+							"tc-t5",
+							__("Consumables of program {0}", [program.program_name])
+					  )
+					: ""
+			}
 			<section class="tc-t4-block tc-t2-sets">
 				<h3>${esc(
 					__(

@@ -94,6 +94,9 @@ HTTP_STATUS: dict[str, int] = {
 			# A-110: chương trình ngoài danh sách của loại bộ (mức Chặn / Ghi đè có lý do)
 			"PROGRAM_NOT_FOR_SET",
 			"PROGRAM_OVERRIDE_REASON_REQUIRED",
+			# A-111: vật tư của chương trình xác nhận tại trạm
+			"CONSUMABLES_NOT_CONFIRMED",
+			"CONSUMABLE_INVALID",
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",

@@ -25,6 +25,7 @@
   "sets_section",
   "set_units",
   "chemicals",
+  "consumables",
   "data_section",
   "data_source",
   "data_complete",
@@ -198,6 +199,14 @@
    "options": "Wash Batch Chemical"
   },
   {
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Run Consumable",
+   "read_only": 1
+  },
+  {
    "fieldname": "data_section",
    "fieldtype": "Section Break",
    "label": "Cycle Data"
@@ -365,7 +374,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-03 10:00:00.000000",
+ "modified": "2026-11-03 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

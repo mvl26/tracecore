@@ -1,5 +1,5 @@
 /* global tcErrorTitle, tcGuideButton */
-/* global uuid4, clientTs, esc, T5Load, T2Wash, t5MachineState */
+/* global uuid4, clientTs, esc, T5Load, T2Wash, t5MachineState, TcRunConsumables */
 // Màn SCR-23 test hằng ngày và khóa máy (FEAT-040, UC-23) trên Page station: chế độ "Test hằng ngày" của màn T5 và T2.
 // Frappe nối file này sau station_t5.js và station_t2.js (hook page_js). T5Load/T2Wash đổi `station.screen` sang
 // DailyTestScreen; nút "Quay lại" trả màn về màn nạp mẻ/lô. Quét QR máy hoặc chọn máy trong danh sách, chọn loại test,
@@ -63,7 +63,15 @@ class DailyTestScreen {
 			uploading: false,
 			reason: "",
 			hours: "",
+			// A-111: vật tư của chương trình test, xác nhận trước khi Bắt đầu test
+			consumables_qty: {},
+			consumables_confirmed: false,
 		};
+	}
+
+	// A-111 D6: chương trình test của máy theo loại test đang chọn và vật tư của nó (rỗng khi chưa gắn)
+	testProgram(machine) {
+		return ((machine && machine.test_programs) || {})[this.form.test_type] || null;
 	}
 
 	clearSession() {
@@ -215,14 +223,30 @@ class DailyTestScreen {
 			});
 		}
 		const machine = this.selected;
-		this.request(
-			method,
-			{ equipment: machine, test_type: form.test_type, station: this.station.station },
-			() => {
-				this.notice = notice(machine);
-				this.load();
+		const args = {
+			equipment: machine,
+			test_type: form.test_type,
+			station: this.station.station,
+		};
+		if (method === DT_START) {
+			const program = this.testProgram(this.machine());
+			if (program && TcRunConsumables.missing(form, program.consumables, 0)) {
+				return this.blocked({
+					title: __("Consumables not confirmed"),
+					reason: __("Program {0} has required consumables.", [program.program_name]),
+					action: __(
+						"Check the consumables, enter what was used, tick that they are ready, then start the test."
+					),
+				});
 			}
-		);
+			args.consumables = TcRunConsumables.payload(form);
+			args.consumables_confirmed = form.consumables_confirmed ? 1 : 0;
+		}
+		this.request(method, args, () => {
+			this.notice = notice(machine);
+			if (method === DT_START) TcRunConsumables.reset(this.form);
+			this.load();
+		});
 	}
 
 	async uploadPhoto(input) {
@@ -350,6 +374,7 @@ class DailyTestScreen {
 				this.show();
 			},
 			"dt-type": () => {
+				if (this.form.test_type !== data.value) TcRunConsumables.reset(this.form);
 				this.form.test_type = data.value;
 				this.show();
 			},
@@ -380,6 +405,12 @@ class DailyTestScreen {
 
 	onInput(event) {
 		if (this.station.screen !== this) return;
+		const consumable = event.target.dataset.consumable;
+		if (consumable) {
+			this.form.consumables_qty = this.form.consumables_qty || {};
+			this.form.consumables_qty[consumable] = event.target.value;
+			return;
+		}
 		const field = event.target.dataset.dtField;
 		if (field) this.form[field] = event.target.value;
 	}
@@ -387,6 +418,10 @@ class DailyTestScreen {
 	onChange(event) {
 		if (this.station.screen !== this) return;
 		if (event.target.id === "tc-dt-photo") this.uploadPhoto(event.target);
+		if (event.target.dataset.consumablesConfirm) {
+			this.form.consumables_confirmed = event.target.checked;
+			this.show();
+		}
 	}
 
 	setOffline(offline) {
@@ -583,11 +618,22 @@ class DailyTestScreen {
 				label
 			)}</button></div>`;
 		if (needsRun && !run) {
+			const program = this.testProgram(machine);
 			return `<p class="tc-t6-hint">${esc(
 				__(
 					"Run the test on an empty machine. The result can be recorded after the test ends."
 				)
-			)}</p>${button("dt-start", __("Start the test"))}`;
+			)}</p>${
+				program
+					? TcRunConsumables.html(
+							form,
+							program.consumables,
+							0,
+							"tc-dt",
+							__("Consumables of program {0}", [program.program_name])
+					  )
+					: ""
+			}${button("dt-start", __("Start the test"))}`;
 		}
 		if (needsRun && run === "Running") {
 			return `<p class="tc-t6-hint">${esc(

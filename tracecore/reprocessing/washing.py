@@ -29,6 +29,7 @@ from tracecore.core import (
 	gs1,
 	program_match,
 	qr,
+	run_consumables,
 	station_auth,
 	step_gate,
 	zones,
@@ -187,6 +188,8 @@ def _programs_and_lots(equipment):
 				"chemical": row.chemical,
 				"chemicals": program_chemicals(row.name),
 				"parameters": _parameters(row.name),
+				# A-111: vật tư của chương trình để màn liệt kê và nhân viên xác nhận
+				"consumables": run_consumables.payload(row.name),
 			}
 		)
 		if row.chemical and row.chemical not in seen:
@@ -646,11 +649,24 @@ def _admit_all(sets, equipment, program=None):
 	return accepted, rejected
 
 
-def start(equipment, program, sets, chemicals, station, client_ts, operator, override_reason=None):
+def start(
+	equipment,
+	program,
+	sets,
+	chemicals,
+	station,
+	client_ts,
+	operator,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	"""Hoàn thành nạp: sinh mã lô `LR-YYMMDD-NN` cho các bộ quét vào máy, ghi lô `Running` và xếp lệnh in nhãn QR.
 
 	A-110: lô ghi chương trình gợi ý theo loại bộ, người ghi đè và `override_reason` khi có bộ ngoài danh sách của
 	chương trình; mức Ghi đè có lý do thiếu lý do → PROGRAM_OVERRIDE_REASON_REQUIRED (`core.program_match.review`).
+	A-111: `consumables` (số thực dùng nhân viên sửa) và `consumables_confirmed` thành bảng vật tư của lô theo số bộ được
+	nhận; chương trình có vật tư bắt buộc chưa xác nhận → CONSUMABLES_NOT_CONFIRMED (`core.run_consumables.rows`).
 
 	`client_ts` là kết quả `parse_client_ts` (UTC); giờ nạp = giờ hệ thống của nó, lệch giờ server quá
 	`client_time.max_skew_seconds()` → ClientTimestampError trước khi ghi gì. `operator` là Employee đăng nhập thẻ.
@@ -663,7 +679,18 @@ def start(equipment, program, sets, chemicals, station, client_ts, operator, ove
 	client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		return _start(equipment, program, sets, chemicals, station, client_ts, operator, override_reason)
+		return _start(
+			equipment,
+			program,
+			sets,
+			chemicals,
+			station,
+			client_ts,
+			operator,
+			override_reason,
+			consumables,
+			consumables_confirmed,
+		)
 	except Exception:
 		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
 		with contextlib.suppress(Exception):
@@ -671,7 +698,18 @@ def start(equipment, program, sets, chemicals, station, client_ts, operator, ove
 		raise
 
 
-def _start(equipment, program, sets, chemicals, station, client_ts, operator, override_reason=None):
+def _start(
+	equipment,
+	program,
+	sets,
+	chemicals,
+	station,
+	client_ts,
+	operator,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	block = check_equipment_ready(equipment)
 	if block:
 		raise BlockedError(block)
@@ -694,6 +732,7 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator, ov
 		operator,
 		override_reason,
 	)
+	used = run_consumables.rows(program.name, len(accepted), consumables, consumables_confirmed, operator)
 	started = _system_time(client_ts)
 	batch = frappe.get_doc(
 		{
@@ -709,6 +748,7 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator, ov
 			"started_at": started,
 			"set_units": [{"set_unit": set_id, "added_at": started} for set_id in accepted],
 			"chemicals": chemical_rows,
+			"consumables": used,
 		}
 	)
 	batch.flags.tc_washing = True

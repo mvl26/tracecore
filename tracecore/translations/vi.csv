@@ -7857,3 +7857,79 @@ reason for the program,lý do dùng chương trình,
 Program {0} chosen: the default of set type {1} on this washer.,Đã chọn chương trình {0}: mặc định của loại bộ {1} trên máy rửa này.,
 Program {0} chosen: the default of set type {1} on this sterilizer.,Đã chọn chương trình {0}: mặc định của loại bộ {1} trên máy tiệt khuẩn này.,
 Program for this set,Chương trình của bộ,
+"One consumable (chemical, test pack, indicator, packaging, label) used by a process program, per load and/or per pack.","Một vật tư (hóa chất, gói test, chỉ thị, bao gói, nhãn) mà chương trình dùng theo mẻ và/hoặc theo gói.",
+Role,Vai trò,Program Consumable
+Required,Bắt buộc,Program Consumable
+Chemical,Hóa chất,Program Consumable
+Test Pack,Gói test,Program Consumable
+Chemical Indicator,Chỉ thị hóa học (CI),Program Consumable
+Biological Indicator,Chỉ thị sinh học (BI),Program Consumable
+Packaging,Bao gói,Program Consumable
+Label,Nhãn – in ấn,Program Consumable
+Other,Khác,Program Consumable
+What the item is for. Chemical and biological indicators are listed at the station as a reminder only and are not deducted with the program (A-111).,"Công dụng của vật tư. Chỉ thị hóa học, sinh học chỉ hiện ở trạm để nhắc, không trừ kho theo chương trình (A-111).",
+The operator must confirm this item before loading is completed or the test is started.,Nhân viên phải xác nhận vật tư này trước khi Hoàn thành nạp hoặc Bắt đầu test.,
+Run Consumable,Vật tư của lô/mẻ/test,
+"A consumable of the program confirmed for one wash batch, sterilization load or daily test: norm, actual quantity, lots issued, who confirmed (A-111).","Vật tư của chương trình đã xác nhận cho một lô rửa, mẻ tiệt khuẩn hoặc lần test: định mức, số thực dùng, lô đã xuất, người xác nhận (A-111).",
+Item,Vật tư,Run Consumable
+Item Name,Tên vật tư,Run Consumable
+Role,Vai trò,Run Consumable
+Required,Bắt buộc,Run Consumable
+Unit of Measure,Đơn vị tính,Run Consumable
+Stock unit of the item.,Đơn vị tồn kho của vật tư.,
+Actual Quantity,Số thực dùng,Run Consumable
+Lots Issued,Lô đã xuất,
+Confirmed By,Người xác nhận,Run Consumable
+Confirmed At,Giờ xác nhận,Run Consumable
+Chemical,Hóa chất,Run Consumable
+Test Pack,Gói test,Run Consumable
+Chemical Indicator,Chỉ thị hóa học (CI),Run Consumable
+Biological Indicator,Chỉ thị sinh học (BI),Run Consumable
+Packaging,Bao gói,Run Consumable
+Label,Nhãn – in ấn,Run Consumable
+Other,Khác,Run Consumable
+Consumables,Vật tư,Wash Batch
+Consumables,Vật tư,Sterilization Load
+Consumables,Vật tư,Daily Test
+"Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).","Vật tư của chương trình đã xác nhận tại trạm: định mức, số thực dùng, lô đã xuất (A-111).",
+Test Program,Chương trình test,
+Test program of the machine for this test type; its consumables are listed and deducted (A-111).,Chương trình test của máy cho loại test này; vật tư của chương trình được liệt kê và trừ kho (A-111).,
+Daily Test Type,Loại test đầu ngày,
+Daily test run with this program. The Daily Test tab lists its consumables when this test is chosen (A-111).,Test đầu ngày chạy bằng chương trình này. Tab Test hằng ngày liệt kê vật tư của chương trình khi chọn test này (A-111).,
+Daily test type {0} does not apply to equipment {1}.,Loại test đầu ngày {0} không áp dụng cho thiết bị {1}.,
+Process program {0} does not exist.,Chương trình {0} không tồn tại.,
+Consumables of program {0} can only be applied to other active programs of the same kind on the same type of machine: {1}.,"Vật tư của chương trình {0} chỉ áp được sang chương trình đang dùng khác, cùng loại chương trình và cùng loại máy: {1}.",
+targets must be a list of program codes.,targets phải là danh sách mã chương trình.,
+consumables must be a list of objects with an item and a qty.,consumables phải là danh sách đối tượng có item và qty.,
+Apply consumables to similar programs,Áp vật tư sang chương trình cùng loại,
+Apply consumables of {0},Áp vật tư của {0},
+The consumables of the chosen programs are replaced by this list. Later changes here are not copied again.,Vật tư của các chương trình được chọn sẽ được thay bằng danh sách này. Sửa ở đây sau này sẽ không tự chép lại.,
+No other active program of the same kind runs on this type of machine.,Không có chương trình đang dùng nào khác cùng loại trên loại máy này.,
+Consumables applied to {0} program(s).,Đã áp vật tư sang {0} chương trình.,
+Consumables could not be applied,Không áp được vật tư,
+Item {0} is not a consumable of this program.,Vật tư {0} không thuộc chương trình này.,
+The quantity of {0} must be a number.,Số lượng của {0} phải là số.,
+The quantity of {0} cannot be negative.,Số lượng của {0} không được âm.,
+Consumable quantity is not valid,Số lượng vật tư không hợp lệ,
+"Correct the quantities of the consumables, then try again.",Sửa số lượng vật tư rồi thử lại.,
+Required consumables have no quantity: {0}.,Vật tư bắt buộc chưa có số lượng: {0}.,
+The consumables of program {0} have not been confirmed.,Vật tư của chương trình {0} chưa được xác nhận.,
+Consumables not confirmed,Chưa xác nhận vật tư,
+"Check the consumables, enter what was used, tick that they are ready, then try again.","Kiểm tra vật tư, nhập số đã dùng, tick đã chuẩn bị đủ rồi thử lại.",
+"Daily test {0} has no result yet, so nothing is consumed for it.",Lần test {0} chưa có kết quả nên chưa trừ kho.,
+Automatic consumption of daily test {0},Tiêu hao tự động của lần test {0},
+Program Consumable Gaps,Chương trình thiếu vật tư,
+Issue Code,Mã vấn đề,
+The program has no consumables.,Chương trình chưa có vật tư.,
+The test program has no required test pack.,Chương trình test chưa có gói test bắt buộc.,
+The test program is not linked to a daily test type.,Chương trình test chưa gắn loại test đầu ngày.,
+Consumables without a role: {0},Vật tư chưa phân vai trò: {0},
+"Reminder only, not deducted","Chỉ nhắc, không trừ kho",
+Actual quantity of {0},Số thực dùng của {0},
+Norm for this run,Định mức lần này,
+Leave the quantity empty to use the norm.,Để trống số lượng thì dùng định mức.,
+Consumables are ready and the quantities are right,Đã chuẩn bị đủ vật tư và số lượng đúng,
+consumables confirmation,xác nhận vật tư,
+Consumables of program {0},Vật tư của chương trình {0},
+Program {0} has required consumables.,Chương trình {0} có vật tư bắt buộc.,
+"Check the consumables, enter what was used, tick that they are ready, then start the test.","Kiểm tra vật tư, nhập số đã dùng, tick đã chuẩn bị đủ rồi Bắt đầu test.",

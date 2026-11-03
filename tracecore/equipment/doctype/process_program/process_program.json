@@ -14,6 +14,7 @@
   "equipment_type",
   "is_active",
   "program_kind",
+  "daily_test_type",
   "requires_bi",
   "requires_wash_indicator",
   "requires_wash_indicator_photo",
@@ -98,6 +99,14 @@
    "in_list_view": 1,
    "label": "Program Kind",
    "options": "Regular\nTest"
+  },
+  {
+   "depends_on": "eval:doc.program_kind == \"Test\"",
+   "description": "Daily test run with this program. The Daily Test tab lists its consumables when this test is chosen (A-111).",
+   "fieldname": "daily_test_type",
+   "fieldtype": "Select",
+   "label": "Daily Test Type",
+   "options": "\nbowie_dick\nleak\nplasma_daily"
   },
   {
    "default": "0",
@@ -275,7 +284,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-03 10:00:00.000000",
+ "modified": "2026-11-03 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Process Program",

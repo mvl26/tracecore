@@ -13,11 +13,13 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, getdate, now_datetime, today
 
-from tracecore.core import audit, error_codes, zones
+from tracecore.core import audit, error_codes, extension, run_consumables, zones
 from tracecore.core.errors import Block, BlockedError
 from tracecore.equipment import chemical_lots
 
 SETTINGS = "TraceCore Settings"
+# A-111 D2: M6 trừ vật tư của lần test khi ghi kết quả; M5 không import M6
+AFTER_RECORD_HOOK = "tracecore_after_daily_test_record"
 MODE_NONE = "Not Required"
 MODE_ALL = "All Sterilizers"
 MODE_SELECTED = "Selected Sterilizers"
@@ -229,10 +231,35 @@ def _check_run_test(machine, test_type):
 		)
 
 
-def start_run(equipment, test_type, station, employee=None):
+def test_program(equipment, test_type):
+	"""Chương trình test đang dùng của máy gắn loại test `test_type` (A-111 D6), hoặc None."""
+	return frappe.db.get_value(
+		"Process Program",
+		{"equipment": equipment, "is_active": 1, "program_kind": "Test", "daily_test_type": test_type},
+		"name",
+		order_by="program_name asc, name asc",
+	)
+
+
+def _test_programs(equipment, tests):
+	"""``{loại test: {"program", "program_name", "consumables"}}`` cho màn test đầu ngày; loại test chưa gắn thì không có."""
+	out = {}
+	for test in tests:
+		program = test_program(equipment, test)
+		if program:
+			out[test] = {
+				"program": program,
+				"program_name": frappe.db.get_value("Process Program", program, "program_name"),
+				"consumables": run_consumables.payload(program),
+			}
+	return out
+
+
+def start_run(equipment, test_type, station, employee=None, consumables=None, consumables_confirmed=False):
 	"""Bắt đầu một lần chạy test (A-84): máy Đang test, không nạp được; trả ``{"daily_test", "started_at"}``.
 
-	Máy còn mẻ chưa dỡ → EQUIPMENT_BUSY; máy đang chạy test khác → DAILY_TEST_RUN_OPEN.
+	Máy còn mẻ chưa dỡ → EQUIPMENT_BUSY; máy đang chạy test khác → DAILY_TEST_RUN_OPEN. A-111: lần chạy ghi chương
+	trình test của máy theo loại test và vật tư đã xác nhận; vật tư bắt buộc chưa xác nhận → CONSUMABLES_NOT_CONFIRMED.
 	"""
 	machine = _equipment(equipment, for_update=True)
 	_check_run_test(machine, test_type)
@@ -256,18 +283,22 @@ def start_run(equipment, test_type, station, employee=None):
 			object_type="Equipment",
 			object_name=machine.name,
 		)
+	program = test_program(machine.name, test_type)
+	used = run_consumables.rows(program, 0, consumables, consumables_confirmed, employee) if program else []
 	now = now_datetime()
 	row = frappe.get_doc(
 		{
 			"doctype": "Daily Test",
 			"equipment": machine.name,
 			"test_type": test_type,
+			"program": program,
 			"test_date": today(),
 			"run_status": RUN_RUNNING,
 			"started_at": now,
 			"station": station,
 			"tested_by_user": frappe.session.user,
 			"tested_by": employee,
+			"consumables": used,
 		}
 	)
 	row.flags.tc_daily_test = True
@@ -377,6 +408,8 @@ def record(
 		)
 	row.flags.tc_daily_test = True
 	row.save(ignore_permissions=True)
+	# A-111 D2: gói test đã dùng dù Đạt hay Không đạt; M6 trừ kho theo vật tư đã xác nhận lúc Bắt đầu test
+	extension.run(AFTER_RECORD_HOOK, {"daily_test": row.name, "equipment": machine.name, "lot": lot})
 	locked = unlocked = False
 	if failed:
 		if machine.status == "Ready":
@@ -638,6 +671,7 @@ def overview(station=None, include=None):
 		row["testing"] = running.test_type if running else None
 		row["run_tests"] = [test for test in TESTS[row.equipment_type] if test in RUN_TESTS]
 		row["runs"] = _open_runs(row.name, row["run_tests"])
+		row["test_programs"] = _test_programs(row.name, row["run_tests"])
 		row["ready_to_load"] = cint(
 			row.status == "Ready"
 			and not busy

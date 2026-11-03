@@ -9,6 +9,7 @@
   "equipment",
   "equipment_name",
   "test_type",
+  "program",
   "result",
   "test_date",
   "run_status",
@@ -24,6 +25,7 @@
   "tested_by",
   "tested_at",
   "note",
+  "consumables",
   "nc_pending"
  ],
  "fields": [
@@ -54,6 +56,14 @@
    "options": "bowie_dick\nleak\nplasma_daily\nwasher_cleaning",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "description": "Test program of the machine for this test type; its consumables are listed and deducted (A-111).",
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Test Program",
+   "options": "Process Program",
+   "read_only": 1
   },
   {
    "fieldname": "result",
@@ -152,6 +162,14 @@
    "read_only": 1
   },
   {
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued (A-111).",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Run Consumable",
+   "read_only": 1
+  },
+  {
    "default": "0",
    "description": "A failed test needs a non-conformity.",
    "fieldname": "nc_pending",
@@ -162,7 +180,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-03 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",
