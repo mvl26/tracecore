@@ -91,6 +91,9 @@ HTTP_STATUS: dict[str, int] = {
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
 			"PROGRAM_TEST_ONLY",  # A-83: chương trình test không nhận gói
+			# A-110: chương trình ngoài danh sách của loại bộ (mức Chặn / Ghi đè có lý do)
+			"PROGRAM_NOT_FOR_SET",
+			"PROGRAM_OVERRIDE_REASON_REQUIRED",
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",

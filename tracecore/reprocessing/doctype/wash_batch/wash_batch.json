@@ -13,6 +13,9 @@
   "program",
   "program_name",
   "operator",
+  "suggested_program",
+  "program_override_by",
+  "program_override_reason",
   "column_break_run",
   "status",
   "loaded_by_scan",
@@ -112,6 +115,31 @@
    "options": "Employee",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "description": "Program the set types suggest on this machine when loading was completed (A-110).",
+   "fieldname": "suggested_program",
+   "fieldtype": "Link",
+   "label": "Suggested Program",
+   "no_copy": 1,
+   "options": "Process Program",
+   "read_only": 1
+  },
+  {
+   "description": "Employee who ran a program not listed for some set types (A-110).",
+   "fieldname": "program_override_by",
+   "fieldtype": "Link",
+   "label": "Program Overridden By",
+   "no_copy": 1,
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "program_override_reason",
+   "fieldtype": "Small Text",
+   "label": "Program Override Reason",
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fieldname": "column_break_run",
@@ -337,7 +365,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-03 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

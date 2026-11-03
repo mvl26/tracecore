@@ -12,7 +12,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, flt
 
-from tracecore.core import audit
+from tracecore.core import audit, program_match
 from tracecore.equipment import norms
 
 PROGRAM_CODE_PATTERN = re.compile(r"[A-Z0-9-]+")
@@ -56,6 +56,10 @@ class ProcessProgram(Document):
 		self._validate_pack_types()
 		self._validate_parameters()
 		self._warn_safe_range()
+
+	def onload(self):
+		# A-110 D9, FR-M5-02.5: loại bộ dùng chương trình này, chỉ xem
+		self.set_onload("set_types", program_match.set_types_of(self.name))
 
 	def on_trash(self):
 		audit.block_delete(self, "on_trash")

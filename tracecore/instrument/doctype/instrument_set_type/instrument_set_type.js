@@ -1279,6 +1279,17 @@ frappe.ui.form.on("Instrument Set Type", {
 		["default_pack_type", "department"].forEach((fieldname) =>
 			frm.set_df_property(fieldname, "ignore_link_validation", 1)
 		);
+		// A-110: chỉ chương trình thường còn dùng của máy rửa, máy tiệt khuẩn; server kiểm lại khi lưu
+		frm.set_query("program", "programs", () => ({
+			filters: {
+				is_active: 1,
+				program_kind: ["!=", "Test"],
+				equipment_type: [
+					"in",
+					["Ultrasonic Cleaner", "Washer-Disinfector", "Steam Sterilizer", "Plasma Sterilizer"],
+				],
+			},
+		}));
 	},
 
 	refresh(frm) {
