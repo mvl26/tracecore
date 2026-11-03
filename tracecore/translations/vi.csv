@@ -7792,3 +7792,68 @@ Collapse menu,Thu gọn menu,TraceCore Launcher
 Expand menu,Mở rộng menu,TraceCore Launcher
 Collapse menu,Thu gọn menu,
 Expand menu,Mở rộng menu,
+Set Type Program,Chương trình theo máy của loại bộ,
+Programs by Machine,Chương trình theo máy,
+Programs by Machine,Chương trình theo máy,Instrument Set Type
+Default and allowed programs of this set type on each washer and sterilizer. One default program per machine.,"Chương trình mặc định và chương trình cho phép của loại bộ trên từng máy rửa, máy tiệt khuẩn. Mỗi máy có một chương trình mặc định.",
+A program (of one machine) that a set type uses by default or is allowed to use (A-110).,Chương trình (của một máy) mà loại bộ dùng mặc định hoặc được phép dùng (A-110).,
+Program,Chương trình,Set Type Program
+Program Name,Tên chương trình,Set Type Program
+Equipment,Thiết bị,Set Type Program
+Equipment Name,Tên thiết bị,Set Type Program
+Equipment Type,Loại thiết bị,Set Type Program
+Stage,Công đoạn,
+Stage,Công đoạn,Set Type Program
+Ultrasonic Washing,Rửa siêu âm,
+Washer-Disinfection,Rửa khử khuẩn,
+Sterilization,Tiệt khuẩn,Set Type Program
+Default,Mặc định,
+Default,Mặc định,Set Type Program
+Programs by Set Type,Chương trình theo loại bộ,
+Program Outside the List,Chương trình ngoài danh sách,
+Warn,Cảnh báo,
+Block,Chặn,TraceCore Settings
+Override,Cho ghi đè có lý do,TraceCore Settings
+"What T2 and T5 do when the chosen program is not listed for a set type on that machine. Warn: load and mark the set. Block: refuse the set. Override: load, but completing the load needs a reason. Method and pack type checks always block.","Cách T2 và T5 xử lý khi chương trình đang chọn không có trong danh sách của loại bộ trên máy đó. Cảnh báo: vẫn nạp và đánh dấu bộ. Chặn: từ chối bộ. Cho ghi đè có lý do: vẫn nạp, nhưng Hoàn thành nạp phải nhập lý do. Kiểm tra phương pháp và loại gói luôn chặn.",
+Suggested Program,Chương trình gợi ý,
+Program Overridden By,Người ghi đè chương trình,
+Program Override Reason,Lý do ghi đè chương trình,
+Program the set types suggest on this machine when loading was completed (A-110).,Chương trình mà các loại bộ gợi ý trên máy này lúc Hoàn thành nạp (A-110).,
+Employee who ran a program not listed for some set types (A-110).,Nhân viên đã chạy chương trình không có trong danh sách của một số loại bộ (A-110).,
+Set Types Using This Program,Loại bộ dùng chương trình này,
+"No set type uses this program yet. Add it on the set type, tab Programs by Machine.","Chưa có loại bộ nào dùng chương trình này. Khai trên loại bộ, tab Chương trình theo máy.",
+Method does not match,Phương pháp không khớp,
+Use,Dùng,
+Row {0}: program {1} does not exist.,Dòng {0}: chương trình {1} không tồn tại.,
+"Row {0}: program {1} belongs to equipment {2}, which is not a washer or a sterilizer.","Dòng {0}: chương trình {1} thuộc thiết bị {2}, không phải máy rửa hay máy tiệt khuẩn.",
+Row {0}: program {1} is no longer in use.,Dòng {0}: chương trình {1} đã ngừng dùng.,
+Row {0}: program {1} is a test program and takes no set.,"Dòng {0}: chương trình {1} là chương trình test, không nhận bộ dụng cụ.",
+"Row {0}: program {1} runs {2} sterilization, but this set type uses {3}.","Dòng {0}: chương trình {1} tiệt khuẩn bằng {2}, nhưng loại bộ này dùng {3}.",
+Row {0}: program {1} is listed twice.,Dòng {0}: chương trình {1} bị khai hai lần.,
+Row {0}: equipment {1} already has default program {2}.,Dòng {0}: thiết bị {1} đã có chương trình mặc định {2}.,
+Programs by machine are not valid,Chương trình theo máy chưa hợp lệ,
+Program is not listed for this set,Chương trình không có trong danh sách của bộ này,
+Set type {0} is not listed for program {1} on equipment {2}.,Loại bộ {0} không được khai cho chương trình {1} trên thiết bị {2}.,
+"Choose a program listed for this set type, or load the set separately.","Chọn chương trình đã khai cho loại bộ này, hoặc nạp bộ ở lô/mẻ riêng.",
+Program is not listed for these sets,Chương trình không có trong danh sách của các bộ này,
+Set types {0} are not listed for program {1} on equipment {2}.,Các loại bộ {0} không được khai cho chương trình {1} trên thiết bị {2}.,
+"Choose a program listed for these set types, or load them separately.","Chọn chương trình đã khai cho các loại bộ này, hoặc nạp chúng ở lô/mẻ riêng.",
+Reason needed to use this program,Cần lý do để dùng chương trình này,
+Program {0} is not listed for set types {1}.,Chương trình {0} không có trong danh sách của loại bộ {1}.,
+"Enter the reason for using this program, then complete loading again.",Nhập lý do dùng chương trình này rồi Hoàn thành nạp lại.,
+Default program,Chương trình mặc định,
+Allowed program,Chương trình cho phép,
+Program not listed,Ngoài danh sách chương trình,
+No program set for this machine,Chưa khai chương trình cho máy này,
+These sets need different programs,Các bộ này cần chương trình khác nhau,
+No program is allowed for every set type on this machine.,Trên máy này không có chương trình nào được phép cho mọi loại bộ.,
+Load the sets with different programs in separate batches.,Nạp các bộ cần chương trình khác nhau thành lô/mẻ riêng.,
+Use {0},Dùng {0},
+These sets have different default programs,Các bộ có chương trình mặc định khác nhau,
+Program {0} is allowed for every set type in the list.,Chương trình {0} được phép cho mọi loại bộ trong danh sách.,
+"Use this program, or load the sets in separate batches.","Dùng chương trình này, hoặc nạp các bộ thành lô/mẻ riêng.",
+Reason for using a program not listed for these sets,Lý do dùng chương trình ngoài danh sách của các bộ này,
+reason for the program,lý do dùng chương trình,
+Program {0} chosen: the default of set type {1} on this washer.,Đã chọn chương trình {0}: mặc định của loại bộ {1} trên máy rửa này.,
+Program {0} chosen: the default of set type {1} on this sterilizer.,Đã chọn chương trình {0}: mặc định của loại bộ {1} trên máy tiệt khuẩn này.,
+Program for this set,Chương trình của bộ,

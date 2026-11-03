@@ -1,5 +1,5 @@
 /* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, TcProgramMatch */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Ô quét chính của shell luôn ở đầu và có focus: chế độ "Nạp lô" nhận QR máy, Set ID, mã HOAN-THANH-NAP và mã lô
@@ -254,6 +254,7 @@ class T2Wash {
 				equipment: this.load.machine.name,
 				queued: this.load.sets.map((row) => row.set_id),
 				station: this.station.station,
+				program: this.load.program,
 			},
 			(res) => this.onSet(res)
 		);
@@ -405,9 +406,16 @@ class T2Wash {
 			machine: res.equipment,
 			programs,
 			lots: res.chemical_lots || [],
-			program: programs.length ? programs[0].program_code : null,
+			// A-110 D5: chương trình mặc định của máy, không có thì chương trình đầu danh sách
+			program:
+				res.equipment.default_program ||
+				(programs.length ? programs[0].program_code : null),
 			lot: null,
 			sets: [],
+			set_programs: res.set_programs || {},
+			program_control: res.program_control || "Warn",
+			programTouched: false,
+			override_reason: "",
 		};
 		this.pickLot();
 		this.done = null;
@@ -453,9 +461,17 @@ class T2Wash {
 				title: __("{0} is already on the list", [res.set_id]),
 			};
 		} else {
+			// A-110 D5: bộ đầu tiên chọn chương trình mặc định của loại bộ khi người dùng chưa tự đổi
+			const chosen = TcProgramMatch.autoSelect(
+				this.load,
+				res.set_type,
+				this.load.sets.length === 0
+			);
+			if (chosen) this.pickLot();
 			this.load.sets.push({
 				set_id: res.set_id,
 				set_name: res.set_name,
+				set_type: res.set_type,
 				gates: res.gates || [],
 			});
 			this.notice = {
@@ -465,8 +481,15 @@ class T2Wash {
 					this.load.machine.name,
 					this.load.sets.length,
 				]),
+				reason: chosen
+					? __("Program {0} chosen: the default of set type {1} on this washer.", [
+							TcProgramMatch.programName(this.load, chosen),
+							res.set_name || res.set_type,
+					  ])
+					: "",
 			};
 			this.saveLoad();
+			if (chosen) this.refreshLots(true);
 		}
 		this.done = null;
 		this.lookup = null;
@@ -500,7 +523,23 @@ class T2Wash {
 		const program = this.programRow();
 		if (this.load && !program) out.push(__("wash program"));
 		if (program && program.chemical && !this.load.lot) out.push(__("chemical lot"));
+		if (this.load && TcProgramMatch.needsReason(this.load, this.setTypes()))
+			out.push(__("reason for the program"));
 		return out;
+	}
+
+	setTypes() {
+		return this.load ? this.load.sets.map((row) => row.set_type).filter(Boolean) : [];
+	}
+
+	useProgram(program) {
+		if (!this.load || this.busy || !program) return;
+		this.load.program = program;
+		this.load.programTouched = true;
+		this.pickLot();
+		this.saveLoad();
+		this.show();
+		this.refreshLots(true);
 	}
 
 	complete() {
@@ -527,6 +566,7 @@ class T2Wash {
 				sets: load.sets.map((row) => row.set_id),
 				chemicals: lot ? [{ item: lot.item, lot: lot.batch_no }] : [],
 				station: this.station.station,
+				program_override_reason: (load.override_reason || "").trim() || null,
 			},
 			(res) => {
 				this.done = {
@@ -1037,6 +1077,7 @@ class T2Wash {
 			"t2-mode": () => this.setMode(data.mode),
 			"t2-daily-test": () => this.openDailyTest(),
 			"t2-remove": () => this.removeSet(data.set),
+			"t2-use-program": () => this.useProgram(data.program),
 			"t2-complete": () => this.complete(),
 			"t2-cancel": () => this.cancelLoad(),
 			"t2-refresh-lots": () => this.refreshLots(),
@@ -1077,6 +1118,7 @@ class T2Wash {
 		const target = event.target;
 		if (target.id === "tc-t2-program" && this.load) {
 			this.load.program = target.value;
+			this.load.programTouched = true; // A-110 D5: người dùng đã chọn, không tự đổi nữa
 			this.pickLot();
 			this.saveLoad();
 			this.show();
@@ -1103,7 +1145,13 @@ class T2Wash {
 
 	onInput(event) {
 		const target = event.target;
-		if (target.dataset.param && this.form) {
+		if (target.dataset.programReason && this.load) {
+			// A-110 D7: lý do ghi đè; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
+			this.load.override_reason = target.value;
+			this.saveLoad();
+			const bar = this.result.querySelector(".tc-actionsbar");
+			if (bar) bar.outerHTML = this.loadBarHtml();
+		} else if (target.dataset.param && this.form) {
 			this.form.values[target.dataset.param] = target.value;
 			const param = (this.unload.context.parameter_schema || []).find(
 				(row) => row.parameter_name === target.dataset.param
@@ -1368,6 +1416,7 @@ class T2Wash {
 				(row) => `<tr>
 					<td class="tc-mono">${esc(row.set_id)}</td>
 					<td>${esc(row.set_name || "-")}</td>
+					<td>${TcProgramMatch.badgeHtml(load, row.set_type)}</td>
 					<td>${this.gatesHtml(row.gates)}</td>
 					<td><button type="button" class="tc-btn tc-btn-secondary" data-action="t2-remove"
 						data-set="${esc(row.set_id)}"${t2Disabled(Boolean(this.busy))}>${esc(
@@ -1376,11 +1425,16 @@ class T2Wash {
 				</tr>`
 			)
 			.join("");
+		// A-110 D6, D7: cảnh báo chương trình chung / tách lô và lý do ghi đè
+		const conflict = TcProgramMatch.conflictNotice(load, this.setTypes(), "t2-use-program");
+		const programNotes = `${
+			conflict ? this.alertHtml(conflict.notice, conflict.buttons) : ""
+		}${TcProgramMatch.reasonHtml(load, this.setTypes(), "tc-t2-program-reason")}`;
 		const table = load.sets.length
-			? `<table class="tc-t2-table">
+			? `${programNotes}<table class="tc-t2-table">
 				<thead><tr><th>${esc(__("Set ID"))}</th><th>${esc(__("Set Type"))}</th><th>${esc(
-					__("Step gates")
-			  )}</th><th><span class="tc-sr-only">${esc(
+					__("Program for this set")
+			  )}</th><th>${esc(__("Step gates"))}</th><th><span class="tc-sr-only">${esc(
 					__("Remove from the list")
 			  )}</span></th></tr></thead>
 				<tbody>${rows}</tbody></table>`

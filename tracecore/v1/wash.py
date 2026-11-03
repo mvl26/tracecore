@@ -218,20 +218,32 @@ def start(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, t
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
 def add_set(
-	raw, equipment, queued, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None
+	raw,
+	equipment,
+	queued,
+	station,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+	program=None,
 ):
-	"""Kiểm một Set ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (Q1)."""
+	"""Kiểm một Set ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (Q1).
+
+	`program` (A-110): chương trình đang chọn trên kiosk để gắn nhãn Mặc định / Cho phép / Ngoài danh sách cho bộ.
+	"""
 	require_any_role(*WASH_LOAD_ROLES)
 	raw = _required_str(raw, "raw")
 	equipment = _required_str(equipment, "equipment")
 	queue = _codes(queued, "queued")
+	program = _optional_str(program, "program")
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {"ok": True, **washing.admit_set(raw, equipment, queue)},
+		lambda: {"ok": True, **washing.admit_set(raw, equipment, queue, program=program)},
 		"Set Unit" if scanned["type"] == "set" else None,
 		scanned["id"],
 		scanned["raw"],
@@ -243,26 +255,34 @@ def add_set(
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
-def complete(equipment, program, sets, chemicals, station, client_ts=None, token=None):
-	"""Hoàn thành nạp: sinh mã lô `LR-`, gắn bộ, in nhãn QR (FR-M2-03.2, FR-M2-24.1); trả cả bộ bị loại (Q19)."""
+def complete(
+	equipment, program, sets, chemicals, station, client_ts=None, token=None, program_override_reason=None
+):
+	"""Hoàn thành nạp: sinh mã lô `LR-`, gắn bộ, in nhãn QR (FR-M2-03.2, FR-M2-24.1); trả cả bộ bị loại (Q19).
+
+	`program_override_reason` (A-110): lý do chạy chương trình ngoài danh sách của loại bộ (mức Ghi đè có lý do).
+	"""
 	require_any_role(*WASH_LOAD_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	program = _required_str(program, "program")
 	codes = _codes(sets, "sets")
 	rows = _chemicals(chemicals)
+	reason = _optional_str(program_override_reason, "program_override_reason")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: _completed(equipment, program, codes, rows, station, timestamp),
+		lambda: _completed(equipment, program, codes, rows, station, timestamp, reason),
 		"Equipment",
 		equipment,
 	)
 
 
-def _completed(equipment, program, codes, rows, station, timestamp):
-	result = washing.start(equipment, program, codes, rows, station, timestamp, _session_employee())
+def _completed(equipment, program, codes, rows, station, timestamp, override_reason=None):
+	result = washing.start(
+		equipment, program, codes, rows, station, timestamp, _session_employee(), override_reason
+	)
 	session = current_station_session()
 	if session:
 		washing.save_draft(session.name, None)  # lô đã có mã: danh sách nạp dở không còn

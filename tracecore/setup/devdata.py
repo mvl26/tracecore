@@ -1265,6 +1265,20 @@ def _t2_program(equipment):
 	).name
 
 
+def _link_set_type_program(set_type, program):
+	"""A-110 D10, chỉ dữ liệu demo: `program` là chương trình của loại bộ trên máy đó (mặc định nếu máy chưa có).
+
+	Idempotent. Dữ liệu thật của từng viện do người vận hành nhập (Desk hoặc Data Import), không nhập bằng code.
+	"""
+	doc = frappe.get_doc("Instrument Set Type", set_type)
+	if any(row.program == program for row in doc.programs):
+		return
+	equipment = frappe.db.get_value("Process Program", program, "equipment")
+	has_default = any(row.equipment == equipment and row.is_default for row in doc.programs)
+	doc.append("programs", {"program": program, "is_default": 0 if has_default else 1})
+	doc.save(ignore_permissions=True)
+
+
 def _t2_chemical_lots():
 	factories.make_item(T2_CHEMICAL, "Chemical", has_batch_no=1, apply_rules=True)
 	if not frappe.db.exists("Batch", T2_LOT_OK):
@@ -1339,6 +1353,7 @@ def ensure_t2_demo():
 	_t2_program(connected)
 
 	set_type = _ensure_set_type("Steam", _t4_catalog()["Steam"])
+	_link_set_type_program(set_type, programs["machine"])
 	ready = _t2_candidates(set_type, "Processing", {"T1": "Pass", "T2": "Pending"})
 	while len(ready) < T2_READY_SETS:
 		ready.append(_t2_new_set(set_type, passed=("T1",)))
@@ -1528,6 +1543,8 @@ def ensure_t5_demo():
 	for method in T5_SET_TYPES:
 		_ensure_set_type(method, _t4_catalog()[method], code=T5_SET_TYPES[method])
 	steam_type, plasma_type = T5_SET_TYPES["Steam"], T5_SET_TYPES["Plasma"]
+	_link_set_type_program(steam_type, program)
+	_link_set_type_program(plasma_type, program_plasma)
 	running = frappe.db.get_value(
 		"Sterilization Load",
 		{"equipment": busy, "status": "Running", "docstatus": 0},

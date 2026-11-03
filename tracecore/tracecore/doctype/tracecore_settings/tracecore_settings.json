@@ -36,6 +36,8 @@
   "daily_test_mode",
   "daily_test_steam_leak",
   "daily_test_plasma",
+  "section_program_control",
+  "program_control",
   "section_reports",
   "report_locked_until",
   "section_error_codes",
@@ -231,6 +233,19 @@
    "label": "Require Plasma Daily Test"
   },
   {
+   "fieldname": "section_program_control",
+   "fieldtype": "Section Break",
+   "label": "Programs by Set Type"
+  },
+  {
+   "default": "Warn",
+   "description": "What T2 and T5 do when the chosen program is not listed for a set type on that machine. Warn: load and mark the set. Block: refuse the set. Override: load, but completing the load needs a reason. Method and pack type checks always block.",
+   "fieldname": "program_control",
+   "fieldtype": "Select",
+   "label": "Program Outside the List",
+   "options": "Warn\nBlock\nOverride"
+  },
+  {
    "fieldname": "section_reports",
    "fieldtype": "Section Break",
    "label": "Reports"
@@ -269,7 +284,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-03 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

@@ -31,6 +31,8 @@
   "tray_html",
   "tab_bom",
   "bom_html",
+  "tab_programs",
+  "programs",
   "tab_history",
   "history_html"
  ],
@@ -197,6 +199,18 @@
    "label": "BOM"
   },
   {
+   "fieldname": "tab_programs",
+   "fieldtype": "Tab Break",
+   "label": "Programs by Machine"
+  },
+  {
+   "description": "Default and allowed programs of this set type on each washer and sterilizer. One default program per machine.",
+   "fieldname": "programs",
+   "fieldtype": "Table",
+   "label": "Programs by Machine",
+   "options": "Set Type Program"
+  },
+  {
    "fieldname": "tab_history",
    "fieldtype": "Tab Break",
    "label": "History"
@@ -210,7 +224,7 @@
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 20:30:00.000000",
+ "modified": "2026-11-03 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",

@@ -100,6 +100,48 @@ function program_show_norm_cost(frm) {
 	});
 }
 
+// A-110 D9, FR-M5-02.5: loại bộ dùng chương trình (chỉ xem), dòng lệch phương pháp có chữ, không chỉ màu
+function program_show_set_types(frm) {
+	const field = frm.fields_dict.set_types_html;
+	if (!field) return;
+	const rows = (frm.doc.__onload && frm.doc.__onload.set_types) || [];
+	if (frm.is_new() || !rows.length) {
+		field.$wrapper.html(
+			`<p class="text-muted">${frappe.utils.escape_html(
+				__(
+					"No set type uses this program yet. Add it on the set type, tab Programs by Machine."
+				)
+			)}</p>`
+		);
+		return;
+	}
+	const esc = frappe.utils.escape_html;
+	const body = rows
+		.map(
+			(row) => `<tr>
+				<td><a href="/app/instrument-set-type/${encodeURIComponent(row.set_type)}">${esc(
+				row.set_type
+			)}</a></td>
+				<td>${esc(row.set_type_name || "")}</td>
+				<td>${esc(__(row.method || ""))}</td>
+				<td>${esc(row.is_default ? __("Default program") : __("Allowed program"))}</td>
+				<td>${
+					row.mismatch
+						? `<span class="indicator-pill orange">${esc(
+								__("Method does not match")
+						  )}</span>`
+						: ""
+				}</td>
+			</tr>`
+		)
+		.join("");
+	field.$wrapper.html(`<table class="table table-bordered table-sm">
+		<thead><tr><th>${esc(__("Set Type"))}</th><th>${esc(__("Set Type Name"))}</th><th>${esc(
+		__("Method")
+	)}</th><th>${esc(__("Use"))}</th><th></th></tr></thead>
+		<tbody>${body}</tbody></table>`);
+}
+
 function program_indicator(frm) {
 	if (frm.is_new()) {
 		return;
@@ -232,6 +274,7 @@ frappe.ui.form.on("Process Program", {
 	refresh(frm) {
 		program_indicator(frm);
 		program_show_norm_cost(frm);
+		program_show_set_types(frm);
 		if (frm.is_new() || !frm.doc.equipment || !frappe.user.has_role(PROGRAM_ADMIN_ROLES)) {
 			return;
 		}

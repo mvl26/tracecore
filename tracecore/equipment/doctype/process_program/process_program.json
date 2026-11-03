@@ -37,6 +37,8 @@
   "norm_cost_html",
   "packs_section",
   "compatible_pack_types",
+  "set_types_section",
+  "set_types_html",
   "parameters_section",
   "parameters"
  ],
@@ -220,6 +222,17 @@
    "options": "Program Compatible Pack Type"
   },
   {
+   "collapsible": 1,
+   "fieldname": "set_types_section",
+   "fieldtype": "Section Break",
+   "label": "Set Types Using This Program"
+  },
+  {
+   "fieldname": "set_types_html",
+   "fieldtype": "HTML",
+   "label": "Set Types Using This Program"
+  },
+  {
    "fieldname": "parameters_section",
    "fieldtype": "Section Break",
    "label": "Manual-entry Parameters"
@@ -262,7 +275,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-03 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Process Program",

@@ -119,12 +119,25 @@ def recheck(equipment, program, packs, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def complete(equipment, program, packs, station, is_priority=0, client_ts=None, token=None):
-	"""Hoàn thành nạp: sinh mã mẻ `ME-`, gắn gói, in nhãn QR (FR-M2-09, FR-M2-24.1); trả cả gói bị loại."""
+def complete(
+	equipment,
+	program,
+	packs,
+	station,
+	is_priority=0,
+	client_ts=None,
+	token=None,
+	program_override_reason=None,
+):
+	"""Hoàn thành nạp: sinh mã mẻ `ME-`, gắn gói, in nhãn QR (FR-M2-09, FR-M2-24.1); trả cả gói bị loại.
+
+	`program_override_reason` (A-110): lý do chạy chương trình ngoài danh sách của loại bộ (mức Ghi đè có lý do).
+	"""
 	require_any_role(*LOAD_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	program = _required_str(program, "program")
 	codes = _codes(packs, "packs")
+	reason = _optional_str(program_override_reason, "program_override_reason")
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
@@ -133,7 +146,14 @@ def complete(equipment, program, packs, station, is_priority=0, client_ts=None, 
 		lambda: {
 			"ok": True,
 			**sterilizing.complete(
-				equipment, program, codes, station, timestamp, _session_employee(), _flag(is_priority)
+				equipment,
+				program,
+				codes,
+				station,
+				timestamp,
+				_session_employee(),
+				_flag(is_priority),
+				reason,
 			),
 		},
 		"Equipment",
