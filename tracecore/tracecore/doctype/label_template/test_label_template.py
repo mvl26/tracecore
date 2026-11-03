@@ -5,9 +5,15 @@ import frappe
 from PIL import ImageFont
 
 from tracecore.core import print as core_print
-from tracecore.patches.v0_1 import create_sample_label_templates
+from tracecore.patches.v0_1 import create_sample_label_templates, update_pack_label_templates_a109
 from tracecore.setup import install
-from tracecore.setup.label_templates import SAMPLE_TEMPLATES, ensure_sample_templates, sample_pack_context
+from tracecore.setup.label_templates import (
+	SAMPLE_TEMPLATES,
+	ensure_sample_templates,
+	legacy_pack_body,
+	sample_pack_body,
+	sample_pack_context,
+)
 from tracecore.tests.utils import IsolatedTestCase, as_non_deleter
 
 BODY = "^XA^FD{{ text(doc.set_name) }}^FS^XZ"
@@ -181,7 +187,7 @@ class TestSampleTemplates(IsolatedTestCase):
 		self.assertEqual(ensure_sample_templates(), ["Pack label - Plasma"])
 		doc = frappe.get_doc("Label Template", "Pack label - Plasma")
 		self.assertTrue(doc.is_active)
-		self.assertIn("Plasma label", core_print.render(doc.body, sample_pack_context()))
+		self.assertEqual(doc.body, sample_pack_body("Plasma"))
 
 	def test_after_install_and_patch_create_missing_samples(self):
 		frappe.db.delete("Label Template", {"name": "Pack label - Plasma"})
@@ -191,6 +197,15 @@ class TestSampleTemplates(IsolatedTestCase):
 		frappe.db.delete("Label Template", {"name": "Pack label - Steam"})
 		create_sample_label_templates.execute()
 		self.assertTrue(frappe.db.exists("Label Template", "Pack label - Steam"))
+
+	def test_a109_patch_replaces_untouched_samples_and_keeps_r10_edits(self):
+		steam, plasma = "Pack label - Steam", "Pack label - Plasma"
+		frappe.db.set_value("Label Template", steam, "body", legacy_pack_body("Steam"))
+		frappe.db.set_value("Label Template", plasma, "body", BODY)  # R10 đã sửa
+		update_pack_label_templates_a109.execute()
+		self.assertEqual(frappe.db.get_value("Label Template", steam, "body"), sample_pack_body("Steam"))
+		self.assertEqual(frappe.db.get_value("Label Template", plasma, "body"), BODY)
+		self.assertNotEqual(sample_pack_body("Steam"), legacy_pack_body("Steam"))
 
 	def test_ensure_sample_templates_does_not_steal_the_active_slot(self):
 		frappe.db.delete("Label Template", {"name": "Pack label - Steam"})
@@ -236,12 +251,20 @@ class TestSampleTemplates(IsolatedTestCase):
 				self.assertIn("^CI28", zpl)
 				self.assertEqual(zpl.isascii(), not unicode)
 
-	def test_sample_templates_name_the_method_on_the_footer(self):
-		footers = {"Steam": "Steam label", "Plasma": "Plasma label"}
-		for method, footer in footers.items():
-			zpl = core_print.render_pack(method, sample_pack_context())
-			self.assertTrue(zpl[: -len("^FS^XZ")].endswith(footer), msg=zpl[-60:])
-			self.assertNotIn(footers["Plasma" if method == "Steam" else "Steam"], zpl)
+	def test_sample_templates_print_only_name_department_expiry_and_shortage(self):
+		# A-109: DataMatrix, tên bộ, khoa, hạn sử dụng và dòng THIẾU; không còn chữ mã hay thông tin đóng gói
+		doc = sample_pack_context(is_loaner=True, warning="THIẾU: Kéo cong")
+		for sample in SAMPLE_TEMPLATES:
+			zpl = core_print.render_pack(sample["method"], doc, unicode=True)
+			self.assertEqual(zpl.count("^BXN"), 1)
+			for kept in (doc["set_name"], doc["dept"], "HẠN SỬ DỤNG / EXP: 19/11/2026", "THIẾU: Kéo cong"):
+				self.assertIn(kept, zpl, msg=sample["template_name"])
+			# chỉ ô chữ (^A0N), bỏ dữ liệu DataMatrix vốn chứa Cycle ID
+			fields = "".join(re.findall(r"\^A0N[^\^]*(?:\^FB[^\^]*)?\^FD(.*?)\^FS", zpl))
+			dropped = (doc["cycle_id"], doc["set_id"], doc["hri"], doc["packer"], doc["packed_at"])
+			dropped += (doc["method_label"], doc["pack_type"], doc["ci_lot"], "TEST", "LOANER", "label")
+			for gone in dropped:
+				self.assertNotIn(gone, fields, msg=sample["template_name"])
 
 	def test_sample_templates_fit_inside_label_without_overlap(self):
 		width, height = core_print.mm_to_dots(60, 300), core_print.mm_to_dots(40, 300)
@@ -257,7 +280,7 @@ class TestSampleTemplates(IsolatedTestCase):
 			for unicode in (False, True):
 				zpl = core_print.render_pack(sample["method"], worst_case, unicode=unicode)
 				boxes = _text_boxes(zpl, width)
-				self.assertGreaterEqual(len(boxes), 10, msg=zpl)
+				self.assertGreaterEqual(len(boxes), 4, msg=zpl)
 				for x0, _y0, x1, y1, text in boxes:
 					self.assertGreaterEqual(x0, 0)
 					self.assertLessEqual(x1, width, msg=text)

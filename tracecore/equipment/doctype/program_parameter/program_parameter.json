@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-21 13:00:00.000000",
- "description": "One manual-entry parameter of a process program: name, unit, range, required (ADR-007 param_schema).",
+ "description": "One manual-entry parameter of a process program: name, unit, range, required.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -59,7 +59,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-01 12:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Program Parameter",

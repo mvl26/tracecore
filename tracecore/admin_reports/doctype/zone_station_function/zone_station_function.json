@@ -31,7 +31,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 16:21:58.252091",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Zone Station Function",
@@ -43,5 +43,5 @@
  "istable": 1,
  "editable_grid": 1,
  "permissions": [],
- "description": "Station function row (A-64)."
+ "description": "Station function row."
 }

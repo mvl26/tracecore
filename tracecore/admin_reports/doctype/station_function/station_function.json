@@ -79,7 +79,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 10:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Station Function",
@@ -121,5 +121,5 @@
    "read": 1
   }
  ],
- "description": "Catalog of station functions (A-64). Functions with new behaviour still need code."
+ "description": "Catalog of station functions. Functions with new behaviour still need code."
 }

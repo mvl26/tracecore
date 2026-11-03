@@ -158,7 +158,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.516949",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Collection",
@@ -182,5 +182,5 @@
  "naming_rule": "Expression (old style)",
  "is_submittable": 1,
  "title_field": "department",
- "description": "Waste collection by department (UC-34, FR-M10-02)."
+ "description": "Waste collection by department."
 }

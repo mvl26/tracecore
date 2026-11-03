@@ -703,7 +703,7 @@ class TestLabelPdf(PackApiCase):
 	def page(self, result):
 		return PdfReader(io.BytesIO(base64.b64decode(result["pdf_b64"]))).pages[0]
 
-	def test_pdf_has_the_real_datamatrix_and_all_preview_text(self):
+	def test_pdf_has_the_real_datamatrix_and_only_the_a109_text(self):
 		_ready, done = self.packed()
 		cycle_id = done["pack"]["cycle_id"]
 		result = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
@@ -712,22 +712,14 @@ class TestLabelPdf(PackApiCase):
 		page = self.page(result)
 		payload = frappe.db.get_value("Pack", cycle_id, "barcode_payload")
 		self.assertEqual(gs1.decode_datamatrix_png(page.images[0].data), payload)
-		text = page.extract_text()
+		text = page.extract_text().replace("\n", " ")
 		pack = done["pack"]
 		expiry = frappe.utils.getdate(pack["expiry"]).strftime("%d/%m/%Y")
-		for part in (
-			cycle_id,
-			done["hri"],
-			pack["set_id"],
-			pack["set_name"],
-			pack["pack_type_name"],
-			pack["packer"],
-			pack["ci_batch"],
-			f"BOM v{pack['bom_version']}",
-			expiry,
-			"Steam",
-		):
-			self.assertIn(part, text.replace("\n", " "), msg=part)
+		# A-109: tên bộ và hạn sử dụng; Cycle ID chỉ nằm trong DataMatrix
+		for part in (pack["set_name"], expiry):
+			self.assertIn(part, text, msg=part)
+		for part in (cycle_id, done["hri"], pack["set_id"], pack["packer"], pack["ci_batch"], "Steam"):
+			self.assertNotIn(part, text, msg=part)
 
 	def test_pdf_marks_the_job_and_generate_print_count_is_unchanged(self):
 		_ready, done = self.packed()

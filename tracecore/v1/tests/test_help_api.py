@@ -40,6 +40,16 @@ class TestHelpGet(IsolatedTestCase):
 		result = api.get("TR-004")
 		self.assertEqual((result["ok"], result["key"], result["article"]), (True, "PACK", None))
 
+	def test_without_station_returns_general_guide(self):
+		# máy chưa có ?station= vẫn mở được Trợ giúp để biết cách mở đúng địa chỉ trạm
+		_article("General", "API guide general")
+		frappe.set_user("Guest")
+		for station in (None, ""):
+			with self.subTest(station=station):
+				result = api.get(station)
+				self.assertEqual((result["ok"], result["key"]), (True, "General"))
+				self.assertEqual(result["article"]["title"], "API guide general")
+
 	def test_unknown_station_is_refused(self):
 		with self.assertRaises(frappe.ValidationError):
 			api.get("TR-DOES-NOT-EXIST")

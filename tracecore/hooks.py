@@ -76,7 +76,8 @@ app_include_js = ["tracecore.bundle.js"]
 # T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023), T7 cấp phát (SCR-12/SCR-36, FEAT-026) và T8 quét sử dụng (SCR-37,
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 # mã trạm đổi thì bỏ script Page trạm trong localStorage của trình duyệt (tc_page_cache.js)
-extend_bootinfo = "tracecore.ui.page_cache.extend_bootinfo"
+# tên bệnh viện cạnh logo trên thanh điều hướng lấy theo Website Settings của site (tc_launcher.js)
+extend_bootinfo = ["tracecore.ui.page_cache.extend_bootinfo", "tracecore.ui.branding.extend_bootinfo"]
 
 page_js = {
 	"station": [
@@ -84,6 +85,10 @@ page_js = {
 		"public/js/station_error.js",
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
+		# A-110: chương trình theo máy của loại bộ, dùng chung cho T2 và T5
+		"public/js/station_program_match.js",
+		# A-111: vật tư của chương trình, dùng chung cho T2, T5 và test đầu ngày
+		"public/js/station_consumables.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		# A-68: chọn tay thiết bị và bộ/gói khi máy quét hỏng (shell gọi qua TcPicker)
@@ -527,6 +532,21 @@ tracecore_after_load_failed = [
 	"tracecore.costing.sheet.on_load_failed",
 ]
 tracecore_bi_positive = ["tracecore.reprocessing.recall.on_bi_positive"]
+# R02 hủy lô rửa / mẻ nhập sai (A-112 D10, D11; reprocessing.run_cancel), cùng transaction, trước khi đóng chứng từ:
+#  - wash_cancel:    (ctx {batch, equipment, program, sets, reason}) M6 hủy phiếu xuất, M7 hủy Cost Sheet
+#  - load_cancel:    (ctx {load, equipment, program, packs, reason}) như trên
+#  - release_cancel: (ctx {set_unit, cycle_id}) mỗi bộ của mẻ đã giải phóng: M1 trừ lại bộ đếm bảo dưỡng
+tracecore_after_wash_cancel = [
+	"tracecore.inventory.consume.on_wash_cancel",
+	"tracecore.costing.sheet.on_wash_cancel",
+]
+tracecore_after_load_cancel = [
+	"tracecore.inventory.consume.on_load_cancel",
+	"tracecore.costing.sheet.on_load_cancel",
+]
+tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_cancelled"]
+# M5 test đầu ngày ghi kết quả (A-111 D2): ctx {daily_test, equipment, lot}; M6 trừ vật tư đã xác nhận lúc Bắt đầu test
+tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",

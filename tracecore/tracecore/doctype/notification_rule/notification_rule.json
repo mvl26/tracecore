@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:event_code",
  "creation": "2026-10-28 10:00:00.000000",
- "description": "Per business event: extra recipients, channels and urgency (FR-M9-10, ADR-014). People tied to the event itself are always notified.",
+ "description": "Per business event: extra recipients, channels and urgency. People tied to the event itself are always notified.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -35,7 +35,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-28 10:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Notification Rule",

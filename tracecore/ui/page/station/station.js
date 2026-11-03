@@ -1530,7 +1530,9 @@ class TraceCoreStation {
 			return this.renderError({
 				title: __("Station not configured"),
 				reason: __("The kiosk address has no station code (?station=TR-...)."),
-				action: __("Check the kiosk address or call R10."),
+				action: __(
+					"Open the address of this station (ending with ?station= and the station code) or press Help. Call R10 if you do not know the code."
+				),
 			});
 		}
 		if (this.isOffline()) return this.setOffline(true);

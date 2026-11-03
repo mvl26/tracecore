@@ -2,13 +2,14 @@
  "actions": [],
  "autoname": "NT-.YYYY.-.#####",
  "creation": "2026-10-25 11:00:00.000000",
- "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test (UC-23). Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
+ "description": "One daily test of a sterilizer or washer: Bowie-Dick, leak or washer cleaning test. Written by the daily test service only; a Pass opens the machine for the day, a Fail locks it.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "equipment",
   "equipment_name",
   "test_type",
+  "program",
   "result",
   "test_date",
   "run_status",
@@ -16,6 +17,7 @@
   "ended_at",
   "column_break_head",
   "lot",
+  "batch",
   "lot_expiry",
   "photo",
   "station",
@@ -24,6 +26,7 @@
   "tested_by",
   "tested_at",
   "note",
+  "consumables",
   "nc_pending"
  ],
  "fields": [
@@ -54,6 +57,14 @@
    "options": "bowie_dick\nleak\nplasma_daily\nwasher_cleaning",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "description": "Test program of the machine for this test type; its consumables are listed and deducted.",
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Test Program",
+   "options": "Process Program",
+   "read_only": 1
   },
   {
    "fieldname": "result",
@@ -101,6 +112,13 @@
    "fieldtype": "Data",
    "label": "Test Pack Lot",
    "read_only": 1
+  },
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch",
+   "description": "Lot in stock; the Lot field keeps what was typed."
   },
   {
    "fieldname": "lot_expiry",
@@ -152,6 +170,14 @@
    "read_only": 1
   },
   {
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued.",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Run Consumable",
+   "read_only": 1
+  },
+  {
    "default": "0",
    "description": "A failed test needs a non-conformity.",
    "fieldname": "nc_pending",
@@ -162,7 +188,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 12:00:00.000000",
+ "modified": "2026-11-03 17:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Daily Test",

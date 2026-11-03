@@ -107,7 +107,7 @@
   },
   {
    "default": "0",
-   "description": "Record temperature, humidity and pressure difference for this zone (FR-M9-04). Missing readings are reminded at the times set in TraceCore Settings.",
+   "description": "Record temperature, humidity and pressure difference for this zone. Missing readings are reminded at the times set in TraceCore Settings.",
    "fieldname": "env_monitored",
    "fieldtype": "Check",
    "label": "Monitor Environment"
@@ -178,7 +178,7 @@
    "link_fieldname": "station"
   }
  ],
- "modified": "2026-10-30 11:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Zone Station",

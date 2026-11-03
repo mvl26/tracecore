@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-19 10:00:00.000000",
- "description": "Physical instrument set. The Set ID is a GS1 GIAI (AI 8004) issued by the system and never changed (FR-M1-05).",
+ "description": "Physical instrument set. The Set ID is a GS1 GIAI (AI 8004) issued by the system and never changed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -160,7 +160,7 @@
   },
   {
    "default": "System",
-   "description": "System: counted by the system since issue. Estimate: a set already in circulation when its Set ID was issued; Cycles Used started from an estimate whose reason is in the Audit Log (UC-03 A1).",
+   "description": "System: counted by the system since issue. Estimate: a set already in circulation when its Set ID was issued; Cycles Used started from an estimate whose reason is in the Audit Log.",
    "fieldname": "cycles_source",
    "fieldtype": "Select",
    "label": "Cycles Source",
@@ -265,7 +265,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:28.503488",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Set Unit",

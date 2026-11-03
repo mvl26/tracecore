@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "creation": "2026-11-03 14:00:00.000000",
+ "description": "A consumable of the program confirmed for one wash batch, sterilization load or daily test: norm, actual quantity, lots issued, who confirmed.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "item_name",
+  "role",
+  "is_required",
+  "uom",
+  "norm_qty",
+  "actual_qty",
+  "batch",
+  "expiry_date",
+  "lots",
+  "confirmed_by",
+  "confirmed_at"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "columns": 1,
+   "fieldname": "role",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Role",
+   "options": "\nChemical\nTest Pack\nChemical Indicator\nBiological Indicator\nPackaging\nLabel\nOther",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "label": "Required",
+   "read_only": 1
+  },
+  {
+   "description": "Stock unit of the item.",
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "Unit of Measure",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "norm_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Norm Quantity",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "actual_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Actual Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date",
+   "fetch_from": "batch.expiry_date",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "lots",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Lots Issued",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-03 17:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Run Consumable",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

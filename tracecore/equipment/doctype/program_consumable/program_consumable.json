@@ -1,13 +1,15 @@
 {
  "actions": [],
  "creation": "2026-10-21 13:00:00.000000",
- "description": "One consumable (chemical, indicator) used by a process program, per load and/or per pack (FR-M5-02).",
+ "description": "One consumable (chemical, test pack, indicator, packaging, label) used by a process program, per load and/or per pack.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "item",
   "item_name",
+  "role",
+  "is_required",
   "uom",
   "qty_per_load",
   "qty_per_pack",
@@ -33,7 +35,25 @@
    "no_copy": 1,
    "read_only": 1,
    "translatable": 0,
-   "columns": 2
+   "columns": 1
+  },
+  {
+   "description": "What the item is for. Chemical and biological indicators are listed at the station as a reminder only and are not deducted with the program.",
+   "fieldname": "role",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Role",
+   "options": "\nChemical\nTest Pack\nChemical Indicator\nBiological Indicator\nPackaging\nLabel\nOther",
+   "columns": 1
+  },
+  {
+   "default": "0",
+   "description": "The operator must confirm this item before loading is completed or the test is started.",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Required",
+   "columns": 1
   },
   {
    "description": "Unit the quantities below are written in (for example ml). Empty = the stock unit of the item. Needs a conversion row in the item unit table.",
@@ -84,7 +104,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-01 17:00:00.000000",
+ "modified": "2026-11-03 17:30:00.000000",
  "modified_by": "Administrator",
  "module": "Equipment",
  "name": "Program Consumable",

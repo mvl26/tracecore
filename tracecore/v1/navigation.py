@@ -58,7 +58,14 @@ MANAGEMENT_GROUPS = (
 	),
 	(
 		"Equipment",
-		("Equipment", "Process Program", "Equipment Type Norm", "Daily Test", "Maintenance Record"),
+		(
+			"Equipment",
+			"Process Program",
+			"Equipment Type Norm",
+			"Daily Test",
+			"Maintenance Record",
+			"report:Program Consumable Gaps",  # FEAT-054: chương trình thiếu vật tư
+		),
 	),
 	(
 		"Instruments",
@@ -86,6 +93,9 @@ MANAGEMENT_GROUPS = (
 			"Par Override",
 			"report:Par Override Report",
 			"report:Stock Alerts",
+			"report:Consumable Usage",  # A-112: định mức so với thực dùng
+			"report:Consumable Lot Trace",  # A-112: truy vết lô vật tư
+			"report:Batch-Wise Balance History",  # A-112 D13: tồn theo lô (ERPNext)
 		),
 	),
 	(
@@ -356,7 +366,14 @@ ROLE_FLOWS = {
 			"incidents",
 			(("document", ("Incident CAPA", "Recall Order")), ("report", ("report:Pack Trace",))),
 		),
-		("equipment", (("catalog", ("Equipment",)), ("document", ("Daily Test", "Maintenance Record")))),
+		(
+			"equipment",
+			(
+				("catalog", ("Equipment",)),
+				("document", ("Daily Test", "Maintenance Record")),
+				("report", ("report:Program Consumable Gaps",)),
+			),
+		),
 		("par", (("catalog", ("Par Level",)), ("document", ("Stock Reconciliation", "Par Override")))),
 		(
 			"waste",
@@ -370,7 +387,15 @@ ROLE_FLOWS = {
 			(
 				("catalog", ("Item", "Batch")),
 				("document", ("Stock Entry", "Material Request")),
-				("report", ("report:Stock Alerts",)),
+				(
+					"report",
+					(
+						"report:Stock Alerts",
+						"report:Consumable Usage",
+						"report:Consumable Lot Trace",
+						"report:Batch-Wise Balance History",
+					),
+				),
 			),
 		),
 		("stock_count", (("document", ("Stock Reconciliation",)),)),
@@ -390,7 +415,13 @@ ROLE_FLOWS = {
 	"TC R10": (
 		("organization", (("catalog", ("Department", "User", "Employee")),)),
 		("zones", (("catalog", ("Zone Station", "Zone Type", "Station Function")),)),
-		("equipment", (("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),)),
+		(
+			"equipment",
+			(
+				("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),
+				("report", ("report:Program Consumable Gaps",)),
+			),
+		),
 		(
 			"labels",
 			(("catalog", ("Printer", "Label Template", "Code Range")), ("document", ("Print Job",))),
@@ -492,6 +523,7 @@ ADMIN_MODULES = (
 		"sections": (
 			("catalog", ("Equipment", "Process Program", "Equipment Type Norm")),
 			("document", ("Daily Test", "Maintenance Record")),
+			("report", ("report:Program Consumable Gaps",)),
 		),
 	},
 	{
@@ -503,7 +535,15 @@ ADMIN_MODULES = (
 		"sections": (
 			("catalog", ("Item", "Batch", "Sterile Location")),
 			("document", ("Stock Entry", "Stock Reconciliation", "Material Request")),
-			("report", ("report:Stock Alerts",)),
+			(
+				"report",
+				(
+					"report:Stock Alerts",
+					"report:Consumable Usage",
+					"report:Consumable Lot Trace",
+					"report:Batch-Wise Balance History",
+				),
+			),
 		),
 	},
 	{

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-31 12:00:00.000000",
- "description": "Error code catalog: the source of the handbook by station and by code (A-71).",
+ "description": "Error code catalog: the source of the handbook by station and by code.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -119,7 +119,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Error Code",

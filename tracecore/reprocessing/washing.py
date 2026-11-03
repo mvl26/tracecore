@@ -22,7 +22,18 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import audit, client_time, extension, gs1, qr, station_auth, step_gate, zones
+from tracecore.core import (
+	audit,
+	client_time,
+	extension,
+	gs1,
+	program_match,
+	qr,
+	run_consumables,
+	station_auth,
+	step_gate,
+	zones,
+)
 from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
@@ -145,7 +156,19 @@ def scan_machine(raw):
 	equipment = frappe.db.get_value("Equipment", scanned["id"], list(EQUIPMENT_FIELDS), as_dict=True)
 	equipment.is_connected = cint(equipment.is_connected)
 	equipment.has_printout = cint(equipment.has_printout)
-	return {"equipment": equipment, **_programs_and_lots(equipment.name)}
+	found = _programs_and_lots(equipment.name)
+	# A-110 D5: chương trình mặc định của máy như T5 (A-83), chỉ khi nó còn trong danh sách
+	default = frappe.db.get_value("Equipment", equipment.name, "default_program")
+	equipment.default_program = (
+		default if default in [row["program_code"] for row in found["programs"]] else None
+	)
+	return {
+		"equipment": equipment,
+		**found,
+		# A-110: chương trình theo máy của loại bộ để màn tự chọn và gắn nhãn dòng (cả khi offline)
+		"set_programs": program_match.machine_map(equipment.name),
+		"program_control": program_match.control_level(),
+	}
 
 
 def _programs_and_lots(equipment):
@@ -165,6 +188,8 @@ def _programs_and_lots(equipment):
 				"chemical": row.chemical,
 				"chemicals": program_chemicals(row.name),
 				"parameters": _parameters(row.name),
+				# A-111: vật tư của chương trình để màn liệt kê và nhân viên xác nhận
+				"consumables": run_consumables.payload(row.name),
 			}
 		)
 		if row.chemical and row.chemical not in seen:
@@ -305,13 +330,14 @@ _RUNNING_BATCH_SQL = """select batch.name from `tabWash Batch Set Unit` row
 _RUNNING_BATCH_LOCKED_SQL = _RUNNING_BATCH_SQL + " for update"
 
 
-def admit_set(raw, equipment, queued=None, for_update=False):
+def admit_set(raw, equipment, queued=None, for_update=False, program=None):
 	"""Kiểm một Set ID quét vào lô rửa trên máy `equipment`; không ghi.
 
-	Trả ``{"set_id", "set_name", "set_type", "duplicate", "gates"}``. Bộ đã có trong `queued` thì
-	``duplicate = True`` và không phải lỗi (FR-M2-03.6 không cấm quét lặp; kiosk chỉ báo đã có). Từ chối theo thứ
-	tự: máy hợp lệ → mã là Set ID → bộ tồn tại → cổng T1 Đạt và trạng thái hợp trạm (`step_gate.check`) → chưa Đạt
-	T2 trong chu trình (STEP_ALREADY_PASSED) → không ở lô khác (SET_IN_OTHER_BATCH).
+	Trả ``{"set_id", "set_name", "set_type", "duplicate", "gates", "program_fit", "program_default"}``. Bộ đã có trong
+	`queued` thì ``duplicate = True`` và không phải lỗi (FR-M2-03.6 không cấm quét lặp; kiosk chỉ báo đã có). Từ chối
+	theo thứ tự: máy hợp lệ → mã là Set ID → bộ tồn tại → cổng T1 Đạt và trạng thái hợp trạm (`step_gate.check`) →
+	chưa Đạt T2 trong chu trình (STEP_ALREADY_PASSED) → không ở lô khác (SET_IN_OTHER_BATCH) → chương trình `program`
+	thuộc danh sách của loại bộ khi mức kiểm soát là Chặn (PROGRAM_NOT_FOR_SET, A-110).
 	"""
 	block = check_equipment_ready(equipment)
 	if block:
@@ -330,7 +356,9 @@ def admit_set(raw, equipment, queued=None, for_update=False):
 		raise _set_not_found(scanned["raw"])
 	set_id, set_type = found
 	if set_id in set(queued or []):
-		return _admitted(set_id, set_type, duplicate=True)
+		return _admitted(
+			set_id, set_type, duplicate=True, fit=program_match.label(set_type, equipment, program)
+		)
 	block = step_gate.check(set_id, STEP, for_update)
 	if block:
 		raise BlockedError(block)
@@ -349,10 +377,12 @@ def admit_set(raw, equipment, queued=None, for_update=False):
 			_("Set {0} is in wash batch {1}, which is still running.").format(set_id, other),
 			_("Unload batch {0} first, or take the set out of the washer.").format(other),
 		)
-	return _admitted(set_id, set_type, duplicate=False)
+	# kiosk cũ chưa gửi `program`: chỉ có chương trình mặc định, không nhãn, không chặn
+	fit = program_match.admit(set_type, equipment, program)
+	return _admitted(set_id, set_type, duplicate=False, fit=fit)
 
 
-def _admitted(set_id, set_type, duplicate):
+def _admitted(set_id, set_type, duplicate, fit):
 	started = cint(frappe.db.get_value("Set Unit", set_id, "current_cycle_no")) > 0
 	return {
 		"set_id": set_id,
@@ -360,6 +390,8 @@ def _admitted(set_id, set_type, duplicate):
 		"set_type": set_type,
 		"duplicate": duplicate,
 		"gates": step_gate.gates(set_id) if started else [],
+		"program_fit": fit["fit"],
+		"program_default": fit["default"],
 	}
 
 
@@ -589,11 +621,12 @@ def _chemical_rows(program, chemicals, equipment=None):
 	return rows
 
 
-def _admit_all(sets, equipment):
+def _admit_all(sets, equipment, program=None):
 	"""``(bộ nhận được, bộ bị loại)`` cho danh sách quét `sets`; bộ bị loại là ``{"set_id", "code", "reason"}``.
 
 	Khóa các Set Unit theo thứ tự tên rồi kiểm lại từng bộ bằng đọc có khóa: hai kiosk cùng nạp một bộ thì chỉ một
-	nơi giữ được, nơi kia thấy SET_IN_OTHER_BATCH. Quét lặp cùng bộ chỉ tính một lần.
+	nơi giữ được, nơi kia thấy SET_IN_OTHER_BATCH. Quét lặp cùng bộ chỉ tính một lần. Mức Chặn của A-110: bộ ngoài
+	danh sách chương trình `program` vào danh sách bị loại.
 	"""
 	scanned = [(raw, gs1.parse_scan(raw)) for raw in sets or []]
 	for set_id in sorted({s["id"] for _raw, s in scanned if s["type"] == "set"}):
@@ -601,7 +634,7 @@ def _admit_all(sets, equipment):
 	accepted, rejected = [], []
 	for raw, parsed in scanned:
 		try:
-			admitted = admit_set(raw, equipment, accepted, for_update=True)
+			admitted = admit_set(raw, equipment, accepted, for_update=True, program=program)
 		except BlockedError as error:
 			rejected.append(
 				{
@@ -616,8 +649,24 @@ def _admit_all(sets, equipment):
 	return accepted, rejected
 
 
-def start(equipment, program, sets, chemicals, station, client_ts, operator):
+def start(
+	equipment,
+	program,
+	sets,
+	chemicals,
+	station,
+	client_ts,
+	operator,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	"""Hoàn thành nạp: sinh mã lô `LR-YYMMDD-NN` cho các bộ quét vào máy, ghi lô `Running` và xếp lệnh in nhãn QR.
+
+	A-110: lô ghi chương trình gợi ý theo loại bộ, người ghi đè và `override_reason` khi có bộ ngoài danh sách của
+	chương trình; mức Ghi đè có lý do thiếu lý do → PROGRAM_OVERRIDE_REASON_REQUIRED (`core.program_match.review`).
+	A-111: `consumables` (số thực dùng nhân viên sửa) và `consumables_confirmed` thành bảng vật tư của lô theo số bộ được
+	nhận; chương trình có vật tư bắt buộc chưa xác nhận → CONSUMABLES_NOT_CONFIRMED (`core.run_consumables.rows`).
 
 	`client_ts` là kết quả `parse_client_ts` (UTC); giờ nạp = giờ hệ thống của nó, lệch giờ server quá
 	`client_time.max_skew_seconds()` → ClientTimestampError trước khi ghi gì. `operator` là Employee đăng nhập thẻ.
@@ -630,7 +679,18 @@ def start(equipment, program, sets, chemicals, station, client_ts, operator):
 	client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		return _start(equipment, program, sets, chemicals, station, client_ts, operator)
+		return _start(
+			equipment,
+			program,
+			sets,
+			chemicals,
+			station,
+			client_ts,
+			operator,
+			override_reason,
+			consumables,
+			consumables_confirmed,
+		)
 	except Exception:
 		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
 		with contextlib.suppress(Exception):
@@ -638,14 +698,25 @@ def start(equipment, program, sets, chemicals, station, client_ts, operator):
 		raise
 
 
-def _start(equipment, program, sets, chemicals, station, client_ts, operator):
+def _start(
+	equipment,
+	program,
+	sets,
+	chemicals,
+	station,
+	client_ts,
+	operator,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	block = check_equipment_ready(equipment)
 	if block:
 		raise BlockedError(block)
 	machine = frappe.db.get_value("Equipment", equipment, ["equipment_name", "equipment_type"], as_dict=True)
 	program = _program(equipment, program)
 	chemical_rows = _chemical_rows(program, chemicals, equipment)
-	accepted, rejected = _admit_all(sets, equipment)
+	accepted, rejected = _admit_all(sets, equipment, program.name)
 	if not accepted:
 		raise _blocked(
 			"BATCH_EMPTY",
@@ -654,6 +725,21 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator):
 			_("Scan sets that have passed receiving, then complete loading again."),
 			items=rejected or None,
 		)
+	trace = program_match.review(
+		[frappe.db.get_value("Set Unit", set_id, "set_type") for set_id in accepted],
+		equipment,
+		program.name,
+		operator,
+		override_reason,
+	)
+	used = run_consumables.rows(
+		program.name,
+		len(accepted),
+		consumables,
+		consumables_confirmed,
+		operator,
+		lots_given={row["item"]: row.get("lot") for row in chemical_rows},
+	)
 	started = _system_time(client_ts)
 	batch = frappe.get_doc(
 		{
@@ -661,6 +747,7 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator):
 			"batch_type": "Ultrasonic" if machine.equipment_type == "Ultrasonic Cleaner" else "Machine",
 			"equipment": equipment,
 			"program": program.name,
+			**trace,
 			"operator": operator,
 			"status": RUNNING,
 			"loaded_by_scan": 1,
@@ -668,6 +755,7 @@ def _start(equipment, program, sets, chemicals, station, client_ts, operator):
 			"started_at": started,
 			"set_units": [{"set_unit": set_id, "added_at": started} for set_id in accepted],
 			"chemicals": chemical_rows,
+			"consumables": used,
 		}
 	)
 	batch.flags.tc_washing = True
@@ -1154,7 +1242,15 @@ def _checked_indicator(doc, indicator, photo_required):
 				_("This program requires a photo of the indicator."),
 				_("Take a photo of the indicator, then record the result."),
 			)
-	return {"result": result, "indicator_item": item, "lot": lot, "lot_expiry": expiry, "photo": photo}
+	# A-112 (c): lô có trong kho được liên kết để trừ kho đúng lô khi lô rửa Đạt
+	return {
+		"result": result,
+		"indicator_item": item,
+		"lot": lot,
+		"batch": lot if batch else None,
+		"lot_expiry": expiry,
+		"photo": photo,
+	}
 
 
 def _record_indicator(doc, checked, reader, station, at):

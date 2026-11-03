@@ -553,7 +553,7 @@ class TestGenerate(IsolatedTestCase):
 		self.assertIsNone(printed["warning"])
 		self.assertTrue(printed["zpl"].startswith("^XA"))
 		self.assertIn("_101" + ready.gtin, printed["zpl"])
-		self.assertIn("^FDTEST^FS", printed["zpl"])
+		self.assertNotIn("TEST", printed["zpl"])  # A-109: không in dòng TEST
 		job = frappe.get_doc("Print Job", printed["print_job"])
 		self.assertEqual(
 			(job.status, job.printer, job.ref_doctype, job.ref_name, job.payload, job.template),
@@ -869,6 +869,31 @@ class TestLabelContext(IsolatedTestCase):
 		self.assertEqual(context["hri"], result["hri"])
 		self.assertEqual(context["warning"], "")
 		self.assertTrue(result["pack"]["is_loaner"])
+
+	def test_label_rows_hold_only_name_department_and_expiry(self):
+		# A-109: nhãn PDF chỉ còn tên bộ, khoa, hạn sử dụng; mã nằm trong DataMatrix
+		ready = make_t4_ready_set(set_type_name="Bộ phẫu thuật", is_loaner=1)
+		pack = frappe.get_doc("Pack", _generate(ready)["pack"]["cycle_id"])
+		expiry = getdate(pack.expiry).strftime("%d/%m/%Y")
+		self.assertEqual(
+			pack_label.label_rows(pack),
+			[("Bộ phẫu thuật", "title"), (f"EXPIRY DATE / EXP: {expiry}", "title")],
+		)
+		pack.department = frappe.db.get_value("Department", {}, "name")
+		dept = frappe.db.get_value("Department", pack.department, "department_name")
+		self.assertEqual(pack_label.label_rows(pack)[1], (f"Department: {dept}", ""))
+
+	@bru("BRU-REP-003")
+	def test_label_rows_keep_the_missing_line(self):
+		ready = make_t4_ready_set(short={"KC-02": 0})
+		result = _generate(ready)
+		pack = frappe.get_doc("Pack", result["pack"]["cycle_id"])
+		last = pack_label.label_rows(pack)[-1]
+		self.assertEqual(last[1], "title")
+		self.assertTrue(last[0].startswith("THIẾU: "), last)
+		# bản xem trước T4 lấy cùng dòng THIẾU
+		self.assertEqual(result["label_warning"], last[0])
+		self.assertEqual(_generate(make_t4_ready_set(type_code="T4WHL"))["label_warning"], "")
 
 
 class TestPackerName(IsolatedTestCase):

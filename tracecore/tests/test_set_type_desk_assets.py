@@ -138,7 +138,9 @@ class TestSetTypeDeskAssets(IsolatedTestCase):
 	def test_set_type_form_has_master_form_tabs(self):
 		meta = frappe.get_meta("Instrument Set Type")
 		tabs = [field.label for field in meta.fields if field.fieldtype == "Tab Break"]
-		self.assertEqual(tabs, ["Information", "Details", "History"])
+		self.assertEqual(
+			tabs, ["Information", "Details", "Programs by Machine", "History"]
+		)  # A-110: tab chương trình theo máy
 		for fieldname in ("shelf_life_html", "tray_html", "bom_html", "history_html"):
 			field = meta.get_field(fieldname)
 			self.assertIsNotNone(field, fieldname)

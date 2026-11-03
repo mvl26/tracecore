@@ -100,6 +100,48 @@ function program_show_norm_cost(frm) {
 	});
 }
 
+// A-110 D9, FR-M5-02.5: loại bộ dùng chương trình (chỉ xem), dòng lệch phương pháp có chữ, không chỉ màu
+function program_show_set_types(frm) {
+	const field = frm.fields_dict.set_types_html;
+	if (!field) return;
+	const rows = (frm.doc.__onload && frm.doc.__onload.set_types) || [];
+	if (frm.is_new() || !rows.length) {
+		field.$wrapper.html(
+			`<p class="text-muted">${frappe.utils.escape_html(
+				__(
+					"No set type uses this program yet. Add it on the set type, tab Programs by Machine."
+				)
+			)}</p>`
+		);
+		return;
+	}
+	const esc = frappe.utils.escape_html;
+	const body = rows
+		.map(
+			(row) => `<tr>
+				<td><a href="/app/instrument-set-type/${encodeURIComponent(row.set_type)}">${esc(
+				row.set_type
+			)}</a></td>
+				<td>${esc(row.set_type_name || "")}</td>
+				<td>${esc(__(row.method || ""))}</td>
+				<td>${esc(row.is_default ? __("Default program") : __("Allowed program"))}</td>
+				<td>${
+					row.mismatch
+						? `<span class="indicator-pill orange">${esc(
+								__("Method does not match")
+						  )}</span>`
+						: ""
+				}</td>
+			</tr>`
+		)
+		.join("");
+	field.$wrapper.html(`<table class="table table-bordered table-sm">
+		<thead><tr><th>${esc(__("Set Type"))}</th><th>${esc(__("Set Type Name"))}</th><th>${esc(
+		__("Method")
+	)}</th><th>${esc(__("Use"))}</th><th></th></tr></thead>
+		<tbody>${body}</tbody></table>`);
+}
+
 function program_indicator(frm) {
 	if (frm.is_new()) {
 		return;
@@ -186,6 +228,102 @@ async function program_copy(frm, values, dialog) {
 	}
 }
 
+// A-111 D4, FR-M5-02.7: áp bảng vật tư sang chương trình đang dùng cùng loại chương trình, cùng loại máy
+const PROGRAM_CONSUMABLE_TARGETS = "tracecore.v1.equipment_admin.consumable_targets";
+const PROGRAM_COPY_CONSUMABLES = "tracecore.v1.equipment_admin.copy_consumables";
+
+async function program_apply_consumables(frm, targets, dialog) {
+	frappe.dom.freeze();
+	try {
+		const response = await fetch(`/api/method/${PROGRAM_COPY_CONSUMABLES}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json",
+				"X-Frappe-CSRF-Token": frappe.csrf_token,
+				"X-Idempotency-Key": program_uuid(),
+			},
+			body: JSON.stringify({
+				program: frm.doc.name,
+				targets,
+				client_ts: program_client_ts(),
+			}),
+		});
+		const body = await response.json().catch(() => ({}));
+		const result = body.message || {};
+		dialog.hide();
+		if (result.ok) {
+			frappe.show_alert({
+				message: __("Consumables applied to {0} program(s).", [result.programs.length]),
+				indicator: "green",
+			});
+		} else {
+			program_show_block(
+				result.error || {
+					title: __("Consumables could not be applied"),
+					reason: program_server_message(body),
+					action: __("Check your permissions and try again."),
+				}
+			);
+		}
+	} catch (e) {
+		dialog.hide();
+		program_show_block({
+			title: __("Consumables could not be applied"),
+			reason: __("The server could not be reached."),
+			action: __("Try again."),
+		});
+	} finally {
+		frappe.dom.unfreeze();
+	}
+}
+
+async function program_open_consumables_dialog(frm) {
+	const r = await frappe.call({
+		method: PROGRAM_CONSUMABLE_TARGETS,
+		args: { program: frm.doc.name, client_ts: program_client_ts() },
+	});
+	const rows = (r.message && r.message.programs) || [];
+	if (!rows.length) {
+		frappe.msgprint(
+			__("No other active program of the same kind runs on this type of machine.")
+		);
+		return;
+	}
+	const dialog = new frappe.ui.Dialog({
+		title: __("Apply consumables of {0}", [frm.doc.name]),
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<p>${frappe.utils.escape_html(
+					__(
+						"The consumables of the chosen programs are replaced by this list. Later changes here are not copied again."
+					)
+				)}</p>`,
+			},
+			{
+				fieldname: "targets",
+				fieldtype: "MultiCheck",
+				label: __("Programs"),
+				reqd: 1,
+				options: rows.map((row) => ({
+					label: `${row.program_name} (${row.program}) · ${
+						row.equipment_name || row.equipment
+					}`,
+					value: row.program,
+					checked: Boolean(row.suggested),
+				})),
+			},
+		],
+		primary_action_label: __("Apply"),
+		primary_action(values) {
+			if (!(values.targets || []).length) return;
+			program_apply_consumables(frm, values.targets, dialog);
+		},
+	});
+	dialog.show();
+}
+
 function program_open_copy_dialog(frm, source) {
 	const dialog = new frappe.ui.Dialog({
 		title: __("Copy program {0}", [frm.doc.name]),
@@ -232,6 +370,7 @@ frappe.ui.form.on("Process Program", {
 	refresh(frm) {
 		program_indicator(frm);
 		program_show_norm_cost(frm);
+		program_show_set_types(frm);
 		if (frm.is_new() || !frm.doc.equipment || !frappe.user.has_role(PROGRAM_ADMIN_ROLES)) {
 			return;
 		}
@@ -242,5 +381,10 @@ frappe.ui.form.on("Process Program", {
 			]);
 			program_open_copy_dialog(frm, source.message || {});
 		});
+		if ((frm.doc.consumables || []).length) {
+			frm.add_custom_button(__("Apply consumables to similar programs"), () =>
+				program_open_consumables_dialog(frm)
+			);
+		}
 	},
 });

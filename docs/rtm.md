@@ -240,6 +240,18 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M9-19 | — | mọi SCR trạm/PDA, màn đăng nhập trạm | — (A-71) | FEAT-052 | — | — |
 | FR-M9-20, FR-M9-21 | — | Desk Nhật ký lỗi, báo cáo | — (A-71) | FEAT-052 | — | — |
 | FR-M5-07 | — | SCR-06 | — (A-71) | FEAT-052 | — | — |
+| FR-M5-02.6, FR-M5-02.7, FR-M5-02.8 | BRU-INV-003 | Desk Process Program, báo cáo Program Consumable Gaps | — (A-111) | FEAT-054 | — | `tracecore/core/tests/test_run_consumables.py` |
+| FR-M2-03.9, FR-M2-09.9, FR-M5-05.5 | BRU-INV-003 | SCR-06, SCR-09, SCR-23 | — (A-111) | FEAT-054 | — | `tracecore/reprocessing/tests/test_run_consumables_station.py` |
+| FR-M6-03, FR-M6-03.5 | BRU-INV-002, BRU-INV-003 | SCR-25 | — (A-111) | FEAT-054 | — | `tracecore/inventory/tests/test_consume_actual.py` |
+| FR-M6-02.4 | — | SCR-24 (Desk Item) | — (A-112) | FEAT-055 | — | `tracecore/inventory/tests/test_consumable_reports.py` |
+| FR-M6-03.6, FR-M6-03.7, FR-M6-03.10 | BRU-INV-001, BRU-INV-004 | SCR-06, SCR-09, SCR-10, SCR-23 | — (A-112) | FEAT-055 | — | `tracecore/core/tests/test_lots.py`, `tracecore/reprocessing/tests/test_indicator_lots.py` |
+| FR-M6-03, FR-M6-03.5, FR-M6-03.8 | BRU-INV-004 | SCR-25 | — (A-112) | FEAT-055 | — | `tracecore/inventory/tests/test_consume_lots.py` |
+| FR-M2-03.10, FR-M2-09.10, FR-M6-03.9 | BRU-REP-018 | SCR-06, SCR-09 (Desk Wash Batch, Sterilization Load) | — (A-112) | FEAT-055 | — | `tracecore/reprocessing/tests/test_run_cancel.py` |
+| FR-M6-07, FR-M6-08 | — | SCR-25, SCR-26 (báo cáo Consumable Usage, Consumable Lot Trace) | — (A-112) | FEAT-055 | — | `tracecore/inventory/tests/test_consumable_reports.py` |
+| FR-M1-03.7, FR-M1-03.8 | BRU-REP-017, BRU-REP-004 | SCR-02 (Desk Loại bộ) | — (A-110) | FEAT-053 | — | `tracecore/core/tests/test_program_match.py` |
+| FR-M5-02.5 | — | Desk Process Program | — (A-110) | FEAT-053 | — | `tracecore/core/tests/test_program_match.py` (`TestProgramSetTypes`) |
+| FR-M2-03.7, FR-M2-03.8 | BRU-REP-017 | SCR-06 | — (A-110) | FEAT-053 | — | `tracecore/reprocessing/tests/test_set_program_station.py`, `tracecore/tests/test_station_program_match_assets.py` |
+| FR-M2-09.7, FR-M2-09.8 | BRU-REP-017 | SCR-09 | — (A-110) | FEAT-053 | — | `tracecore/reprocessing/tests/test_set_program_station.py`, `tracecore/tests/test_station_program_match_assets.py` |
 | FR-M10-01, FR-M10-02 | BRU-WST-001, BRU-WST-002, BRU-ID-006 | SCR-38 (mới) | — (v1.11) | — | — | — |
 | FR-M10-03 | BRU-WST-001, BRU-WST-002 | SCR-39 (mới) | — (v1.11) | — | — | — |
 | FR-M10-04, FR-M10-05 | BRU-WST-003, BRU-WST-004, BRU-CST-002 | SCR-40 (mới) | — (v1.11) | — | — | WF-06 (NC) |

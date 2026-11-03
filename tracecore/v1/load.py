@@ -11,18 +11,20 @@ import frappe
 
 from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
+from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import machine_data, sterilizing
+from tracecore.reprocessing import machine_data, run_cancel, sterilizing
 from tracecore.v1._common import (
 	LOAD_ROLES,
 	current_station_session,
+	reject_block,
 	require_agent_for,
 	require_any_role,
 	require_station,
 	run_at_step,
 	station_session,
 )
-from tracecore.v1.wash import _codes, _flag, _optional_str, _required_str, _run, _values
+from tracecore.v1.wash import _codes, _consumables, _flag, _optional_str, _required_str, _run, _values
 
 FUNCTION = sterilizing.FUNCTION
 
@@ -119,12 +121,30 @@ def recheck(equipment, program, packs, station, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*LOAD_ROLES)
 @idempotent
-def complete(equipment, program, packs, station, is_priority=0, client_ts=None, token=None):
-	"""Hoàn thành nạp: sinh mã mẻ `ME-`, gắn gói, in nhãn QR (FR-M2-09, FR-M2-24.1); trả cả gói bị loại."""
+def complete(
+	equipment,
+	program,
+	packs,
+	station,
+	is_priority=0,
+	client_ts=None,
+	token=None,
+	program_override_reason=None,
+	consumables=None,
+	consumables_confirmed=0,
+):
+	"""Hoàn thành nạp: sinh mã mẻ `ME-`, gắn gói, in nhãn QR (FR-M2-09, FR-M2-24.1); trả cả gói bị loại.
+
+	`program_override_reason` (A-110): lý do chạy chương trình ngoài danh sách của loại bộ (mức Ghi đè có lý do).
+	`consumables`, `consumables_confirmed` (A-111): số thực dùng đã sửa và ô tick "Đã chuẩn bị đủ vật tư".
+	"""
 	require_any_role(*LOAD_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	program = _required_str(program, "program")
 	codes = _codes(packs, "packs")
+	reason = _optional_str(program_override_reason, "program_override_reason")
+	used = _consumables(consumables)
+	confirmed = _flag(consumables_confirmed)
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
@@ -133,7 +153,16 @@ def complete(equipment, program, packs, station, is_priority=0, client_ts=None, 
 		lambda: {
 			"ok": True,
 			**sterilizing.complete(
-				equipment, program, codes, station, timestamp, _session_employee(), _flag(is_priority)
+				equipment,
+				program,
+				codes,
+				station,
+				timestamp,
+				_session_employee(),
+				_flag(is_priority),
+				reason,
+				used,
+				confirmed,
 			),
 		},
 		"Equipment",
@@ -322,3 +351,17 @@ def ingest_machine_data(station, equipment, cycle, client_ts=None):
 		"Equipment",
 		equipment if isinstance(equipment, str) else None,
 	)
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel(load=None, reason=None):
+	"""R02 hủy mẻ tiệt khuẩn nhập sai trên Desk (A-112 D11, FR-M2-09.10): ``{"ok": true, "load", "packs"}``.
+
+	Từ chối ``RUN_CANCEL_BLOCKED`` (409, ``error.items`` là gói đã đi tiếp) hoặc ``REASON_REQUIRED`` (422) bằng body
+	``ok: false``; không phải R02 → 403. Người hủy là nhân viên của tài khoản Desk.
+	"""
+	load = _required_str(load, "load")
+	try:
+		return {"ok": True, **run_cancel.cancel_load(load, reason)}
+	except BlockedError as error:
+		return reject_block(error.block, "Sterilization Load", load)

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-20 15:00:00.000000",
- "description": "One packed set in one cycle, named by its Cycle ID (UC-08). Created and submitted by the packing service; it is voided by status, never cancelled or deleted (WF-02).",
+ "description": "One packed set in one cycle, named by its Cycle ID. Created and submitted by the packing service; it is voided by status, never cancelled or deleted.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -352,7 +352,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.509015",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Pack",

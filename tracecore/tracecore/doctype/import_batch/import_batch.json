@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "naming_series:",
  "creation": "2026-10-27 10:00:00.000000",
- "description": "One catalog import from an Excel template and the result of each row (FR-M9-11, A-41).",
+ "description": "One catalog import from an Excel template and the result of each row.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -135,7 +135,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-27 10:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Import Batch",

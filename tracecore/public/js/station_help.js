@@ -47,8 +47,17 @@ class TcStationHelp {
 		return Boolean(this.overlay);
 	}
 
+	// máy thiếu ?station= dùng bài chung (ticket 03/11/2026)
 	cacheKey() {
-		return `tc-station-help:${this.station.station}`;
+		return `tc-station-help:${this.station.station || "General"}`;
+	}
+
+	// địa chỉ đúng của trạm đang mở để ghim lối tắt kiosk/PDA; chưa có mã trạm thì không có
+	stationAddress() {
+		const code = this.station.station;
+		return code
+			? `${window.location.origin}/app/station?station=${encodeURIComponent(code)}`
+			: "";
 	}
 
 	cached(value) {
@@ -334,9 +343,14 @@ class TcStationHelp {
 						__("Try again")
 				  )}</button>`
 				: "";
+		const address = this.stationAddress()
+			? `<p class="tc-help-address">${esc(__("Address of this station"))}:
+				<span class="tc-code">${esc(this.stationAddress())}</span></p>`
+			: "";
 		return `<h3 id="tc-help-title">${esc(title)}</h3>
 			${notice}
 			${this.state === "loading" ? "" : this.stepsHtml()}
+			${address}
 			<div class="tc-modal-actions">
 				<button type="button" class="tc-btn tc-btn-primary" data-action="help-close">${esc(
 					__("Close")

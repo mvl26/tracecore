@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "LR-.YY.MM.DD.-.##",
  "creation": "2026-10-22 16:00:00.000000",
- "description": "Wash batch on a washer-disinfector or ultrasonic cleaner (UC-06, WF-04). Created by the washing service when loading is completed; submitting it closes the batch.",
+ "description": "Wash batch on a washer-disinfector or ultrasonic cleaner. Created by the washing service when loading is completed; submitting it closes the batch.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -13,6 +13,9 @@
   "program",
   "program_name",
   "operator",
+  "suggested_program",
+  "program_override_by",
+  "program_override_reason",
   "column_break_run",
   "status",
   "loaded_by_scan",
@@ -22,6 +25,7 @@
   "sets_section",
   "set_units",
   "chemicals",
+  "consumables",
   "data_section",
   "data_source",
   "data_complete",
@@ -46,7 +50,9 @@
   "result_note",
   "follow_up_section",
   "nc_pending",
-  "cost_total"
+  "cost_total",
+  "cancel_reason",
+  "cancelled_by"
  ],
  "fields": [
   {
@@ -114,6 +120,31 @@
    "set_only_once": 1
   },
   {
+   "description": "Program the set types suggest on this machine when loading was completed.",
+   "fieldname": "suggested_program",
+   "fieldtype": "Link",
+   "label": "Suggested Program",
+   "no_copy": 1,
+   "options": "Process Program",
+   "read_only": 1
+  },
+  {
+   "description": "Employee who ran a program not listed for some set types.",
+   "fieldname": "program_override_by",
+   "fieldtype": "Link",
+   "label": "Program Overridden By",
+   "no_copy": 1,
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "program_override_reason",
+   "fieldtype": "Small Text",
+   "label": "Program Override Reason",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_run",
    "fieldtype": "Column Break"
   },
@@ -168,6 +199,14 @@
    "fieldtype": "Table",
    "label": "Chemicals",
    "options": "Wash Batch Chemical"
+  },
+  {
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued.",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Run Consumable",
+   "read_only": 1
   },
   {
    "fieldname": "data_section",
@@ -332,12 +371,29 @@
    "fieldtype": "Currency",
    "label": "Batch Cost",
    "read_only": 1
+  },
+  {
+   "fieldname": "cancel_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancel Reason",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.docstatus==2"
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "Cancelled By",
+   "options": "Employee",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.docstatus==2"
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 18:00:00.000000",
+ "modified": "2026-11-03 17:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Wash Batch",

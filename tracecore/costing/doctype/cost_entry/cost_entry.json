@@ -3,7 +3,7 @@
  "allow_import": 0,
  "autoname": "CP-.YYYY.-.#####",
  "creation": "2026-10-29 09:00:00.000000",
- "description": "A cost of the reprocessing department for a period (UC-27): category, amount, period, document and source, allocated to machines, zones or process programs by percentage that must total 100.",
+ "description": "A cost of the reprocessing department for a period: category, amount, period, document and source, allocated to machines, zones or process programs by percentage that must total 100.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -187,7 +187,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-29 09:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Costing",
  "name": "Cost Entry",

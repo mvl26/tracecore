@@ -17,7 +17,16 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, now_datetime, today
 
-from tracecore.core import audit, client_time, code_registry, extension, station_auth, step_gate, zones
+from tracecore.core import (
+	audit,
+	client_time,
+	code_registry,
+	extension,
+	lots,
+	station_auth,
+	step_gate,
+	zones,
+)
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import sterilizing, storage
 
@@ -266,6 +275,36 @@ def _invalid(reason):
 	)
 
 
+# nhóm vật tư dùng làm chỉ thị của mẻ: chỉ thị hóa học, sinh học, gói test Bowie-Dick
+INDICATOR_ITEM_GROUPS = ("Chemical Indicator", "Biological Indicator", "Test")
+
+
+def _stock_lot(lot, used_on):
+	"""Lô chỉ thị có trong kho (A-112 (d), FR-M6-03.8): ``{"batch", "indicator_item", "lot_expiry"}``; lô không có trong kho
+	→ ``{}`` (giữ làm ghi chú, không trừ kho). Lô của vật tư không phải chỉ thị → INDICATOR_LOT_INVALID, hết hạn trước
+	ngày chạy mẻ → INDICATOR_EXPIRED."""
+	batch = frappe.db.get_value("Batch", lot, ["name", "item", "expiry_date"], as_dict=True) if lot else None
+	if not batch:
+		return {}
+	if frappe.db.get_value("Item", batch.item, "tc_item_group_cssd") not in INDICATOR_ITEM_GROUPS:
+		raise _blocked(
+			"INDICATOR_LOT_INVALID",
+			_("Indicator lot is not valid"),
+			_("Lot {0} belongs to item {1}, which is not an indicator.").format(batch.name, batch.item),
+			_("Scan a lot of the indicator in use."),
+		)
+	if batch.expiry_date and getdate(batch.expiry_date) < used_on:
+		raise _blocked(
+			"INDICATOR_EXPIRED",
+			_("Indicator lot has expired"),
+			_("Indicator lot {0} expired on {1}, before the load ran on {2}.").format(
+				batch.name, frappe.utils.formatdate(batch.expiry_date), frappe.utils.formatdate(used_on)
+			),
+			_("Use an indicator that has not expired."),
+		)
+	return {"batch": batch.name, "indicator_item": batch.item, "lot_expiry": batch.expiry_date}
+
+
 def record_indicator(
 	load,
 	station,
@@ -284,7 +323,7 @@ def record_indicator(
 	"""Ghi kết quả một chỉ thị của mẻ (theo mẻ, hoặc theo gói khi truyền `pack`); trả ``{"indicator_result"}``.
 
 	Chỉ thị phải thuộc loại máy (hơi nước: hóa học 5, Bowie-Dick; plasma: hóa học plasma; sinh học khi mẻ cần BI);
-	Bowie-Dick cần ngày thử là hôm nay; sinh học tạo ``Pending`` kèm lô và tủ ủ, đọc sau bằng `bi_result`.
+	Bowie-Dick cần ngày thử là hôm nay; sinh học tạo ``Pending`` kèm lô và máy ủ, đọc sau bằng `bi_result`.
 	"""
 	doc, machine = sterilizing._open_for_data(
 		load, equipment_raw, load_raw, station, for_update=True, unload_only=True
@@ -303,6 +342,8 @@ def record_indicator(
 		raise _invalid(_("The Bowie-Dick test date must be today."))
 	if indicator == BIOLOGICAL and result == "Pending" and not (lot and incubator):
 		raise _invalid(_("A biological indicator needs its lot and the incubator."))
+	lot = lots.lot_code(lot) if isinstance(lot, str) else lot  # A-112 D1: mã GS1 trên hộp → số lô
+	linked = _stock_lot(lot, getdate(doc.started_at or today()))
 	row = frappe.get_doc(
 		{
 			"doctype": "Load Indicator Result",
@@ -312,6 +353,7 @@ def record_indicator(
 			"result": result,
 			"test_date": test_date if indicator == BOWIE_DICK else None,
 			"lot": lot or None,
+			**linked,
 			"incubator": incubator or None,
 			"read_at": read_at or (now_datetime() if result != "Pending" else None),
 			"read_by": employee if result != "Pending" else None,

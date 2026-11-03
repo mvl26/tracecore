@@ -17,6 +17,7 @@ from tracecore.core.tests.test_code_registry import production_site
 from tracecore.instrument import set_tags
 from tracecore.tests.factories import make_department, make_set_type, make_set_unit
 from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.tracecore.doctype.label_template.test_set_templates import use_standard_set_templates
 
 # Set Unit liên kết Department, Zone Station, Instrument Set Type (→ Item) và User; CI chưa có Setup Wizard
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
@@ -32,6 +33,10 @@ def _unit(type_code="TAG", set_type_name="Bộ khám tổng quát", is_implant=0
 
 
 class TestSetTags(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		use_standard_set_templates()
+
 	def test_kinds(self):
 		self.assertEqual(set_tags.KINDS, {"tag": "Set Tag", "tray": "Set Tray Label"})
 		unit = _unit()

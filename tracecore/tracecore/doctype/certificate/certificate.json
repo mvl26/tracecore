@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "CERT-.#####",
  "creation": "2026-10-29 10:00:00.000000",
- "description": "Staff certificate with expiry date and scan (FR-M4-02, DT-CERT). Renewals are new records; old ones are kept as history.",
+ "description": "Staff certificate with expiry date and scan. Renewals are new records; old ones are kept as history.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -41,7 +41,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 16:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Certificate",

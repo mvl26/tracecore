@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "ME-.YY.MM.DD.-.##",
  "creation": "2026-10-23 10:00:00.000000",
- "description": "Sterilization load on a steam or plasma sterilizer (UC-09, WF-03). Created by the sterilizing service when loading is completed.",
+ "description": "Sterilization load on a steam or plasma sterilizer. Created by the sterilizing service when loading is completed.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -12,6 +12,9 @@
   "program",
   "program_name",
   "operator",
+  "suggested_program",
+  "program_override_by",
+  "program_override_reason",
   "is_priority",
   "requires_bi",
   "column_break_run",
@@ -22,6 +25,7 @@
   "ended_at",
   "packs_section",
   "packs",
+  "consumables",
   "data_section",
   "data_source",
   "data_complete",
@@ -53,7 +57,9 @@
   "out_of_range_accepted",
   "out_of_range_accepted_by",
   "out_of_range_approved_by",
-  "out_of_range_reason"
+  "out_of_range_reason",
+  "cancel_reason",
+  "cancelled_by"
  ],
  "fields": [
   {
@@ -108,6 +114,31 @@
    "options": "Employee",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "description": "Program the set types suggest on this machine when loading was completed.",
+   "fieldname": "suggested_program",
+   "fieldtype": "Link",
+   "label": "Suggested Program",
+   "no_copy": 1,
+   "options": "Process Program",
+   "read_only": 1
+  },
+  {
+   "description": "Employee who ran a program not listed for some set types.",
+   "fieldname": "program_override_by",
+   "fieldtype": "Link",
+   "label": "Program Overridden By",
+   "no_copy": 1,
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "program_override_reason",
+   "fieldtype": "Small Text",
+   "label": "Program Override Reason",
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "default": "0",
@@ -173,6 +204,14 @@
    "label": "Packs",
    "options": "Load Pack",
    "reqd": 1
+  },
+  {
+   "description": "Consumables of the program confirmed at the station: norm, actual quantity, lots issued.",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "options": "Run Consumable",
+   "read_only": 1
   },
   {
    "fieldname": "data_section",
@@ -323,7 +362,7 @@
    "label": "Release"
   },
   {
-   "description": "R02 confirmed a load whose manual parameters were outside the program range (FR-M2-10.3).",
+   "description": "R02 confirmed a load whose manual parameters were outside the program range.",
    "fieldname": "review_confirmed",
    "fieldtype": "Check",
    "label": "Review Confirmed",
@@ -357,7 +396,7 @@
    "read_only": 1
   },
   {
-   "description": "Out-of-range values someone chose to accept when recording Pass (A-106).",
+   "description": "Out-of-range values someone chose to accept when recording Pass.",
    "fieldname": "out_of_range_accepted",
    "fieldtype": "JSON",
    "label": "Out-of-range Values Accepted",
@@ -382,12 +421,29 @@
    "fieldtype": "Small Text",
    "label": "Out-of-range Approval Reason",
    "read_only": 1
+  },
+  {
+   "fieldname": "cancel_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancel Reason",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.docstatus==2"
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "Cancelled By",
+   "options": "Employee",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.docstatus==2"
   }
  ],
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-01 20:00:00.000000",
+ "modified": "2026-11-03 17:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterilization Load",

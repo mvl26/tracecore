@@ -34,6 +34,15 @@ class TestStationHelpAssets(FrappeTestCase):
 		self.assertIn("this.help && this.help.isOpen", self.station_js)
 		self.assertIn('method.startsWith("tracecore.v1.feedback.")', self.station_js)
 
+	def test_missing_station_points_to_help_and_guide_shows_station_address(self):
+		# ticket 03/11/2026: máy thiếu ?station= vẫn mở Trợ giúp (bài chung); bài trạm hiện địa chỉ của trạm này
+		missing = self.station_js[self.station_js.index("if (!this.station) {") :]
+		missing = missing[: missing.index("}")]
+		self.assertIn("press Help", missing)
+		self.assertIn("tc-help-address", self.js)
+		self.assertIn("esc(this.stationAddress())", self.js)
+		self.assertIn('this.station.station || "General"', self.js)
+
 	def test_calls_help_and_feedback_rpcs_with_idempotency_key(self):
 		self.assertIn('"tracecore.v1.help.get"', self.js)
 		self.assertIn('"tracecore.v1.feedback.create"', self.js)

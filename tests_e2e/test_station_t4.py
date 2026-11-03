@@ -145,7 +145,7 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expect(page.locator(".tc-cycle")).to_have_text(re.compile(r"^CY-\d{6}-\d{4}$"), timeout=15000)
 	label = page.locator(".tc-label")
 	expect(label).to_contain_text("HẠN SỬ DỤNG")
-	expect(label).to_contain_text("TEST")
+	expect(label).not_to_contain_text("TEST")  # A-109: nhãn gói không in dòng TEST, kể cả GTIN thử
 	expect(label.locator(".tc-label-dm")).to_be_visible()
 	expect(label.locator(".tc-label-dm")).to_have_attribute("alt", re.compile(r"^DataMatrix CY-"))
 	expect(page.locator(".tc-res-grid")).to_contain_text(expected_text)

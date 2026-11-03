@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "NTF-.########",
  "creation": "2026-10-28 10:00:00.000000",
- "description": "One notification for one recipient on one channel: sent / read / failed, attempts and escalation (FR-M9-10, FR-M9-10.1). Written only by core.notification.",
+ "description": "One notification for one recipient on one channel: sent / read / failed, attempts and escalation. Written only by core.notification.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -52,7 +52,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 09:51:49.834719",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Notification Delivery",

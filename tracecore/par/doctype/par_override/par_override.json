@@ -3,7 +3,7 @@
  "allow_rename": 0,
  "autoname": "GD-.YYYY.-.#####",
  "creation": "2026-10-23 10:00:00.000000",
- "description": "Approved override of a set that reached its reprocessing cycle limit (FR-M8-04, WF-08). Requested (draft) -> Approved or Rejected (submitted) -> Expired; cancelling revokes an approved override.",
+ "description": "Approved override of a set that reached its reprocessing cycle limit. Requested (draft) -> Approved or Rejected (submitted) -> Expired; cancelling revokes an approved override.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -250,7 +250,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.505905",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Par",
  "name": "Par Override",

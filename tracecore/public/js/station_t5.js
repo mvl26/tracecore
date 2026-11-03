@@ -1,5 +1,5 @@
 /* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, TcProgramMatch, TcRunConsumables */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
 // Ô quét chính của shell luôn ở đầu và có focus: chế độ "Nạp mẻ" nhận QR máy, Cycle ID, mã HOAN-THANH-NAP và mã mẻ
@@ -444,6 +444,14 @@ class T5Load {
 				(programs.length ? programs[0].program_code : null),
 			priority: false,
 			packs: [],
+			// A-110: chương trình theo máy của loại bộ, mức kiểm soát của viện
+			set_programs: res.set_programs || {},
+			program_control: res.program_control || "Warn",
+			programTouched: false,
+			override_reason: "",
+			// A-111: số thực dùng đã gõ và ô tick vật tư của chương trình đang chọn
+			consumables_qty: {},
+			consumables_confirmed: false,
 		};
 		this.done = null;
 		this.printNote = null;
@@ -460,10 +468,17 @@ class T5Load {
 				title: __("{0} is already on the list", [res.cycle_id]),
 			};
 		} else {
+			// A-110 D5: gói đầu tiên chọn chương trình mặc định của loại bộ khi người dùng chưa tự đổi
+			const chosen = TcProgramMatch.autoSelect(
+				this.load,
+				res.set_type,
+				this.load.packs.length === 0
+			);
 			this.load.packs.push({
 				cycle_id: res.cycle_id,
 				set_id: res.set_id,
 				set_name: res.set_name,
+				set_type: res.set_type,
 				department_name: res.department_name,
 				method: res.method,
 				pack_type_name: res.pack_type_name || res.pack_type,
@@ -477,12 +492,45 @@ class T5Load {
 					this.load.machine.name,
 					this.load.packs.length,
 				]),
+				reason: chosen
+					? __("Program {0} chosen: the default of set type {1} on this sterilizer.", [
+							TcProgramMatch.programName(this.load, chosen),
+							res.set_name || res.set_type,
+					  ])
+					: "",
 			};
 			this.saveLoad();
+			// gói đã nhận theo chương trình cũ: kiểm lại phương pháp, loại gói theo chương trình vừa chọn
+			if (chosen) {
+				TcRunConsumables.reset(this.load);
+				this.done = null;
+				this.lookup = null;
+				this.show();
+				return this.recheckPacks();
+			}
 		}
 		this.done = null;
 		this.lookup = null;
 		this.show();
+	}
+
+	setTypes() {
+		return this.load ? this.load.packs.map((row) => row.set_type).filter(Boolean) : [];
+	}
+
+	useProgram(program) {
+		if (!this.load || this.busy || !program) return;
+		this.load.program = program;
+		this.load.programTouched = true;
+		TcRunConsumables.reset(this.load);
+		this.saveLoad();
+		this.show();
+		this.recheckPacks();
+	}
+
+	// A-111: số gói tính định mức vật tư (gói tô đỏ sẽ bị loại khi Hoàn thành nạp)
+	packCount() {
+		return this.load ? this.load.packs.filter((row) => !row.incompatible).length : 0;
 	}
 
 	removePack(cycleId) {
@@ -563,6 +611,11 @@ class T5Load {
 			out.push(__("check of the packs against the program"));
 		if (this.load && this.load.packs.some((row) => row.incompatible))
 			out.push(__("removing the packs marked in red"));
+		if (this.load && TcProgramMatch.needsReason(this.load, this.setTypes()))
+			out.push(__("reason for the program"));
+		const program = this.programRow();
+		if (program && TcRunConsumables.missing(this.load, program.consumables, this.packCount()))
+			out.push(__("consumables confirmation"));
 		return out;
 	}
 
@@ -587,6 +640,9 @@ class T5Load {
 				packs: load.packs.map((row) => row.cycle_id),
 				is_priority: load.priority ? 1 : 0,
 				station: this.station.station,
+				program_override_reason: (load.override_reason || "").trim() || null,
+				consumables: TcRunConsumables.payload(load),
+				consumables_confirmed: load.consumables_confirmed ? 1 : 0,
 			},
 			(res) => {
 				this.done = {
@@ -1070,6 +1126,7 @@ class T5Load {
 			},
 			"t5-remove": () => this.removePack(data.pack),
 			"t5-recheck": () => this.recheckPacks(),
+			"t5-use-program": () => this.useProgram(data.program),
 			"t5-complete": () => this.complete(),
 			"t5-label-pdf": () => this.printLabelPdf(),
 			"t5-cancel": () => this.cancelLoad(),
@@ -1092,9 +1149,15 @@ class T5Load {
 		const target = event.target;
 		if (target.id === "tc-t5-program" && this.load) {
 			this.load.program = target.value;
+			this.load.programTouched = true; // A-110 D5: người dùng đã chọn, không tự đổi nữa
+			TcRunConsumables.reset(this.load); // A-111: vật tư của chương trình khác
 			this.saveLoad();
 			this.show();
 			this.recheckPacks();
+		} else if (target.dataset.consumablesConfirm && this.load) {
+			this.load.consumables_confirmed = target.checked;
+			this.saveLoad();
+			this.show();
 		} else if (target.id === "tc-t5-priority" && this.load) {
 			this.load.priority = target.checked;
 			this.saveLoad();
@@ -1109,7 +1172,18 @@ class T5Load {
 
 	onInput(event) {
 		const target = event.target;
-		if (target.dataset.param && this.form) {
+		if (this.load && TcRunConsumables.remember(this.load, target)) {
+			// A-111 số thực dùng, A-112 lô; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
+			this.saveLoad();
+			const bar = this.result.querySelector(".tc-actionsbar");
+			if (bar) bar.outerHTML = this.loadBarHtml();
+		} else if (target.dataset.programReason && this.load) {
+			// A-110 D7: lý do ghi đè; chỉ vẽ lại thanh thao tác để ô đang gõ giữ focus
+			this.load.override_reason = target.value;
+			this.saveLoad();
+			const bar = this.result.querySelector(".tc-actionsbar");
+			if (bar) bar.outerHTML = this.loadBarHtml();
+		} else if (target.dataset.param && this.form) {
 			this.form.values[target.dataset.param] = target.value;
 			const param = (this.data.context.parameter_schema || []).find(
 				(row) => row.parameter_name === target.dataset.param
@@ -1341,7 +1415,7 @@ class T5Load {
 						<span class="tc-mono">${esc(row.set_id)}</span></div>
 					<div>${esc(__(row.method, null, "Pack"))} · ${esc(row.pack_type_name || "-")} · ${esc(
 					__("Expires {0}", [t5Date(row.expiry)])
-				)}</div>
+				)}<br>${TcProgramMatch.badgeHtml(load, row.set_type)}</div>
 					${this.gatesHtml(row.gates)}
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="t5-remove"
 						data-pack="${esc(row.cycle_id)}"${t5Disabled(Boolean(this.busy))}>${esc(
@@ -1357,8 +1431,13 @@ class T5Load {
 				</li>`
 			)
 			.join("");
+		// A-110 D6, D7: cảnh báo chương trình chung / tách mẻ và lý do ghi đè
+		const conflict = TcProgramMatch.conflictNotice(load, this.setTypes(), "t5-use-program");
+		const programNotes = `${
+			conflict ? this.alertHtml(conflict.notice, conflict.buttons) : ""
+		}${TcProgramMatch.reasonHtml(load, this.setTypes(), "tc-t5-program-reason")}`;
 		const list = load.packs.length
-			? `<ul class="tc-t5-packs">${rows}</ul>`
+			? `${programNotes}<ul class="tc-t5-packs">${rows}</ul>`
 			: `<p class="tc-empty">${esc(
 					__(
 						"Only packs that finished packing and fit the program of this sterilizer are accepted."
@@ -1399,6 +1478,17 @@ class T5Load {
 					load.priority ? " checked" : ""
 				}> ${esc(__("Priority load"))}</label>
 			</section>
+			${
+				program
+					? TcRunConsumables.html(
+							load,
+							program.consumables,
+							this.packCount(),
+							"tc-t5",
+							__("Consumables of program {0}", [program.program_name])
+					  )
+					: ""
+			}
 			<section class="tc-t4-block tc-t2-sets">
 				<h3>${esc(
 					__(

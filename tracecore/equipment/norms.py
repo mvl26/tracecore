@@ -53,8 +53,20 @@ def _filled(values, norm):
 	return {field: (values[field] if values[field] > 0 else norm[field]) for field in NORM_FIELDS}
 
 
+def _test_pack_missing(program) -> bool:
+	"""A-111 D7: chương trình test phải có gói test bắt buộc trong bảng vật tư."""
+	if program.get("program_kind") != "Test":
+		return False
+	return not any(
+		row.get("role") == "Test Pack" and cint(row.get("is_required"))
+		for row in program.get("consumables") or []
+	)
+
+
 def norm_status(program) -> str:
 	"""``Complete`` / ``Default`` / ``Missing`` của chương trình theo các giá trị hiện có (không ghi)."""
+	if _test_pack_missing(program):
+		return "Missing"
 	equipment_type = equipment_type_of(program)
 	count = len(program.get("consumables") or [])
 	values = _entered(program)

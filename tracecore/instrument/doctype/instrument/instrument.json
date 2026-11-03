@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:instrument_code",
  "creation": "2026-10-20 10:00:00.000000",
- "description": "Single instrument master (FR-M1-01, A-06): code, name, Spaulding class, compatible methods, media, reprocessing limit, value, group and maintenance threshold.",
+ "description": "Single instrument master: code, name, Spaulding class, compatible methods, media, reprocessing limit, value, group and maintenance threshold.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -276,7 +276,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-21 23:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument",

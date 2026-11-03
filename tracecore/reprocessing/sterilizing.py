@@ -21,7 +21,17 @@ from frappe import _
 from frappe.utils import cint, flt, formatdate, get_datetime, getdate, now_datetime
 from frappe.utils.data import get_system_timezone
 
-from tracecore.core import client_time, extension, gs1, qr, station_auth, step_gate, zones
+from tracecore.core import (
+	client_time,
+	extension,
+	gs1,
+	program_match,
+	qr,
+	run_consumables,
+	station_auth,
+	step_gate,
+	zones,
+)
 from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
@@ -210,6 +220,8 @@ def scan_machine(raw):
 			"compatible_pack_types": _compatible_pack_types(row.name),
 			"parameters": _parameters(row.name),
 			"indicators": _indicators(equipment.name, equipment.equipment_type, row.requires_bi),
+			# A-111: vật tư của chương trình để màn liệt kê và nhân viên xác nhận
+			"consumables": run_consumables.payload(row.name),
 		}
 		for row in frappe.get_all(
 			"Process Program",
@@ -220,7 +232,13 @@ def scan_machine(raw):
 	]
 	default = frappe.db.get_value("Equipment", equipment.name, "default_program")
 	equipment.default_program = default if default in [row["program_code"] for row in programs] else None
-	return {"equipment": equipment, "programs": programs}
+	return {
+		"equipment": equipment,
+		"programs": programs,
+		# A-110: chương trình theo máy của loại bộ để màn tự chọn và gắn nhãn dòng (cả khi offline)
+		"set_programs": program_match.machine_map(equipment.name),
+		"program_control": program_match.control_level(),
+	}
 
 
 def _program(equipment, program):
@@ -312,8 +330,9 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 	Trả ``{"cycle_id", "set_id", "set_name", "method", "pack_type", "pack_type_name", "expiry", "duplicate", "gates",
 	"count", "capacity"}``. Gói đã có trong `queued` thì ``duplicate = True`` và không phải lỗi. Từ chối theo thứ tự
 	(A-16, Q6): máy hợp lệ → chương trình thuộc máy → mã là Cycle ID → gói tồn tại → gói ở mẻ khác / không còn nạp được
-	→ gói còn là Cycle ID hiện hành của bộ → còn hạn → cổng T4 Đạt (`step_gate.check`) → tương thích → dung tích.
-	`for_update`: đọc Pack và Set Unit có khóa (dùng khi ghi ngay sau đó).
+	→ gói còn là Cycle ID hiện hành của bộ → còn hạn → cổng T4 Đạt (`step_gate.check`) → tương thích → chương trình
+	thuộc danh sách của loại bộ khi mức kiểm soát là Chặn (PROGRAM_NOT_FOR_SET, A-110) → dung tích. Kết quả có thêm
+	``program_fit``, ``program_default``. `for_update`: đọc Pack và Set Unit có khóa (dùng khi ghi ngay sau đó).
 	"""
 	block = check_equipment_ready(equipment)
 	if block:
@@ -339,8 +358,10 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 		raise _pack_not_found(scanned["id"])
 	queue = set(queued or [])
 	capacity = capacity_of(equipment)
+	set_type = frappe.db.get_value("Set Unit", pack.set_unit, "set_type")
 	if pack.name in queue:
-		return _admitted(pack, duplicate=True, count=len(queue), capacity=capacity)
+		fit = program_match.label(set_type, equipment, program_row.name)
+		return _admitted(pack, duplicate=True, count=len(queue), capacity=capacity, fit=fit)
 	if pack.status == IN_LOAD:
 		raise _blocked(
 			"PACK_IN_OTHER_LOAD",
@@ -380,6 +401,7 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 	block = _check_compatible(pack, equipment_type, program_row.name)
 	if block:
 		raise BlockedError(block)
+	fit = program_match.admit(set_type, equipment, program_row.name)
 	if capacity and len(queue) >= capacity:
 		raise _blocked(
 			"LOAD_CAPACITY_EXCEEDED",
@@ -387,7 +409,7 @@ def admit_pack(raw, equipment, program, queued=None, for_update=False):
 			_("Sterilizer {0} takes at most {1} pack(s) per load.").format(equipment, capacity),
 			_("Complete loading, then load the remaining packs in the next load."),
 		)
-	return _admitted(pack, duplicate=False, count=len(queue) + 1, capacity=capacity)
+	return _admitted(pack, duplicate=False, count=len(queue) + 1, capacity=capacity, fit=fit)
 
 
 def recheck_packs(equipment, program, packs):
@@ -410,9 +432,12 @@ def recheck_packs(equipment, program, packs):
 	return rows
 
 
-def _admitted(pack, duplicate, count, capacity):
+def _admitted(pack, duplicate, count, capacity, fit):
 	set_type = frappe.db.get_value("Set Unit", pack.set_unit, "set_type")
 	return {
+		"program_fit": fit["fit"],
+		"program_default": fit["default"],
+		"set_type": set_type,
 		"cycle_id": pack.name,
 		"set_id": pack.set_unit,
 		"set_name": frappe.db.get_value("Instrument Set Type", set_type, "set_type_name"),
@@ -517,7 +542,18 @@ def _admit_all(packs, equipment, program):
 	return accepted, rejected
 
 
-def complete(equipment, program, packs, station, client_ts, operator, is_priority=False):
+def complete(
+	equipment,
+	program,
+	packs,
+	station,
+	client_ts,
+	operator,
+	is_priority=False,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	"""Hoàn thành nạp: sinh mã mẻ `ME-YYMMDD-NN` cho các gói quét vào máy, ghi mẻ `Running`, gói sang Trong mẻ, xếp lệnh in nhãn QR.
 
 	`client_ts` là kết quả `parse_client_ts` (UTC); giờ nạp = giờ hệ thống của nó, lệch giờ server quá
@@ -526,12 +562,28 @@ def complete(equipment, program, packs, station, client_ts, operator, is_priorit
 	tích…) vào `rejected` mà không dừng mẻ; không còn gói nào → LOAD_EMPTY. Mọi lỗi hoàn tác về savepoint rồi ném lại:
 	không còn mẻ, dòng Code Registry hay số series nào. In không bao giờ làm mất mã mẻ.
 
+	A-110: mẻ ghi chương trình gợi ý theo loại bộ, người ghi đè và `override_reason` khi có gói ngoài danh sách của
+	chương trình; mức Ghi đè có lý do thiếu lý do → PROGRAM_OVERRIDE_REASON_REQUIRED.
+	A-111: `consumables`, `consumables_confirmed` thành bảng vật tư của mẻ theo số gói được nhận; vật tư bắt buộc chưa
+	xác nhận → CONSUMABLES_NOT_CONFIRMED.
+
 	Trả ``{"load", "packs", "rejected", "print": {"print_job", "status", "printer", "zpl", "warning"}, "qr_png_b64"}``.
 	"""
 	client_time.check_skew(client_ts)
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		return _complete(equipment, program, packs, station, client_ts, operator, is_priority)
+		return _complete(
+			equipment,
+			program,
+			packs,
+			station,
+			client_ts,
+			operator,
+			is_priority,
+			override_reason,
+			consumables,
+			consumables_confirmed,
+		)
 	except Exception:
 		# Sau deadlock InnoDB đã hoàn tác cả transaction (savepoint không còn): giữ lỗi gốc, bỏ lỗi rollback
 		with contextlib.suppress(Exception):
@@ -539,7 +591,18 @@ def complete(equipment, program, packs, station, client_ts, operator, is_priorit
 		raise
 
 
-def _complete(equipment, program, packs, station, client_ts, operator, is_priority):
+def _complete(
+	equipment,
+	program,
+	packs,
+	station,
+	client_ts,
+	operator,
+	is_priority,
+	override_reason=None,
+	consumables=None,
+	consumables_confirmed=False,
+):
 	block = check_equipment_ready(equipment)
 	if block:
 		raise BlockedError(block)
@@ -563,11 +626,20 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 		}
 		for name in accepted
 	]
+	trace = program_match.review(
+		[frappe.db.get_value("Set Unit", row["set_unit"], "set_type") for row in rows],
+		equipment,
+		program_row.name,
+		operator,
+		override_reason,
+	)
+	used = run_consumables.rows(program_row.name, len(accepted), consumables, consumables_confirmed, operator)
 	load = frappe.get_doc(
 		{
 			"doctype": "Sterilization Load",
 			"equipment": equipment,
 			"program": program_row.name,
+			**trace,
 			"operator": operator,
 			"status": RUNNING,
 			"is_priority": 1 if is_priority else 0,
@@ -576,6 +648,7 @@ def _complete(equipment, program, packs, station, client_ts, operator, is_priori
 			"load_completed_at": started,
 			"started_at": started,
 			"packs": rows,
+			"consumables": used,
 		}
 	)
 	load.flags.tc_sterilizing = True

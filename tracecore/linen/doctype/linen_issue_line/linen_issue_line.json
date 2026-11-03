@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-29 14:00:00.000000",
- "description": "One line of a linen issue: type, pieces, kg (FR-M3-05).",
+ "description": "One line of a linen issue: type, pieces, kg.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -53,7 +53,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-29 14:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Linen Issue Line",

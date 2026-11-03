@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-30 18:00:00.000000",
- "description": "Shelf or room of the temporary waste store, identified by a KE- QR code (FR-M10-03).",
+ "description": "Shelf or room of the temporary waste store, identified by a KE- QR code.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -73,7 +73,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 18:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Waste",
  "name": "Waste Storage Location",

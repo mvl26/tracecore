@@ -72,7 +72,9 @@ class WashBatch(Document):
 		audit.block_delete(self, "on_trash")
 
 	def before_cancel(self):
-		frappe.throw(_("A wash batch cannot be cancelled."))
+		# chỉ R02 hủy lô nhập sai qua reprocessing.run_cancel (A-112 D10)
+		if not self.flags.tc_run_cancel:
+			frappe.throw(_("A wash batch cannot be cancelled."))
 
 	def _validate_rows(self):
 		sets = [row.set_unit for row in self.set_units]

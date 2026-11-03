@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "SP-.YY.MM.DD.-.####",
  "creation": "2026-10-22 09:00:00.000000",
- "description": "One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves (UC-11). Created and submitted by the sterile storage service only.",
+ "description": "One storage move of a pack in the sterile store: putaway onto a shelf or transfer between shelves. Created and submitted by the sterile storage service only.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -134,7 +134,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.511019",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Sterile Putaway",

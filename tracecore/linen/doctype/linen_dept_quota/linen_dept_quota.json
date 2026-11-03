@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-29 10:00:00.000000",
- "description": "Per-department min/max pieces of a linen type (FR-M3-02); used by the linen reconciliation.",
+ "description": "Per-department min/max pieces of a linen type; used by the linen reconciliation.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -52,7 +52,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-31 09:51:28.504748",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Linen",
  "name": "Linen Dept Quota",

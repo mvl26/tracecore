@@ -90,7 +90,11 @@ DEFAULT_CODES = (
 		("WASH_LOAD", "PACK"),
 		"Refuses the lot.",
 		"<ol><li>Check the label of the lot.</li><li>Choose a lot of the item that the program uses.</li></ol>",
-		("CHEMICAL_LOT_INVALID", "MAINT_OIL_LOT_REQUIRED"),
+		(
+			"CHEMICAL_LOT_INVALID",
+			"MAINT_OIL_LOT_REQUIRED",
+			"CONSUMABLE_LOT_INVALID",
+		),  # A-112: lô vật tư trên dòng
 	),
 	_code(
 		"HC-005",
@@ -217,6 +221,8 @@ DEFAULT_CODES = (
 			"EQUIPMENT_MISMATCH",
 			"PROGRAM_INVALID",
 			"LAUNDRY_PROGRAM_INVALID",
+			"PROGRAM_NOT_FOR_SET",  # A-110
+			"PROGRAM_OVERRIDE_REASON_REQUIRED",  # A-110
 		),
 	),
 	_code(

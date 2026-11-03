@@ -138,17 +138,18 @@ class TestRender(IsolatedTestCase):
 		for part in (
 			"^BXN",
 			"_10109520000000011",
-			"(01)09520000000011(11)261020(17)261119(21)CY-261020-0001",
 			"HAN SU DUNG / EXP: 19/11/2026",
 			"^PW709",
 			"^LL472",
 		):
 			self.assertIn(part, zpl)
+		self.assertNotIn("(01)", zpl)  # A-109: không in chuỗi GS1 người đọc
 		self.assertNotIn("\n", zpl)
 
-	def test_render_prints_test_line_only_for_test_labels(self):
-		self.assertIn("TEST", core_print.render(self.body, sample_pack_context(is_test=True)))
-		self.assertNotIn("TEST", core_print.render(self.body, sample_pack_context(is_test=False)))
+	def test_render_never_prints_test_line(self):
+		# A-109: nhãn gói không còn dòng TEST, kể cả GTIN thử
+		for is_test in (True, False):
+			self.assertNotIn("TEST", core_print.render(self.body, sample_pack_context(is_test=is_test)))
 
 	def test_render_sanitizes_zpl_and_respects_unicode_flag(self):
 		plain = core_print.render(self.body, sample_pack_context(set_name="Bo mo tim"))
@@ -166,7 +167,7 @@ class TestRender(IsolatedTestCase):
 		self.assertTrue(zpl.isascii(), msg=zpl)
 		kept = core_print.render(self.body, sample_pack_context(), unicode=True)
 		self.assertIn("HẠN SỬ DỤNG / EXP: 19/11/2026", kept)
-		self.assertIn("Hấp hơi nước 134°C", kept)
+		self.assertIn("Khoa Phẫu thuật chỉnh hình", kept)
 
 	def test_render_prints_blank_for_none_and_missing_values(self):
 		doc = sample_pack_context(dept=None, ci_lot=None, warning=None)
@@ -243,8 +244,15 @@ class TestRender(IsolatedTestCase):
 		self.assertIsNotNone(core_print.pack_template("Steam"))
 
 	def test_render_pack_uses_template_size_and_method(self):
+		# A-109: hai mẫu mẫu cùng nội dung; đánh dấu mẫu plasma để biết đúng mẫu theo phương pháp được dùng
+		frappe.db.set_value(
+			"Label Template",
+			"Pack label - Plasma",
+			"body",
+			"^XA^PW{{ width_dots }}^LL{{ height_dots }}^FDplasma^FS^XZ",
+		)
 		zpl = core_print.render_pack("Plasma", sample_pack_context())
-		self.assertIn("Plasma label", zpl)
+		self.assertIn("^FDplasma^FS", zpl)
 		self.assertIn("^PW709^LL472", zpl)
 		frappe.db.set_value("Label Template", "Pack label - Plasma", {"width_mm": 50, "height_mm": 30})
 		self.assertIn("^PW591^LL354", core_print.render_pack("Plasma", sample_pack_context()))
@@ -422,7 +430,7 @@ class TestSetRoll(IsolatedTestCase):
 		self.assertIn(job, released)
 		zpl = released[job]["zpl"]
 		self.assertTrue(zpl.startswith("^XA"))
-		self.assertIn("Plasma label", zpl)
+		self.assertIn("HAN SU DUNG / EXP: 19/11/2026", zpl)  # mẫu plasma nhận ra qua doc.template bên dưới
 		self.assertEqual(released[job]["printer"], self.p1)
 		doc = frappe.get_doc("Print Job", job)
 		self.assertEqual((doc.status, doc.printer, doc.payload), ("Queued", self.p1, zpl))

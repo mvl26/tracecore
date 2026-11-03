@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "field:template_name",
  "creation": "2026-10-20 14:00:00.000000",
- "description": "Label layout (Jinja) per label object (pack or QR object label), sterilization method and printer language. R10 edits it without code changes (FR-M2-08.4).",
+ "description": "Label layout (Jinja) per label object (pack or QR object label), sterilization method and printer language. R10 edits it without code changes.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -118,7 +118,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-24 10:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Label Template",

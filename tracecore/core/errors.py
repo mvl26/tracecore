@@ -91,6 +91,14 @@ HTTP_STATUS: dict[str, int] = {
 			"EQUIPMENT_NOT_WASHER",
 			"PROGRAM_INVALID",
 			"PROGRAM_TEST_ONLY",  # A-83: chương trình test không nhận gói
+			# A-110: chương trình ngoài danh sách của loại bộ (mức Chặn / Ghi đè có lý do)
+			"PROGRAM_NOT_FOR_SET",
+			"PROGRAM_OVERRIDE_REASON_REQUIRED",
+			# A-111: vật tư của chương trình xác nhận tại trạm
+			"CONSUMABLES_NOT_CONFIRMED",
+			"CONSUMABLE_INVALID",
+			# A-112: lô vật tư chọn/quét trên dòng hết hạn, của vật tư khác, đã tắt hoặc không có
+			"CONSUMABLE_LOT_INVALID",
 			"CHEMICAL_LOT_INVALID",
 			"CHEMICAL_LOT_EXPIRED",
 			"BATCH_EMPTY",
@@ -301,6 +309,8 @@ HTTP_STATUS: dict[str, int] = {
 			"LABEL_PDF_FAILED",
 			# A-102: gói của khoa khác khoa nhận cần xác nhận kèm lý do
 			"PACK_DEPT_MISMATCH",
+			# A-112 D10, D11: lô rửa / mẻ đã có bộ, gói đi tiếp, đã Không đạt, đã hủy, hoặc còn phiếu xuất Nháp
+			"RUN_CANCEL_BLOCKED",
 		),
 		409,
 	),

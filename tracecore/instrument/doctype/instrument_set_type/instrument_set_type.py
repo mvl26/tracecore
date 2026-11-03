@@ -14,7 +14,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from tracecore.core import code_registry, gs1
+from tracecore.core import code_registry, gs1, program_match
 from tracecore.instrument import bom, media
 from tracecore.instrument import gtin as gtin_rules
 from tracecore.instrument import set_type as set_type_rules
@@ -40,6 +40,8 @@ class InstrumentSetType(Document):
 		# thumbnail 320 px chỉ server ghi
 		media.validate_fields(self)
 		media.refresh_thumbnail(self)
+		# A-110: chương trình theo máy (FR-M1-03.7, FR-M1-03.8)
+		program_match.validate_rows(self)
 		# cấp sau cùng: kiểm tra phần đầu sai thì khỏi tốn số (A-76). Loại bộ mượn luôn mang sẵn GTIN của hãng.
 		if self.is_new() and not self.gtin:
 			self.gtin = code_registry.next_gtin(self.doctype, self.name)

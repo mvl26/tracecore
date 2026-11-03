@@ -102,6 +102,11 @@ class TestErrors(FrappeTestCase):
 				"LINES_NOT_COUNTED",
 				"LINE_VARIANCE_REQUIRED",
 				"PROGRAM_TEST_ONLY",  # A-83
+				"PROGRAM_NOT_FOR_SET",  # A-110
+				"PROGRAM_OVERRIDE_REASON_REQUIRED",  # A-110
+				"CONSUMABLES_NOT_CONFIRMED",  # A-111
+				"CONSUMABLE_INVALID",  # A-111
+				"CONSUMABLE_LOT_INVALID",  # A-112
 				"CYCLE_DATA_OUT_OF_RANGE",  # A-89
 				"ISSUE_COMPANY_AMBIGUOUS",
 				"QTY_INVALID",
@@ -259,6 +264,7 @@ class TestErrors(FrappeTestCase):
 				"LABEL_NOT_QUEUED",
 				"LABEL_PDF_FAILED",
 				"PACK_DEPT_MISMATCH",
+				"RUN_CANCEL_BLOCKED",  # A-112
 			),
 		}
 		table = {code: status for status, codes in expected.items() for code in codes}

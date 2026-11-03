@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "naming_series:",
  "creation": "2026-10-26 10:00:00.000000",
- "description": "Offline replay rejected by the server; R02 resolves it, the server record is kept (FR-M9-06.3, A-40).",
+ "description": "Offline replay rejected by the server; R02 resolves it, the server record is kept.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -230,7 +230,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 19:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Sync Conflict",

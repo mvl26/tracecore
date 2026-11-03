@@ -32,6 +32,8 @@ def scan_settled(page, raw):
 def open_cycle_data(page, load):
 	"""A-103: dữ liệu chu trình nằm trong bước 2; quét mã mẻ là đủ vì máy đã biết từ danh sách, máy chủ vẫn kiểm cặp mã."""
 	page.locator("[data-action='t5-step'][data-step='2']").click()
+	# chờ danh sách mẻ chờ dỡ: quét mẻ trước khi danh sách về thì màn chưa biết máy và còn đợi quét máy
+	expect(page.locator(".tc-t5 tbody tr").filter(has_text=load)).to_have_count(1, timeout=15000)
 	scan_settled(page, load)
 	page.locator("[data-action='t5b-open-data']").first.click()
 

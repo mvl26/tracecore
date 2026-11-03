@@ -1,4 +1,4 @@
-"""Giao diện không còn mã nội bộ FEAT-…, BRU-… (A-88, D7, #1844 T5-09, #1836 T5-04)."""
+"""Giao diện không còn mã tài liệu nội bộ: FEAT-…, BRU-…, UC-…, FR-…, SCR-…, A-…, ADR-… (A-88, D7, #1844 T5-09, #1836 T5-04)."""
 
 import csv
 import json
@@ -8,7 +8,9 @@ import re
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-CODE = re.compile(r"FEAT-\d+|BRU-[A-Z]+-\d+")
+CODE = re.compile(
+	r"\b(?:FEAT-\d+|BRU-[A-Z]+-\d+|UC-\d+|FR-M\d+|NFR-[A-Z]+-\d+|SCR-\d+|A-\d{2,3}|ADR-\d+|WF-\d+|DT-[A-Z]+|OTH-RET-\d+|EI-UI-\d+)"
+)
 UI_CALL = re.compile(r"(?<![\w.])_{1,2}\(\s*f?\"((?:[^\"\\]|\\.)*)\"", re.S)
 
 

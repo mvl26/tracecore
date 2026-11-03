@@ -36,8 +36,18 @@ SCALAR_FIELDS = (
 	"steam_kg_per_cycle",
 	"use_default_norms",
 )
+CONSUMABLE_FIELDS = (
+	"item",
+	"role",
+	"is_required",
+	"uom",
+	"qty_per_load",
+	"qty_per_pack",
+	"qty_per_kg",
+	"unit_price",
+)
 CHILD_FIELDS = {
-	"consumables": ("item", "uom", "qty_per_load", "qty_per_pack"),
+	"consumables": ("item", "role", "is_required", "uom", "qty_per_load", "qty_per_pack"),
 	"compatible_pack_types": ("pack_type",),
 	"parameters": ("parameter_name", "unit", "min_value", "max_value", "required"),
 }
@@ -130,3 +140,74 @@ def copy_program(
 		# bản sao không đủ hơn bản nguồn: số mặc định đã điền vào nguồn vẫn là mặc định, cờ chỉ phản chiếu nguồn
 		copy.flags.tc_copied_norm_status = "Default"
 	return copy.insert(ignore_permissions=ignore_permissions).name
+
+
+# --- Áp vật tư sang chương trình cùng loại (A-111 D4, FR-M5-02.7) ----------------------------------------------
+
+
+def _kind_key(program):
+	"""(loại chương trình, loại máy) của `program`: chỉ áp vật tư giữa chương trình cùng khóa này."""
+	row = frappe.db.get_value("Process Program", program, ["program_kind", "equipment"], as_dict=True)
+	if not row:
+		frappe.throw(_("Process program {0} does not exist.").format(program or "-"))
+	return (row.program_kind or "Regular", frappe.db.get_value("Equipment", row.equipment, "equipment_type"))
+
+
+def consumable_targets(program: str) -> list[dict]:
+	"""Chương trình đang dùng cùng loại chương trình và cùng loại máy với `program` (trừ chính nó), kèm cờ gợi ý.
+
+	``suggested`` = 1 khi cùng tên chương trình hoặc cùng loại test đầu ngày: thường là cùng một chương trình trên máy khác.
+	"""
+	kind, equipment_type = _kind_key(program)
+	source = frappe.db.get_value(
+		"Process Program", program, ["program_name", "daily_test_type"], as_dict=True
+	)
+	rows = frappe.db.sql(
+		"""select p.name, p.program_name, p.equipment, e.equipment_name, p.daily_test_type
+		from `tabProcess Program` p join `tabEquipment` e on e.name = p.equipment
+		where p.is_active = 1 and p.name != %s and ifnull(p.program_kind, 'Regular') = %s
+			and e.equipment_type = %s and e.status != 'Retired'
+		order by p.equipment asc, p.program_name asc""",
+		(program, kind, equipment_type),
+		as_dict=True,
+	)
+	return [
+		{
+			"program": row.name,
+			"program_name": row.program_name,
+			"equipment": row.equipment,
+			"equipment_name": row.equipment_name,
+			"suggested": int(
+				row.program_name == source.program_name
+				or bool(source.daily_test_type and row.daily_test_type == source.daily_test_type)
+			),
+		}
+		for row in rows
+	]
+
+
+def copy_consumables(program: str, targets: list[str], ignore_permissions: bool = False) -> list[str]:
+	"""Thay bảng vật tư của các chương trình `targets` bằng bảng của `program`; trả tên các chương trình đã áp.
+
+	Đích phải là chương trình đang dùng cùng loại chương trình và cùng loại máy, khác chương trình nguồn; sai một đích thì
+	không áp đích nào (tầng RPC hoàn tác về savepoint). Sửa nguồn sau đó không tự lan sang đích.
+	"""
+	allowed = {row["program"] for row in consumable_targets(program)}
+	wrong = [target for target in targets or [] if target not in allowed]
+	if wrong or not targets:
+		frappe.throw(
+			_(
+				"Consumables of program {0} can only be applied to other active programs of the same kind on the same type of machine: {1}."
+			).format(  # fmt: skip
+				program, ", ".join(wrong) or "-"
+			)
+		)
+	rows = [
+		{field: row.get(field) for field in CONSUMABLE_FIELDS}
+		for row in frappe.get_doc("Process Program", program).consumables
+	]
+	for target in targets:
+		doc = frappe.get_doc("Process Program", target)
+		doc.set("consumables", [dict(row) for row in rows])
+		doc.save(ignore_permissions=ignore_permissions)
+	return list(targets)

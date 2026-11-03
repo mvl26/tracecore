@@ -16,7 +16,7 @@ from tracecore.core import gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import washing
+from tracecore.reprocessing import run_cancel, washing
 from tracecore.v1._common import (
 	ENTRY_MODE_FLAG,
 	WASH_LOAD_ROLES,
@@ -69,6 +69,19 @@ def _chemicals(value):
 		if row.get("qty") is not None and not isinstance(row["qty"], int | float):
 			raise BadRequestError(message)
 		rows.append({"item": row["item"], "lot": row["lot"], "qty": row.get("qty")})
+	return rows
+
+
+def _consumables(value):
+	"""A-111: ``[{"item", "qty"}]`` số thực dùng nhân viên sửa; None/rỗng = theo định mức. Số sai do dịch vụ kiểm (422)."""
+	if value in (None, ""):
+		return []
+	message = _("consumables must be a list of objects with an item and a qty.")
+	rows = []
+	for row in _json_list(value, message):
+		if not (isinstance(row, dict) and isinstance(row.get("item"), str)):
+			raise BadRequestError(message)
+		rows.append({"item": row["item"], "qty": row.get("qty")})
 	return rows
 
 
@@ -218,20 +231,32 @@ def start(raw, station, entry_mode="Scan", manual_reason=None, client_ts=None, t
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
 def add_set(
-	raw, equipment, queued, station, entry_mode="Scan", manual_reason=None, client_ts=None, token=None
+	raw,
+	equipment,
+	queued,
+	station,
+	entry_mode="Scan",
+	manual_reason=None,
+	client_ts=None,
+	token=None,
+	program=None,
 ):
-	"""Kiểm một Set ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (Q1)."""
+	"""Kiểm một Set ID quét vào máy `equipment` (không ghi); `queued` là danh sách đang quét trên kiosk (Q1).
+
+	`program` (A-110): chương trình đang chọn trên kiosk để gắn nhãn Mặc định / Cho phép / Ngoài danh sách cho bộ.
+	"""
 	require_any_role(*WASH_LOAD_ROLES)
 	raw = _required_str(raw, "raw")
 	equipment = _required_str(equipment, "equipment")
 	queue = _codes(queued, "queued")
+	program = _optional_str(program, "program")
 	timestamp = parse_client_ts(client_ts)
 	scanned = gs1.parse_scan(raw)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: {"ok": True, **washing.admit_set(raw, equipment, queue)},
+		lambda: {"ok": True, **washing.admit_set(raw, equipment, queue, program=program)},
 		"Set Unit" if scanned["type"] == "set" else None,
 		scanned["id"],
 		scanned["raw"],
@@ -243,26 +268,53 @@ def add_set(
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASH_LOAD_ROLES)
 @idempotent
-def complete(equipment, program, sets, chemicals, station, client_ts=None, token=None):
-	"""Hoàn thành nạp: sinh mã lô `LR-`, gắn bộ, in nhãn QR (FR-M2-03.2, FR-M2-24.1); trả cả bộ bị loại (Q19)."""
+def complete(
+	equipment,
+	program,
+	sets,
+	chemicals,
+	station,
+	client_ts=None,
+	token=None,
+	program_override_reason=None,
+	consumables=None,
+	consumables_confirmed=0,
+):
+	"""Hoàn thành nạp: sinh mã lô `LR-`, gắn bộ, in nhãn QR (FR-M2-03.2, FR-M2-24.1); trả cả bộ bị loại (Q19).
+
+	`program_override_reason` (A-110): lý do chạy chương trình ngoài danh sách của loại bộ (mức Ghi đè có lý do).
+	`consumables`, `consumables_confirmed` (A-111): số thực dùng đã sửa và ô tick "Đã chuẩn bị đủ vật tư".
+	"""
 	require_any_role(*WASH_LOAD_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	program = _required_str(program, "program")
 	codes = _codes(sets, "sets")
 	rows = _chemicals(chemicals)
+	reason = _optional_str(program_override_reason, "program_override_reason")
+	used = {"consumables": _consumables(consumables), "consumables_confirmed": _flag(consumables_confirmed)}
 	timestamp = parse_client_ts(client_ts)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		lambda: _completed(equipment, program, codes, rows, station, timestamp),
+		lambda: _completed(equipment, program, codes, rows, station, timestamp, reason, used),
 		"Equipment",
 		equipment,
 	)
 
 
-def _completed(equipment, program, codes, rows, station, timestamp):
-	result = washing.start(equipment, program, codes, rows, station, timestamp, _session_employee())
+def _completed(equipment, program, codes, rows, station, timestamp, override_reason=None, used=None):
+	result = washing.start(
+		equipment,
+		program,
+		codes,
+		rows,
+		station,
+		timestamp,
+		_session_employee(),
+		override_reason,
+		**(used or {}),
+	)
 	session = current_station_session()
 	if session:
 		washing.save_draft(session.name, None)  # lô đã có mã: danh sách nạp dở không còn
@@ -552,3 +604,17 @@ def result(
 		ref_doctype,
 		ref_name,
 	)
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel(batch=None, reason=None):
+	"""R02 hủy lô rửa nhập sai trên Desk (A-112 D10, FR-M2-03.10): ``{"ok": true, "batch", "sets"}``.
+
+	Từ chối ``RUN_CANCEL_BLOCKED`` (409, ``error.items`` là bộ đã đi tiếp) hoặc ``REASON_REQUIRED`` (422) bằng body
+	``ok: false``; không phải R02 → 403. Người hủy là nhân viên của tài khoản Desk.
+	"""
+	batch = _required_str(batch, "batch")
+	try:
+		return {"ok": True, **run_cancel.cancel_wash(batch, reason)}
+	except BlockedError as error:
+		return reject_block(error.block, "Wash Batch", batch)

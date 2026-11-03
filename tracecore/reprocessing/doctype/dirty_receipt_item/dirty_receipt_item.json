@@ -1,7 +1,7 @@
 {
  "actions": [],
  "creation": "2026-10-24 09:00:00.000000",
- "description": "One set unit received on a dirty receipt: BOM version shown, confirmation state and abnormal note (FR-M2-01, FR-M2-23).",
+ "description": "One set unit received on a dirty receipt: BOM version shown, confirmation state and abnormal note.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -75,7 +75,7 @@
   },
   {
    "default": "0",
-   "description": "The set has an abnormal note, so assembly checks it in detail (FR-M2-23.3).",
+   "description": "The set has an abnormal note, so assembly checks it in detail.",
    "fieldname": "needs_review",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -120,7 +120,7 @@
    "read_only": 1
   },
   {
-   "description": "Cycle ID that was still valid and unused; it was voided at receipt (FR-M2-01.3).",
+   "description": "Cycle ID that was still valid and unused; it was voided at receipt.",
    "fieldname": "voided_pack",
    "fieldtype": "Link",
    "label": "Voided Cycle ID",
@@ -131,7 +131,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-24 09:00:00.000000",
+ "modified": "2026-11-01 21:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Dirty Receipt Item",

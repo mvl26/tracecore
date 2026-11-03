@@ -1751,7 +1751,7 @@ globalThis.tcPrintLabelPdf = async () => ({ok: true, filename: "x.pdf"});
 globalThis.tcPdfRetryButton = () => "";
 window.tcGateLabels = {};
 window.tcDecimal = (value) => String(value);
-globalThis.frappe = {boot: {time_zone: {system: "Asia/Ho_Chi_Minh"}}, csrf_token: "x"};
+globalThis.frappe = {boot: {time_zone: {system: "Asia/Ho_Chi_Minh"}}, csrf_token: "x", utils: {escape_html: esc}};
 const LOAD = "ME-261101-01";
 const MACHINE = "TB-0014";
 const flush = async () => { for (let i = 0; i < 60; i += 1) await null; };
@@ -1826,8 +1826,9 @@ const count = (html, text) => html.split(text).length - 1;
 def t5_run(testcase, body):
 	return run_js(
 		testcase,
-		[ERR, T5, T5B],
-		[[], ["T5Load", "t5DefaultStep"], ["T5Release"]],
+		# thứ tự như hook page_js: chương trình theo loại bộ (A-110) và vật tư (A-111) nạp trước T5
+		[ERR, "public/js/station_program_match.js", "public/js/station_consumables.js", T5, T5B],
+		[[], [], [], ["T5Load", "t5DefaultStep"], ["T5Release"]],
 		FAKE_STATION + T5_FLOW + body,
 	)
 

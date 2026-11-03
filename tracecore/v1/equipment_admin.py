@@ -145,3 +145,38 @@ def copy_program(program, equipment, new_code, client_ts=None):
 		frappe.clear_messages()
 		return reject_block(_copy_block(error), "Process Program", program, client_ts=timestamp)
 	return {"ok": True, "program": name}
+
+
+@frappe.whitelist(methods=["POST"])
+def consumable_targets(program, client_ts=None):
+	"""Chương trình đang dùng cùng loại chương trình và cùng loại máy để áp vật tư của `program` (A-111 D4).
+
+	Chỉ đọc nên không bắt buộc `client_ts` (tham số giữ cho thống nhất với các RPC khác của form).
+	"""
+	require_any_role(*ADMIN_ROLES)
+	return {"ok": True, "programs": programs.consumable_targets(_text(program, "program"))}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def copy_consumables(program, targets, client_ts=None):
+	"""Áp bảng vật tư của `program` sang các chương trình `targets` (FR-M5-02.7); sai một đích thì không áp đích nào.
+
+	Thành công: ``{"ok": true, "programs": [...]}``. Từ chối: ``PROGRAM_COPY_INVALID`` (422) mang thông báo đã dịch.
+	"""
+	require_any_role(*ADMIN_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	program = _text(program, "program")
+	if isinstance(targets, str):
+		targets = frappe.parse_json(targets)
+	if not isinstance(targets, list) or not all(isinstance(target, str) for target in targets):
+		raise BadRequestError(_("targets must be a list of program codes."))
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		# R02 chỉ đọc Process Program (Q7) nhưng được áp vật tư như sao chép chương trình, sau require_any_role
+		done = programs.copy_consumables(program, targets, ignore_permissions=True)
+	except frappe.ValidationError as error:
+		frappe.db.rollback(save_point=SAVEPOINT)
+		frappe.clear_messages()
+		return reject_block(_copy_block(error), "Process Program", program, client_ts=timestamp)
+	return {"ok": True, "programs": done}

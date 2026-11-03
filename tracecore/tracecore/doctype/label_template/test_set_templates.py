@@ -66,7 +66,26 @@ def _datamatrix_box(payload, x=24, y=24, module=6):
 	return x, y, x + modules * module, y + modules * module
 
 
+def use_standard_set_templates():
+	"""Chỉ mẫu chuẩn của thẻ bộ / nhãn khay đang dùng trong test: site test có thể có mẫu viện tự tạo (vd thẻ 40x20) đang
+	bật và mẫu chuẩn bị tắt; test chạy trong transaction được hoàn tác nên không đổi dữ liệu site."""
+	ensure_set_templates()
+	standard = [name for name, _width, _height in SIZES.values()]
+	for name in frappe.get_all(
+		"Label Template",
+		filters={"label_object": ["in", list(SIZES)], "is_active": 1, "name": ["not in", standard]},
+		pluck="name",
+	):
+		frappe.db.set_value("Label Template", name, "is_active", 0)
+	for name in standard:
+		frappe.db.set_value("Label Template", name, "is_active", 1)
+
+
 class TestSetTemplates(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		use_standard_set_templates()
+
 	@bru("BRU-ID-001")
 	def test_set_templates_installed_by_patch_and_install(self):
 		self.assertEqual(core_print.SET_LABELS, ("Set Tag", "Set Tray Label"))

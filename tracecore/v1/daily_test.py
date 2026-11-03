@@ -12,7 +12,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
 from tracecore.equipment import daily_test
 from tracecore.v1._common import current_station_session, require_any_role, station_session
-from tracecore.v1.wash import _optional_str, _required_str, _run
+from tracecore.v1.wash import _consumables, _flag, _optional_str, _required_str, _run
 
 DAILY_TEST_ROLES = ("TC R05", "TC R03", "TC R02", "System Manager")
 UNLOCK_ROLES = ("TC R02",)
@@ -36,16 +36,33 @@ def overview(station, include=None, client_ts=None, token=None):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*DAILY_TEST_ROLES)
 @idempotent
-def start_run(equipment, test_type, station, client_ts=None, token=None):
-	"""Bắt đầu một lần chạy test: máy Đang test, không nạp được (A-84)."""
+def start_run(
+	equipment, test_type, station, client_ts=None, token=None, consumables=None, consumables_confirmed=0
+):
+	"""Bắt đầu một lần chạy test: máy Đang test, không nạp được (A-84).
+
+	`consumables`, `consumables_confirmed` (A-111): vật tư của chương trình test đã xác nhận (số thực dùng, ô tick).
+	"""
 	require_any_role(*DAILY_TEST_ROLES)
 	equipment = _required_str(equipment, "equipment")
 	test_type = _required_str(test_type, "test_type")
+	used = _consumables(consumables)
+	confirmed = _flag(consumables_confirmed)
 	timestamp = parse_client_ts(client_ts)
 	return _run(
 		station,
 		timestamp,
-		lambda: {"ok": True, **daily_test.start_run(equipment, test_type, station, employee=_employee())},
+		lambda: {
+			"ok": True,
+			**daily_test.start_run(
+				equipment,
+				test_type,
+				station,
+				employee=_employee(),
+				consumables=used,
+				consumables_confirmed=confirmed,
+			),
+		},
 		"Equipment",
 		equipment,
 	)

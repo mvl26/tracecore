@@ -538,6 +538,50 @@ def count_cycle(set_unit):
 	return cint(unit.cycles_used)
 
 
+def passed_after(set_unit, step):
+	"""Các bước sau `step` của chu trình hiện hành đã Đạt (bộ đã đi tiếp), theo thứ tự."""
+	_check_step(step)
+	_status, cycle_no = _state(set_unit)
+	results = _results(set_unit, cycle_no) if cycle_no else {}
+	return [
+		later for later in STEPS[STEPS.index(step) + 1 :] if results.get(later, (PENDING, 0))[0] == "Pass"
+	]
+
+
+def revert(set_unit, step, ref_doctype, ref_name, reason, uncount=False):
+	"""Hủy lô rửa / mẻ nhập sai (A-112 D10, D11): cổng `step` Đạt do chứng từ (`ref_doctype`, `ref_name`) về Chưa.
+
+	Chỉ khi cổng của chu trình hiện hành do đúng chứng từ đó ghi và chưa bước sau nào Đạt; sai → lỗi, không ghi gì.
+	Bộ Vô khuẩn về Đang xử lý; `uncount` trừ lại chu trình ``count_cycle`` đã cộng lúc giải phóng. Lý do vào Audit Log.
+	"""
+	_check_step(step)
+	unit = _set_unit(set_unit, for_update=True)
+	cycle_no = _require_cycle(unit.name, cint(unit.current_cycle_no))
+	name = result_name(unit.name, cycle_no, step)
+	row = frappe.db.get_value(
+		"Step Gate Result", name, ["result", "ref_doctype", "ref_name"], as_dict=True, for_update=True
+	)
+	if not row or row.result != "Pass" or (row.ref_doctype, row.ref_name) != (ref_doctype, ref_name):
+		frappe.throw(
+			_("Step {0} of set {1} was not passed by {2} {3}; it cannot be reverted.").format(
+				step, unit.name, ref_doctype, ref_name
+			)
+		)
+	results = _results(unit.name, cycle_no, for_update=True)
+	if any(results.get(later, (PENDING, 0))[0] == "Pass" for later in STEPS[STEPS.index(step) + 1 :]):
+		frappe.throw(_("Set {0} has already passed a later step.").format(unit.name))
+	gate_row = frappe.get_doc("Step Gate Result", name, for_update=True)
+	gate_row.result = PENDING
+	gate_row.save(ignore_permissions=True)
+	fields = {}
+	if unit.status == "Sterile":
+		fields["status"] = "Processing"
+	if uncount:
+		fields["cycles_used"] = max(cint(unit.cycles_used) - 1, 0)
+	unit.flags.tc_audit_reason = event_reason(f"revert {step}", reason)
+	_save_lifecycle(unit, None, {"ref_doctype": ref_doctype, "ref_name": ref_name}, **fields)
+
+
 def return_to_receipt(set_unit):
 	"""Gói hết hiệu lực trong kho: bộ Vô khuẩn sang Chờ tiếp nhận để đưa về khu bẩn (FR-M2-14); bỏ Cycle ID hiện hành.
 

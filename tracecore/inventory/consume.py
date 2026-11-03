@@ -17,15 +17,18 @@ import frappe
 from frappe import _
 from frappe.utils import flt, getdate, strip_html_tags
 
-from tracecore.core import notification
+from tracecore.core import notification, run_consumables
+from tracecore.core.errors import Block, BlockedError
 from tracecore.inventory.receipt import today_vn
 
 ISSUE = "Material Issue"
 SAVEPOINT = "tc_consume"
 NO_EXPIRY = getdate("9999-12-31")
 PRECISION = 6
-WASH, LOAD, LAUNDRY = "Wash Batch", "Sterilization Load", "Laundry Batch"
-RETRY_SOURCES = (WASH, LOAD, LAUNDRY)
+WASH, LOAD, LAUNDRY, DAILY = "Wash Batch", "Sterilization Load", "Laundry Batch", "Daily Test"
+RETRY_SOURCES = (WASH, LOAD, LAUNDRY, DAILY)
+# người vận hành của nguồn (Company dự phòng, A-78); Daily Test ghi người chạy test ở `tested_by`
+OPERATOR_FIELD = {DAILY: "tested_by"}
 
 
 class CompanyUndetermined(frappe.ValidationError):
@@ -152,7 +155,9 @@ def _machine_company(source_doctype, source_name):
 def _operator_company(source_doctype, source_name):
 	if source_doctype not in RETRY_SOURCES:
 		return None
-	operator = frappe.db.get_value(source_doctype, source_name, "operator")
+	operator = frappe.db.get_value(
+		source_doctype, source_name, OPERATOR_FIELD.get(source_doctype, "operator")
+	)
 	return (operator and frappe.db.get_value("Employee", operator, "company")) or None
 
 
@@ -267,15 +272,53 @@ def submit_issue(rows, source_doctype, source_name, reason, draft=None):
 # --- người nghe hook của M2 --------------------------------------------------------------------------------------
 
 
+INDICATOR_GROUPS = ("Chemical Indicator", "Biological Indicator")
+INDICATOR_SOURCE = {WASH: "wash_batch", LOAD: "load"}
+
+
+def _is_indicator(item):
+	"""Vật tư nhóm chỉ thị hóa học, sinh học: chỉ trừ theo lô đã quét/ghi, không theo định mức (A-112 (c))."""
+	return frappe.db.get_value("Item", item, "tc_item_group_cssd") in INDICATOR_GROUPS
+
+
 def _norms(program):
+	"""Định mức của chương trình, bỏ chỉ thị hóa học, sinh học (A-111 D3: chỉ nhắc, không trừ theo chương trình); A-112
+	bỏ cả dòng cũ chưa có vai trò mà vật tư thuộc nhóm chỉ thị."""
 	if not program:
 		return []
-	return frappe.get_all(
+	rows = frappe.get_all(
 		"Program Consumable",
 		filters={"parent": program, "parenttype": "Process Program"},
-		fields=["item", "uom", "qty_per_load", "qty_per_pack", "qty_per_kg"],
+		fields=["item", "role", "uom", "qty_per_load", "qty_per_pack", "qty_per_kg"],
 		order_by="idx",
 	)
+	# lọc ở Python: dòng cũ chưa có vai trò (NULL) phải được giữ, SQL "not in" sẽ loại mất
+	return [
+		row
+		for row in rows
+		if row.role not in run_consumables.NOT_ISSUED_ROLES and not _is_indicator(row.item)
+	]
+
+
+def _without_indicators(lines):
+	return [line for line in lines if not _is_indicator(line["item"])]
+
+
+def _indicator_lines(source_doctype, source_name, packs=()):
+	"""Chỉ thị trừ đúng lô (FR-M6-03.7): mỗi gói 1 cái theo `Pack.ci_batch` quét ở T4, mỗi kết quả chỉ thị của lô/mẻ có
+	lô trong kho (`Load Indicator Result.batch`) 1 cái."""
+	batches = [frappe.db.get_value("Pack", pack, "ci_batch") for pack in packs or ()] + frappe.get_all(
+		"Load Indicator Result",
+		filters={INDICATOR_SOURCE[source_doctype]: source_name, "batch": ["is", "set"]},
+		pluck="batch",
+	)
+	counts = defaultdict(float)
+	for batch in filter(None, batches):
+		counts[batch] += 1
+	return [
+		{"item": frappe.db.get_value("Batch", batch, "item"), "qty": qty, "batch": batch}
+		for batch, qty in counts.items()
+	]
 
 
 def stock_qty_of(item, qty, uom=None):
@@ -402,11 +445,36 @@ def _run(source_doctype, source_name, lines, reason, strict=False):
 				", ".join(f"{row['item']}: {row['qty']}" for row in result["short"]),
 			),
 		)
+	if result["created"]:
+		# A-111 D8: lô FEFO đã xuất ghi vào dòng vật tư của lô/mẻ/test (nguồn có bảng vật tư)
+		run_consumables.record_lots(source_doctype, source_name, result["lots"])
 	return result
 
 
 def _wash_lines(ctx):
-	"""Dòng trừ kho của lô rửa Đạt: hóa chất theo lô và số lượng đã ghi (0 → định mức), cộng vật tư khác của chương trình."""
+	"""Dòng trừ kho của lô rửa Đạt.
+
+	A-111: lô có bảng vật tư đã xác nhận thì trừ đúng số thực dùng (hóa chất ghim lô đã chọn ở T2), hóa chất của lô chưa có
+	trong bảng vẫn trừ như cũ. Lô cũ: hóa chất theo lô và số lượng đã ghi (0 → định mức), cộng vật tư khác của chương trình.
+	"""
+	chemicals = ctx.get("chemicals") or []
+	indicators = _indicator_lines(WASH, ctx["batch"])
+	confirmed = run_consumables.issue_lines(
+		WASH, ctx["batch"], {row["item"]: row.get("lot") for row in chemicals if row.get("lot")}
+	)
+	if confirmed is not None:
+		listed = set(
+			frappe.get_all(
+				run_consumables.CHILD, filters={"parent": ctx["batch"], "parenttype": WASH}, pluck="item"
+			)
+		)
+		extra = [row for row in chemicals if row["item"] not in listed]
+		lines = confirmed + _legacy_wash_lines({**ctx, "chemicals": extra}, only_chemicals=True)
+		return _without_indicators(lines) + indicators
+	return _legacy_wash_lines(ctx) + indicators
+
+
+def _legacy_wash_lines(ctx, only_chemicals=False):
 	norms = _norms(ctx.get("program"))
 	units = len(ctx.get("sets") or [])
 	by_item = {norm.item: norm for norm in norms}
@@ -417,6 +485,8 @@ def _wash_lines(ctx):
 		qty = flt(chemical.get("qty")) or (_norm_stock_qty(norm, units) if norm else 0)
 		lines.append({"item": chemical["item"], "qty": qty, "batch": chemical.get("lot")})
 		covered.add(chemical["item"])
+	if only_chemicals:
+		return lines
 	lines += [
 		{"item": norm.item, "qty": _norm_stock_qty(norm, units)} for norm in norms if norm.item not in covered
 	]
@@ -477,6 +547,13 @@ def _retry_plan(source_doctype, source_name):
 			)
 		ctx = {"load": doc.name, "program": doc.program, "packs": [row.pack for row in doc.packs]}
 		return lambda: _load_lines(ctx), _load_reason(ctx)
+	if source_doctype == DAILY:
+		if not doc.result:
+			frappe.throw(
+				_("Daily test {0} has no result yet, so nothing is consumed for it.").format(source_name)
+			)
+		ctx = {"daily_test": doc.name, "lot": doc.lot}
+		return lambda: _daily_lines(ctx) or [], _daily_reason(ctx)
 	if doc.batch_type == "Outsourced" or doc.status == "Running" or not doc.program:
 		frappe.throw(
 			_("Laundry batch {0} is outsourced, still running or has no program: nothing to consume.").format(
@@ -549,8 +626,15 @@ def on_laundry_complete(ctx):
 
 
 def _load_lines(ctx):
+	"""A-111: mẻ có bảng vật tư đã xác nhận thì trừ số thực dùng; mẻ cũ theo định mức x số gói (bỏ CI/BI).
+	A-112: cộng chỉ thị theo đúng lô quét ở T4 và lô ghi ở kết quả chỉ thị của mẻ."""
+	indicators = _indicator_lines(LOAD, ctx["load"], ctx.get("packs"))
+	confirmed = run_consumables.issue_lines(LOAD, ctx["load"])
+	if confirmed is not None:
+		return _without_indicators(confirmed) + indicators
 	packs = len(ctx.get("packs") or [])
-	return [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in _norms(ctx.get("program"))]
+	norms = [{"item": norm.item, "qty": _norm_stock_qty(norm, packs)} for norm in _norms(ctx.get("program"))]
+	return norms + indicators
 
 
 def _load_reason(ctx):
@@ -563,3 +647,69 @@ def on_load_release(ctx):
 	if lines is None:
 		return
 	_run(LOAD, ctx["load"], lines, _load_reason(ctx))
+
+
+def _daily_lines(ctx):
+	"""Dòng trừ kho của lần test đầu ngày (A-111 D2); gói test ghim lô đã nhập ở form test khi lô đó là `Batch` của nó.
+
+	None khi lần test không có bảng vật tư (chưa gắn chương trình test, hoặc dữ liệu trước A-111).
+	"""
+	lot = (ctx.get("lot") or "").strip()
+	items = frappe.get_all(
+		run_consumables.CHILD, filters={"parent": ctx["daily_test"], "parenttype": DAILY}, pluck="item"
+	)
+	pinned = {item: lot for item in items if lot and frappe.db.exists("Batch", {"name": lot, "item": item})}
+	lines = run_consumables.issue_lines(DAILY, ctx["daily_test"], pinned)
+	# lô gói test ghi lúc có kết quả là gói thật đã dùng: ưu tiên hơn lô gợi ý trên dòng (A-112 E5)
+	return [{**line, "batch": pinned.get(line["item"]) or line["batch"]} for line in lines or []] or lines
+
+
+def _daily_reason(ctx):
+	return _("Automatic consumption of daily test {0}").format(ctx["daily_test"])
+
+
+def cancel_issue(source_doctype, source_name):
+	"""Lô rửa / mẻ bị hủy (A-112 D10, D11; FR-M6-03.9): hủy phiếu xuất tiêu hao đã ghi sổ của nguồn, tồn đúng lô trả về.
+
+	Nguồn còn phiếu Nháp (lần trừ kho dừng giữa chừng) thì từ chối ``RUN_CANCEL_BLOCKED``: R09 xử lý phiếu trước. Trả tên
+	các phiếu đã hủy.
+	"""
+	draft = _draft_entry(source_doctype, source_name)
+	if draft:
+		raise BlockedError(
+			Block(
+				"RUN_CANCEL_BLOCKED",
+				_("Cannot cancel"),
+				_("{0} {1} has a draft stock issue {2}.").format(_(source_doctype), source_name, draft),
+				_("Ask R09 to submit or delete the draft issue, then cancel again."),
+			)
+		)
+	cancelled = []
+	for name in frappe.get_all(
+		"Stock Entry",
+		filters={"tc_source_doctype": source_doctype, "tc_source_name": source_name, "docstatus": 1},
+		pluck="name",
+	):
+		entry = frappe.get_doc("Stock Entry", name)
+		entry.flags.ignore_permissions = True
+		entry.cancel()
+		cancelled.append(name)
+	if cancelled:
+		notification.resolve("CONSUMPTION_FAILED", source_doctype, source_name)
+	return cancelled
+
+
+def on_wash_cancel(ctx):
+	cancel_issue(WASH, ctx["batch"])
+
+
+def on_load_cancel(ctx):
+	cancel_issue(LOAD, ctx["load"])
+
+
+def on_daily_test_record(ctx):
+	"""Test đầu ngày đã ghi kết quả: trừ vật tư đã xác nhận lúc Bắt đầu test; lần test không có vật tư thì bỏ qua."""
+	lines = _lines_or_notify(DAILY, ctx["daily_test"], lambda: _daily_lines(ctx), [])
+	if not lines:
+		return
+	_run(DAILY, ctx["daily_test"], lines, _daily_reason(ctx))
