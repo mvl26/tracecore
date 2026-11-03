@@ -1,6 +1,6 @@
 """Tên bệnh viện cạnh logo trên thanh điều hướng Desk (tc_launcher.js).
 
-Mỗi site là một bệnh viện: tên lấy từ Website Settings › App Name, logo từ Website Settings › App Logo (Frappe tự đọc).
+Mỗi site là một bệnh viện: tên lấy từ Website Settings, ô App Name; logo từ ô App Logo (Frappe tự đọc).
 Chưa đặt tên thì giữ "TraceCore".
 """
 
