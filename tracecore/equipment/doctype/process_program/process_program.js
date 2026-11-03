@@ -108,7 +108,9 @@ function program_show_set_types(frm) {
 	if (frm.is_new() || !rows.length) {
 		field.$wrapper.html(
 			`<p class="text-muted">${frappe.utils.escape_html(
-				__("No set type uses this program yet. Add it on the set type, tab Programs by Machine.")
+				__(
+					"No set type uses this program yet. Add it on the set type, tab Programs by Machine."
+				)
 			)}</p>`
 		);
 		return;
@@ -122,10 +124,12 @@ function program_show_set_types(frm) {
 			)}</a></td>
 				<td>${esc(row.set_type_name || "")}</td>
 				<td>${esc(__(row.method || ""))}</td>
-				<td>${esc(row.is_default ? __("Default") : __("Allowed"))}</td>
+				<td>${esc(row.is_default ? __("Default program") : __("Allowed program"))}</td>
 				<td>${
 					row.mismatch
-						? `<span class="indicator-pill orange">${esc(__("Method does not match"))}</span>`
+						? `<span class="indicator-pill orange">${esc(
+								__("Method does not match")
+						  )}</span>`
 						: ""
 				}</td>
 			</tr>`

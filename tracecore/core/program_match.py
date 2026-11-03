@@ -59,15 +59,17 @@ def validate_rows(doc) -> None:
 		label = f"{program.name} ({program.program_name})"
 		if not row.stage:
 			errors.append(
-				_("Row {0}: program {1} belongs to equipment {2}, which is not a washer or a sterilizer.").format(
-					row.idx, label, program.equipment
-				)
+				_(
+					"Row {0}: program {1} belongs to equipment {2}, which is not a washer or a sterilizer."
+				).format(row.idx, label, program.equipment)
 			)
 			continue
 		if not program.is_active:
 			errors.append(_("Row {0}: program {1} is no longer in use.").format(row.idx, label))
 		if program.program_kind == TEST_PROGRAM:
-			errors.append(_("Row {0}: program {1} is a test program and takes no set.").format(row.idx, label))
+			errors.append(
+				_("Row {0}: program {1} is a test program and takes no set.").format(row.idx, label)
+			)
 		method = STERILIZER_METHODS.get(equipment_type)
 		if method and doc.method and method != doc.method:
 			errors.append(
@@ -97,7 +99,9 @@ def set_types_of(program):
 	``mismatch`` = 1 khi chương trình tiệt khuẩn khác phương pháp của loại bộ (dữ liệu cũ, hoặc loại bộ đổi sau đó).
 	"""
 	method = STERILIZER_METHODS.get(
-		frappe.db.get_value("Equipment", frappe.db.get_value("Process Program", program, "equipment"), "equipment_type")
+		frappe.db.get_value(
+			"Equipment", frappe.db.get_value("Process Program", program, "equipment"), "equipment_type"
+		)
 	)
 	rows = frappe.db.sql(
 		"""select row.parent as set_type, st.set_type_name, st.method, row.is_default
@@ -193,10 +197,18 @@ def _program_label(program):
 	return frappe.db.get_value("Process Program", program, "program_name") or program
 
 
-def admit(set_type, equipment, program):
-	"""Nhãn của một bộ/gói quét vào máy: ``{"fit", "default"}``; mức ``Block`` từ chối bộ ngoài danh sách (D7)."""
+def label(set_type, equipment, program):
+	"""Nhãn của một bộ/gói trên máy, không chặn: ``{"fit", "default"}``; chưa có chương trình thì ``fit`` là None."""
 	entry = machine_map(equipment).get(set_type)
-	result = {"fit": entry_fit(entry, program), "default": entry["default"] if entry else None}
+	return {
+		"fit": entry_fit(entry, program) if program else None,
+		"default": entry["default"] if entry else None,
+	}
+
+
+def admit(set_type, equipment, program):
+	"""Như `label`, nhưng mức ``Block`` từ chối bộ/gói ngoài danh sách (D7)."""
+	result = label(set_type, equipment, program)
 	if result["fit"] == OUTSIDE and control_level() == BLOCK:
 		raise BlockedError(
 			Block(
@@ -220,7 +232,9 @@ def review(set_types, equipment, program, operator=None, override_reason=None):
 	tới được đây vì bộ đã bị loại lúc nạp, vẫn chặn cho chắc.
 	"""
 	mapping = machine_map(equipment)
-	outside = sorted(name for name in set(set_types or []) if entry_fit(mapping.get(name), program) == OUTSIDE)
+	outside = sorted(
+		name for name in set(set_types or []) if entry_fit(mapping.get(name), program) == OUTSIDE
+	)
 	reason = (override_reason or "").strip() or None
 	level = control_level()
 	if outside and level == BLOCK:

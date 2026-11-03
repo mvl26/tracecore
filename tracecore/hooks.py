@@ -84,6 +84,8 @@ page_js = {
 		"public/js/station_error.js",
 		"public/js/station_t4.js",
 		"public/js/station_t6.js",
+		# A-110: chương trình theo máy của loại bộ, dùng chung cho T2 và T5
+		"public/js/station_program_match.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		# A-68: chọn tay thiết bị và bộ/gói khi máy quét hỏng (shell gọi qua TcPicker)

@@ -1286,7 +1286,12 @@ frappe.ui.form.on("Instrument Set Type", {
 				program_kind: ["!=", "Test"],
 				equipment_type: [
 					"in",
-					["Ultrasonic Cleaner", "Washer-Disinfector", "Steam Sterilizer", "Plasma Sterilizer"],
+					[
+						"Ultrasonic Cleaner",
+						"Washer-Disinfector",
+						"Steam Sterilizer",
+						"Plasma Sterilizer",
+					],
 				],
 			},
 		}));

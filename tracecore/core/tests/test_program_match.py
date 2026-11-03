@@ -110,8 +110,13 @@ class TestMachineMapAndFit(ProgramMatchCase):
 
 	def test_machine_map_lists_default_and_allowed(self):
 		mapping = program_match.machine_map(self.washer.name)
-		self.assertEqual(mapping[self.ortho.name], {"default": self.wash_a.name, "allowed": [self.wash_a.name, self.wash_b.name]})
-		self.assertEqual(mapping[self.micro.name], {"default": self.wash_b.name, "allowed": [self.wash_b.name]})
+		self.assertEqual(
+			mapping[self.ortho.name],
+			{"default": self.wash_a.name, "allowed": [self.wash_a.name, self.wash_b.name]},
+		)
+		self.assertEqual(
+			mapping[self.micro.name], {"default": self.wash_b.name, "allowed": [self.wash_b.name]}
+		)
 		self.assertNotIn(self.plain.name, mapping)
 		self.assertEqual(program_match.machine_map(self.steam.name), {})
 
@@ -165,9 +170,13 @@ class TestControlLevel(ProgramMatchCase):
 	@bru("BRU-REP-017")
 	def test_admit_blocks_outside_only_at_block_level(self):
 		set_control("Warn")
-		self.assertEqual(program_match.admit(self.micro.name, self.washer.name, self.wash_a.name)["fit"], "Outside")
+		self.assertEqual(
+			program_match.admit(self.micro.name, self.washer.name, self.wash_a.name)["fit"], "Outside"
+		)
 		set_control("Override")
-		self.assertEqual(program_match.admit(self.micro.name, self.washer.name, self.wash_a.name)["fit"], "Outside")
+		self.assertEqual(
+			program_match.admit(self.micro.name, self.washer.name, self.wash_a.name)["fit"], "Outside"
+		)
 		set_control("Block")
 		with self.assertRaises(BlockedError) as raised:
 			program_match.admit(self.micro.name, self.washer.name, self.wash_a.name)
@@ -207,6 +216,8 @@ class TestProgramSetTypes(ProgramMatchCase):
 	def test_program_lists_set_types_using_it(self):
 		ortho = link(set_type(), (self.steam_134, True))
 		rows = program_match.set_types_of(self.steam_134.name)
-		self.assertEqual([(row["set_type"], row["is_default"], row["mismatch"]) for row in rows], [(ortho.name, 1, 0)])
+		self.assertEqual(
+			[(row["set_type"], row["is_default"], row["mismatch"]) for row in rows], [(ortho.name, 1, 0)]
+		)
 		frappe.db.set_value("Instrument Set Type", ortho.name, "method", "Plasma")
 		self.assertEqual(program_match.set_types_of(self.steam_134.name)[0]["mismatch"], 1)
