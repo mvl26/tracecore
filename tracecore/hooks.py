@@ -76,7 +76,8 @@ app_include_js = ["tracecore.bundle.js"]
 # T5b dỡ mẻ, giải phóng (SCR-10, FEAT-023), T7 cấp phát (SCR-12/SCR-36, FEAT-026) và T8 quét sử dụng (SCR-37,
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 # mã trạm đổi thì bỏ script Page trạm trong localStorage của trình duyệt (tc_page_cache.js)
-extend_bootinfo = "tracecore.ui.page_cache.extend_bootinfo"
+# tên bệnh viện cạnh logo trên thanh điều hướng lấy theo Website Settings của site (tc_launcher.js)
+extend_bootinfo = ["tracecore.ui.page_cache.extend_bootinfo", "tracecore.ui.branding.extend_bootinfo"]
 
 page_js = {
 	"station": [
