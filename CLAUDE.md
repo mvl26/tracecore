@@ -13,6 +13,7 @@ Trả lời người dùng bằng tiếng Việt; thuật ngữ kỹ thuật gi�
 | `docs/architecture.md` | Module, DocType (§5.3), naming series (§5.3.3), runtime, 15 ADR (ADR-015 engine phiếu giám sát) |
 | `docs/ux-foundations.md` | 4 surface, 63 màn SCR đã duyệt (SCR-47..66 = v1.12), luồng, anchor screens |
 | `docs/design.md` + `docs/tokens.json` | Mọi giá trị giao diện; khi lệch nhau `tokens.json` thắng |
+| `docs/design-refs/v1.12/` | Ảnh tham chiếu 20 màn SCR-47..66 (A-113) — mẫu bố cục cho FEAT-056..074; không đo giá trị trên ảnh |
 | `docs/implementation-plan.md` | 74 FEAT (FEAT-056..074 = v1.12, epic E-12..E-19, sprint S6–S9, DoD v1.12 §6.1), thứ tự sprint, acceptance criteria, engineering foundations F-1..F-22 |
 | `docs/rtm.md` | Truy vết FR/NFR → UC → SCR → FEAT |
 

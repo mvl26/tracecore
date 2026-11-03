@@ -414,6 +414,8 @@ graph TD
 
 ### B5. Screen inventory hợp nhất (63 màn hình, ID giữ nguyên)
 
+> **Ảnh tham chiếu v1.12 (03/11/2026):** 20 màn SCR-47..66 có ảnh tại `docs/design-refs/v1.12/` (bảng ánh xạ SCR → UC → FEAT trong README của thư mục). Ảnh là mẫu bố cục; giá trị giao diện vẫn lấy từ `tokens.json` / `design.md`.
+
 Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17; `ảnh NN` = có ảnh design-refs; `—` = chưa có prototype/ảnh (chỉ đặc tả #09 hoặc SRS/UC v1.11); `— (v1.12, BA SRS-lite)` = màn mới A-113, chỉ có đặc tả BA v1.12 (luồng chính + FR + AC), chưa có prototype/ảnh. FR chính theo use-cases.md Phụ lục A. Archetype theo #09 §5; màn mới gán theo cùng 5 archetype. [v1.12] **SCR-43 tái dùng** cho hồ sơ ánh xạ cột nhập file (mẫu số, phẫu thuật, vi sinh WHONET/CSV, hóa chất — FR-M9-26): không tạo màn import riêng; SCR-66 chỉ liên kết sang SCR-43.
 
 | SCR | Tên màn hình | Surface | Archetype #09 | UC | FR chính | Trạng thái nguồn |
