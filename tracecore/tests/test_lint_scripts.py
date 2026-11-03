@@ -45,9 +45,7 @@ class TestCheckBruCoverage(FrappeTestCase):
 	):  # 49 gốc; A-104 BRU-LIN-005..007; A-110 BRU-REP-017; A-111 BRU-INV-003; A-112 BRU-INV-004, BRU-REP-018
 		known = self.bru.known_brus(self.srs)
 		self.assertEqual(len(known), 56, msg=sorted(known))
-		self.assertTrue(
-			{"BRU-ID-001", "BRU-INV-004", "BRU-REP-018", "BRU-WST-004"} <= known
-		)
+		self.assertTrue({"BRU-ID-001", "BRU-INV-004", "BRU-REP-018", "BRU-WST-004"} <= known)
 
 	def test_unknown_marker_fails(self):
 		repo = TempRepo()
