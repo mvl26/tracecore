@@ -1839,6 +1839,11 @@ html:has(.tc-work) {
 	font-size: var(--tc-fs-sm);
 	text-align: right;
 }
+
+.tc-help-address {
+	margin: var(--tc-sp-3) 0 0;
+	overflow-wrap: anywhere;
+}
 /* end trợ giúp */
 /* thu gom chất thải (SCR-38, FEAT-047): mã màu TT 20/2021 luôn là chữ cỡ lớn */
 .tc-waste-color {
