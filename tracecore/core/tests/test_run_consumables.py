@@ -8,6 +8,8 @@ from tracecore.equipment import programs
 from tracecore.equipment.report.program_consumable_gaps import program_consumable_gaps as gaps
 from tracecore.tests import factories
 from tracecore.tests.utils import IsolatedTestCase, bru
+from tracecore.v1 import equipment_admin
+from tracecore.v1.tests.test_equipment_admin_api import call
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
 
@@ -210,6 +212,22 @@ class TestCopyAndReport(ConsumablesCase):
 		for target in (regular.name, self.wash.name, self.source.name):
 			with self.assertRaises(frappe.ValidationError):
 				programs.copy_consumables(self.source.name, [target])
+
+	def test_rpc_lists_targets_and_applies(self):
+		listed = equipment_admin.consumable_targets(self.source.name)
+		self.assertIn(self.target.name, [row["program"] for row in listed["programs"]])
+		result = call(equipment_admin.copy_consumables, program=self.source.name, targets=[self.target.name])
+		self.assertEqual(result, {"ok": True, "programs": [self.target.name]})
+		self.assertEqual(len(frappe.get_doc("Process Program", self.target.name).consumables), 2)
+
+	def test_rpc_refuses_a_wrong_target_and_applies_nothing(self):
+		result = call(
+			equipment_admin.copy_consumables,
+			program=self.source.name,
+			targets=f'["{self.target.name}", "{self.wash.name}"]',
+		)
+		self.assertEqual(result["error"]["code"], "PROGRAM_COPY_INVALID")
+		self.assertEqual(len(frappe.get_doc("Process Program", self.target.name).consumables), 1)
 
 	def test_report_lists_programs_with_gaps(self):
 		empty = factories.make_wash_program(self.washer.name)

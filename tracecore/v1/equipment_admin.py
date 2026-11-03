@@ -149,9 +149,11 @@ def copy_program(program, equipment, new_code, client_ts=None):
 
 @frappe.whitelist(methods=["POST"])
 def consumable_targets(program, client_ts=None):
-	"""Chương trình đang dùng cùng loại chương trình và cùng loại máy để áp vật tư của `program` (A-111 D4); chỉ đọc."""
+	"""Chương trình đang dùng cùng loại chương trình và cùng loại máy để áp vật tư của `program` (A-111 D4).
+
+	Chỉ đọc nên không bắt buộc `client_ts` (tham số giữ cho thống nhất với các RPC khác của form).
+	"""
 	require_any_role(*ADMIN_ROLES)
-	parse_client_ts(client_ts)
 	return {"ok": True, "programs": programs.consumable_targets(_text(program, "program"))}
 
 
