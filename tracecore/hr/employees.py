@@ -25,6 +25,25 @@ def register_code(doc):
 		code_registry.register(doc.name, CODE_PREFIX, "Employee", doc.name)
 
 
+def register_card_code(doc):
+	"""Ghi thẻ riêng `tc_card_id` (khác mã NV- của chính nhân viên) vào sổ mã (FR-M9-07.4, FEAT-079).
+
+	Nhãn QR thẻ in đúng mã thẻ mà trạm tra khi đăng nhập, nên mã đó phải có trong sổ mã (prefix CARD). Mã không hợp lệ
+	làm thẻ (quá ngắn, giống mã hệ thống…) thì bỏ qua, không chặn lưu hồ sơ: thẻ vẫn đăng nhập được, chỉ chưa in được nhãn.
+	"""
+	card = doc.get("tc_card_id")
+	if not card or card == doc.name or code_registry.is_issued(card):
+		return
+	try:
+		code_registry.register_card(card, "Employee", doc.name)
+	except code_registry.InvalidCardCodeError:
+		pass
+
+
+def on_update(doc, method=None):
+	register_card_code(doc)
+
+
 def after_insert(doc, method=None):
 	register_code(doc)
 	if not doc.tc_card_id:
