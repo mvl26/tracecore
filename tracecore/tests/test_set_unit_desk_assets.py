@@ -77,7 +77,7 @@ class TestSetUnitDeskAssets(IsolatedTestCase):
 			"tracecore.v1.set_unit.print_tags",
 			"tracecore.v1.set_unit.reprint_tag",
 			"tracecore.v1.set_unit.cancel_print",
-			"tracecore.v1.set_unit.print_status",
+			"tracecore.v1.set_unit.tags_pdf",  # A-114: in PDF thay cho hỏi trạng thái print_status
 			"tracecore.v1.set_unit.batch_csv",
 			"tracecore.v1.set_type.form_context",
 			"tracecore.v1.set_type.department_query",
@@ -122,7 +122,7 @@ class TestSetUnitDeskAssets(IsolatedTestCase):
 			# mỗi trạng thái có màu riêng trong bảng màu, nhãn luôn là chữ đã dịch
 			self.assertTrue(f'"{status}":' in shared or f"\t{status}:" in shared, status)
 		self.assertIn('__(status, null, "Set Unit")', shared)
-		for label in ("Queued for printing", "Printed", "Not printed: {0}", "Waiting for the Station Agent"):
+		for label in ("Ready to print", "Printed", "Not printed: {0}", "Waiting (old print job)"):
 			self.assertIn(f'__("{label}"', shared)
 		self.assertIn("var(--tc-font-mono)", shared)
 

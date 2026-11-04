@@ -10,10 +10,12 @@ from datetime import time
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import flt
 
 from tracecore.core import code_registry, error_codes, extension, gs1
 
 _TIME = re.compile(r"^(\d{1,2}):(\d{2})$")
+MAX_LABEL_MM = 200
 
 
 def parse_times(text):
@@ -57,8 +59,20 @@ class TraceCoreSettings(Document):
 		self.gtin_indicator_digit = self.gtin_indicator_digit or "0"
 		self._show_gtin_counter()
 
+	def _validate_label_size(self):
+		"""Khổ nhãn chung (A-114 d): mọi PDF nhãn dùng khổ này; để trống/0 thì `core.label_pdf` dùng 60 x 40 mm."""
+		for field in ("label_width_mm", "label_height_mm"):
+			value = flt(self.get(field))
+			if value < 0 or value > MAX_LABEL_MM:
+				frappe.throw(
+					_("{0} must be greater than 0 and at most {1} mm.").format(
+						_(self.meta.get_label(field)), MAX_LABEL_MM
+					)
+				)
+
 	def validate(self):
 		self._validate_gs1()
+		self._validate_label_size()
 		# giờ nhắc nhật ký môi trường: lưu dạng chuẩn "HH:MM, HH:MM"
 		self.env_reminder_times = ", ".join(t.strftime("%H:%M") for t in parse_times(self.env_reminder_times))
 		error_codes.validate_rules(self)

@@ -1,17 +1,15 @@
-"""Print Job: một lệnh in nhãn trong hàng đợi (ghi bởi tracecore.core.print).
+"""Print Job: vết một lần in nhãn (ghi bởi tracecore.core.print).
 
-`Waiting` = chưa có máy in đúng loại nhãn nên chưa có ZPL (`payload` trống); `set_roll` render rồi chuyển `Queued`.
+A-114: nhãn in ra PDF qua hộp thoại In của trình duyệt nên `payload` (ZPL) chỉ còn là vết, có thể trống; job Desk in
+bằng máy in chung có thể không có trạm. `Waiting` chỉ còn ở dữ liệu cũ (patch `a114_release_waiting_print_jobs`).
 """
 
 import frappe
-from frappe import _
 from frappe.model.document import Document
 
 
 class PrintJob(Document):
-	def validate(self):
-		if self.status == "Queued" and not self.payload:
-			frappe.throw(_("A queued print job needs label content."))
+	pass
 
 
 def on_doctype_update():

@@ -531,6 +531,9 @@ def _ensure_printer(roll_steam):
 	frappe.db.set_value("Printer", name, {"is_active": 1, "host": "", "supports_unicode": 0})
 	if frappe.db.get_value("Printer", name, "label_type_loaded") != STEAM_LABEL:
 		core_print.set_roll(name, roll_steam)
+	# A-114: máy này cũng là máy in nhãn chung của site dev/test nếu chưa chọn máy khác
+	if not frappe.db.get_single_value("TraceCore Settings", "label_printer"):
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", name)
 	return name
 
 

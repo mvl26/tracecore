@@ -6,14 +6,13 @@
 // fetch thay frappe.call: Frappe tự hiện "Không tìm thấy" cho HTTP 404 và bỏ mất body, trong khi CODE_DISABLED (409),
 // EQUIPMENT_NOT_FOUND (404), ROLL_NOT_LABEL (422)… mang body {message: {ok: false, error}} cần hiện cho người dùng.
 // Mọi kiểm tra nghiệp vụ (mã Active, thiết bị Retired, số lượng cuộn, máy in hoạt động) nằm ở server.
-// Sau khi gửi, hộp thoại hỏi tracecore.v1.print.job_status vài giây một lần để hiện "Đã in" / "Không in được: lý do"
-// thay vì dừng ở "Đã xếp hàng" (đường in server là at-least-once, kết quả thật do worker ghi).
+// Sau khi gửi, hộp thoại lấy một PDF cho cả loạt (tracecore.v1.print.objects_pdf) và mở hộp thoại In (A-114).
 
 frappe.provide("tracecore.codes");
 
 const TC_CODES_LABEL = "tracecore.v1.print.object_label";
 const TC_CODES_PREVIEW = "tracecore.v1.print.object_preview";
-const TC_CODES_JOB_STATUS = "tracecore.v1.print.job_status";
+const TC_CODES_OBJECTS_PDF = "tracecore.v1.print.objects_pdf";
 const TC_CODES_ISSUE_ROLLS = "tracecore.v1.codes.issue_rolls";
 const TC_CODES_LIST_ROLLS = "tracecore.v1.codes.list_rolls";
 
@@ -23,9 +22,6 @@ tracecore.codes.PRINT_ROLES = ["TC R10", "System Manager"];
 tracecore.codes.MAX_BULK = 50;
 // Chỉ để hiển thị trong hộp thoại; server (v1.codes.issue_rolls) mới là nơi kiểm tra
 tracecore.codes.MAX_ROLLS = 200;
-// Hỏi kết quả lệnh in: mỗi 2 giây, tối đa 10 lần (~20 giây) rồi để server tự thử lại
-tracecore.codes.POLL_INTERVAL_MS = 2000;
-tracecore.codes.POLL_ROUNDS = 10;
 
 tracecore.codes.can_print = function () {
 	return frappe.user.has_role(tracecore.codes.PRINT_ROLES);
@@ -256,30 +252,11 @@ function tc_codes_status(row) {
 			],
 		};
 	}
-	if (state === "Waiting") {
-		const warning = row.result.data.warning || {};
-		return {
-			indicator: "orange",
-			label: __("Waiting for the Station Agent"),
-			detail: [warning.title, warning.reason, warning.action, __("Print job {0}.", [job])],
-		};
-	}
-	if (row.poll_done) {
-		return {
-			indicator: "orange",
-			label: __("No result yet"),
-			detail: [
-				__(
-					"The server keeps retrying print job {0} for a few minutes; check the printer.",
-					[job]
-				),
-			],
-		};
-	}
+	// A-114: nhãn Queued chờ in PDF qua hộp thoại In (lỗi dựng PDF thì giữ Queued, nút In còn)
 	return {
 		indicator: "blue",
-		label: __("Queued for printing"),
-		detail: [__("The server sends the label to the printer (print job {0}).", [job])],
+		label: __("Ready to print"),
+		detail: [__("Print job {0}.", [job])],
 	};
 }
 
@@ -300,25 +277,15 @@ function tc_codes_result_rows(rows) {
 		.join("");
 }
 
-// Tổng kết cả loạt: nhãn chờ agent KHÔNG tính là đã in
+// Tổng kết cả loạt: nhãn chưa in (Queued) KHÔNG tính là đã in
 function tc_codes_summary(rows) {
 	const count = (states) => rows.filter((row) => states.includes(tc_codes_state(row))).length;
-	const printed = count(["Printed"]);
-	const waiting = count(["Waiting"]);
-	const failed = count(["rejected", "Failed"]);
-	const pending = count(["Queued"]);
-	const parts = [
-		__("{0} of {1} labels printed; {2} waiting for the Station Agent; {3} not printed.", [
-			printed,
-			rows.length,
-			waiting,
-			failed,
-		]),
-	];
-	if (pending) {
-		parts.push(__("{0} labels still being sent to the printer.", [pending]));
-	}
-	return parts.join(" ");
+	return __("{0} of {1} labels printed; {2} ready to print; {3} not printed.", [
+		count(["Printed"]),
+		rows.length,
+		count(["Queued"]),
+		count(["rejected", "Failed"]),
+	]);
 }
 
 function tc_codes_render_results(dialog, rows) {
@@ -334,51 +301,31 @@ function tc_codes_render_results(dialog, rows) {
 		</table>`);
 }
 
-const tc_codes_sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Mỗi hộp thoại chỉ có một vòng hỏi kết quả: vòng mới (hoặc lần gửi lại) đổi token, vòng cũ thấy token khác thì
-// dừng ngay, không vẽ đè và không đánh dấu dòng nào.
-function tc_codes_new_poll_token(dialog) {
-	dialog.tc_poll_token = (dialog.tc_poll_token || 0) + 1;
-	return dialog.tc_poll_token;
-}
-
-// Hỏi kết quả các lệnh in còn Queued (đường server) tới khi xong hoặc hết số lần; hộp thoại đóng thì thôi hỏi.
-async function tc_codes_poll(dialog, rows) {
-	const token = tc_codes_new_poll_token(dialog);
-	const superseded = () => dialog.tc_poll_token !== token;
-	const polled = new Set(); // dòng mà chính vòng này đã hỏi: chỉ các dòng này được đánh dấu poll_done
-	for (let round = 0; round < tracecore.codes.POLL_ROUNDS; round++) {
-		const queued = rows.filter((row) => tc_codes_state(row) === "Queued");
-		if (!queued.length || !dialog.display) {
-			break;
-		}
-		queued.forEach((row) => polled.add(row));
-		await tc_codes_sleep(tracecore.codes.POLL_INTERVAL_MS);
-		if (superseded()) {
-			return;
-		}
-		const response = await tracecore.codes.send(TC_CODES_JOB_STATUS, null, {
-			names: queued.map((row) => row.result.data.print_job),
-		});
-		if (superseded()) {
-			return;
-		}
-		if (!response.ok) {
-			break; // không hỏi được: dòng còn Queued hiện "Chưa có kết quả"
-		}
-		for (const row of queued) {
-			const job = response.data.jobs[String(row.result.data.print_job)];
-			if (job) {
-				row.job = job;
-			}
-		}
-		tc_codes_render_results(dialog, rows);
+// A-114: một PDF cho các nhãn Queued rồi mở hộp thoại In; lỗi thì nhãn giữ Queued và khối lỗi hiện dưới bảng
+async function tc_codes_print_pdf(dialog, rows) {
+	const queued = rows.filter((row) => tc_codes_state(row) === "Queued");
+	if (!queued.length) {
+		return;
 	}
-	polled.forEach((row) => {
-		row.poll_done = true;
-	});
+	const response = await tracecore.codes.post(
+		TC_CODES_OBJECTS_PDF,
+		{ print_jobs: queued.map((row) => row.result.data.print_job) },
+		false
+	);
+	if (response.ok) {
+		const printed = new Set((response.data.print_jobs || []).map(String));
+		queued.forEach((row) => {
+			if (printed.has(String(row.result.data.print_job))) {
+				row.job = { status: "Printed" };
+			}
+		});
+	}
 	tc_codes_render_results(dialog, rows);
+	if (response.ok) {
+		await window.tcPrintPdfAndTell(response.data);
+	} else {
+		dialog.fields_dict.result.$wrapper.append(tracecore.codes.block_html(response.error));
+	}
 }
 
 async function tc_codes_load_preview(dialog, label_object, code) {
@@ -398,50 +345,11 @@ async function tc_codes_load_preview(dialog, label_object, code) {
 	);
 }
 
-// Mô tả máy in đang chọn: có địa chỉ mạng → server gửi thẳng; không có → lệnh chờ Station Agent
-function tc_codes_describe_printer(dialog) {
-	const printer = dialog.get_value("printer");
-	const field = dialog.fields_dict.printer;
-	if (!printer) {
-		field.set_description(
-			__("Only network printers are listed: the server sends the label straight to them.")
-		);
-		return;
-	}
-	frappe.db.get_value("Printer", printer, "host").then((r) => {
-		if (dialog.get_value("printer") !== printer) {
-			return;
-		}
-		const host = r && r.message && r.message.host;
-		field.set_description(
-			host
-				? __("Network printer: the server sends the label directly.")
-				: __("No network address: the label waits for the Station Agent of this printer.")
-		);
-	});
-}
-
-// In từ Desk đi đường server: chỉ gợi ý và liệt kê máy in đang hoạt động có địa chỉ mạng (A-05 R1)
-const TC_CODES_PRINTER_FILTERS = { is_active: 1, host: ["is", "set"] };
-
-function tc_codes_suggest_printer(dialog) {
-	frappe.db
-		.get_list("Printer", {
-			filters: TC_CODES_PRINTER_FILTERS,
-			fields: ["name"],
-			order_by: "name asc",
-			limit: 1,
-		})
-		.then((rows) => {
-			if (rows && rows.length && !dialog.get_value("printer")) {
-				dialog.set_value("printer", rows[0].name);
-			}
-		});
-}
+// A-114: máy in tùy chọn, để trống = máy in nhãn chung; nhãn mở dạng PDF trong hộp thoại In
+const TC_CODES_PRINTER_FILTERS = { is_active: 1 };
 
 // Gửi tuần tự các dòng `rows` (mỗi dòng giữ request riêng: gửi lại sau lỗi mạng dùng đúng khóa cũ)
 async function tc_codes_send_rows(dialog, label_object, rows) {
-	tc_codes_new_poll_token(dialog); // vòng hỏi đang chạy (nếu có) dừng: không vẽ đè lên tiến độ gửi
 	for (const [index, row] of rows.entries()) {
 		dialog.fields_dict.result.$wrapper.html(
 			`<p>${tc_codes_escape(
@@ -450,22 +358,11 @@ async function tc_codes_send_rows(dialog, label_object, rows) {
 		);
 		row.result = await tracecore.codes.send(TC_CODES_LABEL, row.request);
 		row.job = null;
-		row.poll_done = false;
 	}
 }
 
 async function tc_codes_send_all(dialog, label_object, codes) {
-	const printer = dialog.get_value("printer");
-	if (!printer) {
-		dialog.fields_dict.result.$wrapper.html(
-			tracecore.codes.block_html({
-				title: __("Printer missing"),
-				reason: __("No printer is selected."),
-				action: __("Choose an active printer, then press Print."),
-			})
-		);
-		return;
-	}
+	const printer = dialog.get_value("printer") || "";
 	const button = dialog.get_primary_btn();
 	button.prop("disabled", true);
 	// một lần bấm In = một thao tác: mỗi mã một request (khóa idempotent) cố định cho mọi lần gửi lại
@@ -494,7 +391,7 @@ function tc_codes_finish(dialog, label_object, rows) {
 		// đã gửi: nút chính thành "Đóng" để không in trùng khi bấm lại
 		dialog.set_primary_action(__("Close"), () => dialog.hide());
 	}
-	tc_codes_poll(dialog, rows);
+	tc_codes_print_pdf(dialog, rows);
 }
 
 // Hộp thoại in nhãn QR: `code` là một mã (có xem trước) hoặc mảng mã (in cả loạt, không xem trước).
@@ -524,9 +421,10 @@ tracecore.codes.print_dialog = function (frm, label_object, code, title, subtitl
 				fieldtype: "Link",
 				options: "Printer",
 				label: __("Printer"),
-				reqd: 1,
+				description: __(
+					"Leave empty for the shared label printer. The label opens as a PDF in the print dialog."
+				),
 				get_query: () => ({ filters: TC_CODES_PRINTER_FILTERS }),
-				onchange: () => tc_codes_describe_printer(dialog),
 			},
 			{ fieldname: "result", fieldtype: "HTML" },
 		],
@@ -536,8 +434,6 @@ tracecore.codes.print_dialog = function (frm, label_object, code, title, subtitl
 		},
 	});
 	dialog.show();
-	tc_codes_describe_printer(dialog);
-	tc_codes_suggest_printer(dialog);
 	if (single) {
 		tc_codes_load_preview(dialog, label_object, codes[0]);
 	}

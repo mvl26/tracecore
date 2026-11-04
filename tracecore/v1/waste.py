@@ -106,6 +106,23 @@ def collect(station, card=None, lines=None, total_kg=None, note=None, client_ts=
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*WASTE_ROLES)
+def label_pdf(station, collection=None, client_ts=None, token=None):
+	"""PDF nhãn QR các túi của lượt thu gom cho hộp thoại In (FR-M10-01.5, A-114); không ``@idempotent`` như
+	`wash.label_pdf`: gọi lại chỉ in lại đúng các nhãn đó. Trả ``{"ok": true, "pdf_b64", "filename", "print_jobs"}``."""
+	require_any_role(*WASTE_ROLES)
+	collection = _text(collection, "collection")
+	return run_at_step(
+		FUNCTION,
+		station,
+		parse_client_ts(client_ts),
+		lambda: {"ok": True, **service.label_pdf(collection, station)},
+		"Waste Collection",
+		collection,
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*WASTE_ROLES)
 @idempotent
 def acknowledge(station, collection=None, card=None, client_ts=None, token=None):
 	"""Biên nhận với khoa: người giao hoặc đồng nghiệp cùng khoa quét lại thẻ (A-60 W4)."""

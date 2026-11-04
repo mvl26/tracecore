@@ -293,6 +293,7 @@ class TestSubmit(IssuingCase):
 		self.assertEqual((before["available"], after["available"]), (2, 0))
 		self.assertIn("format=TC+Issue+Note", result["print_url"])
 		self.assertIn(name, result["print_url"])
+		self.assertIn("trigger_print=1", result["print_url"])  # A-114: mở thẳng hộp thoại In
 		self.assertEqual(frappe.parse_json(note.par_result)[0]["state"], "ok")
 
 	def test_submit_requires_signature_and_packs(self):

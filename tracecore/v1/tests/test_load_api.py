@@ -146,7 +146,7 @@ class TestLoadApi(LoadApiCase):
 		self.assertIs(done["ok"], True)
 		self.assertRegex(done["load"], r"^ME-\d{6}-\d{2}$")
 		self.assertEqual((done["packs"], done["rejected"]), ([pack.name], []))
-		self.assertEqual(done["print"]["status"], "Waiting")
+		self.assertEqual(done["print"]["status"], "Queued")  # A-114: in PDF không cần máy in ở trạm
 		employee = frappe.db.get_value("Employee", {"user_id": "Administrator"}, "name")
 		self.assertEqual(frappe.db.get_value("Sterilization Load", done["load"], "operator"), employee)
 		self.assertEqual(frappe.db.get_value("Pack", pack.name, "status"), "In Load")
@@ -380,20 +380,15 @@ class TestLoadLabelPdf(LoadApiCase):
 	def done_load(self):
 		return self.complete([make_load_ready_pack().name])
 
-	def test_no_active_printer_refuses_without_a_pdf(self):
-		"""A-100: trạm chưa có máy in hoạt động thì không có PDF nhãn, kể cả khi mẻ đã có mã."""
-		done = self.done_load()
-		self.assertEqual(done["print"]["warning"]["code"], "NO_PRINTER_AT_STATION")
-		result = call(load_api.label_pdf, load=done["load"], station=STATION)
-		self.assert_rejection(result, "NO_PRINTER_AT_STATION", 409)
-		self.assertNotIn("pdf_b64", result)
-
-	def test_deactivated_printer_counts_as_no_printer(self):
-		make_printer(STATION, make_label_items()[0])
-		done = self.done_load()
+	def test_station_without_printer_still_gets_the_pdf(self):
+		"""A-114 (thay A-100): trạm không có máy in vẫn in nhãn qua PDF bằng máy in nhãn chung."""
 		deactivate_printers(STATION)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
+		done = self.done_load()
+		self.assertIsNone(done["print"]["warning"])
 		result = call(load_api.label_pdf, load=done["load"], station=STATION)
-		self.assert_rejection(result, "NO_PRINTER_AT_STATION", 409)
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertTrue(base64.b64decode(result["pdf_b64"]).startswith(b"%PDF"))
 
 	def test_returns_pdf_named_after_the_load_with_its_qr_and_text(self):
 		make_printer(STATION, make_label_items()[0])
@@ -414,8 +409,8 @@ class TestLoadLabelPdf(LoadApiCase):
 		self.assertIn(get_datetime(started).strftime("%d/%m/%Y %H:%M"), text)
 		self.assertEqual(frappe.db.count("Print Job"), before)  # không đụng luồng in
 
-	def test_pdf_marks_the_print_job_printed_to_file(self):
-		"""A-101: job giữ làm vết kiểm toán, trạng thái ghi đúng sự thật; không tạo job thứ hai."""
+	def test_pdf_marks_the_print_job_printed_through_the_browser(self):
+		"""A-101, A-114: job giữ làm vết kiểm toán, ghi `Printed`/`Browser`; không tạo job thứ hai."""
 		make_printer(STATION, make_label_items()[0])
 		done = self.done_load()
 		job = done["print"]["print_job"]
@@ -427,7 +422,7 @@ class TestLoadLabelPdf(LoadApiCase):
 		)
 		self.assertEqual(
 			(row.status, row.output_mode, row.output_ref, row.attempts),
-			("Printed", "File", result["filename"], 1),
+			("Printed", "Browser", result["filename"], 1),
 		)
 		self.assertTrue(row.printed_at)
 
@@ -470,9 +465,9 @@ class TestLoadLabelPdf(LoadApiCase):
 		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Queued")
 		self.assertTrue(frappe.db.exists("Sterilization Load", done["load"]))
 
-	def test_waiting_label_stays_waiting_when_a_printer_appears_later(self):
+	def test_old_waiting_label_is_refused_until_the_patch_releases_it(self):
 		done = self.done_load()
-		make_printer(STATION, make_label_items()[0])
+		frappe.db.set_value("Print Job", done["print"]["print_job"], "status", "Waiting")
 		result = call(load_api.label_pdf, load=done["load"], station=STATION)
 		self.assertEqual(result["error"]["code"], "LABEL_NOT_QUEUED")
 		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Waiting")

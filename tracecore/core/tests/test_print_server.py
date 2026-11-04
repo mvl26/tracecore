@@ -526,10 +526,10 @@ class TestServerDispatchQueue(IsolatedTestCase):
 		fake.thread.join(timeout=3)
 		self.assertEqual(frappe.db.get_value("Print Job", server, "status"), "Printed")
 
-	def test_scheduler_runs_dispatch_pending_every_minute(self):
-		self.assertIn(
-			"tracecore.core.print_server.dispatch_pending", hooks.scheduler_events["cron"]["* * * * *"]
-		)
+	def test_scheduler_no_longer_sends_zpl(self):
+		# A-114 (f): nhãn in ra PDF qua trình duyệt; không còn cron gửi ZPL tới máy in mạng
+		scheduled = [job for jobs in hooks.scheduler_events["cron"].values() for job in jobs]
+		self.assertNotIn("tracecore.core.print_server.dispatch_pending", scheduled)
 
 
 class TestServerDispatchMany(IsolatedTestCase):

@@ -68,7 +68,7 @@ Test hằng ngày máy rửa: ✅ đã ghi hôm nay (bỏ qua).
 3. Gõ `LOT-CI5-TEST-01` vào **ô "Quét lô chỉ thị" riêng** (KHÔNG gõ vào ô quét trên cùng)
 4. Bấm **Xác nhận hoàn thành đóng gói** → **ghi lại `CY-…`** (hạn = hôm nay + 30 ngày)
 
-✔ Kết quả: gói **Đã đóng gói**, cổng **T4 = Đạt**. Không có máy in thật → nhãn "chờ in" (bình thường).
+✔ Kết quả: gói **Đã đóng gói**, cổng **T4 = Đạt**. Bấm **In nhãn** → hộp thoại In mở với PDF nhãn; không có máy in thật thì chọn **Lưu thành PDF** (bình thường).
 
 ---
 

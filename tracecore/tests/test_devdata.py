@@ -322,7 +322,8 @@ class TestT4DemoData(FrappeTestCase):
 			self.assertTrue(line["image"].startswith("/private/files/"), msg=line)
 			self.assertTrue(line["thumbnail"].startswith("/private/files/"), msg=line)
 		self.assertEqual(steam["printer"]["name"], demo["printer"])
-		self.assertIsNone(plasma["printer"])  # máy in đang lắp nhãn hấp: nhãn plasma chờ đổi cuộn
+		# A-114: một máy in nhãn chung, không chờ cuộn đúng loại: bộ plasma cũng in trên máy đó
+		self.assertEqual(plasma["printer"]["name"], demo["printer"])
 		self.assertTrue(steam["pack_types"])
 		with self.assertRaises(BlockedError) as raised:
 			packing.get_context(demo["set_gate_fail"], "TR-004")
