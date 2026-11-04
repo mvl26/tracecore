@@ -257,7 +257,7 @@ tracecore.set_unit.job_state = function (job) {
 		};
 	}
 	if (job.status === "Waiting") {
-		return { indicator: "orange", label: __("Waiting (print job from before A-114)") };
+		return { indicator: "orange", label: __("Waiting (old print job)") };
 	}
 	// A-114: nhãn Queued chờ người dùng in PDF qua hộp thoại In
 	return { indicator: "blue", label: __("Ready to print") };
