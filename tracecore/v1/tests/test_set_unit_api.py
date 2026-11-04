@@ -144,6 +144,8 @@ REAL_PREFIX = "8931234"
 
 
 class _Request:
+	host = "localhost"  # frappe.utils.pdf.get_pdf đọc host của request để mở rộng URL tương đối (A-114)
+
 	def __init__(self, method, headers):
 		self.method = method
 		self.headers = headers
@@ -281,20 +283,15 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 	@bru("BRU-ID-006")
 	def test_create_batch_issues_and_queues_prints(self):
 		frappe.set_user(self.r02)
-		with patch.object(
-			set_tags.print_server,
-			"enqueue_server_dispatch_many",
-			wraps=set_tags.print_server.enqueue_server_dispatch_many,
-		) as dispatch:
-			result, response = post(
-				api.create_batch,
-				set_type=self.set_type,
-				count="3",
-				kinds='["tray", "tag"]',
-				tag_printer=self.printer,
-				tray_printer=self.printer,
-				client_ts=TS,
-			)
+		result, response = post(
+			api.create_batch,
+			set_type=self.set_type,
+			count="3",
+			kinds='["tray", "tag"]',
+			tag_printer=self.printer,
+			tray_printer=self.printer,
+			client_ts=TS,
+		)
 		self.assertTrue(result["ok"])
 		self.assertIsNone(response.get("http_status_code"))
 		self.assertEqual(set(result), {"ok", "set_type", "set_ids", "jobs", "warnings"})
@@ -309,8 +306,26 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 			[(set_id, kind) for set_id in set_ids for kind in ("tag", "tray")],
 		)
 		self.assertEqual({job["status"] for job in result["jobs"]}, {"Queued"})
-		dispatch.assert_called_once_with([job["print_job"] for job in result["jobs"]])
+		self.assertEqual(self.dispatch_calls(), [])  # A-114: không gửi ZPL qua mạng
 		self.assertEqual(result["warnings"], [])
+		# A-114: trình duyệt lấy một PDF cho các job vừa xếp rồi mở hộp thoại In
+		pdf, _response = post(api.tags_pdf, print_jobs=[job["print_job"] for job in result["jobs"]])
+		self.assertTrue(pdf["ok"], msg=pdf)
+		self.assertEqual(len(pdf["print_jobs"]), 6)
+		again, response = post(api.tags_pdf, print_jobs=[job["print_job"] for job in result["jobs"]])
+		self.assert_reject(again, response, "LABEL_NOT_QUEUED", 409)
+
+	def test_create_batch_without_printer_uses_the_shared_printer(self):
+		frappe.set_user("Administrator")
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", self.printer)
+		frappe.set_user(self.r02)
+		result, _response = post(
+			api.create_batch, set_type=self.set_type, count=1, kinds=["tag"], client_ts=TS
+		)
+		self.assertTrue(result["ok"], msg=result)
+		self.assertEqual(
+			frappe.db.get_value("Print Job", result["jobs"][0]["print_job"], "printer"), self.printer
+		)
 
 	def test_create_batch_without_printing(self):
 		frappe.set_user(self.r02)
@@ -408,24 +423,23 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 			{key: before[key] for key in ("units", "codes", "jobs")},
 		)
 
-	def test_create_batch_template_broken_issues_nothing(self):
+	def test_create_batch_with_broken_zpl_template_still_issues_and_prints_pdf(self):
+		# A-114: thẻ in ra PDF; mẫu ZPL lỗi chỉ làm job không có vết ZPL
 		frappe.set_user("Administrator")
 		template = core_print.active_template("Set Tag", None).name
 		frappe.db.set_value("Label Template", template, "body", "{{ doc.set_id | nope_filter }}")
 		frappe.set_user(self.r02)
-		before = self.footprint()
-		result, response = post(
+		result, _response = post(
 			api.create_batch,
 			set_type=self.set_type,
-			count=3,
+			count=2,
 			kinds=["tag"],
 			tag_printer=self.printer,
 			client_ts=TS,
 		)
-		self.assert_reject(result, response, "LABEL_RENDER_FAILED", 422)
-		self.assertEqual(frappe.db.count("Set Unit", {"set_type": self.set_type}), 0)
-		self.assertEqual(frappe.db.count("Code Registry"), before["codes"])
-		self.assertEqual(frappe.db.count("Print Job"), before["jobs"])
+		self.assertTrue(result["ok"], msg=result)
+		self.assertEqual(frappe.db.count("Set Unit", {"set_type": self.set_type}), 2)
+		self.assertFalse(frappe.db.get_value("Print Job", result["jobs"][0]["print_job"], "payload"))
 
 	def test_create_batch_bad_params_400(self):
 		frappe.set_user(self.r02)
@@ -437,8 +451,6 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 			{"kinds": "not json"},
 			{"kinds": 5},
 			{"kinds": [["tag"]]},
-			{"kinds": ["tag"]},
-			{"kinds": ["tag", "tray"], "tag_printer": self.printer},
 			{"kinds": ["tag"], "tag_printer": inactive},
 			{"kinds": ["tag"], "tag_printer": "PRN-NONE-T5"},
 			{"kinds": ["tag"], "tag_printer": 5},
@@ -463,24 +475,21 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 				post(api.create_batch, **{**good, **overrides})
 		self.assertEqual(self.footprint(), before)
 
-	def test_create_batch_agent_only_printer_refused(self):
-		"""Ruling Task 4/5: thẻ/nhãn khay chỉ in qua đường server — máy in không có địa chỉ mạng → 422, không cấp."""
+	def test_create_batch_printer_without_network_address_is_fine(self):
+		"""A-114 (thay ruling Task 4/5): thẻ in ra PDF nên máy in không cần địa chỉ mạng."""
 		frappe.set_user(self.r02)
 		agent = self.make_printer(host="")
-		before = self.footprint()
-		result, response = post(
+		result, _response = post(
 			api.create_batch,
 			set_type=self.set_type,
-			count=2,
+			count=1,
 			kinds=["tag", "tray"],
 			tag_printer=self.printer,
 			tray_printer=agent,
 			client_ts=TS,
 		)
-		self.assert_reject(result, response, "PRINTER_NOT_NETWORK", 422)
-		self.assertEqual(result["error"]["items"], [agent])
-		self.assertEqual(frappe.db.count("Set Unit"), before["units"])
-		self.assertEqual(frappe.db.count("Print Job"), before["jobs"])
+		self.assertTrue(result["ok"], msg=result)
+		self.assertEqual(len(result["jobs"]), 2)
 
 	@bru("BRU-ID-001")
 	def test_create_batch_replay_same_key_same_set_ids(self):
@@ -535,12 +544,6 @@ class TestPrintRpc(SetUnitRpcCase):
 		)
 		self.assert_reject(result, response, "TAG_PRINT_PENDING", 409)
 
-		agent = self.make_printer(host="")
-		result, response = post(
-			api.print_tags, set_units=[failed], kinds=["tray"], tray_printer=agent, client_ts=TS
-		)
-		self.assert_reject(result, response, "PRINTER_NOT_NETWORK", 422)
-
 		for bad in (
 			{"set_units": []},
 			{"set_units": "nope"},
@@ -548,7 +551,7 @@ class TestPrintRpc(SetUnitRpcCase):
 			{"set_units": [f"9520000TFIVE{i:06d}" for i in range(101)]},
 			{"set_units": [printed], "kinds": []},
 			{"set_units": [printed], "kinds": ["label"]},
-			{"set_units": [printed], "tag_printer": None},
+			{"set_units": [printed], "tag_printer": "PRN-NONE-T5"},
 		):
 			kwargs = {"kinds": ["tag"], "tag_printer": self.printer, "client_ts": TS, **bad}
 			with self.assertRaises(BadRequestError, msg=repr(bad)):
@@ -591,7 +594,7 @@ class TestPrintRpc(SetUnitRpcCase):
 			api.reprint_tag, set_unit=disposed, kind="tag", printer=self.printer, reason="x", client_ts=TS
 		)
 		self.assert_reject(result, response, "SET_DISPOSED", 409)
-		for bad in ({"kind": "label"}, {"kind": None}, {"printer": None}, {"set_unit": 5}):
+		for bad in ({"kind": "label"}, {"kind": None}, {"printer": "PRN-NONE-T5"}, {"set_unit": 5}):
 			kwargs = {"set_unit": unit, "kind": "tag", "printer": self.printer, "reason": "x", **bad}
 			with self.assertRaises(BadRequestError, msg=repr(bad)):
 				post(api.reprint_tag, client_ts=TS, **kwargs)

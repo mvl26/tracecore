@@ -489,44 +489,42 @@ class TestGenerate(IsolatedTestCase):
 		self.assertEqual(counters, {"KC-21": (0, 0), "KC-22": (11, 2)})
 
 	@bru("BRU-REP-011")
-	def test_no_printer_for_method_keeps_cycle_id(self):
+	def test_plasma_pack_prints_on_whatever_roll_is_loaded(self):
+		# A-114: một cuộn chung, không chặn theo phương pháp; tiêu hao nhãn theo loại nhãn đang lắp (FR-M2-08.3)
 		ready = make_t4_ready_set("Plasma", with_printer=False)
 		steam_label, _plasma_label = make_label_items()
-		make_printer(STATION, steam_label)
+		printer = make_printer(STATION, steam_label)
 		result = _generate(ready)
 		cycle_id = result["pack"]["cycle_id"]
 		printed = result["print"]
-		self.assertEqual(printed["status"], "Waiting")
-		self.assertIsNone(printed["printer"])
-		self.assertIsNone(printed["zpl"])
-		warning = printed["warning"]
-		self.assertEqual(warning["code"], "NO_PRINTER_FOR_METHOD")
-		self.assertTrue(warning["title"] and warning["action"])
-		self.assertIn(STATION, warning["reason"])
-		self.assertIn(cycle_id, warning["reason"])
-		self.assertIn("VT-NHAN-PLASMA", warning["action"])
-		self.assertIn("CN-", warning["action"])
-		self.assertTrue(frappe.db.exists("Pack", cycle_id))
-		self.assertIsNone(result["pack"]["label_type"])
-
+		self.assertEqual(
+			(printed["status"], printed["printer"], printed["warning"]), ("Queued", printer, None)
+		)
+		self.assertEqual(result["pack"]["label_type"], steam_label)
 		job = frappe.get_doc("Print Job", printed["print_job"])
-		self.assertEqual((job.status, job.ref_doctype, job.ref_name), ("Waiting", "Pack", cycle_id))
-		self.assertFalse(job.payload)
-		data = frappe.parse_json(job.data)
-		self.assertEqual((data["method"], data["label_object"]), ("Plasma", "Pack"))
-		self.assertEqual(data["label_context"]["cycle_id"], cycle_id)
+		self.assertEqual((job.status, job.ref_doctype, job.ref_name), ("Queued", "Pack", cycle_id))
+		self.assertEqual(job.template, "Pack label - Plasma")  # mẫu nhãn vẫn theo phương pháp của gói
 
-	def test_missing_label_template_waits_instead_of_failing(self):
-		ready = make_t4_ready_set()
-		frappe.db.set_value("Label Template", {"method": "Steam", "language": "ZPL"}, "is_active", 0)
+	@bru("BRU-REP-011")
+	def test_pack_label_is_ready_without_any_printer(self):
+		ready = make_t4_ready_set("Plasma", with_printer=False)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
 		result = _generate(ready)
 		printed = result["print"]
-		self.assertEqual((printed["status"], printed["zpl"], printed["printer"]), ("Waiting", None, None))
-		self.assertEqual(printed["warning"]["code"], "LABEL_TEMPLATE_MISSING")
-		self.assertIn("ZPL", printed["warning"]["reason"])
-		self.assertTrue(frappe.db.exists("Pack", result["pack"]["cycle_id"]))
+		self.assertEqual(
+			(printed["status"], printed["printer"], printed["zpl"], printed["warning"]),
+			("Queued", None, None, None),
+		)
+		self.assertIsNone(result["pack"]["label_type"])
+		self.assertEqual(frappe.db.get_value("Print Job", printed["print_job"], "status"), "Queued")
 
-	def test_label_render_error_waits_instead_of_failing(self):
+	def test_missing_label_template_does_not_block_the_label(self):
+		ready = make_t4_ready_set()
+		frappe.db.set_value("Label Template", {"method": "Steam", "language": "ZPL"}, "is_active", 0)
+		printed = _generate(ready)["print"]
+		self.assertEqual((printed["status"], printed["zpl"], printed["warning"]), ("Queued", None, None))
+
+	def test_label_render_error_does_not_block_the_label(self):
 		ready = make_t4_ready_set()
 		messages = len(frappe.local.message_log)
 
@@ -536,9 +534,7 @@ class TestGenerate(IsolatedTestCase):
 		with patch.object(core_print, "render", broken):
 			result = _generate(ready)
 		printed = result["print"]
-		self.assertEqual((printed["status"], printed["zpl"]), ("Waiting", None))
-		self.assertEqual(printed["warning"]["code"], "LABEL_RENDER_FAILED")
-		self.assertIn("template exploded", printed["warning"]["reason"])
+		self.assertEqual((printed["status"], printed["zpl"], printed["warning"]), ("Queued", None, None))
 		self.assertTrue(frappe.db.exists("Pack", result["pack"]["cycle_id"]))
 		# lỗi đã bắt không để lại msgprint cho kiosk
 		self.assertEqual(len(frappe.local.message_log), messages)
@@ -692,21 +688,22 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		self.assertEqual(block.code, "STATUS_INVALID_FOR_STATION")
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 1)
 
-	def test_reprint_without_printer_waits_with_warning(self):
-		# nhãn đầu đã vào hàng in; sau đó trạm không còn máy in đúng loại nhãn → nhãn in lại chờ (Waiting)
+	def test_reprint_without_printer_is_ready_to_print(self):
+		# A-114: trạm không còn máy in thì nhãn in lại vẫn in được qua PDF
 		ready, cycle_id = self._packed(method="Plasma")
 		frappe.db.set_value("Printer", ready.printer, "is_active", 0)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
 		result = packing.reprint(cycle_id, "Kẹt giấy", STATION)
-		self.assertEqual(result["print"]["status"], "Waiting")
-		self.assertEqual(result["print"]["warning"]["code"], "NO_PRINTER_FOR_METHOD")
+		self.assertEqual((result["print"]["status"], result["print"]["warning"]), ("Queued", None))
 		job = frappe.get_doc("Print Job", result["print"]["print_job"])
-		self.assertEqual((job.status, job.reprint_reason), ("Waiting", "Kẹt giấy"))
+		self.assertEqual((job.status, job.reprint_reason), ("Queued", "Kẹt giấy"))
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
 
 	@bru("BRU-ID-005")
-	def test_reprint_while_label_waiting_returns_the_waiting_job(self):
-		# F3: nhãn chưa in (Waiting) thì in lại không tạo job thứ hai, nếu không đổi cuộn sẽ in hai nhãn cùng Cycle ID
+	def test_reprint_while_old_label_waiting_returns_the_waiting_job(self):
+		# F3 với dữ liệu trước A-114: nhãn còn Waiting thì in lại không tạo job thứ hai cùng Cycle ID
 		_ready, cycle_id = self._packed(method="Plasma", with_printer=False)
+		frappe.db.set_value("Print Job", {"ref_doctype": "Pack", "ref_name": cycle_id}, "status", "Waiting")
 		[waiting] = _jobs_of(cycle_id)
 		result = packing.reprint(cycle_id, "Kẹt giấy", STATION)
 		self.assertEqual(result["pack"]["cycle_id"], cycle_id)
@@ -729,7 +726,7 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		frappe.db.set_value("Print Job", waiting, "status", "Printed")
 		again = packing.reprint(cycle_id, "Kẹt giấy", STATION)["print"]
 		self.assertNotEqual(again["print_job"], waiting)
-		self.assertEqual(again["warning"]["code"], "NO_PRINTER_FOR_METHOD")
+		self.assertEqual((again["status"], again["warning"]), ("Queued", None))
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 2)
 
 	@bru("BRU-ID-005")
@@ -764,13 +761,11 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		self.assertEqual((unit.status, unit.active_cycle_id), ("Processing", second))
 
 	@bru("BRU-ID-005")
-	def test_void_cancels_waiting_labels_but_not_queued_ones(self):
-		# chưa có máy in đúng loại nhãn: nhãn của gói chờ (Waiting); hủy gói thì nhãn chờ không bao giờ được in
+	def test_void_cancels_old_waiting_labels_but_not_queued_ones(self):
+		# dữ liệu trước A-114: nhãn còn Waiting của gói bị hủy chuyển Failed, không bao giờ được in
 		ready, first = self._packed(method="Plasma", with_printer=False)
-		steam_label, plasma_label = make_label_items()
-		printer = make_printer(STATION, steam_label)
-		[(old_job, (status, _error))] = _jobs_of(first).items()
-		self.assertEqual(status, "Waiting")
+		frappe.db.set_value("Print Job", {"ref_doctype": "Pack", "ref_name": first}, "status", "Waiting")
+		[old_job] = _jobs_of(first)
 
 		packing.void(first, "Label Damaged", STATION)
 		status, error = _jobs_of(first)[old_job]
@@ -778,14 +773,9 @@ class TestReprintVoidLookup(IsolatedTestCase):
 		self.assertIn(first, error)
 		self.assertIn("Label Damaged", error)
 
+		# nhãn đã sẵn sàng in (Queued) giữ nguyên khi hủy, làm vết
 		second = _generate(ready)["pack"]["cycle_id"]
 		[new_job] = _jobs_of(second)
-		released = core_print.set_roll(printer, make_roll(plasma_label))["released_jobs"]
-		self.assertEqual([job["print_job"] for job in released], [new_job])
-		self.assertEqual(_jobs_of(first)[old_job][0], "Failed")
-		self.assertEqual(_jobs_of(second)[new_job][0], "Queued")
-
-		# nhãn đã vào hàng in (Queued) giữ nguyên khi hủy: agent có thể đang in
 		packing.void(second, "Torn", STATION)
 		self.assertEqual(_jobs_of(second)[new_job], ("Queued", None))
 

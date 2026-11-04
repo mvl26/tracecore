@@ -537,6 +537,8 @@ class T3Assembly {
 		this.notice = null;
 		this.queue.reset(); // bộ vừa ghi nhận rời hàng đợi
 		this.show();
+		// A-117: kết luận Đạt thì hiện mã vạch sang trạm đóng gói; Không đạt không có trạm kế
+		if (res && res.next_station) this.station.offerNextStation("ASSEMBLE");
 	}
 
 	setZoom(src, alt) {
@@ -547,7 +549,8 @@ class T3Assembly {
 
 	goNext() {
 		const next = this.asm && this.asm.next_station;
-		if (next) window.location.assign(`/app/station?station=${encodeURIComponent(next)}`);
+		// A-117: đổi trạm không tải lại trang (A-91), cùng đường với hàng nút trạm và mã vạch sang trạm kế
+		if (next) this.station.switchStation(next, next);
 	}
 
 	async uploadFile(input) {
@@ -1226,9 +1229,11 @@ class T3Assembly {
 			${
 				done
 					? next
-						? `<button type="button" class="tc-btn tc-btn-primary" data-action="t3-next">${esc(
-								__("Go to packing station {0}", [next])
-						  )}</button>`
+						? this.station.nextOffer || next === this.station.station
+							? ""
+							: `<button type="button" class="tc-btn tc-btn-primary" data-action="t3-next">${esc(
+									__("Go to packing station {0}", [next])
+							  )}</button>`
 						: ""
 					: `<button type="button" class="tc-btn tc-btn-primary" data-action="t3-submit"${t3Disabled(
 							!asm.ready_to_submit || this.busy || this.offline

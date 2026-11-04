@@ -5,14 +5,14 @@ tra đường chấm bằng ``getattr`` trên module và so hàm với danh sác
 đường). Tách file để `set_unit.py` không vượt giới hạn độ dài; các tuple role của cả hai module đặt ở đây.
 
 - `form_context` (GET): tóm tắt bộ (`set_units.summary`), giới hạn nghiệp vụ cho JS (không chép hằng số), quyền theo
-  role, loại bản in, máy in gợi ý (đang hoạt động, có địa chỉ mạng), cờ ``test_labels`` (nhãn in dòng TEST, Task 7).
+  role, loại bản in, máy in gợi ý (đang hoạt động, máy in nhãn chung đầu tiên), cờ ``test_labels`` (dòng TEST, Task 7).
 - `history` (GET): `set_units.history`, phân trang bằng ``next_before``.
 """
 
 import frappe
 from frappe import _
 
-from tracecore.core import code_registry, gs1, print_server
+from tracecore.core import code_registry, gs1
 from tracecore.core.errors import BlockedError
 from tracecore.instrument import set_history, set_tags, set_units
 from tracecore.v1._common import BadRequestError, reject_block
@@ -42,15 +42,16 @@ def _limit(value):
 
 
 def _printers_hint():
-	"""Máy in đang hoạt động gửi được từ server (thẻ/nhãn khay chỉ in qua đường server, ``PRINTER_NOT_NETWORK``)."""
+	"""Máy in đang hoạt động, máy in nhãn chung đứng đầu (A-114: in qua PDF nên không cần địa chỉ mạng)."""
 	rows = frappe.get_all(
 		"Printer",
-		filters={"is_active": 1, "host": ["is", "set"]},
+		filters={"is_active": 1},
 		fields=["name", "printer_name", "station"],
 		order_by="name asc",
 		limit=PRINTERS_HINT_MAX,
 	)
-	return [row for row in rows if print_server.printer_address(row.name) is not None]
+	shared = frappe.db.get_single_value("TraceCore Settings", "label_printer")
+	return sorted(rows, key=lambda row: row.name != shared)
 
 
 @frappe.whitelist(methods=["GET"])

@@ -30,7 +30,7 @@
 | FR-M2-07 | Xác nhận hoàn thành đóng gói → hệ thống tự sinh mã vạch một lần (Cycle ID) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-003; ADR-004; ADR-005 | FEAT-009; FEAT-018 | `tracecore/reprocessing/tests/test_packing.py`, `test_packing_offline.py`; `tracecore/v1/tests/test_pack_api.py`; `tests_e2e/test_station_t4.py`, `test_station_offline.py` |
 | FR-M2-08 | In nhãn theo phương pháp (2 loại nhãn) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-006 | FEAT-002; FEAT-018 | _TBD_ |
 | FR-M2-09 | Nạp mẻ tiệt khuẩn: quét mã máy + quét từng gói, mã mẻ sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-005 | FEAT-022 | _TBD_ |
-| FR-M2-10 | Nhập tay dữ liệu máy có xác nhận người dùng | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-007 | FEAT-022 | _TBD_ |
+| FR-M2-10 | Nhập tay dữ liệu máy có xác nhận người dùng | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-007 | FEAT-022, FEAT-076 | _TBD_ |
 | FR-M2-11 | Dỡ mẻ: quét mã máy + mã mẻ, kết quả mẻ áp cho toàn bộ gói; nhập chỉ thị và giải phóng | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-007 | FEAT-023 | _TBD_ |
 | FR-M2-12 | Cách ly mẻ và xử lý mẻ không đạt | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-014 | FEAT-023 | _TBD_ |
 | FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
@@ -252,6 +252,8 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M5-02.5 | — | Desk Process Program | — (A-110) | FEAT-053 | — | `tracecore/core/tests/test_program_match.py` (`TestProgramSetTypes`) |
 | FR-M2-03.7, FR-M2-03.8 | BRU-REP-017 | SCR-06 | — (A-110) | FEAT-053 | — | `tracecore/reprocessing/tests/test_set_program_station.py`, `tracecore/tests/test_station_program_match_assets.py` |
 | FR-M2-09.7, FR-M2-09.8 | BRU-REP-017 | SCR-09 | — (A-110) | FEAT-053 | — | `tracecore/reprocessing/tests/test_set_program_station.py`, `tracecore/tests/test_station_program_match_assets.py` |
+| FR-M2-08, FR-M2-08.1, FR-M2-08.2, FR-M2-08.8 | BRU-REP-011 (thu hẹp), BRU-ID-005 | SCR-06, SCR-08, SCR-09, Desk TraceCore Settings, Printer | — (A-114) | FEAT-075 | — | — |
+| FR-M1-05.4, FR-M10-01.5, EI-HW-002, EI-HW-003, EI-HW-007, EI-HW-008 | BRU-ID-006 | SCR-02, SCR-38, Desk in thẻ bộ, nhãn QR đối tượng | — (A-114) | FEAT-075 | — | — |
 | FR-M10-01, FR-M10-02 | BRU-WST-001, BRU-WST-002, BRU-ID-006 | SCR-38 (mới) | — (v1.11) | — | — | — |
 | FR-M10-03 | BRU-WST-001, BRU-WST-002 | SCR-39 (mới) | — (v1.11) | — | — | — |
 | FR-M10-04, FR-M10-05 | BRU-WST-003, BRU-WST-004, BRU-CST-002 | SCR-40 (mới) | — (v1.11) | — | — | WF-06 (NC) |

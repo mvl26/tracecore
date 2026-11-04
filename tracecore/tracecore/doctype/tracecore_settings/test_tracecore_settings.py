@@ -69,3 +69,18 @@ class TestTraceCoreSettings(IsolatedTestCase):
 	def test_settings_cannot_be_deleted(self):
 		with self.assertRaises(frappe.ValidationError):
 			frappe.get_single(SETTINGS).delete()
+
+	def test_label_size_defaults_to_50_by_30_and_must_be_positive(self):
+		# A-114 (d), A-116: một máy một cuộn nên mọi nhãn cùng một khổ, mặc định 50 x 30
+		meta = frappe.get_meta(SETTINGS)
+		self.assertEqual(
+			(meta.get_field("label_width_mm").default, meta.get_field("label_height_mm").default),
+			("50", "30"),
+		)
+		self.assertEqual(meta.get_field("label_printer").options, "Printer")
+		doc = frappe.get_single(SETTINGS)
+		for field in ("label_width_mm", "label_height_mm"):
+			doc.reload()
+			doc.set(field, -1)
+			with self.assertRaises(frappe.ValidationError, msg=field):
+				doc.save()

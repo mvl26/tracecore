@@ -982,6 +982,23 @@ html:has(.tc-work) {
 	font-weight: var(--tc-fw-bold);
 }
 
+/* A-117: mã vạch sang trạm kế cạnh nút chính, quét hoặc bấm tay */
+.tc-next-region {
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-next-station {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-next-station p {
+	margin: 0 0 var(--tc-touch-gap);
+	font-weight: var(--tc-fw-bold);
+}
+
 /* kết quả sinh Cycle ID + label preview §4.12 */
 .tc-cycle {
 	color: var(--tc-text-heading);

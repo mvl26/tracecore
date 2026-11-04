@@ -771,56 +771,16 @@ def _start(
 	}
 
 
-def _warning(code, title, reason, action):
-	return {"code": code, "title": title, "reason": reason, "action": action}
-
-
 def _queue_label(batch, machine, program, station, started):
-	"""Tạo Print Job nhãn QR của lô tại `station`; trả ``{"print_job", "status", "printer", "zpl", "warning"}``.
-
-	Có máy in hoạt động ở trạm và mẫu `Object label - Wash Batch` dựng được → ``Queued``. Không có máy in hay không
-	dựng được nhãn → ``Waiting`` kèm cảnh báo; mã lô vẫn giữ và nhãn in lại được sau.
-	"""
-	job = {
-		"station": station,
-		"data": {"label_object": "Wash Batch", "code": batch.name},
-		"ref_doctype": "Wash Batch",
-		"ref_name": batch.name,
-	}
-	printer = core_print.object_printer(station)
-	zpl = template = warning = None
-	if printer is None:
-		warning = _warning(
-			"NO_PRINTER_AT_STATION",
-			_("No printer at this station"),
-			_("Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.").format(
-				station, batch.name
-			),
-			_("Ask R10 to add a printer to this station, then print the batch label again."),
-		)
-	else:
-		title = f"{machine.equipment_name} - {program.program_name}"
-		subtitle = f"{started:%d/%m/%Y %H:%M}"
-		logged = len(frappe.local.message_log)
-		try:
-			zpl, template = core_print.render_object(
-				"Wash Batch", batch.name, title, subtitle, printer=printer, with_template=True
-			)
-		except frappe.ValidationError as error:
-			del frappe.local.message_log[logged:]  # lỗi đã thành cảnh báo, không để msgprint lên kiosk
-			warning = _warning(
-				"LABEL_RENDER_FAILED",
-				_("Label could not be prepared"),
-				_("{0} Wash batch {1} is kept; its label is waiting.").format(error, batch.name),
-				_("Ask R10 to fix the label template of the wash batch, then print the label again."),
-			)
-	if zpl is None:
-		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
-		return {"print_job": name, "status": "Waiting", "printer": None, "zpl": None, "warning": warning}
-	name = core_print.create_job(
-		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
+	"""Print Job nhãn QR của lô tại `station`, luôn ``Queued`` (A-114): nhãn in ra PDF bằng máy in nhãn chung, trạm
+	không cần máy in riêng. Trả ``{"print_job", "status", "printer", "zpl", "warning"}``."""
+	return core_print.queue_object_label(
+		"Wash Batch",
+		batch.name,
+		f"{machine.equipment_name} - {program.program_name}",
+		f"{started:%d/%m/%Y %H:%M}",
+		station,
 	)
-	return {"print_job": name, "status": "Queued", "printer": printer["name"], "zpl": zpl, "warning": None}
 
 
 # --- Tra cứu lô (FR-M2-03.3) ------------------------------------------------------------------------------
@@ -943,21 +903,12 @@ def lookup(raw):
 
 
 def label_pdf(batch, station):
-	"""PDF nhãn QR của lô để máy trạm lưu (A-99, A-101): dùng Print Job có sẵn, xong ghi `Printed`/`File`.
+	"""PDF nhãn QR của lô cho hộp thoại In của trạm (A-101, A-114): dùng Print Job có sẵn, xong ghi `Printed`/`Browser`.
 
-	Không có lô → WASH_BATCH_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100). Nhãn còn `Waiting`
-	→ LABEL_NOT_QUEUED. Không sinh được PDF → LABEL_PDF_FAILED, job giữ `Queued`.
+	Không có lô → WASH_BATCH_NOT_FOUND. Lô không có nhãn ở trạm này → LABEL_NOT_QUEUED. Không sinh được PDF →
+	LABEL_PDF_FAILED, job giữ nguyên. Trạm không cần máy in riêng (A-114).
 	"""
 	doc = _batch_doc(batch)
-	if core_print.object_printer(station) is None:
-		raise _blocked(
-			"NO_PRINTER_AT_STATION",
-			_("No printer at this station"),
-			_("Station {0} has no active printer. Wash batch {1} is kept; its label is waiting.").format(
-				station, doc.name
-			),
-			_("Ask R10 to add a printer to this station, then print the batch label again."),
-		)
 	job = core_print.label_output_job("Wash Batch", doc.name, station)
 	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
 	program = frappe.db.get_value("Process Program", doc.program, "program_name")
@@ -970,7 +921,7 @@ def label_pdf(batch, station):
 			_("{0} set(s)").format(len(doc.set_units)),
 		],
 	)
-	core_print.mark_file_output(job.name, result["filename"])
+	core_print.mark_browser_output(job.name, result["filename"])
 	return {**result, "print_job": str(job.name)}
 
 
@@ -1380,6 +1331,8 @@ def save_manual_data(
 	)
 	doc.flags.tc_washing = True
 	doc.save(ignore_permissions=True)
+	if confirmed:
+		cycle_defaults.audit_confirmation("Wash Batch", doc.name, source, trace, station, client_ts)
 	return {
 		"data_complete": doc.data_complete,
 		"needs_review": doc.needs_review,

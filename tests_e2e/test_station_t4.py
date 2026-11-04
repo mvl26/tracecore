@@ -149,9 +149,12 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expect(label.locator(".tc-label-dm")).to_be_visible()
 	expect(label.locator(".tc-label-dm")).to_have_attribute("alt", re.compile(r"^DataMatrix CY-"))
 	expect(page.locator(".tc-res-grid")).to_contain_text(expected_text)
-	# A-107: bấm In nhãn mới lưu đúng 1 file PDF, không gửi Station Agent
+	# A-107, A-114: bấm In nhãn dựng PDF rồi mở hộp thoại In (trình duyệt headless không mở được thì báo đã lưu file);
+	# cả hai kết quả đều nêu tên file PDF của Cycle ID, và Station Agent không nhận gì
 	page.locator("[data-action='t4-label-pdf']").click()
-	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_contain_text("file PDF", timeout=15000)
+	expect(page.locator("[data-region='print']")).to_contain_text(
+		re.compile(r"CY-\d{6}-\d{4}\.pdf"), timeout=15000
+	)
 	assert sent == []
 	assert page.locator("[data-region='print'] .tc-alert-error").count() == 0
 
@@ -220,7 +223,8 @@ def test_t4_touch_targets_and_font_sizes(t4_page, t4_demo):
 	assert_touch_and_font(page)
 
 
-def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
+def test_t4_plasma_label_prints_without_roll_check(t4_page, t4_demo):
+	"""A-114: một máy in nhãn chung, một cuộn chung: gói Plasma in được ngay, không chờ đổi cuộn và không báo lỗi."""
 	page = t4_page
 	sent = mock_agent(page)
 	taps = Taps()
@@ -231,25 +235,17 @@ def test_t4_plasma_waits_for_plasma_roll(t4_page, t4_demo):
 	expect(page.locator("[data-region='ci'] .tc-t4-ok")).to_contain_text(t4_demo["ci_plasma"])
 	taps.tap(page.locator("[data-action='confirm-pack']"))
 
-	# Cycle ID vẫn giữ nhưng máy in đang lắp nhãn hấp: nhãn chờ, alert-error có lý do và hành động (AC-8)
 	expect(page.locator(".tc-cycle")).to_have_text(re.compile(r"^CY-\d{6}-\d{4}$"), timeout=15000)
-	waiting = page.locator("[data-region='print'] .tc-alert-error")
-	expect(waiting).to_be_visible(timeout=15000)
-	expect(waiting.locator(".tc-alert-reason")).not_to_be_empty()
-	expect(waiting).to_contain_text("VT-NHAN-PLASMA")
-	expect(waiting).to_contain_text("CN-")
-	assert sent == [], "không được in tạm nhãn plasma trên cuộn nhãn hấp"
-	# nhãn còn chờ máy in thì chưa in lại được: nút khóa kèm lý do (không tạo nhãn thứ hai cùng Cycle ID)
-	reprint = page.locator("[data-action='reprint']")
-	expect(reprint).to_have_count(0)  # A-107: In lại chỉ hiện sau khi đã in
-	expect(page.locator(".tc-actionsbar")).to_contain_text("Chỉ in lại được sau khi nhãn đang chờ đã được in")
+	# không còn nhãn chờ cuộn: không có alert-error ở khối in, nút In nhãn bật ngay
+	expect(page.locator("[data-region='print'] .tc-alert-error")).to_have_count(0)
+	print_button = page.locator("[data-action='t4-label-pdf']")
+	expect(print_button).to_be_enabled(timeout=15000)
 	assert_touch_and_font(page)
 
-	# Đổi cuộn: quét mã cuộn plasma -> alert-info, đúng 1 job chờ, bấm In 1 nhãn chờ ra file PDF (AC-9, A-107)
-	scan(page, t4_demo["roll_plasma"])
-	expect(page.locator(".tc-alert-info")).to_contain_text(t4_demo["roll_plasma"], timeout=15000)
-	page.locator("[data-action='t4-roll-pdf']").click()
-	expect(page.locator("[data-region='print'] .tc-alert-ok")).to_contain_text("file PDF", timeout=15000)
-	assert sent == [], "A-101: nhãn phát hành khi đổi cuộn không gửi Station Agent"
-	expect(reprint).to_be_enabled()
+	print_button.click()
+	expect(page.locator("[data-region='print']")).to_contain_text(
+		re.compile(r"CY-\d{6}-\d{4}\.pdf"), timeout=15000
+	)
+	expect(page.locator("[data-region='print'] .tc-alert-error")).to_have_count(0)
+	assert sent == [], "A-101: nhãn không gửi Station Agent"
 	expect(page.locator(SCAN_INPUT)).to_be_focused()

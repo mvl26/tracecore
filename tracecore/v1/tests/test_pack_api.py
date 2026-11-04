@@ -119,6 +119,12 @@ def totals():
 	)
 
 
+def make_waiting(jobs):
+	"""Đưa các Print Job về `Waiting` như dữ liệu trước A-114 (nhãn chờ cuộn đúng loại, chưa có ZPL)."""
+	for job in jobs:
+		frappe.db.set_value("Print Job", job, {"status": "Waiting", "payload": None, "printer": None})
+
+
 def assert_rejection(case, result, code, status):
 	case.assertIs(result["ok"], False)
 	case.assertEqual(result["error"]["code"], code)
@@ -469,13 +475,14 @@ class TestGenerate(PackApiCase):
 		retry = call(pack_api.generate_cycle_id, **generate_args(ready))
 		self.assertIs(retry["ok"], True)
 
-	def test_print_warning_is_not_an_http_error(self):
+	def test_station_without_printer_gets_a_label_ready_to_print(self):
+		# A-114: nhãn in ra PDF bằng máy in nhãn chung, không còn cảnh báo thiếu máy in đúng loại nhãn
 		ready = make_t4_ready_set(with_printer=False)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
 		before = reject_count()
 		result = call(pack_api.generate_cycle_id, **generate_args(ready))
 		self.assertIs(result["ok"], True)
-		self.assertEqual(result["print"]["status"], "Waiting")
-		self.assertEqual(result["print"]["warning"]["code"], "NO_PRINTER_FOR_METHOD")
+		self.assertEqual((result["print"]["status"], result["print"]["warning"]), ("Queued", None))
 		self.assertIsNone(http_status())
 		self.assertEqual(reject_count(), before)
 		self.assertTrue(frappe.db.exists("Pack", result["pack"]["cycle_id"]))
@@ -638,12 +645,13 @@ class TestReprintAndVoid(PackApiCase):
 			],
 		)
 
-	def test_reprint_while_label_waiting_keeps_one_job(self):
-		# F3: cảnh báo LABEL_ALREADY_WAITING (200, ok), không tạo Print Job mới, không tăng số lần in
+	def test_reprint_while_old_label_waiting_keeps_one_job(self):
+		# F3 với dữ liệu trước A-114: cảnh báo LABEL_ALREADY_WAITING (200, ok), không tạo job mới, không tăng số lần in
 		_ready, cycle_id = self.packed(method="Plasma", with_printer=False)
 		jobs = frappe.get_all(
 			"Print Job", filters={"ref_doctype": "Pack", "ref_name": cycle_id}, pluck="name"
 		)
+		make_waiting(jobs)
 		result = call(pack_api.reprint_label, cycle_id=cycle_id, reason="Kẹt giấy", station=STATION)
 		self.assertIs(result["ok"], True)
 		self.assertIsNone(http_status())
@@ -728,7 +736,7 @@ class TestLabelPdf(PackApiCase):
 		self.assertEqual(result["print_job"], job)
 		row = frappe.db.get_value("Print Job", job, ["status", "output_mode", "output_ref"], as_dict=True)
 		self.assertEqual(
-			(row.status, row.output_mode, row.output_ref), ("Printed", "File", result["filename"])
+			(row.status, row.output_mode, row.output_ref), ("Printed", "Browser", result["filename"])
 		)
 		self.assertEqual(frappe.db.get_value("Pack", cycle_id, "label_print_count"), 1)
 		self.assertEqual(
@@ -764,22 +772,23 @@ class TestLabelPdf(PackApiCase):
 			late = call(pack_api.label_pdf, cycle_id=cycle_id, station=STATION)
 		assert_rejection(self, late, "REPRINT_WINDOW_EXPIRED", 409)
 
-	def test_waiting_label_is_refused_and_stays_waiting(self):
-		"""F3: nhãn còn chờ máy in không ra PDF; đổi cuộn mới phát hành."""
+	def test_old_waiting_label_is_refused_and_stays_waiting(self):
+		"""F3 với dữ liệu trước A-114: nhãn `Waiting` không ra PDF tới khi patch chuyển nó sang `Queued`."""
 		_ready, done = self.packed(method="Plasma", with_printer=False)
-		result = call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
-		assert_rejection(self, result, "NO_PRINTER_FOR_METHOD", 409)
-		make_printer(STATION, make_label_items()[1])  # có máy in rồi vẫn chờ: chỉ quét cuộn mới phát hành
+		make_waiting([done["print"]["print_job"]])
 		refused = call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
 		assert_rejection(self, refused, "LABEL_NOT_QUEUED", 409)
 		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Waiting")
 
-	def test_deactivated_printer_refuses_the_pdf(self):
-		_ready, done = self.packed()
+	@bru("BRU-REP-011")
+	def test_plasma_pack_prints_without_a_plasma_roll_or_any_printer(self):
+		"""A-114: không chặn in theo loại cuộn hay theo máy in của trạm."""
+		_ready, done = self.packed(method="Plasma")
 		deactivate_printers(STATION)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
 		result = call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
-		assert_rejection(self, result, "NO_PRINTER_FOR_METHOD", 409)
-		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Queued")
+		self.assertIs(result["ok"], True, msg=result)
+		self.assertEqual(frappe.db.get_value("Print Job", done["print"]["print_job"], "status"), "Printed")
 
 	def test_voided_pack_has_no_label(self):
 		_ready, done = self.packed()
@@ -816,13 +825,15 @@ class TestLabelPdf(PackApiCase):
 			call(pack_api.label_pdf, cycle_id=done["pack"]["cycle_id"], station=STATION)
 
 	def released(self, count):
-		"""`count` nhãn chờ cùng được phát hành bởi một lần quét cuộn."""
+		"""`count` nhãn chờ của dữ liệu trước A-114 cùng được phát hành bởi một lần quét cuộn."""
 		steam_label, plasma_label = make_label_items()
 		make_printer(STATION, steam_label)
 		cycle_ids = []
 		for _index in range(count):
 			ready = make_t4_ready_set("Plasma", with_printer=False)
-			cycle_ids.append(call(pack_api.generate_cycle_id, **generate_args(ready))["pack"]["cycle_id"])
+			done = call(pack_api.generate_cycle_id, **generate_args(ready))
+			make_waiting([done["print"]["print_job"]])
+			cycle_ids.append(done["pack"]["cycle_id"])
 		result = call(printer_api.set_roll, roll_code=make_roll(plasma_label), station=STATION)
 		return cycle_ids, [row["print_job"] for row in result["roll"]["released_jobs"]]
 
@@ -840,7 +851,7 @@ class TestLabelPdf(PackApiCase):
 			decoded, {frappe.db.get_value("Pack", cycle_id, "barcode_payload") for cycle_id in cycle_ids}
 		)
 		for job in jobs:
-			self.assertEqual(frappe.db.get_value("Print Job", job, "output_mode"), "File")
+			self.assertEqual(frappe.db.get_value("Print Job", job, "output_mode"), "Browser")
 
 	def test_single_released_job_is_named_after_its_cycle_id(self):
 		cycle_ids, jobs = self.released(1)
@@ -862,14 +873,14 @@ class TestLabelPdf(PackApiCase):
 
 
 class TestSetRoll(PackApiCase):
-	@bru("BRU-REP-011")
-	def test_set_roll_releases_the_waiting_label(self):
-		"""AC-9: sinh Cycle ID khi máy in đang lắp nhãn sai, đổi cuộn thì nhãn chờ được in."""
+	def test_set_roll_releases_an_old_waiting_label(self):
+		"""Dữ liệu trước A-114: nhãn còn `Waiting` được phát hành khi quét cuộn đúng loại."""
 		ready = make_t4_ready_set("Plasma", with_printer=False)
 		steam_label, plasma_label = make_label_items()
 		printer = make_printer(STATION, steam_label)
 		generated = call(pack_api.generate_cycle_id, **generate_args(ready))
-		self.assertEqual(generated["print"]["warning"]["code"], "NO_PRINTER_FOR_METHOD")
+		self.assertIsNone(generated["print"]["warning"])
+		make_waiting([generated["print"]["print_job"]])
 
 		result = call(printer_api.set_roll, roll_code=make_roll(plasma_label), station=STATION)
 		self.assertIs(result["ok"], True)
@@ -973,6 +984,7 @@ class TestSetRollFromDesk(PackApiCase):
 		printer = make_printer(STATION, steam_label)
 		generated = call(pack_api.generate_cycle_id, **generate_args(ready))
 		job = generated["print"]["print_job"]
+		make_waiting([job])  # dữ liệu trước A-114
 		self.as_user("pack-api-r10c@example.com", roles=("TC R10",))
 		result = call(
 			printer_api.set_roll, roll_code=make_roll(plasma_label), station=STATION, printer=printer

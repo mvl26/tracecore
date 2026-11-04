@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton, TcStepQueue, tcLabelButton, tcPrintLabelPdf, tcWaitingLabelsButton */
+/* global tcErrorTitle, tcGuideButton, TcStepQueue, tcLabelButton, tcPrintLabelPdf, tcPrintedNote, tcWaitingLabelsButton */
 /* global uuid4, clientTs, esc, STATUS_BADGE, tcScanId, tcLocalDay, TcOutbox */
 // Màn T4 đóng gói (SCR-08, anchor A2, FEAT-018) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc/STATUS_BADGE.
@@ -308,7 +308,7 @@ class T4Packing {
 		const mine = this.done && jobs.find((job) => job.print_job === this.done.print.print_job);
 		if (mine) {
 			this.printNote = printed.includes(mine.print_job)
-				? { kind: "pdf", filename: result.filename, printed: true }
+				? { kind: "pdf", filename: result.filename, dialog: result.dialog, printed: true }
 				: { kind: "roll" };
 		}
 		this.show();
@@ -354,7 +354,7 @@ class T4Packing {
 		};
 	}
 
-	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; nhãn chờ giữ Waiting tới khi quét cuộn (F3)
+	// A-107, A-114: nút In nhãn, bấm mới lấy PDF và mở hộp thoại In; `Waiting` chỉ còn ở dữ liệu cũ (F3)
 	async handlePrint(print) {
 		this.done.print = print;
 		this.printNote = { kind: print.status === "Queued" ? "ready" : "waiting" };
@@ -373,7 +373,7 @@ class T4Packing {
 		});
 		if (result.ended || version !== this.station.sessionVersion) return;
 		this.printNote = result.ok
-			? { kind: "pdf", filename: result.filename, printed: true }
+			? { kind: "pdf", filename: result.filename, dialog: result.dialog, printed: true }
 			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
@@ -382,6 +382,7 @@ class T4Packing {
 		this.notice = null;
 		this.done = res;
 		if (this.queue) this.queue.reset(); // bộ vừa đóng gói rời hàng đợi
+		this.station.offerNextStation("PACK"); // A-117: sinh Cycle ID xong → mã vạch sang trạm tiệt khuẩn
 		this.handlePrint(res.print);
 	}
 
@@ -1480,20 +1481,11 @@ class T4Packing {
 	printerHtml() {
 		const ctx = this.ctx;
 		if (!ctx) return "";
+		// A-114: nhãn in qua PDF trên máy in nhãn chung; không còn chờ cuộn đúng loại nên không cảnh báo thiếu máy in
 		const printer = ctx.printer;
-		const warning = printer
-			? ""
-			: this.alertHtml({
-					variant: "warn",
-					title: __("No printer has this label loaded"),
-					reason: __(
-						"The Cycle ID can still be generated; the label waits until the roll code CN- is scanned."
-					),
-			  });
 		return `<h3>${esc(__("Label and printer"))}</h3>
 			<p>${esc(__("Label type"))}: <span class="tc-mono">${esc(ctx.label_type || "-")}</span></p>
-			<p>${esc(__("Printer"))}: <span class="tc-mono">${esc(printer ? printer.name : "-")}</span></p>
-			${warning}`;
+			<p>${esc(__("Printer"))}: <span class="tc-mono">${esc(printer ? printer.name : "-")}</span></p>`;
 	}
 
 	dangerHtml() {
@@ -1612,11 +1604,7 @@ class T4Packing {
 		if (kind === "pdf") {
 			// A-107: In lại đi qua hộp lý do và quy tắc 10 phút như cũ
 			return this.alertHtml(
-				{
-					variant: "ok",
-					title: __("Label printed to PDF file: {0}", [this.printNote.filename]),
-					reason: __("Print job {0}", [print.print_job]),
-				},
+				tcPrintedNote(this.printNote, print.print_job),
 				tcLabelButton("reprint", true, blocked)
 			);
 		}

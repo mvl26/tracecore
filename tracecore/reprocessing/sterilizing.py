@@ -680,56 +680,16 @@ def _complete(
 	}
 
 
-def _warning(code, title, reason, action):
-	return {"code": code, "title": title, "reason": reason, "action": action}
-
-
 def _queue_label(load, machine, program, station, started):
-	"""Tạo Print Job nhãn QR của mẻ tại `station`; trả ``{"print_job", "status", "printer", "zpl", "warning"}``.
-
-	Có máy in hoạt động ở trạm và mẫu `Object label - Sterilization Load` dựng được → ``Queued``. Không có máy in hay
-	không dựng được nhãn → ``Waiting`` kèm cảnh báo; mã mẻ vẫn giữ và nhãn in lại được sau.
-	"""
-	job = {
-		"station": station,
-		"data": {"label_object": "Sterilization Load", "code": load.name},
-		"ref_doctype": "Sterilization Load",
-		"ref_name": load.name,
-	}
-	printer = core_print.object_printer(station)
-	zpl = template = warning = None
-	if printer is None:
-		warning = _warning(
-			"NO_PRINTER_AT_STATION",
-			_("No printer at this station"),
-			_(
-				"Station {0} has no active printer. Sterilization load {1} is kept; its label is waiting."
-			).format(station, load.name),
-			_("Ask R10 to add a printer to this station, then print the load label again."),
-		)
-	else:
-		title = f"{machine.equipment_name} - {program.program_name}"
-		subtitle = f"{started:%d/%m/%Y %H:%M}"
-		logged = len(frappe.local.message_log)
-		try:
-			zpl, template = core_print.render_object(
-				"Sterilization Load", load.name, title, subtitle, printer=printer, with_template=True
-			)
-		except frappe.ValidationError as error:
-			del frappe.local.message_log[logged:]  # lỗi đã thành cảnh báo, không để msgprint lên kiosk
-			warning = _warning(
-				"LABEL_RENDER_FAILED",
-				_("Label could not be prepared"),
-				_("{0} Sterilization load {1} is kept; its label is waiting.").format(error, load.name),
-				_("Ask R10 to fix the label template of the sterilization load, then print the label again."),
-			)
-	if zpl is None:
-		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
-		return {"print_job": name, "status": "Waiting", "printer": None, "zpl": None, "warning": warning}
-	name = core_print.create_job(
-		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
+	"""Print Job nhãn QR của mẻ tại `station`, luôn ``Queued`` (A-114): nhãn in ra PDF bằng máy in nhãn chung, trạm
+	không cần máy in riêng. Trả ``{"print_job", "status", "printer", "zpl", "warning"}``."""
+	return core_print.queue_object_label(
+		"Sterilization Load",
+		load.name,
+		f"{machine.equipment_name} - {program.program_name}",
+		f"{started:%d/%m/%Y %H:%M}",
+		station,
 	)
-	return {"print_job": name, "status": "Queued", "printer": printer["name"], "zpl": zpl, "warning": None}
 
 
 # --- Tra cứu mẻ (FR-M2-09.2) -------------------------------------------------------------------------------
@@ -839,21 +799,12 @@ def lookup(raw):
 
 
 def label_pdf(load, station):
-	"""PDF nhãn QR của mẻ để máy trạm lưu (A-99, A-101): dùng Print Job có sẵn, xong ghi `Printed`/`File`.
+	"""PDF nhãn QR của mẻ cho hộp thoại In của trạm (A-101, A-114): dùng Print Job có sẵn, xong ghi `Printed`/`Browser`.
 
-	Không có mẻ → LOAD_NOT_FOUND. Trạm không có máy in hoạt động → NO_PRINTER_AT_STATION (A-100). Nhãn còn `Waiting` →
-	LABEL_NOT_QUEUED. Không sinh được PDF → LABEL_PDF_FAILED, job giữ `Queued`.
+	Không có mẻ → LOAD_NOT_FOUND. Mẻ không có nhãn ở trạm này → LABEL_NOT_QUEUED. Không sinh được PDF →
+	LABEL_PDF_FAILED, job giữ nguyên. Trạm không cần máy in riêng (A-114).
 	"""
 	doc = _load_doc(load)
-	if core_print.object_printer(station) is None:
-		raise _blocked(
-			"NO_PRINTER_AT_STATION",
-			_("No printer at this station"),
-			_(
-				"Station {0} has no active printer. Sterilization load {1} is kept; its label is waiting."
-			).format(station, doc.name),
-			_("Ask R10 to add a printer to this station, then print the load label again."),
-		)
 	job = core_print.label_output_job("Sterilization Load", doc.name, station)
 	machine = frappe.db.get_value("Equipment", doc.equipment, "equipment_name")
 	program = frappe.db.get_value("Process Program", doc.program, "program_name")
@@ -866,7 +817,7 @@ def label_pdf(load, station):
 			_("{0} pack(s)").format(len(doc.packs)),
 		],
 	)
-	core_print.mark_file_output(job.name, result["filename"])
+	core_print.mark_browser_output(job.name, result["filename"])
 	return {**result, "print_job": str(job.name)}
 
 
@@ -1145,6 +1096,7 @@ def save_manual_data(
 	)
 	doc.flags.tc_sterilizing = True
 	doc.save(ignore_permissions=True)
+	cycle_defaults.audit_confirmation("Sterilization Load", doc.name, source, trace, station, client_ts)
 	return {
 		"data_complete": doc.data_complete,
 		"needs_review": doc.needs_review,

@@ -130,8 +130,10 @@ doctype_js = {
 	"Sterilization Load": "public/js/sterilization_load.js",
 	"Laundry Batch": "public/js/laundry_batch.js",
 	"Employee": "public/js/employee.js",
+	"Batch": "public/js/batch.js",
+	"Zone Station": "public/js/zone_station.js",
 }
-doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
+doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js", "Batch": "public/js/batch_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -301,7 +303,7 @@ doc_events = {
 		"after_insert": "tracecore.hr.employees.after_insert",
 		"before_save": "tracecore.hr.employees.before_save",
 		"before_validate": "tracecore.core.account.validate_employee",
-		"on_update": "tracecore.core.account.employee_updated",
+		"on_update": ["tracecore.core.account.employee_updated", "tracecore.hr.employees.on_update"],
 		"on_trash": "tracecore.core.audit.block_delete",
 	},
 	"Set Unit": dict(_AUDIT_EVENTS),
@@ -576,10 +578,7 @@ tracecore_after_assembly = []
 
 scheduler_events = {
 	"cron": {
-		# đường in từ server (A-05 R1): gửi lại Print Job còn Queued của máy in có host
-		"* * * * *": [
-			"tracecore.core.print_server.dispatch_pending",
-		],
+		# A-114: bỏ cron gửi ZPL `print_server.dispatch_pending`; nhãn in ra PDF qua hộp thoại In của trình duyệt
 		# FEAT-010, FR-M9-10.1, UC-38 E1/E3: gửi lại email/SMS lỗi (tối đa 3 lần), leo thang thông báo khẩn chưa đọc
 		"*/5 * * * *": [
 			"tracecore.core.notification.retry_failed",

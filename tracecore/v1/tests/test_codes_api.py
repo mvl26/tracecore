@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 import frappe
 from PIL import Image
+from pypdf import PdfReader
 
 from tracecore.core import code_registry, qr
 from tracecore.core.errors import HTTP_STATUS
@@ -249,7 +250,7 @@ class ObjectLabelCase(IsolatedTestCase):
 
 
 class TestObjectLabel(ObjectLabelCase):
-	def test_object_label_creates_job_and_dispatches_for_host_printer(self):
+	def test_object_label_creates_job_then_one_pdf_prints_it(self):
 		equipment = make_equipment(name="Máy hấp in nhãn", serial="SN-LBL-01")
 		result = call(
 			print_api.object_label, label_object="Equipment", code=equipment.name, printer=self.host_printer
@@ -269,14 +270,37 @@ class TestObjectLabel(ObjectLabelCase):
 				"Object label - Equipment",
 			),
 		)
-		self.assertIn(f"^FDMA,{equipment.name}^FS", job.payload)
-		self.assertIn("May hap in nhan", job.payload)  # máy in không Unicode: bỏ dấu
+		self.assertIn(f"^FDMA,{equipment.name}^FS", job.payload)  # ZPL chỉ còn là vết (A-114)
 		data = json.loads(job.data)
+		self.assertEqual((data["label_object"], data["code"]), ("Equipment", equipment.name))
+		self.assertNotIn("dispatch", data)
+		self.enqueue.assert_not_called()  # A-114: không gửi ZPL qua mạng
+		# A-114: một PDF mở trong hộp thoại In, QR đúng mã
+		pdf = call(print_api.objects_pdf, print_jobs=[result["print_job"]])
+		self.assertTrue(pdf["ok"], pdf)
+		page = PdfReader(io.BytesIO(base64.b64decode(pdf["pdf_b64"]))).pages[0]
+		self.assertEqual(qr.decode_png(page.images[0].data), equipment.name)
 		self.assertEqual(
-			(data["label_object"], data["code"], data["dispatch"]), ("Equipment", equipment.name, "server")
+			frappe.db.get_value("Print Job", result["print_job"], ["status", "output_mode"]),
+			("Printed", "Browser"),
 		)
-		self.enqueue.assert_called_once()
-		self.assertEqual(self.enqueue.call_args.kwargs["job"], str(job.name))
+		again = call(print_api.objects_pdf, print_jobs=[result["print_job"]])
+		self.assertEqual(again["error"]["code"], "LABEL_NOT_QUEUED")
+
+	def test_object_label_without_printer_uses_the_shared_printer(self):
+		equipment = make_equipment(name="Máy in chung", serial="SN-LBL-SH")
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", self.agent_printer)
+		result = call(print_api.object_label, label_object="Equipment", code=equipment.name)
+		self.assertTrue(result["ok"], result)
+		self.assertEqual(frappe.db.get_value("Print Job", result["print_job"], "printer"), self.agent_printer)
+
+	def test_test_pdf_has_the_shared_label_size(self):
+		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 60, "label_height_mm": 40})
+		result = call(print_api.test_pdf)
+		self.assertTrue(result["ok"], result)
+		page = PdfReader(io.BytesIO(base64.b64decode(result["pdf_b64"]))).pages[0]
+		self.assertAlmostEqual(float(page.mediabox.width) * 25.4 / 72, 60, delta=1)
+		self.assertIn("60 x 40", page.extract_text())
 
 	def test_object_label_for_station_and_roll(self):
 		station = call(
@@ -307,24 +331,16 @@ class TestObjectLabel(ObjectLabelCase):
 		)
 		self.assertTrue(result["ok"], result)
 
-	def test_object_label_agent_only_printer_waits_with_warning(self):
+	def test_object_label_printer_without_network_address_is_fine(self):
+		# A-114: nhãn in ra PDF nên máy in không cần địa chỉ mạng (trước đây Waiting + PRINTER_AGENT_ONLY)
 		equipment = make_equipment(name="Máy agent", serial="SN-LBL-AG")
 		result = call(
 			print_api.object_label, label_object="Equipment", code=equipment.name, printer=self.agent_printer
 		)
 		self.assertTrue(result["ok"])
-		self.assertEqual(result["status"], "Waiting")
-		self.assertEqual(result["warning"]["code"], "PRINTER_AGENT_ONLY")
-		self.assertTrue(result["warning"]["reason"] and result["warning"]["action"])
+		self.assertEqual((result["status"], result["warning"]), ("Queued", None))
 		self.assertIsNone(http_status())
-		job = frappe.get_doc("Print Job", result["print_job"])
-		self.assertEqual(job.status, "Waiting")
-		self.assertNotIn("dispatch", json.loads(job.data))
 		self.enqueue.assert_not_called()
-		# đổi cuộn ở trạm không phát hành nhãn đối tượng đang chờ (chỉ nhãn gói)
-		self.assertNotIn(
-			job.name, [row["print_job"] for row in core_set_roll(self.agent_printer, self.steam_item)]
-		)
 
 	@bru("BRU-ID-006")
 	def test_object_label_blocked_for_disabled_code_and_retired_equipment(self):
@@ -402,7 +418,6 @@ class TestObjectLabel(ObjectLabelCase):
 		keys = frappe.db.count("Idempotency Key")
 		for kwargs in (
 			{"label_object": "Pack", "printer": self.host_printer},
-			{"label_object": "Equipment", "printer": None},
 			{"label_object": "Equipment", "printer": "PRN-NOPE"},
 			{"label_object": "Equipment", "printer": inactive},
 			{"label_object": "Equipment", "printer": ["x"]},
@@ -413,15 +428,17 @@ class TestObjectLabel(ObjectLabelCase):
 		self.assertEqual(frappe.db.count("Audit Log", {"ref_doctype": ["!=", "User"]}), audit_rows)
 		self.assertEqual(frappe.db.count("Idempotency Key"), keys)
 
-	def test_object_label_missing_template_is_render_failed(self):
+	def test_object_label_missing_zpl_template_still_prints_pdf(self):
+		# A-114: mẫu ZPL chỉ còn là vết; thiếu mẫu không chặn in PDF
 		equipment = make_equipment(name="Máy không mẫu", serial="SN-LBL-NOTPL")
 		frappe.db.set_value("Label Template", {"label_object": "Equipment"}, "is_active", 0)
 		result = call(
 			print_api.object_label, label_object="Equipment", code=equipment.name, printer=self.host_printer
 		)
-		self.assertEqual(result["error"]["code"], "LABEL_RENDER_FAILED")
-		self.assertEqual(http_status(), 422)
+		self.assertTrue(result["ok"], result)
+		self.assertFalse(frappe.db.get_value("Print Job", result["print_job"], "payload"))
 		self.assertFalse(frappe.local.message_log)
+		self.assertTrue(call(print_api.objects_pdf, print_jobs=[result["print_job"]])["ok"])
 
 	def test_object_label_requires_roles(self):
 		equipment = make_equipment(name="Máy quyền", serial="SN-LBL-ROLE")
@@ -485,12 +502,6 @@ class TestObjectLabel(ObjectLabelCase):
 	def test_object_label_is_whitelisted_post_only(self):
 		self.assertEqual(frappe.allowed_http_methods_for_whitelisted_func[print_api.object_label], ["POST"])
 		self.assertEqual(frappe.get_attr("tracecore.v1.print.object_label"), print_api.object_label)
-
-
-def core_set_roll(printer, label_item):
-	from tracecore.core import print as core_print
-
-	return core_print.set_roll(printer, make_roll(label_item))["released_jobs"]
 
 
 class TestObjectPreview(ObjectLabelCase):
@@ -601,6 +612,7 @@ class TestJobStatus(ObjectLabelCase):
 
 		queued = self._job(self.host_printer)
 		waiting = self._job(self.agent_printer)
+		frappe.db.set_value("Print Job", waiting, "status", "Waiting")  # job trước A-114
 		failed = self._job(self.host_printer)
 		printed = self._job(self.host_printer)
 		core_print.ack(failed, "Failed", "Printer", output_ref="10.0.0.50:9100", error="Máy in tắt")

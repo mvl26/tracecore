@@ -15,7 +15,7 @@ ERR = "public/js/station_error.js"
 FAKE_STATION = """
 const makeStation = () => ({
 	result: element(), input: element(), session: {roles: []}, sessionVersion: 1,
-	listen() {}, isOffline: () => false, setState() {}, focus() {}, renderLoading() {},
+	listen() {}, isOffline: () => false, setState() {}, focus() {}, renderLoading() {}, offerNextStation() {},
 	businessButtons: () => "",
 });
 """
@@ -425,7 +425,8 @@ station.rpcRead = async (method, args) => {
 };
 station.failureCause = (error, result) => (result && result.error ? result.error.reason : "net down");
 const saved = [];
-window.tcSavePdf = (b64, name) => saved.push([b64, name]);
+let printDialog = true;
+window.tcPrintPdf = async (b64, name) => { saved.push([b64, name]); return {dialog: printDialog}; };
 const agent = [];
 window.fetch = async (url) => { agent.push(url); return {ok: true}; };
 fetch = window.fetch;
@@ -464,7 +465,7 @@ TICKS = "for (let tick = 0; tick < 20; tick += 1) await Promise.resolve();"
 
 
 class TestLabelPrintsToPdf(FrappeTestCase):
-	"""A-107: T2, T5, T4 không tự lưu PDF; có máy in thì bấm In nhãn mới lưu, không gọi Station Agent."""
+	"""A-107, A-114: T2, T5, T4 không tự in; bấm In nhãn mới lấy PDF và mở hộp thoại In, không gọi Station Agent."""
 
 	def run_screen(self, screen, body):
 		name, path, cls, done = screen[:4]
@@ -495,9 +496,26 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 				self.assertEqual(out["saved"], [["JVBERg==", "X.pdf"]])
 				self.assertEqual(out["agent"], [])
 				self.assertIn("tc-alert-ok", out["note"])
-				self.assertIn("Label printed to PDF file: X.pdf", out["note"])
+				self.assertIn("Label sent to the print dialog: X.pdf", out["note"])
 				self.assertIn("Reprint", out["note"])
 				self.assertNotIn("Print label", out["note"])
+
+	def test_dialog_that_does_not_open_warns_that_the_file_was_saved(self):
+		# A-114: không mở được hộp thoại In thì tcPrintPdf đã lưu file; báo rõ để người dùng tự mở in
+		for screen in SCREENS:
+			with self.subTest(screen=screen[0]):
+				out = self.run_screen(
+					screen,
+					f"""
+					printDialog = false;
+					await screen.handlePrint(screen.done.print);
+					{self.click(screen)}
+					emit({{note: screen.printNoteHtml()}});
+					""",
+				)
+				self.assertIn("tc-alert-warn", out["note"])
+				self.assertIn("saved as PDF file X.pdf", out["note"])
+				self.assertIn("Reprint", out["note"])
 
 	def test_plain_reprint_at_t2_and_t5_saves_again(self):
 		for screen in SCREENS[:2]:
@@ -589,7 +607,8 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 			)
 			self.assertEqual(out["saved"], [])
 
-	def test_no_printer_means_no_request_no_file_and_the_warning(self):
+	def test_old_waiting_label_means_no_request_no_file_and_the_warning(self):
+		# dữ liệu trước A-114: job `Waiting` không có nút In; job mới luôn `Queued`
 		for screen in SCREENS:
 			out = self.run_screen(
 				screen,
@@ -691,7 +710,9 @@ class TestLabelPrintsToPdf(FrappeTestCase):
 		with open(path, encoding="utf-8", newline="") as handle:
 			translated = {row[0]: row[1] for row in csv.reader(handle) if row}
 		for text in (
-			"Label printed to PDF file: {0}",
+			"Label sent to the print dialog: {0}",
+			"The print dialog did not open; the label was saved as PDF file {0}.",
+			"Open the file and print it, or press Reprint.",
 			"Creating the label PDF...",
 			"Print label",
 			"Reprint",
@@ -716,7 +737,7 @@ TcOutbox.remove = async (key) => { entries.splice(entries.findIndex((e) => e.key
 TcOutbox.put = async () => {};
 const posts = [];
 const saved = [];
-window.tcSavePdf = (b64, name) => saved.push([b64, name]);
+window.tcPrintPdf = async (b64, name) => { saved.push([b64, name]); return {dialog: true}; };
 let pdfAnswer = {ok: true, pdf_b64: "JVBERg==", filename: "labels.pdf", print_jobs: ["PJ-1", "PJ-2"], skipped: []};
 fetch = window.fetch = async (url, init) => {
 	const body = JSON.parse(init.body);
@@ -753,6 +774,7 @@ class TestReplayedLabels(FrappeTestCase):
 		self.assertEqual((pdf_calls[0][1]["station"], pdf_calls[0][1]["token"]), ("TR-4", "tok"))
 		self.assertEqual(out["saved"], [["JVBERg==", "labels.pdf"]])
 		self.assertEqual(out["state"]["label_file"], "labels.pdf")
+		self.assertIs(out["state"]["label_dialog"], True)
 		self.assertEqual(out["state"]["waiting_labels"], 0)
 		self.assertFalse(any("8765" in post[0] for post in out["posts"]))
 
@@ -2444,7 +2466,7 @@ const failingStation = (failure) => {
 	const base = {
 		result: element(), input: element(), form: element(), banner: element(), root: element(),
 		session: {roles: ["TC R02"], token: "t"}, sessionVersion: 1, station: "TR-007",
-		listen() {}, isOffline: () => false, focus() {}, setOffline() {},
+		listen() {}, isOffline: () => false, focus() {}, setOffline() {}, offerNextStation() {},
 		setState(state, html) { states.push({state, html}); },
 		renderLoading() { states.push({state: "loading", html: ""}); },
 		businessButtons: () => "",

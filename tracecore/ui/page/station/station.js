@@ -244,6 +244,8 @@ class TraceCoreStation {
 		this.input = this.root.querySelector("#tc-scan-input");
 		window.tcBindScanLabel(this.input);
 		this.result = this.root.querySelector(".tc-result");
+		this.nextRegion = this.root.querySelector(".tc-next-region"); // A-117: mã vạch sang trạm kế
+		this.nextOffer = null;
 		this.authForm = this.root.querySelector(".tc-auth-form");
 		this.cardInput = this.root.querySelector("#tc-card-input");
 		this.authResult = this.root.querySelector(".tc-auth-result");
@@ -571,6 +573,20 @@ class TraceCoreStation {
 			setTimeout(() => this.focus(Boolean(button) && document.activeElement === button), 0);
 		});
 		this.listen(this.input, "blur", () => setTimeout(() => this.focus(), 150));
+		// A-117: máy quét không gửi Enter thì mã trạm kế vừa gõ đủ vẫn tự chuyển trạm (chỉ khớp đúng mã đang hiện)
+		this.listen(this.input, "input", () => {
+			const offer = this.nextOffer;
+			if (offer && offer.station && this.input.value.trim().toUpperCase() === offer.station)
+				this.scan(this.input.value);
+			// A-119: mã lệnh đủ chữ (không có Enter) thì chờ máy quét gõ xong rồi mới chạy, tránh chạy mã dở dang
+			clearTimeout(this.commandTimer);
+			const typed = this.input.value.trim().toUpperCase();
+			if (/^CMD-(?:DO|TAB)-[A-Z0-9_-]+$/.test(typed))
+				this.commandTimer = setTimeout(() => {
+					if (this.input.value.trim().toUpperCase() === typed)
+						this.scan(this.input.value);
+				}, 150);
+		});
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
 			this.listen(this.root, name, (event) => this.noteActivity(event), true);
@@ -1156,7 +1172,13 @@ class TraceCoreStation {
 		else if (state.queued) text = __("Offline – {0} transaction(s) waiting", [state.queued]);
 		else if (state.label_error)
 			text = __("Labels of offline packs were not printed: {0}", [state.label_error]);
-		else if (state.label_file) text = __("Label printed to PDF file: {0}", [state.label_file]);
+		else if (state.label_file)
+			text =
+				state.label_dialog === false
+					? __("The print dialog did not open; the label was saved as PDF file {0}.", [
+							state.label_file,
+					  ])
+					: __("Label sent to the print dialog: {0}", [state.label_file]);
 		else if (state.waiting_labels) text = __("Labels of offline packs are ready to print.");
 		else if (state.conflicts)
 			text = __("Synced · {0} transaction(s) sent to R02 as sync conflicts", [
@@ -1674,8 +1696,151 @@ class TraceCoreStation {
 			await new Promise((resolve) => setTimeout(resolve, 100));
 	}
 
+	// A-117 (FEAT-080, FR-M9-22): xong bước thì màn hiện mã vạch của trạm kế; quét đúng mã đó thì mở trạm kế như bấm nút
+	// trạm, quét mã trạm khác thì báo lỗi inline, quét mã khác thì bỏ đề nghị. Không ghi sổ nghiệp vụ nào.
+	// Khối mã vạch nằm ở vùng riêng của khung trạm (dưới ô quét), nên mọi màn chỉ cần gọi `offerNextStation(bước)` khi xong.
+	setNextOffer(offer) {
+		this.nextOffer = offer;
+		if (!this.nextRegion) return;
+		this.nextRegion.innerHTML = this.nextStationHtml();
+		this.nextRegion.hidden = !offer;
+	}
+
+	async offerNextStation(step) {
+		this.setNextOffer(null);
+		const version = this.sessionVersion;
+		try {
+			const result = await this.rpc("tracecore.v1.station.next_barcode", {
+				token: this.session.token,
+				step,
+			});
+			if (version !== this.sessionVersion) return;
+			if (result && result.ok && result.next) {
+				// trạm kế chính là trạm này (một trạm làm cả hai bước): không có chỗ để nhảy
+				if (result.next.station !== this.station)
+					this.setNextOffer({ ...result.next, png: result.png_b64 });
+			} else if (result && !result.ok) {
+				this.setNextOffer({ error: result.error });
+			}
+		} catch (error) {
+			// mã vạch chỉ là phím tắt: lỗi mạng thì màn vẫn dùng được, không báo lỗi thêm
+			this.setNextOffer(null);
+		}
+	}
+
+	nextStationHtml() {
+		const offer = this.nextOffer;
+		if (!offer) return "";
+		if (offer.error) return this.blockHtml(offer.error);
+		const label = __(offer.label);
+		return `<section class="tc-next-station" data-region="next-station">
+			<img src="data:image/png;base64,${offer.png}" width="112" height="112"
+				alt="${esc(__("Barcode of station {0}", [offer.station]))}">
+			<div>
+				<p>${esc(__("Scan to go to {0}", [label]))}</p>
+				<button type="button" class="tc-btn tc-btn-primary" data-action="tc-switch-station"
+					data-station="${esc(offer.station)}">${esc(__("Go to station {0}", [label]))}</button>
+			</div>
+		</section>`;
+	}
+
+	// true khi mã quét đã được xử lý ở đây (không chuyển tiếp cho màn của bước)
+	handleNextStationScan(raw) {
+		if (!this.nextOffer || !this.nextOffer.station) return false;
+		const code = (raw || "").trim().toUpperCase();
+		if (!/^TR-\d{3}$/.test(code)) {
+			this.setNextOffer(null); // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
+			return false;
+		}
+		if (code === this.nextOffer.station) {
+			this.input.value = "";
+			this.switchStation(code, __(this.nextOffer.label));
+			return true;
+		}
+		return false; // mã trạm khác: là lệnh chuyển trạm thường (A-119), `handleCommandScan` xử lý
+	}
+
+	// A-119 (FEAT-083, FR-M9-23): quét mã lệnh = bấm đúng nút. Mã trạm TR-###, CMD-TAB-<màn>, CMD-DO-<lệnh>; chỉ nút điều hướng
+	// và hoàn thành có mã. `HOAN-THANH-NAP` do màn T2/T5 tự đọc như trước. Lệnh không dùng được thì báo lỗi inline, không làm gì.
+	commandUnavailable(reason) {
+		this.authResult.innerHTML = this.blockHtml({
+			code: "COMMAND_NOT_AVAILABLE",
+			title: __("This command is not available here"),
+			reason,
+			action: __("Finish the current step, or scan the command of the step you are on."),
+		});
+		this.focus();
+		return true;
+	}
+
+	async loadCommandMap() {
+		if (this.commandMap && this.commandMapVersion === this.sessionVersion)
+			return this.commandMap;
+		const version = this.sessionVersion;
+		const result = await this.rpc("tracecore.v1.station.commands", {
+			token: this.session.token,
+		});
+		this.commandMap = result && result.ok ? result.commands : null;
+		this.commandMapVersion = version;
+		return this.commandMap;
+	}
+
+	static usableButton(root, selector) {
+		return [...root.querySelectorAll(selector)].find(
+			(element) => !element.disabled && element.getClientRects().length > 0
+		);
+	}
+
+	// true khi mã quét là mã lệnh (đã xử lý ở đây); false thì mã đi tiếp cho màn của bước
+	async handleCommandScan(raw) {
+		const code = (raw || "").trim().toUpperCase();
+		const match = /^(?:(TR-\d{3})|CMD-(DO|TAB)-([A-Z0-9_-]+))$/.exec(code);
+		if (!match) return false;
+		this.input.value = "";
+		this.authResult.innerHTML = "";
+		if (match[1]) {
+			const button = this.root.querySelector(
+				`[data-action="tc-switch-station"][data-station="${match[1]}"]`
+			);
+			if (!button)
+				return this.commandUnavailable(
+					__("Station {0} is not among the station buttons of this account.", [match[1]])
+				);
+			this.switchStation(match[1], button.textContent);
+			return true;
+		}
+		if (match[2] === "TAB") {
+			const tab = [...this.root.querySelectorAll('[data-action="tc-screen"]')].find(
+				(element) => (element.dataset.screen || "").toUpperCase() === match[3]
+			);
+			if (!tab)
+				return this.commandUnavailable(__("This station has no tab {0}.", [match[3]]));
+			tab.click();
+			return true;
+		}
+		let map = null;
+		try {
+			map = await this.loadCommandMap();
+		} catch (error) {
+			map = null;
+		}
+		if (!map) return this.commandUnavailable(__("The command list could not be loaded."));
+		const selectors = map[match[3]];
+		const button =
+			selectors &&
+			selectors.map((s) => TraceCoreStation.usableButton(this.root, s)).find(Boolean);
+		if (!button)
+			return this.commandUnavailable(
+				__("The button of command {0} is not shown or is turned off at this step.", [code])
+			);
+		button.click();
+		return true;
+	}
+
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
+		if (this.handleNextStationScan(raw)) return;
+		if (await this.handleCommandScan(raw)) return;
 		this.authResult.innerHTML = "";
 		if (this.screen) {
 			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới

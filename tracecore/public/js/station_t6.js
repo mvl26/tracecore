@@ -197,6 +197,7 @@ class T6Storage {
 		}
 		this.show();
 		if (res.kind === "stored") this.loadOverview(); // tồn và danh sách hết hạn đã đổi
+		if (res.kind === "stored") this.station.offerNextStation("PUTAWAY"); // A-117: cất kho xong → mã vạch sang cấp phát
 	}
 
 	// ---- thao tác trên màn ----

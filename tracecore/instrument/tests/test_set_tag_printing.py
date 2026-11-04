@@ -1,9 +1,12 @@
-"""In thẻ kim loại / nhãn khay Set ID qua hàng đợi server (FEAT-016 Task 4; FR-M1-05, .3, .4; EI-HW-008; A-09 G9-G12).
+"""In thẻ kim loại / nhãn khay Set ID (FEAT-016 Task 4; FR-M1-05, .3, .4; EI-HW-008; A-09 G9-G12; A-114).
 
-Máy in giả là socket TCP cục bộ trên 127.0.0.1 nhận nhiều kết nối (mỗi nhãn một kết nối), worker
-`print_server.dispatch_many` gọi đồng bộ; `frappe.db.commit/rollback` giả bằng savepoint như `test_print_server.py`.
+A-114: thẻ xếp ``Queued`` rồi in một PDF qua hộp thoại In (`set_tags.tags_pdf`). Các test `print_server` còn lại giữ
+cho job cũ: máy in giả là socket TCP cục bộ trên 127.0.0.1, worker `print_server.dispatch_many` gọi đồng bộ;
+`frappe.db.commit/rollback` giả bằng savepoint như `test_print_server.py`.
 """
 
+import base64
+import io
 import socket
 import threading
 import time
@@ -12,6 +15,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.utils import now_datetime
+from pypdf import PdfReader
 
 from tracecore.core import code_registry, gs1, print_server
 from tracecore.core import print as core_print
@@ -129,118 +133,67 @@ class SetTagPrintingCase(IsolatedTestCase):
 		core_print.ack(job, status, "File", output_ref="test.zpl", error=None if status == "Printed" else "x")
 
 
-class TestBatchDispatch(SetTagPrintingCase):
+class TestBatchPdf(SetTagPrintingCase):
+	"""A-114: thẻ/nhãn khay xếp ``Queued`` rồi in một PDF nhiều trang qua hộp thoại In, không gửi ZPL qua mạng."""
+
 	@bru("BRU-ID-001")
-	def test_batch_print_reaches_fake_printer_in_order(self):
-		fake = self.fake()
+	def test_batch_queues_in_order_then_one_pdf_prints_every_label(self):
 		units = self.units(3)
-		tag_printer, tray_printer = self.printer(fake.port), self.printer(fake.port)
-
-		result = set_tags.queue_prints(units, ["tray", "tag"], {"tag": tag_printer, "tray": tray_printer})
-		self.tx.commit()
-
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
+		result = set_tags.queue_prints(units, ["tray", "tag"])
 		expected = [(unit, kind) for unit in units for kind in ("tag", "tray")]
 		self.assertEqual([(row["set_unit"], row["kind"]) for row in result["jobs"]], expected)
 		self.assertEqual({row["status"] for row in result["jobs"]}, {"Queued"})
-		self.assertEqual(result["warnings"], [])
+		self.enqueue.assert_not_called()  # không còn worker gửi ZPL
 		jobs = self.jobs(result)
-		self.enqueue.assert_called_once()
-		args, kwargs = self.enqueue.call_args
-		self.assertEqual(args, ("tracecore.core.print_server.dispatch_many",))
-		self.assertEqual(kwargs["jobs"], jobs)
 		for job, (unit, kind) in zip(jobs, expected, strict=True):
 			row = frappe.get_doc("Print Job", job)
-			self.assertEqual((row.ref_doctype, row.ref_name, row.station), ("Set Unit", unit, STATION))
-			self.assertEqual(row.printer, tag_printer if kind == "tag" else tray_printer)
-			data = frappe.parse_json(row.data)
+			self.assertEqual((row.ref_doctype, row.ref_name, row.printer), ("Set Unit", unit, None))
 			self.assertEqual(
-				data,
-				{
-					"label_object": set_tags.KINDS[kind],
-					"set_unit": unit,
-					"kind": kind,
-					"reprint": False,
-					"dispatch": "server",
-				},
+				frappe.parse_json(row.data),
+				{"label_object": set_tags.KINDS[kind], "set_unit": unit, "kind": kind, "reprint": False},
 			)
-			self.assertIn(f"^FD_18004{unit}^FS", row.payload)
-			self.assertEqual(row.template, core_print.active_template(set_tags.KINDS[kind], None).name)
 			audit = frappe.get_all(
 				"Audit Log",
 				filters={"ref_doctype": "Print Job", "ref_name": str(job), "action": "Create"},
-				fields=["new_value", "reason"],
+				fields=["new_value"],
 			)
 			self.assertEqual(len(audit), 1)
-			self.assertEqual(
-				frappe.parse_json(audit[0].new_value),
-				{"set_unit": unit, "kind": kind, "reprint": False, "printer": row.printer},
-			)
-			self.assertIsNone(audit[0].reason)
 
-		results = print_server.dispatch_many(jobs)
-		fake.stop()
-
-		self.assertEqual(results, [{"status": "Printed", "attempts": 1}] * 6)
-		self.assertEqual(fake.received, self.payloads(jobs))
+		pdf = set_tags.tags_pdf(jobs)
+		pages = PdfReader(io.BytesIO(base64.b64decode(pdf["pdf_b64"]))).pages
+		self.assertEqual(len(pages), 6)
+		decoded = [gs1.decode_datamatrix_png(page.images[0].data) for page in pages]
+		self.assertEqual(decoded, [gs1.giai_payload(unit) for unit, _kind in expected])
+		self.assertEqual((pdf["print_jobs"], pdf["skipped"]), ([str(job) for job in jobs], []))
+		self.assertEqual(pdf["filename"], f"{units[0]}-6.pdf")
+		self.assertEqual({self.state(job) for job in jobs}, {("Printed", 1)})
+		self.assertEqual(frappe.db.get_value("Print Job", jobs[0], "output_mode"), "Browser")
+		# đã in thì lấy lại không cần lý do không được: in lại phải qua queue_prints có lý do (FR-M1-05.3)
+		self.assertEqual(self.block_code(set_tags.tags_pdf, jobs).code, "LABEL_NOT_QUEUED")
 
 	@bru("BRU-ID-001")
-	def test_printer_down_keeps_set_ids_and_queues(self):
-		units = self.units(3)
+	def test_pdf_failure_keeps_set_ids_and_jobs_queued(self):
+		# FR-M1-05.4: không dựng được PDF thì Set ID còn nguyên, job giữ Queued để in lại
+		units = self.units(2)
 		registry_before = frappe.db.count("Code Registry")
-		result = self.queue(units, ("tag", "tray"), self.printer(closed_port()))
-		jobs = self.jobs(result)
-
-		results = print_server.dispatch_many(jobs)
-
-		self.assertEqual(results[0], {"status": "Queued", "attempts": 1})
-		self.assertEqual(results[1:], [{"status": "Queued", "attempts": 0}] * 5)
-		self.assertTrue(frappe.db.get_value("Print Job", jobs[0], "error"))
-		for _round in range(2):  # lượt 2, 3 của worker: job đầu hết lần thử
-			print_server.dispatch_many(jobs)
-		self.assertEqual(self.state(jobs[0]), ("Failed", 3))
-		self.assertEqual([self.state(job) for job in jobs[1:]], [("Queued", 0)] * 5)
-		for _round in range(3):  # cron thử lại mọi job còn Queued
-			self.age(jobs)
-			print_server.dispatch_pending(limit=20)
-		self.assertEqual({self.state(job) for job in jobs}, {("Failed", 3)})
-		# FR-M1-05.4: Set ID đã cấp còn nguyên, không cấp mã mới
-		self.assertEqual(len(frappe.get_all("Set Unit", filters={"name": ["in", units]}, pluck="name")), 3)
+		jobs = self.jobs(self.queue(units, ("tag",), self.printer()))
+		with patch("frappe.utils.pdf.get_pdf", side_effect=OSError("No wkhtmltopdf executable found")):
+			self.assertEqual(self.block_code(set_tags.tags_pdf, jobs).code, "LABEL_PDF_FAILED")
+		self.assertEqual({self.state(job) for job in jobs}, {("Queued", 0)})
 		self.assertEqual(frappe.db.count("Code Registry"), registry_before)
-		self.assertEqual({frappe.db.get_value("Code Registry", unit, "status") for unit in units}, {"Active"})
+		self.assertEqual(len(set_tags.tags_pdf(jobs)["print_jobs"]), 2)
 
-	@bru("BRU-ID-001")
-	def test_partial_failure_resumes_without_duplicates(self):
-		fake = MultiFakePrinter()
-		printer = self.printer(fake.port)
-		jobs = self.jobs(self.queue(self.units(100), printer=printer))
-		real_send = print_server._send
-		calls = []
-
-		def flaky(host, port, payload):
-			calls.append(payload)
-			if len(calls) == 38:  # máy in nhận 37 nhãn rồi tắt
-				fake.stop()
-			real_send(host, port, payload)
-
-		with patch.object(print_server, "_send", side_effect=flaky):
-			print_server.dispatch_many(jobs)
-
-		self.assertEqual(len(calls), 38)
-		self.assertEqual(fake.received, self.payloads(jobs[:37]))
-		self.assertEqual({self.state(job) for job in jobs[:37]}, {("Printed", 1)})
-		self.assertEqual(self.state(jobs[37]), ("Queued", 1))
-		self.assertEqual({self.state(job) for job in jobs[38:]}, {("Queued", 0)})
-		self.assertEqual(len(jobs[38:]), 62)
-
-		again = self.fake()  # máy in bật lại
-		frappe.db.set_value("Printer", printer, "port", again.port)
-		self.age(jobs)
-		self.assertEqual(print_server.dispatch_pending(limit=100), 63)
-		again.stop()
-
-		self.assertEqual(again.received, self.payloads(jobs[37:]))
-		self.assertFalse(set(again.received) & set(fake.received))
-		self.assertEqual({self.state(job)[0] for job in jobs}, {"Printed"})
+	def test_tags_pdf_skips_disabled_set_ids_and_other_jobs(self):
+		units = self.units(2)
+		jobs = self.jobs(self.queue(units))
+		code_registry.disable(units[0], "Thanh lý")
+		other = core_print.create_job(STATION, None, ref_doctype="Zone Station", ref_name=STATION)
+		result = set_tags.tags_pdf([*jobs, other])
+		self.assertEqual(
+			(result["print_jobs"], result["skipped"]), ([str(jobs[1])], [str(jobs[0]), str(other)])
+		)
+		self.assertEqual(self.state(jobs[0]), ("Queued", 0))
 
 	def test_batch_worker_bounded_time(self):
 		jobs = self.jobs(self.queue(self.units(100), printer=self.printer()))
@@ -286,27 +239,11 @@ class TestBatchDispatch(SetTagPrintingCase):
 		)
 		self.assertEqual(fake.received, self.payloads([jobs[1], jobs[3]]))
 
-	def test_printer_without_network_address_refused(self):
-		"""Ruling Task 4/5: thẻ/nhãn khay chỉ in qua đường server; máy in chỉ qua agent (host rỗng) hoặc host bị chặn
-		→ ``PRINTER_NOT_NETWORK`` trước mọi ghi, không tạo job ``Waiting`` (không ai giải phóng → chặn bộ mãi mãi)."""
-		units = self.units(2)
-		agent = self.printer(host="")
-		network = self.printer()
-		jobs_before = frappe.db.count("Print Job")
-
-		block = self.block_code(
-			set_tags.queue_prints, units, ["tag", "tray"], {"tag": network, "tray": agent}
-		)
-
-		self.assertEqual(block.code, "PRINTER_NOT_NETWORK")
-		self.assertEqual(block.http_status, 422)
-		self.assertEqual(block.items, [agent])
-		self.assertIn(agent, block.reason)
-		self.assertEqual(frappe.db.count("Print Job"), jobs_before)
-		self.enqueue.assert_not_called()
-		frappe.conf.pop("tracecore_allow_local_printers")  # 127.0.0.1 bị chặn khi site không bật cờ
-		block = self.block_code(set_tags.queue_prints, units, ["tag"], {"tag": network})
-		self.assertEqual(block.code, "PRINTER_NOT_NETWORK")
+	def test_printer_without_network_address_is_fine(self):
+		"""A-114: thẻ in ra PDF nên máy in không cần địa chỉ mạng (trước đây ``PRINTER_NOT_NETWORK``)."""
+		units = self.units(1)
+		result = set_tags.queue_prints(units, ["tag"], {"tag": self.printer(host="")})
+		self.assertEqual(result["jobs"][0]["status"], "Queued")
 
 	def test_dispatch_refuses_demo_prefix_set_label_on_real_site(self):
 		"""DB dev (Set ID tiền tố demo, job Queued) chép sang site thật: worker không gửi, job Failed có lý do."""
@@ -485,7 +422,6 @@ class TestReprint(SetTagPrintingCase):
 			([f"9520000TPRN{i:06d}" for i in range(101)], ["tag"], {"tag": printer}),
 			([unit], ["label"], {"label": printer}),
 			([unit], [], {}),
-			([unit], ["tag"], {}),
 			([unit], ["tag"], {"tag": inactive}),
 			([unit], ["tag"], {"tag": "PRN-NONE"}),
 			([unit], ["tag"], "PRN"),
@@ -495,14 +431,13 @@ class TestReprint(SetTagPrintingCase):
 				set_tags.queue_prints(*args)
 			self.assertNotIsInstance(raised.exception, BlockedError, msg=repr(args))
 
-	def test_broken_template_reports_render_failed_before_writes(self):
+	def test_broken_zpl_template_does_not_block_the_pdf_tag(self):
+		# A-114: thẻ in ra PDF, mẫu ZPL chỉ còn là vết
 		unit = self.units(1)[0]
-		printer = self.printer()
-		jobs_before = frappe.db.count("Print Job")
 		with patch.object(set_tags.core_print, "render_label", side_effect=frappe.ValidationError("bad")):
-			block = self.block_code(set_tags.queue_prints, [unit], ["tag"], {"tag": printer})
-		self.assertEqual(block.code, "LABEL_RENDER_FAILED")
-		self.assertEqual(frappe.db.count("Print Job"), jobs_before)
+			job = self.jobs(set_tags.queue_prints([unit], ["tag"], {"tag": self.printer()}))[0]
+		self.assertEqual(frappe.db.get_value("Print Job", job, ["status", "payload"]), ("Queued", None))
+		self.assertEqual(set_tags.tags_pdf([job])["print_jobs"], [str(job)])
 
 
 class TestVerifyTag(SetTagPrintingCase):

@@ -457,6 +457,7 @@ class T5Release {
 				this.back.loadQueues(true);
 				return this.show();
 			}
+			this.station.offerNextStation("STERI_UNLOAD"); // A-117: giải phóng xong → mã vạch sang kho vô khuẩn
 			this.back.goStep(1, {
 				notice: {
 					variant: "ok",
@@ -509,6 +510,7 @@ class T5Release {
 				this.biManual = null;
 				this.biLoad = "";
 				this.biResult = "";
+				if (!failed) this.station.offerNextStation("STERI_UNLOAD"); // A-117: BI âm tính → giải phóng
 				this.back.goStep(1, {
 					notice: {
 						variant: failed ? "warn" : "ok",

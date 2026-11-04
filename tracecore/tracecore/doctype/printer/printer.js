@@ -1,9 +1,11 @@
-// Desk: form Printer — nạp cuộn nhãn (SCR-33, FEAT-002 Task 5, ruling P1).
+/* global tracecore */
+// Desk: form Printer — nạp cuộn nhãn (SCR-33, FEAT-002 Task 5, ruling P1); in thử nhãn PDF (A-114).
 // Gọi tracecore.v1.printer.set_roll kèm `printer` (đường Desk của R10). Desk không phải màn trạm nên kết quả và lỗi
 // hiện bằng frappe.msgprint (tiêu đề / lý do / hành động). Desk chỉ ghi nhận cuộn: nhãn đang chờ không in từ đây
 // (trình duyệt không gửi được tới Station Agent) mà in khi cuộn được quét ở màn T4 của trạm (ruling F2).
 
 const PRINTER_SET_ROLL = "tracecore.v1.printer.set_roll";
+const PRINTER_TEST_PDF = "tracecore.v1.print.test_pdf";
 
 function printer_uuid() {
 	if (window.crypto && window.crypto.randomUUID) {
@@ -171,5 +173,16 @@ frappe.ui.form.on("Printer", {
 			return;
 		}
 		frm.add_custom_button(__("Load label roll"), () => printer_open_roll_dialog(frm));
+		// A-114: nhãn thử đúng khổ chung, in qua hộp thoại In để kiểm khổ giấy và lề của driver máy in
+		frm.add_custom_button(__("Print test label"), () => printer_test_label());
 	},
 });
+
+async function printer_test_label() {
+	const result = await tracecore.codes.post(PRINTER_TEST_PDF, {}, false);
+	if (!result.ok) {
+		printer_show_block(result.error);
+		return;
+	}
+	await window.tcPrintPdfAndTell(result.data);
+}

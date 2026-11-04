@@ -4,12 +4,14 @@ import base64
 import io
 from unittest.mock import patch
 
+import frappe
 from frappe.tests.utils import FrappeTestCase
 from pypdf import PdfReader
 
 from tracecore.core import gs1, label_pdf, qr
 from tracecore.core.errors import BlockedError
 
+MM_PER_PT = 25.4 / 72
 PAYLOAD = "01095200000000031126110117271101\x1d21CY-261101-0001"
 ROWS = [
 	("CY-261101-0001", "code"),
@@ -34,6 +36,52 @@ class TestLabelPdf(FrappeTestCase):
 		self.assertEqual(len(reader.pages), 1)
 		# khổ nhãn, không phải A4 (842 pt)
 		self.assertLess(float(reader.pages[0].mediabox.height), 200)
+
+	def test_every_label_uses_the_shared_label_size(self):
+		# A-114 (d): một khổ chung trong TraceCore Settings, mặc định 60 x 40 mm
+		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 60, "label_height_mm": 40})
+		pages = [
+			PdfReader(io.BytesIO(_render()[1])).pages[0],
+			PdfReader(io.BytesIO(label_pdf.pack_pdf("CY-261101-0001", PAYLOAD, ROWS))).pages[0],
+			PdfReader(io.BytesIO(label_pdf.object_pdf("KE-0001", "Giá A", "A-1-1-1"))).pages[0],
+		]
+		for page in pages:
+			self.assertAlmostEqual(float(page.mediabox.width) * MM_PER_PT, 60, delta=1)
+			self.assertAlmostEqual(float(page.mediabox.height) * MM_PER_PT, 40, delta=1)
+		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 50, "label_height_mm": 30})
+		page = PdfReader(io.BytesIO(_render()[1])).pages[0]
+		self.assertAlmostEqual(float(page.mediabox.width) * MM_PER_PT, 50, delta=1)
+		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 60, "label_height_mm": 40})
+
+	def test_default_size_is_50_by_30_and_every_label_fits_one_page(self):
+		# A-116: chưa đặt khổ thì 50 x 30 mm
+		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 0, "label_height_mm": 0})
+		self.assertEqual(label_pdf.label_size(), (50, 30))
+		pdfs = [
+			_render()[1],
+			label_pdf.pack_pdf("CY-261101-0001", PAYLOAD, ROWS),
+			label_pdf.object_pdf("KE-0001", "Giá A", "A-1-1-1"),
+		]
+		for pdf in pdfs:
+			reader = PdfReader(io.BytesIO(pdf))
+			self.assertEqual(len(reader.pages), 1)
+			self.assertAlmostEqual(float(reader.pages[0].mediabox.width) * MM_PER_PT, 50, delta=1)
+			self.assertAlmostEqual(float(reader.pages[0].mediabox.height) * MM_PER_PT, 30, delta=1)
+		# DataMatrix của gói vẫn quét ra đúng nội dung ở khổ nhỏ
+		page = PdfReader(io.BytesIO(pdfs[1])).pages[0]
+		self.assertEqual(gs1.decode_datamatrix_png(page.images[0].data), PAYLOAD)
+
+	def test_object_label_qr_decodes_back_to_the_code(self):
+		pdf = label_pdf.object_pdf("KE-0001", "Giá A", "A-1-1-1")
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		self.assertEqual(qr.decode_png(page.images[0].data), "KE-0001")
+		self.assertIn("KE-0001", page.extract_text())
+
+	def test_set_tag_datamatrix_decodes_back_to_the_payload(self):
+		payload = "8004952000000000SET1"
+		pdf = label_pdf.datamatrix_pdf("SET1", payload, [("Bộ phẫu thuật", "title")])
+		page = PdfReader(io.BytesIO(pdf)).pages[0]
+		self.assertEqual(gs1.decode_datamatrix_png(page.images[0].data), payload)
 
 	def test_qr_in_the_pdf_decodes_back_to_the_code(self):
 		for code in ("ME-261101-02", "LR-261101-07"):
@@ -79,8 +127,9 @@ class TestPackLabelPdf(FrappeTestCase):
 			self.assertIn(part, text)
 
 	def test_long_shortage_list_is_not_cut_and_stays_on_one_page(self):
-		"""Danh sách dụng cụ thiếu dài vẫn đủ: trang cao theo nội dung, không cắt chữ, không sang trang."""
-		rows = [*ROWS, ("MISSING: " + ", ".join(f"Instrument {n}" for n in range(60)) + " END", "title")]
+		"""Danh sách dụng cụ thiếu dài vẫn đủ ở khổ mặc định 50 x 30 (A-116): 30 món, không cắt chữ, không sang trang.
+		Đo thực tế: 30 món vừa, 40 món bị cắt ở khổ này (khổ 60 x 40 chứa được hơn)."""
+		rows = [*ROWS, ("MISSING: " + ", ".join(f"Instrument {n}" for n in range(30)) + " END", "title")]
 		reader = PdfReader(io.BytesIO(label_pdf.pack_pdf("CY-261101-0001", PAYLOAD, rows)))
 		self.assertEqual(len(reader.pages), 1)
 		self.assertIn("END", reader.pages[0].extract_text())

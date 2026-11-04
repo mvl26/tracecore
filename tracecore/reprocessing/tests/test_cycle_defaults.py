@@ -37,6 +37,11 @@ CONFIGURED = [
 	},
 	{"parameter_name": "Áp lực nước", "unit": "bar", "min_value": 0, "max_value": 0, "required": 0},
 ]
+MID_PARAMS = [
+	{"parameter_name": "Thời gian giữ nhiệt", "unit": "phút", "min_value": 5, "max_value": 10, "required": 1},
+	{"parameter_name": "A0", "unit": "", "min_value": 3000, "max_value": 12000, "required": 1},
+	{"parameter_name": "Nhiệt độ sấy", "unit": "°C", "min_value": 100, "max_value": 120, "required": 1},
+]
 STERILE = [
 	{"parameter_name": "Temperature", "unit": "°C", "min_value": 132, "max_value": 138, "required": 1},
 	{"parameter_name": "Pressure", "unit": "bar", "min_value": 0, "max_value": 2.3, "required": 1},
@@ -81,12 +86,75 @@ class TestPrefill(WashResultCase):
 		)
 		self.assertEqual(prefill["chemical"], "HC-ENZ-01")
 
-	def test_header_value_outside_the_range_is_not_offered(self):
+	def test_header_value_outside_the_range_falls_to_the_midpoint(self):
 		self.program = make_wash_program(
 			self.machine.name, chemical="HC-ENZ-01", parameters=CONFIGURED, temperature=60
 		)
 		batch, _sets = self.load()
-		self.assertNotIn("Nhiệt độ khử khuẩn", self.context(batch)["prefill"]["values"])
+		context = self.context(batch)
+		self.assertEqual(context["prefill"]["values"]["Nhiệt độ khử khuẩn"], 92.5)
+		self.assertEqual(context["prefill"]["sources"]["Nhiệt độ khử khuẩn"], "midpoint")
+
+	@bru("BRU-REP-015")
+	def test_midpoint_when_no_default(self):
+		self.program = make_wash_program(self.machine.name, chemical="HC-ENZ-01", parameters=MID_PARAMS)
+		batch, _sets = self.load()
+		context = self.context(batch)
+		values, sources = context["prefill"]["values"], context["prefill"]["sources"]
+		self.assertEqual(values["Thời gian giữ nhiệt"], 7.5)
+		self.assertEqual(values["A0"], 7500)
+		self.assertEqual(values["Nhiệt độ sấy"], 110)
+		self.assertEqual(set(sources.values()), {"midpoint"})
+		by_name = {row["parameter_name"]: row for row in context["parameter_schema"]}
+		self.assertEqual(by_name["A0"]["default_source"], "midpoint")
+
+	@bru("BRU-REP-015")
+	def test_program_default_beats_midpoint(self):
+		batch, _sets = self.load()
+		context = self.context(batch)
+		self.assertEqual(context["prefill"]["values"]["Thời gian giữ"], 12)  # dải 0-15, mặc định 12
+		self.assertEqual(context["prefill"]["sources"]["Thời gian giữ"], "program")
+		self.assertEqual(context["prefill"]["sources"]["Nhiệt độ khử khuẩn"], "program")  # từ `temperature`
+
+	def test_no_midpoint_with_a_single_bound_or_no_range(self):
+		self.program = make_wash_program(
+			self.machine.name,
+			chemical="HC-ENZ-01",
+			parameters=[
+				{"parameter_name": "Chỉ cận trên", "min_value": 0, "max_value": 15, "required": 0},
+				{"parameter_name": "Chỉ cận dưới", "min_value": 5, "max_value": 0, "required": 0},
+				{"parameter_name": "Không dải", "min_value": 0, "max_value": 0, "required": 0},
+			],
+		)
+		batch, _sets = self.load()
+		self.assertEqual(self.context(batch)["prefill"]["values"], {})
+
+	def test_midpoint_is_kept_when_confirmed_unchanged(self):
+		self.program = make_wash_program(self.machine.name, chemical="HC-ENZ-01", parameters=MID_PARAMS)
+		batch, _sets = self.load()
+		doc = frappe.get_doc("Wash Batch", batch)
+		values = [
+			{"parameter_name": "Thời gian giữ nhiệt", "value": 7.5},
+			{"parameter_name": "A0", "value": 7000},
+			{"parameter_name": "Nhiệt độ sấy", "value": 110},
+		]
+		self.save_data(batch, values=values, started_at=str(doc.started_at))
+		self.assertEqual(frappe.db.get_value("Wash Batch", batch, "data_source"), "Manual Default")
+		data = json.loads(frappe.db.get_value("Wash Batch", batch, "machine_data"))
+		self.assertEqual(data["edited_fields"].count("A0"), 1)
+		self.assertIn("Thời gian giữ nhiệt", data["kept_fields"])
+		self.assertIn("Nhiệt độ sấy", data["kept_fields"])
+		self.assertNotIn("A0", data["kept_fields"])
+		self.assertEqual(set(data["kept_fields"]) & set(data["edited_fields"]), set())
+		logged = frappe.get_all(
+			"Audit Log",
+			filters={"ref_doctype": "Wash Batch", "ref_name": batch, "reason": "CycleDataConfirmed"},
+			fields=["new_value"],
+		)
+		self.assertEqual(len(logged), 1)
+		event = json.loads(logged[0].new_value)
+		self.assertEqual(event["kept_fields"], data["kept_fields"])
+		self.assertEqual(event["edited_fields"], data["edited_fields"])
 
 	def test_header_values_without_a_parameter_row_get_their_own_field(self):
 		self.program = make_wash_program(self.machine.name, chemical="HC-ENZ-01", temperature=93)
@@ -240,6 +308,8 @@ class TestLoadDefaults(IsolatedTestCase):
 		self.assertEqual(rows["Temperature"]["default_value"], 134)
 		trace = json.loads(doc.machine_data)
 		self.assertIn("Temperature", trace["edited_fields"])
+		self.assertIn("Pressure", trace["kept_fields"])
+		self.assertNotIn("Temperature", trace["kept_fields"])
 		self.assertIsNone(self.context()["prefill"])  # đã lưu: form dùng giá trị đã lưu
 
 	@bru("BRU-REP-015")
@@ -268,5 +338,8 @@ class TestAssets(IsolatedTestCase):
 			self.assertIn("prefill", script, name)
 			self.assertIn('__("Confirm cycle data")', script, name)
 			self.assertNotIn("Save manual data and confirm", script, name)
+			self.assertIn("prefill.started_at", script, name)  # A-115: giờ bắt đầu điền sẵn
+			self.assertIn('"midpoint"', script, name)  # A-115: hint nguồn điểm giữa
+			self.assertNotIn('data-form="reported" value=', script, name)  # kết quả máy không điền sẵn
 		with open(frappe.get_app_path("tracecore", "translations", "vi.csv"), encoding="utf-8") as handle:
 			self.assertIn("Xác nhận dữ liệu chu trình", handle.read())

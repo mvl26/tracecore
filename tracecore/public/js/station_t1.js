@@ -652,6 +652,8 @@ class T1Receiving {
 				this.notice = null;
 				this.show();
 				this.loadToday(); // phiếu vừa ghi sổ vào danh sách hôm nay
+				// A-117: xong lượt nhận thì hiện mã vạch sang trạm rửa (không hiện khi phiếu còn nằm trên máy)
+				if (!res.offline) this.station.offerNextStation("RECEIVE");
 			}
 		);
 	}

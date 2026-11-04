@@ -245,19 +245,18 @@ class TestSterilizingLabel(IsolatedTestCase):
 		self.assertEqual(job.payload, label["zpl"])
 		self.assertTrue(result["qr_png_b64"])
 
-	def test_label_waits_when_station_has_no_printer_but_load_code_is_kept(self):
+	def test_label_is_ready_to_print_without_any_printer(self):
+		# A-114: nhãn in ra PDF bằng máy in nhãn chung, trạm không cần máy in riêng
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
 		result = self.complete()
 		label = result["print"]
-		self.assertEqual((label["status"], label["printer"], label["zpl"]), ("Waiting", None, None))
-		self.assertEqual(label["warning"]["code"], "NO_PRINTER_AT_STATION")
-		self.assertTrue(frappe.db.exists("Sterilization Load", result["load"]))
+		self.assertEqual((label["status"], label["printer"], label["warning"]), ("Queued", None, None))
 		job = frappe.get_doc("Print Job", label["print_job"])
-		self.assertEqual((job.status, job.ref_name), ("Waiting", result["load"]))
+		self.assertEqual((job.status, job.ref_name), ("Queued", result["load"]))
 
-	def test_label_waits_when_template_is_missing_or_broken(self):
+	def test_broken_template_does_not_block_the_label(self):
 		steam, _plasma = make_label_items()
 		make_printer(STATION, steam)
 		frappe.db.set_value("Label Template", {"label_object": "Sterilization Load"}, "is_active", 0)
 		label = self.complete()["print"]
-		self.assertEqual((label["status"], label["warning"]["code"]), ("Waiting", "LABEL_RENDER_FAILED"))
-		self.assertIn("Sterilization Load", label["warning"]["reason"])
+		self.assertEqual((label["status"], label["zpl"], label["warning"]), ("Queued", None, None))

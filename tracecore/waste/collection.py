@@ -7,9 +7,10 @@ gom. Túi phân loại sai bị giữ (`Held`), không tính vào tổng kg, có
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, cint, cstr, flt, now_datetime
+from frappe.utils import add_to_date, cint, cstr, flt, get_datetime, now_datetime
 
-from tracecore.core import code_registry, extension, station_auth, zones
+from tracecore.core import code_registry, extension, station_auth
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 
@@ -17,7 +18,6 @@ WEIGHT_DIGITS = 3
 SCALE, MANUAL, CONVERTED = "Scale", "Manual", "Converted"
 COLLECTED, HELD, CANCELLED = "Collected", "Held", "Cancelled"
 NC_HOOK = "tracecore_waste_nc"
-WASTE_FUNCTION = "WASTE"
 LABEL_OBJECT = "Waste Container"
 
 
@@ -333,75 +333,69 @@ def acknowledge(name, card):
 # --- nhãn -------------------------------------------------------------------------------------------------------------
 
 
-def _printer_station(station):
-	"""Trạm có máy in: trạm hiện tại, không có thì trạm WST khác đang hoạt động (W1); trả (trạm, máy in)."""
-	printer = core_print.object_printer(station) if station else None
-	if printer:
-		return station, printer
-	for other in zones.stations_with_function(WASTE_FUNCTION):
-		if other == station:
-			continue
-		printer = core_print.object_printer(other)
-		if printer:
-			return other, printer
-	return station, None
-
-
-def _label_warning(code, title, reason, action):
-	return {"code": code, "title": title, "reason": reason, "action": action}
+def _collected_text(doc):
+	return f"{get_datetime(doc.collected_at):%d/%m/%Y %H:%M}" if doc.collected_at else ""
 
 
 def _queue_label(doc, line, container):
-	"""Print Job nhãn QR của túi. Không có máy in hoặc không dựng được nhãn → `Waiting` kèm cảnh báo; phiếu vẫn ghi sổ."""
-	station, printer = _printer_station(doc.station)
-	if not station:
-		return {
-			"print_job": None,
-			"status": None,
-			"warning": None,
-		}  # lập trên Desk không có trạm: in lại từ Desk
-	job = {
-		"station": station,
-		"data": {"label_object": LABEL_OBJECT, "code": container.name},
-		"ref_doctype": LABEL_OBJECT,
-		"ref_name": container.name,
-	}
-	zpl = template = warning = None
-	if printer is None:
-		warning = _label_warning(
-			"NO_PRINTER_AT_STATION",
-			_("No printer at this station"),
-			_("Collection {0} is kept; its labels are waiting.").format(doc.name),
-			_("Ask R10 to add a printer to a waste station, then print the labels again."),
-		)
-	else:
-		logged = len(frappe.local.message_log)
-		try:
-			zpl, template = core_print.render_object(
-				LABEL_OBJECT,
-				container.name,
-				line.waste_type,
-				f"{doc.collected_at:%d/%m/%Y %H:%M}"
-				if hasattr(doc.collected_at, "strftime")
-				else str(doc.collected_at),
-				printer=printer,
-				with_template=True,
-			)
-		except frappe.ValidationError as error:
-			del frappe.local.message_log[logged:]  # lỗi đã thành cảnh báo, không để msgprint lên kiosk
-			warning = _label_warning(
-				"LABEL_RENDER_FAILED",
-				_("Label could not be prepared"),
-				_("{0} Collection {1} is kept; its labels are waiting.").format(error, doc.name),
-				_("Ask R10 to fix the label template of waste containers, then print the labels again."),
-			)
-	if zpl is None:
-		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
-		return {"print_job": name, "status": "Waiting", "warning": warning}
-	name = core_print.create_job(
-		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
+	"""Print Job ``Queued`` nhãn QR của túi tại trạm thu gom (A-114: in PDF bằng máy in nhãn chung, không chờ máy in).
+
+	Phiếu lập trên Desk không có trạm thì không tạo job (in lại từ Desk).
+	"""
+	if not doc.station:
+		return {"print_job": None, "status": None, "warning": None}
+	return core_print.queue_object_label(
+		LABEL_OBJECT, container.name, line.waste_type, _collected_text(doc), doc.station
 	)
-	return {"print_job": name, "status": "Queued", "warning": None}
+
+
+def label_pdf(collection, station):
+	"""PDF nhãn QR các túi/thùng của lượt thu gom cho hộp thoại In của trạm (FR-M10-01.5, A-114), mỗi túi một trang.
+
+	Dùng Print Job của từng túi ở trạm này (``Queued``, hoặc đã in để in lại), xong ghi ``Printed``/``Browser``. Không có
+	lượt thu gom → ``WASTE_COLLECTION_NOT_FOUND``; không còn nhãn nào in được ở trạm → ``LABEL_NOT_QUEUED``; lỗi sinh PDF →
+	``LABEL_PDF_FAILED``, job giữ nguyên. Trả ``{"pdf_b64", "filename", "print_jobs"}``.
+	"""
+	doc = (
+		frappe.db.get_value(
+			"Waste Collection", collection, ["name", "collected_at", "docstatus"], as_dict=True
+		)
+		if isinstance(collection, str) and collection
+		else None
+	)
+	if not doc or doc.docstatus != 1:
+		raise _blocked(
+			"WASTE_COLLECTION_NOT_FOUND",
+			_("Collection not found"),
+			_("Waste collection {0} does not exist or is not submitted.").format(collection or "-"),
+			_("Check the collection code."),
+		)
+	containers = frappe.get_all(
+		"Waste Container",
+		filters={"collection": doc.name, "status": ["!=", CANCELLED]},
+		fields=["name", "waste_type"],
+		order_by="name asc",
+	)
+	pages, jobs = [], []
+	for container in containers:
+		try:
+			job = core_print.label_output_job(LABEL_OBJECT, container.name, station)
+		except BlockedError:
+			continue
+		pages.append(core_label_pdf.object_pdf(container.name, container.waste_type, _collected_text(doc)))
+		jobs.append(job)
+	if not pages:
+		raise _blocked(
+			"LABEL_NOT_QUEUED",
+			_("Label is not ready to print"),
+			_("Collection {0} has no container label to print at this station.").format(doc.name),
+			_("Print the labels from the station that recorded the collection, or call R02."),
+		)
+	filename = f"{doc.name}.pdf"
+	pdf = core_label_pdf.merge(pages)
+	for job in jobs:
+		core_print.mark_browser_output(job.name, filename)
+	return {**core_label_pdf.encode(pdf, filename), "print_jobs": [str(job.name) for job in jobs]}
 
 
 def labels_of(doc):
@@ -424,4 +418,6 @@ def view(doc):
 			order_by="name asc",
 		),
 		"label_warning": labels_of(doc)["warning"],
+		# A-114: số nhãn sẵn sàng in; màn trạm hiện nút In nhãn khi > 0
+		"label_jobs": len([job for job in labels_of(doc)["jobs"] if job.get("print_job")]),
 	}

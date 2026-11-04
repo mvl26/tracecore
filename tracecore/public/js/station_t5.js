@@ -1,4 +1,4 @@
-/* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
+/* global tcLabelButton, tcPrintLabelPdf, tcPrintedNote, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, tcPackLabel, tcPackLabelHtml */
 /* global uuid4, clientTs, esc, TcProgramMatch, TcRunConsumables */
 // Màn T5 nạp mẻ tiệt khuẩn (SCR-09 STN, SCR-35 PDA, FEAT-022) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -663,12 +663,13 @@ class T5Load {
 						reason: __("Load known from the previous step, no scan"),
 					});
 				else this.loadQueues(true);
+				this.station.offerNextStation("STERI_LOAD"); // A-117: nạp xong → trạm dỡ mẻ (trạm này nếu tự dỡ thì ẩn)
 				this.handlePrint(res.print);
 			}
 		);
 	}
 
-	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; chưa có máy in thì giữ Waiting và cảnh báo
+	// A-107, A-114: nút In nhãn, bấm mới lấy PDF và mở hộp thoại In; `Waiting` chỉ còn ở dữ liệu cũ
 	async handlePrint(print) {
 		this.printNote = { kind: print && print.status === "Queued" ? "ready" : "waiting" };
 		this.show();
@@ -686,7 +687,7 @@ class T5Load {
 		});
 		if (result.ended || version !== this.station.sessionVersion) return;
 		this.printNote = result.ok
-			? { kind: "pdf", filename: result.filename, printed: true }
+			? { kind: "pdf", filename: result.filename, dialog: result.dialog, printed: true }
 			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
@@ -958,7 +959,7 @@ class T5Load {
 				values,
 				alerts: alerts ? "yes" : "no",
 				alertsText: alerts || "",
-				started: t5LocalInput(context.started_at),
+				started: t5LocalInput(context.started_at) || t5LocalInput(prefill.started_at),
 				ended:
 					t5LocalInput(context.ended_at) ||
 					t5LocalInput(prefill.ended_at) ||
@@ -1587,16 +1588,8 @@ class T5Load {
 		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
 		const button = tcLabelButton("t5-label-pdf", note.printed, this.busy || this.offline);
 		if (note.kind === "ready") return button;
-		if (note.kind === "pdf") {
-			return this.alertHtml(
-				{
-					variant: "ok",
-					title: __("Label printed to PDF file: {0}", [note.filename]),
-					reason: __("Print job {0}", [print.print_job]),
-				},
-				button
-			);
-		}
+		if (note.kind === "pdf")
+			return this.alertHtml(tcPrintedNote(note, print.print_job), button);
 		if (note.kind === "pdf-failed") {
 			return this.alertHtml(
 				{
@@ -1820,7 +1813,13 @@ class T5Load {
 				${
 					param.default_value != null
 						? `<p class="tc-hint">${esc(
-								__("Program default: {0}", [window.tcDecimal(param.default_value)])
+								param.default_source === "midpoint"
+									? __("Prefilled from the midpoint of the range: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
+									: __("Program default: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
 						  )}</p>`
 						: ""
 				}

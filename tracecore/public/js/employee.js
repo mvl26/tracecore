@@ -174,13 +174,21 @@ function tc_employee_staff_buttons(frm) {
 			() => frappe.set_route("List", "Certificate", { employee: frm.doc.name }),
 			__("Certificates")
 		);
-	// thẻ QR in từ mã NV- (nhân viên cũ HR-EMP- chưa có mã NV- nên không có nút)
-	if (frm.doc.name.startsWith("NV-") && window.tracecore && tracecore.codes)
+	// FEAT-079: thẻ QR in đúng Mã thẻ trạm (trạm tra theo mã này khi quét); chưa có thì dùng mã NV-
+	// (nhân viên cũ HR-EMP- không có mã NV- và chưa có mã thẻ nên không có nút)
+	const cardCode = (frm.doc.tc_card_id || "").trim().toUpperCase() || frm.doc.name;
+	if (
+		(frm.doc.tc_card_id || frm.doc.name.startsWith("NV-")) &&
+		window.tracecore &&
+		tracecore.codes
+	)
 		tracecore.codes.add_print_button(
 			frm,
 			"Employee Card",
 			frm.doc.employee_name,
-			frm.doc.department || ""
+			frm.doc.department || "",
+			null,
+			cardCode
 		);
 }
 

@@ -8,14 +8,13 @@
   trên dev/test thẻ in thêm dòng ``TEST``.
 - `render` / `preview`: ZPL bằng `core.print.render_label`; ảnh PNG xem trước dựng từ chính ZPL (máy in không Unicode).
 
-In qua hàng đợi server (Task 4; FR-M1-05.3, .4; EI-HW-008; G9-G12):
+In qua PDF và hộp thoại In của trình duyệt (A-114; trước đó hàng đợi server Task 4; FR-M1-05.3, .4; EI-HW-008; G9-G12):
 
-- `queue_prints`: **một Print Job cho mỗi (bộ, loại bản in)**, thứ tự thẻ rồi nhãn khay của từng bộ; kiểm cả lô
-  (máy in có địa chỉ mạng, `check_printable`, `TAG_PRINT_PENDING`, lý do in lại, dựng ZPL) **trước** mọi ghi. Job
-  ``Queued`` + một `print_server.enqueue_server_dispatch_many` cho cả lô. Máy in không gửi được từ server (chỉ qua
-  agent, host bị chặn) → ``PRINTER_NOT_NETWORK`` (ruling Task 4/5): job ``Waiting`` của thẻ không ai giải phóng nên sẽ
-  chặn bộ bằng ``TAG_PRINT_PENDING`` mãi mãi. Mỗi job một Audit ``Create`` trên Print Job (``new = {set_unit, kind,
-  reprint, printer}``, ``reason`` = lý do in lại) vì Audit Log không có hành động "Print".
+- `queue_prints`: **một Print Job ``Queued`` cho mỗi (bộ, loại bản in)**, thứ tự thẻ rồi nhãn khay của từng bộ; kiểm
+  cả lô (`check_printable`, `TAG_PRINT_PENDING`, lý do in lại) **trước** mọi ghi. Máy in là máy in nhãn chung (hoặc
+  máy người dùng chọn); ZPL chỉ dựng để lưu vết khi mẫu dùng được. Mỗi job một Audit ``Create`` trên Print Job
+  (``new = {set_unit, kind, reprint, printer}``, ``reason`` = lý do in lại) vì Audit Log không có hành động "Print".
+- `tags_pdf`: một PDF nhiều trang (DataMatrix GIAI) cho các job vừa xếp, rồi ghi ``Printed``/``Browser``.
 - `cancel_pending`: lối ra cho job đang chờ bị kẹt (``Waiting`` cũ, ``Queued`` của máy in đã tắt): đánh dấu ``Failed``
   qua `core.print.ack` kèm lý do, Audit ``Update`` trên Print Job; sau đó in bù không cần lý do.
 - In lại (G10): bản in đầu tiên của (bộ, loại) và in bù khi mọi job trước của loại đó ``Failed`` không cần lý do; còn
@@ -31,7 +30,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, get_datetime, now_datetime
 
-from tracecore.core import audit, code_registry, gs1, print_server
+from tracecore.core import audit, code_registry, gs1
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.print_preview import zpl_preview_png
@@ -273,15 +273,26 @@ def _kind_list(kinds) -> list[str]:
 
 
 def _printer_rows(kinds: list[str], printers) -> dict:
+	"""``{kind: máy in}``: máy người dùng chọn (phải đang hoạt động), không chọn thì máy in nhãn chung (có thể None)."""
+	printers = printers or {}
 	if not isinstance(printers, dict):
 		frappe.throw(_("printers must map each label kind to a printer."))
+	shared = core_print.label_printer()
 	rows = {}
 	for kind in kinds:
 		name = printers.get(kind)
-		if not isinstance(name, str) or not name:
-			frappe.throw(_("Choose a printer for {0}.").format(_(KINDS[kind], context="Label Template")))
-		row = frappe.db.get_value(
-			"Printer", name, ["name", "station", "language", "supports_unicode", "is_active"], as_dict=True
+		if name in (None, ""):
+			rows[kind] = frappe._dict(shared, station=None) if shared else None
+			continue
+		row = (
+			frappe.db.get_value(
+				"Printer",
+				name,
+				["name", "station", "language", "supports_unicode", "is_active"],
+				as_dict=True,
+			)
+			if isinstance(name, str)
+			else None
 		)
 		if not row or not cint(row.is_active):
 			frappe.throw(_("Printer {0} does not exist or is not active.").format(name))
@@ -289,42 +300,16 @@ def _printer_rows(kinds: list[str], printers) -> dict:
 	return rows
 
 
-def _render_or_block(set_unit, kind, printer):
-	"""``(zpl, mẫu)``; mẫu thiếu/lỗi → ``BlockedError(LABEL_RENDER_FAILED)`` (không để lại msgprint)."""
+def _render_zpl(set_unit, kind, printer):
+	"""``(zpl, mẫu)`` để lưu vết khi có máy in và mẫu dùng được, ngược lại ``(None, None)`` (A-114: in ra PDF)."""
+	if printer is None:
+		return None, None
 	logged = len(frappe.local.message_log)
 	try:
 		return render(set_unit, kind, printer, with_template=True)
-	except BlockedError:
-		raise
-	except frappe.ValidationError as error:
+	except frappe.ValidationError:
 		del frappe.local.message_log[logged:]
-		raise BlockedError(
-			Block(
-				"LABEL_RENDER_FAILED",
-				_("Label could not be rendered"),
-				str(error),
-				_("Ask R10 to check the active label template for this object."),
-				items=[{"set_unit": set_unit, "kind": kind}],
-			)
-		) from None
-
-
-def printer_block(printers: list[str]) -> Block | None:
-	"""``PRINTER_NOT_NETWORK`` khi một máy in trong `printers` không gửi được từ server (không có host, host bị chặn,
-	port sai, không hoạt động), ngược lại None. Thẻ/nhãn khay Set ID chỉ in qua đường server (A-09 G9, ruling Task 4/5).
-	"""
-	refused = [name for name in dict.fromkeys(printers) if print_server.printer_address(name) is None]
-	if not refused:
-		return None
-	return Block(
-		"PRINTER_NOT_NETWORK",
-		_("Printer not reachable from the server"),
-		_(
-			"Printer {0} has no network address the server can send to; set tags and tray labels are printed only from the server."
-		).format(", ".join(refused)),
-		_("Choose a printer with a network address, or ask R10 to set the printer host and port."),
-		items=refused,
-	)
+		return None, None
 
 
 def _reprint_warning(items: list[dict]) -> dict:
@@ -365,26 +350,23 @@ def _check_batch(units, kinds, reason) -> dict:
 
 
 def queue_prints(
-	set_units: list[str], kinds: list[str], printers: dict[str, str], reason: str | None = None
+	set_units: list[str], kinds: list[str], printers: dict[str, str] | None = None, reason: str | None = None
 ) -> dict:
-	"""Xếp hàng in thẻ kim loại / nhãn khay cho `set_units` (FR-M1-05, .3, .4; G9, G10).
+	"""Xếp Print Job ``Queued`` thẻ kim loại / nhãn khay cho `set_units` để in qua `tags_pdf` (FR-M1-05, .3, .4; G10).
 
-	`kinds` ⊂ ``KINDS``; `printers` = ``{kind: tên Printer đang hoạt động}``; tham số sai → ``ValidationError``.
-	Kiểm cả lô trước mọi ghi: ``PRINTER_NOT_NETWORK``, ``check_printable``, ``TAG_PRINT_PENDING``, ``REASON_REQUIRED``
-	(``items`` = các (bộ, loại) là in lại), ``LABEL_RENDER_FAILED`` → ``BlockedError``. Trả
-	``{"jobs": [{set_unit, kind, print_job, status}], "warnings": [...]}``; gửi thật do worker sau commit.
+	`kinds` ⊂ ``KINDS``; `printers` = ``{kind: tên Printer}`` tùy chọn, mặc định máy in nhãn chung (A-114); tham số sai
+	→ ``ValidationError``. Kiểm cả lô trước mọi ghi: ``check_printable``, ``TAG_PRINT_PENDING``, ``REASON_REQUIRED``
+	(``items`` = các (bộ, loại) là in lại) → ``BlockedError``. Trả ``{"jobs": [{set_unit, kind, print_job, status}],
+	"warnings": [...]}``.
 	"""
 	units = _unit_list(set_units)
 	kinds = _kind_list(kinds)
 	rows = _printer_rows(kinds, printers)
-	block = printer_block([rows[k].name for k in kinds])
-	if block:
-		raise BlockedError(block)
 	reason = reason.strip() if isinstance(reason, str) else ""
 	counts = _check_batch(units, kinds, reason)
-	rendered = {(u, k): _render_or_block(u, k, rows[k]) for u in units for k in kinds}
+	rendered = {(u, k): _render_zpl(u, k, rows[k]) for u in units for k in kinds}
 
-	jobs, queued, warned = [], [], []
+	jobs, warned = [], []
 	frappe.db.savepoint(SAVEPOINT)
 	try:
 		for unit in units:
@@ -393,11 +375,11 @@ def queue_prints(
 				printer = rows[kind]
 				reprint = bool(counts[unit][kind]["printed"])
 				name = core_print.create_job(
-					printer.station,
+					printer.station if printer else None,
 					zpl,
 					{"label_object": KINDS[kind], "set_unit": unit, "kind": kind, "reprint": reprint},
-					template.name,
-					printer=printer.name,
+					template.name if template else None,
+					printer=printer.name if printer else None,
 					status="Queued",
 					ref_doctype=REF_DOCTYPE,
 					ref_name=unit,
@@ -407,20 +389,80 @@ def queue_prints(
 					"Create",
 					"Print Job",
 					name,
-					new={"set_unit": unit, "kind": kind, "reprint": reprint, "printer": printer.name},
+					new={
+						"set_unit": unit,
+						"kind": kind,
+						"reprint": reprint,
+						"printer": printer.name if printer else None,
+					},
 					reason=reason if reprint else None,
 				)
 				jobs.append({"set_unit": unit, "kind": kind, "print_job": name, "status": "Queued"})
-				queued.append(name)
 				total = counts[unit][kind]["reprints"] + 1
 				if reprint and total >= REPRINT_WARN_AT:
 					warned.append({"set_unit": unit, "kind": kind, "reprints": total})
-		print_server.enqueue_server_dispatch_many(queued)
 	except Exception:
 		frappe.db.rollback(save_point=SAVEPOINT)
 		raise
 
 	return {"jobs": jobs, "warnings": [_reprint_warning(warned)] if warned else []}
+
+
+def tag_rows(context: dict) -> list[tuple[str, str]]:
+	"""Các dòng chữ của thẻ/nhãn khay PDF từ `tag_context`: HRI Set ID, loại bộ, khoa, phương pháp, dòng TEST."""
+	method = context["method"] + (f" · {_('Implant')}" if context["is_implant"] else "")
+	rows = [
+		(context["hri"], "mono"),
+		(context["set_type_name"], "title"),
+		(context["department"], ""),
+		(method, ""),
+		("TEST" if context["is_test"] else "", "title"),
+	]
+	return [(text, style) for text, style in rows if text]
+
+
+def tags_pdf(print_jobs: list[str]) -> dict:
+	"""Một PDF nhiều trang cho các Print Job thẻ/nhãn khay `print_jobs` (A-114), rồi ghi ``Printed``/``Browser``.
+
+	Chỉ job ``Queued``: in lại thẻ đã in phải qua `queue_prints` có lý do (FR-M1-05.3). Job không phải thẻ/nhãn khay,
+	không còn ``Queued`` hoặc bộ không in được nữa (`check_printable`) bị bỏ qua, nêu trong ``skipped``; không còn trang
+	nào → ``LABEL_NOT_QUEUED``. Dựng đủ PDF rồi mới ghi; lỗi sinh PDF → ``LABEL_PDF_FAILED``, mọi job giữ nguyên. Trả
+	``{"pdf_b64", "filename", "print_jobs", "skipped"}``.
+	"""
+	pages, printed, skipped = [], [], []
+	for name in dict.fromkeys(print_jobs):
+		job = frappe.db.get_value(
+			"Print Job", name, ["name", "ref_doctype", "ref_name", "status", "data"], as_dict=True
+		)
+		data = frappe.parse_json(job.data) if job and job.data else {}
+		kind = _kind_of(data.get("label_object")) if isinstance(data, dict) else None
+		if (
+			not job
+			or job.ref_doctype != REF_DOCTYPE
+			or kind is None
+			or job.status != "Queued"
+			or check_printable(job.ref_name)
+		):
+			skipped.append(str(name))
+			continue
+		context = tag_context(job.ref_name, kind)
+		pages.append(core_label_pdf.datamatrix_pdf(job.ref_name, context["payload"], tag_rows(context)))
+		printed.append(str(job.name))
+	if not pages:
+		raise BlockedError(
+			Block(
+				"LABEL_NOT_QUEUED",
+				_("Label is not ready to print"),
+				_("None of the {0} tag print job(s) can be printed.").format(len(print_jobs)),
+				_("Print the tags again from the set, or call R02."),
+			)
+		)
+	first = frappe.db.get_value("Print Job", printed[0], "ref_name")
+	filename = f"{first}.pdf" if len(printed) == 1 else f"{first}-{len(printed)}.pdf"
+	pdf = core_label_pdf.merge(pages)
+	for name in printed:
+		core_print.mark_browser_output(name, filename)
+	return {**core_label_pdf.encode(pdf, filename), "print_jobs": printed, "skipped": skipped}
 
 
 def cancel_pending(set_unit: str, kind: str | None, reason: str) -> list[str]:

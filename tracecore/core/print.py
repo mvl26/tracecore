@@ -8,10 +8,11 @@
   nhân viên, kệ bằng mẫu active của loại đối tượng (`OBJECT_LABELS`); QR qua hàm `qr()` của dialect.
 - **Thẻ kim loại / nhãn khay** (FEAT-016 G8): `SET_LABELS`; `render_label` (dùng chung với `render_object`) chọn mẫu
   active theo đối tượng + ngôn ngữ máy in. Ảnh xem trước ở `core.print_preview`.
-- **Chọn máy in** (BRU-REP-011): theo trạm và phương pháp của cuộn nhãn đang lắp (`Printer.label_type_loaded`).
-- **Đổi cuộn** (`set_roll`): cập nhật loại nhãn đang lắp và đưa các Print Job `Waiting` khớp phương pháp vào hàng đợi.
-- **Nhãn ra PDF** (A-101, T2/T5/T4): job vẫn tạo như cũ làm vết kiểm toán; PDF xong thì `mark_file_output` ghi `Printed`/`File`.
-  Job này không mang dấu đường server nên cron `print_server.dispatch_pending` không bao giờ gửi, còn `Printed` thì `_dispatch` bỏ qua.
+- **Chọn máy in** (A-114, BRU-REP-011 thu hẹp): `label_printer` = máy của trạm (dữ liệu cũ) rồi đến máy in nhãn chung
+  `TraceCore Settings.label_printer`; không lọc theo loại nhãn đang lắp, loại nhãn chỉ để trừ tiêu hao.
+- **Đổi cuộn** (`set_roll`): cập nhật loại nhãn đang lắp; job `Waiting` chỉ còn ở dữ liệu cũ (job mới luôn `Queued`).
+- **Nhãn ra PDF** (A-101, A-114): job là vết kiểm toán, ZPL (nếu dựng được) chỉ để lưu; đưa PDF ra hộp thoại In thì
+  `mark_browser_output` ghi `Printed`/`Browser`. Không gửi ZPL qua mạng nữa.
 """
 
 import unicodedata
@@ -33,8 +34,9 @@ from tracecore.core.print_preview import (
 )
 
 ACK_STATUSES = ("Printed", "Failed")
-OUTPUT_MODES = ("Printer", "File")
+OUTPUT_MODES = ("Printer", "File", "Browser")
 NEW_JOB_STATUSES = ("Queued", "Waiting")
+SETTINGS = "TraceCore Settings"
 
 MM_PER_INCH = 25.4
 DEFAULT_DPI = 300
@@ -388,11 +390,10 @@ def render_label(label_object, doc, printer=None, with_template=False):
 	return (zpl, template) if with_template else zpl
 
 
-def _active_printers(station):
-	"""Máy in active của trạm theo tên Printer, kèm `method` của loại nhãn đang lắp."""
-	printers = frappe.get_all(
-		"Printer", filters={"station": station, "is_active": 1}, fields=PRINTER_FIELDS, order_by="name asc"
-	)
+def _active_printers(station=None, name=None):
+	"""Máy in active của trạm (hoặc đúng máy `name`) theo tên Printer, kèm `method` của loại nhãn đang lắp."""
+	filters = {"is_active": 1, **({"name": name} if name else {"station": station})}
+	printers = frappe.get_all("Printer", filters=filters, fields=PRINTER_FIELDS, order_by="name asc")
 	label_types = {printer.label_type_loaded for printer in printers if printer.label_type_loaded}
 	methods = (
 		dict(
@@ -411,40 +412,38 @@ def _active_printers(station):
 	return printers
 
 
-def select_printer(station, method):
-	"""Máy in active của trạm đang lắp nhãn đúng `method` (BRU-REP-011); nhiều máy → theo tên Printer.
+def _printer_dict(printer):
+	return {
+		"name": printer.name,
+		"host": printer.host or "",
+		"port": cint(printer.port),
+		"language": printer.language,
+		"supports_unicode": cint(printer.supports_unicode),
+		"label_type": printer.label_type_loaded,
+	}
 
-	Trả `{"name", "host", "port", "language", "supports_unicode", "label_type"}` hoặc None.
+
+def label_printer(station=None):
+	"""Máy in nhãn dùng cho `station` (A-114): máy active đầu tiên của trạm (dữ liệu cũ), không có thì máy in nhãn chung
+	`TraceCore Settings.label_printer` nếu đang dùng, không có nữa thì None (vẫn in PDF được, job không ghi máy in).
+
+	Trả `{"name", "host", "port", "language", "supports_unicode", "label_type"}`.
 	"""
-	for printer in _active_printers(station):
-		if printer.method == method:
-			return {
-				"name": printer.name,
-				"host": printer.host or "",
-				"port": cint(printer.port),
-				"language": printer.language,
-				"supports_unicode": cint(printer.supports_unicode),
-				"label_type": printer.label_type_loaded,
-			}
-	return None
+	printers = _active_printers(station) if station else []
+	if not printers:
+		shared = frappe.db.get_single_value(SETTINGS, "label_printer")
+		printers = _active_printers(name=shared) if shared else []
+	return _printer_dict(printers[0]) if printers else None
+
+
+def select_printer(station, method):
+	"""Máy in nhãn gói của trạm; A-114 bỏ chặn theo loại cuộn nên `method` không còn dùng (BRU-REP-011 thu hẹp)."""
+	return label_printer(station)
 
 
 def object_printer(station):
-	"""Máy in hoạt động đầu tiên (theo tên Printer) của trạm để in nhãn QR đối tượng, hoặc None.
-
-	Nhãn QR đối tượng (vd mã lô rửa) không gắn với phương pháp tiệt khuẩn nên không xét loại nhãn đang lắp. Trả
-	`{"name", "host", "port", "language", "supports_unicode", "label_type"}` như `select_printer`.
-	"""
-	for printer in _active_printers(station):
-		return {
-			"name": printer.name,
-			"host": printer.host or "",
-			"port": cint(printer.port),
-			"language": printer.language,
-			"supports_unicode": cint(printer.supports_unicode),
-			"label_type": printer.label_type_loaded,
-		}
-	return None
+	"""Máy in nhãn QR đối tượng của trạm: như `label_printer`."""
+	return label_printer(station)
 
 
 def station_printers(station):
@@ -639,10 +638,9 @@ def create_job(
 	ref_name=None,
 	reprint_reason=None,
 ):
-	"""Tạo Print Job: `Queued` (có `zpl`) hoặc `Waiting` (chưa có máy in đúng loại nhãn, `zpl` = None).
+	"""Tạo Print Job và trả tên job (chuỗi). A-114: nơi gọi luôn tạo `Queued`; `zpl` có thể None vì nhãn in ra PDF.
 
-	Job `Waiting` mang `data = {"method", "label_object", "label_context"}` để `set_roll` render khi có máy in.
-	Trả tên job (chuỗi).
+	`Waiting` chỉ còn cho dữ liệu cũ/test của `set_roll` (`data = {"method", "label_object", "label_context"}`).
 	"""
 	if status not in NEW_JOB_STATUSES:
 		frappe.throw(_("Invalid print status: {0}").format(status))
@@ -664,22 +662,61 @@ def create_job(
 	return str(doc.name)
 
 
+def queue_object_label(
+	label_object, code, title, subtitle, station, data=None, ref_doctype=None, ref_name=None
+):
+	"""Print Job `Queued` cho nhãn QR của chứng từ `code` (lô rửa, mẻ, thùng chất thải…) tại `station` (A-114).
+
+	Máy in theo `label_printer`; ZPL chỉ dựng (để lưu vết) khi có máy in và mẫu active, lỗi mẫu thì bỏ qua vì nhãn in ra
+	PDF không cần mẫu ZPL. Chứng từ tham chiếu mặc định là (`label_object`, `code`). Trả ``{"print_job", "status",
+	"printer", "zpl", "warning"}``, `warning` luôn None.
+	"""
+	printer = label_printer(station)
+	zpl = template = None
+	if printer:
+		logged = len(frappe.local.message_log)
+		try:
+			zpl, template = render_object(
+				label_object, code, title, subtitle, printer=printer, with_template=True
+			)
+		except frappe.ValidationError:
+			del frappe.local.message_log[
+				logged:
+			]  # mẫu ZPL lỗi không chặn in PDF, không để msgprint lên kiosk
+	name = create_job(
+		station,
+		zpl,
+		{"label_object": label_object, "code": code, **(data or {})},
+		template=template.name if template else None,
+		printer=printer["name"] if printer else None,
+		ref_doctype=ref_doctype or label_object,
+		ref_name=ref_name or code,
+	)
+	return {
+		"print_job": name,
+		"status": "Queued",
+		"printer": printer["name"] if printer else None,
+		"zpl": zpl,
+		"warning": None,
+	}
+
+
 def _label_not_queued(ref_name):
 	return BlockedError(
 		Block(
 			"LABEL_NOT_QUEUED",
 			_("Label is not ready to print"),
 			_("{0} has no label ready to print at this station.").format(ref_name),
-			_("Load the right label roll into the printer, or ask R10 to check the label template."),
+			_("Print the label again from the record, or call R02."),
 		)
 	)
 
 
 def _can_output_file(job, station):
-	"""Job in ra PDF được: của trạm này, đang `Queued`, hoặc đã xuất file (bù trả lời bị mất, người dùng bấm In lại)."""
+	"""Job in ra PDF được: của trạm này, đang `Queued`, hoặc đã in (bù trả lời bị mất, người dùng bấm In lại)."""
 	if job.station != station:
 		return False
-	return job.status == "Queued" or (job.status == "Printed" and job.output_mode == "File")
+	return job.status in ("Queued", "Printed")
 
 
 def label_output_job(ref_doctype, ref_name, station):
@@ -713,9 +750,12 @@ def file_output_jobs(names, ref_doctype, station):
 	return jobs, skipped
 
 
-def mark_file_output(job, filename):
-	"""Ghi kết quả thật của lệnh in ra PDF: `Printed`, nơi xuất `File`, `output_ref` là tên file; `attempts` đếm số lần xuất."""
-	return ack(job, "Printed", "File", output_ref=filename)
+def mark_browser_output(job, filename=None):
+	"""Nhãn PDF đã đưa ra hộp thoại In của trình duyệt (A-114 g): `Printed`/`Browser`; `attempts` đếm số lần in.
+
+	Hệ thống không biết người dùng bấm In hay Hủy trong hộp thoại, nên `Printed` nghĩa là đã đưa nhãn ra hộp thoại.
+	"""
+	return ack(job, "Printed", "Browser", output_ref=filename)
 
 
 def ack(job, status, output_mode, output_ref=None, error=None):

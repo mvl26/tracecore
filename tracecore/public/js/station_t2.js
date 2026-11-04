@@ -1,4 +1,4 @@
-/* global tcLabelButton, tcPrintLabelPdf, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcLabelButton, tcPrintLabelPdf, tcPrintedNote, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
 /* global uuid4, clientTs, esc, TcProgramMatch, TcRunConsumables */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -594,12 +594,13 @@ class T2Wash {
 				this.saveLoad();
 				this.notice = null;
 				this.loadOverview(true);
+				this.station.offerNextStation("WASH_LOAD"); // A-117: nạp xong → trạm dỡ lô
 				this.handlePrint(res.print);
 			}
 		);
 	}
 
-	// A-107: có máy in thì hiện nút In nhãn, bấm mới ra file PDF; chưa có máy in thì giữ Waiting và cảnh báo
+	// A-107, A-114: nút In nhãn, bấm mới lấy PDF và mở hộp thoại In; `Waiting` chỉ còn ở dữ liệu cũ
 	async handlePrint(print) {
 		this.printNote = { kind: print && print.status === "Queued" ? "ready" : "waiting" };
 		this.show();
@@ -617,7 +618,7 @@ class T2Wash {
 		});
 		if (result.ended || version !== this.station.sessionVersion) return;
 		this.printNote = result.ok
-			? { kind: "pdf", filename: result.filename, printed: true }
+			? { kind: "pdf", filename: result.filename, dialog: result.dialog, printed: true }
 			: { kind: "pdf-failed", reason: result.reason, printed };
 		this.show();
 	}
@@ -776,7 +777,7 @@ class T2Wash {
 				alerts: data.alerts ? "yes" : "no",
 				alertsText: data.alerts || "",
 				reported: data.reported_result || "",
-				started: t2LocalInput(context.started_at),
+				started: t2LocalInput(context.started_at) || t2LocalInput(prefill.started_at),
 				ended:
 					t2LocalInput(context.ended_at) ||
 					t2LocalInput(prefill.ended_at) ||
@@ -1047,6 +1048,8 @@ class T2Wash {
 				this.notice = null;
 				this.loadOverview(true);
 				this.show();
+				// A-117: kết luận Đạt → mã vạch sang trạm lắp bộ; Không đạt thì không có trạm kế
+				if (res.result === "Pass") this.station.offerNextStation("WASH_UNLOAD");
 			}
 		);
 	}
@@ -1639,16 +1642,8 @@ class T2Wash {
 		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
 		const button = tcLabelButton("t2-label-pdf", note.printed, this.busy || this.offline);
 		if (note.kind === "ready") return button;
-		if (note.kind === "pdf") {
-			return this.alertHtml(
-				{
-					variant: "ok",
-					title: __("Label printed to PDF file: {0}", [note.filename]),
-					reason: __("Print job {0}", [print.print_job]),
-				},
-				button
-			);
-		}
+		if (note.kind === "pdf")
+			return this.alertHtml(tcPrintedNote(note, print.print_job), button);
 		if (note.kind === "pdf-failed") {
 			return this.alertHtml(
 				{
@@ -1963,7 +1958,13 @@ class T2Wash {
 				${
 					param.default_value != null
 						? `<p class="tc-hint">${esc(
-								__("Program default: {0}", [window.tcDecimal(param.default_value)])
+								param.default_source === "midpoint"
+									? __("Prefilled from the midpoint of the range: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
+									: __("Program default: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
 						  )}</p>`
 						: ""
 				}

@@ -93,7 +93,7 @@ Kết quả: cổng **T3 Đạt**, "Đóng gói: sẵn sàng".
 | 4 | **Ô "Quét lô chỉ thị" riêng** (không phải ô quét trên cùng) | `LOT-CI5-TEST-01` |
 | 5 | Bấm **Xác nhận hoàn thành đóng gói** → **ghi lại Cycle ID** | → `CY-…` |
 
-Kết quả: gói **Đã đóng gói**, hạn = hôm nay + 30 ngày, cổng **T4 Đạt**. Không có máy in → nhãn "chờ in" (bình thường).
+Kết quả: gói **Đã đóng gói**, hạn = hôm nay + 30 ngày, cổng **T4 Đạt**. Bấm **In nhãn** → trình duyệt mở hộp thoại In với PDF nhãn 60 × 40 mm; chưa lắp máy in thì chọn **Lưu thành PDF** (A-114: một máy in nhãn chung, trạm không cần máy in riêng).
 
 ---
 

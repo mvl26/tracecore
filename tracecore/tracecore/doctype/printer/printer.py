@@ -1,4 +1,5 @@
-"""Printer: máy in nhãn của một trạm; cuộn nhãn đang lắp quyết định loại nhãn máy in được in (BRU-REP-011).
+"""Printer: máy in nhãn; A-114: thường là một máy chung (`TraceCore Settings.label_printer`, không cần trạm), máy gắn
+trạm là dữ liệu cũ và được ưu tiên cho trạm đó. Loại nhãn đang lắp chỉ để trừ tiêu hao, không chặn in (BRU-REP-011).
 
 `label_type_loaded` có thể do System Manager khai báo ban đầu (FR-M2-08.2); `roll_code`, `roll_loaded_on`,
 `roll_loaded_by` chỉ đổi qua `tracecore.core.print.set_roll` (cờ ``flags.tc_roll_change``).
@@ -32,6 +33,8 @@ class Printer(Document):
 			self._guard_roll_fields()
 
 	def _validate_station(self):
+		if not self.station:
+			return
 		is_zone = frappe.db.get_value("Zone Station", self.station, "is_zone")
 		if is_zone is None:
 			frappe.throw(_("Station {0} does not exist.").format(self.station))

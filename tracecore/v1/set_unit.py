@@ -5,6 +5,7 @@
   TRƯỚC mọi ghi, nên user thiếu quyền không để lại Idempotency Key/Audit (G7): cấp, in, in lại, hủy lệnh in kẹt —
   ``ISSUE_ROLES``; quét kiểm tra thẻ thêm TC R04 (``VERIFY_ROLES``).
 - Vòng đời (Task 6, hiện thực ở `set_unit_lifecycle`): `form_context`, `history` (GET).
+- In PDF (POST, không idempotent, A-114): `tags_pdf` cho các job vừa xếp.
 - Đọc (GET): `tag_preview`, `print_status`, `batch_csv`. Từ chối và dòng Audit xuất CSV qua `keep_writes_on_get` để
   được commit (Frappe v15 không commit request GET).
 - Tham số sai kiểu → `BadRequestError` (400); từ chối nghiệp vụ → `reject_block` (Audit ``Reject`` + 404/409/422).
@@ -19,12 +20,10 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from tracecore.core import audit, gs1
-from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.instrument import set_tags, set_units
-from tracecore.setup.label_templates import sample_set_context
 from tracecore.v1._common import (
 	BadRequestError,
 	desk_printer,
@@ -199,9 +198,10 @@ def _units(value):
 
 
 def _printers(kinds, tag_printer, tray_printer):
-	"""``{kind: Printer}`` đang hoạt động cho mỗi loại đã chọn; thiếu/không hoạt động → 400."""
+	"""``{kind: tên Printer}`` người dùng chọn (phải đang hoạt động, sai → 400); không chọn thì bỏ trống để dùng máy in
+	nhãn chung (A-114)."""
 	chosen = {"tag": tag_printer, "tray": tray_printer}
-	return {kind: desk_printer(chosen[kind]) for kind in kinds}
+	return {kind: desk_printer(chosen[kind]).name for kind in kinds if chosen[kind] not in (None, "")}
 
 
 def _reason_required():
@@ -221,17 +221,6 @@ def _render_failed(error, kind):
 		_("Ask R10 to check the active label template for this object."),
 		items=[{"kind": kind}],
 	)
-
-
-def _trial_render(kind, printer):
-	"""Dựng thử mẫu active của `kind` bằng ngữ cảnh mẫu (G9) trước khi cấp: mẫu thiếu/lỗi → ``LABEL_RENDER_FAILED``."""
-	label = set_tags.KINDS[kind]
-	logged = len(frappe.local.message_log)
-	try:
-		core_print.render_label(label, sample_set_context(label), printer)
-	except frappe.ValidationError as error:
-		del frappe.local.message_log[logged:]
-		raise BlockedError(_render_failed(error, kind)) from None
 
 
 def _block_unit(block, default):
@@ -262,11 +251,11 @@ def create_batch(
 ):
 	"""Cấp `count` Set ID cho loại bộ `set_type` và (tùy chọn) xếp hàng in thẻ/nhãn khay trong cùng transaction.
 
-	`kinds` ⊂ {``tag``, ``tray``} (rỗng → chỉ cấp); mỗi loại cần máy in (`tag_printer`/`tray_printer`) đang hoạt
-	động có địa chỉ mạng. Thứ tự kiểm (trước mọi ghi): role → tham số (400) → ``PRINTER_NOT_NETWORK`` →
-	``COUNT_OUT_OF_RANGE`` → điều kiện cấp (`set_units.precheck`) → dựng thử mẫu (``LABEL_RENDER_FAILED``). Rồi
-	`set_units.issue_batch` + `set_tags.queue_prints` trong một savepoint: lỗi ở bước in → không còn Set ID nào.
-	Trả ``{"ok": true, "set_type", "set_ids", "jobs", "warnings"}``; replay cùng key → cùng Set ID (G1).
+	`kinds` ⊂ {``tag``, ``tray``} (rỗng → chỉ cấp); máy in (`tag_printer`/`tray_printer`) tùy chọn, mặc định máy in
+	nhãn chung (A-114). Thứ tự kiểm (trước mọi ghi): role → tham số (400) → ``COUNT_OUT_OF_RANGE`` → điều kiện cấp
+	(`set_units.precheck`). Rồi `set_units.issue_batch` + `set_tags.queue_prints` trong một savepoint: lỗi ở bước xếp
+	in → không còn Set ID nào. Trả ``{"ok": true, "set_type", "set_ids", "jobs", "warnings"}``; trình duyệt lấy PDF
+	qua `tags_pdf` với các ``jobs``; replay cùng key → cùng Set ID (G1).
 	"""
 	require_any_role(*ISSUE_ROLES)
 	timestamp = parse_client_ts(client_ts)
@@ -282,23 +271,16 @@ def create_batch(
 	kinds = _kinds(kinds)
 	printers = _printers(kinds, tag_printer, tray_printer)
 	try:
-		block = set_tags.printer_block([printers[kind].name for kind in kinds])
-		if block:
-			raise BlockedError(block)
 		if set_units.parse_count(count) is None:
 			raise BlockedError(set_units.count_block())
 		ctx = set_units.precheck(set_type, department, max_cycles, origin, cycles_used, estimate_reason)
-		for kind in kinds:
-			_trial_render(kind, printers[kind])
 		frappe.db.savepoint(SAVEPOINT)
 		try:
 			set_ids = set_units.issue_batch(
 				set_type, count, department, max_cycles, origin, cycles_used, estimate_reason
 			)
 			printed = (
-				set_tags.queue_prints(set_ids, kinds, {kind: printers[kind].name for kind in kinds})
-				if kinds
-				else {"jobs": [], "warnings": []}
+				set_tags.queue_prints(set_ids, kinds, printers) if kinds else {"jobs": [], "warnings": []}
 			)
 		except Exception:
 			frappe.db.rollback(save_point=SAVEPOINT)  # cả lô hoặc không gì (G1)
@@ -328,7 +310,7 @@ def print_tags(set_units, kinds, tag_printer=None, tray_printer=None, client_ts=
 	kinds = _kinds(kinds, required=True)
 	printers = _printers(kinds, tag_printer, tray_printer)
 	try:
-		result = set_tags.queue_prints(units, kinds, {kind: printers[kind].name for kind in kinds})
+		result = set_tags.queue_prints(units, kinds, printers)
 	except BlockedError as error:
 		return reject_block(error.block, "Set Unit", _block_unit(error.block, units[0]), client_ts=timestamp)
 	return {"ok": True, **result}
@@ -336,7 +318,7 @@ def print_tags(set_units, kinds, tag_printer=None, tray_printer=None, client_ts=
 
 @frappe.whitelist(methods=["POST"])
 @idempotent
-def reprint_tag(set_unit, kind, printer, reason, client_ts=None):
+def reprint_tag(set_unit, kind, reason, printer=None, client_ts=None):
 	"""In lại thẻ/nhãn khay của một bộ với lý do bắt buộc 1-500 ký tự (FR-M1-05.3, UC-03 A2, G10).
 
 	Trả ``{"ok": true, "print_job", "status", "warning", "counts"}``; ``warning`` = ``TAG_REPRINTED`` từ lần in lại
@@ -346,12 +328,12 @@ def reprint_tag(set_unit, kind, printer, reason, client_ts=None):
 	timestamp = parse_client_ts(client_ts)
 	set_unit = _text(set_unit, "set_unit")
 	kind = _kind(kind)
-	row = desk_printer(printer)
+	printers = {kind: desk_printer(printer).name} if printer not in (None, "") else {}
 	text = reason.strip() if isinstance(reason, str) else ""
 	try:
 		if not text or len(text) > set_tags.REASON_MAX:
 			raise BlockedError(_reason_required())
-		result = set_tags.queue_prints([set_unit], [kind], {kind: row.name}, text)
+		result = set_tags.queue_prints([set_unit], [kind], printers, text)
 	except BlockedError as error:
 		return reject_block(error.block, "Set Unit", set_unit, client_ts=timestamp)
 	job = result["jobs"][0]
@@ -431,6 +413,22 @@ def tag_preview(set_unit, kind):
 	except BlockedError as error:
 		return reject_block(error.block, "Set Unit", set_unit)
 	return {"ok": True, **data}
+
+
+@frappe.whitelist(methods=["POST"])
+def tags_pdf(print_jobs, client_ts=None):
+	"""PDF nhiều trang của các Print Job thẻ/nhãn khay vừa xếp (A-114), để trình duyệt mở hộp thoại In.
+
+	Không ``@idempotent``: gọi lại chỉ xuất lại đúng các job đó, không sinh chứng từ, không lưu PDF vào Idempotency
+	Key (như `pack.waiting_labels_pdf`). Trả ``{"ok": true, "pdf_b64", "filename", "print_jobs", "skipped"}``.
+	"""
+	require_any_role(*ISSUE_ROLES)
+	names = [str(name) for name in job_names(print_jobs, MAX_STATUS_JOBS)]
+	try:
+		result = set_tags.tags_pdf(names)
+	except BlockedError as error:
+		return reject_block(error.block, "Print Job", names[0])
+	return {"ok": True, **result}
 
 
 @frappe.whitelist(methods=["GET"])
