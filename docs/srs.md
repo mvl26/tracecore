@@ -69,6 +69,7 @@
 | 1.11 A-114 | 2026-11-04 | Miyano (dev lead, người dùng quyết định ngày 04/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-114 của `docs/architecture.md`: một máy in nhãn chung cho cả viện, mọi nhãn và giấy tờ in ra PDF qua hộp thoại In của trình duyệt, một cuộn nhãn chung không kiểm theo phương pháp, Station Agent không còn gửi ZPL. Sửa FR-M2-08, FR-M2-08.1, FR-M2-08.2, FR-M2-08.8, FR-M1-05.4, FR-M10-01.5, EI-HW-002, EI-HW-003, EI-HW-007, EI-HW-008, NFR-AVAIL-04, ràng buộc kỹ thuật §2, Glossary "Loại nhãn"; thu hẹp BRU-REP-011. Không thêm/bớt ID FR hay BRU. |
 | 1.11 A-115 | 2026-11-04 | Miyano (dev lead, người dùng quyết định ngày 04/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-115 của `docs/architecture.md`: form nhập tay dữ liệu chu trình (T2, T5) điền sẵn mọi trường số theo mặc định chương trình, không có thì điểm giữa dải min-max; không điền sẵn kết quả của máy; giữ tick xác nhận và ảnh bản in; Audit Log ghi trường giữ nguyên giá trị điền sẵn. Sửa FR-M2-10, FR-M2-10.3; thêm FR-M2-10.5. Không thêm/bớt ID BRU. |
 | 1.11 A-116 | 2026-11-04 | Miyano (dev lead, người dùng quyết định ngày 04/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-116 của `docs/architecture.md`: khổ nhãn chung mặc định đổi từ 60 × 40 mm sang 50 × 30 mm, chỉnh được trong TraceCore Settings; patch chỉ đổi site đang đúng 60 × 40. Không thêm/bớt ID FR hay BRU. |
+| 1.11 A-117 | 2026-11-04 | Miyano (dev lead, người dùng quyết định ngày 04/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-117 của `docs/architecture.md`: khi xong bước ở trạm, màn trạm hiện mã vạch của trạm kế tiếp cạnh nút Hoàn thành; quét thì chuyển sang trạm kế (T1→T2 … T7→T8). Thêm FR-M9-22. Không thêm DocType, không thêm/bớt ID BRU. |
 
 ---
 
@@ -892,6 +893,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M9-19 | Khi chặn hoặc cảnh báo theo mã lỗi ở trạm hoặc màn đăng nhập trạm, hệ thống phải hiển thị [Mã] – Tên – đối tượng liên quan và cách mở Hướng dẫn xử lý của mã. | Must | Active | A-71 |
 | FR-M9-20 | Khi một mã lỗi phát sinh, hệ thống phải ghi Nhật ký lỗi gồm mã, trạm, người dùng, đối tượng, thời điểm, trạng thái, người duyệt, thời hạn; hệ thống phải có báo cáo thống kê theo mã, trạm, thời gian cho R01. | Must | Active | A-71 |
 | FR-M9-21 | Hệ thống phải in được Danh mục mã lỗi theo trạm, lọc theo trạm hoặc mã, kèm Hướng dẫn xử lý. | Must | Active | A-71 |
+| FR-M9-22 | Khi một bước ở trạm đã xong và có trạm kế tiếp đang hoạt động cùng khu, hệ thống phải hiện cạnh nút chính của màn mã vạch của trạm kế (mã trạm `TR-###`; áp dụng mọi trạm T1-T7, trừ trạm cuối T8 không có mã) cùng nút bấm tay "Sang <trạm kế>"; khi người dùng quét đúng mã đó ở ô quét, hệ thống phải mở màn trạm kế mà không ghi sổ nghiệp vụ nào. Nếu quét mã trạm khác trạm kế đang hiện, hệ thống phải từ chối bằng thông báo lỗi inline nêu kết quả, lý do, hành động; nếu chưa có trạm cho bước kế, hệ thống phải báo rõ và không hiện mã. | Must | Active | UC-05..13; SCR-06..09 và mọi SCR trạm; A-117 |
 
 #### 3.1.10 M10 — Quản lý chất thải y tế [NEW v1.11]
 
