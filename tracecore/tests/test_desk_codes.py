@@ -47,7 +47,12 @@ class TestDeskCodes(FrappeTestCase):
 		# A-114: một trình in PDF dùng chung cho Desk và Page station
 		self.assertIn('import "./tc_print_pdf.js";', _read("public", "js", "tracecore.bundle.js"))
 		helper = _read("public", "js", "tc_print_pdf.js")
-		for part in ("window.tcPrintPdf = ", "window.tcSavePdf = ", "contentWindow.print()", "width:0;height:0"):
+		for part in (
+			"window.tcPrintPdf = ",
+			"window.tcSavePdf = ",
+			"contentWindow.print()",
+			"width:0;height:0",
+		):
 			self.assertIn(part, helper)
 		self.assertNotIn("display:none", helper)
 		self.assertIn("tracecore.v1.set_unit.tags_pdf", _read("public", "js", "tc_set_unit.js"))

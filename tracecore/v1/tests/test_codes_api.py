@@ -281,7 +281,8 @@ class TestObjectLabel(ObjectLabelCase):
 		page = PdfReader(io.BytesIO(base64.b64decode(pdf["pdf_b64"]))).pages[0]
 		self.assertEqual(qr.decode_png(page.images[0].data), equipment.name)
 		self.assertEqual(
-			frappe.db.get_value("Print Job", result["print_job"], ["status", "output_mode"]), ("Printed", "Browser")
+			frappe.db.get_value("Print Job", result["print_job"], ["status", "output_mode"]),
+			("Printed", "Browser"),
 		)
 		again = call(print_api.objects_pdf, print_jobs=[result["print_job"]])
 		self.assertEqual(again["error"]["code"], "LABEL_NOT_QUEUED")

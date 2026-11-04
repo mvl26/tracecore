@@ -190,7 +190,9 @@ class TestBatchPdf(SetTagPrintingCase):
 		code_registry.disable(units[0], "Thanh lý")
 		other = core_print.create_job(STATION, None, ref_doctype="Zone Station", ref_name=STATION)
 		result = set_tags.tags_pdf([*jobs, other])
-		self.assertEqual((result["print_jobs"], result["skipped"]), ([str(jobs[1])], [str(jobs[0]), str(other)]))
+		self.assertEqual(
+			(result["print_jobs"], result["skipped"]), ([str(jobs[1])], [str(jobs[0]), str(other)])
+		)
 		self.assertEqual(self.state(jobs[0]), ("Queued", 0))
 
 	def test_batch_worker_bounded_time(self):

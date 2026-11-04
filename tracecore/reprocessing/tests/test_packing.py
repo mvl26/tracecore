@@ -497,7 +497,9 @@ class TestGenerate(IsolatedTestCase):
 		result = _generate(ready)
 		cycle_id = result["pack"]["cycle_id"]
 		printed = result["print"]
-		self.assertEqual((printed["status"], printed["printer"], printed["warning"]), ("Queued", printer, None))
+		self.assertEqual(
+			(printed["status"], printed["printer"], printed["warning"]), ("Queued", printer, None)
+		)
 		self.assertEqual(result["pack"]["label_type"], steam_label)
 		job = frappe.get_doc("Print Job", printed["print_job"])
 		self.assertEqual((job.status, job.ref_doctype, job.ref_name), ("Queued", "Pack", cycle_id))
@@ -510,7 +512,8 @@ class TestGenerate(IsolatedTestCase):
 		result = _generate(ready)
 		printed = result["print"]
 		self.assertEqual(
-			(printed["status"], printed["printer"], printed["zpl"], printed["warning"]), ("Queued", None, None, None)
+			(printed["status"], printed["printer"], printed["zpl"], printed["warning"]),
+			("Queued", None, None, None),
 		)
 		self.assertIsNone(result["pack"]["label_type"])
 		self.assertEqual(frappe.db.get_value("Print Job", printed["print_job"], "status"), "Queued")

@@ -662,7 +662,9 @@ def create_job(
 	return str(doc.name)
 
 
-def queue_object_label(label_object, code, title, subtitle, station, data=None, ref_doctype=None, ref_name=None):
+def queue_object_label(
+	label_object, code, title, subtitle, station, data=None, ref_doctype=None, ref_name=None
+):
 	"""Print Job `Queued` cho nhãn QR của chứng từ `code` (lô rửa, mẻ, thùng chất thải…) tại `station` (A-114).
 
 	Máy in theo `label_printer`; ZPL chỉ dựng (để lưu vết) khi có máy in và mẫu active, lỗi mẫu thì bỏ qua vì nhãn in ra
@@ -674,9 +676,13 @@ def queue_object_label(label_object, code, title, subtitle, station, data=None, 
 	if printer:
 		logged = len(frappe.local.message_log)
 		try:
-			zpl, template = render_object(label_object, code, title, subtitle, printer=printer, with_template=True)
+			zpl, template = render_object(
+				label_object, code, title, subtitle, printer=printer, with_template=True
+			)
 		except frappe.ValidationError:
-			del frappe.local.message_log[logged:]  # mẫu ZPL lỗi không chặn in PDF, không để msgprint lên kiosk
+			del frappe.local.message_log[
+				logged:
+			]  # mẫu ZPL lỗi không chặn in PDF, không để msgprint lên kiosk
 	name = create_job(
 		station,
 		zpl,

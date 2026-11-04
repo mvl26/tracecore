@@ -74,7 +74,8 @@ class TestTraceCoreSettings(IsolatedTestCase):
 		# A-114 (d): một máy một cuộn nên mọi nhãn cùng một khổ
 		meta = frappe.get_meta(SETTINGS)
 		self.assertEqual(
-			(meta.get_field("label_width_mm").default, meta.get_field("label_height_mm").default), ("60", "40")
+			(meta.get_field("label_width_mm").default, meta.get_field("label_height_mm").default),
+			("60", "40"),
 		)
 		self.assertEqual(meta.get_field("label_printer").options, "Printer")
 		doc = frappe.get_single(SETTINGS)

@@ -136,7 +136,12 @@ def object_label(label_object, code, printer=None, client_ts=None):
 	name = core_print.create_job(
 		row.get("station") if row else None,
 		zpl,
-		{"label_object": label_object, "code": target["code"], "title": target["title"], "subtitle": target["subtitle"]},
+		{
+			"label_object": label_object,
+			"code": target["code"],
+			"title": target["title"],
+			"subtitle": target["subtitle"],
+		},
 		template=template.name if template else None,
 		printer=row["name"] if row else None,
 		ref_doctype=target["ref_doctype"],
@@ -154,7 +159,10 @@ def test_pdf(client_ts=None):
 		pdf = core_label_pdf.qr_pdf(
 			"TEST-LABEL",
 			_("Test label"),
-			[_("Label size {0} x {1} mm").format(f"{width:g}", f"{height:g}"), frappe.utils.now_datetime().strftime("%d/%m/%Y %H:%M")],
+			[
+				_("Label size {0} x {1} mm").format(f"{width:g}", f"{height:g}"),
+				frappe.utils.now_datetime().strftime("%d/%m/%Y %H:%M"),
+			],
 		)
 	except BlockedError as error:
 		return reject_block(error.block)
@@ -185,7 +193,9 @@ def objects_pdf(print_jobs, client_ts=None):
 				skipped.append(name)
 				continue
 			pages.append(
-				core_label_pdf.object_pdf(data.get("code") or "", data.get("title") or "", data.get("subtitle") or "")
+				core_label_pdf.object_pdf(
+					data.get("code") or "", data.get("title") or "", data.get("subtitle") or ""
+				)
 			)
 			printed.append(name)
 		if not pages:

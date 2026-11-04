@@ -149,7 +149,9 @@ def queue_label(pack, station, printer, reprint_reason=None):
 				name=template.name,
 			)
 		except frappe.ValidationError:
-			del frappe.local.message_log[logged:]  # mẫu ZPL lỗi không chặn in PDF, không để msgprint lên kiosk
+			del frappe.local.message_log[
+				logged:
+			]  # mẫu ZPL lỗi không chặn in PDF, không để msgprint lên kiosk
 	name = core_print.create_job(
 		station,
 		zpl,

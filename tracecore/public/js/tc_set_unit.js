@@ -522,7 +522,9 @@ function tc_su_print_fields(ctx, checked) {
 
 function tc_su_print_note() {
 	return tc_su_muted(
-		__("Labels open as a PDF in the print dialog; choose the label printer there and press Print.")
+		__(
+			"Labels open as a PDF in the print dialog; choose the label printer there and press Print."
+		)
 	);
 }
 

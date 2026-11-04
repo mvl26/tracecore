@@ -286,7 +286,10 @@ def _printer_rows(kinds: list[str], printers) -> dict:
 			continue
 		row = (
 			frappe.db.get_value(
-				"Printer", name, ["name", "station", "language", "supports_unicode", "is_active"], as_dict=True
+				"Printer",
+				name,
+				["name", "station", "language", "supports_unicode", "is_active"],
+				as_dict=True,
 			)
 			if isinstance(name, str)
 			else None
@@ -428,7 +431,9 @@ def tags_pdf(print_jobs: list[str]) -> dict:
 	"""
 	pages, printed, skipped = [], [], []
 	for name in dict.fromkeys(print_jobs):
-		job = frappe.db.get_value("Print Job", name, ["name", "ref_doctype", "ref_name", "status", "data"], as_dict=True)
+		job = frappe.db.get_value(
+			"Print Job", name, ["name", "ref_doctype", "ref_name", "status", "data"], as_dict=True
+		)
 		data = frappe.parse_json(job.data) if job and job.data else {}
 		kind = _kind_of(data.get("label_object")) if isinstance(data, dict) else None
 		if (

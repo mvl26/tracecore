@@ -69,7 +69,9 @@
 		frappe.show_alert({
 			message: printed.dialog
 				? __("Label sent to the print dialog: {0}", [res.filename])
-				: __("The print dialog did not open; the label was saved as PDF file {0}.", [res.filename]),
+				: __("The print dialog did not open; the label was saved as PDF file {0}.", [
+						res.filename,
+				  ]),
 			indicator: printed.dialog ? "green" : "orange",
 		});
 		return printed;

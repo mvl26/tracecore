@@ -28,12 +28,18 @@
 		if (note.dialog === false) {
 			return {
 				variant: "warn",
-				title: __("The print dialog did not open; the label was saved as PDF file {0}.", [note.filename]),
+				title: __("The print dialog did not open; the label was saved as PDF file {0}.", [
+					note.filename,
+				]),
 				reason,
 				action: __("Open the file and print it, or press Reprint."),
 			};
 		}
-		return { variant: "ok", title: __("Label sent to the print dialog: {0}", [note.filename]), reason };
+		return {
+			variant: "ok",
+			title: __("Label sent to the print dialog: {0}", [note.filename]),
+			reason,
+		};
 	};
 
 	const labelButton = function (action, text, disabled) {

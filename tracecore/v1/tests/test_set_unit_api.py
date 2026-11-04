@@ -319,9 +319,13 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 		frappe.set_user("Administrator")
 		frappe.db.set_single_value("TraceCore Settings", "label_printer", self.printer)
 		frappe.set_user(self.r02)
-		result, _response = post(api.create_batch, set_type=self.set_type, count=1, kinds=["tag"], client_ts=TS)
+		result, _response = post(
+			api.create_batch, set_type=self.set_type, count=1, kinds=["tag"], client_ts=TS
+		)
 		self.assertTrue(result["ok"], msg=result)
-		self.assertEqual(frappe.db.get_value("Print Job", result["jobs"][0]["print_job"], "printer"), self.printer)
+		self.assertEqual(
+			frappe.db.get_value("Print Job", result["jobs"][0]["print_job"], "printer"), self.printer
+		)
 
 	def test_create_batch_without_printing(self):
 		frappe.set_user(self.r02)
@@ -426,7 +430,12 @@ class TestCreateBatchRpc(SetUnitRpcCase):
 		frappe.db.set_value("Label Template", template, "body", "{{ doc.set_id | nope_filter }}")
 		frappe.set_user(self.r02)
 		result, _response = post(
-			api.create_batch, set_type=self.set_type, count=2, kinds=["tag"], tag_printer=self.printer, client_ts=TS
+			api.create_batch,
+			set_type=self.set_type,
+			count=2,
+			kinds=["tag"],
+			tag_printer=self.printer,
+			client_ts=TS,
 		)
 		self.assertTrue(result["ok"], msg=result)
 		self.assertEqual(frappe.db.count("Set Unit", {"set_type": self.set_type}), 2)

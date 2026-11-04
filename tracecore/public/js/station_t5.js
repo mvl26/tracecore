@@ -1587,7 +1587,8 @@ class T5Load {
 		// A-107: In lại ở T2, T5 không cần lý do, lô và mẻ không có quy tắc in lại như gói T4
 		const button = tcLabelButton("t5-label-pdf", note.printed, this.busy || this.offline);
 		if (note.kind === "ready") return button;
-		if (note.kind === "pdf") return this.alertHtml(tcPrintedNote(note, print.print_job), button);
+		if (note.kind === "pdf")
+			return this.alertHtml(tcPrintedNote(note, print.print_job), button);
 		if (note.kind === "pdf-failed") {
 			return this.alertHtml(
 				{

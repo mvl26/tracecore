@@ -349,7 +349,11 @@ const tcSync = {
 			if (message && message.ok && message.pdf_b64) {
 				// A-114: mở hộp thoại In; không mở được thì tcPrintPdf đã lưu file
 				const printed = await window.tcPrintPdf(message.pdf_b64, message.filename);
-				this.emit({ label_file: message.filename, label_dialog: printed.dialog, label_error: null });
+				this.emit({
+					label_file: message.filename,
+					label_dialog: printed.dialog,
+					label_error: null,
+				});
 				return null;
 			}
 			return (message && message.error && message.error.reason) || `HTTP ${response.status}`;

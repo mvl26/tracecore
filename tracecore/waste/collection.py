@@ -357,7 +357,9 @@ def label_pdf(collection, station):
 	``LABEL_PDF_FAILED``, job giữ nguyên. Trả ``{"pdf_b64", "filename", "print_jobs"}``.
 	"""
 	doc = (
-		frappe.db.get_value("Waste Collection", collection, ["name", "collected_at", "docstatus"], as_dict=True)
+		frappe.db.get_value(
+			"Waste Collection", collection, ["name", "collected_at", "docstatus"], as_dict=True
+		)
 		if isinstance(collection, str) and collection
 		else None
 	)

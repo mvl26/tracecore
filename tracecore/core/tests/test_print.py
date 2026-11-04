@@ -269,7 +269,9 @@ class TestPrinterSelection(IsolatedTestCase):
 
 	def _shared(self, label_item=None, **values):
 		printer = (
-			frappe.get_doc({"doctype": "Printer", "printer_name": "Shared", "label_type_loaded": label_item, **values})
+			frappe.get_doc(
+				{"doctype": "Printer", "printer_name": "Shared", "label_type_loaded": label_item, **values}
+			)
 			.insert()
 			.name
 		)
@@ -430,7 +432,8 @@ class TestCreateJob(IsolatedTestCase):
 		self.assertEqual((result["status"], result["printer"], result["warning"]), ("Queued", None, None))
 		doc = frappe.get_doc("Print Job", result["print_job"])
 		self.assertEqual(
-			(doc.status, doc.ref_doctype, doc.ref_name, doc.station), ("Queued", "Zone Station", "TR-002", "TR-002")
+			(doc.status, doc.ref_doctype, doc.ref_name, doc.station),
+			("Queued", "Zone Station", "TR-002", "TR-002"),
 		)
 		self.assertEqual(json.loads(doc.data)["code"], "LR-261104-99")
 		printer = make_printer("TR-002", make_label_items()[0])
