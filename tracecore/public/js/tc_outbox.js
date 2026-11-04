@@ -293,7 +293,7 @@ const tcSync = {
 		return entry.attempts >= TC_MAX_ATTEMPTS;
 	},
 
-	// gói T4 đóng offline: nhãn in khi có mạng (A-40 D1); A-101: ra file PDF, không qua Station Agent
+	// gói T4 đóng offline: nhãn in khi có mạng (A-40 D1); A-101, A-114: PDF qua hộp thoại In, không qua Station Agent
 	noteReplayedLabel(entry, message) {
 		const print = message.print;
 		if (entry.endpoint !== "tracecore.v1.pack.generate_cycle_id" || !print) return;
@@ -347,8 +347,9 @@ const tcSync = {
 			const body = await response.json().catch(() => null);
 			const message = body && body.message;
 			if (message && message.ok && message.pdf_b64) {
-				window.tcSavePdf(message.pdf_b64, message.filename);
-				this.emit({ label_file: message.filename, label_error: null });
+				// A-114: mở hộp thoại In; không mở được thì tcPrintPdf đã lưu file
+				const printed = await window.tcPrintPdf(message.pdf_b64, message.filename);
+				this.emit({ label_file: message.filename, label_dialog: printed.dialog, label_error: null });
 				return null;
 			}
 			return (message && message.error && message.error.reason) || `HTTP ${response.status}`;

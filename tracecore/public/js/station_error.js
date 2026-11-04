@@ -5,10 +5,17 @@
 	const CACHE_PREFIX = "tc_error_guide_";
 	const escape = (value) => frappe.utils.escape_html(value == null ? "" : String(value));
 
-	// A-99: lưu PDF nhãn máy chủ trả về (base64) thành file trên máy trạm
-	window.tcSavePdf = function (b64, filename) {
+	const PRINT_FRAME_WAIT_MS = 10000;
+	const PRINT_FRAME_KEEP_MS = 60000;
+
+	const pdfUrl = function (b64) {
 		const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
-		const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+		return URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+	};
+
+	// A-99: lưu PDF nhãn (base64) thành file trên máy trạm; A-114 chỉ còn là đường dự phòng khi không mở được hộp thoại In
+	window.tcSavePdf = function (b64, filename) {
+		const url = pdfUrl(b64);
 		const link = document.createElement("a");
 		link.href = url;
 		link.download = filename;
@@ -18,21 +25,75 @@
 		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	};
 
-	// A-101: lấy PDF nhãn từ máy chủ rồi lưu một file; không ném lỗi. Trả {ok, filename, res} hoặc {ok: false, reason}.
-	// Phiên trạm vừa kết thúc → {ended: true}: màn đã đổi, không báo gì thêm.
+	// A-114: mở hộp thoại In của trình duyệt với PDF (khung ẩn, không tải file). Không mở được (trình duyệt chặn, thiếu
+	// trình xem PDF, quá thời gian) thì lưu file để người dùng tự mở in. Trả Promise {dialog: true} hoặc {dialog: false}.
+	window.tcPrintPdf = function (b64, filename) {
+		const url = pdfUrl(b64);
+		const frame = document.createElement("iframe");
+		frame.className = "tc-print-frame";
+		frame.setAttribute("aria-hidden", "true");
+		frame.setAttribute("tabindex", "-1");
+		const cleanup = () => {
+			frame.remove();
+			URL.revokeObjectURL(url);
+		};
+		return new Promise((resolve) => {
+			let settled = false;
+			const finish = (dialog) => {
+				if (settled) return;
+				settled = true;
+				if (!dialog) {
+					cleanup();
+					window.tcSavePdf(b64, filename);
+				} else {
+					setTimeout(cleanup, PRINT_FRAME_KEEP_MS); // xóa sớm thì hộp thoại In mất nội dung
+				}
+				resolve({ dialog });
+			};
+			frame.onload = () => {
+				try {
+					frame.contentWindow.focus();
+					frame.contentWindow.print();
+					finish(true);
+				} catch (error) {
+					finish(false);
+				}
+			};
+			setTimeout(() => finish(false), PRINT_FRAME_WAIT_MS);
+			frame.src = url;
+			document.body.appendChild(frame);
+		});
+	};
+
+	// A-101, A-114: lấy PDF nhãn từ máy chủ rồi mở hộp thoại In; không ném lỗi. Trả {ok, filename, dialog, res} hoặc
+	// {ok: false, reason}. Phiên trạm vừa kết thúc → {ended: true}: màn đã đổi, không báo gì thêm.
 	window.tcPrintLabelPdf = async function (station, method, args) {
 		let res = null;
 		try {
 			res = await station.rpcRead(method, { ...args, client_ts: clientTs() });
 			if (res && res.ok && res.pdf_b64) {
-				window.tcSavePdf(res.pdf_b64, res.filename);
-				return { ok: true, filename: res.filename, res };
+				const printed = await window.tcPrintPdf(res.pdf_b64, res.filename);
+				return { ok: true, filename: res.filename, dialog: printed.dialog, res };
 			}
 		} catch (error) {
 			if (error.sessionEnded) return { ok: false, ended: true };
 			return { ok: false, reason: station.failureCause(error) };
 		}
 		return { ok: false, reason: station.failureCause(null, res) };
+	};
+
+	// A-114: khối báo sau khi in: đã mở hộp thoại In, hoặc không mở được nên đã lưu file
+	window.tcPrintedNote = function (note, printJob) {
+		const reason = printJob ? __("Print job {0}", [printJob]) : "";
+		if (note.dialog === false) {
+			return {
+				variant: "warn",
+				title: __("The print dialog did not open; the label was saved as PDF file {0}.", [note.filename]),
+				reason,
+				action: __("Open the file and print it, or press Reprint."),
+			};
+		}
+		return { variant: "ok", title: __("Label sent to the print dialog: {0}", [note.filename]), reason };
 	};
 
 	const labelButton = function (action, text, disabled) {

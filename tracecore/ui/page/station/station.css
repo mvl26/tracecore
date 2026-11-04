@@ -2022,3 +2022,13 @@ html:has(.tc-work) {
 	gap: var(--tc-touch-gap);
 	margin-top: var(--tc-sp-8);
 }
+
+/* A-114: khung in PDF ẩn; không dùng display:none vì Chrome không in được khung bị ẩn hẳn */
+.tc-print-frame {
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	width: 0;
+	height: 0;
+	border: 0;
+}
