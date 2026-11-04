@@ -302,14 +302,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "60",
+   "default": "50",
    "description": "Size of the label roll. Every label PDF uses this size.",
    "fieldname": "label_width_mm",
    "fieldtype": "Float",
    "label": "Label Width (mm)"
   },
   {
-   "default": "40",
+   "default": "30",
    "fieldname": "label_height_mm",
    "fieldtype": "Float",
    "label": "Label Height (mm)"

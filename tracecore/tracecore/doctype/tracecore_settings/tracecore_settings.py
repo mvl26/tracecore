@@ -60,7 +60,7 @@ class TraceCoreSettings(Document):
 		self._show_gtin_counter()
 
 	def _validate_label_size(self):
-		"""Khổ nhãn chung (A-114 d): mọi PDF nhãn dùng khổ này; để trống/0 thì `core.label_pdf` dùng 60 x 40 mm."""
+		"""Khổ nhãn chung (A-114 d): mọi PDF nhãn dùng khổ này; để trống/0 thì `core.label_pdf` dùng 50 x 30 mm (A-116)."""
 		for field in ("label_width_mm", "label_height_mm"):
 			value = flt(self.get(field))
 			if value < 0 or value > MAX_LABEL_MM:

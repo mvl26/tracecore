@@ -53,6 +53,24 @@ class TestLabelPdf(FrappeTestCase):
 		self.assertAlmostEqual(float(page.mediabox.width) * MM_PER_PT, 50, delta=1)
 		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 60, "label_height_mm": 40})
 
+	def test_default_size_is_50_by_30_and_every_label_fits_one_page(self):
+		# A-116: chưa đặt khổ thì 50 x 30 mm
+		frappe.db.set_single_value("TraceCore Settings", {"label_width_mm": 0, "label_height_mm": 0})
+		self.assertEqual(label_pdf.label_size(), (50, 30))
+		pdfs = [
+			_render()[1],
+			label_pdf.pack_pdf("CY-261101-0001", PAYLOAD, ROWS),
+			label_pdf.object_pdf("KE-0001", "Giá A", "A-1-1-1"),
+		]
+		for pdf in pdfs:
+			reader = PdfReader(io.BytesIO(pdf))
+			self.assertEqual(len(reader.pages), 1)
+			self.assertAlmostEqual(float(reader.pages[0].mediabox.width) * MM_PER_PT, 50, delta=1)
+			self.assertAlmostEqual(float(reader.pages[0].mediabox.height) * MM_PER_PT, 30, delta=1)
+		# DataMatrix của gói vẫn quét ra đúng nội dung ở khổ nhỏ
+		page = PdfReader(io.BytesIO(pdfs[1])).pages[0]
+		self.assertEqual(gs1.decode_datamatrix_png(page.images[0].data), PAYLOAD)
+
 	def test_object_label_qr_decodes_back_to_the_code(self):
 		pdf = label_pdf.object_pdf("KE-0001", "Giá A", "A-1-1-1")
 		page = PdfReader(io.BytesIO(pdf)).pages[0]
@@ -109,8 +127,9 @@ class TestPackLabelPdf(FrappeTestCase):
 			self.assertIn(part, text)
 
 	def test_long_shortage_list_is_not_cut_and_stays_on_one_page(self):
-		"""Danh sách dụng cụ thiếu dài vẫn đủ: trang cao theo nội dung, không cắt chữ, không sang trang."""
-		rows = [*ROWS, ("MISSING: " + ", ".join(f"Instrument {n}" for n in range(60)) + " END", "title")]
+		"""Danh sách dụng cụ thiếu dài vẫn đủ ở khổ mặc định 50 x 30 (A-116): 30 món, không cắt chữ, không sang trang.
+		Đo thực tế: 30 món vừa, 40 món bị cắt ở khổ này (khổ 60 x 40 chứa được hơn)."""
+		rows = [*ROWS, ("MISSING: " + ", ".join(f"Instrument {n}" for n in range(30)) + " END", "title")]
 		reader = PdfReader(io.BytesIO(label_pdf.pack_pdf("CY-261101-0001", PAYLOAD, rows)))
 		self.assertEqual(len(reader.pages), 1)
 		self.assertIn("END", reader.pages[0].extract_text())

@@ -1,6 +1,6 @@
 """PDF nhãn in qua hộp thoại In của trình duyệt (A-99, A-101, A-114): mọi nhãn cùng một khổ của cuộn nhãn chung.
 
-Khổ lấy từ `TraceCore Settings.label_width_mm` x `label_height_mm` (mặc định 60 x 40 mm, A-114 d). Bố cục: mã vạch
+Khổ lấy từ `TraceCore Settings.label_width_mm` x `label_height_mm` (mặc định 50 x 30 mm, A-116). Bố cục: mã vạch
 vuông bên trái (QR cho mã đối tượng, lô, mẻ; DataMatrix GS1 cho gói và thẻ bộ), chữ bên phải; cỡ chữ co theo lượng chữ
 để không bao giờ sang trang hay cắt dòng THIẾU (FR-M2-06.1). Sinh PDF trong bộ nhớ bằng wkhtmltopdf của Frappe;
 wkhtmltopdf không hiểu biến CSS nên giá trị token ``--tc-*`` được thay thẳng vào HTML; kích thước theo mm vì đây là khổ
@@ -21,7 +21,7 @@ from tracecore.core import gs1, qr
 from tracecore.core.errors import Block, BlockedError
 
 SETTINGS = "TraceCore Settings"
-DEFAULT_SIZE_MM = (60, 40)
+DEFAULT_SIZE_MM = (50, 30)  # A-116 (trước đó 60 x 40, A-114 d)
 DATETIME_FORMAT = "%d/%m/%Y %H:%M"
 PAD_MM = 1.5
 GAP_MM = 1.5
@@ -36,7 +36,7 @@ _FAILURES = (ImportError, OSError, frappe.ValidationError, gs1.GS1Error)
 
 
 def label_size():
-	"""(rộng, cao) mm của khổ nhãn chung; trống hoặc không dương thì 60 x 40."""
+	"""(rộng, cao) mm của khổ nhãn chung; trống hoặc không dương thì 50 x 30."""
 	width = flt(frappe.db.get_single_value(SETTINGS, "label_width_mm"))
 	height = flt(frappe.db.get_single_value(SETTINGS, "label_height_mm"))
 	return (width if width > 0 else DEFAULT_SIZE_MM[0], height if height > 0 else DEFAULT_SIZE_MM[1])
