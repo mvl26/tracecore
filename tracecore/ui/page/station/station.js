@@ -1680,8 +1680,76 @@ class TraceCoreStation {
 			await new Promise((resolve) => setTimeout(resolve, 100));
 	}
 
+	// A-117 (FEAT-080, FR-M9-22): xong bước thì màn hiện mã vạch của trạm kế; quét đúng mã đó thì mở trạm kế như bấm nút
+	// trạm, quét mã trạm khác thì báo lỗi inline, quét mã khác thì bỏ đề nghị. Không ghi sổ nghiệp vụ nào.
+	async offerNextStation(step, redraw) {
+		this.nextOffer = null;
+		const version = this.sessionVersion;
+		try {
+			const result = await this.rpc("tracecore.v1.station.next_barcode", {
+				token: this.session.token,
+				step,
+			});
+			if (version !== this.sessionVersion) return;
+			if (result && result.ok && result.next) {
+				this.nextOffer = { ...result.next, png: result.png_b64 };
+			} else if (result && !result.ok) {
+				this.nextOffer = { error: result.error };
+			}
+		} catch (error) {
+			// mã vạch chỉ là phím tắt: lỗi mạng thì màn vẫn dùng được, không báo lỗi thêm
+			this.nextOffer = null;
+		}
+		if (redraw) redraw();
+	}
+
+	nextStationHtml() {
+		const offer = this.nextOffer;
+		if (!offer) return "";
+		if (offer.error) return this.blockHtml(offer.error);
+		const label = __(offer.label);
+		return `<section class="tc-next-station" data-region="next-station">
+			<img src="data:image/png;base64,${offer.png}" width="112" height="112"
+				alt="${esc(__("Barcode of station {0}", [offer.station]))}">
+			<div>
+				<p>${esc(__("Scan to go to {0}", [label]))}</p>
+				<button type="button" class="tc-btn tc-btn-primary" data-action="tc-switch-station"
+					data-station="${esc(offer.station)}">${esc(__("Go to station {0}", [label]))}</button>
+			</div>
+		</section>`;
+	}
+
+	// true khi mã quét đã được xử lý ở đây (không chuyển tiếp cho màn của bước)
+	handleNextStationScan(raw) {
+		if (!this.nextOffer || !this.nextOffer.station) return false;
+		const code = (raw || "").trim().toUpperCase();
+		if (!/^TR-\d{3}$/.test(code)) {
+			this.nextOffer = null; // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
+			return false;
+		}
+		this.input.value = "";
+		if (code === this.nextOffer.station) {
+			this.switchStation(code, __(this.nextOffer.label));
+			return true;
+		}
+		this.authResult.innerHTML = this.blockHtml({
+			code: "NEXT_STATION_MISMATCH",
+			title: __("This is not the next station"),
+			reason: __("The code {0} is not the station after this step ({1}).", [
+				code,
+				this.nextOffer.station,
+			]),
+			action: __("Scan the barcode next to the button, or press the button to go to {0}.", [
+				__(this.nextOffer.label),
+			]),
+		});
+		this.focus();
+		return true;
+	}
+
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
+		if (this.handleNextStationScan(raw)) return;
 		this.authResult.innerHTML = "";
 		if (this.screen) {
 			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới
