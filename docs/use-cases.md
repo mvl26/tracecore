@@ -411,7 +411,7 @@ _Nguồn: #06 UC v1.10 (v1.10 — Đang Review); US-07; API API-M2-04; DocType D
 - E1. Vượt cơ số → không sinh Cycle ID (UC-31).
 - E4. Chưa tick đủ dụng cụ hoặc chưa quét lô chỉ thị → nút Sinh Cycle ID khóa, hiển thị mục còn thiếu; lô chỉ thị sai phương pháp/hết hạn → từ chối.
 - E5. Dụng cụ quá ngưỡng bảo dưỡng 20% chưa tra dầu → chặn sinh mã tới khi xác nhận bảo dưỡng.
-- E2. Máy in đúng loại nhãn lỗi hoặc trạm không có cuộn nhãn đúng loại → giữ Cycle ID, hàng đợi in; chặn in tạm trên loại nhãn khác (BRU-REP-011).
+- E2. Không dựng được PDF nhãn hoặc trình duyệt không mở được hộp thoại In → giữ Cycle ID, báo lỗi inline, nút In lại; không sinh mã mới (A-114: một máy in nhãn chung, không còn chặn theo loại cuộn hay hàng đợi in; BRU-REP-011 thu hẹp).
 - E3. Mất mạng → sinh Cycle ID từ dải offline, đồng bộ sau.
 
 **Open issues:** Đã chốt: Set ID GS1; 2 loại nhãn (hấp / plasma); hạn lưu loại gói và cơ số do khoa nhập tay trước Sprint 1. Còn xác nhận mẫu nhãn cụ thể tại UAT.
