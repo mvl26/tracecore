@@ -13,9 +13,9 @@
 - **Không có nhãn đồ vải** (đã bỏ khỏi A-114).
 - Site `yhct` hiện có đúng một `Printer` `PRN-001` gắn TR-004.
 
-## Câu hỏi mở — phải chốt trước khi code
+## Quyết định đã chốt
 
-- **Q1. Khổ nhãn chung.** Một máy, một cuộn thì mọi nhãn nên cùng một khổ. Hiện tại khổ đang khác nhau:
+- **Q1. Khổ nhãn chung — đã chốt 04/11/2026: một khổ chung cấu hình được, mặc định 60 × 40 mm** (đã ghi vào A-114 (d)). Lý do: một máy, một cuộn thì mọi nhãn phải cùng khổ. Khổ trước đây:
 
   | Nhãn | Khổ hiện tại |
   | --- | --- |
@@ -24,7 +24,9 @@
   | PDF lô rửa / mẻ | 80 × 45 mm (`label_pdf.PAGE_*`) |
   | PDF gói | rộng 100 mm, cao ≥ 60 mm (`PACK_PAGE_*`) |
 
-  **Đề xuất:** một khổ cấu hình được, `TraceCore Settings.label_width_mm` / `label_height_mm`, mặc định 60 × 40 mm. Mọi PDF nhãn dùng khổ này; nội dung co theo khổ. Nếu chọn hướng này thì A-114 (d) phải sửa câu "khổ trang PDF bằng khổ nhãn của mẫu".
+  Từ FEAT-075: `TraceCore Settings.label_width_mm` / `label_height_mm`, mặc định 60 × 40 mm. Mọi PDF nhãn dùng khổ này; nội dung co theo khổ.
+
+- **AC-15** (A-114 d): Khi dựng bất kỳ PDF nhãn nào (lô rửa, mẻ, gói, thẻ bộ, chất thải, QR đối tượng, nhãn thử), trang PDF phải đúng khổ `label_width_mm` × `label_height_mm` trong TraceCore Settings (mặc định 60 × 40 mm).
 
 ## Acceptance criteria (EARS)
 
@@ -51,7 +53,7 @@
 ## Tasks (TDD: viết test `FrappeTestCase` trước, thấy fail, rồi mới code)
 
 1. **Dữ liệu** (FR-M2-08.2; AC-1)
-   - `TraceCore Settings`: thêm section "In ấn" với `label_printer` (Link Printer). Nếu Q1 chọn đề xuất thì thêm cả `label_width_mm`, `label_height_mm`.
+   - `TraceCore Settings`: thêm section "In ấn" với `label_printer` (Link Printer), `label_width_mm` (Float, mặc định 60), `label_height_mm` (Float, mặc định 40); kiểm khổ > 0.
    - `Printer.station`: bỏ `reqd`. `_validate_station` chỉ kiểm khi có giá trị.
    - `Print Job.station`: bỏ `reqd`, vì Desk in bằng máy chung có thể không có trạm.
    - `Print Job.output_mode`: thêm `Browser`.
@@ -67,8 +69,8 @@
    - `_can_output_file` nhận thêm `Printed`/`Browser` để In lại.
    - `set_roll`: chỉ cập nhật loại nhãn và audit, `released_jobs = []`.
    - Test: sửa `core/tests/test_print.py`. Viết test mới cho AC-3 với marker `@bru("BRU-REP-011")`.
-3. **`core.label_pdf` khổ chung** (Q1)
-   - PDF lô rửa, mẻ, gói và nhãn đối tượng dùng một khổ.
+3. **`core.label_pdf` khổ chung** (Q1, AC-15)
+   - Mọi PDF nhãn dùng khổ từ TraceCore Settings; bỏ hằng `PAGE_*`, `PACK_PAGE_*` cố định; bố cục co theo khổ (DataMatrix/QR theo chiều cao nhãn).
    - Hàm mới `object_pdf(label_object, code, title, subtitle)` dùng QR PNG (`core.qr`).
    - Hàm mới `set_tag_pdf(unit, kind)` dùng DataMatrix GS1 (`core.gs1.encode_datamatrix_png`).
    - `merge` giữ nguyên.
@@ -119,7 +121,7 @@
     - Phiếu kiểm đếm, sổ tiệt khuẩn: giữ như hiện nay (PDF ở tab mới hoặc file xuất). Người dùng in từ trình xem PDF.
 12. **Patch và mã lỗi** (AC-11)
     - Patch `a114_release_waiting_print_jobs`: `Waiting` → `Queued`.
-    - Nếu Q1 chọn đề xuất thì patch điền `label_printer`: đúng một Printer đang dùng thì chọn máy đó.
+    - Patch điền `label_printer` khi site có đúng một Printer đang dùng, và đặt khổ 60 × 40 mm nếu trống.
     - `NO_PRINTER_AT_STATION`, `NO_PRINTER_FOR_METHOD`, `PRINTER_NOT_NETWORK`, `PRINTER_AGENT_ONLY` vẫn giữ trong `core.errors` để đọc log cũ, nhưng không còn nơi phát sinh.
     - Cập nhật `setup/survey.py` (`NO_ACTIVE_PRINTER`, `PRINTER_WITHOUT_HOST`): chỉ cảnh báo khi chưa khai máy in chung.
 13. **Dọn và tài liệu**
