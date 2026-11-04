@@ -301,7 +301,7 @@ doc_events = {
 		"after_insert": "tracecore.hr.employees.after_insert",
 		"before_save": "tracecore.hr.employees.before_save",
 		"before_validate": "tracecore.core.account.validate_employee",
-		"on_update": "tracecore.core.account.employee_updated",
+		"on_update": ["tracecore.core.account.employee_updated", "tracecore.hr.employees.on_update"],
 		"on_trash": "tracecore.core.audit.block_delete",
 	},
 	"Set Unit": dict(_AUDIT_EVENTS),

@@ -442,17 +442,18 @@ tracecore.codes.print_dialog = function (frm, label_object, code, title, subtitl
 
 // Nút "In nhãn QR" trên form: chỉ khi mã còn Active; mã Disabled → không có nút, kèm dòng giải thích.
 // `blocked`: lý do chặn biết trước ở client (thiết bị Retired), khi đó không cần tra sổ mã.
-tracecore.codes.add_print_button = function (frm, label_object, title, subtitle, blocked) {
+// `code` (tùy chọn): mã in trên nhãn nếu khác tên bản ghi (thẻ nhân viên in mã thẻ trạm, FEAT-079)
+tracecore.codes.add_print_button = function (frm, label_object, title, subtitle, blocked, code) {
 	if (frm.is_new() || !tracecore.codes.can_print()) {
 		return;
 	}
-	const name = frm.doc.name;
+	const name = code || frm.doc.name;
 	if (blocked) {
 		frm.set_intro(blocked, "orange");
 		return;
 	}
 	frappe.db.get_value("Code Registry", name, "status").then((r) => {
-		if (frm.doc.name !== name) {
+		if ((code || frm.doc.name) !== name) {
 			return; // người dùng đã chuyển sang bản ghi khác trong lúc chờ
 		}
 		const status = r && r.message && r.message.status;
