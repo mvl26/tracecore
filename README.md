@@ -47,7 +47,23 @@ cd tests_e2e && set -a && . ~/.tracecore-e2e.env && set +a && TC_BASE_URL=http:/
 
 Kiosk: mở `/app/station?station=TR-004`. Set ID demo: `bench --site <site> execute tracecore.setup.devdata.ensure_demo_set`.
 
+## In nhãn và giấy tờ (A-114)
+
+Một máy in nhãn chung cho cả viện (`TraceCore Settings` → In ấn → Máy in nhãn, khổ nhãn mặc định 60 × 40 mm) và một
+máy in giấy tờ A4. Mọi nút In mở PDF trong hộp thoại In của trình duyệt; người dùng chọn máy in rồi bấm In. Máy chưa lắp
+thì chọn **Lưu thành PDF**. Form Printer có nút **In thử nhãn** để kiểm khổ giấy và lề.
+
+Cài máy trạm (Windows, Chrome):
+
+1. Cài driver máy in nhãn, đặt khổ giấy đúng khổ nhãn (60 × 40 mm) và lề 0 trong driver.
+2. Muốn bấm In là in luôn không qua hộp thoại: đặt máy in nhãn làm máy in mặc định và mở Chrome kiosk với
+   `chrome.exe --kiosk --kiosk-printing https://<site>/app/station?station=TR-004`. Máy trạm in cả giấy tờ A4 thì
+   không dùng `--kiosk-printing` (mọi bản in sẽ đi máy mặc định).
+3. In thử nhãn từ form Printer, quét lại DataMatrix/QR trên nhãn in ra để chắc mã đọc được.
+
 ## Station Agent
+
+Từ A-114 agent không còn in nhãn (nhãn in qua trình duyệt); agent chỉ đọc cân và dữ liệu máy.
 
 ```bash
 bench --site <site> execute tracecore.setup.provision.agent_user \
