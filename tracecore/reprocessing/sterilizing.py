@@ -1096,6 +1096,7 @@ def save_manual_data(
 	)
 	doc.flags.tc_sterilizing = True
 	doc.save(ignore_permissions=True)
+	cycle_defaults.audit_confirmation("Sterilization Load", doc.name, source, trace, station, client_ts)
 	return {
 		"data_complete": doc.data_complete,
 		"needs_review": doc.needs_review,

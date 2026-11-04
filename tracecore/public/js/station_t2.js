@@ -776,7 +776,7 @@ class T2Wash {
 				alerts: data.alerts ? "yes" : "no",
 				alertsText: data.alerts || "",
 				reported: data.reported_result || "",
-				started: t2LocalInput(context.started_at),
+				started: t2LocalInput(context.started_at) || t2LocalInput(prefill.started_at),
 				ended:
 					t2LocalInput(context.ended_at) ||
 					t2LocalInput(prefill.ended_at) ||
@@ -1955,7 +1955,13 @@ class T2Wash {
 				${
 					param.default_value != null
 						? `<p class="tc-hint">${esc(
-								__("Program default: {0}", [window.tcDecimal(param.default_value)])
+								param.default_source === "midpoint"
+									? __("Prefilled from the midpoint of the range: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
+									: __("Program default: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
 						  )}</p>`
 						: ""
 				}

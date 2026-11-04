@@ -7443,6 +7443,7 @@ Values outside the program range: {0}.,Giá trị ngoài khoảng của chương
 Outside the program range - a Pass is not allowed,Ngoài khoảng của chương trình - không được kết luận Đạt,
 Some values are outside the program range: a Pass is not allowed.,Có giá trị ngoài khoảng của chương trình: không được kết luận Đạt.,
 Program default: {0},Mặc định theo chương trình: {0},
+Prefilled from the midpoint of the range: {0},Điền sẵn theo điểm giữa dải: {0},
 "Filled in from the program: check against the washer, change what differs, then confirm.","Đã điền sẵn theo chương trình: đối chiếu với máy rửa, sửa chỗ khác thực tế rồi xác nhận.",
 "Filled in from the program: check against the sterilizer, change what differs, then confirm.","Đã điền sẵn theo chương trình: đối chiếu với máy tiệt khuẩn, sửa chỗ khác thực tế rồi xác nhận.",
 Chemical of the program,Hóa chất của chương trình,

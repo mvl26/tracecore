@@ -247,7 +247,8 @@ class TestWashManualData(WashResultCase):
 		saved = self.save_data(batch)
 		self.assertEqual((saved["data_complete"], saved["missing"]), (1, []))
 		doc = frappe.get_doc("Wash Batch", batch)
-		self.assertEqual((doc.data_source, doc.manual_confirmed_by), ("Manual", self.employee.name))
+		# A-115: chương trình có dải nên form điền sẵn theo điểm giữa → nguồn Manual Default
+		self.assertEqual((doc.data_source, doc.manual_confirmed_by), ("Manual Default", self.employee.name))
 		self.assertTrue(doc.manual_confirmed_at)
 		self.assertEqual(doc.machine_files, PRINTOUT)
 		self.assertEqual(self.close(batch)["result"], "Pass")
