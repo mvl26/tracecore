@@ -6,9 +6,9 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
+from tracecore.core import batch_label, qr
 from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
-from tracecore.core import qr
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
@@ -26,6 +26,7 @@ from tracecore.v1._common import (
 )
 
 LABEL_ROLES = ("TC R10", "System Manager")  # in nhãn đối tượng (A-05 R8)
+BATCH_LABEL_ROLES = (*LABEL_ROLES, "TC R09", "TC R06")  # nhãn lô vật tư: R10 và người nhập kho (FEAT-082)
 PREVIEW_ROLES = ("TC R10", "TC R02", "System Manager")  # R02 chỉ xem trước
 MAX_STATUS_JOBS = 50  # cùng giới hạn lô in của Desk (tracecore.codes.MAX_BULK)
 STATUS_FIELDS = ["name", "status", "attempts", "error", "printed_at"]
@@ -215,6 +216,39 @@ def objects_pdf(print_jobs, client_ts=None):
 	for name in printed:
 		core_print.mark_browser_output(name, filename)
 	return {"ok": True, **core_label_pdf.encode(pdf, filename), "print_jobs": printed, "skipped": skipped}
+
+
+def _batch_names(value):
+	"""Tên lô: danh sách (hoặc chuỗi JSON của danh sách) 1..MAX_LABELS chuỗi; sai → 400."""
+	if isinstance(value, str):
+		try:
+			value = frappe.parse_json(value)
+		except ValueError:
+			value = None
+	if (
+		not isinstance(value, list)
+		or not 0 < len(value) <= batch_label.MAX_LABELS
+		or not all(isinstance(name, str) and name for name in value)
+	):
+		raise BadRequestError(
+			_("batches must be a list of 1 to {0} lot names.").format(batch_label.MAX_LABELS)
+		)
+	return value
+
+
+@frappe.whitelist(methods=["POST"])
+def batch_labels_pdf(batches, client_ts=None):
+	"""Một PDF nhãn QR (tên lô) cho các `Batch` đã chọn rồi đưa ra hộp thoại In (FEAT-082, A-118, FR-M6-09).
+
+	Chỉ lô còn hạn và chưa vô hiệu; lô khác nằm trong ``skipped`` kèm lý do. Không lô nào in được →
+	``CONSUMABLE_LOT_INVALID`` (422). Mỗi lô in ra ghi Audit Log ``BatchLabelPrinted``; không đổi trạng thái lô.
+	"""
+	require_any_role(*BATCH_LABEL_ROLES)
+	names = _batch_names(batches)
+	try:
+		return {"ok": True, **batch_label.render(names)}
+	except BlockedError as error:
+		return reject_block(error.block, "Batch", names[0])
 
 
 @frappe.whitelist(methods=["POST"])

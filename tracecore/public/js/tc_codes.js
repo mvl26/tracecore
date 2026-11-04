@@ -516,6 +516,46 @@ tracecore.codes.add_bulk_print = function (listview, label_object) {
 	);
 };
 
+// Nhãn QR của lô vật tư/chỉ thị (FEAT-082, A-118): QR chứa tên Batch, quét ở ô lô tại trạm. In = PDF qua hộp thoại In.
+tracecore.codes.BATCH_LABEL_ROLES = ["TC R10", "TC R09", "TC R06", "System Manager"];
+
+tracecore.codes.can_print_batch_label = function () {
+	return tracecore.codes.BATCH_LABEL_ROLES.some((role) => frappe.user.has_role(role));
+};
+
+tracecore.codes.print_batch_labels = async function (names) {
+	if (!names.length) {
+		tracecore.codes.show_block({
+			title: __("Nothing selected"),
+			reason: __("No record is selected."),
+			action: __("Tick the records whose QR labels you want to print."),
+		});
+		return;
+	}
+	if (names.length > tracecore.codes.MAX_BULK) {
+		tracecore.codes.show_block(tc_codes_too_many(names.length));
+		return;
+	}
+	const response = await tracecore.codes.post(
+		"tracecore.v1.print.batch_labels_pdf",
+		{ batches: names },
+		false
+	);
+	if (!response.ok) {
+		tracecore.codes.show_block(response.error);
+		return;
+	}
+	await window.tcPrintPdfAndTell(response.data);
+	const skipped = response.data.skipped || [];
+	if (skipped.length) {
+		tracecore.codes.show_block({
+			title: __("{0} lot(s) were not printed", [skipped.length]),
+			reason: skipped.map((row) => row.reason).join(" "),
+			action: __("Choose lots that have not expired and are not disabled."),
+		});
+	}
+};
+
 function tc_codes_show_rolls(frm, codes) {
 	const dialog = new frappe.ui.Dialog({
 		title: __("Roll codes issued"),
