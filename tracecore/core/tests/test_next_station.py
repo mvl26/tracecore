@@ -22,6 +22,7 @@ class TestNextStation(IsolatedTestCase):
 	def test_each_step_points_to_the_next_function_of_the_chain(self):
 		chain = [
 			("TR-001", "RECEIVE", "TR-003"),
+			("TR-003", "WASH_LOAD", "TR-004"),
 			("TR-004", "WASH_UNLOAD", "TR-005"),
 			("TR-006", "PACK", "TR-007"),
 			("TR-007", "STERI_LOAD", "TR-008"),

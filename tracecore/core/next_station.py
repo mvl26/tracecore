@@ -12,6 +12,7 @@ from tracecore.core import zones
 # chức năng của bước vừa xong -> chức năng của bước kế
 NEXT_FUNCTION = {
 	"RECEIVE": "WASH_LOAD",  # T1 -> T2
+	"WASH_LOAD": "WASH_UNLOAD",  # T2 nạp lô -> dỡ lô (trạm khác nếu tách trạm nạp và trạm dỡ)
 	"WASH_UNLOAD": "ASSEMBLE",  # T2 (dỡ lô, kết luận Đạt) -> T3
 	"ASSEMBLE": "PACK",  # T3 -> T4
 	"PACK": "STERI_LOAD",  # T4 -> T5

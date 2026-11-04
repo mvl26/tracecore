@@ -594,6 +594,7 @@ class T2Wash {
 				this.saveLoad();
 				this.notice = null;
 				this.loadOverview(true);
+				this.station.offerNextStation("WASH_LOAD"); // A-117: nạp xong → trạm dỡ lô
 				this.handlePrint(res.print);
 			}
 		);
@@ -1047,6 +1048,8 @@ class T2Wash {
 				this.notice = null;
 				this.loadOverview(true);
 				this.show();
+				// A-117: kết luận Đạt → mã vạch sang trạm lắp bộ; Không đạt thì không có trạm kế
+				if (res.result === "Pass") this.station.offerNextStation("WASH_UNLOAD");
 			}
 		);
 	}

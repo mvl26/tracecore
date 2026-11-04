@@ -382,6 +382,7 @@ class T4Packing {
 		this.notice = null;
 		this.done = res;
 		if (this.queue) this.queue.reset(); // bộ vừa đóng gói rời hàng đợi
+		this.station.offerNextStation("PACK"); // A-117: sinh Cycle ID xong → mã vạch sang trạm tiệt khuẩn
 		this.handlePrint(res.print);
 	}
 

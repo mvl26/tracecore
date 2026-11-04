@@ -420,6 +420,7 @@ class T7Issue {
 				this.notice = null;
 				this.approval = false;
 				this.show();
+				this.station.offerNextStation("ISSUE"); // A-117: cấp phát xong → mã vạch sang trạm sử dụng
 				this.print();
 			}
 		);
