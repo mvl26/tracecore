@@ -53,6 +53,11 @@ class TestStationNextAssets(FrappeTestCase):
 		self.assertLess(html.index("tc-next-region"), html.index("tc-result"))
 		self.assertIn("setNextOffer", read("ui", "page", "station", "station.js"))
 
+	def test_scanner_without_enter_still_jumps_when_the_code_is_complete(self):
+		script = read("ui", "page", "station", "station.js")
+		self.assertIn('this.listen(this.input, "input"', script)
+		self.assertIn("=== offer.station", script)
+
 	def test_last_station_is_not_offered_anything(self):
 		# T8 (USE) là trạm cuối: không màn nào xin mã sau bước USE
 		for name in ("station_t8.js", "station_t7.js"):

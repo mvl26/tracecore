@@ -573,6 +573,12 @@ class TraceCoreStation {
 			setTimeout(() => this.focus(Boolean(button) && document.activeElement === button), 0);
 		});
 		this.listen(this.input, "blur", () => setTimeout(() => this.focus(), 150));
+		// A-117: máy quét không gửi Enter thì mã trạm kế vừa gõ đủ vẫn tự chuyển trạm (chỉ khớp đúng mã đang hiện)
+		this.listen(this.input, "input", () => {
+			const offer = this.nextOffer;
+			if (offer && offer.station && this.input.value.trim().toUpperCase() === offer.station)
+				this.scan(this.input.value);
+		});
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
 			this.listen(this.root, name, (event) => this.noteActivity(event), true);
