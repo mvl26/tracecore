@@ -663,6 +663,7 @@ class T5Load {
 						reason: __("Load known from the previous step, no scan"),
 					});
 				else this.loadQueues(true);
+				this.station.offerNextStation("STERI_LOAD"); // A-117: nạp xong → trạm dỡ mẻ (trạm này nếu tự dỡ thì ẩn)
 				this.handlePrint(res.print);
 			}
 		);

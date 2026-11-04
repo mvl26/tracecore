@@ -244,6 +244,8 @@ class TraceCoreStation {
 		this.input = this.root.querySelector("#tc-scan-input");
 		window.tcBindScanLabel(this.input);
 		this.result = this.root.querySelector(".tc-result");
+		this.nextRegion = this.root.querySelector(".tc-next-region"); // A-117: mã vạch sang trạm kế
+		this.nextOffer = null;
 		this.authForm = this.root.querySelector(".tc-auth-form");
 		this.cardInput = this.root.querySelector("#tc-card-input");
 		this.authResult = this.root.querySelector(".tc-auth-result");
@@ -1682,8 +1684,16 @@ class TraceCoreStation {
 
 	// A-117 (FEAT-080, FR-M9-22): xong bước thì màn hiện mã vạch của trạm kế; quét đúng mã đó thì mở trạm kế như bấm nút
 	// trạm, quét mã trạm khác thì báo lỗi inline, quét mã khác thì bỏ đề nghị. Không ghi sổ nghiệp vụ nào.
-	async offerNextStation(step, redraw) {
-		this.nextOffer = null;
+	// Khối mã vạch nằm ở vùng riêng của khung trạm (dưới ô quét), nên mọi màn chỉ cần gọi `offerNextStation(bước)` khi xong.
+	setNextOffer(offer) {
+		this.nextOffer = offer;
+		if (!this.nextRegion) return;
+		this.nextRegion.innerHTML = this.nextStationHtml();
+		this.nextRegion.hidden = !offer;
+	}
+
+	async offerNextStation(step) {
+		this.setNextOffer(null);
 		const version = this.sessionVersion;
 		try {
 			const result = await this.rpc("tracecore.v1.station.next_barcode", {
@@ -1692,15 +1702,16 @@ class TraceCoreStation {
 			});
 			if (version !== this.sessionVersion) return;
 			if (result && result.ok && result.next) {
-				this.nextOffer = { ...result.next, png: result.png_b64 };
+				// trạm kế chính là trạm này (một trạm làm cả hai bước): không có chỗ để nhảy
+				if (result.next.station !== this.station)
+					this.setNextOffer({ ...result.next, png: result.png_b64 });
 			} else if (result && !result.ok) {
-				this.nextOffer = { error: result.error };
+				this.setNextOffer({ error: result.error });
 			}
 		} catch (error) {
 			// mã vạch chỉ là phím tắt: lỗi mạng thì màn vẫn dùng được, không báo lỗi thêm
-			this.nextOffer = null;
+			this.setNextOffer(null);
 		}
-		if (redraw) redraw();
 	}
 
 	nextStationHtml() {
@@ -1724,7 +1735,7 @@ class TraceCoreStation {
 		if (!this.nextOffer || !this.nextOffer.station) return false;
 		const code = (raw || "").trim().toUpperCase();
 		if (!/^TR-\d{3}$/.test(code)) {
-			this.nextOffer = null; // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
+			this.setNextOffer(null); // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
 			return false;
 		}
 		this.input.value = "";

@@ -653,7 +653,7 @@ class T1Receiving {
 				this.show();
 				this.loadToday(); // phiếu vừa ghi sổ vào danh sách hôm nay
 				// A-117: xong lượt nhận thì hiện mã vạch sang trạm rửa (không hiện khi phiếu còn nằm trên máy)
-				if (!res.offline) this.station.offerNextStation("RECEIVE", () => this.show());
+				if (!res.offline) this.station.offerNextStation("RECEIVE");
 			}
 		);
 	}
@@ -1404,7 +1404,6 @@ class T1Receiving {
 				]),
 				action: __("Scan the employee card of the next deliverer to open a new receipt."),
 			})}
-			${this.station.nextStationHtml()}
 			${
 				rejected.length
 					? this.alertHtml({

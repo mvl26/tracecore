@@ -983,6 +983,10 @@ html:has(.tc-work) {
 }
 
 /* A-117: mã vạch sang trạm kế cạnh nút chính, quét hoặc bấm tay */
+.tc-next-region {
+	margin-bottom: var(--tc-sp-3);
+}
+
 .tc-next-station {
 	display: flex;
 	flex-wrap: wrap;

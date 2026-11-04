@@ -538,7 +538,7 @@ class T3Assembly {
 		this.queue.reset(); // bộ vừa ghi nhận rời hàng đợi
 		this.show();
 		// A-117: kết luận Đạt thì hiện mã vạch sang trạm đóng gói; Không đạt không có trạm kế
-		if (res && res.next_station) this.station.offerNextStation("ASSEMBLE", () => this.show());
+		if (res && res.next_station) this.station.offerNextStation("ASSEMBLE");
 	}
 
 	setZoom(src, alt) {
@@ -1229,8 +1229,8 @@ class T3Assembly {
 			${
 				done
 					? next
-						? this.station.nextOffer
-							? this.station.nextStationHtml()
+						? this.station.nextOffer || next === this.station.station
+							? ""
 							: `<button type="button" class="tc-btn tc-btn-primary" data-action="t3-next">${esc(
 									__("Go to packing station {0}", [next])
 							  )}</button>`

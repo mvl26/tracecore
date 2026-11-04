@@ -15,7 +15,7 @@ ERR = "public/js/station_error.js"
 FAKE_STATION = """
 const makeStation = () => ({
 	result: element(), input: element(), session: {roles: []}, sessionVersion: 1,
-	listen() {}, isOffline: () => false, setState() {}, focus() {}, renderLoading() {},
+	listen() {}, isOffline: () => false, setState() {}, focus() {}, renderLoading() {}, offerNextStation() {},
 	businessButtons: () => "",
 });
 """
@@ -2466,7 +2466,7 @@ const failingStation = (failure) => {
 	const base = {
 		result: element(), input: element(), form: element(), banner: element(), root: element(),
 		session: {roles: ["TC R02"], token: "t"}, sessionVersion: 1, station: "TR-007",
-		listen() {}, isOffline: () => false, focus() {}, setOffline() {},
+		listen() {}, isOffline: () => false, focus() {}, setOffline() {}, offerNextStation() {},
 		setState(state, html) { states.push({state, html}); },
 		renderLoading() { states.push({state: "loading", html: ""}); },
 		businessButtons: () => "",
