@@ -12,11 +12,13 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, flt, get_datetime
 
+from tracecore.core import audit
 from tracecore.core.errors import Block, BlockedError
 
 MANUAL = "Manual"
 MANUAL_DEFAULT = "Manual Default"
 ENDED_AT, STARTED_AT = "ended_at", "started_at"
+PROGRAM, MIDPOINT = "program", "midpoint"  # nguồn giá trị điền sẵn (A-115)
 # trường đầu chương trình -> từ khóa trong tên tham số (không dấu, xem `_folded`)
 HEADER_FIELDS = (
 	("temperature", ("nhiet do", "temperature")),
@@ -42,6 +44,12 @@ def _number(value):
 def _inside(value, low, high):
 	low, high = flt(low), flt(high)
 	return not ((low and value < low) or (high and value > high))
+
+
+def _midpoint(low, high):
+	"""Điểm giữa dải khi đủ hai cận khác 0 (A-115), không thì None."""
+	low, high = flt(low), flt(high)
+	return flt((low + high) / 2, 6) if low and high and low <= high else None
 
 
 def _program(program):
@@ -76,7 +84,12 @@ def parameter_schema(program):
 		lowered = _folded(row.parameter_name)
 		covered.update(field for field, words in HEADER_FIELDS if any(word in lowered for word in words))
 		own = _number(row.default_value)
-		row.default_value = own if own is not None else _header_default(row.parameter_name, row, header)
+		value = own if own is not None else _header_default(row.parameter_name, row, header)
+		row.default_source = PROGRAM if value is not None else None
+		if value is None:  # A-115: không có mặc định thì lấy điểm giữa dải
+			value = _midpoint(row.min_value, row.max_value)
+			row.default_source = MIDPOINT if value is not None else None
+		row.default_value = value
 	for field, label, unit in OWN_FIELDS:
 		value = flt(header.get(field))
 		if value and field not in covered:
@@ -88,6 +101,7 @@ def parameter_schema(program):
 					max_value=0,
 					required=0,
 					default_value=value,
+					default_source=PROGRAM,
 				)
 			)
 	return rows
@@ -96,11 +110,9 @@ def parameter_schema(program):
 def defaults_of(doc):
 	"""``{"values": {tên: số}, "started_at", "ended_at", "chemical", "chemical_name"}`` theo chương trình của lô/mẻ `doc`."""
 	header = _program(doc.program)
-	values = {
-		row.parameter_name: row.default_value
-		for row in parameter_schema(doc.program)
-		if row.default_value is not None
-	}
+	schema = [row for row in parameter_schema(doc.program) if row.default_value is not None]
+	values = {row.parameter_name: row.default_value for row in schema}
+	sources = {row.parameter_name: row.default_source for row in schema}
 	started = doc.started_at or doc.load_completed_at
 	ended = None
 	if started and cint(header.get("duration_min")):
@@ -109,6 +121,7 @@ def defaults_of(doc):
 		ended = doc.unload_scan_at
 	return {
 		"values": values,
+		"sources": sources,
 		STARTED_AT: str(started) if started else None,
 		ENDED_AT: str(ended) if ended else None,
 		"chemical": header.get("chemical"),
@@ -131,7 +144,7 @@ def trace(doc, parameters, started, ended):
 	"""Đánh dấu từng dòng `parameters` (``default_value``, ``edited``); trả ``(nguồn dữ liệu, {"defaults", "edited_fields"})``."""
 	defaults = defaults_of(doc)
 	values = defaults["values"]
-	edited = []
+	edited, kept = [], []
 	given = {row["parameter_name"] for row in parameters}
 	for row in parameters:
 		default = values.get(row["parameter_name"])
@@ -139,13 +152,34 @@ def trace(doc, parameters, started, ended):
 		row["edited"] = default is not None and flt(row["value"], 6) != flt(default, 6)
 		if row["edited"]:
 			edited.append(row["parameter_name"])
+		elif default is not None:
+			kept.append(row["parameter_name"])  # A-115: giữ nguyên giá trị điền sẵn
 	edited += [name for name in values if name not in given]  # đã xóa giá trị điền sẵn
-	if defaults[STARTED_AT] and _minute(defaults[STARTED_AT]) != _minute(started):
-		edited.append(STARTED_AT)
-	if defaults[ENDED_AT] and _minute(defaults[ENDED_AT]) != _minute(ended):
-		edited.append(ENDED_AT)
+	for field, actual in ((STARTED_AT, started), (ENDED_AT, ended)):
+		if defaults[field]:
+			(kept if _minute(defaults[field]) == _minute(actual) else edited).append(field)
 	source = MANUAL_DEFAULT if values else MANUAL
-	return source, {"defaults": defaults, "edited_fields": edited}
+	return source, {"defaults": defaults, "edited_fields": edited, "kept_fields": kept}
+
+
+def audit_confirmation(ref_doctype, name, source, trace, station=None, client_ts=None):
+	"""Ghi Audit Log trường đã sửa và trường giữ nguyên giá trị điền sẵn khi người vận hành xác nhận (A-115)."""
+	if source != MANUAL_DEFAULT:
+		return
+	audit.log(
+		"Update",
+		ref_doctype,
+		name,
+		new={
+			"event": "CycleDataConfirmed",
+			"edited_fields": trace["edited_fields"],
+			"kept_fields": trace["kept_fields"],
+			"sources": trace["defaults"]["sources"],
+		},
+		reason="CycleDataConfirmed",
+		station=station,
+		client_ts=client_ts,
+	)
 
 
 def outside_names(rows):

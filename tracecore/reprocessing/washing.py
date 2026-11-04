@@ -1331,6 +1331,8 @@ def save_manual_data(
 	)
 	doc.flags.tc_washing = True
 	doc.save(ignore_permissions=True)
+	if confirmed:
+		cycle_defaults.audit_confirmation("Wash Batch", doc.name, source, trace, station, client_ts)
 	return {
 		"data_complete": doc.data_complete,
 		"needs_review": doc.needs_review,

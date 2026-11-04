@@ -958,7 +958,7 @@ class T5Load {
 				values,
 				alerts: alerts ? "yes" : "no",
 				alertsText: alerts || "",
-				started: t5LocalInput(context.started_at),
+				started: t5LocalInput(context.started_at) || t5LocalInput(prefill.started_at),
 				ended:
 					t5LocalInput(context.ended_at) ||
 					t5LocalInput(prefill.ended_at) ||
@@ -1812,7 +1812,13 @@ class T5Load {
 				${
 					param.default_value != null
 						? `<p class="tc-hint">${esc(
-								__("Program default: {0}", [window.tcDecimal(param.default_value)])
+								param.default_source === "midpoint"
+									? __("Prefilled from the midpoint of the range: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
+									: __("Program default: {0}", [
+											window.tcDecimal(param.default_value),
+									  ])
 						  )}</p>`
 						: ""
 				}
