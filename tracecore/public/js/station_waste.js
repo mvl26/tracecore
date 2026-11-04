@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, tcPrintLabelPdf, tcPrintedNote */
 /* global uuid4, clientTs, esc, TcWeighLine, wasteTabs */
 // Màn thu gom chất thải theo khoa (SCR-38, FEAT-047, UC-34, A-60) trên Page station, trạm bước WST (kiosk và PDA).
 // Frappe nối file này sau tc_weigh_line.js (hook page_js) nên dùng chung uuid4/clientTs/esc/TcWeighLine.
@@ -10,6 +10,7 @@ const WST_CATALOG = "tracecore.v1.waste.catalog";
 const WST_GIVER = "tracecore.v1.waste.giver";
 const WST_COLLECT = "tracecore.v1.waste.collect";
 const WST_ACKNOWLEDGE = "tracecore.v1.waste.acknowledge";
+const WST_LABEL_PDF = "tracecore.v1.waste.label_pdf";
 
 class WasteCollect {
 	constructor(station) {
@@ -314,6 +315,7 @@ class WasteCollect {
 			record: () => this.record(),
 			"new-collection": () => this.newCollection(),
 			print: () => this.print(),
+			"print-labels": () => this.printLabels(),
 		};
 		if (!handlers[action]) return false; // offline, call-r02: TraceCoreStation xử lý
 		handlers[action]();
@@ -391,6 +393,29 @@ class WasteCollect {
 			no_letterhead: "1",
 		});
 		window.open(`/printview?${query}`, "_blank", "noopener");
+	}
+
+	// FR-M10-01.5, A-114: nhãn QR các túi của lượt thu gom ra một PDF, mở hộp thoại In
+	async printLabels() {
+		if (!this.done || this.printingLabels) return;
+		const version = this.station.sessionVersion;
+		this.printingLabels = true;
+		this.notice = { variant: "info", title: __("Creating the label PDF...") };
+		this.show();
+		const result = await tcPrintLabelPdf(this.station, WST_LABEL_PDF, {
+			collection: this.done.name,
+			station: this.station.station,
+		});
+		this.printingLabels = false;
+		if (result.ended || version !== this.station.sessionVersion) return;
+		this.notice = result.ok
+			? tcPrintedNote({ filename: result.filename, dialog: result.dialog })
+			: {
+					variant: "warn",
+					title: __("Label PDF was not created; code {0} is kept.", [this.done.name]),
+					reason: result.reason || "",
+			  };
+		this.show();
 	}
 
 	// ---- kiểm tra trước khi gửi và ghi sổ ----
@@ -726,7 +751,14 @@ class WasteCollect {
 				<tbody>${rows}</tbody>
 			</table>
 			<div class="tc-actions">
-				<button type="button" class="tc-btn tc-btn-primary" data-action="print">${esc(
+				${
+					done.label_jobs
+						? `<button type="button" class="tc-btn tc-btn-primary" data-action="print-labels"${
+								this.printingLabels || this.offline ? " disabled" : ""
+						  }>${esc(__("Print {0} bag label(s)", [done.label_jobs]))}</button>`
+						: ""
+				}
+				<button type="button" class="tc-btn tc-btn-secondary" data-action="print">${esc(
 					__("Print receipt")
 				)}</button>
 				<button type="button" class="tc-btn tc-btn-secondary" data-action="new-collection">${esc(

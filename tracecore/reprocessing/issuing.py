@@ -573,8 +573,9 @@ def _approver(session, proof):
 
 
 def print_url(name):
+	"""Trang in phiếu cấp phát; ``trigger_print`` mở hộp thoại In ngay như các biên nhận khác (A-114, EI-HW-007)."""
 	return "/printview?" + frappe.utils.urlencode(
-		{"doctype": "Issue Note", "name": name, "format": PRINT_FORMAT, "no_letterhead": 1}
+		{"doctype": "Issue Note", "name": name, "format": PRINT_FORMAT, "no_letterhead": 1, "trigger_print": 1}
 	)
 
 

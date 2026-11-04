@@ -1,8 +1,13 @@
 """Thu gom chất thải theo khoa (FEAT-047, UC-34, FR-M10-02, .1, .3-.6, FR-M10-01.5, BRU-WST-001, BRU-WST-002, BRU-ID-006)."""
 
+import base64
+import io
+
 import frappe
 from frappe.utils import add_to_date, get_datetime
+from pypdf import PdfReader
 
+from tracecore.core import qr
 from tracecore.core.errors import BlockedError
 from tracecore.tests.factories import (
 	make_department,
@@ -241,34 +246,33 @@ class TestLabels(WasteCase):
 			fields=["status", "station"],
 		)
 
-	def test_no_printer_keeps_collection_and_waits_with_warning(self):
+	def test_labels_are_ready_to_print_without_any_printer(self):
+		# A-114: nhãn in ra PDF bằng máy in nhãn chung, trạm không cần máy in riêng
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
 		doc = self.record()
 		rows = self.jobs(doc)
-		self.assertEqual([row.status for row in rows], ["Waiting", "Waiting"])
-		self.assertEqual(collection.labels_of(doc)["warning"]["code"], "NO_PRINTER_AT_STATION")
+		self.assertEqual([(row.status, row.station) for row in rows], [("Queued", self.station)] * 2)
+		self.assertIsNone(collection.labels_of(doc)["warning"])
+		self.assertEqual(collection.view(doc)["label_jobs"], 2)
 
-	def test_label_goes_to_another_waste_station_printer(self):
-		"""W1: PDA không có máy in thì đẩy lệnh sang trạm WST có máy in."""
-		other = "TR-WST2"
-		zone = frappe.db.get_value("Zone Station", self.station, "parent_zone")
-		frappe.get_doc(
-			{
-				"doctype": "Zone Station",
-				"is_zone": 0,
-				"is_active": 1,
-				"zone_station_name": "Waste printer",
-				"parent_zone": zone,
-				"functions": [{"station_function": "WASTE"}],
-			}
-		).insert(ignore_permissions=True, set_name=other)
-		from unittest.mock import patch
+	@bru("BRU-ID-006")
+	def test_label_pdf_prints_one_page_per_bag_with_its_qr(self):
+		# FR-M10-01.5: trước A-114 job nhãn túi tạo ra nhưng không có đường nào in
+		doc = self.record()
+		result = collection.label_pdf(doc.name, self.station)
+		pages = PdfReader(io.BytesIO(base64.b64decode(result["pdf_b64"]))).pages
+		codes = [row.name for row in self.containers(doc)]
+		self.assertEqual([qr.decode_png(page.images[0].data) for page in pages], codes)
+		self.assertEqual(result["filename"], f"{doc.name}.pdf")
+		self.assertEqual({row.status for row in self.jobs(doc)}, {"Printed"})
+		self.assertEqual(len(collection.label_pdf(doc.name, self.station)["print_jobs"]), 2)  # in lại được
 
-		printers = {other: {"name": "PR-1"}}
-		with (
-			patch("tracecore.core.print.object_printer", side_effect=printers.get),
-			patch("tracecore.core.print.render_object", return_value=("^XA^XZ", frappe._dict(name="T"))),
-			patch("tracecore.core.print.create_job", return_value="JOB") as job,
+	def test_label_pdf_refuses_unknown_collection_or_other_station(self):
+		doc = self.record()
+		for args, code in (
+			(("TG-0000-00000", self.station), "WASTE_COLLECTION_NOT_FOUND"),
+			((doc.name, "TR-004"), "LABEL_NOT_QUEUED"),
 		):
-			self.record()
-		self.assertEqual({call.kwargs["station"] for call in job.call_args_list}, {other})
-		self.assertEqual({call.kwargs["status"] for call in job.call_args_list}, {"Queued"})
+			with self.assertRaises(BlockedError) as ctx:
+				collection.label_pdf(*args)
+			self.assertEqual(ctx.exception.block.code, code)

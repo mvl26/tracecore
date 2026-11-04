@@ -15,7 +15,7 @@ const TC_SU_CREATE = "tracecore.v1.set_unit.create_batch";
 const TC_SU_PRINT = "tracecore.v1.set_unit.print_tags";
 const TC_SU_REPRINT = "tracecore.v1.set_unit.reprint_tag";
 const TC_SU_CANCEL = "tracecore.v1.set_unit.cancel_print";
-const TC_SU_STATUS = "tracecore.v1.set_unit.print_status";
+const TC_SU_TAGS_PDF = "tracecore.v1.set_unit.tags_pdf";
 const TC_SU_CSV = "tracecore.v1.set_unit.batch_csv";
 const TC_SU_SET_TYPE_CONTEXT = "tracecore.v1.set_type.form_context";
 const TC_SU_DEPARTMENT_QUERY = "tracecore.v1.set_type.department_query";
@@ -257,12 +257,10 @@ tracecore.set_unit.job_state = function (job) {
 		};
 	}
 	if (job.status === "Waiting") {
-		return { indicator: "orange", label: __("Waiting for the Station Agent") };
+		return { indicator: "orange", label: __("Waiting (print job from before A-114)") };
 	}
-	if (job.poll_done) {
-		return { indicator: "orange", label: __("No result yet") };
-	}
-	return { indicator: "blue", label: __("Queued for printing") };
+	// A-114: nhãn Queued chờ người dùng in PDF qua hộp thoại In
+	return { indicator: "blue", label: __("Ready to print") };
 };
 
 function tc_su_job_cell(job) {
@@ -339,6 +337,13 @@ function tc_su_results_html(model) {
 		<tbody>${body}</tbody>
 	</table>`;
 	const buttons = [];
+	if (count("Queued") && model.ctx.permissions.can_print) {
+		buttons.push(
+			`<button type="button" class="btn btn-primary btn-sm tc-su-print">${tc_su_escape(
+				__("Print {0} label(s)", [count("Queued")])
+			)}</button>`
+		);
+	}
 	if (model.ctx.permissions.can_issue) {
 		buttons.push(
 			`<button type="button" class="btn btn-default btn-sm tc-su-csv">${tc_su_escape(
@@ -368,46 +373,38 @@ function tc_su_render_results(dialog, model) {
 			.html(error ? tracecore.set_unit.error_html(error) : "");
 	});
 	wrapper.find(".tc-su-refill").on("click", () => tc_su_refill(dialog, model));
+	wrapper.find(".tc-su-print").on("click", () => tc_su_print_pdf(dialog, model));
 }
 
-const tc_su_sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Hỏi kết quả các nhãn còn Queued tới khi xong hoặc hết số lần; vòng mới (in bù) đổi token, vòng cũ dừng
-async function tc_su_poll(dialog, model) {
-	const token = (dialog.tc_su_poll_token = (dialog.tc_su_poll_token || 0) + 1);
-	const polled = new Set();
-	for (let round = 0; round < tracecore.codes.POLL_ROUNDS; round++) {
-		const queued = tc_su_all_jobs(model).filter((job) => job.status === "Queued");
-		// dialog.display chỉ thành true sau hiệu ứng mở hộp thoại: dùng cờ đóng của chính bảng kết quả
-		if (!queued.length || model.closed) {
-			break;
-		}
-		queued.forEach((job) => polled.add(job));
-		await tc_su_sleep(tracecore.codes.POLL_INTERVAL_MS);
-		if (dialog.tc_su_poll_token !== token) {
-			return;
-		}
-		const response = await tracecore.codes.get(TC_SU_STATUS, {
-			names: queued.map((job) => job.print_job),
-		});
-		if (dialog.tc_su_poll_token !== token) {
-			return;
-		}
-		if (!response.ok) {
-			break;
-		}
+// A-114: một PDF cho các nhãn Queued rồi mở hộp thoại In; lỗi (vd không dựng được PDF) thì nhãn giữ Queued, nút còn
+async function tc_su_print_pdf(dialog, model) {
+	const queued = tc_su_all_jobs(model).filter((job) => job.status === "Queued");
+	if (!queued.length || model.printing) {
+		return;
+	}
+	model.printing = true;
+	const response = await tracecore.codes.post(
+		TC_SU_TAGS_PDF,
+		{ print_jobs: queued.map((job) => job.print_job) },
+		false
+	);
+	model.printing = false;
+	if (response.ok) {
+		const printed = new Set((response.data.print_jobs || []).map(String));
 		queued.forEach((job) => {
-			const fresh = response.data.jobs[String(job.print_job)];
-			if (fresh) {
-				Object.assign(job, { status: fresh.status, error: fresh.error });
+			if (printed.has(String(job.print_job))) {
+				job.status = "Printed";
 			}
 		});
-		tc_su_render_results(dialog, model);
 	}
-	polled.forEach((job) => {
-		job.poll_done = true;
-	});
 	tc_su_render_results(dialog, model);
+	if (response.ok) {
+		await window.tcPrintPdfAndTell(response.data);
+	} else {
+		dialog.fields_dict.result.$wrapper
+			.find(".tc-su-result-error")
+			.html(tracecore.set_unit.error_html(response.error, model.ctx));
+	}
 }
 
 function tc_su_merge_jobs(model, jobs) {
@@ -440,7 +437,7 @@ async function tc_su_refill(dialog, model) {
 		.find(".tc-su-result-error")
 		.html(errors.map((error) => tracecore.set_unit.error_html(error, model.ctx)).join(""));
 	if (!errors.length) {
-		tc_su_poll(dialog, model);
+		tc_su_print_pdf(dialog, model);
 	}
 }
 
@@ -470,33 +467,34 @@ tracecore.set_unit.show_results = function (opts) {
 		},
 	});
 	dialog.onhide = () => {
-		model.closed = true; // thôi hỏi kết quả in
 		if (opts.on_done) {
 			opts.on_done();
 		}
 	};
 	dialog.show();
 	tc_su_render_results(dialog, model);
-	tc_su_poll(dialog, model);
+	tc_su_print_pdf(dialog, model);
 	return dialog;
 };
 
 // --- Chọn loại bản in và máy in -------------------------------------------------------------------------------
 
 function tc_su_printer_options(ctx) {
-	// tên máy in do R10 nhập: escape trước khi Select chèn vào DOM
-	return (ctx.printers_hint || []).map((printer) => ({
-		value: printer.name,
-		label: tc_su_escape(
-			[printer.name, printer.printer_name, printer.station].filter(Boolean).join(" · ")
-		),
-	}));
+	// A-114: để trống = máy in nhãn chung; tên máy in do R10 nhập: escape trước khi Select chèn vào DOM
+	return [{ value: "", label: tc_su_escape(__("Shared label printer")) }].concat(
+		(ctx.printers_hint || []).map((printer) => ({
+			value: printer.name,
+			label: tc_su_escape(
+				[printer.name, printer.printer_name, printer.station].filter(Boolean).join(" · ")
+			),
+		}))
+	);
 }
 
-// Trường chọn loại bản in (Thẻ kim loại / Nhãn khay) và máy in từng loại; máy in chỉ gồm máy có địa chỉ mạng
+// Trường chọn loại bản in (Thẻ kim loại / Nhãn khay) và máy in từng loại (mặc định máy in nhãn chung, A-114)
 function tc_su_print_fields(ctx, checked) {
 	const options = tc_su_printer_options(ctx);
-	const first = options.length ? options[0].value : "";
+	const first = "";
 	const fields = [];
 	(ctx.kinds || []).forEach((item, index) => {
 		if (index) {
@@ -507,7 +505,7 @@ function tc_su_print_fields(ctx, checked) {
 				fieldname: `print_${item.kind}`,
 				fieldtype: "Check",
 				label: item.label,
-				default: checked && options.length ? 1 : 0,
+				default: checked ? 1 : 0,
 			},
 			{
 				fieldname: `${item.kind}_printer`,
@@ -522,22 +520,13 @@ function tc_su_print_fields(ctx, checked) {
 	return fields;
 }
 
-function tc_su_print_note(ctx) {
-	if ((ctx.printers_hint || []).length) {
-		return tc_su_muted(
-			__(
-				"Only printers with a network address are listed: the server sends each label to them."
-			)
-		);
-	}
-	return tc_su_warning_html([
-		__(
-			"No printer with a network address is available. Set IDs can be issued without printing; ask R10 to set a printer host and port."
-		),
-	]);
+function tc_su_print_note() {
+	return tc_su_muted(
+		__("Labels open as a PDF in the print dialog; choose the label printer there and press Print.")
+	);
 }
 
-// {kinds, printers, error}: loại đã chọn và máy in tương ứng, hoặc lỗi chặn khi thiếu máy in
+// {kinds, printers}: loại đã chọn và máy in tương ứng (trống = máy in nhãn chung, A-114)
 function tc_su_chosen_print(ctx, values) {
 	const kinds = [];
 	const printers = {};
@@ -545,20 +534,11 @@ function tc_su_chosen_print(ctx, values) {
 		if (!values[`print_${item.kind}`]) {
 			continue;
 		}
-		const printer = values[`${item.kind}_printer`];
-		if (!printer) {
-			return {
-				error: {
-					title: __("Printer missing"),
-					reason: __("No printer is selected for {0}.", [item.label]),
-					action: __("Choose a printer with a network address, or untick {0}.", [
-						item.label,
-					]),
-				},
-			};
-		}
 		kinds.push(item.kind);
-		printers[item.kind] = printer;
+		const printer = values[`${item.kind}_printer`];
+		if (printer) {
+			printers[item.kind] = printer;
+		}
 	}
 	return { kinds, printers };
 }

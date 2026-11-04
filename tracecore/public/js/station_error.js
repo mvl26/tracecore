@@ -5,67 +5,7 @@
 	const CACHE_PREFIX = "tc_error_guide_";
 	const escape = (value) => frappe.utils.escape_html(value == null ? "" : String(value));
 
-	const PRINT_FRAME_WAIT_MS = 10000;
-	const PRINT_FRAME_KEEP_MS = 60000;
-
-	const pdfUrl = function (b64) {
-		const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
-		return URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-	};
-
-	// A-99: lưu PDF nhãn (base64) thành file trên máy trạm; A-114 chỉ còn là đường dự phòng khi không mở được hộp thoại In
-	window.tcSavePdf = function (b64, filename) {
-		const url = pdfUrl(b64);
-		const link = document.createElement("a");
-		link.href = url;
-		link.download = filename;
-		document.body.appendChild(link);
-		link.click();
-		link.remove();
-		setTimeout(() => URL.revokeObjectURL(url), 1000);
-	};
-
-	// A-114: mở hộp thoại In của trình duyệt với PDF (khung ẩn, không tải file). Không mở được (trình duyệt chặn, thiếu
-	// trình xem PDF, quá thời gian) thì lưu file để người dùng tự mở in. Trả Promise {dialog: true} hoặc {dialog: false}.
-	window.tcPrintPdf = function (b64, filename) {
-		const url = pdfUrl(b64);
-		const frame = document.createElement("iframe");
-		frame.className = "tc-print-frame";
-		frame.setAttribute("aria-hidden", "true");
-		frame.setAttribute("tabindex", "-1");
-		const cleanup = () => {
-			frame.remove();
-			URL.revokeObjectURL(url);
-		};
-		return new Promise((resolve) => {
-			let settled = false;
-			const finish = (dialog) => {
-				if (settled) return;
-				settled = true;
-				if (!dialog) {
-					cleanup();
-					window.tcSavePdf(b64, filename);
-				} else {
-					setTimeout(cleanup, PRINT_FRAME_KEEP_MS); // xóa sớm thì hộp thoại In mất nội dung
-				}
-				resolve({ dialog });
-			};
-			frame.onload = () => {
-				try {
-					frame.contentWindow.focus();
-					frame.contentWindow.print();
-					finish(true);
-				} catch (error) {
-					finish(false);
-				}
-			};
-			setTimeout(() => finish(false), PRINT_FRAME_WAIT_MS);
-			frame.src = url;
-			document.body.appendChild(frame);
-		});
-	};
-
-	// A-101, A-114: lấy PDF nhãn từ máy chủ rồi mở hộp thoại In; không ném lỗi. Trả {ok, filename, dialog, res} hoặc
+	// A-101, A-114: lấy PDF nhãn từ máy chủ rồi mở hộp thoại In (`tcPrintPdf`, tc_print_pdf.js); không ném lỗi. Trả {ok, filename, dialog, res} hoặc
 	// {ok: false, reason}. Phiên trạm vừa kết thúc → {ended: true}: màn đã đổi, không báo gì thêm.
 	window.tcPrintLabelPdf = async function (station, method, args) {
 		let res = null;

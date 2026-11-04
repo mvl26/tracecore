@@ -28,17 +28,29 @@ class TestDeskCodes(FrappeTestCase):
 		self.assertIn("tracecore.v1.codes.issue_rolls", helper)
 		self.assertIn("X-Idempotency-Key", helper)
 
-	def test_item_form_prints_issued_roll_labels_and_dialog_polls_job_status(self):
+	def test_item_form_prints_issued_roll_labels_and_dialog_prints_one_pdf(self):
 		# mã cuộn đã cấp mà lần in trước lỗi vẫn in lại được từ form Item (list_rolls → print_dialog)
 		item_js = _read("public", "js", "item.js")
 		self.assertIn("tracecore.codes.roll_labels_dialog(frm)", item_js)
 		helper = _read("public", "js", "tc_codes.js")
 		self.assertIn("tracecore.v1.codes.list_rolls", helper)
 		self.assertIn("tracecore.codes.roll_labels_dialog = ", helper)
-		# kết quả thật của lệnh in (Đã in / Không in được / Đang chờ agent) thay vì dừng ở "Đã xếp hàng"
-		self.assertIn("tracecore.v1.print.job_status", helper)
+		# A-114: cả loạt ra một PDF mở trong hộp thoại In, không gửi ZPL, không chờ Station Agent
+		self.assertIn("tracecore.v1.print.objects_pdf", helper)
+		self.assertIn("window.tcPrintPdfAndTell(", helper)
+		self.assertNotIn("Station Agent", helper)
+		self.assertNotIn("host: [", helper)
 		# một thao tác = một khóa idempotent, gửi lại dùng đúng request cũ
 		self.assertIn("tracecore.codes.new_request = ", helper)
+
+	def test_print_pdf_helper_is_in_the_desk_bundle(self):
+		# A-114: một trình in PDF dùng chung cho Desk và Page station
+		self.assertIn('import "./tc_print_pdf.js";', _read("public", "js", "tracecore.bundle.js"))
+		helper = _read("public", "js", "tc_print_pdf.js")
+		for part in ("window.tcPrintPdf = ", "window.tcSavePdf = ", "contentWindow.print()", "width:0;height:0"):
+			self.assertIn(part, helper)
+		self.assertNotIn("display:none", helper)
+		self.assertIn("tracecore.v1.set_unit.tags_pdf", _read("public", "js", "tc_set_unit.js"))
 
 	def test_doctype_scripts_guard_missing_shared_helper(self):
 		# tc_codes.js nạp qua bundle; trang cũ/bundle lỗi không được làm hỏng form và list view
@@ -58,13 +70,6 @@ class TestDeskCodes(FrappeTestCase):
 		self.assertIn("response.status >= 500", helper)
 		self.assertIn("return tc_codes_unknown_outcome(", helper)
 		self.assertIn("if (result.network) {", helper)
-
-	def test_dialog_has_single_poll_token(self):
-		# lần hỏi mới thay lần cũ; poll_done chỉ đặt cho dòng mà chính vòng hỏi đó đã hỏi
-		helper = _read("public", "js", "tc_codes.js")
-		self.assertIn("dialog.tc_poll_token", helper)
-		self.assertIn("polled.forEach((row) => {", helper)
-		self.assertNotIn("rows.forEach((row) => {\n\t\trow.poll_done = true;", helper)
 
 	def test_user_text_is_escaped_in_html(self):
 		helper = _read("public", "js", "tc_codes.js")

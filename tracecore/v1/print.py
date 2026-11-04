@@ -6,8 +6,9 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
+from tracecore.core import label_pdf as core_label_pdf
 from tracecore.core import print as core_print
-from tracecore.core import print_server, qr
+from tracecore.core import qr
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
@@ -116,45 +117,94 @@ def _resolve_and_render(label_object, code, printer=None, client_ts=None):
 @frappe.whitelist(methods=["POST"])
 @idempotent
 def object_label(label_object, code, printer=None, client_ts=None):
-	"""In nhãn QR của đối tượng có mã `code` ra máy in `printer` (Desk, R10/System Manager).
+	"""Xếp nhãn QR của đối tượng có mã `code` để in qua `objects_pdf` (Desk, R10/System Manager; A-114).
 
-	Tạo Print Job (ref = đối tượng, mẫu active của `label_object`). Máy in có địa chỉ mạng → ``Queued`` và gửi qua
-	đường server (`print_server.enqueue_server_dispatch`, cron thử lại); máy in chỉ qua agent → ``Waiting`` kèm cảnh
-	báo ``PRINTER_AGENT_ONLY`` (không phải lỗi HTTP). Trả ``{"ok": true, "print_job", "status", "warning"}``.
-	Từ chối nghiệp vụ như `codes.resolve_object` và ``LABEL_RENDER_FAILED`` (422); `label_object`/`printer` sai → 400.
+	Tạo Print Job ``Queued`` (ref = đối tượng); máy in `printer` tùy chọn, mặc định máy in nhãn chung; ZPL theo mẫu
+	active chỉ dựng để lưu vết, mẫu thiếu/lỗi không chặn vì nhãn in ra PDF. Trả ``{"ok": true, "print_job", "status",
+	"warning"}``. Từ chối nghiệp vụ như `codes.resolve_object`; `label_object`/`printer` sai → 400.
 	"""
 	require_any_role(*LABEL_ROLES)
 	timestamp = parse_client_ts(client_ts)
 	label_object = _label_object(label_object)
-	row = _desk_printer(printer)
-	target, rendered, rejected = _resolve_and_render(label_object, code, row, timestamp)
-	if rejected:
-		return rejected
-	zpl, template = rendered  # đúng mẫu đã render, không tra lại (mẫu có thể vừa bị tắt → None.name)
-	job = {
-		"station": row.station,
-		"data": {"label_object": label_object, "code": target["code"]},
-		"template": template.name,
-		"printer": row.name,
-		"ref_doctype": target["ref_doctype"],
-		"ref_name": target["ref_name"],
-	}
-	if print_server.printer_address(row.name) is None:
-		name = core_print.create_job(zpl=None, status="Waiting", **job)
-		warning = {
-			"code": "PRINTER_AGENT_ONLY",
-			"title": _("Printer not reachable from Desk"),
-			"reason": _(
-				"Printer {0} has no network address the server can send to; it only prints through the Station Agent."
-			).format(row.name),
-			"action": _(
-				"Choose a printer with a network address, or ask R10 to set the printer host and port."
-			),
-		}
-		return {"ok": True, "print_job": name, "status": "Waiting", "warning": warning}
-	name = core_print.create_job(zpl=zpl, status="Queued", **job)
-	print_server.enqueue_server_dispatch(name)
+	row = _desk_printer(printer) if printer not in (None, "") else core_print.label_printer()
+	try:
+		target = codes.resolve_object(label_object, code)
+	except BlockedError as error:
+		return reject_block(error.block, raw=code if isinstance(code, str) else None, client_ts=timestamp)
+	rendered, _block = _render_object(label_object, target, row) if row else (None, None)
+	zpl, template = rendered or (None, None)
+	name = core_print.create_job(
+		row.get("station") if row else None,
+		zpl,
+		{"label_object": label_object, "code": target["code"], "title": target["title"], "subtitle": target["subtitle"]},
+		template=template.name if template else None,
+		printer=row["name"] if row else None,
+		ref_doctype=target["ref_doctype"],
+		ref_name=target["ref_name"],
+	)
 	return {"ok": True, "print_job": name, "status": "Queued", "warning": None}
+
+
+@frappe.whitelist(methods=["POST"])
+def test_pdf(client_ts=None):
+	"""Nhãn thử PDF đúng khổ nhãn chung (A-114) để R10 kiểm khổ giấy, lề và driver của máy in; không ghi gì."""
+	require_any_role(*LABEL_ROLES)
+	width, height = core_label_pdf.label_size()
+	try:
+		pdf = core_label_pdf.qr_pdf(
+			"TEST-LABEL",
+			_("Test label"),
+			[_("Label size {0} x {1} mm").format(f"{width:g}", f"{height:g}"), frappe.utils.now_datetime().strftime("%d/%m/%Y %H:%M")],
+		)
+	except BlockedError as error:
+		return reject_block(error.block)
+	return {"ok": True, **core_label_pdf.encode(pdf, "TEST-LABEL.pdf")}
+
+
+@frappe.whitelist(methods=["POST"])
+def objects_pdf(print_jobs, client_ts=None):
+	"""Một PDF nhiều trang cho các nhãn QR đối tượng vừa xếp (`object_label`), rồi ghi ``Printed``/``Browser`` (A-114).
+
+	Không ``@idempotent`` (như `pack.waiting_labels_pdf`). Chỉ job ``Queued`` của nhãn đối tượng; job khác bị bỏ qua
+	(``skipped``); không còn nhãn nào → ``LABEL_NOT_QUEUED``. Trả ``{"ok": true, "pdf_b64", "filename", "print_jobs",
+	"skipped"}``.
+	"""
+	require_any_role(*LABEL_ROLES)
+	names = [str(name) for name in _job_names(print_jobs)]
+	pages, printed, skipped = [], [], []
+	try:
+		for name in names:
+			job = frappe.db.get_value("Print Job", name, ["name", "status", "data"], as_dict=True)
+			data = frappe.parse_json(job.data) if job and job.data else {}
+			if (
+				not job
+				or job.status != "Queued"
+				or not isinstance(data, dict)
+				or data.get("label_object") not in core_print.OBJECT_LABELS
+			):
+				skipped.append(name)
+				continue
+			pages.append(
+				core_label_pdf.object_pdf(data.get("code") or "", data.get("title") or "", data.get("subtitle") or "")
+			)
+			printed.append(name)
+		if not pages:
+			raise BlockedError(
+				Block(
+					"LABEL_NOT_QUEUED",
+					_("Label is not ready to print"),
+					_("None of the {0} label(s) can be printed.").format(len(names)),
+					_("Print the labels again from the record, or call R02."),
+				)
+			)
+	except BlockedError as error:
+		return reject_block(error.block, "Print Job", names[0])
+	first = frappe.parse_json(frappe.db.get_value("Print Job", printed[0], "data"))["code"]
+	filename = f"{first}.pdf" if len(printed) == 1 else f"{first}-{len(printed)}.pdf"
+	pdf = core_label_pdf.merge(pages)
+	for name in printed:
+		core_print.mark_browser_output(name, filename)
+	return {"ok": True, **core_label_pdf.encode(pdf, filename), "print_jobs": printed, "skipped": skipped}
 
 
 @frappe.whitelist(methods=["POST"])

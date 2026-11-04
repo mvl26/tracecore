@@ -940,3 +940,30 @@ class TestWasteContainerLabel(FrappeTestCase):
 		self.assertTrue(core_print.object_code_problem("Waste Container", "TB-0001"))
 		options = frappe.get_meta("Label Template").get_field("label_object").options.split("\n")
 		self.assertIn("Waste Container", options)
+
+
+class TestA114Patch(IsolatedTestCase):
+	"""Patch A-114: nhãn `Waiting` cũ in được ngay; site một máy in thì máy đó thành máy in nhãn chung."""
+
+	def test_waiting_jobs_become_queued_and_the_only_printer_is_shared(self):
+		from tracecore.patches.v0_1 import a114_shared_label_printer
+
+		frappe.db.set_value("Printer", {"is_active": 1}, "is_active", 0)
+		frappe.db.set_single_value("TraceCore Settings", {"label_printer": None, "label_width_mm": 0})
+		only = make_printer("TR-004", make_label_items()[0])
+		data = {"method": "Steam", "label_object": "Pack", "label_context": {}}
+		job = core_print.create_job("TR-004", None, data, "pack-label", status="Waiting")
+		a114_shared_label_printer.execute()
+		self.assertEqual(frappe.db.get_value("Print Job", job, "status"), "Queued")
+		self.assertEqual(frappe.db.get_single_value("TraceCore Settings", "label_printer"), only)
+		self.assertEqual(frappe.db.get_single_value("TraceCore Settings", "label_width_mm"), 60)
+
+	def test_two_printers_leave_the_choice_to_r10(self):
+		from tracecore.patches.v0_1 import a114_shared_label_printer
+
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
+		steam, plasma = make_label_items()
+		make_printer("TR-004", steam)
+		make_printer("TR-005", plasma)
+		a114_shared_label_printer.execute()
+		self.assertFalse(frappe.db.get_single_value("TraceCore Settings", "label_printer"))
