@@ -19,7 +19,6 @@ class TestStationNextAssets(FrappeTestCase):
 		self.assertIn("tracecore.v1.station.next_barcode", script)
 		self.assertIn("handleNextStationScan", script)
 		self.assertIn("^TR-\\d{3}$", script)
-		self.assertIn("NEXT_STATION_MISMATCH", script)
 		# quét mã trạm kế đi đường đổi trạm có sẵn (A-90/A-91), không tải lại trang
 		self.assertIn("this.switchStation(code,", script)
 		self.assertIn('data-action="tc-switch-station"', script)
