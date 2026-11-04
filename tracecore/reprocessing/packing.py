@@ -664,7 +664,7 @@ def reprint(cycle_id, reason, station):
 
 
 def _check_label_output(pack, station):
-	"""Điều kiện ra PDF nhãn gói (A-101): gói còn hiệu lực, trạm còn máy in đúng loại nhãn."""
+	"""Điều kiện ra PDF nhãn gói (A-101): gói còn hiệu lực. A-114: không còn đòi trạm có máy in đúng loại nhãn."""
 	if pack.status in NO_LABEL_STATUSES:
 		raise _blocked(
 			"STATUS_INVALID_FOR_STATION",
@@ -673,17 +673,6 @@ def _check_label_output(pack, station):
 				pack.name, _(pack.status, context="Pack")
 			),
 			_("Scan the label of a valid pack, or call R02."),
-		)
-	if core_print.select_printer(station, pack.method) is None:
-		raise _blocked(
-			"NO_PRINTER_FOR_METHOD",
-			_("No printer has the right labels"),
-			_(
-				"No active printer at station {0} has {1} labels loaded. Cycle ID {2} is kept; its label is waiting."
-			).format(station, _(pack.method), pack.name),
-			_(
-				"Load the right label roll into a printer at this station, then scan the roll code (CN-#####)."
-			),
 		)
 
 
@@ -704,9 +693,9 @@ def _check_refetch(pack, job):
 
 
 def label_pdf(cycle_id, station):
-	"""PDF nhãn của gói cho T4 (A-101): Print Job mới nhất của gói ở trạm, xong ghi `Printed`/`File`; trả ``pdf_b64``, ``filename``, ``print_job``.
-
-	Nhãn còn `Waiting` (F3) → LABEL_NOT_QUEUED: chỉ quét cuộn đúng loại mới phát hành; in lại vẫn qua `reprint` có lý do.
+	"""PDF nhãn của gói cho hộp thoại In của T4 (A-101, A-114): Print Job mới nhất của gói ở trạm, xong ghi
+	`Printed`/`Browser`; trả ``pdf_b64``, ``filename``, ``print_job``. Nhãn `Waiting` của dữ liệu cũ → LABEL_NOT_QUEUED;
+	in lại sau cửa sổ lấy lại vẫn qua `reprint` có lý do.
 	"""
 	_require_station(station)
 	pack = frappe.get_doc("Pack", _pack_name(cycle_id))
@@ -715,7 +704,7 @@ def label_pdf(cycle_id, station):
 	_check_refetch(pack, job)
 	filename = f"{pack.name}.pdf"
 	result = core_label_pdf.encode(pack_label.pack_pdf(pack), filename)
-	core_print.mark_file_output(job.name, filename)
+	core_print.mark_browser_output(job.name, filename)
 	return {**result, "print_job": str(job.name)}
 
 
@@ -748,7 +737,7 @@ def waiting_labels_pdf(print_jobs, station):
 	first = printable[0][1].name
 	filename = f"{first}.pdf" if len(printable) == 1 else f"{first}-{len(printable)}.pdf"
 	for job, _pack in printable:
-		core_print.mark_file_output(job.name, filename)
+		core_print.mark_browser_output(job.name, filename)
 	return {
 		**core_label_pdf.encode(pdf, filename),
 		"print_jobs": [str(job.name) for job, _pack in printable],

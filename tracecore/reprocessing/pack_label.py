@@ -3,8 +3,8 @@
 Tách khỏi `packing` (dịch vụ sinh/in lại/hủy/tra cứu gọi các hàm ở đây):
 
 - `label_context(pack)`: `doc` của mẫu nhãn gói (đúng bộ khóa `sample_pack_context`), dùng lúc sinh và in lại.
-- `queue_label(pack, station, printer, reprint_reason=None)`: tạo Print Job ``Queued`` hoặc ``Waiting`` + cảnh báo.
-- `waiting_label(pack)`: nhãn còn chờ in của gói (cảnh báo ``LABEL_ALREADY_WAITING``), để in lại không tạo job thứ hai.
+- `queue_label(pack, station, printer, reprint_reason=None)`: tạo Print Job ``Queued`` (A-114: nhãn in ra PDF).
+- `waiting_label(pack)`: nhãn ``Waiting`` của dữ liệu cũ (cảnh báo ``LABEL_ALREADY_WAITING``), để in lại không tạo job thứ hai.
 - `pack_summary(pack)`, `pack_result(pack, printed)`: dữ liệu gói trả về cho trạm.
 - `label_items(method)`: Item nhãn của phương pháp.
 - `cancel_waiting_jobs(pack, reason)`: hủy nhãn còn chờ in của gói vừa hủy hiệu lực.
@@ -126,47 +126,16 @@ def _warning(code, title, reason, action):
 
 
 def queue_label(pack, station, printer, reprint_reason=None):
-	"""Tạo Print Job cho nhãn gói tại `station`; trả ``{"print_job", "status", "printer", "zpl", "warning"}``.
+	"""Print Job nhãn gói tại `station`, luôn ``Queued`` (A-114); trả ``{"print_job", "status", "printer", "zpl", "warning"}``.
 
-	Có máy in đúng loại nhãn (`printer`, từ `select_printer`) và mẫu active theo phương pháp + ngôn ngữ máy in →
-	render với cờ Unicode của máy in, job ``Queued``. Không có máy in (``NO_PRINTER_FOR_METHOD``), không có mẫu
-	(``LABEL_TEMPLATE_MISSING``) hay mẫu lỗi (``LABEL_RENDER_FAILED``) → job ``Waiting`` giữ ``label_context`` trong
-	``data`` để `core.print.set_roll` dựng lại, kèm cảnh báo; Cycle ID vẫn giữ.
+	Nhãn in ra PDF qua hộp thoại In nên không chờ máy in hay cuộn đúng loại (BRU-REP-011 thu hẹp). ZPL theo mẫu active
+	của phương pháp chỉ dựng để lưu vết khi có máy in (`printer`, từ `select_printer`); không có mẫu hay mẫu lỗi thì bỏ
+	qua, không cảnh báo. Cycle ID luôn giữ.
 	"""
 	context = label_context(pack)
-	job = {
-		"station": station,
-		"data": {"method": pack.method, "label_object": "Pack", "label_context": context},
-		"ref_doctype": "Pack",
-		"ref_name": pack.name,
-		"reprint_reason": reprint_reason,
-	}
 	template = core_print.active_template("Pack", pack.method, printer["language"]) if printer else None
-	zpl, warning = None, None
-	if not printer:
-		labels = ", ".join(row.item_name or row.name for row in label_items(pack.method))
-		warning = _warning(
-			"NO_PRINTER_FOR_METHOD",
-			_("No printer has the right labels"),
-			_(
-				"No active printer at station {0} has {1} labels loaded. Cycle ID {2} is kept; its label is waiting."
-			).format(station, _(pack.method), pack.name),
-			_(
-				"Load a roll of {0} into a printer at this station, then scan the roll code (CN-#####) to print the waiting label."
-			).format(labels or _(pack.method)),
-		)
-	elif not template:
-		warning = _warning(
-			"LABEL_TEMPLATE_MISSING",
-			_("No label template"),
-			_(
-				"There is no active {0} label template for {1} packs. Cycle ID {2} is kept; its label is waiting."
-			).format(printer["language"], _(pack.method), pack.name),
-			_(
-				"Ask R10 to activate a label template, then scan the roll code on the printer to print the waiting label."
-			),
-		)
-	else:
+	zpl = None
+	if template:
 		logged = len(frappe.local.message_log)
 		try:
 			zpl = core_print.render(
@@ -179,23 +148,25 @@ def queue_label(pack, station, printer, reprint_reason=None):
 				language=template.language,
 				name=template.name,
 			)
-		except frappe.ValidationError as error:
-			del frappe.local.message_log[logged:]  # lỗi đã thành cảnh báo, không để msgprint lên kiosk
-			warning = _warning(
-				"LABEL_RENDER_FAILED",
-				_("Label could not be prepared"),
-				_("{0} Cycle ID {1} is kept; its label is waiting.").format(error, pack.name),
-				_(
-					"Ask R10 to fix the label template, then scan the roll code on the printer to print the waiting label."
-				),
-			)
-	if zpl is None:
-		name = core_print.create_job(zpl=None, template=None, status="Waiting", **job)
-		return {"print_job": name, "status": "Waiting", "printer": None, "zpl": None, "warning": warning}
+		except frappe.ValidationError:
+			del frappe.local.message_log[logged:]  # mẫu ZPL lỗi không chặn in PDF, không để msgprint lên kiosk
 	name = core_print.create_job(
-		zpl=zpl, template=template.name, printer=printer["name"], status="Queued", **job
+		station,
+		zpl,
+		{"method": pack.method, "label_object": "Pack", "label_context": context},
+		template=template.name if zpl else None,
+		printer=printer["name"] if printer else None,
+		ref_doctype="Pack",
+		ref_name=pack.name,
+		reprint_reason=reprint_reason,
 	)
-	return {"print_job": name, "status": "Queued", "printer": printer["name"], "zpl": zpl, "warning": None}
+	return {
+		"print_job": name,
+		"status": "Queued",
+		"printer": printer["name"] if printer else None,
+		"zpl": zpl,
+		"warning": None,
+	}
 
 
 def waiting_label(pack):

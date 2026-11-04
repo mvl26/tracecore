@@ -32,6 +32,11 @@
   "waste_anomaly_percent",
   "section_laundry",
   "laundry_norm_deviation_percent",
+  "section_printing",
+  "label_printer",
+  "column_break_printing",
+  "label_width_mm",
+  "label_height_mm",
   "section_daily_test",
   "daily_test_mode",
   "daily_test_steam_leak",
@@ -279,12 +284,41 @@
    "default": "10",
    "label": "Laundry Norm Deviation (%)",
    "description": "A laundry batch whose actual water, power or chemical differs from the norm by more than this needs a reason. Default 10; 0 also means 10."
+  },
+  {
+   "fieldname": "section_printing",
+   "fieldtype": "Section Break",
+   "label": "Printing"
+  },
+  {
+   "description": "The one label printer of the hospital. Every station prints labels as a PDF through the browser print dialog; a printer linked to a station is used first at that station.",
+   "fieldname": "label_printer",
+   "fieldtype": "Link",
+   "label": "Label Printer",
+   "options": "Printer"
+  },
+  {
+   "fieldname": "column_break_printing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "60",
+   "description": "Size of the label roll. Every label PDF uses this size.",
+   "fieldname": "label_width_mm",
+   "fieldtype": "Float",
+   "label": "Label Width (mm)"
+  },
+  {
+   "default": "40",
+   "fieldname": "label_height_mm",
+   "fieldtype": "Float",
+   "label": "Label Height (mm)"
   }
  ],
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-03 10:00:00.000000",
+ "modified": "2026-11-04 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",

@@ -38,6 +38,10 @@ class TestPrinter(IsolatedTestCase):
 			_printer_doc(station="TR-999").insert()
 		self.assertTrue(_printer_doc(station="TR-004").insert())
 
+	def test_shared_printer_needs_no_station(self):
+		# A-114: một máy in nhãn chung cho cả viện, khai ở TraceCore Settings
+		self.assertFalse(_printer_doc(station=None).insert().station)
+
 	def test_label_type_must_be_label_item(self):
 		packaging = make_item("VT-BAO-GOI", "Packaging", method="Steam").name
 		with self.assertRaises(frappe.ValidationError):

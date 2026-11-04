@@ -264,42 +264,65 @@ class TestPrinterSelection(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		self.steam, self.plasma = make_label_items()
-		frappe.db.set_value("Printer", {"station": ["in", ["TR-004", "TR-005"]]}, "is_active", 0)
+		frappe.db.set_value("Printer", {"is_active": 1}, "is_active", 0)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
+
+	def _shared(self, label_item=None, **values):
+		printer = (
+			frappe.get_doc({"doctype": "Printer", "printer_name": "Shared", "label_type_loaded": label_item, **values})
+			.insert()
+			.name
+		)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", printer)
+		return printer
 
 	@bru("BRU-REP-011")
-	def test_select_printer_by_method(self):
-		p1 = make_printer("TR-004", self.steam, host="10.0.0.5", name="Steam printer")
-		p2 = make_printer("TR-004", self.plasma, host="10.0.0.6", name="Plasma printer", supports_unicode=1)
+	def test_select_printer_ignores_label_method(self):
+		# A-114: một cuộn chung, không chặn in theo loại nhãn đang lắp
+		steam = make_printer("TR-004", self.steam, host="10.0.0.5", name="Steam printer", supports_unicode=1)
 		self.assertEqual(
 			core_print.select_printer("TR-004", "Plasma"),
 			{
-				"name": p2,
-				"host": "10.0.0.6",
+				"name": steam,
+				"host": "10.0.0.5",
 				"port": 9100,
 				"language": "ZPL",
 				"supports_unicode": 1,
-				"label_type": self.plasma,
+				"label_type": self.steam,
 			},
 		)
-		self.assertEqual(core_print.select_printer("TR-004", "Steam")["name"], p1)
-		frappe.db.set_value("Printer", p2, "is_active", 0)
-		self.assertIsNone(core_print.select_printer("TR-004", "Plasma"))
 
 	@bru("BRU-REP-011")
-	def test_no_printer_for_method_without_matching_label_roll_at_station(self):
-		make_printer("TR-004", self.steam)
-		make_printer("TR-005", self.plasma)
-		self.assertIsNone(core_print.select_printer("TR-004", "Plasma"))
-		self.assertIsNone(core_print.select_printer("TR-006", "Steam"))
+	def test_station_without_printer_uses_the_shared_printer(self):
+		shared = self._shared(self.plasma)
+		self.assertEqual(core_print.select_printer("TR-006", "Steam")["name"], shared)
+		self.assertEqual(core_print.label_printer()["name"], shared)
+		self.assertEqual(core_print.label_printer("TR-006")["label_type"], self.plasma)
 
-	def test_printer_without_loaded_label_is_never_selected(self):
-		frappe.get_doc({"doctype": "Printer", "printer_name": "Bare", "station": "TR-004"}).insert()
+	def test_station_printer_comes_before_the_shared_printer(self):
+		self._shared()
+		own = make_printer("TR-004", self.steam)
+		self.assertEqual(core_print.label_printer("TR-004")["name"], own)
+
+	def test_inactive_shared_printer_and_no_printer_give_none(self):
+		self.assertIsNone(core_print.label_printer("TR-004"))
+		shared = self._shared()
+		frappe.db.set_value("Printer", shared, "is_active", 0)
+		self.assertIsNone(core_print.label_printer("TR-004"))
 		self.assertIsNone(core_print.select_printer("TR-004", "Steam"))
+
+	def test_shared_printer_needs_no_station(self):
+		shared = self._shared()
+		self.assertFalse(frappe.db.get_value("Printer", shared, "station"))
 
 	def test_select_printer_prefers_lowest_name(self):
 		first = make_printer("TR-004", self.steam, name="Z created first")
 		make_printer("TR-004", self.steam, name="A created second")
 		self.assertEqual(core_print.select_printer("TR-004", "Steam")["name"], first)
+
+	def test_object_printer_falls_back_to_the_shared_printer(self):
+		shared = self._shared()
+		self.assertEqual(core_print.object_printer("TR-006")["name"], shared)
 
 	def test_object_printer_is_first_active_printer_of_the_station(self):
 		# nhãn QR đối tượng (vd mã lô rửa) không phụ thuộc loại nhãn đang lắp: máy in hoạt động đầu tiên theo tên
@@ -380,11 +403,47 @@ class TestCreateJob(IsolatedTestCase):
 		self.assertFalse(doc.payload)
 		self.assertEqual(json.loads(doc.data), data)
 
-	def test_create_job_rejects_unknown_status_and_empty_queued_job(self):
+	def test_create_job_rejects_unknown_status(self):
 		with self.assertRaises(frappe.ValidationError):
 			core_print.create_job("TR-004", "^XA^XZ", status="Printed")
-		with self.assertRaises(frappe.ValidationError):
-			core_print.create_job("TR-004", None)
+
+	def test_queued_job_needs_no_zpl_and_no_station(self):
+		# A-114: nhãn in ra PDF, ZPL chỉ còn là vết; Desk in bằng máy in chung có thể không có trạm
+		doc = frappe.get_doc("Print Job", core_print.create_job(None, None))
+		self.assertEqual((doc.status, doc.payload, doc.station), ("Queued", None, None))
+
+	def test_browser_output_marks_the_job_printed(self):
+		job = core_print.create_job("TR-004", None)
+		core_print.mark_browser_output(job)
+		core_print.mark_browser_output(job)
+		doc = frappe.get_doc("Print Job", job)
+		self.assertEqual((doc.status, doc.output_mode, doc.attempts), ("Printed", "Browser", 2))
+		self.assertIsNotNone(doc.printed_at)
+
+	def test_queue_object_label_is_always_queued(self):
+		frappe.db.set_value("Printer", {"is_active": 1}, "is_active", 0)
+		frappe.db.set_single_value("TraceCore Settings", "label_printer", None)
+		ref = {"ref_doctype": "Zone Station", "ref_name": "TR-002"}
+		result = core_print.queue_object_label(
+			"Wash Batch", "LR-261104-99", "Máy rửa 1 - Chương trình 1", "04/11/2026 08:00", "TR-002", **ref
+		)
+		self.assertEqual((result["status"], result["printer"], result["warning"]), ("Queued", None, None))
+		doc = frappe.get_doc("Print Job", result["print_job"])
+		self.assertEqual(
+			(doc.status, doc.ref_doctype, doc.ref_name, doc.station), ("Queued", "Zone Station", "TR-002", "TR-002")
+		)
+		self.assertEqual(json.loads(doc.data)["code"], "LR-261104-99")
+		printer = make_printer("TR-002", make_label_items()[0])
+		result = core_print.queue_object_label(
+			"Wash Batch", "LR-261104-99", "Máy rửa 1", "04/11/2026 08:00", "TR-002", **ref
+		)
+		self.assertEqual(result["printer"], printer)
+		self.assertTrue(result["zpl"].startswith("^XA"))
+
+	def test_label_output_job_accepts_printed_jobs_for_reprint(self):
+		job = core_print.create_job("TR-004", None, ref_doctype="Zone Station", ref_name="TR-004")
+		core_print.mark_browser_output(job)
+		self.assertEqual(str(core_print.label_output_job("Zone Station", "TR-004", "TR-004").name), job)
 
 	def test_print_job_meta(self):
 		meta = frappe.get_meta("Print Job")
@@ -392,6 +451,8 @@ class TestCreateJob(IsolatedTestCase):
 			(meta.get_field("printer").fieldtype, meta.get_field("printer").options), ("Link", "Printer")
 		)
 		self.assertIn("Waiting", meta.get_field("status").options.split("\n"))
+		self.assertIn("Browser", meta.get_field("output_mode").options.split("\n"))
+		self.assertFalse(meta.get_field("station").reqd)
 		self.assertEqual(meta.get_field("ref_name").fieldtype, "Dynamic Link")
 
 
