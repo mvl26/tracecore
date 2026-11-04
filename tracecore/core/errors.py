@@ -35,6 +35,7 @@ HTTP_STATUS: dict[str, int] = {
 	**dict.fromkeys(
 		(
 			"STATION_WRONG_STEP",
+			"NEXT_STATION_NOT_FOUND",  # FEAT-080 A-117: chưa có trạm cho bước kế
 			"SCAN_INVALID",
 			"BOM_INCOMPLETE",
 			"CI_LOT_INVALID",

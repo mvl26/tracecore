@@ -1,13 +1,15 @@
 """Station bearer-session RPCs and TC Agent/API-key station configuration."""
 
+import base64
+
 import frappe
 from frappe import _
 from frappe.utils import cint
 
-from tracecore.core import error_codes, station_auth, zones
+from tracecore.core import error_codes, next_station, qr, station_auth, zones
 from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
-from tracecore.core.errors import BlockedError
+from tracecore.core.errors import Block, BlockedError
 from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	AGENT_ROLE,
@@ -18,6 +20,7 @@ from tracecore.v1._common import (
 	station_inactive_block,
 )
 
+LAST_STEP = "USE"  # T8: bước cuối, không có trạm kế (A-117)
 PERIPHERAL_FIELDS = ["peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"]
 
 
@@ -126,6 +129,36 @@ def stations(token=None):
 		return {"ok": True, "stations": _visible_stations(station_auth.authenticate_session(token))}
 
 	return _session_response(call)
+
+
+@frappe.whitelist(methods=["POST"])
+def next_barcode(token=None, step=None):
+	"""Trạm kế tiếp và QR mã trạm đó cho màn trạm vừa xong bước `step` (A-117, FR-M9-22); chỉ đọc.
+
+	`step` là chức năng của bước vừa xong (``RECEIVE``, ``WASH_UNLOAD`` …). Bước cuối ``USE`` → ``next`` rỗng, không có mã.
+	Chưa có trạm đang hoạt động cho bước kế → ``NEXT_STATION_NOT_FOUND`` (màn không hiện mã).
+	"""
+
+	def call():
+		session = station_auth.authenticate_session(token)
+		if not isinstance(step, str) or (step not in next_station.NEXT_FUNCTION and step != LAST_STEP):
+			raise BadRequestError(_("step is not a known station step."))
+		if step == LAST_STEP:
+			return {"ok": True, "next": None, "png_b64": None}
+		found = next_station.of(session.station, step)
+		if not found:
+			raise BlockedError(
+				Block(
+					"NEXT_STATION_NOT_FOUND",
+					_("No station for the next step"),
+					_("No active station has the function of the step after this one."),
+					_("Ask R10 to set up the next station, or open it yourself from the station buttons."),
+				)
+			)
+		png = qr.qr_png(found["station"])
+		return {"ok": True, "next": found, "png_b64": base64.b64encode(png).decode("ascii")}
+
+	return _session_response(call, None)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

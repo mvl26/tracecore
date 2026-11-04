@@ -130,8 +130,9 @@ doctype_js = {
 	"Sterilization Load": "public/js/sterilization_load.js",
 	"Laundry Batch": "public/js/laundry_batch.js",
 	"Employee": "public/js/employee.js",
+	"Batch": "public/js/batch.js",
 }
-doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js"}
+doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js", "Batch": "public/js/batch_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
