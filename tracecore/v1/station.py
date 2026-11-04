@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-from tracecore.core import error_codes, next_station, qr, station_auth, zones
+from tracecore.core import command_codes, error_codes, label_pdf, next_station, qr, station_auth, zones
 from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
@@ -14,7 +14,9 @@ from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	AGENT_ROLE,
 	BadRequestError,
+	reject_block,
 	require_agent_for,
+	require_any_role,
 	require_role,
 	require_station,
 	station_inactive_block,
@@ -159,6 +161,30 @@ def next_barcode(token=None, step=None):
 		return {"ok": True, "next": found, "png_b64": base64.b64encode(png).decode("ascii")}
 
 	return _session_response(call, None)
+
+
+@frappe.whitelist(methods=["POST"])
+def commands(token=None):
+	"""Lệnh quét được ở trạm của phiên (A-119, FR-M9-23): ``{"ok", "commands": {khóa lệnh: [bộ chọn nút]}}``; chỉ đọc."""
+
+	def call():
+		session = station_auth.authenticate_session(token)
+		return {"ok": True, "commands": command_codes.selectors_for(session.station)}
+
+	return _session_response(call)
+
+
+@frappe.whitelist(methods=["POST"])
+def command_sheet(station=None):
+	"""PDF A4 tờ mã lệnh của một trạm để in dán tại trạm (A-119; R10, System Manager): ``{"ok", "pdf_b64", "filename"}``."""
+	require_any_role("TC R10", "System Manager")
+	if not isinstance(station, str) or not frappe.db.exists("Zone Station", {"name": station, "is_zone": 0}):
+		raise BadRequestError(_("station must be the code of an existing station."))
+	try:
+		pdf = command_codes.sheet_pdf(station)
+	except BlockedError as error:
+		return reject_block(error.block, "Zone Station", station)
+	return {"ok": True, **label_pdf.encode(pdf, f"{station}-COMMANDS.pdf")}
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

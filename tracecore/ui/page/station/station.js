@@ -578,6 +578,14 @@ class TraceCoreStation {
 			const offer = this.nextOffer;
 			if (offer && offer.station && this.input.value.trim().toUpperCase() === offer.station)
 				this.scan(this.input.value);
+			// A-119: mã lệnh đủ chữ (không có Enter) thì chờ máy quét gõ xong rồi mới chạy, tránh chạy mã dở dang
+			clearTimeout(this.commandTimer);
+			const typed = this.input.value.trim().toUpperCase();
+			if (/^CMD-(?:DO|TAB)-[A-Z0-9_-]+$/.test(typed))
+				this.commandTimer = setTimeout(() => {
+					if (this.input.value.trim().toUpperCase() === typed)
+						this.scan(this.input.value);
+				}, 150);
 		});
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
@@ -1744,29 +1752,95 @@ class TraceCoreStation {
 			this.setNextOffer(null); // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
 			return false;
 		}
-		this.input.value = "";
 		if (code === this.nextOffer.station) {
+			this.input.value = "";
 			this.switchStation(code, __(this.nextOffer.label));
 			return true;
 		}
+		return false; // mã trạm khác: là lệnh chuyển trạm thường (A-119), `handleCommandScan` xử lý
+	}
+
+	// A-119 (FEAT-083, FR-M9-23): quét mã lệnh = bấm đúng nút. Mã trạm TR-###, CMD-TAB-<màn>, CMD-DO-<lệnh>; chỉ nút điều hướng
+	// và hoàn thành có mã. `HOAN-THANH-NAP` do màn T2/T5 tự đọc như trước. Lệnh không dùng được thì báo lỗi inline, không làm gì.
+	commandUnavailable(reason) {
 		this.authResult.innerHTML = this.blockHtml({
-			code: "NEXT_STATION_MISMATCH",
-			title: __("This is not the next station"),
-			reason: __("The code {0} is not the station after this step ({1}).", [
-				code,
-				this.nextOffer.station,
-			]),
-			action: __("Scan the barcode next to the button, or press the button to go to {0}.", [
-				__(this.nextOffer.label),
-			]),
+			code: "COMMAND_NOT_AVAILABLE",
+			title: __("This command is not available here"),
+			reason,
+			action: __("Finish the current step, or scan the command of the step you are on."),
 		});
 		this.focus();
+		return true;
+	}
+
+	async loadCommandMap() {
+		if (this.commandMap && this.commandMapVersion === this.sessionVersion)
+			return this.commandMap;
+		const version = this.sessionVersion;
+		const result = await this.rpc("tracecore.v1.station.commands", {
+			token: this.session.token,
+		});
+		this.commandMap = result && result.ok ? result.commands : null;
+		this.commandMapVersion = version;
+		return this.commandMap;
+	}
+
+	static usableButton(root, selector) {
+		return [...root.querySelectorAll(selector)].find(
+			(element) => !element.disabled && element.getClientRects().length > 0
+		);
+	}
+
+	// true khi mã quét là mã lệnh (đã xử lý ở đây); false thì mã đi tiếp cho màn của bước
+	async handleCommandScan(raw) {
+		const code = (raw || "").trim().toUpperCase();
+		const match = /^(?:(TR-\d{3})|CMD-(DO|TAB)-([A-Z0-9_-]+))$/.exec(code);
+		if (!match) return false;
+		this.input.value = "";
+		this.authResult.innerHTML = "";
+		if (match[1]) {
+			const button = this.root.querySelector(
+				`[data-action="tc-switch-station"][data-station="${match[1]}"]`
+			);
+			if (!button)
+				return this.commandUnavailable(
+					__("Station {0} is not among the station buttons of this account.", [match[1]])
+				);
+			this.switchStation(match[1], button.textContent);
+			return true;
+		}
+		if (match[2] === "TAB") {
+			const tab = [...this.root.querySelectorAll('[data-action="tc-screen"]')].find(
+				(element) => (element.dataset.screen || "").toUpperCase() === match[3]
+			);
+			if (!tab)
+				return this.commandUnavailable(__("This station has no tab {0}.", [match[3]]));
+			tab.click();
+			return true;
+		}
+		let map = null;
+		try {
+			map = await this.loadCommandMap();
+		} catch (error) {
+			map = null;
+		}
+		if (!map) return this.commandUnavailable(__("The command list could not be loaded."));
+		const selectors = map[match[3]];
+		const button =
+			selectors &&
+			selectors.map((s) => TraceCoreStation.usableButton(this.root, s)).find(Boolean);
+		if (!button)
+			return this.commandUnavailable(
+				__("The button of command {0} is not shown or is turned off at this step.", [code])
+			);
+		button.click();
 		return true;
 	}
 
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
 		if (this.handleNextStationScan(raw)) return;
+		if (await this.handleCommandScan(raw)) return;
 		this.authResult.innerHTML = "";
 		if (this.screen) {
 			// màn của bước đang chờ máy chủ thì bỏ qua mã quét; T1, T3, T7 tự xếp hàng, các màn khác xếp ở đây (mã mới
