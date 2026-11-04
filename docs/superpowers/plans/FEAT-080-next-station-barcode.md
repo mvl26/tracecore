@@ -13,6 +13,7 @@
 - **AC-1** (FR-M9-22): Khi T1 xong lượt nhận và có trạm có chức năng rửa đang hoạt động cùng khu, RPC xong bước phải trả `next_station`, và màn T1 phải hiện mã vạch của trạm đó cạnh nút chính cùng nút bấm tay "Sang T2".
 - **AC-2** (FR-M9-22): Khi người dùng quét đúng mã trạm kế đang hiện, màn phải mở `/app/station?station=<mã>` và không gọi RPC ghi nào.
 - **AC-3** (FR-M9-22): Khi người dùng quét mã trạm khác trạm kế đang hiện, màn phải hiện `alert-error` inline (kết quả → lý do → hành động), mã lỗi `NEXT_STATION_MISMATCH`, và không chuyển trang.
+- **AC-8** (FR-M9-22, A-117): Tại trạm cuối T8 (sử dụng cho bệnh nhân) hệ thống không được hiện mã vạch hay nút "Sang trạm kế" ở bất kỳ trạng thái nào.
 - **AC-4** (FR-M9-22): Nếu bước chưa xong (T3 kết luận Không đạt, T1 chưa hoàn tất), hệ thống không được hiện mã vạch.
 - **AC-5** (FR-M9-22): Nếu không có trạm nào cho bước kế, hệ thống không được hiện mã, phải hiện thông báo `NEXT_STATION_NOT_FOUND` kèm hành động liên hệ R10.
 - **AC-6** (FR-M9-22): Nút "Sang <trạm kế>" phải dùng được khi không quét (không hover-only, ≥ 48 px); chữ ≥ 16 px.
