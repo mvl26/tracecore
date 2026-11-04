@@ -30,7 +30,7 @@
 | FR-M2-07 | Xác nhận hoàn thành đóng gói → hệ thống tự sinh mã vạch một lần (Cycle ID) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-003; ADR-004; ADR-005 | FEAT-009; FEAT-018 | `tracecore/reprocessing/tests/test_packing.py`, `test_packing_offline.py`; `tracecore/v1/tests/test_pack_api.py`; `tests_e2e/test_station_t4.py`, `test_station_offline.py` |
 | FR-M2-08 | In nhãn theo phương pháp (2 loại nhãn) | Must | Active | BR-M2 (BRD #02) | UC-08 | ADR-006 | FEAT-002; FEAT-018 | _TBD_ |
 | FR-M2-09 | Nạp mẻ tiệt khuẩn: quét mã máy + quét từng gói, mã mẻ sinh tự động khi hoàn thành nạp | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-005 | FEAT-022 | _TBD_ |
-| FR-M2-10 | Nhập tay dữ liệu máy có xác nhận người dùng | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-007 | FEAT-022 | _TBD_ |
+| FR-M2-10 | Nhập tay dữ liệu máy có xác nhận người dùng | Must | Active | BR-M2 (BRD #02) | UC-09 | ADR-007 | FEAT-022, FEAT-076 | _TBD_ |
 | FR-M2-11 | Dỡ mẻ: quét mã máy + mã mẻ, kết quả mẻ áp cho toàn bộ gói; nhập chỉ thị và giải phóng | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-007 | FEAT-023 | _TBD_ |
 | FR-M2-12 | Cách ly mẻ và xử lý mẻ không đạt | Must | Active | BR-M2 (BRD #02) | UC-10 | ADR-014 | FEAT-023 | _TBD_ |
 | FR-M2-13 | Nhập kho vô khuẩn theo vị trí | Must | Active | BR-M2 (BRD #02) | UC-11 | ADR-005 | FEAT-025 | [FEAT-025 evidence](superpowers/reviews/FEAT-025-acceptance-evidence.md) |
