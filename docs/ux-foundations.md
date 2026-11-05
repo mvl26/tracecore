@@ -42,6 +42,7 @@
 | 01/11/2026 | Amendment A-99: thẻ Hoàn thành nạp T5 (SCR-09) và T2 (SCR-06) có nút Lưu PDF nhãn cạnh mã mẻ/lô, chạy được khi không có máy in; T4 giữ nguyên |
 | 01/11/2026 | Amendment A-98 (#1830, sửa NAV-02): Tổng quan hiện số liệu ngay, tab trình duyệt có tên trạm và TraceCore |
 | 03/11/2026 | Amendment T4-BOM-01, người dùng duyệt trong chat: SCR-08 T4, thành phần bộ hiển thị một cột, mỗi dụng cụ một dòng (ảnh, tên, vị trí · số lượng, checkbox) xếp dọc như danh sách gói T5, thay lưới auto-fill ≥ 210 của design.md §4.11. Ảnh bộ đã sắp xếp vẫn ở cột trái khi có. Không đổi dữ liệu, không thêm SCR. |
+| 05/11/2026 | Amendment A-121 (SCR-07, SCR-08; thay T4-BOM-01 và ticket 1827): thành phần bộ ở T4 và T3 là bảng như T1 (T4: STT, Vị trí, Dụng cụ có ảnh nhỏ, Số lượng trong bộ, Xác nhận; T3: STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế là ô nhập thay nút −/+, Thao tác Đủ/Thiếu/Hỏng); hành vi tick, Xác nhận tất cả, đếm n/n, dòng thiếu R02 đã xác nhận, nhắc bảo dưỡng giữ nguyên. Không đổi dữ liệu, không thêm SCR. |
 
 ## 1. Overview
 

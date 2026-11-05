@@ -8071,3 +8071,5 @@ No class {0} indicator lot for {1} is in date.,Không có lô chỉ thị loại
 "Ask R09 to receive an indicator lot, then scan it.","Gọi R09 nhập lô chỉ thị, rồi quét lô đó.",
 Or tap a lot that fits this set:,Hoặc chạm một lô phù hợp với bộ này:,
 Indicator lots,Lô chỉ thị,
+Position in set,Vị trí,
+Row actions,Thao tác,

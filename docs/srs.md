@@ -73,6 +73,7 @@
 | 1.11 A-119 | 2026-11-04 | Miyano (dev lead, người dùng quyết định ngày 04/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-119 của `docs/architecture.md`: mã lệnh (mã vạch) cho nút, tab và trạm ở màn trạm, in thành tờ A4 dán tại trạm; quét mã lệnh = bấm đúng nút, chỉ cho điều hướng và hoàn thành, không cho hủy/từ chối/PIN. Thêm FR-M9-23. Không thêm DocType, không thêm/bớt ID BRU. |
 | 1.11 A-117 | 2026-11-04 | Miyano (dev lead, người dùng quyết định ngày 04/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-117 của `docs/architecture.md`: khi xong bước ở trạm, màn trạm hiện mã vạch của trạm kế tiếp cạnh nút Hoàn thành; quét thì chuyển sang trạm kế (T1→T2 … T7→T8). Thêm FR-M9-22. Không thêm DocType, không thêm/bớt ID BRU. |
 | 1.11 A-120 | 2026-11-05 | Miyano (dev lead, người dùng yêu cầu ngày 04-05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-120 của `docs/architecture.md`: chọn tay lô chỉ thị ở T4 (danh sách lô dùng được theo phương pháp, loại 5/6, còn hạn) và kệ ở T6 (panel Chọn tay có loại Kệ), máy chủ vẫn kiểm như khi quét. Sửa FR-M2-07.2, FR-M2-13. Không thêm DocType, không thêm/bớt ID BRU. |
+| 1.11 A-121 | 2026-11-05 | Miyano (dev lead, người dùng yêu cầu trong chat ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-121 của `docs/architecture.md`: thành phần bộ ở T4 (SCR-08) và T3 (SCR-07) trình bày dạng bảng như T1. Chỉ đổi trình bày, không đổi FR, NFR, BRU, DocType. |
 
 ---
 
