@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+    # chỉ đổi tài liệu thì không chạy CI (không có mã để kiểm)
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}

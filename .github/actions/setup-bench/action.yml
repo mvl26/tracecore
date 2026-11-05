@@ -30,20 +30,52 @@ runs:
       shell: bash
       run: pip install "frappe-bench==${BENCH_VERSION}"
 
+    # Cache bench đã dựng (frappe + erpnext + hrms theo pins.env, chưa có tracecore): bỏ bench init và get-app ở các lần sau.
+    # Khóa theo pins.env, file action này và bản Python (venv trỏ vào Python của runner, đổi bản vá thì không dùng lại).
+    - name: Cache key (bản Python)
+      id: pykey
+      shell: bash
+      run: echo "py=$(python -c 'import sys; print(sys.version)' | sha256sum | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore bench cache
+      id: bench-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/frappe-bench
+        key: bench-${{ runner.os }}-${{ steps.pykey.outputs.py }}-${{ hashFiles('deploy/pins.env', '.github/actions/setup-bench/action.yml') }}
+
     - name: bench init (frappe ${{ env.FRAPPE_REF }})
+      if: steps.bench-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         bench init --skip-redis-config-generation --skip-assets \
           --frappe-branch "$FRAPPE_REF" --python "$(which python)" ~/frappe-bench
-        mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
-        mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
-    - name: Get apps (pinned) and tracecore from this checkout
+    - name: Get apps (pinned)
+      if: steps.bench-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: /home/runner/frappe-bench
       run: |
         bench get-app --branch "$ERPNEXT_REF" "$ERPNEXT_REPO"
         bench get-app --branch "$HRMS_REF" "$HRMS_REPO"
+
+    - name: Save bench cache
+      if: steps.bench-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/frappe-bench
+        key: ${{ steps.bench-cache.outputs.cache-primary-key }}
+
+    - name: MariaDB charset
+      shell: bash
+      run: |
+        mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
+        mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+
+    - name: Get tracecore from this checkout
+      shell: bash
+      working-directory: /home/runner/frappe-bench
+      run: |
         bench get-app tracecore "$GITHUB_WORKSPACE"
         bench setup requirements --dev
 
