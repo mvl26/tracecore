@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.lookup.* (A-68): gợi ý thiết bị và bộ/gói để CHỌN TAY trên trạm khi máy quét hỏng.
+"""RPC tracecore.v1.lookup.* (A-68, A-120): gợi ý thiết bị, bộ/gói, lô/mẻ và kệ để CHỌN TAY trên trạm khi máy quét hỏng.
 
 Chỉ đọc, không `@idempotent`, phiên thẻ như mọi RPC kiosk. Danh sách chỉ là gợi ý: mã chọn xong được gửi qua đúng RPC quét của
 bước (kèm `entry_mode="Manual"` và lý do), nên trình tự cổng, trạng thái, hạn dùng, thu hồi vẫn do server kiểm lại.
@@ -133,6 +133,23 @@ def set_units(
 			department_of_card = _t8_department()
 			return {"ok": True, **pick_list.suggest(step, q, department_of_card, start, page_length)}
 		return {"ok": True, **pick_list.suggest(step, q, department, start, page_length)}
+
+	return run_at_step(functions or None, station, timestamp, call)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*ALL_ROLES)
+def locations(station, screen=None, q=None, start=0, page_length=20, client_ts=None, token=None):
+	"""Kệ kho vô khuẩn đang dùng để chọn tay ở màn Lưu kho T6 (A-120); màn khác không có danh sách này."""
+	timestamp = parse_client_ts(client_ts)
+	step, functions = _screen(screen)
+	require_any_role(SUPERVISOR, *STEP_ROLES.get(step, ()))
+	q = _text(q, "q")
+
+	def call():
+		if step != "T6":
+			raise _wrong_step(step)
+		return {"ok": True, **pick_list.locations(q, start, page_length)}
 
 	return run_at_step(functions or None, station, timestamp, call)
 

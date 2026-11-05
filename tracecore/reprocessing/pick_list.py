@@ -124,6 +124,41 @@ def _item(row):
 	}
 
 
+def locations(q=None, start=0, page_length=20):
+	"""Kệ kho vô khuẩn đang dùng để chọn tay ở T6 (A-120), theo mã: ``{"items": [{id, raw, name, label}], "total"}``.
+
+	Tìm theo mã, tên vị trí, mô tả. Chỉ là gợi ý: kệ chọn xong vẫn đi qua `putaway.scan` như khi quét.
+	"""
+	start, length = page_of(start, page_length)
+	filters = {"is_active": 1}
+	text = (q or "").strip()
+	or_filters = (
+		{field: ["like", like(text)] for field in ("name", "location_name", "description")} if text else None
+	)
+	rows = frappe.get_all(
+		"Sterile Location",
+		filters=filters,
+		or_filters=or_filters,
+		fields=["name", "location_name", "description"],
+		order_by="name asc",
+		start=start,
+		page_length=length,
+	)
+	total = len(frappe.get_all("Sterile Location", filters=filters, or_filters=or_filters, pluck="name"))
+	return {
+		"items": [
+			{
+				"id": row.name,
+				"raw": row.name,
+				"name": row.location_name,
+				"label": join_label(row.name, row.location_name, row.description),
+			}
+			for row in rows
+		],
+		"total": total,
+	}
+
+
 def batches(step, purpose=None, equipment=None, q=None, start=0, page_length=20):
 	"""Lô rửa / mẻ tiệt khuẩn chờ dỡ của bước `step` (A-87, #1818, #1819), chỉ đọc.
 

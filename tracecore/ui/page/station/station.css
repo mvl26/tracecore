@@ -2000,6 +2000,21 @@ html:has(.tc-work) {
 	border-radius: var(--tc-r-md);
 }
 
+/* A-120: lô chỉ thị phù hợp với bộ để chạm chọn ở T4 */
+.tc-ci-lots {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-ci-lot {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	min-height: var(--tc-touch-min);
+	text-align: left;
+}
+
 .tc-pick-list {
 	display: flex;
 	flex-direction: column;

@@ -394,6 +394,8 @@ class T4Packing {
 			"confirm-all": () => this.confirmAll(),
 			"confirm-pack": () => this.confirmPack(),
 			"pack-type": () => this.choosePackType(data.item),
+			"ci-pick": () => this.scanIndicator(data.batch), // A-120: chạm lô = quét đúng tên lô
+
 			"maint-done": () => this.maintDone(data.instrument),
 			"maint-defer": () => this.maintDefer(data.instrument),
 			"maint-reset": () => {
@@ -1441,12 +1443,41 @@ class T4Packing {
 			]);
 			return `${heading}${field}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
 				prompt
-			)}</p>`;
+			)}</p>${this.ciLotsHtml()}`;
 		}
 		return `${heading}${field}
 			<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span>
 				<b class="tc-mono">${esc(this.ci.batch)}</b> · ${esc(__("class {0}", [this.ci.ci_class]))}</p>
 			<p>${esc(__("Expiry: {0}", [t4Date(this.ci.expiry_date)]))}</p>`;
+	}
+
+	// A-120: lô chỉ thị phù hợp với bộ (đúng phương pháp, loại 5/6, còn hạn) để chạm chọn khi không quét được
+	ciLotsHtml() {
+		const lots = this.ctx.ci.lots || [];
+		if (!lots.length) {
+			return this.alertHtml({
+				variant: "warn",
+				title: __("No usable indicator lot for this method"),
+				reason: __("No class {0} indicator lot for {1} is in date.", [
+					this.ctx.ci.classes.join("/"),
+					__(this.ctx.ci.method),
+				]),
+				action: __("Ask R09 to receive an indicator lot, then scan it."),
+			});
+		}
+		const disabled = t4Disabled(Boolean(this.busy));
+		const buttons = lots
+			.map(
+				(lot) => `<button type="button" class="tc-btn tc-btn-secondary tc-ci-lot" data-action="ci-pick"
+					data-batch="${esc(lot.batch)}"${disabled}>
+					<span class="tc-mono">${esc(lot.batch)}</span>
+					<span>${esc(lot.item_name || lot.item)} · ${esc(__("class {0}", [lot.ci_class]))} · ${esc(
+					__("Expiry: {0}", [t4Date(lot.expiry_date)])
+				)}</span></button>`
+			)
+			.join("");
+		return `<p class="tc-hint">${esc(__("Or tap a lot that fits this set:"))}</p>
+			<div class="tc-ci-lots" role="group" aria-label="${esc(__("Indicator lots"))}">${buttons}</div>`;
 	}
 
 	packHtml() {

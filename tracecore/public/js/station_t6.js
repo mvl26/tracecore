@@ -74,6 +74,11 @@ class T6Storage {
 		return this.pack ? this.pack.cycle_id : null;
 	}
 
+	// A-120: đang mở một gói thì panel Chọn tay có thêm loại Kệ (chọn kệ thay cho quét KE-)
+	pickLocation() {
+		return Boolean(this.pack);
+	}
+
 	// ---- quét và gọi RPC ----
 	async scan(raw) {
 		raw = (raw || "").trim();
