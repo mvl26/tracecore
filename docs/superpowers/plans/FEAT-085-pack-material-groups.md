@@ -6,7 +6,7 @@
 
 ## Acceptance criteria (EARS)
 
-- **AC-1** (A-121 a): Item có trường `tc_pack_material` (Select `Rigid Container` / `Pouch` / `Wrap`, để trống được), chỉ hiện khi nhóm CSSD là `Packaging`.
+- **AC-1** (A-121 a): Item có trường `tc_pack_material` (Select `Rigid Container` / `Sealed Pouch` / `Wrap`, để trống được), chỉ hiện khi nhóm CSSD là `Packaging`.
 - **AC-2** (A-121 b): Patch `a121_pack_material` điền nhóm cho Item `Packaging` còn trống theo tiền tố mã rồi từ khóa tên; Item đã có nhóm hoặc không khớp thì không đổi; chạy lại không đổi gì thêm.
 - **AC-3** (FR-M2-07, A-121 c): `packing.pack_types(set_type)` trả mỗi loại gói kèm `material` và `is_default`; vẫn lọc theo phương pháp (A-97) và hạn lưu > 0.
 - **AC-4** (FR-M2-07, A-121 c, d): Khi T4 mở ngữ cảnh một bộ, khối Loại gói phải là một `<select>` có optgroup theo thứ tự Hộp hấp → Túi ép → Vải gói → Chưa phân nhóm, chọn sẵn loại gói mặc định của loại bộ (không có thì dòng đầu), dòng mặc định có chữ "mặc định của bộ".

@@ -29,6 +29,14 @@ const T4_SCAN = "tracecore.v1.pack.scan";
 const T4_REQUEST_OVERRIDE = "tracecore.v1.par.override.request";
 // lỗi chặn vì hết cơ số: T4 hiện nút "Đề nghị ghi đè" (FEAT-032, FR-M8-04)
 const T4_PAR_CODES = ["PAR_EXCEEDED", "SET_END_OF_LIFE"];
+// A-121: nhóm vật liệu gói theo thứ tự hiện trong droplist (giá trị Item.tc_pack_material); rỗng = chưa phân nhóm
+const T4_PACK_MATERIALS = [
+	{ value: "Rigid Container", label: () => __("Rigid Container") },
+	{ value: "Sealed Pouch", label: () => __("Sealed Pouch") },
+	{ value: "Wrap", label: () => __("Wrap") },
+	{ value: "", label: () => __("Unclassified") },
+];
+const T4_PACK_MATERIAL_SET = new Set(T4_PACK_MATERIALS.map((row) => row.value).filter(Boolean));
 
 function t4Date(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
@@ -59,9 +67,7 @@ class T4Packing {
 		this.dialog = null;
 		this.viewKey = null;
 		this.reset();
-		this.result.addEventListener("change", (event) => {
-			if (event.target.matches(".tc-check")) this.toggleLine(event.target);
-		});
+		this.result.addEventListener("change", (event) => this.onChange(event.target));
 		this.result.addEventListener("submit", (event) => {
 			if (!event.target.matches(".tc-ci-form")) return;
 			event.preventDefault();
@@ -250,7 +256,7 @@ class T4Packing {
 			this.reset();
 			this.viewKey = null;
 			this.ctx = res.context;
-			this.packType = (this.ctx.pack_types[0] || {}).item || null;
+			this.packType = this.defaultPackType(this.ctx.pack_types); // A-121: loại gói mặc định của bộ
 		} else if (res.kind === "ci") {
 			this.ci = res.ci;
 		} else if (res.kind === "pack") {
@@ -393,7 +399,6 @@ class T4Packing {
 			retry: () => this.retry(),
 			"confirm-all": () => this.confirmAll(),
 			"confirm-pack": () => this.confirmPack(),
-			"pack-type": () => this.choosePackType(data.item),
 			"ci-pick": () => this.scanIndicator(data.batch), // A-120: chạm lô = quét đúng tên lô
 
 			"maint-done": () => this.maintDone(data.instrument),
@@ -446,6 +451,18 @@ class T4Packing {
 		});
 		this.result.querySelectorAll(".tc-check").forEach((box) => this.markLine(box, true));
 		this.refresh();
+	}
+
+	onChange(target) {
+		if (target.matches(".tc-check")) this.toggleLine(target);
+		else if (target.matches("#tc-t4-pack")) this.choosePackType(target.value);
+	}
+
+	defaultPackType(types) {
+		// A-121: chọn sẵn loại gói mặc định của loại bộ; không có thì dòng đầu như trước
+		const rows = types || [];
+		const row = rows.find((type) => type.is_default) || rows[0];
+		return row ? row.item : null;
 	}
 
 	choosePackType(item) {
@@ -1492,22 +1509,39 @@ class T4Packing {
 			)}</p>`;
 		}
 		const chosen = types.find((row) => row.item === this.packType);
-		const chips = types
-			.map((row) => {
-				const on = row.item === this.packType;
-				return `<button type="button" class="tc-chip" data-action="pack-type"
-					data-item="${esc(row.item)}" aria-pressed="${on}">${
-					on ? '<span aria-hidden="true">&#10003; </span>' : ""
-				}${esc(row.item_name)} · ${esc(__("{0} days", [row.shelf_life_days]))}</button>`;
-			})
-			.join("");
+		// A-121: một droplist, nhóm theo vật liệu gói (Hộp hấp → Túi ép → Vải gói → Chưa phân nhóm)
+		const groups = T4_PACK_MATERIALS.map((material) => {
+			const rows = types.filter((row) =>
+				material.value
+					? row.material === material.value
+					: !T4_PACK_MATERIAL_SET.has(row.material)
+			);
+			if (!rows.length) return "";
+			const options = rows
+				.map((row) => {
+					const parts = [
+						row.item_name || row.item,
+						__("{0} days", [row.shelf_life_days]),
+					];
+					if (row.is_default) parts.push(__("default for this set"));
+					const selected = row.item === this.packType ? " selected" : "";
+					return `<option value="${esc(row.item)}"${selected}>${esc(
+						parts.join(" · ")
+					)}</option>`;
+				})
+				.join("");
+			return `<optgroup label="${esc(material.label())}">${options}</optgroup>`;
+		}).join("");
 		const expiry = chosen
 			? `<p>${esc(__("Expected expiry date"))}: <b>${esc(
 					t4Date(chosen.expected_expiry)
 			  )}</b></p>`
 			: "";
 		return `${heading}
-			<div class="tc-chips" role="group" aria-label="${esc(__("Pack Type"))}">${chips}</div>
+			<div class="tc-field">
+				<label for="tc-t4-pack">${esc(__("Pack material"))}</label>
+				<select id="tc-t4-pack">${groups}</select>
+			</div>
 			${expiry}`;
 	}
 

@@ -139,7 +139,11 @@ class TestPackTypes(IsolatedTestCase):
 		):
 			self.assertNotIn(excluded, listed)
 		by_item = {row["item"]: row for row in rows}
-		self.assertEqual(by_item[other], {"item": other, "item_name": other, "shelf_life_days": 180})
+		self.assertEqual(
+			by_item[other],
+			# A-121: thêm nhóm vật liệu gói và cờ mặc định của bộ
+			{"item": other, "item_name": other, "shelf_life_days": 180, "material": "", "is_default": False},
+		)
 		self.assertEqual(len(listed), len(set(listed)))
 
 	def test_pack_types_puts_the_set_type_default_first(self):
