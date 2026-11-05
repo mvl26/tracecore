@@ -170,7 +170,7 @@ def test_photo_thumbnail_visible_on_form_and_t4(instr_page, instr_demo, other_us
 
 	t4 = other_user_page("TC_E2E_T4_USER", "TC_E2E_T4_PASSWORD")
 	scan_t4(t4, instr_demo["set_plasma"])
-	line = t4.locator(".tc-ins", has_text=instr_demo["full"])
+	line = t4.locator(".tc-bom-row", has_text=instr_demo["full"])
 	expect(line).to_have_count(1)
 	photo = line.locator("img")
 	expect(photo).to_have_attribute("src", src)
