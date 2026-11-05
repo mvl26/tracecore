@@ -192,6 +192,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 	page, demo = settype_page, settype_demo
 	page.goto("/app/instrument-set-type/new")
 	page.wait_for_function("() => window.cur_frm && cur_frm.is_new()", timeout=30000)
+	show_tab(page, "Mặc định xử lý")  # A-122: loại gói mặc định nằm ở tab Mặc định xử lý
 	pack = page.locator("[data-fieldname='default_pack_type'] input")
 	pack.click()
 	pack.fill("DEMO-F15-GOI")
@@ -205,7 +206,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 
 	edit = demo["set_type_edit"]
 	open_set_type(page, edit)
-	show_tab(page, "Thông tin")
+	show_tab(page, "Mặc định xử lý")
 	shelf = page.locator("[data-fieldname='shelf_life_html']")
 	expect(shelf).to_contain_text("Áp dụng: 180 ngày")
 	override = page.locator("[data-fieldname='shelf_life_days'] input")
@@ -227,7 +228,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 		# trả về không ghi đè cho lần chạy sau
 		open_set_type(page, edit)
 		if page.evaluate("() => cur_frm.doc.shelf_life_days"):
-			show_tab(page, "Thông tin")
+			show_tab(page, "Mặc định xử lý")
 			page.locator("[data-fieldname='shelf_life_days'] input").fill("0")
 			page.locator("[data-fieldname='shelf_life_days'] input").press("Tab")
 			assert save_and_wait(page).ok

@@ -8095,7 +8095,7 @@ Scan into the Issue Note box of Pack Trace,Quét vào ô Phiếu cấp phát ở
 Scan to press this button,Quét để bấm nút này,
 Station Screen,Màn hình trạm,
 Command QR next to Buttons,QR mã lệnh cạnh nút,
-Show a small command QR next to the confirm and complete buttons of the station screen. Scanning it with the barcode scanner presses that button (A-127). Not shown on PDA.,Hiện QR mã lệnh nhỏ cạnh các nút xác nhận và hoàn thành ở màn trạm. Quét bằng máy quét mã vạch là bấm nút đó (A-127). Không hiện trên PDA.,
+Show a small command QR next to the confirm and complete buttons of the station screen. Scanning it with the barcode scanner presses that button. Not shown on PDA.,Hiện QR mã lệnh nhỏ cạnh các nút xác nhận và hoàn thành ở màn trạm. Quét bằng máy quét mã vạch là bấm nút đó. Không hiện trên PDA.,
 QR {0} belongs to an earlier screen. Scan the QR shown on the screen now.,QR {0} thuộc màn trước. Hãy quét QR đang hiện trên màn.,
 Vietnamese typing is on,Đang bật bộ gõ tiếng Việt,
 "The scanned code {0} has Vietnamese marks: the typing tool (Unikey, EVKey) changed its letters.","Mã quét được {0} có dấu tiếng Việt: bộ gõ (Unikey, EVKey) đã đổi chữ của mã.",
