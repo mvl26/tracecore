@@ -939,6 +939,23 @@ html:has(.tc-work) {
 	accent-color: var(--tc-pass);
 }
 
+/* A-127: QR mã lệnh ngay cạnh nút xác nhận; quét bằng máy quét = bấm nút. Nền sáng để máy quét đọc được trên màn. */
+.tc-cmd-qr {
+	display: inline-block;
+	width: var(--tc-photo);
+	height: var(--tc-photo);
+	margin-left: var(--tc-sp-3);
+	vertical-align: middle;
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-sm);
+	image-rendering: pixelated;
+}
+
+[data-surface="PDA"] .tc-cmd-qr {
+	display: none;
+}
+
 /* nhắc bảo dưỡng */
 .tc-maint {
 	display: flex;

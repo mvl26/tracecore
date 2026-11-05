@@ -41,6 +41,8 @@
   "daily_test_mode",
   "daily_test_steam_leak",
   "daily_test_plasma",
+  "section_station_screen",
+  "show_command_qr",
   "section_program_control",
   "program_control",
   "section_reports",
@@ -238,6 +240,18 @@
    "label": "Require Plasma Daily Test"
   },
   {
+   "fieldname": "section_station_screen",
+   "fieldtype": "Section Break",
+   "label": "Station Screen"
+  },
+  {
+   "default": "1",
+   "description": "Show a small command QR next to the confirm and complete buttons of the station screen. Scanning it with the barcode scanner presses that button (A-127). Not shown on PDA.",
+   "fieldname": "show_command_qr",
+   "fieldtype": "Check",
+   "label": "Command QR next to Buttons"
+  },
+  {
    "fieldname": "section_program_control",
    "fieldtype": "Section Break",
    "label": "Programs by Set Type"
@@ -318,7 +332,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-04 12:00:00.000000",
+ "modified": "2026-11-05 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "TraceCore Settings",
