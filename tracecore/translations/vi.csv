@@ -8100,3 +8100,8 @@ QR {0} belongs to an earlier screen. Scan the QR shown on the screen now.,QR {0}
 Vietnamese typing is on,Đang bật bộ gõ tiếng Việt,
 "The scanned code {0} has Vietnamese marks: the typing tool (Unikey, EVKey) changed its letters.","Mã quét được {0} có dấu tiếng Việt: bộ gõ (Unikey, EVKey) đã đổi chữ của mã.",
 "Switch the typing tool to E (English) on this computer, then scan again.",Chuyển bộ gõ trên máy này sang E (tiếng Anh) rồi quét lại.,
+Choose or scan the lot of the test pack.,Chọn hoặc quét lô gói thử.,
+Scanned lot: {0},Lô đã quét: {0},
+No usable lot of {0} is in stock. Ask R09 to receive one.,Không có lô {0} nào còn hạn trong kho. Báo R09 nhập lô.,
+Test pack lot ({0}),Lô gói thử ({0}),
+"Tap a lot, or scan the QR label of the lot.","Chạm chọn một lô, hoặc quét nhãn QR của lô.",

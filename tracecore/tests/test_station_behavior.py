@@ -644,6 +644,74 @@ DAILY = "public/js/station_daily_test.js"
 MACHINE = {"name": "TB-1", "equipment_name": "May", "required": ["bowie_dick"], "missing": [], "runs": {}}
 
 
+DT_LOT_MACHINE = """
+const machine = {
+	name: "TB-0010", required: ["plasma_daily"], optional: [], missing: ["plasma_daily"],
+	run_tests: ["plasma_daily"], runs: {plasma_daily: "Ended"}, run_lots: {plasma_daily: "L-FAR"},
+	test_programs: {plasma_daily: {program: "P", program_name: "Test plasma", consumables: [
+		{item: "LBL", item_name: "Nhan", role: "Label", lots: []},
+		{item: "PK", item_name: "Goi thu", role: "Test Pack", lots: [
+			{batch: "L-NEAR", expiry_date: "2026-11-15"}, {batch: "L-<FAR>", expiry_date: "2027-02-01"},
+			{batch: "L-FAR", expiry_date: "2027-03-01"},
+		]},
+	]}},
+};
+const screen = Object.create(DailyTestScreen.prototype);
+screen.station = makeStation();
+screen.input = screen.station.input;
+screen.reset();
+screen.list = [machine];
+screen.selected = "TB-0010";
+screen.form.test_type = "plasma_daily";
+screen.show = () => {};
+const field = (name) => `<input data-dt-field="${name}">`;
+"""
+
+
+class TestDailyTestLotPick(FrappeTestCase):
+	"""A-130: lô gói thử gợi ý theo chương trình thành nút, chọn sẵn lô của lần chạy, chọn tay, quét nhãn lô."""
+
+	def run_dt(self, script):
+		return run_js(self, [DAILY], [["DailyTestScreen"]], FAKE_STATION + DT_LOT_MACHINE + script)
+
+	def test_result_form_lists_test_pack_lots_as_buttons_and_preselects_the_run_lot(self):
+		out = self.run_dt("emit({html: screen.runHtml(machine, field), lot: screen.chosenLot(machine)});")
+		html = out["html"]
+		self.assertEqual(out["lot"], "L-FAR")  # lô đã dùng lúc Bắt đầu test
+		self.assertEqual(html.count('data-action="dt-lot"'), 3)
+		self.assertIn('data-batch="L-FAR" aria-pressed="true"', html)
+		self.assertNotIn("L-<FAR>", html)  # số lô được escape
+		self.assertIn("01/03/2027", html)  # hạn dùng dd/mm/yyyy
+		self.assertNotIn('data-dt-field="lot_expiry"', html)  # hạn lấy theo lô, bỏ ô Hạn lô
+		self.assertNotIn('data-dt-field="lot"', html)
+
+	def test_tap_a_lot_or_scan_its_label_changes_the_lot(self):
+		out = self.run_dt(
+			"""
+			screen.onAction("dt-lot", {dataset: {batch: "L-NEAR"}});
+			const tapped = screen.chosenLot(machine);
+			screen.scan("  L-SCANNED\\r\\n");
+			const scanned = screen.chosenLot(machine);
+			screen.scan("TB-0010");
+			emit({tapped, scanned, selected: screen.selected, after: screen.chosenLot(machine)});
+			"""
+		)
+		self.assertEqual(out["tapped"], "L-NEAR")
+		self.assertEqual(out["scanned"], "L-SCANNED")
+		self.assertEqual(out["selected"], "TB-0010")  # mã máy vẫn là chọn máy
+
+	def test_without_a_test_pack_the_old_lot_fields_stay(self):
+		out = self.run_dt(
+			"""
+			machine.test_programs = {};
+			emit({html: screen.runHtml(machine, field), lot: screen.chosenLot(machine)});
+			"""
+		)
+		self.assertIn('data-dt-field="lot"', out["html"])
+		self.assertIn('data-dt-field="lot_expiry"', out["html"])
+		self.assertNotIn('data-action="dt-lot"', out["html"])
+
+
 class TestDailyTestList(FrappeTestCase):
 	def html(self, row):
 		import json
