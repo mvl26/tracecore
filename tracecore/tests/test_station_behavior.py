@@ -21,6 +21,89 @@ const makeStation = () => ({
 """
 
 
+BURST = "public/js/tc_scan_burst.js"
+BURST_CLOCK = """
+let now = 0;
+const timers = [];
+const fired = [];
+const burst = new TcScanBurst(() => fired.push(now), {
+	now: () => now,
+	schedule: (fn, ms) => { timers.push({fn, at: now + ms}); return timers.length; },
+	cancel: (id) => { if (id) timers[id - 1].fn = null; },
+});
+// gõ từng ký tự của `text` cách nhau `gap` ms vào ô (giá trị tăng dần), rồi chạy mọi hẹn giờ đến hạn
+const type = (text, gap, start = "") => {
+	let value = start;
+	for (const ch of text) { now += gap; value += ch; burst.input(value); }
+	return value;
+};
+const wait = (ms) => {
+	now += ms;
+	timers.forEach((t) => { if (t.fn && t.at <= now) { const fn = t.fn; t.fn = null; fn(); } });
+};
+"""
+
+
+class TestScanBurst(FrappeTestCase):
+	"""A-126: ô quét tự gửi khi máy quét gõ xong mã (máy quét không gửi Enter)."""
+
+	def run_burst(self, script):
+		return run_js(self, [BURST], [["TcScanBurst"]], BURST_CLOCK + script)
+
+	def test_scanner_speed_submits_once_after_the_pause(self):
+		out = self.run_burst(
+			"""
+			type("9520000TST000001", 8);
+			wait(60);
+			const early = fired.length;
+			wait(100);
+			wait(500);
+			emit({early, fired: fired.length});
+			"""
+		)
+		self.assertEqual(out["early"], 0)  # chưa đủ 120 ms im lặng
+		self.assertEqual(out["fired"], 1)
+
+	def test_hand_typing_does_not_submit(self):
+		out = self.run_burst('type("RC-2026", 180); wait(1000); emit({fired: fired.length});')
+		self.assertEqual(out["fired"], 0)
+
+	def test_block_input_and_short_codes(self):
+		out = self.run_burst(
+			"""
+			now += 10; burst.input("CY-261105-0001"); wait(200);
+			const block = fired.length;
+			burst.reset();
+			type("AB", 5); wait(200);
+			emit({block, short: fired.length - block});
+			"""
+		)
+		self.assertEqual(out["block"], 1)  # một lần nhập ≥ 4 ký tự (máy quét dạng bàn phím gửi cả khối)
+		self.assertEqual(out["short"], 0)  # dưới 4 ký tự không tự gửi
+
+	def test_deleting_cancels(self):
+		out = self.run_burst(
+			"""
+			const value = type("TB-0001", 8);
+			now += 20; burst.input(value.slice(0, -1));
+			wait(500);
+			emit({fired: fired.length});
+			"""
+		)
+		self.assertEqual(out["fired"], 0)
+
+	def test_station_binds_every_scan_box_and_loads_the_helper_first(self):
+		from tracecore import hooks
+
+		self.assertEqual(hooks.page_js["station"][0], BURST)
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new TcScanBurst(", source)
+		self.assertIn('matches(".tc-scan-input")', source)
+		self.assertIn("requestSubmit()", source)
+
+
 class TestT4Queue(FrappeTestCase):
 	def test_queue_is_reloaded_after_packing(self):
 		out = run_js(

@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton, tcWarningsHtml */
+/* global tcErrorTitle, tcGuideButton, tcWarningsHtml, TcScanBurst */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
@@ -586,6 +586,23 @@ class TraceCoreStation {
 					if (this.input.value.trim().toUpperCase() === typed)
 						this.scan(this.input.value);
 				}, 150);
+		});
+		// A-126: máy quét không gửi Enter → mọi ô quét (ô chính, ô thẻ, ô lô chỉ thị T4…) tự gửi form khi máy quét gõ
+		// xong mã (nhận diện theo tốc độ ký tự); gõ tay vẫn bấm Quét/Enter. Ô đã trống lúc hết chờ thì không gửi.
+		const bursts = new WeakMap();
+		this.listen(this.root, "input", (event) => {
+			const box = event.target;
+			if (!box || !box.matches || !box.matches(".tc-scan-input") || !box.form) return;
+			if (!bursts.has(box)) {
+				bursts.set(
+					box,
+					new TcScanBurst(() => {
+						if (box.isConnected && box.value.trim() && !box.disabled)
+							box.form.requestSubmit();
+					})
+				);
+			}
+			bursts.get(box).input(box.value);
 		});
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {

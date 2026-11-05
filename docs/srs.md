@@ -78,6 +78,7 @@
 | 1.11 A-123 | 2026-11-05 | Miyano (dev lead, người dùng yêu cầu ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-123 của `docs/architecture.md`: panel Chọn tay kệ ở T6 xếp kệ Đề xuất (đang chứa gói cùng loại bộ) rồi kệ Trống (chưa có gói) lên trước, có badge chữ. Ghi chú FR-M2-13. Không thêm DocType, không thêm/bớt ID FR hay BRU. |
 | 1.11 A-124 | 2026-11-05 | Miyano (dev lead, người dùng yêu cầu và chốt 2 điểm trong chat ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-124 của `docs/architecture.md`: phiếu cấp phát in một QR dẫn tới báo cáo Pack Trace lọc theo số phiếu; truy xuất có thêm tiêu chí phiếu cấp phát. Sửa FR-M2-15.1, FR-M2-19. Không thêm DocType, không thêm/bớt ID BRU. |
 | 1.11 A-125 | 2026-11-05 | Miyano (dev lead, người dùng chốt trong chat ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-125 của `docs/architecture.md`: QR trên phiếu cấp phát chỉ chứa số phiếu để quét bằng máy quét mã vạch vào ô Phiếu cấp phát ở màn Tra cứu. Sửa ghi chú FR-M2-15.1. |
+| 1.11 A-126 | 2026-11-05 | Miyano (dev lead, người dùng yêu cầu trong chat ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-126 của `docs/architecture.md`: ô quét ở trạm/PDA tự gửi khi máy quét gõ xong mã (nhận diện theo tốc độ ký tự), gõ tay vẫn bấm Quét/Enter. Không đổi ID FR/BRU. |
 
 ---
 

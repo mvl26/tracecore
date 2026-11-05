@@ -81,6 +81,8 @@ extend_bootinfo = ["tracecore.ui.page_cache.extend_bootinfo", "tracecore.ui.bran
 
 page_js = {
 	"station": [
+		# A-126: nhận diện luồng quét, ô quét tự gửi khi máy quét gõ xong mã (shell station.js dùng)
+		"public/js/tc_scan_burst.js",
 		# FEAT-052 A-71: tiêu đề mã lỗi và Hướng dẫn xử lý dùng chung, nạp trước các màn
 		"public/js/station_error.js",
 		"public/js/station_t4.js",
