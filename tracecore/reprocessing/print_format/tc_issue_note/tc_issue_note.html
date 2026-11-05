@@ -26,11 +26,27 @@
 .tc-in .tc-sign td { width: 50%; text-align: center; padding-bottom: {{ tc.sp_3 }}; font-weight: {{ tc.fw_bold }}; }
 .tc-in .tc-sign span { display: block; font-weight: normal; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
 .tc-in .tc-sign img { max-width: 60mm; max-height: 25mm; display: block; margin: {{ tc.sp_2 }} auto 0 auto; }
+.tc-in .tc-head td.tc-qr { width: 34mm; text-align: center; }
+.tc-in .tc-head td.tc-qr img { width: 30mm; height: 30mm; display: block; margin: 0 auto; }
+.tc-in .tc-head td.tc-qr span { display: block; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
 .tc-in-footer, .tc-in-footer span { font-family: {{ tc.font_sans }}; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
 </style>
 <div class="tc-in">
-	<h1>{{ _("Issue note", context=T) | e }}</h1>
-	<div class="tc-code">{{ cs.name | e }}</div>
+	{#- A-124, A-125: one QR for the whole note holding the bare note number; scanned with a barcode scanner into the
+	    Issue Note box of Pack Trace (T1 receiving to T7 issuing of every set) #}
+	<table class="tc-head">
+		<tr>
+			<td>
+				<h1>{{ _("Issue note", context=T) | e }}</h1>
+				<div class="tc-code">{{ cs.name | e }}</div>
+			</td>
+			<td class="tc-qr">
+				<img src="{{ cs.trace_qr | e }}" alt="{{ cs.name | e }}">
+				<span class="tc-code">{{ cs.name | e }}</span>
+				<span>{{ _("Scan into the Issue Note box of Pack Trace", context=T) | e }}</span>
+			</td>
+		</tr>
+	</table>
 	{%- if cs.draft %}
 	<div class="tc-draft">{{ _("Not confirmed yet", context=T) | e }}</div>
 	{%- endif %}

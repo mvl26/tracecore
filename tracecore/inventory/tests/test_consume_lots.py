@@ -201,8 +201,11 @@ class TestDailyTestLot(LotsCase):
 		expired = factories.make_chemical_batch(ENZYME, "CL-ENZ-OLD", expiry_days=-2).name
 		with self.assertRaises(frappe.ValidationError) as raised:
 			self.run_test("(01)08931234567890(10)" + expired, frappe.utils.add_days(frappe.utils.today(), 30))
-		self.assertEqual(raised.exception.block.code, "TEST_LOT_EXPIRED")
+		# A-130: có vật tư Gói test thì lô hết hạn bị chặn ngay ở bước kiểm lô theo vật tư
+		self.assertEqual(raised.exception.block.code, "CONSUMABLE_LOT_INVALID")
 
-	def test_free_text_lot_stays_a_note(self):
-		test = self.run_test("LOT-ON-THE-BOX", frappe.utils.add_days(frappe.utils.today(), 30))
-		self.assertEqual((test.lot, test.batch), ("LOT-ON-THE-BOX", None))
+	def test_free_text_lot_is_blocked_when_the_program_has_a_test_pack(self):
+		# A-130 thay A-112 (E5): chương trình có Gói test thì chỉ nhận lô có trong kho của đúng vật tư, không còn ghi chú tự do
+		with self.assertRaises(frappe.ValidationError) as raised:
+			self.run_test("LOT-ON-THE-BOX", frappe.utils.add_days(frappe.utils.today(), 30))
+		self.assertEqual(raised.exception.block.code, "CONSUMABLE_LOT_INVALID")

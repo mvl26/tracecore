@@ -29,6 +29,14 @@ const T4_SCAN = "tracecore.v1.pack.scan";
 const T4_REQUEST_OVERRIDE = "tracecore.v1.par.override.request";
 // lỗi chặn vì hết cơ số: T4 hiện nút "Đề nghị ghi đè" (FEAT-032, FR-M8-04)
 const T4_PAR_CODES = ["PAR_EXCEEDED", "SET_END_OF_LIFE"];
+// A-122: nhóm vật liệu gói theo thứ tự hiện trong droplist (giá trị Item.tc_pack_material); rỗng = chưa phân nhóm
+const T4_PACK_MATERIALS = [
+	{ value: "Rigid Container", label: () => __("Rigid Container") },
+	{ value: "Sealed Pouch", label: () => __("Sealed Pouch") },
+	{ value: "Wrap", label: () => __("Wrap") },
+	{ value: "", label: () => __("Unclassified") },
+];
+const T4_PACK_MATERIAL_SET = new Set(T4_PACK_MATERIALS.map((row) => row.value).filter(Boolean));
 
 function t4Date(iso) {
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
@@ -59,9 +67,7 @@ class T4Packing {
 		this.dialog = null;
 		this.viewKey = null;
 		this.reset();
-		this.result.addEventListener("change", (event) => {
-			if (event.target.matches(".tc-check")) this.toggleLine(event.target);
-		});
+		this.result.addEventListener("change", (event) => this.onChange(event.target));
 		this.result.addEventListener("submit", (event) => {
 			if (!event.target.matches(".tc-ci-form")) return;
 			event.preventDefault();
@@ -250,7 +256,7 @@ class T4Packing {
 			this.reset();
 			this.viewKey = null;
 			this.ctx = res.context;
-			this.packType = (this.ctx.pack_types[0] || {}).item || null;
+			this.packType = this.defaultPackType(this.ctx.pack_types); // A-122: loại gói mặc định của bộ
 		} else if (res.kind === "ci") {
 			this.ci = res.ci;
 		} else if (res.kind === "pack") {
@@ -393,7 +399,8 @@ class T4Packing {
 			retry: () => this.retry(),
 			"confirm-all": () => this.confirmAll(),
 			"confirm-pack": () => this.confirmPack(),
-			"pack-type": () => this.choosePackType(data.item),
+			"ci-pick": () => this.scanIndicator(data.batch), // A-120: chạm lô = quét đúng tên lô
+
 			"maint-done": () => this.maintDone(data.instrument),
 			"maint-defer": () => this.maintDefer(data.instrument),
 			"maint-reset": () => {
@@ -413,9 +420,9 @@ class T4Packing {
 
 	markLine(box, checked) {
 		box.checked = checked;
-		const card = box.closest(".tc-ins");
-		card.classList.toggle("is-done", checked);
-		card.querySelector(".tc-ins-state").textContent = this.lineState(checked);
+		const row = box.closest("tr");
+		row.classList.toggle("is-done", checked);
+		row.querySelector(".tc-ins-state").textContent = this.lineState(checked);
 	}
 
 	toggleLine(box) {
@@ -444,6 +451,18 @@ class T4Packing {
 		});
 		this.result.querySelectorAll(".tc-check").forEach((box) => this.markLine(box, true));
 		this.refresh();
+	}
+
+	onChange(target) {
+		if (target.matches(".tc-check")) this.toggleLine(target);
+		else if (target.matches("#tc-t4-pack")) this.choosePackType(target.value);
+	}
+
+	defaultPackType(types) {
+		// A-122: chọn sẵn loại gói mặc định của loại bộ; không có thì dòng đầu như trước
+		const rows = types || [];
+		const row = rows.find((type) => type.is_default) || rows[0];
+		return row ? row.item : null;
 	}
 
 	choosePackType(item) {
@@ -1370,27 +1389,30 @@ class T4Packing {
 				const label = __("Placed correctly at position {0} as in the photo", [
 					line.position,
 				]);
-				return `<label class="tc-ins${checked ? " is-done" : ""}${
+				// A-121: mỗi dụng cụ một hàng của bảng; ô tick và chữ trạng thái nằm trong cùng nhãn
+				return `<tr class="tc-bom-row${checked ? " is-done" : ""}${
 					short ? " is-short" : ""
 				}">
-					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
-					<span class="tc-ins-text">
-						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
-						<span class="tc-ins-pos">${esc(
-							__("Position {0} · × {1} · {2}", [
-								line.position,
-								line.qty,
-								line.instrument,
-							])
-						)}</span>
+					<td>${index + 1}</td>
+					<td>${esc(line.position)}</td>
+					<td><span class="tc-t1-line-name">${this.photoHtml(
+						line.thumbnail || line.image,
+						line.instrument_name
+					)}<span class="tc-ins-text"><span class="tc-ins-name">${esc(
+					line.instrument_name
+				)}</span><span class="tc-ins-pos tc-mono">${esc(
+					line.instrument
+				)}</span></span></span></td>
+					<td>${esc(line.qty)}</td>
+					<td><label class="tc-bom-check">
+						<input type="checkbox" class="tc-check" data-line="${index}"${checked ? " checked" : ""}${
+					short ? " disabled" : ""
+				} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
 						<span class="tc-ins-state">${esc(
 							short ? __("Missing – confirmed by R02") : this.lineState(checked)
 						)}</span>
-					</span>
-					<input type="checkbox" class="tc-check" data-line="${index}"${checked ? " checked" : ""}${
-					short ? " disabled" : ""
-				} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
-				</label>`;
+					</label></td>
+				</tr>`;
 			})
 			.join("");
 		const tray = ctx.tray_image
@@ -1399,7 +1421,15 @@ class T4Packing {
 				<figcaption>${esc(__("Arranged set photo"))}</figcaption>
 			</figure>`
 			: "";
-		const grid = lines || `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		const grid = lines
+			? `<table class="tc-t2-table tc-bom-table"><thead><tr>
+					<th scope="col">${esc(__("No."))}</th>
+					<th scope="col">${esc(__("Position in set"))}</th>
+					<th scope="col">${esc(__("Instrument name"))}</th>
+					<th scope="col">${esc(__("Quantity in set"))}</th>
+					<th scope="col">${esc(__("Confirmation"))}</th>
+				</tr></thead><tbody>${lines}</tbody></table>`
+			: `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Set components (BOM v{0})", [ctx.bom_version]))}</h3>
 			<div class="tc-bom${tray ? " has-tray" : ""}">${tray}<div class="tc-inst">${grid}</div></div>
@@ -1441,12 +1471,46 @@ class T4Packing {
 			]);
 			return `${heading}${field}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
 				prompt
-			)}</p>`;
+			)}</p>${this.ciLotsHtml()}`;
 		}
 		return `${heading}${field}
 			<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span>
 				<b class="tc-mono">${esc(this.ci.batch)}</b> · ${esc(__("class {0}", [this.ci.ci_class]))}</p>
 			<p>${esc(__("Expiry: {0}", [t4Date(this.ci.expiry_date)]))}</p>`;
+	}
+
+	// A-120: lô chỉ thị phù hợp với bộ (đúng phương pháp, loại 5/6, còn hạn) để chạm chọn khi không quét được
+	ciLotsHtml() {
+		const lots = this.ctx.ci.lots || [];
+		if (!lots.length) {
+			return this.alertHtml({
+				variant: "warn",
+				title: __("No usable indicator lot for this method"),
+				reason: __("No class {0} indicator lot for {1} is in date.", [
+					this.ctx.ci.classes.join("/"),
+					__(this.ctx.ci.method),
+				]),
+				action: __("Ask R09 to receive an indicator lot, then scan it."),
+			});
+		}
+		const disabled = t4Disabled(Boolean(this.busy));
+		const buttons = lots
+			.map(
+				(
+					lot
+				) => `<button type="button" class="tc-btn tc-btn-secondary tc-ci-lot" data-action="ci-pick"
+					data-batch="${esc(lot.batch)}"${disabled}>
+					<span class="tc-mono">${esc(lot.batch)}</span>
+					<span>${esc(lot.item_name || lot.item)} · ${esc(__("class {0}", [lot.ci_class]))} · ${esc(
+					__("Expiry: {0}", [t4Date(lot.expiry_date)])
+				)}${
+					// A-122: lô của chỉ thị mặc định của bộ (đứng đầu do server xếp); không tự chọn lô
+					lot.is_default ? ` · <b>${esc(__("default for this set"))}</b>` : ""
+				}</span></button>`
+			)
+			.join("");
+		return `<p class="tc-hint">${esc(__("Or tap a lot that fits this set:"))}</p>
+			<div class="tc-ci-lots" role="group" aria-label="${esc(__("Indicator lots"))}">${buttons}</div>`;
 	}
 
 	packHtml() {
@@ -1459,22 +1523,39 @@ class T4Packing {
 			)}</p>`;
 		}
 		const chosen = types.find((row) => row.item === this.packType);
-		const chips = types
-			.map((row) => {
-				const on = row.item === this.packType;
-				return `<button type="button" class="tc-chip" data-action="pack-type"
-					data-item="${esc(row.item)}" aria-pressed="${on}">${
-					on ? '<span aria-hidden="true">&#10003; </span>' : ""
-				}${esc(row.item_name)} · ${esc(__("{0} days", [row.shelf_life_days]))}</button>`;
-			})
-			.join("");
+		// A-122: một droplist, nhóm theo vật liệu gói (Hộp hấp → Túi ép → Vải gói → Chưa phân nhóm)
+		const groups = T4_PACK_MATERIALS.map((material) => {
+			const rows = types.filter((row) =>
+				material.value
+					? row.material === material.value
+					: !T4_PACK_MATERIAL_SET.has(row.material)
+			);
+			if (!rows.length) return "";
+			const options = rows
+				.map((row) => {
+					const parts = [
+						row.item_name || row.item,
+						__("{0} days", [row.shelf_life_days]),
+					];
+					if (row.is_default) parts.push(__("default for this set"));
+					const selected = row.item === this.packType ? " selected" : "";
+					return `<option value="${esc(row.item)}"${selected}>${esc(
+						parts.join(" · ")
+					)}</option>`;
+				})
+				.join("");
+			return `<optgroup label="${esc(material.label())}">${options}</optgroup>`;
+		}).join("");
 		const expiry = chosen
 			? `<p>${esc(__("Expected expiry date"))}: <b>${esc(
 					t4Date(chosen.expected_expiry)
 			  )}</b></p>`
 			: "";
 		return `${heading}
-			<div class="tc-chips" role="group" aria-label="${esc(__("Pack Type"))}">${chips}</div>
+			<div class="tc-field">
+				<label for="tc-t4-pack">${esc(__("Pack material"))}</label>
+				<select id="tc-t4-pack">${groups}</select>
+			</div>
 			${expiry}`;
 	}
 

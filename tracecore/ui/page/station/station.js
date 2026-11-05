@@ -1,4 +1,5 @@
-/* global tcErrorTitle, tcGuideButton, tcWarningsHtml */
+/* global tcErrorTitle, tcGuideButton, tcWarningsHtml, TcScanBurst, TcKeyBurst, tcButtonCode, tcParseButtonCode */
+/* global TC_SCAN_FAST_MS, TcQrAlias, tcHasVietnameseMarks */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
@@ -120,6 +121,15 @@ function tcStationTitle(station) {
 }
 
 const STATION_ACTIVE_KEY = "tc-station-active";
+// A-128: nút không gắn QR: nút trạm/tab trên cùng (đã có trên tờ A4), nút chụp/tải ảnh (phải thao tác trên màn) và
+// phần Chọn tay (nút "Chọn tay" + bảng chọn tay: dùng khi máy quét không đọc được mã; người dùng thấy thừa 05/11/2026)
+const TC_QR_SKIP = {
+	actions: ["tc-switch-station", "tc-screen", "manual-pick"],
+	pattern: /photo|camera|capture|snapshot/,
+	containers: ".tc-picker",
+};
+// A-128: mã lệnh quét từ bất kỳ ô nào cũng chạy được
+const TC_COMMAND_CODE = /^(?:TR-\d{3}|CMD-(?:DO|TAB|BTN)-[A-Z0-9_.-]+|HOAN-THANH-NAP|99-\d{4})$/;
 
 class TcStepQueue {
 	constructor(station, screen) {
@@ -587,7 +597,68 @@ class TraceCoreStation {
 						this.scan(this.input.value);
 				}, 150);
 		});
+		// A-126: máy quét không gửi Enter → mọi ô quét (ô chính, ô thẻ, ô lô chỉ thị T4…) tự gửi form khi máy quét gõ
+		// xong mã (nhận diện theo tốc độ ký tự); gõ tay vẫn bấm Quét/Enter. Ô đã trống lúc hết chờ thì không gửi.
+		const bursts = new WeakMap();
+		this.listen(this.root, "input", (event) => {
+			const box = event.target;
+			if (!box || !box.matches || !box.matches(".tc-scan-input") || !box.form) return;
+			if (!bursts.has(box)) {
+				bursts.set(
+					box,
+					new TcScanBurst(() => {
+						if (box.isConnected && box.value.trim() && !box.disabled)
+							box.form.requestSubmit();
+					})
+				);
+			}
+			bursts.get(box).input(box.value);
+		});
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
+		// A-128: máy quét gõ mã lệnh lúc con trỏ đang ở ô khác ô quét (ô số lượng, ô ghi chú…): ô số không nhận chữ nên
+		// mã mất. Bắt luồng phím tốc độ máy quét ở mọi ô; là mã lệnh thì trả ô về giá trị trước khi quét rồi chạy lệnh.
+		// Ô quét (`.tc-scan-input`) giữ đường cũ (A-126 tự gửi), không chặn Enter ở đó.
+		let snapshot = null;
+		this.keyBurst = new TcKeyBurst((text, start) => {
+			const code = text.trim().toUpperCase();
+			const own = snapshot && snapshot.target === start ? snapshot : null;
+			snapshot = null;
+			// A-129: luồng quét có chữ có dấu = bộ gõ tiếng Việt đã đổi chữ của mã: trả ô về như cũ và báo tắt bộ gõ
+			const marked = tcHasVietnameseMarks(code);
+			if (!this.session || !(marked || TC_COMMAND_CODE.test(code))) return;
+			if (start && start.matches && start.matches(".tc-scan-input")) return;
+			if (own && "value" in start && start.value !== own.value) {
+				start.value = own.value;
+				start.dispatchEvent(new Event("input", { bubbles: true }));
+			}
+			if (marked) this.imeWarning(code);
+			else this.scan(code);
+		});
+		this.listen(
+			this.root,
+			"keydown",
+			(event) => {
+				const target = event.target;
+				if (
+					!this.keyBurst.lastAt ||
+					performance.now() - this.keyBurst.lastAt > TC_SCAN_FAST_MS
+				)
+					snapshot = { target, value: "value" in target ? target.value : null };
+				const inScanBox = target.matches && target.matches(".tc-scan-input");
+				if (this.keyBurst.key(event.key, target) && !inScanBox) event.preventDefault();
+			},
+			true
+		);
+		// A-127: màn của bước vẽ lại nút thì gắn lại QR mã lệnh NGAY trong microtask (trước khi trình duyệt tính bố cục).
+		// Chờ sang khung hình sau thì có lúc trang vừa vẽ lại chưa có QR nên ngắn đi, trình duyệt kéo vị trí cuộn lên
+		// rồi QR mới gắn vào: quét xong trang tự nhảy lên (người dùng báo 05/11/2026). QR tự gắn cũng gây thay đổi DOM
+		// nhưng lần gọi sau không còn gì để gắn nên dừng.
+		if (typeof MutationObserver === "function") {
+			this.commandObserver = new MutationObserver(() => {
+				if (this.commandShowQr) this.decorateCommandButtons();
+			});
+			this.commandObserver.observe(this.root, { childList: true, subtree: true });
+		}
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
 			this.listen(this.root, name, (event) => this.noteActivity(event), true);
 		}
@@ -913,6 +984,10 @@ class TraceCoreStation {
 
 	activateSession(session) {
 		this.session = session;
+		// A-127: nạp mã lệnh + ảnh QR của trạm rồi gắn QR cạnh nút xác nhận (lỗi mạng thì bỏ qua, nút vẫn bấm tay)
+		Promise.resolve(this.loadCommandMap())
+			.then(() => this.decorateCommandButtons())
+			.catch(() => {});
 		this.storedToken(session.token);
 		this.rememberActive({ station: this.station, token: session.token });
 		this.lastActivity = Date.now();
@@ -1749,7 +1824,9 @@ class TraceCoreStation {
 		if (!this.nextOffer || !this.nextOffer.station) return false;
 		const code = (raw || "").trim().toUpperCase();
 		if (!/^TR-\d{3}$/.test(code)) {
-			this.setNextOffer(null); // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
+			// quét mã nút/mã lệnh (A-119, A-128, A-129: vd QR "In nhãn" sau khi đóng gói) là bấm nút của bước vừa xong:
+			// giữ đề nghị sang trạm kế. Chỉ mã dữ liệu (bộ, gói, thẻ…) mới bỏ đề nghị.
+			if (!TC_COMMAND_CODE.test(code)) this.setNextOffer(null);
 			return false;
 		}
 		if (code === this.nextOffer.station) {
@@ -1781,8 +1858,96 @@ class TraceCoreStation {
 			token: this.session.token,
 		});
 		this.commandMap = result && result.ok ? result.commands : null;
+		// A-127/A-128: QR chỉ hiện khi R10 bật trong TraceCore Settings; ảnh nhớ theo mã trong phiên
+		this.commandShowQr = Boolean(result && result.ok && result.show_qr);
+		// A-129: QR chứa số `99-NNNN` cấp trong phiên cho từng mã nút (bộ gõ tiếng Việt không đổi được); ảnh nhớ theo số
+		this.qrAlias = new TcQrAlias();
+		this.qrCache = new Map();
+		this.qrAsked = new Set();
 		this.commandMapVersion = version;
 		return this.commandMap;
+	}
+
+	// A-128: mã QR của một nút: nút có mã lệnh A-119 giữ `CMD-DO-…`; nút khác `CMD-BTN-<action>[.n]` theo thứ tự hiện
+	buttonQrCode(button, order) {
+		for (const [key, selectors] of Object.entries(this.commandMap || {})) {
+			if (selectors.some((selector) => button.matches(selector))) return `CMD-DO-${key}`;
+		}
+		const action = button.dataset.action;
+		const index = (order.get(action) || 0) + 1;
+		order.set(action, index);
+		return tcButtonCode(action, index);
+	}
+
+	// A-128: các nút có thể gắn QR (trừ nút trạm/tab trên cùng, nút chụp ảnh, phần Chọn tay), theo thứ tự trên màn.
+	// Chỉ đọc thuộc tính, KHÔNG đo bố cục (getClientRects…): đo lúc màn vừa vẽ lại mà QR chưa gắn sẽ ép trình duyệt tính
+	// bố cục khi trang còn ngắn và kéo trang lên. Nút ẩn bằng thuộc tính `hidden` (hoặc nằm trong khối `hidden`) bỏ qua.
+	qrButtons() {
+		return [...this.root.querySelectorAll("button[data-action]")].filter(
+			(button) =>
+				!TC_QR_SKIP.actions.includes(button.dataset.action) &&
+				!TC_QR_SKIP.pattern.test(button.dataset.action) &&
+				!button.closest(TC_QR_SKIP.containers) &&
+				!button.closest("[hidden]")
+		);
+	}
+
+	// A-127, A-128: gắn QR mã lệnh ngay sau mọi nút đang có trên màn (chỉ STN). Gọi lại mỗi khi màn vẽ lại
+	// (MutationObserver ở bind); QR đúng mã đã nằm ngay sau nút thì thôi, nên không lặp vô hạn. Ảnh chưa có thì xin
+	// máy chủ theo lô rồi gắn lại.
+	decorateCommandButtons() {
+		if (this.root.dataset.surface === "PDA" || !this.session || !this.ownsPage()) return;
+		if (!this.commandShowQr || !this.qrCache || !this.qrAlias) return;
+		const order = new Map();
+		const missing = new Set();
+		const buttons = this.qrButtons();
+		// QR còn sót cạnh nút nay đã ẩn/bị bỏ khỏi danh sách (vd nút Thông báo khi hết thông báo) thì gỡ
+		const keep = new Set(buttons);
+		this.root.querySelectorAll("img.tc-cmd-qr").forEach((image) => {
+			if (!keep.has(image.previousElementSibling)) image.remove();
+		});
+		for (const button of buttons) {
+			const code = this.qrAlias.alias(this.buttonQrCode(button, order));
+			const src = this.qrCache.get(code);
+			const next = button.nextElementSibling;
+			const current = next && next.classList.contains("tc-cmd-qr") ? next : null;
+			if (!src) {
+				missing.add(code);
+				continue;
+			}
+			if (current && current.dataset.code === code) continue;
+			const image = current || document.createElement("img");
+			image.className = "tc-cmd-qr";
+			image.dataset.code = code;
+			image.src = src;
+			image.alt = code;
+			image.title = __("Scan to press this button");
+			if (!current) button.insertAdjacentElement("afterend", image);
+		}
+		if (missing.size) this.fetchQr([...missing]);
+	}
+
+	// A-128: xin ảnh QR cho các mã còn thiếu (một yêu cầu đang chạy là đủ; mã đã xin mà không có ảnh thì không xin lại)
+	async fetchQr(codes) {
+		if (this.qrLoading || !this.session) return;
+		this.qrAsked = this.qrAsked || new Set();
+		const wanted = codes.filter((code) => !this.qrAsked.has(code)).slice(0, 80);
+		if (!wanted.length) return;
+		wanted.forEach((code) => this.qrAsked.add(code));
+		this.qrLoading = true;
+		try {
+			const result = await this.rpc("tracecore.v1.station.command_qr", {
+				token: this.session.token,
+				codes: JSON.stringify(wanted),
+			});
+			for (const [code, src] of Object.entries((result && result.ok && result.qr) || {}))
+				this.qrCache.set(code, src);
+		} catch (error) {
+			wanted.forEach((code) => this.qrAsked.delete(code)); // lỗi mạng: lần vẽ sau xin lại
+		} finally {
+			this.qrLoading = false;
+		}
+		this.decorateCommandButtons();
 	}
 
 	static usableButton(root, selector) {
@@ -1791,9 +1956,47 @@ class TraceCoreStation {
 		);
 	}
 
+	// A-128: quét `CMD-BTN-…` = bấm đúng nút mang mã đó trên màn (cùng cách đánh số với QR đang hiện); nút ẩn hoặc
+	// đang tắt thì báo COMMAND_NOT_AVAILABLE, không làm gì. Nút nguy hiểm vẫn qua bước xác nhận của chính nó.
+	async pressButtonCode(code) {
+		this.input.value = "";
+		this.authResult.innerHTML = "";
+		try {
+			await this.loadCommandMap();
+		} catch (error) {
+			// không có danh sách mã lệnh A-119 thì vẫn đánh số được nút CMD-BTN
+		}
+		const order = new Map();
+		const button = this.qrButtons().find(
+			(element) => this.buttonQrCode(element, order) === code
+		);
+		// lúc bấm mới kiểm nút đang hiện (đo bố cục ở đây không sao: không có QR nào đang chờ gắn)
+		if (!button || button.disabled || !button.getClientRects().length)
+			return this.commandUnavailable(
+				__("The button of command {0} is not shown or is turned off at this step.", [code])
+			);
+		button.click();
+		return true;
+	}
+
 	// true khi mã quét là mã lệnh (đã xử lý ở đây); false thì mã đi tiếp cho màn của bước
 	async handleCommandScan(raw) {
-		const code = (raw || "").trim().toUpperCase();
+		let code = (raw || "").trim().toUpperCase();
+		// A-129: số `99-NNNN` của QR trên màn = mã nút đã cấp số trong phiên này
+		if (TcQrAlias.isAlias(code)) {
+			const real = this.qrAlias ? this.qrAlias.code(code) : null;
+			if (!real) {
+				this.input.value = "";
+				return this.commandUnavailable(
+					__(
+						"QR {0} belongs to an earlier screen. Scan the QR shown on the screen now.",
+						[code]
+					)
+				);
+			}
+			code = real;
+		}
+		if (tcParseButtonCode(code)) return this.pressButtonCode(code);
 		const match = /^(?:(TR-\d{3})|CMD-(DO|TAB)-([A-Z0-9_-]+))$/.exec(code);
 		if (!match) return false;
 		this.input.value = "";
@@ -1837,8 +2040,25 @@ class TraceCoreStation {
 		return true;
 	}
 
+	// A-129: máy trạm bật bộ gõ tiếng Việt thì mã máy quét gõ vào bị đổi chữ (vd RECEIPT → RÊCIPT): báo rõ để tắt bộ gõ
+	imeWarning(raw) {
+		this.input.value = "";
+		this.authResult.innerHTML = this.blockHtml({
+			code: "SCAN_IME_ON",
+			title: __("Vietnamese typing is on"),
+			reason: __(
+				"The scanned code {0} has Vietnamese marks: the typing tool (Unikey, EVKey) changed its letters.",
+				[(raw || "").trim()]
+			),
+			action: __("Switch the typing tool to E (English) on this computer, then scan again."),
+		});
+		this.focus();
+		return true;
+	}
+
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
+		if (tcHasVietnameseMarks(raw)) return this.imeWarning(raw);
 		if (this.handleNextStationScan(raw)) return;
 		if (await this.handleCommandScan(raw)) return;
 		this.authResult.innerHTML = "";

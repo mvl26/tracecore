@@ -253,8 +253,6 @@ class T3Assembly {
 		const data = (button && button.dataset) || {};
 		const handlers = {
 			retry: () => this.retry(),
-			"t3-dec": () => this.step(data.instrument, -1),
-			"t3-inc": () => this.step(data.instrument, 1),
 			"t3-full": () => this.setQty(data.instrument, this.line(data.instrument).bom_qty),
 			"t3-all": () => this.allOk(),
 			"t3-variance": () => this.openVariance(data.instrument),
@@ -279,15 +277,11 @@ class T3Assembly {
 		return true;
 	}
 
-	step(code, delta) {
+	// A-121: nhập số lượng thực tế vào ô của dòng; đúng định mức thì ghi Đủ, lệch định mức phải giải thích (A-79)
+	enterQty(code, value) {
 		const row = this.line(code);
-		if (!row) return;
-		// dòng chưa đếm tính từ định mức nhưng vẫn Chưa đếm cho tới khi người dùng lưu; lệch định mức phải giải thích (A-79)
-		// biểu mẫu của chính dòng này đang mở thì tính tiếp từ số trên biểu mẫu
-		const open =
-			this.form && this.form.instrument === code ? parseInt(this.form.qty, 10) : NaN;
-		const base = Number.isNaN(open) ? (row.counted ? row.actual_qty : row.bom_qty) : open;
-		const qty = Math.max(0, base + delta);
+		const qty = parseInt(value, 10);
+		if (!row || Number.isNaN(qty) || qty < 0) return;
 		if (qty === row.bom_qty) return this.setQty(code, qty);
 		this.openVariance(code, qty);
 	}
@@ -592,6 +586,8 @@ class T3Assembly {
 	onChange(event) {
 		const target = event.target;
 		if (target.id === "tc-t3-file") this.uploadFile(target);
+		else if (target.matches(".tc-t3-actual"))
+			this.enterQty(target.dataset.instrument, target.value);
 		else if (target.dataset.form && this.form) {
 			this.form[target.dataset.form] = target.value;
 			// số lượng đổi quyết định có hỏi Thiếu/Hỏng hay không
@@ -867,7 +863,7 @@ class T3Assembly {
 		</div>`;
 	}
 
-	lineHtml(row) {
+	lineHtml(row, index) {
 		const open = this.asm.docstatus === 0;
 		const off = !open || this.busy || this.offline;
 		const status = row.counted ? row.line_status : "";
@@ -898,34 +894,59 @@ class T3Assembly {
 			  )}</span>`
 			: "";
 		const code = esc(row.instrument);
-		return `<div class="tc-ins${cls}" data-instrument="${code}">
-			${this.photoHtml(row.thumbnail || row.image, row.instrument_name)}
-			<span class="tc-ins-text">
-				<span class="tc-ins-name">${esc(row.instrument_name)}</span>
-				<span class="tc-ins-pos">${esc(
-					__("Position {0} · BOM × {1} · {2}", [
-						row.position,
-						row.bom_qty,
-						row.instrument,
-					])
-				)}</span>
+		// biểu mẫu Thiếu/lệch của chính dòng này đang mở thì ô hiện số đang nhập; dòng chưa đếm để trống
+		const draft =
+			this.form && this.form.kind === "variance" && this.form.instrument === row.instrument
+				? this.form.qty
+				: null;
+		const shown = draft !== null ? draft : row.counted ? row.actual_qty : "";
+		const label = `${row.instrument_name}: ${__("Actual quantity")}`;
+		// A-121: mỗi dụng cụ một hàng, bảng như T1 (STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế) và cột Thao tác
+		return `<tr class="tc-bom-row${cls}" data-instrument="${code}">
+			<td>${index + 1}</td>
+			<td><span class="tc-t1-line-name">${this.photoHtml(
+				row.thumbnail || row.image,
+				row.instrument_name
+			)}
+				<span class="tc-ins-text">
+					<span class="tc-ins-name">${esc(row.instrument_name)}</span>
+					<span class="tc-ins-pos tc-mono">${esc(
+						__("Position {0} · BOM × {1} · {2}", [
+							row.position,
+							row.bom_qty,
+							row.instrument,
+						])
+					)}</span>
+				</span></span></td>
+			<td>${esc(row.bom_qty)}</td>
+			<td><input class="tc-t3-actual" type="number" min="0" max="9999" step="1" inputmode="numeric" data-instrument="${code}" aria-label="${esc(
+			label
+		)}" value="${esc(shown)}"${t3Disabled(off)}>
+				<span class="tc-ins-text">
 				<span class="tc-ins-state"><span aria-hidden="true">${marks}</span>${esc(state)}</span>
 				${damaged}${par}${unexplained}
-			</span>
-			<span class="tc-t3-qty">
-					<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-dec"
-						data-instrument="${code}" aria-label="${esc(__("Decrease"))}"${t3Disabled(off)}>&minus;</button>
-					<b class="tc-t3-count" data-qty="${code}">${row.counted ? row.actual_qty : "-"}</b>
-					<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-inc"
-						data-instrument="${code}" aria-label="${esc(__("Increase"))}"${t3Disabled(off)}>+</button>
+			</span></td>
+			<td><span class="tc-t3-qty">
 					<button type="button" class="tc-btn tc-btn-ok" data-action="t3-full"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("All present"))}</button>
 					<button type="button" class="tc-btn tc-btn-secondary" data-action="t3-variance"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Short / other count"))}</button>
 					<button type="button" class="tc-btn tc-btn-warn" data-action="t3-damage"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Damaged / replace"))}</button>
-			</span>
-		</div>`;
+			</span></td>
+		</tr>`;
+	}
+
+	tableHtml() {
+		const rows = this.asm.lines.map((row, index) => this.lineHtml(row, index)).join("");
+		if (!rows) return `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		return `<table class="tc-t2-table tc-bom-table"><thead><tr>
+				<th scope="col">${esc(__("No."))}</th>
+								<th scope="col">${esc(__("Instrument name"))}</th>
+				<th scope="col">${esc(__("Quantity in set"))}</th>
+				<th scope="col">${esc(__("Actual quantity"))}</th>
+				<th scope="col">${esc(__("Row actions"))}</th>
+			</tr></thead><tbody>${rows}</tbody></table>`;
 	}
 
 	linesHtml() {
@@ -942,7 +963,7 @@ class T3Assembly {
 			<h3>${esc(__("Set components (BOM v{0})", [asm.bom_version]))}</h3>
 			<div class="tc-bom${trays ? " has-tray" : ""}">
 				${trays ? `<div>${trays}</div>` : ""}
-				<div class="tc-inst">${asm.lines.map((row) => this.lineHtml(row)).join("")}</div>
+				<div class="tc-inst">${this.tableHtml()}</div>
 			</div>
 			${
 				asm.docstatus === 0

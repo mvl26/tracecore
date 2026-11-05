@@ -22,13 +22,13 @@ def scan(page, raw):
 
 def open_set(page, set_id):
 	scan(page, set_id)
-	expect(page.locator(".tc-t3 .tc-ins").first).to_be_visible(timeout=15000)
+	expect(page.locator(".tc-t3 .tc-bom-row").first).to_be_visible(timeout=15000)
 	expect(page.locator(".tc-t3 .tc-loading")).to_have_count(0, timeout=15000)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 
 
 def line(page, instrument):
-	return page.locator(f".tc-t3 .tc-ins[data-instrument='{instrument}']")
+	return page.locator(f".tc-t3 .tc-bom-row[data-instrument='{instrument}']")
 
 
 class Taps:
@@ -61,7 +61,7 @@ def test_t3_set_without_passed_wash_is_blocked_inline(t3_page, t3_demo):
 	expect(alert.locator(".tc-alert-title")).not_to_be_empty()
 	expect(alert.locator(".tc-alert-reason")).to_contain_text("Dỡ máy rửa")
 	expect(alert.locator(".tc-alert-action")).not_to_be_empty()
-	expect(page.locator(".tc-t3 .tc-ins")).to_have_count(0)
+	expect(page.locator(".tc-t3 .tc-bom-row")).to_have_count(0)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 
 
@@ -69,7 +69,7 @@ def test_t3_full_count_is_recorded_within_three_taps(t3_page, t3_demo):
 	page = t3_page
 	open_set(page, t3_demo["set_full"])
 	# BOM kèm ảnh từng dụng cụ và ảnh bộ đã xếp; Đóng gói đang khóa vì chưa ghi nhận
-	expect(page.locator(".tc-t3 .tc-ins img.tc-photo").first).to_be_visible()
+	expect(page.locator(".tc-t3 .tc-bom-row img.tc-photo").first).to_be_visible()
 	expect(page.locator(".tc-t3 .tc-tray img").first).to_be_visible()
 	expect(page.locator(".tc-t3-lock")).to_contain_text("Đóng gói: khóa")
 	submit = page.locator("[data-action='t3-submit']")
@@ -77,12 +77,12 @@ def test_t3_full_count_is_recorded_within_three_taps(t3_page, t3_demo):
 	measure_touch_and_font(page)
 
 	taps = Taps()
-	lines = page.locator(".tc-t3 .tc-ins").count()
+	lines = page.locator(".tc-t3 .tc-bom-row").count()
 	expect(page.locator("[data-action='t3-all']")).to_have_count(1)  # A-102 đảo A-79: có lại xác nhận tất cả
 	expect(page.locator("[data-region='tally']")).to_contain_text(f"Đủ 0/{lines}")
 	for index in range(lines):
-		taps.tap(page.locator(".tc-t3 .tc-ins").nth(index).locator("[data-action='t3-full']"))
-		expect(page.locator(".tc-t3 .tc-ins.is-done")).to_have_count(index + 1, timeout=15000)
+		taps.tap(page.locator(".tc-t3 .tc-bom-row").nth(index).locator("[data-action='t3-full']"))
+		expect(page.locator(".tc-t3 .tc-bom-row.is-done")).to_have_count(index + 1, timeout=15000)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
 	taps.tap(submit)
 	expect(recorded(page)).to_be_visible(timeout=15000)
@@ -115,13 +115,14 @@ def measure_touch_and_font(page):
 def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo, t3_r02):
 	page = t3_page
 	open_set(page, t3_demo["set_short"])
-	for index in range(page.locator(".tc-t3 .tc-ins").count()):
-		page.locator(".tc-t3 .tc-ins").nth(index).locator("[data-action='t3-full']").click()
-		expect(page.locator(".tc-t3 .tc-ins.is-done")).to_have_count(index + 1, timeout=15000)
+	for index in range(page.locator(".tc-t3 .tc-bom-row").count()):
+		page.locator(".tc-t3 .tc-bom-row").nth(index).locator("[data-action='t3-full']").click()
+		expect(page.locator(".tc-t3 .tc-bom-row.is-done")).to_have_count(index + 1, timeout=15000)
 	short = line(page, t3_demo["short_instrument"])
-	expect(short.locator(".tc-t3-count")).to_have_text("2", timeout=15000)
+	expect(short.locator(".tc-t3-actual")).to_have_value("2", timeout=15000)
 	expect(page.locator(SCAN_INPUT)).to_be_focused()
-	short.locator("[data-action='t3-dec']").click()
+	short.locator(".tc-t3-actual").fill("1")  # A-121: nhập số thực tế thay nút -
+	short.locator(".tc-t3-actual").press("Tab")
 	# A-79: lệch định mức phải chọn Thiếu/Hỏng và ghi chú
 	page.locator("[data-action='t3-variance-pick'][data-value='Short']").click()
 	page.locator("#tc-t3-variance-note").fill("Thiếu 1 khi đếm")
@@ -140,7 +141,7 @@ def test_t3_shortage_locks_packing_until_r02_confirms_with_pin(t3_page, t3_demo,
 	page.locator(CARD_INPUT).press("Enter")
 	page.locator(".tc-result[data-state='empty'] .tc-t3").wait_for(timeout=30000)
 	open_set(page, t3_demo["set_short"])
-	expect(line(page, t3_demo["short_instrument"]).locator(".tc-t3-count")).to_have_text("1")
+	expect(line(page, t3_demo["short_instrument"]).locator(".tc-t3-actual")).to_have_value("1")
 	page.locator("[data-action='t3-confirm']").click()
 	page.locator("#tc-t3-confirm-reason").fill("Ca mổ gấp, bổ sung dụng cụ sau")
 	# PIN sai bị chặn inline, chưa mở khóa

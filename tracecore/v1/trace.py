@@ -18,8 +18,9 @@ def query(
 	user=None,
 	from_date=None,
 	to_date=None,
+	issue_note=None,
 ):
-	"""Chuỗi sự kiện T1→T8 theo tiêu chí; trả ``{"chains": [...], "suggestion"}``."""
+	"""Chuỗi sự kiện T1→T8 theo tiêu chí (A-124: thêm số phiếu cấp phát); trả ``{"chains": [...], "suggestion"}``."""
 	return trace.query(
 		patient_code=patient_code,
 		set_id=set_id,
@@ -29,4 +30,5 @@ def query(
 		user=user,
 		from_date=from_date,
 		to_date=to_date,
+		issue_note=issue_note,
 	)

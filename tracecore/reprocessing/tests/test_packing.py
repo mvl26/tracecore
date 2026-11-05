@@ -138,7 +138,11 @@ class TestGetContext(IsolatedTestCase):
 		self.assertEqual(context["bom_version"], 1)
 		self.assertEqual(context["maintenance"], [])
 		self.assertEqual(context["par"]["state"], "ok")
-		self.assertEqual(context["ci"], {"method": "Steam", "classes": ["5", "6"]})
+		ci = context["ci"]
+		self.assertEqual((ci["method"], ci["classes"]), ("Steam", ["5", "6"]))
+		# A-120: lô chỉ thị phù hợp với bộ (theo phương pháp của loại bộ) để chọn tay
+		self.assertTrue(ci["lots"])
+		self.assertEqual(ci["lots"], packing.ci_lots("Steam", frappe.utils.getdate()))
 		self.assertEqual(
 			context["set"],
 			{

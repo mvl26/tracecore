@@ -19,7 +19,46 @@ from tracecore.instrument import bom_versions, catalog, shelf_life
 
 DOCTYPE = "Instrument Set Type"
 ASSEMBLY_MINUTES_MAX = 600
+# A-122: chỉ thị mặc định của loại bộ phải dùng được khi đóng gói (FR-M2-07.2: loại 5/6 theo phương pháp)
+PACK_CI_CLASSES = ("5", "6")
+CI_GROUP = "Chemical Indicator"
 LINE_SEPARATOR = " \u2013 "  # gạch ngang (en dash) giữa các cột của dòng BOM trong thông báo
+
+
+def usable_ci_items(method) -> list[dict]:
+	"""Mặt hàng chỉ thị chọn được làm mặc định cho loại bộ phương pháp `method` (A-122).
+
+	Item nhóm Chemical Indicator chưa tắt, loại 5/6, phương pháp đúng `method` (lô của chỉ thị trống phương pháp bị T4
+	từ chối, xem ``reprocessing.packing.resolve_ci_batch``); theo tên. Trả ``[{"item", "item_name", "ci_class"}]``.
+	Cùng tiêu chí với kiểm khi lưu để ô gợi ý không chép luật.
+	"""
+	if not method:
+		return []
+	rows = frappe.get_all(
+		"Item",
+		filters={
+			"tc_item_group_cssd": CI_GROUP,
+			"tc_compatible_method": method,
+			"tc_ci_class": ["in", list(PACK_CI_CLASSES)],
+			"disabled": 0,
+		},
+		fields=["name", "item_name", "tc_ci_class"],
+		order_by="item_name asc, name asc",
+	)
+	return [{"item": row.name, "item_name": row.item_name, "ci_class": row.tc_ci_class} for row in rows]
+
+
+def _validate_default_ci(doc) -> None:
+	"""Chỉ thị mặc định (không bắt buộc) phải nằm trong ``usable_ci_items`` của phương pháp loại bộ (A-122)."""
+	item = doc.get("default_ci_item")
+	if not item or item in {row["item"] for row in usable_ci_items(doc.get("method"))}:
+		return
+	frappe.throw(
+		_(
+			"Default indicator {0} cannot be used for this set: choose a class 5 or 6 chemical indicator in use for {1}."
+		).format(item, _(doc.get("method") or "")),
+		title=_("Default indicator"),
+	)
 
 
 def validate_header(doc) -> None:
@@ -31,6 +70,7 @@ def validate_header(doc) -> None:
 		)
 	_guard_current_bom_version(doc)
 	shelf_life.validate_set_type(doc)
+	_validate_default_ci(doc)  # A-122
 	if not doc.is_new():
 		before = doc.get_doc_before_save()
 		if before is not None and before.get("method") != doc.get("method"):

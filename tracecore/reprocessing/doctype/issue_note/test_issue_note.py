@@ -125,6 +125,22 @@ class TestIssueNotePrint(IsolatedTestCase):
 		self.assertIn("Not confirmed yet", html)  # nháp chưa ghi sổ
 		self.assertIn("Điều dưỡng &lt;b&gt;In&lt;/b&gt;", html)  # giá trị động luôn được escape
 
+	def test_one_qr_for_the_whole_note_holds_the_note_number(self):
+		"""A-124, A-125: một QR cho cả phiếu, chứa đúng số phiếu để quét bằng máy quét ở màn Tra cứu."""
+		import base64
+
+		from tracecore.core import qr
+
+		note, _pack = self.build()
+		context = tc_issue_note_context(note.name)
+		self.assertNotIn("trace_url", context)
+		self.assertTrue(context["trace_qr"].startswith("data:image/png;base64,"))
+		png = base64.b64decode(context["trace_qr"].split(",", 1)[1])
+		self.assertEqual(qr.decode_png(png), note.name)
+		html = frappe.get_print("Issue Note", note.name, "TC Issue Note")
+		self.assertEqual(html.count(context["trace_qr"]), 1)
+		self.assertIn("Scan into the Issue Note box of Pack Trace", html)
+
 	def test_context_for_card_signature_has_no_image(self):
 		note, _pack = self.build(sign_method="Card", signature=None)
 		context = tc_issue_note_context(note.name)

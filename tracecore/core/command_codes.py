@@ -152,6 +152,63 @@ def selectors_for(station):
 	return {key: list(cmd["selectors"]) for key, cmd in COMMANDS.items() if applies(cmd, functions)}
 
 
+# A-127: lệnh xác nhận/hoàn thành hiện QR ngay cạnh nút trên màn trạm; lệnh điều hướng khác chỉ có trên tờ A4
+SCREEN_QR = (
+	"SUBMIT-RECEIPT",
+	"CONFIRM-SET",
+	"COMPLETE-LOAD",
+	"SAVE-DATA",
+	"RECORD-RESULT",
+	"RECORD-COUNT",
+	"CONFIRM-ALL",
+	"CONFIRM-PACK",
+	"FINISH-CHECK",
+	"RELEASE",
+	"CONFIRM-USE",
+)
+
+
+# A-128: mã QR của mọi nút ở màn trạm (khớp `tcButtonCode` ở public/js/tc_scan_burst.js)
+BUTTON_CODE = re.compile(r"^CMD-BTN-[A-Z0-9][A-Z0-9_-]{0,47}(?:\.[1-9][0-9]?)?$")
+# A-129: mã toàn số màn trạm cấp cho từng nút trong phiên (khớp `TcQrAlias`), bộ gõ tiếng Việt không đổi được
+ALIAS_CODE = re.compile(r"^99-\d{4}$")
+QR_BATCH_LIMIT = 80
+
+
+def _png_uri(code):
+	png = qr.qr_png(code, module_px=4, margin_px=12)
+	return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+
+
+def qr_images(codes):
+	"""``{mã: ảnh QR PNG data URI}`` cho mã nút đúng dạng: ``CMD-DO-<lệnh có thật>``, ``CMD-BTN-…`` (A-128), ``99-NNNN`` (A-129).
+
+	Mã sai dạng bị bỏ (không báo lỗi: màn trạm chỉ không hiện QR cho nút đó); tối đa ``QR_BATCH_LIMIT`` mã mỗi lần.
+	"""
+	images = {}
+	for code in codes or []:
+		if len(images) >= QR_BATCH_LIMIT:
+			break
+		if not isinstance(code, str) or code in images:
+			continue
+		valid = (
+			BUTTON_CODE.match(code)
+			or ALIAS_CODE.match(code)
+			or (code.startswith(DO_PREFIX) and code[len(DO_PREFIX) :] in COMMANDS)
+		)
+		if valid:
+			images[code] = _png_uri(code)
+	return images
+
+
+def screen_qr(station):
+	"""``{khóa lệnh: ảnh QR PNG data URI của "CMD-DO-<khóa>"}`` cho lệnh ``SCREEN_QR`` áp dụng cho trạm `station` (A-127)."""
+	if not isinstance(station, str) or not frappe.db.exists("Zone Station", {"name": station, "is_zone": 0}):
+		return {}
+	functions = zones.station_functions(station)
+	return {key: _png_uri(f"{DO_PREFIX}{key}") for key in SCREEN_QR if applies(COMMANDS[key], functions)}
+
+
 def _stations():
 	rows = frappe.get_all(
 		"Zone Station",

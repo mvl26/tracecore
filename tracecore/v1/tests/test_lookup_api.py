@@ -14,7 +14,9 @@ from tracecore.tests.factories import (
 	make_department,
 	make_equipment,
 	make_released_pack,
+	make_set_type,
 	make_set_unit,
+	make_sterile_location,
 	make_stocked_pack,
 	make_user,
 	make_wash_machine,
@@ -222,6 +224,70 @@ class TestLookupSetUnits(LookupCase):
 		frappe.set_user(user)
 		with self.assertRaises(frappe.PermissionError):
 			call(lookup_api.set_units, station, screen="receive")
+
+
+class TestLookupLocations(LookupCase):
+	"""A-120: chọn tay kệ ở màn Lưu kho T6."""
+
+	def test_storage_lists_active_shelves_matching_query(self):
+		shelf = make_sterile_location("Giá chọn tay A-9-9-1", description="Kệ thử chọn tay")
+		off = make_sterile_location("Giá chọn tay ngừng", is_active=0)
+		station = self.login("T6")
+		found = call(lookup_api.locations, station, screen="storage", q="chọn tay")
+		self.assertTrue(found["ok"])
+		self.assertIn(shelf.name, ids(found))
+		self.assertNotIn(off.name, ids(found))
+		row = next(item for item in found["items"] if item["id"] == shelf.name)
+		self.assertEqual(row["raw"], shelf.name)
+		self.assertIn("Giá chọn tay A-9-9-1", row["label"])
+		self.assertIn("Kệ thử chọn tay", row["label"])
+		by_code = call(lookup_api.locations, station, screen="storage", q=shelf.name)
+		self.assertEqual(ids(by_code), [shelf.name])
+		page = call(lookup_api.locations, station, screen="storage", page_length=1)
+		self.assertEqual(len(page["items"]), 1)
+		self.assertGreaterEqual(page["total"], 1)
+
+	def test_open_pack_puts_same_set_type_shelves_then_empty_shelves_first(self):
+		"""A-123: kệ đang chứa cùng loại bộ (Đề xuất) lên đầu, rồi kệ chưa có gói (Trống), rồi kệ khác."""
+		mine = make_set_type(type_code="SHA").name
+		other = make_set_type(type_code="SHB").name
+		same = make_sterile_location("Kệ đề xuất A-123")
+		empty = make_sterile_location("Kệ trống A-123")
+		busy = make_sterile_location("Kệ khác loại A-123")
+		make_stocked_pack(set_type=mine, location=same)
+		make_stocked_pack(set_type=other, location=busy)
+		pack = make_released_pack(set_type=mine)
+		station = self.login("T6")
+		found = call(lookup_api.locations, station, screen="storage", q="A-123", pack=pack.name)
+		self.assertEqual(ids(found), [same.name, empty.name, busy.name])
+		rows = {item["id"]: item for item in found["items"]}
+		self.assertEqual(rows[same.name]["hint"], "suggested")
+		self.assertEqual(rows[same.name]["same"], 1)
+		self.assertIn("1 pack(s) of this set type", rows[same.name]["label"])
+		self.assertEqual(rows[empty.name]["hint"], "empty")
+		self.assertIn("1 pack(s)", rows[busy.name]["label"])
+		self.assertIsNone(rows[busy.name]["hint"])
+		self.assertEqual(rows[busy.name]["stock"], 1)
+		# không có gói đang mở: không có Đề xuất, kệ trống vẫn lên trước
+		plain = call(lookup_api.locations, station, screen="storage", q="A-123")
+		self.assertEqual(ids(plain)[0], empty.name)
+		self.assertNotIn("suggested", [item["hint"] for item in plain["items"]])
+
+	def test_moving_pack_is_not_counted_on_its_own_shelf(self):
+		mine = make_set_type(type_code="SHC").name
+		shelf = make_sterile_location("Kệ đang chứa B-777")
+		pack = make_stocked_pack(set_type=mine, location=shelf)
+		station = self.login("T6")
+		found = call(lookup_api.locations, station, screen="storage", q="B-777", pack=pack.name)
+		row = found["items"][0]
+		self.assertEqual(row["hint"], "empty")
+		self.assertEqual(row["stock"], 0)
+
+	def test_other_screens_have_no_shelf_list(self):
+		station = self.login("T4")
+		result = call(lookup_api.locations, station, screen="pack")
+		self.assertFalse(result["ok"])
+		self.assertEqual(result["error"]["code"], "STATION_WRONG_STEP")
 
 
 class TestManualEntryAudit(LookupCase):

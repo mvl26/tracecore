@@ -115,6 +115,66 @@ class TestQuery(TraceCase):
 			trace.query()
 
 
+class TestIssueNoteCriterion(TraceCase):
+	"""A-124: tra theo số phiếu cấp phát (QR trên phiếu) ra chuỗi T1→T7 của mọi bộ trong phiếu."""
+
+	def note(self):
+		return frappe.db.get_value("Issue Note Pack", {"pack": self.pack.name}, "parent")
+
+	def test_issue_note_returns_the_chain_from_receiving_to_issuing(self):
+		chain = self.chain(trace.query(issue_note=self.note()))
+		self.assertEqual(chain["cycle_id"], self.pack.name)
+		steps = [event["step"] for event in chain["events"]]
+		for step in ("T1", "T2", "T3", "T4", "T5", "T6", "T7"):
+			self.assertIn(step, steps)
+		issued = next(event for event in chain["events"] if event["step"] == "T7")
+		self.assertEqual(issued["ref_name"], self.note())
+
+	def test_issue_note_is_combined_with_other_criteria(self):
+		self.assertEqual(trace.query(issue_note="IN-KHONG-CO")["chains"], [])
+		other = factories.make_stocked_pack()
+		self.assertEqual(trace.query(issue_note=self.note(), cycle_id=other.name)["chains"], [])
+
+	def test_ward_user_sees_the_note_only_for_own_department(self):
+		own = make_user("tx-r08-note-a@example.com", ["TC R08"])
+		make_employee(first_name="R08 phiếu A", department=self.dept, user_id=own)
+		foreign = make_user("tx-r08-note-b@example.com", ["TC R08"])
+		make_employee(first_name="R08 phiếu B", department=self.other, user_id=foreign)
+		note = self.note()
+		frappe.set_user(own)
+		self.chain(trace.query(issue_note=note))
+		frappe.set_user(foreign)
+		self.assertEqual(trace.query(issue_note=note)["chains"], [])
+
+	def test_scanner_input_is_cleaned(self):
+		"""A-125: máy quét gõ số phiếu kèm khoảng trắng/Enter/tiền tố AIM; phiếu in theo A-124 chứa đường dẫn."""
+		note = self.note()
+		url = f"https://cssd.example/app/query-report/Pack%20Trace?issue_note={note}"
+		for raw in (f"  {note}\r\n", f"]Q1{note}", url):
+			self.assertEqual(trace.issue_note_code(raw), note, raw)
+			self.chain(trace.query(issue_note=raw))
+		self.assertEqual(trace.issue_note_code("  "), "")
+
+	def test_report_puts_the_issue_note_box_first_and_focuses_it(self):
+		import os
+
+		path = os.path.join(os.path.dirname(pack_trace.__file__), "pack_trace.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		filters = source[source.index("filters: [") :]
+		self.assertLess(filters.index('"issue_note"'), filters.index('"patient_code"'))
+		self.assertIn('get_filter("issue_note")', source)
+
+	def test_rpc_and_report_accept_the_issue_note(self):
+		from tracecore.v1 import trace as trace_api
+
+		note = self.note()
+		self.chain(trace_api.query(issue_note=note))
+		_columns, rows, _message = pack_trace.execute({"issue_note": note})
+		self.assertIn(("Issue Note", note), {(row["ref_doctype"], row["ref_name"]) for row in rows})
+		self.assertEqual({row["cycle_id"] for row in rows}, {self.pack.name})
+
+
 class TestAccess(TraceCase):
 	def test_ward_user_sees_only_own_department(self):
 		own = make_user("tx-r08-a@example.com", ["TC R08"])

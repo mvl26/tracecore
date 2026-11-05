@@ -81,8 +81,15 @@ class TcPicker {
 		return screen && screen.pickContext ? screen.pickContext() : null;
 	}
 
+	// A-120: màn Lưu kho đang mở gói chờ kệ thì có thêm danh sách kệ
+	hasLocations() {
+		const screen = this.shell.screen;
+		return Boolean(screen && screen.pickLocation && screen.pickLocation());
+	}
+
 	defaultKind() {
 		if (this.context) return "batch";
+		if (this.hasLocations()) return "location";
 		return this.hasEquipment() ? "equipment" : "set";
 	}
 
@@ -165,7 +172,13 @@ class TcPicker {
 		this.busy = true;
 		const context = this.context;
 		if (context ? this.kind === "set" : this.kind === "batch") this.kind = this.defaultKind();
-		const methods = { equipment: "equipment", batch: "batches", set: "set_units" };
+		if (this.kind === "location" && !this.hasLocations()) this.kind = this.defaultKind();
+		const methods = {
+			equipment: "equipment",
+			batch: "batches",
+			set: "set_units",
+			location: "locations",
+		};
 		const method = PICK_LOOKUP + methods[this.kind];
 		const args = {
 			station: this.shell.station,
@@ -177,6 +190,11 @@ class TcPicker {
 		};
 		const department = this.kind === "set" ? this.shell.pickDepartment() : null;
 		if (department) args.department = department;
+		// A-123: gói đang mở để server xếp kệ Đề xuất / Trống lên trước
+		const screen = this.shell.screen;
+		const pack =
+			this.kind === "location" && screen && screen.openPack ? screen.openPack() : null;
+		if (pack) args.pack = pack;
 		if (this.kind === "batch") {
 			args.purpose = context.purpose || null;
 			args.equipment = context.equipment || null;
@@ -284,16 +302,20 @@ class TcPicker {
 
 	kindHtml() {
 		const context = this.context;
-		if (context ? context.noEquipment : !this.hasEquipment()) return "";
+		const locations = !context && this.hasLocations();
+		if (!locations && (context ? context.noEquipment : !this.hasEquipment())) return "";
 		const tab = (kind, label) =>
 			`<button type="button" class="tc-btn tc-pick-chip${
 				this.kind === kind ? " is-active" : ""
 			}" data-action="pick-kind" data-kind="${kind}" aria-pressed="${
 				this.kind === kind
 			}">${esc(label)}</button>`;
+		const first = locations
+			? tab("location", __("Shelves"))
+			: tab("equipment", __("Equipment"));
 		return `<div class="tc-picker-kinds" role="group" aria-label="${esc(
 			__("What to choose")
-		)}">${tab("equipment", __("Equipment"))}${
+		)}">${first}${
 			context ? tab("batch", context.label) : tab("set", __("Sets and packs"))
 		}</div>`;
 	}
@@ -327,7 +349,7 @@ class TcPicker {
 					item
 				) => `<li><button type="button" class="tc-btn tc-pick-item" data-action="pick-item"
 					data-raw="${esc(item.raw || item.id)}"${this.reason ? "" : " disabled"}>
-					<span class="tc-mono">${esc(item.id)}</span>
+					<span class="tc-mono">${esc(item.id)}</span>${this.hintHtml(item)}
 					<span>${esc(this.itemText(item))}</span></button></li>`
 			)
 			.join("");
@@ -338,6 +360,15 @@ class TcPicker {
 				  }>${esc(__("Show more"))} (${this.items.length}/${this.total})</button>`
 				: "";
 		return `<ul class="tc-pick-list">${rows}</ul>${more}`;
+	}
+
+	// A-123: nhãn chữ cho kệ Đề xuất (cùng loại bộ) / Trống, không chỉ dựa vào màu
+	hintHtml(item) {
+		const hint = {
+			suggested: ["tc-badge-g", __("Suggested")],
+			empty: ["tc-badge-x", __("Empty")],
+		}[item.hint];
+		return hint ? `<span class="tc-badge ${hint[0]} tc-pick-hint">${esc(hint[1])}</span>` : "";
 	}
 
 	// phần sau mã trong nhãn "Mã – Tên – Khoa – thời điểm"

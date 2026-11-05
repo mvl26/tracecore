@@ -832,23 +832,60 @@ html:has(.tc-work) {
 	gap: var(--tc-sp-3);
 }
 
-.tc-ins {
+/* A-121: thành phần bộ ở T3, T4 là bảng; trạng thái đổi nền cả hàng, luôn kèm chữ hoặc ký hiệu */
+.tc-bom-table {
+	width: 100%;
+}
+
+.tc-bom-row.is-done td {
+	background: var(--tc-pass-tint);
+}
+
+.tc-bom-row.is-short td {
+	background: var(--tc-fail-tint);
+}
+
+.tc-bom-row.is-over td {
+	background: var(--tc-warn-tint);
+}
+
+.tc-bom-table .tc-ins-name {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-bom-table .tc-ins-pos,
+.tc-bom-table .tc-ins-state {
+	font-size: var(--tc-fs-md);
+}
+
+.tc-bom-check {
 	display: flex;
 	align-items: center;
-	gap: var(--tc-sp-2-5);
+	gap: var(--tc-sp-2);
 	min-height: var(--tc-touch-min);
 	margin: 0;
-	padding: var(--tc-sp-2);
-	background: var(--tc-card);
-	border: var(--tc-bw-hair) solid var(--tc-line);
-	border-radius: var(--tc-r-lg);
 	font-weight: var(--tc-fw-regular);
 	cursor: pointer;
 }
 
-.tc-ins.is-done {
-	background: var(--tc-pass-tint);
-	border-color: var(--tc-pass);
+@media (max-width: 480px) {
+	.tc-bom-table {
+		table-layout: fixed;
+	}
+	.tc-bom-table th,
+	.tc-bom-table td {
+		padding: var(--tc-sp-1);
+		overflow-wrap: anywhere;
+	}
+	.tc-bom-table th:nth-child(1) {
+		width: 10%;
+	}
+	.tc-bom-table th:nth-child(2) {
+		width: 14%;
+	}
+	.tc-bom-table th:nth-child(4) {
+		width: 14%;
+	}
 }
 
 .tc-photo {
@@ -886,7 +923,7 @@ html:has(.tc-work) {
 	font-size: var(--tc-fs-2xs);
 }
 
-.tc-ins.is-done .tc-ins-state {
+.tc-bom-row.is-done .tc-ins-state {
 	color: var(--tc-pass-text);
 	font-weight: var(--tc-fw-bold);
 }
@@ -900,6 +937,23 @@ html:has(.tc-work) {
 	height: var(--tc-checkbox-station);
 	margin: 0;
 	accent-color: var(--tc-pass);
+}
+
+/* A-127: QR mã lệnh ngay cạnh nút xác nhận; quét bằng máy quét = bấm nút. Nền sáng để máy quét đọc được trên màn. */
+.tc-cmd-qr {
+	display: inline-block;
+	width: var(--tc-photo);
+	height: var(--tc-photo);
+	margin-left: var(--tc-sp-3);
+	vertical-align: middle;
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-sm);
+	image-rendering: pixelated;
+}
+
+[data-surface="PDA"] .tc-cmd-qr {
+	display: none;
 }
 
 /* nhắc bảo dưỡng */
@@ -1512,14 +1566,8 @@ html:has(.tc-work) {
 	grid-template-columns: minmax(0, 1fr);
 }
 
-.tc-t3 .tc-ins {
-	flex-wrap: wrap;
-	cursor: default;
-}
-
 .tc-t3 .tc-ins-text {
 	display: block;
-	flex: 1 1 var(--tc-inst-min);
 }
 
 .tc-t3 .tc-ins-name,
@@ -1527,13 +1575,8 @@ html:has(.tc-work) {
 	display: block;
 }
 
-.tc-t3 .tc-ins-pos + .tc-ins-state {
-	display: inline;
-	margin-left: var(--tc-sp-2);
-}
-
 /* kiosk 1366x768: thấy ít nhất 4 dòng dụng cụ không cần cuộn (ticket 1827) */
-.tc-t3 .tc-ins {
+.tc-t3 .tc-bom-table td {
 	padding-block: var(--tc-sp-1);
 }
 
@@ -1568,23 +1611,12 @@ html:has(.tc-work) {
 	margin-inline: auto;
 }
 
-.tc-ins.is-short,
-.tc-t3 .tc-ins.is-short {
-	background: var(--tc-fail-tint);
-	border-color: var(--tc-fail);
-}
-
-.tc-ins.is-short .tc-ins-state {
+.tc-bom-row.is-short .tc-ins-state {
 	color: var(--tc-fail-text);
 	font-weight: var(--tc-fw-bold);
 }
 
-.tc-t3 .tc-ins.is-over {
-	background: var(--tc-warn-tint);
-	border-color: var(--tc-warn);
-}
-
-.tc-t3 .tc-ins.is-over .tc-ins-state {
+.tc-t3 .tc-bom-row.is-over .tc-ins-state {
 	color: var(--tc-warn-text);
 	font-weight: var(--tc-fw-bold);
 }
@@ -1596,11 +1628,21 @@ html:has(.tc-work) {
 	gap: var(--tc-touch-gap);
 }
 
-.tc-t3-count {
-	min-width: var(--tc-touch-min);
-	color: var(--tc-text-heading);
+.tc-t3-actual {
+	display: block;
+	width: calc(var(--tc-touch-min) * 1.75);
+	min-height: var(--tc-touch-min);
+	margin-bottom: var(--tc-sp-1);
+	padding: 0 var(--tc-sp-2);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-sm);
 	font-size: var(--tc-fs-lg);
-	text-align: center;
+}
+
+@media (max-width: 480px) {
+	.tc-t3-actual {
+		width: 100%;
+	}
 }
 
 .tc-t3-lock {
@@ -1998,6 +2040,21 @@ html:has(.tc-work) {
 	font-size: var(--tc-fs-lg);
 	border: var(--tc-bw-thick) solid var(--tc-border-input);
 	border-radius: var(--tc-r-md);
+}
+
+/* A-120: lô chỉ thị phù hợp với bộ để chạm chọn ở T4 */
+.tc-ci-lots {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-ci-lot {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	min-height: var(--tc-touch-min);
+	text-align: left;
 }
 
 .tc-pick-list {

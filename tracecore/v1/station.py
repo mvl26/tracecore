@@ -165,11 +165,39 @@ def next_barcode(token=None, step=None):
 
 @frappe.whitelist(methods=["POST"])
 def commands(token=None):
-	"""Lệnh quét được ở trạm của phiên (A-119, FR-M9-23): ``{"ok", "commands": {khóa lệnh: [bộ chọn nút]}}``; chỉ đọc."""
+	"""Lệnh quét được ở trạm của phiên (A-119, FR-M9-23): ``{"ok", "commands", "show_qr", "qr"}``; chỉ đọc.
+
+	``commands`` = {khóa lệnh: [bộ chọn nút]}. A-127: ``show_qr`` theo ``TraceCore Settings.show_command_qr``; ``qr`` =
+	{khóa lệnh: ảnh QR} để màn trạm hiện cạnh nút xác nhận (rỗng khi tắt).
+	"""
 
 	def call():
 		session = station_auth.authenticate_session(token)
-		return {"ok": True, "commands": command_codes.selectors_for(session.station)}
+		show_qr = bool(cint(frappe.db.get_single_value("TraceCore Settings", "show_command_qr")))
+		return {
+			"ok": True,
+			"commands": command_codes.selectors_for(session.station),
+			"show_qr": show_qr,
+			"qr": command_codes.screen_qr(session.station) if show_qr else {},
+		}
+
+	return _session_response(call)
+
+
+@frappe.whitelist(methods=["POST"])
+def command_qr(token=None, codes=None):
+	"""Ảnh QR cho mã nút ở màn trạm của phiên (A-128): ``{"ok", "qr": {mã: ảnh PNG data URI}}``; chỉ đọc.
+
+	``codes`` là list hoặc chuỗi JSON. Mã sai dạng bị bỏ, tối đa 80 mã; ``qr`` rỗng khi R10 tắt
+	``TraceCore Settings.show_command_qr``.
+	"""
+
+	def call():
+		station_auth.authenticate_session(token)
+		if not cint(frappe.db.get_single_value("TraceCore Settings", "show_command_qr")):
+			return {"ok": True, "qr": {}}
+		wanted = frappe.parse_json(codes) if isinstance(codes, str) else codes
+		return {"ok": True, "qr": command_codes.qr_images(wanted if isinstance(wanted, list) else [])}
 
 	return _session_response(call)
 

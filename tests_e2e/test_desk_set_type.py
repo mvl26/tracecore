@@ -192,6 +192,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 	page, demo = settype_page, settype_demo
 	page.goto("/app/instrument-set-type/new")
 	page.wait_for_function("() => window.cur_frm && cur_frm.is_new()", timeout=30000)
+	show_tab(page, "Mặc định xử lý")  # A-122: loại gói mặc định nằm ở tab Mặc định xử lý
 	pack = page.locator("[data-fieldname='default_pack_type'] input")
 	pack.click()
 	pack.fill("DEMO-F15-GOI")
@@ -205,13 +206,13 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 
 	edit = demo["set_type_edit"]
 	open_set_type(page, edit)
-	show_tab(page, "Thông tin")
+	show_tab(page, "Mặc định xử lý")
 	shelf = page.locator("[data-fieldname='shelf_life_html']")
 	expect(shelf).to_contain_text("Áp dụng: 180 ngày")
 	override = page.locator("[data-fieldname='shelf_life_days'] input")
 	try:
 		override.fill("200")
-		override.press("Tab")
+		override.blur()  # A-122: Tab đưa focus vào lưới Chương trình, Ctrl+S không tới form
 		saved = save_and_wait(page)
 		assert saved.status == 417, saved.status
 		expect(modal(page, "ngắn hơn 180 ngày")).to_be_visible()
@@ -219,7 +220,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 		assert api_doc(page, "Instrument Set Type", edit)["shelf_life_days"] == 0
 
 		override.fill("20")
-		override.press("Tab")
+		override.blur()  # A-122: Tab đưa focus vào lưới Chương trình, Ctrl+S không tới form
 		assert save_and_wait(page).ok
 		expect(shelf).to_contain_text("Áp dụng: 20 ngày", timeout=15000)
 		assert api_doc(page, "Instrument Set Type", edit)["shelf_life_days"] == 20
@@ -227,9 +228,9 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 		# trả về không ghi đè cho lần chạy sau
 		open_set_type(page, edit)
 		if page.evaluate("() => cur_frm.doc.shelf_life_days"):
-			show_tab(page, "Thông tin")
+			show_tab(page, "Mặc định xử lý")
 			page.locator("[data-fieldname='shelf_life_days'] input").fill("0")
-			page.locator("[data-fieldname='shelf_life_days'] input").press("Tab")
+			page.locator("[data-fieldname='shelf_life_days'] input").blur()
 			assert save_and_wait(page).ok
 	expect(page.locator("[data-fieldname='shelf_life_html']")).to_contain_text(
 		"Áp dụng: 180 ngày", timeout=15000
@@ -477,6 +478,6 @@ def test_in_flight_set_keeps_old_bom_at_t4(settype_page, settype_demo, other_use
 	t4.keyboard.press("Enter")
 	expect(t4.locator(".tc-t4[data-view='ctx'] .tc-code").first).to_have_text(set_id, timeout=15000)
 	expect(t4.locator("h3", has_text="Thành phần bộ")).to_contain_text(f"danh mục bộ v{pinned})")
-	shown = sorted(t4.locator(".tc-ins .tc-ins-name").all_inner_texts())
+	shown = sorted(t4.locator(".tc-bom-row .tc-ins-name").all_inner_texts())
 	assert shown == names(pinned), shown
 	expect(t4.locator(SCAN_INPUT)).to_be_focused()

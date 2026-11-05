@@ -152,7 +152,8 @@ class TestDailyTestConsumption(ActualCase):
 		entry = frappe.db.get_value("Stock Entry", {"tc_source_name": name, "docstatus": 1})
 		self.assertEqual(frappe.get_doc("Stock Entry", entry).items[0].batch_no, self.pack_lot)
 
-	def test_free_text_lot_falls_back_to_fefo_and_retry_does_not_issue_twice(self):
-		name = self.run_test("LOT-ON-THE-BOX")
+	def test_retry_does_not_issue_twice(self):
+		# A-130: lô gõ tay không có trong kho bị chặn lúc ghi kết quả, nên chỉ còn đường lô có trong kho
+		name = self.run_test(self.pack_lot)
 		self.assertEqual(issued("Daily Test", name), {TEST_PACK: 1})
 		self.assertFalse(consume.retry("Daily Test", name)["created"])

@@ -115,7 +115,12 @@ def auth_shell():
 		} """,
 			template,
 		)
-		for path in ("tracecore/ui/page/station/station.js", "tracecore/public/js/station_t4.js"):
+		# A-126, A-128: station.js dùng TcScanBurst, TcKeyBurst, TcQrAlias, tcButtonCode của tc_scan_burst.js
+		for path in (
+			"tracecore/public/js/tc_scan_burst.js",
+			"tracecore/ui/page/station/station.js",
+			"tracecore/public/js/station_t4.js",
+		):
 			page.add_script_tag(path=str(ROOT / path))
 		for path in ("tracecore/public/css/tokens.css", "tracecore/ui/page/station/station.css"):
 			page.add_style_tag(path=str(ROOT / path))

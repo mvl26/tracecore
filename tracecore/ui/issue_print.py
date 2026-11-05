@@ -4,10 +4,13 @@ Nằm ở module ``ui`` (lớp trình bày) vì phiếu in cần token giao di�
 (``reprocessing``) không được import chéo (ADR-001). Hàm đăng ký trong ``hooks.jinja`` như ``tc_count_sheet_context``.
 """
 
+import base64
+
 import frappe
 from frappe import _
 from frappe.utils import cint, formatdate, get_datetime
 
+from tracecore.core import qr
 from tracecore.instrument.count_sheet import DATETIME_FORMAT, token_values
 
 CONTEXT = "TC Issue Note"
@@ -16,6 +19,16 @@ TITLE_FIELDS = ("name", "set_type_name")
 
 def _stamp(value):
 	return get_datetime(value).strftime(DATETIME_FORMAT) if value else ""
+
+
+def trace_qr(name: str) -> str:
+	"""Ảnh QR (data URI PNG, sinh tại server bằng ``core.qr``) chứa số phiếu `name` trần.
+
+	A-125: người dùng quét bằng máy quét mã vạch vào ô Phiếu cấp phát của báo cáo Pack Trace (không dùng điện thoại),
+	nên payload là mã trần như các QR nội bộ khác (ADR-004), không phải đường dẫn.
+	"""
+	png = qr.qr_png(name, module_px=6, margin_px=16)
+	return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
 
 
 def tc_issue_note_context(name: str) -> dict:
@@ -63,6 +76,8 @@ def tc_issue_note_context(name: str) -> dict:
 			for index, row in enumerate(doc.packs, start=1)
 		],
 		"pack_count": cint(doc.pack_count),
+		# A-124, A-125: một QR cho cả phiếu chứa số phiếu; quét vào Pack Trace ra chuỗi T1→T7 của mọi bộ trong phiếu
+		"trace_qr": trace_qr(doc.name),
 		"printed_at": _stamp(frappe.utils.now_datetime()),
 		"printed_by": frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user,
 	}

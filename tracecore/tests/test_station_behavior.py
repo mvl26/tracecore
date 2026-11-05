@@ -21,6 +21,269 @@ const makeStation = () => ({
 """
 
 
+BURST = "public/js/tc_scan_burst.js"
+BURST_CLOCK = """
+let now = 0;
+const timers = [];
+const fired = [];
+const burst = new TcScanBurst(() => fired.push(now), {
+	now: () => now,
+	schedule: (fn, ms) => { timers.push({fn, at: now + ms}); return timers.length; },
+	cancel: (id) => { if (id) timers[id - 1].fn = null; },
+});
+// gõ từng ký tự của `text` cách nhau `gap` ms vào ô (giá trị tăng dần), rồi chạy mọi hẹn giờ đến hạn
+const type = (text, gap, start = "") => {
+	let value = start;
+	for (const ch of text) { now += gap; value += ch; burst.input(value); }
+	return value;
+};
+const wait = (ms) => {
+	now += ms;
+	timers.forEach((t) => { if (t.fn && t.at <= now) { const fn = t.fn; t.fn = null; fn(); } });
+};
+"""
+
+
+class TestScanBurst(FrappeTestCase):
+	"""A-126: ô quét tự gửi khi máy quét gõ xong mã (máy quét không gửi Enter)."""
+
+	def run_burst(self, script):
+		return run_js(self, [BURST], [["TcScanBurst"]], BURST_CLOCK + script)
+
+	def test_scanner_speed_submits_once_after_the_pause(self):
+		out = self.run_burst(
+			"""
+			type("9520000TST000001", 8);
+			wait(60);
+			const early = fired.length;
+			wait(100);
+			wait(500);
+			emit({early, fired: fired.length});
+			"""
+		)
+		self.assertEqual(out["early"], 0)  # chưa đủ 120 ms im lặng
+		self.assertEqual(out["fired"], 1)
+
+	def test_hand_typing_does_not_submit(self):
+		out = self.run_burst('type("RC-2026", 180); wait(1000); emit({fired: fired.length});')
+		self.assertEqual(out["fired"], 0)
+
+	def test_block_input_and_short_codes(self):
+		out = self.run_burst(
+			"""
+			now += 10; burst.input("CY-261105-0001"); wait(200);
+			const block = fired.length;
+			burst.reset();
+			type("AB", 5); wait(200);
+			emit({block, short: fired.length - block});
+			"""
+		)
+		self.assertEqual(out["block"], 1)  # một lần nhập ≥ 4 ký tự (máy quét dạng bàn phím gửi cả khối)
+		self.assertEqual(out["short"], 0)  # dưới 4 ký tự không tự gửi
+
+	def test_deleting_cancels(self):
+		out = self.run_burst(
+			"""
+			const value = type("TB-0001", 8);
+			now += 20; burst.input(value.slice(0, -1));
+			wait(500);
+			emit({fired: fired.length});
+			"""
+		)
+		self.assertEqual(out["fired"], 0)
+
+	def test_station_binds_every_scan_box_and_loads_the_helper_first(self):
+		from tracecore import hooks
+
+		self.assertEqual(hooks.page_js["station"][0], BURST)
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new TcScanBurst(", source)
+		self.assertIn('matches(".tc-scan-input")', source)
+		self.assertIn("requestSubmit()", source)
+
+
+KEY_CLOCK = """
+let now = 0;
+const timers = [];
+const got = [];
+const keys = new TcKeyBurst((text, start) => got.push({text, start}), {
+	now: () => now,
+	schedule: (fn, ms) => { timers.push({fn, at: now + ms}); return timers.length; },
+	cancel: (id) => { if (id) timers[id - 1].fn = null; },
+});
+const press = (text, gap, target = "qty") => {
+	const handled = [];
+	for (const ch of text) { now += gap; handled.push(keys.key(ch, target)); }
+	return handled;
+};
+const wait = (ms) => {
+	now += ms;
+	timers.forEach((t) => { if (t.fn && t.at <= now) { const fn = t.fn; t.fn = null; fn(); } });
+};
+"""
+
+
+class TestQrAllButtons(FrappeTestCase):
+	"""A-128: mọi nút có QR mã lệnh; quét mã lệnh ở ô nào cũng bấm được nút."""
+
+	def test_button_codes_round_trip(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["tcButtonCode", "tcParseButtonCode"]],
+			"""
+			emit({
+				one: tcButtonCode("ci-pick", 1),
+				two: tcButtonCode("ci-pick", 2),
+				p1: tcParseButtonCode("CMD-BTN-CI-PICK"),
+				p2: tcParseButtonCode(" cmd-btn-ci-pick.3\\r\\n"),
+				bad: [tcParseButtonCode("CMD-DO-CONFIRM-SET"), tcParseButtonCode("CMD-BTN-"), tcParseButtonCode("CMD-BTN-X.0")],
+			});
+			""",
+		)
+		self.assertEqual(out["one"], "CMD-BTN-CI-PICK")
+		self.assertEqual(out["two"], "CMD-BTN-CI-PICK.2")
+		self.assertEqual(out["p1"], {"action": "ci-pick", "index": 1})
+		self.assertEqual(out["p2"], {"action": "ci-pick", "index": 3})
+		self.assertEqual(out["bad"], [None, None, None])
+
+	def test_key_burst_returns_scanner_text_with_its_start_target(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["TcKeyBurst"]],
+			KEY_CLOCK
+			+ """
+			press("CMD-DO-SUBMIT-RECEIPT", 6);
+			wait(130);
+			press("12", 300);
+			wait(500);
+			press("TR-002", 6, "note");
+			const enter = keys.key("Enter", "note");
+			emit({got, enter});
+			""",
+		)
+		self.assertEqual(
+			out["got"],
+			[{"text": "CMD-DO-SUBMIT-RECEIPT", "start": "qty"}, {"text": "TR-002", "start": "note"}],
+		)
+		self.assertTrue(out["enter"])  # Enter kết thúc luồng quét: báo đã xử lý để chặn mặc định
+
+	def test_station_routes_commands_and_decorates_every_button(self):
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new TcKeyBurst(", source)
+		self.assertIn("tcParseButtonCode(", source)
+		self.assertIn("tracecore.v1.station.command_qr", source)
+		skip = source[source.index("const TC_QR_SKIP") :][:400]
+		# phần Chọn tay (nút và bảng chọn tay) không có QR: người dùng duyệt bản thử thấy thừa
+		for skipped in ("tc-switch-station", "tc-screen", "photo", "manual-pick", ".tc-picker"):
+			self.assertIn(skipped, skip)
+		self.assertIn("button.closest(TC_QR_SKIP.containers)", source)
+
+	def test_decorating_never_forces_layout_before_inserting(self):
+		"""Quét xong trang tự nhảy lên (05/11/2026): màn vẽ lại chưa có QR, đo nút ép tính bố cục khi trang còn ngắn."""
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		buttons = source[source.index("\tqrButtons() {") :]
+		buttons = buttons[: buttons.index("\n\t}\n")]
+		self.assertNotIn("getClientRects", buttons)  # không đo bố cục khi chọn nút gắn QR
+		self.assertIn('closest("[hidden]")', buttons)  # nút đang ẩn thì không gắn
+		observer = source[source.index("this.commandObserver = new MutationObserver") :][:600]
+		self.assertNotIn(
+			"requestAnimationFrame", observer
+		)  # gắn ngay trong microtask, trước khi trình duyệt tính bố cục
+		press = source[source.index("\tasync pressButtonCode(code) {") :][:1200]
+		self.assertIn("getClientRects", press)  # nút phải đang hiện lúc bấm theo mã
+
+
+class TestNextStationOfferKept(FrappeTestCase):
+	"""Xong T4 không còn ô sang T5 (05/11/2026): quét QR nút (vd In nhãn) bị coi là "mã khác" nên xóa đề nghị."""
+
+	def run_offer(self, raw):
+		return run_js(
+			self,
+			[BURST, "ui/page/station/station.js"],
+			[["TC_SCAN_FAST_MS"], ["TraceCoreStation"]],
+			f"""
+			const self = {{
+				nextOffer: {{station: "TR-005", label: "T5 Sterilization"}},
+				input: {{value: ""}},
+				switched: null,
+				setNextOffer(offer) {{ this.nextOffer = offer; }},
+				switchStation(code) {{ this.switched = code; }},
+			}};
+			const handled = TraceCoreStation.prototype.handleNextStationScan.call(self, {raw!r});
+			emit({{handled, kept: Boolean(self.nextOffer), switched: self.switched}});
+			""",
+		)
+
+	def test_button_and_command_codes_keep_the_offer(self):
+		for raw in ("99-0007", "CMD-BTN-T4-LABEL-PDF", "CMD-DO-PRINT-LABEL", "HOAN-THANH-NAP"):
+			out = self.run_offer(raw)
+			self.assertEqual((out["handled"], out["kept"]), (False, True), raw)
+
+	def test_data_codes_drop_it_and_the_next_station_code_switches(self):
+		out = self.run_offer("9520000DEMOT4S000006")
+		self.assertEqual((out["handled"], out["kept"]), (False, False))
+		out = self.run_offer("TR-005")
+		self.assertEqual((out["handled"], out["switched"]), (True, "TR-005"))
+
+
+class TestQrNumericAlias(FrappeTestCase):
+	"""A-129: QR trên màn chứa mã toàn số `99-NNNN` (bộ gõ tiếng Việt không đổi được); báo khi chuỗi quét có dấu."""
+
+	def test_alias_is_numeric_stable_and_reversible(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["TcQrAlias"]],
+			"""
+			const alias = new TcQrAlias();
+			const a = alias.alias("CMD-DO-SUBMIT-RECEIPT");
+			const b = alias.alias("CMD-BTN-DISCARD");
+			const again = alias.alias("CMD-DO-SUBMIT-RECEIPT");
+			emit({a, b, again, back: alias.code(" 99-0002\\r\\n"), unknown: alias.code("99-0999"), notAlias: alias.code("TR-001"),
+				isAlias: [TcQrAlias.isAlias("99-0001"), TcQrAlias.isAlias("CMD-DO-X"), TcQrAlias.isAlias("9520000123")]});
+			""",
+		)
+		self.assertEqual((out["a"], out["b"], out["again"]), ("99-0001", "99-0002", "99-0001"))
+		self.assertEqual(out["back"], "CMD-BTN-DISCARD")
+		self.assertIsNone(out["unknown"])
+		self.assertIsNone(out["notAlias"])
+		self.assertEqual(out["isAlias"], [True, False, False])
+
+	def test_vietnamese_marks_are_detected(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["tcHasVietnameseMarks"]],
+			"""
+			emit([
+				tcHasVietnameseMarks("CMD-DO-SUBMIT-RÊCIPT"),
+				tcHasVietnameseMarks("9520000DEMÒ15E000001"),
+				tcHasVietnameseMarks("đ"),
+				tcHasVietnameseMarks("CMD-DO-SUBMIT-RECEIPT"),
+				tcHasVietnameseMarks("CY-261105-0001"),
+			]);
+			""",
+		)
+		self.assertEqual(out, [True, True, True, False, False])
+
+	def test_station_uses_alias_and_blocks_marked_scans(self):
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new TcQrAlias()", source)
+		self.assertIn("TcQrAlias.isAlias(", source)
+		self.assertIn("SCAN_IME_ON", source)
+		self.assertIn("tcHasVietnameseMarks(", source)
+
+
 class TestT4Queue(FrappeTestCase):
 	def test_queue_is_reloaded_after_packing(self):
 		out = run_js(
@@ -38,6 +301,232 @@ class TestT4Queue(FrappeTestCase):
 			""",
 		)
 		self.assertEqual(out["resets"], 1)
+
+
+T4_CI = """
+const t4 = new T4Packing(makeStation());
+t4.alertHtml = (alert) => `<div class="tc-alert-${alert.variant}">${alert.title} ${alert.reason} ${alert.action}</div>`;
+t4.ctx = {ci: {method: "Steam", classes: ["5", "6"], lots: [
+	{batch: "LOT-A", item: "CI5", item_name: "Que CI 5", ci_class: "5", expiry_date: "2026-12-01"},
+	{batch: "LOT-<B>", item: "CI6", item_name: "Que CI 6", ci_class: "6", expiry_date: "2027-01-01"},
+]}};
+const scanned = [];
+t4.scanIndicator = (raw) => scanned.push(raw);
+"""
+
+
+class TestT4IndicatorLotPick(FrappeTestCase):
+	"""A-120: chọn tay lô chỉ thị phù hợp với bộ ở T4."""
+
+	def test_lots_are_buttons_and_a_tap_scans_that_lot(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			const html = t4.ciHtml();
+			t4.onAction("ci-pick", {dataset: {batch: "LOT-A"}});
+			emit({html, scanned});
+			""",
+		)
+		self.assertEqual(out["html"].count('data-action="ci-pick"'), 2)
+		self.assertIn('data-batch="LOT-A"', out["html"])
+		self.assertIn("Que CI 5", out["html"])
+		self.assertNotIn("LOT-<B>", out["html"])  # tên lô được escape
+		self.assertIn('id="tc-ci-input"', out["html"])  # ô quét vẫn còn
+		self.assertEqual(out["scanned"], ["LOT-A"])
+
+	def test_no_usable_lot_warns_and_lots_hide_once_chosen(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			t4.ctx.ci.lots = [];
+			const empty = t4.ciHtml();
+			t4.ctx.ci.lots = [{batch: "LOT-A", item: "CI5", ci_class: "5", expiry_date: "2026-12-01"}];
+			t4.ci = {batch: "LOT-A", ci_class: "5", expiry_date: "2026-12-01"};
+			emit({empty, chosen: t4.ciHtml()});
+			""",
+		)
+		self.assertIn("tc-alert-warn", out["empty"])
+		self.assertIn("No usable indicator lot", out["empty"])
+		self.assertNotIn("ci-pick", out["chosen"])
+
+	def test_lot_of_the_set_default_indicator_is_marked_but_not_picked(self):
+		"""A-122: lô của chỉ thị mặc định ghi "mặc định của bộ"; màn không tự chọn lô."""
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			t4.ctx.ci.default_item = "CI6";
+			t4.ctx.ci.lots[1].is_default = true;
+			t4.ctx.ci.lots[0].is_default = false;
+			const html = t4.ciHtml();
+			emit({html, ci: t4.ci || null, scanned});
+			""",
+		)
+		self.assertEqual(out["html"].count("default for this set"), 1)
+		self.assertLess(out["html"].index("Que CI 6"), out["html"].index("default for this set"))
+		self.assertIsNone(out["ci"])
+		self.assertEqual(out["scanned"], [])
+
+
+T4_PACK = """
+const t4 = new T4Packing(makeStation());
+const types = [
+	{item: "PK-TUI", item_name: "Túi ép", shelf_life_days: 180, material: "Sealed Pouch", is_default: true,
+		expected_expiry: "2027-05-04"},
+	{item: "PK-HOP", item_name: "Hộp hấp", shelf_life_days: 30, material: "Rigid Container", is_default: false,
+		expected_expiry: "2026-12-05"},
+	{item: "PK-LA", item_name: "Lá <nhôm>", shelf_life_days: 7, material: "", is_default: false},
+	{item: "PK-VKD", item_name: "Vải không dệt", shelf_life_days: 30, material: "Wrap", is_default: false},
+];
+t4.ctx = {pack_types: types};
+t4.refresh = () => {};
+"""
+
+
+class TestT4PackMaterialDropdown(FrappeTestCase):
+	"""A-122: loại gói ở T4 là droplist nhóm theo vật liệu, chọn sẵn loại gói mặc định của bộ."""
+
+	def test_dropdown_groups_by_material_and_selects_the_set_default(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_PACK
+			+ """
+			t4.packType = t4.defaultPackType(types);
+			emit({chosen: t4.packType, html: t4.packHtml()});
+			""",
+		)
+		html = out["html"]
+		self.assertEqual(out["chosen"], "PK-TUI")
+		self.assertIn('<select id="tc-t4-pack"', html)
+		self.assertNotIn('data-action="pack-type"', html)  # không còn hàng chip
+		order = [
+			html.index(f'label="{label}"')
+			for label in ("Rigid Container", "Sealed Pouch", "Wrap", "Unclassified")
+		]
+		self.assertEqual(order, sorted(order))
+		self.assertIn('value="PK-TUI" selected', html)
+		self.assertEqual(html.count(" selected"), 1)
+		self.assertIn("default for this set", html)
+		self.assertNotIn("Lá <nhôm>", html)  # tên được escape
+		self.assertIn("2027-05-04".split("-")[0], html)  # hạn dùng dự kiến của loại đang chọn
+
+	def test_choosing_another_pack_type_changes_it_and_unknown_is_ignored(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_PACK
+			+ """
+			t4.packType = "PK-TUI";
+			t4.onChange({matches: (sel) => sel === "#tc-t4-pack", value: "PK-VKD"});
+			const changed = t4.packType;
+			t4.onChange({matches: (sel) => sel === "#tc-t4-pack", value: "KHONG-CO"});
+			emit({changed, after: t4.packType});
+			""",
+		)
+		self.assertEqual(out["changed"], "PK-VKD")
+		self.assertEqual(out["after"], "PK-VKD")
+
+	def test_default_falls_back_to_first_row(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_PACK
+			+ """
+			const none = types.map((row) => ({...row, is_default: false}));
+			emit({first: t4.defaultPackType(none), empty: t4.defaultPackType([])});
+			""",
+		)
+		self.assertEqual(out["first"], "PK-TUI")
+		self.assertIsNone(out["empty"])
+
+
+PICKER_SHELL = """
+globalThis.esc = (value) => String(value == null ? "" : value).replace(/</g, "&lt;");
+globalThis.clientTs = () => "2026-11-05T09:00:00+07:00";
+globalThis.uuid4 = () => "u";
+const calls = [];
+let packOpen = true;
+const shell = {
+	activeTab: "storage", station: "TR-6", screen: {pickLocation: () => packOpen},
+	isOffline: () => false, pickDepartment: () => null,
+	rpc: async (method, args) => {
+		calls.push([method, args]);
+		return {items: [{id: "KE-0001", raw: "KE-0001", label: "KE-0001 - A-1-1-1"}], total: 1};
+	},
+};
+const picker = new TcPicker(shell);
+picker.render = () => {};
+picker.isOpen = true;
+"""
+
+
+class TestPickerShelves(FrappeTestCase):
+	"""A-120: màn Lưu kho đang mở gói thì panel Chọn tay có loại Kệ."""
+
+	def test_open_pack_at_storage_lists_shelves_first(self):
+		out = run_js(
+			self,
+			["public/js/station_picker.js"],
+			[["TcPicker"]],
+			PICKER_SHELL
+			+ """
+			picker.kind = picker.defaultKind();
+			await picker.load(true);
+			const tabs = picker.kindHtml();
+			packOpen = false;
+			emit({kind: calls[0][1] && picker.kind, calls, tabs, without: picker.defaultKind(), noTabs: picker.kindHtml()});
+			""",
+		)
+		self.assertEqual(out["calls"][0][0], "tracecore.v1.lookup.locations")
+		self.assertEqual(out["calls"][0][1]["screen"], "storage")
+		self.assertIn('data-kind="location"', out["tabs"])
+		self.assertIn('data-kind="set"', out["tabs"])
+		self.assertIn("Shelves", out["tabs"])
+		self.assertEqual(out["without"], "set")
+		self.assertEqual(out["noTabs"], "")
+
+	def test_shelf_list_sends_open_pack_and_marks_suggested_and_empty(self):
+		"""A-123: gửi Cycle ID gói đang mở; kệ Đề xuất / Trống có nhãn chữ, không chỉ màu."""
+		out = run_js(
+			self,
+			["public/js/station_picker.js"],
+			[["TcPicker"]],
+			PICKER_SHELL
+			+ """
+			shell.screen.openPack = () => "CY-1";
+			picker.kind = picker.defaultKind();
+			await picker.load(true);
+			picker.reason = "Scanner broken";
+			picker.items = [
+				{id: "KE-1", raw: "KE-1", label: "A", hint: "suggested", same: 2},
+				{id: "KE-2", raw: "KE-2", label: "B", hint: "empty"},
+				{id: "KE-3", raw: "KE-3", label: "C", hint: null},
+			];
+			emit({args: calls[0][1], html: picker.listHtml()});
+			""",
+		)
+		self.assertEqual(out["args"]["pack"], "CY-1")
+		self.assertEqual(out["html"].count("tc-pick-hint"), 2)
+		self.assertIn("Suggested", out["html"])
+		self.assertIn("Empty", out["html"])
 
 
 T1_ITEM = """
@@ -153,6 +642,74 @@ LAUNCHER = "ui/page/tracecore/tracecore.js"
 STATION = "ui/page/station/station.js"
 DAILY = "public/js/station_daily_test.js"
 MACHINE = {"name": "TB-1", "equipment_name": "May", "required": ["bowie_dick"], "missing": [], "runs": {}}
+
+
+DT_LOT_MACHINE = """
+const machine = {
+	name: "TB-0010", required: ["plasma_daily"], optional: [], missing: ["plasma_daily"],
+	run_tests: ["plasma_daily"], runs: {plasma_daily: "Ended"}, run_lots: {plasma_daily: "L-FAR"},
+	test_programs: {plasma_daily: {program: "P", program_name: "Test plasma", consumables: [
+		{item: "LBL", item_name: "Nhan", role: "Label", lots: []},
+		{item: "PK", item_name: "Goi thu", role: "Test Pack", lots: [
+			{batch: "L-NEAR", expiry_date: "2026-11-15"}, {batch: "L-<FAR>", expiry_date: "2027-02-01"},
+			{batch: "L-FAR", expiry_date: "2027-03-01"},
+		]},
+	]}},
+};
+const screen = Object.create(DailyTestScreen.prototype);
+screen.station = makeStation();
+screen.input = screen.station.input;
+screen.reset();
+screen.list = [machine];
+screen.selected = "TB-0010";
+screen.form.test_type = "plasma_daily";
+screen.show = () => {};
+const field = (name) => `<input data-dt-field="${name}">`;
+"""
+
+
+class TestDailyTestLotPick(FrappeTestCase):
+	"""A-130: lô gói thử gợi ý theo chương trình thành nút, chọn sẵn lô của lần chạy, chọn tay, quét nhãn lô."""
+
+	def run_dt(self, script):
+		return run_js(self, [DAILY], [["DailyTestScreen"]], FAKE_STATION + DT_LOT_MACHINE + script)
+
+	def test_result_form_lists_test_pack_lots_as_buttons_and_preselects_the_run_lot(self):
+		out = self.run_dt("emit({html: screen.runHtml(machine, field), lot: screen.chosenLot(machine)});")
+		html = out["html"]
+		self.assertEqual(out["lot"], "L-FAR")  # lô đã dùng lúc Bắt đầu test
+		self.assertEqual(html.count('data-action="dt-lot"'), 3)
+		self.assertIn('data-batch="L-FAR" aria-pressed="true"', html)
+		self.assertNotIn("L-<FAR>", html)  # số lô được escape
+		self.assertIn("01/03/2027", html)  # hạn dùng dd/mm/yyyy
+		self.assertNotIn('data-dt-field="lot_expiry"', html)  # hạn lấy theo lô, bỏ ô Hạn lô
+		self.assertNotIn('data-dt-field="lot"', html)
+
+	def test_tap_a_lot_or_scan_its_label_changes_the_lot(self):
+		out = self.run_dt(
+			"""
+			screen.onAction("dt-lot", {dataset: {batch: "L-NEAR"}});
+			const tapped = screen.chosenLot(machine);
+			screen.scan("  L-SCANNED\\r\\n");
+			const scanned = screen.chosenLot(machine);
+			screen.scan("TB-0010");
+			emit({tapped, scanned, selected: screen.selected, after: screen.chosenLot(machine)});
+			"""
+		)
+		self.assertEqual(out["tapped"], "L-NEAR")
+		self.assertEqual(out["scanned"], "L-SCANNED")
+		self.assertEqual(out["selected"], "TB-0010")  # mã máy vẫn là chọn máy
+
+	def test_without_a_test_pack_the_old_lot_fields_stay(self):
+		out = self.run_dt(
+			"""
+			machine.test_programs = {};
+			emit({html: screen.runHtml(machine, field), lot: screen.chosenLot(machine)});
+			"""
+		)
+		self.assertIn('data-dt-field="lot"', out["html"])
+		self.assertIn('data-dt-field="lot_expiry"', out["html"])
+		self.assertNotIn('data-action="dt-lot"', out["html"])
 
 
 class TestDailyTestList(FrappeTestCase):
@@ -1135,6 +1692,13 @@ class TestT3Layout(FrappeTestCase):
 		self.assertEqual(out, [["lines", 60]])
 
 
+T3_TYPE = """
+const typed = (code, value) => ({target: {
+	matches: (selector) => selector === ".tc-t3-actual", dataset: {instrument: code}, value,
+}});
+"""
+
+
 class TestT3VarianceForm(FrappeTestCase):
 	"""#1842: nút trên dòng đóng biểu mẫu cũ; lỗi lưu biểu mẫu hiện ngay tại biểu mẫu."""
 
@@ -1157,12 +1721,12 @@ class TestT3VarianceForm(FrappeTestCase):
 			self.run_t3('t3.onAction("t3-full", {dataset: {instrument: "I-1"}}); emit({f: t3.form});')["f"]
 		)
 
-	def test_stepping_back_to_the_bom_closes_the_open_form(self):
-		out = self.run_t3('t3.onAction("t3-inc", {dataset: {instrument: "I-1"}}); emit({f: t3.form});')
+	def test_typing_the_bom_quantity_closes_the_open_form(self):
+		out = self.run_t3(T3_TYPE + 't3.onChange(typed("I-1", "2")); emit({f: t3.form});')
 		self.assertIsNone(out["f"])
 
-	def test_stepping_away_from_the_bom_updates_the_form_quantity(self):
-		out = self.run_t3('t3.onAction("t3-dec", {dataset: {instrument: "I-1"}}); emit(t3.form);')
+	def test_typing_another_quantity_updates_the_form_quantity(self):
+		out = self.run_t3(T3_TYPE + 't3.onChange(typed("I-1", "0")); emit(t3.form);')
 		self.assertEqual(out["qty"], 0)
 
 	def test_form_error_is_rendered_at_the_form(self):
@@ -1683,6 +2247,148 @@ class TestT3ConfirmAll(FrappeTestCase):
 			FAKE_STATION + self.BODY + "t3.asm.docstatus = 1; emit(t3.linesHtml());",
 		)
 		self.assertNotIn("t3-all", out)
+
+
+T4_BOM = """
+const t4 = new T4Packing(makeStation());
+t4.ctx = {
+	bom_version: 3, tray_image: null, shortage: [{instrument: "DC-2"}],
+	bom: [
+		{instrument: "DC-1", instrument_name: "Kep <1>", qty: 2, position: 5, thumbnail: "/a.png"},
+		{instrument: "DC-2", instrument_name: "Keo", qty: 1, position: 6},
+		{instrument: "DC-3", instrument_name: "Panh", qty: 4, position: 7},
+	],
+};
+t4.checked = new Set([2]);
+t4.imagesReady = true;
+"""
+
+
+class TestT4BomTable(FrappeTestCase):
+	"""A-121: thành phần bộ ở T4 là bảng, hành vi tick giữ nguyên."""
+
+	def test_bom_is_a_five_column_table_with_one_row_per_line(self):
+		out = run_js(self, [T4], [["T4Packing"]], FAKE_STATION + T4_BOM + "emit(t4.bomHtml());")
+		self.assertEqual(out.count("<table"), 1)
+		self.assertEqual(out.count("<th "), 5)
+		self.assertEqual(out.count('scope="col"'), 5)
+		self.assertEqual(out.count("<tbody>"), 1)
+		body = out[out.index("<tbody>") :]
+		self.assertEqual(body.count("<tr"), 3)
+		self.assertNotRegex(out, r'class="tc-ins[ "]')
+		for index in range(3):
+			self.assertIn(f'data-line="{index}"', body)
+		self.assertIn("Kep &lt;1&gt;", body)  # tên dụng cụ được escape
+		self.assertIn("DC-1", body)
+		self.assertIn("Confirmed 1/2 lines", out)
+		self.assertIn('data-action="confirm-all"', out)
+
+	def test_short_line_is_locked_and_labelled_and_ticked_line_is_done(self):
+		out = run_js(self, [T4], [["T4Packing"]], FAKE_STATION + T4_BOM + "emit(t4.bomHtml());")
+		rows = out[out.index("<tbody>") :].split("<tr")[1:]
+		self.assertIn("is-short", rows[1])
+		self.assertIn("disabled", rows[1])
+		self.assertIn("Missing", rows[1])
+		self.assertIn("is-done", rows[2])
+		self.assertIn("checked", rows[2])
+		self.assertIn("Placed correctly", rows[2])
+		self.assertNotIn("is-done", rows[0])
+		self.assertIn("Not confirmed", rows[0])
+
+	def test_ticking_updates_the_row_and_confirm_all_skips_short_lines(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_BOM
+			+ """
+			const toggles = [];
+			const state = {textContent: ""};
+			const row = {classList: {toggle: (cls, on) => toggles.push([cls, on])}, querySelector: () => state};
+			const box = {checked: true, dataset: {line: "0"}, closest: (sel) => (sel === "tr" ? row : null)};
+			t4.refresh = () => {};
+			t4.toggleLine(box);
+			emit({toggles, state: state.textContent, checked: [...t4.checked].sort()});
+			""",
+		)
+		self.assertEqual(out["toggles"], [["is-done", True]])
+		self.assertEqual(out["state"], "Placed correctly")
+		self.assertEqual(out["checked"], [0, 2])
+
+
+class TestT3BomTable(FrappeTestCase):
+	"""A-121: BOM ở T3 là bảng, các nút thao tác trên dòng giữ nguyên."""
+
+	def run_t3(self, body):
+		return run_js(self, [ERR, T3], [[], ["T3Assembly"]], FAKE_STATION + T3_STATION + body)
+
+	def test_lines_are_a_five_column_table_with_the_row_controls(self):
+		out = self.run_t3('t3.asm = ASM; ASM.lines[1].instrument_name = "Keo <2>"; emit(t3.linesHtml());')
+		self.assertEqual(out.count("<table"), 1)
+		self.assertEqual(out.count("<th "), 5)
+		self.assertEqual(out.count('scope="col"'), 5)
+		body = out[out.index("<tbody>") :]
+		self.assertEqual(body.count("<tr"), 2)
+		self.assertNotRegex(out, r'class="tc-ins[ "]')
+		self.assertIn("Keo &lt;2&gt;", body)
+		for action in ("t3-full", "t3-variance", "t3-damage"):
+			self.assertEqual(body.count(f'data-action="{action}"'), 2, action)
+		# ô nhập số lượng thực tế thay cặp nút -/+ (như T1); dòng chưa đếm để trống
+		for gone in ("t3-dec", "t3-inc", "tc-t3-count"):
+			self.assertNotIn(gone, out)
+		self.assertRegex(body, r'class="tc-t3-actual"[^>]*data-instrument="I-1"[^>]*value="2"')
+		self.assertRegex(body, r'class="tc-t3-actual"[^>]*data-instrument="I-2"[^>]*value=""')
+		self.assertIn('data-instrument="I-2"', body)
+		self.assertIn('data-action="t3-all"', out)
+		self.assertIn('data-region="tally"', out)
+
+	def test_typing_the_bom_quantity_records_enough_and_another_opens_the_form(self):
+		out = self.run_t3(
+			T3_TYPE
+			+ """
+			t3.asm = ASM;
+			const sent = [];
+			t3.request = (name, args) => sent.push(args);
+			t3.onChange(typed("I-2", "2"));
+			const afterBom = {sent: sent.slice(), form: t3.form};
+			t3.onChange(typed("I-2", "1"));
+			const afterOther = {sent: sent.slice(), form: t3.form};
+			t3.form = null;
+			t3.onChange(typed("I-2", ""));
+			t3.onChange(typed("I-2", "-3"));
+			emit({afterBom, afterOther, ignored: {sent: sent.length, form: t3.form}});
+			"""
+		)
+		self.assertEqual(out["afterBom"]["sent"], [{"assembly": "A-1", "instrument": "I-2", "actual_qty": 2}])
+		self.assertIsNone(out["afterBom"]["form"])
+		self.assertEqual(len(out["afterOther"]["sent"]), 1)  # không ghi dòng khi khác BOM
+		self.assertEqual(out["afterOther"]["form"]["kind"], "variance")
+		self.assertEqual(out["afterOther"]["form"]["qty"], 1)
+		self.assertEqual(out["ignored"], {"sent": 1, "form": None})
+
+	def test_input_shows_the_open_form_quantity_for_that_line(self):
+		out = self.run_t3(
+			't3.asm = ASM; t3.request = () => {}; t3.openVariance("I-1", 1); emit(t3.linesHtml());'
+		)
+		self.assertRegex(out, r'data-instrument="I-1"[^>]*value="1"')
+
+	def test_row_state_has_text_and_a_class_per_status(self):
+		out = self.run_t3(
+			"""
+			ASM.lines[1] = line("I-2", {line_status: "Short", missing_qty: 1, actual_qty: 1});
+			ASM.lines.push(line("I-3", {line_status: "Over", actual_qty: 3}));
+			t3.asm = ASM;
+			emit(t3.linesHtml());
+			"""
+		)
+		rows = out[out.index("<tbody>") :].split("<tr")[1:]
+		self.assertIn("is-done", rows[0])
+		self.assertIn("is-short", rows[1])
+		self.assertIn("(-1)", rows[1])
+		self.assertIn("is-over", rows[2])
+		self.assertIn("(+1)", rows[2])
+		self.assertIn("&#10003;", rows[0])  # ký hiệu, không chỉ màu
 
 
 class TestOpenStationByUrl(FrappeTestCase):

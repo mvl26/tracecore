@@ -124,6 +124,64 @@ def _item(row):
 	}
 
 
+IN_STOCK = "In Sterile Stock"
+
+
+def locations(q=None, start=0, page_length=20, pack=None):
+	"""Kệ kho vô khuẩn đang dùng để chọn tay ở T6 (A-120, A-123).
+
+	Trả ``{"items": [{id, raw, name, stock, same, hint, label}], "total"}``. `stock` là số gói đang nằm trên kệ (không
+	tính chính gói `pack`), `same` là số gói cùng loại bộ với `pack`. Xếp kệ Đề xuất (`hint="suggested"`, có gói cùng
+	loại bộ) trước, rồi kệ Trống (`hint="empty"`, chưa có gói), rồi kệ khác theo mã. Tìm theo mã, tên vị trí, mô tả.
+	Chỉ là gợi ý: kệ chọn xong vẫn đi qua `putaway.scan` như khi quét.
+	"""
+	start, length = page_of(start, page_length)
+	set_type = frappe.db.get_value("Pack", pack, "set_type") if pack else None
+	values = {"in_stock": IN_STOCK, "pack": pack or "", "set_type": set_type or ""}
+	where = "loc.is_active = 1"
+	text = (q or "").strip()
+	if text:
+		where += " and (loc.name like %(like)s or loc.location_name like %(like)s or loc.description like %(like)s)"
+		values["like"] = like(text)
+	total = frappe.db.sql(
+		f"select count(*) from `tabSterile Location` loc where {where}",  # nosec B608 - `where` ghép từ hằng, giá trị qua tham số
+		values,
+	)[0][0]
+	rows = frappe.db.sql(
+		f"""select loc.name, loc.location_name, loc.description,
+			count(p.name) as stock, ifnull(sum(p.set_type = %(set_type)s), 0) as same
+		from `tabSterile Location` loc
+		left join `tabPack` p on p.location = loc.name and p.docstatus = 1 and p.status = %(in_stock)s
+			and p.name != %(pack)s
+		where {where}
+		group by loc.name, loc.location_name, loc.description
+		order by (ifnull(sum(p.set_type = %(set_type)s), 0) > 0) desc, (count(p.name) = 0) desc, loc.name asc
+		limit %(length)s offset %(start)s""",  # nosec B608 - như trên
+		{**values, "length": length, "start": start},
+		as_dict=True,
+	)
+	return {"items": [_location_item(row) for row in rows], "total": total}
+
+
+def _location_item(row):
+	stock, same = cint(row.stock), cint(row.same)
+	hint = "suggested" if same else ("empty" if not stock else None)
+	# kệ Trống đã có badge chữ ở panel; kệ khác ghi số gói đang nằm trên kệ
+	note = {
+		"suggested": _("{0} pack(s) of this set type").format(same),
+		"empty": None,
+	}.get(hint, _("{0} pack(s)").format(stock))
+	return {
+		"id": row.name,
+		"raw": row.name,
+		"name": row.location_name,
+		"stock": stock,
+		"same": same,
+		"hint": hint,
+		"label": join_label(row.name, row.location_name, row.description, note),
+	}
+
+
 def batches(step, purpose=None, equipment=None, q=None, start=0, page_length=20):
 	"""Lô rửa / mẻ tiệt khuẩn chờ dỡ của bước `step` (A-87, #1818, #1819), chỉ đọc.
 
