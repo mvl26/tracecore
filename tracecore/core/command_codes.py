@@ -152,6 +152,35 @@ def selectors_for(station):
 	return {key: list(cmd["selectors"]) for key, cmd in COMMANDS.items() if applies(cmd, functions)}
 
 
+# A-127: lệnh xác nhận/hoàn thành hiện QR ngay cạnh nút trên màn trạm; lệnh điều hướng khác chỉ có trên tờ A4
+SCREEN_QR = (
+	"SUBMIT-RECEIPT",
+	"CONFIRM-SET",
+	"COMPLETE-LOAD",
+	"SAVE-DATA",
+	"RECORD-RESULT",
+	"RECORD-COUNT",
+	"CONFIRM-ALL",
+	"CONFIRM-PACK",
+	"FINISH-CHECK",
+	"RELEASE",
+	"CONFIRM-USE",
+)
+
+
+def screen_qr(station):
+	"""``{khóa lệnh: ảnh QR PNG data URI của "CMD-DO-<khóa>"}`` cho lệnh ``SCREEN_QR`` áp dụng cho trạm `station` (A-127)."""
+	if not isinstance(station, str) or not frappe.db.exists("Zone Station", {"name": station, "is_zone": 0}):
+		return {}
+	functions = zones.station_functions(station)
+	return {
+		key: "data:image/png;base64,"
+		+ base64.b64encode(qr.qr_png(f"{DO_PREFIX}{key}", module_px=4, margin_px=12)).decode("ascii")
+		for key in SCREEN_QR
+		if applies(COMMANDS[key], functions)
+	}
+
+
 def _stations():
 	rows = frappe.get_all(
 		"Zone Station",

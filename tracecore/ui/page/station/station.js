@@ -605,6 +605,19 @@ class TraceCoreStation {
 			bursts.get(box).input(box.value);
 		});
 		this.listen(this.cardInput, "blur", () => setTimeout(() => this.focus(), 150));
+		// A-127: màn của bước vẽ lại nút thì gắn lại QR mã lệnh (gom các thay đổi trong một khung hình)
+		if (typeof MutationObserver === "function") {
+			let queued = false;
+			this.commandObserver = new MutationObserver(() => {
+				if (queued || !this.commandQr || !Object.keys(this.commandQr).length) return;
+				queued = true;
+				requestAnimationFrame(() => {
+					queued = false;
+					this.decorateCommandButtons();
+				});
+			});
+			this.commandObserver.observe(this.root, { childList: true, subtree: true });
+		}
 		for (const name of ["pointerdown", "keydown", "input", "change"]) {
 			this.listen(this.root, name, (event) => this.noteActivity(event), true);
 		}
@@ -930,6 +943,10 @@ class TraceCoreStation {
 
 	activateSession(session) {
 		this.session = session;
+		// A-127: nạp mã lệnh + ảnh QR của trạm rồi gắn QR cạnh nút xác nhận (lỗi mạng thì bỏ qua, nút vẫn bấm tay)
+		Promise.resolve(this.loadCommandMap())
+			.then(() => this.decorateCommandButtons())
+			.catch(() => {});
 		this.storedToken(session.token);
 		this.rememberActive({ station: this.station, token: session.token });
 		this.lastActivity = Date.now();
@@ -1798,8 +1815,34 @@ class TraceCoreStation {
 			token: this.session.token,
 		});
 		this.commandMap = result && result.ok ? result.commands : null;
+		// A-127: ảnh QR của lệnh xác nhận (rỗng khi R10 tắt trong TraceCore Settings)
+		this.commandQr = result && result.ok && result.show_qr ? result.qr || {} : {};
 		this.commandMapVersion = version;
 		return this.commandMap;
+	}
+
+	// A-127: gắn QR mã lệnh ngay sau nút xác nhận/hoàn thành đang có trên màn (chỉ STN). Gọi lại mỗi khi màn vẽ lại
+	// (MutationObserver ở bind); đã có QR đúng lệnh ngay sau nút thì thôi, nên không lặp vô hạn.
+	decorateCommandButtons() {
+		if (this.root.dataset.surface === "PDA" || !this.session || !this.ownsPage()) return;
+		const map = this.commandMap || {};
+		const images = this.commandQr || {};
+		for (const [key, src] of Object.entries(images)) {
+			for (const selector of map[key] || []) {
+				this.root.querySelectorAll(selector).forEach((button) => {
+					const next = button.nextElementSibling;
+					if (next && next.classList.contains("tc-cmd-qr") && next.dataset.cmd === key)
+						return;
+					const image = document.createElement("img");
+					image.className = "tc-cmd-qr";
+					image.dataset.cmd = key;
+					image.src = src;
+					image.alt = `CMD-DO-${key}`;
+					image.title = __("Scan to press this button");
+					button.insertAdjacentElement("afterend", image);
+				});
+			}
+		}
 	}
 
 	static usableButton(root, selector) {
