@@ -212,7 +212,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 	override = page.locator("[data-fieldname='shelf_life_days'] input")
 	try:
 		override.fill("200")
-		override.press("Tab")
+		override.blur()  # A-122: Tab đưa focus vào lưới Chương trình, Ctrl+S không tới form
 		saved = save_and_wait(page)
 		assert saved.status == 417, saved.status
 		expect(modal(page, "ngắn hơn 180 ngày")).to_be_visible()
@@ -220,7 +220,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 		assert api_doc(page, "Instrument Set Type", edit)["shelf_life_days"] == 0
 
 		override.fill("20")
-		override.press("Tab")
+		override.blur()  # A-122: Tab đưa focus vào lưới Chương trình, Ctrl+S không tới form
 		assert save_and_wait(page).ok
 		expect(shelf).to_contain_text("Áp dụng: 20 ngày", timeout=15000)
 		assert api_doc(page, "Instrument Set Type", edit)["shelf_life_days"] == 20
@@ -230,7 +230,7 @@ def test_pack_type_without_shelf_life_not_offered_and_override_shorter_only(sett
 		if page.evaluate("() => cur_frm.doc.shelf_life_days"):
 			show_tab(page, "Mặc định xử lý")
 			page.locator("[data-fieldname='shelf_life_days'] input").fill("0")
-			page.locator("[data-fieldname='shelf_life_days'] input").press("Tab")
+			page.locator("[data-fieldname='shelf_life_days'] input").blur()
 			assert save_and_wait(page).ok
 	expect(page.locator("[data-fieldname='shelf_life_html']")).to_contain_text(
 		"Áp dụng: 180 ngày", timeout=15000
