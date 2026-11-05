@@ -1,14 +1,53 @@
 """A-122 (FEAT-086): nhóm vật liệu gói và loại gói mặc định của bộ ở T4."""
 
 import frappe
+from frappe.utils import add_days, getdate, today
 
 from tracecore.core.errors import BlockedError
 from tracecore.patches.v0_1 import a122_pack_material
 from tracecore.reprocessing import packing
-from tracecore.tests.factories import make_item, make_set_type
+from tracecore.tests.factories import make_batch, make_item, make_set_type
 from tracecore.tests.utils import IsolatedTestCase, bru
 
 test_ignore = ["Item", "Batch", "Department", "User", "Employee"]
+
+
+class TestDefaultIndicatorLots(IsolatedTestCase):
+	"""A-122 (g): lô của chỉ thị mặc định của loại bộ đứng đầu danh sách ở T4, không chọn sẵn."""
+
+	def _lot(self, item, batch, days):
+		return make_batch(item, batch, expiry_date=add_days(today(), days)).name
+
+	@bru("BRU-REP-013")
+	def test_lots_of_the_default_item_come_first(self):
+		usual = make_item("CI5-A122-USUAL", "Chemical Indicator", method="Steam", ci_class="5").name
+		chosen = make_item("CI6-A122-CHOSEN", "Chemical Indicator", method="Steam", ci_class="6").name
+		near = self._lot(usual, "LOT-A122-NEAR", 2)
+		late = self._lot(chosen, "LOT-A122-LATE", 300)
+		later = self._lot(chosen, "LOT-A122-LATER", 400)
+
+		rows = packing.ci_lots("Steam", getdate(), chosen)
+
+		self.assertEqual([row["batch"] for row in rows[:2]], [late, later])
+		self.assertTrue(all(row["is_default"] for row in rows[:2]))
+		self.assertIn(near, [row["batch"] for row in rows])
+		self.assertFalse(next(row for row in rows if row["batch"] == near)["is_default"])
+		self.assertLessEqual(len(rows), packing.CI_LOT_LIMIT)
+
+	def test_without_default_the_order_is_unchanged(self):
+		usual = make_item("CI5-A122-PLAIN", "Chemical Indicator", method="Steam", ci_class="5").name
+		self._lot(usual, "LOT-A122-PLAIN", 3)
+		self.assertEqual(packing.ci_lots("Steam", getdate()), packing.ci_lots("Steam", getdate(), None))
+		self.assertFalse(any(row["is_default"] for row in packing.ci_lots("Steam", getdate())))
+
+	def test_context_carries_the_default_item_and_does_not_pick_a_lot(self):
+		ci = make_item("CI5-A122-CTX", "Chemical Indicator", method="Steam", ci_class="5").name
+		set_type = make_set_type("A122X", method="Steam")
+		set_type.default_ci_item = ci
+		set_type.save(ignore_permissions=True)
+		block = packing.ci_block(frappe.get_doc("Instrument Set Type", set_type.name))
+		self.assertEqual(block["default_item"], ci)
+		self.assertNotIn("batch", block)
 
 
 def _material(item, value):

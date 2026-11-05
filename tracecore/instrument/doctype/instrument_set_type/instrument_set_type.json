@@ -16,10 +16,7 @@
   "assembly_minutes",
   "section_packing",
   "gtin",
-  "default_pack_type",
   "column_break_packing",
-  "shelf_life_days",
-  "shelf_life_html",
   "current_bom_version",
   "section_tray",
   "tray_image",
@@ -32,6 +29,13 @@
   "tab_bom",
   "bom_html",
   "tab_programs",
+  "section_pack_defaults",
+  "default_pack_type",
+  "default_ci_item",
+  "column_break_pack_defaults",
+  "shelf_life_days",
+  "shelf_life_html",
+  "section_programs",
   "programs",
   "tab_history",
   "history_html"
@@ -97,7 +101,7 @@
   {
    "fieldname": "section_packing",
    "fieldtype": "Section Break",
-   "label": "Packing"
+   "label": "Identification"
   },
   {
    "description": "Issued automatically when the GS1 company prefix is declared in TraceCore Settings; can be entered by hand (14 digits, valid check digit, unique). A pack cannot be issued without it. Locked once a pack has been labelled.",
@@ -107,29 +111,8 @@
    "unique": 1
   },
   {
-   "description": "Packaging item in use with a shelf life; the set type shelf life defaults to it.",
-   "fieldname": "default_pack_type",
-   "fieldtype": "Link",
-   "label": "Default Pack Type",
-   "options": "Item",
-   "reqd": 1
-  },
-  {
    "fieldname": "column_break_packing",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "description": "Override in days, only shorter than the default pack type shelf life. 0 = no override (the pack type shelf life applies).",
-   "fieldname": "shelf_life_days",
-   "fieldtype": "Int",
-   "label": "Shelf Life Override (Days)",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "shelf_life_html",
-   "fieldtype": "HTML",
-   "label": "Shelf Life Applied"
   },
   {
    "default": "1",
@@ -201,7 +184,49 @@
   {
    "fieldname": "tab_programs",
    "fieldtype": "Tab Break",
-   "label": "Programs by Machine"
+   "label": "Processing Defaults"
+  },
+  {
+   "fieldname": "section_pack_defaults",
+   "fieldtype": "Section Break",
+   "label": "Packing"
+  },
+  {
+   "description": "Packaging item in use with a shelf life; the set type shelf life defaults to it.",
+   "fieldname": "default_pack_type",
+   "fieldtype": "Link",
+   "label": "Default Pack Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "description": "Chemical indicator item (class 5/6, method of this set) whose lots are listed first at the packing station. The lot itself is still scanned or tapped.",
+   "fieldname": "default_ci_item",
+   "fieldtype": "Link",
+   "label": "Default Indicator",
+   "options": "Item"
+  },
+  {
+   "fieldname": "column_break_pack_defaults",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Override in days, only shorter than the default pack type shelf life. 0 = no override (the pack type shelf life applies).",
+   "fieldname": "shelf_life_days",
+   "fieldtype": "Int",
+   "label": "Shelf Life Override (Days)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "shelf_life_html",
+   "fieldtype": "HTML",
+   "label": "Shelf Life Applied"
+  },
+  {
+   "fieldname": "section_programs",
+   "fieldtype": "Section Break",
+   "label": "Allowed Programs"
   },
   {
    "description": "Default and allowed programs of this set type on each washer and sterilizer. One default program per machine.",
@@ -224,7 +249,7 @@
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-03 10:00:00.000000",
+ "modified": "2026-11-05 11:00:00.000000",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",

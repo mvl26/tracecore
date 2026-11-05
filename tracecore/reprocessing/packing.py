@@ -51,7 +51,8 @@ SET_FIELDS = tuple(
 	"name set_type status cycles_used max_cycles active_cycle_id current_cycle_no is_loaner department".split()
 )
 SET_TYPE_FIELDS = tuple(
-	"name set_type_name method gtin department default_pack_type shelf_life_days tray_image current_bom_version".split()
+	"name set_type_name method gtin department default_pack_type default_ci_item shelf_life_days tray_image "
+	"current_bom_version".split()
 )
 LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
@@ -154,12 +155,27 @@ def pack_types(set_type):
 # --- Lô chỉ thị hóa học (BRU-REP-013, BRU-INV-001) ----------------------------------------------
 
 
-def ci_lots(method, on_date):
+def ci_block(set_type):
+	"""Khối ``ci`` của ngữ cảnh T4 cho loại bộ `set_type` (doc/dict có ``method``, ``default_ci_item``).
+
+	A-122: ``default_item`` là chỉ thị mặc định của loại bộ, lô của nó đứng đầu ``lots``; không chọn sẵn lô nào.
+	"""
+	default_item = set_type.get("default_ci_item") or None
+	return {
+		"method": set_type.get("method"),
+		"classes": list(CI_CLASSES),
+		"default_item": default_item,
+		"lots": ci_lots(set_type.get("method"), getdate(), default_item),  # A-120: chọn tay lô chỉ thị
+	}
+
+
+def ci_lots(method, on_date, preferred_item=None):
 	"""Tối đa `CI_LOT_LIMIT` lô chỉ thị dùng được cho phương pháp `method` tại ngày `on_date` để chọn tay ở T4 (A-120).
 
 	Cùng quy tắc với `resolve_ci_batch`: Item nhóm Chemical Indicator đúng phương pháp, loại 5/6, Item và Batch chưa tắt,
-	có hạn dùng không trước `on_date`; hạn gần trước rồi theo tên lô. Trả ``[{"batch", "item", "item_name", "ci_class",
-	"expiry_date"}]``. Chỉ là gợi ý: lô chọn xong vẫn đi qua `resolve_ci_batch` khi sinh Cycle ID.
+	có hạn dùng không trước `on_date`; hạn gần trước rồi theo tên lô. A-122: lô của `preferred_item` (chỉ thị mặc định
+	của loại bộ) đứng đầu, mỗi lô có ``is_default``. Trả ``[{"batch", "item", "item_name", "ci_class", "expiry_date",
+	"is_default"}]``. Chỉ là gợi ý: lô chọn xong vẫn đi qua `resolve_ci_batch` khi sinh Cycle ID.
 	"""
 	if not method:
 		return []
@@ -178,13 +194,22 @@ def ci_lots(method, on_date):
 	}
 	if not items:
 		return []
-	rows = frappe.get_all(
-		"Batch",
-		filters={"item": ["in", list(items)], "disabled": 0, "expiry_date": [">=", getdate(on_date)]},
-		fields=["name", "item", "expiry_date"],
-		order_by="expiry_date asc, name asc",
-		limit=CI_LOT_LIMIT,
-	)
+
+	def batches(codes, limit):
+		if not codes or limit <= 0:
+			return []
+		return frappe.get_all(
+			"Batch",
+			filters={"item": ["in", codes], "disabled": 0, "expiry_date": [">=", getdate(on_date)]},
+			fields=["name", "item", "expiry_date"],
+			order_by="expiry_date asc, name asc",
+			limit=limit,
+		)
+
+	preferred = [preferred_item] if preferred_item in items else []
+	rows = batches(preferred, CI_LOT_LIMIT)
+	others = [code for code in items if code not in preferred]
+	rows += batches(others, CI_LOT_LIMIT - len(rows))
 	return [
 		{
 			"batch": row.name,
@@ -193,6 +218,7 @@ def ci_lots(method, on_date):
 			"ci_class": items[row.item].tc_ci_class,
 			# chuỗi ISO: trả lời idempotent phát lại (JSON) phải giống hệt lần đầu
 			"expiry_date": str(getdate(row.expiry_date)),
+			"is_default": row.item in preferred,
 		}
 		for row in rows
 	]
@@ -431,11 +457,7 @@ def get_context(set_id, station):
 		"maintenance": ctx.get("maintenance", []),
 		"par": ctx.get("par"),
 		"pack_types": [_with_expected_expiry(row, set_type.name) for row in pack_types(set_type.name)],
-		"ci": {
-			"method": set_type.method,
-			"classes": list(CI_CLASSES),
-			"lots": ci_lots(set_type.method, getdate()),  # A-120: chọn tay lô chỉ thị
-		},
+		"ci": ci_block(set_type),
 		"label_type": printer["label_type"] if printer else (labels[0].name if labels else None),
 		"printer": printer,
 	}

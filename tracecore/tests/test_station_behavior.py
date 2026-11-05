@@ -94,6 +94,27 @@ class TestT4IndicatorLotPick(FrappeTestCase):
 		self.assertIn("No usable indicator lot", out["empty"])
 		self.assertNotIn("ci-pick", out["chosen"])
 
+	def test_lot_of_the_set_default_indicator_is_marked_but_not_picked(self):
+		"""A-122: lô của chỉ thị mặc định ghi "mặc định của bộ"; màn không tự chọn lô."""
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			t4.ctx.ci.default_item = "CI6";
+			t4.ctx.ci.lots[1].is_default = true;
+			t4.ctx.ci.lots[0].is_default = false;
+			const html = t4.ciHtml();
+			emit({html, ci: t4.ci || null, scanned});
+			""",
+		)
+		self.assertEqual(out["html"].count("default for this set"), 1)
+		self.assertLess(out["html"].index("Que CI 6"), out["html"].index("default for this set"))
+		self.assertIsNone(out["ci"])
+		self.assertEqual(out["scanned"], [])
+
 
 T4_PACK = """
 const t4 = new T4Packing(makeStation());

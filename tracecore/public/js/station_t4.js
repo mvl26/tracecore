@@ -1503,7 +1503,10 @@ class T4Packing {
 					<span class="tc-mono">${esc(lot.batch)}</span>
 					<span>${esc(lot.item_name || lot.item)} · ${esc(__("class {0}", [lot.ci_class]))} · ${esc(
 					__("Expiry: {0}", [t4Date(lot.expiry_date)])
-				)}</span></button>`
+				)}${
+					// A-122: lô của chỉ thị mặc định của bộ (đứng đầu do server xếp); không tự chọn lô
+					lot.is_default ? ` · <b>${esc(__("default for this set"))}</b>` : ""
+				}</span></button>`
 			)
 			.join("");
 		return `<p class="tc-hint">${esc(__("Or tap a lot that fits this set:"))}</p>
