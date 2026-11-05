@@ -649,16 +649,13 @@ class TraceCoreStation {
 			},
 			true
 		);
-		// A-127: màn của bước vẽ lại nút thì gắn lại QR mã lệnh (gom các thay đổi trong một khung hình)
+		// A-127: màn của bước vẽ lại nút thì gắn lại QR mã lệnh NGAY trong microtask (trước khi trình duyệt tính bố cục).
+		// Chờ sang khung hình sau thì có lúc trang vừa vẽ lại chưa có QR nên ngắn đi, trình duyệt kéo vị trí cuộn lên
+		// rồi QR mới gắn vào: quét xong trang tự nhảy lên (người dùng báo 05/11/2026). QR tự gắn cũng gây thay đổi DOM
+		// nhưng lần gọi sau không còn gì để gắn nên dừng.
 		if (typeof MutationObserver === "function") {
-			let queued = false;
 			this.commandObserver = new MutationObserver(() => {
-				if (queued || !this.commandShowQr) return;
-				queued = true;
-				requestAnimationFrame(() => {
-					queued = false;
-					this.decorateCommandButtons();
-				});
+				if (this.commandShowQr) this.decorateCommandButtons();
 			});
 			this.commandObserver.observe(this.root, { childList: true, subtree: true });
 		}
@@ -1880,14 +1877,16 @@ class TraceCoreStation {
 		return tcButtonCode(action, index);
 	}
 
-	// A-128: các nút đang hiện có thể gắn QR (trừ nút trạm/tab trên cùng và nút chụp ảnh), theo thứ tự trên màn
+	// A-128: các nút có thể gắn QR (trừ nút trạm/tab trên cùng, nút chụp ảnh, phần Chọn tay), theo thứ tự trên màn.
+	// Chỉ đọc thuộc tính, KHÔNG đo bố cục (getClientRects…): đo lúc màn vừa vẽ lại mà QR chưa gắn sẽ ép trình duyệt tính
+	// bố cục khi trang còn ngắn và kéo trang lên. Nút ẩn bằng thuộc tính `hidden` (hoặc nằm trong khối `hidden`) bỏ qua.
 	qrButtons() {
 		return [...this.root.querySelectorAll("button[data-action]")].filter(
 			(button) =>
 				!TC_QR_SKIP.actions.includes(button.dataset.action) &&
 				!TC_QR_SKIP.pattern.test(button.dataset.action) &&
 				!button.closest(TC_QR_SKIP.containers) &&
-				button.getClientRects().length > 0
+				!button.closest("[hidden]")
 		);
 	}
 
@@ -1899,7 +1898,13 @@ class TraceCoreStation {
 		if (!this.commandShowQr || !this.qrCache || !this.qrAlias) return;
 		const order = new Map();
 		const missing = new Set();
-		for (const button of this.qrButtons()) {
+		const buttons = this.qrButtons();
+		// QR còn sót cạnh nút nay đã ẩn/bị bỏ khỏi danh sách (vd nút Thông báo khi hết thông báo) thì gỡ
+		const keep = new Set(buttons);
+		this.root.querySelectorAll("img.tc-cmd-qr").forEach((image) => {
+			if (!keep.has(image.previousElementSibling)) image.remove();
+		});
+		for (const button of buttons) {
 			const code = this.qrAlias.alias(this.buttonQrCode(button, order));
 			const src = this.qrCache.get(code);
 			const next = button.nextElementSibling;
@@ -1963,7 +1968,8 @@ class TraceCoreStation {
 		const button = this.qrButtons().find(
 			(element) => this.buttonQrCode(element, order) === code
 		);
-		if (!button || button.disabled)
+		// lúc bấm mới kiểm nút đang hiện (đo bố cục ở đây không sao: không có QR nào đang chờ gắn)
+		if (!button || button.disabled || !button.getClientRects().length)
 			return this.commandUnavailable(
 				__("The button of command {0} is not shown or is turned off at this step.", [code])
 			);

@@ -184,6 +184,22 @@ class TestQrAllButtons(FrappeTestCase):
 			self.assertIn(skipped, skip)
 		self.assertIn("button.closest(TC_QR_SKIP.containers)", source)
 
+	def test_decorating_never_forces_layout_before_inserting(self):
+		"""Quét xong trang tự nhảy lên (05/11/2026): màn vẽ lại chưa có QR, đo nút ép tính bố cục khi trang còn ngắn."""
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		buttons = source[source.index("\tqrButtons() {") :]
+		buttons = buttons[: buttons.index("\n\t}\n")]
+		self.assertNotIn("getClientRects", buttons)  # không đo bố cục khi chọn nút gắn QR
+		self.assertIn('closest("[hidden]")', buttons)  # nút đang ẩn thì không gắn
+		observer = source[source.index("this.commandObserver = new MutationObserver") :][:600]
+		self.assertNotIn(
+			"requestAnimationFrame", observer
+		)  # gắn ngay trong microtask, trước khi trình duyệt tính bố cục
+		press = source[source.index("\tasync pressButtonCode(code) {") :][:1200]
+		self.assertIn("getClientRects", press)  # nút phải đang hiện lúc bấm theo mã
+
 
 class TestQrNumericAlias(FrappeTestCase):
 	"""A-129: QR trên màn chứa mã toàn số `99-NNNN` (bộ gõ tiếng Việt không đổi được); báo khi chuỗi quét có dấu."""
