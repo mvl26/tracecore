@@ -73,3 +73,42 @@ class TestScreenQr(IsolatedTestCase):
 			style = handle.read()
 		self.assertIn(".tc-cmd-qr", style)
 		self.assertIn('[data-surface="PDA"] .tc-cmd-qr', style)
+
+
+class TestCommandQrRpc(IsolatedTestCase):
+	"""A-128: ảnh QR cho mã lệnh của mọi nút, sinh tại server."""
+
+	def setUp(self):
+		super().setUp()
+		frappe.set_user("Administrator")
+		apply_yhct(dry_run=False)
+		self.session = make_station_session(make_user("tc-cmd-qr-all@example.com"), "TR-001")
+
+	def test_images_for_valid_codes_only(self):
+		codes = [
+			"CMD-BTN-DISCARD",
+			"CMD-BTN-CI-PICK.2",
+			"CMD-DO-CONFIRM-SET",
+			"CMD-DO-KHONG-CO",
+			"<b>",
+			"CMD-BTN-X.0",
+		]
+		result = station_api.command_qr(token=self.session["token"], codes=codes)
+		self.assertTrue(result["ok"])
+		images = result["qr"]
+		self.assertEqual(set(images), {"CMD-BTN-DISCARD", "CMD-BTN-CI-PICK.2", "CMD-DO-CONFIRM-SET"})
+		self.assertEqual(_decode(images["CMD-BTN-CI-PICK.2"]), "CMD-BTN-CI-PICK.2")
+
+	def test_codes_as_json_and_limit(self):
+		import json
+
+		many = [f"CMD-BTN-ROW.{n}" for n in range(2, 200)]
+		result = station_api.command_qr(token=self.session["token"], codes=json.dumps(many))
+		self.assertEqual(len(result["qr"]), command_codes.QR_BATCH_LIMIT)
+
+	def test_setting_off_and_bad_session(self):
+		frappe.db.set_single_value(SETTINGS, "show_command_qr", 0)
+		self.assertEqual(
+			station_api.command_qr(token=self.session["token"], codes=["CMD-BTN-DISCARD"])["qr"], {}
+		)
+		self.assertFalse(station_api.command_qr(token="khong-co", codes=["CMD-BTN-DISCARD"])["ok"])
