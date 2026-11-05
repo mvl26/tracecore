@@ -42,6 +42,18 @@
  {
   "doctype": "Custom Field",
   "dt": "Item",
+  "name": "Item-tc_pack_material",
+  "fieldname": "tc_pack_material",
+  "fieldtype": "Select",
+  "label": "Pack Material",
+  "options": "\nRigid Container\nSealed Pouch\nWrap",
+  "description": "Group shown in the pack type list at the packing station: rigid container, sealed pouch, or wrap (cotton or non-woven).",
+  "depends_on": "eval:doc.tc_item_group_cssd=='Packaging'",
+  "insert_after": "tc_shelf_life_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Item",
   "name": "Item-tc_specification",
   "fieldname": "tc_specification",
   "fieldtype": "Data",

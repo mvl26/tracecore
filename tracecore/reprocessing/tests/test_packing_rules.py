@@ -139,7 +139,11 @@ class TestPackTypes(IsolatedTestCase):
 		):
 			self.assertNotIn(excluded, listed)
 		by_item = {row["item"]: row for row in rows}
-		self.assertEqual(by_item[other], {"item": other, "item_name": other, "shelf_life_days": 180})
+		self.assertEqual(
+			by_item[other],
+			# A-122: thêm nhóm vật liệu gói và cờ mặc định của bộ
+			{"item": other, "item_name": other, "shelf_life_days": 180, "material": "", "is_default": False},
+		)
 		self.assertEqual(len(listed), len(set(listed)))
 
 	def test_pack_types_puts_the_set_type_default_first(self):
@@ -206,6 +210,7 @@ class TestCiLots(IsolatedTestCase):
 				"item_name": frappe.db.get_value("Item", "CI5-STEAM", "item_name"),
 				"ci_class": "5",
 				"expiry_date": str(self.on_date),
+				"is_default": False,  # A-122: không có chỉ thị mặc định của bộ
 			},
 		)
 		for name in names:  # mọi lô gợi ý đều được resolve_ci_batch nhận

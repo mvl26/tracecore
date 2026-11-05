@@ -51,7 +51,8 @@ SET_FIELDS = tuple(
 	"name set_type status cycles_used max_cycles active_cycle_id current_cycle_no is_loaner department".split()
 )
 SET_TYPE_FIELDS = tuple(
-	"name set_type_name method gtin department default_pack_type shelf_life_days tray_image current_bom_version".split()
+	"name set_type_name method gtin department default_pack_type default_ci_item shelf_life_days tray_image "
+	"current_bom_version".split()
 )
 LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
@@ -125,20 +126,28 @@ def compute_expiry(packed_on, pack_type, set_type):
 def pack_types(set_type):
 	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng, có hạn lưu > 0, đúng phương pháp của bộ (A-97).
 
-	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days"}``; loại gói mặc định của loại bộ (nếu còn
-	dùng được) đứng đầu, các loại khác theo tên.
+	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days", "material", "is_default"}``; ``material`` là nhóm
+	vật liệu gói (A-122: ``Rigid Container`` / ``Sealed Pouch`` / ``Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng
+	droplist có nhóm. Loại gói mặc định của loại bộ (nếu còn dùng được) đứng đầu và có ``is_default``; các loại
+	khác theo tên.
 	"""
 	rows = frappe.get_all(
 		"Item",
 		filters={"tc_item_group_cssd": "Packaging", "disabled": 0, "tc_shelf_life_days": [">", 0]},
-		fields=["name", "item_name", "tc_shelf_life_days", "tc_compatible_method"],
+		fields=["name", "item_name", "tc_shelf_life_days", "tc_compatible_method", "tc_pack_material"],
 		order_by="item_name asc, name asc",
 	)
 	default, method = frappe.db.get_value("Instrument Set Type", set_type, ["default_pack_type", "method"])
 	rows = [row for row in rows if not row.tc_compatible_method or row.tc_compatible_method == method]
 	rows.sort(key=lambda row: row.name != default)  # ổn định: mặc định lên đầu, giữ thứ tự tên
 	return [
-		{"item": row.name, "item_name": row.item_name, "shelf_life_days": cint(row.tc_shelf_life_days)}
+		{
+			"item": row.name,
+			"item_name": row.item_name,
+			"shelf_life_days": cint(row.tc_shelf_life_days),
+			"material": row.tc_pack_material or "",
+			"is_default": bool(default) and row.name == default,
+		}
 		for row in rows
 	]
 
@@ -146,12 +155,27 @@ def pack_types(set_type):
 # --- Lô chỉ thị hóa học (BRU-REP-013, BRU-INV-001) ----------------------------------------------
 
 
-def ci_lots(method, on_date):
+def ci_block(set_type):
+	"""Khối ``ci`` của ngữ cảnh T4 cho loại bộ `set_type` (doc/dict có ``method``, ``default_ci_item``).
+
+	A-122: ``default_item`` là chỉ thị mặc định của loại bộ, lô của nó đứng đầu ``lots``; không chọn sẵn lô nào.
+	"""
+	default_item = set_type.get("default_ci_item") or None
+	return {
+		"method": set_type.get("method"),
+		"classes": list(CI_CLASSES),
+		"default_item": default_item,
+		"lots": ci_lots(set_type.get("method"), getdate(), default_item),  # A-120: chọn tay lô chỉ thị
+	}
+
+
+def ci_lots(method, on_date, preferred_item=None):
 	"""Tối đa `CI_LOT_LIMIT` lô chỉ thị dùng được cho phương pháp `method` tại ngày `on_date` để chọn tay ở T4 (A-120).
 
 	Cùng quy tắc với `resolve_ci_batch`: Item nhóm Chemical Indicator đúng phương pháp, loại 5/6, Item và Batch chưa tắt,
-	có hạn dùng không trước `on_date`; hạn gần trước rồi theo tên lô. Trả ``[{"batch", "item", "item_name", "ci_class",
-	"expiry_date"}]``. Chỉ là gợi ý: lô chọn xong vẫn đi qua `resolve_ci_batch` khi sinh Cycle ID.
+	có hạn dùng không trước `on_date`; hạn gần trước rồi theo tên lô. A-122: lô của `preferred_item` (chỉ thị mặc định
+	của loại bộ) đứng đầu, mỗi lô có ``is_default``. Trả ``[{"batch", "item", "item_name", "ci_class", "expiry_date",
+	"is_default"}]``. Chỉ là gợi ý: lô chọn xong vẫn đi qua `resolve_ci_batch` khi sinh Cycle ID.
 	"""
 	if not method:
 		return []
@@ -170,13 +194,22 @@ def ci_lots(method, on_date):
 	}
 	if not items:
 		return []
-	rows = frappe.get_all(
-		"Batch",
-		filters={"item": ["in", list(items)], "disabled": 0, "expiry_date": [">=", getdate(on_date)]},
-		fields=["name", "item", "expiry_date"],
-		order_by="expiry_date asc, name asc",
-		limit=CI_LOT_LIMIT,
-	)
+
+	def batches(codes, limit):
+		if not codes or limit <= 0:
+			return []
+		return frappe.get_all(
+			"Batch",
+			filters={"item": ["in", codes], "disabled": 0, "expiry_date": [">=", getdate(on_date)]},
+			fields=["name", "item", "expiry_date"],
+			order_by="expiry_date asc, name asc",
+			limit=limit,
+		)
+
+	preferred = [preferred_item] if preferred_item in items else []
+	rows = batches(preferred, CI_LOT_LIMIT)
+	others = [code for code in items if code not in preferred]
+	rows += batches(others, CI_LOT_LIMIT - len(rows))
 	return [
 		{
 			"batch": row.name,
@@ -185,6 +218,7 @@ def ci_lots(method, on_date):
 			"ci_class": items[row.item].tc_ci_class,
 			# chuỗi ISO: trả lời idempotent phát lại (JSON) phải giống hệt lần đầu
 			"expiry_date": str(getdate(row.expiry_date)),
+			"is_default": row.item in preferred,
 		}
 		for row in rows
 	]
@@ -423,11 +457,7 @@ def get_context(set_id, station):
 		"maintenance": ctx.get("maintenance", []),
 		"par": ctx.get("par"),
 		"pack_types": [_with_expected_expiry(row, set_type.name) for row in pack_types(set_type.name)],
-		"ci": {
-			"method": set_type.method,
-			"classes": list(CI_CLASSES),
-			"lots": ci_lots(set_type.method, getdate()),  # A-120: chọn tay lô chỉ thị
-		},
+		"ci": ci_block(set_type),
 		"label_type": printer["label_type"] if printer else (labels[0].name if labels else None),
 		"printer": printer,
 	}

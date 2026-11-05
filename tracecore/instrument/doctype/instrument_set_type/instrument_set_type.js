@@ -15,6 +15,7 @@ const TC_ST_COMPARE = "tracecore.v1.set_type.compare";
 const TC_ST_COUNT_SHEET = "tracecore.v1.set_type.count_sheet";
 const TC_ST_PACK_QUERY = "tracecore.v1.set_type.pack_type_query";
 const TC_ST_DEPARTMENT_QUERY = "tracecore.v1.set_type.department_query";
+const TC_ST_CI_QUERY = "tracecore.v1.set_type.ci_item_query"; // A-122: chỉ thị mặc định
 const TC_ST_CREATE = "tracecore.v1.set_type_admin.create";
 const TC_ST_SAVE_BOM = "tracecore.v1.set_type_admin.save_bom";
 const TC_ST_COPY = "tracecore.v1.set_type_admin.copy";
@@ -27,6 +28,7 @@ const TC_ST_HEADER_FIELDS = [
 	"method",
 	"department",
 	"default_pack_type",
+	"default_ci_item", // A-122
 	"shelf_life_days",
 	"is_implant",
 	"assembly_minutes",
@@ -1276,7 +1278,12 @@ frappe.ui.form.on("Instrument Set Type", {
 		// (frappe.client.validate_link cần quyền đó); server vẫn kiểm Link tồn tại và luật loại gói khi lưu.
 		frm.set_query("default_pack_type", () => ({ query: TC_ST_PACK_QUERY }));
 		frm.set_query("department", () => ({ query: TC_ST_DEPARTMENT_QUERY }));
-		["default_pack_type", "department"].forEach((fieldname) =>
+		// A-122: chỉ thị mặc định loại 5/6 đúng phương pháp của bộ (server lọc và kiểm lại khi lưu)
+		frm.set_query("default_ci_item", () => ({
+			query: TC_ST_CI_QUERY,
+			filters: { method: frm.doc.method || "" },
+		}));
+		["default_pack_type", "default_ci_item", "department"].forEach((fieldname) =>
 			frm.set_df_property(fieldname, "ignore_link_validation", 1)
 		);
 		// A-110: chỉ chương trình thường còn dùng của máy rửa, máy tiệt khuẩn; server kiểm lại khi lưu

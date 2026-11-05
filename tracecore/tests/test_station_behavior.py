@@ -94,6 +94,106 @@ class TestT4IndicatorLotPick(FrappeTestCase):
 		self.assertIn("No usable indicator lot", out["empty"])
 		self.assertNotIn("ci-pick", out["chosen"])
 
+	def test_lot_of_the_set_default_indicator_is_marked_but_not_picked(self):
+		"""A-122: lô của chỉ thị mặc định ghi "mặc định của bộ"; màn không tự chọn lô."""
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			t4.ctx.ci.default_item = "CI6";
+			t4.ctx.ci.lots[1].is_default = true;
+			t4.ctx.ci.lots[0].is_default = false;
+			const html = t4.ciHtml();
+			emit({html, ci: t4.ci || null, scanned});
+			""",
+		)
+		self.assertEqual(out["html"].count("default for this set"), 1)
+		self.assertLess(out["html"].index("Que CI 6"), out["html"].index("default for this set"))
+		self.assertIsNone(out["ci"])
+		self.assertEqual(out["scanned"], [])
+
+
+T4_PACK = """
+const t4 = new T4Packing(makeStation());
+const types = [
+	{item: "PK-TUI", item_name: "Túi ép", shelf_life_days: 180, material: "Sealed Pouch", is_default: true,
+		expected_expiry: "2027-05-04"},
+	{item: "PK-HOP", item_name: "Hộp hấp", shelf_life_days: 30, material: "Rigid Container", is_default: false,
+		expected_expiry: "2026-12-05"},
+	{item: "PK-LA", item_name: "Lá <nhôm>", shelf_life_days: 7, material: "", is_default: false},
+	{item: "PK-VKD", item_name: "Vải không dệt", shelf_life_days: 30, material: "Wrap", is_default: false},
+];
+t4.ctx = {pack_types: types};
+t4.refresh = () => {};
+"""
+
+
+class TestT4PackMaterialDropdown(FrappeTestCase):
+	"""A-122: loại gói ở T4 là droplist nhóm theo vật liệu, chọn sẵn loại gói mặc định của bộ."""
+
+	def test_dropdown_groups_by_material_and_selects_the_set_default(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_PACK
+			+ """
+			t4.packType = t4.defaultPackType(types);
+			emit({chosen: t4.packType, html: t4.packHtml()});
+			""",
+		)
+		html = out["html"]
+		self.assertEqual(out["chosen"], "PK-TUI")
+		self.assertIn('<select id="tc-t4-pack"', html)
+		self.assertNotIn('data-action="pack-type"', html)  # không còn hàng chip
+		order = [
+			html.index(f'label="{label}"')
+			for label in ("Rigid Container", "Sealed Pouch", "Wrap", "Unclassified")
+		]
+		self.assertEqual(order, sorted(order))
+		self.assertIn('value="PK-TUI" selected', html)
+		self.assertEqual(html.count(" selected"), 1)
+		self.assertIn("default for this set", html)
+		self.assertNotIn("Lá <nhôm>", html)  # tên được escape
+		self.assertIn("2027-05-04".split("-")[0], html)  # hạn dùng dự kiến của loại đang chọn
+
+	def test_choosing_another_pack_type_changes_it_and_unknown_is_ignored(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_PACK
+			+ """
+			t4.packType = "PK-TUI";
+			t4.onChange({matches: (sel) => sel === "#tc-t4-pack", value: "PK-VKD"});
+			const changed = t4.packType;
+			t4.onChange({matches: (sel) => sel === "#tc-t4-pack", value: "KHONG-CO"});
+			emit({changed, after: t4.packType});
+			""",
+		)
+		self.assertEqual(out["changed"], "PK-VKD")
+		self.assertEqual(out["after"], "PK-VKD")
+
+	def test_default_falls_back_to_first_row(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_PACK
+			+ """
+			const none = types.map((row) => ({...row, is_default: false}));
+			emit({first: t4.defaultPackType(none), empty: t4.defaultPackType([])});
+			""",
+		)
+		self.assertEqual(out["first"], "PK-TUI")
+		self.assertIsNone(out["empty"])
+
 
 PICKER_SHELL = """
 globalThis.esc = (value) => String(value == null ? "" : value).replace(/</g, "&lt;");
