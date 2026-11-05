@@ -126,7 +126,7 @@ def pack_types(set_type):
 	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng, có hạn lưu > 0, đúng phương pháp của bộ (A-97).
 
 	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days", "material", "is_default"}``; ``material`` là nhóm
-	vật liệu gói (A-121: ``Rigid Container`` / ``Sealed Pouch`` / ``Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng
+	vật liệu gói (A-122: ``Rigid Container`` / ``Sealed Pouch`` / ``Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng
 	droplist có nhóm. Loại gói mặc định của loại bộ (nếu còn dùng được) đứng đầu và có ``is_default``; các loại
 	khác theo tên.
 	"""

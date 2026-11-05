@@ -1,4 +1,4 @@
-"""A-121: điền nhóm vật liệu gói (`Item.tc_pack_material`) cho loại gói đã có để T4 dựng droplist có nhóm.
+"""A-122: điền nhóm vật liệu gói (`Item.tc_pack_material`) cho loại gói đã có để T4 dựng droplist có nhóm.
 
 Chỉ đụng Item nhóm `Packaging` còn để trống nhóm vật liệu: xét tiền tố mã trước (`PK-HOP` → hộp hấp, `PK-TUI` → túi ép,
 `PK-VKD`/`PK-XV`/`PK-VAI` → vải gói), rồi từ khóa trong tên. Không khớp thì để trống cho R10 phân nhóm tay. Item đã có nhóm

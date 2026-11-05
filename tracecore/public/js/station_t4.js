@@ -29,7 +29,7 @@ const T4_SCAN = "tracecore.v1.pack.scan";
 const T4_REQUEST_OVERRIDE = "tracecore.v1.par.override.request";
 // lỗi chặn vì hết cơ số: T4 hiện nút "Đề nghị ghi đè" (FEAT-032, FR-M8-04)
 const T4_PAR_CODES = ["PAR_EXCEEDED", "SET_END_OF_LIFE"];
-// A-121: nhóm vật liệu gói theo thứ tự hiện trong droplist (giá trị Item.tc_pack_material); rỗng = chưa phân nhóm
+// A-122: nhóm vật liệu gói theo thứ tự hiện trong droplist (giá trị Item.tc_pack_material); rỗng = chưa phân nhóm
 const T4_PACK_MATERIALS = [
 	{ value: "Rigid Container", label: () => __("Rigid Container") },
 	{ value: "Sealed Pouch", label: () => __("Sealed Pouch") },
@@ -256,7 +256,7 @@ class T4Packing {
 			this.reset();
 			this.viewKey = null;
 			this.ctx = res.context;
-			this.packType = this.defaultPackType(this.ctx.pack_types); // A-121: loại gói mặc định của bộ
+			this.packType = this.defaultPackType(this.ctx.pack_types); // A-122: loại gói mặc định của bộ
 		} else if (res.kind === "ci") {
 			this.ci = res.ci;
 		} else if (res.kind === "pack") {
@@ -459,7 +459,7 @@ class T4Packing {
 	}
 
 	defaultPackType(types) {
-		// A-121: chọn sẵn loại gói mặc định của loại bộ; không có thì dòng đầu như trước
+		// A-122: chọn sẵn loại gói mặc định của loại bộ; không có thì dòng đầu như trước
 		const rows = types || [];
 		const row = rows.find((type) => type.is_default) || rows[0];
 		return row ? row.item : null;
@@ -1509,7 +1509,7 @@ class T4Packing {
 			)}</p>`;
 		}
 		const chosen = types.find((row) => row.item === this.packType);
-		// A-121: một droplist, nhóm theo vật liệu gói (Hộp hấp → Túi ép → Vải gói → Chưa phân nhóm)
+		// A-122: một droplist, nhóm theo vật liệu gói (Hộp hấp → Túi ép → Vải gói → Chưa phân nhóm)
 		const groups = T4_PACK_MATERIALS.map((material) => {
 			const rows = types.filter((row) =>
 				material.value

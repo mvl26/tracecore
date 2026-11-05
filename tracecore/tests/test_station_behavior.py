@@ -111,7 +111,7 @@ t4.refresh = () => {};
 
 
 class TestT4PackMaterialDropdown(FrappeTestCase):
-	"""A-121: loại gói ở T4 là droplist nhóm theo vật liệu, chọn sẵn loại gói mặc định của bộ."""
+	"""A-122: loại gói ở T4 là droplist nhóm theo vật liệu, chọn sẵn loại gói mặc định của bộ."""
 
 	def test_dropdown_groups_by_material_and_selects_the_set_default(self):
 		out = run_js(
