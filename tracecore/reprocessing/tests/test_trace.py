@@ -146,6 +146,25 @@ class TestIssueNoteCriterion(TraceCase):
 		frappe.set_user(foreign)
 		self.assertEqual(trace.query(issue_note=note)["chains"], [])
 
+	def test_scanner_input_is_cleaned(self):
+		"""A-125: máy quét gõ số phiếu kèm khoảng trắng/Enter/tiền tố AIM; phiếu in theo A-124 chứa đường dẫn."""
+		note = self.note()
+		url = f"https://cssd.example/app/query-report/Pack%20Trace?issue_note={note}"
+		for raw in (f"  {note}\r\n", f"]Q1{note}", url):
+			self.assertEqual(trace.issue_note_code(raw), note, raw)
+			self.chain(trace.query(issue_note=raw))
+		self.assertEqual(trace.issue_note_code("  "), "")
+
+	def test_report_puts_the_issue_note_box_first_and_focuses_it(self):
+		import os
+
+		path = os.path.join(os.path.dirname(pack_trace.__file__), "pack_trace.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		filters = source[source.index("filters: [") :]
+		self.assertLess(filters.index('"issue_note"'), filters.index('"patient_code"'))
+		self.assertIn('get_filter("issue_note")', source)
+
 	def test_rpc_and_report_accept_the_issue_note(self):
 		from tracecore.v1 import trace as trace_api
 

@@ -6,11 +6,13 @@ thiết bị: cổng T1 đến T5 từ ``Step Gate Result``, T6 nhập kho, T7 c
 (``core.crypto.patient_hash``) và chỉ trả ở dạng che. R01/R02 xem mọi chuỗi, R08 chỉ chuỗi của khoa mình.
 """
 
+from urllib.parse import parse_qs, urlsplit
+
 import frappe
 from frappe import _
 from frappe.utils import add_days, format_datetime, formatdate, get_datetime, getdate
 
-from tracecore.core import crypto
+from tracecore.core import crypto, gs1
 from tracecore.reprocessing import cycle_time, washing
 
 MAX_CHAINS = 50
@@ -87,8 +89,20 @@ def _by_user(user):
 	return keys
 
 
+def issue_note_code(raw):
+	"""Số phiếu cấp phát từ chuỗi máy quét gõ vào ô Phiếu cấp phát (A-125).
+
+	Bỏ khoảng trắng, CR/LF, tiền tố AIM (``core.gs1.clean_scan``). Phiếu in theo A-124 có QR là đường dẫn
+	``…?issue_note=<số phiếu>``: lấy số phiếu trong đó.
+	"""
+	code = gs1.clean_scan(raw)
+	query = parse_qs(urlsplit(code).query) if "issue_note=" in code else {}
+	return (query.get("issue_note") or [code])[0].strip()
+
+
 def _by_issue_note(issue_note):
 	"""A-124: chuỗi của các gói trong phiếu cấp phát `issue_note` (QR trên phiếu); phiếu đã hủy không tính."""
+	issue_note = issue_note_code(issue_note)
 	if frappe.db.get_value("Issue Note", issue_note, "docstatus") in (None, 2):
 		return set()
 	packs = frappe.get_all("Issue Note Pack", filters={"parent": issue_note}, pluck="pack")

@@ -32,7 +32,8 @@
 .tc-in-footer, .tc-in-footer span { font-family: {{ tc.font_sans }}; color: {{ tc.muted }}; font-size: {{ tc.fs_xs }}; }
 </style>
 <div class="tc-in">
-	{#- A-124: one QR for the whole note -> Pack Trace filtered by this note (T1 receiving to T7 issuing of every set) #}
+	{#- A-124, A-125: one QR for the whole note holding the bare note number; scanned with a barcode scanner into the
+	    Issue Note box of Pack Trace (T1 receiving to T7 issuing of every set) #}
 	<table class="tc-head">
 		<tr>
 			<td>
@@ -41,7 +42,8 @@
 			</td>
 			<td class="tc-qr">
 				<img src="{{ cs.trace_qr | e }}" alt="{{ cs.name | e }}">
-				<span>{{ _("Scan to trace every set of this note", context=T) | e }}</span>
+				<span class="tc-code">{{ cs.name | e }}</span>
+				<span>{{ _("Scan into the Issue Note box of Pack Trace", context=T) | e }}</span>
 			</td>
 		</tr>
 	</table>
