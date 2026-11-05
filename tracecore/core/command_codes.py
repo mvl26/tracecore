@@ -170,6 +170,8 @@ SCREEN_QR = (
 
 # A-128: mã QR của mọi nút ở màn trạm (khớp `tcButtonCode` ở public/js/tc_scan_burst.js)
 BUTTON_CODE = re.compile(r"^CMD-BTN-[A-Z0-9][A-Z0-9_-]{0,47}(?:\.[1-9][0-9]?)?$")
+# A-129: mã toàn số màn trạm cấp cho từng nút trong phiên (khớp `TcQrAlias`), bộ gõ tiếng Việt không đổi được
+ALIAS_CODE = re.compile(r"^99-\d{4}$")
 QR_BATCH_LIMIT = 80
 
 
@@ -179,7 +181,7 @@ def _png_uri(code):
 
 
 def qr_images(codes):
-	"""``{mã: ảnh QR PNG data URI}`` cho mã nút đúng dạng (A-128): ``CMD-DO-<lệnh có thật>`` hoặc ``CMD-BTN-…``.
+	"""``{mã: ảnh QR PNG data URI}`` cho mã nút đúng dạng: ``CMD-DO-<lệnh có thật>``, ``CMD-BTN-…`` (A-128), ``99-NNNN`` (A-129).
 
 	Mã sai dạng bị bỏ (không báo lỗi: màn trạm chỉ không hiện QR cho nút đó); tối đa ``QR_BATCH_LIMIT`` mã mỗi lần.
 	"""
@@ -189,7 +191,11 @@ def qr_images(codes):
 			break
 		if not isinstance(code, str) or code in images:
 			continue
-		valid = BUTTON_CODE.match(code) or (code.startswith(DO_PREFIX) and code[len(DO_PREFIX) :] in COMMANDS)
+		valid = (
+			BUTTON_CODE.match(code)
+			or ALIAS_CODE.match(code)
+			or (code.startswith(DO_PREFIX) and code[len(DO_PREFIX) :] in COMMANDS)
+		)
 		if valid:
 			images[code] = _png_uri(code)
 	return images
