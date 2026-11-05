@@ -190,6 +190,11 @@ class TcPicker {
 		};
 		const department = this.kind === "set" ? this.shell.pickDepartment() : null;
 		if (department) args.department = department;
+		// A-123: gói đang mở để server xếp kệ Đề xuất / Trống lên trước
+		const screen = this.shell.screen;
+		const pack =
+			this.kind === "location" && screen && screen.openPack ? screen.openPack() : null;
+		if (pack) args.pack = pack;
 		if (this.kind === "batch") {
 			args.purpose = context.purpose || null;
 			args.equipment = context.equipment || null;
@@ -344,7 +349,7 @@ class TcPicker {
 					item
 				) => `<li><button type="button" class="tc-btn tc-pick-item" data-action="pick-item"
 					data-raw="${esc(item.raw || item.id)}"${this.reason ? "" : " disabled"}>
-					<span class="tc-mono">${esc(item.id)}</span>
+					<span class="tc-mono">${esc(item.id)}</span>${this.hintHtml(item)}
 					<span>${esc(this.itemText(item))}</span></button></li>`
 			)
 			.join("");
@@ -355,6 +360,15 @@ class TcPicker {
 				  }>${esc(__("Show more"))} (${this.items.length}/${this.total})</button>`
 				: "";
 		return `<ul class="tc-pick-list">${rows}</ul>${more}`;
+	}
+
+	// A-123: nhãn chữ cho kệ Đề xuất (cùng loại bộ) / Trống, không chỉ dựa vào màu
+	hintHtml(item) {
+		const hint = {
+			suggested: ["tc-badge-g", __("Suggested")],
+			empty: ["tc-badge-x", __("Empty")],
+		}[item.hint];
+		return hint ? `<span class="tc-badge ${hint[0]} tc-pick-hint">${esc(hint[1])}</span>` : "";
 	}
 
 	// phần sau mã trong nhãn "Mã – Tên – Khoa – thời điểm"
