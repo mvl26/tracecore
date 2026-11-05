@@ -121,10 +121,12 @@ function tcStationTitle(station) {
 }
 
 const STATION_ACTIVE_KEY = "tc-station-active";
-// A-128: nút không gắn QR: nút trạm/tab trên cùng (đã có trên tờ A4) và nút chụp/tải ảnh (phải thao tác trên màn)
+// A-128: nút không gắn QR: nút trạm/tab trên cùng (đã có trên tờ A4), nút chụp/tải ảnh (phải thao tác trên màn) và
+// phần Chọn tay (nút "Chọn tay" + bảng chọn tay: dùng khi máy quét không đọc được mã; người dùng thấy thừa 05/11/2026)
 const TC_QR_SKIP = {
-	actions: ["tc-switch-station", "tc-screen"],
+	actions: ["tc-switch-station", "tc-screen", "manual-pick"],
 	pattern: /photo|camera|capture|snapshot/,
+	containers: ".tc-picker",
 };
 // A-128: mã lệnh quét từ bất kỳ ô nào cũng chạy được
 const TC_COMMAND_CODE = /^(?:TR-\d{3}|CMD-(?:DO|TAB|BTN)-[A-Z0-9_.-]+|HOAN-THANH-NAP)$/;
@@ -1880,6 +1882,7 @@ class TraceCoreStation {
 			(button) =>
 				!TC_QR_SKIP.actions.includes(button.dataset.action) &&
 				!TC_QR_SKIP.pattern.test(button.dataset.action) &&
+				!button.closest(TC_QR_SKIP.containers) &&
 				button.getClientRects().length > 0
 		);
 	}
