@@ -124,7 +124,7 @@ def test_t4_happy_path_within_three_taps(t4_page, t4_demo):
 	expect(confirm_all).to_be_enabled(timeout=20000)  # D1: bật khi lưới BOM đã hiển thị đủ và ảnh đã tải
 	# FEAT-014 FR-M1-01.6: lưới BOM dùng thumbnail riêng tư (không tải ảnh gốc), ảnh tải được với quyền R04
 	photos = page.evaluate(
-		"""() => Array.from(document.querySelectorAll('.tc-ins img'))
+		"""() => Array.from(document.querySelectorAll('.tc-bom-row img'))
 			.map((img) => ({src: img.getAttribute('src'), width: img.naturalWidth, height: img.naturalHeight}))"""
 	)
 	assert photos, "lưới BOM không có ảnh"

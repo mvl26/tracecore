@@ -161,8 +161,10 @@ class TestShelfLife(IsolatedTestCase):
 		disabled = make_pack_type("Gói tắt SLM", 90, disabled=1)
 		set_type = make_set_type("SLM", default_pack_type=tyvek, shelf_life_days=14)
 
+		keys = ("item", "item_name", "shelf_life_days")  # A-122: packing.pack_types thêm material, is_default
+
 		def as_set(rows):
-			return {tuple(sorted(row.items())) for row in rows}
+			return {tuple((key, row[key]) for key in keys) for row in rows}
 
 		self.assertEqual(as_set(shelf_life.usable_pack_types()), as_set(packing.pack_types(set_type.name)))
 		for row in shelf_life.usable_pack_types():
