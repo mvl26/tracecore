@@ -139,17 +139,19 @@ def set_units(
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @station_session(*ALL_ROLES)
-def locations(station, screen=None, q=None, start=0, page_length=20, client_ts=None, token=None):
-	"""Kệ kho vô khuẩn đang dùng để chọn tay ở màn Lưu kho T6 (A-120); màn khác không có danh sách này."""
+def locations(station, screen=None, q=None, start=0, page_length=20, pack=None, client_ts=None, token=None):
+	"""Kệ kho vô khuẩn để chọn tay ở màn Lưu kho T6 (A-120); `pack` là Cycle ID gói đang mở để xếp kệ Đề xuất /
+	Trống lên trước (A-123). Màn khác không có danh sách này."""
 	timestamp = parse_client_ts(client_ts)
 	step, functions = _screen(screen)
 	require_any_role(SUPERVISOR, *STEP_ROLES.get(step, ()))
 	q = _text(q, "q")
+	pack = _text(pack, "pack")
 
 	def call():
 		if step != "T6":
 			raise _wrong_step(step)
-		return {"ok": True, **pick_list.locations(q, start, page_length)}
+		return {"ok": True, **pick_list.locations(q, start, page_length, pack=pack)}
 
 	return run_at_step(functions or None, station, timestamp, call)
 

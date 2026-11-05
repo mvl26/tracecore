@@ -240,6 +240,31 @@ class TestPickerShelves(FrappeTestCase):
 		self.assertEqual(out["without"], "set")
 		self.assertEqual(out["noTabs"], "")
 
+	def test_shelf_list_sends_open_pack_and_marks_suggested_and_empty(self):
+		"""A-123: gửi Cycle ID gói đang mở; kệ Đề xuất / Trống có nhãn chữ, không chỉ màu."""
+		out = run_js(
+			self,
+			["public/js/station_picker.js"],
+			[["TcPicker"]],
+			PICKER_SHELL
+			+ """
+			shell.screen.openPack = () => "CY-1";
+			picker.kind = picker.defaultKind();
+			await picker.load(true);
+			picker.reason = "Scanner broken";
+			picker.items = [
+				{id: "KE-1", raw: "KE-1", label: "A", hint: "suggested", same: 2},
+				{id: "KE-2", raw: "KE-2", label: "B", hint: "empty"},
+				{id: "KE-3", raw: "KE-3", label: "C", hint: null},
+			];
+			emit({args: calls[0][1], html: picker.listHtml()});
+			""",
+		)
+		self.assertEqual(out["args"]["pack"], "CY-1")
+		self.assertEqual(out["html"].count("tc-pick-hint"), 2)
+		self.assertIn("Suggested", out["html"])
+		self.assertIn("Empty", out["html"])
+
 
 T1_ITEM = """
 const t1 = new T1Receiving(makeStation());
