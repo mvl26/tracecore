@@ -87,10 +87,20 @@ def _by_user(user):
 	return keys
 
 
-def _candidates(patient_code, set_id, cycle_id, load, equipment, user, start, end):
+def _by_issue_note(issue_note):
+	"""A-124: chuỗi của các gói trong phiếu cấp phát `issue_note` (QR trên phiếu); phiếu đã hủy không tính."""
+	if frappe.db.get_value("Issue Note", issue_note, "docstatus") in (None, 2):
+		return set()
+	packs = frappe.get_all("Issue Note Pack", filters={"parent": issue_note}, pluck="pack")
+	return _keys(_packs({"name": ["in", packs]})) if packs else set()
+
+
+def _candidates(patient_code, set_id, cycle_id, load, equipment, user, start, end, issue_note=None):
 	sets = []
 	if patient_code:
 		sets.append(_by_patient(patient_code))
+	if issue_note:
+		sets.append(_by_issue_note(issue_note))
 	if cycle_id:
 		sets.append(_keys(_packs({"name": cycle_id})))
 	if set_id:
@@ -325,15 +335,19 @@ def query(
 	user=None,
 	from_date=None,
 	to_date=None,
+	issue_note=None,
 ):
-	"""Chuỗi sự kiện theo tiêu chí (FR-M2-19); trả ``{"chains": [...], "suggestion": str | None}``."""
-	if not any((patient_code, set_id, cycle_id, load, equipment, user, from_date, to_date)):
+	"""Chuỗi sự kiện theo tiêu chí (FR-M2-19; A-124 thêm số phiếu cấp phát); trả ``{"chains", "suggestion"}``."""
+	if not any((patient_code, set_id, cycle_id, load, equipment, user, from_date, to_date, issue_note)):
 		frappe.throw(_("Enter at least one search criterion."))
 	scope = _scope()
 	start = get_datetime(getdate(from_date)) if from_date else get_datetime("1900-01-01")
 	end = get_datetime(add_days(getdate(to_date), 1)) if to_date else get_datetime("2999-01-01")
 	chains = []
-	for set_unit, cycle_no in _candidates(patient_code, set_id, cycle_id, load, equipment, user, start, end):
+	candidates = _candidates(
+		patient_code, set_id, cycle_id, load, equipment, user, start, end, issue_note=issue_note
+	)
+	for set_unit, cycle_no in candidates:
 		chain = _chain(set_unit, cycle_no)
 		if scope is not None and chain["department"] != scope:
 			continue

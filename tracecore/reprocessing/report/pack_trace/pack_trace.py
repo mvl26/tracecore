@@ -8,7 +8,18 @@ from frappe import _
 
 from tracecore.reprocessing import trace
 
-CRITERIA = ("patient_code", "set_id", "cycle_id", "load", "equipment", "user", "from_date", "to_date")
+# A-124: issue_note = số phiếu cấp phát (QR trên phiếu mở báo cáo này với bộ lọc đó)
+CRITERIA = (
+	"patient_code",
+	"set_id",
+	"cycle_id",
+	"load",
+	"equipment",
+	"user",
+	"from_date",
+	"to_date",
+	"issue_note",
+)
 
 
 # (fieldname, nhãn gốc, kiểu, rộng, options); nhãn dịch với ngữ cảnh "Pack Trace" để không đè bản dịch app khác

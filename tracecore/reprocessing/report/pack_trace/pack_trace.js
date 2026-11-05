@@ -16,6 +16,9 @@ frappe.query_reports["Pack Trace"] = {
 		{ fieldname: "patient_code", label: __("Patient Code"), fieldtype: "Data" },
 		{ fieldname: "set_id", label: __("Set ID"), fieldtype: "Link", options: "Set Unit" },
 		{ fieldname: "cycle_id", label: __("Cycle ID"), fieldtype: "Link", options: "Pack" },
+		// A-124: QR trên phiếu cấp phát mở báo cáo với ?issue_note=<số phiếu>. Kiểu Data (không Link) vì R08 không có
+		// quyền đọc Issue Note: kiểm Link phía client sẽ xóa giá trị; server vẫn giới hạn chuỗi theo khoa.
+		{ fieldname: "issue_note", label: __("Issue Note"), fieldtype: "Data" },
 		{
 			fieldname: "load",
 			label: __("Sterilization Load"),
