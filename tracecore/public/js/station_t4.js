@@ -420,9 +420,9 @@ class T4Packing {
 
 	markLine(box, checked) {
 		box.checked = checked;
-		const card = box.closest(".tc-ins");
-		card.classList.toggle("is-done", checked);
-		card.querySelector(".tc-ins-state").textContent = this.lineState(checked);
+		const row = box.closest("tr");
+		row.classList.toggle("is-done", checked);
+		row.querySelector(".tc-ins-state").textContent = this.lineState(checked);
 	}
 
 	toggleLine(box) {
@@ -1389,27 +1389,30 @@ class T4Packing {
 				const label = __("Placed correctly at position {0} as in the photo", [
 					line.position,
 				]);
-				return `<label class="tc-ins${checked ? " is-done" : ""}${
+				// A-121: mỗi dụng cụ một hàng của bảng; ô tick và chữ trạng thái nằm trong cùng nhãn
+				return `<tr class="tc-bom-row${checked ? " is-done" : ""}${
 					short ? " is-short" : ""
 				}">
-					${this.photoHtml(line.thumbnail || line.image, line.instrument_name)}
-					<span class="tc-ins-text">
-						<span class="tc-ins-name">${esc(line.instrument_name)}</span>
-						<span class="tc-ins-pos">${esc(
-							__("Position {0} · × {1} · {2}", [
-								line.position,
-								line.qty,
-								line.instrument,
-							])
-						)}</span>
+					<td>${index + 1}</td>
+					<td>${esc(line.position)}</td>
+					<td><span class="tc-t1-line-name">${this.photoHtml(
+						line.thumbnail || line.image,
+						line.instrument_name
+					)}<span class="tc-ins-text"><span class="tc-ins-name">${esc(
+					line.instrument_name
+				)}</span><span class="tc-ins-pos tc-mono">${esc(
+					line.instrument
+				)}</span></span></span></td>
+					<td>${esc(line.qty)}</td>
+					<td><label class="tc-bom-check">
+						<input type="checkbox" class="tc-check" data-line="${index}"${checked ? " checked" : ""}${
+					short ? " disabled" : ""
+				} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
 						<span class="tc-ins-state">${esc(
 							short ? __("Missing – confirmed by R02") : this.lineState(checked)
 						)}</span>
-					</span>
-					<input type="checkbox" class="tc-check" data-line="${index}"${checked ? " checked" : ""}${
-					short ? " disabled" : ""
-				} aria-label="${esc(`${line.instrument_name}: ${label}`)}">
-				</label>`;
+					</label></td>
+				</tr>`;
 			})
 			.join("");
 		const tray = ctx.tray_image
@@ -1418,7 +1421,15 @@ class T4Packing {
 				<figcaption>${esc(__("Arranged set photo"))}</figcaption>
 			</figure>`
 			: "";
-		const grid = lines || `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		const grid = lines
+			? `<table class="tc-t2-table tc-bom-table"><thead><tr>
+					<th scope="col">${esc(__("No."))}</th>
+					<th scope="col">${esc(__("Position in set"))}</th>
+					<th scope="col">${esc(__("Instrument name"))}</th>
+					<th scope="col">${esc(__("Quantity in set"))}</th>
+					<th scope="col">${esc(__("Confirmation"))}</th>
+				</tr></thead><tbody>${lines}</tbody></table>`
+			: `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
 		return `<section class="tc-t4-block">
 			<h3>${esc(__("Set components (BOM v{0})", [ctx.bom_version]))}</h3>
 			<div class="tc-bom${tray ? " has-tray" : ""}">${tray}<div class="tc-inst">${grid}</div></div>
