@@ -356,6 +356,35 @@ def _test_pack_lot(run):
 	)
 
 
+def _test_pack_item(equipment, test_type, run):
+	"""``(vật tư Gói test, chương trình test)`` của test (A-130): dòng Gói test của lần chạy, không có thì của chương trình
+	test đang gắn; test không có vật tư Gói test → ``(None, chương trình hoặc None)``."""
+	program = test_program(equipment, test_type) if test_type in RUN_TESTS else None
+	if run:
+		item = frappe.db.get_value(
+			run_consumables.CHILD, {"parent": run, "parenttype": "Daily Test", "role": "Test Pack"}, "item"
+		)
+		if item:
+			return item, frappe.db.get_value("Daily Test", run, "program") or program
+	if program:
+		for line in run_consumables.lines_of(program):
+			if line.get("role") == "Test Pack":
+				return line["item"], program
+	return None, program
+
+
+def _run_lots(equipment, tests):
+	"""``{loại test: lô Gói test}`` của các lần chạy đã kết thúc mà chưa ghi kết quả (A-130: màn chọn sẵn lô này)."""
+	out = {}
+	for test in tests:
+		latest = _latest_run(equipment, test)
+		if latest and latest.run_status == RUN_ENDED and not latest.result:
+			lot = _test_pack_lot(latest.name)
+			if lot:
+				out[test] = lot
+	return out
+
+
 def record(
 	equipment,
 	test_type,
@@ -388,6 +417,13 @@ def record(
 	run = _ended_run(machine.name, test_type) if test_type in RUN_TESTS else None
 	# A-112 D5: không gõ lô thì lấy lô của dòng Gói test đã chọn lúc Bắt đầu test; mã quét trên hộp đọc ra số lô
 	lot = lots.lot_code(lot) or _test_pack_lot(run)
+	pack_item, program = _test_pack_item(machine.name, test_type, run)
+	if pack_item:
+		# A-130: có vật tư Gói test thì chỉ nhận lô của đúng vật tư đó, chưa tắt, còn hạn, có tồn ở bệnh viện của máy
+		if not lot:
+			raise _invalid(_("Choose or scan the lot of the test pack."))
+		checked = lots.check(pack_item, lot, company=run_consumables.company_of(program))
+		lot, lot_expiry = checked["batch"], checked["expiry_date"]
 	# lô trùng Batch của kho thì liên kết và hạn theo Batch (D2); lô khác giữ làm ghi chú với hạn đã gõ
 	batch = frappe.db.get_value("Batch", lot, ["name", "expiry_date"], as_dict=True) if lot else None
 	if batch and batch.expiry_date:
@@ -692,6 +728,7 @@ def overview(station=None, include=None):
 		row["run_tests"] = [test for test in TESTS[row.equipment_type] if test in RUN_TESTS]
 		row["runs"] = _open_runs(row.name, row["run_tests"])
 		row["test_programs"] = _test_programs(row.name, row["run_tests"])
+		row["run_lots"] = _run_lots(row.name, row["run_tests"])  # A-130: lô Gói test chọn sẵn ở form kết quả
 		row["ready_to_load"] = cint(
 			row.status == "Ready"
 			and not busy

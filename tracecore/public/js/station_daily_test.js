@@ -19,6 +19,11 @@ function dtDateTime(iso) {
 	return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : "-";
 }
 
+function dtDate(iso) {
+	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+	return m ? `${m[3]}/${m[2]}/${m[1]}` : "-";
+}
+
 function dtTestLabel(type) {
 	return (
 		{
@@ -74,6 +79,35 @@ class DailyTestScreen {
 		return ((machine && machine.test_programs) || {})[this.form.test_type] || null;
 	}
 
+	// A-130: vật tư Gói test của chương trình test đang chọn (kèm lô gợi ý hạn gần trước), hoặc null
+	testPack(machine) {
+		const program = this.testProgram(machine);
+		return (
+			((program && program.consumables) || []).find((line) => line.role === "Test Pack") ||
+			null
+		);
+	}
+
+	// A-130: lô gói thử đang chọn: lô đã chạm/quét, rồi lô dùng lúc Bắt đầu test, rồi lô hạn gần nhất
+	chosenLot(machine) {
+		const pack = this.testPack(machine);
+		if (!pack) return this.form.lot;
+		const first = (pack.lots || [])[0];
+		return (
+			this.form.lot ||
+			((machine && machine.run_lots) || {})[this.form.test_type] ||
+			(first ? first.batch : "")
+		);
+	}
+
+	// form ghi kết quả đang mở (test đã kết thúc, hoặc test ghi thẳng không cần chạy máy)
+	resultFormOpen(machine) {
+		const type = this.form.test_type;
+		if (!machine || !type) return false;
+		const run = (machine.runs || {})[type];
+		return !((machine.run_tests || []).includes(type) && run !== "Ended");
+	}
+
 	clearSession() {
 		this.pending = null;
 		this.busy = null;
@@ -90,6 +124,14 @@ class DailyTestScreen {
 		if (!raw) return this.station.focus();
 		if (this.station.isOffline()) return this.station.setOffline(true);
 		const match = /TB-\d{4}/.exec(raw.toUpperCase());
+		// A-130: form kết quả đang mở và test có vật tư Gói test thì mã quét không phải mã máy là nhãn lô gói thử
+		// (nhãn QR của lô chứa đúng số lô); máy chủ kiểm lô khi ghi kết quả
+		const machine = this.machine();
+		if (!match && this.resultFormOpen(machine) && this.testPack(machine)) {
+			this.form.lot = raw;
+			this.notice = null;
+			return this.show();
+		}
 		if (!match) {
 			return this.blocked({
 				title: __("Invalid code"),
@@ -293,14 +335,16 @@ class DailyTestScreen {
 				action: __("Choose the missing items, then record the test."),
 			});
 		}
+		// A-130: có vật tư Gói test thì gửi lô đang chọn, hạn lấy theo lô ở máy chủ
+		const pack = this.testPack(this.machine());
 		this.request(
 			DT_RECORD,
 			{
 				equipment: this.selected,
 				test_type: form.test_type,
 				result: form.result,
-				lot: form.lot,
-				lot_expiry: form.lot_expiry,
+				lot: this.chosenLot(this.machine()),
+				lot_expiry: pack ? "" : form.lot_expiry,
 				photo: form.photo,
 				note: form.note,
 				station: this.station.station,
@@ -322,7 +366,15 @@ class DailyTestScreen {
 						? __("Do not load this machine.")
 						: __("Scan the next machine."),
 				};
-				this.form = { ...this.form, result: "", test_type: "", note: "", photo: "" };
+				this.form = {
+					...this.form,
+					result: "",
+					test_type: "",
+					note: "",
+					photo: "",
+					lot: "",
+					lot_expiry: "",
+				};
 				this.load();
 			}
 		);
@@ -368,14 +420,23 @@ class DailyTestScreen {
 			retry: () => this.retry(),
 			"dt-back": () => this.backToLoad(),
 			"dt-select": () => {
+				if (this.selected !== data.machine) this.form.lot = "";
 				this.selected = data.machine;
 				this.scrollToForm = true;
 				this.notice = null;
 				this.show();
 			},
 			"dt-type": () => {
-				if (this.form.test_type !== data.value) TcRunConsumables.reset(this.form);
+				if (this.form.test_type !== data.value) {
+					TcRunConsumables.reset(this.form);
+					this.form.lot = "";
+				}
 				this.form.test_type = data.value;
+				this.show();
+			},
+			// A-130: chạm (hoặc quét QR cạnh) nút lô gói thử để chọn lô đó
+			"dt-lot": () => {
+				this.form.lot = data.batch || "";
 				this.show();
 			},
 			"dt-result": () => {
@@ -640,8 +701,7 @@ class DailyTestScreen {
 				${this.chip("dt-result", "Pass", __("Pass", null, "Step Gate Result"), form.result === "Pass")}
 				${this.chip("dt-result", "Fail", __("Fail", null, "Step Gate Result"), form.result === "Fail")}
 			</div>
-			${field("lot", __("Test pack lot"), "text")}
-			${field("lot_expiry", __("Lot expiry date"), "date")}
+			${this.lotHtml(machine, field)}
 			${field("note", __("Note", null, "Daily Test"), "text")}
 			<div class="tc-field"><label for="tc-dt-photo">${esc(__("Test result photo"))}</label>
 				<input id="tc-dt-photo" type="file" accept="image/*" capture="environment"${
@@ -656,6 +716,50 @@ class DailyTestScreen {
 				}
 			</div>
 			${button("dt-record", __("Record the daily test"))}`;
+	}
+
+	// A-130: lô gói thử: có vật tư Gói test thì các lô gợi ý (hạn gần trước) là nút để chạm, quét nhãn lô cũng được;
+	// không có (chưa gắn chương trình test) thì giữ ô gõ số lô và hạn lô như cũ
+	lotHtml(machine, field) {
+		const pack = this.testPack(machine);
+		if (!pack) {
+			return `${field("lot", __("Test pack lot"), "text")}
+				${field("lot_expiry", __("Lot expiry date"), "date")}`;
+		}
+		const chosen = this.chosenLot(machine);
+		const lots = pack.lots || [];
+		const known = lots.some((lot) => lot.batch === chosen);
+		const buttons = lots
+			.map((lot) => {
+				const on = lot.batch === chosen;
+				return `<button type="button" class="tc-chip" data-action="dt-lot" data-batch="${esc(
+					lot.batch
+				)}" aria-pressed="${on ? "true" : "false"}">${
+					on ? '<span aria-hidden="true">&#10003; </span>' : ""
+				}<span class="tc-mono">${esc(lot.batch)}</span> · ${esc(
+					__("Expiry: {0}", [dtDate(lot.expiry_date)])
+				)}</button>`;
+			})
+			.join("");
+		const scanned =
+			chosen && !known
+				? `<p class="tc-t4-ok"><span aria-hidden="true">&#10003;</span> ${esc(
+						__("Scanned lot: {0}", [chosen])
+				  )}</p>`
+				: "";
+		const empty = lots.length
+			? ""
+			: `<p class="tc-t4-todo">${esc(
+					__("No usable lot of {0} is in stock. Ask R09 to receive one.", [
+						pack.item_name || pack.item,
+					])
+			  )}</p>`;
+		return `<div class="tc-field"><span>${esc(
+			__("Test pack lot ({0})", [pack.item_name || pack.item])
+		)}</span>
+			<div class="tc-chips" role="group" aria-label="${esc(__("Test pack lot"))}">${buttons}</div>
+			${scanned}${empty}
+			<p class="tc-hint">${esc(__("Tap a lot, or scan the QR label of the lot."))}</p></div>`;
 	}
 
 	chip(action, value, label, active) {
