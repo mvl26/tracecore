@@ -1824,7 +1824,9 @@ class TraceCoreStation {
 		if (!this.nextOffer || !this.nextOffer.station) return false;
 		const code = (raw || "").trim().toUpperCase();
 		if (!/^TR-\d{3}$/.test(code)) {
-			this.setNextOffer(null); // quét mã khác (bộ, thẻ…): bỏ đề nghị sang trạm kế
+			// quét mã nút/mã lệnh (A-119, A-128, A-129: vd QR "In nhãn" sau khi đóng gói) là bấm nút của bước vừa xong:
+			// giữ đề nghị sang trạm kế. Chỉ mã dữ liệu (bộ, gói, thẻ…) mới bỏ đề nghị.
+			if (!TC_COMMAND_CODE.test(code)) this.setNextOffer(null);
 			return false;
 		}
 		if (code === this.nextOffer.station) {
