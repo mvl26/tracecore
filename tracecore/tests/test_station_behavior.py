@@ -201,6 +201,39 @@ class TestQrAllButtons(FrappeTestCase):
 		self.assertIn("getClientRects", press)  # nút phải đang hiện lúc bấm theo mã
 
 
+class TestNextStationOfferKept(FrappeTestCase):
+	"""Xong T4 không còn ô sang T5 (05/11/2026): quét QR nút (vd In nhãn) bị coi là "mã khác" nên xóa đề nghị."""
+
+	def run_offer(self, raw):
+		return run_js(
+			self,
+			[BURST, "ui/page/station/station.js"],
+			[["TC_SCAN_FAST_MS"], ["TraceCoreStation"]],
+			f"""
+			const self = {{
+				nextOffer: {{station: "TR-005", label: "T5 Sterilization"}},
+				input: {{value: ""}},
+				switched: null,
+				setNextOffer(offer) {{ this.nextOffer = offer; }},
+				switchStation(code) {{ this.switched = code; }},
+			}};
+			const handled = TraceCoreStation.prototype.handleNextStationScan.call(self, {raw!r});
+			emit({{handled, kept: Boolean(self.nextOffer), switched: self.switched}});
+			""",
+		)
+
+	def test_button_and_command_codes_keep_the_offer(self):
+		for raw in ("99-0007", "CMD-BTN-T4-LABEL-PDF", "CMD-DO-PRINT-LABEL", "HOAN-THANH-NAP"):
+			out = self.run_offer(raw)
+			self.assertEqual((out["handled"], out["kept"]), (False, True), raw)
+
+	def test_data_codes_drop_it_and_the_next_station_code_switches(self):
+		out = self.run_offer("9520000DEMOT4S000006")
+		self.assertEqual((out["handled"], out["kept"]), (False, False))
+		out = self.run_offer("TR-005")
+		self.assertEqual((out["handled"], out["switched"]), (True, "TR-005"))
+
+
 class TestQrNumericAlias(FrappeTestCase):
 	"""A-129: QR trên màn chứa mã toàn số `99-NNNN` (bộ gõ tiếng Việt không đổi được); báo khi chuỗi quét có dấu."""
 
