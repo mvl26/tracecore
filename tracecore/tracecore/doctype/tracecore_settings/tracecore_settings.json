@@ -246,7 +246,7 @@
   },
   {
    "default": "1",
-   "description": "Show a small command QR next to the confirm and complete buttons of the station screen. Scanning it with the barcode scanner presses that button (A-127). Not shown on PDA.",
+   "description": "Show a small command QR next to the confirm and complete buttons of the station screen. Scanning it with the barcode scanner presses that button. Not shown on PDA.",
    "fieldname": "show_command_qr",
    "fieldtype": "Check",
    "label": "Command QR next to Buttons"
