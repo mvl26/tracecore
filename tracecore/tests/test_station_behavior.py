@@ -106,7 +106,7 @@ const shell = {
 	isOffline: () => false, pickDepartment: () => null,
 	rpc: async (method, args) => {
 		calls.push([method, args]);
-		return {items: [{id: "KE-0001", raw: "KE-0001", label: "KE-0001 – A-1-1-1"}], total: 1};
+		return {items: [{id: "KE-0001", raw: "KE-0001", label: "KE-0001 - A-1-1-1"}], total: 1};
 	},
 };
 const picker = new TcPicker(shell);
