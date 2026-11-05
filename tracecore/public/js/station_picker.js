@@ -305,10 +305,14 @@ class TcPicker {
 			}" data-action="pick-kind" data-kind="${kind}" aria-pressed="${
 				this.kind === kind
 			}">${esc(label)}</button>`;
-		const first = locations ? tab("location", __("Shelves")) : tab("equipment", __("Equipment"));
+		const first = locations
+			? tab("location", __("Shelves"))
+			: tab("equipment", __("Equipment"));
 		return `<div class="tc-picker-kinds" role="group" aria-label="${esc(
 			__("What to choose")
-		)}">${first}${context ? tab("batch", context.label) : tab("set", __("Sets and packs"))}</div>`;
+		)}">${first}${
+			context ? tab("batch", context.label) : tab("set", __("Sets and packs"))
+		}</div>`;
 	}
 
 	listHtml() {

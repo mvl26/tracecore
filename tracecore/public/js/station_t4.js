@@ -1468,7 +1468,9 @@ class T4Packing {
 		const disabled = t4Disabled(Boolean(this.busy));
 		const buttons = lots
 			.map(
-				(lot) => `<button type="button" class="tc-btn tc-btn-secondary tc-ci-lot" data-action="ci-pick"
+				(
+					lot
+				) => `<button type="button" class="tc-btn tc-btn-secondary tc-ci-lot" data-action="ci-pick"
 					data-batch="${esc(lot.batch)}"${disabled}>
 					<span class="tc-mono">${esc(lot.batch)}</span>
 					<span>${esc(lot.item_name || lot.item)} · ${esc(__("class {0}", [lot.ci_class]))} · ${esc(
