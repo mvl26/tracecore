@@ -1611,11 +1611,21 @@ html:has(.tc-work) {
 	gap: var(--tc-touch-gap);
 }
 
-.tc-t3-count {
-	min-width: var(--tc-touch-min);
-	color: var(--tc-text-heading);
+.tc-t3-actual {
+	display: block;
+	width: calc(var(--tc-touch-min) * 1.75);
+	min-height: var(--tc-touch-min);
+	margin-bottom: var(--tc-sp-1);
+	padding: 0 var(--tc-sp-2);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-sm);
 	font-size: var(--tc-fs-lg);
-	text-align: center;
+}
+
+@media (max-width: 480px) {
+	.tc-t3-actual {
+		width: 100%;
+	}
 }
 
 .tc-t3-lock {

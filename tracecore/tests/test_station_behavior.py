@@ -1236,6 +1236,13 @@ class TestT3Layout(FrappeTestCase):
 		self.assertEqual(out, [["lines", 60]])
 
 
+T3_TYPE = """
+const typed = (code, value) => ({target: {
+	matches: (selector) => selector === ".tc-t3-actual", dataset: {instrument: code}, value,
+}});
+"""
+
+
 class TestT3VarianceForm(FrappeTestCase):
 	"""#1842: nút trên dòng đóng biểu mẫu cũ; lỗi lưu biểu mẫu hiện ngay tại biểu mẫu."""
 
@@ -1258,12 +1265,12 @@ class TestT3VarianceForm(FrappeTestCase):
 			self.run_t3('t3.onAction("t3-full", {dataset: {instrument: "I-1"}}); emit({f: t3.form});')["f"]
 		)
 
-	def test_stepping_back_to_the_bom_closes_the_open_form(self):
-		out = self.run_t3('t3.onAction("t3-inc", {dataset: {instrument: "I-1"}}); emit({f: t3.form});')
+	def test_typing_the_bom_quantity_closes_the_open_form(self):
+		out = self.run_t3(T3_TYPE + 't3.onChange(typed("I-1", "2")); emit({f: t3.form});')
 		self.assertIsNone(out["f"])
 
-	def test_stepping_away_from_the_bom_updates_the_form_quantity(self):
-		out = self.run_t3('t3.onAction("t3-dec", {dataset: {instrument: "I-1"}}); emit(t3.form);')
+	def test_typing_another_quantity_updates_the_form_quantity(self):
+		out = self.run_t3(T3_TYPE + 't3.onChange(typed("I-1", "0")); emit(t3.form);')
 		self.assertEqual(out["qty"], 0)
 
 	def test_form_error_is_rendered_at_the_form(self):
@@ -1869,11 +1876,46 @@ class TestT3BomTable(FrappeTestCase):
 		self.assertEqual(body.count("<tr"), 2)
 		self.assertNotRegex(out, r'class="tc-ins[ "]')
 		self.assertIn("Keo &lt;2&gt;", body)
-		for action in ("t3-dec", "t3-inc", "t3-full", "t3-variance", "t3-damage"):
+		for action in ("t3-full", "t3-variance", "t3-damage"):
 			self.assertEqual(body.count(f'data-action="{action}"'), 2, action)
+		# ô nhập số lượng thực tế thay cặp nút -/+ (như T1); dòng chưa đếm để trống
+		for gone in ("t3-dec", "t3-inc", "tc-t3-count"):
+			self.assertNotIn(gone, out)
+		self.assertRegex(body, r'class="tc-t3-actual"[^>]*data-instrument="I-1"[^>]*value="2"')
+		self.assertRegex(body, r'class="tc-t3-actual"[^>]*data-instrument="I-2"[^>]*value=""')
 		self.assertIn('data-instrument="I-2"', body)
 		self.assertIn('data-action="t3-all"', out)
 		self.assertIn('data-region="tally"', out)
+
+	def test_typing_the_bom_quantity_records_enough_and_another_opens_the_form(self):
+		out = self.run_t3(
+			T3_TYPE
+			+ """
+			t3.asm = ASM;
+			const sent = [];
+			t3.request = (name, args) => sent.push(args);
+			t3.onChange(typed("I-2", "2"));
+			const afterBom = {sent: sent.slice(), form: t3.form};
+			t3.onChange(typed("I-2", "1"));
+			const afterOther = {sent: sent.slice(), form: t3.form};
+			t3.form = null;
+			t3.onChange(typed("I-2", ""));
+			t3.onChange(typed("I-2", "-3"));
+			emit({afterBom, afterOther, ignored: {sent: sent.length, form: t3.form}});
+			"""
+		)
+		self.assertEqual(out["afterBom"]["sent"], [{"assembly": "A-1", "instrument": "I-2", "actual_qty": 2}])
+		self.assertIsNone(out["afterBom"]["form"])
+		self.assertEqual(len(out["afterOther"]["sent"]), 1)  # không ghi dòng khi khác BOM
+		self.assertEqual(out["afterOther"]["form"]["kind"], "variance")
+		self.assertEqual(out["afterOther"]["form"]["qty"], 1)
+		self.assertEqual(out["ignored"], {"sent": 1, "form": None})
+
+	def test_input_shows_the_open_form_quantity_for_that_line(self):
+		out = self.run_t3(
+			't3.asm = ASM; t3.request = () => {}; t3.openVariance("I-1", 1); emit(t3.linesHtml());'
+		)
+		self.assertRegex(out, r'data-instrument="I-1"[^>]*value="1"')
 
 	def test_row_state_has_text_and_a_class_per_status(self):
 		out = self.run_t3(
