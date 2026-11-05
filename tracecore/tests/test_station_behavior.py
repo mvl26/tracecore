@@ -104,6 +104,84 @@ class TestScanBurst(FrappeTestCase):
 		self.assertIn("requestSubmit()", source)
 
 
+KEY_CLOCK = """
+let now = 0;
+const timers = [];
+const got = [];
+const keys = new TcKeyBurst((text, start) => got.push({text, start}), {
+	now: () => now,
+	schedule: (fn, ms) => { timers.push({fn, at: now + ms}); return timers.length; },
+	cancel: (id) => { if (id) timers[id - 1].fn = null; },
+});
+const press = (text, gap, target = "qty") => {
+	const handled = [];
+	for (const ch of text) { now += gap; handled.push(keys.key(ch, target)); }
+	return handled;
+};
+const wait = (ms) => {
+	now += ms;
+	timers.forEach((t) => { if (t.fn && t.at <= now) { const fn = t.fn; t.fn = null; fn(); } });
+};
+"""
+
+
+class TestQrAllButtons(FrappeTestCase):
+	"""A-128: mọi nút có QR mã lệnh; quét mã lệnh ở ô nào cũng bấm được nút."""
+
+	def test_button_codes_round_trip(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["tcButtonCode", "tcParseButtonCode"]],
+			"""
+			emit({
+				one: tcButtonCode("ci-pick", 1),
+				two: tcButtonCode("ci-pick", 2),
+				p1: tcParseButtonCode("CMD-BTN-CI-PICK"),
+				p2: tcParseButtonCode(" cmd-btn-ci-pick.3\\r\\n"),
+				bad: [tcParseButtonCode("CMD-DO-CONFIRM-SET"), tcParseButtonCode("CMD-BTN-"), tcParseButtonCode("CMD-BTN-X.0")],
+			});
+			""",
+		)
+		self.assertEqual(out["one"], "CMD-BTN-CI-PICK")
+		self.assertEqual(out["two"], "CMD-BTN-CI-PICK.2")
+		self.assertEqual(out["p1"], {"action": "ci-pick", "index": 1})
+		self.assertEqual(out["p2"], {"action": "ci-pick", "index": 3})
+		self.assertEqual(out["bad"], [None, None, None])
+
+	def test_key_burst_returns_scanner_text_with_its_start_target(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["TcKeyBurst"]],
+			KEY_CLOCK
+			+ """
+			press("CMD-DO-SUBMIT-RECEIPT", 6);
+			wait(130);
+			press("12", 300);
+			wait(500);
+			press("TR-002", 6, "note");
+			const enter = keys.key("Enter", "note");
+			emit({got, enter});
+			""",
+		)
+		self.assertEqual(
+			out["got"],
+			[{"text": "CMD-DO-SUBMIT-RECEIPT", "start": "qty"}, {"text": "TR-002", "start": "note"}],
+		)
+		self.assertTrue(out["enter"])  # Enter kết thúc luồng quét: báo đã xử lý để chặn mặc định
+
+	def test_station_routes_commands_and_decorates_every_button(self):
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new TcKeyBurst(", source)
+		self.assertIn("tcParseButtonCode(", source)
+		self.assertIn("tracecore.v1.station.command_qr", source)
+		for skipped in ("tc-switch-station", "tc-screen", "photo"):
+			self.assertIn(skipped, source[source.index("TC_QR_SKIP") :][:400])
+
+
 class TestT4Queue(FrappeTestCase):
 	def test_queue_is_reloaded_after_packing(self):
 		out = run_js(

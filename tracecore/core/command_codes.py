@@ -168,17 +168,39 @@ SCREEN_QR = (
 )
 
 
+# A-128: mã QR của mọi nút ở màn trạm (khớp `tcButtonCode` ở public/js/tc_scan_burst.js)
+BUTTON_CODE = re.compile(r"^CMD-BTN-[A-Z0-9][A-Z0-9_-]{0,47}(?:\.[1-9][0-9]?)?$")
+QR_BATCH_LIMIT = 80
+
+
+def _png_uri(code):
+	png = qr.qr_png(code, module_px=4, margin_px=12)
+	return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+
+
+def qr_images(codes):
+	"""``{mã: ảnh QR PNG data URI}`` cho mã nút đúng dạng (A-128): ``CMD-DO-<lệnh có thật>`` hoặc ``CMD-BTN-…``.
+
+	Mã sai dạng bị bỏ (không báo lỗi: màn trạm chỉ không hiện QR cho nút đó); tối đa ``QR_BATCH_LIMIT`` mã mỗi lần.
+	"""
+	images = {}
+	for code in codes or []:
+		if len(images) >= QR_BATCH_LIMIT:
+			break
+		if not isinstance(code, str) or code in images:
+			continue
+		valid = BUTTON_CODE.match(code) or (code.startswith(DO_PREFIX) and code[len(DO_PREFIX) :] in COMMANDS)
+		if valid:
+			images[code] = _png_uri(code)
+	return images
+
+
 def screen_qr(station):
 	"""``{khóa lệnh: ảnh QR PNG data URI của "CMD-DO-<khóa>"}`` cho lệnh ``SCREEN_QR`` áp dụng cho trạm `station` (A-127)."""
 	if not isinstance(station, str) or not frappe.db.exists("Zone Station", {"name": station, "is_zone": 0}):
 		return {}
 	functions = zones.station_functions(station)
-	return {
-		key: "data:image/png;base64,"
-		+ base64.b64encode(qr.qr_png(f"{DO_PREFIX}{key}", module_px=4, margin_px=12)).decode("ascii")
-		for key in SCREEN_QR
-		if applies(COMMANDS[key], functions)
-	}
+	return {key: _png_uri(f"{DO_PREFIX}{key}") for key in SCREEN_QR if applies(COMMANDS[key], functions)}
 
 
 def _stations():
