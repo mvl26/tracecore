@@ -1,5 +1,5 @@
 /* global tcErrorTitle, tcGuideButton, tcWarningsHtml, TcScanBurst, TcKeyBurst, tcButtonCode, tcParseButtonCode */
-/* global TC_SCAN_FAST_MS */
+/* global TC_SCAN_FAST_MS, TcQrAlias, tcHasVietnameseMarks */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
@@ -129,7 +129,7 @@ const TC_QR_SKIP = {
 	containers: ".tc-picker",
 };
 // A-128: mã lệnh quét từ bất kỳ ô nào cũng chạy được
-const TC_COMMAND_CODE = /^(?:TR-\d{3}|CMD-(?:DO|TAB|BTN)-[A-Z0-9_.-]+|HOAN-THANH-NAP)$/;
+const TC_COMMAND_CODE = /^(?:TR-\d{3}|CMD-(?:DO|TAB|BTN)-[A-Z0-9_.-]+|HOAN-THANH-NAP|99-\d{4})$/;
 
 class TcStepQueue {
 	constructor(station, screen) {
@@ -623,13 +623,16 @@ class TraceCoreStation {
 			const code = text.trim().toUpperCase();
 			const own = snapshot && snapshot.target === start ? snapshot : null;
 			snapshot = null;
-			if (!this.session || !TC_COMMAND_CODE.test(code)) return;
+			// A-129: luồng quét có chữ có dấu = bộ gõ tiếng Việt đã đổi chữ của mã: trả ô về như cũ và báo tắt bộ gõ
+			const marked = tcHasVietnameseMarks(code);
+			if (!this.session || !(marked || TC_COMMAND_CODE.test(code))) return;
 			if (start && start.matches && start.matches(".tc-scan-input")) return;
 			if (own && "value" in start && start.value !== own.value) {
 				start.value = own.value;
 				start.dispatchEvent(new Event("input", { bubbles: true }));
 			}
-			this.scan(code);
+			if (marked) this.imeWarning(code);
+			else this.scan(code);
 		});
 		this.listen(
 			this.root,
@@ -1858,9 +1861,10 @@ class TraceCoreStation {
 		this.commandMap = result && result.ok ? result.commands : null;
 		// A-127/A-128: QR chỉ hiện khi R10 bật trong TraceCore Settings; ảnh nhớ theo mã trong phiên
 		this.commandShowQr = Boolean(result && result.ok && result.show_qr);
+		// A-129: QR chứa số `99-NNNN` cấp trong phiên cho từng mã nút (bộ gõ tiếng Việt không đổi được); ảnh nhớ theo số
+		this.qrAlias = new TcQrAlias();
 		this.qrCache = new Map();
-		for (const [key, src] of Object.entries((this.commandShowQr && result.qr) || {}))
-			this.qrCache.set(`CMD-DO-${key}`, src);
+		this.qrAsked = new Set();
 		this.commandMapVersion = version;
 		return this.commandMap;
 	}
@@ -1892,11 +1896,11 @@ class TraceCoreStation {
 	// máy chủ theo lô rồi gắn lại.
 	decorateCommandButtons() {
 		if (this.root.dataset.surface === "PDA" || !this.session || !this.ownsPage()) return;
-		if (!this.commandShowQr || !this.qrCache) return;
+		if (!this.commandShowQr || !this.qrCache || !this.qrAlias) return;
 		const order = new Map();
 		const missing = new Set();
 		for (const button of this.qrButtons()) {
-			const code = this.buttonQrCode(button, order);
+			const code = this.qrAlias.alias(this.buttonQrCode(button, order));
 			const src = this.qrCache.get(code);
 			const next = button.nextElementSibling;
 			const current = next && next.classList.contains("tc-cmd-qr") ? next : null;
@@ -1969,7 +1973,21 @@ class TraceCoreStation {
 
 	// true khi mã quét là mã lệnh (đã xử lý ở đây); false thì mã đi tiếp cho màn của bước
 	async handleCommandScan(raw) {
-		const code = (raw || "").trim().toUpperCase();
+		let code = (raw || "").trim().toUpperCase();
+		// A-129: số `99-NNNN` của QR trên màn = mã nút đã cấp số trong phiên này
+		if (TcQrAlias.isAlias(code)) {
+			const real = this.qrAlias ? this.qrAlias.code(code) : null;
+			if (!real) {
+				this.input.value = "";
+				return this.commandUnavailable(
+					__(
+						"QR {0} belongs to an earlier screen. Scan the QR shown on the screen now.",
+						[code]
+					)
+				);
+			}
+			code = real;
+		}
 		if (tcParseButtonCode(code)) return this.pressButtonCode(code);
 		const match = /^(?:(TR-\d{3})|CMD-(DO|TAB)-([A-Z0-9_-]+))$/.exec(code);
 		if (!match) return false;
@@ -2014,8 +2032,25 @@ class TraceCoreStation {
 		return true;
 	}
 
+	// A-129: máy trạm bật bộ gõ tiếng Việt thì mã máy quét gõ vào bị đổi chữ (vd RECEIPT → RÊCIPT): báo rõ để tắt bộ gõ
+	imeWarning(raw) {
+		this.input.value = "";
+		this.authResult.innerHTML = this.blockHtml({
+			code: "SCAN_IME_ON",
+			title: __("Vietnamese typing is on"),
+			reason: __(
+				"The scanned code {0} has Vietnamese marks: the typing tool (Unikey, EVKey) changed its letters.",
+				[(raw || "").trim()]
+			),
+			action: __("Switch the typing tool to E (English) on this computer, then scan again."),
+		});
+		this.focus();
+		return true;
+	}
+
 	async scan(raw, retry = false) {
 		if (!this.session) return this.focus();
+		if (tcHasVietnameseMarks(raw)) return this.imeWarning(raw);
 		if (this.handleNextStationScan(raw)) return;
 		if (await this.handleCommandScan(raw)) return;
 		this.authResult.innerHTML = "";

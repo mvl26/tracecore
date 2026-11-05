@@ -99,6 +99,12 @@ class TestCommandQrRpc(IsolatedTestCase):
 		self.assertEqual(set(images), {"CMD-BTN-DISCARD", "CMD-BTN-CI-PICK.2", "CMD-DO-CONFIRM-SET"})
 		self.assertEqual(_decode(images["CMD-BTN-CI-PICK.2"]), "CMD-BTN-CI-PICK.2")
 
+	def test_numeric_alias_codes(self):
+		"""A-129: mã toàn số `99-NNNN` (bộ gõ tiếng Việt không đổi được) cũng có ảnh QR."""
+		result = station_api.command_qr(token=self.session["token"], codes=["99-0001", "99-12", "99-00001"])
+		self.assertEqual(set(result["qr"]), {"99-0001"})
+		self.assertEqual(_decode(result["qr"]["99-0001"]), "99-0001")
+
 	def test_codes_as_json_and_limit(self):
 		import json
 

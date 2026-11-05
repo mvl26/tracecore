@@ -73,6 +73,43 @@ function tcParseButtonCode(raw) {
 		: null;
 }
 
+// A-129 (FEAT-092): QR trên màn chứa mã toàn số `99-NNNN` để bộ gõ tiếng Việt (Telex/VNI/VIQR) không đổi chữ được
+// (không có nguyên âm thì không có gì để thêm dấu). Số cấp theo thứ tự trong phiên, cùng mã nút thì cùng số.
+const TC_QR_ALIAS = /^99-(\d{4})$/;
+
+class TcQrAlias {
+	constructor() {
+		this.byCode = new Map();
+		this.byAlias = new Map();
+	}
+
+	static isAlias(raw) {
+		return TC_QR_ALIAS.test(String(raw || "").trim());
+	}
+
+	alias(code) {
+		if (!this.byCode.has(code)) {
+			const alias = `99-${String(this.byCode.size + 1).padStart(4, "0")}`;
+			this.byCode.set(code, alias);
+			this.byAlias.set(alias, code);
+		}
+		return this.byCode.get(code);
+	}
+
+	code(raw) {
+		const alias = String(raw || "").trim();
+		return TC_QR_ALIAS.test(alias) ? this.byAlias.get(alias) || null : null;
+	}
+}
+
+// A-129: chuỗi máy quét gõ vào có chữ có dấu tiếng Việt = bộ gõ (Unikey/EVKey) đang bật và đã đổi chữ của mã
+// dải Latin có dấu (U+00C0–U+024F) và Latin mở rộng bổ sung (U+1E00–U+1EFF) viết bằng mã để không có chữ có dấu trong nguồn
+const TC_VIETNAMESE_MARKS = new RegExp("[\\u00C0-\\u024F\\u1E00-\\u1EFF]");
+
+function tcHasVietnameseMarks(raw) {
+	return TC_VIETNAMESE_MARKS.test(String(raw || ""));
+}
+
 // A-128: gom phím tốc độ máy quét ở BẤT KỲ ô nào (kể cả ô số không nhận chữ), để mã lệnh quét lúc con trỏ đang ở ô số
 // lượng / ghi chú vẫn chạy được. `key(k, target)` trả true khi phím thuộc luồng quét đang mở mà là Enter (để chặn mặc
 // định). Hết IDLE_MS hoặc gặp Enter thì gọi onComplete(text, target lúc bắt đầu luồng) nếu đủ MIN_CHARS ký tự nhanh.

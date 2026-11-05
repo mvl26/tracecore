@@ -185,6 +185,56 @@ class TestQrAllButtons(FrappeTestCase):
 		self.assertIn("button.closest(TC_QR_SKIP.containers)", source)
 
 
+class TestQrNumericAlias(FrappeTestCase):
+	"""A-129: QR trên màn chứa mã toàn số `99-NNNN` (bộ gõ tiếng Việt không đổi được); báo khi chuỗi quét có dấu."""
+
+	def test_alias_is_numeric_stable_and_reversible(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["TcQrAlias"]],
+			"""
+			const alias = new TcQrAlias();
+			const a = alias.alias("CMD-DO-SUBMIT-RECEIPT");
+			const b = alias.alias("CMD-BTN-DISCARD");
+			const again = alias.alias("CMD-DO-SUBMIT-RECEIPT");
+			emit({a, b, again, back: alias.code(" 99-0002\\r\\n"), unknown: alias.code("99-0999"), notAlias: alias.code("TR-001"),
+				isAlias: [TcQrAlias.isAlias("99-0001"), TcQrAlias.isAlias("CMD-DO-X"), TcQrAlias.isAlias("9520000123")]});
+			""",
+		)
+		self.assertEqual((out["a"], out["b"], out["again"]), ("99-0001", "99-0002", "99-0001"))
+		self.assertEqual(out["back"], "CMD-BTN-DISCARD")
+		self.assertIsNone(out["unknown"])
+		self.assertIsNone(out["notAlias"])
+		self.assertEqual(out["isAlias"], [True, False, False])
+
+	def test_vietnamese_marks_are_detected(self):
+		out = run_js(
+			self,
+			[BURST],
+			[["tcHasVietnameseMarks"]],
+			"""
+			emit([
+				tcHasVietnameseMarks("CMD-DO-SUBMIT-RÊCIPT"),
+				tcHasVietnameseMarks("9520000DEMÒ15E000001"),
+				tcHasVietnameseMarks("đ"),
+				tcHasVietnameseMarks("CMD-DO-SUBMIT-RECEIPT"),
+				tcHasVietnameseMarks("CY-261105-0001"),
+			]);
+			""",
+		)
+		self.assertEqual(out, [True, True, True, False, False])
+
+	def test_station_uses_alias_and_blocks_marked_scans(self):
+		path = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(path, encoding="utf-8") as handle:
+			source = handle.read()
+		self.assertIn("new TcQrAlias()", source)
+		self.assertIn("TcQrAlias.isAlias(", source)
+		self.assertIn("SCAN_IME_ON", source)
+		self.assertIn("tcHasVietnameseMarks(", source)
+
+
 class TestT4Queue(FrappeTestCase):
 	def test_queue_is_reloaded_after_packing(self):
 		out = run_js(
