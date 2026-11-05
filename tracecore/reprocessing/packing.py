@@ -36,6 +36,7 @@ from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
 
 CI_CLASSES = ("5", "6")  # FR-M2-07.2: lô chỉ thị loại 5/6 theo phương pháp
+CI_LOT_LIMIT = 10  # A-120: số lô chỉ thị gợi ý để chọn tay ở T4
 SOURCE_PACK_TYPE = "Pack Type"
 SOURCE_SET_TYPE = "Set Type"
 STEP = "T4"  # mã cổng trong step_gate
@@ -143,6 +144,50 @@ def pack_types(set_type):
 
 
 # --- Lô chỉ thị hóa học (BRU-REP-013, BRU-INV-001) ----------------------------------------------
+
+
+def ci_lots(method, on_date):
+	"""Tối đa `CI_LOT_LIMIT` lô chỉ thị dùng được cho phương pháp `method` tại ngày `on_date` để chọn tay ở T4 (A-120).
+
+	Cùng quy tắc với `resolve_ci_batch`: Item nhóm Chemical Indicator đúng phương pháp, loại 5/6, Item và Batch chưa tắt,
+	có hạn dùng không trước `on_date`; hạn gần trước rồi theo tên lô. Trả ``[{"batch", "item", "item_name", "ci_class",
+	"expiry_date"}]``. Chỉ là gợi ý: lô chọn xong vẫn đi qua `resolve_ci_batch` khi sinh Cycle ID.
+	"""
+	if not method:
+		return []
+	items = {
+		row.name: row
+		for row in frappe.get_all(
+			"Item",
+			filters={
+				"tc_item_group_cssd": "Chemical Indicator",
+				"tc_compatible_method": method,
+				"tc_ci_class": ["in", list(CI_CLASSES)],
+				"disabled": 0,
+			},
+			fields=["name", "item_name", "tc_ci_class"],
+		)
+	}
+	if not items:
+		return []
+	rows = frappe.get_all(
+		"Batch",
+		filters={"item": ["in", list(items)], "disabled": 0, "expiry_date": [">=", getdate(on_date)]},
+		fields=["name", "item", "expiry_date"],
+		order_by="expiry_date asc, name asc",
+		limit=CI_LOT_LIMIT,
+	)
+	return [
+		{
+			"batch": row.name,
+			"item": row.item,
+			"item_name": items[row.item].item_name,
+			"ci_class": items[row.item].tc_ci_class,
+			# chuỗi ISO: trả lời idempotent phát lại (JSON) phải giống hệt lần đầu
+			"expiry_date": str(getdate(row.expiry_date)),
+		}
+		for row in rows
+	]
 
 
 def resolve_ci_batch(raw, method, on_date):
@@ -378,7 +423,11 @@ def get_context(set_id, station):
 		"maintenance": ctx.get("maintenance", []),
 		"par": ctx.get("par"),
 		"pack_types": [_with_expected_expiry(row, set_type.name) for row in pack_types(set_type.name)],
-		"ci": {"method": set_type.method, "classes": list(CI_CLASSES)},
+		"ci": {
+			"method": set_type.method,
+			"classes": list(CI_CLASSES),
+			"lots": ci_lots(set_type.method, getdate()),  # A-120: chọn tay lô chỉ thị
+		},
 		"label_type": printer["label_type"] if printer else (labels[0].name if labels else None),
 		"printer": printer,
 	}

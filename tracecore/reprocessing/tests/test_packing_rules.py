@@ -171,6 +171,54 @@ class TestPackTypes(IsolatedTestCase):
 		self.assertTrue(packing.pack_types(set_type.name))
 
 
+class TestCiLots(IsolatedTestCase):
+	"""A-120: lô chỉ thị dùng được để chọn tay ở T4, cùng quy tắc với `resolve_ci_batch`."""
+
+	def setUp(self):
+		super().setUp()
+		self.on_date = getdate(today())
+
+	@bru("BRU-REP-013")
+	def test_lists_only_lots_that_resolve_ci_batch_accepts(self):
+		good = [
+			make_ci_batch("Steam", "5", expiry_days=0, batch_id="PICK-S5-0"),
+			make_ci_batch("Steam", "6", expiry_days=1, batch_id="PICK-S6-1"),
+		]
+		bad = [
+			make_ci_batch("Plasma", "5", expiry_days=1, batch_id="PICK-P5"),
+			make_ci_batch("Steam", "4", expiry_days=1, batch_id="PICK-S4"),
+			make_ci_batch("Steam", "5", expiry_days=-1, batch_id="PICK-S5-OLD"),
+		]
+		disabled = make_ci_batch("Steam", "5", expiry_days=1, batch_id="PICK-S5-OFF")
+		frappe.db.set_value("Batch", disabled, "disabled", 1)
+		make_item("CI-PICK-NOEXP", "Chemical Indicator", method="Steam", ci_class="5")
+		no_expiry = make_batch("CI-PICK-NOEXP", "PICK-NOEXP").name
+		lots = packing.ci_lots("Steam", self.on_date)
+		names = [row["batch"] for row in lots]
+		self.assertEqual(names[:2], good)  # hạn gần trước
+		for name in (*bad, disabled, no_expiry):
+			self.assertNotIn(name, names)
+		self.assertEqual(
+			lots[0],
+			{
+				"batch": "PICK-S5-0",
+				"item": "CI5-STEAM",
+				"item_name": frappe.db.get_value("Item", "CI5-STEAM", "item_name"),
+				"ci_class": "5",
+				"expiry_date": str(self.on_date),
+			},
+		)
+		for name in names:  # mọi lô gợi ý đều được resolve_ci_batch nhận
+			self.assertEqual(packing.resolve_ci_batch(name, "Steam", self.on_date)["batch"], name)
+
+	def test_at_most_ten_lots_and_none_for_unknown_method(self):
+		for index in range(12):
+			make_ci_batch("Steam", "5", expiry_days=0, batch_id=f"PICK-MANY-{index:02d}")
+		self.assertEqual(len(packing.ci_lots("Steam", self.on_date)), packing.CI_LOT_LIMIT)
+		self.assertEqual(packing.ci_lots("EO", self.on_date), [])
+		self.assertEqual(packing.ci_lots(None, self.on_date), [])
+
+
 class TestResolveCiBatch(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()

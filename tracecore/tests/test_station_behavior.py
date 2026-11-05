@@ -40,6 +40,107 @@ class TestT4Queue(FrappeTestCase):
 		self.assertEqual(out["resets"], 1)
 
 
+T4_CI = """
+const t4 = new T4Packing(makeStation());
+t4.alertHtml = (alert) => `<div class="tc-alert-${alert.variant}">${alert.title} ${alert.reason} ${alert.action}</div>`;
+t4.ctx = {ci: {method: "Steam", classes: ["5", "6"], lots: [
+	{batch: "LOT-A", item: "CI5", item_name: "Que CI 5", ci_class: "5", expiry_date: "2026-12-01"},
+	{batch: "LOT-<B>", item: "CI6", item_name: "Que CI 6", ci_class: "6", expiry_date: "2027-01-01"},
+]}};
+const scanned = [];
+t4.scanIndicator = (raw) => scanned.push(raw);
+"""
+
+
+class TestT4IndicatorLotPick(FrappeTestCase):
+	"""A-120: chọn tay lô chỉ thị phù hợp với bộ ở T4."""
+
+	def test_lots_are_buttons_and_a_tap_scans_that_lot(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			const html = t4.ciHtml();
+			t4.onAction("ci-pick", {dataset: {batch: "LOT-A"}});
+			emit({html, scanned});
+			""",
+		)
+		self.assertEqual(out["html"].count('data-action="ci-pick"'), 2)
+		self.assertIn('data-batch="LOT-A"', out["html"])
+		self.assertIn("Que CI 5", out["html"])
+		self.assertNotIn("LOT-<B>", out["html"])  # tên lô được escape
+		self.assertIn('id="tc-ci-input"', out["html"])  # ô quét vẫn còn
+		self.assertEqual(out["scanned"], ["LOT-A"])
+
+	def test_no_usable_lot_warns_and_lots_hide_once_chosen(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_CI
+			+ """
+			t4.ctx.ci.lots = [];
+			const empty = t4.ciHtml();
+			t4.ctx.ci.lots = [{batch: "LOT-A", item: "CI5", ci_class: "5", expiry_date: "2026-12-01"}];
+			t4.ci = {batch: "LOT-A", ci_class: "5", expiry_date: "2026-12-01"};
+			emit({empty, chosen: t4.ciHtml()});
+			""",
+		)
+		self.assertIn("tc-alert-warn", out["empty"])
+		self.assertIn("No usable indicator lot", out["empty"])
+		self.assertNotIn("ci-pick", out["chosen"])
+
+
+PICKER_SHELL = """
+globalThis.esc = (value) => String(value == null ? "" : value).replace(/</g, "&lt;");
+globalThis.clientTs = () => "2026-11-05T09:00:00+07:00";
+globalThis.uuid4 = () => "u";
+const calls = [];
+let packOpen = true;
+const shell = {
+	activeTab: "storage", station: "TR-6", screen: {pickLocation: () => packOpen},
+	isOffline: () => false, pickDepartment: () => null,
+	rpc: async (method, args) => {
+		calls.push([method, args]);
+		return {items: [{id: "KE-0001", raw: "KE-0001", label: "KE-0001 - A-1-1-1"}], total: 1};
+	},
+};
+const picker = new TcPicker(shell);
+picker.render = () => {};
+picker.isOpen = true;
+"""
+
+
+class TestPickerShelves(FrappeTestCase):
+	"""A-120: màn Lưu kho đang mở gói thì panel Chọn tay có loại Kệ."""
+
+	def test_open_pack_at_storage_lists_shelves_first(self):
+		out = run_js(
+			self,
+			["public/js/station_picker.js"],
+			[["TcPicker"]],
+			PICKER_SHELL
+			+ """
+			picker.kind = picker.defaultKind();
+			await picker.load(true);
+			const tabs = picker.kindHtml();
+			packOpen = false;
+			emit({kind: calls[0][1] && picker.kind, calls, tabs, without: picker.defaultKind(), noTabs: picker.kindHtml()});
+			""",
+		)
+		self.assertEqual(out["calls"][0][0], "tracecore.v1.lookup.locations")
+		self.assertEqual(out["calls"][0][1]["screen"], "storage")
+		self.assertIn('data-kind="location"', out["tabs"])
+		self.assertIn('data-kind="set"', out["tabs"])
+		self.assertIn("Shelves", out["tabs"])
+		self.assertEqual(out["without"], "set")
+		self.assertEqual(out["noTabs"], "")
+
+
 T1_ITEM = """
 const t1 = new T1Receiving(makeStation());
 const item = {set_id: "S1", set_name: "Bo", lines: [
