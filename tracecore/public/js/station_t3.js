@@ -867,7 +867,7 @@ class T3Assembly {
 		</div>`;
 	}
 
-	lineHtml(row) {
+	lineHtml(row, index) {
 		const open = this.asm.docstatus === 0;
 		const off = !open || this.busy || this.offline;
 		const status = row.counted ? row.line_status : "";
@@ -898,17 +898,20 @@ class T3Assembly {
 			  )}</span>`
 			: "";
 		const code = esc(row.instrument);
-		return `<div class="tc-ins${cls}" data-instrument="${code}">
-			${this.photoHtml(row.thumbnail || row.image, row.instrument_name)}
-			<span class="tc-ins-text">
-				<span class="tc-ins-name">${esc(row.instrument_name)}</span>
-				<span class="tc-ins-pos">${esc(
-					__("Position {0} · BOM × {1} · {2}", [
-						row.position,
-						row.bom_qty,
-						row.instrument,
-					])
-				)}</span>
+		// A-121: mỗi dụng cụ một hàng của bảng 5 cột (STT, Vị trí, Dụng cụ, Số lượng trong bộ, Kiểm đếm)
+		return `<tr class="tc-bom-row${cls}" data-instrument="${code}">
+			<td>${index + 1}</td>
+			<td>${esc(row.position)}</td>
+			<td><span class="tc-t1-line-name">${this.photoHtml(
+				row.thumbnail || row.image,
+				row.instrument_name
+			)}
+				<span class="tc-ins-text">
+					<span class="tc-ins-name">${esc(row.instrument_name)}</span>
+					<span class="tc-ins-pos tc-mono">${esc(row.instrument)}</span>
+				</span></span></td>
+			<td>${esc(row.bom_qty)}</td>
+			<td><span class="tc-ins-text">
 				<span class="tc-ins-state"><span aria-hidden="true">${marks}</span>${esc(state)}</span>
 				${damaged}${par}${unexplained}
 			</span>
@@ -924,8 +927,20 @@ class T3Assembly {
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Short / other count"))}</button>
 					<button type="button" class="tc-btn tc-btn-warn" data-action="t3-damage"
 						data-instrument="${code}"${t3Disabled(off)}>${esc(__("Damaged / replace"))}</button>
-			</span>
-		</div>`;
+			</span></td>
+		</tr>`;
+	}
+
+	tableHtml() {
+		const rows = this.asm.lines.map((row, index) => this.lineHtml(row, index)).join("");
+		if (!rows) return `<p class="tc-empty">${esc(__("This set type has no BOM."))}</p>`;
+		return `<table class="tc-t2-table tc-bom-table"><thead><tr>
+				<th scope="col">${esc(__("No."))}</th>
+				<th scope="col">${esc(__("Position in set"))}</th>
+				<th scope="col">${esc(__("Instrument name"))}</th>
+				<th scope="col">${esc(__("Quantity in set"))}</th>
+				<th scope="col">${esc(__("Counting"))}</th>
+			</tr></thead><tbody>${rows}</tbody></table>`;
 	}
 
 	linesHtml() {
@@ -942,7 +957,7 @@ class T3Assembly {
 			<h3>${esc(__("Set components (BOM v{0})", [asm.bom_version]))}</h3>
 			<div class="tc-bom${trays ? " has-tray" : ""}">
 				${trays ? `<div>${trays}</div>` : ""}
-				<div class="tc-inst">${asm.lines.map((row) => this.lineHtml(row)).join("")}</div>
+				<div class="tc-inst">${this.tableHtml()}</div>
 			</div>
 			${
 				asm.docstatus === 0

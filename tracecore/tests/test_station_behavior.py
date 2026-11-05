@@ -1786,6 +1786,113 @@ class TestT3ConfirmAll(FrappeTestCase):
 		self.assertNotIn("t3-all", out)
 
 
+T4_BOM = """
+const t4 = new T4Packing(makeStation());
+t4.ctx = {
+	bom_version: 3, tray_image: null, shortage: [{instrument: "DC-2"}],
+	bom: [
+		{instrument: "DC-1", instrument_name: "Kep <1>", qty: 2, position: 5, thumbnail: "/a.png"},
+		{instrument: "DC-2", instrument_name: "Keo", qty: 1, position: 6},
+		{instrument: "DC-3", instrument_name: "Panh", qty: 4, position: 7},
+	],
+};
+t4.checked = new Set([2]);
+t4.imagesReady = true;
+"""
+
+
+class TestT4BomTable(FrappeTestCase):
+	"""A-121: thành phần bộ ở T4 là bảng, hành vi tick giữ nguyên."""
+
+	def test_bom_is_a_five_column_table_with_one_row_per_line(self):
+		out = run_js(self, [T4], [["T4Packing"]], FAKE_STATION + T4_BOM + "emit(t4.bomHtml());")
+		self.assertEqual(out.count("<table"), 1)
+		self.assertEqual(out.count("<th "), 5)
+		self.assertEqual(out.count('scope="col"'), 5)
+		self.assertEqual(out.count("<tbody>"), 1)
+		body = out[out.index("<tbody>") :]
+		self.assertEqual(body.count("<tr"), 3)
+		self.assertNotRegex(out, r'class="tc-ins[ "]')
+		for index in range(3):
+			self.assertIn(f'data-line="{index}"', body)
+		self.assertIn("Kep &lt;1&gt;", body)  # tên dụng cụ được escape
+		self.assertIn("DC-1", body)
+		self.assertIn("Confirmed 1/2 lines", out)
+		self.assertIn('data-action="confirm-all"', out)
+
+	def test_short_line_is_locked_and_labelled_and_ticked_line_is_done(self):
+		out = run_js(self, [T4], [["T4Packing"]], FAKE_STATION + T4_BOM + "emit(t4.bomHtml());")
+		rows = out[out.index("<tbody>") :].split("<tr")[1:]
+		self.assertIn("is-short", rows[1])
+		self.assertIn("disabled", rows[1])
+		self.assertIn("Missing", rows[1])
+		self.assertIn("is-done", rows[2])
+		self.assertIn("checked", rows[2])
+		self.assertIn("Placed correctly", rows[2])
+		self.assertNotIn("is-done", rows[0])
+		self.assertIn("Not confirmed", rows[0])
+
+	def test_ticking_updates_the_row_and_confirm_all_skips_short_lines(self):
+		out = run_js(
+			self,
+			[T4],
+			[["T4Packing"]],
+			FAKE_STATION
+			+ T4_BOM
+			+ """
+			const toggles = [];
+			const state = {textContent: ""};
+			const row = {classList: {toggle: (cls, on) => toggles.push([cls, on])}, querySelector: () => state};
+			const box = {checked: true, dataset: {line: "0"}, closest: (sel) => (sel === "tr" ? row : null)};
+			t4.refresh = () => {};
+			t4.toggleLine(box);
+			emit({toggles, state: state.textContent, checked: [...t4.checked].sort()});
+			""",
+		)
+		self.assertEqual(out["toggles"], [["is-done", True]])
+		self.assertEqual(out["state"], "Placed correctly")
+		self.assertEqual(out["checked"], [0, 2])
+
+
+class TestT3BomTable(FrappeTestCase):
+	"""A-121: BOM ở T3 là bảng, các nút thao tác trên dòng giữ nguyên."""
+
+	def run_t3(self, body):
+		return run_js(self, [ERR, T3], [[], ["T3Assembly"]], FAKE_STATION + T3_STATION + body)
+
+	def test_lines_are_a_five_column_table_with_the_row_controls(self):
+		out = self.run_t3('t3.asm = ASM; ASM.lines[1].instrument_name = "Keo <2>"; emit(t3.linesHtml());')
+		self.assertEqual(out.count("<table"), 1)
+		self.assertEqual(out.count("<th "), 5)
+		self.assertEqual(out.count('scope="col"'), 5)
+		body = out[out.index("<tbody>") :]
+		self.assertEqual(body.count("<tr"), 2)
+		self.assertNotRegex(out, r'class="tc-ins[ "]')
+		self.assertIn("Keo &lt;2&gt;", body)
+		for action in ("t3-dec", "t3-inc", "t3-full", "t3-variance", "t3-damage"):
+			self.assertEqual(body.count(f'data-action="{action}"'), 2, action)
+		self.assertIn('data-instrument="I-2"', body)
+		self.assertIn('data-action="t3-all"', out)
+		self.assertIn('data-region="tally"', out)
+
+	def test_row_state_has_text_and_a_class_per_status(self):
+		out = self.run_t3(
+			"""
+			ASM.lines[1] = line("I-2", {line_status: "Short", missing_qty: 1, actual_qty: 1});
+			ASM.lines.push(line("I-3", {line_status: "Over", actual_qty: 3}));
+			t3.asm = ASM;
+			emit(t3.linesHtml());
+			"""
+		)
+		rows = out[out.index("<tbody>") :].split("<tr")[1:]
+		self.assertIn("is-done", rows[0])
+		self.assertIn("is-short", rows[1])
+		self.assertIn("(-1)", rows[1])
+		self.assertIn("is-over", rows[2])
+		self.assertIn("(+1)", rows[2])
+		self.assertIn("&#10003;", rows[0])  # ký hiệu, không chỉ màu
+
+
 class TestOpenStationByUrl(FrappeTestCase):
 	"""A-102, #1822: mở trạm khác bằng URL đi đúng đường của nút chuyển trạm khi phiên thẻ còn."""
 
