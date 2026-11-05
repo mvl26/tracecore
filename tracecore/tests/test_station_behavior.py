@@ -178,8 +178,11 @@ class TestQrAllButtons(FrappeTestCase):
 		self.assertIn("new TcKeyBurst(", source)
 		self.assertIn("tcParseButtonCode(", source)
 		self.assertIn("tracecore.v1.station.command_qr", source)
-		for skipped in ("tc-switch-station", "tc-screen", "photo"):
-			self.assertIn(skipped, source[source.index("TC_QR_SKIP") :][:400])
+		skip = source[source.index("const TC_QR_SKIP") :][:400]
+		# phần Chọn tay (nút và bảng chọn tay) không có QR: người dùng duyệt bản thử thấy thừa
+		for skipped in ("tc-switch-station", "tc-screen", "photo", "manual-pick", ".tc-picker"):
+			self.assertIn(skipped, skip)
+		self.assertIn("button.closest(TC_QR_SKIP.containers)", source)
 
 
 class TestT4Queue(FrappeTestCase):
