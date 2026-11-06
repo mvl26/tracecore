@@ -118,7 +118,9 @@ page_js = {
 		"public/js/station_waste_handover.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
-	]
+	],
+	# A-113/A-131 (FEAT-056): màn quản lý KSNK toàn viện — shell (rail, router, 4 trạng thái); màn từng SCR nạp khi mở
+	"tc-ksnk": ["public/js/ksnk/ksnk_shell.js"],
 }
 
 # include js in doctype views
@@ -560,6 +562,11 @@ tracecore_after_load_cancel = [
 tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_cancelled"]
 # M5 test đầu ngày ghi kết quả (A-111 D2): ctx {daily_test, equipment, lot}; M6 trừ vật tư đã xác nhận lúc Bắt đầu test
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
+# A-113 (FEAT-056): hàm tính chỉ số KSNK của module M11-M17 — mỗi hàm trả {source_method: hàm(period, department)}
+# (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
+tracecore_ic_indicators = []
+# A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
+tracecore_ksnk_badges = []
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
