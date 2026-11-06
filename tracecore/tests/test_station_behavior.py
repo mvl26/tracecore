@@ -201,6 +201,111 @@ class TestQrAllButtons(FrappeTestCase):
 		self.assertIn("getClientRects", press)  # nút phải đang hiện lúc bấm theo mã
 
 
+STATION_JS = "ui/page/station/station.js"
+SCROLL_WINDOW = """
+const frames = [];
+window.scrollY = 800;
+window.innerHeight = 768;
+window.scrollTo = ({top}) => { window.scrollY = top; };
+window.requestAnimationFrame = (fn) => frames.push(fn);
+const flush = async () => { await Promise.resolve(); while (frames.length) frames.shift()(); };
+const self = {};
+"""
+
+
+class TestCommandPressKeepsScroll(FrappeTestCase):
+	"""Quét QR "Đạt" ở Test hằng ngày trang nhảy lên (06/11/2026): bấm bằng mã giữ nguyên chỗ, xong bước/lỗi mới đưa lên."""
+
+	def run_station(self, script):
+		return run_js(
+			self, [BURST, STATION_JS], [["TC_SCAN_FAST_MS"], ["TraceCoreStation"]], SCROLL_WINDOW + script
+		)
+
+	def test_button_pressed_by_code_keeps_the_scroll_position(self):
+		out = self.run_station(
+			"""
+			const button = {click() { window.scrollY = 0; }};  // màn vẽ lại kéo trang lên đầu
+			TraceCoreStation.prototype.pressInPlace.call(self, button);
+			await flush();
+			emit(window.scrollY);
+			"""
+		)
+		self.assertEqual(out, 800)
+
+	def test_a_screen_that_reveals_its_notice_is_not_pulled_back(self):
+		out = self.run_station(
+			"""
+			const button = {click() {
+				window.scrollY = 120;  // màn tự đưa thông báo xong bước/lỗi lên
+				TraceCoreStation.prototype.noteReveal.call(self);
+			}};
+			TraceCoreStation.prototype.pressInPlace.call(self, button);
+			await flush();
+			emit(window.scrollY);
+			"""
+		)
+		self.assertEqual(out, 120)
+
+	def test_finished_step_notice_is_revealed_once_and_plain_notices_stay_put(self):
+		out = self.run_station(
+			"""
+			let scrolled = 0;
+			const node = {getBoundingClientRect: () => ({top: -600, bottom: -500}), scrollIntoView() { scrolled++; }};
+			Object.assign(self, {
+				result: {querySelector: () => node}, form: {offsetHeight: 80}, syncStickyHeight() {},
+			});
+			const reveal = (notice) => TraceCoreStation.prototype.revealNotice.call(self, notice);
+			reveal({variant: "ok", title: "Photo attached"});
+			const plain = scrolled;
+			const done = {variant: "ok", title: "Test recorded", reveal: true};
+			reveal(done);
+			reveal(done);  // vẽ lại cùng thông báo: không cuộn lại
+			emit({plain, done: scrolled, reveals: self.reveals});
+			"""
+		)
+		self.assertEqual(out, {"plain": 0, "done": 1, "reveals": 1})
+
+	def test_commands_press_in_place_and_daily_test_reveals_finished_steps(self):
+		with open(frappe.get_app_path("tracecore", *STATION_JS.split("/")), encoding="utf-8") as handle:
+			station = handle.read()
+		for method in ("\tasync pressButtonCode(code) {", "\tasync handleCommandScan(raw) {"):
+			body = station[station.index(method) :]
+			body = body[: body.index("\n\t}\n")]
+			self.assertNotIn("button.click()", body, method)
+			self.assertIn("this.pressInPlace(button)", body, method)
+		out = run_js(
+			self,
+			[DAILY],
+			[["DailyTestScreen"]],
+			FAKE_STATION
+			+ DT_LOT_MACHINE
+			+ """
+			globalThis.TcRunConsumables = {reset() {}, missing: () => false, payload: () => "[]"};
+			screen.load = () => {};
+			screen.request = (method, args, onOk) => onOk({locked: 0});
+			const seen = {};
+			screen.form.result = "Pass";
+			screen.recordTest(); seen.record = screen.notice.reveal;
+			screen.selected = "TB-0010"; screen.form.reason = "Ca gap"; screen.form.hours = "2";
+			screen.unlock(); seen.unlock = screen.notice.reveal;
+			screen.form.test_type = "plasma_daily";
+			screen.onAction("dt-end", {dataset: {}}); seen.end = screen.notice.reveal;
+			const before = screen.notice;
+			screen.onAction("dt-result", {dataset: {value: "Pass"}});
+			seen.chipKeepsNotice = screen.notice === before;
+			emit(seen);
+			""",
+		)
+		self.assertEqual(out, {"record": True, "unlock": True, "end": True, "chipKeepsNotice": True})
+		with open(frappe.get_app_path("tracecore", *DAILY.split("/")), encoding="utf-8") as handle:
+			daily = handle.read()
+		show = daily[daily.index("\tshow() {") :]
+		show = show[: show.index("\n\t}\n")]
+		self.assertIn("this.station.revealNotice(this.notice)", show)
+		form = daily[daily.index("\trevealForm() {") :][:600]
+		self.assertIn("noteReveal", form)  # cuộn tới form khi chọn máy không bị giữ lại
+
+
 class TestNextStationOfferKept(FrappeTestCase):
 	"""Xong T4 không còn ô sang T5 (05/11/2026): quét QR nút (vd In nhãn) bị coi là "mã khác" nên xóa đề nghị."""
 
@@ -710,6 +815,67 @@ class TestDailyTestLotPick(FrappeTestCase):
 		self.assertIn('data-dt-field="lot"', out["html"])
 		self.assertIn('data-dt-field="lot_expiry"', out["html"])
 		self.assertNotIn('data-action="dt-lot"', out["html"])
+
+
+class TestDailyTestNeedsTestType(FrappeTestCase):
+	"""06/11/2026: ghi xong test của máy 2 loại test, chưa chọn Bowie-Dick hay rò rỉ mà vẫn hiện form kết quả."""
+
+	def test_no_result_fields_until_a_test_is_chosen(self):
+		out = run_js(
+			self,
+			[DAILY],
+			[["DailyTestScreen"]],
+			FAKE_STATION
+			+ DT_LOT_MACHINE
+			+ """
+			const two = {name: "TB-0010", required: ["bowie_dick", "leak"], optional: [], missing: ["leak"],
+				run_tests: [], runs: {}};
+			screen.form.test_type = "";
+			const none = screen.runHtml(two, field);
+			screen.form.test_type = "leak";
+			emit({none, chosen: screen.runHtml(two, field)});
+			""",
+		)
+		for marker in (
+			'data-action="dt-result"',
+			'data-action="dt-record"',
+			'data-dt-field="note"',
+			"tc-dt-photo",
+		):
+			self.assertNotIn(marker, out["none"])
+			self.assertIn(marker, out["chosen"])
+		self.assertIn("Choose the test above", out["none"])
+
+
+class TestDailyTestMissingItem(FrappeTestCase):
+	"""06/11/2026: đang ghi test máy TB-0010, chỉ thiếu Đạt/Không đạt mà lỗi bảo "Chọn máy, loại kiểm tra và kết quả"."""
+
+	def test_record_names_only_the_missing_item(self):
+		out = run_js(
+			self,
+			[DAILY],
+			[["DailyTestScreen"]],
+			FAKE_STATION
+			+ DT_LOT_MACHINE
+			+ """
+			const sent = [];
+			screen.request = (method) => sent.push(method);
+			const reason = () => (screen.recordTest(), screen.notice.reason);
+			screen.form.result = "";
+			const result = reason();
+			screen.form.test_type = "";
+			const test = reason();
+			screen.selected = null;
+			const noMachine = reason();
+			emit({result, test, machine: noMachine, sent});
+			""",
+		)
+		self.assertEqual(out["sent"], [])
+		self.assertIn("TB-0010", out["result"])
+		self.assertIn("Pass or Fail", out["result"])
+		self.assertNotIn("machine", out["result"].lower().replace("machine tb-0010", ""))
+		self.assertEqual(out["test"], "Choose the test above to record its result.")
+		self.assertEqual(out["machine"], "Choose the machine from the list.")
 
 
 class TestDailyTestList(FrappeTestCase):
