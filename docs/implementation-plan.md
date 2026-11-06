@@ -1,15 +1,16 @@
 # Implementation Plan: TraceCore
 
-> Status: Draft · Last updated: 2026-10-21
-> Inputs: docs/srs.md (v1.11, 90 FR / 35 NFR) · docs/use-cases.md (39 UC) · docs/architecture.md (14 ADR, 63 DocType) · docs/ux-foundations.md (43 SCR) · docs/design.md + docs/tokens.json · docs/.architecture-inputs.md · input/ba_md/cover.md ("Thứ tự phát triển đề xuất") · input/ba_md/d01.md §6 (GĐ1–8).
+> Status: Draft · Last updated: 2026-11-03 (Amendment A-113)
+> Inputs: docs/srs.md (v1.12, 171 FR / 42 NFR) · docs/use-cases.md (57 UC) · docs/architecture.md (15 ADR; 63 DocType + ~45 DocType M11–M17) · docs/ux-foundations.md (63 SCR đã duyệt) · docs/design.md + docs/tokens.json · docs/.architecture-inputs.md · input/ba_md/cover.md ("Thứ tự phát triển đề xuất") · input/ba_md/d01.md §6 (GĐ1–8).
 > Fidelity: đủ 4 tài liệu đầu vào chính. SCR-44..46 (ux-foundations §B5.2) là **đề xuất chưa duyệt**, không tính vào inventory và không được slice. Không có FR/SCR tombstoned.
+> **Amendment A-113 (2026-11-03):** BA v1.12 "Mở rộng KSNK toàn viện" (M11–M17 + M9 mở rộng; 81 FR, 34 BRU, 7 NFR) → 7 epic E-12..E-19, **FEAT-056..074** (§3), sprint S6–S9 (§4.2), DoD v1.12 (§6.1). Người dùng duyệt quyết định D1–D11 ngày 03/11/2026; chủ đầu tư chưa xác nhận. Số FEAT của BA (053..071) dời +3 vì FEAT-053..055 đã dùng cho A-110..112.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
 
 TraceCore là app Frappe v15 `tracecore` (cạnh `erpnext`, `hrms`) cho khoa KSNK/CSSD: truy xuất dụng cụ qua chuỗi 8 trạm T1–T8 với cổng kiểm soát 5 bước, Set ID GS1 GIAI vĩnh viễn, Cycle ID GS1 DataMatrix dùng một lần in trên 2 loại nhãn (hấp/plasma), cùng đồ vải, nhân sự, thiết bị, kho, chi phí, cơ số, báo cáo và (v1.11) chất thải y tế. Bốn surface: WEB (Desk), STN (kiosk Frappe Page), PDA (PWA cùng Page), DEPT (Portal).
 
-Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)**, mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
+Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
 
 1. **De-risk sớm** 4 ADR rủi ro nhất: ADR-004 (GS1 DataMatrix 300 dpi trên nhãn chịu hấp, rủi ro R-01), ADR-005 (step-gate engine), ADR-003 (offline/idempotency), ADR-006 (station agent + 2 loại nhãn, R-04).
 2. **Milestone demo** "1 bộ đi hết T1→T8 + thu hồi" sớm nhất có thể (cuối Sprint 2).
@@ -176,6 +177,67 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | FEAT-076 | Điền sẵn form nhập tay dữ liệu chu trình T2/T5 (Amendment A-115): tham số số điền theo mặc định chương trình, không có thì điểm giữa dải; hiện nguồn điền sẵn; giờ bắt đầu điền sẵn; không điền sẵn kết quả của máy; Audit Log ghi `kept_fields` | FR-M2-10, FR-M2-10.3, FR-M2-10.5 | UC-09 | SCR-09, SCR-35 | `reprocessing.cycle_defaults` (`parameter_schema`, `trace`); `v1.wash.unload_context`, `v1.load.data_scan`, `v1.wash.manual_data`, `v1.load.manual_data` | R: Process Program, Program Parameter; W: Wash Batch, Sterilization Load | 021, 022 | S | — |
 | FEAT-075 | Một máy in nhãn chung, in PDF qua hộp thoại In của trình duyệt (Amendment A-114): máy in nhãn chung trong TraceCore Settings, mọi trạm có nút In, bỏ kiểm cuộn theo phương pháp và hàng chờ `Waiting`, chuyển thẻ Set ID, nhãn chất thải, QR đối tượng, nhãn thử từ ZPL sang PDF, giấy tờ A4 in cùng cơ chế, tắt gửi ZPL qua Station Agent / `print_server`, Print Job ghi `output_mode = Browser` | FR-M2-08, FR-M2-08.1, FR-M2-08.2, FR-M2-08.3, FR-M2-08.8, FR-M1-05.3, FR-M1-05.4, FR-M10-01.5, FR-M3-01.5, FR-M3-05.1, EI-HW-002, EI-HW-003, EI-HW-007, EI-HW-008, NFR-AVAIL-04 | UC-02, UC-06, UC-08, UC-09, UC-34 | SCR-02, SCR-06, SCR-08, SCR-09, SCR-38, Desk Printer, TraceCore Settings | `core.print` (chọn máy in trạm → máy chung, bỏ chặn theo phương pháp), `core.label_pdf`; trình in PDF dùng chung ở trang trạm; `v1.wash.label_pdf`, `v1.load.label_pdf`, `v1.pack.label_pdf`, `v1.pack.waiting_labels_pdf`, RPC PDF cho thẻ bộ, nhãn chất thải, QR đối tượng; patch chuyển job `Waiting` sang `Queued`; tắt cron `print_server.dispatch_pending` | W: TraceCore Settings, Printer, Print Job; R: Label Template, Pack, Set Unit, Wash Batch, Sterilization Load | 006 | L | — |
 
+### E-12 M11 Chương trình KSNK [A-113]
+
+> **Amendment A-113 (2026-11-03):** 7 epic E-12..E-19 (FEAT-056..074) triển khai BA v1.12 "Mở rộng KSNK toàn viện" (M11–M17 + M9 mở rộng); người dùng duyệt quyết định D1–D11 ngày 03/11/2026, chủ đầu tư chưa xác nhận. Số FEAT của BA (053..071) **dời +3** thành 056..074 vì FEAT-053..055 đã được dùng cho A-110..112 trên `develop`; thứ tự, phụ thuộc và giai đoạn giữ nguyên (GĐ1 = 056–066, GĐ2 = 067–072, GĐ3 = 073–074). Mọi FEAT của A-113 chịu Definition of Done v1.12 (§6.1).
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-057 | Cơ cấu KSNK: `IC Program Settings` (số giường, tuyến, tỷ lệ giám sát viên/giường), Hội đồng KSNK (quyết định, thành viên, vai trò Chủ tịch/Thư ký, đại diện), mạng lưới viên theo khoa, kiểm tra cơ cấu bắt buộc theo BRU-ICP-001..003 và danh sách thiếu có chữ "Thiếu" | FR-M11-01, FR-M11-02, FR-M11-03 | UC-40 | SCR-47 (WEB) | Desk form + validate hook `infection_program.structure.check`; Script Report "Cơ cấu KSNK còn thiếu" | W: IC Committee (+IC Committee Member), IC Network Member; R: IC Program Settings, Department, Employee | 009, 015 | M | S6 |
+| FEAT-058 | Kế hoạch KSNK năm (mục tiêu, chỉ số, hoạt động, ngân sách; R13 ghi sổ = duyệt; sau duyệt chỉ sửa bằng bản Amend BRU-ICP-004), nhắc hoạt động tới hạn/quá hạn (Notification Rule), tổng kết năm từ M9/M12/M13, sổ văn bản nội bộ có phiên bản & hạn rà soát (BRU-ICP-005), biên bản họp Hội đồng → việc theo dõi mỗi kết luận | FR-M11-04, FR-M11-05, FR-M11-06, FR-M11-07, FR-M11-08 | UC-41 | SCR-48 (WEB) | Desk form submittable; scheduler nhắc hạn; Print Format "Kế hoạch KSNK năm", "Báo cáo tổng kết KSNK"; `core.notification.emit` | W: IC Annual Plan (+IC Plan Indicator, IC Plan Activity), IC Procedure Document, IC Committee Meeting, ToDo; R: IC Indicator Value, IC Committee | 014, 015 | M | S6 |
+| FEAT-059 | Đào tạo KSNK trên HRMS Training (tỷ lệ nhân viên đào tạo cơ bản/năm theo khoa; tỷ lệ chuyên trách/Hội đồng/mạng lưới đào tạo theo quy định; nhắc người chưa học), sinh viên thực tập (ngày đào tạo KSNK ≤ ngày bắt đầu thực tập) | FR-M11-09, FR-M11-10, FR-M11-11 | UC-42 | SCR-49 (WEB) | Script Report "Đào tạo KSNK theo khoa"; hàm chỉ số đăng ký hook `tracecore_ic_indicators`; HRMS Training Event/Result (ADR-009) | W: Trainee Induction; R: Training Event, Training Result (hrms), Employee, IC Network Member, IC Committee | 009 | S | S6 |
+| FEAT-072 | Cải tiến chất lượng KSNK & nghiên cứu (`IC Improvement Project`: trạng thái, kết quả, đếm số dự án hoàn thành/năm cho chỉ tiêu QĐ 38), tự đánh giá chất lượng KSNK hằng năm dùng mẫu phiếu M12 loại "Tự đánh giá" (TT 35/2024; kết quả vào tổng kết năm FR-M11-06), điều tra cắt ngang tỷ lệ hiện mắc theo ngày (ghi từng người bệnh đang nằm viện có/không NKBV, mã BN mã hóa, kết quả theo khoa) | FR-M11-12, FR-M11-13, FR-M13-14 | UC-42, UC-50 | SCR-49 (WEB), SCR-58 (WEB) | Desk form; phiếu tự đánh giá qua engine M12 (ADR-015); Script Report "Điều tra cắt ngang"; hàm chỉ số qua `tracecore_ic_indicators` | W: IC Improvement Project, Audit Session, HAI Case (cắt ngang); R: Audit Template, IC Annual Plan, Ward Daily Census, Department | 015, 010 | S | S8 |
+
+### E-13 M12 Giám sát tuân thủ [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-060 | **Engine phiếu giám sát (ADR-015)**: `Audit Template` có phiên bản (R01 duyệt → khóa; sửa = phiên bản mới; phiếu lưu bản chụp mẫu BRU-AUD-001), loại mẫu (Cơ hội VST / Điểm % / Gói dự phòng / Tự đánh giá / VSMT / ATTP), mục trọng yếu, trọng số, min_sample; `Audit Schedule` giao việc theo kỳ + độ bao phủ; `Audit Session` trên PDA/DEPT offline ≥ 4 giờ (ADR-003) ≤ 3 chạm; chấm điểm % theo trọng số (mục N/A loại khỏi mẫu số); chặn tự đánh giá mình (BRU-AUD-004); phản hồi tự động cho trưởng khoa/mạng lưới viên; mục trọng yếu không đạt → đề nghị mở Incident CAPA loại Compliance (BRU-AUD-005); nhãn "Chưa đủ mẫu"; báo cáo tuân thủ theo loại phiếu/khoa/nghề/thời điểm PDF/Excel | FR-M12-01, FR-M12-03, FR-M12-04, FR-M12-06, FR-M12-08, FR-M12-09, FR-M12-10, FR-M12-11, FR-M12-14 | UC-43, UC-44, UC-45 | SCR-50 (WEB), SCR-52 (PDA + DEPT), SCR-53 (WEB; view DEPT) | RPC `tracecore.v1.audit.submit_session` (@idempotent); Page `station` chế độ PDA form phiếu; scheduler lịch giám sát; Script Report "Tuân thủ theo khoa"; Print Format; `core.notification.emit`; `Incident CAPA` (`incident_category=Compliance`) | W: Audit Template (+Audit Template Item), Audit Schedule, Audit Session (+Audit Session Item), Incident CAPA, Notification Delivery; R: Department, Employee, IC Network Member | **015**, 003, 010, 014 | L | S6 |
+| FEAT-061 | Vệ sinh tay theo cơ hội: ghi từng cơ hội (thời điểm 1–5, nghề nghiệp, hành động) ≤ 3 chạm, nút ≥ 48 px, một tay (NFR-USAB-03), offline queue + `@idempotent`; tỷ lệ tuân thủ = cơ hội có hành động / tổng cơ hội theo khoa–nghề–thời điểm (BRU-AUD-002); bộ mẫu khởi tạo nạp khi cài app ở trạng thái Nháp, không ghi đè khi migrate (NFR-MAINT-04): VST 5 thời điểm, phòng ngừa chuẩn–PPE, gói dự phòng, VSMT, đơn vị thuê ngoài, ATTP | FR-M12-02, FR-M12-05 | UC-44 | SCR-51 (PDA) | RPC `tracecore.v1.audit.record_opportunity` (@idempotent); fixtures `audit_template` (Nháp, có phiên bản); hàm chỉ số VST qua hook `tracecore_ic_indicators` | W: Audit Session (+Audit Session Item), Idempotency Key; R: Audit Template, Employee | 015, 003 | M | S6 |
+| FEAT-066 | Hóa chất KSNK theo khoa–tháng từ 3 nguồn (Stock Entry xuất tới kho khoa, file import qua Import Mapping Profile, nhập tay có nguồn) + chỉ số lít/1.000 ngày nằm viện; đơn vị thuê ngoài = ERPNext Supplier mở rộng (giấy phép, loại dịch vụ, hợp đồng), nhắc giấy phép 60/30/7 ngày và hết hạn (chỉ cảnh báo + Audit Log, BRU-AUD-006), phiếu giám sát đơn vị thuê ngoài dùng engine M12 | FR-M12-12, FR-M12-13 | UC-46 | SCR-54 (WEB) | Script Report "Hóa chất KSNK theo khoa"; scheduler nhắc giấy phép; Custom Field Supplier (`tc_ic_vendor`, `license_no`, `license_expiry`); hook Stock Entry (ADR-009) | W: IC Chemical Consumption, Supplier (Custom Field); R: Stock Entry, Item (`tc_ic_chemical_type`), Ward Daily Census, Audit Session | 009, 015 | S | S7 |
+
+### E-14 M13 Giám sát nhiễm khuẩn bệnh viện [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-062 | Mẫu số ngày theo khoa (1 bản ghi/(ngày, khoa); số có thiết bị ≤ số người bệnh; nguồn Nhập tay/Import; khóa theo kỳ BRU-HAI-002), nhắc 10:00 khi khoa thiếu mẫu số hôm trước, đợt thiết bị (thở máy/CVC/thông tiểu; mã BN mã hóa ADR-010; số ngày thiết bị; khoa chọn chế độ ghi đợt hay chỉ đếm), phiếu gói dự phòng gắn đợt thiết bị, chấm tất-cả-hoặc-không (BRU-AUD-003) | FR-M13-02, FR-M13-03, FR-M13-04, FR-M12-07 | UC-47, UC-44 | SCR-55 (DEPT + PDA), SCR-52 (PDA + DEPT) | RPC `tracecore.v1.hai.census_upsert`, `tracecore.v1.hai.device_episode` (@idempotent); Portal page Cổng khoa; scheduler nhắc 10:00; Import Mapping Profile loại "Mẫu số ngày" (F-21) | W: Ward Daily Census, Device Episode, Audit Session; R: Audit Template, Department, Import Batch | 010, 003, 015 | M | S6 |
+| FEAT-063 | Định nghĩa ca NKBV có phiên bản (R01 duyệt → khóa; áp phiên bản hiệu lực tại ngày khởi phát BRU-HAI-001; fixtures Nháp theo QĐ 3916), ca NKBV Nghi ngờ → Xác định/Loại trừ (chỉ R11/R01 xác định), kiểm tra min_hours_after_admission / min_device_days_before_onset, tỷ suất NKBV/1.000 ngày nằm viện, VPTM/1.000 ngày thở máy, NK huyết/1.000 ngày CVC, NK tiết niệu/1.000 ngày thông tiểu (mẫu số 0 không hiển thị 0, BRU-HAI-006), kỳ báo cáo tháng khóa/mở khóa có lý do + Audit Log, che mã BN trên mọi danh sách/báo cáo/export (xem đầy đủ chỉ R01/R11 có lý do, BRU-HAI-005) | FR-M13-01, FR-M13-05, FR-M13-06, FR-M13-10, FR-M13-11, FR-M13-15 | UC-48 | SCR-56 (WEB), SCR-58 (WEB) | Desk form submittable; hàm chỉ số qua `tracecore_ic_indicators`; `core.patient_code` (mask/hash/reveal có lý do → Audit Log); test tự động export không chứa mã BN rõ (NFR-PRIV-01) | W: HAI Case Definition (+HAI Case Definition Criterion), HAI Case, IC Reporting Period, IC Indicator Value; R: Ward Daily Census, Device Episode, Department | **010**, 015, 008 | L | S7 |
+| FEAT-064 | Giám sát NKVM theo QĐ 1526: nhóm phẫu thuật (T cắt, cửa sổ 30/90 ngày), đăng ký ca phẫu thuật (ASA, loại vết mổ, thời gian mổ → NNIS BRU-HAI-003; ngày kết thúc cửa sổ BRU-HAI-004), lịch theo dõi sau ra viện (nhắc R11 đúng ngày, ghi kết quả gọi điện), kháng sinh dự phòng (tỷ lệ có KSDP, tỷ lệ đúng thời điểm theo ngưỡng cấu hình), xuất báo cáo NKVM / NK hồi sức theo ánh xạ cột cấu hình được (Excel/CSV) | FR-M13-07, FR-M13-08, FR-M13-09, FR-M13-12 | UC-49 | SCR-57 (WEB + PDA), SCR-58 (WEB) | Desk form + PDA form theo dõi; scheduler lịch theo dõi; Script Report "NKVM theo nhóm phẫu thuật"; export theo `Export Mapping` cấu hình; Import Mapping Profile loại "Danh sách phẫu thuật" (F-21) | W: Surgical Procedure Group, Surgical Surveillance (+Surgical Follow-up), HAI Case; R: HAI Case Definition, IC Reporting Period | 010, 014 | M | S7 |
+
+### E-15 M14 Vi sinh, đa kháng, cách ly, ổ dịch [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-067 | Import kết quả nuôi cấy & kháng sinh đồ (WHONET/CSV) qua Import Mapping Profile (kiểm tra dòng, bỏ trùng (lab_sample_id, organism), báo lỗi theo dòng), nhập tay có xác nhận khi không có file, danh mục Organism, `MDRO Rule` có phiên bản R01 duyệt (BRU-MDR-001), gắn nhãn đa kháng + chủng đầu tiên/người bệnh–loài/kỳ (BRU-MDR-002), thông báo R11/trưởng khoa/mạng lưới viên ≤ 15 phút khi có chủng đa kháng mới, cảnh báo người bệnh từng đa kháng (so hash mã BN) tái xuất hiện ở M13/M14, báo cáo kháng thuốc quý (S/I/R theo vi khuẩn–kháng sinh, theo khoa) | FR-M14-01, FR-M14-02, FR-M14-03, FR-M14-04, FR-M14-05, FR-M14-08 | UC-51 | SCR-59 (WEB) | Import Batch loại Microbiology + Import Mapping Profile (F-21); hook `tracecore_mdro_detected(isolate)` (M13 đăng ký gắn nhãn); `core.notification.emit` Urgent; Script Report "Kháng thuốc theo quý" | W: Organism, Microbiology Isolate (+Antibiogram Result), MDRO Rule (+MDRO Rule Criterion), Import Batch; R: Department, HAI Case | 010, 014, 009 | L | S8 |
+| FEAT-068 | Lệnh cách ly tại khoa (bắt buộc loại phòng ngừa theo đường lây và lý do; danh sách cách ly đang mở theo khoa; đóng lệnh có lý do), phòng cách ly (điều kiện đạt/không đạt), tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt + danh sách khoa chưa có | FR-M14-06, FR-M14-07 | UC-52 | SCR-60 (WEB + DEPT) | Desk/Portal form; hàm chỉ số qua `tracecore_ic_indicators`; `core.notification.emit` | W: Isolation Order, Isolation Room; R: Microbiology Isolate, HAI Case, Department | 010, 015 | S | S8 |
+| FEAT-069 | Điều tra ổ dịch (gắn ca từ M13/M14, đường cong dịch theo ngày khởi phát, hành động kiểm soát, kết thúc), cảnh báo cụm ca (số ca cùng loại NK/tác nhân tại khoa trong N ngày vượt ngưỡng cấu hình → thông báo R01/R11, đề nghị mở ổ dịch), khai báo bệnh truyền nhiễm (nhóm A/B/C, hạn khai báo theo cấu hình, nhắc R11, mẫu báo cáo theo TT 15/2026; OQ-V12-03) | FR-M14-09, FR-M14-10, FR-M13-13 | UC-53, UC-50 | SCR-61 (WEB), SCR-58 (WEB) | Desk form submittable; scheduler phát hiện cụm ca; Insights chart đường cong dịch (design.md); Print Format "Báo cáo ổ dịch", "Khai báo bệnh truyền nhiễm"; `core.notification.emit` Urgent | W: Outbreak Investigation (+Outbreak Case), Notifiable Disease Report; R: HAI Case, Microbiology Isolate, Isolation Order | 010, 014 | M | S8 |
+
+### E-16 M15 Vệ sinh môi trường và cơ sở hạ tầng [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-070 | Vùng vệ sinh (mức nguy cơ, bên chịu trách nhiệm nội bộ/thuê ngoài, danh sách vùng chưa đủ số liệu), phiếu VSMT gắn vùng dùng engine M12 → tỷ lệ đạt theo mức nguy cơ/khoa/bên chịu trách nhiệm, ngưỡng môi trường có phiên bản (`Environmental Limit`, BRU-ENV-*), kế hoạch lấy mẫu giao việc + mẫu trễ hạn, mẫu môi trường (so ngưỡng hiệu lực tại ngày lấy mẫu, Không đạt → thông báo + đề nghị NC loại Environment + lấy mẫu lại), phiếu kiểm tra hạ tầng (hạn kiểm tra kế tiếp, nhắc trước 7 ngày), báo cáo môi trường tháng/quý | FR-M15-01, FR-M15-02, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07 | UC-54 | SCR-62 (WEB), SCR-52 (PDA + DEPT) | Desk form; scheduler kế hoạch lấy mẫu & hạn hạ tầng; Script Report "Vệ sinh môi trường"; Print Format; `Incident CAPA` (`incident_category=Environment`); tái dùng `Environment Log` cho khu CSSD (ADR-009) | W: Environment Zone, Environmental Limit, Sampling Plan, Environmental Sample, Audit Session, Incident CAPA; R: Audit Template, Supplier, Department | 015, 014, 009 | M | S8 |
+
+### E-17 M16 An toàn nghề nghiệp [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-071 | Báo phơi nhiễm ban đầu ≤ 3 bước trên PDA/DEPT (thông báo ngay R01/R11), tự tạo `Occupational Exposure` từ sự cố vật sắc nhọn của M10 qua hook `tracecore_exposure_incident` (FR-M10-06.1), thời gian phơi nhiễm → báo cáo → dự phòng + cờ vượt ngưỡng (BRU-OCC-*), sơ cứu & chỉ định dự phòng → lịch theo dõi từ `Exposure Follow-up Template` (có phiên bản, fixtures Nháp), quyền xem hồ sơ chỉ R01/R11/chính nhân viên (báo cáo khác ẩn danh), **không có trường kết quả xét nghiệm/chẩn đoán nhân viên** (NFR-PRIV-01), tiêm chủng nhân viên (`Immunization Requirement` theo vị trí; next_due; nhắc dùng lại FR-M4-01.4), cảnh báo tồn thuốc dự phòng (Item đánh dấu) dưới mức tối thiểu/lô ≤ 30 ngày hạn, báo cáo phơi nhiễm theo kỳ | FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | UC-55 | SCR-63 (PDA + DEPT), SCR-64 (WEB) | RPC `tracecore.v1.exposure.report` (@idempotent); hook `tracecore_exposure_incident(incident)` (M10 gọi, M16 đăng ký); scheduler lịch theo dõi & tiêm chủng; Script Report "Phơi nhiễm theo kỳ"; test JSON DocType không có trường kết quả XN; test ma trận quyền (F-22) | W: Occupational Exposure (+Exposure Follow-up), Exposure Follow-up Template, Staff Immunization, Immunization Requirement; R: Incident CAPA (M10), Employee, Item, Batch | 010, 003, 014, 009 | L | S8 |
+
+### E-18 M17 An toàn thực phẩm & truyền thông người bệnh [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-073 | Giám sát bếp ăn/đơn vị suất ăn bằng mẫu phiếu M12 loại "An toàn thực phẩm" gắn Supplier, sức khỏe người chế biến (nhắc 30 ngày/quá hạn, danh sách không đủ điều kiện), mẫu thực phẩm xử lý như mẫu môi trường M15, sự cố nghi ngộ độc thực phẩm (báo ngay R01/R11, NC, ngưỡng số người → khai báo), buổi truyền thông KSNK (đối tượng, chủ đề, số người, tổng hợp quý), tài liệu truyền thông người bệnh có QR trỏ bản hiện hành | FR-M17-01, FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | UC-56 | SCR-65 (WEB), SCR-52 (PDA + DEPT) | Desk form; scheduler hạn khám sức khỏe; `core.gs1`/QR nội bộ cho tài liệu; Script Report "ATTP & truyền thông theo quý"; `Incident CAPA` (`incident_category=Food Safety`) | W: Food Handler Health Check, Foodborne Event, IC Education Session, Audit Session, Environmental Sample, Incident CAPA; R: Audit Template, Supplier, Environmental Limit, IC Procedure Document | 015, 009, 014 | M | S9 |
+
+### E-19 M9 mở rộng — bảng chỉ số KSNK toàn viện & nhập file [A-113]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-056 | **Nền v1.12** (gồm: thêm 7 package mới vào tuple `BUSINESS` của `scripts/check_architecture.py` để lint không-import-chéo phủ M11–M17): 3 Role `TC R11..R13` + Role Profile + DocPerm fixtures (ma trận #13 mở rộng, NFR-SEC-09; R12 User Permission Department), 7 Module Def mới (Infection Program, Compliance Audit, HAI Surveillance, Microbiology, Environmental Hygiene, Occupational Safety, Food Safety) + package Python, `IC Program Settings` (Single), danh mục `IC Indicator` (14 nhóm biện pháp, kind, source_method, national_target), engine `IC Indicator Value` tính & khóa theo kỳ qua hook `tracecore_ic_indicators` (mỗi module đăng ký hàm tính), `Import Mapping Profile` (hồ sơ ánh xạ cột dùng chung cho mẫu số, phẫu thuật, vi sinh, hóa chất; nhập lại cùng file không trùng; báo lỗi theo dòng theo mẫu FR-M9-11) | FR-M9-27, FR-M9-28 | UC-57 | SCR-66 (WEB + DEPT), SCR-43 (WEB, tab hồ sơ ánh xạ) | hook `tracecore_ic_indicators`; RPC `tracecore.v1.indicator.values` (chỉ đọc); Import Batch mở rộng loại import; fixtures Role/DocPerm/Module Def; `test_permissions.py` sinh từ CSV mở rộng (F-22) | W: IC Program Settings, IC Indicator, IC Indicator Value, Import Mapping Profile (+Import Mapping Profile Column), Import Batch; R: Department, Role | 015, 010, 009, 001 | M | S6 |
+| FEAT-065 | Bảng chỉ số KSNK toàn viện (từng chỉ số của kế hoạch năm: giá trị kỳ gần nhất, mục tiêu, xu hướng 12 tháng, cỡ mẫu; lọc khoa; trạng thái đạt/chưa có chữ; mở ≤ 3 s với 24 tháng dữ liệu 1.000 giường — đọc IC Indicator Value, NFR-PERF-05), báo cáo một trang cho Hội đồng ngày làm việc thứ 5 hằng tháng (PDF, từ kỳ đã khóa, gửi R13/R01), view Cổng khoa (chỉ số khoa cạnh trung bình toàn viện + việc cần làm), tự đánh giá năm theo QĐ 38 điền sẵn từ dữ liệu | FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-29 | UC-57 | SCR-66 (WEB + DEPT) | Page/Insights dashboard `ic_dashboard`; scheduler sinh PDF tháng + `core.notification.emit`; Portal view khoa; Print Format "Báo cáo Hội đồng KSNK 1 trang", "Tự đánh giá QĐ 38"; RPC `tracecore.v1.indicator.values`; test hiệu năng dữ liệu sinh giả | W: IC Annual Plan (tự đánh giá), Notification Delivery; R: IC Indicator Value, IC Indicator, IC Annual Plan, Audit Session, HAI Case, Department | 015, 014, 002 | M | S7 |
+| FEAT-074 | Gói xuất hồ sơ KSNK cho đoàn kiểm tra theo kỳ (PDF + Excel: kế hoạch, biên bản, chỉ số, báo cáo tuân thủ/NKBV/môi trường/phơi nhiễm; checksum, dấu thời gian, che mã BN theo FR-M9-12/NFR-PRIV-01); API `tracecore.v1.ic.*` chỉ đọc **chỉ khi D3 được chủ đầu tư mở** (mặc định không triển khai) | FR-M9-30 | UC-57 | SCR-66 (WEB), SCR-43 (WEB) | Tái dùng Archive Export (FEAT-012) + RQ job nền; mask patient_code trong gói | W: Archive Export; R: toàn bộ DocType M11–M17, IC Indicator Value | 010, 008 | S | S9 |
+
 ### 3.1 Coverage ledger
 
 **Must FR (toàn bộ 90 FR gốc, kể cả Should/Could):** mỗi FR xuất hiện ở ít nhất một FEAT ở trên; FR-M9-14 đặt vào Foundations (§6). Kiểm bằng script (§9): **0 FR chưa phủ, 0 Must FR chưa phủ.** FR partial được hoàn tất tại: FR-M2-25 (018 → 019/020/021/022 → 023 full), FR-M8-03 (018 stub → 023 counter → 032 full), FR-M4-01/FR-M4-03 (003 partial → 036/037 full), FR-M2-24 (021 nhập tay → 024 tự động), FR-M2-08 (002 cấu hình → 018 in), FR-M9-07 (001 → 005), FR-M1-09 (014 → 018 nhắc tại T4), FR-M8-02 (031 → 026 áp dụng).
@@ -183,6 +245,12 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 **SCR (43/43):** SCR-01→014 · 02→015 · 03→016, 005 · 04→017 · 05→019 · 06→021, 024 · 07→020 · 08→018, 032, 009 · 09→022, 024 · 10→023 · 11→025 · 12→026 · 13→027 · 14→028, 029 · 15→030, 050 · 16→033 · 17→034 · 18→035 · 19→036 · 20→037 · 21→038 · 22→039 · 23→040 · 24→041 · 25→042 · 26→043 · 27→044 · 28→045 · 29→046 · 30→031 · 31→032 · 32→006, 007, 050 · 33→002, 003, 004, 005, 008, 009 · 34→019, 009 · 35→022, 009 · 36→026, 009 · 37→027, 009 · 38→047 · 39→048 · 40→049 · 41→050 · 42→010, 029 · 43→011, 012. **0 màn hình chưa chạm.**
 
 **NFR (35):** phân vào Foundations hoặc FEAT đo được — ghi trong RTM Plan ref (§9); EI-*/OTH-* không có dòng RTM, được tham chiếu trong ngoặc tại FEAT liên quan.
+
+**[A-113] FR v1.12 (81/81 → tổng 171 FR):** mỗi FR-M11..M17 và FR-M9-24..30 nằm trong đúng một FEAT ở E-12..E-19, trừ các FR xuất hiện ở FEAT thứ hai theo thiết kế BA: FR-M12-07 (gói dự phòng) hoàn tất tại FEAT-062 (engine ở 060); FR-M13-13 (cụm ca) tại FEAT-069; FR-M13-14 (cắt ngang) và FR-M11-12/13 (cải tiến, tự đánh giá) tại FEAT-072. Kiểm tay 2026-11-03: **0 FR v1.12 chưa phủ, 0 Must chưa phủ.**
+
+**[A-113] SCR (63/63 đã duyệt; SCR-44..46 vẫn là đề xuất):** SCR-47→057 · 48→058 · 49→059, 072 · 50→060 · 51→061 · 52→060, 062, 070, 073 · 53→060 · 54→066 · 55→062 · 56→063 · 57→064 · 58→063, 064, 069, 072 · 59→067 · 60→068 · 61→069 · 62→070 · 63→071 · 64→071 · 65→073 · 66→056, 065, 074; SCR-43 tái dùng cho hồ sơ ánh xạ cột (056, 074).
+
+**[A-113] NFR (42):** NFR-PRIV-01, NFR-SEC-09 → FEAT-056 (đo lại tại 063, 067, 071); NFR-PRIV-02 → FEAT-063, 071; NFR-USAB-03 → FEAT-061; NFR-AVAIL-05 → FEAT-061, 062, 071; NFR-MAINT-04 → FEAT-060, 063, 067, 070, 071; NFR-PERF-05 → FEAT-065 (RTM Plan ref đã ghi).
 
 ## 4. Build Sequence
 
@@ -207,6 +275,10 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | **S5** (3) | 046, 006, 007, 012, 013 (+ S5b: 049, 050) | Giá thành mẻ/bộ; dashboard; sổ tiệt khuẩn điện tử in mẫu BYT; export hồ sơ | **M2 UAT 3 khu** (GĐ6 PID, 3 tuần) |
 | **S5b** (song song S4–S5, 1 dev) | 047, 048, 049, 050 | Thu gom → lưu giữ → bàn giao → báo cáo chất thải | UAT M10 cùng M2 hoặc sau go-live |
 | Sau UAT | hardening, load test, pentest ASVS L2, đào tạo, chạy song song 2 tuần | — | **M3 Go-live** (GĐ7 PID) |
+| **S6** (3) [A-113 GĐ1] | 056, 057, 058, 059, 060, 061, 062 | Cơ cấu KSNK + kế hoạch năm; engine phiếu giám sát; ghi cơ hội VST trên PDA offline; mẫu số ngày & đợt thiết bị tại Cổng khoa | **M-v1.12-GĐ1a** — khoa thí điểm ghi phiếu VST thật |
+| **S7** (3) [A-113 GĐ1] | 063, 064, 065, 066 | Ca NKBV + tỷ suất theo kỳ khóa; NKVM/NNIS; bảng chỉ số KSNK toàn viện + báo cáo Hội đồng 1 trang; hóa chất, đơn vị thuê ngoài | **M-v1.12-GĐ1** — Hội đồng KSNK xem bảng chỉ số từ dữ liệu thật |
+| **S8** (4) [A-113 GĐ2] | 067, 068, 069, 070, 071, 072 | Import WHONET + đa kháng + cách ly + ổ dịch; vệ sinh môi trường; phơi nhiễm & tiêm chủng; cải tiến/tự đánh giá/cắt ngang | **M-v1.12-GĐ2** |
+| **S9** (2) [A-113 GĐ3] | 073, 074 | ATTP & truyền thông; gói hồ sơ KSNK (API tích hợp chỉ khi D3 mở) | **M-v1.12-GĐ3** — UAT KSNK toàn viện |
 
 Thời lượng: S0–S5 ≈ 18 tuần phát triển (PID GĐ3–5 = 15 tuần + GĐ2 thiết kế 3 tuần — tương đương vì detailed-design/ui-design chạy per-slice trong sprint). Thứ tự sau S2 là **living order**: tái sắp sau mỗi sprint theo kết quả đo (Debt-1, R-07) — không phải cam kết.
 
@@ -265,6 +337,26 @@ graph LR
     F049["FEAT-049<br/>Bàn giao chất thải"]
     F050["FEAT-050<br/>Báo cáo chất thải"]
     F051["FEAT-051<br/>Cấu hình trạm"]
+    F053["FEAT-053<br/>Chương trình theo máy (A-110)"]
+    F056["FEAT-056<br/>Nền v1.12: R11–R13, chỉ số, Import Mapping Profile"]
+    F057["FEAT-057<br/>Cơ cấu KSNK"]
+    F058["FEAT-058<br/>Kế hoạch năm, văn bản, họp HĐ"]
+    F059["FEAT-059<br/>Đào tạo HRMS, sinh viên"]
+    F060["FEAT-060<br/>Engine phiếu giám sát (ADR-015)"]
+    F061["FEAT-061<br/>Vệ sinh tay theo cơ hội"]
+    F062["FEAT-062<br/>Mẫu số, đợt thiết bị, gói dự phòng"]
+    F063["FEAT-063<br/>Ca NKBV, kỳ, tỷ suất, che mã BN"]
+    F064["FEAT-064<br/>NKVM, KSDP, xuất báo cáo"]
+    F065["FEAT-065<br/>Bảng chỉ số KSNK, Cổng khoa"]
+    F066["FEAT-066<br/>Hóa chất, đơn vị thuê ngoài"]
+    F067["FEAT-067<br/>Vi sinh, đa kháng, kháng thuốc"]
+    F068["FEAT-068<br/>Cách ly"]
+    F069["FEAT-069<br/>Ổ dịch, cụm ca, khai báo"]
+    F070["FEAT-070<br/>Vệ sinh môi trường"]
+    F071["FEAT-071<br/>Phơi nhiễm, tiêm chủng"]
+    F072["FEAT-072<br/>Cải tiến, tự đánh giá, cắt ngang"]
+    F073["FEAT-073<br/>ATTP, truyền thông"]
+    F074["FEAT-074<br/>Gói hồ sơ KSNK"]
 
     F001 --> F018
     F001 --> F002
@@ -318,9 +410,34 @@ graph LR
     F033 --> F047
     F047 --> F048 --> F049 --> F050
     F002 --> F051
+    F038 --> F053
+    F053 --> F056
+    F003 --> F056
+    F011 --> F056
+    F056 --> F057 --> F058
+    F057 --> F059
+    F056 --> F060 --> F061
+    F060 --> F062 --> F063 --> F064
+    F058 --> F065
+    F061 --> F065
+    F063 --> F065
+    F060 --> F066
+    F056 --> F067 --> F068
+    F063 --> F069
+    F067 --> F069
+    F060 --> F070
+    F056 --> F071
+    F050 --> F071
+    F060 --> F072
+    F063 --> F072
+    F060 --> F073
+    F070 --> F073
+    F065 --> F074
 
     classDef risk fill:#c0392b,stroke:#7b241c,color:#fff
     class F018,F009,F024 risk
+    classDef v112 fill:#1f4e79,stroke:#0b2a45,color:#fff
+    class F056,F057,F058,F059,F060,F061,F062,F063,F064,F065,F066,F067,F068,F069,F070,F071,F072,F073,F074 v112
 ```
 
 ### 4.4 Milestone view
@@ -351,8 +468,18 @@ graph LR
     subgraph m3["M3 Go-live"]
         g["Hardening · load test · pentest<br/>đào tạo · song song 2 tuần"]
     end
+    subgraph v1["[A-113] M-v1.12-GĐ1 — S6–S7"]
+        h["FEAT-056 · 057 · 058 · 059 · 060 · 061 · 062<br/>063 · 064 · 065 · 066"]
+    end
+    subgraph v2["[A-113] M-v1.12-GĐ2 — S8"]
+        i["FEAT-067 · 068 · 069 · 070 · 071 · 072"]
+    end
+    subgraph v3["[A-113] M-v1.12-GĐ3 — S9"]
+        j["FEAT-073 · 074"]
+    end
     s --> a --> b --> c --> d --> e --> g
     d --> f --> g
+    g --> h --> i --> j
 ```
 
 ## 5. First Vertical Slice — FEAT-018 "T4 Đóng gói → Cycle ID GS1 + in nhãn theo phương pháp + cổng T3→T4"
@@ -439,6 +566,20 @@ R04 (phiên kỹ thuật `station-t4@local`, đăng nhập thẻ đến FEAT-003
 | F-18 | Security scanning | bandit, pip-audit, npm audit trong CI; pentest nội bộ ASVS L2 trước go-live (ngoài CI) | NFR-SEC-04 |
 | F-19 | Compatibility | Playwright matrix: Chromium kiosk 1366×768 + 1920×1080, Android Chrome (Pixel 7 descriptor); Edge/Firefox smoke WEB thủ công trước UAT | NFR-COMPAT-01 |
 | F-20 | Tài liệu kỹ thuật đồng bộ | Docstring cho DocType/RPC/hook; `#00 CHG` + Revision History khi đổi yêu cầu; design-manifest.json từ ui-design | NFR-MAINT-03 |
+| F-21 [A-113] | Import Mapping Profile (hồ sơ ánh xạ cột) dùng chung | DocType `Import Mapping Profile` (+child cột nguồn → trường đích, kiểu, bắt buộc, quy tắc chuẩn hóa) gắn `Import Batch`; loại import mới: Mẫu số ngày, Danh sách phẫu thuật, Vi sinh (WHONET/CSV), Hóa chất; nhập lại cùng file không tạo trùng (khóa tự nhiên theo loại); báo lỗi theo dòng theo mẫu FR-M9-11; **không** kết nối trực tuyến HIS/LIS/WHONET (D3) | FR-M9-28, FR-M13-02, FR-M14-01, FR-M12-12; EI-SW-007 |
+| F-22 [A-113] | Ma trận quyền R11–R13 từ CSV | Mở rộng `fixtures/permission_matrix.csv` cho 3 Role mới và mọi DocType M11–M17/M9 mở rộng; `test_permissions.py` sinh 100 % ô; R12 và R08 giới hạn User Permission Department; test che mã BN trên mọi report/export M13, M14, M16 và kiểm JSON DocType không có trường họ tên người bệnh / kết quả XN nhân viên | NFR-SEC-09, NFR-PRIV-01, ADR-010 |
+
+### 6.1 Definition of Done v1.12 (mỗi FEAT 056–074) [A-113]
+
+Áp dụng thêm cho mọi FEAT của A-113, ngoài DoD chung của CLAUDE.md (BA v1.12 §12.2):
+
+- [ ] Amendment đã ghi trước khi code: FR/BRU vào srs.md, DocType vào architecture.md §5.3.1, naming vào §5.3.3, SCR vào ux-foundations.md, dòng mới trong rtm.md.
+- [ ] TDD với FrappeTestCase; mỗi BRU có ít nhất 1 test gắn `@bru("BRU-XXX-NNN")`.
+- [ ] Mọi tiêu chí nghiệm thu trong bảng FR của FEAT đạt; coverage changed-code ≥ 70 %; pre-commit sạch.
+- [ ] Test ma trận quyền cho DocType mới; test che mã người bệnh trên export (nếu FEAT có dữ liệu người bệnh).
+- [ ] Chuỗi hiển thị qua `_()`, bản dịch trong translations/vi.csv, chỉ dùng token `--tc-*`.
+- [ ] Fixtures nội dung chuyên môn ở trạng thái Nháp, không ghi đè khi nâng cấp.
+- [ ] Merge vào develop theo Conventional Commits; không tự tạo Pull Request.
 
 ## 7. Risks & Assumptions
 
@@ -459,6 +600,11 @@ R04 (phiên kỹ thuật `station-t4@local`, đăng nhập thẻ đến FEAT-003
 | P-11 | **Phạm vi go-live M10** chưa chốt | S5b có thể dời sau go-live | Quyết định của Medcons PM/chủ đầu tư trước S4 |
 | P-12 | **ERPNext Stock Entry hook** (R-10) | FEAT-042 async lỗi | Test hồi quy M6 trong CI; `allow_negative_stock` kho tiêu hao |
 | P-13 | **Tiền tố GS1 thật** (OQ-05) | Payload (01) GTIN loại bộ dùng prefix test | Thẻ/nhãn dev/staging đánh dấu TEST; re-issue thẻ khi có prefix thật trước UAT (Set ID không sửa sau in — nên chỉ in thẻ thật ở staging/prod) |
+
+| P-14 [A-113] | **Nội dung chuyên môn khởi tạo** (mẫu phiếu, định nghĩa ca NKBV, quy tắc đa kháng, ngưỡng môi trường, bước theo dõi phơi nhiễm; ngưỡng cảnh báo cụm ca, giờ báo phơi nhiễm, thời điểm KSDP, cỡ mẫu tối thiểu) chưa có người soạn/duyệt (OQ-V12-08, OQ-V12-09) | FEAT-060/061/063/067/070/071 chỉ chạy được với fixture mẫu; UAT KSNK cần chuyên gia | Fixtures Nháp có phiên bản, R01 duyệt tại bệnh viện (D10); Medcons + chuyên gia KSNK soạn bộ khởi tạo trước S6; không mã hóa cứng tiêu chí (NFR-MAINT-04) |
+| P-15 [A-113] | **Dữ liệu sức khỏe nhạy cảm** (NĐ 356/2025) ở M13, M14, M16; thời hạn lưu chưa chốt (OQ-V12-07); bệnh viện là bên xử lý, cần hồ sơ bảo vệ dữ liệu (luật sư xác nhận) | FEAT-063/067/071 có thể bị chặn pháp lý; rework quyền/che mã | ADR-010 mở rộng + F-22 test che mã tự động; NFR-PRIV-02 job xóa định danh cấu hình được; Medcons cung cấp sơ đồ luồng dữ liệu cho bệnh viện trước UAT |
+| P-16 [A-113] | **Hiệu năng bảng chỉ số** với 24 tháng × 1.000 giường và **file nhập từ HIS/WHONET** không đúng định dạng (OQ-V12-05) | FEAT-065 trượt NFR-PERF-05; FEAT-062/067 import lỗi hàng loạt | Đọc từ `IC Indicator Value` tính sẵn khi khóa kỳ (FR-M9-27), không tính lại khi mở; test hiệu năng dữ liệu sinh giả; Import Mapping Profile linh hoạt cột + mẫu file lấy từ bệnh viện thí điểm trước S6 |
+| P-17 [A-113] | **Đụng số FEAT**: BA v1.12 đánh FEAT-053..071 trong khi develop đã dùng 053..055 | Tham chiếu chéo sai giữa BA và repo | Repo là nguồn sự thật: FEAT-056..074; mọi tài liệu BA/marketing nhắc số FEAT phải đọc +3 (ghi ở §3 E-12) |
 
 **Giả định:** đội 2–3 dev song song 2–3 FEAT/sprint; detailed-design + ui-design chạy per-slice trong sprint (không có GĐ2 riêng 3 tuần như PID); Claude Code hỗ trợ scaffold/test; staging bench Miyano sẵn từ S0. Thứ tự từ S3 trở đi là **living order** — tái sắp sau mỗi sprint review, không phải cam kết.
 
@@ -489,6 +635,21 @@ Kết quả tự kiểm bằng script `scripts/verify_plan.py` (chạy 2026-10-1
 5. **Document conformance** — đủ §1–§7 template + §8/§9 bổ sung; fidelity note ở header; MoSCoW giữ nguyên SRS; **RTM write-back**: cột Plan ref điền cho 90 FR + 35 NFR (chỉ cột này).
 
 Log kiểm: xem cuối file (phần "Verification log").
+
+### Verification log A-113 (kiểm tay bằng grep, 2026-11-03)
+
+`scripts/verify_plan.py` không còn trong repo (đã bỏ sau 2026-10-17) nên kiểm tay:
+
+```
+FEAT rows in §3: 74 (FEAT-001..074, contiguous, no reuse; 053..055 = A-110..112, 056..074 = A-113)
+FR v1.12 defined (srs §3.1.11–3.1.17 + FR-M9-24..30): 81 · covered by FEAT-056..074: 81 · uncovered: 0 · uncovered Must: 0
+SCR v1.12 (SCR-47..66): 20 · touched by ≥ 1 FEAT: 20 · SCR-44..46 not cited
+UC v1.12 (UC-40..57): 18 · each cited by ≥ 1 FEAT
+NFR v1.12: 7 · Plan ref filled in RTM: 7
+dependency graph: 74 nodes (+ F053 của A-110), 28 edges added, acyclic (every A-113 edge points from lower FEAT to higher FEAT or from 050/053/003/011/038 → 056/071)
+RTM write-back: +81 FR rows, +7 NFR rows (Plan ref column only, other columns per rtm-guide ownership)
+ERRORS: 0
+```
 
 ### Verification log (scripts/verify_plan.py, 2026-10-17)
 
