@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "creation": "2026-11-06 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "IV-.YYYY.-.######",
+ "naming_rule": "Expression (old style)",
+ "description": "Infection control indicator values written by the system when a reporting period is locked.",
+ "field_order": [
+  "indicator",
+  "period",
+  "department",
+  "column_break_main",
+  "value",
+  "sample_note",
+  "locked",
+  "section_detail",
+  "numerator",
+  "denominator",
+  "column_break_detail",
+  "sample_size",
+  "computed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "indicator",
+   "fieldtype": "Link",
+   "label": "Indicator",
+   "options": "IC Indicator",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "period",
+   "fieldtype": "Data",
+   "label": "Period",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1,
+   "description": "Month in the form YYYY-MM."
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1,
+   "description": "Empty means the whole hospital."
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Float",
+   "label": "Value",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sample_note",
+   "fieldtype": "Select",
+   "label": "Note",
+   "options": "\nNot calculated\nInsufficient sample",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "locked",
+   "fieldtype": "Check",
+   "label": "Locked",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break",
+   "label": "Calculation"
+  },
+  {
+   "fieldname": "numerator",
+   "fieldtype": "Float",
+   "label": "Numerator",
+   "read_only": 1
+  },
+  {
+   "fieldname": "denominator",
+   "fieldtype": "Float",
+   "label": "Denominator",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_detail",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sample_size",
+   "fieldtype": "Int",
+   "label": "Sample Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "computed_on",
+   "fieldtype": "Datetime",
+   "label": "Computed On",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-06 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "IC Indicator Value",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

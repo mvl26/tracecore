@@ -378,6 +378,12 @@ doc_events = {
 	"Waste Quota": dict(_AUDIT_EVENTS),  # FEAT-050, A-63
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	# A-113 (FEAT-056): cài đặt chương trình, danh mục chỉ số, giá trị chỉ số (tính lại sau mở khóa có old/new —
+	# FR-M9-27.1), hồ sơ ánh xạ cột: Audit Log, không xóa
+	"IC Program Settings": dict(_AUDIT_EVENTS),
+	"IC Indicator": dict(_AUDIT_EVENTS),
+	"IC Indicator Value": dict(_AUDIT_EVENTS),
+	"Import Mapping Profile": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
