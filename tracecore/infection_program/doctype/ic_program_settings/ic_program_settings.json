@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "creation": "2026-11-06 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_program",
+  "bed_count",
+  "facility_level",
+  "column_break_program",
+  "has_inpatient",
+  "surveillance_ratio_beds",
+  "doc_review_months",
+  "section_retention",
+  "patient_data_retention_months",
+  "exposure_retention_months"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_program",
+   "fieldtype": "Section Break",
+   "label": "Program"
+  },
+  {
+   "fieldname": "bed_count",
+   "fieldtype": "Int",
+   "label": "Planned Beds",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "facility_level",
+   "fieldtype": "Select",
+   "label": "Facility Level",
+   "reqd": 1,
+   "options": "Specialized\nBasic\nPrimary"
+  },
+  {
+   "fieldname": "column_break_program",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "has_inpatient",
+   "fieldtype": "Check",
+   "label": "Has Inpatient Care"
+  },
+  {
+   "default": "150",
+   "fieldname": "surveillance_ratio_beds",
+   "fieldtype": "Int",
+   "label": "Beds per Surveillance Officer"
+  },
+  {
+   "default": "12",
+   "fieldname": "doc_review_months",
+   "fieldtype": "Int",
+   "label": "Procedure Review Cycle (Months)"
+  },
+  {
+   "fieldname": "section_retention",
+   "fieldtype": "Section Break",
+   "label": "Personal Data Retention"
+  },
+  {
+   "fieldname": "patient_data_retention_months",
+   "fieldtype": "Int",
+   "label": "Patient Identifier Retention (Months)",
+   "description": "Leave empty until the hospital decides. Identifiers older than this are removed; totals stay."
+  },
+  {
+   "fieldname": "exposure_retention_months",
+   "fieldtype": "Int",
+   "label": "Exposure Record Retention (Months)",
+   "description": "Leave empty until the hospital decides."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-06 10:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "IC Program Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "issingle": 1,
+ "module": "Infection Program",
+ "description": "Infection control program settings: planned beds and facility level decide the required IC structure."
+}
