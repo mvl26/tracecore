@@ -1845,7 +1845,7 @@ _Nguồn: BA v1.12 §4.1 bước 3–5, §4.3 FR-M11-04..08, §4.4; TT 16/2018 �
 **Alternate flows**
 - A1. Nhân viên có Certificate KSNK còn hiệu lực nhưng chưa dự lớp trong năm → vẫn tính đạt cho FR-M11-10; không tính cho FR-M11-09 (đào tạo cơ bản trong năm).
 - A2. Gửi nhắc hàng loạt cho danh sách chưa đào tạo qua `core.notification`.
-- A3. Tự đánh giá theo QĐ 38 → dùng UC-57 (FR-M9-27) để điền sẵn phần tính được.
+- A3. Tự đánh giá theo QĐ 38 → dùng UC-57 (FR-M9-29) để điền sẵn phần tính được.
 
 **Exception flows**
 - E1. `trained_on` sau `period_from` → cảnh báo và đánh dấu "Chưa đạt trước thực tập" (FR-M11-11).
@@ -2015,7 +2015,7 @@ _Nguồn: BA v1.12 §5.1 bước 4, §5.3 FR-M12-08, 09, 14, §5.4; TT 16/2018 �
 
 **Main success scenario**
 1. Khi `Stock Entry` xuất hóa chất có `tc_ic_chemical_type` tới kho khoa được ghi sổ, hook tạo/cộng dồn `IC Chemical Consumption` (kỳ tháng, khoa, item, qty, uom, `source` = Stock Entry, `source_ref`).
-2. Khoa Dược gửi file → R09/R11 import qua SCR-43 với hồ sơ ánh xạ cột (FR-M9-26); dòng hợp lệ tạo bản ghi `source` = Import.
+2. Khoa Dược gửi file → R09/R11 import qua SCR-43 với hồ sơ ánh xạ cột (FR-M9-28); dòng hợp lệ tạo bản ghi `source` = Import.
 3. Khoa không có cả hai nguồn → R09 nhập tay trên SCR-54 với người xác nhận; `source` = Nhập tay, Audit Log.
 4. Cuối quý R01 mở SCR-54, chọn quý → hệ thống tổng hợp theo loại hóa chất (Dung dịch VST nhanh / Xà phòng / Khử khuẩn bề mặt / Khử khuẩn dụng cụ / Khác) theo khoa; nếu M13 có ngày nằm viện của kỳ → tính lít VST/1.000 ngày nằm viện; xuất PDF/Excel; đẩy chỉ số sang M9.
 5. R09 cập nhật `Supplier` thuê ngoài: loại dịch vụ, số giấy phép, hạn giấy phép, hợp đồng từ–đến.
@@ -2120,14 +2120,14 @@ _Nguồn: BA v1.12 §6.1 bước 1–2, §6.3 FR-M13-02..04, §6.4; QĐ 3916 (gi
 2. R11 rà soát danh sách gợi ý (đợt thiết bị đang mở, chủng dương tính từ M14) và tạo `HAI Case` trạng thái Nghi ngờ: mã BN (mã hóa), năm sinh, giới, khoa, ngày nhập viện, ngày khởi phát, đợt thiết bị/ca phẫu thuật liên quan, chủng (tùy chọn).
 3. Hệ thống gắn phiên bản định nghĩa có hiệu lực tại `onset_date` (bản chụp) và kiểm tra ngưỡng: khởi phát sớm hơn `min_hours_after_admission` hoặc thiết bị lưu ngắn hơn `min_device_days_before_onset` → cảnh báo, yêu cầu lý do.
 4. R11/R01 chuyển Xác định (lưu `confirmed_by`) hoặc Loại trừ (bắt buộc `exclusion_reason`); ghi sổ ca.
-5. Cuối tháng R01 khóa `IC Reporting Period` → hệ thống chặn sửa mẫu số và ca thuộc kỳ, tính tỷ suất theo khoa/kỳ (FR-M13-10) và lưu `IC Indicator Value` (FR-M9-25).
+5. Cuối tháng R01 khóa `IC Reporting Period` → hệ thống chặn sửa mẫu số và ca thuộc kỳ, tính tỷ suất theo khoa/kỳ (FR-M13-10) và lưu `IC Indicator Value` (FR-M9-27).
 6. Người dùng mở SCR-58 xem tỷ suất, tỷ lệ sử dụng thiết bị theo khoa; mọi danh sách chỉ hiện mã BN che.
 7. Khi cần xem mã đầy đủ, R01/R11 bấm "Xem mã BN", nhập lý do → hệ thống giải mã hiển thị tạm thời và ghi Audit Log "Xem mã BN".
 
 **Alternate flows**
 - A1. R12/R08 tạo ca Nghi ngờ cho khoa mình → chỉ R11/R01 xác định; R08 không thấy nút Xác định.
 - A2. Ca khởi phát trước ngày hiệu lực V2 → vẫn gắn V1 (BRU-HAI-001).
-- A3. Cần sửa dữ liệu kỳ đã khóa → R01 mở khóa với `unlock_reason` (Audit Log), sửa, khóa lại → giá trị chỉ số tính lại (FR-M9-25).
+- A3. Cần sửa dữ liệu kỳ đã khóa → R01 mở khóa với `unlock_reason` (Audit Log), sửa, khóa lại → giá trị chỉ số tính lại (FR-M9-27).
 - A4. Hết thời hạn lưu (NFR-PRIV-02) → job xóa định danh (mã BN, năm sinh), giữ số liệu tổng hợp.
 
 **Exception flows**
@@ -2164,7 +2164,7 @@ _Nguồn: BA v1.12 §6.1 bước 3, 5, §6.3 FR-M13-01, 05, 06, 10, 11, 15, §6.
 7. Người dùng xuất báo cáo NKVM (hoặc NK hồi sức) qua SCR-58: chọn hồ sơ ánh xạ cột để khớp mẫu cơ quan quản lý yêu cầu → Excel/CSV chỉ chứa mã BN che.
 
 **Alternate flows**
-- A1. Danh sách phẫu thuật từ phòng mổ/HIS dạng file → import qua SCR-43 với hồ sơ ánh xạ cột (FR-M9-26); R11 bổ sung ASA/vết mổ còn thiếu.
+- A1. Danh sách phẫu thuật từ phòng mổ/HIS dạng file → import qua SCR-43 với hồ sơ ánh xạ cột (FR-M9-28); R11 bổ sung ASA/vết mổ còn thiếu.
 - A2. Ca chưa ra viện quá cửa sổ → theo dõi nội trú, `outcome` cập nhật khi đóng ca.
 - A3. Đổi ngưỡng phút kháng sinh dự phòng → chỉ áp dụng kỳ chưa khóa (FR-M13-09).
 
@@ -2285,7 +2285,7 @@ _Nguồn: BA v1.12 §7.1 bước 1–2, §7.3 FR-M14-01..05, 08, §7.4; QĐ 3596
 - **Actors:** R08 Điều dưỡng khoa / R12 Mạng lưới viên (primary — tạo lệnh cách ly khoa mình); R11 Giám sát viên KSNK (primary — kiểm tra tuân thủ, đóng lệnh do đa kháng); R01 (secondary — danh mục phòng cách ly, đóng lệnh); R13 (secondary — xem tỷ lệ khoa có phòng cách ly)
 - **Description:** Khoa tạo `Isolation Order` (mã BN mã hóa, khoa, phòng, loại phòng ngừa Tiếp xúc / Giọt bắn / Không khí / Kết hợp, lý do, chủng liên quan); danh sách cách ly đang mở theo khoa hiển thị trên Cổng khoa; R11 kiểm tra tuân thủ bằng phiếu M12; đóng lệnh cần lý do kết thúc, lệnh do đa kháng chỉ R11/R01 đóng. R01 duy trì `Isolation Room` (loại phòng, số giường, đạt chuẩn, ngày kiểm tra); hệ thống tính tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt điều kiện và liệt kê khoa chưa có.
 - **Preconditions:** Department có cờ lâm sàng; `Isolation Room` theo khoa; có cảnh báo đa kháng (UC-51) hoặc ca bệnh truyền nhiễm/nghi nhiễm.
-- **Postconditions (success):** Lệnh cách ly có đủ loại phòng ngừa và lý do; danh sách đang mở đúng theo khoa và hiển thị trong việc cần làm Cổng khoa (FR-M9-24); lệnh đóng có `end_reason`; tỷ lệ khoa có phòng cách ly đạt chuẩn tính cho M9 (chỉ tiêu QĐ 38 ≥ 80 %).
+- **Postconditions (success):** Lệnh cách ly có đủ loại phòng ngừa và lý do; danh sách đang mở đúng theo khoa và hiển thị trong việc cần làm Cổng khoa (FR-M9-26); lệnh đóng có `end_reason`; tỷ lệ khoa có phòng cách ly đạt chuẩn tính cho M9 (chỉ tiêu QĐ 38 ≥ 80 %).
 - **Traces to:** FR-M14-06, FR-M14-07
 - **Business rules:** BRU-MDR-003 (không đóng khi thiếu lý do; lệnh do đa kháng chỉ R11/R01 đóng), BRU-HAI-005
 - **Screens:** SCR-60 (Lệnh cách ly & phòng cách ly — WEB + DEPT)
@@ -2567,10 +2567,10 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 - **Description:** Khi kỳ báo cáo khóa (UC-48), hệ thống tính và lưu `IC Indicator Value` cho mọi `IC Indicator` theo khoa và toàn viện (hàm tính đăng ký qua hook từ M11–M17, M12, M13), đánh dấu `locked`. R01/R13 mở bảng chỉ số: từng chỉ số của kế hoạch năm với giá trị kỳ gần nhất, mục tiêu, xu hướng 12 tháng, cỡ mẫu, lọc theo khoa. Ngày làm việc thứ 5 mỗi tháng, hệ thống sinh báo cáo một trang PDF cho Hội đồng từ kỳ đã khóa và thông báo R01, R13. Cổng khoa hiển thị chỉ số khoa mình cạnh trung bình toàn viện và việc cần làm (phiếu chưa làm, mẫu số thiếu, cách ly đang mở). R11/R10 nhập file (mẫu số, phẫu thuật, vi sinh, hóa chất) qua hồ sơ ánh xạ cột (`Import Mapping Profile`), nhập lại không trùng, báo lỗi theo dòng. R01 lập tự đánh giá năm theo QĐ 38 với phần tính được điền sẵn; xuất gói hồ sơ KSNK (PDF + Excel) cho đoàn kiểm tra với mã BN che.
 - **Preconditions:** Danh mục `IC Indicator` (mã, nhóm biện pháp 14 nhóm, loại, hàm tính, tần suất, chỉ tiêu quốc gia, `target_ref`); kế hoạch năm (UC-41); kỳ báo cáo và cơ chế khóa (UC-48); Import Batch (FR-M9-11) mở rộng loại import; Notification Rule.
 - **Postconditions (success):** `IC Indicator Value` bất biến sau khóa, chỉ tính lại khi R01 mở khóa có lý do; bảng chỉ số đọc từ giá trị đã lưu (≤ 3 giây với 24 tháng dữ liệu BV 1.000 giường); báo cáo tháng không dữ liệu cá nhân; R12 không xem chi tiết khoa khác; import 500 dòng có 3 dòng lỗi → 497 ghi, 3 báo lỗi; tự đánh giá ghi rõ nguồn Tự động / Thủ công; gói xuất không có dữ liệu cá nhân rõ.
-- **Traces to:** FR-M9-22, FR-M9-23, FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28
+- **Traces to:** FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30
 - **Business rules:** BRU-RPT-001 (mẫu số 0 → "Không tính"), BRU-RPT-002 (báo cáo cho R13 và file ra ngoài chỉ số liệu tổng hợp/mã che), BRU-RPT-003 (giá trị đã khóa chỉ đổi khi mở khóa có lý do), BRU-ID-006 (import không nhập tay mã hệ thống sinh)
 - **Screens:** SCR-66 (Bảng chỉ số KSNK; báo cáo Hội đồng; view Cổng khoa; tự đánh giá QĐ 38; nhập file & hồ sơ ánh xạ cột; gói hồ sơ KSNK — WEB + DEPT); SCR-43 (wizard import/export hiện có); SCR-42 (thông báo)
-- **Priority:** Must (FR-M9-22..26); Should (FR-M9-27); Could (FR-M9-28) · Frequency: tính giá trị khi khóa kỳ (tháng); báo cáo tháng; Cổng khoa hằng ngày; import theo nguồn (ngày/tuần/tháng); tự đánh giá năm; gói hồ sơ theo đoàn kiểm tra.
+- **Priority:** Must (FR-M9-24..28); Should (FR-M9-29); Could (FR-M9-30) · Frequency: tính giá trị khi khóa kỳ (tháng); báo cáo tháng; Cổng khoa hằng ngày; import theo nguồn (ngày/tuần/tháng); tự đánh giá năm; gói hồ sơ theo đoàn kiểm tra.
 - **Related NFR:** NFR-PERF-05 (bảng ≤ 3 giây, đọc từ `IC Indicator Value`), NFR-PRIV-01, NFR-SEC-09, NFR-PORT-02, NFR-COMP-01, NFR-PERF-03, NFR-AVAIL-04
 
 **Main success scenario**
@@ -2585,22 +2585,22 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 
 **Alternate flows**
 - A1. Kỳ chưa khóa khi đến ngày sinh báo cáo → báo cáo mang dấu "Tạm" từ giá trị tạm tính; khi khóa, sinh lại bản chính thức.
-- A2. R01 mở khóa kỳ có lý do, sửa dữ liệu nguồn, khóa lại → giá trị tính lại, Audit Log ghi giá trị trước/sau (FR-M9-25).
+- A2. R01 mở khóa kỳ có lý do, sửa dữ liệu nguồn, khóa lại → giá trị tính lại, Audit Log ghi giá trị trước/sau (FR-M9-27).
 - A3. Dashboard CSSD hiện có (FR-M9-01, SCR-32) giữ nguyên; bảng chỉ số KSNK là màn riêng.
 - A4. Xuất > 50.000 dòng → chạy nền, thông báo khi xong (như UC-39 E4).
 - A5. Nếu D3 được mở sau này (FEAT-074) → API `tracecore.v1` nhận mẫu số/vi sinh thay file; không thuộc v1.12.
 
 **Exception flows**
 - E1. Chỉ số có mẫu số 0 → hiển thị "Không tính", không ghi 0 (BRU-RPT-001).
-- E2. Dữ liệu nguồn hoặc ngưỡng đổi sau khóa → giá trị đã khóa không đổi (FR-M9-25, BRU-RPT-003).
-- E3. R12 khoa A truy cập chỉ số chi tiết khoa B → từ chối (FR-M9-24).
+- E2. Dữ liệu nguồn hoặc ngưỡng đổi sau khóa → giá trị đã khóa không đổi (FR-M9-27, BRU-RPT-003).
+- E3. R12 khoa A truy cập chỉ số chi tiết khoa B → từ chối (FR-M9-26).
 - E4. File import sai mẫu / hồ sơ ánh xạ thiếu cột bắt buộc → từ chối, chỉ rõ cột thiếu; dòng chứa họ tên người bệnh → bỏ cột, cảnh báo (NFR-PRIV-01).
 - E5. Báo cáo Hội đồng hoặc gói hồ sơ phát hiện mã BN rõ → test tự động chặn xuất (NFR-PRIV-01).
 - E6. Bảng chỉ số vượt 3 giây → vi phạm NFR-PERF-05 (test hiệu năng với dữ liệu sinh giả, BV 1.000 giường, 24 tháng).
 
 **Open issues:** Định dạng cột file HIS/WHONET của bệnh viện thí điểm (OQ-V12-05); mẫu báo cáo cơ quan quản lý (OQ-V12-02); mở D3 tích hợp HIS/LIS là quyết định riêng của chủ đầu tư.
 
-_Nguồn: BA v1.12 §11.2 FR-M9-22..28, §11.1; TT 16/2018 Điều 17, 20; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+_Nguồn: BA v1.12 §11.2 FR-M9-24..30, §11.1; TT 16/2018 Điều 17, 20; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
 
 ## Phụ lục A — Ma trận UC → FR
 
@@ -2662,6 +2662,6 @@ _Nguồn: BA v1.12 §11.2 FR-M9-22..28, §11.1; TT 16/2018 Điều 17, 20; QĐ 3
 | UC-54 | Vệ sinh môi trường: vùng, phiếu, xét nghiệm môi trường, hạ tầng, báo cáo [v1.12] | M15 | R01, R11 | FR-M15-01, FR-M15-02, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07 | SCR-62, SCR-52 |
 | UC-55 | Báo cáo và theo dõi phơi nhiễm nghề nghiệp; tiêm chủng nhân viên [v1.12] | M16 | Nhân viên/R08, R11, R01, R02 | FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | SCR-63, SCR-64, SCR-15 |
 | UC-56 | An toàn thực phẩm và truyền thông người bệnh [v1.12] | M17 | R11, R01, R08 | FR-M17-01, FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | SCR-65, SCR-52, SCR-62, SCR-61 |
-| UC-57 | Bảng chỉ số KSNK toàn viện, báo cáo Hội đồng, Cổng khoa, tự đánh giá QĐ 38, nhập file ngoài, xuất hồ sơ [v1.12] | M9 | R01, R13, R12, R10 | FR-M9-22, FR-M9-23, FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28 | SCR-66, SCR-43, SCR-42 |
+| UC-57 | Bảng chỉ số KSNK toàn viện, báo cáo Hội đồng, Cổng khoa, tự đánh giá QĐ 38, nhập file ngoài, xuất hồ sơ [v1.12] | M9 | R01, R13, R12, R10 | FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30 | SCR-66, SCR-43, SCR-42 |
 
-Kiểm đếm: **57 UC** (33 gốc + UC-34..39 v1.11 + UC-40..57 v1.12); [v1.12] 81 FR mới (FR-M11-01..13, FR-M12-01..14, FR-M13-01..15, FR-M14-01..10, FR-M15-01..07, FR-M16-01..09, FR-M17-01..06, FR-M9-22..28) được truy vết đủ 81/81 bởi UC-40..57; baseline v1.11: **88/90 FR** được ít nhất một UC truy vết — FR-M9-14 (trạng thái màn hình) và FR-M9-15 (trợ giúp) là yêu cầu xuyên suốt mọi màn hình trạm/PDA, không có UC sở hữu riêng (RTM ghi "— / mọi UC trạm"). **43 SCR** (SCR-01..37 gốc #09 + SCR-38..43 mới: 38 Trạm thu gom chất thải; 39 Kho lưu giữ tạm; 40 Bàn giao & đơn vị xử lý; 41 Báo cáo chất thải & sự cố; 42 Trung tâm thông báo; 43 Import/Export). Bộ Số Chuẩn BA v1.10 → v1.11: N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43.
+Kiểm đếm: **57 UC** (33 gốc + UC-34..39 v1.11 + UC-40..57 v1.12); [v1.12] 81 FR mới (FR-M11-01..13, FR-M12-01..14, FR-M13-01..15, FR-M14-01..10, FR-M15-01..07, FR-M16-01..09, FR-M17-01..06, FR-M9-24..30) được truy vết đủ 81/81 bởi UC-40..57; baseline v1.11: **88/90 FR** được ít nhất một UC truy vết — FR-M9-14 (trạng thái màn hình) và FR-M9-15 (trợ giúp) là yêu cầu xuyên suốt mọi màn hình trạm/PDA, không có UC sở hữu riêng (RTM ghi "— / mọi UC trạm"). **43 SCR** (SCR-01..37 gốc #09 + SCR-38..43 mới: 38 Trạm thu gom chất thải; 39 Kho lưu giữ tạm; 40 Bàn giao & đơn vị xử lý; 41 Báo cáo chất thải & sự cố; 42 Trung tâm thông báo; 43 Import/Export). Bộ Số Chuẩn BA v1.10 → v1.11: N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43.

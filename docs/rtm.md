@@ -183,13 +183,13 @@
 | FR-M17-04 | Sự cố nghi ngộ độc thực phẩm → báo, NC, khai báo | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
 | FR-M17-05 | Buổi truyền thông KSNK, tổng hợp quý | Could | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
 | FR-M17-06 | Tài liệu truyền thông người bệnh có QR | Could | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
-| FR-M9-22 | Bảng chỉ số KSNK toàn viện theo kế hoạch năm | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
-| FR-M9-23 | Báo cáo Hội đồng 1 trang hằng tháng (PDF) | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
-| FR-M9-24 | Cổng khoa: chỉ số khoa cạnh trung bình toàn viện | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
-| FR-M9-25 | Khóa kỳ → tính, lưu IC Indicator Value | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
-| FR-M9-26 | Nhập file qua hồ sơ ánh xạ cột, báo lỗi dòng | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
-| FR-M9-27 | Tự đánh giá năm QĐ 38 điền sẵn | Should | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
-| FR-M9-28 | Gói xuất hồ sơ KSNK cho đoàn kiểm tra | Could | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-074 | _TBD_ |
+| FR-M9-24 | Bảng chỉ số KSNK toàn viện theo kế hoạch năm | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-25 | Báo cáo Hội đồng 1 trang hằng tháng (PDF) | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-26 | Cổng khoa: chỉ số khoa cạnh trung bình toàn viện | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-27 | Khóa kỳ → tính, lưu IC Indicator Value | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
+| FR-M9-28 | Nhập file qua hồ sơ ánh xạ cột, báo lỗi dòng | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
+| FR-M9-29 | Tự đánh giá năm QĐ 38 điền sẵn | Should | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
+| FR-M9-30 | Gói xuất hồ sơ KSNK cho đoàn kiểm tra | Could | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-074 | _TBD_ |
 
 FR-M9-08..16 và FR-M10-01..08 là ID mới v1.11 (chủ đầu tư duyệt 2026-10-17, srs.md Appendix C / §3.1.10); FR-M9-14/15 là yêu cầu xuyên suốt mọi màn hình trạm/PDA nên không có UC sở hữu riêng (ghi "—" kèm danh sách UC trạm tham chiếu).
 
@@ -362,7 +362,7 @@ Kiểm thử NFR: 14 NFR gốc tham chiếu "#14 mục 3.1 (TC phi chức năng,
 
 | Chỉ tiêu | Kết quả |
 | :-- | :-- |
-| Dòng FR trong RTM | 175 (94 dòng trước A-113 — 73 gốc + 9 FR-M9-08..16 + 8 FR-M10-01..08 + 4 dòng amendment — + [A-113] 81 FR-M11..M17 & FR-M9-22..28) |
+| Dòng FR trong RTM | 175 (94 dòng trước A-113 — 73 gốc + 9 FR-M9-08..16 + 8 FR-M10-01..08 + 4 dòng amendment — + [A-113] 81 FR-M11..M17 & FR-M9-24..30) |
 | Dòng NFR trong RTM | 42 (14 gốc + 21 mới v1.11 + [A-113] 7 mới v1.12) |
 | UC trong docs/use-cases.md | 57 (UC-01..33 gốc + UC-34..39 mới + [A-113] UC-40..57) |
 | SCR | 63 đã duyệt (SCR-01..37 gốc + SCR-38..43 mới + [A-113] SCR-47..66; SCR-44..46 đề xuất chưa duyệt) |
