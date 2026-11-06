@@ -7393,6 +7393,7 @@ Run the test on an empty machine. The result can be recorded after the test ends
 Start the test,Bắt đầu test,
 End the test,Kết thúc test,
 Test result photo,Ảnh kết quả test,
+Choose the test above to record its result.,Chọn loại kiểm tra ở trên để ghi kết quả.,
 Running - {0},Đang chạy – {0},
 Waiting to unload - {0},Chờ dỡ – {0},
 Machine {0} has no daily test at this station,Máy {0} không có test hằng ngày ở trạm này,
