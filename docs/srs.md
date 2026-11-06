@@ -87,6 +87,7 @@
 | 1.11 A-129 | 2026-11-05 | Miyano (dev lead, người dùng đồng ý trong chat ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-129 của `docs/architecture.md`: QR cạnh nút ở màn trạm dùng mã toàn số `99-NNNN` để bộ gõ tiếng Việt không đổi chữ; trạm báo `SCAN_IME_ON` khi chuỗi quét có dấu tiếng Việt. Sửa ghi chú FR-M9-23. |
 | 1.11 A-130 | 2026-11-05 | Miyano (dev lead, người dùng yêu cầu và chốt 3 điểm trong chat ngày 05/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-130 của `docs/architecture.md`: màn Kiểm tra hằng ngày gợi ý lô gói thử của chương trình (hạn gần trước), chọn tay bằng nút hoặc quét nhãn QR lô; lô không đúng vật tư/hết hạn/hết tồn bị chặn. Sửa ghi chú FR-M5-05. |
 | 1.12 A-113 (sửa) | 2026-11-06 | Miyano (dev lead, người dùng quyết định ngày 06/11/2026; chủ đầu tư chưa) + Claude Code | Khi gộp v1.12 vào `develop`: dời khối FR M9 mở rộng của A-113 từ FR-M9-22..28 thành **FR-M9-24..30** (giữ nguyên thứ tự và nội dung, sửa đồng bộ ở srs, use-cases, architecture, ux-foundations, rtm, implementation-plan) vì FR-M9-22 (A-117) và FR-M9-23 (A-119) đã dùng trên `develop`. Không đổi FR khác, BRU, DocType. |
+| 1.12 A-131 | 2026-11-06 | Miyano (dev lead, người dùng yêu cầu ngày 06/11/2026; chủ đầu tư chưa) + Claude Code | Amendment A-131 của `docs/architecture.md`: các màn WEB của M11–M17 và M9 mở rộng nằm chung một màn quản lý (Page `tc_ksnk`), khung làm trong FEAT-056. Chỉ đổi cách tổ chức giao diện; không đổi FR, NFR, BRU, DocType. |
 
 ---
 
