@@ -50,7 +50,9 @@ class TestKsnkPage(FrappeTestCase):
 			emit({a, b, q: TcKsnk.query({period: "2026-10", department: "", year: "2026"})});
 			""",
 		)
-		self.assertEqual(out["a"], {"slug": "chi-so", "filters": {"period": "2026-10", "department": "Khoa A", "year": ""}})
+		self.assertEqual(
+			out["a"], {"slug": "chi-so", "filters": {"period": "2026-10", "department": "Khoa A", "year": ""}}
+		)
 		self.assertEqual(out["b"]["slug"], "")
 		self.assertEqual(out["q"], "period=2026-10&year=2026")
 
@@ -91,7 +93,7 @@ class TestKsnkPage(FrappeTestCase):
 		self.assertIn("aria-busy", out["loading"])
 		self.assertIn("Nothing yet", out["empty"])
 		self.assertIn('role="alert"', out["error"])
-		self.assertIn("data-action=\"retry\"", out["error"])
+		self.assertIn('data-action="retry"', out["error"])
 		self.assertIn("not allowed", out["forbidden"])
 		self.assertIn("offline", out["offline"].lower())
 

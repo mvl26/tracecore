@@ -83,7 +83,7 @@ def _write(code, period, department, values):
 
 
 def compute_period(period):
-	"""Tính và ghi giá trị mọi chỉ số đang dùng × (toàn viện + khoa có dữ liệu) của kỳ chưa khóa.
+	"""Tính và ghi giá trị mọi chỉ số đang dùng, cho toàn viện và từng khoa có dữ liệu, của kỳ chưa khóa.
 
 	Kỳ đã khóa: không làm gì (BRU-RPT-003). Khoa mà hàm tính trả (0, 0, 0) là khoa không có dữ liệu: không ghi dòng.
 	Ghi đè dòng tạm cũ của kỳ chưa khóa; thay đổi có Audit Log old/new (doc_events).
@@ -136,7 +136,10 @@ def unlock_period(period, reason):
 	"""R01 mở khóa kỳ có lý do (FR-M9-27.1); Audit Log ghi lý do. Khóa lại thì tính lại."""
 	check_period(period)
 	if frappe.session.user != "Administrator" and UNLOCK_ROLE not in frappe.get_roles():
-		frappe.throw(_("Only the head of infection control (R01) can unlock a reporting period."), frappe.PermissionError)
+		frappe.throw(
+			_("Only the head of infection control (R01) can unlock a reporting period."),
+			frappe.PermissionError,
+		)
 	reason = (reason or "").strip()
 	if not reason:
 		frappe.throw(_("Enter a reason to unlock period {0}.").format(period))

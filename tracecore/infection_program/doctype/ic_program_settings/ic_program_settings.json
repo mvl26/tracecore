@@ -33,7 +33,7 @@
    "fieldtype": "Select",
    "label": "Facility Level",
    "reqd": 1,
-   "options": "Specialized\nBasic\nPrimary"
+   "options": "Specialized Level\nBasic Level\nPrimary Level"
   },
   {
    "fieldname": "column_break_program",

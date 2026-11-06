@@ -11,7 +11,7 @@ DOCTYPE = "IC Program Settings"
 class TestICProgramSettings(IsolatedTestCase):
 	def _settings(self, **values):
 		doc = frappe.get_single(DOCTYPE)
-		doc.update({"bed_count": 420, "facility_level": "Specialized", "has_inpatient": 1, **values})
+		doc.update({"bed_count": 420, "facility_level": "Specialized Level", "has_inpatient": 1, **values})
 		return doc
 
 	def test_is_single_in_infection_program_module(self):
@@ -24,7 +24,8 @@ class TestICProgramSettings(IsolatedTestCase):
 		self.assertEqual(meta.get_field("surveillance_ratio_beds").default, "150")
 		self.assertEqual(meta.get_field("doc_review_months").default, "12")
 		self.assertEqual(
-			meta.get_field("facility_level").options.split("\n"), ["Specialized", "Basic", "Primary"]
+			meta.get_field("facility_level").options.split("\n"),
+			["Specialized Level", "Basic Level", "Primary Level"],
 		)
 		for field in ("patient_data_retention_months", "exposure_retention_months"):
 			self.assertEqual(meta.get_field(field).fieldtype, "Int", msg=field)

@@ -27,7 +27,12 @@ const TcKsnkScr66 = {
 	},
 
 	targetText(row) {
-		if (!row.target_direction || row.national_target === null || row.national_target === undefined) return "—";
+		if (
+			!row.target_direction ||
+			row.national_target === null ||
+			row.national_target === undefined
+		)
+			return "—";
 		const sign = row.target_direction === "Higher is better" ? "≥ " : "≤ ";
 		return sign + TcKsnkScr66.number(row.national_target) + TcKsnkScr66.unit(row.kind);
 	},
@@ -35,8 +40,10 @@ const TcKsnkScr66 = {
 	statusBadge(status) {
 		if (status === "Met") return { cls: "is-pass", label: __("Met") };
 		if (status === "Not met") return { cls: "is-fail", label: __("Not met") };
-		if (status === "Not calculated") return { cls: "is-neutral", label: __("Not calculated (denominator 0)") };
-		if (status === "Insufficient sample") return { cls: "is-neutral", label: __("Insufficient sample") };
+		if (status === "Not calculated")
+			return { cls: "is-neutral", label: __("Not calculated (denominator 0)") };
+		if (status === "Insufficient sample")
+			return { cls: "is-neutral", label: __("Insufficient sample") };
 		return { cls: "", label: "—" };
 	},
 
@@ -48,31 +55,43 @@ const TcKsnkScr66 = {
 	tableHtml(data, esc) {
 		const self = TcKsnkScr66;
 		const latest = data.periods[data.periods.length - 1];
-		const head = data.periods.map((p) => `<th class="is-num">${esc(self.periodLabel(p))}</th>`).join("");
+		const head = data.periods
+			.map((p) => `<th class="is-num">${esc(self.periodLabel(p))}</th>`)
+			.join("");
 		const body = data.rows
 			.map((row) => {
 				const cells = data.periods
 					.map((p) => {
 						const cell = row.values[p];
-						return `<td class="is-num">${esc(cell ? self.formatValue(cell.value, row.kind) : "—")}</td>`;
+						return `<td class="is-num">${esc(
+							cell ? self.formatValue(cell.value, row.kind) : "—"
+						)}</td>`;
 					})
 					.join("");
-				const badge = self.statusBadge(row.values[latest] ? row.values[latest].status : "");
+				const badge = self.statusBadge(
+					row.values[latest] ? row.values[latest].status : ""
+				);
 				const label = badge.cls
 					? `<span class="tc-ksnk-badge ${badge.cls}">${esc(badge.label)}</span>`
 					: esc(badge.label);
 				return (
 					`<tr><td><code class="tc-ksnk-code">${esc(row.code)}</code></td>` +
 					`<td>${esc(row.indicator_name)}</td><td>${esc(__(row.measure_group))}</td>` +
-					`<td class="is-num">${esc(self.targetText(row))}</td>${cells}<td>${label}</td></tr>`
+					`<td class="is-num">${esc(
+						self.targetText(row)
+					)}</td>${cells}<td>${label}</td></tr>`
 				);
 			})
 			.join("");
 		return (
 			`<table class="tc-ksnk-table"><thead><tr>` +
 			`<th scope="col">${esc(__("Code"))}</th><th scope="col">${esc(__("Indicator"))}</th>` +
-			`<th scope="col">${esc(__("Measure Group"))}</th><th scope="col" class="is-num">${esc(__("Target"))}</th>` +
-			`${head}<th scope="col">${esc(__("Status"))}</th></tr></thead><tbody>${body}</tbody></table>`
+			`<th scope="col">${esc(__("Measure Group"))}</th><th scope="col" class="is-num">${esc(
+				__("Target")
+			)}</th>` +
+			`${head}<th scope="col">${esc(
+				__("Status")
+			)}</th></tr></thead><tbody>${body}</tbody></table>`
 		);
 	},
 
@@ -83,15 +102,24 @@ const TcKsnkScr66 = {
 		const departments = ctx.departments
 			.map(
 				(d) =>
-					`<option value="${esc(d.name)}"${d.name === filters.department ? " selected" : ""}>` +
-					`${esc(d.department_name || d.name)}</option>`
+					`<option value="${esc(d.name)}"${
+						d.name === filters.department ? " selected" : ""
+					}>` + `${esc(d.department_name || d.name)}</option>`
 			)
 			.join("");
 		el.innerHTML =
 			`<div class="tc-ksnk-filters">` +
-			`<label>${esc(__("Period"))}<input type="month" class="form-control" data-filter="period" value="${esc(filters.period)}"></label>` +
-			`<label>${esc(__("Department"))}<select class="form-control" data-filter="department">` +
-			`<option value="">${esc(__("Whole hospital"))}</option>${departments}</select></label></div>` +
+			`<label>${esc(
+				__("Period")
+			)}<input type="month" class="form-control" data-filter="period" value="${esc(
+				filters.period
+			)}"></label>` +
+			`<label>${esc(
+				__("Department")
+			)}<select class="form-control" data-filter="department">` +
+			`<option value="">${esc(
+				__("Whole hospital")
+			)}</option>${departments}</select></label></div>` +
 			`<section class="tc-ksnk-card"><h3>${esc(__("Indicators"))}</h3>` +
 			`<div data-region="table">${ctx.state("loading")}</div>` +
 			`<p class="tc-ksnk-note">${esc(
@@ -119,7 +147,9 @@ const TcKsnkScr66 = {
 			if (!data || !data.periods.length || !data.rows.length) {
 				region.innerHTML = ctx.state(
 					"empty",
-					__("No indicator values yet. Values appear after a reporting period is locked.")
+					__(
+						"No indicator values yet. Values appear after a reporting period is locked."
+					)
 				);
 				return;
 			}

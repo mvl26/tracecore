@@ -81,7 +81,9 @@ class TestKsnkNav(IsolatedTestCase):
 			self.assertNotIn("test-only-r01", _slugs(api.nav()))
 
 	def test_badges_come_from_hook_in_one_call(self):
-		with patch("tracecore.ui.ksnk.extension.run", return_value=[{"chi-so": 3}, {"chi-so": 2, "other": 9}]):
+		with patch(
+			"tracecore.ui.ksnk.extension.run", return_value=[{"chi-so": 3}, {"chi-so": 2, "other": 9}]
+		):
 			frappe.set_user(self.users["R01"])
 			nav = api.nav()
 		item = next(i for g in nav["groups"] for i in g["items"] if i["slug"] == "chi-so")

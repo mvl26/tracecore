@@ -445,7 +445,9 @@ def _cell(column: Column, value, row: int, date_patterns=DATE_PATTERNS) -> tuple
 	return text or None, None
 
 
-def parse(kind: ImportKind, content: bytes, profile: Profile | None = None) -> tuple[list[ParsedRow], list[Issue]]:
+def parse(
+	kind: ImportKind, content: bytes, profile: Profile | None = None
+) -> tuple[list[ParsedRow], list[Issue]]:
 	"""Đọc sheet đầu (hoặc file CSV khi hồ sơ ánh xạ là CSV): trả các dòng dữ liệu (bỏ dòng trống) với số dòng và lỗi ô.
 
 	Ném ``ImportFileError`` khi file rỗng / không phải .xlsx / quá cỡ / quá ``MAX_ROWS`` dòng / thiếu cột bắt buộc /
@@ -675,7 +677,9 @@ def run(key: str, content: bytes, file_url: str | None, profile: str | None = No
 
 	``profile``: Import Mapping Profile đọc file nguồn (lưu trên Import Batch để job nền đọc lại cùng cách)."""
 	kind = get_kind(key)
-	rows, _issues = parse(kind, content, load_profile(profile, key))  # file sai mẫu → lỗi ngay, không tạo batch
+	rows, _issues = parse(
+		kind, content, load_profile(profile, key)
+	)  # file sai mẫu → lỗi ngay, không tạo batch
 	batch = frappe.get_doc(
 		{
 			"doctype": "Import Batch",

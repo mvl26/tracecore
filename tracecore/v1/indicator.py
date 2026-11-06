@@ -57,7 +57,16 @@ def values(period=None, department=None, periods=3):
 			"period": ("in", months or [""]),
 			"department": department or ("is", "not set"),
 		},
-		fields=["indicator", "period", "value", "numerator", "denominator", "sample_size", "sample_note", "locked"],
+		fields=[
+			"indicator",
+			"period",
+			"value",
+			"numerator",
+			"denominator",
+			"sample_size",
+			"sample_note",
+			"locked",
+		],
 		limit_page_length=0,
 	)
 	by_indicator = {}

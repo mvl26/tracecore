@@ -42,7 +42,9 @@ def _indicator(code, kind, method, **values):
 			doc = frappe.get_doc("IC Indicator", code)
 			doc.update(fields)
 			return doc.save(ignore_permissions=True)
-		return frappe.get_doc({"doctype": "IC Indicator", "code": code, **fields}).insert(ignore_permissions=True)
+		return frappe.get_doc({"doctype": "IC Indicator", "code": code, **fields}).insert(
+			ignore_permissions=True
+		)
 
 
 def _value(code, department=None, period=PERIOD):

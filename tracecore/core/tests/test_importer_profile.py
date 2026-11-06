@@ -63,7 +63,9 @@ FAKE_KIND = ImportKind(
 		Column("patients", "Patients", required=True, kind="int"),
 	],
 	code_field="ward",
-	code_of=lambda v: f"{v.get('ward')}|{v.get('census_date')}" if v.get("ward") and v.get("census_date") else "",
+	code_of=lambda v: f"{v.get('ward')}|{v.get('census_date')}"
+	if v.get("ward") and v.get("census_date")
+	else "",
 	exists=lambda code: code in STORE,
 	validate=_validate,
 	write=_write,
@@ -163,7 +165,9 @@ class TestImportMappingProfile(IsolatedTestCase):
 			importer.check(KEY, _csv([("2026-11-02", "Hồi sức", 18)]))
 
 	def test_windows_1258_and_semicolon(self):
-		profile = _profile(name="HIS cp1258", encoding="Windows-1258", delimiter=";", date_format="dd/mm/yyyy")
+		profile = _profile(
+			name="HIS cp1258", encoding="Windows-1258", delimiter=";", date_format="dd/mm/yyyy"
+		)
 		content = _csv([("02/11/2026", "Sơ sinh", 9)], encoding="cp1258", delimiter=";")
 		result = importer.check(KEY, content, profile=profile.name)
 		self.assertEqual(result["valid"], 1, result["issues"])

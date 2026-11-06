@@ -13,7 +13,9 @@ from tracecore.v1 import indicator as api
 
 def _r12_user(email, department):
 	user = factories.make_user(email, ["TC R12"])
-	if not frappe.db.exists("User Permission", {"user": user, "allow": "Department", "for_value": department}):
+	if not frappe.db.exists(
+		"User Permission", {"user": user, "allow": "Department", "for_value": department}
+	):
 		frappe.get_doc(
 			{"doctype": "User Permission", "user": user, "allow": "Department", "for_value": department}
 		).insert(ignore_permissions=True)

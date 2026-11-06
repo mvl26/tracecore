@@ -13,7 +13,8 @@ const TcKsnk = {
 	esc(value) {
 		return String(value === null || value === undefined ? "" : value).replace(
 			/[&<>"']/g,
-			(char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]
+			(char) =>
+				({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])
 		);
 	},
 
@@ -52,16 +53,22 @@ const TcKsnk = {
 					.map((item) => {
 						const on = item.slug === active;
 						const badge = item.badge
-							? `<span class="tc-ksnk-count" title="${esc(__("{0} pending", [item.badge]))}">${esc(item.badge)}</span>`
+							? `<span class="tc-ksnk-count" title="${esc(
+									__("{0} pending", [item.badge])
+							  )}">${esc(item.badge)}</span>`
 							: "";
 						return (
-							`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${on ? " is-active" : ""}"` +
+							`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
+								on ? " is-active" : ""
+							}"` +
 							` data-slug="${esc(item.slug)}"${on ? ' aria-current="page"' : ""}>` +
 							`<span>${esc(item.label)}</span>${badge}</a>`
 						);
 					})
 					.join("");
-				return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(group.label)}</div>${items}</div>`;
+				return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
+					group.label
+				)}</div>${items}</div>`;
 			})
 			.join("");
 	},
@@ -80,25 +87,39 @@ const TcKsnk = {
 		}
 		if (kind === "forbidden") {
 			return (
-				`<div class="tc-ksnk-alert is-error" role="alert"><b>${esc(__("You are not allowed to open this screen."))}</b> ` +
-				`${esc(__("Ask the administrator (R10) to grant the infection control role you need."))}</div>`
+				`<div class="tc-ksnk-alert is-error" role="alert"><b>${esc(
+					__("You are not allowed to open this screen.")
+				)}</b> ` +
+				`${esc(
+					__("Ask the administrator (R10) to grant the infection control role you need.")
+				)}</div>`
 			);
 		}
 		if (kind === "offline") {
 			return (
 				`<div class="tc-ksnk-alert is-info" role="status">` +
-				`${esc(__("You are offline. Connect to the network to see infection control data."))}</div>`
+				`${esc(
+					__("You are offline. Connect to the network to see infection control data.")
+				)}</div>`
 			);
 		}
 		if (kind === "dept") {
 			return (
 				`<div class="tc-ksnk-alert is-info" role="status">` +
-				`${esc(__("Infection control network members work on the department portal, not on this screen."))}</div>`
+				`${esc(
+					__(
+						"Infection control network members work on the department portal, not on this screen."
+					)
+				)}</div>`
 			);
 		}
 		return (
-			`<div class="tc-ksnk-alert is-error" role="alert"><b>${esc(__("Cannot load this screen."))}</b> ` +
-			`${esc(message || "")} <button type="button" class="btn btn-default btn-sm" data-action="retry">` +
+			`<div class="tc-ksnk-alert is-error" role="alert"><b>${esc(
+				__("Cannot load this screen.")
+			)}</b> ` +
+			`${esc(
+				message || ""
+			)} <button type="button" class="btn btn-default btn-sm" data-action="retry">` +
 			`${esc(__("Retry"))}</button></div>`
 		);
 	},
@@ -157,7 +178,11 @@ const TcKsnk = {
 
 		function writeUrl(slug) {
 			const query = TcKsnk.query(state.filters);
-			window.history.replaceState(null, "", `/app/tc-ksnk/${slug}${query ? `?${query}` : ""}`);
+			window.history.replaceState(
+				null,
+				"",
+				`/app/tc-ksnk/${slug}${query ? `?${query}` : ""}`
+			);
 		}
 
 		function show() {

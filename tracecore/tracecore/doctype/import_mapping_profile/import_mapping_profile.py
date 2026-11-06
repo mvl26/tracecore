@@ -30,6 +30,8 @@ class ImportMappingProfile(Document):
 			if row.target_field in targets:
 				frappe.throw(_("Row {0}: column {1} is mapped twice.").format(row.idx, row.target_field))
 			if row.source_column.casefold() in sources:
-				frappe.throw(_("Row {0}: file column {1} is listed twice.").format(row.idx, row.source_column))
+				frappe.throw(
+					_("Row {0}: file column {1} is listed twice.").format(row.idx, row.source_column)
+				)
 			targets.add(row.target_field)
 			sources.add(row.source_column.casefold())

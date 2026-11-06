@@ -89,9 +89,9 @@ def ensure_role_profiles():
 		for role in KSNK_ROLE_PROFILES:
 			if frappe.db.exists("Role Profile", role) or not frappe.db.exists("Role", role):
 				continue
-			frappe.get_doc({"doctype": "Role Profile", "role_profile": role, "roles": [{"role": role}]}).insert(
-				ignore_permissions=True
-			)
+			frappe.get_doc(
+				{"doctype": "Role Profile", "role_profile": role, "roles": [{"role": role}]}
+			).insert(ignore_permissions=True)
 	finally:
 		frappe.flags.in_install = previous
 
