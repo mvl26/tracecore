@@ -74,11 +74,36 @@ def before_tests():
 	frappe.db.commit()  # nosemgrep
 
 
+KSNK_ROLE_PROFILES = ("TC R11", "TC R12", "TC R13")
+
+
+def ensure_role_profiles():
+	"""A-113 (FEAT-056): mỗi vai trò KSNK toàn viện có Role Profile cùng tên; chỉ tạo khi chưa có, không ghi đè.
+
+	Role Profile.on_update xếp hàng job cập nhật người dùng; chạy ngay trong tiến trình (như lúc cài app) để không để lại
+	khóa bản ghi khi site chưa có worker.
+	"""
+	previous = frappe.flags.in_install
+	frappe.flags.in_install = True
+	try:
+		for role in KSNK_ROLE_PROFILES:
+			if frappe.db.exists("Role Profile", role) or not frappe.db.exists("Role", role):
+				continue
+			frappe.get_doc({"doctype": "Role Profile", "role_profile": role, "roles": [{"role": role}]}).insert(
+				ignore_permissions=True
+			)
+	finally:
+		frappe.flags.in_install = previous
+
+
 def apply_system_settings():
 	settings = frappe.get_single("System Settings")
 	settings.update(SYSTEM_SETTINGS)
 	settings.flags.ignore_mandatory = True
 	settings.save(ignore_permissions=True)
-	for number in range(1, 11):
-		frappe.db.set_value("Role", f"TC R{number:02d}", "two_factor_auth", int(number in (1, 2, 9, 10)))
+	# A-113 a: thêm 2FA cho R11 (Giám sát viên KSNK) và R13 (Hội đồng KSNK & BGĐ); R12 như R08
+	for number in range(1, 14):
+		frappe.db.set_value(
+			"Role", f"TC R{number:02d}", "two_factor_auth", int(number in (1, 2, 9, 10, 11, 13))
+		)
 	frappe.clear_cache()

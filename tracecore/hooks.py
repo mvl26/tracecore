@@ -10,7 +10,7 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "hrms"]
 
-# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; A-113: + TC R11..R13;
 # FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói;
 # FEAT-041: thêm Stock Entry-tc_*, Stock Entry Detail-tc_* cho nhập kho theo lô/hạn).
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
@@ -196,6 +196,9 @@ after_install = "tracecore.setup.install.after_install"
 after_migrate = [
 	"tracecore.inventory.permissions.ensure_permissions",
 	"tracecore.setup.install.apply_system_settings",
+	# A-113 (FEAT-056): Role Profile cho R11-R13; không làm fixtures vì mỗi lần import lại Role Profile xếp hàng job
+	# cập nhật người dùng và khóa bản ghi (DocumentLockedError khi chưa có worker)
+	"tracecore.setup.install.ensure_role_profiles",
 	# FEAT-010: Notification Rule mặc định cho mọi loại sự kiện (không ghi đè chỉnh sửa của R10)
 	"tracecore.core.notification.ensure_default_rules",
 	# FEAT-037: quyền R02/R10/R01 cho HRMS Shift Assignment và Shift Type

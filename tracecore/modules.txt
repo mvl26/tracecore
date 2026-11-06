@@ -9,3 +9,10 @@ Par
 Admin Reports
 Waste
 UI
+Infection Program
+Compliance Audit
+HAI Surveillance
+Microbiology
+Environmental Hygiene
+Occupational Safety
+Food Safety
