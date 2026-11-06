@@ -306,6 +306,44 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 		self.assertIn("noteReveal", form)  # cuộn tới form khi chọn máy không bị giữ lại
 
 
+class TestStationCodeRemembered(FrappeTestCase):
+	"""06/11/2026: thỉnh thoảng trang mở `/app/station` mất `?station=` và báo Chưa cấu hình trạm."""
+
+	def resolve(self, search, stored=None, broken=False):
+		import json
+
+		return run_js(
+			self,
+			[BURST, STATION_JS],
+			[["TC_SCAN_FAST_MS"], ["TraceCoreStation"]],
+			f"""
+			const data = {{}};
+			if ({json.dumps(stored)}) data["tc-station-code"] = {json.dumps(stored)};
+			const storage = {json.dumps(broken)}
+				? {{getItem() {{ throw new Error("off"); }}, setItem() {{ throw new Error("off"); }}}}
+				: {{getItem: (k) => (k in data ? data[k] : null), setItem: (k, v) => {{ data[k] = v; }}}};
+			const out = TraceCoreStation.resolveStation({json.dumps(search)}, storage);
+			emit({{...out, stored: data["tc-station-code"] || null}});
+			""",
+		)
+
+	def test_url_code_wins_and_is_remembered(self):
+		out = self.resolve("?station=TR-005", stored="TR-002")
+		self.assertEqual(out, {"station": "TR-005", "restored": False, "stored": "TR-005"})
+
+	def test_missing_code_comes_back_from_this_browser(self):
+		out = self.resolve("", stored="TR-005")
+		self.assertEqual(out, {"station": "TR-005", "restored": True, "stored": "TR-005"})
+
+	def test_nothing_remembered_or_bad_values_keep_the_error_screen(self):
+		self.assertEqual(self.resolve("")["station"], None)
+		self.assertEqual(self.resolve("", stored="<x>")["station"], None)
+		self.assertEqual(self.resolve("", broken=True)["station"], None)
+		# mã lạ trong URL vẫn đi tiếp như cũ (máy chủ báo), nhưng không ghi đè mã đã nhớ
+		out = self.resolve("?station=abc", stored="TR-005")
+		self.assertEqual((out["station"], out["stored"]), ("abc", "TR-005"))
+
+
 class TestNextStationOfferKept(FrappeTestCase):
 	"""Xong T4 không còn ô sang T5 (05/11/2026): quét QR nút (vd In nhãn) bị coi là "mã khác" nên xóa đề nghị."""
 
