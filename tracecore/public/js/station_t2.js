@@ -1231,7 +1231,10 @@ class T2Wash {
 		);
 		const error = Boolean(this.notice && this.notice.variant === "error");
 		this.station.form.classList.toggle("is-error", error);
-		if (error && this.shownNotice !== this.notice) window.scrollTo({ top: 0 });
+		if (error && this.shownNotice !== this.notice) {
+			window.scrollTo({ top: 0 });
+			if (this.station.noteReveal) this.station.noteReveal(); // lỗi mới: không bị giữ chỗ cũ khi bấm bằng mã
+		}
 		this.shownNotice = this.notice;
 	}
 

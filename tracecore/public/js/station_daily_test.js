@@ -285,7 +285,7 @@ class DailyTestScreen {
 			args.consumables_confirmed = form.consumables_confirmed ? 1 : 0;
 		}
 		this.request(method, args, () => {
-			this.notice = notice(machine);
+			this.notice = { ...notice(machine), reveal: true };
 			if (method === DT_START) TcRunConsumables.reset(this.form);
 			this.load();
 		});
@@ -351,6 +351,7 @@ class DailyTestScreen {
 			},
 			(res) => {
 				this.notice = {
+					reveal: true,
 					variant: res.locked ? "warn" : "ok",
 					title: res.locked
 						? __("Test failed: machine {0} is locked", [this.selected])
@@ -403,6 +404,7 @@ class DailyTestScreen {
 			},
 			() => {
 				this.notice = {
+					reveal: true,
 					variant: "ok",
 					title: __("Machine {0} is unlocked temporarily", [this.selected]),
 					reason: __("The unlock ends after {0} hour(s).", [hours]),
@@ -510,6 +512,8 @@ class DailyTestScreen {
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
 		if (this.scrollToForm && this.list) this.revealForm();
+		// xong bước (`reveal`) hoặc lỗi: đưa thông báo lên một lần; chọn kết quả/loại test không cuộn (06/11/2026)
+		else if (this.station.revealNotice) this.station.revealNotice(this.notice);
 	}
 
 	// Form nằm dưới bảng máy: cuộn tới để KTV thấy ngay sau khi quét; ô quét giữ focus (preventScroll) nên quét tiếp vẫn được
@@ -520,6 +524,7 @@ class DailyTestScreen {
 		const reduced =
 			window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		region.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+		if (this.station.noteReveal) this.station.noteReveal();
 	}
 
 	alertHtml(notice, buttons = "") {

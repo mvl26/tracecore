@@ -371,6 +371,33 @@ class TraceCoreStation {
 		this.syncStickyHeight();
 		const top = target.getBoundingClientRect().top;
 		window.scrollTo({ top: window.scrollY + top - this.form.offsetHeight - below });
+		this.reveals = (this.reveals || 0) + 1; // = noteReveal
+	}
+
+	// màn chủ động cuộn (đưa thông báo/kết quả/form lên): `pressInPlace` không kéo trang về chỗ cũ
+	noteReveal() {
+		this.reveals = (this.reveals || 0) + 1;
+	}
+
+	// Quét QR của nút (A-119, A-128) = bấm nút tại chỗ: trang đứng yên (người dùng báo 06/11/2026, quét "Đạt" ở Test hằng
+	// ngày trang nhảy lên). Màn vẽ lại sau khi bấm có lúc kéo trang lên; giữ vị trí cuộn cũ qua microtask (sau khi QR gắn
+	// lại) và hai khung hình kế. Không đọc vị trí ngay sau click: đọc lúc QR chưa gắn ép tính bố cục khi trang còn ngắn.
+	// Màn tự đưa thông báo lên (xong bước, lỗi: `noteReveal`) thì không giữ.
+	pressInPlace(button) {
+		const top = window.scrollY;
+		const reveals = this.reveals || 0;
+		button.click();
+		const hold = () => {
+			if ((this.reveals || 0) === reveals && window.scrollY !== top)
+				window.scrollTo({ top });
+		};
+		Promise.resolve().then(() => {
+			hold();
+			requestAnimationFrame(() => {
+				hold();
+				requestAnimationFrame(hold);
+			});
+		});
 	}
 
 	syncStickyHeight() {
@@ -379,10 +406,13 @@ class TraceCoreStation {
 
 	// Thông báo chặn nằm ngoài khung nhìn thì đưa vào, mỗi thông báo một lần: vẽ lại màn không được giật về thông báo cũ.
 	// Cuộn tức thì, không hiệu ứng (motion chỉ theo token); phần dính phía trên do scroll-padding, scroll-margin lo.
+	// Thông báo xong bước có `reveal: true` (vd Test hằng ngày đã ghi) cũng được đưa lên như lỗi.
 	revealNotice(notice) {
 		const blocking =
 			notice &&
-			((notice.variant || "error") === "error" || notice.code === "CONFIRM_INCOMPLETE");
+			(notice.reveal ||
+				(notice.variant || "error") === "error" ||
+				notice.code === "CONFIRM_INCOMPLETE");
 		if (!blocking) {
 			this.revealed = null;
 			return;
@@ -395,8 +425,10 @@ class TraceCoreStation {
 		if (!node) return;
 		this.syncStickyHeight();
 		const box = node.getBoundingClientRect();
-		if (box.top < this.form.offsetHeight || box.bottom > window.innerHeight)
+		if (box.top < this.form.offsetHeight || box.bottom > window.innerHeight) {
 			node.scrollIntoView({ block: "start" });
+			this.reveals = (this.reveals || 0) + 1; // = noteReveal
+		}
 	}
 
 	renderSwitching() {
@@ -1846,8 +1878,21 @@ class TraceCoreStation {
 			reason,
 			action: __("Finish the current step, or scan the command of the step you are on."),
 		});
+		this.revealAuthNotice();
 		this.focus();
 		return true;
+	}
+
+	// lỗi của mã quét (mã lệnh không dùng được, bộ gõ tiếng Việt) nằm ngoài khung nhìn thì đưa vào
+	revealAuthNotice() {
+		const node = this.authResult.firstElementChild;
+		if (!node) return;
+		this.syncStickyHeight();
+		const box = node.getBoundingClientRect();
+		if (box.top < this.form.offsetHeight || box.bottom > window.innerHeight) {
+			node.scrollIntoView({ block: "start" });
+			this.reveals = (this.reveals || 0) + 1; // = noteReveal
+		}
 	}
 
 	async loadCommandMap() {
@@ -1975,7 +2020,7 @@ class TraceCoreStation {
 			return this.commandUnavailable(
 				__("The button of command {0} is not shown or is turned off at this step.", [code])
 			);
-		button.click();
+		this.pressInPlace(button);
 		return true;
 	}
 
@@ -2036,7 +2081,7 @@ class TraceCoreStation {
 			return this.commandUnavailable(
 				__("The button of command {0} is not shown or is turned off at this step.", [code])
 			);
-		button.click();
+		this.pressInPlace(button);
 		return true;
 	}
 
@@ -2052,6 +2097,7 @@ class TraceCoreStation {
 			),
 			action: __("Switch the typing tool to E (English) on this computer, then scan again."),
 		});
+		this.revealAuthNotice();
 		this.focus();
 		return true;
 	}
