@@ -847,6 +847,37 @@ class TestDailyTestNeedsTestType(FrappeTestCase):
 		self.assertIn("Choose the test above", out["none"])
 
 
+class TestDailyTestMissingItem(FrappeTestCase):
+	"""06/11/2026: đang ghi test máy TB-0010, chỉ thiếu Đạt/Không đạt mà lỗi bảo "Chọn máy, loại kiểm tra và kết quả"."""
+
+	def test_record_names_only_the_missing_item(self):
+		out = run_js(
+			self,
+			[DAILY],
+			[["DailyTestScreen"]],
+			FAKE_STATION
+			+ DT_LOT_MACHINE
+			+ """
+			const sent = [];
+			screen.request = (method) => sent.push(method);
+			const reason = () => (screen.recordTest(), screen.notice.reason);
+			screen.form.result = "";
+			const result = reason();
+			screen.form.test_type = "";
+			const test = reason();
+			screen.selected = null;
+			const noMachine = reason();
+			emit({result, test, machine: noMachine, sent});
+			""",
+		)
+		self.assertEqual(out["sent"], [])
+		self.assertIn("TB-0010", out["result"])
+		self.assertIn("Pass or Fail", out["result"])
+		self.assertNotIn("machine", out["result"].lower().replace("machine tb-0010", ""))
+		self.assertEqual(out["test"], "Choose the test above to record its result.")
+		self.assertEqual(out["machine"], "Choose the machine from the list.")
+
+
 class TestDailyTestList(FrappeTestCase):
 	def html(self, row):
 		import json

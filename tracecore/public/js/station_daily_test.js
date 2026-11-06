@@ -328,10 +328,18 @@ class DailyTestScreen {
 
 	recordTest() {
 		const form = this.form;
-		if (!this.selected || !form.test_type || !form.result) {
+		// báo đúng mục còn thiếu, không liệt kê cả máy/loại test đã chọn (06/11/2026)
+		const missing = !this.selected
+			? __("Choose the machine from the list.")
+			: !form.test_type
+			? __("Choose the test above to record its result.")
+			: !form.result
+			? __("No result is chosen for machine {0}: tap or scan Pass or Fail.", [this.selected])
+			: "";
+		if (missing) {
 			return this.blocked({
 				title: __("Test is not complete"),
-				reason: __("Choose the machine, the test and its result."),
+				reason: missing,
 				action: __("Choose the missing items, then record the test."),
 			});
 		}
