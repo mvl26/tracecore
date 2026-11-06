@@ -314,15 +314,15 @@ class TestStationCodeRemembered(FrappeTestCase):
 
 		return run_js(
 			self,
-			[BURST, STATION_JS],
-			[["TC_SCAN_FAST_MS"], ["TraceCoreStation"]],
+			["public/js/tc_station_code.js"],
+			[["tcResolveStation"]],
 			f"""
 			const data = {{}};
 			if ({json.dumps(stored)}) data["tc-station-code"] = {json.dumps(stored)};
 			const storage = {json.dumps(broken)}
 				? {{getItem() {{ throw new Error("off"); }}, setItem() {{ throw new Error("off"); }}}}
 				: {{getItem: (k) => (k in data ? data[k] : null), setItem: (k, v) => {{ data[k] = v; }}}};
-			const out = TraceCoreStation.resolveStation({json.dumps(search)}, storage);
+			const out = tcResolveStation({json.dumps(search)}, storage);
 			emit({{...out, stored: data["tc-station-code"] || null}});
 			""",
 		)
@@ -342,6 +342,18 @@ class TestStationCodeRemembered(FrappeTestCase):
 		# mã lạ trong URL vẫn đi tiếp như cũ (máy chủ báo), nhưng không ghi đè mã đã nhớ
 		out = self.resolve("?station=abc", stored="TR-005")
 		self.assertEqual((out["station"], out["stored"]), ("abc", "TR-005"))
+
+	def test_page_uses_it_and_only_the_station_code_is_kept(self):
+		hooks = frappe.get_hooks("page_js", app_name="tracecore")["station"]
+		self.assertIn("public/js/tc_station_code.js", hooks)
+		with open(frappe.get_app_path("tracecore", *STATION_JS.split("/")), encoding="utf-8") as handle:
+			self.assertIn("tcResolveStation(window.location.search)", handle.read())
+		with open(
+			frappe.get_app_path("tracecore", "public", "js", "tc_station_code.js"), encoding="utf-8"
+		) as handle:
+			code = handle.read()
+		self.assertEqual(code.count("setItem("), 1)  # chỉ ghi một khóa: mã trạm
+		self.assertNotIn("token", code.lower().replace("token phiên", ""))
 
 
 class TestNextStationOfferKept(FrappeTestCase):

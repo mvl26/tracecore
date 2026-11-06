@@ -83,6 +83,8 @@ page_js = {
 	"station": [
 		# A-126: nhận diện luồng quét, ô quét tự gửi khi máy quét gõ xong mã (shell station.js dùng)
 		"public/js/tc_scan_burst.js",
+		# mã trạm nhớ theo trình duyệt khi URL mất ?station= (06/11/2026); station.js không dùng localStorage
+		"public/js/tc_station_code.js",
 		# FEAT-052 A-71: tiêu đề mã lỗi và Hướng dẫn xử lý dùng chung, nạp trước các màn
 		"public/js/station_error.js",
 		"public/js/station_t4.js",

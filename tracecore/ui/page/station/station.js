@@ -1,5 +1,5 @@
 /* global tcErrorTitle, tcGuideButton, tcWarningsHtml, TcScanBurst, TcKeyBurst, tcButtonCode, tcParseButtonCode */
-/* global TC_SCAN_FAST_MS, TcQrAlias, tcHasVietnameseMarks */
+/* global TC_SCAN_FAST_MS, TcQrAlias, tcHasVietnameseMarks, tcResolveStation */
 // Page station — kiosk trạm quét (surface STN), khung FEAT-001.
 // Ô quét luôn focus; 4 trạng thái loading / empty / error / offline (FR-M9-14);
 // gọi RPC tracecore.v1.* với X-Idempotency-Key + client_ts (ADR-003).
@@ -121,7 +121,6 @@ function tcStationTitle(station) {
 }
 
 const STATION_ACTIVE_KEY = "tc-station-active";
-const STATION_CODE_KEY = "tc-station-code"; // mã trạm mở gần nhất của trình duyệt này (localStorage)
 // A-128: nút không gắn QR: nút trạm/tab trên cùng (đã có trên tờ A4), nút chụp/tải ảnh (phải thao tác trên màn) và
 // phần Chọn tay (nút "Chọn tay" + bảng chọn tay: dùng khi máy quét không đọc được mã; người dùng thấy thừa 05/11/2026)
 const TC_QR_SKIP = {
@@ -203,10 +202,7 @@ class TcStepQueue {
 class TraceCoreStation {
 	constructor(wrapper, authBarrier = Promise.resolve()) {
 		this.wrapper = wrapper;
-		const resolved = TraceCoreStation.resolveStation(
-			window.location.search,
-			TraceCoreStation.localStore()
-		);
+		const resolved = tcResolveStation(window.location.search); // public/js/tc_station_code.js
 		this.station = resolved.station;
 		// URL mất ?station= (mở từ menu/lịch sử, Desk điều hướng lại): dùng mã trạm đã nhớ của trình duyệt này, ghi lại URL
 		if (resolved.restored)
@@ -1374,38 +1370,6 @@ class TraceCoreStation {
 
 	isCurrentAuth(attempt) {
 		return this.ownsPage() && attempt === this.authGeneration;
-	}
-
-	static localStore() {
-		try {
-			return window.localStorage;
-		} catch (failure) {
-			return null; // trình duyệt chặn storage: vẫn chạy, chỉ không nhớ mã trạm
-		}
-	}
-
-	// Mã trạm của trang (06/11/2026: thỉnh thoảng URL mất ?station=). Có trong URL thì dùng và nhớ (chỉ mã TR-###); thiếu
-	// thì lấy mã đã nhớ của trình duyệt này; không có thì null (màn Chưa cấu hình trạm như cũ).
-	static resolveStation(search, storage) {
-		const fromUrl = new URLSearchParams(search || "").get("station");
-		const valid = (code) => /^TR-\d{3}$/.test(code || "");
-		if (fromUrl) {
-			try {
-				if (storage && valid(fromUrl)) storage.setItem(STATION_CODE_KEY, fromUrl);
-			} catch (failure) {
-				// không nhớ được thì thôi
-			}
-			return { station: fromUrl, restored: false };
-		}
-		let stored = null;
-		try {
-			stored = storage ? storage.getItem(STATION_CODE_KEY) : null;
-		} catch (failure) {
-			stored = null;
-		}
-		return valid(stored)
-			? { station: stored, restored: true }
-			: { station: null, restored: false };
 	}
 
 	// A-102 (#1822): phiên thẻ đang mở của tab này, để mở trạm khác bằng URL đi đúng đường của nút chuyển trạm
