@@ -285,7 +285,7 @@ class DailyTestScreen {
 			args.consumables_confirmed = form.consumables_confirmed ? 1 : 0;
 		}
 		this.request(method, args, () => {
-			this.notice = notice(machine);
+			this.notice = { ...notice(machine), reveal: true };
 			if (method === DT_START) TcRunConsumables.reset(this.form);
 			this.load();
 		});
@@ -328,10 +328,18 @@ class DailyTestScreen {
 
 	recordTest() {
 		const form = this.form;
-		if (!this.selected || !form.test_type || !form.result) {
+		// báo đúng mục còn thiếu, không liệt kê cả máy/loại test đã chọn (06/11/2026)
+		const missing = !this.selected
+			? __("Choose the machine from the list.")
+			: !form.test_type
+			? __("Choose the test above to record its result.")
+			: !form.result
+			? __("No result is chosen for machine {0}: tap or scan Pass or Fail.", [this.selected])
+			: "";
+		if (missing) {
 			return this.blocked({
 				title: __("Test is not complete"),
-				reason: __("Choose the machine, the test and its result."),
+				reason: missing,
 				action: __("Choose the missing items, then record the test."),
 			});
 		}
@@ -351,6 +359,7 @@ class DailyTestScreen {
 			},
 			(res) => {
 				this.notice = {
+					reveal: true,
 					variant: res.locked ? "warn" : "ok",
 					title: res.locked
 						? __("Test failed: machine {0} is locked", [this.selected])
@@ -403,6 +412,7 @@ class DailyTestScreen {
 			},
 			() => {
 				this.notice = {
+					reveal: true,
 					variant: "ok",
 					title: __("Machine {0} is unlocked temporarily", [this.selected]),
 					reason: __("The unlock ends after {0} hour(s).", [hours]),
@@ -510,6 +520,8 @@ class DailyTestScreen {
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
 		if (this.scrollToForm && this.list) this.revealForm();
+		// xong bước (`reveal`) hoặc lỗi: đưa thông báo lên một lần; chọn kết quả/loại test không cuộn (06/11/2026)
+		else if (this.station.revealNotice) this.station.revealNotice(this.notice);
 	}
 
 	// Form nằm dưới bảng máy: cuộn tới để KTV thấy ngay sau khi quét; ô quét giữ focus (preventScroll) nên quét tiếp vẫn được
@@ -520,6 +532,7 @@ class DailyTestScreen {
 		const reduced =
 			window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		region.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+		if (this.station.noteReveal) this.station.noteReveal();
 	}
 
 	alertHtml(notice, buttons = "") {
@@ -674,6 +687,12 @@ class DailyTestScreen {
 			`<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="${action}">${esc(
 				label
 			)}</button></div>`;
+		// chưa chọn loại test (máy có nhiều test, vừa ghi xong một test): chưa hiện Đạt/Không đạt, lô, ảnh, nút Ghi
+		if (!type) {
+			return `<p class="tc-t6-hint">${esc(
+				__("Choose the test above to record its result.")
+			)}</p>`;
+		}
 		if (needsRun && !run) {
 			const program = this.testProgram(machine);
 			return `<p class="tc-t6-hint">${esc(
