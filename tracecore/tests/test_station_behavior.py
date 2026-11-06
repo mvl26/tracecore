@@ -817,6 +817,36 @@ class TestDailyTestLotPick(FrappeTestCase):
 		self.assertNotIn('data-action="dt-lot"', out["html"])
 
 
+class TestDailyTestNeedsTestType(FrappeTestCase):
+	"""06/11/2026: ghi xong test của máy 2 loại test, chưa chọn Bowie-Dick hay rò rỉ mà vẫn hiện form kết quả."""
+
+	def test_no_result_fields_until_a_test_is_chosen(self):
+		out = run_js(
+			self,
+			[DAILY],
+			[["DailyTestScreen"]],
+			FAKE_STATION
+			+ DT_LOT_MACHINE
+			+ """
+			const two = {name: "TB-0010", required: ["bowie_dick", "leak"], optional: [], missing: ["leak"],
+				run_tests: [], runs: {}};
+			screen.form.test_type = "";
+			const none = screen.runHtml(two, field);
+			screen.form.test_type = "leak";
+			emit({none, chosen: screen.runHtml(two, field)});
+			""",
+		)
+		for marker in (
+			'data-action="dt-result"',
+			'data-action="dt-record"',
+			'data-dt-field="note"',
+			"tc-dt-photo",
+		):
+			self.assertNotIn(marker, out["none"])
+			self.assertIn(marker, out["chosen"])
+		self.assertIn("Choose the test above", out["none"])
+
+
 class TestDailyTestList(FrappeTestCase):
 	def html(self, row):
 		import json

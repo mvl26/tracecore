@@ -679,6 +679,12 @@ class DailyTestScreen {
 			`<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-action="${action}">${esc(
 				label
 			)}</button></div>`;
+		// chưa chọn loại test (máy có nhiều test, vừa ghi xong một test): chưa hiện Đạt/Không đạt, lô, ảnh, nút Ghi
+		if (!type) {
+			return `<p class="tc-t6-hint">${esc(
+				__("Choose the test above to record its result.")
+			)}</p>`;
+		}
 		if (needsRun && !run) {
 			const program = this.testProgram(machine);
 			return `<p class="tc-t6-hint">${esc(
