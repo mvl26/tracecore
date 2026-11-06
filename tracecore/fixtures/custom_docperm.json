@@ -4927,5 +4927,48 @@
   "read": 1,
   "report": 1,
   "role": "TC R13"
+ },
+ {
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "e1d437d55f",
+  "parent": "Import Mapping Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R01"
+ },
+ {
+  "create": 1,
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "6cd5b0c594",
+  "parent": "Import Mapping Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R10",
+  "write": 1
+ },
+ {
+  "create": 1,
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "3b8b7717ac",
+  "parent": "Import Mapping Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R11",
+  "write": 1
  }
 ]
