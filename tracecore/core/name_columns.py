@@ -24,6 +24,7 @@ TRACECORE_NAME_FIELD = {
 	"Set Unit": "set_type_name",
 	"TraceCore Error Code": "error_name",
 	"Station Function": "function_name",
+	"IC Indicator": "indicator_name",  # A-113 (FEAT-056)
 }
 
 NAME_FIELD = {**EXTERNAL_NAME_FIELD, **TRACECORE_NAME_FIELD}
@@ -89,4 +90,12 @@ MODULES = (
 	"Admin Reports",
 	"Waste",
 	"UI",
+	# A-113 (FEAT-056): M11-M17
+	"Infection Program",
+	"Compliance Audit",
+	"HAI Surveillance",
+	"Microbiology",
+	"Environmental Hygiene",
+	"Occupational Safety",
+	"Food Safety",
 )

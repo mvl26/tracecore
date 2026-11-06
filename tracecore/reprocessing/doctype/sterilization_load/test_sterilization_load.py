@@ -144,6 +144,10 @@ class TestSterilizationLoad(FrappeTestCase):
 				"R08": "RW",
 				"R09": "R",
 				"R10": "R",
+				# A-113: vai trò KSNK toàn viện không có quyền trên chứng từ CSSD
+				"R11": "",
+				"R12": "",
+				"R13": "",
 			},
 		)
 		records = [

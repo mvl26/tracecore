@@ -8,8 +8,10 @@
  "description": "Infection control indicator values written by the system when a reporting period is locked.",
  "field_order": [
   "indicator",
+  "indicator_name",
   "period",
   "department",
+  "department_name",
   "column_break_main",
   "value",
   "sample_note",
@@ -34,6 +36,14 @@
    "read_only": 1
   },
   {
+   "fetch_from": "indicator.indicator_name",
+   "fieldname": "indicator_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Indicator Name",
+   "read_only": 1
+  },
+  {
    "fieldname": "period",
    "fieldtype": "Data",
    "label": "Period",
@@ -54,6 +64,14 @@
    "search_index": 1,
    "read_only": 1,
    "description": "Empty means the whole hospital."
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_main",
@@ -120,7 +138,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-06 10:00:00.000000",
+ "modified": "2026-11-06 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "IC Indicator Value",

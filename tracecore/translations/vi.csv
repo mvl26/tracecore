@@ -8116,7 +8116,6 @@ Insufficient sample,Chưa đủ mẫu,
 Calculation,Cách tính,
 Numerator,Tử số,
 Denominator,Mẫu số,
-Sample Size,Cỡ mẫu,
 Computed On,Tính lúc,
 "Period must be in the form YYYY-MM, for example 2026-10.","Kỳ phải có dạng YYYY-MM, ví dụ 2026-10.",
 Only the head of infection control (R01) can unlock a reporting period.,Chỉ Trưởng khoa KSNK (R01) được mở khóa kỳ báo cáo.,
@@ -8188,7 +8187,6 @@ Not calculated (denominator 0),Không tính (mẫu số 0),
 Whole hospital,Toàn viện,
 "Values are read from the indicator values saved when the period was locked; opening this board does not recalculate them. A rate with a zero denominator shows Not calculated, never 0.","Giá trị đọc từ giá trị chỉ số đã lưu khi khóa kỳ; mở bảng không tính lại. Tỷ suất có mẫu số 0 hiển thị ""Không tính"", không hiển thị 0.",
 No indicator values yet. Values appear after a reporting period is locked.,Chưa có giá trị chỉ số. Giá trị xuất hiện sau khi khóa kỳ báo cáo.,
-Import Type,Loại nhập,
 Mapping Profile,Hồ sơ ánh xạ cột,
 "Saved column mapping for importing files exported from HIS, the laboratory or the pharmacy.","Ánh xạ cột đã lưu để nhập file xuất từ HIS, phòng xét nghiệm hoặc khoa Dược.",
 Import Mapping Profile,Hồ sơ ánh xạ cột,
@@ -8219,3 +8217,14 @@ Compliance Audit,Giám sát tuân thủ,
 Microbiology,Vi sinh,
 Environmental Hygiene,Vệ sinh môi trường,
 Occupational Safety,An toàn nghề nghiệp,
+Import Type,Loại nhập,Import Mapping Profile
+Sample Size,Cỡ mẫu,IC Indicator Value
+",",",",Import Mapping Profile
+;,;,Import Mapping Profile
+Tab,Tab,Import Mapping Profile
+UTF-8,UTF-8,Import Mapping Profile
+Windows-1252,Windows-1252,Import Mapping Profile
+Windows-1258,Windows-1258,Import Mapping Profile
+Loading…,Đang tải…,
+Indicator Name,Tên chỉ số,IC Indicator Value
+Department Name,Tên khoa,IC Indicator Value
