@@ -126,6 +126,22 @@ Các mặc định dưới đây sẽ dùng nếu người dùng không phản �
     - Chạy `diff-cover coverage.xml --compare-branch=origin/develop --fail-under=70`.
     - Push `feat/FEAT-060-audit-engine` lên GitHub. Không tạo PR, không merge.
 
+## Ghi chú triển khai (lệch so với mặc định ở trên)
+
+- Người dùng duyệt plan ngày 09/11/2026 theo mặc định Q1–Q3. Đã ghi amendment A-132 vào Revision History của `docs/architecture.md`.
+- **D1:** `Audit Session` cho R01 ký hiệu `RWSA`, để R01 hủy được phiếu nhập sai. Báo cáo không tính phiếu Hủy.
+- **D7:** Trạm `AUDIT` dùng cơ chế năng lực trạm hiện có. R11/R12/R08 cần `Station Competency` tại trạm PDA như các trạm khác, vì `core.station_auth` chưa có ngoại lệ theo chức năng. Không sửa `core` cho việc này.
+- **Audit Log:** trường `action` của Audit Log chỉ nhận danh sách cố định. Vì vậy:
+  - Cảnh báo "gói không có mục trọng yếu" ghi `Submit` kèm `reason` có tiền tố `[NO_CRITICAL_ITEM]`.
+  - "Bỏ qua NC" ghi `Update` kèm lý do.
+- **Mã lỗi mới** (`AUDIT_*`):
+  - Thêm vào `core/errors.HTTP_STATUS`.
+  - Thêm vào `UNMAPPED_BLOCK_CODES`, vì đây là lỗi nhập liệu/chứng từ của engine phiếu, không phải kiểm soát an toàn CSSD.
+- **Mã chỉ số M9:**
+  - `AUDIT_PASS_RATE` cho mọi loại phiếu.
+  - Theo loại phiếu: `AUDIT_PASS_PPE`, `AUDIT_PASS_BUNDLE`, `AUDIT_PASS_ENV`, `AUDIT_PASS_VENDOR`, `AUDIT_PASS_FOOD`.
+  - R01 tạo `IC Indicator` trỏ tới các khóa này.
+
 ## Ngoài phạm vi (FEAT sau)
 
 - FEAT-061: SCR-51, `record_opportunity`, tỷ lệ VST (BRU-AUD-002), 8 mẫu khởi tạo (FR-M12-02).
