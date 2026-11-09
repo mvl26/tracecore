@@ -54,6 +54,8 @@ WASTE_TYPES = (
 	"Sharps Exposure",
 )
 SHARPS = "Sharps Exposure"
+# FEAT-060 (A-132 c, FR-M12-09): không tuân thủ từ phiếu giám sát KSNK (M12) — loại riêng, nhóm Compliance
+COMPLIANCE = "Compliance Nonconformity"
 NC_TYPES = {"Shortage": "Missing Instrument", "Foreign Instrument": "Foreign Instrument"}
 
 
@@ -114,6 +116,8 @@ def validate(doc):
 	doc.description = cstr(doc.description).strip()
 	if doc.incident_type in WASTE_TYPES:
 		doc.incident_category = "Waste"
+	if doc.incident_type == COMPLIANCE:
+		doc.incident_category = "Compliance"
 	if doc.incident_type == SHARPS:
 		_check_sharps(doc)
 	if not any(doc.get(field) for field in LINK_FIELDS):
@@ -412,6 +416,19 @@ def on_sync_conflict(conflict):
 			"Offline transaction from station {0} was rejected on sync ({1}); the server record was kept."
 		).format(conflict.station or "-", conflict.error_code or conflict.http_status),
 		links,
+	)
+
+
+def on_compliance_nc(ctx):
+	"""Hook ``tracecore_compliance_nc`` (FEAT-060, FR-M12-09): R01/R11 mở NC từ phiếu giám sát có mục trọng yếu không
+	đạt → Incident Compliance, nguồn Audit Session, gắn khoa. ``ctx``: {session, department, description}."""
+	return _auto(
+		"Audit Session",
+		ctx["session"],
+		COMPLIANCE,
+		"Medium",
+		ctx.get("description") or _("Audit {0} has a failed critical item.").format(ctx["session"]),
+		{"department": ctx.get("department")},
 	)
 
 

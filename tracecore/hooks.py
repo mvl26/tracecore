@@ -571,9 +571,16 @@ tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_c
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
 # A-113 (FEAT-056): hàm tính chỉ số KSNK của module M11-M17 — mỗi hàm trả {source_method: hàm(period, department)}
 # (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
-tracecore_ic_indicators = []
+tracecore_ic_indicators = [
+	"tracecore.compliance_audit.indicators.register",  # FEAT-060: tỷ lệ phiếu giám sát Đạt
+]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
-tracecore_ksnk_badges = []
+tracecore_ksnk_badges = [
+	"tracecore.compliance_audit.nc.badges",  # FEAT-060: phiếu chờ quyết định NC
+]
+# FEAT-060 (A-132 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
+# department, description}, trả tên Incident
+tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
