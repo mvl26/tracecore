@@ -106,16 +106,16 @@ class TestPdaReport(ExposureApiCase):
 
 	def test_report_creates_record_for_session_employee_and_notifies_r11(self):
 		result = self.report(
-			activity="Recapping", device="Needle", source_known="Yes", source_patient_code="BN77"
+			activity="Recapping", device="Needle", source_known="Yes", source_patient_code="BN0077"
 		)
 		self.assertTrue(result["ok"], result)
 		name = result["exposure"]["name"]
 		doc = frappe.get_doc(DOCTYPE, name)
 		self.assertEqual(doc.employee, self.employee)
 		self.assertEqual(doc.report_channel, "PDA")
-		self.assertEqual(doc.source_patient_code_masked, "***BN77")
+		self.assertEqual(doc.source_patient_code_masked, "***0077")
 		self.assertIn("procedure", result["exposure"])
-		self.assertNotIn("BN77", frappe.as_json(result))
+		self.assertNotIn("BN0077", frappe.as_json(result))
 		self.assertTrue(
 			frappe.db.exists(
 				"Notification Delivery",

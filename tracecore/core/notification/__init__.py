@@ -102,6 +102,9 @@ EVENTS = {
 	"AUDIT_COVERAGE_LOW": ("Audit coverage below target", "Normal", 0, 1, (FALLBACK_ROLE,)),
 	"AUDIT_FEEDBACK": ("Audit result feedback to the department", "Normal", 0, 1, ()),
 	"AUDIT_CRITICAL_FAIL": ("Critical audit item failed", "Normal", 0, 0, ("TC R01", "TC R11")),
+	# FEAT-067 (A-136 Q4, FR-M14-04): chủng đa kháng mới — R11 theo Rule; mạng lưới viên, R08 của khoa và vai trò của
+	# quy tắc do nơi gọi truyền; chưa đọc quá 15 phút thì leo thang R01
+	"MDRO_DETECTED": ("New multidrug-resistant isolate", "Urgent", 1, 1, ("TC R11",)),
 	# FEAT-071 (A-137 e): phơi nhiễm nghề nghiệp báo ngay R01, R11 (FR-M16-01, 01.1); mốc theo dõi (nhân viên do nơi gọi
 	# truyền); mẫu theo dõi chưa duyệt; tiêm chủng đến hạn (nhân viên + R02, như FR-M4-01.4); thuốc dự phòng (FR-M16-08)
 	"EXPOSURE_REPORTED": ("Occupational exposure reported", "Urgent", 1, 1, ("TC R01", "TC R11")),

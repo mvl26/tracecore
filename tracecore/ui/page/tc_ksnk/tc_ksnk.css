@@ -105,6 +105,16 @@
 .tc-ksnk .tc-ksnk-alert.is-info { border-left-color: var(--tc-info); background: var(--tc-info-tint); color: var(--tc-text-heading); }
 .tc-ksnk .tc-ksnk-alert.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); margin-top: var(--tc-sp-2); }
 .tc-ksnk .tc-ksnk-alert.is-warn strong { color: var(--tc-warn-text); }
+/* FEAT-067 SCR-59: các bước nhập file (bước có số/ký hiệu, không chỉ màu), ô số liệu kiểm tra, hàng nút */
+.tc-ksnk .tc-ksnk-steps { display: flex; flex-wrap: wrap; gap: var(--tc-sp-4); margin: 0 0 var(--tc-sp-3); padding: 0; list-style: none; font-size: var(--tc-fs-sm); color: var(--tc-text-2); }
+.tc-ksnk .tc-ksnk-step.is-done, .tc-ksnk .tc-ksnk-step.is-current { color: var(--tc-text-heading); }
+.tc-ksnk .tc-ksnk-step.is-current { font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ksnk-step-mark { display: inline-block; min-width: var(--tc-sp-5); padding: 0 var(--tc-sp-1); border: var(--tc-bw-hair) solid var(--tc-border-input); border-radius: var(--tc-r-badge); text-align: center; }
+.tc-ksnk .tc-ksnk-stats { display: flex; flex-wrap: wrap; gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-stat { display: flex; flex-direction: column; gap: var(--tc-sp-1); padding: var(--tc-sp-2) var(--tc-sp-3); border: var(--tc-bw-hair) solid var(--tc-border-input); border-radius: var(--tc-r-xs); background: var(--tc-card); color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ksnk-stat-value { color: var(--tc-text-heading); font-size: var(--tc-fs-3xl); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ksnk-stat.is-fail .tc-ksnk-stat-value { color: var(--tc-fail); }
+.tc-ksnk .tc-ksnk-actions { display: flex; flex-wrap: wrap; gap: var(--tc-sp-2); margin: var(--tc-sp-3) 0; }
 @media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-body { flex-direction: column; }
 	.tc-ksnk .tc-ksnk-rail { flex: none; width: 100%; min-height: 0; border-right: 0; border-bottom: var(--tc-bw-hair) solid var(--tc-line); }

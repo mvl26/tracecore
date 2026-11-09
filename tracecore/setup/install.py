@@ -8,6 +8,7 @@ from tracecore.costing.setup import ensure_categories
 from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_settings
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
 from tracecore.inventory.permissions import ensure_permissions
+from tracecore.microbiology.seed import ensure_seed as ensure_microbiology_seed
 from tracecore.setup.error_codes import ensure_error_codes
 from tracecore.setup.label_templates import (
 	ensure_object_templates,
@@ -52,6 +53,7 @@ def after_install():
 	ensure_station_help()
 	ensure_error_codes()
 	ensure_daily_test_settings()
+	ensure_microbiology_seed()
 
 
 TEST_GENDERS = ("Male", "Female", "Other")

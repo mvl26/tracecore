@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "organism",
+  "organism_name",
+  "organism_group"
+ ],
+ "fields": [
+  {
+   "fieldname": "organism",
+   "fieldtype": "Link",
+   "label": "Organism",
+   "options": "Organism",
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "organism_name",
+   "fieldtype": "Data",
+   "label": "Organism Name",
+   "fetch_from": "organism.organism_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 3,
+   "translatable": 0
+  },
+  {
+   "fieldname": "organism_group",
+   "fieldtype": "Data",
+   "label": "Organism Group",
+   "in_list_view": 1,
+   "columns": 3,
+   "translatable": 0,
+   "description": "Matches every organism of this group when no organism is chosen."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "MDRO Rule Organism",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Organism or organism group a multidrug resistance rule applies to.",
+ "istable": 1,
+ "editable_grid": 1
+}

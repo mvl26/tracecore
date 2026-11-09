@@ -79,6 +79,21 @@ SCREENS += [
 		"script": "/assets/tracecore/js/ksnk/scr_53_tuan_thu.js",
 	},
 ]
+# FEAT-067 (A-136): vi sinh & đa kháng — import WHONET/CSV, nhập tay có xác nhận, chủng mới, kháng sinh đồ quý (UC-51);
+# R13 chỉ thấy phần tổng hợp (không đọc chủng có mã người bệnh)
+SCREENS += [
+	{
+		"slug": "vi-sinh",
+		"scr": "SCR-59",
+		"uc": "UC-51",
+		"label": "Microbiology and MDRO",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_59_vi_sinh.js",
+	},
+]
+
+
 # FEAT-071 (A-137 j): phơi nhiễm nghề nghiệp & tiêm chủng (UC-55); R13 chỉ thấy số liệu tổng hợp, R02 ghi tiêm chủng
 # trên Desk list Staff Immunization
 SCREENS += [
