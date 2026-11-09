@@ -12,7 +12,8 @@ import frappe
 
 from tracecore.core.audit import MASTER_DOCTYPES
 
-ROLE_CODES = tuple(f"R{i:02d}" for i in range(1, 11))
+# R01-R10 (SEC #13) + R11-R13 KSNK toàn viện (A-113 a, FEAT-056)
+ROLE_CODES = tuple(f"R{i:02d}" for i in range(1, 14))
 ROLE_NAMES = {code: f"TC {code}" for code in ROLE_CODES}
 MATRIX_PATH = Path(__file__).parents[1] / "fixtures" / "permission_matrix.csv"
 FIXTURE_PATH = Path(__file__).parents[1] / "fixtures" / "custom_docperm.json"

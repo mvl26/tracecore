@@ -19,8 +19,9 @@ class TestPermissionMatrix(FrappeTestCase):
 		rows = load_permission_matrix(MATRIX_PATH)
 		self.assertEqual(tuple(rows.roles), ROLE_CODES)
 		# 40 DocType của BA #13 + Cost Category và Cost Settings (FEAT-044, A-47 C3, C6) + Environment Log (FEAT-008, A-55 Q4) + Archive Export (FEAT-012, A-58 D2) + 3 DocType chất thải (FEAT-047, A-60) + Waste Storage Location (FEAT-048, A-61) + Waste Treatment Vendor, Waste Handover (FEAT-049, A-62) + Waste Quota (FEAT-050, A-63)
-		self.assertEqual(len(rows), 53)
-		self.assertEqual(len({row.code for row in rows}), 53)
+		# + 4 DocType nền v1.12 (FEAT-056, A-113): IC Program Settings, IC Indicator, IC Indicator Value, Import Mapping Profile
+		self.assertEqual(len(rows), 57)
+		self.assertEqual(len({row.code for row in rows}), 57)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:
@@ -96,5 +97,6 @@ class TestPermissionMatrix(FrappeTestCase):
 		roles_path = MATRIX_PATH.with_name("role.json")
 		roles = {row["role_name"]: row for row in json.loads(roles_path.read_text(encoding="utf-8"))}
 		for code in ROLE_CODES:
-			expected = 1 if code in {"R01", "R02", "R09", "R10"} else 0
+			# A-113 a: thêm R11 (Giám sát viên KSNK) và R13 (Hội đồng KSNK & BGĐ)
+			expected = 1 if code in {"R01", "R02", "R09", "R10", "R11", "R13"} else 0
 			self.assertEqual(roles[f"TC {code}"]["two_factor_auth"], expected)

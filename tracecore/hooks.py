@@ -10,7 +10,7 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "hrms"]
 
-# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; A-113: + TC R11..R13;
 # FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói;
 # FEAT-041: thêm Stock Entry-tc_*, Stock Entry Detail-tc_* cho nhập kho theo lô/hạn).
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
@@ -118,7 +118,9 @@ page_js = {
 		"public/js/station_waste_handover.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
-	]
+	],
+	# A-113/A-131 (FEAT-056): màn quản lý KSNK toàn viện — shell (rail, router, 4 trạng thái); màn từng SCR nạp khi mở
+	"tc-ksnk": ["public/js/ksnk/ksnk_shell.js"],
 }
 
 # include js in doctype views
@@ -196,6 +198,9 @@ after_install = "tracecore.setup.install.after_install"
 after_migrate = [
 	"tracecore.inventory.permissions.ensure_permissions",
 	"tracecore.setup.install.apply_system_settings",
+	# A-113 (FEAT-056): Role Profile cho R11-R13; không làm fixtures vì mỗi lần import lại Role Profile xếp hàng job
+	# cập nhật người dùng và khóa bản ghi (DocumentLockedError khi chưa có worker)
+	"tracecore.setup.install.ensure_role_profiles",
 	# FEAT-010: Notification Rule mặc định cho mọi loại sự kiện (không ghi đè chỉnh sửa của R10)
 	"tracecore.core.notification.ensure_default_rules",
 	# FEAT-037: quyền R02/R10/R01 cho HRMS Shift Assignment và Shift Type
@@ -375,6 +380,12 @@ doc_events = {
 	"Waste Quota": dict(_AUDIT_EVENTS),  # FEAT-050, A-63
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	# A-113 (FEAT-056): cài đặt chương trình, danh mục chỉ số, giá trị chỉ số (tính lại sau mở khóa có old/new —
+	# FR-M9-27.1), hồ sơ ánh xạ cột: Audit Log, không xóa
+	"IC Program Settings": dict(_AUDIT_EVENTS),
+	"IC Indicator": dict(_AUDIT_EVENTS),
+	"IC Indicator Value": dict(_AUDIT_EVENTS),
+	"Import Mapping Profile": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -551,6 +562,11 @@ tracecore_after_load_cancel = [
 tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_cancelled"]
 # M5 test đầu ngày ghi kết quả (A-111 D2): ctx {daily_test, equipment, lot}; M6 trừ vật tư đã xác nhận lúc Bắt đầu test
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
+# A-113 (FEAT-056): hàm tính chỉ số KSNK của module M11-M17 — mỗi hàm trả {source_method: hàm(period, department)}
+# (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
+tracecore_ic_indicators = []
+# A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
+tracecore_ksnk_badges = []
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",

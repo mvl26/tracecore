@@ -14,7 +14,9 @@ Không biết gì về nghiệp vụ: mỗi module khai báo "loại import" (`I
 
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import math
 import os
 import unicodedata
@@ -41,6 +43,19 @@ BACKGROUND_ROWS = 200
 DATE_FORMAT = "dd/mm/yyyy"
 SAVEPOINT = "tc_import_unit"
 # so khớp sau khi bỏ dấu (`_plain`): "có" / "không" người dùng gõ cũng được nhận
+DATE_PATTERNS = ("%d/%m/%Y", "%Y-%m-%d")
+# Import Mapping Profile (FEAT-056, F-21): định dạng ngày, bảng mã, dấu phân cách của file nguồn
+PROFILE_DOCTYPE = "Import Mapping Profile"
+PROFILE_DATES = {
+	"dd/mm/yyyy": "%d/%m/%Y",
+	"yyyy-mm-dd": "%Y-%m-%d",
+	"mm/dd/yyyy": "%m/%d/%Y",
+	"dd-mm-yyyy": "%d-%m-%Y",
+	"dd.mm.yyyy": "%d.%m.%Y",
+}
+PROFILE_ENCODINGS = {"UTF-8": "utf-8-sig", "Windows-1258": "cp1258", "Windows-1252": "cp1252"}
+PROFILE_DELIMITERS = {",": ",", ";": ";", "Tab": "\t"}
+
 TRUE_WORDS = {"1", "x", "yes", "y", "true", "co", "c"}
 FALSE_WORDS = {"0", "no", "n", "false", "khong", "k"}
 DATA_SHEET = "Data"
@@ -108,6 +123,38 @@ class ImportKind:
 	guide: Sequence[str] = field(default_factory=tuple)  # câu hướng dẫn thêm cho sheet Guide
 	# mã lặp lại trong cùng file là lỗi dòng (``DUPLICATE_IN_FILE``); False cho loại mỗi dòng là một lô mới (Set Unit)
 	unique_code: bool = True
+
+
+@dataclass
+class Profile:
+	"""Hồ sơ ánh xạ cột đã đọc (FEAT-056, FR-M9-28): tiêu đề nguồn (đã chuẩn hóa) → mã cột của loại import."""
+
+	name: str
+	is_csv: bool
+	encoding: str
+	delimiter: str
+	date_patterns: tuple[str, ...]
+	rename: dict[str, str]
+
+
+def load_profile(name: str | None, key: str) -> Profile | None:
+	"""Đọc `Import Mapping Profile`; không có / khác loại import → ImportFileError. ``name`` rỗng → None."""
+	if not name:
+		return None
+	if not frappe.db.exists(PROFILE_DOCTYPE, name):
+		raise ImportFileError(_("Mapping profile {0} does not exist.").format(name))
+	doc = frappe.get_doc(PROFILE_DOCTYPE, name)
+	if doc.import_kind != key:
+		raise ImportFileError(_("Mapping profile {0} is for another import type.").format(name))
+	pattern = PROFILE_DATES.get(doc.date_format or "", DATE_PATTERNS[0])
+	return Profile(
+		name=doc.name,
+		is_csv=doc.file_format == "CSV",
+		encoding=PROFILE_ENCODINGS.get(doc.encoding or "", "utf-8-sig"),
+		delimiter=PROFILE_DELIMITERS.get(doc.delimiter or "", ","),
+		date_patterns=tuple(dict.fromkeys((pattern, "%Y-%m-%d"))),
+		rename={_norm(row.source_column): row.target_field for row in doc.columns},
+	)
 
 
 def can_import(kind: ImportKind) -> bool:
@@ -316,7 +363,7 @@ def _number(value):
 	return (number, True) if math.isfinite(number) else (None, False)
 
 
-def _date(value):
+def _date(value, patterns=DATE_PATTERNS):
 	if value is None or (isinstance(value, str) and not value.strip()):
 		return None, True
 	if isinstance(value, datetime):
@@ -324,7 +371,7 @@ def _date(value):
 	if isinstance(value, date):
 		return value, True
 	if isinstance(value, str):
-		for pattern in ("%d/%m/%Y", "%Y-%m-%d"):
+		for pattern in patterns:
 			try:
 				return datetime.strptime(value.strip(), pattern).date(), True
 			except ValueError:
@@ -345,7 +392,7 @@ def _option(column: Column, text: str):
 	return None
 
 
-def _cell(column: Column, value, row: int) -> tuple[object, Issue | None]:
+def _cell(column: Column, value, row: int, date_patterns=DATE_PATTERNS) -> tuple[object, Issue | None]:
 	"""Giá trị đã chuẩn hóa của một ô theo kiểu cột, hoặc lỗi dòng."""
 
 	def bad(reason):
@@ -358,7 +405,7 @@ def _cell(column: Column, value, row: int) -> tuple[object, Issue | None]:
 			return bad(_('{0}: "{1}" is not a valid number.').format(_(column.label), shown))
 		return (int(number) if column.kind == "int" and number is not None else number), None
 	if column.kind == "date":
-		day, ok = _date(value)
+		day, ok = _date(value, date_patterns)
 		return (
 			(day, None)
 			if ok
@@ -398,19 +445,25 @@ def _cell(column: Column, value, row: int) -> tuple[object, Issue | None]:
 	return text or None, None
 
 
-def parse(kind: ImportKind, content: bytes) -> tuple[list[ParsedRow], list[Issue]]:
-	"""Đọc sheet đầu: trả các dòng dữ liệu (bỏ dòng trống) với số dòng Excel và lỗi giá trị ô.
+def parse(
+	kind: ImportKind, content: bytes, profile: Profile | None = None
+) -> tuple[list[ParsedRow], list[Issue]]:
+	"""Đọc sheet đầu (hoặc file CSV khi hồ sơ ánh xạ là CSV): trả các dòng dữ liệu (bỏ dòng trống) với số dòng và lỗi ô.
 
 	Ném ``ImportFileError`` khi file rỗng / không phải .xlsx / quá cỡ / quá ``MAX_ROWS`` dòng / thiếu cột bắt buộc /
-	có cột mã hệ thống. Ô công thức lấy giá trị đã lưu.
+	có cột mã hệ thống. Ô công thức lấy giá trị đã lưu. Có ``profile`` thì đổi tên cột theo hồ sơ trước khi khớp cột.
 	"""
+	if profile and profile.is_csv:
+		return _read(kind, _csv_rows(content, profile), profile)
 	_check_container(content)
 	try:
 		book = load_workbook(BytesIO(content), read_only=True, data_only=True)
 	except Exception:
 		raise _file_error(_("The file is not an Excel .xlsx workbook.")) from None
 	try:
-		return _read(kind, book)
+		if not book.worksheets:
+			raise _file_error(_("The workbook has no sheet."))
+		return _read(kind, book.worksheets[0].iter_rows(values_only=True), profile)
 	except ImportFileError:
 		raise
 	except Exception:
@@ -419,13 +472,29 @@ def parse(kind: ImportKind, content: bytes) -> tuple[list[ParsedRow], list[Issue
 		book.close()
 
 
-def _read(kind: ImportKind, book) -> tuple[list[ParsedRow], list[Issue]]:
-	if not book.worksheets:
-		raise _file_error(_("The workbook has no sheet."))
-	iterator = book.worksheets[0].iter_rows(values_only=True)
+def _csv_rows(content: bytes, profile: Profile):
+	"""Dòng của file CSV theo bảng mã và dấu phân cách của hồ sơ; chữ tiếng Việt chuẩn hóa NFC."""
+	if not content:
+		raise _file_error(_("The file is empty."))
+	if len(content) > MAX_BYTES:
+		raise _file_error(_("The file is larger than {0} MB.").format(MAX_BYTES // (1024 * 1024)))
+	try:
+		text = content.decode(profile.encoding)
+	except UnicodeDecodeError:
+		raise _file_error(
+			_("The file cannot be read with the encoding of mapping profile {0}.").format(profile.name)
+		) from None
+	text = unicodedata.normalize("NFC", text)
+	return iter(csv.reader(io.StringIO(text, newline=""), delimiter=profile.delimiter))
+
+
+def _read(kind: ImportKind, iterator, profile: Profile | None = None) -> tuple[list[ParsedRow], list[Issue]]:
 	header = next(iterator, None)
 	if not header or all(_text(cell) == "" for cell in header):
 		raise _file_error(_("Row 1 of the first sheet must be the header row."))
+	if profile:
+		header = [profile.rename.get(_norm(cell), cell) for cell in header]
+	patterns = profile.date_patterns if profile else DATE_PATTERNS
 	forbidden = {_norm(text): text for text in kind.forbidden_columns}
 	found = [forbidden[_norm(cell)] for cell in header if _norm(cell) in forbidden]
 	if found:
@@ -457,7 +526,9 @@ def _read(kind: ImportKind, book) -> tuple[list[ParsedRow], list[Issue]]:
 			raise _file_error(_("The file has more than {0} data rows.").format(MAX_ROWS))
 		parsed = {}
 		for name, index in columns.items():
-			value, issue = _cell(by_field[name], values[index] if index < len(values) else None, number)
+			value, issue = _cell(
+				by_field[name], values[index] if index < len(values) else None, number, patterns
+			)
 			parsed[name] = value
 			if issue:
 				issues.append(issue)
@@ -518,9 +589,9 @@ def _code(kind: ImportKind, unit: list[ParsedRow]) -> str:
 	return unit[0].values.get(kind.code_field) or ""
 
 
-def _analyse(kind: ImportKind, content: bytes):
+def _analyse(kind: ImportKind, content: bytes, profile: Profile | None = None):
 	"""(đơn vị, lỗi theo đơn vị {id(unit): [Issue]}, mã đã có, tổng số dòng)."""
-	rows, issues = parse(kind, content)
+	rows, issues = parse(kind, content, profile)
 	units, group_issues = _units(kind, rows)
 	issues += group_issues
 	reported = {(issue.row, issue.field) for issue in issues}  # ô sai giá trị không báo thêm "bắt buộc"
@@ -579,11 +650,11 @@ def previous_batch(key: str, content: bytes) -> str | None:
 	return names[0] if names else None
 
 
-def check(key: str, content: bytes) -> dict:
+def check(key: str, content: bytes, profile: str | None = None) -> dict:
 	"""Kiểm file, không ghi gì: ``{"total", "units", "valid", "existing": [mã], "issues": [Issue dict],
-	"previous_batch"}`` (`previous_batch`: file y hệt đã được ghi sổ trước đó)."""
+	"previous_batch"}`` (`previous_batch`: file y hệt đã được ghi sổ trước đó). ``profile``: Import Mapping Profile."""
 	kind = get_kind(key)
-	units, per_unit, existing, total, _rows = _analyse(kind, content)
+	units, per_unit, existing, total, _rows = _analyse(kind, content, load_profile(profile, key))
 	issues = sorted(
 		(i for own in per_unit.values() for i in own), key=lambda issue: (issue.row, issue.field or "")
 	)
@@ -601,14 +672,19 @@ def check(key: str, content: bytes) -> dict:
 # --- Ghi sổ ------------------------------------------------------------------------------------------------------
 
 
-def run(key: str, content: bytes, file_url: str | None) -> str:
-	"""Tạo `Import Batch` và ghi các đơn vị hợp lệ; > ``BACKGROUND_ROWS`` dòng thì chạy nền. Trả tên Import Batch."""
+def run(key: str, content: bytes, file_url: str | None, profile: str | None = None) -> str:
+	"""Tạo `Import Batch` và ghi các đơn vị hợp lệ; > ``BACKGROUND_ROWS`` dòng thì chạy nền. Trả tên Import Batch.
+
+	``profile``: Import Mapping Profile đọc file nguồn (lưu trên Import Batch để job nền đọc lại cùng cách)."""
 	kind = get_kind(key)
-	rows, _issues = parse(kind, content)  # file sai mẫu → lỗi ngay, không tạo batch
+	rows, _issues = parse(
+		kind, content, load_profile(profile, key)
+	)  # file sai mẫu → lỗi ngay, không tạo batch
 	batch = frappe.get_doc(
 		{
 			"doctype": "Import Batch",
 			"kind": key,
+			"mapping_profile": profile or None,
 			"file": file_url,
 			"content_hash": content_hash(content),
 			"status": "Queued",
@@ -648,7 +724,9 @@ def execute_batch(batch: str, content: bytes | None = None, background: bool = F
 	if background:
 		frappe.db.commit()  # nosemgrep: màn SCR-43 thấy "Running" và giờ bắt đầu trong lúc job nền đang ghi
 	try:
-		units, per_unit, existing, _total, _rows = _analyse(kind, content or _file_content(doc.file))
+		units, per_unit, existing, _total, _rows = _analyse(
+			kind, content or _file_content(doc.file), load_profile(doc.get("mapping_profile"), doc.kind)
+		)
 		results = []
 		for unit in units:
 			results += _write_unit(kind, unit, per_unit.get(id(unit)), existing)
