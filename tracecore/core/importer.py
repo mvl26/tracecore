@@ -739,7 +739,8 @@ def run(key: str, content: bytes, file_url: str | None, profile: str | None = No
 			timeout=3600,
 			enqueue_after_commit=True,
 			batch=batch.name,
-			content=content,
+			# file có mã người bệnh rõ (`purge_file`): không đưa nội dung vào hàng đợi Redis, job đọc lại File
+			content=None if kind.purge_file and file_url else content,
 			background=True,
 		)
 	else:
@@ -833,7 +834,12 @@ def _write_unit(kind: ImportKind, unit, issues, existing) -> list[dict]:
 		# vẫn ghi; chi tiết vào Error Log cho quản trị
 		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.clear_last_message()
-		frappe.log_error(title=f"TraceCore import {kind.key} row {unit[0].row}")
+		title = f"TraceCore import {kind.key} row {unit[0].row}"
+		if kind.purge_file:
+			# traceback có biến cục bộ (giá trị dòng, mã người bệnh rõ): chỉ ghi loại lỗi
+			frappe.log_error(title=title, message=type(error).__name__)
+		else:
+			frappe.log_error(title=title)
 		reason = _(
 			"The row could not be saved because of an unexpected error ({0}); it is logged for the administrator."
 		)

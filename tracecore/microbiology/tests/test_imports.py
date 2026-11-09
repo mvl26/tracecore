@@ -166,6 +166,17 @@ class TestMicrobiologyImport(IsolatedTestCase):
 		self.assertIn((4, "VALUE_INVALID", "birth_year"), codes)
 		self.assertIn((4, "VALUE_INVALID", "result"), codes)
 
+	def test_isolate_without_antibiogram_is_an_error(self):
+		content = _csv([LONG_HEADER, f"N1,kpn,BN1,1960,{self.ward},Máu,03/08/2026,,,"])
+		result = importer.check(imports.KEY, content, profile=self.long)
+		self.assertEqual(result["valid"], 0)
+		self.assertEqual([(i["row"], i["field"]) for i in result["issues"]], [(2, "antibiotic")])
+
+	def test_disabled_organism_still_counts_as_existing(self):
+		importer.run(imports.KEY, self.long_file(), None, profile=self.long)
+		frappe.db.set_value("Organism", "eco", "disabled", 1)
+		self.assertTrue(imports._exists("LAB2|eco"))
+
 	@bru("BRU-HAI-005")
 	def test_only_r11_can_import(self):
 		kind = importer.get_kind(imports.KEY)

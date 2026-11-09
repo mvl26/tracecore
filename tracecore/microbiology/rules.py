@@ -67,6 +67,13 @@ def antibiotic_code(raw) -> str:
 
 
 def validate(doc):
+	if doc.amended_from:
+		# Amend (sau khi hủy) bỏ qua `autoname` và phá mẫu tên phiên bản: sửa quy tắc = nhân bản thành Nháp V(n+1)
+		frappe.throw(
+			_("A rule version cannot be amended. Duplicate the approved version to create the next version.")
+		)
+	if not doc.is_new() and doc.rule_code != frappe.db.get_value(DOCTYPE, doc.name, "rule_code"):
+		frappe.throw(_("The rule code cannot be changed after the version is created."))
 	if not doc.organisms:
 		frappe.throw(_("Add at least one organism or organism group to the rule."))
 	for row in doc.organisms:

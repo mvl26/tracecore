@@ -49,6 +49,16 @@ class TestMDRORule(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			rule.save(ignore_permissions=True)
 
+	def test_rule_code_is_fixed_and_amend_is_blocked(self):
+		draft = make_rule("T-FIX", submit=False)
+		draft.rule_code = "T-OTHER"
+		with self.assertRaises(frappe.ValidationError):
+			draft.save(ignore_permissions=True)
+		amended = duplicate(make_rule("T-AMD"))
+		amended.amended_from = "MDR-T-AMD-V1"
+		with self.assertRaises(frappe.ValidationError):
+			amended.insert(ignore_permissions=True)
+
 	def test_rule_needs_organisms_criteria_and_classes(self):
 		with self.assertRaises(frappe.ValidationError):
 			make_rule("T-NOORG", organisms=(), submit=False)

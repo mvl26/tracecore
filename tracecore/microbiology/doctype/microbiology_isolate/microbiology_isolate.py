@@ -4,9 +4,18 @@ Mã người bệnh là trường Password (``core.patient_code``); danh sách h
 tên người bệnh (BRU-HAI-005, NFR-PRIV-01).
 """
 
+import frappe
 from frappe.model.document import Document
 
 from tracecore.microbiology import isolates
+
+
+def on_doctype_update():
+	"""Khóa (mã mẫu, vi khuẩn) duy nhất ở cả DB, không chỉ ở ``validate`` (hai lần ghi song song)."""
+	frappe.db.add_unique(
+		isolates.DOCTYPE, ["lab_sample_id", "organism"], constraint_name="tc_lab_sample_organism"
+	)
+	frappe.db.add_index(isolates.DOCTYPE, ["patient_code_hash", "organism", "period_key"])
 
 
 class MicrobiologyIsolate(Document):

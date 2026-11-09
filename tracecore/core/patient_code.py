@@ -19,7 +19,7 @@ FIELD = "patient_code"
 VISIBLE = 4
 MASK = "***"
 MAX_REASON = 140
-REVEAL_ROLES = ("TC R01", "TC R11", "System Manager")
+REVEAL_ROLES = ("TC R01", "TC R11")  # CLAUDE.md, NFR-PRIV-01: không cấp cho System Manager (quản trị IT)
 
 
 def normalise(code) -> str:

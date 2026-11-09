@@ -50,7 +50,8 @@ def _key(values) -> str:
 
 def _exists(code) -> bool:
 	lab, _sep, organism = code.partition(SEPARATOR)
-	name = isolates.organism_ref(organism)
+	# loài đã tắt vẫn tính "đã có" (nhập lại file cũ không báo lỗi danh mục)
+	name = frappe.db.get_value("Organism", {"organism_code": organism}, "name")
 	return bool(name) and isolates.exists(lab, name)
 
 
@@ -154,7 +155,14 @@ def _validate(unit):
 		issues.append(
 			Issue(head.row, "VALUE_INVALID", "birth_year", _("Birth year {0} is not valid.").format(year))
 		)
-	issues += _susceptibility(unit)[1]
+	rows, problems = _susceptibility(unit)
+	issues += problems
+	if not rows and not problems:
+		# chủng không có kháng sinh đồ (vd hồ sơ quên ánh xạ cột kháng sinh) sẽ không bao giờ được gắn nhãn đa kháng,
+		# và import lại sau đó chỉ ra "đã có": chặn như nhập tay
+		issues.append(
+			Issue(head.row, "VALUE_INVALID", "antibiotic", _("Enter at least one antibiotic result."))
+		)
 	return issues
 
 

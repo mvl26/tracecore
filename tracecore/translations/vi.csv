@@ -8548,3 +8548,5 @@ Female,Nữ,Microbiology Isolate
 Other,Khác,Microbiology Isolate
 Amended From,Sửa đổi từ,MDRO Rule
 Collection Date,Ngày lấy mẫu
+A rule version cannot be amended. Duplicate the approved version to create the next version.,Không sửa đổi (Amend) được phiên bản quy tắc. Nhân bản phiên bản đã duyệt để tạo phiên bản kế tiếp.
+The rule code cannot be changed after the version is created.,Không đổi được mã quy tắc sau khi đã tạo phiên bản.

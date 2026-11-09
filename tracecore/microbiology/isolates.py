@@ -199,11 +199,14 @@ def refresh_first_isolate(hash_value, organism, period):
 	"""Đánh dấu lại chủng đầu tiên của một (người bệnh, loài, quý)."""
 	if not hash_value:
 		return
-	rows = frappe.get_all(
-		DOCTYPE,
-		filters={"patient_code_hash": hash_value, "organism": organism, "period_key": period},
-		fields=["name", "is_first_isolate"],
-		order_by="collected_on asc, lab_sample_id asc, name asc",
+	# khóa dòng của nhóm: hai lần ghi song song (job nền + nhập tay) không cùng đánh dấu chủng đầu tiên
+	rows = frappe.db.sql(
+		"""select name, is_first_isolate from `tabMicrobiology Isolate`
+		where patient_code_hash = %s and organism = %s and period_key = %s
+		order by collected_on asc, lab_sample_id asc, name asc
+		for update""",
+		(hash_value, organism, period),
+		as_dict=True,
 	)
 	for index, row in enumerate(rows):
 		wanted = int(index == 0)
