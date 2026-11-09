@@ -88,6 +88,13 @@ class TestIsolatePrivacy(IsolateCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.save(ignore_permissions=True)
 
+	def test_sample_and_organism_unique_at_database_level(self):
+		keys = {
+			(row.Key_name, row.Non_unique)
+			for row in frappe.db.sql("show index from `tabMicrobiology Isolate`", as_dict=True)
+		}
+		self.assertIn(("tc_lab_sample_organism", 0), keys)
+
 	def test_same_sample_and_organism_is_rejected(self):
 		new_isolate(lab="L-DUP")
 		with self.assertRaises(frappe.ValidationError):
