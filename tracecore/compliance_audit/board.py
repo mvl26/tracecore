@@ -24,7 +24,16 @@ TEMPLATE_FIELDS = (
 	"pass_threshold",
 	"legal_ref",
 )
-ITEM_FIELDS = ("item_code", "section", "question", "answer_type", "options", "weight", "is_critical", "guidance")
+ITEM_FIELDS = (
+	"item_code",
+	"section",
+	"question",
+	"answer_type",
+	"options",
+	"weight",
+	"is_critical",
+	"guidance",
+)
 SCHEDULE_FIELDS = ("audit_template", "frequency", "target_count", "assignee", "active")
 SAVEPOINT = "tc_audit_board"
 
@@ -48,7 +57,9 @@ def _inline(fn):
 		except frappe.ValidationError as error:
 			frappe.db.rollback(save_point=SAVEPOINT)
 			frappe.clear_last_message()
-			return _error(_("Not saved"), frappe.utils.strip_html(str(error)), _("Correct the data, then save again."))
+			return _error(
+				_("Not saved"), frappe.utils.strip_html(str(error)), _("Correct the data, then save again.")
+			)
 
 	return wrapper
 
@@ -79,8 +90,16 @@ def _status(row, active):
 def template_board(template=None):
 	rows = frappe.get_list(
 		templates.DOCTYPE,
-		fields=["name", "template_code", "title", "version_no", "docstatus", "effective_from", "audit_type",
-			"scoring_method"],
+		fields=[
+			"name",
+			"template_code",
+			"title",
+			"version_no",
+			"docstatus",
+			"effective_from",
+			"audit_type",
+			"scoring_method",
+		],
 		order_by="template_code asc, version_no desc",
 		limit_page_length=0,
 	)
@@ -107,7 +126,10 @@ def _detail(name):
 	doc = frappe.get_doc(templates.DOCTYPE, name)
 	doc.check_permission("read")
 	active = templates.active_version(doc.template_code)
-	data = {field: doc.get(field) for field in ("name", "version_no", "docstatus", "superseded_by", *TEMPLATE_FIELDS)}
+	data = {
+		field: doc.get(field)
+		for field in ("name", "version_no", "docstatus", "superseded_by", *TEMPLATE_FIELDS)
+	}
 	data["items"] = [{field: row.get(field) for field in ITEM_FIELDS} for row in doc.items]
 	data["status"] = _status(doc, {doc.template_code: active})
 	data["can_edit"] = doc.docstatus == 0 and doc.has_permission("write")
@@ -156,7 +178,15 @@ def schedule_board(on=None):
 	rows = frappe.get_list(
 		schedule.DOCTYPE,
 		filters={"active": 1},
-		fields=["name", "template_code", "template_title", "frequency", "target_count", "assignee", "assignee_name"],
+		fields=[
+			"name",
+			"template_code",
+			"template_title",
+			"frequency",
+			"target_count",
+			"assignee",
+			"assignee_name",
+		],
 		order_by="name desc",
 		limit_page_length=0,
 	)
@@ -172,7 +202,11 @@ def schedule_board(on=None):
 @_inline
 def save_schedule(values):
 	values = frappe._dict(values or {})
-	doc = frappe.get_doc(schedule.DOCTYPE, values.name) if values.get("name") else frappe.new_doc(schedule.DOCTYPE)
+	doc = (
+		frappe.get_doc(schedule.DOCTYPE, values.name)
+		if values.get("name")
+		else frappe.new_doc(schedule.DOCTYPE)
+	)
 	doc.update({field: values.get(field) for field in SCHEDULE_FIELDS if field in values})
 	doc.set("departments", [{"department": row.get("department")} for row in values.get("departments") or []])
 	doc.save()
@@ -221,8 +255,18 @@ def compliance_board(filters):
 		recent = frappe.get_list(
 			"Audit Session",
 			filters=session_filters,
-			fields=["name", "department", "template_title", "template_code", "audit_date", "score_pct", "result",
-				"critical_failed", "nc_status", "nc_name"],
+			fields=[
+				"name",
+				"department",
+				"template_title",
+				"template_code",
+				"audit_date",
+				"score_pct",
+				"result",
+				"critical_failed",
+				"nc_status",
+				"nc_name",
+			],
 			order_by="audit_date desc, creation desc",
 			limit_page_length=20,
 		)

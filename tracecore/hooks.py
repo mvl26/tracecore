@@ -116,6 +116,8 @@ page_js = {
 		"public/js/station_waste_store.js",
 		# FEAT-049: tab Bàn giao (SCR-40)
 		"public/js/station_waste_handover.js",
+		# FEAT-060: phiếu giám sát KSNK theo mục trên PDA (SCR-52), chức năng trạm AUDIT
+		"public/js/station_audit.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],

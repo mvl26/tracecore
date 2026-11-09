@@ -98,15 +98,19 @@ class TestAuditTemplate(IsolatedTestCase):
 		self.assertEqual(v2.name, "MP-T-VER-V2")
 		self.assertEqual(v2.docstatus, 0)
 		self.assertEqual([row.item_code for row in v2.items], [row.item_code for row in v1.items])
-		self.assertEqual(templates.new_version(v1.name).name, v2.name)  # Nháp đang có thì trả lại, không tạo V3
+		self.assertEqual(
+			templates.new_version(v1.name).name, v2.name
+		)  # Nháp đang có thì trả lại, không tạo V3
 		self.assertEqual(templates.active_version("T-VER"), v1.name)
 		v2.items[0].question = "Revised question"
 		v2.save()
 		v2.submit()
 		self.assertEqual(frappe.db.get_value(DOCTYPE, v1.name, "superseded_by"), v2.name)
 		self.assertEqual(templates.active_version("T-VER"), v2.name)
-		self.assertEqual(frappe.db.get_value("Audit Template Item", {"parent": v1.name, "idx": 1}, "question"),
-			"Hand hygiene before gloving")
+		self.assertEqual(
+			frappe.db.get_value("Audit Template Item", {"parent": v1.name, "idx": 1}, "question"),
+			"Hand hygiene before gloving",
+		)
 
 	def test_only_latest_approved_version_can_be_revised(self):
 		v1 = make_template("T-OLD")
@@ -134,11 +138,19 @@ class TestAuditTemplate(IsolatedTestCase):
 
 	def test_bundle_without_critical_item_warns_and_logs(self):
 		items = (("VAP-01", "", "Head of bed 30-45", 1, 0),)
-		doc = make_template("T-VAP", audit_type="Prevention Bundle", bundle_type="VAP", scoring="All or None",
-			items=items)
+		doc = make_template(
+			"T-VAP", audit_type="Prevention Bundle", bundle_type="VAP", scoring="All or None", items=items
+		)
 		self.assertTrue(
-			frappe.db.exists("Audit Log", {"ref_doctype": DOCTYPE, "ref_name": doc.name, "action": "Submit",
-				"reason": ["like", templates.NO_CRITICAL_REASON + "%"]})
+			frappe.db.exists(
+				"Audit Log",
+				{
+					"ref_doctype": DOCTYPE,
+					"ref_name": doc.name,
+					"action": "Submit",
+					"reason": ["like", templates.NO_CRITICAL_REASON + "%"],
+				},
+			)
 		)
 
 	def test_install_templates_never_overwrites(self):

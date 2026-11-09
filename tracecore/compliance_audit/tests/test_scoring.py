@@ -8,7 +8,9 @@ from tracecore.tests.utils import bru
 
 
 def _row(code, answer, weight=1, critical=0, answer_type="Pass/Fail"):
-	return frappe._dict(item_code=code, answer=answer, weight=weight, is_critical=critical, answer_type=answer_type)
+	return frappe._dict(
+		item_code=code, answer=answer, weight=weight, is_critical=critical, answer_type=answer_type
+	)
 
 
 def _session(method, rows, threshold=None):
@@ -17,11 +19,15 @@ def _session(method, rows, threshold=None):
 
 class TestWeightedScore(FrappeTestCase):
 	def test_score_is_weighted_pass_over_applicable(self):
-		doc, tpl = _session("Weighted Score", [_row("A", "Pass", 2), _row("B", "Fail", 1), _row("C", "Pass", 1)])
+		doc, tpl = _session(
+			"Weighted Score", [_row("A", "Pass", 2), _row("B", "Fail", 1), _row("C", "Pass", 1)]
+		)
 		self.assertEqual(scoring.score(doc, tpl), (75.0, "Pass", False))
 
 	def test_na_items_leave_the_denominator(self):
-		doc, tpl = _session("Weighted Score", [_row("A", "Pass", 3), _row("B", "N/A", 5), _row("C", "Fail", 1)])
+		doc, tpl = _session(
+			"Weighted Score", [_row("A", "Pass", 3), _row("B", "N/A", 5), _row("C", "Fail", 1)]
+		)
 		self.assertEqual(scoring.score(doc, tpl)[0], 75.0)
 
 	@bru("BRU-AUD-005")

@@ -24,7 +24,9 @@ def _department_users(department, role):
 	if not permitted:
 		return []
 	holders = frappe.get_all(
-		"Has Role", filters={"role": role, "parenttype": "User", "parent": ["in", list(permitted)]}, pluck="parent"
+		"Has Role",
+		filters={"role": role, "parenttype": "User", "parent": ["in", list(permitted)]},
+		pluck="parent",
 	)
 	return sorted(
 		frappe.get_all("User", filters={"name": ["in", holders or [""]], "enabled": 1}, pluck="name")

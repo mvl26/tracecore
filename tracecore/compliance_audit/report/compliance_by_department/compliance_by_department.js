@@ -35,7 +35,12 @@ frappe.query_reports["Compliance by Department"] = {
 			options: [""].concat(TC_AUDIT_TYPES.map((value) => ({ value, label: __(value) }))),
 		},
 		{ fieldname: "template_code", label: __("Template Code"), fieldtype: "Data" },
-		{ fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department" },
+		{
+			fieldname: "department",
+			label: __("Department"),
+			fieldtype: "Link",
+			options: "Department",
+		},
 		{
 			fieldname: "profession",
 			label: __("Observed Profession"),

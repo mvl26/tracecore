@@ -3,7 +3,7 @@
 - Tạo phiếu chỉ từ phiên bản mẫu đang hiệu lực (BRU-AUD-001); mục của mẫu chép vào ``answers`` (bản chụp) và không sửa
   được sau đó, nên đổi mẫu không đổi phiếu cũ.
 - Người giám sát không là người được quan sát, của phiếu hay của từng cơ hội (BRU-AUD-004, FR-M12-10).
-- Điểm/kết quả tính ở server theo ``scoring_method`` (``scoring``); ghi sổ: cỡ mẫu khoa–tháng (FR-M12-11), đề nghị NC
+- Điểm/kết quả tính ở server theo ``scoring_method`` (``scoring``); ghi sổ: cỡ mẫu khoa-tháng (FR-M12-11), đề nghị NC
   khi mục trọng yếu không đạt (BRU-AUD-005), phản hồi khoa (``feedback``).
 - R08/R12 chỉ đọc/ghi phiếu của khoa có User Permission Department (FR-M12-08.1, NFR-SEC-09).
 """
@@ -34,7 +34,11 @@ def _check_template(doc):
 	template = frappe.db.get_value(
 		templates.DOCTYPE, doc.audit_template, ["template_code", "docstatus", "effective_from"], as_dict=True
 	)
-	active = template and template.docstatus == 1 and templates.active_version(template.template_code, doc.audit_date)
+	active = (
+		template
+		and template.docstatus == 1
+		and templates.active_version(template.template_code, doc.audit_date)
+	)
 	if (
 		doc.flags.tc_replay
 		and template
@@ -95,7 +99,9 @@ def _guard_snapshot(doc):
 	old = [tuple(row.get(field) for field in SNAPSHOT_FIELDS) for row in before.answers]
 	new = [tuple(row.get(field) for field in SNAPSHOT_FIELDS) for row in doc.answers]
 	if [tuple(map(str, row)) for row in old] != [tuple(map(str, row)) for row in new]:
-		frappe.throw(_("Audit items come from template version {0} and cannot be changed.").format(doc.audit_template))
+		frappe.throw(
+			_("Audit items come from template version {0} and cannot be changed.").format(doc.audit_template)
+		)
 
 
 def _self_observation():
@@ -117,7 +123,9 @@ def _check_people(doc):
 
 def _default_observer(doc):
 	if not doc.observer:
-		doc.observer = frappe.db.get_value("Employee", {"user_id": frappe.session.user, "status": "Active"}, "name")
+		doc.observer = frappe.db.get_value(
+			"Employee", {"user_id": frappe.session.user, "status": "Active"}, "name"
+		)
 
 
 def validate(doc):
@@ -140,7 +148,8 @@ def before_submit(doc):
 	missing = [
 		row.item_code
 		for row in doc.answers
-		if row.answer_type == scoring.PASS_FAIL and row.answer not in (scoring.PASS, scoring.FAIL, scoring.NA)
+		if row.answer_type == scoring.BINARY_ITEM
+		and row.answer not in (scoring.PASS, scoring.FAIL, scoring.NA)
 	]
 	if missing:
 		raise blocked(
@@ -201,9 +210,7 @@ def allowed_departments(user=None):
 	roles = set(frappe.get_roles(user))
 	if roles & WIDE_ROLES or not roles & DEPT_ROLES:
 		return None
-	return frappe.get_all(
-		"User Permission", filters={"user": user, "allow": "Department"}, pluck="for_value"
-	)
+	return frappe.get_all("User Permission", filters={"user": user, "allow": "Department"}, pluck="for_value")
 
 
 def query_conditions(user=None):

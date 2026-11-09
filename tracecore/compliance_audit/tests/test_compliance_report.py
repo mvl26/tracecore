@@ -5,7 +5,14 @@ from frappe.utils import get_first_day, get_last_day, getdate
 
 from tracecore.compliance_audit import compliance, indicators
 from tracecore.compliance_audit.report.compliance_by_department import compliance_by_department as report
-from tracecore.compliance_audit.tests.factories import R12, R13, answers, make_dept_user, make_observer, make_template
+from tracecore.compliance_audit.tests.factories import (
+	R12,
+	R13,
+	answers,
+	make_dept_user,
+	make_observer,
+	make_template,
+)
 from tracecore.core import indicators as indicator_registry
 from tracecore.tests import factories
 from tracecore.tests.utils import IsolatedTestCase, bru
@@ -47,7 +54,9 @@ class ComplianceCase(IsolatedTestCase):
 		return doc
 
 	def filters(self, **values):
-		return frappe._dict(from_date=get_first_day(TODAY), to_date=get_last_day(TODAY), template_code="T-RPT", **values)
+		return frappe._dict(
+			from_date=get_first_day(TODAY), to_date=get_last_day(TODAY), template_code="T-RPT", **values
+		)
 
 
 class TestCompliance(ComplianceCase):
@@ -103,9 +112,9 @@ class TestIndicatorsAndReport(ComplianceCase):
 		self.post(self.dept_a, passed=False)
 		self.post(self.dept_b)
 		registry = indicator_registry.registry()
-		self.assertIn(indicators.PASS_RATE, registry)
+		self.assertIn(indicators.RATE_ALL, registry)
 		self.assertIn("AUDIT_PASS_PPE", registry)
-		numerator, denominator, sample = registry[indicators.PASS_RATE](PERIOD, self.dept_a)
+		numerator, denominator, sample = registry[indicators.RATE_ALL](PERIOD, self.dept_a)
 		self.assertEqual((numerator, denominator, sample), (1, 2, 2))
 		self.assertGreaterEqual(registry["AUDIT_PASS_PPE"](PERIOD, None)[1], 3)
 

@@ -63,7 +63,9 @@ class TestTemplateBoard(BoardCase):
 		self.assertTrue(saved["ok"])
 		name = saved["name"]
 		values.update(name=name, title="Edited title")
-		values["items"].append({"item_code": "PNC-06", "question": "Photo", "answer_type": "Photo", "weight": 0})
+		values["items"].append(
+			{"item_code": "PNC-06", "question": "Photo", "answer_type": "Photo", "weight": 0}
+		)
 		self.assertTrue(board.save_template(values)["ok"])
 		self.assertEqual(frappe.db.count("Audit Template Item", {"parent": name}), 6)
 		self.assertFalse(board.template_board(name)["selected"]["can_approve"])
@@ -121,8 +123,13 @@ class TestScheduleBoard(BoardCase):
 		draft = make_template("T-BRD-SD", submit=False)
 		frappe.set_user(self.r02)
 		res = board.save_schedule(
-			{"audit_template": draft.name, "frequency": "Monthly", "target_count": 1,
-				"assignee": make_observer(), "departments": [{"department": self.dept}]}
+			{
+				"audit_template": draft.name,
+				"frequency": "Monthly",
+				"target_count": 1,
+				"assignee": make_observer(),
+				"departments": [{"department": self.dept}],
+			}
 		)
 		self.assertIs(res["ok"], False)
 

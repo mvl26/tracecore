@@ -14,11 +14,15 @@ from tracecore.compliance_audit import board, nc, pda
 from tracecore.core import sync
 from tracecore.core.client_time import check_not_future, parse_client_ts, to_system_time
 from tracecore.core.idempotency import idempotent
-from tracecore.v1._common import current_station_session, require_any_role, run_at_step, station_session
+from tracecore.v1._common import (
+	AUDIT_ROLES,
+	current_station_session,
+	require_any_role,
+	run_at_step,
+	station_session,
+)
 
 AUDIT_FUNCTION = "AUDIT"
-# FR-M12-08.2: R11 mọi khoa; R12, R08 khoa mình (User Permission); R01 (tự đánh giá, xem tất cả)
-AUDIT_ROLES = ("TC R01", "TC R08", "TC R11", "TC R12", "System Manager")
 
 MAX_LIMIT = 500
 FIELDS = [

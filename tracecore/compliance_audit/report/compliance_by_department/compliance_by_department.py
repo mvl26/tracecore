@@ -1,6 +1,6 @@
-"""Compliance by Department (FEAT-060; FR-M12-11, FR-M12-14, UC-45 bước 5–6).
+"""Compliance by Department (FEAT-060; FR-M12-11, FR-M12-14, UC-45 bước 5-6).
 
-Tổng hợp phiếu giám sát đã ghi sổ theo mẫu × khoa trong kỳ (``compliance.aggregate``); xuất Excel/PDF bằng nút có sẵn
+Tổng hợp phiếu giám sát đã ghi sổ theo mẫu x khoa trong kỳ (``compliance.aggregate``); xuất Excel/PDF bằng nút có sẵn
 của Frappe. R08/R12 chỉ nhận khoa của mình; R13 xem tổng hợp, không xem từng phiếu.
 """
 
@@ -14,7 +14,13 @@ from tracecore.compliance_audit import compliance
 def _columns():
 	return [
 		{"fieldname": "template_code", "label": _("Template"), "fieldtype": "Data", "width": 110},
-		{"fieldname": "department", "label": _("Department"), "fieldtype": "Link", "options": "Department", "width": 200},
+		{
+			"fieldname": "department",
+			"label": _("Department"),
+			"fieldtype": "Link",
+			"options": "Department",
+			"width": 200,
+		},
 		{"fieldname": "sessions", "label": _("Audits"), "fieldtype": "Int", "width": 80},
 		{"fieldname": "passed", "label": _("Passed"), "fieldtype": "Int", "width": 80},
 		{"fieldname": "scored", "label": _("Sample (n)"), "fieldtype": "Int", "width": 90},

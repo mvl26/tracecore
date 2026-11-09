@@ -64,7 +64,10 @@ class TestAuditSession(AuditSessionCase):
 		doc = self.make_session({"PNC-02": "Fail"})
 		self.assertEqual([row.item_code for row in doc.answers], list(ALL_PASS))
 		row = doc.answers[1]
-		self.assertEqual((row.question, row.weight, row.is_critical, row.answer), ("PPE matches exposure risk", 2, 1, "Fail"))
+		self.assertEqual(
+			(row.question, row.weight, row.is_critical, row.answer),
+			("PPE matches exposure risk", 2, 1, "Fail"),
+		)
 
 	@bru("BRU-AUD-001")
 	def test_snapshot_survives_new_template_version(self):
@@ -135,12 +138,19 @@ class TestAuditSession(AuditSessionCase):
 		self.assertEqual(frappe.db.get_value(DOCTYPE, doc.name, "nc_status"), "Suggested")
 
 	def test_insufficient_sample_flag(self):
-		"""FR-M12-11: khoa–tháng có số phiếu dưới min_sample của mẫu → cờ Chưa đủ mẫu kèm n."""
+		"""FR-M12-11: khoa-tháng có số phiếu dưới min_sample của mẫu → cờ Chưa đủ mẫu kèm n."""
 		first = self.make_session(ALL_PASS, submit=True)
 		self.assertEqual(frappe.db.get_value(DOCTYPE, first.name, ["sample_n", "sample_flag"]), (1, 1))
 		self.make_session(ALL_PASS, submit=True)
 		third = self.make_session(ALL_PASS, submit=True)
 		self.assertEqual(frappe.db.get_value(DOCTYPE, third.name, ["sample_n", "sample_flag"]), (3, 0))
+
+	def test_print_format_shows_snapshot_and_result(self):
+		doc = self.make_session(ALL_PASS, submit=True)
+		html = frappe.get_print("Audit Session", doc.name, "TC Audit Session")
+		self.assertIn(doc.name, html)
+		self.assertIn("PNC-04", html)
+		self.assertIn("No two-handed needle recapping", html)
 
 	def test_observer_defaults_to_session_employee(self):
 		user = factories.make_user("aud-obs-r11@example.com", [R11])

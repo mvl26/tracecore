@@ -53,7 +53,9 @@ def make_template(code="T-PNC", submit=True, **values):
 def make_dept_user(email, role, department):
 	"""Người dùng có role và User Permission Department (R08/R12 của khoa)."""
 	user = factories.make_user(email, [role])
-	if not frappe.db.exists("User Permission", {"user": user, "allow": "Department", "for_value": department}):
+	if not frappe.db.exists(
+		"User Permission", {"user": user, "allow": "Department", "for_value": department}
+	):
 		frappe.get_doc(
 			{"doctype": "User Permission", "user": user, "allow": "Department", "for_value": department}
 		).insert(ignore_permissions=True)

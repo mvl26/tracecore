@@ -102,7 +102,12 @@ class TestComplianceNc(FeedbackCase):
 		frappe.set_user("Administrator")
 		incident = frappe.get_doc("Incident CAPA", name)
 		self.assertEqual(
-			(incident.incident_category, incident.incident_type, incident.source_doctype, incident.source_name),
+			(
+				incident.incident_category,
+				incident.incident_type,
+				incident.source_doctype,
+				incident.source_name,
+			),
 			("Compliance", "Compliance Nonconformity", "Audit Session", self.failed.name),
 		)
 		self.assertEqual(incident.department, self.dept_a)
@@ -137,8 +142,14 @@ class TestComplianceNc(FeedbackCase):
 			("Dismissed", "Corrected on the spot and retrained"),
 		)
 		self.assertTrue(
-			frappe.db.exists("Audit Log", {"ref_doctype": "Audit Session", "ref_name": self.failed.name,
-				"reason": "Corrected on the spot and retrained"})
+			frappe.db.exists(
+				"Audit Log",
+				{
+					"ref_doctype": "Audit Session",
+					"ref_name": self.failed.name,
+					"reason": "Corrected on the spot and retrained",
+				},
+			)
 		)
 		with self.assertRaises(BlockedError):
 			nc.open_nc(self.failed.name)

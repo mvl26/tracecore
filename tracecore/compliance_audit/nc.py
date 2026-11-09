@@ -26,7 +26,9 @@ def can_decide(user=None):
 
 def _require_decider():
 	if not can_decide():
-		frappe.throw(_("Only R01 or R11 can open or dismiss a non-conformance from an audit."), frappe.PermissionError)
+		frappe.throw(
+			_("Only R01 or R11 can open or dismiss a non-conformance from an audit."), frappe.PermissionError
+		)
 
 
 def _suggested(name):
@@ -53,7 +55,9 @@ def open_nc(name):
 		doc.name,
 		doc.template_title or doc.template_code,
 		frappe.format(doc.audit_date, "Date"),
-		"; ".join(f"{row.item_code} {row.question}" + (f" ({row.note})" if row.note else "") for row in failed),
+		"; ".join(
+			f"{row.item_code} {row.question}" + (f" ({row.note})" if row.note else "") for row in failed
+		),
 	)
 	ctx = {"session": doc.name, "department": doc.department, "description": description}
 	results = [result for result in extension.run(HOOK, ctx) if result]
@@ -83,7 +87,9 @@ def dismiss_nc(name, reason):
 			_("Follow the incident until it is closed."),
 		)
 	doc.db_set({"nc_status": DISMISSED, "nc_reason": reason})
-	audit.log("Update", DOCTYPE, name, old={"nc_status": SUGGESTED}, new={"nc_status": DISMISSED}, reason=reason)
+	audit.log(
+		"Update", DOCTYPE, name, old={"nc_status": SUGGESTED}, new={"nc_status": DISMISSED}, reason=reason
+	)
 
 
 def pending(limit=50):

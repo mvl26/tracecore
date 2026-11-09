@@ -8,7 +8,7 @@ from frappe.utils import get_first_day, get_last_day, getdate
 
 from tracecore.compliance_audit import compliance
 
-PASS_RATE = "AUDIT_PASS_RATE"
+RATE_ALL = "AUDIT_PASS_RATE"
 # khóa chỉ số → loại phiếu (audit_type) của Audit Template
 BY_TYPE = {
 	"AUDIT_PASS_PPE": "Standard Precautions - PPE",
@@ -46,4 +46,4 @@ def _by_type(audit_type):
 
 
 def register():
-	return {PASS_RATE: pass_rate, **{key: _by_type(audit_type) for key, audit_type in BY_TYPE.items()}}
+	return {RATE_ALL: pass_rate, **{key: _by_type(audit_type) for key, audit_type in BY_TYPE.items()}}

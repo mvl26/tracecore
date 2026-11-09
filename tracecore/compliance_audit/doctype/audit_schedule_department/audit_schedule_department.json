@@ -4,7 +4,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "department"
+  "department",
+  "department_name"
  ],
  "fields": [
   {
@@ -13,7 +14,17 @@
    "label": "Department",
    "options": "Department",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 6,
+   "fetch_from": "department.department_name"
   }
  ],
  "index_web_pages_for_search": 0,

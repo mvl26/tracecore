@@ -1,6 +1,6 @@
 """Lịch giám sát `Audit Schedule`: kỳ, độ bao phủ, giao việc và nhắc tuần cuối kỳ (FEAT-060; FR-M12-03, UC-43).
 
-Độ bao phủ tính lúc đọc từ phiếu đã ghi sổ trong kỳ, theo mã mẫu (mọi phiên bản) × khoa: số phiếu, hoặc số cơ hội với
+Độ bao phủ tính lúc đọc từ phiếu đã ghi sổ trong kỳ, theo mã mẫu (mọi phiên bản) x khoa: số phiếu, hoặc số cơ hội với
 mẫu "By Opportunity" (vệ sinh tay). Không có DocType "việc": giao việc = thông báo ``AUDIT_DUE`` ngày đầu kỳ cho người
 phụ trách; tuần cuối kỳ khoa chưa đạt mục tiêu → ``AUDIT_COVERAGE_LOW`` cho người phụ trách và R02 (theo Rule).
 Mỗi kỳ gửi mỗi loại một lần (``last_due_period``, ``last_low_period``).
@@ -36,7 +36,11 @@ def period_of(frequency, on=None):
 def validate(doc):
 	"""Gọi từ ``AuditSchedule.validate``."""
 	if frappe.db.get_value(templates.DOCTYPE, doc.audit_template, "docstatus") != 1:
-		frappe.throw(_("Template {0} is not approved. Only approved templates can be scheduled.").format(doc.audit_template))
+		frappe.throw(
+			_("Template {0} is not approved. Only approved templates can be scheduled.").format(
+				doc.audit_template
+			)
+		)
 	if cint(doc.target_count) <= 0:
 		frappe.throw(_("Target per department must be greater than 0."))
 	seen = set()
@@ -52,9 +56,10 @@ def _done(template_code, departments, start, end):
 	"""{khoa: số phiếu (hoặc số cơ hội vệ sinh tay)} đã ghi sổ trong kỳ."""
 	if not departments:
 		return {}
-	by_opportunity = frappe.db.get_value(
-		templates.DOCTYPE, {"template_code": template_code}, "scoring_method"
-	) == templates.BY_OPPORTUNITY
+	by_opportunity = (
+		frappe.db.get_value(templates.DOCTYPE, {"template_code": template_code}, "scoring_method")
+		== templates.BY_OPPORTUNITY
+	)
 	session = frappe.qb.DocType(SESSION)
 	query = (
 		frappe.qb.from_(session)

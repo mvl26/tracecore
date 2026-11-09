@@ -11,11 +11,13 @@ import contextlib
 import frappe
 from frappe.utils import cint, getdate, today
 
+from tracecore.compliance_audit import pda
 from tracecore.core import code_range, crypto, extension, step_gate, sync, zones
 from tracecore.core.client_time import parse_client_ts, to_system_time
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing, receiving, usage
 from tracecore.v1._common import (
+	AUDIT_ROLES,
 	PACKING_ROLES,
 	RECEIVE_ROLES,
 	USAGE_ROLES,
@@ -24,8 +26,10 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE")  # chức năng có màn chạy offline (A-40)
-SNAPSHOT_ROLES = tuple(dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES)))
+AUDIT_FUNCTION = "AUDIT"
+# chức năng có màn chạy offline (A-40); FEAT-060: phiếu giám sát KSNK trên PDA (ADR-015)
+OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE", AUDIT_FUNCTION)
+SNAPSHOT_ROLES = tuple(dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES, *AUDIT_ROLES)))
 STATUS_ROLES = ("TC R02", "TC R01", "TC R10", "System Manager")
 SAVEPOINT = "tc_sync_snapshot"
 
@@ -187,6 +191,9 @@ def snapshot(station, client_ts=None, token=None):
 		data = _t4(station, on.date(), session.name if session else None)
 	elif function == "USE":
 		data = _t8(session.employee if session else None)
+	elif function == AUDIT_FUNCTION:
+		# FEAT-060 (SCR-52, NFR-AVAIL-05): mẫu phiếu đã duyệt + khoa được làm phiếu để ghi phiếu khi mất mạng
+		data = pda.context(session.employee if session else None, on)
 	else:
 		return {"ok": True, "function": functions[0] if functions else None, "offline": False}
 	return {"ok": True, "function": function, "offline": True, **data}

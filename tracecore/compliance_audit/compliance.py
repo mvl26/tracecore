@@ -1,4 +1,4 @@
-"""Tổng hợp tuân thủ theo mẫu × khoa từ phiếu đã ghi sổ (FEAT-060; FR-M12-11, FR-M12-14, BRU-RPT-001).
+"""Tổng hợp tuân thủ theo mẫu x khoa từ phiếu đã ghi sổ (FEAT-060; FR-M12-11, FR-M12-14, BRU-RPT-001).
 
 Nguồn duy nhất cho Script Report "Compliance by Department", màn SCR-53 và hàm chỉ số M9 (``indicators``): chỉ phiếu
 ``docstatus = 1`` trong kỳ (FR-M12-14.1). Tỷ lệ = phiếu Đạt / phiếu có kết quả; n = số phiếu có kết quả. n = 0 → "Không

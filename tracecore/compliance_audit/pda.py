@@ -14,16 +14,39 @@ from tracecore.compliance_audit import sessions, templates
 DOCTYPE = "Audit Session"
 SAVEPOINT = "tc_audit_submit"
 PROFESSIONS = ("Doctor", "Nurse", "Midwife", "Technician", "Orderly", "Student", "Other")
-ITEM_FIELDS = ["item_code", "section", "question", "answer_type", "options", "weight", "is_critical", "guidance"]
+ITEM_FIELDS = [
+	"item_code",
+	"section",
+	"question",
+	"answer_type",
+	"options",
+	"weight",
+	"is_critical",
+	"guidance",
+]
 
 
 def active_templates(on=None, methods=templates.SCORED):
 	"""Phiên bản đã duyệt mới nhất có hiệu lực của mỗi mã, theo phương pháp chấm."""
 	rows = frappe.get_all(
 		templates.DOCTYPE,
-		filters={"docstatus": 1, "effective_from": ["<=", getdate(on)], "scoring_method": ["in", list(methods)]},
-		fields=["name", "template_code", "title", "audit_type", "scoring_method", "bundle_type", "version_no",
-			"pass_threshold", "min_sample", "legal_ref"],
+		filters={
+			"docstatus": 1,
+			"effective_from": ["<=", getdate(on)],
+			"scoring_method": ["in", list(methods)],
+		},
+		fields=[
+			"name",
+			"template_code",
+			"title",
+			"audit_type",
+			"scoring_method",
+			"bundle_type",
+			"version_no",
+			"pass_threshold",
+			"min_sample",
+			"legal_ref",
+		],
 		order_by="template_code asc, version_no desc",
 	)
 	latest = {}
@@ -64,7 +87,10 @@ def context(observer, on=None):
 
 def _result(name):
 	row = frappe.db.get_value(
-		DOCTYPE, name, ["name", "score_pct", "result", "critical_failed", "sample_flag", "sample_n"], as_dict=True
+		DOCTYPE,
+		name,
+		["name", "score_pct", "result", "critical_failed", "sample_flag", "sample_n"],
+		as_dict=True,
 	)
 	row.critical_failed = cint(row.critical_failed)
 	return row

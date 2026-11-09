@@ -8,7 +8,7 @@ Chỉ mục kiểu Pass/Fail được chấm; mục Không áp dụng (N/A) ho�
 from frappe.utils import cint, flt
 
 PASS, FAIL, NA = "Pass", "Fail", "N/A"
-PASS_FAIL = "Pass/Fail"
+BINARY_ITEM = "Pass/Fail"
 SCORERS = {}
 
 
@@ -22,7 +22,7 @@ def register(method):
 
 def applicable(doc):
 	"""Dòng trả lời được chấm: kiểu Pass/Fail và đã trả lời Đạt hoặc Không đạt."""
-	return [row for row in doc.answers or () if row.answer_type == PASS_FAIL and row.answer in (PASS, FAIL)]
+	return [row for row in doc.answers or () if row.answer_type == BINARY_ITEM and row.answer in (PASS, FAIL)]
 
 
 def critical_failed(rows):

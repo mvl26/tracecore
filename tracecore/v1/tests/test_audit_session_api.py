@@ -124,11 +124,25 @@ class TestAuditPdaApi(AuditApiCase):
 	def test_station_without_audit_function_rejected(self):
 		self.login("aud-api-r11d@example.com", "TC R11")
 		frappe.db.set_value(
-			"Zone Station Function", {"parent": self.station, "station_function": "AUDIT"}, "station_function", "USE"
+			"Zone Station Function",
+			{"parent": self.station, "station_function": "AUDIT"},
+			"station_function",
+			"USE",
 		)
 		res = call(audit_api.submit_session, **self.submit_args())
 		self.assertIs(res["ok"], False)
 		self.assertEqual(res["error"]["code"], "STATION_WRONG_STEP")
+
+
+class TestAuditSnapshot(AuditApiCase):
+	def test_snapshot_carries_templates_for_offline(self):
+		from tracecore.v1 import sync as sync_api
+
+		self.login("aud-api-r11s@example.com", "TC R11")
+		res = call(sync_api.snapshot, station=self.station)
+		self.assertEqual((res["function"], res["offline"]), ("AUDIT", True))
+		self.assertIn("T-API", {row["template_code"] for row in res["templates"]})
+		self.assertTrue(res["departments"])
 
 
 class TestAuditOfflineReplay(AuditApiCase):

@@ -28,8 +28,15 @@ class TestComplianceIncident(IsolatedTestCase):
 				"title": "M2 NC source",
 				"audit_type": "Standard Precautions - PPE",
 				"scoring_method": "Weighted Score",
-				"items": [{"item_code": "PNC-04", "question": "No recapping", "answer_type": "Pass/Fail",
-					"weight": 1, "is_critical": 1}],
+				"items": [
+					{
+						"item_code": "PNC-04",
+						"question": "No recapping",
+						"answer_type": "Pass/Fail",
+						"weight": 1,
+						"is_critical": 1,
+					}
+				],
 			}
 		).insert(ignore_permissions=True)
 		template.submit()
@@ -51,8 +58,22 @@ class TestComplianceIncident(IsolatedTestCase):
 		name = incidents.on_compliance_nc(self.ctx)
 		doc = frappe.get_doc("Incident CAPA", name)
 		self.assertEqual(
-			(doc.incident_type, doc.incident_category, doc.source_doctype, doc.source_name, doc.department, doc.is_auto),
-			("Compliance Nonconformity", "Compliance", "Audit Session", self.ctx["session"], self.department, 1),
+			(
+				doc.incident_type,
+				doc.incident_category,
+				doc.source_doctype,
+				doc.source_name,
+				doc.department,
+				doc.is_auto,
+			),
+			(
+				"Compliance Nonconformity",
+				"Compliance",
+				"Audit Session",
+				self.ctx["session"],
+				self.department,
+				1,
+			),
 		)
 		self.assertEqual(incidents.on_compliance_nc(self.ctx), name)
 

@@ -14,12 +14,21 @@ from tracecore.core import audit, versioning
 DOCTYPE = "Audit Template"
 ITEM_DOCTYPE = "Audit Template Item"
 PREFIX = "MP"
-PASS_FAIL = "Pass/Fail"
+BINARY_ITEM = "Pass/Fail"
 BY_OPPORTUNITY, ALL_OR_NONE, WEIGHTED = "By Opportunity", "All or None", "Weighted Score"
 SCORED = (ALL_OR_NONE, WEIGHTED)
 BUNDLE = "Prevention Bundle"
 NO_CRITICAL_REASON = "[NO_CRITICAL_ITEM]"
-ITEM_FIELDS = ("item_code", "section", "question", "answer_type", "options", "weight", "is_critical", "guidance")
+ITEM_FIELDS = (
+	"item_code",
+	"section",
+	"question",
+	"answer_type",
+	"options",
+	"weight",
+	"is_critical",
+	"guidance",
+)
 # trường hệ thống ghi sau khi duyệt; mọi trường khác của phiên bản đã duyệt bị khóa
 AFTER_APPROVAL = frozenset({"superseded_by", "modified", "modified_by", "_comments", "_assign", "_liked_by"})
 
@@ -85,12 +94,10 @@ def validate(doc):
 		seen.add(row.item_code)
 		if flt(row.weight) < 0:
 			frappe.throw(_("Row {0}: weight cannot be negative.").format(row.idx))
-		if row.answer_type != PASS_FAIL:
+		if row.answer_type != BINARY_ITEM:
 			row.is_critical = 0  # chỉ mục Đạt/Không đạt mới chấm được, nên chỉ chúng là trọng yếu
-	if doc.scoring_method in SCORED and not any(row.answer_type == PASS_FAIL for row in doc.items):
-		frappe.throw(
-			_("Scoring method {0} needs at least one Pass/Fail item.").format(_(doc.scoring_method))
-		)
+	if doc.scoring_method in SCORED and not any(row.answer_type == BINARY_ITEM for row in doc.items):
+		frappe.throw(_("Scoring method {0} needs at least one Pass/Fail item.").format(_(doc.scoring_method)))
 
 
 def _row_values(row):
@@ -163,7 +170,13 @@ def new_version(name):
 		frappe.throw(_("Version {0} is no longer current. Revise version {1}.").format(name, latest.name))
 	doc = frappe.copy_doc(source)
 	doc.update(
-		{"docstatus": 0, "version_no": None, "effective_from": today(), "superseded_by": None, "amended_from": None}
+		{
+			"docstatus": 0,
+			"version_no": None,
+			"effective_from": today(),
+			"superseded_by": None,
+			"amended_from": None,
+		}
 	)
 	for row in doc.items:
 		row.docstatus = 0

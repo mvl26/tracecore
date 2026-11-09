@@ -1,4 +1,4 @@
-"""Lịch giám sát, độ bao phủ và nhắc việc (FEAT-060 AC-5; FR-M12-03, FR-M12-03.1; UC-43 bước 4–6, E2)."""
+"""Lịch giám sát, độ bao phủ và nhắc việc (FEAT-060 AC-5; FR-M12-03, FR-M12-03.1; UC-43 bước 4-6, E2)."""
 
 import frappe
 from frappe.utils import add_days, get_last_day, getdate
@@ -56,7 +56,9 @@ class ScheduleCase(IsolatedTestCase):
 		return doc
 
 	def deliveries(self, event, user):
-		return frappe.db.count("Notification Delivery", {"event_code": event, "recipient": user, "channel": "In App"})
+		return frappe.db.count(
+			"Notification Delivery", {"event_code": event, "recipient": user, "channel": "In App"}
+		)
 
 
 class TestScheduleRules(ScheduleCase):
@@ -81,9 +83,18 @@ class TestScheduleRules(ScheduleCase):
 
 	def test_periods(self):
 		day = getdate("2026-11-11")
-		self.assertEqual(audit_schedule.period_of("Weekly", day), (getdate("2026-11-09"), getdate("2026-11-15"), "2026-W46"))
-		self.assertEqual(audit_schedule.period_of("Monthly", day), (getdate("2026-11-01"), getdate("2026-11-30"), "2026-11"))
-		self.assertEqual(audit_schedule.period_of("Quarterly", day), (getdate("2026-10-01"), getdate("2026-12-31"), "2026-Q4"))
+		self.assertEqual(
+			audit_schedule.period_of("Weekly", day),
+			(getdate("2026-11-09"), getdate("2026-11-15"), "2026-W46"),
+		)
+		self.assertEqual(
+			audit_schedule.period_of("Monthly", day),
+			(getdate("2026-11-01"), getdate("2026-11-30"), "2026-11"),
+		)
+		self.assertEqual(
+			audit_schedule.period_of("Quarterly", day),
+			(getdate("2026-10-01"), getdate("2026-12-31"), "2026-Q4"),
+		)
 
 
 class TestCoverage(ScheduleCase):
@@ -112,7 +123,9 @@ class TestCoverage(ScheduleCase):
 
 	def test_hand_hygiene_counts_opportunities(self):
 		hh = make_template(
-			"T-SCH-HH", scoring="By Opportunity", audit_type="Hand Hygiene",
+			"T-SCH-HH",
+			scoring="By Opportunity",
+			audit_type="Hand Hygiene",
 			items=(("HH-NOTE", "", "Observation note", 0, 0),),
 		)
 		self.template = hh
