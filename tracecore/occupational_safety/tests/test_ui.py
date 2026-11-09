@@ -38,7 +38,9 @@ class TestStationScreen(IsolatedTestCase):
 		station = _read(os.path.join(APP, "ui", "page", "station", "station.js"))
 		self.assertIn('case "exposure"', station)
 		self.assertIn('method.startsWith("tracecore.v1.exposure.")', station)
-		self.assertIn('"tracecore.v1.exposure.report"', _read(os.path.join(APP, "public", "js", "tc_outbox.js")))
+		self.assertIn(
+			'"tracecore.v1.exposure.report"', _read(os.path.join(APP, "public", "js", "tc_outbox.js"))
+		)
 
 	def test_pda_screen_three_steps_four_states_no_result_field(self):
 		js = _read(STATION_JS)
@@ -63,7 +65,9 @@ class TestStationScreen(IsolatedTestCase):
 class TestPortalPage(IsolatedTestCase):
 	def test_route_rule_and_assets(self):
 		rules = frappe.get_hooks("website_route_rules")
-		self.assertIn({"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"}, rules)
+		self.assertIn(
+			{"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"}, rules
+		)
 		js = _code(_read(os.path.join(PORTAL, "bao_phoi_nhiem.js")))
 		self.assertIsNone(VIETNAMESE.search(js))
 		self.assertIn("X-Idempotency-Key", js)
@@ -95,7 +99,9 @@ class TestScr64(IsolatedTestCase):
 		screen = next(s for s in ksnk.SCREENS if s["slug"] == "phoi-nhiem")
 		self.assertEqual((screen["scr"], screen["uc"], screen["group"]), ("SCR-64", "UC-55", "environment"))
 		self.assertEqual(set(screen["roles"]), {"TC R01", "TC R11", "TC R13", "System Manager"})
-		self.assertTrue(os.path.exists(os.path.join(APP, "public", screen["script"].split("/assets/tracecore/")[1])))
+		self.assertTrue(
+			os.path.exists(os.path.join(APP, "public", screen["script"].split("/assets/tracecore/")[1]))
+		)
 
 	def test_r11_sees_screen_r02_does_not(self):
 		r11 = factories.make_user("os-ksnk-r11@example.com", roles=["TC R11"])

@@ -143,7 +143,9 @@ def _proxy_departments(user=None):
 	departments = set()
 	if "TC R12" in roles:
 		departments |= set(
-			frappe.get_all("User Permission", filters={"user": user, "allow": "Department"}, pluck="for_value")
+			frappe.get_all(
+				"User Permission", filters={"user": user, "allow": "Department"}, pluck="for_value"
+			)
 		)
 	own = service.employee_of(user)
 	if own:
@@ -196,7 +198,9 @@ def report_portal(
 	timestamp = parse_client_ts(client_ts)
 	try:
 		target = _target_employee(_text(employee, "employee"))
-		values = _values(target, exposure_type, occurred_at, activity, device, source_known, source_patient_code)
+		values = _values(
+			target, exposure_type, occurred_at, activity, device, source_known, source_patient_code
+		)
 		if sync.is_replay():
 			values["reported_at"] = to_system_time(timestamp)
 		doc = service.create_report(values, channel="Department Portal")
@@ -270,7 +274,7 @@ def detail(name):
 
 @frappe.whitelist(methods=["POST"])
 def record_handling(name, first_aid_done=0, first_aid_at=None, prophylaxis=None, prophylaxis_started_at=None):
-	"""R11 ghi sơ cứu và chỉ định dự phòng (UC-55 bước 3–4)."""
+	"""R11 ghi sơ cứu và chỉ định dự phòng (UC-55 bước 3-4)."""
 	require_any_role(*MANAGER_ROLES)
 	return _savepoint(
 		name,
@@ -278,7 +282,11 @@ def record_handling(name, first_aid_done=0, first_aid_at=None, prophylaxis=None,
 			"ok": True,
 			"detail": dashboard.detail(
 				service.record_handling(
-					name, first_aid_done, first_aid_at or None, prophylaxis or None, prophylaxis_started_at or None
+					name,
+					first_aid_done,
+					first_aid_at or None,
+					prophylaxis or None,
+					prophylaxis_started_at or None,
 				).name
 			),
 		},
@@ -289,14 +297,17 @@ def record_handling(name, first_aid_done=0, first_aid_at=None, prophylaxis=None,
 def followup_done(name, row, done_on):
 	require_any_role(*MANAGER_ROLES)
 	return _savepoint(
-		name, lambda: {"ok": True, "detail": dashboard.detail(service.mark_followup_done(name, row, done_on).name)}
+		name,
+		lambda: {"ok": True, "detail": dashboard.detail(service.mark_followup_done(name, row, done_on).name)},
 	)
 
 
 @frappe.whitelist(methods=["POST"])
 def cancel(name, reason=None):
 	require_any_role(*MANAGER_ROLES)
-	return _savepoint(name, lambda: {"ok": True, "detail": dashboard.detail(service.cancel(name, reason).name)})
+	return _savepoint(
+		name, lambda: {"ok": True, "detail": dashboard.detail(service.cancel(name, reason).name)}
+	)
 
 
 @frappe.whitelist(methods=["POST"])

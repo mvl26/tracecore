@@ -24,10 +24,20 @@ def _columns(group_by):
 		{"fieldname": "group", "label": _(group_by), "fieldtype": "Data", "width": 240},
 		{"fieldname": "exposures", "label": _("Exposures"), "fieldtype": "Int", "width": 110},
 		{"fieldname": "on_time", "label": _("Reported on Time"), "fieldtype": "Int", "width": 140},
-		{"fieldname": "on_time_rate", "label": _("On-time Report Rate (%)"), "fieldtype": "Percent", "width": 170},
+		{
+			"fieldname": "on_time_rate",
+			"label": _("On-time Report Rate (%)"),
+			"fieldtype": "Percent",
+			"width": 170,
+		},
 		{"fieldname": "scheduled", "label": _("With Follow-up Schedule"), "fieldtype": "Int", "width": 170},
 		{"fieldname": "completed", "label": _("Follow-up Completed"), "fieldtype": "Int", "width": 160},
-		{"fieldname": "completion_rate", "label": _("Follow-up Completion Rate (%)"), "fieldtype": "Percent", "width": 200},
+		{
+			"fieldname": "completion_rate",
+			"label": _("Follow-up Completion Rate (%)"),
+			"fieldtype": "Percent",
+			"width": 200,
+		},
 	]
 
 
@@ -77,7 +87,9 @@ def execute(filters=None):
 	buckets = {}
 	for row in rows:
 		buckets.setdefault(row.get(field) or "", []).append(row)
-	data = [_row(_label(field, key), items) for key, items in sorted(buckets.items(), key=lambda kv: -len(kv[1]))]
+	data = [
+		_row(_label(field, key), items) for key, items in sorted(buckets.items(), key=lambda kv: -len(kv[1]))
+	]
 	if rows:
 		data.append({**_row(_("Total"), rows), "bold": 1})
 	return _columns(group_by), data

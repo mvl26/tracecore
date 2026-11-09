@@ -1,5 +1,5 @@
 """Hồ sơ phơi nhiễm: báo ban đầu, thời gian → cờ, sơ cứu/dự phòng → lịch theo dõi (FEAT-071; FR-M16-01, FR-M16-03,
-FR-M16-04, FR-M16-06; BRU-OCC-001; UC-55 bước 1–5, E3, E4; A-137 a, b, d)."""
+FR-M16-04, FR-M16-06; BRU-OCC-001; UC-55 bước 1-5, E3, E4; A-137 a, b, d)."""
 
 import json
 import os
@@ -109,7 +109,9 @@ class TestExposureReport(IsolatedTestCase):
 		self.assertEqual(doc.template_version, 1)
 		self.assertEqual([r.step for r in doc.followups], ["Step 1", "Step 2", "Step 3"])
 		base = getdate(doc.occurred_at)
-		self.assertEqual([getdate(r.due_date) for r in doc.followups], [base, add_days(base, 42), add_days(base, 180)])
+		self.assertEqual(
+			[getdate(r.due_date) for r in doc.followups], [base, add_days(base, 42), add_days(base, 180)]
+		)
 		self.assertAlmostEqual(doc.minutes_to_prophylaxis, 150, delta=1)
 		self.assertTrue(doc.prophylaxis_late)
 
@@ -144,8 +146,9 @@ class TestExposureReport(IsolatedTestCase):
 
 	def test_all_steps_done_completes_follow_up(self):
 		fx.template(steps=(("Step 1", 0), ("Step 2", 1)))
-		doc = exposure.record_handling(_report(self).name, first_aid_done=1, prophylaxis="Given",
-			prophylaxis_started_at=now_datetime())
+		doc = exposure.record_handling(
+			_report(self).name, first_aid_done=1, prophylaxis="Given", prophylaxis_started_at=now_datetime()
+		)
 		first, second = doc.followups
 		doc = exposure.mark_followup_done(doc.name, first.name, today())
 		self.assertEqual(doc.status, "Following Up")

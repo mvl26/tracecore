@@ -46,7 +46,9 @@ def apply(doc):
 def reveal(doctype, name, reason):
 	"""Mã đầy đủ cho R01/R11 có lý do; ghi Audit Log, không ghi mã."""
 	if frappe.session.user != "Administrator" and not set(frappe.get_roles()) & set(REVEAL_ROLES):
-		raise frappe.PermissionError(_("Only the head of infection control or a supervisor can view the full code."))
+		raise frappe.PermissionError(
+			_("Only the head of infection control or a supervisor can view the full code.")
+		)
 	reason = cstr(reason).strip()
 	if not reason:
 		raise BlockedError(

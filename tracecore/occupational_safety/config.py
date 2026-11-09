@@ -110,12 +110,17 @@ def approve_requirement(name):
 	doc.approved_by = frappe.session.user
 	doc.approved_on = now_datetime()
 	doc.save(ignore_permissions=True)
-	audit.log("Update", REQUIREMENT, doc.name, old={"status": old}, new={"status": "Approved"}, reason=_("Approved"))
+	audit.log(
+		"Update", REQUIREMENT, doc.name, old={"status": old}, new={"status": "Approved"}, reason=_("Approved")
+	)
 	return doc
 
 
 def approved_requirements():
-	return [frappe.get_doc(REQUIREMENT, name) for name in frappe.get_all(REQUIREMENT, {"status": "Approved"}, pluck="name")]
+	return [
+		frappe.get_doc(REQUIREMENT, name)
+		for name in frappe.get_all(REQUIREMENT, {"status": "Approved"}, pluck="name")
+	]
 
 
 # --- fixtures Nháp (after_migrate) ---------------------------------------------------------------------------------

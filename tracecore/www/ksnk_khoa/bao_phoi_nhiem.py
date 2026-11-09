@@ -42,7 +42,9 @@ def labels():
 		"done_title": _("Exposure {0} reported"),
 		"done_reason": _("The head of infection control and the supervisor have been notified."),
 		"procedure": _("First-aid procedure"),
-		"no_procedure": _("Follow the first-aid steps of the hospital and call the infection control team now."),
+		"no_procedure": _(
+			"Follow the first-aid steps of the hospital and call the infection control team now."
+		),
 		"open": _("Open"),
 		"offline_title": _("No network connection"),
 		"offline_reason": _("The report is kept in this browser and sent when the connection returns."),
@@ -64,7 +66,9 @@ def labels():
 		"due": _("Due"),
 		"done_on": _("Done on"),
 		"not_yet": _("Not yet"),
-		"no_employee": _("Your account is not linked to a staff record. Ask the department nurse to report for you."),
+		"no_employee": _(
+			"Your account is not linked to a staff record. Ask the department nurse to report for you."
+		),
 		"exposure_type": _("Exposure Type"),
 		"occurred_at": _("Occurred At"),
 		"source_known": _("Source Known"),

@@ -41,7 +41,15 @@ class TestExposureIncidentHook(IsolatedTestCase):
 		rows = frappe.get_all(
 			DOCTYPE,
 			filters={"incident_capa": incident.name},
-			fields=["name", "employee", "department", "exposure_type", "report_channel", "status", "activity"],
+			fields=[
+				"name",
+				"employee",
+				"department",
+				"exposure_type",
+				"report_channel",
+				"status",
+				"activity",
+			],
 		)
 		self.assertEqual(len(rows), 1)
 		row = rows[0]
@@ -61,6 +69,11 @@ class TestExposureIncidentHook(IsolatedTestCase):
 	def test_other_incidents_create_no_exposure(self):
 		before = frappe.db.count(DOCTYPE)
 		incidents.create(
-			{"incident_type": "Waste Spill", "severity": "Low", "description": "Spill", "department": self.department}
+			{
+				"incident_type": "Waste Spill",
+				"severity": "Low",
+				"description": "Spill",
+				"department": self.department,
+			}
 		)
 		self.assertEqual(frappe.db.count(DOCTYPE), before)

@@ -21,7 +21,9 @@ class TestExposureReport(IsolatedTestCase):
 		fx.clear_templates()
 		fx.thresholds(report_hours=2)
 		self.department = factories.make_department("PN Báo cáo")
-		self.employee = fx.employee("PN Report Nguyen Van Ten", self.department, designation="PN Report Nurse")
+		self.employee = fx.employee(
+			"PN Report Nguyen Van Ten", self.department, designation="PN Report Nurse"
+		)
 		fx.template(steps=(("Step 1", 0),))
 		late = exposure.create_report(
 			{
@@ -35,17 +37,25 @@ class TestExposureReport(IsolatedTestCase):
 		)
 		done = exposure.record_handling(late.name, first_aid_done=1, prophylaxis="Not Indicated")
 		exposure.mark_followup_done(done.name, done.followups[0].name, today())
-		exposure.create_report({"employee": self.employee, "exposure_type": fx.SHARPS, "occurred_at": now_datetime()})
-		exposure.create_report({"employee": self.employee, "exposure_type": fx.SPLASH, "occurred_at": now_datetime()})
+		exposure.create_report(
+			{"employee": self.employee, "exposure_type": fx.SHARPS, "occurred_at": now_datetime()}
+		)
+		exposure.create_report(
+			{"employee": self.employee, "exposure_type": fx.SPLASH, "occurred_at": now_datetime()}
+		)
 
 	def _run(self, group_by="Exposure Type"):
-		return report.execute({"from_date": f"{getdate().year}-01-01", "to_date": today(), "group_by": group_by})
+		return report.execute(
+			{"from_date": f"{getdate().year}-01-01", "to_date": today(), "group_by": group_by}
+		)
 
 	def test_groups_rates_and_total(self):
 		_columns, rows = self._run()
 		by_group = {row["group"]: row for row in rows}
 		sharps = by_group[frappe._("Needlestick or Sharps", context="Occupational Exposure")]
-		self.assertEqual((sharps["exposures"], sharps["on_time"], sharps["scheduled"], sharps["completed"]), (2, 1, 1, 1))
+		self.assertEqual(
+			(sharps["exposures"], sharps["on_time"], sharps["scheduled"], sharps["completed"]), (2, 1, 1, 1)
+		)
 		self.assertEqual(sharps["on_time_rate"], 50.0)
 		self.assertEqual(sharps["completion_rate"], 100.0)
 		self.assertEqual(rows[-1]["exposures"], 3)

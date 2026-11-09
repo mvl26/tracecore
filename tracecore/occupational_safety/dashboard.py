@@ -45,9 +45,13 @@ def kpis(day=None):
 
 
 def records(limit=50):
-	rows = frappe.get_all(exposure.DOCTYPE, fields=list(RECORD_FIELDS), order_by="occurred_at desc", limit=limit)
+	rows = frappe.get_all(
+		exposure.DOCTYPE, fields=list(RECORD_FIELDS), order_by="occurred_at desc", limit=limit
+	)
 	order = {"New": 0, "Following Up": 1, "Completed": 2, "Cancelled": 3}
-	rows.sort(key=lambda row: order.get(row.status, 9))  # sort ổn định: trong cùng trạng thái vẫn mới nhất trước
+	rows.sort(
+		key=lambda row: order.get(row.status, 9)
+	)  # sort ổn định: trong cùng trạng thái vẫn mới nhất trước
 	for row in rows:
 		row.department_name = (
 			frappe.db.get_value("Department", row.department, "department_name") if row.department else None
@@ -57,16 +61,23 @@ def records(limit=50):
 
 def immunizations(day=None, limit=50):
 	day = getdate(day or nowdate())
-	doses = {name: cint(doses) for name, doses in frappe.get_all(config.REQUIREMENT, fields=["name", "doses_required"], as_list=True)}
+	doses = {
+		name: cint(doses)
+		for name, doses in frappe.get_all(config.REQUIREMENT, fields=["name", "doses_required"], as_list=True)
+	}
 	rows = []
 	for row in immunization._latest_doses():
 		if frappe.db.get_value("Employee", row.employee, "status") != "Active":
 			continue
-		info = frappe.db.get_value("Employee", row.employee, ["employee_name", "department"], as_dict=True) or {}
+		info = (
+			frappe.db.get_value("Employee", row.employee, ["employee_name", "department"], as_dict=True) or {}
+		)
 		required = doses.get(row.vaccine) or 0
 		if row.next_due:
 			days_left = date_diff(row.next_due, day)
-			state = "Overdue" if days_left < 0 else ("Due Soon" if days_left <= DUE_SOON_DAYS else "Scheduled")
+			state = (
+				"Overdue" if days_left < 0 else ("Due Soon" if days_left <= DUE_SOON_DAYS else "Scheduled")
+			)
 		else:
 			days_left = None
 			state = "Complete" if cint(row.dose_no) >= required else "Scheduled"
@@ -132,5 +143,7 @@ def build(user=None, day=None):
 	"""Toàn bộ dữ liệu màn; người không phải R01/R11 chỉ nhận KPI."""
 	result = {"kpis": kpis(day), "is_manager": exposure.is_manager(user)}
 	if result["is_manager"]:
-		result.update({"records": records(), "immunizations": immunizations(day), "pep_alerts": pep_stock.status(day)})
+		result.update(
+			{"records": records(), "immunizations": immunizations(day), "pep_alerts": pep_stock.status(day)}
+		)
 	return result

@@ -38,9 +38,12 @@ const TcKsnkScr64 = {
 
 	statusBadge(status, esc) {
 		const cls =
-			{ New: "is-fail", "Following Up": "is-neutral", Completed: "is-pass", Cancelled: "is-neutral" }[
-				status
-			] || "is-neutral";
+			{
+				New: "is-fail",
+				"Following Up": "is-neutral",
+				Completed: "is-pass",
+				Cancelled: "is-neutral",
+			}[status] || "is-neutral";
 		const label = status === "New" ? __("New — awaiting handling") : TcKsnkScr64.opt(status);
 		return `<span class="tc-ksnk-badge ${cls}">${esc(label)}</span>`;
 	},
@@ -52,12 +55,14 @@ const TcKsnkScr64 = {
 	kpisHtml(kpis, esc) {
 		const imm = kpis.immunization || {};
 		const tile = (label, value, warn) =>
-			`<div class="tc-ksnk-kpi${warn ? " is-warn" : ""}"><span>${esc(label)}</span><strong>${esc(
-				value
-			)}</strong></div>`;
+			`<div class="tc-ksnk-kpi${warn ? " is-warn" : ""}"><span>${esc(
+				label
+			)}</span><strong>${esc(value)}</strong></div>`;
 		const th = kpis.thresholds || {};
 		const limits = [
-			th.report_hours ? __("report within {0} h", [th.report_hours]) : __("report limit not set"),
+			th.report_hours
+				? __("report within {0} h", [th.report_hours])
+				: __("report limit not set"),
 			th.prophylaxis_hours
 				? __("prophylaxis within {0} h", [th.prophylaxis_hours])
 				: __("prophylaxis limit not set"),
@@ -125,14 +130,20 @@ const TcKsnkScr64 = {
 		const steps = (d.followups || [])
 			.map((row) => {
 				const done = row.done_on
-					? `<span class="tc-ksnk-badge is-pass">${esc(__("Done"))} ${esc(self.date(row.done_on))}</span>`
+					? `<span class="tc-ksnk-badge is-pass">${esc(__("Done"))} ${esc(
+							self.date(row.done_on)
+					  )}</span>`
 					: open
-					? `<input type="date" class="form-control tc-ksnk-date" data-step-date="${esc(row.name)}">
+					? `<input type="date" class="form-control tc-ksnk-date" data-step-date="${esc(
+							row.name
+					  )}">
 					   <button type="button" class="btn btn-default btn-sm" data-action="step-done" data-row="${esc(
-								row.name
-							)}">${esc(__("Mark done"))}</button>`
+							row.name
+						)}">${esc(__("Mark done"))}</button>`
 					: `<span class="tc-ksnk-badge is-neutral">${esc(__("Not done"))}</span>`;
-				return `<tr><td>${esc(row.step)}</td><td>${esc(self.date(row.due_date))}</td><td>${done}</td></tr>`;
+				return `<tr><td>${esc(row.step)}</td><td>${esc(
+					self.date(row.due_date)
+				)}</td><td>${done}</td></tr>`;
 			})
 			.join("");
 		const schedule = d.followups.length
@@ -140,12 +151,20 @@ const TcKsnkScr64 = {
 					__("Due")
 			  )}</th><th>${esc(__("Done"))}</th></tr></thead><tbody>${steps}</tbody></table>
 			  <p class="tc-ksnk-note">${esc(
-					__("Steps come from the approved follow-up template; only the date done is recorded, never a result.")
-			  )}</p>`
-			: `<div class="tc-ksnk-alert${d.has_template ? " is-info" : " is-warn"}" role="status">${esc(
+					__(
+						"Steps come from the approved follow-up template; only the date done is recorded, never a result."
+					)
+				)}</p>`
+			: `<div class="tc-ksnk-alert${
+					d.has_template ? " is-info" : " is-warn"
+			  }" role="status">${esc(
 					d.has_template
-						? __("Record first aid and the prophylaxis decision to create the follow-up schedule.")
-						: __("No approved follow-up template for this exposure type. Ask the head of infection control to approve one.")
+						? __(
+								"Record first aid and the prophylaxis decision to create the follow-up schedule."
+						  )
+						: __(
+								"No approved follow-up template for this exposure type. Ask the head of infection control to approve one."
+						  )
 			  )}</div>`;
 		const prophylaxis = ["Given", "Not Indicated", "Refused"]
 			.map(
@@ -161,30 +180,37 @@ const TcKsnkScr64 = {
 				<label><input type="checkbox" data-field="first_aid_done"${
 					d.first_aid_done ? " checked" : ""
 				}> ${esc(__("First aid done"))}</label>
-				<label>${esc(__("First aid at"))}<input type="datetime-local" class="form-control" data-field="first_aid_at" value="${esc(
+				<label>${esc(
+					__("First aid at")
+				)}<input type="datetime-local" class="form-control" data-field="first_aid_at" value="${esc(
 					local(d.first_aid_at)
-				)}"></label>
-				<label>${esc(__("Prophylaxis"))}<select class="form-control" data-field="prophylaxis"><option value="">${esc(
+			  )}"></label>
+				<label>${esc(
+					__("Prophylaxis")
+				)}<select class="form-control" data-field="prophylaxis"><option value="">${esc(
 					__("Choose")
-				)}</option>${prophylaxis}</select></label>
-				<label>${esc(__("Prophylaxis started at"))}<input type="datetime-local" class="form-control" data-field="prophylaxis_started_at" value="${esc(
+			  )}</option>${prophylaxis}</select></label>
+				<label>${esc(
+					__("Prophylaxis started at")
+				)}<input type="datetime-local" class="form-control" data-field="prophylaxis_started_at" value="${esc(
 					local(d.prophylaxis_started_at)
-				)}"></label>
+			  )}"></label>
 				<button type="button" class="btn btn-primary" data-action="handling">${esc(
 					__("Record first aid and prophylaxis")
 				)}</button>
 			</div>`
 			: "";
 		const source = d.source_patient_code_masked
-			? `${esc(d.source_patient_code_masked)} <button type="button" class="btn btn-link btn-sm" data-action="reveal">${esc(
+			? `${esc(
+					d.source_patient_code_masked
+			  )} <button type="button" class="btn btn-link btn-sm" data-action="reveal">${esc(
 					__("View full code")
 			  )}</button> <span data-region="revealed" class="tc-ksnk-code"></span>`
 			: esc(self.opt(d.source_known));
 		return `<section class="tc-ksnk-card" data-name="${esc(d.name)}">
-			<h3><span class="tc-ksnk-code">${esc(d.name)}</span> — ${esc(__("follow-up schedule"))} ${self.statusBadge(
-			d.status,
-			esc
-		)}</h3>
+			<h3><span class="tc-ksnk-code">${esc(d.name)}</span> — ${esc(
+			__("follow-up schedule")
+		)} ${self.statusBadge(d.status, esc)}</h3>
 			<div data-region="detail-alert"></div>
 			<table class="tc-ksnk-table"><tbody>
 				<tr><th>${esc(__("Employee"))}</th><td>${esc(d.employee_name || "—")} · ${esc(
@@ -219,7 +245,12 @@ const TcKsnkScr64 = {
 	},
 
 	immunizationHtml(rows, esc) {
-		const cls = { Overdue: "is-fail", "Due Soon": "is-warn", Scheduled: "is-neutral", Complete: "is-pass" };
+		const cls = {
+			Overdue: "is-fail",
+			"Due Soon": "is-warn",
+			Scheduled: "is-neutral",
+			Complete: "is-pass",
+		};
 		const label = (r) =>
 			r.state === "Due Soon"
 				? __("{0} days left", [r.days_left])
@@ -231,7 +262,9 @@ const TcKsnkScr64 = {
 		const body = rows.length
 			? rows
 					.map(
-						(r) => `<tr><td>${esc(r.employee_name || "—")}</td><td>${esc(r.department || "—")}</td>
+						(r) => `<tr><td>${esc(r.employee_name || "—")}</td><td>${esc(
+							r.department || "—"
+						)}</td>
 				<td>${esc(r.vaccine)}</td><td class="is-num">${esc(`${r.dose_no}/${r.doses_required || "—"}`)}</td>
 				<td>${esc(TcKsnkScr64.date(r.next_due))}</td>
 				<td><span class="tc-ksnk-badge ${cls[r.state] || "is-neutral"}">${esc(label(r))}</span></td></tr>`
@@ -254,14 +287,21 @@ const TcKsnkScr64 = {
 		const lines = alerts
 			.map((a) =>
 				a.kind === "below_min"
-					? __("{0} at {1}: {2} left, minimum {3}", [a.item, a.warehouse, a.qty, a.level])
+					? __("{0} at {1}: {2} left, minimum {3}", [
+							a.item,
+							a.warehouse,
+							a.qty,
+							a.level,
+					  ])
 					: __("{0} batch {1}: {2} days to expiry", [a.item, a.batch, a.days])
 			)
 			.map((text) => `<li>${esc(text)}</li>`)
 			.join("");
 		return `<div class="tc-ksnk-alert is-warn" role="status"><strong>${esc(
 			__("Post-exposure prophylaxis drugs")
-		)}</strong><ul>${lines}</ul><a href="/app/query-report/Stock Balance">${esc(__("View stock"))}</a></div>`;
+		)}</strong><ul>${lines}</ul><a href="/app/query-report/Stock Balance">${esc(
+			__("View stock")
+		)}</a></div>`;
 	},
 
 	actionsHtml(esc) {
@@ -279,8 +319,14 @@ const TcKsnkScr64 = {
 		return (
 			self.kpisHtml(data.kpis, esc) +
 			self.recordsHtml(data.records || [], esc) +
-			`<div class="tc-ksnk-cols"><div data-region="detail">${self.detailHtml(detail, esc)}</div>
-			<div>${self.immunizationHtml(data.immunizations || [], esc)}${self.pepHtml(data.pep_alerts, esc)}</div></div>` +
+			`<div class="tc-ksnk-cols"><div data-region="detail">${self.detailHtml(
+				detail,
+				esc
+			)}</div>
+			<div>${self.immunizationHtml(data.immunizations || [], esc)}${self.pepHtml(
+				data.pep_alerts,
+				esc
+			)}</div></div>` +
 			self.actionsHtml(esc)
 		);
 	},
@@ -288,7 +334,9 @@ const TcKsnkScr64 = {
 	blockHtml(error, esc) {
 		const e = error || {};
 		return (
-			`<div class="tc-ksnk-alert" role="alert"><strong>${esc(e.title || __("Not saved"))}</strong>` +
+			`<div class="tc-ksnk-alert" role="alert"><strong>${esc(
+				e.title || __("Not saved")
+			)}</strong>` +
 			`<div>${esc(e.reason || "")}</div><div>${esc(e.action || "")}</div></div>`
 		);
 	},
@@ -297,7 +345,8 @@ const TcKsnkScr64 = {
 		const out = {};
 		region.querySelectorAll("[data-field]").forEach((input) => {
 			const value = input.type === "checkbox" ? (input.checked ? 1 : 0) : input.value;
-			out[input.dataset.field] = input.type === "datetime-local" && value ? value.replace("T", " ") + ":00" : value;
+			out[input.dataset.field] =
+				input.type === "datetime-local" && value ? value.replace("T", " ") + ":00" : value;
 		});
 		return out;
 	},
@@ -366,7 +415,15 @@ const TcKsnkScr64 = {
 				const action = button.dataset.action;
 				if (action === "handling") {
 					const form = region.querySelector('[data-region="handling"]');
-					self.write(el, ctx, data, detail, TC_EXP_HANDLING, { name: detail.name, ...self.values(form) }, button);
+					self.write(
+						el,
+						ctx,
+						data,
+						detail,
+						TC_EXP_HANDLING,
+						{ name: detail.name, ...self.values(form) },
+						button
+					);
 				} else if (action === "step-done") {
 					const input = region.querySelector(`[data-step-date="${button.dataset.row}"]`);
 					self.write(
@@ -375,16 +432,36 @@ const TcKsnkScr64 = {
 						data,
 						detail,
 						TC_EXP_STEP_DONE,
-						{ name: detail.name, row: button.dataset.row, done_on: (input && input.value) || "" },
+						{
+							name: detail.name,
+							row: button.dataset.row,
+							done_on: (input && input.value) || "",
+						},
 						button
 					);
 				} else if (action === "reveal") {
 					self.askReason(__("Why do you need the full patient code?"), (reason) =>
-						self.write(el, ctx, data, detail, TC_EXP_REVEAL, { name: detail.name, reason }, button)
+						self.write(
+							el,
+							ctx,
+							data,
+							detail,
+							TC_EXP_REVEAL,
+							{ name: detail.name, reason },
+							button
+						)
 					);
 				} else if (action === "cancel") {
 					self.askReason(__("Cancel this exposure record"), (reason) =>
-						self.write(el, ctx, data, detail, TC_EXP_CANCEL, { name: detail.name, reason }, button)
+						self.write(
+							el,
+							ctx,
+							data,
+							detail,
+							TC_EXP_CANCEL,
+							{ name: detail.name, reason },
+							button
+						)
 					);
 				}
 			});
@@ -393,7 +470,9 @@ const TcKsnkScr64 = {
 
 	bind(el, ctx, data) {
 		el.querySelectorAll('[data-action="open"]').forEach((button) =>
-			button.addEventListener("click", () => TcKsnkScr64.openDetail(el, ctx, data, button.dataset.name))
+			button.addEventListener("click", () =>
+				TcKsnkScr64.openDetail(el, ctx, data, button.dataset.name)
+			)
 		);
 		el.querySelectorAll('[data-action="retry"]').forEach((button) =>
 			button.addEventListener("click", () => TcKsnkScr64.render(el, ctx))

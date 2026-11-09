@@ -123,7 +123,9 @@ def set_timing(doc):
 	doc.report_late = int(bool(report_hours and doc.minutes_to_report > report_hours * 60))
 	if doc.prophylaxis == "Given" and doc.prophylaxis_started_at:
 		doc.minutes_to_prophylaxis = _minutes(doc.occurred_at, doc.prophylaxis_started_at)
-		doc.prophylaxis_late = int(bool(prophylaxis_hours and doc.minutes_to_prophylaxis > prophylaxis_hours * 60))
+		doc.prophylaxis_late = int(
+			bool(prophylaxis_hours and doc.minutes_to_prophylaxis > prophylaxis_hours * 60)
+		)
 	else:
 		doc.minutes_to_prophylaxis = None
 		doc.prophylaxis_late = 0
@@ -141,7 +143,9 @@ def create_report(values, channel="Desk", reported_by=None):
 		{
 			"doctype": DOCTYPE,
 			**data,
-			"source_patient_code": values.get("source_patient_code") if data["source_known"] == "Yes" else None,
+			"source_patient_code": values.get("source_patient_code")
+			if data["source_known"] == "Yes"
+			else None,
 			"report_channel": channel,
 			"reported_by": reported_by or frappe.session.user,
 			# phát lại offline: giờ báo = client_ts (ADR-003); trực tuyến: giờ server nhận
@@ -214,7 +218,9 @@ def record_handling(name, first_aid_done=0, first_aid_at=None, prophylaxis=None,
 		raise _blocked(
 			"EXPOSURE_HANDLING_INCOMPLETE",
 			_("Prophylaxis decision is required"),
-			_("Choose whether prophylaxis was given, not indicated or refused; when given, enter the start time."),
+			_(
+				"Choose whether prophylaxis was given, not indicated or refused; when given, enter the start time."
+			),
 			_("Complete the prophylaxis decision, then save again."),
 		)
 	doc.first_aid_done = cint(first_aid_done)
@@ -241,7 +247,11 @@ def _schedule(doc):
 	for row in template.steps:
 		doc.append(
 			"followups",
-			{"step": row.step, "days_after": row.days_after, "due_date": add_days(base, cint(row.days_after))},
+			{
+				"step": row.step,
+				"days_after": row.days_after,
+				"due_date": add_days(base, cint(row.days_after)),
+			},
 		)
 	doc.followup_template = template.name
 	doc.template_version = template.version_no
@@ -286,7 +296,9 @@ def cancel(name, reason):
 
 
 def employee_of(user=None):
-	return frappe.db.get_value("Employee", {"user_id": user or frappe.session.user, "status": "Active"}, "name")
+	return frappe.db.get_value(
+		"Employee", {"user_id": user or frappe.session.user, "status": "Active"}, "name"
+	)
 
 
 def my_records(user=None):

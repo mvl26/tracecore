@@ -31,10 +31,18 @@ def status(day=None):
 	):
 		if not flt(row.level):
 			continue
-		qty = flt(frappe.db.get_value("Bin", {"item_code": row.item, "warehouse": row.warehouse}, "actual_qty"))
+		qty = flt(
+			frappe.db.get_value("Bin", {"item_code": row.item, "warehouse": row.warehouse}, "actual_qty")
+		)
 		if qty < flt(row.level):
 			alerts.append(
-				{"kind": "below_min", "item": row.item, "warehouse": row.warehouse, "qty": qty, "level": flt(row.level)}
+				{
+					"kind": "below_min",
+					"item": row.item,
+					"warehouse": row.warehouse,
+					"qty": qty,
+					"level": flt(row.level),
+				}
 			)
 	for batch in frappe.get_all(
 		"Batch",
@@ -69,9 +77,9 @@ def check(day=None):
 	expiring = len(alerts) - below
 	notification.emit(
 		"PEP_STOCK_ALERT",
-		subject=_("Post-exposure prophylaxis stock: {0} below minimum, {1} batches expiring within {2} days").format(
-			below, expiring, EXPIRY_DAYS
-		),
+		subject=_(
+			"Post-exposure prophylaxis stock: {0} below minimum, {1} batches expiring within {2} days"
+		).format(below, expiring, EXPIRY_DAYS),
 		link="/app/tc-ksnk/phoi-nhiem",
 	)
 	return alerts

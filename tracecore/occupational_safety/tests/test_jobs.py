@@ -80,15 +80,24 @@ class TestRetention(IsolatedTestCase):
 		row = frappe.db.get_value(
 			DOCTYPE,
 			self.doc.name,
-			["employee", "employee_name", "source_patient_code_hash", "source_patient_code_masked", "department",
-			 "exposure_type", "deidentified"],
+			[
+				"employee",
+				"employee_name",
+				"source_patient_code_hash",
+				"source_patient_code_masked",
+				"department",
+				"exposure_type",
+				"deidentified",
+			],
 			as_dict=True,
 		)
 		self.assertFalse(row.employee or row.employee_name or row.source_patient_code_hash)
 		self.assertFalse(row.source_patient_code_masked)
 		self.assertTrue(row.department and row.exposure_type and row.deidentified)
 		self.assertFalse(
-			frappe.db.exists("__Auth", {"doctype": DOCTYPE, "name": self.doc.name, "fieldname": "source_patient_code"})
+			frappe.db.exists(
+				"__Auth", {"doctype": DOCTYPE, "name": self.doc.name, "fieldname": "source_patient_code"}
+			)
 		)
 		self.assertTrue(frappe.db.exists("Audit Log", {"ref_doctype": DOCTYPE, "ref_name": self.doc.name}))
 		self.assertEqual(jobs.deidentify_expired(), 0)
@@ -154,7 +163,9 @@ class TestPepStock(IsolatedTestCase):
 		self.assertIn(("expiring", batch.name), kinds)
 		self.assertNotIn(("expiring", far.name), kinds)
 		self.assertTrue(
-			frappe.db.exists("Notification Delivery", {"event_code": "PEP_STOCK_ALERT", "recipient": self.r01})
+			frappe.db.exists(
+				"Notification Delivery", {"event_code": "PEP_STOCK_ALERT", "recipient": self.r01}
+			)
 		)
 
 	def test_custom_field_exists(self):
@@ -163,5 +174,7 @@ class TestPepStock(IsolatedTestCase):
 
 class TestRunDaily(IsolatedTestCase):
 	def test_run_daily_hook_registered_and_runs(self):
-		self.assertIn("tracecore.occupational_safety.jobs.run_daily", frappe.get_hooks("scheduler_events")["daily"])
+		self.assertIn(
+			"tracecore.occupational_safety.jobs.run_daily", frappe.get_hooks("scheduler_events")["daily"]
+		)
 		jobs.run_daily()

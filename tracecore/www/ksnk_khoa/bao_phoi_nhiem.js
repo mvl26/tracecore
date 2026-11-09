@@ -27,7 +27,9 @@
 	}
 
 	function fmt(text, args) {
-		return String(text || "").replace(/\{(\d+)\}/g, (_m, i) => (args[i] == null ? "" : args[i]));
+		return String(text || "").replace(/\{(\d+)\}/g, (_m, i) =>
+			args[i] == null ? "" : args[i]
+		);
 	}
 
 	function uuid4() {
@@ -35,7 +37,10 @@
 		bytes[6] = (bytes[6] & 0x0f) | 0x40;
 		bytes[8] = (bytes[8] & 0x3f) | 0x80;
 		const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-		return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+		return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(
+			16,
+			20
+		)}-${hex.slice(20)}`;
 	}
 
 	function pad(n) {
@@ -139,7 +144,8 @@
 			activity: form.activity.trim(),
 			device: form.device.trim(),
 			source_known: form.source_known,
-			source_patient_code: form.source_known === "Yes" ? form.source_patient_code.trim() : "",
+			source_patient_code:
+				form.source_known === "Yes" ? form.source_patient_code.trim() : "",
 		};
 	}
 
@@ -149,7 +155,11 @@
 		items.push({ key: pending.key, args: { ...rest, client_ts: pending.ts } });
 		state.pending = null;
 		if (!writeOutbox(items)) {
-			state.notice = { title: L.server_error, reason: L.server_error_reason, action: L.server_error_action };
+			state.notice = {
+				title: L.server_error,
+				reason: L.server_error_reason,
+				action: L.server_error_action,
+			};
 			return render();
 		}
 		state.done = { queued: true };
@@ -193,7 +203,12 @@
 		state.pending = null;
 		state.done = message.exposure;
 		state.records = [
-			{ name: message.exposure.name, exposure_type: message.exposure.exposure_type, status: "New", followups: [] },
+			{
+				name: message.exposure.name,
+				exposure_type: message.exposure.exposure_type,
+				status: "New",
+				followups: [],
+			},
 			...state.records,
 		];
 		render();
@@ -202,7 +217,11 @@
 	function stepError() {
 		const form = state.form;
 		if (form.step === 1 && !form.exposure_type)
-			return { title: L.type_required, reason: L.type_required_reason, action: L.type_required_action };
+			return {
+				title: L.type_required,
+				reason: L.type_required_reason,
+				action: L.type_required_action,
+			};
 		if (form.step === 1 && new Date(form.occurred_at) > new Date(Date.now() + 5 * 60000))
 			return { title: L.future_title, reason: L.future_reason, action: L.future_action };
 		return null;
@@ -210,27 +229,41 @@
 
 	function alertHtml(notice, variant) {
 		const icon = { error: "&#10005;", ok: "&#10003;", info: "i" }[variant];
-		return `<div class="tc-alert tc-alert-${variant}" role="${variant === "error" ? "alert" : "status"}">
+		return `<div class="tc-alert tc-alert-${variant}" role="${
+			variant === "error" ? "alert" : "status"
+		}">
 			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(notice.title)}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
-			${notice.action ? `<p class="tc-alert-action">${notice.action_html || esc(notice.action)}</p>` : ""}
-			${notice.retry ? `<button type="button" class="tc-btn tc-btn-primary" data-act="send">${esc(L.retry)}</button>` : ""}
+			${
+				notice.action
+					? `<p class="tc-alert-action">${notice.action_html || esc(notice.action)}</p>`
+					: ""
+			}
+			${
+				notice.retry
+					? `<button type="button" class="tc-btn tc-btn-primary" data-act="send">${esc(
+							L.retry
+					  )}</button>`
+					: ""
+			}
 		</div>`;
 	}
 
 	function option(act, value, label, chosen) {
-		return `<button type="button" class="tc-btn tc-exp-option${chosen ? " is-chosen" : ""}" data-act="${act}" data-value="${esc(
-			value
-		)}" aria-pressed="${chosen}">${chosen ? '<span aria-hidden="true">&#10003; </span>' : ""}${esc(label)}</button>`;
+		return `<button type="button" class="tc-btn tc-exp-option${
+			chosen ? " is-chosen" : ""
+		}" data-act="${act}" data-value="${esc(value)}" aria-pressed="${chosen}">${
+			chosen ? '<span aria-hidden="true">&#10003; </span>' : ""
+		}${esc(label)}</button>`;
 	}
 
 	function stepsHtml() {
 		return `<ol class="tc-exp-steps">${[L.step1, L.step2, L.step3]
 			.map((label, i) => {
 				const current = state.form.step === i + 1;
-				return `<li class="tc-exp-chip${current ? " is-current" : ""}"${current ? ' aria-current="step"' : ""}>${
-					i + 1
-				} ${esc(label)}</li>`;
+				return `<li class="tc-exp-chip${current ? " is-current" : ""}"${
+					current ? ' aria-current="step"' : ""
+				}>${i + 1} ${esc(label)}</li>`;
 			})
 			.join("")}</ol>`;
 	}
@@ -242,13 +275,15 @@
 			.filter((row) => row.employee !== data.employee)
 			.map(
 				(row) =>
-					`<option value="${esc(row.employee)}"${state.form.employee === row.employee ? " selected" : ""}>${esc(
-						row.employee_name
-					)}</option>`
+					`<option value="${esc(row.employee)}"${
+						state.form.employee === row.employee ? " selected" : ""
+					}>${esc(row.employee_name)}</option>`
 			)
 			.join("");
 		return `<div class="tc-field"><label for="tc-exp-for">${esc(L.reporter)}</label>
-			<select id="tc-exp-for" data-field="employee"><option value="">${esc(L.myself)}</option>${options}</select></div>`;
+			<select id="tc-exp-for" data-field="employee"><option value="">${esc(
+				L.myself
+			)}</option>${options}</select></div>`;
 	}
 
 	function step1() {
@@ -258,9 +293,9 @@
 				option("type", t, (L.types || {})[t] || t, state.form.exposure_type === t)
 			).join("")}</div>
 			<div class="tc-field"><label for="tc-exp-time">${esc(L.when)}</label>
-				<input id="tc-exp-time" type="datetime-local" data-field="occurred_at" max="${esc(localInput())}" value="${esc(
-			state.form.occurred_at
-		)}"></div>
+				<input id="tc-exp-time" type="datetime-local" data-field="occurred_at" max="${esc(
+					localInput()
+				)}" value="${esc(state.form.occurred_at)}"></div>
 			<div class="tc-actions"><button type="button" class="tc-btn tc-btn-primary" data-act="next"${
 				state.form.exposure_type ? "" : " disabled"
 			}>${esc(L.continue)}</button></div>`;
@@ -289,16 +324,23 @@
 				)}"><p class="tc-hint">${esc(L.source_code_hint)}</p></div>`
 					: ""
 			}
-			<div class="tc-actions"><button type="button" class="tc-btn" data-act="back">${esc(L.back)}</button>
-				<button type="button" class="tc-btn tc-btn-primary" data-act="next">${esc(L.continue)}</button></div>`;
+			<div class="tc-actions"><button type="button" class="tc-btn" data-act="back">${esc(
+				L.back
+			)}</button>
+				<button type="button" class="tc-btn tc-btn-primary" data-act="next">${esc(
+					L.continue
+				)}</button></div>`;
 	}
 
 	function step3() {
 		const form = state.form;
-		const row = (label, value) => `<div class="tc-exp-row"><dt>${esc(label)}</dt><dd>${esc(value || "-")}</dd></div>`;
+		const row = (label, value) =>
+			`<div class="tc-exp-row"><dt>${esc(label)}</dt><dd>${esc(value || "-")}</dd></div>`;
 		const source =
 			((L.sources || {})[form.source_known] || form.source_known) +
-			(form.source_known === "Yes" && form.source_patient_code ? " · " + L.code_entered : "");
+			(form.source_known === "Yes" && form.source_patient_code
+				? " · " + L.code_entered
+				: "");
 		return `<h2 class="tc-exp-title">${esc(L.step3_title)}</h2>
 			<dl class="tc-exp-summary">
 				${row(L.exposure_type, (L.types || {})[form.exposure_type])}
@@ -308,24 +350,38 @@
 				${row(L.source_known, source)}
 			</dl>
 			<p class="tc-hint">${esc(L.notified)}</p>
-			<div class="tc-actions"><button type="button" class="tc-btn" data-act="back">${esc(L.back)}</button>
-				<button type="button" class="tc-btn tc-btn-primary tc-exp-send" data-act="send">${esc(L.send)}</button></div>`;
+			<div class="tc-actions"><button type="button" class="tc-btn" data-act="back">${esc(
+				L.back
+			)}</button>
+				<button type="button" class="tc-btn tc-btn-primary tc-exp-send" data-act="send">${esc(
+					L.send
+				)}</button></div>`;
 	}
 
 	function doneHtml() {
 		const done = state.done;
 		if (done.queued)
-			return alertHtml({ title: L.queued_title, reason: L.queued_reason, action: L.no_procedure }, "info");
+			return alertHtml(
+				{ title: L.queued_title, reason: L.queued_reason, action: L.no_procedure },
+				"info"
+			);
 		const procedure = done.procedure;
 		const action = procedure
 			? {
 					action: `${L.procedure}: ${procedure.title}`,
 					action_html:
 						`${esc(L.procedure)}: ${esc(procedure.title)}` +
-						(procedure.file ? ` <a href="${esc(procedure.file)}" target="_blank" rel="noopener">${esc(L.open)}</a>` : ""),
+						(procedure.file
+							? ` <a href="${esc(
+									procedure.file
+							  )}" target="_blank" rel="noopener">${esc(L.open)}</a>`
+							: ""),
 			  }
 			: { action: L.no_procedure };
-		return alertHtml({ title: fmt(L.done_title, [done.name]), reason: L.done_reason, ...action }, "ok");
+		return alertHtml(
+			{ title: fmt(L.done_title, [done.name]), reason: L.done_reason, ...action },
+			"ok"
+		);
 	}
 
 	function recordsHtml() {
@@ -339,14 +395,24 @@
 							)}</li>`
 					)
 					.join("");
-				return `<li class="tc-dept-record"><span class="tc-mono">${esc(r.name)}</span> · ${esc(
+				return `<li class="tc-dept-record"><span class="tc-mono">${esc(
+					r.name
+				)}</span> · ${esc(
 					(L.types || {})[r.exposure_type] || r.exposure_type
-				)} · <span class="tc-badge">${esc((L.statuses || {})[r.status] || r.status)}</span>${
-					steps ? `<ul class="tc-dept-steps" aria-label="${esc(L.followups)}">${steps}</ul>` : ""
+				)} · <span class="tc-badge">${esc(
+					(L.statuses || {})[r.status] || r.status
+				)}</span>${
+					steps
+						? `<ul class="tc-dept-steps" aria-label="${esc(
+								L.followups
+						  )}">${steps}</ul>`
+						: ""
 				}</li>`;
 			})
 			.join("");
-		return `<section class="tc-dept-records"><h2 class="tc-exp-title">${esc(L.my_records)}</h2>${
+		return `<section class="tc-dept-records"><h2 class="tc-exp-title">${esc(
+			L.my_records
+		)}</h2>${
 			rows ? `<ul>${rows}</ul>` : `<p class="tc-empty">${esc(L.no_records)}</p>`
 		}</section>`;
 	}
@@ -366,7 +432,8 @@
 				L.new_report
 			)}</button></div>`;
 		} else {
-			const step = state.form.step === 1 ? step1() : state.form.step === 2 ? step2() : step3();
+			const step =
+				state.form.step === 1 ? step1() : state.form.step === 2 ? step2() : step3();
 			if (state.notice) view = "error";
 			else if (state.form.step === 1 && !state.form.exposure_type) view = "empty";
 			body = `${state.notice ? alertHtml(state.notice, "error") : ""}${stepsHtml()}${step}`;
@@ -375,7 +442,9 @@
 		const offline = !navigator.onLine
 			? alertHtml({ title: L.offline_title, reason: L.offline_reason }, "info")
 			: "";
-		const queued = waiting ? `<p class="tc-hint" role="status">${esc(fmt(L.queued_count, [waiting]))}</p>` : "";
+		const queued = waiting
+			? `<p class="tc-hint" role="status">${esc(fmt(L.queued_count, [waiting]))}</p>`
+			: "";
 		root.dataset.state = view;
 		root.innerHTML = `${offline}${queued}${body}${recordsHtml()}`;
 	}

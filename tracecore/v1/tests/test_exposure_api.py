@@ -1,4 +1,4 @@
-"""RPC tracecore.v1.exposure.* (FEAT-071; FR-M16-01, 01.1, 03, 04, 05; UC-55 bước 1–5, A2, A4; NFR-AVAIL-05; A-137 Q2,
+"""RPC tracecore.v1.exposure.* (FEAT-071; FR-M16-01, 01.1, 03, 04, 05; UC-55 bước 1-5, A2, A4; NFR-AVAIL-05; A-137 Q2,
 Q4): phiên thẻ PDA idempotent, phát lại offline, Cổng khoa báo thay cùng khoa, màn SCR-64."""
 
 import uuid
@@ -27,7 +27,12 @@ def _iso(dt):
 def make_exposure_station():
 	if not frappe.db.exists("Zone Station", STATION):
 		zone = frappe.get_doc(
-			{"doctype": "Zone Station", "zone_station_name": "PN Ward zone", "is_zone": 1, "zone_type": "Department"}
+			{
+				"doctype": "Zone Station",
+				"zone_station_name": "PN Ward zone",
+				"is_zone": 1,
+				"zone_type": "Department",
+			}
 		).insert(ignore_permissions=True)
 		frappe.get_doc(
 			{
@@ -100,7 +105,9 @@ class TestPdaReport(ExposureApiCase):
 			return api.report(**kwargs)
 
 	def test_report_creates_record_for_session_employee_and_notifies_r11(self):
-		result = self.report(activity="Recapping", device="Needle", source_known="Yes", source_patient_code="BN77")
+		result = self.report(
+			activity="Recapping", device="Needle", source_known="Yes", source_patient_code="BN77"
+		)
 		self.assertTrue(result["ok"], result)
 		name = result["exposure"]["name"]
 		doc = frappe.get_doc(DOCTYPE, name)
@@ -111,7 +118,8 @@ class TestPdaReport(ExposureApiCase):
 		self.assertNotIn("BN77", frappe.as_json(result))
 		self.assertTrue(
 			frappe.db.exists(
-				"Notification Delivery", {"event_code": "EXPOSURE_REPORTED", "recipient": self.r11, "ref_name": name}
+				"Notification Delivery",
+				{"event_code": "EXPOSURE_REPORTED", "recipient": self.r11, "ref_name": name},
 			)
 		)
 
@@ -244,7 +252,9 @@ class TestScreenApi(ExposureApiCase):
 	def test_reveal_and_cancel(self):
 		frappe.set_user(self.r11)
 		self.assertEqual(api.reveal_source_code(self.name, "")["error"]["code"], "REASON_REQUIRED")
-		self.assertEqual(api.reveal_source_code(self.name, "Source follow-up")["source_patient_code"], "BN-SCR64-9876")
+		self.assertEqual(
+			api.reveal_source_code(self.name, "Source follow-up")["source_patient_code"], "BN-SCR64-9876"
+		)
 		self.assertEqual(api.cancel(self.name, "")["error"]["code"], "REASON_REQUIRED")
 		self.assertEqual(api.cancel(self.name, "Duplicate")["detail"]["status"], "Cancelled")
 

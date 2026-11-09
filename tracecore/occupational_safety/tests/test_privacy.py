@@ -10,7 +10,12 @@ from tracecore.tests import factories
 from tracecore.tests.utils import IsolatedTestCase, assert_permission_matrix, bru
 
 DOCTYPE = "Occupational Exposure"
-M16 = ("Occupational Exposure", "Exposure Follow-up Template", "Immunization Requirement", "Staff Immunization")
+M16 = (
+	"Occupational Exposure",
+	"Exposure Follow-up Template",
+	"Immunization Requirement",
+	"Staff Immunization",
+)
 
 
 class TestExposurePrivacy(IsolatedTestCase):
@@ -36,7 +41,8 @@ class TestExposurePrivacy(IsolatedTestCase):
 			channel="Department Portal",
 		)
 		self.other_doc = exposure.create_report(
-			{"employee": self.other, "exposure_type": fx.SHARPS, "occurred_at": fx.hours_ago(1)}, channel="PDA"
+			{"employee": self.other, "exposure_type": fx.SHARPS, "occurred_at": fx.hours_ago(1)},
+			channel="PDA",
 		)
 
 	def test_permission_matrix(self):

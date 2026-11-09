@@ -80,5 +80,10 @@ def deidentify_expired(day=None):
 	)
 	for name in names:
 		exposure.deidentify(frappe.get_doc(exposure.DOCTYPE, name))
-		audit.log("Update", exposure.DOCTYPE, name, reason=_("Personal identifiers removed after the retention period"))
+		audit.log(
+			"Update",
+			exposure.DOCTYPE,
+			name,
+			reason=_("Personal identifiers removed after the retention period"),
+		)
 	return len(names)

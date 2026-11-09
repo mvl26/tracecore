@@ -30,7 +30,9 @@ def _rows(period, department):
 	}
 	if department:
 		filters["department"] = department
-	return frappe.get_all(exposure.DOCTYPE, filters=filters, fields=["name", "status", "report_late", "followup_template"])
+	return frappe.get_all(
+		exposure.DOCTYPE, filters=filters, fields=["name", "status", "report_late", "followup_template"]
+	)
 
 
 def report_on_time(period, department=None):

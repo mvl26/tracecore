@@ -95,7 +95,9 @@ class TestDefaultConfig(IsolatedTestCase):
 
 		config.ensure_default_config()
 		config.ensure_default_config()
-		self.assertEqual(frappe.get_all(TEMPLATE, filters={"exposure_type": fx.SHARPS}, pluck="name"), [draft.name])
+		self.assertEqual(
+			frappe.get_all(TEMPLATE, filters={"exposure_type": fx.SHARPS}, pluck="name"), [draft.name]
+		)
 		self.assertEqual(frappe.db.get_value(TEMPLATE, draft.name, "status"), "Approved")
 		self.assertEqual([r.step for r in frappe.get_doc(TEMPLATE, draft.name).steps], ["Hospital step"])
 		self.assertEqual(frappe.db.get_value(REQUIREMENT, vaccines[0], "doses_required"), 4)

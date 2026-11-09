@@ -14,7 +14,13 @@ DOCTYPE = "Staff Immunization"
 
 def dose(employee, vaccine, dose_no, given_on):
 	return frappe.get_doc(
-		{"doctype": DOCTYPE, "employee": employee, "vaccine": vaccine, "dose_no": dose_no, "given_on": given_on}
+		{
+			"doctype": DOCTYPE,
+			"employee": employee,
+			"vaccine": vaccine,
+			"dose_no": dose_no,
+			"given_on": given_on,
+		}
 	).insert(ignore_permissions=True)
 
 

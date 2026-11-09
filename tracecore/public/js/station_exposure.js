@@ -127,7 +127,10 @@ class ExposureReport {
 				reason: __("The report needs the type of exposure."),
 				action: __("Choose one of the types, then continue."),
 			};
-		if (this.form.step === 1 && new Date(this.form.occurred_at) > new Date(Date.now() + 5 * 60000))
+		if (
+			this.form.step === 1 &&
+			new Date(this.form.occurred_at) > new Date(Date.now() + 5 * 60000)
+		)
 			return {
 				title: __("Exposure time is in the future"),
 				reason: __("The exposure time is later than now."),
@@ -170,7 +173,8 @@ class ExposureReport {
 			activity: form.activity.trim(),
 			device: form.device.trim(),
 			source_known: form.source_known,
-			source_patient_code: form.source_known === "Yes" ? form.source_patient_code.trim() : "",
+			source_patient_code:
+				form.source_known === "Yes" ? form.source_patient_code.trim() : "",
 		};
 	}
 
@@ -300,7 +304,9 @@ class ExposureReport {
 	alertHtml(notice, buttons = "") {
 		const variant = notice.variant || "error";
 		const icon = { error: "&#10005;", warn: "!", ok: "&#10003;", info: "i" }[variant];
-		return `<div class="tc-alert tc-alert-${variant}" role="${variant === "error" ? "alert" : "status"}">
+		return `<div class="tc-alert tc-alert-${variant}" role="${
+			variant === "error" ? "alert" : "status"
+		}">
 			<p class="tc-alert-title"><span aria-hidden="true">${icon}</span> ${esc(tcErrorTitle(notice))}</p>
 			${notice.reason ? `<p class="tc-alert-reason">${esc(notice.reason)}</p>` : ""}
 			${notice.action ? `<p class="tc-alert-action">${esc(notice.action)}</p>` : ""}
@@ -345,7 +351,12 @@ class ExposureReport {
 
 	typeHtml() {
 		const options = EXP_TYPES.map((type) =>
-			this.optionHtml("exp-type", type, __(type, null, EXP_CONTEXT), this.form.exposure_type === type)
+			this.optionHtml(
+				"exp-type",
+				type,
+				__(type, null, EXP_CONTEXT),
+				this.form.exposure_type === type
+			)
 		).join("");
 		return `<section class="tc-t6-block" aria-label="${esc(__("Exposure type"))}">
 			<h2 class="tc-exp-title">${esc(__("Step 1: type of exposure"))}</h2>
@@ -449,10 +460,14 @@ class ExposureReport {
 	procedureHtml(procedure) {
 		if (!procedure)
 			return `<p class="tc-alert-action">${esc(
-				__("Follow the first-aid steps of the hospital and call the infection control team now.")
+				__(
+					"Follow the first-aid steps of the hospital and call the infection control team now."
+				)
 			)}</p>`;
 		const link = procedure.file
-			? ` <a href="${esc(procedure.file)}" target="_blank" rel="noopener">${esc(__("Open"))}</a>`
+			? ` <a href="${esc(procedure.file)}" target="_blank" rel="noopener">${esc(
+					__("Open")
+			  )}</a>`
 			: "";
 		return `<p class="tc-alert-action">${esc(__("First-aid procedure"))}: ${esc(
 			procedure.title
@@ -475,7 +490,9 @@ class ExposureReport {
 			: {
 					variant: "ok",
 					title: __("Exposure {0} reported", [done.name]),
-					reason: __("The head of infection control and the supervisor have been notified."),
+					reason: __(
+						"The head of infection control and the supervisor have been notified."
+					),
 					action: "",
 			  };
 		return `<div class="tc-linen tc-exposure">
