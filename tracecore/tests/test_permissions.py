@@ -22,8 +22,9 @@ class TestPermissionMatrix(FrappeTestCase):
 		# + 4 DocType nền v1.12 (FEAT-056, A-113): IC Program Settings, IC Indicator, IC Indicator Value, Import Mapping Profile
 		# + IC Committee, IC Network Member (FEAT-057)
 		# + IC Annual Plan, IC Procedure Document, IC Committee Meeting (FEAT-058, A-133)
-		self.assertEqual(len(rows), 62)
-		self.assertEqual(len({row.code for row in rows}), 62)
+		# + Audit Template, Audit Schedule, Audit Session (FEAT-060, A-113/A-134)
+		self.assertEqual(len(rows), 65)
+		self.assertEqual(len({row.code for row in rows}), 65)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

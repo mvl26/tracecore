@@ -58,6 +58,27 @@ SCREENS += [
 		"script": "/assets/tracecore/js/ksnk/scr_48_ke_hoach.js",
 	},
 ]
+# FEAT-060 (ADR-015, A-131): mẫu phiếu & lịch giám sát, báo cáo tuân thủ & phản hồi khoa
+SCREENS += [
+	{
+		"slug": "mau-phieu",
+		"scr": "SCR-50",
+		"uc": "UC-43",
+		"label": "Audit Templates and Schedules",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_50_mau_phieu.js",
+	},
+	{
+		"slug": "tuan-thu",
+		"scr": "SCR-53",
+		"uc": "UC-45",
+		"label": "Compliance Report",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_53_tuan_thu.js",
+	},
+]
 
 
 def _badges(user):

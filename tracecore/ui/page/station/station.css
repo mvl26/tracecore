@@ -2087,6 +2087,109 @@ html:has(.tc-work) {
 	align-self: flex-start;
 }
 
+/* FEAT-060 SCR-52: phiếu giám sát theo mục trên PDA — chữ ≥ 16 px, nút ≥ 48 px, Ghi sổ 56 px dưới cùng */
+.tc-aud {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-aud .tc-btn {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-aud-choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-aud-choice {
+	flex: 1 1 100%;
+	text-align: left;
+}
+
+.tc-aud-head {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-touch-gap);
+}
+
+.tc-aud-items {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	padding-bottom: var(--tc-sp-8);
+}
+
+.tc-aud-item {
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-aud-item.is-critical {
+	border-left: var(--tc-bw-alert) solid var(--tc-fail);
+}
+
+.tc-aud-question {
+	margin: 0 0 var(--tc-sp-2);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-aud-answers {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-aud-answer {
+	background: var(--tc-card);
+	border: var(--tc-bw-med) solid var(--tc-border-input);
+	color: var(--tc-text);
+}
+
+.tc-aud-answer[data-answer-kind="Pass"] {
+	border-color: var(--tc-pass);
+	color: var(--tc-pass-text);
+}
+
+.tc-aud-answer[data-answer-kind="Fail"] {
+	border-color: var(--tc-fail);
+	color: var(--tc-fail-text);
+}
+
+.tc-aud-answer.is-on[data-answer-kind="Pass"] {
+	background: var(--tc-pass);
+	color: var(--tc-text-inverse);
+}
+
+.tc-aud-answer.is-on[data-answer-kind="Fail"] {
+	background: var(--tc-fail);
+	color: var(--tc-text-inverse);
+}
+
+.tc-aud-answer.is-on[data-answer-kind="N/A"] {
+	background: var(--tc-neutral-fill);
+	color: var(--tc-text-inverse);
+}
+
+.tc-aud-footer {
+	position: sticky;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-3) 0;
+	background: var(--tc-bg);
+	border-top: var(--tc-bw-med) solid var(--tc-primary);
+}
+
+.tc-aud-post {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
 /* thao tác nguy hiểm tách khỏi thanh thao tác chính (ticket 1843 T4-07, 1834 T3-05) */
 .tc-danger-zone {
 	display: flex;

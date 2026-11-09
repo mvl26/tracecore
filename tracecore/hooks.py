@@ -116,6 +116,8 @@ page_js = {
 		"public/js/station_waste_store.js",
 		# FEAT-049: tab Bàn giao (SCR-40)
 		"public/js/station_waste_handover.js",
+		# FEAT-060: phiếu giám sát KSNK theo mục trên PDA (SCR-52), chức năng trạm AUDIT
+		"public/js/station_audit.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -268,10 +270,13 @@ after_migrate = [
 # Thông báo (FEAT-010): mỗi người chỉ thấy thông báo của mình; R10 và System Manager thấy tất cả
 permission_query_conditions = {
 	"Notification Delivery": "tracecore.core.notification.delivery_query_conditions",
+	# FEAT-060 FR-M12-08.1: R08/R12 chỉ thấy phiếu giám sát của khoa có User Permission
+	"Audit Session": "tracecore.compliance_audit.sessions.query_conditions",
 }
 
 has_permission = {
 	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
+	"Audit Session": "tracecore.compliance_audit.sessions.has_permission",
 }
 
 # DocType Class
@@ -405,6 +410,10 @@ doc_events = {
 		"on_update_after_submit": "tracecore.core.audit.on_document_event",
 	},
 	"ToDo": {"on_update": "tracecore.infection_program.meetings.on_todo_update"},
+	# FEAT-060 (ADR-015): mẫu phiếu, lịch, phiếu giám sát ghi Audit Log, không xóa
+	"Audit Template": dict(_AUDIT_EVENTS),
+	"Audit Schedule": dict(_AUDIT_EVENTS),
+	"Audit Session": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -586,6 +595,7 @@ tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_
 tracecore_ic_indicators = [
 	# FEAT-058 (A-133 Q4, FR-M11-07.1): tỷ lệ văn bản nội bộ còn hạn rà soát
 	"tracecore.infection_program.procedure_documents.register",
+	"tracecore.compliance_audit.indicators.register",  # FEAT-060: tỷ lệ phiếu giám sát Đạt
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -593,7 +603,11 @@ tracecore_ksnk_badges = [
 	"tracecore.infection_program.structure.badges",
 	# FEAT-058: hoạt động kế hoạch quá hạn + văn bản cần rà soát (SCR-48)
 	"tracecore.infection_program.annual_plan.badges",
+	"tracecore.compliance_audit.nc.badges",  # FEAT-060: phiếu chờ quyết định NC
 ]
+# FEAT-060 (A-134 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
+# department, description}, trả tên Incident
+tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
@@ -669,6 +683,8 @@ scheduler_events = {
 		"tracecore.instrument.loaner.remind_overdue",
 		# FEAT-058, FR-M11-05, FR-M11-07, FR-M11-08: hoạt động kế hoạch, kết luận họp tới hạn/quá hạn; văn bản cần rà soát
 		"tracecore.infection_program.reminders.run_daily",
+		# FEAT-060, FR-M12-03: giao việc giám sát ngày đầu kỳ, nhắc khoa chưa đạt mục tiêu tuần cuối kỳ
+		"tracecore.compliance_audit.schedule.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

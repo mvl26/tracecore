@@ -14,7 +14,8 @@ class TestZones(IsolatedTestCase):
 			("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD"),
 		)
 		self.assertEqual(zones.allowed_functions("Sterile"), ("STERI_UNLOAD", "PUTAWAY", "ISSUE"))
-		self.assertEqual(zones.allowed_functions("Department"), ("USE",))
+		# A-134 (f): PDA giám sát tuân thủ dùng tại khoa
+		self.assertEqual(zones.allowed_functions("Department"), ("USE", "AUDIT"))
 		self.assertEqual(zones.allowed_functions("Linen"), ("LINEN",))
 		self.assertEqual(zones.allowed_functions("Waste"), ("WASTE",))
 		self.assertEqual(zones.allowed_functions("Unknown"), ())

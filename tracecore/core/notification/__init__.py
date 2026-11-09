@@ -96,6 +96,12 @@ EVENTS = {
 	"IC_RESOLUTION_DUE": ("Committee conclusion due soon", "Normal", 0, 0, ("TC R01",)),
 	"IC_RESOLUTION_OVERDUE": ("Committee conclusion overdue", "Normal", 0, 0, ("TC R01",)),
 	"IC_DOCUMENT_REVIEW_DUE": ("Internal document review due", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-060 (FR-M12-03, 08, 09): giao việc giám sát, nhắc độ bao phủ (R02), phản hồi khoa (người nhận do nơi gọi
+	# truyền: R08/R12 của khoa), mục trọng yếu không đạt → đề nghị R01/R11 mở NC
+	"AUDIT_DUE": ("Audits due for the period", "Normal", 0, 1, ()),
+	"AUDIT_COVERAGE_LOW": ("Audit coverage below target", "Normal", 0, 1, (FALLBACK_ROLE,)),
+	"AUDIT_FEEDBACK": ("Audit result feedback to the department", "Normal", 0, 1, ()),
+	"AUDIT_CRITICAL_FAIL": ("Critical audit item failed", "Normal", 0, 0, ("TC R01", "TC R11")),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

@@ -61,3 +61,6 @@ DT-ICNET,IC Network Member,RW,RW,,,,,,,,R,R,R,R,"FEAT-057 A-113 (FR-M11-01.4, FR
 DT-ICPLAN,IC Annual Plan,RWA,,,,,,,,,R,R,,RS,"FEAT-058 A-133 (FR-M11-01.4, FR-M11-04, BRU-ICP-004): R01 lập, sửa Nháp, lập bản sửa đổi; chỉ R13 ghi sổ = duyệt; R10, R11 đọc"
 DT-ICDOC,IC Procedure Document,RW,,,,,,,,,R,R,R,R,"FEAT-058 A-133 (FR-M11-07): sổ văn bản nội bộ toàn viện; R12 đọc quy trình hiện hành (FR-M16-01)"
 DT-ICMEET,IC Committee Meeting,RWSA,,,,,,,,,R,R,,R,"FEAT-058 A-133 (FR-M11-08): biên bản họp Hội đồng; R01 ghi sổ sinh việc theo dõi; R10, R11, R13 đọc"
+DT-AUDTPL,Audit Template,RWS,R,,,,,,R,,R,RW,R,R,"FEAT-060 A-113/A-134 (plan D1): ghi sổ = R01 duyệt, khóa phiên bản; R11 soạn nháp"
+DT-AUDSCH,Audit Schedule,RW,RW,,,,,,,,R,R,,R,"FEAT-060 A-113 (plan D1): R01/R02 lập lịch giám sát (FR-M12-08.2)"
+DT-AUDSES,Audit Session,RWSA,R,,,,,,RWS,,,RWS,RWS,,"FEAT-060 A-113 (plan D1): R08/R12 khoa mình (User Permission Department), R11 mọi khoa; R01 hủy phiếu nhập sai; R13 chỉ xem báo cáo tổng hợp"
