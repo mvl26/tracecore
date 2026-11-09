@@ -371,7 +371,7 @@ flowchart LR
 
 *[v1.12] Mẫu số ngày & đợt thiết bị [UC-47]* (SCR-55): form 1 cột, ô số lớn (số BN nằm viện, số BN thở máy, CVC, thông tiểu) điền sẵn giá trị hôm qua; một bản ghi mỗi (ngày, khoa) — trùng thì hiện bản đã có để sửa; đợt thiết bị: nút "Mở đợt" / "Đóng đợt" theo mã BN che, ngày đặt/rút.
 
-*[v1.12] Báo phơi nhiễm [UC-55]* (SCR-63, FR-M16-01): 3 bước cố định — (1) loại phơi nhiễm + thời điểm, (2) nơi/thiết bị gây phơi nhiễm, (3) Gửi; sau gửi hiện quy trình xử trí ban đầu của bệnh viện (văn bản cấu hình) và thông báo R01/R11 ngay; không có ô kết quả xét nghiệm hay chẩn đoán (FR-M16-06).
+*[v1.12] Báo phơi nhiễm [UC-55]* (SCR-63, FR-M16-01): 3 bước cố định, nhãn chip "1 Loại & thời điểm / 2 Hoàn cảnh / 3 Xác nhận" [A-137] — (1) loại phơi nhiễm (5 nút lớn) + thời điểm (mặc định bây giờ, sửa được), (2) hoạt động / thiết bị gây phơi nhiễm, nguồn đã biết? (Có / Không / Chưa rõ) và mã BN nguồn tùy chọn (ô mật khẩu, không hiện lại dạng rõ), (3) xác nhận và Gửi; PDA ở Page `station`, DEPT ở trang Portal riêng `/ksnk-khoa/bao-phoi-nhiem` (nhân viên báo cho mình; R08/R12 báo thay nhân viên cùng khoa) [A-137]; sau gửi hiện quy trình xử trí ban đầu của bệnh viện (văn bản cấu hình) và thông báo R01/R11 ngay; không có ô kết quả xét nghiệm hay chẩn đoán (FR-M16-06).
 
 **Screen inventory** — §B5, Surface = PDA: 4 màn chính (SCR-34..37) + SCR-38 dùng chung với STN; [v1.12] + SCR-51 (PDA), SCR-52, SCR-55, SCR-63 (PDA + DEPT), SCR-57 (view PDA theo dõi sau ra viện).
 
@@ -565,7 +565,7 @@ flowchart TB
 
 **[v1.12] Quy tắc riêng A-113** (áp cho mọi surface):
 - (a) **Phiếu giám sát**: cùng `Audit Template` phiên bản và `Audit Session` ở PDA/DEPT/WEB; PDA/DEPT là nơi ghi, WEB cấu hình và xem; R13 chỉ xem tổng hợp, không mở từng phiếu; phiếu đã ghi sổ hiện bản chụp phiên bản mẫu (BRU-AUD-001).
-- (b) **Che mã người bệnh**: mọi danh sách, báo cáo, file xuất của M13/M14 (và M16 không có mã BN) hiện mã BN dạng che (`***` + 4 ký tự cuối) trên **mọi** surface; "Xem đầy đủ" chỉ có trên WEB cho R01/R11, mở hộp lý do bắt buộc và ghi Audit Log (FR-M13-15, NFR-PRIV-01, ADR-010). DEPT/PDA không có nút xem đầy đủ. Không surface nào có ô họ tên người bệnh.
+- (b) **Che mã người bệnh**: mọi danh sách, báo cáo, file xuất của M13/M14 (và mã BN nguồn phơi nhiễm của M16 [A-137]) hiện mã BN dạng che (`***` + 4 ký tự cuối) trên **mọi** surface; "Xem đầy đủ" chỉ có trên WEB cho R01/R11, mở hộp lý do bắt buộc và ghi Audit Log (FR-M13-15, NFR-PRIV-01, ADR-010). DEPT/PDA không có nút xem đầy đủ. Không surface nào có ô họ tên người bệnh.
 - (c) **Trạng thái không chỉ bằng màu**: Đạt / Không đạt / Không áp dụng / Chưa đủ mẫu / Không tính / Đa kháng / Nghi ngờ / Xác định / Loại trừ / Thiếu luôn là badge có chữ (design.md §4), cùng tên trên PDA, DEPT, WEB và trên PDF/Excel xuất ra.
 - (d) **Kỳ đã khóa**: mẫu số, ca, giá trị chỉ số thuộc kỳ khóa hiển thị chỉ đọc kèm dòng "Kỳ đã khóa" ở mọi surface; mở khóa chỉ R01 trên WEB với lý do.
 
