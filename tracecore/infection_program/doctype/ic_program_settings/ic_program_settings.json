@@ -11,6 +11,9 @@
   "has_inpatient",
   "surveillance_ratio_beds",
   "doc_review_months",
+  "section_structure",
+  "ic_department",
+  "surveillance_staff",
   "section_retention",
   "patient_data_retention_months",
   "exposure_retention_months"
@@ -58,6 +61,23 @@
    "label": "Procedure Review Cycle (Months)"
   },
   {
+   "fieldname": "section_structure",
+   "fieldtype": "Section Break",
+   "label": "Infection Control Unit and Surveillance Staff"
+  },
+  {
+   "fieldname": "ic_department",
+   "fieldtype": "Link",
+   "label": "Infection Control Department or Unit",
+   "options": "Department"
+  },
+  {
+   "fieldname": "surveillance_staff",
+   "fieldtype": "Table",
+   "label": "Surveillance Staff",
+   "options": "IC Surveillance Staff"
+  },
+  {
    "fieldname": "section_retention",
    "fieldtype": "Section Break",
    "label": "Personal Data Retention"
@@ -77,7 +97,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-06 10:00:00.000000",
+ "modified": "2026-11-09 09:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

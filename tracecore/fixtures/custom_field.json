@@ -350,5 +350,17 @@
   "label": "Feedback Type",
   "insert_after": "tc_employee",
   "in_list_view": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_ic_network_required",
+  "fieldname": "tc_ic_network_required",
+  "fieldtype": "Check",
+  "label": "IC Network Required",
+  "default": "0",
+  "in_standard_filter": 1,
+  "insert_after": "tc_is_ward",
+  "description": "Clinical or paraclinical department that must have at least one doctor and one nurse, midwife or technician in the infection control network (BRU-ICP-003)."
  }
 ]

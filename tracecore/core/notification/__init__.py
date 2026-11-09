@@ -88,6 +88,8 @@ EVENTS = {
 	"SOFTWARE_FEEDBACK": ("Software feedback from a station", "Normal", 0, 0, (ADMIN_ROLE,)),
 	# A-75: R10 sửa dải mã offline làm hai dải giao nhau
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
+	# FEAT-057 (A-132 d, FR-M11-03.2): khoa bắt buộc mất mạng lưới viên cuối cùng của một nhóm, báo Trưởng khoa KSNK
+	"IC_NETWORK_GAP": ("Infection control network gap", "Normal", 0, 0, ("TC R01",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

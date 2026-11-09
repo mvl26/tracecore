@@ -382,10 +382,18 @@ doc_events = {
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
 	# A-113 (FEAT-056): cài đặt chương trình, danh mục chỉ số, giá trị chỉ số (tính lại sau mở khóa có old/new —
 	# FR-M9-27.1), hồ sơ ánh xạ cột: Audit Log, không xóa
-	"IC Program Settings": dict(_AUDIT_EVENTS),
+	# FEAT-057 (A-132): validate hook cơ cấu KSNK `infection_program.structure.check` (BRU-ICP-001..003)
+	"IC Program Settings": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
 	"IC Indicator": dict(_AUDIT_EVENTS),
 	"IC Indicator Value": dict(_AUDIT_EVENTS),
 	"Import Mapping Profile": dict(_AUDIT_EVENTS),
+	# FEAT-057: Hội đồng KSNK (ghi sổ, cảnh báo thiếu khối đại diện ghi sau ghi sổ) và mạng lưới viên; không xóa
+	"IC Committee": {
+		**_AUDIT_EVENTS,
+		"validate": "tracecore.infection_program.structure.check",
+		"on_update_after_submit": "tracecore.core.audit.on_document_event",
+	},
+	"IC Network Member": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -566,7 +574,10 @@ tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_
 # (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
 tracecore_ic_indicators = []
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
-tracecore_ksnk_badges = []
+tracecore_ksnk_badges = [
+	# FEAT-057: số thành phần cơ cấu KSNK còn thiếu (SCR-47)
+	"tracecore.infection_program.structure.badges",
+]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",

@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "autoname": "HDK-.YYYY.-.##",
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_decision",
+  "decision_no",
+  "decision_date",
+  "decision_file",
+  "column_break_validity",
+  "valid_from",
+  "valid_to",
+  "section_members",
+  "members",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_decision",
+   "fieldtype": "Section Break",
+   "label": "Establishment Decision"
+  },
+  {
+   "fieldname": "decision_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Decision No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "decision_date",
+   "fieldtype": "Date",
+   "label": "Decision Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "decision_file",
+   "fieldtype": "Attach",
+   "label": "Decision File"
+  },
+  {
+   "fieldname": "column_break_validity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Valid From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "section_members",
+   "fieldtype": "Section Break",
+   "label": "Members"
+  },
+  {
+   "fieldname": "members",
+   "fieldtype": "Table",
+   "label": "Members",
+   "options": "IC Committee Member",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "IC Committee",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Committee",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "decision_no",
+ "track_changes": 1,
+ "description": "Infection control committee establishment decision: exactly one Chair and one Secretary (BRU-ICP-002)."
+}
