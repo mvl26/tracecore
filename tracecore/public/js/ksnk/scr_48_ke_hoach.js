@@ -126,7 +126,7 @@ const TcKsnkScr48 = {
 		const note = approved
 			? `<div class="tc-ksnk-alert is-info">${esc(
 					__(
-						"An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair (BRU-ICP-004)."
+						"An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair."
 					)
 			  )}</div>`
 			: "";
@@ -301,7 +301,7 @@ const TcKsnkScr48 = {
 			`<code class="tc-ksnk-tag">QTK-</code></h3>${body}` +
 			`<p class="tc-ksnk-note">${esc(
 				__(
-					"Documents within 30 days of the review date move to Review needed and R01 is notified (BRU-ICP-005)."
+					"Documents within 30 days of the review date move to Review needed and R01 is notified."
 				)
 			)} <a href="/app/ic-procedure-document/new">${esc(
 				__("Add document")
@@ -406,9 +406,7 @@ const TcKsnkScr48 = {
 				" "
 			)}` +
 			`<span class="tc-ksnk-note">${esc(
-				__(
-					"Responsible people are reminded 7 days before the due date and when overdue (FR-M11-05)."
-				)
+				__("Responsible people are reminded 7 days before the due date and when overdue.")
 			)}</span></div><div data-region="actions-alert"></div>`
 		);
 	},

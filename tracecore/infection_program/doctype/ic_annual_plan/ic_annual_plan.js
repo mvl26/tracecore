@@ -37,7 +37,7 @@ frappe.ui.form.on("IC Annual Plan", {
 		if (frm.doc.docstatus === 1) {
 			frm.set_intro(
 				__(
-					"An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair (BRU-ICP-004)."
+					"An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair."
 				),
 				"blue"
 			);

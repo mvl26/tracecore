@@ -8351,7 +8351,7 @@ An amendment must keep the year {0} of plan {1}.,Bản sửa đổi phải giữ
 Plan year {0} is not valid.,Năm kế hoạch {0} không hợp lệ.,
 Year {0} already has plan {1}. Create an amendment (Amend) of that plan instead of a new plan.,Năm {0} đã có kế hoạch {1}. Lập bản sửa đổi (Amend) của kế hoạch đó thay vì tạo kế hoạch mới.,
 Indicator {0} is listed more than once.,Chỉ số {0} bị nhập trùng.,
-Plan {0} is approved and its content cannot be changed. Create an amendment (Amend) and have the committee chair approve it again (BRU-ICP-004).,"Kế hoạch {0} đã duyệt, không sửa được nội dung. Lập bản sửa đổi (Amend) và trình Chủ tịch Hội đồng duyệt lại (BRU-ICP-004).",
+Plan {0} is approved and its content cannot be changed. Create an amendment (Amend) and have the committee chair approve it again.,"Kế hoạch {0} đã duyệt, không sửa được nội dung. Lập bản sửa đổi (Amend) và trình Chủ tịch Hội đồng duyệt lại.",
 Approved plan locked,Kế hoạch đã duyệt bị khóa,
 Only the chair of the infection control committee (R13) can approve the annual plan.,Chỉ Chủ tịch Hội đồng KSNK (R13) được duyệt kế hoạch năm.,
 Plan {0} is not a draft.,Kế hoạch {0} không phải bản Nháp.,
@@ -8392,7 +8392,7 @@ Plan year,Năm kế hoạch,
 Annual plan,Kế hoạch năm,
 Internal documents,Văn bản nội bộ,
 Committee meetings,Họp Hội đồng,
-An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair (BRU-ICP-004).,Kế hoạch đã ghi sổ không sửa trực tiếp; thay đổi bằng bản sửa đổi (Amend) và Chủ tịch Hội đồng duyệt lại (BRU-ICP-004).,
+An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair.,Kế hoạch đã ghi sổ không sửa trực tiếp; thay đổi bằng bản sửa đổi (Amend) và Chủ tịch Hội đồng duyệt lại.,
 Amendment waiting for approval,Bản sửa đổi chờ duyệt,
 Approval (submit),Phê duyệt (ghi sổ),
 Activity progress,Tiến độ hoạt động,
@@ -8404,7 +8404,7 @@ Review overdue,Quá hạn rà soát,
 {0} days left,Còn {0} ngày,
 No internal document yet.,Chưa có văn bản nội bộ.,
 Internal document register,Sổ văn bản nội bộ,
-Documents within 30 days of the review date move to Review needed and R01 is notified (BRU-ICP-005).,Văn bản còn 30 ngày tới hạn rà soát chuyển Cần rà soát và báo R01 (BRU-ICP-005).,
+Documents within 30 days of the review date move to Review needed and R01 is notified.,Văn bản còn 30 ngày tới hạn rà soát chuyển Cần rà soát và báo R01.,
 Add document,Thêm văn bản,
 Latest committee meeting,Họp Hội đồng gần nhất,
 Conclusion → follow-up task,Kết luận → việc theo dõi,
@@ -8417,7 +8417,7 @@ Approve (submit),Ghi sổ (duyệt),
 Create amendment (Amend),Lập bản sửa đổi (Amend),
 Create annual plan,Lập kế hoạch năm,
 Record meeting minutes,Ghi biên bản họp,
-Responsible people are reminded 7 days before the due date and when overdue (FR-M11-05).,Nhắc người chủ trì khi còn 7 ngày tới hạn hoặc quá hạn (FR-M11-05).,
+Responsible people are reminded 7 days before the due date and when overdue.,Nhắc người chủ trì khi còn 7 ngày tới hạn hoặc quá hạn.,
 No annual plan for {0} yet.,Chưa có kế hoạch KSNK năm {0}.,
 Indicator,Chỉ số,IC Plan
 Indicator Name,Tên chỉ số,IC Plan
@@ -8478,7 +8478,7 @@ TC IC Annual Plan,Kế hoạch KSNK năm,
 TC IC Annual Summary,Báo cáo tổng kết KSNK,
 IC Annual Summary,Tổng kết KSNK năm,
 IC Annual Plan,Kế hoạch KSNK năm,
-Annual infection control plan; the committee chair (R13) submits it as approval (BRU-ICP-004).,Kế hoạch KSNK năm; Chủ tịch Hội đồng (R13) ghi sổ là phê duyệt (BRU-ICP-004).,
+Annual infection control plan; the committee chair (R13) submits it as approval.,Kế hoạch KSNK năm; Chủ tịch Hội đồng (R13) ghi sổ là phê duyệt.,
 Plan,Kế hoạch,IC Annual Plan
 Year,Năm,IC Annual Plan
 Objectives,Mục tiêu,IC Annual Plan
@@ -8517,7 +8517,7 @@ Evidence,Minh chứng,IC Plan Activity
 Due Soon Reminder Sent,Đã nhắc sắp tới hạn,IC Plan Activity
 Overdue Reminder Sent,Đã nhắc quá hạn,IC Plan Activity
 IC Procedure Document,Văn bản nội bộ KSNK,
-Internal infection control regulation or procedure with version and review date (BRU-ICP-005).,"Quy định, quy trình nội bộ KSNK có phiên bản và hạn rà soát (BRU-ICP-005).",
+Internal infection control regulation or procedure with version and review date.,"Quy định, quy trình nội bộ KSNK có phiên bản và hạn rà soát.",
 Document Code,Mã văn bản,IC Procedure Document
 Title,Tên văn bản,IC Procedure Document
 Document Type,Loại văn bản,IC Procedure Document
@@ -8574,3 +8574,9 @@ Annual plan activity overdue,Hoạt động kế hoạch năm quá hạn,
 Committee conclusion due soon,Kết luận họp Hội đồng sắp tới hạn,
 Committee conclusion overdue,Kết luận họp Hội đồng quá hạn,
 Internal document review due,Văn bản nội bộ tới hạn rà soát,
+Baseline,Nền,
+Document Code,Mã văn bản,
+Evidence,Minh chứng,
+Indicator Name,Tên chỉ số,
+Review Due,Hạn rà soát,
+Year Value,Giá trị năm,

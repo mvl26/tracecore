@@ -116,8 +116,7 @@ def guard_after_submit(doc):
 	if old and _changed_content(doc, old):
 		frappe.throw(
 			_(
-				"Plan {0} is approved and its content cannot be changed. Create an amendment (Amend) and have the "
-				"committee chair approve it again (BRU-ICP-004)."
+				"Plan {0} is approved and its content cannot be changed. Create an amendment (Amend) and have the committee chair approve it again."
 			).format(doc.name),
 			title=_("Approved plan locked"),
 		)

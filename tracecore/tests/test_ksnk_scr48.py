@@ -101,7 +101,8 @@ class TestKsnkScr48(FrappeTestCase):
 		self.assertIn("KH-2026-01", html)
 		self.assertIn("21/34 completed", html)
 		self.assertIn("486.000.000 VND", html)
-		self.assertIn("BRU-ICP-004", html)
+		self.assertIn("approved again by the committee chair", html)  # BRU-ICP-004, không in mã nội bộ
+		self.assertNotIn("BRU-ICP-004", html)
 		self.assertIn("Hand &lt;b&gt;hygiene", html)
 		self.assertNotIn("Hand <b>hygiene", html)
 		self.assertIn("78,4 %", html)
