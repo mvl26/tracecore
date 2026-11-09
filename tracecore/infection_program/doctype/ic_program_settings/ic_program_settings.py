@@ -15,9 +15,10 @@ class ICProgramSettings(Document):
 		for field in POSITIVE:
 			if not self.get(field) or self.get(field) <= 0:
 				frappe.throw(_("{0} must be greater than 0.").format(_(self.meta.get_label(field))))
+		# Single đọc lại Int trống thành 0 (FEAT-057): 0 = để trống = chưa áp dụng, chỉ chặn số âm
 		for field in POSITIVE_IF_SET:
 			value = self.get(field)
-			if value is not None and value != "" and value <= 0:
+			if value is not None and value != "" and value < 0:
 				frappe.throw(
 					_("{0} must be greater than 0, or left empty.").format(_(self.meta.get_label(field)))
 				)

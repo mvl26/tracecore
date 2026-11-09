@@ -52,7 +52,9 @@ DT-STFUNC,Station Function,R,R,,,,,,,R,RW,,,,A-64: danh mục chức năng trạ
 DT-ARCHIVE,Archive Export,RW,,,,,,,,,RW,,,,FEAT-012 A-58 D2: R01 và R10 tạo/đọc phiếu xuất hồ sơ lưu trữ; phiếu không sửa sau khi tạo
 DT-ENVLOG,Environment Log,R,RWSA,RWS,RWS,RWS,RWS,,,,R,,,,FEAT-008 A-55 Q4: R02-R06 ghi sổ; R02 hủy/sửa đổi; R01 và R10 chỉ đọc
 DT-AUDIT,Audit Log,R,R,,,,,,,,R,,,,immutable; R01/R02 object-scoped
-DT-ICSET,IC Program Settings,R,,,,,,,,,RW,R,,R,FEAT-056 A-113 (plan D3): Single cài đặt chương trình KSNK; R10 lưu số giường/tuyến (FR-M11-01)
+DT-ICSET,IC Program Settings,RW,,,,,,,,,RW,R,,R,"FEAT-056 A-113 (plan D3): Single cài đặt chương trình KSNK; R10 lưu số giường/tuyến (FR-M11-01); FEAT-057 A-132: R01 RW (FR-M11-01.4, nhập khoa KSNK và giám sát viên)"
 DT-ICIND,IC Indicator,RW,,,,,,,,,RW,R,R,R,FEAT-056 A-113 (plan D3): danh mục chỉ số; R01 duyệt nội dung chuyên môn (D10)
 DT-ICVAL,IC Indicator Value,R,,,,,,,,,R,R,R,R,"FEAT-056 A-113 (plan D3): hệ thống ghi khi khóa kỳ, không ai ghi tay; R12 chỉ khoa mình + toàn viện"
 DT-IMPMAP,Import Mapping Profile,R,,,,,,,,,RW,RW,,,"FEAT-056 A-113 (plan D3, F-21): hồ sơ ánh xạ cột nhập file"
+DT-ICCOM,IC Committee,RWSA,,,,,,,,,R,R,,R,"FEAT-057 A-113 (FR-M11-01.4, FR-M11-02): Hội đồng KSNK ghi sổ; R01 tạo/sửa/ghi sổ/hủy; R10, R11, R13 đọc"
+DT-ICNET,IC Network Member,RW,RW,,,,,,,,R,R,R,R,"FEAT-057 A-113 (FR-M11-01.4, FR-M11-03): R01, R02 sửa mạng lưới; R12 chỉ khoa mình (User Permission Department, A-132 d)"

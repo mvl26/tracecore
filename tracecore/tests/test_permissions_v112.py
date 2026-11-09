@@ -7,10 +7,17 @@ from tracecore.setup.permissions import ROLE_CODES, ROLE_NAMES, load_permission_
 NEW_ROLES = ("R11", "R12", "R13")
 V112_ROWS = {
 	# code: (doctype, {role: symbols}) — vai trò không ghi = không quyền
-	"DT-ICSET": ("IC Program Settings", {"R01": "R", "R10": "RW", "R11": "R", "R13": "R"}),
+	# FEAT-057 A-132: R01 RW (FR-M11-01.4 — R01 nhập khoa KSNK và giám sát viên)
+	"DT-ICSET": ("IC Program Settings", {"R01": "RW", "R10": "RW", "R11": "R", "R13": "R"}),
 	"DT-ICIND": ("IC Indicator", {"R01": "RW", "R10": "RW", "R11": "R", "R12": "R", "R13": "R"}),
 	"DT-ICVAL": ("IC Indicator Value", {"R01": "R", "R10": "R", "R11": "R", "R12": "R", "R13": "R"}),
 	"DT-IMPMAP": ("Import Mapping Profile", {"R01": "R", "R10": "RW", "R11": "RW"}),
+	# FEAT-057 (plan D5, FR-M11-01.4)
+	"DT-ICCOM": ("IC Committee", {"R01": "RWSA", "R10": "R", "R11": "R", "R13": "R"}),
+	"DT-ICNET": (
+		"IC Network Member",
+		{"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
+	),
 }
 
 
