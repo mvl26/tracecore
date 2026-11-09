@@ -90,6 +90,12 @@ EVENTS = {
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
 	# FEAT-057 (A-132 d, FR-M11-03.2): khoa bắt buộc mất mạng lưới viên cuối cùng của một nhóm, báo Trưởng khoa KSNK
 	"IC_NETWORK_GAP": ("Infection control network gap", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-058 (A-133, FR-M11-05, FR-M11-07, FR-M11-08): người chủ trì do nơi gọi truyền + Trưởng khoa KSNK
+	"IC_PLAN_ACTIVITY_DUE": ("Annual plan activity due soon", "Normal", 0, 0, ("TC R01",)),
+	"IC_PLAN_ACTIVITY_OVERDUE": ("Annual plan activity overdue", "Normal", 0, 0, ("TC R01",)),
+	"IC_RESOLUTION_DUE": ("Committee conclusion due soon", "Normal", 0, 0, ("TC R01",)),
+	"IC_RESOLUTION_OVERDUE": ("Committee conclusion overdue", "Normal", 0, 0, ("TC R01",)),
+	"IC_DOCUMENT_REVIEW_DUE": ("Internal document review due", "Normal", 0, 0, ("TC R01",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }
