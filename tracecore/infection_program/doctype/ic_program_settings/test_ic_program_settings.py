@@ -41,7 +41,7 @@ class TestICProgramSettings(IsolatedTestCase):
 			("surveillance_ratio_beds", 0),
 			("doc_review_months", 0),
 			("patient_data_retention_months", -3),
-			("exposure_retention_months", 0),
+			("exposure_retention_months", -1),
 		):
 			doc = self._settings(**{field: value})
 			with self.assertRaises(frappe.ValidationError, msg=field):
@@ -51,6 +51,35 @@ class TestICProgramSettings(IsolatedTestCase):
 		doc = self._settings(patient_data_retention_months=None, exposure_retention_months=None)
 		doc.save(ignore_permissions=True)
 		self.assertFalse(frappe.db.get_single_value(DOCTYPE, "patient_data_retention_months"))
+
+	def test_saving_again_with_empty_retention_works(self):
+		"""FEAT-057: Single đọc lại Int trống thành 0 — lần lưu thứ hai không được bị chặn (0 = chưa áp dụng)."""
+		self._settings(patient_data_retention_months=None, exposure_retention_months=None).save(
+			ignore_permissions=True
+		)
+		doc = frappe.get_single(DOCTYPE)
+		doc.bed_count = 300
+		doc.save(ignore_permissions=True)
+		self.assertEqual(frappe.db.get_single_value(DOCTYPE, "bed_count"), 300)
+
+
+class TestICProgramSettingsStructureFields(IsolatedTestCase):
+	"""FEAT-057 (A-132 a, b): khoa/bộ phận KSNK và nhân sự giám sát."""
+
+	def test_structure_fields(self):
+		meta = frappe.get_meta(DOCTYPE)
+		self.assertEqual(meta.get_field("ic_department").options, "Department")
+		self.assertEqual(meta.get_field("surveillance_staff").options, "IC Surveillance Staff")
+		child = frappe.get_meta("IC Surveillance Staff")
+		self.assertTrue(child.istable)
+		self.assertEqual(child.get_field("full_time").default, "1")
+
+	def test_duplicate_surveillance_staff_rejected(self):
+		from tracecore.infection_program.tests import ic_fixtures as fx
+
+		employee = fx.employee("Dup GSV")
+		with self.assertRaises(frappe.ValidationError):
+			fx.settings(staff=[(employee, 1, 1), (employee, 0, 1)])
 
 
 class TestICProgramSettingsPermissions(FrappeTestCase):

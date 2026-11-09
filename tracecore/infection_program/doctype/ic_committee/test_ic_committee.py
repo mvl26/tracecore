@@ -78,9 +78,14 @@ class TestICCommittee(IsolatedTestCase):
 
 	def test_active_committee_is_latest_valid_submitted(self):
 		old = fx.committee(
-			fx.full_committee_members("Old"), valid_from=add_days(today(), -400), valid_to=fx.yesterday(), submit=True
+			fx.full_committee_members("Old"),
+			valid_from=add_days(today(), -400),
+			valid_to=fx.yesterday(),
+			submit=True,
 		)
-		current = fx.committee(fx.full_committee_members("Cur"), valid_from=add_days(today(), -10), submit=True)
+		current = fx.committee(
+			fx.full_committee_members("Cur"), valid_from=add_days(today(), -10), submit=True
+		)
 		fx.committee(fx.full_committee_members("Draft"), valid_from=today())  # Nháp không tính
 		active = structure.active_committee()
 		self.assertEqual(active.name, current.name)

@@ -50,7 +50,9 @@ def _warn_gap(doc, before):
 		return
 	label = _("doctor") if group == "doctor" else _("nurse/midwife/technician")
 	department_name = frappe.db.get_value("Department", department, "department_name") or department
-	message = _("{0} no longer has an active {1} in the infection control network.").format(department_name, label)
+	message = _("{0} no longer has an active {1} in the infection control network.").format(
+		department_name, label
+	)
 	notification.emit(
 		GAP_EVENT,
 		doc=doc,
@@ -79,7 +81,9 @@ def sync_user(user):
 		return
 	employees = frappe.get_all("Employee", filters={"user_id": user}, pluck="name")
 	rows = (
-		frappe.get_all(structure.NETWORK, filters={"employee": ["in", employees]}, fields=["department", "is_active"])
+		frappe.get_all(
+			structure.NETWORK, filters={"employee": ["in", employees]}, fields=["department", "is_active"]
+		)
 		if employees
 		else []
 	)

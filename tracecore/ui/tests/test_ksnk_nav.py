@@ -89,6 +89,30 @@ class TestKsnkNav(IsolatedTestCase):
 		item = next(i for g in nav["groups"] for i in g["items"] if i["slug"] == "chi-so")
 		self.assertEqual(item["badge"], 5)
 
+	def test_structure_screen_scr47_for_office_roles_with_missing_badge(self):
+		"""FEAT-057 AC-11: SCR-47 trong nhóm program; badge = số thành phần cơ cấu thiếu (hook thật)."""
+		screen = next(s for s in ksnk.SCREENS if s["slug"] == "co-cau")
+		self.assertEqual((screen["scr"], screen["uc"], screen["group"]), ("SCR-47", "UC-40", "program"))
+		self.assertEqual(screen["script"], "/assets/tracecore/js/ksnk/scr_47_co_cau.js")
+		self.assertIn(
+			"tracecore.infection_program.structure.badges", frappe.get_hooks("tracecore_ksnk_badges")
+		)
+		frappe.db.sql("update `tabDepartment` set tc_ic_network_required = 0")
+		settings = frappe.get_single("IC Program Settings")
+		settings.update({"bed_count": 420, "facility_level": "Specialized Level", "has_inpatient": 1})
+		settings.set("ic_department", None)
+		settings.set("surveillance_staff", [])
+		settings.save(ignore_permissions=True)
+		for code in ("R01", "R10", "R11", "R13"):
+			frappe.set_user(self.users[code])
+			nav = api.nav()
+			self.assertIn("co-cau", _slugs(nav), code)
+			self.assertEqual(nav["home"], "chi-so", code)
+		item = next(i for g in nav["groups"] for i in g["items"] if i["slug"] == "co-cau")
+		self.assertGreaterEqual(
+			item["badge"], 3
+		)  # Hội đồng (nếu chưa có), khoa KSNK, mạng lưới, giám sát viên
+
 	def test_departments_listed_for_filter(self):
 		department = factories.make_department("KSNK Nav Ward")
 		frappe.set_user(self.users["R11"])

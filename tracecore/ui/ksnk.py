@@ -35,6 +35,16 @@ SCREENS = [
 		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
 		"script": "/assets/tracecore/js/ksnk/scr_66_chi_so.js",
 	},
+	# FEAT-057: cơ cấu KSNK — cài đặt chương trình, Hội đồng, mạng lưới (UC-40; R02 sửa mạng lưới trên Desk form)
+	{
+		"slug": "co-cau",
+		"scr": "SCR-47",
+		"uc": "UC-40",
+		"label": "IC Structure",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_47_co_cau.js",
+	},
 ]
 
 

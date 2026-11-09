@@ -54,7 +54,9 @@ def settings(bed_count=420, has_inpatient=1, ratio=150, ic_department=None, staf
 	)
 	doc.set("surveillance_staff", [])
 	for employee_name, full_time, is_active in staff:
-		doc.append("surveillance_staff", {"employee": employee_name, "full_time": full_time, "is_active": is_active})
+		doc.append(
+			"surveillance_staff", {"employee": employee_name, "full_time": full_time, "is_active": is_active}
+		)
 	doc.save(ignore_permissions=True)
 	return doc
 

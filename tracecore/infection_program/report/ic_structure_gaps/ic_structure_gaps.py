@@ -28,7 +28,12 @@ def _columns():
 			"width": 160,
 		},
 		{"fieldname": "requirement", "label": _("Requirement"), "fieldtype": "Data", "width": 300},
-		{"fieldname": "current", "label": _("Current", context="IC Structure"), "fieldtype": "Data", "width": 180},
+		{
+			"fieldname": "current",
+			"label": _("Current", context="IC Structure"),
+			"fieldtype": "Data",
+			"width": 180,
+		},
 		{"fieldname": "issue", "label": _("Issue"), "fieldtype": "Data", "width": 260},
 		{"fieldname": "issue_code", "label": _("Issue Code"), "fieldtype": "Data", "hidden": 1},
 	]
@@ -69,8 +74,12 @@ def _rows(result):
 					"item": row["department_name"],
 					"department": row["department"],
 					"requirement": _("≥ 1 doctor + ≥ 1 nurse/midwife/technician"),
-					"current": _("{0} doctors, {1} nurses/midwives/technicians").format(row["doctors"], row["nurses"]),
-					"issue": _("Missing doctor") if group == "doctor" else _("Missing nurse/midwife/technician"),
+					"current": _("{0} doctors, {1} nurses/midwives/technicians").format(
+						row["doctors"], row["nurses"]
+					),
+					"issue": _("Missing doctor")
+					if group == "doctor"
+					else _("Missing nurse/midwife/technician"),
 					"issue_code": DEPARTMENT_CODES[group],
 				}
 			)

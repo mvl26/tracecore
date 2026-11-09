@@ -203,7 +203,9 @@ def _committee_component(scale, committee):
 		)
 	requirement = _("Required (≥ {0} beds)").format(COMMITTEE_MIN_BEDS)
 	if not committee:
-		return _component("committee", label, requirement, current, "missing", _("Missing", context="IC Structure"), 1)
+		return _component(
+			"committee", label, requirement, current, "missing", _("Missing", context="IC Structure"), 1
+		)
 	missing = missing_representatives(committee)
 	if missing:
 		return _component(
@@ -223,8 +225,12 @@ def _department_component(scale, settings):
 		return _na("ic_department", label)
 	if settings.ic_department:
 		name = frappe.db.get_value("Department", settings.ic_department, "department_name")
-		return _component("ic_department", label, _("Required"), name or settings.ic_department, "ok", _("Sufficient"))
-	return _component("ic_department", label, _("Required"), "—", "missing", _("Missing", context="IC Structure"), 1)
+		return _component(
+			"ic_department", label, _("Required"), name or settings.ic_department, "ok", _("Sufficient")
+		)
+	return _component(
+		"ic_department", label, _("Required"), "—", "missing", _("Missing", context="IC Structure"), 1
+	)
 
 
 def _network_component(scale, departments):
@@ -246,7 +252,13 @@ def _network_component(scale, departments):
 	current = _("{0}/{1} departments sufficient").format(len(departments) - missing, len(departments))
 	if missing:
 		return _component(
-			"network", label, requirement, current, "missing", _("Missing {0} departments").format(missing), missing
+			"network",
+			label,
+			requirement,
+			current,
+			"missing",
+			_("Missing {0} departments").format(missing),
+			missing,
 		)
 	return _component("network", label, requirement, current, "ok", _("Sufficient"))
 
@@ -265,7 +277,9 @@ def _surveillance_component(scale, settings):
 		ratio = cint(settings.surveillance_ratio_beds) or DEFAULT_RATIO
 		required = required_surveillance(settings.bed_count, ratio)
 		actual = sum(1 for row in active if cint(row.full_time))
-		requirement = _("≥ {0} people ({1} ÷ {2}, rounded up)").format(required, cint(settings.bed_count), ratio)
+		requirement = _("≥ {0} people ({1} ÷ {2}, rounded up)").format(
+			required, cint(settings.bed_count), ratio
+		)
 	current = _("{0} people").format(actual)
 	if actual < required:
 		return _component(
@@ -326,7 +340,9 @@ def _duplicates(values):
 def _check_settings(doc):
 	duplicated = _duplicates(row.employee for row in doc.surveillance_staff if row.employee)
 	if duplicated:
-		frappe.throw(_("Employee {0} is listed more than once in surveillance staff.").format(", ".join(duplicated)))
+		frappe.throw(
+			_("Employee {0} is listed more than once in surveillance staff.").format(", ".join(duplicated))
+		)
 
 
 def _check_committee(doc):
@@ -334,7 +350,9 @@ def _check_committee(doc):
 		frappe.throw(_("Valid To cannot be before Valid From."))
 	duplicated = _duplicates(row.employee for row in doc.members if row.employee)
 	if duplicated:
-		frappe.throw(_("Employee {0} is listed more than once in the committee.").format(", ".join(duplicated)))
+		frappe.throw(
+			_("Employee {0} is listed more than once in the committee.").format(", ".join(duplicated))
+		)
 	if cint(doc.docstatus) != 1:
 		return
 	problems = []
@@ -346,7 +364,9 @@ def _check_committee(doc):
 			problems.append(_("{0} {1} (only 1 allowed)").format(count, _(role)))
 	if problems:
 		frappe.throw(
-			_("The committee must have exactly one Chair and one Secretary: {0}.").format("; ".join(problems)),
+			_("The committee must have exactly one Chair and one Secretary: {0}.").format(
+				"; ".join(problems)
+			),
 			title=_("Committee not complete"),
 		)
 
@@ -356,9 +376,16 @@ def _check_network_member(doc):
 		return
 	if frappe.db.exists(
 		NETWORK,
-		{"employee": doc.employee, "department": doc.department, "is_active": 1, "name": ["!=", doc.name or ""]},
+		{
+			"employee": doc.employee,
+			"department": doc.department,
+			"is_active": 1,
+			"name": ["!=", doc.name or ""],
+		},
 	):
-		frappe.throw(_("{0} is already an active network member of {1}.").format(doc.employee, doc.department))
+		frappe.throw(
+			_("{0} is already an active network member of {1}.").format(doc.employee, doc.department)
+		)
 
 
 CHECKS = {SETTINGS: _check_settings, COMMITTEE: _check_committee, NETWORK: _check_network_member}

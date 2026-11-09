@@ -14,7 +14,9 @@ DOCTYPE = "IC Network Member"
 
 
 def _dept_permissions(user):
-	return set(frappe.get_all("User Permission", filters={"user": user, "allow": "Department"}, pluck="for_value"))
+	return set(
+		frappe.get_all("User Permission", filters={"user": user, "allow": "Department"}, pluck="for_value")
+	)
 
 
 class TestICNetworkMember(IsolatedTestCase):

@@ -41,7 +41,12 @@ class TestStructure(IsolatedTestCase):
 		fx.settings(
 			bed_count=420,
 			ic_department=self.ic_dept,
-			staff=[(self.staff[0], 1, 1), (self.staff[1], 1, 1), (self.staff[2], 1, 0), (self.staff[3], 0, 1)],
+			staff=[
+				(self.staff[0], 1, 1),
+				(self.staff[1], 1, 1),
+				(self.staff[2], 1, 0),
+				(self.staff[3], 0, 1),
+			],
 		)
 		result = structure.compute()
 		parts = _by_key(result)

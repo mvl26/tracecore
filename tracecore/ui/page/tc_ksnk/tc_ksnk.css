@@ -91,6 +91,8 @@
 .tc-ksnk .tc-ksnk-badge.is-pass { background: var(--tc-pass); }
 .tc-ksnk .tc-ksnk-badge.is-fail { background: var(--tc-fail); }
 .tc-ksnk .tc-ksnk-badge.is-neutral { background: var(--tc-neutral-fill); }
+/* FEAT-057 SCR-47: cảnh báo không chặn (Hội đồng thiếu khối đại diện) — chữ trắng trên cam dùng warn-fill */
+.tc-ksnk .tc-ksnk-badge.is-warn { background: var(--tc-warn-fill); }
 .tc-ksnk .tc-ksnk-note { margin: var(--tc-sp-2) 0 0; color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
 .tc-ksnk .tc-ksnk-state { display: flex; flex-direction: column; gap: var(--tc-sp-2); padding: var(--tc-sp-4); color: var(--tc-text-2); }
 .tc-ksnk .tc-ksnk-skeleton { display: block; height: var(--tc-sp-3-5); background: var(--tc-track); border-radius: var(--tc-r-xs); }
@@ -101,6 +103,8 @@
 	border-radius: 0 var(--tc-r-sm) var(--tc-r-sm) 0;
 }
 .tc-ksnk .tc-ksnk-alert.is-info { border-left-color: var(--tc-info); background: var(--tc-info-tint); color: var(--tc-text-heading); }
+.tc-ksnk .tc-ksnk-alert.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); margin-top: var(--tc-sp-2); }
+.tc-ksnk .tc-ksnk-alert.is-warn strong { color: var(--tc-warn-text); }
 @media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-body { flex-direction: column; }
 	.tc-ksnk .tc-ksnk-rail { flex: none; width: 100%; min-height: 0; border-right: 0; border-bottom: var(--tc-bw-hair) solid var(--tc-line); }
