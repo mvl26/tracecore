@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_plan",
+  "year",
+  "objectives",
+  "column_break_approval",
+  "total_budget_vnd",
+  "approved_by",
+  "approved_by_name",
+  "approved_on",
+  "section_indicators",
+  "indicators",
+  "section_activities",
+  "activities",
+  "section_summary",
+  "summary",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_plan",
+   "fieldtype": "Section Break",
+   "label": "Plan"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "label": "Year",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "objectives",
+   "fieldtype": "Text",
+   "label": "Objectives"
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_budget_vnd",
+   "fieldtype": "Currency",
+   "label": "Total Budget (VND)",
+   "precision": "0",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "approved_by_name",
+   "fieldtype": "Data",
+   "label": "Approved By Name",
+   "fetch_from": "approved_by.full_name",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_indicators",
+   "fieldtype": "Section Break",
+   "label": "Indicators and Targets"
+  },
+  {
+   "fieldname": "indicators",
+   "fieldtype": "Table",
+   "label": "Indicators",
+   "options": "IC Plan Indicator"
+  },
+  {
+   "fieldname": "section_activities",
+   "fieldtype": "Section Break",
+   "label": "Activities"
+  },
+  {
+   "fieldname": "activities",
+   "fieldtype": "Table",
+   "label": "Activities",
+   "options": "IC Plan Activity"
+  },
+  {
+   "fieldname": "section_summary",
+   "fieldtype": "Section Break",
+   "label": "Year-end Summary"
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "Text",
+   "label": "Summary Remarks",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "IC Annual Plan",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Annual Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:KH-{year}-{##}",
+ "naming_rule": "Expression",
+ "is_submittable": 1,
+ "title_field": "year",
+ "track_changes": 1,
+ "description": "Annual infection control plan; the committee chair (R13) submits it as approval."
+}

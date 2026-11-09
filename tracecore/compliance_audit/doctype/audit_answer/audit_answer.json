@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "section",
+  "question",
+  "answer_type",
+  "weight",
+  "is_critical",
+  "answer",
+  "value",
+  "photo",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Data",
+   "label": "Item Code",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "section",
+   "fieldtype": "Data",
+   "label": "Section",
+   "read_only": 1
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Small Text",
+   "label": "Question",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "answer_type",
+   "fieldtype": "Data",
+   "label": "Answer Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "label": "Weight",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "is_critical",
+   "fieldtype": "Check",
+   "label": "Critical",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "answer",
+   "fieldtype": "Select",
+   "label": "Answer",
+   "options": "\nPass\nFail\nN/A",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Data",
+   "label": "Value"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note",
+   "in_list_view": 1,
+   "columns": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "Audit Answer",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

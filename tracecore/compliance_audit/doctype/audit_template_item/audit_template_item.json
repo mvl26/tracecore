@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "section",
+  "question",
+  "answer_type",
+  "options",
+  "weight",
+  "is_critical",
+  "guidance"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Data",
+   "label": "Item Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "section",
+   "fieldtype": "Data",
+   "label": "Section",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Small Text",
+   "label": "Question",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "answer_type",
+   "fieldtype": "Select",
+   "label": "Answer Type",
+   "reqd": 1,
+   "default": "Pass/Fail",
+   "options": "Pass/Fail\nChoice\nNumber\nPhoto",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "options",
+   "fieldtype": "Small Text",
+   "label": "Choices",
+   "depends_on": "eval:doc.answer_type==\"Choice\"",
+   "description": "One choice per line."
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "label": "Weight",
+   "default": "1",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "is_critical",
+   "fieldtype": "Check",
+   "label": "Critical",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "guidance",
+   "fieldtype": "Small Text",
+   "label": "Guidance"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "Audit Template Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1
+}

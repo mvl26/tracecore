@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "audit_template",
+  "template_code",
+  "template_title",
+  "frequency",
+  "column_break_main",
+  "target_count",
+  "assignee",
+  "assignee_name",
+  "active",
+  "section_departments",
+  "departments",
+  "last_due_period",
+  "last_low_period"
+ ],
+ "fields": [
+  {
+   "fieldname": "audit_template",
+   "fieldtype": "Link",
+   "label": "Audit Template",
+   "options": "Audit Template",
+   "reqd": 1
+  },
+  {
+   "fieldname": "template_code",
+   "fieldtype": "Data",
+   "label": "Template Code",
+   "read_only": 1,
+   "fetch_from": "audit_template.template_code",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "template_title",
+   "fieldtype": "Data",
+   "label": "Template",
+   "read_only": 1,
+   "fetch_from": "audit_template.title"
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "reqd": 1,
+   "default": "Monthly",
+   "options": "Weekly\nMonthly\nQuarterly",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "target_count",
+   "fieldtype": "Int",
+   "label": "Target per Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Audits (or opportunities for hand hygiene) per department and period."
+  },
+  {
+   "fieldname": "assignee",
+   "fieldtype": "Link",
+   "label": "Assignee",
+   "options": "Employee",
+   "reqd": 1,
+   "ignore_user_permissions": 1
+  },
+  {
+   "fieldname": "assignee_name",
+   "fieldtype": "Data",
+   "label": "Assignee Name",
+   "read_only": 1,
+   "fetch_from": "assignee.employee_name"
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_departments",
+   "fieldtype": "Section Break",
+   "label": "Departments"
+  },
+  {
+   "fieldname": "departments",
+   "fieldtype": "Table",
+   "label": "Departments",
+   "options": "Audit Schedule Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "last_due_period",
+   "fieldtype": "Data",
+   "label": "Last Due Notice",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "last_low_period",
+   "fieldtype": "Data",
+   "label": "Last Coverage Reminder",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "Audit Schedule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Audit plan: template, departments, frequency and target per period.",
+ "autoname": "LGS-.YYYY.-.###",
+ "naming_rule": "Expression (old style)",
+ "title_field": "template_title",
+ "track_changes": 1
+}

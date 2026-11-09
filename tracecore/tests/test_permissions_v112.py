@@ -19,6 +19,28 @@ V112_ROWS = {
 		{"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
 	),
 }
+# FEAT-058 (plan D6, A-133; FR-M11-01.4): R13 ghi sổ kế hoạch năm, R01 lập và lập bản sửa đổi
+V112_ROWS.update(
+	{
+		"DT-ICPLAN": ("IC Annual Plan", {"R01": "RWA", "R10": "R", "R11": "R", "R13": "RS"}),
+		"DT-ICDOC": (
+			"IC Procedure Document",
+			{"R01": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
+		),
+		"DT-ICMEET": ("IC Committee Meeting", {"R01": "RWSA", "R10": "R", "R11": "R", "R13": "R"}),
+	}
+)
+# FEAT-060 plan D1 (engine phiếu giám sát M12)
+V112_ROWS.update(
+	{
+		"DT-AUDTPL": (
+			"Audit Template",
+			{"R01": "RWS", "R02": "R", "R08": "R", "R10": "R", "R11": "RW", "R12": "R", "R13": "R"},
+		),
+		"DT-AUDSCH": ("Audit Schedule", {"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R13": "R"}),
+		"DT-AUDSES": ("Audit Session", {"R01": "RWSA", "R02": "R", "R08": "RWS", "R11": "RWS", "R12": "RWS"}),
+	}
+)
 # FEAT-059 (plan D6, A-135): sinh viên thực tập
 V112_ROWS.update(
 	{

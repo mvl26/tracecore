@@ -8346,6 +8346,487 @@ Department Name,Tên khoa,IC Network Member
 Employee Name,Tên nhân viên,IC Committee Member
 Employee Name,Tên nhân viên,IC Network Member
 Employee Name,Tên nhân viên,IC Surveillance Staff
+Only an approved plan can be amended.,Chỉ lập bản sửa đổi cho kế hoạch đã duyệt.,
+An amendment must keep the year {0} of plan {1}.,Bản sửa đổi phải giữ năm {0} của kế hoạch {1}.,
+Plan year {0} is not valid.,Năm kế hoạch {0} không hợp lệ.,
+Year {0} already has plan {1}. Create an amendment (Amend) of that plan instead of a new plan.,Năm {0} đã có kế hoạch {1}. Lập bản sửa đổi (Amend) của kế hoạch đó thay vì tạo kế hoạch mới.,
+Indicator {0} is listed more than once.,Chỉ số {0} bị nhập trùng.,
+Plan {0} is approved and its content cannot be changed. Create an amendment (Amend) and have the committee chair approve it again.,"Kế hoạch {0} đã duyệt, không sửa được nội dung. Lập bản sửa đổi (Amend) và trình Chủ tịch Hội đồng duyệt lại.",
+Approved plan locked,Kế hoạch đã duyệt bị khóa,
+Only the chair of the infection control committee (R13) can approve the annual plan.,Chỉ Chủ tịch Hội đồng KSNK (R13) được duyệt kế hoạch năm.,
+Plan {0} is not a draft.,Kế hoạch {0} không phải bản Nháp.,
+You are not allowed to amend the annual plan.,Bạn không có quyền lập bản sửa đổi kế hoạch năm.,
+Progress is updated on the approved plan.,Tiến độ chỉ cập nhật trên kế hoạch đã duyệt.,
+Activity {0} is not in plan {1}.,Hoạt động {0} không thuộc kế hoạch {1}.,
+Only the responsible person or the head of infection control (R01) can update this activity.,Chỉ người chủ trì hoặc Trưởng khoa KSNK (R01) được cập nhật hoạt động này.,
+Activity status {0} is not valid.,Trạng thái hoạt động {0} không hợp lệ.,
+Overdue since {0}: {1},Quá hạn từ {0}: {1},
+Due on {0}: {1},Đến hạn ngày {0}: {1},
+Review due on {0}: {1} {2},Hạn rà soát {0}: {1} {2},
+Review due date cannot be before the issue date.,Hạn rà soát không được trước ngày ban hành.,
+Version must be 1 or higher.,Phiên bản phải từ 1 trở lên.,
+A document cannot supersede itself.,Văn bản không thể thay thế chính nó.,
+The new version must keep the document code {0} of {1}.,Phiên bản mới phải giữ mã văn bản {0} của {1}.,
+The new version must be higher than version {0} of {1}.,Phiên bản mới phải lớn hơn phiên bản {0} của {1}.,
+{0} is already superseded by {1}.,{0} đã được thay thế bởi {1}.,
+Employee {0} is listed more than once in attendees.,Nhân viên {0} bị nhập trùng trong danh sách dự họp.,
+No user account for {0}; the follow-up task is assigned to you.,{0} chưa có tài khoản; việc theo dõi được giao cho bạn.,
+You are not allowed to read committee meetings.,Bạn không có quyền xem biên bản họp Hội đồng.,
+{0}/{1} completed,{0}/{1} hoàn thành,
+Choose an annual plan.,Chọn kế hoạch năm.,
+No target direction,Chưa có hướng mục tiêu,
+Activities completed: {0}/{1}.,Hoạt động hoàn thành: {0}/{1}.,
+Provisional: the year is not closed or some months are not locked.,Tạm: năm chưa kết thúc hoặc còn tháng chưa khóa số liệu.,
+You are not allowed to open the annual plan screen.,Bạn không có quyền mở màn kế hoạch năm.,
+Plan not approved,Kế hoạch chưa được duyệt,
+"Open the plan, correct it and approve again.","Mở kế hoạch, sửa rồi duyệt lại.",
+Amendment not created,Chưa lập được bản sửa đổi,
+Finish or remove the pending draft of this year first.,Hoàn tất hoặc xử lý bản Nháp đang chờ của năm này trước.,
+Progress not saved,Chưa lưu tiến độ,
+"Check the status and evidence, then save again.",Kiểm tra trạng thái và minh chứng rồi lưu lại.,
+Plans and Documents,Kế hoạch & văn bản,
+No plan,Chưa có kế hoạch,
+"Draft, waiting for approval","Nháp, chờ duyệt",
+Infection control plan {0},Kế hoạch KSNK năm {0},
+Plan year,Năm kế hoạch,
+Annual plan,Kế hoạch năm,
+Internal documents,Văn bản nội bộ,
+Committee meetings,Họp Hội đồng,
+An approved plan is not edited directly; changes go through an amendment (Amend) approved again by the committee chair.,Kế hoạch đã ghi sổ không sửa trực tiếp; thay đổi bằng bản sửa đổi (Amend) và Chủ tịch Hội đồng duyệt lại.,
+Amendment waiting for approval,Bản sửa đổi chờ duyệt,
+Approval (submit),Phê duyệt (ghi sổ),
+Activity progress,Tiến độ hoạt động,
+No indicator in this plan.,Kế hoạch chưa có chỉ số.,
+Indicators and targets,Chỉ số và mục tiêu,
+{0} overdue,{0} quá hạn,
+No activity in this plan.,Kế hoạch chưa có hoạt động.,
+Review overdue,Quá hạn rà soát,
+{0} days left,Còn {0} ngày,
+No internal document yet.,Chưa có văn bản nội bộ.,
+Internal document register,Sổ văn bản nội bộ,
+Documents within 30 days of the review date move to Review needed and R01 is notified.,Văn bản còn 30 ngày tới hạn rà soát chuyển Cần rà soát và báo R01.,
+Add document,Thêm văn bản,
+Latest committee meeting,Họp Hội đồng gần nhất,
+Conclusion → follow-up task,Kết luận → việc theo dõi,
+No committee meeting recorded yet.,Chưa có biên bản họp Hội đồng.,
+Open conclusions from previous meetings,Kết luận chưa đóng của các lần họp trước,
+No open conclusion from previous meetings.,Không còn kết luận mở của các lần họp trước.,
+Create year-end summary,Tạo báo cáo tổng kết năm,
+Summary (Excel),Tổng kết (Excel),
+Approve (submit),Ghi sổ (duyệt),
+Create amendment (Amend),Lập bản sửa đổi (Amend),
+Create annual plan,Lập kế hoạch năm,
+Record meeting minutes,Ghi biên bản họp,
+Responsible people are reminded 7 days before the due date and when overdue.,Nhắc người chủ trì khi còn 7 ngày tới hạn hoặc quá hạn.,
+No annual plan for {0} yet.,Chưa có kế hoạch KSNK năm {0}.,
+Indicator,Chỉ số,IC Plan
+Indicator Name,Tên chỉ số,IC Plan
+Baseline,Nền,IC Plan
+Target,Mục tiêu,IC Plan
+Latest,Hiện tại,IC Plan
+Year Value,Giá trị năm,IC Plan
+Activity,Hoạt động,IC Plan
+Activities,Hoạt động,IC Plan
+Responsible,Người chủ trì,IC Plan
+Due Date,Hạn,IC Plan
+Budget,Ngân sách,IC Plan
+Evidence,Minh chứng,IC Plan
+Code,Mã,IC Plan
+Title,Tên,IC Plan
+Version,Phiên bản,IC Plan
+Document Code,Mã văn bản,IC Plan
+Review Due,Hạn rà soát,IC Plan
+Completed,Hoàn thành,IC Plan
+In Progress,Đang làm,IC Plan
+Planned,Chưa bắt đầu,IC Plan
+Done,Hoàn thành,IC Plan
+Overdue,Quá hạn,IC Plan
+Due soon,Sắp tới hạn,IC Plan
+Approved,Đã duyệt,IC Plan
+Annual Plan,Kế hoạch năm,IC Plan
+Annual Plan,Kế hoạch năm,
+Annual infection control plan {0},Kế hoạch KSNK năm {0},TC IC Annual Plan
+Infection control year-end summary {0},Báo cáo tổng kết KSNK năm {0},TC IC Annual Plan
+"Draft, not approved yet","Nháp, chưa duyệt",TC IC Annual Plan
+Provisional: the year is not closed or some months are not locked,Tạm: năm chưa kết thúc hoặc còn tháng chưa khóa số liệu,TC IC Annual Plan
+Cancelled,Đã hủy,TC IC Annual Plan
+Approved by,Người duyệt,TC IC Annual Plan
+Approved on,Ngày duyệt,TC IC Annual Plan
+Activity progress,Tiến độ hoạt động,TC IC Annual Plan
+Total budget (VND),Tổng ngân sách (VND),TC IC Annual Plan
+Objectives,Mục tiêu,TC IC Annual Plan
+Indicators and targets,Chỉ số và mục tiêu,TC IC Annual Plan
+Indicator results against targets,Kết quả chỉ số so với mục tiêu,TC IC Annual Plan
+Indicator,Chỉ số,TC IC Annual Plan
+Baseline,Nền,TC IC Annual Plan
+Target,Mục tiêu,TC IC Annual Plan
+Year value,Giá trị năm,TC IC Annual Plan
+Result,Kết quả,TC IC Annual Plan
+Activities,Hoạt động,TC IC Annual Plan
+Activity,Hoạt động,TC IC Annual Plan
+Measure group,Nhóm biện pháp,TC IC Annual Plan
+Responsible,Người chủ trì,TC IC Annual Plan
+Department,Khoa,TC IC Annual Plan
+Due date,Hạn,TC IC Annual Plan
+Budget (VND),Ngân sách (VND),TC IC Annual Plan
+Status,Trạng thái,TC IC Annual Plan
+Evidence,Minh chứng,TC IC Annual Plan
+Remarks of the head of infection control,Nhận xét của Trưởng khoa KSNK,TC IC Annual Plan
+Head of infection control (R01),Trưởng khoa KSNK (R01),TC IC Annual Plan
+Committee chair (R13),Chủ tịch Hội đồng KSNK (R13),TC IC Annual Plan
+TC IC Annual Plan,Kế hoạch KSNK năm,
+TC IC Annual Summary,Báo cáo tổng kết KSNK,
+IC Annual Summary,Tổng kết KSNK năm,
+IC Annual Plan,Kế hoạch KSNK năm,
+Annual infection control plan; the committee chair (R13) submits it as approval.,Kế hoạch KSNK năm; Chủ tịch Hội đồng (R13) ghi sổ là phê duyệt.,
+Plan,Kế hoạch,IC Annual Plan
+Year,Năm,IC Annual Plan
+Objectives,Mục tiêu,IC Annual Plan
+Total Budget (VND),Tổng ngân sách (VND),IC Annual Plan
+Approved By,Người duyệt,IC Annual Plan
+Approved By Name,Tên người duyệt,IC Annual Plan
+Approved On,Ngày duyệt,IC Annual Plan
+Indicators and Targets,Chỉ số và mục tiêu,IC Annual Plan
+Indicators,Chỉ số,IC Annual Plan
+Activities,Hoạt động,IC Annual Plan
+Year-end Summary,Tổng kết năm,IC Annual Plan
+Summary Remarks,Nhận xét tổng kết,IC Annual Plan
+Amended From,Sửa đổi từ,IC Annual Plan
+IC Plan Indicator,Chỉ số kế hoạch KSNK,
+Indicator of the annual infection control plan with baseline and target.,"Chỉ số của kế hoạch KSNK năm, có giá trị nền và mục tiêu.",
+Indicator,Chỉ số,IC Plan Indicator
+Indicator Name,Tên chỉ số,IC Plan Indicator
+Baseline,Nền,IC Plan Indicator
+Target,Mục tiêu,IC Plan Indicator
+IC Plan Activity,Hoạt động kế hoạch KSNK,
+Activity of the annual infection control plan; only progress fields change after approval.,Hoạt động của kế hoạch KSNK năm; sau khi duyệt chỉ sửa được tiến độ.,
+Activity,Hoạt động,IC Plan Activity
+Measure Group,Nhóm biện pháp,IC Plan Activity
+Responsible,Người chủ trì,IC Plan Activity
+Responsible Name,Tên người chủ trì,IC Plan Activity
+Department,Khoa,IC Plan Activity
+Department Name,Tên khoa,IC Plan Activity
+Due Date,Hạn,IC Plan Activity
+Budget (VND),Ngân sách (VND),IC Plan Activity
+Status,Trạng thái,IC Plan Activity
+Planned,Chưa bắt đầu,IC Plan Activity
+In Progress,Đang làm,IC Plan Activity
+Completed,Hoàn thành,IC Plan Activity
+Completed On,Ngày hoàn thành,IC Plan Activity
+Evidence,Minh chứng,IC Plan Activity
+Due Soon Reminder Sent,Đã nhắc sắp tới hạn,IC Plan Activity
+Overdue Reminder Sent,Đã nhắc quá hạn,IC Plan Activity
+IC Procedure Document,Văn bản nội bộ KSNK,
+Internal infection control regulation or procedure with version and review date.,"Quy định, quy trình nội bộ KSNK có phiên bản và hạn rà soát.",
+Document Code,Mã văn bản,IC Procedure Document
+Title,Tên văn bản,IC Procedure Document
+Document Type,Loại văn bản,IC Procedure Document
+Regulation,Quy định,IC Procedure Document
+Procedure,Quy trình,IC Procedure Document
+Guideline,Hướng dẫn,IC Procedure Document
+Communication Material,Tài liệu truyền thông,IC Procedure Document
+Version,Phiên bản,IC Procedure Document
+Measure Group,Nhóm biện pháp,IC Procedure Document
+Issued On,Ngày ban hành,IC Procedure Document
+Review Due,Hạn rà soát,IC Procedure Document
+Status,Trạng thái,IC Procedure Document
+Effective,Hiệu lực,IC Procedure Document
+Review Needed,Cần rà soát,IC Procedure Document
+Superseded,Thay thế,IC Procedure Document
+File,Tệp văn bản,IC Procedure Document
+Versions,Phiên bản,IC Procedure Document
+Supersedes,Thay cho bản,IC Procedure Document
+Superseded By,Bị thay bởi,IC Procedure Document
+Effective,Hiệu lực,
+Review Needed,Cần rà soát,
+IC Committee Meeting,Biên bản họp Hội đồng KSNK,
+Minutes of an infection control committee meeting; each conclusion becomes a follow-up task.,Biên bản họp Hội đồng KSNK; mỗi kết luận thành một việc theo dõi.,
+Meeting,Cuộc họp,IC Committee Meeting
+Meeting Date,Ngày họp,IC Committee Meeting
+IC Committee,Hội đồng KSNK,IC Committee Meeting
+Agenda,Chương trình họp,IC Committee Meeting
+Open Conclusions from Previous Meetings,Kết luận chưa đóng của các lần họp trước,IC Committee Meeting
+Open Conclusions,Kết luận chưa đóng,IC Committee Meeting
+Attendees,Người dự họp,IC Committee Meeting
+Minutes,Biên bản,IC Committee Meeting
+Minutes File,Tệp biên bản,IC Committee Meeting
+Conclusions,Kết luận,IC Committee Meeting
+Amended From,Sửa đổi từ,IC Committee Meeting
+IC Meeting Attendee,Người dự họp Hội đồng KSNK,
+Attendee of an infection control committee meeting.,Người dự họp Hội đồng KSNK.,
+Employee,Nhân viên,IC Meeting Attendee
+Employee Name,Tên nhân viên,IC Meeting Attendee
+Role in Meeting,Vai trò trong cuộc họp,IC Meeting Attendee
+IC Resolution,Kết luận họp Hội đồng KSNK,
+Conclusion of a committee meeting; each one becomes a follow-up task (ToDo).,Kết luận của cuộc họp Hội đồng; mỗi kết luận thành một việc theo dõi (ToDo).,
+Content,Nội dung,IC Resolution
+Responsible,Người chủ trì,IC Resolution
+Responsible Name,Tên người chủ trì,IC Resolution
+Due Date,Hạn,IC Resolution
+Status,Trạng thái,IC Resolution
+Open,Đang mở,IC Resolution
+Done,Xong,IC Resolution
+Follow-up Task,Việc theo dõi,IC Resolution
+Due Soon Reminder Sent,Đã nhắc sắp tới hạn,IC Resolution
+Overdue Reminder Sent,Đã nhắc quá hạn,IC Resolution
+Annual plan activity due soon,Hoạt động kế hoạch năm sắp tới hạn,
+Annual plan activity overdue,Hoạt động kế hoạch năm quá hạn,
+Committee conclusion due soon,Kết luận họp Hội đồng sắp tới hạn,
+Committee conclusion overdue,Kết luận họp Hội đồng quá hạn,
+Internal document review due,Văn bản nội bộ tới hạn rà soát,
+Baseline,Nền,
+Document Code,Mã văn bản,
+Evidence,Minh chứng,
+Indicator Name,Tên chỉ số,
+Review Due,Hạn rà soát,
+Year Value,Giá trị năm,
+Only R01 or R11 can open or dismiss a non-conformance from an audit.,Chỉ R01 hoặc R11 được mở hoặc bỏ qua sự không phù hợp từ phiếu giám sát.,
+No non-conformance to open,Không có sự không phù hợp để mở,
+Audit {0} has no failed critical item waiting for a decision.,Phiếu {0} không có mục trọng yếu không đạt đang chờ quyết định.,
+Open a non-conformance from the incident screen if it is still needed.,"Nếu vẫn cần, mở sự không phù hợp từ màn sự cố.",
+"Audit {0} ({1}, {2}): critical items failed: {3}","Phiếu {0} ({1}, {2}): mục trọng yếu không đạt: {3}",
+No module handles non-conformances from audits.,Chưa có phân hệ xử lý sự không phù hợp từ phiếu giám sát.,
+No reason was given for not opening a non-conformance.,Chưa nhập lý do không mở sự không phù hợp.,
+Enter why no non-conformance is needed.,Nhập lý do không cần mở sự không phù hợp.,
+Non-conformance already opened,Đã mở sự không phù hợp,
+Audit {0} already has incident {1}.,Phiếu {0} đã có sự cố {1}.,
+Follow the incident until it is closed.,Theo dõi sự cố đến khi đóng.,
+"{0} % (n = {1}, insufficient sample)","{0} % (n = {1}, chưa đủ cỡ mẫu)",
+{0} % (n = {1}),{0} % (n = {1}),
+Template {0} is not approved. Only approved templates can be scheduled.,Mẫu {0} chưa được duyệt. Chỉ lập lịch với mẫu đã duyệt.,
+Target per department must be greater than 0.,Chỉ tiêu mỗi khoa phải lớn hơn 0.,
+Department {0} is listed twice.,Khoa {0} bị nhập hai lần.,
+Add at least one department.,Thêm ít nhất một khoa.,
+Audits due: {0} ({1}),Việc giám sát đến kỳ: {0} ({1}),
+Target {0} per department for {1} departments in period {2}.,Chỉ tiêu {0} mỗi khoa cho {1} khoa trong kỳ {2}.,
+Audit coverage below target: {0} ({1}),Độ bao phủ giám sát dưới chỉ tiêu: {0} ({1}),
+Ask R01 or R10 for access.,Đề nghị R01 hoặc R10 cấp quyền.,
+"Correct the data, then save again.",Sửa dữ liệu rồi lưu lại.,
+Version {0} is approved and locked. Create version V{1} to change it; audits already filled keep version {0}.,Phiên bản {0} đã duyệt và bị khóa. Tạo phiên bản V{1} để sửa; phiếu đã ghi giữ phiên bản {0}.,
+Template version not in use,Phiên bản mẫu không còn dùng,
+Template {0} is not the approved version in effect on {1}.,Mẫu {0} không phải phiên bản đã duyệt có hiệu lực ngày {1}.,
+Open the audit again to use the current approved version{0}.,Mở lại phiếu để dùng phiên bản đã duyệt hiện hành{0}.,
+Item not in template,Mục không có trong mẫu,
+Items {0} are not in template {1}.,Mục {0} không có trong mẫu {1}.,
+Reload the audit form and answer again.,Tải lại phiếu và trả lời lại.,
+Audit items come from template version {0} and cannot be changed.,"Mục của phiếu chép từ phiên bản mẫu {0}, không sửa được.",
+Cannot audit yourself,Không được tự đánh giá mình,
+The observed person is the observer.,Người được quan sát trùng người giám sát.,
+"Choose another observed person, or ask another auditor to observe you.","Chọn người được quan sát khác, hoặc nhờ giám sát viên khác quan sát bạn.",
+Items not answered,Còn mục chưa chấm,
+Items {0} have no answer.,Mục {0} chưa có câu trả lời.,
+"Choose Pass, Fail or N/A for every item, then post the audit.","Chọn Đạt, Không đạt hoặc Không áp dụng cho mọi mục rồi ghi sổ phiếu.",
+Note required for failed items,Mục không đạt cần ghi chú,
+Failed items {0} have no note or photo.,Mục không đạt {0} chưa có ghi chú hoặc ảnh.,
+Add a short note or a photo to each failed item.,Thêm ghi chú ngắn hoặc ảnh cho từng mục không đạt.,
+not scored,không tính điểm,
+No result,Chưa có kết quả,
+"Score {0}, result {1}.","Điểm {0}, kết quả {1}.",
+Failed items: {0}.,Mục không đạt: {0}.,
+Opportunities observed: {0}.,Số cơ hội quan sát: {0}.,
+Audit result {0}: {1},Kết quả phiếu giám sát {0}: {1},
+Critical item failed in audit {0} ({1}),Mục trọng yếu không đạt trong phiếu {0} ({1}),
+Open a non-conformance or dismiss it with a reason.,Mở sự không phù hợp hoặc bỏ qua kèm lý do.,
+"Template code {0} is invalid. Use Latin letters without accents, digits and dashes.","Mã mẫu {0} không hợp lệ. Dùng chữ Latin không dấu, chữ số và dấu gạch ngang.",
+Template {0} already has a draft version {1}. Open and edit that draft instead.,Mẫu {0} đã có bản Nháp {1}. Mở và sửa bản Nháp đó.,
+Pass threshold must be between 0 and 100 %.,Ngưỡng đạt phải từ 0 đến 100 %.,
+Add at least one item to the template.,Thêm ít nhất một mục vào mẫu.,
+Item code {0} is used twice in the template.,Mã mục {0} bị dùng hai lần trong mẫu.,
+Row {0}: weight cannot be negative.,Dòng {0}: trọng số không được âm.,
+Scoring method {0} needs at least one Pass/Fail item.,Cách chấm {0} cần ít nhất một mục kiểu Đạt/Không đạt.,
+Approved template is locked,Mẫu đã duyệt bị khóa,
+Bundle template {0} has no critical item.,Mẫu gói dự phòng {0} không có mục trọng yếu.,
+Only an approved version can be revised. Edit draft {0} directly.,Chỉ tạo phiên bản mới từ bản đã duyệt. Sửa trực tiếp bản Nháp {0}.,
+Version {0} is no longer current. Revise version {1}.,Phiên bản {0} không còn hiện hành. Tạo phiên bản mới từ {1}.,
+Audits,Số phiếu,
+Sample (n),Cỡ mẫu (n),
+Pass Rate,Tỷ lệ đạt,
+Average Score,Điểm trung bình,
+Critical Failed,Trọng yếu không đạt,
+Template Title,Tên mẫu,Audit Session
+From Date must be before To Date.,Từ ngày phải trước Đến ngày.,
+Audit {0} has a failed critical item.,Phiếu {0} có mục trọng yếu không đạt.,
+Fail — critical item,Không đạt — mục trọng yếu,
+Not scored yet,Chưa tính điểm,
+Choose a template and a department to start an audit,Chọn mẫu và khoa để bắt đầu phiếu giám sát,
+Nothing to scan on this screen,Màn này không có mã để quét,
+Audits are filled by tapping the buttons below.,Phiếu ghi bằng cách chạm các nút bên dưới.,
+Choose a template and a department.,Chọn mẫu và khoa.,
+Template and department required,Cần chọn mẫu và khoa,
+The audit has no template or no department.,Phiếu chưa có mẫu hoặc chưa có khoa.,
+"Choose the template and the department, then post again.",Chọn mẫu và khoa rồi ghi sổ lại.,
+{0} item(s) have no answer.,{0} mục chưa có câu trả lời.,
+Failed items {0} have no note.,Mục không đạt {0} chưa có ghi chú.,
+Add a short note to each failed item.,Thêm ghi chú ngắn cho từng mục không đạt.,
+Could not keep the audit on this device,Không lưu được phiếu trên máy,
+"Post the audit when the connection returns, or call R10.","Ghi sổ phiếu khi có mạng lại, hoặc gọi R10.",
+Audit kept on this device,Phiếu đã lưu trên máy,
+It is posted when the connection returns; the result is calculated by the server.,Phiếu được ghi sổ khi có mạng lại; kết quả do máy chủ tính.,
+Audit {0} posted: {1},Đã ghi sổ phiếu {0}: {1},
+Feedback was sent to the department.,Đã gửi phản hồi cho khoa.,
+Score {0} %. Feedback was sent to the department.,Điểm {0} %. Đã gửi phản hồi cho khoa.,
+Start the next audit.,Bắt đầu phiếu tiếp theo.,
+Offline — audits are kept on this device and posted when the connection returns.,Ngoại tuyến — phiếu được lưu trên máy và ghi sổ khi có mạng lại.,
+No template was loaded on this device before the connection was lost.,Máy chưa tải mẫu phiếu nào trước khi mất mạng.,
+No approved audit template. Ask R01 to approve one.,Chưa có mẫu phiếu đã duyệt. Đề nghị R01 duyệt mẫu.,
+Audit template,Mẫu phiếu,
+Choose the department first.,Chọn khoa trước.,
+N/A,K. áp dụng,Audit Answer
+Note (required),Ghi chú (bắt buộc),
+all-or-none,tất cả-hoặc-không,
+weighted score,điểm theo trọng số,
+Observer: {0},Người giám sát: {0},
+Unannounced,Không báo trước,
+Announced,Công khai,
+Observed employee ID (optional),Mã nhân viên được quan sát (không bắt buộc),
+Result ({0}),Kết quả ({0}),
+Posting...,Đang ghi sổ...,
+Post audit,Ghi sổ phiếu,
+Not yet effective,Chưa hiệu lực,
+{0} % ({1}),{0} % ({1}),
+The server did not accept the request.,Máy chủ không nhận yêu cầu.,
+"Retry, or call R10 if it happens again.","Thử lại, hoặc gọi R10 nếu còn lặp lại.",
+No template yet.,Chưa có mẫu phiếu.,
+Version {0} is approved and locked; any change needs a new version. Audits already filled keep their copy of {0}.,{0} đã duyệt nên bị khóa; mọi sửa đổi tạo phiên bản mới. Phiếu đã ghi theo {0} giữ nguyên bản chụp.,
+New template,Mẫu mới,
+Template Code,Mã mẫu,
+Audit Type,Loại phiếu,
+Scoring Method,Cách chấm,
+Minimum sample per department and month,Cỡ mẫu tối thiểu / khoa / tháng,
+Pass Threshold,Ngưỡng đạt,
+Legal Reference,Căn cứ,
+Question,Câu hỏi,
+Answer Type,Kiểu trả lời,
+Weight,Trọng số,Audit Answer
+Weight,Trọng số,Audit Template Item
++ Add item,+ Thêm mục,
+No active audit schedule.,Chưa có lịch giám sát đang hiệu lực.,
+Assignee,Người phụ trách,
+Coverage,Độ bao phủ,
+New audit schedule,Lịch giám sát mới,
+Target per Department,Chỉ tiêu mỗi khoa,
+Employee ID,Mã nhân viên,Audit Schedule
+Save schedule,Lưu lịch,
+Approve template {0} (post),Duyệt mẫu {0} (ghi sổ),
+Save draft,Lưu nháp,
+Create version V{0},Tạo phiên bản V{0},
+Create audit schedule,Tạo lịch giám sát,
+Only R01 approves templates; a failed critical item fails the audit.,Chỉ R01 duyệt mẫu; mục trọng yếu không đạt làm phiếu Không đạt.,
+Templates,Mẫu phiếu,Audit Template
+Starter templates come with the app as drafts; app upgrades never overwrite templates edited by the hospital.,Mẫu khởi tạo đi kèm app ở trạng thái Nháp; nâng cấp app không ghi đè bản bệnh viện đã sửa.,
+Audit schedule for period {0},Lịch giám sát kỳ {0},
+"Insufficient sample (n = {0}, needs {1})","Chưa đủ mẫu (n = {0}, cần {1})",
+n = {0},n = {0},
+Not scored,Không tính điểm,
+"Pass rate, whole hospital",Tỷ lệ đạt toàn viện,
+{0}/{1} audits passed,{0}/{1} phiếu đạt,
+Audits posted,Phiếu đã ghi sổ,
+Audits with a failed critical item,Phiếu có mục trọng yếu không đạt,
+Non-conformance suggested,Đã đề nghị mở NC,
+Feedback sent to departments,Phản hồi gửi khoa,
+No posted audit in this period.,Kỳ này chưa có phiếu đã ghi sổ.,
+"Pass rate = audits passed / audits with a result, from posted audits only. A failed critical item fails the audit whatever the score.","Tỷ lệ đạt = số phiếu đạt / số phiếu có kết quả, chỉ tính phiếu đã ghi sổ. Mục trọng yếu không đạt làm phiếu Không đạt bất kể điểm.",
+No audit to show.,Chưa có phiếu để hiển thị.,
+Reason for not opening a non-conformance,Lý do không mở sự không phù hợp,
+critical items failed: {0},mục trọng yếu không đạt: {0},
+Open NC,Mở NC,
+Dismiss (with reason),Bỏ qua (ghi lý do),
+Suggested non-conformances,Đề nghị mở NC,
+No audit waits for a decision.,Không có phiếu chờ quyết định.,
+Feedback (score and failed items) is sent to the head and network members of the department on posting.,Phản hồi (điểm và mục không đạt) gửi trưởng khoa và mạng lưới viên của khoa khi ghi sổ phiếu.,
+Observed Profession,Nghề nghiệp người được quan sát,
+Export Excel / PDF,Xuất Excel / PDF,
+Retry.,Thử lại.,
+Compliance by template and department,Tuân thủ theo mẫu và khoa,
+Recent audits,Phiếu gần đây,
+Non-conformance {0} opened,Đã mở sự không phù hợp {0},
+Audit Answer,Câu trả lời phiếu giám sát,
+Answer,Trả lời,
+Audit Session,Phiếu giám sát,
+Audit form filled from an approved template version (snapshot of the items).,Phiếu giám sát ghi theo phiên bản mẫu đã duyệt (bản chụp các mục).,
+Audit Template,Mẫu phiếu giám sát,
+Audit Date,Ngày giám sát,
+Mode,Chế độ,
+Outsourced service or catering supplier.,Đơn vị thuê ngoài hoặc đơn vị suất ăn.,
+People,Người,
+Observer,Người giám sát,
+Orderly,Hộ lý,
+Observed Employee,Nhân viên được quan sát,
+Must not be the observer.,Không được trùng người giám sát.,
+Critical Item Failed,Có mục trọng yếu không đạt,
+Department Sample (month),Cỡ mẫu khoa (tháng),
+Insufficient Sample,Chưa đủ mẫu,
+Non-conformance,Sự không phù hợp,
+Opened,Đã mở,Audit Session
+Dismissed,Đã bỏ qua,
+Dismiss Reason,Lý do bỏ qua,
+Answers,Câu trả lời,
+Hand Hygiene Opportunities,Cơ hội vệ sinh tay,
+Opportunities,Cơ hội,
+Client ID,Mã máy khách,Audit Session
+Client ID,Mã máy khách,Hand Hygiene Opportunity
+Audit Schedule Department,Khoa của lịch giám sát,
+Hand Hygiene Opportunity,Cơ hội vệ sinh tay,
+Profession,Nghề nghiệp,
+Moment,Thời điểm,
+Hand Rub,Chà tay cồn,
+Hand Wash,Rửa tay xà phòng,
+Missed,Không thực hiện,Hand Hygiene Opportunity
+Correct Technique,Đúng kỹ thuật,
+Gloves Instead of Hand Hygiene,Mang găng thay vệ sinh tay,
+Audit Template Item,Mục mẫu phiếu giám sát,
+Pass/Fail,Đạt / Không đạt / Không áp dụng,
+Choice,Lựa chọn,
+Choices,Các lựa chọn,
+One choice per line.,Mỗi dòng một lựa chọn.,
+Guidance,Hướng dẫn,
+Audit Schedule,Lịch giám sát,
+"Audit plan: template, departments, frequency and target per period.","Lịch giám sát: mẫu, khoa, tần suất và chỉ tiêu mỗi kỳ.",
+Audits (or opportunities for hand hygiene) per department and period.,Số phiếu (hoặc số cơ hội với vệ sinh tay) mỗi khoa mỗi kỳ.,
+Last Due Notice,Lần giao việc gần nhất,
+Last Coverage Reminder,Lần nhắc bao phủ gần nhất,
+Versioned audit form. Approving (submit) locks the version; changes need a new version.,Mẫu phiếu giám sát có phiên bản. Duyệt (ghi sổ) khóa phiên bản; sửa phải tạo phiên bản mới.,
+"Letters, digits and dashes. Versions of one form share the code.","Chữ, số và dấu gạch ngang. Các phiên bản của một mẫu dùng chung mã.",
+Standard Precautions - PPE,Phòng ngừa chuẩn – PPE,
+Prevention Bundle,Gói dự phòng,
+Infrastructure,Cơ sở hạ tầng,
+Outsourced Service,Đơn vị thuê ngoài,
+Quality Self-Assessment,Tự đánh giá chất lượng,
+By Opportunity,Theo cơ hội,
+All or None,Tất cả-hoặc-không,
+Weighted Score,Điểm %,
+Bundle,Gói,
+Per department and month. Smaller samples are marked Insufficient sample.,Theo khoa và tháng. Cỡ mẫu nhỏ hơn được gắn nhãn Chưa đủ mẫu.,
+Weighted score needed to pass. Empty = pass unless a critical item fails.,Điểm theo trọng số cần để Đạt. Để trống = Đạt nếu không có mục trọng yếu không đạt.,
+Superseded By,Thay thế bởi,
+Compliance by Department,Tuân thủ theo khoa,
+Audit Templates and Schedules,Mẫu phiếu & lịch,
+Compliance Report,Báo cáo tuân thủ,
+Compliance Nonconformity,Không tuân thủ KSNK,
+Compliance,Tuân thủ,Incident CAPA
+Audits due for the period,Việc giám sát đến kỳ,
+Audit coverage below target,Độ bao phủ giám sát dưới chỉ tiêu,
+Audit result feedback to the department,Phản hồi kết quả giám sát cho khoa,
+Critical audit item failed,Mục trọng yếu của phiếu giám sát không đạt,
+Compliance audit,Phiếu giám sát,
+Observer Name,Tên người giám sát,Audit Session
+Assignee Name,Tên người phụ trách,Audit Schedule
+Department Name,Tên khoa,Audit Session
+Department Name,Tên khoa,Audit Schedule Department
+Student,Sinh viên,
+1,1 - Trước khi tiếp xúc người bệnh,Hand Hygiene Opportunity
+2,2 - Trước khi làm thủ thuật vô khuẩn,Hand Hygiene Opportunity
+3,3 - Sau khi tiếp xúc dịch cơ thể,Hand Hygiene Opportunity
+4,4 - Sau khi tiếp xúc người bệnh,Hand Hygiene Opportunity
+5,5 - Sau khi tiếp xúc môi trường quanh người bệnh,Hand Hygiene Opportunity
+CAUTI,CAUTI,Audit Template
+CLABSI,CLABSI,Audit Template
+SSI,SSI,Audit Template
+VAP,VAP,Audit Template
+AUDIT,Giám sát tuân thủ,Help Article
+"Choose the audit template and the department, then the person or role observed.","Chọn mẫu phiếu và khoa, rồi người hoặc vai trò được quan sát.",
+Answer every item; a Fail answer needs a note.,Trả lời đủ các mục; mục Không đạt phải có ghi chú.,
+Submit the audit; without network it is saved and sent when the connection returns.,Gửi phiếu; khi mất mạng phiếu được lưu và tự gửi khi có mạng lại.,
 Enter a valid year.,Nhập năm hợp lệ.,
 No target,Chưa có mục tiêu,
 Met,Đạt,IC Training
