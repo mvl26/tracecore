@@ -11,6 +11,7 @@
   "has_inpatient",
   "surveillance_ratio_beds",
   "doc_review_months",
+  "ast_min_isolates",
   "section_structure",
   "ic_department",
   "surveillance_staff",
@@ -61,6 +62,13 @@
    "label": "Procedure Review Cycle (Months)"
   },
   {
+   "default": "30",
+   "description": "An organism and antibiotic pair tested on fewer first isolates is flagged as a small sample in the quarterly resistance report.",
+   "fieldname": "ast_min_isolates",
+   "fieldtype": "Int",
+   "label": "Minimum Isolates per Antibiogram Pair"
+  },
+  {
    "fieldname": "section_structure",
    "fieldtype": "Section Break",
    "label": "Infection Control Unit and Surveillance Staff"
@@ -97,7 +105,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 11:00:00.000000",
+ "modified": "2026-11-09 15:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

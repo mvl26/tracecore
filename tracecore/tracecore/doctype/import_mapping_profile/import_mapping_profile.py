@@ -21,7 +21,9 @@ class ImportMappingProfile(Document):
 		for row in self.columns:
 			row.source_column = " ".join((row.source_column or "").split())
 			row.target_field = (row.target_field or "").strip()
-			if row.target_field not in fields:
+			# FEAT-067 (A-136 Q6): loại import nhận cột ngoài khai báo (vd `ab:<MÃ>` kháng sinh dạng rộng WHONET)
+			extra = bool(kind.extra_columns and kind.extra_columns(row.target_field))
+			if row.target_field not in fields and not extra:
 				frappe.throw(
 					_("Row {0}: {1} is not a column of import type {2}.").format(
 						row.idx, row.target_field, _(kind.label)

@@ -41,6 +41,15 @@ V112_ROWS.update(
 		"DT-AUDSES": ("Audit Session", {"R01": "RWSA", "R02": "R", "R08": "RWS", "R11": "RWS", "R12": "RWS"}),
 	}
 )
+# FEAT-067 (A-136, FR-M14-01.3): R13 không đọc chủng có mã người bệnh (ADR-010); Import Batch thêm R11 đọc
+V112_ROWS.update(
+	{
+		"DT-ORG": ("Organism", {"R01": "RW", "R10": "RW", "R11": "R", "R13": "R"}),
+		"DT-MICISO": ("Microbiology Isolate", {"R01": "R", "R11": "RW"}),
+		"DT-MDRO": ("MDRO Rule", {"R01": "RWS", "R11": "R", "R13": "R"}),
+		"DT-IMPBATCH": ("Import Batch", {"R02": "R", "R10": "R", "R11": "R"}),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):

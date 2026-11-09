@@ -23,8 +23,9 @@ class TestPermissionMatrix(FrappeTestCase):
 		# + IC Committee, IC Network Member (FEAT-057)
 		# + IC Annual Plan, IC Procedure Document, IC Committee Meeting (FEAT-058, A-133)
 		# + Audit Template, Audit Schedule, Audit Session (FEAT-060, A-113/A-134)
-		self.assertEqual(len(rows), 65)
-		self.assertEqual(len({row.code for row in rows}), 65)
+		# + Organism, Microbiology Isolate, MDRO Rule, Import Batch (FEAT-067, A-136)
+		self.assertEqual(len(rows), 69)
+		self.assertEqual(len({row.code for row in rows}), 69)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

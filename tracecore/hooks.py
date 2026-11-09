@@ -216,6 +216,8 @@ after_migrate = [
 	"tracecore.ui.feedback.ensure_issue_type",
 	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
 	"tracecore.setup.error_codes.ensure_error_codes",
+	# FEAT-067 (A-136): danh mục Organism tối thiểu + quy tắc đa kháng Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.microbiology.seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -414,6 +416,11 @@ doc_events = {
 	"Audit Template": dict(_AUDIT_EVENTS),
 	"Audit Schedule": dict(_AUDIT_EVENTS),
 	"Audit Session": dict(_AUDIT_EVENTS),
+	# FEAT-067 (A-136): vi sinh — danh mục loài, chủng phân lập (mã BN Password không vào Audit), quy tắc đa kháng có
+	# phiên bản (ghi sổ = R01 duyệt; superseded_by đổi sau ghi sổ); không xóa
+	"Organism": dict(_AUDIT_EVENTS),
+	"Microbiology Isolate": dict(_AUDIT_EVENTS),
+	"MDRO Rule": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -604,7 +611,11 @@ tracecore_ksnk_badges = [
 	# FEAT-058: hoạt động kế hoạch quá hạn + văn bản cần rà soát (SCR-48)
 	"tracecore.infection_program.annual_plan.badges",
 	"tracecore.compliance_audit.nc.badges",  # FEAT-060: phiếu chờ quyết định NC
+	# FEAT-067: chủng đa kháng có thông báo chưa đọc của người dùng (SCR-59)
+	"tracecore.microbiology.alerts.badges",
 ]
+# FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
+tracecore_mdro_detected = []
 # FEAT-060 (A-134 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
 # department, description}, trả tên Incident
 tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
@@ -615,6 +626,8 @@ tracecore_import_kinds = [
 	"tracecore.equipment.imports.import_kinds",
 	"tracecore.inventory.imports.import_kinds",
 	"tracecore.par.imports.import_kinds",
+	# FEAT-067: kết quả nuôi cấy và kháng sinh đồ (WHONET/CSV) qua Import Mapping Profile
+	"tracecore.microbiology.imports.import_kinds",
 ]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]

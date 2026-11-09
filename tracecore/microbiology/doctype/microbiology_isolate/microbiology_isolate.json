@@ -1,0 +1,271 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lab_sample_id",
+  "organism",
+  "organism_name",
+  "organism_group",
+  "specimen_type",
+  "collected_on",
+  "column_break_patient",
+  "patient_code",
+  "patient_code_masked",
+  "patient_code_hash",
+  "birth_year",
+  "sex",
+  "department",
+  "department_name",
+  "section_susceptibility",
+  "susceptibility",
+  "section_mdro",
+  "is_mdro",
+  "mdro_flags",
+  "is_first_isolate",
+  "period_key",
+  "column_break_mdro",
+  "mdro_rule_versions",
+  "section_source",
+  "source",
+  "import_batch",
+  "column_break_source",
+  "confirmed_by",
+  "confirmed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "lab_sample_id",
+   "fieldtype": "Data",
+   "label": "Lab Sample ID",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "organism",
+   "fieldtype": "Link",
+   "label": "Organism",
+   "options": "Organism",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "organism_name",
+   "fieldtype": "Data",
+   "label": "Organism Name",
+   "fetch_from": "organism.organism_name",
+   "read_only": 1,
+   "translatable": 0,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "organism_group",
+   "fieldtype": "Data",
+   "label": "Organism Group",
+   "fetch_from": "organism.organism_group",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "specimen_type",
+   "fieldtype": "Data",
+   "label": "Specimen Type",
+   "translatable": 0
+  },
+  {
+   "fieldname": "collected_on",
+   "fieldtype": "Date",
+   "label": "Collected On",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_patient",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient_code",
+   "fieldtype": "Password",
+   "label": "Patient Code",
+   "reqd": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Patient Code (masked)",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "patient_code_hash",
+   "fieldtype": "Data",
+   "label": "Patient Code Hash",
+   "hidden": 1,
+   "read_only": 1,
+   "no_copy": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "birth_year",
+   "fieldtype": "Int",
+   "label": "Birth Year"
+  },
+  {
+   "fieldname": "sex",
+   "fieldtype": "Select",
+   "label": "Sex",
+   "options": "\nMale\nFemale\nOther"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "section_susceptibility",
+   "fieldtype": "Section Break",
+   "label": "Antibiogram"
+  },
+  {
+   "fieldname": "susceptibility",
+   "fieldtype": "Table",
+   "label": "Susceptibility",
+   "options": "Isolate Susceptibility"
+  },
+  {
+   "fieldname": "section_mdro",
+   "fieldtype": "Section Break",
+   "label": "Multidrug Resistance"
+  },
+  {
+   "fieldname": "is_mdro",
+   "fieldtype": "Check",
+   "label": "Multidrug Resistant",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "mdro_flags",
+   "fieldtype": "Data",
+   "label": "MDRO Labels",
+   "read_only": 1,
+   "in_list_view": 1,
+   "no_copy": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "is_first_isolate",
+   "fieldtype": "Check",
+   "label": "First Isolate",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "period_key",
+   "fieldtype": "Data",
+   "label": "Quarter",
+   "read_only": 1,
+   "search_index": 1,
+   "no_copy": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "column_break_mdro",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mdro_rule_versions",
+   "fieldtype": "Small Text",
+   "label": "Matched Rule Versions",
+   "read_only": 1,
+   "no_copy": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "section_source",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Import\nManual",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "import_batch",
+   "fieldtype": "Link",
+   "label": "Import Batch",
+   "options": "Import Batch",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_source",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "confirmed_on",
+   "fieldtype": "Datetime",
+   "label": "Confirmed On",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Microbiology Isolate",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Microbiology isolate with its antibiogram; the patient code is encrypted and lists show it masked.",
+ "track_changes": 1,
+ "autoname": "VS-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "lab_sample_id",
+ "search_fields": "lab_sample_id,organism"
+}

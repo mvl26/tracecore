@@ -26,6 +26,7 @@ TRACECORE_NAME_FIELD = {
 	"Station Function": "function_name",
 	"IC Indicator": "indicator_name",  # A-113 (FEAT-056)
 	"IC Procedure Document": "title",  # A-133 (FEAT-058): bản thay thế trỏ bản cũ
+	"Organism": "organism_name",  # FEAT-067 (A-136)
 }
 
 NAME_FIELD = {**EXTERNAL_NAME_FIELD, **TRACECORE_NAME_FIELD}
