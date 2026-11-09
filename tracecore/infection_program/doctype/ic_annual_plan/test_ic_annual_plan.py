@@ -1,4 +1,4 @@
-"""IC Annual Plan — kế hoạch KSNK năm (FEAT-058 AC-1..AC-4, AC-6; FR-M11-04..06; BRU-ICP-004; UC-41 A1, A2, E1–E3)."""
+"""IC Annual Plan — kế hoạch KSNK năm (FEAT-058 AC-1..AC-4, AC-6; FR-M11-04..06; BRU-ICP-004; UC-41 A1, A2, E1-E3)."""
 
 import frappe
 from frappe.utils import add_days, today
@@ -170,7 +170,9 @@ class TestICAnnualPlan(IsolatedTestCase):
 
 	def test_annual_value_rules(self):
 		row = frappe._dict
-		self.assertEqual(annual_plan.annual_value("Count", [row(numerator=2, denominator=0, sample_size=0)]), (2, ""))
+		self.assertEqual(
+			annual_plan.annual_value("Count", [row(numerator=2, denominator=0, sample_size=0)]), (2, "")
+		)
 		self.assertEqual(annual_plan.annual_value("Percentage", []), (None, "Not calculated"))
 		self.assertEqual(
 			annual_plan.annual_value("Percentage", [row(numerator=1, denominator=2, sample_size=2)], 5),

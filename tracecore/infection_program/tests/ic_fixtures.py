@@ -156,10 +156,12 @@ def plan(year, indicators=(), activities=(), objectives="Reduce HAI"):
 			"year": year,
 			"objectives": objectives,
 			"indicators": [
-				{"indicator": code, "baseline": baseline, "target": target} for code, baseline, target in indicators
+				{"indicator": code, "baseline": baseline, "target": target}
+				for code, baseline, target in indicators
 			],
 			"activities": [
-				{"measure_group": "Hand Hygiene", "budget_vnd": 1000000, **activity} for activity in activities
+				{"measure_group": "Hand Hygiene", "budget_vnd": 1000000, **activity}
+				for activity in activities
 			],
 		}
 	).insert(ignore_permissions=True)
@@ -178,7 +180,9 @@ def approve(doc, approver):
 	return frappe.get_doc(doc.doctype, doc.name)
 
 
-def procedure(doc_code, title="Hand hygiene procedure", issued_on=None, review_due=None, version_no=1, **values):
+def procedure(
+	doc_code, title="Hand hygiene procedure", issued_on=None, review_due=None, version_no=1, **values
+):
 	return frappe.get_doc(
 		{
 			"doctype": "IC Procedure Document",

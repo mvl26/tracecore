@@ -68,7 +68,9 @@ class TestICProcedureDocument(IsolatedTestCase):
 		fx.procedure("QD-10", issued_on="2026-01-05", review_due="2027-01-05")  # còn hạn
 		fx.procedure("QD-11", issued_on="2025-01-05", review_due="2026-03-01")  # quá hạn tại 31/03
 		old = fx.procedure("QD-12", issued_on="2024-01-05", review_due="2027-01-01")
-		fx.procedure("QD-12", version_no=2, issued_on="2026-02-01", review_due="2027-02-01", supersedes=old.name)
+		fx.procedure(
+			"QD-12", version_no=2, issued_on="2026-02-01", review_due="2027-02-01", supersedes=old.name
+		)
 		later = fx.procedure("QD-13", issued_on="2025-06-01", review_due="2027-06-01")
 		fx.procedure("QD-13", version_no=2, issued_on="2026-06-01", supersedes=later.name)  # sau kỳ
 		fx.procedure("QD-14", issued_on="2026-04-02")  # ban hành sau kỳ

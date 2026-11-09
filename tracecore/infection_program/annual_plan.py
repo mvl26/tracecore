@@ -1,4 +1,4 @@
-"""Kế hoạch KSNK năm (FEAT-058; FR-M11-04..06; BRU-ICP-004; UC-41; A-133 Q1–Q3).
+"""Kế hoạch KSNK năm (FEAT-058; FR-M11-04..06; BRU-ICP-004; UC-41; A-133 Q1-Q3).
 
 - Mỗi năm tối đa một kế hoạch chưa hủy, trừ bản sửa đổi (``amended_from``) của chính kế hoạch đó (FR-M11-04.2).
 - Chỉ Chủ tịch Hội đồng (R13) ghi sổ = phê duyệt (FR-M11-04.1); ghi sổ bản sửa đổi thì tự Hủy bản gốc (A-133 Q1).

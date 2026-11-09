@@ -55,7 +55,7 @@ def _open_rows(child, parent, field):
 		join `tab{parent}` p on p.name = c.parent
 		where c.parenttype = %(parent)s and p.docstatus = 1 and c.due_date is not null
 			and c.status not in %(done)s
-		""",
+		""",  # nosec B608 - tên bảng/trường lấy từ hằng SOURCES, giá trị qua tham số
 		{"parent": parent, "done": DONE_STATUSES},
 		as_dict=True,
 	)
@@ -68,7 +68,9 @@ def _remind_rows(on):
 			days = date_diff(getdate(row.due_date), on)
 			if days < 0 and not row.reminded_overdue:
 				event, flag = overdue_event, "reminded_overdue"
-				subject = _("Overdue since {0}: {1}").format(formatdate(row.due_date, "dd/mm/yyyy"), row.label)
+				subject = _("Overdue since {0}: {1}").format(
+					formatdate(row.due_date, "dd/mm/yyyy"), row.label
+				)
 			elif 0 <= days <= DUE_SOON_DAYS and not row.reminded_due_soon:
 				event, flag = due_event, "reminded_due_soon"
 				subject = _("Due on {0}: {1}").format(formatdate(row.due_date, "dd/mm/yyyy"), row.label)

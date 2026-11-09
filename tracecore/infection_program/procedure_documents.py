@@ -50,7 +50,9 @@ def _check_supersedes(doc):
 		)
 	if cint(doc.version_no) <= cint(old.version_no):
 		frappe.throw(
-			_("The new version must be higher than version {0} of {1}.").format(old.version_no, doc.supersedes)
+			_("The new version must be higher than version {0} of {1}.").format(
+				old.version_no, doc.supersedes
+			)
 		)
 	if old.superseded_by and old.superseded_by != doc.name:
 		frappe.throw(_("{0} is already superseded by {1}.").format(doc.supersedes, old.superseded_by))

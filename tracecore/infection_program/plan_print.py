@@ -55,12 +55,16 @@ def tc_ic_plan_context(name: str) -> dict:
 		"approved_on": approved_on,
 		"total_budget": vnd(doc.total_budget_vnd),
 		"summary": doc.summary or "",
-		"progress": _("{0}/{1} completed").format(summary["activities_completed"], summary["activities_total"]),
+		"progress": _("{0}/{1} completed").format(
+			summary["activities_completed"], summary["activities_total"]
+		),
 		"indicators": [
 			{
 				"name": row["indicator_name"],
 				"baseline": number(row["baseline"], row["kind"]),
-				"target": ("≥ " if row["direction"] == "Higher is better" else "≤ " if row["direction"] else "")
+				"target": (
+					"≥ " if row["direction"] == "Higher is better" else "≤ " if row["direction"] else ""
+				)
 				+ number(row["target"], row["kind"]),
 				"value": number(row["value"], row["kind"]) if row["value"] is not None else "—",
 				"status": row["status_label"],
@@ -76,7 +80,9 @@ def tc_ic_plan_context(name: str) -> dict:
 				"department": row.department_name or row.department or "",
 				"due_date": date(row.due_date),
 				"budget": vnd(row.budget_vnd),
-				"status": _(STATUS_TEXT[reminders.display_status(row.status, row.due_date)]),
+				"status": _(
+					STATUS_TEXT[reminders.display_status(row.status, row.due_date)], context="IC Plan"
+				),
 				"evidence": row.evidence or "",
 			}
 			for row in doc.activities

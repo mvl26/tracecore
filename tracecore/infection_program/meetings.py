@@ -74,7 +74,9 @@ def on_todo_update(todo, method=None):
 	"""Hook ``ToDo.on_update``: đóng việc theo dõi → kết luận Xong (mở lại → Mở)."""
 	if todo.reference_type != DOCTYPE:
 		return
-	row = frappe.db.get_value(CHILD, {"todo": todo.name, "parenttype": DOCTYPE}, ["name", "status"], as_dict=True)
+	row = frappe.db.get_value(
+		CHILD, {"todo": todo.name, "parenttype": DOCTYPE}, ["name", "status"], as_dict=True
+	)
 	if not row:
 		return
 	status = DONE if todo.status == "Closed" else OPEN if todo.status == "Open" else row.status

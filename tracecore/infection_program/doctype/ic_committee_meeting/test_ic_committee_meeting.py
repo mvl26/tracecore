@@ -81,7 +81,9 @@ class TestICCommitteeMeeting(IsolatedTestCase):
 			meetings.open_resolutions_for(draft.name)
 
 	def test_committee_in_force_filled_and_attendee_unique(self):
-		committee = fx.committee(fx.full_committee_members("MT"), valid_from=add_days(today(), -400), submit=True)
+		committee = fx.committee(
+			fx.full_committee_members("MT"), valid_from=add_days(today(), -400), submit=True
+		)
 		doc = fx.meeting(attendees=[self.with_user])
 		self.assertEqual(doc.committee, committee.name)
 		with self.assertRaises(frappe.ValidationError):

@@ -15,7 +15,8 @@
    "label": "Employee",
    "options": "Employee",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 3
   },
   {
    "fieldname": "employee_name",
@@ -23,13 +24,15 @@
    "label": "Employee Name",
    "fetch_from": "employee.employee_name",
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 4
   },
   {
    "fieldname": "role_in_meeting",
    "fieldtype": "Data",
    "label": "Role in Meeting",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 3
   }
  ],
  "index_web_pages_for_search": 0,

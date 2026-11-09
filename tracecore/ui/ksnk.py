@@ -46,6 +46,18 @@ SCREENS = [
 		"script": "/assets/tracecore/js/ksnk/scr_47_co_cau.js",
 	},
 ]
+# FEAT-058: kế hoạch năm, văn bản nội bộ, họp Hội đồng (UC-41; R13 ghi sổ kế hoạch ngay trên màn)
+SCREENS += [
+	{
+		"slug": "ke-hoach",
+		"scr": "SCR-48",
+		"uc": "UC-41",
+		"label": "Plans and Documents",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_48_ke_hoach.js",
+	},
+]
 
 
 def _badges(user):
