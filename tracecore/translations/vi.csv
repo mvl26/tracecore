@@ -8249,13 +8249,15 @@ Establishment Decision,Quyết định thành lập,
 Decision No.,Số quyết định,
 Decision Date,Ngày quyết định,
 Decision File,File quyết định,
-Members,Thành viên,
+Members,Thành viên,IC Committee
+Valid From,Hiệu lực từ,IC Committee
+Valid To,Hiệu lực đến,IC Committee
 Employee,Nhân viên,
 Committee Role,Vai trò trong Hội đồng,
 Representing,Đại diện,
 Member Type,Loại thành viên,
 Appointed On,Ngày bổ nhiệm,
-Full-time,Chuyên trách,
+Full-time,Chuyên trách,IC Surveillance Staff
 Infection Control Unit and Surveillance Staff,Khoa/bộ phận KSNK và nhân sự giám sát,
 Infection Control Department or Unit,Khoa hoặc bộ phận KSNK,
 Surveillance Staff,Nhân sự giám sát,
@@ -8304,7 +8306,7 @@ IC network gap,Mạng lưới KSNK thiếu,
 Infection control network gap,Mạng lưới KSNK thiếu người,
 Component or Department,Thành phần hoặc khoa,
 Current,Hiện có,IC Structure
-Issue,Vấn đề,
+Issue,Vấn đề,IC Structure
 Representative: {0},Đại diện: {0},
 Missing representative: {0},Thiếu đại diện: {0},
 ≥ 1 doctor + ≥ 1 nurse/midwife/technician,≥ 1 bác sĩ + ≥ 1 ĐD/HS/KTV,
@@ -8317,14 +8319,14 @@ Save settings,Lưu cài đặt,
 Program settings,Cài đặt chương trình,
 Infection control unit and surveillance staff are edited in the settings form.,Khoa/bộ phận KSNK và nhân sự giám sát sửa trên form cài đặt.,
 Required structure status,Trạng thái cơ cấu bắt buộc,
-Component,Thành phần,
+Component,Thành phần,IC Structure
 Submitted,Đã ghi sổ,IC Structure
 No committee in force.,Chưa có Hội đồng đang hiệu lực.,
 Create committee,Tạo Hội đồng,
 The committee is still recorded; the warning is kept in the Audit Log.,Thành phần vẫn được ghi sổ; cảnh báo đã ghi Audit Log.,
 Add member,Thêm thành viên,
 Validity,Hiệu lực,
-Member,Thành viên,IC Structure
+Member,Thành viên,
 Doctors,Bác sĩ,
 Nurses / midwives / technicians,ĐD / HS / KTV,
 No department is marked as requiring a network. Mark clinical and paraclinical departments in the Department form.,"Chưa khoa nào được đánh dấu bắt buộc mạng lưới. Đánh dấu khoa lâm sàng, cận lâm sàng trên form Khoa.",

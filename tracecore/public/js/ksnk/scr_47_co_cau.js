@@ -112,7 +112,7 @@ const TcKsnkScr47 = {
 			`<section class="tc-ksnk-card"><h3>${esc(__("Required structure status"))} ` +
 			`<code class="tc-ksnk-tag">BRU-ICP-001 · TT 16/2018</code></h3>` +
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
-				__("Component")
+				__("Component", null, "IC Structure")
 			)}</th>` +
 			`<th scope="col">${esc(__("Requirement"))}</th><th scope="col">${esc(
 				__("Current", null, "IC Structure")
@@ -171,9 +171,7 @@ const TcKsnkScr47 = {
 			`${esc(__("Validity"))}: ${esc(TcKsnkScr47.date(c.valid_from))} – ${esc(
 				TcKsnkScr47.date(c.valid_to)
 			)}</p>` +
-			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
-				__("Member", null, "IC Structure")
-			)}</th>` +
+			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Member"))}</th>` +
 			`<th scope="col">${esc(__("Committee Role"))}</th><th scope="col">${esc(
 				__("Representing")
 			)}</th></tr></thead>` +

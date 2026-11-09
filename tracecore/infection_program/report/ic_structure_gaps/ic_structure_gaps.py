@@ -34,7 +34,12 @@ def _columns():
 			"fieldtype": "Data",
 			"width": 180,
 		},
-		{"fieldname": "issue", "label": _("Issue"), "fieldtype": "Data", "width": 260},
+		{
+			"fieldname": "issue",
+			"label": _("Issue", context="IC Structure"),
+			"fieldtype": "Data",
+			"width": 260,
+		},
 		{"fieldname": "issue_code", "label": _("Issue Code"), "fieldtype": "Data", "hidden": 1},
 	]
 

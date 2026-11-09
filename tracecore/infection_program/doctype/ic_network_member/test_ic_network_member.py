@@ -56,6 +56,33 @@ class TestICNetworkMember(IsolatedTestCase):
 		self.assertNotIn("TC R12", frappe.get_roles(user))
 		self.assertEqual(_dept_permissions(user), set())
 
+	def test_r01_and_r02_save_member_and_role_sync_still_runs(self):
+		"""R01/R02 không có quyền ghi User; gán R12 + User Permission vẫn chạy (bỏ qua quyền ở bước hệ thống)."""
+		for code in ("R01", "R02"):
+			with self.subTest(role=code):
+				editor = factories.make_user(f"ksnk-nw-editor-{code.lower()}@example.com", [f"TC {code}"])
+				user = factories.make_user(f"ksnk-nw-target-{code.lower()}@example.com")
+				employee = fx.employee(f"Net Target {code}", self.dept_a, user=user)
+				frappe.set_user(editor)
+				member = frappe.get_doc(
+					{
+						"doctype": DOCTYPE,
+						"employee": employee,
+						"department": self.dept_a,
+						"member_type": "Doctor",
+					}
+				).insert()
+				member.is_active = 0
+				member.save()
+				frappe.set_user("Administrator")
+				self.assertNotIn("TC R12", frappe.get_roles(user))
+				frappe.set_user(editor)
+				member.is_active = 1
+				member.save()
+				frappe.set_user("Administrator")
+				self.assertIn("TC R12", frappe.get_roles(user))
+				self.assertEqual(_dept_permissions(user), {self.dept_a})
+
 	def test_keeps_role_while_another_membership_is_active(self):
 		user = factories.make_user("ksnk-nw-b@example.com")
 		emp = fx.employee("Net Two", self.dept_a, user=user)
