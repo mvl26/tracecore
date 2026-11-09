@@ -90,6 +90,13 @@ EVENTS = {
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
 	# FEAT-057 (A-132 d, FR-M11-03.2): khoa bắt buộc mất mạng lưới viên cuối cùng của một nhóm, báo Trưởng khoa KSNK
 	"IC_NETWORK_GAP": ("Infection control network gap", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-071 (A-137 e): phơi nhiễm nghề nghiệp báo ngay R01, R11 (FR-M16-01, 01.1); mốc theo dõi (nhân viên do nơi gọi
+	# truyền); mẫu theo dõi chưa duyệt; tiêm chủng đến hạn (nhân viên + R02, như FR-M4-01.4); thuốc dự phòng (FR-M16-08)
+	"EXPOSURE_REPORTED": ("Occupational exposure reported", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"EXPOSURE_FOLLOWUP_DUE": ("Exposure follow-up step due", "Normal", 0, 1, ("TC R11",)),
+	"EXPOSURE_TEMPLATE_MISSING": ("Exposure follow-up template missing", "Normal", 0, 0, ("TC R01",)),
+	"IMMUNIZATION_DUE": ("Staff vaccination due", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"PEP_STOCK_ALERT": ("Post-exposure prophylaxis stock alert", "Normal", 1, 0, ("TC R01",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

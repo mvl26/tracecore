@@ -16,7 +16,10 @@
   "surveillance_staff",
   "section_retention",
   "patient_data_retention_months",
-  "exposure_retention_months"
+  "exposure_retention_months",
+  "section_exposure",
+  "exposure_report_hours",
+  "exposure_prophylaxis_hours"
  ],
  "fields": [
   {
@@ -93,11 +96,30 @@
    "fieldtype": "Int",
    "label": "Exposure Record Retention (Months)",
    "description": "Leave empty until the hospital decides."
+  },
+  {
+   "fieldname": "section_exposure",
+   "fieldtype": "Section Break",
+   "label": "Occupational Exposure Time Limits"
+  },
+  {
+   "fieldname": "exposure_report_hours",
+   "fieldtype": "Float",
+   "label": "Report Within (Hours)",
+   "non_negative": 1,
+   "description": "Exposures reported later than this are flagged as late. Leave empty to flag none."
+  },
+  {
+   "fieldname": "exposure_prophylaxis_hours",
+   "fieldtype": "Float",
+   "label": "Start Prophylaxis Within (Hours)",
+   "non_negative": 1,
+   "description": "Prophylaxis started later than this is flagged as late. Leave empty to flag none."
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 11:00:00.000000",
+ "modified": "2026-11-09 18:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

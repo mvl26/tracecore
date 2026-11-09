@@ -212,6 +212,8 @@ after_migrate = [
 	"tracecore.ui.feedback.ensure_issue_type",
 	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
 	"tracecore.setup.error_codes.ensure_error_codes",
+	# FEAT-071 (A-137): mẫu theo dõi phơi nhiễm, vaccine mẫu ở trạng thái Nháp; không ghi đè bản R01 đã sửa
+	"tracecore.occupational_safety.config.ensure_default_config",
 ]
 
 # Uninstallation
@@ -266,10 +268,13 @@ after_migrate = [
 # Thông báo (FEAT-010): mỗi người chỉ thấy thông báo của mình; R10 và System Manager thấy tất cả
 permission_query_conditions = {
 	"Notification Delivery": "tracecore.core.notification.delivery_query_conditions",
+	# FEAT-071 (FR-M16-05, BRU-OCC-003): hồ sơ phơi nhiễm chỉ R01, R11; nhân viên xem hồ sơ của mình qua RPC
+	"Occupational Exposure": "tracecore.occupational_safety.exposure.query_conditions",
 }
 
 has_permission = {
 	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
+	"Occupational Exposure": "tracecore.occupational_safety.exposure.has_permission",
 }
 
 # DocType Class
@@ -443,6 +448,10 @@ doc_events = {
 		"validate": "tracecore.instrument.media.validate_file",
 	},
 	"Station Competency": dict(_AUDIT_EVENTS),
+	# FEAT-071: hồ sơ phơi nhiễm không xóa được; lịch sử sửa bằng track_changes (chỉ người đọc được hồ sơ mới xem), không
+	# chép nội dung vào Audit Log để giữ BRU-OCC-003
+	"Occupational Exposure": {"on_trash": "tracecore.core.audit.block_delete"},
+	"Staff Immunization": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
@@ -490,6 +499,9 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
 # M10 phân loại sai (FEAT-047, A-60 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
 tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
+# M10 sự cố phơi nhiễm vật sắc nhọn (FEAT-071, FR-M10-06.1, FR-M16-02, A-137): (incident doc) -> tên Occupational
+# Exposure; M16 tạo hồ sơ, gọi lại cùng sự cố không tạo trùng (BRU-OCC-002). Incident CAPA không import M16.
+tracecore_exposure_incident = ["tracecore.occupational_safety.exposure.from_incident"]
 # M10 ghi sổ / hủy phiếu bàn giao (FEAT-049, A-62): (doc) -> tên Cost Entry | None; M7 lập chi phí thuê ngoài, M10 không import M7
 tracecore_after_waste_handover = ["tracecore.costing.from_waste.on_handover"]
 tracecore_after_waste_handover_cancel = ["tracecore.costing.from_waste.on_handover_cancel"]
@@ -572,11 +584,16 @@ tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_c
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
 # A-113 (FEAT-056): hàm tính chỉ số KSNK của module M11-M17 — mỗi hàm trả {source_method: hàm(period, department)}
 # (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
-tracecore_ic_indicators = []
+tracecore_ic_indicators = [
+	# FEAT-071: báo phơi nhiễm đúng hạn, hoàn thành theo dõi, bao phủ tiêm chủng
+	"tracecore.occupational_safety.indicators.register",
+]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
 	# FEAT-057: số thành phần cơ cấu KSNK còn thiếu (SCR-47)
 	"tracecore.infection_program.structure.badges",
+	# FEAT-071: số hồ sơ phơi nhiễm mới chờ xử trí (SCR-64)
+	"tracecore.occupational_safety.exposure.badges",
 ]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
@@ -651,6 +668,8 @@ scheduler_events = {
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày
 		"tracecore.instrument.loaner.remind_overdue",
+		# FEAT-071, FR-M16-04.1, 07, 08, NFR-PRIV-02: nhắc mốc theo dõi phơi nhiễm, tiêm chủng, thuốc dự phòng, xóa định danh
+		"tracecore.occupational_safety.jobs.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

@@ -288,6 +288,17 @@ class TestErrors(FrappeTestCase):
 				"WASTE_NOT_HELD": 409,
 			}
 		)
+		# FEAT-071 A-137: phơi nhiễm nghề nghiệp
+		table.update(
+			{
+				"EXPOSURE_TIME_INVALID": 422,
+				"EXPOSURE_NO_EMPLOYEE": 422,
+				"EXPOSURE_HANDLING_INCOMPLETE": 422,
+				"EXPOSURE_STEP_INVALID": 422,
+				"EXPOSURE_NOT_ALLOWED": 403,
+				"EXPOSURE_STATUS_INVALID": 409,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

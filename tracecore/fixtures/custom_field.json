@@ -280,6 +280,16 @@
  },
  {
   "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_is_pep_drug",
+  "fieldname": "tc_is_pep_drug",
+  "fieldtype": "Check",
+  "label": "Post-exposure Prophylaxis Drug",
+  "description": "Stock below the minimum or batches expiring within 30 days alert the head of infection control.",
+  "insert_after": "tc_is_disinfectant"
+ },
+ {
+  "doctype": "Custom Field",
   "dt": "Stock Reconciliation Item",
   "name": "Stock Reconciliation Item-tc_variance_reason",
   "fieldname": "tc_variance_reason",

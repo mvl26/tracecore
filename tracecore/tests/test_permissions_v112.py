@@ -19,6 +19,15 @@ V112_ROWS = {
 		{"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
 	),
 }
+# FEAT-071 (A-137 j, FR-M16-05/05.1/05.2, BRU-OCC-003): hồ sơ phơi nhiễm chỉ R01, R11; R02 ghi tiêm chủng
+V112_ROWS.update(
+	{
+		"DT-OCCEXP": ("Occupational Exposure", {"R01": "RW", "R11": "RW"}),
+		"DT-EXPTPL": ("Exposure Follow-up Template", {"R01": "RW", "R11": "R"}),
+		"DT-IMMREQ": ("Immunization Requirement", {"R01": "RW", "R02": "R", "R11": "R"}),
+		"DT-STFIMM": ("Staff Immunization", {"R01": "RW", "R02": "RW", "R11": "R"}),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):

@@ -1,0 +1,310 @@
+{
+ "actions": [],
+ "autoname": "PN-.YYYY.-.#####",
+ "creation": "2026-11-09 18:00:00.000000",
+ "description": "Occupational exposure of a staff member: what happened, the steps taken and their dates only. Only the head of infection control, the infection control supervisor and the staff member can see it.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "department",
+  "occupation",
+  "column_break_report",
+  "status",
+  "report_channel",
+  "reported_by",
+  "incident_capa",
+  "section_event",
+  "exposure_type",
+  "occurred_at",
+  "reported_at",
+  "activity",
+  "device",
+  "column_break_source",
+  "source_known",
+  "source_patient_code",
+  "source_patient_code_masked",
+  "source_patient_code_hash",
+  "section_handling",
+  "first_aid_done",
+  "first_aid_at",
+  "prophylaxis",
+  "prophylaxis_started_at",
+  "column_break_timing",
+  "minutes_to_report",
+  "report_late",
+  "minutes_to_prophylaxis",
+  "prophylaxis_late",
+  "section_followup",
+  "followup_template",
+  "template_version",
+  "followups",
+  "section_other",
+  "cancel_reason",
+  "deidentified"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fetch_if_empty": 1,
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "occupation",
+   "fieldtype": "Data",
+   "label": "Occupation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_report",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "New",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "New\nFollowing Up\nCompleted\nCancelled",
+   "read_only": 1
+  },
+  {
+   "default": "Desk",
+   "fieldname": "report_channel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Reported Via",
+   "options": "PDA\nDepartment Portal\nWaste Incident\nDesk",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "incident_capa",
+   "fieldtype": "Link",
+   "label": "Waste Incident",
+   "options": "Incident CAPA",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_event",
+   "fieldtype": "Section Break",
+   "label": "Exposure"
+  },
+  {
+   "fieldname": "exposure_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Exposure Type",
+   "options": "Needlestick or Sharps\nMucous Membrane Splash\nNon-intact Skin\nRespiratory\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "occurred_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Occurred At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reported_at",
+   "fieldtype": "Datetime",
+   "label": "Reported At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activity",
+   "fieldtype": "Data",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "label": "Device"
+  },
+  {
+   "fieldname": "column_break_source",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "source_known",
+   "fieldtype": "Select",
+   "label": "Source Known",
+   "options": "Yes\nNo\nUnknown"
+  },
+  {
+   "depends_on": "eval:doc.source_known==\"Yes\"",
+   "fieldname": "source_patient_code",
+   "fieldtype": "Password",
+   "label": "Source Patient Code"
+  },
+  {
+   "fieldname": "source_patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Source Patient Code (Masked)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_patient_code_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Source Patient Code Hash",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_handling",
+   "fieldtype": "Section Break",
+   "label": "First Aid and Prophylaxis"
+  },
+  {
+   "default": "0",
+   "fieldname": "first_aid_done",
+   "fieldtype": "Check",
+   "label": "First Aid Done"
+  },
+  {
+   "depends_on": "first_aid_done",
+   "fieldname": "first_aid_at",
+   "fieldtype": "Datetime",
+   "label": "First Aid At"
+  },
+  {
+   "fieldname": "prophylaxis",
+   "fieldtype": "Select",
+   "label": "Prophylaxis",
+   "options": "\nGiven\nNot Indicated\nRefused"
+  },
+  {
+   "depends_on": "eval:doc.prophylaxis==\"Given\"",
+   "fieldname": "prophylaxis_started_at",
+   "fieldtype": "Datetime",
+   "label": "Prophylaxis Started At"
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "minutes_to_report",
+   "fieldtype": "Int",
+   "label": "Minutes to Report",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "report_late",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Reported Late",
+   "read_only": 1
+  },
+  {
+   "fieldname": "minutes_to_prophylaxis",
+   "fieldtype": "Int",
+   "label": "Minutes to Prophylaxis",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "prophylaxis_late",
+   "fieldtype": "Check",
+   "label": "Prophylaxis Late",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_followup",
+   "fieldtype": "Section Break",
+   "label": "Follow-up Schedule"
+  },
+  {
+   "fieldname": "followup_template",
+   "fieldtype": "Link",
+   "label": "Follow-up Template",
+   "options": "Exposure Follow-up Template",
+   "read_only": 1
+  },
+  {
+   "fieldname": "template_version",
+   "fieldtype": "Int",
+   "label": "Template Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "followups",
+   "fieldtype": "Table",
+   "label": "Follow-up Steps",
+   "options": "Exposure Follow-up"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_other",
+   "fieldtype": "Section Break",
+   "label": "Other"
+  },
+  {
+   "fieldname": "cancel_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancel Reason",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "deidentified",
+   "fieldtype": "Check",
+   "label": "De-identified",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Occupational Safety",
+ "name": "Occupational Exposure",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

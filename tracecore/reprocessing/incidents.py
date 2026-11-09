@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import cstr, getdate, now_datetime, today
 
-from tracecore.core import notification
+from tracecore.core import extension, notification
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Incident CAPA"
@@ -168,6 +168,9 @@ def after_insert(doc):
 		users = _users_with(R01) + users
 	subject = _("New incident {0}: {1}").format(doc.name, _(doc.incident_type))
 	_notify("INCIDENT", users, subject, doc)
+	if doc.incident_type == SHARPS:
+		# FR-M10-06.1 → FR-M16-02 (FEAT-071, A-137): M16 lập hồ sơ phơi nhiễm; M2/M10 không import M16
+		extension.run("tracecore_exposure_incident", doc)
 
 
 def guard_submit(doc):
