@@ -168,15 +168,15 @@
 | FR-M15-05 | Kế hoạch lấy mẫu giao việc, mẫu trễ hạn | Should | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
 | FR-M15-06 | Phiếu kiểm tra hạ tầng, hạn kế tiếp, nhắc 7 ngày | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
 | FR-M15-07 | Báo cáo môi trường tháng/quý | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
-| FR-M16-01 | Báo phơi nhiễm ban đầu ≤ 3 bước, thông báo ngay | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-02 | Sự cố sắc nhọn M10 → Occupational Exposure | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-03 | Thời gian phơi nhiễm → báo cáo → dự phòng, cờ | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-04 | Sơ cứu, dự phòng → lịch theo dõi theo mẫu | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-05 | Quyền xem hồ sơ phơi nhiễm: R01, R11, chính NV | Must | Active | BA v1.12 (A-113) | UC-55 | ADR-010 | FEAT-071 | _TBD_ |
-| FR-M16-06 | Không lưu kết quả XN/chẩn đoán nhân viên | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-07 | Tiêm chủng: next_due, nhắc, tỷ lệ bao phủ | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-08 | Cảnh báo tồn thuốc dự phòng sau phơi nhiễm | Should | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
-| FR-M16-09 | Báo cáo phơi nhiễm theo kỳ | Must | Active | BA v1.12 (A-113) | UC-55 | _TBD_ | FEAT-071 | _TBD_ |
+| FR-M16-01 | Báo phơi nhiễm ban đầu ≤ 3 bước, thông báo ngay | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-63; A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py`, `v1/tests/test_exposure_api.py`, `occupational_safety/tests/test_ui.py` |
+| FR-M16-02 | Sự cố sắc nhọn M10 → Occupational Exposure | Must | Active | BA v1.12 (A-113) | UC-55 | A-137 | FEAT-071 | `occupational_safety/tests/test_hook.py` |
+| FR-M16-03 | Thời gian phơi nhiễm → báo cáo → dự phòng, cờ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py` |
+| FR-M16-04 | Sơ cứu, dự phòng → lịch theo dõi theo mẫu | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_config.py`, `occupational_safety/tests/test_exposure.py`, `occupational_safety/tests/test_jobs.py` |
+| FR-M16-05 | Quyền xem hồ sơ phơi nhiễm: R01, R11, chính NV | Must | Active | BA v1.12 (A-113) | UC-55 | ADR-010; A-137 | FEAT-071 | `occupational_safety/tests/test_privacy.py`, `v1/tests/test_exposure_api.py` |
+| FR-M16-06 | Không lưu kết quả XN/chẩn đoán nhân viên | Must | Active | BA v1.12 (A-113) | UC-55 | A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py` |
+| FR-M16-07 | Tiêm chủng: next_due, nhắc, tỷ lệ bao phủ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_immunization.py` |
+| FR-M16-08 | Cảnh báo tồn thuốc dự phòng sau phơi nhiễm | Should | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_jobs.py` |
+| FR-M16-09 | Báo cáo phơi nhiễm theo kỳ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_report.py` |
 | FR-M17-01 | Giám sát bếp ăn bằng mẫu phiếu ATTP | Should | Active | BA v1.12 (A-113) | UC-56 | ADR-015 | FEAT-073 | _TBD_ |
 | FR-M17-02 | Nhắc hạn khám sức khỏe người chế biến | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
 | FR-M17-03 | Mẫu thực phẩm xử lý như mẫu môi trường | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |

@@ -8346,3 +8346,253 @@ Department Name,Tên khoa,IC Network Member
 Employee Name,Tên nhân viên,IC Committee Member
 Employee Name,Tên nhân viên,IC Network Member
 Employee Name,Tên nhân viên,IC Surveillance Staff
+0 means no booster reminder.,0 nghĩa là không nhắc tiêm nhắc lại.,Immunization Requirement
+A cancelled exposure record needs a reason.,Hủy hồ sơ phơi nhiễm cần có lý do.
+Add at least one follow-up step before approving.,Thêm ít nhất một mốc theo dõi trước khi duyệt.
+All doses,Đủ mũi
+An approved follow-up template cannot be changed. Create a new version instead.,Mẫu theo dõi đã duyệt không sửa được. Hãy tạo phiên bản mới.
+An approved vaccine requirement needs at least one dose.,Yêu cầu tiêm chủng đã duyệt phải có ít nhất một mũi.
+Approval,Phê duyệt,Immunization Requirement
+Ask the department nurse or the infection control team to report it for you.,Nhờ điều dưỡng khoa hoặc khoa KSNK báo thay.
+Being followed up,Đang theo dõi
+Booster Interval (Days),Khoảng tiêm nhắc lại (ngày),Immunization Requirement
+Cancel Reason,Lý do hủy,Occupational Exposure
+Cancel record (reported by mistake),Hủy hồ sơ (báo nhầm)
+Cancel this exposure record,Hủy hồ sơ phơi nhiễm này
+Cannot report for this staff member,Không báo thay được cho nhân viên này
+"Check the date and time of the exposure, then continue.",Kiểm tra ngày giờ phơi nhiễm rồi tiếp tục.
+"Check the date and time of the exposure, then send again.",Kiểm tra ngày giờ phơi nhiễm rồi gửi lại.
+Choose a record to see its follow-up schedule.,Chọn một hồ sơ để xem lịch theo dõi.
+"Choose a staff member of your department, or ask them to report it themselves.","Chọn nhân viên trong khoa của bạn, hoặc nhờ người đó tự báo."
+Choose a step of this record and a date from the exposure day to today.,Chọn một mốc của hồ sơ này và ngày từ ngày phơi nhiễm đến hôm nay.
+"Choose one of the types, then continue.",Chọn một loại rồi tiếp tục.
+"Choose the staff member who was exposed, then send again.",Chọn nhân viên bị phơi nhiễm rồi gửi lại.
+"Choose whether prophylaxis was given, not indicated or refused; when given, enter the start time.","Chọn có dự phòng, không chỉ định hay từ chối; nếu có dự phòng thì nhập giờ bắt đầu."
+Circumstances,Hoàn cảnh
+"Complete the prophylaxis decision, then save again.",Ghi đủ quyết định dự phòng rồi lưu lại.
+Could not keep the report on this device,Không giữ được báo cáo trên máy này
+Days After Exposure,Số ngày sau phơi nhiễm,Exposure Follow-up Template Step
+Days After Exposure,Số ngày sau phơi nhiễm,Exposure Follow-up
+Days Between Doses,Khoảng cách giữa các mũi (ngày),Immunization Requirement
+De-identified,Đã xóa định danh,Occupational Exposure
+Department Portal,Cổng khoa,Occupational Exposure
+Designations,Chức danh,Immunization Requirement
+Device or object,Dụng cụ hoặc vật gây phơi nhiễm
+Do first aid now and call the infection control team.,Sơ cứu ngay và gọi khoa KSNK.
+Done On,Ngày thực hiện,Exposure Follow-up
+Done on,Thực hiện ngày
+Dose,Mũi
+Dose No.,Mũi số,Staff Immunization
+Dose number must be at least 1.,Mũi số phải từ 1 trở lên.
+Doses Required,Số mũi bắt buộc,Immunization Requirement
+EXPOSURE,Báo phơi nhiễm,Help Article
+Enter the number of doses before approving.,Nhập số mũi trước khi duyệt.
+"Enter the reason, then view again.",Nhập lý do rồi xem lại.
+Evidence,Minh chứng,Staff Immunization
+Exposed staff member is required,Thiếu nhân viên bị phơi nhiễm
+Exposure Follow-up,Theo dõi sau phơi nhiễm
+Exposure Follow-up Template,Mẫu theo dõi sau phơi nhiễm
+Exposure Follow-up Template Step,Mốc của mẫu theo dõi sau phơi nhiễm
+Exposure Report,Báo phơi nhiễm
+Exposure Type,Loại phơi nhiễm
+Exposure Type,Loại phơi nhiễm,Exposure Follow-up Template
+Exposure Type,Loại phơi nhiễm,Occupational Exposure
+Exposure,Sự việc phơi nhiễm,Occupational Exposure
+Exposure record is closed,Hồ sơ phơi nhiễm đã đóng
+Exposure record {0} is {1}.,Hồ sơ phơi nhiễm {0} ở trạng thái {1}.
+Exposure records,Hồ sơ phơi nhiễm
+Exposure report by period,Báo cáo phơi nhiễm theo kỳ
+Exposure time is in the future,Thời điểm phơi nhiễm ở tương lai
+Exposure to prophylaxis,Phơi nhiễm → dự phòng
+Exposure to report,Phơi nhiễm → báo
+Exposure type,Loại phơi nhiễm
+Exposure type is required,Chưa chọn loại phơi nhiễm
+Exposure {0} reported,Đã báo phơi nhiễm {0}
+Exposure {0}: follow-up step {1} is due on {2},Phơi nhiễm {0}: mốc theo dõi {1} đến hạn ngày {2}
+Exposure {0}: follow-up step {1} was due on {2},Phơi nhiễm {0}: mốc theo dõi {1} đã quá hạn từ ngày {2}
+Exposures,Số ca phơi nhiễm
+Exposures in {0},Phơi nhiễm năm {0}
+Exposures reported later than this are flagged as late. Leave empty to flag none.,Phơi nhiễm báo muộn hơn số giờ này bị gắn cờ báo muộn. Để trống thì không gắn cờ.,IC Program Settings
+First Aid,Sơ cứu
+First Aid At,Giờ sơ cứu,Occupational Exposure
+First Aid Done,Đã sơ cứu,Occupational Exposure
+First Aid and Prophylaxis,Sơ cứu và dự phòng,Occupational Exposure
+First aid at,Giờ sơ cứu
+First aid done,Đã sơ cứu
+First-aid procedure,Quy trình xử trí ban đầu
+Follow the first-aid steps of the hospital and call the infection control team now.,Làm theo quy trình xử trí ban đầu của bệnh viện và gọi khoa KSNK ngay.
+Follow-up Completed,Hoàn thành theo dõi
+Follow-up Completion Rate (%),Tỷ lệ hoàn thành theo dõi (%)
+Follow-up Schedule,Lịch theo dõi,Occupational Exposure
+Follow-up Steps,Các mốc theo dõi,Exposure Follow-up Template
+Follow-up Steps,Các mốc theo dõi,Occupational Exposure
+Follow-up Template,Mẫu theo dõi,Occupational Exposure
+Follow-up step cannot be recorded,Không ghi được mốc theo dõi
+Follow-up steps,Các mốc theo dõi
+Following Up,Đang theo dõi,Occupational Exposure
+Given On,Ngày tiêm,Staff Immunization
+Given,Có dự phòng,Occupational Exposure
+Immunization Requirement,Yêu cầu tiêm chủng
+Immunization Requirement Department,Khoa của yêu cầu tiêm chủng
+Immunization Requirement Designation,Chức danh của yêu cầu tiêm chủng
+Is the source patient known?,Đã biết người bệnh nguồn chưa?
+It is sent when the connection returns.,Báo cáo được gửi khi có mạng trở lại.
+It is sent when the connection returns. The patient code is not kept offline.,Báo cáo được gửi khi có mạng trở lại. Mã người bệnh không được lưu khi mất mạng.
+It is sent when the connection returns. The patient code was not kept: tell the supervisor.,Báo cáo được gửi khi có mạng trở lại. Mã người bệnh không được lưu: hãy báo giám sát viên KSNK.
+Late,Báo muộn
+Late (over the time limit),Báo muộn (vượt ngưỡng giờ)
+Mark done,Ghi đã thực hiện
+Minutes to Prophylaxis,Số phút đến dự phòng,Occupational Exposure
+Minutes to Report,Số phút đến khi báo,Occupational Exposure
+Mucous Membrane Splash,"Máu, dịch bắn vào mắt, miệng",Exposure Follow-up Template
+Mucous Membrane Splash,"Máu, dịch bắn vào mắt, miệng",Occupational Exposure
+My exposure records,Hồ sơ phơi nhiễm của tôi
+Myself,Chính tôi
+Needlestick or Sharps,Kim đâm / vật sắc nhọn,Exposure Follow-up Template
+Needlestick or Sharps,Kim đâm / vật sắc nhọn,Occupational Exposure
+New — awaiting handling,Mới — chờ xử trí
+Next Due,Hạn mũi tiếp,Staff Immunization
+No approved follow-up template for this exposure type. Ask the head of infection control to approve one.,Loại phơi nhiễm này chưa có mẫu theo dõi đã duyệt. Đề nghị Trưởng khoa KSNK duyệt mẫu.
+No approved follow-up template for {0},Chưa có mẫu theo dõi đã duyệt cho {0}
+No exposure records yet.,Chưa có hồ sơ phơi nhiễm.
+No network connection,Mất kết nối mạng
+No vaccinations recorded yet.,Chưa ghi mũi tiêm nào.
+Non-intact Skin,"Máu, dịch dính da tổn thương",Exposure Follow-up Template
+Non-intact Skin,"Máu, dịch dính da tổn thương",Occupational Exposure
+Not Indicated,Không chỉ định,Occupational Exposure
+Not done,Chưa thực hiện
+Not specified,Không ghi
+Not yet,Chưa tới
+Occupational Exposure Time Limits,Ngưỡng giờ phơi nhiễm nghề nghiệp,IC Program Settings
+Occupational exposure {0} reported: {1},Báo phơi nhiễm nghề nghiệp {0}: {1}
+On-time Report Rate (%),Tỷ lệ báo đúng hạn (%)
+Only a draft version can be approved.,Chỉ duyệt được phiên bản Nháp.
+Only the head of infection control can approve this.,Chỉ Trưởng khoa KSNK được duyệt.
+Only the head of infection control or a supervisor can view the full code.,Chỉ Trưởng khoa KSNK hoặc giám sát viên KSNK được xem mã đầy đủ.
+"Only the head of infection control, the supervisor and the staff member can see a record; reports show totals without names. There is no field for the staff member's test results or diagnosis.","Chỉ Trưởng khoa KSNK, giám sát viên KSNK và chính nhân viên xem được hồ sơ; báo cáo tổng hợp chỉ hiện số liệu, không có tên. Không có trường kết quả xét nghiệm hay chẩn đoán của nhân viên."
+Open an exposure record that is new or being followed up.,Mở hồ sơ phơi nhiễm đang Mới hoặc Đang theo dõi.
+Open the exposure report screen,Xem màn báo phơi nhiễm
+Open the vaccination list,Mở danh sách tiêm chủng
+Overdue Reminders Sent,Số lần đã nhắc quá hạn,Exposure Follow-up
+Personal identifiers removed after the retention period,Đã xóa định danh sau thời hạn lưu
+Post-exposure Prophylaxis Drug,Thuốc dự phòng sau phơi nhiễm,Item
+Post-exposure prophylaxis drugs,Thuốc dự phòng sau phơi nhiễm
+"Post-exposure prophylaxis stock: {0} below minimum, {1} batches expiring within {2} days","Thuốc dự phòng sau phơi nhiễm: {0} dưới mức tối thiểu, {1} lô hết hạn trong {2} ngày"
+Prophylaxis,Dự phòng
+Prophylaxis Late,Dự phòng muộn,Occupational Exposure
+Prophylaxis Started At,Giờ bắt đầu dự phòng,Occupational Exposure
+Prophylaxis,Chỉ định dự phòng,Occupational Exposure
+Prophylaxis decision is required,Thiếu quyết định dự phòng
+Prophylaxis started at,Giờ bắt đầu dự phòng
+Prophylaxis started later than this is flagged as late. Leave empty to flag none.,Dự phòng bắt đầu muộn hơn số giờ này bị gắn cờ muộn. Để trống thì không gắn cờ.,IC Program Settings
+Record first aid and prophylaxis,Ghi sơ cứu & chỉ định
+Record first aid and the prophylaxis decision to create the follow-up schedule.,Ghi sơ cứu và quyết định dự phòng để sinh lịch theo dõi.
+Recorded {0},Đã ghi {0}
+Refused,Từ chối,Occupational Exposure
+Reminded Before Due,Đã nhắc trước hạn,Exposure Follow-up
+Report Within (Hours),Báo trong vòng (giờ),IC Program Settings
+Report an exposure: choose the type below,Báo phơi nhiễm: chọn loại bên dưới
+Report another exposure,Báo phơi nhiễm khác
+Report kept in this browser,Báo cáo đang giữ trong trình duyệt
+Report kept on this device,Báo cáo đang giữ trên máy
+Report steps,Các bước báo cáo
+Report the exposure to the infection control team by phone now.,Gọi điện báo khoa KSNK ngay.
+Reported At,Giờ báo
+Reported At,Giờ báo,Occupational Exposure
+Reported Late,Báo muộn,Occupational Exposure
+Reported Via,Nguồn báo
+Reported Via,Nguồn báo,Occupational Exposure
+Reported for,Báo cho
+Reported on Time,Báo đúng hạn
+Respiratory,Hô hấp,Exposure Follow-up Template
+Respiratory,Hô hấp,Occupational Exposure
+"Retry, or report the exposure to the infection control team by phone.","Thử lại, hoặc gọi điện báo khoa KSNK."
+Send report,Gửi báo cáo
+Send the report without the patient code; the supervisor adds it on the Desk.,Gửi báo cáo không kèm mã người bệnh; giám sát viên KSNK bổ sung trên Desk.
+Sending...,Đang gửi...
+Sign in to report an exposure.,Đăng nhập để báo phơi nhiễm.
+Source Known,Đã biết nguồn
+Source Known,Đã biết nguồn,Occupational Exposure
+Source Patient Code,Mã người bệnh nguồn
+Source Patient Code (Masked),Mã người bệnh nguồn (che),Occupational Exposure
+Source Patient Code Hash,Mã băm người bệnh nguồn,Occupational Exposure
+Source Patient Code,Mã người bệnh nguồn,Occupational Exposure
+Source patient code (optional),Mã người bệnh nguồn (không bắt buộc)
+Staff Immunization,Tiêm chủng nhân viên
+Staff at Risk,Nhân viên có nguy cơ,Immunization Requirement
+Staff vaccination,Tiêm chủng nhân viên
+Staff with all required vaccines,Nhân viên đủ mũi tiêm bắt buộc
+Start Prophylaxis Within (Hours),Bắt đầu dự phòng trong vòng (giờ),IC Program Settings
+Step 1: type of exposure,Bước 1 — Loại phơi nhiễm
+Step 2: what happened,Bước 2 — Hoàn cảnh phơi nhiễm
+Step 3: check and send,Bước 3 — Kiểm tra và gửi
+"Steps come from the approved follow-up template; only the date done is recorded, never a result.","Các mốc sinh từ mẫu theo dõi đã duyệt; chỉ ghi ngày đã thực hiện, không ghi kết quả."
+Template Version,Phiên bản mẫu,Occupational Exposure
+The code is encrypted and shown masked; do not enter the patient name.,Mã được mã hóa và luôn hiện dạng che; không nhập họ tên người bệnh.
+The exposure is not linked to a staff member.,Phơi nhiễm chưa gắn với nhân viên nào.
+"The exposure must belong to a staff member, but your account has no staff record.","Phơi nhiễm phải gắn với một nhân viên, nhưng tài khoản của bạn chưa có hồ sơ nhân viên."
+The exposure time is later than now.,Thời điểm phơi nhiễm muộn hơn bây giờ.
+The head of infection control and the supervisor are notified at once.,Trưởng khoa KSNK và giám sát viên KSNK được báo ngay.
+The head of infection control and the supervisor have been notified.,Đã báo Trưởng khoa KSNK và giám sát viên KSNK.
+The report is kept in this browser and sent when the connection returns.,Báo cáo được giữ trong trình duyệt và gửi khi có mạng trở lại.
+The report is kept on this device and sent when the connection returns.,Báo cáo được giữ trên máy và gửi khi có mạng trở lại.
+The report needs the type of exposure.,Báo cáo cần loại phơi nhiễm.
+The server could not process the request.,Máy chủ không xử lý được yêu cầu.
+"The step is not on this record, or the date is before the exposure or after today.","Mốc không thuộc hồ sơ này, hoặc ngày trước ngày phơi nhiễm hay sau hôm nay."
+The vaccination date cannot be in the future.,Ngày tiêm không được ở tương lai.
+This account cannot report an exposure at this station.,Tài khoản này không báo phơi nhiễm được tại trạm này.
+Time limits in use,Ngưỡng giờ đang áp dụng
+Type and time,Loại & thời điểm
+Vaccination {0} is due on {1},Mũi tiêm {0} đến hạn ngày {1}
+Vaccination {0} is overdue since {1},Mũi tiêm {0} quá hạn từ ngày {1}
+Vaccine,Vắc xin
+Vaccine,Vắc xin,Immunization Requirement
+Vaccine,Vắc xin,Staff Immunization
+View full code,Xem mã đầy đủ
+View stock,Xem tồn kho
+Viewing the full patient code needs a reason.,Xem mã người bệnh đầy đủ cần có lý do.
+Waste Incident,Sự cố chất thải,Occupational Exposure
+What were you doing?,Bạn đang làm gì?
+When did it happen?,Xảy ra lúc nào?
+Why do you need the full patient code?,Vì sao cần xem mã người bệnh đầy đủ?
+With Follow-up Schedule,Có lịch theo dõi
+You can report for yourself or for staff of your own department only.,Bạn chỉ báo được cho mình hoặc nhân viên cùng khoa.
+You have no exposure records.,Bạn chưa có hồ sơ phơi nhiễm.
+Your account is not linked to a staff record,Tài khoản chưa gắn hồ sơ nhân viên
+Your account is not linked to a staff record. Ask the department nurse to report for you.,Tài khoản chưa gắn hồ sơ nhân viên. Nhờ điều dưỡng khoa báo thay.
+follow-up schedule,lịch theo dõi
+occurred_at must be an ISO 8601 time with offset.,occurred_at phải là thời điểm ISO 8601 có múi giờ.
+patient code entered,đã nhập mã người bệnh
+prophylaxis limit not set,chưa đặt ngưỡng dự phòng
+prophylaxis within {0} h,dự phòng trong {0} giờ
+report limit not set,chưa đặt ngưỡng báo
+report within {0} h,báo trong {0} giờ
+"{0} at {1}: {2} left, minimum {3}","{0} tại {1}: còn {2}, tối thiểu {3}"
+{0} batch {1}: {2} days to expiry,{0} lô {1}: còn {2} ngày hạn dùng
+{0} days left,Còn {0} ngày
+{0} min,{0} phút
+{0} report(s) waiting to be sent,{0} báo cáo đang chờ gửi
+Hepatitis B,Viêm gan B
+Influenza,Cúm mùa
+Exposure report,Báo phơi nhiễm
+Exposure and Immunization,Phơi nhiễm & tiêm chủng
+Occupational exposure reported,Báo phơi nhiễm nghề nghiệp
+Exposure follow-up step due,Mốc theo dõi sau phơi nhiễm đến hạn
+Exposure follow-up template missing,Thiếu mẫu theo dõi sau phơi nhiễm
+Staff vaccination due,Mũi tiêm nhân viên đến hạn
+Post-exposure prophylaxis stock alert,Cảnh báo tồn thuốc dự phòng sau phơi nhiễm
+Choose the type of exposure and check the time it happened.,Chọn loại phơi nhiễm và kiểm tra thời điểm xảy ra.
+"Enter what you were doing, the device and whether the source is known.","Nhập việc đang làm, dụng cụ gây phơi nhiễm và đã biết nguồn hay chưa."
+"Check and send the report, then follow the first-aid procedure shown.","Kiểm tra và gửi báo cáo, rồi làm theo quy trình xử trí ban đầu hiện trên màn."
+Occupational Exposure by Period,Phơi nhiễm theo kỳ
+Group By,Nhóm theo
+Occupation,Nghề nghiệp,Occupational Exposure
+Approved By,Người duyệt,Exposure Follow-up Template
+Approved On,Ngày duyệt,Exposure Follow-up Template
+Approved By,Người duyệt,Immunization Requirement
+Approved On,Ngày duyệt,Immunization Requirement
+Superseded,Đã thay thế,Exposure Follow-up Template
+Draft,Nháp,Exposure Follow-up Template
+Approved,Đã duyệt,Exposure Follow-up Template
+Draft,Nháp,Immunization Requirement
+Approved,Đã duyệt,Immunization Requirement
