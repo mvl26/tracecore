@@ -8260,7 +8260,7 @@ Infection Control Unit and Surveillance Staff,Khoa/bộ phận KSNK và nhân s�
 Infection Control Department or Unit,Khoa hoặc bộ phận KSNK,
 Surveillance Staff,Nhân sự giám sát,
 IC Network Required,Bắt buộc mạng lưới KSNK,
-"Clinical or paraclinical department that must have at least one doctor and one nurse, midwife or technician in the infection control network (BRU-ICP-003).","Khoa lâm sàng hoặc cận lâm sàng phải có ít nhất 1 bác sĩ và 1 điều dưỡng, hộ sinh hoặc kỹ thuật viên trong mạng lưới KSNK (BRU-ICP-003).",
+"Clinical or paraclinical department that must have at least one doctor and one nurse, midwife or technician in the infection control network.","Khoa lâm sàng hoặc cận lâm sàng phải có ít nhất 1 bác sĩ và 1 điều dưỡng, hộ sinh hoặc kỹ thuật viên trong mạng lưới KSNK.",
 IC Structure,Cơ cấu KSNK,
 Missing committee representative: {0}. The committee is still recorded.,Thiếu đại diện {0} trong Hội đồng. Thành phần Hội đồng vẫn được ghi sổ.,
 Committee warning,Cảnh báo Hội đồng,
@@ -8309,8 +8309,8 @@ Representative: {0},Đại diện: {0},
 Missing representative: {0},Thiếu đại diện: {0},
 ≥ 1 doctor + ≥ 1 nurse/midwife/technician,≥ 1 bác sĩ + ≥ 1 ĐD/HS/KTV,
 "{0} doctors, {1} nurses/midwives/technicians","{0} bác sĩ, {1} ĐD/HS/KTV",
-Infection control committee establishment decision: exactly one Chair and one Secretary (BRU-ICP-002).,Quyết định thành lập Hội đồng KSNK: đúng 1 Chủ tịch và 1 Thư ký (BRU-ICP-002).,
-"Infection control network member of a department: each required department needs a doctor and a nurse, midwife or technician (BRU-ICP-003).","Mạng lưới viên KSNK của khoa: mỗi khoa bắt buộc cần 1 bác sĩ và 1 điều dưỡng, hộ sinh hoặc kỹ thuật viên (BRU-ICP-003).",
+Infection control committee establishment decision: exactly one Chair and one Secretary.,Quyết định thành lập Hội đồng KSNK: đúng 1 Chủ tịch và 1 Thư ký.,
+"Infection control network member of a department: each required department needs a doctor and a nurse, midwife or technician.","Mạng lưới viên KSNK của khoa: mỗi khoa bắt buộc cần 1 bác sĩ và 1 điều dưỡng, hộ sinh hoặc kỹ thuật viên.",
 Missing {0} components,Thiếu {0} thành phần,
 Required structure complete,Đủ cơ cấu bắt buộc,
 Save settings,Lưu cài đặt,
@@ -8321,7 +8321,7 @@ Component,Thành phần,
 Submitted,Đã ghi sổ,IC Structure
 No committee in force.,Chưa có Hội đồng đang hiệu lực.,
 Create committee,Tạo Hội đồng,
-The committee is still recorded; the warning is kept in the Audit Log (FR-M11-02).,Thành phần vẫn được ghi sổ; cảnh báo đã ghi Audit Log (FR-M11-02).,
+The committee is still recorded; the warning is kept in the Audit Log.,Thành phần vẫn được ghi sổ; cảnh báo đã ghi Audit Log.,
 Add member,Thêm thành viên,
 Validity,Hiệu lực,
 Member,Thành viên,IC Structure
@@ -8339,3 +8339,8 @@ Correct the value and save again.,Sửa giá trị rồi lưu lại.,
 Committee not recorded,Chưa ghi sổ Hội đồng,
 "Open the committee, correct the members and record it again.","Mở Hội đồng, sửa thành phần rồi ghi sổ lại.",
 You are not allowed to open the IC structure screen.,Bạn không có quyền mở màn Cơ cấu KSNK.,
+Department Name,Tên khoa,IC Committee Member
+Department Name,Tên khoa,IC Network Member
+Employee Name,Tên nhân viên,IC Committee Member
+Employee Name,Tên nhân viên,IC Network Member
+Employee Name,Tên nhân viên,IC Surveillance Staff

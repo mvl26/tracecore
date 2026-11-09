@@ -83,7 +83,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-09 09:00:00.000000",
+ "modified": "2026-11-09 11:00:00.000000",
  "modified_by": "Administrator",
  "module": "Infection Program",
  "name": "IC Committee",
@@ -105,5 +105,5 @@
  "states": [],
  "title_field": "decision_no",
  "track_changes": 1,
- "description": "Infection control committee establishment decision: exactly one Chair and one Secretary (BRU-ICP-002)."
+ "description": "Infection control committee establishment decision: exactly one Chair and one Secretary."
 }

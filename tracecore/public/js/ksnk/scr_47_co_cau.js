@@ -157,9 +157,7 @@ const TcKsnkScr47 = {
 					])
 			  )}</strong> ` +
 			  `${esc(
-					__(
-						"The committee is still recorded; the warning is kept in the Audit Log (FR-M11-02)."
-					)
+					__("The committee is still recorded; the warning is kept in the Audit Log.")
 			  )} ` +
 			  `<a href="/app/ic-committee/${encodeURIComponent(c.name)}">${esc(
 					__("Add member")

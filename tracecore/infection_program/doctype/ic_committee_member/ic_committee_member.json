@@ -9,6 +9,7 @@
   "employee_name",
   "committee_role",
   "department",
+  "department_name",
   "representing"
  ],
  "fields": [
@@ -18,7 +19,8 @@
    "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
   },
   {
    "fetch_from": "employee.employee_name",
@@ -26,7 +28,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Employee Name",
-   "read_only": 1
+   "read_only": 1,
+   "columns": 2
   },
   {
    "fieldname": "committee_role",
@@ -34,16 +37,28 @@
    "in_list_view": 1,
    "label": "Committee Role",
    "options": "Chair\nVice Chair\nSecretary\nOrdinary Member",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
   },
   {
    "fetch_from": "employee.department",
    "fetch_if_empty": 1,
    "fieldname": "department",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Department",
-   "options": "Department"
+   "options": "Department",
+   "columns": 2
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0,
+   "columns": 2
   },
   {
    "fieldname": "representing",
@@ -51,13 +66,14 @@
    "in_list_view": 1,
    "label": "Representing",
    "options": "Functional Unit\nMicrobiology and Laboratory\nPharmacy\nHigh-risk Clinical\nOther",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
   }
  ],
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-09 09:00:00.000000",
+ "modified": "2026-11-09 11:00:00.000000",
  "modified_by": "Administrator",
  "module": "Infection Program",
  "name": "IC Committee Member",

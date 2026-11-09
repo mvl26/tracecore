@@ -8,6 +8,7 @@
   "employee",
   "employee_name",
   "department",
+  "department_name",
   "member_type",
   "column_break_decision",
   "appointed_on",
@@ -44,6 +45,16 @@
    "reqd": 1
   },
   {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
    "fieldname": "member_type",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -77,7 +88,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 09:00:00.000000",
+ "modified": "2026-11-09 11:00:00.000000",
  "modified_by": "Administrator",
  "module": "Infection Program",
  "name": "IC Network Member",
@@ -96,5 +107,5 @@
  "states": [],
  "title_field": "employee_name",
  "track_changes": 1,
- "description": "Infection control network member of a department: each required department needs a doctor and a nurse, midwife or technician (BRU-ICP-003)."
+ "description": "Infection control network member of a department: each required department needs a doctor and a nurse, midwife or technician."
 }
