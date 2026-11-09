@@ -105,6 +105,27 @@
 .tc-ksnk .tc-ksnk-alert.is-info { border-left-color: var(--tc-info); background: var(--tc-info-tint); color: var(--tc-text-heading); }
 .tc-ksnk .tc-ksnk-alert.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); margin-top: var(--tc-sp-2); }
 .tc-ksnk .tc-ksnk-alert.is-warn strong { color: var(--tc-warn-text); }
+/* FEAT-059: SCR-49 đào tạo KSNK, sinh viên thực tập (thẻ chỉ số dùng chung lớp với FEAT-060) */
+.tc-ksnk .tc-ksnk-badge.is-info { background: var(--tc-info); }
+.tc-ksnk .tc-ksnk-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-kpi {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-1);
+	padding: var(--tc-sp-3) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-left: var(--tc-bw-alert) solid var(--tc-info);
+	border-radius: var(--tc-r-sm);
+}
+.tc-ksnk .tc-ksnk-kpi span, .tc-ksnk .tc-ksnk-kpi small { color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ksnk-kpi b { color: var(--tc-text-heading); font-size: var(--tc-fs-4xl); }
+.tc-ksnk .tc-ksnk-kpi.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); }
+.tc-ksnk .tc-ksnk-kpi.is-fail { border-left-color: var(--tc-fail); background: var(--tc-fail-tint); }
+.tc-ksnk .tc-ksnk-kpi.is-pass { border-left-color: var(--tc-pass); }
+@media (max-width: 900px) {
+	.tc-ksnk .tc-ksnk-kpis { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-body { flex-direction: column; }
 	.tc-ksnk .tc-ksnk-rail { flex: none; width: 100%; min-height: 0; border-right: 0; border-bottom: var(--tc-bw-hair) solid var(--tc-line); }

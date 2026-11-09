@@ -58,3 +58,4 @@ DT-ICVAL,IC Indicator Value,R,,,,,,,,,R,R,R,R,"FEAT-056 A-113 (plan D3): hệ th
 DT-IMPMAP,Import Mapping Profile,R,,,,,,,,,RW,RW,,,"FEAT-056 A-113 (plan D3, F-21): hồ sơ ánh xạ cột nhập file"
 DT-ICCOM,IC Committee,RWSA,,,,,,,,,R,R,,R,"FEAT-057 A-113 (FR-M11-01.4, FR-M11-02): Hội đồng KSNK ghi sổ; R01 tạo/sửa/ghi sổ/hủy; R10, R11, R13 đọc"
 DT-ICNET,IC Network Member,RW,RW,,,,,,,,R,R,R,R,"FEAT-057 A-113 (FR-M11-01.4, FR-M11-03): R01, R02 sửa mạng lưới; R12 chỉ khoa mình (User Permission Department, A-132 d)"
+DT-ICTRN,Trainee Induction,RW,RW,,,,,,,,R,R,R,R,"FEAT-059 A-135 (FR-M11-11, UC-42): R01, R02 ghi sinh viên thực tập; R12 chỉ khoa mình (User Permission Department)"

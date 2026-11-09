@@ -46,6 +46,18 @@ SCREENS = [
 		"script": "/assets/tracecore/js/ksnk/scr_47_co_cau.js",
 	},
 ]
+# FEAT-059: đào tạo KSNK (HRMS Training), sinh viên thực tập (UC-42; R02 làm trên Desk — A-135 e)
+SCREENS += [
+	{
+		"slug": "dao-tao",
+		"scr": "SCR-49",
+		"uc": "UC-42",
+		"label": "IC Training and Improvement",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_49_dao_tao.js",
+	},
+]
 
 
 def _badges(user):

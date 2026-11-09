@@ -31,6 +31,8 @@ fixtures = [
 			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
 			["name", "like", "Help Article-tc_%"],  # FEAT-013: hướng dẫn theo bước trạm
 			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
+			["name", "like", "Training Program-tc_%"],  # FEAT-059 (A-135): loại đào tạo KSNK
+			["name", "like", "Training Result Employee-tc_%"],  # FEAT-059 (A-135 a): Đạt
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -212,6 +214,8 @@ after_migrate = [
 	"tracecore.ui.feedback.ensure_issue_type",
 	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
 	"tracecore.setup.error_codes.ensure_error_codes",
+	# FEAT-059 (A-135 e): quyền R01/R02 cho HRMS Training Program / Event / Result
+	"tracecore.infection_program.permissions.ensure_permissions",
 ]
 
 # Uninstallation
@@ -394,6 +398,8 @@ doc_events = {
 		"on_update_after_submit": "tracecore.core.audit.on_document_event",
 	},
 	"IC Network Member": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
+	# FEAT-059 (A-135 c): sinh viên thực tập; không xóa
+	"Trainee Induction": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -572,7 +578,10 @@ tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_c
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
 # A-113 (FEAT-056): hàm tính chỉ số KSNK của module M11-M17 — mỗi hàm trả {source_method: hàm(period, department)}
 # (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
-tracecore_ic_indicators = []
+tracecore_ic_indicators = [
+	# FEAT-059: tỷ lệ đào tạo KSNK cơ bản, chuyên trách/Hội đồng/mạng lưới, sinh viên thực tập (FR-M11-09..11)
+	"tracecore.infection_program.training.register",
+]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
 	# FEAT-057: số thành phần cơ cấu KSNK còn thiếu (SCR-47)

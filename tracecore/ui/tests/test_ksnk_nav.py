@@ -113,6 +113,16 @@ class TestKsnkNav(IsolatedTestCase):
 			item["badge"], 3
 		)  # Hội đồng (nếu chưa có), khoa KSNK, mạng lưới, giám sát viên
 
+	def test_training_screen_scr49_for_office_roles(self):
+		"""FEAT-059 AC-9: SCR-49 trong nhóm program; R02 làm trên Desk (A-135 e) nên không có trên menu."""
+		screen = next(s for s in ksnk.SCREENS if s["slug"] == "dao-tao")
+		self.assertEqual((screen["scr"], screen["uc"], screen["group"]), ("SCR-49", "UC-42", "program"))
+		self.assertEqual(screen["script"], "/assets/tracecore/js/ksnk/scr_49_dao_tao.js")
+		self.assertNotIn("TC R02", screen["roles"])
+		for code in ("R01", "R10", "R11", "R13"):
+			frappe.set_user(self.users[code])
+			self.assertIn("dao-tao", _slugs(api.nav()), code)
+
 	def test_departments_listed_for_filter(self):
 		department = factories.make_department("KSNK Nav Ward")
 		frappe.set_user(self.users["R11"])

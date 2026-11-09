@@ -19,6 +19,15 @@ V112_ROWS = {
 		{"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
 	),
 }
+# FEAT-059 (plan D6, A-135): sinh viên thực tập
+V112_ROWS.update(
+	{
+		"DT-ICTRN": (
+			"Trainee Induction",
+			{"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
+		),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):

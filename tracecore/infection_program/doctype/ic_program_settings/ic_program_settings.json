@@ -14,6 +14,8 @@
   "section_structure",
   "ic_department",
   "surveillance_staff",
+  "section_training",
+  "ic_certificate_types",
   "section_retention",
   "patient_data_retention_months",
   "exposure_retention_months"
@@ -78,6 +80,17 @@
    "options": "IC Surveillance Staff"
   },
   {
+   "fieldname": "section_training",
+   "fieldtype": "Section Break",
+   "label": "Infection Control Training"
+  },
+  {
+   "fieldname": "ic_certificate_types",
+   "fieldtype": "Small Text",
+   "label": "Accepted IC Certificate Types",
+   "description": "One certificate type per line, as entered on staff certificates. A valid certificate of these types counts as trained for full-time staff, committee members and network members."
+  },
+  {
    "fieldname": "section_retention",
    "fieldtype": "Section Break",
    "label": "Personal Data Retention"
@@ -97,7 +110,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 11:00:00.000000",
+ "modified": "2026-11-09 15:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",
