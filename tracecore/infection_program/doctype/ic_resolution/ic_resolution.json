@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "content",
+  "responsible",
+  "responsible_name",
+  "due_date",
+  "status",
+  "todo",
+  "reminded_due_soon",
+  "reminded_overdue"
+ ],
+ "fields": [
+  {
+   "fieldname": "content",
+   "fieldtype": "Small Text",
+   "label": "Content",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "responsible",
+   "fieldtype": "Link",
+   "label": "Responsible",
+   "options": "Employee",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "responsible_name",
+   "fieldtype": "Data",
+   "label": "Responsible Name",
+   "fetch_from": "responsible.employee_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nDone",
+   "default": "Open",
+   "allow_on_submit": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "todo",
+   "fieldtype": "Link",
+   "label": "Follow-up Task",
+   "options": "ToDo",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "reminded_due_soon",
+   "fieldtype": "Check",
+   "label": "Due Soon Reminder Sent",
+   "hidden": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "reminded_overdue",
+   "fieldtype": "Check",
+   "label": "Overdue Reminder Sent",
+   "hidden": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "read_only": 1,
+   "default": "0"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Resolution",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "description": "Conclusion of a committee meeting; each one becomes a follow-up task (ToDo)."
+}

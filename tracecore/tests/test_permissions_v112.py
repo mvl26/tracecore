@@ -19,6 +19,17 @@ V112_ROWS = {
 		{"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
 	),
 }
+# FEAT-058 (plan D6, A-133; FR-M11-01.4): R13 ghi sổ kế hoạch năm, R01 lập và lập bản sửa đổi
+V112_ROWS.update(
+	{
+		"DT-ICPLAN": ("IC Annual Plan", {"R01": "RWA", "R10": "R", "R11": "R", "R13": "RS"}),
+		"DT-ICDOC": (
+			"IC Procedure Document",
+			{"R01": "RW", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
+		),
+		"DT-ICMEET": ("IC Committee Meeting", {"R01": "RWSA", "R10": "R", "R11": "R", "R13": "R"}),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):

@@ -94,3 +94,119 @@ def full_committee_members(prefix="HD"):
 
 def yesterday():
 	return add_days(today(), -1)
+
+
+# --- FEAT-058: kế hoạch năm, văn bản nội bộ, họp Hội đồng --------------------------------------------------------
+
+
+def user(code, prefix="ksnk-plan"):
+	"""User có Role `TC <code>` (R01, R13…)."""
+	return factories.make_user(f"{prefix}-{code.lower()}@example.com", [f"TC {code}"])
+
+
+def indicator(code, kind="Percentage", direction="Higher is better", target=80, min_sample=0):
+	if not frappe.db.exists("IC Indicator", code):
+		frappe.get_doc(
+			{
+				"doctype": "IC Indicator",
+				"code": code,
+				"indicator_name": f"Indicator {code}",
+				"measure_group": "Hand Hygiene",
+				"kind": kind,
+				"target_direction": direction,
+				"national_target": target,
+				"min_sample": min_sample,
+			}
+		).insert(ignore_permissions=True)
+	return code
+
+
+def indicator_value(code, period, numerator, denominator, locked=1, department=None):
+	frappe.get_doc(
+		{
+			"doctype": "IC Indicator Value",
+			"indicator": code,
+			"period": period,
+			"department": department,
+			"numerator": numerator,
+			"denominator": denominator,
+			"sample_size": denominator,
+			"value": numerator / denominator * 100 if denominator else 0,
+			"sample_note": "" if denominator else "Not calculated",
+			"locked": locked,
+		}
+	).insert(ignore_permissions=True)
+
+
+def clear_plans(year):
+	"""Bỏ kế hoạch có sẵn trên site test cho năm `year` (rollback theo savepoint của IsolatedTestCase)."""
+	for table in ("IC Plan Activity", "IC Plan Indicator"):
+		frappe.db.sql(
+			f"delete c from `tab{table}` c join `tabIC Annual Plan` p on p.name = c.parent where p.year = %s",
+			year,
+		)
+	frappe.db.sql("delete from `tabIC Annual Plan` where year = %s", year)
+
+
+def plan(year, indicators=(), activities=(), objectives="Reduce HAI"):
+	"""Kế hoạch Nháp; `indicators` là (mã, nền, mục tiêu), `activities` là dict trường của IC Plan Activity."""
+	return frappe.get_doc(
+		{
+			"doctype": "IC Annual Plan",
+			"year": year,
+			"objectives": objectives,
+			"indicators": [
+				{"indicator": code, "baseline": baseline, "target": target} for code, baseline, target in indicators
+			],
+			"activities": [
+				{"measure_group": "Hand Hygiene", "budget_vnd": 1000000, **activity} for activity in activities
+			],
+		}
+	).insert(ignore_permissions=True)
+
+
+def approve(doc, approver):
+	"""R13 ghi sổ qua ``annual_plan.approve`` (đường của RPC và nút trên form)."""
+	from tracecore.infection_program import annual_plan
+
+	previous = frappe.session.user
+	frappe.set_user(approver)
+	try:
+		annual_plan.approve(doc.name)
+	finally:
+		frappe.set_user(previous)
+	return frappe.get_doc(doc.doctype, doc.name)
+
+
+def procedure(doc_code, title="Hand hygiene procedure", issued_on=None, review_due=None, version_no=1, **values):
+	return frappe.get_doc(
+		{
+			"doctype": "IC Procedure Document",
+			"doc_code": doc_code,
+			"title": title,
+			"doc_type": "Procedure",
+			"version_no": version_no,
+			"measure_group": "Hand Hygiene",
+			"issued_on": issued_on or today(),
+			"review_due": review_due,
+			**values,
+		}
+	).insert(ignore_permissions=True)
+
+
+def meeting(resolutions=(), attendees=(), meeting_date=None, submit=False):
+	"""`resolutions` là (nội dung, employee, hạn); `attendees` là danh sách employee."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "IC Committee Meeting",
+			"meeting_date": meeting_date or today(),
+			"agenda": "Quarterly review",
+			"attendees": [{"employee": emp} for emp in attendees],
+			"resolutions": [
+				{"content": content, "responsible": emp, "due_date": due} for content, emp, due in resolutions
+			],
+		}
+	).insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+	return doc
