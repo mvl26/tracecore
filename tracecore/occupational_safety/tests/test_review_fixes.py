@@ -93,7 +93,9 @@ class TestRequirementApproval(IsolatedTestCase):
 
 	def test_default_vaccines_not_reinserted_after_hospital_edits(self):
 		fx.requirement("PN Only Vaccine", approve=False)
-		for name in frappe.get_all("Immunization Requirement", filters={"name": ["!=", "PN Only Vaccine"]}, pluck="name"):
+		for name in frappe.get_all(
+			"Immunization Requirement", filters={"name": ["!=", "PN Only Vaccine"]}, pluck="name"
+		):
 			frappe.delete_doc("Immunization Requirement", name, force=True, ignore_permissions=True)
 		config.ensure_default_config()
 		self.assertEqual(frappe.get_all("Immunization Requirement", pluck="name"), ["PN Only Vaccine"])
