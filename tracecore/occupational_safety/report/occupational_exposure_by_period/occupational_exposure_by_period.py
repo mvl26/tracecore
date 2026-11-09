@@ -17,6 +17,9 @@ GROUPS = {
 	"Device": "device",
 }
 TRANSLATED = ("exposure_type",)
+# nghề nghiệp và dụng cụ là chữ tự do hoặc nhóm nhỏ, có thể nhận ra người: chỉ R01/R11 nhóm theo hai cột này
+MANAGER_ONLY = ("Occupation", "Device")
+MANAGER_ROLES = ("TC R01", "TC R11", "System Manager")
 
 
 def _columns(group_by):
@@ -45,15 +48,16 @@ def _rate(part, whole):
 	return round(100.0 * part / whole, 1) if whole else None
 
 
-def _row(group, items):
+def _row(group, items, has_limit=True):
 	scheduled = [r for r in items if r.followup_template]
-	on_time = sum(1 for r in items if not r.report_late)
+	on_time = sum(1 for r in items if not r.report_late) if has_limit else None
 	completed = sum(1 for r in scheduled if r.status == "Completed")
 	return {
 		"group": group,
 		"exposures": len(items),
 		"on_time": on_time,
-		"on_time_rate": _rate(on_time, len(items)),
+		# chưa đặt ngưỡng giờ báo: không có "đúng hạn" để tính, để trống thay vì 100 %
+		"on_time_rate": _rate(on_time, len(items)) if has_limit else None,
 		"scheduled": len(scheduled),
 		"completed": completed,
 		"completion_rate": _rate(completed, len(scheduled)),
@@ -73,7 +77,10 @@ def _label(field, value):
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
 	group_by = filters.get("group_by") if filters.get("group_by") in GROUPS else "Exposure Type"
+	if group_by in MANAGER_ONLY and not set(frappe.get_roles()) & set(MANAGER_ROLES):
+		group_by = "Exposure Type"
 	field = GROUPS[group_by]
+	has_limit = bool(frappe.db.get_single_value("IC Program Settings", "exposure_report_hours"))
 	start = getdate(filters.get("from_date") or get_first_day(nowdate()).replace(month=1))
 	end = getdate(filters.get("to_date") or nowdate())
 	rows = frappe.get_all(
@@ -88,8 +95,9 @@ def execute(filters=None):
 	for row in rows:
 		buckets.setdefault(row.get(field) or "", []).append(row)
 	data = [
-		_row(_label(field, key), items) for key, items in sorted(buckets.items(), key=lambda kv: -len(kv[1]))
+		_row(_label(field, key), items, has_limit)
+		for key, items in sorted(buckets.items(), key=lambda kv: -len(kv[1]))
 	]
 	if rows:
-		data.append({**_row(_("Total"), rows), "bold": 1})
+		data.append({**_row(_("Total"), rows, has_limit), "bold": 1})
 	return _columns(group_by), data

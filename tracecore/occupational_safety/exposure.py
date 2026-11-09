@@ -101,6 +101,23 @@ def _check_time(doc):
 		)
 
 
+def _check_after_exposure(doc, moment):
+	"""Giờ sơ cứu / bắt đầu dự phòng phải từ lúc phơi nhiễm đến bây giờ (không để thời gian âm làm mất cờ muộn)."""
+	if not moment:
+		return
+	at = get_datetime(moment)
+	if (
+		at < get_datetime(doc.occurred_at)
+		or time_diff_in_seconds(at, now_datetime()) > FUTURE_TOLERANCE_MIN * 60
+	):
+		raise _blocked(
+			"EXPOSURE_TIME_INVALID",
+			_("Time is outside the exposure period"),
+			_("First aid and prophylaxis times must be between the exposure time and now."),
+			_("Check the times, then save again."),
+		)
+
+
 def _minutes(start, end):
 	return max(0, int(time_diff_in_seconds(get_datetime(end), get_datetime(start)) // 60))
 
@@ -227,6 +244,8 @@ def record_handling(name, first_aid_done=0, first_aid_at=None, prophylaxis=None,
 	doc.first_aid_at = (first_aid_at or doc.first_aid_at or now_datetime()) if doc.first_aid_done else None
 	doc.prophylaxis = prophylaxis
 	doc.prophylaxis_started_at = prophylaxis_started_at if prophylaxis == "Given" else None
+	for moment in (doc.first_aid_at, doc.prophylaxis_started_at):
+		_check_after_exposure(doc, moment)
 	if not doc.followups:
 		_schedule(doc)
 	doc.save(ignore_permissions=True)
@@ -332,9 +351,21 @@ def badges(user):
 
 def deidentify(doc):
 	"""NFR-PRIV-02: bỏ định danh nhân viên và mã BN nguồn, giữ số liệu tổng hợp."""
-	doc.employee = doc.employee_name = doc.reported_by = None
-	doc.source_patient_code = doc.source_patient_code_masked = doc.source_patient_code_hash = None
-	doc.deidentified = 1
+	cleared = {
+		"employee": None,
+		"employee_name": None,
+		"reported_by": None,
+		# sự cố chất thải liên kết còn ghi tên nhân viên; bỏ liên kết để hồ sơ không dẫn ngược về người
+		"incident_capa": None,
+		"source_patient_code": None,
+		"source_patient_code_masked": None,
+		"source_patient_code_hash": None,
+		"owner": "Administrator",
+		"deidentified": 1,
+	}
+	# ghi thẳng (không qua save): save tạo Version chứa giá trị cũ, tức là lưu lại chính định danh vừa xóa
+	frappe.db.set_value(DOCTYPE, doc.name, cleared, update_modified=False)
 	remove_encrypted_password(DOCTYPE, doc.name, "source_patient_code")
-	doc.flags.ignore_links = True
-	doc.save(ignore_permissions=True)
+	frappe.db.delete("Version", {"ref_doctype": DOCTYPE, "docname": doc.name})
+	for row in doc.followups:
+		frappe.db.set_value("Exposure Follow-up", row.name, "owner", "Administrator", update_modified=False)

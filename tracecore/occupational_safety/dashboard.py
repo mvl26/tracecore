@@ -45,13 +45,20 @@ def kpis(day=None):
 
 
 def records(limit=50):
-	rows = frappe.get_all(
-		exposure.DOCTYPE, fields=list(RECORD_FIELDS), order_by="occurred_at desc", limit=limit
+	"""Mọi hồ sơ đang mở (Mới, Đang theo dõi) — không bị cắt bởi giới hạn — rồi các hồ sơ đã đóng gần nhất."""
+	fields = list(RECORD_FIELDS)
+	rows = []
+	for status in exposure.OPEN:
+		rows += frappe.get_all(
+			exposure.DOCTYPE, filters={"status": status}, fields=fields, order_by="occurred_at desc"
+		)
+	rows += frappe.get_all(
+		exposure.DOCTYPE,
+		filters={"status": ["not in", list(exposure.OPEN)]},
+		fields=fields,
+		order_by="occurred_at desc",
+		limit=limit,
 	)
-	order = {"New": 0, "Following Up": 1, "Completed": 2, "Cancelled": 3}
-	rows.sort(
-		key=lambda row: order.get(row.status, 9)
-	)  # sort ổn định: trong cùng trạng thái vẫn mới nhất trước
 	for row in rows:
 		row.department_name = (
 			frappe.db.get_value("Department", row.department, "department_name") if row.department else None

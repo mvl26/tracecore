@@ -24,8 +24,11 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE")  # chức năng có màn chạy offline (A-40)
-SNAPSHOT_ROLES = tuple(dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES)))
+OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE", "EXPOSURE")  # chức năng có màn chạy offline (A-40; FEAT-071)
+# FEAT-071: trạm báo phơi nhiễm của khoa (R08, mạng lưới viên R12, giám sát viên R11) cần khóa mã hóa mã BN nguồn
+SNAPSHOT_ROLES = tuple(
+	dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES, "TC R08", "TC R11", "TC R12"))
+)
 STATUS_ROLES = ("TC R02", "TC R01", "TC R10", "System Manager")
 SAVEPOINT = "tc_sync_snapshot"
 
@@ -187,6 +190,8 @@ def snapshot(station, client_ts=None, token=None):
 		data = _t4(station, on.date(), session.name if session else None)
 	elif function == "USE":
 		data = _t8(session.employee if session else None)
+	elif function == "EXPOSURE":
+		data = {"patient_key": crypto.patient_public_key()}
 	else:
 		return {"ok": True, "function": functions[0] if functions else None, "offline": False}
 	return {"ok": True, "function": function, "offline": True, **data}

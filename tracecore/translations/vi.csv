@@ -8596,3 +8596,11 @@ Draft,Nháp,Exposure Follow-up Template
 Approved,Đã duyệt,Exposure Follow-up Template
 Draft,Nháp,Immunization Requirement
 Approved,Đã duyệt,Immunization Requirement
+Time is outside the exposure period,Thời điểm nằm ngoài khoảng phơi nhiễm
+First aid and prophylaxis times must be between the exposure time and now.,Giờ sơ cứu và giờ bắt đầu dự phòng phải từ lúc phơi nhiễm đến bây giờ.
+"Check the times, then save again.",Kiểm tra lại giờ rồi lưu lại.
+Not approved,Chưa duyệt được
+"Correct the record, save it, then approve again.","Sửa bản ghi, lưu rồi duyệt lại."
+Save the record before approving.,Lưu bản ghi trước khi duyệt.
+Some reports kept offline were not accepted,Một số báo cáo giữ khi mất mạng không được ghi nhận
+Report these exposures again or call the infection control team.,Báo lại các phơi nhiễm này hoặc gọi khoa KSNK.

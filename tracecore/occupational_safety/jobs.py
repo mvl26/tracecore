@@ -19,10 +19,14 @@ CHILD = "Exposure Follow-up"
 
 def run_daily(day=None):
 	day = getdate(day or today())
-	remind_followups(day)
-	immunization.remind_due(day)
-	pep_stock.check(day)
-	deidentify_expired(day)
+	# mỗi việc độc lập: một việc lỗi không làm mất các việc còn lại của ngày (lỗi vào Error Log)
+	for task in (remind_followups, immunization.remind_due, pep_stock.check, deidentify_expired):
+		frappe.db.savepoint("tc_os_daily")
+		try:
+			task(day)
+		except Exception:
+			frappe.db.rollback(save_point="tc_os_daily")
+			frappe.log_error(title=f"TraceCore M16 daily job: {getattr(task, '__name__', task)}")
 
 
 def remind_followups(day=None):

@@ -37,6 +37,8 @@ def _rows(period, department):
 
 def report_on_time(period, department=None):
 	rows = _rows(period, department)
+	if not exposure.thresholds()[0]:
+		return 0, 0, len(rows)  # chưa đặt ngưỡng giờ (OQ-V12-09): không tính, tránh 100 % giả
 	on_time = sum(1 for row in rows if not row.report_late)
 	return on_time, len(rows), len(rows)
 

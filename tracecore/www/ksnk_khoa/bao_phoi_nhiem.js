@@ -4,7 +4,6 @@
 // mạng với cùng khóa + X-TC-Replay (NFR-AVAIL-05). Bốn trạng thái: đang gửi / chưa chọn / lỗi / mất mạng.
 (function () {
 	const METHOD = "tracecore.v1.exposure.report_portal";
-	const OUTBOX = "tc-exposure-outbox";
 	const TYPES = [
 		"Needlestick or Sharps",
 		"Mucous Membrane Splash",
@@ -19,6 +18,9 @@
 	const boot = JSON.parse(bootEl.textContent || "{}");
 	const L = boot.labels || {};
 	const data = boot.data || {};
+	// hàng đợi riêng từng tài khoản: máy dùng chung của khoa không gửi báo cáo của người trước dưới tên người sau
+	const OUTBOX = `tc-exposure-outbox:${boot.user || ""}`;
+	const FAILED = `tc-exposure-failed:${boot.user || ""}`;
 
 	function esc(value) {
 		const div = document.createElement("div");
@@ -62,21 +64,37 @@
 		)}:${pad(date.getMinutes())}`;
 	}
 
-	function readOutbox() {
+	// "2026-11-09T14:20" / "2026-11-09 14:20:00" → "09/11/2026 14:20"
+	function dmy(value) {
+		if (!value) return "-";
+		const [day, time] = String(value).replace("T", " ").split(" ");
+		const [y, m, d] = day.split("-");
+		return `${d}/${m}/${y}${time ? " " + time.slice(0, 5) : ""}`;
+	}
+
+	function readList(name) {
 		try {
-			return JSON.parse(localStorage.getItem(OUTBOX) || "[]");
+			return JSON.parse(localStorage.getItem(name) || "[]");
 		} catch (e) {
 			return [];
 		}
 	}
 
-	function writeOutbox(items) {
+	function writeList(name, items) {
 		try {
-			localStorage.setItem(OUTBOX, JSON.stringify(items));
+			localStorage.setItem(name, JSON.stringify(items));
 			return true;
 		} catch (e) {
 			return false;
 		}
+	}
+
+	function readOutbox() {
+		return readList(OUTBOX);
+	}
+
+	function writeOutbox(items) {
+		return writeList(OUTBOX, items);
 	}
 
 	const state = {
@@ -123,22 +141,38 @@
 		if (!navigator.onLine) return;
 		const items = readOutbox();
 		const left = [];
+		const failed = readList(FAILED);
 		for (const item of items) {
+			let result;
 			try {
-				const result = await post(item.args, item.key, true);
-				if (result.status >= 500) left.push(item); // lỗi server: giữ lại, gửi lần sau
+				result = await post(item.args, item.key, true);
 			} catch (e) {
 				left.push(item); // vẫn mất mạng
+				continue;
+			}
+			const message = result.message || {};
+			if (result.status >= 500) left.push(item); // lỗi server: giữ lại, gửi lần sau
+			else if (message.ok) {
+				const exposure = message.exposure || {};
+				state.records = [{ ...exposure, followups: [] }, ...state.records];
+			} else {
+				// bị từ chối: không âm thầm bỏ — giữ lại để người báo thấy lý do, sửa và báo lại hoặc gọi khoa KSNK
+				failed.push({
+					args: item.args,
+					error: message.error || { title: L.server_error },
+				});
 			}
 		}
 		writeOutbox(left);
+		writeList(FAILED, failed);
 		render();
 	}
 
 	function args() {
 		const form = state.form;
 		return {
-			employee: form.employee || null,
+			// luôn gửi nhân viên cụ thể (không để server suy từ phiên lúc gửi lại)
+			employee: form.employee || data.employee || null,
 			exposure_type: form.exposure_type,
 			occurred_at: iso(new Date(form.occurred_at || Date.now())),
 			activity: form.activity.trim(),
@@ -152,7 +186,11 @@
 	function queue(pending) {
 		const { source_patient_code: _code, ...rest } = pending.args; // mã BN không lưu trong trình duyệt
 		const items = readOutbox();
-		items.push({ key: pending.key, args: { ...rest, client_ts: pending.ts } });
+		// bỏ mã thì tham số khác bản đã thử gửi → khóa mới (cùng khóa sẽ bị server từ chối vì khác nội dung)
+		items.push({
+			key: _code ? uuid4() : pending.key,
+			args: { ...rest, client_ts: pending.ts },
+		});
 		state.pending = null;
 		if (!writeOutbox(items)) {
 			state.notice = {
@@ -344,7 +382,7 @@
 		return `<h2 class="tc-exp-title">${esc(L.step3_title)}</h2>
 			<dl class="tc-exp-summary">
 				${row(L.exposure_type, (L.types || {})[form.exposure_type])}
-				${row(L.occurred_at, form.occurred_at.replace("T", " "))}
+				${row(L.occurred_at, dmy(form.occurred_at))}
 				${row(L.activity, form.activity)}
 				${row(L.device, form.device)}
 				${row(L.source_known, source)}
@@ -390,8 +428,8 @@
 				const steps = (r.followups || [])
 					.map(
 						(f) =>
-							`<li>${esc(f.step)} · ${esc(L.due)} ${esc(f.due_date || "-")} · ${esc(
-								f.done_on ? `${L.done_on} ${f.done_on}` : L.not_yet
+							`<li>${esc(f.step)} · ${esc(L.due)} ${esc(dmy(f.due_date))} · ${esc(
+								f.done_on ? `${L.done_on} ${dmy(f.done_on)}` : L.not_yet
 							)}</li>`
 					)
 					.join("");
@@ -415,6 +453,28 @@
 		)}</h2>${
 			rows ? `<ul>${rows}</ul>` : `<p class="tc-empty">${esc(L.no_records)}</p>`
 		}</section>`;
+	}
+
+	function failedHtml() {
+		const failed = readList(FAILED);
+		if (!failed.length) return "";
+		const items = failed
+			.map(
+				(item, index) =>
+					`<li>${esc(
+						(L.types || {})[item.args.exposure_type] || item.args.exposure_type
+					)} · ${esc(dmy((item.args.occurred_at || "").slice(0, 16)))} — <strong>${esc(
+						item.error.title || ""
+					)}</strong> ${esc(item.error.reason || "")} ${esc(
+						item.error.action || ""
+					)} <button type="button" class="tc-btn" data-act="dismiss" data-index="${index}">${esc(
+						L.dismiss
+					)}</button></li>`
+			)
+			.join("");
+		return `<div class="tc-alert tc-alert-error" role="alert"><p class="tc-alert-title"><span aria-hidden="true">&#10005;</span> ${esc(
+			L.failed_title
+		)}</p><p class="tc-alert-action">${esc(L.failed_action)}</p><ul>${items}</ul></div>`;
 	}
 
 	function render() {
@@ -446,7 +506,7 @@
 			? `<p class="tc-hint" role="status">${esc(fmt(L.queued_count, [waiting]))}</p>`
 			: "";
 		root.dataset.state = view;
-		root.innerHTML = `${offline}${queued}${body}${recordsHtml()}`;
+		root.innerHTML = `${offline}${queued}${failedHtml()}${body}${recordsHtml()}`;
 	}
 
 	root.addEventListener("click", (event) => {
@@ -466,7 +526,11 @@
 			state.notice = null;
 			form.step = Math.max(1, form.step - 1);
 		} else if (act === "send") return send();
-		else if (act === "new") {
+		else if (act === "dismiss") {
+			const failed = readList(FAILED);
+			failed.splice(Number(button.dataset.index), 1);
+			writeList(FAILED, failed);
+		} else if (act === "new") {
 			state.done = null;
 			state.notice = null;
 			state.form = blank();

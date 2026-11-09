@@ -145,6 +145,17 @@ class TestPdaReport(ExposureApiCase):
 		again = self.report(key=key, replay=True, occurred_at=occurred, client_ts=_iso(reported))
 		self.assertEqual(again["exposure"]["name"], doc.name)
 
+	def test_offline_snapshot_gives_patient_key_to_exposure_station(self):
+		"""PDA chỉ có chức năng EXPOSURE vẫn mã hóa được mã BN nguồn khi mất mạng."""
+		from tracecore.v1 import sync as sync_api
+
+		frappe.local.response.pop("http_status_code", None)
+		with self.headers(**{"X-TC-Station": self.station}):
+			data = sync_api.snapshot(station=self.station, client_ts=TS, token=self.token)
+		self.assertTrue(data["offline"], data)
+		self.assertEqual(data["function"], "EXPOSURE")
+		self.assertTrue(data["patient_key"])
+
 	def test_future_time_rejected_with_body(self):
 		result = self.report(occurred_at=_iso(add_to_date(now_datetime(), hours=2)))
 		self.assertFalse(result["ok"])
@@ -202,6 +213,23 @@ class TestPortalReport(ExposureApiCase):
 		frappe.set_user("Guest")
 		with self.assertRaises(frappe.PermissionError):
 			self.portal()
+
+	def test_replay_report_time_is_clamped_between_exposure_and_now(self):
+		"""Gói phát lại không đặt được giờ báo trước giờ phơi nhiễm hay ở tương lai."""
+		frappe.set_user(self.user)
+		occurred = add_to_date(now_datetime(), hours=-2).replace(microsecond=0)
+		frappe.local.response.pop("http_status_code", None)
+		with self.headers(**{"X-TC-Replay": "1"}):
+			result = api.report_portal(
+				exposure_type=fx.SPLASH,
+				occurred_at=_iso(occurred),
+				client_ts=_iso(add_to_date(occurred, hours=-5)),
+			)
+		self.assertTrue(result["ok"], result)
+		frappe.set_user("Administrator")
+		self.assertEqual(
+			str(frappe.db.get_value(DOCTYPE, result["exposure"]["name"], "reported_at")), str(occurred)
+		)
 
 
 class TestScreenApi(ExposureApiCase):

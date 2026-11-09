@@ -178,13 +178,25 @@ class ExposureReport {
 		};
 	}
 
+	// Dạng tham số gửi đi giống hệt khi trực tuyến và khi xếp hàng (cùng X-Idempotency-Key → cùng hash yêu cầu):
+	// có khóa công khai của site thì mã BN luôn mã hóa (`source_patient_code_enc`); không có khóa thì mã rõ chỉ gửi
+	// trực tuyến và bị bỏ nếu phải xếp hàng (khi đó dùng khóa mới vì tham số đã khác).
+	async wireArgs(form) {
+		const { source_patient_code: code, ...rest } = form;
+		if (!code) return rest;
+		const key = this.station.offlineData && this.station.offlineData.patient_key;
+		if (key && window.crypto && crypto.subtle && typeof t8Encrypt === "function")
+			return { ...rest, source_patient_code_enc: await t8Encrypt(key, code) };
+		return { ...rest, source_patient_code: code };
+	}
+
 	// ---- gửi: trực tuyến qua station.rpc; mất mạng → hàng đợi trên máy ----
 	async send() {
 		if (this.busy || !this.station.session) return;
-		const args = this.args();
-		const sig = JSON.stringify(args);
+		const form = this.args();
+		const sig = JSON.stringify(form);
 		if (!this.pending || this.pending.sig !== sig)
-			this.pending = { sig, args, key: uuid4(), ts: clientTs() };
+			this.pending = { sig, args: await this.wireArgs(form), key: uuid4(), ts: clientTs() };
 		const pending = this.pending;
 		if (this.offline) return this.queue(pending);
 		const version = this.station.sessionVersion;
@@ -216,17 +228,12 @@ class ExposureReport {
 	}
 
 	async queue(pending) {
-		const { source_patient_code: code, ...rest } = pending.args; // mã rõ không bao giờ vào IndexedDB
-		const queued = { ...rest };
-		let dropped = false;
-		const key = this.station.offlineData && this.station.offlineData.patient_key;
-		if (code) {
-			if (key && window.crypto && crypto.subtle && typeof t8Encrypt === "function")
-				queued.source_patient_code_enc = await t8Encrypt(key, code);
-			else dropped = true;
-		}
+		// mã rõ không bao giờ vào IndexedDB: bỏ mã và đổi khóa (tham số đã khác bản gửi trực tuyến)
+		const { source_patient_code: code, ...rest } = pending.args;
+		const dropped = Boolean(code);
+		const key = dropped ? uuid4() : pending.key;
 		try {
-			await this.station.queueCall(EXP_REPORT, queued, pending.key, pending.ts);
+			await this.station.queueCall(EXP_REPORT, rest, key, pending.ts);
 		} catch (error) {
 			if (error.sessionEnded) return;
 			this.notice = {

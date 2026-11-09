@@ -35,7 +35,12 @@ def apply(doc):
 		doc.set(FIELD, None)
 		doc.source_patient_code_masked = doc.source_patient_code_hash = None
 		return
-	if not value or _is_dummy(value):
+	if _is_dummy(value):
+		return
+	if not crypto.normalise_patient_code(value):
+		# ô mã bị xóa trên Desk: Frappe xóa bản mã hóa, bỏ luôn bản che và hash để không còn "***1234" mồ côi
+		doc.set(FIELD, None)
+		doc.source_patient_code_masked = doc.source_patient_code_hash = None
 		return
 	code = crypto.normalise_patient_code(value)
 	doc.set(FIELD, code)

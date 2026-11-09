@@ -74,6 +74,9 @@ def labels():
 		"source_known": _("Source Known"),
 		"code_entered": _("patient code entered"),
 		"status": _("Status"),
+		"failed_title": _("Some reports kept offline were not accepted"),
+		"failed_action": _("Report these exposures again or call the infection control team."),
+		"dismiss": _("Dismiss"),
 		"types": {value: _(value, context="Occupational Exposure") for value in api.config.EXPOSURE_TYPES},
 		"sources": {value: _(value, context="Occupational Exposure") for value in ("Yes", "No", "Unknown")},
 		"statuses": {
@@ -92,5 +95,6 @@ def get_context(context):
 	context.title = _("Exposure Report")
 	data = api.portal_context()
 	context.department = data.get("department")
-	context.boot = {"data": data, "labels": labels()}
+	# user: hàng đợi offline trong trình duyệt tách theo tài khoản (máy dùng chung của khoa)
+	context.boot = {"data": data, "labels": labels(), "user": frappe.session.user}
 	return context

@@ -94,10 +94,31 @@ def active_template(exposure_type):
 # --- yêu cầu tiêm chủng --------------------------------------------------------------------------------------------
 
 
+REQUIREMENT_RULES = ("doses_required", "dose_interval_days", "booster_interval_days")
+
+
+def before_insert_requirement(doc):
+	# tên = vaccine (autoname field:vaccine chạy trước validate): cắt khoảng trắng trước khi đặt tên
+	doc.vaccine = (doc.vaccine or "").strip()
+
+
+def _scope(doc):
+	return (
+		sorted(row.department for row in doc.departments),
+		sorted(row.designation for row in doc.designations),
+		[cint(doc.get(field)) for field in REQUIREMENT_RULES],
+	)
+
+
 def validate_requirement(doc):
 	doc.vaccine = (doc.vaccine or "").strip()
 	if doc.status == "Approved" and cint(doc.doses_required) < 1:
 		frappe.throw(_("An approved vaccine requirement needs at least one dose."), frappe.ValidationError)
+	before = None if doc.is_new() or doc.flags.get("tc_status_change") else doc.get_doc_before_save()
+	if before and before.status == "Approved" and _scope(before) != _scope(doc):
+		# đổi số mũi, khoảng cách hay nhóm nguy cơ của bản đã duyệt → về Nháp, R01 duyệt lại (BRU-OCC-004)
+		doc.status = "Draft"
+		doc.approved_by = doc.approved_on = None
 
 
 def approve_requirement(name):
@@ -109,11 +130,29 @@ def approve_requirement(name):
 	doc.status = "Approved"
 	doc.approved_by = frappe.session.user
 	doc.approved_on = now_datetime()
+	doc.flags.tc_status_change = True
 	doc.save(ignore_permissions=True)
 	audit.log(
 		"Update", REQUIREMENT, doc.name, old={"status": old}, new={"status": "Approved"}, reason=_("Approved")
 	)
+	_recompute_next_due(doc)
 	return doc
+
+
+def _recompute_next_due(requirement):
+	"""Quy tắc mũi vừa duyệt áp lại cho hạn mũi kế tiếp đã tính (mức nhắc về 0 khi hạn đổi)."""
+	from tracecore.occupational_safety import immunization
+
+	for row in frappe.get_all(
+		"Staff Immunization",
+		filters={"vaccine": requirement.name},
+		fields=["name", "dose_no", "given_on", "next_due"],
+	):
+		due = immunization.next_due(requirement, row.dose_no, row.given_on)
+		if str(due or "") != str(row.next_due or ""):
+			frappe.db.set_value(
+				"Staff Immunization", row.name, {"next_due": due, "reminded_level": 0}, update_modified=False
+			)
 
 
 def approved_requirements():
@@ -132,8 +171,8 @@ def ensure_default_config():
 		if frappe.db.exists(TEMPLATE, {"exposure_type": exposure_type}):
 			continue
 		frappe.get_doc({"doctype": TEMPLATE, "exposure_type": exposure_type}).insert(ignore_permissions=True)
+	# vaccine mẫu chỉ chèn khi danh mục còn trống (lần cài đầu): R01 đã xóa/đổi tên thì không chèn lại
+	if frappe.db.count(REQUIREMENT):
+		return
 	for vaccine in DEFAULT_VACCINES:
-		label = _(vaccine, "vi")
-		if frappe.db.exists(REQUIREMENT, label):
-			continue
-		frappe.get_doc({"doctype": REQUIREMENT, "vaccine": label}).insert(ignore_permissions=True)
+		frappe.get_doc({"doctype": REQUIREMENT, "vaccine": _(vaccine, "vi")}).insert(ignore_permissions=True)

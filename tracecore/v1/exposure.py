@@ -12,6 +12,7 @@ Từ chối nghiệp vụ trả body ``{"ok": false, "error": {...}}`` (``reject
 
 import frappe
 from frappe import _
+from frappe.utils import get_datetime, now_datetime, strip_html
 
 from tracecore.core import crypto, sync
 from tracecore.core.client_time import ClientTimestampError, parse_client_ts, to_system_time
@@ -119,7 +120,7 @@ def report(
 		code = _decrypt(source_patient_code_enc) if source_patient_code_enc else source_patient_code
 		values = _values(employee, exposure_type, occurred_at, activity, device, source_known, code)
 		if replay:
-			values["reported_at"] = to_system_time(timestamp)
+			values["reported_at"] = _replay_reported_at(values, timestamp)
 		doc = service.create_report(values, channel="PDA")
 		return {"ok": True, "exposure": _receipt(doc)}
 
@@ -202,7 +203,7 @@ def report_portal(
 			target, exposure_type, occurred_at, activity, device, source_known, source_patient_code
 		)
 		if sync.is_replay():
-			values["reported_at"] = to_system_time(timestamp)
+			values["reported_at"] = _replay_reported_at(values, timestamp)
 		doc = service.create_report(values, channel="Department Portal")
 	except BlockedError as error:
 		return reject_block(error.block, DOCTYPE, None, client_ts=timestamp)
@@ -321,14 +322,41 @@ def reveal_source_code(name, reason=None):
 	return {"ok": True, "name": name, "source_patient_code": code}
 
 
+def _approve(fn, name):
+	"""Nút Duyệt trên form Desk: lỗi nghiệp vụ trả body để form hiện cảnh báo inline (không msgprint)."""
+	frappe.db.savepoint("tc_exposure_approve")
+	try:
+		doc = fn(name)
+	except frappe.PermissionError:
+		frappe.db.rollback(save_point="tc_exposure_approve")
+		raise
+	except frappe.ValidationError as error:
+		frappe.db.rollback(save_point="tc_exposure_approve")
+		frappe.clear_messages()
+		return {
+			"ok": False,
+			"error": {
+				"title": _("Not approved"),
+				"reason": strip_html(str(error)),
+				"action": _("Correct the record, save it, then approve again."),
+			},
+		}
+	return {"ok": True, "name": doc.name, "status": doc.status}
+
+
 @frappe.whitelist(methods=["POST"])
 def approve_template(name):
 	"""R01 duyệt một phiên bản mẫu theo dõi (A-137 Q3)."""
-	doc = config.approve_template(name)
-	return {"ok": True, "name": doc.name, "status": doc.status}
+	return _approve(config.approve_template, name)
 
 
 @frappe.whitelist(methods=["POST"])
 def approve_requirement(name):
-	doc = config.approve_requirement(name)
-	return {"ok": True, "name": doc.name, "status": doc.status}
+	"""R01 duyệt yêu cầu tiêm chủng (A-137 f)."""
+	return _approve(config.approve_requirement, name)
+
+
+def _replay_reported_at(values, timestamp):
+	"""Giờ báo của gói phát lại = client_ts, kẹp trong [giờ phơi nhiễm, bây giờ] để không báo lùi/tiến giờ."""
+	reported = get_datetime(to_system_time(timestamp))
+	return min(max(reported, get_datetime(values["occurred_at"])), now_datetime())

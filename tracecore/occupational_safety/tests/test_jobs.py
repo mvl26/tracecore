@@ -100,7 +100,19 @@ class TestRetention(IsolatedTestCase):
 			)
 		)
 		self.assertTrue(frappe.db.exists("Audit Log", {"ref_doctype": DOCTYPE, "ref_name": self.doc.name}))
+		# không còn dấu vết định danh ở lịch sử sửa (Version) hay người tạo
+		self.assertFalse(frappe.db.exists("Version", {"ref_doctype": DOCTYPE, "docname": self.doc.name}))
+		self.assertEqual(frappe.db.get_value(DOCTYPE, self.doc.name, "owner"), "Administrator")
 		self.assertEqual(jobs.deidentify_expired(), 0)
+
+	def test_failing_task_does_not_stop_other_daily_tasks(self):
+		from unittest.mock import patch
+
+		frappe.db.set_single_value("IC Program Settings", "exposure_retention_months", 24)
+		with patch.object(jobs, "remind_followups", side_effect=RuntimeError("boom")):
+			with patch.object(jobs.frappe, "log_error"):
+				jobs.run_daily()
+		self.assertTrue(frappe.db.get_value(DOCTYPE, self.doc.name, "deidentified"))
 
 
 class TestPepStock(IsolatedTestCase):
