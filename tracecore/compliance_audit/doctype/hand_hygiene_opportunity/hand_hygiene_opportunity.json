@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "subject_role",
+  "subject_employee",
+  "moment",
+  "action",
+  "technique_ok",
+  "glove_instead",
+  "client_uuid"
+ ],
+ "fields": [
+  {
+   "fieldname": "subject_role",
+   "fieldtype": "Select",
+   "label": "Profession",
+   "options": "\nDoctor\nNurse\nMidwife\nTechnician\nOrderly\nStudent\nOther",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "subject_employee",
+   "fieldtype": "Link",
+   "label": "Observed Employee",
+   "options": "Employee",
+   "ignore_user_permissions": 1
+  },
+  {
+   "fieldname": "moment",
+   "fieldtype": "Select",
+   "label": "Moment",
+   "reqd": 1,
+   "options": "1\n2\n3\n4\n5",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "label": "Action",
+   "reqd": 1,
+   "options": "Hand Rub\nHand Wash\nMissed",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "technique_ok",
+   "fieldtype": "Check",
+   "label": "Correct Technique",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "glove_instead",
+   "fieldtype": "Check",
+   "label": "Gloves Instead of Hand Hygiene"
+  },
+  {
+   "fieldname": "client_uuid",
+   "fieldtype": "Data",
+   "label": "Client ID",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "Hand Hygiene Opportunity",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

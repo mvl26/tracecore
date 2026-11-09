@@ -266,10 +266,13 @@ after_migrate = [
 # Thông báo (FEAT-010): mỗi người chỉ thấy thông báo của mình; R10 và System Manager thấy tất cả
 permission_query_conditions = {
 	"Notification Delivery": "tracecore.core.notification.delivery_query_conditions",
+	# FEAT-060 FR-M12-08.1: R08/R12 chỉ thấy phiếu giám sát của khoa có User Permission
+	"Audit Session": "tracecore.compliance_audit.sessions.query_conditions",
 }
 
 has_permission = {
 	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
+	"Audit Session": "tracecore.compliance_audit.sessions.has_permission",
 }
 
 # DocType Class
@@ -386,6 +389,10 @@ doc_events = {
 	"IC Indicator": dict(_AUDIT_EVENTS),
 	"IC Indicator Value": dict(_AUDIT_EVENTS),
 	"Import Mapping Profile": dict(_AUDIT_EVENTS),
+	# FEAT-060 (ADR-015): mẫu phiếu, lịch, phiếu giám sát ghi Audit Log, không xóa
+	"Audit Template": dict(_AUDIT_EVENTS),
+	"Audit Schedule": dict(_AUDIT_EVENTS),
+	"Audit Session": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -640,6 +647,8 @@ scheduler_events = {
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày
 		"tracecore.instrument.loaner.remind_overdue",
+		# FEAT-060, FR-M12-03: giao việc giám sát ngày đầu kỳ, nhắc khoa chưa đạt mục tiêu tuần cuối kỳ
+		"tracecore.compliance_audit.schedule.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

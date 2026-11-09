@@ -88,6 +88,12 @@ EVENTS = {
 	"SOFTWARE_FEEDBACK": ("Software feedback from a station", "Normal", 0, 0, (ADMIN_ROLE,)),
 	# A-75: R10 sửa dải mã offline làm hai dải giao nhau
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
+	# FEAT-060 (FR-M12-03, 08, 09): giao việc giám sát, nhắc độ bao phủ (R02), phản hồi khoa (người nhận do nơi gọi
+	# truyền: R08/R12 của khoa), mục trọng yếu không đạt → đề nghị R01/R11 mở NC
+	"AUDIT_DUE": ("Audits due for the period", "Normal", 0, 1, ()),
+	"AUDIT_COVERAGE_LOW": ("Audit coverage below target", "Normal", 0, 1, (FALLBACK_ROLE,)),
+	"AUDIT_FEEDBACK": ("Audit result feedback to the department", "Normal", 0, 1, ()),
+	"AUDIT_CRITICAL_FAIL": ("Critical audit item failed", "Normal", 0, 0, ("TC R01", "TC R11")),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

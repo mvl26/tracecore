@@ -56,3 +56,6 @@ DT-ICSET,IC Program Settings,R,,,,,,,,,RW,R,,R,FEAT-056 A-113 (plan D3): Single 
 DT-ICIND,IC Indicator,RW,,,,,,,,,RW,R,R,R,FEAT-056 A-113 (plan D3): danh mục chỉ số; R01 duyệt nội dung chuyên môn (D10)
 DT-ICVAL,IC Indicator Value,R,,,,,,,,,R,R,R,R,"FEAT-056 A-113 (plan D3): hệ thống ghi khi khóa kỳ, không ai ghi tay; R12 chỉ khoa mình + toàn viện"
 DT-IMPMAP,Import Mapping Profile,R,,,,,,,,,RW,RW,,,"FEAT-056 A-113 (plan D3, F-21): hồ sơ ánh xạ cột nhập file"
+DT-AUDTPL,Audit Template,RWS,R,,,,,,R,,R,RW,R,R,"FEAT-060 A-113/A-132 (plan D1): ghi sổ = R01 duyệt, khóa phiên bản; R11 soạn nháp"
+DT-AUDSCH,Audit Schedule,RW,RW,,,,,,,,R,R,,R,"FEAT-060 A-113 (plan D1): R01/R02 lập lịch giám sát (FR-M12-08.2)"
+DT-AUDSES,Audit Session,RWSA,R,,,,,,RWS,,,RWS,RWS,,"FEAT-060 A-113 (plan D1): R08/R12 khoa mình (User Permission Department), R11 mọi khoa; R01 hủy phiếu nhập sai; R13 chỉ xem báo cáo tổng hợp"

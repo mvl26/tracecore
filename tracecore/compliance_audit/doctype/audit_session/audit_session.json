@@ -1,0 +1,317 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "audit_template",
+  "template_code",
+  "template_title",
+  "audit_type",
+  "scoring_method",
+  "audit_date",
+  "column_break_main",
+  "department",
+  "location",
+  "mode",
+  "supplier",
+  "section_people",
+  "observer",
+  "observer_name",
+  "column_break_people",
+  "subject_role",
+  "subject_employee",
+  "started_at",
+  "ended_at",
+  "section_result",
+  "score_pct",
+  "result",
+  "critical_failed",
+  "column_break_result",
+  "sample_n",
+  "sample_flag",
+  "nc_status",
+  "nc_name",
+  "nc_reason",
+  "section_answers",
+  "answers",
+  "section_opportunities",
+  "opportunities",
+  "client_uuid",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "audit_template",
+   "fieldtype": "Link",
+   "label": "Audit Template",
+   "options": "Audit Template",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "template_code",
+   "fieldtype": "Data",
+   "label": "Template Code",
+   "read_only": 1,
+   "fetch_from": "audit_template.template_code",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "template_title",
+   "fieldtype": "Data",
+   "label": "Template",
+   "read_only": 1,
+   "fetch_from": "audit_template.title",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "audit_type",
+   "fieldtype": "Data",
+   "label": "Audit Type",
+   "read_only": 1,
+   "fetch_from": "audit_template.audit_type"
+  },
+  {
+   "fieldname": "scoring_method",
+   "fieldtype": "Data",
+   "label": "Scoring Method",
+   "read_only": 1,
+   "fetch_from": "audit_template.scoring_method"
+  },
+  {
+   "fieldname": "audit_date",
+   "fieldtype": "Date",
+   "label": "Audit Date",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location"
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "default": "Announced",
+   "options": "Announced\nUnannounced"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier",
+   "ignore_user_permissions": 1,
+   "description": "Outsourced service or catering supplier."
+  },
+  {
+   "fieldname": "section_people",
+   "fieldtype": "Section Break",
+   "label": "People"
+  },
+  {
+   "fieldname": "observer",
+   "fieldtype": "Link",
+   "label": "Observer",
+   "options": "Employee",
+   "reqd": 1,
+   "ignore_user_permissions": 1
+  },
+  {
+   "fieldname": "observer_name",
+   "fieldtype": "Data",
+   "label": "Observer Name",
+   "read_only": 1,
+   "fetch_from": "observer.employee_name"
+  },
+  {
+   "fieldname": "column_break_people",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "subject_role",
+   "fieldtype": "Select",
+   "label": "Observed Profession",
+   "options": "\nDoctor\nNurse\nMidwife\nTechnician\nOrderly\nStudent\nOther"
+  },
+  {
+   "fieldname": "subject_employee",
+   "fieldtype": "Link",
+   "label": "Observed Employee",
+   "options": "Employee",
+   "ignore_user_permissions": 1,
+   "description": "Must not be the observer."
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At"
+  },
+  {
+   "fieldname": "section_result",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "score_pct",
+   "fieldtype": "Percent",
+   "label": "Score",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "\nPass\nFail",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "critical_failed",
+   "fieldtype": "Check",
+   "label": "Critical Item Failed",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sample_n",
+   "fieldtype": "Int",
+   "label": "Department Sample (month)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "sample_flag",
+   "fieldtype": "Check",
+   "label": "Insufficient Sample",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nc_status",
+   "fieldtype": "Select",
+   "label": "Non-conformance",
+   "options": "\nSuggested\nOpened\nDismissed",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "nc_name",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident CAPA",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "nc_reason",
+   "fieldtype": "Small Text",
+   "label": "Dismiss Reason",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "section_answers",
+   "fieldtype": "Section Break",
+   "label": "Answers"
+  },
+  {
+   "fieldname": "answers",
+   "fieldtype": "Table",
+   "label": "Answers",
+   "options": "Audit Answer"
+  },
+  {
+   "fieldname": "section_opportunities",
+   "fieldtype": "Section Break",
+   "label": "Hand Hygiene Opportunities",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "opportunities",
+   "fieldtype": "Table",
+   "label": "Opportunities",
+   "options": "Hand Hygiene Opportunity"
+  },
+  {
+   "fieldname": "client_uuid",
+   "fieldtype": "Data",
+   "label": "Client ID",
+   "read_only": 1,
+   "no_copy": 1,
+   "search_index": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Audit Session",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "Audit Session",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "submit": 1,
+   "cancel": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Audit form filled from an approved template version (snapshot of the items).",
+ "autoname": "GS-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "is_submittable": 1,
+ "title_field": "department",
+ "track_changes": 1,
+ "search_fields": "department,template_code,audit_date"
+}

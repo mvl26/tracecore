@@ -12,6 +12,17 @@ V112_ROWS = {
 	"DT-ICVAL": ("IC Indicator Value", {"R01": "R", "R10": "R", "R11": "R", "R12": "R", "R13": "R"}),
 	"DT-IMPMAP": ("Import Mapping Profile", {"R01": "R", "R10": "RW", "R11": "RW"}),
 }
+# FEAT-060 plan D1 (engine phiếu giám sát M12)
+V112_ROWS.update(
+	{
+		"DT-AUDTPL": (
+			"Audit Template",
+			{"R01": "RWS", "R02": "R", "R08": "R", "R10": "R", "R11": "RW", "R12": "R", "R13": "R"},
+		),
+		"DT-AUDSCH": ("Audit Schedule", {"R01": "RW", "R02": "RW", "R10": "R", "R11": "R", "R13": "R"}),
+		"DT-AUDSES": ("Audit Session", {"R01": "RWSA", "R02": "R", "R08": "RWS", "R11": "RWS", "R12": "RWS"}),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):

@@ -333,6 +333,14 @@ HTTP_STATUS: dict[str, int] = {
 	"WASTE_NOTE_REQUIRED": 422,
 	"WASTE_GIVER_INVALID": 403,
 	"WASTE_NOT_HELD": 409,
+	# FEAT-060 (ADR-015): phiếu giám sát — mẫu chưa duyệt/hết hiệu lực, tự đánh giá mình, mục chưa chấm, NC
+	"AUDIT_TEMPLATE_NOT_APPROVED": 409,
+	"AUDIT_SELF_OBSERVATION": 422,
+	"AUDIT_ANSWER_MISSING": 422,
+	"AUDIT_FAIL_NOTE_REQUIRED": 422,
+	"AUDIT_ITEM_UNKNOWN": 422,
+	"AUDIT_NC_NOT_SUGGESTED": 409,
+	"AUDIT_NOT_ALLOWED": 403,
 }
 DEFAULT_HTTP_STATUS = 409
 # Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ
