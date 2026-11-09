@@ -8,7 +8,8 @@
 // bước LIN (trạm đồ vải, FEAT-033, FEAT-034) cho LinenStation: LinenCollect (station_linen.js) và LaundryBatch (station_laundry.js);
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
-/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, ExposureReport, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
+/* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
+/* global AuditForm, ExposureReport */
 
 const RPC_TIMEOUT_MS = 8000;
 const RPC_READ_RETRY_MS = 600;
@@ -40,6 +41,8 @@ function tcScreenClass(key) {
 		case "waste":
 			if (typeof WasteStation !== "undefined") return WasteStation; // thu gom + kho tạm (FEAT-048)
 			return typeof WasteCollect !== "undefined" ? WasteCollect : null;
+		case "audit": // FEAT-060 SCR-52: phiếu giám sát KSNK trên PDA
+			return typeof AuditForm !== "undefined" ? AuditForm : null;
 		case "exposure": // báo phơi nhiễm trên PDA của khoa (FEAT-071, SCR-63)
 			return typeof ExposureReport !== "undefined" ? ExposureReport : null;
 		default:
@@ -1222,8 +1225,8 @@ class TraceCoreStation {
 		return (
 			typeof TcOutbox !== "undefined" &&
 			Boolean(window.indexedDB) &&
-			((this.stationInfo && this.stationInfo.functions) || []).some((code) =>
-				["RECEIVE", "PACK", "USE", "EXPOSURE"].includes(code)
+			((this.stationInfo && this.stationInfo.functions) || []).some(
+				(code) => ["RECEIVE", "PACK", "USE", "AUDIT", "EXPOSURE"].includes(code) // FEAT-060 phiếu giám sát, FEAT-071 báo phơi nhiễm offline
 			)
 		);
 	}

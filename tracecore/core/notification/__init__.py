@@ -90,6 +90,18 @@ EVENTS = {
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
 	# FEAT-057 (A-132 d, FR-M11-03.2): khoa bắt buộc mất mạng lưới viên cuối cùng của một nhóm, báo Trưởng khoa KSNK
 	"IC_NETWORK_GAP": ("Infection control network gap", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-058 (A-133, FR-M11-05, FR-M11-07, FR-M11-08): người chủ trì do nơi gọi truyền + Trưởng khoa KSNK
+	"IC_PLAN_ACTIVITY_DUE": ("Annual plan activity due soon", "Normal", 0, 0, ("TC R01",)),
+	"IC_PLAN_ACTIVITY_OVERDUE": ("Annual plan activity overdue", "Normal", 0, 0, ("TC R01",)),
+	"IC_RESOLUTION_DUE": ("Committee conclusion due soon", "Normal", 0, 0, ("TC R01",)),
+	"IC_RESOLUTION_OVERDUE": ("Committee conclusion overdue", "Normal", 0, 0, ("TC R01",)),
+	"IC_DOCUMENT_REVIEW_DUE": ("Internal document review due", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-060 (FR-M12-03, 08, 09): giao việc giám sát, nhắc độ bao phủ (R02), phản hồi khoa (người nhận do nơi gọi
+	# truyền: R08/R12 của khoa), mục trọng yếu không đạt → đề nghị R01/R11 mở NC
+	"AUDIT_DUE": ("Audits due for the period", "Normal", 0, 1, ()),
+	"AUDIT_COVERAGE_LOW": ("Audit coverage below target", "Normal", 0, 1, (FALLBACK_ROLE,)),
+	"AUDIT_FEEDBACK": ("Audit result feedback to the department", "Normal", 0, 1, ()),
+	"AUDIT_CRITICAL_FAIL": ("Critical audit item failed", "Normal", 0, 0, ("TC R01", "TC R11")),
 	# FEAT-071 (A-137 e): phơi nhiễm nghề nghiệp báo ngay R01, R11 (FR-M16-01, 01.1); mốc theo dõi (nhân viên do nơi gọi
 	# truyền); mẫu theo dõi chưa duyệt; tiêm chủng đến hạn (nhân viên + R02, như FR-M4-01.4); thuốc dự phòng (FR-M16-08)
 	"EXPOSURE_REPORTED": ("Occupational exposure reported", "Urgent", 1, 1, ("TC R01", "TC R11")),

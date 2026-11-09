@@ -29,6 +29,7 @@ STATION_KEYS = (
 	"USE",
 	"LINEN",
 	"WASTE",
+	"AUDIT",
 	"EXPOSURE",  # FEAT-071
 	GENERAL,
 )
@@ -113,6 +114,12 @@ DEFAULT_STEPS = {
 		"Scan the card of the person handing over the waste.",
 		"Choose the waste type, then enter the number of bags and the weight.",
 		"Confirm, then scan the card again to acknowledge the receipt.",
+	),
+	"AUDIT": (
+		"Scan your employee card to open the station.",
+		"Choose the audit template and the department, then the person or role observed.",
+		"Answer every item; a Fail answer needs a note.",
+		"Submit the audit; without network it is saved and sent when the connection returns.",
 	),
 	"EXPOSURE": (
 		"Choose the type of exposure and check the time it happened.",

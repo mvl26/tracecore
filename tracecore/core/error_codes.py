@@ -257,6 +257,14 @@ UNMAPPED_BLOCK_CODES = frozenset(
 		"WASTE_WEIGHT_MISSING",
 		"WASTE_WEIGHT_UNCONFIRMED",
 		"WASTE_WRONG_LOCATION",
+		# FEAT-060: phiếu giám sát KSNK — lỗi nhập liệu/chứng từ của engine phiếu, không phải kiểm soát CSSD
+		"AUDIT_TEMPLATE_NOT_APPROVED",
+		"AUDIT_SELF_OBSERVATION",
+		"AUDIT_ANSWER_MISSING",
+		"AUDIT_FAIL_NOTE_REQUIRED",
+		"AUDIT_ITEM_UNKNOWN",
+		"AUDIT_NC_NOT_SUGGESTED",
+		"AUDIT_NOT_ALLOWED",
 		# FEAT-071 (A-137): báo phơi nhiễm trên PDA/Cổng khoa và xử trí ở SCR-64, không thuộc danh mục lỗi trạm
 		"EXPOSURE_HANDLING_INCOMPLETE",
 		"EXPOSURE_NOT_ALLOWED",

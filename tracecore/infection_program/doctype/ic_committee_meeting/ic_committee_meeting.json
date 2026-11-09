@@ -1,0 +1,140 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_meeting",
+  "meeting_date",
+  "committee",
+  "column_break_meeting",
+  "agenda",
+  "section_open",
+  "open_resolutions_html",
+  "section_attendees",
+  "attendees",
+  "section_minutes",
+  "minutes",
+  "minutes_file",
+  "section_resolutions",
+  "resolutions",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_meeting",
+   "fieldtype": "Section Break",
+   "label": "Meeting"
+  },
+  {
+   "fieldname": "meeting_date",
+   "fieldtype": "Date",
+   "label": "Meeting Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "committee",
+   "fieldtype": "Link",
+   "label": "IC Committee",
+   "options": "IC Committee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_meeting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agenda",
+   "fieldtype": "Text",
+   "label": "Agenda"
+  },
+  {
+   "fieldname": "section_open",
+   "fieldtype": "Section Break",
+   "label": "Open Conclusions from Previous Meetings"
+  },
+  {
+   "fieldname": "open_resolutions_html",
+   "fieldtype": "HTML",
+   "label": "Open Conclusions"
+  },
+  {
+   "fieldname": "section_attendees",
+   "fieldtype": "Section Break",
+   "label": "Attendees"
+  },
+  {
+   "fieldname": "attendees",
+   "fieldtype": "Table",
+   "label": "Attendees",
+   "options": "IC Meeting Attendee"
+  },
+  {
+   "fieldname": "section_minutes",
+   "fieldtype": "Section Break",
+   "label": "Minutes"
+  },
+  {
+   "fieldname": "minutes",
+   "fieldtype": "Text Editor",
+   "label": "Minutes"
+  },
+  {
+   "fieldname": "minutes_file",
+   "fieldtype": "Attach",
+   "label": "Minutes File"
+  },
+  {
+   "fieldname": "section_resolutions",
+   "fieldtype": "Section Break",
+   "label": "Conclusions"
+  },
+  {
+   "fieldname": "resolutions",
+   "fieldtype": "Table",
+   "label": "Conclusions",
+   "options": "IC Resolution"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "IC Committee Meeting",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Committee Meeting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "HH-.YYYY.-.###",
+ "naming_rule": "Expression (old style)",
+ "is_submittable": 1,
+ "title_field": "meeting_date",
+ "track_changes": 1,
+ "description": "Minutes of an infection control committee meeting; each conclusion becomes a follow-up task."
+}

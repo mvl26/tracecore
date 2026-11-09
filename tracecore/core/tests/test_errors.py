@@ -288,6 +288,18 @@ class TestErrors(FrappeTestCase):
 				"WASTE_NOT_HELD": 409,
 			}
 		)
+		# FEAT-060 A-134: engine phiếu giám sát
+		table.update(
+			{
+				"AUDIT_TEMPLATE_NOT_APPROVED": 409,
+				"AUDIT_SELF_OBSERVATION": 422,
+				"AUDIT_ANSWER_MISSING": 422,
+				"AUDIT_FAIL_NOTE_REQUIRED": 422,
+				"AUDIT_ITEM_UNKNOWN": 422,
+				"AUDIT_NC_NOT_SUGGESTED": 409,
+				"AUDIT_NOT_ALLOWED": 403,
+			}
+		)
 		# FEAT-071 A-137: phơi nhiễm nghề nghiệp
 		table.update(
 			{
