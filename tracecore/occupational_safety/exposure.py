@@ -144,6 +144,8 @@ def create_report(values, channel="Desk", reported_by=None):
 			"source_patient_code": values.get("source_patient_code") if data["source_known"] == "Yes" else None,
 			"report_channel": channel,
 			"reported_by": reported_by or frappe.session.user,
+			# phát lại offline: giờ báo = client_ts (ADR-003); trực tuyến: giờ server nhận
+			"reported_at": values.get("reported_at"),
 		}
 	)
 	doc.insert(ignore_permissions=True)

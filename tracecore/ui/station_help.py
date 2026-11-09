@@ -29,6 +29,7 @@ STATION_KEYS = (
 	"USE",
 	"LINEN",
 	"WASTE",
+	"EXPOSURE",  # FEAT-071
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
@@ -112,6 +113,11 @@ DEFAULT_STEPS = {
 		"Scan the card of the person handing over the waste.",
 		"Choose the waste type, then enter the number of bags and the weight.",
 		"Confirm, then scan the card again to acknowledge the receipt.",
+	),
+	"EXPOSURE": (
+		"Choose the type of exposure and check the time it happened.",
+		"Enter what you were doing, the device and whether the source is known.",
+		"Check and send the report, then follow the first-aid procedure shown.",
 	),
 	GENERAL: (
 		"Open the address of your station: it ends with ?station= and the station code, for example ?station=TR-001. Ask R10 for the code if you do not know it.",

@@ -22,6 +22,8 @@ FUNCTION_ROLES = {
 	"USE": {"TC R08"},
 	"LINEN": {"TC R07"},  # trạm đồ vải (FEAT-033, A-49 L1): thu gom, sau này lô giặt và cấp phát
 	"WASTE": {"TC R07"},  # trạm thu gom chất thải (FEAT-047, A-60 W5)
+	# báo phơi nhiễm trên PDA của khoa (FEAT-071, A-137): nhân viên khoa, mạng lưới viên, giám sát viên KSNK
+	"EXPOSURE": {"TC R08", "TC R11", "TC R12"},
 }
 # thẻ, tài khoản thấy đủ trạm trên hàng nút (A-91, #1831 S-01); bấm trạm khác khu vẫn phải quét lại thẻ (A-90)
 OVERVIEW_ROLES = {"TC R01", "TC R02", "TC R10"}
