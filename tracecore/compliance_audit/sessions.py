@@ -32,9 +32,16 @@ def blocked(code, title, reason, action, **extra):
 
 def _check_template(doc):
 	template = frappe.db.get_value(
-		templates.DOCTYPE, doc.audit_template, ["template_code", "docstatus"], as_dict=True
+		templates.DOCTYPE, doc.audit_template, ["template_code", "docstatus", "effective_from"], as_dict=True
 	)
 	active = template and template.docstatus == 1 and templates.active_version(template.template_code, doc.audit_date)
+	if (
+		doc.flags.tc_replay
+		and template
+		and template.docstatus == 1
+		and getdate(template.effective_from) <= getdate(doc.audit_date)
+	):
+		return  # phiếu offline giữ phiên bản tại lúc tạo dù mẫu đã lên phiên bản mới (UC-44 E3)
 	if active != doc.audit_template:
 		raise blocked(
 			"AUDIT_TEMPLATE_NOT_APPROVED",
