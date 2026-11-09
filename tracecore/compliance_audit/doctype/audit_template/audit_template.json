@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_code",
+  "title",
+  "audit_type",
+  "scoring_method",
+  "bundle_type",
+  "column_break_main",
+  "version_no",
+  "effective_from",
+  "min_sample",
+  "pass_threshold",
+  "legal_ref",
+  "superseded_by",
+  "section_items",
+  "items",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_code",
+   "fieldtype": "Data",
+   "label": "Template Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Letters, digits and dashes. Versions of one form share the code."
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "audit_type",
+   "fieldtype": "Select",
+   "label": "Audit Type",
+   "reqd": 1,
+   "options": "Hand Hygiene\nStandard Precautions - PPE\nPrevention Bundle\nEnvironmental Hygiene\nInfrastructure\nOutsourced Service\nFood Safety\nQuality Self-Assessment\nOther",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "scoring_method",
+   "fieldtype": "Select",
+   "label": "Scoring Method",
+   "reqd": 1,
+   "options": "By Opportunity\nAll or None\nWeighted Score"
+  },
+  {
+   "fieldname": "bundle_type",
+   "fieldtype": "Select",
+   "label": "Bundle",
+   "options": "\nVAP\nCLABSI\nCAUTI\nSSI\nOther",
+   "depends_on": "eval:doc.audit_type==\"Prevention Bundle\""
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "default": "Today"
+  },
+  {
+   "fieldname": "min_sample",
+   "fieldtype": "Int",
+   "label": "Minimum Sample",
+   "default": "0",
+   "description": "Per department and month. Smaller samples are marked Insufficient sample."
+  },
+  {
+   "fieldname": "pass_threshold",
+   "fieldtype": "Percent",
+   "label": "Pass Threshold",
+   "description": "Weighted score needed to pass. Empty = pass unless a critical item fails."
+  },
+  {
+   "fieldname": "legal_ref",
+   "fieldtype": "Data",
+   "label": "Legal Reference"
+  },
+  {
+   "fieldname": "superseded_by",
+   "fieldtype": "Link",
+   "label": "Superseded By",
+   "options": "Audit Template",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Audit Template Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Audit Template",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "Audit Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "submit": 1,
+   "cancel": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Versioned audit form. Approving (submit) locks the version; changes need a new version.",
+ "is_submittable": 1,
+ "title_field": "title",
+ "show_title_field_in_link": 1,
+ "search_fields": "template_code,title,version_no",
+ "track_changes": 1
+}

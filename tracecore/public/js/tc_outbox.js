@@ -13,6 +13,7 @@ const TC_QUEUEABLE = [
 	"tracecore.v1.receive.submit_offline",
 	"tracecore.v1.pack.generate_cycle_id",
 	"tracecore.v1.usage.confirm",
+	"tracecore.v1.audit.submit_session", // FEAT-060: phiếu giám sát KSNK (NFR-AVAIL-05)
 ];
 
 function tcLocalDay(date = new Date()) {

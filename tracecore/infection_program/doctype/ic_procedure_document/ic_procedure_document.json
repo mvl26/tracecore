@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "doc_code",
+  "title",
+  "doc_type",
+  "version_no",
+  "measure_group",
+  "column_break_dates",
+  "issued_on",
+  "review_due",
+  "status",
+  "file",
+  "section_versions",
+  "supersedes",
+  "superseded_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "doc_code",
+   "fieldtype": "Data",
+   "label": "Document Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "doc_type",
+   "fieldtype": "Select",
+   "label": "Document Type",
+   "options": "Regulation\nProcedure\nGuideline\nCommunication Material",
+   "default": "Procedure",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version",
+   "reqd": 1,
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "measure_group",
+   "fieldtype": "Select",
+   "label": "Measure Group",
+   "options": "Infection Surveillance\nPractice Compliance Monitoring\nInvasive Procedures and High-Risk Patients\nPatient Counselling\nMicroorganism-Related Transmission Prevention\nStandard Precautions\nTransmission-Based Precautions\nHand Hygiene\nMedical Devices and Equipment\nMedical Waste\nEnvironmental Hygiene and Infrastructure\nLinen\nOccupational Exposure\nFood Safety",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "issued_on",
+   "fieldtype": "Date",
+   "label": "Issued On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "review_due",
+   "fieldtype": "Date",
+   "label": "Review Due",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Effective\nReview Needed\nSuperseded",
+   "default": "Effective",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Attach",
+   "label": "File"
+  },
+  {
+   "fieldname": "section_versions",
+   "fieldtype": "Section Break",
+   "label": "Versions"
+  },
+  {
+   "fieldname": "supersedes",
+   "fieldtype": "Link",
+   "label": "Supersedes",
+   "options": "IC Procedure Document"
+  },
+  {
+   "fieldname": "superseded_by",
+   "fieldtype": "Link",
+   "label": "Superseded By",
+   "options": "IC Procedure Document",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Procedure Document",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "QTK-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "title",
+ "show_title_field_in_link": 1,
+ "search_fields": "doc_code,title",
+ "track_changes": 1,
+ "description": "Internal infection control regulation or procedure with version and review date."
+}

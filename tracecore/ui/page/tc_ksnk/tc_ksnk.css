@@ -120,3 +120,60 @@
 	.tc-ksnk .tc-ksnk-rail { flex: none; width: 100%; min-height: 0; border-right: 0; border-bottom: var(--tc-bw-hair) solid var(--tc-line); }
 	.tc-ksnk .tc-ksnk-main { padding: var(--tc-sp-3); }
 }
+/* FEAT-058 SCR-48: tab trong màn, khối thông tin kế hoạch, thanh tiến độ có chữ, ô cập nhật tiến độ trong bảng */
+.tc-ksnk .tc-ksnk-plan-title { margin: 0; color: var(--tc-text-heading); font-size: var(--tc-fs-xl); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ksnk-tabs { display: flex; flex-wrap: wrap; gap: var(--tc-sp-1); margin-bottom: var(--tc-sp-3); border-bottom: var(--tc-bw-med) solid var(--tc-primary); }
+.tc-ksnk .tc-ksnk-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--tc-sp-1-5);
+	padding: var(--tc-sp-2) var(--tc-sp-4);
+	background: transparent;
+	border: 0;
+	border-radius: var(--tc-r-sm) var(--tc-r-sm) 0 0;
+	color: var(--tc-text);
+	font-size: var(--tc-fs-md);
+}
+.tc-ksnk .tc-ksnk-tab.is-active { background: var(--tc-primary); color: var(--tc-on-primary); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ksnk-tab:focus-visible { outline: var(--tc-bw-focus) solid var(--tc-focus); outline-offset: var(--tc-sp-0-5); }
+.tc-ksnk .tc-ksnk-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--tc-sp-3); margin: 0 0 var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-facts dt { color: var(--tc-text-2); font-size: var(--tc-fs-2xs); font-weight: var(--tc-fw-regular); }
+.tc-ksnk .tc-ksnk-facts dd { margin: var(--tc-sp-1) 0 0; }
+.tc-ksnk .tc-ksnk-progress { display: block; height: var(--tc-sp-2); margin-top: var(--tc-sp-1-5); background: var(--tc-track); border-radius: var(--tc-r-full); overflow: hidden; }
+.tc-ksnk .tc-ksnk-progress span { display: block; height: 100%; background: var(--tc-pass); }
+.tc-ksnk .tc-ksnk-badge.is-info { background: var(--tc-info); }
+.tc-ksnk .tc-ksnk-inline { display: flex; flex-wrap: wrap; gap: var(--tc-sp-1-5); align-items: center; }
+.tc-ksnk .tc-ksnk-inline .form-control { width: auto; }
+.tc-ksnk .tc-ksnk-list { margin: 0; padding-left: var(--tc-sp-5); }
+.tc-ksnk .tc-ksnk-list li { margin-bottom: var(--tc-sp-1); }
+.tc-ksnk .tc-ksnk-filters.tc-ksnk-actions { align-items: center; padding-top: var(--tc-sp-3); border-top: var(--tc-bw-med) solid var(--tc-primary); }
+@media (max-width: 900px) {
+	.tc-ksnk .tc-ksnk-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+	.tc-ksnk .tc-ksnk-tab { transition: background var(--tc-dur-fast) var(--tc-ease); }
+}
+/* FEAT-060: SCR-50 mẫu phiếu & lịch, SCR-53 báo cáo tuân thủ */
+.tc-ksnk .tc-ksnk-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-row { cursor: pointer; }
+.tc-ksnk .tc-ksnk-row.is-selected { background: var(--tc-primary-soft); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ksnk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tc-sp-3); margin-top: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-checks { display: flex; flex-wrap: wrap; gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-3); border: 0; padding: 0; }
+.tc-ksnk .tc-ksnk-checks legend { font-size: var(--tc-fs-2xs); color: var(--tc-text-2); }
+.tc-ksnk .tc-ksnk-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-kpi {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-1);
+	padding: var(--tc-sp-3) var(--tc-sp-4);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-left: var(--tc-bw-alert) solid var(--tc-info);
+	border-radius: var(--tc-r-sm);
+.tc-ksnk .tc-ksnk-kpi span, .tc-ksnk .tc-ksnk-kpi small { color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ksnk-kpi b { color: var(--tc-text-heading); font-size: var(--tc-fs-4xl); }
+.tc-ksnk .tc-ksnk-kpi.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); }
+.tc-ksnk .tc-ksnk-kpi.is-fail { border-left-color: var(--tc-fail); background: var(--tc-fail-tint); }
+.tc-ksnk .tc-ksnk-kpi.is-pass { border-left-color: var(--tc-pass); }
+	.tc-ksnk .tc-ksnk-grid, .tc-ksnk .tc-ksnk-kpis { grid-template-columns: minmax(0, 1fr); }
+}

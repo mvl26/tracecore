@@ -51,7 +51,11 @@ class TestKsnkPage(FrappeTestCase):
 			""",
 		)
 		self.assertEqual(
-			out["a"], {"slug": "chi-so", "filters": {"period": "2026-10", "department": "Khoa A", "year": ""}}
+			out["a"],
+			{
+				"slug": "chi-so",
+				"filters": {"period": "2026-10", "department": "Khoa A", "year": "", "tab": ""},
+			},
 		)
 		self.assertEqual(out["b"]["slug"], "")
 		self.assertEqual(out["q"], "period=2026-10&year=2026")

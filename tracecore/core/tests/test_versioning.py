@@ -1,4 +1,4 @@
-"""Mã phiên bản dùng chung `<TIỀN TỐ>-<mã>-V<n>` (architecture §5.3.3, A-132; FEAT-060)."""
+"""Mã phiên bản dùng chung `<TIỀN TỐ>-<mã>-V<n>` (architecture §5.3.3, A-134; FEAT-060)."""
 
 from frappe.tests.utils import FrappeTestCase
 

@@ -5,7 +5,8 @@
 // tự đăng ký vào window.TcKsnkScreens[slug] = { render(el, ctx) }. Chữ hiển thị qua __(); mã định danh dùng font mono.
 
 const TC_KSNK_NAV = "tracecore.v1.ksnk.nav";
-const TC_KSNK_FILTERS = ["period", "department", "year"];
+// `tab`: tab trong màn (FEAT-058 SCR-48, A-131 a — tab giữ trong query string)
+const TC_KSNK_FILTERS = ["period", "department", "year", "tab"];
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
 

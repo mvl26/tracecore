@@ -1,4 +1,4 @@
-"""Mã phiên bản dùng chung `<TIỀN TỐ>-<mã>-V<n>` (architecture §5.3.3; A-132).
+"""Mã phiên bản dùng chung `<TIỀN TỐ>-<mã>-V<n>` (architecture §5.3.3; A-134).
 
 Mã phiên bản không phải naming series: tên chứng từ ghép từ mã nghiệp vụ và số phiên bản (cùng kiểu `BOM-<TYPE>-V<n>`
 của `core.gs1`). Module nghiệp vụ (vd M12 `Audit Template`) gọi hàm ở đây thay vì tự ghép chuỗi.

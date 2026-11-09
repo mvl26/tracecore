@@ -46,6 +46,39 @@ SCREENS = [
 		"script": "/assets/tracecore/js/ksnk/scr_47_co_cau.js",
 	},
 ]
+# FEAT-058: kế hoạch năm, văn bản nội bộ, họp Hội đồng (UC-41; R13 ghi sổ kế hoạch ngay trên màn)
+SCREENS += [
+	{
+		"slug": "ke-hoach",
+		"scr": "SCR-48",
+		"uc": "UC-41",
+		"label": "Plans and Documents",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_48_ke_hoach.js",
+	},
+]
+# FEAT-060 (ADR-015, A-131): mẫu phiếu & lịch giám sát, báo cáo tuân thủ & phản hồi khoa
+SCREENS += [
+	{
+		"slug": "mau-phieu",
+		"scr": "SCR-50",
+		"uc": "UC-43",
+		"label": "Audit Templates and Schedules",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_50_mau_phieu.js",
+	},
+	{
+		"slug": "tuan-thu",
+		"scr": "SCR-53",
+		"uc": "UC-45",
+		"label": "Compliance Report",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_53_tuan_thu.js",
+	},
+]
 # FEAT-067 (A-136): vi sinh & đa kháng — import WHONET/CSV, nhập tay có xác nhận, chủng mới, kháng sinh đồ quý (UC-51);
 # R13 chỉ thấy phần tổng hợp (không đọc chủng có mã người bệnh)
 SCREENS += [

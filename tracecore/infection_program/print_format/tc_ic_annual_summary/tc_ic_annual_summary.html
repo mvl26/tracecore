@@ -1,0 +1,57 @@
+{#- Year-end infection control summary, A4 (FEAT-058, FR-M11-06, FR-M11-06.2; UC-41 step 7, A2). Data:
+    tracecore.infection_program.plan_print.tc_ic_plan_context. "Provisional" is printed while the year is not locked. -#}
+{%- set cs = tc_ic_plan_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC IC Annual Plan" -%}
+<style>
+.tc-icp { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-icp table { width: 100%; border-collapse: collapse; }
+.tc-icp td, .tc-icp th { vertical-align: top; }
+.tc-icp .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-icp h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-icp h2 { font-size: {{ tc.fs_md }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: {{ tc.sp_3 }} 0 {{ tc.sp_1 }} 0; }
+.tc-icp .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-icp .tc-facts td { padding: {{ tc.sp_1 }} {{ tc.sp_2 }} {{ tc.sp_1 }} 0; border-bottom: {{ tc.bw_hair }} solid {{ tc.line }}; }
+.tc-icp .tc-facts td.tc-label { color: {{ tc.muted }}; width: 50mm; white-space: nowrap; }
+.tc-icp table.tc-lines tr { page-break-inside: avoid; }
+.tc-icp table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-icp table.tc-lines th, .tc-icp table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-icp table.tc-lines .tc-num { text-align: right; }
+.tc-icp .tc-text { white-space: pre-wrap; }
+.tc-icp .tc-sign { margin-top: {{ tc.sp_4 }}; page-break-inside: avoid; }
+.tc-icp .tc-sign td { width: 50%; text-align: center; font-weight: {{ tc.fw_bold }}; }
+</style>
+<div class="tc-icp">
+	<h1>{{ _("Infection control year-end summary {0}", context=T).format(cs.year) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}</div>
+	{%- if cs.provisional %}<div class="tc-draft">{{ _("Provisional: the year is not closed or some months are not locked", context=T) | e }}</div>{%- endif %}
+	{%- if cs.cancelled %}<div class="tc-draft">{{ _("Cancelled", context=T) | e }}</div>{%- endif %}
+	<table class="tc-facts">
+		<tr><td class="tc-label">{{ _("Approved by", context=T) | e }}</td><td>{{ cs.approved_by | e }} {{ cs.approved_on | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Activity progress", context=T) | e }}</td><td>{{ cs.progress | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Total budget (VND)", context=T) | e }}</td><td>{{ cs.total_budget | e }}</td></tr>
+	</table>
+	<h2>{{ _("Indicator results against targets", context=T) | e }}</h2>
+	<table class="tc-lines">
+		<thead><tr><th>{{ _("Indicator", context=T) | e }}</th><th class="tc-num">{{ _("Baseline", context=T) | e }}</th><th class="tc-num">{{ _("Target", context=T) | e }}</th><th class="tc-num">{{ _("Year value", context=T) | e }}</th><th>{{ _("Result", context=T) | e }}</th></tr></thead>
+		<tbody>
+		{%- for row in cs.indicators %}
+			<tr><td>{{ row.name | e }}</td><td class="tc-num">{{ row.baseline | e }}</td><td class="tc-num">{{ row.target | e }}</td><td class="tc-num">{{ row.value | e }}</td><td>{{ row.status | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<h2>{{ _("Activities", context=T) | e }}</h2>
+	<table class="tc-lines">
+		<thead><tr><th>#</th><th>{{ _("Activity", context=T) | e }}</th><th>{{ _("Responsible", context=T) | e }}</th><th>{{ _("Due date", context=T) | e }}</th><th>{{ _("Status", context=T) | e }}</th><th>{{ _("Evidence", context=T) | e }}</th></tr></thead>
+		<tbody>
+		{%- for row in cs.activities %}
+			<tr><td>{{ row.index }}</td><td>{{ row.activity | e }}</td><td>{{ row.responsible | e }}</td><td>{{ row.due_date | e }}</td><td>{{ row.status | e }}</td><td>{{ row.evidence | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<h2>{{ _("Remarks of the head of infection control", context=T) | e }}</h2>
+	<div class="tc-text">{{ cs.summary | e }}</div>
+	<table class="tc-sign">
+		<tr><td>{{ _("Head of infection control (R01)", context=T) | e }}</td><td>{{ _("Committee chair (R13)", context=T) | e }}</td></tr>
+	</table>
+</div>
