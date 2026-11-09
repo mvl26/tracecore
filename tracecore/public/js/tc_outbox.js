@@ -13,6 +13,7 @@ const TC_QUEUEABLE = [
 	"tracecore.v1.receive.submit_offline",
 	"tracecore.v1.pack.generate_cycle_id",
 	"tracecore.v1.usage.confirm",
+	"tracecore.v1.exposure.report", // FEAT-071, NFR-AVAIL-05: báo phơi nhiễm ban đầu
 ];
 
 function tcLocalDay(date = new Date()) {

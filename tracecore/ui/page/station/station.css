@@ -2096,3 +2096,101 @@ html:has(.tc-work) {
 	gap: var(--tc-touch-gap);
 	margin-top: var(--tc-sp-8);
 }
+
+/* FEAT-071 SCR-63: báo phơi nhiễm 3 bước trên PDA (chip bước, nút chọn lớn có dấu chọn bằng chữ, không chỉ màu) */
+.tc-exp-steps {
+	display: flex;
+	gap: var(--tc-sp-3);
+	margin: 0 0 var(--tc-sp-3);
+	padding: 0;
+	list-style: none;
+}
+
+.tc-exp-chip {
+	flex: 1;
+	min-height: var(--tc-touch-min);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-full);
+	color: var(--tc-text-muted);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-exp-chip.is-current {
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-exp-title {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-xl);
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-border-strong);
+}
+
+.tc-exp-options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-exp-options.tc-exp-inline {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.tc-exp-option {
+	min-height: var(--tc-touch-station);
+	justify-content: flex-start;
+	text-align: left;
+	font-size: var(--tc-fs-xl);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-exp-inline .tc-exp-option {
+	flex: 1;
+	justify-content: center;
+}
+
+.tc-exp-option.is-chosen {
+	border: var(--tc-bw-thick) solid var(--tc-primary);
+	background: var(--tc-primary-soft);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-exp-question {
+	margin: var(--tc-sp-3) 0;
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-exp-summary {
+	margin: 0 0 var(--tc-sp-3);
+}
+
+.tc-exp-row {
+	display: flex;
+	gap: var(--tc-sp-3);
+	padding: var(--tc-sp-2) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-border-row);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-exp-row dt {
+	min-width: 40%;
+	color: var(--tc-text-muted);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-exp-row dd {
+	margin: 0;
+}
+
+.tc-exp-send {
+	flex: 1;
+}

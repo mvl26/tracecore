@@ -1,0 +1,18 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Exposure Report") }}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/tracecore/css/tokens.css">
+{% endblock %}
+
+{% block page_content %}
+<div class="tc-dept">
+	<div class="tc-dept-zonebar" role="banner">
+		<span>{{ _("Department") }}: {{ department or "-" }}</span>
+	</div>
+	<h1 class="tc-dept-title">{{ _("Exposure Report") }}</h1>
+	<div id="tc-exposure-portal" class="tc-dept-body" aria-live="polite"></div>
+	<script type="application/json" id="tc-exposure-boot">{{ boot | tojson }}</script>
+</div>
+{% endblock %}

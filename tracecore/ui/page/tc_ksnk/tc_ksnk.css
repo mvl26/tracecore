@@ -110,3 +110,17 @@
 	.tc-ksnk .tc-ksnk-rail { flex: none; width: 100%; min-height: 0; border-right: 0; border-bottom: var(--tc-bw-hair) solid var(--tc-line); }
 	.tc-ksnk .tc-ksnk-main { padding: var(--tc-sp-3); }
 }
+/* FEAT-071 SCR-64: ô KPI (viền trái, cảnh báo có chữ), hai cột lịch theo dõi / tiêm chủng, form xử trí, thanh thao tác */
+.tc-ksnk .tc-ksnk-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--tc-sp-22), 1fr)); gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-2); }
+.tc-ksnk .tc-ksnk-kpi { display: flex; flex-direction: column; gap: var(--tc-sp-1); padding: var(--tc-sp-3); background: var(--tc-card); border: var(--tc-bw-hair) solid var(--tc-border-input); border-left: var(--tc-bw-kpi) solid var(--tc-border-strong); border-radius: var(--tc-r-sm); }
+.tc-ksnk .tc-ksnk-kpi span { color: var(--tc-text-2); font-size: var(--tc-fs-sm); }
+.tc-ksnk .tc-ksnk-kpi strong { color: var(--tc-text-heading); font-size: var(--tc-fs-3xl); }
+.tc-ksnk .tc-ksnk-kpi.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); }
+.tc-ksnk .tc-ksnk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--tc-sp-3); align-items: start; }
+.tc-ksnk .tc-ksnk-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--tc-sp-3); margin: var(--tc-sp-3) 0; }
+.tc-ksnk .tc-ksnk-form label { display: flex; flex-direction: column; gap: var(--tc-sp-1); font-size: var(--tc-fs-sm); }
+.tc-ksnk .tc-ksnk-date { display: inline-block; width: auto; }
+.tc-ksnk .tc-ksnk-actions { display: flex; flex-wrap: wrap; gap: var(--tc-sp-3); margin-top: var(--tc-sp-3); }
+@media (max-width: 900px) {
+	.tc-ksnk .tc-ksnk-cols { grid-template-columns: 1fr; }
+}

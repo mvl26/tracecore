@@ -116,6 +116,8 @@ page_js = {
 		"public/js/station_waste_store.js",
 		# FEAT-049: tab Bàn giao (SCR-40)
 		"public/js/station_waste_handover.js",
+		# FEAT-071: báo phơi nhiễm nghề nghiệp (SCR-63) trên PDA của khoa, chức năng trạm EXPOSURE
+		"public/js/station_exposure.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -151,6 +153,11 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js", "Batch": "pub
 
 # application home page (will override Website Settings)
 # home_page = "login"
+
+# FEAT-071 (A-137 Q4): Cổng khoa báo phơi nhiễm; file ở www/ksnk_khoa (package Python không có dấu gạch ngang)
+website_route_rules = [
+	{"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"},
+]
 
 # website user home page (by Role)
 # role_home_page = {
