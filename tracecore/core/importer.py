@@ -123,6 +123,14 @@ class ImportKind:
 	guide: Sequence[str] = field(default_factory=tuple)  # câu hướng dẫn thêm cho sheet Guide
 	# mã lặp lại trong cùng file là lỗi dòng (``DUPLICATE_IN_FILE``); False cho loại mỗi dòng là một lô mới (Set Unit)
 	unique_code: bool = True
+	# FEAT-067 (A-136 Q6, Q7): gom dòng theo khóa nhiều cột (thay `group_by` một cột); cột không khai báo mà hàm này nhận
+	# (vd đích `ab:<MÃ>` của hồ sơ ánh xạ — cột kháng sinh dạng rộng WHONET) được đọc nguyên chữ vào ``values["_extra"]``;
+	# cột trong `ignored_columns` (họ tên người bệnh) bị bỏ kèm cảnh báo, không chặn file; `purge_file`: xóa File nguồn
+	# sau khi ghi sổ (file chứa mã người bệnh rõ, ADR-010 mở rộng)
+	group_of: Callable[[dict], str] | None = None
+	extra_columns: Callable[[str], bool] | None = None
+	ignored_columns: Sequence[str] = ()
+	purge_file: bool = False
 
 
 @dataclass
@@ -446,15 +454,16 @@ def _cell(column: Column, value, row: int, date_patterns=DATE_PATTERNS) -> tuple
 
 
 def parse(
-	kind: ImportKind, content: bytes, profile: Profile | None = None
+	kind: ImportKind, content: bytes, profile: Profile | None = None, warnings: list | None = None
 ) -> tuple[list[ParsedRow], list[Issue]]:
 	"""Đọc sheet đầu (hoặc file CSV khi hồ sơ ánh xạ là CSV): trả các dòng dữ liệu (bỏ dòng trống) với số dòng và lỗi ô.
 
 	Ném ``ImportFileError`` khi file rỗng / không phải .xlsx / quá cỡ / quá ``MAX_ROWS`` dòng / thiếu cột bắt buộc /
 	có cột mã hệ thống. Ô công thức lấy giá trị đã lưu. Có ``profile`` thì đổi tên cột theo hồ sơ trước khi khớp cột.
+	``warnings``: nhận cảnh báo mức file (cột bị bỏ qua).
 	"""
 	if profile and profile.is_csv:
-		return _read(kind, _csv_rows(content, profile), profile)
+		return _read(kind, _csv_rows(content, profile), profile, warnings)
 	_check_container(content)
 	try:
 		book = load_workbook(BytesIO(content), read_only=True, data_only=True)
@@ -463,7 +472,7 @@ def parse(
 	try:
 		if not book.worksheets:
 			raise _file_error(_("The workbook has no sheet."))
-		return _read(kind, book.worksheets[0].iter_rows(values_only=True), profile)
+		return _read(kind, book.worksheets[0].iter_rows(values_only=True), profile, warnings)
 	except ImportFileError:
 		raise
 	except Exception:
@@ -488,12 +497,26 @@ def _csv_rows(content: bytes, profile: Profile):
 	return iter(csv.reader(io.StringIO(text, newline=""), delimiter=profile.delimiter))
 
 
-def _read(kind: ImportKind, iterator, profile: Profile | None = None) -> tuple[list[ParsedRow], list[Issue]]:
+def _plain_header(value) -> str:
+	return _plain(_norm(value))
+
+
+def _read(
+	kind: ImportKind, iterator, profile: Profile | None = None, warnings: list | None = None
+) -> tuple[list[ParsedRow], list[Issue]]:
 	header = next(iterator, None)
 	if not header or all(_text(cell) == "" for cell in header):
 		raise _file_error(_("Row 1 of the first sheet must be the header row."))
 	if profile:
 		header = [profile.rename.get(_norm(cell), cell) for cell in header]
+	ignored = {_plain_header(text) for text in kind.ignored_columns}
+	dropped = [_text(cell) for cell in header if ignored and _plain_header(cell) in ignored]
+	if dropped:
+		header = [None if _plain_header(cell) in ignored else cell for cell in header]
+		if warnings is not None:
+			warnings.append(
+				_("Column(s) {0} were ignored: patient names are not stored.").format(", ".join(dropped))
+			)
 	patterns = profile.date_patterns if profile else DATE_PATTERNS
 	forbidden = {_norm(text): text for text in kind.forbidden_columns}
 	found = [forbidden[_norm(cell)] for cell in header if _norm(cell) in forbidden]
@@ -505,10 +528,15 @@ def _read(kind: ImportKind, iterator, profile: Profile | None = None) -> tuple[l
 		)
 	aliases = _aliases(kind)
 	columns: dict[str, int] = {}
+	extras: dict[str, int] = {}
 	for index, cell in enumerate(header):
+		if cell is None:
+			continue
 		name = aliases.get(_norm(cell))
 		if name:
 			columns.setdefault(name, index)
+		elif kind.extra_columns and kind.extra_columns(_text(cell)):
+			extras.setdefault(_text(cell), index)
 	missing = [column for column in kind.columns if column.required and column.field not in columns]
 	if missing:
 		raise _file_error(
@@ -532,6 +560,12 @@ def _read(kind: ImportKind, iterator, profile: Profile | None = None) -> tuple[l
 			parsed[name] = value
 			if issue:
 				issues.append(issue)
+		if extras:
+			parsed["_extra"] = {
+				head: _text(values[index])
+				for head, index in extras.items()
+				if index < len(values) and _text(values[index])
+			}
 		rows.append(ParsedRow(number, parsed))
 	return rows, issues
 
@@ -550,17 +584,20 @@ def _required_issues(kind: ImportKind, row: ParsedRow, head: bool) -> list[Issue
 	return issues
 
 
+def _group_key(kind: ImportKind, values: dict) -> str:
+	if kind.group_of:
+		return (kind.group_of(values) or "").casefold()
+	value = values.get(kind.group_by)
+	return value.casefold() if isinstance(value, str) else ""
+
+
 def _units(kind: ImportKind, rows: list[ParsedRow]) -> tuple[list[list[ParsedRow]], list[Issue]]:
-	if not kind.group_by:
+	if not kind.group_by and not kind.group_of:
 		return [[row] for row in rows], []
 	groups: dict[str, list[ParsedRow]] = {}
 	issues: list[Issue] = []
 	for row in rows:
-		key = (
-			(row.values.get(kind.group_by) or "").casefold()
-			if isinstance(row.values.get(kind.group_by), str)
-			else ""
-		)
+		key = _group_key(kind, row.values)
 		groups.setdefault(key or f"__row{row.row}", []).append(row)
 	for unit in groups.values():
 		head = unit[0].values
@@ -575,7 +612,7 @@ def _units(kind: ImportKind, rows: list[ParsedRow]) -> tuple[list[list[ParsedRow
 							name,
 							_("{0} differs from the first row of {1} (row {2}).").format(
 								_(next(c.label for c in kind.columns if c.field == name)),
-								head.get(kind.group_by),
+								kind.group_of(head) if kind.group_of else head.get(kind.group_by),
 								unit[0].row,
 							),
 						)
@@ -589,9 +626,9 @@ def _code(kind: ImportKind, unit: list[ParsedRow]) -> str:
 	return unit[0].values.get(kind.code_field) or ""
 
 
-def _analyse(kind: ImportKind, content: bytes, profile: Profile | None = None):
+def _analyse(kind: ImportKind, content: bytes, profile: Profile | None = None, warnings: list | None = None):
 	"""(đơn vị, lỗi theo đơn vị {id(unit): [Issue]}, mã đã có, tổng số dòng)."""
-	rows, issues = parse(kind, content, profile)
+	rows, issues = parse(kind, content, profile, warnings)
 	units, group_issues = _units(kind, rows)
 	issues += group_issues
 	reported = {(issue.row, issue.field) for issue in issues}  # ô sai giá trị không báo thêm "bắt buộc"
@@ -654,7 +691,8 @@ def check(key: str, content: bytes, profile: str | None = None) -> dict:
 	"""Kiểm file, không ghi gì: ``{"total", "units", "valid", "existing": [mã], "issues": [Issue dict],
 	"previous_batch"}`` (`previous_batch`: file y hệt đã được ghi sổ trước đó). ``profile``: Import Mapping Profile."""
 	kind = get_kind(key)
-	units, per_unit, existing, total, _rows = _analyse(kind, content, load_profile(profile, key))
+	warnings: list[str] = []
+	units, per_unit, existing, total, _rows = _analyse(kind, content, load_profile(profile, key), warnings)
 	issues = sorted(
 		(i for own in per_unit.values() for i in own), key=lambda issue: (issue.row, issue.field or "")
 	)
@@ -665,6 +703,7 @@ def check(key: str, content: bytes, profile: str | None = None) -> dict:
 		"valid": valid,
 		"existing": existing,
 		"issues": [asdict(issue) for issue in issues],
+		"warnings": warnings,
 		"previous_batch": previous_batch(key, content),
 	}
 
@@ -723,6 +762,9 @@ def execute_batch(batch: str, content: bytes | None = None, background: bool = F
 	_save(doc, status="Running", started_at=now_datetime())
 	if background:
 		frappe.db.commit()  # nosemgrep: màn SCR-43 thấy "Running" và giờ bắt đầu trong lúc job nền đang ghi
+	# `write` của loại import biết Import Batch đang ghi (vd `Microbiology Isolate.import_batch`)
+	previous_batch_flag = frappe.flags.tc_import_batch
+	frappe.flags.tc_import_batch = doc.name
 	try:
 		units, per_unit, existing, _total, _rows = _analyse(
 			kind, content or _file_content(doc.file), load_profile(doc.get("mapping_profile"), doc.kind)
@@ -743,6 +785,11 @@ def execute_batch(batch: str, content: bytes | None = None, background: bool = F
 			)
 			frappe.db.commit()  # nosemgrep: job nền cần giữ trạng thái Failed dù ném lỗi
 		raise
+	finally:
+		frappe.flags.tc_import_batch = previous_batch_flag
+	if kind.purge_file and doc.file:
+		_purge_file(doc.file)
+		doc.file = None
 	doc.set("rows", [])
 	for row in results:
 		doc.append("rows", row)
@@ -802,6 +849,12 @@ def _write_unit(kind: ImportKind, unit, issues, existing) -> list[dict]:
 			"ref_name": name,
 		}
 	]
+
+
+def _purge_file(file_url: str) -> None:
+	"""Xóa File riêng tư nguồn của lô import (mọi bản cùng URL) sau khi ghi sổ xong."""
+	for name in frappe.get_all("File", filters={"file_url": file_url, "is_private": 1}, pluck="name"):
+		frappe.delete_doc("File", name, ignore_permissions=True, force=True)
 
 
 def _error_row(issue: Issue, code: str) -> dict:

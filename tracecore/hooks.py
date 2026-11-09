@@ -212,6 +212,8 @@ after_migrate = [
 	"tracecore.ui.feedback.ensure_issue_type",
 	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
 	"tracecore.setup.error_codes.ensure_error_codes",
+	# FEAT-067 (A-136): danh mục Organism tối thiểu + quy tắc đa kháng Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.microbiology.seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -394,6 +396,11 @@ doc_events = {
 		"on_update_after_submit": "tracecore.core.audit.on_document_event",
 	},
 	"IC Network Member": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
+	# FEAT-067 (A-136): vi sinh — danh mục loài, chủng phân lập (mã BN Password không vào Audit), quy tắc đa kháng có
+	# phiên bản (ghi sổ = R01 duyệt; superseded_by đổi sau ghi sổ); không xóa
+	"Organism": dict(_AUDIT_EVENTS),
+	"Microbiology Isolate": dict(_AUDIT_EVENTS),
+	"MDRO Rule": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -577,7 +584,11 @@ tracecore_ic_indicators = []
 tracecore_ksnk_badges = [
 	# FEAT-057: số thành phần cơ cấu KSNK còn thiếu (SCR-47)
 	"tracecore.infection_program.structure.badges",
+	# FEAT-067: chủng đa kháng có thông báo chưa đọc của người dùng (SCR-59)
+	"tracecore.microbiology.alerts.badges",
 ]
+# FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
+tracecore_mdro_detected = []
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
@@ -585,6 +596,8 @@ tracecore_import_kinds = [
 	"tracecore.equipment.imports.import_kinds",
 	"tracecore.inventory.imports.import_kinds",
 	"tracecore.par.imports.import_kinds",
+	# FEAT-067: kết quả nuôi cấy và kháng sinh đồ (WHONET/CSV) qua Import Mapping Profile
+	"tracecore.microbiology.imports.import_kinds",
 ]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]

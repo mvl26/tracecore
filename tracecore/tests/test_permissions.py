@@ -21,8 +21,9 @@ class TestPermissionMatrix(FrappeTestCase):
 		# 40 DocType của BA #13 + Cost Category và Cost Settings (FEAT-044, A-47 C3, C6) + Environment Log (FEAT-008, A-55 Q4) + Archive Export (FEAT-012, A-58 D2) + 3 DocType chất thải (FEAT-047, A-60) + Waste Storage Location (FEAT-048, A-61) + Waste Treatment Vendor, Waste Handover (FEAT-049, A-62) + Waste Quota (FEAT-050, A-63)
 		# + 4 DocType nền v1.12 (FEAT-056, A-113): IC Program Settings, IC Indicator, IC Indicator Value, Import Mapping Profile
 		# + IC Committee, IC Network Member (FEAT-057)
-		self.assertEqual(len(rows), 59)
-		self.assertEqual(len({row.code for row in rows}), 59)
+		# + Organism, Microbiology Isolate, MDRO Rule, Import Batch (FEAT-067, A-136)
+		self.assertEqual(len(rows), 63)
+		self.assertEqual(len({row.code for row in rows}), 63)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

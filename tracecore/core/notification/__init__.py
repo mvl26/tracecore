@@ -90,6 +90,9 @@ EVENTS = {
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
 	# FEAT-057 (A-132 d, FR-M11-03.2): khoa bắt buộc mất mạng lưới viên cuối cùng của một nhóm, báo Trưởng khoa KSNK
 	"IC_NETWORK_GAP": ("Infection control network gap", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-067 (A-136 Q4, FR-M14-04): chủng đa kháng mới — R11 theo Rule; mạng lưới viên, R08 của khoa và vai trò của
+	# quy tắc do nơi gọi truyền; chưa đọc quá 15 phút thì leo thang R01
+	"MDRO_DETECTED": ("New multidrug-resistant isolate", "Urgent", 1, 1, ("TC R11",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

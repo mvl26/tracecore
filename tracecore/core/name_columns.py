@@ -25,6 +25,7 @@ TRACECORE_NAME_FIELD = {
 	"TraceCore Error Code": "error_name",
 	"Station Function": "function_name",
 	"IC Indicator": "indicator_name",  # A-113 (FEAT-056)
+	"Organism": "organism_name",  # FEAT-067 (A-136)
 }
 
 NAME_FIELD = {**EXTERNAL_NAME_FIELD, **TRACECORE_NAME_FIELD}

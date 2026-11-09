@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule_code",
+  "label",
+  "condition",
+  "min_classes",
+  "count_intermediate",
+  "precaution_type",
+  "column_break_version",
+  "version_no",
+  "effective_from",
+  "superseded_by",
+  "alert_roles",
+  "section_organisms",
+  "organisms",
+  "section_criteria",
+  "criteria",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule_code",
+   "fieldtype": "Data",
+   "label": "Rule Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label",
+   "reqd": 1,
+   "in_list_view": 1,
+   "translatable": 0,
+   "description": "Short label shown on isolates, for example MRSA."
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Select",
+   "label": "Condition",
+   "reqd": 1,
+   "options": "Resistant to any\nResistant to all\nResistant in at least N classes",
+   "default": "Resistant to any"
+  },
+  {
+   "fieldname": "min_classes",
+   "fieldtype": "Int",
+   "label": "Minimum Resistant Classes",
+   "depends_on": "eval:doc.condition=='Resistant in at least N classes'"
+  },
+  {
+   "fieldname": "count_intermediate",
+   "fieldtype": "Check",
+   "label": "Count Intermediate as Resistant",
+   "default": "0"
+  },
+  {
+   "fieldname": "precaution_type",
+   "fieldtype": "Select",
+   "label": "Precaution Type",
+   "options": "Contact\nDroplet\nAirborne\nCombined",
+   "reqd": 1,
+   "default": "Contact"
+  },
+  {
+   "fieldname": "column_break_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version",
+   "read_only": 1,
+   "in_list_view": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "default": "Today"
+  },
+  {
+   "fieldname": "superseded_by",
+   "fieldtype": "Link",
+   "label": "Superseded By",
+   "options": "MDRO Rule",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "alert_roles",
+   "fieldtype": "Small Text",
+   "label": "Additional Alert Roles",
+   "translatable": 0,
+   "description": "One role per line, notified in addition to infection control staff."
+  },
+  {
+   "fieldname": "section_organisms",
+   "fieldtype": "Section Break",
+   "label": "Organisms"
+  },
+  {
+   "fieldname": "organisms",
+   "fieldtype": "Table",
+   "label": "Organisms",
+   "options": "MDRO Rule Organism",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_criteria",
+   "fieldtype": "Section Break",
+   "label": "Antibiotics"
+  },
+  {
+   "fieldname": "criteria",
+   "fieldtype": "Table",
+   "label": "Antibiotics",
+   "options": "MDRO Rule Criterion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "MDRO Rule",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "MDRO Rule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Versioned multidrug resistance rule; submitting a version means infection control approved it.",
+ "track_changes": 1,
+ "is_submittable": 1,
+ "title_field": "label"
+}

@@ -46,6 +46,19 @@ SCREENS = [
 		"script": "/assets/tracecore/js/ksnk/scr_47_co_cau.js",
 	},
 ]
+# FEAT-067 (A-136): vi sinh & đa kháng — import WHONET/CSV, nhập tay có xác nhận, chủng mới, kháng sinh đồ quý (UC-51);
+# R13 chỉ thấy phần tổng hợp (không đọc chủng có mã người bệnh)
+SCREENS += [
+	{
+		"slug": "vi-sinh",
+		"scr": "SCR-59",
+		"uc": "UC-51",
+		"label": "Microbiology and MDRO",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_59_vi_sinh.js",
+	},
+]
 
 
 def _badges(user):
