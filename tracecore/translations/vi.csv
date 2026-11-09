@@ -8259,7 +8259,7 @@ Items {0} are not in template {1}.,Mục {0} không có trong mẫu {1}.,
 Reload the audit form and answer again.,Tải lại phiếu và trả lời lại.,
 Audit items come from template version {0} and cannot be changed.,"Mục của phiếu chép từ phiên bản mẫu {0}, không sửa được.",
 Cannot audit yourself,Không được tự đánh giá mình,
-The observed person is the observer (BRU-AUD-004).,Người được quan sát trùng người giám sát (BRU-AUD-004).,
+The observed person is the observer.,Người được quan sát trùng người giám sát.,
 "Choose another observed person, or ask another auditor to observe you.","Chọn người được quan sát khác, hoặc nhờ giám sát viên khác quan sát bạn.",
 Items not answered,Còn mục chưa chấm,
 Items {0} have no answer.,Mục {0} chưa có câu trả lời.,
@@ -8291,7 +8291,7 @@ Sample (n),Cỡ mẫu (n),
 Pass Rate,Tỷ lệ đạt,
 Average Score,Điểm trung bình,
 Critical Failed,Trọng yếu không đạt,
-Template Title,Tên mẫu,
+Template Title,Tên mẫu,Audit Session
 From Date must be before To Date.,Từ ngày phải trước Đến ngày.,
 Audit {0} has a failed critical item.,Phiếu {0} có mục trọng yếu không đạt.,
 Fail — critical item,Không đạt — mục trọng yếu,
@@ -8319,7 +8319,7 @@ No template was loaded on this device before the connection was lost.,Máy chưa
 No approved audit template. Ask R01 to approve one.,Chưa có mẫu phiếu đã duyệt. Đề nghị R01 duyệt mẫu.,
 Audit template,Mẫu phiếu,
 Choose the department first.,Chọn khoa trước.,
-N/A,K. áp dụng,
+N/A,K. áp dụng,Audit Answer
 Note (required),Ghi chú (bắt buộc),
 all-or-none,tất cả-hoặc-không,
 weighted score,điểm theo trọng số,
@@ -8335,7 +8335,7 @@ Not yet effective,Chưa hiệu lực,
 The server did not accept the request.,Máy chủ không nhận yêu cầu.,
 "Retry, or call R10 if it happens again.","Thử lại, hoặc gọi R10 nếu còn lặp lại.",
 No template yet.,Chưa có mẫu phiếu.,
-Version {0} is approved and locked; any change needs a new version. Audits already filled keep their copy of {0} (BRU-AUD-001).,{0} đã duyệt nên bị khóa; mọi sửa đổi tạo phiên bản mới. Phiếu đã ghi theo {0} giữ nguyên bản chụp (BRU-AUD-001).,
+Version {0} is approved and locked; any change needs a new version. Audits already filled keep their copy of {0}.,{0} đã duyệt nên bị khóa; mọi sửa đổi tạo phiên bản mới. Phiếu đã ghi theo {0} giữ nguyên bản chụp.,
 New template,Mẫu mới,
 Template Code,Mã mẫu,
 Audit Type,Loại phiếu,
@@ -8345,21 +8345,22 @@ Pass Threshold,Ngưỡng đạt,
 Legal Reference,Căn cứ,
 Question,Câu hỏi,
 Answer Type,Kiểu trả lời,
-Weight,Trọng số,
+Weight,Trọng số,Audit Answer
+Weight,Trọng số,Audit Template Item
 + Add item,+ Thêm mục,
 No active audit schedule.,Chưa có lịch giám sát đang hiệu lực.,
 Assignee,Người phụ trách,
 Coverage,Độ bao phủ,
 New audit schedule,Lịch giám sát mới,
 Target per Department,Chỉ tiêu mỗi khoa,
-Employee ID,Mã nhân viên,
+Employee ID,Mã nhân viên,Audit Schedule
 Save schedule,Lưu lịch,
 Approve template {0} (post),Duyệt mẫu {0} (ghi sổ),
 Save draft,Lưu nháp,
 Create version V{0},Tạo phiên bản V{0},
 Create audit schedule,Tạo lịch giám sát,
-Only R01 approves templates; a failed critical item fails the audit (BRU-AUD-005).,Chỉ R01 duyệt mẫu; mục trọng yếu không đạt làm phiếu Không đạt (BRU-AUD-005).,
-Templates,Mẫu phiếu,
+Only R01 approves templates; a failed critical item fails the audit.,Chỉ R01 duyệt mẫu; mục trọng yếu không đạt làm phiếu Không đạt.,
+Templates,Mẫu phiếu,Audit Template
 Starter templates come with the app as drafts; app upgrades never overwrite templates edited by the hospital.,Mẫu khởi tạo đi kèm app ở trạng thái Nháp; nâng cấp app không ghi đè bản bệnh viện đã sửa.,
 Audit schedule for period {0},Lịch giám sát kỳ {0},
 "Insufficient sample (n = {0}, needs {1})","Chưa đủ mẫu (n = {0}, cần {1})",
@@ -8406,20 +8407,21 @@ Critical Item Failed,Có mục trọng yếu không đạt,
 Department Sample (month),Cỡ mẫu khoa (tháng),
 Insufficient Sample,Chưa đủ mẫu,
 Non-conformance,Sự không phù hợp,
-Opened,Đã mở,
+Opened,Đã mở,Audit Session
 Dismissed,Đã bỏ qua,
 Dismiss Reason,Lý do bỏ qua,
 Answers,Câu trả lời,
 Hand Hygiene Opportunities,Cơ hội vệ sinh tay,
 Opportunities,Cơ hội,
-Client ID,Mã máy khách,
+Client ID,Mã máy khách,Audit Session
+Client ID,Mã máy khách,Hand Hygiene Opportunity
 Audit Schedule Department,Khoa của lịch giám sát,
 Hand Hygiene Opportunity,Cơ hội vệ sinh tay,
 Profession,Nghề nghiệp,
 Moment,Thời điểm,
 Hand Rub,Chà tay cồn,
 Hand Wash,Rửa tay xà phòng,
-Missed,Không thực hiện,
+Missed,Không thực hiện,Hand Hygiene Opportunity
 Correct Technique,Đúng kỹ thuật,
 Gloves Instead of Hand Hygiene,Mang găng thay vệ sinh tay,
 Audit Template Item,Mục mẫu phiếu giám sát,
@@ -8464,3 +8466,16 @@ Department Name,Tên khoa,Audit Schedule Department
 Doctor,Bác sĩ,
 Nurse,Điều dưỡng,
 Student,Sinh viên,
+1,1 - Trước khi tiếp xúc người bệnh,Hand Hygiene Opportunity
+2,2 - Trước khi làm thủ thuật vô khuẩn,Hand Hygiene Opportunity
+3,3 - Sau khi tiếp xúc dịch cơ thể,Hand Hygiene Opportunity
+4,4 - Sau khi tiếp xúc người bệnh,Hand Hygiene Opportunity
+5,5 - Sau khi tiếp xúc môi trường quanh người bệnh,Hand Hygiene Opportunity
+CAUTI,CAUTI,Audit Template
+CLABSI,CLABSI,Audit Template
+SSI,SSI,Audit Template
+VAP,VAP,Audit Template
+AUDIT,Giám sát tuân thủ,Help Article
+"Choose the audit template and the department, then the person or role observed.","Chọn mẫu phiếu và khoa, rồi người hoặc vai trò được quan sát.",
+Answer every item; a Fail answer needs a note.,Trả lời đủ các mục; mục Không đạt phải có ghi chú.,
+Submit the audit; without network it is saved and sent when the connection returns.,Gửi phiếu; khi mất mạng phiếu được lưu và tự gửi khi có mạng lại.,

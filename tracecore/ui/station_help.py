@@ -29,6 +29,7 @@ STATION_KEYS = (
 	"USE",
 	"LINEN",
 	"WASTE",
+	"AUDIT",
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
@@ -112,6 +113,12 @@ DEFAULT_STEPS = {
 		"Scan the card of the person handing over the waste.",
 		"Choose the waste type, then enter the number of bags and the weight.",
 		"Confirm, then scan the card again to acknowledge the receipt.",
+	),
+	"AUDIT": (
+		"Scan your employee card to open the station.",
+		"Choose the audit template and the department, then the person or role observed.",
+		"Answer every item; a Fail answer needs a note.",
+		"Submit the audit; without network it is saved and sent when the connection returns.",
 	),
 	GENERAL: (
 		"Open the address of your station: it ends with ?station= and the station code, for example ?station=TR-001. Ask R10 for the code if you do not know it.",

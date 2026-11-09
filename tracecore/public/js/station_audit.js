@@ -244,7 +244,7 @@ class AuditForm {
 			return this.block(
 				"AUDIT_SELF_OBSERVATION",
 				__("Cannot audit yourself"),
-				__("The observed person is the observer (BRU-AUD-004)."),
+				__("The observed person is the observer."),
 				__("Choose another observed person, or ask another auditor to observe you.")
 			);
 		}
@@ -499,7 +499,7 @@ class AuditForm {
 							"&#10003; "
 					  )}${button("Fail", __("Fail"), "&#10005; ")}${button(
 							"N/A",
-							__("N/A"),
+							__("N/A", null, "Audit Answer"),
 							""
 					  )}</div>`
 					: ""

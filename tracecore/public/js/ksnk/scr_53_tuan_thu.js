@@ -190,7 +190,9 @@ const TcKsnkScr53 = {
 		if (!body)
 			return `<div class="tc-ksnk-state is-empty">${esc(__("No audit to show."))}</div>`;
 		return (
-			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Audit"))}</th>` +
+			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
+				__("Audit Session")
+			)}</th>` +
 			`<th scope="col">${esc(__("Department"))}</th><th scope="col">${esc(
 				__("Template")
 			)}</th>` +

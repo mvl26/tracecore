@@ -122,7 +122,7 @@ const TcKsnkScr50 = {
 		const locked = off
 			? `<div class="tc-ksnk-alert is-info" role="status">${esc(
 					__(
-						"Version {0} is approved and locked; any change needs a new version. Audits already filled keep their copy of {0} (BRU-AUD-001).",
+						"Version {0} is approved and locked; any change needs a new version. Audits already filled keep their copy of {0}.",
 						[detail.name || ""]
 					)
 			  )}</div>`
@@ -203,7 +203,7 @@ const TcKsnkScr50 = {
 				__("Question")
 			)}</th>` +
 			`<th scope="col">${esc(__("Answer Type"))}</th><th scope="col" class="is-num">${esc(
-				__("Weight")
+				__("Weight", null, "Audit Template Item")
 			)}</th>` +
 			`<th scope="col">${esc(
 				__("Critical")
@@ -286,7 +286,7 @@ const TcKsnkScr50 = {
 			`<label>${esc(
 				__("Assignee")
 			)}<input class="form-control" data-schedule="assignee" placeholder="${esc(
-				__("Employee ID")
+				__("Employee ID", null, "Audit Schedule")
 			)}"></label></div>` +
 			`<fieldset class="tc-ksnk-checks"><legend>${esc(__("Departments"))}</legend>` +
 			departments
@@ -337,9 +337,7 @@ const TcKsnkScr50 = {
 			);
 		if (!buttons.length) return "";
 		return `<div class="tc-ksnk-actions">${buttons.join("")}<span class="tc-ksnk-note">${esc(
-			__(
-				"Only R01 approves templates; a failed critical item fails the audit (BRU-AUD-005)."
-			)
+			__("Only R01 approves templates; a failed critical item fails the audit.")
 		)}</span></div>`;
 	},
 
@@ -384,7 +382,7 @@ const TcKsnkScr50 = {
 			self.alertHtml(state.error, esc) +
 			`<div class="tc-ksnk-grid">` +
 			`<section class="tc-ksnk-card" data-region="list"><h3>${esc(
-				__("Templates")
+				__("Templates", null, "Audit Template")
 			)} <code class="tc-ksnk-code">Audit Template</code></h3>` +
 			`${
 				(data.templates || []).length

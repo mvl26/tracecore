@@ -121,8 +121,7 @@ def guard_locked(doc):
 	if changed:
 		frappe.throw(
 			_(
-				"Version {0} is approved and locked. Create version V{1} to change it; audits already filled keep "
-				"version {0}."
+				"Version {0} is approved and locked. Create version V{1} to change it; audits already filled keep version {0}."
 			).format(doc.name, cint(doc.version_no) + 1),
 			title=_("Approved template is locked"),
 		)

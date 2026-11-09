@@ -146,8 +146,7 @@ def save_template(values):
 		if doc.docstatus != 0:
 			frappe.throw(
 				_(
-					"Version {0} is approved and locked. Create version V{1} to change it; audits already filled keep "
-					"version {0}."
+					"Version {0} is approved and locked. Create version V{1} to change it; audits already filled keep version {0}."
 				).format(doc.name, cint(doc.version_no) + 1)
 			)
 	else:

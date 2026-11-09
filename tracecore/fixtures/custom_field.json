@@ -306,7 +306,7 @@
   "fieldname": "tc_station_key",
   "fieldtype": "Select",
   "label": "TraceCore Station Step",
-  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nGeneral",
+  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nAUDIT\nGeneral",
   "insert_after": "category",
   "in_list_view": 1,
   "in_standard_filter": 1,

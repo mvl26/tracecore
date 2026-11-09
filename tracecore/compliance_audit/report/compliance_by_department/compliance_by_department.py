@@ -28,7 +28,12 @@ def _columns():
 		{"fieldname": "avg_score", "label": _("Average Score"), "fieldtype": "Percent", "width": 110},
 		{"fieldname": "critical_failed", "label": _("Critical Failed"), "fieldtype": "Int", "width": 110},
 		{"fieldname": "rate_label", "label": _("Result"), "fieldtype": "Data", "width": 230},
-		{"fieldname": "template_title", "label": _("Template Title"), "fieldtype": "Data", "width": 200},
+		{
+			"fieldname": "template_title",
+			"label": _("Template Title", context="Audit Session"),
+			"fieldtype": "Data",
+			"width": 200,
+		},
 	]
 
 

@@ -108,7 +108,7 @@ def _self_observation():
 	return blocked(
 		"AUDIT_SELF_OBSERVATION",
 		_("Cannot audit yourself"),
-		_("The observed person is the observer (BRU-AUD-004)."),
+		_("The observed person is the observer."),
 		_("Choose another observed person, or ask another auditor to observe you."),
 	)
 
