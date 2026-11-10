@@ -108,8 +108,9 @@ class TestScr64(IsolatedTestCase):
 		r02 = factories.make_user("os-ksnk-r02@example.com", roles=["TC R02"])
 		slugs = [item["slug"] for group in ksnk.nav(r11)["groups"] for item in group["items"]]
 		self.assertIn("phoi-nhiem", slugs)
-		with self.assertRaises(frappe.PermissionError):
-			ksnk.nav(r02)
+		# R02 vào Page từ FEAT-066 (màn hóa chất SCR-54) nhưng không thấy hồ sơ phơi nhiễm (FR-M16-05.2)
+		r02_slugs = [item["slug"] for group in ksnk.nav(r02)["groups"] for item in group["items"]]
+		self.assertNotIn("phoi-nhiem", r02_slugs)
 
 	def test_script_contract(self):
 		js = _read(SCR64_JS)

@@ -67,16 +67,11 @@ class TestLimitSeed(IsolatedTestCase):
 
 	def test_seed_risk_levels_once(self):
 		seed.ensure_seed()
-		frappe.db.set_value(
-			"Environment Risk Level", seed.RISK_LEVELS[0]["risk_name"], "min_audits_per_month", 9
-		)
+		# mức nguy cơ đặt tên theo nhãn đã dịch sang ngôn ngữ site (seed._t), site test tiếng Việt thì tên là tiếng Việt
+		name = seed._t(seed.RISK_LEVELS[0]["risk_name"])
+		frappe.db.set_value("Environment Risk Level", name, "min_audits_per_month", 9)
 		seed.ensure_seed()
-		self.assertEqual(
-			frappe.db.get_value(
-				"Environment Risk Level", seed.RISK_LEVELS[0]["risk_name"], "min_audits_per_month"
-			),
-			9,
-		)
+		self.assertEqual(frappe.db.get_value("Environment Risk Level", name, "min_audits_per_month"), 9)
 		self.assertTrue(any(row["is_high_risk"] for row in seed.RISK_LEVELS))
 
 	def test_seed_text_has_vietnamese_translation(self):
