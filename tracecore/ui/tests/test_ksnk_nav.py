@@ -20,7 +20,7 @@ class TestKsnkNav(IsolatedTestCase):
 		self.addCleanup(frappe.set_user, "Administrator")
 		self.users = {
 			code: factories.make_user(f"ksnk-nav-{code.lower()}@example.com", [f"TC {code}"])
-			for code in ("R01", "R02", "R10", "R11", "R12", "R13")
+			for code in ("R01", "R02", "R03", "R10", "R11", "R12", "R13")
 		}
 
 	def test_registry_screens_have_known_groups_and_scripts(self):
@@ -57,7 +57,8 @@ class TestKsnkNav(IsolatedTestCase):
 		self.assertEqual(nav["groups"], [])
 
 	def test_role_without_ksnk_access_is_rejected(self):
-		frappe.set_user(self.users["R02"])
+		# R02 vào được Page từ FEAT-066 (màn hóa chất SCR-54, A-142 Q4); R03 (nhân viên CSSD) không có màn KSNK nào
+		frappe.set_user(self.users["R03"])
 		with self.assertRaises(frappe.PermissionError):
 			api.nav()
 
