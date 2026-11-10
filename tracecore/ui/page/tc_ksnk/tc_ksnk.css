@@ -170,10 +170,12 @@
 	border: var(--tc-bw-hair) solid var(--tc-line);
 	border-left: var(--tc-bw-alert) solid var(--tc-info);
 	border-radius: var(--tc-r-sm);
+}
 .tc-ksnk .tc-ksnk-kpi span, .tc-ksnk .tc-ksnk-kpi small { color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
 .tc-ksnk .tc-ksnk-kpi b { color: var(--tc-text-heading); font-size: var(--tc-fs-4xl); }
 .tc-ksnk .tc-ksnk-kpi.is-warn { border-left-color: var(--tc-warn); background: var(--tc-warn-tint); }
 .tc-ksnk .tc-ksnk-kpi.is-fail { border-left-color: var(--tc-fail); background: var(--tc-fail-tint); }
 .tc-ksnk .tc-ksnk-kpi.is-pass { border-left-color: var(--tc-pass); }
+@media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-grid, .tc-ksnk .tc-ksnk-kpis { grid-template-columns: minmax(0, 1fr); }
 }

@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "autoname": "SV-.YYYY.-.#####",
+ "creation": "2026-11-09 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "full_name",
+  "school",
+  "department",
+  "department_name",
+  "column_break_period",
+  "period_from",
+  "period_to",
+  "trained_on",
+  "result",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Trainee Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "school",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "School",
+   "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "period_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Internship Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_to",
+   "fieldtype": "Date",
+   "label": "Internship End",
+   "reqd": 1
+  },
+  {
+   "description": "Infection control training must be on or before the internship start date.",
+   "fieldname": "trained_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "IC Training Date"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Training Result",
+   "options": "\nPassed\nFailed"
+  },
+  {
+   "default": "Not Trained",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Induction Status",
+   "no_copy": 1,
+   "options": "Valid\nNot Trained\nTrained After Start",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "Trainee Induction",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "full_name",
+ "track_changes": 1,
+ "description": "Student intern: infection control training must be completed on or before the internship start date."
+}

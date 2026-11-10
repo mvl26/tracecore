@@ -31,6 +31,8 @@ fixtures = [
 			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
 			["name", "like", "Help Article-tc_%"],  # FEAT-013: hướng dẫn theo bước trạm
 			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
+			["name", "like", "Training Program-tc_%"],  # FEAT-059 (A-135): loại đào tạo KSNK
+			["name", "like", "Training Result Employee-tc_%"],  # FEAT-059 (A-135 a): Đạt
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -218,6 +220,8 @@ after_migrate = [
 	"tracecore.setup.error_codes.ensure_error_codes",
 	# FEAT-067 (A-136): danh mục Organism tối thiểu + quy tắc đa kháng Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
 	"tracecore.microbiology.seed.ensure_seed",
+	# FEAT-059 (A-135 e): quyền R01/R02 cho HRMS Training Program / Event / Result
+	"tracecore.infection_program.permissions.ensure_permissions",
 ]
 
 # Uninstallation
@@ -421,6 +425,8 @@ doc_events = {
 	"Organism": dict(_AUDIT_EVENTS),
 	"Microbiology Isolate": dict(_AUDIT_EVENTS),
 	"MDRO Rule": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	# FEAT-059 (A-135 c): sinh viên thực tập; không xóa
+	"Trainee Induction": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -603,6 +609,8 @@ tracecore_ic_indicators = [
 	# FEAT-058 (A-133 Q4, FR-M11-07.1): tỷ lệ văn bản nội bộ còn hạn rà soát
 	"tracecore.infection_program.procedure_documents.register",
 	"tracecore.compliance_audit.indicators.register",  # FEAT-060: tỷ lệ phiếu giám sát Đạt
+	# FEAT-059: tỷ lệ đào tạo KSNK cơ bản, chuyên trách/Hội đồng/mạng lưới, sinh viên thực tập (FR-M11-09..11)
+	"tracecore.infection_program.training.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [

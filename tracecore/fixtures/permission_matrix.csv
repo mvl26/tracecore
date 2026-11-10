@@ -68,3 +68,4 @@ DT-ORG,Organism,RW,,,,,,,,,RW,R,,R,"FEAT-067 A-136: danh mục vi sinh vật mã
 DT-MICISO,Microbiology Isolate,R,,,,,,,,,,RW,,,"FEAT-067 A-136 (FR-M14-01.3, ADR-010): R11 import/nhập tay (tạo qua dịch vụ, không sửa); R13 không đọc dữ liệu người bệnh"
 DT-MDRO,MDRO Rule,RWS,,,,,,,,,,R,,R,"FEAT-067 A-136 (BRU-MDR-001): quy tắc đa kháng có phiên bản; R01 ghi sổ = duyệt"
 DT-IMPBATCH,Import Batch,,R,,,,,,,,R,R,,,"FEAT-067 A-136: R11 xem kết quả lô import vi sinh; giữ R02, R10 như FEAT-011"
+DT-ICTRN,Trainee Induction,RW,RW,,,,,,,,R,R,R,R,"FEAT-059 A-135 (FR-M11-11, UC-42): R01, R02 ghi sinh viên thực tập; R12 chỉ khoa mình (User Permission Department)"
