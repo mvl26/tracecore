@@ -1,0 +1,355 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "department_name",
+  "procedure_group",
+  "group_name",
+  "outcome",
+  "hai_case",
+  "column_break_patient",
+  "patient_code",
+  "patient_code_masked",
+  "patient_code_hash",
+  "birth_year",
+  "sex",
+  "deidentified",
+  "section_surgery",
+  "surgery_date",
+  "asa_score",
+  "wound_class",
+  "column_break_surgery",
+  "duration_min",
+  "has_implant",
+  "data_complete",
+  "source",
+  "import_batch",
+  "section_nnis",
+  "nnis_index",
+  "nnis_note",
+  "t_time_applied",
+  "column_break_window",
+  "window_days",
+  "window_end",
+  "reporting_period",
+  "section_prophylaxis",
+  "prophylaxis_given",
+  "prophylaxis_agent",
+  "prophylaxis_minutes_before_incision",
+  "column_break_prophylaxis",
+  "prophylaxis_timing",
+  "prophylaxis_max_applied",
+  "section_followup",
+  "discharge_date",
+  "followups"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "translatable": 0,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "procedure_group",
+   "fieldtype": "Link",
+   "label": "Procedure Group",
+   "options": "Surgical Procedure Group",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "fetch_from": "procedure_group.group_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "Under Surveillance\nNo SSI\nSSI\nLost to Follow-up",
+   "default": "Under Surveillance",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "hai_case",
+   "fieldtype": "Link",
+   "label": "HAI Case",
+   "options": "HAI Case",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_patient",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient_code",
+   "fieldtype": "Password",
+   "label": "Patient Code",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Patient Code (masked)",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "patient_code_hash",
+   "fieldtype": "Data",
+   "label": "Patient Code Hash",
+   "hidden": 1,
+   "read_only": 1,
+   "no_copy": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "birth_year",
+   "fieldtype": "Int",
+   "label": "Birth Year"
+  },
+  {
+   "fieldname": "sex",
+   "fieldtype": "Select",
+   "label": "Sex",
+   "options": "\nMale\nFemale\nOther"
+  },
+  {
+   "fieldname": "deidentified",
+   "fieldtype": "Check",
+   "label": "De-identified",
+   "read_only": 1,
+   "default": "0",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_surgery",
+   "fieldtype": "Section Break",
+   "label": "Surgery"
+  },
+  {
+   "fieldname": "surgery_date",
+   "fieldtype": "Date",
+   "label": "Surgery Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "asa_score",
+   "fieldtype": "Int",
+   "label": "ASA Score",
+   "description": "1 to 5."
+  },
+  {
+   "fieldname": "wound_class",
+   "fieldtype": "Select",
+   "label": "Wound Class",
+   "options": "\nClean\nClean-Contaminated\nContaminated\nDirty"
+  },
+  {
+   "fieldname": "column_break_surgery",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration_min",
+   "fieldtype": "Int",
+   "label": "Duration (minutes)"
+  },
+  {
+   "fieldname": "has_implant",
+   "fieldtype": "Check",
+   "label": "Implant",
+   "default": "0"
+  },
+  {
+   "fieldname": "data_complete",
+   "fieldtype": "Check",
+   "label": "Data Complete",
+   "read_only": 1,
+   "default": "0",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Manual\nImport",
+   "default": "Manual",
+   "read_only": 1
+  },
+  {
+   "fieldname": "import_batch",
+   "fieldtype": "Link",
+   "label": "Import Batch",
+   "options": "Import Batch",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_nnis",
+   "fieldtype": "Section Break",
+   "label": "NNIS Risk Index and Window"
+  },
+  {
+   "fieldname": "nnis_index",
+   "fieldtype": "Select",
+   "label": "NNIS Index",
+   "read_only": 1,
+   "no_copy": 1,
+   "options": "\n0\n1\n2\n3"
+  },
+  {
+   "fieldname": "nnis_note",
+   "fieldtype": "Small Text",
+   "label": "NNIS Note",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "t_time_applied",
+   "fieldtype": "Int",
+   "label": "T Applied (minutes)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_window",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "window_days",
+   "fieldtype": "Int",
+   "label": "Window (days)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "window_end",
+   "fieldtype": "Date",
+   "label": "Window End",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reporting_period",
+   "fieldtype": "Data",
+   "label": "Reporting Period",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "section_prophylaxis",
+   "fieldtype": "Section Break",
+   "label": "Surgical Antibiotic Prophylaxis"
+  },
+  {
+   "fieldname": "prophylaxis_given",
+   "fieldtype": "Check",
+   "label": "Prophylaxis Given",
+   "default": "0"
+  },
+  {
+   "fieldname": "prophylaxis_agent",
+   "fieldtype": "Data",
+   "label": "Antibiotic",
+   "depends_on": "prophylaxis_given"
+  },
+  {
+   "fieldname": "prophylaxis_minutes_before_incision",
+   "fieldtype": "Data",
+   "label": "Minutes before Incision",
+   "depends_on": "prophylaxis_given",
+   "description": "Whole minutes; 0 = at the incision, negative = given after the incision."
+  },
+  {
+   "fieldname": "column_break_prophylaxis",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "prophylaxis_timing",
+   "fieldtype": "Select",
+   "label": "Timing",
+   "options": "Not given\nOn time\nLate\nToo early\nNot assessed",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "prophylaxis_max_applied",
+   "fieldtype": "Int",
+   "label": "Threshold Applied (minutes)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_followup",
+   "fieldtype": "Section Break",
+   "label": "Follow-up after Discharge"
+  },
+  {
+   "fieldname": "discharge_date",
+   "fieldtype": "Date",
+   "label": "Discharge Date"
+  },
+  {
+   "fieldname": "followups",
+   "fieldtype": "Table",
+   "label": "Follow-ups",
+   "options": "SSI Follow-up"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 19:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Surgical Surveillance",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "module": "HAI Surveillance",
+ "autoname": "PT-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "patient_code_masked",
+ "search_fields": "procedure_group,department",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "description": "Surgical site infection surveillance of one operation; the patient code is encrypted and lists show it masked."
+}

@@ -176,6 +176,21 @@ SCREENS += [
 ]
 
 
+# FEAT-064 (A-147 k): giám sát NKVM — đăng ký phẫu thuật, lịch theo dõi sau ra viện, KSDP (SCR-57, UC-49); có mã người
+# bệnh nên chỉ R01, R11. Báo cáo NKVM theo nhóm/NNIS và xuất nằm trong SCR-58 `bao-cao-nkbv`
+SCREENS += [
+	{
+		"slug": "nkvm",
+		"scr": "SCR-57",
+		"uc": "UC-49",
+		"label": "SSI Surveillance",
+		"group": "hai",
+		"roles": ("TC R01", "TC R11", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_57_nkvm.js",
+	},
+]
+
+
 def _badges(user):
 	total: dict[str, int] = {}
 	for result in extension.run(BADGE_HOOK, user):

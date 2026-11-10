@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "group_code",
+  "group_name",
+  "is_monitored",
+  "column_break_rules",
+  "t_time_minutes",
+  "has_implant",
+  "followup_days",
+  "section_followups",
+  "followups"
+ ],
+ "fields": [
+  {
+   "fieldname": "group_code",
+   "fieldtype": "Data",
+   "label": "Group Code",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_monitored",
+   "fieldtype": "Check",
+   "label": "Monitored",
+   "default": "0",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Only monitored groups can be registered. Seeded groups stay off until the head of infection control reviews them."
+  },
+  {
+   "fieldname": "column_break_rules",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "t_time_minutes",
+   "fieldtype": "Int",
+   "label": "T (minutes)",
+   "description": "Cut-off duration of the NNIS risk index. Empty = not configured: the NNIS index is not calculated."
+  },
+  {
+   "fieldname": "has_implant",
+   "fieldtype": "Check",
+   "label": "Implant Group",
+   "default": "0",
+   "description": "Groups with an implant are followed for 90 days."
+  },
+  {
+   "fieldname": "followup_days",
+   "fieldtype": "Select",
+   "label": "Surveillance Window (days)",
+   "options": "30\n90",
+   "default": "30",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_followups",
+   "fieldtype": "Section Break",
+   "label": "Follow-up after Discharge"
+  },
+  {
+   "fieldname": "followups",
+   "fieldtype": "Table",
+   "label": "Follow-up Schedule",
+   "options": "Surgical Procedure Group Follow-up",
+   "description": "A last follow-up on the window end day is always added."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 14:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Surgical Procedure Group",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "module": "HAI Surveillance",
+ "autoname": "field:group_code",
+ "naming_rule": "By fieldname",
+ "title_field": "group_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "group_name",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "description": "Surgical procedure group under surgical site infection surveillance (Decision 1526/QD-BYT)."
+}

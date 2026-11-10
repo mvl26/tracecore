@@ -281,3 +281,42 @@ def device_episode_portal(
 		return _episode(action, values, episode, removed_on, getdate())
 	except BlockedError as error:
 		return reject_block(error.block, episodes.DOCTYPE, episode, client_ts=timestamp)
+
+
+# --- FEAT-064 (A-147 k): theo dõi NKVM sau ra viện trên PDA (Station Function SSI_FOLLOWUP, SCR-57 PDA) -------------
+# Chỉ online: lần theo dõi gắn người bệnh nên không lưu snapshot trên máy; response chỉ có mã BN che.
+SSI_FUNCTION = "SSI_FOLLOWUP"
+SSI_ROLES = ("TC R01", "TC R11", "System Manager")
+
+
+def _ssi_view(day):
+	from tracecore.hai_surveillance import ssi
+
+	return {"ok": True, "day": str(day), "due": ssi.due_followups(day)}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*SSI_ROLES)
+def ssi_followups(station, client_ts=None, token=None):
+	"""Lần theo dõi NKVM đến hạn/quá hạn hôm nay (mã BN che)."""
+	require_any_role(*SSI_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	return run_at_step(SSI_FUNCTION, station, timestamp, lambda: _ssi_view(_on(timestamp)))
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*SSI_ROLES)
+@idempotent
+def ssi_record(station, surveillance=None, row=None, result=None, note=None, client_ts=None, token=None):
+	"""Ghi kết quả một lần theo dõi từ PDA (FR-M13-08); trả danh sách còn đến hạn."""
+	from tracecore.hai_surveillance import ssi
+
+	require_any_role(*SSI_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	day = _on(timestamp)
+
+	def call():
+		ssi.record_followup(surveillance, row, day, result, note)
+		return _ssi_view(day)
+
+	return run_at_step(SSI_FUNCTION, station, timestamp, call, ssi.DOCTYPE, surveillance)

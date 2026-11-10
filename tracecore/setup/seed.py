@@ -35,6 +35,8 @@ DEFAULT_FUNCTIONS = (
 	("EXPOSURE", "Exposure report", 130, None, "exposure", 0),
 	# FEAT-062 (A-141 f, SCR-55): mẫu số ngày & đợt thiết bị trên PDA của khoa
 	("CENSUS", "Daily census", 125, None, "census", 0),
+	# FEAT-064 (A-147 k, SCR-57 PDA): theo dõi NKVM sau ra viện của giám sát viên KSNK, chỉ online
+	("SSI_FOLLOWUP", "SSI follow-up", 140, None, "ssi", 0),
 )
 
 # (loại vùng, màu, vùng kế tiếp qua máy hai cửa, chức năng được phép)
@@ -42,7 +44,12 @@ DEFAULT_ZONE_TYPES = (
 	("Dirty", "Dirty zone", "Clean", ("RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD")),
 	("Clean", "Clean zone", "Sterile", ("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD")),
 	("Sterile", "Sterile zone", None, ("STERI_UNLOAD", "PUTAWAY", "ISSUE")),
-	("Department", "Department zone", None, ("USE", "AUDIT", "EXPOSURE", "CENSUS")),  # FEAT-062: CENSUS
+	(
+		"Department",
+		"Department zone",
+		None,
+		("USE", "AUDIT", "EXPOSURE", "CENSUS", "SSI_FOLLOWUP"),
+	),  # FEAT-062: CENSUS; FEAT-064: SSI_FOLLOWUP
 	("Linen", "Default color", None, ("LINEN",)),
 	("Waste", "Waste zone", None, ("WASTE",)),
 )

@@ -61,3 +61,5 @@ tracecore.patches.v0_1.a138_ic_staff_role
 tracecore.patches.v0_1.a145_qd38_criteria
 # FEAT-068 (A-146 Q1): cờ khoa lâm sàng điền sẵn từ khoa nội trú cho site đang chạy
 tracecore.patches.v0_1.a146_department_clinical
+# FEAT-064 (A-147 k): chức năng trạm SSI_FOLLOWUP và nhóm phẫu thuật khởi tạo cho site đang chạy
+tracecore.patches.v0_1.a147_ssi_station_function

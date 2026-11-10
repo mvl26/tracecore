@@ -29,7 +29,9 @@
   "census_reminder_time",
   "bundle_reminder_time",
   "section_council",
-  "council_report_workday"
+  "council_report_workday",
+  "section_ssi",
+  "prophylaxis_max_minutes"
  ],
  "fields": [
   {
@@ -190,11 +192,23 @@
    "label": "Committee Report Working Day",
    "non_negative": 1,
    "description": "The monthly one-page report for the infection control committee is generated at 07:00 on this working day of the month (Monday to Friday, holidays excluded). Default 5."
+  },
+  {
+   "fieldname": "section_ssi",
+   "fieldtype": "Section Break",
+   "label": "Surgical Site Infection"
+  },
+  {
+   "fieldname": "prophylaxis_max_minutes",
+   "fieldtype": "Int",
+   "label": "Prophylaxis On Time Within (Minutes before Incision)",
+   "non_negative": 1,
+   "description": "Antibiotic prophylaxis given from 0 to this many minutes before the incision is on time, following the hospital protocol. Leave empty to assess none. A change recalculates surgeries of unlocked periods only."
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 10:00:00.000000",
+ "modified": "2026-11-10 16:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

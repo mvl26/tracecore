@@ -146,6 +146,9 @@ EVENTS = {
 	),
 	# FEAT-065 (FR-M9-25, A-145 D6): báo cáo Hội đồng KSNK một trang hằng tháng → R01, R13 (email + trong ứng dụng)
 	"IC_COUNCIL_REPORT": ("Infection control committee report ready", "Normal", 1, 0, ("TC R01", "TC R13")),
+	# FEAT-064 (A-147 c, l): lần theo dõi NKVM sau ra viện đến hạn → R11; nhóm phẫu thuật chưa có T của NNIS → R01
+	"SSI_FOLLOWUP_DUE": ("Surgical site infection follow-up due", "Normal", 0, 1, ("TC R11",)),
+	"SSI_GROUP_T_MISSING": ("Surgical procedure group without NNIS cut-off", "Normal", 0, 0, ("TC R01",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

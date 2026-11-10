@@ -128,6 +128,8 @@ page_js = {
 		"public/js/station_hand_hygiene.js",
 		# FEAT-062: mẫu số ngày & đợt thiết bị (SCR-55) trên PDA của khoa, chức năng trạm CENSUS
 		"public/js/station_census.js",
+		# FEAT-064: theo dõi NKVM sau ra viện (SCR-57 PDA), chức năng trạm SSI_FOLLOWUP
+		"public/js/station_ssi.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -254,6 +256,8 @@ after_migrate = [
 	"tracecore.hai_surveillance.seed.ensure_seed",
 	# FEAT-065 (A-145 Q1): chỉ tiêu QĐ 38 cho tự đánh giá năm — chỉ chèn mã còn thiếu, không ghi đè (NFR-MAINT-04)
 	"tracecore.admin_reports.self_assessment_seed.ensure_seed",
+	# FEAT-064 (A-147 a): 6 nhóm phẫu thuật QĐ 1526 chưa bật giám sát, chỉ chèn mã còn thiếu (NFR-MAINT-04)
+	"tracecore.hai_surveillance.ssi_seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -546,6 +550,11 @@ doc_events = {
 	# FEAT-063 (A-144): định nghĩa ca có phiên bản, ca NKBV; kỳ báo cáo ghi Audit Log trong dịch vụ periods
 	"HAI Case Definition": dict(_AUDIT_EVENTS),
 	"HAI Case": dict(_AUDIT_EVENTS),
+	# FEAT-064 (A-147): nhóm phẫu thuật (danh mục, xóa được khi chưa dùng), ca phẫu thuật giám sát NKVM (không xóa),
+	# hồ sơ xuất báo cáo theo ánh xạ cột
+	"Surgical Procedure Group": {k: v for k, v in _AUDIT_EVENTS.items() if k != "on_trash"},
+	"Surgical Surveillance": dict(_AUDIT_EVENTS),
+	"Report Export Profile": dict(_AUDIT_EVENTS),
 }
 # FEAT-066 (A-142 Q2, ADR-009): Stock Entry ghi sổ/hủy → hóa chất KSNK xuất tới kho khoa (M12 không import M6);
 # phiếu giám sát gắn đơn vị thuê ngoài hết hạn giấy phép chỉ cảnh báo (BRU-AUD-006)
@@ -558,6 +567,17 @@ doc_events["Stock Entry"]["on_cancel"] = [
 	"tracecore.compliance_audit.chemicals.on_stock_entry_cancel",
 ]
 doc_events["Audit Session"]["validate"] = "tracecore.compliance_audit.vendors.warn_expired_license"
+# FEAT-064 (A-147 e, f, Q3): ca NKBV gắn ca phẫu thuật xác định/loại trừ/hủy → kết cục NKVM; đổi ngưỡng phút KSDP →
+# tính lại ca thuộc kỳ chưa khóa (FR-M13-09.2)
+for _event in ("on_submit", "on_cancel"):
+	doc_events["HAI Case"][_event] = [
+		doc_events["HAI Case"][_event],
+		"tracecore.hai_surveillance.ssi.on_case_change",
+	]
+doc_events["IC Program Settings"]["on_update"] = [
+	doc_events["IC Program Settings"]["on_update"],
+	"tracecore.hai_surveillance.ssi.on_settings_update",
+]
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
 # ---------------
@@ -703,6 +723,8 @@ tracecore_ic_indicators = [
 	"tracecore.hai_surveillance.indicators.register",
 	# FEAT-068 (FR-M14-07, QĐ 38): tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt
 	"tracecore.microbiology.indicators.register",
+	# FEAT-064 (A-147 h): tỷ lệ NKVM, tỷ lệ có KSDP, tỷ lệ KSDP đúng thời điểm (FR-M13-09)
+	"tracecore.hai_surveillance.ssi_indicators.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -719,6 +741,8 @@ tracecore_ksnk_badges = [
 	"tracecore.compliance_audit.chemicals.badges",
 	# FEAT-063: số ca NKBV Nghi ngờ chờ xác định (SCR-56)
 	"tracecore.hai_surveillance.cases.badges",
+	# FEAT-064: lần theo dõi NKVM sau ra viện đến hạn/quá hạn (SCR-57)
+	"tracecore.hai_surveillance.ssi.badges",
 ]
 # FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
 # = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
@@ -759,6 +783,10 @@ tracecore_import_kinds = [
 	# FEAT-066 (A-142): hóa chất KSNK từ file khoa Dược qua Import Mapping Profile
 	"tracecore.compliance_audit.chemical_import.import_kinds",
 ]
+# FEAT-064 (A-147 i): danh sách phẫu thuật xuất từ HIS/phòng mổ qua Import Mapping Profile
+tracecore_import_kinds += ["tracecore.hai_surveillance.ssi_imports.import_kinds"]
+# FEAT-064 (A-147 Q1, j): loại báo cáo xuất theo Report Export Profile (core.exporter) — mỗi hàm trả list ExportKind
+tracecore_export_kinds = ["tracecore.hai_surveillance.exports.export_kinds"]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
@@ -795,6 +823,8 @@ scheduler_events = {
 			"tracecore.waste.storage.run_checks",
 			# FEAT-062, FR-M13-03, FR-M12-07.2: nhắc mẫu số thiếu và gói dự phòng chưa chấm sau giờ cấu hình
 			"tracecore.hai_surveillance.reminders.run",
+			# FEAT-064 (A-147 l): lần theo dõi NKVM sau ra viện đến hạn → R11, một lần mỗi ngày
+			"tracecore.hai_surveillance.ssi.remind",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],
@@ -838,6 +868,8 @@ scheduler_events = {
 		"tracecore.compliance_audit.vendors.run_daily",
 		# FEAT-063, NFR-PRIV-02 (A-144 Q3): xóa định danh ca NKBV, đợt thiết bị quá thời hạn lưu
 		"tracecore.hai_surveillance.retention.run",
+		# FEAT-064 (FR-M13-08, 08.1): ca hết cửa sổ theo dõi → Không NKVM / Mất theo dõi
+		"tracecore.hai_surveillance.ssi.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

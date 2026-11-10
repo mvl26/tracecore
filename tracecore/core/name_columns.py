@@ -61,6 +61,8 @@ EXISTING_NAME_COLUMN = {
 	("Issue Note Pack", "set_unit"): "set_name",
 	("TraceCore Error Log", "error_code"): "error_name",
 }
+# FEAT-064 (A-147): ca phẫu thuật giám sát đã có `group_name` (fetch tên nhóm phẫu thuật) ngay sau mã nhóm
+EXISTING_NAME_COLUMN[("Surgical Surveillance", "procedure_group")] = "group_name"
 
 # Giới hạn Frappe Grid: tổng ``columns`` của các cột hiển thị tối đa 10
 GRID_MAX_COLUMNS = 10

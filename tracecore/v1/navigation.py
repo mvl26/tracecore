@@ -26,6 +26,8 @@ FUNCTION_ROLES = {
 	"EXPOSURE": {"TC R08", "TC R11", "TC R12"},
 	# FEAT-062 (SCR-55): mẫu số ngày & đợt thiết bị — điều dưỡng khoa, mạng lưới viên, giám sát viên KSNK
 	"CENSUS": {"TC R08", "TC R11", "TC R12"},
+	# FEAT-064 (SCR-57 PDA): theo dõi NKVM sau ra viện — giám sát viên KSNK, trưởng khoa KSNK
+	"SSI_FOLLOWUP": {"TC R01", "TC R11"},
 }
 # thẻ, tài khoản thấy đủ trạm trên hàng nút (A-91, #1831 S-01); bấm trạm khác khu vẫn phải quét lại thẻ (A-90)
 OVERVIEW_ROLES = {"TC R01", "TC R02", "TC R10"}

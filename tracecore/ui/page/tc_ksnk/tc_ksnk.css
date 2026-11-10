@@ -209,3 +209,11 @@
 /* FEAT-068 SCR-60: form tạo lệnh cách ly xếp dọc, ô bắt buộc bị thiếu viền đỏ (kèm alert chữ, không chỉ màu) */
 .tc-ksnk .tc-ksnk-form.tc-ksnk-stack { flex-direction: column; align-items: stretch; }
 .tc-ksnk .tc-ksnk-form .form-control.is-invalid { border: var(--tc-bw-med) solid var(--tc-fail); }
+/* FEAT-064 SCR-57: form đăng ký phẫu thuật 4 cột, ô giá trị do server tính (NNIS, cửa sổ, KSDP) */
+.tc-ksnk .tc-ksnk-form4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--tc-sp-3); align-items: end; margin: var(--tc-sp-3) 0; }
+.tc-ksnk .tc-ksnk-form4 > label { display: flex; flex-direction: column; gap: var(--tc-sp-1); font-size: var(--tc-fs-sm); }
+.tc-ksnk .tc-ksnk-computed > div { padding: var(--tc-sp-2) var(--tc-sp-3); background: var(--tc-primary-soft); border-radius: var(--tc-r-sm); }
+.tc-ksnk .tc-ksnk-computed span { display: block; color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+@media (max-width: 900px) {
+	.tc-ksnk .tc-ksnk-form4 { grid-template-columns: minmax(0, 1fr); }
+}

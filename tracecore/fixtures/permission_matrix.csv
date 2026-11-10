@@ -85,3 +85,6 @@ DT-ICQD38,IC QD38 Criterion,RW,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, NFR-MAI
 DT-ICSA,IC Self Assessment,RWS,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, .1): R01 lập và ghi sổ tự đánh giá năm; R10, R11, R13 đọc"
 DT-ISOORD,Isolation Order,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-068 A-146 Q5 (FR-M14-06, BRU-MDR-003): R08, R12 tạo/đóng lệnh khoa mình (lệnh do đa kháng chỉ R01, R11 đóng); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
 DT-ISOROOM,Isolation Room,RW,,,,,,,R,,,R,R,R,"FEAT-068 A-146 Q2, Q5 (FR-M14-07): R01 duy trì phòng và đánh giá đạt; R08, R12 đọc phòng khoa mình; R11, R13 đọc"
+DT-SSIGRP,Surgical Procedure Group,RW,,,,,,,,,R,R,,,"FEAT-064 A-147 a (FR-M13-07, BRU-HAI-004): R01 cấu hình T, cửa sổ, lịch theo dõi và bật giám sát; R10, R11 đọc"
+DT-SSI,Surgical Surveillance,RW,,,,,,,,,,RW,,,"FEAT-064 A-147 b, m (FR-M13-07..09, ADR-010): R11 đăng ký ca và ghi theo dõi, R01 toàn quyền; có mã BN — R08, R10, R12, R13 không đọc; không ai xóa"
+DT-REXP,Report Export Profile,RW,,,,,,,,,RW,RW,,,"FEAT-064 A-147 Q1 (FR-M13-12, BRU-RPT-002): hồ sơ ánh xạ cột xuất báo cáo theo mẫu cơ quan quản lý"
