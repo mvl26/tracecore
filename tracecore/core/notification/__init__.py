@@ -155,6 +155,12 @@ EVENTS = {
 	"ENV_SAMPLING_DUE": ("Environmental sampling due", "Normal", 0, 1, ()),
 	"ENV_SAMPLE_OVERDUE": ("Environmental sample overdue", "Normal", 0, 0, ("TC R01",)),
 	"ENV_INFRA_DUE": ("Infrastructure inspection due", "Normal", 0, 0, ("TC R01", "TC R11")),
+	# FEAT-073 (A-151): sự cố nghi ngộ độc thực phẩm → báo ngay R01, R11 (FR-M17-04); chưa đặt ngưỡng số người → R01
+	# (UC-56 E2); hạn khám sức khỏe người chế biến còn 30 ngày / quá hạn → R11 (FR-M17-02)
+	"FOODBORNE_EVENT_REPORTED": ("Suspected food poisoning", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"FOODBORNE_THRESHOLD_MISSING": ("Food poisoning outbreak threshold not set", "Normal", 0, 0, ("TC R01",)),
+	"FOOD_HANDLER_CHECK_DUE": ("Food handler health check due", "Normal", 0, 1, ("TC R11",)),
+	"FOOD_HANDLER_CHECK_OVERDUE": ("Food handler health check overdue", "Normal", 0, 1, ("TC R11",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

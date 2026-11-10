@@ -1,0 +1,35 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/tracecore/css/tokens.css">
+{% endblock %}
+
+{# FEAT-073 (FR-M17-06): page opened from the QR code of a communication material #}
+{% block style %}
+<style>
+.tc-material { max-width: var(--tc-phone-w); margin: 0 auto; padding: var(--tc-sp-4);
+	font-family: var(--tc-font-sans); font-size: var(--tc-fs-md); line-height: var(--tc-lh-base); color: var(--tc-text); }
+.tc-material h1 { font-size: var(--tc-fs-xl); color: var(--tc-text-heading); margin: 0 0 var(--tc-sp-3); }
+.tc-material .tc-material-meta { color: var(--tc-text-muted); margin: 0 0 var(--tc-sp-4); }
+.tc-material .tc-material-open { display: inline-block; min-height: var(--tc-touch-station); padding: var(--tc-sp-3) var(--tc-sp-5);
+	background: var(--tc-primary); color: var(--tc-on-primary); border-radius: var(--tc-r-md); text-decoration: none; }
+.tc-material .tc-material-notice { border-left: var(--tc-bw-alert) solid var(--tc-info); background: var(--tc-info-tint);
+	color: var(--tc-info-text); padding: var(--tc-sp-3); }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="tc-material">
+	<h1>{{ title }}</h1>
+	{% if state == "current" %}
+	<p class="tc-material-meta">{{ _("Version {0}").format(version_no) }}{% if issued_on %} · {{ _("Issued on {0}").format(frappe.format(issued_on, "Date")) }}{% endif %}</p>
+	{% endif %}
+	{% if file_link %}
+	<a class="tc-material-open" href="{{ file_link }}">{{ _("Open the document") }}</a>
+	{% else %}
+	<div class="tc-material-notice" role="status">{{ notice }}</div>
+	{% endif %}
+</div>
+{% endblock %}

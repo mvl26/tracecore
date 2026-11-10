@@ -31,7 +31,9 @@
   "section_council",
   "council_report_workday",
   "section_ssi",
-  "prophylaxis_max_minutes"
+  "prophylaxis_max_minutes",
+  "section_food_safety",
+  "foodborne_outbreak_threshold"
  ],
  "fields": [
   {
@@ -204,11 +206,23 @@
    "label": "Prophylaxis On Time Within (Minutes before Incision)",
    "non_negative": 1,
    "description": "Antibiotic prophylaxis given from 0 to this many minutes before the incision is on time, following the hospital protocol. Leave empty to assess none. A change recalculates surgeries of unlocked periods only."
+  },
+  {
+   "fieldname": "section_food_safety",
+   "fieldtype": "Section Break",
+   "label": "Food Safety"
+  },
+  {
+   "fieldname": "foodborne_outbreak_threshold",
+   "fieldtype": "Int",
+   "label": "Outbreak Investigation from (People Affected)",
+   "non_negative": 1,
+   "description": "A suspected food poisoning event affecting at least this many people suggests an outbreak investigation. Leave empty until the head of infection control sets it; events then only suggest a non-conformance."
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 16:00:00.000000",
+ "modified": "2026-11-10 19:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

@@ -52,7 +52,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Incident Type",
-   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nSync Conflict\nWaste Misclassification\nWaste Storage Overdue\nWaste Weight Variance\nWaste Spill\nSharps Exposure\nCompliance Nonconformity\nEnvironment Nonconformity\nOther",
+   "options": "Missing Instrument\nForeign Instrument\nWash Failed\nLoad Failed\nDamaged Pack\nEquipment Fault\nSync Conflict\nWaste Misclassification\nWaste Storage Overdue\nWaste Weight Variance\nWaste Spill\nSharps Exposure\nCompliance Nonconformity\nEnvironment Nonconformity\nFood Safety Nonconformity\nOther",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -70,7 +70,7 @@
   {
    "fieldname": "incident_category",
    "fieldtype": "Select",
-   "options": "\nWaste\nCompliance\nEnvironment",
+   "options": "\nWaste\nCompliance\nEnvironment\nFood Safety",
    "read_only": 1,
    "in_standard_filter": 1,
    "label": "Incident Category"
@@ -290,7 +290,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-10 18:00:00.000000",
+ "modified": "2026-11-10 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Incident CAPA",

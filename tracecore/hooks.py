@@ -173,6 +173,8 @@ website_route_rules = [
 	{"from_route": "/ksnk-khoa/mau-so", "to_route": "ksnk_khoa/mau_so"},
 	# FEAT-068 (SCR-60 DEPT, A-146 Q4): Cổng khoa — lệnh cách ly; link thông báo đa kháng mở trang này
 	{"from_route": "/ksnk-khoa/cach-ly", "to_route": "ksnk_khoa/cach_ly"},
+	# FEAT-073 (A-151 Q3, FR-M17-06): mã QR tài liệu truyền thông trỏ URL cố định theo mã tài liệu, không cần đăng nhập
+	{"from_route": "/tai-lieu/<code>", "to_route": "tai_lieu"},
 ]
 
 # website user home page (by Role)
@@ -328,6 +330,8 @@ permission_query_conditions = {
 	# FEAT-070 (FR-M15-01.2, NFR-SEC-09): R08/R12 chỉ thấy vùng vệ sinh và mẫu môi trường của khoa có User Permission
 	"Environment Zone": "tracecore.environmental_hygiene.zones.query_conditions",
 	"Environmental Sample": "tracecore.environmental_hygiene.zones.sample_query_conditions",
+	# FEAT-073 (FR-M17-01.2, NFR-SEC-09): R12 chỉ thấy buổi truyền thông của khoa có User Permission
+	"IC Education Session": "tracecore.food_safety.education.query_conditions",
 }
 
 has_permission = {
@@ -344,6 +348,8 @@ has_permission = {
 	# FEAT-070
 	"Environment Zone": "tracecore.environmental_hygiene.zones.has_permission",
 	"Environmental Sample": "tracecore.environmental_hygiene.zones.has_permission",
+	# FEAT-073
+	"IC Education Session": "tracecore.food_safety.education.has_permission",
 }
 
 # DocType Class
@@ -603,6 +609,21 @@ doc_events.update(
 		"Environmental Sample": dict(_AUDIT_EVENTS),
 	}
 )
+# FEAT-073 (A-151): người chế biến, sự cố ngộ độc, buổi truyền thông không xóa, có Audit Log; ổ dịch M14 mở từ sự cố
+# ngộ độc (nguồn source_doctype/source_name) → M17 ghi ngược tên ổ dịch (Q1, liên kết hai chiều; M14 không import M17)
+doc_events.update(
+	{
+		"Food Handler Health Check": dict(_AUDIT_EVENTS),
+		"Foodborne Event": dict(_AUDIT_EVENTS),
+		"IC Education Session": dict(_AUDIT_EVENTS),
+	}
+)
+_outbreak_events = doc_events.setdefault("Outbreak Investigation", {})
+for _event in ("after_insert", "on_update"):
+	_previous = _outbreak_events.get(_event) or []
+	_outbreak_events[_event] = (_previous if isinstance(_previous, list) else [_previous]) + [
+		"tracecore.food_safety.events.on_outbreak_saved"
+	]
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
 # ---------------
@@ -756,6 +777,8 @@ tracecore_ic_indicators = [
 	"tracecore.infection_program.improvement.register_indicators",
 	"tracecore.hai_surveillance.prevalence.register",
 ]
+# FEAT-073 (FR-M17-02): tỷ lệ người chế biến thực phẩm Đủ sức khỏe và còn hạn khám
+tracecore_ic_indicators += ["tracecore.food_safety.indicators.register"]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
 	# FEAT-057: số thành phần cơ cấu KSNK còn thiếu (SCR-47)
@@ -776,6 +799,8 @@ tracecore_ksnk_badges = [
 	# FEAT-070: mẫu môi trường chờ quyết định NC + vùng chờ lấy mẫu lại (SCR-62)
 	"tracecore.environmental_hygiene.samples.badges",
 ]
+# FEAT-073: người chế biến quá hạn khám + sự cố ngộ độc chờ quyết định NC/ổ dịch (SCR-65)
+tracecore_ksnk_badges += ["tracecore.food_safety.dashboard.badges"]
 # FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
 # = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
 # FEAT-068 đăng ký cách ly đang mở, FEAT-063 cảnh báo cụm ca.
@@ -806,6 +831,9 @@ tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
 # FEAT-070 (A-148 d, FR-M15-04): R01/R11 mở NC từ mẫu môi trường Không đạt → M2 tạo Incident Environment; ctx {sample,
 # department, description}, trả tên Incident
 tracecore_environment_nc = ["tracecore.reprocessing.incidents.on_environment_nc"]
+# FEAT-073 (A-151, FR-M17-04): R01/R11 mở NC từ sự cố nghi ngộ độc thực phẩm → M2 tạo Incident Food Safety; ctx {event,
+# department, description}, trả tên Incident (M17 không import M2)
+tracecore_food_safety_nc = ["tracecore.reprocessing.incidents.on_food_safety_nc"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
@@ -910,6 +938,8 @@ scheduler_events = {
 		# FEAT-070, FR-M15-05, .1, FR-M15-06: giao việc lấy mẫu đến kỳ, nhắc R01 mẫu quá hạn 7 ngày, nhắc hạ tầng trước 7 ngày
 		"tracecore.environmental_hygiene.plans.run_daily",
 		"tracecore.environmental_hygiene.audits.run_daily",
+		# FEAT-073, FR-M17-02: nhắc R11 hạn khám sức khỏe người chế biến còn 30 ngày / quá hạn
+		"tracecore.food_safety.handlers.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước
