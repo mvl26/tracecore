@@ -375,6 +375,13 @@ HTTP_STATUS: dict[str, int] = {
 	"HAI_CASE_EXCEPTION_REQUIRED": 422,
 	"HAI_PERIOD_LOCKED": 409,
 	"HAI_PERIOD_INVALID": 422,
+	# FEAT-064 (A-147): giám sát NKVM, xuất báo cáo theo hồ sơ ánh xạ cột
+	"SSI_VALUE_INVALID": 422,
+	"SSI_DATE_INVALID": 422,
+	"SSI_GROUP_NOT_MONITORED": 422,
+	"SSI_WINDOW_OPEN": 409,
+	"HAI_CASE_SURGERY_INVALID": 422,
+	"EXPORT_COLUMN_FORBIDDEN": 422,
 }
 DEFAULT_HTTP_STATUS = 409
 # Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ

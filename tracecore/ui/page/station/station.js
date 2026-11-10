@@ -47,6 +47,8 @@ function tcScreenClass(key) {
 			return typeof ExposureReport !== "undefined" ? ExposureReport : null;
 		case "census": // FEAT-062 SCR-55: mẫu số ngày & đợt thiết bị trên PDA của khoa
 			return typeof CensusStation !== "undefined" ? CensusStation : null;
+		case "ssi": // FEAT-064 SCR-57 PDA: theo dõi NKVM sau ra viện (chỉ online)
+			return window.SsiFollowupStation || null;
 		default:
 			return null;
 	}

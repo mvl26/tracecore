@@ -346,6 +346,17 @@ class TestErrors(FrappeTestCase):
 				"HAI_PERIOD_INVALID": 422,
 			}
 		)
+		# FEAT-064 (A-147)
+		table.update(
+			{
+				"SSI_VALUE_INVALID": 422,
+				"SSI_DATE_INVALID": 422,
+				"SSI_GROUP_NOT_MONITORED": 422,
+				"SSI_WINDOW_OPEN": 409,
+				"HAI_CASE_SURGERY_INVALID": 422,
+				"EXPORT_COLUMN_FORBIDDEN": 422,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

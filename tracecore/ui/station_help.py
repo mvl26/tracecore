@@ -32,6 +32,7 @@ STATION_KEYS = (
 	"AUDIT",
 	"EXPOSURE",  # FEAT-071
 	"CENSUS",  # FEAT-062
+	"SSI_FOLLOWUP",  # FEAT-064
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
@@ -133,6 +134,12 @@ DEFAULT_STEPS = {
 		"Check the department and the day, then enter the inpatient and device counts and save.",
 		"Open a device episode when a device is inserted and close it when it is removed.",
 		"Without network the census and episodes are saved and sent when the connection returns.",
+	),
+	# FEAT-064 (SCR-57 PDA)
+	"SSI_FOLLOWUP": (
+		"Scan your employee card to open the station.",
+		"Choose a follow-up due today, call the patient or check the record.",
+		"Tap the result, add a note if needed and save; a suspected infection is reviewed on the desk screen.",
 	),
 	GENERAL: (
 		"Open the address of your station: it ends with ?station= and the station code, for example ?station=TR-001. Ask R10 for the code if you do not know it.",

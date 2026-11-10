@@ -15,7 +15,7 @@ from frappe.utils import cint, date_diff, formatdate, get_datetime, getdate, now
 
 from tracecore.core import audit, patient_code
 from tracecore.core.errors import Block, BlockedError
-from tracecore.hai_surveillance import definitions, periods, permissions
+from tracecore.hai_surveillance import definitions, periods, permissions, ssi
 
 DOCTYPE = "HAI Case"
 EPISODE = "Device Episode"
@@ -177,6 +177,7 @@ def validate(doc):
 			before = frappe.db.get_value(DOCTYPE, doc.name, "onset_date")
 			periods.ensure_open(before, DOCTYPE, doc.name)
 	_episode(doc)
+	ssi.check_case_link(doc)  # FEAT-064 (A-147 f): ca phẫu thuật cùng người bệnh
 	doc.time_check, doc.time_check_note = time_check(doc)
 	_check_isolates(doc)
 	if doc.docstatus == 0 and not doc.flags.tc_decision:

@@ -299,6 +299,13 @@ UNMAPPED_BLOCK_CODES = frozenset(
 		"HAI_CASE_REASON_REQUIRED",
 		"HAI_PERIOD_INVALID",
 		"HAI_PERIOD_LOCKED",
+		# FEAT-064 (A-147): giám sát NKVM, xuất báo cáo — lỗi nghiệp vụ KSNK, không thuộc danh mục lỗi trạm
+		"EXPORT_COLUMN_FORBIDDEN",
+		"HAI_CASE_SURGERY_INVALID",
+		"SSI_DATE_INVALID",
+		"SSI_GROUP_NOT_MONITORED",
+		"SSI_VALUE_INVALID",
+		"SSI_WINDOW_OPEN",
 		# FEAT-068 (A-146): lệnh cách ly tại khoa — lỗi nhập liệu KSNK, không thuộc danh mục lỗi trạm
 		"ISOLATION_ALREADY_CLOSED",
 		"ISOLATION_END_REASON_REQUIRED",

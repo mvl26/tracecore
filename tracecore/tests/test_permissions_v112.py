@@ -129,6 +129,15 @@ V112_ROWS.update(
 	}
 )
 
+# FEAT-064 (A-147 m): nhóm phẫu thuật, ca phẫu thuật giám sát NKVM (có mã BN), hồ sơ xuất báo cáo
+V112_ROWS.update(
+	{
+		"DT-SSIGRP": ("Surgical Procedure Group", {"R01": "RW", "R10": "R", "R11": "R"}),
+		"DT-SSI": ("Surgical Surveillance", {"R01": "RW", "R11": "RW"}),
+		"DT-REXP": ("Report Export Profile", {"R01": "RW", "R10": "RW", "R11": "RW"}),
+	}
+)
+
 
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):
