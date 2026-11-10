@@ -10,10 +10,12 @@
   "column_break_program",
   "has_inpatient",
   "surveillance_ratio_beds",
+  "surveillance_rounding",
   "doc_review_months",
   "ast_min_isolates",
   "section_structure",
   "ic_department",
+  "director",
   "surveillance_staff",
   "section_training",
   "ic_certificate_types",
@@ -64,6 +66,14 @@
    "label": "Beds per Surveillance Officer"
   },
   {
+   "fieldname": "surveillance_rounding",
+   "fieldtype": "Select",
+   "label": "Surveillance Officer Rounding",
+   "options": "Up\nDown",
+   "default": "Up",
+   "description": "Beds ÷ ratio rounded up or down, at least 1."
+  },
+  {
    "default": "12",
    "fieldname": "doc_review_months",
    "fieldtype": "Int",
@@ -86,6 +96,13 @@
    "fieldtype": "Link",
    "label": "Infection Control Department or Unit",
    "options": "Department"
+  },
+  {
+   "fieldname": "director",
+   "fieldtype": "Link",
+   "label": "Head of Facility",
+   "options": "Employee",
+   "description": "Chair of the IC Committee (TT 16/2018 Article 17)."
   },
   {
    "fieldname": "surveillance_staff",
@@ -162,7 +179,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 09:00:00.000000",
+ "modified": "2026-11-10 12:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

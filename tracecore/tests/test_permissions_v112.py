@@ -89,6 +89,14 @@ V112_ROWS.update(
 )
 
 
+# FEAT-094 (A-138 h, FR-M11-01.8): bộ tiêu chí cơ cấu KSNK — R01 nhập và duyệt; R02, R10, R13 đọc
+V112_ROWS.update(
+	{
+		"DT-ICSP": ("IC Structure Profile", {"R01": "RW", "R02": "R", "R10": "R", "R13": "R"}),
+	}
+)
+
+
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):
 		self.assertEqual(ROLE_CODES, tuple(f"R{n:02d}" for n in range(1, 14)))

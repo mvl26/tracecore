@@ -65,7 +65,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Representing",
-   "options": "Functional Unit\nMicrobiology and Laboratory\nPharmacy\nHigh-risk Clinical\nOther",
+   "options": "Functional Unit\nMicrobiology and Laboratory\nPharmacy\nHigh-risk Clinical\nOther\nNursing\nQuality Management\nPlanning and General\nInfrastructure\nMedical Equipment",
    "reqd": 1,
    "columns": 2
   }
@@ -73,7 +73,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-11-09 11:00:00.000000",
+ "modified": "2026-11-10 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Infection Program",
  "name": "IC Committee Member",

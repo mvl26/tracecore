@@ -5,6 +5,10 @@
   quyết định ai được ghi.
 - ``submit_committee`` (POST): R01 ghi sổ Hội đồng Nháp; cảnh báo thiếu khối đại diện trả về ``warnings``.
 
+FEAT-094 (A-138 h): ``status`` thêm ``profile``, ``profile_notice``, ``can_open_profile``, ``settings.director``,
+``settings.director_name``, ``settings.surveillance_rounding``; ``save_settings`` nhận thêm ``director``,
+``surveillance_rounding``. Không bỏ khóa cũ.
+
 Lỗi nghiệp vụ trả body ``{ok: false, error: {title, reason, action}}`` để màn hiện ``alert-error`` inline (design.md
 §6) — không để Frappe bật hộp thoại msgprint.
 """
@@ -21,8 +25,16 @@ from tracecore.ui import ksnk
 SETTINGS = structure.SETTINGS
 COMMITTEE = structure.COMMITTEE
 SCREEN_SLUG = structure.SCREEN_SLUG
-EDITABLE_SETTINGS = ("bed_count", "facility_level", "has_inpatient", "surveillance_ratio_beds")
+EDITABLE_SETTINGS = (
+	"bed_count",
+	"facility_level",
+	"has_inpatient",
+	"surveillance_ratio_beds",
+	"surveillance_rounding",  # FEAT-094
+	"director",
+)
 SETTINGS_FIELDS = (*EDITABLE_SETTINGS, "doc_review_months", "ic_department")
+PROFILE = "IC Structure Profile"  # FEAT-094
 
 
 def _require_screen():
@@ -49,6 +61,10 @@ def _status():
 	result["settings"] = {field: settings.get(field) for field in SETTINGS_FIELDS}
 	result["can_edit_settings"] = bool(frappe.has_permission(SETTINGS, "write"))
 	result["can_submit_committee"] = bool(frappe.has_permission(COMMITTEE, "submit"))
+	result["can_open_profile"] = bool(frappe.has_permission(PROFILE, "read"))
+	result["settings"]["director_name"] = (
+		frappe.db.get_value("Employee", settings.director, "employee_name") if settings.director else None
+	)
 	drafts = frappe.get_list(
 		COMMITTEE, filters={"docstatus": 0}, pluck="name", order_by="creation desc", limit_page_length=1
 	)
@@ -71,6 +87,8 @@ def save_settings(values):
 		values = json.loads(values or "{}")
 	doc = frappe.get_single(SETTINGS)
 	doc.update({field: values[field] for field in EDITABLE_SETTINGS if field in values})
+	if "director" in values and not values["director"]:
+		doc.director = None
 	frappe.db.savepoint("ksnk_structure_settings")
 	try:
 		doc.save()

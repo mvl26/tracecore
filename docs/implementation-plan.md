@@ -11,7 +11,7 @@
 
 TraceCore là app Frappe v15 `tracecore` (cạnh `erpnext`, `hrms`) cho khoa KSNK/CSSD: truy xuất dụng cụ qua chuỗi 8 trạm T1–T8 với cổng kiểm soát 5 bước, Set ID GS1 GIAI vĩnh viễn, Cycle ID GS1 DataMatrix dùng một lần in trên 2 loại nhãn (hấp/plasma), cùng đồ vải, nhân sự, thiết bị, kho, chi phí, cơ số, báo cáo và (v1.11) chất thải y tế. Bốn surface: WEB (Desk), STN (kiosk Frappe Page), PDA (PWA cùng Page), DEPT (Portal).
 
-Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
+Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT; + FEAT-094 theo A-138**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
 
 1. **De-risk sớm** 4 ADR rủi ro nhất: ADR-004 (GS1 DataMatrix 300 dpi trên nhãn chịu hấp, rủi ro R-01), ADR-005 (step-gate engine), ADR-003 (offline/idempotency), ADR-006 (station agent + 2 loại nhãn, R-04).
 2. **Milestone demo** "1 bộ đi hết T1→T8 + thu hồi" sớm nhất có thể (cuối Sprint 2).
@@ -188,6 +188,26 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | FEAT-058 | Kế hoạch KSNK năm (mục tiêu, chỉ số, hoạt động, ngân sách; R13 ghi sổ = duyệt; sau duyệt chỉ sửa bằng bản Amend BRU-ICP-004), nhắc hoạt động tới hạn/quá hạn (Notification Rule), tổng kết năm từ M9/M12/M13, sổ văn bản nội bộ có phiên bản & hạn rà soát (BRU-ICP-005), biên bản họp Hội đồng → việc theo dõi mỗi kết luận | FR-M11-04, FR-M11-05, FR-M11-06, FR-M11-07, FR-M11-08 | UC-41 | SCR-48 (WEB) | Desk form submittable; scheduler nhắc hạn; Print Format "Kế hoạch KSNK năm", "Báo cáo tổng kết KSNK"; `core.notification.emit` | W: IC Annual Plan (+IC Plan Indicator, IC Plan Activity), IC Procedure Document, IC Committee Meeting, ToDo; R: IC Indicator Value, IC Committee | 014, 015 | M | S6 |
 | FEAT-059 | Đào tạo KSNK trên HRMS Training (tỷ lệ nhân viên đào tạo cơ bản/năm theo khoa; tỷ lệ chuyên trách/Hội đồng/mạng lưới đào tạo theo quy định; nhắc người chưa học), sinh viên thực tập (ngày đào tạo KSNK ≤ ngày bắt đầu thực tập) | FR-M11-09, FR-M11-10, FR-M11-11 | UC-42 | SCR-49 (WEB) | Script Report "Đào tạo KSNK theo khoa"; hàm chỉ số đăng ký hook `tracecore_ic_indicators`; HRMS Training Event/Result (ADR-009) | W: Trainee Induction; R: Training Event, Training Result (hrms), Employee, IC Network Member, IC Committee | 009 | S | S6 |
 | FEAT-072 | Cải tiến chất lượng KSNK & nghiên cứu (`IC Improvement Project`: trạng thái, kết quả, đếm số dự án hoàn thành/năm cho chỉ tiêu QĐ 38), tự đánh giá chất lượng KSNK hằng năm dùng mẫu phiếu M12 loại "Tự đánh giá" (TT 35/2024; kết quả vào tổng kết năm FR-M11-06), điều tra cắt ngang tỷ lệ hiện mắc theo ngày (ghi từng người bệnh đang nằm viện có/không NKBV, mã BN mã hóa, kết quả theo khoa) | FR-M11-12, FR-M11-13, FR-M13-14 | UC-42, UC-50 | SCR-49 (WEB), SCR-58 (WEB) | Desk form; phiếu tự đánh giá qua engine M12 (ADR-015); Script Report "Điều tra cắt ngang"; hàm chỉ số qua `tracecore_ic_indicators` | W: IC Improvement Project, Audit Session, HAI Case (cắt ngang); R: Audit Template, IC Annual Plan, Ward Daily Census, Department | 015, 010 | S | S8 |
+| FEAT-094 | **Cơ cấu KSNK kiểm đủ điều kiện TT 16/2018 (Amendment A-138)**: bộ tiêu chí cấu hình có phiên bản `IC Structure Profile` (R01 duyệt; fixture Nháp theo TT 16/2018 Điều 16–22), kiểm trình độ / khối ngành sức khỏe / chứng chỉ / toàn thời gian theo vai trò (trưởng khoa, điều dưỡng trưởng, giám sát viên, người phụ trách), tách người phụ trách và giám sát viên chuyên trách ở < 150 giường, cách làm tròn số giám sát viên cấu hình được, kiểm Chủ tịch / Thư ký / khối bắt buộc của Hội đồng, cột lý do và "Chưa xác minh" trên SCR-47 | FR-M11-01, FR-M11-01.1, FR-M11-01.2, FR-M11-01.5..01.8, FR-M11-02, FR-M11-02.2..02.4, FR-M11-03, FR-M11-03.3 | UC-40 | SCR-47 (WEB) | `infection_program.structure` (sửa), `infection_program.qualification` (mới), `v1.ksnk_structure.status` / `save_settings` (thêm khóa), validate hook IC Committee; fixture + patch `ic_role` cho dòng cũ | W: IC Structure Profile (+ IC Structure Committee Requirement, IC Structure Role Requirement), IC Program Settings (`director`, `surveillance_rounding`), [A-143] `IC Structure Profile.department_min_beds`, IC Surveillance Staff (`ic_role`), Custom Field Employee `tc_education_level`, `tc_health_field`; R: Certificate, Training Result, Employee, Department | 009 | M | S7 |
+
+#### Acceptance criteria FEAT-094 [A-138] (EARS; BRU-ICP-001..003, BRU-ICP-006, BRU-ICP-007)
+
+| AC | Câu EARS | FR / BRU |
+| :- | :- | :- |
+| AC-094-01 | Khi R01 duyệt `IC Structure Profile` ở trạng thái Nháp, hệ thống phải đổi sang Đã duyệt, ghi Audit Log, chuyển bản Đã duyệt trước đó cùng hiệu lực thành Thay thế và không cho sửa bản Đã duyệt. | FR-M11-01.8 |
+| AC-094-02 | Nếu `bench migrate` chạy khi bản profile của bệnh viện đã được sửa hoặc duyệt, thì hệ thống phải giữ nguyên bản đó và không nạp lại fixture đè lên. | FR-M11-01.8; NFR-MAINT-04 |
+| AC-094-03 | Khi chưa có profile Đã duyệt, hệ thống phải chỉ kiểm phần đếm (Hội đồng, khoa/bộ phận, mạng lưới, số người) và hiển thị thông báo "Chưa duyệt bộ tiêu chí cơ cấu" trên SCR-47. | FR-M11-01.8; OQ-V12-16 |
+| AC-094-04 | Khi số giường là 420, `surveillance_rounding` = Up và có 2 giám sát viên chuyên trách đạt, hệ thống phải hiển thị "Thiếu 1" (yêu cầu 3); khi `surveillance_rounding` = Down, phải hiển thị "Đủ" (yêu cầu 2). | FR-M11-01.1, FR-M11-01.7; BRU-ICP-001 |
+| AC-094-05 | Khi cơ sở có 120 giường nội trú và chỉ có người phụ trách toàn thời gian đạt (không có giám sát viên chuyên trách), hệ thống phải hiển thị thành phần giám sát viên là "Thiếu 1" và thành phần người phụ trách là "Đủ". | FR-M11-01.2, FR-M11-01.6; BRU-ICP-007 |
+| AC-094-06 | Nếu một người cùng được khai là người phụ trách và giám sát viên và `allow_one_person_both_roles` = 0, thì hệ thống phải chỉ đếm người đó cho một vai và nêu lý do ở vai còn lại. | FR-M11-01.6; BRU-ICP-007; OQ-V12-11 |
+| AC-094-07 | Nếu trưởng khoa hoặc điều dưỡng trưởng khoa KSNK có bậc học dưới đại học, không thuộc khối ngành sức khỏe, không có chứng chỉ KSNK hợp lệ hoặc không toàn thời gian, thì hệ thống phải không đếm người đó vào số tối thiểu và hiển thị lý do bằng chữ (ví dụ "Chưa đạt: bậc học dưới đại học"). | FR-M11-01.5; BRU-ICP-006 |
+| AC-094-08 | Nếu giám sát viên có bậc học cao đẳng trở lên, thuộc khối ngành sức khỏe và có `Certificate` KSNK còn hiệu lực hoặc kết quả đào tạo đạt thuộc `Full-time IC Staff`, thì hệ thống phải đếm người đó là đạt. | FR-M11-01.5; BRU-ICP-006 |
+| AC-094-09 | Nếu nhân viên chưa có `tc_education_level` hoặc chưa có chứng chỉ để đối chiếu, thì hệ thống phải hiển thị "Chưa xác minh", không đếm vào số tối thiểu và không cộng vào số thành phần thiếu. | FR-M11-01.5; OQ-V12-12 |
+| AC-094-10 | Khi R01 ghi sổ Hội đồng thiếu lãnh đạo phòng chức năng (khối Functional Unit), hệ thống phải vẫn ghi sổ, cảnh báo nêu khối thiếu và ghi Audit Log. | FR-M11-02.2; BRU-ICP-002 |
+| AC-094-11 | Nếu Chủ tịch không phải `director` đã khai, hoặc Thư ký không phải người giữ vai Trưởng khoa / Người phụ trách đang hiệu lực, thì hệ thống phải cảnh báo (hoặc chặn nếu profile đặt Block) và ghi Audit Log; chưa khai `director` thì bỏ qua kiểm Chủ tịch. | FR-M11-02.3; BRU-ICP-002 |
+| AC-094-12 | Nếu Hội đồng không có đúng 1 Chủ tịch và 1 Thư ký, thì hệ thống phải từ chối ghi sổ bất kể profile (hành vi FEAT-057 giữ nguyên). | FR-M11-02.1 |
+| AC-094-13 | Khi R01 duyệt profile mới có thêm khối Điều dưỡng, Quản lý chất lượng, `network_rule` = Any One Member và `committee_min_beds` = 0, hệ thống phải áp ngay tiêu chí đó từ `effective_from` mà không sửa code. | FR-M11-01.8, FR-M11-02.4, FR-M11-03.3 |
+| AC-094-14 | Hệ thống phải giữ nguyên nhãn trạng thái bằng chữ (Đủ / Thiếu / Cảnh báo / Chưa xác minh / Không áp dụng), không chỉ bằng màu, và Script Report "Cơ cấu KSNK còn thiếu" phải liệt kê lý do từng người không đạt. | FR-M11-01.3, FR-M11-01.5; NFR-ACC-01 |
 
 ### E-13 M12 Giám sát tuân thủ [A-113]
 
@@ -277,7 +297,7 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | **S5b** (song song S4–S5, 1 dev) | 047, 048, 049, 050 | Thu gom → lưu giữ → bàn giao → báo cáo chất thải | UAT M10 cùng M2 hoặc sau go-live |
 | Sau UAT | hardening, load test, pentest ASVS L2, đào tạo, chạy song song 2 tuần | — | **M3 Go-live** (GĐ7 PID) |
 | **S6** (3) [A-113 GĐ1] | 056, 057, 058, 059, 060, 061, 062 | Cơ cấu KSNK + kế hoạch năm; engine phiếu giám sát; ghi cơ hội VST trên PDA offline; mẫu số ngày & đợt thiết bị tại Cổng khoa | **M-v1.12-GĐ1a** — khoa thí điểm ghi phiếu VST thật |
-| **S7** (3) [A-113 GĐ1] | 063, 064, 065, 066 | Ca NKBV + tỷ suất theo kỳ khóa; NKVM/NNIS; bảng chỉ số KSNK toàn viện + báo cáo Hội đồng 1 trang; hóa chất, đơn vị thuê ngoài | **M-v1.12-GĐ1** — Hội đồng KSNK xem bảng chỉ số từ dữ liệu thật |
+| **S7** (3) [A-113 GĐ1] | 063, 064, 065, 066, 094 [A-138] | Ca NKBV + tỷ suất theo kỳ khóa; NKVM/NNIS; bảng chỉ số KSNK toàn viện + báo cáo Hội đồng 1 trang; hóa chất, đơn vị thuê ngoài | **M-v1.12-GĐ1** — Hội đồng KSNK xem bảng chỉ số từ dữ liệu thật |
 | **S8** (4) [A-113 GĐ2] | 067, 068, 069, 070, 071, 072 | Import WHONET + đa kháng + cách ly + ổ dịch; vệ sinh môi trường; phơi nhiễm & tiêm chủng; cải tiến/tự đánh giá/cắt ngang | **M-v1.12-GĐ2** |
 | **S9** (2) [A-113 GĐ3] | 073, 074 | ATTP & truyền thông; gói hồ sơ KSNK (API tích hợp chỉ khi D3 mở) | **M-v1.12-GĐ3** — UAT KSNK toàn viện |
 
@@ -343,6 +363,7 @@ graph LR
     F057["FEAT-057<br/>Cơ cấu KSNK"]
     F058["FEAT-058<br/>Kế hoạch năm, văn bản, họp HĐ"]
     F059["FEAT-059<br/>Đào tạo HRMS, sinh viên"]
+    F094["FEAT-094<br/>Cơ cấu KSNK theo TT 16"]
     F060["FEAT-060<br/>Engine phiếu giám sát (ADR-015)"]
     F061["FEAT-061<br/>Vệ sinh tay theo cơ hội"]
     F062["FEAT-062<br/>Mẫu số, đợt thiết bị, gói dự phòng"]
@@ -417,6 +438,8 @@ graph LR
     F011 --> F056
     F056 --> F057 --> F058
     F057 --> F059
+    F057 --> F094
+    F059 --> F094
     F056 --> F060 --> F061
     F060 --> F062 --> F063 --> F064
     F058 --> F065
@@ -438,7 +461,7 @@ graph LR
     classDef risk fill:#c0392b,stroke:#7b241c,color:#fff
     class F018,F009,F024 risk
     classDef v112 fill:#1f4e79,stroke:#0b2a45,color:#fff
-    class F056,F057,F058,F059,F060,F061,F062,F063,F064,F065,F066,F067,F068,F069,F070,F071,F072,F073,F074 v112
+    class F056,F057,F058,F059,F060,F061,F062,F063,F064,F065,F066,F067,F068,F069,F070,F071,F072,F073,F074,F094 v112
 ```
 
 ### 4.4 Milestone view

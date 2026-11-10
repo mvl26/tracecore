@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_version",
+  "profile_name",
+  "version_no",
+  "status",
+  "column_break_version",
+  "effective_from",
+  "legal_basis",
+  "approved_by",
+  "approved_by_name",
+  "approved_on",
+  "section_rules",
+  "department_min_beds",
+  "committee_min_beds",
+  "committee_rule_severity",
+  "column_break_rules",
+  "network_rule",
+  "allow_one_person_both_roles",
+  "section_committee",
+  "committee_requirements",
+  "section_roles",
+  "role_requirements"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_version",
+   "fieldtype": "Section Break",
+   "label": "Version"
+  },
+  {
+   "fieldname": "profile_name",
+   "fieldtype": "Data",
+   "label": "Profile Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version No.",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nApproved\nSuperseded",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "legal_basis",
+   "fieldtype": "Data",
+   "label": "Legal Basis"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by_name",
+   "fieldtype": "Data",
+   "label": "Approved By Name",
+   "fetch_from": "approved_by.employee_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_rules",
+   "fieldtype": "Section Break",
+   "label": "Structure Rules"
+  },
+  {
+   "fieldname": "department_min_beds",
+   "fieldtype": "Int",
+   "label": "Beds Requiring IC Department",
+   "default": "150",
+   "non_negative": 1,
+   "description": "From this number of inpatient beds: IC department, head, head nurse, surveillance officers by ratio."
+  },
+  {
+   "fieldname": "committee_min_beds",
+   "fieldtype": "Int",
+   "label": "Beds Requiring IC Committee",
+   "default": "150",
+   "non_negative": 1,
+   "description": "0 = every facility with inpatient care."
+  },
+  {
+   "fieldname": "committee_rule_severity",
+   "fieldtype": "Select",
+   "label": "Committee Rule Severity",
+   "options": "Warn\nBlock",
+   "default": "Warn",
+   "description": "Chair, Secretary and required groups. Exactly one Chair and one Secretary is always blocking."
+  },
+  {
+   "fieldname": "column_break_rules",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "network_rule",
+   "fieldtype": "Select",
+   "label": "Network Rule",
+   "options": "Doctor and Nurse\nAny One Member",
+   "default": "Doctor and Nurse"
+  },
+  {
+   "fieldname": "allow_one_person_both_roles",
+   "fieldtype": "Check",
+   "label": "One Person May Count for Two Roles",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_committee",
+   "fieldtype": "Section Break",
+   "label": "Committee Requirements"
+  },
+  {
+   "fieldname": "committee_requirements",
+   "fieldtype": "Table",
+   "label": "Committee Requirements",
+   "options": "IC Structure Committee Requirement"
+  },
+  {
+   "fieldname": "section_roles",
+   "fieldtype": "Section Break",
+   "label": "Role Requirements"
+  },
+  {
+   "fieldname": "role_requirements",
+   "fieldtype": "Table",
+   "label": "Role Requirements",
+   "options": "IC Structure Role Requirement"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Structure Profile",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "BTC-.YYYY.-.##",
+ "naming_rule": "Expression (old style)",
+ "title_field": "profile_name",
+ "show_title_field_in_link": 1,
+ "track_changes": 1,
+ "description": "Versioned infection control structure criteria approved by the head of infection control (TT 16/2018).",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ]
+}
