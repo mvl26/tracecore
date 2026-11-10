@@ -133,8 +133,8 @@
 | FR-M12-09 | Mục trọng yếu không đạt → đề nghị NC | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-10 | Chặn người giám sát tự quan sát mình | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-11 | Nhãn "Chưa đủ mẫu" khi dưới min_sample | Should | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
-| FR-M12-12 | Hóa chất KSNK theo khoa–tháng, 3 nguồn | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015 | FEAT-066 | _TBD_ |
-| FR-M12-13 | Nhắc giấy phép đơn vị thuê ngoài 60/30/7 ngày | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015 | FEAT-066 | _TBD_ |
+| FR-M12-12 | Hóa chất KSNK theo khoa–tháng, 3 nguồn | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015; SCR-54; A-142 | FEAT-066 | `compliance_audit/tests/test_chemicals.py`, `compliance_audit/tests/test_chemical_import.py`, `v1/tests/test_ic_chemical_api.py`, `tests/test_ksnk_scr54.py` |
+| FR-M12-13 | Nhắc giấy phép đơn vị thuê ngoài 60/30/7 ngày | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015; SCR-54; A-142 | FEAT-066 | `compliance_audit/tests/test_vendors.py` |
 | FR-M12-14 | Báo cáo tuân thủ theo kỳ PDF/Excel | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M13-01 | Định nghĩa ca có phiên bản theo ngày khởi phát | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
 | FR-M13-02 | Mẫu số ngày: một bản ghi/(ngày, khoa) | Must | Active | BA v1.12 (A-113) | UC-47 | _TBD_ | FEAT-062 | _TBD_ |

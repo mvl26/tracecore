@@ -473,7 +473,7 @@ Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17
 | SCR-51 | PDA — Phiếu vệ sinh tay theo cơ hội (≤ 3 chạm, offline) | PDA | Form chứng từ (station-like) | UC-44 | FR-M12-04, FR-M12-05, FR-M12-10 | — (v1.12, BA SRS-lite) |
 | SCR-52 | PDA — Phiếu giám sát theo mục (điểm %, gói dự phòng, VSMT, ATTP, tự đánh giá) | PDA + DEPT | Form chứng từ | UC-44, UC-54, UC-56 | FR-M12-06, FR-M12-07, FR-M15-02, FR-M17-01 | — (v1.12, BA SRS-lite) |
 | SCR-53 | Báo cáo tuân thủ & phản hồi khoa; danh sách phiếu | WEB (view DEPT) | Dashboard | UC-45 | FR-M12-08, FR-M12-09, FR-M12-11, FR-M12-14 | — (v1.12, BA SRS-lite) |
-| SCR-54 | Hóa chất KSNK theo khoa–tháng; đơn vị thuê ngoài & giấy phép | WEB | List View | UC-46 | FR-M12-12, FR-M12-13 | — (v1.12, BA SRS-lite) |
+| SCR-54 | Hóa chất KSNK theo khoa–tháng; đơn vị thuê ngoài & giấy phép | WEB | List View | UC-46 | FR-M12-12, FR-M12-13 | — (v1.12, BA SRS-lite); [A-142] màn `hoa-chat` của Page `tc-ksnk`, vai trò R01, R02, R09, R10, R11, R13 (R02, R10, R13 chỉ xem) |
 | SCR-55 | Cổng khoa — Mẫu số ngày & đợt thiết bị | DEPT + PDA | Form chứng từ | UC-47 | FR-M13-02, FR-M13-03, FR-M13-04 | — (v1.12, BA SRS-lite) |
 | SCR-56 | Ca NKBV (danh sách + hồ sơ ca, che mã BN) & kỳ báo cáo | WEB | Form chứng từ | UC-48 | FR-M13-01, FR-M13-05, FR-M13-06, FR-M13-11, FR-M13-15 | — (v1.12, BA SRS-lite) |
 | SCR-57 | Giám sát NKVM: đăng ký phẫu thuật, lịch theo dõi sau ra viện, kháng sinh dự phòng | WEB + PDA | Form chứng từ | UC-49 | FR-M13-07, FR-M13-08, FR-M13-09 | — (v1.12, BA SRS-lite) |
