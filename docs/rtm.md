@@ -142,12 +142,12 @@
 | FR-M13-04 | Đợt thiết bị, mã BN mã hóa, ngày thiết bị | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-010; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
 | FR-M13-05 | Ca NKBV Nghi ngờ → Xác định/Loại trừ | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010; A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-06 | Kiểm tra ngưỡng giờ/ngày thiết bị khi xác định ca | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
-| FR-M13-07 | Đăng ký phẫu thuật, NNIS, cửa sổ theo dõi | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
-| FR-M13-08 | Lịch theo dõi NKVM sau ra viện | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
-| FR-M13-09 | Kháng sinh dự phòng: tỷ lệ có, đúng thời điểm | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
+| FR-M13-07 | Đăng ký phẫu thuật, NNIS, cửa sổ theo dõi | Must | Active | BA v1.12 (A-113) | UC-49 | SCR-57; A-147 | FEAT-064 | `hai_surveillance/tests/test_ssi.py`, `hai_surveillance/tests/test_ssi_import.py`, `v1/tests/test_ssi_api.py`, `tests/test_ksnk_scr57.py` |
+| FR-M13-08 | Lịch theo dõi NKVM sau ra viện | Must | Active | BA v1.12 (A-113) | UC-49 | SCR-57 (WEB + PDA); A-147 | FEAT-064 | `hai_surveillance/tests/test_ssi.py`, `v1/tests/test_ssi_pda.py`, `v1/tests/test_ssi_api.py` |
+| FR-M13-09 | Kháng sinh dự phòng: tỷ lệ có, đúng thời điểm | Must | Active | BA v1.12 (A-113) | UC-49 | SCR-57, SCR-58; A-147 | FEAT-064 | `hai_surveillance/tests/test_ssi.py`, `hai_surveillance/tests/test_ssi_export.py` |
 | FR-M13-10 | Tỷ suất NKBV/1.000 ngày theo khoa và kỳ | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-11 | Khóa kỳ tháng, mở khóa có lý do | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
-| FR-M13-12 | Xuất báo cáo NKVM/NK hồi sức theo ánh xạ cột | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
+| FR-M13-12 | Xuất báo cáo NKVM/NK hồi sức theo ánh xạ cột | Must | Active | BA v1.12 (A-113) | UC-49 | SCR-58; A-147 | FEAT-064 | `core/tests/test_exporter.py`, `hai_surveillance/tests/test_ssi_export.py`, `v1/tests/test_ssi_api.py`, `tests/test_ksnk_scr57.py` |
 | FR-M13-13 | Cảnh báo cụm ca vượt ngưỡng | Should | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-069 | _TBD_ |
 | FR-M13-14 | Điều tra cắt ngang tỷ lệ hiện mắc | Could | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-072 | _TBD_ |
 | FR-M13-15 | Che mã BN trên danh sách, báo cáo, export M13 | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010; A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
