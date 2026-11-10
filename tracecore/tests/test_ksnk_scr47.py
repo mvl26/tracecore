@@ -136,3 +136,92 @@ class TestKsnkScr47(FrappeTestCase):
 		css = _read("ui/page/tc_ksnk/tc_ksnk.css")
 		self.assertIn(".tc-ksnk .tc-ksnk-badge.is-warn { background: var(--tc-warn-fill); }", css)
 		self.assertIn(".tc-ksnk .tc-ksnk-alert.is-warn", css)
+
+
+# --- FEAT-094 (A-138): cột Lý do, Chưa xác minh, thông báo bộ tiêu chí, cài đặt mới ----------------------------------
+
+PROFILE_DATA = """
+const withPeople = Object.assign({}, data, {
+	profile: null, profile_notice: "Structure criteria not approved", can_open_profile: true,
+	components: data.components.concat([
+		{key: "head", label: "Head of IC Department", requirement: "≥ 1 person · Bachelor or higher", current: "0 of 1",
+		 status: "missing", status_label: "Missing 1", reasons: "BS. <B>: Not met: education below Bachelor"},
+		{key: "surveillance", label: "Officers", requirement: "≥ 3 people (420 ÷ 150, rounded up)", current: "2 of 3",
+		 status: "unverified", status_label: "Not verified", reasons: "ĐD. C: Not verified: no IC certificate"},
+	]),
+});
+const approved = Object.assign({}, withPeople, {
+	profile_notice: null,
+	profile: {name: "BTC-2026-01", profile_name: "TT 16/2018", version_no: 2, effective_from: "2018-08-15"},
+});
+"""
+
+
+class TestKsnkScr47Feat094(FrappeTestCase):
+	def _run(self, code):
+		return run_js(self, [SHELL, SCR47], [["TcKsnk"], ["TcKsnkScr47"]], DATA + PROFILE_DATA + code)
+
+	def test_unverified_badge_has_text_and_warn_class(self):
+		out = self._run("""emit(TcKsnkScr47.badge("unverified", "Not verified"));""")
+		self.assertEqual(out, {"cls": "is-warn", "label": "Not verified"})
+
+	def test_reason_column_lists_people_escaped(self):
+		out = self._run("""emit({html: TcKsnkScr47.componentsHtml(withPeople, esc)});""")
+		html = out["html"]
+		self.assertIn(">Reason<", html)
+		self.assertIn("Not met: education below Bachelor", html)
+		self.assertIn("BS. &lt;B&gt;", html)
+		self.assertNotIn("BS. <B>", html)
+		self.assertIn("Not verified", html)
+		self.assertIn("rounded up", html)
+
+	def test_profile_notice_with_link_and_approved_summary(self):
+		out = self._run(
+			"""emit({
+				notice: TcKsnkScr47.profileHtml(withPeople, esc),
+				noLink: TcKsnkScr47.profileHtml(Object.assign({}, withPeople, {can_open_profile: false}), esc),
+				approved: TcKsnkScr47.profileHtml(approved, esc),
+				none: TcKsnkScr47.profileHtml(Object.assign({}, approved, {profile: null}), esc),
+			});"""
+		)
+		self.assertIn("Structure criteria not approved", out["notice"])
+		self.assertIn("tc-ksnk-alert is-warn", out["notice"])
+		self.assertIn("/app/ic-structure-profile", out["notice"])
+		self.assertNotIn("/app/ic-structure-profile", out["noLink"])
+		self.assertIn("BTC-2026-01", out["approved"])
+		self.assertIn("15/08/2018", out["approved"])
+		self.assertEqual(out["none"], "")
+
+	def test_committee_problems_shown(self):
+		out = self._run(
+			"""
+			const c = Object.assign({}, data.committee, {problems: [
+				{code: "CHAIR_NOT_DIRECTOR", text: "The Chair is not the head of facility (GĐ).", blocking: 1}]});
+			emit({html: TcKsnkScr47.committeeHtml(Object.assign({}, data, {committee: c}), esc)});
+			"""
+		)
+		self.assertIn("The Chair is not the head of facility", out["html"])
+		self.assertIn("tc-ksnk-alert is-warn", out["html"])
+
+	def test_settings_have_director_and_rounding(self):
+		out = self._run(
+			"""
+			const d = Object.assign({}, data, {settings: Object.assign({}, data.settings,
+				{director: "NV-0001", director_name: "BS. Giám đốc", surveillance_rounding: "Down"})});
+			const inputs = [["bed_count", "420"], ["director", " NV-0001 "], ["surveillance_rounding", "Down"]]
+				.map(([setting, value]) => ({dataset: {setting}, value}));
+			const el = {querySelectorAll: () => inputs};
+			emit({html: TcKsnkScr47.settingsHtml(d, false, esc), values: TcKsnkScr47.settingsValues(el)});
+			"""
+		)
+		self.assertIn('data-setting="director"', out["html"])
+		self.assertIn("BS. Giám đốc", out["html"])
+		self.assertEqual(out["values"]["director"], "NV-0001")
+		self.assertEqual(out["values"]["surveillance_rounding"], "Down")
+		self.assertEqual(out["values"]["bed_count"], 420)
+
+	def test_profile_form_script_approves_inline(self):
+		script = _read("infection_program/doctype/ic_structure_profile/ic_structure_profile.js")
+		self.assertIn('method: "approve"', script)
+		self.assertIn("set_headline_alert", script)
+		self.assertNotIn("msgprint", script)

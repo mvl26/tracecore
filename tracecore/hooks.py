@@ -235,6 +235,8 @@ after_migrate = [
 	"tracecore.occupational_safety.config.ensure_default_config",
 	# FEAT-061 (A-140; FR-M12-02): 8 mẫu phiếu giám sát khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
 	"tracecore.compliance_audit.seed.ensure_seed",
+	# FEAT-094 (A-138 a): bộ tiêu chí cơ cấu KSNK TT 16/2018 ở trạng thái Nháp, chỉ chèn khi chưa có bản nào (NFR-MAINT-04)
+	"tracecore.infection_program.structure_seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -423,6 +425,8 @@ doc_events = {
 		"on_update_after_submit": "tracecore.core.audit.on_document_event",
 	},
 	"IC Network Member": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
+	# FEAT-094 (A-138 a): bộ tiêu chí cơ cấu KSNK có phiên bản — Audit Log, không xóa
+	"IC Structure Profile": dict(_AUDIT_EVENTS),
 	# FEAT-058 (A-133): kế hoạch năm, văn bản nội bộ, biên bản họp — ghi vết cả cập nhật sau ghi sổ, không xóa;
 	# đóng ToDo của kết luận họp → kết luận Xong
 	"IC Annual Plan": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},

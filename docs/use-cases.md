@@ -1768,7 +1768,7 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 4. R01 ghi sổ Hội đồng; hệ thống kiểm tra đúng 1 Chủ tịch và 1 Thư ký; nếu thiếu đại diện vi sinh–xét nghiệm, dược hoặc khoa lâm sàng nguy cơ cao thì ghi sổ được kèm cảnh báo và Audit Log.
 5. R01/R02 nhập mạng lưới viên theo khoa (`IC Network Member`: nhân viên, khoa, loại thành viên, ngày bổ nhiệm, số quyết định, hiệu lực).
 6. Mỗi lần danh sách mạng lưới thay đổi, hệ thống kiểm tra từng khoa lâm sàng, cận lâm sàng và liệt kê khoa thiếu bác sĩ hoặc thiếu điều dưỡng/hộ sinh/KTV.
-7. R01 nhập nhân sự khoa/bộ phận KSNK kèm vai trò (Trưởng khoa / Điều dưỡng trưởng / Người phụ trách / Giám sát viên) và chuyên trách; R01/R02 nhập bậc học và khối ngành sức khỏe trên hồ sơ nhân viên. Hệ thống đối chiếu từng người với yêu cầu của vai trò và với chứng chỉ KSNK / kết quả đào tạo KSNK đạt (FEAT-059), so số người đạt với số tối thiểu và cập nhật bảng trạng thái cơ cấu kèm lý do từng người chưa đạt. [A-138]
+7. R01 nhập nhân sự khoa/bộ phận KSNK kèm vai trò (Trưởng khoa / Điều dưỡng trưởng / Người phụ trách / Giám sát viên) và chuyên trách; R02/R10 nhập bậc học và khối ngành sức khỏe trên hồ sơ nhân viên [A-143: R01 chỉ đọc Employee]. Hệ thống đối chiếu từng người với yêu cầu của vai trò và với chứng chỉ KSNK / kết quả đào tạo KSNK đạt (FEAT-059), so số người đạt với số tối thiểu và cập nhật bảng trạng thái cơ cấu kèm lý do từng người chưa đạt. [A-138]
 
 **Alternate flows**
 - A1. Cơ sở dưới 150 giường → cơ cấu bắt buộc là bộ phận KSNK, mạng lưới, ≥ 1 người phụ trách toàn thời gian và ≥ 1 giám sát viên chuyên trách (hai thành phần riêng; một người được tính cho cả hai vai hay không theo cấu hình, mặc định không, OQ-V12-11); không bắt buộc Hội đồng đầy đủ. [A-138]

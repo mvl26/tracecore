@@ -73,3 +73,4 @@ DT-OCCEXP,Occupational Exposure,RW,,,,,,,,,,RW,,,"FEAT-071 A-137 j (FR-M16-05, B
 DT-EXPTPL,Exposure Follow-up Template,RW,,,,,,,,,,R,,,"FEAT-071 A-137 Q3 (FR-M16-04, BRU-OCC-004): R01 nhập và duyệt phiên bản"
 DT-IMMREQ,Immunization Requirement,RW,R,,,,,,,,,R,,,"FEAT-071 A-137 f (FR-M16-07, BRU-OCC-004): R01 nhập và duyệt"
 DT-STFIMM,Staff Immunization,RW,RW,,,,,,,,,R,,,"FEAT-071 (FR-M16-05.2, FR-M16-07): R02 ghi tiêm chủng"
+DT-ICSP,IC Structure Profile,RW,R,,,,,,,,R,,,R,"FEAT-094 A-138 h (FR-M11-01.8): bộ tiêu chí cơ cấu KSNK có phiên bản; R01 nhập và duyệt; R02, R10, R13 đọc"

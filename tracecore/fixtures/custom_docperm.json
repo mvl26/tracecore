@@ -5925,5 +5925,59 @@
   "read": 1,
   "report": 1,
   "role": "TC R11"
+ },
+ {
+  "create": 1,
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "00002ab442",
+  "parent": "IC Structure Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R01",
+  "write": 1
+ },
+ {
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "f312a45b5d",
+  "parent": "IC Structure Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R02"
+ },
+ {
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "f1e9a7f3d0",
+  "parent": "IC Structure Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R10"
+ },
+ {
+  "doctype": "Custom DocPerm",
+  "export": 1,
+  "name": "d5f3b56abc",
+  "parent": "IC Structure Profile",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "print": 1,
+  "read": 1,
+  "report": 1,
+  "role": "TC R13"
  }
 ]

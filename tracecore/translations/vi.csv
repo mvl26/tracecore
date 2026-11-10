@@ -9480,3 +9480,124 @@ QD 3671/QD-BYT,QĐ 3671/QĐ-BYT
 TT 16/2018/TT-BYT,TT 16/2018/TT-BYT
 TT 16/2018/TT-BYT Article 25,TT 16/2018/TT-BYT Điều 25
 Compliance,Tuân thủ
+IC Structure Profile,Bộ tiêu chí cơ cấu KSNK,
+IC Structure Committee Requirement,Yêu cầu Hội đồng của bộ tiêu chí,
+IC Structure Role Requirement,Yêu cầu vai trò của bộ tiêu chí,
+Versioned infection control structure criteria approved by the head of infection control (TT 16/2018).,Bộ tiêu chí cơ cấu KSNK có phiên bản do Trưởng khoa KSNK duyệt (TT 16/2018).,
+Version,Phiên bản,IC Structure Profile
+Profile Name,Tên bộ tiêu chí,IC Structure Profile
+Version No.,Số phiên bản,IC Structure Profile
+Status,Trạng thái,IC Structure Profile
+Draft,Nháp,IC Structure Profile
+Approved,Đã duyệt,IC Structure Profile
+Superseded,Thay thế,IC Structure Profile
+Effective From,Hiệu lực từ,IC Structure Profile
+Legal Basis,Căn cứ pháp lý,IC Structure Profile
+Approved By,Người duyệt,IC Structure Profile
+Approved By Name,Tên người duyệt,IC Structure Profile
+Approved On,Ngày duyệt,IC Structure Profile
+Structure Rules,Quy tắc cơ cấu,IC Structure Profile
+Beds Requiring IC Department,Số giường bắt buộc có khoa KSNK,IC Structure Profile
+"From this number of inpatient beds: IC department, head, head nurse, surveillance officers by ratio.","Từ số giường nội trú này: khoa KSNK, trưởng khoa, điều dưỡng trưởng, giám sát viên theo tỷ lệ.",
+Beds Requiring IC Committee,Số giường bắt buộc có Hội đồng KSNK,IC Structure Profile
+0 = every facility with inpatient care.,0 = mọi cơ sở có nội trú.,
+Committee Rule Severity,Mức xử lý quy tắc Hội đồng,IC Structure Profile
+"Chair, Secretary and required groups. Exactly one Chair and one Secretary is always blocking.","Chủ tịch, Thư ký và các khối bắt buộc. Thiếu đúng 1 Chủ tịch và 1 Thư ký luôn bị chặn.",
+Warn,Cảnh báo,IC Structure Profile
+Block,Chặn,IC Structure Profile
+Network Rule,Quy tắc mạng lưới,IC Structure Profile
+Doctor and Nurse,≥ 1 bác sĩ và ≥ 1 điều dưỡng/hộ sinh/KTV,IC Structure Profile
+Any One Member,≥ 1 thành viên mỗi đơn vị,IC Structure Profile
+One Person May Count for Two Roles,Một người được tính cho hai vai,IC Structure Profile
+Committee Requirements,Yêu cầu Hội đồng,IC Structure Profile
+Role Requirements,Yêu cầu theo vai trò,IC Structure Profile
+Requirement Type,Loại yêu cầu,IC Structure Committee Requirement
+Representing,Khối đại diện,IC Structure Committee Requirement
+Role,Vai trò,IC Structure Committee Requirement
+Committee Role,Vai trò trong Hội đồng,IC Structure Committee Requirement
+Minimum Count,Số tối thiểu,IC Structure Committee Requirement
+IC Role,Vai trò KSNK,IC Structure Role Requirement
+IC Role,Vai trò KSNK,IC Surveillance Staff
+Applies To,Áp dụng cho,IC Structure Role Requirement
+Large,≥ ngưỡng giường,IC Structure Role Requirement
+Small,Dưới ngưỡng giường,IC Structure Role Requirement
+Outpatient,Không nội trú,IC Structure Role Requirement
+Any,Mọi quy mô,IC Structure Role Requirement
+Large: inpatient beds at or above the department threshold; Small: below it; Outpatient: no inpatient care.,≥ ngưỡng giường: số giường nội trú từ ngưỡng khoa KSNK trở lên; Dưới ngưỡng giường: thấp hơn ngưỡng; Không nội trú: không có giường nội trú.,
+Minimum Education,Bậc học tối thiểu,IC Structure Role Requirement
+None,Không yêu cầu,IC Structure Role Requirement
+Vocational,Trung cấp,
+College,Cao đẳng,
+Bachelor,Đại học,
+Postgraduate,Sau đại học,
+Health Field Required,Yêu cầu khối ngành sức khỏe,IC Structure Role Requirement
+Full-time Required,Yêu cầu toàn thời gian,IC Structure Role Requirement
+IC Certificate Required,Yêu cầu chứng chỉ KSNK,IC Structure Role Requirement
+Accepted Certificate Types,Loại chứng chỉ được công nhận,IC Structure Role Requirement
+One certificate type per line. Empty = use the accepted types in IC Program Settings.,Mỗi dòng một loại chứng chỉ. Để trống = dùng các loại được công nhận trong Cài đặt chương trình KSNK.,
+Head,Trưởng khoa,IC Structure Role Requirement
+Head,Trưởng khoa,IC Surveillance Staff
+Head,Trưởng khoa,IC Role
+Head Nurse,Điều dưỡng trưởng,
+Person in Charge,Người phụ trách,
+Surveillance Officer,Giám sát viên,
+Nursing,Điều dưỡng,
+Quality Management,Quản lý chất lượng,
+Planning and General,Kế hoạch tổng hợp,
+Medical Equipment,Thiết bị y tế,
+Surveillance Officer Rounding,Làm tròn số giám sát viên,
+"Beds ÷ ratio rounded up or down, at least 1.","Số giường ÷ tỷ lệ, làm tròn lên hoặc xuống, tối thiểu 1.",
+Up,Lên,IC Program Settings
+Down,Xuống,IC Program Settings
+Head of Facility,Người đứng đầu cơ sở,
+Chair of the IC Committee (TT 16/2018 Article 17).,Chủ tịch Hội đồng KSNK (TT 16/2018 Điều 17).,
+Education Level (IC),Bậc học (KSNK),
+Health Field Graduate,Tốt nghiệp khối ngành sức khỏe,
+Missing committee role: {0} (at least {1}),Thiếu vai trò Hội đồng: {0} (ít nhất {1}),
+Head of facility is not declared in IC Program Settings; the Chair was not checked.,Chưa khai người đứng đầu cơ sở trong Cài đặt chương trình KSNK; chưa kiểm Chủ tịch.,
+The Chair is not the head of facility ({0}).,Chủ tịch không phải người đứng đầu cơ sở ({0}).,
+The Secretary is not the active head or person in charge of infection control in IC Program Settings.,Thư ký không phải trưởng khoa hoặc người phụ trách KSNK đang hiệu lực trong Cài đặt chương trình KSNK.,
+Committee warning: {0} The committee is still recorded.,Cảnh báo Hội đồng: {0} Hội đồng vẫn được ghi sổ.,
+Missing network member,Thiếu mạng lưới viên,
+Required (every facility with inpatient care),Bắt buộc (mọi cơ sở có nội trú),
+missing representative: {0},thiếu đại diện {0},
+Present — {0},Có — {0},
+Each department ≥ 1 network member,Mỗi khoa ≥ 1 mạng lưới viên,
+rounded up,làm tròn lên,
+rounded down,làm tròn xuống,
+"≥ {0} people ({1} ÷ {2}, {3})","≥ {0} người ({1} ÷ {2}, {3})",
+Not verified,Chưa xác minh,IC Structure
+Not met,Chưa đạt,IC Structure
+Qualified,Đạt,
+Head of IC Department,Trưởng khoa KSNK,
+Head Nurse of IC Department,Điều dưỡng trưởng khoa KSNK,
+IC Person in Charge (full-time),Người phụ trách KSNK (toàn thời gian),
+{0} or higher,{0} trở lên,
+health field,khối ngành sức khỏe,
+full-time,toàn thời gian,
+IC certificate,chứng chỉ KSNK,
+Already counted for role {0},Đã được tính cho vai {0},
+{0} of {1} people qualified,{0}/{1} người đạt,
+Structure criteria not approved,Chưa duyệt bộ tiêu chí cơ cấu,
+Employee {0} is listed more than once with the same role in IC staff.,Nhân viên {0} được khai nhiều lần với cùng vai trò trong nhân sự KSNK.,
+The committee does not meet the approved structure criteria: {0},Hội đồng chưa đạt bộ tiêu chí cơ cấu đã duyệt: {0},
+Not met: not full-time,Chưa đạt: không toàn thời gian,
+Not verified: no education level,Chưa xác minh: chưa có bậc học,
+Not met: education below {0},Chưa đạt: bậc học dưới {0},
+Not met: not a health-field graduate,Chưa đạt: không thuộc khối ngành sức khỏe,
+Not met: IC certificate no longer valid,Chưa đạt: chứng chỉ KSNK hết hiệu lực,
+Not verified: no IC certificate,Chưa xác minh: chưa có chứng chỉ KSNK,
+Row {0}: choose the group the committee must include.,Dòng {0}: chọn khối Hội đồng phải có.,
+Row {0}: choose the committee role.,Dòng {0}: chọn vai trò Hội đồng.,
+Row {0}: the minimum count must be at least 1.,Dòng {0}: số tối thiểu phải từ 1 trở lên.,
+Role {0} for {1} is listed more than once.,Vai trò {0} cho quy mô {1} được khai nhiều lần.,
+The number of beds requiring an IC department must be at least 1.,Số giường bắt buộc có khoa KSNK phải từ 1 trở lên.,
+An approved structure profile cannot be changed. Create a new version instead.,Không sửa được bộ tiêu chí đã duyệt. Hãy tạo phiên bản mới.,
+Correct the draft and approve again.,Sửa bản Nháp rồi duyệt lại.,
+Reason,Lý do,IC Structure
+Approved structure criteria,Bộ tiêu chí cơ cấu đã duyệt,
+Open structure criteria,Mở bộ tiêu chí cơ cấu,
+Only counts are checked until R01 reviews and approves the draft criteria (TT 16/2018).,Hệ thống chỉ kiểm phần đếm cho đến khi R01 rà soát và duyệt bộ tiêu chí Nháp (TT 16/2018).,
+Structure criteria,Bộ tiêu chí cơ cấu,
+Approve,Duyệt,
+TT 16/2018/TT-BYT Articles 16-22,TT 16/2018/TT-BYT Điều 16-22,

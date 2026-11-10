@@ -89,6 +89,7 @@ class TestKsnkStructureApi(IsolatedTestCase):
 
 	@bru("BRU-ICP-002")
 	def test_submit_committee_returns_warnings(self):
+		fx.approved_profile()  # FEAT-094: khối Hội đồng chỉ kiểm khi có bộ tiêu chí đã duyệt
 		members = [m for m in fx.full_committee_members() if m[2] != "High-risk Clinical"]
 		draft = fx.committee(members)
 		frappe.set_user(self.users["R01"])
@@ -103,3 +104,51 @@ class TestKsnkStructureApi(IsolatedTestCase):
 		frappe.set_user(self.users["R13"])
 		with self.assertRaises(frappe.PermissionError):
 			api.submit_committee(draft.name)
+
+
+# --- FEAT-094 (A-138 h): khóa mới của status / save_settings --------------------------------------------------------
+
+
+class TestKsnkStructureApiProfile(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.db.sql("update `tabIC Structure Profile` set status = 'Draft'")
+		fx.clear_required_departments()
+		fx.settings(bed_count=420)
+		self.r10 = factories.make_user("ksnk-structure-p-r10@example.com", ["TC R10"])
+		self.r13 = factories.make_user("ksnk-structure-p-r13@example.com", ["TC R13"])
+
+	@bru("BRU-ICP-001")
+	def test_status_without_profile_has_notice(self):
+		frappe.set_user(self.r13)
+		data = api.status()
+		self.assertIsNone(data["profile"])
+		self.assertEqual(data["profile_notice"], "Structure criteria not approved")
+		self.assertTrue(data["can_open_profile"])
+		self.assertIn("surveillance_rounding", data["settings"])
+
+	@bru("BRU-ICP-001")
+	def test_r10_saves_director_and_rounding(self):
+		director = fx.employee("API Giám đốc")
+		frappe.set_user(self.r10)
+		result = api.save_settings({"director": director, "surveillance_rounding": "Down"})
+		self.assertTrue(result["ok"], result)
+		settings = result["status"]["settings"]
+		self.assertEqual(settings["director"], director)
+		self.assertEqual(settings["director_name"], "API Giám đốc")
+		self.assertEqual(settings["surveillance_rounding"], "Down")
+		surveillance = {row["key"]: row for row in result["status"]["components"]}["surveillance"]
+		self.assertEqual(surveillance["required"], 2)
+		result = api.save_settings({"director": ""})
+		self.assertIsNone(result["status"]["settings"]["director"])
+
+	def test_status_with_profile_lists_people(self):
+		fx.approved_profile()
+		frappe.set_user(self.r13)
+		data = api.status()
+		self.assertTrue(data["profile"]["name"].startswith("BTC-"))
+		self.assertIsNone(data["profile_notice"])
+		keys = [row["key"] for row in data["components"]]
+		self.assertEqual(keys[-3:], ["head", "head_nurse", "surveillance"])
+		self.assertIn("people", data["components"][-1])

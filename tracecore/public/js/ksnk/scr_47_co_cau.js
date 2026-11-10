@@ -3,18 +3,23 @@
 // Cài đặt chương trình (R10/R01), bảng trạng thái cơ cấu bắt buộc, Hội đồng hiệu lực, mạng lưới theo khoa.
 // Trạng thái luôn có chữ (server đã dịch: Đủ / Thiếu … / Không áp dụng / Không bắt buộc), không chỉ màu.
 // Lỗi chặn hiện alert-error inline theo thứ tự kết quả → lý do → hành động (design.md §6).
+// FEAT-094 (A-138): cột Lý do từng người chưa đạt, trạng thái chữ "Chưa xác minh", thông báo "Chưa duyệt bộ tiêu chí
+// cơ cấu" kèm lối mở bộ tiêu chí, ô người đứng đầu cơ sở và cách làm tròn số giám sát viên.
 
 const TC_STRUCT_STATUS = "tracecore.v1.ksnk_structure.status";
 const TC_STRUCT_SAVE = "tracecore.v1.ksnk_structure.save_settings";
 const TC_STRUCT_SUBMIT = "tracecore.v1.ksnk_structure.submit_committee";
 const TC_FACILITY_LEVELS = ["Specialized Level", "Basic Level", "Primary Level"];
+const TC_ROUNDING = ["Up", "Down"]; // FEAT-094
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
 
 const TcKsnkScr47 = {
 	badge(status, label) {
 		const cls =
-			{ ok: "is-pass", missing: "is-fail", warning: "is-warn" }[status] || "is-neutral";
+			{ ok: "is-pass", missing: "is-fail", warning: "is-warn", unverified: "is-warn" }[
+				status
+			] || "is-neutral";
 		return { cls, label: label || "—" };
 	},
 
@@ -64,6 +69,12 @@ const TcKsnkScr47 = {
 					}>${esc(label)}</option>`
 			)
 			.join("");
+		const rounding = TC_ROUNDING.map(
+			(value) =>
+				`<option value="${esc(value)}"${
+					value === (s.surveillance_rounding || "Up") ? " selected" : ""
+				}>${esc(__(value, null, "IC Program Settings"))}</option>`
+		).join("");
 		const save = editable
 			? `<button type="button" class="btn btn-primary" data-action="save-settings">${esc(
 					__("Save settings")
@@ -87,12 +98,45 @@ const TcKsnkScr47 = {
 			`class="form-control" data-setting="surveillance_ratio_beds" value="${esc(
 				s.surveillance_ratio_beds
 			)}"${dis}></label>` +
+			`<label>${esc(
+				__("Surveillance Officer Rounding")
+			)}<select class="form-control" data-setting="surveillance_rounding"${dis}>${rounding}</select></label>` +
+			`<label>${esc(__("Head of Facility"))}<input type="text" class="form-control" ` +
+			`data-setting="director" value="${esc(s.director || "")}"${dis}>` +
+			`<span class="tc-ksnk-note">${esc(s.director_name || "")}</span></label>` +
 			`</div><div data-region="settings-alert"></div>${save}` +
 			`<p class="tc-ksnk-note"><a href="/app/ic-program-settings">${esc(
 				__(
 					"Infection control unit and surveillance staff are edited in the settings form."
 				)
 			)}</a></p></section>`
+		);
+	},
+
+	profileHtml(data, esc) {
+		const link = data.can_open_profile
+			? ` <a href="/app/ic-structure-profile">${esc(__("Open structure criteria"))}</a>`
+			: "";
+		if (data.profile_notice) {
+			return (
+				`<div class="tc-ksnk-alert is-warn" role="status"><strong>${esc(
+					data.profile_notice
+				)}</strong> ` +
+				`${esc(
+					__(
+						"Only counts are checked until R01 reviews and approves the draft criteria (TT 16/2018)."
+					)
+				)}${link}</div>`
+			);
+		}
+		const p = data.profile;
+		if (!p) return "";
+		return (
+			`<p class="tc-ksnk-note">${esc(__("Structure criteria"))}: ` +
+			`<code class="tc-ksnk-code">${esc(p.name)}</code> ${esc(p.profile_name || "")} · ` +
+			`${esc(__("Version {0}", [p.version_no]))} · ${esc(__("Effective From"))} ${esc(
+				TcKsnkScr47.date(p.effective_from)
+			)}${link}</p>`
 		);
 	},
 
@@ -105,7 +149,7 @@ const TcKsnkScr47 = {
 						c.status,
 						c.status_label,
 						esc
-					)}</td></tr>`
+					)}</td><td>${esc(c.reasons || "—")}</td></tr>`
 			)
 			.join("");
 		return (
@@ -117,9 +161,10 @@ const TcKsnkScr47 = {
 			`<th scope="col">${esc(__("Requirement"))}</th><th scope="col">${esc(
 				__("Current", null, "IC Structure")
 			)}</th>` +
-			`<th scope="col">${esc(
-				__("Status")
-			)}</th></tr></thead><tbody>${rows}</tbody></table></section>`
+			`<th scope="col">${esc(__("Status"))}</th><th scope="col">${esc(
+				__("Reason", null, "IC Structure")
+			)}</th></tr></thead><tbody>${rows}</tbody></table>` +
+			`${TcKsnkScr47.profileHtml(data, esc)}</section>`
 		);
 	},
 
@@ -150,12 +195,16 @@ const TcKsnkScr47 = {
 					)}</td>` + `<td>${esc(__(m.representing))}</td></tr>`
 			)
 			.join("");
-		const warning = c.missing_representatives.length
-			? `<div class="tc-ksnk-alert is-warn"><strong>${esc(
-					__("Missing representative: {0}", [
-						c.missing_representatives.map((g) => __(g)).join(", "),
-					])
-			  )}</strong> ` +
+		const problems = (c.problems || []).map((p) => p.text);
+		if (!c.problems && c.missing_representatives.length) {
+			problems.push(
+				__("Missing representative: {0}", [
+					c.missing_representatives.map((g) => __(g)).join(", "),
+				])
+			);
+		}
+		const warning = problems.length
+			? `<div class="tc-ksnk-alert is-warn"><strong>${esc(problems.join(" "))}</strong> ` +
 			  `${esc(
 					__("The committee is still recorded; the warning is kept in the Audit Log.")
 			  )} ` +
@@ -273,7 +322,8 @@ const TcKsnkScr47 = {
 		const values = {};
 		el.querySelectorAll("[data-setting]").forEach((input) => {
 			const key = input.dataset.setting;
-			values[key] = key === "facility_level" ? input.value : Number(input.value);
+			const text = ["facility_level", "surveillance_rounding", "director"].includes(key);
+			values[key] = text ? input.value.trim() : Number(input.value);
 		});
 		return values;
 	},

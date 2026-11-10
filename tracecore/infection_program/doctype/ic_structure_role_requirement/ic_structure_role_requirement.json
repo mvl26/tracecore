@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ic_role",
+  "applies_to",
+  "min_education",
+  "health_field_required",
+  "full_time_required",
+  "evidence_required",
+  "certificate_types"
+ ],
+ "fields": [
+  {
+   "fieldname": "ic_role",
+   "fieldtype": "Select",
+   "label": "IC Role",
+   "options": "Head\nHead Nurse\nPerson in Charge\nSurveillance Officer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "label": "Applies To",
+   "options": "Large\nSmall\nOutpatient\nAny",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Large: inpatient beds at or above the department threshold; Small: below it; Outpatient: no inpatient care."
+  },
+  {
+   "fieldname": "min_education",
+   "fieldtype": "Select",
+   "label": "Minimum Education",
+   "options": "None\nVocational\nCollege\nBachelor\nPostgraduate",
+   "default": "None",
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "health_field_required",
+   "fieldtype": "Check",
+   "label": "Health Field Required",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "full_time_required",
+   "fieldtype": "Check",
+   "label": "Full-time Required",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "evidence_required",
+   "fieldtype": "Check",
+   "label": "IC Certificate Required",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "certificate_types",
+   "fieldtype": "Small Text",
+   "label": "Accepted Certificate Types",
+   "description": "One certificate type per line. Empty = use the accepted types in IC Program Settings."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Structure Role Requirement",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "editable_grid": 1,
+ "istable": 1,
+ "permissions": []
+}

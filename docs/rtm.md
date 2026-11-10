@@ -109,7 +109,7 @@
 
 | Req ID | Requirement (short) | Priority | Status | Source | Use case(s) | Design ref | Plan ref | Test ref |
 | :----- | :------------------ | :------- | :----- | :----- | :---------- | :--------- | :------- | :------- |
-| FR-M11-01 | Cơ cấu KSNK bắt buộc theo giường, tuyến | Must | Active | BA v1.12 (A-113) | UC-40 | SCR-47; A-132; A-138 | FEAT-057, FEAT-094 | `infection_program/tests/test_structure.py`, `v1/tests/test_ksnk_structure_api.py`, `tests/test_ksnk_scr47.py` |
+| FR-M11-01 | Cơ cấu KSNK bắt buộc theo giường, tuyến | Must | Active | BA v1.12 (A-113) | UC-40 | SCR-47; A-132; A-138 | FEAT-057, FEAT-094 | `infection_program/tests/test_structure.py`, `infection_program/tests/test_qualification.py`, `infection_program/doctype/ic_structure_profile/test_ic_structure_profile.py`, `v1/tests/test_ksnk_structure_api.py`, `tests/test_ksnk_scr47.py` |
 | FR-M11-02 | Ghi sổ Hội đồng: 1 Chủ tịch, 1 Thư ký | Must | Active | BA v1.12 (A-113) | UC-40 | SCR-47; A-138 | FEAT-057, FEAT-094 | `infection_program/doctype/ic_committee/test_ic_committee.py` |
 | FR-M11-03 | Mạng lưới: mỗi khoa ≥ 1 BS + 1 ĐD | Must | Active | BA v1.12 (A-113) | UC-40 | SCR-47; A-132; A-138 | FEAT-057, FEAT-094 | `infection_program/doctype/ic_network_member/test_ic_network_member.py`, `infection_program/tests/test_structure.py` |
 | FR-M11-04 | Kế hoạch năm: R13 duyệt, một kế hoạch/năm | Must | Active | BA v1.12 (A-113) | UC-41 | SCR-48; A-133 | FEAT-058 | `infection_program/doctype/ic_annual_plan/test_ic_annual_plan.py`, `v1/tests/test_ksnk_plan_api.py`, `tests/test_ksnk_scr48.py` |

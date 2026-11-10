@@ -40,7 +40,7 @@ def network_member(employee_name, department, member_type="Doctor", is_active=1)
 
 
 def settings(bed_count=420, has_inpatient=1, ratio=150, ic_department=None, staff=()):
-	"""Ghi IC Program Settings; `staff` là danh sách (employee, full_time, is_active)."""
+	"""Ghi IC Program Settings; `staff` là danh sách (employee, full_time, is_active[, ic_role]) — FEAT-094 thêm vai trò."""
 	doc = frappe.get_single(SETTINGS)
 	doc.update(
 		{
@@ -53,10 +53,11 @@ def settings(bed_count=420, has_inpatient=1, ratio=150, ic_department=None, staf
 		}
 	)
 	doc.set("surveillance_staff", [])
-	for employee_name, full_time, is_active in staff:
-		doc.append(
-			"surveillance_staff", {"employee": employee_name, "full_time": full_time, "is_active": is_active}
-		)
+	for employee_name, full_time, is_active, *role in staff:
+		row = {"employee": employee_name, "full_time": full_time, "is_active": is_active}
+		if role:
+			row["ic_role"] = role[0]
+		doc.append("surveillance_staff", row)
 	doc.save(ignore_permissions=True)
 	return doc
 
@@ -214,3 +215,38 @@ def meeting(resolutions=(), attendees=(), meeting_date=None, submit=False):
 	if submit:
 		doc.submit()
 	return doc
+
+
+# --- FEAT-094 (A-138): bộ tiêu chí cơ cấu, trình độ nhân sự KSNK ---------------------------------------------------
+
+
+def approved_profile(**overrides):
+	"""Bản bộ tiêu chí TT 16/2018 (nội dung của fixture khởi tạo) đã được duyệt; `overrides` ghi đè trường cha."""
+	from tracecore.infection_program import structure_profile, structure_seed
+
+	values = structure_seed.default_profile()
+	values.update(overrides)
+	values.setdefault("effective_from", add_days(today(), -1))
+	doc = frappe.get_doc(values).insert(ignore_permissions=True)
+	return structure_profile.approve(doc.name)
+
+
+def qualify(employee_name, level="Bachelor", health=1):
+	frappe.db.set_value("Employee", employee_name, {"tc_education_level": level, "tc_health_field": health})
+	return employee_name
+
+
+def certified(employee_name, certificate_type="Chứng chỉ KSNK"):
+	"""Nhân viên có Certificate KSNK được công nhận còn hiệu lực."""
+	from tracecore.infection_program.tests import training_fixtures as tfx
+
+	current = frappe.db.get_single_value(SETTINGS, "ic_certificate_types") or ""
+	if certificate_type not in current.splitlines():
+		tfx.accept_certificates(*[line for line in current.splitlines() if line], certificate_type)
+	tfx.certificate(employee_name, certificate_type)
+	return employee_name
+
+
+def qualified_employee(first_name, level="Bachelor"):
+	"""Nhân viên đạt đủ trình độ, khối ngành sức khỏe và chứng chỉ KSNK."""
+	return certified(qualify(employee(first_name), level=level))

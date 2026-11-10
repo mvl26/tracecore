@@ -396,5 +396,25 @@
   "default": "1",
   "in_list_view": 1,
   "insert_after": "grade"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "tc_education_level",
+  "fieldtype": "Select",
+  "insert_after": "tc_vaccination_remind_level",
+  "label": "Education Level (IC)",
+  "name": "Employee-tc_education_level",
+  "options": "\nVocational\nCollege\nBachelor\nPostgraduate"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "tc_health_field",
+  "fieldtype": "Check",
+  "insert_after": "tc_education_level",
+  "label": "Health Field Graduate",
+  "name": "Employee-tc_health_field",
+  "options": null
  }
 ]
