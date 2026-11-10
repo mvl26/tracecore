@@ -58,3 +58,4 @@ tracecore.patches.v0_1.feat060_audit_station_function
 tracecore.patches.v0_1.a137_exposure_station_function
 tracecore.patches.v0_1.a141_census_station_function
 tracecore.patches.v0_1.a138_ic_staff_role
+tracecore.patches.v0_1.a145_qd38_criteria

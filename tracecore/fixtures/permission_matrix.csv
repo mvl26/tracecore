@@ -77,3 +77,6 @@ DT-WDCEN,Ward Daily Census,RW,,,,,,,RW,,R,RW,RW,,"FEAT-062 A-141 g (FR-M13-02, B
 DT-DEVEP,Device Episode,RW,,,,,,,RW,,,RW,RW,,"FEAT-062 A-141 g (FR-M13-04, ADR-010): có mã BN — R13 không đọc; R08, R12 chỉ khoa mình; không ai xóa"
 DT-ICCHEM,IC Chemical Consumption,RWSA,R,,,,,,,RWSA,R,RWS,,R,"FEAT-066 A-142 Q4 (FR-M12-12): R09 nhập tay, chọn nguồn khi trùng; R11 import file khoa Dược; R02, R10, R13 xem"
 DT-ICSP,IC Structure Profile,RW,R,,,,,,,,R,,,R,"FEAT-094 A-138 h (FR-M11-01.8): bộ tiêu chí cơ cấu KSNK có phiên bản; R01 nhập và duyệt; R02, R10, R13 đọc"
+DT-ICCR,IC Council Report,R,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-25, BRU-RPT-002): báo cáo Hội đồng một trang hằng tháng do hệ thống sinh; không ai ghi tay"
+DT-ICQD38,IC QD38 Criterion,RW,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, NFR-MAINT-04): danh mục chỉ tiêu QĐ 38; R01 sửa, ngưng dùng thay vì xóa"
+DT-ICSA,IC Self Assessment,RWS,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, .1): R01 lập và ghi sổ tự đánh giá năm; R10, R11, R13 đọc"

@@ -130,6 +130,15 @@ def lock_period(period):
 		return
 	compute_period(period)
 	frappe.db.set_value(DOCTYPE, {"period": period}, "locked", 1, update_modified=False)
+	# FEAT-065 (UC-57 A1, A-145 D6): kỳ đã có báo cáo Hội đồng bản Tạm → sinh lại bản Chính thức (job nền, sau commit)
+	if frappe.db.get_value("IC Council Report", {"period": period}, "report_status") == "Provisional":
+		frappe.enqueue(
+			"tracecore.admin_reports.council_report.on_period_locked",
+			queue="long",
+			enqueue_after_commit=True,
+			now=bool(frappe.flags.in_test),
+			period=period,
+		)
 
 
 def unlock_period(period, reason):

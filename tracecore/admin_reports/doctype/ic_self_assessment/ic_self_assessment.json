@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "description": "Yearly self-assessment against the national infection control action plan (Decision 38/QD-BYT).",
+ "field_order": [
+  "year",
+  "column_break_main",
+  "assessed_on",
+  "section_items",
+  "items",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "label": "Year",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assessed_on",
+   "fieldtype": "Date",
+   "label": "Assessed On",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Criteria"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Criteria",
+   "options": "IC Self Assessment Item"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "IC Self Assessment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:TDG-{year}",
+ "naming_rule": "Expression",
+ "is_submittable": 1,
+ "title_field": "year"
+}

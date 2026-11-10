@@ -145,7 +145,8 @@ class TestKsnkPage(FrappeTestCase):
 			self.assertNotIn("frappe.call(", script, path)
 			self.assertIsNone(re.search(r"\.text\(\s*[\"'][A-Za-zÀ-ỹ]", script), path)
 		self.assertIn('"tracecore.v1.ksnk.nav"', _read(SHELL))
-		self.assertIn('"tracecore.v1.indicator.values"', _read(SCR66))
+		# FEAT-065: SCR-66 đầy đủ đọc RPC bảng (vẫn chỉ đọc IC Indicator Value, không tính lại)
+		self.assertIn('"tracecore.v1.indicator.board"', _read(SCR66))
 
 	def test_css_scoped_and_tokens_only(self):
 		css = re.sub(r"/\*.*?\*/", "", _read("ui/page/tc_ksnk/tc_ksnk.css"), flags=re.DOTALL)

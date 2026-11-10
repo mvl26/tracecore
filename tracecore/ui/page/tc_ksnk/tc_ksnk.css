@@ -190,3 +190,19 @@
 }
 /* FEAT-066 SCR-54: dòng Toàn viện của bảng hóa chất */
 .tc-ksnk .tc-ksnk-table tr.is-total td, .tc-ksnk .tc-ksnk-table tr.is-total th { font-weight: var(--tc-fw-bold); background: var(--tc-primary-soft); }
+/* FEAT-065 SCR-66: xu hướng 12 tháng (sparkline), thanh theo khoa có vạch mục tiêu, việc cần xử lý, dòng trạng thái KPI */
+.tc-ksnk .tc-ksnk-scroll { overflow-x: auto; }
+.tc-ksnk .tc-ksnk-spark { display: block; width: calc(var(--tc-sp-22) * 1.5); height: var(--tc-sp-7); }
+.tc-ksnk .tc-ksnk-spark polyline { fill: none; stroke: var(--tc-primary); stroke-width: 2; }
+.tc-ksnk .tc-ksnk-spark-target { stroke: var(--tc-text-heading); stroke-width: 1; stroke-dasharray: 3 3; }
+.tc-ksnk .tc-ksnk-spark-empty { color: var(--tc-text-muted); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ksnk-kpi-status { color: var(--tc-text-heading); }
+.tc-ksnk .tc-ksnk-bars { display: flex; flex-direction: column; gap: var(--tc-sp-2); margin-top: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-bar { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 1fr); gap: var(--tc-sp-2); align-items: center; }
+.tc-ksnk .tc-ksnk-bar-track { position: relative; display: block; height: var(--tc-sp-4); background: var(--tc-track); border-radius: var(--tc-r-sm); }
+.tc-ksnk .tc-ksnk-bar-fill { display: block; height: 100%; background: var(--tc-primary); border-radius: var(--tc-r-sm); }
+.tc-ksnk .tc-ksnk-bar.is-below .tc-ksnk-bar-fill { background: var(--tc-warn-fill); }
+.tc-ksnk .tc-ksnk-bar-target { position: absolute; top: calc(var(--tc-sp-1) * -1); bottom: calc(var(--tc-sp-1) * -1); border-left: var(--tc-bw-med) solid var(--tc-text-heading); }
+.tc-ksnk .tc-ksnk-bar-value { text-align: right; font-variant-numeric: tabular-nums; }
+.tc-ksnk .tc-ksnk-todos { margin: 0; padding: 0; list-style: none; }
+.tc-ksnk .tc-ksnk-todos li { margin-bottom: var(--tc-sp-2); }

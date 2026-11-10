@@ -207,6 +207,9 @@ jinja = {
 		"tracecore.ui.stock_count_print.tc_stock_count_context",
 		# Print Format "TC IC Annual Plan" / "TC IC Annual Summary" (FEAT-058, FR-M11-04, FR-M11-06)
 		"tracecore.infection_program.plan_print.tc_ic_plan_context",
+		# FEAT-065 (FR-M9-25, FR-M9-29): "TC IC Council Report" (báo cáo Hội đồng 1 trang), "TC IC Self Assessment"
+		"tracecore.admin_reports.council_report.tc_ic_council_context",
+		"tracecore.admin_reports.self_assessment.tc_ic_self_assessment_context",
 	]
 }
 
@@ -245,6 +248,8 @@ after_migrate = [
 	"tracecore.compliance_audit.permissions.ensure_permissions",
 	# FEAT-094 (A-138 a): bộ tiêu chí cơ cấu KSNK TT 16/2018 ở trạng thái Nháp, chỉ chèn khi chưa có bản nào (NFR-MAINT-04)
 	"tracecore.infection_program.structure_seed.ensure_seed",
+	# FEAT-065 (A-145 Q1): chỉ tiêu QĐ 38 cho tự đánh giá năm — chỉ chèn mã còn thiếu, không ghi đè (NFR-MAINT-04)
+	"tracecore.admin_reports.self_assessment_seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -464,6 +469,10 @@ doc_events = {
 	# FEAT-062 (A-141 a): mẫu số ngày, đợt thiết bị (mã BN Password không vào Audit Log); không xóa
 	"Ward Daily Census": dict(_AUDIT_EVENTS),
 	"Device Episode": dict(_AUDIT_EVENTS),
+	# FEAT-065 (A-145): báo cáo Hội đồng, chỉ tiêu QĐ 38, tự đánh giá năm — Audit Log, không xóa
+	"IC Council Report": dict(_AUDIT_EVENTS),
+	"IC QD38 Criterion": dict(_AUDIT_EVENTS),
+	"IC Self Assessment": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -687,6 +696,24 @@ tracecore_ksnk_badges = [
 	# FEAT-066: hóa chất chờ chọn nguồn + giấy phép thuê ngoài đã hết hạn (SCR-54)
 	"tracecore.compliance_audit.chemicals.badges",
 ]
+# FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
+# = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
+# FEAT-068 đăng ký cách ly đang mở, FEAT-063 cảnh báo cụm ca.
+tracecore_ksnk_todos = [
+	"tracecore.hai_surveillance.todos.todos",  # mẫu số ngày thiếu
+	"tracecore.compliance_audit.todos.todos",  # phiếu theo lịch còn thiếu kỳ này
+	"tracecore.infection_program.todos.todos",  # hoạt động kế hoạch quá hạn
+	"tracecore.occupational_safety.todos.todos",  # bước theo dõi phơi nhiễm đến hạn (chỉ đếm)
+	"tracecore.admin_reports.council_report.todos",  # báo cáo Hội đồng mới nhất
+]
+# FEAT-065 (A-145 Q1, D8): dòng tự động của tự đánh giá QĐ 38 — mỗi hàm trả {check_method: fn(year) -> {status, source_ref}}
+# (admin_reports.self_assessment); FEAT-068 đăng ký `isolation_rooms`.
+tracecore_ic_self_checks = [
+	"tracecore.infection_program.self_checks.register",
+	"tracecore.compliance_audit.self_checks.register",
+	"tracecore.hai_surveillance.self_checks.register",
+	"tracecore.microbiology.self_checks.register",
+]
 # FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
 tracecore_mdro_detected = []
 # FEAT-060 (A-134 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
@@ -745,6 +772,8 @@ scheduler_events = {
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],
+		# FEAT-065 (FR-M9-25, A-145 D6): 07:00 ngày làm việc thứ N → báo cáo Hội đồng KSNK kỳ tháng trước
+		"0 7 * * *": ["tracecore.admin_reports.council_report.run_daily"],
 		# 00:00 giờ hệ thống (Asia/Ho_Chi_Minh): một khóa cron nên mọi việc nửa đêm nằm chung một danh sách
 		"0 0 * * *": [
 			# FEAT-015 S2: kích hoạt phiên bản BOM đã lên lịch

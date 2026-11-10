@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "description": "Criteria of the national infection control action plan (Decision 38/QD-BYT) for the yearly self-assessment.",
+ "field_order": [
+  "criterion_code",
+  "criterion",
+  "sort_order",
+  "column_break_main",
+  "is_active",
+  "source_hint",
+  "section_auto",
+  "check_method",
+  "column_break_auto",
+  "indicator",
+  "indicator_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "criterion_code",
+   "fieldtype": "Data",
+   "label": "Criterion Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "criterion",
+   "fieldtype": "Small Text",
+   "label": "Criterion",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "default": "0"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_hint",
+   "fieldtype": "Data",
+   "label": "Data Source",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_auto",
+   "fieldtype": "Section Break",
+   "label": "Automatic Assessment"
+  },
+  {
+   "fieldname": "check_method",
+   "fieldtype": "Data",
+   "label": "Check Method",
+   "description": "Key of a check registered through the tracecore_ic_self_checks hook. Leave empty when the hospital assesses this criterion by hand."
+  },
+  {
+   "fieldname": "column_break_auto",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "indicator",
+   "fieldtype": "Link",
+   "label": "Indicator",
+   "options": "IC Indicator",
+   "description": "When set, the criterion is met if the indicator value of the year (locked periods) meets the target."
+  },
+  {
+   "fieldname": "indicator_name",
+   "fieldtype": "Data",
+   "label": "Indicator Name",
+   "fetch_from": "indicator.indicator_name",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Admin Reports",
+ "name": "IC QD38 Criterion",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:criterion_code",
+ "naming_rule": "By fieldname",
+ "title_field": "criterion"
+}
