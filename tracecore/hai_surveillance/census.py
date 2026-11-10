@@ -13,7 +13,7 @@ from frappe import _
 from frappe.utils import add_days, cint, formatdate, getdate, today
 
 from tracecore.core.errors import Block, BlockedError
-from tracecore.hai_surveillance import episodes
+from tracecore.hai_surveillance import episodes, periods
 
 DOCTYPE = "Ward Daily Census"
 MANUAL, IMPORT = "Manual", "Import"
@@ -63,7 +63,10 @@ def _duplicate(name, census_date):
 
 def validate(doc):
 	"""Gọi từ ``WardDailyCensus.validate``."""
-	if not doc.is_new() and cint(doc.get_db_value("locked")) and not doc.flags.tc_period_unlock:
+	locked = not doc.is_new() and cint(doc.get_db_value("locked"))
+	# FEAT-063 (A-144 e): kỳ đã khóa chặn cả mẫu số mới của tháng
+	locked = locked or (doc.census_date and periods.is_locked(periods.month_of(doc.census_date)))
+	if locked and not doc.flags.tc_period_unlock:
 		raise blocked(
 			"CENSUS_PERIOD_LOCKED",
 			_("Reporting period locked"),

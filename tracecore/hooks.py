@@ -245,6 +245,8 @@ after_migrate = [
 	"tracecore.compliance_audit.permissions.ensure_permissions",
 	# FEAT-094 (A-138 a): bộ tiêu chí cơ cấu KSNK TT 16/2018 ở trạng thái Nháp, chỉ chèn khi chưa có bản nào (NFR-MAINT-04)
 	"tracecore.infection_program.structure_seed.ensure_seed",
+	# FEAT-063 (A-144 a): 6 định nghĩa ca NKBV khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.hai_surveillance.seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -306,6 +308,7 @@ permission_query_conditions = {
 	# FEAT-062 (NFR-SEC-09, A-141 g): R08/R12 chỉ thấy mẫu số và đợt thiết bị của khoa có User Permission
 	"Ward Daily Census": "tracecore.hai_surveillance.permissions.census_query",
 	"Device Episode": "tracecore.hai_surveillance.permissions.episode_query",
+	"HAI Case": "tracecore.hai_surveillance.permissions.case_query",  # FEAT-063 (A-144 j)
 }
 
 has_permission = {
@@ -315,6 +318,7 @@ has_permission = {
 	# FEAT-062
 	"Ward Daily Census": "tracecore.hai_surveillance.permissions.has_permission",
 	"Device Episode": "tracecore.hai_surveillance.permissions.has_permission",
+	"HAI Case": "tracecore.hai_surveillance.permissions.has_permission",  # FEAT-063 (A-144 j)
 }
 
 # DocType Class
@@ -519,6 +523,9 @@ doc_events = {
 	"Staff Immunization": dict(_AUDIT_EVENTS),
 	# FEAT-066 (A-142): hóa chất KSNK theo khoa-tháng; không xóa, hủy phải có lý do
 	"IC Chemical Consumption": dict(_AUDIT_EVENTS),
+	# FEAT-063 (A-144): định nghĩa ca có phiên bản, ca NKBV; kỳ báo cáo ghi Audit Log trong dịch vụ periods
+	"HAI Case Definition": dict(_AUDIT_EVENTS),
+	"HAI Case": dict(_AUDIT_EVENTS),
 }
 # FEAT-066 (A-142 Q2, ADR-009): Stock Entry ghi sổ/hủy → hóa chất KSNK xuất tới kho khoa (M12 không import M6);
 # phiếu giám sát gắn đơn vị thuê ngoài hết hạn giấy phép chỉ cảnh báo (BRU-AUD-006)
@@ -672,6 +679,8 @@ tracecore_ic_indicators = [
 	"tracecore.occupational_safety.indicators.register",
 	# FEAT-066 (A-142): lít dung dịch VST nhanh / 1.000 ngày nằm viện (FR-M12-12)
 	"tracecore.compliance_audit.chemicals.register_indicators",
+	# FEAT-063 (A-144 d): tỷ suất NKBV, VAP, CLABSI, CAUTI / 1.000 ngày; tỷ lệ sử dụng thiết bị (FR-M13-10)
+	"tracecore.hai_surveillance.indicators.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -686,9 +695,13 @@ tracecore_ksnk_badges = [
 	"tracecore.occupational_safety.exposure.badges",
 	# FEAT-066: hóa chất chờ chọn nguồn + giấy phép thuê ngoài đã hết hạn (SCR-54)
 	"tracecore.compliance_audit.chemicals.badges",
+	# FEAT-063: số ca NKBV Nghi ngờ chờ xác định (SCR-56)
+	"tracecore.hai_surveillance.cases.badges",
 ]
 # FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
 tracecore_mdro_detected = []
+# FEAT-063 (A-144 h): cộng nhãn đa kháng vào ca NKBV cùng người bệnh
+tracecore_mdro_detected += ["tracecore.hai_surveillance.cases.on_mdro_detected"]
 # FEAT-060 (A-134 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
 # department, description}, trả tên Incident
 tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
@@ -781,6 +794,8 @@ scheduler_events = {
 		"tracecore.occupational_safety.jobs.run_daily",
 		# FEAT-066, FR-M12-13: giấy phép đơn vị thuê ngoài 60/30/7 ngày, hết hạn; đơn vị chưa giám sát trong quý
 		"tracecore.compliance_audit.vendors.run_daily",
+		# FEAT-063, NFR-PRIV-02 (A-144 Q3): xóa định danh ca NKBV, đợt thiết bị quá thời hạn lưu
+		"tracecore.hai_surveillance.retention.run",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

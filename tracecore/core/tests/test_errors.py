@@ -331,6 +331,21 @@ class TestErrors(FrappeTestCase):
 				"AUDIT_EPISODE_INVALID": 422,
 			}
 		)
+		# FEAT-063 (A-144): ca NKBV, kỳ báo cáo
+		table.update(
+			{
+				"HAI_CASE_DEFINITION_MISSING": 422,
+				"HAI_CASE_DATE_INVALID": 422,
+				"HAI_CASE_EPISODE_INVALID": 422,
+				"HAI_CASE_ISOLATE_INVALID": 422,
+				"HAI_CASE_NOT_ALLOWED": 403,
+				"HAI_CASE_DECISION_REQUIRED": 422,
+				"HAI_CASE_REASON_REQUIRED": 422,
+				"HAI_CASE_EXCEPTION_REQUIRED": 422,
+				"HAI_PERIOD_LOCKED": 409,
+				"HAI_PERIOD_INVALID": 422,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

@@ -110,6 +110,25 @@ def first_isolate_count(year, quarter, department=None, organism=None) -> int:
 
 
 def hai_with_pathogen_rate(year, quarter):
-	"""Tỷ lệ % ca NKBV xác định có tác nhân trong quý (FR-M14-08). DocType `HAI Case` làm ở FEAT-063 (A-136 Q8): đến
-	lúc đó chưa có dữ liệu, trả None; FEAT-063 thay thân hàm này khi có trạng thái ca và tác nhân."""
-	return None
+	"""Tỷ lệ % ca NKBV xác định có tác nhân trong quý (FR-M14-08; A-136 Q8). FEAT-063 (A-144 i): đọc `HAI Case` của M13
+	qua ``frappe.db`` (không import M13) — ca Xác định đã ghi sổ có ngày khởi phát trong quý, có ≥ 1 chủng gắn. Chưa có
+	ca Xác định nào trong quý → None (không hiện 0 %)."""
+	quarter = cint(quarter)
+	period(year, quarter)
+	months = [f"{cint(year)}-{month:02d}" for month in range(3 * quarter - 2, 3 * quarter + 1)]
+	if not frappe.db.exists("DocType", "HAI Case"):
+		return None
+	names = frappe.get_all(
+		"HAI Case",
+		filters={"docstatus": 1, "status": "Confirmed", "reporting_period": ["in", months]},
+		pluck="name",
+	)
+	if not names:
+		return None
+	with_isolate = frappe.get_all(
+		"HAI Case Isolate",
+		filters={"parenttype": "HAI Case", "parent": ["in", names]},
+		pluck="parent",
+		distinct=True,
+	)
+	return _pct(len(with_isolate), len(names))

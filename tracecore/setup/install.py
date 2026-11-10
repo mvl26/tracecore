@@ -7,6 +7,7 @@ from tracecore.compliance_audit.seed import ensure_seed as ensure_compliance_see
 from tracecore.core.notification import ensure_default_rules
 from tracecore.costing.setup import ensure_categories
 from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_settings
+from tracecore.hai_surveillance.seed import ensure_seed as ensure_hai_seed  # FEAT-063
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
 from tracecore.infection_program.structure_seed import ensure_seed as ensure_structure_seed  # FEAT-094
 from tracecore.inventory.permissions import ensure_permissions
@@ -58,6 +59,7 @@ def after_install():
 	ensure_microbiology_seed()
 	ensure_compliance_seed()  # FEAT-061: 8 mẫu phiếu giám sát Nháp (FR-M12-02)
 	ensure_structure_seed()  # FEAT-094: bộ tiêu chí cơ cấu KSNK Nháp (FR-M11-01.8)
+	ensure_hai_seed()  # FEAT-063: 6 định nghĩa ca NKBV Nháp (FR-M13-01)
 
 
 TEST_GENDERS = ("Male", "Female", "Other")
