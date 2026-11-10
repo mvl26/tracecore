@@ -43,6 +43,11 @@ def episode_query(user=None):
 	return _conditions("Device Episode", user)
 
 
+# FEAT-063 (A-144 j): ca NKBV theo khoa như mẫu số và đợt thiết bị
+def case_query(user=None):
+	return _conditions("HAI Case", user)
+
+
 def has_permission(doc, user=None, permission_type=None):
 	departments = allowed_departments(user)
 	if departments is None:

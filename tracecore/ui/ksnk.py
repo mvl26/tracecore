@@ -138,6 +138,30 @@ SCREENS += [
 ]
 
 
+# FEAT-063 (A-144 g): ca NKBV & kỳ báo cáo (SCR-56, R01/R11 — R13 không xem từng người bệnh) và tỷ suất NKBV theo khoa
+# (SCR-58 phần FEAT-063, chỉ số liệu tổng hợp nên R10, R13 xem được) (UC-48)
+SCREENS += [
+	{
+		"slug": "ca-nkbv",
+		"scr": "SCR-56",
+		"uc": "UC-48",
+		"label": "HAI Cases",
+		"group": "hai",
+		"roles": ("TC R01", "TC R11", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_56_ca_nkbv.js",
+	},
+	{
+		"slug": "bao-cao-nkbv",
+		"scr": "SCR-58",
+		"uc": "UC-48",
+		"label": "HAI Report",
+		"group": "hai",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_58_bao_cao_nkbv.js",
+	},
+]
+
+
 def _badges(user):
 	total: dict[str, int] = {}
 	for result in extension.run(BADGE_HOOK, user):

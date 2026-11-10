@@ -97,6 +97,19 @@ V112_ROWS.update(
 )
 
 
+# FEAT-063 (A-144 j): định nghĩa ca, ca NKBV, kỳ báo cáo — R13 không đọc ca (FR-M13-15.3)
+V112_ROWS.update(
+	{
+		"DT-HAIDEF": (
+			"HAI Case Definition",
+			{"R01": "RWS", "R08": "R", "R10": "R", "R11": "R", "R12": "R"},
+		),
+		"DT-HAICASE": ("HAI Case", {"R01": "RWSA", "R08": "RW", "R11": "RWS", "R12": "RW"}),
+		"DT-ICPER": ("IC Reporting Period", {"R01": "RW", "R10": "R", "R11": "R", "R13": "R"}),
+	}
+)
+
+
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):
 		self.assertEqual(ROLE_CODES, tuple(f"R{n:02d}" for n in range(1, 14)))

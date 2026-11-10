@@ -77,3 +77,6 @@ DT-WDCEN,Ward Daily Census,RW,,,,,,,RW,,R,RW,RW,,"FEAT-062 A-141 g (FR-M13-02, B
 DT-DEVEP,Device Episode,RW,,,,,,,RW,,,RW,RW,,"FEAT-062 A-141 g (FR-M13-04, ADR-010): có mã BN — R13 không đọc; R08, R12 chỉ khoa mình; không ai xóa"
 DT-ICCHEM,IC Chemical Consumption,RWSA,R,,,,,,,RWSA,R,RWS,,R,"FEAT-066 A-142 Q4 (FR-M12-12): R09 nhập tay, chọn nguồn khi trùng; R11 import file khoa Dược; R02, R10, R13 xem"
 DT-ICSP,IC Structure Profile,RW,R,,,,,,,,R,,,R,"FEAT-094 A-138 h (FR-M11-01.8): bộ tiêu chí cơ cấu KSNK có phiên bản; R01 nhập và duyệt; R02, R10, R13 đọc"
+DT-HAIDEF,HAI Case Definition,RWS,,,,,,,R,,R,R,R,,"FEAT-063 A-144 a (FR-M13-01, BRU-HAI-001): định nghĩa ca có phiên bản; R01 nhập và duyệt; R08, R11, R12 đọc để chọn mã; R10 đọc"
+DT-HAICASE,HAI Case,RWSA,,,,,,,RW,,,RWS,RW,,"FEAT-063 A-144 b, j (FR-M13-05, FR-M13-15.3): R08, R12 tạo ca Nghi ngờ khoa mình (User Permission Department); R11, R01 xác định/loại trừ; R01 hủy; R13, R10 không đọc dữ liệu người bệnh; không ai xóa"
+DT-ICPER,IC Reporting Period,RW,,,,,,,,,R,R,,R,"FEAT-063 A-144 Q1, c (FR-M13-11): chỉ R01 khóa/mở khóa qua dịch vụ; R10, R11, R13 xem"
