@@ -20,8 +20,17 @@ DOCTYPE = "Audit Session"
 ALL_PASS = dict.fromkeys(("PNC-01", "PNC-02", "PNC-03", "PNC-04", "PNC-05"), "Pass")
 
 
-# Link Supplier và Incident CAPA kéo bản ghi test của ERPNext (cần setup wizard)
-test_ignore = ["Item", "Batch", "Supplier", "Incident CAPA", "Department", "User", "Employee"]
+# Link Supplier, Incident CAPA và Environment Zone (→ Environmental Sample → Incident CAPA) kéo bản ghi test của ERPNext (cần setup wizard)
+test_ignore = [
+	"Item",
+	"Batch",
+	"Supplier",
+	"Incident CAPA",
+	"Environment Zone",
+	"Department",
+	"User",
+	"Employee",
+]
 
 
 class AuditSessionCase(IsolatedTestCase):

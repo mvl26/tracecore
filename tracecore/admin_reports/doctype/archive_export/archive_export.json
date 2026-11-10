@@ -123,7 +123,7 @@
   },
   {
    "depends_on": "eval:doc.scope_type == 'IC Dossier'",
-   "description": "Dossier for an inspection team: plan, committee minutes, surveillance results, indicators and training of the chosen months, with masked patient codes only (FR-M9-30).",
+   "description": "Dossier for an inspection team: plan, committee minutes, surveillance results, indicators and training of the chosen months, with masked patient codes only.",
    "fieldname": "section_ic_dossier",
    "fieldtype": "Section Break",
    "label": "Infection Control Dossier"

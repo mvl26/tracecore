@@ -370,7 +370,7 @@ const TcKsnkPps = {
 			`<th scope="col" class="is-num">${esc(__("Prevalence"))}</th>` +
 			`<th scope="col" class="is-num">${esc(__("Antibiotic use"))}</th></tr></thead>` +
 			`<tbody>${rows.join("")}${row(
-				__("Hospital"),
+				__("Hospital total"),
 				p.hospital || {},
 				"is-total"
 			)}</tbody></table>`

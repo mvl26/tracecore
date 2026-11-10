@@ -24,6 +24,9 @@ class TestStationAuthModels(FrappeTestCase):
 			"tc_vaccination_expiry",
 			"tc_health_remind_level",
 			"tc_vaccination_remind_level",
+			# FEAT-094 (A-138): trình độ chuyên môn để kiểm đủ điều kiện nhân sự KSNK
+			"tc_education_level",
+			"tc_health_field",
 		}
 		self.assertEqual(set(fields), auth | staff)
 		self.assertEqual(fields["tc_pin_reset_required"]["fieldtype"], "Check")

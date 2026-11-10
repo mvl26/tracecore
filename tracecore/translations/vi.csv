@@ -9906,7 +9906,6 @@ Approved structure criteria,Bộ tiêu chí cơ cấu đã duyệt,
 Open structure criteria,Mở bộ tiêu chí cơ cấu,
 Only counts are checked until R01 reviews and approves the draft criteria (TT 16/2018).,Hệ thống chỉ kiểm phần đếm cho đến khi R01 rà soát và duyệt bộ tiêu chí Nháp (TT 16/2018).,
 Structure criteria,Bộ tiêu chí cơ cấu,
-Approve,Duyệt,
 TT 16/2018/TT-BYT Articles 16-22,TT 16/2018/TT-BYT Điều 16-22,
 No approved case definition,Chưa có định nghĩa ca đã duyệt,
 Definition {0} has no approved version in force on {1}.,Định nghĩa {0} chưa có phiên bản đã duyệt hiệu lực ngày {1}.,
@@ -9996,17 +9995,21 @@ Census complete,Đủ mẫu số,
 Unlock (enter reason),Mở khóa (ghi lý do),
 Lock period,Khóa kỳ,
 Reporting periods,Kỳ báo cáo,
-Period,Kỳ,
+Period,Kỳ,IC Council Report
+Period,Kỳ,IC Indicator Value
+Period,Kỳ,Isolation Order
 Locked By,Khóa bởi,
 Locked On,Ngày khóa,
-Note,Ghi chú,
+Note,Ghi chú,Audit Answer
+Note,Ghi chú,IC Indicator Value
+Note,Ghi chú,IC Self Assessment Item
+Note,Ghi chú,SSI Follow-up
 Confirm,Xác nhận,
 Confirm case with an exception,Xác định ca có ngoại lệ,
 Exception Reason,Lý do ngoại lệ,
 Exclude case,Loại trừ ca,
-Reason,Lý do,
+Reason,Lý do,Isolation Order
 No other isolate of this patient was found.,Không tìm thấy chủng khác của người bệnh này.,
-Link,Gắn,
 Lock period {0}? Census and cases of the month can no longer change.,Khóa kỳ {0}? Mẫu số và ca của tháng sẽ không sửa được nữa.,
 Unlock period,Mở khóa kỳ,
 Month {0} (locked),Tháng {0} (đã khóa),
@@ -10045,8 +10048,22 @@ Onset earlier than this after admission needs an exception reason to confirm.,Kh
 Minimum Device Days Before Onset,Số ngày thiết bị tối thiểu trước khởi phát,
 Device in place fewer days than this before onset needs an exception reason to confirm.,Thiết bị lưu ít ngày hơn ngưỡng này trước khởi phát thì phải ghi lý do ngoại lệ khi xác định.,
 Criteria,Tiêu chí,
-Notes,Ghi chú,
-Amended From,Sửa đổi từ,
+Notes,Ghi chú,Cluster Alert Rule
+Notes,Ghi chú,HAI Case Definition
+Notes,Ghi chú,IC Education Session
+Notes,Ghi chú,Notifiable Disease Report
+Amended From,Sửa đổi từ,Audit Session
+Amended From,Sửa đổi từ,Audit Template
+Amended From,Sửa đổi từ,Environmental Limit
+Amended From,Sửa đổi từ,Environmental Sample
+Amended From,Sửa đổi từ,Food Handler Health Check
+Amended From,Sửa đổi từ,Foodborne Event
+Amended From,Sửa đổi từ,HAI Case
+Amended From,Sửa đổi từ,HAI Case Definition
+Amended From,Sửa đổi từ,IC Committee
+Amended From,Sửa đổi từ,Isolation Order
+Amended From,Sửa đổi từ,Notifiable Disease Report
+Amended From,Sửa đổi từ,Outbreak Investigation
 HAI Case Definition Criterion,Tiêu chí định nghĩa ca NKBV,
 Criterion,Tiêu chí,
 HAI Case,Ca NKBV,
@@ -10074,8 +10091,10 @@ Decided On,Ngày kết luận,
 Isolates,Chủng vi sinh,
 MDRO Labels,Nhãn đa kháng,
 HAI Case Isolate,Chủng vi sinh của ca NKBV,
-Organism,Vi khuẩn,
-Collected On,Ngày lấy mẫu,
+Organism,Vi khuẩn,Cluster Alert Rule
+Organism,Vi khuẩn,HAI Case Isolate
+Organism,Vi khuẩn,Outbreak Investigation
+Collected On,Ngày lấy mẫu,HAI Case Isolate
 IC Reporting Period,Kỳ báo cáo KSNK,
 YYYY-MM,YYYY-MM,
 Unlock,Mở khóa,
@@ -10159,10 +10178,11 @@ Not enough data,Chưa đủ dữ liệu,
 Target {0},Mục tiêu {0},
 {0} sample,cỡ mẫu {0},
 Provisional,Tạm,
-Code,Mã,
-Indicator,Chỉ số,
+Code,Mã,IC Indicator
+Indicator,Chỉ số,IC Indicator
+Indicator,Chỉ số,IC Indicator Value
+Indicator,Chỉ số,IC QD38 Criterion
 Target,Mục tiêu,
-Sample Size,Cỡ mẫu,
 By department — {0},Theo khoa — tháng {0},
 target {0},mục tiêu {0},
 Orange bar and ↓ = below target. Dark line = target.,Thanh cam và ký hiệu ↓ = dưới mục tiêu. Vạch đậm = mục tiêu.,
@@ -10180,8 +10200,7 @@ Print,In,
 Criterion 2025-2030,Chỉ tiêu 2025–2030,
 Assess by hand,Đánh giá tay,
 The self-assessment of {0} is not prepared yet.,Chưa lập tự đánh giá năm {0}.,
-Submitted,Đã ghi sổ,
-Draft,Nháp,
+Draft,Nháp,Isolation Order
 Self-assessment against Decision 38/QD-BYT — year {0},Tự đánh giá theo QĐ 38/QĐ-BYT — năm {0},
 Period {0},Kỳ {0},
 Import census / microbiology file,Nhập file mẫu số / vi sinh,
@@ -10216,7 +10235,6 @@ Department not allowed,Không được xem khoa này,
 You can only see the indicators of your own department.,Bạn chỉ được xem chỉ số của khoa mình.,
 Choose your department below.,Chọn khoa của bạn ở dưới.,
 No department is assigned to you. Ask R10 to set your department.,Bạn chưa được gán khoa. Đề nghị R10 gán khoa cho bạn.,
-Show,Xem,
 Indicators of the department next to the whole hospital,Chỉ số của khoa cạnh toàn viện,
 Provisional: the period is not locked yet.,Tạm: kỳ chưa khóa.,
 "Values are read from the indicator values saved when the period was locked. A rate with a zero denominator shows Not calculated, never 0.","Giá trị đọc từ IC Indicator Value tính khi khóa kỳ. Tỷ lệ có mẫu số 0 hiển thị ""Không tính"", không hiển thị 0.",
@@ -10232,8 +10250,14 @@ PDF,PDF,
 IC QD38 Criterion,Chỉ tiêu QĐ 38,
 Criteria of the national infection control action plan (Decision 38/QD-BYT) for the yearly self-assessment.,Chỉ tiêu kế hoạch hành động quốc gia về KSNK (QĐ 38/QĐ-BYT) dùng cho tự đánh giá năm.,
 Criterion Code,Mã chỉ tiêu,
-Sort Order,Thứ tự,
-Active,Đang dùng,
+Sort Order,Thứ tự,Environment Risk Level
+Sort Order,Thứ tự,IC QD38 Criterion
+Active,Đang dùng,Audit Schedule
+Active,Đang dùng,IC Indicator
+Active,Đang dùng,IC Network Member
+Active,Đang dùng,IC QD38 Criterion
+Active,Đang dùng,IC Surveillance Staff
+Active,Đang dùng,Sampling Plan
 Automatic Assessment,Đánh giá tự động,
 Check Method,Hàm kiểm,
 Key of a check registered through the tracecore_ic_self_checks hook. Leave empty when the hospital assesses this criterion by hand.,Khóa của hàm kiểm đăng ký qua hook tracecore_ic_self_checks. Để trống khi bệnh viện đánh giá tay chỉ tiêu này.,
@@ -10242,12 +10266,14 @@ IC Self Assessment,Tự đánh giá KSNK,
 Yearly self-assessment against the national infection control action plan (Decision 38/QD-BYT).,Tự đánh giá năm theo kế hoạch hành động quốc gia về KSNK (QĐ 38/QĐ-BYT).,
 Year,Năm,
 Assessed On,Ngày đánh giá,
-Remarks,Nhận xét,
+Remarks,Nhận xét,IC Self Assessment
 IC Self Assessment Item,Dòng tự đánh giá KSNK,
 One criterion of the yearly self-assessment.,Một chỉ tiêu của bản tự đánh giá năm.,
 Criterion Text,Nội dung chỉ tiêu,
 Auto,Tự động,
-Manual,Thủ công,
+Manual,Thủ công,IC Self Assessment Item
+Manual,Thủ công,Surgical Surveillance
+Manual,Thủ công,Ward Daily Census
 Needs confirmation,Cần R01 xác nhận,
 Source Reference,Tham chiếu nguồn,
 Committee Report,Báo cáo Hội đồng,
@@ -10406,17 +10432,17 @@ Close: No SSI,Đóng: Không NKVM,
 Column key of the report type.,Mã cột của loại báo cáo.,
 Column not allowed,Cột không được phép,
 Column {0} would put a patient name or a clear patient code in the file.,Cột {0} sẽ đưa họ tên hoặc mã người bệnh dạng rõ vào file.,
-Columns,Các cột,
+Columns,Các cột,Import Mapping Profile
+Columns,Các cột,Report Export Profile
 Create HAI case,Tạo ca NKBV,
 Cut-off duration of the NNIS risk index. Empty = not configured: the NNIS index is not calculated.,Ngưỡng thời gian mổ T của chỉ số nguy cơ NNIS. Để trống = chưa cấu hình: không tính chỉ số NNIS.,
 Day After Surgery,Ngày sau mổ,
 Day N counted from the day of surgery.,Ngày thứ N tính từ ngày phẫu thuật.,
 Default columns (Excel),Cột mặc định (Excel),
-Discharge Date,Ngày ra viện,
+Discharge Date,Ngày ra viện,Surgical Surveillance
 "Discharged after the window end: follow up as an inpatient, then close the surgery.",Ra viện sau ngày kết thúc cửa sổ: theo dõi nội trú rồi đóng ca.,
 Done By,Người thực hiện,
 Done On,Ngày thực hiện,
-Download,Tải về,
 Due today,Hôm nay,
 Due {0} · {1}{2},Hạn {0} · {1}{2},
 Duration (minutes),Thời gian mổ (phút),
@@ -10479,7 +10505,8 @@ Too early,Quá sớm,
 On Time Rate (%),Tỷ lệ đúng thời điểm (%),
 On time: 0 to {0} min before incision,Đúng thời điểm: 0 đến {0} phút trước rạch da,
 Only monitored groups can be registered. Seeded groups stay off until the head of infection control reviews them.,Chỉ đăng ký được ca thuộc nhóm đang giám sát. Nhóm khởi tạo sẵn để tắt cho tới khi trưởng khoa KSNK rà soát.,
-Phone,Điện thoại,
+Phone,Điện thoại,SSI Follow-up
+Phone,Điện thoại,Surgical Procedure Group Follow-up
 Revisit,Tái khám,
 Procedure Group,Nhóm phẫu thuật,
 Procedure Group Code,Mã nhóm phẫu thuật,
@@ -10502,7 +10529,7 @@ Record the follow-ups until the window ends.,Ghi các lần theo dõi cho tới 
 Register surgery under surveillance,Đăng ký phẫu thuật giám sát,
 Remove the column; files only carry the masked patient code.,Bỏ cột này; file chỉ chứa mã người bệnh đã che.,
 Report,Báo cáo,
-Report Column,Cột báo cáo,
+Report Column,Cột báo cáo,Report Export Profile Column
 Report Export Profile,Hồ sơ xuất báo cáo,
 Report Export Profile Column,Cột hồ sơ xuất báo cáo,
 Report Type,Loại báo cáo,
@@ -10569,7 +10596,7 @@ The surveillance window of {0} ends on {1}.,Cửa sổ theo dõi của {0} kết
 This account cannot record surgical site infection follow-ups.,Tài khoản này không được ghi kết quả theo dõi NKVM.,
 This surgery has a follow-up schedule; record the follow-ups instead.,Ca này có lịch theo dõi; hãy ghi kết quả các lần theo dõi.,
 Threshold Applied (minutes),Ngưỡng đã áp dụng (phút),
-Timing,Thời điểm,
+Timing,Thời điểm,Surgical Surveillance
 Under Surveillance,Đang theo dõi,
 Unknown report type {0}.,Không có loại báo cáo {0}.,
 Urinary Catheter Days,Ngày thông tiểu,
@@ -10641,7 +10668,6 @@ Dirty,Bẩn,Surgical Surveillance
 Negative,Âm tính,Surgical Surveillance
 SSI suspected,Nghi ngờ NKVM,Surgical Surveillance
 Unreachable,Không liên lạc được,Surgical Surveillance
-Saved,Đã lưu,
 Department Name,Tên khoa,Surgical Surveillance
 Group Name,Tên nhóm,Surgical Surveillance
 Risk level required,Thiếu mức nguy cơ,
@@ -10734,7 +10760,6 @@ Environmental test results — month {0},Kết quả xét nghiệm môi trườn
 Sample Type,Loại mẫu,
 Sampled On,Ngày lấy,
 Limit (snapshot),Ngưỡng (bản chụp),
-Assessment,Đánh giá,
 No environmental sample posted this month.,Tháng này chưa có mẫu môi trường nào được ghi sổ.,
 Limits are versioned configuration approved by the head of infection control; each sample keeps a snapshot of the limit in effect on its sampling date.,Ngưỡng là dữ liệu cấu hình có phiên bản do trưởng khoa KSNK duyệt; mỗi mẫu lưu bản chụp ngưỡng hiệu lực tại ngày lấy mẫu.,
 Cleaning zones — audits this month,Vùng vệ sinh — phiếu giám sát tháng này,
@@ -10746,13 +10771,11 @@ New zone,Thêm vùng,
 Risk levels,Mức nguy cơ,
 In date,Còn hạn,
 Infrastructure inspections,Kiểm tra hạ tầng,
-Last,Lần gần nhất,
 Reminder 7 days before the due date; the CSSD area keeps using the existing Environment Log (M9).,Nhắc trước hạn 7 ngày; khu vực CSSD vẫn dùng Environment Log hiện có (M9).,
 All levels,Mọi mức,
 "{0} — {1}: due {2}, {3} days late","{0} — {1}: hạn {2}, trễ {3} ngày",
 {0} draft limit(s) — awaiting approval by the head of infection control.,{0} ngưỡng Nháp — chờ trưởng khoa KSNK duyệt.,
 Limits in effect,Ngưỡng đang hiệu lực,
-Limit,Ngưỡng,
 No approved limit yet.,Chưa có ngưỡng đã duyệt.,
 All limits,Tất cả ngưỡng,
 Sampling plans,Kế hoạch lấy mẫu,
@@ -10785,10 +10808,10 @@ Fluorescence,Huỳnh quang,
 Limit Code,Mã ngưỡng,
 "Leave empty when only one approved limit matches the sample type, method and risk level.","Để trống khi chỉ có một ngưỡng đã duyệt khớp loại mẫu, phương pháp và mức nguy cơ.",
 Sampled By,Người lấy mẫu,
-Laboratory,Phòng xét nghiệm,
+Laboratory,Phòng xét nghiệm,Environmental Sample
 Sampling Plan,Kế hoạch lấy mẫu,
 Resample Of,Lấy lại của mẫu,
-Result Value,Kết quả,
+Result Value,Kết quả,Environmental Sample
 Lab Report,Phiếu kết quả,
 Limit Version Applied,Phiên bản ngưỡng đã dùng,
 Limit Applied (Snapshot),Ngưỡng đã dùng (bản chụp),
@@ -10820,11 +10843,16 @@ Limit Value,Ngưỡng trên,
 Upper limit; the result must not exceed it.,Ngưỡng trên; kết quả không được vượt.,
 "Environmental sampling plan: zones, frequency and assignee.","Kế hoạch lấy mẫu môi trường: vùng, tần suất, người phụ trách.",
 Code of the environmental limit the samples are checked against.,Mã ngưỡng môi trường dùng để đánh giá mẫu.,
-Weekly,Hằng tuần,
-Monthly,Hằng tháng,
-Quarterly,Hằng quý,
+Weekly,Hằng tuần,Audit Schedule
+Weekly,Hằng tuần,Sampling Plan
+Monthly,Hằng tháng,Audit Schedule
+Monthly,Hằng tháng,IC Indicator
+Monthly,Hằng tháng,Sampling Plan
+Quarterly,Hằng quý,Audit Schedule
+Quarterly,Hằng quý,IC Indicator
+Quarterly,Hằng quý,Sampling Plan
 Semi-annual,6 tháng,
-Annual,Hằng năm,
+Annual,Hằng năm,Sampling Plan
 Zones,Vùng,
 Sampling Plan Zone,Vùng của kế hoạch lấy mẫu,
 Last Sampled On,Lần lấy mẫu gần nhất,
@@ -10894,7 +10922,7 @@ PDCA Stage,Giai đoạn PDCA,
 Start Date,Ngày bắt đầu,
 End Date,Ngày kết thúc,
 Result Summary,Tóm tắt kết quả,
-Attachment,Tệp đính kèm,
+Attachment,Tệp đính kèm,IC Improvement Project
 Required when the project is completed; the project counts for the year of this date.,Bắt buộc khi dự án hoàn thành; dự án được tính vào năm của ngày này.,
 "Required when the project is completed, for example the indicator before and after.","Bắt buộc khi dự án hoàn thành, ví dụ chỉ số trước và sau cải tiến.",
 Plan (P),Kế hoạch (P),
@@ -10964,12 +10992,11 @@ No self-assessment posted for these two years.,Hai năm này chưa có phiếu t
 Changed,Thay đổi,
 Only one of the two years has a posted self-assessment.,Chỉ một trong hai năm có phiếu tự đánh giá đã ghi sổ.,
 Quality self-assessment {0} vs {1},Tự đánh giá chất lượng {0} so với {1},
-Score,Điểm,
+Score,Điểm,Audit Session
 Patients surveyed,Người bệnh điều tra,
 With HAI,Có NKBV,
 Prevalence,Tỷ lệ hiện mắc,
 Antibiotic use,Dùng kháng sinh,
-Hospital,Toàn viện,
 No patient surveyed on this day.,Chưa có người bệnh nào được điều tra trong ngày này.,
 Survey day,Ngày điều tra,
 New survey day,Ngày điều tra mới,
@@ -10984,7 +11011,7 @@ No open device episode left to survey in this department; enter other patients b
 Point prevalence survey,Điều tra cắt ngang (tỷ lệ hiện mắc),
 day {0},ngày {0},
 "Each patient is recorded by an encrypted patient code, never by name. Prevalence = patients with HAI / patients surveyed.","Mỗi người bệnh ghi bằng mã người bệnh đã mã hóa, không họ tên. Tỷ lệ hiện mắc = số có NKBV / số điều tra.",
-Yes,Có,
+Yes,Có,Occupational Exposure
 No,Không,
 Project Lead Name,Tên người chủ trì,IC Improvement Project
 Dossier section {0} was not exported: {1},Không xuất được phần {0} của gói hồ sơ: {1},
@@ -11014,8 +11041,6 @@ No data in the chosen months.,Không có dữ liệu trong các tháng đã ch�
 Plan Status,Trạng thái kế hoạch,
 Committee,Hội đồng,
 Resolutions,Nghị quyết,
-Training Event,Lớp đào tạo,
-Event Name,Tên lớp,
 Training Program,Chương trình đào tạo,
 Infection control plan,Kế hoạch KSNK,
 Committee meeting minutes,Biên bản họp Hội đồng KSNK,
@@ -11034,14 +11059,13 @@ Sample,Mẫu,
 Occupational exposures (aggregated),Phơi nhiễm nghề nghiệp (tổng hợp),
 Download ZIP,Tải file ZIP,
 Dossier,Gói hồ sơ,
-Months,Các tháng,
 No dossier exported yet.,Chưa xuất gói hồ sơ nào.,
 Infection control dossier for an inspection team,Gói hồ sơ KSNK cho đoàn kiểm tra,
 PDF + Excel of the chosen months with SHA-256 checksums. Patient codes are masked; exposures are aggregated only. A month that is not locked yet makes the dossier Provisional.,"PDF + Excel của các tháng đã chọn, kèm mã kiểm SHA-256. Mã người bệnh đã che; phơi nhiễm chỉ số liệu tổng hợp. Có tháng chưa khóa thì gói mang dấu Tạm.",
 Sections,Các phần,
 Create dossier,Tạo gói hồ sơ,
 Infection Control Dossier,Gói hồ sơ KSNK,
-"Dossier for an inspection team: plan, committee minutes, surveillance results, indicators and training of the chosen months, with masked patient codes only (FR-M9-30).","Gói hồ sơ cho đoàn kiểm tra: kế hoạch, biên bản Hội đồng, kết quả giám sát, chỉ số và đào tạo của các tháng đã chọn, chỉ có mã người bệnh đã che (FR-M9-30).",
+"Dossier for an inspection team: plan, committee minutes, surveillance results, indicators and training of the chosen months, with masked patient codes only.","Gói hồ sơ cho đoàn kiểm tra: kế hoạch, biên bản Hội đồng, kết quả giám sát, chỉ số và đào tạo của các tháng đã chọn, chỉ có mã người bệnh đã che.",
 JSON list of section keys; empty means every section.,Danh sách JSON mã phần; để trống là mọi phần.,
 IC Dossier,Gói hồ sơ KSNK,
 A,A,Communicable Disease
@@ -11115,7 +11139,7 @@ Deep Incisional SSI,NKVM sâu,Cluster Alert Rule
 Department involved in an outbreak investigation.,Khoa liên quan đến điều tra ổ dịch.,
 Detected By,Nguồn phát hiện,
 Diagnosed On,Ngày giờ chẩn đoán,
-Disease,Bệnh,
+Disease,Bệnh,Notifiable Disease Report
 Disease Code,Mã bệnh,
 Disease Group,Nhóm bệnh,
 Disease Name,Tên bệnh,
@@ -11278,7 +11302,7 @@ Reporting Deadline Group A (hours),Hạn khai báo nhóm A (giờ),
 Reporting Deadline Group B (hours),Hạn khai báo nhóm B (giờ),
 Reporting Deadline Group C (hours),Hạn khai báo nhóm C (giờ),
 Reporting deadline of disease group {0} is not configured,Chưa cấu hình hạn khai báo nhóm bệnh {0},
-Review,Xem xét,
+Review,Xem xét,Cluster Alert
 Review Reason,Lý do xem xét,
 Reviewed By,Người xem xét,
 Reviewed On,Ngày xem xét,
@@ -11302,7 +11326,7 @@ The reporting deadline of group {0} is not configured; no due date was computed.
 The start date cannot be in the future.,Ngày bắt đầu không được ở tương lai.,
 The window must be at least 1 day.,Cửa sổ phải từ 1 ngày trở lên.,
 This case is already in outbreak {0}.,Ca này đã có trong ổ dịch {0}.,
-Threshold,Ngưỡng,
+Threshold,Ngưỡng,Cluster Alert
 Threshold Cases,Số ca ngưỡng,
 Threshold {0} cases / {1} days. Open an outbreak investigation or record why not.,Ngưỡng {0} ca / {1} ngày. Mở điều tra ổ dịch hoặc ghi lý do không mở.,
 "Title, organism or disease, department and start date are required.","Bắt buộc có tiêu đề, tác nhân hoặc bệnh, khoa và ngày bắt đầu.",
@@ -11320,10 +11344,8 @@ You can record notifiable disease reports of your own department only.,Bạn ch�
 {0} h {1} min left,Còn {0} giờ {1} phút,
 "{0} — {1}, patient {2}: report by {3}.","{0} — {1}, người bệnh {2}: khai báo trước {3}.",
 multidrug-resistant,đa kháng,
-Confirmed,Xác định,
 Suspected,Nghi ngờ,
 Excluded,Loại trừ,
-Done,Hoàn thành,
 Department Name,Tên khoa,Cluster Alert
 Department Name,Tên khoa,Notifiable Disease Report
 Department Name,Tên khoa,Outbreak Investigation
@@ -11339,12 +11361,10 @@ One health check of a food handler. Only the conclusion (fit or unfit) and the n
 "An infection control education session for patients, families, staff, food handlers or students; summarised by quarter.","Buổi truyền thông KSNK cho người bệnh, người nhà, nhân viên, người chế biến thực phẩm hoặc sinh viên; tổng hợp theo quý.",
 Food Handler,Người chế biến,
 Catering Vendor,Đơn vị suất ăn,
-Vendor Name,Tên đơn vị,
 Next Check Due,Hạn khám kế tiếp,
 Fit for Work,Kết luận sức khỏe,
 Fit,Đủ sức khỏe,Food Handler Health Check
 Unfit,Không đủ sức khỏe,Food Handler Health Check
-Fit,Đủ sức khỏe,
 Unfit,Không đủ sức khỏe,
 Health Certificate,Giấy khám sức khỏe,
 Handler Key,Khóa người chế biến,
@@ -11380,7 +11400,6 @@ Patient Families,Người nhà,IC Education Session
 Staff,Nhân viên,IC Education Session
 Food Handlers,Người chế biến thực phẩm,IC Education Session
 Students,Sinh viên,IC Education Session
-Withdrawn,Đã thu hồi,
 Withdrawn,Đã thu hồi,IC Procedure Document
 Draft,Nháp,IC Procedure Document
 Withdrawal Reason,Lý do thu hồi,
@@ -11431,9 +11450,7 @@ Document {0} is not a communication material for patients and families.,Văn b�
 "Choose a document of type Communication Material, or leave the field empty.","Chọn văn bản loại Tài liệu truyền thông, hoặc để trống.",
 Audience / Item,Đối tượng / nội dung,
 Topic / Detail,Chủ đề / chi tiết,
-Count,Số lượng,
-Quarter,Quý,
-Communication,Truyền thông,
+Count,Số lượng,IC Indicator
 Kitchen and catering audits,Giám sát bếp ăn và đơn vị suất ăn,
 {0} passed,{0} phiếu Đạt,
 Suspected food poisoning events,Sự cố nghi ngộ độc thực phẩm,
@@ -11487,7 +11504,6 @@ Infection control education sessions,Buổi truyền thông KSNK,
 Quarterly report,Báo cáo quý,
 Record a session,Ghi buổi truyền thông,
 Topic,Chủ đề,
-Sessions,Số buổi,
 No education sessions this quarter.,Quý này chưa có buổi truyền thông.,
 Last audit,Lần giám sát gần nhất,
 Passed (90 days),Đạt (90 ngày),
@@ -11518,3 +11534,27 @@ Department Name,Tên khoa,IC Education Session
 "Filled when the investigation is opened from another record, e.g. a suspected food poisoning event.","Tự điền khi mở điều tra từ bản ghi khác, ví dụ sự cố nghi ngộ độc thực phẩm.",
 Source Document Type,Loại chứng từ nguồn,Outbreak Investigation
 Source Document,Chứng từ nguồn,Outbreak Investigation
+",",",",Report Export Profile
+;,;,Report Export Profile
+Tab,Tab,Report Export Profile
+UTF-8,UTF-8,Report Export Profile
+Windows-1252,Windows-1252,Report Export Profile
+Windows-1258,Windows-1258,Report Export Profile
+0,0,Surgical Surveillance
+1,1,Surgical Surveillance
+2,2,Surgical Surveillance
+3,3,Surgical Surveillance
+30,30,Surgical Procedure Group
+90,90,Surgical Procedure Group
+Airborne,Đường không khí,Isolation Order
+Combined,Kết hợp,Isolation Order
+Droplet,Giọt bắn,Isolation Order
+Precaution Type,Loại phòng ngừa
+Precaution Type,Loại phòng ngừa,Isolation Order
+Next Due,Hạn kế tiếp
+Next Due,Hạn kế tiếp,Sampling Plan Zone
+Overdue Reminder Sent,Đã nhắc quá hạn,Sampling Plan Zone
+Not verified,Chưa xác minh
+Reported Late,Báo cáo muộn,Notifiable Disease Report
+SHA-256,SHA-256
+SSI_FOLLOWUP,Theo dõi NKVM sau mổ,Help Article

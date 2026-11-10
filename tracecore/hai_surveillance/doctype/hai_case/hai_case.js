@@ -44,8 +44,8 @@ function tc_hai_decide(frm, decision, field) {
 frappe.ui.form.on("HAI Case", {
 	onload(frm) {
 		frappe
-			.xcall("tracecore.v1.hai_case.definition_codes", {}, "GET")
-			.then((result) => {
+			.call({ method: "tracecore.v1.hai_case.definition_codes", type: "GET" })
+			.then(({ message: result }) => {
 				const options = (result.definitions || []).map((row) => ({
 					value: row.def_code,
 					label: `${row.def_code} — ${row.title || ""}`,
