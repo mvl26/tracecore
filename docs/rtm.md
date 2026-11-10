@@ -120,8 +120,8 @@
 | FR-M11-09 | Tỷ lệ NVYT đào tạo KSNK cơ bản theo khoa | Must | Active | BA v1.12 (A-113) | UC-42 | SCR-49; A-135 | FEAT-059 | `infection_program/tests/test_training.py`, `infection_program/report/ic_training_by_department/test_ic_training_by_department.py`, `v1/tests/test_ksnk_training_api.py`, `tests/test_ksnk_scr49.py` |
 | FR-M11-10 | Tỷ lệ chuyên trách/Hội đồng/mạng lưới đã đào tạo | Must | Active | BA v1.12 (A-113) | UC-42 | SCR-49; A-135 | FEAT-059 | `infection_program/tests/test_training.py` (TestTrainingCore), `infection_program/tests/test_training_permissions.py` |
 | FR-M11-11 | Sinh viên thực tập phải đào tạo KSNK trước | Should | Active | BA v1.12 (A-113) | UC-42 | SCR-49; A-135 | FEAT-059 | `infection_program/doctype/trainee_induction/test_trainee_induction.py` |
-| FR-M11-12 | Dự án cải tiến chất lượng, nghiên cứu KSNK | Should | Active | BA v1.12 (A-113) | UC-42 | _TBD_ | FEAT-072 | _TBD_ |
-| FR-M11-13 | Tự đánh giá chất lượng KSNK hằng năm | Should | Active | BA v1.12 (A-113) | UC-42 | ADR-015 | FEAT-072 | _TBD_ |
+| FR-M11-12 | Dự án cải tiến chất lượng, nghiên cứu KSNK | Should | Active | BA v1.12 (A-113) | UC-42 | SCR-49; A-149 | FEAT-072 | `infection_program/doctype/ic_improvement_project/test_ic_improvement_project.py`, `v1/tests/test_ksnk_improvement_api.py` |
+| FR-M11-13 | Tự đánh giá chất lượng KSNK hằng năm | Should | Active | BA v1.12 (A-113) | UC-42 | SCR-49; ADR-015; A-149 | FEAT-072 | `infection_program/tests/test_quality_review.py` |
 | FR-M12-01 | Mẫu phiếu duyệt → khóa phiên bản | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-02 | Bộ mẫu phiếu khởi tạo ở trạng thái Nháp | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-061 | `compliance_audit/tests/test_seed.py` |
 | FR-M12-03 | Lịch giám sát giao việc, độ bao phủ | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-060 | _TBD_ |
@@ -149,7 +149,7 @@
 | FR-M13-11 | Khóa kỳ tháng, mở khóa có lý do | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-12 | Xuất báo cáo NKVM/NK hồi sức theo ánh xạ cột | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
 | FR-M13-13 | Cảnh báo cụm ca vượt ngưỡng | Should | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-069 | _TBD_ |
-| FR-M13-14 | Điều tra cắt ngang tỷ lệ hiện mắc | Could | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-072 | _TBD_ |
+| FR-M13-14 | Điều tra cắt ngang tỷ lệ hiện mắc | Could | Active | BA v1.12 (A-113) | UC-50 | SCR-58; ADR-010; ADR-015; A-149 | FEAT-072 | `compliance_audit/tests/test_prevalence.py`, `hai_surveillance/tests/test_prevalence.py`, `v1/tests/test_hai_prevalence_api.py` |
 | FR-M13-15 | Che mã BN trên danh sách, báo cáo, export M13 | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010; A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M14-01 | Import vi sinh theo hồ sơ ánh xạ, bỏ trùng | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; ADR-009; A-136 | FEAT-067 | `microbiology/tests/test_imports.py`, `core/tests/test_importer_wide.py`, `tests/test_ksnk_scr59.py` |
 | FR-M14-02 | Nhập tay kết quả vi sinh có xác nhận | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; A-136 | FEAT-067 | `v1/tests/test_micro_api.py` |
