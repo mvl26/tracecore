@@ -11,6 +11,7 @@
   "has_inpatient",
   "surveillance_ratio_beds",
   "doc_review_months",
+  "ast_min_isolates",
   "section_structure",
   "ic_department",
   "surveillance_staff",
@@ -61,6 +62,13 @@
    "fieldname": "doc_review_months",
    "fieldtype": "Int",
    "label": "Procedure Review Cycle (Months)"
+  },
+  {
+   "default": "30",
+   "description": "An organism and antibiotic pair tested on fewer first isolates is flagged as a small sample in the quarterly resistance report.",
+   "fieldname": "ast_min_isolates",
+   "fieldtype": "Int",
+   "label": "Minimum Isolates per Antibiogram Pair"
   },
   {
    "fieldname": "section_structure",

@@ -8827,6 +8827,210 @@ AUDIT,Giám sát tuân thủ,Help Article
 "Choose the audit template and the department, then the person or role observed.","Chọn mẫu phiếu và khoa, rồi người hoặc vai trò được quan sát.",
 Answer every item; a Fail answer needs a note.,Trả lời đủ các mục; mục Không đạt phải có ghi chú.,
 Submit the audit; without network it is saved and sent when the connection returns.,Gửi phiếu; khi mất mạng phiếu được lưu và tự gửi khi có mạng lại.,
+A manually entered result is saved only after the person entering it confirms it.,Kết quả nhập tay chỉ được ghi sau khi người nhập xác nhận.
+A manually entered result needs the confirmation of the person entering it.,Kết quả nhập tay cần người nhập xác nhận.
+Add at least one antibiotic to the rule.,Thêm ít nhất một kháng sinh vào quy tắc.
+Add at least one organism or organism group to the rule.,Thêm ít nhất một vi khuẩn hoặc nhóm vi khuẩn vào quy tắc.
+Additional Alert Roles,Vai trò nhận cảnh báo thêm,MDRO Rule
+Airborne,Không khí,MDRO Rule
+Contact,Tiếp xúc,MDRO Rule
+An organism and antibiotic pair tested on fewer first isolates is flagged as a small sample in the quarterly resistance report.,Cặp vi khuẩn – kháng sinh có ít chủng đầu tiên được thử hơn số này bị đánh dấu cỡ mẫu nhỏ trong báo cáo kháng thuốc quý.,IC Program Settings
+Antibiogram,Kháng sinh đồ
+Antibiogram,Kháng sinh đồ,Microbiology Isolate
+"Antibiogram row {0}: result must be S, I or R.","Dòng kháng sinh đồ {0}: kết quả phải là S, I hoặc R."
+Antibiotic Class,Nhóm kháng sinh,MDRO Rule Criterion
+Antibiotic Code,Mã kháng sinh
+Antibiotic Code,Mã kháng sinh,Isolate Susceptibility
+Antibiotic Code,Mã kháng sinh,MDRO Rule Criterion
+Antibiotic Name,Tên kháng sinh,Isolate Susceptibility
+Antibiotic Name,Tên kháng sinh,MDRO Rule Criterion
+"Antibiotic code and a result S, I or R are needed together.","Cần nhập cùng lúc mã kháng sinh và kết quả S, I hoặc R."
+Antibiotic {0} has two different results for this isolate.,Kháng sinh {0} có hai kết quả khác nhau cho chủng này.
+Antibiotic {0} is listed twice in the rule.,Kháng sinh {0} bị khai hai lần trong quy tắc.
+"Antibiotic {0}: result must be S, I or R.","Kháng sinh {0}: kết quả phải là S, I hoặc R."
+"Antibiotic {0}: ""{1}"" has no result S, I or R.","Kháng sinh {0}: ""{1}"" không có kết quả S, I hoặc R."
+Antibiotics,Kháng sinh,MDRO Rule
+Approved multidrug resistance rules: {0},Quy tắc đa kháng đã duyệt: {0}
+Approved rule is locked,Quy tắc đã duyệt bị khóa
+Birth Year,Năm sinh
+Birth Year,Năm sinh,Microbiology Isolate
+Birth year {0} is not valid.,Năm sinh {0} không hợp lệ.
+By Department,Theo khoa
+Check before saving,Kiểm tra trước khi ghi
+Check each row,Kiểm tra từng dòng
+Check the result,Kiểm tra kết quả
+Check the summary and choose Confirm and save.,Xem lại tóm tắt rồi chọn Xác nhận và ghi.
+Choose a year and a quarter from 1 to 4.,Chọn năm và quý từ 1 đến 4.
+Choose file,Chọn file
+Collected On,Ngày lấy mẫu,Microbiology Isolate
+Collection date cannot be in the future.,Ngày lấy mẫu không được ở tương lai.
+Collection date is not valid.,Ngày lấy mẫu không hợp lệ.
+Column(s) {0} were ignored: patient names are not stored.,Đã bỏ qua cột {0}: không lưu họ tên người bệnh.
+Combined,Kết hợp,MDRO Rule
+Condition,Điều kiện,MDRO Rule
+Confirm and save,Xác nhận và ghi
+Confirmed By,Người xác nhận,Microbiology Isolate
+Confirmed HAI cases with a pathogen,Ca NKBV xác định có tác nhân
+Confirmed On,Thời điểm xác nhận,Microbiology Isolate
+"Correct the file and check it again, or save only the valid rows.","Sửa file rồi kiểm tra lại, hoặc chỉ ghi sổ các dòng hợp lệ."
+Correct the result and check it again.,Sửa kết quả rồi kiểm tra lại.
+Count Intermediate as Resistant,Tính trung gian (I) là kháng,MDRO Rule
+Create mapping profile,Tạo hồ sơ ánh xạ
+Droplet,Giọt bắn,MDRO Rule
+"Duplicates (lab sample ID, organism) — skipped","Trùng (mã mẫu, vi khuẩn) — bỏ qua"
+Each error below gives the file row number and the reason.,Mỗi lỗi dưới đây ghi số dòng trong file và lý do.
+Effective From,Hiệu lực từ,MDRO Rule
+Enter at least one antibiotic result.,Nhập ít nhất một kết quả kháng sinh.
+Every antibiotic needs a class when the rule counts resistant classes.,Quy tắc đếm số nhóm kháng thì mỗi kháng sinh phải có nhóm.
+Export quarterly resistance report,Xuất báo cáo kháng thuốc quý
+First Isolate,Chủng đầu tiên,Microbiology Isolate
+First isolate,Chủng đầu tiên
+First isolates in the quarter,Số chủng đầu tiên trong quý
+"Group used by multidrug resistance rules, for example Enterobacterales.","Nhóm dùng trong quy tắc đa kháng, ví dụ Enterobacterales.",Organism
+I %,I %
+Import microbiology file,Nhập file vi sinh
+Import {0} is running in the background; reload the screen in a moment.,Lô nhập {0} đang chạy nền; một lát sau tải lại màn hình.
+"Import {0}: {1} saved, {2} already existed, {3} errors.","Lô nhập {0}: ghi {1}, đã có {2}, lỗi {3}."
+"Infection control staff, the department and its network members were notified at {0}.","Đã thông báo bộ phận KSNK, khoa và mạng lưới viên của khoa lúc {0}."
+Isolate,Chủng
+Isolate Susceptibility,Kết quả kháng sinh đồ
+Isolate {0} saved.,Đã ghi chủng {0}.
+Isolate {0} with organism {1} already exists.,Mẫu {0} với vi khuẩn {1} đã có.
+"Isolate {0}: {1} ({2}), patient {3}, department {4}. Recommended isolation precaution: {5}.","Chủng {0}: {1} ({2}), người bệnh {3}, khoa {4}. Đề nghị cách ly phòng ngừa: {5}."
+Isolates Tested,Số chủng được thử
+Isolates tested,Số chủng được thử
+Lab Sample ID,Mã mẫu xét nghiệm
+Lab Sample ID,Mã mẫu xét nghiệm,Microbiology Isolate
+Label,Nhãn,MDRO Rule
+Labels come from approved multidrug resistance rules; statistics use only the first isolate of each patient and organism in the quarter.,Nhãn theo quy tắc đa kháng đã duyệt; thống kê chỉ dùng chủng đầu tiên của mỗi người bệnh – loài vi khuẩn trong quý.
+MDRO Labels,Nhãn đa kháng,Microbiology Isolate
+MDRO Rule,Quy tắc đa kháng
+MDRO Rule Criterion,Kháng sinh của quy tắc đa kháng
+MDRO Rule Organism,Vi khuẩn của quy tắc đa kháng
+MDRO history,Tiền sử đa kháng
+MIC or Zone,MIC hoặc đường kính vòng vô khuẩn
+MIC or Zone,MIC hoặc đường kính vòng vô khuẩn,Isolate Susceptibility
+Manual,Nhập tay,Microbiology Isolate
+Manual entry of a result,Nhập tay kết quả
+Manual entry when there is no file,Nhập tay khi không có file
+Map columns,Ánh xạ cột
+Mapping profile,Hồ sơ ánh xạ
+Matched Rule Versions,Phiên bản quy tắc đã khớp,Microbiology Isolate
+Matches every organism of this group when no organism is chosen.,Không chọn vi khuẩn thì áp cho mọi vi khuẩn của nhóm này.,MDRO Rule Organism
+Microbiology Isolate,Chủng vi sinh
+Microbiology and MDRO,Vi sinh & đa kháng
+Microbiology results,Kết quả vi sinh
+Microbiology isolates are recorded by file import or confirmed manual entry and cannot be changed.,"Chủng vi sinh chỉ được ghi qua nhập file hoặc nhập tay có xác nhận, và không sửa được."
+Microbiology isolate with its antibiogram; the patient code is encrypted and lists show it masked.,Chủng vi sinh kèm kháng sinh đồ; mã người bệnh được mã hóa và danh sách chỉ hiện mã đã che.
+Minimum Isolates per Antibiogram Pair,Số chủng tối thiểu mỗi cặp kháng sinh đồ,IC Program Settings
+Minimum Resistant Classes,Số nhóm kháng tối thiểu,MDRO Rule
+"Minimum resistant classes must be between 1 and {0}, the number of classes in the rule.",Số nhóm kháng tối thiểu phải từ 1 đến {0} (số nhóm trong quy tắc).
+Multidrug Resistance,Đa kháng,Microbiology Isolate
+Multidrug Resistant,Đa kháng,Microbiology Isolate
+Multidrug resistant,Đa kháng
+New isolates this week,Chủng mới trong tuần
+New multidrug-resistant isolate,Chủng vi khuẩn đa kháng mới
+New multidrug-resistant isolate {0} in {1},Chủng đa kháng mới {0} tại {1}
+No (repeat),Không (lặp lại)
+No HAI surveillance data yet,Chưa có dữ liệu giám sát NKBV
+No first isolate in this quarter.,Quý này chưa có chủng đầu tiên.
+No isolate recorded in the last 7 days.,Không có chủng nào được ghi trong 7 ngày qua.
+No mapping profile for microbiology files yet.,Chưa có hồ sơ ánh xạ cho file vi sinh.
+Not multidrug resistant,Không đa kháng
+Notes,Ghi chú,MDRO Rule
+"One role per line, notified in addition to infection control staff.","Mỗi dòng một vai trò, nhận cảnh báo cùng bộ phận KSNK.",MDRO Rule
+One row per isolate and antibiotic; rows with the same lab sample ID and organism form one isolate.,Mỗi dòng một chủng × một kháng sinh; các dòng cùng mã mẫu và vi khuẩn là một chủng.
+Only infection control staff can view the full patient code.,Chỉ bộ phận KSNK được xem mã người bệnh đầy đủ.
+Only the first {0} errors are listed.,Chỉ liệt kê {0} lỗi đầu tiên.
+Open notifications,Mở thông báo
+Open the rule list,Mở danh sách quy tắc
+Organism,Vi khuẩn,Microbiology Isolate
+Organism,Vi khuẩn,MDRO Rule Organism
+Organism Code,Mã vi khuẩn
+Organism Code,Mã vi khuẩn,Organism
+Organism Group,Nhóm vi khuẩn,MDRO Rule Organism
+Organism Group,Nhóm vi khuẩn,Microbiology Isolate
+Organism Group,Nhóm vi khuẩn,Organism
+Organism Name,Tên vi khuẩn
+Organism Name,Tên vi khuẩn,MDRO Rule Organism
+Organism Name,Tên vi khuẩn,Microbiology Isolate
+Organism Name,Tên vi khuẩn,Organism
+Organism catalog by WHONET code.,Danh mục vi sinh vật theo mã WHONET.
+Organism or organism group a multidrug resistance rule applies to.,Vi khuẩn hoặc nhóm vi khuẩn áp dụng quy tắc đa kháng.
+Antibiotic checked by a multidrug resistance rule.,Kháng sinh được xét trong quy tắc đa kháng.
+Antimicrobial susceptibility result of an isolate.,Kết quả kháng sinh đồ của một chủng.
+Versioned multidrug resistance rule; submitting a version means infection control approved it.,Quy tắc đa kháng có phiên bản; ghi sổ một phiên bản là KSNK đã duyệt.
+Organism code {0} is not in the Organism catalog.,Mã vi khuẩn {0} không có trong danh mục vi sinh vật.
+Organisms,Vi khuẩn,MDRO Rule
+Organisms row {0}: choose an organism or enter an organism group.,Dòng vi khuẩn {0}: chọn vi khuẩn hoặc nhập nhóm vi khuẩn.
+Patient Code,Mã người bệnh,Microbiology Isolate
+Patient Code (masked),Mã người bệnh (đã che),Microbiology Isolate
+Patient Code Hash,Mã băm người bệnh,Microbiology Isolate
+Patient names are not stored: name columns are ignored.,Không lưu họ tên người bệnh: cột họ tên bị bỏ qua.
+Precaution Type,Loại phòng ngừa,MDRO Rule
+Previously carried a multidrug-resistant organism: {0}.,Đã từng mang vi khuẩn đa kháng: {0}.
+Previously carried {0},Đã từng mang vi khuẩn đa kháng {0}
+Quarter,Quý,Microbiology Isolate
+Quarter {0},Quý {0}
+Quarter {0}/{1}: only the first isolate of each patient and organism is counted.,Quý {0}/{1}: chỉ tính chủng đầu tiên của mỗi người bệnh – loài vi khuẩn.
+R %,R %
+R,R,Isolate Susceptibility
+S,S,Isolate Susceptibility
+I,I,Isolate Susceptibility
+Resistant in at least N classes,Kháng ở ít nhất N nhóm,MDRO Rule
+Resistant to all,Kháng tất cả,MDRO Rule
+Resistant to any,Kháng bất kỳ,MDRO Rule
+Result,Kết quả,Isolate Susceptibility
+Result (S/I/R),Kết quả (S/I/R)
+Result not saved,Chưa ghi kết quả
+Result not valid,Kết quả không hợp lệ
+Rule Code,Mã quy tắc,MDRO Rule
+"Rule code {0} is invalid. Use Latin letters without accents, digits and dashes.","Mã quy tắc {0} không hợp lệ. Dùng chữ Latin không dấu, chữ số và gạch ngang."
+Rule {0} already has a draft version {1}. Open and edit that draft instead.,Quy tắc {0} đã có bản Nháp {1}. Mở và sửa bản Nháp đó.
+S %,S %
+Save {0} valid rows,Ghi sổ {0} dòng hợp lệ
+Save,Ghi sổ,Microbiology import
+Sex,Giới tính
+Sex,Giới tính,Microbiology Isolate
+"Sex must be Male, Female or Other.","Giới tính phải là Nam, Nữ hoặc Khác."
+"Short label shown on isolates, for example MRSA.","Nhãn ngắn hiện trên chủng, ví dụ MRSA.",MDRO Rule
+Small sample (n < {0}),Cỡ mẫu nhỏ (n < {0})
+Small sample threshold,Ngưỡng cỡ mẫu nhỏ
+Small sample: fewer than {0} first isolates,Cỡ mẫu nhỏ: dưới {0} chủng đầu tiên
+Source,Nguồn,Microbiology Isolate
+Specimen,Bệnh phẩm
+Specimen Type,Loại bệnh phẩm
+Specimen Type,Loại bệnh phẩm,Microbiology Isolate
+Superseded By,Thay bằng phiên bản,MDRO Rule
+Susceptibility,Kháng sinh đồ,Microbiology Isolate
+Total rows,Tổng số dòng
+Version,Phiên bản,MDRO Rule
+Version {0} is approved and locked. Duplicate it to create version V{1}; isolates already labelled keep their labels.,Phiên bản {0} đã duyệt và bị khóa. Nhân bản để tạo phiên bản V{1}; chủng đã gắn nhãn giữ nguyên nhãn.
+WHONET files with one column per antibiotic: map each antibiotic column to ab:<code> in the mapping profile.,"File WHONET mỗi kháng sinh một cột: trong hồ sơ ánh xạ, ánh xạ mỗi cột kháng sinh sang ab:<mã>."
+"WHONET organism code, for example eco or kpn.","Mã vi khuẩn WHONET, ví dụ eco hoặc kpn.",Organism
+"WHONET organism code, for example eco.","Mã vi khuẩn WHONET, ví dụ eco."
+You are not allowed to open the microbiology screen.,Bạn không có quyền mở màn vi sinh.
+You are not allowed to read {0} {1}.,Bạn không có quyền đọc {0} {1}.
+You are not allowed to record microbiology results.,Bạn không có quyền ghi kết quả vi sinh.
+n = {0} first isolates,n = {0} chủng đầu tiên
+{0} %,{0} %
+{0} draft(s) — R01 approval needed,{0} bản Nháp — chờ R01 duyệt
+{0} has no patient code.,{0} không có mã người bệnh.
+{0} new multidrug-resistant isolate(s) not handled yet,{0} chủng đa kháng mới chưa xử lý
+{0} row(s) with errors are not saved,{0} dòng lỗi không được ghi sổ
+Antimicrobial Resistance by Quarter,Kháng thuốc theo quý
+Import,Nhập file,Microbiology Isolate
+Import Batch,Lô nhập,Microbiology Isolate
+Department,Khoa,Microbiology Isolate
+Department Name,Tên khoa,Microbiology Isolate
+Disabled,Ngừng dùng,Organism
+Male,Nam,Microbiology Isolate
+Female,Nữ,Microbiology Isolate
+Other,Khác,Microbiology Isolate
+Amended From,Sửa đổi từ,MDRO Rule
+Collection Date,Ngày lấy mẫu
+A rule version cannot be amended. Duplicate the approved version to create the next version.,Không sửa đổi (Amend) được phiên bản quy tắc. Nhân bản phiên bản đã duyệt để tạo phiên bản kế tiếp.
+The rule code cannot be changed after the version is created.,Không đổi được mã quy tắc sau khi đã tạo phiên bản.
 Enter a valid year.,Nhập năm hợp lệ.,
 No target,Chưa có mục tiêu,
 Met,Đạt,IC Training

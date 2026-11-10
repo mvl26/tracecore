@@ -102,6 +102,9 @@ EVENTS = {
 	"AUDIT_COVERAGE_LOW": ("Audit coverage below target", "Normal", 0, 1, (FALLBACK_ROLE,)),
 	"AUDIT_FEEDBACK": ("Audit result feedback to the department", "Normal", 0, 1, ()),
 	"AUDIT_CRITICAL_FAIL": ("Critical audit item failed", "Normal", 0, 0, ("TC R01", "TC R11")),
+	# FEAT-067 (A-136 Q4, FR-M14-04): chủng đa kháng mới — R11 theo Rule; mạng lưới viên, R08 của khoa và vai trò của
+	# quy tắc do nơi gọi truyền; chưa đọc quá 15 phút thì leo thang R01
+	"MDRO_DETECTED": ("New multidrug-resistant isolate", "Urgent", 1, 1, ("TC R11",)),
 	# FEAT-059 (A-135 d): nhắc nhân viên chưa học KSNK cơ bản; người nhận do nơi gọi truyền (user của nhân viên)
 	"IC_TRAINING_REMINDER": ("Infection control training reminder", "Normal", 0, 0, ()),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
