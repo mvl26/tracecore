@@ -122,23 +122,32 @@ class TestFoodborneEvent(IsolatedTestCase):
 	def test_real_outbreak_saved_from_prefill_links_back(self):
 		# merge FEAT-069 + FEAT-073 (A-151 Q1): ổ dịch M14 thật lưu nguồn, hook ghi ngược tên vào sự cố (Link)
 		doc = ff.make_event(affected=6)
-		prefill = events.outbreak_prefill(doc.name)
-		department = doc.get("department") or frappe.get_all("Department", pluck="name", limit=1)[0]
-		outbreak = frappe.get_doc(
-			{
-				"doctype": "Outbreak Investigation",
-				**prefill,
-				"organism_or_disease": "Food poisoning",
-				"department": department,
-			}
-		).insert(ignore_permissions=True)
-		self.assertEqual(outbreak.source, "Foodborne Event")
+		prefill = frappe.get_attr("tracecore.microbiology.outbreaks.prefill_from_source")(
+			events.DOCTYPE, doc.name
+		)
+		self.assertEqual((prefill["source_doctype"], prefill["source_name"]), (events.DOCTYPE, doc.name))
+		values = {**prefill, "department": prefill.get("department") or ff_department()}
+		outbreak = frappe.get_attr("tracecore.microbiology.outbreaks.open_outbreak")(values)
+		self.assertEqual(
+			(outbreak.source, outbreak.source_doctype, outbreak.source_name),
+			("Foodborne Event", events.DOCTYPE, doc.name),
+		)
+		overview = frappe.get_attr("tracecore.v1.outbreak.overview")(
+			source_doctype=events.DOCTYPE, source_name=doc.name
+		)
+		self.assertEqual(overview["prefill"]["source_name"], doc.name)
 		values = frappe.db.get_value(
 			events.DOCTYPE, doc.name, ["outbreak_status", "outbreak_investigation"], as_dict=True
 		)
-		self.assertEqual((values.outbreak_status, values.outbreak_investigation), (events.OPENED, outbreak.name))
+		self.assertEqual(
+			(values.outbreak_status, values.outbreak_investigation), (events.OPENED, outbreak.name)
+		)
 
 	def test_badges_count_events_waiting_for_decision(self):
 		ff.make_event(affected=6)
 		frappe.set_user(self.r11)
 		self.assertGreaterEqual(events.pending_count(), 1)
+
+
+def ff_department():
+	return frappe.get_all("Department", filters={"is_group": 0}, pluck="name", limit=1)[0]

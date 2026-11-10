@@ -11515,3 +11515,6 @@ Vendor Name,Tên đơn vị,Food Handler Health Check
 Vendor Name,Tên đơn vị,Foodborne Event
 Facilitator Name,Tên người truyền thông,IC Education Session
 Department Name,Tên khoa,IC Education Session
+"Filled when the investigation is opened from another record, e.g. a suspected food poisoning event.","Tự điền khi mở điều tra từ bản ghi khác, ví dụ sự cố nghi ngộ độc thực phẩm.",
+Source Document Type,Loại chứng từ nguồn,Outbreak Investigation
+Source Document,Chứng từ nguồn,Outbreak Investigation

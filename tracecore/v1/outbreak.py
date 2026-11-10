@@ -74,7 +74,7 @@ def _choices():
 
 
 @frappe.whitelist(methods=["GET"])
-def overview(outbreak=None, alert=None):
+def overview(outbreak=None, alert=None, source_doctype=None, source_name=None):
 	"""Dữ liệu SCR-61 WEB (chỉ đọc)."""
 	_require_screen()
 	can_cases = _can_read_cases()
@@ -91,7 +91,13 @@ def overview(outbreak=None, alert=None):
 		"can_work": can_cases,
 		"summary": summary,
 		"current": current,
-		"prefill": outbreaks.prefill_from_alert(alert) if alert and can_cases else None,
+		"prefill": (
+			outbreaks.prefill_from_alert(alert)
+			if alert
+			else outbreaks.prefill_from_source(source_doctype, source_name)
+		)
+		if can_cases and (alert or source_name)
+		else None,
 		"alerts": clusters.open_alerts() if can_cases else [],
 		"rules_configured": clusters.configured(),
 		"rule_form": "/app/cluster-alert-rule",
@@ -189,6 +195,9 @@ def open_outbreak(
 	start_date=None,
 	case_definition=None,
 	cluster_alert=None,
+	source=None,
+	source_doctype=None,
+	source_name=None,
 	client_ts=None,
 ):
 	values = {
@@ -203,6 +212,9 @@ def open_outbreak(
 		"start_date": start_date,
 		"case_definition": case_definition,
 		"cluster_alert": cluster_alert or None,
+		"source": source or None,
+		"source_doctype": source_doctype or None,
+		"source_name": source_name or None,
 	}
 	doc, rejected = _run(outbreaks.open_outbreak, outbreaks.DOCTYPE, cluster_alert, client_ts, values)
 	return rejected or _detail(doc)

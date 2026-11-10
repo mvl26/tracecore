@@ -9,7 +9,6 @@ const TC_FS_OVERVIEW = "tracecore.v1.food_safety.overview";
 const TC_FS_OPEN_NC = "tracecore.v1.food_safety.open_nc";
 const TC_FS_DISMISS_NC = "tracecore.v1.food_safety.dismiss_nc";
 const TC_FS_DISMISS_OUTBREAK = "tracecore.v1.food_safety.dismiss_outbreak";
-const TC_FS_PREFILL = "tracecore.v1.food_safety.outbreak_prefill";
 const TC_FS_PUBLISH = "tracecore.v1.food_safety.publish_material";
 const TC_FS_WITHDRAW = "tracecore.v1.food_safety.withdraw_material";
 const TC_FS_REPORT = "/app/query-report/Food Safety and Communication by Quarter";
@@ -473,9 +472,13 @@ const TcKsnkScr65 = {
 		win.print();
 	},
 
-	async openOutbreak(name) {
-		const prefill = await frappe.xcall(TC_FS_PREFILL, { event: name });
-		frappe.new_doc("Outbreak Investigation", prefill);
+	// A-151 Q1: ổ dịch M14 chỉ mở trên màn SCR-61 (không mở Desk form); SCR-61 tự điền sẵn từ sự cố qua hook
+	openOutbreak(name) {
+		const query = new URLSearchParams({
+			source_doctype: "Foodborne Event",
+			source_name: name,
+		});
+		window.location.assign(`/app/tc-ksnk/o-dich?${query.toString()}`);
 	},
 
 	bind(el, ctx, data) {

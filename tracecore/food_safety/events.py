@@ -203,6 +203,23 @@ def outbreak_prefill(name):
 	}
 
 
+def outbreak_source_prefill(source_doctype, source_name):
+	"""Hook ``tracecore_outbreak_source_prefill`` của M14 (A-151 Q1): điền sẵn form mở ổ dịch trên SCR-61 từ sự cố."""
+	if source_doctype != DOCTYPE or not frappe.db.exists(DOCTYPE, source_name):
+		return None
+	values = outbreak_prefill(source_name)
+	department = frappe.db.get_value(DOCTYPE, source_name, "department")
+	return {
+		**values,
+		"start_date": str(values["start_date"]) if values.get("start_date") else None,
+		"organism_or_disease": _("Suspected food poisoning"),
+		"department": department,
+		"department_name": frappe.db.get_value("Department", department, "department_name")
+		if department
+		else None,
+	}
+
+
 def on_outbreak_saved(doc, method=None):
 	"""``doc_events["Outbreak Investigation"]``: ổ dịch có nguồn là sự cố → ghi ngược tên, Đã mở (liên kết hai chiều)."""
 	if doc.get("source_doctype") != DOCTYPE or not doc.get("source_name"):

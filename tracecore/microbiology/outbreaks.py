@@ -77,6 +77,22 @@ def _alert_cases(alert):
 	return [{"source_type": alert.source, "ref": ref} for ref in refs]
 
 
+SOURCE_PREFILL_HOOK = "tracecore_outbreak_source_prefill"
+
+
+def prefill_from_source(source_doctype, source_name):
+	"""Giá trị điền sẵn khi mở ổ dịch từ một bản ghi nguồn của module khác (A-151 Q1, ví dụ sự cố nghi ngộ độc thực
+	phẩm M17). Module nguồn đăng ký hook ``tracecore_outbreak_source_prefill(source_doctype, source_name)`` trả dict
+	hoặc None; M14 không import module nguồn."""
+	if not source_doctype or not source_name:
+		return None
+	for path in frappe.get_hooks(SOURCE_PREFILL_HOOK):
+		values = frappe.get_attr(path)(source_doctype, source_name)
+		if values:
+			return {**values, "source_doctype": source_doctype, "source_name": source_name}
+	return None
+
+
 def prefill_from_alert(alert_name):
 	"""Giá trị điền sẵn của form mở ổ dịch từ một cảnh báo cụm ca (không có mã BN)."""
 	alert = frappe.get_doc(clusters.ALERT_DOCTYPE, alert_name)
@@ -149,6 +165,9 @@ def open_outbreak(values: dict):
 			"start_date": getdate(values["start_date"]),
 			"source": "Cluster Alert" if alert else (values.get("source") or "Suspicion"),
 			"cluster_alert": alert.name if alert else None,
+			# A-151 Q1: ổ dịch mở từ bản ghi của module khác (sự cố ngộ độc M17) — module nguồn ghi ngược qua doc_events
+			"source_doctype": None if alert else (values.get("source_doctype") or None),
+			"source_name": None if alert else (values.get("source_name") or None),
 			"opened_by": frappe.session.user,
 			"case_definition": _text(values.get("case_definition"), 2000) or None,
 		}

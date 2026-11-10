@@ -863,6 +863,8 @@ tracecore_outbreak_nc = ["tracecore.reprocessing.incidents.on_outbreak_nc"]
 # FEAT-073 (A-151, FR-M17-04): R01/R11 mở NC từ sự cố nghi ngộ độc thực phẩm → M2 tạo Incident Food Safety; ctx {event,
 # department, description}, trả tên Incident (M17 không import M2)
 tracecore_food_safety_nc = ["tracecore.reprocessing.incidents.on_food_safety_nc"]
+# merge FEAT-069 + FEAT-073 (A-151 Q1): SCR-61 điền sẵn form mở ổ dịch từ sự cố nghi ngộ độc thực phẩm (M14 không import M17)
+tracecore_outbreak_source_prefill = ["tracecore.food_safety.events.outbreak_source_prefill"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",

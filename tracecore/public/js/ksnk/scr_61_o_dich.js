@@ -282,7 +282,9 @@ const TcKsnkScr61 = {
 					<option value="">${esc(__("— Choose —"))}</option>${extra}${options}</select></label>
 				<label>${esc(
 					__("Start Date")
-				)} *<input type="date" class="form-control" data-field="start_date"></label>
+				)} *<input type="date" class="form-control" data-field="start_date" value="${esc(
+			p.start_date || ""
+		)}"></label>
 				<label>${esc(
 					__("Case Definition")
 				)}<textarea class="form-control" data-field="case_definition" rows="3"></textarea></label>
@@ -766,6 +768,10 @@ const TcKsnkScr61 = {
 					...values,
 					cluster_alert: alert,
 					organism: (data.prefill && data.prefill.organism) || "",
+					// A-151 Q1: mở từ bản ghi nguồn của module khác (sự cố nghi ngộ độc thực phẩm)
+					source: (!alert && data.prefill && data.prefill.source) || "",
+					source_doctype: (!alert && data.prefill && data.prefill.source_doctype) || "",
+					source_name: (!alert && data.prefill && data.prefill.source_name) || "",
 				},
 				'[data-region="open-alert"]',
 				(result) => self.go(el, ctx, { outbreak: result.outbreak.name })
@@ -975,6 +981,8 @@ const TcKsnkScr61 = {
 			const data = await ctx.get(TC_OD_OVERVIEW, {
 				outbreak: params.get("outbreak") || "",
 				alert: params.get("alert") || "",
+				source_doctype: params.get("source_doctype") || "",
+				source_name: params.get("source_name") || "",
 			});
 			if (!ctx.isCurrent()) return;
 			el.innerHTML = TcKsnkScr61.pageHtml(data, ctx.esc, false);
