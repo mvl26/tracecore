@@ -9480,3 +9480,143 @@ QD 3671/QD-BYT,QĐ 3671/QĐ-BYT
 TT 16/2018/TT-BYT,TT 16/2018/TT-BYT
 TT 16/2018/TT-BYT Article 25,TT 16/2018/TT-BYT Điều 25
 Compliance,Tuân thủ
+Choose an existing department.,Chọn một khoa đã có.
+Choose an existing item.,Chọn một vật tư đã có.
+Item {0} has no infection control chemical type.,Vật tư {0} chưa có loại hóa chất KSNK.
+Quantity must be greater than 0.,Số lượng phải lớn hơn 0.
+Write where the manually entered quantity comes from.,Ghi rõ số lượng nhập tay lấy từ đâu.
+Source must be one of {0}.,Nguồn phải là một trong {0}.
+Chemical consumption not valid,Lượng hóa chất không hợp lệ
+This source row is already recorded.,Dòng chứng từ nguồn này đã được ghi.
+Write the reason for cancelling this chemical consumption.,Ghi lý do hủy bản ghi hóa chất này.
+Stock Entry {0} was cancelled.,Phiếu kho {0} đã bị hủy.
+Write why this source is kept.,Ghi lý do giữ nguồn này.
+This department and item have no duplicate sources to resolve in {0}.,Khoa và hóa chất này không có nguồn trùng cần xử lý trong tháng {0}.
+Source {0} has no record to keep.,Nguồn {0} không có bản ghi để giữ.
+Duplicate source; kept {0}: {1},Trùng nguồn; giữ {0}: {1}
+Quarter must be 1 to 4.,Quý phải từ 1 đến 4.
+Item {0} does not exist.,Vật tư {0} không tồn tại.
+Item {0} has no conversion for unit {1}.,Vật tư {0} chưa khai báo quy đổi đơn vị {1}.
+Issue date is in the future.,Ngày xuất ở tương lai.
+The license of {0} ends in {1} days ({2}).,Giấy phép của {0} còn {1} ngày ({2}).
+Outsourced vendor license of {0} is close to expiry,Giấy phép đơn vị thuê ngoài {0} sắp hết hạn
+Outsourced vendor license of {0} has expired,Giấy phép đơn vị thuê ngoài {0} đã hết hạn
+The license of {0} expired on {1}. The system only warns; stopping the contract is a hospital decision.,Giấy phép của {0} đã hết hạn ngày {1}. Hệ thống chỉ cảnh báo; quyết định dừng hợp đồng thuộc bệnh viện.
+Quarter {0}/{1}: no outsourced vendor audit yet for {2}.,Quý {0}/{1}: chưa có phiếu giám sát đơn vị thuê ngoài cho {2}.
+{0} outsourced vendor(s) not audited this quarter,{0} đơn vị thuê ngoài chưa được giám sát trong quý
+The license of vendor {0} has expired. The audit can still be saved; this is only a warning.,Giấy phép của đơn vị {0} đã hết hạn. Phiếu giám sát vẫn lưu được; đây chỉ là cảnh báo.
+Patient Days,Ngày nằm viện
+"Hand Rub per 1,000 Patient Days (L)",VST nhanh / 1.000 ngày nằm viện (lít)
+No denominator yet,Chưa có mẫu số
+"{0} item(s) awaiting source confirmation, not counted","{0} hóa chất chờ xác nhận nguồn, chưa tính"
+{0} record(s) without a litre conversion,{0} bản ghi thiếu quy đổi lít
+Whole hospital ({0} departments),Toàn viện ({0} khoa)
+Quarter {0}/{1}; departments with duplicate sources are counted after a source is chosen.,Quý {0}/{1}; khoa có nguồn trùng chỉ được tính sau khi chọn nguồn.
+You are not allowed to open the chemicals screen.,Bạn không được mở màn hóa chất KSNK.
+You are not allowed to record chemical consumption.,Bạn không được ghi lượng hóa chất KSNK.
+Entry not valid,Dòng nhập chưa hợp lệ
+Correct the entry and check it again.,Sửa dòng nhập rồi kiểm lại.
+A manually entered quantity is saved only after the person entering it confirms it.,Số lượng nhập tay chỉ được lưu sau khi người nhập xác nhận.
+Entry not saved,Chưa lưu dòng nhập
+You are not allowed to cancel chemical consumption.,Bạn không được hủy bản ghi hóa chất KSNK.
+Source not chosen,Chưa chọn được nguồn
+Check the entry and try again.,Kiểm lại thông tin rồi thử lại.
+Manual Entry,Nhập tay
+Quarter {0}/{1},Quý {0}/{1}
+Import pharmacy file,Nhập file từ khoa Dược
+Manual entry (with source),Nhập tay (ghi nguồn)
+Quarterly chemical report,Báo cáo hóa chất quý (QĐ 38)
+Awaiting confirmation,Chờ xác nhận
+No litre conversion,Thiếu quy đổi lít
+No infection control chemical recorded in this quarter.,Chưa có hóa chất KSNK nào được ghi trong quý này.
+IC chemicals by department,Lượng hóa chất KSNK theo khoa
+Preferred source: ERPNext stock transfers to the department warehouse; otherwise the pharmacy file or a manual entry confirmed by the person entering it.,Nguồn ưu tiên: phiếu xuất kho ERPNext tới kho khoa; khi không có thì file khoa Dược hoặc nhập tay có người xác nhận.
+Keep this source,Giữ nguồn này
+Waiting for the materials accountant or the head of infection control to choose.,Chờ kế toán vật tư hoặc Trưởng khoa KSNK chọn nguồn.
+{0} item(s) have two sources and are not counted,"{0} hóa chất có hai nguồn, chưa được tính"
+Choose the source to keep; the other source is cancelled with your reason.,Chọn nguồn giữ lại; nguồn còn lại bị hủy kèm lý do bạn ghi.
+Sources,Nguồn
+No license date,Chưa có hạn giấy phép
+Waste vendor record,Hồ sơ đơn vị xử lý chất thải
+Not audited this quarter,Chưa giám sát trong quý
+License Expiry,Hết hạn giấy phép
+Latest vendor audit,Phiếu giám sát gần nhất
+No outsourced vendor yet. Set the outsourced service on the supplier form to follow its license.,Chưa có đơn vị thuê ngoài. Chọn loại dịch vụ thuê ngoài trên hồ sơ nhà cung cấp để theo dõi giấy phép.
+License expired: {0}.,Giấy phép đã hết hạn: {0}.
+"The system only warns and logs it; stopping the contract is a hospital decision. Reminders come 60, 30 and 7 days before.","Hệ thống chỉ cảnh báo và ghi Audit Log; quyết định dừng hợp đồng thuộc bệnh viện. Nhắc trước 60, 30, 7 ngày."
+Outsourced vendors,Đơn vị thuê ngoài
+ERPNext Supplier + license,Nhà cung cấp ERPNext + giấy phép
+No mapping profile for chemical files yet.,Chưa có hồ sơ ánh xạ cho file hóa chất.
+Already imported — skipped,Đã nhập trước đó — bỏ qua
+Errors,Lỗi
+Source Note,Nguồn số liệu
+Check the entry,Kiểm dòng nhập
+{0} L,{0} lít
+"This month already has data from {0}; after saving, the item waits for a source to be chosen.","Tháng này đã có số liệu từ {0}; sau khi lưu, hóa chất này chờ chọn nguồn."
+Chemical consumption {0} saved.,Đã lưu lượng hóa chất {0}.
+Source kept; {0} record(s) of the other source cancelled.,Đã giữ nguồn; hủy {0} bản ghi của nguồn còn lại.
+Hand Rub (L),Dung dịch VST nhanh (lít)
+Soap (L),Xà phòng (lít)
+Surface Disinfectant (L),Khử khuẩn bề mặt (lít)
+Instrument Disinfectant (L),Khử khuẩn dụng cụ (lít)
+Other (L),Khác (lít)
+Chemicals and Outsourcing,Hóa chất & thuê ngoài
+Infection Control Chemicals,Hóa chất KSNK
+Day the pharmacy issued the chemical.,Ngày khoa Dược xuất hóa chất.
+Department name or full name.,Tên khoa hoặc tên đầy đủ.
+Item with an infection control chemical type.,Vật tư có loại hóa chất KSNK.
+Empty means the stock unit of the item.,Để trống là đơn vị kho của vật tư.
+Pharmacy issue document number.,Số phiếu xuất của khoa Dược.
+One row per item and pharmacy issue document; the issue date decides the month.,Mỗi dòng một vật tư của một phiếu xuất khoa Dược; ngày xuất quyết định tháng.
+A file imported again creates nothing new.,Nhập lại cùng file không tạo bản ghi mới.
+Outsourced vendor license expiring,Giấy phép đơn vị thuê ngoài sắp hết hạn
+Outsourced vendor license expired,Giấy phép đơn vị thuê ngoài đã hết hạn
+Outsourced vendors not audited this quarter,Đơn vị thuê ngoài chưa giám sát trong quý
+IC Chemical Consumption,Hóa chất KSNK theo khoa
+IC Chemical Consumption by Department,Hóa chất KSNK theo khoa
+IC Chemical Type,Loại hóa chất KSNK
+Infection control chemical counted per department and month; set the Litre conversion in the units of measure.,Hóa chất KSNK tính theo khoa và tháng; khai báo quy đổi Litre trong bảng đơn vị tính.
+Soap,Xà phòng
+Surface Disinfectant,Khử khuẩn bề mặt
+Instrument Disinfectant,Khử khuẩn dụng cụ
+Department Using This Warehouse,Khoa sử dụng kho
+Infection control chemicals transferred into this warehouse are counted for this department.,Hóa chất KSNK chuyển vào kho này được tính cho khoa này.
+Outsourced Infection Control Service,Đơn vị thuê ngoài KSNK
+"Set for outsourced service vendors watched by infection control (license reminders, vendor audits).","Chọn cho đơn vị thuê ngoài do khoa KSNK theo dõi (nhắc giấy phép, phiếu giám sát)."
+Industrial Cleaning,Vệ sinh công nghiệp
+Waste Treatment,Xử lý chất thải
+Catering,Suất ăn
+"Reminders 60, 30 and 7 days before; an expired license only warns and is logged, it never blocks.","Nhắc trước 60, 30, 7 ngày; giấy phép hết hạn chỉ cảnh báo và ghi Audit Log, không chặn giao dịch."
+Contract From,Hợp đồng từ
+Contract To,Hợp đồng đến
+Awaiting Confirmation,Chờ xác nhận
+Kept,Đã chọn
+"Infection control chemical used by a department in a month, from a stock transfer, a pharmacy file or a confirmed manual entry.","Hóa chất KSNK khoa dùng trong tháng, từ phiếu chuyển kho, file khoa Dược hoặc nhập tay có xác nhận."
+Month YYYY-MM.,Tháng dạng YYYY-MM.
+Empty when the item has no Litre conversion.,Để trống khi vật tư chưa có quy đổi lít.
+Where a manually entered quantity comes from.,Số lượng nhập tay lấy từ đâu.
+Series,Dãy số,IC Chemical Consumption
+Period,Kỳ (tháng),IC Chemical Consumption
+Posting Date,Ngày ghi,IC Chemical Consumption
+Department,Khoa,IC Chemical Consumption
+Department Name,Tên khoa,IC Chemical Consumption
+Item,Hóa chất,IC Chemical Consumption
+Item Name,Tên hóa chất,IC Chemical Consumption
+IC Chemical Type,Loại hóa chất KSNK,IC Chemical Consumption
+Quantity,Số lượng,IC Chemical Consumption
+UOM,Đơn vị kho,IC Chemical Consumption
+Litres,Số lít,IC Chemical Consumption
+Source,Nguồn,IC Chemical Consumption
+Source Document,Chứng từ nguồn,IC Chemical Consumption
+Source Row,Dòng nguồn,IC Chemical Consumption
+Import Batch,Lô import,IC Chemical Consumption
+Source Note,Nguồn số liệu,IC Chemical Consumption
+Confirmed By,Người xác nhận,IC Chemical Consumption
+Confirmed On,Thời điểm xác nhận,IC Chemical Consumption
+Duplicate Status,Trùng nguồn,IC Chemical Consumption
+Cancel Reason,Lý do hủy,IC Chemical Consumption
+Amended From,Sửa từ,IC Chemical Consumption
+Stock Entry,Phiếu kho ERPNext,IC Chemical Consumption
+Import,File khoa Dược,IC Chemical Consumption
+Manual Entry,Nhập tay,IC Chemical Consumption
+HC-.YYYY.-.#####,HC-.YYYY.-.#####,IC Chemical Consumption

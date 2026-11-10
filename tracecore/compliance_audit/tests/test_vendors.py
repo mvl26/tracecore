@@ -1,5 +1,5 @@
 """Đơn vị thuê ngoài: nhắc giấy phép 60/30/7 ngày, hết hạn chỉ cảnh báo (FEAT-066 AC-7..AC-9; FR-M12-13, FR-M12-13.1;
-BRU-AUD-006; UC-46 bước 5–7, E2)."""
+BRU-AUD-006; UC-46 bước 5-7, E2)."""
 
 import frappe
 from frappe.utils import add_days, getdate, today
@@ -55,11 +55,16 @@ class TestVendors(IsolatedTestCase):
 
 	@bru("BRU-AUD-006")
 	def test_expired_license_warns_and_logs_once_without_blocking(self):
-		supplier = cf.make_vendor("KSNK Test Giặt là B", service="Laundry", license_expiry=add_days(self.day, -1))
+		supplier = cf.make_vendor(
+			"KSNK Test Giặt là B", service="Laundry", license_expiry=add_days(self.day, -1)
+		)
 		vendors.run_daily(self.day)
 		vendors.run_daily(add_days(self.day, 1))
 		self.assertEqual(
-			frappe.db.count("Audit Log", {"ref_doctype": "Supplier", "ref_name": supplier, "action": "Update"}), 1
+			frappe.db.count(
+				"Audit Log", {"ref_doctype": "Supplier", "ref_name": supplier, "action": "Update"}
+			),
+			1,
 		)
 		self.assertGreater(_deliveries(vendors.EXPIRED_EVENT, supplier), 0)
 		# không chặn: phiếu giám sát đơn vị thuê ngoài vẫn ghi sổ được
@@ -88,3 +93,26 @@ class TestVendors(IsolatedTestCase):
 		self.assertEqual(last["name"], session.name)
 		vendors.run_daily(getdate("2026-09-01"))  # ngày 1 tháng cuối quý III
 		self.assertTrue(frappe.db.exists("Notification Delivery", {"event_code": vendors.UNAUDITED_EVENT}))
+
+	def test_r09_edits_supplier_and_warehouse_without_delete(self):
+		"""A-142 Q4: R09 sửa hồ sơ thuê ngoài và gán khoa cho kho; quyền chuẩn ERPNext giữ nguyên, không ai xóa."""
+		from tracecore.compliance_audit import permissions
+
+		permissions.ensure_permissions()
+		permissions.ensure_permissions()  # idempotent
+		for doctype, role in (("Supplier", "TC R09"), ("Warehouse", "TC R09"), ("Warehouse", "TC R10")):
+			row = frappe.db.get_value(
+				"Custom DocPerm",
+				{"parent": doctype, "role": role, "permlevel": 0, "if_owner": 0},
+				["read", "write", "create", "delete"],
+				as_dict=True,
+			)
+			self.assertEqual(
+				(row.read, row.write, row.create, row.delete), (1, 1, 1, 0), msg=f"{doctype} {role}"
+			)
+		self.assertEqual(
+			frappe.db.get_value("Custom DocPerm", {"parent": "Supplier", "role": "TC R13"}, "write"), 0
+		)
+		self.assertTrue(
+			frappe.db.exists("Custom DocPerm", {"parent": "Supplier", "role": "Purchase Manager"})
+		)

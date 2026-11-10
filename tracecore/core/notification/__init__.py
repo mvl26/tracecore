@@ -116,8 +116,20 @@ EVENTS = {
 	"PEP_STOCK_ALERT": ("Post-exposure prophylaxis stock alert", "Normal", 1, 0, ("TC R01",)),
 	# FEAT-066 (A-142, FR-M12-13): giấy phép đơn vị thuê ngoài 60/30/7 ngày, đã hết hạn (chỉ cảnh báo, BRU-AUD-006),
 	# đơn vị chưa được giám sát trong quý
-	"IC_VENDOR_LICENSE_EXPIRING": ("Outsourced vendor license expiring", "Normal", 1, 0, ("TC R01", FALLBACK_ROLE)),
-	"IC_VENDOR_LICENSE_EXPIRED": ("Outsourced vendor license expired", "Normal", 1, 0, ("TC R01", FALLBACK_ROLE)),
+	"IC_VENDOR_LICENSE_EXPIRING": (
+		"Outsourced vendor license expiring",
+		"Normal",
+		1,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
+	"IC_VENDOR_LICENSE_EXPIRED": (
+		"Outsourced vendor license expired",
+		"Normal",
+		1,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
 	"IC_VENDOR_UNAUDITED": (
 		"Outsourced vendors not audited this quarter",
 		"Normal",

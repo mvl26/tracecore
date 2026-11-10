@@ -22,10 +22,14 @@ class TestChemicalImport(IsolatedTestCase):
 		self.department = make_department("KSNK Test Khoa Nội")
 		self.ward = frappe.db.get_value("Department", self.department, "department_name")
 		self.rub = cf.make_chemical("TC-HC-VST", "Hand Rub")
-		self.surface = cf.make_chemical("TC-HC-BM", "Surface Disinfectant", stock_uom=cf.BOTTLE, litre_factor=2)
+		self.surface = cf.make_chemical(
+			"TC-HC-BM", "Surface Disinfectant", stock_uom=cf.BOTTLE, litre_factor=2
+		)
 		cf.make_chemical("TC-HC-NOTYPE", None)
 		if frappe.db.exists("Import Mapping Profile", "Hóa chất khoa Dược thử"):
-			frappe.delete_doc("Import Mapping Profile", "Hóa chất khoa Dược thử", force=True, ignore_permissions=True)
+			frappe.delete_doc(
+				"Import Mapping Profile", "Hóa chất khoa Dược thử", force=True, ignore_permissions=True
+			)
 		self.profile = (
 			frappe.get_doc(
 				{
@@ -60,7 +64,7 @@ class TestChemicalImport(IsolatedTestCase):
 				HEADER,
 				f"03/08/2026;{w};TC-HC-VST;12,5;;PX-001",
 				f"03/08/2026;{w};TC-HC-BM;6;{cf.BOTTLE};PX-001",
-				f"04/08/2026;Khoa không có;TC-HC-VST;1;;PX-002",
+				"04/08/2026;Khoa không có;TC-HC-VST;1;;PX-002",
 				f"04/08/2026;{w};TC-HC-NOTYPE;1;;PX-002",
 				f"05/08/2026;{w};TC-HC-VST;0;;PX-003",
 			]
@@ -74,7 +78,9 @@ class TestChemicalImport(IsolatedTestCase):
 		self.assertEqual((result["total"], result["valid"]), (5, 2))
 		rows = {issue["row"] for issue in result["issues"]}
 		self.assertEqual(rows, {4, 5, 6})
-		self.assertFalse(frappe.db.exists(chemicals.DOCTYPE, {"source": chemicals.IMPORT, "source_ref": "PX-001"}))
+		self.assertFalse(
+			frappe.db.exists(chemicals.DOCTYPE, {"source": chemicals.IMPORT, "source_ref": "PX-001"})
+		)
 
 	def test_run_records_import_source_and_reimport_creates_none(self):
 		batch = frappe.get_doc(

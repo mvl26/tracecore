@@ -1,4 +1,4 @@
-"""Hóa chất KSNK theo khoa–tháng từ 3 nguồn (FEAT-066; FR-M12-12, FR-M12-12.1, FR-M12-12.2; UC-46; A-142).
+"""Hóa chất KSNK theo khoa-tháng từ 3 nguồn (FEAT-066; FR-M12-12, FR-M12-12.1, FR-M12-12.2; UC-46; A-142).
 
 - Nguồn 1 — ``Stock Entry`` ERPNext ghi sổ có dòng tới kho thuộc khoa (``Warehouse.tc_department``) và Item có
   ``tc_ic_chemical_type`` (hook ``doc_events``, ADR-009; M12 không import M6): mỗi dòng một bản ghi.
@@ -25,7 +25,7 @@ SOURCES = (STOCK_ENTRY, IMPORT, MANUAL)
 TYPES = ("Hand Rub", "Soap", "Surface Disinfectant", "Instrument Disinfectant", "Other")
 HAND_RUB = "Hand Rub"
 AWAITING, KEPT = "Awaiting Confirmation", "Kept"
-LITRE_UOMS = ("Litre", "Liter", "Lít", "L")
+LITRE_UOMS = ("Litre", "Liter", "L")
 INDICATOR = "HAND_RUB_PER_1000_PATIENT_DAYS"
 CENSUS = "Ward Daily Census"
 SCREEN_SLUG = "hoa-chat"
@@ -207,7 +207,9 @@ def choose_source(period, department, item, keep_source, reason):
 		frappe.throw(_("Write why this source is kept."))
 	docs = _posted(period, department, item)
 	if not any(doc.duplicate_status == AWAITING for doc in docs):
-		frappe.throw(_("This department and item have no duplicate sources to resolve in {0}.").format(period))
+		frappe.throw(
+			_("This department and item have no duplicate sources to resolve in {0}.").format(period)
+		)
 	if keep_source not in {doc.source for doc in docs}:
 		frappe.throw(_("Source {0} has no record to keep.").format(_(keep_source)))
 	text = _("Duplicate source; kept {0}: {1}").format(_(keep_source), reason)
@@ -318,7 +320,7 @@ def _empty_litres():
 
 
 def summary(year, quarter, department=None) -> dict:
-	"""Báo cáo quý: lít theo loại × khoa (bỏ bộ Chờ xác nhận), toàn viện, VST nhanh / 1.000 ngày nằm viện."""
+	"""Báo cáo quý: lít theo loại x khoa (bỏ bộ Chờ xác nhận), toàn viện, VST nhanh / 1.000 ngày nằm viện."""
 	periods = quarter_periods(year, quarter)
 	by_department: dict[str, dict] = {}
 	for row in monthly(periods[0], periods[-1], department):
@@ -346,10 +348,15 @@ def summary(year, quarter, department=None) -> dict:
 		dept["no_litre"] += row.no_litre
 	names = dict(
 		frappe.get_all(
-			"Department", filters={"name": ["in", list(by_department) or [""]]}, fields=["name", "department_name"], as_list=True
+			"Department",
+			filters={"name": ["in", list(by_department) or [""]]},
+			fields=["name", "department_name"],
+			as_list=True,
 		)
 	)
-	departments = sorted(by_department.values(), key=lambda d: (names.get(d["department"]) or d["department"]).casefold())
+	departments = sorted(
+		by_department.values(), key=lambda d: (names.get(d["department"]) or d["department"]).casefold()
+	)
 	total = {"litres": _empty_litres(), "awaiting": 0, "no_litre": 0}
 	for dept in departments:
 		dept["department_name"] = names.get(dept["department"]) or dept["department"]

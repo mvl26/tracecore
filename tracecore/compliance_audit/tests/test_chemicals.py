@@ -1,4 +1,4 @@
-"""Hóa chất KSNK theo khoa–tháng từ 3 nguồn (FEAT-066; FR-M12-12, FR-M12-12.1, FR-M12-12.2; UC-46; A-142)."""
+"""Hóa chất KSNK theo khoa-tháng từ 3 nguồn (FEAT-066; FR-M12-12, FR-M12-12.1, FR-M12-12.2; UC-46; A-142)."""
 
 from unittest.mock import patch
 
@@ -20,7 +20,9 @@ class ChemicalCase(FrappeTestCase):
 		self.surg = factories.make_department("KSNK Test Ngoại")
 		self.rub = cf.make_chemical("TC-HC-VST", "Hand Rub")
 		self.soap = cf.make_chemical("TC-HC-XP", "Soap")
-		self.surface = cf.make_chemical("TC-HC-BM", "Surface Disinfectant", stock_uom=cf.BOTTLE, litre_factor=2)
+		self.surface = cf.make_chemical(
+			"TC-HC-BM", "Surface Disinfectant", stock_uom=cf.BOTTLE, litre_factor=2
+		)
 		self.plain = cf.make_chemical("TC-HC-NOTYPE", None)
 		self.period = today()[:7]
 		# mỗi test một khoa riêng: dữ liệu giữa các test trong class không bị hoàn tác
@@ -112,7 +114,9 @@ class TestDuplicates(ChemicalCase):
 				frappe.db.get_value(chemicals.DOCTYPE, name, "duplicate_status"), chemicals.AWAITING
 			)
 		rows = chemicals.monthly(self.period, self.period)
-		self.assertFalse([r for r in rows if r.department == self.dept and r.item == self.soap and not r.awaiting])
+		self.assertFalse(
+			[r for r in rows if r.department == self.dept and r.item == self.soap and not r.awaiting]
+		)
 		summary = chemicals.summary(*chemicals.quarter_of(self.period))
 		dept = next(d for d in summary["departments"] if d["department"] == self.dept)
 		self.assertEqual(dept["litres"]["Soap"], 0)
@@ -123,12 +127,18 @@ class TestDuplicates(ChemicalCase):
 		imported = cf.record(
 			self.soap, self.dept, 7, source=chemicals.IMPORT, source_ref="PX-2", source_row="k2"
 		)
-		cancelled = chemicals.choose_source(self.period, self.dept, self.soap, chemicals.IMPORT, "Pharmacy file is complete")
+		cancelled = chemicals.choose_source(
+			self.period, self.dept, self.soap, chemicals.IMPORT, "Pharmacy file is complete"
+		)
 		self.assertEqual(cancelled, [manual.name])
 		self.assertEqual(frappe.db.get_value(chemicals.DOCTYPE, manual.name, "docstatus"), 2)
-		self.assertEqual(frappe.db.get_value(chemicals.DOCTYPE, imported.name, "duplicate_status"), chemicals.KEPT)
+		self.assertEqual(
+			frappe.db.get_value(chemicals.DOCTYPE, imported.name, "duplicate_status"), chemicals.KEPT
+		)
 		self.assertTrue(
-			frappe.db.exists("Audit Log", {"ref_doctype": chemicals.DOCTYPE, "ref_name": manual.name, "action": "Cancel"})
+			frappe.db.exists(
+				"Audit Log", {"ref_doctype": chemicals.DOCTYPE, "ref_name": manual.name, "action": "Cancel"}
+			)
 		)
 		summary = chemicals.summary(*chemicals.quarter_of(self.period))
 		dept = next(d for d in summary["departments"] if d["department"] == self.dept)
@@ -157,15 +167,20 @@ class TestSummary(ChemicalCase):
 		summary = chemicals.summary(year, quarter)
 		dept = next(d for d in summary["departments"] if d["department"] == self.dept)
 		months = [
-			sum(r.qty_litre for r in chemicals.monthly(p, p, department=self.dept) if r.chemical_type == "Hand Rub")
+			sum(
+				r.qty_litre
+				for r in chemicals.monthly(p, p, department=self.dept)
+				if r.chemical_type == "Hand Rub"
+			)
 			for p in ("2026-01", "2026-02", "2026-03")
 		]
 		self.assertAlmostEqual(dept["litres"]["Hand Rub"], sum(months))
 		self.assertAlmostEqual(dept["litres"]["Hand Rub"], 6.75)
 		self.assertAlmostEqual(dept["litres"]["Surface Disinfectant"], 2)
-		self.assertAlmostEqual(summary["total"]["litres"]["Hand Rub"], sum(
-			d["litres"]["Hand Rub"] for d in summary["departments"]
-		))
+		self.assertAlmostEqual(
+			summary["total"]["litres"]["Hand Rub"],
+			sum(d["litres"]["Hand Rub"] for d in summary["departments"]),
+		)
 
 	def test_per_1000_patient_days_when_census_exists(self):
 		cf.record(self.rub, self.dept, 12, period="2026-04")
@@ -203,7 +218,15 @@ class TestSummary(ChemicalCase):
 		cf.record(self.rub, self.dept, 2, period="2026-10")
 		columns, data = report.execute({"year": 2026, "quarter": 4})[:2]
 		fields = [c["fieldname"] for c in columns]
-		for field in ("department", "hand_rub", "soap", "surface", "instrument", "other", "hand_rub_per_1000"):
+		for field in (
+			"department",
+			"hand_rub",
+			"soap",
+			"surface",
+			"instrument",
+			"other",
+			"hand_rub_per_1000",
+		):
 			self.assertIn(field, fields)
 		self.assertTrue(any(row.get("department") == self.dept and row["hand_rub"] == 2 for row in data))
 		self.assertTrue(data[-1].get("is_total"))

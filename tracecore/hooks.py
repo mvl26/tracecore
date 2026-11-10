@@ -500,7 +500,7 @@ doc_events = {
 	# chép nội dung vào Audit Log để giữ BRU-OCC-003
 	"Occupational Exposure": {"on_trash": "tracecore.core.audit.block_delete"},
 	"Staff Immunization": dict(_AUDIT_EVENTS),
-	# FEAT-066 (A-142): hóa chất KSNK theo khoa–tháng; không xóa, hủy phải có lý do
+	# FEAT-066 (A-142): hóa chất KSNK theo khoa-tháng; không xóa, hủy phải có lý do
 	"IC Chemical Consumption": dict(_AUDIT_EVENTS),
 }
 # FEAT-066 (A-142 Q2, ADR-009): Stock Entry ghi sổ/hủy → hóa chất KSNK xuất tới kho khoa (M12 không import M6);

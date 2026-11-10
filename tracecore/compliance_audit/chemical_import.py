@@ -15,7 +15,9 @@ from tracecore.core.importer import Column, ImportKind, Issue, department_ref
 KEY = "ic_chemical"
 ROLES = ("TC R09", "TC R11", "TC R01", "System Manager")
 COLUMNS = [
-	Column("issue_date", "Issue Date", required=True, kind="date", help="Day the pharmacy issued the chemical."),
+	Column(
+		"issue_date", "Issue Date", required=True, kind="date", help="Day the pharmacy issued the chemical."
+	),
 	Column("department", "Department", required=True, help="Department name or full name."),
 	Column("item", "Item Code", required=True, help="Item with an infection control chemical type."),
 	Column("qty", "Quantity", required=True, kind="float"),
@@ -51,7 +53,12 @@ def _row_issues(row) -> list[Issue]:
 	issues = []
 	if values.get("department") and not head["department"]:
 		issues.append(
-			Issue(row.row, "DEPARTMENT_NOT_FOUND", "department", _("Department {0} does not exist.").format(values["department"]))
+			Issue(
+				row.row,
+				"DEPARTMENT_NOT_FOUND",
+				"department",
+				_("Department {0} does not exist.").format(values["department"]),
+			)
 		)
 	item = head["item"]
 	if item and not frappe.db.exists("Item", item):
@@ -104,7 +111,9 @@ def write(unit) -> str:
 
 
 def can_import() -> bool:
-	return bool(set(frappe.get_roles()) & set(ROLES)) and bool(frappe.has_permission(chemicals.DOCTYPE, "create"))
+	return bool(set(frappe.get_roles()) & set(ROLES)) and bool(
+		frappe.has_permission(chemicals.DOCTYPE, "create")
+	)
 
 
 def import_kinds():

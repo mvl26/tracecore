@@ -120,6 +120,23 @@ SCREENS += [
 	},
 ]
 
+# FEAT-066 (A-142 Q4): hóa chất KSNK theo khoa-tháng & đơn vị thuê ngoài (UC-46). R09 (kế toán vật tư) và R02 vào Page
+# chỉ thấy màn này; R02, R10, R13 chỉ xem (quyền thật ở RPC và DocPerm)
+PAGE_ROLES += ("TC R02", "TC R09")
+OFFICE_ROLES += ("TC R02", "TC R09")
+READ_ONLY_ROLES += ("TC R02",)
+SCREENS += [
+	{
+		"slug": "hoa-chat",
+		"scr": "SCR-54",
+		"uc": "UC-46",
+		"label": "Chemicals and Outsourcing",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R02", "TC R09", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_54_hoa_chat.js",
+	},
+]
+
 
 def _badges(user):
 	total: dict[str, int] = {}

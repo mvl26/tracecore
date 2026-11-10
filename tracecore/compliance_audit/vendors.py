@@ -150,7 +150,9 @@ def overview(day=None) -> list[dict]:
 
 def _sent(event, supplier, marker) -> bool:
 	return bool(
-		frappe.db.exists("Notification Delivery", {"event_code": event, "ref_name": supplier, "message": marker})
+		frappe.db.exists(
+			"Notification Delivery", {"event_code": event, "ref_name": supplier, "message": marker}
+		)
 	)
 
 
@@ -212,7 +214,11 @@ def _remind_unaudited(day):
 	names = unaudited(day.year, quarter)
 	if not names:
 		return
-	labels = dict(frappe.get_all("Supplier", filters={"name": ["in", names]}, fields=["name", "supplier_name"], as_list=True))
+	labels = dict(
+		frappe.get_all(
+			"Supplier", filters={"name": ["in", names]}, fields=["name", "supplier_name"], as_list=True
+		)
+	)
 	marker = _("Quarter {0}/{1}: no outsourced vendor audit yet for {2}.").format(
 		quarter, day.year, ", ".join(labels.get(name, name) for name in names)
 	)
@@ -242,9 +248,9 @@ def warn_expired_license(doc, method=None):
 	state = status(doc.supplier, doc.audit_date)
 	if state["state"] == EXPIRED:
 		frappe.msgprint(
-			_("The license of vendor {0} has expired. The audit can still be saved; this is only a warning.").format(
-				doc.supplier
-			),
+			_(
+				"The license of vendor {0} has expired. The audit can still be saved; this is only a warning."
+			).format(doc.supplier),
 			indicator="orange",
 			alert=True,
 		)

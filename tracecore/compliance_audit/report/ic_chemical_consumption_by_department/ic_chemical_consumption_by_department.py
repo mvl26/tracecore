@@ -1,6 +1,6 @@
 """IC Chemical Consumption by Department — báo cáo hóa chất KSNK quý (FEAT-066; FR-M12-12, FR-M12-12.2; QĐ 38; UC-46).
 
-Lít theo 5 loại hóa chất × khoa của một quý (hoặc một tháng), dòng Toàn viện; bỏ bộ (tháng, khoa, item) đang "Chờ xác
+Lít theo 5 loại hóa chất x khoa của một quý (hoặc một tháng), dòng Toàn viện; bỏ bộ (tháng, khoa, item) đang "Chờ xác
 nhận" nguồn. Tổng quý = tổng 3 tháng vì cùng cộng từ bảng tháng (``chemicals.summary``). Lít dung dịch VST nhanh /
 1.000 ngày nằm viện khi M13 có mẫu số, không thì ghi "Chưa có mẫu số". Xuất Excel/PDF bằng nút có sẵn của Frappe.
 """
@@ -28,9 +28,23 @@ TYPE_LABELS = {
 
 
 def _columns():
-	columns = [{"fieldname": "department", "label": _("Department"), "fieldtype": "Link", "options": "Department", "width": 200}]
+	columns = [
+		{
+			"fieldname": "department",
+			"label": _("Department"),
+			"fieldtype": "Link",
+			"options": "Department",
+			"width": 200,
+		}
+	]
 	columns += [
-		{"fieldname": field, "label": _(TYPE_LABELS[kind]), "fieldtype": "Float", "precision": 1, "width": 130}
+		{
+			"fieldname": field,
+			"label": _(TYPE_LABELS[kind]),
+			"fieldtype": "Float",
+			"precision": 1,
+			"width": 130,
+		}
 		for kind, field in TYPE_FIELDS.items()
 	]
 	columns += [
@@ -81,7 +95,7 @@ def execute(filters=None):
 	summary = chemicals.summary(year, quarter, filters.department or None)
 	data = [_row(entry, entry["department"]) for entry in summary["departments"]]
 	data.append(_row(summary["total"], is_total=True))
-	message = _("Quarter {0}/{1}; departments with duplicate sources are counted after a source is chosen.").format(
-		quarter, year
-	)
+	message = _(
+		"Quarter {0}/{1}; departments with duplicate sources are counted after a source is chosen."
+	).format(quarter, year)
 	return _columns(), data, message

@@ -10,6 +10,7 @@
   "period",
   "posting_date",
   "department",
+  "department_name",
   "column_break_main",
   "item",
   "item_name",
@@ -69,6 +70,14 @@
    "search_index": 1
   },
   {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
    "fieldname": "column_break_main",
    "fieldtype": "Column Break"
   },
@@ -85,7 +94,9 @@
    "fieldname": "item_name",
    "fieldtype": "Data",
    "label": "Item Name",
-   "read_only": 1
+   "read_only": 1,
+   "fetch_from": "item.item_name",
+   "in_list_view": 1
   },
   {
    "fieldname": "chemical_type",
@@ -136,7 +147,6 @@
    "label": "Source",
    "options": "Stock Entry\nImport\nManual Entry",
    "reqd": 1,
-   "in_list_view": 1,
    "in_standard_filter": 1
   },
   {
@@ -189,7 +199,6 @@
    "options": "\nAwaiting Confirmation\nKept",
    "read_only": 1,
    "allow_on_submit": 1,
-   "in_list_view": 1,
    "in_standard_filter": 1
   },
   {
@@ -210,7 +219,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-10 12:00:00.000000",
+ "modified": "2026-11-10 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Compliance Audit",
  "name": "IC Chemical Consumption",

@@ -1,4 +1,4 @@
-"""IC Chemical Consumption — hóa chất KSNK theo khoa–tháng (FEAT-066, A-142). Luật ở ``compliance_audit.chemicals``."""
+"""IC Chemical Consumption — hóa chất KSNK theo khoa-tháng (FEAT-066, A-142). Luật ở ``compliance_audit.chemicals``."""
 
 from frappe.model.document import Document
 
