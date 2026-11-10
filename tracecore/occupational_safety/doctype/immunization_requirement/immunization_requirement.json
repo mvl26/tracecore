@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "autoname": "field:vaccine",
+ "creation": "2026-11-09 18:00:00.000000",
+ "description": "Vaccine required for staff at risk, by department or designation. Only approved requirements count for coverage and reminders.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vaccine",
+  "status",
+  "column_break_doses",
+  "doses_required",
+  "dose_interval_days",
+  "booster_interval_days",
+  "section_scope",
+  "departments",
+  "designations",
+  "section_approval",
+  "approved_by",
+  "approved_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "vaccine",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vaccine",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nApproved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_doses",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "doses_required",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Doses Required",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "dose_interval_days",
+   "fieldtype": "Int",
+   "label": "Days Between Doses",
+   "non_negative": 1
+  },
+  {
+   "description": "0 means no booster reminder.",
+   "fieldname": "booster_interval_days",
+   "fieldtype": "Int",
+   "label": "Booster Interval (Days)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "section_scope",
+   "fieldtype": "Section Break",
+   "label": "Staff at Risk"
+  },
+  {
+   "fieldname": "departments",
+   "fieldtype": "Table MultiSelect",
+   "label": "Departments",
+   "options": "Immunization Requirement Department"
+  },
+  {
+   "fieldname": "designations",
+   "fieldtype": "Table MultiSelect",
+   "label": "Designations",
+   "options": "Immunization Requirement Designation"
+  },
+  {
+   "fieldname": "section_approval",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Occupational Safety",
+ "name": "Immunization Requirement",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

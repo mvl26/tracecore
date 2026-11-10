@@ -341,6 +341,13 @@ HTTP_STATUS: dict[str, int] = {
 	"AUDIT_ITEM_UNKNOWN": 422,
 	"AUDIT_NC_NOT_SUGGESTED": 409,
 	"AUDIT_NOT_ALLOWED": 403,
+	# FEAT-071 A-137: báo phơi nhiễm, xử trí, mốc theo dõi
+	"EXPOSURE_TIME_INVALID": 422,
+	"EXPOSURE_NO_EMPLOYEE": 422,
+	"EXPOSURE_HANDLING_INCOMPLETE": 422,
+	"EXPOSURE_STEP_INVALID": 422,
+	"EXPOSURE_NOT_ALLOWED": 403,
+	"EXPOSURE_STATUS_INVALID": 409,
 }
 DEFAULT_HTTP_STATUS = 409
 # Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ

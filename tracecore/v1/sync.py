@@ -27,9 +27,12 @@ from tracecore.v1._common import (
 )
 
 AUDIT_FUNCTION = "AUDIT"
-# chức năng có màn chạy offline (A-40); FEAT-060: phiếu giám sát KSNK trên PDA (ADR-015)
-OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE", AUDIT_FUNCTION)
-SNAPSHOT_ROLES = tuple(dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES, *AUDIT_ROLES)))
+# chức năng có màn chạy offline (A-40); FEAT-060: phiếu giám sát KSNK trên PDA (ADR-015);
+# FEAT-071: báo phơi nhiễm (khóa mã hóa mã BN nguồn cho R08, R11, R12)
+OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE", AUDIT_FUNCTION, "EXPOSURE")
+SNAPSHOT_ROLES = tuple(
+	dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES, *AUDIT_ROLES, "TC R08", "TC R11", "TC R12"))
+)
 STATUS_ROLES = ("TC R02", "TC R01", "TC R10", "System Manager")
 SAVEPOINT = "tc_sync_snapshot"
 
@@ -194,8 +197,13 @@ def snapshot(station, client_ts=None, token=None):
 	elif function == AUDIT_FUNCTION:
 		# FEAT-060 (SCR-52, NFR-AVAIL-05): mẫu phiếu đã duyệt + khoa được làm phiếu để ghi phiếu khi mất mạng
 		data = pda.context(session.employee if session else None, on)
+	elif function == "EXPOSURE":
+		data = {"patient_key": crypto.patient_public_key()}
 	else:
 		return {"ok": True, "function": functions[0] if functions else None, "offline": False}
+	if "EXPOSURE" in functions:
+		# FEAT-071: PDA của khoa thường có nhiều chức năng; báo phơi nhiễm offline luôn cần khóa mã hóa mã BN nguồn
+		data = {**data, "patient_key": data.get("patient_key") or crypto.patient_public_key()}
 	return {"ok": True, "function": function, "offline": True, **data}
 
 

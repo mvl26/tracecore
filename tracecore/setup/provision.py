@@ -31,6 +31,7 @@ STATION_ROLE_BY_FUNCTION = {
 	"USE": "TC R08",
 	"LINEN": "TC R07",
 	"WASTE": "TC R07",
+	"EXPOSURE": "TC R08",  # FEAT-071: PDA của khoa
 }
 # Trạm không gán chức năng (tra cứu Set ID chung): role theo loại khu của trạm
 STATION_ROLE_BY_ZONE_TYPE = {

@@ -179,3 +179,12 @@
 @media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-grid, .tc-ksnk .tc-ksnk-kpis { grid-template-columns: minmax(0, 1fr); }
 }
+/* FEAT-071 SCR-64: số KPI dạng <strong>, hai cột lịch theo dõi / tiêm chủng, form xử trí */
+.tc-ksnk .tc-ksnk-kpi strong { color: var(--tc-text-heading); font-size: var(--tc-fs-4xl); }
+.tc-ksnk .tc-ksnk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--tc-sp-3); align-items: start; }
+.tc-ksnk .tc-ksnk-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--tc-sp-3); margin: var(--tc-sp-3) 0; }
+.tc-ksnk .tc-ksnk-form label { display: flex; flex-direction: column; gap: var(--tc-sp-1); font-size: var(--tc-fs-sm); }
+.tc-ksnk .tc-ksnk-date { display: inline-block; width: auto; }
+@media (max-width: 900px) {
+	.tc-ksnk .tc-ksnk-cols { grid-template-columns: 1fr; }
+}

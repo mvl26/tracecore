@@ -69,3 +69,7 @@ DT-MICISO,Microbiology Isolate,R,,,,,,,,,,RW,,,"FEAT-067 A-136 (FR-M14-01.3, ADR
 DT-MDRO,MDRO Rule,RWS,,,,,,,,,,R,,R,"FEAT-067 A-136 (BRU-MDR-001): quy tắc đa kháng có phiên bản; R01 ghi sổ = duyệt"
 DT-IMPBATCH,Import Batch,,R,,,,,,,,R,R,,,"FEAT-067 A-136: R11 xem kết quả lô import vi sinh; giữ R02, R10 như FEAT-011"
 DT-ICTRN,Trainee Induction,RW,RW,,,,,,,,R,R,R,R,"FEAT-059 A-135 (FR-M11-11, UC-42): R01, R02 ghi sinh viên thực tập; R12 chỉ khoa mình (User Permission Department)"
+DT-OCCEXP,Occupational Exposure,RW,,,,,,,,,,RW,,,"FEAT-071 A-137 j (FR-M16-05, BRU-OCC-003): chỉ R01, R11; nhân viên báo và xem hồ sơ của mình qua RPC; R02, R13 chỉ số liệu tổng hợp"
+DT-EXPTPL,Exposure Follow-up Template,RW,,,,,,,,,,R,,,"FEAT-071 A-137 Q3 (FR-M16-04, BRU-OCC-004): R01 nhập và duyệt phiên bản"
+DT-IMMREQ,Immunization Requirement,RW,R,,,,,,,,,R,,,"FEAT-071 A-137 f (FR-M16-07, BRU-OCC-004): R01 nhập và duyệt"
+DT-STFIMM,Staff Immunization,RW,RW,,,,,,,,,R,,,"FEAT-071 (FR-M16-05.2, FR-M16-07): R02 ghi tiêm chủng"

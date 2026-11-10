@@ -120,6 +120,8 @@ page_js = {
 		"public/js/station_waste_handover.js",
 		# FEAT-060: phiếu giám sát KSNK theo mục trên PDA (SCR-52), chức năng trạm AUDIT
 		"public/js/station_audit.js",
+		# FEAT-071: báo phơi nhiễm nghề nghiệp (SCR-63) trên PDA của khoa, chức năng trạm EXPOSURE
+		"public/js/station_exposure.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -155,6 +157,11 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js", "Batch": "pub
 
 # application home page (will override Website Settings)
 # home_page = "login"
+
+# FEAT-071 (A-137 Q4): Cổng khoa báo phơi nhiễm; file ở www/ksnk_khoa (package Python không có dấu gạch ngang)
+website_route_rules = [
+	{"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"},
+]
 
 # website user home page (by Role)
 # role_home_page = {
@@ -222,6 +229,8 @@ after_migrate = [
 	"tracecore.microbiology.seed.ensure_seed",
 	# FEAT-059 (A-135 e): quyền R01/R02 cho HRMS Training Program / Event / Result
 	"tracecore.infection_program.permissions.ensure_permissions",
+	# FEAT-071 (A-137): mẫu theo dõi phơi nhiễm, vaccine mẫu ở trạng thái Nháp; không ghi đè bản R01 đã sửa
+	"tracecore.occupational_safety.config.ensure_default_config",
 ]
 
 # Uninstallation
@@ -278,11 +287,14 @@ permission_query_conditions = {
 	"Notification Delivery": "tracecore.core.notification.delivery_query_conditions",
 	# FEAT-060 FR-M12-08.1: R08/R12 chỉ thấy phiếu giám sát của khoa có User Permission
 	"Audit Session": "tracecore.compliance_audit.sessions.query_conditions",
+	# FEAT-071 (FR-M16-05, BRU-OCC-003): hồ sơ phơi nhiễm chỉ R01, R11; nhân viên xem hồ sơ của mình qua RPC
+	"Occupational Exposure": "tracecore.occupational_safety.exposure.query_conditions",
 }
 
 has_permission = {
 	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
 	"Audit Session": "tracecore.compliance_audit.sessions.has_permission",
+	"Occupational Exposure": "tracecore.occupational_safety.exposure.has_permission",
 }
 
 # DocType Class
@@ -476,6 +488,10 @@ doc_events = {
 		"validate": "tracecore.instrument.media.validate_file",
 	},
 	"Station Competency": dict(_AUDIT_EVENTS),
+	# FEAT-071: hồ sơ phơi nhiễm không xóa được; lịch sử sửa bằng track_changes (chỉ người đọc được hồ sơ mới xem), không
+	# chép nội dung vào Audit Log để giữ BRU-OCC-003
+	"Occupational Exposure": {"on_trash": "tracecore.core.audit.block_delete"},
+	"Staff Immunization": dict(_AUDIT_EVENTS),
 }
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
@@ -523,6 +539,9 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
 # M10 phân loại sai (FEAT-047, A-60 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
 tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
+# M10 sự cố phơi nhiễm vật sắc nhọn (FEAT-071, FR-M10-06.1, FR-M16-02, A-137): (incident doc) -> tên Occupational
+# Exposure; M16 tạo hồ sơ, gọi lại cùng sự cố không tạo trùng (BRU-OCC-002). Incident CAPA không import M16.
+tracecore_exposure_incident = ["tracecore.occupational_safety.exposure.from_incident"]
 # M10 ghi sổ / hủy phiếu bàn giao (FEAT-049, A-62): (doc) -> tên Cost Entry | None; M7 lập chi phí thuê ngoài, M10 không import M7
 tracecore_after_waste_handover = ["tracecore.costing.from_waste.on_handover"]
 tracecore_after_waste_handover_cancel = ["tracecore.costing.from_waste.on_handover_cancel"]
@@ -611,6 +630,8 @@ tracecore_ic_indicators = [
 	"tracecore.compliance_audit.indicators.register",  # FEAT-060: tỷ lệ phiếu giám sát Đạt
 	# FEAT-059: tỷ lệ đào tạo KSNK cơ bản, chuyên trách/Hội đồng/mạng lưới, sinh viên thực tập (FR-M11-09..11)
 	"tracecore.infection_program.training.register",
+	# FEAT-071: báo phơi nhiễm đúng hạn, hoàn thành theo dõi, bao phủ tiêm chủng
+	"tracecore.occupational_safety.indicators.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -621,6 +642,8 @@ tracecore_ksnk_badges = [
 	"tracecore.compliance_audit.nc.badges",  # FEAT-060: phiếu chờ quyết định NC
 	# FEAT-067: chủng đa kháng có thông báo chưa đọc của người dùng (SCR-59)
 	"tracecore.microbiology.alerts.badges",
+	# FEAT-071: số hồ sơ phơi nhiễm mới chờ xử trí (SCR-64)
+	"tracecore.occupational_safety.exposure.badges",
 ]
 # FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
 tracecore_mdro_detected = []
@@ -706,6 +729,8 @@ scheduler_events = {
 		"tracecore.infection_program.reminders.run_daily",
 		# FEAT-060, FR-M12-03: giao việc giám sát ngày đầu kỳ, nhắc khoa chưa đạt mục tiêu tuần cuối kỳ
 		"tracecore.compliance_audit.schedule.run_daily",
+		# FEAT-071, FR-M16-04.1, 07, 08, NFR-PRIV-02: nhắc mốc theo dõi phơi nhiễm, tiêm chủng, thuốc dự phòng, xóa định danh
+		"tracecore.occupational_safety.jobs.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

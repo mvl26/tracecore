@@ -106,6 +106,21 @@ SCREENS += [
 ]
 
 
+# FEAT-071 (A-137 j): phơi nhiễm nghề nghiệp & tiêm chủng (UC-55); R13 chỉ thấy số liệu tổng hợp, R02 ghi tiêm chủng
+# trên Desk list Staff Immunization
+SCREENS += [
+	{
+		"slug": "phoi-nhiem",
+		"scr": "SCR-64",
+		"uc": "UC-55",
+		"label": "Exposure and Immunization",
+		"group": "environment",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_64_phoi_nhiem.js",
+	},
+]
+
+
 def _badges(user):
 	total: dict[str, int] = {}
 	for result in extension.run(BADGE_HOOK, user):

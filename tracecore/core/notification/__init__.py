@@ -107,6 +107,13 @@ EVENTS = {
 	"MDRO_DETECTED": ("New multidrug-resistant isolate", "Urgent", 1, 1, ("TC R11",)),
 	# FEAT-059 (A-135 d): nhắc nhân viên chưa học KSNK cơ bản; người nhận do nơi gọi truyền (user của nhân viên)
 	"IC_TRAINING_REMINDER": ("Infection control training reminder", "Normal", 0, 0, ()),
+	# FEAT-071 (A-137 e): phơi nhiễm nghề nghiệp báo ngay R01, R11 (FR-M16-01, 01.1); mốc theo dõi (nhân viên do nơi gọi
+	# truyền); mẫu theo dõi chưa duyệt; tiêm chủng đến hạn (nhân viên + R02, như FR-M4-01.4); thuốc dự phòng (FR-M16-08)
+	"EXPOSURE_REPORTED": ("Occupational exposure reported", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"EXPOSURE_FOLLOWUP_DUE": ("Exposure follow-up step due", "Normal", 0, 1, ("TC R11",)),
+	"EXPOSURE_TEMPLATE_MISSING": ("Exposure follow-up template missing", "Normal", 0, 0, ("TC R01",)),
+	"IMMUNIZATION_DUE": ("Staff vaccination due", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"PEP_STOCK_ALERT": ("Post-exposure prophylaxis stock alert", "Normal", 1, 0, ("TC R01",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

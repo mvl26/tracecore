@@ -31,6 +31,8 @@ DEFAULT_FUNCTIONS = (
 	("WASTE", "Waste collection", 110, None, "waste", 0),
 	# FEAT-060 (ADR-015, SCR-52): phiếu giám sát KSNK trên PDA tại khoa; không ghi cổng
 	("AUDIT", "Compliance audit", 120, None, "audit", 0),
+	# FEAT-071 (A-137, SCR-63): báo phơi nhiễm nghề nghiệp trên PDA của khoa, ngoài chuỗi xử lý dụng cụ
+	("EXPOSURE", "Exposure report", 130, None, "exposure", 0),
 )
 
 # (loại vùng, màu, vùng kế tiếp qua máy hai cửa, chức năng được phép)
@@ -38,7 +40,7 @@ DEFAULT_ZONE_TYPES = (
 	("Dirty", "Dirty zone", "Clean", ("RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD")),
 	("Clean", "Clean zone", "Sterile", ("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD")),
 	("Sterile", "Sterile zone", None, ("STERI_UNLOAD", "PUTAWAY", "ISSUE")),
-	("Department", "Department zone", None, ("USE", "AUDIT")),
+	("Department", "Department zone", None, ("USE", "AUDIT", "EXPOSURE")),
 	("Linen", "Default color", None, ("LINEN",)),
 	("Waste", "Waste zone", None, ("WASTE",)),
 )

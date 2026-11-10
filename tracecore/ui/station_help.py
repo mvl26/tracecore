@@ -30,6 +30,7 @@ STATION_KEYS = (
 	"LINEN",
 	"WASTE",
 	"AUDIT",
+	"EXPOSURE",  # FEAT-071
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
@@ -119,6 +120,11 @@ DEFAULT_STEPS = {
 		"Choose the audit template and the department, then the person or role observed.",
 		"Answer every item; a Fail answer needs a note.",
 		"Submit the audit; without network it is saved and sent when the connection returns.",
+	),
+	"EXPOSURE": (
+		"Choose the type of exposure and check the time it happened.",
+		"Enter what you were doing, the device and whether the source is known.",
+		"Check and send the report, then follow the first-aid procedure shown.",
 	),
 	GENERAL: (
 		"Open the address of your station: it ends with ?station= and the station code, for example ?station=TR-001. Ask R10 for the code if you do not know it.",
