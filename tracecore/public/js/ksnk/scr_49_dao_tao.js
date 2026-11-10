@@ -3,9 +3,11 @@
 // Thẻ chỉ số, tỷ lệ đào tạo KSNK cơ bản theo khoa (nhắc người chưa học), chuyên trách/Hội đồng/mạng lưới chưa đạt,
 // sinh viên thực tập. Trạng thái luôn có chữ (server đã dịch), không chỉ màu. Sinh viên đào tạo muộn chỉ cảnh báo
 // (A-135 c, không chặn); lỗi chặn của nút nhắc hiện alert-error inline: kết quả → lý do → hành động.
-// Phần "Cải tiến chất lượng & đề tài" của SCR-49 do FEAT-072 thêm.
+// FEAT-072 (A-149; FR-M11-12, FR-M11-13): thẻ dự án cải tiến, khối "Cải tiến chất lượng & đề tài" (giai đoạn PDCA có
+// chữ) và khối tự đánh giá chất lượng hai năm liền theo mục.
 
 const TC_TRAINING_STATUS = "tracecore.v1.ksnk_training.status";
+const TC_IMPROVEMENT_STATUS = "tracecore.v1.ksnk_improvement.status"; // FEAT-072
 const TC_TRAINING_REMIND = "tracecore.v1.ksnk_training.remind";
 const TC_TRAINING_GROUPS = {
 	full_time: "Full-time IC staff",
@@ -49,7 +51,7 @@ const TcKsnkScr49 = {
 		);
 	},
 
-	kpiHtml(data, esc) {
+	kpiHtml(data, esc, improvement) {
 		const self = TcKsnkScr49;
 		const total = data.basic.total;
 		const core = data.core.total;
@@ -82,6 +84,7 @@ const TcKsnkScr49 = {
 				__("{0} late · {1} not trained", [trainees.late || 0, trainees.not_trained || 0]),
 				esc
 			) +
+			(improvement ? self.improvementKpi(improvement, esc) : "") +
 			`</div>`
 		);
 	},
@@ -238,6 +241,126 @@ const TcKsnkScr49 = {
 		);
 	},
 
+	// --- FEAT-072: cải tiến chất lượng & đề tài, tự đánh giá ------------------------------------------------------
+
+	improvementKpi(imp, esc) {
+		const p = imp.improvement || {};
+		return TcKsnkScr49.kpiCard(
+			"",
+			__("Improvement projects / research"),
+			String(p.total || 0),
+			__("{0} completed · {1} in progress", [p.completed || 0, p.in_progress || 0]),
+			esc
+		);
+	},
+
+	stageBadge(status, label) {
+		const cls = { Completed: "is-pass", Cancelled: "is-neutral" }[status] || "is-info";
+		return { cls, label: label || status || "—" };
+	},
+
+	improvementHtml(imp, esc) {
+		const self = TcKsnkScr49;
+		const rows = ((imp.improvement && imp.improvement.projects) || [])
+			.map(
+				(r) =>
+					`<tr><td><a href="/app/ic-improvement-project/${encodeURIComponent(
+						r.name
+					)}"><code class="tc-ksnk-code">${esc(r.name)}</code></a></td>` +
+					`<td>${esc(r.title)}<br><small>${esc(
+						r.project_type_label || ""
+					)}</small></td>` +
+					`<td>${self.badgeHtml(self.stageBadge(r.status, r.status_label), esc)}</td>` +
+					`<td>${esc(r.result_summary || "—")}</td></tr>`
+			)
+			.join("");
+		const body = rows
+			? `<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
+					__("ID", null, "IC Training")
+			  )}</th>` +
+			  `<th scope="col">${esc(__("Project Title"))}</th><th scope="col">${esc(
+					__("PDCA Stage")
+			  )}</th>` +
+			  `<th scope="col">${esc(
+					__("Result Summary")
+			  )}</th></tr></thead><tbody>${rows}</tbody></table>`
+			: `<p class="tc-ksnk-note">${esc(__("No improvement projects in this year."))}</p>`;
+		const add = imp.can_edit
+			? `<p class="tc-ksnk-note"><a href="/app/ic-improvement-project/new">${esc(
+					__("Add improvement project")
+			  )}</a></p>`
+			: "";
+		return (
+			`<section class="tc-ksnk-card"><h3>${esc(__("Quality improvement and research"))} ` +
+			`<code class="tc-ksnk-tag">IC Improvement Project · CI-</code></h3>${body}${add}` +
+			self.selfAssessmentHtml(imp, esc) +
+			`</section>`
+		);
+	},
+
+	scoreLabel(row) {
+		if (!row) return "—";
+		if (row.score_pct === null || row.score_pct === undefined) return __("not scored");
+		return `${String(row.score_pct).replace(".", ",")} %`;
+	},
+
+	selfAssessmentHtml(imp, esc) {
+		const self = TcKsnkScr49;
+		const sa = imp.self_assessment || { items: [] };
+		const open = imp.template
+			? ` <a href="/app/audit-session/new?audit_template=${encodeURIComponent(
+					imp.template
+			  )}">${esc(__("Open form"))}</a>`
+			: ` ${esc(
+					__(
+						"No approved self-assessment template yet: approve it on the audit template screen."
+					)
+			  )}`;
+		const intro = `<div class="tc-ksnk-alert is-info" role="status">${esc(
+			__(
+				"The annual infection control quality self-assessment uses the audit template type Quality Self-Assessment."
+			)
+		)}${open}</div>`;
+		if (!sa.current && !sa.previous) {
+			return (
+				intro +
+				`<p class="tc-ksnk-note">${esc(
+					__("No self-assessment posted for these two years.")
+				)}</p>`
+			);
+		}
+		const rows = (sa.items || [])
+			.map(
+				(r) =>
+					`<tr><td>${esc(r.question)}<br><small>${esc(r.section)}</small></td>` +
+					`<td>${esc(r.previous_label || "—")}</td><td>${esc(r.current_label || "—")}${
+						r.changed
+							? ` <span class="tc-ksnk-badge is-info">${esc(__("Changed"))}</span>`
+							: ""
+					}</td></tr>`
+			)
+			.join("");
+		const note = sa.both
+			? ""
+			: `<p class="tc-ksnk-note">${esc(
+					__("Only one of the two years has a posted self-assessment.")
+			  )}</p>`;
+		return (
+			intro +
+			`<h4>${esc(
+				__("Quality self-assessment {0} vs {1}", [sa.year, sa.previous_year])
+			)}</h4>` +
+			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Item"))}</th>` +
+			`<th scope="col">${esc(String(sa.previous_year))}</th><th scope="col">${esc(
+				String(sa.year)
+			)}</th></tr></thead>` +
+			`<tbody><tr class="is-total"><th scope="row">${esc(__("Score"))}</th><td>${esc(
+				self.scoreLabel(sa.previous)
+			)}</td>` +
+			`<td>${esc(self.scoreLabel(sa.current))}</td></tr>${rows}</tbody></table>${note}`
+		);
+	},
+
 	actionsHtml(data, esc) {
 		return (
 			`<div class="tc-ksnk-filters" data-region="actions">` +
@@ -284,18 +407,25 @@ const TcKsnkScr49 = {
 		);
 	},
 
-	pageHtml(data, ctx, esc) {
+	pageHtml(data, ctx, esc, imp) {
 		const self = TcKsnkScr49;
 		const readOnly = !!(ctx && ctx.readOnly);
+		// FEAT-072: sinh viên thực tập và cải tiến chất lượng hai cột (bố cục SCR-49)
+		const lower = imp
+			? `<div class="tc-ksnk-cols"><div>${self.traineesHtml(
+					data,
+					esc
+			  )}</div><div>${self.improvementHtml(imp, esc)}</div></div>`
+			: self.traineesHtml(data, esc);
 		return (
 			`<p class="tc-ksnk-head"><span class="tc-ksnk-badge is-info">${esc(
 				__("Year {0}", [data.year])
 			)}</span></p>` +
 			self.filtersHtml(data, ctx, esc) +
-			self.kpiHtml(data, esc) +
+			self.kpiHtml(data, esc, imp) +
 			self.departmentsHtml(data, readOnly, esc) +
 			self.coreHtml(data, esc) +
-			self.traineesHtml(data, esc) +
+			lower +
 			self.actionsHtml(data, esc)
 		);
 	},
@@ -341,8 +471,8 @@ const TcKsnkScr49 = {
 		});
 	},
 
-	paint(el, ctx, data) {
-		el.innerHTML = TcKsnkScr49.pageHtml(data, ctx, ctx.esc);
+	paint(el, ctx, data, imp) {
+		el.innerHTML = TcKsnkScr49.pageHtml(data, ctx, ctx.esc, imp);
 		TcKsnkScr49.bind(el, ctx, data);
 	},
 
@@ -352,9 +482,13 @@ const TcKsnkScr49 = {
 			const args = {};
 			if (ctx.filters.year) args.year = ctx.filters.year;
 			if (ctx.filters.department) args.department = ctx.filters.department;
-			const data = await ctx.get(TC_TRAINING_STATUS, args);
+			// FEAT-072: khối cải tiến & tự đánh giá theo năm (không lọc khoa — dự án không thuộc khoa)
+			const [data, imp] = await Promise.all([
+				ctx.get(TC_TRAINING_STATUS, args),
+				ctx.get(TC_IMPROVEMENT_STATUS, args.year ? { year: args.year } : {}),
+			]);
 			if (!ctx.isCurrent()) return;
-			TcKsnkScr49.paint(el, ctx, data);
+			TcKsnkScr49.paint(el, ctx, data, imp);
 		} catch (error) {
 			if (!ctx.isCurrent()) return;
 			el.innerHTML = ctx.state("error", (error && error.message) || "");

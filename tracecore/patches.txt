@@ -61,3 +61,5 @@ tracecore.patches.v0_1.a138_ic_staff_role
 tracecore.patches.v0_1.a145_qd38_criteria
 # FEAT-068 (A-146 Q1): cờ khoa lâm sàng điền sẵn từ khoa nội trú cho site đang chạy
 tracecore.patches.v0_1.a146_department_clinical
+# FEAT-072 (A-149 Q3, Q4): mẫu Nháp tự đánh giá / cắt ngang, QD38-QI tự chấm cho site đang chạy
+tracecore.patches.v0_1.a149_ic_improvement_seed

@@ -17,6 +17,9 @@
   "mode",
   "supplier",
   "device_episode",
+  "patient_code",
+  "patient_code_masked",
+  "patient_code_hash",
   "section_people",
   "observer",
   "observer_name",
@@ -139,6 +142,33 @@
    "search_index": 1,
    "depends_on": "eval:doc.audit_type==\"Prevention Bundle\"",
    "description": "Open device episode checked by this prevention bundle audit."
+  },
+  {
+   "depends_on": "eval:doc.patient_code_masked || doc.audit_type == 'Other'",
+   "description": "Point prevalence survey only: patient code, stored encrypted. Never enter the patient's name.",
+   "fieldname": "patient_code",
+   "fieldtype": "Password",
+   "label": "Patient Code",
+   "no_copy": 1
+  },
+  {
+   "depends_on": "eval:doc.patient_code_masked",
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Patient Code (masked)",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "patient_code_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Patient Code Hash",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1,
+   "translatable": 0
   },
   {
    "fieldname": "section_people",
@@ -307,7 +337,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 09:00:00.000000",
+ "modified": "2026-11-10 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Compliance Audit",
  "name": "Audit Session",

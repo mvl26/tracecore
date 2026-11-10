@@ -9,6 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
+from tracecore.compliance_audit import prevalence  # FEAT-072
 from tracecore.core import audit, versioning
 
 DOCTYPE = "Audit Template"
@@ -96,7 +97,13 @@ def validate(doc):
 			frappe.throw(_("Row {0}: weight cannot be negative.").format(row.idx))
 		if row.answer_type != BINARY_ITEM:
 			row.is_critical = 0  # chỉ mục Đạt/Không đạt mới chấm được, nên chỉ chúng là trọng yếu
-	if doc.scoring_method in SCORED and not any(row.answer_type == BINARY_ITEM for row in doc.items):
+	# FEAT-072 (A-149 Q1): mẫu điều tra cắt ngang (mục PREV-HAI) chỉ ghi Có/Không, không chấm điểm
+	survey = any(row.item_code == prevalence.HAI_ITEM for row in doc.items)
+	if (
+		doc.scoring_method in SCORED
+		and not survey
+		and not any(row.answer_type == BINARY_ITEM for row in doc.items)
+	):
 		frappe.throw(_("Scoring method {0} needs at least one Pass/Fail item.").format(_(doc.scoring_method)))
 
 

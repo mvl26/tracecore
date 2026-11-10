@@ -129,6 +129,13 @@ V112_ROWS.update(
 	}
 )
 
+# FEAT-072 (A-149 Q2, FR-M11-12): R01 ghi dự án cải tiến / đề tài; R10, R11, R13 đọc; không ai xóa
+V112_ROWS.update(
+	{
+		"DT-ICIMP": ("IC Improvement Project", {"R01": "RW", "R10": "R", "R11": "R", "R13": "R"}),
+	}
+)
+
 
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):

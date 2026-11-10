@@ -38,7 +38,13 @@ CRITERIA = (
 		"amr_surveillance",
 	),
 	("QD38-ISO", "Isolation rooms meet requirements", "M14 Isolation", "isolation_rooms"),
-	("QD38-QI", "Infection control quality improvement projects completed", "M11 Improvement projects", ""),
+	# FEAT-072 (A-149 Q4): tự chấm theo dự án cải tiến hoàn thành trong năm
+	(
+		"QD38-QI",
+		"Infection control quality improvement projects completed",
+		"M11 Improvement projects",
+		"ic_improvement_completed",
+	),
 	("QD38-IT", "Information technology applied in infection control", "Manual entry with evidence", ""),
 )
 

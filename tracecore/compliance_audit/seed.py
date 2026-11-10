@@ -214,6 +214,123 @@ def rows():
 	return result
 
 
+# FEAT-072 (A-149 Q3): mẫu Nháp tự đánh giá chất lượng KSNK năm (FR-M11-13, TT 35/2024) và điều tra cắt ngang
+# (FR-M13-14.1, loại Khác, mục `PREV-HAI` / `PREV-ABX` kiểu Lựa chọn Có/Không). Nội dung khởi đầu do dev soạn, R01 sửa
+# và duyệt tại bệnh viện; không nằm trong 8 mẫu của FR-M12-02.1.
+YES_NO = "Yes\nNo"
+SELF_ASSESSMENT = (
+	# (mã mục, phần, câu hỏi, trọng số, trọng yếu)
+	(
+		"TDG-01",
+		"Organization and plan",
+		"The infection control council and network are established and active",
+		1,
+		0,
+	),
+	(
+		"TDG-02",
+		"Organization and plan",
+		"The annual infection control plan is approved and followed up",
+		1,
+		0,
+	),
+	(
+		"TDG-03",
+		"Surveillance and training",
+		"Healthcare-associated infection surveillance is carried out and reported",
+		1,
+		0,
+	),
+	(
+		"TDG-04",
+		"Surveillance and training",
+		"Hand hygiene compliance is monitored and fed back to departments",
+		1,
+		0,
+	),
+	("TDG-05", "Surveillance and training", "Staff are trained in infection control every year", 1, 0),
+	("TDG-06", "Practice and environment", "Instruments are reprocessed centrally with traceability", 1, 0),
+	("TDG-07", "Practice and environment", "Isolation rooms meet requirements", 1, 0),
+	(
+		"TDG-08",
+		"Practice and environment",
+		"Medical waste is segregated, collected and treated as regulated",
+		1,
+		0,
+	),
+	(
+		"TDG-09",
+		"Quality improvement",
+		"At least one infection control quality improvement project is completed",
+		1,
+		0,
+	),
+)
+SURVEY_SECTION = "Patient on the survey day"
+SURVEY_ITEMS = (
+	("PREV-HAI", "The patient has a healthcare-associated infection on the survey day"),
+	("PREV-ABX", "The patient is receiving antibiotics on the survey day"),
+)
+SURVEY_TEMPLATES = {
+	"TDG-KSNK": (
+		"Annual infection control quality self-assessment",
+		"Quality Self-Assessment",
+		"TT 35/2024/TT-BYT",
+	),
+	"CAT-NGANG": ("Point prevalence survey of healthcare-associated infection", "Other", "QD 3916/QD-BYT"),
+}
+
+
+def survey_source_texts():
+	texts = [text for title, _type, legal_ref in SURVEY_TEMPLATES.values() for text in (title, legal_ref)]
+	texts += [text for _code, section, question, _w, _c in SELF_ASSESSMENT for text in (section, question)]
+	texts += [SURVEY_SECTION, *(question for _code, question in SURVEY_ITEMS)]
+	return list(dict.fromkeys(texts))
+
+
+def survey_rows():
+	result = []
+	for code, (title, audit_type, legal_ref) in SURVEY_TEMPLATES.items():
+		if audit_type == "Other":
+			items = [
+				{
+					"item_code": item_code,
+					"section": _t(SURVEY_SECTION),
+					"question": _t(question),
+					"answer_type": "Choice",
+					"options": YES_NO,
+					"weight": 0,
+					"is_critical": 0,
+				}
+				for item_code, question in SURVEY_ITEMS
+			]
+		else:
+			items = [
+				{
+					"item_code": item_code,
+					"section": _t(section),
+					"question": _t(question),
+					"answer_type": "Pass/Fail",
+					"weight": weight,
+					"is_critical": critical,
+				}
+				for item_code, section, question, weight, critical in SELF_ASSESSMENT
+			]
+		result.append(
+			{
+				"template_code": code,
+				"title": _t(title),
+				"audit_type": audit_type,
+				"scoring_method": WEIGHTED,
+				"min_sample": 0,
+				"legal_ref": _t(legal_ref),
+				"effective_from": today(),
+				"items": items,
+			}
+		)
+	return result
+
+
 def ensure_seed():
 	"""Hook ``after_install`` / ``after_migrate``; trả tên các mẫu vừa tạo."""
-	return templates.install_templates(rows())
+	return templates.install_templates(rows()) + templates.install_templates(survey_rows())  # FEAT-072

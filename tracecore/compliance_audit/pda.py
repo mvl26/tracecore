@@ -9,7 +9,12 @@
 import frappe
 from frappe.utils import cint, getdate
 
-from tracecore.compliance_audit import hand_hygiene, sessions, templates
+from tracecore.compliance_audit import (
+	hand_hygiene,
+	prevalence,  # FEAT-072
+	sessions,
+	templates,
+)
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Audit Session"
@@ -54,6 +59,9 @@ def active_templates(on=None, methods=templates.SCORED):
 	for row in rows:
 		latest.setdefault(row.template_code, row)
 	result = list(latest.values())
+	# FEAT-072 (A-149 Q1): phiếu cắt ngang cần mã BN, chỉ ghi trên WEB SCR-58 — không đưa lên PDA
+	survey = set(prevalence.template_codes())
+	result = [row for row in result if row.template_code not in survey]
 	for row in result:
 		row["items"] = frappe.get_all(
 			templates.ITEM_DOCTYPE,

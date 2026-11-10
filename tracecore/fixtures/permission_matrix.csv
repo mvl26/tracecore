@@ -85,3 +85,4 @@ DT-ICQD38,IC QD38 Criterion,RW,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, NFR-MAI
 DT-ICSA,IC Self Assessment,RWS,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, .1): R01 lập và ghi sổ tự đánh giá năm; R10, R11, R13 đọc"
 DT-ISOORD,Isolation Order,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-068 A-146 Q5 (FR-M14-06, BRU-MDR-003): R08, R12 tạo/đóng lệnh khoa mình (lệnh do đa kháng chỉ R01, R11 đóng); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
 DT-ISOROOM,Isolation Room,RW,,,,,,,R,,,R,R,R,"FEAT-068 A-146 Q2, Q5 (FR-M14-07): R01 duy trì phòng và đánh giá đạt; R08, R12 đọc phòng khoa mình; R11, R13 đọc"
+DT-ICIMP,IC Improvement Project,RW,,,,,,,,,R,R,,R,"FEAT-072 A-149 Q2 (FR-M11-12, UC-42): R01 ghi dự án cải tiến chất lượng / đề tài nghiên cứu; R10, R11, R13 đọc; không ai xóa (dùng Hủy)"

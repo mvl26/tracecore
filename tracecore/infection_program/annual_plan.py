@@ -10,7 +10,11 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, now_datetime, today
 
-from tracecore.infection_program import reminders
+from tracecore.infection_program import (  # FEAT-072 (A-149): cải tiến, tự đánh giá
+	improvement,
+	quality_review,
+	reminders,
+)
 
 DOCTYPE = "IC Annual Plan"
 VALUE_DOCTYPE = "IC Indicator Value"
@@ -330,6 +334,9 @@ def year_summary(name):
 		"objectives": doc.objectives or "",
 		"approved_by": doc.approved_by_name or doc.approved_by or "",
 		"approved_on": doc.approved_on,
+		# FEAT-072 (A-149, FR-M11-12, FR-M11-13): số dự án cải tiến hoàn thành và tự đánh giá chất lượng của năm
+		"improvement_completed": len(improvement.completed(f"{year}-01-01", f"{year}-12-31")),
+		"self_assessment": quality_review.latest(year),
 	}
 
 

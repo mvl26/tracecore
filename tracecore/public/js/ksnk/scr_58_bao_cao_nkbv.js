@@ -156,6 +156,9 @@ const TcKsnkScr58 = {
 			const data = await ctx.get(TC_HAI_REPORT, { period: ctx.filters.period || "" });
 			if (!ctx.isCurrent()) return;
 			el.innerHTML = TcKsnkScr58.pageHtml(data, ctx.esc);
+			// FEAT-072: khối điều tra cắt ngang (tải riêng, lỗi khối này không làm hỏng phần tỷ suất)
+			el.insertAdjacentHTML("beforeend", '<div data-region="pps"></div>');
+			TcKsnkPps.render(el.querySelector('[data-region="pps"]'), ctx);
 			const select = el.querySelector('[data-filter="period"]');
 			if (select)
 				select.addEventListener("change", () => {
@@ -171,3 +174,295 @@ const TcKsnkScr58 = {
 
 window.TcKsnkScreens["bao-cao-nkbv"] = TcKsnkScr58;
 window.TcKsnkScr58 = TcKsnkScr58;
+
+// FEAT-072 (A-149 Q1; FR-M13-14; UC-50 bước 5, 6, E2, E3): điều tra cắt ngang — chọn ngày, bảng tỷ lệ hiện mắc theo khoa
+// (số liệu tổng hợp, R13 xem được); R01/R11 ghi từng người bệnh bằng đợt thiết bị đang đặt hoặc mã BN (không họ tên).
+// Số khảo sát 0 → "Không tính". Lỗi chặn hiện alert-error inline: kết quả → lý do → hành động.
+const TC_PPS_OVERVIEW = "tracecore.v1.hai_prevalence.overview";
+const TC_PPS_CANDIDATES = "tracecore.v1.hai_prevalence.candidates";
+const TC_PPS_RECORD = "tracecore.v1.hai_prevalence.record";
+
+const TcKsnkPps = {
+	day: "",
+	form: { department: "", episode: "", masked: "" },
+
+	date(value) {
+		if (!value) return "—";
+		const [y, m, d] = String(value).slice(0, 10).split("-");
+		return `${d}/${m}/${y}`;
+	},
+
+	pct(value) {
+		if (value === null || value === undefined) return __("Not calculated");
+		return `${Number(value).toFixed(1).replace(".", ",")} %`;
+	},
+
+	tableHtml(p, esc) {
+		const self = TcKsnkPps;
+		const row = (label, r, cls) =>
+			`<tr${cls ? ` class="${cls}"` : ""}><td>${esc(label)}</td>` +
+			`<td class="is-num">${esc(r.surveyed)}</td><td class="is-num">${esc(r.hai)}</td>` +
+			`<td class="is-num">${esc(self.pct(r.rate))}</td><td class="is-num">${esc(
+				self.pct(r.antibiotic_rate)
+			)}</td></tr>`;
+		const rows = (p.departments || []).map((r) =>
+			row(r.department_name || r.department, r, "")
+		);
+		if (!rows.length)
+			return `<p class="tc-ksnk-state">${esc(__("No patient surveyed on this day."))}</p>`;
+		return (
+			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
+				__("Department")
+			)}</th>` +
+			`<th scope="col" class="is-num">${esc(__("Patients surveyed"))}</th>` +
+			`<th scope="col" class="is-num">${esc(__("With HAI"))}</th>` +
+			`<th scope="col" class="is-num">${esc(__("Prevalence"))}</th>` +
+			`<th scope="col" class="is-num">${esc(__("Antibiotic use"))}</th></tr></thead>` +
+			`<tbody>${rows.join("")}${row(
+				__("Hospital"),
+				p.hospital || {},
+				"is-total"
+			)}</tbody></table>`
+		);
+	},
+
+	datesHtml(p, esc) {
+		const self = TcKsnkPps;
+		const current = String(p.date || "").slice(0, 10);
+		const days = (p.dates || []).map((d) => String(d).slice(0, 10));
+		if (current && !days.includes(current)) days.unshift(current);
+		const options = days
+			.map(
+				(d) =>
+					`<option value="${esc(d)}"${d === current ? " selected" : ""}>${esc(
+						self.date(d)
+					)}</option>`
+			)
+			.join("");
+		return (
+			`<div class="tc-ksnk-filters"><label>${esc(__("Survey day"))}` +
+			`<select class="form-control" data-pps="day">${options}</select></label>` +
+			`<label>${esc(
+				__("New survey day")
+			)}<input type="date" class="form-control tc-ksnk-date" ` +
+			`data-pps="new-day" value=""></label></div>`
+		);
+	},
+
+	formHtml(p, ctx, esc) {
+		const self = TcKsnkPps;
+		if (!p.can_record) return "";
+		if (!p.template)
+			return `<div class="tc-ksnk-alert is-warn" role="status">${esc(
+				__(
+					"No approved point prevalence survey template: approve it on the audit template screen before recording."
+				)
+			)}</div>`;
+		const departments = ((ctx && ctx.departments) || [])
+			.map(
+				(d) =>
+					`<option value="${esc(d.name)}"${
+						d.name === self.form.department ? " selected" : ""
+					}>${esc(d.department_name || d.name)}</option>`
+			)
+			.join("");
+		const yesNo = (name) =>
+			`<select class="form-control" data-pps="${name}"><option value="">—</option>` +
+			`<option value="Yes">${esc(__("Yes"))}</option><option value="No">${esc(
+				__("No")
+			)}</option></select>`;
+		return (
+			`<h4>${esc(__("Record a patient"))}</h4>` +
+			`<div class="tc-ksnk-form"><label>${esc(__("Department"))}` +
+			`<select class="form-control" data-pps="department"><option value="">—</option>${departments}</select></label>` +
+			`<label>${esc(
+				__("Patient code (no name)")
+			)}<input type="text" class="form-control" data-pps="code" ` +
+			`autocomplete="off" value=""></label>` +
+			`<label>${esc(__("Healthcare-associated infection"))}${yesNo("hai")}</label>` +
+			`<label>${esc(__("Receiving antibiotics"))}${yesNo("abx")}</label>` +
+			`<button type="button" class="btn btn-primary" data-pps="record">${esc(
+				__("Record patient")
+			)}</button></div>` +
+			`<div data-region="pps-candidates"></div><div data-region="pps-alert"></div>`
+		);
+	},
+
+	candidatesHtml(rows, esc) {
+		const self = TcKsnkPps;
+		if (!rows.length)
+			return `<p class="tc-ksnk-note">${esc(
+				__(
+					"No open device episode left to survey in this department; enter other patients by code."
+				)
+			)}</p>`;
+		return (
+			`<p class="tc-ksnk-note">${esc(
+				__(
+					"Patients with an open device episode, not yet surveyed (choose one, or enter a code):"
+				)
+			)}</p><div class="tc-ksnk-filters">` +
+			rows
+				.map((r) => {
+					const ep = r.episodes[0];
+					const on = self.form.episode === ep.name;
+					return `<button type="button" class="btn ${
+						on ? "btn-primary" : "btn-default"
+					}" data-pps="episode" data-episode="${esc(ep.name)}" data-masked="${esc(
+						r.patient_code_masked
+					)}" aria-pressed="${on}"><code class="tc-ksnk-code">${esc(
+						r.patient_code_masked
+					)}</code> · ${esc(
+						r.episodes.map((e) => __(e.device_type)).join(", ")
+					)}</button>`;
+				})
+				.join("") +
+			`</div>`
+		);
+	},
+
+	blockHtml(error, esc) {
+		const e = error || {};
+		return (
+			`<div class="tc-ksnk-alert" role="alert"><strong>${esc(
+				e.title || __("Survey not recorded")
+			)}</strong>` +
+			`<div>${esc(e.reason || "")}</div><div>${esc(e.action || "")}</div></div>`
+		);
+	},
+
+	cardHtml(p, ctx, esc) {
+		const self = TcKsnkPps;
+		return (
+			`<section class="tc-ksnk-card"><h3>${esc(__("Point prevalence survey"))} ` +
+			`<code class="tc-ksnk-tag">${esc(__("day {0}", [self.date(p.date)]))}</code></h3>` +
+			self.datesHtml(p, esc) +
+			self.tableHtml(p, esc) +
+			`<p class="tc-ksnk-note">${esc(
+				__(
+					"Each patient is recorded by an encrypted patient code, never by name. Prevalence = patients with HAI / patients surveyed."
+				)
+			)}</p>` +
+			self.formHtml(p, ctx, esc) +
+			`</section>`
+		);
+	},
+
+	async loadCandidates(region, ctx) {
+		const self = TcKsnkPps;
+		const box = region.querySelector('[data-region="pps-candidates"]');
+		if (!box || !self.form.department) {
+			if (box) box.innerHTML = "";
+			return;
+		}
+		try {
+			const res = await ctx.get(TC_PPS_CANDIDATES, {
+				date: self.day,
+				department: self.form.department,
+			});
+			if (!ctx.isCurrent()) return;
+			box.innerHTML = self.candidatesHtml(res.candidates || [], ctx.esc);
+			self.bindCandidates(region, ctx);
+		} catch (error) {
+			box.innerHTML = ctx.state("error", (error && error.message) || "");
+		}
+	},
+
+	bindCandidates(region, ctx) {
+		const self = TcKsnkPps;
+		region.querySelectorAll('[data-pps="episode"]').forEach((button) => {
+			button.addEventListener("click", () => {
+				const same = self.form.episode === button.dataset.episode;
+				self.form.episode = same ? "" : button.dataset.episode;
+				self.form.masked = same ? "" : button.dataset.masked;
+				const code = region.querySelector('[data-pps="code"]');
+				if (code) code.value = "";
+				self.loadCandidates(region, ctx);
+			});
+		});
+	},
+
+	bind(region, ctx) {
+		const self = TcKsnkPps;
+		const value = (key) => {
+			const input = region.querySelector(`[data-pps="${key}"]`);
+			return input ? input.value : "";
+		};
+		const day = region.querySelector('[data-pps="day"]');
+		if (day)
+			day.addEventListener("change", () => {
+				self.day = day.value;
+				self.render(region, ctx);
+			});
+		const fresh = region.querySelector('[data-pps="new-day"]');
+		if (fresh)
+			fresh.addEventListener("change", () => {
+				if (!fresh.value) return;
+				self.day = fresh.value;
+				self.render(region, ctx);
+			});
+		const department = region.querySelector('[data-pps="department"]');
+		if (department)
+			department.addEventListener("change", () => {
+				self.form = { department: department.value, episode: "", masked: "" };
+				self.loadCandidates(region, ctx);
+			});
+		const code = region.querySelector('[data-pps="code"]');
+		if (code)
+			code.addEventListener("input", () => {
+				if (code.value && self.form.episode) {
+					self.form.episode = "";
+					self.form.masked = "";
+					self.loadCandidates(region, ctx);
+				}
+			});
+		const record = region.querySelector('[data-pps="record"]');
+		if (record)
+			record.addEventListener("click", () => {
+				const alertBox = region.querySelector('[data-region="pps-alert"]');
+				record.disabled = true;
+				tracecore.desk_call({
+					method: TC_PPS_RECORD,
+					args: {
+						date: self.day,
+						department: self.form.department,
+						hai: value("hai"),
+						antibiotic: value("abx"),
+						device_episode: self.form.episode || "",
+						patient_code: self.form.episode ? "" : value("code"),
+					},
+					on_ok: () => {
+						self.form.episode = "";
+						self.form.masked = "";
+						self.render(region, ctx);
+					},
+					on_block: (error) => {
+						record.disabled = false;
+						if (alertBox) alertBox.innerHTML = self.blockHtml(error, ctx.esc);
+					},
+					on_fail: () => {
+						record.disabled = false;
+					},
+				});
+			});
+	},
+
+	async render(region, ctx) {
+		const self = TcKsnkPps;
+		if (!region) return;
+		region.innerHTML = ctx.state("loading");
+		try {
+			const p = await ctx.get(TC_PPS_OVERVIEW, self.day ? { date: self.day } : {});
+			if (!ctx.isCurrent()) return;
+			self.day = String(p.date || "").slice(0, 10);
+			region.innerHTML = self.cardHtml(p, ctx, ctx.esc);
+			self.bind(region, ctx);
+			self.loadCandidates(region, ctx);
+		} catch (error) {
+			if (!ctx.isCurrent()) return;
+			region.innerHTML = ctx.state("error", (error && error.message) || "");
+		}
+	},
+};
+
+window.TcKsnkPps = TcKsnkPps;
