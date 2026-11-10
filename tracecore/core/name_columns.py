@@ -43,6 +43,8 @@ CODE_IS_NAME = frozenset(
 		"DocType",
 		"UOM",
 		"Zone Type",
+		"Designation",  # HRMS: name = designation_name (FEAT-071, Immunization Requirement)
+		"Immunization Requirement",  # FEAT-071: autoname field:vaccine, mã chính là tên vaccine
 	}
 )
 

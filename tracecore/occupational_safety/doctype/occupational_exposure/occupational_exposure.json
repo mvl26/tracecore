@@ -9,6 +9,7 @@
   "employee",
   "employee_name",
   "department",
+  "department_name",
   "occupation",
   "column_break_report",
   "status",
@@ -70,6 +71,16 @@
    "in_standard_filter": 1,
    "label": "Department",
    "options": "Department"
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
   },
   {
    "fieldname": "occupation",
@@ -289,7 +300,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 18:00:00.000000",
+ "modified": "2026-11-10 09:07:53.429848",
  "modified_by": "Administrator",
  "module": "Occupational Safety",
  "name": "Occupational Exposure",
