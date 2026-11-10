@@ -98,7 +98,10 @@ class TestBundleSession(FrappeTestCase):
 
 	def test_closed_episode_before_audit_day_rejected(self):
 		episode = _episode(
-			self.ward, inserted_on=add_days(today(), -5), removed_on=add_days(today(), -2), code="BN-BUNDLE-0416"
+			self.ward,
+			inserted_on=add_days(today(), -5),
+			removed_on=add_days(today(), -2),
+			code="BN-BUNDLE-0416",
 		).name
 		self.assertEqual(self._block(self._session(episode)).code, "AUDIT_EPISODE_INVALID")
 

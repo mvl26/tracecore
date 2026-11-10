@@ -47,7 +47,9 @@ def _departments():
 	"""Khoa người gọi được thấy: R08/R12 theo User Permission; vai trò rộng → khoa nội trú."""
 	allowed = permissions.allowed_departments()
 	if allowed is None:
-		return [{"name": row.name, "label": row.department_name or row.name} for row in census.inpatient_wards()]
+		return [
+			{"name": row.name, "label": row.department_name or row.name} for row in census.inpatient_wards()
+		]
 	rows = frappe.get_all(
 		"Department",
 		filters={"name": ["in", allowed or [""]], "disabled": 0},
@@ -82,7 +84,9 @@ def _view(department, census_date, on):
 	}
 
 
-def _census_values(department, census_date, patient_count, vent_count, cvc_count, urinary_catheter_count, admissions):
+def _census_values(
+	department, census_date, patient_count, vent_count, cvc_count, urinary_catheter_count, admissions
+):
 	return {
 		"department": department,
 		"census_date": census_date,
@@ -277,4 +281,3 @@ def device_episode_portal(
 		return _episode(action, values, episode, removed_on, getdate())
 	except BlockedError as error:
 		return reject_block(error.block, episodes.DOCTYPE, episode, client_ts=timestamp)
-

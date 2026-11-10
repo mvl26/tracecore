@@ -1,7 +1,7 @@
 """Đợt thiết bị xâm lấn `Device Episode` (FEAT-062; FR-M13-04, .1, .2, FR-M12-07, BRU-HAI-005, ADR-010; A-141 a).
 
 - Mã người bệnh: trường Password + hash + bản che qua `core.patient_code`; không trường họ tên; danh sách chỉ mã che.
-- Số ngày thiết bị = (ngày rút hoặc hôm nay) − ngày đặt + 1 (đếm cả hai đầu; ảnh SCR-55: đặt 29/10, hôm nay 02/11 → 5).
+- Số ngày thiết bị = (ngày rút hoặc hôm nay) - ngày đặt + 1 (đếm cả hai đầu; ảnh SCR-55: đặt 29/10, hôm nay 02/11 → 5).
 - Một người bệnh (hash) không có hai đợt cùng loại thiết bị đang mở tại một khoa.
 - ``bundle_status``: phiếu gói dự phòng ghi sổ trong ngày của đợt (M12 trỏ về qua Link `Audit Session.device_episode`).
 """
@@ -83,7 +83,9 @@ def validate(doc):
 			)
 	if doc.birth_year and not MIN_BIRTH_YEAR <= cint(doc.birth_year) <= now.year:
 		raise _date_invalid(
-			_("Birth year {0} is not valid.").format(doc.birth_year), _("Correct the birth year."), "birth_year"
+			_("Birth year {0} is not valid.").format(doc.birth_year),
+			_("Correct the birth year."),
+			"birth_year",
 		)
 	doc.status = CLOSED if doc.removed_on else OPEN
 	doc.device_days = device_days(doc.inserted_on, doc.removed_on) if doc.removed_on else None

@@ -22,7 +22,12 @@ CODE = "BN-API-00004821"
 def make_census_station():
 	if not frappe.db.exists("Zone Station", STATION):
 		zone = frappe.get_doc(
-			{"doctype": "Zone Station", "zone_station_name": "MS Ward zone", "is_zone": 1, "zone_type": "Department"}
+			{
+				"doctype": "Zone Station",
+				"zone_station_name": "MS Ward zone",
+				"is_zone": 1,
+				"zone_type": "Department",
+			}
 		).insert(ignore_permissions=True)
 		frappe.get_doc(
 			{
@@ -153,7 +158,11 @@ class TestPortal(HaiApiCase):
 		self.assertEqual([row["name"] for row in context["episodes"]], [opened["episode"]["name"]])
 		self.assertNotIn(CODE, frappe.as_json(context))
 		closed = self.portal(
-			api.device_episode_portal, action="close", episode=opened["episode"]["name"], removed_on=today(), client_ts=TS
+			api.device_episode_portal,
+			action="close",
+			episode=opened["episode"]["name"],
+			removed_on=today(),
+			client_ts=TS,
 		)
 		self.assertEqual((closed["episode"]["status"], closed["episode"]["device_days"]), ("Closed", 5))
 
@@ -180,7 +189,9 @@ class TestPortal(HaiApiCase):
 	def test_episode_of_other_department_cannot_be_closed(self):
 		episode = f.make_episode(self.other)
 		frappe.set_user(self.r12)
-		result = self.portal(api.device_episode_portal, action="close", episode=episode.name, removed_on=today(), client_ts=TS)
+		result = self.portal(
+			api.device_episode_portal, action="close", episode=episode.name, removed_on=today(), client_ts=TS
+		)
 		self.assertEqual(result["error"]["code"], "HAI_NOT_ALLOWED")
 
 	def test_bundle_status_in_context(self):

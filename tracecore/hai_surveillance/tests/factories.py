@@ -30,7 +30,9 @@ def census_values(department, census_date=None, patients=18, vent=9, cvc=11, uri
 
 
 def make_census(department, census_date=None, source="Manual", **counts):
-	doc = frappe.get_doc({"doctype": "Ward Daily Census", "source": source, **census_values(department, census_date, **counts)})
+	doc = frappe.get_doc(
+		{"doctype": "Ward Daily Census", "source": source, **census_values(department, census_date, **counts)}
+	)
 	return doc.insert(ignore_permissions=True)
 
 
@@ -69,7 +71,13 @@ def bundle_template(bundle="VAP"):
 			"scoring_method": "All or None",
 			"effective_from": today(),
 			"items": [
-				{"item_code": f"{bundle}-0{i}", "section": bundle, "question": f"Item {i}", "answer_type": "Pass/Fail", "weight": 1}
+				{
+					"item_code": f"{bundle}-0{i}",
+					"section": bundle,
+					"question": f"Item {i}",
+					"answer_type": "Pass/Fail",
+					"weight": 1,
+				}
 				for i in (1, 2)
 			],
 		}
@@ -86,7 +94,9 @@ def observer():
 def post_bundle(episode, result="Pass"):
 	"""Phiếu gói dự phòng đã ghi sổ cho đợt (hôm nay)."""
 	template = bundle_template(BUNDLE_BY_DEVICE[episode.device_type])
-	items = frappe.get_all("Audit Template Item", filters={"parent": template}, pluck="item_code", order_by="idx")
+	items = frappe.get_all(
+		"Audit Template Item", filters={"parent": template}, pluck="item_code", order_by="idx"
+	)
 	doc = frappe.get_doc(
 		{
 			"doctype": "Audit Session",
@@ -107,7 +117,9 @@ def post_bundle(episode, result="Pass"):
 def make_dept_user(email, role, department):
 	"""Người dùng có role và User Permission Department (R08/R12 của khoa)."""
 	user = factories.make_user(email, [role])
-	if not frappe.db.exists("User Permission", {"user": user, "allow": "Department", "for_value": department}):
+	if not frappe.db.exists(
+		"User Permission", {"user": user, "allow": "Department", "for_value": department}
+	):
 		frappe.get_doc(
 			{"doctype": "User Permission", "user": user, "allow": "Department", "for_value": department}
 		).insert(ignore_permissions=True)

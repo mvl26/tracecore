@@ -42,7 +42,9 @@ def blocked(code, title, reason, action, **extra):
 
 
 def find(department, census_date):
-	return frappe.db.get_value(DOCTYPE, {"department": department, "census_date": getdate(census_date)}, "name")
+	return frappe.db.get_value(
+		DOCTYPE, {"department": department, "census_date": getdate(census_date)}, "name"
+	)
 
 
 def _duplicate(name, census_date):
@@ -208,7 +210,10 @@ def denominators(department, from_date, to_date):
 	(FR-M13-04, A-141 b) — dữ liệu cho tỷ suất FEAT-063."""
 	sums = frappe.get_all(
 		DOCTYPE,
-		filters={"department": department, "census_date": ["between", [getdate(from_date), getdate(to_date)]]},
+		filters={
+			"department": department,
+			"census_date": ["between", [getdate(from_date), getdate(to_date)]],
+		},
 		fields=[f"sum({field}) as {field}" for field in ("patient_count", *DEVICE_FIELDS)],
 	)[0]
 	source = device_day_source(department)

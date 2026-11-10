@@ -1,0 +1,112 @@
+/* Cổng khoa — mẫu số ngày & đợt thiết bị (SCR-55 DEPT, FEAT-062). Nền .tc-dept lấy từ bao_phoi_nhiem.css (FEAT-071).
+   Chỉ token --tc-*; chữ ≥ 16, chạm ≥ 48, nút chính 56; mã (MS-, DTB-, mã BN che) Courier New. */
+.tc-census-portal {
+	max-width: none;
+}
+
+.tc-dept-ref {
+	font-size: var(--tc-fs-sm);
+	font-weight: var(--tc-fw-regular);
+	color: var(--tc-text-muted);
+}
+
+.tc-cen-card {
+	margin: 0 0 var(--tc-sp-3);
+	padding: var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-md);
+	background: var(--tc-card);
+}
+
+.tc-cen-card h2 {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-xl);
+	color: var(--tc-border-strong);
+}
+
+.tc-cen-pick {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-3);
+	align-items: flex-end;
+}
+
+.tc-cen-counts {
+	display: grid;
+	/* tự xuống hàng trên PDA: mỗi ô rộng tối thiểu --tc-inst-min */
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tc-inst-min)), 1fr));
+	gap: var(--tc-sp-3);
+}
+
+.tc-dept .tc-cen-counts input {
+	font-family: var(--tc-font-mono);
+	font-size: var(--tc-fs-xl);
+}
+
+.tc-dept .tc-field .is-error {
+	border: var(--tc-bw-thick) solid var(--tc-fail);
+}
+
+.tc-cen-field-error {
+	margin: var(--tc-sp-1) 0 0;
+	color: var(--tc-fail-text);
+	font-size: var(--tc-fs-sm);
+}
+
+.tc-cen-grid {
+	display: grid;
+	/* hai cột trên máy tính, một cột trên PDA (mỗi cột tối thiểu --tc-modal-w) */
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tc-modal-w)), 1fr));
+	gap: var(--tc-sp-3);
+}
+
+.tc-cen-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--tc-fs-base);
+}
+
+.tc-cen-table th {
+	padding: var(--tc-sp-2);
+	background: var(--tc-border-strong);
+	color: var(--tc-on-primary);
+	text-align: left;
+}
+
+.tc-cen-table td {
+	padding: var(--tc-sp-2);
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+	vertical-align: middle;
+}
+
+.tc-cen-table .tc-num {
+	text-align: right;
+	font-family: var(--tc-font-mono);
+}
+
+.tc-cen-scroll {
+	overflow-x: auto;
+}
+
+.tc-alert-warn {
+	border-left: var(--tc-bw-thick) solid var(--tc-warn-fill);
+}
+
+.tc-alert-info {
+	border-left: var(--tc-bw-thick) solid var(--tc-border-strong);
+}
+
+.tc-dept .tc-badge-g {
+	background: var(--tc-pass);
+	color: var(--tc-on-primary);
+}
+
+.tc-dept .tc-badge-r {
+	background: var(--tc-fail);
+	color: var(--tc-on-primary);
+}
+
+.tc-dept .tc-badge-x {
+	background: var(--tc-neutral-fill);
+	color: var(--tc-on-primary);
+}

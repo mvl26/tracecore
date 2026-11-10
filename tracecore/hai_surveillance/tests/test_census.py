@@ -48,7 +48,9 @@ class TestCensusRules(FrappeTestCase):
 
 	def test_edit_cannot_move_to_another_day(self):
 		first = census.save(f.census_values(self.ward))
-		block = self._code(census.save, f.census_values(self.ward, census_date=add_days(today(), -2)), name=first.name)
+		block = self._code(
+			census.save, f.census_values(self.ward, census_date=add_days(today(), -2)), name=first.name
+		)
 		self.assertEqual(block.code, "CENSUS_DUPLICATE")
 
 	def test_device_count_above_patients_blocked_with_field(self):

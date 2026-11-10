@@ -32,11 +32,15 @@ class TestCensusReminder(IsolatedTestCase):
 		for department in (self.ward, self.clinic):
 			frappe.db.delete("Ward Daily Census", {"department": department})
 			frappe.db.delete("Device Episode", {"department": department})
-		frappe.db.delete("Notification Delivery", {"event_code": ["in", [reminders.CENSUS_EVENT, reminders.BUNDLE_EVENT]]})
+		frappe.db.delete(
+			"Notification Delivery", {"event_code": ["in", [reminders.CENSUS_EVENT, reminders.BUNDLE_EVENT]]}
+		)
 		self.r12 = f.make_dept_user("r12-reminder@test.local", f.R12, self.ward)
 		self.r08 = f.make_dept_user("r08-reminder@test.local", f.R08, self.ward)
 		self.r11 = f.factories.make_user("r11-reminder@test.local", [f.R11])
-		frappe.db.set_single_value("IC Program Settings", {"census_reminder_time": "10:00:00", "bundle_reminder_time": "11:00:00"})
+		frappe.db.set_single_value(
+			"IC Program Settings", {"census_reminder_time": "10:00:00", "bundle_reminder_time": "11:00:00"}
+		)
 
 	def test_before_time_nothing(self):
 		reminders.run(_at(9, 45))

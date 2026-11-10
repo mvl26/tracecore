@@ -43,7 +43,9 @@ def department_users(department, roles):
 		filters={"role": ["in", list(roles)], "parenttype": "User", "parent": ["in", permitted]},
 		pluck="parent",
 	)
-	return sorted(set(frappe.get_all("User", filters={"name": ["in", holders or [""]], "enabled": 1}, pluck="name")))
+	return sorted(
+		set(frappe.get_all("User", filters={"name": ["in", holders or [""]], "enabled": 1}, pluck="name"))
+	)
 
 
 def _sent(event, department, marker):
@@ -71,7 +73,9 @@ def remind_census(day):
 	for ward in census.inpatient_wards():
 		if ward.name in entered:
 			continue
-		marker = _("No daily census of {0} for {1}.").format(ward.department_name or ward.name, formatdate(target))
+		marker = _("No daily census of {0} for {1}.").format(
+			ward.department_name or ward.name, formatdate(target)
+		)
 		if _sent(CENSUS_EVENT, ward.name, marker):
 			continue
 		notification.emit(

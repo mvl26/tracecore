@@ -2264,6 +2264,35 @@ html:has(.tc-work) {
 	color: var(--tc-fail-text);
 }
 
+/* FEAT-062 SCR-55: mẫu số ngày — ô số lớn một cột, danh sách đợt thiết bị (mã che Courier New) */
+.tc-census .tc-cen-count {
+	font-size: var(--tc-fs-xl);
+	font-family: var(--tc-font-mono);
+}
+
+.tc-cen-episodes {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-cen-episode {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-2);
+	padding: var(--tc-sp-3) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-cen-episode p {
+	margin: 0;
+	font-size: var(--tc-fs-base);
+}
+
+.tc-cen-save {
+	min-height: var(--tc-touch-station);
+}
+
 /* thao tác nguy hiểm tách khỏi thanh thao tác chính (ticket 1843 T4-07, 1834 T3-05) */
 .tc-danger-zone {
 	display: flex;

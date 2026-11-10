@@ -23,15 +23,22 @@ EPISODE_DOCTYPE = "Device Episode"
 
 def _invalid(reason, action):
 	return BlockedError(
-		Block("AUDIT_EPISODE_INVALID", _("Device episode not valid for this audit"), reason, action, items=["device_episode"])
+		Block(
+			"AUDIT_EPISODE_INVALID",
+			_("Device episode not valid for this audit"),
+			reason,
+			action,
+			items=["device_episode"],
+		)
 	)
 
 
 def validate(doc):
 	"""Gọi từ ``sessions.validate`` sau khi đã biết mẫu."""
-	template = frappe.db.get_value(
-		"Audit Template", doc.audit_template, ["audit_type", "bundle_type"], as_dict=True
-	) or frappe._dict()
+	template = (
+		frappe.db.get_value("Audit Template", doc.audit_template, ["audit_type", "bundle_type"], as_dict=True)
+		or frappe._dict()
+	)
 	device = DEVICE_OF_BUNDLE.get(template.bundle_type) if template.audit_type == BUNDLE_TYPE else None
 	if not doc.device_episode:
 		if device:
@@ -39,7 +46,9 @@ def validate(doc):
 				Block(
 					"AUDIT_EPISODE_REQUIRED",
 					_("Device episode required"),
-					_("A {0} bundle audit must be linked to an open device episode.").format(template.bundle_type),
+					_("A {0} bundle audit must be linked to an open device episode.").format(
+						template.bundle_type
+					),
 					_("Choose the patient's open device episode, then post the audit."),
 					items=["device_episode"],
 				)

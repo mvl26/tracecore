@@ -98,7 +98,9 @@ def import_kinds():
 				Column("patient_count", "Inpatients", required=True, kind="int"),
 				Column("vent_count", "On ventilator", required=True, kind="int", help=count_help),
 				Column("cvc_count", "Central line", required=True, kind="int", help=count_help),
-				Column("urinary_catheter_count", "Urinary catheter", required=True, kind="int", help=count_help),
+				Column(
+					"urinary_catheter_count", "Urinary catheter", required=True, kind="int", help=count_help
+				),
 				Column("admissions", "Admissions", kind="int"),
 			],
 			code_field="census_date",

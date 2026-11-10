@@ -11,7 +11,7 @@
 | Q1 | FR-M13-03.2 "Department có cờ nội trú" nhưng Department chưa có cờ; `tc_is_ward` nghĩa là khoa nhận/trả dụng cụ CSSD | **Custom Field mới `Department.tc_inpatient`** (Check). Chỉ khoa có cờ, đang dùng, không phải nhóm mới bị nhắc mẫu số |
 | Q2 | FR-M13-02.2 import lại phải cập nhật bản có sẵn; `core.importer` gặp mã đã có thì bỏ qua | **Mở rộng importer**: `ImportKind.upsert`; dòng mã đã có vẫn kiểm và ghi, kết quả `Updated`; `Import Batch Row.result` thêm `Updated`, `Import Batch` thêm `updated` (Int). Bản ghi đã khóa kỳ → lỗi dòng |
 | Q3 | FR-M12-07 nhắc "mỗi đợt thiết bị đang mở"; FR-M12-07.2 chỉ nêu thở máy 10:00 | **Mọi đợt đang mở** (thở máy, CVC, thông tiểu): đến giờ nhắc mà trong ngày chưa có phiếu gói ghi sổ gắn đợt → nhắc khoa |
-| Q4 | SCR-52 DEPT: FEAT-060 chốt R08/R12 chấm phiếu trên Page `station` | **Portal chỉ liệt kê**: trang `/ksnk-khoa/mau-so` có bảng đợt đang mở + cột "Gói hôm nay" (Đạt / Không đạt / Chưa kiểm tra), nút "Chấm gói" mở Page `station`. Không viết form chấm thứ hai |
+| Q4 | SCR-52 DEPT: FEAT-060 chốt R08/R12 chấm phiếu trên Page `station` | **Portal chỉ liệt kê**: trang `/ksnk-khoa/mau-so` có bảng đợt đang mở + cột "Gói hôm nay" (Đạt / Không đạt / Chưa kiểm tra) và câu hướng dẫn chấm phiếu trên PDA của khoa (Page `station` cần mã trạm nên Portal không mở thẳng được). Không viết form chấm thứ hai |
 
 ## Quyết định thiết kế (mặc định, ghi vào A-141)
 
@@ -65,4 +65,5 @@
 
 - Khóa/mở khóa kỳ `IC Reporting Period`, tính tỷ suất, reveal mã BN chung `hai.reveal_patient_code` (FEAT-063).
 - Cổng khoa đầy đủ (chỉ số khoa, việc cần làm, FR-M9-26 — FEAT-065); menu "Cách ly" (FEAT-068).
-- Mở form phiếu trên Page `station` chọn sẵn đợt từ Portal (hiện chỉ mở trạm).
+- Mở form phiếu trên Page `station` chọn sẵn đợt từ Portal (hiện Portal chỉ hướng dẫn chấm trên PDA).
+- Cổng khoa chưa có hàng đợi offline cho mẫu số (PDA có); mất mạng thì Portal giữ số trên form và báo.

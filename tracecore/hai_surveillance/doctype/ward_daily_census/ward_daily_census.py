@@ -10,7 +10,9 @@ from tracecore.hai_surveillance import census
 
 
 def on_doctype_update():
-	frappe.db.add_unique(census.DOCTYPE, ["census_date", "department"], constraint_name="tc_census_date_department")
+	frappe.db.add_unique(
+		census.DOCTYPE, ["census_date", "department"], constraint_name="tc_census_date_department"
+	)
 
 
 class WardDailyCensus(Document):

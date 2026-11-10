@@ -89,7 +89,12 @@ class TestDeviceEpisode(FrappeTestCase):
 		start = getdate(add_days(today(), -9))
 		episodes.open_episode(_values(self.ward, inserted_on=start))
 		episodes.open_episode(
-			_values(self.ward, patient_code="BN-X-0002", inserted_on=add_days(start, 1), removed_on=add_days(start, 2))
+			_values(
+				self.ward,
+				patient_code="BN-X-0002",
+				inserted_on=add_days(start, 1),
+				removed_on=add_days(start, 2),
+			)
 		)
 		days = episodes.days_between(self.ward, start, add_days(start, 2))
 		self.assertEqual(days["Ventilator"], 5)

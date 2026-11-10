@@ -9,6 +9,8 @@
 const AUD_CONTEXT = "tracecore.v1.audit.context";
 const AUD_SUBMIT = "tracecore.v1.audit.submit_session";
 const AUD_ANSWERS = ["Pass", "Fail", "N/A"];
+// FEAT-062 (FR-M12-07, A-141 e): gói dự phòng gắn đợt thiết bị đang mở đúng loại
+const AUD_BUNDLE_DEVICE = { VAP: "Ventilator", CLABSI: "Central Line", CAUTI: "Urinary Catheter" };
 
 // Tính tạm trên máy theo đúng luật server (scoring.py); kết quả chính thức do server tính khi ghi sổ.
 const TcAudit = {
@@ -178,6 +180,13 @@ class AuditForm {
 				this.form.subject_role = this.form.subject_role === data.role ? "" : data.role;
 				this.show();
 			},
+			// FEAT-062: chọn đợt thiết bị cho phiếu gói dự phòng
+			"aud-episode": () => {
+				this.form.device_episode =
+					this.form.device_episode === data.episode ? "" : data.episode;
+				this.notice = null;
+				this.show();
+			},
 			"aud-mode": () => {
 				this.form.mode = this.form.mode === "Unannounced" ? "Announced" : "Unannounced";
 				this.show();
@@ -267,6 +276,15 @@ class AuditForm {
 				__("Choose another observed person, or ask another auditor to observe you.")
 			);
 		}
+		// FEAT-062 (FR-M12-07): gói VAP/CLABSI/CAUTI phải gắn đợt thiết bị đang mở
+		if (this.bundleDevice() && !this.form.device_episode) {
+			return this.block(
+				"AUDIT_EPISODE_REQUIRED",
+				__("Device episode required"),
+				__("A bundle audit must be linked to the patient's open device episode."),
+				__("Choose the device episode above, then post the audit.")
+			);
+		}
 		const missing = TcAudit.missing(this.template, this.answers);
 		if (missing.length) {
 			return this.block(
@@ -295,6 +313,7 @@ class AuditForm {
 			subject_employee: this.form.subject_employee || "",
 			location: this.form.location || "",
 			started_at: this.form.started_at,
+			device_episode: this.form.device_episode || "", // FEAT-062
 			answers: JSON.stringify(
 				(this.template.items || [])
 					.filter((item) => this.answers[item.item_code] || this.notes[item.item_code])
@@ -307,11 +326,12 @@ class AuditForm {
 		};
 		if (
 			!this.pending ||
-			this.pending.sig !== args.answers + args.department + args.audit_template
+			this.pending.sig !==
+				args.answers + args.department + args.audit_template + args.device_episode
 		) {
 			const key = uuid4();
 			this.pending = {
-				sig: args.answers + args.department + args.audit_template,
+				sig: args.answers + args.department + args.audit_template + args.device_episode,
 				key,
 				ts: clientTs(),
 			};
@@ -494,6 +514,46 @@ class AuditForm {
 		}</section>`;
 	}
 
+	// FEAT-062: loại thiết bị của mẫu gói đang chấm (null nếu mẫu không phải gói thiết bị)
+	bundleDevice() {
+		const template = this.template || {};
+		return template.audit_type === "Prevention Bundle"
+			? AUD_BUNDLE_DEVICE[template.bundle_type] || null
+			: null;
+	}
+
+	episodeHtml(data) {
+		const device = this.bundleDevice();
+		if (!device) return "";
+		const rows = (data.episodes || []).filter(
+			(row) => row.department === this.department && row.device_type === device
+		);
+		const chips = rows
+			.map((row) => {
+				const chosen = this.form.device_episode === row.name;
+				return `<button type="button" class="tc-btn ${
+					chosen ? "tc-btn-primary" : "tc-btn-secondary"
+				} tc-aud-choice" data-action="aud-episode" data-episode="${esc(
+					row.name
+				)}" aria-pressed="${chosen}">${
+					chosen ? "&#10003; " : ""
+				}<span class="tc-mono">${esc(row.patient_code_masked || "")}</span> · ${esc(
+					__(row.device_type)
+				)} · <span class="tc-mono">${esc(row.name)}</span></button>`;
+			})
+			.join("");
+		return `<section class="tc-t6-block"><h3>${esc(__("Device episode"))}</h3>${
+			chips
+				? `<div class="tc-aud-choices">${chips}</div>`
+				: `<p class="tc-hint">${esc(
+						__(
+							"No open {0} episode in this department. Open the episode on the census screen first.",
+							[__(device).toLowerCase()]
+						)
+				  )}</p>`
+		}</section>`;
+	}
+
 	itemHtml(item) {
 		const value = this.answers[item.item_code];
 		const button = (answer, label, icon) => {
@@ -576,6 +636,7 @@ class AuditForm {
 			this.form.subject_employee || ""
 		)}"></label>
 			</section>
+			${this.episodeHtml(data)}
 			<section class="tc-aud-items">${(template.items || [])
 				.map((item) => this.itemHtml(item))
 				.join("")}</section>

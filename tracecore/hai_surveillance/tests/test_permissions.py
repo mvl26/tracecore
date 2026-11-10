@@ -24,9 +24,13 @@ class TestDepartmentScope(IsolatedTestCase):
 
 	def test_r12_sees_only_own_department(self):
 		frappe.set_user(self.r12)
-		names = frappe.get_list("Ward Daily Census", filters={"department": ["in", [self.ward_a, self.ward_b]]}, pluck="name")
+		names = frappe.get_list(
+			"Ward Daily Census", filters={"department": ["in", [self.ward_a, self.ward_b]]}, pluck="name"
+		)
 		self.assertEqual(names, [self.census_a])
-		self.assertEqual(frappe.get_list("Device Episode", filters={"department": self.ward_b}, pluck="name"), [])
+		self.assertEqual(
+			frappe.get_list("Device Episode", filters={"department": self.ward_b}, pluck="name"), []
+		)
 		self.assertFalse(frappe.has_permission("Ward Daily Census", "read", self.census_b))
 		self.assertTrue(frappe.has_permission("Ward Daily Census", "read", self.census_a))
 
@@ -42,5 +46,6 @@ class TestDepartmentScope(IsolatedTestCase):
 		for role in ("TC R01", "TC R08", "TC R11", "TC R12"):
 			for doctype in ("Ward Daily Census", "Device Episode"):
 				self.assertFalse(
-					frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "delete": 1}), (doctype, role)
+					frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "delete": 1}),
+					(doctype, role),
 				)

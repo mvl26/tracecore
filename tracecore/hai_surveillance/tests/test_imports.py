@@ -77,7 +77,9 @@ class TestCensusImport(IsolatedTestCase):
 
 	@bru("BRU-HAI-002")
 	def test_reimport_updates_existing_without_duplicates(self):
-		batch = frappe.get_doc("Import Batch", importer.run(imports.KEY, self._file(), None, profile=self.profile))
+		batch = frappe.get_doc(
+			"Import Batch", importer.run(imports.KEY, self._file(), None, profile=self.profile)
+		)
 		self.assertEqual((batch.created, batch.updated, batch.failed), (1, 0, 2))
 		name = frappe.db.get_value("Ward Daily Census", {"department": self.ward, "census_date": self.d1})
 		doc = frappe.get_doc("Ward Daily Census", name)
@@ -92,10 +94,14 @@ class TestCensusImport(IsolatedTestCase):
 
 	def test_manual_census_is_updated_by_import(self):
 		f.make_census(self.ward, self.d1, patients=30)
-		batch = frappe.get_doc("Import Batch", importer.run(imports.KEY, self._file(), None, profile=self.profile))
+		batch = frappe.get_doc(
+			"Import Batch", importer.run(imports.KEY, self._file(), None, profile=self.profile)
+		)
 		self.assertEqual(batch.updated, 1)
 		row = frappe.db.get_value(
-			"Ward Daily Census", {"department": self.ward, "census_date": self.d1}, ["patient_count", "source"]
+			"Ward Daily Census",
+			{"department": self.ward, "census_date": self.d1},
+			["patient_count", "source"],
 		)
 		self.assertEqual(row, (16, "Import"))
 
@@ -103,7 +109,9 @@ class TestCensusImport(IsolatedTestCase):
 	def test_locked_census_is_a_row_error(self):
 		doc = f.make_census(self.ward, self.d1, patients=30)
 		frappe.db.set_value("Ward Daily Census", doc.name, "locked", 1)
-		batch = frappe.get_doc("Import Batch", importer.run(imports.KEY, self._file(), None, profile=self.profile))
+		batch = frappe.get_doc(
+			"Import Batch", importer.run(imports.KEY, self._file(), None, profile=self.profile)
+		)
 		self.assertEqual((batch.created, batch.updated), (0, 0))
 		errors = {(row.row_no, row.error_code) for row in batch.rows if row.result == "Error"}
 		self.assertIn((2, "CENSUS_PERIOD_LOCKED"), errors)

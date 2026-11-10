@@ -93,6 +93,7 @@ def get_context(context):
 	context.no_breadcrumbs = 1
 	context.show_sidebar = 0
 	context.title = _("Exposure Report")
+	context.ksnk_nav = "bao-phoi-nhiem"  # FEAT-062: mục đang mở của menu "KSNK khoa"
 	data = api.portal_context()
 	context.department = data.get("department")
 	# user: hàng đợi offline trong trình duyệt tách theo tài khoản (máy dùng chung của khoa)
