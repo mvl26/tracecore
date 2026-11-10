@@ -56,6 +56,7 @@ WASTE_TYPES = (
 SHARPS = "Sharps Exposure"
 # FEAT-060 (A-134 c, FR-M12-09): không tuân thủ từ phiếu giám sát KSNK (M12) — loại riêng, nhóm Compliance
 COMPLIANCE = "Compliance Nonconformity"
+ENVIRONMENT = "Environment Nonconformity"  # FEAT-070 (A-148 d): NC từ mẫu môi trường Không đạt
 NC_TYPES = {"Shortage": "Missing Instrument", "Foreign Instrument": "Foreign Instrument"}
 
 
@@ -118,6 +119,8 @@ def validate(doc):
 		doc.incident_category = "Waste"
 	if doc.incident_type == COMPLIANCE:
 		doc.incident_category = "Compliance"
+	if doc.incident_type == ENVIRONMENT:  # FEAT-070
+		doc.incident_category = "Environment"
 	if doc.incident_type == SHARPS:
 		_check_sharps(doc)
 	if not any(doc.get(field) for field in LINK_FIELDS):
@@ -431,6 +434,19 @@ def on_compliance_nc(ctx):
 		COMPLIANCE,
 		"Medium",
 		ctx.get("description") or _("Audit {0} has a failed critical item.").format(ctx["session"]),
+		{"department": ctx.get("department")},
+	)
+
+
+def on_environment_nc(ctx):
+	"""Hook ``tracecore_environment_nc`` (FEAT-070, FR-M15-04, BRU-ENV-003): R01/R11 mở NC từ mẫu môi trường Không đạt
+	→ Incident Environment, nguồn Environmental Sample, gắn khoa của vùng. ``ctx``: {sample, department, description}."""
+	return _auto(
+		"Environmental Sample",
+		ctx["sample"],
+		ENVIRONMENT,
+		"Medium",
+		ctx.get("description") or _("Environmental sample {0} failed.").format(ctx["sample"]),
 		{"department": ctx.get("department")},
 	)
 

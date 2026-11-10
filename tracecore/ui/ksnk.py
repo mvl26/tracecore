@@ -190,6 +190,20 @@ SCREENS += [
 	},
 ]
 
+# FEAT-070 (A-148 f): vệ sinh môi trường & cơ sở hạ tầng (UC-54); R02 chỉ xem, R13 chỉ số liệu tổng hợp; R12 làm phiếu
+# VSMT trên PDA (SCR-52); tạo/sửa vùng, ngưỡng, kế hoạch, mẫu trên Desk form
+SCREENS += [
+	{
+		"slug": "moi-truong",
+		"scr": "SCR-62",
+		"uc": "UC-54",
+		"label": "Environmental Hygiene",
+		"group": "environment",
+		"roles": ("TC R01", "TC R02", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_62_moi_truong.js",
+	},
+]
+
 
 def _badges(user):
 	total: dict[str, int] = {}

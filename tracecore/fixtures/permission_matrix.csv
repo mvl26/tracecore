@@ -88,3 +88,8 @@ DT-ISOROOM,Isolation Room,RW,,,,,,,R,,,R,R,R,"FEAT-068 A-146 Q2, Q5 (FR-M14-07):
 DT-SSIGRP,Surgical Procedure Group,RW,,,,,,,,,R,R,,,"FEAT-064 A-147 a (FR-M13-07, BRU-HAI-004): R01 cấu hình T, cửa sổ, lịch theo dõi và bật giám sát; R10, R11 đọc"
 DT-SSI,Surgical Surveillance,RW,,,,,,,,,,RW,,,"FEAT-064 A-147 b, m (FR-M13-07..09, ADR-010): R11 đăng ký ca và ghi theo dõi, R01 toàn quyền; có mã BN — R08, R10, R12, R13 không đọc; không ai xóa"
 DT-REXP,Report Export Profile,RW,,,,,,,,,RW,RW,,,"FEAT-064 A-147 Q1 (FR-M13-12, BRU-RPT-002): hồ sơ ánh xạ cột xuất báo cáo theo mẫu cơ quan quản lý"
+DT-ENVRISK,Environment Risk Level,RW,R,,,,,,R,,R,R,R,R,"FEAT-070 A-148 a (FR-M15-01, BRU-ENV-001): R01 cấu hình mức nguy cơ và số phiếu tối thiểu; R02, R08, R10, R11, R12, R13 đọc; ngưng dùng thay vì xóa"
+DT-ENVZONE,Environment Zone,RW,R,,,,,,R,,R,R,R,R,"FEAT-070 A-148 a (FR-M15-01, .2): R01 khai báo vùng; R08, R12 đọc vùng khoa mình (User Permission Department) để làm phiếu; R02, R10, R11, R13 đọc"
+DT-ENVLIMIT,Environmental Limit,RWS,R,,,,,,,,R,R,,R,"FEAT-070 A-148 b (FR-M15-03, BRU-ENV-002): ngưỡng có phiên bản, R01 nhập và duyệt (ghi sổ); sửa = phiên bản mới; R02, R10, R11, R13 đọc"
+DT-SAMPLAN,Sampling Plan,RW,R,,,,,,,,R,R,,R,"FEAT-070 A-148 c (FR-M15-05): R01 lập kế hoạch lấy mẫu; R02, R10, R11, R13 đọc"
+DT-ENVSAMPLE,Environmental Sample,RWSA,R,,,,,,R,,,RWSA,R,,"FEAT-070 A-148 d (FR-M15-03, FR-M15-04): R11 ghi mẫu và ghi sổ, R01 toàn quyền, hủy khi nhập nhầm; R02 đọc; R08, R12 đọc mẫu khoa mình; R13 chỉ xem tổng hợp trên SCR-62"

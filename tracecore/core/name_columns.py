@@ -48,6 +48,11 @@ CODE_IS_NAME = frozenset(
 	}
 )
 
+# FEAT-070 (A-148): vùng vệ sinh hiện tên khu; mức nguy cơ đặt tên theo `risk_name` nên mã chính là tên
+TRACECORE_NAME_FIELD = {**TRACECORE_NAME_FIELD, "Environment Zone": "area_name"}
+NAME_FIELD = {**NAME_FIELD, "Environment Zone": "area_name"}
+CODE_IS_NAME = CODE_IS_NAME | {"Environment Risk Level"}
+
 # Đích không có trường tên
 NO_NAME_FIELD = frozenset({"Sterilization Load", "Pack", "Wash Batch", "Waste Container"})
 # FEAT-063 (A-144): chủng vi sinh không có trường tên; dòng chủng của ca NKBV đã hiện loài, ngày lấy mẫu

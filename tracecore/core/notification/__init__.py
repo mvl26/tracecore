@@ -149,6 +149,12 @@ EVENTS = {
 	# FEAT-064 (A-147 c, l): lần theo dõi NKVM sau ra viện đến hạn → R11; nhóm phẫu thuật chưa có T của NNIS → R01
 	"SSI_FOLLOWUP_DUE": ("Surgical site infection follow-up due", "Normal", 0, 1, ("TC R11",)),
 	"SSI_GROUP_T_MISSING": ("Surgical procedure group without NNIS cut-off", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-070 (A-148 f): mẫu môi trường Không đạt → R01, R11 (+ bên chịu trách nhiệm do nơi gọi truyền) (FR-M15-04); kế
+	# hoạch lấy mẫu đến kỳ (người phụ trách do nơi gọi truyền), quá hạn 7 ngày → R01 (FR-M15-05, .1); hạ tầng trước hạn 7 ngày
+	"ENV_SAMPLE_FAILED": ("Environmental sample failed", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"ENV_SAMPLING_DUE": ("Environmental sampling due", "Normal", 0, 1, ()),
+	"ENV_SAMPLE_OVERDUE": ("Environmental sample overdue", "Normal", 0, 0, ("TC R01",)),
+	"ENV_INFRA_DUE": ("Infrastructure inspection due", "Normal", 0, 0, ("TC R01", "TC R11")),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }
