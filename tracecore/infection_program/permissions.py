@@ -18,8 +18,9 @@ PERMISSIONS: dict[str, dict[str, tuple[str, ...]]] = {
 	"Training Event": {"TC R01": _SUBMIT, "TC R02": _SUBMIT},
 	"Training Result": {"TC R01": _SUBMIT, "TC R02": _SUBMIT},
 }
-# DocType được Link tới từ form đào tạo: R01/R02 cần đọc để chọn trên Desk (chỉ thêm, không gỡ quyền có sẵn)
-LINK_TARGETS = ("Employee", "Department", "Company")
+# DocType được Link tới từ form đào tạo: R01/R02 cần đọc để chọn trên Desk (chỉ thêm, không gỡ quyền có sẵn).
+# Không có Department: khoa của dòng nhân viên lấy từ employee.department, R02 không có quyền Department (FR-M1-03).
+LINK_TARGETS = ("Employee", "Company")
 
 
 def ensure_permissions() -> None:

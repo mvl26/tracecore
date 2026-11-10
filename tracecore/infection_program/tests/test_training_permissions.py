@@ -37,3 +37,12 @@ class TestTrainingPermissions(IsolatedTestCase):
 		self.assertTrue(frappe.has_permission("Training Result", "create", user=r02))
 		self.assertFalse(frappe.has_permission("Training Event", "delete", user=r02))
 		self.assertFalse(frappe.has_permission("Training Event", "read", user=r11))
+
+	def test_no_department_right_added(self):
+		# khoa của dòng nhân viên lấy từ employee.department; R02 không có quyền Department (FR-M1-03)
+		self.assertNotIn("Department", permissions.LINK_TARGETS)
+		for role in ("TC R01", "TC R02"):
+			self.assertIsNone(permissions._row("Department", role), role)
+		r02 = factories.make_user("ksnk-train-perm-dept@example.com", ["TC R02"])
+		self.assertFalse(frappe.has_permission("Department", "select", user=r02))
+		self.assertTrue(frappe.has_permission("Employee", "read", user=r02))
