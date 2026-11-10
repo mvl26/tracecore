@@ -161,13 +161,13 @@
 | FR-M14-08 | Báo cáo kháng thuốc quý S/I/R | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; A-136 | FEAT-067 | `microbiology/tests/test_resistance.py` |
 | FR-M14-09 | Điều tra ổ dịch, đường cong dịch | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
 | FR-M14-10 | Khai báo bệnh truyền nhiễm theo hạn nhóm bệnh | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
-| FR-M15-01 | Vùng vệ sinh: mức nguy cơ, bên chịu trách nhiệm | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
-| FR-M15-02 | Tổng hợp tỷ lệ đạt VSMT theo mức nguy cơ, khoa | Must | Active | BA v1.12 (A-113) | UC-54 | ADR-015 | FEAT-070 | _TBD_ |
-| FR-M15-03 | Kết quả xét nghiệm môi trường so ngưỡng | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
-| FR-M15-04 | Mẫu Không đạt → thông báo, đề nghị NC | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
-| FR-M15-05 | Kế hoạch lấy mẫu giao việc, mẫu trễ hạn | Should | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
-| FR-M15-06 | Phiếu kiểm tra hạ tầng, hạn kế tiếp, nhắc 7 ngày | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
-| FR-M15-07 | Báo cáo môi trường tháng/quý | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | _TBD_ |
+| FR-M15-01 | Vùng vệ sinh: mức nguy cơ, bên chịu trách nhiệm | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-02 | Tổng hợp tỷ lệ đạt VSMT theo mức nguy cơ, khoa | Must | Active | BA v1.12 (A-113) | UC-54 | ADR-015 | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-03 | Kết quả xét nghiệm môi trường so ngưỡng | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-04 | Mẫu Không đạt → thông báo, đề nghị NC | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-05 | Kế hoạch lấy mẫu giao việc, mẫu trễ hạn | Should | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-06 | Phiếu kiểm tra hạ tầng, hạn kế tiếp, nhắc 7 ngày | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-07 | Báo cáo môi trường tháng/quý | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
 | FR-M16-01 | Báo phơi nhiễm ban đầu ≤ 3 bước, thông báo ngay | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-63; A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py`, `v1/tests/test_exposure_api.py`, `occupational_safety/tests/test_ui.py` |
 | FR-M16-02 | Sự cố sắc nhọn M10 → Occupational Exposure | Must | Active | BA v1.12 (A-113) | UC-55 | A-137 | FEAT-071 | `occupational_safety/tests/test_hook.py` |
 | FR-M16-03 | Thời gian phơi nhiễm → báo cáo → dự phòng, cờ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py` |
