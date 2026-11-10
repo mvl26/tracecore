@@ -177,12 +177,12 @@
 | FR-M16-07 | Tiêm chủng: next_due, nhắc, tỷ lệ bao phủ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_immunization.py` |
 | FR-M16-08 | Cảnh báo tồn thuốc dự phòng sau phơi nhiễm | Should | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_jobs.py` |
 | FR-M16-09 | Báo cáo phơi nhiễm theo kỳ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_report.py` |
-| FR-M17-01 | Giám sát bếp ăn bằng mẫu phiếu ATTP | Should | Active | BA v1.12 (A-113) | UC-56 | ADR-015 | FEAT-073 | _TBD_ |
-| FR-M17-02 | Nhắc hạn khám sức khỏe người chế biến | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
-| FR-M17-03 | Mẫu thực phẩm xử lý như mẫu môi trường | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
-| FR-M17-04 | Sự cố nghi ngộ độc thực phẩm → báo, NC, khai báo | Should | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
-| FR-M17-05 | Buổi truyền thông KSNK, tổng hợp quý | Could | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
-| FR-M17-06 | Tài liệu truyền thông người bệnh có QR | Could | Active | BA v1.12 (A-113) | UC-56 | _TBD_ | FEAT-073 | _TBD_ |
+| FR-M17-01 | Giám sát bếp ăn bằng mẫu phiếu ATTP | Should | Active | BA v1.12 (A-113) | UC-56 | SCR-52; ADR-015; A-151 | FEAT-073 | `tests/test_ksnk_scr65.py` (TestFoodAuditsAndSamples) |
+| FR-M17-02 | Nhắc hạn khám sức khỏe người chế biến | Should | Active | BA v1.12 (A-113) | UC-56 | SCR-65; A-151 | FEAT-073 | `food_safety/tests/test_handlers.py` |
+| FR-M17-03 | Mẫu thực phẩm xử lý như mẫu môi trường | Should | Active | BA v1.12 (A-113) | UC-56 | SCR-65; A-151 | FEAT-073 | `tests/test_ksnk_scr65.py` (test_food_sample_is_handled_like_environmental_sample) |
+| FR-M17-04 | Sự cố nghi ngộ độc thực phẩm → báo, NC, khai báo | Should | Active | BA v1.12 (A-113) | UC-56 | SCR-65; A-151 | FEAT-073 | `food_safety/tests/test_events.py`, `tests/test_ksnk_scr65.py` |
+| FR-M17-05 | Buổi truyền thông KSNK, tổng hợp quý | Could | Active | BA v1.12 (A-113) | UC-56 | SCR-65; A-151 | FEAT-073 | `food_safety/tests/test_education.py` |
+| FR-M17-06 | Tài liệu truyền thông người bệnh có QR | Could | Active | BA v1.12 (A-113) | UC-56 | SCR-65; A-151 | FEAT-073 | `infection_program/tests/test_communication_materials.py`, `tests/test_ksnk_scr65.py` |
 | FR-M9-24 | Bảng chỉ số KSNK toàn viện theo kế hoạch năm | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
 | FR-M9-25 | Báo cáo Hội đồng 1 trang hằng tháng (PDF) | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
 | FR-M9-26 | Cổng khoa: chỉ số khoa cạnh trung bình toàn viện | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
