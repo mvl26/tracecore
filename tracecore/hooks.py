@@ -500,6 +500,8 @@ doc_events = {
 	# FEAT-068 (A-146): lệnh cách ly (mã BN Password không vào Audit Log; đóng = sửa sau ghi sổ), phòng cách ly
 	"Isolation Order": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	"Isolation Room": dict(_AUDIT_EVENTS),
+	# FEAT-072 (A-149 Q2): dự án cải tiến chất lượng / đề tài nghiên cứu — Audit Log, không xóa (dùng Hủy)
+	"IC Improvement Project": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -750,6 +752,9 @@ tracecore_ic_indicators = [
 	"tracecore.hai_surveillance.ssi_indicators.register",
 	# FEAT-070 (FR-M15-02, FR-M15-06, QĐ 38): vệ sinh bề mặt khu nguy cơ cao, mẫu môi trường Đạt, thông khí/nước đúng hạn
 	"tracecore.environmental_hygiene.indicators.register",
+	# FEAT-072 (A-149): số dự án cải tiến hoàn thành/năm (FR-M11-12.1); tỷ lệ hiện mắc điều tra cắt ngang (FR-M13-14)
+	"tracecore.infection_program.improvement.register_indicators",
+	"tracecore.hai_surveillance.prevalence.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -788,6 +793,8 @@ tracecore_ic_self_checks = [
 	"tracecore.compliance_audit.self_checks.register",
 	"tracecore.hai_surveillance.self_checks.register",
 	"tracecore.microbiology.self_checks.register",
+	# FEAT-072 (A-149 Q4): QD38-QI — năm có ≥ 1 dự án cải tiến hoàn thành
+	"tracecore.infection_program.improvement.register_self_checks",
 ]
 # FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
 tracecore_mdro_detected = []

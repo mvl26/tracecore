@@ -38,6 +38,17 @@ def date(value):
 	return formatdate(value, "dd/mm/yyyy") if value else ""
 
 
+def _self_assessment(row):
+	"""FEAT-072: "<điểm> % · <kết quả> · <ngày> (<mã phiếu>)" hoặc "—"."""
+	if not row:
+		return "—"
+	parts = [number(row.score_pct, "Percentage") if row.score_pct is not None else _("not scored")]
+	if row.result_label:
+		parts.append(row.result_label)
+	parts.append(f"{date(row.audit_date)} ({row.name})")
+	return " · ".join(parts)
+
+
 def tc_ic_plan_context(name: str) -> dict:
 	doc = frappe.get_doc(annual_plan.DOCTYPE, name)
 	doc.check_permission("read")
@@ -58,6 +69,9 @@ def tc_ic_plan_context(name: str) -> dict:
 		"progress": _("{0}/{1} completed").format(
 			summary["activities_completed"], summary["activities_total"]
 		),
+		# FEAT-072 (A-149): số dự án cải tiến hoàn thành, kết quả tự đánh giá chất lượng của năm
+		"improvement_completed": str(summary["improvement_completed"]),
+		"self_assessment": _self_assessment(summary["self_assessment"]),
 		"indicators": [
 			{
 				"name": row["indicator_name"],

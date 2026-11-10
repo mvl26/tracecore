@@ -29,6 +29,9 @@
 	<table class="tc-facts">
 		<tr><td class="tc-label">{{ _("Approved by", context=T) | e }}</td><td>{{ cs.approved_by | e }} {{ cs.approved_on | e }}</td></tr>
 		<tr><td class="tc-label">{{ _("Activity progress", context=T) | e }}</td><td>{{ cs.progress | e }}</td></tr>
+		{#- FEAT-072 (A-149): improvement projects completed in the year, IC quality self-assessment of the year -#}
+		<tr><td class="tc-label">{{ _("Improvement projects completed", context=T) | e }}</td><td>{{ cs.improvement_completed | e }}</td></tr>
+		<tr><td class="tc-label">{{ _("Quality self-assessment", context=T) | e }}</td><td>{{ cs.self_assessment | e }}</td></tr>
 		<tr><td class="tc-label">{{ _("Total budget (VND)", context=T) | e }}</td><td>{{ cs.total_budget | e }}</td></tr>
 	</table>
 	<h2>{{ _("Indicator results against targets", context=T) | e }}</h2>

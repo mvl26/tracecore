@@ -93,3 +93,4 @@ DT-ENVZONE,Environment Zone,RW,R,,,,,,R,,R,R,R,R,"FEAT-070 A-148 a (FR-M15-01, .
 DT-ENVLIMIT,Environmental Limit,RWS,R,,,,,,,,R,R,,R,"FEAT-070 A-148 b (FR-M15-03, BRU-ENV-002): ngưỡng có phiên bản, R01 nhập và duyệt (ghi sổ); sửa = phiên bản mới; R02, R10, R11, R13 đọc"
 DT-SAMPLAN,Sampling Plan,RW,R,,,,,,,,R,R,,R,"FEAT-070 A-148 c (FR-M15-05): R01 lập kế hoạch lấy mẫu; R02, R10, R11, R13 đọc"
 DT-ENVSAMPLE,Environmental Sample,RWSA,R,,,,,,R,,,RWSA,R,,"FEAT-070 A-148 d (FR-M15-03, FR-M15-04): R11 ghi mẫu và ghi sổ, R01 toàn quyền, hủy khi nhập nhầm; R02 đọc; R08, R12 đọc mẫu khoa mình; R13 chỉ xem tổng hợp trên SCR-62"
+DT-ICIMP,IC Improvement Project,RW,,,,,,,,,R,R,,R,"FEAT-072 A-149 Q2 (FR-M11-12, UC-42): R01 ghi dự án cải tiến chất lượng / đề tài nghiên cứu; R10, R11, R13 đọc; không ai xóa (dùng Hủy)"

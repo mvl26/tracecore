@@ -16,6 +16,7 @@ from tracecore.compliance_audit import (  # FEAT-061: hand_hygiene; FEAT-062: bu
 	bundle,
 	feedback,
 	hand_hygiene,
+	prevalence,  # FEAT-072: phiếu điều tra cắt ngang (A-149 Q1)
 	scoring,
 	templates,
 )
@@ -147,13 +148,20 @@ def validate(doc):
 	template = frappe.db.get_value(templates.DOCTYPE, doc.audit_template, ["pass_threshold"], as_dict=True)
 	doc.scoring_method = frappe.db.get_value(templates.DOCTYPE, doc.audit_template, "scoring_method")
 	hand_hygiene.validate(doc)  # FEAT-061: cơ hội vệ sinh tay (BRU-AUD-002)
-	bundle.validate(doc)  # FEAT-062: phiếu gói dự phòng gắn đợt thiết bị (FR-M12-07)
+	# FEAT-072 (A-149 Q1): phiếu cắt ngang mang mã BN và có thể gắn đợt thiết bị; phiếu khác không có mã BN
+	if prevalence.is_prevalence(doc):
+		prevalence.validate(doc)
+	else:
+		prevalence.reject_patient(doc)
+		bundle.validate(doc)  # FEAT-062: phiếu gói dự phòng gắn đợt thiết bị (FR-M12-07)
 	doc.score_pct, doc.result, critical = scoring.score(doc, template or frappe._dict())
 	doc.critical_failed = 1 if critical else 0
 
 
 def before_submit(doc):
 	hand_hygiene.before_submit(doc)  # FEAT-061: phiếu theo cơ hội cần ≥ 1 cơ hội
+	if prevalence.is_prevalence(doc):  # FEAT-072: phiếu cắt ngang cần trả lời Có/Không NKBV
+		prevalence.before_submit(doc)
 	missing = [
 		row.item_code
 		for row in doc.answers
@@ -210,6 +218,8 @@ def on_submit(doc):
 	if cint(doc.critical_failed):
 		values["nc_status"] = SUGGESTED
 	doc.db_set(values)
+	if prevalence.is_prevalence(doc):  # FEAT-072: phiếu cắt ngang (từng người bệnh) không gửi phản hồi khoa
+		return
 	feedback.after_submit(doc)
 
 
