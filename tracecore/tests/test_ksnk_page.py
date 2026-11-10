@@ -37,7 +37,11 @@ class TestKsnkPage(FrappeTestCase):
 		page = frappe.get_doc("Page", "tc-ksnk")
 		self.assertEqual(page.module, "UI")
 		roles = {row.role for row in page.roles}
-		self.assertEqual(roles, {"TC R01", "TC R10", "TC R11", "TC R12", "TC R13", "System Manager"})
+		# FEAT-066 (A-142 Q4): + R02, R09 (chỉ màn hóa chất & thuê ngoài)
+		self.assertEqual(
+			roles,
+			{"TC R01", "TC R02", "TC R09", "TC R10", "TC R11", "TC R12", "TC R13", "System Manager"},
+		)
 
 	def test_route_and_filters_round_trip(self):
 		out = run_js(

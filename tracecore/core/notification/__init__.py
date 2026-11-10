@@ -118,6 +118,29 @@ EVENTS = {
 	# gói dự phòng chưa chấm → R08, R12 của khoa (nơi gọi truyền)
 	"CENSUS_MISSING": ("Daily census missing", "Normal", 0, 1, ("TC R11",)),
 	"BUNDLE_CHECK_DUE": ("Prevention bundle check due", "Normal", 0, 1, ()),
+	# FEAT-066 (A-142, FR-M12-13): giấy phép đơn vị thuê ngoài 60/30/7 ngày, đã hết hạn (chỉ cảnh báo, BRU-AUD-006),
+	# đơn vị chưa được giám sát trong quý
+	"IC_VENDOR_LICENSE_EXPIRING": (
+		"Outsourced vendor license expiring",
+		"Normal",
+		1,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
+	"IC_VENDOR_LICENSE_EXPIRED": (
+		"Outsourced vendor license expired",
+		"Normal",
+		1,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
+	"IC_VENDOR_UNAUDITED": (
+		"Outsourced vendors not audited this quarter",
+		"Normal",
+		0,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

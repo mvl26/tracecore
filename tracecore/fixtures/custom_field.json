@@ -421,5 +421,96 @@
   "default": "1",
   "in_list_view": 1,
   "insert_after": "grade"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_ic_chemical_type",
+  "fieldname": "tc_ic_chemical_type",
+  "fieldtype": "Select",
+  "options": "\nHand Rub\nSoap\nSurface Disinfectant\nInstrument Disinfectant\nOther",
+  "label": "IC Chemical Type",
+  "in_standard_filter": 1,
+  "insert_after": "tc_is_pep_drug",
+  "description": "Infection control chemical counted per department and month; set the Litre conversion in the units of measure."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Warehouse",
+  "name": "Warehouse-tc_department",
+  "fieldname": "tc_department",
+  "fieldtype": "Link",
+  "options": "Department",
+  "label": "Department Using This Warehouse",
+  "in_standard_filter": 1,
+  "insert_after": "warehouse_name",
+  "description": "Infection control chemicals transferred into this warehouse are counted for this department."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_ic_section",
+  "fieldname": "tc_ic_section",
+  "fieldtype": "Section Break",
+  "label": "Outsourced Infection Control Service",
+  "collapsible": 1,
+  "insert_after": "supplier_details"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_ic_service_type",
+  "fieldname": "tc_ic_service_type",
+  "fieldtype": "Select",
+  "options": "\nIndustrial Cleaning\nLaundry\nWaste Treatment\nSterilization\nCatering\nOther",
+  "label": "Outsourced Service",
+  "in_standard_filter": 1,
+  "insert_after": "tc_ic_section",
+  "description": "Set for outsourced service vendors watched by infection control (license reminders, vendor audits)."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_license_no",
+  "fieldname": "tc_license_no",
+  "fieldtype": "Data",
+  "label": "License No",
+  "insert_after": "tc_ic_service_type"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_license_expiry",
+  "fieldname": "tc_license_expiry",
+  "fieldtype": "Date",
+  "label": "License Expiry",
+  "insert_after": "tc_license_no",
+  "description": "Reminders 60, 30 and 7 days before; an expired license only warns and is logged, it never blocks."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_ic_column",
+  "fieldname": "tc_ic_column",
+  "fieldtype": "Column Break",
+  "insert_after": "tc_license_expiry"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_contract_from",
+  "fieldname": "tc_contract_from",
+  "fieldtype": "Date",
+  "label": "Contract From",
+  "insert_after": "tc_ic_column"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_contract_to",
+  "fieldname": "tc_contract_to",
+  "fieldtype": "Date",
+  "label": "Contract To",
+  "insert_after": "tc_contract_from"
  }
 ]

@@ -33,6 +33,8 @@ fixtures = [
 			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
 			["name", "like", "Training Program-tc_%"],  # FEAT-059 (A-135): loại đào tạo KSNK
 			["name", "like", "Training Result Employee-tc_%"],  # FEAT-059 (A-135 a): Đạt
+			["name", "like", "Supplier-tc_%"],  # FEAT-066 (A-142 Q1): đơn vị thuê ngoài, giấy phép, hợp đồng
+			["name", "like", "Warehouse-tc_%"],  # FEAT-066 (A-142 Q2): kho thuộc khoa
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -239,6 +241,8 @@ after_migrate = [
 	"tracecore.occupational_safety.config.ensure_default_config",
 	# FEAT-061 (A-140; FR-M12-02): 8 mẫu phiếu giám sát khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
 	"tracecore.compliance_audit.seed.ensure_seed",
+	# FEAT-066 (A-142 Q4): R09 sửa Supplier thuê ngoài, R09/R10 gán khoa cho kho (sao chép quyền chuẩn trước)
+	"tracecore.compliance_audit.permissions.ensure_permissions",
 ]
 
 # Uninstallation
@@ -509,7 +513,20 @@ doc_events = {
 	# chép nội dung vào Audit Log để giữ BRU-OCC-003
 	"Occupational Exposure": {"on_trash": "tracecore.core.audit.block_delete"},
 	"Staff Immunization": dict(_AUDIT_EVENTS),
+	# FEAT-066 (A-142): hóa chất KSNK theo khoa-tháng; không xóa, hủy phải có lý do
+	"IC Chemical Consumption": dict(_AUDIT_EVENTS),
 }
+# FEAT-066 (A-142 Q2, ADR-009): Stock Entry ghi sổ/hủy → hóa chất KSNK xuất tới kho khoa (M12 không import M6);
+# phiếu giám sát gắn đơn vị thuê ngoài hết hạn giấy phép chỉ cảnh báo (BRU-AUD-006)
+doc_events["Stock Entry"]["on_submit"] = [
+	doc_events["Stock Entry"]["on_submit"],
+	"tracecore.compliance_audit.chemicals.on_stock_entry_submit",
+]
+doc_events["Stock Entry"]["on_cancel"] = [
+	doc_events["Stock Entry"]["on_cancel"],
+	"tracecore.compliance_audit.chemicals.on_stock_entry_cancel",
+]
+doc_events["Audit Session"]["validate"] = "tracecore.compliance_audit.vendors.warn_expired_license"
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
 # ---------------
@@ -649,6 +666,8 @@ tracecore_ic_indicators = [
 	"tracecore.infection_program.training.register",
 	# FEAT-071: báo phơi nhiễm đúng hạn, hoàn thành theo dõi, bao phủ tiêm chủng
 	"tracecore.occupational_safety.indicators.register",
+	# FEAT-066 (A-142): lít dung dịch VST nhanh / 1.000 ngày nằm viện (FR-M12-12)
+	"tracecore.compliance_audit.chemicals.register_indicators",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -661,6 +680,8 @@ tracecore_ksnk_badges = [
 	"tracecore.microbiology.alerts.badges",
 	# FEAT-071: số hồ sơ phơi nhiễm mới chờ xử trí (SCR-64)
 	"tracecore.occupational_safety.exposure.badges",
+	# FEAT-066: hóa chất chờ chọn nguồn + giấy phép thuê ngoài đã hết hạn (SCR-54)
+	"tracecore.compliance_audit.chemicals.badges",
 ]
 # FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
 tracecore_mdro_detected = []
@@ -678,6 +699,8 @@ tracecore_import_kinds = [
 	"tracecore.microbiology.imports.import_kinds",
 	# FEAT-062: mẫu số ngày theo khoa xuất từ HIS (upsert, A-141 Q2)
 	"tracecore.hai_surveillance.imports.import_kinds",
+	# FEAT-066 (A-142): hóa chất KSNK từ file khoa Dược qua Import Mapping Profile
+	"tracecore.compliance_audit.chemical_import.import_kinds",
 ]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
@@ -752,6 +775,8 @@ scheduler_events = {
 		"tracecore.compliance_audit.schedule.run_daily",
 		# FEAT-071, FR-M16-04.1, 07, 08, NFR-PRIV-02: nhắc mốc theo dõi phơi nhiễm, tiêm chủng, thuốc dự phòng, xóa định danh
 		"tracecore.occupational_safety.jobs.run_daily",
+		# FEAT-066, FR-M12-13: giấy phép đơn vị thuê ngoài 60/30/7 ngày, hết hạn; đơn vị chưa giám sát trong quý
+		"tracecore.compliance_audit.vendors.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

@@ -188,3 +188,5 @@
 @media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-cols { grid-template-columns: 1fr; }
 }
+/* FEAT-066 SCR-54: dòng Toàn viện của bảng hóa chất */
+.tc-ksnk .tc-ksnk-table tr.is-total td, .tc-ksnk .tc-ksnk-table tr.is-total th { font-weight: var(--tc-fw-bold); background: var(--tc-primary-soft); }

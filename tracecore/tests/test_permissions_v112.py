@@ -78,6 +78,16 @@ V112_ROWS.update(
 	}
 )
 
+# FEAT-066 (A-142 Q4, FR-M12-12): hóa chất KSNK — R09 nhập tay/chọn nguồn, R11 import, R02/R10/R13 xem
+V112_ROWS.update(
+	{
+		"DT-ICCHEM": (
+			"IC Chemical Consumption",
+			{"R01": "RWSA", "R02": "R", "R09": "RWSA", "R10": "R", "R11": "RWS", "R13": "R"},
+		),
+	}
+)
+
 
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):

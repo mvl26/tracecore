@@ -16,6 +16,8 @@ from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
 # A-113 (FEAT-056): R11 nhập file mẫu số/phẫu thuật/vi sinh/hóa chất; loại import nào cho vai trò nào do `kind.roles`
 IMPORT_ROLES = ("TC R10", "TC R02", "TC R11", "System Manager")
+# FEAT-066 (A-142, UC-46 bước 2): R09, R01 nhập file hóa chất khoa Dược; loại import khác vẫn giới hạn bởi `kind.roles`
+IMPORT_ROLES += ("TC R09", "TC R01")
 BATCH_FIELDS = (
 	"name",
 	"kind",
