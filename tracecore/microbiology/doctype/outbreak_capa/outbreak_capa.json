@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 20:00:00.000000",
+ "description": "Incident CAPA (nonconformity) tracking the control actions of an outbreak.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "incident_capa",
+  "is_main",
+  "open_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "incident_capa",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident CAPA",
+   "reqd": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "is_main",
+   "fieldtype": "Check",
+   "label": "Outbreak Control Incident",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "open_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason Still Open",
+   "in_list_view": 1,
+   "allow_on_submit": 1,
+   "translatable": 0,
+   "columns": 6
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Outbreak CAPA",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1
+}

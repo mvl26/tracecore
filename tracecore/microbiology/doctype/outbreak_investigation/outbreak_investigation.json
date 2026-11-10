@@ -1,0 +1,249 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 20:00:00.000000",
+ "description": "Outbreak investigation: linked cases, epidemic curve by onset date, control actions through Incident CAPA, and closing summary.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "organism_or_disease",
+  "organism",
+  "communicable_disease",
+  "column_break_department",
+  "department",
+  "department_name",
+  "departments",
+  "start_date",
+  "source",
+  "cluster_alert",
+  "opened_by",
+  "section_definition",
+  "case_definition",
+  "section_cases",
+  "cases",
+  "section_actions",
+  "capas",
+  "section_status",
+  "status",
+  "controlled_on",
+  "end_date",
+  "column_break_summary",
+  "summary",
+  "external_report_ref",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "organism_or_disease",
+   "fieldtype": "Data",
+   "label": "Organism or Disease",
+   "reqd": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "organism",
+   "fieldtype": "Link",
+   "label": "Organism",
+   "options": "Organism"
+  },
+  {
+   "fieldname": "communicable_disease",
+   "fieldtype": "Link",
+   "label": "Communicable Disease",
+   "options": "Communicable Disease"
+  },
+  {
+   "fieldname": "column_break_department",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "departments",
+   "fieldtype": "Table MultiSelect",
+   "label": "Other Departments",
+   "options": "Outbreak Department",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Detected By",
+   "options": "Cluster Alert\nSuspicion\nFoodborne Event\nOther",
+   "default": "Suspicion"
+  },
+  {
+   "fieldname": "cluster_alert",
+   "fieldtype": "Link",
+   "label": "Cluster Alert",
+   "options": "Cluster Alert",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "opened_by",
+   "fieldtype": "Link",
+   "label": "Opened By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_definition",
+   "fieldtype": "Section Break",
+   "label": "Case Definition"
+  },
+  {
+   "fieldname": "case_definition",
+   "fieldtype": "Small Text",
+   "label": "Case Definition",
+   "allow_on_submit": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "section_cases",
+   "fieldtype": "Section Break",
+   "label": "Cases"
+  },
+  {
+   "fieldname": "cases",
+   "fieldtype": "Table",
+   "label": "Cases",
+   "options": "Outbreak Case",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "section_actions",
+   "fieldtype": "Section Break",
+   "label": "Control Actions"
+  },
+  {
+   "fieldname": "capas",
+   "fieldtype": "Table",
+   "label": "Incidents",
+   "options": "Outbreak CAPA",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nInvestigating\nControlled\nEnded\nCancelled",
+   "default": "Draft",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "controlled_on",
+   "fieldtype": "Date",
+   "label": "Controlled On",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_summary",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "Text",
+   "label": "Summary",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "external_report_ref",
+   "fieldtype": "Data",
+   "label": "External Report Reference",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Outbreak Investigation",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Outbreak Investigation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "OD-.YYYY.-.###",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "title_field": "title",
+ "show_title_field_in_link": 1
+}

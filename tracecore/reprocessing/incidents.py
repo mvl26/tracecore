@@ -57,6 +57,7 @@ SHARPS = "Sharps Exposure"
 # FEAT-060 (A-134 c, FR-M12-09): không tuân thủ từ phiếu giám sát KSNK (M12) — loại riêng, nhóm Compliance
 COMPLIANCE = "Compliance Nonconformity"
 ENVIRONMENT = "Environment Nonconformity"  # FEAT-070 (A-148 d): NC từ mẫu môi trường Không đạt
+OUTBREAK = "Outbreak Control"  # FEAT-069 (A-150 Q3): hành động kiểm soát ổ dịch (M14)
 NC_TYPES = {"Shortage": "Missing Instrument", "Foreign Instrument": "Foreign Instrument"}
 
 
@@ -121,6 +122,8 @@ def validate(doc):
 		doc.incident_category = "Compliance"
 	if doc.incident_type == ENVIRONMENT:  # FEAT-070
 		doc.incident_category = "Environment"
+	if doc.incident_type == OUTBREAK:  # FEAT-069
+		doc.incident_category = "Outbreak"
 	if doc.incident_type == SHARPS:
 		_check_sharps(doc)
 	if not any(doc.get(field) for field in LINK_FIELDS):
@@ -449,6 +452,41 @@ def on_environment_nc(ctx):
 		ctx.get("description") or _("Environmental sample {0} failed.").format(ctx["sample"]),
 		{"department": ctx.get("department")},
 	)
+
+
+def on_outbreak_nc(ctx):
+	"""Hook ``tracecore_outbreak_nc`` (FEAT-069, FR-M14-09, A-150 Q3): R01/R11 thêm hành động kiểm soát ổ dịch → Incident
+	Outbreak Control (một NC cho mỗi ổ dịch, nguồn Outbreak Investigation, khoa chính) và thêm một CAPA Action.
+	``ctx``: {outbreak, department, description, action: {description, responsible, due_date}}; trả tên Incident."""
+	name = _auto(
+		"Outbreak Investigation",
+		ctx["outbreak"],
+		OUTBREAK,
+		"High",
+		ctx.get("description") or _("Outbreak {0} control actions.").format(ctx["outbreak"]),
+		{"department": ctx.get("department")},
+	)
+	action = ctx.get("action")
+	if action:
+		doc = frappe.get_doc(DOCTYPE, name)
+		if doc.docstatus != 0:
+			raise _blocked(
+				"INCIDENT_STATUS_INVALID",
+				_("Step not available"),
+				_("Incident {0} is {1}.").format(doc.name, _(doc.status)),
+				_("Link a new incident to the outbreak for further actions."),
+			)
+		doc.append(
+			"actions",
+			{
+				"action_type": "Corrective",
+				"description": cstr(action.get("description")).strip(),
+				"responsible": action.get("responsible"),
+				"due_date": action.get("due_date"),
+			},
+		)
+		_save(doc)
+	return name
 
 
 def on_assembly_nc(ctx):

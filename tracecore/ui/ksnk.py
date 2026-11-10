@@ -204,6 +204,20 @@ SCREENS += [
 	},
 ]
 
+# FEAT-069 (A-150 e): điều tra ổ dịch (đường cong dịch) & khai báo bệnh truyền nhiễm (SCR-61, UC-53); R13 chỉ số liệu
+# tổng hợp; R08/R12 ghi khai báo trên Cổng khoa /ksnk-khoa/khai-bao; banner cụm ca nằm trong SCR-58 `bao-cao-nkbv`
+SCREENS += [
+	{
+		"slug": "o-dich",
+		"scr": "SCR-61",
+		"uc": "UC-53",
+		"label": "Outbreaks and Notifications",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_61_o_dich.js",
+	},
+]
+
 
 def _badges(user):
 	total: dict[str, int] = {}

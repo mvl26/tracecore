@@ -217,3 +217,12 @@
 @media (max-width: 900px) {
 	.tc-ksnk .tc-ksnk-form4 { grid-template-columns: minmax(0, 1fr); }
 }
+/* FEAT-069 SCR-61: đường cong dịch theo ngày khởi phát — một ô = một ca, ký hiệu ✓ / ? / × kèm màu (không chỉ màu) */
+.tc-ksnk .tc-od-curve { display: flex; align-items: flex-end; gap: var(--tc-sp-1); min-height: calc(var(--tc-sp-22) * 2); padding: var(--tc-sp-2) 0; border-bottom: var(--tc-bw-hair) solid var(--tc-border-input); overflow-x: auto; }
+.tc-ksnk .tc-od-day { display: flex; flex-direction: column; align-items: center; flex: 1 0 var(--tc-sp-6); }
+.tc-ksnk .tc-od-stack { display: flex; flex-direction: column; gap: var(--tc-sp-1); }
+.tc-ksnk .tc-od-cell { display: inline-flex; align-items: center; justify-content: center; width: var(--tc-sp-6); height: var(--tc-sp-5); border-radius: var(--tc-r-xs); color: var(--tc-text-inverse); font-size: var(--tc-fs-xs); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-od-cell.is-confirmed { background: var(--tc-fail); }
+.tc-ksnk .tc-od-cell.is-suspected { background: var(--tc-warn-fill); }
+.tc-ksnk .tc-od-cell.is-excluded { background: var(--tc-neutral-fill); }
+.tc-ksnk .tc-od-axis { margin-top: var(--tc-sp-1); color: var(--tc-text-2); font-size: var(--tc-fs-xs); font-variant-numeric: tabular-nums; }

@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 20:00:00.000000",
+ "description": "Notifiable communicable disease of the hospital list with its group A, B or C (the reporting deadline is set per group in IC Program Settings).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "disease_code",
+  "disease_name",
+  "disease_group",
+  "column_break_ref",
+  "legal_ref",
+  "disabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "disease_code",
+   "fieldtype": "Data",
+   "label": "Disease Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "disease_name",
+   "fieldtype": "Data",
+   "label": "Disease Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "translatable": 1
+  },
+  {
+   "fieldname": "disease_group",
+   "fieldtype": "Select",
+   "label": "Disease Group",
+   "options": "A\nB\nC",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_ref",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legal_ref",
+   "fieldtype": "Data",
+   "label": "Legal Reference",
+   "translatable": 0
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Communicable Disease",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:disease_code",
+ "track_changes": 1,
+ "title_field": "disease_name",
+ "search_fields": "disease_name,disease_group",
+ "show_title_field_in_link": 1
+}

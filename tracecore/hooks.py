@@ -173,6 +173,8 @@ website_route_rules = [
 	{"from_route": "/ksnk-khoa/mau-so", "to_route": "ksnk_khoa/mau_so"},
 	# FEAT-068 (SCR-60 DEPT, A-146 Q4): Cổng khoa — lệnh cách ly; link thông báo đa kháng mở trang này
 	{"from_route": "/ksnk-khoa/cach-ly", "to_route": "ksnk_khoa/cach_ly"},
+	# FEAT-069 (SCR-61 DEPT, A-150 Q4): Cổng khoa — khai báo bệnh truyền nhiễm của khoa
+	{"from_route": "/ksnk-khoa/khai-bao", "to_route": "ksnk_khoa/khai_bao"},
 ]
 
 # website user home page (by Role)
@@ -328,6 +330,8 @@ permission_query_conditions = {
 	# FEAT-070 (FR-M15-01.2, NFR-SEC-09): R08/R12 chỉ thấy vùng vệ sinh và mẫu môi trường của khoa có User Permission
 	"Environment Zone": "tracecore.environmental_hygiene.zones.query_conditions",
 	"Environmental Sample": "tracecore.environmental_hygiene.zones.sample_query_conditions",
+	# FEAT-069 (NFR-SEC-09, A-150 Q5): R08/R12 chỉ thấy khai báo bệnh truyền nhiễm của khoa có User Permission
+	"Notifiable Disease Report": "tracecore.microbiology.permissions.notifiable_query",
 }
 
 has_permission = {
@@ -344,6 +348,8 @@ has_permission = {
 	# FEAT-070
 	"Environment Zone": "tracecore.environmental_hygiene.zones.has_permission",
 	"Environmental Sample": "tracecore.environmental_hygiene.zones.has_permission",
+	# FEAT-069
+	"Notifiable Disease Report": "tracecore.microbiology.permissions.has_permission",
 }
 
 # DocType Class
@@ -603,6 +609,23 @@ doc_events.update(
 		"Environmental Sample": dict(_AUDIT_EVENTS),
 	}
 )
+# FEAT-069 (A-150): ổ dịch, khai báo bệnh truyền nhiễm (sửa sau ghi sổ qua dịch vụ), danh mục bệnh, ngưỡng và cảnh báo
+# cụm ca — Audit Log, không xóa (mã BN Password không vào Audit Log)
+doc_events.update(
+	{
+		"Outbreak Investigation": {
+			**_AUDIT_EVENTS,
+			"on_update_after_submit": "tracecore.core.audit.on_document_event",
+		},
+		"Notifiable Disease Report": {
+			**_AUDIT_EVENTS,
+			"on_update_after_submit": "tracecore.core.audit.on_document_event",
+		},
+		"Communicable Disease": dict(_AUDIT_EVENTS),
+		"Cluster Alert Rule": dict(_AUDIT_EVENTS),
+		"Cluster Alert": dict(_AUDIT_EVENTS),
+	}
+)
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
 # ---------------
@@ -775,6 +798,8 @@ tracecore_ksnk_badges = [
 	"tracecore.hai_surveillance.ssi.badges",
 	# FEAT-070: mẫu môi trường chờ quyết định NC + vùng chờ lấy mẫu lại (SCR-62)
 	"tracecore.environmental_hygiene.samples.badges",
+	# FEAT-069: cảnh báo cụm ca chờ xem xét + khai báo bệnh truyền nhiễm quá hạn (SCR-61)
+	"tracecore.microbiology.clusters.badges",
 ]
 # FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
 # = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
@@ -785,6 +810,7 @@ tracecore_ksnk_todos = [
 	"tracecore.infection_program.todos.todos",  # hoạt động kế hoạch quá hạn
 	"tracecore.occupational_safety.todos.todos",  # bước theo dõi phơi nhiễm đến hạn (chỉ đếm)
 	"tracecore.admin_reports.council_report.todos",  # báo cáo Hội đồng mới nhất
+	"tracecore.microbiology.clusters.todos",  # FEAT-069: cảnh báo cụm ca, khai báo chưa xong của khoa
 ]
 # FEAT-065 (A-145 Q1, D8): dòng tự động của tự đánh giá QĐ 38 — mỗi hàm trả {check_method: fn(year) -> {status, source_ref}}
 # (admin_reports.self_assessment); FEAT-068 đăng ký `isolation_rooms`.
@@ -806,6 +832,9 @@ tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
 # FEAT-070 (A-148 d, FR-M15-04): R01/R11 mở NC từ mẫu môi trường Không đạt → M2 tạo Incident Environment; ctx {sample,
 # department, description}, trả tên Incident
 tracecore_environment_nc = ["tracecore.reprocessing.incidents.on_environment_nc"]
+# FEAT-069 (A-150 Q3, FR-M14-09): hành động kiểm soát ổ dịch → M2 tạo Incident Outbreak Control (một NC/ổ dịch) và thêm
+# CAPA Action; ctx {outbreak, department, description, action: {description, responsible, due_date}}, trả tên Incident
+tracecore_outbreak_nc = ["tracecore.reprocessing.incidents.on_outbreak_nc"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
@@ -862,6 +891,8 @@ scheduler_events = {
 			"tracecore.hai_surveillance.reminders.run",
 			# FEAT-064 (A-147 l): lần theo dõi NKVM sau ra viện đến hạn → R11, một lần mỗi ngày
 			"tracecore.hai_surveillance.ssi.remind",
+			# FEAT-069 (FR-M14-10, A-150 Q6): nhắc khai báo bệnh truyền nhiễm nửa hạn, quá hạn, rồi mỗi ngày
+			"tracecore.microbiology.notifiable.remind",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],
@@ -910,6 +941,8 @@ scheduler_events = {
 		# FEAT-070, FR-M15-05, .1, FR-M15-06: giao việc lấy mẫu đến kỳ, nhắc R01 mẫu quá hạn 7 ngày, nhắc hạ tầng trước 7 ngày
 		"tracecore.environmental_hygiene.plans.run_daily",
 		"tracecore.environmental_hygiene.audits.run_daily",
+		# FEAT-069 (FR-M13-13, A-150 Q2): đếm cụm ca theo ngưỡng, cảnh báo R01, R11
+		"tracecore.microbiology.clusters.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước
