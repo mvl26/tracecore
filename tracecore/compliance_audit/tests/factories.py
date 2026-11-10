@@ -50,6 +50,44 @@ def make_template(code="T-PNC", submit=True, **values):
 	return doc
 
 
+# FEAT-061: mẫu vệ sinh tay "Theo cơ hội" — mỗi thời điểm là một mục `MOMENT-<n>` (kiểu Lựa chọn, không chấm theo mục)
+VST_MOMENTS = ("1", "2", "3", "4", "5")
+
+
+def make_vst_template(code="T-VST", submit=True, moments=VST_MOMENTS, **values):
+	doc = frappe.get_doc(
+		{
+			"doctype": "Audit Template",
+			"template_code": code,
+			"title": "Hand hygiene - 5 moments",
+			"audit_type": "Hand Hygiene",
+			"scoring_method": "By Opportunity",
+			"effective_from": today(),
+			"min_sample": 0,
+			"legal_ref": "QD 3916/QD-BYT",
+			"items": [
+				{
+					"item_code": f"MOMENT-{moment}",
+					"section": "WHO 5 moments",
+					"question": f"Moment {moment}",
+					"answer_type": "Choice",
+					"weight": 0,
+				}
+				for moment in moments
+			],
+			**values,
+		}
+	).insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+	return doc
+
+
+def opportunity(role="Nurse", moment="1", action="Hand Rub", **values):
+	"""Một cơ hội vệ sinh tay (dòng child hoặc đối số RPC)."""
+	return {"subject_role": role, "moment": moment, "action": action, **values}
+
+
 def make_dept_user(email, role, department):
 	"""Người dùng có role và User Permission Department (R08/R12 của khoa)."""
 	user = factories.make_user(email, [role])

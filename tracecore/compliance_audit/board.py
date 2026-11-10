@@ -10,7 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, get_first_day, getdate, today
 
-from tracecore.compliance_audit import compliance, nc, schedule, templates
+from tracecore.compliance_audit import compliance, hand_hygiene, nc, schedule, templates
 from tracecore.core.errors import BlockedError
 
 TEMPLATE_FIELDS = (
@@ -227,6 +227,15 @@ def _feedback_share(names):
 	return round(len(set(sent)) * 100 / len(names))
 
 
+def _hand_hygiene(filters):
+	by_moment = hand_hygiene.breakdown(filters, "moment")
+	return {
+		"total": sum(row.total for row in by_moment),
+		"profession": hand_hygiene.breakdown(filters, "profession"),
+		"moment": by_moment,
+	}
+
+
 def compliance_board(filters):
 	filters = frappe._dict(filters or {})
 	filters.from_date = getdate(filters.from_date or get_first_day(today()))
@@ -276,6 +285,7 @@ def compliance_board(filters):
 		"filters": filters,
 		"cards": cards,
 		"rows": rows,
+		"hand_hygiene": _hand_hygiene(filters),  # FEAT-061: tỷ lệ theo nghề và thời điểm (FR-M12-05)
 		"recent": recent,
 		"pending": nc.pending() if can_decide else [],
 		"can_decide": can_decide,

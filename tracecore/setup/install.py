@@ -3,6 +3,7 @@
 
 import frappe
 
+from tracecore.compliance_audit.seed import ensure_seed as ensure_compliance_seed  # FEAT-061
 from tracecore.core.notification import ensure_default_rules
 from tracecore.costing.setup import ensure_categories
 from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_settings
@@ -54,6 +55,7 @@ def after_install():
 	ensure_error_codes()
 	ensure_daily_test_settings()
 	ensure_microbiology_seed()
+	ensure_compliance_seed()  # FEAT-061: 8 mẫu phiếu giám sát Nháp (FR-M12-02)
 
 
 TEST_GENDERS = ("Male", "Female", "Other")

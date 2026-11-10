@@ -123,10 +123,10 @@
 | FR-M11-12 | Dự án cải tiến chất lượng, nghiên cứu KSNK | Should | Active | BA v1.12 (A-113) | UC-42 | _TBD_ | FEAT-072 | _TBD_ |
 | FR-M11-13 | Tự đánh giá chất lượng KSNK hằng năm | Should | Active | BA v1.12 (A-113) | UC-42 | ADR-015 | FEAT-072 | _TBD_ |
 | FR-M12-01 | Mẫu phiếu duyệt → khóa phiên bản | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-060 | _TBD_ |
-| FR-M12-02 | Bộ mẫu phiếu khởi tạo ở trạng thái Nháp | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-061 | _TBD_ |
+| FR-M12-02 | Bộ mẫu phiếu khởi tạo ở trạng thái Nháp | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-061 | `compliance_audit/tests/test_seed.py` |
 | FR-M12-03 | Lịch giám sát giao việc, độ bao phủ | Must | Active | BA v1.12 (A-113) | UC-43 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-04 | Ghi phiếu PDA ≤ 3 chạm, offline | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
-| FR-M12-05 | Tỷ lệ tuân thủ vệ sinh tay theo cơ hội | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-061 | _TBD_ |
+| FR-M12-05 | Tỷ lệ tuân thủ vệ sinh tay theo cơ hội | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-061 | `compliance_audit/tests/test_hand_hygiene.py`, `compliance_audit/tests/test_hand_hygiene_aggregate.py`, `compliance_audit/tests/test_hygiene_report.py` |
 | FR-M12-06 | Điểm % theo trọng số, mục N/A loại trừ | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-07 | Gói dự phòng chấm tất-cả-hoặc-không | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-062 | _TBD_ |
 | FR-M12-08 | Phản hồi kết quả phiếu cho khoa | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
@@ -242,7 +242,7 @@ NFR là yêu cầu hệ thống, không có use case sở hữu riêng; cột Us
 | NFR-PRIV-01 | Security — Dữ liệu sức khỏe BN/NV là dữ liệu nhạy cảm (NĐ 356/2025): tối thiểu hóa (không họ tên BN, không kết quả XN NV), mã BN mã hóa (ADR-010), che trên danh sách/export, xem đầy đủ có lý do + Audit Log. Kiểm: test tự động mọi report/export M13, M14, M16 không chứa mã BN rõ; JSON DocType không có trường họ tên BN. | Must | Active | BA v1.12 (A-113) | UC-48, UC-51, UC-55 | ADR-010; ADR-008 | FEAT-056 (F-22); đo lại FEAT-063, FEAT-067, FEAT-071 | _TBD_ |
 | NFR-PRIV-02 | Security — Thời hạn lưu dữ liệu ca bệnh, phơi nhiễm cấu hình được; hết hạn xóa định danh, giữ số liệu tổng hợp. Kiểm: job định kỳ có test; thời hạn do bệnh viện quyết (OQ-V12-07). | Must | Active | BA v1.12 (A-113) | UC-48, UC-55 | ADR-010 | FEAT-063, FEAT-071 | _TBD_ |
 | NFR-SEC-09 | Security — Ma trận quyền mở rộng cho R11–R13 và mọi DocType mới được kiểm thử tự động từ CSV như NFR-SEC-07; R12, R08 giới hạn theo Department. Kiểm: CI chạy test ma trận. | Must | Active | BA v1.12 (A-113) | — | ADR-010 | FEAT-056 (F-22) | _TBD_ |
-| NFR-USAB-03 | Usability — Phiếu giám sát trên PDA: mỗi cơ hội vệ sinh tay ≤ 3 chạm, nút ≥ 48 px, chữ ≥ 16 px, dùng được một tay. Kiểm: E2E PDA 412×915 (khi người dùng cho chạy). | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-002; ADR-015 | FEAT-061 | _TBD_ |
+| NFR-USAB-03 | Usability — Phiếu giám sát trên PDA: mỗi cơ hội vệ sinh tay ≤ 3 chạm, nút ≥ 48 px, chữ ≥ 16 px, dùng được một tay. Kiểm: E2E PDA 412×915 (khi người dùng cho chạy). | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-002; ADR-015 | FEAT-061 | `tests/test_hygiene_screen.py` (không E2E) |
 | NFR-AVAIL-05 | Reliability — Phiếu giám sát, mẫu số, báo phơi nhiễm hoạt động offline ≥ 4 giờ và đồng bộ idempotent (ADR-003, NFR-AVAIL-02). Kiểm: test mất mạng như FR-M12-04. | Must | Active | BA v1.12 (A-113) | UC-44, UC-47, UC-55 | ADR-003 | FEAT-061, FEAT-062, FEAT-071 | _TBD_ |
 | NFR-MAINT-04 | Maintainability — Tiêu chí chuyên môn (mẫu phiếu, định nghĩa ca, quy tắc đa kháng, ngưỡng môi trường, bước theo dõi phơi nhiễm) là dữ liệu cấu hình có phiên bản; nâng cấp app không ghi đè bản bệnh viện đã sửa. Kiểm: test migrate hai lần giữ bản đã sửa. | Must | Active | BA v1.12 (A-113) | UC-43, UC-48, UC-51, UC-54, UC-55 | ADR-015 | FEAT-060, FEAT-063, FEAT-067, FEAT-070, FEAT-071 | _TBD_ |
 | NFR-PERF-05 | Performance efficiency — Bảng chỉ số KSNK mở ≤ 3 giây với 24 tháng dữ liệu của bệnh viện 1.000 giường (đọc IC Indicator Value, không tính lại khi mở). Kiểm: test hiệu năng với dữ liệu sinh giả. | Must | Active | BA v1.12 (A-113) | UC-57 | ADR-015 | FEAT-065 | _TBD_ |

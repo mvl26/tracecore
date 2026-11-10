@@ -122,6 +122,8 @@ page_js = {
 		"public/js/station_audit.js",
 		# FEAT-071: báo phơi nhiễm nghề nghiệp (SCR-63) trên PDA của khoa, chức năng trạm EXPOSURE
 		"public/js/station_exposure.js",
+		# FEAT-061: phiếu vệ sinh tay theo cơ hội (SCR-51), mở từ màn phiếu giám sát khi mẫu là "Theo cơ hội"
+		"public/js/station_hand_hygiene.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -231,6 +233,8 @@ after_migrate = [
 	"tracecore.infection_program.permissions.ensure_permissions",
 	# FEAT-071 (A-137): mẫu theo dõi phơi nhiễm, vaccine mẫu ở trạng thái Nháp; không ghi đè bản R01 đã sửa
 	"tracecore.occupational_safety.config.ensure_default_config",
+	# FEAT-061 (A-140; FR-M12-02): 8 mẫu phiếu giám sát khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.compliance_audit.seed.ensure_seed",
 ]
 
 # Uninstallation

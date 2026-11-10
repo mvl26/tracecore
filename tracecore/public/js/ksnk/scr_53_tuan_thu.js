@@ -170,6 +170,49 @@ const TcKsnkScr53 = {
 		);
 	},
 
+	// FEAT-061 (FR-M12-05, BRU-AUD-002): tuân thủ vệ sinh tay theo cơ hội, theo nghề nghiệp và thời điểm; tỷ lệ đúng kỹ thuật
+	// tách riêng; nhãn cỡ mẫu bằng chữ do server dựng
+	hygieneHtml(hygiene, esc) {
+		if (!hygiene || !hygiene.total) return "";
+		const table = (title, rows, label) =>
+			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(title)}</th>` +
+			`<th scope="col" class="is-num">${esc(__("Opportunities"))}</th>` +
+			`<th scope="col" class="is-num">${esc(__("With Action"))}</th>` +
+			`<th scope="col" class="is-num">${esc(__("Compliance Rate"))}</th>` +
+			`<th scope="col" class="is-num">${esc(__("Technique Rate"))}</th>` +
+			`<th scope="col">${esc(__("Result"))}</th></tr></thead><tbody>` +
+			rows
+				.map(
+					(row) =>
+						`<tr><td>${esc(label(row))}</td><td class="is-num">${esc(
+							row.total
+						)}</td>` +
+						`<td class="is-num">${esc(row.actioned)}</td>` +
+						`<td class="is-num">${esc(TcKsnkScr53.percent(row.rate))}</td>` +
+						`<td class="is-num">${esc(
+							row.technique_rate === null || row.technique_rate === undefined
+								? "—"
+								: TcKsnkScr53.percent(row.technique_rate)
+						)}</td><td>${esc(row.rate_label || "")}</td></tr>`
+				)
+				.join("") +
+			`</tbody></table>`;
+		return (
+			`<section class="tc-ksnk-card"><h3>${esc(
+				__("Hand hygiene compliance by opportunity")
+			)}</h3>` +
+			table(__("Observed Profession"), hygiene.profession || [], (row) =>
+				__(row.key || "Other")
+			) +
+			table(__("Moment"), hygiene.moment || [], (row) => __("Moment {0}", [row.key])) +
+			`<p class="tc-ksnk-note">${esc(
+				__(
+					"Compliance = opportunities with a hand rub or hand wash / all opportunities. Correct technique is counted apart and excludes opportunities not done."
+				)
+			)}</p></section>`
+		);
+	},
+
 	recentHtml(data, esc) {
 		const self = TcKsnkScr53;
 		const body = (data.recent || [])
@@ -331,6 +374,7 @@ const TcKsnkScr53 = {
 			`<section class="tc-ksnk-card"><h3>${esc(
 				__("Compliance by template and department")
 			)}</h3>${self.rowsHtml(data, esc)}</section>` +
+			self.hygieneHtml(data.hand_hygiene, esc) +
 			`<div class="tc-ksnk-grid">` +
 			`<section class="tc-ksnk-card"><h3>${esc(__("Recent audits"))}</h3>${self.recentHtml(
 				data,

@@ -11,7 +11,7 @@ from frappe.query_builder.functions import Avg, Count, Sum
 from frappe.utils import cint, flt, getdate
 from pypika.terms import Case
 
-from tracecore.compliance_audit import sessions, templates
+from tracecore.compliance_audit import hand_hygiene, sessions, templates
 
 DOCTYPE = "Audit Session"
 NOT_CALCULATED, INSUFFICIENT = "Not calculated", "Insufficient sample"
@@ -55,6 +55,8 @@ def aggregate(filters):
 	query = (
 		frappe.qb.from_(session)
 		.where(session.docstatus == 1)
+		# FEAT-061: phiếu vệ sinh tay đếm theo cơ hội (BRU-AUD-002) nên lấy từ hand_hygiene.rows, không đếm theo phiếu
+		.where(session.scoring_method != templates.BY_OPPORTUNITY)
 		.where(session.audit_date[getdate(filters.from_date) : getdate(filters.to_date)])
 		.groupby(session.template_code, session.department)
 		.select(
@@ -76,6 +78,10 @@ def aggregate(filters):
 	if allowed is not None:
 		query = query.where(session.department.isin(allowed or [""]))
 	rows = [frappe._dict(row) for row in query.run(as_dict=True)]
+	if (
+		not filters.exclude_opportunity
+	):  # hàm chỉ số "phiếu Đạt" không gộp tỷ lệ theo cơ hội (HAND_HYGIENE_RATE riêng)
+		rows += hand_hygiene.rows(filters)
 	if not rows and filters.department and filters.template_code:
 		if allowed is None or filters.department in allowed:
 			rows = [

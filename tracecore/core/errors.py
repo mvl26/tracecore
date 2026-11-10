@@ -348,6 +348,10 @@ HTTP_STATUS: dict[str, int] = {
 	"EXPOSURE_STEP_INVALID": 422,
 	"EXPOSURE_NOT_ALLOWED": 403,
 	"EXPOSURE_STATUS_INVALID": 409,
+	# FEAT-061: vệ sinh tay theo cơ hội — cơ hội sai mẫu/thời điểm, phiếu chưa có cơ hội, ghi vào phiếu đã ghi sổ
+	"AUDIT_OPPORTUNITY_INVALID": 422,
+	"AUDIT_NO_OPPORTUNITY": 422,
+	"AUDIT_SESSION_POSTED": 409,
 }
 DEFAULT_HTTP_STATUS = 409
 # Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ

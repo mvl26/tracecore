@@ -9,7 +9,8 @@
 import frappe
 from frappe.utils import cint, getdate
 
-from tracecore.compliance_audit import sessions, templates
+from tracecore.compliance_audit import hand_hygiene, sessions, templates
+from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Audit Session"
 SAVEPOINT = "tc_audit_submit"
@@ -75,9 +76,22 @@ def departments(user=None):
 	)
 
 
+def opportunity_templates(on=None):
+	"""Mẫu "Theo cơ hội" (SCR-51) kèm thời điểm sinh từ mục của mẫu (FEAT-061, D2)."""
+	rows = active_templates(on, (templates.BY_OPPORTUNITY,))
+	for row in rows:
+		row["moments"] = [
+			{"moment": hand_hygiene.moment_of(item.item_code), "label": item.question}
+			for item in row["items"]
+			if hand_hygiene.moment_of(item.item_code)
+		] or [{"moment": str(number), "label": ""} for number in range(1, 6)]  # mẫu không khai thời điểm: 1-5
+	return rows
+
+
 def context(observer, on=None):
 	return {
 		"templates": active_templates(on),
+		"opportunity_templates": opportunity_templates(on),  # FEAT-061 (SCR-51)
 		"departments": departments(),
 		"observer": observer,
 		"observer_name": frappe.db.get_value("Employee", observer, "employee_name") if observer else None,
@@ -96,6 +110,111 @@ def _result(name):
 	return row
 
 
+def _blocked(code, title, reason, action):
+	return BlockedError(Block(code, title, reason, action))
+
+
+def _own_draft(name, observer):
+	"""Phiếu Nháp của chính người giám sát (người khác không ghi sổ hộ)."""
+	doc = frappe.get_doc(DOCTYPE, name)
+	if doc.observer != observer:
+		raise _blocked(
+			"AUDIT_NOT_ALLOWED",
+			frappe._("Not your audit"),
+			frappe._("This audit was started by another observer."),
+			frappe._("Start your own audit."),
+		)
+	return doc
+
+
+def _post_draft(name, observer, replay):
+	doc = _own_draft(name, observer)
+	doc.flags.tc_replay = bool(replay)
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		doc.submit()
+	except Exception:
+		frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+	return _result(doc.name)
+
+
+def _opportunity_row(item):
+	return {
+		"subject_role": item.get("subject_role"),
+		"subject_employee": item.get("subject_employee") or None,
+		"moment": item.get("moment"),
+		"action": item.get("action"),
+		"technique_ok": 1 if item.get("technique_ok") else 0,
+		"glove_instead": 1 if item.get("glove_instead") else 0,
+		"client_uuid": item.get("uuid"),
+	}
+
+
+def _progress(doc):
+	stats = hand_hygiene.stats(doc.opportunities)
+	return {
+		"name": doc.name,
+		"opportunities": stats.total,
+		"actioned": stats.actioned,
+		"rate": stats.rate,
+		"technique_rate": stats.technique_rate,
+	}
+
+
+def record_opportunity(observer, values, on, replay=False):
+	"""Ghi một cơ hội vệ sinh tay vào phiếu Nháp (SCR-51; FR-M12-04, BRU-AUD-002/004).
+
+	Lần đầu của ``session_uuid`` tạo phiếu Nháp; mỗi lần sau thêm đúng một dòng, khử trùng theo UUID của cơ hội
+	(``Hand Hygiene Opportunity.client_uuid``) nên phát lại offline sau khi khóa idempotent hết hạn vẫn không trùng.
+	Trả ``{name, opportunities, actioned, rate, technique_rate}`` (tỷ lệ tạm tính).
+	"""
+	uuid = values.get("session_uuid")
+	if not uuid:
+		raise hand_hygiene.invalid(
+			frappe._("The audit has no client ID."), frappe._("Start the audit again from the first screen.")
+		)
+	if frappe.db.get_value(DOCTYPE, {"client_uuid": uuid, "docstatus": 1}, "name"):
+		raise _blocked(
+			"AUDIT_SESSION_POSTED",
+			frappe._("Audit already posted"),
+			frappe._("This audit was posted; opportunities cannot be added."),
+			frappe._("Start a new audit."),
+		)
+	item = frappe.parse_json(values.get("opportunity") or "{}")
+	name = frappe.db.get_value(DOCTYPE, {"client_uuid": uuid, "docstatus": 0}, "name")
+	frappe.db.savepoint(SAVEPOINT)
+	try:
+		if name:
+			doc = _own_draft(name, observer)
+			if item.get("uuid") and any(row.client_uuid == item.get("uuid") for row in doc.opportunities):
+				return _progress(doc)
+			doc.append("opportunities", _opportunity_row(item))
+			doc.flags.tc_replay = bool(replay)
+			doc.save()
+		else:
+			doc = frappe.get_doc(
+				{
+					"doctype": DOCTYPE,
+					"audit_template": values.get("audit_template"),
+					"department": values.get("department"),
+					"location": values.get("location"),
+					"mode": values.get("mode") or "Announced",
+					"observer": observer,
+					"audit_date": getdate(on),
+					"started_at": values.get("started_at"),
+					"client_uuid": uuid,
+					"opportunities": [_opportunity_row(item)],
+				}
+			)
+			doc.flags.tc_replay = bool(replay)
+			doc.insert()
+	except Exception:
+		frappe.db.rollback(save_point=SAVEPOINT)
+		raise
+	return _progress(doc)
+
+
 def submit(observer, values, on, replay=False):
 	"""Tạo + ghi sổ phiếu; trả {name, score_pct, result, critical_failed, sample_flag, sample_n}."""
 	uuid = values.get("session_uuid")
@@ -103,6 +222,9 @@ def submit(observer, values, on, replay=False):
 		existing = frappe.db.get_value(DOCTYPE, {"client_uuid": uuid, "docstatus": 1}, "name")
 		if existing:
 			return _result(existing)
+		draft = frappe.db.get_value(DOCTYPE, {"client_uuid": uuid, "docstatus": 0}, "name")
+		if draft:  # FEAT-061: phiếu vệ sinh tay đã có cơ hội (Nháp) → ghi sổ
+			return _post_draft(draft, observer, replay)
 	doc = frappe.get_doc(
 		{
 			"doctype": DOCTYPE,

@@ -9379,3 +9379,104 @@ Department Name,Tên khoa,Immunization Requirement Department
 Department Name,Tên khoa,Occupational Exposure
 Employee Name,Tên nhân viên,Occupational Exposure
 Employee Name,Tên nhân viên,Staff Immunization
+Hand hygiene - 5 moments,Vệ sinh tay - 5 thời điểm
+Standard precautions - PPE,Phòng ngừa chuẩn - phương tiện phòng hộ cá nhân (PPE)
+VAP prevention bundle,Gói dự phòng viêm phổi thở máy (VAP)
+CLABSI prevention bundle,Gói dự phòng nhiễm khuẩn huyết do catheter trung tâm (CLABSI)
+CAUTI prevention bundle,Gói dự phòng nhiễm khuẩn tiết niệu do sonde tiểu (CAUTI)
+SSI prevention bundle,Gói dự phòng nhiễm khuẩn vết mổ (SSI)
+Environmental surface hygiene,Vệ sinh môi trường bề mặt
+Outsourced service provider,Đơn vị thuê ngoài
+WHO 5 moments of hand hygiene,5 thời điểm vệ sinh tay của WHO
+Standard precautions,Phòng ngừa chuẩn
+Bundle elements,Các thành phần của gói
+Environmental cleaning,Vệ sinh môi trường
+Service provider,Đơn vị cung cấp dịch vụ
+Before touching a patient,Trước khi tiếp xúc người bệnh
+Before a clean or aseptic procedure,Trước khi làm thủ thuật sạch hoặc vô khuẩn
+After body fluid exposure risk,Sau khi có nguy cơ tiếp xúc dịch cơ thể
+After touching a patient,Sau khi tiếp xúc người bệnh
+After touching a patient's surroundings,Sau khi tiếp xúc môi trường xung quanh người bệnh
+Hand hygiene before putting on gloves,Vệ sinh tay trước khi đeo găng
+PPE is chosen to match the exposure risk,Chọn PPE phù hợp với nguy cơ phơi nhiễm
+PPE is put on in the right order,Mặc PPE đúng trình tự
+PPE is removed in the right order,Tháo PPE đúng trình tự
+Used PPE is discarded in the right waste bin,PPE đã dùng được bỏ đúng thùng chất thải
+Sharps box is not more than three-quarters full,Hộp đựng vật sắc nhọn không đầy quá 3/4
+No two-handed needle recapping,Không đậy nắp kim bằng hai tay
+Hand hygiene right after removing PPE,Vệ sinh tay ngay sau khi tháo PPE
+Head of bed is raised 30 to 45 degrees,Đầu giường nâng cao 30 đến 45 độ
+Sedation is reviewed daily and readiness to wean is checked,Rà soát an thần hằng ngày và đánh giá khả năng cai máy
+Oral care is done per protocol,Chăm sóc răng miệng theo quy trình
+Ventilator circuit is closed and not changed without indication,"Dây máy thở là hệ thống kín, không thay khi không có chỉ định"
+Cuff pressure is checked per protocol,Kiểm tra áp lực bóng chèn theo quy trình
+Hand hygiene before airway care,Vệ sinh tay trước khi chăm sóc đường thở
+Need for the central line is reviewed daily,Rà soát hằng ngày sự cần thiết của catheter trung tâm
+"Insertion site dressing is clean, dry and intact","Băng vị trí đặt catheter sạch, khô và còn nguyên vẹn"
+Hub is disinfected before each access,Khử khuẩn đầu nối trước mỗi lần sử dụng
+Dressing and tubing are changed on schedule and dated,Băng và dây truyền được thay đúng lịch và ghi ngày
+Hand hygiene before catheter care,Vệ sinh tay trước khi chăm sóc catheter
+Skin antisepsis with chlorhexidine at insertion and dressing change,Sát khuẩn da bằng chlorhexidine khi đặt catheter và khi thay băng
+Need for the urinary catheter is reviewed daily,Rà soát hằng ngày sự cần thiết của sonde tiểu
+Closed drainage system is intact,Hệ thống dẫn lưu kín còn nguyên vẹn
+Drainage bag is below bladder level and off the floor,Túi nước tiểu thấp hơn bàng quang và không chạm sàn
+Catheter is secured and perineal care is done,Sonde được cố định và vệ sinh vùng tầng sinh môn
+Urine is sampled from the sampling port with aseptic technique,Lấy nước tiểu xét nghiệm từ cổng lấy mẫu bằng kỹ thuật vô khuẩn
+Prophylactic antibiotic is given within 60 minutes before incision,Kháng sinh dự phòng được dùng trong vòng 60 phút trước rạch da
+"Hair is removed only if needed, using clippers","Chỉ cắt lông khi cần, dùng máy cắt"
+Skin antisepsis is done and allowed to dry,Sát khuẩn da và để khô tự nhiên
+Surgical hand antisepsis is done by the team,Kíp mổ sát khuẩn tay phẫu thuật
+Normal body temperature is kept during surgery,Giữ thân nhiệt bình thường trong khi mổ
+Dressing stays intact and is changed with aseptic technique,Băng vết mổ còn nguyên vẹn và được thay bằng kỹ thuật vô khuẩn
+Cleaning schedule is posted and signed,Lịch vệ sinh được niêm yết và có ký xác nhận
+Right disinfectant and dilution are used,Dùng đúng hóa chất khử khuẩn và đúng nồng độ pha loãng
+High-touch surfaces are visibly clean,Bề mặt tiếp xúc nhiều sạch bằng mắt thường
+Cleaning goes from clean to dirty areas,Lau từ khu sạch sang khu bẩn
+Mops and cloths are changed and washed per protocol,Cây lau và khăn lau được thay và giặt theo quy trình
+Blood or body fluid spill is cleaned with the spill kit,Xử lý máu hoặc dịch cơ thể đổ tràn bằng bộ dụng cụ xử lý tràn đổ
+A valid license is on file,Có giấy phép còn hiệu lực lưu hồ sơ
+Staff wear the required PPE,Nhân viên mặc đủ PPE theo yêu cầu
+Staff are trained in infection control,Nhân viên được tập huấn kiểm soát nhiễm khuẩn
+Waste or linen is handled and transported separately,Chất thải hoặc đồ vải được xử lý và vận chuyển riêng
+Service log is signed by the department,Sổ theo dõi dịch vụ có khoa ký xác nhận
+Equipment and vehicles are clean,Dụng cụ và phương tiện vận chuyển sạch
+Profession and moment required,Cần chọn nghề nghiệp và thời điểm
+The opportunity has no profession or no moment.,Cơ hội chưa có nghề nghiệp hoặc thời điểm.
+"Tap the profession and the moment, then tap the action.","Chạm nghề nghiệp và thời điểm, rồi chạm hành động."
+No opportunity recorded,Chưa ghi cơ hội nào
+The audit has no hand hygiene opportunity.,Phiếu chưa có cơ hội vệ sinh tay nào.
+Record at least one opportunity before posting.,Ghi ít nhất một cơ hội trước khi ghi sổ.
+Audit {0} posted,Đã ghi sổ phiếu {0}
+Compliance {0} % over {1} opportunities. Feedback was sent to the department.,Tuân thủ {0} % trên {1} cơ hội. Đã gửi phản hồi cho khoa.
+Moment {0}: {1},Thời điểm {0}: {1}
+Moment {0},Thời điểm {0}
+Waiting to sync,Chờ đồng bộ
+Just recorded,Vừa ghi
+Post audit ({0} opportunities),Ghi sổ phiếu ({0} cơ hội)
+Hand hygiene,Vệ sinh tay
+Observed profession,Người được quan sát
+"Tap one moment, then tap the action.","Chạm 1 thời điểm, rồi chạm hành động."
+With Action,Có hành động
+Compliance Rate,Tỷ lệ tuân thủ
+Technique Rate,Tỷ lệ đúng kỹ thuật
+Hand hygiene compliance by opportunity,Tuân thủ vệ sinh tay theo cơ hội
+Compliance = opportunities with a hand rub or hand wash / all opportunities. Correct technique is counted apart and excludes opportunities not done.,Tuân thủ = cơ hội có chà tay cồn hoặc rửa tay xà phòng / tổng cơ hội. Đúng kỹ thuật tính riêng và không gồm cơ hội không thực hiện.
+Opportunity not valid,Cơ hội không hợp lệ
+Template {0} does not record hand hygiene opportunities.,Mẫu {0} không ghi cơ hội vệ sinh tay.
+"Choose a hand hygiene template, or remove the opportunities.",Chọn mẫu vệ sinh tay hoặc bỏ các cơ hội.
+Moment {0} is not in template {1}.,Thời điểm {0} không có trong mẫu {1}.
+Choose one of the moments of the template: {0}.,Chọn một trong các thời điểm của mẫu: {0}.
+Group by must be one of: {0}.,Nhóm theo phải là một trong: {0}.
+Not your audit,Không phải phiếu của bạn
+This audit was started by another observer.,Phiếu này do người giám sát khác mở.
+Start your own audit.,Hãy mở phiếu của bạn.
+The audit has no client ID.,Phiếu chưa có mã phiên từ thiết bị.
+Start the audit again from the first screen.,Mở lại phiếu từ màn đầu tiên.
+Audit already posted,Phiếu đã ghi sổ
+This audit was posted; opportunities cannot be added.,Phiếu này đã ghi sổ nên không thêm cơ hội được.
+Start a new audit.,Mở phiếu mới.
+QD 3916/QD-BYT,QĐ 3916/QĐ-BYT
+QD 3671/QD-BYT,QĐ 3671/QĐ-BYT
+TT 16/2018/TT-BYT,TT 16/2018/TT-BYT
+TT 16/2018/TT-BYT Article 25,TT 16/2018/TT-BYT Điều 25
+Compliance,Tuân thủ
