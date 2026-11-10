@@ -148,7 +148,7 @@
 | FR-M13-10 | Tỷ suất NKBV/1.000 ngày theo khoa và kỳ | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-11 | Khóa kỳ tháng, mở khóa có lý do | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-12 | Xuất báo cáo NKVM/NK hồi sức theo ánh xạ cột | Must | Active | BA v1.12 (A-113) | UC-49 | SCR-58; A-147 | FEAT-064 | `core/tests/test_exporter.py`, `hai_surveillance/tests/test_ssi_export.py`, `v1/tests/test_ssi_api.py`, `tests/test_ksnk_scr57.py` |
-| FR-M13-13 | Cảnh báo cụm ca vượt ngưỡng | Should | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-069 | _TBD_ |
+| FR-M13-13 | Cảnh báo cụm ca vượt ngưỡng | Should | Active | BA v1.12 (A-113) | UC-50 | SCR-58; A-150 | FEAT-069 | `microbiology/tests/test_clusters.py` |
 | FR-M13-14 | Điều tra cắt ngang tỷ lệ hiện mắc | Could | Active | BA v1.12 (A-113) | UC-50 | SCR-58; ADR-010; ADR-015; A-149 | FEAT-072 | `compliance_audit/tests/test_prevalence.py`, `hai_surveillance/tests/test_prevalence.py`, `v1/tests/test_hai_prevalence_api.py` |
 | FR-M13-15 | Che mã BN trên danh sách, báo cáo, export M13 | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010; A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M14-01 | Import vi sinh theo hồ sơ ánh xạ, bỏ trùng | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; ADR-009; A-136 | FEAT-067 | `microbiology/tests/test_imports.py`, `core/tests/test_importer_wide.py`, `tests/test_ksnk_scr59.py` |
@@ -159,8 +159,8 @@
 | FR-M14-06 | Lệnh cách ly: loại phòng ngừa, lý do, danh sách | Must | Active | BA v1.12 (A-113) | UC-52 | SCR-60; ADR-010; A-146 | FEAT-068 | `microbiology/tests/test_isolation.py`, `v1/tests/test_isolation_api.py`, `tests/test_ksnk_scr60.py` |
 | FR-M14-07 | Tỷ lệ khoa có phòng cách ly đạt điều kiện | Must | Active | BA v1.12 (A-113) | UC-52 | SCR-60; A-146 | FEAT-068 | `microbiology/tests/test_isolation.py`, `microbiology/tests/test_isolation_patch.py` |
 | FR-M14-08 | Báo cáo kháng thuốc quý S/I/R | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; A-136 | FEAT-067 | `microbiology/tests/test_resistance.py` |
-| FR-M14-09 | Điều tra ổ dịch, đường cong dịch | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
-| FR-M14-10 | Khai báo bệnh truyền nhiễm theo hạn nhóm bệnh | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
+| FR-M14-09 | Điều tra ổ dịch, đường cong dịch | Must | Active | BA v1.12 (A-113) | UC-53 | SCR-61; A-150 | FEAT-069 | `microbiology/tests/test_outbreaks.py` |
+| FR-M14-10 | Khai báo bệnh truyền nhiễm theo hạn nhóm bệnh | Must | Active | BA v1.12 (A-113) | UC-53 | SCR-61; A-150 | FEAT-069 | `microbiology/tests/test_notifiable.py` |
 | FR-M15-01 | Vùng vệ sinh: mức nguy cơ, bên chịu trách nhiệm | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
 | FR-M15-02 | Tổng hợp tỷ lệ đạt VSMT theo mức nguy cơ, khoa | Must | Active | BA v1.12 (A-113) | UC-54 | ADR-015 | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
 | FR-M15-03 | Kết quả xét nghiệm môi trường so ngưỡng | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
