@@ -1,7 +1,7 @@
 # Use Cases: TraceCore
 
 > Version 1.12 (Amendment A-113) · 2026-11-03 · Nguồn: #06 UC v1.10, giữ nguyên ID UC-01..UC-33; [v1.11] thêm UC-34..37 (M10 chất thải y tế) và UC-38..39 (M9: thông báo, import/export) theo quyết định chủ đầu tư 2026-10-17; [v1.12] thêm UC-40..57 (M11–M17 KSNK toàn viện và M9 mở rộng) theo BA v1.12 / Amendment A-113 — người dùng duyệt D1–D11 ngày 03/11/2026, chủ đầu tư chưa xác nhận. Tổng 57 UC, 17 phân hệ, 63 màn hình đã duyệt (SCR-01..43, SCR-47..66; SCR-44..46 đề xuất).
-> **Revision:** v1.11 2026-10-17 Finalized · v1.12 A-113 2026-11-03 Miyano (dev lead) + Claude Code — thêm UC-40..57, actor R11–R13, Phụ lục A 18 dòng; không đổi UC-01..39.
+> **Revision:** v1.11 2026-10-17 Finalized · v1.12 A-113 2026-11-03 Miyano (dev lead) + Claude Code — thêm UC-40..57, actor R11–R13, Phụ lục A 18 dòng; không đổi UC-01..39. · v1.12 A-138 2026-11-10 Miyano (dev lead) + Claude Code — UC-40 kiểm thêm trình độ, khối ngành sức khỏe, chứng chỉ, toàn thời gian theo vai trò, tách người phụ trách và giám sát viên chuyên trách dưới 150 giường, kiểm Chủ tịch / Thư ký / khối bắt buộc của Hội đồng theo bộ tiêu chí cấu hình; thêm FR-M11-01.5..01.8, 02.3, 02.4, 03.3, BRU-ICP-006, 007; không thêm UC.
 > Tài liệu use-case-centric theo use-case-guide: đặc tả văn bản là nội dung chính, sơ đồ Mermaid theo phân hệ là minh họa. Không có user story (US-xx chỉ giữ làm tham chiếu gốc). Mọi luồng chính / thay thế / ngoại lệ được giữ nguyên nội dung từ #06 v1.10; nhãn A1/E1 là nhãn gốc của #06 để các TC-xx-xx tiếp tục tham chiếu được.
 
 ## Mục lục
@@ -1752,35 +1752,38 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 
 - **ID:** UC-40
 - **Actors:** R01 Trưởng khoa KSNK (primary); R10 Quản trị hệ thống — khai báo số giường, tuyến; R13 Hội đồng KSNK & BGĐ — đọc; R02 — sửa danh sách mạng lưới (secondary)
-- **Description:** R10 khai báo số giường và tuyến của cơ sở trong `IC Program Settings`; hệ thống tính cơ cấu KSNK bắt buộc theo BRU-ICP-001 và hiển thị trạng thái đáp ứng từng thành phần. R01 nhập quyết định thành lập Hội đồng (`IC Committee` + thành viên), danh sách mạng lưới viên theo khoa (`IC Network Member`) và nhân sự bộ phận giám sát; hệ thống kiểm tra đủ Chủ tịch/Thư ký, đại diện các khối, và mỗi khoa có đủ bác sĩ + điều dưỡng/hộ sinh/KTV.
+- **Description:** R10 khai báo số giường và tuyến của cơ sở trong `IC Program Settings`; hệ thống tính cơ cấu KSNK bắt buộc theo BRU-ICP-001 và hiển thị trạng thái đáp ứng từng thành phần. R01 nhập quyết định thành lập Hội đồng (`IC Committee` + thành viên), danh sách mạng lưới viên theo khoa (`IC Network Member`) và nhân sự bộ phận giám sát; hệ thống kiểm tra đủ Chủ tịch/Thư ký, đại diện các khối, và mỗi khoa có đủ bác sĩ + điều dưỡng/hộ sinh/KTV. [A-138] Hệ thống còn kiểm từng người của khoa/bộ phận KSNK có đạt yêu cầu của vai trò (trình độ, khối ngành sức khỏe, chứng chỉ KSNK, toàn thời gian) theo bộ tiêu chí do R01 duyệt, và chỉ đếm người đạt.
 - **Preconditions:** Department (khoa) và Employee đã có trên ERPNext/HRMS; vai trò R01, R10, R13 đã gán (FEAT-056).
 - **Postconditions (success):** `IC Program Settings` lưu số giường, tuyến, tỷ lệ giám sát viên; `IC Committee` ghi sổ với đúng 1 Chủ tịch, 1 Thư ký; `IC Network Member` hiệu lực theo khoa; bảng trạng thái cơ cấu hiển thị thành phần Đủ/Thiếu bằng chữ; mọi cảnh báo thiếu ghi Audit Log.
-- **Traces to:** FR-M11-01, FR-M11-02, FR-M11-03
-- **Business rules:** BRU-ICP-001 (cơ cấu tối thiểu theo giường; giám sát viên = giường ÷ 150 làm tròn lên, OQ-V12-04), BRU-ICP-002 (Chủ tịch là Giám đốc, Thư ký là trưởng khoa/người phụ trách KSNK), BRU-ICP-003 (mỗi khoa ≥ 1 bác sĩ và ≥ 1 điều dưỡng/hộ sinh/KTV)
+- **Traces to:** FR-M11-01, FR-M11-02, FR-M11-03 (kể cả FR-M11-01.5..01.8, 02.3, 02.4, 03.3 theo A-138)
+- **Business rules:** BRU-ICP-001 (cơ cấu tối thiểu theo giường; giám sát viên = giường ÷ 150, cách làm tròn cấu hình được, mặc định lên, OQ-V12-04), BRU-ICP-002 (Chủ tịch là Giám đốc, Thư ký là trưởng khoa/người phụ trách KSNK), BRU-ICP-003 (mỗi khoa ≥ 1 bác sĩ và ≥ 1 điều dưỡng/hộ sinh/KTV), BRU-ICP-006 (trình độ, chứng chỉ, toàn thời gian theo vai trò), BRU-ICP-007 (dưới 150 giường: người phụ trách và giám sát viên chuyên trách)
 - **Screens:** SCR-47 (Cơ cấu KSNK: cài đặt chương trình, Hội đồng, mạng lưới)
 - **Priority:** Must · Frequency: khi thành lập/kiện toàn (1–2 lần/năm); cập nhật mạng lưới theo biến động nhân sự.
 - **Related NFR:** NFR-SEC-09 (ma trận quyền R11–R13), NFR-MAINT-04
 
 **Main success scenario**
-1. R10 mở SCR-47, nhập `bed_count`, `facility_level` (Chuyên sâu / Cơ bản / Ban đầu), `has_inpatient`, `surveillance_ratio_beds` (mặc định 150), `doc_review_months` (mặc định 12) và lưu.
+1. R10 mở SCR-47, nhập `bed_count`, `facility_level` (Chuyên sâu / Cơ bản / Ban đầu), `has_inpatient`, `surveillance_ratio_beds` (mặc định 150), `surveillance_rounding` (Lên / Xuống, mặc định Lên), `director` (người đứng đầu cơ sở), `doc_review_months` (mặc định 12) và lưu. [A-138]
 2. Hệ thống tính cơ cấu bắt buộc theo BRU-ICP-001 (ví dụ 420 giường → Hội đồng, khoa KSNK, mạng lưới, ≥ 3 giám sát viên) và hiển thị bảng thành phần với nhãn chữ Đủ / Thiếu.
 3. R01 tạo `IC Committee`: số và ngày quyết định, file quyết định, hiệu lực; thêm thành viên (nhân viên, vai trò Chủ tịch / Phó Chủ tịch / Thư ký / Ủy viên, khoa, khối đại diện).
 4. R01 ghi sổ Hội đồng; hệ thống kiểm tra đúng 1 Chủ tịch và 1 Thư ký; nếu thiếu đại diện vi sinh–xét nghiệm, dược hoặc khoa lâm sàng nguy cơ cao thì ghi sổ được kèm cảnh báo và Audit Log.
 5. R01/R02 nhập mạng lưới viên theo khoa (`IC Network Member`: nhân viên, khoa, loại thành viên, ngày bổ nhiệm, số quyết định, hiệu lực).
 6. Mỗi lần danh sách mạng lưới thay đổi, hệ thống kiểm tra từng khoa lâm sàng, cận lâm sàng và liệt kê khoa thiếu bác sĩ hoặc thiếu điều dưỡng/hộ sinh/KTV.
-7. R01 nhập nhân sự bộ phận giám sát; hệ thống so với số giám sát viên tối thiểu và cập nhật bảng trạng thái cơ cấu.
+7. R01 nhập nhân sự khoa/bộ phận KSNK kèm vai trò (Trưởng khoa / Điều dưỡng trưởng / Người phụ trách / Giám sát viên) và chuyên trách; R01/R02 nhập bậc học và khối ngành sức khỏe trên hồ sơ nhân viên. Hệ thống đối chiếu từng người với yêu cầu của vai trò và với chứng chỉ KSNK / kết quả đào tạo KSNK đạt (FEAT-059), so số người đạt với số tối thiểu và cập nhật bảng trạng thái cơ cấu kèm lý do từng người chưa đạt. [A-138]
 
 **Alternate flows**
-- A1. Cơ sở dưới 150 giường → cơ cấu bắt buộc là bộ phận KSNK, mạng lưới và ≥ 1 người chuyên trách; không bắt buộc Hội đồng đầy đủ.
+- A1. Cơ sở dưới 150 giường → cơ cấu bắt buộc là bộ phận KSNK, mạng lưới, ≥ 1 người phụ trách toàn thời gian và ≥ 1 giám sát viên chuyên trách (hai thành phần riêng; một người được tính cho cả hai vai hay không theo cấu hình, mặc định không, OQ-V12-11); không bắt buộc Hội đồng đầy đủ. [A-138]
 - A2. Cơ sở không có nội trú → chỉ cần 1 người phụ trách KSNK; các thành phần khác hiển thị Không áp dụng.
 - A3. Kiện toàn Hội đồng mới → tạo `IC Committee` mới với `valid_from`; bản cũ hết hiệu lực theo `valid_to`, lịch sử giữ nguyên.
+- A4. [A-138] Người trong khoa/bộ phận KSNK chưa có dữ liệu bậc học hoặc chứng chỉ → hệ thống hiển thị "Chưa xác minh", không đếm vào số tối thiểu, không tính là thành phần thiếu (OQ-V12-12).
+- A5. [A-138] Chưa có bộ tiêu chí cơ cấu Đã duyệt → hệ thống chỉ kiểm phần đếm và hiển thị "Chưa duyệt bộ tiêu chí cơ cấu"; R01 mở bộ tiêu chí Nháp (nạp sẵn theo TT 16/2018), rà soát và duyệt (OQ-V12-16).
 
 **Exception flows**
 - E1. Ghi sổ Hội đồng thiếu Chủ tịch hoặc Thư ký, hoặc có hơn một → hệ thống chặn ghi sổ, chỉ rõ vai trò thiếu/thừa (FR-M11-02).
+- E1a. [A-138] Chủ tịch không phải người đứng đầu cơ sở, Thư ký không phải trưởng khoa/người phụ trách KSNK, hoặc thiếu khối bắt buộc (lãnh đạo phòng chức năng, vi sinh–xét nghiệm, dược, khoa lâm sàng nguy cơ cao) → vẫn ghi sổ, cảnh báo nêu rõ và ghi Audit Log (mức Chặn nếu bộ tiêu chí đặt, OQ-V12-13).
 - E2. Vô hiệu mạng lưới viên cuối cùng của một khoa → cảnh báo R01 và khoa vào danh sách thiếu (FR-M11-03).
 - E3. R12 mở màn hình → chỉ đọc dữ liệu mạng lưới của khoa mình (User Permission Department).
 
-**Open issues:** Làm tròn số giám sát viên lên hay xuống (OQ-V12-04).
+**Open issues:** Làm tròn số giám sát viên lên hay xuống (OQ-V12-04, đã có cấu hình); [A-138] OQ-V12-11..16 (kiêm nhiệm ở dưới 150 giường, chưa xác minh, mức chặn Hội đồng, loại chứng chỉ được công nhận, xác định Giám đốc, bộ tiêu chí chưa duyệt).
 
 _Nguồn: BA v1.12 §4.1 bước 1–2, §4.3 FR-M11-01..03, §4.4; TT 16/2018 Điều 16, 17, 19, 22. Không có US/TC/API gốc — bước detailed-design bổ sung._
 

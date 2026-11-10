@@ -46,6 +46,7 @@
 | 05/11/2026 | Amendment A-121 (SCR-07, SCR-08; thay T4-BOM-01 và ticket 1827): thành phần bộ ở T4 và T3 là bảng như T1 (T4: STT, Vị trí, Dụng cụ có ảnh nhỏ, Số lượng trong bộ, Xác nhận; T3: STT, Tên dụng cụ, Số lượng trong bộ, Số lượng thực tế là ô nhập thay nút −/+, Thao tác Đủ/Thiếu/Hỏng); hành vi tick, Xác nhận tất cả, đếm n/n, dòng thiếu R02 đã xác nhận, nhắc bảo dưỡng giữ nguyên. Không đổi dữ liệu, không thêm SCR. |
 | 06/11/2026 | Gộp A-113 vào `develop`: FR M9 mở rộng đổi số FR-M9-22..28 → FR-M9-24..30 (FR-M9-22/23 đã dùng cho A-117/A-119). Không đổi SCR. |
 | 06/11/2026 | **Amendment A-131** (người dùng yêu cầu trong chat kèm bản giao diện v1.12): các màn WEB SCR-47, 48, 49, 50, 53, 54, 56..62, 64, 65, 66 nằm chung **một màn quản lý** — Page `tc_ksnk` (`/app/tc-ksnk/<màn>`) với rail riêng chia 5 nhóm, badge việc chờ, bộ lọc năm/kỳ/khoa dùng chung. PDA (SCR-51, 52, 63) và DEPT (SCR-55, view khoa SCR-66) không đổi. Không thêm/bớt SCR. |
+| 10/11/2026 | **Amendment A-138** (Miyano dev lead + Claude Code; người dùng giao đối chiếu TT 16/2018 Điều 16–22; chủ đầu tư chưa xác nhận): SCR-47 bảng thành phần thêm cột **Lý do** liệt kê từng người chưa đạt yêu cầu vai trò (bằng chữ), thêm trạng thái chữ **Chưa xác minh** (badge cảnh báo, có chữ, không chỉ màu), tách hai dòng "Người phụ trách (toàn thời gian)" và "Giám sát viên chuyên trách" khi < 150 giường, dòng Trưởng khoa và Điều dưỡng trưởng khi ≥ 150 giường, và thông báo "Chưa duyệt bộ tiêu chí cơ cấu" kèm lối mở bộ tiêu chí cho R01. Form IC Program Settings thêm `director`, `surveillance_rounding`. Không thêm SCR: bộ tiêu chí (`IC Structure Profile`) là DocType Desk trong cùng Page `tc_ksnk`, hiện hành vi như các form khác của M11. Chỉ dùng token `--tc-*` sẵn có. |
 
 ## 1. Overview
 
@@ -466,7 +467,7 @@ Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17
 | SCR-41 | Báo cáo / dashboard chất thải & sự cố, định mức | WEB (view DEPT) | Dashboard | UC-37 | FR-M10-06, FR-M10-07, FR-M10-08 | — (v1.11) |
 | SCR-42 | Trung tâm thông báo (web, trạm, PDA) | WEB + STN + PDA + DEPT | List View | UC-38 | FR-M9-10 | — (v1.11) |
 | SCR-43 | Import / Export danh mục & hồ sơ lưu trữ; [v1.12] hồ sơ ánh xạ cột nhập file ngoài | WEB | List View + Form (wizard) | UC-39, UC-57 | FR-M9-11, FR-M9-12, FR-M9-28 | — (v1.11) |
-| SCR-47 | Cơ cấu KSNK: cài đặt chương trình, Hội đồng, mạng lưới | WEB | Master Form | UC-40 | FR-M11-01, FR-M11-02, FR-M11-03 | — (v1.12, BA SRS-lite) |
+| SCR-47 | Cơ cấu KSNK: cài đặt chương trình, Hội đồng, mạng lưới [A-138: kiểm điều kiện TT 16/2018, cột Lý do, bộ tiêu chí] | WEB | Master Form | UC-40 | FR-M11-01, FR-M11-02, FR-M11-03 | — (v1.12, BA SRS-lite) |
 | SCR-48 | Kế hoạch KSNK năm & hoạt động; biên bản họp Hội đồng; sổ văn bản nội bộ | WEB | Form chứng từ | UC-41 | FR-M11-04, FR-M11-05, FR-M11-06, FR-M11-07, FR-M11-08 | — (v1.12, BA SRS-lite) |
 | SCR-49 | Đào tạo, sinh viên thực tập, cải tiến chất lượng (báo cáo) | WEB | Dashboard | UC-42 | FR-M11-09, FR-M11-10, FR-M11-11, FR-M11-12, FR-M11-13 | — (v1.12, BA SRS-lite) |
 | SCR-50 | Mẫu phiếu giám sát (builder có phiên bản) & lịch giám sát | WEB | Master Form | UC-43 | FR-M12-01, FR-M12-02, FR-M12-03 | — (v1.12, BA SRS-lite) |
