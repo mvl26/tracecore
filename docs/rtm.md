@@ -136,21 +136,21 @@
 | FR-M12-12 | Hóa chất KSNK theo khoa–tháng, 3 nguồn | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015; SCR-54; A-142 | FEAT-066 | `compliance_audit/tests/test_chemicals.py`, `compliance_audit/tests/test_chemical_import.py`, `v1/tests/test_ic_chemical_api.py`, `tests/test_ksnk_scr54.py` |
 | FR-M12-13 | Nhắc giấy phép đơn vị thuê ngoài 60/30/7 ngày | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015; SCR-54; A-142 | FEAT-066 | `compliance_audit/tests/test_vendors.py` |
 | FR-M12-14 | Báo cáo tuân thủ theo kỳ PDF/Excel | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
-| FR-M13-01 | Định nghĩa ca có phiên bản theo ngày khởi phát | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-01 | Định nghĩa ca có phiên bản theo ngày khởi phát | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-02 | Mẫu số ngày: một bản ghi/(ngày, khoa) | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-014; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
 | FR-M13-03 | Nhắc 10:00 khi thiếu mẫu số hôm trước | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-014; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
 | FR-M13-04 | Đợt thiết bị, mã BN mã hóa, ngày thiết bị | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-010; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
-| FR-M13-05 | Ca NKBV Nghi ngờ → Xác định/Loại trừ | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010 | FEAT-063 | _TBD_ |
-| FR-M13-06 | Kiểm tra ngưỡng giờ/ngày thiết bị khi xác định ca | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-05 | Ca NKBV Nghi ngờ → Xác định/Loại trừ | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010; A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
+| FR-M13-06 | Kiểm tra ngưỡng giờ/ngày thiết bị khi xác định ca | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-07 | Đăng ký phẫu thuật, NNIS, cửa sổ theo dõi | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
 | FR-M13-08 | Lịch theo dõi NKVM sau ra viện | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
 | FR-M13-09 | Kháng sinh dự phòng: tỷ lệ có, đúng thời điểm | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
-| FR-M13-10 | Tỷ suất NKBV/1.000 ngày theo khoa và kỳ | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
-| FR-M13-11 | Khóa kỳ tháng, mở khóa có lý do | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
+| FR-M13-10 | Tỷ suất NKBV/1.000 ngày theo khoa và kỳ | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
+| FR-M13-11 | Khóa kỳ tháng, mở khóa có lý do | Must | Active | BA v1.12 (A-113) | UC-48 | A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M13-12 | Xuất báo cáo NKVM/NK hồi sức theo ánh xạ cột | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |
 | FR-M13-13 | Cảnh báo cụm ca vượt ngưỡng | Should | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-069 | _TBD_ |
 | FR-M13-14 | Điều tra cắt ngang tỷ lệ hiện mắc | Could | Active | BA v1.12 (A-113) | UC-50 | _TBD_ | FEAT-072 | _TBD_ |
-| FR-M13-15 | Che mã BN trên danh sách, báo cáo, export M13 | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010 | FEAT-063 | _TBD_ |
+| FR-M13-15 | Che mã BN trên danh sách, báo cáo, export M13 | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010; A-144 | FEAT-063 | `hai_surveillance/tests`, `v1/tests/test_hai_case_api.py` |
 | FR-M14-01 | Import vi sinh theo hồ sơ ánh xạ, bỏ trùng | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; ADR-009; A-136 | FEAT-067 | `microbiology/tests/test_imports.py`, `core/tests/test_importer_wide.py`, `tests/test_ksnk_scr59.py` |
 | FR-M14-02 | Nhập tay kết quả vi sinh có xác nhận | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; A-136 | FEAT-067 | `v1/tests/test_micro_api.py` |
 | FR-M14-03 | Gắn nhãn đa kháng theo MDRO Rule, chủng đầu | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; ADR-015; A-136 | FEAT-067 | `microbiology/doctype/mdro_rule/test_mdro_rule.py`, `microbiology/doctype/microbiology_isolate/test_microbiology_isolate.py`, `microbiology/tests/test_seed.py` |
