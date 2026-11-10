@@ -29,8 +29,8 @@ class TestPermissionMatrix(FrappeTestCase):
 		# + Ward Daily Census, Device Episode (FEAT-062, A-141 g)
 		# + IC Chemical Consumption (FEAT-066, A-142)
 		# + IC Structure Profile (FEAT-094, A-138 h)
-		self.assertEqual(len(rows), 81)
-		self.assertEqual(len({row.code for row in rows}), 81)
+		self.assertEqual(len(rows), 84)
+		self.assertEqual(len({row.code for row in rows}), 84)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

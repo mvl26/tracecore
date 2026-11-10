@@ -111,7 +111,9 @@ const TcKsnk = {
 					__(
 						"Infection control network members work on the department portal, not on this screen."
 					)
-				)}</div>`
+				)}` +
+				// FEAT-065 (FR-M9-26): R12 mở Cổng khoa — chỉ số khoa cạnh toàn viện + việc cần làm
+				` <a href="/ksnk-khoa/chi-so">${esc(__("Open the department portal"))}</a></div>`
 			);
 		}
 		return (

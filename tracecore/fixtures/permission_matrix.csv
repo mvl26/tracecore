@@ -80,3 +80,6 @@ DT-ICSP,IC Structure Profile,RW,R,,,,,,,,R,,,R,"FEAT-094 A-138 h (FR-M11-01.8): 
 DT-HAIDEF,HAI Case Definition,RWS,,,,,,,R,,R,R,R,,"FEAT-063 A-144 a (FR-M13-01, BRU-HAI-001): định nghĩa ca có phiên bản; R01 nhập và duyệt; R08, R11, R12 đọc để chọn mã; R10 đọc"
 DT-HAICASE,HAI Case,RWSA,,,,,,,RW,,,RWS,RW,,"FEAT-063 A-144 b, j (FR-M13-05, FR-M13-15.3): R08, R12 tạo ca Nghi ngờ khoa mình (User Permission Department); R11, R01 xác định/loại trừ; R01 hủy; R13, R10 không đọc dữ liệu người bệnh; không ai xóa"
 DT-ICPER,IC Reporting Period,RW,,,,,,,,,R,R,,R,"FEAT-063 A-144 Q1, c (FR-M13-11): chỉ R01 khóa/mở khóa qua dịch vụ; R10, R11, R13 xem"
+DT-ICCR,IC Council Report,R,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-25, BRU-RPT-002): báo cáo Hội đồng một trang hằng tháng do hệ thống sinh; không ai ghi tay"
+DT-ICQD38,IC QD38 Criterion,RW,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, NFR-MAINT-04): danh mục chỉ tiêu QĐ 38; R01 sửa, ngưng dùng thay vì xóa"
+DT-ICSA,IC Self Assessment,RWS,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, .1): R01 lập và ghi sổ tự đánh giá năm; R10, R11, R13 đọc"

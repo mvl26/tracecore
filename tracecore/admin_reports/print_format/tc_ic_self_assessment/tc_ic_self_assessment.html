@@ -1,0 +1,30 @@
+{#- Yearly self-assessment against Decision 38/QD-BYT, A4 (FEAT-065, FR-M9-29, FR-M9-29.1; UC-57 step 7). Data:
+    tracecore.admin_reports.self_assessment.tc_ic_self_assessment_context. Each line shows its source: Auto / Manual. -#}
+{%- set cs = tc_ic_self_assessment_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC IC Self Assessment" -%}
+<style>
+.tc-isa { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-isa table { width: 100%; border-collapse: collapse; }
+.tc-isa .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-isa h1 { font-size: {{ tc.fs_lg }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-isa .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-isa table.tc-lines tr { page-break-inside: avoid; }
+.tc-isa table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-isa table.tc-lines th, .tc-isa table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; vertical-align: top; }
+.tc-isa .tc-text { white-space: pre-wrap; margin-top: {{ tc.sp_3 }}; }
+</style>
+<div class="tc-isa">
+	<h1>{{ _("Self-assessment against Decision 38/QD-BYT, year {0}", context=T).format(cs.year) | e }}</h1>
+	<div class="tc-code">{{ cs.name | e }}{% if cs.assessed_on %} · {{ cs.assessed_on | e }}{% endif %}</div>
+	{%- if cs.draft %}<div class="tc-draft">{{ _("Draft: not submitted by the head of infection control", context=T) | e }}</div>{%- endif %}
+	<table class="tc-lines">
+		<thead><tr><th>{{ _("Criterion 2025-2030", context=T) | e }}</th><th>{{ _("Data source", context=T) | e }}</th><th>{{ _("Source", context=T) | e }}</th><th>{{ _("Status", context=T) | e }}</th><th>{{ _("Evidence", context=T) | e }}</th></tr></thead>
+		<tbody>
+		{%- for row in cs.rows %}
+			<tr><td>{{ row.criterion | e }}</td><td>{{ row.source_hint | e }}{% if row.source_ref %}<br>{{ row.source_ref | e }}{% endif %}</td><td>{{ row.source | e }}</td><td>{{ row.status | e }}</td><td>{{ row.evidence | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	{%- if cs.remarks %}<div class="tc-text">{{ cs.remarks | e }}</div>{%- endif %}
+</div>

@@ -109,6 +109,15 @@ V112_ROWS.update(
 	}
 )
 
+# FEAT-065 (A-145, FR-M9-25, FR-M9-29): báo cáo Hội đồng do hệ thống ghi; R01 sửa chỉ tiêu QĐ 38, lập và ghi sổ tự đánh giá
+V112_ROWS.update(
+	{
+		"DT-ICCR": ("IC Council Report", {"R01": "R", "R10": "R", "R11": "R", "R13": "R"}),
+		"DT-ICQD38": ("IC QD38 Criterion", {"R01": "RW", "R10": "R", "R11": "R", "R13": "R"}),
+		"DT-ICSA": ("IC Self Assessment", {"R01": "RWS", "R10": "R", "R11": "R", "R13": "R"}),
+	}
+)
+
 
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):

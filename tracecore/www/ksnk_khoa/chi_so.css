@@ -1,0 +1,19 @@
+/* Cổng khoa — chỉ số KSNK của khoa (SCR-66 view DEPT, FEAT-065). Chỉ dùng token --tc-*; nền trang dùng chung với
+   bao_phoi_nhiem.css + mau_so.css. Việc cần làm: mỗi dòng một khối alert có viền trái theo mức (kèm chữ). */
+.tc-ind-todos {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-ind-todos li {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-base);
+}
+
+.tc-ind-portal .tc-badge {
+	display: inline-block;
+	min-width: var(--tc-touch-min);
+	font-weight: var(--tc-fw-bold);
+	text-align: center;
+}

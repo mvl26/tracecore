@@ -141,6 +141,8 @@ EVENTS = {
 		0,
 		("TC R01", FALLBACK_ROLE),
 	),
+	# FEAT-065 (FR-M9-25, A-145 D6): báo cáo Hội đồng KSNK một trang hằng tháng → R01, R13 (email + trong ứng dụng)
+	"IC_COUNCIL_REPORT": ("Infection control committee report ready", "Normal", 1, 0, ("TC R01", "TC R13")),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

@@ -27,7 +27,9 @@
   "exposure_prophylaxis_hours",
   "section_hai",
   "census_reminder_time",
-  "bundle_reminder_time"
+  "bundle_reminder_time",
+  "section_council",
+  "council_report_workday"
  ],
  "fields": [
   {
@@ -175,11 +177,24 @@
    "label": "Bundle Check Reminder Time",
    "default": "10:00:00",
    "description": "After this time, open device episodes without a posted prevention bundle audit today are reminded. Default 10:00."
+  },
+  {
+   "fieldname": "section_council",
+   "fieldtype": "Section Break",
+   "label": "Committee Report"
+  },
+  {
+   "default": "5",
+   "fieldname": "council_report_workday",
+   "fieldtype": "Int",
+   "label": "Committee Report Working Day",
+   "non_negative": 1,
+   "description": "The monthly one-page report for the infection control committee is generated at 07:00 on this working day of the month (Monday to Friday, holidays excluded). Default 5."
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 12:00:00.000000",
+ "modified": "2026-11-10 10:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

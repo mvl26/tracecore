@@ -1,0 +1,91 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Department infection control indicators") }}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/tracecore/css/tokens.css">
+{% endblock %}
+
+{# base portal styles shared with the exposure report and census pages + styles of this page (FEAT-065) #}
+{% block style %}
+<style>
+{% include "tracecore/www/ksnk_khoa/bao_phoi_nhiem.css" %}
+{% include "tracecore/www/ksnk_khoa/mau_so.css" %}
+{% include "tracecore/www/ksnk_khoa/chi_so.css" %}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="tc-dept tc-census-portal tc-ind-portal">
+	<div class="tc-dept-zonebar" role="banner">
+		<span>{{ _("Department") }}: {{ department_label }}</span>
+	</div>
+	{% include "templates/includes/ksnk_khoa_nav.html" %}
+	<h1 class="tc-dept-title">{{ _("Department infection control indicators") }} <span class="tc-mono tc-dept-ref">SCR-66</span></h1>
+
+	{% if forbidden %}
+	<div class="tc-alert tc-alert-error" role="alert">
+		<div class="tc-alert-title">{{ _("Department not allowed") }}</div>
+		<div>{{ _("You can only see the indicators of your own department.") }}</div>
+		<div>{{ _("Choose your department below.") }}</div>
+	</div>
+	{% endif %}
+
+	{% if not department %}
+	<p class="tc-empty">{{ _("No department is assigned to you. Ask R10 to set your department.") }}</p>
+	{% else %}
+	{% if departments | length > 1 %}
+	<form class="tc-cen-pick" method="get" action="/ksnk-khoa/chi-so">
+		<label class="tc-field">{{ _("Department") }}
+			<select name="department">
+				{% for row in departments %}<option value="{{ row.name }}"{% if row.name == department %} selected{% endif %}>{{ row.label }}</option>{% endfor %}
+			</select>
+		</label>
+		<button type="submit" class="tc-btn">{{ _("Show") }}</button>
+	</form>
+	{% endif %}
+
+	<section class="tc-cen-card" aria-labelledby="tc-ind-title">
+		<h2 id="tc-ind-title">{{ _("Indicators of the department next to the whole hospital") }}{% if period_label %} · {{ _("Period {0}").format(period_label) }}{% endif %}</h2>
+		{% if period_label and not locked %}<p class="tc-alert tc-alert-warn">{{ _("Provisional: the period is not locked yet.") }}</p>{% endif %}
+		{% if rows %}
+		<div class="tc-cen-scroll">
+		<table class="tc-cen-table">
+			<thead><tr>
+				<th scope="col">{{ _("Code") }}</th><th scope="col">{{ _("Indicator") }}</th>
+				<th scope="col" class="tc-num">{{ _("Department") }}</th><th scope="col" class="tc-num">{{ _("Whole hospital") }}</th>
+				<th scope="col" class="tc-num">{{ _("Target") }}</th><th scope="col">{{ _("Status") }}</th>
+			</tr></thead>
+			<tbody>
+			{% for row in rows %}
+			<tr>
+				<td class="tc-mono">{{ row.code }}</td><td>{{ row.indicator_name }}</td>
+				<td class="tc-num">{{ row.department_value }}</td><td class="tc-num">{{ row.hospital_value }}</td>
+				<td class="tc-num">{{ row.target }}</td>
+				<td><span class="tc-badge {{ row.badge }}">{{ row.status }}</span></td>
+			</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+		</div>
+		<p class="tc-hint">{{ _("Values are read from the indicator values saved when the period was locked. A rate with a zero denominator shows Not calculated, never 0.") }}</p>
+		{% else %}
+		<p class="tc-empty">{{ _("No indicator values yet. Values appear after a reporting period is locked.") }}</p>
+		{% endif %}
+	</section>
+
+	<section class="tc-cen-card" aria-labelledby="tc-todo-title">
+		<h2 id="tc-todo-title">{{ _("To do in the department") }}</h2>
+		{% if todos %}
+		<ul class="tc-ind-todos">
+			{% for item in todos %}
+			<li class="tc-alert {{ item.cls }}"><b>{{ item.title }}</b>{% if item.detail %} — {{ item.detail }}{% endif %}{% if item.link %} <a href="{{ item.link }}">{{ _("Open") }}</a>{% endif %}</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<p class="tc-empty">{{ _("Nothing to do right now.") }}</p>
+		{% endif %}
+	</section>
+	{% endif %}
+</div>
+{% endblock %}
