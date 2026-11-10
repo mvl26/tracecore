@@ -124,6 +124,8 @@ page_js = {
 		"public/js/station_exposure.js",
 		# FEAT-061: phiếu vệ sinh tay theo cơ hội (SCR-51), mở từ màn phiếu giám sát khi mẫu là "Theo cơ hội"
 		"public/js/station_hand_hygiene.js",
+		# FEAT-062: mẫu số ngày & đợt thiết bị (SCR-55) trên PDA của khoa, chức năng trạm CENSUS
+		"public/js/station_census.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -163,6 +165,8 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js", "Batch": "pub
 # FEAT-071 (A-137 Q4): Cổng khoa báo phơi nhiễm; file ở www/ksnk_khoa (package Python không có dấu gạch ngang)
 website_route_rules = [
 	{"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"},
+	# FEAT-062 (SCR-55 DEPT): Cổng khoa — mẫu số ngày & đợt thiết bị
+	{"from_route": "/ksnk-khoa/mau-so", "to_route": "ksnk_khoa/mau_so"},
 ]
 
 # website user home page (by Role)
@@ -293,12 +297,18 @@ permission_query_conditions = {
 	"Audit Session": "tracecore.compliance_audit.sessions.query_conditions",
 	# FEAT-071 (FR-M16-05, BRU-OCC-003): hồ sơ phơi nhiễm chỉ R01, R11; nhân viên xem hồ sơ của mình qua RPC
 	"Occupational Exposure": "tracecore.occupational_safety.exposure.query_conditions",
+	# FEAT-062 (NFR-SEC-09, A-141 g): R08/R12 chỉ thấy mẫu số và đợt thiết bị của khoa có User Permission
+	"Ward Daily Census": "tracecore.hai_surveillance.permissions.census_query",
+	"Device Episode": "tracecore.hai_surveillance.permissions.episode_query",
 }
 
 has_permission = {
 	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
 	"Audit Session": "tracecore.compliance_audit.sessions.has_permission",
 	"Occupational Exposure": "tracecore.occupational_safety.exposure.has_permission",
+	# FEAT-062
+	"Ward Daily Census": "tracecore.hai_surveillance.permissions.has_permission",
+	"Device Episode": "tracecore.hai_surveillance.permissions.has_permission",
 }
 
 # DocType Class
@@ -443,6 +453,9 @@ doc_events = {
 	"MDRO Rule": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
 	# FEAT-059 (A-135 c): sinh viên thực tập; không xóa
 	"Trainee Induction": dict(_AUDIT_EVENTS),
+	# FEAT-062 (A-141 a): mẫu số ngày, đợt thiết bị (mã BN Password không vào Audit Log); không xóa
+	"Ward Daily Census": dict(_AUDIT_EVENTS),
+	"Device Episode": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -663,6 +676,8 @@ tracecore_import_kinds = [
 	"tracecore.par.imports.import_kinds",
 	# FEAT-067: kết quả nuôi cấy và kháng sinh đồ (WHONET/CSV) qua Import Mapping Profile
 	"tracecore.microbiology.imports.import_kinds",
+	# FEAT-062: mẫu số ngày theo khoa xuất từ HIS (upsert, A-141 Q2)
+	"tracecore.hai_surveillance.imports.import_kinds",
 ]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
@@ -698,6 +713,8 @@ scheduler_events = {
 			"tracecore.admin_reports.environment.remind_missing",
 			# FEAT-048, FR-M10-03.2-.4: nhiệt độ kho lạnh và hạn lưu chất thải
 			"tracecore.waste.storage.run_checks",
+			# FEAT-062, FR-M13-03, FR-M12-07.2: nhắc mẫu số thiếu và gói dự phòng chưa chấm sau giờ cấu hình
+			"tracecore.hai_surveillance.reminders.run",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],

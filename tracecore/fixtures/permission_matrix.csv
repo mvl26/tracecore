@@ -73,3 +73,5 @@ DT-OCCEXP,Occupational Exposure,RW,,,,,,,,,,RW,,,"FEAT-071 A-137 j (FR-M16-05, B
 DT-EXPTPL,Exposure Follow-up Template,RW,,,,,,,,,,R,,,"FEAT-071 A-137 Q3 (FR-M16-04, BRU-OCC-004): R01 nhập và duyệt phiên bản"
 DT-IMMREQ,Immunization Requirement,RW,R,,,,,,,,,R,,,"FEAT-071 A-137 f (FR-M16-07, BRU-OCC-004): R01 nhập và duyệt"
 DT-STFIMM,Staff Immunization,RW,RW,,,,,,,,,R,,,"FEAT-071 (FR-M16-05.2, FR-M16-07): R02 ghi tiêm chủng"
+DT-WDCEN,Ward Daily Census,RW,,,,,,,RW,,R,RW,RW,,"FEAT-062 A-141 g (FR-M13-02, BRU-HAI-002): R08, R12 nhập mẫu số khoa mình (User Permission Department); R11, R01 mọi khoa; R10 xem; không ai xóa"
+DT-DEVEP,Device Episode,RW,,,,,,,RW,,,RW,RW,,"FEAT-062 A-141 g (FR-M13-04, ADR-010): có mã BN — R13 không đọc; R08, R12 chỉ khoa mình; không ai xóa"

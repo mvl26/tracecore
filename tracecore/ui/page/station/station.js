@@ -9,7 +9,7 @@
 // các file này nối sau file này qua hook page_js.
 // Màn riêng của bước nằm ở this.screen.
 /* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
-/* global AuditForm, ExposureReport */
+/* global AuditForm, ExposureReport, CensusStation */
 
 const RPC_TIMEOUT_MS = 8000;
 const RPC_READ_RETRY_MS = 600;
@@ -45,6 +45,8 @@ function tcScreenClass(key) {
 			return typeof AuditForm !== "undefined" ? AuditForm : null;
 		case "exposure": // báo phơi nhiễm trên PDA của khoa (FEAT-071, SCR-63)
 			return typeof ExposureReport !== "undefined" ? ExposureReport : null;
+		case "census": // FEAT-062 SCR-55: mẫu số ngày & đợt thiết bị trên PDA của khoa
+			return typeof CensusStation !== "undefined" ? CensusStation : null;
 		default:
 			return null;
 	}
@@ -1226,7 +1228,7 @@ class TraceCoreStation {
 			typeof TcOutbox !== "undefined" &&
 			Boolean(window.indexedDB) &&
 			((this.stationInfo && this.stationInfo.functions) || []).some(
-				(code) => ["RECEIVE", "PACK", "USE", "AUDIT", "EXPOSURE"].includes(code) // FEAT-060 phiếu giám sát, FEAT-071 báo phơi nhiễm offline
+				(code) => ["RECEIVE", "PACK", "USE", "AUDIT", "EXPOSURE", "CENSUS"].includes(code) // FEAT-060 phiếu giám sát, FEAT-071 báo phơi nhiễm, FEAT-062 mẫu số offline
 			)
 		);
 	}
@@ -1533,6 +1535,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.laundry.") ||
 			method.startsWith("tracecore.v1.waste.") ||
 			method.startsWith("tracecore.v1.exposure.") ||
+			method.startsWith("tracecore.v1.hai.") || // FEAT-062
 			method.startsWith("tracecore.v1.sync.") ||
 			method.startsWith("tracecore.v1.lookup.") ||
 			method.startsWith("tracecore.v1.code_range.") ||

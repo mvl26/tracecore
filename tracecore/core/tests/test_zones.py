@@ -15,7 +15,9 @@ class TestZones(IsolatedTestCase):
 		)
 		self.assertEqual(zones.allowed_functions("Sterile"), ("STERI_UNLOAD", "PUTAWAY", "ISSUE"))
 		# A-134 (f): PDA giám sát tuân thủ dùng tại khoa; FEAT-071 A-137: báo phơi nhiễm
-		self.assertEqual(zones.allowed_functions("Department"), ("USE", "AUDIT", "EXPOSURE"))
+		self.assertEqual(
+			zones.allowed_functions("Department"), ("USE", "AUDIT", "CENSUS", "EXPOSURE")
+		)  # FEAT-062
 		self.assertEqual(zones.allowed_functions("Linen"), ("LINEN",))
 		self.assertEqual(zones.allowed_functions("Waste"), ("WASTE",))
 		self.assertEqual(zones.allowed_functions("Unknown"), ())

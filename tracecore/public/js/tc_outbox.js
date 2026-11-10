@@ -16,6 +16,8 @@ const TC_QUEUEABLE = [
 	"tracecore.v1.audit.submit_session", // FEAT-060: phiếu giám sát KSNK (NFR-AVAIL-05)
 	"tracecore.v1.exposure.report", // FEAT-071, NFR-AVAIL-05: báo phơi nhiễm ban đầu
 	"tracecore.v1.audit.record_opportunity", // FEAT-061: từng cơ hội vệ sinh tay, phát lại trước submit_session
+	"tracecore.v1.hai.census_upsert", // FEAT-062, NFR-AVAIL-05: mẫu số ngày
+	"tracecore.v1.hai.device_episode", // FEAT-062: mở/đóng đợt thiết bị (mã BN đã mã hóa)
 ];
 
 function tcLocalDay(date = new Date()) {

@@ -272,9 +272,11 @@ class TraceCoreImport {
 			});
 		}
 		if (data.existing.length) {
-			html += `<p class="tc-imp-hint">${tc_imp_esc(
-				__("Already existing (skipped): {0}", [data.existing.join(", ")])
-			)}</p>`;
+			// FEAT-062 (A-141 Q2): loại import "upsert" (mẫu số ngày) cập nhật bản có sẵn thay vì bỏ qua
+			const hint = data.upsert
+				? __("Already existing (will be updated): {0}", [data.existing.join(", ")])
+				: __("Already existing (skipped): {0}", [data.existing.join(", ")]);
+			html += `<p class="tc-imp-hint">${tc_imp_esc(hint)}</p>`;
 		}
 		html += tc_imp_issue_table(data.issues);
 		this.region("result").html(html);
@@ -356,11 +358,17 @@ class TraceCoreImport {
 				errors.length ? "!" : "&#10003;",
 				{
 					title: __("Import {0} finished", [batch]),
-					reason: __("{0} created, {1} already existing, {2} with errors.", [
-						data.created,
-						data.skipped,
-						data.failed,
-					]),
+					reason: data.updated // FEAT-062: số bản ghi đã cập nhật (loại upsert)
+						? __("{0} created, {1} updated, {2} with errors.", [
+								data.created,
+								data.updated,
+								data.failed,
+						  ])
+						: __("{0} created, {1} already existing, {2} with errors.", [
+								data.created,
+								data.skipped,
+								data.failed,
+						  ]),
 					action: errors.length
 						? __("Fix the rows listed below and import the file again.")
 						: "",

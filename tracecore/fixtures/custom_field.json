@@ -316,7 +316,7 @@
   "fieldname": "tc_station_key",
   "fieldtype": "Select",
   "label": "TraceCore Station Step",
-  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nAUDIT\nEXPOSURE\nGeneral",
+  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nAUDIT\nEXPOSURE\nCENSUS\nGeneral",
   "insert_after": "category",
   "in_list_view": 1,
   "in_standard_filter": 1,
@@ -372,6 +372,31 @@
   "in_standard_filter": 1,
   "insert_after": "tc_is_ward",
   "description": "Clinical or paraclinical department that must have at least one doctor and one nurse, midwife or technician in the infection control network."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_inpatient",
+  "fieldname": "tc_inpatient",
+  "fieldtype": "Check",
+  "label": "Inpatient Ward",
+  "default": "0",
+  "in_standard_filter": 1,
+  "insert_after": "tc_ic_network_required",
+  "description": "Inpatient ward that enters a daily census; wards without this flag are not reminded."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_device_day_source",
+  "fieldname": "tc_device_day_source",
+  "fieldtype": "Select",
+  "label": "Device Days Source",
+  "options": "Daily Census\nDevice Episode",
+  "default": "Daily Census",
+  "insert_after": "tc_inpatient",
+  "depends_on": "eval:doc.tc_inpatient",
+  "description": "Where device days for infection rates come from: the daily census counts or the recorded device episodes."
  },
  {
   "doctype": "Custom Field",

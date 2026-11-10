@@ -16,6 +16,7 @@
   "location",
   "mode",
   "supplier",
+  "device_episode",
   "section_people",
   "observer",
   "observer_name",
@@ -129,6 +130,15 @@
    "options": "Supplier",
    "ignore_user_permissions": 1,
    "description": "Outsourced service or catering supplier."
+  },
+  {
+   "fieldname": "device_episode",
+   "fieldtype": "Link",
+   "label": "Device Episode",
+   "options": "Device Episode",
+   "search_index": 1,
+   "depends_on": "eval:doc.audit_type==\"Prevention Bundle\"",
+   "description": "Open device episode checked by this prevention bundle audit."
   },
   {
    "fieldname": "section_people",
@@ -297,7 +307,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 09:00:00.000000",
+ "modified": "2026-11-10 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Compliance Audit",
  "name": "Audit Session",

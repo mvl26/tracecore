@@ -315,6 +315,22 @@ class TestErrors(FrappeTestCase):
 		table.update(
 			{"AUDIT_OPPORTUNITY_INVALID": 422, "AUDIT_NO_OPPORTUNITY": 422, "AUDIT_SESSION_POSTED": 409}
 		)
+		# FEAT-062 (A-141): mẫu số ngày, đợt thiết bị, gói dự phòng
+		table.update(
+			{
+				"CENSUS_DUPLICATE": 409,
+				"CENSUS_COUNT_INVALID": 422,
+				"CENSUS_DATE_INVALID": 422,
+				"CENSUS_PERIOD_LOCKED": 409,
+				"DEVICE_EPISODE_DATE_INVALID": 422,
+				"DEVICE_EPISODE_OPEN": 409,
+				"DEVICE_EPISODE_CLOSED": 409,
+				"DEVICE_EPISODE_TYPE_INVALID": 422,
+				"HAI_NOT_ALLOWED": 403,
+				"AUDIT_EPISODE_REQUIRED": 422,
+				"AUDIT_EPISODE_INVALID": 422,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

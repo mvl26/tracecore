@@ -114,6 +114,10 @@ EVENTS = {
 	"EXPOSURE_TEMPLATE_MISSING": ("Exposure follow-up template missing", "Normal", 0, 0, ("TC R01",)),
 	"IMMUNIZATION_DUE": ("Staff vaccination due", "Normal", 0, 0, (FALLBACK_ROLE,)),
 	"PEP_STOCK_ALERT": ("Post-exposure prophylaxis stock alert", "Normal", 1, 0, ("TC R01",)),
+	# FEAT-062 (A-141 d, FR-M13-03, FR-M12-07): mẫu số thiếu → R11 (+ R12 của khoa do nơi gọi truyền);
+	# gói dự phòng chưa chấm → R08, R12 của khoa (nơi gọi truyền)
+	"CENSUS_MISSING": ("Daily census missing", "Normal", 0, 1, ("TC R11",)),
+	"BUNDLE_CHECK_DUE": ("Prevention bundle check due", "Normal", 0, 1, ()),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

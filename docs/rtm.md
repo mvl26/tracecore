@@ -128,7 +128,7 @@
 | FR-M12-04 | Ghi phiếu PDA ≤ 3 chạm, offline | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-05 | Tỷ lệ tuân thủ vệ sinh tay theo cơ hội | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-061 | `compliance_audit/tests/test_hand_hygiene.py`, `compliance_audit/tests/test_hand_hygiene_aggregate.py`, `compliance_audit/tests/test_hygiene_report.py` |
 | FR-M12-06 | Điểm % theo trọng số, mục N/A loại trừ | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
-| FR-M12-07 | Gói dự phòng chấm tất-cả-hoặc-không | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-062 | _TBD_ |
+| FR-M12-07 | Gói dự phòng chấm tất-cả-hoặc-không | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
 | FR-M12-08 | Phản hồi kết quả phiếu cho khoa | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-09 | Mục trọng yếu không đạt → đề nghị NC | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M12-10 | Chặn người giám sát tự quan sát mình | Must | Active | BA v1.12 (A-113) | UC-44 | ADR-015 | FEAT-060 | _TBD_ |
@@ -137,9 +137,9 @@
 | FR-M12-13 | Nhắc giấy phép đơn vị thuê ngoài 60/30/7 ngày | Must | Active | BA v1.12 (A-113) | UC-46 | ADR-015 | FEAT-066 | _TBD_ |
 | FR-M12-14 | Báo cáo tuân thủ theo kỳ PDF/Excel | Must | Active | BA v1.12 (A-113) | UC-45 | ADR-015 | FEAT-060 | _TBD_ |
 | FR-M13-01 | Định nghĩa ca có phiên bản theo ngày khởi phát | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
-| FR-M13-02 | Mẫu số ngày: một bản ghi/(ngày, khoa) | Must | Active | BA v1.12 (A-113) | UC-47 | _TBD_ | FEAT-062 | _TBD_ |
-| FR-M13-03 | Nhắc 10:00 khi thiếu mẫu số hôm trước | Must | Active | BA v1.12 (A-113) | UC-47 | _TBD_ | FEAT-062 | _TBD_ |
-| FR-M13-04 | Đợt thiết bị, mã BN mã hóa, ngày thiết bị | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-010 | FEAT-062 | _TBD_ |
+| FR-M13-02 | Mẫu số ngày: một bản ghi/(ngày, khoa) | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-014; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
+| FR-M13-03 | Nhắc 10:00 khi thiếu mẫu số hôm trước | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-014; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
+| FR-M13-04 | Đợt thiết bị, mã BN mã hóa, ngày thiết bị | Must | Active | BA v1.12 (A-113) | UC-47 | ADR-010; A-141 | FEAT-062 | `hai_surveillance/tests`, `compliance_audit/tests/test_bundle.py` |
 | FR-M13-05 | Ca NKBV Nghi ngờ → Xác định/Loại trừ | Must | Active | BA v1.12 (A-113) | UC-48 | ADR-010 | FEAT-063 | _TBD_ |
 | FR-M13-06 | Kiểm tra ngưỡng giờ/ngày thiết bị khi xác định ca | Must | Active | BA v1.12 (A-113) | UC-48 | _TBD_ | FEAT-063 | _TBD_ |
 | FR-M13-07 | Đăng ký phẫu thuật, NNIS, cửa sổ theo dõi | Must | Active | BA v1.12 (A-113) | UC-49 | _TBD_ | FEAT-064 | _TBD_ |

@@ -11,6 +11,8 @@
 	<div class="tc-dept-zonebar" role="banner">
 		<span>{{ _("Department") }}: {{ department or "-" }}</span>
 	</div>
+	{# FEAT-062: department infection control menu #}
+	{% include "templates/includes/ksnk_khoa_nav.html" %}
 	<h1 class="tc-dept-title">{{ _("Exposure Report") }}</h1>
 	<div id="tc-exposure-portal" class="tc-dept-body" aria-live="polite"></div>
 	<script type="application/json" id="tc-exposure-boot">{{ boot | tojson }}</script>

@@ -88,8 +88,24 @@ def opportunity_templates(on=None):
 	return rows
 
 
+def open_episodes(on=None):
+	"""FEAT-062 (FR-M12-07, A-141 e): đợt thiết bị đang mở của các khoa được làm phiếu, mã BN che — chọn khi chấm gói.
+
+	Đọc `Device Episode` (M13) qua Link, không import M13; xếp theo khoa rồi ngày đặt."""
+	names = [row.name for row in departments()]
+	if not names:
+		return []
+	return frappe.get_all(
+		"Device Episode",
+		filters={"status": "Open", "department": ["in", names], "inserted_on": ["<=", getdate(on)]},
+		fields=["name", "department", "device_type", "patient_code_masked", "inserted_on"],
+		order_by="department asc, inserted_on asc, name asc",
+	)
+
+
 def context(observer, on=None):
 	return {
+		"episodes": open_episodes(on),  # FEAT-062: đợt thiết bị đang mở cho phiếu gói dự phòng
 		"templates": active_templates(on),
 		"opportunity_templates": opportunity_templates(on),  # FEAT-061 (SCR-51)
 		"departments": departments(),
@@ -235,6 +251,7 @@ def submit(observer, values, on, replay=False):
 			"subject_role": values.get("subject_role"),
 			"subject_employee": values.get("subject_employee") or None,
 			"supplier": values.get("supplier") or None,
+			"device_episode": values.get("device_episode") or None,  # FEAT-062: phiếu gói dự phòng gắn đợt
 			"observer": observer,
 			"audit_date": getdate(on),
 			"started_at": values.get("started_at"),

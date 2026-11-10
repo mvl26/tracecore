@@ -9480,3 +9480,170 @@ QD 3671/QD-BYT,QĐ 3671/QĐ-BYT
 TT 16/2018/TT-BYT,TT 16/2018/TT-BYT
 TT 16/2018/TT-BYT Article 25,TT 16/2018/TT-BYT Điều 25
 Compliance,Tuân thủ
+Device episode not valid for this audit,Đợt thiết bị không hợp lệ cho phiếu này
+Device episode required,Cần chọn đợt thiết bị
+A {0} bundle audit must be linked to an open device episode.,Phiếu gói dự phòng {0} phải gắn với một đợt thiết bị đang mở.
+"Choose the patient's open device episode, then post the audit.",Chọn đợt thiết bị đang mở của người bệnh rồi ghi sổ phiếu.
+Only prevention bundle audits are linked to a device episode.,Chỉ phiếu gói dự phòng mới gắn với đợt thiết bị.
+Remove the device episode from this audit.,Bỏ đợt thiết bị khỏi phiếu này.
+Device episode {0} does not exist.,Không có đợt thiết bị {0}.
+Choose an open device episode of the department.,Chọn một đợt thiết bị đang mở của khoa.
+Device episode {0} belongs to another department.,Đợt thiết bị {0} thuộc khoa khác.
+Choose an open device episode of the audited department.,Chọn một đợt thiết bị đang mở của khoa được giám sát.
+"The {0} bundle applies to {1}, but episode {2} is {3}.","Gói {0} dùng cho {1}, nhưng đợt {2} là {3}."
+Choose an episode with the matching device or another bundle template.,Chọn đợt có đúng thiết bị hoặc chọn mẫu gói khác.
+The device of episode {0} was not in place on the audit day.,Thiết bị của đợt {0} không lưu vào ngày giám sát.
+Choose an episode that is open on the audit day.,Chọn đợt đang mở vào ngày giám sát.
+Device Episode,Đợt thiết bị
+Open device episode checked by this prevention bundle audit.,Đợt thiết bị đang mở được kiểm tra bằng phiếu gói dự phòng này.
+Inpatient Ward,Khoa nội trú
+Inpatient ward that enters a daily census; wards without this flag are not reminded.,Khoa nội trú phải nhập mẫu số ngày; khoa không đánh dấu không bị nhắc.
+Device Days Source,Nguồn ngày thiết bị
+Where device days for infection rates come from: the daily census counts or the recorded device episodes.,Ngày thiết bị để tính tỷ suất nhiễm khuẩn lấy từ đâu: số đếm của mẫu số ngày hay các đợt thiết bị đã ghi.
+Daily Census,Mẫu số ngày
+Daily census,Mẫu số ngày
+Census already entered,Đã có mẫu số
+The census of {0} for this department already exists.,Mẫu số ngày {0} của khoa này đã có.
+Open the existing census to change it.,Mở mẫu số đã có để sửa.
+Reporting period locked,Kỳ báo cáo đã khóa
+The census of {0} belongs to a locked reporting period.,Mẫu số ngày {0} thuộc kỳ báo cáo đã khóa.
+Ask the head of infection control to unlock the period with a reason.,Đề nghị Trưởng khoa KSNK mở khóa kỳ kèm lý do.
+Census date in the future,Ngày mẫu số ở tương lai
+The census date {0} is later than today.,Ngày mẫu số {0} sau ngày hôm nay.
+Choose today or an earlier day.,Chọn hôm nay hoặc một ngày trước đó.
+Count not valid,Số không hợp lệ
+{0} must be a whole number of 0 or more.,{0} phải là số nguyên từ 0 trở lên.
+Correct the {0} box and save again.,Sửa ô “{0}” rồi lưu lại.
+Census not saved,Không lưu được mẫu số
+Patients with {0} ({1}) cannot be more than inpatients ({2}).,Số người bệnh {0} ({1}) không được lớn hơn số người bệnh nằm viện ({2}).
+Daily census is never deleted; correct the counts instead.,Không xóa mẫu số ngày; hãy sửa số.
+Invasive device episode of a patient; the patient code is encrypted and lists show it masked.,"Đợt thiết bị xâm lấn của người bệnh; mã người bệnh được mã hóa, danh sách chỉ hiện mã che."
+Ventilator,Thở máy
+Central Line,Catheter TM trung tâm
+Urinary Catheter,Thông tiểu
+Dates,Ngày
+Inserted On,Ngày đặt
+Removed On,Ngày rút
+Device Days,Số ngày thiết bị
+"Days from insertion to removal (or today), both counted.","Số ngày từ ngày đặt đến ngày rút (hoặc hôm nay), tính cả hai đầu."
+Daily census of a ward: one record per department and day (denominator of infection rates).,Mẫu số ngày của khoa: một bản ghi mỗi khoa mỗi ngày (mẫu số của tỷ suất nhiễm khuẩn).
+Ward Daily Census,Mẫu số ngày theo khoa
+Census Date,Ngày mẫu số
+Set when the reporting period is locked; locked census cannot be changed.,Bật khi kỳ báo cáo đã khóa; mẫu số đã khóa không sửa được.
+Counts,Số liệu
+Inpatients,Người bệnh nằm viện
+On Ventilator,Đang thở máy
+Admissions,Nhập viện trong ngày
+Date not valid,Ngày không hợp lệ
+Device not valid,Thiết bị không hợp lệ
+Device {0} is not a tracked invasive device.,{0} không phải thiết bị xâm lấn được theo dõi.
+"Choose ventilator, central line or urinary catheter.","Chọn thở máy, catheter TM trung tâm hoặc thông tiểu."
+The insertion date must be today or earlier.,Ngày đặt phải là hôm nay hoặc trước đó.
+Correct the insertion date.,Sửa ngày đặt.
+The removal date {0} is later than today.,Ngày rút {0} sau ngày hôm nay.
+Correct the removal date.,Sửa ngày rút.
+The removal date {0} is before the insertion date {1}.,Ngày rút {0} trước ngày đặt {1}.
+Enter a removal date on or after the insertion date.,Nhập ngày rút từ ngày đặt trở đi.
+Correct the birth year.,Sửa năm sinh.
+Episode already open,Đợt đang mở
+This patient already has an open {0} episode ({1}) in this department.,Người bệnh này đã có đợt {0} đang mở ({1}) tại khoa.
+"Close the open episode first, or use it.","Đóng đợt đang mở trước, hoặc dùng đợt đó."
+Device episodes are never deleted; close the episode instead.,Không xóa đợt thiết bị; hãy đóng đợt.
+Episode already closed,Đợt đã đóng
+Episode {0} was closed on {1}.,Đợt {0} đã đóng ngày {1}.
+Open a new episode if the device was inserted again.,Mở đợt mới nếu thiết bị được đặt lại.
+The removal date is required.,Cần ngày rút.
+Enter the removal date.,Nhập ngày rút.
+Not your department,Không phải khoa của bạn
+You can record census and device episodes of your own department only.,Bạn chỉ ghi được mẫu số và đợt thiết bị của khoa mình.
+"Choose your department, or ask the infection control supervisor.","Chọn khoa của bạn, hoặc nhờ giám sát viên KSNK."
+No daily census of {0} for {1}.,Khoa {0} chưa có mẫu số ngày {1}.
+Daily census missing: {0},Thiếu mẫu số ngày: {0}
+Prevention bundle not checked today ({0}) in {1}:,Chưa chấm gói dự phòng hôm nay ({0}) tại {1}:
+Prevention bundle check due: {0},Cần chấm gói dự phòng: {0}
+Daily census missing,Thiếu mẫu số ngày
+Prevention bundle check due,Cần chấm gói dự phòng
+Daily Census and Device Bundles,Mẫu số ngày và gói dự phòng
+Census Reminder Time,Giờ nhắc mẫu số
+"After this time, inpatient wards without yesterday's census are reminded. Default 10:00.","Sau giờ này, khoa nội trú chưa có mẫu số hôm qua bị nhắc. Mặc định 10:00."
+Bundle Check Reminder Time,Giờ nhắc chấm gói dự phòng
+"After this time, open device episodes without a posted prevention bundle audit today are reminded. Default 10:00.","Sau giờ này, đợt thiết bị đang mở chưa có phiếu gói dự phòng ghi sổ hôm nay bị nhắc. Mặc định 10:00."
+A bundle audit must be linked to the patient's open device episode.,Phiếu gói dự phòng phải gắn với đợt thiết bị đang mở của người bệnh.
+"Choose the device episode above, then post the audit.",Chọn đợt thiết bị ở trên rồi ghi sổ phiếu.
+Device episode,Đợt thiết bị
+No open {0} episode in this department. Open the episode on the census screen first.,Khoa chưa có đợt {0} đang mở. Mở đợt ở màn mẫu số trước.
+Not checked,Chưa kiểm tra
+Enter the daily census below,Nhập mẫu số ngày bên dưới
+Census saved,Đã lưu mẫu số
+Daily census of {0} is saved.,Đã lưu mẫu số ngày {0}.
+Device and patient code required,Cần thiết bị và mã người bệnh
+An episode needs the device and the patient code.,Đợt thiết bị cần loại thiết bị và mã người bệnh.
+"Choose the device and enter the patient code, then save.","Chọn thiết bị, nhập mã người bệnh rồi lưu."
+Network needed to open the episode,Cần mạng để mở đợt
+The patient code cannot be kept on this device without encryption.,Không thể giữ mã người bệnh trên máy khi chưa mã hóa được.
+Open the episode when the connection returns.,Mở đợt khi có mạng lại.
+Episode opened,Đã mở đợt
+Episode closed,Đã đóng đợt
+The device episode list is updated.,Danh sách đợt thiết bị đã cập nhật.
+Could not keep the data on this device,Không giữ được dữ liệu trên máy
+Write the numbers down and enter them when the connection returns.,Ghi lại số liệu và nhập khi có mạng lại.
+Kept on this device,Đã giữ trên máy
+This account cannot enter the census of this department.,Tài khoản này không nhập được mẫu số của khoa này.
+"Retry, or tell the infection control supervisor.","Thử lại, hoặc báo giám sát viên KSNK."
+The census screen needs the network once to load the department.,Màn mẫu số cần mạng một lần để tải khoa.
+"Reconnect, then open the screen again.",Kết nối lại rồi mở lại màn.
+No inpatient department is assigned to you. Ask R10 to set your department.,Bạn chưa được gán khoa nội trú nào. Đề nghị R10 gán khoa.
+Census and episodes are kept on this device and sent when the connection returns.,Mẫu số và đợt thiết bị được giữ trên máy và gửi khi có mạng lại.
+No census for {0} yet,Chưa có mẫu số ngày {0}
+Enter the counts of that day below.,Nhập số liệu của ngày đó bên dưới.
+Yesterday,Hôm qua
+Today,Hôm nay
+Census {0} already entered ({1}).,Mẫu số {0} đã nhập ({1}).
+Period locked,Kỳ đã khóa
+Daily census {0},Mẫu số ngày {0}
+Save changes,Lưu thay đổi
+Save census,Lưu mẫu số
+Copy from the previous day,Sao chép từ hôm trước
+Inserted {0} · day {1},Đặt {0} · ngày thứ {1}
+Bundle today,Gói hôm nay
+Close episode,Đóng đợt (rút thiết bị)
+Open device episodes,Đợt thiết bị đang mở
+No open device episode.,Không có đợt thiết bị đang mở.
+Open device episode,Mở đợt thiết bị
+The patient code is encrypted and shown masked. Do not enter the patient name.,"Mã người bệnh lưu mã hóa, chỉ hiện 4 ký tự cuối. Không nhập họ tên người bệnh."
+Open episode,Mở đợt
+Inserted {0},Đặt {0}
+Department infection control,KSNK khoa
+Daily census and device episodes,Mẫu số & đợt thiết bị
+Daily Census and Device Episodes,Mẫu số ngày & đợt thiết bị
+Updated,Đã cập nhật,Import Batch
+Updated,Đã cập nhật,Import Batch Row
+CENSUS,Mẫu số ngày,Help Article
+Department Name,Tên khoa,Ward Daily Census
+Department Name,Tên khoa,Device Episode
+Already existing (will be updated): {0},Đã có (sẽ cập nhật): {0}
+"{0} created, {1} updated, {2} with errors.","Tạo mới {0}, cập nhật {1}, lỗi {2}."
+You cannot open the census of this department.,Bạn không mở được mẫu số của khoa này.
+Enter the patient code again.,Nhập lại mã người bệnh.
+Action not valid,Thao tác không hợp lệ
+Device episode action must be open or close.,Thao tác với đợt thiết bị phải là mở hoặc đóng.
+Choose Open episode or Close episode.,Chọn Mở đợt hoặc Đóng đợt.
+Sign in to enter the daily census.,Đăng nhập để nhập mẫu số ngày.
+Enter the counts of that day below. Inpatient wards are reminded at the configured time.,Nhập số liệu của ngày đó bên dưới. Khoa nội trú được nhắc vào giờ đã cấu hình.
+Days,Ngày
+Prevention bundle audits are posted on the department PDA (audit screen).,Phiếu gói dự phòng chấm và ghi sổ trên PDA của khoa (màn Phiếu giám sát).
+Last 7 days,7 ngày gần nhất
+No census in the last 7 days.,Không có mẫu số trong 7 ngày gần nhất.
+The census cannot be saved now. Keep the numbers and save when the connection returns.,Chưa lưu được mẫu số. Giữ số liệu và lưu khi có mạng lại.
+Device days for rates come from: {0},Ngày thiết bị cho tỷ suất lấy từ: {0}
+"Check the department and the day, then enter the inpatient and device counts and save.","Kiểm khoa và ngày, nhập số người bệnh nằm viện và số có thiết bị rồi lưu."
+Open a device episode when a device is inserted and close it when it is removed.,Mở đợt thiết bị khi đặt thiết bị và đóng đợt khi rút.
+Without network the census and episodes are saved and sent when the connection returns.,Mất mạng: mẫu số và đợt thiết bị được giữ lại và gửi khi có mạng.
+Daily ward census,Mẫu số ngày theo khoa
+Census date,Ngày mẫu số
+On ventilator,Đang thở máy
+Central line,Catheter TM trung tâm
+Urinary catheter,Thông tiểu
+Department name as in TraceCore.,Tên khoa như trong TraceCore.
+Whole number of 0 or more; cannot be more than inpatients.,Số nguyên từ 0 trở lên; không lớn hơn số người bệnh nằm viện.
+One row per department and day. Importing the same day again updates the counts of that day.,Mỗi dòng một khoa một ngày. Nhập lại cùng ngày sẽ cập nhật số liệu của ngày đó.

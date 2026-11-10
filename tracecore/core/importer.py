@@ -131,6 +131,8 @@ class ImportKind:
 	extra_columns: Callable[[str], bool] | None = None
 	ignored_columns: Sequence[str] = ()
 	purge_file: bool = False
+	# FEAT-062 (A-141 Q2, FR-M13-02.2): mã đã có thì vẫn kiểm và ghi (`write` cập nhật bản có sẵn), kết quả "Updated"
+	upsert: bool = False
 
 
 @dataclass
@@ -664,7 +666,8 @@ def _analyse(kind: ImportKind, content: bytes, profile: Profile | None = None, w
 				first_row[code] = unit[0].row
 		if not own and code and kind.exists(code):
 			existing.append(code)
-			continue
+			if not kind.upsert:  # FEAT-062: loại upsert kiểm và ghi tiếp
+				continue
 		if not own:
 			own = kind.validate(unit)
 		per_unit[id(unit)] = own
@@ -705,6 +708,7 @@ def check(key: str, content: bytes, profile: str | None = None) -> dict:
 		"issues": [asdict(issue) for issue in issues],
 		"warnings": warnings,
 		"previous_batch": previous_batch(key, content),
+		"upsert": kind.upsert,  # FEAT-062: mã trong `existing` sẽ được cập nhật, không bỏ qua
 	}
 
 
@@ -799,6 +803,7 @@ def execute_batch(batch: str, content: bytes | None = None, background: bool = F
 		status="Done",
 		finished_at=now_datetime(),
 		created=sum(1 for row in results if row["result"] == "Created"),
+		updated=sum(1 for row in results if row["result"] == "Updated"),  # FEAT-062
 		skipped=sum(1 for row in results if row["result"] == "Existing"),
 		failed=sum(1 for row in results if row["result"] == "Error"),
 	)
@@ -850,7 +855,7 @@ def _write_unit(kind: ImportKind, unit, issues, existing) -> list[dict]:
 		{
 			"row_no": unit[0].row,
 			"code": code,
-			"result": "Created",
+			"result": "Updated" if kind.upsert and code in existing else "Created",  # FEAT-062
 			"ref_doctype": kind.doctype,
 			"ref_name": name,
 		}
