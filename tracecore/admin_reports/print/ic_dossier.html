@@ -1,0 +1,71 @@
+{#- Infection control dossier for an inspection team (FEAT-074; FR-M9-30, FR-M9-30.1; BRU-RPT-002; A-152).
+    Data: tracecore.admin_reports.ic_dossier.render_html (r). Every dynamic value goes through |e; colours and sizes
+    come from the generated tokens.css (r.tc); tables only (wkhtmltopdf WebKit has no flex/grid). Masked patient codes
+    only; long patient lists are in the Excel file. -#}
+{%- set tc = r.tc -%}
+<style>
+.tc-rp { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_xs }}; line-height: {{ tc.lh_snug }}; position: relative; }
+.tc-rp h1 { font-size: {{ tc.fs_2xl }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-rp h2 { font-size: {{ tc.fs_md }}; font-weight: {{ tc.fw_bold }}; margin: {{ tc.sp_3 }} 0 {{ tc.sp_1 }} 0; page-break-after: avoid; }
+.tc-rp .tc-meta { color: {{ tc.muted }}; margin-bottom: {{ tc.sp_2 }}; }
+.tc-rp table.tc-grid { width: 100%; border-collapse: collapse; }
+.tc-rp table.tc-grid thead { display: table-header-group; }
+.tc-rp table.tc-grid tr { page-break-inside: avoid; }
+.tc-rp table.tc-grid th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-rp table.tc-grid th, .tc-rp table.tc-grid td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }}; vertical-align: top; }
+.tc-rp table.tc-grid td.tc-num, .tc-rp table.tc-grid th.tc-num { text-align: right; white-space: nowrap; }
+.tc-rp .tc-provisional { border: {{ tc.bw_thick }} solid {{ tc.heading }}; color: {{ tc.heading }}; font-size: {{ tc.fs_lg }}; font-weight: {{ tc.fw_bold }}; padding: {{ tc.sp_1 }} {{ tc.sp_3 }}; float: right; }
+.tc-rp .tc-empty { padding: {{ tc.sp_2 }}; border: {{ tc.bw_hair }} solid {{ tc.border }}; color: {{ tc.muted }}; }
+</style>
+<div class="tc-rp">
+	{%- if r.provisional %}<div class="tc-provisional">{{ _("PROVISIONAL") | e }}</div>{% endif %}
+	<h1>{{ r.title | e }}</h1>
+	<div class="tc-meta">
+		{%- if r.hospital %}{{ r.hospital | e }}<br>{% endif %}
+		{{ r.months | e }}<br>
+		{{ r.generated | e }}<br>
+		{{ _("Patient codes are masked; the file holds no patient names (Decree 356/2025).") | e }}
+	</div>
+
+	<h2>{{ _("Contents") | e }}</h2>
+	<table class="tc-grid">
+		<thead><tr>
+			<th>{{ _("Section") | e }}</th>
+			<th class="tc-num">{{ _("Rows") | e }}</th>
+			<th>{{ _("Where") | e }}</th>
+		</tr></thead>
+		<tbody>
+		{%- for s in r.sections %}
+			<tr>
+				<td>{{ s.label | e }}</td>
+				<td class="tc-num">{{ s.count }}</td>
+				<td>{{ (_("PDF and Excel") if s.printable else _("Excel only")) | e }}</td>
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+
+	{%- for s in r.sections if s.printable %}
+	<h2>{{ s.label | e }}</h2>
+	{%- if s.rows %}
+	<table class="tc-grid">
+		<thead><tr>
+		{%- for h in s.headers %}
+			<th{% if s.numeric[loop.index0] %} class="tc-num"{% endif %}>{{ h | e }}</th>
+		{%- endfor %}
+		</tr></thead>
+		<tbody>
+		{%- for row in s.rows %}
+			<tr>
+			{%- for cell in row %}
+				<td{% if s.numeric[loop.index0] %} class="tc-num"{% endif %}>{{ cell | e }}</td>
+			{%- endfor %}
+			</tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	{%- else %}
+	<div class="tc-empty">{{ _("No data in the chosen months.") | e }}</div>
+	{%- endif %}
+	{%- endfor %}
+</div>

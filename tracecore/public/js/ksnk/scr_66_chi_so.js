@@ -13,6 +13,10 @@ const TC_IND_SELF_SUBMIT = "tracecore.v1.indicator.self_assessment_submit";
 const TC_IND_COUNCIL = "tracecore.v1.indicator.council_generate";
 const TC_IND_IMPORT_ROUTE = "/app/tc-import";
 const TC_IND_SELF_STATUSES = ["Not assessed", "Met", "Not met", "Needs confirmation"];
+// FEAT-074 (FR-M9-30; A-152): gói hồ sơ KSNK cho đoàn kiểm tra — chỉ R01
+const TC_DOSSIER_SECTIONS = "tracecore.v1.archive.ic_dossier_sections";
+const TC_DOSSIER_EXPORT = "tracecore.v1.archive.ic_dossier_export";
+const TC_DOSSIER_LIST = "tracecore.v1.archive.ic_dossiers";
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
 
@@ -378,6 +382,100 @@ const TcKsnkScr66 = {
 		);
 	},
 
+	// FEAT-074: khối gói hồ sơ KSNK (R01) — dải tháng, chọn phần, danh sách gói gần nhất; trạng thái luôn có chữ
+	dossierHtml(dz, data, esc) {
+		const year = data.year || new Date().getFullYear();
+		const lastMonth = data.period || `${year}-12`;
+		const statusCls = {
+			Completed: "is-pass",
+			Failed: "is-fail",
+			Running: "is-warn",
+			Queued: "is-neutral",
+		};
+		const statusLabel = {
+			Completed: __("Completed"),
+			Failed: __("Failed"),
+			Running: __("Running"),
+			Queued: __("Queued"),
+		};
+		const sections = dz.sections
+			.map(
+				(s) =>
+					`<label><input type="checkbox" data-dossier-section="${esc(
+						s.key
+					)}" checked> ${esc(s.label)}${
+						s.in_pdf
+							? ""
+							: ` <span class="tc-ksnk-note">(${esc(__("Excel only"))})</span>`
+					}</label>`
+			)
+			.join("");
+		const rows = dz.dossiers
+			.map((d) => {
+				const status = `<span class="tc-ksnk-badge ${
+					statusCls[d.status] || "is-neutral"
+				}">${esc(statusLabel[d.status] || d.status)}</span>${
+					d.provisional
+						? ` <span class="tc-ksnk-badge is-warn">${esc(__("Provisional"))}</span>`
+						: ""
+				}`;
+				const file = d.file
+					? `<a target="_blank" href="${esc(d.file)}">${esc(__("Download ZIP"))}</a>`
+					: d.error
+					? esc(d.error)
+					: "—";
+				return (
+					`<tr><td><code class="tc-ksnk-code">${esc(d.name)}</code></td><td>${esc(
+						d.months || ""
+					)}</td>` +
+					`<td>${status}</td><td><code class="tc-ksnk-code">${esc(
+						d.sha256 ? d.sha256.slice(0, 12) + "…" : "—"
+					)}</code></td><td>${file}</td></tr>`
+				);
+			})
+			.join("");
+		const table = dz.dossiers.length
+			? `<div class="tc-ksnk-scroll"><table class="tc-ksnk-table"><thead><tr>` +
+			  `<th scope="col">${esc(__("Dossier"))}</th><th scope="col">${esc(
+					__("Months")
+			  )}</th>` +
+			  `<th scope="col">${esc(__("Status"))}</th><th scope="col">${esc(
+					__("SHA-256")
+			  )}</th><th scope="col">${esc(
+					__("File")
+			  )}</th></tr></thead><tbody>${rows}</tbody></table></div>`
+			: `<p class="tc-ksnk-note">${esc(__("No dossier exported yet."))}</p>`;
+		return (
+			`<section class="tc-ksnk-card" id="tc-ksnk-dossier"><h3>${esc(
+				__("Infection control dossier for an inspection team")
+			)} <code class="tc-ksnk-code">FR-M9-30</code></h3>` +
+			`<p class="tc-ksnk-note">${esc(
+				__(
+					"PDF + Excel of the chosen months with SHA-256 checksums. Patient codes are masked; exposures are aggregated only. A month that is not locked yet makes the dossier Provisional."
+				)
+			)}</p>` +
+			`<div class="tc-ksnk-filters tc-ksnk-actions"><label>${esc(
+				__("From month")
+			)}<input type="month" class="form-control" data-dossier="from" value="${esc(
+				`${year}-01`
+			)}"></label>` +
+			`<label>${esc(
+				__("To month")
+			)}<input type="month" class="form-control" data-dossier="to" value="${esc(
+				lastMonth
+			)}"></label></div>` +
+			`<fieldset class="tc-ksnk-checks"><legend>${esc(
+				__("Sections")
+			)}</legend>${sections}</fieldset>` +
+			`<div data-region="dossier-alert"></div>` +
+			`<div class="tc-ksnk-actions"><button type="button" class="btn btn-primary" data-action="dossier-export">${esc(
+				__("Create dossier")
+			)}</button><button type="button" class="btn btn-default" data-action="dossier-refresh">${esc(
+				__("Refresh")
+			)}</button></div>${table}</section>`
+		);
+	},
+
 	blockHtml(error, esc) {
 		const e = error || {};
 		return (
@@ -472,7 +570,7 @@ const TcKsnkScr66 = {
 		);
 	},
 
-	pageHtml(data, sa, ctx) {
+	pageHtml(data, sa, ctx, dz) {
 		const self = TcKsnkScr66;
 		const esc = ctx.esc;
 		const hasValues = data.periods.length && data.rows.length;
@@ -501,7 +599,13 @@ const TcKsnkScr66 = {
 					esc
 			  )}</div>`
 			: self.todosHtml(data.todos, esc);
-		return self.headerHtml(data, ctx) + board + lower + (sa ? self.selfHtml(sa, esc) : "");
+		return (
+			self.headerHtml(data, ctx) +
+			board +
+			lower +
+			(sa ? self.selfHtml(sa, esc) : "") +
+			(dz ? self.dossierHtml(dz, data, esc) : "")
+		);
 	},
 
 	// --- sự kiện ---------------------------------------------------------------------------------------------------
@@ -544,7 +648,8 @@ const TcKsnkScr66 = {
 			button.addEventListener("click", (event) => {
 				const action = button.dataset.action;
 				const year = data.year;
-				if (action === "retry") return self.render(el, ctx);
+				if (action === "retry" || action === "dossier-refresh")
+					return self.render(el, ctx);
 				if (action === "goto-self") {
 					event.preventDefault();
 					const target = el.querySelector("#tc-ksnk-self");
@@ -552,7 +657,24 @@ const TcKsnkScr66 = {
 					return;
 				}
 				button.disabled = true;
-				if (action === "council") {
+				if (action === "dossier-export") {
+					const value = (name) => el.querySelector(`[data-dossier="${name}"]`).value;
+					const sections = Array.from(
+						el.querySelectorAll("[data-dossier-section]:checked")
+					).map((node) => node.dataset.dossierSection);
+					self.post(
+						el,
+						ctx,
+						TC_DOSSIER_EXPORT,
+						{
+							from_month: value("from"),
+							to_month: value("to"),
+							sections: JSON.stringify(sections),
+						},
+						"dossier-alert",
+						() => self.render(el, ctx)
+					);
+				} else if (action === "council") {
 					self.post(
 						el,
 						ctx,
@@ -615,7 +737,20 @@ const TcKsnkScr66 = {
 				sa = null; // vai trò không đọc được tự đánh giá (R10/R11/R13 đọc được theo ma trận)
 			}
 			if (!ctx.isCurrent()) return;
-			el.innerHTML = self.pageHtml(data, sa, ctx);
+			let dz = null;
+			if (frappe.user.has_role("TC R01")) {
+				try {
+					const [sections, list] = await Promise.all([
+						ctx.get(TC_DOSSIER_SECTIONS, {}),
+						ctx.get(TC_DOSSIER_LIST, {}),
+					]);
+					dz = { sections: sections.sections, dossiers: list.dossiers };
+				} catch (error) {
+					dz = null; // khối gói hồ sơ không chặn bảng chỉ số
+				}
+			}
+			if (!ctx.isCurrent()) return;
+			el.innerHTML = self.pageHtml(data, sa, ctx, dz);
 			self.bind(el, ctx, data);
 		} catch (error) {
 			if (!ctx.isCurrent()) return;
