@@ -1,0 +1,25 @@
+/* Cổng khoa — lệnh cách ly (SCR-60 DEPT, FEAT-068). Nền .tc-dept / .tc-cen-* lấy từ bao_phoi_nhiem.css, mau_so.css.
+   Chỉ token --tc-*; chữ ≥ 16, chạm ≥ 48, nút chính 56; mã (CL-, PCL-, mã BN che) Courier New. */
+.tc-iso-form {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tc-inst-min)), 1fr));
+	gap: var(--tc-sp-3);
+}
+
+.tc-iso-readonly {
+	display: flex;
+	align-items: center;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-md);
+	background: var(--tc-primary-soft);
+}
+
+.tc-iso-end {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-3);
+	align-items: flex-end;
+	margin-top: var(--tc-sp-2);
+}

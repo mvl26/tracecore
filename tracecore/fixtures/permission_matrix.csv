@@ -83,3 +83,5 @@ DT-ICPER,IC Reporting Period,RW,,,,,,,,,R,R,,R,"FEAT-063 A-144 Q1, c (FR-M13-11)
 DT-ICCR,IC Council Report,R,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-25, BRU-RPT-002): báo cáo Hội đồng một trang hằng tháng do hệ thống sinh; không ai ghi tay"
 DT-ICQD38,IC QD38 Criterion,RW,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, NFR-MAINT-04): danh mục chỉ tiêu QĐ 38; R01 sửa, ngưng dùng thay vì xóa"
 DT-ICSA,IC Self Assessment,RWS,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, .1): R01 lập và ghi sổ tự đánh giá năm; R10, R11, R13 đọc"
+DT-ISOORD,Isolation Order,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-068 A-146 Q5 (FR-M14-06, BRU-MDR-003): R08, R12 tạo/đóng lệnh khoa mình (lệnh do đa kháng chỉ R01, R11 đóng); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
+DT-ISOROOM,Isolation Room,RW,,,,,,,R,,,R,R,R,"FEAT-068 A-146 Q2, Q5 (FR-M14-07): R01 duy trì phòng và đánh giá đạt; R08, R12 đọc phòng khoa mình; R11, R13 đọc"

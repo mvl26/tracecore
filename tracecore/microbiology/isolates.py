@@ -23,6 +23,9 @@ SOURCE_IMPORT, SOURCE_MANUAL = "Import", "Manual"
 MDRO_EVENT = "MDRO_DETECTED"
 MDRO_HOOK = "tracecore_mdro_detected"
 SCREEN_LINK = "/app/tc-ksnk/vi-sinh"
+# FEAT-068 (A-146 Q4): thông báo đa kháng mở form tạo lệnh cách ly điền sẵn trên Cổng khoa (R01/R11 được chuyển sang
+# SCR-60 trên Desk); cùng đường với `isolation.alert_link` (không import để tránh vòng)
+ISOLATION_LINK = "/ksnk-khoa/cach-ly?isolate={0}"
 RESULTS = ("S", "I", "R")
 DEPARTMENT_ROLE = "TC R08"
 NETWORK_DOCTYPE = "IC Network Member"
@@ -280,7 +283,7 @@ def _alert(doc, matched):
 		),
 		message=message,
 		users=recipients(doc, matched),
-		link=SCREEN_LINK,
+		link=ISOLATION_LINK.format(doc.name),
 	)
 
 

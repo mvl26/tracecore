@@ -201,8 +201,16 @@ const TcKsnkScr59 = {
 
 	mdroBadge(row, esc) {
 		return row.is_mdro
-			? `<span class="tc-ksnk-badge is-fail">${esc(row.mdro_flags)}</span>`
+			? `<span class="tc-ksnk-badge is-fail">${esc(row.mdro_flags)}</span>` +
+					TcKsnkScr59.isolationLink(row, esc)
 			: `<span class="tc-ksnk-badge is-neutral">${esc(__("No"))}</span>`;
+	},
+
+	// FEAT-068 (A-136 Q5, A-146 Q4): mở SCR-60 với form tạo lệnh cách ly điền sẵn từ chủng đa kháng
+	isolationLink(row, esc) {
+		return ` <a class="btn btn-default btn-xs" href="/app/tc-ksnk/cach-ly?isolate=${encodeURIComponent(
+			row.name
+		)}">${esc(__("Create isolation order"))}</a>`;
 	},
 
 	historyBadge(labels, esc) {

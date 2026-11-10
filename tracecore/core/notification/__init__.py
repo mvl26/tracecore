@@ -105,6 +105,9 @@ EVENTS = {
 	# FEAT-067 (A-136 Q4, FR-M14-04): chủng đa kháng mới — R11 theo Rule; mạng lưới viên, R08 của khoa và vai trò của
 	# quy tắc do nơi gọi truyền; chưa đọc quá 15 phút thì leo thang R01
 	"MDRO_DETECTED": ("New multidrug-resistant isolate", "Urgent", 1, 1, ("TC R11",)),
+	# FEAT-068 (A-146 Q6): khoa mở / kết thúc lệnh cách ly → R11 theo Rule
+	"ISOLATION_ORDER_OPENED": ("Isolation order opened", "Normal", 0, 1, ("TC R11",)),
+	"ISOLATION_ORDER_CLOSED": ("Isolation order closed", "Normal", 0, 1, ("TC R11",)),
 	# FEAT-059 (A-135 d): nhắc nhân viên chưa học KSNK cơ bản; người nhận do nơi gọi truyền (user của nhân viên)
 	"IC_TRAINING_REMINDER": ("Infection control training reminder", "Normal", 0, 0, ()),
 	# FEAT-071 (A-137 e): phơi nhiễm nghề nghiệp báo ngay R01, R11 (FR-M16-01, 01.1); mốc theo dõi (nhân viên do nơi gọi

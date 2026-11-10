@@ -59,3 +59,5 @@ tracecore.patches.v0_1.a137_exposure_station_function
 tracecore.patches.v0_1.a141_census_station_function
 tracecore.patches.v0_1.a138_ic_staff_role
 tracecore.patches.v0_1.a145_qd38_criteria
+# FEAT-068 (A-146 Q1): cờ khoa lâm sàng điền sẵn từ khoa nội trú cho site đang chạy
+tracecore.patches.v0_1.a146_department_clinical

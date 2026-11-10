@@ -206,3 +206,6 @@
 .tc-ksnk .tc-ksnk-bar-value { text-align: right; font-variant-numeric: tabular-nums; }
 .tc-ksnk .tc-ksnk-todos { margin: 0; padding: 0; list-style: none; }
 .tc-ksnk .tc-ksnk-todos li { margin-bottom: var(--tc-sp-2); }
+/* FEAT-068 SCR-60: form tạo lệnh cách ly xếp dọc, ô bắt buộc bị thiếu viền đỏ (kèm alert chữ, không chỉ màu) */
+.tc-ksnk .tc-ksnk-form.tc-ksnk-stack { flex-direction: column; align-items: stretch; }
+.tc-ksnk .tc-ksnk-form .form-control.is-invalid { border: var(--tc-bw-med) solid var(--tc-fail); }

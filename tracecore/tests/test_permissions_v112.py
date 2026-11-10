@@ -96,6 +96,17 @@ V112_ROWS.update(
 	}
 )
 
+# FEAT-068 (A-146 Q5, NFR-SEC-09): lệnh cách ly có mã BN — R13 không đọc; R08, R12 chỉ khoa mình; phòng cách ly R01 sửa
+V112_ROWS.update(
+	{
+		"DT-ISOORD": (
+			"Isolation Order",
+			{"R01": "RWSA", "R08": "RWS", "R11": "RWSA", "R12": "RWS"},
+		),
+		"DT-ISOROOM": ("Isolation Room", {"R01": "RW", "R08": "R", "R11": "R", "R12": "R", "R13": "R"}),
+	}
+)
+
 
 # FEAT-063 (A-144 j): định nghĩa ca, ca NKBV, kỳ báo cáo — R13 không đọc ca (FR-M13-15.3)
 V112_ROWS.update(

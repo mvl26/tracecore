@@ -137,6 +137,20 @@ SCREENS += [
 	},
 ]
 
+# FEAT-068 (A-146): lệnh cách ly & phòng cách ly (UC-52); R13 chỉ thấy phòng và tỷ lệ khoa có phòng đạt; R08/R12 làm trên
+# Cổng khoa /ksnk-khoa/cach-ly
+SCREENS += [
+	{
+		"slug": "cach-ly",
+		"scr": "SCR-60",
+		"uc": "UC-52",
+		"label": "Isolation",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_60_cach_ly.js",
+	},
+]
+
 
 # FEAT-063 (A-144 g): ca NKBV & kỳ báo cáo (SCR-56, R01/R11 — R13 không xem từng người bệnh) và tỷ suất NKBV theo khoa
 # (SCR-58 phần FEAT-063, chỉ số liệu tổng hợp nên R10, R13 xem được) (UC-48)
