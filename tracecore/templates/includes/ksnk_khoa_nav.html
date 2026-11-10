@@ -29,4 +29,6 @@
 <nav class="tc-dept-nav" aria-label="{{ _('Department infection control') }}">
 	<a href="/ksnk-khoa/mau-so"{% if ksnk_nav == "mau-so" %} aria-current="page"{% endif %}>{{ _("Daily census and device episodes") }}</a>
 	<a href="/ksnk-khoa/bao-phoi-nhiem"{% if ksnk_nav == "bao-phoi-nhiem" %} aria-current="page"{% endif %}>{{ _("Exposure Report") }}</a>
+	{# FEAT-068 (SCR-60 DEPT): department isolation orders #}
+	<a href="/ksnk-khoa/cach-ly"{% if ksnk_nav == "cach-ly" %} aria-current="page"{% endif %}>{{ _("Isolation Orders") }}</a>
 </nav>

@@ -77,3 +77,5 @@ DT-WDCEN,Ward Daily Census,RW,,,,,,,RW,,R,RW,RW,,"FEAT-062 A-141 g (FR-M13-02, B
 DT-DEVEP,Device Episode,RW,,,,,,,RW,,,RW,RW,,"FEAT-062 A-141 g (FR-M13-04, ADR-010): có mã BN — R13 không đọc; R08, R12 chỉ khoa mình; không ai xóa"
 DT-ICCHEM,IC Chemical Consumption,RWSA,R,,,,,,,RWSA,R,RWS,,R,"FEAT-066 A-142 Q4 (FR-M12-12): R09 nhập tay, chọn nguồn khi trùng; R11 import file khoa Dược; R02, R10, R13 xem"
 DT-ICSP,IC Structure Profile,RW,R,,,,,,,,R,,,R,"FEAT-094 A-138 h (FR-M11-01.8): bộ tiêu chí cơ cấu KSNK có phiên bản; R01 nhập và duyệt; R02, R10, R13 đọc"
+DT-ISOORD,Isolation Order,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-068 A-146 Q5 (FR-M14-06, BRU-MDR-003): R08, R12 tạo/đóng lệnh khoa mình (lệnh do đa kháng chỉ R01, R11 đóng); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
+DT-ISOROOM,Isolation Room,RW,,,,,,,R,,,R,R,R,"FEAT-068 A-146 Q2, Q5 (FR-M14-07): R01 duy trì phòng và đánh giá đạt; R08, R12 đọc phòng khoa mình; R11, R13 đọc"

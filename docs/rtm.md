@@ -156,8 +156,8 @@
 | FR-M14-03 | Gắn nhãn đa kháng theo MDRO Rule, chủng đầu | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; ADR-015; A-136 | FEAT-067 | `microbiology/doctype/mdro_rule/test_mdro_rule.py`, `microbiology/doctype/microbiology_isolate/test_microbiology_isolate.py`, `microbiology/tests/test_seed.py` |
 | FR-M14-04 | Thông báo chủng đa kháng mới ≤ 15 phút | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; ADR-014; A-136 | FEAT-067 | `microbiology/doctype/microbiology_isolate/test_microbiology_isolate.py`, `v1/tests/test_micro_api.py` |
 | FR-M14-05 | Cảnh báo người bệnh từng đa kháng tái xuất hiện | Should | Active | BA v1.12 (A-113) | UC-51 | ADR-010; A-136 | FEAT-067 | `microbiology/doctype/microbiology_isolate/test_microbiology_isolate.py`, `v1/tests/test_micro_api.py` |
-| FR-M14-06 | Lệnh cách ly: loại phòng ngừa, lý do, danh sách | Must | Active | BA v1.12 (A-113) | UC-52 | ADR-010 | FEAT-068 | _TBD_ |
-| FR-M14-07 | Tỷ lệ khoa có phòng cách ly đạt điều kiện | Must | Active | BA v1.12 (A-113) | UC-52 | _TBD_ | FEAT-068 | _TBD_ |
+| FR-M14-06 | Lệnh cách ly: loại phòng ngừa, lý do, danh sách | Must | Active | BA v1.12 (A-113) | UC-52 | SCR-60; ADR-010; A-146 | FEAT-068 | `microbiology/tests/test_isolation.py`, `v1/tests/test_isolation_api.py`, `tests/test_ksnk_scr60.py` |
+| FR-M14-07 | Tỷ lệ khoa có phòng cách ly đạt điều kiện | Must | Active | BA v1.12 (A-113) | UC-52 | SCR-60; A-146 | FEAT-068 | `microbiology/tests/test_isolation.py`, `microbiology/tests/test_isolation_patch.py` |
 | FR-M14-08 | Báo cáo kháng thuốc quý S/I/R | Must | Active | BA v1.12 (A-113) | UC-51 | SCR-59; A-136 | FEAT-067 | `microbiology/tests/test_resistance.py` |
 | FR-M14-09 | Điều tra ổ dịch, đường cong dịch | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |
 | FR-M14-10 | Khai báo bệnh truyền nhiễm theo hạn nhóm bệnh | Must | Active | BA v1.12 (A-113) | UC-53 | _TBD_ | FEAT-069 | _TBD_ |

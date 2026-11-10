@@ -169,6 +169,8 @@ website_route_rules = [
 	{"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"},
 	# FEAT-062 (SCR-55 DEPT): Cổng khoa — mẫu số ngày & đợt thiết bị
 	{"from_route": "/ksnk-khoa/mau-so", "to_route": "ksnk_khoa/mau_so"},
+	# FEAT-068 (SCR-60 DEPT, A-146 Q4): Cổng khoa — lệnh cách ly; link thông báo đa kháng mở trang này
+	{"from_route": "/ksnk-khoa/cach-ly", "to_route": "ksnk_khoa/cach_ly"},
 ]
 
 # website user home page (by Role)
@@ -306,6 +308,9 @@ permission_query_conditions = {
 	# FEAT-062 (NFR-SEC-09, A-141 g): R08/R12 chỉ thấy mẫu số và đợt thiết bị của khoa có User Permission
 	"Ward Daily Census": "tracecore.hai_surveillance.permissions.census_query",
 	"Device Episode": "tracecore.hai_surveillance.permissions.episode_query",
+	# FEAT-068 (NFR-SEC-09, A-146 Q5): R08/R12 chỉ thấy lệnh cách ly và phòng cách ly của khoa có User Permission
+	"Isolation Order": "tracecore.microbiology.permissions.order_query",
+	"Isolation Room": "tracecore.microbiology.permissions.room_query",
 }
 
 has_permission = {
@@ -315,6 +320,9 @@ has_permission = {
 	# FEAT-062
 	"Ward Daily Census": "tracecore.hai_surveillance.permissions.has_permission",
 	"Device Episode": "tracecore.hai_surveillance.permissions.has_permission",
+	# FEAT-068
+	"Isolation Order": "tracecore.microbiology.permissions.has_permission",
+	"Isolation Room": "tracecore.microbiology.permissions.has_permission",
 }
 
 # DocType Class
@@ -464,6 +472,9 @@ doc_events = {
 	# FEAT-062 (A-141 a): mẫu số ngày, đợt thiết bị (mã BN Password không vào Audit Log); không xóa
 	"Ward Daily Census": dict(_AUDIT_EVENTS),
 	"Device Episode": dict(_AUDIT_EVENTS),
+	# FEAT-068 (A-146): lệnh cách ly (mã BN Password không vào Audit Log; đóng = sửa sau ghi sổ), phòng cách ly
+	"Isolation Order": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	"Isolation Room": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -672,6 +683,8 @@ tracecore_ic_indicators = [
 	"tracecore.occupational_safety.indicators.register",
 	# FEAT-066 (A-142): lít dung dịch VST nhanh / 1.000 ngày nằm viện (FR-M12-12)
 	"tracecore.compliance_audit.chemicals.register_indicators",
+	# FEAT-068 (FR-M14-07, QĐ 38): tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt
+	"tracecore.microbiology.indicators.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [

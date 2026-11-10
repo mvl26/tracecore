@@ -190,3 +190,6 @@
 }
 /* FEAT-066 SCR-54: dòng Toàn viện của bảng hóa chất */
 .tc-ksnk .tc-ksnk-table tr.is-total td, .tc-ksnk .tc-ksnk-table tr.is-total th { font-weight: var(--tc-fw-bold); background: var(--tc-primary-soft); }
+/* FEAT-068 SCR-60: form tạo lệnh cách ly xếp dọc, ô bắt buộc bị thiếu viền đỏ (kèm alert chữ, không chỉ màu) */
+.tc-ksnk .tc-ksnk-form.tc-ksnk-stack { flex-direction: column; align-items: stretch; }
+.tc-ksnk .tc-ksnk-form .form-control.is-invalid { border: var(--tc-bw-med) solid var(--tc-fail); }
