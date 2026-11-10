@@ -57,6 +57,8 @@ CODE_IS_NAME = CODE_IS_NAME | {"Environment Risk Level"}
 NO_NAME_FIELD = frozenset({"Sterilization Load", "Pack", "Wash Batch", "Waste Container"})
 # FEAT-063 (A-144): chủng vi sinh không có trường tên; dòng chủng của ca NKBV đã hiện loài, ngày lấy mẫu
 NO_NAME_FIELD = NO_NAME_FIELD | {"Microbiology Isolate"}
+# FEAT-069 (A-150): sự cố Incident CAPA và ca NKBV không có trường tên; dòng ca của ổ dịch đã hiện mã BN che, ngày khởi phát
+NO_NAME_FIELD = NO_NAME_FIELD | {"Incident CAPA", "HAI Case"}
 
 # Đã có sẵn cột tên (không fetch được hoặc đặt tên khác): giữ nguyên, không thêm trường trùng
 EXISTING_NAME_COLUMN = {

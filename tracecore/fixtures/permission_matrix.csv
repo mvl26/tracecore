@@ -94,3 +94,8 @@ DT-ENVLIMIT,Environmental Limit,RWS,R,,,,,,,,R,R,,R,"FEAT-070 A-148 b (FR-M15-03
 DT-SAMPLAN,Sampling Plan,RW,R,,,,,,,,R,R,,R,"FEAT-070 A-148 c (FR-M15-05): R01 lập kế hoạch lấy mẫu; R02, R10, R11, R13 đọc"
 DT-ENVSAMPLE,Environmental Sample,RWSA,R,,,,,,R,,,RWSA,R,,"FEAT-070 A-148 d (FR-M15-03, FR-M15-04): R11 ghi mẫu và ghi sổ, R01 toàn quyền, hủy khi nhập nhầm; R02 đọc; R08, R12 đọc mẫu khoa mình; R13 chỉ xem tổng hợp trên SCR-62"
 DT-ICIMP,IC Improvement Project,RW,,,,,,,,,R,R,,R,"FEAT-072 A-149 Q2 (FR-M11-12, UC-42): R01 ghi dự án cải tiến chất lượng / đề tài nghiên cứu; R10, R11, R13 đọc; không ai xóa (dùng Hủy)"
+DT-OUTBREAK,Outbreak Investigation,RWSA,,,,,,,,,,R,,,"FEAT-069 A-150 Q5 (FR-M14-09, BRU-MDR-004): R01 mở, kiểm soát, kết thúc, hủy ổ dịch; R11 đọc, gắn ca và thêm hành động qua màn SCR-61 (dịch vụ); có mã BN che — R13 chỉ số liệu tổng hợp trên SCR-61"
+DT-NOTIFY,Notifiable Disease Report,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-069 A-150 Q4, Q5 (FR-M14-10, BRU-MDR-005): R08, R12 ghi khai báo khoa mình (Cổng khoa); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
+DT-CDISEASE,Communicable Disease,RW,,,,,,,R,,RW,R,R,R,"FEAT-069 A-150 Q1 (FR-M14-10.1): R01, R10 duy trì danh mục bệnh truyền nhiễm và nhóm A/B/C; R08, R11, R12, R13 đọc"
+DT-CLRULE,Cluster Alert Rule,RW,,,,,,,,,R,R,,R,"FEAT-069 A-150 Q2 (FR-M13-13.1): R01 đặt ngưỡng cảnh báo cụm ca; R10, R11, R13 đọc"
+DT-CLALERT,Cluster Alert,R,,,,,,,,,,R,,,"FEAT-069 A-150 Q2 (FR-M13-13, UC-50): cảnh báo do job hằng ngày tạo; R01, R11 đọc và xem xét qua màn SCR-61/SCR-58 (dịch vụ)"

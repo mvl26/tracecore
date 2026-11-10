@@ -1,0 +1,179 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 20:00:00.000000",
+ "description": "Cluster of cases above a threshold, found by the daily check; reviewed by opening an outbreak investigation or recording why not.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule",
+  "source",
+  "key_label",
+  "department",
+  "department_name",
+  "window_days",
+  "min_cases",
+  "column_break_window",
+  "window_start",
+  "window_end",
+  "case_count",
+  "case_refs",
+  "section_review",
+  "status",
+  "outbreak_investigation",
+  "column_break_review",
+  "review_reason",
+  "reviewed_by",
+  "reviewed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule",
+   "fieldtype": "Link",
+   "label": "Threshold",
+   "options": "Cluster Alert Rule",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "key_label",
+   "fieldtype": "Data",
+   "label": "Infection or Organism",
+   "read_only": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "window_days",
+   "fieldtype": "Int",
+   "label": "Window (days)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "min_cases",
+   "fieldtype": "Int",
+   "label": "Threshold Cases",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_window",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "window_start",
+   "fieldtype": "Date",
+   "label": "Window Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "window_end",
+   "fieldtype": "Date",
+   "label": "Window End",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "case_count",
+   "fieldtype": "Int",
+   "label": "Cases",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "case_refs",
+   "fieldtype": "Small Text",
+   "label": "Case References",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "section_review",
+   "fieldtype": "Section Break",
+   "label": "Review"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "New\nInvestigation Opened\nDismissed",
+   "default": "New",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "outbreak_investigation",
+   "fieldtype": "Link",
+   "label": "Outbreak Investigation",
+   "options": "Outbreak Investigation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_review",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "review_reason",
+   "fieldtype": "Small Text",
+   "label": "Review Reason",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_on",
+   "fieldtype": "Datetime",
+   "label": "Reviewed On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Cluster Alert",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "CCA-.YYYY.-.#####",
+ "track_changes": 1
+}

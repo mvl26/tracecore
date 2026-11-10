@@ -43,6 +43,11 @@ def room_query(user=None):
 	return _conditions("Isolation Room", user)
 
 
+def notifiable_query(user=None):
+	"""FEAT-069 (A-150 Q5): R08/R12 chỉ thấy khai báo bệnh truyền nhiễm của khoa mình."""
+	return _conditions("Notifiable Disease Report", user)
+
+
 def has_permission(doc, user=None, permission_type=None):
 	departments = allowed_departments(user)
 	if departments is None:
@@ -50,12 +55,17 @@ def has_permission(doc, user=None, permission_type=None):
 	return doc.department in departments
 
 
-def not_allowed(department=None):
+def not_allowed(department=None, code="ISOLATION_NOT_ALLOWED"):
+	reason = (
+		_("You can record notifiable disease reports of your own department only.")
+		if code == "NOTIFIABLE_NOT_ALLOWED"
+		else _("You can record isolation orders of your own department only.")
+	)
 	return BlockedError(
 		Block(
-			"ISOLATION_NOT_ALLOWED",
+			code,
 			_("Not your department"),
-			_("You can record isolation orders of your own department only."),
+			reason,
 			_("Choose your department, or ask the infection control supervisor."),
 			object_type="Department" if department else None,
 			object_name=department,
@@ -63,8 +73,8 @@ def not_allowed(department=None):
 	)
 
 
-def require_department(department, user=None):
-	"""Chặn ghi cho khoa ngoài phạm vi hoặc thiếu khoa (`ISOLATION_NOT_ALLOWED`)."""
+def require_department(department, user=None, code="ISOLATION_NOT_ALLOWED"):
+	"""Chặn ghi cho khoa ngoài phạm vi hoặc thiếu khoa (`ISOLATION_NOT_ALLOWED`; FEAT-069 `NOTIFIABLE_NOT_ALLOWED`)."""
 	departments = allowed_departments(user)
 	if not department or (departments is not None and department not in departments):
-		raise not_allowed(department)
+		raise not_allowed(department, code)

@@ -1,0 +1,29 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Notifiable communicable diseases") }}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/tracecore/css/tokens.css">
+{% endblock %}
+
+{# base portal styles shared with the exposure report (FEAT-071), census (FEAT-062) and isolation (FEAT-068) pages #}
+{% block style %}
+<style>
+{% include "tracecore/www/ksnk_khoa/bao_phoi_nhiem.css" %}
+{% include "tracecore/www/ksnk_khoa/mau_so.css" %}
+{% include "tracecore/www/ksnk_khoa/cach_ly.css" %}
+{% include "tracecore/www/ksnk_khoa/khai_bao.css" %}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="tc-dept tc-census-portal tc-kb-portal">
+	<div class="tc-dept-zonebar" role="banner">
+		<span>{{ _("Department") }}: {{ department_label }}</span>
+	</div>
+	{% include "templates/includes/ksnk_khoa_nav.html" %}
+	<h1 class="tc-dept-title">{{ _("Notifiable communicable diseases") }} <span class="tc-mono tc-dept-ref">SCR-61</span></h1>
+	<div id="tc-kb-portal" class="tc-dept-body" aria-live="polite"></div>
+	<script type="application/json" id="tc-kb-boot">{{ boot | tojson }}</script>
+</div>
+{% endblock %}

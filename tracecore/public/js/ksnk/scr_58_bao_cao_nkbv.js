@@ -617,3 +617,116 @@ const TcKsnkPps = {
 };
 
 window.TcKsnkPps = TcKsnkPps;
+
+// FEAT-069 (A-150 Q2; FR-M13-13, .1; UC-50 bước 3–4, E1): banner cảnh báo cụm ca ở đầu SCR-58 — nút "Mở điều tra ổ dịch"
+// (sang SCR-61 điền sẵn) và "Đánh dấu đã xem xét" (bắt buộc lý do); chưa có ngưỡng → nhắc cấu hình. Tải riêng, lỗi
+// khối này không làm hỏng phần tỷ suất.
+const TC_CLUSTER_ALERTS = "tracecore.v1.outbreak.cluster_alerts";
+const TC_CLUSTER_DISMISS = "tracecore.v1.outbreak.dismiss_alert";
+
+const TcKsnkClusterBanner = {
+	html(b, esc) {
+		const date = (value) => {
+			if (!value) return "—";
+			const [y, m, d] = String(value).slice(0, 10).split("-");
+			return `${d}/${m}/${y}`;
+		};
+		if (!b.configured)
+			return `<div class="tc-ksnk-alert is-info" role="note">${esc(
+				__("No cluster alert threshold is configured, so no cluster is detected.")
+			)} <a href="${esc(b.rule_form)}">${esc(__("Set thresholds"))}</a></div>`;
+		return (b.alerts || [])
+			.map(
+				(a) => `<div class="tc-ksnk-alert is-warn" role="alert">
+				<strong>${esc(__("Cluster alert — {0}", [a.department_name || a.department]))}:</strong>
+				${esc(
+					__(
+						"{0} cases of {1} in {2} days (threshold {3} cases / {2} days), {4} – {5}.",
+						[
+							a.case_count,
+							a.key_label,
+							a.window_days,
+							a.min_cases,
+							date(a.window_start),
+							date(a.window_end),
+						]
+					)
+				)}
+				${
+					b.can_review
+						? `<div class="tc-ksnk-actions">
+					<a class="btn btn-danger" href="${esc(b.open_link)}?alert=${encodeURIComponent(a.name)}">${esc(
+								__("Open outbreak investigation")
+						  )}</a>
+					<button type="button" class="btn btn-default" data-action="cluster-dismiss" data-name="${esc(
+						a.name
+					)}">${esc(__("Mark as reviewed"))}</button></div>`
+						: ""
+				}</div>`
+			)
+			.join("");
+	},
+
+	async render(region, ctx, rerender) {
+		if (!region) return;
+		try {
+			const b = await ctx.get(TC_CLUSTER_ALERTS, {});
+			if (!ctx.isCurrent()) return;
+			region.innerHTML = TcKsnkClusterBanner.html(b, ctx.esc);
+			region.querySelectorAll('[data-action="cluster-dismiss"]').forEach((button) =>
+				button.addEventListener("click", () =>
+					frappe.prompt(
+						[
+							{
+								fieldname: "reason",
+								fieldtype: "Small Text",
+								label: __("Reason"),
+								reqd: 1,
+							},
+						],
+						(v) =>
+							frappe.call({
+								method: TC_CLUSTER_DISMISS,
+								args: {
+									alert: button.dataset.name,
+									reason: v.reason,
+									client_ts: tcClusterClientTs(),
+								},
+								headers: { "X-Idempotency-Key": crypto.randomUUID() },
+								callback: () => rerender(),
+							}),
+						__("Mark as reviewed (no investigation)"),
+						__("Confirm")
+					)
+				)
+			);
+		} catch (error) {
+			if (!ctx.isCurrent()) return;
+			region.innerHTML = "";
+		}
+	},
+};
+
+function tcClusterClientTs(date = new Date()) {
+	const pad = (n) => String(Math.floor(Math.abs(n))).padStart(2, "0");
+	const offset = -date.getTimezoneOffset();
+	return (
+		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+		`T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}` +
+		`${offset >= 0 ? "+" : "-"}${pad(offset / 60)}:${pad(offset % 60)}`
+	);
+}
+
+(function () {
+	const base = TcKsnkScr58.render;
+	TcKsnkScr58.render = async function (el, ctx) {
+		await base.call(TcKsnkScr58, el, ctx);
+		if (!ctx.isCurrent() || el.querySelector('[data-region="clusters"]')) return;
+		el.insertAdjacentHTML("afterbegin", '<div data-region="clusters"></div>');
+		TcKsnkClusterBanner.render(el.querySelector('[data-region="clusters"]'), ctx, () =>
+			TcKsnkScr58.render(el, ctx)
+		);
+	};
+})();
+
+window.TcKsnkClusterBanner = TcKsnkClusterBanner;

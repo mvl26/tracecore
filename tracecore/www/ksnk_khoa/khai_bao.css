@@ -1,0 +1,15 @@
+/* Cổng khoa — khai báo bệnh truyền nhiễm (SCR-61 DEPT, FEAT-069). Nền .tc-dept / .tc-cen-* / .tc-iso-form lấy từ
+   bao_phoi_nhiem.css, mau_so.css, cach_ly.css. Chỉ token --tc-*; chữ ≥ 16, chạm ≥ 48; mã (KB-, mã BN che) Courier New. */
+.tc-kb-reported {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-3);
+	align-items: flex-end;
+	margin-top: var(--tc-sp-2);
+}
+
+/* Sắp đến hạn / thiếu số khai báo: chữ trắng trên cam dùng --tc-warn-fill (design.md) */
+.tc-badge-w {
+	background: var(--tc-warn-fill);
+	color: var(--tc-text-inverse);
+}

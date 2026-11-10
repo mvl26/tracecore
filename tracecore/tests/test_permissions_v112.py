@@ -171,6 +171,24 @@ V112_ROWS.update(
 )
 
 
+# FEAT-069 (A-150 Q1, Q2, Q5): ổ dịch, khai báo bệnh truyền nhiễm, danh mục bệnh, ngưỡng và cảnh báo cụm ca
+V112_ROWS.update(
+	{
+		"DT-OUTBREAK": ("Outbreak Investigation", {"R01": "RWSA", "R11": "R"}),
+		"DT-NOTIFY": (
+			"Notifiable Disease Report",
+			{"R01": "RWSA", "R08": "RWS", "R11": "RWSA", "R12": "RWS"},
+		),
+		"DT-CDISEASE": (
+			"Communicable Disease",
+			{"R01": "RW", "R08": "R", "R10": "RW", "R11": "R", "R12": "R", "R13": "R"},
+		),
+		"DT-CLRULE": ("Cluster Alert Rule", {"R01": "RW", "R10": "R", "R11": "R", "R13": "R"}),
+		"DT-CLALERT": ("Cluster Alert", {"R01": "R", "R11": "R"}),
+	}
+)
+
+
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):
 		self.assertEqual(ROLE_CODES, tuple(f"R{n:02d}" for n in range(1, 14)))
