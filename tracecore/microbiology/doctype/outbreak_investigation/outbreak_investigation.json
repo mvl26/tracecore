@@ -15,6 +15,8 @@
   "departments",
   "start_date",
   "source",
+  "source_doctype",
+  "source_name",
   "cluster_alert",
   "opened_by",
   "section_definition",
@@ -103,6 +105,23 @@
    "label": "Detected By",
    "options": "Cluster Alert\nSuspicion\nFoodborne Event\nOther",
    "default": "Suspicion"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source Document Type",
+   "options": "DocType",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Filled when the investigation is opened from another record, e.g. a suspected food poisoning event."
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Source Document",
+   "options": "source_doctype",
+   "read_only": 1,
+   "no_copy": 1
   },
   {
    "fieldname": "cluster_alert",
@@ -223,7 +242,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 20:00:00.000000",
+ "modified": "2026-11-10 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "Microbiology",
  "name": "Outbreak Investigation",

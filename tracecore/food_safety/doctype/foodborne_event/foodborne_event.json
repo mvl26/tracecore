@@ -1,0 +1,208 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "NDTP-.YYYY.-.###",
+ "creation": "2026-11-10 17:00:00.000000",
+ "description": "Suspected food poisoning. Posting it notifies the head of infection control and the supervisors at once, suggests a non-conformance and, at or above the configured number of people, an outbreak investigation.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_date",
+  "location",
+  "department",
+  "affected_count",
+  "column_break_event",
+  "suspected_food",
+  "supplier",
+  "supplier_name",
+  "reported_ref",
+  "section_description",
+  "description",
+  "section_nc",
+  "nc_status",
+  "incident_capa",
+  "nc_reason",
+  "section_outbreak",
+  "threshold_applied",
+  "outbreak_status",
+  "outbreak_investigation",
+  "outbreak_reason",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "event_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Event Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Location",
+   "reqd": 1
+  },
+  {
+   "description": "Department in charge of the place; the non-conformance is linked to it.",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "affected_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "People Affected",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_event",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "suspected_food",
+   "fieldtype": "Small Text",
+   "label": "Suspected Food"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Catering Vendor",
+   "options": "Supplier"
+  },
+  {
+   "fetch_from": "supplier.supplier_name",
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Vendor Name",
+   "read_only": 1
+  },
+  {
+   "description": "Reference of the outside authority investigating the event, if any.",
+   "fieldname": "reported_ref",
+   "fieldtype": "Data",
+   "label": "External Report Reference"
+  },
+  {
+   "fieldname": "section_description",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "section_nc",
+   "fieldtype": "Section Break",
+   "label": "Non-conformance"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "nc_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "NC Status",
+   "no_copy": 1,
+   "options": "\nSuggested\nOpened\nDismissed",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "incident_capa",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "no_copy": 1,
+   "options": "Incident CAPA",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "nc_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason Not Opened",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_outbreak",
+   "fieldtype": "Section Break",
+   "label": "Outbreak Investigation"
+  },
+  {
+   "fieldname": "threshold_applied",
+   "fieldtype": "Int",
+   "label": "People Threshold Applied",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "outbreak_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Outbreak Status",
+   "no_copy": 1,
+   "options": "\nSuggested\nOpened\nDismissed",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Outbreak investigation opened from this event.",
+   "fieldname": "outbreak_investigation",
+   "fieldtype": "Link",
+   "label": "Outbreak Investigation",
+   "no_copy": 1,
+   "read_only": 1,
+   "options": "Outbreak Investigation"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "outbreak_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason No Investigation",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Foodborne Event",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-10 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Food Safety",
+ "name": "Foodborne Event",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "location",
+ "track_changes": 1
+}

@@ -226,3 +226,6 @@
 .tc-ksnk .tc-od-cell.is-suspected { background: var(--tc-warn-fill); }
 .tc-ksnk .tc-od-cell.is-excluded { background: var(--tc-neutral-fill); }
 .tc-ksnk .tc-od-axis { margin-top: var(--tc-sp-1); color: var(--tc-text-2); font-size: var(--tc-fs-xs); font-variant-numeric: tabular-nums; }
+/* FEAT-073 SCR-65: thẻ tài liệu truyền thông có ảnh QR (in dán tại khoa) */
+.tc-ksnk .tc-ksnk-material { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--tc-sp-3); align-items: start; padding: var(--tc-sp-3); border: var(--tc-bw-hair) solid var(--tc-border-row); border-radius: var(--tc-r-md); margin-bottom: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-qr { width: var(--tc-sp-22); height: var(--tc-sp-22); border: var(--tc-bw-hair) solid var(--tc-border-strong); }

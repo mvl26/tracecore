@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "GDS-.YYYY.-.#####",
+ "creation": "2026-11-10 17:00:00.000000",
+ "description": "An infection control education session for patients, families, staff, food handlers or students; summarised by quarter.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "session_date",
+  "department",
+  "department_name",
+  "audience",
+  "attendee_count",
+  "column_break_topic",
+  "topic",
+  "title",
+  "materials",
+  "facilitator",
+  "facilitator_name",
+  "section_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "session_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Session Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "audience",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Audience",
+   "options": "\nPatients\nPatient Families\nStaff\nFood Handlers\nStudents",
+   "reqd": 1
+  },
+  {
+   "fieldname": "attendee_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Attendees",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_topic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "topic",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Topic (Measure Group)",
+   "options": "\nInfection Surveillance\nPractice Compliance Monitoring\nInvasive Procedures and High-Risk Patients\nPatient Counselling\nMicroorganism-Related Transmission Prevention\nStandard Precautions\nTransmission-Based Precautions\nHand Hygiene\nMedical Devices and Equipment\nMedical Waste\nEnvironmental Hygiene and Infrastructure\nLinen\nOccupational Exposure\nFood Safety",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "fieldname": "materials",
+   "fieldtype": "Link",
+   "label": "Communication Material",
+   "options": "IC Procedure Document"
+  },
+  {
+   "fieldname": "facilitator",
+   "fieldtype": "Link",
+   "label": "Facilitator",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "facilitator.employee_name",
+   "fieldname": "facilitator_name",
+   "fieldtype": "Data",
+   "label": "Facilitator Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Food Safety",
+ "name": "IC Education Session",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

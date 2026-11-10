@@ -125,10 +125,22 @@ def environment_zones():
 	)
 
 
+def caterers():
+	"""FEAT-073 (FR-M17-01, A-151): đơn vị suất ăn thuê ngoài (Supplier `tc_ic_service_type` = Catering) — chọn khi chấm
+	phiếu An toàn thực phẩm; bếp ăn bệnh viện tự vận hành để trống (UC-56 A1)."""
+	return frappe.get_all(
+		"Supplier",
+		filters={"disabled": 0, "tc_ic_service_type": "Catering"},
+		fields=["name", "supplier_name"],
+		order_by="supplier_name asc",
+	)
+
+
 def context(observer, on=None):
 	return {
 		"episodes": open_episodes(on),  # FEAT-062: đợt thiết bị đang mở cho phiếu gói dự phòng
 		"zones": environment_zones(),  # FEAT-070: vùng vệ sinh cho phiếu VSMT/hạ tầng
+		"caterers": caterers(),  # FEAT-073: đơn vị suất ăn cho phiếu ATTP
 		"templates": active_templates(on),
 		"opportunity_templates": opportunity_templates(on),  # FEAT-061 (SCR-51)
 		"departments": departments(),

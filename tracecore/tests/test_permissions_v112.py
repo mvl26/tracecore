@@ -170,6 +170,15 @@ V112_ROWS.update(
 	}
 )
 
+# FEAT-073 (A-151, FR-M17-01.2): R01, R11 toàn quyền M17; R12 ghi buổi truyền thông khoa mình; R13 đọc tổng hợp quý
+V112_ROWS.update(
+	{
+		"DT-FHHC": ("Food Handler Health Check", {"R01": "RWSA", "R11": "RWSA"}),
+		"DT-FBEVT": ("Foodborne Event", {"R01": "RWSA", "R11": "RWSA"}),
+		"DT-ICEDU": ("IC Education Session", {"R01": "RW", "R11": "RW", "R12": "RW", "R13": "R"}),
+	}
+)
+
 
 # FEAT-069 (A-150 Q1, Q2, Q5): ổ dịch, khai báo bệnh truyền nhiễm, danh mục bệnh, ngưỡng và cảnh báo cụm ca
 V112_ROWS.update(

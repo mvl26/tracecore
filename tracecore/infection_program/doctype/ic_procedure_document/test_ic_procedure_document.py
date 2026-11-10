@@ -20,7 +20,8 @@ class TestICProcedureDocument(IsolatedTestCase):
 		meta = frappe.get_meta(DOCTYPE)
 		self.assertFalse(meta.is_submittable)
 		self.assertEqual(
-			meta.get_field("status").options.split("\n"), ["Effective", "Review Needed", "Superseded"]
+			meta.get_field("status").options.split("\n"),
+			["Effective", "Review Needed", "Superseded", "Draft", "Withdrawn"],  # FEAT-073 (A-151 Q3)
 		)
 		self.assertIn("Communication Material", meta.get_field("doc_type").options)
 		assert_permission_matrix(self, DOCTYPE)

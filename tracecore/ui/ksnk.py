@@ -203,6 +203,19 @@ SCREENS += [
 		"script": "/assets/tracecore/js/ksnk/scr_62_moi_truong.js",
 	},
 ]
+# FEAT-073 (A-151): ATTP & truyền thông người bệnh (UC-56); R13 chỉ số liệu tổng hợp; R12 ghi buổi truyền thông của khoa
+# trên Desk form `IC Education Session`, phiếu ATTP trên PDA (SCR-52)
+SCREENS += [
+	{
+		"slug": "attp",
+		"scr": "SCR-65",
+		"uc": "UC-56",
+		"label": "Food Safety and Communication",
+		"group": "environment",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_65_attp.js",
+	},
+]
 
 # FEAT-069 (A-150 e): điều tra ổ dịch (đường cong dịch) & khai báo bệnh truyền nhiễm (SCR-61, UC-53); R13 chỉ số liệu
 # tổng hợp; R08/R12 ghi khai báo trên Cổng khoa /ksnk-khoa/khai-bao; banner cụm ca nằm trong SCR-58 `bao-cao-nkbv`

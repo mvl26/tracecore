@@ -194,6 +194,13 @@ class AuditForm {
 				this.notice = null;
 				this.show();
 			},
+			// FEAT-073: chọn đơn vị suất ăn (hoặc bếp ăn bệnh viện) cho phiếu ATTP
+			"aud-supplier": () => {
+				this.form.supplier = data.supplier || "";
+				this.form.supplier_chosen = true;
+				this.notice = null;
+				this.show();
+			},
 			"aud-mode": () => {
 				this.form.mode = this.form.mode === "Unannounced" ? "Announced" : "Unannounced";
 				this.show();
@@ -303,6 +310,15 @@ class AuditForm {
 				__("Choose the zone you audited, then post the audit.")
 			);
 		}
+		// FEAT-073 (FR-M17-01): phiếu ATTP gắn đơn vị suất ăn hoặc ghi rõ là bếp ăn bệnh viện
+		if (this.foodAudit() && !this.form.supplier_chosen) {
+			return this.block(
+				"FOOD_AUDIT_UNIT_REQUIRED",
+				__("Kitchen or vendor required"),
+				__("A food safety audit must say which catering vendor or kitchen was audited."),
+				__("Choose the catering vendor, or Hospital kitchen, then post the audit.")
+			);
+		}
 		const missing = TcAudit.missing(this.template, this.answers);
 		if (missing.length) {
 			return this.block(
@@ -334,6 +350,7 @@ class AuditForm {
 			device_episode: this.form.device_episode || "", // FEAT-062
 			environment_zone: this.form.environment_zone || "", // FEAT-070
 			next_due: this.form.next_due || "", // FEAT-070
+			supplier: this.form.supplier || "", // FEAT-073
 			answers: JSON.stringify(
 				(this.template.items || [])
 					.filter((item) => this.answers[item.item_code] || this.notes[item.item_code])
@@ -624,6 +641,32 @@ class AuditForm {
 		}${due}</section>`;
 	}
 
+	// FEAT-073 (FR-M17-01, UC-56 A1): phiếu An toàn thực phẩm gắn đơn vị suất ăn hoặc bếp ăn bệnh viện
+	foodAudit() {
+		return (this.template || {}).audit_type === "Food Safety";
+	}
+
+	supplierHtml(data) {
+		if (!this.foodAudit()) return "";
+		const chip = (value, label) => {
+			const chosen = this.form.supplier_chosen && (this.form.supplier || "") === value;
+			return `<button type="button" class="tc-btn ${
+				chosen ? "tc-btn-primary" : "tc-btn-secondary"
+			} tc-aud-choice" data-action="aud-supplier" data-supplier="${esc(
+				value
+			)}" aria-pressed="${chosen}">${chosen ? "&#10003; " : ""}${esc(label)}</button>`;
+		};
+		const chips = ((data && data.caterers) || [])
+			.map((row) => chip(row.name, row.supplier_name || row.name))
+			.join("");
+		return `<section class="tc-t6-block"><h3>${esc(
+			__("Catering vendor or kitchen")
+		)}</h3><div class="tc-aud-choices">${chips}${chip(
+			"",
+			__("Hospital kitchen")
+		)}</div></section>`;
+	}
+
 	itemHtml(item) {
 		const value = this.answers[item.item_code];
 		const button = (answer, label, icon) => {
@@ -708,6 +751,7 @@ class AuditForm {
 			</section>
 			${this.episodeHtml(data)}
 			${this.zoneHtml(data)}
+			${this.supplierHtml(data)}
 			<section class="tc-aud-items">${(template.items || [])
 				.map((item) => this.itemHtml(item))
 				.join("")}</section>

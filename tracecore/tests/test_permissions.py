@@ -32,8 +32,9 @@ class TestPermissionMatrix(FrappeTestCase):
 		# + Surgical Procedure Group, Surgical Surveillance, Report Export Profile (FEAT-064, A-147 m)
 		# + Environment Risk Level, Environment Zone, Environmental Limit, Sampling Plan, Environmental Sample (FEAT-070)
 		# + IC Improvement Project (FEAT-072, A-149)
-		self.assertEqual(len(rows), 100)
-		self.assertEqual(len({row.code for row in rows}), 100)
+		# + Food Handler Health Check, Foodborne Event, IC Education Session (FEAT-073, A-151)
+		self.assertEqual(len(rows), 103)
+		self.assertEqual(len({row.code for row in rows}), 103)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:

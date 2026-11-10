@@ -35,7 +35,9 @@
   "section_notifiable",
   "notifiable_hours_a",
   "notifiable_hours_b",
-  "notifiable_hours_c"
+  "notifiable_hours_c",
+  "section_food_safety",
+  "foodborne_outbreak_threshold"
  ],
  "fields": [
   {
@@ -229,6 +231,18 @@
    "fieldname": "notifiable_hours_c",
    "fieldtype": "Float",
    "label": "Reporting Deadline Group C (hours)"
+  },
+  {
+   "fieldname": "section_food_safety",
+   "fieldtype": "Section Break",
+   "label": "Food Safety"
+  },
+  {
+   "fieldname": "foodborne_outbreak_threshold",
+   "fieldtype": "Int",
+   "label": "Outbreak Investigation from (People Affected)",
+   "non_negative": 1,
+   "description": "A suspected food poisoning event affecting at least this many people suggests an outbreak investigation. Leave empty until the head of infection control sets it; events then only suggest a non-conformance."
   }
  ],
  "index_web_pages_for_search": 0,

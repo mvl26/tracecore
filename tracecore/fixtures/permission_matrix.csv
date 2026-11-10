@@ -99,3 +99,6 @@ DT-NOTIFY,Notifiable Disease Report,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-069 A-150 Q
 DT-CDISEASE,Communicable Disease,RW,,,,,,,R,,RW,R,R,R,"FEAT-069 A-150 Q1 (FR-M14-10.1): R01, R10 duy trì danh mục bệnh truyền nhiễm và nhóm A/B/C; R08, R11, R12, R13 đọc"
 DT-CLRULE,Cluster Alert Rule,RW,,,,,,,,,R,R,,R,"FEAT-069 A-150 Q2 (FR-M13-13.1): R01 đặt ngưỡng cảnh báo cụm ca; R10, R11, R13 đọc"
 DT-CLALERT,Cluster Alert,R,,,,,,,,,,R,,,"FEAT-069 A-150 Q2 (FR-M13-13, UC-50): cảnh báo do job hằng ngày tạo; R01, R11 đọc và xem xét qua màn SCR-61/SCR-58 (dịch vụ)"
+DT-FHHC,Food Handler Health Check,RWSA,,,,,,,,,,RWSA,,,"FEAT-073 A-151 Q4 (FR-M17-02, .1; BRU-FS-001): R01, R11 ghi phiếu khám sức khỏe người chế biến và ghi sổ; chỉ kết luận Đủ/Không đủ và hạn, không chẩn đoán; R13 chỉ xem tổng hợp trên SCR-65; không ai xóa (dùng Hủy)"
+DT-FBEVT,Foodborne Event,RWSA,,,,,,,,,,RWSA,,,"FEAT-073 A-151 Q1, Q2 (FR-M17-04, .1; BRU-FS-002): R01, R11 ghi sự cố nghi ngộ độc thực phẩm và ghi sổ (báo ngay, đề nghị NC/ổ dịch); R13 chỉ xem tổng hợp; không ai xóa (dùng Hủy)"
+DT-ICEDU,IC Education Session,RW,,,,,,,,,,RW,RW,R,"FEAT-073 A-151 Q4 (FR-M17-05, FR-M17-01.2): R01, R11 ghi buổi truyền thông mọi khoa; R12 ghi buổi của khoa mình (User Permission Department); R13 đọc tổng hợp quý; không ai xóa"

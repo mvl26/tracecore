@@ -58,6 +58,7 @@ SHARPS = "Sharps Exposure"
 COMPLIANCE = "Compliance Nonconformity"
 ENVIRONMENT = "Environment Nonconformity"  # FEAT-070 (A-148 d): NC từ mẫu môi trường Không đạt
 OUTBREAK = "Outbreak Control"  # FEAT-069 (A-150 Q3): hành động kiểm soát ổ dịch (M14)
+FOOD_SAFETY = "Food Safety Nonconformity"  # FEAT-073 (A-151): NC từ sự cố nghi ngộ độc thực phẩm (M17)
 NC_TYPES = {"Shortage": "Missing Instrument", "Foreign Instrument": "Foreign Instrument"}
 
 
@@ -124,6 +125,8 @@ def validate(doc):
 		doc.incident_category = "Environment"
 	if doc.incident_type == OUTBREAK:  # FEAT-069
 		doc.incident_category = "Outbreak"
+	if doc.incident_type == FOOD_SAFETY:  # FEAT-073
+		doc.incident_category = "Food Safety"
 	if doc.incident_type == SHARPS:
 		_check_sharps(doc)
 	if not any(doc.get(field) for field in LINK_FIELDS):
@@ -487,6 +490,19 @@ def on_outbreak_nc(ctx):
 		)
 		_save(doc)
 	return name
+
+
+def on_food_safety_nc(ctx):
+	"""Hook ``tracecore_food_safety_nc`` (FEAT-073, FR-M17-04, A-151): R01/R11 mở NC từ sự cố nghi ngộ độc thực phẩm
+	→ Incident Food Safety mức High, nguồn Foodborne Event, gắn khoa. ``ctx``: {event, department, description}."""
+	return _auto(
+		"Foodborne Event",
+		ctx["event"],
+		FOOD_SAFETY,
+		"High",
+		ctx.get("description") or _("Suspected food poisoning {0}.").format(ctx["event"]),
+		{"department": ctx.get("department")},
+	)
 
 
 def on_assembly_nc(ctx):
