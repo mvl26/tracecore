@@ -189,7 +189,7 @@
 | FR-M9-27 | Khóa kỳ → tính, lưu IC Indicator Value | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
 | FR-M9-28 | Nhập file qua hồ sơ ánh xạ cột, báo lỗi dòng | Must | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-056 | _TBD_ |
 | FR-M9-29 | Tự đánh giá năm QĐ 38 điền sẵn | Should | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-065 | _TBD_ |
-| FR-M9-30 | Gói xuất hồ sơ KSNK cho đoàn kiểm tra | Could | Active | BA v1.12 (A-113) | UC-57 | _TBD_ | FEAT-074 | _TBD_ |
+| FR-M9-30 | Gói xuất hồ sơ KSNK cho đoàn kiểm tra | Could | Active | BA v1.12 (A-113) | UC-57 | SCR-66; A-152 | FEAT-074 | `admin_reports/tests/test_ic_dossier.py`, `tests/test_core_dossier.py`, `*/tests/test_dossier.py`, `tests/test_ksnk_scr66_dossier.py` |
 
 FR-M9-08..16 và FR-M10-01..08 là ID mới v1.11 (chủ đầu tư duyệt 2026-10-17, srs.md Appendix C / §3.1.10); FR-M9-14/15 là yêu cầu xuyên suốt mọi màn hình trạm/PDA nên không có UC sở hữu riêng (ghi "—" kèm danh sách UC trạm tham chiếu).
 

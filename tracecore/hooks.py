@@ -824,6 +824,17 @@ tracecore_import_kinds = [
 tracecore_import_kinds += ["tracecore.hai_surveillance.ssi_imports.import_kinds"]
 # FEAT-064 (A-147 Q1, j): loại báo cáo xuất theo Report Export Profile (core.exporter) — mỗi hàm trả list ExportKind
 tracecore_export_kinds = ["tracecore.hai_surveillance.exports.export_kinds"]
+# FEAT-074 (A-152): phần của gói hồ sơ KSNK cho đoàn kiểm tra (core.dossier) — mỗi hàm trả list DossierSection; M9 gom,
+# không import M11-M16. M17 (FEAT-073) đăng ký thêm khi có.
+tracecore_ic_dossier_sections = [
+	"tracecore.admin_reports.ic_dossier.register",
+	"tracecore.infection_program.dossier.register",
+	"tracecore.compliance_audit.dossier.register",
+	"tracecore.hai_surveillance.dossier.register",
+	"tracecore.microbiology.dossier.register",
+	"tracecore.environmental_hygiene.dossier.register",
+	"tracecore.occupational_safety.dossier.register",
+]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
 # M2 (FEAT-020, A-35) kiểm đếm tại T3:
