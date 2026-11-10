@@ -2190,6 +2190,80 @@ html:has(.tc-work) {
 	min-height: var(--tc-touch-station);
 }
 
+/* FEAT-061 SCR-51: phiếu vệ sinh tay theo cơ hội — 5 nút thời điểm, 3 nút hành động lớn, nút ≥ 48 px, chữ ≥ 16 px */
+.tc-hh-counter {
+	margin: 0;
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-hh-moments {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(var(--tc-touch-min), 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-hh-moment {
+	min-height: var(--tc-touch-station);
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+	background: var(--tc-card);
+	border: var(--tc-bw-med) solid var(--tc-primary);
+	color: var(--tc-primary);
+}
+
+.tc-hh-moment.is-on {
+	background: var(--tc-primary);
+	color: var(--tc-text-inverse);
+}
+
+.tc-hh-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin: var(--tc-touch-gap) 0;
+}
+
+.tc-hh-action {
+	min-height: var(--tc-touch-station);
+	font-size: var(--tc-fs-lg);
+	color: var(--tc-text-inverse);
+}
+
+.tc-hh-action[data-action-kind="Hand Rub"] {
+	background: var(--tc-pass);
+}
+
+.tc-hh-action[data-action-kind="Hand Wash"] {
+	background: var(--tc-primary);
+}
+
+.tc-hh-action[data-action-kind="Missed"] {
+	background: var(--tc-fail);
+}
+
+.tc-hh-recent {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-hh-row {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-2) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-hh-row[data-kind="Hand Rub"] b,
+.tc-hh-row[data-kind="Hand Wash"] b {
+	color: var(--tc-pass-text);
+}
+
+.tc-hh-row[data-kind="Missed"] b {
+	color: var(--tc-fail-text);
+}
+
 /* thao tác nguy hiểm tách khỏi thanh thao tác chính (ticket 1843 T4-07, 1834 T3-05) */
 .tc-danger-zone {
 	display: flex;

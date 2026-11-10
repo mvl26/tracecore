@@ -1,4 +1,4 @@
-/* global uuid4, clientTs, esc, tcErrorTitle */
+/* global uuid4, clientTs, esc, tcErrorTitle, HygieneView */
 // SCR-52 Phiếu giám sát theo mục trên PDA (FEAT-060; UC-44; FR-M12-04, FR-M12-06, FR-M12-10; BRU-AUD-004/005; ADR-003, ADR-015).
 // Page station, chức năng trạm AUDIT. Chọn mẫu + khoa một lần cho phiếu; mỗi mục một hàng với 3 nút chữ Đạt / Không /
 // K. áp dụng (≥ 48 px, không chỉ màu; mục trọng yếu có nhãn chữ "Trọng yếu"); mục Không bắt buộc ghi chú; thanh kết quả
@@ -105,6 +105,7 @@ class AuditForm {
 		this.busy = null;
 		this.offline = false;
 		this.template = null;
+		this.hygiene = null; // FEAT-061: màn vệ sinh tay theo cơ hội (SCR-51) khi mẫu là "Theo cơ hội"
 		this.department = "";
 		this.form = {};
 		this.answers = {};
@@ -185,6 +186,7 @@ class AuditForm {
 			"aud-submit": () => this.submit(),
 			"aud-cancel": () => {
 				this.template = null;
+				this.hygiene = null;
 				this.answers = {};
 				this.notes = {};
 				this.notice = null;
@@ -192,15 +194,32 @@ class AuditForm {
 			},
 			retry: () => this.retry(),
 		};
-		if (!handlers[action]) return false;
+		if (!handlers[action]) {
+			// FEAT-061: nút của màn vệ sinh tay (hh-*)
+			return Boolean(this.hygiene && this.hygiene.onAction(action, data));
+		}
 		this.captureNotes();
 		handlers[action]();
 		return true;
 	}
 
+	// mẫu chấm theo mục (SCR-52) và mẫu "Theo cơ hội" (SCR-51, FEAT-061)
+	allTemplates(data) {
+		return [
+			...((data && data.templates) || []),
+			...((data && data.opportunity_templates) || []),
+		];
+	}
+
 	pickTemplate(name) {
 		const data = this.data();
-		this.template = ((data && data.templates) || []).find((row) => row.name === name) || null;
+		this.template = this.allTemplates(data).find((row) => row.name === name) || null;
+		this.hygiene =
+			this.template &&
+			this.template.scoring_method === "By Opportunity" &&
+			typeof HygieneView !== "undefined"
+				? new HygieneView(this, this.template)
+				: null;
 		this.answers = {};
 		this.notes = {};
 		this.notice = null;
@@ -368,6 +387,7 @@ class AuditForm {
 
 	done(title, reason) {
 		this.pending = null;
+		this.hygiene = null;
 		this.template = null;
 		this.answers = {};
 		this.notes = {};
@@ -400,6 +420,7 @@ class AuditForm {
 				__("Loading...")
 			)}</p>`;
 		else if (!this.template) body = this.startHtml(data);
+		else if (this.hygiene) body = this.hygiene.html(data);
 		else body = this.formHtml(data);
 		const state = this.notice && this.notice.variant === "error" ? "error" : "result";
 		this.station.setState(
@@ -439,7 +460,7 @@ class AuditForm {
 	}
 
 	startHtml(data) {
-		const templates = (data.templates || [])
+		const templates = this.allTemplates(data)
 			.map(
 				(row) =>
 					`<button type="button" class="tc-btn tc-btn-secondary tc-aud-choice" data-action="aud-template" data-template="${esc(

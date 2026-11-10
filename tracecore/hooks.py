@@ -118,6 +118,8 @@ page_js = {
 		"public/js/station_waste_handover.js",
 		# FEAT-060: phiếu giám sát KSNK theo mục trên PDA (SCR-52), chức năng trạm AUDIT
 		"public/js/station_audit.js",
+		# FEAT-061: phiếu vệ sinh tay theo cơ hội (SCR-51), mở từ màn phiếu giám sát khi mẫu là "Theo cơ hội"
+		"public/js/station_hand_hygiene.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
 	],
@@ -218,6 +220,8 @@ after_migrate = [
 	"tracecore.setup.error_codes.ensure_error_codes",
 	# FEAT-067 (A-136): danh mục Organism tối thiểu + quy tắc đa kháng Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
 	"tracecore.microbiology.seed.ensure_seed",
+	# FEAT-061 (A-140; FR-M12-02): 8 mẫu phiếu giám sát khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.compliance_audit.seed.ensure_seed",
 ]
 
 # Uninstallation

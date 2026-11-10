@@ -12,7 +12,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, get_first_day, get_last_day, getdate, now_datetime
 
-from tracecore.compliance_audit import feedback, scoring, templates
+from tracecore.compliance_audit import feedback, hand_hygiene, scoring, templates  # FEAT-061: hand_hygiene
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Audit Session"
@@ -140,11 +140,13 @@ def validate(doc):
 	_check_people(doc)
 	template = frappe.db.get_value(templates.DOCTYPE, doc.audit_template, ["pass_threshold"], as_dict=True)
 	doc.scoring_method = frappe.db.get_value(templates.DOCTYPE, doc.audit_template, "scoring_method")
+	hand_hygiene.validate(doc)  # FEAT-061: cơ hội vệ sinh tay (BRU-AUD-002)
 	doc.score_pct, doc.result, critical = scoring.score(doc, template or frappe._dict())
 	doc.critical_failed = 1 if critical else 0
 
 
 def before_submit(doc):
+	hand_hygiene.before_submit(doc)  # FEAT-061: phiếu theo cơ hội cần ≥ 1 cơ hội
 	missing = [
 		row.item_code
 		for row in doc.answers
@@ -191,7 +193,12 @@ def month_sample(template_code, department, on):
 
 def on_submit(doc):
 	min_sample = cint(frappe.db.get_value(templates.DOCTYPE, doc.audit_template, "min_sample"))
-	sample = month_sample(doc.template_code, doc.department, doc.audit_date)
+	if (
+		doc.scoring_method == templates.BY_OPPORTUNITY
+	):  # FEAT-061: cỡ mẫu = số cơ hội của khoa-tháng (FR-M12-11)
+		sample = hand_hygiene.month_opportunities(doc.template_code, doc.department, doc.audit_date)
+	else:
+		sample = month_sample(doc.template_code, doc.department, doc.audit_date)
 	values = {"sample_n": sample, "sample_flag": 1 if min_sample and sample < min_sample else 0}
 	if cint(doc.critical_failed):
 		values["nc_status"] = SUGGESTED

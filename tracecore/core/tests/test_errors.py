@@ -300,6 +300,10 @@ class TestErrors(FrappeTestCase):
 				"AUDIT_NOT_ALLOWED": 403,
 			}
 		)
+		# FEAT-061: vệ sinh tay theo cơ hội
+		table.update(
+			{"AUDIT_OPPORTUNITY_INVALID": 422, "AUDIT_NO_OPPORTUNITY": 422, "AUDIT_SESSION_POSTED": 409}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

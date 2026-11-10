@@ -140,6 +140,50 @@ def submit_session(
 	)
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*AUDIT_ROLES, offline=True)
+@idempotent
+def record_opportunity(
+	station,
+	audit_template,
+	department,
+	session_uuid,
+	opportunity,
+	location=None,
+	mode=None,
+	started_at=None,
+	client_ts=None,
+	token=None,
+):
+	"""FEAT-061 (SCR-51, FR-M12-04, BRU-AUD-002): ghi một cơ hội vệ sinh tay vào phiếu Nháp ``session_uuid`` (tạo ở lần
+	đầu); ``opportunity`` = {uuid, subject_role, subject_employee, moment, action, technique_ok, glove_instead}. Ghi sổ
+	phiếu bằng ``submit_session`` cùng ``session_uuid``."""
+	require_any_role(*AUDIT_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	replay = sync.is_replay()
+	if replay:
+		check_not_future(timestamp)
+	values = {
+		"audit_template": audit_template,
+		"department": department,
+		"session_uuid": session_uuid,
+		"opportunity": opportunity,
+		"location": location,
+		"mode": mode,
+		"started_at": to_system_time(parse_client_ts(started_at)) if started_at else None,
+	}
+	return _ok(
+		run_at_step(
+			AUDIT_FUNCTION,
+			station,
+			timestamp,
+			lambda: pda.record_opportunity(_observer(), values, to_system_time(timestamp), replay),
+			"Audit Session",
+			session_uuid,
+		)
+	)
+
+
 # --- Desk / Page tc-ksnk (SCR-50, SCR-53) ---------------------------------------------------------------------------
 
 
