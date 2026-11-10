@@ -12,7 +12,13 @@ import frappe
 from frappe import _
 from frappe.utils import cint, get_first_day, get_last_day, getdate, now_datetime
 
-from tracecore.compliance_audit import feedback, hand_hygiene, scoring, templates  # FEAT-061: hand_hygiene
+from tracecore.compliance_audit import (  # FEAT-061: hand_hygiene; FEAT-062: bundle
+	bundle,
+	feedback,
+	hand_hygiene,
+	scoring,
+	templates,
+)
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Audit Session"
@@ -141,6 +147,7 @@ def validate(doc):
 	template = frappe.db.get_value(templates.DOCTYPE, doc.audit_template, ["pass_threshold"], as_dict=True)
 	doc.scoring_method = frappe.db.get_value(templates.DOCTYPE, doc.audit_template, "scoring_method")
 	hand_hygiene.validate(doc)  # FEAT-061: cơ hội vệ sinh tay (BRU-AUD-002)
+	bundle.validate(doc)  # FEAT-062: phiếu gói dự phòng gắn đợt thiết bị (FR-M12-07)
 	doc.score_pct, doc.result, critical = scoring.score(doc, template or frappe._dict())
 	doc.critical_failed = 1 if critical else 0
 

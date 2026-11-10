@@ -22,6 +22,7 @@ BATCH_FIELDS = (
 	"status",
 	"total",
 	"created",
+	"updated",  # FEAT-062: loại import cập nhật bản có sẵn
 	"skipped",
 	"failed",
 	"started_at",

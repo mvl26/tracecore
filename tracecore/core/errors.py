@@ -352,6 +352,18 @@ HTTP_STATUS: dict[str, int] = {
 	"AUDIT_OPPORTUNITY_INVALID": 422,
 	"AUDIT_NO_OPPORTUNITY": 422,
 	"AUDIT_SESSION_POSTED": 409,
+	# FEAT-062 (A-141): mẫu số ngày, đợt thiết bị, phiếu gói dự phòng gắn đợt
+	"CENSUS_DUPLICATE": 409,
+	"CENSUS_COUNT_INVALID": 422,
+	"CENSUS_DATE_INVALID": 422,
+	"CENSUS_PERIOD_LOCKED": 409,
+	"DEVICE_EPISODE_DATE_INVALID": 422,
+	"DEVICE_EPISODE_OPEN": 409,
+	"DEVICE_EPISODE_CLOSED": 409,
+	"DEVICE_EPISODE_TYPE_INVALID": 422,
+	"HAI_NOT_ALLOWED": 403,
+	"AUDIT_EPISODE_REQUIRED": 422,
+	"AUDIT_EPISODE_INVALID": 422,
 }
 DEFAULT_HTTP_STATUS = 409
 # Tên danh mục của các mã này quá chung ("Sai thứ tự trạm"): màn trạm hiện tiêu đề cụ thể của từ chối, vẫn kèm mã nhỏ

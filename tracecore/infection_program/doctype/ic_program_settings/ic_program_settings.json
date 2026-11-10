@@ -22,7 +22,10 @@
   "exposure_retention_months",
   "section_exposure",
   "exposure_report_hours",
-  "exposure_prophylaxis_hours"
+  "exposure_prophylaxis_hours",
+  "section_hai",
+  "census_reminder_time",
+  "bundle_reminder_time"
  ],
  "fields": [
   {
@@ -136,11 +139,30 @@
    "label": "Start Prophylaxis Within (Hours)",
    "non_negative": 1,
    "description": "Prophylaxis started later than this is flagged as late. Leave empty to flag none."
+  },
+  {
+   "fieldname": "section_hai",
+   "fieldtype": "Section Break",
+   "label": "Daily Census and Device Bundles"
+  },
+  {
+   "fieldname": "census_reminder_time",
+   "fieldtype": "Time",
+   "label": "Census Reminder Time",
+   "default": "10:00:00",
+   "description": "After this time, inpatient wards without yesterday's census are reminded. Default 10:00."
+  },
+  {
+   "fieldname": "bundle_reminder_time",
+   "fieldtype": "Time",
+   "label": "Bundle Check Reminder Time",
+   "default": "10:00:00",
+   "description": "After this time, open device episodes without a posted prevention bundle audit today are reminded. Default 10:00."
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 18:00:00.000000",
+ "modified": "2026-11-10 09:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

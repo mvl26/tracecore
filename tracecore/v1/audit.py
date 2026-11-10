@@ -109,6 +109,7 @@ def submit_session(
 	session_uuid=None,
 	client_ts=None,
 	token=None,
+	device_episode=None,  # FEAT-062 (FR-M12-07): đợt thiết bị của phiếu gói dự phòng
 ):
 	"""Tạo và ghi sổ phiếu giám sát (FR-M12-04); khi phát lại (`X-TC-Replay`) ngày phiếu = ngày của `client_ts`."""
 	require_any_role(*AUDIT_ROLES)
@@ -125,6 +126,7 @@ def submit_session(
 		"subject_role": subject_role,
 		"subject_employee": subject_employee,
 		"supplier": supplier,
+		"device_episode": device_episode,  # FEAT-062
 		"started_at": to_system_time(parse_client_ts(started_at)) if started_at else None,
 		"session_uuid": session_uuid,
 	}

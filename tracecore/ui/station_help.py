@@ -31,6 +31,7 @@ STATION_KEYS = (
 	"WASTE",
 	"AUDIT",
 	"EXPOSURE",  # FEAT-071
+	"CENSUS",  # FEAT-062
 	GENERAL,
 )
 MIN_STEPS, MAX_STEPS = 3, 5
@@ -125,6 +126,13 @@ DEFAULT_STEPS = {
 		"Choose the type of exposure and check the time it happened.",
 		"Enter what you were doing, the device and whether the source is known.",
 		"Check and send the report, then follow the first-aid procedure shown.",
+	),
+	# FEAT-062 (SCR-55)
+	"CENSUS": (
+		"Scan your employee card to open the station.",
+		"Check the department and the day, then enter the inpatient and device counts and save.",
+		"Open a device episode when a device is inserted and close it when it is removed.",
+		"Without network the census and episodes are saved and sent when the connection returns.",
 	),
 	GENERAL: (
 		"Open the address of your station: it ends with ?station= and the station code, for example ?station=TR-001. Ask R10 for the code if you do not know it.",

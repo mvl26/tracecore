@@ -70,6 +70,13 @@ V112_ROWS.update(
 		"DT-STFIMM": ("Staff Immunization", {"R01": "RW", "R02": "RW", "R11": "R"}),
 	}
 )
+# FEAT-062 (A-141 g, NFR-SEC-09): mẫu số ngày, đợt thiết bị — R13 không đọc đợt (có mã BN)
+V112_ROWS.update(
+	{
+		"DT-WDCEN": ("Ward Daily Census", {"R01": "RW", "R08": "RW", "R10": "R", "R11": "RW", "R12": "RW"}),
+		"DT-DEVEP": ("Device Episode", {"R01": "RW", "R08": "RW", "R11": "RW", "R12": "RW"}),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):
