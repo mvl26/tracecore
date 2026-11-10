@@ -9,6 +9,8 @@
   "audit_type",
   "scoring_method",
   "bundle_type",
+  "infra_category",
+  "inspection_interval_days",
   "column_break_main",
   "version_no",
   "effective_from",
@@ -58,6 +60,22 @@
    "label": "Bundle",
    "options": "\nVAP\nCLABSI\nCAUTI\nSSI\nOther",
    "depends_on": "eval:doc.audit_type==\"Prevention Bundle\""
+  },
+  {
+   "fieldname": "infra_category",
+   "fieldtype": "Select",
+   "label": "Infrastructure Category",
+   "options": "\nVentilation\nWater Supply\nToilet\nPest Control\nIsolation Room\nOther",
+   "depends_on": "eval:doc.audit_type=='Infrastructure'",
+   "mandatory_depends_on": "eval:doc.audit_type=='Infrastructure'"
+  },
+  {
+   "fieldname": "inspection_interval_days",
+   "fieldtype": "Int",
+   "label": "Inspection Interval (days)",
+   "non_negative": 1,
+   "depends_on": "eval:doc.audit_type=='Infrastructure'",
+   "description": "Next inspection due = audit date + this interval."
   },
   {
    "fieldname": "column_break_main",
@@ -130,7 +148,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 09:00:00.000000",
+ "modified": "2026-11-10 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Compliance Audit",
  "name": "Audit Template",

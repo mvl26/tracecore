@@ -130,6 +130,30 @@ V112_ROWS.update(
 )
 
 
+# FEAT-070 (A-148): vùng vệ sinh, mức nguy cơ, ngưỡng có phiên bản, kế hoạch lấy mẫu, mẫu môi trường (FR-M15-01..05)
+V112_ROWS.update(
+	{
+		"DT-ENVRISK": (
+			"Environment Risk Level",
+			{"R01": "RW", "R02": "R", "R08": "R", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
+		),
+		"DT-ENVZONE": (
+			"Environment Zone",
+			{"R01": "RW", "R02": "R", "R08": "R", "R10": "R", "R11": "R", "R12": "R", "R13": "R"},
+		),
+		"DT-ENVLIMIT": (
+			"Environmental Limit",
+			{"R01": "RWS", "R02": "R", "R10": "R", "R11": "R", "R13": "R"},
+		),
+		"DT-SAMPLAN": ("Sampling Plan", {"R01": "RW", "R02": "R", "R10": "R", "R11": "R", "R13": "R"}),
+		"DT-ENVSAMPLE": (
+			"Environmental Sample",
+			{"R01": "RWSA", "R02": "R", "R08": "R", "R11": "RWSA", "R12": "R"},
+		),
+	}
+)
+
+
 class TestPermissionMatrixV112(FrappeTestCase):
 	def test_thirteen_roles(self):
 		self.assertEqual(ROLE_CODES, tuple(f"R{n:02d}" for n in range(1, 14)))

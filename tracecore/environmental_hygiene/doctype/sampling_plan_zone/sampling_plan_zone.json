@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "environment_zone",
+  "environment_zone_name",
+  "next_due",
+  "last_sampled_on",
+  "overdue_notified"
+ ],
+ "fields": [
+  {
+   "fieldname": "environment_zone",
+   "fieldtype": "Link",
+   "label": "Zone",
+   "options": "Environment Zone",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "environment_zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "fetch_from": "environment_zone.area_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 3,
+   "translatable": 0
+  },
+  {
+   "fieldname": "next_due",
+   "fieldtype": "Date",
+   "label": "Next Due",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "last_sampled_on",
+   "fieldtype": "Date",
+   "label": "Last Sampled On",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "overdue_notified",
+   "fieldtype": "Check",
+   "label": "Overdue Reminder Sent",
+   "read_only": 1,
+   "default": "0"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Sampling Plan Zone",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

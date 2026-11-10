@@ -103,9 +103,24 @@ def open_episodes(on=None):
 	)
 
 
+def environment_zones():
+	"""FEAT-070 (FR-M15-02, A-148 e): vùng vệ sinh đang dùng của các khoa được làm phiếu — chọn khi chấm phiếu VSMT/hạ
+	tầng. Đọc `Environment Zone` (M15) qua Link, không import M15."""
+	names = [row.name for row in departments()]
+	if not names:
+		return []
+	return frappe.get_all(
+		"Environment Zone",
+		filters={"disabled": 0, "department": ["in", names]},
+		fields=["name", "area_name", "department", "risk_level", "awaiting_resample"],
+		order_by="department asc, area_name asc",
+	)
+
+
 def context(observer, on=None):
 	return {
 		"episodes": open_episodes(on),  # FEAT-062: đợt thiết bị đang mở cho phiếu gói dự phòng
+		"zones": environment_zones(),  # FEAT-070: vùng vệ sinh cho phiếu VSMT/hạ tầng
 		"templates": active_templates(on),
 		"opportunity_templates": opportunity_templates(on),  # FEAT-061 (SCR-51)
 		"departments": departments(),
@@ -252,6 +267,10 @@ def submit(observer, values, on, replay=False):
 			"subject_employee": values.get("subject_employee") or None,
 			"supplier": values.get("supplier") or None,
 			"device_episode": values.get("device_episode") or None,  # FEAT-062: phiếu gói dự phòng gắn đợt
+			"environment_zone": values.get("environment_zone")
+			or None,  # FEAT-070: phiếu VSMT/hạ tầng gắn vùng
+			"next_due": values.get("next_due")
+			or None,  # FEAT-070: hạn kiểm tra hạ tầng kế tiếp (trống = theo chu kỳ)
 			"observer": observer,
 			"audit_date": getdate(on),
 			"started_at": values.get("started_at"),

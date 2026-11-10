@@ -17,6 +17,8 @@
   "mode",
   "supplier",
   "device_episode",
+  "environment_zone",
+  "next_due",
   "section_people",
   "observer",
   "observer_name",
@@ -139,6 +141,20 @@
    "search_index": 1,
    "depends_on": "eval:doc.audit_type==\"Prevention Bundle\"",
    "description": "Open device episode checked by this prevention bundle audit."
+  },
+  {
+   "fieldname": "environment_zone",
+   "fieldtype": "Link",
+   "label": "Cleaning Zone",
+   "options": "Environment Zone",
+   "description": "Zone of an environmental cleaning or infrastructure audit."
+  },
+  {
+   "fieldname": "next_due",
+   "fieldtype": "Date",
+   "label": "Next Inspection Due",
+   "depends_on": "eval:doc.audit_type=='Infrastructure'",
+   "description": "Infrastructure audits: filled from the template interval, can be changed."
   },
   {
    "fieldname": "section_people",
@@ -307,7 +323,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 09:00:00.000000",
+ "modified": "2026-11-10 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Compliance Audit",
  "name": "Audit Session",

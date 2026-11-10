@@ -187,6 +187,13 @@ class AuditForm {
 				this.notice = null;
 				this.show();
 			},
+			// FEAT-070: chọn vùng vệ sinh cho phiếu VSMT/hạ tầng
+			"aud-zone": () => {
+				this.form.environment_zone =
+					this.form.environment_zone === data.zone ? "" : data.zone;
+				this.notice = null;
+				this.show();
+			},
 			"aud-mode": () => {
 				this.form.mode = this.form.mode === "Unannounced" ? "Announced" : "Unannounced";
 				this.show();
@@ -251,6 +258,8 @@ class AuditForm {
 		if (subject) this.form.subject_employee = subject.value.trim();
 		const location = this.result.querySelector("#tc-aud-location");
 		if (location) this.form.location = location.value;
+		const nextDue = this.result.querySelector("#tc-aud-next-due"); // FEAT-070
+		if (nextDue) this.form.next_due = nextDue.value;
 	}
 
 	block(code, title, reason, action, items) {
@@ -285,6 +294,15 @@ class AuditForm {
 				__("Choose the device episode above, then post the audit.")
 			);
 		}
+		// FEAT-070 (FR-M15-02): phiếu VSMT/hạ tầng của khoa đã khai báo vùng phải gắn vùng
+		if (this.zoneAudit() && this.departmentZones(data).length && !this.form.environment_zone) {
+			return this.block(
+				"ENV_ZONE_REQUIRED",
+				__("Zone required"),
+				__("This department has cleaning zones; this audit is not linked to a zone."),
+				__("Choose the zone you audited, then post the audit.")
+			);
+		}
 		const missing = TcAudit.missing(this.template, this.answers);
 		if (missing.length) {
 			return this.block(
@@ -314,6 +332,8 @@ class AuditForm {
 			location: this.form.location || "",
 			started_at: this.form.started_at,
 			device_episode: this.form.device_episode || "", // FEAT-062
+			environment_zone: this.form.environment_zone || "", // FEAT-070
+			next_due: this.form.next_due || "", // FEAT-070
 			answers: JSON.stringify(
 				(this.template.items || [])
 					.filter((item) => this.answers[item.item_code] || this.notes[item.item_code])
@@ -327,11 +347,20 @@ class AuditForm {
 		if (
 			!this.pending ||
 			this.pending.sig !==
-				args.answers + args.department + args.audit_template + args.device_episode
+				args.answers +
+					args.department +
+					args.audit_template +
+					args.device_episode +
+					args.environment_zone
 		) {
 			const key = uuid4();
 			this.pending = {
-				sig: args.answers + args.department + args.audit_template + args.device_episode,
+				sig:
+					args.answers +
+					args.department +
+					args.audit_template +
+					args.device_episode +
+					args.environment_zone,
 				key,
 				ts: clientTs(),
 			};
@@ -554,6 +583,47 @@ class AuditForm {
 		}</section>`;
 	}
 
+	// FEAT-070: phiếu vệ sinh môi trường / cơ sở hạ tầng gắn vùng vệ sinh của khoa
+	zoneAudit() {
+		const type = (this.template || {}).audit_type;
+		return type === "Environmental Hygiene" || type === "Infrastructure";
+	}
+
+	departmentZones(data) {
+		return ((data && data.zones) || []).filter((row) => row.department === this.department);
+	}
+
+	zoneHtml(data) {
+		if (!this.zoneAudit()) return "";
+		const chips = this.departmentZones(data)
+			.map((row) => {
+				const chosen = this.form.environment_zone === row.name;
+				return `<button type="button" class="tc-btn ${
+					chosen ? "tc-btn-primary" : "tc-btn-secondary"
+				} tc-aud-choice" data-action="aud-zone" data-zone="${esc(
+					row.name
+				)}" aria-pressed="${chosen}">${chosen ? "&#10003; " : ""}${esc(
+					row.area_name
+				)} · ${esc(row.risk_level || "")}${
+					row.awaiting_resample ? ` · ${esc(__("Awaiting resample"))}` : ""
+				}</button>`;
+			})
+			.join("");
+		const due =
+			this.template.audit_type === "Infrastructure"
+				? `<label class="tc-field">${esc(
+						__("Next inspection due (empty = template interval)")
+				  )}<input id="tc-aud-next-due" type="date" value="${esc(
+						this.form.next_due || ""
+				  )}"></label>`
+				: "";
+		return `<section class="tc-t6-block"><h3>${esc(__("Cleaning zone"))}</h3>${
+			chips
+				? `<div class="tc-aud-choices">${chips}</div>`
+				: `<p class="tc-hint">${esc(__("This department has no cleaning zone."))}</p>`
+		}${due}</section>`;
+	}
+
 	itemHtml(item) {
 		const value = this.answers[item.item_code];
 		const button = (answer, label, icon) => {
@@ -637,6 +707,7 @@ class AuditForm {
 		)}"></label>
 			</section>
 			${this.episodeHtml(data)}
+			${this.zoneHtml(data)}
 			<section class="tc-aud-items">${(template.items || [])
 				.map((item) => this.itemHtml(item))
 				.join("")}</section>

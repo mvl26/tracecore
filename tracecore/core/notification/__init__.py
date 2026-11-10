@@ -146,6 +146,12 @@ EVENTS = {
 	),
 	# FEAT-065 (FR-M9-25, A-145 D6): báo cáo Hội đồng KSNK một trang hằng tháng → R01, R13 (email + trong ứng dụng)
 	"IC_COUNCIL_REPORT": ("Infection control committee report ready", "Normal", 1, 0, ("TC R01", "TC R13")),
+	# FEAT-070 (A-148 f): mẫu môi trường Không đạt → R01, R11 (+ bên chịu trách nhiệm do nơi gọi truyền) (FR-M15-04); kế
+	# hoạch lấy mẫu đến kỳ (người phụ trách do nơi gọi truyền), quá hạn 7 ngày → R01 (FR-M15-05, .1); hạ tầng trước hạn 7 ngày
+	"ENV_SAMPLE_FAILED": ("Environmental sample failed", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"ENV_SAMPLING_DUE": ("Environmental sampling due", "Normal", 0, 1, ()),
+	"ENV_SAMPLE_OVERDUE": ("Environmental sample overdue", "Normal", 0, 0, ("TC R01",)),
+	"ENV_INFRA_DUE": ("Infrastructure inspection due", "Normal", 0, 0, ("TC R01", "TC R11")),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

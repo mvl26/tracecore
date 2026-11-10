@@ -254,6 +254,8 @@ after_migrate = [
 	"tracecore.hai_surveillance.seed.ensure_seed",
 	# FEAT-065 (A-145 Q1): chỉ tiêu QĐ 38 cho tự đánh giá năm — chỉ chèn mã còn thiếu, không ghi đè (NFR-MAINT-04)
 	"tracecore.admin_reports.self_assessment_seed.ensure_seed",
+	# FEAT-070 (A-148): 4 mức nguy cơ QĐ 3916, ngưỡng môi trường Nháp, mẫu phiếu hạ tầng/ATTP Nháp — chỉ chèn bản còn thiếu
+	"tracecore.environmental_hygiene.seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -319,6 +321,9 @@ permission_query_conditions = {
 	# FEAT-068 (NFR-SEC-09, A-146 Q5): R08/R12 chỉ thấy lệnh cách ly và phòng cách ly của khoa có User Permission
 	"Isolation Order": "tracecore.microbiology.permissions.order_query",
 	"Isolation Room": "tracecore.microbiology.permissions.room_query",
+	# FEAT-070 (FR-M15-01.2, NFR-SEC-09): R08/R12 chỉ thấy vùng vệ sinh và mẫu môi trường của khoa có User Permission
+	"Environment Zone": "tracecore.environmental_hygiene.zones.query_conditions",
+	"Environmental Sample": "tracecore.environmental_hygiene.zones.sample_query_conditions",
 }
 
 has_permission = {
@@ -332,6 +337,9 @@ has_permission = {
 	# FEAT-068
 	"Isolation Order": "tracecore.microbiology.permissions.has_permission",
 	"Isolation Room": "tracecore.microbiology.permissions.has_permission",
+	# FEAT-070
+	"Environment Zone": "tracecore.environmental_hygiene.zones.has_permission",
+	"Environmental Sample": "tracecore.environmental_hygiene.zones.has_permission",
 }
 
 # DocType Class
@@ -558,6 +566,21 @@ doc_events["Stock Entry"]["on_cancel"] = [
 	"tracecore.compliance_audit.chemicals.on_stock_entry_cancel",
 ]
 doc_events["Audit Session"]["validate"] = "tracecore.compliance_audit.vendors.warn_expired_license"
+# FEAT-070 (A-148 e, FR-M15-02, FR-M15-06): phiếu VSMT/hạ tầng gắn vùng cùng khoa, hạn kiểm tra hạ tầng kế tiếp (M12 không
+# import M15); vùng, ngưỡng, kế hoạch, mẫu môi trường không xóa, có Audit Log
+doc_events["Audit Session"]["validate"] = [
+	doc_events["Audit Session"]["validate"],
+	"tracecore.environmental_hygiene.audits.validate_session",
+]
+doc_events.update(
+	{
+		"Environment Risk Level": dict(_AUDIT_EVENTS),
+		"Environment Zone": dict(_AUDIT_EVENTS),
+		"Environmental Limit": dict(_AUDIT_EVENTS),
+		"Sampling Plan": dict(_AUDIT_EVENTS),
+		"Environmental Sample": dict(_AUDIT_EVENTS),
+	}
+)
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
 # ---------------
@@ -703,6 +726,8 @@ tracecore_ic_indicators = [
 	"tracecore.hai_surveillance.indicators.register",
 	# FEAT-068 (FR-M14-07, QĐ 38): tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt
 	"tracecore.microbiology.indicators.register",
+	# FEAT-070 (FR-M15-02, FR-M15-06, QĐ 38): vệ sinh bề mặt khu nguy cơ cao, mẫu môi trường Đạt, thông khí/nước đúng hạn
+	"tracecore.environmental_hygiene.indicators.register",
 ]
 # A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
 tracecore_ksnk_badges = [
@@ -719,6 +744,8 @@ tracecore_ksnk_badges = [
 	"tracecore.compliance_audit.chemicals.badges",
 	# FEAT-063: số ca NKBV Nghi ngờ chờ xác định (SCR-56)
 	"tracecore.hai_surveillance.cases.badges",
+	# FEAT-070: mẫu môi trường chờ quyết định NC + vùng chờ lấy mẫu lại (SCR-62)
+	"tracecore.environmental_hygiene.samples.badges",
 ]
 # FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
 # = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
@@ -745,6 +772,9 @@ tracecore_mdro_detected += ["tracecore.hai_surveillance.cases.on_mdro_detected"]
 # FEAT-060 (A-134 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
 # department, description}, trả tên Incident
 tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
+# FEAT-070 (A-148 d, FR-M15-04): R01/R11 mở NC từ mẫu môi trường Không đạt → M2 tạo Incident Environment; ctx {sample,
+# department, description}, trả tên Incident
+tracecore_environment_nc = ["tracecore.reprocessing.incidents.on_environment_nc"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
@@ -838,6 +868,9 @@ scheduler_events = {
 		"tracecore.compliance_audit.vendors.run_daily",
 		# FEAT-063, NFR-PRIV-02 (A-144 Q3): xóa định danh ca NKBV, đợt thiết bị quá thời hạn lưu
 		"tracecore.hai_surveillance.retention.run",
+		# FEAT-070, FR-M15-05, .1, FR-M15-06: giao việc lấy mẫu đến kỳ, nhắc R01 mẫu quá hạn 7 ngày, nhắc hạ tầng trước 7 ngày
+		"tracecore.environmental_hygiene.plans.run_daily",
+		"tracecore.environmental_hygiene.audits.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

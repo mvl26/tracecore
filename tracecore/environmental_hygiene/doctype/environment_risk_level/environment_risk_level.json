@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "risk_name",
+  "sort_order",
+  "min_audits_per_month",
+  "is_high_risk",
+  "legal_ref",
+  "disabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "risk_name",
+   "fieldtype": "Data",
+   "label": "Risk Level",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "default": "0",
+   "in_list_view": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "min_audits_per_month",
+   "fieldtype": "Int",
+   "label": "Minimum Audits per Month",
+   "reqd": 1,
+   "default": "1",
+   "in_list_view": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "is_high_risk",
+   "fieldtype": "Check",
+   "label": "Counts as High Risk",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "Counted in the indicator for surface cleaning of high-risk areas (QD 38)."
+  },
+  {
+   "fieldname": "legal_ref",
+   "fieldtype": "Data",
+   "label": "Legal Reference"
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Environment Risk Level",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:risk_name",
+ "naming_rule": "By fieldname",
+ "title_field": "risk_name",
+ "description": "Risk level of a cleaning area and the minimum number of cleaning audits per month."
+}
