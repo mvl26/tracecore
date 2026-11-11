@@ -27,6 +27,14 @@ MODULES = (
 	"Admin Reports",
 	"Waste",
 	"UI",
+	# A-113 (FEAT-056): M11-M17
+	"Infection Program",
+	"Compliance Audit",
+	"HAI Surveillance",
+	"Microbiology",
+	"Environmental Hygiene",
+	"Occupational Safety",
+	"Food Safety",
 )
 
 # Dynamic Link `in_list_view`: đích đổi theo từng dòng nên không có cột tên cố định, xử lý tay

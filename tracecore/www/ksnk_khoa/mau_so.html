@@ -1,0 +1,27 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Daily Census and Device Episodes") }}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/tracecore/css/tokens.css">
+{% endblock %}
+
+{# base portal styles shared with the exposure report page (FEAT-071) + styles of this page #}
+{% block style %}
+<style>
+{% include "tracecore/www/ksnk_khoa/bao_phoi_nhiem.css" %}
+{% include "tracecore/www/ksnk_khoa/mau_so.css" %}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="tc-dept tc-census-portal">
+	<div class="tc-dept-zonebar" role="banner">
+		<span>{{ _("Department") }}: {{ department_label }}</span>
+	</div>
+	{% include "templates/includes/ksnk_khoa_nav.html" %}
+	<h1 class="tc-dept-title">{{ _("Daily Census and Device Episodes") }} <span class="tc-mono tc-dept-ref">SCR-55</span></h1>
+	<div id="tc-census-portal" class="tc-dept-body" aria-live="polite"></div>
+	<script type="application/json" id="tc-census-boot">{{ boot | tojson }}</script>
+</div>
+{% endblock %}

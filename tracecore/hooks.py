@@ -10,7 +10,7 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "hrms"]
 
-# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent;
+# Fixtures (F-7: 10 vai trò TC R01..R10 + TC Agent; A-113: + TC R11..R13;
 # FEAT-018: Custom Field Item-tc_* cho nhóm CSSD, phương pháp, chỉ thị hóa học, hạn lưu loại gói;
 # FEAT-041: thêm Stock Entry-tc_*, Stock Entry Detail-tc_* cho nhập kho theo lô/hạn).
 # Khung khu-trạm KHÔNG là fixtures (migrate nhập lại với force, xóa sửa của R10): tracecore.setup.seed
@@ -31,6 +31,10 @@ fixtures = [
 			["name", "like", "Stock Reconciliation-tc_%"],  # FEAT-043: phiếu kiểm kê bỏ dở
 			["name", "like", "Help Article-tc_%"],  # FEAT-013: hướng dẫn theo bước trạm
 			["name", "like", "Issue-tc_%"],  # FEAT-013: phản hồi / báo lỗi từ trạm
+			["name", "like", "Training Program-tc_%"],  # FEAT-059 (A-135): loại đào tạo KSNK
+			["name", "like", "Training Result Employee-tc_%"],  # FEAT-059 (A-135 a): Đạt
+			["name", "like", "Supplier-tc_%"],  # FEAT-066 (A-142 Q1): đơn vị thuê ngoài, giấy phép, hợp đồng
+			["name", "like", "Warehouse-tc_%"],  # FEAT-066 (A-142 Q2): kho thuộc khoa
 		],
 	},
 	# FEAT-036: nhân viên mới đặt tên theo series NV- (giữ HR-EMP- trong danh sách để nhân viên cũ vẫn lưu được)
@@ -116,9 +120,21 @@ page_js = {
 		"public/js/station_waste_store.js",
 		# FEAT-049: tab Bàn giao (SCR-40)
 		"public/js/station_waste_handover.js",
+		# FEAT-060: phiếu giám sát KSNK theo mục trên PDA (SCR-52), chức năng trạm AUDIT
+		"public/js/station_audit.js",
+		# FEAT-071: báo phơi nhiễm nghề nghiệp (SCR-63) trên PDA của khoa, chức năng trạm EXPOSURE
+		"public/js/station_exposure.js",
+		# FEAT-061: phiếu vệ sinh tay theo cơ hội (SCR-51), mở từ màn phiếu giám sát khi mẫu là "Theo cơ hội"
+		"public/js/station_hand_hygiene.js",
+		# FEAT-062: mẫu số ngày & đợt thiết bị (SCR-55) trên PDA của khoa, chức năng trạm CENSUS
+		"public/js/station_census.js",
+		# FEAT-064: theo dõi NKVM sau ra viện (SCR-57 PDA), chức năng trạm SSI_FOLLOWUP
+		"public/js/station_ssi.js",
 		# FEAT-009: hàng đợi offline IndexedDB + phát lại theo client_ts (TcOutbox, tcSync)
 		"public/js/tc_outbox.js",
-	]
+	],
+	# A-113/A-131 (FEAT-056): màn quản lý KSNK toàn viện — shell (rail, router, 4 trạng thái); màn từng SCR nạp khi mở
+	"tc-ksnk": ["public/js/ksnk/ksnk_shell.js"],
 }
 
 # include js in doctype views
@@ -149,6 +165,19 @@ doctype_list_js = {"Stock Entry": "public/js/stock_entry_list.js", "Batch": "pub
 
 # application home page (will override Website Settings)
 # home_page = "login"
+
+# FEAT-071 (A-137 Q4): Cổng khoa báo phơi nhiễm; file ở www/ksnk_khoa (package Python không có dấu gạch ngang)
+website_route_rules = [
+	{"from_route": "/ksnk-khoa/bao-phoi-nhiem", "to_route": "ksnk_khoa/bao_phoi_nhiem"},
+	# FEAT-062 (SCR-55 DEPT): Cổng khoa — mẫu số ngày & đợt thiết bị
+	{"from_route": "/ksnk-khoa/mau-so", "to_route": "ksnk_khoa/mau_so"},
+	# FEAT-068 (SCR-60 DEPT, A-146 Q4): Cổng khoa — lệnh cách ly; link thông báo đa kháng mở trang này
+	{"from_route": "/ksnk-khoa/cach-ly", "to_route": "ksnk_khoa/cach_ly"},
+	# FEAT-069 (SCR-61 DEPT, A-150 Q4): Cổng khoa — khai báo bệnh truyền nhiễm của khoa
+	{"from_route": "/ksnk-khoa/khai-bao", "to_route": "ksnk_khoa/khai_bao"},
+	# FEAT-073 (A-151 Q3, FR-M17-06): mã QR tài liệu truyền thông trỏ URL cố định theo mã tài liệu, không cần đăng nhập
+	{"from_route": "/tai-lieu/<code>", "to_route": "tai_lieu"},
+]
 
 # website user home page (by Role)
 # role_home_page = {
@@ -184,6 +213,11 @@ jinja = {
 		"tracecore.ui.waste_print.tc_waste_handover_context",
 		# Print Format "TC Stock Count Sheet" (FEAT-043, FR-M6-05): phiếu kiểm kê kho
 		"tracecore.ui.stock_count_print.tc_stock_count_context",
+		# Print Format "TC IC Annual Plan" / "TC IC Annual Summary" (FEAT-058, FR-M11-04, FR-M11-06)
+		"tracecore.infection_program.plan_print.tc_ic_plan_context",
+		# FEAT-065 (FR-M9-25, FR-M9-29): "TC IC Council Report" (báo cáo Hội đồng 1 trang), "TC IC Self Assessment"
+		"tracecore.admin_reports.council_report.tc_ic_council_context",
+		"tracecore.admin_reports.self_assessment.tc_ic_self_assessment_context",
 	]
 }
 
@@ -196,6 +230,9 @@ after_install = "tracecore.setup.install.after_install"
 after_migrate = [
 	"tracecore.inventory.permissions.ensure_permissions",
 	"tracecore.setup.install.apply_system_settings",
+	# A-113 (FEAT-056): Role Profile cho R11-R13; không làm fixtures vì mỗi lần import lại Role Profile xếp hàng job
+	# cập nhật người dùng và khóa bản ghi (DocumentLockedError khi chưa có worker)
+	"tracecore.setup.install.ensure_role_profiles",
 	# FEAT-010: Notification Rule mặc định cho mọi loại sự kiện (không ghi đè chỉnh sửa của R10)
 	"tracecore.core.notification.ensure_default_rules",
 	# FEAT-037: quyền R02/R10/R01 cho HRMS Shift Assignment và Shift Type
@@ -207,6 +244,26 @@ after_migrate = [
 	"tracecore.ui.feedback.ensure_issue_type",
 	# FEAT-052: danh mục mã lỗi mặc định, không ghi đè nội dung viện đã sửa
 	"tracecore.setup.error_codes.ensure_error_codes",
+	# FEAT-067 (A-136): danh mục Organism tối thiểu + quy tắc đa kháng Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.microbiology.seed.ensure_seed",
+	# FEAT-059 (A-135 e): quyền R01/R02 cho HRMS Training Program / Event / Result
+	"tracecore.infection_program.permissions.ensure_permissions",
+	# FEAT-071 (A-137): mẫu theo dõi phơi nhiễm, vaccine mẫu ở trạng thái Nháp; không ghi đè bản R01 đã sửa
+	"tracecore.occupational_safety.config.ensure_default_config",
+	# FEAT-061 (A-140; FR-M12-02): 8 mẫu phiếu giám sát khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.compliance_audit.seed.ensure_seed",
+	# FEAT-066 (A-142 Q4): R09 sửa Supplier thuê ngoài, R09/R10 gán khoa cho kho (sao chép quyền chuẩn trước)
+	"tracecore.compliance_audit.permissions.ensure_permissions",
+	# FEAT-094 (A-138 a): bộ tiêu chí cơ cấu KSNK TT 16/2018 ở trạng thái Nháp, chỉ chèn khi chưa có bản nào (NFR-MAINT-04)
+	"tracecore.infection_program.structure_seed.ensure_seed",
+	# FEAT-063 (A-144 a): 6 định nghĩa ca NKBV khởi tạo ở trạng thái Nháp, không ghi đè bản bệnh viện (NFR-MAINT-04)
+	"tracecore.hai_surveillance.seed.ensure_seed",
+	# FEAT-065 (A-145 Q1): chỉ tiêu QĐ 38 cho tự đánh giá năm — chỉ chèn mã còn thiếu, không ghi đè (NFR-MAINT-04)
+	"tracecore.admin_reports.self_assessment_seed.ensure_seed",
+	# FEAT-064 (A-147 a): 6 nhóm phẫu thuật QĐ 1526 chưa bật giám sát, chỉ chèn mã còn thiếu (NFR-MAINT-04)
+	"tracecore.hai_surveillance.ssi_seed.ensure_seed",
+	# FEAT-070 (A-148): 4 mức nguy cơ QĐ 3916, ngưỡng môi trường Nháp, mẫu phiếu hạ tầng/ATTP Nháp — chỉ chèn bản còn thiếu
+	"tracecore.environmental_hygiene.seed.ensure_seed",
 ]
 
 # Uninstallation
@@ -261,10 +318,44 @@ after_migrate = [
 # Thông báo (FEAT-010): mỗi người chỉ thấy thông báo của mình; R10 và System Manager thấy tất cả
 permission_query_conditions = {
 	"Notification Delivery": "tracecore.core.notification.delivery_query_conditions",
+	# FEAT-060 FR-M12-08.1: R08/R12 chỉ thấy phiếu giám sát của khoa có User Permission
+	"Audit Session": "tracecore.compliance_audit.sessions.query_conditions",
+	# FEAT-071 (FR-M16-05, BRU-OCC-003): hồ sơ phơi nhiễm chỉ R01, R11; nhân viên xem hồ sơ của mình qua RPC
+	"Occupational Exposure": "tracecore.occupational_safety.exposure.query_conditions",
+	# FEAT-062 (NFR-SEC-09, A-141 g): R08/R12 chỉ thấy mẫu số và đợt thiết bị của khoa có User Permission
+	"Ward Daily Census": "tracecore.hai_surveillance.permissions.census_query",
+	"Device Episode": "tracecore.hai_surveillance.permissions.episode_query",
+	"HAI Case": "tracecore.hai_surveillance.permissions.case_query",  # FEAT-063 (A-144 j)
+	# FEAT-068 (NFR-SEC-09, A-146 Q5): R08/R12 chỉ thấy lệnh cách ly và phòng cách ly của khoa có User Permission
+	"Isolation Order": "tracecore.microbiology.permissions.order_query",
+	"Isolation Room": "tracecore.microbiology.permissions.room_query",
+	# FEAT-070 (FR-M15-01.2, NFR-SEC-09): R08/R12 chỉ thấy vùng vệ sinh và mẫu môi trường của khoa có User Permission
+	"Environment Zone": "tracecore.environmental_hygiene.zones.query_conditions",
+	"Environmental Sample": "tracecore.environmental_hygiene.zones.sample_query_conditions",
+	# FEAT-069 (NFR-SEC-09, A-150 Q5): R08/R12 chỉ thấy khai báo bệnh truyền nhiễm của khoa có User Permission
+	"Notifiable Disease Report": "tracecore.microbiology.permissions.notifiable_query",
+	# FEAT-073 (FR-M17-01.2, NFR-SEC-09): R12 chỉ thấy buổi truyền thông của khoa có User Permission
+	"IC Education Session": "tracecore.food_safety.education.query_conditions",
 }
 
 has_permission = {
 	"Notification Delivery": "tracecore.core.notification.delivery_has_permission",
+	"Audit Session": "tracecore.compliance_audit.sessions.has_permission",
+	"Occupational Exposure": "tracecore.occupational_safety.exposure.has_permission",
+	# FEAT-062
+	"Ward Daily Census": "tracecore.hai_surveillance.permissions.has_permission",
+	"Device Episode": "tracecore.hai_surveillance.permissions.has_permission",
+	"HAI Case": "tracecore.hai_surveillance.permissions.has_permission",  # FEAT-063 (A-144 j)
+	# FEAT-068
+	"Isolation Order": "tracecore.microbiology.permissions.has_permission",
+	"Isolation Room": "tracecore.microbiology.permissions.has_permission",
+	# FEAT-070
+	"Environment Zone": "tracecore.environmental_hygiene.zones.has_permission",
+	"Environmental Sample": "tracecore.environmental_hygiene.zones.has_permission",
+	# FEAT-069
+	"Notifiable Disease Report": "tracecore.microbiology.permissions.has_permission",
+	# FEAT-073
+	"IC Education Session": "tracecore.food_safety.education.has_permission",
 }
 
 # DocType Class
@@ -375,6 +466,54 @@ doc_events = {
 	"Waste Quota": dict(_AUDIT_EVENTS),  # FEAT-050, A-63
 	"Process Program": dict(_AUDIT_EVENTS),
 	"Equipment Type Norm": dict(_AUDIT_EVENTS),
+	# A-113 (FEAT-056): cài đặt chương trình, danh mục chỉ số, giá trị chỉ số (tính lại sau mở khóa có old/new —
+	# FR-M9-27.1), hồ sơ ánh xạ cột: Audit Log, không xóa
+	# FEAT-057 (A-132): validate hook cơ cấu KSNK `infection_program.structure.check` (BRU-ICP-001..003)
+	"IC Program Settings": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
+	"IC Indicator": dict(_AUDIT_EVENTS),
+	"IC Indicator Value": dict(_AUDIT_EVENTS),
+	"Import Mapping Profile": dict(_AUDIT_EVENTS),
+	# FEAT-057: Hội đồng KSNK (ghi sổ, cảnh báo thiếu khối đại diện ghi sau ghi sổ) và mạng lưới viên; không xóa
+	"IC Committee": {
+		**_AUDIT_EVENTS,
+		"validate": "tracecore.infection_program.structure.check",
+		"on_update_after_submit": "tracecore.core.audit.on_document_event",
+	},
+	"IC Network Member": {**_AUDIT_EVENTS, "validate": "tracecore.infection_program.structure.check"},
+	# FEAT-094 (A-138 a): bộ tiêu chí cơ cấu KSNK có phiên bản — Audit Log, không xóa
+	"IC Structure Profile": dict(_AUDIT_EVENTS),
+	# FEAT-058 (A-133): kế hoạch năm, văn bản nội bộ, biên bản họp — ghi vết cả cập nhật sau ghi sổ, không xóa;
+	# đóng ToDo của kết luận họp → kết luận Xong
+	"IC Annual Plan": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	"IC Procedure Document": dict(_AUDIT_EVENTS),
+	"IC Committee Meeting": {
+		**_AUDIT_EVENTS,
+		"on_update_after_submit": "tracecore.core.audit.on_document_event",
+	},
+	"ToDo": {"on_update": "tracecore.infection_program.meetings.on_todo_update"},
+	# FEAT-060 (ADR-015): mẫu phiếu, lịch, phiếu giám sát ghi Audit Log, không xóa
+	"Audit Template": dict(_AUDIT_EVENTS),
+	"Audit Schedule": dict(_AUDIT_EVENTS),
+	"Audit Session": dict(_AUDIT_EVENTS),
+	# FEAT-067 (A-136): vi sinh — danh mục loài, chủng phân lập (mã BN Password không vào Audit), quy tắc đa kháng có
+	# phiên bản (ghi sổ = R01 duyệt; superseded_by đổi sau ghi sổ); không xóa
+	"Organism": dict(_AUDIT_EVENTS),
+	"Microbiology Isolate": dict(_AUDIT_EVENTS),
+	"MDRO Rule": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	# FEAT-059 (A-135 c): sinh viên thực tập; không xóa
+	"Trainee Induction": dict(_AUDIT_EVENTS),
+	# FEAT-062 (A-141 a): mẫu số ngày, đợt thiết bị (mã BN Password không vào Audit Log); không xóa
+	"Ward Daily Census": dict(_AUDIT_EVENTS),
+	"Device Episode": dict(_AUDIT_EVENTS),
+	# FEAT-065 (A-145): báo cáo Hội đồng, chỉ tiêu QĐ 38, tự đánh giá năm — Audit Log, không xóa
+	"IC Council Report": dict(_AUDIT_EVENTS),
+	"IC QD38 Criterion": dict(_AUDIT_EVENTS),
+	"IC Self Assessment": dict(_AUDIT_EVENTS),
+	# FEAT-068 (A-146): lệnh cách ly (mã BN Password không vào Audit Log; đóng = sửa sau ghi sổ), phòng cách ly
+	"Isolation Order": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	"Isolation Room": dict(_AUDIT_EVENTS),
+	# FEAT-072 (A-149 Q2): dự án cải tiến chất lượng / đề tài nghiên cứu — Audit Log, không xóa (dùng Hủy)
+	"IC Improvement Project": dict(_AUDIT_EVENTS),
 	# cờ tính năng toàn site (FEAT-014 A-06 I7): đổi cờ ghi Audit Log, không xóa
 	# đổi chế độ test hằng ngày mở ngay máy đang khóa mà không còn thuộc diện (A-70)
 	"TraceCore Settings": {
@@ -424,7 +563,90 @@ doc_events = {
 		"validate": "tracecore.instrument.media.validate_file",
 	},
 	"Station Competency": dict(_AUDIT_EVENTS),
+	# FEAT-071: hồ sơ phơi nhiễm không xóa được; lịch sử sửa bằng track_changes (chỉ người đọc được hồ sơ mới xem), không
+	# chép nội dung vào Audit Log để giữ BRU-OCC-003
+	"Occupational Exposure": {"on_trash": "tracecore.core.audit.block_delete"},
+	"Staff Immunization": dict(_AUDIT_EVENTS),
+	# FEAT-066 (A-142): hóa chất KSNK theo khoa-tháng; không xóa, hủy phải có lý do
+	"IC Chemical Consumption": dict(_AUDIT_EVENTS),
+	# FEAT-063 (A-144): định nghĩa ca có phiên bản, ca NKBV; kỳ báo cáo ghi Audit Log trong dịch vụ periods
+	"HAI Case Definition": dict(_AUDIT_EVENTS),
+	"HAI Case": dict(_AUDIT_EVENTS),
+	# FEAT-064 (A-147): nhóm phẫu thuật (danh mục, xóa được khi chưa dùng), ca phẫu thuật giám sát NKVM (không xóa),
+	# hồ sơ xuất báo cáo theo ánh xạ cột
+	"Surgical Procedure Group": {k: v for k, v in _AUDIT_EVENTS.items() if k != "on_trash"},
+	"Surgical Surveillance": dict(_AUDIT_EVENTS),
+	"Report Export Profile": dict(_AUDIT_EVENTS),
 }
+# FEAT-066 (A-142 Q2, ADR-009): Stock Entry ghi sổ/hủy → hóa chất KSNK xuất tới kho khoa (M12 không import M6);
+# phiếu giám sát gắn đơn vị thuê ngoài hết hạn giấy phép chỉ cảnh báo (BRU-AUD-006)
+doc_events["Stock Entry"]["on_submit"] = [
+	doc_events["Stock Entry"]["on_submit"],
+	"tracecore.compliance_audit.chemicals.on_stock_entry_submit",
+]
+doc_events["Stock Entry"]["on_cancel"] = [
+	doc_events["Stock Entry"]["on_cancel"],
+	"tracecore.compliance_audit.chemicals.on_stock_entry_cancel",
+]
+doc_events["Audit Session"]["validate"] = "tracecore.compliance_audit.vendors.warn_expired_license"
+# FEAT-064 (A-147 e, f, Q3): ca NKBV gắn ca phẫu thuật xác định/loại trừ/hủy → kết cục NKVM; đổi ngưỡng phút KSDP →
+# tính lại ca thuộc kỳ chưa khóa (FR-M13-09.2)
+for _event in ("on_submit", "on_cancel"):
+	doc_events["HAI Case"][_event] = [
+		doc_events["HAI Case"][_event],
+		"tracecore.hai_surveillance.ssi.on_case_change",
+	]
+doc_events["IC Program Settings"]["on_update"] = [
+	doc_events["IC Program Settings"]["on_update"],
+	"tracecore.hai_surveillance.ssi.on_settings_update",
+]
+# FEAT-070 (A-148 e, FR-M15-02, FR-M15-06): phiếu VSMT/hạ tầng gắn vùng cùng khoa, hạn kiểm tra hạ tầng kế tiếp (M12 không
+# import M15); vùng, ngưỡng, kế hoạch, mẫu môi trường không xóa, có Audit Log
+doc_events["Audit Session"]["validate"] = [
+	doc_events["Audit Session"]["validate"],
+	"tracecore.environmental_hygiene.audits.validate_session",
+]
+doc_events.update(
+	{
+		"Environment Risk Level": dict(_AUDIT_EVENTS),
+		"Environment Zone": dict(_AUDIT_EVENTS),
+		"Environmental Limit": dict(_AUDIT_EVENTS),
+		"Sampling Plan": dict(_AUDIT_EVENTS),
+		"Environmental Sample": dict(_AUDIT_EVENTS),
+	}
+)
+# FEAT-069 (A-150): ổ dịch, khai báo bệnh truyền nhiễm (sửa sau ghi sổ qua dịch vụ), danh mục bệnh, ngưỡng và cảnh báo
+# cụm ca — Audit Log, không xóa (mã BN Password không vào Audit Log)
+doc_events.update(
+	{
+		"Outbreak Investigation": {
+			**_AUDIT_EVENTS,
+			"on_update_after_submit": "tracecore.core.audit.on_document_event",
+		},
+		"Notifiable Disease Report": {
+			**_AUDIT_EVENTS,
+			"on_update_after_submit": "tracecore.core.audit.on_document_event",
+		},
+		"Communicable Disease": dict(_AUDIT_EVENTS),
+		"Cluster Alert Rule": dict(_AUDIT_EVENTS),
+		"Cluster Alert": dict(_AUDIT_EVENTS),
+	}
+)
+# FEAT-073 (A-151): người chế biến, sự cố ngộ độc, buổi truyền thông không xóa, có Audit Log; ổ dịch M14 mở từ sự cố
+# ngộ độc (nguồn source_doctype/source_name) → M17 ghi ngược tên ổ dịch (Q1, liên kết hai chiều; M14 không import M17)
+doc_events.update(
+	{
+		"Food Handler Health Check": dict(_AUDIT_EVENTS),
+		"Foodborne Event": dict(_AUDIT_EVENTS),
+		"IC Education Session": dict(_AUDIT_EVENTS),
+	}
+)
+_outbreak_events = doc_events.setdefault("Outbreak Investigation", {})
+for _event in ("after_insert", "on_update"):
+	_previous = _outbreak_events.get(_event) or []
+	_outbreak_events[_event] = (_previous if isinstance(_previous, list) else [_previous]) + [
+		"tracecore.food_safety.events.on_outbreak_saved"
+	]
 
 # Hook mở rộng giữa các phân hệ (ADR-001, FEAT-018 D9)
 # ---------------
@@ -471,6 +693,9 @@ tracecore_after_set_status = ["tracecore.reprocessing.storage.on_set_status"]
 tracecore_loaner_returned = ["tracecore.reprocessing.incidents.on_loaner_returned"]
 # M10 phân loại sai (FEAT-047, A-60 W3): (ctx {container, waste_type, department, employee, station, note}) -> tên NC.
 tracecore_waste_nc = ["tracecore.reprocessing.incidents.on_waste_nc"]
+# M10 sự cố phơi nhiễm vật sắc nhọn (FEAT-071, FR-M10-06.1, FR-M16-02, A-137): (incident doc) -> tên Occupational
+# Exposure; M16 tạo hồ sơ, gọi lại cùng sự cố không tạo trùng (BRU-OCC-002). Incident CAPA không import M16.
+tracecore_exposure_incident = ["tracecore.occupational_safety.exposure.from_incident"]
 # M10 ghi sổ / hủy phiếu bàn giao (FEAT-049, A-62): (doc) -> tên Cost Entry | None; M7 lập chi phí thuê ngoài, M10 không import M7
 tracecore_after_waste_handover = ["tracecore.costing.from_waste.on_handover"]
 tracecore_after_waste_handover_cancel = ["tracecore.costing.from_waste.on_handover_cancel"]
@@ -551,6 +776,95 @@ tracecore_after_load_cancel = [
 tracecore_after_release_cancel = ["tracecore.instrument.maintenance.on_release_cancelled"]
 # M5 test đầu ngày ghi kết quả (A-111 D2): ctx {daily_test, equipment, lot}; M6 trừ vật tư đã xác nhận lúc Bắt đầu test
 tracecore_after_daily_test_record = ["tracecore.inventory.consume.on_daily_test_record"]
+# A-113 (FEAT-056): hàm tính chỉ số KSNK của module M11-M17 — mỗi hàm trả {source_method: hàm(period, department)}
+# (core.indicators); engine M9 gọi khi khóa kỳ. Các module đăng ký ở FEAT của mình.
+tracecore_ic_indicators = [
+	# FEAT-058 (A-133 Q4, FR-M11-07.1): tỷ lệ văn bản nội bộ còn hạn rà soát
+	"tracecore.infection_program.procedure_documents.register",
+	"tracecore.compliance_audit.indicators.register",  # FEAT-060: tỷ lệ phiếu giám sát Đạt
+	# FEAT-059: tỷ lệ đào tạo KSNK cơ bản, chuyên trách/Hội đồng/mạng lưới, sinh viên thực tập (FR-M11-09..11)
+	"tracecore.infection_program.training.register",
+	# FEAT-071: báo phơi nhiễm đúng hạn, hoàn thành theo dõi, bao phủ tiêm chủng
+	"tracecore.occupational_safety.indicators.register",
+	# FEAT-066 (A-142): lít dung dịch VST nhanh / 1.000 ngày nằm viện (FR-M12-12)
+	"tracecore.compliance_audit.chemicals.register_indicators",
+	# FEAT-063 (A-144 d): tỷ suất NKBV, VAP, CLABSI, CAUTI / 1.000 ngày; tỷ lệ sử dụng thiết bị (FR-M13-10)
+	"tracecore.hai_surveillance.indicators.register",
+	# FEAT-068 (FR-M14-07, QĐ 38): tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt
+	"tracecore.microbiology.indicators.register",
+	# FEAT-064 (A-147 h): tỷ lệ NKVM, tỷ lệ có KSDP, tỷ lệ KSDP đúng thời điểm (FR-M13-09)
+	"tracecore.hai_surveillance.ssi_indicators.register",
+	# FEAT-070 (FR-M15-02, FR-M15-06, QĐ 38): vệ sinh bề mặt khu nguy cơ cao, mẫu môi trường Đạt, thông khí/nước đúng hạn
+	"tracecore.environmental_hygiene.indicators.register",
+	# FEAT-072 (A-149): số dự án cải tiến hoàn thành/năm (FR-M11-12.1); tỷ lệ hiện mắc điều tra cắt ngang (FR-M13-14)
+	"tracecore.infection_program.improvement.register_indicators",
+	"tracecore.hai_surveillance.prevalence.register",
+]
+# FEAT-073 (FR-M17-02): tỷ lệ người chế biến thực phẩm Đủ sức khỏe và còn hạn khám
+tracecore_ic_indicators += ["tracecore.food_safety.indicators.register"]
+# A-131 (FEAT-056): số việc chờ trên rail màn quản lý KSNK — mỗi hàm nhận user, trả {slug màn: số} (ui.ksnk)
+tracecore_ksnk_badges = [
+	# FEAT-057: số thành phần cơ cấu KSNK còn thiếu (SCR-47)
+	"tracecore.infection_program.structure.badges",
+	# FEAT-058: hoạt động kế hoạch quá hạn + văn bản cần rà soát (SCR-48)
+	"tracecore.infection_program.annual_plan.badges",
+	"tracecore.compliance_audit.nc.badges",  # FEAT-060: phiếu chờ quyết định NC
+	# FEAT-067: chủng đa kháng có thông báo chưa đọc của người dùng (SCR-59)
+	"tracecore.microbiology.alerts.badges",
+	# FEAT-071: số hồ sơ phơi nhiễm mới chờ xử trí (SCR-64)
+	"tracecore.occupational_safety.exposure.badges",
+	# FEAT-066: hóa chất chờ chọn nguồn + giấy phép thuê ngoài đã hết hạn (SCR-54)
+	"tracecore.compliance_audit.chemicals.badges",
+	# FEAT-063: số ca NKBV Nghi ngờ chờ xác định (SCR-56)
+	"tracecore.hai_surveillance.cases.badges",
+	# FEAT-064: lần theo dõi NKVM sau ra viện đến hạn/quá hạn (SCR-57)
+	"tracecore.hai_surveillance.ssi.badges",
+	# FEAT-070: mẫu môi trường chờ quyết định NC + vùng chờ lấy mẫu lại (SCR-62)
+	"tracecore.environmental_hygiene.samples.badges",
+	# FEAT-069: cảnh báo cụm ca chờ xem xét + khai báo bệnh truyền nhiễm quá hạn (SCR-61)
+	"tracecore.microbiology.clusters.badges",
+]
+# FEAT-073: người chế biến quá hạn khám + sự cố ngộ độc chờ quyết định NC/ổ dịch (SCR-65)
+tracecore_ksnk_badges += ["tracecore.food_safety.dashboard.badges"]
+# FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
+# = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
+# FEAT-068 đăng ký cách ly đang mở, FEAT-063 cảnh báo cụm ca.
+tracecore_ksnk_todos = [
+	"tracecore.hai_surveillance.todos.todos",  # mẫu số ngày thiếu
+	"tracecore.compliance_audit.todos.todos",  # phiếu theo lịch còn thiếu kỳ này
+	"tracecore.infection_program.todos.todos",  # hoạt động kế hoạch quá hạn
+	"tracecore.occupational_safety.todos.todos",  # bước theo dõi phơi nhiễm đến hạn (chỉ đếm)
+	"tracecore.admin_reports.council_report.todos",  # báo cáo Hội đồng mới nhất
+	"tracecore.microbiology.clusters.todos",  # FEAT-069: cảnh báo cụm ca, khai báo chưa xong của khoa
+]
+# FEAT-065 (A-145 Q1, D8): dòng tự động của tự đánh giá QĐ 38 — mỗi hàm trả {check_method: fn(year) -> {status, source_ref}}
+# (admin_reports.self_assessment); FEAT-068 đăng ký `isolation_rooms`.
+tracecore_ic_self_checks = [
+	"tracecore.infection_program.self_checks.register",
+	"tracecore.compliance_audit.self_checks.register",
+	"tracecore.hai_surveillance.self_checks.register",
+	"tracecore.microbiology.self_checks.register",
+	# FEAT-072 (A-149 Q4): QD38-QI — năm có ≥ 1 dự án cải tiến hoàn thành
+	"tracecore.infection_program.improvement.register_self_checks",
+]
+# FEAT-067 (A-136; FR-M14-04): chủng đa kháng mới vừa ghi — (isolate Document); M13 đăng ký gắn nhãn ở FEAT-063
+tracecore_mdro_detected = []
+# FEAT-063 (A-144 h): cộng nhãn đa kháng vào ca NKBV cùng người bệnh
+tracecore_mdro_detected += ["tracecore.hai_surveillance.cases.on_mdro_detected"]
+# FEAT-060 (A-134 c, FR-M12-09): R01/R11 mở NC từ phiếu giám sát → M2 tạo Incident Compliance; ctx {session,
+# department, description}, trả tên Incident
+tracecore_compliance_nc = ["tracecore.reprocessing.incidents.on_compliance_nc"]
+# FEAT-070 (A-148 d, FR-M15-04): R01/R11 mở NC từ mẫu môi trường Không đạt → M2 tạo Incident Environment; ctx {sample,
+# department, description}, trả tên Incident
+tracecore_environment_nc = ["tracecore.reprocessing.incidents.on_environment_nc"]
+# FEAT-069 (A-150 Q3, FR-M14-09): hành động kiểm soát ổ dịch → M2 tạo Incident Outbreak Control (một NC/ổ dịch) và thêm
+# CAPA Action; ctx {outbreak, department, description, action: {description, responsible, due_date}}, trả tên Incident
+tracecore_outbreak_nc = ["tracecore.reprocessing.incidents.on_outbreak_nc"]
+# FEAT-073 (A-151, FR-M17-04): R01/R11 mở NC từ sự cố nghi ngộ độc thực phẩm → M2 tạo Incident Food Safety; ctx {event,
+# department, description}, trả tên Incident (M17 không import M2)
+tracecore_food_safety_nc = ["tracecore.reprocessing.incidents.on_food_safety_nc"]
+# merge FEAT-069 + FEAT-073 (A-151 Q1): SCR-61 điền sẵn form mở ổ dịch từ sự cố nghi ngộ độc thực phẩm (M14 không import M17)
+tracecore_outbreak_source_prefill = ["tracecore.food_safety.events.outbreak_source_prefill"]
 # core.importer (FEAT-011, A-41): mỗi hàm trả list `importer.ImportKind` (loại import danh mục từ Excel của module)
 tracecore_import_kinds = [
 	"tracecore.admin_reports.imports.import_kinds",
@@ -558,6 +872,27 @@ tracecore_import_kinds = [
 	"tracecore.equipment.imports.import_kinds",
 	"tracecore.inventory.imports.import_kinds",
 	"tracecore.par.imports.import_kinds",
+	# FEAT-067: kết quả nuôi cấy và kháng sinh đồ (WHONET/CSV) qua Import Mapping Profile
+	"tracecore.microbiology.imports.import_kinds",
+	# FEAT-062: mẫu số ngày theo khoa xuất từ HIS (upsert, A-141 Q2)
+	"tracecore.hai_surveillance.imports.import_kinds",
+	# FEAT-066 (A-142): hóa chất KSNK từ file khoa Dược qua Import Mapping Profile
+	"tracecore.compliance_audit.chemical_import.import_kinds",
+]
+# FEAT-064 (A-147 i): danh sách phẫu thuật xuất từ HIS/phòng mổ qua Import Mapping Profile
+tracecore_import_kinds += ["tracecore.hai_surveillance.ssi_imports.import_kinds"]
+# FEAT-064 (A-147 Q1, j): loại báo cáo xuất theo Report Export Profile (core.exporter) — mỗi hàm trả list ExportKind
+tracecore_export_kinds = ["tracecore.hai_surveillance.exports.export_kinds"]
+# FEAT-074 (A-152): phần của gói hồ sơ KSNK cho đoàn kiểm tra (core.dossier) — mỗi hàm trả list DossierSection; M9 gom,
+# không import M11-M16. M17 (FEAT-073) đăng ký thêm khi có.
+tracecore_ic_dossier_sections = [
+	"tracecore.admin_reports.ic_dossier.register",
+	"tracecore.infection_program.dossier.register",
+	"tracecore.compliance_audit.dossier.register",
+	"tracecore.hai_surveillance.dossier.register",
+	"tracecore.microbiology.dossier.register",
+	"tracecore.environmental_hygiene.dossier.register",
+	"tracecore.occupational_safety.dossier.register",
 ]
 # core.sync (FEAT-009, A-40 Q2) gọi khi phát lại offline bị từ chối: (Sync Conflict doc) -> tên Incident NC
 tracecore_after_sync_conflict = ["tracecore.reprocessing.incidents.on_sync_conflict"]
@@ -593,9 +928,17 @@ scheduler_events = {
 			"tracecore.admin_reports.environment.remind_missing",
 			# FEAT-048, FR-M10-03.2-.4: nhiệt độ kho lạnh và hạn lưu chất thải
 			"tracecore.waste.storage.run_checks",
+			# FEAT-062, FR-M13-03, FR-M12-07.2: nhắc mẫu số thiếu và gói dự phòng chưa chấm sau giờ cấu hình
+			"tracecore.hai_surveillance.reminders.run",
+			# FEAT-064 (A-147 l): lần theo dõi NKVM sau ra viện đến hạn → R11, một lần mỗi ngày
+			"tracecore.hai_surveillance.ssi.remind",
+			# FEAT-069 (FR-M14-10, A-150 Q6): nhắc khai báo bệnh truyền nhiễm nửa hạn, quá hạn, rồi mỗi ngày
+			"tracecore.microbiology.notifiable.remind",
 		],
 		# FEAT-043, FR-M6-06: 06:00 cảnh báo tồn dưới tối thiểu và lô sắp hết hạn (email R09)
 		"0 6 * * *": ["tracecore.inventory.alerts.run_daily"],
+		# FEAT-065 (FR-M9-25, A-145 D6): 07:00 ngày làm việc thứ N → báo cáo Hội đồng KSNK kỳ tháng trước
+		"0 7 * * *": ["tracecore.admin_reports.council_report.run_daily"],
 		# 00:00 giờ hệ thống (Asia/Ho_Chi_Minh): một khóa cron nên mọi việc nửa đêm nằm chung một danh sách
 		"0 0 * * *": [
 			# FEAT-015 S2: kích hoạt phiên bản BOM đã lên lịch
@@ -624,6 +967,25 @@ scheduler_events = {
 		"tracecore.reprocessing.incidents.remind_overdue",
 		# FEAT-017, FR-M1-07.4: bộ mượn quá ngày trả → nhắc R02 mỗi ngày
 		"tracecore.instrument.loaner.remind_overdue",
+		# FEAT-058, FR-M11-05, FR-M11-07, FR-M11-08: hoạt động kế hoạch, kết luận họp tới hạn/quá hạn; văn bản cần rà soát
+		"tracecore.infection_program.reminders.run_daily",
+		# FEAT-060, FR-M12-03: giao việc giám sát ngày đầu kỳ, nhắc khoa chưa đạt mục tiêu tuần cuối kỳ
+		"tracecore.compliance_audit.schedule.run_daily",
+		# FEAT-071, FR-M16-04.1, 07, 08, NFR-PRIV-02: nhắc mốc theo dõi phơi nhiễm, tiêm chủng, thuốc dự phòng, xóa định danh
+		"tracecore.occupational_safety.jobs.run_daily",
+		# FEAT-066, FR-M12-13: giấy phép đơn vị thuê ngoài 60/30/7 ngày, hết hạn; đơn vị chưa giám sát trong quý
+		"tracecore.compliance_audit.vendors.run_daily",
+		# FEAT-063, NFR-PRIV-02 (A-144 Q3): xóa định danh ca NKBV, đợt thiết bị quá thời hạn lưu
+		"tracecore.hai_surveillance.retention.run",
+		# FEAT-064 (FR-M13-08, 08.1): ca hết cửa sổ theo dõi → Không NKVM / Mất theo dõi
+		"tracecore.hai_surveillance.ssi.run_daily",
+		# FEAT-070, FR-M15-05, .1, FR-M15-06: giao việc lấy mẫu đến kỳ, nhắc R01 mẫu quá hạn 7 ngày, nhắc hạ tầng trước 7 ngày
+		"tracecore.environmental_hygiene.plans.run_daily",
+		"tracecore.environmental_hygiene.audits.run_daily",
+		# FEAT-069 (FR-M13-13, A-150 Q2): đếm cụm ca theo ngưỡng, cảnh báo R01, R11
+		"tracecore.microbiology.clusters.run_daily",
+		# FEAT-073, FR-M17-02: nhắc R11 hạn khám sức khỏe người chế biến còn 30 ngày / quá hạn
+		"tracecore.food_safety.handlers.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước

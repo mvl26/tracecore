@@ -1,0 +1,325 @@
+{
+ "actions": [],
+ "autoname": "CA-.YYYY.-.#####",
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "department_name",
+  "status",
+  "reporting_period",
+  "column_break_patient",
+  "patient_code",
+  "patient_code_masked",
+  "patient_code_hash",
+  "birth_year",
+  "sex",
+  "deidentified",
+  "section_onset",
+  "admission_at",
+  "onset_date",
+  "def_code",
+  "column_break_definition",
+  "case_definition",
+  "infection_site",
+  "device_type",
+  "section_device",
+  "device_episode",
+  "surgical_surveillance",
+  "time_check",
+  "column_break_time",
+  "time_check_note",
+  "exception_reason",
+  "section_decision",
+  "exclusion_reason",
+  "outcome",
+  "column_break_decision",
+  "confirmed_by",
+  "confirmed_on",
+  "section_isolates",
+  "isolates",
+  "mdro_flags",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "translatable": 0,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Suspected\nConfirmed\nExcluded",
+   "default": "Suspected",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reporting_period",
+   "fieldtype": "Data",
+   "label": "Reporting Period",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "column_break_patient",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient_code",
+   "fieldtype": "Password",
+   "label": "Patient Code",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Patient Code (masked)",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "patient_code_hash",
+   "fieldtype": "Data",
+   "label": "Patient Code Hash",
+   "hidden": 1,
+   "read_only": 1,
+   "no_copy": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "birth_year",
+   "fieldtype": "Int",
+   "label": "Birth Year"
+  },
+  {
+   "fieldname": "sex",
+   "fieldtype": "Select",
+   "label": "Sex",
+   "options": "\nMale\nFemale\nOther"
+  },
+  {
+   "fieldname": "deidentified",
+   "fieldtype": "Check",
+   "label": "De-identified",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "description": "Patient code and birth year removed after the retention period; counts are kept."
+  },
+  {
+   "fieldname": "section_onset",
+   "fieldtype": "Section Break",
+   "label": "Onset and Definition"
+  },
+  {
+   "fieldname": "admission_at",
+   "fieldtype": "Datetime",
+   "label": "Admitted At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "onset_date",
+   "fieldtype": "Date",
+   "label": "Onset Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "def_code",
+   "fieldtype": "Autocomplete",
+   "label": "Case Definition Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "The approved version in force on the onset date is attached automatically."
+  },
+  {
+   "fieldname": "column_break_definition",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "case_definition",
+   "fieldtype": "Link",
+   "label": "Case Definition (snapshot)",
+   "options": "HAI Case Definition",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "infection_site",
+   "fieldtype": "Data",
+   "label": "Infection Site",
+   "fetch_from": "case_definition.infection_site",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "device_type",
+   "fieldtype": "Data",
+   "label": "Device",
+   "fetch_from": "case_definition.device_type",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_device",
+   "fieldtype": "Section Break",
+   "label": "Time Check"
+  },
+  {
+   "fieldname": "device_episode",
+   "fieldtype": "Link",
+   "label": "Device Episode",
+   "options": "Device Episode"
+  },
+  {
+   "fieldname": "surgical_surveillance",
+   "fieldtype": "Link",
+   "label": "Surgical Surveillance",
+   "options": "Surgical Surveillance",
+   "description": "Surgery of this patient under surgical site infection surveillance."
+  },
+  {
+   "fieldname": "time_check",
+   "fieldtype": "Select",
+   "label": "Time Check",
+   "options": "\nMet\nNot met\nNot applicable",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_time",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "time_check_note",
+   "fieldtype": "Small Text",
+   "label": "Time Check Detail",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "exception_reason",
+   "fieldtype": "Small Text",
+   "label": "Exception Reason",
+   "no_copy": 1,
+   "description": "Required to confirm a case that does not meet the time thresholds of its definition."
+  },
+  {
+   "fieldname": "section_decision",
+   "fieldtype": "Section Break",
+   "label": "Decision"
+  },
+  {
+   "fieldname": "exclusion_reason",
+   "fieldtype": "Small Text",
+   "label": "Exclusion Reason",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "\nUnder Treatment\nRecovered\nTransferred\nDied\nUnknown",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_decision",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Decided By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "confirmed_on",
+   "fieldtype": "Datetime",
+   "label": "Decided On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_isolates",
+   "fieldtype": "Section Break",
+   "label": "Related Isolates"
+  },
+  {
+   "fieldname": "isolates",
+   "fieldtype": "Table",
+   "label": "Isolates",
+   "options": "HAI Case Isolate",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "mdro_flags",
+   "fieldtype": "Data",
+   "label": "MDRO Labels",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "HAI Case",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-10 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HAI Surveillance",
+ "name": "HAI Case",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

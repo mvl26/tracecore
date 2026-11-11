@@ -1,0 +1,44 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2026-11-10 12:00:00.000000",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2026-11-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Compliance Audit",
+ "name": "IC Chemical Consumption by Department",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "IC Chemical Consumption",
+ "report_name": "IC Chemical Consumption by Department",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "TC R01"
+  },
+  {
+   "role": "TC R02"
+  },
+  {
+   "role": "TC R09"
+  },
+  {
+   "role": "TC R10"
+  },
+  {
+   "role": "TC R11"
+  },
+  {
+   "role": "TC R13"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

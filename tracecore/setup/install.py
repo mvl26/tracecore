@@ -1,13 +1,23 @@
 """Cài đặt app: định dạng Việt Nam (F-13, NFR-L10N-01), mẫu nhãn gói, nhãn QR đối tượng, thẻ kim loại và nhãn khay
 (FR-M2-08.4, FR-M9-07, FR-M1-05), khung khu-trạm (FR-M9-03)."""
 
+import json
+import os
+
 import frappe
 
+from tracecore.compliance_audit.seed import ensure_seed as ensure_compliance_seed  # FEAT-061
 from tracecore.core.notification import ensure_default_rules
 from tracecore.costing.setup import ensure_categories
+from tracecore.environmental_hygiene.seed import ensure_seed as ensure_environment_seed  # FEAT-070
 from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_settings
+from tracecore.hai_surveillance.seed import ensure_seed as ensure_hai_seed  # FEAT-063
+from tracecore.hai_surveillance.ssi_seed import ensure_seed as ensure_ssi_seed  # FEAT-064
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
+from tracecore.infection_program.settings_defaults import ensure_reminder_times
+from tracecore.infection_program.structure_seed import ensure_seed as ensure_structure_seed  # FEAT-094
 from tracecore.inventory.permissions import ensure_permissions
+from tracecore.microbiology.seed import ensure_seed as ensure_microbiology_seed
 from tracecore.setup.error_codes import ensure_error_codes
 from tracecore.setup.label_templates import (
 	ensure_object_templates,
@@ -38,7 +48,33 @@ SYSTEM_SETTINGS = {
 }
 
 
+ROLE_FIXTURE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fixtures", "role.json")
+ROLE_FIELDS = ("desk_access", "two_factor_auth", "disabled")
+
+
+def ensure_roles(path=ROLE_FIXTURE):
+	"""Tạo trước các vai trò TC còn thiếu, đọc từ ``fixtures/role.json`` (một nguồn duy nhất); không ghi đè vai trò có sẵn.
+
+	Frappe v15 chạy ``after_install`` trước ``sync_fixtures``: site trắng chưa có TC R11..R13 (A-113) nên mọi bước sau
+	có Link tới Role (Notification Rule, Role Profile, 2FA) sẽ lỗi. ``sync_fixtures`` chạy sau vẫn đồng bộ đủ trường.
+	"""
+	with open(path, encoding="utf-8") as handle:
+		rows = json.load(handle)
+	for row in rows:
+		if row.get("doctype") != "Role" or frappe.db.exists("Role", row["name"]):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Role",
+				"role_name": row.get("role_name") or row["name"],
+				**{field: row[field] for field in ROLE_FIELDS if field in row},
+			}
+		).insert(ignore_permissions=True)
+
+
 def after_install():
+	ensure_roles()  # trước mọi bước có Link tới Role (CI cài mới: LinkValidationError TC R11)
+	ensure_role_profiles()  # A-113 D4; site trắng chưa chạy after_migrate nên phải tạo ngay khi cài
 	apply_system_settings()
 	ensure_sample_templates()
 	ensure_object_templates()
@@ -52,6 +88,13 @@ def after_install():
 	ensure_station_help()
 	ensure_error_codes()
 	ensure_daily_test_settings()
+	ensure_microbiology_seed()
+	ensure_compliance_seed()  # FEAT-061: 8 mẫu phiếu giám sát Nháp (FR-M12-02)
+	ensure_structure_seed()  # FEAT-094: bộ tiêu chí cơ cấu KSNK Nháp (FR-M11-01.8)
+	ensure_hai_seed()  # FEAT-063: 6 định nghĩa ca NKBV Nháp (FR-M13-01)
+	ensure_ssi_seed()  # FEAT-064: 6 nhóm phẫu thuật chưa bật giám sát (FR-M13-07)
+	ensure_environment_seed()  # FEAT-070 (A-148): mức nguy cơ, ngưỡng Nháp, mẫu hạ tầng/ATTP Nháp
+	ensure_reminder_times()  # giờ nhắc 10:00, không để Frappe điền giờ lúc tạo IC Program Settings
 
 
 TEST_GENDERS = ("Male", "Female", "Other")
@@ -74,11 +117,36 @@ def before_tests():
 	frappe.db.commit()  # nosemgrep
 
 
+KSNK_ROLE_PROFILES = ("TC R11", "TC R12", "TC R13")
+
+
+def ensure_role_profiles():
+	"""A-113 (FEAT-056): mỗi vai trò KSNK toàn viện có Role Profile cùng tên; chỉ tạo khi chưa có, không ghi đè.
+
+	Role Profile.on_update xếp hàng job cập nhật người dùng; chạy ngay trong tiến trình (như lúc cài app) để không để lại
+	khóa bản ghi khi site chưa có worker.
+	"""
+	previous = frappe.flags.in_install
+	frappe.flags.in_install = True
+	try:
+		for role in KSNK_ROLE_PROFILES:
+			if frappe.db.exists("Role Profile", role) or not frappe.db.exists("Role", role):
+				continue
+			frappe.get_doc(
+				{"doctype": "Role Profile", "role_profile": role, "roles": [{"role": role}]}
+			).insert(ignore_permissions=True)
+	finally:
+		frappe.flags.in_install = previous
+
+
 def apply_system_settings():
 	settings = frappe.get_single("System Settings")
 	settings.update(SYSTEM_SETTINGS)
 	settings.flags.ignore_mandatory = True
 	settings.save(ignore_permissions=True)
-	for number in range(1, 11):
-		frappe.db.set_value("Role", f"TC R{number:02d}", "two_factor_auth", int(number in (1, 2, 9, 10)))
+	# A-113 a: thêm 2FA cho R11 (Giám sát viên KSNK) và R13 (Hội đồng KSNK & BGĐ); R12 như R08
+	for number in range(1, 14):
+		frappe.db.set_value(
+			"Role", f"TC R{number:02d}", "two_factor_auth", int(number in (1, 2, 9, 10, 11, 13))
+		)
 	frappe.clear_cache()

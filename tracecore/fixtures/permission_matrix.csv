@@ -1,54 +1,104 @@
-code,doctype,R01,R02,R03,R04,R05,R06,R07,R08,R09,R10,notes
-DT-INSTR,Instrument,R,RWS,R,R,R,R,R,R,R,RW,FEAT-014 A-06 I15: mọi vai trò TC được đọc; System Manager theo AMENDMENT_GRANTS
-DT-SETTYPE,Instrument Set Type,R,RWS,R,R,R,R,R,R,R,RW,"FEAT-015 A-09 S12 (mới hơn ma trận): TC R03-R09 đọc; System Manager đọc/tạo/ghi theo AMENDMENT_GRANTS"
-DT-SETBOM,Set BOM Item,R,R,R,R,R,R,R,R,R,R,"FEAT-015 A-09 S12 (mới hơn ma trận): mọi TC role chỉ đọc; không ai tạo/ghi trực tiếp, dòng chỉ tạo qua bom_versions (cờ tc_bom)"
-DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,
-DT-LOANER,Loaner Set,R,RWS,R,R,R,R,,,R,RW,FEAT-017 A-38: tên DocType theo architecture §5.3 (Loaner Set); R02 nhận và trả
-DT-INSTRMAINT,Instrument Maintenance,R,RWS,R,R,R,R,,,R,RW,
-DT-RECEIPT,Dirty Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-019 A-30: DocType Dirty Receipt (tên BA Receipt); ghi/sổ chỉ qua dịch vụ tiếp nhận (cờ tc_receiving)
-DT-WASHBATCH,Wash Batch,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-021
-DT-ASSEMBLY,Assembly Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
-DT-PACK,Pack,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
-DT-LOAD,Sterilization Load,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-022
-DT-LOADTEST,Load Indicator Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-023 A-20: tên DocType theo architecture §5.3
-DT-STERLOC,Sterile Location,R,R,,,,R,,,,RW,FEAT-025: danh mục kệ do R10 quản lý; R01/R02/R06 chỉ đọc
-DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-027
-DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,future FEAT-028
-DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,FEAT-029
-DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,
-DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,RW,RW,R,R,FEAT-030; FEAT-050 A-63: R07 ghi sự cố chất thải (UC-37 bước 4)
-DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
-DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
-DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
-DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,future FEAT-035
-DT-WASTETYPE,Waste Type,R,RW,,,,,R,,R,RW,FEAT-047 A-60 W14: danh mục; R02 và R10 cấu hình
-DT-WASTECOL,Waste Collection,R,RWSA,,,,,RWS,,R,R,FEAT-047 A-60 W14: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
-DT-WASTECON,Waste Container,R,R,,,,,R,,R,R,FEAT-047 A-60 W14: chỉ dịch vụ thu gom tạo và đổi
-DT-WASTELOC,Waste Storage Location,R,RW,,,,,R,,,RW,FEAT-048 A-61: R10 và R02 cấu hình vị trí kho; R07 chỉ đọc
-DT-WASTEVENDOR,Waste Treatment Vendor,R,RW,,,,,R,,RW,R,FEAT-049 A-62: R09 và R02 quản lý đơn vị xử lý và hợp đồng; R07 đọc để chọn
-DT-WASTEHANDOVER,Waste Handover,R,RWSA,,,,,RWS,,RW,R,FEAT-049 A-62: R07 lập và ghi sổ; R02 hủy; R09 bổ sung chứng từ
-DT-WASTEQUOTA,Waste Quota,R,RW,,,,,,,R,R,FEAT-050 A-63: R02 cấu hình định mức
-DT-EMP,Employee,R,RWS,,,,,,,,RW,
-DT-CERT,Certificate,R,RWS,,,,,,,,RW,future FEAT-036
-DT-COMP,Station Competency,R,RWS,,,,,,,,RW,
-DT-SHIFT,Shift Assignment,R,RWS,,,,,,,,RW,HRMS
-DT-EQUIP,Equipment,R,R,R,R,R,R,R,,R,RW,A-04 overrides BA baseline; A-104: R07 đọc để chọn máy giặt/sấy và xem định mức
-DT-PROGRAM,Process Program,R,R,R,R,R,R,R,,R,RW,A-04 overrides BA baseline; A-104: R07 đọc để chọn máy giặt/sấy và xem định mức
-DT-MAINT,Maintenance Record,R,RWSA,,,,,,,R,RW,"FEAT-039 A-43 M10 (mới hơn ma trận): R02 làm hết; R10 tạo/sửa không ghi sổ; R01 và R09 chỉ đọc; KTV không thấy"
-DT-DAILYTEST,Daily Test,RA,RWSA,R,R,RW,R,RW,,RW,RW,future FEAT-040
-DT-ITEM,Item,R,RA,R,R,RW,RWS,RW,,RWS,R,
-DT-STOCKENTRY,Stock Entry,R,RA,R,R,RW,RWS,RW,,RWS,R,
-DT-STOCKCOUNT,Stock Reconciliation,R,RWSA,R,R,RW,RW,RW,,RWSA,R,FEAT-043 A-52 C2: ghi sổ = phê duyệt của R02/R09 (FR-M6-05.1); R06 lập bản nháp
-DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,FEAT-044 A-47 C12
-DT-COSTCAT,Cost Category,R,R,,,,,,,RW,R,FEAT-044 A-47 C12
-DT-COSTSET,Cost Settings,RW,,,,,,,,R,,FEAT-044 A-47 C6
-DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,FEAT-045 A-48 D5: R01 duyệt (Ghi sổ/Hủy) theo UC-28 bước 4 (Frappe cần W để Ghi sổ); R09 lập Nháp
-DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,FEAT-046 A-53 D1
-DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,FEAT-031
-DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,FEAT-032
-DT-ZONE,Zone Station,R,R,R,R,R,R,,,R,RW,A-03 overrides BA baseline; FEAT-008 A-55 Q4: R03-R06 đọc để chọn khu khi ghi nhật ký môi trường
-DT-ZONETYPE,Zone Type,R,R,,,,,,,R,RW,A-64: danh mục loại vùng
-DT-STFUNC,Station Function,R,R,,,,,,,R,RW,A-64: danh mục chức năng trạm
-DT-ARCHIVE,Archive Export,RW,,,,,,,,,RW,FEAT-012 A-58 D2: R01 và R10 tạo/đọc phiếu xuất hồ sơ lưu trữ; phiếu không sửa sau khi tạo
-DT-ENVLOG,Environment Log,R,RWSA,RWS,RWS,RWS,RWS,,,,R,FEAT-008 A-55 Q4: R02-R06 ghi sổ; R02 hủy/sửa đổi; R01 và R10 chỉ đọc
-DT-AUDIT,Audit Log,R,R,,,,,,,,R,immutable; R01/R02 object-scoped
+code,doctype,R01,R02,R03,R04,R05,R06,R07,R08,R09,R10,R11,R12,R13,notes
+DT-INSTR,Instrument,R,RWS,R,R,R,R,R,R,R,RW,,,,FEAT-014 A-06 I15: mọi vai trò TC được đọc; System Manager theo AMENDMENT_GRANTS
+DT-SETTYPE,Instrument Set Type,R,RWS,R,R,R,R,R,R,R,RW,,,,FEAT-015 A-09 S12 (mới hơn ma trận): TC R03-R09 đọc; System Manager đọc/tạo/ghi theo AMENDMENT_GRANTS
+DT-SETBOM,Set BOM Item,R,R,R,R,R,R,R,R,R,R,,,,"FEAT-015 A-09 S12 (mới hơn ma trận): mọi TC role chỉ đọc; không ai tạo/ghi trực tiếp, dòng chỉ tạo qua bom_versions (cờ tc_bom)"
+DT-SETUNIT,Set Unit,R,RWS,R,R,R,R,,,R,RW,,,,
+DT-LOANER,Loaner Set,R,RWS,R,R,R,R,,,R,RW,,,,FEAT-017 A-38: tên DocType theo architecture §5.3 (Loaner Set); R02 nhận và trả
+DT-INSTRMAINT,Instrument Maintenance,R,RWS,R,R,R,R,,,R,RW,,,,
+DT-RECEIPT,Dirty Receipt,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,FEAT-019 A-30: DocType Dirty Receipt (tên BA Receipt); ghi/sổ chỉ qua dịch vụ tiếp nhận (cờ tc_receiving)
+DT-WASHBATCH,Wash Batch,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,future FEAT-021
+DT-ASSEMBLY,Assembly Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,
+DT-PACK,Pack,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,
+DT-LOAD,Sterilization Load,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,FEAT-022
+DT-LOADTEST,Load Indicator Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,FEAT-023 A-20: tên DocType theo architecture §5.3
+DT-STERLOC,Sterile Location,R,R,,,,R,,,,RW,,,,FEAT-025: danh mục kệ do R10 quản lý; R01/R02/R06 chỉ đọc
+DT-ISSUE,Issue Note,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,future FEAT-027
+DT-USAGE,Usage Record,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,future FEAT-028
+DT-RECALL,Recall Order,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,FEAT-029
+DT-STEPGATE,Step Gate Result,RA,RWSA,RWS,RWS,RWS,RWS,,RW,R,R,,,,
+DT-INCIDENT,Incident CAPA,RA,RWSA,RWS,RWS,RWS,RWS,RW,RW,R,R,,,,FEAT-030; FEAT-050 A-63: R07 ghi sự cố chất thải (UC-37 bước 4)
+DT-LINENTYPE,Linen Type,R,RW,,,,,RW,R,R,RW,,,,FEAT-033 A-49 L10: danh mục không có ghi sổ; R10 cấu hình
+DT-LINENCOL,Linen Collection,R,RWSA,,,,,RWS,,R,R,,,,FEAT-033 A-49 L10: R02 hủy/sửa đổi; R08 chưa đọc cho đến khi FEAT-035 có quyền theo khoa
+DT-LAUNDRY,Laundry Batch,R,RWSA,,,,,RWS,R,R,R,,,,FEAT-034 A-50 D13: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
+DT-LINENISS,Linen Issue,R,RWS,,,,,RWS,R,R,R,,,,future FEAT-035
+DT-WASTETYPE,Waste Type,R,RW,,,,,R,,R,RW,,,,FEAT-047 A-60 W14: danh mục; R02 và R10 cấu hình
+DT-WASTECOL,Waste Collection,R,RWSA,,,,,RWS,,R,R,,,,FEAT-047 A-60 W14: R07 ghi sổ; R02 hủy/sửa đổi; không xóa
+DT-WASTECON,Waste Container,R,R,,,,,R,,R,R,,,,FEAT-047 A-60 W14: chỉ dịch vụ thu gom tạo và đổi
+DT-WASTELOC,Waste Storage Location,R,RW,,,,,R,,,RW,,,,FEAT-048 A-61: R10 và R02 cấu hình vị trí kho; R07 chỉ đọc
+DT-WASTEVENDOR,Waste Treatment Vendor,R,RW,,,,,R,,RW,R,,,,FEAT-049 A-62: R09 và R02 quản lý đơn vị xử lý và hợp đồng; R07 đọc để chọn
+DT-WASTEHANDOVER,Waste Handover,R,RWSA,,,,,RWS,,RW,R,,,,FEAT-049 A-62: R07 lập và ghi sổ; R02 hủy; R09 bổ sung chứng từ
+DT-WASTEQUOTA,Waste Quota,R,RW,,,,,,,R,R,,,,FEAT-050 A-63: R02 cấu hình định mức
+DT-EMP,Employee,R,RWS,,,,,,,,RW,,,,
+DT-CERT,Certificate,R,RWS,,,,,,,,RW,,,,future FEAT-036
+DT-COMP,Station Competency,R,RWS,,,,,,,,RW,,,,
+DT-SHIFT,Shift Assignment,R,RWS,,,,,,,,RW,,,,HRMS
+DT-EQUIP,Equipment,R,R,R,R,R,R,R,,R,RW,,,,A-04 overrides BA baseline; A-104: R07 đọc để chọn máy giặt/sấy và xem định mức
+DT-PROGRAM,Process Program,R,R,R,R,R,R,R,,R,RW,,,,A-04 overrides BA baseline; A-104: R07 đọc để chọn máy giặt/sấy và xem định mức
+DT-MAINT,Maintenance Record,R,RWSA,,,,,,,R,RW,,,,FEAT-039 A-43 M10 (mới hơn ma trận): R02 làm hết; R10 tạo/sửa không ghi sổ; R01 và R09 chỉ đọc; KTV không thấy
+DT-DAILYTEST,Daily Test,RA,RWSA,R,R,RW,R,RW,,RW,RW,,,,future FEAT-040
+DT-ITEM,Item,R,RA,R,R,RW,RWS,RW,,RWS,R,,,,
+DT-STOCKENTRY,Stock Entry,R,RA,R,R,RW,RWS,RW,,RWS,R,,,,
+DT-STOCKCOUNT,Stock Reconciliation,R,RWSA,R,R,RW,RW,RW,,RWSA,R,,,,FEAT-043 A-52 C2: ghi sổ = phê duyệt của R02/R09 (FR-M6-05.1); R06 lập bản nháp
+DT-COSTENTRY,Cost Entry,RA,R,,,,,,,RWS,R,,,,FEAT-044 A-47 C12
+DT-COSTCAT,Cost Category,R,R,,,,,,,RW,R,,,,FEAT-044 A-47 C12
+DT-COSTSET,Cost Settings,RW,,,,,,,,R,,,,,FEAT-044 A-47 C6
+DT-COSTRATE,Cost Rate Version,RWSA,R,,,,,,,RW,R,,,,FEAT-045 A-48 D5: R01 duyệt (Ghi sổ/Hủy) theo UC-28 bước 4 (Frappe cần W để Ghi sổ); R09 lập Nháp
+DT-COSTSHEET,Cost Sheet,RA,R,,,,,,,RWS,R,,,,FEAT-046 A-53 D1
+DT-PARLEVEL,Par Level,RWSA,RWS,,R,,R,R,,R,R,,,,FEAT-031
+DT-OVERRIDE,Par Override,RWSA,RWS,,R,,R,R,,R,R,,,,FEAT-032
+DT-ZONE,Zone Station,R,R,R,R,R,R,,,R,RW,,,,A-03 overrides BA baseline; FEAT-008 A-55 Q4: R03-R06 đọc để chọn khu khi ghi nhật ký môi trường
+DT-ZONETYPE,Zone Type,R,R,,,,,,,R,RW,,,,A-64: danh mục loại vùng
+DT-STFUNC,Station Function,R,R,,,,,,,R,RW,,,,A-64: danh mục chức năng trạm
+DT-ARCHIVE,Archive Export,RW,,,,,,,,,RW,,,,FEAT-012 A-58 D2: R01 và R10 tạo/đọc phiếu xuất hồ sơ lưu trữ; phiếu không sửa sau khi tạo
+DT-ENVLOG,Environment Log,R,RWSA,RWS,RWS,RWS,RWS,,,,R,,,,FEAT-008 A-55 Q4: R02-R06 ghi sổ; R02 hủy/sửa đổi; R01 và R10 chỉ đọc
+DT-AUDIT,Audit Log,R,R,,,,,,,,R,,,,immutable; R01/R02 object-scoped
+DT-ICSET,IC Program Settings,RW,,,,,,,,,RW,R,,R,"FEAT-056 A-113 (plan D3): Single cài đặt chương trình KSNK; R10 lưu số giường/tuyến (FR-M11-01); FEAT-057 A-132: R01 RW (FR-M11-01.4, nhập khoa KSNK và giám sát viên)"
+DT-ICIND,IC Indicator,RW,,,,,,,,,RW,R,R,R,FEAT-056 A-113 (plan D3): danh mục chỉ số; R01 duyệt nội dung chuyên môn (D10)
+DT-ICVAL,IC Indicator Value,R,,,,,,,,,R,R,R,R,"FEAT-056 A-113 (plan D3): hệ thống ghi khi khóa kỳ, không ai ghi tay; R12 chỉ khoa mình + toàn viện"
+DT-IMPMAP,Import Mapping Profile,R,,,,,,,,,RW,RW,,,"FEAT-056 A-113 (plan D3, F-21): hồ sơ ánh xạ cột nhập file"
+DT-ICCOM,IC Committee,RWSA,,,,,,,,,R,R,,R,"FEAT-057 A-113 (FR-M11-01.4, FR-M11-02): Hội đồng KSNK ghi sổ; R01 tạo/sửa/ghi sổ/hủy; R10, R11, R13 đọc"
+DT-ICNET,IC Network Member,RW,RW,,,,,,,,R,R,R,R,"FEAT-057 A-113 (FR-M11-01.4, FR-M11-03): R01, R02 sửa mạng lưới; R12 chỉ khoa mình (User Permission Department, A-132 d)"
+DT-ICPLAN,IC Annual Plan,RWA,,,,,,,,,R,R,,RS,"FEAT-058 A-133 (FR-M11-01.4, FR-M11-04, BRU-ICP-004): R01 lập, sửa Nháp, lập bản sửa đổi; chỉ R13 ghi sổ = duyệt; R10, R11 đọc"
+DT-ICDOC,IC Procedure Document,RW,,,,,,,,,R,R,R,R,"FEAT-058 A-133 (FR-M11-07): sổ văn bản nội bộ toàn viện; R12 đọc quy trình hiện hành (FR-M16-01)"
+DT-ICMEET,IC Committee Meeting,RWSA,,,,,,,,,R,R,,R,"FEAT-058 A-133 (FR-M11-08): biên bản họp Hội đồng; R01 ghi sổ sinh việc theo dõi; R10, R11, R13 đọc"
+DT-AUDTPL,Audit Template,RWS,R,,,,,,R,,R,RW,R,R,"FEAT-060 A-113/A-134 (plan D1): ghi sổ = R01 duyệt, khóa phiên bản; R11 soạn nháp"
+DT-AUDSCH,Audit Schedule,RW,RW,,,,,,,,R,R,,R,"FEAT-060 A-113 (plan D1): R01/R02 lập lịch giám sát (FR-M12-08.2)"
+DT-AUDSES,Audit Session,RWSA,R,,,,,,RWS,,,RWS,RWS,,"FEAT-060 A-113 (plan D1): R08/R12 khoa mình (User Permission Department), R11 mọi khoa; R01 hủy phiếu nhập sai; R13 chỉ xem báo cáo tổng hợp"
+DT-ORG,Organism,RW,,,,,,,,,RW,R,,R,"FEAT-067 A-136: danh mục vi sinh vật mã WHONET; R13 đọc để lọc báo cáo kháng thuốc"
+DT-MICISO,Microbiology Isolate,R,,,,,,,,,,RW,,,"FEAT-067 A-136 (FR-M14-01.3, ADR-010): R11 import/nhập tay (tạo qua dịch vụ, không sửa); R13 không đọc dữ liệu người bệnh"
+DT-MDRO,MDRO Rule,RWS,,,,,,,,,,R,,R,"FEAT-067 A-136 (BRU-MDR-001): quy tắc đa kháng có phiên bản; R01 ghi sổ = duyệt"
+DT-IMPBATCH,Import Batch,,R,,,,,,,,R,R,,,"FEAT-067 A-136: R11 xem kết quả lô import vi sinh; giữ R02, R10 như FEAT-011"
+DT-ICTRN,Trainee Induction,RW,RW,,,,,,,,R,R,R,R,"FEAT-059 A-135 (FR-M11-11, UC-42): R01, R02 ghi sinh viên thực tập; R12 chỉ khoa mình (User Permission Department)"
+DT-OCCEXP,Occupational Exposure,RW,,,,,,,,,,RW,,,"FEAT-071 A-137 j (FR-M16-05, BRU-OCC-003): chỉ R01, R11; nhân viên báo và xem hồ sơ của mình qua RPC; R02, R13 chỉ số liệu tổng hợp"
+DT-EXPTPL,Exposure Follow-up Template,RW,,,,,,,,,,R,,,"FEAT-071 A-137 Q3 (FR-M16-04, BRU-OCC-004): R01 nhập và duyệt phiên bản"
+DT-IMMREQ,Immunization Requirement,RW,R,,,,,,,,,R,,,"FEAT-071 A-137 f (FR-M16-07, BRU-OCC-004): R01 nhập và duyệt"
+DT-STFIMM,Staff Immunization,RW,RW,,,,,,,,,R,,,"FEAT-071 (FR-M16-05.2, FR-M16-07): R02 ghi tiêm chủng"
+DT-WDCEN,Ward Daily Census,RW,,,,,,,RW,,R,RW,RW,,"FEAT-062 A-141 g (FR-M13-02, BRU-HAI-002): R08, R12 nhập mẫu số khoa mình (User Permission Department); R11, R01 mọi khoa; R10 xem; không ai xóa"
+DT-DEVEP,Device Episode,RW,,,,,,,RW,,,RW,RW,,"FEAT-062 A-141 g (FR-M13-04, ADR-010): có mã BN — R13 không đọc; R08, R12 chỉ khoa mình; không ai xóa"
+DT-ICCHEM,IC Chemical Consumption,RWSA,R,,,,,,,RWSA,R,RWS,,R,"FEAT-066 A-142 Q4 (FR-M12-12): R09 nhập tay, chọn nguồn khi trùng; R11 import file khoa Dược; R02, R10, R13 xem"
+DT-ICSP,IC Structure Profile,RW,R,,,,,,,,R,,,R,"FEAT-094 A-138 h (FR-M11-01.8): bộ tiêu chí cơ cấu KSNK có phiên bản; R01 nhập và duyệt; R02, R10, R13 đọc"
+DT-HAIDEF,HAI Case Definition,RWS,,,,,,,R,,R,R,R,,"FEAT-063 A-144 a (FR-M13-01, BRU-HAI-001): định nghĩa ca có phiên bản; R01 nhập và duyệt; R08, R11, R12 đọc để chọn mã; R10 đọc"
+DT-HAICASE,HAI Case,RWSA,,,,,,,RW,,,RWS,RW,,"FEAT-063 A-144 b, j (FR-M13-05, FR-M13-15.3): R08, R12 tạo ca Nghi ngờ khoa mình (User Permission Department); R11, R01 xác định/loại trừ; R01 hủy; R13, R10 không đọc dữ liệu người bệnh; không ai xóa"
+DT-ICPER,IC Reporting Period,RW,,,,,,,,,R,R,,R,"FEAT-063 A-144 Q1, c (FR-M13-11): chỉ R01 khóa/mở khóa qua dịch vụ; R10, R11, R13 xem"
+DT-ICCR,IC Council Report,R,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-25, BRU-RPT-002): báo cáo Hội đồng một trang hằng tháng do hệ thống sinh; không ai ghi tay"
+DT-ICQD38,IC QD38 Criterion,RW,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, NFR-MAINT-04): danh mục chỉ tiêu QĐ 38; R01 sửa, ngưng dùng thay vì xóa"
+DT-ICSA,IC Self Assessment,RWS,,,,,,,,,R,R,,R,"FEAT-065 A-145 (FR-M9-29, .1): R01 lập và ghi sổ tự đánh giá năm; R10, R11, R13 đọc"
+DT-ISOORD,Isolation Order,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-068 A-146 Q5 (FR-M14-06, BRU-MDR-003): R08, R12 tạo/đóng lệnh khoa mình (lệnh do đa kháng chỉ R01, R11 đóng); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
+DT-ISOROOM,Isolation Room,RW,,,,,,,R,,,R,R,R,"FEAT-068 A-146 Q2, Q5 (FR-M14-07): R01 duy trì phòng và đánh giá đạt; R08, R12 đọc phòng khoa mình; R11, R13 đọc"
+DT-SSIGRP,Surgical Procedure Group,RW,,,,,,,,,R,R,,,"FEAT-064 A-147 a (FR-M13-07, BRU-HAI-004): R01 cấu hình T, cửa sổ, lịch theo dõi và bật giám sát; R10, R11 đọc"
+DT-SSI,Surgical Surveillance,RW,,,,,,,,,,RW,,,"FEAT-064 A-147 b, m (FR-M13-07..09, ADR-010): R11 đăng ký ca và ghi theo dõi, R01 toàn quyền; có mã BN — R08, R10, R12, R13 không đọc; không ai xóa"
+DT-REXP,Report Export Profile,RW,,,,,,,,,RW,RW,,,"FEAT-064 A-147 Q1 (FR-M13-12, BRU-RPT-002): hồ sơ ánh xạ cột xuất báo cáo theo mẫu cơ quan quản lý"
+DT-ENVRISK,Environment Risk Level,RW,R,,,,,,R,,R,R,R,R,"FEAT-070 A-148 a (FR-M15-01, BRU-ENV-001): R01 cấu hình mức nguy cơ và số phiếu tối thiểu; R02, R08, R10, R11, R12, R13 đọc; ngưng dùng thay vì xóa"
+DT-ENVZONE,Environment Zone,RW,R,,,,,,R,,R,R,R,R,"FEAT-070 A-148 a (FR-M15-01, .2): R01 khai báo vùng; R08, R12 đọc vùng khoa mình (User Permission Department) để làm phiếu; R02, R10, R11, R13 đọc"
+DT-ENVLIMIT,Environmental Limit,RWS,R,,,,,,,,R,R,,R,"FEAT-070 A-148 b (FR-M15-03, BRU-ENV-002): ngưỡng có phiên bản, R01 nhập và duyệt (ghi sổ); sửa = phiên bản mới; R02, R10, R11, R13 đọc"
+DT-SAMPLAN,Sampling Plan,RW,R,,,,,,,,R,R,,R,"FEAT-070 A-148 c (FR-M15-05): R01 lập kế hoạch lấy mẫu; R02, R10, R11, R13 đọc"
+DT-ENVSAMPLE,Environmental Sample,RWSA,R,,,,,,R,,,RWSA,R,,"FEAT-070 A-148 d (FR-M15-03, FR-M15-04): R11 ghi mẫu và ghi sổ, R01 toàn quyền, hủy khi nhập nhầm; R02 đọc; R08, R12 đọc mẫu khoa mình; R13 chỉ xem tổng hợp trên SCR-62"
+DT-ICIMP,IC Improvement Project,RW,,,,,,,,,R,R,,R,"FEAT-072 A-149 Q2 (FR-M11-12, UC-42): R01 ghi dự án cải tiến chất lượng / đề tài nghiên cứu; R10, R11, R13 đọc; không ai xóa (dùng Hủy)"
+DT-OUTBREAK,Outbreak Investigation,RWSA,,,,,,,,,,R,,,"FEAT-069 A-150 Q5 (FR-M14-09, BRU-MDR-004): R01 mở, kiểm soát, kết thúc, hủy ổ dịch; R11 đọc, gắn ca và thêm hành động qua màn SCR-61 (dịch vụ); có mã BN che — R13 chỉ số liệu tổng hợp trên SCR-61"
+DT-NOTIFY,Notifiable Disease Report,RWSA,,,,,,,RWS,,,RWSA,RWS,,"FEAT-069 A-150 Q4, Q5 (FR-M14-10, BRU-MDR-005): R08, R12 ghi khai báo khoa mình (Cổng khoa); R01, R11 mọi khoa, hủy khi nhập nhầm; có mã BN — R13 không đọc"
+DT-CDISEASE,Communicable Disease,RW,,,,,,,R,,RW,R,R,R,"FEAT-069 A-150 Q1 (FR-M14-10.1): R01, R10 duy trì danh mục bệnh truyền nhiễm và nhóm A/B/C; R08, R11, R12, R13 đọc"
+DT-CLRULE,Cluster Alert Rule,RW,,,,,,,,,R,R,,R,"FEAT-069 A-150 Q2 (FR-M13-13.1): R01 đặt ngưỡng cảnh báo cụm ca; R10, R11, R13 đọc"
+DT-CLALERT,Cluster Alert,R,,,,,,,,,,R,,,"FEAT-069 A-150 Q2 (FR-M13-13, UC-50): cảnh báo do job hằng ngày tạo; R01, R11 đọc và xem xét qua màn SCR-61/SCR-58 (dịch vụ)"
+DT-FHHC,Food Handler Health Check,RWSA,,,,,,,,,,RWSA,,,"FEAT-073 A-151 Q4 (FR-M17-02, .1; BRU-FS-001): R01, R11 ghi phiếu khám sức khỏe người chế biến và ghi sổ; chỉ kết luận Đủ/Không đủ và hạn, không chẩn đoán; R13 chỉ xem tổng hợp trên SCR-65; không ai xóa (dùng Hủy)"
+DT-FBEVT,Foodborne Event,RWSA,,,,,,,,,,RWSA,,,"FEAT-073 A-151 Q1, Q2 (FR-M17-04, .1; BRU-FS-002): R01, R11 ghi sự cố nghi ngộ độc thực phẩm và ghi sổ (báo ngay, đề nghị NC/ổ dịch); R13 chỉ xem tổng hợp; không ai xóa (dùng Hủy)"
+DT-ICEDU,IC Education Session,RW,,,,,,,,,,RW,RW,R,"FEAT-073 A-151 Q4 (FR-M17-05, FR-M17-01.2): R01, R11 ghi buổi truyền thông mọi khoa; R12 ghi buổi của khoa mình (User Permission Department); R13 đọc tổng hợp quý; không ai xóa"

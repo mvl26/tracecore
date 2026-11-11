@@ -88,6 +88,90 @@ EVENTS = {
 	"SOFTWARE_FEEDBACK": ("Software feedback from a station", "Normal", 0, 0, (ADMIN_ROLE,)),
 	# A-75: R10 sửa dải mã offline làm hai dải giao nhau
 	"CODE_RANGE_OVERLAP": ("Offline code ranges overlap", "Normal", 0, 0, (ADMIN_ROLE, FALLBACK_ROLE)),
+	# FEAT-057 (A-132 d, FR-M11-03.2): khoa bắt buộc mất mạng lưới viên cuối cùng của một nhóm, báo Trưởng khoa KSNK
+	"IC_NETWORK_GAP": ("Infection control network gap", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-058 (A-133, FR-M11-05, FR-M11-07, FR-M11-08): người chủ trì do nơi gọi truyền + Trưởng khoa KSNK
+	"IC_PLAN_ACTIVITY_DUE": ("Annual plan activity due soon", "Normal", 0, 0, ("TC R01",)),
+	"IC_PLAN_ACTIVITY_OVERDUE": ("Annual plan activity overdue", "Normal", 0, 0, ("TC R01",)),
+	"IC_RESOLUTION_DUE": ("Committee conclusion due soon", "Normal", 0, 0, ("TC R01",)),
+	"IC_RESOLUTION_OVERDUE": ("Committee conclusion overdue", "Normal", 0, 0, ("TC R01",)),
+	"IC_DOCUMENT_REVIEW_DUE": ("Internal document review due", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-060 (FR-M12-03, 08, 09): giao việc giám sát, nhắc độ bao phủ (R02), phản hồi khoa (người nhận do nơi gọi
+	# truyền: R08/R12 của khoa), mục trọng yếu không đạt → đề nghị R01/R11 mở NC
+	"AUDIT_DUE": ("Audits due for the period", "Normal", 0, 1, ()),
+	"AUDIT_COVERAGE_LOW": ("Audit coverage below target", "Normal", 0, 1, (FALLBACK_ROLE,)),
+	"AUDIT_FEEDBACK": ("Audit result feedback to the department", "Normal", 0, 1, ()),
+	"AUDIT_CRITICAL_FAIL": ("Critical audit item failed", "Normal", 0, 0, ("TC R01", "TC R11")),
+	# FEAT-067 (A-136 Q4, FR-M14-04): chủng đa kháng mới — R11 theo Rule; mạng lưới viên, R08 của khoa và vai trò của
+	# quy tắc do nơi gọi truyền; chưa đọc quá 15 phút thì leo thang R01
+	"MDRO_DETECTED": ("New multidrug-resistant isolate", "Urgent", 1, 1, ("TC R11",)),
+	# FEAT-068 (A-146 Q6): khoa mở / kết thúc lệnh cách ly → R11 theo Rule
+	"ISOLATION_ORDER_OPENED": ("Isolation order opened", "Normal", 0, 1, ("TC R11",)),
+	"ISOLATION_ORDER_CLOSED": ("Isolation order closed", "Normal", 0, 1, ("TC R11",)),
+	# FEAT-059 (A-135 d): nhắc nhân viên chưa học KSNK cơ bản; người nhận do nơi gọi truyền (user của nhân viên)
+	"IC_TRAINING_REMINDER": ("Infection control training reminder", "Normal", 0, 0, ()),
+	# FEAT-071 (A-137 e): phơi nhiễm nghề nghiệp báo ngay R01, R11 (FR-M16-01, 01.1); mốc theo dõi (nhân viên do nơi gọi
+	# truyền); mẫu theo dõi chưa duyệt; tiêm chủng đến hạn (nhân viên + R02, như FR-M4-01.4); thuốc dự phòng (FR-M16-08)
+	"EXPOSURE_REPORTED": ("Occupational exposure reported", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"EXPOSURE_FOLLOWUP_DUE": ("Exposure follow-up step due", "Normal", 0, 1, ("TC R11",)),
+	"EXPOSURE_TEMPLATE_MISSING": ("Exposure follow-up template missing", "Normal", 0, 0, ("TC R01",)),
+	"IMMUNIZATION_DUE": ("Staff vaccination due", "Normal", 0, 0, (FALLBACK_ROLE,)),
+	"PEP_STOCK_ALERT": ("Post-exposure prophylaxis stock alert", "Normal", 1, 0, ("TC R01",)),
+	# FEAT-062 (A-141 d, FR-M13-03, FR-M12-07): mẫu số thiếu → R11 (+ R12 của khoa do nơi gọi truyền);
+	# gói dự phòng chưa chấm → R08, R12 của khoa (nơi gọi truyền)
+	"CENSUS_MISSING": ("Daily census missing", "Normal", 0, 1, ("TC R11",)),
+	"BUNDLE_CHECK_DUE": ("Prevention bundle check due", "Normal", 0, 1, ()),
+	# FEAT-066 (A-142, FR-M12-13): giấy phép đơn vị thuê ngoài 60/30/7 ngày, đã hết hạn (chỉ cảnh báo, BRU-AUD-006),
+	# đơn vị chưa được giám sát trong quý
+	"IC_VENDOR_LICENSE_EXPIRING": (
+		"Outsourced vendor license expiring",
+		"Normal",
+		1,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
+	"IC_VENDOR_LICENSE_EXPIRED": (
+		"Outsourced vendor license expired",
+		"Normal",
+		1,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
+	"IC_VENDOR_UNAUDITED": (
+		"Outsourced vendors not audited this quarter",
+		"Normal",
+		0,
+		0,
+		("TC R01", FALLBACK_ROLE),
+	),
+	# FEAT-065 (FR-M9-25, A-145 D6): báo cáo Hội đồng KSNK một trang hằng tháng → R01, R13 (email + trong ứng dụng)
+	"IC_COUNCIL_REPORT": ("Infection control committee report ready", "Normal", 1, 0, ("TC R01", "TC R13")),
+	# FEAT-064 (A-147 c, l): lần theo dõi NKVM sau ra viện đến hạn → R11; nhóm phẫu thuật chưa có T của NNIS → R01
+	"SSI_FOLLOWUP_DUE": ("Surgical site infection follow-up due", "Normal", 0, 1, ("TC R11",)),
+	"SSI_GROUP_T_MISSING": ("Surgical procedure group without NNIS cut-off", "Normal", 0, 0, ("TC R01",)),
+	# FEAT-070 (A-148 f): mẫu môi trường Không đạt → R01, R11 (+ bên chịu trách nhiệm do nơi gọi truyền) (FR-M15-04); kế
+	# hoạch lấy mẫu đến kỳ (người phụ trách do nơi gọi truyền), quá hạn 7 ngày → R01 (FR-M15-05, .1); hạ tầng trước hạn 7 ngày
+	"ENV_SAMPLE_FAILED": ("Environmental sample failed", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"ENV_SAMPLING_DUE": ("Environmental sampling due", "Normal", 0, 1, ()),
+	"ENV_SAMPLE_OVERDUE": ("Environmental sample overdue", "Normal", 0, 0, ("TC R01",)),
+	"ENV_INFRA_DUE": ("Infrastructure inspection due", "Normal", 0, 0, ("TC R01", "TC R11")),
+	# FEAT-069 (A-150 Q2, Q6): cụm ca vượt ngưỡng → R01, R11 (khẩn); khai báo bệnh truyền nhiễm sắp/quá hạn (R11 + R08 của
+	# khoa do nơi gọi truyền); nhóm bệnh chưa cấu hình giờ khai báo → R01, R10
+	"CLUSTER_ALERT": ("Infection cluster alert", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"NOTIFIABLE_DUE": ("Notifiable disease report due", "Normal", 0, 1, ("TC R11",)),
+	"NOTIFIABLE_CONFIG_MISSING": (
+		"Notifiable disease deadline not configured",
+		"Normal",
+		0,
+		0,
+		("TC R01", "TC R10"),
+	),
+	# FEAT-073 (A-151): sự cố nghi ngộ độc thực phẩm → báo ngay R01, R11 (FR-M17-04); chưa đặt ngưỡng số người → R01
+	# (UC-56 E2); hạn khám sức khỏe người chế biến còn 30 ngày / quá hạn → R11 (FR-M17-02)
+	"FOODBORNE_EVENT_REPORTED": ("Suspected food poisoning", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"FOODBORNE_THRESHOLD_MISSING": ("Food poisoning outbreak threshold not set", "Normal", 0, 0, ("TC R01",)),
+	"FOOD_HANDLER_CHECK_DUE": ("Food handler health check due", "Normal", 0, 1, ("TC R11",)),
+	"FOOD_HANDLER_CHECK_OVERDUE": ("Food handler health check overdue", "Normal", 0, 1, ("TC R11",)),
 	MISSING_RULE_EVENT: ("Notification rule missing", "Normal", 0, 0, (ADMIN_ROLE,)),
 	DELIVERY_FAILED_EVENT: ("Notification delivery failed", "Normal", 0, 0, (ADMIN_ROLE,)),
 }

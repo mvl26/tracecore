@@ -16,7 +16,11 @@ from tracecore.core.client_time import to_system_time
 
 REPLAY_HEADER = "X-TC-Replay"
 RESOLVE_ROLES = ("TC R02", "TC R01", "System Manager")
-_SECRET_ARGS = ("token", "pin", "reviewer_proof", "approver_proof")
+_SECRET_ARGS = ("token", "pin", "reviewer_proof", "approver_proof", "source_patient_code")
+# FEAT-071 (BRU-OCC-003): báo phơi nhiễm là dữ liệu sức khỏe nhân viên, chỉ R01/R11 được biết; Sync Conflict do R02 xử
+# lý nên chỉ giữ trạm và thời điểm, không giữ nội dung báo cáo hay nhân viên
+_HEALTH_ENDPOINTS = ("tracecore.v1.exposure.report",)
+_HEALTH_KEEP = ("station", "client_ts")
 
 
 def is_replay() -> bool:
@@ -58,11 +62,16 @@ def record_conflict(
 		ref_doctype, ref_name = _ref(args or {})
 	session = session or {}
 	user = session.get("user") or frappe.session.user
+	health = endpoint in _HEALTH_ENDPOINTS
+	if health:
+		args = {key: value for key, value in (args or {}).items() if key in _HEALTH_KEEP}
 	doc = frappe.get_doc(
 		{
 			"doctype": "Sync Conflict",
 			"station": session.get("station") or (args or {}).get("station"),
-			"employee": session.get("employee") or frappe.db.get_value("Employee", {"user_id": user}, "name"),
+			"employee": None
+			if health
+			else session.get("employee") or frappe.db.get_value("Employee", {"user_id": user}, "name"),
 			"user": user,
 			"endpoint": endpoint,
 			"idempotency_key": key,

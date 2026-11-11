@@ -1,0 +1,38 @@
+{# Department portal infection control menu (FEAT-062, A-141 Q4; the FEAT-071 exposure page includes it too).
+   `ksnk_nav` = current item. Isolation (FEAT-068) and department indicators (FEAT-065) are added with their pages.
+   Tokens only; items >= 48 (touch-min), current item has a left border + aria-current (not colour only). #}
+<style>
+.tc-dept-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-sp-3);
+	margin: 0 0 var(--tc-sp-3);
+}
+.tc-dept-nav a {
+	display: flex;
+	align-items: center;
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-md);
+	background: var(--tc-card);
+	color: var(--tc-border-strong);
+	font-size: var(--tc-fs-lg);
+	text-decoration: none;
+}
+.tc-dept-nav a[aria-current="page"] {
+	border-left: var(--tc-bw-thick) solid var(--tc-border-strong);
+	background: var(--tc-primary-soft);
+	font-weight: var(--tc-fw-bold);
+}
+</style>
+<nav class="tc-dept-nav" aria-label="{{ _('Department infection control') }}">
+	{# FEAT-065 (FR-M9-26): department indicators next to the whole hospital + to-do list #}
+	<a href="/ksnk-khoa/chi-so"{% if ksnk_nav == "chi-so" %} aria-current="page"{% endif %}>{{ _("Department indicators") }}</a>
+	<a href="/ksnk-khoa/mau-so"{% if ksnk_nav == "mau-so" %} aria-current="page"{% endif %}>{{ _("Daily census and device episodes") }}</a>
+	<a href="/ksnk-khoa/bao-phoi-nhiem"{% if ksnk_nav == "bao-phoi-nhiem" %} aria-current="page"{% endif %}>{{ _("Exposure Report") }}</a>
+	{# FEAT-068 (SCR-60 DEPT): department isolation orders #}
+	<a href="/ksnk-khoa/cach-ly"{% if ksnk_nav == "cach-ly" %} aria-current="page"{% endif %}>{{ _("Isolation Orders") }}</a>
+	{# FEAT-069 (SCR-61 DEPT): department notifiable communicable disease reports #}
+	<a href="/ksnk-khoa/khai-bao"{% if ksnk_nav == "khai-bao" %} aria-current="page"{% endif %}>{{ _("Notifiable diseases") }}</a>
+</nav>

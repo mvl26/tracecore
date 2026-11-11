@@ -1,6 +1,7 @@
 # Use Cases: TraceCore
 
-> Version 1.11 (Finalized) · 2026-10-17 · Nguồn: #06 UC v1.10, giữ nguyên ID UC-01..UC-33; [v1.11] thêm UC-34..37 (M10 chất thải y tế) và UC-38..39 (M9: thông báo, import/export) theo quyết định chủ đầu tư 2026-10-17. Tổng 39 UC, 10 phân hệ, 43 màn hình (SCR-01..43).
+> Version 1.12 (Amendment A-113) · 2026-11-03 · Nguồn: #06 UC v1.10, giữ nguyên ID UC-01..UC-33; [v1.11] thêm UC-34..37 (M10 chất thải y tế) và UC-38..39 (M9: thông báo, import/export) theo quyết định chủ đầu tư 2026-10-17; [v1.12] thêm UC-40..57 (M11–M17 KSNK toàn viện và M9 mở rộng) theo BA v1.12 / Amendment A-113 — người dùng duyệt D1–D11 ngày 03/11/2026, chủ đầu tư chưa xác nhận. Tổng 57 UC, 17 phân hệ, 63 màn hình đã duyệt (SCR-01..43, SCR-47..66; SCR-44..46 đề xuất).
+> **Revision:** v1.11 2026-10-17 Finalized · v1.12 A-113 2026-11-03 Miyano (dev lead) + Claude Code — thêm UC-40..57, actor R11–R13, Phụ lục A 18 dòng; không đổi UC-01..39. · v1.12 A-138 2026-11-10 Miyano (dev lead) + Claude Code — UC-40 kiểm thêm trình độ, khối ngành sức khỏe, chứng chỉ, toàn thời gian theo vai trò, tách người phụ trách và giám sát viên chuyên trách dưới 150 giường, kiểm Chủ tịch / Thư ký / khối bắt buộc của Hội đồng theo bộ tiêu chí cấu hình; thêm FR-M11-01.5..01.8, 02.3, 02.4, 03.3, BRU-ICP-006, 007; không thêm UC.
 > Tài liệu use-case-centric theo use-case-guide: đặc tả văn bản là nội dung chính, sơ đồ Mermaid theo phân hệ là minh họa. Không có user story (US-xx chỉ giữ làm tham chiếu gốc). Mọi luồng chính / thay thế / ngoại lệ được giữ nguyên nội dung từ #06 v1.10; nhãn A1/E1 là nhãn gốc của #06 để các TC-xx-xx tiếp tục tham chiếu được.
 
 ## Mục lục
@@ -15,31 +16,45 @@
 | M6 Kho vật tư tiêu hao | UC-24, UC-25, UC-26 |
 | M7 Chi phí & giá thành tái xử lý | UC-27, UC-28, UC-29 |
 | M8 Cơ số & kiểm soát vượt ngưỡng | UC-30, UC-31 |
-| M9 Báo cáo, dashboard & quản trị | UC-32, UC-33, UC-38, UC-39 |
+| M9 Báo cáo, dashboard & quản trị | UC-32, UC-33, UC-38, UC-39; [v1.12] UC-57 |
 | M10 Quản lý chất thải y tế [v1.11] | UC-34, UC-35, UC-36, UC-37 |
+| M11 Chương trình KSNK [v1.12] | UC-40, UC-41, UC-42 |
+| M12 Giám sát tuân thủ [v1.12] | UC-43, UC-44, UC-45, UC-46 |
+| M13 Giám sát nhiễm khuẩn bệnh viện [v1.12] | UC-47, UC-48, UC-49, UC-50 |
+| M14 Vi sinh, đa kháng, cách ly, ổ dịch [v1.12] | UC-51, UC-52, UC-53 |
+| M15 Vệ sinh môi trường và cơ sở hạ tầng [v1.12] | UC-54 |
+| M16 An toàn nghề nghiệp [v1.12] | UC-55 |
+| M17 An toàn thực phẩm và tư vấn người bệnh [v1.12] | UC-56 |
+| M9 mở rộng — Bảng chỉ số KSNK toàn viện [v1.12] | UC-57 |
 
 ## Actors
 
-Vai trò người dùng R01–R10 theo #02 BRD §5 và ma trận Actor – Use Case của #06 §3.
+Vai trò người dùng R01–R10 theo #02 BRD §5 và ma trận Actor – Use Case của #06 §3; [v1.12] thêm R11–R13 theo BA v1.12 §3.2 (TT 16/2018 Điều 17, 19, 22). Tổng 13 vai trò.
 
 | Mã | Actor | Trách nhiệm chính | UC chính (primary) | UC phụ (secondary) |
 | :-- | :-- | :-- | :-- | :-- |
-| R01 | Trưởng khoa KSNK | Phê duyệt cơ số, ghi đè cảnh báo, duyệt thu hồi, xem toàn bộ báo cáo và chi phí; [v1.11] báo cáo chất thải, xuất hồ sơ lưu trữ. | UC-30, UC-32, UC-37 | UC-14, UC-15, UC-20, UC-27, UC-29, UC-31, UC-33, UC-38, UC-39 |
-| R02 | Điều dưỡng trưởng / Giám sát CSSD | Điều phối ca, giải phóng mẻ, quản lý cơ số, duyệt NC-CAPA, kiểm kê; [v1.11] giám sát kho chất thải, duyệt chênh lệch kg, danh mục loại chất thải. | UC-01, UC-02, UC-03, UC-04, UC-10, UC-14, UC-15, UC-19, UC-20, UC-22, UC-31 | UC-07, UC-08, UC-09, UC-21, UC-23, UC-28, UC-30, UC-32, UC-35, UC-36, UC-37, UC-38, UC-39 |
+| R01 | Trưởng khoa KSNK | Phê duyệt cơ số, ghi đè cảnh báo, duyệt thu hồi, xem toàn bộ báo cáo và chi phí; [v1.11] báo cáo chất thải, xuất hồ sơ lưu trữ. | UC-30, UC-32, UC-37, UC-40, UC-41, UC-42, UC-43, UC-48, UC-53, UC-54, UC-55, UC-56, UC-57 | UC-14, UC-15, UC-20, UC-27, UC-29, UC-31, UC-33, UC-38, UC-39, UC-45, UC-46, UC-47, UC-49, UC-50, UC-51, UC-52 |
+| R02 | Điều dưỡng trưởng / Giám sát CSSD | Điều phối ca, giải phóng mẻ, quản lý cơ số, duyệt NC-CAPA, kiểm kê; [v1.11] giám sát kho chất thải, duyệt chênh lệch kg, danh mục loại chất thải. | UC-01, UC-02, UC-03, UC-04, UC-10, UC-14, UC-15, UC-19, UC-20, UC-22, UC-31, UC-42, UC-43, UC-55 | UC-07, UC-08, UC-09, UC-21, UC-23, UC-28, UC-30, UC-32, UC-35, UC-36, UC-37, UC-38, UC-39, UC-40, UC-46, UC-54 |
 | R03 | KTV khu bẩn | Tiếp nhận đồ bẩn, vận hành máy rửa, tạo lô rửa. | UC-05, UC-06 | UC-04 |
 | R04 | KTV khu sạch (kiểm tra – lắp ráp – đóng gói) | Kiểm đếm theo BOM, ghi thiếu/hỏng, đóng gói, sinh và in Cycle ID. | UC-07, UC-08 | UC-03, UC-04, UC-31 |
 | R05 | KTV tiệt khuẩn | Tạo mẻ, vận hành máy tiệt khuẩn, nhập kết quả chỉ thị, đề nghị giải phóng mẻ. | UC-09, UC-23, UC-25 | UC-06, UC-10, UC-11, UC-17 |
 | R06 | KTV kho vô khuẩn / cấp phát | Nhập kho vô khuẩn, quản lý vị trí, FEFO, cấp phát cho khoa. | UC-11, UC-12, UC-26 | UC-13, UC-24 |
 | R07 | Nhân viên đồ vải & chất thải [v1.11 mở rộng] | Thu gom, cân, tạo lô giặt, cấp phát đồ vải theo khoa; [v1.11] thu gom chất thải tại khoa, nhập kho lưu giữ tạm, bàn giao đơn vị xử lý, ghi sự cố chất thải. | UC-16, UC-17, UC-18, UC-34, UC-35, UC-36 | UC-38 |
-| R08 | Nhân viên khoa sử dụng (phòng mổ/khoa lâm sàng) | Nhận bộ dụng cụ, quét sử dụng gắn bệnh nhân, trả đồ bẩn, nhận đồ vải; [v1.11] giao chất thải đã phân loại cho người thu gom. | UC-13 | UC-05, UC-12, UC-14, UC-16, UC-18, UC-34, UC-38 |
-| R09 | Kế toán / Vật tư | Nhập chi phí, giá vật tư, hóa đơn điện nước, xem giá thành; [v1.11] hợp đồng và đơn giá đơn vị xử lý chất thải. | UC-24, UC-27, UC-28, UC-29 | UC-22, UC-25, UC-26, UC-32, UC-36, UC-38 |
-| R10 | Quản trị hệ thống | Cấu hình khu vực, trạm, thiết bị, người dùng, phân quyền, audit trail; [v1.11] cấu hình kênh thông báo, import danh mục ban đầu. | UC-21, UC-33, UC-39 | UC-01, UC-02, UC-19, UC-22, UC-38 |
+| R08 | Nhân viên khoa sử dụng (phòng mổ/khoa lâm sàng) | Nhận bộ dụng cụ, quét sử dụng gắn bệnh nhân, trả đồ bẩn, nhận đồ vải; [v1.11] giao chất thải đã phân loại cho người thu gom. | UC-13, UC-47, UC-52, UC-55 | UC-05, UC-12, UC-14, UC-16, UC-18, UC-34, UC-38, UC-44, UC-45, UC-49, UC-56 |
+| R09 | Kế toán / Vật tư | Nhập chi phí, giá vật tư, hóa đơn điện nước, xem giá thành; [v1.11] hợp đồng và đơn giá đơn vị xử lý chất thải. | UC-24, UC-27, UC-28, UC-29, UC-46 | UC-22, UC-25, UC-26, UC-32, UC-36, UC-38 |
+| R10 | Quản trị hệ thống | Cấu hình khu vực, trạm, thiết bị, người dùng, phân quyền, audit trail; [v1.11] cấu hình kênh thông báo, import danh mục ban đầu. | UC-21, UC-33, UC-39 | UC-01, UC-02, UC-19, UC-22, UC-38, UC-40, UC-57 |
+| R11 | Giám sát viên KSNK [v1.12] | Làm phiếu giám sát mọi khoa trên PDA; rà soát, tạo và xác định ca NKBV; đăng ký giám sát NKVM; import mẫu số, vi sinh; xử trí và theo dõi phơi nhiễm; ghi mẫu môi trường, thực phẩm; xem đầy đủ mã BN khi có lý do (Audit Log). Surface: PDA + Desk. | UC-44, UC-45, UC-48, UC-49, UC-50, UC-51, UC-52, UC-53, UC-54, UC-55, UC-56 | UC-40, UC-42, UC-43, UC-46, UC-47, UC-57 |
+| R12 | Mạng lưới viên KSNK [v1.12] | Làm phiếu giám sát, nhập mẫu số ngày, đợt thiết bị, tạo ca Nghi ngờ, lệnh cách ly, buổi truyền thông — chỉ khoa mình (User Permission Department). Surface: PDA + Cổng khoa. | UC-44, UC-47, UC-52, UC-57 | UC-40, UC-42, UC-45, UC-50, UC-53, UC-54, UC-56 |
+| R13 | Hội đồng KSNK & Ban Giám đốc [v1.12] | Chủ tịch Hội đồng ghi sổ (phê duyệt) kế hoạch KSNK năm; xem bảng chỉ số và báo cáo tổng hợp; không xem từng người bệnh. Surface: Desk (bảng chỉ số). | UC-41, UC-57 | UC-40, UC-45, UC-48, UC-52, UC-53, UC-55, UC-56 |
 
 **Actor ngoài (không phải người dùng hệ thống)** [v1.11]:
 
 | Actor ngoài | Vai trò trong luồng | UC liên quan |
 | :-- | :-- | :-- |
 | Đơn vị xử lý chất thải (vận chuyển/xử lý có giấy phép môi trường) | Nhận bàn giao chất thải, ký điện tử/ký biên bản, cung cấp số chứng từ chất thải nguy hại (NĐ 08/2022/NĐ-CP) | UC-36 |
+| Phòng xét nghiệm vi sinh [v1.12] | Cung cấp file kết quả nuôi cấy, kháng sinh đồ (WHONET/CSV) — không tích hợp API (D3); vẫn giữ nghĩa vụ báo cáo QĐ 3596 (BRU-MDR-005) | UC-51 |
+| Đơn vị thuê ngoài: vệ sinh công nghiệp, giặt là, suất ăn, tiệt khuẩn [v1.12] | Hồ sơ trên ERPNext Supplier (giấy phép, hợp đồng); bên chịu trách nhiệm vùng vệ sinh; đối tượng của phiếu giám sát "Đơn vị thuê ngoài" / "An toàn thực phẩm" | UC-46, UC-54, UC-56 |
+| HIS / phòng mổ / khoa Dược (nguồn file) [v1.12] | Xuất file CSV/Excel mẫu số ngày, danh sách phẫu thuật, hóa chất để nhập qua hồ sơ ánh xạ cột — không tích hợp API (D3) | UC-47, UC-49, UC-46, UC-57 |
 
 **Actor hệ thống / thiết bị ngoại vi** (không có mã R trong #06; suy ra từ luồng và NFR-INT-01, ghi để các bước thiết kế giao diện tích hợp sau):
 
@@ -49,7 +64,7 @@ Vai trò người dùng R01–R10 theo #02 BRD §5 và ma trận Actor – Use C
 | Máy in thẻ / nhãn (ZPL/TSPL) | In thẻ Set ID, nhãn Cycle ID theo phương pháp (2 loại nhãn), nhãn QR lô/mẻ, thẻ nhân viên, QR thiết bị | UC-03, UC-04, UC-06, UC-08, UC-09, UC-21, UC-24, UC-33 |
 | Cân điện tử (RS-232/USB) | Lấy cân nặng đồ vải; [v1.11] cân túi/thùng chất thải khi thu gom và bàn giao | UC-16, UC-34, UC-36 |
 | Máy rửa / máy tiệt khuẩn (API, tùy chọn giai đoạn 2) | Tự điền tham số và kết quả chu trình vào mã lô/mẻ; khi không kết nối thì nhập tay có xác nhận (FR-M2-10) | UC-06, UC-09, UC-10 |
-| Bộ lập lịch hệ thống (Scheduler) | Hết hạn gói lúc 00:00, cảnh báo chứng chỉ/kiểm định/tồn kho, khấu hao tháng, email báo cáo; [v1.11] cảnh báo hạn lưu chất thải, giấy phép đơn vị xử lý, gửi lại thông báo thất bại | UC-11, UC-19, UC-22, UC-26, UC-27, UC-32, UC-35, UC-36, UC-38 |
+| Bộ lập lịch hệ thống (Scheduler) | Hết hạn gói lúc 00:00, cảnh báo chứng chỉ/kiểm định/tồn kho, khấu hao tháng, email báo cáo; [v1.11] cảnh báo hạn lưu chất thải, giấy phép đơn vị xử lý, gửi lại thông báo thất bại; [v1.12] nhắc hoạt động kế hoạch, hạn rà soát văn bản, lịch giám sát và độ bao phủ, mẫu số thiếu 10:00, theo dõi sau ra viện, cụm ca, giấy phép thuê ngoài, bước theo dõi phơi nhiễm, mũi tiêm, hạn khám người chế biến, hạn khai báo bệnh truyền nhiễm, báo cáo Hội đồng ngày làm việc thứ 5, tính IC Indicator Value khi khóa kỳ | UC-11, UC-19, UC-22, UC-26, UC-27, UC-32, UC-35, UC-36, UC-38, UC-41, UC-43, UC-46, UC-47, UC-49, UC-50, UC-53, UC-54, UC-55, UC-56, UC-57 |
 | Cảm biến nhiệt độ kho lạnh chất thải (tùy chọn) [v1.11] | Ghi nhiệt độ kho lạnh ≤ 8°C | UC-35 |
 
 ## M1 — Danh mục dụng cụ & bộ dụng cụ
@@ -1705,6 +1720,891 @@ _Nguồn: SRS v1.11 §3.1.10 FR-M10-04, FR-M10-05; TT 20/2021/TT-BYT Điều 10 
 
 _Nguồn: SRS v1.11 §3.1.10 FR-M10-06, FR-M10-07, FR-M10-08; TT 20/2021/TT-BYT (báo cáo, chế độ thống kê); TT 16/2018/TT-BYT (phơi nhiễm). Không có US/TC/API gốc trong BA v1.10 — bước detailed-design bổ sung._
 
+## M11 — Chương trình KSNK [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §4 (Amendment A-113, người dùng duyệt D1–D11 ngày 03/11/2026; chủ đầu tư chưa xác nhận); TT 16/2018/TT-BYT Điều 3, 16–22, 24; NĐ 96/2023/NĐ-CP Điều 41; chỉ tiêu QĐ 38/QĐ-BYT. Phạm vi: số hóa bộ máy KSNK (cơ cấu theo quy mô giường, Hội đồng, mạng lưới, bộ phận giám sát), kế hoạch KSNK năm, văn bản nội bộ, họp Hội đồng, đào tạo (trên HRMS Training), sinh viên thực tập, cải tiến chất lượng, tự đánh giá năm. Use case: UC-40, UC-41, UC-42. Quy tắc: BRU-ICP-001..005 (SRS Appendix A).
+
+```mermaid
+graph LR
+    r01(["R01 Trưởng khoa KSNK"])
+    r02(["R02 Điều dưỡng trưởng / Giám sát CSSD"])
+    r10(["R10 Quản trị hệ thống"])
+    r13(["R13 Hội đồng KSNK & Ban Giám đốc"])
+    r11(["R11 Giám sát viên KSNK"])
+    subgraph m11["TraceCore · M11 Chương trình KSNK"]
+        uc40(("UC-40<br/>Khai báo cơ cấu KSNK"))
+        uc41(("UC-41<br/>Kế hoạch năm, văn bản nội bộ, họp Hội đồng"))
+        uc42(("UC-42<br/>Đào tạo, thực tập, cải tiến, tự đánh giá"))
+    end
+    r01 --> uc40
+    r10 -.-> uc40
+    r13 -.-> uc40
+    r01 --> uc41
+    r13 --> uc41
+    r01 --> uc42
+    r02 --> uc42
+    r11 -.-> uc42
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-40: Khai báo cơ cấu KSNK: Hội đồng, mạng lưới, bộ phận giám sát [NEW v1.12]
+
+- **ID:** UC-40
+- **Actors:** R01 Trưởng khoa KSNK (primary); R10 Quản trị hệ thống — khai báo số giường, tuyến; R13 Hội đồng KSNK & BGĐ — đọc; R02 — sửa danh sách mạng lưới (secondary)
+- **Description:** R10 khai báo số giường và tuyến của cơ sở trong `IC Program Settings`; hệ thống tính cơ cấu KSNK bắt buộc theo BRU-ICP-001 và hiển thị trạng thái đáp ứng từng thành phần. R01 nhập quyết định thành lập Hội đồng (`IC Committee` + thành viên), danh sách mạng lưới viên theo khoa (`IC Network Member`) và nhân sự bộ phận giám sát; hệ thống kiểm tra đủ Chủ tịch/Thư ký, đại diện các khối, và mỗi khoa có đủ bác sĩ + điều dưỡng/hộ sinh/KTV. [A-138] Hệ thống còn kiểm từng người của khoa/bộ phận KSNK có đạt yêu cầu của vai trò (trình độ, khối ngành sức khỏe, chứng chỉ KSNK, toàn thời gian) theo bộ tiêu chí do R01 duyệt, và chỉ đếm người đạt.
+- **Preconditions:** Department (khoa) và Employee đã có trên ERPNext/HRMS; vai trò R01, R10, R13 đã gán (FEAT-056).
+- **Postconditions (success):** `IC Program Settings` lưu số giường, tuyến, tỷ lệ giám sát viên; `IC Committee` ghi sổ với đúng 1 Chủ tịch, 1 Thư ký; `IC Network Member` hiệu lực theo khoa; bảng trạng thái cơ cấu hiển thị thành phần Đủ/Thiếu bằng chữ; mọi cảnh báo thiếu ghi Audit Log.
+- **Traces to:** FR-M11-01, FR-M11-02, FR-M11-03 (kể cả FR-M11-01.5..01.8, 02.3, 02.4, 03.3 theo A-138)
+- **Business rules:** BRU-ICP-001 (cơ cấu tối thiểu theo giường; giám sát viên = giường ÷ 150, cách làm tròn cấu hình được, mặc định lên, OQ-V12-04), BRU-ICP-002 (Chủ tịch là Giám đốc, Thư ký là trưởng khoa/người phụ trách KSNK), BRU-ICP-003 (mỗi khoa ≥ 1 bác sĩ và ≥ 1 điều dưỡng/hộ sinh/KTV), BRU-ICP-006 (trình độ, chứng chỉ, toàn thời gian theo vai trò), BRU-ICP-007 (dưới 150 giường: người phụ trách và giám sát viên chuyên trách)
+- **Screens:** SCR-47 (Cơ cấu KSNK: cài đặt chương trình, Hội đồng, mạng lưới)
+- **Priority:** Must · Frequency: khi thành lập/kiện toàn (1–2 lần/năm); cập nhật mạng lưới theo biến động nhân sự.
+- **Related NFR:** NFR-SEC-09 (ma trận quyền R11–R13), NFR-MAINT-04
+
+**Main success scenario**
+1. R10 mở SCR-47, nhập `bed_count`, `facility_level` (Chuyên sâu / Cơ bản / Ban đầu), `has_inpatient`, `surveillance_ratio_beds` (mặc định 150), `surveillance_rounding` (Lên / Xuống, mặc định Lên), `director` (người đứng đầu cơ sở), `doc_review_months` (mặc định 12) và lưu. [A-138]
+2. Hệ thống tính cơ cấu bắt buộc theo BRU-ICP-001 (ví dụ 420 giường → Hội đồng, khoa KSNK, mạng lưới, ≥ 3 giám sát viên) và hiển thị bảng thành phần với nhãn chữ Đủ / Thiếu.
+3. R01 tạo `IC Committee`: số và ngày quyết định, file quyết định, hiệu lực; thêm thành viên (nhân viên, vai trò Chủ tịch / Phó Chủ tịch / Thư ký / Ủy viên, khoa, khối đại diện).
+4. R01 ghi sổ Hội đồng; hệ thống kiểm tra đúng 1 Chủ tịch và 1 Thư ký; nếu thiếu đại diện vi sinh–xét nghiệm, dược hoặc khoa lâm sàng nguy cơ cao thì ghi sổ được kèm cảnh báo và Audit Log.
+5. R01/R02 nhập mạng lưới viên theo khoa (`IC Network Member`: nhân viên, khoa, loại thành viên, ngày bổ nhiệm, số quyết định, hiệu lực).
+6. Mỗi lần danh sách mạng lưới thay đổi, hệ thống kiểm tra từng khoa lâm sàng, cận lâm sàng và liệt kê khoa thiếu bác sĩ hoặc thiếu điều dưỡng/hộ sinh/KTV.
+7. R01 nhập nhân sự khoa/bộ phận KSNK kèm vai trò (Trưởng khoa / Điều dưỡng trưởng / Người phụ trách / Giám sát viên) và chuyên trách; R02/R10 nhập bậc học và khối ngành sức khỏe trên hồ sơ nhân viên [A-143: R01 chỉ đọc Employee]. Hệ thống đối chiếu từng người với yêu cầu của vai trò và với chứng chỉ KSNK / kết quả đào tạo KSNK đạt (FEAT-059), so số người đạt với số tối thiểu và cập nhật bảng trạng thái cơ cấu kèm lý do từng người chưa đạt. [A-138]
+
+**Alternate flows**
+- A1. Cơ sở dưới 150 giường → cơ cấu bắt buộc là bộ phận KSNK, mạng lưới, ≥ 1 người phụ trách toàn thời gian và ≥ 1 giám sát viên chuyên trách (hai thành phần riêng; một người được tính cho cả hai vai hay không theo cấu hình, mặc định không, OQ-V12-11); không bắt buộc Hội đồng đầy đủ. [A-138]
+- A2. Cơ sở không có nội trú → chỉ cần 1 người phụ trách KSNK; các thành phần khác hiển thị Không áp dụng.
+- A3. Kiện toàn Hội đồng mới → tạo `IC Committee` mới với `valid_from`; bản cũ hết hiệu lực theo `valid_to`, lịch sử giữ nguyên.
+- A4. [A-138] Người trong khoa/bộ phận KSNK chưa có dữ liệu bậc học hoặc chứng chỉ → hệ thống hiển thị "Chưa xác minh", không đếm vào số tối thiểu, không tính là thành phần thiếu (OQ-V12-12).
+- A5. [A-138] Chưa có bộ tiêu chí cơ cấu Đã duyệt → hệ thống chỉ kiểm phần đếm và hiển thị "Chưa duyệt bộ tiêu chí cơ cấu"; R01 mở bộ tiêu chí Nháp (nạp sẵn theo TT 16/2018), rà soát và duyệt (OQ-V12-16).
+
+**Exception flows**
+- E1. Ghi sổ Hội đồng thiếu Chủ tịch hoặc Thư ký, hoặc có hơn một → hệ thống chặn ghi sổ, chỉ rõ vai trò thiếu/thừa (FR-M11-02).
+- E1a. [A-138] Chủ tịch không phải người đứng đầu cơ sở, Thư ký không phải trưởng khoa/người phụ trách KSNK, hoặc thiếu khối bắt buộc (lãnh đạo phòng chức năng, vi sinh–xét nghiệm, dược, khoa lâm sàng nguy cơ cao) → vẫn ghi sổ, cảnh báo nêu rõ và ghi Audit Log (mức Chặn nếu bộ tiêu chí đặt, OQ-V12-13).
+- E2. Vô hiệu mạng lưới viên cuối cùng của một khoa → cảnh báo R01 và khoa vào danh sách thiếu (FR-M11-03).
+- E3. R12 mở màn hình → chỉ đọc dữ liệu mạng lưới của khoa mình (User Permission Department).
+
+**Open issues:** Làm tròn số giám sát viên lên hay xuống (OQ-V12-04, đã có cấu hình); [A-138] OQ-V12-11..16 (kiêm nhiệm ở dưới 150 giường, chưa xác minh, mức chặn Hội đồng, loại chứng chỉ được công nhận, xác định Giám đốc, bộ tiêu chí chưa duyệt).
+
+_Nguồn: BA v1.12 §4.1 bước 1–2, §4.3 FR-M11-01..03, §4.4; TT 16/2018 Điều 16, 17, 19, 22. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-41: Lập, duyệt và theo dõi kế hoạch KSNK năm; văn bản nội bộ; họp Hội đồng [NEW v1.12]
+
+- **ID:** UC-41
+- **Actors:** R01 Trưởng khoa KSNK (primary — lập kế hoạch, sổ văn bản, biên bản); R13 Chủ tịch Hội đồng KSNK (primary — ghi sổ kế hoạch = phê duyệt); người chủ trì hoạt động/kết luận (R02, R11, trưởng khoa) (secondary)
+- **Description:** R01 lập `IC Annual Plan` (mục tiêu, chỉ số với baseline/target, hoạt động có người chủ trì, hạn, ngân sách); R13 ghi sổ làm phê duyệt; hệ thống nhắc tiến độ từng hoạt động và cuối năm tạo báo cáo tổng kết từ số liệu M9, M12, M13. R01 quản lý sổ `IC Procedure Document` có phiên bản và hạn rà soát; sau mỗi cuộc họp Hội đồng ghi `IC Committee Meeting`, mỗi kết luận thành một việc theo dõi.
+- **Preconditions:** UC-40 đã có Hội đồng hiệu lực; danh mục `IC Indicator` đã có (FEAT-056); `core.notification` hoạt động (ADR-014).
+- **Postconditions (success):** Mỗi năm có đúng một kế hoạch đã duyệt (hoặc bản Amend); hoạt động được nhắc đúng mốc; báo cáo tổng kết PDF/Excel khớp bảng chỉ số M9 cùng kỳ; văn bản nội bộ ở trạng thái Hiệu lực / Cần rà soát / Thay thế đúng hạn; biên bản họp có việc theo dõi cho từng kết luận.
+- **Traces to:** FR-M11-04, FR-M11-05, FR-M11-06, FR-M11-07, FR-M11-08
+- **Business rules:** BRU-ICP-004 (kế hoạch chỉ hiệu lực khi Chủ tịch duyệt; sửa bằng Amend), BRU-ICP-005 (văn bản quá hạn rà soát không tính "đã cập nhật trong năm")
+- **Screens:** SCR-48 (Kế hoạch KSNK năm & hoạt động; biên bản họp Hội đồng; sổ văn bản nội bộ)
+- **Priority:** Must (FR-M11-05, FR-M11-08 Should) · Frequency: kế hoạch 1 lần/năm + Amend; nhắc hoạt động hằng ngày (scheduler); họp Hội đồng theo quý; rà soát văn bản theo `doc_review_months`.
+- **Related NFR:** NFR-AVAIL-04 (thông báo), NFR-PERF-05 (số liệu tổng kết đọc từ `IC Indicator Value`)
+
+**Main success scenario**
+1. R01 mở SCR-48, tạo `IC Annual Plan` năm N: mục tiêu; bảng `IC Plan Indicator` (chỉ số, baseline, target); bảng `IC Plan Activity` (hoạt động, nhóm biện pháp, người chủ trì, khoa, hạn, ngân sách VND, bằng chứng).
+2. R01 lưu Nháp và trình; R13 (Chủ tịch Hội đồng) mở và ghi sổ → kế hoạch có hiệu lực, lưu `approved_by`, `approved_on`.
+3. Scheduler hằng ngày: hoạt động còn 7 ngày tới hạn hoặc quá hạn mà chưa hoàn thành → thông báo người chủ trì và R01 qua `core.notification`, mỗi mốc một lần.
+4. Người chủ trì cập nhật trạng thái hoạt động và đính bằng chứng; hoàn thành thì dừng nhắc.
+5. R01 quản lý `IC Procedure Document` (mã, tiêu đề, phiên bản, nhóm biện pháp, ngày ban hành, hạn rà soát, file); còn 30 ngày tới hạn hoặc quá hạn → hệ thống nhắc R01 và chuyển trạng thái Cần rà soát; ban hành phiên bản mới → bản cũ chuyển Thay thế, lịch sử phiên bản giữ nguyên.
+6. Sau họp Hội đồng, R01 ghi `IC Committee Meeting` (ngày, chương trình, người dự, biên bản, file) với bảng `IC Resolution` (nội dung, người chủ trì, hạn); ghi sổ → hệ thống tạo một việc theo dõi cho mỗi kết luận và nhắc đến khi đóng.
+7. Cuối năm R01 yêu cầu tổng kết → hệ thống tạo báo cáo: kết quả từng chỉ số so mục tiêu (từ `IC Indicator Value`), tỷ lệ hoạt động hoàn thành, phần nhận xét của R01; xuất PDF/Excel.
+
+**Alternate flows**
+- A1. Cần điều chỉnh kế hoạch đã duyệt → R01 tạo bản Amend (cùng năm, tham chiếu bản gốc); R13 ghi sổ lại; bản gốc giữ nguyên.
+- A2. Tổng kết khi kỳ M9 chưa khóa → báo cáo mang dấu "Tạm" (như FR-M9-02.1).
+- A3. Kết luận chưa đóng của lần họp trước → hiển thị trong danh sách mở của lần họp kế tiếp.
+
+**Exception flows**
+- E1. R01 bấm ghi sổ kế hoạch → bị chặn: chỉ R13 được ghi sổ (FR-M11-04).
+- E2. Tạo kế hoạch thứ hai cùng năm không phải Amend → chặn.
+- E3. Sửa trường của kế hoạch đã duyệt → chặn; hướng dẫn tạo Amend.
+- E4. Email/SMS nhắc thất bại → giữ in-app, scheduler gửi lại tối đa 3 lần (FR-M9-10.1).
+
+**Open issues:** Mẫu báo cáo tổng kết năm theo yêu cầu Sở Y tế (chờ bệnh viện thí điểm, liên quan OQ-V12-02).
+
+_Nguồn: BA v1.12 §4.1 bước 3–5, §4.3 FR-M11-04..08, §4.4; TT 16/2018 Điều 17, 20. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-42: Theo dõi đào tạo KSNK (HRMS Training), sinh viên thực tập, cải tiến chất lượng, tự đánh giá năm [NEW v1.12]
+
+- **ID:** UC-42
+- **Actors:** R01 Trưởng khoa KSNK (primary — cải tiến, tự đánh giá); R02 Điều dưỡng trưởng / Giám sát (primary — đào tạo, thực tập); R11 Giám sát viên KSNK (secondary — làm phiếu tự đánh giá); R12 — đọc dữ liệu khoa mình (secondary)
+- **Description:** Đào tạo chạy trên HRMS `Training Program` / `Training Event` / `Training Result` với Custom Field `tc_ic_category`; M11 tính tỷ lệ nhân viên được đào tạo KSNK cơ bản theo khoa, tỷ lệ nhân sự chuyên trách / Hội đồng / mạng lưới đã đào tạo theo quy định (từ Training Result hoặc Certificate loại KSNK còn hiệu lực, FR-M4-02) và liệt kê người chưa học. R02 ghi `Trainee Induction` cho sinh viên thực tập; R01 ghi `IC Improvement Project` và thực hiện tự đánh giá chất lượng KSNK hằng năm bằng mẫu phiếu M12 loại "Tự đánh giá chất lượng".
+- **Preconditions:** HRMS Training có chương trình gắn `tc_ic_category`; Employee có khoa; UC-43 đã có mẫu "Tự đánh giá chất lượng" được duyệt (cho bước tự đánh giá).
+- **Postconditions (success):** Tỷ lệ đào tạo theo khoa và theo nhóm đối tượng được tính và đẩy sang `IC Indicator` (M9); danh sách chưa đào tạo có thể gửi nhắc; sinh viên có ngày đào tạo trước ngày thực tập; dự án cải tiến có trạng thái/kết quả; kết quả tự đánh giá lưu theo năm, so sánh hai năm liền.
+- **Traces to:** FR-M11-09, FR-M11-10, FR-M11-11, FR-M11-12, FR-M11-13
+- **Business rules:** BRU-ICP-001 (đối tượng chuyên trách), BRU-AUD-001 (tự đánh giá dùng mẫu đã duyệt)
+- **Screens:** SCR-49 (Đào tạo, sinh viên thực tập, cải tiến chất lượng — báo cáo); SCR-52 (phiếu tự đánh giá theo mục)
+- **Priority:** Must (FR-M11-09, 10); Should (FR-M11-11, 12, 13) · Frequency: tính tỷ lệ theo tháng/năm; thực tập theo đợt; tự đánh giá 1 lần/năm.
+- **Related NFR:** NFR-PERF-05, NFR-MAINT-04
+
+**Main success scenario**
+1. R02 tạo/duy trì `Training Program` trên HRMS với `tc_ic_category` = KSNK cơ bản / Chuyên trách / Hội đồng–mạng lưới / Tân tuyển; tổ chức `Training Event` và ghi `Training Result`.
+2. Hệ thống tính theo khoa: tử số = nhân viên có Training Result đạt thuộc chương trình KSNK cơ bản trong năm; mẫu số = nhân viên đang làm việc của khoa (nhân viên nghỉ việc không tính); hiển thị tỷ lệ (ví dụ 38/40 → 95,0 %) và danh sách chưa đào tạo trên SCR-49.
+3. Hệ thống tính tỷ lệ nhân sự chuyên trách, thành viên Hội đồng và mạng lưới viên đã đào tạo theo quy định (Training Result hoặc Certificate loại KSNK còn hiệu lực); người chưa đạt vào danh sách.
+4. R02 ghi `Trainee Induction` (họ tên, trường, khoa, kỳ thực tập, ngày đào tạo KSNK, kết quả); hệ thống kiểm tra `trained_on` ≤ `period_from` và báo cáo tỷ lệ đạt theo kỳ.
+5. R01 ghi `IC Improvement Project` (loại Cải tiến chất lượng / Đề tài nghiên cứu, tiêu đề, nhóm biện pháp, chủ trì, thời gian, trạng thái, tóm tắt kết quả, tệp đính kèm); hệ thống đếm số dự án Hoàn thành theo năm cho chỉ số M9.
+6. Cuối năm R01 mở phiếu tự đánh giá (mẫu M12 loại "Tự đánh giá chất lượng", UC-44 trên Desk/PDA), chấm từng mục; hệ thống lưu kết quả theo năm và hiển thị hai năm liền cạnh nhau theo từng mục.
+
+**Alternate flows**
+- A1. Nhân viên có Certificate KSNK còn hiệu lực nhưng chưa dự lớp trong năm → vẫn tính đạt cho FR-M11-10; không tính cho FR-M11-09 (đào tạo cơ bản trong năm).
+- A2. Gửi nhắc hàng loạt cho danh sách chưa đào tạo qua `core.notification`.
+- A3. Tự đánh giá theo QĐ 38 → dùng UC-57 (FR-M9-29) để điền sẵn phần tính được.
+
+**Exception flows**
+- E1. `trained_on` sau `period_from` → cảnh báo và đánh dấu "Chưa đạt trước thực tập" (FR-M11-11).
+- E2. Training Program không có `tc_ic_category` → không vào tử số; cảnh báo R02 khi lập báo cáo.
+- E3. Khoa chưa có nhân viên đang làm việc (mẫu số 0) → hiển thị "Không tính" (BRU-RPT-001).
+
+**Open issues:** Danh mục chứng chỉ KSNK được công nhận (phụ thuộc FR-M4-02 và quy định bệnh viện).
+
+_Nguồn: BA v1.12 §4.1 bước 6, §4.3 FR-M11-09..13, §4.4; TT 16/2018 Điều 24; QĐ 38 (chỉ tiêu đào tạo). Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M12 — Giám sát tuân thủ [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §5 (A-113); TT 16/2018/TT-BYT Điều 5, 6, 7, 15, 25; QĐ 3916/QĐ-BYT (vệ sinh tay, NK tiết niệu); QĐ 3671/QĐ-BYT (phòng ngừa chuẩn, NK huyết catheter, NKVM, viêm phổi bệnh viện, tiêm an toàn); chỉ tiêu QĐ 38. Phạm vi: engine phiếu giám sát cấu hình được (ADR-015, D5) — `Audit Template` có phiên bản, `Audit Schedule`, `Audit Session` — dùng cho vệ sinh tay theo cơ hội, phòng ngừa chuẩn–PPE, gói dự phòng, vệ sinh môi trường (M15), đơn vị thuê ngoài, an toàn thực phẩm (M17), tự đánh giá (M11); kèm hóa chất KSNK theo khoa–tháng. Use case: UC-43, UC-44, UC-45, UC-46. Quy tắc: BRU-AUD-001..006.
+
+```mermaid
+graph LR
+    r01(["R01 Trưởng khoa KSNK"])
+    r02(["R02 Điều dưỡng trưởng / Giám sát CSSD"])
+    r11(["R11 Giám sát viên KSNK"])
+    r12(["R12 Mạng lưới viên KSNK"])
+    r08(["R08 Nhân viên khoa sử dụng"])
+    r09(["R09 Kế toán / Vật tư"])
+    r13(["R13 Hội đồng KSNK & BGĐ"])
+    subgraph m12["TraceCore · M12 Giám sát tuân thủ"]
+        uc43(("UC-43<br/>Mẫu phiếu & lịch giám sát"))
+        uc44(("UC-44<br/>Ghi phiếu giám sát trên PDA"))
+        uc45(("UC-45<br/>Phản hồi, NC, báo cáo tuân thủ"))
+        uc46(("UC-46<br/>Hóa chất KSNK & đơn vị thuê ngoài"))
+    end
+    r01 --> uc43
+    r02 -.-> uc43
+    r11 --> uc44
+    r12 --> uc44
+    r08 -.-> uc44
+    r11 --> uc45
+    r01 -.-> uc45
+    r13 -.-> uc45
+    r09 --> uc46
+    r01 -.-> uc46
+    r02 -.-> uc46
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-43: Quản lý mẫu phiếu giám sát có phiên bản và lịch giám sát [NEW v1.12]
+
+- **ID:** UC-43
+- **Actors:** R01 Trưởng khoa KSNK (primary — duyệt mẫu); R02 Điều dưỡng trưởng / Giám sát CSSD (primary — lập lịch); R11 Giám sát viên KSNK (secondary — soạn nháp mẫu, nhận việc)
+- **Description:** R01 soạn/duyệt `Audit Template` (loại, phương pháp chấm, mục hỏi với trọng số và cờ trọng yếu, cỡ mẫu tối thiểu, căn cứ pháp lý); ghi sổ = duyệt và khóa phiên bản; sửa phải tạo phiên bản mới. Bộ mẫu khởi tạo (8 mẫu) nạp ở trạng thái Nháp khi cài app, không bị ghi đè khi nâng cấp. R01/R02 lập `Audit Schedule` (mẫu, khoa, tần suất, mục tiêu, người phụ trách); hệ thống sinh việc theo kỳ và hiển thị độ bao phủ theo khoa.
+- **Preconditions:** Module Compliance Audit cài đặt (FEAT-060); fixtures mẫu khởi tạo đã migrate (FEAT-061); Department và Employee có sẵn.
+- **Postconditions (success):** Mẫu đã duyệt bất biến theo phiên bản `MP-<code>-V<n>`; lịch giám sát hoạt động sinh việc đúng kỳ; độ bao phủ (đã làm / mục tiêu) hiển thị theo khoa và nhắc tuần cuối kỳ.
+- **Traces to:** FR-M12-01, FR-M12-02, FR-M12-03
+- **Business rules:** BRU-AUD-001 (chỉ mẫu đã duyệt mới dùng; phiếu lưu bản chụp phiên bản), BRU-AUD-002, BRU-AUD-003 (quy tắc chấm gắn với mẫu)
+- **Screens:** SCR-50 (Mẫu phiếu giám sát — builder có phiên bản & lịch giám sát)
+- **Priority:** Must · Frequency: duyệt mẫu khi có thay đổi tiêu chí (vài lần/năm); lịch theo tuần/tháng/quý.
+- **Related NFR:** NFR-MAINT-04 (tiêu chí là dữ liệu cấu hình có phiên bản, migrate không ghi đè), NFR-SEC-09
+
+**Main success scenario**
+1. Sau `bench migrate`, hệ thống nạp 8 mẫu Nháp: vệ sinh tay 5 thời điểm, phòng ngừa chuẩn–PPE, 4 gói dự phòng (VAP, CLABSI, CAUTI, SSI), vệ sinh môi trường bề mặt, đơn vị thuê ngoài; mỗi mẫu có `legal_ref`.
+2. R01 mở SCR-50, chọn mẫu Nháp (hoặc tạo mới): `audit_type`, `scoring_method` (Theo cơ hội / Tất cả-hoặc-không / Điểm %), `bundle_type`, `min_sample`, `legal_ref`; bảng `Audit Template Item` (mã mục, phần, câu hỏi, kiểu trả lời, lựa chọn, trọng số, `is_critical`, hướng dẫn).
+3. R01 ghi sổ → mẫu được duyệt, phiên bản `V<n>` khóa nội dung, `effective_from` ghi nhận.
+4. R02 tạo `Audit Schedule`: mẫu, danh sách khoa, tần suất (Tuần / Tháng / Quý), `target_count` (ví dụ 30 cơ hội/khoa/tháng), người phụ trách, hiệu lực.
+5. Đến kỳ, scheduler sinh việc cho người phụ trách (thông báo + danh sách việc trên PDA/Cổng khoa) và hiển thị độ bao phủ theo khoa (ví dụ 12/30).
+6. Tuần cuối kỳ, khoa chưa đạt mục tiêu → hệ thống nhắc người phụ trách và R02.
+
+**Alternate flows**
+- A1. Cần sửa câu hỏi của mẫu đã duyệt → R01 tạo phiên bản V(n+1) từ bản cũ, sửa, ghi sổ; phiếu từ ngày hiệu lực mới dùng V(n+1), phiếu cũ vẫn hiển thị V(n).
+- A2. Nâng cấp app có fixtures mới → mẫu bệnh viện đã sửa không bị ghi đè; mẫu mới thêm ở trạng thái Nháp (như FR-M9-17).
+- A3. Mẫu loại "Cơ sở hạ tầng" (M15) có thêm hạn kiểm tra kế tiếp; mẫu "An toàn thực phẩm" (M17) gắn `supplier`; mẫu "Tự đánh giá chất lượng" (M11) lưu theo năm.
+
+**Exception flows**
+- E1. Sửa trực tiếp nội dung mẫu đã duyệt → chặn, gợi ý tạo V(n+1) (FR-M12-01).
+- E2. Lịch gắn mẫu chưa duyệt (Nháp) → chặn lưu lịch (BRU-AUD-001).
+- E3. Mẫu không có mục nào `is_critical` với loại Gói dự phòng → cảnh báo (không chặn), ghi Audit Log.
+
+**Open issues:** Ai soạn và duyệt nội dung chuyên môn của bộ mẫu khởi tạo (OQ-V12-08); cỡ mẫu tối thiểu mặc định (OQ-V12-09).
+
+_Nguồn: BA v1.12 §5.1 bước 1–2, §5.3 FR-M12-01..03, §5.4; QĐ 3671, QĐ 3916. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-44: Ghi phiếu giám sát trên PDA (vệ sinh tay theo cơ hội, điểm %, gói dự phòng), offline [NEW v1.12]
+
+- **ID:** UC-44
+- **Actors:** R11 Giám sát viên KSNK (primary — mọi khoa); R12 Mạng lưới viên KSNK (primary — khoa mình); R08 Điều dưỡng khoa (secondary — phiếu gói dự phòng khoa mình); R01 (secondary — phiếu tự đánh giá)
+- **Description:** Người giám sát mở phiếu trên PDA (PWA, Page `station`) hoặc Cổng khoa, chọn khoa và vị trí, ghi từng cơ hội vệ sinh tay (≤ 3 chạm/cơ hội) hoặc chấm từng mục (Điểm %, gói dự phòng tất cả-hoặc-không gắn đợt thiết bị M13). Phiếu chạy được khi mất mạng ≥ 4 giờ, đồng bộ idempotent khi có mạng. Ghi sổ → hệ thống tính tỷ lệ/điểm theo phương pháp của mẫu.
+- **Preconditions:** Mẫu đã duyệt (UC-43); người dùng đăng nhập PDA bằng thẻ/PIN với vai trò R11/R12/R08; với phiếu gói dự phòng cần `Device Episode` đang mở (UC-47).
+- **Postconditions (success):** `Audit Session` ghi sổ với bản chụp phiên bản mẫu, `score_pct`, `result` (Đạt / Không đạt), `sample_flag`; cơ hội vệ sinh tay lưu đủ (vai trò, thời điểm 1–5, hành động, kỹ thuật, găng thay rửa tay); mọi RPC ghi có `X-Idempotency-Key`, không trùng sau đồng bộ.
+- **Traces to:** FR-M12-04, FR-M12-05, FR-M12-06, FR-M12-07, FR-M12-10, FR-M12-11
+- **Business rules:** BRU-AUD-002 (tuân thủ tính theo cơ hội), BRU-AUD-003 (gói chấm tất cả-hoặc-không; "Không áp dụng" loại khỏi mẫu số), BRU-AUD-004 (không tự đánh giá mình), BRU-AUD-005 (mục trọng yếu không đạt → phiếu Không đạt)
+- **Screens:** SCR-51 (PDA — Phiếu vệ sinh tay theo cơ hội); SCR-52 (PDA/DEPT — Phiếu giám sát theo mục)
+- **Priority:** Must (FR-M12-11 Should) · Frequency: hằng ngày tại khoa; gói dự phòng hằng ngày cho mỗi đợt thiết bị đang mở; vệ sinh tay ≥ 30 cơ hội/khoa/tháng (mục tiêu lịch).
+- **Related NFR:** NFR-USAB-03 (≤ 3 chạm, nút ≥ 48 px, chữ ≥ 16 px, một tay), NFR-AVAIL-05 (offline ≥ 4 giờ, đồng bộ idempotent), NFR-SEC-09 (R12 theo khoa), NFR-PERF-01
+
+**Main success scenario**
+1. R11/R12 mở SCR-51 trên PDA, chọn mẫu "Vệ sinh tay 5 thời điểm", khoa, vị trí, chế độ (Công khai / Không báo trước); hệ thống tạo `Audit Session` Nháp, `observer` = người đăng nhập.
+2. Với mỗi cơ hội: chọn vai trò người được quan sát (hoặc nhân viên), thời điểm 1–5, hành động (Chà tay cồn / Rửa tay xà phòng / Không thực hiện) — tối đa 3 chạm; tùy chọn `technique_ok`, `glove_instead`; gửi `tracecore.v1.audit.record_opportunity` (`@idempotent`).
+3. Mất mạng → phiếu và cơ hội lưu hàng đợi cục bộ (IndexedDB, ADR-003), giao diện hiện trạng thái offline; có mạng → đồng bộ theo thứ tự, không trùng.
+4. Kết thúc, người giám sát bấm Ghi sổ (`tracecore.v1.audit.submit_session`); hệ thống tính tỷ lệ tuân thủ = cơ hội có hành động / tổng cơ hội và tỷ lệ đúng kỹ thuật riêng (mẫu số không gồm "Không thực hiện").
+5. (Phiếu Điểm %) người giám sát chấm từng mục trên SCR-52; ghi sổ → điểm = tổng trọng số mục Đạt / tổng trọng số mục áp dụng; mục trọng yếu không đạt → `result` = Không đạt bất kể điểm.
+6. (Phiếu gói dự phòng) R08/R12 mở SCR-52 từ nhắc 10:00, chọn `device_episode` đang mở, chấm tất cả mục; ghi sổ → Đạt chỉ khi mọi mục áp dụng Đạt.
+7. Nếu khoa–tháng có số cơ hội/phiếu < `min_sample` → tỷ lệ hiển thị kèm "Chưa đủ cỡ mẫu (n = …)"; hệ thống chuyển sang UC-45 (phản hồi).
+
+**Alternate flows**
+- A1. Giám sát không báo trước → `mode` = Không báo trước; không gửi thông báo trước cho khoa.
+- A2. Phiếu loại Vệ sinh môi trường gắn `environment_zone` (M15), loại An toàn thực phẩm gắn `supplier` (M17), loại Đơn vị thuê ngoài gắn `supplier` (UC-46), loại Tự đánh giá (M11) do R01 làm trên Desk.
+- A3. Điều tra cắt ngang (FR-M13-14) dùng mẫu loại "Khác" + danh sách `Device Episode`.
+- A4. Mất mạng khi ghi sổ → phiếu xếp hàng, ghi sổ khi có mạng; hiển thị "Chờ đồng bộ".
+
+**Exception flows**
+- E1. `subject_employee` = `observer` → chặn lưu cơ hội (lỗi inline, FR-M12-10, BRU-AUD-004).
+- E2. Phiếu gói không chọn đợt thiết bị đang mở → chặn ghi sổ.
+- E3. Đồng bộ gặp xung đột (phiên bản mẫu hết hiệu lực giữa chừng) → phiếu giữ phiên bản tại lúc tạo (bản chụp), ghi Audit Log.
+- E4. R12 chọn khoa khác khoa mình → danh sách khoa chỉ hiện khoa được phân quyền (User Permission).
+- E5. Hết 4 giờ offline, hàng đợi đầy → cảnh báo, chặn tạo phiếu mới đến khi đồng bộ (NFR-AVAIL-05).
+
+**Open issues:** Ngưỡng cỡ mẫu tối thiểu mặc định (OQ-V12-09); E2E PDA 412×915 chỉ chạy khi người dùng cho phép.
+
+_Nguồn: BA v1.12 §5.1 bước 3, 5, §5.3 FR-M12-04..07, 10, 11, §5.4; QĐ 3916 (vệ sinh tay); QĐ 3671 (gói dự phòng). Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-45: Phản hồi kết quả giám sát, mở NC, báo cáo tuân thủ [NEW v1.12]
+
+- **ID:** UC-45
+- **Actors:** R11 Giám sát viên KSNK (primary); R01 Trưởng khoa KSNK (secondary — mở/duyệt NC, xem tất cả); R08 Trưởng khoa sử dụng và R12 Mạng lưới viên (secondary — nhận phản hồi khoa mình); R13 (secondary — xem báo cáo)
+- **Description:** Khi phiếu ghi sổ, hệ thống gửi phản hồi (điểm, mục không đạt) cho trưởng khoa và mạng lưới viên của khoa trong ngày; phiếu có mục trọng yếu không đạt → đề nghị R11/R01 mở `Incident CAPA` loại Compliance liên kết phiếu nguồn, theo dõi đến khi đóng. Theo kỳ, người dùng xuất báo cáo tuân thủ theo loại phiếu, khoa, nghề nghiệp, thời điểm (PDF/Excel) và hệ thống đẩy chỉ số sang `IC Indicator` cho M9.
+- **Preconditions:** Có phiếu ghi sổ (UC-44); `Notification Rule` cho sự kiện phản hồi (ADR-014); `Incident CAPA` có giá trị `incident_category` = Compliance.
+- **Postconditions (success):** Phản hồi đến khoa trong ngày; NC tạo ra có `source_doctype` = Audit Session, đóng NC cần kết quả xác minh (FR-M2-21/22); báo cáo kỳ khớp tổng từ phiếu ghi sổ; chỉ số tuân thủ xuất hiện trong `IC Indicator Value` sau khóa kỳ.
+- **Traces to:** FR-M12-08, FR-M12-09, FR-M12-14
+- **Business rules:** BRU-AUD-005, BRU-AUD-004; BRU-RPT-001 (mẫu số 0 → "Không tính")
+- **Screens:** SCR-53 (Báo cáo tuân thủ & phản hồi khoa; danh sách phiếu — WEB, view DEPT); SCR-15 (NC/CAPA hiện có)
+- **Priority:** Must · Frequency: phản hồi theo từng phiếu (hằng ngày); báo cáo tháng/quý.
+- **Related NFR:** NFR-SEC-09 (R12 chỉ thấy phiếu khoa mình — `permission_query_conditions`), NFR-AVAIL-04, NFR-PERF-05
+
+**Main success scenario**
+1. Phiếu ghi sổ (UC-44) → hệ thống phát sự kiện qua `core.notification.emit` tới trưởng khoa (R08) và mạng lưới viên (R12) của khoa: điểm, mục không đạt, liên kết phiếu.
+2. R08/R12 mở phản hồi trên Cổng khoa (SCR-53 view DEPT) → chỉ thấy phiếu của khoa mình.
+3. Phiếu có mục trọng yếu không đạt → hệ thống hiển thị đề nghị "Mở NC" cho R11/R01 với thông tin điền sẵn (khoa, mẫu, mục, phiếu nguồn).
+4. R11/R01 tạo `Incident CAPA` loại Compliance, `source_doctype` = Audit Session; theo dõi hành động khắc phục; đóng NC khi có kết quả xác minh (UC-15).
+5. Cuối kỳ, R11/R01 mở SCR-53, chọn kỳ và bộ lọc (loại phiếu, khoa, nghề nghiệp, thời điểm); hệ thống tổng hợp từ phiếu ghi sổ trong kỳ, hiển thị cỡ mẫu và nhãn "Chưa đủ cỡ mẫu" khi cần.
+6. Người dùng xuất PDF/Excel; hệ thống đẩy chỉ số (tỷ lệ tuân thủ vệ sinh tay, tỷ lệ đạt gói, tỷ lệ phòng ngừa chuẩn…) sang `IC Indicator` qua hook `tracecore_ic_indicators` để UC-57 tính `IC Indicator Value` khi khóa kỳ.
+
+**Alternate flows**
+- A1. Khoa không có mạng lưới viên hiệu lực → phản hồi chỉ gửi trưởng khoa và cảnh báo R01 (liên kết FR-M11-03).
+- A2. R13 xem báo cáo tổng hợp toàn viện (không xem từng phiếu/người được quan sát).
+- A3. Báo cáo theo đơn vị thuê ngoài (UC-46) và theo vùng/mức nguy cơ (UC-54) dùng cùng màn hình với bộ lọc tương ứng.
+
+**Exception flows**
+- E1. R12 khoa A mở danh sách → không thấy phiếu khoa B (FR-M12-08).
+- E2. NC Compliance bị đóng mà chưa có kết quả xác minh → chặn (FR-M2-22).
+- E3. Kỳ không có phiếu nào → tỷ lệ "Không tính", không hiển thị 0 (BRU-RPT-001).
+- E4. Thông báo email/SMS lỗi → giữ in-app, gửi lại tối đa 3 lần (FR-M9-10.1).
+
+**Open issues:** Mẫu báo cáo tuân thủ theo yêu cầu Sở Y tế (OQ-V12-02).
+
+_Nguồn: BA v1.12 §5.1 bước 4, §5.3 FR-M12-08, 09, 14, §5.4; TT 16/2018 Điều 5, 6. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-46: Hóa chất KSNK theo khoa–tháng và giám sát đơn vị thuê ngoài [NEW v1.12]
+
+- **ID:** UC-46
+- **Actors:** R09 Kế toán / Vật tư (primary — nhập hóa chất, hồ sơ nhà cung cấp); R01 Trưởng khoa KSNK (secondary — báo cáo quý, giám sát thuê ngoài); R02 (secondary — nhận nhắc giấy phép); R11 (secondary — phiếu giám sát đơn vị thuê ngoài)
+- **Description:** Hệ thống ghi lượng hóa chất KSNK theo khoa–tháng (`IC Chemical Consumption`) từ 3 nguồn: `Stock Entry` ERPNext xuất tới kho khoa, file import từ khoa Dược, nhập tay có người xác nhận; cuối quý xuất báo cáo theo loại hóa chất, và tính lít dung dịch VST/1.000 ngày nằm viện khi có mẫu số M13. Đơn vị thuê ngoài (vệ sinh, giặt là, xử lý chất thải, tiệt khuẩn, suất ăn) quản lý trên ERPNext `Supplier` với Custom Field giấy phép/hợp đồng; hệ thống nhắc hạn giấy phép và liệt kê đơn vị chưa được giám sát trong quý.
+- **Preconditions:** Item hóa chất có `tc_ic_chemical_type`; kho khoa khai báo trên ERPNext; Supplier có `tc_ic_service_type`, `tc_license_expiry`, `tc_contract_to`; mẫu phiếu "Đơn vị thuê ngoài" đã duyệt (UC-43).
+- **Postconditions (success):** Mỗi (tháng, khoa, item) có đúng một nguồn ghi nhận hoặc được cảnh báo trùng; báo cáo quý khớp tổng 3 tháng; lít VST/1.000 ngày nằm viện hiển thị khi có mẫu số; giấy phép hết hạn chỉ cảnh báo + Audit Log, không chặn giao dịch.
+- **Traces to:** FR-M12-12, FR-M12-13
+- **Business rules:** BRU-AUD-006 (hết hạn giấy phép chỉ cảnh báo; quyết định dừng hợp đồng thuộc bệnh viện), BRU-WST-003 (đơn vị xử lý chất thải vẫn theo M10)
+- **Screens:** SCR-54 (Hóa chất KSNK theo khoa–tháng; đơn vị thuê ngoài & giấy phép); SCR-43 (import file hóa chất qua hồ sơ ánh xạ cột)
+- **Priority:** Must · Frequency: hóa chất theo tháng, báo cáo quý; nhắc giấy phép theo mốc 60/30/7 ngày; giám sát thuê ngoài ≥ 1 lần/quý.
+- **Related NFR:** NFR-PERF-05, NFR-AVAIL-04
+
+**Main success scenario**
+1. Khi `Stock Entry` xuất hóa chất có `tc_ic_chemical_type` tới kho khoa được ghi sổ, hook tạo/cộng dồn `IC Chemical Consumption` (kỳ tháng, khoa, item, qty, uom, `source` = Stock Entry, `source_ref`).
+2. Khoa Dược gửi file → R09/R11 import qua SCR-43 với hồ sơ ánh xạ cột (FR-M9-28); dòng hợp lệ tạo bản ghi `source` = Import.
+3. Khoa không có cả hai nguồn → R09 nhập tay trên SCR-54 với người xác nhận; `source` = Nhập tay, Audit Log.
+4. Cuối quý R01 mở SCR-54, chọn quý → hệ thống tổng hợp theo loại hóa chất (Dung dịch VST nhanh / Xà phòng / Khử khuẩn bề mặt / Khử khuẩn dụng cụ / Khác) theo khoa; nếu M13 có ngày nằm viện của kỳ → tính lít VST/1.000 ngày nằm viện; xuất PDF/Excel; đẩy chỉ số sang M9.
+5. R09 cập nhật `Supplier` thuê ngoài: loại dịch vụ, số giấy phép, hạn giấy phép, hợp đồng từ–đến.
+6. Scheduler: giấy phép còn 60, 30, 7 ngày hoặc đã hết hạn → nhắc R01, R02; cuối quý liệt kê đơn vị chưa có phiếu giám sát loại "Đơn vị thuê ngoài" trong quý.
+7. R11 giám sát đơn vị thuê ngoài bằng phiếu M12 gắn `supplier` (UC-44); kết quả tách riêng theo đơn vị trên báo cáo (liên kết FR-M15-02).
+
+**Alternate flows**
+- A1. Hóa chất khử khuẩn bề mặt dùng cho báo cáo môi trường (FR-M15-07) → lấy từ cùng bảng.
+- A2. Đơn vị xử lý chất thải → hợp đồng/giấy phép môi trường vẫn theo `Waste Treatment Vendor` M10; SCR-54 chỉ hiển thị tham chiếu.
+
+**Exception flows**
+- E1. Cùng (tháng, khoa, item) từ 2 nguồn → cảnh báo trùng, yêu cầu R09 chọn nguồn giữ lại (FR-M12-12).
+- E2. Giấy phép đã hết hạn → cảnh báo và Audit Log, không chặn phiếu giám sát hay giao dịch (BRU-AUD-006).
+- E3. Chưa có mẫu số ngày nằm viện của kỳ → chỉ hiển thị số lít, ghi "Chưa có mẫu số".
+
+**Open issues:** Định dạng file hóa chất từ khoa Dược (OQ-V12-05).
+
+_Nguồn: BA v1.12 §5.1 bước 6–7, §5.3 FR-M12-12, 13, §5.4; TT 16/2018 Điều 25; QĐ 38 (báo cáo hóa chất quý). Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M13 — Giám sát nhiễm khuẩn bệnh viện [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §6 (A-113); TT 16/2018/TT-BYT Điều 4, 22; QĐ 3916/QĐ-BYT (giám sát NKBV, KSNK khoa GMHS, NK tiết niệu); QĐ 1526/QĐ-BYT (giám sát NKVM); QĐ 3671/QĐ-BYT (NK huyết catheter, viêm phổi bệnh viện); QĐ 5631/QĐ-BYT (kháng sinh dự phòng); QĐ 38 (chỉ tiêu báo cáo NKVM, NK hồi sức, kháng sinh dự phòng). Phạm vi: mẫu số (ngày nằm viện, ngày thiết bị) nhập theo khoa hoặc nhập file từ HIS (D3 — không tích hợp API), đợt thiết bị, ca NKBV theo định nghĩa có phiên bản, giám sát NKVM, kỳ báo cáo khóa tháng, tỷ suất. Dữ liệu người bệnh chỉ gồm mã BN mã hóa (ADR-010), năm sinh, giới, khoa, ngày — không họ tên (D4, BRU-HAI-005). Use case: UC-47, UC-48, UC-49, UC-50. Quy tắc: BRU-HAI-001..006.
+
+```mermaid
+graph LR
+    r08(["R08 Nhân viên khoa sử dụng"])
+    r12(["R12 Mạng lưới viên KSNK"])
+    r11(["R11 Giám sát viên KSNK"])
+    r01(["R01 Trưởng khoa KSNK"])
+    r13(["R13 Hội đồng KSNK & BGĐ"])
+    subgraph m13["TraceCore · M13 Giám sát nhiễm khuẩn bệnh viện"]
+        uc47(("UC-47<br/>Mẫu số ngày & đợt thiết bị"))
+        uc48(("UC-48<br/>Ca NKBV, khóa kỳ, tỷ suất"))
+        uc49(("UC-49<br/>Giám sát NKVM"))
+        uc50(("UC-50<br/>Cảnh báo cụm ca & điều tra cắt ngang"))
+    end
+    r08 --> uc47
+    r12 --> uc47
+    r11 -.-> uc47
+    r11 --> uc48
+    r01 --> uc48
+    r13 -.-> uc48
+    r11 --> uc49
+    r11 --> uc50
+    r01 -.-> uc50
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-47: Nhập mẫu số ngày và đợt thiết bị tại khoa (Cổng khoa/PDA/import) [NEW v1.12]
+
+- **ID:** UC-47
+- **Actors:** R08 Điều dưỡng khoa (primary); R12 Mạng lưới viên KSNK (primary); R11 Giám sát viên KSNK (secondary — import file từ HIS, nhận nhắc)
+- **Description:** Mỗi khoa nội trú nhập `Ward Daily Census` hằng ngày (số người bệnh nằm viện, số có thở máy / catheter TM trung tâm / thông tiểu, số nhập viện) trên Cổng khoa hoặc PDA, hoặc R11 nhập file xuất từ HIS qua hồ sơ ánh xạ cột (D3). Khoa hồi sức ghi `Device Episode` mỗi lần đặt/rút thiết bị với mã người bệnh mã hóa; đợt đang mở là căn cứ cho phiếu gói dự phòng M12 (UC-44) và ngày thiết bị cho tỷ suất.
+- **Preconditions:** Department có cờ nội trú/lâm sàng; vai trò R08/R12 có User Permission theo khoa; hồ sơ ánh xạ cột cho mẫu số đã lưu (UC-57) khi dùng import; mã BN nhập theo ADR-010.
+- **Postconditions (success):** Đúng một `Ward Daily Census` mỗi (ngày, khoa); số thiết bị ≤ số người bệnh; `Device Episode` lưu `patient_code` mã hóa + `patient_code_hash` + mã che, tính số ngày thiết bị; khoa cấu hình nguồn ngày thiết bị (mẫu số ngày hoặc đợt thiết bị); khoa thiếu mẫu số được nhắc 10:00.
+- **Traces to:** FR-M13-02, FR-M13-03, FR-M13-04
+- **Business rules:** BRU-HAI-002 (một mẫu số/khoa/ngày; sau khóa kỳ chỉ sửa khi R01 mở khóa), BRU-HAI-005 (không lưu họ tên)
+- **Screens:** SCR-55 (Cổng khoa — Mẫu số ngày & đợt thiết bị; DEPT + PDA); SCR-43 (import)
+- **Priority:** Must · Frequency: hằng ngày mỗi khoa nội trú; đợt thiết bị theo sự kiện đặt/rút.
+- **Related NFR:** NFR-PRIV-01, NFR-AVAIL-05 (mẫu số nhập được offline, đồng bộ idempotent), NFR-SEC-09, NFR-USAB-03
+
+**Main success scenario**
+1. R08/R12 mở SCR-55 trên Cổng khoa (hoặc PDA), chọn ngày hôm trước (mặc định), nhập `patient_count`, `vent_count`, `cvc_count`, `urinary_catheter_count`, `admissions`; gửi qua `tracecore.v1.hai.census_upsert` (`@idempotent`).
+2. Hệ thống kiểm tra duy nhất (ngày, khoa), số thiết bị ≤ số người bệnh, lưu `source` = Nhập tay.
+3. Khoa hồi sức ghi `Device Episode` khi đặt thiết bị: mã BN (nhập → mã hóa trường Password, sinh hash và mã che), năm sinh, giới, loại thiết bị, `inserted_on`; gửi `tracecore.v1.hai.device_episode`.
+4. Khi rút thiết bị, khoa đóng đợt (`removed_on`); hệ thống tính số ngày thiết bị; đợt đang mở hiển thị trong danh sách để làm phiếu gói dự phòng (FR-M12-07).
+5. R10/R01 cấu hình cho từng khoa nguồn ngày thiết bị dùng cho tỷ suất: mẫu số ngày hoặc đợt thiết bị.
+6. Scheduler 10:00 (giờ cấu hình): khoa nội trú chưa có mẫu số ngày hôm trước → nhắc mạng lưới viên của khoa và R11.
+
+**Alternate flows**
+- A1. Bệnh viện xuất được file từ HIS → R11 import hằng ngày/tuần qua SCR-43 với hồ sơ ánh xạ cột; dòng hợp lệ ghi `source` = Import; dòng lỗi báo theo số dòng (mẫu FR-M9-11).
+- A2. PDA mất mạng → mẫu số/đợt thiết bị xếp hàng cục bộ, đồng bộ khi có mạng, không trùng (ADR-003).
+- A3. Khoa không nội trú → không yêu cầu mẫu số, không nhắc.
+
+**Exception flows**
+- E1. `vent_count` > `patient_count` → chặn dòng/bản ghi, chỉ rõ trường (FR-M13-02).
+- E2. Trùng (ngày, khoa) → chặn; gợi ý sửa bản ghi hiện có (nếu kỳ chưa khóa).
+- E3. `removed_on` < `inserted_on` → chặn (FR-M13-04).
+- E4. Sửa mẫu số thuộc kỳ đã khóa → chặn (FR-M13-11); chỉ R01 mở khóa với lý do.
+- E5. Danh sách đợt thiết bị → chỉ hiện mã BN che; R12 chỉ thấy khoa mình.
+
+**Open issues:** Định dạng cột file mẫu số từ HIS của bệnh viện thí điểm (OQ-V12-05).
+
+_Nguồn: BA v1.12 §6.1 bước 1–2, §6.3 FR-M13-02..04, §6.4; QĐ 3916 (giám sát NKBV). Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-48: Ghi nhận và xác định ca NKBV, khóa kỳ, tỷ suất, che mã BN [NEW v1.12]
+
+- **ID:** UC-48
+- **Actors:** R11 Giám sát viên KSNK (primary — tạo, xác định ca); R01 Trưởng khoa KSNK (primary — duyệt định nghĩa, khóa kỳ); R12/R08 (secondary — tạo ca Nghi ngờ khoa mình); R13 (secondary — xem số liệu tổng hợp)
+- **Description:** R01 duyệt `HAI Case Definition` có phiên bản (vị trí nhiễm khuẩn, tiêu chí, ngưỡng giờ sau nhập viện, ngày thiết bị trước khởi phát). R11 rà soát (người bệnh có thiết bị, sốt, kết quả vi sinh dương tính từ M14) → tạo `HAI Case` Nghi ngờ → đối chiếu định nghĩa có hiệu lực tại ngày khởi phát → Xác định hoặc Loại trừ (bắt buộc lý do). R01 khóa `IC Reporting Period` tháng → hệ thống tính tỷ suất theo khoa và kỳ, đẩy chỉ số sang M9. Mã BN che trên mọi danh sách/báo cáo/file xuất; xem đầy đủ chỉ R01/R11 với lý do và Audit Log.
+- **Preconditions:** UC-47 có mẫu số/đợt thiết bị của kỳ; bộ định nghĩa khởi tạo đã migrate ở trạng thái Nháp (FEAT-063); M14 (tùy chọn) có chủng liên kết.
+- **Postconditions (success):** Ca lưu bản chụp phiên bản định nghĩa; trạng thái Nghi ngờ / Xác định / Loại trừ với `confirmed_by`; kỳ khóa chặn sửa mẫu số và ca; tỷ suất NKBV/1.000 ngày nằm viện, VAP/1.000 ngày thở máy, CLABSI/1.000 ngày catheter, CAUTI/1.000 ngày thông tiểu, tỷ lệ sử dụng thiết bị tính đúng; mẫu số 0 → "Không tính".
+- **Traces to:** FR-M13-01, FR-M13-05, FR-M13-06, FR-M13-10, FR-M13-11, FR-M13-15
+- **Business rules:** BRU-HAI-001 (phiên bản định nghĩa theo ngày khởi phát; ngưỡng từ định nghĩa), BRU-HAI-002, BRU-HAI-005 (không họ tên), BRU-HAI-006 (mẫu số 0 không hiển thị 0), BRU-RPT-003 (giá trị đã khóa chỉ đổi khi mở khóa có lý do)
+- **Screens:** SCR-56 (Ca NKBV — danh sách + hồ sơ ca, che mã BN; kỳ báo cáo); SCR-58 (Báo cáo NKBV / NK hồi sức)
+- **Priority:** Must · Frequency: rà soát ca hằng ngày; khóa kỳ hằng tháng.
+- **Related NFR:** NFR-PRIV-01 (tối thiểu hóa, mã hóa, che, xem có lý do + Audit Log), NFR-PRIV-02 (thời hạn lưu, OQ-V12-07), NFR-SEC-09, NFR-PERF-05, NFR-MAINT-04 (định nghĩa là cấu hình có phiên bản)
+
+**Main success scenario**
+1. R01 mở SCR-56 → `HAI Case Definition`: `def_code`, vị trí nhiễm khuẩn (NKVM nông/sâu/cơ quan–khoang, viêm phổi thở máy, NK huyết liên quan catheter, NK tiết niệu liên quan thông tiểu, Khác), tiêu chí, loại thiết bị, `min_hours_after_admission`, `min_device_days_before_onset`, `legal_ref`; ghi sổ = duyệt, khóa phiên bản `DN-<code>-V<n>` với `effective_from`.
+2. R11 rà soát danh sách gợi ý (đợt thiết bị đang mở, chủng dương tính từ M14) và tạo `HAI Case` trạng thái Nghi ngờ: mã BN (mã hóa), năm sinh, giới, khoa, ngày nhập viện, ngày khởi phát, đợt thiết bị/ca phẫu thuật liên quan, chủng (tùy chọn).
+3. Hệ thống gắn phiên bản định nghĩa có hiệu lực tại `onset_date` (bản chụp) và kiểm tra ngưỡng: khởi phát sớm hơn `min_hours_after_admission` hoặc thiết bị lưu ngắn hơn `min_device_days_before_onset` → cảnh báo, yêu cầu lý do.
+4. R11/R01 chuyển Xác định (lưu `confirmed_by`) hoặc Loại trừ (bắt buộc `exclusion_reason`); ghi sổ ca.
+5. Cuối tháng R01 khóa `IC Reporting Period` → hệ thống chặn sửa mẫu số và ca thuộc kỳ, tính tỷ suất theo khoa/kỳ (FR-M13-10) và lưu `IC Indicator Value` (FR-M9-27).
+6. Người dùng mở SCR-58 xem tỷ suất, tỷ lệ sử dụng thiết bị theo khoa; mọi danh sách chỉ hiện mã BN che.
+7. Khi cần xem mã đầy đủ, R01/R11 bấm "Xem mã BN", nhập lý do → hệ thống giải mã hiển thị tạm thời và ghi Audit Log "Xem mã BN".
+
+**Alternate flows**
+- A1. R12/R08 tạo ca Nghi ngờ cho khoa mình → chỉ R11/R01 xác định; R08 không thấy nút Xác định.
+- A2. Ca khởi phát trước ngày hiệu lực V2 → vẫn gắn V1 (BRU-HAI-001).
+- A3. Cần sửa dữ liệu kỳ đã khóa → R01 mở khóa với `unlock_reason` (Audit Log), sửa, khóa lại → giá trị chỉ số tính lại (FR-M9-27).
+- A4. Hết thời hạn lưu (NFR-PRIV-02) → job xóa định danh (mã BN, năm sinh), giữ số liệu tổng hợp.
+
+**Exception flows**
+- E1. Loại trừ với lý do trống → chặn (FR-M13-05).
+- E2. Sửa `Ward Daily Census` hoặc `HAI Case` thuộc kỳ đã khóa → lỗi chặn (FR-M13-11).
+- E3. Mẫu số (ngày thiết bị) = 0 → tỷ suất hiển thị "Không tính" (FR-M13-10, BRU-HAI-006).
+- E4. R13 mở hồ sơ ca → bị từ chối; chỉ xem số liệu tổng hợp (ADR-010 mở rộng).
+- E5. Nhập họ tên vào trường tự do → không có trường họ tên trong DocType; test tự động kiểm tra JSON (NFR-PRIV-01).
+
+**Open issues:** Thời hạn lưu dữ liệu ca bệnh và bên lập hồ sơ bảo vệ dữ liệu cá nhân (OQ-V12-07); nội dung định nghĩa khởi tạo do chuyên gia KSNK soạn (OQ-V12-08).
+
+_Nguồn: BA v1.12 §6.1 bước 3, 5, §6.3 FR-M13-01, 05, 06, 10, 11, 15, §6.4; QĐ 3916; QĐ 3671; NĐ 356/2025/NĐ-CP. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-49: Giám sát NKVM: đăng ký phẫu thuật, NNIS, theo dõi sau ra viện, kháng sinh dự phòng, xuất báo cáo [NEW v1.12]
+
+- **ID:** UC-49
+- **Actors:** R11 Giám sát viên KSNK (primary); R01 (secondary — cấu hình nhóm phẫu thuật, ngưỡng); R08 phòng mổ (secondary — cung cấp danh sách phẫu thuật, file)
+- **Description:** R01 chọn `Surgical Procedure Group` được giám sát (T-time, cửa sổ 30/90 ngày). R11 đăng ký `Surgical Surveillance` (mã BN mã hóa, nhóm, ngày mổ, ASA, loại vết mổ, thời gian, cấy ghép, kháng sinh dự phòng); hệ thống tính NNIS (BRU-HAI-003) và ngày kết thúc cửa sổ (BRU-HAI-004); khi có ngày ra viện, sinh lịch theo dõi sau ra viện (điện thoại/tái khám/hồ sơ), nhắc R11 đúng ngày; hết cửa sổ với mọi lần theo dõi âm tính → Không NKVM; có NKVM → liên kết `HAI Case`. Tính tỷ lệ ca có kháng sinh dự phòng và đúng thời điểm theo ngưỡng phút cấu hình; xuất báo cáo NKVM theo ánh xạ cột (Excel/CSV) chỉ mã BN che.
+- **Preconditions:** Danh mục nhóm phẫu thuật với `t_time_minutes`, `followup_days`, `is_monitored`; ngưỡng phút kháng sinh dự phòng cấu hình (QĐ 5631, phác đồ bệnh viện); hồ sơ ánh xạ cột báo cáo (UC-57).
+- **Postconditions (success):** Mỗi ca phẫu thuật có `nnis_index` 0–3, `window_end`; bảng `SSI Follow-up` sinh theo cấu hình; `outcome` đúng (Đang theo dõi / Không NKVM / Có NKVM / Mất theo dõi); tỷ lệ NKVM % theo nhóm và NNIS, tỷ lệ kháng sinh dự phòng đúng thời điểm tính theo kỳ; file xuất không có họ tên/mã rõ.
+- **Traces to:** FR-M13-07, FR-M13-08, FR-M13-09, FR-M13-12
+- **Business rules:** BRU-HAI-003 (NNIS = (ASA ≥ 3) + (vết mổ Nhiễm/Bẩn) + (thời gian > T)), BRU-HAI-004 (cửa sổ 30/90 ngày từ ngày mổ), BRU-HAI-005, BRU-RPT-002 (file ra ngoài chỉ mã che)
+- **Screens:** SCR-57 (Giám sát NKVM: đăng ký phẫu thuật, lịch theo dõi sau ra viện, kháng sinh dự phòng — WEB + PDA); SCR-58 (báo cáo NKVM)
+- **Priority:** Must · Frequency: đăng ký theo ca mổ thuộc nhóm giám sát (hằng ngày); theo dõi sau ra viện theo lịch; báo cáo tháng/quý.
+- **Related NFR:** NFR-PRIV-01, NFR-PRIV-02, NFR-MAINT-04 (T-time, cửa sổ, ngưỡng phút là cấu hình), NFR-PERF-05
+
+**Main success scenario**
+1. R01 cấu hình `Surgical Procedure Group` (mã, tên, `t_time_minutes`, `followup_days` 30/90, `is_monitored`) và ngưỡng phút kháng sinh dự phòng trước rạch da.
+2. R11 mở SCR-57, đăng ký `Surgical Surveillance`: mã BN (mã hóa), năm sinh, giới, khoa, nhóm phẫu thuật, ngày mổ, ASA 1–5, loại vết mổ, thời gian mổ (phút), cấy ghép, `prophylaxis_given`, phút trước rạch da, thuốc.
+3. Hệ thống tính `nnis_index` (ví dụ ASA 3, vết mổ Sạch, 150 phút với T = 120 → 2) và `window_end` (ngày mổ + 30, hoặc + 90 nếu cấy ghép/nhóm có cấy ghép).
+4. R11 nhập `discharge_date` → hệ thống sinh bảng `SSI Follow-up` theo cấu hình nhóm (hạn, phương thức); đến ngày → nhắc R11.
+5. R11 ghi kết quả từng lần theo dõi (`done_on`, `result`); hết cửa sổ, mọi lần âm tính → `outcome` = Không NKVM; phát hiện NKVM → tạo/gắn `HAI Case` (UC-48), `outcome` = Có NKVM.
+6. Hệ thống tính theo kỳ: tỷ lệ NKVM % theo nhóm và NNIS; tỷ lệ ca có kháng sinh dự phòng; tỷ lệ đúng thời điểm theo ngưỡng.
+7. Người dùng xuất báo cáo NKVM (hoặc NK hồi sức) qua SCR-58: chọn hồ sơ ánh xạ cột để khớp mẫu cơ quan quản lý yêu cầu → Excel/CSV chỉ chứa mã BN che.
+
+**Alternate flows**
+- A1. Danh sách phẫu thuật từ phòng mổ/HIS dạng file → import qua SCR-43 với hồ sơ ánh xạ cột (FR-M9-28); R11 bổ sung ASA/vết mổ còn thiếu.
+- A2. Ca chưa ra viện quá cửa sổ → theo dõi nội trú, `outcome` cập nhật khi đóng ca.
+- A3. Đổi ngưỡng phút kháng sinh dự phòng → chỉ áp dụng kỳ chưa khóa (FR-M13-09).
+
+**Exception flows**
+- E1. Bỏ lỡ lần theo dõi cuối (không `done_on` khi hết cửa sổ) → `outcome` = Mất theo dõi, không tự thành Không NKVM (FR-M13-08).
+- E2. ASA ngoài 1–5, thời gian mổ ≤ 0 → chặn lưu.
+- E3. Hồ sơ ánh xạ cột chứa cột họ tên/mã rõ → chặn xuất (FR-M13-12, NFR-PRIV-01).
+- E4. Nhóm phẫu thuật chưa có `t_time_minutes` → không tính NNIS, cảnh báo R01.
+
+**Open issues:** Mẫu báo cáo NKVM/kháng sinh dự phòng của cơ quan quản lý (OQ-V12-02); ngưỡng phút mặc định (OQ-V12-09).
+
+_Nguồn: BA v1.12 §6.1 bước 4, §6.3 FR-M13-07..09, 12, §6.4; QĐ 1526/QĐ-BYT; QĐ 5631/QĐ-BYT; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-50: Cảnh báo cụm ca và điều tra cắt ngang [NEW v1.12]
+
+- **ID:** UC-50
+- **Actors:** R11 Giám sát viên KSNK (primary); R01 Trưởng khoa KSNK (secondary — đặt ngưỡng, mở điều tra ổ dịch); R12 (secondary — hỗ trợ điều tra tại khoa)
+- **Description:** Hệ thống theo dõi số ca cùng loại nhiễm khuẩn hoặc cùng tác nhân tại một khoa trong N ngày; vượt ngưỡng do R01 đặt → cảnh báo R01, R11 và đề nghị mở điều tra ổ dịch ở M14 (UC-53). R11 thực hiện điều tra cắt ngang (tỷ lệ hiện mắc) theo ngày: ghi từng người bệnh đang nằm viện có/không NKBV bằng mẫu phiếu M12 loại "Khác" kết hợp `Device Episode`, tính tỷ lệ hiện mắc theo khoa — không thêm DocType riêng.
+- **Preconditions:** Ngưỡng cụm ca cấu hình (mặc định trống); ca NKBV và chủng M14 có `department`, `onset_date`/`collected_on`; mẫu phiếu "Điều tra cắt ngang" (loại Khác) đã duyệt.
+- **Postconditions (success):** Cảnh báo cụm ca gửi đúng người, có nút mở `Outbreak Investigation` điền sẵn; phiếu cắt ngang ghi sổ với số người bệnh khảo sát và số có NKBV; tỷ lệ hiện mắc theo khoa đẩy sang M9.
+- **Traces to:** FR-M13-13, FR-M13-14
+- **Business rules:** BRU-HAI-005, BRU-RPT-001, BRU-MDR-004 (điều tra ổ dịch kết thúc khi đủ điều kiện — UC-53)
+- **Screens:** SCR-58 (cảnh báo cụm ca, điều tra cắt ngang); SCR-52 (phiếu cắt ngang theo mục trên PDA)
+- **Priority:** Should (FR-M13-13); Could (FR-M13-14) · Frequency: kiểm tra cụm ca hằng ngày (scheduler); cắt ngang theo đợt (quý/năm).
+- **Related NFR:** NFR-PRIV-01, NFR-AVAIL-04, NFR-MAINT-04 (ngưỡng là cấu hình)
+
+**Main success scenario**
+1. R01 đặt ngưỡng cụm ca: loại nhiễm khuẩn/tác nhân, khoa (hoặc toàn viện), N ngày, số ca.
+2. Scheduler hằng ngày đếm ca Xác định (M13) và chủng (M14) theo (khoa, loại/tác nhân) trong cửa sổ N ngày.
+3. Vượt ngưỡng → thông báo R01, R11 với danh sách ca (mã BN che) và nút "Mở điều tra ổ dịch" điền sẵn khoa, tác nhân, ca.
+4. R01 mở `Outbreak Investigation` (UC-53) hoặc ghi lý do không mở; cảnh báo không lặp cho cùng cụm đến khi có ca mới.
+5. (Cắt ngang) R11 chọn ngày điều tra, khoa; hệ thống liệt kê người bệnh đang nằm viện có `Device Episode` mở và cho thêm người bệnh khác theo mã BN.
+6. R11 ghi từng người bệnh có/không NKBV (phiếu M12 loại "Khác" trên SCR-52); ghi sổ → tỷ lệ hiện mắc = số có NKBV / số khảo sát theo khoa, đẩy sang `IC Indicator`.
+
+**Alternate flows**
+- A1. Cụm ca phát hiện từ M14 (chủng đa kháng cùng loài) → cùng luồng cảnh báo (FR-M14-09 nhận ca).
+- A2. Cắt ngang toàn viện → gộp từng khoa; R12 hỗ trợ ghi phiếu khoa mình.
+
+**Exception flows**
+- E1. Ngưỡng chưa đặt (mặc định trống) → không cảnh báo; nhắc R01 trên SCR-58 rằng chưa cấu hình.
+- E2. Số khảo sát = 0 → "Không tính" (BRU-RPT-001).
+- E3. Người bệnh chưa có `Device Episode` và nhập mã BN mới → mã hóa theo ADR-010; không nhập họ tên.
+
+**Open issues:** Ngưỡng cụm ca mặc định (OQ-V12-09).
+
+_Nguồn: BA v1.12 §6.3 FR-M13-13, 14; QĐ 3916 (điều tra cắt ngang). Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M14 — Vi sinh, đa kháng, cách ly, ổ dịch [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §7 (A-113); TT 16/2018/TT-BYT Điều 4, 7, 14, 22; QĐ 3596/QĐ-BYT (2025, giám sát kháng thuốc, WHONET); Luật Phòng bệnh 114/2025/QH15 và TT 15/2026/TT-BYT (bệnh truyền nhiễm nhóm A/B/C); QĐ 38. Phạm vi: nhận kết quả vi sinh bằng file WHONET/CSV hoặc nhập tay (D3 — không API LIS), quy tắc đa kháng cấu hình, cảnh báo và lệnh cách ly, phòng cách ly, điều tra ổ dịch, theo dõi khai báo bệnh truyền nhiễm. TraceCore không thay nghĩa vụ báo cáo của phòng xét nghiệm (BRU-MDR-005). Use case: UC-51, UC-52, UC-53. Quy tắc: BRU-MDR-001..005.
+
+```mermaid
+graph LR
+    r11(["R11 Giám sát viên KSNK"])
+    r01(["R01 Trưởng khoa KSNK"])
+    r08(["R08 Nhân viên khoa sử dụng"])
+    r12(["R12 Mạng lưới viên KSNK"])
+    r13(["R13 Hội đồng KSNK & BGĐ"])
+    lab(["Phòng xét nghiệm vi sinh (actor ngoài — file WHONET/CSV)"])
+    subgraph m14["TraceCore · M14 Vi sinh, đa kháng, cách ly, ổ dịch"]
+        uc51(("UC-51<br/>Import vi sinh, đa kháng, báo cáo kháng thuốc"))
+        uc52(("UC-52<br/>Lệnh cách ly & phòng cách ly"))
+        uc53(("UC-53<br/>Điều tra ổ dịch & khai báo BTN"))
+    end
+    r11 --> uc51
+    lab -.-> uc51
+    r01 -.-> uc51
+    r08 --> uc52
+    r12 --> uc52
+    r11 --> uc52
+    r01 --> uc53
+    r11 --> uc53
+    r13 -.-> uc53
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-51: Import kết quả vi sinh (WHONET/CSV), gắn nhãn đa kháng, cảnh báo, báo cáo kháng thuốc [NEW v1.12]
+
+- **ID:** UC-51
+- **Actors:** R11 Giám sát viên KSNK (primary); R01 (secondary — duyệt `MDRO Rule`); Phòng xét nghiệm vi sinh (actor ngoài — cung cấp file); R08/R12 (secondary — nhận cảnh báo khoa)
+- **Description:** R11 nhập file nuôi cấy + kháng sinh đồ (WHONET hoặc LIS xuất CSV) theo hồ sơ ánh xạ cột; hệ thống kiểm tra từng dòng, bỏ trùng (lab_sample_id, organism), tạo `Microbiology Isolate` với mã BN mã hóa. Khi phòng xét nghiệm không xuất file, R11 nhập tay có xác nhận. Mỗi chủng mới chạy mọi `MDRO Rule` đã duyệt → gắn nhãn đa kháng, đánh dấu chủng đầu tiên mỗi người bệnh–loài trong kỳ; chủng đa kháng mới → thông báo R11, trưởng khoa, mạng lưới viên trong 15 phút với nút "Tạo lệnh cách ly". Người bệnh từng mang đa kháng → nhãn chữ ở M13/M14. Báo cáo kháng thuốc quý: S/I/R theo vi khuẩn–kháng sinh, theo khoa, chỉ trên chủng đầu tiên, kèm cảnh báo cỡ mẫu nhỏ.
+- **Preconditions:** Danh mục `Organism` (mã WHONET); hồ sơ ánh xạ cột loại Microbiology (UC-57); `MDRO Rule` đã duyệt (ví dụ MRSA, ESBL, CRE); `Notification Rule` cho sự kiện đa kháng.
+- **Postconditions (success):** Import lại cùng file → 0 bản ghi mới; chủng có `mdro_flags`, `is_first_isolate`; cảnh báo đến đúng khoa trong 15 phút; báo cáo quý tính đúng trên chủng đầu tiên; mọi danh sách chỉ hiện mã BN che.
+- **Traces to:** FR-M14-01, FR-M14-02, FR-M14-03, FR-M14-04, FR-M14-05, FR-M14-08
+- **Business rules:** BRU-MDR-001 (đa kháng chỉ theo quy tắc đã duyệt; đổi quy tắc không gắn lại nhãn kỳ đã khóa), BRU-MDR-002 (thống kê chỉ chủng đầu tiên), BRU-MDR-005 (không thay nghĩa vụ báo cáo của phòng xét nghiệm), BRU-HAI-005
+- **Screens:** SCR-59 (Import vi sinh & danh sách chủng, quy tắc đa kháng, báo cáo kháng thuốc); SCR-43 (wizard import)
+- **Priority:** Must (FR-M14-05 Should) · Frequency: import hằng ngày/tuần; báo cáo quý.
+- **Related NFR:** NFR-PRIV-01, NFR-PRIV-02, NFR-AVAIL-04 (cảnh báo ≤ 15 phút), NFR-MAINT-04 (quy tắc là cấu hình có phiên bản), NFR-PERF-03 (import), NFR-PERF-05
+
+**Main success scenario**
+1. R11 mở SCR-59 → Import, chọn file WHONET/CSV và hồ sơ ánh xạ cột đã lưu (lab_sample_id, mã BN, năm sinh, giới, khoa, loại bệnh phẩm, ngày lấy, mã vi khuẩn, kháng sinh/S-I-R/MIC).
+2. Hệ thống kiểm tra từng dòng (mã vi khuẩn tồn tại, ngày hợp lệ, mã BN), bỏ dòng trùng (lab_sample_id, organism), hiển thị xem trước: số dòng hợp lệ / lỗi theo số dòng.
+3. R11 xác nhận → hệ thống tạo `Microbiology Isolate` (mã BN mã hóa + hash + che, bảng `Isolate Susceptibility`), `source` = Import, gắn `import_batch`.
+4. Với mỗi chủng mới, hệ thống chạy mọi `MDRO Rule` đã duyệt (điều kiện R với bất kỳ / tất cả / ≥ n nhóm) → điền `mdro_flags`; đánh dấu `is_first_isolate` cho chủng đầu tiên của (người bệnh–loài) trong kỳ.
+5. Chủng đa kháng mới → `core.notification.emit` tới R11, trưởng khoa, mạng lưới viên khoa (≤ 15 phút) kèm `precaution_type` của quy tắc và nút "Tạo lệnh cách ly" điền sẵn (UC-52).
+6. Mã BN (so bằng hash) đã từng có chủng đa kháng xuất hiện lại ở M13/M14 → hiển thị nhãn chữ "Đã từng mang vi khuẩn đa kháng".
+7. Cuối quý R11/R01 xuất báo cáo kháng thuốc: tỷ lệ S/I/R theo vi khuẩn–kháng sinh và theo khoa trên chủng đầu tiên; tỷ lệ ca NKBV xác định có tác nhân; cặp có n < ngưỡng (mặc định 30) kèm cảnh báo cỡ mẫu nhỏ; đẩy chỉ số sang M9.
+
+**Alternate flows**
+- A1. Phòng xét nghiệm không xuất được file → R11 nhập tay chủng và kháng sinh đồ với xác nhận người nhập; `source` = Nhập tay, Audit Log (FR-M14-02).
+- A2. R01 tạo/sửa `MDRO Rule` → phiên bản mới `MDR-<code>-V<n>`; chỉ áp dụng cho chủng từ ngày hiệu lực; kỳ đã khóa không gắn lại nhãn.
+- A3. Chủng liên kết ca NKBV → R11 gắn vào `HAI Case.isolates` (UC-48).
+
+**Exception flows**
+- E1. Dòng thiếu mã vi khuẩn hoặc mã không có trong `Organism` → lỗi theo số dòng, không ghi dòng đó (FR-M14-01).
+- E2. Import lại cùng file → 0 bản ghi mới, báo "đã tồn tại".
+- E3. Hồ sơ ánh xạ cột có cột họ tên → bỏ qua cột, cảnh báo (NFR-PRIV-01).
+- E4. Thông báo email/SMS lỗi → giữ in-app, gửi lại (FR-M9-10.1).
+
+**Open issues:** Phòng xét nghiệm thí điểm xuất được file WHONET không; định dạng cột (OQ-V12-05); nội dung quy tắc đa kháng khởi tạo (OQ-V12-08); ngưỡng cỡ mẫu nhỏ (OQ-V12-09).
+
+_Nguồn: BA v1.12 §7.1 bước 1–2, §7.3 FR-M14-01..05, 08, §7.4; QĐ 3596/QĐ-BYT; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-52: Lệnh cách ly và phòng cách ly theo khoa [NEW v1.12]
+
+- **ID:** UC-52
+- **Actors:** R08 Điều dưỡng khoa / R12 Mạng lưới viên (primary — tạo lệnh cách ly khoa mình); R11 Giám sát viên KSNK (primary — kiểm tra tuân thủ, đóng lệnh do đa kháng); R01 (secondary — danh mục phòng cách ly, đóng lệnh); R13 (secondary — xem tỷ lệ khoa có phòng cách ly)
+- **Description:** Khoa tạo `Isolation Order` (mã BN mã hóa, khoa, phòng, loại phòng ngừa Tiếp xúc / Giọt bắn / Không khí / Kết hợp, lý do, chủng liên quan); danh sách cách ly đang mở theo khoa hiển thị trên Cổng khoa; R11 kiểm tra tuân thủ bằng phiếu M12; đóng lệnh cần lý do kết thúc, lệnh do đa kháng chỉ R11/R01 đóng. R01 duy trì `Isolation Room` (loại phòng, số giường, đạt chuẩn, ngày kiểm tra); hệ thống tính tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt điều kiện và liệt kê khoa chưa có.
+- **Preconditions:** Department có cờ lâm sàng; `Isolation Room` theo khoa; có cảnh báo đa kháng (UC-51) hoặc ca bệnh truyền nhiễm/nghi nhiễm.
+- **Postconditions (success):** Lệnh cách ly có đủ loại phòng ngừa và lý do; danh sách đang mở đúng theo khoa và hiển thị trong việc cần làm Cổng khoa (FR-M9-26); lệnh đóng có `end_reason`; tỷ lệ khoa có phòng cách ly đạt chuẩn tính cho M9 (chỉ tiêu QĐ 38 ≥ 80 %).
+- **Traces to:** FR-M14-06, FR-M14-07
+- **Business rules:** BRU-MDR-003 (không đóng khi thiếu lý do; lệnh do đa kháng chỉ R11/R01 đóng), BRU-HAI-005
+- **Screens:** SCR-60 (Lệnh cách ly & phòng cách ly — WEB + DEPT)
+- **Priority:** Must · Frequency: theo ca (hằng ngày ở khoa hồi sức/truyền nhiễm); phòng cách ly kiểm tra định kỳ (UC-54 hạ tầng).
+- **Related NFR:** NFR-PRIV-01, NFR-SEC-09 (R12/R08 theo khoa), NFR-USAB-03 (tạo lệnh từ thông báo trên PDA)
+
+**Main success scenario**
+1. Từ thông báo đa kháng (UC-51) hoặc chủ động, R08/R12 mở SCR-60 trên Cổng khoa, bấm "Tạo lệnh cách ly": khoa và người bệnh điền sẵn (mã BN che), chọn `isolation_room`, `precaution_type`, `reason` (Vi khuẩn đa kháng / Bệnh truyền nhiễm / Nghi nhiễm), `start_at`.
+2. Hệ thống lưu lệnh trạng thái Đang cách ly, hiển thị trong danh sách cách ly đang mở của khoa và trong việc cần làm Cổng khoa.
+3. R11 giám sát tuân thủ cách ly bằng phiếu M12 (phòng ngừa theo đường lây) gắn khoa/vị trí (UC-44).
+4. Khi đủ điều kiện, R11 (hoặc R08 với lệnh không do đa kháng) đóng lệnh: nhập `end_at`, `end_reason`.
+5. R01 duy trì `Isolation Room` (khoa, mã phòng, loại Phòng đơn / Áp lực âm / Phòng nhóm, số giường, `meets_standard`, `checked_on`).
+6. Hệ thống tính tỷ lệ khoa lâm sàng có ≥ 1 phòng cách ly đạt điều kiện, liệt kê khoa chưa có trên SCR-60 và đẩy chỉ số sang M9.
+
+**Alternate flows**
+- A1. Người bệnh chuyển khoa → đóng lệnh ở khoa cũ với lý do "Chuyển khoa", tạo lệnh mới ở khoa nhận (giữ cùng mã BN hash).
+- A2. Phòng cách ly hết chỗ → chọn phòng khác hoặc ghi "Cách ly tại giường" với cảnh báo.
+- A3. Kiểm tra phòng cách ly theo phiếu hạ tầng M15 (UC-54) cập nhật `checked_on`, `meets_standard`.
+
+**Exception flows**
+- E1. Thiếu `precaution_type` hoặc `reason` → chặn lưu (FR-M14-06).
+- E2. R08 đóng lệnh do đa kháng → chặn; chỉ R11/R01 (BRU-MDR-003).
+- E3. Đóng lệnh không có `end_reason` → chặn.
+- E4. R12 khoa A xem danh sách → không thấy lệnh khoa B.
+
+**Open issues:** Tiêu chí "phòng cách ly đạt điều kiện" cấu hình theo hướng dẫn bệnh viện (OQ-V12-08).
+
+_Nguồn: BA v1.12 §7.1 bước 3, §7.3 FR-M14-06, 07, §7.4; TT 16/2018 Điều 7; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-53: Điều tra ổ dịch và khai báo bệnh truyền nhiễm [NEW v1.12]
+
+- **ID:** UC-53
+- **Actors:** R01 Trưởng khoa KSNK (primary — mở/kết thúc điều tra ổ dịch); R11 Giám sát viên KSNK (primary — điều tra, theo dõi khai báo); R12/R08 (secondary — ghi ca bệnh truyền nhiễm của khoa, hành động tại khoa); R13 (secondary — nhận báo cáo)
+- **Description:** Khi có cảnh báo cụm ca (UC-50/UC-51) hoặc nghi ngờ, R01 mở `Outbreak Investigation`: gắn ca từ M13/M14 (mã BN che, ngày khởi phát), định nghĩa ca điều tra, đường cong dịch theo ngày khởi phát, hành động qua `Incident CAPA`; chỉ kết thúc khi có tóm tắt và mọi CAPA đã đóng hoặc có lý do. Ca bệnh truyền nhiễm phải khai báo: khoa/R11 ghi `Notifiable Disease Report`; hệ thống tính hạn theo cấu hình nhóm bệnh A/B/C (TT 15/2026, chuyên gia nhập) và nhắc R11, trưởng khoa đến khi ghi `reported_on` và `report_ref` trên hệ thống giám sát quốc gia.
+- **Preconditions:** Danh mục bệnh truyền nhiễm với nhóm và thời hạn khai báo (cấu hình, OQ-V12-03); ca NKBV/chủng có sẵn; `Incident CAPA` dùng chung.
+- **Postconditions (success):** Ổ dịch có danh sách ca, đường cong dịch, CAPA, tóm tắt và `external_report_ref` khi kết thúc; ca bệnh truyền nhiễm có `due_by` và được nhắc đến khi khai báo xong; số liệu tổng hợp đẩy sang M9 (không dữ liệu cá nhân).
+- **Traces to:** FR-M14-09, FR-M14-10
+- **Business rules:** BRU-MDR-004 (kết thúc ổ dịch khi có tóm tắt và CAPA đóng/có lý do), BRU-MDR-005 (chỉ theo dõi đã khai báo hay chưa), BRU-HAI-005, BRU-FS-002 (ngộ độc thực phẩm xem như ổ dịch tiềm năng — UC-56)
+- **Screens:** SCR-61 (Điều tra ổ dịch — đường cong dịch; khai báo bệnh truyền nhiễm); SCR-15 (NC/CAPA)
+- **Priority:** Must · Frequency: ổ dịch theo sự kiện (vài lần/năm); khai báo theo ca.
+- **Related NFR:** NFR-PRIV-01, NFR-AVAIL-04, NFR-MAINT-04 (thời hạn nhóm bệnh là cấu hình)
+
+**Main success scenario**
+1. R01 mở SCR-61 từ nút "Mở điều tra ổ dịch" của cảnh báo (hoặc tạo mới): tiêu đề, tác nhân/bệnh, khoa liên quan, ngày bắt đầu, định nghĩa ca điều tra.
+2. R01/R11 gắn ca: chọn từ `HAI Case` (M13) và `Microbiology Isolate` (M14) hoặc thêm mã BN che + ngày khởi phát; hệ thống vẽ đường cong dịch theo `onset_date`.
+3. R11 ghi hành động kiểm soát qua `Incident CAPA` liên kết ổ dịch (cách ly, vệ sinh môi trường, lấy mẫu môi trường M15, đào tạo…); theo dõi trạng thái.
+4. Khi kiểm soát được, R01 chuyển Đã kiểm soát; khi mọi CAPA đóng (hoặc có lý do) và có tóm tắt → R01 ghi sổ Kết thúc với `end_date`, `summary`, `external_report_ref`.
+5. (Khai báo) R12/R08/R11 ghi `Notifiable Disease Report`: mã BN (mã hóa), bệnh (danh mục, nhóm A/B/C), ngày chẩn đoán, khoa; hệ thống tính `due_by` theo cấu hình nhóm.
+6. Scheduler nhắc R11 và trưởng khoa trước và sau hạn đến khi `reported_on` và `report_ref` được ghi.
+7. R13 xem báo cáo ổ dịch/khai báo tổng hợp (số ca, thời gian, trạng thái), không dữ liệu cá nhân.
+
+**Alternate flows**
+- A1. Ổ dịch bắt nguồn từ sự cố ngộ độc thực phẩm (FR-M17-04) → `Foodborne Event` liên kết `outbreak_investigation`.
+- A2. Mẫu môi trường trong điều tra (UC-54) gắn vào CAPA của ổ dịch.
+- A3. Cảnh báo cụm ca nhưng R01 quyết định không mở → ghi lý do, cảnh báo đóng.
+
+**Exception flows**
+- E1. Kết thúc ổ dịch khi còn CAPA mở không có lý do hoặc thiếu tóm tắt → chặn (FR-M14-09, BRU-MDR-004).
+- E2. Nhóm bệnh chưa cấu hình thời hạn → không tính `due_by`, cảnh báo R01/R10 cấu hình (không code cứng).
+- E3. Ghi `reported_on` mà thiếu `report_ref` → cảnh báo, nhắc tiếp đến khi đủ.
+- E4. Ca gắn vào ổ dịch bị Loại trừ ở M13 → ổ dịch hiển thị nhãn "Ca đã loại trừ", R01 xem xét gỡ.
+
+**Open issues:** TT 54/2015/TT-BYT còn hiệu lực hay thay bằng hướng dẫn Luật Phòng bệnh 2025; thời hạn khai báo nhóm A/B/C (OQ-V12-03).
+
+_Nguồn: BA v1.12 §7.1 bước 4–5, §7.3 FR-M14-09, 10, §7.4; Luật Phòng bệnh 114/2025/QH15; TT 15/2026/TT-BYT. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M15 — Vệ sinh môi trường và cơ sở hạ tầng [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §8 (A-113); TT 16/2018/TT-BYT Điều 11; QĐ 3916/QĐ-BYT (vệ sinh môi trường bề mặt); QĐ 38 (chỉ tiêu vệ sinh bề mặt khu nguy cơ cao, giám sát chất lượng vệ sinh, nước sạch, thông khí). Phạm vi: vùng vệ sinh theo mức nguy cơ, phiếu giám sát vệ sinh và kiểm tra hạ tầng dùng engine M12, xét nghiệm môi trường (bề mặt, không khí, nước) so với ngưỡng có phiên bản, kế hoạch lấy mẫu, báo cáo môi trường. `Environment Log` (M9) vẫn dùng cho nhiệt độ/độ ẩm/áp suất khu CSSD. Use case: UC-54. Quy tắc: BRU-ENV-001..003.
+
+```mermaid
+graph LR
+    r01(["R01 Trưởng khoa KSNK"])
+    r11(["R11 Giám sát viên KSNK"])
+    r12(["R12 Mạng lưới viên KSNK"])
+    r02(["R02 Điều dưỡng trưởng / Giám sát CSSD"])
+    ext(["Đơn vị vệ sinh thuê ngoài (actor ngoài)"])
+    subgraph m15["TraceCore · M15 Vệ sinh môi trường và cơ sở hạ tầng"]
+        uc54(("UC-54<br/>Vùng, phiếu, xét nghiệm môi trường, hạ tầng, báo cáo"))
+    end
+    r01 --> uc54
+    r11 --> uc54
+    r12 -.-> uc54
+    r02 -.-> uc54
+    ext -.-> uc54
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-54: Vệ sinh môi trường: vùng, phiếu, xét nghiệm môi trường, hạ tầng, báo cáo [NEW v1.12]
+
+- **ID:** UC-54
+- **Actors:** R01 Trưởng khoa KSNK (primary — vùng, ngưỡng, kế hoạch); R11 Giám sát viên KSNK (primary — phiếu, mẫu, hạ tầng); R12 (secondary — phiếu khoa mình); R02, R13 (secondary — xem); Đơn vị vệ sinh thuê ngoài (actor ngoài — bên chịu trách nhiệm)
+- **Description:** R01 khai báo `Environment Zone` (khoa, khu, mức nguy cơ theo QĐ 3916, tần suất, hóa chất, bên chịu trách nhiệm khoa/thuê ngoài, số phiếu tối thiểu/tháng) và duyệt `Environmental Limit` có phiên bản. R11/R12 giám sát vệ sinh bằng phiếu M12 gắn vùng; tỷ lệ đạt tổng hợp theo mức nguy cơ, khoa, bên chịu trách nhiệm. R11 ghi `Environmental Sample` theo `Sampling Plan`; hệ thống so ngưỡng có hiệu lực tại ngày lấy mẫu (bản chụp), Không đạt → thông báo, đề nghị NC loại Environment, việc lấy mẫu lại, cờ vùng đến khi mẫu lại Đạt. Kiểm tra hạ tầng (thông khí, cấp nước, nhà vệ sinh, côn trùng, phòng cách ly) bằng phiếu M12 loại "Cơ sở hạ tầng" có hạn kế tiếp. Báo cáo môi trường tháng/quý gộp giám sát vệ sinh, xét nghiệm, hạ tầng và hóa chất khử khuẩn bề mặt (M12).
+- **Preconditions:** Engine phiếu M12 (UC-43) với mẫu "Vệ sinh môi trường bề mặt" và "Cơ sở hạ tầng" đã duyệt; Supplier thuê ngoài (UC-46); Item hóa chất.
+- **Postconditions (success):** Vùng thiếu phiếu tối thiểu được liệt kê; mẫu có `limit_applied` bản chụp, `result`; vùng Không đạt mang cờ "Chờ lấy mẫu lại" đến khi mẫu lại Đạt; hạ tầng có `next_due`, nhắc trước 7 ngày; báo cáo PDF/Excel; chỉ số đẩy sang M9.
+- **Traces to:** FR-M15-01, FR-M15-02, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07
+- **Business rules:** BRU-ENV-001 (mức nguy cơ quyết định số phiếu tối thiểu; cấu hình theo QĐ 3916), BRU-ENV-002 (ngưỡng theo phiên bản hiệu lực tại ngày lấy mẫu, có `legal_ref`), BRU-ENV-003 (Không đạt bắt buộc lấy mẫu lại; cờ giữ đến khi Đạt), BRU-AUD-001, BRU-AUD-006
+- **Screens:** SCR-62 (Vùng vệ sinh, ngưỡng, kế hoạch lấy mẫu, mẫu môi trường, hạ tầng, báo cáo môi trường — WEB); SCR-52 (phiếu vệ sinh/hạ tầng trên PDA)
+- **Priority:** Must (FR-M15-05 Should) · Frequency: phiếu theo mức nguy cơ (vùng nguy cơ cao ≥ 4/tháng); lấy mẫu theo kế hoạch (tháng/quý); hạ tầng theo hạn; báo cáo tháng/quý.
+- **Related NFR:** NFR-MAINT-04 (ngưỡng, mức nguy cơ là cấu hình có phiên bản), NFR-AVAIL-04, NFR-USAB-03 (phiếu PDA), NFR-PERF-05
+
+**Main success scenario**
+1. R01 mở SCR-62, tạo `Environment Zone`: khoa, tên khu, `risk_level`, tần suất vệ sinh, hóa chất (Item), `responsible_party` (Khoa / Đơn vị thuê ngoài + `supplier`), `min_audits_per_month`.
+2. R01 duyệt `Environmental Limit` (loại mẫu Bề mặt / Không khí / Nước sinh hoạt / Nước chuyên môn / Khác, phương pháp, thông số, giá trị, đơn vị, mức nguy cơ áp dụng, `legal_ref`, phiên bản, `effective_from`) và lập `Sampling Plan` (loại mẫu, vùng, tần suất, người phụ trách).
+3. R11/R12 làm phiếu vệ sinh môi trường gắn `environment_zone` trên PDA (UC-44); ghi sổ → hệ thống tổng hợp tỷ lệ đạt theo mức nguy cơ, khoa và bên chịu trách nhiệm; vùng chưa đủ `min_audits_per_month` vào danh sách thiếu.
+4. Đến kỳ kế hoạch lấy mẫu, scheduler giao việc cho người phụ trách và liệt kê mẫu trễ hạn; R11 ghi `Environmental Sample` (vùng, loại, phương thức, ngày, người lấy, phòng xét nghiệm, kết quả, tệp).
+5. Hệ thống so với ngưỡng có hiệu lực tại `sampled_on`, lưu `limit_applied` (bản chụp), `result` Đạt / Không đạt.
+6. Mẫu Không đạt → thông báo R01, R11 và bên chịu trách nhiệm; đề nghị mở NC loại Environment; tạo việc lấy mẫu lại (`is_resample_of`); gắn cờ vùng "Chờ lấy mẫu lại" đến khi mẫu lại Đạt.
+7. R11 làm phiếu kiểm tra hạ tầng (mẫu loại "Cơ sở hạ tầng"); ghi sổ → lưu `next_due`, nhắc trước 7 ngày; hệ thống tính tỷ lệ hệ thống thông khí, nguồn nước được kiểm tra đúng hạn.
+8. Cuối tháng/quý R01 xuất báo cáo môi trường (PDF/Excel) gộp giám sát vệ sinh, xét nghiệm, hạ tầng, lượng hóa chất khử khuẩn bề mặt từ M12; chỉ số đẩy sang M9.
+
+**Alternate flows**
+- A1. Mẫu thực phẩm (M17, FR-M17-03) xử lý như mẫu môi trường với `sample_type` = Thực phẩm.
+- A2. Vùng do đơn vị thuê ngoài chịu trách nhiệm → kết quả tách theo `supplier` trên báo cáo; giấy phép hết hạn chỉ cảnh báo (UC-46).
+- A3. Lấy mẫu phục vụ điều tra ổ dịch (UC-53) → mẫu gắn CAPA của ổ dịch.
+- A4. Phòng cách ly kiểm tra bằng phiếu hạ tầng → cập nhật `Isolation Room.checked_on`, `meets_standard` (UC-52).
+
+**Exception flows**
+- E1. Vùng thiếu `risk_level` hoặc `responsible_party` → chặn lưu (FR-M15-01).
+- E2. Đổi ngưỡng sau ngày lấy mẫu → kết quả mẫu cũ không đổi (FR-M15-03, BRU-ENV-002).
+- E3. Mẫu quá hạn kế hoạch 7 ngày → nhắc R01 (FR-M15-05).
+- E4. Hệ thống hạ tầng quá hạn kiểm tra → không tính "đúng hạn" (FR-M15-06).
+- E5. Mẫu lại vẫn Không đạt → NC giữ mở, tạo tiếp việc lấy mẫu lại, cờ vùng giữ nguyên.
+
+**Open issues:** Danh sách mức nguy cơ và tần suất mặc định; ngưỡng môi trường khởi tạo do chuyên gia soạn (OQ-V12-08, OQ-V12-09).
+
+_Nguồn: BA v1.12 §8.1 bước 1–4, §8.3 FR-M15-01..07, §8.4; TT 16/2018 Điều 11; QĐ 3916; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M16 — An toàn nghề nghiệp [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §9 (A-113); TT 16/2018/TT-BYT Điều 13; QĐ 3671/QĐ-BYT (phòng ngừa chuẩn, tiêm an toàn). Phạm vi: báo cáo và theo dõi phơi nhiễm nghề nghiệp của nhân viên y tế (nối tiếp FR-M10-06.1 phơi nhiễm vật sắc nhọn từ chất thải, qua hook), tiêm chủng nhân viên có nguy cơ (thay trường tiêm chủng đơn lẻ của FR-M4-01), cảnh báo thuốc dự phòng sau phơi nhiễm. **Nguyên tắc riêng tư:** không lưu kết quả xét nghiệm hay chẩn đoán của nhân viên; chỉ lưu sự việc, các bước đã làm và ngày làm (BRU-OCC-001). Use case: UC-55. Quy tắc: BRU-OCC-001..004.
+
+```mermaid
+graph LR
+    nv(["Nhân viên y tế (mọi vai trò) / R08 khoa"])
+    r11(["R11 Giám sát viên KSNK"])
+    r01(["R01 Trưởng khoa KSNK"])
+    r02(["R02 Điều dưỡng trưởng / Phòng Tổ chức"])
+    r13(["R13 Hội đồng KSNK & BGĐ"])
+    subgraph m16["TraceCore · M16 An toàn nghề nghiệp"]
+        uc55(("UC-55<br/>Phơi nhiễm nghề nghiệp & tiêm chủng nhân viên"))
+    end
+    nv --> uc55
+    r11 --> uc55
+    r01 --> uc55
+    r02 --> uc55
+    r13 -.-> uc55
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-55: Báo cáo và theo dõi phơi nhiễm nghề nghiệp; tiêm chủng nhân viên [NEW v1.12]
+
+- **ID:** UC-55
+- **Actors:** Nhân viên y tế bị phơi nhiễm / R08 khoa (primary — báo cáo ban đầu); R11 Giám sát viên KSNK (primary — xử trí, theo dõi); R01 (primary — cấu hình mẫu theo dõi, ngưỡng, xem); R02 / Phòng Tổ chức (primary — tiêm chủng); R13 (secondary — số liệu tổng hợp)
+- **Description:** Nhân viên hoặc khoa báo phơi nhiễm trên PDA/Cổng khoa trong ≤ 3 bước (hoặc tự tạo từ sự cố chất thải M10 qua hook, không trùng); hệ thống báo ngay R01, R11 (≤ 1 phút) và hiển thị quy trình xử trí ban đầu (`IC Procedure Document`). R11 ghi sơ cứu, nguồn phơi nhiễm (mã BN nguồn mã hóa), chỉ định dự phòng và thời điểm bắt đầu; hệ thống sinh lịch theo dõi từ `Exposure Follow-up Template` theo loại, nhắc trước mỗi bước 3 ngày; tính thời gian phơi nhiễm → báo cáo → bắt đầu dự phòng và gắn cờ vượt ngưỡng. Hồ sơ chỉ R01, R11 và chính nhân viên xem; không trường kết quả xét nghiệm/chẩn đoán. Tiêm chủng: R02 ghi `Staff Immunization`; hệ thống tính `next_due`, nhắc, tính tỷ lệ bao phủ theo `Immunization Requirement`; cảnh báo R01 khi tồn thuốc dự phòng thấp hoặc lô sắp hết hạn (đọc từ ERPNext Stock).
+- **Preconditions:** `Exposure Follow-up Template` theo loại phơi nhiễm và `Immunization Requirement` đã duyệt (R01); Item thuốc dự phòng đánh dấu; `IC Procedure Document` quy trình xử trí phơi nhiễm; hook `tracecore_exposure_incident` đăng ký (M10 → M16).
+- **Postconditions (success):** Mỗi sự cố có đúng một `Occupational Exposure`; thông báo R11 ≤ 1 phút; lịch theo dõi đầy đủ với nhắc; hồ sơ bị giới hạn quyền xem; báo cáo kỳ không có tên nhân viên; tỷ lệ bao phủ vaccine theo nhóm nguy cơ; NC (nếu có) không chứa thông tin sức khỏe.
+- **Traces to:** FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09
+- **Business rules:** BRU-OCC-001 (không lưu kết quả xét nghiệm/chẩn đoán), BRU-OCC-002 (một sự cố = một hồ sơ, dù từ M10 hay M16), BRU-OCC-003 (chỉ R01, R11 và chính nhân viên xem; NC không chứa thông tin sức khỏe), BRU-OCC-004 (danh mục vaccine và bước theo dõi là cấu hình do R01 duyệt)
+- **Screens:** SCR-63 (PDA/DEPT — Báo phơi nhiễm ≤ 3 bước); SCR-64 (Hồ sơ phơi nhiễm & theo dõi; tiêm chủng nhân viên; báo cáo phơi nhiễm — WEB); SCR-15 (NC)
+- **Priority:** Must (FR-M16-08 Should) · Frequency: phơi nhiễm theo sự kiện (vài chục/năm); tiêm chủng theo lịch; báo cáo quý/năm.
+- **Related NFR:** NFR-PRIV-01 (dữ liệu sức khỏe nhân viên là nhạy cảm; không lưu kết quả), NFR-PRIV-02 (thời hạn lưu), NFR-SEC-09, NFR-USAB-03 (≤ 3 bước trên PDA), NFR-AVAIL-05 (báo phơi nhiễm offline), NFR-AVAIL-04 (≤ 1 phút)
+
+**Main success scenario**
+1. Nhân viên (hoặc R08 thay mặt) mở SCR-63 trên PDA/Cổng khoa: bước 1 loại phơi nhiễm (Kim tiêm–vật sắc nhọn / Bắn máu–dịch vào niêm mạc / Da không lành / Hô hấp / Khác) và thời điểm; bước 2 hoạt động, thiết bị, nguồn đã biết? (mã BN nguồn → mã hóa); bước 3 xác nhận → gửi `tracecore.v1.exposure.report` (`@idempotent`).
+2. Hệ thống tạo `Occupational Exposure` (`reported_at`), thông báo ngay R01, R11 qua `core.notification` (≤ 1 phút) và hiển thị quy trình xử trí ban đầu của bệnh viện.
+3. R11 mở SCR-64, ghi `first_aid_done`, `prophylaxis` (Có / Không chỉ định / Từ chối), `prophylaxis_started_at`; hệ thống tính thời gian phơi nhiễm → báo cáo và → bắt đầu dự phòng, gắn cờ nếu vượt ngưỡng giờ R01 cấu hình.
+4. Hệ thống sinh bảng `Exposure Follow-up` từ template theo loại (bước, hạn = ngày + `days_after`); nhắc nhân viên và R11 trước mỗi bước 3 ngày; bước quá hạn chưa `done_on` → nhắc hằng ngày tối đa 7 lần.
+5. R11 ghi `done_on` từng bước; đủ bước → `status` Hoàn thành theo dõi.
+6. Nếu nguyên nhân là quy trình/thiết bị, R11 mở `Incident CAPA` loại Occupational Exposure chỉ mô tả nguyên nhân quy trình (không thông tin sức khỏe).
+7. (Tiêm chủng) R02 ghi `Staff Immunization` (nhân viên, vaccine, mũi số, ngày tiêm, bằng chứng); hệ thống tính `next_due`, nhắc nhân viên và R02 đến hạn (cơ chế FR-M4-01.4), tính tỷ lệ bao phủ từng vaccine trong nhóm nguy cơ theo `Immunization Requirement` (nhân viên nghỉ việc không tính).
+8. Cuối kỳ R01/R11 xuất báo cáo phơi nhiễm: theo loại, khoa, nghề nghiệp, thiết bị gây phơi nhiễm, tỷ lệ báo cáo đúng hạn, tỷ lệ hoàn thành theo dõi — không có tên nhân viên; chỉ số đẩy sang M9.
+
+**Alternate flows**
+- A1. Sự cố chất thải loại phơi nhiễm vật sắc nhọn ghi ở M10 (FR-M10-06.1) → hook tạo `Occupational Exposure` liên kết `incident_capa`; ghi lại cùng sự cố → vẫn một hồ sơ (FR-M16-02).
+- A2. PDA mất mạng → báo cáo ban đầu xếp hàng cục bộ, gửi khi có mạng; thông báo tính từ lúc server nhận.
+- A3. Tồn kho Item thuốc dự phòng < mức tối thiểu hoặc lô ≤ 30 ngày hạn → cảnh báo R01 (đọc ERPNext Stock, không nhập lại).
+- A4. Nhân viên tự xem hồ sơ phơi nhiễm của mình trên Cổng khoa/Desk.
+
+**Exception flows**
+- E1. R02 hoặc R13 mở danh sách phơi nhiễm → không thấy bản ghi cá nhân, chỉ số liệu tổng hợp (FR-M16-05).
+- E2. Mã BN nguồn luôn che; không có trường kết quả xét nghiệm/chẩn đoán để nhập (FR-M16-06, kiểm tra JSON DocType bằng test).
+- E3. Thời gian đến báo cáo hoặc đến dự phòng vượt ngưỡng → cờ hiển thị bằng chữ, đưa vào báo cáo "không đúng hạn".
+- E4. Template theo dõi chưa có cho loại phơi nhiễm → không sinh lịch, cảnh báo R01 cấu hình.
+- E5. NC chứa nội dung sức khỏe → chặn bởi quy tắc nhập (chỉ mục nguyên nhân quy trình).
+
+**Open issues:** Ai xử trí và theo dõi phơi nhiễm (R11 hay khoa khác), có cần vai trò riêng (OQ-V12-06); ngưỡng giờ báo cáo (OQ-V12-09); thời hạn lưu (OQ-V12-07).
+
+_Nguồn: BA v1.12 §9.1 bước 1–5, §9.3 FR-M16-01..09, §9.4; TT 16/2018 Điều 13; QĐ 3671; NĐ 356/2025/NĐ-CP. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M17 — An toàn thực phẩm và tư vấn người bệnh [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §10 (A-113); TT 16/2018/TT-BYT Điều 12, 25; Luật An toàn thực phẩm 55/2010/QH12. Phạm vi: module nhỏ tận dụng M12 (phiếu loại "An toàn thực phẩm" gắn đơn vị suất ăn) và M15 (mẫu thực phẩm xử lý như mẫu môi trường): sức khỏe người chế biến (chỉ Đủ/Không đủ), sự cố nghi ngộ độc, buổi truyền thông KSNK cho người bệnh/người nhà, tài liệu truyền thông có QR. Use case: UC-56. Quy tắc: BRU-FS-001..002.
+
+```mermaid
+graph LR
+    r11(["R11 Giám sát viên KSNK"])
+    r01(["R01 Trưởng khoa KSNK"])
+    r12(["R12 Mạng lưới viên KSNK"])
+    r08(["R08 Nhân viên khoa"])
+    ext(["Đơn vị suất ăn / bếp ăn (actor ngoài)"])
+    subgraph m17["TraceCore · M17 An toàn thực phẩm và tư vấn người bệnh"]
+        uc56(("UC-56<br/>An toàn thực phẩm & truyền thông người bệnh"))
+    end
+    r11 --> uc56
+    r01 --> uc56
+    r12 -.-> uc56
+    r08 -.-> uc56
+    ext -.-> uc56
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-56: An toàn thực phẩm và truyền thông người bệnh [NEW v1.12]
+
+- **ID:** UC-56
+- **Actors:** R11 Giám sát viên KSNK (primary — giám sát bếp ăn, sức khỏe người chế biến, mẫu thực phẩm, sự cố); R01 (primary — ban hành tài liệu truyền thông, ngưỡng); R12/R08 (secondary — ghi buổi truyền thông của khoa); Đơn vị suất ăn/bếp ăn (actor ngoài)
+- **Description:** R11 giám sát bếp ăn hoặc đơn vị suất ăn bằng phiếu M12 loại "An toàn thực phẩm" gắn `supplier`; theo dõi `Food Handler Health Check` (chỉ Đủ/Không đủ và hạn), nhắc còn 30 ngày/quá hạn; ghi mẫu thực phẩm như mẫu môi trường M15; ghi `Foodborne Event` → báo ngay R01, R11, đề nghị NC, vượt ngưỡng số người → đề nghị điều tra ổ dịch M14. Khoa ghi `IC Education Session` (đối tượng, chủ đề, số người) tổng hợp theo quý; R01 ban hành tài liệu truyền thông (`IC Procedure Document` loại Tài liệu truyền thông) với mã QR trỏ tới bản hiện hành.
+- **Preconditions:** Mẫu phiếu "An toàn thực phẩm" đã duyệt (UC-43); Supplier loại Suất ăn (UC-46); `Environmental Limit` cho `sample_type` = Thực phẩm (UC-54); ngưỡng số người bị ảnh hưởng do R01 đặt.
+- **Postconditions (success):** Kết quả giám sát gắn đơn vị cung cấp; người chế biến quá hạn khám được liệt kê theo đơn vị; mẫu thực phẩm có kết quả so ngưỡng; sự cố ngộ độc có NC và (khi vượt ngưỡng) ổ dịch liên kết; buổi truyền thông tổng hợp quý; QR tài liệu luôn trỏ bản mới nhất.
+- **Traces to:** FR-M17-01, FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06
+- **Business rules:** BRU-FS-001 (hồ sơ sức khỏe người chế biến chỉ lưu kết luận Đủ/Không đủ và hạn), BRU-FS-002 (ngộ độc luôn xem xét như ổ dịch tiềm năng theo ngưỡng), BRU-AUD-001, BRU-ENV-002, BRU-ENV-003, BRU-AUD-006
+- **Screens:** SCR-65 (An toàn thực phẩm — sức khỏe người chế biến, sự cố; truyền thông người bệnh với QR — WEB); SCR-52 (phiếu ATTP trên PDA); SCR-62 (mẫu thực phẩm); SCR-61 (ổ dịch)
+- **Priority:** Should (FR-M17-01..04); Could (FR-M17-05, 06) · Frequency: giám sát bếp ăn tháng/quý; khám sức khỏe người chế biến theo hạn (năm); truyền thông theo buổi; sự cố theo sự kiện.
+- **Related NFR:** NFR-PRIV-01 (không lưu chẩn đoán người chế biến), NFR-AVAIL-04, NFR-MAINT-04
+
+**Main success scenario**
+1. R11 mở phiếu loại "An toàn thực phẩm" trên PDA (SCR-52), chọn `supplier` (đơn vị suất ăn) hoặc bếp ăn bệnh viện, chấm các mục; ghi sổ → kết quả gắn đơn vị cung cấp, phản hồi theo UC-45.
+2. R11 ghi `Food Handler Health Check` cho từng người chế biến (họ tên, `supplier` hoặc `employee`, ngày khám, hạn kế tiếp, `fit_for_work` Đủ/Không đủ, bằng chứng); scheduler nhắc R11 khi còn 30 ngày hoặc quá hạn và liệt kê theo đơn vị trên SCR-65.
+3. R11 ghi mẫu thực phẩm như `Environmental Sample` với `sample_type` = Thực phẩm (SCR-62): so ngưỡng, cờ, lấy mẫu lại (dùng chung FR-M15-03, FR-M15-04).
+4. Khi nghi ngộ độc, R11 ghi `Foodborne Event` (ngày, địa điểm, số người bị ảnh hưởng, thực phẩm nghi ngờ, đơn vị); hệ thống báo ngay R01, R11, đề nghị mở NC; `affected_count` ≥ ngưỡng → đề nghị mở `Outbreak Investigation` (UC-53), liên kết hai chiều.
+5. Khoa (R12/R08) ghi `IC Education Session` (ngày, đối tượng Người bệnh / Người nhà / Nhân viên / Người chế biến / Sinh viên, chủ đề theo nhóm biện pháp, khoa, số người, tài liệu); hệ thống tổng hợp quý theo đối tượng–chủ đề.
+6. R01 ban hành tài liệu truyền thông (`IC Procedure Document` loại Tài liệu truyền thông, có phiên bản); hệ thống sinh mã QR trỏ tới bản hiện hành để in dán tại khoa; phiên bản mới → QR cũ vẫn trỏ bản mới nhất.
+
+**Alternate flows**
+- A1. Bếp ăn do bệnh viện tự vận hành → giám sát gắn khoa Dinh dưỡng thay `supplier`.
+- A2. Sự cố ngộ độc được cơ quan bên ngoài điều tra → ghi `reported_ref`, ổ dịch kết thúc theo UC-53.
+- A3. Người chế biến thuộc đơn vị thuê ngoài → theo dõi theo `supplier`; giấy phép đơn vị theo UC-46.
+
+**Exception flows**
+- E1. Nhập chẩn đoán/kết quả xét nghiệm vào hồ sơ người chế biến → không có trường; chỉ Đủ/Không đủ (BRU-FS-001).
+- E2. Ngưỡng số người chưa đặt → chỉ đề nghị NC, không đề nghị ổ dịch; nhắc R01 cấu hình.
+- E3. Người chế biến `fit_for_work` = Không đủ → nhãn chữ trên danh sách, nhắc đơn vị; không chặn giao dịch (quyết định thuộc bệnh viện).
+- E4. QR được quét khi tài liệu đã thu hồi (không bản hiện hành) → trang thông báo "Tài liệu đã thu hồi".
+
+**Open issues:** Nội dung mẫu phiếu ATTP khởi tạo do chuyên gia soạn (OQ-V12-08); ngưỡng số người bị ảnh hưởng (OQ-V12-09).
+
+_Nguồn: BA v1.12 §10.2 FR-M17-01..06; TT 16/2018 Điều 12, 25; Luật ATTP 2010. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+## M9 mở rộng — Bảng chỉ số KSNK toàn viện, báo cáo, nhập dữ liệu ngoài [NEW v1.12]
+
+Nguồn nghiệp vụ: BA v1.12 §11 (A-113); TT 16/2018/TT-BYT Điều 17, 20 (báo cáo Giám đốc, Hội đồng); QĐ 38 (chỉ tiêu, ứng dụng công nghệ). Phạm vi: engine chỉ số dùng chung cho M11–M17 (`IC Indicator`, `IC Indicator Value`, hook `tracecore_ic_indicators`), bảng chỉ số cho Hội đồng và khoa, báo cáo tháng một trang, Cổng khoa, tự đánh giá QĐ 38, nhập file có hồ sơ ánh xạ cột thay tích hợp HIS/LIS (D3), gói xuất hồ sơ KSNK. Use case: UC-57 (bổ sung UC-32, UC-33, UC-38, UC-39 hiện có). Quy tắc: BRU-RPT-001..003.
+
+```mermaid
+graph LR
+    r01(["R01 Trưởng khoa KSNK"])
+    r13(["R13 Hội đồng KSNK & BGĐ"])
+    r12(["R12 Mạng lưới viên / trưởng khoa (Cổng khoa)"])
+    r10(["R10 Quản trị hệ thống"])
+    r11(["R11 Giám sát viên KSNK"])
+    subgraph m9x["TraceCore · M9 mở rộng KSNK toàn viện"]
+        uc57(("UC-57<br/>Bảng chỉ số, báo cáo Hội đồng, Cổng khoa, nhập file, hồ sơ"))
+    end
+    r01 --> uc57
+    r13 --> uc57
+    r12 --> uc57
+    r10 -.-> uc57
+    r11 -.-> uc57
+```
+
+_Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
+
+### UC-57: Bảng chỉ số KSNK toàn viện, báo cáo Hội đồng, Cổng khoa, tự đánh giá QĐ 38, nhập file ngoài, xuất hồ sơ [NEW v1.12]
+
+- **ID:** UC-57
+- **Actors:** R01 Trưởng khoa KSNK (primary — khóa kỳ, tự đánh giá, xuất hồ sơ); R13 Hội đồng KSNK & BGĐ (primary — xem bảng chỉ số, nhận báo cáo tháng); R12 / trưởng khoa (primary — Cổng khoa); R10 Quản trị (secondary — hồ sơ ánh xạ cột, import); R11 (secondary — import)
+- **Description:** Khi kỳ báo cáo khóa (UC-48), hệ thống tính và lưu `IC Indicator Value` cho mọi `IC Indicator` theo khoa và toàn viện (hàm tính đăng ký qua hook từ M11–M17, M12, M13), đánh dấu `locked`. R01/R13 mở bảng chỉ số: từng chỉ số của kế hoạch năm với giá trị kỳ gần nhất, mục tiêu, xu hướng 12 tháng, cỡ mẫu, lọc theo khoa. Ngày làm việc thứ 5 mỗi tháng, hệ thống sinh báo cáo một trang PDF cho Hội đồng từ kỳ đã khóa và thông báo R01, R13. Cổng khoa hiển thị chỉ số khoa mình cạnh trung bình toàn viện và việc cần làm (phiếu chưa làm, mẫu số thiếu, cách ly đang mở). R11/R10 nhập file (mẫu số, phẫu thuật, vi sinh, hóa chất) qua hồ sơ ánh xạ cột (`Import Mapping Profile`), nhập lại không trùng, báo lỗi theo dòng. R01 lập tự đánh giá năm theo QĐ 38 với phần tính được điền sẵn; xuất gói hồ sơ KSNK (PDF + Excel) cho đoàn kiểm tra với mã BN che.
+- **Preconditions:** Danh mục `IC Indicator` (mã, nhóm biện pháp 14 nhóm, loại, hàm tính, tần suất, chỉ tiêu quốc gia, `target_ref`); kế hoạch năm (UC-41); kỳ báo cáo và cơ chế khóa (UC-48); Import Batch (FR-M9-11) mở rộng loại import; Notification Rule.
+- **Postconditions (success):** `IC Indicator Value` bất biến sau khóa, chỉ tính lại khi R01 mở khóa có lý do; bảng chỉ số đọc từ giá trị đã lưu (≤ 3 giây với 24 tháng dữ liệu BV 1.000 giường); báo cáo tháng không dữ liệu cá nhân; R12 không xem chi tiết khoa khác; import 500 dòng có 3 dòng lỗi → 497 ghi, 3 báo lỗi; tự đánh giá ghi rõ nguồn Tự động / Thủ công; gói xuất không có dữ liệu cá nhân rõ.
+- **Traces to:** FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30
+- **Business rules:** BRU-RPT-001 (mẫu số 0 → "Không tính"), BRU-RPT-002 (báo cáo cho R13 và file ra ngoài chỉ số liệu tổng hợp/mã che), BRU-RPT-003 (giá trị đã khóa chỉ đổi khi mở khóa có lý do), BRU-ID-006 (import không nhập tay mã hệ thống sinh)
+- **Screens:** SCR-66 (Bảng chỉ số KSNK; báo cáo Hội đồng; view Cổng khoa; tự đánh giá QĐ 38; nhập file & hồ sơ ánh xạ cột; gói hồ sơ KSNK — WEB + DEPT); SCR-43 (wizard import/export hiện có); SCR-42 (thông báo)
+- **Priority:** Must (FR-M9-24..28); Should (FR-M9-29); Could (FR-M9-30) · Frequency: tính giá trị khi khóa kỳ (tháng); báo cáo tháng; Cổng khoa hằng ngày; import theo nguồn (ngày/tuần/tháng); tự đánh giá năm; gói hồ sơ theo đoàn kiểm tra.
+- **Related NFR:** NFR-PERF-05 (bảng ≤ 3 giây, đọc từ `IC Indicator Value`), NFR-PRIV-01, NFR-SEC-09, NFR-PORT-02, NFR-COMP-01, NFR-PERF-03, NFR-AVAIL-04
+
+**Main success scenario**
+1. R10/R01 duy trì `IC Indicator` (mã, tên, `measure_group`, `kind` Tỷ lệ % / Tỷ suất ‰ / Số đếm, `source_method` — hàm do module đăng ký qua hook `tracecore_ic_indicators`, tần suất, `national_target`, `target_ref`).
+2. R01 khóa kỳ tháng (UC-48) → hệ thống gọi hàm tính của từng module, lưu `IC Indicator Value` (chỉ số, kỳ, khoa hoặc toàn viện, tử số, mẫu số, giá trị, ghi chú cỡ mẫu, `computed_on`, `locked` = 1).
+3. R01/R13 mở SCR-66 → bảng chỉ số: từng chỉ số của `IC Annual Plan` năm hiện hành với giá trị kỳ gần nhất, mục tiêu, trạng thái Đạt / Chưa đạt bằng chữ, xu hướng 12 tháng, cỡ mẫu; lọc theo khoa; số liệu đọc từ `IC Indicator Value` qua `tracecore.v1.indicator.values` (chỉ đọc).
+4. Ngày làm việc thứ 5 mỗi tháng (cấu hình), scheduler sinh báo cáo một trang PDF cho Hội đồng từ kỳ đã khóa (chỉ số, so mục tiêu, xu hướng, việc nổi bật) và thông báo R01, R13 (SCR-42).
+5. Trưởng khoa/R12 mở Cổng khoa (SCR-66 view DEPT) → chỉ số của khoa mình cạnh trung bình toàn viện; danh sách việc cần làm: phiếu chưa làm (UC-43), mẫu số thiếu (UC-47), cách ly đang mở (UC-52), theo dõi phơi nhiễm (UC-55).
+6. R11/R10 nhập file (mẫu số ngày, danh sách phẫu thuật, vi sinh, hóa chất) qua SCR-43: chọn loại import và `Import Mapping Profile` đã lưu (hoặc tạo mới bằng cách ánh xạ cột file → trường); hệ thống kiểm tra từng dòng, nhập lại cùng file không tạo trùng, trả báo cáo lỗi theo số dòng; dòng hợp lệ ghi vào M13/M14/M12.
+7. Cuối năm R01 lập tự đánh giá theo QĐ 38 (SCR-66): hệ thống điền sẵn trạng thái chỉ tiêu tính được (kế hoạch, đào tạo, báo cáo NKVM, hồi sức, kháng thuốc, phòng cách ly, hóa chất) với nguồn "Tự động"; R01 đánh giá tay phần còn lại ("Thủ công"); lưu theo năm.
+8. Khi có đoàn kiểm tra, R01 chọn kỳ → hệ thống xuất gói PDF + Excel (kế hoạch, biên bản Hội đồng, kết quả giám sát, chỉ số, đào tạo) với mã BN che, dấu thời gian, checksum (cùng cơ chế FR-M9-12).
+
+**Alternate flows**
+- A1. Kỳ chưa khóa khi đến ngày sinh báo cáo → báo cáo mang dấu "Tạm" từ giá trị tạm tính; khi khóa, sinh lại bản chính thức.
+- A2. R01 mở khóa kỳ có lý do, sửa dữ liệu nguồn, khóa lại → giá trị tính lại, Audit Log ghi giá trị trước/sau (FR-M9-27).
+- A3. Dashboard CSSD hiện có (FR-M9-01, SCR-32) giữ nguyên; bảng chỉ số KSNK là màn riêng.
+- A4. Xuất > 50.000 dòng → chạy nền, thông báo khi xong (như UC-39 E4).
+- A5. Nếu D3 được mở sau này (FEAT-074) → API `tracecore.v1` nhận mẫu số/vi sinh thay file; không thuộc v1.12.
+
+**Exception flows**
+- E1. Chỉ số có mẫu số 0 → hiển thị "Không tính", không ghi 0 (BRU-RPT-001).
+- E2. Dữ liệu nguồn hoặc ngưỡng đổi sau khóa → giá trị đã khóa không đổi (FR-M9-27, BRU-RPT-003).
+- E3. R12 khoa A truy cập chỉ số chi tiết khoa B → từ chối (FR-M9-26).
+- E4. File import sai mẫu / hồ sơ ánh xạ thiếu cột bắt buộc → từ chối, chỉ rõ cột thiếu; dòng chứa họ tên người bệnh → bỏ cột, cảnh báo (NFR-PRIV-01).
+- E5. Báo cáo Hội đồng hoặc gói hồ sơ phát hiện mã BN rõ → test tự động chặn xuất (NFR-PRIV-01).
+- E6. Bảng chỉ số vượt 3 giây → vi phạm NFR-PERF-05 (test hiệu năng với dữ liệu sinh giả, BV 1.000 giường, 24 tháng).
+
+**Open issues:** Định dạng cột file HIS/WHONET của bệnh viện thí điểm (OQ-V12-05); mẫu báo cáo cơ quan quản lý (OQ-V12-02); mở D3 tích hợp HIS/LIS là quyết định riêng của chủ đầu tư.
+
+_Nguồn: BA v1.12 §11.2 FR-M9-24..30, §11.1; TT 16/2018 Điều 17, 20; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
 ## Phụ lục A — Ma trận UC → FR
 
 | UC | Tên | Phân hệ | Actor chính | Traces to (FR) | Screens |
@@ -1748,5 +2648,23 @@ _Nguồn: SRS v1.11 §3.1.10 FR-M10-06, FR-M10-07, FR-M10-08; TT 20/2021/TT-BYT 
 | UC-37 | Báo cáo chất thải và sự cố [v1.11] | M10 | R01 | FR-M10-06, FR-M10-07, FR-M10-08 | SCR-41, SCR-32, SCR-15 |
 | UC-38 | Nhận và xử lý thông báo [v1.11] | M9 | Mọi vai trò | FR-M9-10 | SCR-42 |
 | UC-39 | Nhập dữ liệu danh mục ban đầu và xuất hồ sơ lưu trữ [v1.11] | M9 | R10 | FR-M9-11, FR-M9-12 | SCR-43 |
+| UC-40 | Khai báo cơ cấu KSNK: Hội đồng, mạng lưới, bộ phận giám sát [v1.12] | M11 | R01 | FR-M11-01, FR-M11-02, FR-M11-03 | SCR-47 |
+| UC-41 | Lập, duyệt và theo dõi kế hoạch KSNK năm; văn bản nội bộ; họp Hội đồng [v1.12] | M11 | R01, R13 | FR-M11-04, FR-M11-05, FR-M11-06, FR-M11-07, FR-M11-08 | SCR-48 |
+| UC-42 | Theo dõi đào tạo KSNK (HRMS Training), sinh viên thực tập, cải tiến chất lượng, tự đánh giá năm [v1.12] | M11 | R01, R02 | FR-M11-09, FR-M11-10, FR-M11-11, FR-M11-12, FR-M11-13 | SCR-49, SCR-52 |
+| UC-43 | Quản lý mẫu phiếu giám sát có phiên bản và lịch giám sát [v1.12] | M12 | R01, R11 | FR-M12-01, FR-M12-02, FR-M12-03 | SCR-50 |
+| UC-44 | Ghi phiếu giám sát trên PDA (vệ sinh tay theo cơ hội, điểm %, gói dự phòng), offline [v1.12] | M12 | R11, R12 | FR-M12-04, FR-M12-05, FR-M12-06, FR-M12-07, FR-M12-10, FR-M12-11 | SCR-51, SCR-52 |
+| UC-45 | Phản hồi kết quả giám sát, mở NC, báo cáo tuân thủ [v1.12] | M12 | R11, R01, R08 | FR-M12-08, FR-M12-09, FR-M12-14 | SCR-53, SCR-15 |
+| UC-46 | Hóa chất KSNK theo khoa–tháng và giám sát đơn vị thuê ngoài [v1.12] | M12 | R09, R01, R02 | FR-M12-12, FR-M12-13 | SCR-54, SCR-43 |
+| UC-47 | Nhập mẫu số ngày và đợt thiết bị tại khoa (Cổng khoa/PDA/import) [v1.12] | M13 | R08, R12, R11 | FR-M13-02, FR-M13-03, FR-M13-04 | SCR-55, SCR-43 |
+| UC-48 | Ghi nhận và xác định ca NKBV, khóa kỳ, tỷ suất, che mã BN [v1.12] | M13 | R11, R01 | FR-M13-01, FR-M13-05, FR-M13-06, FR-M13-10, FR-M13-11, FR-M13-15 | SCR-56, SCR-58 |
+| UC-49 | Giám sát NKVM: đăng ký phẫu thuật, NNIS, theo dõi sau ra viện, kháng sinh dự phòng, xuất báo cáo [v1.12] | M13 | R11 | FR-M13-07, FR-M13-08, FR-M13-09, FR-M13-12 | SCR-57, SCR-58 |
+| UC-50 | Cảnh báo cụm ca và điều tra cắt ngang [v1.12] | M13 | R11, R01 | FR-M13-13, FR-M13-14 | SCR-58, SCR-52 |
+| UC-51 | Import kết quả vi sinh (WHONET/CSV), gắn nhãn đa kháng, cảnh báo, báo cáo kháng thuốc [v1.12] | M14 | R11 | FR-M14-01, FR-M14-02, FR-M14-03, FR-M14-04, FR-M14-05, FR-M14-08 | SCR-59, SCR-43 |
+| UC-52 | Lệnh cách ly và phòng cách ly theo khoa [v1.12] | M14 | R08, R12, R11 | FR-M14-06, FR-M14-07 | SCR-60 |
+| UC-53 | Điều tra ổ dịch và khai báo bệnh truyền nhiễm [v1.12] | M14 | R01, R11 | FR-M14-09, FR-M14-10 | SCR-61, SCR-15 |
+| UC-54 | Vệ sinh môi trường: vùng, phiếu, xét nghiệm môi trường, hạ tầng, báo cáo [v1.12] | M15 | R01, R11 | FR-M15-01, FR-M15-02, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07 | SCR-62, SCR-52 |
+| UC-55 | Báo cáo và theo dõi phơi nhiễm nghề nghiệp; tiêm chủng nhân viên [v1.12] | M16 | Nhân viên/R08, R11, R01, R02 | FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | SCR-63, SCR-64, SCR-15 |
+| UC-56 | An toàn thực phẩm và truyền thông người bệnh [v1.12] | M17 | R11, R01, R08 | FR-M17-01, FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | SCR-65, SCR-52, SCR-62, SCR-61 |
+| UC-57 | Bảng chỉ số KSNK toàn viện, báo cáo Hội đồng, Cổng khoa, tự đánh giá QĐ 38, nhập file ngoài, xuất hồ sơ [v1.12] | M9 | R01, R13, R12, R10 | FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30 | SCR-66, SCR-43, SCR-42 |
 
-Kiểm đếm: **39 UC** (33 gốc + UC-34..39 v1.11); **88/90 FR** được ít nhất một UC truy vết — FR-M9-14 (trạng thái màn hình) và FR-M9-15 (trợ giúp) là yêu cầu xuyên suốt mọi màn hình trạm/PDA, không có UC sở hữu riêng (RTM ghi "— / mọi UC trạm"). **43 SCR** (SCR-01..37 gốc #09 + SCR-38..43 mới: 38 Trạm thu gom chất thải; 39 Kho lưu giữ tạm; 40 Bàn giao & đơn vị xử lý; 41 Báo cáo chất thải & sự cố; 42 Trung tâm thông báo; 43 Import/Export). Bộ Số Chuẩn BA v1.10 → v1.11: N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43.
+Kiểm đếm: **57 UC** (33 gốc + UC-34..39 v1.11 + UC-40..57 v1.12); [v1.12] 81 FR mới (FR-M11-01..13, FR-M12-01..14, FR-M13-01..15, FR-M14-01..10, FR-M15-01..07, FR-M16-01..09, FR-M17-01..06, FR-M9-24..30) được truy vết đủ 81/81 bởi UC-40..57; baseline v1.11: **88/90 FR** được ít nhất một UC truy vết — FR-M9-14 (trạng thái màn hình) và FR-M9-15 (trợ giúp) là yêu cầu xuyên suốt mọi màn hình trạm/PDA, không có UC sở hữu riêng (RTM ghi "— / mọi UC trạm"). **43 SCR** (SCR-01..37 gốc #09 + SCR-38..43 mới: 38 Trạm thu gom chất thải; 39 Kho lưu giữ tạm; 40 Bàn giao & đơn vị xử lý; 41 Báo cáo chất thải & sự cố; 42 Trung tâm thông báo; 43 Import/Export). Bộ Số Chuẩn BA v1.10 → v1.11: N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43.

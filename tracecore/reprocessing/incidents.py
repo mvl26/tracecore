@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import cstr, getdate, now_datetime, today
 
-from tracecore.core import notification
+from tracecore.core import extension, notification
 from tracecore.core.errors import Block, BlockedError
 
 DOCTYPE = "Incident CAPA"
@@ -54,6 +54,11 @@ WASTE_TYPES = (
 	"Sharps Exposure",
 )
 SHARPS = "Sharps Exposure"
+# FEAT-060 (A-134 c, FR-M12-09): không tuân thủ từ phiếu giám sát KSNK (M12) — loại riêng, nhóm Compliance
+COMPLIANCE = "Compliance Nonconformity"
+ENVIRONMENT = "Environment Nonconformity"  # FEAT-070 (A-148 d): NC từ mẫu môi trường Không đạt
+OUTBREAK = "Outbreak Control"  # FEAT-069 (A-150 Q3): hành động kiểm soát ổ dịch (M14)
+FOOD_SAFETY = "Food Safety Nonconformity"  # FEAT-073 (A-151): NC từ sự cố nghi ngộ độc thực phẩm (M17)
 NC_TYPES = {"Shortage": "Missing Instrument", "Foreign Instrument": "Foreign Instrument"}
 
 
@@ -114,6 +119,14 @@ def validate(doc):
 	doc.description = cstr(doc.description).strip()
 	if doc.incident_type in WASTE_TYPES:
 		doc.incident_category = "Waste"
+	if doc.incident_type == COMPLIANCE:
+		doc.incident_category = "Compliance"
+	if doc.incident_type == ENVIRONMENT:  # FEAT-070
+		doc.incident_category = "Environment"
+	if doc.incident_type == OUTBREAK:  # FEAT-069
+		doc.incident_category = "Outbreak"
+	if doc.incident_type == FOOD_SAFETY:  # FEAT-073
+		doc.incident_category = "Food Safety"
 	if doc.incident_type == SHARPS:
 		_check_sharps(doc)
 	if not any(doc.get(field) for field in LINK_FIELDS):
@@ -168,6 +181,9 @@ def after_insert(doc):
 		users = _users_with(R01) + users
 	subject = _("New incident {0}: {1}").format(doc.name, _(doc.incident_type))
 	_notify("INCIDENT", users, subject, doc)
+	if doc.incident_type == SHARPS:
+		# FR-M10-06.1 → FR-M16-02 (FEAT-071, A-137): M16 lập hồ sơ phơi nhiễm; M2/M10 không import M16
+		extension.run("tracecore_exposure_incident", doc)
 
 
 def guard_submit(doc):
@@ -412,6 +428,80 @@ def on_sync_conflict(conflict):
 			"Offline transaction from station {0} was rejected on sync ({1}); the server record was kept."
 		).format(conflict.station or "-", conflict.error_code or conflict.http_status),
 		links,
+	)
+
+
+def on_compliance_nc(ctx):
+	"""Hook ``tracecore_compliance_nc`` (FEAT-060, FR-M12-09): R01/R11 mở NC từ phiếu giám sát có mục trọng yếu không
+	đạt → Incident Compliance, nguồn Audit Session, gắn khoa. ``ctx``: {session, department, description}."""
+	return _auto(
+		"Audit Session",
+		ctx["session"],
+		COMPLIANCE,
+		"Medium",
+		ctx.get("description") or _("Audit {0} has a failed critical item.").format(ctx["session"]),
+		{"department": ctx.get("department")},
+	)
+
+
+def on_environment_nc(ctx):
+	"""Hook ``tracecore_environment_nc`` (FEAT-070, FR-M15-04, BRU-ENV-003): R01/R11 mở NC từ mẫu môi trường Không đạt
+	→ Incident Environment, nguồn Environmental Sample, gắn khoa của vùng. ``ctx``: {sample, department, description}."""
+	return _auto(
+		"Environmental Sample",
+		ctx["sample"],
+		ENVIRONMENT,
+		"Medium",
+		ctx.get("description") or _("Environmental sample {0} failed.").format(ctx["sample"]),
+		{"department": ctx.get("department")},
+	)
+
+
+def on_outbreak_nc(ctx):
+	"""Hook ``tracecore_outbreak_nc`` (FEAT-069, FR-M14-09, A-150 Q3): R01/R11 thêm hành động kiểm soát ổ dịch → Incident
+	Outbreak Control (một NC cho mỗi ổ dịch, nguồn Outbreak Investigation, khoa chính) và thêm một CAPA Action.
+	``ctx``: {outbreak, department, description, action: {description, responsible, due_date}}; trả tên Incident."""
+	name = _auto(
+		"Outbreak Investigation",
+		ctx["outbreak"],
+		OUTBREAK,
+		"High",
+		ctx.get("description") or _("Outbreak {0} control actions.").format(ctx["outbreak"]),
+		{"department": ctx.get("department")},
+	)
+	action = ctx.get("action")
+	if action:
+		doc = frappe.get_doc(DOCTYPE, name)
+		if doc.docstatus != 0:
+			raise _blocked(
+				"INCIDENT_STATUS_INVALID",
+				_("Step not available"),
+				_("Incident {0} is {1}.").format(doc.name, _(doc.status)),
+				_("Link a new incident to the outbreak for further actions."),
+			)
+		doc.append(
+			"actions",
+			{
+				"action_type": "Corrective",
+				"description": cstr(action.get("description")).strip(),
+				"responsible": action.get("responsible"),
+				"due_date": action.get("due_date"),
+			},
+		)
+		_save(doc)
+	return name
+
+
+def on_food_safety_nc(ctx):
+	"""Hook ``tracecore_food_safety_nc`` (FEAT-073, FR-M17-04, A-151): R01/R11 mở NC từ sự cố nghi ngộ độc thực phẩm
+	→ Incident Food Safety mức High, nguồn Foodborne Event, gắn khoa. ``ctx``: {event, department, description}."""
+	return _auto(
+		"Foodborne Event",
+		ctx["event"],
+		FOOD_SAFETY,
+		"High",
+		ctx.get("description") or _("Suspected food poisoning {0}.").format(ctx["event"]),
+		{"department": ctx.get("department")},
 	)
 
 

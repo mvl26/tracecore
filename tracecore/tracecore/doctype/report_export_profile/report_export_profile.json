@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "profile_name",
+  "export_kind",
+  "description",
+  "column_break_format",
+  "file_format",
+  "encoding",
+  "delimiter",
+  "date_format",
+  "section_columns",
+  "columns"
+ ],
+ "fields": [
+  {
+   "fieldname": "profile_name",
+   "fieldtype": "Data",
+   "label": "Profile Name",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "export_kind",
+   "fieldtype": "Data",
+   "label": "Report Type",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Key of the report type this profile writes files for."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Requested by"
+  },
+  {
+   "fieldname": "column_break_format",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "file_format",
+   "fieldtype": "Select",
+   "label": "File Format",
+   "options": "Excel\nCSV",
+   "default": "Excel",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "encoding",
+   "fieldtype": "Select",
+   "label": "CSV Encoding",
+   "options": "UTF-8\nWindows-1258\nWindows-1252",
+   "default": "UTF-8",
+   "depends_on": "eval:doc.file_format=='CSV'"
+  },
+  {
+   "fieldname": "delimiter",
+   "fieldtype": "Select",
+   "label": "CSV Separator",
+   "options": ",\n;\nTab",
+   "default": ",",
+   "depends_on": "eval:doc.file_format=='CSV'"
+  },
+  {
+   "fieldname": "date_format",
+   "fieldtype": "Select",
+   "label": "Date Format in File",
+   "options": "dd/mm/yyyy\nyyyy-mm-dd\nmm/dd/yyyy\ndd-mm-yyyy\ndd.mm.yyyy",
+   "default": "dd/mm/yyyy"
+  },
+  {
+   "fieldname": "section_columns",
+   "fieldtype": "Section Break",
+   "label": "Column Mapping"
+  },
+  {
+   "fieldname": "columns",
+   "fieldtype": "Table",
+   "label": "Columns",
+   "options": "Report Export Profile Column",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 14:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Report Export Profile",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "module": "TraceCore",
+ "autoname": "field:profile_name",
+ "naming_rule": "By fieldname",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "description": "Saved column mapping that shapes a report file to the template requested by the health authority."
+}

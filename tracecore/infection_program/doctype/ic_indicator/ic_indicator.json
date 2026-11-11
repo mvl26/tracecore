@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "creation": "2026-11-06 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "code",
+  "indicator_name",
+  "measure_group",
+  "kind",
+  "column_break_main",
+  "is_active",
+  "source_method",
+  "frequency",
+  "min_sample",
+  "section_target",
+  "national_target",
+  "target_direction",
+  "column_break_target",
+  "target_ref"
+ ],
+ "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "indicator_name",
+   "fieldtype": "Data",
+   "label": "Indicator",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "measure_group",
+   "fieldtype": "Select",
+   "label": "Measure Group",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "options": "Infection Surveillance\nPractice Compliance Monitoring\nInvasive Procedures and High-Risk Patients\nPatient Counselling\nMicroorganism-Related Transmission Prevention\nStandard Precautions\nTransmission-Based Precautions\nHand Hygiene\nMedical Devices and Equipment\nMedical Waste\nEnvironmental Hygiene and Infrastructure\nLinen\nOccupational Exposure\nFood Safety"
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "reqd": 1,
+   "options": "Percentage\nRate per 1000\nCount"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_method",
+   "fieldtype": "Data",
+   "label": "Calculation Method",
+   "description": "Key of the calculation registered by a module. Required to activate the indicator."
+  },
+  {
+   "default": "Monthly",
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Monthly\nQuarterly\nYearly"
+  },
+  {
+   "default": "0",
+   "fieldname": "min_sample",
+   "fieldtype": "Int",
+   "label": "Minimum Sample",
+   "description": "Values with a smaller sample are marked Insufficient sample."
+  },
+  {
+   "fieldname": "section_target",
+   "fieldtype": "Section Break",
+   "label": "Target"
+  },
+  {
+   "fieldname": "national_target",
+   "fieldtype": "Float",
+   "label": "Target"
+  },
+  {
+   "fieldname": "target_direction",
+   "fieldtype": "Select",
+   "label": "Target Direction",
+   "options": "\nHigher is better\nLower is better"
+  },
+  {
+   "fieldname": "column_break_target",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "target_ref",
+   "fieldtype": "Data",
+   "label": "Target Reference",
+   "description": "Legal basis of the target, for example a ministry decision number."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-06 10:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "IC Indicator",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "module": "Infection Program",
+ "autoname": "field:code",
+ "naming_rule": "By fieldname",
+ "title_field": "indicator_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "indicator_name,measure_group",
+ "description": "Infection control indicators. Values are calculated and stored when a reporting period is locked."
+}

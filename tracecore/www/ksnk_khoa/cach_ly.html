@@ -1,0 +1,28 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Isolation Orders") }}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/tracecore/css/tokens.css">
+{% endblock %}
+
+{# base portal styles shared with the exposure report (FEAT-071) and census (FEAT-062) pages + styles of this page #}
+{% block style %}
+<style>
+{% include "tracecore/www/ksnk_khoa/bao_phoi_nhiem.css" %}
+{% include "tracecore/www/ksnk_khoa/mau_so.css" %}
+{% include "tracecore/www/ksnk_khoa/cach_ly.css" %}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="tc-dept tc-census-portal tc-iso-portal">
+	<div class="tc-dept-zonebar" role="banner">
+		<span>{{ _("Department") }}: {{ department_label }}</span>
+	</div>
+	{% include "templates/includes/ksnk_khoa_nav.html" %}
+	<h1 class="tc-dept-title">{{ _("Isolation Orders") }} <span class="tc-mono tc-dept-ref">SCR-60</span></h1>
+	<div id="tc-iso-portal" class="tc-dept-body" aria-live="polite"></div>
+	<script type="application/json" id="tc-iso-boot">{{ boot | tojson }}</script>
+</div>
+{% endblock %}

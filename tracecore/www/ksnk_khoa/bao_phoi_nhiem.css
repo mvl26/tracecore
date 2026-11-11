@@ -1,0 +1,203 @@
+/* Cổng khoa — báo phơi nhiễm (SCR-63 DEPT, FEAT-071). Chỉ token --tc-*; chữ 16, chạm 48, nút chính 56. */
+.tc-dept {
+	margin: 0 auto;
+	padding: var(--tc-sp-3);
+	font-family: var(--tc-font-sans);
+	font-size: var(--tc-fs-lg);
+	color: var(--tc-text);
+	background: var(--tc-bg);
+}
+
+.tc-dept-zonebar {
+	margin: 0 calc(-1 * var(--tc-sp-3)) var(--tc-sp-3);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	background: var(--tc-border-strong);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-dept-title,
+.tc-exp-title {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-2xl);
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-border-strong);
+}
+
+.tc-dept .tc-btn {
+	min-height: var(--tc-touch-min);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-border-strong);
+	border-radius: var(--tc-r-md);
+	background: var(--tc-card);
+	color: var(--tc-border-strong);
+	font-size: var(--tc-fs-lg);
+	cursor: pointer;
+}
+
+.tc-dept .tc-btn-primary {
+	min-height: var(--tc-touch-station);
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-dept .tc-btn:disabled {
+	background: var(--tc-neutral-fill);
+	border-color: var(--tc-neutral-fill);
+	color: var(--tc-on-primary);
+	cursor: not-allowed;
+}
+
+.tc-dept .tc-actions {
+	display: flex;
+	gap: var(--tc-sp-3);
+	margin: var(--tc-sp-3) 0;
+}
+
+.tc-dept .tc-actions .tc-btn {
+	flex: 1;
+}
+
+.tc-dept .tc-exp-steps {
+	display: flex;
+	gap: var(--tc-sp-3);
+	margin: 0 0 var(--tc-sp-3);
+	padding: 0;
+	list-style: none;
+}
+
+.tc-dept .tc-exp-chip {
+	flex: 1;
+	min-height: var(--tc-touch-min);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-full);
+	color: var(--tc-text-muted);
+}
+
+.tc-dept .tc-exp-chip.is-current {
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-dept .tc-exp-options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-dept .tc-exp-inline {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.tc-dept .tc-exp-option {
+	min-height: var(--tc-touch-station);
+	text-align: left;
+}
+
+.tc-dept .tc-exp-inline .tc-exp-option {
+	flex: 1;
+	text-align: center;
+}
+
+.tc-dept .tc-exp-option.is-chosen {
+	border-width: var(--tc-bw-thick);
+	background: var(--tc-primary-soft);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-dept .tc-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-1);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-dept .tc-field input,
+.tc-dept .tc-field select {
+	min-height: var(--tc-touch-min);
+	padding: 0 var(--tc-sp-2);
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-sm);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-dept .tc-exp-question {
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-dept .tc-exp-row {
+	display: flex;
+	gap: var(--tc-sp-3);
+	padding: var(--tc-sp-2) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-border-row);
+}
+
+.tc-dept .tc-exp-row dt {
+	min-width: 40%;
+	color: var(--tc-text-muted);
+}
+
+.tc-dept .tc-exp-row dd {
+	margin: 0;
+}
+
+.tc-dept .tc-hint,
+.tc-dept .tc-empty,
+.tc-dept .tc-loading {
+	color: var(--tc-text-muted);
+}
+
+.tc-dept .tc-alert {
+	margin: 0 0 var(--tc-sp-3);
+	padding: var(--tc-sp-3);
+	border-left: var(--tc-bw-thick) solid var(--tc-primary);
+	background: var(--tc-primary-soft);
+}
+
+.tc-dept .tc-alert-error {
+	border-left-color: var(--tc-fail);
+	background: var(--tc-fail-tint);
+}
+
+.tc-dept .tc-alert-ok {
+	border-left-color: var(--tc-pass);
+	background: var(--tc-pass-tint);
+}
+
+.tc-dept .tc-alert-title {
+	margin: 0;
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-dept .tc-mono {
+	font-family: var(--tc-font-mono);
+}
+
+.tc-dept .tc-badge {
+	padding: 0 var(--tc-sp-2);
+	border: var(--tc-bw-hair) solid var(--tc-border-strong);
+	border-radius: var(--tc-r-full);
+}
+
+.tc-dept-records ul {
+	padding-left: var(--tc-sp-3);
+}
+
+.tc-dept-record {
+	margin-bottom: var(--tc-sp-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tc-dept * {
+		transition: none;
+	}
+}

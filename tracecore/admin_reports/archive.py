@@ -20,7 +20,7 @@ from frappe import _
 from frappe.utils import add_days, get_datetime, get_system_timezone, getdate, now_datetime
 from frappe.utils.password import get_decrypted_password
 
-from tracecore.admin_reports import sterilization_log
+from tracecore.admin_reports import ic_dossier, sterilization_log
 
 EXPORT = "Archive Export"
 LOAD = "Sterilization Load"
@@ -354,10 +354,14 @@ def build(name, lang=None):
 	_set(doc, status="Running")
 	frappe.db.savepoint(SAVEPOINT)
 	try:
-		rel = related(doc)
-		files = _files(doc, rel)
 		generated_at = now_datetime()
-		provisional = int(not sterilization_log.is_locked(_period(doc, rel)[1]))
+		if doc.scope_type == ic_dossier.SCOPE:  # FEAT-074: gói hồ sơ KSNK (A-152)
+			files, provisional, ic_scope = ic_dossier.build_files(doc, _iso_with_offset(generated_at))
+		else:
+			rel = related(doc)
+			files = _files(doc, rel)
+			provisional = int(not sterilization_log.is_locked(_period(doc, rel)[1]))
+			ic_scope = {}
 		manifest = {
 			"export": doc.name,
 			"application": APP_NAME,
@@ -367,6 +371,7 @@ def build(name, lang=None):
 				"to_date": str(doc.to_date) if doc.to_date else None,
 				"sterilization_load": doc.sterilization_load,
 				"recall_order": doc.recall_order,
+				**ic_scope,
 			},
 			"generated_at": _iso_with_offset(generated_at),
 			"generated_by": doc.requested_by,

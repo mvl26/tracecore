@@ -1,0 +1,269 @@
+{
+ "actions": [],
+ "creation": "2026-11-06 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_program",
+  "bed_count",
+  "facility_level",
+  "column_break_program",
+  "has_inpatient",
+  "surveillance_ratio_beds",
+  "surveillance_rounding",
+  "doc_review_months",
+  "ast_min_isolates",
+  "section_structure",
+  "ic_department",
+  "director",
+  "surveillance_staff",
+  "section_training",
+  "ic_certificate_types",
+  "section_retention",
+  "patient_data_retention_months",
+  "exposure_retention_months",
+  "section_exposure",
+  "exposure_report_hours",
+  "exposure_prophylaxis_hours",
+  "section_hai",
+  "census_reminder_time",
+  "bundle_reminder_time",
+  "section_council",
+  "council_report_workday",
+  "section_ssi",
+  "prophylaxis_max_minutes",
+  "section_notifiable",
+  "notifiable_hours_a",
+  "notifiable_hours_b",
+  "notifiable_hours_c",
+  "section_food_safety",
+  "foodborne_outbreak_threshold"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_program",
+   "fieldtype": "Section Break",
+   "label": "Program"
+  },
+  {
+   "fieldname": "bed_count",
+   "fieldtype": "Int",
+   "label": "Planned Beds",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "facility_level",
+   "fieldtype": "Select",
+   "label": "Facility Level",
+   "reqd": 1,
+   "options": "Specialized Level\nBasic Level\nPrimary Level"
+  },
+  {
+   "fieldname": "column_break_program",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "has_inpatient",
+   "fieldtype": "Check",
+   "label": "Has Inpatient Care"
+  },
+  {
+   "default": "150",
+   "fieldname": "surveillance_ratio_beds",
+   "fieldtype": "Int",
+   "label": "Beds per Surveillance Officer"
+  },
+  {
+   "fieldname": "surveillance_rounding",
+   "fieldtype": "Select",
+   "label": "Surveillance Officer Rounding",
+   "options": "Up\nDown",
+   "default": "Up",
+   "description": "Beds ÷ ratio rounded up or down, at least 1."
+  },
+  {
+   "default": "12",
+   "fieldname": "doc_review_months",
+   "fieldtype": "Int",
+   "label": "Procedure Review Cycle (Months)"
+  },
+  {
+   "default": "30",
+   "description": "An organism and antibiotic pair tested on fewer first isolates is flagged as a small sample in the quarterly resistance report.",
+   "fieldname": "ast_min_isolates",
+   "fieldtype": "Int",
+   "label": "Minimum Isolates per Antibiogram Pair"
+  },
+  {
+   "fieldname": "section_structure",
+   "fieldtype": "Section Break",
+   "label": "Infection Control Unit and Surveillance Staff"
+  },
+  {
+   "fieldname": "ic_department",
+   "fieldtype": "Link",
+   "label": "Infection Control Department or Unit",
+   "options": "Department"
+  },
+  {
+   "fieldname": "director",
+   "fieldtype": "Link",
+   "label": "Head of Facility",
+   "options": "Employee",
+   "description": "Chair of the IC Committee (TT 16/2018 Article 17)."
+  },
+  {
+   "fieldname": "surveillance_staff",
+   "fieldtype": "Table",
+   "label": "Surveillance Staff",
+   "options": "IC Surveillance Staff"
+  },
+  {
+   "fieldname": "section_training",
+   "fieldtype": "Section Break",
+   "label": "Infection Control Training"
+  },
+  {
+   "fieldname": "ic_certificate_types",
+   "fieldtype": "Small Text",
+   "label": "Accepted IC Certificate Types",
+   "description": "One certificate type per line, as entered on staff certificates. A valid certificate of these types counts as trained for full-time staff, committee members and network members."
+  },
+  {
+   "fieldname": "section_retention",
+   "fieldtype": "Section Break",
+   "label": "Personal Data Retention"
+  },
+  {
+   "fieldname": "patient_data_retention_months",
+   "fieldtype": "Int",
+   "label": "Patient Identifier Retention (Months)",
+   "description": "Leave empty until the hospital decides. Identifiers older than this are removed; totals stay."
+  },
+  {
+   "fieldname": "exposure_retention_months",
+   "fieldtype": "Int",
+   "label": "Exposure Record Retention (Months)",
+   "description": "Leave empty until the hospital decides."
+  },
+  {
+   "fieldname": "section_exposure",
+   "fieldtype": "Section Break",
+   "label": "Occupational Exposure Time Limits"
+  },
+  {
+   "fieldname": "exposure_report_hours",
+   "fieldtype": "Float",
+   "label": "Report Within (Hours)",
+   "non_negative": 1,
+   "description": "Exposures reported later than this are flagged as late. Leave empty to flag none."
+  },
+  {
+   "fieldname": "exposure_prophylaxis_hours",
+   "fieldtype": "Float",
+   "label": "Start Prophylaxis Within (Hours)",
+   "non_negative": 1,
+   "description": "Prophylaxis started later than this is flagged as late. Leave empty to flag none."
+  },
+  {
+   "fieldname": "section_hai",
+   "fieldtype": "Section Break",
+   "label": "Daily Census and Device Bundles"
+  },
+  {
+   "fieldname": "census_reminder_time",
+   "fieldtype": "Time",
+   "label": "Census Reminder Time",
+   "default": "10:00:00",
+   "description": "After this time, inpatient wards without yesterday's census are reminded. Default 10:00."
+  },
+  {
+   "fieldname": "bundle_reminder_time",
+   "fieldtype": "Time",
+   "label": "Bundle Check Reminder Time",
+   "default": "10:00:00",
+   "description": "After this time, open device episodes without a posted prevention bundle audit today are reminded. Default 10:00."
+  },
+  {
+   "fieldname": "section_council",
+   "fieldtype": "Section Break",
+   "label": "Committee Report"
+  },
+  {
+   "default": "5",
+   "fieldname": "council_report_workday",
+   "fieldtype": "Int",
+   "label": "Committee Report Working Day",
+   "non_negative": 1,
+   "description": "The monthly one-page report for the infection control committee is generated at 07:00 on this working day of the month (Monday to Friday, holidays excluded). Default 5."
+  },
+  {
+   "fieldname": "section_ssi",
+   "fieldtype": "Section Break",
+   "label": "Surgical Site Infection"
+  },
+  {
+   "fieldname": "prophylaxis_max_minutes",
+   "fieldtype": "Int",
+   "label": "Prophylaxis On Time Within (Minutes before Incision)",
+   "non_negative": 1,
+   "description": "Antibiotic prophylaxis given from 0 to this many minutes before the incision is on time, following the hospital protocol. Leave empty to assess none. A change recalculates surgeries of unlocked periods only."
+  },
+  {
+   "fieldname": "section_notifiable",
+   "fieldtype": "Section Break",
+   "label": "Notifiable Diseases"
+  },
+  {
+   "fieldname": "notifiable_hours_a",
+   "fieldtype": "Float",
+   "label": "Reporting Deadline Group A (hours)",
+   "description": "Set by the legal expert (Circular 15/2026/TT-BYT, OQ-V12-03). Empty = no deadline computed."
+  },
+  {
+   "fieldname": "notifiable_hours_b",
+   "fieldtype": "Float",
+   "label": "Reporting Deadline Group B (hours)"
+  },
+  {
+   "fieldname": "notifiable_hours_c",
+   "fieldtype": "Float",
+   "label": "Reporting Deadline Group C (hours)"
+  },
+  {
+   "fieldname": "section_food_safety",
+   "fieldtype": "Section Break",
+   "label": "Food Safety"
+  },
+  {
+   "fieldname": "foodborne_outbreak_threshold",
+   "fieldtype": "Int",
+   "label": "Outbreak Investigation from (People Affected)",
+   "non_negative": 1,
+   "description": "A suspected food poisoning event affecting at least this many people suggests an outbreak investigation. Leave empty until the head of infection control sets it; events then only suggest a non-conformance."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 20:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "IC Program Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "issingle": 1,
+ "module": "Infection Program",
+ "description": "Infection control program settings: planned beds and facility level decide the required IC structure."
+}

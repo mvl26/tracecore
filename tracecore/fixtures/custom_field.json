@@ -280,6 +280,16 @@
  },
  {
   "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_is_pep_drug",
+  "fieldname": "tc_is_pep_drug",
+  "fieldtype": "Check",
+  "label": "Post-exposure Prophylaxis Drug",
+  "description": "Stock below the minimum or batches expiring within 30 days alert the head of infection control.",
+  "insert_after": "tc_is_disinfectant"
+ },
+ {
+  "doctype": "Custom Field",
   "dt": "Stock Reconciliation Item",
   "name": "Stock Reconciliation Item-tc_variance_reason",
   "fieldname": "tc_variance_reason",
@@ -306,7 +316,7 @@
   "fieldname": "tc_station_key",
   "fieldtype": "Select",
   "label": "TraceCore Station Step",
-  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nGeneral",
+  "options": "\nRECEIVE\nWASH_LOAD\nWASH_UNLOAD\nASSEMBLE\nPACK\nSTERI_LOAD\nSTERI_UNLOAD\nPUTAWAY\nISSUE\nUSE\nLINEN\nWASTE\nAUDIT\nEXPOSURE\nCENSUS\nSSI_FOLLOWUP\nGeneral",
   "insert_after": "category",
   "in_list_view": 1,
   "in_standard_filter": 1,
@@ -350,5 +360,201 @@
   "label": "Feedback Type",
   "insert_after": "tc_employee",
   "in_list_view": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_ic_network_required",
+  "fieldname": "tc_ic_network_required",
+  "fieldtype": "Check",
+  "label": "IC Network Required",
+  "default": "0",
+  "in_standard_filter": 1,
+  "insert_after": "tc_is_ward",
+  "description": "Clinical or paraclinical department that must have at least one doctor and one nurse, midwife or technician in the infection control network."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_inpatient",
+  "fieldname": "tc_inpatient",
+  "fieldtype": "Check",
+  "label": "Inpatient Ward",
+  "default": "0",
+  "in_standard_filter": 1,
+  "insert_after": "tc_ic_network_required",
+  "description": "Inpatient ward that enters a daily census; wards without this flag are not reminded."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_device_day_source",
+  "fieldname": "tc_device_day_source",
+  "fieldtype": "Select",
+  "label": "Device Days Source",
+  "options": "Daily Census\nDevice Episode",
+  "default": "Daily Census",
+  "insert_after": "tc_inpatient",
+  "depends_on": "eval:doc.tc_inpatient",
+  "description": "Where device days for infection rates come from: the daily census counts or the recorded device episodes."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_clinical",
+  "fieldname": "tc_clinical",
+  "fieldtype": "Check",
+  "label": "Clinical Department",
+  "default": "0",
+  "in_standard_filter": 1,
+  "insert_after": "tc_device_day_source",
+  "description": "Clinical department counted in the rate of departments with an isolation room that meets the standard."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Department",
+  "name": "Department-tc_icu",
+  "fieldname": "tc_icu",
+  "fieldtype": "Check",
+  "label": "Intensive Care Unit",
+  "default": "0",
+  "in_standard_filter": 1,
+  "insert_after": "tc_clinical",
+  "description": "Intensive care unit included in the ICU infection report."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Training Program",
+  "name": "Training Program-tc_ic_category",
+  "fieldname": "tc_ic_category",
+  "fieldtype": "Select",
+  "options": "\nBasic IC\nFull-time IC Staff\nCommittee and Network\nNew Staff",
+  "label": "IC Training Category",
+  "in_list_view": 1,
+  "in_standard_filter": 1,
+  "insert_after": "status",
+  "description": "Infection control training category; programs without a category are not counted in the infection control training rates."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Training Result Employee",
+  "name": "Training Result Employee-tc_ic_passed",
+  "fieldname": "tc_ic_passed",
+  "fieldtype": "Check",
+  "label": "Passed",
+  "default": "1",
+  "in_list_view": 1,
+  "insert_after": "grade"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_ic_chemical_type",
+  "fieldname": "tc_ic_chemical_type",
+  "fieldtype": "Select",
+  "options": "\nHand Rub\nSoap\nSurface Disinfectant\nInstrument Disinfectant\nOther",
+  "label": "IC Chemical Type",
+  "in_standard_filter": 1,
+  "insert_after": "tc_is_pep_drug",
+  "description": "Infection control chemical counted per department and month; set the Litre conversion in the units of measure."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Warehouse",
+  "name": "Warehouse-tc_department",
+  "fieldname": "tc_department",
+  "fieldtype": "Link",
+  "options": "Department",
+  "label": "Department Using This Warehouse",
+  "in_standard_filter": 1,
+  "insert_after": "warehouse_name",
+  "description": "Infection control chemicals transferred into this warehouse are counted for this department."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_ic_section",
+  "fieldname": "tc_ic_section",
+  "fieldtype": "Section Break",
+  "label": "Outsourced Infection Control Service",
+  "collapsible": 1,
+  "insert_after": "supplier_details"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_ic_service_type",
+  "fieldname": "tc_ic_service_type",
+  "fieldtype": "Select",
+  "options": "\nIndustrial Cleaning\nLaundry\nWaste Treatment\nSterilization\nCatering\nOther",
+  "label": "Outsourced Service",
+  "in_standard_filter": 1,
+  "insert_after": "tc_ic_section",
+  "description": "Set for outsourced service vendors watched by infection control (license reminders, vendor audits)."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_license_no",
+  "fieldname": "tc_license_no",
+  "fieldtype": "Data",
+  "label": "License No",
+  "insert_after": "tc_ic_service_type"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_license_expiry",
+  "fieldname": "tc_license_expiry",
+  "fieldtype": "Date",
+  "label": "License Expiry",
+  "insert_after": "tc_license_no",
+  "description": "Reminders 60, 30 and 7 days before; an expired license only warns and is logged, it never blocks."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_ic_column",
+  "fieldname": "tc_ic_column",
+  "fieldtype": "Column Break",
+  "insert_after": "tc_license_expiry"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_contract_from",
+  "fieldname": "tc_contract_from",
+  "fieldtype": "Date",
+  "label": "Contract From",
+  "insert_after": "tc_ic_column"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_contract_to",
+  "fieldname": "tc_contract_to",
+  "fieldtype": "Date",
+  "label": "Contract To",
+  "insert_after": "tc_contract_from"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "tc_education_level",
+  "fieldtype": "Select",
+  "insert_after": "tc_vaccination_remind_level",
+  "label": "Education Level (IC)",
+  "name": "Employee-tc_education_level",
+  "options": "\nVocational\nCollege\nBachelor\nPostgraduate"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "tc_health_field",
+  "fieldtype": "Check",
+  "insert_after": "tc_education_level",
+  "label": "Health Field Graduate",
+  "name": "Employee-tc_health_field",
+  "options": null
  }
 ]

@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "antibiotic",
+  "antibiotic_name",
+  "result",
+  "mic"
+ ],
+ "fields": [
+  {
+   "fieldname": "antibiotic",
+   "fieldtype": "Data",
+   "label": "Antibiotic Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2,
+   "translatable": 0
+  },
+  {
+   "fieldname": "antibiotic_name",
+   "fieldtype": "Data",
+   "label": "Antibiotic Name",
+   "in_list_view": 1,
+   "columns": 3,
+   "translatable": 0
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "S\nI\nR",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "mic",
+   "fieldtype": "Data",
+   "label": "MIC or Zone",
+   "in_list_view": 1,
+   "columns": 2,
+   "translatable": 0
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Isolate Susceptibility",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Antimicrobial susceptibility result of an isolate.",
+ "istable": 1,
+ "editable_grid": 1
+}

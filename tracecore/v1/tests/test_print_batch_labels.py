@@ -20,6 +20,8 @@ class TestBatchLabelsPdf(IsolatedTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.set_user("Administrator")
+		# test đổi người dùng phải trả lại Administrator, không thì module chạy sau (putaway, purchase request) lỗi quyền
+		self.addCleanup(frappe.set_user, "Administrator")
 		factories.make_item(ITEM, "Chemical Indicator")
 		self.valid = factories.make_batch(ITEM, "LOT-RPC-OK", expiry_date=add_days(today(), 30)).name
 		self.expired = factories.make_batch(ITEM, "LOT-RPC-OLD", expiry_date=add_days(today(), -1)).name

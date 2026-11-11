@@ -8,12 +8,14 @@
  "field_order": [
   "naming_series",
   "kind",
+  "mapping_profile",
   "status",
   "file",
   "content_hash",
   "column_break_counts",
   "total",
   "created",
+  "updated",
   "skipped",
   "failed",
   "section_time",
@@ -39,6 +41,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Import Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mapping_profile",
+   "fieldtype": "Link",
+   "label": "Mapping Profile",
+   "options": "Import Mapping Profile",
    "read_only": 1
   },
   {
@@ -80,6 +89,13 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Created",
+   "read_only": 1
+  },
+  {
+   "fieldname": "updated",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Updated",
    "read_only": 1
   },
   {
@@ -135,7 +151,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-10 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Import Batch",

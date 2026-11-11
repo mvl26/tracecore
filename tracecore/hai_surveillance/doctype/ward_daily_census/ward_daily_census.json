@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "census_date",
+  "department",
+  "department_name",
+  "column_break_source",
+  "source",
+  "import_batch",
+  "locked",
+  "section_counts",
+  "patient_count",
+  "vent_count",
+  "cvc_count",
+  "column_break_counts",
+  "urinary_catheter_count",
+  "admissions"
+ ],
+ "fields": [
+  {
+   "fieldname": "census_date",
+   "fieldtype": "Date",
+   "label": "Census Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "translatable": 0,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_source",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Manual\nImport",
+   "default": "Manual",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "import_batch",
+   "fieldtype": "Link",
+   "label": "Import Batch",
+   "options": "Import Batch",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "locked",
+   "fieldtype": "Check",
+   "label": "Locked",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Set when the reporting period is locked; locked census cannot be changed."
+  },
+  {
+   "fieldname": "section_counts",
+   "fieldtype": "Section Break",
+   "label": "Counts"
+  },
+  {
+   "fieldname": "patient_count",
+   "label": "Inpatients",
+   "reqd": 1,
+   "fieldtype": "Int",
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vent_count",
+   "label": "On Ventilator",
+   "reqd": 1,
+   "fieldtype": "Int",
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cvc_count",
+   "label": "Central Line",
+   "reqd": 1,
+   "fieldtype": "Int",
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_counts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "urinary_catheter_count",
+   "label": "Urinary Catheter",
+   "reqd": 1,
+   "fieldtype": "Int",
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "admissions",
+   "fieldtype": "Int",
+   "non_negative": 1,
+   "label": "Admissions"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HAI Surveillance",
+ "name": "Ward Daily Census",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "Expression (old style)",
+ "autoname": "MS-.YYYY.-.#####",
+ "title_field": "department_name",
+ "search_fields": "census_date,department",
+ "description": "Daily census of a ward: one record per department and day (denominator of infection rates)."
+}

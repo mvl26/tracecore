@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "XH-.YYYY.-.#####",
  "creation": "2026-10-30 16:00:00.000000",
- "description": "One export of sterilization records (loads, indicators, machine data, issues, usage, audit) as a ZIP of PDF and CSV files with SHA-256 checksums, for keeping at least 10 years outside the system.",
+ "description": "One export of sterilization records (loads, indicators, machine data, issues, usage, audit) as a ZIP of PDF and CSV files with SHA-256 checksums, for keeping at least 10 years outside the system; or an infection control dossier (PDF + Excel) for an inspection team.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -19,6 +19,9 @@
   "inc_issues",
   "inc_usage",
   "inc_audit",
+  "section_ic_dossier",
+  "ic_months",
+  "ic_sections",
   "section_patient",
   "full_patient_code",
   "patient_code_reason",
@@ -41,18 +44,18 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Scope",
-   "options": "Period\nLoad\nRecall Order",
+   "options": "Period\nLoad\nRecall Order\nIC Dossier",
    "reqd": 1
   },
   {
-   "depends_on": "eval:doc.scope_type == 'Period'",
+   "depends_on": "eval:in_list(['Period', 'IC Dossier'], doc.scope_type)",
    "fieldname": "from_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "From Date"
   },
   {
-   "depends_on": "eval:doc.scope_type == 'Period'",
+   "depends_on": "eval:in_list(['Period', 'IC Dossier'], doc.scope_type)",
    "fieldname": "to_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -73,6 +76,7 @@
    "options": "Recall Order"
   },
   {
+   "depends_on": "eval:doc.scope_type != 'IC Dossier'",
    "fieldname": "section_content",
    "fieldtype": "Section Break",
    "label": "Content"
@@ -118,10 +122,30 @@
    "label": "Audit Trail"
   },
   {
+   "depends_on": "eval:doc.scope_type == 'IC Dossier'",
+   "description": "Dossier for an inspection team: plan, committee minutes, surveillance results, indicators and training of the chosen months, with masked patient codes only.",
+   "fieldname": "section_ic_dossier",
+   "fieldtype": "Section Break",
+   "label": "Infection Control Dossier"
+  },
+  {
+   "fieldname": "ic_months",
+   "fieldtype": "Data",
+   "label": "Months",
+   "read_only": 1
+  },
+  {
+   "description": "JSON list of section keys; empty means every section.",
+   "fieldname": "ic_sections",
+   "fieldtype": "Small Text",
+   "label": "Sections"
+  },
+  {
+   "depends_on": "eval:doc.scope_type != 'IC Dossier'",
+   "description": "Patient codes are masked unless TC R01 exports them in full with a reason (recorded in the Audit Log).",
    "fieldname": "section_patient",
    "fieldtype": "Section Break",
-   "label": "Patient Codes",
-   "description": "Patient codes are masked unless TC R01 exports them in full with a reason (recorded in the Audit Log)."
+   "label": "Patient Codes"
   },
   {
    "default": "0",
@@ -208,7 +232,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-10 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Admin Reports",
  "name": "Archive Export",

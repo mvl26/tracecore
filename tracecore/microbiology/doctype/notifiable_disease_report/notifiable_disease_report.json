@@ -1,0 +1,259 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 20:00:00.000000",
+ "description": "Tracks whether a notifiable communicable disease case was reported to the national surveillance system before its deadline (the report itself is made outside TraceCore).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "patient_code",
+  "patient_code_masked",
+  "patient_code_hash",
+  "birth_year",
+  "sex",
+  "department",
+  "department_name",
+  "column_break_disease",
+  "disease",
+  "disease_name",
+  "disease_group",
+  "diagnosed_on",
+  "outbreak_investigation",
+  "section_deadline",
+  "deadline_hours",
+  "due_by",
+  "status",
+  "column_break_report",
+  "reported_on",
+  "report_ref",
+  "reported_by",
+  "reported_late",
+  "remind_stage",
+  "last_reminded_on",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "patient_code",
+   "fieldtype": "Password",
+   "label": "Patient Code",
+   "reqd": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "patient_code_masked",
+   "fieldtype": "Data",
+   "label": "Patient Code (masked)",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "patient_code_hash",
+   "fieldtype": "Data",
+   "label": "Patient Code Hash",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "birth_year",
+   "fieldtype": "Int",
+   "label": "Birth Year"
+  },
+  {
+   "fieldname": "sex",
+   "fieldtype": "Select",
+   "label": "Sex",
+   "options": "\nMale\nFemale\nOther"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "fetch_from": "department.department_name",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "column_break_disease",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "disease",
+   "fieldtype": "Link",
+   "label": "Disease",
+   "options": "Communicable Disease",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "disease_name",
+   "fieldtype": "Data",
+   "label": "Disease Name",
+   "fetch_from": "disease.disease_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "disease_group",
+   "fieldtype": "Data",
+   "label": "Disease Group",
+   "fetch_from": "disease.disease_group",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "diagnosed_on",
+   "fieldtype": "Datetime",
+   "label": "Diagnosed On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "outbreak_investigation",
+   "fieldtype": "Link",
+   "label": "Outbreak Investigation",
+   "options": "Outbreak Investigation",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "section_deadline",
+   "fieldtype": "Section Break",
+   "label": "Reporting"
+  },
+  {
+   "fieldname": "deadline_hours",
+   "fieldtype": "Float",
+   "label": "Reporting Deadline (hours)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "due_by",
+   "fieldtype": "Datetime",
+   "label": "Due By",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPending\nReported\nCancelled",
+   "default": "Draft",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_report",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reported_on",
+   "fieldtype": "Datetime",
+   "label": "Reported On",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "report_ref",
+   "fieldtype": "Data",
+   "label": "Report Reference",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "reported_late",
+   "fieldtype": "Check",
+   "label": "Reported Late",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "remind_stage",
+   "fieldtype": "Int",
+   "label": "Reminder Stage",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "last_reminded_on",
+   "fieldtype": "Date",
+   "label": "Last Reminded On",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes",
+   "translatable": 0
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Notifiable Disease Report",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Notifiable Disease Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "KB-.YYYY.-.#####",
+ "is_submittable": 1,
+ "track_changes": 1
+}

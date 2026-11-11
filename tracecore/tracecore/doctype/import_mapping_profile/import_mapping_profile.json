@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "creation": "2026-11-06 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "profile_name",
+  "import_kind",
+  "description",
+  "column_break_format",
+  "file_format",
+  "encoding",
+  "delimiter",
+  "date_format",
+  "section_columns",
+  "columns"
+ ],
+ "fields": [
+  {
+   "fieldname": "profile_name",
+   "fieldtype": "Data",
+   "label": "Profile Name",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "import_kind",
+   "fieldtype": "Data",
+   "label": "Import Type",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Key of the import type this profile reads files for."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Source Description"
+  },
+  {
+   "fieldname": "column_break_format",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Excel",
+   "fieldname": "file_format",
+   "fieldtype": "Select",
+   "label": "File Format",
+   "options": "Excel\nCSV",
+   "in_list_view": 1
+  },
+  {
+   "default": "UTF-8",
+   "fieldname": "encoding",
+   "fieldtype": "Select",
+   "label": "CSV Encoding",
+   "options": "UTF-8\nWindows-1258\nWindows-1252",
+   "depends_on": "eval:doc.file_format=='CSV'"
+  },
+  {
+   "default": ",",
+   "fieldname": "delimiter",
+   "fieldtype": "Select",
+   "label": "CSV Separator",
+   "options": ",\n;\nTab",
+   "depends_on": "eval:doc.file_format=='CSV'"
+  },
+  {
+   "default": "dd/mm/yyyy",
+   "fieldname": "date_format",
+   "fieldtype": "Select",
+   "label": "Date Format in File",
+   "options": "dd/mm/yyyy\nyyyy-mm-dd\nmm/dd/yyyy\ndd-mm-yyyy\ndd.mm.yyyy"
+  },
+  {
+   "fieldname": "section_columns",
+   "fieldtype": "Section Break",
+   "label": "Column Mapping"
+  },
+  {
+   "fieldname": "columns",
+   "fieldtype": "Table",
+   "label": "Columns",
+   "options": "Import Mapping Profile Column"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-06 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TraceCore",
+ "name": "Import Mapping Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:profile_name",
+ "naming_rule": "By fieldname",
+ "track_changes": 1,
+ "description": "Saved column mapping for importing files exported from HIS, the laboratory or the pharmacy."
+}

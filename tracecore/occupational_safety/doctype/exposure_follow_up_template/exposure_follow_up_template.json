@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "autoname": "format:{exposure_type}-V{version_no}",
+ "creation": "2026-11-09 18:00:00.000000",
+ "description": "Follow-up steps after an occupational exposure, by exposure type. Each version is approved by the head of infection control; only the approved version creates follow-up schedules.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "exposure_type",
+  "version_no",
+  "status",
+  "column_break_approval",
+  "approved_by",
+  "approved_on",
+  "section_steps",
+  "steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "exposure_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Exposure Type",
+   "options": "Needlestick or Sharps\nMucous Membrane Splash\nNon-intact Skin\nRespiratory\nOther",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Version",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nApproved\nSuperseded",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_steps",
+   "fieldtype": "Section Break",
+   "label": "Follow-up Steps"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Exposure Follow-up Template Step"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Occupational Safety",
+ "name": "Exposure Follow-up Template",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

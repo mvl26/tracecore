@@ -11,11 +11,13 @@ import contextlib
 import frappe
 from frappe.utils import cint, getdate, today
 
+from tracecore.compliance_audit import pda
 from tracecore.core import code_range, crypto, extension, step_gate, sync, zones
 from tracecore.core.client_time import parse_client_ts, to_system_time
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing, receiving, usage
 from tracecore.v1._common import (
+	AUDIT_ROLES,
 	PACKING_ROLES,
 	RECEIVE_ROLES,
 	USAGE_ROLES,
@@ -24,8 +26,16 @@ from tracecore.v1._common import (
 	station_session,
 )
 
-OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE")  # chức năng có màn chạy offline (A-40)
-SNAPSHOT_ROLES = tuple(dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES)))
+AUDIT_FUNCTION = "AUDIT"
+# chức năng có màn chạy offline (A-40); FEAT-060: phiếu giám sát KSNK trên PDA (ADR-015);
+# FEAT-071: báo phơi nhiễm (khóa mã hóa mã BN nguồn cho R08, R11, R12)
+OFFLINE_FUNCTIONS = ("RECEIVE", "PACK", "USE", AUDIT_FUNCTION, "EXPOSURE")
+# FEAT-062 (NFR-AVAIL-05): mẫu số ngày, đợt thiết bị — snapshot là khóa mã hóa mã BN; màn tự giữ ngữ cảnh khoa
+CENSUS_FUNCTION = "CENSUS"
+OFFLINE_FUNCTIONS = (*OFFLINE_FUNCTIONS, CENSUS_FUNCTION)
+SNAPSHOT_ROLES = tuple(
+	dict.fromkeys((*RECEIVE_ROLES, *PACKING_ROLES, *USAGE_ROLES, *AUDIT_ROLES, "TC R08", "TC R11", "TC R12"))
+)
 STATUS_ROLES = ("TC R02", "TC R01", "TC R10", "System Manager")
 SAVEPOINT = "tc_sync_snapshot"
 
@@ -187,8 +197,20 @@ def snapshot(station, client_ts=None, token=None):
 		data = _t4(station, on.date(), session.name if session else None)
 	elif function == "USE":
 		data = _t8(session.employee if session else None)
+	elif function == AUDIT_FUNCTION:
+		# FEAT-060 (SCR-52, NFR-AVAIL-05): mẫu phiếu đã duyệt + khoa được làm phiếu để ghi phiếu khi mất mạng
+		data = pda.context(session.employee if session else None, on)
+	elif function == "EXPOSURE":
+		data = {"patient_key": crypto.patient_public_key()}
+	elif function == CENSUS_FUNCTION:  # FEAT-062
+		data = {"patient_key": crypto.patient_public_key()}
 	else:
 		return {"ok": True, "function": functions[0] if functions else None, "offline": False}
+	if "EXPOSURE" in functions:
+		# FEAT-071: PDA của khoa thường có nhiều chức năng; báo phơi nhiễm offline luôn cần khóa mã hóa mã BN nguồn
+		data = {**data, "patient_key": data.get("patient_key") or crypto.patient_public_key()}
+	if CENSUS_FUNCTION in functions:  # FEAT-062: đợt thiết bị offline mã hóa mã BN như báo phơi nhiễm
+		data = {**data, "patient_key": data.get("patient_key") or crypto.patient_public_key()}
 	return {"ok": True, "function": function, "offline": True, **data}
 
 

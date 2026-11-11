@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "organism_code",
+  "organism_name",
+  "organism_group",
+  "disabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "organism_code",
+   "fieldtype": "Data",
+   "label": "Organism Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "translatable": 0,
+   "description": "WHONET organism code, for example eco or kpn."
+  },
+  {
+   "fieldname": "organism_name",
+   "fieldtype": "Data",
+   "label": "Organism Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "organism_group",
+   "fieldtype": "Data",
+   "label": "Organism Group",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "translatable": 0,
+   "description": "Group used by multidrug resistance rules, for example Enterobacterales."
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Microbiology",
+ "name": "Organism",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Organism catalog by WHONET code.",
+ "track_changes": 1,
+ "autoname": "field:organism_code",
+ "naming_rule": "By fieldname",
+ "title_field": "organism_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "organism_name,organism_group"
+}

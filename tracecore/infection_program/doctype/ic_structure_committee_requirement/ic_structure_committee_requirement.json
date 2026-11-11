@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "requirement_type",
+  "representing",
+  "committee_role",
+  "min_count"
+ ],
+ "fields": [
+  {
+   "fieldname": "requirement_type",
+   "fieldtype": "Select",
+   "label": "Requirement Type",
+   "options": "Representing\nRole",
+   "default": "Representing",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "representing",
+   "fieldtype": "Select",
+   "label": "Representing",
+   "options": "\nFunctional Unit\nMicrobiology and Laboratory\nPharmacy\nHigh-risk Clinical\nOther\nNursing\nQuality Management\nPlanning and General\nInfrastructure\nMedical Equipment",
+   "depends_on": "eval:doc.requirement_type=='Representing'",
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "committee_role",
+   "fieldtype": "Select",
+   "label": "Committee Role",
+   "options": "\nChair\nVice Chair\nSecretary\nOrdinary Member",
+   "depends_on": "eval:doc.requirement_type=='Role'",
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "min_count",
+   "fieldtype": "Int",
+   "label": "Minimum Count",
+   "default": "1",
+   "non_negative": 1,
+   "in_list_view": 1,
+   "columns": 2
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Structure Committee Requirement",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "editable_grid": 1,
+ "istable": 1,
+ "permissions": []
+}

@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "sample_type",
+  "limit_code",
+  "frequency",
+  "column_break_owner",
+  "assignee",
+  "assignee_name",
+  "active",
+  "section_zones",
+  "zones"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sample_type",
+   "fieldtype": "Select",
+   "label": "Sample Type",
+   "options": "Surface\nAir\nDomestic Water\nClinical Water\nFood\nOther",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "limit_code",
+   "fieldtype": "Data",
+   "label": "Limit Code",
+   "translatable": 0,
+   "description": "Code of the environmental limit the samples are checked against."
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Weekly\nMonthly\nQuarterly\nSemi-annual\nAnnual",
+   "reqd": 1,
+   "default": "Monthly",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_owner",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assignee",
+   "fieldtype": "Link",
+   "label": "Assignee",
+   "options": "Employee",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "assignee_name",
+   "fieldtype": "Data",
+   "label": "Assignee Name",
+   "fetch_from": "assignee.employee_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "section_zones",
+   "fieldtype": "Section Break",
+   "label": "Zones"
+  },
+  {
+   "fieldname": "zones",
+   "fieldtype": "Table",
+   "label": "Zones",
+   "options": "Sampling Plan Zone",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Sampling Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "KLM-.YYYY.-.###",
+ "naming_rule": "Expression (old style)",
+ "title_field": "title",
+ "show_title_field_in_link": 1,
+ "description": "Environmental sampling plan: zones, frequency and assignee."
+}

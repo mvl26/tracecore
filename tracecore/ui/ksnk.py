@@ -1,0 +1,290 @@
+"""Registry màn của màn quản lý KSNK toàn viện — Page `tc-ksnk` (FEAT-056; A-131 a, b, e).
+
+Mỗi FEAT 057..074 thêm màn WEB của mình vào ``SCREENS`` (slug, mã SCR/UC, nhãn, nhóm, vai trò, file JS). Menu chỉ là
+hiển thị: quyền thật vẫn ở RPC và DocPerm. Số việc chờ trên menu do module đăng ký qua hook ``tracecore_ksnk_badges``
+(mỗi hàm nhận ``user`` và trả ``{slug: số}``), gọi một lần cho cả menu.
+"""
+
+import frappe
+from frappe import _
+
+from tracecore.core import extension
+
+BADGE_HOOK = "tracecore_ksnk_badges"
+PAGE_ROLES = ("TC R01", "TC R10", "TC R11", "TC R12", "TC R13", "System Manager")
+OFFICE_ROLES = ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager")
+READ_ONLY_ROLES = ("TC R13",)
+DEPT_ROLES = ("TC R12",)
+
+# nhóm rail theo bản giao diện v1.12 (SCR-66): (khóa, nhãn tiếng Anh — dịch qua vi.csv)
+GROUPS = (
+	("program", "Hospital IC"),
+	("compliance", "Compliance Monitoring"),
+	("hai", "HAI Surveillance"),
+	("micro", "Microbiology and Isolation"),
+	("environment", "Environment and Occupational Safety"),
+)
+
+SCREENS = [
+	{
+		"slug": "chi-so",
+		"scr": "SCR-66",
+		"uc": "UC-57",
+		"label": "IC Indicator Board",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_66_chi_so.js",
+	},
+	# FEAT-057: cơ cấu KSNK — cài đặt chương trình, Hội đồng, mạng lưới (UC-40; R02 sửa mạng lưới trên Desk form)
+	{
+		"slug": "co-cau",
+		"scr": "SCR-47",
+		"uc": "UC-40",
+		"label": "IC Structure",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_47_co_cau.js",
+	},
+]
+# FEAT-058: kế hoạch năm, văn bản nội bộ, họp Hội đồng (UC-41; R13 ghi sổ kế hoạch ngay trên màn)
+SCREENS += [
+	{
+		"slug": "ke-hoach",
+		"scr": "SCR-48",
+		"uc": "UC-41",
+		"label": "Plans and Documents",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_48_ke_hoach.js",
+	},
+]
+# FEAT-060 (ADR-015, A-131): mẫu phiếu & lịch giám sát, báo cáo tuân thủ & phản hồi khoa
+SCREENS += [
+	{
+		"slug": "mau-phieu",
+		"scr": "SCR-50",
+		"uc": "UC-43",
+		"label": "Audit Templates and Schedules",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_50_mau_phieu.js",
+	},
+	{
+		"slug": "tuan-thu",
+		"scr": "SCR-53",
+		"uc": "UC-45",
+		"label": "Compliance Report",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_53_tuan_thu.js",
+	},
+]
+# FEAT-067 (A-136): vi sinh & đa kháng — import WHONET/CSV, nhập tay có xác nhận, chủng mới, kháng sinh đồ quý (UC-51);
+# R13 chỉ thấy phần tổng hợp (không đọc chủng có mã người bệnh)
+SCREENS += [
+	{
+		"slug": "vi-sinh",
+		"scr": "SCR-59",
+		"uc": "UC-51",
+		"label": "Microbiology and MDRO",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_59_vi_sinh.js",
+	},
+]
+# FEAT-059: đào tạo KSNK (HRMS Training), sinh viên thực tập (UC-42; R02 làm trên Desk — A-135 e)
+SCREENS += [
+	{
+		"slug": "dao-tao",
+		"scr": "SCR-49",
+		"uc": "UC-42",
+		"label": "IC Training and Improvement",
+		"group": "program",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_49_dao_tao.js",
+	},
+]
+
+
+# FEAT-071 (A-137 j): phơi nhiễm nghề nghiệp & tiêm chủng (UC-55); R13 chỉ thấy số liệu tổng hợp, R02 ghi tiêm chủng
+# trên Desk list Staff Immunization
+SCREENS += [
+	{
+		"slug": "phoi-nhiem",
+		"scr": "SCR-64",
+		"uc": "UC-55",
+		"label": "Exposure and Immunization",
+		"group": "environment",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_64_phoi_nhiem.js",
+	},
+]
+
+# FEAT-066 (A-142 Q4): hóa chất KSNK theo khoa-tháng & đơn vị thuê ngoài (UC-46). R09 (kế toán vật tư) và R02 vào Page
+# chỉ thấy màn này; R02, R10, R13 chỉ xem (quyền thật ở RPC và DocPerm)
+PAGE_ROLES += ("TC R02", "TC R09")
+OFFICE_ROLES += ("TC R02", "TC R09")
+READ_ONLY_ROLES += ("TC R02",)
+SCREENS += [
+	{
+		"slug": "hoa-chat",
+		"scr": "SCR-54",
+		"uc": "UC-46",
+		"label": "Chemicals and Outsourcing",
+		"group": "compliance",
+		"roles": ("TC R01", "TC R02", "TC R09", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_54_hoa_chat.js",
+	},
+]
+
+# FEAT-068 (A-146): lệnh cách ly & phòng cách ly (UC-52); R13 chỉ thấy phòng và tỷ lệ khoa có phòng đạt; R08/R12 làm trên
+# Cổng khoa /ksnk-khoa/cach-ly
+SCREENS += [
+	{
+		"slug": "cach-ly",
+		"scr": "SCR-60",
+		"uc": "UC-52",
+		"label": "Isolation",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_60_cach_ly.js",
+	},
+]
+
+
+# FEAT-063 (A-144 g): ca NKBV & kỳ báo cáo (SCR-56, R01/R11 — R13 không xem từng người bệnh) và tỷ suất NKBV theo khoa
+# (SCR-58 phần FEAT-063, chỉ số liệu tổng hợp nên R10, R13 xem được) (UC-48)
+SCREENS += [
+	{
+		"slug": "ca-nkbv",
+		"scr": "SCR-56",
+		"uc": "UC-48",
+		"label": "HAI Cases",
+		"group": "hai",
+		"roles": ("TC R01", "TC R11", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_56_ca_nkbv.js",
+	},
+	{
+		"slug": "bao-cao-nkbv",
+		"scr": "SCR-58",
+		"uc": "UC-48",
+		"label": "HAI Report",
+		"group": "hai",
+		"roles": ("TC R01", "TC R10", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_58_bao_cao_nkbv.js",
+	},
+]
+
+
+# FEAT-064 (A-147 k): giám sát NKVM — đăng ký phẫu thuật, lịch theo dõi sau ra viện, KSDP (SCR-57, UC-49); có mã người
+# bệnh nên chỉ R01, R11. Báo cáo NKVM theo nhóm/NNIS và xuất nằm trong SCR-58 `bao-cao-nkbv`
+SCREENS += [
+	{
+		"slug": "nkvm",
+		"scr": "SCR-57",
+		"uc": "UC-49",
+		"label": "SSI Surveillance",
+		"group": "hai",
+		"roles": ("TC R01", "TC R11", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_57_nkvm.js",
+	},
+]
+
+# FEAT-070 (A-148 f): vệ sinh môi trường & cơ sở hạ tầng (UC-54); R02 chỉ xem, R13 chỉ số liệu tổng hợp; R12 làm phiếu
+# VSMT trên PDA (SCR-52); tạo/sửa vùng, ngưỡng, kế hoạch, mẫu trên Desk form
+SCREENS += [
+	{
+		"slug": "moi-truong",
+		"scr": "SCR-62",
+		"uc": "UC-54",
+		"label": "Environmental Hygiene",
+		"group": "environment",
+		"roles": ("TC R01", "TC R02", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_62_moi_truong.js",
+	},
+]
+# FEAT-073 (A-151): ATTP & truyền thông người bệnh (UC-56); R13 chỉ số liệu tổng hợp; R12 ghi buổi truyền thông của khoa
+# trên Desk form `IC Education Session`, phiếu ATTP trên PDA (SCR-52)
+SCREENS += [
+	{
+		"slug": "attp",
+		"scr": "SCR-65",
+		"uc": "UC-56",
+		"label": "Food Safety and Communication",
+		"group": "environment",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_65_attp.js",
+	},
+]
+
+# FEAT-069 (A-150 e): điều tra ổ dịch (đường cong dịch) & khai báo bệnh truyền nhiễm (SCR-61, UC-53); R13 chỉ số liệu
+# tổng hợp; R08/R12 ghi khai báo trên Cổng khoa /ksnk-khoa/khai-bao; banner cụm ca nằm trong SCR-58 `bao-cao-nkbv`
+SCREENS += [
+	{
+		"slug": "o-dich",
+		"scr": "SCR-61",
+		"uc": "UC-53",
+		"label": "Outbreaks and Notifications",
+		"group": "micro",
+		"roles": ("TC R01", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_61_o_dich.js",
+	},
+]
+
+
+def _badges(user):
+	total: dict[str, int] = {}
+	for result in extension.run(BADGE_HOOK, user):
+		for slug, count in (result or {}).items():
+			total[slug] = total.get(slug, 0) + int(count or 0)
+	return total
+
+
+def _departments():
+	"""Khoa cho bộ lọc (Department có tc_is_ward). Chỉ gọi cho vai trò văn phòng KSNK (toàn viện), không có R12; danh
+	sách tên khoa không nhạy cảm nên không đòi quyền đọc Department của ERPNext."""
+	return frappe.get_all(
+		"Department",
+		filters={"tc_is_ward": 1, "disabled": 0, "is_group": 0},
+		fields=["name", "department_name"],
+		order_by="department_name asc",
+		limit_page_length=0,
+	)
+
+
+def nav(user=None):
+	"""Menu theo vai trò người dùng: ``{groups, home, read_only, dept_only, departments}``."""
+	user = user or frappe.session.user
+	roles = set(frappe.get_roles(user))
+	if not roles & set(PAGE_ROLES):
+		frappe.throw(_("You are not allowed to open infection control management."), frappe.PermissionError)
+	if not roles & set(OFFICE_ROLES):
+		# R12 làm việc trên Cổng khoa (A-131 e); màn này không có mục nào cho R12
+		return {"groups": [], "home": "", "read_only": True, "dept_only": True, "departments": []}
+	badges = _badges(user)
+	groups = []
+	for key, label in GROUPS:
+		items = [
+			{
+				"slug": screen["slug"],
+				"scr": screen["scr"],
+				"uc": screen["uc"],
+				"label": _(screen["label"]),
+				"script": screen["script"],
+				"badge": badges.get(screen["slug"], 0),
+			}
+			for screen in SCREENS
+			if screen["group"] == key and roles & set(screen["roles"])
+		]
+		if items:
+			groups.append({"key": key, "label": _(label), "items": items})
+	home = groups[0]["items"][0]["slug"] if groups else ""
+	if any(item["slug"] == "chi-so" for group in groups for item in group["items"]):
+		home = "chi-so"  # R13: trang chủ là bảng chỉ số (A-131 e)
+	return {
+		"groups": groups,
+		"home": home,
+		"read_only": not (roles & (set(OFFICE_ROLES) - set(READ_ONLY_ROLES))),
+		"dept_only": False,
+		"departments": _departments(),
+	}

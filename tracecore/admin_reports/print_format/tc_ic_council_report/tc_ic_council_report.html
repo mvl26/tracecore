@@ -1,0 +1,44 @@
+{#- One-page monthly report for the infection control committee, A4 portrait (FEAT-065, FR-M9-25, FR-M9-25.2,
+    BRU-RPT-002; UC-57 step 4, A1). Data: tracecore.admin_reports.council_report.tc_ic_council_context — aggregated
+    figures only, no patient data. "Provisional" is printed while the period is not locked. -#}
+{%- set cs = tc_ic_council_context(doc.name) -%}
+{%- set tc = cs.tc -%}
+{%- set T = "TC IC Council Report" -%}
+<style>
+.tc-icc { font-family: {{ tc.font_sans }}; color: {{ tc.text }}; font-size: {{ tc.fs_sm }}; line-height: {{ tc.lh_snug }}; }
+.tc-icc table { width: 100%; border-collapse: collapse; }
+.tc-icc .tc-code { font-family: {{ tc.font_mono }}; letter-spacing: {{ tc.ls_code }}; }
+.tc-icc h1 { font-size: {{ tc.fs_lg }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: 0 0 {{ tc.sp_1 }} 0; }
+.tc-icc h2 { font-size: {{ tc.fs_md }}; color: {{ tc.heading }}; font-weight: {{ tc.fw_bold }}; margin: {{ tc.sp_3 }} 0 {{ tc.sp_1 }} 0; }
+.tc-icc .tc-draft { margin: {{ tc.sp_2 }} 0; padding: {{ tc.sp_2 }}; border: {{ tc.bw_thick }} solid {{ tc.border }}; font-weight: {{ tc.fw_bold }}; }
+.tc-icc .tc-meta { color: {{ tc.muted }}; }
+.tc-icc table.tc-lines tr { page-break-inside: avoid; }
+.tc-icc table.tc-lines th { background: {{ tc.zebra }}; font-weight: {{ tc.fw_bold }}; text-align: left; }
+.tc-icc table.tc-lines th, .tc-icc table.tc-lines td { border: {{ tc.bw_hair }} solid {{ tc.border }}; padding: {{ tc.sp_1 }} {{ tc.sp_2 }}; }
+.tc-icc table.tc-lines .tc-num { text-align: right; white-space: nowrap; }
+.tc-icc ul { margin: 0; padding-left: {{ tc.sp_4 }}; }
+.tc-icc .tc-foot { margin-top: {{ tc.sp_3 }}; color: {{ tc.muted }}; }
+</style>
+<div class="tc-icc">
+	<h1>{{ _("Infection control committee report, period {0}", context=T).format(cs.period_label) | e }}</h1>
+	<div class="tc-meta"><span class="tc-code">{{ cs.name | e }}</span> · {{ _("Generated on {0}", context=T).format(cs.generated_on) | e }} · {{ _("{0}/{1} indicators met", context=T).format(cs.met, cs.total) | e }}</div>
+	{%- if cs.provisional %}<div class="tc-draft">{{ _("PROVISIONAL: the period is not locked; figures may change", context=T) | e }}</div>{%- endif %}
+	<h2>{{ _("Indicators of the annual plan", context=T) | e }}</h2>
+	<table class="tc-lines">
+		<thead><tr><th>{{ _("Code", context=T) | e }}</th><th>{{ _("Indicator", context=T) | e }}</th><th class="tc-num">{{ _("Target", context=T) | e }}</th>
+		{%- for header in cs.period_headers %}<th class="tc-num">{{ header | e }}</th>{%- endfor %}
+		<th>{{ _("Status", context=T) | e }}</th></tr></thead>
+		<tbody>
+		{%- for row in cs.rows %}
+			<tr><td class="tc-code">{{ row.code | e }}</td><td>{{ row.indicator_name | e }}</td><td class="tc-num">{{ row.target | e }}</td>
+			{%- for value in row["values"] %}<td class="tc-num">{{ value | e }}</td>{%- endfor %}
+			<td>{{ row.status_label | e }}</td></tr>
+		{%- endfor %}
+		</tbody>
+	</table>
+	<h2>{{ _("Items needing attention", context=T) | e }}</h2>
+	{%- if cs.highlights %}
+	<ul>{%- for item in cs.highlights %}<li>{{ item.title | e }}</li>{%- endfor %}</ul>
+	{%- else %}<div>{{ _("No outstanding items.", context=T) | e }}</div>{%- endif %}
+	<div class="tc-foot">{{ _("Aggregated figures only; no patient names or codes. A rate with a zero denominator is shown as Not calculated.", context=T) | e }}</div>
+</div>

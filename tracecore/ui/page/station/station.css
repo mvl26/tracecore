@@ -2087,6 +2087,212 @@ html:has(.tc-work) {
 	align-self: flex-start;
 }
 
+/* FEAT-060 SCR-52: phiếu giám sát theo mục trên PDA — chữ ≥ 16 px, nút ≥ 48 px, Ghi sổ 56 px dưới cùng */
+.tc-aud {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-aud .tc-btn {
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-aud-choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tc-aud-choice {
+	flex: 1 1 100%;
+	text-align: left;
+}
+
+.tc-aud-head {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin-bottom: var(--tc-touch-gap);
+}
+
+.tc-aud-items {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	padding-bottom: var(--tc-sp-8);
+}
+
+.tc-aud-item {
+	padding: var(--tc-sp-3);
+	background: var(--tc-card);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-md);
+}
+
+.tc-aud-item.is-critical {
+	border-left: var(--tc-bw-alert) solid var(--tc-fail);
+}
+
+.tc-aud-question {
+	margin: 0 0 var(--tc-sp-2);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-aud-answers {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-aud-answer {
+	background: var(--tc-card);
+	border: var(--tc-bw-med) solid var(--tc-border-input);
+	color: var(--tc-text);
+}
+
+.tc-aud-answer[data-answer-kind="Pass"] {
+	border-color: var(--tc-pass);
+	color: var(--tc-pass-text);
+}
+
+.tc-aud-answer[data-answer-kind="Fail"] {
+	border-color: var(--tc-fail);
+	color: var(--tc-fail-text);
+}
+
+.tc-aud-answer.is-on[data-answer-kind="Pass"] {
+	background: var(--tc-pass);
+	color: var(--tc-text-inverse);
+}
+
+.tc-aud-answer.is-on[data-answer-kind="Fail"] {
+	background: var(--tc-fail);
+	color: var(--tc-text-inverse);
+}
+
+.tc-aud-answer.is-on[data-answer-kind="N/A"] {
+	background: var(--tc-neutral-fill);
+	color: var(--tc-text-inverse);
+}
+
+.tc-aud-footer {
+	position: sticky;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-3) 0;
+	background: var(--tc-bg);
+	border-top: var(--tc-bw-med) solid var(--tc-primary);
+}
+
+.tc-aud-post {
+	width: 100%;
+	min-height: var(--tc-touch-station);
+}
+
+/* FEAT-061 SCR-51: phiếu vệ sinh tay theo cơ hội — 5 nút thời điểm, 3 nút hành động lớn, nút ≥ 48 px, chữ ≥ 16 px */
+.tc-hh-counter {
+	margin: 0;
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-hh-moments {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(var(--tc-touch-min), 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tc-hh-moment {
+	min-height: var(--tc-touch-station);
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+	background: var(--tc-card);
+	border: var(--tc-bw-med) solid var(--tc-primary);
+	color: var(--tc-primary);
+}
+
+.tc-hh-moment.is-on {
+	background: var(--tc-primary);
+	color: var(--tc-text-inverse);
+}
+
+.tc-hh-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-touch-gap);
+	margin: var(--tc-touch-gap) 0;
+}
+
+.tc-hh-action {
+	min-height: var(--tc-touch-station);
+	font-size: var(--tc-fs-lg);
+	color: var(--tc-text-inverse);
+}
+
+.tc-hh-action[data-action-kind="Hand Rub"] {
+	background: var(--tc-pass);
+}
+
+.tc-hh-action[data-action-kind="Hand Wash"] {
+	background: var(--tc-primary);
+}
+
+.tc-hh-action[data-action-kind="Missed"] {
+	background: var(--tc-fail);
+}
+
+.tc-hh-recent {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-hh-row {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--tc-touch-gap);
+	padding: var(--tc-sp-2) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-hh-row[data-kind="Hand Rub"] b,
+.tc-hh-row[data-kind="Hand Wash"] b {
+	color: var(--tc-pass-text);
+}
+
+.tc-hh-row[data-kind="Missed"] b {
+	color: var(--tc-fail-text);
+}
+
+/* FEAT-062 SCR-55: mẫu số ngày — ô số lớn một cột, danh sách đợt thiết bị (mã che Courier New) */
+.tc-census .tc-cen-count {
+	font-size: var(--tc-fs-xl);
+	font-family: var(--tc-font-mono);
+}
+
+.tc-cen-episodes {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tc-cen-episode {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-2);
+	padding: var(--tc-sp-3) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tc-cen-episode p {
+	margin: 0;
+	font-size: var(--tc-fs-base);
+}
+
+.tc-cen-save {
+	min-height: var(--tc-touch-station);
+}
+
 /* thao tác nguy hiểm tách khỏi thanh thao tác chính (ticket 1843 T4-07, 1834 T3-05) */
 .tc-danger-zone {
 	display: flex;
@@ -2095,4 +2301,102 @@ html:has(.tc-work) {
 	justify-content: space-between;
 	gap: var(--tc-touch-gap);
 	margin-top: var(--tc-sp-8);
+}
+
+/* FEAT-071 SCR-63: báo phơi nhiễm 3 bước trên PDA (chip bước, nút chọn lớn có dấu chọn bằng chữ, không chỉ màu) */
+.tc-exp-steps {
+	display: flex;
+	gap: var(--tc-sp-3);
+	margin: 0 0 var(--tc-sp-3);
+	padding: 0;
+	list-style: none;
+}
+
+.tc-exp-chip {
+	flex: 1;
+	min-height: var(--tc-touch-min);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: var(--tc-bw-hair) solid var(--tc-border-input);
+	border-radius: var(--tc-r-full);
+	color: var(--tc-text-muted);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-exp-chip.is-current {
+	background: var(--tc-primary);
+	border-color: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-exp-title {
+	margin: 0 0 var(--tc-sp-3);
+	font-size: var(--tc-fs-xl);
+	font-weight: var(--tc-fw-bold);
+	color: var(--tc-border-strong);
+}
+
+.tc-exp-options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-3);
+}
+
+.tc-exp-options.tc-exp-inline {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.tc-exp-option {
+	min-height: var(--tc-touch-station);
+	justify-content: flex-start;
+	text-align: left;
+	font-size: var(--tc-fs-xl);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-exp-inline .tc-exp-option {
+	flex: 1;
+	justify-content: center;
+}
+
+.tc-exp-option.is-chosen {
+	border: var(--tc-bw-thick) solid var(--tc-primary);
+	background: var(--tc-primary-soft);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-exp-question {
+	margin: var(--tc-sp-3) 0;
+	font-size: var(--tc-fs-lg);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tc-exp-summary {
+	margin: 0 0 var(--tc-sp-3);
+}
+
+.tc-exp-row {
+	display: flex;
+	gap: var(--tc-sp-3);
+	padding: var(--tc-sp-2) 0;
+	border-bottom: var(--tc-bw-hair) solid var(--tc-border-row);
+	font-size: var(--tc-fs-lg);
+}
+
+.tc-exp-row dt {
+	min-width: 40%;
+	color: var(--tc-text-muted);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tc-exp-row dd {
+	margin: 0;
+}
+
+.tc-exp-send {
+	flex: 1;
 }

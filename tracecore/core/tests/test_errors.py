@@ -288,6 +288,75 @@ class TestErrors(FrappeTestCase):
 				"WASTE_NOT_HELD": 409,
 			}
 		)
+		# FEAT-060 A-134: engine phiếu giám sát
+		table.update(
+			{
+				"AUDIT_TEMPLATE_NOT_APPROVED": 409,
+				"AUDIT_SELF_OBSERVATION": 422,
+				"AUDIT_ANSWER_MISSING": 422,
+				"AUDIT_FAIL_NOTE_REQUIRED": 422,
+				"AUDIT_ITEM_UNKNOWN": 422,
+				"AUDIT_NC_NOT_SUGGESTED": 409,
+				"AUDIT_NOT_ALLOWED": 403,
+			}
+		)
+		# FEAT-071 A-137: phơi nhiễm nghề nghiệp
+		table.update(
+			{
+				"EXPOSURE_TIME_INVALID": 422,
+				"EXPOSURE_NO_EMPLOYEE": 422,
+				"EXPOSURE_HANDLING_INCOMPLETE": 422,
+				"EXPOSURE_STEP_INVALID": 422,
+				"EXPOSURE_NOT_ALLOWED": 403,
+				"EXPOSURE_STATUS_INVALID": 409,
+			}
+		)
+		# FEAT-061: vệ sinh tay theo cơ hội
+		table.update(
+			{"AUDIT_OPPORTUNITY_INVALID": 422, "AUDIT_NO_OPPORTUNITY": 422, "AUDIT_SESSION_POSTED": 409}
+		)
+		# FEAT-062 (A-141): mẫu số ngày, đợt thiết bị, gói dự phòng
+		table.update(
+			{
+				"CENSUS_DUPLICATE": 409,
+				"CENSUS_COUNT_INVALID": 422,
+				"CENSUS_DATE_INVALID": 422,
+				"CENSUS_PERIOD_LOCKED": 409,
+				"DEVICE_EPISODE_DATE_INVALID": 422,
+				"DEVICE_EPISODE_OPEN": 409,
+				"DEVICE_EPISODE_CLOSED": 409,
+				"DEVICE_EPISODE_TYPE_INVALID": 422,
+				"HAI_NOT_ALLOWED": 403,
+				"AUDIT_EPISODE_REQUIRED": 422,
+				"AUDIT_EPISODE_INVALID": 422,
+			}
+		)
+		# FEAT-063 (A-144): ca NKBV, kỳ báo cáo
+		table.update(
+			{
+				"HAI_CASE_DEFINITION_MISSING": 422,
+				"HAI_CASE_DATE_INVALID": 422,
+				"HAI_CASE_EPISODE_INVALID": 422,
+				"HAI_CASE_ISOLATE_INVALID": 422,
+				"HAI_CASE_NOT_ALLOWED": 403,
+				"HAI_CASE_DECISION_REQUIRED": 422,
+				"HAI_CASE_REASON_REQUIRED": 422,
+				"HAI_CASE_EXCEPTION_REQUIRED": 422,
+				"HAI_PERIOD_LOCKED": 409,
+				"HAI_PERIOD_INVALID": 422,
+			}
+		)
+		# FEAT-064 (A-147)
+		table.update(
+			{
+				"SSI_VALUE_INVALID": 422,
+				"SSI_DATE_INVALID": 422,
+				"SSI_GROUP_NOT_MONITORED": 422,
+				"SSI_WINDOW_OPEN": 409,
+				"HAI_CASE_SURGERY_INVALID": 422,
+				"EXPORT_COLUMN_FORBIDDEN": 422,
+			}
+		)
 		self.assertEqual(errors.HTTP_STATUS, table)
 
 	def test_http_status_instrument_not_found(self):

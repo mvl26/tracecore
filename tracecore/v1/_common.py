@@ -40,6 +40,8 @@ RECEIVE_ROLES = ("TC R03", "TC R02", "System Manager")
 LINEN_ROLES = ("TC R07", "TC R02", "System Manager")
 # FEAT-047 (A-60): trạm thu gom chất thải do R07 (actor chính UC-34); R02 hỗ trợ
 WASTE_ROLES = ("TC R07", "TC R02", "System Manager")
+# FEAT-060 (FR-M12-08.2): phiếu giám sát KSNK trên PDA — R11 mọi khoa; R12, R08 khoa mình; R01 (tự đánh giá)
+AUDIT_ROLES = ("TC R01", "TC R08", "TC R11", "TC R12", "System Manager")
 SESSION_FLAG = "tc_station_session"
 
 

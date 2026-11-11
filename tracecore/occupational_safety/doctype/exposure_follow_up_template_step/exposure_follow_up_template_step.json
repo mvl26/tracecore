@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 18:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step",
+  "days_after"
+ ],
+ "fields": [
+  {
+   "fieldname": "step",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Step",
+   "reqd": 1
+  },
+  {
+   "fieldname": "days_after",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Days After Exposure",
+   "non_negative": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-09 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Occupational Safety",
+ "name": "Exposure Follow-up Template Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

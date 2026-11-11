@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Lint quy tắc kiến trúc TraceCore (CLAUDE.md, F-2, ADR-001/005):
 
-R1  Không import chéo giữa package nghiệp vụ M1-M10 (chỉ qua tracecore.core hoặc Link/hook).
+R1  Không import chéo giữa package nghiệp vụ M1-M10, M11-M17 (chỉ qua tracecore.core hoặc Link/hook).
 R2  Chỉ tracecore/core/step_gate.py được ghi ``status`` của Set Unit.
 R3  Không có chuỗi tiếng Việt trong code .py/.js/.html ngoài ``_()``/``__()`` (bản dịch ở translations/vi.csv).
 R4  CSS viết tay của Page không gõ hex/px — chỉ dùng biến ``--tc-*``.
@@ -25,6 +25,14 @@ BUSINESS = (
 	"par",
 	"admin_reports",
 	"waste",
+	# A-113 (FEAT-056): M11-M17 KSNK toàn viện
+	"infection_program",
+	"compliance_audit",
+	"hai_surveillance",
+	"microbiology",
+	"environmental_hygiene",
+	"occupational_safety",
+	"food_safety",
 )
 SCAN_DIRS = ("tracecore", "tracecore_agent")
 SKIP_DIRS = {"node_modules", "__pycache__", "dist", "tests", "translations", "fixtures"}

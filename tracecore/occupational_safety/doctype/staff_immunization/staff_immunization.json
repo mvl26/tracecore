@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "autoname": "TCH-.YYYY.-.#####",
+ "creation": "2026-11-09 18:00:00.000000",
+ "description": "A vaccine dose given to a staff member. The next due date is calculated from the immunization requirement.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "department",
+  "column_break_dose",
+  "vaccine",
+  "dose_no",
+  "given_on",
+  "next_due",
+  "section_evidence",
+  "evidence",
+  "reminded_level"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fetch_if_empty": 1,
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "column_break_dose",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vaccine",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Vaccine",
+   "options": "Immunization Requirement",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "dose_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Dose No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "given_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Given On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "next_due",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Next Due",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_evidence",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "evidence",
+   "fieldtype": "Attach",
+   "label": "Evidence"
+  },
+  {
+   "default": "0",
+   "fieldname": "reminded_level",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Reminder Level Sent",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-09 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Occupational Safety",
+ "name": "Staff Immunization",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "employee_name",
+ "track_changes": 1
+}

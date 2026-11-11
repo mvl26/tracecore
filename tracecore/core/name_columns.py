@@ -24,6 +24,9 @@ TRACECORE_NAME_FIELD = {
 	"Set Unit": "set_type_name",
 	"TraceCore Error Code": "error_name",
 	"Station Function": "function_name",
+	"IC Indicator": "indicator_name",  # A-113 (FEAT-056)
+	"IC Procedure Document": "title",  # A-133 (FEAT-058): bản thay thế trỏ bản cũ
+	"Organism": "organism_name",  # FEAT-067 (A-136)
 }
 
 NAME_FIELD = {**EXTERNAL_NAME_FIELD, **TRACECORE_NAME_FIELD}
@@ -40,11 +43,22 @@ CODE_IS_NAME = frozenset(
 		"DocType",
 		"UOM",
 		"Zone Type",
+		"Designation",  # HRMS: name = designation_name (FEAT-071, Immunization Requirement)
+		"Immunization Requirement",  # FEAT-071: autoname field:vaccine, mã chính là tên vaccine
 	}
 )
 
+# FEAT-070 (A-148): vùng vệ sinh hiện tên khu; mức nguy cơ đặt tên theo `risk_name` nên mã chính là tên
+TRACECORE_NAME_FIELD = {**TRACECORE_NAME_FIELD, "Environment Zone": "area_name"}
+NAME_FIELD = {**NAME_FIELD, "Environment Zone": "area_name"}
+CODE_IS_NAME = CODE_IS_NAME | {"Environment Risk Level"}
+
 # Đích không có trường tên
 NO_NAME_FIELD = frozenset({"Sterilization Load", "Pack", "Wash Batch", "Waste Container"})
+# FEAT-063 (A-144): chủng vi sinh không có trường tên; dòng chủng của ca NKBV đã hiện loài, ngày lấy mẫu
+NO_NAME_FIELD = NO_NAME_FIELD | {"Microbiology Isolate"}
+# FEAT-069 (A-150): sự cố Incident CAPA và ca NKBV không có trường tên; dòng ca của ổ dịch đã hiện mã BN che, ngày khởi phát
+NO_NAME_FIELD = NO_NAME_FIELD | {"Incident CAPA", "HAI Case"}
 
 # Đã có sẵn cột tên (không fetch được hoặc đặt tên khác): giữ nguyên, không thêm trường trùng
 EXISTING_NAME_COLUMN = {
@@ -54,6 +68,8 @@ EXISTING_NAME_COLUMN = {
 	("Issue Note Pack", "set_unit"): "set_name",
 	("TraceCore Error Log", "error_code"): "error_name",
 }
+# FEAT-064 (A-147): ca phẫu thuật giám sát đã có `group_name` (fetch tên nhóm phẫu thuật) ngay sau mã nhóm
+EXISTING_NAME_COLUMN[("Surgical Surveillance", "procedure_group")] = "group_name"
 
 # Giới hạn Frappe Grid: tổng ``columns`` của các cột hiển thị tối đa 10
 GRID_MAX_COLUMNS = 10
@@ -89,4 +105,12 @@ MODULES = (
 	"Admin Reports",
 	"Waste",
 	"UI",
+	# A-113 (FEAT-056): M11-M17
+	"Infection Program",
+	"Compliance Audit",
+	"HAI Surveillance",
+	"Microbiology",
+	"Environmental Hygiene",
+	"Occupational Safety",
+	"Food Safety",
 )

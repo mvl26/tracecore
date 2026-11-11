@@ -14,13 +14,17 @@ from tracecore.core.idempotency import idempotent
 from tracecore.instrument import photo_import
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
-IMPORT_ROLES = ("TC R10", "TC R02", "System Manager")
+# A-113 (FEAT-056): R11 nhập file mẫu số/phẫu thuật/vi sinh/hóa chất; loại import nào cho vai trò nào do `kind.roles`
+IMPORT_ROLES = ("TC R10", "TC R02", "TC R11", "System Manager")
+# FEAT-066 (A-142, UC-46 bước 2): R09, R01 nhập file hóa chất khoa Dược; loại import khác vẫn giới hạn bởi `kind.roles`
+IMPORT_ROLES += ("TC R09", "TC R01")
 BATCH_FIELDS = (
 	"name",
 	"kind",
 	"status",
 	"total",
 	"created",
+	"updated",  # FEAT-062: loại import cập nhật bản có sẵn
 	"skipped",
 	"failed",
 	"started_at",
@@ -69,24 +73,46 @@ def template(kind=None):
 	frappe.response["filecontent"] = importer.build_template(kind)
 
 
+def _content(kind, file_url, profile):
+	"""File tải lên; có hồ sơ ánh xạ CSV (FEAT-056, F-21) thì nhận .csv thay .xlsx."""
+	loaded = importer.load_profile(profile, kind)
+	extensions = (".csv",) if loaded and loaded.is_csv else (".xlsx",)
+	return importer.read_upload(file_url, extensions=extensions)
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def profiles(kind=None):
+	"""Hồ sơ ánh xạ cột của một loại import (FEAT-056, FR-M9-28): ``{"ok": true, "profiles": [{name, file_format}]}``."""
+	_kind(kind)
+	rows = frappe.get_list(
+		importer.PROFILE_DOCTYPE,
+		filters={"import_kind": kind},
+		fields=["name", "file_format", "description"],
+		order_by="name asc",
+	)
+	return {"ok": True, "profiles": rows}
+
+
 @frappe.whitelist(methods=["POST"])
-def check(kind=None, file_url=None):
-	"""Kiểm file, không ghi gì: ``{"ok": true, total, valid, existing, issues, previous_batch}``."""
+def check(kind=None, file_url=None, profile=None):
+	"""Kiểm file, không ghi gì: ``{"ok": true, total, valid, existing, issues, previous_batch}``.
+
+	``profile``: Import Mapping Profile đọc file xuất từ HIS / phòng xét nghiệm (FR-M9-28)."""
 	_kind(kind)
 	try:
-		return {"ok": True, **importer.check(kind, importer.read_upload(file_url))}
+		return {"ok": True, **importer.check(kind, _content(kind, file_url, profile), profile=profile)}
 	except importer.ImportFileError as error:
 		return reject_block(importer.file_block(error.reason), "Import Batch", None)
 
 
 @frappe.whitelist(methods=["POST"])
 @idempotent
-def run(kind=None, file_url=None, client_ts=None):
+def run(kind=None, file_url=None, client_ts=None, profile=None):
 	"""Ghi sổ các dòng hợp lệ (> 200 dòng chạy nền): ``{"ok": true, "batch", "status"}``; ghi Audit lô import."""
 	_kind(kind)
 	timestamp = parse_client_ts(client_ts)
 	try:
-		name = importer.run(kind, importer.read_upload(file_url), file_url)
+		name = importer.run(kind, _content(kind, file_url, profile), file_url, profile=profile)
 	except importer.ImportFileError as error:
 		return reject_block(importer.file_block(error.reason), "Import Batch", None, client_ts=timestamp)
 	status, total = frappe.db.get_value("Import Batch", name, ["status", "total"])
@@ -94,7 +120,7 @@ def run(kind=None, file_url=None, client_ts=None):
 		"Create",
 		"Import Batch",
 		name,
-		new={"kind": kind, "file": file_url, "rows": total},
+		new={"kind": kind, "file": file_url, "rows": total, "profile": profile},
 		reason="catalog import",
 		client_ts=timestamp,
 	)

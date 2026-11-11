@@ -1,0 +1,271 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "environment_zone",
+  "environment_zone_name",
+  "department",
+  "risk_level",
+  "responsible_party",
+  "supplier",
+  "sample_type",
+  "method",
+  "limit_code",
+  "column_break_sampling",
+  "sampled_on",
+  "sampled_by",
+  "sampled_by_name",
+  "lab",
+  "sampling_plan",
+  "is_resample_of",
+  "section_result",
+  "result_value",
+  "unit",
+  "attachment",
+  "column_break_result",
+  "environmental_limit",
+  "limit_applied",
+  "result",
+  "section_nc",
+  "nc_status",
+  "nc_name",
+  "nc_reason",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "environment_zone",
+   "fieldtype": "Link",
+   "label": "Zone",
+   "options": "Environment Zone",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "environment_zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "fetch_from": "environment_zone.area_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "fetch_from": "environment_zone.department",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "risk_level",
+   "fieldtype": "Link",
+   "label": "Risk Level",
+   "options": "Environment Risk Level",
+   "fetch_from": "environment_zone.risk_level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "responsible_party",
+   "fieldtype": "Data",
+   "label": "Responsible Party",
+   "fetch_from": "environment_zone.responsible_party",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Outsourced Vendor",
+   "options": "Supplier",
+   "fetch_from": "environment_zone.supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sample_type",
+   "fieldtype": "Select",
+   "label": "Sample Type",
+   "options": "Surface\nAir\nDomestic Water\nClinical Water\nFood\nOther",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "label": "Method",
+   "options": "Culture\nATP\nFluorescence\nOther",
+   "reqd": 1,
+   "default": "Culture"
+  },
+  {
+   "fieldname": "limit_code",
+   "fieldtype": "Data",
+   "label": "Limit Code",
+   "translatable": 0,
+   "description": "Leave empty when only one approved limit matches the sample type, method and risk level."
+  },
+  {
+   "fieldname": "column_break_sampling",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sampled_on",
+   "fieldtype": "Date",
+   "label": "Sampled On",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sampled_by",
+   "fieldtype": "Link",
+   "label": "Sampled By",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "sampled_by_name",
+   "fieldtype": "Data",
+   "label": "Sampled By Name",
+   "fetch_from": "sampled_by.employee_name",
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "fieldname": "lab",
+   "fieldtype": "Data",
+   "label": "Laboratory"
+  },
+  {
+   "fieldname": "sampling_plan",
+   "fieldtype": "Link",
+   "label": "Sampling Plan",
+   "options": "Sampling Plan"
+  },
+  {
+   "fieldname": "is_resample_of",
+   "fieldtype": "Link",
+   "label": "Resample Of",
+   "options": "Environmental Sample"
+  },
+  {
+   "fieldname": "section_result",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "result_value",
+   "fieldtype": "Float",
+   "label": "Result Value",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Lab Report"
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "environmental_limit",
+   "fieldtype": "Link",
+   "label": "Limit Version Applied",
+   "options": "Environmental Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "limit_applied",
+   "fieldtype": "Small Text",
+   "label": "Limit Applied (Snapshot)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "\nPass\nFail",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "section_nc",
+   "fieldtype": "Section Break",
+   "label": "Non-conformance",
+   "depends_on": "eval:doc.result=='Fail'"
+  },
+  {
+   "fieldname": "nc_status",
+   "fieldtype": "Select",
+   "label": "NC Status",
+   "options": "\nSuggested\nOpened\nDismissed",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nc_name",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident CAPA",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nc_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason Not Opened",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Environmental Sample",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Environmental Sample",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "XN-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)",
+ "is_submittable": 1,
+ "title_field": "environment_zone_name",
+ "description": "Environmental test result compared with the limit in effect on the sampling date."
+}

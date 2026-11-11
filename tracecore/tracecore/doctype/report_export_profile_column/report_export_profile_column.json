@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_field",
+  "header"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_field",
+   "fieldtype": "Data",
+   "label": "Report Column",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Column key of the report type."
+  },
+  {
+   "fieldname": "header",
+   "fieldtype": "Data",
+   "label": "Header in File",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 14:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Report Export Profile Column",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "module": "TraceCore",
+ "permissions": [],
+ "editable_grid": 1
+}

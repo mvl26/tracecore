@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "creation": "2026-11-09 18:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step",
+  "days_after",
+  "due_date",
+  "done_on",
+  "pre_reminded",
+  "reminder_count",
+  "last_reminded_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "step",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Step",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_after",
+   "fieldtype": "Int",
+   "label": "Days After Exposure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Due Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "done_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Done On"
+  },
+  {
+   "default": "0",
+   "fieldname": "pre_reminded",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded Before Due",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "reminder_count",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Overdue Reminders Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_reminded_on",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Last Reminded On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-09 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Occupational Safety",
+ "name": "Exposure Follow-up",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -10,6 +10,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate
 
+from tracecore.admin_reports import ic_dossier
 from tracecore.core import audit
 
 FULL_CODE_ROLE = "TC R01"
@@ -23,14 +24,17 @@ class ArchiveExport(Document):
 			if not self.flags.tc_archive:
 				frappe.throw(_("An archive export cannot be changed after it is created."))
 			return
-		self._validate_scope()
-		if not any(self.get(field) for field in INCLUDES):
-			frappe.throw(_("Choose at least one kind of record to export."))
-		if self.full_patient_code:
-			if FULL_CODE_ROLE not in frappe.get_roles():
-				frappe.throw(_("Only the head of infection control (R01) can export full patient codes."))
-			if not (self.patient_code_reason or "").strip():
-				frappe.throw(_("Enter the reason for exporting full patient codes."))
+		if self.scope_type == ic_dossier.SCOPE:  # FEAT-074: gói hồ sơ KSNK (A-152)
+			ic_dossier.validate_export(self)
+		else:
+			self._validate_scope()
+			if not any(self.get(field) for field in INCLUDES):
+				frappe.throw(_("Choose at least one kind of record to export."))
+			if self.full_patient_code:
+				if FULL_CODE_ROLE not in frappe.get_roles():
+					frappe.throw(_("Only the head of infection control (R01) can export full patient codes."))
+				if not (self.patient_code_reason or "").strip():
+					frappe.throw(_("Enter the reason for exporting full patient codes."))
 		self.status = "Queued"
 		self.requested_by = frappe.session.user
 		for field in ("archive_file", "sha256", "file_size", "generated_at", "error", "manifest"):

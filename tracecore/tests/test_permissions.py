@@ -19,8 +19,22 @@ class TestPermissionMatrix(FrappeTestCase):
 		rows = load_permission_matrix(MATRIX_PATH)
 		self.assertEqual(tuple(rows.roles), ROLE_CODES)
 		# 40 DocType của BA #13 + Cost Category và Cost Settings (FEAT-044, A-47 C3, C6) + Environment Log (FEAT-008, A-55 Q4) + Archive Export (FEAT-012, A-58 D2) + 3 DocType chất thải (FEAT-047, A-60) + Waste Storage Location (FEAT-048, A-61) + Waste Treatment Vendor, Waste Handover (FEAT-049, A-62) + Waste Quota (FEAT-050, A-63)
-		self.assertEqual(len(rows), 53)
-		self.assertEqual(len({row.code for row in rows}), 53)
+		# + 4 DocType nền v1.12 (FEAT-056, A-113): IC Program Settings, IC Indicator, IC Indicator Value, Import Mapping Profile
+		# + IC Committee, IC Network Member (FEAT-057)
+		# + IC Annual Plan, IC Procedure Document, IC Committee Meeting (FEAT-058, A-133)
+		# + Audit Template, Audit Schedule, Audit Session (FEAT-060, A-113/A-134)
+		# + Organism, Microbiology Isolate, MDRO Rule, Import Batch (FEAT-067, A-136)
+		# + Trainee Induction (FEAT-059, A-135)
+		# + Occupational Exposure, Exposure Follow-up Template, Immunization Requirement, Staff Immunization (FEAT-071)
+		# + Ward Daily Census, Device Episode (FEAT-062, A-141 g)
+		# + IC Chemical Consumption (FEAT-066, A-142)
+		# + IC Structure Profile (FEAT-094, A-138 h)
+		# + Surgical Procedure Group, Surgical Surveillance, Report Export Profile (FEAT-064, A-147 m)
+		# + Environment Risk Level, Environment Zone, Environmental Limit, Sampling Plan, Environmental Sample (FEAT-070)
+		# + IC Improvement Project (FEAT-072, A-149)
+		# + Food Handler Health Check, Foodborne Event, IC Education Session (FEAT-073, A-151)
+		self.assertEqual(len(rows), 103)
+		self.assertEqual(len({row.code for row in rows}), 103)
 		for row in rows:
 			self.assertTrue(row.doctype)
 			for role in ROLE_CODES:
@@ -96,5 +110,6 @@ class TestPermissionMatrix(FrappeTestCase):
 		roles_path = MATRIX_PATH.with_name("role.json")
 		roles = {row["role_name"]: row for row in json.loads(roles_path.read_text(encoding="utf-8"))}
 		for code in ROLE_CODES:
-			expected = 1 if code in {"R01", "R02", "R09", "R10"} else 0
+			# A-113 a: thêm R11 (Giám sát viên KSNK) và R13 (Hội đồng KSNK & BGĐ)
+			expected = 1 if code in {"R01", "R02", "R09", "R10", "R11", "R13"} else 0
 			self.assertEqual(roles[f"TC {code}"]["two_factor_auth"], expected)

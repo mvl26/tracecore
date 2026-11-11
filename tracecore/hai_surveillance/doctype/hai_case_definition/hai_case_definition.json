@@ -1,0 +1,163 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "def_code",
+  "title",
+  "infection_site",
+  "device_type",
+  "column_break_version",
+  "version_no",
+  "effective_from",
+  "superseded_by",
+  "legal_ref",
+  "section_thresholds",
+  "min_hours_after_admission",
+  "column_break_thresholds",
+  "min_device_days_before_onset",
+  "section_criteria",
+  "criteria",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "def_code",
+   "fieldtype": "Data",
+   "label": "Definition Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "translatable": 0,
+   "description": "Latin letters without accents, digits and dashes, for example VAP."
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "infection_site",
+   "fieldtype": "Select",
+   "label": "Infection Site",
+   "options": "Superficial Incisional SSI\nDeep Incisional SSI\nOrgan/Space SSI\nVentilator-associated Pneumonia\nCatheter-related Bloodstream Infection\nCatheter-associated Urinary Tract Infection\nOther",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "device_type",
+   "fieldtype": "Select",
+   "label": "Device",
+   "options": "\nVentilator\nCentral Line\nUrinary Catheter",
+   "description": "Device-associated rates (per 1,000 device days) count confirmed cases of this device."
+  },
+  {
+   "fieldname": "column_break_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "superseded_by",
+   "fieldtype": "Link",
+   "label": "Superseded By",
+   "options": "HAI Case Definition",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "legal_ref",
+   "fieldtype": "Data",
+   "label": "Legal Reference"
+  },
+  {
+   "fieldname": "section_thresholds",
+   "fieldtype": "Section Break",
+   "label": "Time Thresholds"
+  },
+  {
+   "fieldname": "min_hours_after_admission",
+   "fieldtype": "Int",
+   "label": "Minimum Hours After Admission",
+   "description": "Onset earlier than this after admission needs an exception reason to confirm."
+  },
+  {
+   "fieldname": "column_break_thresholds",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "min_device_days_before_onset",
+   "fieldtype": "Int",
+   "label": "Minimum Device Days Before Onset",
+   "description": "Device in place fewer days than this before onset needs an exception reason to confirm."
+  },
+  {
+   "fieldname": "section_criteria",
+   "fieldtype": "Section Break",
+   "label": "Criteria"
+  },
+  {
+   "fieldname": "criteria",
+   "fieldtype": "Table",
+   "label": "Criteria",
+   "options": "HAI Case Definition Criterion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "HAI Case Definition",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-10 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HAI Surveillance",
+ "name": "HAI Case Definition",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

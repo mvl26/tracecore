@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "limit_code",
+  "version_no",
+  "title",
+  "sample_type",
+  "method",
+  "parameter",
+  "applies_to_risk_level",
+  "column_break_value",
+  "min_value",
+  "limit_value",
+  "unit",
+  "legal_ref",
+  "effective_from",
+  "superseded_by",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "limit_code",
+   "fieldtype": "Data",
+   "label": "Limit Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "translatable": 0,
+   "description": "Stable code shared by all versions, e.g. PM-KK (operating room air)."
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sample_type",
+   "fieldtype": "Select",
+   "label": "Sample Type",
+   "options": "Surface\nAir\nDomestic Water\nClinical Water\nFood\nOther",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "label": "Method",
+   "options": "Culture\nATP\nFluorescence\nOther",
+   "reqd": 1,
+   "default": "Culture"
+  },
+  {
+   "fieldname": "parameter",
+   "fieldtype": "Data",
+   "label": "Parameter",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applies_to_risk_level",
+   "fieldtype": "Link",
+   "label": "Applies to Risk Level",
+   "options": "Environment Risk Level",
+   "description": "Empty = all risk levels."
+  },
+  {
+   "fieldname": "column_break_value",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "min_value",
+   "fieldtype": "Float",
+   "label": "Minimum Value",
+   "description": "Optional lower limit; the result must not be below it."
+  },
+  {
+   "fieldname": "limit_value",
+   "fieldtype": "Float",
+   "label": "Limit Value",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Upper limit; the result must not exceed it."
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "legal_ref",
+   "fieldtype": "Data",
+   "label": "Legal Reference",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "superseded_by",
+   "fieldtype": "Link",
+   "label": "Superseded By",
+   "options": "Environmental Limit",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Environmental Limit",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Environmental Limit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "is_submittable": 1,
+ "title_field": "title",
+ "show_title_field_in_link": 1,
+ "search_fields": "limit_code,title",
+ "description": "Versioned limit for an environmental test; posting = approved by the head of infection control."
+}

@@ -1,0 +1,135 @@
+{
+ "actions": [],
+ "autoname": "CI-.YYYY.-.###",
+ "creation": "2026-11-10 16:00:00.000000",
+ "description": "Infection control quality improvement project or research study: PDCA stage, result and completion count per year.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project_type",
+  "title",
+  "measure_group",
+  "column_break_main",
+  "lead",
+  "lead_name",
+  "status",
+  "section_dates",
+  "start_date",
+  "column_break_dates",
+  "end_date",
+  "section_result",
+  "result_summary",
+  "attachments"
+ ],
+ "fields": [
+  {
+   "fieldname": "project_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project Type",
+   "options": "Quality Improvement\nResearch Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "measure_group",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Measure Group",
+   "options": "Infection Surveillance\nPractice Compliance Monitoring\nInvasive Procedures and High-Risk Patients\nPatient Counselling\nMicroorganism-Related Transmission Prevention\nStandard Precautions\nTransmission-Based Precautions\nHand Hygiene\nMedical Devices and Equipment\nMedical Waste\nEnvironmental Hygiene and Infrastructure\nLinen\nOccupational Exposure\nFood Safety"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Project Lead",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "lead.employee_name",
+   "fieldname": "lead_name",
+   "fieldtype": "Data",
+   "label": "Project Lead Name",
+   "no_copy": 1,
+   "read_only": 1,
+   "translatable": 0
+  },
+  {
+   "default": "Plan (P)",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "PDCA Stage",
+   "options": "Plan (P)\nDo (D)\nCheck (C)\nAct (A)\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_dates",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Required when the project is completed; the project counts for the year of this date.",
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "section_result",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Required when the project is completed, for example the indicator before and after.",
+   "fieldname": "result_summary",
+   "fieldtype": "Small Text",
+   "label": "Result Summary"
+  },
+  {
+   "fieldname": "attachments",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infection Program",
+ "name": "IC Improvement Project",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

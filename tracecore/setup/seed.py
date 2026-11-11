@@ -29,6 +29,14 @@ DEFAULT_FUNCTIONS = (
 	("USE", "Usage", 80, None, "usage", 1),
 	("LINEN", "Linen", 100, None, "linen", 0),
 	("WASTE", "Waste collection", 110, None, "waste", 0),
+	# FEAT-060 (ADR-015, SCR-52): phiếu giám sát KSNK trên PDA tại khoa; không ghi cổng
+	("AUDIT", "Compliance audit", 120, None, "audit", 0),
+	# FEAT-071 (A-137, SCR-63): báo phơi nhiễm nghề nghiệp trên PDA của khoa, ngoài chuỗi xử lý dụng cụ
+	("EXPOSURE", "Exposure report", 130, None, "exposure", 0),
+	# FEAT-062 (A-141 f, SCR-55): mẫu số ngày & đợt thiết bị trên PDA của khoa
+	("CENSUS", "Daily census", 125, None, "census", 0),
+	# FEAT-064 (A-147 k, SCR-57 PDA): theo dõi NKVM sau ra viện của giám sát viên KSNK, chỉ online
+	("SSI_FOLLOWUP", "SSI follow-up", 140, None, "ssi", 0),
 )
 
 # (loại vùng, màu, vùng kế tiếp qua máy hai cửa, chức năng được phép)
@@ -36,7 +44,12 @@ DEFAULT_ZONE_TYPES = (
 	("Dirty", "Dirty zone", "Clean", ("RECEIVE", "MANUAL_WASH", "WASH_LOAD", "WASH_UNLOAD")),
 	("Clean", "Clean zone", "Sterile", ("WASH_UNLOAD", "ASSEMBLE", "PACK", "STERI_LOAD", "STERI_UNLOAD")),
 	("Sterile", "Sterile zone", None, ("STERI_UNLOAD", "PUTAWAY", "ISSUE")),
-	("Department", "Department zone", None, ("USE",)),
+	(
+		"Department",
+		"Department zone",
+		None,
+		("USE", "AUDIT", "EXPOSURE", "CENSUS", "SSI_FOLLOWUP"),
+	),  # FEAT-062: CENSUS; FEAT-064: SSI_FOLLOWUP
 	("Linen", "Default color", None, ("LINEN",)),
 	("Waste", "Waste zone", None, ("WASTE",)),
 )

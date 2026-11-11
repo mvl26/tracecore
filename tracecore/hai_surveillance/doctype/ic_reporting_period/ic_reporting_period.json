@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "month",
+  "locked",
+  "column_break_lock",
+  "locked_by",
+  "locked_on",
+  "section_unlock",
+  "unlock_count",
+  "unlocked_by",
+  "column_break_unlock",
+  "unlocked_on",
+  "unlock_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "month",
+   "fieldtype": "Data",
+   "label": "Month",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "translatable": 0,
+   "description": "YYYY-MM"
+  },
+  {
+   "fieldname": "locked",
+   "fieldtype": "Check",
+   "label": "Locked",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_lock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "locked_by",
+   "fieldtype": "Link",
+   "label": "Locked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "locked_on",
+   "fieldtype": "Datetime",
+   "label": "Locked On",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_unlock",
+   "fieldtype": "Section Break",
+   "label": "Unlock"
+  },
+  {
+   "fieldname": "unlock_count",
+   "fieldtype": "Int",
+   "label": "Times Unlocked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unlocked_by",
+   "fieldtype": "Link",
+   "label": "Last Unlocked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_unlock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unlocked_on",
+   "fieldtype": "Datetime",
+   "label": "Last Unlocked On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unlock_reason",
+   "fieldtype": "Small Text",
+   "label": "Last Unlock Reason",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HAI Surveillance",
+ "name": "IC Reporting Period",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
