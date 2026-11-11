@@ -185,7 +185,7 @@ const TcKsnkScr49 = {
 				__(
 					"Passed: a class of their group's category in the year, or a valid certificate of an accepted IC type."
 				)
-			)} <a href="/app/ic-program-settings">${esc(
+			)} <a class="btn btn-default btn-sm" href="/app/ic-program-settings">${esc(
 				__("Accepted certificate types")
 			)}</a></p></section>`
 		);

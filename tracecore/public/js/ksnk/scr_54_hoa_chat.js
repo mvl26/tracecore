@@ -249,7 +249,7 @@ const TcKsnkScr54 = {
 					  )} %`
 					: "—";
 				const waste = v.waste_vendor
-					? ` <a href="/app/waste-treatment-vendor/${encodeURIComponent(
+					? ` <a class="btn btn-default btn-sm" href="/app/waste-treatment-vendor/${encodeURIComponent(
 							v.waste_vendor
 					  )}">${esc(__("Waste vendor record"))}</a>`
 					: "";

@@ -268,7 +268,9 @@ const TcKsnkScr66 = {
 						const cls =
 							{ error: "", warn: " is-warn", info: " is-info" }[item.severity] || "";
 						const link = item.link
-							? ` <a href="${esc(item.link)}">${esc(__("Open"))}</a>`
+							? ` <a class="btn btn-default btn-sm" href="${esc(item.link)}">${esc(
+									__("Open")
+							  )}</a>`
 							: "";
 						const detail = item.detail ? ` — ${esc(item.detail)}` : "";
 						return `<li class="tc-ksnk-alert${cls}"><strong>${esc(
@@ -427,7 +429,9 @@ const TcKsnkScr66 = {
 						: ""
 				}`;
 				const file = d.file
-					? `<a target="_blank" href="${esc(d.file)}">${esc(__("Download ZIP"))}</a>`
+					? `<a class="btn btn-default btn-sm" target="_blank" href="${esc(
+							d.file
+					  )}">${esc(__("Download ZIP"))}</a>`
 					: d.error
 					? esc(d.error)
 					: "—";

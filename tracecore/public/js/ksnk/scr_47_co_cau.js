@@ -93,7 +93,7 @@ const TcKsnkScr47 = {
 			)}"${dis}></label>` +
 			// làm tròn số giám sát viên, người đứng đầu cơ sở: chỉ sửa trên form IC Program Settings (11/11/2026)
 			`</div><div data-region="settings-alert"></div>${save}` +
-			`<p class="tc-ksnk-note"><a href="/app/ic-program-settings">${esc(
+			`<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/ic-program-settings">${esc(
 				__(
 					"Infection control unit and surveillance staff are edited in the settings form."
 				)
@@ -103,7 +103,9 @@ const TcKsnkScr47 = {
 
 	profileHtml(data, esc) {
 		const link = data.can_open_profile
-			? ` <a href="/app/ic-structure-profile">${esc(__("Open structure criteria"))}</a>`
+			? ` <a class="btn btn-default btn-sm" href="/app/ic-structure-profile">${esc(
+					__("Open structure criteria")
+			  )}</a>`
 			: "";
 		if (data.profile_notice) {
 			return (

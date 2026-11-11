@@ -197,7 +197,8 @@ class TestActionPermissionFlags(IsolatedTestCase):
 	def test_environment_overview_returns_perms(self):
 		data = environment.overview()
 		self.assert_perm_flags(
-			data["perms"], ["Environmental Sample", "Environment Zone", "Sampling Plan", "Environmental Limit"]
+			data["perms"],
+			["Environmental Sample", "Environment Zone", "Sampling Plan", "Environmental Limit"],
 		)
 
 	def test_food_safety_overview_returns_perms(self):

@@ -330,7 +330,7 @@ const TcKsnkScr64 = {
 			.join("");
 		return `<div class="tc-ksnk-alert is-warn" role="status"><strong>${esc(
 			__("Post-exposure prophylaxis drugs")
-		)}</strong><ul>${lines}</ul><a href="/app/query-report/Stock Balance">${esc(
+		)}</strong><ul>${lines}</ul><a class="btn btn-default btn-sm" href="/app/query-report/Stock Balance">${esc(
 			__("View stock")
 		)}</a></div>`;
 	},

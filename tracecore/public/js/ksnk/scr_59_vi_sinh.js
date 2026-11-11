@@ -195,7 +195,9 @@ const TcKsnkScr59 = {
 					[TcKsnkScr59.time(pending.first_sent)]
 				)
 			)} ` +
-			`<a href="/app/notifications">${esc(__("Open notifications"))}</a></div>`
+			`<a class="btn btn-default btn-sm" href="/app/notifications">${esc(
+				__("Open notifications")
+			)}</a></div>`
 		);
 	},
 
@@ -368,7 +370,9 @@ const TcKsnkScr59 = {
 			`<p class="tc-ksnk-note">${esc(
 				__("Approved multidrug resistance rules: {0}", [r.approved || 0])
 			)}${draft} ` +
-			`<a href="/app/mdro-rule">${esc(__("Open the rule list"))}</a> ` +
+			`<a class="btn btn-default btn-sm" href="/app/mdro-rule">${esc(
+				__("Open the rule list")
+			)}</a> ` +
 			TcKsnk.recordActions(
 				{
 					doctype: "MDRO Rule",

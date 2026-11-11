@@ -206,7 +206,7 @@ const TcKsnkScr61 = {
 				(r) => `<tr${r.name === current ? ' aria-current="true"' : ""}>
 				<td class="tc-ksnk-code">${
 					data.can_work
-						? `<a href="/app/tc-ksnk/o-dich?outbreak=${encodeURIComponent(
+						? `<a class="btn btn-default btn-sm" href="/app/tc-ksnk/o-dich?outbreak=${encodeURIComponent(
 								r.name
 						  )}">${esc(r.name)}</a>`
 						: esc(r.name)

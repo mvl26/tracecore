@@ -230,8 +230,8 @@
 .tc-ksnk .tc-ksnk-material { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--tc-sp-3); align-items: start; padding: var(--tc-sp-3); border: var(--tc-bw-hair) solid var(--tc-border-row); border-radius: var(--tc-r-md); margin-bottom: var(--tc-sp-3); }
 .tc-ksnk .tc-ksnk-qr { width: var(--tc-sp-22); height: var(--tc-sp-22); border: var(--tc-bw-hair) solid var(--tc-border-strong); }
 /* Mọi nút phụ trên Page tc-ksnk nhìn ra là nút: viền ô + nền card (A-131); nút chính giữ nguyên */
-.tc-ksnk .btn-default,
-.tc-ksnk .btn-default.btn-sm,
-.tc-ksnk .btn-default.btn-xs { background: var(--tc-card); color: var(--tc-text); border: var(--tc-bw-hair) solid var(--tc-border-input); border-radius: var(--tc-r-sm); }
-.tc-ksnk .btn-default:hover,
-.tc-ksnk .btn-default:focus { border-color: var(--tc-primary); color: var(--tc-primary); }
+.tc-ksnk .btn.btn-default,
+.tc-ksnk .btn.btn-default.btn-sm,
+.tc-ksnk .btn.btn-default.btn-xs { background: var(--tc-card); color: var(--tc-text); border: var(--tc-bw-hair) solid var(--tc-border-input); border-radius: var(--tc-r-sm); box-shadow: none; }
+.tc-ksnk .btn.btn-default:hover,
+.tc-ksnk .btn.btn-default:focus { border-color: var(--tc-primary); color: var(--tc-primary); }

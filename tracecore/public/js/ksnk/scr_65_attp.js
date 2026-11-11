@@ -307,7 +307,7 @@ const TcKsnkScr65 = {
 					q.sessions || 0,
 					q.attendees || 0,
 				])
-			)} · <a href="${esc(TC_FS_REPORT)}">${esc(
+			)} · <a class="btn btn-default btn-sm" href="${esc(TC_FS_REPORT)}">${esc(
 			__("Quarterly report")
 		)}</a> · <a class="btn btn-default btn-sm" href="/app/ic-education-session/new">${esc(
 			__("Record a session")
@@ -401,7 +401,7 @@ const TcKsnkScr65 = {
 				__(
 					"Kitchen audits use the infection control audit template of type Food Safety; food samples are handled like environmental samples."
 				)
-			)} <a href="/app/audit-template?audit_type=Food%20Safety">${esc(
+			)} <a class="btn btn-default btn-sm" href="/app/audit-template?audit_type=Food%20Safety">${esc(
 			__("Audit templates")
 		)}</a> · <a
 				href="/app/environmental-sample?sample_type=Food">${esc(__("Food samples"))}</a></div></section>`;
