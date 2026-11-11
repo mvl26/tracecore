@@ -55,7 +55,7 @@ class TestScr54(FrappeTestCase):
 
 	def test_empty_tables_keep_frame(self):
 		out = self.run54(
-			'emit({c: TcKsnkScr54.chemicalsHtml({summary: {departments: [], total: {litres: {}}}}, esc),'
+			"emit({c: TcKsnkScr54.chemicalsHtml({summary: {departments: [], total: {litres: {}}}}, esc),"
 			" v: TcKsnkScr54.vendorsHtml({vendors: []}, esc)});"
 		)
 		self.assertIn("<th", out["c"])

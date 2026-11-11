@@ -35,7 +35,7 @@ class TestScr58Fidelity(FrappeTestCase):
 	def test_empty_department_and_prevalence_keep_table_frame(self):
 		out = self.run58(
 			'emit({d: TcKsnkScr58.departmentsHtml({period: "2026-10", departments: []}, esc),'
-			' p: TcKsnkPps.tableHtml({departments: [], hospital: {}}, esc)});'
+			" p: TcKsnkPps.tableHtml({departments: [], hospital: {}}, esc)});"
 		)
 		self.assertIn("<table", out["d"])
 		self.assertIn("No census or HAI case in this month.", out["d"])
@@ -59,7 +59,7 @@ class TestScr59Fidelity(FrappeTestCase):
 
 	def test_empty_recent_and_antibiogram_keep_table_frame(self):
 		out = self.run59(
-			'emit({r: TcKsnkScr59.recentHtml([], esc),'
+			"emit({r: TcKsnkScr59.recentHtml([], esc),"
 			' a: TcKsnkScr59.antibiogramHtml({year: 2026, quarter: 3, report: "/r", antibiogram: {rows: []}}, esc)});'
 		)
 		self.assertIn("<table", out["r"])

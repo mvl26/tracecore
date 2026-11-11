@@ -43,7 +43,9 @@ class TestScr66Fidelity(FrappeTestCase):
 		out = self.run66("emit({h: TcKsnkScr66.headerHtml(base, ctx)});")["h"]
 		self.assertIn("tc-ksnk-headrow", out)
 		self.assertIn('data-action="council"', out)
-		self.assertIn("btn btn-primary", out.split('data-action="council"')[0].rsplit("<", 1)[1] + "btn btn-primary")
+		self.assertIn(
+			"btn btn-primary", out.split('data-action="council"')[0].rsplit("<", 1)[1] + "btn btn-primary"
+		)
 		self.assertIn("Generate committee report", out)
 		done = self.run66(
 			'const d = Object.assign({}, base, {council_report: {period: "2026-10", pdf: "/f.pdf", report_status: "Official"}});'
@@ -53,7 +55,7 @@ class TestScr66Fidelity(FrappeTestCase):
 
 	def test_empty_values_keep_kpi_frame(self):
 		out = self.run66(
-			'const d = Object.assign({}, base, {periods: [], table_periods: []});'
+			"const d = Object.assign({}, base, {periods: [], table_periods: []});"
 			"emit({p: TcKsnkScr66.pageHtml(d, null, ctx, null)});"
 		)["p"]
 		self.assertIn("tc-ksnk-kpis", out)
@@ -63,7 +65,9 @@ class TestScr66Fidelity(FrappeTestCase):
 	def test_submitted_badge_uses_own_context(self):
 		src = _src("public/js/ksnk/scr_66_chi_so.js")
 		self.assertIn('__("Submitted", null, "IC Self Assessment")', src)
-		with open(os.path.join(frappe.get_app_path("tracecore"), "translations/vi.csv"), encoding="utf8") as fh:
+		with open(
+			os.path.join(frappe.get_app_path("tracecore"), "translations/vi.csv"), encoding="utf8"
+		) as fh:
 			self.assertIn("Submitted,Đã ghi sổ,IC Self Assessment", fh.read())
 
 

@@ -43,7 +43,7 @@ class TestKsnkFidelityA(FrappeTestCase):
 		self.assertLess(out.index("IC Committee"), out.index("IC network by department"))
 		self.assertLess(cols, out.index("IC Committee"))
 		self.assertIn('class="form-control tc-ksnk-code" readonly value="152/QĐ-BV"', out)
-		self.assertIn("15/01/2026 – 14/01/2029", out)
+		self.assertIn("15/01/2026 \u2013 14/01/2029", out)  # gạch ngang (en dash) như màn hiển thị
 
 	def test_scr47_empty_committee_keeps_frame(self):
 		out = self.run47(

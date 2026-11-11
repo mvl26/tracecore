@@ -1,6 +1,9 @@
 """Cài đặt app: định dạng Việt Nam (F-13, NFR-L10N-01), mẫu nhãn gói, nhãn QR đối tượng, thẻ kim loại và nhãn khay
 (FR-M2-08.4, FR-M9-07, FR-M1-05), khung khu-trạm (FR-M9-03)."""
 
+import json
+import os
+
 import frappe
 
 from tracecore.compliance_audit.seed import ensure_seed as ensure_compliance_seed  # FEAT-061
@@ -44,7 +47,32 @@ SYSTEM_SETTINGS = {
 }
 
 
+ROLE_FIXTURE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fixtures", "role.json")
+ROLE_FIELDS = ("desk_access", "two_factor_auth", "disabled")
+
+
+def ensure_roles(path=ROLE_FIXTURE):
+	"""Tạo trước các vai trò TC còn thiếu, đọc từ ``fixtures/role.json`` (một nguồn duy nhất); không ghi đè vai trò có sẵn.
+
+	Frappe v15 chạy ``after_install`` trước ``sync_fixtures``: site trắng chưa có TC R11..R13 (A-113) nên mọi bước sau
+	có Link tới Role (Notification Rule, Role Profile, 2FA) sẽ lỗi. ``sync_fixtures`` chạy sau vẫn đồng bộ đủ trường.
+	"""
+	with open(path, encoding="utf-8") as handle:
+		rows = json.load(handle)
+	for row in rows:
+		if row.get("doctype") != "Role" or frappe.db.exists("Role", row["name"]):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Role",
+				"role_name": row.get("role_name") or row["name"],
+				**{field: row[field] for field in ROLE_FIELDS if field in row},
+			}
+		).insert(ignore_permissions=True)
+
+
 def after_install():
+	ensure_roles()  # trước mọi bước có Link tới Role (CI cài mới: LinkValidationError TC R11)
 	apply_system_settings()
 	ensure_sample_templates()
 	ensure_object_templates()
