@@ -258,8 +258,9 @@ class TestFollowups(SSITestBase):
 		self.assertEqual(self.block(ssi.close, doc.name, ssi.NO_SSI).code, "SSI_WINDOW_OPEN")
 
 	def test_followups_due_and_reminder_once_a_day(self):
-		# remind() bỏ qua nếu hôm nay đã có thông báo cùng tiêu đề: dọn thông báo do test khác trong cùng phần CI để lại
-		# (CI PR #34 phần 1/6, 11/11/2026: sent = [] dù chạy riêng thì qua) — như test_reminders
+		# remind() chỉ chạy sau census_reminder_time; test gọi lúc 11:00 nên cố định giờ nhắc 10:00 như test_reminders
+		# (CI PR #34 phần 1/6: site trắng có giờ nhắc = giờ lúc tạo IC Program Settings, ví dụ 14:33 → không gửi)
+		frappe.db.set_single_value("IC Program Settings", "census_reminder_time", "10:00:00")
 		frappe.db.delete("Notification Delivery", {"event_code": ssi.DUE_EVENT})
 		doc = s.make_ssi(
 			self.ward, self.plain.name, surgery=add_days(today(), -10), discharge_date=add_days(today(), -8)

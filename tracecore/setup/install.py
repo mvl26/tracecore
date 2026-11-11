@@ -14,6 +14,7 @@ from tracecore.equipment.daily_test import ensure_settings as ensure_daily_test_
 from tracecore.hai_surveillance.seed import ensure_seed as ensure_hai_seed  # FEAT-063
 from tracecore.hai_surveillance.ssi_seed import ensure_seed as ensure_ssi_seed  # FEAT-064
 from tracecore.hr.permissions import ensure_permissions as ensure_hr_permissions
+from tracecore.infection_program.settings_defaults import ensure_reminder_times
 from tracecore.infection_program.structure_seed import ensure_seed as ensure_structure_seed  # FEAT-094
 from tracecore.inventory.permissions import ensure_permissions
 from tracecore.microbiology.seed import ensure_seed as ensure_microbiology_seed
@@ -93,6 +94,7 @@ def after_install():
 	ensure_hai_seed()  # FEAT-063: 6 định nghĩa ca NKBV Nháp (FR-M13-01)
 	ensure_ssi_seed()  # FEAT-064: 6 nhóm phẫu thuật chưa bật giám sát (FR-M13-07)
 	ensure_environment_seed()  # FEAT-070 (A-148): mức nguy cơ, ngưỡng Nháp, mẫu hạ tầng/ATTP Nháp
+	ensure_reminder_times()  # giờ nhắc 10:00, không để Frappe điền giờ lúc tạo IC Program Settings
 
 
 TEST_GENDERS = ("Male", "Female", "Other")

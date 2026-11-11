@@ -65,3 +65,5 @@ tracecore.patches.v0_1.a146_department_clinical
 tracecore.patches.v0_1.a147_ssi_station_function
 # FEAT-072 (A-149 Q3, Q4): mẫu Nháp tự đánh giá / cắt ngang, QD38-QI tự chấm cho site đang chạy
 tracecore.patches.v0_1.a149_ic_improvement_seed
+# giờ nhắc mẫu số / gói dự phòng bị Frappe điền bằng giờ lúc tạo IC Program Settings → 10:00 (CI PR #34)
+tracecore.patches.v0_1.ic_reminder_time_defaults
