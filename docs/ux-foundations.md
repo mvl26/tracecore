@@ -47,6 +47,7 @@
 | 06/11/2026 | Gộp A-113 vào `develop`: FR M9 mở rộng đổi số FR-M9-22..28 → FR-M9-24..30 (FR-M9-22/23 đã dùng cho A-117/A-119). Không đổi SCR. |
 | 06/11/2026 | **Amendment A-131** (người dùng yêu cầu trong chat kèm bản giao diện v1.12): các màn WEB SCR-47, 48, 49, 50, 53, 54, 56..62, 64, 65, 66 nằm chung **một màn quản lý** — Page `tc_ksnk` (`/app/tc-ksnk/<màn>`) với rail riêng chia 5 nhóm, badge việc chờ, bộ lọc năm/kỳ/khoa dùng chung. PDA (SCR-51, 52, 63) và DEPT (SCR-55, view khoa SCR-66) không đổi. Không thêm/bớt SCR. |
 | 10/11/2026 | **Amendment A-138** (Miyano dev lead + Claude Code; người dùng giao đối chiếu TT 16/2018 Điều 16–22; chủ đầu tư chưa xác nhận): SCR-47 bảng thành phần thêm cột **Lý do** liệt kê từng người chưa đạt yêu cầu vai trò (bằng chữ), thêm trạng thái chữ **Chưa xác minh** (badge cảnh báo, có chữ, không chỉ màu), tách hai dòng "Người phụ trách (toàn thời gian)" và "Giám sát viên chuyên trách" khi < 150 giường, dòng Trưởng khoa và Điều dưỡng trưởng khi ≥ 150 giường, và thông báo "Chưa duyệt bộ tiêu chí cơ cấu" kèm lối mở bộ tiêu chí cho R01. Form IC Program Settings thêm `director`, `surveillance_rounding`. Không thêm SCR: bộ tiêu chí (`IC Structure Profile`) là DocType Desk trong cùng Page `tc_ksnk`, hiện hành vi như các form khác của M11. Chỉ dùng token `--tc-*` sẵn có. |
+| 12/11/2026 | **Amendment A-153** (người dùng duyệt W1–W8 trong chat): thêm **SCR-67 Nước thải** (WEB, Page `tc-ksnk` slug `nuoc-thai`, nhóm rail Môi trường – nghề nghiệp; UC-58; FR-M15-08..13). N_SCR 63 → 64. |
 
 ## 1. Overview
 
@@ -173,6 +174,7 @@ graph TD
     m14 --> s60["SCR-60 Lệnh cách ly & phòng cách ly"]
     m14 --> s61["SCR-61 Ổ dịch & khai báo bệnh truyền nhiễm"]
     m15 --> s62["SCR-62 Vùng, ngưỡng, mẫu môi trường, hạ tầng"]
+    m15 --> s67["SCR-67 Nước thải: GPMT, lịch, kết quả quan trắc"]
     m16 --> s64["SCR-64 Hồ sơ phơi nhiễm, tiêm chủng, báo cáo"]
     m17 --> s65["SCR-65 ATTP & truyền thông người bệnh"]
     ksnk --> s66["SCR-66 Bảng chỉ số KSNK, báo cáo Hội đồng, QĐ 38"]
@@ -487,6 +489,7 @@ Cột **Trạng thái nguồn**: `#17` = có prototype chạy được trong #17
 | SCR-64 | Hồ sơ phơi nhiễm & theo dõi; tiêm chủng nhân viên; báo cáo phơi nhiễm | WEB | Form chứng từ + Dashboard | UC-55 | FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | — (v1.12, BA SRS-lite) |
 | SCR-65 | An toàn thực phẩm (sức khỏe người chế biến, sự cố) & truyền thông người bệnh (QR) | WEB | List View | UC-56 | FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | — (v1.12, BA SRS-lite); [A-151] FEAT-073 màn `attp` trong Page `tc-ksnk`: sự cố ngộ độc chờ quyết định (Mở NC / Mở điều tra ổ dịch / bỏ qua có lý do), hạn khám người chế biến (nhãn Còn hạn / Còn N ngày / Quá hạn, Không đủ sức khỏe), buổi truyền thông và tổng hợp quý, giám sát bếp ăn theo đơn vị, mẫu thực phẩm, tài liệu truyền thông có QR (Nháp → Ban hành, Thu hồi, In QR); R13 chỉ số liệu tổng hợp |
 | SCR-66 | Bảng chỉ số KSNK toàn viện; báo cáo Hội đồng; view Cổng khoa; tự đánh giá QĐ 38; nhập file & hồ sơ ánh xạ cột (→ SCR-43); gói hồ sơ KSNK | WEB + DEPT | Dashboard | UC-57 | FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30 | — (v1.12, BA SRS-lite) |
+| SCR-67 | Nước thải: GPMT hiện hành, lịch quan trắc điểm xả × kỳ 12 tháng, đợt quan trắc và kết quả, báo cáo nước thải | WEB | Dashboard + Form chứng từ | UC-58 | FR-M15-08, FR-M15-09, FR-M15-10, FR-M15-11, FR-M15-12, FR-M15-13 | — [A-153] Page `tc-ksnk` slug `nuoc-thai` (R01, R02, R11, người phụ trách điểm xả; R13 chỉ số liệu tổng hợp). 3 khối: thẻ GPMT (số, quy chuẩn/cột, badge hạn); lưới lịch (trạng thái có chữ: Đã quan trắc / Thiếu thông số / Đến hạn / Quá hạn / Không áp dụng); bảng đợt gần nhất từng điểm (thông số vượt có chữ "Vượt"). Actions bar: Ghi đợt quan trắc · Xuất báo cáo · Cập nhật GPMT. Badge rail = kỳ quá hạn + điểm đang cờ. Đủ loading/empty/error/offline. Không có ảnh design-refs: bố cục theo SCR-62 |
 
 **Đếm theo surface chính**: WEB 22 (01–04, 14, 15, 19–22, 24–33, 41, 43) · STN 15 (05–12, 16–18, 23, 38–40) · PDA 4 (34–37) · DEPT 1 (13) · đa surface 1 (42) → **43** (v1.11); [v1.12] + WEB 14 (47–50, 53, 54, 56, 58, 59, 61, 62, 64, 65 và 57 WEB + PDA) · PDA 1 (51) · PDA + DEPT 3 (52, 55, 63) · WEB + DEPT 2 (60, 66) → **63**. Có prototype #17: 20 màn (05–15, 19–23, 29, 31, 32, 37); có ảnh: 16 màn; chưa có nguồn hình ảnh: 23 màn v1.11 (toàn bộ M1, M3, M6, M7 nhập liệu, M8 cấu hình, M9 quản trị/import, M10, PDA 34–36, SCR-42) + 20 màn v1.12 (SCR-47..66, chỉ có đặc tả BA SRS-lite — bước ui-design dựng từ archetype và anchor Part D).
 

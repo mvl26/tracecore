@@ -22,7 +22,7 @@
 | M12 Giám sát tuân thủ [v1.12] | UC-43, UC-44, UC-45, UC-46 |
 | M13 Giám sát nhiễm khuẩn bệnh viện [v1.12] | UC-47, UC-48, UC-49, UC-50 |
 | M14 Vi sinh, đa kháng, cách ly, ổ dịch [v1.12] | UC-51, UC-52, UC-53 |
-| M15 Vệ sinh môi trường và cơ sở hạ tầng [v1.12] | UC-54 |
+| M15 Vệ sinh môi trường và cơ sở hạ tầng [v1.12] | UC-54; [A-153] UC-58 |
 | M16 An toàn nghề nghiệp [v1.12] | UC-55 |
 | M17 An toàn thực phẩm và tư vấn người bệnh [v1.12] | UC-56 |
 | M9 mở rộng — Bảng chỉ số KSNK toàn viện [v1.12] | UC-57 |
@@ -2418,6 +2418,41 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 
 _Nguồn: BA v1.12 §8.1 bước 1–4, §8.3 FR-M15-01..07, §8.4; TT 16/2018 Điều 11; QĐ 3916; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
 
+### UC-58: Quản lý nước thải y tế: GPMT, lịch quan trắc, kết quả quan trắc [A-153]
+
+- **ID:** UC-58
+- **Actors:** R01 Trưởng khoa KSNK (primary — GPMT, điểm xả); R11 Giám sát viên KSNK và người phụ trách điểm xả (primary — ghi đợt quan trắc); đơn vị quan trắc có VIMCERTS (ngoài hệ thống, cung cấp phiếu kết quả); R02, R13 (secondary — xem).
+- **Description:** R01 nhập GPMT của bệnh viện (thông số, giới hạn, tần suất theo từng điểm xả); hệ thống lập lịch quan trắc theo kỳ, nhắc khi đến hạn; R11/người phụ trách ghi kết quả từng đợt, hệ thống so giới hạn của GPMT có hiệu lực tại ngày lấy mẫu; vượt chuẩn thì cờ, NC, quan trắc lại; cuối kỳ/năm xuất báo cáo.
+- **Preconditions:** Supplier đơn vị quan trắc có `vimcerts_no` còn hạn; ít nhất một `Wastewater Point`.
+- **Postconditions (success):** Mỗi kỳ của từng (điểm xả, thông số) có trạng thái; đợt có `limit_applied`, `overall_result`; điểm xả vượt chuẩn mang cờ đến khi đợt quan trắc lại Đạt.
+- **Traces to:** FR-M15-08, FR-M15-09, FR-M15-10, FR-M15-11, FR-M15-12, FR-M15-13
+- **Business rules:** BRU-ENV-004, BRU-ENV-005, BRU-ENV-006
+- **Screens:** SCR-67 (Nước thải — WEB, Page `tc-ksnk` slug `nuoc-thai`)
+- **Priority:** Must (FR-M15-08.2, 12.1, 13 Should) · Frequency: GPMT vài năm/lần; đợt quan trắc 3–6 tháng/lần mỗi điểm; báo cáo năm.
+- **Related NFR:** NFR-MAINT-04 (giới hạn là cấu hình có phiên bản), NFR-SEC-09
+
+**Main success scenario**
+1. R01 mở SCR-67, khai báo `Wastewater Point` (điểm xả, HTXLNT, nguồn tiếp nhận, người phụ trách).
+2. R01 tạo `Wastewater Permit` từ GPMT: số, ngày cấp, hạn, quy chuẩn và cột, bảng thông số (điểm xả, thông số, đơn vị, giới hạn, tần suất, có quan trắc tự động không), đính kèm GPMT; duyệt.
+3. Hệ thống lập lưới lịch điểm xả × kỳ 12 tháng; còn 15 ngày đến cuối kỳ chưa quan trắc → nhắc R01, R11, người phụ trách.
+4. Sau khi nhận phiếu kết quả, R11 (hoặc người phụ trách) ghi `Wastewater Monitoring`: điểm xả, ngày lấy mẫu, đơn vị quan trắc, số phiếu, đính kèm; hệ thống nạp sẵn thông số theo GPMT hiệu lực tại ngày lấy mẫu; người dùng nhập giá trị (hoặc đánh dấu KPH).
+5. Ghi sổ → hệ thống so từng thông số, lưu bản chụp giới hạn, tính `overall_result`; kỳ chuyển "Đã quan trắc" hoặc "Thiếu thông số".
+6. Cuối kỳ/năm R01 xuất báo cáo nước thải PDF/Excel dùng cho báo cáo công tác BVMT.
+
+**Alternate flows**
+- A1. GPMT mới (cấp lại, đổi quy chuẩn từ QCVN 28:2010 sang QCVN 40:2025) → phiên bản mới; đợt cũ giữ kết quả.
+- A2. Thông số quan trắc tự động liên tục → trạng thái "Không áp dụng", không nhắc.
+
+**Exception flows**
+- E1. Đợt có thông số vượt → cờ điểm xả, thông báo, đề nghị NC loại Environment, việc quan trắc lại (`is_remonitor_of`); bỏ qua NC phải ghi lý do.
+- E2. Không đính kèm phiếu kết quả → không ghi sổ được.
+- E3. Đơn vị quan trắc hết hạn VIMCERTS tại ngày lấy mẫu → lỗi inline, chặn chọn.
+- E4. Quá cuối kỳ chưa quan trắc → "Quá hạn", nhắc R01.
+
+**Open issues:** OQ-V12-17 (hiệu lực TT 31/2013/TT-BYT), OQ-V12-18 (fixtures quy chuẩn).
+
+_Nguồn: Amendment A-153 (người dùng 12/11/2026); Luật BVMT 2020 Điều 111; NĐ 08/2022/NĐ-CP Điều 97 (sửa bởi NĐ 05/2025/NĐ-CP); TT 06/2025/TT-BTNMT (QCVN 40:2025/BTNMT); TT 02/2022/TT-BTNMT (sửa bởi TT 07/2025/TT-BTNMT)._
+
 ## M16 — An toàn nghề nghiệp [NEW v1.12]
 
 Nguồn nghiệp vụ: BA v1.12 §9 (A-113); TT 16/2018/TT-BYT Điều 13; QĐ 3671/QĐ-BYT (phòng ngừa chuẩn, tiêm an toàn). Phạm vi: báo cáo và theo dõi phơi nhiễm nghề nghiệp của nhân viên y tế (nối tiếp FR-M10-06.1 phơi nhiễm vật sắc nhọn từ chất thải, qua hook), tiêm chủng nhân viên có nguy cơ (thay trường tiêm chủng đơn lẻ của FR-M4-01), cảnh báo thuốc dự phòng sau phơi nhiễm. **Nguyên tắc riêng tư:** không lưu kết quả xét nghiệm hay chẩn đoán của nhân viên; chỉ lưu sự việc, các bước đã làm và ngày làm (BRU-OCC-001). Use case: UC-55. Quy tắc: BRU-OCC-001..004.
@@ -2666,5 +2701,6 @@ _Nguồn: BA v1.12 §11.2 FR-M9-24..30, §11.1; TT 16/2018 Điều 17, 20; QĐ 3
 | UC-55 | Báo cáo và theo dõi phơi nhiễm nghề nghiệp; tiêm chủng nhân viên [v1.12] | M16 | Nhân viên/R08, R11, R01, R02 | FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | SCR-63, SCR-64, SCR-15 |
 | UC-56 | An toàn thực phẩm và truyền thông người bệnh [v1.12] | M17 | R11, R01, R08 | FR-M17-01, FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | SCR-65, SCR-52, SCR-62, SCR-61 |
 | UC-57 | Bảng chỉ số KSNK toàn viện, báo cáo Hội đồng, Cổng khoa, tự đánh giá QĐ 38, nhập file ngoài, xuất hồ sơ [v1.12] | M9 | R01, R13, R12, R10 | FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30 | SCR-66, SCR-43, SCR-42 |
+| UC-58 | Quản lý nước thải y tế: GPMT, lịch quan trắc, kết quả quan trắc [A-153] | M15 | R01, R11, người phụ trách điểm xả | FR-M15-08, FR-M15-09, FR-M15-10, FR-M15-11, FR-M15-12, FR-M15-13 | SCR-67 |
 
 Kiểm đếm: **57 UC** (33 gốc + UC-34..39 v1.11 + UC-40..57 v1.12); [v1.12] 81 FR mới (FR-M11-01..13, FR-M12-01..14, FR-M13-01..15, FR-M14-01..10, FR-M15-01..07, FR-M16-01..09, FR-M17-01..06, FR-M9-24..30) được truy vết đủ 81/81 bởi UC-40..57; baseline v1.11: **88/90 FR** được ít nhất một UC truy vết — FR-M9-14 (trạng thái màn hình) và FR-M9-15 (trợ giúp) là yêu cầu xuyên suốt mọi màn hình trạm/PDA, không có UC sở hữu riêng (RTM ghi "— / mọi UC trạm"). **43 SCR** (SCR-01..37 gốc #09 + SCR-38..43 mới: 38 Trạm thu gom chất thải; 39 Kho lưu giữ tạm; 40 Bàn giao & đơn vị xử lý; 41 Báo cáo chất thải & sự cố; 42 Trung tâm thông báo; 43 Import/Export). Bộ Số Chuẩn BA v1.10 → v1.11: N_MOD 9→10, N_FR 73→90, N_NFR 14→35, N_UC 33→39, N_SCR 37→43.

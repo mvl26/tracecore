@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix: TraceCore
 
-> Source: docs/srs.md, docs/use-cases.md · Last updated: 2026-11-03 · Version 1.12 (Amendment A-113)
+> Source: docs/srs.md, docs/use-cases.md · Last updated: 2026-11-12 · Version 1.12 (Amendment A-113; [A-153] + FR-M15-08..13)
 > Import & chuẩn hóa từ #15 RTM v1.10 (Medcons, 20/09/2026). Giữ nguyên ID gốc FR-Mx-NN (thứ tự theo bảng 2.1 của #05) và NFR-*.
 > Design, Plan, and Test columns are filled by downstream phases as they produce their artifacts (see Column ownership in rtm-guide: Design ref ← software-architecture / detailed-design / ui-design; Plan ref ← implementation-planning; Test ref ← acceptance-verification). Requirements-engineering owns the other columns.
 > Source = "BR-Mx (BRD #02)" cho FR kế thừa baseline; "CHG-0xx" cho FR sinh từ quyết định review v1.3–v1.10 (#00 nhật ký thay đổi); "Catalog gap v1.11" cho FR-M9-08..16 (khoảng trống catalog, duyệt 2026-10-17); "Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT" cho FR-M10-*; NFR gốc = "Catalog ISO 25010 / BA #05", NFR mới = "Catalog ISO 25010 v1.11".
@@ -168,6 +168,12 @@
 | FR-M15-05 | Kế hoạch lấy mẫu giao việc, mẫu trễ hạn | Should | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
 | FR-M15-06 | Phiếu kiểm tra hạ tầng, hạn kế tiếp, nhắc 7 ngày | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
 | FR-M15-07 | Báo cáo môi trường tháng/quý | Must | Active | BA v1.12 (A-113) | UC-54 | _TBD_ | FEAT-070 | tracecore/environmental_hygiene/tests (A-148) |
+| FR-M15-08 | GPMT có phiên bản: thông số, giới hạn, tần suất theo điểm xả | Must | Active | A-153 (người dùng 12/11/2026) | UC-58 | SCR-67; A-153 | FEAT-095 | _TBD_ |
+| FR-M15-09 | Lịch quan trắc nước thải điểm xả × kỳ, nhắc đến hạn/quá hạn | Must | Active | A-153 (người dùng 12/11/2026) | UC-58 | SCR-67; A-153 | FEAT-095 | _TBD_ |
+| FR-M15-10 | Ghi đợt quan trắc, so giới hạn GPMT tại ngày lấy mẫu | Must | Active | A-153 (người dùng 12/11/2026) | UC-58 | SCR-67; A-153 | FEAT-095 | _TBD_ |
+| FR-M15-11 | Vượt chuẩn → cờ điểm xả, NC Environment, quan trắc lại | Must | Active | A-153 (người dùng 12/11/2026) | UC-58 | SCR-67; A-153 | FEAT-095 | _TBD_ |
+| FR-M15-12 | Báo cáo nước thải kỳ/năm PDF/Excel | Must | Active | A-153 (người dùng 12/11/2026) | UC-58 | SCR-67; A-153 | FEAT-095 | _TBD_ |
+| FR-M15-13 | Chặn đơn vị quan trắc hết VIMCERTS; phân quyền | Should | Active | A-153 (người dùng 12/11/2026) | UC-58 | SCR-67; A-153 | FEAT-095 | _TBD_ |
 | FR-M16-01 | Báo phơi nhiễm ban đầu ≤ 3 bước, thông báo ngay | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-63; A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py`, `v1/tests/test_exposure_api.py`, `occupational_safety/tests/test_ui.py` |
 | FR-M16-02 | Sự cố sắc nhọn M10 → Occupational Exposure | Must | Active | BA v1.12 (A-113) | UC-55 | A-137 | FEAT-071 | `occupational_safety/tests/test_hook.py` |
 | FR-M16-03 | Thời gian phơi nhiễm → báo cáo → dự phòng, cờ | Must | Active | BA v1.12 (A-113) | UC-55 | SCR-64; A-137 | FEAT-071 | `occupational_safety/tests/test_exposure.py` |
