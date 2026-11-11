@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-66 Bảng chỉ số KSNK toàn viện (FEAT-065; FR-M9-24, .1, .2, FR-M9-25, FR-M9-29, .1; BRU-RPT-001; NFR-PERF-05;
 // UC-57 bước 3, 4, 7; A-131 g; A-145). Khung tối thiểu từ FEAT-056.
 // Đọc giá trị đã lưu khi khóa kỳ qua tracecore.v1.indicator.board (không tính lại). Trạng thái luôn có chữ hoặc ký hiệu:
@@ -335,8 +335,6 @@ const TcKsnkScr66 = {
 			})
 			.join("");
 		const actions = [];
-		const btn = (cls, attrs, label) => `<a class="btn ${cls}" ${attrs}>${esc(label)}</a>`;
-		const formUrl = sa.name ? `/app/ic-self-assessment/${encodeURIComponent(sa.name)}` : "";
 		// Thao tác theo trạng thái phiếu: quyền thật vẫn kiểm ở RPC/DocPerm
 		if (editable || (sa.can_manage && !sa.name))
 			actions.push(
@@ -350,34 +348,20 @@ const TcKsnkScr66 = {
 					__("Submit self-assessment")
 				)}</button>`
 			);
-		if (sa.name)
-			actions.push(
-				btn(
-					"btn-default",
-					`href="${esc(formUrl)}"`,
-					editable
-						? __("Open form")
-						: sa.can_manage
-						? __("Open form to cancel or amend")
-						: __("View form")
-				)
-			);
-		if (sa.can_manage && sa.name && !editable)
-			actions.push(
-				btn(
-					"btn-default",
-					'href="/app/ic-self-assessment/new"',
-					__("Create new self-assessment")
-				)
-			);
-		if (sa.name)
-			actions.push(
-				`<a class="btn btn-default" target="_blank" href="/printview?doctype=${encodeURIComponent(
-					"IC Self Assessment"
-				)}&name=${encodeURIComponent(sa.name)}&format=${encodeURIComponent(
-					"TC IC Self Assessment"
-				)}">${esc(__("Print"))}</a>`
-			);
+		actions.push(
+			TcKsnk.recordActions(
+				{
+					doctype: "IC Self Assessment",
+					name: sa.name,
+					docstatus: sa.docstatus,
+					can_write: sa.can_manage,
+					can_create: sa.can_manage && sa.name && !editable,
+					create_label: __("Create new self-assessment"),
+					print_format: "TC IC Self Assessment",
+				},
+				false
+			)
+		);
 		const table = sa.rows.length
 			? `<div class="tc-ksnk-scroll"><table class="tc-ksnk-table"><thead><tr>` +
 			  `<th scope="col">${esc(__("Criterion 2025-2030"))}</th><th scope="col">${esc(

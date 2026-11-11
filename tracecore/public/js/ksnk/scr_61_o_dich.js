@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-61 Điều tra ổ dịch & khai báo bệnh truyền nhiễm — view WEB trong Page tc-ksnk (FEAT-069; UC-53, UC-50;
 // FR-M14-09, .1, FR-M14-10, .1, FR-M13-13; BRU-MDR-004, BRU-MDR-005; A-150). R01: mở / Đã kiểm soát / kết thúc / hủy ổ
 // dịch; R01, R11: gắn ca (M13/M14 hoặc mã BN), hành động kiểm soát (Incident CAPA), khai báo; R13: chỉ số liệu tổng hợp.
@@ -149,7 +149,9 @@ const TcKsnkScr61 = {
 			? ""
 			: `<div class="tc-ksnk-alert is-info" role="note">${esc(
 					__("No cluster alert threshold is configured, so no cluster is detected.")
-			  )} <a href="${esc(data.rule_form)}">${esc(__("Set thresholds"))}</a></div>`;
+			  )} <a class="btn btn-default btn-sm" href="${esc(data.rule_form)}">${esc(
+					__("Set thresholds")
+			  )}</a></div>`;
 		if (!rows.length) return config;
 		return (
 			config +
@@ -477,6 +479,16 @@ const TcKsnkScr61 = {
 					  )}</button>`
 					: ""
 			}
+			${TcKsnk.recordActions(
+				{
+					doctype: "Outbreak Investigation",
+					name: d.name,
+					docstatus: d.docstatus === undefined ? 1 : d.docstatus,
+					can_write: !!data.can_edit_outbreak,
+					can_print: false, // đã có "Xuất mẫu báo cáo ổ dịch" bên dưới
+				},
+				false
+			)}
 			<a class="btn btn-default" target="_blank" rel="noopener" href="${esc(
 				data.print_outbreak + encodeURIComponent(d.name)
 			)}">${esc(__("Export outbreak report form"))}</a>
@@ -532,7 +544,9 @@ const TcKsnkScr61 = {
 					__("No reporting deadline is configured for disease group {0}.", [
 						data.missing_groups.join(", "),
 					])
-			  )} <a href="${esc(data.settings_form)}">${esc(__("IC Program Settings"))}</a></div>`
+			  )} <a class="btn btn-default btn-sm" href="${esc(data.settings_form)}">${esc(
+					__("IC Program Settings")
+			  )}</a></div>`
 			: "";
 		const note = `<div class="tc-ksnk-alert is-info" role="note">${esc(
 			__(
@@ -577,7 +591,16 @@ const TcKsnkScr61 = {
 								r.name
 						  )}">${esc(__("Cancel entry"))}</button>`
 						: ""
-				}</td></tr>`
+				} ${TcKsnk.recordActions(
+					{
+						doctype: "Notifiable Disease Report",
+						name: r.name,
+						docstatus: r.docstatus === undefined ? 1 : r.docstatus,
+						can_write: !!data.can_edit_report,
+						print_format: "TC Notifiable Disease Report",
+					},
+					false
+				)}</td></tr>`
 			)
 			.join("");
 		const table = rows
@@ -624,7 +647,7 @@ const TcKsnkScr61 = {
 				__(
 					"The patient code is encrypted and shown masked. Do not enter the patient name."
 				)
-			)} <a href="${esc(data.disease_form)}">${esc(
+			)} <a class="btn btn-default btn-sm" href="${esc(data.disease_form)}">${esc(
 			__("Communicable disease list")
 		)}</a></p>`;
 		return `<section class="tc-ksnk-card" data-region="reports"><h3>${esc(

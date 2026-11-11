@@ -17,7 +17,7 @@ from frappe import _
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
-from tracecore.food_safety import dashboard, events
+from tracecore.food_safety import dashboard, education, events, handlers
 from tracecore.infection_program import procedure_documents as documents
 from tracecore.ui import ksnk
 from tracecore.v1._common import reject_block
@@ -67,6 +67,17 @@ def _materials():
 	return result
 
 
+def _perms(*doctypes):
+	"""Cờ hiện nút theo quyền DocType (A-131); quyền thật vẫn kiểm ở DocPerm khi mở form."""
+	return {
+		doctype: {
+			"write": bool(frappe.has_permission(doctype, "write")),
+			"create": bool(frappe.has_permission(doctype, "create")),
+		}
+		for doctype in doctypes
+	}
+
+
 @frappe.whitelist(methods=["GET"])
 def overview():
 	"""Dữ liệu SCR-65."""
@@ -79,6 +90,13 @@ def overview():
 		{
 			"can_decide": events.can_decide(),
 			"can_publish": documents.can_publish(),
+			"perms": _perms(
+				events.DOCTYPE,
+				handlers.DOCTYPE,
+				education.DOCTYPE,
+				"Environmental Sample",
+				documents.DOCTYPE,
+			),
 			"outbreak_ready": events.outbreak_ready(),
 			"materials": _materials(),
 		}

@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-58 Báo cáo NKBV — phần tỷ suất của FEAT-063 (UC-48 bước 6; FR-M13-10, 10.1, 10.2; BRU-HAI-006; A-131, A-144 g).
 // Chọn kỳ (tháng, kèm trạng thái khóa), xu hướng tỷ suất NKBV/1.000 ngày nằm viện 12 tháng, bảng theo khoa: ngày nằm
 // viện, ca NKBV xác định, ‰, VAP ‰, CLABSI ‰, CAUTI ‰, tỷ lệ thở máy. Mẫu số 0 → "Không tính", không bao giờ 0.
@@ -634,7 +634,9 @@ const TcKsnkClusterBanner = {
 		if (!b.configured)
 			return `<div class="tc-ksnk-alert is-info" role="note">${esc(
 				__("No cluster alert threshold is configured, so no cluster is detected.")
-			)} <a href="${esc(b.rule_form)}">${esc(__("Set thresholds"))}</a></div>`;
+			)} <a class="btn btn-default btn-sm" href="${esc(b.rule_form)}">${esc(
+				__("Set thresholds")
+			)}</a></div>`;
 		return (b.alerts || [])
 			.map(
 				(a) => `<div class="tc-ksnk-alert is-warn" role="alert">
@@ -652,17 +654,28 @@ const TcKsnkClusterBanner = {
 						]
 					)
 				)}
-				${
+				<div class="tc-ksnk-actions">${
 					b.can_review
-						? `<div class="tc-ksnk-actions">
-					<a class="btn btn-danger" href="${esc(b.open_link)}?alert=${encodeURIComponent(a.name)}">${esc(
+						? `<a class="btn btn-danger" href="${esc(
+								b.open_link
+						  )}?alert=${encodeURIComponent(a.name)}">${esc(
 								__("Open outbreak investigation")
 						  )}</a>
 					<button type="button" class="btn btn-default" data-action="cluster-dismiss" data-name="${esc(
 						a.name
-					)}">${esc(__("Mark as reviewed"))}</button></div>`
+					)}">${esc(__("Mark as reviewed"))}</button> `
 						: ""
-				}</div>`
+				}${TcKsnk.recordActions(
+					{
+						doctype: "Cluster Alert",
+						name: a.name,
+						docstatus: a.docstatus === undefined ? 0 : a.docstatus,
+						can_write: !!b.can_review,
+						can_create: false,
+						can_print: false,
+					},
+					false
+				)}</div></div>`
 			)
 			.join("");
 	},

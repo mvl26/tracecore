@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-59 Kết quả vi sinh & vi khuẩn đa kháng (FEAT-067; UC-51; FR-M14-01..05, FR-M14-08; A-131, A-136).
 // Nhập file WHONET/CSV qua hồ sơ ánh xạ (kiểm từng dòng → ghi sổ dòng hợp lệ), nhập tay có bước xác nhận, chủng đa
 // kháng chưa xử lý, chủng mới trong 7 ngày (mã người bệnh luôn đã che), kháng sinh đồ quý trên chủng đầu tiên.
@@ -143,7 +143,7 @@ const TcKsnkScr59 = {
 			? ""
 			: `<div class="tc-ksnk-alert is-warn" role="status">${esc(
 					__("No mapping profile for microbiology files yet.")
-			  )} <a href="/app/import-mapping-profile/new">${esc(
+			  )} <a class="btn btn-default btn-sm" href="/app/import-mapping-profile/new">${esc(
 					__("Create mapping profile")
 			  )}</a></div>`;
 		const stage = state.check ? 2 : state.file_url ? 1 : 0;
@@ -242,7 +242,15 @@ const TcKsnkScr59 = {
 						row.organism_name || row.organism
 					)}</em></td><td>${TcKsnkScr59.mdroBadge(row, esc)}</td>` +
 					`<td>${esc(row.is_first_isolate ? __("Yes") : __("No (repeat)"))}</td>` +
-					`<td>${TcKsnkScr59.historyBadge(row.history, esc)}</td></tr>`
+					`<td>${TcKsnkScr59.historyBadge(row.history, esc)}</td>` +
+					`<td>${TcKsnk.recordActions(
+						{
+							doctype: "Microbiology Isolate",
+							name: row.name,
+							docstatus: row.docstatus || 0,
+						},
+						false
+					)}</td></tr>`
 			)
 			.join("");
 		return (
@@ -258,6 +266,7 @@ const TcKsnkScr59 = {
 				__("Multidrug resistant"),
 				__("First isolate"),
 				__("MDRO history"),
+				__("Actions"),
 			]
 				.map((label) => `<th scope="col">${esc(label)}</th>`)
 				.join("") +
@@ -358,7 +367,17 @@ const TcKsnkScr59 = {
 		return (
 			`<p class="tc-ksnk-note">${esc(
 				__("Approved multidrug resistance rules: {0}", [r.approved || 0])
-			)}${draft} ` + `<a href="/app/mdro-rule">${esc(__("Open the rule list"))}</a></p>`
+			)}${draft} ` +
+			`<a href="/app/mdro-rule">${esc(__("Open the rule list"))}</a> ` +
+			TcKsnk.recordActions(
+				{
+					doctype: "MDRO Rule",
+					can_create: !!r.can_create,
+					create_label: __("New multidrug resistance rule"),
+				},
+				false
+			) +
+			`</p>`
 		);
 	},
 

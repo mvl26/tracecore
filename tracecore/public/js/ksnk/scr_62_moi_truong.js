@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-62 Vệ sinh môi trường & cơ sở hạ tầng — view WEB trong Page tc-ksnk (FEAT-070; UC-54; FR-M15-01..07;
 // BRU-ENV-001..003; A-148 f). Tab: Tổng quan · Vùng vệ sinh · Mẫu môi trường · Hạ tầng · Ngưỡng & kế hoạch. R01/R11 quyết
 // định NC Environment của mẫu Không đạt (mở NC hoặc bỏ qua có lý do); R02 chỉ xem; R13 chỉ số liệu tổng hợp. Tạo/sửa
@@ -72,6 +72,27 @@ const TcKsnkScr62 = {
 		return `<a href="/app/${slug}/${encodeURIComponent(
 			name
 		)}"><span class="tc-ksnk-code">${esc(label || name)}</span></a>`;
+	},
+
+	// Cờ quyền theo DocType do RPC trả (A-131); thiếu cờ = chỉ xem
+	perm(data, doctype) {
+		return ((data && data.perms) || {})[doctype] || {};
+	},
+
+	// Hàng thao tác của một mẫu đã ghi sổ: xem/hủy/sửa đổi theo quyền, In; thêm mẫu mới ở nút "Ghi kết quả"
+	sampleActions(data, row, extra) {
+		const perm = TcKsnkScr62.perm(data, "Environmental Sample");
+		return TcKsnk.recordActions(
+			{
+				doctype: "Environmental Sample",
+				name: row.name,
+				docstatus: 1,
+				can_write: perm.write,
+				can_create: false,
+				extra: extra || [],
+			},
+			false
+		);
 	},
 
 	// POST @idempotent: khóa giữ nguyên khi bấm lại cùng dữ liệu (thử lại sau lỗi mạng)
@@ -233,6 +254,7 @@ const TcKsnkScr62 = {
 						"Infection control, R11 and the responsible party were notified; the zone stays flagged until a resample passes."
 					)
 				)}</div>
+				<div class="tc-ksnk-actions">${self.sampleActions(data, r)}</div>
 				${
 					data.can_decide
 						? `<div class="tc-ksnk-actions"><button type="button" class="btn btn-danger btn-sm" data-action="open-nc" data-name="${esc(
@@ -268,7 +290,7 @@ const TcKsnkScr62 = {
 					r.is_resample_of
 						? ` ${self.badge("info", __("Resample of {0}", [r.is_resample_of]), esc)}`
 						: ""
-				}</td></tr>`
+				}</td><td>${self.sampleActions(data, r)}</td></tr>`
 			)
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
@@ -281,8 +303,8 @@ const TcKsnkScr62 = {
 						__("Sampled On")
 				  )}</th><th>${esc(__("Result"))}</th><th>${esc(
 						__("Limit (snapshot)")
-				  )}</th><th>${esc(
-						__("Assessment")
+				  )}</th><th>${esc(__("Assessment"))}</th><th>${esc(
+						__("Action")
 				  )}</th></tr></thead><tbody>${body}</tbody></table></div>`
 				: `<p class="tc-ksnk-state is-empty">${esc(
 						__("No environmental sample posted this month.")
@@ -446,7 +468,13 @@ const TcKsnkScr62 = {
 					: `<p class="tc-ksnk-state is-empty">${esc(__("No approved limit yet."))}</p>`
 			}<div class="tc-ksnk-actions"><a class="btn btn-default btn-sm" href="/app/environmental-limit">${esc(
 				__("All limits")
-			)}</a></div></section>` +
+			)}</a>${
+				self.perm(data, "Environmental Limit").create
+					? ` <a class="btn btn-default btn-sm" href="/app/environmental-limit/new">${esc(
+							__("New limit")
+					  )}</a>`
+					: ""
+			}</div></section>` +
 			`<section class="tc-ksnk-card"><h3>${esc(__("Sampling plans"))}</h3>${
 				overdue
 					? `<div class="tc-ksnk-alert is-warn"><strong>${esc(

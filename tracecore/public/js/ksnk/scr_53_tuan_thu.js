@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-53 Báo cáo tuân thủ & phản hồi khoa (FEAT-060; UC-45; FR-M12-08, FR-M12-09, FR-M12-11, FR-M12-14; BRU-AUD-005).
 // Tổng hợp từ phiếu đã ghi sổ trong kỳ (tracecore.v1.audit.compliance_board): thẻ số, bảng theo mẫu × khoa với nhãn cỡ
 // mẫu ("Chưa đủ cỡ mẫu", "Không tính"), phiếu gần đây, đề nghị mở NC (R01/R11: Mở NC / Bỏ qua có lý do). Xuất Excel/PDF
@@ -213,6 +213,28 @@ const TcKsnkScr53 = {
 		);
 	},
 
+	sessionActions(row, data) {
+		// Phiên giám sát đã ghi sổ: xem/sửa đổi trên form Desk, In; quyền thật kiểm ở DocPerm (ADR-002).
+		return TcKsnk.recordActions(
+			{
+				doctype: "Audit Session",
+				name: row.name,
+				docstatus: row.docstatus === undefined ? 1 : row.docstatus,
+				can_write: !!data.can_write,
+				can_create: false,
+			},
+			false
+		);
+	},
+
+	createHtml(data) {
+		if (!data.can_create) return "";
+		return TcKsnk.recordActions(
+			{ doctype: "Audit Session", can_create: true, create_label: __("New audit session") },
+			true
+		);
+	},
+
 	recentHtml(data, esc) {
 		const self = TcKsnkScr53;
 		const body = (data.recent || [])
@@ -227,11 +249,15 @@ const TcKsnkScr53 = {
 					`<td class="is-num">${esc(
 						row.score_pct === null ? "—" : `${self.number(row.score_pct)} %`
 					)}</td>` +
-					`<td>${self.badge(self.resultBadge(row), esc)}</td></tr>`
+					`<td>${self.badge(self.resultBadge(row), esc)}</td>` +
+					`<td>${self.sessionActions(row, data)}</td></tr>`
 			)
 			.join("");
 		if (!body)
-			return `<div class="tc-ksnk-state is-empty">${esc(__("No audit to show."))}</div>`;
+			return (
+				`<div class="tc-ksnk-state is-empty">${esc(__("No audit to show."))}</div>` +
+				self.createHtml(data)
+			);
 		return (
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
 				__("Audit Session")
@@ -241,8 +267,9 @@ const TcKsnkScr53 = {
 			)}</th>` +
 			`<th scope="col" class="is-num">${esc(__("Score"))}</th><th scope="col">${esc(
 				__("Result")
-			)}</th></tr></thead>` +
-			`<tbody>${body}</tbody></table>`
+			)}</th><th scope="col">${esc(__("Actions"))}</th></tr></thead>` +
+			`<tbody>${body}</tbody></table>` +
+			self.createHtml(data)
 		);
 	},
 
@@ -269,7 +296,10 @@ const TcKsnkScr53 = {
 					)}</code> — ${esc(row.department)}:</b> ${esc(
 						__("critical items failed: {0}", [failed])
 					)}` +
-					`<div class="tc-ksnk-actions"><button type="button" class="btn btn-danger btn-sm" data-action="open-nc" data-session="${esc(
+					`<div class="tc-ksnk-actions">${TcKsnkScr53.sessionActions(
+						row,
+						data
+					)} <button type="button" class="btn btn-danger btn-sm" data-action="open-nc" data-session="${esc(
 						row.name
 					)}">${esc(__("Open NC"))}</button>` +
 					`<button type="button" class="btn btn-default btn-sm" data-action="dismiss" data-session="${esc(

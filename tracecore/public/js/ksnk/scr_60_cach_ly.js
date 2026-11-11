@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-60 Lệnh cách ly & phòng cách ly — view WEB trong Page tc-ksnk (FEAT-068; UC-52; FR-M14-06, .1, FR-M14-07;
 // BRU-MDR-003; A-146). R01/R11: tạo lệnh (điền sẵn từ chủng đa kháng ?isolate=), danh sách đang cách ly mọi khoa, kết
 // thúc (bắt buộc lý do), hủy nhập nhầm; R13: chỉ phòng cách ly và tỷ lệ khoa có phòng đạt. Mã BN chỉ dạng che. Lỗi
@@ -207,12 +207,12 @@ const TcKsnkScr60 = {
 					: `<span class="tc-ksnk-badge is-warn">${esc(__("Bedside"))}</span>`;
 				const closable = !r.is_mdro || data.mdro_close;
 				const close = closable
-					? `<button type="button" class="btn btn-link" data-action="close" data-name="${esc(
+					? `<button type="button" class="btn btn-default btn-sm" data-action="close" data-name="${esc(
 							r.name
 					  )}">${esc(__("End isolation"))}</button>`
 					: `<span class="tc-ksnk-note">${esc(__("Infection control closes"))}</span>`;
 				const cancel = data.can_cancel
-					? ` <button type="button" class="btn btn-link" data-action="cancel" data-name="${esc(
+					? ` <button type="button" class="btn btn-default btn-sm" data-action="cancel" data-name="${esc(
 							r.name
 					  )}">${esc(__("Cancel entry"))}</button>`
 					: "";
@@ -224,7 +224,15 @@ const TcKsnkScr60 = {
 					<td>${room}</td>
 					<td>${esc(self.date(r.start_at))}</td>
 					<td class="is-num">${esc(r.days)}</td>
-					<td>${close}${cancel}</td>
+					<td>${close}${cancel} ${TcKsnk.recordActions(
+					{
+						doctype: TC_ISO_CONTEXT,
+						name: r.name,
+						docstatus: r.docstatus === undefined ? 1 : r.docstatus,
+						can_write: !!data.can_write,
+					},
+					false
+				)}</td>
 				</tr>`;
 			})
 			.join("");

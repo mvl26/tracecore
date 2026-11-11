@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-57 Giám sát NKVM (FEAT-064; UC-49; FR-M13-07, 07.1, 07.2, 08, 08.1, 09; BRU-HAI-003, 004, 005; A-147 k).
 // 4 KPI (ca đang theo dõi, tỷ lệ NKVM tháng trước, KSDP đúng thời điểm, cuộc gọi theo dõi hôm nay); form đăng ký phẫu
 // thuật (mã BN chỉ nhập mới — ca có sẵn hiện bản che), NNIS và cửa sổ do server tính; lịch theo dõi sau ra viện (ghi
@@ -324,6 +324,16 @@ const TcKsnkScr57 = {
 					__("{0}: HAI case", [d.name])
 			  )} <span class="tc-ksnk-code">${esc(d.hai_case)}</span> ${esc(
 					d.case_status ? __(d.case_status.status) : ""
+			  )} ${TcKsnk.recordActions(
+					{
+						doctype: "HAI Case",
+						name: d.hai_case,
+						docstatus: d.case_status ? d.case_status.docstatus : undefined,
+						can_write: false,
+						can_create: false,
+						can_print: false,
+					},
+					false
 			  )}</div>`
 			: "";
 		const actions = [];
@@ -403,9 +413,27 @@ const TcKsnkScr57 = {
 		)}</h3>${body}</section>`;
 	},
 
-	actionsHtml(d, esc) {
+	recordActionsHtml(d, data) {
+		// Ca đang chọn: xem/sửa chi tiết trên form Desk (ADR-002) và In; quyền thật kiểm ở DocPerm.
+		if (!d || !d.name) return "";
+		return (
+			TcKsnk.recordActions(
+				{
+					doctype: "Surgical Surveillance",
+					name: d.name,
+					docstatus: d.docstatus === undefined ? 0 : d.docstatus,
+					can_write: !!(data && data.can_write),
+					can_create: false,
+				},
+				false
+			) + " "
+		);
+	},
+
+	actionsHtml(d, esc, data) {
 		return (
 			`<div class="tc-ksnk-actions">` +
+			TcKsnkScr57.recordActionsHtml(d, data) +
 			`<button type="button" class="btn btn-primary btn-lg" data-action="save">${esc(
 				__("Save surgery")
 			)}</button>` +
@@ -439,7 +467,7 @@ const TcKsnkScr57 = {
 				data,
 				esc
 			)}</div><div>${self.recentHtml(data.recent || [], d && d.name, esc)}</div></div>` +
-			self.actionsHtml(d, esc)
+			self.actionsHtml(d, esc, data)
 		);
 	},
 

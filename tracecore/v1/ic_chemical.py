@@ -173,6 +173,9 @@ def manual_entry(values=None, confirm=0, client_ts=None):
 	return {
 		"ok": True,
 		"name": doc.name,
+		"docstatus": cint(frappe.db.get_value(chemicals.DOCTYPE, doc.name, "docstatus")),
+		"can_write": bool(frappe.has_permission(chemicals.DOCTYPE, "write")),
+		"can_create": bool(frappe.has_permission(chemicals.DOCTYPE, "create")),
 		"duplicate_status": frappe.db.get_value(chemicals.DOCTYPE, doc.name, "duplicate_status"),
 	}
 

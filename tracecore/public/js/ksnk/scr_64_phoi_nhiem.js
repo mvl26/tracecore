@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-64 Phơi nhiễm nghề nghiệp & tiêm chủng nhân viên (FEAT-071; UC-55; FR-M16-03..09; BRU-OCC-001..004; A-131,
 // A-137). R01/R11: KPI, hồ sơ phơi nhiễm (mã BN nguồn chỉ dạng che), xử trí (sơ cứu, chỉ định dự phòng → lịch theo
 // dõi theo mẫu đã duyệt), ghi "đã thực hiện" từng mốc (không có ô kết quả), tiêm chủng, cảnh báo thuốc dự phòng.
@@ -212,6 +212,12 @@ const TcKsnkScr64 = {
 			__("follow-up schedule")
 		)} ${self.statusBadge(d.status, esc)}</h3>
 			<div data-region="detail-alert"></div>
+			${TcKsnk.recordActions({
+				doctype: TC_EXP_CONTEXT,
+				name: d.name,
+				can_write: d.can_write,
+				can_create: false,
+			})}
 			<table class="tc-ksnk-table"><tbody>
 				<tr><th>${esc(__("Employee"))}</th><td>${esc(d.employee_name || "—")} · ${esc(
 			d.occupation || ""
@@ -244,7 +250,20 @@ const TcKsnkScr64 = {
 		</section>`;
 	},
 
-	immunizationHtml(rows, esc) {
+	// Cờ quyền theo DocType do RPC trả (A-131); thiếu cờ = chỉ xem
+	perm(data, doctype) {
+		return ((data && data.perms) || {})[doctype] || {};
+	},
+
+	// Nút tạo mới luôn còn (kể cả khi danh sách rỗng) khi người dùng có quyền tạo
+	createActions(data, doctype, label) {
+		const perm = TcKsnkScr64.perm(data, doctype);
+		return perm.create
+			? TcKsnk.recordActions({ doctype, can_create: true, create_label: label })
+			: "";
+	},
+
+	immunizationHtml(rows, esc, data) {
 		const cls = {
 			Overdue: "is-fail",
 			"Due Soon": "is-warn",
@@ -267,17 +286,29 @@ const TcKsnkScr64 = {
 						)}</td>
 				<td>${esc(r.vaccine)}</td><td class="is-num">${esc(`${r.dose_no}/${r.doses_required || "—"}`)}</td>
 				<td>${esc(TcKsnkScr64.date(r.next_due))}</td>
-				<td><span class="tc-ksnk-badge ${cls[r.state] || "is-neutral"}">${esc(label(r))}</span></td></tr>`
+				<td><span class="tc-ksnk-badge ${cls[r.state] || "is-neutral"}">${esc(label(r))}</span></td>
+				<td>${TcKsnk.recordActions(
+					{
+						doctype: "Staff Immunization",
+						name: r.name,
+						can_write: TcKsnkScr64.perm(data, "Staff Immunization").write,
+						can_create: false,
+					},
+					false
+				)}</td></tr>`
 					)
 					.join("")
-			: `<tr><td colspan="6">${esc(__("No vaccinations recorded yet."))}</td></tr>`;
+			: `<tr><td colspan="7">${esc(__("No vaccinations recorded yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(__("Staff vaccination"))}</h3>
 			<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Employee"))}</th><th>${esc(
 			__("Department")
 		)}</th><th>${esc(__("Vaccine"))}</th><th>${esc(__("Dose"))}</th><th>${esc(
 			__("Due")
-		)}</th><th>${esc(__("Status"))}</th></tr></thead><tbody>${body}</tbody></table>
-			<p class="tc-ksnk-note"><a href="/app/staff-immunization">${esc(
+		)}</th><th>${esc(__("Status"))}</th><th>${esc(
+			__("Action")
+		)}</th></tr></thead><tbody>${body}</tbody></table>
+			${TcKsnkScr64.createActions(data, "Staff Immunization", __("Record vaccination"))}
+			<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/staff-immunization">${esc(
 				__("Open the vaccination list")
 			)}</a></p></section>`;
 	},
@@ -319,11 +350,12 @@ const TcKsnkScr64 = {
 		return (
 			self.kpisHtml(data.kpis, esc) +
 			self.recordsHtml(data.records || [], esc) +
+			self.createActions(data, TC_EXP_CONTEXT, __("Record exposure")) +
 			`<div class="tc-ksnk-cols"><div data-region="detail">${self.detailHtml(
 				detail,
 				esc
 			)}</div>
-			<div>${self.immunizationHtml(data.immunizations || [], esc)}${self.pepHtml(
+			<div>${self.immunizationHtml(data.immunizations || [], esc, data)}${self.pepHtml(
 				data.pep_alerts,
 				esc
 			)}</div></div>` +
