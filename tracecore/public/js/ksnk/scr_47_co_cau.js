@@ -10,7 +10,6 @@ const TC_STRUCT_STATUS = "tracecore.v1.ksnk_structure.status";
 const TC_STRUCT_SAVE = "tracecore.v1.ksnk_structure.save_settings";
 const TC_STRUCT_SUBMIT = "tracecore.v1.ksnk_structure.submit_committee";
 const TC_FACILITY_LEVELS = ["Specialized Level", "Basic Level", "Primary Level"];
-const TC_ROUNDING = ["Up", "Down"]; // FEAT-094
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
 
@@ -69,12 +68,6 @@ const TcKsnkScr47 = {
 					}>${esc(label)}</option>`
 			)
 			.join("");
-		const rounding = TC_ROUNDING.map(
-			(value) =>
-				`<option value="${esc(value)}"${
-					value === (s.surveillance_rounding || "Up") ? " selected" : ""
-				}>${esc(__(value, null, "IC Program Settings"))}</option>`
-		).join("");
 		const save = editable
 			? `<button type="button" class="btn btn-primary" data-action="save-settings">${esc(
 					__("Save settings")
@@ -98,12 +91,7 @@ const TcKsnkScr47 = {
 			`class="form-control" data-setting="surveillance_ratio_beds" value="${esc(
 				s.surveillance_ratio_beds
 			)}"${dis}></label>` +
-			`<label>${esc(
-				__("Surveillance Officer Rounding")
-			)}<select class="form-control" data-setting="surveillance_rounding"${dis}>${rounding}</select></label>` +
-			`<label>${esc(__("Head of Facility"))}<input type="text" class="form-control" ` +
-			`data-setting="director" value="${esc(s.director || "")}"${dis}>` +
-			`<span class="tc-ksnk-note">${esc(s.director_name || "")}</span></label>` +
+			// làm tròn số giám sát viên, người đứng đầu cơ sở: chỉ sửa trên form IC Program Settings (11/11/2026)
 			`</div><div data-region="settings-alert"></div>${save}` +
 			`<p class="tc-ksnk-note"><a href="/app/ic-program-settings">${esc(
 				__(

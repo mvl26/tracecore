@@ -217,21 +217,26 @@ class TestKsnkScr47Feat094(FrappeTestCase):
 		self.assertIn("The Chair is not the head of facility", out["html"])
 		self.assertIn("tc-ksnk-alert is-warn", out["html"])
 
-	def test_settings_have_director_and_rounding(self):
+	def test_settings_screen_hides_director_and_rounding(self):
+		# người dùng 11/11/2026: bỏ 2 ô khỏi màn; hai trường vẫn sửa trên form IC Program Settings (A-138 giữ nguyên)
 		out = self._run(
 			"""
 			const d = Object.assign({}, data, {settings: Object.assign({}, data.settings,
 				{director: "NV-0001", director_name: "BS. Giám đốc", surveillance_rounding: "Down"})});
-			const inputs = [["bed_count", "420"], ["director", " NV-0001 "], ["surveillance_rounding", "Down"]]
+			const inputs = [["bed_count", "420"], ["surveillance_ratio_beds", "150"]]
 				.map(([setting, value]) => ({dataset: {setting}, value}));
 			const el = {querySelectorAll: () => inputs};
 			emit({html: TcKsnkScr47.settingsHtml(d, false, esc), values: TcKsnkScr47.settingsValues(el)});
 			"""
 		)
-		self.assertIn('data-setting="director"', out["html"])
-		self.assertIn("BS. Giám đốc", out["html"])
-		self.assertEqual(out["values"]["director"], "NV-0001")
-		self.assertEqual(out["values"]["surveillance_rounding"], "Down")
+		self.assertNotIn('data-setting="director"', out["html"])
+		self.assertNotIn('data-setting="surveillance_rounding"', out["html"])
+		self.assertNotIn("BS. Giám đốc", out["html"])
+		self.assertIn('data-setting="bed_count"', out["html"])
+		self.assertIn('href="/app/ic-program-settings"', out["html"])
+		# không gửi 2 khóa này → save_settings giữ nguyên giá trị đang có
+		self.assertNotIn("director", out["values"])
+		self.assertNotIn("surveillance_rounding", out["values"])
 		self.assertEqual(out["values"]["bed_count"], 420)
 
 	def test_profile_form_script_approves_inline(self):
