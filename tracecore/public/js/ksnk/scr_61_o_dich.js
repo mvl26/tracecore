@@ -58,6 +58,7 @@ const TcKsnkScr61 = {
 				handlers.on_block(result.error || {});
 				return;
 			}
+			tracecore.saved_notice(handlers.success);
 			handlers.on_ok(result || {});
 		};
 		frappe.call({

@@ -5,14 +5,24 @@
 //   on_ok(result)    — body ok (HTTP 200)
 //   on_block(error)  — body ok: false; `error` = {code, title, reason, action, items}
 //   on_fail()        — lỗi khác (mạng, quyền, 500…): Frappe đã tự hiện thông báo
+//   success          — thông báo xanh khi ghi thành công: chuỗi riêng, hoặc false nếu màn tự thông báo. Trên trang
+//                      KSNK (route tc-ksnk) bỏ trống = "Đã lưu thành công"; nơi khác bỏ trống = không thông báo.
 frappe.provide("tracecore");
 
-tracecore.desk_call = function ({ method, args, on_ok, on_block, on_fail }) {
+tracecore.saved_notice = function (success) {
+	if (success === false) return;
+	const route = (frappe.get_route && frappe.get_route()) || [];
+	if (!success && route[0] !== "tc-ksnk") return;
+	frappe.show_alert({ message: success || __("Saved successfully"), indicator: "green" });
+};
+
+tracecore.desk_call = function ({ method, args, on_ok, on_block, on_fail, success }) {
 	const handle = (result) => {
 		if (result && result.ok === false) {
 			on_block && on_block(result.error || {});
 			return;
 		}
+		tracecore.saved_notice(success);
 		on_ok && on_ok(result || {});
 	};
 	frappe.call({

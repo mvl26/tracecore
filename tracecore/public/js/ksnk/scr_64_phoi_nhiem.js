@@ -377,6 +377,7 @@ const TcKsnkScr64 = {
 		tracecore.desk_call({
 			method,
 			args,
+			success: method === TC_EXP_REVEAL ? false : undefined, // xem mã đầy đủ không phải thao tác lưu
 			on_ok: (result) => {
 				if (!ctx.isCurrent()) return;
 				if (result.source_patient_code !== undefined) {

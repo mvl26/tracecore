@@ -83,6 +83,7 @@ const TcKsnkScr62 = {
 		const handle = (result) => {
 			TcKsnkScr62.pending = null;
 			if (result && result.ok === false) return handlers.on_block(result.error || {});
+			tracecore.saved_notice(handlers.success);
 			handlers.on_ok(result || {});
 		};
 		frappe.call({
@@ -554,6 +555,7 @@ const TcKsnkScr62 = {
 					const box = button.closest("[data-region]");
 					const alert = box && box.querySelector('[data-region="nc-alert"]');
 					const handlers = {
+						success: button.dataset.action === "open-nc" ? false : undefined, // mở NC tự báo mã NC
 						on_ok: (result) => {
 							if (result.incident)
 								frappe.show_alert({

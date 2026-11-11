@@ -609,11 +609,12 @@ const TcKsnkScr66 = {
 	},
 
 	// --- sự kiện ---------------------------------------------------------------------------------------------------
-	post(el, ctx, method, args, region, done) {
+	post(el, ctx, method, args, region, done, success) {
 		const self = TcKsnkScr66;
 		tracecore.desk_call({
 			method,
 			args,
+			success,
 			on_ok: (result) => {
 				if (!ctx.isCurrent()) return;
 				done(result);
@@ -672,7 +673,8 @@ const TcKsnkScr66 = {
 							sections: JSON.stringify(sections),
 						},
 						"dossier-alert",
-						() => self.render(el, ctx)
+						() => self.render(el, ctx),
+						__("Dossier prepared successfully")
 					);
 				} else if (action === "council") {
 					self.post(
@@ -681,7 +683,8 @@ const TcKsnkScr66 = {
 						TC_IND_COUNCIL,
 						{ period: data.period },
 						"actions-alert",
-						() => self.render(el, ctx)
+						() => self.render(el, ctx),
+						__("Council report generated successfully")
 					);
 				} else if (action === "sa-prepare") {
 					self.post(el, ctx, TC_IND_SELF_PREPARE, { year }, "sa-alert", () =>
