@@ -64,3 +64,6 @@ class TestInstallRoles(FrappeTestCase):
 			install.after_install()
 		self.assertEqual(order[0], "ensure_roles")
 		self.assertLess(order.index("ensure_roles"), order.index("ensure_default_rules"))
+		# site trắng không chạy migrate: Role Profile R11..R13 phải tạo ngay lúc cài (A-113 D4)
+		self.assertIn("ensure_role_profiles", order)
+		self.assertLess(order.index("ensure_roles"), order.index("ensure_role_profiles"))

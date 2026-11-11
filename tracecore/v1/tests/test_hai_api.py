@@ -239,7 +239,9 @@ class TestStation(HaiApiCase):
 			return fn(**kwargs)
 
 	def test_context_snapshot(self):
-		f.make_census(self.ward, add_days(today(), -2), patients=17)
+		# theo ngày của TS (API dùng client_ts), không theo ngày thật: hôm sau ngày viết test thì ``today() - 2`` rơi
+		# đúng ngày mẫu số mặc định và prefill thành None
+		f.make_census(self.ward, add_days(getdate(TS[:10]), -2), patients=17)
 		result = self.call(api.context)
 		self.assertTrue(result["ok"], result)
 		self.assertEqual([row["name"] for row in result["departments"]], [self.ward])

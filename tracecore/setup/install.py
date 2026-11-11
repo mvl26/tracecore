@@ -73,6 +73,7 @@ def ensure_roles(path=ROLE_FIXTURE):
 
 def after_install():
 	ensure_roles()  # trước mọi bước có Link tới Role (CI cài mới: LinkValidationError TC R11)
+	ensure_role_profiles()  # A-113 D4; site trắng chưa chạy after_migrate nên phải tạo ngay khi cài
 	apply_system_settings()
 	ensure_sample_templates()
 	ensure_object_templates()

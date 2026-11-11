@@ -19,6 +19,16 @@ def heartbeat(page, token):
 	)
 
 
+SESSION_TOKEN = "frappe.tc_station.session && frappe.tc_station.session.token"
+
+
+def session_token(page):
+	"""Token phiên trạm sau khi trình duyệt lưu xong phiên: quẹt thẻ xong, mã trạm hiện trước khi ``session`` được gán
+	(CI 11/11/2026: ``Cannot read properties of null (reading 'token')``)."""
+	page.wait_for_function(SESSION_TOKEN)
+	return page.evaluate(SESSION_TOKEN)
+
+
 def test_live_card_identity_t4_indicator_and_logout(t4_page, t4_demo):
 	page = t4_page
 	expect(page.locator(".tc-session-person")).to_have_text("TraceCore Demo")
@@ -45,7 +55,7 @@ def test_live_card_identity_t4_indicator_and_logout(t4_page, t4_demo):
 
 def test_live_second_station_replaces_first_and_idle_revokes(t4_page, browser, browser_context_args):
 	page = t4_page
-	old_token = page.evaluate("frappe.tc_station.session.token")
+	old_token = session_token(page)
 	with browser.new_context(**browser_context_args) as context:
 		second = context.new_page()
 		desk_login(second, "TC_E2E_T4")
@@ -58,7 +68,7 @@ def test_live_second_station_replaces_first_and_idle_revokes(t4_page, browser, b
 		page.evaluate("frappe.tc_station.heartbeat()")
 		expect(page.locator("#tc-card-input")).to_be_visible()
 		expect(page.locator(".tc-work")).to_be_hidden()
-		new_token = second.evaluate("frappe.tc_station.session.token")
+		new_token = session_token(second)
 		assert heartbeat(second, new_token).json()["message"]["ok"]
 		second.evaluate(
 			"async () => { frappe.tc_station.lastActivity = Date.now() - 600001; await frappe.tc_station.checkSession(); }"
