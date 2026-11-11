@@ -450,6 +450,7 @@ const TcKsnkScr49 = {
 				tracecore.desk_call({
 					method: TC_TRAINING_REMIND,
 					args: { department: button.dataset.department, year: data && data.year },
+					success: false, // kết quả gửi nhắc đã hiện inline ngay dưới
 					on_ok: (result) => {
 						if (!ctx.isCurrent() || !region) return;
 						region.innerHTML = `<div class="tc-ksnk-alert is-info" role="status">${esc(

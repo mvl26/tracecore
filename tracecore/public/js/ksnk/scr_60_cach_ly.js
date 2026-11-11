@@ -62,6 +62,7 @@ const TcKsnkScr60 = {
 				return;
 			}
 			TcKsnkScr60.pending = null;
+			tracecore.saved_notice(handlers.success);
 			handlers.on_ok(result || {});
 		};
 		frappe.call({
@@ -366,6 +367,7 @@ const TcKsnkScr60 = {
 				const args = { ...self.values(form), isolate: isolate || "" };
 				button.disabled = true;
 				self.post(TC_ISO_CREATE, args, {
+					success: false, // tự báo "Đã tạo lệnh cách ly {0}"
 					on_ok: (result) => {
 						if (!ctx.isCurrent()) return;
 						const warn = (result.warnings || []).join(" ");

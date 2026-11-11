@@ -494,6 +494,8 @@ const TcKsnkScr48 = {
 				tracecore.desk_call({
 					method: call.method,
 					args: call.args,
+					// Sửa đổi chỉ mở form bản mới (chưa lưu gì): không hiện "đã lưu"
+					success: action === "amend" ? false : undefined,
 					on_ok: (result) => {
 						if (!ctx.isCurrent()) return;
 						if (action === "amend") {

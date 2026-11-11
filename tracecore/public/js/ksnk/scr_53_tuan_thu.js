@@ -333,6 +333,7 @@ const TcKsnkScr53 = {
 			tracecore.desk_call({
 				method,
 				args,
+				success: method === TC_AUD_OPEN_NC ? false : undefined, // mở NC tự báo mã NC vừa tạo
 				on_ok: (result) => resolve(result),
 				on_block: (error) => resolve({ ok: false, error }),
 				on_fail: () =>

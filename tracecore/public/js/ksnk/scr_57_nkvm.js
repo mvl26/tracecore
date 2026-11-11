@@ -468,6 +468,8 @@ const TcKsnkScr57 = {
 		tracecore.desk_call({
 			method: TC_SSI + method,
 			args,
+			// create_case tự báo "ca NKBV … đã tạo"; thao tác khác dùng thông báo chung của trang
+			success: method === "create_case" ? false : undefined,
 			on_ok: (result) => {
 				if (button) button.disabled = false;
 				onOk(result);
@@ -560,10 +562,7 @@ const TcKsnkScr57 = {
 						{ values: JSON.stringify(self.values(el)), name: d ? d.name : null },
 						formAlert,
 						ctx.esc,
-						(result) => {
-							frappe.show_alert({ message: __("Saved"), indicator: "green" });
-							reload(result.detail.name);
-						},
+						(result) => reload(result.detail.name),
 						button
 					);
 				} else if (action === "new") reload(null);

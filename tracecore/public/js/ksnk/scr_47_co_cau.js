@@ -343,15 +343,18 @@ const TcKsnkScr47 = {
 								method: TC_STRUCT_SAVE,
 								args: { values: self.settingsValues(el) },
 								region: "settings-alert",
+								success: __("Settings saved successfully"),
 						  }
 						: {
 								method: TC_STRUCT_SUBMIT,
 								args: { name: button.dataset.name },
 								region: "actions-alert",
+								success: __("Committee composition recorded"),
 						  };
 				tracecore.desk_call({
 					method: call.method,
 					args: call.args,
+					success: call.success,
 					on_ok: (result) => {
 						if (!ctx.isCurrent()) return;
 						self.paint(el, ctx, result.status || data);
