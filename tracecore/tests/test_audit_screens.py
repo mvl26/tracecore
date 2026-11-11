@@ -192,8 +192,8 @@ class TestKsnkAuditScreens(FrappeTestCase):
 	def test_scr53_labels_are_text_not_color(self):
 		out = run_js(
 			self,
-			[SCR53],
-			[["TcKsnkScr53"]],
+			["public/js/ksnk/ksnk_shell.js", SCR53],
+			[["TcKsnk"], ["TcKsnkScr53"]],
 			"""
 			const s = TcKsnkScr53;
 			emit({

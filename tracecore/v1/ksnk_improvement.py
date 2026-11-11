@@ -33,4 +33,8 @@ def status(year=None):
 		"self_assessment": quality_review.compare(year),
 		"template": quality_review.active_template(),
 		"can_edit": bool(frappe.has_permission(improvement.DOCTYPE, "create")),
+		# quyền mở/sửa dự án và mở/tạo phiếu tự đánh giá (DocPerm thật) để màn luôn có lối mở form
+		"can_write": bool(frappe.has_permission(improvement.DOCTYPE, "write")),
+		"can_write_session": bool(frappe.has_permission(quality_review.SESSION, "write")),
+		"can_create_session": bool(frappe.has_permission(quality_review.SESSION, "create")),
 	}

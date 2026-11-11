@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-56 Ca nhiễm khuẩn bệnh viện & kỳ báo cáo (FEAT-063; UC-48; FR-M13-01, 05, 06, 11, 15; BRU-HAI-001, 005; A-131,
 // A-144). R01/R11: danh sách ca (mã người bệnh chỉ dạng che), hồ sơ ca với kiểm tra thời gian theo phiên bản định nghĩa,
 // Xác định / Loại trừ (bắt buộc lý do) / Gắn chủng vi sinh, Xem mã BN (lý do + Audit Log); R01 khóa / mở khóa kỳ.
@@ -13,7 +13,6 @@ const TC_HAI_LOCK = "tracecore.v1.hai_case.lock_period";
 const TC_HAI_UNLOCK = "tracecore.v1.hai_case.unlock_period";
 const TC_HAI_REVEAL = "tracecore.v1.patient_code.reveal";
 const TC_HAI_CONTEXT = "HAI Case";
-const TC_HAI_NEW = "/app/hai-case/new";
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
 
@@ -59,27 +58,34 @@ const TcKsnkScr56 = {
 		}">${esc(label)}</span></p>`;
 	},
 
-	listHtml(rows, esc, selected) {
+	listHtml(rows, esc, selected, data) {
 		const self = TcKsnkScr56;
-		const create = `<a class="btn btn-default btn-sm" href="${esc(TC_HAI_NEW)}">${esc(
-			__("New suspected case")
-		)}</a>`;
-		if (!rows.length)
-			return `<section class="tc-ksnk-card"><h3>${esc(__("Cases"))}</h3>
-				<p class="tc-ksnk-state">${esc(__("No HAI cases yet."))}</p>${create}</section>`;
-		const body = rows
-			.map(
-				(r) => `<tr class="tc-ksnk-row${
-					r.name === selected ? " is-selected" : ""
-				}" data-action="open" data-name="${esc(r.name)}" tabindex="0">
+		// Tạo ca Nghi ngờ trên form Desk; ẩn khi người gọi không có quyền tạo (R13 chỉ đọc).
+		const create =
+			data && data.can_create === false
+				? ""
+				: TcKsnk.recordActions(
+						{
+							doctype: TC_HAI_CONTEXT,
+							can_create: true,
+							create_label: __("New suspected case"),
+						},
+						false
+				  );
+		const body =
+			rows
+				.map(
+					(r) => `<tr class="tc-ksnk-row${
+						r.name === selected ? " is-selected" : ""
+					}" data-action="open" data-name="${esc(r.name)}" tabindex="0">
 				<td class="tc-ksnk-code">${esc(r.name)}</td>
 				<td class="tc-ksnk-code">${esc(r.patient_code_masked || "—")}</td>
 				<td>${esc(r.department_name || r.department || "—")}</td>
 				<td>${esc(r.def_code || "—")}</td>
 				<td>${self.statusBadge(r.status, esc)}</td>
 			</tr>`
-			)
-			.join("");
+				)
+				.join("") || `<tr><td colspan="5">${esc(__("No HAI cases yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Cases")
 		)} <span class="tc-ksnk-tag">HAI Case · CA-</span></h3>
@@ -128,10 +134,18 @@ const TcKsnkScr56 = {
 
 	detailHtml(d, data, esc) {
 		const self = TcKsnkScr56;
-		if (!d)
-			return `<section class="tc-ksnk-card"><p class="tc-ksnk-state">${esc(
-				__("Choose a case to see its record.")
-			)}</p></section>`;
+		if (!d) {
+			const blank = (label) => `<div><dt>${esc(label)}</dt><dd>—</dd></div>`;
+			return `<section class="tc-ksnk-card"><h3>${esc(
+				__("Case record", null, "IC HAI Case")
+			)}</h3>
+				<dl class="tc-ksnk-facts">
+					${blank(__("Patient Code"))}${blank(__("Birth Year · Sex"))}${blank(__("Department"))}
+					${blank(__("Admitted At"))}${blank(__("Onset Date"))}${blank(__("Case Definition (snapshot)"))}
+					${blank(__("Device Episode"))}${blank(__("Related Isolates"))}${blank(__("Outcome"))}
+				</dl>
+				<p class="tc-ksnk-state">${esc(__("Choose a case to see its record."))}</p></section>`;
+		}
 		const episode = d.episode
 			? `<span class="tc-ksnk-code">${esc(d.device_episode)}</span> · ${esc(
 					self.opt(d.episode.device_type)
@@ -209,7 +223,16 @@ const TcKsnkScr56 = {
 					: ""
 			}
 			<div class="tc-ksnk-actions">${actions.join("")}
-				<a class="btn btn-default btn-sm" href="/app/hai-case/${esc(d.name)}">${esc(__("Open form"))}</a>
+				${TcKsnk.recordActions(
+					{
+						doctype: TC_HAI_CONTEXT,
+						name: d.name,
+						docstatus: d.docstatus,
+						can_write: !!data.can_write,
+						can_create: false,
+					},
+					false
+				)}
 				<span class="tc-ksnk-note">${esc(
 					__("Only R11 and R01 can confirm a case. Locking a period: R01.")
 				)}</span>
@@ -240,16 +263,18 @@ const TcKsnkScr56 = {
 						r.month
 				  )}">${esc(__("Lock period"))}</button>`;
 		};
-		const body = rows
-			.map(
-				(r) => `<tr><td class="tc-ksnk-code">${esc(r.name)}</td><td>${self.periodBadge(
-					r.locked,
-					esc
-				)}</td>
+		const body =
+			rows
+				.map(
+					(r) => `<tr><td class="tc-ksnk-code">${esc(r.name)}</td><td>${self.periodBadge(
+						r.locked,
+						esc
+					)}</td>
 				<td>${esc(r.locked_by_name || "—")}</td><td>${esc(r.locked ? self.date(r.locked_on) : "—")}</td>
 				<td>${esc(note(r))}</td><td>${action(r)}</td></tr>`
-			)
-			.join("");
+				)
+				.join("") ||
+			`<tr><td colspan="6">${esc(__("No reporting period yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Reporting periods")
 		)} <span class="tc-ksnk-tag">IC Reporting Period · KY-</span></h3>
@@ -267,7 +292,8 @@ const TcKsnkScr56 = {
 			`<div class="tc-ksnk-cols"><div>${self.listHtml(
 				data.cases || [],
 				esc,
-				detail && detail.name
+				detail && detail.name,
+				data
 			)}</div>
 			<div data-region="detail">${self.detailHtml(detail, data, esc)}</div></div>` +
 			`<div data-region="periods">${self.periodsHtml(data.periods || [], data, esc)}</div>`

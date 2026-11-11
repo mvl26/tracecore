@@ -202,6 +202,11 @@ def _status(year=None):
 		),
 		"can_create_plan": bool(not plan and frappe.has_permission(PLAN, "create")),
 		"can_record_meeting": bool(frappe.has_permission(MEETING, "create")),
+		# thao tác mở form theo quyền thật (DocPerm): màn luôn có lối mở/sửa/tạo mới bản ghi đang xem
+		"can_write_plan": bool(plan and frappe.has_permission(PLAN, "write")),
+		"can_write_document": bool(frappe.has_permission(DOCUMENT, "write")),
+		"can_create_document": bool(frappe.has_permission(DOCUMENT, "create")),
+		"can_write_meeting": bool(meeting and frappe.has_permission(MEETING, "write")),
 	}
 
 

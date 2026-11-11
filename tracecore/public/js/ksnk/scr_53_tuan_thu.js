@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-53 Báo cáo tuân thủ & phản hồi khoa (FEAT-060; UC-45; FR-M12-08, FR-M12-09, FR-M12-11, FR-M12-14; BRU-AUD-005).
 // Tổng hợp từ phiếu đã ghi sổ trong kỳ (tracecore.v1.audit.compliance_board): thẻ số, bảng theo mẫu × khoa với nhãn cỡ
 // mẫu ("Chưa đủ cỡ mẫu", "Không tính"), phiếu gần đây, đề nghị mở NC (R01/R11: Mở NC / Bỏ qua có lý do). Xuất Excel/PDF
@@ -146,10 +146,6 @@ const TcKsnkScr53 = {
 					)}</td></tr>`
 			)
 			.join("");
-		if (!body)
-			return `<div class="tc-ksnk-state is-empty">${esc(
-				__("No posted audit in this period.")
-			)}</div>`;
 		return (
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Template"))}</th>` +
 			`<th scope="col">${esc(__("Department"))}</th><th scope="col" class="is-num">${esc(
@@ -161,7 +157,10 @@ const TcKsnkScr53 = {
 			`<th scope="col" class="is-num">${esc(
 				__("Average Score")
 			)}</th><th scope="col" class="is-num">${esc(__("Critical Failed"))}</th>` +
-			`<th scope="col">${esc(__("Note"))}</th></tr></thead><tbody>${body}</tbody></table>` +
+			`<th scope="col">${esc(__("Note"))}</th></tr></thead><tbody>${
+				body ||
+				`<tr><td colspan="8">${esc(__("No posted audit in this period."))}</td></tr>`
+			}</tbody></table>` +
 			`<p class="tc-ksnk-note">${esc(
 				__(
 					"Pass rate = audits passed / audits with a result, from posted audits only. A failed critical item fails the audit whatever the score."
@@ -213,6 +212,28 @@ const TcKsnkScr53 = {
 		);
 	},
 
+	sessionActions(row, data) {
+		// Phiên giám sát đã ghi sổ: xem/sửa đổi trên form Desk, In; quyền thật kiểm ở DocPerm (ADR-002).
+		return TcKsnk.recordActions(
+			{
+				doctype: "Audit Session",
+				name: row.name,
+				docstatus: row.docstatus === undefined ? 1 : row.docstatus,
+				can_write: !!data.can_write,
+				can_create: false,
+			},
+			false
+		);
+	},
+
+	createHtml(data) {
+		if (!data.can_create) return "";
+		return TcKsnk.recordActions(
+			{ doctype: "Audit Session", can_create: true, create_label: __("New audit session") },
+			true
+		);
+	},
+
 	recentHtml(data, esc) {
 		const self = TcKsnkScr53;
 		const body = (data.recent || [])
@@ -227,11 +248,11 @@ const TcKsnkScr53 = {
 					`<td class="is-num">${esc(
 						row.score_pct === null ? "—" : `${self.number(row.score_pct)} %`
 					)}</td>` +
-					`<td>${self.badge(self.resultBadge(row), esc)}</td></tr>`
+					`<td>${self.badge(self.resultBadge(row), esc)}</td>` +
+					`<td>${self.sessionActions(row, data)}</td></tr>`
 			)
 			.join("");
-		if (!body)
-			return `<div class="tc-ksnk-state is-empty">${esc(__("No audit to show."))}</div>`;
+		const empty = `<tr><td colspan="6">${esc(__("No audit to show."))}</td></tr>`;
 		return (
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
 				__("Audit Session")
@@ -241,8 +262,9 @@ const TcKsnkScr53 = {
 			)}</th>` +
 			`<th scope="col" class="is-num">${esc(__("Score"))}</th><th scope="col">${esc(
 				__("Result")
-			)}</th></tr></thead>` +
-			`<tbody>${body}</tbody></table>`
+			)}</th><th scope="col">${esc(__("Actions"))}</th></tr></thead>` +
+			`<tbody>${body || empty}</tbody></table>` +
+			self.createHtml(data)
 		);
 	},
 
@@ -269,7 +291,10 @@ const TcKsnkScr53 = {
 					)}</code> — ${esc(row.department)}:</b> ${esc(
 						__("critical items failed: {0}", [failed])
 					)}` +
-					`<div class="tc-ksnk-actions"><button type="button" class="btn btn-danger btn-sm" data-action="open-nc" data-session="${esc(
+					`<div class="tc-ksnk-actions">${TcKsnkScr53.sessionActions(
+						row,
+						data
+					)} <button type="button" class="btn btn-danger btn-sm" data-action="open-nc" data-session="${esc(
 						row.name
 					)}">${esc(__("Open NC"))}</button>` +
 					`<button type="button" class="btn btn-default btn-sm" data-action="dismiss" data-session="${esc(
@@ -311,21 +336,52 @@ const TcKsnkScr53 = {
 				.join("") +
 			`</select></label>`;
 		return (
-			`<div class="tc-ksnk-filters">${select(
+			`<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters">${select(
 				"audit_type",
 				TC_AUD_TYPES,
 				__("Audit Type")
 			)}` +
 			`<label>${esc(
 				__("Period")
-			)}<input type="month" class="form-control" data-filter="period" value="${esc(
-				TcKsnkScr53.month(filters)
-			)}"></label>` +
-			`${select("profession", TC_AUD_PROFESSIONS, __("Observed Profession"))}` +
+			)}<select class="form-control" data-filter="period">${TcKsnkScr53.periodOptions(
+				TcKsnkScr53.month(filters),
+				esc
+			)}</select></label>` +
+			`${select("profession", TC_AUD_PROFESSIONS, __("Observed Profession"))}</div>` +
+			`<div class="tc-ksnk-actions tc-ksnk-headactions">` +
 			`<button type="button" class="btn btn-default" data-action="export">${esc(
-				__("Export Excel / PDF")
-			)}</button></div>`
+				__("Export Excel")
+			)}</button>` +
+			`<button type="button" class="btn btn-primary" data-action="export">${esc(
+				__("Export PDF")
+			)}</button></div></div>`
 		);
+	},
+
+	// 12 tháng gần nhất (đến tháng đang chọn nếu xa hơn), nhãn "Tháng MM/YYYY"
+	periodOptions(selected, esc) {
+		const [sy, sm] = selected.split("-").map(Number);
+		const now = new Date();
+		let y = now.getFullYear();
+		let m = now.getMonth() + 1;
+		const out = [];
+		for (let i = 0; i < 12; i += 1) {
+			out.push([y, m]);
+			m -= 1;
+			if (!m) {
+				m = 12;
+				y -= 1;
+			}
+		}
+		if (!out.some(([oy, om]) => oy === sy && om === sm)) out.unshift([sy, sm]);
+		return out
+			.map(([oy, om]) => {
+				const value = `${oy}-${String(om).padStart(2, "0")}`;
+				return `<option value="${value}"${value === selected ? " selected" : ""}>${esc(
+					__("Month {0}", [`${String(om).padStart(2, "0")}/${oy}`])
+				)}</option>`;
+			})
+			.join("");
 	},
 
 	call(method, args) {

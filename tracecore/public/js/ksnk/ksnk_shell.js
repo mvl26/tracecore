@@ -19,6 +19,57 @@ const TcKsnk = {
 		);
 	},
 
+	// Hàng thao tác dùng chung cho khối hiển thị một bản ghi/chứng từ (A-131): luôn đủ thao tác hợp lệ theo
+	// trạng thái và quyền, không bao giờ chỉ còn chữ. Quyền thật vẫn kiểm ở RPC/DocPerm; cờ chỉ quyết định hiện nút.
+	// opts: doctype, name, docstatus (0/1/2, bỏ trống nếu không ghi sổ), can_write, can_create, create_label,
+	// create_query, print_format, can_print (mặc định true), extra (mảng HTML bổ sung đặt trước nút In).
+	recordActions(opts, wrap) {
+		const esc = TcKsnk.esc;
+		const slug = String(opts.doctype || "")
+			.toLowerCase()
+			.replace(/ /g, "-");
+		const link = (cls, href, label, attrs) =>
+			`<a class="btn ${cls}" href="${esc(href)}"${attrs || ""}>${esc(label)}</a>`;
+		const out = [];
+		if (opts.name) {
+			const ds = opts.docstatus;
+			let label = opts.can_write ? __("Open form") : __("View form");
+			if (opts.can_write && ds === 1) label = __("Open form to cancel or amend");
+			else if (opts.can_write && ds === 2) label = __("Open form to amend");
+			out.push(
+				link("btn-default btn-sm", `/app/${slug}/${encodeURIComponent(opts.name)}`, label)
+			);
+		}
+		if (opts.can_create) {
+			const query = opts.create_query ? `?${opts.create_query}` : "";
+			out.push(
+				link(
+					"btn-default btn-sm",
+					`/app/${slug}/new${query}`,
+					opts.create_label || __("Create new")
+				)
+			);
+		}
+		(opts.extra || []).forEach((html) => out.push(html));
+		if (opts.name && opts.can_print !== false && opts.docstatus !== 2) {
+			const format = opts.print_format
+				? `&format=${encodeURIComponent(opts.print_format)}`
+				: "";
+			out.push(
+				link(
+					"btn-default btn-sm",
+					`/printview?doctype=${encodeURIComponent(
+						opts.doctype
+					)}&name=${encodeURIComponent(opts.name)}${format}`,
+					__("Print"),
+					' target="_blank"'
+				)
+			);
+		}
+		const html = out.join(" ");
+		return wrap === false ? html : `<div class="tc-ksnk-actions">${html}</div>`;
+	},
+
 	parseRoute(route, search) {
 		const params = new URLSearchParams(search || "");
 		const filters = {};
@@ -47,31 +98,51 @@ const TcKsnk = {
 
 	railHtml(nav, active) {
 		const esc = TcKsnk.esc;
-		return ((nav && nav.groups) || [])
-			.filter((group) => group.items.length)
-			.map((group) => {
-				const items = group.items
-					.map((item) => {
-						const on = item.slug === active;
-						const badge = item.badge
-							? `<span class="tc-ksnk-count" title="${esc(
-									__("{0} pending", [item.badge])
-							  )}">${esc(item.badge)}</span>`
-							: "";
-						return (
-							`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
-								on ? " is-active" : ""
-							}"` +
-							` data-slug="${esc(item.slug)}"${on ? ' aria-current="page"' : ""}>` +
-							`<span>${esc(item.label)}</span>${badge}</a>`
-						);
-					})
-					.join("");
-				return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
-					group.label
-				)}</div>${items}</div>`;
-			})
-			.join("");
+		return (
+			((nav && nav.groups) || [])
+				.filter((group) => group.items.length)
+				.map((group) => {
+					const items = group.items
+						.map((item) => {
+							const on = item.slug === active;
+							const badge = item.badge
+								? `<span class="tc-ksnk-count" title="${esc(
+										__("{0} pending", [item.badge])
+								  )}">${esc(item.badge)}</span>`
+								: "";
+							return (
+								`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
+									on ? " is-active" : ""
+								}"` +
+								` data-slug="${esc(item.slug)}"${
+									on ? ' aria-current="page"' : ""
+								}>` +
+								`<span>${esc(item.label)}</span>${badge}</a>`
+							);
+						})
+						.join("");
+					return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
+						group.label
+					)}</div>${items}</div>`;
+				})
+				.join("") + TcKsnk.otherSurfacesHtml(nav)
+		);
+	},
+
+	// Nhóm "Bề mặt khác" (ảnh SCR-66): lối sang Cổng khoa (DEPT) và PDA; ẩn với vai trò chỉ đọc. Quyền thật ở từng trang.
+	otherSurfacesHtml(nav) {
+		const esc = TcKsnk.esc;
+		if (!nav || nav.read_only || !(nav.groups || []).length) return "";
+		const link = (href, label) =>
+			`<a href="${esc(href)}" class="tc-ksnk-nav-item"><span>${esc(label)}</span></a>`;
+		return (
+			`<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
+				__("Other surfaces", null, "IC Rail")
+			)}</div>` +
+			link("/ksnk-khoa/chi-so", __("Department portal (DEPT)", null, "IC Rail")) +
+			link("/app/station", __("Supervision PDA", null, "IC Rail")) +
+			"</div>"
+		);
 	},
 
 	stateHtml(kind, message) {
@@ -113,7 +184,9 @@ const TcKsnk = {
 					)
 				)}` +
 				// FEAT-065 (FR-M9-26): R12 mở Cổng khoa — chỉ số khoa cạnh toàn viện + việc cần làm
-				` <a href="/ksnk-khoa/chi-so">${esc(__("Open the department portal"))}</a></div>`
+				` <a class="btn btn-default btn-sm" href="/ksnk-khoa/chi-so">${esc(
+					__("Open the department portal")
+				)}</a></div>`
 			);
 		}
 		return (

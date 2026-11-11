@@ -95,6 +95,17 @@ def _plans():
 	return result
 
 
+def _perms(*doctypes):
+	"""Cờ hiện nút theo quyền DocType (A-131); quyền thật vẫn kiểm ở DocPerm khi mở form."""
+	return {
+		doctype: {
+			"write": bool(frappe.has_permission(doctype, "write")),
+			"create": bool(frappe.has_permission(doctype, "create")),
+		}
+		for doctype in doctypes
+	}
+
+
 @frappe.whitelist(methods=["GET"])
 def overview(month=None):
 	"""Dữ liệu SCR-62 cho tháng chứa ``month`` (YYYY-MM-DD hoặc YYYY-MM; trống = hôm nay)."""
@@ -134,6 +145,7 @@ def overview(month=None):
 	result.update(
 		{
 			"can_decide": samples.can_decide(),
+			"perms": _perms(samples.DOCTYPE, "Environment Zone", "Sampling Plan", "Environmental Limit"),
 			"pending_nc": pending,
 			"samples": [{key: row.get(key) for key in SAMPLE_KEYS} for row in data["samples"]["rows"][:50]],
 			"zones": zones.coverage(on),

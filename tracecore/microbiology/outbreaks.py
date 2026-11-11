@@ -689,6 +689,7 @@ def detail(name):
 	actions, incidents = action_rows(doc)
 	return {
 		"name": doc.name,
+		"docstatus": doc.docstatus,
 		"title": doc.title,
 		"organism_or_disease": doc.organism_or_disease,
 		"organism": doc.organism,
@@ -703,7 +704,6 @@ def detail(name):
 		"opened_by_name": frappe.utils.get_fullname(doc.opened_by) if doc.opened_by else None,
 		"case_definition": doc.case_definition,
 		"status": doc.status,
-		"docstatus": doc.docstatus,
 		"controlled_on": doc.controlled_on,
 		"end_date": doc.end_date,
 		"summary": doc.summary,

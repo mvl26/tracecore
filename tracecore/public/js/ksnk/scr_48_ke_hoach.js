@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-48 Kế hoạch KSNK năm, văn bản nội bộ, họp Hội đồng (FEAT-058; UC-41; FR-M11-04..08; BRU-ICP-004/005; A-131).
 // Ba tab (Kế hoạch năm / Văn bản nội bộ / Họp Hội đồng) giữ trong query string `tab`; năm kế hoạch dùng bộ lọc `year`.
 // Trạng thái luôn có chữ (Quá hạn / Sắp tới hạn / Đang làm / Hoàn thành…), không chỉ màu. Lỗi chặn hiện alert-error
@@ -303,9 +303,11 @@ const TcKsnkScr48 = {
 				__(
 					"Documents within 30 days of the review date move to Review needed and R01 is notified."
 				)
-			)} <a href="/app/ic-procedure-document/new">${esc(
-				__("Add document")
-			)}</a></p></section>`
+			)}</p>${TcKsnk.recordActions({
+				doctype: "IC Procedure Document",
+				can_create: data.can_create_document !== false,
+				create_label: __("Add document"),
+			})}</section>`
 		);
 	},
 
@@ -352,7 +354,16 @@ const TcKsnkScr48 = {
 					.join("") +
 			  `</ul>`
 			: "";
-		return `<section class="tc-ksnk-card">${latest}${open}</section>`;
+		// biên bản họp đã ghi sổ: xem form, Hủy/sửa đổi theo quyền, In
+		const record = m
+			? TcKsnk.recordActions({
+					doctype: "IC Committee Meeting",
+					name: m.name,
+					docstatus: 1,
+					can_write: !!data.can_write_meeting,
+			  })
+			: "";
+		return `<section class="tc-ksnk-card">${latest}${record}${open}</section>`;
 	},
 
 	actionsHtml(data, readOnly, esc) {
@@ -378,6 +389,21 @@ const TcKsnkScr48 = {
 				`<button type="button" class="btn btn-primary" data-action="approve" data-name="${esc(
 					plan.name
 				)}">${esc(__("Approve (submit)"))}</button>`
+			);
+		}
+		if (plan) {
+			// luôn có lối mở form kế hoạch: Nháp sửa/ghi sổ, đã ghi sổ xem hoặc Hủy/sửa đổi; R13 chỉ xem
+			buttons.push(
+				TcKsnk.recordActions(
+					{
+						doctype: "IC Annual Plan",
+						name: plan.name,
+						docstatus: plan.docstatus,
+						can_write: !readOnly && !!data.can_write_plan,
+						can_print: false,
+					},
+					false
+				)
 			);
 		}
 		if (plan && !readOnly && data.can_amend && !plan.pending_amendment) {
@@ -434,7 +460,14 @@ const TcKsnkScr48 = {
 			body =
 				self.infoHtml(data.plan, esc) +
 				self.indicatorsHtml(data.plan, esc) +
-				self.activitiesHtml(data.plan, esc);
+				self.activitiesHtml(data.plan, esc) +
+				// ảnh duyệt SCR-48: sổ văn bản và họp Hội đồng gần nhất đặt cạnh nhau ngay dưới hoạt động
+				(data.documents
+					? `<div class="tc-ksnk-cols"><div>${self.documentsHtml(
+							data,
+							esc
+					  )}</div><div>${self.meetingHtml(data, esc)}</div></div>`
+					: "");
 		return (
 			self.headHtml(data, esc) +
 			self.tabsHtml(data, tab, esc) +

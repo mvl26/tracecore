@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-65 An toàn thực phẩm & truyền thông người bệnh — view WEB trong Page tc-ksnk (FEAT-073; UC-56; FR-M17-01..06;
 // BRU-FS-001..002; A-131, A-151). R01/R11: sự cố nghi ngộ độc chờ quyết định (mở NC / điều tra ổ dịch hoặc bỏ qua có lý
 // do), hạn khám sức khỏe người chế biến (chỉ Đủ/Không đủ), buổi truyền thông theo quý, kết quả giám sát bếp ăn theo đơn
@@ -11,6 +11,8 @@ const TC_FS_DISMISS_NC = "tracecore.v1.food_safety.dismiss_nc";
 const TC_FS_DISMISS_OUTBREAK = "tracecore.v1.food_safety.dismiss_outbreak";
 const TC_FS_PUBLISH = "tracecore.v1.food_safety.publish_material";
 const TC_FS_WITHDRAW = "tracecore.v1.food_safety.withdraw_material";
+const TC_FS_EVENT = "Foodborne Event";
+const TC_FS_DOCUMENT = "IC Procedure Document";
 const TC_FS_REPORT = "/app/query-report/Food Safety and Communication by Quarter";
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
@@ -78,6 +80,32 @@ const TcKsnkScr65 = {
 		if (result === "Pass") return self.badge("pass", `✓ ${__("Pass")}`, esc);
 		if (result === "Fail") return self.badge("fail", `✕ ${__("Fail")}`, esc);
 		return self.badge("neutral", __("No result"), esc);
+	},
+
+	// Cờ quyền theo DocType do RPC trả (A-131); thiếu cờ = chỉ xem
+	perm(data, doctype) {
+		return ((data && data.perms) || {})[doctype] || {};
+	},
+
+	// Hàng thao tác của một bản ghi trong bảng (docstatus bỏ trống nếu DocType không ghi sổ)
+	rowActions(data, doctype, name, docstatus) {
+		return TcKsnk.recordActions(
+			{
+				doctype,
+				name,
+				docstatus,
+				can_write: TcKsnkScr65.perm(data, doctype).write,
+				can_create: false,
+			},
+			false
+		);
+	},
+
+	// Nút tạo mới luôn còn (kể cả khi danh sách rỗng) khi người dùng có quyền tạo
+	createActions(data, doctype, label) {
+		return TcKsnkScr65.perm(data, doctype).create
+			? TcKsnk.recordActions({ doctype, can_create: true, create_label: label })
+			: "";
 	},
 
 	// POST @idempotent: khóa giữ nguyên khi bấm lại cùng dữ liệu (thử lại sau lỗi mạng)
@@ -195,6 +223,7 @@ const TcKsnkScr65 = {
 					)}
 					<div>${esc(__("Infection control and the supervisors were notified."))} ${esc(outbreak)}</div>
 					${actions.length ? `<div class="tc-ksnk-actions">${actions.join("")}</div>` : ""}
+					<div class="tc-ksnk-actions">${self.rowActions(data, TC_FS_EVENT, r.name, 1)}</div>
 					<div data-region="ev-alert"></div></div>`;
 			})
 			.join("");
@@ -208,10 +237,11 @@ const TcKsnkScr65 = {
 					.map(
 						(r) => `<tr><td>${esc(r.full_name)}</td><td>${esc(r.unit || "—")}</td>
 				<td>${esc(self.date(r.checked_on))}</td><td>${esc(self.date(r.next_due))}</td>
-				<td>${self.handlerBadge(r, esc)}</td></tr>`
+				<td>${self.handlerBadge(r, esc)}</td>
+				<td>${self.rowActions(data, "Food Handler Health Check", r.name, 1)}</td></tr>`
 					)
 					.join("")
-			: `<tr><td colspan="5">${esc(__("No health checks recorded yet."))}</td></tr>`;
+			: `<tr><td colspan="6">${esc(__("No health checks recorded yet."))}</td></tr>`;
 		const overdue = (data.overdue_by_unit || [])
 			.map(
 				(group) =>
@@ -222,12 +252,12 @@ const TcKsnkScr65 = {
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Food handler health checks")
-		)} <span class="tc-ksnk-code">Food Handler Health Check · SKTP-</span></h3>
+		)} <span class="tc-ksnk-tag">Food Handler Health Check · SKTP-</span></h3>
 			<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Food Handler"))}</th><th>${esc(
 			__("Unit")
 		)}</th><th>${esc(__("Last check"))}</th><th>${esc(__("Next Check Due"))}</th><th>${esc(
 			__("Status")
-		)}</th></tr></thead><tbody>${body}</tbody></table>
+		)}</th><th>${esc(__("Action"))}</th></tr></thead><tbody>${body}</tbody></table>
 			${
 				overdue
 					? `<div class="tc-ksnk-alert is-warn" role="status"><strong>${esc(
@@ -239,7 +269,7 @@ const TcKsnkScr65 = {
 				__(
 					"Only the conclusion (fit or unfit) and the next due date are kept; there is no field for a diagnosis or test result."
 				)
-			)} <a href="/app/food-handler-health-check/new">${esc(
+			)} <a class="btn btn-default btn-sm" href="/app/food-handler-health-check/new">${esc(
 			__("Record a health check")
 		)}</a></p>
 			</section>`;
@@ -256,29 +286,30 @@ const TcKsnkScr65 = {
 							r.department_name || r.department || "—"
 						)}</td>
 				<td>${esc(self.opt(r.audience, "IC Education Session"))}</td><td>${esc(r.title)}</td>
-				<td class="is-num">${esc(self.num(r.attendee_count))}</td></tr>`
+				<td class="is-num">${esc(self.num(r.attendee_count))}</td>
+					<td>${self.rowActions(data, "IC Education Session", r.name)}</td></tr>`
 					)
 					.join("")
-			: `<tr><td colspan="5">${esc(__("No education sessions recorded yet."))}</td></tr>`;
+			: `<tr><td colspan="6">${esc(__("No education sessions recorded yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Infection control education sessions")
-		)} <span class="tc-ksnk-code">IC Education Session · GDS-</span></h3>
+		)} <span class="tc-ksnk-tag">IC Education Session · GDS-</span></h3>
 			<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Date"))}</th><th>${esc(
 			__("Department")
 		)}</th><th>${esc(__("Audience"))}</th><th>${esc(
 			__("Subject")
 		)}</th><th class="is-num">${esc(
 			__("Attendees", null, "IC Education Session")
-		)}</th></tr></thead><tbody>${body}</tbody></table>
+		)}</th><th>${esc(__("Action"))}</th></tr></thead><tbody>${body}</tbody></table>
 			<p class="tc-ksnk-note">${esc(
 				__("{0}: {1} sessions · {2} attendees", [
 					q.label || "",
 					q.sessions || 0,
 					q.attendees || 0,
 				])
-			)} · <a href="${esc(TC_FS_REPORT)}">${esc(
+			)} · <a class="btn btn-default btn-sm" href="${esc(TC_FS_REPORT)}">${esc(
 			__("Quarterly report")
-		)}</a> · <a href="/app/ic-education-session/new">${esc(
+		)}</a> · <a class="btn btn-default btn-sm" href="/app/ic-education-session/new">${esc(
 			__("Record a session")
 		)}</a></p></section>`;
 	},
@@ -334,40 +365,37 @@ const TcKsnkScr65 = {
 						r.environment_zone_name || "—"
 					)}</td><td>${esc(self.date(r.sampled_on))}</td><td class="is-num">${esc(
 						`${self.num(r.result_value)} ${r.unit || ""}`
-					)}</td><td>${self.resultBadge(r.result, esc)}</td></tr>`
+					)}</td><td>${self.resultBadge(r.result, esc)}</td>
+						<td>${self.rowActions(data, "Environmental Sample", r.name, 1)}</td></tr>`
 			)
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(__("Kitchen and catering audits"))}</h3>
-			${
-				audits
-					? `<table class="tc-ksnk-table"><thead><tr><th>${esc(
-							__("Unit")
-					  )}</th><th>${esc(__("Last audit"))}</th><th>${esc(
-							__("Result")
-					  )}</th><th class="is-num">${esc(
-							__("Passed (90 days)")
-					  )}</th></tr></thead><tbody>${audits}</tbody></table>`
-					: `<p class="tc-ksnk-state">${esc(
-							__("No food safety audit in the last 90 days.")
-					  )}</p>`
-			}
+				<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Unit"))}</th><th>${esc(
+			__("Last audit")
+		)}</th><th>${esc(__("Result"))}</th><th class="is-num">${esc(
+			__("Passed (90 days)")
+		)}</th></tr></thead><tbody>${
+			audits ||
+			`<tr class="is-empty"><td colspan="4" class="tc-ksnk-note">${esc(
+				__("No food safety audit in the last 90 days.")
+			)}</td></tr>`
+		}</tbody></table>
 			<h3>${esc(__("Food samples"))}</h3>
-			${
-				samples
-					? `<table class="tc-ksnk-table"><thead><tr><th>${esc(
-							__("Code")
-					  )}</th><th>${esc(__("Zone"))}</th><th>${esc(
-							__("Sampled On")
-					  )}</th><th class="is-num">${esc(__("Result Value"))}</th><th>${esc(
-							__("Result")
-					  )}</th></tr></thead><tbody>${samples}</tbody></table>`
-					: `<p class="tc-ksnk-state">${esc(__("No food samples yet."))}</p>`
-			}
+				<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Code"))}</th><th>${esc(
+			__("Zone")
+		)}</th><th>${esc(__("Sampled On"))}</th><th class="is-num">${esc(
+			__("Result Value")
+		)}</th><th>${esc(__("Result"))}</th><th>${esc(__("Action"))}</th></tr></thead><tbody>${
+			samples ||
+			`<tr class="is-empty"><td colspan="6" class="tc-ksnk-note">${esc(
+				__("No food samples yet.")
+			)}</td></tr>`
+		}</tbody></table>
 			<div class="tc-ksnk-alert is-info" role="note">${esc(
 				__(
 					"Kitchen audits use the infection control audit template of type Food Safety; food samples are handled like environmental samples."
 				)
-			)} <a href="/app/audit-template?audit_type=Food%20Safety">${esc(
+			)} <a class="btn btn-default btn-sm" href="/app/audit-template?audit_type=Food%20Safety">${esc(
 			__("Audit templates")
 		)}</a> · <a
 				href="/app/environmental-sample?sample_type=Food">${esc(__("Food samples"))}</a></div></section>`;
@@ -415,7 +443,17 @@ const TcKsnkScr65 = {
 					<div><strong>${esc(r.title)}</strong> ${status} <span class="tc-ksnk-code">${esc(
 					r.doc_code
 				)}</span><div>${esc(note)}</div><div data-region="doc-alert"></div></div>
-					<div class="tc-ksnk-actions">${actions.join("")}</div></div>`;
+					<div class="tc-ksnk-actions">${TcKsnk.recordActions(
+						{
+							doctype: TC_FS_DOCUMENT,
+							name: r.name,
+							can_write: self.perm(data, TC_FS_DOCUMENT).write,
+							can_create: false,
+							can_print: false,
+							extra: actions,
+						},
+						false
+					)}</div></div>`;
 			})
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
@@ -427,7 +465,7 @@ const TcKsnkScr65 = {
 					"No communication material yet. Add one as a procedure document of type Communication Material."
 				)
 			)}</p>`
-		}<p class="tc-ksnk-note"><a href="/app/ic-procedure-document/new?doc_type=Communication%20Material&status=Draft">${esc(
+		}<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/ic-procedure-document/new?doc_type=Communication%20Material&status=Draft">${esc(
 			__("New communication material")
 		)}</a></p></section>`;
 	},
@@ -438,10 +476,12 @@ const TcKsnkScr65 = {
 		return (
 			self.kpisHtml(data, esc) +
 			self.eventsHtml(data, esc) +
-			`<div class="tc-ksnk-cols"><div>${self.handlersHtml(data, esc)}${self.foodHtml(
+			self.createActions(data, TC_FS_EVENT, __("Record food poisoning event")) +
+			`<div class="tc-ksnk-cols"><div>${self.handlersHtml(
 				data,
 				esc
 			)}</div><div>${self.sessionsHtml(data, esc)}</div></div>` +
+			self.foodHtml(data, esc) +
 			self.materialsHtml(data, esc)
 		);
 	},

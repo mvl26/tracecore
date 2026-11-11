@@ -55,6 +55,8 @@ def screen(period=None, department=None, status=None):
 		"definitions": definitions.approved_codes(),
 		"can_decide": bool(roles & set(cases.DECIDE_ROLES)) or frappe.session.user == "Administrator",
 		"can_reveal": bool(roles & {"TC R01", "TC R11"}),
+		"can_write": bool(frappe.has_permission(cases.DOCTYPE, "write")),
+		"can_create": bool(frappe.has_permission(cases.DOCTYPE, "create")),
 		"can_lock": bool(roles & set(LOCK_ROLES)) or frappe.session.user == "Administrator",
 	}
 

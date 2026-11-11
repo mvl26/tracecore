@@ -35,6 +35,7 @@ EDITABLE_SETTINGS = (
 )
 SETTINGS_FIELDS = (*EDITABLE_SETTINGS, "doc_review_months", "ic_department")
 PROFILE = "IC Structure Profile"  # FEAT-094
+NETWORK_MEMBER = "IC Network Member"
 
 
 def _require_screen():
@@ -62,6 +63,7 @@ def _status():
 	result["can_edit_settings"] = bool(frappe.has_permission(SETTINGS, "write"))
 	result["can_submit_committee"] = bool(frappe.has_permission(COMMITTEE, "submit"))
 	result["can_open_profile"] = bool(frappe.has_permission(PROFILE, "read"))
+	result["can_create_member"] = bool(frappe.has_permission(NETWORK_MEMBER, "create"))
 	result["settings"]["director_name"] = (
 		frappe.db.get_value("Employee", settings.director, "employee_name") if settings.director else None
 	)

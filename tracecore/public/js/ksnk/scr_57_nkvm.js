@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-57 Giám sát NKVM (FEAT-064; UC-49; FR-M13-07, 07.1, 07.2, 08, 08.1, 09; BRU-HAI-003, 004, 005; A-147 k).
 // 4 KPI (ca đang theo dõi, tỷ lệ NKVM tháng trước, KSDP đúng thời điểm, cuộc gọi theo dõi hôm nay); form đăng ký phẫu
 // thuật (mã BN chỉ nhập mới — ca có sẵn hiện bản che), NNIS và cửa sổ do server tính; lịch theo dõi sau ra viện (ghi
@@ -290,40 +290,49 @@ const TcKsnkScr57 = {
 				__("Follow-ups due")
 			)}</h3>${self.dueHtml(data.due || [], esc)}</section>`;
 		const rows = d.followups || [];
-		const body = rows.length
-			? `<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Due Date"))}</th><th>${esc(
-					__("Method")
-			  )}</th><th>${esc(__("Done On"))}</th><th>${esc(
-					__("Result")
-			  )}</th><th></th></tr></thead><tbody>${rows
-					.map(
-						(r) =>
-							`<tr><td>${esc(self.date(r.due_date))}${
-								r.is_final ? ` <small>${esc(__("(last)"))}</small>` : ""
-							}</td><td>${esc(__(r.method, null, TC_SSI_CTX))}</td><td>${esc(
-								self.date(r.done_on)
-							)}</td><td>${self.followupBadge(r, esc, today)}</td><td>${
-								r.done_on
-									? ""
-									: `<button type="button" class="btn btn-default btn-sm" data-action="record" data-row="${esc(
-											r.name
-									  )}">${esc(__("Record result"))}</button>`
-							}</td></tr>`
-					)
-					.join("")}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(
-					d.discharge_date
-						? __(
-								"Discharged after the window end: follow up as an inpatient, then close the surgery."
-						  )
-						: __("The schedule is created when the discharge date is entered.")
-			  )}</p>`;
+		const emptyNote = d.discharge_date
+			? __(
+					"Discharged after the window end: follow up as an inpatient, then close the surgery."
+			  )
+			: __("The schedule is created when the discharge date is entered.");
+		const body = `<table class="tc-ksnk-table"><thead><tr><th>${esc(
+			__("Due Date")
+		)}</th><th>${esc(__("Method"))}</th><th>${esc(__("Done On"))}</th><th>${esc(
+			__("Result")
+		)}</th><th></th></tr></thead><tbody>${
+			rows.length ? "" : `<tr><td colspan="5">${esc(emptyNote)}</td></tr>`
+		}${rows
+			.map(
+				(r) =>
+					`<tr><td>${esc(self.date(r.due_date))}${
+						r.is_final ? ` <small>${esc(__("(last)"))}</small>` : ""
+					}</td><td>${esc(__(r.method, null, TC_SSI_CTX))}</td><td>${esc(
+						self.date(r.done_on)
+					)}</td><td>${self.followupBadge(r, esc, today)}</td><td>${
+						r.done_on
+							? ""
+							: `<button type="button" class="btn btn-default btn-sm" data-action="record" data-row="${esc(
+									r.name
+							  )}">${esc(__("Record result"))}</button>`
+					}</td></tr>`
+			)
+			.join("")}</tbody></table>`;
 		const suspected = rows.some((r) => r.result === "SSI suspected");
 		const caseLine = d.hai_case
 			? `<div class="tc-ksnk-alert is-info">${esc(
 					__("{0}: HAI case", [d.name])
 			  )} <span class="tc-ksnk-code">${esc(d.hai_case)}</span> ${esc(
 					d.case_status ? __(d.case_status.status) : ""
+			  )} ${TcKsnk.recordActions(
+					{
+						doctype: "HAI Case",
+						name: d.hai_case,
+						docstatus: d.case_status ? d.case_status.docstatus : undefined,
+						can_write: false,
+						can_create: false,
+						can_print: false,
+					},
+					false
 			  )}</div>`
 			: "";
 		const actions = [];
@@ -353,13 +362,14 @@ const TcKsnkScr57 = {
 
 	dueHtml(rows, esc) {
 		const self = TcKsnkScr57;
-		if (!rows.length)
-			return `<p class="tc-ksnk-state">${esc(__("No follow-up due today."))}</p>`;
+		const empty = rows.length
+			? ""
+			: `<tr><td colspan="5">${esc(__("No follow-up due today."))}</td></tr>`;
 		return `<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Surgery"))}</th><th>${esc(
 			__("Patient Code")
 		)}</th><th>${esc(__("Procedure Group"))}</th><th>${esc(__("Due Date"))}</th><th>${esc(
 			__("Method")
-		)}</th></tr></thead><tbody>${rows
+		)}</th></tr></thead><tbody>${empty}${rows
 			.map(
 				(r) =>
 					`<tr class="tc-ksnk-row" data-open="${esc(
@@ -375,37 +385,57 @@ const TcKsnkScr57 = {
 
 	recentHtml(rows, selected, esc) {
 		const self = TcKsnkScr57;
-		const body = rows.length
-			? `<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Surgery"))}</th><th>${esc(
-					__("Procedure Group")
-			  )}</th><th class="is-num">NNIS</th><th>${esc(__("Prophylaxis"))}</th><th>${esc(
-					__("Outcome")
-			  )}</th></tr></thead><tbody>${rows
-					.map(
-						(r) =>
-							`<tr class="tc-ksnk-row${
-								r.name === selected ? " is-selected" : ""
-							}" data-open="${esc(r.name)}"><td class="tc-ksnk-code">${esc(
-								r.name
-							)}</td><td>${esc(
-								r.group_name || r.procedure_group
-							)}</td><td class="is-num">${esc(
-								r.nnis_index === "" || r.nnis_index === null ? "—" : r.nnis_index
-							)}</td><td>${self.timingBadge(
-								r.prophylaxis_timing,
-								esc
-							)}</td><td>${self.outcomeBadge(r.outcome, esc)}</td></tr>`
-					)
-					.join("")}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(__("No surgery under surveillance yet."))}</p>`;
+		const body = `<table class="tc-ksnk-table"><thead><tr><th>${esc(
+			__("Surgery")
+		)}</th><th>${esc(__("Procedure Group"))}</th><th class="is-num">NNIS</th><th>${esc(
+			__("Prophylaxis")
+		)}</th><th>${esc(__("Outcome"))}</th></tr></thead><tbody>${
+			rows.length
+				? ""
+				: `<tr><td colspan="5">${esc(__("No surgery under surveillance yet."))}</td></tr>`
+		}${rows
+			.map(
+				(r) =>
+					`<tr class="tc-ksnk-row${
+						r.name === selected ? " is-selected" : ""
+					}" data-open="${esc(r.name)}"><td class="tc-ksnk-code">${esc(
+						r.name
+					)}</td><td>${esc(
+						r.group_name || r.procedure_group
+					)}</td><td class="is-num">${esc(
+						r.nnis_index === "" || r.nnis_index === null ? "—" : r.nnis_index
+					)}</td><td>${self.timingBadge(
+						r.prophylaxis_timing,
+						esc
+					)}</td><td>${self.outcomeBadge(r.outcome, esc)}</td></tr>`
+			)
+			.join("")}</tbody></table>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Recent surgeries")
 		)}</h3>${body}</section>`;
 	},
 
-	actionsHtml(d, esc) {
+	recordActionsHtml(d, data) {
+		// Ca đang chọn: xem/sửa chi tiết trên form Desk (ADR-002) và In; quyền thật kiểm ở DocPerm.
+		if (!d || !d.name) return "";
+		return (
+			TcKsnk.recordActions(
+				{
+					doctype: "Surgical Surveillance",
+					name: d.name,
+					docstatus: d.docstatus === undefined ? 0 : d.docstatus,
+					can_write: !!(data && data.can_write),
+					can_create: false,
+				},
+				false
+			) + " "
+		);
+	},
+
+	actionsHtml(d, esc, data) {
 		return (
 			`<div class="tc-ksnk-actions">` +
+			TcKsnkScr57.recordActionsHtml(d, data) +
 			`<button type="button" class="btn btn-primary btn-lg" data-action="save">${esc(
 				__("Save surgery")
 			)}</button>` +
@@ -439,7 +469,7 @@ const TcKsnkScr57 = {
 				data,
 				esc
 			)}</div><div>${self.recentHtml(data.recent || [], d && d.name, esc)}</div></div>` +
-			self.actionsHtml(d, esc)
+			self.actionsHtml(d, esc, data)
 		);
 	},
 

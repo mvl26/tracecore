@@ -87,7 +87,8 @@ class TestSelfAssessment(BoardCase):
 		api.self_assessment_set(YEAR, "T-NEEDS", "Met", evidence="WHONET file sent")
 		data = api.self_assessment_submit(YEAR)
 		self.assertEqual(data["docstatus"], 1)
-		self.assertFalse(data["can_manage"])
+		self.assertTrue(data["can_manage"])
+		self.assertFalse(data["editable"])
 		self.assertFalse(api.self_assessment_set(YEAR, "T-MET", "Met")["ok"])
 		self.assertFalse(api.self_assessment_prepare(YEAR)["ok"])
 
@@ -96,6 +97,7 @@ class TestSelfAssessment(BoardCase):
 		frappe.set_user(self.r13)
 		data = api.self_assessment(YEAR)
 		self.assertFalse(data["can_manage"])
+		self.assertFalse(data["editable"])
 		self.assertEqual(len(data["rows"]), 5)
 		for call in (
 			lambda: api.self_assessment_prepare(YEAR),

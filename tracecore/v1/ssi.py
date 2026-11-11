@@ -120,6 +120,8 @@ def screen(name=None):
 		"threshold": limit,
 		"definitions": _ssi_definitions(),
 		"can_reveal": bool(set(frappe.get_roles()) & {"TC R01", "TC R11"}),
+		"can_write": bool(frappe.has_permission(ssi.DOCTYPE, "write")),
+		"can_create": bool(frappe.has_permission(ssi.DOCTYPE, "create")),
 	}
 
 

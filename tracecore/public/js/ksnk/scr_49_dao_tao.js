@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-49 Đào tạo KSNK, sinh viên thực tập (FEAT-059; UC-42; FR-M11-09..11; A-131, A-135).
 // Thẻ chỉ số, tỷ lệ đào tạo KSNK cơ bản theo khoa (nhắc người chưa học), chuyên trách/Hội đồng/mạng lưới chưa đạt,
 // sinh viên thực tập. Trạng thái luôn có chữ (server đã dịch), không chỉ màu. Sinh viên đào tạo muộn chỉ cảnh báo
@@ -97,7 +97,7 @@ const TcKsnkScr49 = {
 				const count = (d.untrained || []).length;
 				const action =
 					canRemind && count
-						? `<button type="button" class="btn btn-link" data-action="remind" data-department="${esc(
+						? `<button type="button" class="btn btn-default btn-sm" data-action="remind" data-department="${esc(
 								d.department
 						  )}">${esc(__("Remind {0} people", [count]))}</button>`
 						: count
@@ -185,7 +185,7 @@ const TcKsnkScr49 = {
 				__(
 					"Passed: a class of their group's category in the year, or a valid certificate of an accepted IC type."
 				)
-			)} <a href="/app/ic-program-settings">${esc(
+			)} <a class="btn btn-default btn-sm" href="/app/ic-program-settings">${esc(
 				__("Accepted certificate types")
 			)}</a></p></section>`
 		);
@@ -235,9 +235,12 @@ const TcKsnkScr49 = {
 		return (
 			`<section class="tc-ksnk-card"><h3>${esc(__("Student interns"))} ` +
 			`<code class="tc-ksnk-tag">Trainee Induction · SV-</code></h3>${body}${warning}` +
-			`<p class="tc-ksnk-note"><a href="/app/trainee-induction/new">${esc(
-				__("Add trainee")
-			)}</a></p></section>`
+			TcKsnk.recordActions({
+				doctype: "Trainee Induction",
+				can_create: data.can_create_trainee !== false,
+				create_label: __("Add trainee"),
+			}) +
+			`</section>`
 		);
 	},
 
@@ -286,7 +289,7 @@ const TcKsnkScr49 = {
 			  )}</th></tr></thead><tbody>${rows}</tbody></table>`
 			: `<p class="tc-ksnk-note">${esc(__("No improvement projects in this year."))}</p>`;
 		const add = imp.can_edit
-			? `<p class="tc-ksnk-note"><a href="/app/ic-improvement-project/new">${esc(
+			? `<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/ic-improvement-project/new">${esc(
 					__("Add improvement project")
 			  )}</a></p>`
 			: "";
@@ -308,7 +311,7 @@ const TcKsnkScr49 = {
 		const self = TcKsnkScr49;
 		const sa = imp.self_assessment || { items: [] };
 		const open = imp.template
-			? ` <a href="/app/audit-session/new?audit_template=${encodeURIComponent(
+			? ` <a class="btn btn-default btn-sm" href="/app/audit-session/new?audit_template=${encodeURIComponent(
 					imp.template
 			  )}">${esc(__("Open form"))}</a>`
 			: ` ${esc(
@@ -321,6 +324,16 @@ const TcKsnkScr49 = {
 				"The annual infection control quality self-assessment uses the audit template type Quality Self-Assessment."
 			)
 		)}${open}</div>`;
+		// phiếu tự đánh giá đã ghi sổ (Audit Session): xem form, Hủy/sửa đổi theo quyền, In
+		const sessionActions = (row) =>
+			row && row.name
+				? TcKsnk.recordActions({
+						doctype: "Audit Session",
+						name: row.name,
+						docstatus: 1,
+						can_write: !!imp.can_write_session,
+				  })
+				: "";
 		if (!sa.current && !sa.previous) {
 			return (
 				intro +
@@ -347,6 +360,7 @@ const TcKsnkScr49 = {
 			  )}</p>`;
 		return (
 			intro +
+			sessionActions(sa.current || sa.previous) +
 			`<h4>${esc(
 				__("Quality self-assessment {0} vs {1}", [sa.year, sa.previous_year])
 			)}</h4>` +
@@ -383,11 +397,17 @@ const TcKsnkScr49 = {
 					}>${esc(d.department_name || d.name)}</option>`
 			)
 			.join("");
+		const years = [data.year - 1, data.year, data.year + 1]
+			.map(
+				(y) =>
+					`<option value="${esc(y)}"${y === data.year ? " selected" : ""}>${esc(
+						y
+					)}</option>`
+			)
+			.join("");
 		return (
 			`<div class="tc-ksnk-filters"><label>${esc(__("Year"))}` +
-			`<input type="number" min="2000" max="2100" class="form-control" data-filter="year" value="${esc(
-				data.year
-			)}"></label>` +
+			`<select class="form-control" data-filter="year">${years}</select></label>` +
 			`<label>${esc(
 				__("Department")
 			)}<select class="form-control" data-filter="department">` +

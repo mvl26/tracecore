@@ -93,7 +93,7 @@ const TcKsnkScr47 = {
 			)}"${dis}></label>` +
 			// làm tròn số giám sát viên, người đứng đầu cơ sở: chỉ sửa trên form IC Program Settings (11/11/2026)
 			`</div><div data-region="settings-alert"></div>${save}` +
-			`<p class="tc-ksnk-note"><a href="/app/ic-program-settings">${esc(
+			`<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/ic-program-settings">${esc(
 				__(
 					"Infection control unit and surveillance staff are edited in the settings form."
 				)
@@ -103,7 +103,9 @@ const TcKsnkScr47 = {
 
 	profileHtml(data, esc) {
 		const link = data.can_open_profile
-			? ` <a href="/app/ic-structure-profile">${esc(__("Open structure criteria"))}</a>`
+			? ` <a class="btn btn-default btn-sm" href="/app/ic-structure-profile">${esc(
+					__("Open structure criteria")
+			  )}</a>`
 			: "";
 		if (data.profile_notice) {
 			return (
@@ -172,7 +174,9 @@ const TcKsnkScr47 = {
 				`<section class="tc-ksnk-card">${head}<p class="tc-ksnk-note">${esc(
 					__("No committee in force.")
 				)} ` +
-				`<a href="/app/ic-committee/new">${esc(__("Create committee"))}</a></p></section>`
+				`<a class="btn btn-default btn-sm" href="/app/ic-committee/new">${esc(
+					__("Create committee")
+				)}</a></p></section>`
 			);
 		}
 		const members = c.members
@@ -202,21 +206,25 @@ const TcKsnkScr47 = {
 			: "";
 		return (
 			`<section class="tc-ksnk-card">${head}` +
-			`<p>${esc(__("Decision No."))}: <code class="tc-ksnk-code">${esc(
+			`<div class="tc-ksnk-filters"><label>${esc(
+				__("Decision No.")
+			)}<input class="form-control tc-ksnk-code" readonly value="${esc(
 				c.decision_no
-			)}</code> · ` +
-			`${esc(__("Validity"))}: ${esc(TcKsnkScr47.date(c.valid_from))} – ${esc(
-				TcKsnkScr47.date(c.valid_to)
-			)}</p>` +
+			)}"></label>` +
+			`<label>${esc(__("Validity"))}<input class="form-control" readonly value="${esc(
+				TcKsnkScr47.date(c.valid_from)
+			)} – ${esc(TcKsnkScr47.date(c.valid_to))}"></label></div>` +
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Member"))}</th>` +
 			`<th scope="col">${esc(__("Committee Role"))}</th><th scope="col">${esc(
 				__("Representing")
 			)}</th></tr></thead>` +
 			`<tbody>${members}</tbody></table>${warning}` +
 			// Hội đồng đã ghi sổ: sửa thành viên bằng Hủy → Sửa đổi trên form; nhiệm kỳ mới lập Hội đồng mới
-			`<p class="tc-ksnk-note"><a href="/app/ic-committee/${encodeURIComponent(
+			`<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/ic-committee/${encodeURIComponent(
 				c.name
-			)}">${esc(__("Open committee"))}</a> · <a href="/app/ic-committee/new">${esc(
+			)}">${esc(
+				__("Open committee")
+			)}</a> · <a class="btn btn-default btn-sm" href="/app/ic-committee/new">${esc(
 				__("New committee term")
 			)}</a></p></section>`
 		);
@@ -258,9 +266,16 @@ const TcKsnkScr47 = {
 					"Deactivating the last member of a group puts the department on the missing list and alerts R01."
 				)
 			)}</div>` +
-			`<p class="tc-ksnk-note"><a href="/app/ic-network-member/new">${esc(
-				__("Add network member")
-			)}</a></p></section>`
+			// danh sách thành viên mạng lưới luôn mở được; thêm mới chỉ khi có quyền tạo
+			`<p class="tc-ksnk-note"><a class="btn btn-default btn-sm" href="/app/ic-network-member">${esc(
+				__("Open network members")
+			)}</a>${
+				data.can_create_member === false
+					? ""
+					: ` · <a class="btn btn-default btn-sm" href="/app/ic-network-member/new">${esc(
+							__("Add network member")
+					  )}</a>`
+			}</p></section>`
 		);
 	},
 
@@ -306,8 +321,11 @@ const TcKsnkScr47 = {
 			self.summaryHtml(data, esc) +
 			self.settingsHtml(data, readOnly, esc) +
 			self.componentsHtml(data, esc) +
-			self.committeeHtml(data, esc) +
-			self.networkHtml(data, esc) +
+			// Hội đồng và mạng lưới đặt cạnh nhau như ảnh duyệt SCR-47
+			`<div class="tc-ksnk-cols"><div>${self.committeeHtml(
+				data,
+				esc
+			)}</div><div>${self.networkHtml(data, esc)}</div></div>` +
 			self.actionsHtml(data, readOnly, esc)
 		);
 	},

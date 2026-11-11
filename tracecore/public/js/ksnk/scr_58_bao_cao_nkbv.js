@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-58 Báo cáo NKBV — phần tỷ suất của FEAT-063 (UC-48 bước 6; FR-M13-10, 10.1, 10.2; BRU-HAI-006; A-131, A-144 g).
 // Chọn kỳ (tháng, kèm trạng thái khóa), xu hướng tỷ suất NKBV/1.000 ngày nằm viện 12 tháng, bảng theo khoa: ngày nằm
 // viện, ca NKBV xác định, ‰, VAP ‰, CLABSI ‰, CAUTI ‰, tỷ lệ thở máy. Mẫu số 0 → "Không tính", không bao giờ 0.
@@ -40,8 +40,14 @@ const TcKsnkScr58 = {
 					)}</option>`
 			)
 			.join("");
-		return `<div class="tc-ksnk-filters"><label>${esc(__("Period"))}
-			<select class="form-control" data-filter="period">${options}</select></label></div>`;
+		// Bố cục ảnh SCR-58: bộ lọc kỳ bên trái, nút xuất bên phải cùng một hàng; vùng cảnh báo cụm ca ngay dưới hàng này.
+		return `<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters"><label>${esc(
+			__("Period")
+		)}
+			<select class="form-control" data-filter="period">${options}</select></label></div>
+			<div class="tc-ksnk-actions"><button type="button" class="btn btn-primary" data-action="goto-export">${esc(
+				__("Export Excel/CSV", null, "IC Screen")
+			)}</button></div></div><div data-region="clusters"></div>`;
 	},
 
 	kpisHtml(data, esc) {
@@ -100,15 +106,14 @@ const TcKsnkScr58 = {
 	departmentsHtml(data, esc) {
 		const self = TcKsnkScr58;
 		const rows = data.departments || [];
-		if (!rows.length)
-			return `<section class="tc-ksnk-card"><h3>${esc(
-				__("By department — month {0}", [self.month(data.period)])
-			)}</h3><p class="tc-ksnk-state">${esc(
-				__("No census or HAI case in this month.")
-			)}</p></section>`;
-		const body = rows
-			.map(
-				(r) => `<tr><td>${esc(r.department_name || r.department)}</td>
+		const emptyRow = `<tr><td colspan="8" class="tc-ksnk-state">${esc(
+			__("No census or HAI case in this month.")
+		)}</td></tr>`;
+		const body = !rows.length
+			? emptyRow
+			: rows
+					.map(
+						(r) => `<tr><td>${esc(r.department_name || r.department)}</td>
 				<td class="is-num">${esc(self.int(r.patient_days))}</td>
 				<td class="is-num">${esc(self.int(r.cases))}</td>
 				<td class="is-num">${esc(self.num(r.hai))}</td>
@@ -120,8 +125,8 @@ const TcKsnkScr58 = {
 						? __("Not calculated")
 						: `${self.num(r.vent_utilization)} %`
 				)}</td></tr>`
-			)
-			.join("");
+					)
+					.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("By department — month {0}", [self.month(data.period)])
 		)}</h3>
@@ -310,6 +315,12 @@ const TcKsnkScr58 = {
 			// FEAT-072: khối điều tra cắt ngang (tải riêng, lỗi khối này không làm hỏng phần tỷ suất)
 			el.insertAdjacentHTML("beforeend", '<div data-region="pps"></div>');
 			TcKsnkPps.render(el.querySelector('[data-region="pps"]'), ctx);
+			const toExport = el.querySelector('[data-action="goto-export"]');
+			if (toExport)
+				toExport.addEventListener("click", () => {
+					const target = el.querySelector('[data-region="export"]');
+					if (target && target.scrollIntoView) target.scrollIntoView();
+				});
 			const select = el.querySelector('[data-filter="period"]');
 			if (select)
 				select.addEventListener("change", () => {
@@ -360,7 +371,11 @@ const TcKsnkPps = {
 			row(r.department_name || r.department, r, "")
 		);
 		if (!rows.length)
-			return `<p class="tc-ksnk-state">${esc(__("No patient surveyed on this day."))}</p>`;
+			rows.push(
+				`<tr><td colspan="5" class="tc-ksnk-state">${esc(
+					__("No patient surveyed on this day.")
+				)}</td></tr>`
+			);
 		return (
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
 				__("Department")
@@ -369,11 +384,11 @@ const TcKsnkPps = {
 			`<th scope="col" class="is-num">${esc(__("With HAI"))}</th>` +
 			`<th scope="col" class="is-num">${esc(__("Prevalence"))}</th>` +
 			`<th scope="col" class="is-num">${esc(__("Antibiotic use"))}</th></tr></thead>` +
-			`<tbody>${rows.join("")}${row(
-				__("Hospital total"),
-				p.hospital || {},
-				"is-total"
-			)}</tbody></table>`
+			`<tbody>${rows.join("")}${
+				(p.departments || []).length
+					? row(__("Hospital total"), p.hospital || {}, "is-total")
+					: ""
+			}</tbody></table>`
 		);
 	},
 
@@ -634,7 +649,9 @@ const TcKsnkClusterBanner = {
 		if (!b.configured)
 			return `<div class="tc-ksnk-alert is-info" role="note">${esc(
 				__("No cluster alert threshold is configured, so no cluster is detected.")
-			)} <a href="${esc(b.rule_form)}">${esc(__("Set thresholds"))}</a></div>`;
+			)} <a class="btn btn-default btn-sm" href="${esc(b.rule_form)}">${esc(
+				__("Set thresholds")
+			)}</a></div>`;
 		return (b.alerts || [])
 			.map(
 				(a) => `<div class="tc-ksnk-alert is-warn" role="alert">
@@ -652,17 +669,28 @@ const TcKsnkClusterBanner = {
 						]
 					)
 				)}
-				${
+				<div class="tc-ksnk-actions">${
 					b.can_review
-						? `<div class="tc-ksnk-actions">
-					<a class="btn btn-danger" href="${esc(b.open_link)}?alert=${encodeURIComponent(a.name)}">${esc(
+						? `<a class="btn btn-danger" href="${esc(
+								b.open_link
+						  )}?alert=${encodeURIComponent(a.name)}">${esc(
 								__("Open outbreak investigation")
 						  )}</a>
 					<button type="button" class="btn btn-default" data-action="cluster-dismiss" data-name="${esc(
 						a.name
-					)}">${esc(__("Mark as reviewed"))}</button></div>`
+					)}">${esc(__("Mark as reviewed"))}</button> `
 						: ""
-				}</div>`
+				}${TcKsnk.recordActions(
+					{
+						doctype: "Cluster Alert",
+						name: a.name,
+						docstatus: a.docstatus === undefined ? 0 : a.docstatus,
+						can_write: !!b.can_review,
+						can_create: false,
+						can_print: false,
+					},
+					false
+				)}</div></div>`
 			)
 			.join("");
 	},
@@ -721,11 +749,10 @@ function tcClusterClientTs(date = new Date()) {
 	const base = TcKsnkScr58.render;
 	TcKsnkScr58.render = async function (el, ctx) {
 		await base.call(TcKsnkScr58, el, ctx);
-		if (!ctx.isCurrent() || el.querySelector('[data-region="clusters"]')) return;
-		el.insertAdjacentHTML("afterbegin", '<div data-region="clusters"></div>');
-		TcKsnkClusterBanner.render(el.querySelector('[data-region="clusters"]'), ctx, () =>
-			TcKsnkScr58.render(el, ctx)
-		);
+		if (!ctx.isCurrent()) return;
+		const clusters = el.querySelector('[data-region="clusters"]');
+		if (!clusters) return;
+		TcKsnkClusterBanner.render(clusters, ctx, () => TcKsnkScr58.render(el, ctx));
 	};
 })();
 

@@ -135,6 +135,7 @@ def overview(year=None, quarter=None, organism=None):
 		"rules": {
 			"approved": frappe.db.count(rules.DOCTYPE, {"docstatus": 1, "superseded_by": ["is", "not set"]}),
 			"draft": frappe.db.count(rules.DOCTYPE, {"docstatus": 0}),
+			"can_create": bool(frappe.has_permission(rules.DOCTYPE, "create")),
 		},
 		"report": f"/app/query-report/{REPORT}",
 	}

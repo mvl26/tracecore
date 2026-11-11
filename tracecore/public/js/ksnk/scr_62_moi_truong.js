@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-62 Vệ sinh môi trường & cơ sở hạ tầng — view WEB trong Page tc-ksnk (FEAT-070; UC-54; FR-M15-01..07;
 // BRU-ENV-001..003; A-148 f). Tab: Tổng quan · Vùng vệ sinh · Mẫu môi trường · Hạ tầng · Ngưỡng & kế hoạch. R01/R11 quyết
 // định NC Environment của mẫu Không đạt (mở NC hoặc bỏ qua có lý do); R02 chỉ xem; R13 chỉ số liệu tổng hợp. Tạo/sửa
@@ -67,11 +67,44 @@ const TcKsnkScr62 = {
 		return TcKsnkScr62.badge("neutral", __("No result"), esc);
 	},
 
+	// Bảng luôn giữ khung (tiêu đề cột); chưa có dữ liệu thì một hàng ghi chú thay vì ẩn bảng (bố cục ảnh duyệt SCR-62)
+	tableHtml(heads, body, empty, esc) {
+		const rows = body
+			? body
+			: `<tr class="is-empty"><td colspan="${heads.length}" class="tc-ksnk-note">${esc(
+					empty
+			  )}</td></tr>`;
+		return `<div class="tc-ksnk-scroll"><table class="tc-ksnk-table"><thead><tr>${heads
+			.map((h) => `<th>${esc(h)}</th>`)
+			.join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
+	},
+
 	desk(doctype, name, label, esc) {
 		const slug = frappe.router.slug(doctype);
 		return `<a href="/app/${slug}/${encodeURIComponent(
 			name
 		)}"><span class="tc-ksnk-code">${esc(label || name)}</span></a>`;
+	},
+
+	// Cờ quyền theo DocType do RPC trả (A-131); thiếu cờ = chỉ xem
+	perm(data, doctype) {
+		return ((data && data.perms) || {})[doctype] || {};
+	},
+
+	// Hàng thao tác của một mẫu đã ghi sổ: xem/hủy/sửa đổi theo quyền, In; thêm mẫu mới ở nút "Ghi kết quả"
+	sampleActions(data, row, extra) {
+		const perm = TcKsnkScr62.perm(data, "Environmental Sample");
+		return TcKsnk.recordActions(
+			{
+				doctype: "Environmental Sample",
+				name: row.name,
+				docstatus: 1,
+				can_write: perm.write,
+				can_create: false,
+				extra: extra || [],
+			},
+			false
+		);
 	},
 
 	// POST @idempotent: khóa giữ nguyên khi bấm lại cùng dữ liệu (thử lại sau lỗi mạng)
@@ -248,7 +281,8 @@ const TcKsnkScr62 = {
 						  )}</a></div>`
 						: ""
 				}
-				<div data-region="nc-alert"></div></div>`
+				<div class="tc-ksnk-actions">${self.sampleActions(data, r)}</div>
+					<div data-region="nc-alert"></div></div>`
 			)
 			.join("");
 	},
@@ -268,26 +302,26 @@ const TcKsnkScr62 = {
 					r.is_resample_of
 						? ` ${self.badge("info", __("Resample of {0}", [r.is_resample_of]), esc)}`
 						: ""
-				}</td></tr>`
+				}</td><td>${self.sampleActions(data, r)}</td></tr>`
 			)
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Environmental test results — month {0}", [self.month(data.month)])
-		)} <span class="tc-ksnk-tag">Environmental Sample · XN-</span></h3>${
-			body
-				? `<div class="tc-ksnk-scroll"><table class="tc-ksnk-table"><thead><tr><th>${esc(
-						__("Code")
-				  )}</th><th>${esc(__("Zone"))}</th><th>${esc(__("Sample Type"))}</th><th>${esc(
-						__("Sampled On")
-				  )}</th><th>${esc(__("Result"))}</th><th>${esc(
-						__("Limit (snapshot)")
-				  )}</th><th>${esc(
-						__("Assessment")
-				  )}</th></tr></thead><tbody>${body}</tbody></table></div>`
-				: `<p class="tc-ksnk-state is-empty">${esc(
-						__("No environmental sample posted this month.")
-				  )}</p>`
-		}<p class="tc-ksnk-note">${esc(
+		)} <span class="tc-ksnk-tag">Environmental Sample · XN-</span></h3>${self.tableHtml(
+			[
+				__("Code"),
+				__("Zone"),
+				__("Sample Type"),
+				__("Sampled On"),
+				__("Result"),
+				__("Limit (snapshot)"),
+				__("Assessment"),
+				__("Action"),
+			],
+			body,
+			__("No environmental sample posted this month."),
+			esc
+		)}<p class="tc-ksnk-note">${esc(
 			__(
 				"Limits are versioned configuration approved by the head of infection control; each sample keeps a snapshot of the limit in effect on its sampling date."
 			)
@@ -299,7 +333,9 @@ const TcKsnkScr62 = {
 		const body = (data.zones || [])
 			.map(
 				(r) => `<tr><td>${self.desk("Environment Zone", r.zone, r.area_name, esc)}</td>
-				<td>${esc(r.department_name || r.department)}</td><td>${esc(r.risk_level)}</td>
+				<td>${esc(r.department_name || r.department)}</td><td><span class="tc-ksnk-tag">${esc(
+					r.risk_level
+				)}</span></td>
 				<td>${esc(
 					r.responsible_party === "Outsourced Vendor"
 						? r.supplier_name || r.supplier
@@ -319,19 +355,19 @@ const TcKsnkScr62 = {
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Cleaning zones — audits this month")
-		)} <span class="tc-ksnk-tag">Environment Zone · VV-</span></h3>${
-			body
-				? `<div class="tc-ksnk-scroll"><table class="tc-ksnk-table"><thead><tr><th>${esc(
-						__("Zone")
-				  )}</th><th>${esc(__("Department"))}</th><th>${esc(
-						__("Risk Level")
-				  )}</th><th>${esc(__("Responsible Party"))}</th><th>${esc(
-						__("Audits / minimum")
-				  )}</th><th>${esc(
-						__("Status")
-				  )}</th></tr></thead><tbody>${body}</tbody></table></div>`
-				: `<p class="tc-ksnk-state is-empty">${esc(__("No cleaning zone yet."))}</p>`
-		}<div class="tc-ksnk-actions"><a class="btn btn-default btn-sm" href="/app/environment-zone/new">${esc(
+		)} <span class="tc-ksnk-tag">Environment Zone · VV-</span></h3>${self.tableHtml(
+			[
+				__("Zone"),
+				__("Department"),
+				__("Risk Level"),
+				__("Responsible Party"),
+				__("Audits / minimum"),
+				__("Status"),
+			],
+			body,
+			__("No cleaning zone yet."),
+			esc
+		)}<div class="tc-ksnk-actions"><a class="btn btn-default btn-sm" href="/app/environment-zone/new">${esc(
 			__("New zone")
 		)}</a> <a class="btn btn-default btn-sm" href="/app/environment-risk-level">${esc(
 			__("Risk levels")
@@ -356,19 +392,14 @@ const TcKsnkScr62 = {
 				)}</td></tr>`
 			)
 			.join("");
-		return `<section class="tc-ksnk-card"><h3>${esc(__("Infrastructure inspections"))}</h3>${
-			body
-				? `<div class="tc-ksnk-scroll"><table class="tc-ksnk-table"><thead><tr><th>${esc(
-						__("Item")
-				  )}</th><th>${esc(__("Location"))}</th><th>${esc(__("Last"))}</th><th>${esc(
-						__("Next Due")
-				  )}</th><th>${esc(
-						__("Status")
-				  )}</th></tr></thead><tbody>${body}</tbody></table></div>`
-				: `<p class="tc-ksnk-state is-empty">${esc(
-						__("No infrastructure inspection posted yet.")
-				  )}</p>`
-		}<p class="tc-ksnk-alert is-info">${esc(
+		return `<section class="tc-ksnk-card"><h3>${esc(
+			__("Infrastructure inspections")
+		)}</h3>${self.tableHtml(
+			[__("Item"), __("Location"), __("Last"), __("Next Due"), __("Status")],
+			body,
+			__("No infrastructure inspection posted yet."),
+			esc
+		)}<p class="tc-ksnk-alert is-info">${esc(
 			__(
 				"Reminder 7 days before the due date; the CSSD area keeps using the existing Environment Log (M9)."
 			)
@@ -446,7 +477,13 @@ const TcKsnkScr62 = {
 					: `<p class="tc-ksnk-state is-empty">${esc(__("No approved limit yet."))}</p>`
 			}<div class="tc-ksnk-actions"><a class="btn btn-default btn-sm" href="/app/environmental-limit">${esc(
 				__("All limits")
-			)}</a></div></section>` +
+			)}</a>${
+				self.perm(data, "Environmental Limit").create
+					? ` <a class="btn btn-default btn-sm" href="/app/environmental-limit/new">${esc(
+							__("New limit")
+					  )}</a>`
+					: ""
+			}</div></section>` +
 			`<section class="tc-ksnk-card"><h3>${esc(__("Sampling plans"))}</h3>${
 				overdue
 					? `<div class="tc-ksnk-alert is-warn"><strong>${esc(
@@ -491,7 +528,8 @@ const TcKsnkScr62 = {
 
 	actionsHtml(esc) {
 		return `<div class="tc-ksnk-actions">
-			<a class="btn btn-primary" href="/app/environmental-sample/new">${esc(
+			<a class="btn btn-primary" href="/app/station">${esc(__("Record surface cleaning form (PDA)"))}</a>
+			<a class="btn btn-default" href="/app/environmental-sample/new">${esc(
 				__("Record test result")
 			)}</a>
 			<a class="btn btn-default" href="/app/query-report/Environmental Hygiene">${esc(
@@ -499,13 +537,39 @@ const TcKsnkScr62 = {
 			)}</a></div>`;
 	},
 
+	// Select "Tháng MM/YYYY": 12 tháng gần nhất tính từ tháng đang xem (hoặc tháng hiện tại), như SCR-66
+	monthOptions(selected, esc) {
+		const [y0, m0] = String(selected || "")
+			.split("-")
+			.map(Number);
+		const now = new Date();
+		let y = y0 || now.getFullYear();
+		let m = m0 || now.getMonth() + 1;
+		const out = [];
+		for (let i = 0; i < 12; i++) {
+			const key = `${y}-${String(m).padStart(2, "0")}`;
+			out.push(
+				`<option value="${key}"${key === selected ? " selected" : ""}>${esc(
+					__("Month {0}", [TcKsnkScr62.month(key)])
+				)}</option>`
+			);
+			m -= 1;
+			if (m < 1) {
+				m = 12;
+				y -= 1;
+			}
+		}
+		return out.join("");
+	},
+
 	pageHtml(data, esc) {
 		const self = TcKsnkScr62;
-		const filter = `<div class="tc-ksnk-filters"><label>${esc(
+		const filter = `<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters"><label>${esc(
 			__("Month")
-		)} <input type="month" class="form-control" data-filter="month" value="${esc(
-			data.month
-		)}"></label></div>`;
+		)}<select class="form-control" data-filter="month">${self.monthOptions(
+			data.month,
+			esc
+		)}</select></label></div></div>`;
 		if (data.summary_only)
 			return filter + self.kpisHtml(data, esc) + self.ratesHtml(data, esc);
 		const body = {

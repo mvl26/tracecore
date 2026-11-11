@@ -94,19 +94,48 @@ class TestScr66Display(FrappeTestCase):
 		self.assertNotIn("86 % ↓", out)
 		self.assertIn("is-below", out)
 
+	def test_self_assessment_actions_by_state(self):
+		out = self.run_board(
+			"""
+			const s = TcKsnkScr66;
+			const rows = [{criterion: "A", criterion_text: "A", source_hint: "", source: "Manual",
+				status: "Met", source_ref: "", evidence: ""}];
+			const base = {year: 2031, name: "TDG-2031", rows};
+			emit({
+				draft: s.selfHtml(Object.assign({}, base, {docstatus: 0, can_manage: true, editable: true}), esc),
+				sub: s.selfHtml(Object.assign({}, base, {docstatus: 1, can_manage: true, editable: false}), esc),
+				ro: s.selfHtml(Object.assign({}, base, {docstatus: 1, can_manage: false, editable: false}), esc),
+				none: s.selfHtml({year: 2032, name: null, rows: [], can_manage: true, editable: false}, esc),
+			});
+			"""
+		)
+		form = "/app/ic-self-assessment/TDG-2031"
+		for key in ("draft", "sub", "ro"):
+			self.assertIn(form, out[key])
+			self.assertIn("printview", out[key])
+		self.assertIn("sa-submit", out["draft"])
+		self.assertIn("sa-save", out["draft"])
+		self.assertNotIn("sa-submit", out["sub"])
+		self.assertNotIn("sa-prepare", out["sub"])
+		self.assertIn("cancel or amend", out["sub"])
+		self.assertIn("/app/ic-self-assessment/new", out["sub"])
+		self.assertNotIn("/app/ic-self-assessment/new", out["ro"])
+		self.assertNotIn("cancel or amend", out["ro"])
+		self.assertIn("sa-prepare", out["none"])
+
 	def test_todos_and_self_assessment(self):
 		out = self.run_board(
 			"""
 			const s = TcKsnkScr66;
 			const todos = [{severity: "error", title: "3 departments have no census", detail: "ICU", link: "/app/x"},
 				{severity: "info", title: "Report ready", detail: "", link: ""}];
-			const sa = {year: 2031, name: "TDG-2031", docstatus: 0, can_manage: true, rows: [
+			const sa = {year: 2031, name: "TDG-2031", docstatus: 0, can_manage: true, editable: true, rows: [
 				{criterion: "QD38-PLAN", criterion_text: "Plan approved", source_hint: "M11", source: "Auto",
 				 status: "Met", source_ref: "KH-2031-01", evidence: ""},
 				{criterion: "QD38-IT", criterion_text: "IT", source_hint: "Manual", source: "Manual",
 				 status: "Not assessed", source_ref: "", evidence: ""}]};
 			emit({todos: s.todosHtml(todos, esc), none: s.todosHtml([], esc), sa: s.selfHtml(sa, esc),
-				ro: s.selfHtml(Object.assign({}, sa, {can_manage: false, docstatus: 1}), esc),
+				ro: s.selfHtml(Object.assign({}, sa, {can_manage: false, editable: false, docstatus: 1}), esc),
 				empty: s.selfHtml({year: 2031, name: null, rows: [], can_manage: false}, esc)});
 			"""
 		)

@@ -132,6 +132,7 @@ def _detail(name):
 	}
 	data["items"] = [{field: row.get(field) for field in ITEM_FIELDS} for row in doc.items]
 	data["status"] = _status(doc, {doc.template_code: active})
+	data["can_write"] = bool(doc.has_permission("write"))  # mở form để sửa/Hủy/sửa đổi theo quyền thật
 	data["can_edit"] = doc.docstatus == 0 and doc.has_permission("write")
 	data["can_approve"] = doc.docstatus == 0 and doc.has_permission("submit")
 	data["can_revise"] = doc.docstatus == 1 and frappe.has_permission(templates.DOCTYPE, "create")
@@ -289,4 +290,7 @@ def compliance_board(filters):
 		"recent": recent,
 		"pending": nc.pending() if can_decide else [],
 		"can_decide": can_decide,
+		# Quyền thật của người gọi trên Audit Session, để màn hiện đủ thao tác (form/hủy/sửa đổi/tạo mới).
+		"can_write": bool(frappe.has_permission("Audit Session", "write")),
+		"can_create": bool(frappe.has_permission("Audit Session", "create")),
 	}

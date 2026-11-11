@@ -143,12 +143,21 @@ def detail(name):
 			for row in doc.followups
 		],
 		"has_template": bool(config.active_template(doc.exposure_type)),
+		"can_write": bool(frappe.has_permission(exposure.DOCTYPE, "write", doc=doc)),
 	}
 
 
 def build(user=None, day=None):
 	"""Toàn bộ dữ liệu màn; người không phải R01/R11 chỉ nhận KPI."""
 	result = {"kpis": kpis(day), "is_manager": exposure.is_manager(user)}
+	# cờ hiện nút theo quyền DocType (A-131); quyền thật vẫn kiểm ở DocPerm khi mở form
+	result["perms"] = {
+		doctype: {
+			"write": bool(frappe.has_permission(doctype, "write", user=user)),
+			"create": bool(frappe.has_permission(doctype, "create", user=user)),
+		}
+		for doctype in (exposure.DOCTYPE, immunization.DOCTYPE)
+	}
 	if result["is_manager"]:
 		result.update(
 			{"records": records(), "immunizations": immunizations(day), "pep_alerts": pep_stock.status(day)}

@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-54 Hóa chất KSNK theo khoa–tháng & đơn vị thuê ngoài (FEAT-066; UC-46; FR-M12-12, FR-M12-13; A-131, A-142).
 // Ba nguồn: phiếu xuất kho ERPNext tới kho khoa (tự động), file khoa Dược qua hồ sơ ánh xạ (kiểm từng dòng → ghi sổ),
 // nhập tay có ghi nguồn và bước xác nhận. Bộ (tháng, khoa, hóa chất) có ≥ 2 nguồn hiện "Chờ xác nhận" và không vào
@@ -99,9 +99,11 @@ const TcKsnkScr54 = {
 			)}</a>`,
 		].join(" ");
 		return (
-			`<div class="tc-ksnk-filters"><label>${esc(__("Period"))}` +
-			`<select class="form-control" data-input="quarter">${options}</select></label>` +
-			`<div class="tc-ksnk-actions">${buttons}</div></div>` +
+			`<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters"><label>${esc(
+				__("Period")
+			)}` +
+			`<select class="form-control" data-input="quarter">${options}</select></label></div>` +
+			`<div class="tc-ksnk-actions tc-ksnk-headactions">${buttons}</div></div>` +
 			`<div data-region="import"></div><div data-region="manual"></div><div data-region="message"></div>`
 		);
 	},
@@ -156,9 +158,11 @@ const TcKsnkScr54 = {
 			: "";
 		const table = body
 			? `<table class="tc-ksnk-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
-			: `<div class="tc-ksnk-state is-empty">${esc(
+			: `<table class="tc-ksnk-table"><thead>${head}</thead><tbody><tr><td colspan="${
+					TC_CHEM_TYPES.length + 3
+			  }">${esc(
 					__("No infection control chemical recorded in this quarter.")
-			  )}</div>`;
+			  )}</td></tr></tbody></table>`;
 		return (
 			`<section class="tc-ksnk-card"><h3>${esc(__("IC chemicals by department"))} ` +
 			`<code class="tc-ksnk-tag">IC Chemical Consumption · HC-</code></h3>${table}` +
@@ -249,7 +253,7 @@ const TcKsnkScr54 = {
 					  )} %`
 					: "—";
 				const waste = v.waste_vendor
-					? ` <a href="/app/waste-treatment-vendor/${encodeURIComponent(
+					? ` <a class="btn btn-default btn-sm" href="/app/waste-treatment-vendor/${encodeURIComponent(
 							v.waste_vendor
 					  )}">${esc(__("Waste vendor record"))}</a>`
 					: "";
@@ -278,25 +282,27 @@ const TcKsnkScr54 = {
 				);
 			})
 			.join("");
+		const head =
+			`<thead><tr>` +
+			[
+				__("Vendor"),
+				__("Service"),
+				__("License No"),
+				__("License Expiry"),
+				__("Contract"),
+				__("Latest vendor audit"),
+				__("Status"),
+			]
+				.map((label) => `<th scope="col">${esc(label)}</th>`)
+				.join("") +
+			`</tr></thead>`;
 		const table = rows
-			? `<table class="tc-ksnk-table"><thead><tr>` +
-			  [
-					__("Vendor"),
-					__("Service"),
-					__("License No"),
-					__("License Expiry"),
-					__("Contract"),
-					__("Latest vendor audit"),
-					__("Status"),
-			  ]
-					.map((label) => `<th scope="col">${esc(label)}</th>`)
-					.join("") +
-			  `</tr></thead><tbody>${rows}</tbody></table>`
-			: `<div class="tc-ksnk-state is-empty">${esc(
+			? `<table class="tc-ksnk-table">${head}<tbody>${rows}</tbody></table>`
+			: `<table class="tc-ksnk-table">${head}<tbody><tr><td colspan="7">${esc(
 					__(
 						"No outsourced vendor yet. Set the outsourced service on the supplier form to follow its license."
 					)
-			  )}</div>`;
+			  )}</td></tr></tbody></table>`;
 		const expired = list.filter((v) => v.state === "Expired");
 		const alert = expired.length
 			? `<div class="tc-ksnk-alert is-warn" role="status"><strong>${esc(
@@ -337,6 +343,32 @@ const TcKsnkScr54 = {
 		return `<div class="tc-ksnk-alert is-info" role="status">${esc(message)}</div>`;
 	},
 
+	// Thông báo ghi thành công kèm hàng thao tác trên chính bản ghi vừa tạo (A-131): không chỉ còn chữ
+	savedHtml(message, actions, esc) {
+		return TcKsnkScr54.infoHtml(message, esc) + actions;
+	},
+
+	// Hàng thao tác của dòng nhập tay vừa ghi sổ: xem/hủy/sửa đổi theo quyền, In, và nhập thêm dòng mới
+	chemicalActions(data) {
+		return TcKsnk.recordActions({
+			doctype: "IC Chemical Consumption",
+			name: data.name,
+			docstatus: data.docstatus === undefined ? 1 : data.docstatus,
+			can_write: data.can_write,
+			can_create: false,
+		});
+	},
+
+	batchActions(name) {
+		return TcKsnk.recordActions({
+			doctype: "Import Batch",
+			name,
+			can_write: false,
+			can_create: false,
+			can_print: false,
+		});
+	},
+
 	importHtml(data, state, esc) {
 		const options = (data.profiles || [])
 			.map(
@@ -350,7 +382,7 @@ const TcKsnkScr54 = {
 			? ""
 			: `<div class="tc-ksnk-alert is-warn" role="status">${esc(
 					__("No mapping profile for chemical files yet.")
-			  )} <a href="/app/import-mapping-profile/new">${esc(
+			  )} <a class="btn btn-default btn-sm" href="/app/import-mapping-profile/new">${esc(
 					__("Create mapping profile")
 			  )}</a></div>`;
 		const check = state.check;
@@ -601,7 +633,11 @@ const TcKsnkScr54 = {
 				: __("Import {0} is running in the background; reload the screen in a moment.", [
 						b.name,
 				  ]);
-		TcKsnkScr54.region(el, "message", TcKsnkScr54.infoHtml(message, ctx.esc));
+		TcKsnkScr54.region(
+			el,
+			"message",
+			TcKsnkScr54.savedHtml(message, TcKsnkScr54.batchActions(b.name), ctx.esc)
+		);
 	},
 
 	async preview(el, ctx, state) {
@@ -639,8 +675,9 @@ const TcKsnkScr54 = {
 		TcKsnkScr54.region(
 			el,
 			"message",
-			TcKsnkScr54.infoHtml(
+			TcKsnkScr54.savedHtml(
 				__("Chemical consumption {0} saved.", [outcome.data.name]),
+				TcKsnkScr54.chemicalActions(outcome.data),
 				ctx.esc
 			)
 		);

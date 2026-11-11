@@ -89,6 +89,8 @@ def overview(outbreak=None, alert=None, source_doctype=None, source_name=None):
 		"ok": True,
 		"can_own": outbreaks.can_own() and can_cases,
 		"can_work": can_cases,
+		"can_edit_outbreak": bool(frappe.has_permission(outbreaks.DOCTYPE, "write")),
+		"can_edit_report": bool(frappe.has_permission(notifiable.DOCTYPE, "write")),
 		"summary": summary,
 		"current": current,
 		"prefill": (

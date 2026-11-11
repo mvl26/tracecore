@@ -55,6 +55,8 @@ def status(year=None, department=None):
 		"core": training.core_rows(year, department),
 		"trainees": training.trainee_rows(year, department),
 		"can_remind": _can_remind(),
+		"can_write_trainee": bool(frappe.has_permission("Trainee Induction", "write")),
+		"can_create_trainee": bool(frappe.has_permission("Trainee Induction", "create")),
 	}
 
 

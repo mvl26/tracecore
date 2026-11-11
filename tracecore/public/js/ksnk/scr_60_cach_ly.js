@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcKsnk */
 // SCR-60 Lệnh cách ly & phòng cách ly — view WEB trong Page tc-ksnk (FEAT-068; UC-52; FR-M14-06, .1, FR-M14-07;
 // BRU-MDR-003; A-146). R01/R11: tạo lệnh (điền sẵn từ chủng đa kháng ?isolate=), danh sách đang cách ly mọi khoa, kết
 // thúc (bắt buộc lý do), hủy nhập nhầm; R13: chỉ phòng cách ly và tỷ lệ khoa có phòng đạt. Mã BN chỉ dạng che. Lỗi
@@ -207,12 +207,12 @@ const TcKsnkScr60 = {
 					: `<span class="tc-ksnk-badge is-warn">${esc(__("Bedside"))}</span>`;
 				const closable = !r.is_mdro || data.mdro_close;
 				const close = closable
-					? `<button type="button" class="btn btn-link" data-action="close" data-name="${esc(
+					? `<button type="button" class="btn btn-default btn-sm" data-action="close" data-name="${esc(
 							r.name
 					  )}">${esc(__("End isolation"))}</button>`
 					: `<span class="tc-ksnk-note">${esc(__("Infection control closes"))}</span>`;
 				const cancel = data.can_cancel
-					? ` <button type="button" class="btn btn-link" data-action="cancel" data-name="${esc(
+					? ` <button type="button" class="btn btn-default btn-sm" data-action="cancel" data-name="${esc(
 							r.name
 					  )}">${esc(__("Cancel entry"))}</button>`
 					: "";
@@ -224,18 +224,28 @@ const TcKsnkScr60 = {
 					<td>${room}</td>
 					<td>${esc(self.date(r.start_at))}</td>
 					<td class="is-num">${esc(r.days)}</td>
-					<td>${close}${cancel}</td>
+					<td>${close}${cancel} ${TcKsnk.recordActions(
+					{
+						doctype: TC_ISO_CONTEXT,
+						name: r.name,
+						docstatus: r.docstatus === undefined ? 1 : r.docstatus,
+						can_write: !!data.can_write,
+					},
+					false
+				)}</td>
 				</tr>`;
 			})
 			.join("");
-		const table = rows.length
-			? `<table class="tc-ksnk-table"><thead><tr>
+		// khung bảng luôn hiện (ảnh SCR-60); chưa có lệnh thì một dòng trạng thái
+		const emptyRow = `<tr><td colspan="8" class="tc-ksnk-state">${esc(
+			__("No patient in isolation.")
+		)}</td></tr>`;
+		const table = `<table class="tc-ksnk-table"><thead><tr>
 				<th>${esc(__("Isolation order no."))}</th><th>${esc(__("Patient Code"))}</th><th>${esc(
-					__("Department")
-			  )}</th>
+			__("Department")
+		)}</th>
 				<th>${esc(__("Precaution"))}</th><th>${esc(__("Room"))}</th><th>${esc(__("From"))}</th>
-				<th>${esc(__("Days"))}</th><th></th></tr></thead><tbody>${body}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(__("No patient in isolation."))}</p>`;
+				<th>${esc(__("Days"))}</th><th></th></tr></thead><tbody>${body || emptyRow}</tbody></table>`;
 		return `<section class="tc-ksnk-card" data-region="orders">
 			<h3>${esc(__("In isolation"))} <span class="tc-ksnk-badge is-warn">${esc(
 			__("{0} patients", [rows.length])
@@ -257,7 +267,9 @@ const TcKsnkScr60 = {
 		}"><span>${esc(
 			__("Clinical departments with at least 1 isolation room meeting the standard")
 		)}</span>
-			<strong>${esc(cov.covered)}/${esc(cov.total)}</strong><small>${esc(rate)}</small></div></div>`;
+			<strong>${esc(cov.total === undefined ? "—" : `${cov.covered}/${cov.total}`)}</strong><small>${esc(
+			rate
+		)}</small></div></div>`;
 		const condition = (room) =>
 			room.meets_standard
 				? `<span class="tc-ksnk-badge is-pass">${esc(__("Meets standard"))}</span>`
@@ -310,7 +322,13 @@ const TcKsnkScr60 = {
 			__("Own Hand-Wash Sink")
 		)}</th>
 				<th>${esc(__("Anteroom"))}</th><th>${esc(__("Room status"))}</th><th>${esc(__("Condition"))}</th>
-			</tr></thead><tbody>${roomRows}${missingRows}</tbody></table>
+			</tr></thead><tbody>${
+				roomRows || missingRows
+					? roomRows + missingRows
+					: `<tr><td colspan="9" class="tc-ksnk-state">${esc(
+							__("No isolation room yet.")
+					  )}</td></tr>`
+			}</tbody></table>
 			<p class="tc-ksnk-note">${esc(
 				__(
 					"Whether a room meets the standard is set by the head of infection control against the hospital criteria."
