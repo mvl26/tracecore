@@ -99,9 +99,11 @@ const TcKsnkScr54 = {
 			)}</a>`,
 		].join(" ");
 		return (
-			`<div class="tc-ksnk-filters"><label>${esc(__("Period"))}` +
-			`<select class="form-control" data-input="quarter">${options}</select></label>` +
-			`<div class="tc-ksnk-actions">${buttons}</div></div>` +
+			`<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters"><label>${esc(
+				__("Period")
+			)}` +
+			`<select class="form-control" data-input="quarter">${options}</select></label></div>` +
+			`<div class="tc-ksnk-actions tc-ksnk-headactions">${buttons}</div></div>` +
 			`<div data-region="import"></div><div data-region="manual"></div><div data-region="message"></div>`
 		);
 	},
@@ -156,9 +158,11 @@ const TcKsnkScr54 = {
 			: "";
 		const table = body
 			? `<table class="tc-ksnk-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
-			: `<div class="tc-ksnk-state is-empty">${esc(
+			: `<table class="tc-ksnk-table"><thead>${head}</thead><tbody><tr><td colspan="${
+					TC_CHEM_TYPES.length + 3
+			  }">${esc(
 					__("No infection control chemical recorded in this quarter.")
-			  )}</div>`;
+			  )}</td></tr></tbody></table>`;
 		return (
 			`<section class="tc-ksnk-card"><h3>${esc(__("IC chemicals by department"))} ` +
 			`<code class="tc-ksnk-tag">IC Chemical Consumption · HC-</code></h3>${table}` +
@@ -278,25 +282,27 @@ const TcKsnkScr54 = {
 				);
 			})
 			.join("");
+		const head =
+			`<thead><tr>` +
+			[
+				__("Vendor"),
+				__("Service"),
+				__("License No"),
+				__("License Expiry"),
+				__("Contract"),
+				__("Latest vendor audit"),
+				__("Status"),
+			]
+				.map((label) => `<th scope="col">${esc(label)}</th>`)
+				.join("") +
+			`</tr></thead>`;
 		const table = rows
-			? `<table class="tc-ksnk-table"><thead><tr>` +
-			  [
-					__("Vendor"),
-					__("Service"),
-					__("License No"),
-					__("License Expiry"),
-					__("Contract"),
-					__("Latest vendor audit"),
-					__("Status"),
-			  ]
-					.map((label) => `<th scope="col">${esc(label)}</th>`)
-					.join("") +
-			  `</tr></thead><tbody>${rows}</tbody></table>`
-			: `<div class="tc-ksnk-state is-empty">${esc(
+			? `<table class="tc-ksnk-table">${head}<tbody>${rows}</tbody></table>`
+			: `<table class="tc-ksnk-table">${head}<tbody><tr><td colspan="7">${esc(
 					__(
 						"No outsourced vendor yet. Set the outsourced service on the supplier form to follow its license."
 					)
-			  )}</div>`;
+			  )}</td></tr></tbody></table>`;
 		const expired = list.filter((v) => v.state === "Expired");
 		const alert = expired.length
 			? `<div class="tc-ksnk-alert is-warn" role="status"><strong>${esc(

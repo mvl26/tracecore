@@ -40,7 +40,7 @@ const TcKsnkScr64 = {
 		const cls =
 			{
 				New: "is-fail",
-				"Following Up": "is-neutral",
+				"Following Up": "is-info",
 				Completed: "is-pass",
 				Cancelled: "is-neutral",
 			}[status] || "is-neutral";
@@ -83,9 +83,6 @@ const TcKsnkScr64 = {
 
 	recordsHtml(rows, esc) {
 		const self = TcKsnkScr64;
-		if (!rows.length)
-			return `<section class="tc-ksnk-card"><h3>${esc(__("Exposure records"))}</h3>
-				<p class="tc-ksnk-state">${esc(__("No exposure records yet."))}</p></section>`;
 		const body = rows
 			.map(
 				(r) => `<tr>
@@ -106,13 +103,20 @@ const TcKsnkScr64 = {
 			</tr>`
 			)
 			.join("");
-		return `<section class="tc-ksnk-card"><h3>${esc(__("Exposure records"))}</h3>
+		const rowsHtml = body
+			? body
+			: `<tr class="is-empty"><td colspan="8" class="tc-ksnk-note">${esc(
+					__("No exposure records yet.")
+			  )}</td></tr>`;
+		return `<section class="tc-ksnk-card"><h3>${esc(
+			__("Exposure records")
+		)} <span class="tc-ksnk-tag">Occupational Exposure · PN-</span></h3>
 			<table class="tc-ksnk-table"><thead><tr>
 				<th>${esc(__("Code"))}</th><th>${esc(__("Employee"))}</th><th>${esc(__("Department"))}</th>
 				<th>${esc(__("Type"))}</th><th>${esc(__("Reported Via"))}</th>
 				<th>${esc(__("Exposure to report"))}</th><th>${esc(__("Exposure to prophylaxis"))}</th>
 				<th>${esc(__("Status"))}</th>
-			</tr></thead><tbody>${body}</tbody></table>
+			</tr></thead><tbody>${rowsHtml}</tbody></table>
 			<div class="tc-ksnk-alert is-info" role="note">${esc(
 				__(
 					"Only the head of infection control, the supervisor and the staff member can see a record; reports show totals without names. There is no field for the staff member's test results or diagnosis."
@@ -123,9 +127,16 @@ const TcKsnkScr64 = {
 	detailHtml(d, esc) {
 		const self = TcKsnkScr64;
 		if (!d)
-			return `<section class="tc-ksnk-card"><p class="tc-ksnk-state">${esc(
+			return `<section class="tc-ksnk-card"><h3>${esc(
+				__("Follow-up schedule")
+			)} <span class="tc-ksnk-tag">Exposure Follow-up Template</span></h3>
+				<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Step"))}</th><th>${esc(
+				__("Due")
+			)}</th><th>${esc(
+				__("Done")
+			)}</th></tr></thead><tbody><tr class="is-empty"><td colspan="3" class="tc-ksnk-note">${esc(
 				__("Choose a record to see its follow-up schedule.")
-			)}</p></section>`;
+			)}</td></tr></tbody></table></section>`;
 		const open = d.status === "New" || d.status === "Following Up";
 		const steps = (d.followups || [])
 			.map((row) => {
@@ -210,7 +221,10 @@ const TcKsnkScr64 = {
 		return `<section class="tc-ksnk-card" data-name="${esc(d.name)}">
 			<h3><span class="tc-ksnk-code">${esc(d.name)}</span> — ${esc(
 			__("follow-up schedule")
-		)} ${self.statusBadge(d.status, esc)}</h3>
+		)} <span class="tc-ksnk-tag">Exposure Follow-up Template</span> ${self.statusBadge(
+			d.status,
+			esc
+		)}</h3>
 			<div data-region="detail-alert"></div>
 			${TcKsnk.recordActions({
 				doctype: TC_EXP_CONTEXT,
@@ -299,7 +313,9 @@ const TcKsnkScr64 = {
 					)
 					.join("")
 			: `<tr><td colspan="7">${esc(__("No vaccinations recorded yet."))}</td></tr>`;
-		return `<section class="tc-ksnk-card"><h3>${esc(__("Staff vaccination"))}</h3>
+		return `<section class="tc-ksnk-card"><h3>${esc(
+			__("Staff vaccination")
+		)} <span class="tc-ksnk-tag">Staff Immunization · TCH-</span></h3>
 			<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Employee"))}</th><th>${esc(
 			__("Department")
 		)}</th><th>${esc(__("Vaccine"))}</th><th>${esc(__("Dose"))}</th><th>${esc(
@@ -350,7 +366,6 @@ const TcKsnkScr64 = {
 		return (
 			self.kpisHtml(data.kpis, esc) +
 			self.recordsHtml(data.records || [], esc) +
-			self.createActions(data, TC_EXP_CONTEXT, __("Record exposure")) +
 			`<div class="tc-ksnk-cols"><div data-region="detail">${self.detailHtml(
 				detail,
 				esc
@@ -359,6 +374,7 @@ const TcKsnkScr64 = {
 				data.pep_alerts,
 				esc
 			)}</div></div>` +
+			self.createActions(data, TC_EXP_CONTEXT, __("Record exposure")) +
 			self.actionsHtml(esc)
 		);
 	},

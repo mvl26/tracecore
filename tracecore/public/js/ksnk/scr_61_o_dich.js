@@ -217,15 +217,18 @@ const TcKsnkScr61 = {
 				<td>${self.statusBadge(r.status, esc)}</td></tr>`
 			)
 			.join("");
-		const table = rows.length
-			? `<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Code"))}</th><th>${esc(
-					__("Title")
-			  )}</th><th>${esc(__("Organism or Disease"))}</th><th>${esc(
-					__("Department")
-			  )}</th><th>${esc(__("Start Date"))}</th><th>${esc(__("Cases"))}</th><th>${esc(
-					__("Days")
-			  )}</th><th>${esc(__("Status"))}</th></tr></thead><tbody>${body}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(__("No outbreak investigation yet."))}</p>`;
+		const table = `<table class="tc-ksnk-table"><thead><tr><th>${esc(
+			__("Code")
+		)}</th><th>${esc(__("Title"))}</th><th>${esc(__("Organism or Disease"))}</th><th>${esc(
+			__("Department")
+		)}</th><th>${esc(__("Start Date"))}</th><th>${esc(__("Cases"))}</th><th>${esc(
+			__("Days")
+		)}</th><th>${esc(__("Status"))}</th></tr></thead><tbody>${
+			body ||
+			`<tr><td colspan="8" class="tc-ksnk-state">${esc(
+				__("No outbreak investigation yet.")
+			)}</td></tr>`
+		}</tbody></table>`;
 		const add = data.can_own
 			? `<div class="tc-ksnk-actions"><button type="button" class="btn btn-default" data-action="new">${esc(
 					__("New outbreak investigation")
@@ -366,15 +369,14 @@ const TcKsnkScr61 = {
 				}</td></tr>`
 			)
 			.join("");
-		const table = rows
-			? `<table class="tc-ksnk-table"><thead><tr><th>${esc(
-					__("Case / isolate")
-			  )}</th><th>${esc(__("Patient Code"))}</th><th>${esc(__("Onset"))}</th><th>${esc(
-					__("Status")
-			  )}</th><th>${esc(
-					__("Organism or Infection")
-			  )}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(__("No case linked yet."))}</p>`;
+		const table = `<table class="tc-ksnk-table"><thead><tr><th>${esc(
+			__("Case / isolate")
+		)}</th><th>${esc(__("Patient Code"))}</th><th>${esc(__("Onset"))}</th><th>${esc(
+			__("Status")
+		)}</th><th>${esc(__("Organism or Infection"))}</th><th></th></tr></thead><tbody>${
+			rows ||
+			`<tr><td colspan="6" class="tc-ksnk-state">${esc(__("No case linked yet."))}</td></tr>`
+		}</tbody></table>`;
 		const buttons =
 			active && data.can_work
 				? `<div class="tc-ksnk-actions">
@@ -404,13 +406,16 @@ const TcKsnkScr61 = {
 				)}</a></td></tr>`
 			)
 			.join("");
-		const table = rows
-			? `<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Action"))}</th><th>${esc(
-					__("Responsible")
-			  )}</th><th>${esc(__("Due"))}</th><th>${esc(__("Status"))}</th><th>${esc(
-					__("Incident")
-			  )}</th></tr></thead><tbody>${rows}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(__("No control action yet."))}</p>`;
+		const table = `<table class="tc-ksnk-table"><thead><tr><th>${esc(
+			__("Action")
+		)}</th><th>${esc(__("Responsible"))}</th><th>${esc(__("Due"))}</th><th>${esc(
+			__("Status")
+		)}</th><th>${esc(__("Incident"))}</th></tr></thead><tbody>${
+			rows ||
+			`<tr><td colspan="5" class="tc-ksnk-state">${esc(
+				__("No control action yet.")
+			)}</td></tr>`
+		}</tbody></table>`;
 		const incidents = (d.incidents || [])
 			.map(
 				(i) =>
@@ -465,6 +470,16 @@ const TcKsnkScr61 = {
 		const active = ["Investigating", "Controlled"].includes(d.status);
 		const ended = d.status === "Ended";
 		const footer = `<div class="tc-ksnk-actions" data-region="footer">
+			${TcKsnk.recordActions(
+				{
+					doctype: "Outbreak Investigation",
+					name: d.name,
+					docstatus: d.docstatus === undefined ? 1 : d.docstatus,
+					can_write: !!data.can_edit_outbreak,
+					can_print: false, // đã có "Xuất mẫu báo cáo ổ dịch" bên dưới
+				},
+				false
+			)}
 			${
 				data.can_own && d.status === "Investigating"
 					? `<button type="button" class="btn btn-default" data-action="controlled">${esc(
@@ -479,16 +494,6 @@ const TcKsnkScr61 = {
 					  )}</button>`
 					: ""
 			}
-			${TcKsnk.recordActions(
-				{
-					doctype: "Outbreak Investigation",
-					name: d.name,
-					docstatus: d.docstatus === undefined ? 1 : d.docstatus,
-					can_write: !!data.can_edit_outbreak,
-					can_print: false, // đã có "Xuất mẫu báo cáo ổ dịch" bên dưới
-				},
-				false
-			)}
 			<a class="btn btn-default" target="_blank" rel="noopener" href="${esc(
 				data.print_outbreak + encodeURIComponent(d.name)
 			)}">${esc(__("Export outbreak report form"))}</a>
@@ -603,15 +608,15 @@ const TcKsnkScr61 = {
 				)}</td></tr>`
 			)
 			.join("");
-		const table = rows
-			? `<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Code"))}</th><th>${esc(
-					__("Patient Code")
-			  )}</th><th>${esc(__("Disease"))}</th><th>${esc(__("Group"))}</th><th>${esc(
-					__("Department")
-			  )}</th><th>${esc(__("Diagnosed On"))}</th><th>${esc(__("Due By"))}</th><th>${esc(
-					__("Status")
-			  )}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
-			: `<p class="tc-ksnk-state">${esc(__("No report."))}</p>`;
+		const table = `<table class="tc-ksnk-table"><thead><tr><th>${esc(
+			__("Code")
+		)}</th><th>${esc(__("Patient Code"))}</th><th>${esc(__("Disease"))}</th><th>${esc(
+			__("Group")
+		)}</th><th>${esc(__("Department"))}</th><th>${esc(__("Diagnosed On"))}</th><th>${esc(
+			__("Due By")
+		)}</th><th>${esc(__("Status"))}</th><th></th></tr></thead><tbody>${
+			rows || `<tr><td colspan="9" class="tc-ksnk-state">${esc(__("No report."))}</td></tr>`
+		}</tbody></table>`;
 		const diseases = (data.diseases || [])
 			.map(
 				(row) =>

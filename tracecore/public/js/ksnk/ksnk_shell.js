@@ -98,31 +98,51 @@ const TcKsnk = {
 
 	railHtml(nav, active) {
 		const esc = TcKsnk.esc;
-		return ((nav && nav.groups) || [])
-			.filter((group) => group.items.length)
-			.map((group) => {
-				const items = group.items
-					.map((item) => {
-						const on = item.slug === active;
-						const badge = item.badge
-							? `<span class="tc-ksnk-count" title="${esc(
-									__("{0} pending", [item.badge])
-							  )}">${esc(item.badge)}</span>`
-							: "";
-						return (
-							`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
-								on ? " is-active" : ""
-							}"` +
-							` data-slug="${esc(item.slug)}"${on ? ' aria-current="page"' : ""}>` +
-							`<span>${esc(item.label)}</span>${badge}</a>`
-						);
-					})
-					.join("");
-				return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
-					group.label
-				)}</div>${items}</div>`;
-			})
-			.join("");
+		return (
+			((nav && nav.groups) || [])
+				.filter((group) => group.items.length)
+				.map((group) => {
+					const items = group.items
+						.map((item) => {
+							const on = item.slug === active;
+							const badge = item.badge
+								? `<span class="tc-ksnk-count" title="${esc(
+										__("{0} pending", [item.badge])
+								  )}">${esc(item.badge)}</span>`
+								: "";
+							return (
+								`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
+									on ? " is-active" : ""
+								}"` +
+								` data-slug="${esc(item.slug)}"${
+									on ? ' aria-current="page"' : ""
+								}>` +
+								`<span>${esc(item.label)}</span>${badge}</a>`
+							);
+						})
+						.join("");
+					return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
+						group.label
+					)}</div>${items}</div>`;
+				})
+				.join("") + TcKsnk.otherSurfacesHtml(nav)
+		);
+	},
+
+	// Nhóm "Bề mặt khác" (ảnh SCR-66): lối sang Cổng khoa (DEPT) và PDA; ẩn với vai trò chỉ đọc. Quyền thật ở từng trang.
+	otherSurfacesHtml(nav) {
+		const esc = TcKsnk.esc;
+		if (!nav || nav.read_only || !(nav.groups || []).length) return "";
+		const link = (href, label) =>
+			`<a href="${esc(href)}" class="tc-ksnk-nav-item"><span>${esc(label)}</span></a>`;
+		return (
+			`<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
+				__("Other surfaces", null, "IC Rail")
+			)}</div>` +
+			link("/ksnk-khoa/chi-so", __("Department portal (DEPT)", null, "IC Rail")) +
+			link("/app/station", __("Supervision PDA", null, "IC Rail")) +
+			"</div>"
+		);
 	},
 
 	stateHtml(kind, message) {

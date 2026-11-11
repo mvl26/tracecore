@@ -252,7 +252,7 @@ const TcKsnkScr65 = {
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Food handler health checks")
-		)} <span class="tc-ksnk-code">Food Handler Health Check · SKTP-</span></h3>
+		)} <span class="tc-ksnk-tag">Food Handler Health Check · SKTP-</span></h3>
 			<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Food Handler"))}</th><th>${esc(
 			__("Unit")
 		)}</th><th>${esc(__("Last check"))}</th><th>${esc(__("Next Check Due"))}</th><th>${esc(
@@ -293,7 +293,7 @@ const TcKsnkScr65 = {
 			: `<tr><td colspan="6">${esc(__("No education sessions recorded yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Infection control education sessions")
-		)} <span class="tc-ksnk-code">IC Education Session · GDS-</span></h3>
+		)} <span class="tc-ksnk-tag">IC Education Session · GDS-</span></h3>
 			<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Date"))}</th><th>${esc(
 			__("Department")
 		)}</th><th>${esc(__("Audience"))}</th><th>${esc(
@@ -370,33 +370,27 @@ const TcKsnkScr65 = {
 			)
 			.join("");
 		return `<section class="tc-ksnk-card"><h3>${esc(__("Kitchen and catering audits"))}</h3>
-			${
-				audits
-					? `<table class="tc-ksnk-table"><thead><tr><th>${esc(
-							__("Unit")
-					  )}</th><th>${esc(__("Last audit"))}</th><th>${esc(
-							__("Result")
-					  )}</th><th class="is-num">${esc(
-							__("Passed (90 days)")
-					  )}</th></tr></thead><tbody>${audits}</tbody></table>`
-					: `<p class="tc-ksnk-state">${esc(
-							__("No food safety audit in the last 90 days.")
-					  )}</p>`
-			}
+				<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Unit"))}</th><th>${esc(
+			__("Last audit")
+		)}</th><th>${esc(__("Result"))}</th><th class="is-num">${esc(
+			__("Passed (90 days)")
+		)}</th></tr></thead><tbody>${
+			audits ||
+			`<tr class="is-empty"><td colspan="4" class="tc-ksnk-note">${esc(
+				__("No food safety audit in the last 90 days.")
+			)}</td></tr>`
+		}</tbody></table>
 			<h3>${esc(__("Food samples"))}</h3>
-			${
-				samples
-					? `<table class="tc-ksnk-table"><thead><tr><th>${esc(
-							__("Code")
-					  )}</th><th>${esc(__("Zone"))}</th><th>${esc(
-							__("Sampled On")
-					  )}</th><th class="is-num">${esc(__("Result Value"))}</th><th>${esc(
-							__("Result")
-					  )}</th><th>${esc(
-							__("Action")
-					  )}</th></tr></thead><tbody>${samples}</tbody></table>`
-					: `<p class="tc-ksnk-state">${esc(__("No food samples yet."))}</p>`
-			}
+				<table class="tc-ksnk-table"><thead><tr><th>${esc(__("Code"))}</th><th>${esc(
+			__("Zone")
+		)}</th><th>${esc(__("Sampled On"))}</th><th class="is-num">${esc(
+			__("Result Value")
+		)}</th><th>${esc(__("Result"))}</th><th>${esc(__("Action"))}</th></tr></thead><tbody>${
+			samples ||
+			`<tr class="is-empty"><td colspan="6" class="tc-ksnk-note">${esc(
+				__("No food samples yet.")
+			)}</td></tr>`
+		}</tbody></table>
 			<div class="tc-ksnk-alert is-info" role="note">${esc(
 				__(
 					"Kitchen audits use the infection control audit template of type Food Safety; food samples are handled like environmental samples."
@@ -483,10 +477,11 @@ const TcKsnkScr65 = {
 			self.kpisHtml(data, esc) +
 			self.eventsHtml(data, esc) +
 			self.createActions(data, TC_FS_EVENT, __("Record food poisoning event")) +
-			`<div class="tc-ksnk-cols"><div>${self.handlersHtml(data, esc)}${self.foodHtml(
+			`<div class="tc-ksnk-cols"><div>${self.handlersHtml(
 				data,
 				esc
 			)}</div><div>${self.sessionsHtml(data, esc)}</div></div>` +
+			self.foodHtml(data, esc) +
 			self.materialsHtml(data, esc)
 		);
 	},

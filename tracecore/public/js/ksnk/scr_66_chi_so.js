@@ -67,7 +67,8 @@ const TcKsnkScr66 = {
 			return { cls: "is-neutral", label: __("Not calculated (denominator 0)") };
 		if (status === "Insufficient sample")
 			return { cls: "is-neutral", label: __("Insufficient sample") };
-		if (status === "No data") return { cls: "is-neutral", label: __("No data") };
+		if (status === "No data")
+			return { cls: "is-neutral", label: __("No data", null, "IC Indicator") };
 		return { cls: "", label: "—" };
 	},
 
@@ -141,7 +142,10 @@ const TcKsnkScr66 = {
 		if (!rows.length) return "";
 		const tiles = rows
 			.map((row) => {
-				const badge = self.statusBadge(row.status, row.target_direction);
+				const badge = self.statusBadge(
+					row.latest ? row.status : "No data",
+					row.target_direction
+				);
 				const sample =
 					row.latest && row.latest.sample_size ? row.latest.sample_size : null;
 				const facts = [__("Target {0}", [self.targetText(row)])];
@@ -188,7 +192,7 @@ const TcKsnkScr66 = {
 					`<td class="is-num">${esc(sample)}</td>` +
 					`<td>${self.sparkline(row, data.periods, esc)}</td>` +
 					`<td>${self.badgeHtml(
-						row.status,
+						row.latest ? row.status : "No data",
 						row.target_direction,
 						esc
 					)}${provisional}</td></tr>`
@@ -377,7 +381,9 @@ const TcKsnkScr66 = {
 			  )}</p>`;
 		const state =
 			sa.docstatus === 1
-				? ` <span class="tc-ksnk-badge is-pass">${esc(__("Submitted"))}</span>`
+				? ` <span class="tc-ksnk-badge is-pass">${esc(
+						__("Submitted", null, "IC Self Assessment")
+				  )}</span>`
 				: sa.name
 				? ` <span class="tc-ksnk-badge is-neutral">${esc(__("Draft"))}</span>`
 				: "";
@@ -509,8 +515,22 @@ const TcKsnkScr66 = {
 			.map(
 				(y) =>
 					`<option value="${y}"${y === data.year ? " selected" : ""}>${y}${
-						y === data.year && data.plan ? ` — ${esc(data.plan.name)}` : ""
+						y === data.year && data.plan
+							? ` — ${esc(data.plan.name)} (${esc(__("approved", null, "IC Plan"))})`
+							: ""
 					}</option>`
+			)
+			.join("");
+		const periodSet = new Set([].concat(data.periods || [], data.table_periods || []));
+		if (data.period) periodSet.add(data.period);
+		const periodOptions = Array.from(periodSet)
+			.sort()
+			.reverse()
+			.map(
+				(p) =>
+					`<option value="${esc(p)}"${p === data.period ? " selected" : ""}>${esc(
+						__("Month {0}", [self.periodLabel(p)])
+					)}</option>`
 			)
 			.join("");
 		const departments = ctx.departments
@@ -528,6 +548,7 @@ const TcKsnkScr66 = {
 			: "";
 		const report = data.council_report;
 		const reportForPeriod = report && report.period === data.period;
+		const isManager = frappe.user.has_role("TC R01");
 		const actions = [
 			ctx.readOnly
 				? ""
@@ -543,33 +564,34 @@ const TcKsnkScr66 = {
 				  )}${
 						report.report_status === "Official" ? "" : ` · ${esc(__("Provisional"))}`
 				  }</a>`
-				: `<span class="tc-ksnk-note">${esc(
+				: "",
+			isManager && data.period
+				? `<button type="button" class="btn ${
+						reportForPeriod && report.pdf ? "btn-default" : "btn-primary"
+				  }" data-action="council">${esc(__("Generate committee report"))}</button>`
+				: "",
+			!isManager && !(reportForPeriod && report.pdf)
+				? `<span class="tc-ksnk-note">${esc(
 						__("No committee report for this period yet.")
-				  )}</span>`,
-			frappe.user.has_role("TC R01") && data.period
-				? `<button type="button" class="btn btn-default" data-action="council">${esc(
-						__("Generate committee report")
-				  )}</button>`
+				  )}</span>`
 				: "",
 		].join("");
 		return (
-			`<div class="tc-ksnk-filters tc-ksnk-actions">` +
+			`<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters">` +
 			`<label>${esc(
 				__("Plan year")
 			)}<select class="form-control" data-filter="year">${yearOptions}</select></label>` +
 			`<label>${esc(
 				__("Period")
-			)}<input type="month" class="form-control" data-filter="period" value="${esc(
-				data.period || ""
-			)}"></label>` +
+			)}<select class="form-control" data-filter="period">${periodOptions}</select></label>` +
 			`<label>${esc(
 				__("Department")
 			)}<select class="form-control" data-filter="department">` +
 			`<option value="">${esc(
-				__("Whole hospital")
-			)}</option>${departments}</select></label>` +
-			`${periodBadge}</div>` +
-			`<div class="tc-ksnk-actions">${actions}</div><div data-region="actions-alert"></div>` +
+				__("Whole hospital ({0} departments)", [ctx.departments.length])
+			)}</option>${departments}</select></label>${periodBadge}</div>` +
+			`<div class="tc-ksnk-actions tc-ksnk-headactions">${actions}</div></div>` +
+			`<div data-region="actions-alert"></div>` +
 			(data.plan
 				? ""
 				: `<div class="tc-ksnk-alert is-warn" role="status">${esc(
@@ -584,7 +606,7 @@ const TcKsnkScr66 = {
 	pageHtml(data, sa, ctx, dz) {
 		const self = TcKsnkScr66;
 		const esc = ctx.esc;
-		const hasValues = data.periods.length && data.rows.length;
+		const hasValues = data.rows.length;
 		const board = hasValues
 			? self.kpisHtml(data, esc) +
 			  `<section class="tc-ksnk-card"><h3>${esc(

@@ -235,3 +235,10 @@
 .tc-ksnk .btn.btn-default.btn-xs { background: var(--tc-card); color: var(--tc-text); border: var(--tc-bw-hair) solid var(--tc-border-input); border-radius: var(--tc-r-sm); box-shadow: none; }
 .tc-ksnk .btn.btn-default:hover,
 .tc-ksnk .btn.btn-default:focus { border-color: var(--tc-primary); color: var(--tc-primary); }
+/* Ảnh SCR-66: ô lọc có viền, bộ lọc bên trái và ba nút bên phải cùng một hàng */
+.tc-ksnk .form-control { background: var(--tc-card); border: var(--tc-bw-hair) solid var(--tc-border-input); border-radius: var(--tc-r-sm); color: var(--tc-text); box-shadow: none; }
+.tc-ksnk .tc-ksnk-headrow { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--tc-sp-3); margin-bottom: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-headrow .tc-ksnk-filters { margin-bottom: 0; align-items: flex-end; }
+.tc-ksnk .tc-ksnk-headactions { margin: 0; justify-content: flex-end; }
+/* Khung bảng luôn hiện: dòng trạng thái rỗng nằm trong bảng, căn trái */
+.tc-ksnk .tc-ksnk-table tr.is-empty td, .tc-ksnk .tc-ksnk-table td.tc-ksnk-state { color: var(--tc-text-2); text-align: left; padding: var(--tc-sp-3); }

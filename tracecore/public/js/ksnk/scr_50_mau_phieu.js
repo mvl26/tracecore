@@ -148,7 +148,7 @@ const TcKsnkScr50 = {
 				const critical = `<label><input type="checkbox" data-item="${index}" data-item-field="is_critical"${
 					item.is_critical ? " checked" : ""
 				}${off ? " disabled" : ""}> ${esc(
-					item.is_critical ? __("Critical") : __("No")
+					item.is_critical ? __("Yes") : __("No")
 				)}</label>`;
 				return (
 					`<tr><td>${
@@ -173,7 +173,7 @@ const TcKsnkScr50 = {
 			.join("");
 		return (
 			`<div class="tc-ksnk-head"><h3>${esc(detail.title || __("New template"))}</h3>` +
-			(detail.name ? `<code class="tc-ksnk-code">${esc(detail.name)}</code>` : "") +
+			(detail.name ? `<code class="tc-ksnk-tag">${esc(detail.name)}</code>` : "") +
 			` <span class="tc-ksnk-badge ${badge.cls}">${esc(badge.label)}</span></div>${locked}` +
 			`<div class="tc-ksnk-filters">` +
 			input("template_code", __("Template Code")) +
@@ -230,7 +230,11 @@ const TcKsnkScr50 = {
 						row.target_count
 					)}</td>` +
 					`<td>${esc(row.assignee_name || row.assignee)}</td>` +
-					`<td>${esc(TcKsnkScr50.coverageText(row))}</td></tr>`
+					`<td><span class="tc-ksnk-progress" role="progressbar" aria-valuenow="${esc(
+						row.coverage_pct || 0
+					)}" aria-valuemin="0" aria-valuemax="100"><span style="width: ${esc(
+						Math.min(100, Number(row.coverage_pct) || 0)
+					)}%"></span></span> ${esc(TcKsnkScr50.coverageText(row))}</td></tr>`
 			)
 			.join("");
 		if (!rows)
@@ -398,7 +402,7 @@ const TcKsnkScr50 = {
 			`<div class="tc-ksnk-grid">` +
 			`<section class="tc-ksnk-card" data-region="list"><h3>${esc(
 				__("Templates", null, "Audit Template")
-			)} <code class="tc-ksnk-code">Audit Template</code></h3>` +
+			)} <code class="tc-ksnk-tag">Audit Template</code></h3>` +
 			`${
 				(data.templates || []).length
 					? self.listHtml(data, detail, esc)
@@ -421,7 +425,7 @@ const TcKsnkScr50 = {
 			`<section class="tc-ksnk-card"><h3>${esc(
 				__("Audit schedule for period {0}", [period])
 			)} ` +
-			`<code class="tc-ksnk-code">Audit Schedule · LGS-</code></h3>${self.schedulesHtml(
+			`<code class="tc-ksnk-tag">Audit Schedule · LGS-</code></h3>${self.schedulesHtml(
 				schedules,
 				esc
 			)}</section>` +

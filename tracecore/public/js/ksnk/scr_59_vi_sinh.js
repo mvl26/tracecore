@@ -64,12 +64,12 @@ const TcKsnkScr59 = {
 			[__("Valid"), check.valid, ""],
 			[
 				__("Duplicates (lab sample ID, organism) — skipped"),
-				(check.existing || []).length,
+				check.existing ? check.existing.length : null,
 				"",
 			],
 			[
 				__("Errors"),
-				(check.issues || []).length,
+				check.issues ? check.issues.length : null,
 				(check.issues || []).length ? " is-fail" : "",
 			],
 		];
@@ -79,7 +79,7 @@ const TcKsnkScr59 = {
 				.map(
 					([label, value, cls]) =>
 						`<div class="tc-ksnk-stat${cls}"><span class="tc-ksnk-stat-value">${esc(
-							value
+							value === undefined || value === null ? "—" : value
 						)}</span><span>${esc(label)}</span></div>`
 				)
 				.join("") +
@@ -147,11 +147,12 @@ const TcKsnkScr59 = {
 					__("Create mapping profile")
 			  )}</a></div>`;
 		const stage = state.check ? 2 : state.file_url ? 1 : 0;
+		// khung thống kê luôn hiện (ảnh SCR-59): chưa kiểm file thì các ô hiện "—"
 		const check = state.check
 			? TcKsnkScr59.statsHtml(state.check, esc) +
 			  TcKsnkScr59.warningsHtml(state.check.warnings, esc) +
 			  TcKsnkScr59.issuesHtml(state.check.issues, esc)
-			: "";
+			: TcKsnkScr59.statsHtml({}, esc);
 		const run =
 			state.check && state.check.valid
 				? `<button type="button" class="btn btn-primary" data-action="run">${esc(
@@ -160,7 +161,9 @@ const TcKsnkScr59 = {
 				: "";
 		return (
 			`<section class="tc-ksnk-card"><h3>${esc(__("Import microbiology file"))} ` +
-			`<code class="tc-ksnk-tag">Import Batch</code></h3>` +
+			`<code class="tc-ksnk-tag">Import Batch${
+				state.profile ? ` · ${esc(__("profile {0}", [state.profile], "IC Screen"))}` : ""
+			}</code></h3>` +
 			TcKsnkScr59.stepsHtml(stage, esc) +
 			noProfile +
 			`<div class="tc-ksnk-filters"><label>${esc(__("Mapping profile"))}` +
@@ -224,15 +227,11 @@ const TcKsnkScr59 = {
 	},
 
 	recentHtml(rows, esc) {
-		if (!rows.length) {
-			return (
-				`<section class="tc-ksnk-card"><h3>${esc(__("New isolates this week"))}</h3>` +
-				`<div class="tc-ksnk-state is-empty">${esc(
-					__("No isolate recorded in the last 7 days.")
-				)}</div></section>`
-			);
-		}
-		const body = rows
+		// khung bảng luôn hiện (ảnh SCR-59), chưa có chủng thì một dòng trạng thái
+		const emptyBody = `<tr><td colspan="9" class="tc-ksnk-state is-empty">${esc(
+			__("No isolate recorded in the last 7 days.")
+		)}</td></tr>`;
+		const body = (rows.length ? rows : [])
 			.map(
 				(row) =>
 					`<tr><td><code class="tc-ksnk-code">${esc(row.name)}</code></td>` +
@@ -272,7 +271,7 @@ const TcKsnkScr59 = {
 			]
 				.map((label) => `<th scope="col">${esc(label)}</th>`)
 				.join("") +
-			`</tr></thead><tbody>${body}</tbody></table>` +
+			`</tr></thead><tbody>${body || emptyBody}</tbody></table>` +
 			`<p class="tc-ksnk-note">${esc(
 				__(
 					"Labels come from approved multidrug resistance rules; statistics use only the first isolate of each patient and organism in the quarter."
@@ -320,25 +319,27 @@ const TcKsnkScr59 = {
 					}</td></tr>`
 			)
 			.join("");
-		const table = rows
-			? `<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
-					__("Antibiotic")
-			  )}</th>` +
-			  `<th scope="col" class="is-num">S %</th><th scope="col" class="is-num">I %</th>` +
-			  `<th scope="col" class="is-num">R %</th><th scope="col" class="is-num">${esc(
-					__("Isolates tested")
-			  )}</th>` +
-			  `<th scope="col">${esc(__("Note"))}</th></tr></thead><tbody>${rows}</tbody></table>`
-			: `<div class="tc-ksnk-state is-empty">${esc(
+		const table =
+			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
+				__("Antibiotic")
+			)}</th>` +
+			`<th scope="col" class="is-num">S %</th><th scope="col" class="is-num">I %</th>` +
+			`<th scope="col" class="is-num">R %</th><th scope="col" class="is-num">${esc(
+				__("Isolates tested")
+			)}</th>` +
+			`<th scope="col">${esc(__("Note"))}</th></tr></thead><tbody>${
+				rows ||
+				`<tr><td colspan="6" class="tc-ksnk-state is-empty">${esc(
 					__("No first isolate in this quarter.")
-			  )}</div>`;
+				)}</td></tr>`
+			}</tbody></table>`;
 		const report = `${data.report}?year=${encodeURIComponent(
 			data.year
 		)}&quarter=${encodeURIComponent(data.quarter)}`;
 		return (
-			`<section class="tc-ksnk-card"><h3>${esc(__("Antibiogram"))} <em>${esc(
-				ab.organism_name || ""
-			)}</em> ` +
+			`<section class="tc-ksnk-card"><h3>${esc(__("Antibiogram"))} — <em>${esc(
+				ab.organism_name || "—"
+			)}</em>, ${esc(__("Quarter {0}", [data.quarter || "—"]))}/${esc(data.year || "—")} ` +
 			`<code class="tc-ksnk-tag">${esc(
 				__("n = {0} first isolates", [ab.first_isolates || 0])
 			)}</code></h3>` +

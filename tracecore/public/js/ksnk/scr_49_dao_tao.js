@@ -397,11 +397,17 @@ const TcKsnkScr49 = {
 					}>${esc(d.department_name || d.name)}</option>`
 			)
 			.join("");
+		const years = [data.year - 1, data.year, data.year + 1]
+			.map(
+				(y) =>
+					`<option value="${esc(y)}"${y === data.year ? " selected" : ""}>${esc(
+						y
+					)}</option>`
+			)
+			.join("");
 		return (
 			`<div class="tc-ksnk-filters"><label>${esc(__("Year"))}` +
-			`<input type="number" min="2000" max="2100" class="form-control" data-filter="year" value="${esc(
-				data.year
-			)}"></label>` +
+			`<select class="form-control" data-filter="year">${years}</select></label>` +
 			`<label>${esc(
 				__("Department")
 			)}<select class="form-control" data-filter="department">` +

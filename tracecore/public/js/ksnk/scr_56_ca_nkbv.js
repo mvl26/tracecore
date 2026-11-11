@@ -72,22 +72,20 @@ const TcKsnkScr56 = {
 						},
 						false
 				  );
-		if (!rows.length)
-			return `<section class="tc-ksnk-card"><h3>${esc(__("Cases"))}</h3>
-				<p class="tc-ksnk-state">${esc(__("No HAI cases yet."))}</p>${create}</section>`;
-		const body = rows
-			.map(
-				(r) => `<tr class="tc-ksnk-row${
-					r.name === selected ? " is-selected" : ""
-				}" data-action="open" data-name="${esc(r.name)}" tabindex="0">
+		const body =
+			rows
+				.map(
+					(r) => `<tr class="tc-ksnk-row${
+						r.name === selected ? " is-selected" : ""
+					}" data-action="open" data-name="${esc(r.name)}" tabindex="0">
 				<td class="tc-ksnk-code">${esc(r.name)}</td>
 				<td class="tc-ksnk-code">${esc(r.patient_code_masked || "—")}</td>
 				<td>${esc(r.department_name || r.department || "—")}</td>
 				<td>${esc(r.def_code || "—")}</td>
 				<td>${self.statusBadge(r.status, esc)}</td>
 			</tr>`
-			)
-			.join("");
+				)
+				.join("") || `<tr><td colspan="5">${esc(__("No HAI cases yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Cases")
 		)} <span class="tc-ksnk-tag">HAI Case · CA-</span></h3>
@@ -136,10 +134,18 @@ const TcKsnkScr56 = {
 
 	detailHtml(d, data, esc) {
 		const self = TcKsnkScr56;
-		if (!d)
-			return `<section class="tc-ksnk-card"><p class="tc-ksnk-state">${esc(
-				__("Choose a case to see its record.")
-			)}</p></section>`;
+		if (!d) {
+			const blank = (label) => `<div><dt>${esc(label)}</dt><dd>—</dd></div>`;
+			return `<section class="tc-ksnk-card"><h3>${esc(
+				__("Case record", null, "IC HAI Case")
+			)}</h3>
+				<dl class="tc-ksnk-facts">
+					${blank(__("Patient Code"))}${blank(__("Birth Year · Sex"))}${blank(__("Department"))}
+					${blank(__("Admitted At"))}${blank(__("Onset Date"))}${blank(__("Case Definition (snapshot)"))}
+					${blank(__("Device Episode"))}${blank(__("Related Isolates"))}${blank(__("Outcome"))}
+				</dl>
+				<p class="tc-ksnk-state">${esc(__("Choose a case to see its record."))}</p></section>`;
+		}
 		const episode = d.episode
 			? `<span class="tc-ksnk-code">${esc(d.device_episode)}</span> · ${esc(
 					self.opt(d.episode.device_type)
@@ -257,16 +263,18 @@ const TcKsnkScr56 = {
 						r.month
 				  )}">${esc(__("Lock period"))}</button>`;
 		};
-		const body = rows
-			.map(
-				(r) => `<tr><td class="tc-ksnk-code">${esc(r.name)}</td><td>${self.periodBadge(
-					r.locked,
-					esc
-				)}</td>
+		const body =
+			rows
+				.map(
+					(r) => `<tr><td class="tc-ksnk-code">${esc(r.name)}</td><td>${self.periodBadge(
+						r.locked,
+						esc
+					)}</td>
 				<td>${esc(r.locked_by_name || "—")}</td><td>${esc(r.locked ? self.date(r.locked_on) : "—")}</td>
 				<td>${esc(note(r))}</td><td>${action(r)}</td></tr>`
-			)
-			.join("");
+				)
+				.join("") ||
+			`<tr><td colspan="6">${esc(__("No reporting period yet."))}</td></tr>`;
 		return `<section class="tc-ksnk-card"><h3>${esc(
 			__("Reporting periods")
 		)} <span class="tc-ksnk-tag">IC Reporting Period · KY-</span></h3>

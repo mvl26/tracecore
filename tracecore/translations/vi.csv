@@ -11577,3 +11577,18 @@ Record vaccination,Ghi tiêm chủng,
 Record exposure,Ghi phơi nhiễm,
 Record food poisoning event,Ghi sự cố ngộ độc thực phẩm,
 New limit,Ngưỡng mới,
+Month {0},Tháng {0},
+No data,Chưa đủ dữ liệu,IC Indicator
+approved,đã duyệt
+Submitted,Đã ghi sổ,IC Self Assessment
+Other surfaces,Bề mặt khác
+Department portal (DEPT),Cổng khoa (DEPT)
+Supervision PDA,PDA giám sát
+Export Excel,Xuất Excel,
+Case record,Hồ sơ ca
+No reporting period yet.,Chưa có kỳ báo cáo.,
+Export Excel/CSV,Xuất Excel/CSV
+profile {0},hồ sơ {0}
+No isolation room yet.,Chưa có phòng cách ly.,
+Record surface cleaning form (PDA),Ghi phiếu vệ sinh bề mặt (PDA),
+Follow-up schedule,Lịch theo dõi,

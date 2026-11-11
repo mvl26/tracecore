@@ -146,10 +146,6 @@ const TcKsnkScr53 = {
 					)}</td></tr>`
 			)
 			.join("");
-		if (!body)
-			return `<div class="tc-ksnk-state is-empty">${esc(
-				__("No posted audit in this period.")
-			)}</div>`;
 		return (
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Template"))}</th>` +
 			`<th scope="col">${esc(__("Department"))}</th><th scope="col" class="is-num">${esc(
@@ -161,7 +157,10 @@ const TcKsnkScr53 = {
 			`<th scope="col" class="is-num">${esc(
 				__("Average Score")
 			)}</th><th scope="col" class="is-num">${esc(__("Critical Failed"))}</th>` +
-			`<th scope="col">${esc(__("Note"))}</th></tr></thead><tbody>${body}</tbody></table>` +
+			`<th scope="col">${esc(__("Note"))}</th></tr></thead><tbody>${
+				body ||
+				`<tr><td colspan="8">${esc(__("No posted audit in this period."))}</td></tr>`
+			}</tbody></table>` +
 			`<p class="tc-ksnk-note">${esc(
 				__(
 					"Pass rate = audits passed / audits with a result, from posted audits only. A failed critical item fails the audit whatever the score."
@@ -253,11 +252,7 @@ const TcKsnkScr53 = {
 					`<td>${self.sessionActions(row, data)}</td></tr>`
 			)
 			.join("");
-		if (!body)
-			return (
-				`<div class="tc-ksnk-state is-empty">${esc(__("No audit to show."))}</div>` +
-				self.createHtml(data)
-			);
+		const empty = `<tr><td colspan="6">${esc(__("No audit to show."))}</td></tr>`;
 		return (
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(
 				__("Audit Session")
@@ -268,7 +263,7 @@ const TcKsnkScr53 = {
 			`<th scope="col" class="is-num">${esc(__("Score"))}</th><th scope="col">${esc(
 				__("Result")
 			)}</th><th scope="col">${esc(__("Actions"))}</th></tr></thead>` +
-			`<tbody>${body}</tbody></table>` +
+			`<tbody>${body || empty}</tbody></table>` +
 			self.createHtml(data)
 		);
 	},
@@ -341,21 +336,52 @@ const TcKsnkScr53 = {
 				.join("") +
 			`</select></label>`;
 		return (
-			`<div class="tc-ksnk-filters">${select(
+			`<div class="tc-ksnk-headrow"><div class="tc-ksnk-filters">${select(
 				"audit_type",
 				TC_AUD_TYPES,
 				__("Audit Type")
 			)}` +
 			`<label>${esc(
 				__("Period")
-			)}<input type="month" class="form-control" data-filter="period" value="${esc(
-				TcKsnkScr53.month(filters)
-			)}"></label>` +
-			`${select("profession", TC_AUD_PROFESSIONS, __("Observed Profession"))}` +
+			)}<select class="form-control" data-filter="period">${TcKsnkScr53.periodOptions(
+				TcKsnkScr53.month(filters),
+				esc
+			)}</select></label>` +
+			`${select("profession", TC_AUD_PROFESSIONS, __("Observed Profession"))}</div>` +
+			`<div class="tc-ksnk-actions tc-ksnk-headactions">` +
 			`<button type="button" class="btn btn-default" data-action="export">${esc(
-				__("Export Excel / PDF")
-			)}</button></div>`
+				__("Export Excel")
+			)}</button>` +
+			`<button type="button" class="btn btn-primary" data-action="export">${esc(
+				__("Export PDF")
+			)}</button></div></div>`
 		);
+	},
+
+	// 12 tháng gần nhất (đến tháng đang chọn nếu xa hơn), nhãn "Tháng MM/YYYY"
+	periodOptions(selected, esc) {
+		const [sy, sm] = selected.split("-").map(Number);
+		const now = new Date();
+		let y = now.getFullYear();
+		let m = now.getMonth() + 1;
+		const out = [];
+		for (let i = 0; i < 12; i += 1) {
+			out.push([y, m]);
+			m -= 1;
+			if (!m) {
+				m = 12;
+				y -= 1;
+			}
+		}
+		if (!out.some(([oy, om]) => oy === sy && om === sm)) out.unshift([sy, sm]);
+		return out
+			.map(([oy, om]) => {
+				const value = `${oy}-${String(om).padStart(2, "0")}`;
+				return `<option value="${value}"${value === selected ? " selected" : ""}>${esc(
+					__("Month {0}", [`${String(om).padStart(2, "0")}/${oy}`])
+				)}</option>`;
+			})
+			.join("");
 	},
 
 	call(method, args) {

@@ -206,12 +206,14 @@ const TcKsnkScr47 = {
 			: "";
 		return (
 			`<section class="tc-ksnk-card">${head}` +
-			`<p>${esc(__("Decision No."))}: <code class="tc-ksnk-code">${esc(
+			`<div class="tc-ksnk-filters"><label>${esc(
+				__("Decision No.")
+			)}<input class="form-control tc-ksnk-code" readonly value="${esc(
 				c.decision_no
-			)}</code> · ` +
-			`${esc(__("Validity"))}: ${esc(TcKsnkScr47.date(c.valid_from))} – ${esc(
-				TcKsnkScr47.date(c.valid_to)
-			)}</p>` +
+			)}"></label>` +
+			`<label>${esc(__("Validity"))}<input class="form-control" readonly value="${esc(
+				TcKsnkScr47.date(c.valid_from)
+			)} – ${esc(TcKsnkScr47.date(c.valid_to))}"></label></div>` +
 			`<table class="tc-ksnk-table"><thead><tr><th scope="col">${esc(__("Member"))}</th>` +
 			`<th scope="col">${esc(__("Committee Role"))}</th><th scope="col">${esc(
 				__("Representing")
@@ -319,8 +321,11 @@ const TcKsnkScr47 = {
 			self.summaryHtml(data, esc) +
 			self.settingsHtml(data, readOnly, esc) +
 			self.componentsHtml(data, esc) +
-			self.committeeHtml(data, esc) +
-			self.networkHtml(data, esc) +
+			// Hội đồng và mạng lưới đặt cạnh nhau như ảnh duyệt SCR-47
+			`<div class="tc-ksnk-cols"><div>${self.committeeHtml(
+				data,
+				esc
+			)}</div><div>${self.networkHtml(data, esc)}</div></div>` +
 			self.actionsHtml(data, readOnly, esc)
 		);
 	},

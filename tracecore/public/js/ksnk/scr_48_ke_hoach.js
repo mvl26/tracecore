@@ -460,7 +460,14 @@ const TcKsnkScr48 = {
 			body =
 				self.infoHtml(data.plan, esc) +
 				self.indicatorsHtml(data.plan, esc) +
-				self.activitiesHtml(data.plan, esc);
+				self.activitiesHtml(data.plan, esc) +
+				// ảnh duyệt SCR-48: sổ văn bản và họp Hội đồng gần nhất đặt cạnh nhau ngay dưới hoạt động
+				(data.documents
+					? `<div class="tc-ksnk-cols"><div>${self.documentsHtml(
+							data,
+							esc
+					  )}</div><div>${self.meetingHtml(data, esc)}</div></div>`
+					: "");
 		return (
 			self.headHtml(data, esc) +
 			self.tabsHtml(data, tab, esc) +
