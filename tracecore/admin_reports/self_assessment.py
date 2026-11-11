@@ -203,13 +203,21 @@ def view(year):
 	doc = _get(year)
 	can_manage = frappe.session.user == "Administrator" or MANAGE_ROLE in frappe.get_roles()
 	if not doc:
-		return {"year": year, "name": None, "docstatus": None, "rows": [], "can_manage": can_manage}
+		return {
+			"year": year,
+			"name": None,
+			"docstatus": None,
+			"rows": [],
+			"can_manage": can_manage,
+			"editable": False,
+		}
 	return {
 		"year": year,
 		"name": doc.name,
 		"docstatus": doc.docstatus,
 		"assessed_on": doc.assessed_on,
-		"can_manage": can_manage and doc.docstatus == 0,
+		"can_manage": can_manage,
+		"editable": can_manage and doc.docstatus == 0,
 		"rows": [
 			{
 				"criterion": row.criterion,

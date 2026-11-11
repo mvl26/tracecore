@@ -303,7 +303,7 @@ const TcKsnkScr66 = {
 			"Needs confirmation": "is-warn",
 			"Not assessed": "is-neutral",
 		};
-		const editable = sa.can_manage && sa.name && sa.docstatus === 0;
+		const editable = Boolean(sa.can_manage && sa.name && sa.docstatus === 0);
 		const rows = sa.rows
 			.map((row) => {
 				const status = `<span class="tc-ksnk-badge ${
@@ -335,7 +335,10 @@ const TcKsnkScr66 = {
 			})
 			.join("");
 		const actions = [];
-		if (sa.can_manage)
+		const btn = (cls, attrs, label) => `<a class="btn ${cls}" ${attrs}>${esc(label)}</a>`;
+		const formUrl = sa.name ? `/app/ic-self-assessment/${encodeURIComponent(sa.name)}` : "";
+		// Thao tác theo trạng thái phiếu: quyền thật vẫn kiểm ở RPC/DocPerm
+		if (editable || (sa.can_manage && !sa.name))
 			actions.push(
 				`<button type="button" class="btn btn-default" data-action="sa-prepare">${esc(
 					sa.name ? __("Refresh automatic rows") : __("Prepare self-assessment")
@@ -346,6 +349,26 @@ const TcKsnkScr66 = {
 				`<button type="button" class="btn btn-primary" data-action="sa-submit">${esc(
 					__("Submit self-assessment")
 				)}</button>`
+			);
+		if (sa.name)
+			actions.push(
+				btn(
+					"btn-default",
+					`href="${esc(formUrl)}"`,
+					editable
+						? __("Open form")
+						: sa.can_manage
+						? __("Open form to cancel or amend")
+						: __("View form")
+				)
+			);
+		if (sa.can_manage && sa.name && !editable)
+			actions.push(
+				btn(
+					"btn-default",
+					'href="/app/ic-self-assessment/new"',
+					__("Create new self-assessment")
+				)
 			);
 		if (sa.name)
 			actions.push(
