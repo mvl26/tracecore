@@ -224,7 +224,13 @@ const TcKsnkScr47 = {
 			`<th scope="col">${esc(__("Committee Role"))}</th><th scope="col">${esc(
 				__("Representing")
 			)}</th></tr></thead>` +
-			`<tbody>${members}</tbody></table>${warning}</section>`
+			`<tbody>${members}</tbody></table>${warning}` +
+			// Hội đồng đã ghi sổ: sửa thành viên bằng Hủy → Sửa đổi trên form; nhiệm kỳ mới lập Hội đồng mới
+			`<p class="tc-ksnk-note"><a href="/app/ic-committee/${encodeURIComponent(
+				c.name
+			)}">${esc(__("Open committee"))}</a> · <a href="/app/ic-committee/new">${esc(
+				__("New committee term")
+			)}</a></p></section>`
 		);
 	},
 

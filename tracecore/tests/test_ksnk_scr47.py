@@ -93,6 +93,20 @@ class TestKsnkScr47(FrappeTestCase):
 		self.assertIn("tc-ksnk-alert is-warn", out["html"])
 		self.assertIn("No committee in force", out["none"])
 
+	def test_committee_in_force_keeps_open_and_new_term_links(self):
+		# đã có Hội đồng (không cảnh báo) vẫn mở được Hội đồng và lập nhiệm kỳ mới; trước đây link biến mất
+		out = self._run(
+			"""
+			const c = Object.assign({}, data.committee, {missing_representatives: [], problems: []});
+			emit({html: TcKsnkScr47.committeeHtml(Object.assign({}, data, {committee: c}), esc)});
+			"""
+		)
+		self.assertNotIn("tc-ksnk-alert is-warn", out["html"])
+		self.assertIn('href="/app/ic-committee/HDK-2026-01"', out["html"])
+		self.assertIn("Open committee", out["html"])
+		self.assertIn('href="/app/ic-committee/new"', out["html"])
+		self.assertIn("New committee term", out["html"])
+
 	def test_actions_depend_on_rights_and_read_only(self):
 		out = self._run(
 			"""
