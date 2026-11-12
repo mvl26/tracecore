@@ -242,3 +242,45 @@ def derived_max_cycles(set_type: str, version: int | None = None) -> dict:
 		result["value"] = min(defined.values())
 		result["limiting"] = sorted(code for code, value in defined.items() if value == result["value"])
 	return result
+
+
+# --- A-157 (FR-M1-06.6): sửa Quy trình xử lý / Loại chỉ thị hóa học từ form Set Unit ----------------------------
+
+
+def choices(fieldname: str) -> list[str]:
+	"""Lựa chọn của trường Select trên Loại bộ (``method`` / ``ci_class``) theo meta, không chép vào code/JS."""
+	return (frappe.get_meta(DOCTYPE).get_field(fieldname).options or "").split("\n")
+
+
+def route_ci_context(set_type: str) -> dict:
+	"""Dữ liệu hộp thoại sửa trên form Set Unit: lựa chọn, giá trị hiện tại, số bộ cùng loại (chưa hủy) và số bộ đang
+	có Cycle ID hiệu lực (gói đã đóng giữ giá trị cũ, giá trị mới áp từ lần đóng gói kế tiếp)."""
+	method, setting = frappe.db.get_value(DOCTYPE, set_type, ["method", "ci_class"]) or (None, None)
+	units = {"set_type": set_type, "status": ["!=", "Disposed"]}
+	return {
+		"set_type": set_type,
+		"method": method or "",
+		"ci_class": setting or "",
+		"methods": choices("method"),
+		"ci_classes": choices("ci_class"),
+		"units": frappe.db.count("Set Unit", units),
+		"units_in_cycle": frappe.db.count("Set Unit", {**units, "active_cycle_id": ["is", "set"]}),
+	}
+
+
+def set_route_ci(set_type: str, method: str, setting: str) -> dict:
+	"""Đổi ``method`` và ``ci_class`` của loại bộ qua ``save()`` (đủ kiểm FR-M1-03.3/.9/.10, Audit Log qua hook).
+
+	Chỉ thị mặc định không còn hợp với giá trị mới thì bỏ trống cùng lần lưu (``cleared_default_ci``). Không đổi gì →
+	không lưu (``changed`` False). Trả ``{set_type, method, ci_class, changed, cleared_default_ci}``.
+	"""
+	doc = frappe.get_doc(DOCTYPE, set_type)
+	result = {"set_type": doc.name, "method": method, "ci_class": setting, "cleared_default_ci": None}
+	if (doc.method, doc.ci_class or "") == (method, setting):
+		return {**result, "changed": False}
+	doc.method, doc.ci_class = method, setting or None
+	item = doc.get("default_ci_item")
+	if item and item not in {row["item"] for row in usable_ci_items(method, setting)}:
+		doc.default_ci_item, result["cleared_default_ci"] = None, item
+	doc.save()
+	return {**result, "changed": True}

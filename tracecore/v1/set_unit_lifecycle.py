@@ -15,7 +15,9 @@ from frappe import _
 from tracecore.core import code_registry, gs1
 from tracecore.core.errors import BlockedError
 from tracecore.instrument import set_history, set_tags, set_units
+from tracecore.instrument import set_type as set_type_rules
 from tracecore.v1._common import BadRequestError, reject_block
+from tracecore.v1.set_type_admin import can_edit_set_type
 
 ISSUE_ROLES = ("TC R02", "TC R10", "System Manager")  # cấp, in, in lại, hủy lệnh in, xuất CSV (G7)
 VERIFY_ROLES = (*ISSUE_ROLES, "TC R04")  # quét kiểm tra thẻ (UC-03 bước 4)
@@ -93,7 +95,16 @@ def form_context(set_unit=None, set_type=None):
 		# thẻ/nhãn in thêm dòng TEST (G3): theo tiền tố trong Set ID của bộ, chưa có bộ thì theo tiền tố của site
 		"test_labels": gs1.is_demo_prefix(set_unit or code_registry.company_prefix()),
 		"max_cycles_cap": set_units.max_cycles_cap(set_type) if set_type else None,
+		"set_type_edit": _set_type_edit(summary),
 	}
+
+
+def _set_type_edit(summary):
+	"""A-157 (FR-M1-06.6): hộp thoại sửa Quy trình xử lý / Loại chỉ thị của loại bộ trên form Set Unit."""
+	set_type = summary and summary.get("set_type")
+	if not set_type:
+		return None
+	return {**set_type_rules.route_ci_context(set_type), "can_edit": can_edit_set_type(set_type)}
 
 
 @frappe.whitelist(methods=["GET"])

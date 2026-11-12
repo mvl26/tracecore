@@ -15,6 +15,7 @@ from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import BlockedError
 from tracecore.core.idempotency import idempotent
 from tracecore.instrument import bom_versions, shelf_life
+from tracecore.instrument import set_type as set_type_rules
 from tracecore.v1._common import BadRequestError, reject_block, require_any_role
 
 ADMIN_ROLES = ("TC R02", "TC R10", "System Manager")
@@ -163,3 +164,41 @@ def set_pack_shelf_life(item, days, reason, client_ts=None):
 		ref = item.strip() if item and item.strip() else None
 		return reject_block(error.block, shelf_life.ITEM, ref, client_ts=timestamp)
 	return {"ok": True, **result}
+
+
+def _choice(value, name, options) -> str:
+	if not isinstance(value, str) or value not in options:
+		raise BadRequestError(
+			_("{0} must be one of: {1}.").format(name, ", ".join(o or '""' for o in options))
+		)
+	return value
+
+
+def can_edit_set_type(set_type) -> bool:
+	"""Người dùng hiện tại sửa được loại bộ (role quản trị + quyền ghi bản ghi): để form chỉ hiện nút khi có quyền."""
+	return bool(set(frappe.get_roles()) & set(ADMIN_ROLES)) and bool(
+		frappe.has_permission(SET_TYPE, "write", doc=set_type)
+	)
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def set_route_ci(set_type, method, ci_class, client_ts=None):
+	"""Đổi Quy trình xử lý và Loại chỉ thị hóa học của loại bộ từ form Set Unit (A-157, FR-M1-06.6).
+
+	Áp cho mọi bộ cùng loại; gói đã đóng không đổi. Lưu qua ``Instrument Set Type.save()`` nên lỗi kiểm (BOM không
+	tương thích, Khử khuẩn có loại chỉ thị 4/5/6…) là lỗi kiểm tra của Frappe. Giá trị ngoài lựa chọn → 400. Từ chối:
+	``SET_TYPE_NOT_FOUND`` (404). Thành công: ``{"ok": true, set_type, method, ci_class, changed, cleared_default_ci}``.
+	"""
+	require_any_role(*ADMIN_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	set_type = _text(set_type, "set_type")
+	method = _choice(method, "method", set_type_rules.choices("method"))
+	ci_class = _choice(ci_class, "ci_class", set_type_rules.choices("ci_class"))
+	name = frappe.db.get_value(SET_TYPE, set_type, "name") if set_type else None
+	if not name:
+		return reject_block(
+			bom_versions.not_found_block(set_type), SET_TYPE, _ref(set_type), client_ts=timestamp
+		)
+	frappe.has_permission(SET_TYPE, "write", doc=name, throw=True)
+	return {"ok": True, **set_type_rules.set_route_ci(name, method, ci_class)}
