@@ -156,3 +156,82 @@ class TestKsnkPage(FrappeTestCase):
 		for selector in re.findall(r"(?m)^([^@\s{}][^{]*)\{", css):
 			for part in selector.split(","):
 				self.assertTrue(part.strip().startswith(".tc-ksnk"), part)
+
+
+GROUPS = """
+const nav = {
+	home: "chi-so", read_only: false, dept_only: false, departments: [],
+	groups: [
+		{key: "program", label: "Hospital IC", items: [
+			{slug: "chi-so", label: "Board", badge: 0},
+			{slug: "co-cau", label: "Structure", badge: 3},
+			{slug: "ke-hoach", label: "Plan", badge: 4},
+		]},
+		{key: "compliance", label: "Compliance", items: [
+			{slug: "mau-phieu", label: "Forms", badge: 0},
+			{slug: "tuan-thu", label: "Report", badge: 10},
+		]},
+		{key: "hai", label: "HAI", items: []},
+	],
+};
+const groups = (html) => html.split('<div class="tc-ksnk-group').slice(1);
+"""
+
+
+class TestRailCollapsibleGroups(FrappeTestCase):
+	"""NAV-06: rail tc-ksnk thu gọn theo nhóm, mỗi lúc mở một nhóm."""
+
+	def _run(self, body):
+		return run_js(self, [SHELL], [["TcKsnk"]], GROUPS + body)
+
+	def test_group_of_active_screen_opens_others_collapse(self):
+		out = self._run('emit(groups(TcKsnk.railHtml(nav, "tuan-thu")));')
+		program, compliance, other = out
+		self.assertIn("is-collapsed", program)
+		self.assertIn('aria-expanded="false"', program)
+		self.assertNotIn("is-collapsed", compliance)
+		self.assertIn('aria-expanded="true"', compliance)
+		self.assertIn("is-collapsed", other)  # nhóm "Bề mặt khác" cũng thu gọn
+		# mục của nhóm thu gọn vẫn có trong DOM nhưng bị ẩn (hidden), không bị xóa
+		self.assertRegex(program, r'<div class="tc-ksnk-group-items"[^>]*\bhidden\b')
+		self.assertIn('data-slug="co-cau"', program)
+		self.assertNotRegex(compliance, r'<div class="tc-ksnk-group-items"[^>]*\bhidden\b')
+
+	def test_header_is_a_button_with_text_symbol_and_controls(self):
+		out = self._run('emit(groups(TcKsnk.railHtml(nav, "chi-so"))[0]);')
+		self.assertRegex(out, r'<button type="button" class="tc-ksnk-group-label tc-ksnk-group-toggle"')
+		self.assertIn('data-group="program"', out)
+		self.assertIn("▾", out)  # nhóm mở
+		self.assertRegex(out, r'aria-controls="([^"]+)".*id="\1"')
+
+	def test_collapsed_group_shows_total_pending(self):
+		out = self._run('emit(groups(TcKsnk.railHtml(nav, "chi-so")));')
+		program, compliance = out[0], out[1]
+		self.assertIn("▸", compliance)
+		self.assertIn('class="tc-ksnk-count tc-ksnk-group-count"', compliance)
+		self.assertIn(">10<", compliance.split("</button>")[0])
+		# nhóm đang mở không lặp tổng ở tiêu đề: badge đã nằm trên từng mục
+		self.assertNotIn("tc-ksnk-group-count", program.split("</button>")[0])
+
+	def test_explicit_open_group_overrides_active_group(self):
+		out = self._run('emit(groups(TcKsnk.railHtml(nav, "chi-so", "compliance")).map((g) => g.includes("is-collapsed")));')
+		self.assertEqual(out, [True, False, True])
+		none = self._run('emit(groups(TcKsnk.railHtml(nav, "chi-so", "")).map((g) => g.includes("is-collapsed")));')
+		self.assertEqual(none, [True, True, True])
+
+	def test_toggle_opens_clicked_group_or_closes_it(self):
+		out = self._run(
+			'emit([TcKsnk.toggleGroup("program", "compliance"), TcKsnk.toggleGroup("program", "program"),'
+			' TcKsnk.toggleGroup("", "program"), TcKsnk.groupOf(nav, "tuan-thu"), TcKsnk.groupOf(nav, "nope")]);'
+		)
+		self.assertEqual(out, ["compliance", "", "program", "compliance", ""])
+
+	def test_shell_wires_toggle_and_css_hides_collapsed_items(self):
+		src = _read(SHELL)
+		self.assertIn('rail.on("click", ".tc-ksnk-group-toggle"', src)
+		self.assertIn("TcKsnk.toggleGroup(", src)
+		css = _read("tracecore/ui/page/tc_ksnk/tc_ksnk.css".replace("tracecore/", "", 1))
+		self.assertIn(".tc-ksnk .tc-ksnk-group-toggle", css)
+
+	def test_toggle_label_translated(self):
+		self.assertIn("Total pending: {0},Tổng việc chờ: {0},IC Rail", _read("translations/vi.csv"))
