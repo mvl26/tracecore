@@ -115,9 +115,11 @@ def auth_shell():
 		} """,
 			template,
 		)
-		# A-126, A-128: station.js dùng TcScanBurst, TcKeyBurst, TcQrAlias, tcButtonCode của tc_scan_burst.js
+		# A-126, A-128: station.js dùng TcScanBurst, TcKeyBurst, TcQrAlias, tcButtonCode của tc_scan_burst.js;
+		# NAV-07: station.js dùng TcStationUrl của tc_station_url.js (trên site thật cả hai nằm trong bundle)
 		for path in (
 			"tracecore/public/js/tc_scan_burst.js",
+			"tracecore/public/js/tc_station_url.js",
 			"tracecore/ui/page/station/station.js",
 			"tracecore/public/js/station_t4.js",
 		):

@@ -40,12 +40,14 @@ class TestCheckBruCoverage(FrappeTestCase):
 		with open(os.path.join(APP_ROOT, "docs", "srs.md"), encoding="utf-8") as handle:
 			cls.srs = handle.read()
 
-	def test_known_brus_count_92(
+	def test_known_brus_count_95(
 		self,
-	):  # 49 gốc; A-104 BRU-LIN-005..007; A-110 BRU-REP-017; A-111 BRU-INV-003; A-112 BRU-INV-004, BRU-REP-018; A-113 34 BRU v1.12; A-138 BRU-ICP-006..007
+	):  # 49 gốc; A-104 BRU-LIN-005..007; A-110 BRU-REP-017; A-111 BRU-INV-003; A-112 BRU-INV-004, BRU-REP-018; A-113 34 BRU v1.12; A-138 BRU-ICP-006..007; A-153 BRU-ENV-004..006
 		known = self.bru.known_brus(self.srs)
-		self.assertEqual(len(known), 92, msg=sorted(known))
-		self.assertTrue({"BRU-ID-001", "BRU-INV-004", "BRU-REP-018", "BRU-WST-004", "BRU-RPT-003"} <= known)
+		self.assertEqual(len(known), 95, msg=sorted(known))
+		self.assertTrue(
+			{"BRU-ID-001", "BRU-INV-004", "BRU-REP-018", "BRU-WST-004", "BRU-RPT-003", "BRU-ENV-006"} <= known
+		)
 
 	def test_unknown_marker_fails(self):
 		repo = TempRepo()

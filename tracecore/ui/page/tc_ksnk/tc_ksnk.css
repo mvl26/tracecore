@@ -261,8 +261,8 @@
 /* FEAT-095 SCR-67 Nước thải (A-153, bổ sung 12/11/2026 theo bản mẫu): 5 KPI, hai cột GPMT / Cần xử lý, ô lịch có chữ,
    thanh thao tác cố định ở đáy, cửa sổ ghi đợt. Không gradient: ô "Không áp dụng" là nền xám viền đứt. */
 .tc-ksnk .tc-ww-kpis { grid-template-columns: repeat(auto-fit, minmax(calc(var(--tc-sp-22) * 2), 1fr)); }
-.tc-ksnk .tc-ww-two { display: grid; grid-template-columns: 11fr 9fr; gap: var(--tc-sp-3); align-items: start; }
-@media (max-width: 900px) { .tc-ksnk .tc-ww-two { grid-template-columns: 1fr; } }
+/* hai cột GPMT / Cần xử lý tự xuống một cột khi hẹp: lưới auto-fit theo token, không @media px */
+.tc-ksnk .tc-ww-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tc-sp-22) * 5)), 1fr)); gap: var(--tc-sp-3); align-items: start; }
 .tc-ksnk .tc-ww-spacer { flex: 1; }
 .tc-ksnk .tc-ksnk-card h3:has(.tc-ww-spacer) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tc-sp-2); }
 .tc-ksnk .tc-ww-link { color: var(--tc-text-link); font-size: var(--tc-fs-xs); font-weight: var(--tc-fw-regular); text-decoration: underline; }
