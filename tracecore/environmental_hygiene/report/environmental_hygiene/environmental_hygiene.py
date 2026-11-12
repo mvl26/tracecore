@@ -100,6 +100,18 @@ def rows(data):
 				"pct": _rate(entry["on_time"], entry["total"]),
 			}
 		)
+	wastewater = data.get("wastewater")
+	if wastewater:  # FEAT-095 (A-153, FR-M15-12.1): một dòng tóm tắt nước thải
+		out.append(
+			{
+				"section": _("Medical wastewater"),
+				"item": _("Monitoring rounds posted (passed = without exceedance)"),
+				"total": wastewater["rounds"],
+				"passed": wastewater["rounds"] - wastewater["failed"],
+				"pct": _rate(wastewater["rounds"] - wastewater["failed"], wastewater["rounds"]),
+				"note": _("{0} period(s) overdue or missing parameters").format(wastewater["overdue"]),
+			}
+		)
 	chemicals = data["chemicals"]
 	for entry in chemicals["by_department"]:
 		out.append(

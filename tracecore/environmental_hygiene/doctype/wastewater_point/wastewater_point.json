@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "creation": "2026-11-12 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "point_name",
+  "point_type",
+  "treatment_system",
+  "design_capacity_m3_day",
+  "column_break_owner",
+  "receiving_source",
+  "coordinates",
+  "responsible_user",
+  "responsible_name",
+  "disabled",
+  "section_status",
+  "awaiting_remonitor",
+  "flag_monitoring",
+  "due_notified_period",
+  "overdue_notified_period"
+ ],
+ "fields": [
+  {
+   "fieldname": "point_name",
+   "fieldtype": "Data",
+   "label": "Point Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "point_type",
+   "fieldtype": "Select",
+   "label": "Point Type",
+   "options": "Outlet\nInlet\nDischarge",
+   "default": "Outlet",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Inlet = before treatment, reference only (not compared with limits)."
+  },
+  {
+   "fieldname": "treatment_system",
+   "fieldtype": "Data",
+   "label": "Treatment System"
+  },
+  {
+   "fieldname": "design_capacity_m3_day",
+   "fieldtype": "Float",
+   "label": "Design Capacity (m3/day)"
+  },
+  {
+   "fieldname": "column_break_owner",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "receiving_source",
+   "fieldtype": "Data",
+   "label": "Receiving Source"
+  },
+  {
+   "fieldname": "coordinates",
+   "fieldtype": "Data",
+   "label": "Coordinates"
+  },
+  {
+   "fieldname": "responsible_user",
+   "fieldtype": "Link",
+   "label": "Responsible Person",
+   "options": "User",
+   "description": "Gets due/overdue reminders and failed-result notices. Give the person role TC R11 to record rounds."
+  },
+  {
+   "fieldname": "responsible_name",
+   "fieldtype": "Data",
+   "label": "Responsible Name",
+   "fetch_from": "responsible_user.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Monitoring Status"
+  },
+  {
+   "fieldname": "awaiting_remonitor",
+   "fieldtype": "Check",
+   "label": "Exceeded – Awaiting Re-monitoring",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "flag_monitoring",
+   "fieldtype": "Link",
+   "label": "Failed Round",
+   "options": "Wastewater Monitoring",
+   "read_only": 1
+  },
+  {
+   "fieldname": "due_notified_period",
+   "fieldtype": "Data",
+   "label": "Due Reminder Sent For",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "overdue_notified_period",
+   "fieldtype": "Data",
+   "label": "Overdue Reminder Sent For",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Wastewater Point",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "NT-.##",
+ "naming_rule": "Expression (old style)",
+ "title_field": "point_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "point_name,point_type",
+ "description": "Wastewater monitoring point (inlet, outlet of the treatment system, discharge point)."
+}

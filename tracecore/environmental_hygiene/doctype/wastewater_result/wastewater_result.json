@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "creation": "2026-11-12 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "parameter",
+  "unit",
+  "value",
+  "below_detection",
+  "limit_applied",
+  "result"
+ ],
+ "fields": [
+  {
+   "fieldname": "parameter",
+   "fieldtype": "Data",
+   "label": "Parameter",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Float",
+   "label": "Value",
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "0 = not entered."
+  },
+  {
+   "fieldname": "below_detection",
+   "fieldtype": "Check",
+   "label": "Not Detected",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "limit_applied",
+   "fieldtype": "Data",
+   "label": "Limit Applied",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "\nPass\nFail",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Wastewater Result",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

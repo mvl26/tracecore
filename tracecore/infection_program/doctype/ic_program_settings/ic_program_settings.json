@@ -37,7 +37,9 @@
   "notifiable_hours_b",
   "notifiable_hours_c",
   "section_food_safety",
-  "foodborne_outbreak_threshold"
+  "foodborne_outbreak_threshold",
+  "section_wastewater",
+  "wastewater_due_days"
  ],
  "fields": [
   {
@@ -243,11 +245,23 @@
    "label": "Outbreak Investigation from (People Affected)",
    "non_negative": 1,
    "description": "A suspected food poisoning event affecting at least this many people suggests an outbreak investigation. Leave empty until the head of infection control sets it; events then only suggest a non-conformance."
+  },
+  {
+   "fieldname": "section_wastewater",
+   "fieldtype": "Section Break",
+   "label": "Medical Wastewater"
+  },
+  {
+   "fieldname": "wastewater_due_days",
+   "fieldtype": "Int",
+   "label": "Wastewater Reminder Days Before Period End",
+   "non_negative": 1,
+   "description": "Remind the head of infection control, R11 and the person in charge this many days before a monitoring period ends. Empty = 15."
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-10 20:00:00.000000",
+ "modified": "2026-11-12 09:00:00.000000",
  "modified_by": "Administrator",
  "name": "IC Program Settings",
  "owner": "Administrator",

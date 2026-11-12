@@ -446,13 +446,17 @@ def on_compliance_nc(ctx):
 
 def on_environment_nc(ctx):
 	"""Hook ``tracecore_environment_nc`` (FEAT-070, FR-M15-04, BRU-ENV-003): R01/R11 mở NC từ mẫu môi trường Không đạt
-	→ Incident Environment, nguồn Environmental Sample, gắn khoa của vùng. ``ctx``: {sample, department, description}."""
+	→ Incident Environment, nguồn Environmental Sample, gắn khoa của vùng. ``ctx``: {sample, department, description}.
+	[FEAT-095, A-153 W4, FR-M15-11] đợt quan trắc nước thải Không đạt truyền thêm ``source_doctype`` = Wastewater
+	Monitoring và ``source_name`` (không có khoa)."""
+	source_doctype = ctx.get("source_doctype") or "Environmental Sample"
+	source_name = ctx.get("source_name") or ctx["sample"]
 	return _auto(
-		"Environmental Sample",
-		ctx["sample"],
+		source_doctype,
+		source_name,
 		ENVIRONMENT,
 		"Medium",
-		ctx.get("description") or _("Environmental sample {0} failed.").format(ctx["sample"]),
+		ctx.get("description") or _("Environmental sample {0} failed.").format(source_name),
 		{"department": ctx.get("department")},
 	)
 
