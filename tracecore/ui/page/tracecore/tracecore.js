@@ -268,8 +268,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			.on("click", () => {
 				if (!navigator.onLine) return load();
 				const item = available.find((item) => item.name === select.val());
-				if (item)
-					window.location.assign(TcStationUrl.path(item.name, item.station_no));
+				if (item) window.location.assign(TcStationUrl.path(item.name, item.station_no));
 			})
 			.appendTo(station);
 		$("<p class='tc-launcher-note'></p>")

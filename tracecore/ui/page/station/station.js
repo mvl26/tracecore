@@ -217,7 +217,9 @@ class TraceCoreStation {
 		const where = TcStationUrl.parse(window.location.pathname, window.location.search);
 		this.stationNo = where.no;
 		this.stationCode = where.name;
-		this.station = where.name || (where.no ? TcStationUrl.recall(TcStationUrl.storage(), where.no) : null);
+		this.station =
+			where.name ||
+			(where.no ? TcStationUrl.recall(TcStationUrl.storage(), where.no) : null);
 		this.stationInfo = null;
 		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
 		this.pending = null;

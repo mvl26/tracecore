@@ -76,7 +76,9 @@ def _station_by_number(station_no):
 		"code": "STATION_NUMBER_DUPLICATE",
 		"title": _("Station not configured"),
 		"reason": _("Station number {0} is used by several stations: {1}.").format(number, ", ".join(names)),
-		"action": _("Ask R10 to give each station its own number, or open the address with the station code."),
+		"action": _(
+			"Ask R10 to give each station its own number, or open the address with the station code."
+		),
 	}
 
 
