@@ -50,6 +50,7 @@ HEADER_FIELDS = (
 	"method",
 	"department",
 	"default_pack_type",
+	"ci_class",  # A-154
 	"default_ci_item",  # A-122
 	"shelf_life_days",
 	"is_implant",
@@ -61,6 +62,7 @@ COPY_FIELDS = (
 	"method",
 	"department",
 	"default_pack_type",
+	"ci_class",  # A-154
 	"default_ci_item",  # A-122
 	"shelf_life_days",
 	"is_implant",

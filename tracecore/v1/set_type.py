@@ -180,16 +180,17 @@ def pack_type_query(doctype=None, txt=None, searchfield=None, start=0, page_len=
 
 @frappe.whitelist()
 def ci_item_query(doctype=None, txt=None, searchfield=None, start=0, page_len=20, filters=None):
-	"""Gợi ý của trường Link ``default_ci_item`` trên form Desk (A-122): chỉ thị loại 5/6 đúng phương pháp của bộ.
+	"""Gợi ý của trường Link ``default_ci_item`` trên form Desk (A-122): chỉ thị đúng phương pháp và đúng loại chỉ
+	thị của bộ (A-154: ``ci_class`` trống → loại 5/6).
 
-	``filters`` = ``{"method": ...}`` do form gửi (dict hoặc chuỗi JSON). Trả ``[(mã Item, tên, "loại N")]``; cùng
+	``filters`` = ``{"method": ..., "ci_class": ...}`` do form gửi (dict hoặc chuỗi JSON). Trả ``[(mã Item, tên, "loại N")]``; cùng
 	tiêu chí với kiểm khi lưu (``instrument.set_type.usable_ci_items``). Quyền đọc ``Instrument Set Type``.
 	"""
 	frappe.has_permission(SET_TYPE, "read", throw=True)
 	filters = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
 	rows = [
 		(row["item"], row["item_name"], _("class {0}").format(row["ci_class"]))
-		for row in set_type_rules.usable_ci_items(filters.get("method"))
+		for row in set_type_rules.usable_ci_items(filters.get("method"), filters.get("ci_class"))
 	]
 	return _page(_matching(rows, txt), start, page_len)
 

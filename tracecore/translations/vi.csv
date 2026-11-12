@@ -11850,3 +11850,21 @@ Responsible Name,Tên người phụ trách,Wastewater Point
 A,A,Wastewater Permit
 B,B,Wastewater Permit
 C,C,Wastewater Permit
+Not Needed,Không cần,
+Class {0},Loại {0},
+Not set (class 5 or 6 at packing),Chưa khai (đóng gói nhận loại 5 hoặc 6),
+Set components,Thành phần bộ,
+The set type has no BOM version in effect.,Loại bộ chưa có phiên bản BOM hiệu lực.,
+BOM v{0} pinned for this cycle,BOM v{0} đã ghim cho chu trình này,
+BOM v{0} — will be pinned at receiving,BOM v{0} — sẽ ghim khi tiếp nhận,
+Total: {0} line(s),Tổng: {0} dòng,
+This set needs no chemical indicator in the pack.,Bộ này không cần chỉ thị hóa học trong gói.,
+Lot {0} is not a valid class {1} indicator lot for {2} in the offline data.,Lô {0} không phải lô chỉ thị loại {1} hợp lệ cho {2} trong dữ liệu ngoại tuyến.,
+Lot {0} is a class {1} indicator; this set needs class {2}.,Lô {0} là chỉ thị loại {1}; bộ này cần loại {2}.,
+Scan the lot code on a chemical indicator of class {0} for this sterilization method.,Quét mã lô trên chỉ thị hóa học loại {0} đúng phương pháp tiệt khuẩn của bộ.,
+"This set needs no chemical indicator, so it cannot have a default indicator. Clear Default Indicator Item or choose a class.",Bộ này không cần chỉ thị hóa học nên không có chỉ thị mặc định. Xóa Chỉ thị mặc định hoặc chọn loại chỉ thị.,
+Default indicator {0} cannot be used for this set: choose a class {1} chemical indicator in use for {2}.,Không dùng được chỉ thị mặc định {0} cho bộ này: chọn chỉ thị hóa học loại {1} đang dùng cho {2}.,
+Chemical indicator placed in each pack at packing (ISO 11140-1). Blank: class 5 or 6 as before. Not Needed: packing does not ask for an indicator lot.,Chỉ thị hóa học đặt trong mỗi gói khi đóng gói (ISO 11140-1). Để trống: loại 5 hoặc 6 như trước. Không cần: đóng gói không hỏi lô chỉ thị.,
+4,Loại 4,Instrument Set Type
+5,Loại 5,Instrument Set Type
+6,Loại 6,Instrument Set Type
