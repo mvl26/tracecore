@@ -14,7 +14,7 @@ from tracecore.instrument import bom_versions, catalog, set_units
 
 SPAULDING = ("Critical", "Semi-critical", "Non-critical")
 INSTRUMENT_METHODS = ("Steam 121", "Steam 134", "Plasma", "EO")
-SET_METHODS = ("Steam", "Plasma")
+SET_METHODS = ("Steam", "Plasma", "Disinfection")  # A-156: quy trình xử lý của loại bộ
 MAINT_TYPES = ("Lubrication", "Blade Check", "Screw Tightening", "Battery Replacement")
 SET_ID_COLUMNS = ("Set ID", "Set Unit", "GIAI")
 # cùng vai trò được cấp Set ID trên Desk (FEAT-016 G7, `v1.set_unit_lifecycle.ISSUE_ROLES`): Set Unit không tạo tay

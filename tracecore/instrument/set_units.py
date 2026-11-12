@@ -113,19 +113,20 @@ def _bom_items(set_type: str, method: str | None, version: int) -> list[dict]:
 	"""Lỗi từng dòng của BOM `version`: dụng cụ Ngừng sử dụng / không tương thích phương pháp (một truy vấn)."""
 	rows = frappe.db.sql(
 		"""
-		select b.position, b.instrument, i.status, group_concat(m.method separator '\n') as methods
+		select b.position, b.instrument, i.status, i.spaulding_class,
+			group_concat(m.method separator '\n') as methods
 		from `tabSet BOM Item` b
 		left join `tabInstrument` i on i.name = b.instrument
 		left join `tabInstrument Compatible Method` m
 			on m.parent = b.instrument and m.parenttype = 'Instrument' and m.parentfield = 'compatible_methods'
 		where b.set_type = %s and b.bom_version = %s
-		group by b.name, b.position, b.instrument, i.status
+		group by b.name, b.position, b.instrument, i.status, i.spaulding_class
 		order by b.position asc, b.name asc
 		""",
 		(set_type, version),
 	)
 	items = []
-	for position, instrument, status, methods in rows:
+	for position, instrument, status, spaulding, methods in rows:
 		methods = set(filter(None, (methods or "").split("\n")))
 		if status == "Retired" or status is None:
 			items.append(
@@ -138,15 +139,13 @@ def _bom_items(set_type: str, method: str | None, version: int) -> list[dict]:
 					),
 				}
 			)
-		if method and method not in catalog.families(methods):
+		if not catalog.fits_route(method, methods, spaulding):
 			items.append(
 				{
 					"row": cint(position),
 					"instrument": instrument,
 					"code": "INCOMPATIBLE",
-					"message": _(
-						"Instrument {0} ({1}) is not compatible with the set type method {2}."
-					).format(instrument, ", ".join(catalog.ordered_methods(methods)) or "—", _(method)),
+					"message": catalog.route_issue(instrument, method, methods),
 				}
 			)
 	return items
