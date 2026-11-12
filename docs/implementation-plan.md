@@ -7,7 +7,7 @@
 > **Amendment A-131 (2026-11-06):** mọi màn WEB của M11–M17 và M9 mở rộng nằm trong một màn quản lý — Page `tc_ksnk` (architecture ADR-002, §5.2). FEAT-056 dựng khung Page (shell, router, registry màn, RPC `tracecore.v1.ksnk.nav`, hook `tracecore_ksnk_badges`); FEAT-057..074 mỗi FEAT thêm màn của mình vào registry thay vì làm Workspace/Desk page riêng.
 > **Amendment A-153 (2026-11-12):** nước thải y tế vào M15 (mở một phần SC-01) → **FEAT-095** ở E-16 (sprint S9), FR-M15-08..13, UC-58, SCR-67, BRU-ENV-004..006. Người dùng duyệt W1–W8 ngày 12/11/2026; chủ đầu tư chưa xác nhận. Số FEAT-075 trong đề xuất đổi thành FEAT-095 vì FEAT-075 đã dùng cho A-114.
 > **Amendment A-154 (2026-11-12):** thành phần bộ trên form Set Unit và loại chỉ thị hóa học của loại bộ (Không cần / Loại 4 / Loại 5 / Loại 6, T4 kiểm theo loại) → **FEAT-096** ở E-02 (M1, ngoài sprint), FR-M1-03.9, FR-M1-06.5, sửa FR-M2-07.2/.3. Người dùng duyệt C1–C3 ngày 12/11/2026; chủ đầu tư chưa xác nhận.
-> **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5; nút Sao chép bộ dụng cụ trên form Set Unit, FR-M1-05.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
@@ -294,6 +294,7 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | AC-097-03 | Nếu Item là Giấy bọc mà chưa chọn 1 lớp / 2 lớp, thì hệ thống phải từ chối lưu. | FR-M6-02.5 |
 | AC-097-04 | Khi Item đổi vật liệu sang loại khác, hệ thống phải xóa kích thước/số lớp không còn áp dụng; Item không thuộc nhóm Packaging có vật liệu gói thì từ chối lưu. | FR-M6-02.5 |
 | AC-097-05 | Khi T4 mở ngữ cảnh một bộ, droplist loại gói phải có nhóm Giấy bọc (sau Vải bọc) và mỗi dòng Túi ép ghi `… · 100 × 250 mm · …`, dòng Giấy bọc ghi `… · 2 lớp · …`. | FR-M2-07, FR-M6-02.5 |
+| AC-097-07 | Khi R02/R10 bấm "Sao chép bộ dụng cụ" trên form Set Unit, hộp thoại Cấp Set ID phải mở với loại bộ, khoa và cơ số tối đa của bộ đó điền sẵn (loại bộ không ghi đè khoa/cơ số); R04 không thấy nút. | FR-M1-05.6 |
 | AC-097-06 | Khi patch A-155 chạy, Item Packaging nhóm Vải bọc/trống có tên chứa "giấy"/"crepe" phải thành Giấy bọc, số lớp và kích thước túi suy từ tên khi còn trống; chạy lại không đổi thêm. | FR-M6-02.5 |
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
