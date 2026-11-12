@@ -1,4 +1,4 @@
-/* global tracecore */
+/* global tracecore, TcQuickNav */
 const NAV_COLLAPSED_KEY = "tc_home_nav_collapsed";
 
 frappe.pages["tracecore"].on_page_load = function (wrapper) {
@@ -75,6 +75,8 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		report: "chart",
 	};
 	let selected_module = null;
+	// NAV-05: phân hệ trên URL (/app/tracecore/<key>), chỉ đọc lúc mở trang vì sau replaceState route của Frappe cũ
+	let requested_module = null;
 	function icon(name, size = "md") {
 		return $(frappe.utils.icon(name, size)).attr("aria-hidden", "true");
 	}
@@ -139,9 +141,14 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		}
 		// #1830 G-03: Tổng quan mở thẳng bảng vận hành nên không phải mô-đun mặc định, tránh vòng lặp khi bấm Back
 		const opens_here = (module) => module.key !== OVERVIEW && module.key !== STATIONS.key;
-		const landing = modules.find(opens_here) || modules[0];
-		if (!modules.some((module) => module.key === selected_module && opens_here(module)))
-			selected_module = landing.key;
+		// phân hệ trên URL nếu tài khoản có (NAV-05), rồi phân hệ đang chọn, rồi phân hệ mặc định
+		selected_module = TcQuickNav.pick_module(
+			modules,
+			requested_module,
+			selected_module,
+			opens_here
+		);
+		requested_module = null;
 		const shell = $("<div class='tc-admin'></div>").appendTo(root);
 		const nav = $("<nav class='tc-admin-nav'></nav>")
 			.attr("aria-label", __("CSSD management"))
@@ -160,6 +167,11 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			$("<p></p>").text(__(module.description, null, "TraceCore Launcher")).appendTo(text);
 			const body = $("<div class='tc-admin-body'></div>").appendTo(main);
 			document.title = `${__(module.label, null, "TraceCore Launcher")} – TraceCore`;
+			// NAV-05: giữ phân hệ trên URL để tải lại / chia sẻ link mở đúng chỗ; thay mục lịch sử hiện tại, không thêm
+			const path = TcQuickNav.module_path(module.key === STATIONS.key ? null : module.key);
+			if (visible() && window.location.pathname !== path)
+				window.history.replaceState(window.history.state, "", path);
+			TcQuickNav.refresh();
 			if (module.key !== STATIONS.key) render_module(body, module);
 		}
 		let cluster = modules[0].cluster;
@@ -320,8 +332,13 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		if (visible()) load();
 	});
 	wrapper.tc_launcher_load = load;
+	wrapper.tc_launcher_request = (key) => {
+		requested_module = key || null;
+	};
 };
 
 frappe.pages["tracecore"].on_page_show = function (wrapper) {
+	// route vừa đổi nên còn đúng: lấy phân hệ trên URL trước khi tải (thử lại / mất mạng thì giữ phân hệ đang chọn)
+	wrapper.tc_launcher_request((frappe.get_route() || [])[1]);
 	wrapper.tc_launcher_load();
 };

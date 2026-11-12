@@ -59,7 +59,11 @@ fixtures = [
 
 # include js, css files in header of desk.html
 # Biến --tc-* sinh từ docs/tokens.json (scripts/build_tokens.py) + ánh xạ biến Frappe Desk
-app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + tracecore-theme.css
+# tc_desk.bundle.css: CSS viết tay của thành phần TraceCore trên Desk (thanh truy cập nhanh NAV-05), chỉ biến --tc-*
+app_include_css = [
+	"tracecore.bundle.css",
+	"tc_desk.bundle.css",
+]  # bundle có hash: tokens.css + tracecore-theme.css
 # Hàm dùng chung tracecore.codes.* (in nhãn QR đối tượng, cấp mã cuộn — FEAT-005): bundle có hash nhập tc_codes.js
 app_include_js = ["tracecore.bundle.js"]
 
@@ -81,7 +85,12 @@ app_include_js = ["tracecore.bundle.js"]
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 # mã trạm đổi thì bỏ script Page trạm trong localStorage của trình duyệt (tc_page_cache.js)
 # tên bệnh viện cạnh logo trên thanh điều hướng lấy theo Website Settings của site (tc_launcher.js)
-extend_bootinfo = ["tracecore.ui.page_cache.extend_bootinfo", "tracecore.ui.branding.extend_bootinfo"]
+# ô truy cập nhanh tài khoản mở được trên navbar (NAV-05, tc_launcher.js)
+extend_bootinfo = [
+	"tracecore.ui.page_cache.extend_bootinfo",
+	"tracecore.ui.branding.extend_bootinfo",
+	"tracecore.ui.quick_nav.extend_bootinfo",
+]
 
 page_js = {
 	"station": [
