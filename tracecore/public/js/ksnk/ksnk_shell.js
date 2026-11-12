@@ -7,6 +7,8 @@
 const TC_KSNK_NAV = "tracecore.v1.ksnk.nav";
 // `tab`: tab trong màn (FEAT-058 SCR-48, A-131 a — tab giữ trong query string)
 const TC_KSNK_FILTERS = ["period", "department", "year", "tab"];
+// NAV-06: nhóm rail đang mở, nhớ trong localStorage của trình duyệt
+const TC_KSNK_OPEN_GROUPS = "tc_ksnk_open_groups";
 
 window.TcKsnkScreens = window.TcKsnkScreens || {};
 
@@ -96,52 +98,124 @@ const TcKsnk = {
 		return null;
 	},
 
-	railHtml(nav, active) {
+	// nhóm chứa màn đang xem (NAV-06); không có thì chuỗi rỗng
+	groupOf(nav, slug) {
+		const group = ((nav && nav.groups) || []).find((g) =>
+			g.items.some((item) => item.slug === slug)
+		);
+		return group ? group.key : "";
+	},
+
+	// NAV-06: mỗi nhóm mở/đóng độc lập; bấm nhóm đang mở thì đóng nhóm đó, bấm nhóm đang đóng thì mở thêm
+	toggleGroup(open, clicked) {
+		const list = open || [];
+		return list.includes(clicked) ? list.filter((key) => key !== clicked) : [...list, clicked];
+	},
+
+	// nhóm đang mở = lựa chọn đã có của người dùng + nhóm chứa màn đang xem (không tự đóng nhóm nào)
+	openGroupsFor(stored, nav, active) {
+		const list = Array.isArray(stored) ? [...stored] : [];
+		const group = TcKsnk.groupOf(nav, active);
+		if (group && !list.includes(group)) list.push(group);
+		return list;
+	},
+
+	// nhớ nhóm đang mở trong trình duyệt (chỉ tiện ích): không đọc/ghi được thì về mặc định
+	loadOpenGroups(storage) {
+		try {
+			const list = JSON.parse(storage.getItem(TC_KSNK_OPEN_GROUPS));
+			return Array.isArray(list) ? list.filter((key) => typeof key === "string") : null;
+		} catch (error) {
+			return null;
+		}
+	},
+
+	saveOpenGroups(storage, list) {
+		try {
+			storage.setItem(TC_KSNK_OPEN_GROUPS, JSON.stringify(list));
+		} catch (error) {
+			/* chế độ riêng tư / chặn lưu trữ: chỉ mất phần nhớ nhóm */
+		}
+	},
+
+	// Một nhóm của rail: tiêu đề là nút (ký hiệu ▸/▾ + aria-expanded), nhóm thu gọn hiện tổng việc chờ
+	groupHtml(key, label, itemsHtml, open, pending) {
 		const esc = TcKsnk.esc;
+		const id = `tc-ksnk-group-${esc(key)}`;
+		const count =
+			!open && pending
+				? `<span class="tc-ksnk-count tc-ksnk-group-count" title="${esc(
+						__("Total pending: {0}", [pending], "IC Rail")
+				  )}">${esc(pending)}</span>`
+				: "";
 		return (
-			((nav && nav.groups) || [])
-				.filter((group) => group.items.length)
-				.map((group) => {
-					const items = group.items
-						.map((item) => {
-							const on = item.slug === active;
-							const badge = item.badge
-								? `<span class="tc-ksnk-count" title="${esc(
-										__("{0} pending", [item.badge])
-								  )}">${esc(item.badge)}</span>`
-								: "";
-							return (
-								`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
-									on ? " is-active" : ""
-								}"` +
-								` data-slug="${esc(item.slug)}"${
-									on ? ' aria-current="page"' : ""
-								}>` +
-								`<span>${esc(item.label)}</span>${badge}</a>`
-							);
-						})
-						.join("");
-					return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
-						group.label
-					)}</div>${items}</div>`;
-				})
-				.join("") + TcKsnk.otherSurfacesHtml(nav)
+			`<div class="tc-ksnk-group${open ? "" : " is-collapsed"}">` +
+			`<button type="button" class="tc-ksnk-group-label tc-ksnk-group-toggle" data-group="${esc(
+				key
+			)}" aria-expanded="${open ? "true" : "false"}" aria-controls="${id}">` +
+			`<span class="tc-ksnk-group-mark" aria-hidden="true">${open ? "▾" : "▸"}</span>` +
+			`<span class="tc-ksnk-group-name">${esc(label)}</span>${count}</button>` +
+			`<div class="tc-ksnk-group-items" id="${id}"${
+				open ? "" : " hidden"
+			}>${itemsHtml}</div></div>`
 		);
 	},
 
+	// `open`: mảng key nhóm đang mở; bỏ trống (undefined) thì chỉ mở nhóm chứa màn đang xem
+	railHtml(nav, active, open) {
+		const esc = TcKsnk.esc;
+		const opened = open === undefined ? [TcKsnk.groupOf(nav, active)] : open;
+		// NAV-06: tạm ẩn nhóm "Bề mặt khác" theo yêu cầu người dùng (12/11/2026). Bật lại: nối
+		//   + TcKsnk.otherSurfacesHtml(nav, opened)
+		// vào sau .join("") ở cuối biểu thức return dưới đây.
+		return ((nav && nav.groups) || [])
+			.filter((group) => group.items.length)
+			.map((group) => {
+				const items = group.items
+					.map((item) => {
+						const on = item.slug === active;
+						const badge = item.badge
+							? `<span class="tc-ksnk-count" title="${esc(
+									__("{0} pending", [item.badge])
+							  )}">${esc(item.badge)}</span>`
+							: "";
+						return (
+							`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
+								on ? " is-active" : ""
+							}"` +
+							` data-slug="${esc(item.slug)}"${on ? ' aria-current="page"' : ""}>` +
+							`<span>${esc(item.label)}</span>${badge}</a>`
+						);
+					})
+					.join("");
+				const pending = group.items.reduce(
+					(sum, item) => sum + (Number(item.badge) || 0),
+					0
+				);
+				return TcKsnk.groupHtml(
+					group.key,
+					group.label,
+					items,
+					opened.includes(group.key),
+					pending
+				);
+			})
+			.join("");
+	},
+
 	// Nhóm "Bề mặt khác" (ảnh SCR-66): lối sang Cổng khoa (DEPT) và PDA; ẩn với vai trò chỉ đọc. Quyền thật ở từng trang.
-	otherSurfacesHtml(nav) {
+	otherSurfacesHtml(nav, opened) {
 		const esc = TcKsnk.esc;
 		if (!nav || nav.read_only || !(nav.groups || []).length) return "";
 		const link = (href, label) =>
 			`<a href="${esc(href)}" class="tc-ksnk-nav-item"><span>${esc(label)}</span></a>`;
-		return (
-			`<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
-				__("Other surfaces", null, "IC Rail")
-			)}</div>` +
+		return TcKsnk.groupHtml(
+			"other",
+			__("Other surfaces", null, "IC Rail"),
 			link("/ksnk-khoa/chi-so", __("Department portal (DEPT)", null, "IC Rail")) +
-			link("/app/station", __("Supervision PDA", null, "IC Rail")) +
-			"</div>"
+				link("/app/station", __("Supervision PDA", null, "IC Rail")),
+			(opened || []).includes("other"),
+			0
 		);
 	},
 
@@ -220,11 +294,34 @@ const TcKsnk = {
 		).appendTo(page.main);
 		const rail = root.find(".tc-ksnk-rail");
 		const content = root.find(".tc-ksnk-content");
-		const state = { nav: null, filters: {}, request: 0, loading: null };
+		// openGroups: nhóm rail đang mở (NAV-06), railSlug: màn lúc vẽ rail; đổi màn thì mở thêm nhóm của màn đó
+		const state = {
+			nav: null,
+			filters: {},
+			request: 0,
+			loading: null,
+			openGroups: null,
+			railSlug: null,
+		};
 
 		rail.on("click", ".tc-ksnk-nav-item", (event) => {
 			event.preventDefault();
 			frappe.set_route("tc-ksnk", $(event.currentTarget).attr("data-slug"));
+		});
+		const storage = () => {
+			try {
+				return window.localStorage;
+			} catch (error) {
+				return null;
+			}
+		};
+		rail.on("click", ".tc-ksnk-group-toggle", (event) => {
+			const key = $(event.currentTarget).attr("data-group");
+			state.openGroups = TcKsnk.toggleGroup(state.openGroups, key);
+			TcKsnk.saveOpenGroups(storage(), state.openGroups);
+			rail.html(TcKsnk.railHtml(state.nav, state.railSlug, state.openGroups));
+			// vẽ lại rail làm mất focus: trả focus về nút vừa bấm để dùng bàn phím tiếp được
+			rail.find(`.tc-ksnk-group-toggle[data-group="${CSS.escape(key)}"]`).trigger("focus");
 		});
 		content.on("click", '[data-action="retry"]', () => {
 			if (!state.nav) state.loading = null;
@@ -287,7 +384,13 @@ const TcKsnk = {
 			}
 			const slug = route.slug || state.nav.home;
 			const item = TcKsnk.pick(state.nav, slug);
-			rail.html(TcKsnk.railHtml(state.nav, slug));
+			if (slug !== state.railSlug) {
+				const stored = state.openGroups || TcKsnk.loadOpenGroups(storage());
+				state.openGroups = TcKsnk.openGroupsFor(stored, state.nav, slug);
+				TcKsnk.saveOpenGroups(storage(), state.openGroups);
+				state.railSlug = slug;
+			}
+			rail.html(TcKsnk.railHtml(state.nav, slug, state.openGroups));
 			header(item);
 			if (!item) {
 				content.html(TcKsnk.stateHtml("forbidden"));

@@ -155,6 +155,11 @@ EVENTS = {
 	"ENV_SAMPLING_DUE": ("Environmental sampling due", "Normal", 0, 1, ()),
 	"ENV_SAMPLE_OVERDUE": ("Environmental sample overdue", "Normal", 0, 0, ("TC R01",)),
 	"ENV_INFRA_DUE": ("Infrastructure inspection due", "Normal", 0, 0, ("TC R01", "TC R11")),
+	# FEAT-095 (A-153): đợt quan trắc nước thải vượt chuẩn → R01, R11 (+ người phụ trách điểm do nơi gọi truyền)
+	# (FR-M15-11); kỳ quan trắc còn 15 ngày → R01, R11 + người phụ trách; quá hạn → R01 (FR-M15-09.1)
+	"WW_MONITORING_FAILED": ("Wastewater monitoring exceeded limits", "Urgent", 1, 1, ("TC R01", "TC R11")),
+	"WW_MONITORING_DUE": ("Wastewater monitoring due", "Normal", 0, 1, ("TC R01", "TC R11")),
+	"WW_MONITORING_OVERDUE": ("Wastewater monitoring overdue", "Normal", 0, 0, ("TC R01",)),
 	# FEAT-069 (A-150 Q2, Q6): cụm ca vượt ngưỡng → R01, R11 (khẩn); khai báo bệnh truyền nhiễm sắp/quá hạn (R11 + R08 của
 	# khoa do nơi gọi truyền); nhóm bệnh chưa cấu hình giờ khai báo → R01, R10
 	"CLUSTER_ALERT": ("Infection cluster alert", "Urgent", 1, 1, ("TC R01", "TC R11")),

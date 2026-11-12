@@ -1,0 +1,224 @@
+{
+ "actions": [],
+ "creation": "2026-11-12 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "wastewater_point",
+  "point_name",
+  "point_type",
+  "sampled_on",
+  "period_label",
+  "is_remonitor_of",
+  "column_break_lab",
+  "supplier",
+  "supplier_name",
+  "vimcerts_no",
+  "report_no",
+  "attachment",
+  "section_permit",
+  "wastewater_permit",
+  "standard_applied",
+  "section_results",
+  "results",
+  "section_outcome",
+  "overall_result",
+  "nc_status",
+  "nc_name",
+  "nc_reason",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "wastewater_point",
+   "fieldtype": "Link",
+   "label": "Point",
+   "options": "Wastewater Point",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "point_name",
+   "fieldtype": "Data",
+   "label": "Point Name",
+   "fetch_from": "wastewater_point.point_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "point_type",
+   "fieldtype": "Data",
+   "label": "Point Type",
+   "fetch_from": "wastewater_point.point_type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sampled_on",
+   "fieldtype": "Date",
+   "label": "Sampled On",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "period_label",
+   "fieldtype": "Data",
+   "label": "Period",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_remonitor_of",
+   "fieldtype": "Link",
+   "label": "Re-monitoring Of",
+   "options": "Wastewater Monitoring",
+   "description": "The failed round this re-monitoring answers."
+  },
+  {
+   "fieldname": "column_break_lab",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Monitoring Unit",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Monitoring Unit Name",
+   "fetch_from": "supplier.supplier_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vimcerts_no",
+   "fieldtype": "Data",
+   "label": "VIMCERTS No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "report_no",
+   "fieldtype": "Data",
+   "label": "Result Report No",
+   "reqd": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Result Report File",
+   "description": "Required to post."
+  },
+  {
+   "fieldname": "section_permit",
+   "fieldtype": "Section Break",
+   "label": "Limits Applied"
+  },
+  {
+   "fieldname": "wastewater_permit",
+   "fieldtype": "Link",
+   "label": "Permit Version",
+   "options": "Wastewater Permit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "standard_applied",
+   "fieldtype": "Data",
+   "label": "Standard Applied",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_results",
+   "fieldtype": "Section Break",
+   "label": "Results"
+  },
+  {
+   "fieldname": "results",
+   "fieldtype": "Table",
+   "label": "Results",
+   "options": "Wastewater Result"
+  },
+  {
+   "fieldname": "section_outcome",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "fieldname": "overall_result",
+   "fieldtype": "Select",
+   "label": "Overall Result",
+   "options": "\nPass\nFail\nIncomplete\nReference Only",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "nc_status",
+   "fieldtype": "Select",
+   "label": "NC Status",
+   "options": "\nSuggested\nOpened\nDismissed",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nc_name",
+   "fieldtype": "Link",
+   "label": "Non-conformance",
+   "options": "Incident CAPA",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "nc_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason No NC",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Wastewater Monitoring",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Wastewater Monitoring",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "is_submittable": 1,
+ "autoname": "QTNT-.YYYY.-.####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "point_name",
+ "search_fields": "wastewater_point,period_label",
+ "description": "Periodic wastewater monitoring round compared with the permit in effect on the sampling date."
+}

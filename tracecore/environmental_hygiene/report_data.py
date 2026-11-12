@@ -8,7 +8,7 @@ kiện với báo cáo quý M12 (``compliance_audit.chemicals.monthly``) nên s�
 import frappe
 from frappe.utils import add_months, flt, get_first_day, get_last_day, getdate, today
 
-from tracecore.environmental_hygiene import audits, plans, zones
+from tracecore.environmental_hygiene import audits, plans, wastewater_report, zones
 
 MONTH, QUARTER = "Month", "Quarter"
 CHEMICAL_DOCTYPE = "IC Chemical Consumption"
@@ -118,4 +118,6 @@ def build(period_type=MONTH, on=None, department=None):
 			"by_category": sorted(categories.values(), key=lambda e: e["key"]),
 		},
 		"chemicals": chemicals(start, end, department),
+		# FEAT-095 (A-153, FR-M15-12.1): nước thải là toàn viện, không lọc theo khoa
+		"wastewater": None if department else wastewater_report.brief(start, end),
 	}

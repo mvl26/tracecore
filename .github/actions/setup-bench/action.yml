@@ -16,6 +16,10 @@ runs:
         WKHTMLTOX_SHA256: "ee88d74834bdec650f7432c7d3ef1c981e42ae7a762a75a01f7f5da59abc18d5"
       run: |
         sudo apt-get update -q
+        # Ảnh runner ubuntu-22.04 cài sẵn MySQL 8.0; từ 8.0.46 gói này xung đột mariadb-client-core-10.6
+        # ("Breaks: mysql-server-core-8.0", apt thoát 100). CI dùng container MariaDB riêng nên gỡ MySQL cài sẵn trước.
+        sudo apt-get purge -y -q 'mysql-server*' 'mysql-client*' mysql-common || true
+        sudo apt-get autoremove -y -q
         sudo apt-get install -y -q mariadb-client libdmtx0b
         # phiếu kiểm đếm PDF (FEAT-015 S9): wkhtmltopdf 0.12.6.1 patched qt của Frappe v15 + font có chữ Việt
         if ! [[ "$WKHTMLTOX_SHA256" =~ ^[0-9a-f]{64}$ ]]; then

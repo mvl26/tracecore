@@ -10,6 +10,7 @@
 // Màn riêng của bước nằm ở this.screen.
 /* global T4Packing, T6Storage, T2Wash, T1Receiving, T3Assembly, T5Load, T7Issue, T8Usage, LinenCollect, LinenStation, WasteCollect, WasteStation, TcOutbox, tcSync, TC_SNAPSHOT_MS, TcStationHelp, TcPicker, PICK_SCAN_METHODS */
 /* global AuditForm, ExposureReport, CensusStation */
+/* global TcStationUrl */
 
 const RPC_TIMEOUT_MS = 8000;
 const RPC_READ_RETRY_MS = 600;
@@ -211,7 +212,14 @@ class TcStepQueue {
 class TraceCoreStation {
 	constructor(wrapper, authBarrier = Promise.resolve()) {
 		this.wrapper = wrapper;
-		this.station = new URLSearchParams(window.location.search).get("station");
+		// NAV-07: /app/station/<số trạm> hoặc link cũ ?station=<mã>; chỉ có số thì dùng mã đã nhớ (mất mạng),
+		// bắt tay với máy chủ sẽ đổi số thành mã chính xác và đưa thanh địa chỉ về dạng /app/station/<số>
+		const where = TcStationUrl.parse(window.location.pathname, window.location.search);
+		this.stationNo = where.no;
+		this.stationCode = where.name;
+		this.station =
+			where.name ||
+			(where.no ? TcStationUrl.recall(TcStationUrl.storage(), where.no) : null);
 		this.stationInfo = null;
 		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
 		this.pending = null;
@@ -359,11 +367,8 @@ class TraceCoreStation {
 		// phiên trên máy chủ đã đóng hoặc đã chuyển: dispose không được thu hồi token
 		this.session = null;
 		this.restoreCandidate = null;
-		window.history.replaceState(
-			window.history.state,
-			"",
-			`/app/station?station=${encodeURIComponent(station)}`
-		);
+		// số trạm chưa biết ở đây: dùng mã, bắt tay của trang mới đưa về /app/station/<số> (NAV-07)
+		window.history.replaceState(window.history.state, "", TcStationUrl.path(station, null));
 		const pills = this.root.querySelector(".tc-station-pills").innerHTML;
 		const next = new TraceCoreStation(this.wrapper, this.dispose());
 		frappe.tc_station = next;
@@ -1666,21 +1671,36 @@ class TraceCoreStation {
 	async handshake() {
 		if (!this.ownsPage()) return;
 		const generation = this.authGeneration;
-		if (!this.station) {
+		if (!this.station && !this.stationNo) {
 			return this.renderError({
 				title: __("Station not configured"),
-				reason: __("The kiosk address has no station code (?station=TR-...)."),
+				reason: __("The kiosk address has no station number (/app/station/1)."),
 				action: __(
-					"Open the address of this station (ending with ?station= and the station code) or press Help. Call R10 if you do not know the code."
+					"Open the address of this station (/app/station/ followed by the station number) or press Help. Call R10 if you do not know the number."
 				),
+			});
+		}
+		if (!this.station && this.isOffline()) {
+			// mở theo số lần đầu trên máy này: chưa có mã trạm nào được nhớ để làm offline
+			return this.renderError({
+				title: __("Station not configured"),
+				reason: __("This kiosk has not opened station number {0} online yet.", [
+					this.stationNo,
+				]),
+				action: __("Connect to the network and reload the page."),
 			});
 		}
 		if (this.isOffline()) return this.setOffline(true);
 		try {
-			const info = await this.rpc("tracecore.v1.ping", { station: this.station });
+			// chỉ có số trên URL thì máy chủ đổi số → mã; mã trên URL (link cũ) thì dùng mã
+			const args = this.stationCode
+				? { station: this.stationCode }
+				: { station_no: this.stationNo };
+			const info = await this.rpc("tracecore.v1.ping", args);
 			if (!this.ownsPage()) return;
 			if (this.isOffline()) return this.setOffline(true);
 			if (info.station_error) return this.renderError(info.station_error);
+			this.adoptStationAddress(info.station);
 			this.applyStation(info.station);
 			if (generation !== this.authGeneration) return;
 			if (!this.session) {
@@ -1698,6 +1718,16 @@ class TraceCoreStation {
 		} finally {
 			this.root.dataset.readyMs = String(Math.round(performance.now()));
 		}
+	}
+
+	// NAV-07: mã trạm theo máy chủ, nhớ cặp số ↔ mã cho lần mở khi mất mạng, thanh địa chỉ về /app/station/<số>
+	adoptStationAddress(station) {
+		this.station = station.name;
+		this.stationNo = station.station_no || null;
+		TcStationUrl.remember(TcStationUrl.storage(), station.station_no, station.name);
+		const address = TcStationUrl.path(station.name, station.station_no);
+		if (window.location.pathname + window.location.search !== address)
+			window.history.replaceState(window.history.state, "", address);
 	}
 
 	applyStation(station) {

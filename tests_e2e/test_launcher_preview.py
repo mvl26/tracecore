@@ -54,6 +54,9 @@ def mount(page, fail=False):
 	} """,
 		fail,
 	)
+	# NAV-05, NAV-07: tracecore.js dùng TcQuickNav, TcStationUrl (trên site thật nằm trong tracecore.bundle.js)
+	for helper in ("tc_quick_nav.js", "tc_station_url.js"):
+		page.add_script_tag(content=(ROOT / "tracecore/public/js" / helper).read_text())
 	page.add_script_tag(content=(ASSETS / "tracecore.js").read_text())
 	page.evaluate("""() => {
 		const wrapper = document.querySelector('#launcher');

@@ -1,7 +1,7 @@
 # Use Cases: TraceCore
 
 > Version 1.12 (Amendment A-113) · 2026-11-03 · Nguồn: #06 UC v1.10, giữ nguyên ID UC-01..UC-33; [v1.11] thêm UC-34..37 (M10 chất thải y tế) và UC-38..39 (M9: thông báo, import/export) theo quyết định chủ đầu tư 2026-10-17; [v1.12] thêm UC-40..57 (M11–M17 KSNK toàn viện và M9 mở rộng) theo BA v1.12 / Amendment A-113 — người dùng duyệt D1–D11 ngày 03/11/2026, chủ đầu tư chưa xác nhận. Tổng 57 UC, 17 phân hệ, 63 màn hình đã duyệt (SCR-01..43, SCR-47..66; SCR-44..46 đề xuất).
-> **Revision:** v1.11 2026-10-17 Finalized · v1.12 A-113 2026-11-03 Miyano (dev lead) + Claude Code — thêm UC-40..57, actor R11–R13, Phụ lục A 18 dòng; không đổi UC-01..39. · v1.12 A-138 2026-11-10 Miyano (dev lead) + Claude Code — UC-40 kiểm thêm trình độ, khối ngành sức khỏe, chứng chỉ, toàn thời gian theo vai trò, tách người phụ trách và giám sát viên chuyên trách dưới 150 giường, kiểm Chủ tịch / Thư ký / khối bắt buộc của Hội đồng theo bộ tiêu chí cấu hình; thêm FR-M11-01.5..01.8, 02.3, 02.4, 03.3, BRU-ICP-006, 007; không thêm UC.
+> **Revision:** v1.12 A-153 2026-11-12 Miyano (dev lead, người dùng duyệt W1–W8 của đề xuất A-153 và 5 điểm bổ sung trong chat ngày 12/11/2026; chủ đầu tư chưa) + Claude Code — thêm UC-58 Nước thải y tế (M15, FR-M15-08..13). · v1.11 2026-10-17 Finalized · v1.12 A-113 2026-11-03 Miyano (dev lead) + Claude Code — thêm UC-40..57, actor R11–R13, Phụ lục A 18 dòng; không đổi UC-01..39. · v1.12 A-138 2026-11-10 Miyano (dev lead) + Claude Code — UC-40 kiểm thêm trình độ, khối ngành sức khỏe, chứng chỉ, toàn thời gian theo vai trò, tách người phụ trách và giám sát viên chuyên trách dưới 150 giường, kiểm Chủ tịch / Thư ký / khối bắt buộc của Hội đồng theo bộ tiêu chí cấu hình; thêm FR-M11-01.5..01.8, 02.3, 02.4, 03.3, BRU-ICP-006, 007; không thêm UC.
 > Tài liệu use-case-centric theo use-case-guide: đặc tả văn bản là nội dung chính, sơ đồ Mermaid theo phân hệ là minh họa. Không có user story (US-xx chỉ giữ làm tham chiếu gốc). Mọi luồng chính / thay thế / ngoại lệ được giữ nguyên nội dung từ #06 v1.10; nhãn A1/E1 là nhãn gốc của #06 để các TC-xx-xx tiếp tục tham chiếu được.
 
 ## Mục lục
@@ -22,7 +22,7 @@
 | M12 Giám sát tuân thủ [v1.12] | UC-43, UC-44, UC-45, UC-46 |
 | M13 Giám sát nhiễm khuẩn bệnh viện [v1.12] | UC-47, UC-48, UC-49, UC-50 |
 | M14 Vi sinh, đa kháng, cách ly, ổ dịch [v1.12] | UC-51, UC-52, UC-53 |
-| M15 Vệ sinh môi trường và cơ sở hạ tầng [v1.12] | UC-54 |
+| M15 Vệ sinh môi trường và cơ sở hạ tầng [v1.12] | UC-54; [A-153] UC-58 |
 | M16 An toàn nghề nghiệp [v1.12] | UC-55 |
 | M17 An toàn thực phẩm và tư vấn người bệnh [v1.12] | UC-56 |
 | M9 mở rộng — Bảng chỉ số KSNK toàn viện [v1.12] | UC-57 |
@@ -2368,8 +2368,12 @@ graph LR
     ext(["Đơn vị vệ sinh thuê ngoài (actor ngoài)"])
     subgraph m15["TraceCore · M15 Vệ sinh môi trường và cơ sở hạ tầng"]
         uc54(("UC-54<br/>Vùng, phiếu, xét nghiệm môi trường, hạ tầng, báo cáo"))
+        uc58(("UC-58<br/>Nước thải y tế: GPMT, lịch, kết quả quan trắc"))
     end
     r01 --> uc54
+    r01 --> uc58
+    r11 --> uc58
+    r02 -.-> uc58
     r11 --> uc54
     r12 -.-> uc54
     r02 -.-> uc54
@@ -2417,6 +2421,46 @@ _Nét liền = actor chính (primary); nét đứt = actor phụ (secondary)._
 **Open issues:** Danh sách mức nguy cơ và tần suất mặc định; ngưỡng môi trường khởi tạo do chuyên gia soạn (OQ-V12-08, OQ-V12-09).
 
 _Nguồn: BA v1.12 §8.1 bước 1–4, §8.3 FR-M15-01..07, §8.4; TT 16/2018 Điều 11; QĐ 3916; QĐ 38. Không có US/TC/API gốc — bước detailed-design bổ sung._
+
+### UC-58: Nước thải y tế: GPMT, lịch quan trắc, kết quả quan trắc [A-153]
+
+- **ID:** UC-58
+- **Actors:** R01 Trưởng khoa KSNK (primary — GPMT, điểm quan trắc, quyết định NC); R11 Giám sát viên KSNK và người phụ trách HTXLNT (thường phòng HCQT, được cấp R11) (primary — ghi đợt quan trắc); R02 (secondary — xem); R13 (secondary — xem tổng hợp); Đơn vị quan trắc có VIMCERTS (actor ngoài — lấy mẫu, phân tích, phát hành phiếu kết quả)
+- **Description:** R01 khai báo `Wastewater Point` và `Wastewater Permit` theo giấy phép môi trường của bệnh viện (quy chuẩn, cột, thông số, giới hạn, tần suất từng thông số, thông số quan trắc tự động). Hệ thống tính lịch quan trắc 12 tháng theo kỳ lịch, nhắc đến hạn/quá hạn. R11 ghi `Wastewater Monitoring` theo phiếu kết quả của đơn vị quan trắc; hệ thống so giới hạn của GPMT hiệu lực tại ngày lấy mẫu, Không đạt thì gắn cờ điểm, thông báo, đề nghị NC và tạo việc quan trắc lại.
+- **Preconditions:** `Supplier` đơn vị quan trắc có `tc_vimcerts_no`, `tc_vimcerts_valid_until`; người phụ trách điểm có tài khoản (User).
+- **Postconditions (success):** Đợt ghi sổ có bản chụp giới hạn từng thông số, kết luận Đạt / Không đạt / Thiếu thông số / Tham khảo; lịch cập nhật; điểm Không đạt mang cờ đến khi đợt quan trắc lại Đạt; báo cáo PDF/Excel; chỉ số kỳ đúng hạn sang M9.
+- **Traces to:** FR-M15-08, FR-M15-08.1, FR-M15-08.2, FR-M15-09, FR-M15-09.1, FR-M15-10, FR-M15-10.1, FR-M15-11, FR-M15-12, FR-M15-12.1, FR-M15-13, FR-M15-13.1
+- **Business rules:** BRU-ENV-004 (giới hạn theo phiên bản GPMT tại ngày lấy mẫu), BRU-ENV-005 (đánh giá đợt, KPH), BRU-ENV-006 (kỳ đủ thông số), BRU-ENV-003 (mở rộng: Không đạt phải quan trắc lại)
+- **Screens:** SCR-67 (Nước thải y tế — WEB, Page `tc-ksnk` slug `nuoc-thai`); Desk form GPMT, điểm, đợt quan trắc
+- **Priority:** Must (FR-M15-08.2, FR-M15-12.1, FR-M15-13 Should) · Frequency: đợt quan trắc theo GPMT (thường 3 hoặc 6 tháng/lần); GPMT sửa khi được cấp/điều chỉnh.
+- **Related NFR:** NFR-MAINT-04 (giới hạn là cấu hình có phiên bản, mẫu quy chuẩn Nháp), NFR-SEC-09, NFR-ACC-01 (trạng thái có chữ)
+
+**Main success scenario**
+1. R01 mở SCR-67, khai báo điểm quan trắc (đầu vào / đầu ra HTXLNT / điểm xả, người phụ trách).
+2. R01 tạo GPMT Nháp: số GPMT, cơ quan cấp, hạn, quy chuẩn và cột, ngày hiệu lực, bản scan; nạp danh mục thông số mẫu theo quy chuẩn (FR-M15-08.2) rồi sửa theo GPMT thật: điểm, thông số, giới hạn, tần suất, đánh dấu thông số tự động; ghi sổ = duyệt.
+3. Hệ thống hiển thị lịch năm theo điểm × kỳ; còn 15 ngày đến cuối kỳ mà chưa đủ thông số → nhắc R01, R11 và người phụ trách.
+4. Nhận phiếu kết quả, R11 bấm "Ghi đợt quan trắc": chọn điểm, ngày lấy mẫu → hệ thống nạp thông số của GPMT hiệu lực tại ngày đó; R11 chọn đơn vị quan trắc, nhập số phiếu, giá trị từng thông số (hoặc KPH), đính kèm phiếu kết quả, ghi sổ.
+5. Hệ thống so từng giá trị với giới hạn, lưu bản chụp, kết luận đợt; kỳ đủ thông số thành "Đã quan trắc".
+6. Cuối năm R01 xuất báo cáo nước thải (PDF/Excel) làm phụ lục báo cáo công tác bảo vệ môi trường.
+
+**Alternate flows**
+- A1. GPMT được điều chỉnh → R01 bấm "Cập nhật GPMT" → hệ thống tạo phiên bản Nháp mới; duyệt xong, bản cũ ghi `superseded_by`; đợt cũ giữ kết quả.
+- A2. Điểm đầu vào HTXLNT → chỉ lưu giá trị để tham khảo hiệu suất xử lý, kết luận "Tham khảo", không tính vượt.
+- A3. Thông số quan trắc tự động liên tục → hiện "Không áp dụng" trên lịch, không nhắc (W8).
+- A4. Bệnh viện còn áp dụng QCVN 28:2010 theo GPMT trong lộ trình chuyển tiếp → GPMT ghi QCVN 28:2010; GPMT mới theo QCVN 40:2025 có hiệu lực từ ngày ghi trên GPMT.
+
+**Exception flows**
+- E1. Đợt Không đạt → cờ "Vượt chuẩn – chờ quan trắc lại", thông báo R01, R11, người phụ trách, ToDo quan trắc lại, đề nghị NC Environment; R01 mở NC hoặc bỏ qua có lý do (Audit Log); đợt quan trắc lại Đạt thì tắt cờ (FR-M15-11).
+- E2. Đơn vị quan trắc chưa có VIMCERTS hoặc hết hạn tại ngày lấy mẫu → chặn lưu, lỗi inline (FR-M15-13).
+- E3. Không đính kèm phiếu kết quả → không ghi sổ được (FR-M15-10.1).
+- E4. Không có GPMT đã duyệt hiệu lực tại ngày lấy mẫu cho điểm → chặn lưu, đề nghị R01 duyệt GPMT.
+- E5. Hết kỳ chưa đủ thông số → "Thiếu thông số" (có đợt) hoặc "Quá hạn" (không có đợt); nhắc R01 một lần (FR-M15-09.1).
+- E6. GPMT dòng không tự động thiếu tần suất → không lưu được (FR-M15-08).
+
+**Open issues:** Giá trị giới hạn QCVN 40:2025 cột A/B chờ chuyên gia bệnh viện đối chiếu văn bản; nhật ký vận hành HTXLNT (W6) giai đoạn 2.
+
+_Nguồn: đề xuất A-153 (12/11/2026, người dùng duyệt W1–W8); Luật BVMT 2020 Điều 111; NĐ 08/2022 Điều 97; QCVN 40:2025/BTNMT; QCVN 28:2010/BTNMT; GPMT của bệnh viện._
+
 
 ## M16 — An toàn nghề nghiệp [NEW v1.12]
 
@@ -2663,6 +2707,7 @@ _Nguồn: BA v1.12 §11.2 FR-M9-24..30, §11.1; TT 16/2018 Điều 17, 20; QĐ 3
 | UC-52 | Lệnh cách ly và phòng cách ly theo khoa [v1.12] | M14 | R08, R12, R11 | FR-M14-06, FR-M14-07 | SCR-60 |
 | UC-53 | Điều tra ổ dịch và khai báo bệnh truyền nhiễm [v1.12] | M14 | R01, R11 | FR-M14-09, FR-M14-10 | SCR-61, SCR-15 |
 | UC-54 | Vệ sinh môi trường: vùng, phiếu, xét nghiệm môi trường, hạ tầng, báo cáo [v1.12] | M15 | R01, R11 | FR-M15-01, FR-M15-02, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07 | SCR-62, SCR-52 |
+| UC-58 | Nước thải y tế: GPMT, lịch quan trắc, kết quả quan trắc [A-153] | M15 | R01, R11 | FR-M15-08, FR-M15-09, FR-M15-10, FR-M15-11, FR-M15-12, FR-M15-13 | SCR-67 |
 | UC-55 | Báo cáo và theo dõi phơi nhiễm nghề nghiệp; tiêm chủng nhân viên [v1.12] | M16 | Nhân viên/R08, R11, R01, R02 | FR-M16-01, FR-M16-02, FR-M16-03, FR-M16-04, FR-M16-05, FR-M16-06, FR-M16-07, FR-M16-08, FR-M16-09 | SCR-63, SCR-64, SCR-15 |
 | UC-56 | An toàn thực phẩm và truyền thông người bệnh [v1.12] | M17 | R11, R01, R08 | FR-M17-01, FR-M17-02, FR-M17-03, FR-M17-04, FR-M17-05, FR-M17-06 | SCR-65, SCR-52, SCR-62, SCR-61 |
 | UC-57 | Bảng chỉ số KSNK toàn viện, báo cáo Hội đồng, Cổng khoa, tự đánh giá QĐ 38, nhập file ngoài, xuất hồ sơ [v1.12] | M9 | R01, R13, R12, R10 | FR-M9-24, FR-M9-25, FR-M9-26, FR-M9-27, FR-M9-28, FR-M9-29, FR-M9-30 | SCR-66, SCR-43, SCR-42 |

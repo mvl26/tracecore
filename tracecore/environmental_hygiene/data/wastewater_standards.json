@@ -1,0 +1,83 @@
+{
+ "version": 1,
+ "status": "Draft",
+ "note": "Mẫu khởi tạo (FEAT-095, A-153; NFR-MAINT-04) — chờ chuyên gia bệnh viện duyệt. R01 nạp mẫu vào GPMT Nháp rồi sửa theo giấy phép môi trường thật trước khi duyệt; bench migrate không ghi mẫu vào GPMT. QCVN 28:2010/BTNMT: giá trị C của Bảng 1, chưa nhân hệ số K (ghi hệ số ở factor_note của GPMT). QCVN 40:2025/BTNMT: chỉ có danh mục thông số, giá trị giới hạn để trống chờ đối chiếu văn bản.",
+ "standards": [
+  {
+   "standard": "QCVN 28:2010/BTNMT",
+   "legal_ref": "QCVN 28:2010/BTNMT Bảng 1 (Nháp — chờ chuyên gia duyệt)",
+   "columns": {
+    "A": [
+     {"parameter": "pH", "unit": "-", "min_value": 6.5, "max_value": 8.5},
+     {"parameter": "BOD5 (20 °C)", "unit": "mg/L", "max_value": 30},
+     {"parameter": "COD", "unit": "mg/L", "max_value": 50},
+     {"parameter": "TSS", "unit": "mg/L", "max_value": 50},
+     {"parameter": "Sunfua (theo H2S)", "unit": "mg/L", "max_value": 1.0},
+     {"parameter": "Amoni (theo N)", "unit": "mg/L", "max_value": 5},
+     {"parameter": "Nitrat (theo N)", "unit": "mg/L", "max_value": 30},
+     {"parameter": "Phosphat (theo P)", "unit": "mg/L", "max_value": 6},
+     {"parameter": "Dầu mỡ động thực vật", "unit": "mg/L", "max_value": 10},
+     {"parameter": "Tổng hoạt độ phóng xạ α", "unit": "Bq/L", "max_value": 0.1},
+     {"parameter": "Tổng hoạt độ phóng xạ β", "unit": "Bq/L", "max_value": 1.0},
+     {"parameter": "Tổng Coliforms", "unit": "MPN/100mL", "max_value": 3000},
+     {"parameter": "Salmonella", "unit": "Vi khuẩn/100mL", "detect_only": 1},
+     {"parameter": "Shigella", "unit": "Vi khuẩn/100mL", "detect_only": 1},
+     {"parameter": "Vibrio cholerae", "unit": "Vi khuẩn/100mL", "detect_only": 1}
+    ],
+    "B": [
+     {"parameter": "pH", "unit": "-", "min_value": 6.5, "max_value": 8.5},
+     {"parameter": "BOD5 (20 °C)", "unit": "mg/L", "max_value": 50},
+     {"parameter": "COD", "unit": "mg/L", "max_value": 100},
+     {"parameter": "TSS", "unit": "mg/L", "max_value": 100},
+     {"parameter": "Sunfua (theo H2S)", "unit": "mg/L", "max_value": 4.0},
+     {"parameter": "Amoni (theo N)", "unit": "mg/L", "max_value": 10},
+     {"parameter": "Nitrat (theo N)", "unit": "mg/L", "max_value": 50},
+     {"parameter": "Phosphat (theo P)", "unit": "mg/L", "max_value": 10},
+     {"parameter": "Dầu mỡ động thực vật", "unit": "mg/L", "max_value": 20},
+     {"parameter": "Tổng hoạt độ phóng xạ α", "unit": "Bq/L", "max_value": 0.1},
+     {"parameter": "Tổng hoạt độ phóng xạ β", "unit": "Bq/L", "max_value": 1.0},
+     {"parameter": "Tổng Coliforms", "unit": "MPN/100mL", "max_value": 5000},
+     {"parameter": "Salmonella", "unit": "Vi khuẩn/100mL", "detect_only": 1},
+     {"parameter": "Shigella", "unit": "Vi khuẩn/100mL", "detect_only": 1},
+     {"parameter": "Vibrio cholerae", "unit": "Vi khuẩn/100mL", "detect_only": 1}
+    ]
+   }
+  },
+  {
+   "standard": "QCVN 40:2025/BTNMT",
+   "legal_ref": "QCVN 40:2025/BTNMT (TT 06/2025/TT-BTNMT) — giới hạn chờ chuyên gia đối chiếu văn bản",
+   "columns": {
+    "A": [
+     {"parameter": "pH", "unit": "-"},
+     {"parameter": "BOD5 (20 °C)", "unit": "mg/L"},
+     {"parameter": "COD", "unit": "mg/L"},
+     {"parameter": "TSS", "unit": "mg/L"},
+     {"parameter": "Sunfua (theo H2S)", "unit": "mg/L"},
+     {"parameter": "Amoni (theo N)", "unit": "mg/L"},
+     {"parameter": "Nitrat (theo N)", "unit": "mg/L"},
+     {"parameter": "Phosphat (theo P)", "unit": "mg/L"},
+     {"parameter": "Dầu mỡ động thực vật", "unit": "mg/L"},
+     {"parameter": "Tổng Coliforms", "unit": "MPN/100mL"},
+     {"parameter": "Salmonella", "unit": "Vi khuẩn/100mL"},
+     {"parameter": "Shigella", "unit": "Vi khuẩn/100mL"},
+     {"parameter": "Vibrio cholerae", "unit": "Vi khuẩn/100mL"}
+    ],
+    "B": [
+     {"parameter": "pH", "unit": "-"},
+     {"parameter": "BOD5 (20 °C)", "unit": "mg/L"},
+     {"parameter": "COD", "unit": "mg/L"},
+     {"parameter": "TSS", "unit": "mg/L"},
+     {"parameter": "Sunfua (theo H2S)", "unit": "mg/L"},
+     {"parameter": "Amoni (theo N)", "unit": "mg/L"},
+     {"parameter": "Nitrat (theo N)", "unit": "mg/L"},
+     {"parameter": "Phosphat (theo P)", "unit": "mg/L"},
+     {"parameter": "Dầu mỡ động thực vật", "unit": "mg/L"},
+     {"parameter": "Tổng Coliforms", "unit": "MPN/100mL"},
+     {"parameter": "Salmonella", "unit": "Vi khuẩn/100mL"},
+     {"parameter": "Shigella", "unit": "Vi khuẩn/100mL"},
+     {"parameter": "Vibrio cholerae", "unit": "Vi khuẩn/100mL"}
+    ]
+   }
+  }
+ ]
+}

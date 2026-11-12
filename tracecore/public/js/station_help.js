@@ -3,7 +3,7 @@
 // "Báo sự cố" gửi phản hồi/báo lỗi kèm ảnh chụp màn hình tới R10 (tracecore.v1.feedback.create, @idempotent).
 // Ảnh chụp bằng html2canvas để trong app (public/js/lib/html2canvas), nạp lười; ô mã bệnh nhân / PIN bị che trước khi
 // chụp. Nối sau station.js qua hook page_js; TraceCoreStation gọi open() và chuyển data-action "help-*" vào onAction().
-/* global uuid4, clientTs, esc */
+/* global uuid4, clientTs, esc, TcStationUrl */
 
 const TC_HELP_GET = "tracecore.v1.help.get";
 const TC_FEEDBACK_CREATE = "tracecore.v1.feedback.create";
@@ -55,9 +55,9 @@ class TcStationHelp {
 	// địa chỉ đúng của trạm đang mở để ghim lối tắt kiosk/PDA; chưa có mã trạm thì không có
 	stationAddress() {
 		const code = this.station.station;
-		return code
-			? `${window.location.origin}/app/station?station=${encodeURIComponent(code)}`
-			: "";
+		// NAV-07: theo Số trạm (/app/station/<số>); trạm chưa có số giữ ?station=<mã>
+		const no = this.station.stationInfo && this.station.stationInfo.station_no;
+		return code ? `${window.location.origin}${TcStationUrl.path(code, no)}` : "";
 	}
 
 	cached(value) {

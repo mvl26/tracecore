@@ -57,3 +57,35 @@ class TestPingInactiveStation(IsolatedTestCase):
 		for key in ("title", "reason", "action"):
 			self.assertTrue(error[key], msg=key)
 		self.assertIn("TR-004", error["reason"])
+
+
+class TestPingByStationNumber(FrappeTestCase):
+	"""NAV-07: kiosk mở /app/station/<số trạm>; ping đổi số trạm thành mã trạm."""
+
+	def test_number_resolves_to_station(self):
+		result = v1.ping(station_no="4")
+		self.assertEqual(result["station"]["name"], "TR-004")
+		self.assertEqual(result["station"]["station_no"], 4)
+		self.assertIsNone(result["station_error"])
+
+	def test_code_wins_over_number(self):
+		result = v1.ping(station="TR-004", station_no=1)
+		self.assertEqual(result["station"]["name"], "TR-004")
+
+	def test_unknown_number_is_a_blocking_error(self):
+		for number in (987, "abc", 0):
+			result = v1.ping(station_no=number)
+			self.assertIsNone(result["station"], number)
+			error = result["station_error"]
+			self.assertEqual(error["code"], "STATION_NOT_FOUND", number)
+			for key in ("title", "reason", "action"):
+				self.assertTrue(error[key], msg=key)
+
+	def test_duplicate_number_is_a_blocking_error(self):
+		from unittest.mock import patch
+
+		with patch("frappe.get_all", return_value=["TR-004", "TR-099"]):
+			result = v1.ping(station_no=4)
+		self.assertIsNone(result["station"])
+		self.assertEqual(result["station_error"]["code"], "STATION_NUMBER_DUPLICATE")
+		self.assertIn("TR-099", result["station_error"]["reason"])

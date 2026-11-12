@@ -1,5 +1,7 @@
 """Read-only navigation. Destination permissions and card authentication remain authoritative."""
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import cint
@@ -736,10 +738,12 @@ def _management_links():
 	return links
 
 
-def _admin_modules():
-	"""Phân hệ của sidebar admin; bỏ link không có quyền, nhóm rỗng và phân hệ rỗng."""
+def _admin_modules(only=None):
+	"""Phân hệ của sidebar admin; bỏ link không có quyền, nhóm rỗng và phân hệ rỗng (``only``: chỉ các key này)."""
 	modules = []
 	for module in ADMIN_MODULES:
+		if only is not None and module["key"] not in only:
+			continue
 		sections = []
 		for kind, targets in module["sections"]:
 			links = [link for link in map(_link, targets) if link]
@@ -748,6 +752,30 @@ def _admin_modules():
 		if sections:
 			modules.append({**module, "sections": sections})
 	return modules
+
+
+# NAV-05: ô truy cập nhanh trên navbar Desk — phân hệ của trang chủ và Page KSNK toàn viện
+QUICK_NAV_MODULES = ("instruments", "linen", "waste")
+QUICK_NAV_KSNK_PAGE = "tc-ksnk"
+_TC_ROLE = re.compile(r"^TC R\d\d$")
+
+
+def quick_nav_keys():
+	"""Key các ô tài khoản hiện tại mở được, theo thứ tự thiết kế; không có role TC thì rỗng.
+
+	System Manager không có role TC (quản trị app khác trên site dùng chung) không thấy thanh. Phân hệ theo
+	NAV-02 (quản trị) / NAV-04 (luồng của role); KSNK theo quyền Page ``tc-ksnk``.
+	"""
+	roles = set(frappe.get_roles())
+	if not any(_TC_ROLE.match(role) for role in roles):
+		return []
+	admin = frappe.session.user == "Administrator" or "System Manager" in roles
+	modules = _admin_modules(QUICK_NAV_MODULES) if admin else _role_modules(roles)
+	have = {module["key"] for module in modules}
+	keys = [key for key in QUICK_NAV_MODULES if key in have]
+	if _roles_permit("Page", QUICK_NAV_KSNK_PAGE):
+		keys.append("ksnk")
+	return keys
 
 
 def _link(target):

@@ -36,7 +36,8 @@ class TestStationHelpAssets(FrappeTestCase):
 
 	def test_missing_station_points_to_help_and_guide_shows_station_address(self):
 		# ticket 03/11/2026: máy thiếu ?station= vẫn mở Trợ giúp (bài chung); bài trạm hiện địa chỉ của trạm này
-		missing = self.station_js[self.station_js.index("if (!this.station) {") :]
+		# NAV-07: trang trạm mở theo số trạm (/app/station/<số>) hoặc mã trạm (link cũ)
+		missing = self.station_js[self.station_js.index("if (!this.station && !this.stationNo) {") :]
 		missing = missing[: missing.index("}")]
 		self.assertIn("press Help", missing)
 		self.assertIn("tc-help-address", self.js)

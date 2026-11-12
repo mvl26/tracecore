@@ -1,0 +1,37 @@
+/* CSS viết tay của thành phần TraceCore trên Desk (app_include_css). Chỉ dùng biến --tc-* (check_architecture R4);
+   biến sinh từ docs/tokens.json nằm ở tracecore.bundle.css. */
+
+/* NAV-05: thanh truy cập nhanh trên navbar, bên trái ô tìm kiếm; ẩn dưới cỡ lg bằng d-none d-lg-flex */
+.navbar .tc-quick-nav {
+	align-items: center;
+	gap: var(--tc-sp-1);
+	margin-left: var(--tc-sp-4);
+	margin-right: var(--tc-sp-3);
+	flex-shrink: 0;
+}
+.navbar .tc-quick-nav a {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--tc-sp-1-5);
+	padding: var(--tc-sp-1) var(--tc-sp-3);
+	border-radius: var(--tc-r-pill);
+	color: var(--tc-text-2);
+	font-size: var(--tc-fs-md);
+	font-weight: var(--tc-fw-regular);
+	white-space: nowrap;
+	text-decoration: none;
+	transition: background var(--tc-dur-fast) var(--tc-ease), color var(--tc-dur-fast) var(--tc-ease);
+}
+.navbar .tc-quick-nav a .icon {
+	--icon-stroke: currentColor;
+}
+.navbar .tc-quick-nav a:hover {
+	background: var(--tc-primary-soft);
+	color: var(--tc-primary);
+	text-decoration: none;
+}
+.navbar .tc-quick-nav a[aria-current="page"] {
+	background: var(--tc-primary);
+	color: var(--tc-on-primary);
+	font-weight: var(--tc-fw-bold);
+}

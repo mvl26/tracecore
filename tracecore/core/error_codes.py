@@ -329,6 +329,15 @@ UNMAPPED_BLOCK_CODES = frozenset(
 		"ENV_ZONE_REQUIRED",
 		"ENV_ZONE_RISK_REQUIRED",
 		"ENV_ZONE_VENDOR_REQUIRED",
+		# FEAT-095 (A-153): GPMT, đợt quan trắc nước thải — lỗi nhập liệu KSNK, không thuộc danh mục lỗi trạm
+		"WW_IC_DEPARTMENT_MISSING",
+		"WW_NC_NOT_SUGGESTED",
+		"WW_PERMIT_MISSING",
+		"WW_REMONITOR_INVALID",
+		"WW_REPORT_FILE_REQUIRED",
+		"WW_SAMPLE_DATE_INVALID",
+		"WW_VIMCERTS_EXPIRED",
+		"WW_VIMCERTS_MISSING",
 		# FEAT-072 (A-149 Q1): phiếu điều tra cắt ngang — lỗi nhập liệu KSNK, không thuộc danh mục lỗi trạm
 		"PREVALENCE_ANSWER_MISSING",
 		"PREVALENCE_DUPLICATE",

@@ -59,7 +59,11 @@ fixtures = [
 
 # include js, css files in header of desk.html
 # Biến --tc-* sinh từ docs/tokens.json (scripts/build_tokens.py) + ánh xạ biến Frappe Desk
-app_include_css = ["tracecore.bundle.css"]  # bundle có hash: tokens.css + tracecore-theme.css
+# tc_desk.bundle.css: CSS viết tay của thành phần TraceCore trên Desk (thanh truy cập nhanh NAV-05), chỉ biến --tc-*
+app_include_css = [
+	"tracecore.bundle.css",
+	"tc_desk.bundle.css",
+]  # bundle có hash: tokens.css + tracecore-theme.css
 # Hàm dùng chung tracecore.codes.* (in nhãn QR đối tượng, cấp mã cuộn — FEAT-005): bundle có hash nhập tc_codes.js
 app_include_js = ["tracecore.bundle.js"]
 
@@ -81,7 +85,12 @@ app_include_js = ["tracecore.bundle.js"]
 # FEAT-027): Frappe nối các file này sau station.js trong script của Page station
 # mã trạm đổi thì bỏ script Page trạm trong localStorage của trình duyệt (tc_page_cache.js)
 # tên bệnh viện cạnh logo trên thanh điều hướng lấy theo Website Settings của site (tc_launcher.js)
-extend_bootinfo = ["tracecore.ui.page_cache.extend_bootinfo", "tracecore.ui.branding.extend_bootinfo"]
+# ô truy cập nhanh tài khoản mở được trên navbar (NAV-05, tc_launcher.js)
+extend_bootinfo = [
+	"tracecore.ui.page_cache.extend_bootinfo",
+	"tracecore.ui.branding.extend_bootinfo",
+	"tracecore.ui.quick_nav.extend_bootinfo",
+]
 
 page_js = {
 	"station": [
@@ -615,6 +624,14 @@ doc_events.update(
 		"Environmental Sample": dict(_AUDIT_EVENTS),
 	}
 )
+# FEAT-095 (A-153): điểm quan trắc, GPMT có phiên bản, đợt quan trắc nước thải — Audit Log, không xóa
+doc_events.update(
+	{
+		"Wastewater Point": dict(_AUDIT_EVENTS),
+		"Wastewater Permit": dict(_AUDIT_EVENTS),
+		"Wastewater Monitoring": dict(_AUDIT_EVENTS),
+	}
+)
 # FEAT-069 (A-150): ổ dịch, khai báo bệnh truyền nhiễm (sửa sau ghi sổ qua dịch vụ), danh mục bệnh, ngưỡng và cảnh báo
 # cụm ca — Audit Log, không xóa (mã BN Password không vào Audit Log)
 doc_events.update(
@@ -826,6 +843,8 @@ tracecore_ksnk_badges = [
 ]
 # FEAT-073: người chế biến quá hạn khám + sự cố ngộ độc chờ quyết định NC/ổ dịch (SCR-65)
 tracecore_ksnk_badges += ["tracecore.food_safety.dashboard.badges"]
+# FEAT-095 (A-153): điểm nước thải đang cờ vượt chuẩn + kỳ quan trắc quá hạn (SCR-67)
+tracecore_ksnk_badges += ["tracecore.environmental_hygiene.wastewater.badges"]
 # FEAT-065 (A-145 Q3): việc cần xử lý của bảng chỉ số KSNK (SCR-66) và Cổng khoa — mỗi hàm nhận (user, department; trống
 # = toàn viện), trả [{key, severity error/warn/info, title, count, detail, link}] (admin_reports.ic_board.todos).
 # FEAT-068 đăng ký cách ly đang mở, FEAT-063 cảnh báo cụm ca.
@@ -986,6 +1005,8 @@ scheduler_events = {
 		"tracecore.microbiology.clusters.run_daily",
 		# FEAT-073, FR-M17-02: nhắc R11 hạn khám sức khỏe người chế biến còn 30 ngày / quá hạn
 		"tracecore.food_safety.handlers.run_daily",
+		# FEAT-095, FR-M15-09.1 (A-153): nhắc kỳ quan trắc nước thải đến hạn (15 ngày) / quá hạn, mỗi điểm mỗi kỳ một lần
+		"tracecore.environmental_hygiene.wastewater_schedule.run_daily",
 	],
 	"monthly": [
 		# FEAT-032, FR-M8-04.3: báo R01 báo cáo ghi đè tháng trước
