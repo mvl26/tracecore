@@ -165,45 +165,41 @@ const TcKsnk = {
 	railHtml(nav, active, open) {
 		const esc = TcKsnk.esc;
 		const opened = open === undefined ? [TcKsnk.groupOf(nav, active)] : open;
-		return (
-			((nav && nav.groups) || [])
-				.filter((group) => group.items.length)
-				.map((group) => {
-					const items = group.items
-						.map((item) => {
-							const on = item.slug === active;
-							const badge = item.badge
-								? `<span class="tc-ksnk-count" title="${esc(
-										__("{0} pending", [item.badge])
-								  )}">${esc(item.badge)}</span>`
-								: "";
-							return (
-								`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
-									on ? " is-active" : ""
-								}"` +
-								` data-slug="${esc(item.slug)}"${
-									on ? ' aria-current="page"' : ""
-								}>` +
-								`<span>${esc(item.label)}</span>${badge}</a>`
-							);
-						})
-						.join("");
-					const pending = group.items.reduce(
-						(sum, item) => sum + (Number(item.badge) || 0),
-						0
-					);
-					return TcKsnk.groupHtml(
-						group.key,
-						group.label,
-						items,
-						opened.includes(group.key),
-						pending
-					);
-				})
-				.join("")
-			// NAV-06: tạm ẩn nhóm "Bề mặt khác" theo yêu cầu người dùng (12/11/2026); bật lại thì bỏ comment dòng dưới
-			// + TcKsnk.otherSurfacesHtml(nav, opened)
-		);
+		return ((nav && nav.groups) || [])
+			.filter((group) => group.items.length)
+			.map((group) => {
+				const items = group.items
+					.map((item) => {
+						const on = item.slug === active;
+						const badge = item.badge
+							? `<span class="tc-ksnk-count" title="${esc(
+									__("{0} pending", [item.badge])
+							  )}">${esc(item.badge)}</span>`
+							: "";
+						return (
+							`<a href="/app/tc-ksnk/${esc(item.slug)}" class="tc-ksnk-nav-item${
+								on ? " is-active" : ""
+							}"` +
+							` data-slug="${esc(item.slug)}"${on ? ' aria-current="page"' : ""}>` +
+							`<span>${esc(item.label)}</span>${badge}</a>`
+						);
+					})
+					.join("");
+				const pending = group.items.reduce(
+					(sum, item) => sum + (Number(item.badge) || 0),
+					0
+				);
+				return TcKsnk.groupHtml(
+					group.key,
+					group.label,
+					items,
+					opened.includes(group.key),
+					pending
+				);
+			})
+			.join("");
+		// NAV-06: tạm ẩn nhóm "Bề mặt khác" theo yêu cầu người dùng (12/11/2026); bật lại thì bỏ comment dòng dưới
+		// + TcKsnk.otherSurfacesHtml(nav, opened)
 	},
 
 	// Nhóm "Bề mặt khác" (ảnh SCR-66): lối sang Cổng khoa (DEPT) và PDA; ẩn với vai trò chỉ đọc. Quyền thật ở từng trang.
