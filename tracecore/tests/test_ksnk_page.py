@@ -186,12 +186,11 @@ class TestRailCollapsibleGroups(FrappeTestCase):
 
 	def test_group_of_active_screen_opens_others_collapse(self):
 		out = self._run('emit(groups(TcKsnk.railHtml(nav, "tuan-thu")));')
-		program, compliance, other = out
+		program, compliance = out  # nhóm "Bề mặt khác" đang tạm ẩn
 		self.assertIn("is-collapsed", program)
 		self.assertIn('aria-expanded="false"', program)
 		self.assertNotIn("is-collapsed", compliance)
 		self.assertIn('aria-expanded="true"', compliance)
-		self.assertIn("is-collapsed", other)  # nhóm "Bề mặt khác" cũng thu gọn
 		# mục của nhóm thu gọn vẫn có trong DOM nhưng bị ẩn (hidden), không bị xóa
 		self.assertRegex(program, r'<div class="tc-ksnk-group-items"[^>]*\bhidden\b')
 		self.assertIn('data-slug="co-cau"', program)
@@ -216,9 +215,9 @@ class TestRailCollapsibleGroups(FrappeTestCase):
 	def test_explicit_open_groups_override_active_group(self):
 		collapsed = 'groups(TcKsnk.railHtml(nav, "chi-so", OPEN)).map((g) => g.includes("is-collapsed"))'
 		for open_, expected in (
-			('["compliance"]', [True, False, True]),
-			("[]", [True, True, True]),
-			('["program", "compliance", "other"]', [False, False, False]),
+			('["compliance"]', [True, False]),
+			("[]", [True, True]),
+			('["program", "compliance"]', [False, False]),
 		):
 			self.assertEqual(self._run(f"emit({collapsed.replace('OPEN', open_)});"), expected, open_)
 

@@ -200,7 +200,9 @@ const TcKsnk = {
 						pending
 					);
 				})
-				.join("") + TcKsnk.otherSurfacesHtml(nav, opened)
+				.join("")
+			// NAV-06: tạm ẩn nhóm "Bề mặt khác" theo yêu cầu người dùng (12/11/2026); bật lại thì bỏ comment dòng dưới
+			// + TcKsnk.otherSurfacesHtml(nav, opened)
 		);
 	},
 
