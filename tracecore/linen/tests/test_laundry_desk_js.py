@@ -16,9 +16,7 @@ class TestLaundryDeskComplete(IsolatedTestCase):
 		return run_js(self, [FORM], [NAMES], SETUP + code)
 
 	def test_payload_has_client_ts_with_offset(self):
-		out = self._run(
-			"""emit(laundry_payload(frm, {dryer: "MS-01", clean_ok: "Pass", dry_ok: "Fail"}));"""
-		)
+		out = self._run("""emit(laundry_payload(frm, {dryer: "MS-01", clean_ok: "Pass", dry_ok: "Fail"}));""")
 		self.assertEqual(out["client_ts"], "2026-11-12T09:30:00+07:00")
 		self.assertEqual((out["batch"], out["clean_ok"], out["dry_ok"]), ("LG-2026-00001", 1, 0))
 
