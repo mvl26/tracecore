@@ -15,31 +15,32 @@ import frappe
 from frappe import _
 from frappe.utils import cint, escape_html
 
+from tracecore.core import ci_class
 from tracecore.instrument import bom_versions, catalog, shelf_life
 
 DOCTYPE = "Instrument Set Type"
 ASSEMBLY_MINUTES_MAX = 600
-# A-122: chỉ thị mặc định của loại bộ phải dùng được khi đóng gói (FR-M2-07.2: loại 5/6 theo phương pháp)
-PACK_CI_CLASSES = ("5", "6")
 CI_GROUP = "Chemical Indicator"
 LINE_SEPARATOR = " \u2013 "  # gạch ngang (en dash) giữa các cột của dòng BOM trong thông báo
 
 
-def usable_ci_items(method) -> list[dict]:
-	"""Mặt hàng chỉ thị chọn được làm mặc định cho loại bộ phương pháp `method` (A-122).
+def usable_ci_items(method, setting=None) -> list[dict]:
+	"""Mặt hàng chỉ thị chọn được làm mặc định cho loại bộ phương pháp `method`, loại chỉ thị `setting` (A-122, A-154).
 
-	Item nhóm Chemical Indicator chưa tắt, loại 5/6, phương pháp đúng `method` (lô của chỉ thị trống phương pháp bị T4
-	từ chối, xem ``reprocessing.packing.resolve_ci_batch``); theo tên. Trả ``[{"item", "item_name", "ci_class"}]``.
+	Item nhóm Chemical Indicator chưa tắt, đúng loại của `setting` (``ci_class.classes_for``: trống → 5/6, Không cần →
+	không có mặt hàng nào), phương pháp đúng `method` (lô của chỉ thị trống phương pháp bị T4 từ chối, xem
+	``reprocessing.packing.resolve_ci_batch``); theo tên. Trả ``[{"item", "item_name", "ci_class"}]``.
 	Cùng tiêu chí với kiểm khi lưu để ô gợi ý không chép luật.
 	"""
-	if not method:
+	classes = ci_class.classes_for(setting)
+	if not method or not classes:
 		return []
 	rows = frappe.get_all(
 		"Item",
 		filters={
 			"tc_item_group_cssd": CI_GROUP,
 			"tc_compatible_method": method,
-			"tc_ci_class": ["in", list(PACK_CI_CLASSES)],
+			"tc_ci_class": ["in", list(classes)],
 			"disabled": 0,
 		},
 		fields=["name", "item_name", "tc_ci_class"],
@@ -49,14 +50,23 @@ def usable_ci_items(method) -> list[dict]:
 
 
 def _validate_default_ci(doc) -> None:
-	"""Chỉ thị mặc định (không bắt buộc) phải nằm trong ``usable_ci_items`` của phương pháp loại bộ (A-122)."""
+	"""Chỉ thị mặc định (không bắt buộc) phải nằm trong ``usable_ci_items`` của phương pháp và loại chỉ thị của loại
+	bộ (A-122, A-154); loại bộ khai Không cần thì không được có chỉ thị mặc định."""
 	item = doc.get("default_ci_item")
-	if not item or item in {row["item"] for row in usable_ci_items(doc.get("method"))}:
+	setting = doc.get("ci_class")
+	if not item or item in {row["item"] for row in usable_ci_items(doc.get("method"), setting)}:
 		return
+	if not ci_class.is_required(setting):
+		frappe.throw(
+			_(
+				"This set needs no chemical indicator, so it cannot have a default indicator. Clear Default Indicator Item or choose a class."
+			),
+			title=_("Default indicator"),
+		)
 	frappe.throw(
 		_(
-			"Default indicator {0} cannot be used for this set: choose a class 5 or 6 chemical indicator in use for {1}."
-		).format(item, _(doc.get("method") or "")),
+			"Default indicator {0} cannot be used for this set: choose a class {1} chemical indicator in use for {2}."
+		).format(item, "/".join(ci_class.classes_for(setting)), _(doc.get("method") or "")),
 		title=_("Default indicator"),
 	)
 

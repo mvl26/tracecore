@@ -106,11 +106,60 @@ function tc_su_render_summary(frm, ctx) {
 		${tc_su_form_row(__("Current station"), tc_su_form_escape(s.current_station || "-"))}
 		${tc_su_form_row(__("BOM version"), tc_su_form_escape(bom))}
 		${tc_su_form_row(
+			__("Chemical Indicator Class"),
+			tc_su_form_escape(tc_su_ci_class_label(s.ci_class))
+		)}
+		${tc_su_form_row(
 			__("Set ID code"),
 			tc_su_form_escape(code[s.code_status] || __("Not registered in the code registry"))
 		)}
 	</tbody></table>`;
+	html += tc_su_components_html(s);
 	field.$wrapper.html(html);
+}
+
+// A-154 (FR-M1-06.5): loại chỉ thị hóa học của loại bộ; trống = chưa khai (đóng gói nhận loại 5/6)
+function tc_su_ci_class_label(value) {
+	if (value === "Not Needed") return __("Not Needed");
+	if (value) return __("Class {0}", [value]);
+	return __("Not set (class 5 or 6 at packing)");
+}
+
+// A-154 (FR-M1-06.5): thành phần bộ theo phiên bản BOM ghim (chưa ghim: phiên bản hiệu lực)
+function tc_su_components_html(s) {
+	const parts = s.components || [];
+	const heading = `<h4>${tc_su_form_escape(__("Set components"))}</h4>`;
+	if (!parts.length) {
+		return heading + tc_su_form_muted(__("The set type has no BOM version in effect."));
+	}
+	let note = __("BOM v{0} pinned for this cycle", [s.components_version]);
+	if (!s.bom_pinned) {
+		note = __("BOM v{0} — will be pinned at receiving", [s.components_version]);
+	}
+	const rows = parts
+		.map(
+			(row) => `<tr>
+				<td class="text-right">${tc_su_form_escape(row.position)}</td>
+				<td>${tc_su_form_mono(row.instrument)}</td>
+				<td>${tc_su_form_escape(row.instrument_name)}</td>
+				<td class="text-right">${tc_su_form_escape(row.qty)}</td>
+			</tr>`
+		)
+		.join("");
+	return `${heading}<p class="text-muted">${tc_su_form_escape(note)}</p>
+		<table class="table table-bordered table-sm">
+			<thead><tr>
+				<th class="text-right" style="width: 10%">${tc_su_form_escape(__("No."))}</th>
+				<th style="width: 25%">${tc_su_form_escape(__("Instrument Code"))}</th>
+				<th>${tc_su_form_escape(__("Instrument Name"))}</th>
+				<th class="text-right" style="width: 15%">${tc_su_form_escape(__("Quantity"))}</th>
+			</tr></thead>
+			<tbody>${rows}</tbody>
+			<tfoot><tr>
+				<th colspan="3">${tc_su_form_escape(__("Total: {0} line(s)", [parts.length]))}</th>
+				<th class="text-right">${tc_su_form_escape(s.components_total)}</th>
+			</tr></tfoot>
+		</table>`;
 }
 
 // --- Chi tiết: thẻ, nhãn khay, quét kiểm tra --------------------------------------------------------------------

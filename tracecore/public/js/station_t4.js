@@ -485,7 +485,7 @@ class T4Packing {
 		if (this.offline && !this.offlineReady()) out.push(__("network connection"));
 		const left = this.tickable() - this.checked.size;
 		if (left > 0) out.push(__("{0} instrument(s)", [left]));
-		if (!this.ci) out.push(__("indicator lot"));
+		if (this.ciRequired() && !this.ci) out.push(__("indicator lot"));
 		const maint = (this.ctx.maintenance || [])
 			.filter((row) => !this.maint[row.instrument])
 			.map((row) => row.instrument);
@@ -500,7 +500,7 @@ class T4Packing {
 			set_id: this.ctx.set.set_id,
 			station: this.station.station,
 			confirmed_lines: this.confirmedLines(),
-			ci_batch: this.ci.batch,
+			ci_batch: this.ciRequired() && this.ci ? this.ci.batch : null,
 			pack_type: this.packType,
 			maint_actions: Object.values(this.maint),
 		};
@@ -564,8 +564,12 @@ class T4Packing {
 	offlineIndicator(raw) {
 		const code = tcScanId(raw).toUpperCase();
 		const today = tcLocalDay();
+		const classes = this.ciClasses();
 		const lot = (this.station.offlineData.ci_batches || []).find(
-			(row) => row.batch.toUpperCase() === code && row.method === this.ctx.set.method
+			(row) =>
+				row.batch.toUpperCase() === code &&
+				row.method === this.ctx.set.method &&
+				classes.includes(String(row.ci_class))
 		);
 		if (!lot || lot.expiry < today) {
 			this.notice = {
@@ -575,8 +579,8 @@ class T4Packing {
 				reason: lot
 					? __("Lot {0} expired on {1}.", [lot.batch, t4Date(lot.expiry)])
 					: __(
-							"Lot {0} is not a valid class 5/6 indicator lot for {1} in the offline data.",
-							[code, __(this.ctx.set.method)]
+							"Lot {0} is not a valid class {1} indicator lot for {2} in the offline data.",
+							[code, classes.join("/"), __(this.ctx.set.method)]
 					  ),
 				action: __("Scan another indicator lot that is still valid."),
 			};
@@ -1194,7 +1198,7 @@ class T4Packing {
 				<dt>${esc(__("Pack Type"))}</dt><dd class="tc-mono">${esc(pack.pack_type)}</dd>
 				<dt>${esc(__("Packed At"))}</dt><dd>${esc(t4DateTime(pack.packed_at))} · ${esc(pack.packer)}</dd>
 				<dt>${esc(__("Use-by date"))}</dt><dd><b>${esc(t4Date(pack.expiry))}</b></dd>
-				<dt>${esc(__("Indicator Lot"))}</dt><dd class="tc-mono">${esc(pack.ci_batch)}</dd>
+				<dt>${esc(__("Indicator Lot"))}</dt><dd class="tc-mono">${esc(pack.ci_batch || "-")}</dd>
 				<dt>${esc(__("Labels Printed"))}</dt><dd>${esc(pack.label_print_count)}</dd>
 			</dl>
 		</section>`;
@@ -1453,9 +1457,24 @@ class T4Packing {
 		</div>`;
 	}
 
+	// A-154: loại chỉ thị của loại bộ; ngữ cảnh cũ (offline trước A-154) không có `required`/`classes` → loại 5/6
+	ciRequired() {
+		return !(this.ctx && this.ctx.ci && this.ctx.ci.required === false);
+	}
+
+	ciClasses() {
+		const classes = this.ctx && this.ctx.ci && this.ctx.ci.classes;
+		return Array.isArray(classes) && classes.length ? classes.map(String) : ["5", "6"];
+	}
+
 	ciHtml() {
 		if (!this.ctx) return "";
 		const heading = `<h3>${esc(__("Indicator Lot"))}</h3>`;
+		if (!this.ciRequired()) {
+			return `${heading}<p class="tc-t4-ok"><span aria-hidden="true">&#8212;</span> ${esc(
+				__("This set needs no chemical indicator in the pack.")
+			)}</p>`;
+		}
 		const field = `<form class="tc-ci-form" autocomplete="off">
 			<label for="tc-ci-input">${esc(__("Scan indicator lot"))}</label>
 			<input id="tc-ci-input" class="tc-scan-input" type="text" inputmode="none"
@@ -1466,7 +1485,7 @@ class T4Packing {
 		</form>`;
 		if (!this.ci) {
 			const prompt = __("Scan indicator lot class {0} – {1}", [
-				this.ctx.ci.classes.join("/"),
+				this.ciClasses().join("/"),
 				__(this.ctx.ci.method),
 			]);
 			return `${heading}${field}<p class="tc-t4-todo"><span aria-hidden="true">&#9675;</span> ${esc(
@@ -1487,7 +1506,7 @@ class T4Packing {
 				variant: "warn",
 				title: __("No usable indicator lot for this method"),
 				reason: __("No class {0} indicator lot for {1} is in date.", [
-					this.ctx.ci.classes.join("/"),
+					this.ciClasses().join("/"),
 					__(this.ctx.ci.method),
 				]),
 				action: __("Ask R09 to receive an indicator lot, then scan it."),

@@ -11,7 +11,7 @@ import frappe
 from frappe import _
 from frappe.utils import today
 
-from tracecore.core import gs1
+from tracecore.core import ci_class, gs1
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
 from tracecore.core.idempotency import idempotent
@@ -90,13 +90,19 @@ def _scan_invalid(scanned):
 	)
 
 
-def _open_set_method(open_set):
-	"""Phương pháp (Steam/Plasma) của bộ đang mở; mã không phải Set ID hoặc không có bộ → SET_NOT_FOUND."""
+def _open_set_rules(open_set):
+	"""``(phương pháp, loại chỉ thị nhận được)`` của bộ đang mở (A-154: theo ``ci_class`` của loại bộ); mã không phải
+	Set ID hoặc không có bộ → SET_NOT_FOUND."""
 	scanned = gs1.parse_scan(open_set)
 	set_type = (
 		frappe.db.get_value("Set Unit", scanned["id"], "set_type") if scanned["type"] == "set" else None
 	)
-	method = frappe.db.get_value("Instrument Set Type", set_type, "method") if set_type else None
+	row = (
+		frappe.db.get_value("Instrument Set Type", set_type, ["method", "ci_class"], as_dict=True)
+		if set_type
+		else None
+	)
+	method = row.method if row else None
 	if not method:
 		raise BlockedError(
 			Block(
@@ -106,7 +112,7 @@ def _open_set_method(open_set):
 				_("Check the set tag or call R02."),
 			)
 		)
-	return method
+	return method, ci_class.classes_for(row.ci_class)
 
 
 def _route(scanned, raw, station, open_set):
@@ -159,14 +165,15 @@ def scan(raw, station, open_set=None, entry_mode="Scan", manual_reason=None, cli
 @station_session(*PACKING_ROLES)
 @idempotent
 def resolve_ci(raw, station, open_set, client_ts=None, token=None):
-	"""Ô lô chỉ thị riêng: giữ nguyên kiểm tra loại 5/6, phương pháp và hạn dùng FEAT-018."""
+	"""Ô lô chỉ thị riêng: kiểm loại chỉ thị của loại bộ (A-154; chưa khai = 5/6), phương pháp và hạn dùng FEAT-018."""
 	require_any_role(*PACKING_ROLES)
 	if not isinstance(raw, str) or not isinstance(open_set, str):
 		raise BadRequestError(_("raw and open_set must be strings."))
 	timestamp = parse_client_ts(client_ts)
 
 	def resolve():
-		lot = packing.resolve_ci_batch(raw.strip(), _open_set_method(open_set), today())
+		method, classes = _open_set_rules(open_set)
+		lot = packing.resolve_ci_batch(raw.strip(), method, today(), classes)
 		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
 
 	scanned = gs1.parse_scan(open_set)
