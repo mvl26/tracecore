@@ -3,6 +3,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from tracecore.tests.js_harness import run_js
 from tracecore.v1.navigation import context as get_context
 
 
@@ -609,3 +610,172 @@ class TestHomeTitle(FrappeTestCase):
 			frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.css"), encoding="utf-8"
 		) as handle:
 			self.assertIn(".tc-admin.is-collapsed .tc-admin-nav", handle.read())
+
+
+QUICK_NAV = "public/js/tc_quick_nav.js"
+
+
+class TestNavbarQuickAccess(FrappeTestCase):
+	"""NAV-05: thanh truy cập nhanh trên navbar Desk — chỉ role TC, chỉ ô tài khoản mở được."""
+
+	def _keys(self, roles, user="role@example.test"):
+		from tracecore.v1.navigation import quick_nav_keys
+
+		with (
+			patch("frappe.session", frappe._dict(user=user)),
+			patch("frappe.get_roles", return_value=roles),
+			# link trong phân hệ coi như mở được; quyền Page tc-ksnk đọc thật từ Has Role
+			patch(
+				"tracecore.v1.navigation._link",
+				side_effect=lambda target: {"label": target, "doctype": None, "route": "/app/x"},
+			),
+		):
+			return quick_nav_keys()
+
+	def test_system_manager_without_tc_role_sees_no_quick_nav(self):
+		# site dùng chung với app khác: quản trị không làm TraceCore thì không thấy thanh
+		self.assertEqual(self._keys(["System Manager"]), [])
+
+	def test_system_manager_with_tc_role_sees_all_four(self):
+		self.assertEqual(
+			self._keys(["System Manager", "TC R10"]), ["instruments", "linen", "waste", "ksnk"]
+		)
+
+	def test_office_roles_only_see_modules_of_their_flows(self):
+		self.assertEqual(self._keys(["TC R02"]), ["instruments", "waste", "ksnk"])
+		self.assertEqual(self._keys(["TC R01"]), ["waste", "ksnk"])
+		self.assertEqual(self._keys(["TC R10"]), ["ksnk"])
+		self.assertEqual(self._keys(["TC R11"]), ["ksnk"])
+
+	def test_station_roles_see_nothing(self):
+		# R03–R08 không có phân hệ trên trang chủ và không mở được Page tc-ksnk
+		for role in ("TC R03", "TC R05", "TC R08"):
+			self.assertEqual(self._keys([role]), [], role)
+
+	def test_bootinfo_carries_the_keys(self):
+		from tracecore.ui import quick_nav
+
+		boot = frappe._dict()
+		with patch("tracecore.v1.navigation.quick_nav_keys", return_value=["waste"]):
+			quick_nav.extend_bootinfo(boot)
+		self.assertEqual(boot.tc_quick_nav, ["waste"])
+		self.assertIn("tracecore.ui.quick_nav.extend_bootinfo", frappe.get_hooks("extend_bootinfo"))
+
+	def test_boot_never_breaks_on_error(self):
+		from tracecore.ui import quick_nav
+
+		boot = frappe._dict()
+		with patch("tracecore.v1.navigation.quick_nav_keys", side_effect=RuntimeError("db")):
+			quick_nav.extend_bootinfo(boot)
+		self.assertEqual(boot.tc_quick_nav, [])
+
+	def test_desk_css_is_a_hand_written_bundle_with_tokens_only(self):
+		import importlib.util
+		from pathlib import Path
+
+		script = Path(frappe.get_app_path("tracecore")).parent / "scripts" / "check_architecture.py"
+		spec = importlib.util.spec_from_file_location("tc_check_architecture", script)
+		lint = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(lint)
+
+		self.assertIn("tc_desk.bundle.css", frappe.get_hooks("app_include_css"))
+		path = frappe.get_app_path("tracecore", "public", "css", "tc_desk.bundle.css")
+		with open(path, encoding="utf-8") as handle:
+			css = handle.read()
+		self.assertIn(".tc-quick-nav", css)
+		self.assertIn('[aria-current="page"]', css)
+		self.assertEqual(lint._check_css("tracecore/public/css/tc_desk.bundle.css", css), [])
+
+	def _js(self, body):
+		return run_js(self, [QUICK_NAV], [["TcQuickNav"]], body)
+
+	def test_current_key_follows_the_url(self):
+		out = self._js(
+			"""
+			const k = TcQuickNav.current_key;
+			emit([k("/app/tracecore/linen"), k("/app/tracecore"), k("/app/tc-ksnk/tuan-thu"),
+				k("/app/tracecore/stock"), k("/app/asset"), k("/app/tracecore/waste/")]);
+			"""
+		)
+		self.assertEqual(out, ["linen", None, "ksnk", None, None, "waste"])
+
+	def test_pick_module_opens_requested_module_only_when_allowed(self):
+		out = self._js(
+			"""
+			const modules = [{key: "overview"}, {key: "approvals"}, {key: "waste"}, {key: "stations"}];
+			const here = (m) => m.key !== "overview" && m.key !== "stations";
+			const p = (requested, selected) => TcQuickNav.pick_module(modules, requested, selected, here);
+			emit([p("waste", null), p("linen", null), p("linen", "waste"), p(null, "waste"),
+				p("overview", null), p("stations", null), p(null, null)]);
+			"""
+		)
+		self.assertEqual(out, ["waste", "approvals", "waste", "waste", "approvals", "approvals", "approvals"])
+
+	def test_module_path_keeps_the_module_in_the_url(self):
+		out = self._js(
+			'emit([TcQuickNav.module_path("linen"), TcQuickNav.module_path(null), TcQuickNav.module_path("a b")]);'
+		)
+		self.assertEqual(out, ["/app/tracecore/linen", "/app/tracecore", "/app/tracecore/a%20b"])
+
+	def test_render_shows_only_allowed_links_with_text_and_current_state(self):
+		out = self._js(
+			"""
+			const deps = {t: (s) => "vi:" + s, icon: (name) => `<svg data-icon="${name}"></svg>`, esc};
+			emit({
+				none: TcQuickNav.render([], "waste", deps),
+				some: TcQuickNav.render(["ksnk", "waste", "bogus"], "waste", deps),
+			});
+			"""
+		)
+		self.assertEqual(out["none"], "")
+		html = out["some"]
+		self.assertIn('class="tc-quick-nav d-none d-lg-flex"', html)
+		self.assertIn('aria-label="vi:Quick access"', html)
+		# thứ tự cố định theo thiết kế, không theo thứ tự key từ server
+		self.assertLess(html.index('href="/app/tracecore/waste"'), html.index('href="/app/tc-ksnk"'))
+		self.assertNotIn("instruments", html)
+		self.assertNotIn("bogus", html)
+		self.assertIn('data-key="waste" aria-current="page"', html)
+		self.assertEqual(html.count('aria-current="page"'), 1)
+		self.assertIn("<span>vi:Waste</span>", html)
+		self.assertIn("<span>vi:Infection control</span>", html)
+		self.assertIn('data-icon="delete"', html)
+
+	def test_mark_moves_the_current_state(self):
+		out = self._js(
+			"""
+			const a = (key) => ({dataset: {key}, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; },
+				removeAttribute(k) { delete this.attrs[k]; }});
+			const links = [a("linen"), a("waste")];
+			links[0].attrs["aria-current"] = "page";
+			TcQuickNav.mark(links, "waste");
+			emit(links.map((l) => l.attrs["aria-current"] || null));
+			"""
+		)
+		self.assertEqual(out, [None, "page"])
+
+	def test_quick_links_are_translated(self):
+		with open(frappe.get_app_path("tracecore", "translations", "vi.csv"), encoding="utf-8") as handle:
+			rows = handle.read()
+		for row in (
+			"Quick access,Truy cập nhanh,TraceCore Quick Access",
+			"Instruments,Dụng cụ,TraceCore Quick Access",
+			"Linen,Đồ vải,TraceCore Quick Access",
+			"Waste,Chất thải,TraceCore Quick Access",
+			"Infection control,KSNK,TraceCore Quick Access",
+		):
+			self.assertIn(row, rows)
+
+	def test_launcher_page_and_navbar_use_the_shared_helpers(self):
+		# hành vi đã test ở TcQuickNav; ở đây chỉ kiểm trang chủ và navbar gọi đúng hàm dùng chung
+		with open(frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.js"), encoding="utf-8") as handle:
+			page = handle.read()
+		self.assertIn("TcQuickNav.pick_module(", page)
+		self.assertIn("TcQuickNav.module_path(", page)
+		self.assertIn("history.replaceState(", page)
+		with open(frappe.get_app_path("tracecore", "public", "js", "tc_launcher.js"), encoding="utf-8") as handle:
+			launcher = handle.read()
+		self.assertIn("TcQuickNav.render(frappe.boot.tc_quick_nav", launcher)
+		with open(frappe.get_app_path("tracecore", "public", "js", "tracecore.bundle.js"), encoding="utf-8") as handle:
+			bundle = handle.read()
+		self.assertLess(bundle.index('import "./tc_quick_nav.js"'), bundle.index('import "./tc_launcher.js"'))
