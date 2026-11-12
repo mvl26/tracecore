@@ -203,6 +203,19 @@ SCREENS += [
 		"script": "/assets/tracecore/js/ksnk/scr_62_moi_truong.js",
 	},
 ]
+# FEAT-095 (A-153): nước thải y tế (UC-58) — GPMT, lịch, kết quả quan trắc; R11 (gồm người phụ trách HTXLNT được cấp
+# R11) ghi đợt trên Desk form; R01 duyệt GPMT, quyết định NC; R02 chỉ xem, R13 chỉ thẻ tóm tắt
+SCREENS += [
+	{
+		"slug": "nuoc-thai",
+		"scr": "SCR-67",
+		"uc": "UC-58",
+		"label": "Medical Wastewater",
+		"group": "environment",
+		"roles": ("TC R01", "TC R02", "TC R11", "TC R13", "System Manager"),
+		"script": "/assets/tracecore/js/ksnk/scr_67_nuoc_thai.js",
+	},
+]
 # FEAT-073 (A-151): ATTP & truyền thông người bệnh (UC-56); R13 chỉ số liệu tổng hợp; R12 ghi buổi truyền thông của khoa
 # trên Desk form `IC Education Session`, phiếu ATTP trên PDA (SCR-52)
 SCREENS += [

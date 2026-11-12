@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "creation": "2026-11-12 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "wastewater_point",
+  "wastewater_point_name",
+  "parameter",
+  "unit",
+  "min_value",
+  "max_value",
+  "detect_only",
+  "frequency_months",
+  "auto_monitored",
+  "legal_ref"
+ ],
+ "fields": [
+  {
+   "fieldname": "wastewater_point",
+   "fieldtype": "Link",
+   "label": "Point",
+   "options": "Wastewater Point",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "wastewater_point_name",
+   "fieldtype": "Data",
+   "label": "Point Name",
+   "fetch_from": "wastewater_point.point_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "parameter",
+   "fieldtype": "Data",
+   "label": "Parameter",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit"
+  },
+  {
+   "fieldname": "min_value",
+   "fieldtype": "Float",
+   "label": "Min",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "max_value",
+   "fieldtype": "Float",
+   "label": "Max",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "detect_only",
+   "fieldtype": "Check",
+   "label": "Not Detected Only",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "frequency_months",
+   "fieldtype": "Select",
+   "label": "Frequency (months)",
+   "options": "\n3\n6\n12",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "auto_monitored",
+   "fieldtype": "Check",
+   "label": "Automatic Monitoring",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "legal_ref",
+   "fieldtype": "Data",
+   "label": "Legal Reference"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Wastewater Permit Parameter",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

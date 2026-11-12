@@ -143,3 +143,120 @@ def make_session(template, department, zone=None, passed=True, audit_date=None, 
 
 def make_department(name):
 	return factories.make_department(name)
+
+
+# --- nước thải y tế (FEAT-095, A-153) ------------------------------------------------------------------------------
+
+ATTACHMENT = "/private/files/qtnt-ket-qua-test.pdf"
+
+
+def make_lab(name="T Trung tâm QT Môi trường", vimcerts="VIMCERTS 112", until="2027-06-30"):
+	"""Đơn vị quan trắc = Supplier có VIMCERTS (W5)."""
+	supplier = factories.make_supplier(name)
+	frappe.db.set_value("Supplier", supplier, {"tc_vimcerts_no": vimcerts, "tc_vimcerts_valid_until": until})
+	return supplier
+
+
+def make_point(name="T Đầu ra HTXLNT", point_type="Outlet", user=None, **values):
+	return frappe.get_doc(
+		{
+			"doctype": "Wastewater Point",
+			"point_name": name,
+			"point_type": point_type,
+			"treatment_system": "HTXLNT 300 m3",
+			"responsible_user": user,
+			**values,
+		}
+	).insert(ignore_permissions=True)
+
+
+def rows_for(point, freq="3"):
+	"""Dòng GPMT minh họa: pH 6-9, COD ≤ 100, Coliforms ≤ 5000 (tần suất ``freq``), Salmonella chỉ KPH 6 tháng, lưu
+	lượng tự động."""
+	return [
+		{
+			"wastewater_point": point,
+			"parameter": "pH",
+			"unit": "-",
+			"min_value": 6,
+			"max_value": 9,
+			"frequency_months": freq,
+		},
+		{
+			"wastewater_point": point,
+			"parameter": "COD",
+			"unit": "mg/L",
+			"max_value": 100,
+			"frequency_months": freq,
+		},
+		{
+			"wastewater_point": point,
+			"parameter": "Coliforms",
+			"unit": "MPN/100mL",
+			"max_value": 5000,
+			"frequency_months": freq,
+		},
+		{
+			"wastewater_point": point,
+			"parameter": "Salmonella",
+			"unit": "Vk/100mL",
+			"detect_only": 1,
+			"frequency_months": "6",
+		},
+		{
+			"wastewater_point": point,
+			"parameter": "Flow",
+			"unit": "m3/day",
+			"max_value": 300,
+			"auto_monitored": 1,
+		},
+	]
+
+
+def make_permit(code="T-0154", rows=None, effective_from="2026-01-01", submit=True, **values):
+	doc = frappe.get_doc(
+		{
+			"doctype": "Wastewater Permit",
+			"permit_code": code,
+			"permit_no": f"{code}/GPMT-UBND",
+			"issued_on": "2024-03-15",
+			"valid_until": values.pop("valid_until", "2034-03-14"),
+			"issuing_authority": "UBND tỉnh (test)",
+			"standard": values.pop("standard", "QCVN 28:2010/BTNMT"),
+			"standard_column": values.pop("standard_column", "B"),
+			"effective_from": effective_from,
+			"parameters": rows or [],
+			**values,
+		}
+	).insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+	return doc
+
+
+def make_monitoring(point, values, sampled_on="2026-10-20", lab=None, submit=True, attach=True, **extra):
+	"""``values``: {thông số: số hoặc "KPH"}; dòng kết quả tự nạp theo GPMT rồi điền giá trị."""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Wastewater Monitoring",
+			"wastewater_point": point,
+			"sampled_on": sampled_on,
+			"supplier": lab or make_lab(),
+			"report_no": extra.pop("report_no", "2611/KQ-QTMT"),
+			"attachment": ATTACHMENT if attach else None,
+			**extra,
+		}
+	)
+	from tracecore.environmental_hygiene import wastewater
+
+	wastewater.load_parameters(doc)
+	for row in doc.results:
+		value = values.get(row.parameter)
+		if value == "KPH":
+			row.below_detection = 1
+		elif value is not None:
+			row.value = value
+	doc.insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+	return doc

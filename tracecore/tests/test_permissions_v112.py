@@ -196,6 +196,14 @@ V112_ROWS.update(
 		"DT-CLALERT": ("Cluster Alert", {"R01": "R", "R11": "R"}),
 	}
 )
+# FEAT-095 (A-153 W7, FR-M15-13.1): R01 cấu hình điểm và duyệt GPMT; R11 ghi đợt quan trắc; R02, R10 đọc; R13 chỉ tổng hợp
+V112_ROWS.update(
+	{
+		"DT-WWPOINT": ("Wastewater Point", {"R01": "RW", "R02": "R", "R10": "R", "R11": "R"}),
+		"DT-WWPERMIT": ("Wastewater Permit", {"R01": "RWS", "R02": "R", "R10": "R", "R11": "R"}),
+		"DT-WWMON": ("Wastewater Monitoring", {"R01": "RWSA", "R02": "R", "R11": "RWS"}),
+	}
+)
 
 
 class TestPermissionMatrixV112(FrappeTestCase):

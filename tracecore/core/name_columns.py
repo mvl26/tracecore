@@ -70,6 +70,10 @@ EXISTING_NAME_COLUMN = {
 }
 # FEAT-064 (A-147): ca phẫu thuật giám sát đã có `group_name` (fetch tên nhóm phẫu thuật) ngay sau mã nhóm
 EXISTING_NAME_COLUMN[("Surgical Surveillance", "procedure_group")] = "group_name"
+# FEAT-095 (A-153): điểm quan trắc nước thải hiện tên điểm; đợt quan trắc đã có `point_name` (fetch tên điểm quan trắc) ngay sau mã điểm
+EXISTING_NAME_COLUMN[("Wastewater Monitoring", "wastewater_point")] = "point_name"
+TRACECORE_NAME_FIELD = {**TRACECORE_NAME_FIELD, "Wastewater Point": "point_name"}
+NAME_FIELD = {**NAME_FIELD, "Wastewater Point": "point_name"}
 
 # Giới hạn Frappe Grid: tổng ``columns`` của các cột hiển thị tối đa 10
 GRID_MAX_COLUMNS = 10

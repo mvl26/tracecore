@@ -5,13 +5,14 @@
 > Fidelity: đủ 4 tài liệu đầu vào chính. SCR-44..46 (ux-foundations §B5.2) là **đề xuất chưa duyệt**, không tính vào inventory và không được slice. Không có FR/SCR tombstoned.
 > **Amendment A-113 (2026-11-03):** BA v1.12 "Mở rộng KSNK toàn viện" (M11–M17 + M9 mở rộng; 81 FR, 34 BRU, 7 NFR) → 7 epic E-12..E-19, **FEAT-056..074** (§3), sprint S6–S9 (§4.2), DoD v1.12 (§6.1). Người dùng duyệt quyết định D1–D11 ngày 03/11/2026; chủ đầu tư chưa xác nhận. Số FEAT của BA (053..071) dời +3 vì FEAT-053..055 đã dùng cho A-110..112.
 > **Amendment A-131 (2026-11-06):** mọi màn WEB của M11–M17 và M9 mở rộng nằm trong một màn quản lý — Page `tc_ksnk` (architecture ADR-002, §5.2). FEAT-056 dựng khung Page (shell, router, registry màn, RPC `tracecore.v1.ksnk.nav`, hook `tracecore_ksnk_badges`); FEAT-057..074 mỗi FEAT thêm màn của mình vào registry thay vì làm Workspace/Desk page riêng.
+> **Amendment A-153 (2026-11-12):** nước thải y tế vào M15 (mở một phần SC-01) → **FEAT-095** ở E-16 (sprint S9), FR-M15-08..13, UC-58, SCR-67, BRU-ENV-004..006. Người dùng duyệt W1–W8 ngày 12/11/2026; chủ đầu tư chưa xác nhận. Số FEAT-075 trong đề xuất đổi thành FEAT-095 vì FEAT-075 đã dùng cho A-114.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
 
 TraceCore là app Frappe v15 `tracecore` (cạnh `erpnext`, `hrms`) cho khoa KSNK/CSSD: truy xuất dụng cụ qua chuỗi 8 trạm T1–T8 với cổng kiểm soát 5 bước, Set ID GS1 GIAI vĩnh viễn, Cycle ID GS1 DataMatrix dùng một lần in trên 2 loại nhãn (hấp/plasma), cùng đồ vải, nhân sự, thiết bị, kho, chi phí, cơ số, báo cáo và (v1.11) chất thải y tế. Bốn surface: WEB (Desk), STN (kiosk Frappe Page), PDA (PWA cùng Page), DEPT (Portal).
 
-Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT; + FEAT-094 theo A-138**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
+Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT; + FEAT-094 theo A-138; + FEAT-095 theo A-153**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
 
 1. **De-risk sớm** 4 ADR rủi ro nhất: ADR-004 (GS1 DataMatrix 300 dpi trên nhãn chịu hấp, rủi ro R-01), ADR-005 (step-gate engine), ADR-003 (offline/idempotency), ADR-006 (station agent + 2 loại nhãn, R-04).
 2. **Milestone demo** "1 bộ đi hết T1→T8 + thu hồi" sớm nhất có thể (cuối Sprint 2).
@@ -238,6 +239,26 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
 | :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
 | FEAT-070 | Vùng vệ sinh (mức nguy cơ, bên chịu trách nhiệm nội bộ/thuê ngoài, danh sách vùng chưa đủ số liệu), phiếu VSMT gắn vùng dùng engine M12 → tỷ lệ đạt theo mức nguy cơ/khoa/bên chịu trách nhiệm, ngưỡng môi trường có phiên bản (`Environmental Limit`, BRU-ENV-*), kế hoạch lấy mẫu giao việc + mẫu trễ hạn, mẫu môi trường (so ngưỡng hiệu lực tại ngày lấy mẫu, Không đạt → thông báo + đề nghị NC loại Environment + lấy mẫu lại), phiếu kiểm tra hạ tầng (hạn kiểm tra kế tiếp, nhắc trước 7 ngày), báo cáo môi trường tháng/quý; [A-148] mức nguy cơ là DocType `Environment Risk Level`, hạ tầng = mẫu `Cơ sở hạ tầng` × vùng (`infra_category`, `inspection_interval_days`), ngưỡng `NG-<mã>-V<n>`, NC Environment qua hook `tracecore_environment_nc` | FR-M15-01, FR-M15-02, FR-M15-03, FR-M15-04, FR-M15-05, FR-M15-06, FR-M15-07 | UC-54 | SCR-62 (WEB), SCR-52 (PDA + DEPT) | Desk form; scheduler kế hoạch lấy mẫu & hạn hạ tầng; Script Report "Vệ sinh môi trường"; Print Format; `Incident CAPA` (`incident_category=Environment`); tái dùng `Environment Log` cho khu CSSD (ADR-009) | W: Environment Risk Level, Environment Zone, Environmental Limit, Sampling Plan, Environmental Sample, Audit Session, Incident CAPA; R: Audit Template, Supplier, Department | 015, 014, 009 | M | S8 |
+| FEAT-095 | **Nước thải y tế (Amendment A-153)**: điểm quan trắc (đầu vào / đầu ra HTXLNT / điểm xả, người phụ trách), GPMT có phiên bản `GPMT-<mã>-V<n>` (thông số, giới hạn min–max hoặc KPH, tần suất 3/6/12 tháng từng thông số, thông số tự động), mẫu quy chuẩn Nháp (QCVN 28:2010, QCVN 40:2025 cột A/B) nạp vào GPMT, lịch quan trắc 12 tháng theo kỳ lịch + nhắc đến hạn 15 ngày / quá hạn, đợt quan trắc (thông số tự nạp theo GPMT tại ngày lấy mẫu, so giới hạn, bản chụp, KPH, bắt buộc phiếu kết quả, đơn vị có VIMCERTS còn hạn), Không đạt → cờ điểm + ToDo quan trắc lại + thông báo + đề nghị NC Environment (R01 quyết định), báo cáo PDF/Excel, chỉ số kỳ đúng hạn sang SCR-66, dòng tóm tắt trong báo cáo môi trường | FR-M15-08, FR-M15-09, FR-M15-10, FR-M15-11, FR-M15-12, FR-M15-13 | UC-58 | SCR-67 (WEB) | Page `tc-ksnk` slug `nuoc-thai`; RPC `tracecore.v1.wastewater.*`; Desk form + client script nạp thông số; scheduler hằng ngày nhắc kỳ; Script Report `Wastewater Monitoring Summary`; Print Format `TC Wastewater Monitoring`; hook `tracecore_environment_nc`, `tracecore_ic_indicators`, `tracecore_ksnk_badges` | W: Wastewater Point, Wastewater Permit (+ Parameter), Wastewater Monitoring (+ Result), Incident CAPA, ToDo; R: Supplier (Custom Field VIMCERTS), IC Program Settings, User | 015, 014, 009 | M | S9 |
+#### Acceptance criteria FEAT-095 [A-153] (EARS; BRU-ENV-003..006)
+
+| AC | Câu EARS | FR / BRU |
+| :- | :- | :- |
+| AC-095-01 | Nếu R01 lưu GPMT thiếu số GPMT, quy chuẩn, cột, ngày hiệu lực, không có dòng thông số, hoặc dòng không tự động thiếu tần suất, thì hệ thống phải từ chối lưu và nêu dòng/trường thiếu. | FR-M15-08 |
+| AC-095-02 | Khi GPMT đã duyệt còn ≤ 90 ngày đến hạn, SCR-67 phải hiện badge "Còn N ngày" (có chữ). | FR-M15-08 |
+| AC-095-03 | Khi R01 bấm "Cập nhật GPMT" trên bản V1 đã duyệt, hệ thống phải tạo V2 Nháp chép từ V1; khi V2 được duyệt, V1 phải có `superseded_by` = V2 và không sửa được. | FR-M15-08.1; BRU-ENV-004 |
+| AC-095-04 | Khi R01 nạp mẫu QCVN 28:2010 cột B cho điểm NT-02, hệ thống phải thêm các dòng thông số của mẫu vào GPMT Nháp; `bench migrate` không được ghi vào GPMT nào. | FR-M15-08.2; NFR-MAINT-04 |
+| AC-095-05 | Khi điểm có thông số tần suất 3 tháng, quý 4 chưa có đợt và hôm nay sau 31/12, lịch phải hiện "Quá hạn"; kỳ có đợt nhưng thiếu thông số phải hiện "Thiếu thông số"; thông số tự động phải hiện "Không áp dụng". | FR-M15-09; BRU-ENV-006 |
+| AC-095-06 | Khi còn ≤ 15 ngày đến cuối kỳ mà kỳ chưa đủ thông số, job hằng ngày phải gửi `WW_MONITORING_DUE` tới R01, R11 và người phụ trách đúng một lần mỗi điểm mỗi kỳ; hết kỳ chưa đủ phải gửi `WW_MONITORING_OVERDUE` tới R01 một lần. | FR-M15-09.1 |
+| AC-095-07 | Khi R11 ghi đợt với pH 9,2 (giới hạn 6–9) và COD "KPH", hệ thống phải đánh giá pH Không đạt, COD Đạt, đợt Không đạt và lưu bản chụp giới hạn từng dòng. | FR-M15-10; BRU-ENV-005 |
+| AC-095-08 | Khi GPMT đổi sang phiên bản mới sau ngày lấy mẫu, đợt đã ghi sổ phải giữ phiên bản và kết quả cũ; đợt mới sau ngày hiệu lực dùng phiên bản mới. | FR-M15-10; BRU-ENV-004 |
+| AC-095-09 | Nếu đợt không có phiếu kết quả đính kèm, thì hệ thống phải từ chối ghi sổ với lỗi inline. | FR-M15-10.1 |
+| AC-095-10 | Khi đợt Không đạt được ghi sổ, hệ thống phải gắn cờ "Vượt chuẩn – chờ quan trắc lại" cho điểm, tạo ToDo quan trắc lại, thông báo R01, R11, người phụ trách và đặt `nc_status` = Suggested; đợt quan trắc lại Đạt phải tắt cờ. | FR-M15-11; BRU-ENV-003 |
+| AC-095-11 | Khi R01 mở NC từ đợt Không đạt, hệ thống phải tạo một Incident CAPA loại Environment Nonconformity, nguồn Wastewater Monitoring; bỏ qua NC phải có lý do và ghi Audit Log; R11 không được mở/bỏ qua. | FR-M15-11; FR-M15-13.1 |
+| AC-095-12 | Khi người dùng chạy `Wastewater Monitoring Summary` cho năm, báo cáo phải liệt kê điểm × thông số × đợt kèm giới hạn và số lần vượt, khớp số trên SCR-67, xuất được Excel/PDF. | FR-M15-12 |
+| AC-095-13 | Nếu đơn vị quan trắc không có VIMCERTS hoặc VIMCERTS hết hạn trước ngày lấy mẫu, thì hệ thống phải chặn lưu đợt với lỗi inline (kết quả → lý do → hành động); SCR-67 phải cảnh báo đơn vị hết hạn. | FR-M15-13 |
+| AC-095-14 | Nếu R02 hoặc R13 gọi RPC ghi hay tạo đợt, thì hệ thống phải từ chối; R13 nhận dữ liệu tóm tắt, không có danh sách đợt. | FR-M15-13.1; NFR-SEC-09 |
+
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
 
@@ -377,6 +398,7 @@ graph LR
     F068["FEAT-068<br/>Cách ly"]
     F069["FEAT-069<br/>Ổ dịch, cụm ca, khai báo"]
     F070["FEAT-070<br/>Vệ sinh môi trường"]
+    F095["FEAT-095<br/>Nước thải y tế"]
     F071["FEAT-071<br/>Phơi nhiễm, tiêm chủng"]
     F072["FEAT-072<br/>Cải tiến, tự đánh giá, cắt ngang"]
     F073["FEAT-073<br/>ATTP, truyền thông"]
@@ -458,12 +480,13 @@ graph LR
     F063 --> F072
     F060 --> F073
     F070 --> F073
+    F070 --> F095
     F065 --> F074
 
     classDef risk fill:#c0392b,stroke:#7b241c,color:#fff
     class F018,F009,F024 risk
     classDef v112 fill:#1f4e79,stroke:#0b2a45,color:#fff
-    class F056,F057,F058,F059,F060,F061,F062,F063,F064,F065,F066,F067,F068,F069,F070,F071,F072,F073,F074,F094 v112
+    class F056,F057,F058,F059,F060,F061,F062,F063,F064,F065,F066,F067,F068,F069,F070,F071,F072,F073,F074,F094,F095 v112
 ```
 
 ### 4.4 Milestone view

@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "creation": "2026-11-12 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "permit_code",
+  "version_no",
+  "permit_no",
+  "issuing_authority",
+  "issued_on",
+  "valid_until",
+  "column_break_standard",
+  "standard",
+  "standard_column",
+  "factor_note",
+  "effective_from",
+  "superseded_by",
+  "attachment",
+  "section_parameters",
+  "parameters",
+  "note",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "permit_code",
+   "fieldtype": "Data",
+   "label": "Permit Code",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "translatable": 0,
+   "description": "Stable code shared by all versions, e.g. 0154."
+  },
+  {
+   "fieldname": "version_no",
+   "fieldtype": "Int",
+   "label": "Version",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "permit_no",
+   "fieldtype": "Data",
+   "label": "Permit No",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "issuing_authority",
+   "fieldtype": "Data",
+   "label": "Issuing Authority"
+  },
+  {
+   "fieldname": "issued_on",
+   "fieldtype": "Date",
+   "label": "Issued On"
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "label": "Valid Until"
+  },
+  {
+   "fieldname": "column_break_standard",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "standard",
+   "fieldtype": "Select",
+   "label": "Technical Standard",
+   "options": "QCVN 40:2025/BTNMT\nQCVN 28:2010/BTNMT\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "standard_column",
+   "fieldtype": "Select",
+   "label": "Column",
+   "options": "\nA\nB\nC",
+   "reqd": 1
+  },
+  {
+   "fieldname": "factor_note",
+   "fieldtype": "Data",
+   "label": "Factor Note",
+   "description": "For example K = 1.0. Limits on the rows are the maximum values already applied."
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "superseded_by",
+   "fieldtype": "Link",
+   "label": "Superseded By",
+   "options": "Wastewater Permit",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Permit Scan"
+  },
+  {
+   "fieldname": "section_parameters",
+   "fieldtype": "Section Break",
+   "label": "Parameters by Point"
+  },
+  {
+   "fieldname": "parameters",
+   "fieldtype": "Table",
+   "label": "Parameters",
+   "options": "Wastewater Permit Parameter"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Wastewater Permit",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Environmental Hygiene",
+ "name": "Wastewater Permit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "is_submittable": 1,
+ "title_field": "permit_no",
+ "show_title_field_in_link": 1,
+ "search_fields": "permit_code,permit_no",
+ "description": "Environmental permit of the hospital; posting = approved by the head of infection control."
+}

@@ -539,6 +539,26 @@
  },
  {
   "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_vimcerts_no",
+  "fieldname": "tc_vimcerts_no",
+  "fieldtype": "Data",
+  "label": "VIMCERTS No",
+  "insert_after": "tc_contract_to",
+  "description": "Environmental monitoring certificate of a wastewater monitoring unit."
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Supplier",
+  "name": "Supplier-tc_vimcerts_valid_until",
+  "fieldname": "tc_vimcerts_valid_until",
+  "fieldtype": "Date",
+  "label": "VIMCERTS Valid Until",
+  "insert_after": "tc_vimcerts_no",
+  "description": "A unit whose certificate has expired on the sampling date cannot be chosen for a wastewater round."
+ },
+ {
+  "doctype": "Custom Field",
   "dt": "Employee",
   "fieldname": "tc_education_level",
   "fieldtype": "Select",
