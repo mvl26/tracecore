@@ -48,10 +48,48 @@ def _station_info(station):
 	}, None
 
 
+def _station_by_number(station_no):
+	"""NAV-07: kiosk mở /app/station/<số trạm>; đổi Số trạm thành mã trạm (đúng một trạm đang dùng)."""
+	number = cint(station_no)
+	names = (
+		frappe.get_all(
+			"Zone Station",
+			filters={"is_zone": 0, "is_active": 1, "station_no": number},
+			pluck="name",
+			order_by="name asc",
+			# kiosk chưa quét thẻ có thể không đọc được Zone Station; chỉ trả mã trạm
+			ignore_permissions=True,
+		)
+		if number > 0
+		else []
+	)
+	if len(names) == 1:
+		return names[0], None
+	if not names:
+		return None, {
+			"code": "STATION_NOT_FOUND",
+			"title": _("Station not configured"),
+			"reason": _("No active station has number {0}.").format(station_no),
+			"action": _("Check the kiosk address or call R10."),
+		}
+	return None, {
+		"code": "STATION_NUMBER_DUPLICATE",
+		"title": _("Station not configured"),
+		"reason": _("Station number {0} is used by several stations: {1}.").format(number, ", ".join(names)),
+		"action": _("Ask R10 to give each station its own number, or open the address with the station code."),
+	}
+
+
 @frappe.whitelist()
-def ping(station=None):
-	"""Bắt tay của kiosk/agent: phiên bản, site, múi giờ, giờ server, thông tin trạm, trạng thái agent."""
-	info, error = _station_info(station) if station else (None, None)
+def ping(station=None, station_no=None):
+	"""Bắt tay của kiosk/agent: phiên bản, site, múi giờ, giờ server, thông tin trạm, trạng thái agent.
+
+	``station_no`` (NAV-07): kiosk mở theo Số trạm; mã trạm ``station`` có thì thắng.
+	"""
+	error = None
+	if not station and station_no not in (None, ""):
+		station, error = _station_by_number(station_no)
+	info, error = _station_info(station) if station else (None, error)
 	agent = frappe.cache.hget(AGENT_HEARTBEAT_CACHE, station) if station else None
 	return {
 		"app": "tracecore",
