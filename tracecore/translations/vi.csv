@@ -11598,4 +11598,11 @@ Linen,Đồ vải,TraceCore Quick Access
 Waste,Chất thải,TraceCore Quick Access
 Infection control,KSNK,TraceCore Quick Access
 Total pending: {0},Tổng việc chờ: {0},IC Rail
+The kiosk address has no station number (/app/station/1).,Địa chỉ máy trạm thiếu số trạm (/app/station/1).,
+"Open the address of this station (/app/station/ followed by the station number) or press Help. Call R10 if you do not know the number.","Mở đúng địa chỉ của trạm này (/app/station/ và số trạm ở cuối) hoặc bấm Trợ giúp. Chưa biết số trạm thì gọi quản trị hệ thống.",
+This kiosk has not opened station number {0} online yet.,Máy này chưa mở trạm số {0} lần nào khi có mạng.,
+Connect to the network and reload the page.,Kết nối mạng rồi tải lại trang.,
+No active station has number {0}.,Không có trạm đang dùng nào mang số {0}.,
+Station number {0} is used by several stations: {1}.,Số trạm {0} đang trùng ở nhiều trạm: {1}.,
+"Ask R10 to give each station its own number, or open the address with the station code.","Nhờ quản trị hệ thống đặt số riêng cho từng trạm, hoặc mở địa chỉ theo mã trạm.",
 Total pending: {0},Tổng việc chờ: {0},

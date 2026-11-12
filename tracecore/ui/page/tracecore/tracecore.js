@@ -1,4 +1,4 @@
-/* global tracecore, TcQuickNav */
+/* global tracecore, TcQuickNav, TcStationUrl */
 const NAV_COLLAPSED_KEY = "tc_home_nav_collapsed";
 
 frappe.pages["tracecore"].on_page_load = function (wrapper) {
@@ -118,7 +118,8 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	function open_first_station(data) {
 		const first = data.stations.find((item) => item.implemented);
 		if (!first) return false;
-		const route = `/app/station?station=${encodeURIComponent(first.name)}`;
+		// NAV-07: địa chỉ trạm theo Số trạm (/app/station/<số>)
+		const route = TcStationUrl.path(first.name, first.station_no);
 		// Page station đọc mã từ URL lúc nạp nên phải nạp lại trang
 		window.location.assign(route);
 		return true;
@@ -267,10 +268,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			.on("click", () => {
 				if (!navigator.onLine) return load();
 				const item = available.find((item) => item.name === select.val());
-				if (item)
-					window.location.assign(
-						`/app/station?station=${encodeURIComponent(item.name)}`
-					);
+				if (item) window.location.assign(TcStationUrl.path(item.name, item.station_no));
 			})
 			.appendTo(station);
 		$("<p class='tc-launcher-note'></p>")
