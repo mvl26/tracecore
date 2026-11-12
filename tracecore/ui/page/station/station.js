@@ -18,15 +18,6 @@ const STATION_IDLE_MS = 10 * 60 * 1000;
 const STATION_HEARTBEAT_MS = 30000;
 const TC_NOTIFY_MS = 60000; // chuông thông báo hỏi lại mỗi 60 giây (FR-M9-10, SCR-42)
 // Lớp màn theo Station Function.screen_key; lớp nằm ở các file nối sau qua page_js nên kiểm typeof lúc chạy.
-// localStorage có thể bị chặn (chế độ riêng tư): không có thì chỉ mất phần nhớ số trạm khi mất mạng (NAV-07)
-function tcStationStorage() {
-	try {
-		return window.localStorage;
-	} catch (error) {
-		return null;
-	}
-}
-
 function tcScreenClass(key) {
 	switch (key) {
 		case "receive":
@@ -226,7 +217,7 @@ class TraceCoreStation {
 		const where = TcStationUrl.parse(window.location.pathname, window.location.search);
 		this.stationNo = where.no;
 		this.stationCode = where.name;
-		this.station = where.name || (where.no ? TcStationUrl.recall(tcStationStorage(), where.no) : null);
+		this.station = where.name || (where.no ? TcStationUrl.recall(TcStationUrl.storage(), where.no) : null);
 		this.stationInfo = null;
 		// lần quét chưa có phản hồi dứt khoát: {raw, key, ts} — Thử lại gửi lại y nguyên key + client_ts
 		this.pending = null;
@@ -1731,7 +1722,7 @@ class TraceCoreStation {
 	adoptStationAddress(station) {
 		this.station = station.name;
 		this.stationNo = station.station_no || null;
-		TcStationUrl.remember(tcStationStorage(), station.station_no, station.name);
+		TcStationUrl.remember(TcStationUrl.storage(), station.station_no, station.name);
 		const address = TcStationUrl.path(station.name, station.station_no);
 		if (window.location.pathname + window.location.search !== address)
 			window.history.replaceState(window.history.state, "", address);

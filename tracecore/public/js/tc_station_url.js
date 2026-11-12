@@ -18,6 +18,16 @@ const TcStationUrl = {
 		return { no: number > 0 ? number : null, name: name || null };
 	},
 
+	// bộ nhớ lâu dài của trình duyệt chỉ giữ cặp số ↔ mã trạm (không bí mật); token phiên trạm vẫn chỉ ở sessionStorage.
+	// Bị chặn (chế độ riêng tư) thì null: chỉ mất phần mở trạm theo số khi mất mạng.
+	storage() {
+		try {
+			return window.localStorage;
+		} catch (error) {
+			return null;
+		}
+	},
+
 	remember(storage, no, name) {
 		const number = parseInt(no, 10);
 		if (!(number > 0) || !name) return;
