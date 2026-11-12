@@ -60,4 +60,7 @@ class TestSetUnitComponents(IsolatedTestCase):
 		with open(path, encoding="utf-8") as handle:
 			script = handle.read()
 		self.assertIn('__("Processing Route", null, "Instrument Set Type")', script)
-		self.assertIn('__(s.processing_route, null, "Instrument Set Type")', script)
+		self.assertIn(
+			"tc_su_route_label(s.processing_route)", script
+		)  # A-157: nhãn qua hàm dùng chung với hộp thoại
+		self.assertIn('__(value, null, "Instrument Set Type")', script)

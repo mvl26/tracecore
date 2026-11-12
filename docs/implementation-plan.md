@@ -9,6 +9,7 @@
 > **Amendment A-154 (2026-11-12):** thành phần bộ trên form Set Unit và loại chỉ thị hóa học của loại bộ (Không cần / Loại 4 / Loại 5 / Loại 6, T4 kiểm theo loại) → **FEAT-096** ở E-02 (M1, ngoài sprint), FR-M1-03.9, FR-M1-06.5, sửa FR-M2-07.2/.3. Người dùng duyệt C1–C3 ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5; nút Sao chép bộ dụng cụ trên form Set Unit, FR-M1-05.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-156 (2026-11-12):** quy trình xử lý của loại bộ (Tiệt khuẩn nhiệt độ cao / nhiệt độ thấp / Khử khuẩn) → **FEAT-098** ở E-02 (M1, ngoài sprint), FR-M1-03.10. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-157 (2026-11-12):** sửa Quy trình xử lý / Loại chỉ thị hóa học của loại bộ ngay trên form Set Unit → mở rộng **FEAT-098**, FR-M1-06.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
