@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix: TraceCore
 
-> Source: docs/srs.md, docs/use-cases.md · Last updated: 2026-11-12 (Amendment A-153: FR-M15-08..13, UC-58, SCR-67, FEAT-095; A-154: FR-M1-03.9, FR-M1-06.5, FEAT-096) · Version 1.12 (Amendment A-113)
+> Source: docs/srs.md, docs/use-cases.md · Last updated: 2026-11-12 (Amendment A-153: FR-M15-08..13, UC-58, SCR-67, FEAT-095; A-154: FR-M1-03.9, FR-M1-06.5, FEAT-096; A-155: FR-M6-02.5, FEAT-097) · Version 1.12 (Amendment A-113)
 > Import & chuẩn hóa từ #15 RTM v1.10 (Medcons, 20/09/2026). Giữ nguyên ID gốc FR-Mx-NN (thứ tự theo bảng 2.1 của #05) và NFR-*.
 > Design, Plan, and Test columns are filled by downstream phases as they produce their artifacts (see Column ownership in rtm-guide: Design ref ← software-architecture / detailed-design / ui-design; Plan ref ← implementation-planning; Test ref ← acceptance-verification). Requirements-engineering owns the other columns.
 > Source = "BR-Mx (BRD #02)" cho FR kế thừa baseline; "CHG-0xx" cho FR sinh từ quyết định review v1.3–v1.10 (#00 nhật ký thay đổi); "Catalog gap v1.11" cho FR-M9-08..16 (khoảng trống catalog, duyệt 2026-10-17); "Quyết định chủ đầu tư 2026-10-17 (SC-01); TT 20/2021/TT-BYT" cho FR-M10-*; NFR gốc = "Catalog ISO 25010 / BA #05", NFR mới = "Catalog ISO 25010 v1.11".
@@ -359,6 +359,7 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M2-09.7, FR-M2-09.8 | BRU-REP-017 | SCR-09 | — (A-110) | FEAT-053 | — | `tracecore/reprocessing/tests/test_set_program_station.py`, `tracecore/tests/test_station_program_match_assets.py` |
 | FR-M2-08, FR-M2-08.1, FR-M2-08.2, FR-M2-08.8 | BRU-REP-011 (thu hẹp), BRU-ID-005 | SCR-06, SCR-08, SCR-09, Desk TraceCore Settings, Printer | — (A-114) | FEAT-075 | — | — |
 | FR-M1-03.9, FR-M1-06.5, FR-M2-07.2, FR-M2-07.3 | BRU-REP-013 (thu hẹp cho loại bộ Không cần) | SCR-02, SCR-03, SCR-08 | — (A-154) | FEAT-096 | — | `tracecore/instrument/tests/test_set_type_ci_class.py`, `tracecore/instrument/tests/test_set_unit_components.py`, `tracecore/reprocessing/tests/test_packing_ci_class.py` |
+| FR-M6-02.5, FR-M2-07 | — | SCR-24, SCR-08 | — (A-155) | FEAT-097 | — | `tracecore/inventory/tests/test_pack_material_detail.py` |
 | FR-M1-05.4, FR-M10-01.5, EI-HW-002, EI-HW-003, EI-HW-007, EI-HW-008 | BRU-ID-006 | SCR-02, SCR-38, Desk in thẻ bộ, nhãn QR đối tượng | — (A-114) | FEAT-075 | — | — |
 | FR-M10-01, FR-M10-02 | BRU-WST-001, BRU-WST-002, BRU-ID-006 | SCR-38 (mới) | — (v1.11) | — | — | — |
 | FR-M10-03 | BRU-WST-001, BRU-WST-002 | SCR-39 (mới) | — (v1.11) | — | — | — |
