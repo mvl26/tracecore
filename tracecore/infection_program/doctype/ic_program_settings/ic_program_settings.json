@@ -211,7 +211,7 @@
    "fieldtype": "Int",
    "label": "Prophylaxis On Time Within (Minutes before Incision)",
    "non_negative": 1,
-   "description": "Antibiotic prophylaxis given from 0 to this many minutes before the incision is on time, following the hospital protocol. Leave empty to assess none. A change recalculates surgeries of unlocked periods only."
+   "description": "Antibiotic prophylaxis given from 0 to this many minutes before the incision is on time, following the hospital protocol. Leave empty or 0 to assess none. A change recalculates surgeries of unlocked periods only."
   },
   {
    "fieldname": "section_notifiable",

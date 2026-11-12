@@ -67,3 +67,5 @@ tracecore.patches.v0_1.a147_ssi_station_function
 tracecore.patches.v0_1.a149_ic_improvement_seed
 # giờ nhắc mẫu số / gói dự phòng bị Frappe điền bằng giờ lúc tạo IC Program Settings → 10:00 (CI PR #34)
 tracecore.patches.v0_1.ic_reminder_time_defaults
+# ngưỡng KSDP 0 phút = chưa cấu hình: ca đã bị đánh Quá sớm của kỳ chưa khóa → Không đánh giá
+tracecore.patches.v0_1.ssi_prophylaxis_zero_threshold

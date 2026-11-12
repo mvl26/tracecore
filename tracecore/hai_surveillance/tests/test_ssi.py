@@ -335,6 +335,22 @@ class TestProphylaxis(SSITestBase):
 		self.assertEqual(ssi.prophylaxis_timing(1, None, 60), ssi.NOT_ASSESSED)
 		self.assertEqual(ssi.prophylaxis_timing(0, None, 60), ssi.NOT_GIVEN)
 
+	def test_zero_threshold_means_not_configured(self):
+		# ô Int trống bị Frappe lưu thành 0 khi lưu IC Program Settings → coi như chưa cấu hình, không đánh "Quá sớm"
+		self.assertEqual(ssi.prophylaxis_timing(1, 45, 0), ssi.NOT_ASSESSED)
+		s.set_threshold(0)
+		self.assertIsNone(ssi.threshold())
+		doc = s.make_ssi(self.ward, self.group.name)
+		self.assertEqual(doc.prophylaxis_timing, ssi.NOT_ASSESSED)
+
+	def test_emptied_threshold_saved_as_zero_recalculates_to_not_assessed(self):
+		# xóa ngưỡng trên form: Frappe ghi 0 xuống Singles; on_update tính lại → ca kỳ chưa khóa thành Không đánh giá
+		doc = s.make_ssi(self.ward, self.group.name)
+		self.assertEqual(doc.prophylaxis_timing, ssi.ON_TIME)
+		s.set_threshold(0)
+		ssi.recalculate_prophylaxis()
+		self.assertEqual(frappe.db.get_value(s.SSI, doc.name, "prophylaxis_timing"), ssi.NOT_ASSESSED)
+
 	def test_snapshot_on_save(self):
 		doc = s.make_ssi(self.ward, self.group.name)
 		self.assertEqual((doc.prophylaxis_timing, doc.prophylaxis_max_applied), (ssi.ON_TIME, 60))
