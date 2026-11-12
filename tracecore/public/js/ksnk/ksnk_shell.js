@@ -165,6 +165,9 @@ const TcKsnk = {
 	railHtml(nav, active, open) {
 		const esc = TcKsnk.esc;
 		const opened = open === undefined ? [TcKsnk.groupOf(nav, active)] : open;
+		// NAV-06: tạm ẩn nhóm "Bề mặt khác" theo yêu cầu người dùng (12/11/2026). Bật lại: nối
+		//   + TcKsnk.otherSurfacesHtml(nav, opened)
+		// vào sau .join("") ở cuối biểu thức return dưới đây.
 		return ((nav && nav.groups) || [])
 			.filter((group) => group.items.length)
 			.map((group) => {
@@ -198,8 +201,6 @@ const TcKsnk = {
 				);
 			})
 			.join("");
-		// NAV-06: tạm ẩn nhóm "Bề mặt khác" theo yêu cầu người dùng (12/11/2026); bật lại thì bỏ comment dòng dưới
-		// + TcKsnk.otherSurfacesHtml(nav, opened)
 	},
 
 	// Nhóm "Bề mặt khác" (ảnh SCR-66): lối sang Cổng khoa (DEPT) và PDA; ẩn với vai trò chỉ đọc. Quyền thật ở từng trang.
