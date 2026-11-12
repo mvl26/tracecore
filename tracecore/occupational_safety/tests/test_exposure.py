@@ -165,6 +165,30 @@ class TestExposureReport(IsolatedTestCase):
 		self.assertEqual(doc.status, "Cancelled")
 		self.assertEqual(doc.cancel_reason, "Reported by mistake")
 
+	def test_department_entered_by_hand_is_kept_when_staff_has_no_department(self):
+		"""Nhân viên chưa gán khoa: khoa nhập tay giữ nguyên, tên khoa luôn theo khoa."""
+		other = factories.make_department("PN Hồi sức TH")
+		no_dept = fx.employee("PN No Dept")
+		doc = _report(self, employee=no_dept)
+		self.assertFalse(doc.department)
+		doc.department = other  # R11 nhập Khoa trên form Desk
+		doc.save(ignore_permissions=True)
+		self.assertEqual(doc.department, other)
+		self.assertEqual(doc.department_name, "PN Hồi sức TH")
+		self.assertIsNone(frappe.get_meta(DOCTYPE).get_field("department").fetch_from)
+
+	def test_department_name_follows_department(self):
+		doc = _report(self)
+		doc.db_set("department_name", "Tên cũ", update_modified=False)
+		doc.reload()
+		doc.save(ignore_permissions=True)
+		self.assertEqual(doc.department_name, "PN Ngoại TH")
+		doc.employee = fx.employee("PN No Dept 2")
+		doc.department = None
+		doc.save(ignore_permissions=True)
+		self.assertIsNone(doc.department)
+		self.assertFalse(doc.department_name)
+
 	@bru("BRU-OCC-001")
 	def test_no_lab_result_or_diagnosis_field_in_m16(self):
 		"""FR-M16-06.1: quét JSON mọi DocType M16, không có trường kết quả xét nghiệm hay chẩn đoán."""
@@ -181,3 +205,66 @@ class TestExposureReport(IsolatedTestCase):
 					self.assertIsNone(FORBIDDEN.search(text), f"{meta['name']}.{field['fieldname']}")
 			self.assertNotIn("patient_name", [f["fieldname"] for f in meta["fields"]])
 		self.assertEqual(checked, 8)
+
+
+class TestExposureDepartmentRepair(IsolatedTestCase):
+	"""Bản ghi cũ bị form xóa Khoa (fetch_from employee.department ghi đè rỗng) nhưng còn Tên khoa cũ."""
+
+	def setUp(self):
+		super().setUp()
+		self.department = factories.make_department("PN Sửa Khoa TH")
+		self.employee = fx.employee("PN Repair", self.department)
+		fx.thresholds()
+		fx.clear_templates()
+
+	def _broken(self, department_name):
+		doc = _report(self)
+		frappe.db.set_value(
+			DOCTYPE, doc.name, {"department": None, "department_name": department_name}, update_modified=False
+		)
+		return doc.name, frappe.db.get_value(DOCTYPE, doc.name, "modified")
+
+	def test_patch_restores_department_from_unique_name_else_clears_name(self):
+		from tracecore.patches.v0_1 import exposure_department_name
+
+		fixable, modified = self._broken("PN Sửa Khoa TH")
+		unknown, _ = self._broken("PN Khoa không tồn tại")
+		exposure_department_name.execute()
+		self.assertEqual(
+			frappe.db.get_value(DOCTYPE, fixable, ["department", "department_name", "modified"]),
+			(self.department, "PN Sửa Khoa TH", modified),
+		)
+		self.assertEqual(
+			frappe.db.get_value(DOCTYPE, unknown, ["department", "department_name"]), (None, None)
+		)
+
+
+class TestExposureFormScript(IsolatedTestCase):
+	"""Form Desk: đổi nhân viên chỉ điền Khoa khi đang trống, không bao giờ xóa Khoa đã nhập."""
+
+	FORM = "public/js/occupational_exposure.js"
+
+	def test_hook_loads_form_script(self):
+		self.assertEqual(frappe.get_hooks("doctype_js")["Occupational Exposure"], [self.FORM])
+
+	def test_employee_change_fills_only_empty_department(self):
+		from tracecore.tests.js_harness import run_js
+
+		out = run_js(
+			self,
+			[self.FORM],
+			[["TcOccupationalExposureForm"]],
+			"""
+			const depts = {"NV-1": "Khoa A", "NV-2": null};
+			globalThis.frappe = {db: {get_value: async (_dt, name) => ({message: {department: depts[name]}})}};
+			const form = (doc) => ({doc, async set_value(field, value) { this.doc[field] = value; }});
+			const run = async (doc) => { const frm = form(doc); await TcOccupationalExposureForm.employee(frm); return frm.doc; };
+			emit([
+				await run({employee: "NV-1", department: ""}),
+				await run({employee: "NV-1", department: "Khoa B"}),
+				await run({employee: "NV-2", department: "Khoa B"}),
+				await run({employee: "NV-2", department: ""}),
+			]);
+			""",
+		)
+		self.assertEqual([row["department"] for row in out], ["Khoa A", "Khoa B", "Khoa B", ""])
