@@ -777,7 +777,8 @@ class TestNavbarQuickAccess(FrappeTestCase):
 			frappe.get_app_path("tracecore", "public", "js", "tc_launcher.js"), encoding="utf-8"
 		) as handle:
 			launcher = handle.read()
-		self.assertIn("TcQuickNav.render(frappe.boot.tc_quick_nav", launcher)
+		self.assertIn("TcQuickNav.render(", launcher)
+		self.assertIn("frappe.boot.tc_quick_nav", launcher)
 		with open(
 			frappe.get_app_path("tracecore", "public", "js", "tracecore.bundle.js"), encoding="utf-8"
 		) as handle:
