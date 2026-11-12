@@ -75,13 +75,22 @@ R11 để ghi đợt (W7, không thêm vai trò).
 
 ## 6. Giao diện, RPC, báo cáo, lịch chạy
 
-- **SCR-67** `/app/tc-ksnk/nuoc-thai` (nhóm Môi trường – nghề nghiệp): thanh thao tác (Ghi đợt quan trắc · Xuất báo cáo ·
-  Điểm quan trắc), KPI năm, thẻ GPMT hiện hành + Cần xử lý (điểm vượt chuẩn với nút Mở NC / Không cần NC / Ghi đợt quan trắc
-  lại, kỳ quá hạn, kỳ thiếu thông số, VIMCERTS hết hạn), lưới lịch T1–T12, bảng đợt gần nhất từng điểm. R13 chỉ KPI.
-- **Form**: `Wastewater Monitoring` tự nạp thông số khi chọn điểm/ngày; `Wastewater Permit` có nút "Nạp thông số mẫu theo
-  quy chuẩn" (Nháp) và "Phiên bản mới" (đã duyệt).
-- **RPC** `tracecore.v1.wastewater.overview / schedule / parameters / template` (GET), `new_permit_version / open_nc /
-  dismiss_nc` (POST, `@idempotent`).
+- **SCR-67** `/app/tc-ksnk/nuoc-thai` (nhóm Môi trường – nghề nghiệp), bố cục theo bản mẫu: 5 KPI; thẻ GPMT hiện hành
+  (badge Hiệu lực / Còn N ngày, link phiên bản trước) + Cần xử lý (điểm vượt chuẩn với Mở NC / Không cần NC, kỳ quá hạn, kỳ
+  thiếu thông số, VIMCERTS hết hạn); lưới lịch T1–T12 có chú giải, ô kỳ hiện tại viền; bảng đợt gần nhất từng điểm với các
+  dòng Kết luận đợt · Số phiếu · Đơn vị QT · NC / việc tiếp theo (Ghi đợt QT lại, Bổ sung thông số thiếu). R13 chỉ thẻ tóm tắt.
+- **Thanh thao tác cố định ở đáy**, luôn 3 nút; nút không dùng được thì mờ, lý do bằng chữ ở cuối thanh:
+  - **Ghi đợt quan trắc** → cửa sổ ngay trên màn: điểm, ngày lấy mẫu, kỳ tự tính, đơn vị quan trắc (đơn vị hết hạn VIMCERTS
+    tại ngày lấy mẫu bị khóa), số phiếu, file phiếu kết quả; bảng thông số tự nạp theo GPMT với ô giá trị, ô KPH, cột kết quả
+    tự tính Đạt / Vượt / Chưa nhập; Lưu nháp · Ghi sổ. Đợt Không đạt → cửa sổ tiếp theo: R01 Mở NC hoặc Bỏ qua (lý do); R11
+    thấy thông báo đã gửi đề nghị tới R01.
+  - **Xuất báo cáo** → cửa sổ chọn phạm vi (năm, quý), điểm, định dạng Excel/PDF → tải file.
+  - **Cập nhật GPMT** (R01) → cửa sổ cảnh báo tạo phiên bản V(n+1) → mở bản Nháp trong form để sửa và duyệt; chưa có GPMT thì
+    mở form khai báo mới.
+- **Form Desk** vẫn dùng được: `Wastewater Monitoring` tự nạp thông số khi chọn điểm/ngày; `Wastewater Permit` có nút "Nạp
+  thông số mẫu theo quy chuẩn" (Nháp) và "Phiên bản mới" (đã duyệt).
+- **RPC** `tracecore.v1.wastewater.overview / schedule / parameters / template / export_report` (GET),
+  `record_round / new_permit_version / open_nc / dismiss_nc` (POST, `@idempotent`).
 - **Báo cáo**: Script Report `Wastewater Monitoring Summary` (điểm × đợt × thông số + số lần vượt; Export Excel, In PDF);
   Print Format `TC Wastewater Monitoring`; báo cáo môi trường tháng/quý có dòng "Nước thải y tế"; chỉ số `ww_period_on_time`.
 - **Scheduler hằng ngày** `environmental_hygiene.wastewater_schedule.run_daily`: sự kiện `WW_MONITORING_DUE`,

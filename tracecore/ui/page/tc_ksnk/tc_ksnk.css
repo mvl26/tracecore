@@ -242,3 +242,44 @@
 .tc-ksnk .tc-ksnk-headactions { margin: 0; justify-content: flex-end; }
 /* Khung bảng luôn hiện: dòng trạng thái rỗng nằm trong bảng, căn trái */
 .tc-ksnk .tc-ksnk-table tr.is-empty td, .tc-ksnk .tc-ksnk-table td.tc-ksnk-state { color: var(--tc-text-2); text-align: left; padding: var(--tc-sp-3); }
+/* FEAT-095 SCR-67 Nước thải (A-153, bổ sung 12/11/2026 theo bản mẫu): 5 KPI, hai cột GPMT / Cần xử lý, ô lịch có chữ,
+   thanh thao tác cố định ở đáy, cửa sổ ghi đợt. Không gradient: ô "Không áp dụng" là nền xám viền đứt. */
+.tc-ksnk .tc-ww-kpis { grid-template-columns: repeat(auto-fit, minmax(calc(var(--tc-sp-22) * 2), 1fr)); }
+.tc-ksnk .tc-ww-two { display: grid; grid-template-columns: 11fr 9fr; gap: var(--tc-sp-3); align-items: start; }
+@media (max-width: 900px) { .tc-ksnk .tc-ww-two { grid-template-columns: 1fr; } }
+.tc-ksnk .tc-ww-spacer { flex: 1; }
+.tc-ksnk .tc-ksnk-card h3:has(.tc-ww-spacer) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tc-sp-2); }
+.tc-ksnk .tc-ww-link { color: var(--tc-text-link); font-size: var(--tc-fs-xs); font-weight: var(--tc-fw-regular); text-decoration: underline; }
+.tc-ksnk .tc-ww-year { width: auto; min-width: calc(var(--tc-sp-22) * 1.2); }
+.tc-ksnk .tc-ww-permit { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--tc-sp-22) * 1.8), 1fr)); gap: var(--tc-sp-2) var(--tc-sp-4); font-size: var(--tc-fs-sm); }
+.tc-ksnk .tc-ww-permit span { display: block; color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ww-sched .tc-ww-month { text-align: center; }
+.tc-ksnk .tc-ww-sched td.tc-ww-point { white-space: nowrap; background: var(--tc-card); }
+.tc-ksnk .tc-ww-sched td.tc-ww-point small { display: block; color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ww-sched td.is-current { box-shadow: inset 0 0 0 var(--tc-bw-med) var(--tc-primary); }
+.tc-ksnk .tc-ww-flag { color: var(--tc-fail-text); font-size: var(--tc-fs-xs); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ww-cell { display: block; padding: var(--tc-sp-1-5) var(--tc-sp-1); border: var(--tc-bw-hair) solid transparent; border-radius: var(--tc-r-xs); text-align: center; font-size: var(--tc-fs-xs); font-weight: var(--tc-fw-bold); line-height: var(--tc-lh-snug); }
+.tc-ksnk .tc-ww-cell small { display: block; font-weight: var(--tc-fw-regular); }
+.tc-ksnk .tc-ww-cell.is-done { background: var(--tc-pass-tint); color: var(--tc-pass-text); border-color: var(--tc-pass); }
+.tc-ksnk .tc-ww-cell.is-fail { background: var(--tc-fail-tint); color: var(--tc-fail-text); border-color: var(--tc-fail); }
+.tc-ksnk .tc-ww-cell.is-miss { background: var(--tc-warn-tint); color: var(--tc-warn-text); border-color: var(--tc-warn); }
+.tc-ksnk .tc-ww-cell.is-due { background: var(--tc-card); color: var(--tc-warn-text); border: var(--tc-bw-med) dashed var(--tc-warn); }
+.tc-ksnk .tc-ww-cell.is-over { background: var(--tc-fail); color: var(--tc-text-inverse); }
+.tc-ksnk .tc-ww-cell.is-na, .tc-ksnk .tc-ww-cell.is-none { background: var(--tc-zebra); color: var(--tc-text-muted); border: var(--tc-bw-hair) dashed var(--tc-border-input); font-weight: var(--tc-fw-regular); }
+.tc-ksnk .tc-ww-cell.is-future { background: var(--tc-card); color: var(--tc-text-muted); border-color: var(--tc-border-input); font-weight: var(--tc-fw-regular); }
+.tc-ksnk .tc-ww-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tc-sp-2); margin-top: var(--tc-sp-2-5); font-size: var(--tc-fs-xs); color: var(--tc-text-2); }
+.tc-ksnk .tc-ww-legend .tc-ww-cell { display: inline-block; padding: var(--tc-sp-0-5) var(--tc-sp-2); }
+.tc-ksnk .tc-ww-results td.tc-ww-fail { background: var(--tc-fail-tint); color: var(--tc-fail-text); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ww-missing { color: var(--tc-warn-text); }
+.tc-ksnk .tc-ww-fail-text { color: var(--tc-fail-text); }
+.tc-ksnk .tc-ww-pass-text { color: var(--tc-pass-text); }
+.tc-ksnk .tc-ww-results tr.tc-ww-sum td { background: var(--tc-zebra); }
+.tc-ksnk .tc-ww-actions { position: sticky; bottom: 0; z-index: var(--tc-z-actions); display: flex; flex-wrap: wrap; align-items: center; gap: var(--tc-sp-3); margin-top: var(--tc-sp-4); padding: var(--tc-sp-3) var(--tc-sp-4); background: var(--tc-card); border-top: var(--tc-bw-med) solid var(--tc-primary); }
+.tc-ksnk .tc-ww-actions .btn { min-height: var(--tc-touch-min); font-weight: var(--tc-fw-bold); }
+.tc-ksnk .tc-ww-actions .btn:disabled { background: var(--tc-disabled-bg); color: var(--tc-disabled-text); border-color: var(--tc-disabled-bg); cursor: not-allowed; }
+.tc-ksnk .tc-ww-hint { margin-left: auto; color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ww-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--tc-sp-22) * 2.2), 1fr)); gap: var(--tc-sp-2-5) var(--tc-sp-3); margin: var(--tc-sp-3) 0; }
+.tc-ksnk .tc-ww-form label { display: block; color: var(--tc-text-2); font-size: var(--tc-fs-xs); }
+.tc-ksnk .tc-ww-value { width: calc(var(--tc-sp-22) * 1.4); font-family: var(--tc-font-mono); text-align: right; }
+.tc-ksnk .tc-ww-kph { display: inline-flex; align-items: center; gap: var(--tc-sp-1); font-size: var(--tc-fs-xs); white-space: nowrap; }
+.tc-ksnk .tc-ww-sum-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tc-sp-2); margin-top: var(--tc-sp-3); font-size: var(--tc-fs-sm); }
