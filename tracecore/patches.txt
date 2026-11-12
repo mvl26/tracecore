@@ -67,3 +67,9 @@ tracecore.patches.v0_1.a147_ssi_station_function
 tracecore.patches.v0_1.a149_ic_improvement_seed
 # giờ nhắc mẫu số / gói dự phòng bị Frappe điền bằng giờ lúc tạo IC Program Settings → 10:00 (CI PR #34)
 tracecore.patches.v0_1.ic_reminder_time_defaults
+# ngưỡng KSDP 0 phút = chưa cấu hình: ca đã bị đánh Quá sớm của kỳ chưa khóa → Không đánh giá
+tracecore.patches.v0_1.ssi_prophylaxis_zero_threshold
+# Phơi nhiễm nghề nghiệp: form Desk đã xóa Khoa khi chọn nhân viên chưa gán khoa, Tên khoa còn tên cũ → gán lại / xóa tên
+tracecore.patches.v0_1.exposure_department_name
+# FEAT-097 (A-155 P6): giấy bọc tách khỏi vải bọc, suy số lớp / kích thước túi ép từ tên
+tracecore.patches.v0_1.a155_pack_material_detail

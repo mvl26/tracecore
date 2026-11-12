@@ -72,6 +72,10 @@ def validate(doc):
 		)
 	if doc.department is None and doc.employee:
 		doc.department = frappe.db.get_value("Employee", doc.employee, "department")
+	# Tên khoa luôn theo Khoa (form Desk có thể đổi Khoa mà không fetch lại tên)
+	doc.department_name = (
+		frappe.db.get_value("Department", doc.department, "department_name") if doc.department else None
+	)
 	_check_time(doc)
 	for field in ("activity", "device"):
 		doc.set(field, cstr(doc.get(field)).strip() or None)

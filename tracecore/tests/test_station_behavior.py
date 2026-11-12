@@ -488,7 +488,9 @@ T4_PACK = """
 const t4 = new T4Packing(makeStation());
 const types = [
 	{item: "PK-TUI", item_name: "Túi ép", shelf_life_days: 180, material: "Sealed Pouch", is_default: true,
-		expected_expiry: "2027-05-04"},
+		expected_expiry: "2027-05-04", pouch_size: "100 \u00d7 250"},
+	{item: "PK-GIAY", item_name: "Giấy crepe", shelf_life_days: 30, material: "Paper Wrap", is_default: false,
+		wrap_layers: "Double Layer"},
 	{item: "PK-HOP", item_name: "Hộp hấp", shelf_life_days: 30, material: "Rigid Container", is_default: false,
 		expected_expiry: "2026-12-05"},
 	{item: "PK-LA", item_name: "Lá <nhôm>", shelf_life_days: 7, material: "", is_default: false},
@@ -520,9 +522,12 @@ class TestT4PackMaterialDropdown(FrappeTestCase):
 		self.assertNotIn('data-action="pack-type"', html)  # không còn hàng chip
 		order = [
 			html.index(f'label="{label}"')
-			for label in ("Rigid Container", "Sealed Pouch", "Wrap", "Unclassified")
+			for label in ("Rigid Container", "Sealed Pouch", "Wrap", "Paper Wrap", "Unclassified")
 		]
 		self.assertEqual(order, sorted(order))
+		# A-155: dòng túi ép ghi kích thước, dòng giấy bọc ghi số lớp
+		self.assertIn("Túi ép · 100 \u00d7 250 mm · 180 days", html)
+		self.assertIn("Giấy crepe · Double Layer · 30 days", html)
 		self.assertIn('value="PK-TUI" selected', html)
 		self.assertEqual(html.count(" selected"), 1)
 		self.assertIn("default for this set", html)

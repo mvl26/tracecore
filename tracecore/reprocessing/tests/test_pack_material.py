@@ -61,7 +61,8 @@ class TestPackMaterialField(IsolatedTestCase):
 		self.assertIsNotNone(field)
 		self.assertEqual(field.fieldtype, "Select")
 		self.assertEqual(
-			[o for o in field.options.split("\n") if o], ["Rigid Container", "Sealed Pouch", "Wrap"]
+			[o for o in field.options.split("\n") if o],
+			["Rigid Container", "Sealed Pouch", "Wrap", "Paper Wrap"],  # A-155 thêm Giấy bọc
 		)
 		self.assertIn("Packaging", field.depends_on)
 

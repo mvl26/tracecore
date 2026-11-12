@@ -248,8 +248,9 @@ const TcKsnkScr62 = {
 			.map(
 				(r) => `<div class="tc-ksnk-alert" role="alert" data-region="nc-${esc(r.name)}">
 				<strong>${esc(
-					__("{0} failed — {1}, {2}:", [
+					__("{0} failed (sampled {1}) — {2}, {3}:", [
 						r.name,
+						self.date(r.sampled_on),
 						r.environment_zone_name,
 						__(r.sample_type),
 					])
@@ -262,9 +263,14 @@ const TcKsnkScr62 = {
 					])
 				)}</div>
 				<div>${esc(
-					__(
-						"Infection control, R11 and the responsible party were notified; the zone stays flagged until a resample passes."
-					)
+					r.resolved_by
+						? `✓ ${__(
+								"Resample {0} passed; the zone flag was cleared. An NC decision is still needed.",
+								[r.resolved_by]
+						  )}`
+						: __(
+								"Infection control, R11 and the responsible party were notified; the zone stays flagged until a resample passes."
+						  )
 				)}</div>
 				${
 					data.can_decide
@@ -273,12 +279,16 @@ const TcKsnkScr62 = {
 						  )}">${esc(__("Open Environment NC"))}</button>
 						<button type="button" class="btn btn-default btn-sm" data-action="dismiss-nc" data-name="${esc(
 							r.name
-						)}">${esc(__("No NC needed"))}</button>
+						)}">${esc(__("No NC needed"))}</button>${
+								r.resolved_by
+									? ""
+									: `
 						<a class="btn btn-default btn-sm" href="/app/environmental-sample/new?is_resample_of=${encodeURIComponent(
 							r.name
 						)}&environment_zone=${encodeURIComponent(r.environment_zone)}">${esc(
-								__("Record resample")
-						  )}</a></div>`
+											__("Record resample")
+									  )}</a>`
+						  }</div>`
 						: ""
 				}
 				<div class="tc-ksnk-actions">${self.sampleActions(data, r)}</div>

@@ -5,7 +5,7 @@ import re
 import frappe
 from frappe import _
 from frappe.model.naming import getseries
-from frappe.utils import now_datetime
+from frappe.utils import get_datetime, now_datetime
 
 from tracecore.core import gs1
 from tracecore.core.errors import Block, BlockedError
@@ -439,7 +439,8 @@ def next_instrument_giai(instrument):
 
 def next_container_code(collected_at, station=None):
 	"""Cấp mã túi/thùng chất thải `CT-YYMMDD-NNNNN` và ghi sổ (FR-M10-01.5, BRU-ID-006); số đã có trong sổ thì bỏ qua."""
-	series_key = f"{CONTAINER_PREFIX}-{collected_at:%y%m%d}-"
+	# phiếu gửi từ Desk mang collected_at dạng chuỗi
+	series_key = f"{CONTAINER_PREFIX}-{get_datetime(collected_at):%y%m%d}-"
 	while True:
 		code = series_key + getseries(series_key, CONTAINER_SERIAL_DIGITS)
 		if not is_issued(code):

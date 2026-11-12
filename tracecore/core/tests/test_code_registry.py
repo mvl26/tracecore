@@ -452,3 +452,9 @@ class TestContainerCode(FrappeTestCase):
 		self.assertNotEqual(first, second)
 		self.assertTrue(code_registry.is_issued(first))
 		self.assertEqual(gs1.parse_scan(first)["type"], "container")
+
+	@bru("BRU-ID-006")
+	def test_next_container_code_accepts_datetime_string_from_desk(self):
+		# phiếu gửi từ Desk: collected_at là chuỗi "YYYY-MM-DD HH:MM:SS", không phải datetime
+		code = code_registry.next_container_code("2026-10-31 07:45:00", "TR-WST")
+		self.assertRegex(code, r"^CT-261031-\d{5}$")

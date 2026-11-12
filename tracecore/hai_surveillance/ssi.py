@@ -217,14 +217,14 @@ def window_days(group, has_implant):
 
 
 def prophylaxis_timing(given, minutes, limit):
-	"""FR-M13-09: Đúng = 0 ≤ phút trước rạch da ≤ ngưỡng; âm = sau rạch da (Muộn); trên ngưỡng = Quá sớm."""
+	"""FR-M13-09: Đúng = 0 ≤ phút trước rạch da ≤ ngưỡng; âm = sau rạch da (Muộn); trên ngưỡng = Quá sớm; ngưỡng trống/0 = không đánh giá."""
 	if not cint(given):
 		return NOT_GIVEN
 	try:
 		minutes = minutes_of(minutes)
 	except ValueError:
 		minutes = None
-	if minutes is None or _empty(limit):
+	if minutes is None or _empty(limit) or cint(limit) <= 0:
 		return NOT_ASSESSED
 	if minutes < 0:
 		return LATE
@@ -234,11 +234,14 @@ def prophylaxis_timing(given, minutes, limit):
 
 
 def threshold():
-	"""Ngưỡng phút đang cấu hình; trống → None (không đánh giá, OQ-V12-09)."""
+	"""Ngưỡng phút đang cấu hình; trống hoặc 0 → None (không đánh giá, OQ-V12-09).
+
+	Ô Int trống bị Frappe lưu thành 0 mỗi lần lưu IC Program Settings, nên 0 cũng là "chưa cấu hình".
+	"""
 	raw = frappe.db.get_value(
 		"Singles", {"doctype": SETTINGS, "field": THRESHOLD_FIELD}, "value", order_by=None
 	)
-	return None if _empty(raw) else cint(raw)
+	return None if _empty(raw) or cint(raw) <= 0 else cint(raw)
 
 
 def schedule_rows(surgery_date, window, discharge_date, plan):
@@ -589,6 +592,7 @@ def check_case_link(case):
 def recalculate_prophylaxis():
 	"""Tính lại kết quả KSDP theo ngưỡng hiện tại cho ca thuộc kỳ chưa khóa (FR-M13-09.2); trả số ca đổi."""
 	limit = threshold()
+	applied = limit or 0  # cột Int NOT NULL: 0 = không có ngưỡng
 	locked = frappe.get_all("IC Reporting Period", filters={"locked": 1}, pluck="month")
 	changed = 0
 	for row in frappe.get_all(
@@ -603,11 +607,11 @@ def recalculate_prophylaxis():
 		],
 	):
 		timing = prophylaxis_timing(row.prophylaxis_given, row.prophylaxis_minutes_before_incision, limit)
-		if timing != row.prophylaxis_timing or row.prophylaxis_max_applied != limit:
+		if timing != row.prophylaxis_timing or cint(row.prophylaxis_max_applied) != applied:
 			frappe.db.set_value(
 				DOCTYPE,
 				row.name,
-				{"prophylaxis_timing": timing, "prophylaxis_max_applied": limit},
+				{"prophylaxis_timing": timing, "prophylaxis_max_applied": applied},
 				update_modified=False,
 			)
 			changed += 1

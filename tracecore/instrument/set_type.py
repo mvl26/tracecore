@@ -15,31 +15,32 @@ import frappe
 from frappe import _
 from frappe.utils import cint, escape_html
 
+from tracecore.core import ci_class
 from tracecore.instrument import bom_versions, catalog, shelf_life
 
 DOCTYPE = "Instrument Set Type"
 ASSEMBLY_MINUTES_MAX = 600
-# A-122: chỉ thị mặc định của loại bộ phải dùng được khi đóng gói (FR-M2-07.2: loại 5/6 theo phương pháp)
-PACK_CI_CLASSES = ("5", "6")
 CI_GROUP = "Chemical Indicator"
 LINE_SEPARATOR = " \u2013 "  # gạch ngang (en dash) giữa các cột của dòng BOM trong thông báo
 
 
-def usable_ci_items(method) -> list[dict]:
-	"""Mặt hàng chỉ thị chọn được làm mặc định cho loại bộ phương pháp `method` (A-122).
+def usable_ci_items(method, setting=None) -> list[dict]:
+	"""Mặt hàng chỉ thị chọn được làm mặc định cho loại bộ phương pháp `method`, loại chỉ thị `setting` (A-122, A-154).
 
-	Item nhóm Chemical Indicator chưa tắt, loại 5/6, phương pháp đúng `method` (lô của chỉ thị trống phương pháp bị T4
-	từ chối, xem ``reprocessing.packing.resolve_ci_batch``); theo tên. Trả ``[{"item", "item_name", "ci_class"}]``.
+	Item nhóm Chemical Indicator chưa tắt, đúng loại của `setting` (``ci_class.classes_for``: trống → 5/6, Không cần →
+	không có mặt hàng nào), phương pháp đúng `method` (lô của chỉ thị trống phương pháp bị T4 từ chối, xem
+	``reprocessing.packing.resolve_ci_batch``); theo tên. Trả ``[{"item", "item_name", "ci_class"}]``.
 	Cùng tiêu chí với kiểm khi lưu để ô gợi ý không chép luật.
 	"""
-	if not method:
+	classes = ci_class.classes_for(setting)
+	if not method or not classes:
 		return []
 	rows = frappe.get_all(
 		"Item",
 		filters={
 			"tc_item_group_cssd": CI_GROUP,
 			"tc_compatible_method": method,
-			"tc_ci_class": ["in", list(PACK_CI_CLASSES)],
+			"tc_ci_class": ["in", list(classes)],
 			"disabled": 0,
 		},
 		fields=["name", "item_name", "tc_ci_class"],
@@ -49,16 +50,36 @@ def usable_ci_items(method) -> list[dict]:
 
 
 def _validate_default_ci(doc) -> None:
-	"""Chỉ thị mặc định (không bắt buộc) phải nằm trong ``usable_ci_items`` của phương pháp loại bộ (A-122)."""
+	"""Chỉ thị mặc định (không bắt buộc) phải nằm trong ``usable_ci_items`` của phương pháp và loại chỉ thị của loại
+	bộ (A-122, A-154); loại bộ khai Không cần thì không được có chỉ thị mặc định."""
 	item = doc.get("default_ci_item")
-	if not item or item in {row["item"] for row in usable_ci_items(doc.get("method"))}:
+	setting = doc.get("ci_class")
+	if not item or item in {row["item"] for row in usable_ci_items(doc.get("method"), setting)}:
 		return
+	if not ci_class.is_required(setting):
+		frappe.throw(
+			_(
+				"This set needs no chemical indicator, so it cannot have a default indicator. Clear Default Indicator Item or choose a class."
+			),
+			title=_("Default indicator"),
+		)
 	frappe.throw(
 		_(
-			"Default indicator {0} cannot be used for this set: choose a class 5 or 6 chemical indicator in use for {1}."
-		).format(item, _(doc.get("method") or "")),
+			"Default indicator {0} cannot be used for this set: choose a class {1} chemical indicator in use for {2}."
+		).format(item, "/".join(ci_class.classes_for(setting)), _(doc.get("method") or "")),
 		title=_("Default indicator"),
 	)
+
+
+def _validate_route_ci(doc) -> None:
+	"""Loại bộ quy trình Khử khuẩn không tiệt khuẩn nên không có loại chỉ thị hóa học 4/5/6 (A-156; trống hoặc Không cần)."""
+	if doc.get("method") == catalog.DISINFECTION and doc.get("ci_class") in ci_class.PACK_CLASSES:
+		frappe.throw(
+			_(
+				"A disinfection set is not sterilized, so it takes no chemical indicator class. Choose Not Needed or leave it empty."
+			),
+			title=_("Chemical indicator class"),
+		)
 
 
 def validate_header(doc) -> None:
@@ -71,6 +92,7 @@ def validate_header(doc) -> None:
 	_guard_current_bom_version(doc)
 	shelf_life.validate_set_type(doc)
 	_validate_default_ci(doc)  # A-122
+	_validate_route_ci(doc)  # A-156
 	if not doc.is_new():
 		before = doc.get_doc_before_save()
 		if before is not None and before.get("method") != doc.get("method"):
@@ -132,11 +154,14 @@ def check_method_against_boms(doc) -> None:
 	if not lines:
 		return
 	codes = list({line.instrument for line in lines})
-	names = dict(
-		frappe.get_all(
-			"Instrument", filters={"name": ["in", codes]}, fields=["name", "instrument_name"], as_list=True
+	facts = {
+		row.name: row
+		for row in frappe.get_all(
+			"Instrument",
+			filters={"name": ["in", codes]},
+			fields=["name", "instrument_name", "spaulding_class"],
 		)
-	)
+	}
 	methods = defaultdict(set)
 	for row in frappe.get_all(
 		"Instrument Compatible Method",
@@ -144,9 +169,24 @@ def check_method_against_boms(doc) -> None:
 		fields=["parent", "method"],
 	):
 		methods[row.parent].add(row.method)
-	bad = [line for line in lines if doc.method not in catalog.families(methods[line.instrument])]
+
+	def spaulding(code):
+		return (facts.get(code) or {}).get("spaulding_class")
+
+	bad = [
+		line
+		for line in lines
+		if not catalog.fits_route(doc.method, methods[line.instrument], spaulding(line.instrument))
+	]
 	if not bad:
 		return
+
+	def fact(code):
+		# A-156: quy trình Khử khuẩn chặn theo Spaulding, nên cột cuối ghi phân loại thay cho phương pháp
+		if doc.method == catalog.DISINFECTION:
+			return _(spaulding(code) or "—")
+		return ", ".join(catalog.ordered_methods(methods[code])) or "—"
+
 	rows = [
 		_("BOM version {0}: {1}").format(
 			line.bom_version,
@@ -154,8 +194,8 @@ def check_method_against_boms(doc) -> None:
 				(
 					str(cint(line.position)),
 					line.instrument,
-					escape_html(names.get(line.instrument) or ""),
-					", ".join(catalog.ordered_methods(methods[line.instrument])) or "—",
+					escape_html((facts.get(line.instrument) or {}).get("instrument_name") or ""),
+					fact(line.instrument),
 				)
 			),
 		)
@@ -202,3 +242,45 @@ def derived_max_cycles(set_type: str, version: int | None = None) -> dict:
 		result["value"] = min(defined.values())
 		result["limiting"] = sorted(code for code, value in defined.items() if value == result["value"])
 	return result
+
+
+# --- A-157 (FR-M1-06.6): sửa Quy trình xử lý / Loại chỉ thị hóa học từ form Set Unit ----------------------------
+
+
+def choices(fieldname: str) -> list[str]:
+	"""Lựa chọn của trường Select trên Loại bộ (``method`` / ``ci_class``) theo meta, không chép vào code/JS."""
+	return (frappe.get_meta(DOCTYPE).get_field(fieldname).options or "").split("\n")
+
+
+def route_ci_context(set_type: str) -> dict:
+	"""Dữ liệu hộp thoại sửa trên form Set Unit: lựa chọn, giá trị hiện tại, số bộ cùng loại (chưa hủy) và số bộ đang
+	có Cycle ID hiệu lực (gói đã đóng giữ giá trị cũ, giá trị mới áp từ lần đóng gói kế tiếp)."""
+	method, setting = frappe.db.get_value(DOCTYPE, set_type, ["method", "ci_class"]) or (None, None)
+	units = {"set_type": set_type, "status": ["!=", "Disposed"]}
+	return {
+		"set_type": set_type,
+		"method": method or "",
+		"ci_class": setting or "",
+		"methods": choices("method"),
+		"ci_classes": choices("ci_class"),
+		"units": frappe.db.count("Set Unit", units),
+		"units_in_cycle": frappe.db.count("Set Unit", {**units, "active_cycle_id": ["is", "set"]}),
+	}
+
+
+def set_route_ci(set_type: str, method: str, setting: str) -> dict:
+	"""Đổi ``method`` và ``ci_class`` của loại bộ qua ``save()`` (đủ kiểm FR-M1-03.3/.9/.10, Audit Log qua hook).
+
+	Chỉ thị mặc định không còn hợp với giá trị mới thì bỏ trống cùng lần lưu (``cleared_default_ci``). Không đổi gì →
+	không lưu (``changed`` False). Trả ``{set_type, method, ci_class, changed, cleared_default_ci}``.
+	"""
+	doc = frappe.get_doc(DOCTYPE, set_type)
+	result = {"set_type": doc.name, "method": method, "ci_class": setting, "cleared_default_ci": None}
+	if (doc.method, doc.ci_class or "") == (method, setting):
+		return {**result, "changed": False}
+	doc.method, doc.ci_class = method, setting or None
+	item = doc.get("default_ci_item")
+	if item and item not in {row["item"] for row in usable_ci_items(method, setting)}:
+		doc.default_ci_item, result["cleared_default_ci"] = None, item
+	doc.save()
+	return {**result, "changed": True}

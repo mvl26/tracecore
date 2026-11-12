@@ -56,6 +56,20 @@ class TestItemImport(IsolatedTestCase):
 		code = factories.make_item(item_code(), "Chemical").name
 		self.assertEqual(self.run_rows([[code, "Đã có", "Chemical", "Nos", None, None, None]]).skipped, 1)
 
+	def test_pack_material_columns(self):  # A-155
+		header = [*HEADER, "Pack Material", "Pouch Size (mm)", "Wrap Layers"]
+		pouch, paper, bad = item_code(), item_code(), item_code()
+		rows = [
+			[pouch, "Túi ép", "Packaging", "Nos", "Steam", None, 180, "Sealed Pouch", "100x250", None],
+			[paper, "Giấy crepe", "Packaging", "Nos", "Steam", None, 30, "Paper Wrap", None, "Double Layer"],
+			[bad, "Túi thiếu cỡ", "Packaging", "Nos", "Steam", None, 180, "Sealed Pouch", None, None],
+		]
+		batch = frappe.get_doc("Import Batch", importer.run("item", workbook(header, rows), "f.xlsx"))
+		self.assertEqual((batch.created, batch.failed), (2, 1), batch.rows)
+		self.assertEqual(frappe.db.get_value("Item", pouch, "tc_pouch_size"), "100 \u00d7 250")
+		self.assertEqual(frappe.db.get_value("Item", paper, "tc_wrap_layers"), "Double Layer")
+		self.assertFalse(frappe.db.exists("Item", bad))
+
 	def test_unknown_unit_is_row_error(self):
 		result = importer.check(
 			"item", workbook(list(HEADER), [[item_code(), "X", "Chemical", "Thùng lạ", None, None, None]])

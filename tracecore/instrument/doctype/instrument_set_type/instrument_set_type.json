@@ -31,6 +31,7 @@
   "tab_programs",
   "section_pack_defaults",
   "default_pack_type",
+  "ci_class",
   "default_ci_item",
   "column_break_pack_defaults",
   "shelf_life_days",
@@ -67,8 +68,8 @@
    "fieldname": "method",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Sterilization Method",
-   "options": "Steam\nPlasma",
+   "label": "Processing Route",
+   "options": "Steam\nPlasma\nDisinfection",
    "reqd": 1
   },
   {
@@ -200,11 +201,19 @@
    "reqd": 1
   },
   {
+   "description": "Chemical indicator placed in each pack at packing (ISO 11140-1). Blank: class 5 or 6 as before. Not Needed: packing does not ask for an indicator lot.",
+   "fieldname": "ci_class",
+   "fieldtype": "Select",
+   "label": "Chemical Indicator Class",
+   "options": "\nNot Needed\n4\n5\n6"
+  },
+  {
    "description": "Chemical indicator item (class 5/6, method of this set) whose lots are listed first at the packing station. The lot itself is still scanned or tapped.",
    "fieldname": "default_ci_item",
    "fieldtype": "Link",
    "label": "Default Indicator",
-   "options": "Item"
+   "options": "Item",
+   "depends_on": "eval:doc.ci_class !== 'Not Needed'"
   },
   {
    "fieldname": "column_break_pack_defaults",
@@ -249,7 +258,7 @@
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-05 11:00:00.000000",
+ "modified": "2026-11-12 18:40:18.808774",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",

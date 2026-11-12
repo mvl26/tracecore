@@ -7,6 +7,8 @@ Item là ERPNext ``Item`` + Custom Field ``tc_*``; không có DocType riêng (AD
   bình quân gia quyền) thay vì chặn, để Item cũ của FEAT-005/014/018 vẫn lưu và sửa được.
 """
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import cint, flt
@@ -39,6 +41,14 @@ LABEL_GROUP = "Label"
 CI_GROUP = "Chemical Indicator"
 METHODS = ("Steam", "Plasma")
 VALUATION_METHOD = "Moving Average"  # V5
+# A-155: nhóm vật liệu gói (Item.tc_pack_material) và trường đi kèm theo vật liệu
+PACKAGING_GROUP = "Packaging"
+POUCH = "Sealed Pouch"
+PAPER_WRAP = "Paper Wrap"
+PACK_MATERIALS = ("Rigid Container", POUCH, "Wrap", PAPER_WRAP)
+WRAP_LAYERS = ("Single Layer", "Double Layer")
+POUCH_MM = (10, 1000)  # mỗi cạnh túi ép, mm
+_POUCH_SIZE = re.compile(r"^(\d{1,4})(?:\s*[x\u00d7*]\s*(\d{1,4}))?\s*(?:mm)?$", re.IGNORECASE)
 
 
 def is_cssd_item(item_code: str) -> bool:
@@ -94,6 +104,7 @@ def validate_item(doc, method=None) -> None:
 		)
 	_validate_method(doc, group)
 	_validate_ci_class(doc, group)
+	_validate_pack_material(doc, group)
 	_apply_stock_rules(doc, group)
 	_validate_reorder_levels(doc)
 
@@ -125,6 +136,48 @@ def _validate_ci_class(doc, group: str) -> None:
 		_throw(
 			_("Chemical Indicator Class applies only to the Chemical Indicator group."),
 			_("Clear Chemical Indicator Class or change the group."),
+		)
+
+
+def normalize_pouch_size(raw) -> str | None:
+	"""Kích thước túi ép (A-155): ``"100x250mm"`` → ``"100 x 250"`` (dấu nhân U+00D7), cuộn ``"200"`` → ``"200"``; sai dạng → ``None``."""
+	match = _POUCH_SIZE.match((raw or "").strip())
+	if not match:
+		return None
+	sides = [int(side) for side in match.groups() if side]
+	if not all(POUCH_MM[0] <= side <= POUCH_MM[1] for side in sides):
+		return None
+	return " \u00d7 ".join(str(side) for side in sides)
+
+
+def _validate_pack_material(doc, group: str) -> None:
+	"""A-155: vật liệu gói chỉ cho nhóm Packaging; Túi ép cần kích thước, Giấy bọc cần số lớp."""
+	material = doc.get("tc_pack_material")
+	if material and group != PACKAGING_GROUP:
+		_throw(
+			_("Pack Material applies only to the Packaging group."),
+			_("Clear Pack Material or change the group to Packaging."),
+		)
+	if material and material not in PACK_MATERIALS:
+		_throw(_("Pack Material {0} is not valid.").format(material), _("Choose a value from the list."))
+	if material != POUCH:
+		doc.tc_pouch_size = None
+	if material != PAPER_WRAP:
+		doc.tc_wrap_layers = None
+	if material == POUCH:
+		size = normalize_pouch_size(doc.get("tc_pouch_size"))
+		if not size:
+			_throw(
+				_("Pouch size {0} is missing or not valid.").format(doc.get("tc_pouch_size") or "-"),
+				_(
+					"Enter the size in mm as width x length, for example 100 x 250, or the width only for a roll; each side 10 to 1000."
+				),
+			)
+		doc.tc_pouch_size = size
+	if material == PAPER_WRAP and doc.get("tc_wrap_layers") not in WRAP_LAYERS:
+		_throw(
+			_("Paper wrap needs the number of wrap layers."),
+			_("Choose Single Layer or Double Layer."),
 		)
 
 

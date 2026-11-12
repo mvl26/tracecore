@@ -21,6 +21,7 @@ from frappe.utils.data import get_system_timezone
 
 from tracecore.core import (
 	audit,
+	ci_class,
 	client_time,
 	code_range,
 	code_registry,
@@ -35,7 +36,7 @@ from tracecore.core import print as core_print
 from tracecore.core.errors import Block, BlockedError
 from tracecore.reprocessing import pack_label
 
-CI_CLASSES = ("5", "6")  # FR-M2-07.2: lô chỉ thị loại 5/6 theo phương pháp
+CI_CLASSES = ci_class.DEFAULT_CLASSES  # FR-M2-07.2: loại bộ chưa khai loại chỉ thị nhận lô loại 5/6 (A-154)
 CI_LOT_LIMIT = 10  # A-120: số lô chỉ thị gợi ý để chọn tay ở T4
 SOURCE_PACK_TYPE = "Pack Type"
 SOURCE_SET_TYPE = "Set Type"
@@ -51,9 +52,10 @@ SET_FIELDS = tuple(
 	"name set_type status cycles_used max_cycles active_cycle_id current_cycle_no is_loaner department".split()
 )
 SET_TYPE_FIELDS = tuple(
-	"name set_type_name method gtin department default_pack_type default_ci_item shelf_life_days tray_image "
+	"name set_type_name method gtin department default_pack_type ci_class default_ci_item shelf_life_days tray_image "
 	"current_bom_version".split()
 )
+DISINFECTION = "Disinfection"  # quy trình Khử khuẩn của loại bộ (A-156); không import M1 (catalog) vào M2
 LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
 
@@ -126,15 +128,24 @@ def compute_expiry(packed_on, pack_type, set_type):
 def pack_types(set_type):
 	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng, có hạn lưu > 0, đúng phương pháp của bộ (A-97).
 
-	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days", "material", "is_default"}``; ``material`` là nhóm
-	vật liệu gói (A-122: ``Rigid Container`` / ``Sealed Pouch`` / ``Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng
-	droplist có nhóm. Loại gói mặc định của loại bộ (nếu còn dùng được) đứng đầu và có ``is_default``; các loại
-	khác theo tên.
+	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days", "material", "pouch_size", "wrap_layers",
+	"is_default"}``; ``material`` là nhóm vật liệu gói (A-122, A-155: ``Rigid Container`` / ``Sealed Pouch`` /
+	``Wrap`` / ``Paper Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng droplist có nhóm; ``pouch_size`` (túi ép) và
+	``wrap_layers`` (giấy bọc) để ghi trên dòng (A-155). Loại gói mặc định của loại bộ (nếu còn dùng được) đứng
+	đầu và có ``is_default``; các loại khác theo tên.
 	"""
 	rows = frappe.get_all(
 		"Item",
 		filters={"tc_item_group_cssd": "Packaging", "disabled": 0, "tc_shelf_life_days": [">", 0]},
-		fields=["name", "item_name", "tc_shelf_life_days", "tc_compatible_method", "tc_pack_material"],
+		fields=[
+			"name",
+			"item_name",
+			"tc_shelf_life_days",
+			"tc_compatible_method",
+			"tc_pack_material",
+			"tc_pouch_size",
+			"tc_wrap_layers",
+		],
 		order_by="item_name asc, name asc",
 	)
 	default, method = frappe.db.get_value("Instrument Set Type", set_type, ["default_pack_type", "method"])
@@ -146,6 +157,8 @@ def pack_types(set_type):
 			"item_name": row.item_name,
 			"shelf_life_days": cint(row.tc_shelf_life_days),
 			"material": row.tc_pack_material or "",
+			"pouch_size": row.tc_pouch_size or "",
+			"wrap_layers": row.tc_wrap_layers or "",
 			"is_default": bool(default) and row.name == default,
 		}
 		for row in rows
@@ -156,28 +169,37 @@ def pack_types(set_type):
 
 
 def ci_block(set_type):
-	"""Khối ``ci`` của ngữ cảnh T4 cho loại bộ `set_type` (doc/dict có ``method``, ``default_ci_item``).
+	"""Khối ``ci`` của ngữ cảnh T4 cho loại bộ `set_type` (doc/dict có ``method``, ``ci_class``, ``default_ci_item``).
 
 	A-122: ``default_item`` là chỉ thị mặc định của loại bộ, lô của nó đứng đầu ``lots``; không chọn sẵn lô nào.
+	A-154: ``ci_class`` là loại chỉ thị của loại bộ (trống = chưa khai), ``classes`` là các loại nhận được; ``required``
+	False (Không cần) → không có lô, màn T4 không hỏi lô chỉ thị.
 	"""
-	default_item = set_type.get("default_ci_item") or None
+	setting = set_type.get("ci_class") or ""
+	classes = ci_class.classes_for(setting)
+	required = ci_class.is_required(setting)
+	default_item = (set_type.get("default_ci_item") or None) if required else None
 	return {
 		"method": set_type.get("method"),
-		"classes": list(CI_CLASSES),
+		"required": required,
+		"ci_class": setting,
+		"classes": list(classes),
 		"default_item": default_item,
-		"lots": ci_lots(set_type.get("method"), getdate(), default_item),  # A-120: chọn tay lô chỉ thị
+		# A-120: chọn tay lô chỉ thị
+		"lots": ci_lots(set_type.get("method"), getdate(), default_item, classes) if required else [],
 	}
 
 
-def ci_lots(method, on_date, preferred_item=None):
+def ci_lots(method, on_date, preferred_item=None, classes=CI_CLASSES):
 	"""Tối đa `CI_LOT_LIMIT` lô chỉ thị dùng được cho phương pháp `method` tại ngày `on_date` để chọn tay ở T4 (A-120).
 
-	Cùng quy tắc với `resolve_ci_batch`: Item nhóm Chemical Indicator đúng phương pháp, loại 5/6, Item và Batch chưa tắt,
+	Cùng quy tắc với `resolve_ci_batch`: Item nhóm Chemical Indicator đúng phương pháp, loại thuộc `classes` (A-154; mặc
+	định 5/6), Item và Batch chưa tắt,
 	có hạn dùng không trước `on_date`; hạn gần trước rồi theo tên lô. A-122: lô của `preferred_item` (chỉ thị mặc định
 	của loại bộ) đứng đầu, mỗi lô có ``is_default``. Trả ``[{"batch", "item", "item_name", "ci_class", "expiry_date",
 	"is_default"}]``. Chỉ là gợi ý: lô chọn xong vẫn đi qua `resolve_ci_batch` khi sinh Cycle ID.
 	"""
-	if not method:
+	if not method or not classes:
 		return []
 	items = {
 		row.name: row
@@ -186,7 +208,7 @@ def ci_lots(method, on_date, preferred_item=None):
 			filters={
 				"tc_item_group_cssd": "Chemical Indicator",
 				"tc_compatible_method": method,
-				"tc_ci_class": ["in", list(CI_CLASSES)],
+				"tc_ci_class": ["in", list(classes)],
 				"disabled": 0,
 			},
 			fields=["name", "item_name", "tc_ci_class"],
@@ -224,14 +246,20 @@ def ci_lots(method, on_date, preferred_item=None):
 	]
 
 
-def resolve_ci_batch(raw, method, on_date):
+def resolve_ci_batch(raw, method, on_date, classes=CI_CLASSES):
 	"""Lô chỉ thị hóa học từ chuỗi quét `raw` cho phương pháp `method`, còn hạn tại ngày `on_date`.
 
 	Làm sạch nhiễu của máy quét (`gs1.clean_scan`), tra Batch không phân biệt hoa/thường và trả tên Batch
-	chuẩn: ``{"batch", "item", "expiry_date", "ci_class"}``. Không phải lô chỉ thị loại 5/6 đúng phương pháp,
+	chuẩn: ``{"batch", "item", "expiry_date", "ci_class"}``. `classes`: loại chỉ thị loại bộ nhận (A-154,
+	``ci_class.classes_for``; mặc định 5/6). Không phải lô chỉ thị đúng loại, đúng phương pháp,
 	không tồn tại, đã ngừng hoặc không có hạn dùng → ``CI_LOT_INVALID``; hết hạn trước `on_date` →
 	``CI_LOT_EXPIRED`` (hết hạn đúng ngày `on_date` vẫn dùng được).
 	"""
+	classes = tuple(classes or ())
+
+	def _invalid_lot(reason):
+		return _invalid_lot_block(reason, classes)
+
 	code = gs1.clean_scan(raw)
 	if not code:
 		raise _invalid_lot(_("No lot code was scanned."))
@@ -254,10 +282,10 @@ def resolve_ci_batch(raw, method, on_date):
 				batch.name, _(item.tc_compatible_method), _(method)
 			)
 		)
-	if item.tc_ci_class not in CI_CLASSES:
+	if item.tc_ci_class not in classes:
 		raise _invalid_lot(
-			_("Lot {0} is a class {1} indicator; only class 5 or 6 can be used.").format(
-				batch.name, item.tc_ci_class or "-"
+			_("Lot {0} is a class {1} indicator; this set needs class {2}.").format(
+				batch.name, item.tc_ci_class or "-", "/".join(classes) or "-"
 			)
 		)
 	if cint(batch.disabled):
@@ -277,12 +305,14 @@ def resolve_ci_batch(raw, method, on_date):
 	return {"batch": batch.name, "item": batch.item, "expiry_date": expiry, "ci_class": item.tc_ci_class}
 
 
-def _invalid_lot(reason):
+def _invalid_lot_block(reason, classes=CI_CLASSES):
 	return _blocked(
 		"CI_LOT_INVALID",
 		_("Indicator lot is not valid"),
 		reason,
-		_("Scan the lot code on a chemical indicator of class 5 or 6 for this sterilization method."),
+		_("Scan the lot code on a chemical indicator of class {0} for this sterilization method.").format(
+			"/".join(classes) or "-"
+		),
 	)
 
 
@@ -393,6 +423,15 @@ def _open(set_id, station, for_update=False, maint_actions=None):
 	unit = _load_set(set_id, for_update)
 	_admit(unit, for_update)
 	set_type = frappe.db.get_value("Instrument Set Type", unit.set_type, SET_TYPE_FIELDS, as_dict=True)
+	if set_type.method == DISINFECTION:  # A-156: chưa có luồng khử khuẩn, không sinh Cycle ID tiệt khuẩn
+		raise _blocked(
+			"SET_NOT_FOR_STERILIZATION",
+			_("Set is not packed for sterilization"),
+			_(
+				"Set type {0} uses the Disinfection processing route, so it is not packed or sterilized."
+			).format(set_type.name),
+			_("Ask R10 to change the processing route of this set type if it must be sterilized."),
+		)
 	if not gs1.is_valid_gtin14(set_type.gtin):
 		raise _blocked(
 			"SET_TYPE_GTIN_MISSING",
@@ -544,7 +583,12 @@ def _generate(
 	if missing:
 		raise _bom_incomplete(missing)
 	packed_at = _system_time(client_ts)
-	ci = resolve_ci_batch(ci_batch, set_type.method, packed_at.date())
+	# A-154: loại bộ khai Không cần → gói không có lô chỉ thị (bỏ qua lô gửi kèm); còn lại kiểm đúng loại của bộ
+	ci = (
+		resolve_ci_batch(ci_batch, set_type.method, packed_at.date(), ci_class.classes_for(set_type.ci_class))
+		if ci_class.is_required(set_type.ci_class)
+		else {"batch": None}
+	)
 	check_pack_method(pack_type, set_type.method)
 	expiry = compute_expiry(packed_at.date(), pack_type, set_type.name)
 	printer = core_print.select_printer(station, set_type.method)

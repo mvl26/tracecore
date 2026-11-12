@@ -22,6 +22,10 @@ from tracecore.core.errors import Block, BlockedError
 
 METHODS: tuple[str, ...] = ("Steam 121", "Steam 134", "Plasma", "EO")
 METHOD_FAMILY: dict[str, str] = {"Steam 121": "Steam", "Steam 134": "Steam", "Plasma": "Plasma", "EO": "EO"}
+# A-156: quy trình xử lý của loại bộ (``Instrument Set Type.method``) — Steam = nhiệt độ cao, Plasma = nhiệt độ thấp,
+# Disinfection = khử khuẩn (không tiệt khuẩn: chỉ nhận dụng cụ Spaulding không phải Thiết yếu).
+DISINFECTION = "Disinfection"
+CRITICAL = "Critical"
 
 CODE_MAX_LENGTH = 40
 CODE_PATTERN = re.compile(rf"[A-Z0-9-]{{1,{CODE_MAX_LENGTH}}}")
@@ -119,6 +123,29 @@ def families(methods: Iterable[str]) -> frozenset[str]:
 	return frozenset(METHOD_FAMILY[method] for method in methods if method in METHOD_FAMILY)
 
 
+def fits_route(route: str | None, methods: Iterable[str], spaulding: str | None) -> bool:
+	"""Dụng cụ (phương pháp tương thích `methods`, phân loại `spaulding`) hợp quy trình xử lý `route` của loại bộ.
+
+	Trống → coi như hợp; Khử khuẩn → mọi dụng cụ trừ Spaulding Thiết yếu (A-156); còn lại theo họ phương pháp (S5).
+	"""
+	if not route:
+		return True
+	if route == DISINFECTION:
+		return spaulding != CRITICAL
+	return route in families(methods)
+
+
+def route_issue(code: str, route: str, methods: Iterable[str]) -> str:
+	"""Thông báo lỗi dòng BOM khi dụng cụ `code` không hợp quy trình `route` (xem ``fits_route``)."""
+	if route == DISINFECTION:
+		return _(
+			"Instrument {0} is Spaulding Critical, so it must be sterilized and cannot be in a disinfection set."
+		).format(code)
+	return _("Instrument {0} ({1}) is not compatible with the set type method {2}.").format(
+		code, ", ".join(ordered_methods(methods)) or "—", _(route)
+	)
+
+
 def ordered_methods(methods: Iterable[str]) -> list[str]:
 	"""Phương pháp theo thứ tự danh mục ``METHODS`` (phương pháp lạ, nếu có, xếp sau theo tên)."""
 	methods = set(methods)
@@ -161,7 +188,8 @@ def bom_usage(instrument: str) -> list[dict]:
 	if not rows:
 		return []
 	live = bom_versions.live_map({row.set_type for row in rows})
-	usable = families(_current_methods(instrument))
+	current = _current_methods(instrument)
+	spaulding = frappe.db.get_value("Instrument", instrument, "spaulding_class")
 	result: dict[str, dict] = {}
 	for row in rows:
 		state = live.get(row.set_type) or {"effective": None, "scheduled": []}
@@ -177,7 +205,7 @@ def bom_usage(instrument: str) -> list[dict]:
 			"set_type_name": row.set_type_name,
 			"method": row.method,
 			"bom_version": version,
-			"compatible": not row.method or row.method in usable,
+			"compatible": fits_route(row.method, current, spaulding),
 			"scheduled": scheduled,
 		}
 	return [result[name] for name in sorted(result)]

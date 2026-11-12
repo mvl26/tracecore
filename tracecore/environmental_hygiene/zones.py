@@ -141,15 +141,18 @@ def short_zones(on, department=None):
 # --- cờ "Chờ lấy mẫu lại" (FR-M15-04.1, BRU-ENV-003) -----------------------------------------------------------------
 
 
-def _resolved(name, resamples):
-	"""Mẫu Không đạt đã được giải quyết: có mẫu lại Đạt, hoặc mẫu lại Không đạt mà chính nó đã được giải quyết."""
+def _passing_resample(name, resamples):
+	"""Mẫu lại Đạt giải quyết mẫu Không đạt ``name`` (trực tiếp, hoặc qua chuỗi mẫu lại Không đạt); None nếu chưa có."""
 	for child in resamples.get(name, ()):
-		if child.result == PASS or _resolved(child.name, resamples):
-			return True
-	return False
+		if child.result == PASS:
+			return child.name
+		found = _passing_resample(child.name, resamples)
+		if found:
+			return found
+	return None
 
 
-def unresolved_failures(zone):
+def _zone_samples(zone):
 	rows = frappe.get_all(
 		SAMPLE_DOCTYPE,
 		filters={"environment_zone": zone, "docstatus": 1},
@@ -160,7 +163,24 @@ def unresolved_failures(zone):
 	for row in rows:
 		if row.is_resample_of:
 			resamples.setdefault(row.is_resample_of, []).append(row)
-	return [row.name for row in rows if row.result == FAIL and not _resolved(row.name, resamples)]
+	return rows, resamples
+
+
+def unresolved_failures(zone):
+	rows, resamples = _zone_samples(zone)
+	return [row.name for row in rows if row.result == FAIL and not _passing_resample(row.name, resamples)]
+
+
+def resolving_resamples(zone):
+	"""``{mẫu Không đạt: mẫu lại Đạt đã giải quyết nó}`` của vùng — chỉ các mẫu đã được giải quyết."""
+	rows, resamples = _zone_samples(zone)
+	result = {}
+	for row in rows:
+		if row.result == FAIL:
+			found = _passing_resample(row.name, resamples)
+			if found:
+				result[row.name] = found
+	return result
 
 
 def refresh_flag(zone):

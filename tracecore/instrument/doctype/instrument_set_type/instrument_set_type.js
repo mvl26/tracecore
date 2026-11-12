@@ -28,6 +28,7 @@ const TC_ST_HEADER_FIELDS = [
 	"method",
 	"department",
 	"default_pack_type",
+	"ci_class", // A-154
 	"default_ci_item", // A-122
 	"shelf_life_days",
 	"is_implant",
@@ -1278,10 +1279,10 @@ frappe.ui.form.on("Instrument Set Type", {
 		// (frappe.client.validate_link cần quyền đó); server vẫn kiểm Link tồn tại và luật loại gói khi lưu.
 		frm.set_query("default_pack_type", () => ({ query: TC_ST_PACK_QUERY }));
 		frm.set_query("department", () => ({ query: TC_ST_DEPARTMENT_QUERY }));
-		// A-122: chỉ thị mặc định loại 5/6 đúng phương pháp của bộ (server lọc và kiểm lại khi lưu)
+		// A-122/A-154: chỉ thị mặc định đúng phương pháp và đúng loại chỉ thị của bộ (trống = 5/6; server lọc, kiểm lại)
 		frm.set_query("default_ci_item", () => ({
 			query: TC_ST_CI_QUERY,
-			filters: { method: frm.doc.method || "" },
+			filters: { method: frm.doc.method || "", ci_class: frm.doc.ci_class || "" },
 		}));
 		["default_pack_type", "default_ci_item", "department"].forEach((fieldname) =>
 			frm.set_df_property(fieldname, "ignore_link_validation", 1)
@@ -1325,6 +1326,15 @@ frappe.ui.form.on("Instrument Set Type", {
 		if (frm.is_new()) {
 			frappe.validated = false;
 			tc_st_create_dialog(frm);
+		}
+	},
+});
+
+// A-154: loại bộ Không cần chỉ thị thì không có chỉ thị mặc định (ô bị ẩn); chỉ thị khác loại do server từ chối khi lưu
+frappe.ui.form.on("Instrument Set Type", {
+	ci_class(frm) {
+		if (frm.doc.ci_class === "Not Needed" && frm.doc.default_ci_item) {
+			frm.set_value("default_ci_item", null);
 		}
 	},
 });

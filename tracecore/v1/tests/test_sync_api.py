@@ -79,6 +79,18 @@ class TestSnapshotT4(SnapshotCase):
 		self.assertTrue(result["ranges"])
 		self.assertTrue(result["ranges"][0]["prefix"].endswith("-T004-"))
 
+	def test_snapshot_t4_sends_class_4_lots_and_the_set_classes(self):
+		# A-154: lô loại 4 có trong dữ liệu offline; màn T4 lọc theo ci.classes của bộ
+		from tracecore.tests.factories import make_ci_batch
+
+		ready = make_t4_ready_set()
+		frappe.db.set_value("Instrument Set Type", ready.set_type, "ci_class", "4")
+		four = make_ci_batch("Steam", "4", expiry_days=30)
+		result = snapshot("TR-004", self.token("TR-004"))
+		self.assertIn(four, [lot["batch"] for lot in result["ci_batches"]])
+		row = {r["set_id"]: r for r in result["sets"]}[ready.set_id]
+		self.assertEqual(row["context"]["ci"]["classes"], ["4"])
+
 	def test_snapshot_t4_is_read_only(self):
 		ready = make_t4_ready_set(max_cycles=1)
 		# hết cơ số: T4 online sẽ chặn PAR_EXCEEDED và chuyển bộ sang Hết vòng đời

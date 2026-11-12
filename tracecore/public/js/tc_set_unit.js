@@ -652,7 +652,8 @@ function tc_su_issue_args(values, chosen) {
 	return args;
 }
 
-// opts: {set_type?, on_done?}
+// opts: {set_type?, department?, max_cycles?, source?, on_done?}
+// source (A-155 P7, "Sao chép bộ"): Set ID của bộ đang xem; khoa và cơ số của bộ đó được điền sẵn, không bị loại bộ ghi đè
 tracecore.set_unit.issue_dialog = async function (opts = {}) {
 	if (!tc_su_ready()) {
 		frappe.msgprint(tc_su_block(tc_su_not_loaded()));
@@ -679,6 +680,16 @@ tracecore.set_unit.issue_dialog = async function (opts = {}) {
 			)
 		),
 	];
+	if (opts.source) {
+		intro.push(
+			tc_su_muted(
+				__(
+					"Copy of set {0}: a new set of the same set type, department and max cycles gets a new Set ID.",
+					[opts.source]
+				)
+			)
+		);
+	}
 	if (ctx.test_labels) {
 		intro.push(
 			tc_su_warning_html([
@@ -689,7 +700,7 @@ tracecore.set_unit.issue_dialog = async function (opts = {}) {
 		);
 	}
 	const dialog = new frappe.ui.Dialog({
-		title: __("Issue Set IDs"),
+		title: opts.source ? __("Copy set {0}", [opts.source]) : __("Issue Set IDs"),
 		size: "large",
 		fields: [
 			{ fieldname: "intro", fieldtype: "HTML", options: intro.join("") },
@@ -825,6 +836,13 @@ tracecore.set_unit.issue_dialog = async function (opts = {}) {
 	});
 	dialog.tc_su_ctx = ctx;
 	dialog.show();
+	// giá trị người gọi điền sẵn (sao chép bộ) coi như người dùng đã nhập: tc_su_load_set_type không ghi đè
+	if (opts.department) {
+		await dialog.set_value("department", opts.department);
+	}
+	if (opts.max_cycles) {
+		await dialog.set_value("max_cycles", opts.max_cycles);
+	}
 	if (opts.set_type) {
 		tc_su_load_set_type(dialog, opts.set_type);
 	} else {

@@ -11,6 +11,7 @@
 const TC_SU_FORM_PREVIEW = "tracecore.v1.set_unit.tag_preview";
 const TC_SU_FORM_VERIFY = "tracecore.v1.set_unit.verify_tag";
 const TC_SU_FORM_HISTORY = "tracecore.v1.set_unit.history";
+const TC_SU_FORM_ROUTE_CI = "tracecore.v1.set_type_admin.set_route_ci";
 
 function tc_su_form_ready() {
 	return Boolean(window.tracecore && tracecore.codes && tracecore.set_unit);
@@ -90,6 +91,13 @@ function tc_su_render_summary(frm, ctx) {
 			)
 		)}</div>`;
 	}
+	// A-157 (FR-M1-06.6): sửa 2 giá trị của loại bộ ngay tại đây, chỉ người có quyền sửa loại bộ
+	const editable = Boolean(ctx.set_type_edit && ctx.set_type_edit.can_edit);
+	const edit_button = editable
+		? ` <button type="button" class="btn btn-xs btn-default tc-su-edit-route-ci">${tc_su_form_escape(
+				__("Edit")
+		  )}</button>`
+		: "";
 	html += `<table class="table table-bordered table-sm"><tbody>
 		${tc_su_form_row(
 			__("Set type"),
@@ -106,11 +114,153 @@ function tc_su_render_summary(frm, ctx) {
 		${tc_su_form_row(__("Current station"), tc_su_form_escape(s.current_station || "-"))}
 		${tc_su_form_row(__("BOM version"), tc_su_form_escape(bom))}
 		${tc_su_form_row(
+			__("Processing Route", null, "Instrument Set Type"),
+			tc_su_form_escape(tc_su_route_label(s.processing_route)) + edit_button
+		)}
+		${tc_su_form_row(
+			__("Chemical Indicator Class"),
+			tc_su_form_escape(tc_su_ci_class_label(s.ci_class)) + edit_button
+		)}
+		${tc_su_form_row(
 			__("Set ID code"),
 			tc_su_form_escape(code[s.code_status] || __("Not registered in the code registry"))
 		)}
 	</tbody></table>`;
+	html += tc_su_components_html(s);
 	field.$wrapper.html(html);
+	if (editable) {
+		field.$wrapper
+			.find(".tc-su-edit-route-ci")
+			.on("click", () => tc_su_route_ci_dialog(frm, ctx.set_type_edit));
+	}
+}
+
+function tc_su_route_label(value) {
+	return value ? __(value, null, "Instrument Set Type") : "-";
+}
+
+// --- A-157: sửa Quy trình xử lý / Loại chỉ thị hóa học của loại bộ --------------------------------------------
+
+function tc_su_route_ci_payload(frm, values) {
+	return {
+		set_type: frm.doc.set_type,
+		method: values.method,
+		ci_class: values.ci_class || "",
+	};
+}
+
+function tc_su_route_ci_warning(edit) {
+	return __(
+		"This changes set type {0}: it applies to all {1} set(s) of this type, {2} of them in an active cycle. Packs already packed keep their indicator lot; the new values apply from the next packing.",
+		[edit.set_type, edit.units, edit.units_in_cycle]
+	);
+}
+
+function tc_su_route_ci_dialog(frm, edit) {
+	const dialog = new frappe.ui.Dialog({
+		title: __("Processing route and chemical indicator"),
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "warning",
+				options: `<div class="alert alert-warning" role="status">${tc_su_form_escape(
+					tc_su_route_ci_warning(edit)
+				)}</div>`,
+			},
+			{
+				fieldtype: "Select",
+				fieldname: "method",
+				label: __("Processing Route", null, "Instrument Set Type"),
+				reqd: 1,
+				default: edit.method,
+				options: edit.methods.map((value) => ({ value, label: tc_su_route_label(value) })),
+			},
+			{
+				fieldtype: "Select",
+				fieldname: "ci_class",
+				label: __("Chemical Indicator Class"),
+				default: edit.ci_class,
+				options: edit.ci_classes.map((value) => ({
+					value,
+					label: tc_su_ci_class_label(value),
+				})),
+			},
+			{ fieldtype: "HTML", fieldname: "error" },
+		],
+		primary_action_label: __("Save"),
+		primary_action: async (values) => {
+			const error = dialog.fields_dict.error.$wrapper;
+			error.html("");
+			dialog.disable_primary_action();
+			const result = await tracecore.set_unit.send(
+				dialog,
+				TC_SU_FORM_ROUTE_CI,
+				tc_su_route_ci_payload(frm, values)
+			);
+			dialog.enable_primary_action();
+			if (!result.ok) {
+				error.html(tc_su_form_block(result.error));
+				return;
+			}
+			dialog.hide();
+			const data = result.data || {};
+			let message = data.changed ? __("Set type updated.") : __("Nothing changed.");
+			if (data.cleared_default_ci) {
+				message +=
+					" " +
+					__("Default indicator {0} no longer fits and was cleared.", [
+						data.cleared_default_ci,
+					]);
+			}
+			frappe.show_alert({ message, indicator: "green" });
+			tc_su_load(frm);
+		},
+	});
+	dialog.show();
+}
+
+// A-154 (FR-M1-06.5): loại chỉ thị hóa học của loại bộ; trống = chưa khai (đóng gói nhận loại 5/6)
+function tc_su_ci_class_label(value) {
+	if (value === "Not Needed") return __("Not Needed");
+	if (value) return __("Class {0}", [value]);
+	return __("Not set (class 5 or 6 at packing)");
+}
+
+// A-154 (FR-M1-06.5): thành phần bộ theo phiên bản BOM ghim (chưa ghim: phiên bản hiệu lực)
+function tc_su_components_html(s) {
+	const parts = s.components || [];
+	const heading = `<h4>${tc_su_form_escape(__("Set components"))}</h4>`;
+	if (!parts.length) {
+		return heading + tc_su_form_muted(__("The set type has no BOM version in effect."));
+	}
+	let note = __("BOM v{0} pinned for this cycle", [s.components_version]);
+	if (!s.bom_pinned) {
+		note = __("BOM v{0} — will be pinned at receiving", [s.components_version]);
+	}
+	const rows = parts
+		.map(
+			(row) => `<tr>
+				<td class="text-right">${tc_su_form_escape(row.position)}</td>
+				<td>${tc_su_form_mono(row.instrument)}</td>
+				<td>${tc_su_form_escape(row.instrument_name)}</td>
+				<td class="text-right">${tc_su_form_escape(row.qty)}</td>
+			</tr>`
+		)
+		.join("");
+	return `${heading}<p class="text-muted">${tc_su_form_escape(note)}</p>
+		<table class="table table-bordered table-sm">
+			<thead><tr>
+				<th class="text-right" style="width: 10%">${tc_su_form_escape(__("No."))}</th>
+				<th style="width: 25%">${tc_su_form_escape(__("Instrument Code"))}</th>
+				<th>${tc_su_form_escape(__("Instrument Name"))}</th>
+				<th class="text-right" style="width: 15%">${tc_su_form_escape(__("Quantity"))}</th>
+			</tr></thead>
+			<tbody>${rows}</tbody>
+			<tfoot><tr>
+				<th colspan="3">${tc_su_form_escape(__("Total: {0} line(s)", [parts.length]))}</th>
+				<th class="text-right">${tc_su_form_escape(s.components_total)}</th>
+			</tr></tfoot>
+		</table>`;
 }
 
 // --- Chi tiết: thẻ, nhãn khay, quét kiểm tra --------------------------------------------------------------------
@@ -474,6 +624,18 @@ function tc_su_buttons(frm, ctx) {
 	const group = __("Print tags");
 	const reload = () => tc_su_load(frm);
 	const printable = s.status !== "Disposed" && s.code_status !== "Disabled";
+	// A-155 (P7): sao chép bộ = Cấp Set ID cho bộ mới cùng loại bộ, điền sẵn khoa và cơ số của bộ đang xem;
+	// máy chủ kiểm như Cấp Set ID (quyền R02/R10, BOM hiệu lực, Set ID mới qua core.gs1)
+	if (perms.can_issue) {
+		tc_su_add_button(frm, __("Copy set"), () =>
+			tracecore.set_unit.issue_dialog({
+				set_type: frm.doc.set_type,
+				department: frm.doc.department,
+				max_cycles: frm.doc.max_cycles,
+				source: frm.doc.name,
+			})
+		);
+	}
 	if (perms.can_print && printable) {
 		tc_su_add_button(
 			frm,

@@ -12,7 +12,7 @@ import frappe
 from frappe.utils import cint, getdate, today
 
 from tracecore.compliance_audit import pda
-from tracecore.core import code_range, crypto, extension, step_gate, sync, zones
+from tracecore.core import ci_class, code_range, crypto, extension, step_gate, sync, zones
 from tracecore.core.client_time import parse_client_ts, to_system_time
 from tracecore.core.errors import BlockedError
 from tracecore.reprocessing import packing, receiving, usage
@@ -122,7 +122,8 @@ def _t4_row(set_id, station):
 
 
 def _ci_batches():
-	"""Lô chỉ thị loại 5/6 còn dùng được (cùng điều kiện `packing.resolve_ci_batch`, trừ hạn kiểm lúc đóng gói)."""
+	"""Lô chỉ thị loại 4/5/6 còn dùng được (cùng điều kiện `packing.resolve_ci_batch`, trừ hạn kiểm lúc đóng gói); màn
+	T4 offline lọc theo ``ci.classes`` của từng bộ (A-154)."""
 	return frappe.db.sql(
 		"""select b.name as batch, i.tc_compatible_method as method, i.tc_ci_class as ci_class,
 			b.expiry_date as expiry
@@ -131,7 +132,7 @@ def _ci_batches():
 			and ifnull(i.tc_compatible_method, '') != '' and b.disabled = 0
 			and b.expiry_date is not null and b.expiry_date >= %(today)s
 		order by b.expiry_date asc""",
-		{"classes": packing.CI_CLASSES, "today": today()},
+		{"classes": ci_class.PACK_CLASSES, "today": today()},
 		as_dict=True,
 	)
 

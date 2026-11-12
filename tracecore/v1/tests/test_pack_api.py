@@ -1154,3 +1154,18 @@ class TestVoidIsLogged(PackApiCase):
 		self.assertEqual(
 			(logged["void_reason"], logged["note"], logged["employee"]), ("Used", "Nhòe", employee)
 		)
+
+
+class TestResolveCiByClass(PackApiCase):
+	"""A-154 (FEAT-096): ô lô chỉ thị theo loại chỉ thị của loại bộ."""
+
+	def test_lot_must_match_the_class_of_the_set_type(self):
+		ready = make_t4_ready_set()
+		frappe.db.set_value("Instrument Set Type", ready.set_type, "ci_class", "4")
+		result = call(pack_api.resolve_ci, raw=ready.ci_batch, station=STATION, open_set=ready.set_id)
+		self.assertIs(result["ok"], False)
+		self.assertEqual(result["error"]["code"], "CI_LOT_INVALID")
+		four = make_ci_batch("Steam", "4", expiry_days=30)
+		result = call(pack_api.resolve_ci, raw=four, station=STATION, open_set=ready.set_id)
+		self.assertIs(result["ok"], True)
+		self.assertEqual(result["ci"]["ci_class"], "4")

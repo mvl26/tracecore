@@ -80,12 +80,38 @@ def _unit_row(set_unit, fields):
 	return row
 
 
+def components(set_type: str, version) -> list[dict]:
+	"""Thành phần bộ (A-154, FR-M1-06.5): dòng BOM của phiên bản `version` theo thứ tự xếp. Không có → ``[]``.
+
+	Trả ``[{"position", "instrument", "instrument_name", "qty"}]``; ``position`` đánh lại từ 1 theo thứ tự xếp.
+	"""
+	if not set_type or not cint(version):
+		return []
+	rows = frappe.get_all(
+		"Set BOM Item",
+		filters={"set_type": set_type, "bom_version": cint(version)},
+		fields=["instrument", "instrument_name", "qty"],
+		order_by="position asc, name asc",
+	)
+	return [
+		{
+			"position": index,
+			"instrument": row.instrument,
+			"instrument_name": row.instrument_name or row.instrument,
+			"qty": cint(row.qty),
+		}
+		for index, row in enumerate(rows, start=1)
+	]
+
+
 def summary(set_unit: str) -> dict:
 	"""Tóm tắt form Set Unit (FR-M1-06.2, AC-7): chu trình đã dùng / tối đa / còn lại ``max(0, tối đa - đã dùng)``, nguồn
 	số chu trình (``Actual``/``Estimated``), Cycle ID hiệu lực, phiên bản BOM (ghim, hoặc phiên bản hiệu lực "sẽ ghim khi
 	tiếp nhận"), quét kiểm tra thẻ, trạng thái mã trong Code Registry, số lần in. Bộ không có → ``SET_NOT_FOUND``."""
 	row = _unit_row(set_unit, SUMMARY_FIELDS)
 	used, maximum = cint(row.cycles_used), cint(row.max_cycles)
+	version = bom_versions.version_for_set_unit(row.name)
+	parts = components(row.set_type, version)
 	return {
 		"set_id": row.name,
 		"set_type": row.set_type,
@@ -99,8 +125,15 @@ def summary(set_unit: str) -> dict:
 		"active_cycle_id": row.active_cycle_id or None,
 		"current_station": row.current_station or None,
 		"cycle_bom_version": cint(row.cycle_bom_version),
-		"bom_version_applied": bom_versions.version_for_set_unit(row.name),
+		"bom_version_applied": version,
 		"bom_pinned": cint(row.cycle_bom_version) > 0,
+		# A-154 (FR-M1-06.5): thành phần bộ theo phiên bản trên và loại chỉ thị hóa học của loại bộ
+		"components_version": cint(version) if parts else None,
+		"components": parts,
+		"components_total": sum(part["qty"] for part in parts),
+		"ci_class": frappe.db.get_value("Instrument Set Type", row.set_type, "ci_class") or "",
+		# A-156 (FR-M1-03.10): quy trình xử lý của loại bộ (Steam / Plasma / Disinfection)
+		"processing_route": frappe.db.get_value("Instrument Set Type", row.set_type, "method") or "",
 		"tag_verified_on": row.tag_verified_on,
 		"tag_verified_by": row.tag_verified_by,
 		"code_status": frappe.db.get_value("Code Registry", row.name, "status"),
