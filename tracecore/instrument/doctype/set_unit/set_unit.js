@@ -106,6 +106,12 @@ function tc_su_render_summary(frm, ctx) {
 		${tc_su_form_row(__("Current station"), tc_su_form_escape(s.current_station || "-"))}
 		${tc_su_form_row(__("BOM version"), tc_su_form_escape(bom))}
 		${tc_su_form_row(
+			__("Processing Route", null, "Instrument Set Type"),
+			tc_su_form_escape(
+				s.processing_route ? __(s.processing_route, null, "Instrument Set Type") : "-"
+			)
+		)}
+		${tc_su_form_row(
 			__("Chemical Indicator Class"),
 			tc_su_form_escape(tc_su_ci_class_label(s.ci_class))
 		)}
