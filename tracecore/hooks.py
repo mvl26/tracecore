@@ -60,7 +60,10 @@ fixtures = [
 # include js, css files in header of desk.html
 # Biến --tc-* sinh từ docs/tokens.json (scripts/build_tokens.py) + ánh xạ biến Frappe Desk
 # tc_desk.bundle.css: CSS viết tay của thành phần TraceCore trên Desk (thanh truy cập nhanh NAV-05), chỉ biến --tc-*
-app_include_css = ["tracecore.bundle.css", "tc_desk.bundle.css"]  # bundle có hash: tokens.css + tracecore-theme.css
+app_include_css = [
+	"tracecore.bundle.css",
+	"tc_desk.bundle.css",
+]  # bundle có hash: tokens.css + tracecore-theme.css
 # Hàm dùng chung tracecore.codes.* (in nhãn QR đối tượng, cấp mã cuộn — FEAT-005): bundle có hash nhập tc_codes.js
 app_include_js = ["tracecore.bundle.js"]
 

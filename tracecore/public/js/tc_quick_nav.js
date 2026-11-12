@@ -3,7 +3,12 @@
 // (tracecore.ui.quick_nav); file này chỉ có hàm thuần để test bằng tracecore/tests/js_harness.py.
 const TcQuickNav = {
 	LINKS: [
-		{ key: "instruments", label: "Instruments", icon: "tool", href: "/app/tracecore/instruments" },
+		{
+			key: "instruments",
+			label: "Instruments",
+			icon: "tool",
+			href: "/app/tracecore/instruments",
+		},
 		{ key: "linen", label: "Linen", icon: "retail", href: "/app/tracecore/linen" },
 		{ key: "waste", label: "Waste", icon: "delete", href: "/app/tracecore/waste" },
 		{ key: "ksnk", label: "Infection control", icon: "healthcare", href: "/app/tc-ksnk" },
@@ -24,7 +29,8 @@ const TcQuickNav = {
 
 	// phân hệ trang chủ mở: phân hệ trên URL nếu tài khoản có, rồi phân hệ đang chọn, rồi phân hệ mặc định
 	pick_module(modules, requested, selected, opens_here) {
-		const ok = (key) => key && modules.some((module) => module.key === key && opens_here(module));
+		const ok = (key) =>
+			key && modules.some((module) => module.key === key && opens_here(module));
 		if (ok(requested)) return requested;
 		if (ok(selected)) return selected;
 		return (modules.find(opens_here) || modules[0]).key;
@@ -47,9 +53,9 @@ const TcQuickNav = {
 				`${deps.icon(link.icon, "sm")}<span>${label}</span></a>`
 			);
 		});
-		return `<nav class="tc-quick-nav d-none d-lg-flex" aria-label="${t("Quick access")}">${items.join(
-			""
-		)}</nav>`;
+		return `<nav class="tc-quick-nav d-none d-lg-flex" aria-label="${t(
+			"Quick access"
+		)}">${items.join("")}</nav>`;
 	},
 
 	// chuyển trạng thái đang mở (chữ + aria-current, không chỉ bằng màu) sang ô của key

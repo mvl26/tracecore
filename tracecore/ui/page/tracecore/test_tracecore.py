@@ -637,9 +637,7 @@ class TestNavbarQuickAccess(FrappeTestCase):
 		self.assertEqual(self._keys(["System Manager"]), [])
 
 	def test_system_manager_with_tc_role_sees_all_four(self):
-		self.assertEqual(
-			self._keys(["System Manager", "TC R10"]), ["instruments", "linen", "waste", "ksnk"]
-		)
+		self.assertEqual(self._keys(["System Manager", "TC R10"]), ["instruments", "linen", "waste", "ksnk"])
 
 	def test_office_roles_only_see_modules_of_their_flows(self):
 		self.assertEqual(self._keys(["TC R02"]), ["instruments", "waste", "ksnk"])
@@ -648,7 +646,7 @@ class TestNavbarQuickAccess(FrappeTestCase):
 		self.assertEqual(self._keys(["TC R11"]), ["ksnk"])
 
 	def test_station_roles_see_nothing(self):
-		# R03–R08 không có phân hệ trên trang chủ và không mở được Page tc-ksnk
+		# R03-R08 không có phân hệ trên trang chủ và không mở được Page tc-ksnk
 		for role in ("TC R03", "TC R05", "TC R08"):
 			self.assertEqual(self._keys([role]), [], role)
 
@@ -768,14 +766,20 @@ class TestNavbarQuickAccess(FrappeTestCase):
 
 	def test_launcher_page_and_navbar_use_the_shared_helpers(self):
 		# hành vi đã test ở TcQuickNav; ở đây chỉ kiểm trang chủ và navbar gọi đúng hàm dùng chung
-		with open(frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.js"), encoding="utf-8") as handle:
+		with open(
+			frappe.get_app_path("tracecore", "ui", "page", "tracecore", "tracecore.js"), encoding="utf-8"
+		) as handle:
 			page = handle.read()
 		self.assertIn("TcQuickNav.pick_module(", page)
 		self.assertIn("TcQuickNav.module_path(", page)
 		self.assertIn("history.replaceState(", page)
-		with open(frappe.get_app_path("tracecore", "public", "js", "tc_launcher.js"), encoding="utf-8") as handle:
+		with open(
+			frappe.get_app_path("tracecore", "public", "js", "tc_launcher.js"), encoding="utf-8"
+		) as handle:
 			launcher = handle.read()
 		self.assertIn("TcQuickNav.render(frappe.boot.tc_quick_nav", launcher)
-		with open(frappe.get_app_path("tracecore", "public", "js", "tracecore.bundle.js"), encoding="utf-8") as handle:
+		with open(
+			frappe.get_app_path("tracecore", "public", "js", "tracecore.bundle.js"), encoding="utf-8"
+		) as handle:
 			bundle = handle.read()
 		self.assertLess(bundle.index('import "./tc_quick_nav.js"'), bundle.index('import "./tc_launcher.js"'))

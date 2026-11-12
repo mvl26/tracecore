@@ -27,11 +27,16 @@ $(document).on("app_ready", () => {
 	function show_quick_nav() {
 		const collapse = $(".navbar .navbar-collapse").first();
 		if (!collapse.length || collapse.find(".tc-quick-nav").length) return;
-		const html = TcQuickNav.render(frappe.boot.tc_quick_nav, TcQuickNav.current_key(location.pathname), {
-			t: __,
-			icon: (name, size) => frappe.utils.icon(name, size).replace("<svg", '<svg aria-hidden="true"'),
-			esc: frappe.utils.escape_html,
-		});
+		const html = TcQuickNav.render(
+			frappe.boot.tc_quick_nav,
+			TcQuickNav.current_key(location.pathname),
+			{
+				t: __,
+				icon: (name, size) =>
+					frappe.utils.icon(name, size).replace("<svg", '<svg aria-hidden="true"'),
+				esc: frappe.utils.escape_html,
+			}
+		);
 		if (html) collapse.prepend(html);
 	}
 	show_brand();

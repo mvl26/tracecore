@@ -142,7 +142,12 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 		// #1830 G-03: Tổng quan mở thẳng bảng vận hành nên không phải mô-đun mặc định, tránh vòng lặp khi bấm Back
 		const opens_here = (module) => module.key !== OVERVIEW && module.key !== STATIONS.key;
 		// phân hệ trên URL nếu tài khoản có (NAV-05), rồi phân hệ đang chọn, rồi phân hệ mặc định
-		selected_module = TcQuickNav.pick_module(modules, requested_module, selected_module, opens_here);
+		selected_module = TcQuickNav.pick_module(
+			modules,
+			requested_module,
+			selected_module,
+			opens_here
+		);
 		requested_module = null;
 		const shell = $("<div class='tc-admin'></div>").appendTo(root);
 		const nav = $("<nav class='tc-admin-nav'></nav>")
