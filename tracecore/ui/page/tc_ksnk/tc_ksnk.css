@@ -17,6 +17,22 @@
 	font-weight: var(--tc-fw-bold);
 	text-transform: uppercase;
 }
+/* NAV-06: tiêu đề nhóm là nút thu gọn / mở; ký hiệu ▸/▾ + aria-expanded, không chỉ bằng màu */
+.tc-ksnk .tc-ksnk-group-toggle {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-sp-2);
+	width: 100%;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+}
+.tc-ksnk .tc-ksnk-group-toggle:hover { background: var(--tc-primary-soft); color: var(--tc-text-heading); }
+.tc-ksnk .tc-ksnk-group-mark { flex: 0 0 auto; width: var(--tc-sp-3); }
+.tc-ksnk .tc-ksnk-group-name { flex: 1 1 auto; }
+.tc-ksnk .tc-ksnk-group.is-collapsed { margin-bottom: 0; }
+.tc-ksnk .tc-ksnk-group-items[hidden] { display: none; }
 .tc-ksnk .tc-ksnk-nav-item {
 	display: flex;
 	align-items: center;

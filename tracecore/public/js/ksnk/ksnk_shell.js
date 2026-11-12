@@ -96,8 +96,42 @@ const TcKsnk = {
 		return null;
 	},
 
-	railHtml(nav, active) {
+	// nhóm chứa màn đang xem (NAV-06); không có thì chuỗi rỗng
+	groupOf(nav, slug) {
+		const group = ((nav && nav.groups) || []).find((g) => g.items.some((item) => item.slug === slug));
+		return group ? group.key : "";
+	},
+
+	// NAV-06: mỗi lúc mở một nhóm; bấm nhóm đang mở thì thu gọn, bấm nhóm khác thì mở nhóm đó
+	toggleGroup(open, clicked) {
+		return open === clicked ? "" : clicked;
+	},
+
+	// Một nhóm của rail: tiêu đề là nút (ký hiệu ▸/▾ + aria-expanded), nhóm thu gọn hiện tổng việc chờ
+	groupHtml(key, label, itemsHtml, open, pending) {
 		const esc = TcKsnk.esc;
+		const id = `tc-ksnk-group-${esc(key)}`;
+		const count =
+			!open && pending
+				? `<span class="tc-ksnk-count tc-ksnk-group-count" title="${esc(
+						__("Total pending: {0}", [pending], "IC Rail")
+				  )}">${esc(pending)}</span>`
+				: "";
+		return (
+			`<div class="tc-ksnk-group${open ? "" : " is-collapsed"}">` +
+			`<button type="button" class="tc-ksnk-group-label tc-ksnk-group-toggle" data-group="${esc(
+				key
+			)}" aria-expanded="${open ? "true" : "false"}" aria-controls="${id}">` +
+			`<span class="tc-ksnk-group-mark" aria-hidden="true">${open ? "▾" : "▸"}</span>` +
+			`<span class="tc-ksnk-group-name">${esc(label)}</span>${count}</button>` +
+			`<div class="tc-ksnk-group-items" id="${id}"${open ? "" : " hidden"}>${itemsHtml}</div></div>`
+		);
+	},
+
+	// `open`: key nhóm đang mở; bỏ trống (undefined) thì mở nhóm chứa màn đang xem, "" thì thu gọn hết
+	railHtml(nav, active, open) {
+		const esc = TcKsnk.esc;
+		const opened = open === undefined ? TcKsnk.groupOf(nav, active) : open;
 		return (
 			((nav && nav.groups) || [])
 				.filter((group) => group.items.length)
@@ -121,27 +155,35 @@ const TcKsnk = {
 							);
 						})
 						.join("");
-					return `<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
-						group.label
-					)}</div>${items}</div>`;
+					const pending = group.items.reduce(
+						(sum, item) => sum + (Number(item.badge) || 0),
+						0
+					);
+					return TcKsnk.groupHtml(
+						group.key,
+						group.label,
+						items,
+						group.key === opened,
+						pending
+					);
 				})
-				.join("") + TcKsnk.otherSurfacesHtml(nav)
+				.join("") + TcKsnk.otherSurfacesHtml(nav, opened)
 		);
 	},
 
 	// Nhóm "Bề mặt khác" (ảnh SCR-66): lối sang Cổng khoa (DEPT) và PDA; ẩn với vai trò chỉ đọc. Quyền thật ở từng trang.
-	otherSurfacesHtml(nav) {
+	otherSurfacesHtml(nav, opened) {
 		const esc = TcKsnk.esc;
 		if (!nav || nav.read_only || !(nav.groups || []).length) return "";
 		const link = (href, label) =>
 			`<a href="${esc(href)}" class="tc-ksnk-nav-item"><span>${esc(label)}</span></a>`;
-		return (
-			`<div class="tc-ksnk-group"><div class="tc-ksnk-group-label">${esc(
-				__("Other surfaces", null, "IC Rail")
-			)}</div>` +
+		return TcKsnk.groupHtml(
+			"other",
+			__("Other surfaces", null, "IC Rail"),
 			link("/ksnk-khoa/chi-so", __("Department portal (DEPT)", null, "IC Rail")) +
-			link("/app/station", __("Supervision PDA", null, "IC Rail")) +
-			"</div>"
+				link("/app/station", __("Supervision PDA", null, "IC Rail")),
+			opened === "other",
+			0
 		);
 	},
 
@@ -220,11 +262,30 @@ const TcKsnk = {
 		).appendTo(page.main);
 		const rail = root.find(".tc-ksnk-rail");
 		const content = root.find(".tc-ksnk-content");
-		const state = { nav: null, filters: {}, request: 0, loading: null };
+		// openGroup: nhóm rail đang mở (NAV-06), railSlug: màn lúc vẽ rail; đổi màn thì mở lại nhóm của màn đó
+		const state = {
+			nav: null,
+			filters: {},
+			request: 0,
+			loading: null,
+			openGroup: undefined,
+			railSlug: null,
+		};
 
 		rail.on("click", ".tc-ksnk-nav-item", (event) => {
 			event.preventDefault();
 			frappe.set_route("tc-ksnk", $(event.currentTarget).attr("data-slug"));
+		});
+		rail.on("click", ".tc-ksnk-group-toggle", (event) => {
+			const key = $(event.currentTarget).attr("data-group");
+			const current =
+				state.openGroup === undefined
+					? TcKsnk.groupOf(state.nav, state.railSlug)
+					: state.openGroup;
+			state.openGroup = TcKsnk.toggleGroup(current, key);
+			rail.html(TcKsnk.railHtml(state.nav, state.railSlug, state.openGroup));
+			// vẽ lại rail làm mất focus: trả focus về nút vừa bấm để dùng bàn phím tiếp được
+			rail.find(`.tc-ksnk-group-toggle[data-group="${CSS.escape(key)}"]`).trigger("focus");
 		});
 		content.on("click", '[data-action="retry"]', () => {
 			if (!state.nav) state.loading = null;
@@ -287,7 +348,9 @@ const TcKsnk = {
 			}
 			const slug = route.slug || state.nav.home;
 			const item = TcKsnk.pick(state.nav, slug);
-			rail.html(TcKsnk.railHtml(state.nav, slug));
+			if (slug !== state.railSlug) state.openGroup = undefined;
+			state.railSlug = slug;
+			rail.html(TcKsnk.railHtml(state.nav, slug, state.openGroup));
 			header(item);
 			if (!item) {
 				content.html(TcKsnk.stateHtml("forbidden"));
