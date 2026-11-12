@@ -8,13 +8,14 @@
 > **Amendment A-153 (2026-11-12):** nước thải y tế vào M15 (mở một phần SC-01) → **FEAT-095** ở E-16 (sprint S9), FR-M15-08..13, UC-58, SCR-67, BRU-ENV-004..006. Người dùng duyệt W1–W8 ngày 12/11/2026; chủ đầu tư chưa xác nhận. Số FEAT-075 trong đề xuất đổi thành FEAT-095 vì FEAT-075 đã dùng cho A-114.
 > **Amendment A-154 (2026-11-12):** thành phần bộ trên form Set Unit và loại chỉ thị hóa học của loại bộ (Không cần / Loại 4 / Loại 5 / Loại 6, T4 kiểm theo loại) → **FEAT-096** ở E-02 (M1, ngoài sprint), FR-M1-03.9, FR-M1-06.5, sửa FR-M2-07.2/.3. Người dùng duyệt C1–C3 ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5; nút Sao chép bộ dụng cụ trên form Set Unit, FR-M1-05.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-156 (2026-11-12):** quy trình xử lý của loại bộ (Tiệt khuẩn nhiệt độ cao / nhiệt độ thấp / Khử khuẩn) → **FEAT-098** ở E-02 (M1, ngoài sprint), FR-M1-03.10. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
 
 TraceCore là app Frappe v15 `tracecore` (cạnh `erpnext`, `hrms`) cho khoa KSNK/CSSD: truy xuất dụng cụ qua chuỗi 8 trạm T1–T8 với cổng kiểm soát 5 bước, Set ID GS1 GIAI vĩnh viễn, Cycle ID GS1 DataMatrix dùng một lần in trên 2 loại nhãn (hấp/plasma), cùng đồ vải, nhân sự, thiết bị, kho, chi phí, cơ số, báo cáo và (v1.11) chất thải y tế. Bốn surface: WEB (Desk), STN (kiosk Frappe Page), PDA (PWA cùng Page), DEPT (Portal).
 
-Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT; + FEAT-094 theo A-138; + FEAT-095 theo A-153; + FEAT-096 theo A-154; + FEAT-097 theo A-155**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
+Kế hoạch gồm **12 epic / 50 feature (FEAT-001..050)** (+ FEAT-051..055 theo amendment A-64/A-71/A-110..112; **+ 8 epic E-12..E-19 / 19 feature FEAT-056..074 theo A-113 — tổng 74 FEAT; + FEAT-094 theo A-138; + FEAT-095 theo A-153; + FEAT-096 theo A-154; + FEAT-097 theo A-155; + FEAT-098 theo A-156**), mỗi FEAT là một lát cắt dọc (UI + RPC `tracecore.v1.*` + domain + DocType). Ưu tiên sắp xếp (Phase 2, chủ đầu tư xác nhận):
 
 1. **De-risk sớm** 4 ADR rủi ro nhất: ADR-004 (GS1 DataMatrix 300 dpi trên nhãn chịu hấp, rủi ro R-01), ADR-005 (step-gate engine), ADR-003 (offline/idempotency), ADR-006 (station agent + 2 loại nhãn, R-04).
 2. **Milestone demo** "1 bộ đi hết T1→T8 + thu hồi" sớm nhất có thể (cuối Sprint 2).
@@ -296,6 +297,21 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | AC-097-05 | Khi T4 mở ngữ cảnh một bộ, droplist loại gói phải có nhóm Giấy bọc (sau Vải bọc) và mỗi dòng Túi ép ghi `… · 100 × 250 mm · …`, dòng Giấy bọc ghi `… · 2 lớp · …`. | FR-M2-07, FR-M6-02.5 |
 | AC-097-07 | Khi R02/R10 bấm "Sao chép bộ dụng cụ" trên form Set Unit, hộp thoại Cấp Set ID phải mở với loại bộ, khoa và cơ số tối đa của bộ đó điền sẵn (loại bộ không ghi đè khoa/cơ số); R04 không thấy nút. | FR-M1-05.6 |
 | AC-097-06 | Khi patch A-155 chạy, Item Packaging nhóm Vải bọc/trống có tên chứa "giấy"/"crepe" phải thành Giấy bọc, số lớp và kích thước túi suy từ tên khi còn trống; chạy lại không đổi thêm. | FR-M6-02.5 |
+
+### FEAT-098 Quy trình xử lý của loại bộ: nhiệt độ cao / nhiệt độ thấp / khử khuẩn [A-156]
+
+| ID | Feature | FRs | UCs | Screens | Blocks / Endpoints | Data | ADR | Size | Sprint |
+| :- | :- | :- | :- | :- | :- | :- | :- | :- | :- |
+| FEAT-098 | `Instrument Set Type.method` hiển thị là Quy trình xử lý, thêm `Disinfection`; luật dòng BOM theo quy trình (`catalog.fits_route`); T4 chặn bộ Khử khuẩn; nhập file loại bộ nhận Disinfection | FR-M1-03.10, FR-M1-03.3 | UC-02 | SCR-02, SCR-08 | `instrument.set_type`, `instrument.bom_versions.line_errors`, `instrument.set_units`, `reprocessing.packing` | Instrument Set Type (options) | — | S | ngoài sprint |
+
+#### Acceptance criteria FEAT-098 [A-156] (EARS)
+
+| AC | Câu EARS | FR / BRU |
+| :- | :- | :- |
+| AC-098-01 | Khi người dùng mở form Loại bộ, trường Quy trình xử lý (bắt buộc) phải có Tiệt khuẩn nhiệt độ cao (hấp), Tiệt khuẩn nhiệt độ thấp (plasma), Khử khuẩn. | FR-M1-03.10 |
+| AC-098-02 | Nếu Loại bộ Khử khuẩn có dụng cụ Spaulding Thiết yếu trong BOM (lưu mới, đổi quy trình, cấp Set ID), thì hệ thống phải từ chối và chỉ rõ dòng; dụng cụ Bán thiết yếu/Không thiết yếu được nhận bất kể phương pháp tương thích. | FR-M1-03.10, BRU-REP-004 |
+| AC-098-03 | Nếu Loại bộ Khử khuẩn khai loại chỉ thị hóa học 4/5/6, thì hệ thống phải từ chối lưu. | FR-M1-03.10 |
+| AC-098-04 | Nếu bộ của Loại bộ Khử khuẩn được quét tại T4, thì hệ thống phải báo `alert-error` (kết quả → lý do → hành động) và không sinh Cycle ID. | FR-M1-03.10 |
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
 
