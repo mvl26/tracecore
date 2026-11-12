@@ -11,7 +11,7 @@ from tracecore.environmental_hygiene import zones
 from tracecore.environmental_hygiene.tests import factories as ef
 from tracecore.tests.factories import make_user
 from tracecore.tests.js_harness import run_js
-from tracecore.tests.utils import IsolatedTestCase, request_headers
+from tracecore.tests.utils import IsolatedTestCase, bru, request_headers
 from tracecore.ui import ksnk
 from tracecore.v1 import environment as api
 
@@ -28,7 +28,8 @@ const data = {
 		by_party: [{key: "NCC-A", label: "Công ty A <b>", passed: 3, total: 4}]},
 	infra_by_category: [{key: "Ventilation", total: 2, on_time: 1}],
 	pending_nc: [{name: "XN-2026-00131", environment_zone: "VV-0001", environment_zone_name: "Phòng mổ 3",
-		sample_type: "Air", result_value: 24, unit: "CFU/m3", limit_applied: "NG-PM-KK-V2 · ≤ 10"}],
+		sample_type: "Air", sampled_on: "2026-10-30", result_value: 24, unit: "CFU/m3",
+		limit_applied: "NG-PM-KK-V2 · ≤ 10"}],
 	samples: [{name: "XN-2026-00131", environment_zone_name: "Phòng mổ 3", sample_type: "Air",
 		sampled_on: "2026-10-30", result_value: 24, unit: "CFU/m3", limit_applied: "NG-PM-KK-V2 · ≤ 10",
 		result: "Fail"},
@@ -72,9 +73,10 @@ class TestScr62Screen(IsolatedTestCase):
 		html = out["html"]
 		self.assertIn("92,9 %", html)
 		self.assertIn("2/46", html)
-		self.assertIn("XN-2026-00131 failed — Phòng mổ 3, Air:", html)
+		self.assertIn("XN-2026-00131 failed (sampled 30/10/2026) — Phòng mổ 3, Air:", html)
 		self.assertIn('data-action="open-nc" data-name="XN-2026-00131"', html)
 		self.assertIn("is_resample_of=XN-2026-00131", html)
+		self.assertIn("the zone stays flagged until a resample passes", html)
 		self.assertIn("✕ Fail", html)
 		self.assertIn("Resample of XN-2026-00100", html)
 		self.assertIn("! Short", html)
@@ -82,6 +84,20 @@ class TestScr62Screen(IsolatedTestCase):
 		self.assertIn("2 days left", html)
 		self.assertIn("✕ Overdue", html)
 		self.assertNotIn("open-nc", out["viewer"])
+
+	def test_pending_nc_resolved_by_passing_resample_says_flag_cleared(self):
+		"""Mẫu Không đạt đã có mẫu lại Đạt: vẫn chờ quyết định NC (BRU-ENV-003) nhưng không nói vùng còn giữ cờ."""
+		out = self._run(
+			"""const row = Object.assign({}, data.pending_nc[0], {resolved_by: "XN-2026-00140"});
+			emit(TcKsnkScr62.pendingHtml(Object.assign({}, data, {pending_nc: [row]}), esc));"""
+		)
+		self.assertIn(
+			"Resample XN-2026-00140 passed; the zone flag was cleared. An NC decision is still needed.", out
+		)
+		self.assertNotIn("the zone stays flagged", out)
+		self.assertNotIn("is_resample_of=", out)
+		self.assertIn('data-action="open-nc" data-name="XN-2026-00131"', out)
+		self.assertIn('data-action="dismiss-nc" data-name="XN-2026-00131"', out)
 
 	def test_tabs_limits_plans_and_overdue_samples(self):
 		out = self._run('TcKsnkScr62.tab = "limits"; emit(TcKsnkScr62.pageHtml(data, esc));')
@@ -118,6 +134,21 @@ class TestScr62Api(IsolatedTestCase):
 		self.assertIn(self.zone, [row["zone"] for row in data["zones"]])
 		self.assertGreaterEqual(data["kpis"]["samples_failed"], 1)
 		self.assertTrue(any(row["name"] == "NG-T-PM-KK-V1" for row in data["limits"]))
+
+	@bru("BRU-ENV-003")
+	def test_pending_nc_row_names_the_passing_resample(self):
+		"""Mẫu lại Đạt gỡ cờ vùng; dòng chờ quyết định NC vẫn còn nhưng cho biết mẫu lại nào đã Đạt."""
+
+		def open_row():
+			return next(r for r in api.overview()["pending_nc"] if r["name"] == self.failed.name)
+
+		self.assertIsNone(open_row()["resolved_by"])
+		self.assertEqual(str(open_row()["sampled_on"]), str(self.failed.sampled_on))
+		failed_again = ef.make_sample(self.zone, 30, is_resample_of=self.failed.name)
+		self.assertIsNone(open_row()["resolved_by"])
+		passed = ef.make_sample(self.zone, 2, is_resample_of=failed_again.name)
+		self.assertEqual(open_row()["resolved_by"], passed.name)
+		self.assertEqual(frappe.db.get_value(zones.DOCTYPE, self.zone, "awaiting_resample"), 0)
 
 	def test_r13_gets_summary_only_and_r08_is_rejected(self):
 		r13 = make_user("mt-r13@example.com", [ef.R13])
