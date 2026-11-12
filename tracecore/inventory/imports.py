@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 
 from tracecore.core.importer import Column, ImportKind, Issue
-from tracecore.inventory.items import CSSD_GROUPS
+from tracecore.inventory.items import CSSD_GROUPS, PACK_MATERIALS, WRAP_LAYERS
 
 ITEM_GROUP_ROOT = "All Item Groups"
 METHODS = ("Steam", "Plasma")
@@ -59,6 +59,9 @@ def _write_item(unit):
 			"tc_compatible_method": values.get("compatible_method"),
 			"tc_ci_class": values.get("ci_class"),
 			"tc_shelf_life_days": values.get("shelf_life_days"),
+			"tc_pack_material": values.get("pack_material"),  # A-155
+			"tc_pouch_size": values.get("pouch_size"),
+			"tc_wrap_layers": values.get("wrap_layers"),
 			"tc_specification": values.get("specification"),
 		}
 	)
@@ -83,6 +86,14 @@ def import_kinds():
 				Column("compatible_method", "Compatible Method", kind="select", options=METHODS),
 				Column("ci_class", "Indicator Class", kind="select", options=CI_CLASSES),
 				Column("shelf_life_days", "Shelf Life (days)", kind="int"),
+				# A-155: loại vật liệu đóng gói của Item nhóm Packaging
+				Column("pack_material", "Pack Material", kind="select", options=PACK_MATERIALS),
+				Column(
+					"pouch_size",
+					"Pouch Size (mm)",
+					help="Sealed pouch only: width x length, or width for a roll.",
+				),
+				Column("wrap_layers", "Wrap Layers", kind="select", options=WRAP_LAYERS),
 				Column("specification", "Specification"),
 			],
 			code_field="item_code",

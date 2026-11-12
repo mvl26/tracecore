@@ -46,10 +46,34 @@
   "fieldname": "tc_pack_material",
   "fieldtype": "Select",
   "label": "Pack Material",
-  "options": "\nRigid Container\nSealed Pouch\nWrap",
-  "description": "Group shown in the pack type list at the packing station: rigid container, sealed pouch, or wrap (cotton or non-woven).",
+  "options": "\nRigid Container\nSealed Pouch\nWrap\nPaper Wrap",
+  "description": "Group shown in the pack type list at the packing station: rigid container, sealed pouch, cloth wrap (cotton or non-woven) or paper wrap.",
   "depends_on": "eval:doc.tc_item_group_cssd=='Packaging'",
   "insert_after": "tc_shelf_life_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_pouch_size",
+  "fieldname": "tc_pouch_size",
+  "fieldtype": "Data",
+  "label": "Pouch Size (mm)",
+  "description": "Width × length in mm, for example 100 × 250; width only for a roll, for example 200.",
+  "depends_on": "eval:doc.tc_item_group_cssd=='Packaging' && doc.tc_pack_material=='Sealed Pouch'",
+  "mandatory_depends_on": "eval:doc.tc_item_group_cssd=='Packaging' && doc.tc_pack_material=='Sealed Pouch'",
+  "insert_after": "tc_pack_material"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Item",
+  "name": "Item-tc_wrap_layers",
+  "fieldname": "tc_wrap_layers",
+  "fieldtype": "Select",
+  "label": "Wrap Layers",
+  "options": "\nSingle Layer\nDouble Layer",
+  "depends_on": "eval:doc.tc_item_group_cssd=='Packaging' && doc.tc_pack_material=='Paper Wrap'",
+  "mandatory_depends_on": "eval:doc.tc_item_group_cssd=='Packaging' && doc.tc_pack_material=='Paper Wrap'",
+  "insert_after": "tc_pouch_size"
  },
  {
   "doctype": "Custom Field",

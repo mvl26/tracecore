@@ -71,3 +71,5 @@ tracecore.patches.v0_1.ic_reminder_time_defaults
 tracecore.patches.v0_1.ssi_prophylaxis_zero_threshold
 # Phơi nhiễm nghề nghiệp: form Desk đã xóa Khoa khi chọn nhân viên chưa gán khoa, Tên khoa còn tên cũ → gán lại / xóa tên
 tracecore.patches.v0_1.exposure_department_name
+# FEAT-097 (A-155 P6): giấy bọc tách khỏi vải bọc, suy số lớp / kích thước túi ép từ tên
+tracecore.patches.v0_1.a155_pack_material_detail

@@ -29,11 +29,12 @@ const T4_SCAN = "tracecore.v1.pack.scan";
 const T4_REQUEST_OVERRIDE = "tracecore.v1.par.override.request";
 // lỗi chặn vì hết cơ số: T4 hiện nút "Đề nghị ghi đè" (FEAT-032, FR-M8-04)
 const T4_PAR_CODES = ["PAR_EXCEEDED", "SET_END_OF_LIFE"];
-// A-122: nhóm vật liệu gói theo thứ tự hiện trong droplist (giá trị Item.tc_pack_material); rỗng = chưa phân nhóm
+// A-122, A-155: nhóm vật liệu gói theo thứ tự hiện trong droplist (giá trị Item.tc_pack_material); rỗng = chưa phân nhóm
 const T4_PACK_MATERIALS = [
 	{ value: "Rigid Container", label: () => __("Rigid Container") },
 	{ value: "Sealed Pouch", label: () => __("Sealed Pouch") },
 	{ value: "Wrap", label: () => __("Wrap") },
+	{ value: "Paper Wrap", label: () => __("Paper Wrap") },
 	{ value: "", label: () => __("Unclassified") },
 ];
 const T4_PACK_MATERIAL_SET = new Set(T4_PACK_MATERIALS.map((row) => row.value).filter(Boolean));
@@ -1552,10 +1553,15 @@ class T4Packing {
 			if (!rows.length) return "";
 			const options = rows
 				.map((row) => {
-					const parts = [
-						row.item_name || row.item,
-						__("{0} days", [row.shelf_life_days]),
-					];
+					const parts = [row.item_name || row.item];
+					// A-155: túi ép ghi kích thước, giấy bọc ghi số lớp
+					if (row.material === "Sealed Pouch" && row.pouch_size) {
+						parts.push(__("{0} mm", [row.pouch_size]));
+					}
+					if (row.material === "Paper Wrap" && row.wrap_layers) {
+						parts.push(__(row.wrap_layers));
+					}
+					parts.push(__("{0} days", [row.shelf_life_days]));
 					if (row.is_default) parts.push(__("default for this set"));
 					const selected = row.item === this.packType ? " selected" : "";
 					return `<option value="${esc(row.item)}"${selected}>${esc(
