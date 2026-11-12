@@ -179,7 +179,7 @@ const groups = (html) => html.split(/<div class="tc-ksnk-group(?=[ "])/).slice(1
 
 
 class TestRailCollapsibleGroups(FrappeTestCase):
-	"""NAV-06: rail tc-ksnk thu gọn theo nhóm, mỗi lúc mở một nhóm."""
+	"""NAV-06: rail tc-ksnk thu gọn theo nhóm; mỗi nhóm mở/đóng độc lập, chỉ đóng khi người dùng bấm."""
 
 	def _run(self, body):
 		return run_js(self, [SHELL], [["TcKsnk"]], GROUPS + body)
@@ -213,27 +213,55 @@ class TestRailCollapsibleGroups(FrappeTestCase):
 		# nhóm đang mở không lặp tổng ở tiêu đề: badge đã nằm trên từng mục
 		self.assertNotIn("tc-ksnk-group-count", program.split("</button>")[0])
 
-	def test_explicit_open_group_overrides_active_group(self):
-		out = self._run(
-			'emit(groups(TcKsnk.railHtml(nav, "chi-so", "compliance")).map((g) => g.includes("is-collapsed")));'
-		)
-		self.assertEqual(out, [True, False, True])
-		none = self._run(
-			'emit(groups(TcKsnk.railHtml(nav, "chi-so", "")).map((g) => g.includes("is-collapsed")));'
-		)
-		self.assertEqual(none, [True, True, True])
+	def test_explicit_open_groups_override_active_group(self):
+		collapsed = 'groups(TcKsnk.railHtml(nav, "chi-so", OPEN)).map((g) => g.includes("is-collapsed"))'
+		for open_, expected in (
+			('["compliance"]', [True, False, True]),
+			("[]", [True, True, True]),
+			('["program", "compliance", "other"]', [False, False, False]),
+		):
+			self.assertEqual(self._run(f"emit({collapsed.replace('OPEN', open_)});"), expected, open_)
 
-	def test_toggle_opens_clicked_group_or_closes_it(self):
+	def test_groups_open_and_close_independently(self):
+		# mở nhóm này không đóng nhóm kia; chỉ đóng khi người dùng bấm đóng
 		out = self._run(
-			'emit([TcKsnk.toggleGroup("program", "compliance"), TcKsnk.toggleGroup("program", "program"),'
-			' TcKsnk.toggleGroup("", "program"), TcKsnk.groupOf(nav, "tuan-thu"), TcKsnk.groupOf(nav, "nope")]);'
+			'emit([TcKsnk.toggleGroup(["program"], "compliance"), TcKsnk.toggleGroup(["program", "compliance"], "program"),'
+			' TcKsnk.toggleGroup([], "program"), TcKsnk.groupOf(nav, "tuan-thu"), TcKsnk.groupOf(nav, "nope")]);'
 		)
-		self.assertEqual(out, ["compliance", "", "program", "compliance", ""])
+		self.assertEqual(out, [["program", "compliance"], ["compliance"], ["program"], "compliance", ""])
+
+	def test_open_groups_keep_user_choice_and_add_group_of_screen(self):
+		out = self._run(
+			"""
+			emit([
+				TcKsnk.openGroupsFor(null, nav, "tuan-thu"),
+				TcKsnk.openGroupsFor(["program"], nav, "tuan-thu"),
+				TcKsnk.openGroupsFor(["compliance"], nav, "tuan-thu"),
+				TcKsnk.openGroupsFor(["program"], nav, "nope"),
+			]);
+			"""
+		)
+		self.assertEqual(out, [["compliance"], ["program", "compliance"], ["compliance"], ["program"]])
+
+	def test_open_groups_survive_reload_in_browser_storage(self):
+		out = self._run(
+			"""
+			const store = {};
+			const storage = {getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }};
+			const broken = {getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); }};
+			const first = TcKsnk.loadOpenGroups(storage);
+			TcKsnk.saveOpenGroups(storage, ["program", "hai"]);
+			store.bad = "x";
+			emit([first, TcKsnk.loadOpenGroups(storage), TcKsnk.loadOpenGroups(broken), TcKsnk.saveOpenGroups(broken, ["a"]) === undefined]);
+			"""
+		)
+		self.assertEqual(out, [None, ["program", "hai"], None, True])
 
 	def test_shell_wires_toggle_and_css_hides_collapsed_items(self):
 		src = _read(SHELL)
 		self.assertIn('rail.on("click", ".tc-ksnk-group-toggle"', src)
 		self.assertIn("TcKsnk.toggleGroup(", src)
+		self.assertIn("TcKsnk.saveOpenGroups(", src)
 		css = _read("tracecore/ui/page/tc_ksnk/tc_ksnk.css".replace("tracecore/", "", 1))
 		self.assertIn(".tc-ksnk .tc-ksnk-group-toggle", css)
 
