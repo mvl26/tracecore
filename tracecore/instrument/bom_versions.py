@@ -126,19 +126,22 @@ def normalize_lines(lines) -> list[dict]:
 	return rows
 
 
-def _instrument_facts(codes: list[str], lock: bool) -> tuple[dict, dict]:
-	"""``({mã: trạng thái}, {mã: {phương pháp}})`` bằng hai truy vấn cố định.
+def _instrument_facts(codes: list[str], lock: bool) -> tuple[dict, dict, dict]:
+	"""``({mã: trạng thái}, {mã: {phương pháp}}, {mã: phân loại Spaulding})`` bằng hai truy vấn cố định.
 
 	``lock``: đọc dụng cụ bằng ``lock in share mode`` (đọc bản mới nhất đã commit và chặn ngừng sử dụng song song tới
 	khi phiên bản được lưu).
 	"""
 	if not codes:
-		return {}, {}
+		return {}, {}, {}
 	marks = ", ".join(["%s"] * len(codes))
 	share = " lock in share mode" if lock else ""
-	statuses = dict(
-		frappe.db.sql(f"select name, status from `tabInstrument` where name in ({marks}){share}", codes)  # nosec B608
-	)
+	statuses, spaulding = {}, {}
+	for name, status, klass in frappe.db.sql(
+		f"select name, status, spaulding_class from `tabInstrument` where name in ({marks}){share}",  # nosec B608
+		codes,
+	):
+		statuses[name], spaulding[name] = status, klass
 	methods = defaultdict(set)
 	for parent, method in frappe.db.sql(
 		f"""
@@ -148,7 +151,7 @@ def _instrument_facts(codes: list[str], lock: bool) -> tuple[dict, dict]:
 		codes,
 	):
 		methods[parent].add(method)
-	return statuses, methods
+	return statuses, methods, spaulding
 
 
 def line_errors(method: str | None, lines: list[dict], lock: bool = False) -> list[dict]:
@@ -158,7 +161,7 @@ def line_errors(method: str | None, lines: list[dict], lock: bool = False) -> li
 	``DUPLICATE_INSTRUMENT``, ``DUPLICATE_POSITION``, ``POSITION_INVALID``, ``QTY_RANGE``; một dòng có thể có nhiều lỗi;
 	sắp theo dòng gửi lên. ``method`` trống → bỏ kiểm tương thích (thiếu phương pháp do kiểm bắt buộc của loại bộ báo).
 	"""
-	statuses, methods = _instrument_facts(
+	statuses, methods, spaulding = _instrument_facts(
 		sorted({row["instrument"] for row in lines if row["instrument"]}), lock
 	)
 	errors, first_row, first_position = [], {}, {}
@@ -174,13 +177,8 @@ def line_errors(method: str | None, lines: list[dict], lock: bool = False) -> li
 		else:
 			if statuses[code] == "Retired":
 				add("RETIRED", _("Instrument {0} is retired and cannot be added to a BOM.").format(code))
-			if method and method not in catalog.families(methods[code]):
-				add(
-					"INCOMPATIBLE",
-					_("Instrument {0} ({1}) is not compatible with the set type method {2}.").format(
-						code, ", ".join(catalog.ordered_methods(methods[code])) or "—", _(method)
-					),
-				)
+			if not catalog.fits_route(method, methods[code], spaulding.get(code)):
+				add("INCOMPATIBLE", catalog.route_issue(code, method, methods[code]))
 			if code in first_row:
 				add(
 					"DUPLICATE_INSTRUMENT",

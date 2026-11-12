@@ -88,9 +88,13 @@ class TestDefaultIndicatorFollowsClass(IsolatedTestCase):
 	def test_query_follows_the_declared_class(self):
 		four = make_item("CI4-QC-STEAM-A154", "Chemical Indicator", method="Steam", ci_class="4").name
 		five = make_item("CI5-QC-STEAM-A154", "Chemical Indicator", method="Steam", ci_class="5").name
-		codes = [r[0] for r in set_type_api.ci_item_query(txt="QC-", filters={"method": "Steam", "ci_class": "4"})]
+		codes = [
+			r[0] for r in set_type_api.ci_item_query(txt="QC-", filters={"method": "Steam", "ci_class": "4"})
+		]
 		self.assertEqual(codes, [four])
-		codes = [r[0] for r in set_type_api.ci_item_query(txt="QC-", filters={"method": "Steam", "ci_class": ""})]
+		codes = [
+			r[0] for r in set_type_api.ci_item_query(txt="QC-", filters={"method": "Steam", "ci_class": ""})
+		]
 		self.assertEqual(codes, [five])
 		codes = set_type_api.ci_item_query(txt="QC-", filters={"method": "Steam", "ci_class": "Not Needed"})
 		self.assertEqual(list(codes), [])

@@ -11887,3 +11887,15 @@ Chemical indicator placed in each pack at packing (ISO 11140-1). Blank: class 5 
 4,Loại 4,Instrument Set Type
 5,Loại 5,Instrument Set Type
 6,Loại 6,Instrument Set Type
+Processing Route,Quy trình xử lý,Instrument Set Type
+Processing Route,Quy trình xử lý,
+Steam,Tiệt khuẩn nhiệt độ cao (hấp),Instrument Set Type
+Plasma,Tiệt khuẩn nhiệt độ thấp (plasma),Instrument Set Type
+Disinfection,Khử khuẩn,Instrument Set Type
+Disinfection,Khử khuẩn,
+"Instrument {0} is Spaulding Critical, so it must be sterilized and cannot be in a disinfection set.","Dụng cụ {0} thuộc nhóm Spaulding Thiết yếu nên phải tiệt khuẩn, không đưa vào bộ khử khuẩn.",
+"A disinfection set is not sterilized, so it takes no chemical indicator class. Choose Not Needed or leave it empty.",Bộ khử khuẩn không qua tiệt khuẩn nên không có loại chỉ thị hóa học. Chọn Không cần hoặc để trống.,
+Chemical indicator class,Loại chỉ thị hóa học,
+Set is not packed for sterilization,Bộ không đóng gói tiệt khuẩn,
+"Set type {0} uses the Disinfection processing route, so it is not packed or sterilized.","Loại bộ {0} có quy trình xử lý Khử khuẩn nên không đóng gói, không tiệt khuẩn.",
+"Ask R10 to change the processing route of this set type if it must be sterilized.","Nếu bộ cần tiệt khuẩn, báo R10 đổi quy trình xử lý của loại bộ này.",

@@ -55,6 +55,7 @@ SET_TYPE_FIELDS = tuple(
 	"name set_type_name method gtin department default_pack_type ci_class default_ci_item shelf_life_days tray_image "
 	"current_bom_version".split()
 )
+DISINFECTION = "Disinfection"  # quy trình Khử khuẩn của loại bộ (A-156); không import M1 (catalog) vào M2
 LOOKUP_KEYS = tuple("cycle_id set_id set_name packed_at packer expiry method pack_type ci_batch".split())
 
 
@@ -422,6 +423,15 @@ def _open(set_id, station, for_update=False, maint_actions=None):
 	unit = _load_set(set_id, for_update)
 	_admit(unit, for_update)
 	set_type = frappe.db.get_value("Instrument Set Type", unit.set_type, SET_TYPE_FIELDS, as_dict=True)
+	if set_type.method == DISINFECTION:  # A-156: chưa có luồng khử khuẩn, không sinh Cycle ID tiệt khuẩn
+		raise _blocked(
+			"SET_NOT_FOR_STERILIZATION",
+			_("Set is not packed for sterilization"),
+			_(
+				"Set type {0} uses the Disinfection processing route, so it is not packed or sterilized."
+			).format(set_type.name),
+			_("Ask R10 to change the processing route of this set type if it must be sterilized."),
+		)
 	if not gs1.is_valid_gtin14(set_type.gtin):
 		raise _blocked(
 			"SET_TYPE_GTIN_MISSING",

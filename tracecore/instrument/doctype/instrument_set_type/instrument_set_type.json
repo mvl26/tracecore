@@ -68,8 +68,8 @@
    "fieldname": "method",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Sterilization Method",
-   "options": "Steam\nPlasma",
+   "label": "Processing Route",
+   "options": "Steam\nPlasma\nDisinfection",
    "reqd": 1
   },
   {
@@ -258,7 +258,7 @@
  "image_field": "tray_image",
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-12 16:00:00.000000",
+ "modified": "2026-11-12 18:40:18.808774",
  "modified_by": "Administrator",
  "module": "Instrument",
  "name": "Instrument Set Type",

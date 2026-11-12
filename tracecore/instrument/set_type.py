@@ -71,6 +71,17 @@ def _validate_default_ci(doc) -> None:
 	)
 
 
+def _validate_route_ci(doc) -> None:
+	"""Loại bộ quy trình Khử khuẩn không tiệt khuẩn nên không có loại chỉ thị hóa học 4/5/6 (A-156; trống hoặc Không cần)."""
+	if doc.get("method") == catalog.DISINFECTION and doc.get("ci_class") in ci_class.PACK_CLASSES:
+		frappe.throw(
+			_(
+				"A disinfection set is not sterilized, so it takes no chemical indicator class. Choose Not Needed or leave it empty."
+			),
+			title=_("Chemical indicator class"),
+		)
+
+
 def validate_header(doc) -> None:
 	"""Luật phần đầu loại bộ khi lưu (S13, FR-M1-03.3/.4/.5)."""
 	minutes = cint(doc.get("assembly_minutes"))
@@ -81,6 +92,7 @@ def validate_header(doc) -> None:
 	_guard_current_bom_version(doc)
 	shelf_life.validate_set_type(doc)
 	_validate_default_ci(doc)  # A-122
+	_validate_route_ci(doc)  # A-156
 	if not doc.is_new():
 		before = doc.get_doc_before_save()
 		if before is not None and before.get("method") != doc.get("method"):
@@ -142,11 +154,14 @@ def check_method_against_boms(doc) -> None:
 	if not lines:
 		return
 	codes = list({line.instrument for line in lines})
-	names = dict(
-		frappe.get_all(
-			"Instrument", filters={"name": ["in", codes]}, fields=["name", "instrument_name"], as_list=True
+	facts = {
+		row.name: row
+		for row in frappe.get_all(
+			"Instrument",
+			filters={"name": ["in", codes]},
+			fields=["name", "instrument_name", "spaulding_class"],
 		)
-	)
+	}
 	methods = defaultdict(set)
 	for row in frappe.get_all(
 		"Instrument Compatible Method",
@@ -154,9 +169,24 @@ def check_method_against_boms(doc) -> None:
 		fields=["parent", "method"],
 	):
 		methods[row.parent].add(row.method)
-	bad = [line for line in lines if doc.method not in catalog.families(methods[line.instrument])]
+
+	def spaulding(code):
+		return (facts.get(code) or {}).get("spaulding_class")
+
+	bad = [
+		line
+		for line in lines
+		if not catalog.fits_route(doc.method, methods[line.instrument], spaulding(line.instrument))
+	]
 	if not bad:
 		return
+
+	def fact(code):
+		# A-156: quy trình Khử khuẩn chặn theo Spaulding, nên cột cuối ghi phân loại thay cho phương pháp
+		if doc.method == catalog.DISINFECTION:
+			return _(spaulding(code) or "—")
+		return ", ".join(catalog.ordered_methods(methods[code])) or "—"
+
 	rows = [
 		_("BOM version {0}: {1}").format(
 			line.bom_version,
@@ -164,8 +194,8 @@ def check_method_against_boms(doc) -> None:
 				(
 					str(cint(line.position)),
 					line.instrument,
-					escape_html(names.get(line.instrument) or ""),
-					", ".join(catalog.ordered_methods(methods[line.instrument])) or "—",
+					escape_html((facts.get(line.instrument) or {}).get("instrument_name") or ""),
+					fact(line.instrument),
 				)
 			),
 		)
