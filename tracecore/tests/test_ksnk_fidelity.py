@@ -72,14 +72,29 @@ class TestScr66Fidelity(FrappeTestCase):
 
 
 class TestRailOtherSurfaces(FrappeTestCase):
-	def test_rail_has_other_surfaces_group(self):
+	def test_other_surfaces_group_is_hidden_for_now(self):
+		# NAV-06: người dùng tạm ẩn nhóm "Bề mặt khác" khỏi rail (12/11/2026); hàm vẫn giữ để bật lại
 		out = run_js(
 			self,
 			[SHELL],
 			[["TcKsnk"]],
 			"""
 			const nav = {groups: [{key: "program", label: "Hospital IC", items: [{slug: "chi-so", label: "Board", badge: 0}]}], read_only: false};
-			emit({r: TcKsnk.railHtml(nav, "chi-so"), ro: TcKsnk.railHtml(Object.assign({}, nav, {read_only: true}), "chi-so")});
+			emit({r: TcKsnk.railHtml(nav, "chi-so", ["program", "other"]), fn: TcKsnk.otherSurfacesHtml(nav, ["other"])});
+			""",
+		)
+		self.assertNotIn("Other surfaces", out["r"])
+		self.assertIn("Other surfaces", out["fn"])
+
+	def test_other_surfaces_keeps_links_and_hides_for_read_only(self):
+		# hàm giữ nguyên để bật lại nhóm: vẫn có link Cổng khoa và PDA, vai trò chỉ đọc không thấy
+		out = run_js(
+			self,
+			[SHELL],
+			[["TcKsnk"]],
+			"""
+			const nav = {groups: [{key: "program", label: "Hospital IC", items: [{slug: "chi-so", label: "Board", badge: 0}]}], read_only: false};
+			emit({r: TcKsnk.otherSurfacesHtml(nav, []), ro: TcKsnk.otherSurfacesHtml(Object.assign({}, nav, {read_only: true}), [])});
 			""",
 		)
 		self.assertIn("Other surfaces", out["r"])
