@@ -177,3 +177,20 @@ class TestSetUnitDeskAssets(IsolatedTestCase):
 		self.assertIn("tracecore.set_unit.issue_dialog(", list_script)
 		self.assertIn("tracecore.set_unit.add_bulk_actions(", list_script)
 		self.assertIn("permissions.can_issue", list_script)
+
+	def test_set_unit_form_has_copy_button(self):
+		"""A-155 (P7): sao chép bộ dụng cụ = Cấp Set ID cho bộ mới, điền sẵn loại bộ, khoa, cơ số của bộ đang xem."""
+		script = _read(*SCRIPTS["form"])
+		self.assertIn('__("Copy set")', script)
+		self.assertIn("perms.can_issue", script)
+		for snippet in (
+			"set_type: frm.doc.set_type",
+			"department: frm.doc.department",
+			"max_cycles: frm.doc.max_cycles",
+			"source: frm.doc.name",
+		):
+			self.assertIn(snippet, script)
+		shared = _read(*SCRIPTS["shared"])
+		self.assertIn("opts.department", shared)
+		self.assertIn("opts.max_cycles", shared)
+		self.assertIn("opts.source", shared)
