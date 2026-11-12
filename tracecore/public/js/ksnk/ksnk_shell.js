@@ -98,7 +98,9 @@ const TcKsnk = {
 
 	// nhóm chứa màn đang xem (NAV-06); không có thì chuỗi rỗng
 	groupOf(nav, slug) {
-		const group = ((nav && nav.groups) || []).find((g) => g.items.some((item) => item.slug === slug));
+		const group = ((nav && nav.groups) || []).find((g) =>
+			g.items.some((item) => item.slug === slug)
+		);
 		return group ? group.key : "";
 	},
 
@@ -124,7 +126,9 @@ const TcKsnk = {
 			)}" aria-expanded="${open ? "true" : "false"}" aria-controls="${id}">` +
 			`<span class="tc-ksnk-group-mark" aria-hidden="true">${open ? "▾" : "▸"}</span>` +
 			`<span class="tc-ksnk-group-name">${esc(label)}</span>${count}</button>` +
-			`<div class="tc-ksnk-group-items" id="${id}"${open ? "" : " hidden"}>${itemsHtml}</div></div>`
+			`<div class="tc-ksnk-group-items" id="${id}"${
+				open ? "" : " hidden"
+			}>${itemsHtml}</div></div>`
 		);
 	},
 

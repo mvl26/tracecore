@@ -214,9 +214,13 @@ class TestRailCollapsibleGroups(FrappeTestCase):
 		self.assertNotIn("tc-ksnk-group-count", program.split("</button>")[0])
 
 	def test_explicit_open_group_overrides_active_group(self):
-		out = self._run('emit(groups(TcKsnk.railHtml(nav, "chi-so", "compliance")).map((g) => g.includes("is-collapsed")));')
+		out = self._run(
+			'emit(groups(TcKsnk.railHtml(nav, "chi-so", "compliance")).map((g) => g.includes("is-collapsed")));'
+		)
 		self.assertEqual(out, [True, False, True])
-		none = self._run('emit(groups(TcKsnk.railHtml(nav, "chi-so", "")).map((g) => g.includes("is-collapsed")));')
+		none = self._run(
+			'emit(groups(TcKsnk.railHtml(nav, "chi-so", "")).map((g) => g.includes("is-collapsed")));'
+		)
 		self.assertEqual(none, [True, True, True])
 
 	def test_toggle_opens_clicked_group_or_closes_it(self):
