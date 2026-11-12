@@ -11657,15 +11657,12 @@ Limit Applied,Giới hạn áp dụng,
 Times Exceeded,Số lần vượt,
 Times exceeded,Số lần vượt,
 "{0} rounds, {1} failed, {2} - {3}.","{0} đợt, {1} đợt không đạt, {2} – {3}.",
-From Date,Từ ngày,
-To Date,Đến ngày,
 Medical wastewater,Nước thải y tế,
 Monitoring rounds posted (passed = without exceedance),Đợt quan trắc đã ghi sổ (đạt = không vượt chuẩn),
 {0} period(s) overdue or missing parameters,{0} kỳ quá hạn hoặc thiếu thông số,
 No approved environmental permit covers this point on the sampling date.,Chưa có giấy phép môi trường đã duyệt cho điểm này tại ngày lấy mẫu.,
 Load standard template,Nạp thông số mẫu theo quy chuẩn,
 Technical Standard,Quy chuẩn,
-Column,Cột,
 Frequency (months),Tần suất (tháng),
 Template values are a draft awaiting the hospital expert's review; edit them to match the actual permit before posting.,Giá trị mẫu là bản Nháp chờ chuyên gia bệnh viện duyệt; sửa cho đúng giấy phép thật trước khi ghi sổ.,
 New version,Phiên bản mới,
@@ -11734,7 +11731,6 @@ Point Type,Loại điểm,
 "Inlet = before treatment, reference only (not compared with limits).","Đầu vào = trước xử lý, chỉ tham khảo (không so giới hạn).",
 Outlet,Đầu ra HTXLNT,
 Inlet,Đầu vào HTXLNT,
-Discharge,Điểm xả,
 Treatment System,Hệ thống xử lý nước thải,
 Design Capacity (m3/day),Công suất thiết kế (m³/ngày),
 Receiving Source,Nguồn tiếp nhận,
@@ -11800,7 +11796,6 @@ Version effective,Hiệu lực phiên bản,
 from {0},từ {0},
 "Outlined cell = current period. Status always has text, not only colour.","Ô viền xanh = kỳ hiện tại. Trạng thái luôn có chữ, không chỉ dùng màu.",
 NC suggested,Đề nghị mở NC,
-Add {0},Bổ sung {0},
 limits from {0},giới hạn theo {0},
 Report no · monitoring unit,Số phiếu · Đơn vị QT,
 NC / next step,NC / việc tiếp theo,
@@ -11838,10 +11833,19 @@ Opening a non-conformance is decided by R01 — the suggestion was sent to the h
 Reason for no NC (required to dismiss — recorded in the audit log),Lý do bỏ qua NC (bắt buộc nếu bỏ qua — ghi nhật ký kiểm toán),
 Export wastewater report,Xuất báo cáo nước thải,
 All points,Tất cả điểm,
-Format,Định dạng,
 Point × parameter × round with limits and number of exceedances — an annex for the yearly environmental protection report. TraceCore only exports the data; it does not submit it.,"Bảng điểm × thông số × đợt, kèm giới hạn và số lần vượt — dùng làm phụ lục báo cáo công tác bảo vệ môi trường năm. TraceCore chỉ xuất số liệu, không nộp thay.",
 Export,Xuất,
 Update environmental permit,Cập nhật giấy phép môi trường,
 {0} is approved and locked. Saving changes creates new version V{1}; the current version stays unchanged and points to the new one. Rounds already recorded keep their results.,{0} đã duyệt và bị khóa. Lưu thay đổi sẽ tạo phiên bản mới V{1}; bản hiện hành giữ nguyên và trỏ sang bản mới. Kết quả các đợt đã ghi không đổi.,
 "The draft opens in the permit form: edit the permit number, standard, column, effective date, scan and the parameter rows (point, parameter, limits, frequency, automatic monitoring), then post to approve.","Bản Nháp mở trong form giấy phép: sửa số GPMT, quy chuẩn, cột, ngày hiệu lực, bản scan và các dòng thông số (điểm, thông số, giới hạn, tần suất, quan trắc tự động), rồi ghi sổ để duyệt.",
 Declare another permit instead,Khai báo một giấy phép khác,
+Supplement {0},Bổ sung {0}
+Discharge,Điểm xả,Wastewater Point
+Column,Cột,Wastewater Permit
+Responsible Name,Tên người phụ trách,Wastewater Point
+3,3,Wastewater Permit Parameter
+6,6,Wastewater Permit Parameter
+12,12,Wastewater Permit Parameter
+A,A,Wastewater Permit
+B,B,Wastewater Permit
+C,C,Wastewater Permit

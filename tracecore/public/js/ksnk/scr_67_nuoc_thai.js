@@ -422,7 +422,7 @@ const TcKsnkScr67 = {
 		)
 			return `<button type="button" class="btn btn-default btn-sm" data-action="supplement" data-point="${esc(
 				round.wastewater_point
-			)}">${esc(__("Add {0}", [round.missing.join(", ")]))}</button>`;
+			)}">${esc(__("Supplement {0}", [round.missing.join(", ")]))}</button>`;
 		return "—";
 	},
 

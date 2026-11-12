@@ -85,7 +85,10 @@ class TestScr67Screen(IsolatedTestCase):
 		self.assertIn("NC-ENV-2026-0031", html)
 		self.assertIn('data-action="remonitor" data-point="NT-03" data-name="QTNT-2026-0012"', html)
 		self.assertIn('data-action="supplement" data-point="NT-02"', html)
-		self.assertIn("Add Coliforms", html)
+		# chuỗi riêng "Supplement {0}" (vi "Bổ sung {0}"): "Add {0}" của frappe dịch "Thêm {0}", không đè toàn site
+		self.assertIn("Supplement Coliforms", html)
+		with open(frappe.get_app_path("tracecore", "translations", "vi.csv"), encoding="utf-8") as handle:
+			self.assertIn("Supplement {0},Bổ sung {0}", handle.read())
 
 	def test_fixed_action_bar_has_three_buttons_and_reasons(self):
 		out = self._run(
