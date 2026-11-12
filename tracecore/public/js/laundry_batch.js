@@ -1,3 +1,4 @@
+/* global tracecore */
 // Desk: form Laundry Batch. Nút "Retry consumption" cho R09/R02 khi tiêu hao tự động bị lỗi (thông báo CONSUMPTION_FAILED trỏ về
 // đây, A-78). Chỉ trình bày: server (tracecore.v1.stock.retry_consumption) quyết định và không trừ kho hai lần.
 
@@ -67,6 +68,49 @@ function laundry_show_block(error) {
 	});
 }
 
+// client_ts phải là ISO 8601 có offset: moment().format() trên Desk chỉ ra ngày (frappe đặt moment.defaultFormat)
+function laundry_payload(frm, values) {
+	return {
+		batch: frm.doc.name,
+		dryer: values.dryer,
+		dry_program: values.dry_program || null,
+		dry_temp_c: values.dry_temp_c || null,
+		dry_minutes: values.dry_minutes || null,
+		clean_ok: values.clean_ok === "Pass" ? 1 : 0,
+		dry_ok: values.dry_ok === "Pass" ? 1 : 0,
+		note: values.note || null,
+		deviation_reason: values.deviation_reason || null,
+		client_ts: tracecore.codes.client_ts(),
+	};
+}
+
+// Lý do không hoàn tất: lỗi chặn nghiệp vụ, rồi thông báo server (4xx/5xx), rồi tên exception; cuối cùng câu chung
+function laundry_error(body) {
+	const result = (body && body.message) || {};
+	if (result.error) return result.error;
+	let reason = "";
+	try {
+		const messages = JSON.parse((body && body._server_messages) || "[]");
+		reason = messages
+			.map((raw) => {
+				try {
+					return JSON.parse(raw).message || "";
+				} catch (e) {
+					return String(raw);
+				}
+			})
+			.filter(Boolean)
+			.map((text) => String(text).replace(/<[^>]*>/g, ""))
+			.join(" ");
+	} catch (e) {
+		reason = "";
+	}
+	if (!reason && body && body.exception) {
+		reason = String(body.exception).split(": ").slice(1).join(": ") || String(body.exception);
+	}
+	return { reason: reason || __("Check your permissions and try again.") };
+}
+
 async function laundry_complete(frm, values, dialog) {
 	frappe.dom.freeze();
 	try {
@@ -78,18 +122,7 @@ async function laundry_complete(frm, values, dialog) {
 				"X-Frappe-CSRF-Token": frappe.csrf_token,
 				"X-Idempotency-Key": laundry_uuid(),
 			},
-			body: JSON.stringify({
-				batch: frm.doc.name,
-				dryer: values.dryer,
-				dry_program: values.dry_program || null,
-				dry_temp_c: values.dry_temp_c || null,
-				dry_minutes: values.dry_minutes || null,
-				clean_ok: values.clean_ok === "Pass" ? 1 : 0,
-				dry_ok: values.dry_ok === "Pass" ? 1 : 0,
-				note: values.note || null,
-				deviation_reason: values.deviation_reason || null,
-				client_ts: moment().format(),
-			}),
+			body: JSON.stringify(laundry_payload(frm, values)),
 		});
 		const body = await response.json().catch(() => ({}));
 		const result = body.message || {};
@@ -101,9 +134,7 @@ async function laundry_complete(frm, values, dialog) {
 			});
 			frm.reload_doc();
 		} else {
-			laundry_show_block(
-				result.error || { reason: __("Check your permissions and try again.") }
-			);
+			laundry_show_block(laundry_error(body));
 		}
 	} catch (e) {
 		laundry_show_block({
