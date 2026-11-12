@@ -174,7 +174,7 @@ const nav = {
 		{key: "hai", label: "HAI", items: []},
 	],
 };
-const groups = (html) => html.split('<div class="tc-ksnk-group').slice(1);
+const groups = (html) => html.split(/<div class="tc-ksnk-group(?=[ "])/).slice(1);
 """
 
 
