@@ -132,6 +132,8 @@ def summary(set_unit: str) -> dict:
 		"components": parts,
 		"components_total": sum(part["qty"] for part in parts),
 		"ci_class": frappe.db.get_value("Instrument Set Type", row.set_type, "ci_class") or "",
+		# A-156 (FR-M1-03.10): quy trình xử lý của loại bộ (Steam / Plasma / Disinfection)
+		"processing_route": frappe.db.get_value("Instrument Set Type", row.set_type, "method") or "",
 		"tag_verified_on": row.tag_verified_on,
 		"tag_verified_by": row.tag_verified_by,
 		"code_status": frappe.db.get_value("Code Registry", row.name, "status"),

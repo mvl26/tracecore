@@ -48,3 +48,16 @@ class TestSetUnitComponents(IsolatedTestCase):
 		summary = set_history.summary(bare)
 		self.assertEqual(summary["components"], [])
 		self.assertEqual(summary["components_total"], 0)
+
+	def test_summary_carries_the_set_type_processing_route(self):
+		# A-156 (FR-M1-03.10): form Set Unit hiện Quy trình xử lý của loại bộ
+		self.assertEqual(set_history.summary(self.unit)["processing_route"], "Steam")
+		frappe.db.set_value("Instrument Set Type", self.set_type, "method", "Plasma")
+		self.assertEqual(set_history.summary(self.unit)["processing_route"], "Plasma")
+
+	def test_set_unit_form_shows_the_processing_route_row(self):
+		path = frappe.get_app_path("tracecore", "instrument", "doctype", "set_unit", "set_unit.js")
+		with open(path, encoding="utf-8") as handle:
+			script = handle.read()
+		self.assertIn('__("Processing Route", null, "Instrument Set Type")', script)
+		self.assertIn('__(s.processing_route, null, "Instrument Set Type")', script)
