@@ -142,6 +142,12 @@ def overview(month=None):
 		order_by="sampled_on desc",
 		limit=20,
 	)
+	# Mẫu lại Đạt đã gỡ cờ vùng: vẫn chờ quyết định NC (BRU-ENV-003) nhưng màn không được nói vùng còn giữ cờ
+	resolved = {}
+	for row in pending:
+		if row.environment_zone not in resolved:
+			resolved[row.environment_zone] = zones.resolving_resamples(row.environment_zone)
+		row["resolved_by"] = resolved[row.environment_zone].get(row.name)
 	result.update(
 		{
 			"can_decide": samples.can_decide(),
