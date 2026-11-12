@@ -127,15 +127,24 @@ def compute_expiry(packed_on, pack_type, set_type):
 def pack_types(set_type):
 	"""Loại gói chọn được cho `set_type`: Item Packaging còn dùng, có hạn lưu > 0, đúng phương pháp của bộ (A-97).
 
-	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days", "material", "is_default"}``; ``material`` là nhóm
-	vật liệu gói (A-122: ``Rigid Container`` / ``Sealed Pouch`` / ``Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng
-	droplist có nhóm. Loại gói mặc định của loại bộ (nếu còn dùng được) đứng đầu và có ``is_default``; các loại
-	khác theo tên.
+	Mỗi phần tử là ``{"item", "item_name", "shelf_life_days", "material", "pouch_size", "wrap_layers",
+	"is_default"}``; ``material`` là nhóm vật liệu gói (A-122, A-155: ``Rigid Container`` / ``Sealed Pouch`` /
+	``Wrap`` / ``Paper Wrap``, chuỗi rỗng = chưa phân nhóm) để T4 dựng droplist có nhóm; ``pouch_size`` (túi ép) và
+	``wrap_layers`` (giấy bọc) để ghi trên dòng (A-155). Loại gói mặc định của loại bộ (nếu còn dùng được) đứng
+	đầu và có ``is_default``; các loại khác theo tên.
 	"""
 	rows = frappe.get_all(
 		"Item",
 		filters={"tc_item_group_cssd": "Packaging", "disabled": 0, "tc_shelf_life_days": [">", 0]},
-		fields=["name", "item_name", "tc_shelf_life_days", "tc_compatible_method", "tc_pack_material"],
+		fields=[
+			"name",
+			"item_name",
+			"tc_shelf_life_days",
+			"tc_compatible_method",
+			"tc_pack_material",
+			"tc_pouch_size",
+			"tc_wrap_layers",
+		],
 		order_by="item_name asc, name asc",
 	)
 	default, method = frappe.db.get_value("Instrument Set Type", set_type, ["default_pack_type", "method"])
@@ -147,6 +156,8 @@ def pack_types(set_type):
 			"item_name": row.item_name,
 			"shelf_life_days": cint(row.tc_shelf_life_days),
 			"material": row.tc_pack_material or "",
+			"pouch_size": row.tc_pouch_size or "",
+			"wrap_layers": row.tc_wrap_layers or "",
 			"is_default": bool(default) and row.name == default,
 		}
 		for row in rows

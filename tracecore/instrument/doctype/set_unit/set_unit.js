@@ -523,6 +523,18 @@ function tc_su_buttons(frm, ctx) {
 	const group = __("Print tags");
 	const reload = () => tc_su_load(frm);
 	const printable = s.status !== "Disposed" && s.code_status !== "Disabled";
+	// A-155 (P7): sao chép bộ = Cấp Set ID cho bộ mới cùng loại bộ, điền sẵn khoa và cơ số của bộ đang xem;
+	// máy chủ kiểm như Cấp Set ID (quyền R02/R10, BOM hiệu lực, Set ID mới qua core.gs1)
+	if (perms.can_issue) {
+		tc_su_add_button(frm, __("Copy set"), () =>
+			tracecore.set_unit.issue_dialog({
+				set_type: frm.doc.set_type,
+				department: frm.doc.department,
+				max_cycles: frm.doc.max_cycles,
+				source: frm.doc.name,
+			})
+		);
+	}
 	if (perms.can_print && printable) {
 		tc_su_add_button(
 			frm,
