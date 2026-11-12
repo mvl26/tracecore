@@ -157,7 +157,11 @@ class TestStationPage(FrappeTestCase):
 		self.assertIn("response.ok", body)
 
 	def test_desk_loads_hashed_token_bundle(self):
-		self.assertEqual(frappe.get_hooks("app_include_css", app_name="tracecore"), ["tracecore.bundle.css"])
+		# bundle token đứng đầu; sau đó là CSS viết tay của Desk (NAV-05), cũng là bundle có hash
+		self.assertEqual(
+			frappe.get_hooks("app_include_css", app_name="tracecore"),
+			["tracecore.bundle.css", "tc_desk.bundle.css"],
+		)
 		with open(
 			os.path.join(APP_PATH, "public", "css", "tracecore.bundle.css"), encoding="utf-8"
 		) as handle:
