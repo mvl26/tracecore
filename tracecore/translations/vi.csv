@@ -11605,3 +11605,4 @@ Connect to the network and reload the page.,Kết nối mạng rồi tải lại
 No active station has number {0}.,Không có trạm đang dùng nào mang số {0}.,
 Station number {0} is used by several stations: {1}.,Số trạm {0} đang trùng ở nhiều trạm: {1}.,
 "Ask R10 to give each station its own number, or open the address with the station code.","Nhờ quản trị hệ thống đặt số riêng cho từng trạm, hoặc mở địa chỉ theo mã trạm.",
+Total pending: {0},Tổng việc chờ: {0},
