@@ -275,7 +275,8 @@ body.tcf-body .layout-main-section {
 	margin-right: var(--tc-sp-1);
 }
 
-/* màn trạm bên trong khung: rail đã có tên trạm, danh sách trạm, tên người và nút đăng xuất */
+/* màn trạm bên trong khung: rail đã có tên trạm, danh sách trạm, tên người và nút đăng xuất.
+   Nút Menu của màn hẹp giữ nguyên: nó mở thanh phiên (Chi tiết, Thông báo, Quét thẻ khác). */
 .tcf .tc-station {
 	min-height: 0;
 }
@@ -286,7 +287,6 @@ body.tcf-body .layout-main-section {
 }
 
 .tcf .tc-brand,
-.tcf .tc-menu-btn,
 .tcf .tc-station-pills,
 .tcf .tc-net-status,
 .tcf .tc-session-person,

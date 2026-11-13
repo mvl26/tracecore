@@ -67,6 +67,11 @@ const TcFlow = {
 		);
 	},
 
+	// mọi trạm của luồng dụng cụ T1–T8 theo số trạm: rail của kỹ thuật viên và stepper dùng chung
+	flowStations(stations) {
+		return TcFlow.sorted([...TcFlow.ktvStations(stations), ...TcFlow.deptStations(stations)]);
+	},
+
 	// "T1 Tiếp nhận": tên trạm đã có số thì không lặp số (cùng quy tắc hàng nút trạm của Page station)
 	stationLabel(station) {
 		const full = __(station.label || station.name || "");
@@ -76,10 +81,7 @@ const TcFlow = {
 
 	// thứ tự bước T1–T8: mỗi số trạm một ô; state done / current / todo theo trạm đang mở
 	stepper(stations, currentName) {
-		const flow = TcFlow.sorted([
-			...TcFlow.ktvStations(stations),
-			...TcFlow.deptStations(stations),
-		]);
+		const flow = TcFlow.flowStations(stations);
 		const current = flow.find((station) => station.name === currentName);
 		const at = current ? parseInt(current.station_no, 10) || 0 : 0;
 		const steps = [];

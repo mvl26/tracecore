@@ -23,7 +23,7 @@ class TcFlowPage {
 		this.foreign = undefined; // instance của Page station đã mở trong cùng phiên: trả lại khi rời trang
 		this.kitPromise = null;
 		this.pane = "work";
-		this.modeHint = "ktv";
+		this.modeHint = null; // vai trò chọn ở trang đầu; mở thẳng bằng URL thì theo chức năng của trạm
 		this.dept = null; // khoa đang mở ở cổng khoa: {name, label}
 		this.departments = [];
 		this.visible = false;
@@ -372,12 +372,14 @@ class TcFlowPage {
 
 	mode() {
 		if (this.dept) return "dept";
+		// vào bằng thẻ kỹ thuật viên thì rail giữ đủ T1–T8 kể cả khi đang ở trạm sử dụng
+		if (this.modeHint === "ktv") return "ktv";
 		const info = this.stationInfo();
-		return info && info.functions ? TcFlow.mode(info) : this.modeHint;
+		return info && info.functions ? TcFlow.mode(info) : this.modeHint || "ktv";
 	}
 
 	railStations() {
-		const flow = TcFlow.ktvStations(this.catalog);
+		const flow = TcFlow.flowStations(this.catalog);
 		if (!this.cardStations) return flow;
 		const allowed = this.cardStations.map((station) => station.name);
 		const byCard = flow.filter((station) => allowed.includes(station.name));

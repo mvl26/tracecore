@@ -80,6 +80,7 @@ class TestTcFlowShell(FrappeTestCase):
 			"""emit({
 				ktv: TcFlow.ktvStations(stations).map((s) => s.name),
 				dept: TcFlow.deptStations(stations).map((s) => s.name),
+				flow: TcFlow.flowStations(stations).map((s) => s.name),
 				modes: [TcFlow.mode(stations[0]), TcFlow.mode(stations[1]), TcFlow.mode(null)],
 				labels: TcFlow.ktvStations(stations).map((s) => TcFlow.stationLabel(s)),
 			});""",
@@ -87,6 +88,8 @@ class TestTcFlowShell(FrappeTestCase):
 		# trạm đồ vải và trạm chưa có màn không vào danh sách; thứ tự theo số trạm
 		self.assertEqual(out["ktv"], ["TR-001", "TR-002", "TR-005", "TR-05B"])
 		self.assertEqual(out["dept"], ["TR-008"])
+		# rail của kỹ thuật viên có đủ T1 đến T8 như hàng nút trạm của Page station
+		self.assertEqual(out["flow"], ["TR-001", "TR-002", "TR-005", "TR-05B", "TR-008"])
 		self.assertEqual(out["modes"], ["dept", "ktv", "ktv"])
 		self.assertEqual(out["labels"][:2], ["T1 Receiving", "T2 Wash"])
 
@@ -324,6 +327,9 @@ class TestTcFlowPage(FrappeTestCase):
 		self.assertNotIn("gradient", css)
 		self.assertNotIn(":hover", css)
 		self.assertIn("prefers-reduced-motion", css)
+		# màn hẹp: nút Menu của màn trạm phải còn để mở thanh phiên
+		self.assertNotIn(".tc-menu-btn", css)
+		self.assertIn("TcFlow.flowStations(this.catalog)", source)
 		self.assertIn("var(--tc-touch-min)", css)
 		# trạng thái bước không chỉ bằng màu
 		self.assertIn("tcf-step-mark", source)
