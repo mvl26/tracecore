@@ -12,6 +12,7 @@
 > **Amendment A-157 (2026-11-12):** sửa Quy trình xử lý / Loại chỉ thị hóa học của loại bộ ngay trên form Set Unit → mở rộng **FEAT-098**, FR-M1-06.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-158 (2026-11-13):** giao diện người dùng cho luồng xử lý dụng cụ ở URL mới `/app/tc-flow` (Page `tc-flow`, dùng lại nguyên các màn trạm) → **FEAT-099** (module UI, ngoài sprint), FR-M9-31, SCR-68. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-159 (2026-11-13):** ảnh của màn trạm (T2, T3, T5, test hằng ngày) tải qua phiên thẻ bằng RPC `tracecore.v1.station.upload_photo` thay cho `upload_file` của Desk; lỗi phiên báo "Phiên đăng nhập đã hết" → FR-M9-14.1, sửa lỗi theo ticket (không thêm FEAT). Người dùng duyệt ngày 13/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-160 (2026-11-13):** khoa gửi yêu cầu lấy đồ bẩn từ cổng khoa của Page `tc-flow` (DocType `Dirty Return Request`, RPC `tracecore.v1.flow.return_overview` / `request_return`) → **FEAT-100** (module Reprocessing + UI, ngoài sprint), FR-M2-26, SCR-69. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
@@ -331,6 +332,21 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 - AC-099-5: Khi người dùng ở cổng khoa mở Gói tại khoa hoặc Tra cứu gói, hệ thống phải hiện gói tại khoa đã chọn (`flow.department_stock`, không cần quét thẻ) và chuỗi sự kiện của gói (`trace.query`); lỗi hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
 - AC-099-7: Khi người dùng mở không gian quản lý, hệ thống phải hiện các phân hệ quản lý mà tài khoản được mở (mặc định Dụng cụ và bộ) và mở danh sách, form, báo cáo hiện có ngay trong khung, không rời `/app/tc-flow`.
 - AC-099-6: Hệ thống không được thay đổi hành vi của `/app/station` và các RPC hiện có.
+
+### FEAT-100 Cổng khoa gửi yêu cầu lấy đồ bẩn về KSNK [A-160]
+
+| FEAT | Mô tả | FR | SCR |
+| --- | --- | --- | --- |
+| FEAT-100 | Mục "Gửi trả đồ bẩn" của cổng khoa trên Page `tc-flow`: bảng bộ có thể trả, tình trạng khi trả, nút gửi yêu cầu, bảng yêu cầu đã gửi hôm nay. DocType `Dirty Return Request` (+ Item), dịch vụ `reprocessing.dirty_return`, RPC `tracecore.v1.flow.return_overview` (GET) và `tracecore.v1.flow.request_return` (POST, `@idempotent`). Không đổi trạng thái bộ, không sửa code tiếp nhận T1. | FR-M2-26 | SCR-69 |
+
+#### Acceptance criteria FEAT-100 [A-160] (EARS)
+
+- AC-100-1: Khi người dùng mở mục Gửi trả đồ bẩn của một khoa, hệ thống phải hiện các bộ đang ở khoa (chưa dùng, ghi rõ sẽ tính trả không sử dụng) và bộ đã dùng chờ trả, trừ bộ đã nằm trong yêu cầu đang chờ lấy.
+- AC-100-2: Khi người dùng chọn ít nhất một bộ, chọn tình trạng khi trả và bấm Gửi yêu cầu lấy đồ bẩn, hệ thống phải ghi sổ một `Dirty Return Request` với khoa, người gửi, thời điểm, các bộ và tình trạng, rồi hiện yêu cầu trong bảng Yêu cầu đã gửi hôm nay.
+- AC-100-3: Khi yêu cầu được ghi, hệ thống không được đổi trạng thái Set Unit hay Pack (BRU-FLOW-003).
+- AC-100-4: Nếu không chọn bộ nào, bộ không thuộc khoa, bộ đã có yêu cầu đang chờ hoặc tình trạng không hợp lệ, thì hệ thống phải từ chối và hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
+- AC-100-5: Khi bộ trong yêu cầu được tiếp nhận tại T1 sau thời điểm gửi, hệ thống phải hiện yêu cầu là Đã tiếp nhận (hoặc Đã tiếp nhận một phần).
+- AC-100-6: Khi gửi lại cùng `X-Idempotency-Key`, hệ thống phải trả lại kết quả cũ và không tạo yêu cầu thứ hai; R08 chỉ gửi và xem được yêu cầu của khoa mình.
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
 

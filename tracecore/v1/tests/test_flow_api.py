@@ -1,10 +1,13 @@
 """FEAT-099 (A-158, FR-M9-31): RPC đọc của cổng khoa trên Page tc-flow."""
 
+import uuid
 from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from tracecore.reprocessing import dirty_return
+from tracecore.tests.utils import request_headers
 from tracecore.v1 import flow
 
 
@@ -74,6 +77,58 @@ class TestFlowApi(FrappeTestCase):
 		with patch.object(frappe, "get_roles", return_value=["TC R03"]):
 			with self.assertRaises(frappe.PermissionError):
 				flow._scope()
+
+	def post(self, **kwargs):
+		kwargs.setdefault("client_ts", "2026-11-13T15:20:00+07:00")
+		with request_headers({"X-Idempotency-Key": kwargs.pop("key", None) or str(uuid.uuid4())}):
+			return flow.request_return(**kwargs)
+
+	def test_return_overview_lists_candidates_and_todays_requests(self):
+		rows = [{"set_id": "SET-1", "set_name": "A", "cycle_id": "CY-1", "used": True}]
+		sent = [{"request": "YC-1", "status": "Waiting", "set_count": 1, "received_count": 0}]
+		with (
+			patch.object(dirty_return, "candidates", return_value=rows) as candidates,
+			patch.object(dirty_return, "requests_on", return_value=sent),
+		):
+			out = flow.return_overview(self.ward)
+		candidates.assert_called_once_with(self.ward)
+		self.assertEqual((out["candidates"], out["requests"]), (rows, sent))
+		self.assertEqual(out["conditions"][0], "Complete")
+		self.assertNotIn("patient", frappe.as_json(out))
+
+	def test_return_rpcs_keep_the_department_scope(self):
+		with patch.object(flow, "_scope", return_value=self.ward):
+			with self.assertRaises(frappe.PermissionError):
+				flow.return_overview(self.other)
+			with self.assertRaises(frappe.PermissionError):
+				self.post(department=self.other, items="[]")
+		with self.assertRaises(frappe.DoesNotExistError):
+			flow.return_overview(self.office)
+
+	def test_request_return_answers_a_rejection_inline(self):
+		out = self.post(department=self.ward, items="[]")
+		self.assertFalse(out["ok"])
+		self.assertEqual(out["error"]["code"], "NO_SETS")
+		for part in ("title", "reason", "action"):
+			self.assertTrue(out["error"][part])
+
+	def test_request_return_is_idempotent_and_needs_client_ts(self):
+		created = {"request": "YC-TEST", "set_count": 1}
+		key = str(uuid.uuid4())
+		items = '[{"set_id": "SET-1", "condition": "Complete"}]'
+		with (
+			patch.object(dirty_return, "create", return_value=created) as create,
+			patch.object(dirty_return, "candidates", return_value=[]),
+			patch.object(dirty_return, "requests_on", return_value=[]),
+		):
+			first = self.post(department=self.ward, items=items, key=key)
+			again = self.post(department=self.ward, items=items, key=key)
+			self.assertEqual(create.call_count, 1)
+			self.assertEqual(create.call_args.args[:2], (self.ward, items))
+			with self.assertRaises(frappe.ValidationError):
+				self.post(department=self.ward, items=items, client_ts="2026-11-13 15:20:00")
+		self.assertTrue(first["ok"])
+		self.assertEqual((first["request"], again["request"]), ("YC-TEST", "YC-TEST"))
 
 	def test_par_range_sums_the_department_stock_levels(self):
 		rows = [frappe._dict(min_qty=2, max_qty=4), frappe._dict(min_qty=4, max_qty=6)]

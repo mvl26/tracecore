@@ -182,6 +182,42 @@ class TestTcFlowShell(FrappeTestCase):
 		# số trong ô không làm ô co giãn khi đang chạy
 		self.assertIn("tabular-nums", css)
 
+	def test_write_helpers_for_the_pickup_request(self):
+		"""FEAT-100: client_ts ISO 8601 có offset và X-Idempotency-Key dạng UUID v4."""
+		out = run(
+			self,
+			"""const bytes = Array.from({ length: 16 }, (_, index) => index * 16 + 5);
+			emit({
+				ts: TcFlow.clientTs(new Date(2026, 10, 13, 15, 20, 5)),
+				fixed: TcFlow.uuid(bytes),
+				random: [TcFlow.uuid(), TcFlow.uuid()],
+				tones: ["Waiting", "Partly received", "Received"].map((s) => TcFlow.returnTone(s)),
+			});""",
+		)
+		self.assertRegex(out["ts"], r"^2026-11-13T15:20:05[+-]\d{2}:\d{2}$")
+		uuid4 = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		self.assertRegex(out["fixed"], uuid4)
+		for value in out["random"]:
+			self.assertRegex(value, uuid4)
+		self.assertNotEqual(*out["random"])
+		self.assertEqual(out["tones"], ["warn", "info", "pass"])
+
+	def test_return_pane_sends_the_request_through_the_idempotent_rpc(self):
+		html = (PAGE_DIR / "tc_flow.html").read_text(encoding="utf-8")
+		source = (PAGE_DIR / "tc_flow.js").read_text(encoding="utf-8")
+		self.assertIn("tcf-return", html)
+		self.assertIn("tcf-return-body", html)
+		self.assertIn('"tracecore.v1.flow.return_overview"', source)
+		self.assertIn('"tracecore.v1.flow.request_return"', source)
+		self.assertIn('"X-Idempotency-Key"', source)
+		self.assertIn("client_ts: TcFlow.clientTs()", source)
+		# gửi lại sau lỗi mạng dùng lại đúng khóa và nội dung cũ, không tạo yêu cầu thứ hai
+		self.assertIn("this.returnAttempt", source)
+		# thứ tự mục cổng khoa như prototype: bộ tại khoa, quét sử dụng, gửi trả đồ bẩn, tra cứu gói
+		self.assertIn('["stock", "work", "return", "trace"]', source)
+		# ô chọn và ô tình trạng có nhãn cho trình đọc màn hình
+		self.assertIn("aria-label", source[source.index("returnHtml(") :])
+
 	def test_station_kit_is_loaded_in_a_private_scope(self):
 		# script của Page station kết thúc bằng gán vào frappe.pages["station"]; nạp riêng không được để lại dấu vết toàn cục
 		out = run(

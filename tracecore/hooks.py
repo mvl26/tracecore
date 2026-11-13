@@ -452,6 +452,8 @@ doc_events = {
 	"Issue Note": dict(_AUDIT_EVENTS),
 	# quét sử dụng T8 (FEAT-027): mã bệnh nhân (Password) bị bỏ khỏi Audit; bổ sung mã sau ghi sổ (ca cấp cứu)
 	"Usage Record": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	# yêu cầu lấy đồ bẩn khoa gửi KSNK (FEAT-100, A-160): ghi sổ một lần, không hủy, không xóa
+	"Dirty Return Request": dict(_AUDIT_EVENTS),
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),

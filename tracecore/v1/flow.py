@@ -1,15 +1,17 @@
-"""RPC tracecore.v1.flow.* — phần đọc của cổng khoa trên Page tc-flow (FEAT-099, A-158, FR-M9-31).
+"""RPC tracecore.v1.flow.* — cổng khoa trên Page tc-flow (FEAT-099, A-158, FR-M9-31; FEAT-100, A-160, FR-M2-26).
 
-Chỉ đọc, phiên Desk. Khoa lấy từ danh mục khoa nhận cấp phát; gói tại khoa dùng lại
+Phiên Desk. RPC ghi duy nhất là `request_return` (yêu cầu lấy đồ bẩn, `@idempotent`), còn lại chỉ đọc. Khoa lấy từ danh mục khoa nhận cấp phát; gói tại khoa dùng lại
 ``reprocessing.usage.department_overview`` (cùng dữ liệu màn T8). Giới hạn khoa như truy xuất gói:
 R01/R02 xem mọi khoa, R08 chỉ khoa của mình. Không trả mã người bệnh.
 """
 
 import frappe
 from frappe import _
-from frappe.utils import cint
+from frappe.utils import cint, today
 
-from tracecore.reprocessing import issuing
+from tracecore.core.client_time import parse_client_ts
+from tracecore.core.idempotency import idempotent
+from tracecore.reprocessing import dirty_return, issuing
 from tracecore.reprocessing import usage as usage_service
 
 SEE_ALL_ROLES = {"TC R01", "TC R02", "System Manager"}
@@ -106,13 +108,8 @@ def _recall_pending(department):
 	)
 
 
-@frappe.whitelist(methods=["GET"])
-def department_stock(department=None):
-	"""Bộ tại khoa và cơ số: 4 số liệu, gói đang tại khoa (kèm Set ID, loại bộ), gói đã dùng chờ trả.
-
-	``counts.held`` đếm như tồn khoa của cấp phát (gói `Issued` của khoa); ``counts.waiting_return`` là gói đã dùng mà
-	bộ chưa về trạm tiếp nhận (chưa có chứng từ "yêu cầu trả đồ bẩn" riêng).
-	"""
+def _ward(department):
+	"""Tên khoa nhận cấp phát mà người gọi được mở; không có → DoesNotExistError, khoa khác → PermissionError."""
 	scope = _scope()
 	name = (
 		frappe.db.get_value("Department", {**WARD_FILTERS, "name": department}, "name")
@@ -123,6 +120,46 @@ def department_stock(department=None):
 		frappe.throw(_("Department {0} does not exist.").format(department or "-"), frappe.DoesNotExistError)
 	if scope is not None and scope != name:
 		frappe.throw(_("You can only see the packs of your own department."), frappe.PermissionError)
+	return name
+
+
+@frappe.whitelist(methods=["GET"])
+def return_overview(department=None):
+	"""Gửi trả đồ bẩn (FEAT-100, FR-M2-26): bộ có thể trả và yêu cầu khoa đã gửi hôm nay."""
+	name = _ward(department)
+	return {
+		"ok": True,
+		"department": name,
+		"conditions": list(dirty_return.CONDITIONS),
+		"candidates": dirty_return.candidates(name),
+		"requests": dirty_return.requests_on(name, today()),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def request_return(department=None, items=None, client_ts=None):
+	"""Khoa gửi yêu cầu lấy đồ bẩn cho các bộ đã chọn; không đổi trạng thái bộ (BRU-FLOW-003).
+
+	Từ chối nghiệp vụ trả ``{"ok": false, "error": {code, title, reason, action}}`` (mã HTTP 200) để trang hiện
+	alert inline; thành công trả tên yêu cầu và danh sách mới như `return_overview`.
+	"""
+	name = _ward(department)
+	try:
+		created = dirty_return.create(name, items, parse_client_ts(client_ts))
+	except dirty_return.ReturnRejected as error:
+		return {"ok": False, "error": error.as_dict()}
+	return {**return_overview(name), **created}
+
+
+@frappe.whitelist(methods=["GET"])
+def department_stock(department=None):
+	"""Bộ tại khoa và cơ số: 4 số liệu, gói đang tại khoa (kèm Set ID, loại bộ), gói đã dùng chờ trả.
+
+	``counts.held`` đếm như tồn khoa của cấp phát (gói `Issued` của khoa); ``counts.waiting_return`` là gói đã dùng mà
+	bộ chưa về trạm tiếp nhận (chưa có chứng từ "yêu cầu trả đồ bẩn" riêng).
+	"""
+	name = _ward(department)
 	overview = usage_service.department_overview(name)
 	return {
 		"ok": True,

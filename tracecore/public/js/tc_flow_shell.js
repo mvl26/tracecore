@@ -129,6 +129,44 @@ const TcFlow = {
 		return Math.round(to * (1 - Math.pow(1 - at, 2)));
 	},
 
+	// client_ts của RPC ghi: ISO 8601 giờ máy kèm offset (vd 2026-11-13T15:20:00+07:00)
+	clientTs(date) {
+		const at = date || new Date();
+		const offset = -at.getTimezoneOffset();
+		const pad = (value) => String(value).padStart(2, "0");
+		const local = new Date(at.getTime() + offset * 60000).toISOString().slice(0, 19);
+		const size = Math.abs(offset);
+		return `${local}${offset < 0 ? "-" : "+"}${pad(Math.floor(size / 60))}:${pad(size % 60)}`;
+	},
+
+	// X-Idempotency-Key: UUID v4; `bytes` (16 số 0..255) chỉ truyền trong test
+	uuid(bytes) {
+		const source =
+			bytes ||
+			(typeof crypto !== "undefined" && crypto.getRandomValues
+				? Array.from(crypto.getRandomValues(new Uint8Array(16)))
+				: Array.from({ length: 16 }, () => Math.floor(Math.random() * 256)));
+		const hex = source.map((value, index) => {
+			let byte = value & 255;
+			if (index === 6) byte = (byte & 15) | 64;
+			if (index === 8) byte = (byte & 63) | 128;
+			return byte.toString(16).padStart(2, "0");
+		});
+		return [
+			hex.slice(0, 4).join(""),
+			hex.slice(4, 6).join(""),
+			hex.slice(6, 8).join(""),
+			hex.slice(8, 10).join(""),
+			hex.slice(10).join(""),
+		].join("-");
+	},
+
+	// trạng thái yêu cầu lấy đồ bẩn → tông badge và có kèm số bộ đã nhận hay không
+	returnTone(status) {
+		if (status === "Received") return "pass";
+		return status === "Waiting" ? "warn" : "info";
+	},
+
 	// mã gói CY-… tra theo Cycle ID, còn lại tra theo Set ID
 	traceArgs(raw) {
 		const code = String(raw || "").trim();

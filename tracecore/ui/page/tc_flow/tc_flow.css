@@ -477,6 +477,48 @@ body.tcf-body .layout-main-section {
 	background: var(--tc-warn-fill);
 }
 
+.tcf-badge[data-tone="pass"] {
+	background: var(--tc-pass);
+}
+
+/* ---- Gửi trả đồ bẩn về KSNK ---- */
+.tcf-check-cell {
+	text-align: center;
+}
+
+.tcf-check {
+	width: var(--tc-checkbox-station);
+	height: var(--tc-checkbox-station);
+	margin: var(--tc-sp-1-5);
+	accent-color: var(--tc-primary);
+}
+
+.tcf-table .tcf-select {
+	margin-bottom: 0;
+}
+
+.tcf-return-send {
+	margin-top: var(--tc-sp-3);
+}
+
+.tcf-note {
+	margin: var(--tc-sp-3) 0 0;
+	color: var(--tc-text-2);
+}
+
+.tcf-done {
+	margin: 0 0 var(--tc-sp-2-5);
+	padding: var(--tc-sp-2) var(--tc-sp-3);
+	border-left: var(--tc-bw-kpi) solid var(--tc-pass);
+	background: var(--tc-zebra);
+	color: var(--tc-text-heading);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tcf-return-body .tcf-card {
+	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) both;
+}
+
 .tcf-scan {
 	display: flex;
 	align-items: stretch;

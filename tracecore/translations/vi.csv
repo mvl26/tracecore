@@ -11968,3 +11968,48 @@ The server did not accept the photo {0} for this login.,Máy chủ không nhận
 No connection to the server: the file {0} was not uploaded.,Không kết nối được máy chủ: tệp {0} chưa được tải lên.,
 Server error ({0}): the file {1} was not uploaded.,Lỗi máy chủ ({0}): tệp {1} chưa được tải lên.,
 "Choose the photo again. If it fails again, call R10.","Chọn lại ảnh. Nếu vẫn lỗi, gọi quản trị hệ thống.",
+Return dirty sets to CSSD,Gửi trả đồ bẩn về KSNK
+Return dirty sets,Gửi trả đồ bẩn
+Offline: sending a pickup request needs a connection.,Ngoại tuyến: cần kết nối để gửi yêu cầu lấy đồ bẩn.
+Could not load the sets that can be returned,Không tải được danh sách bộ có thể trả
+Sets that can be returned,Bộ có thể trả
+waiting to be returned,chờ trả
+not used: it will count as returned unused,chưa dùng — sẽ tính trả không sử dụng
+At department,Tại khoa,Dirty Return
+Choose set {0},Chọn bộ {0}
+Condition on return of set {0},Tình trạng khi trả của bộ {0}
+Condition on return,Tình trạng khi trả
+Complete,Đủ,Dirty Return
+Missing instruments,Thiếu dụng cụ,Dirty Return
+Damaged,Hỏng,Dirty Return
+Sharps inside,Có vật sắc nhọn,Dirty Return
+Send pickup request,Gửi yêu cầu lấy đồ bẩn
+No set of the department is waiting to be returned.,Khoa không có bộ nào chờ trả.
+The request is only a notice; the set status changes only when the technician scans it at receiving T1 (BRU-FLOW-003).,Yêu cầu chỉ là thông báo; trạng thái bộ chỉ đổi khi KTV quét tiếp nhận tại T1 (BRU-FLOW-003).
+Requests sent today,Yêu cầu đã gửi hôm nay
+Sent at,Gửi lúc
+Sent by,Người gửi
+No request was sent today.,Hôm nay chưa gửi yêu cầu nào.
+Received at T1,Đã tiếp nhận tại T1
+Partly received ({0}/{1}),Đã tiếp nhận một phần ({0}/{1})
+Waiting for CSSD pickup,Chờ KSNK lấy
+The pickup request was not sent,Chưa gửi được yêu cầu lấy đồ bẩn
+No set was chosen.,Chưa chọn bộ nào.
+"Tick at least one set, then send the request again.",Chọn ít nhất một bộ rồi gửi lại yêu cầu.
+Refresh the list and choose again.,Làm mới danh sách rồi chọn lại.
+Request {0} was sent for {1} sets.,Đã gửi yêu cầu {0} cho {1} bộ.
+Check the connection and send the request again.,Kiểm tra kết nối rồi gửi lại yêu cầu.
+The condition on return of set {0} is not valid.,Tình trạng khi trả của bộ {0} không hợp lệ.
+"Choose the condition again, then send the request again.",Chọn lại tình trạng rồi gửi lại yêu cầu.
+Set {0} is in the request twice.,Bộ {0} bị lặp trong yêu cầu.
+"Refresh the list, then send the request again.",Làm mới danh sách rồi gửi lại yêu cầu.
+Set {0} is not at this department or is already in a request waiting for pickup.,Bộ {0} không ở khoa này hoặc đã nằm trong một yêu cầu đang chờ lấy.
+A pickup request can only be created from the department portal.,Yêu cầu lấy đồ bẩn chỉ được tạo từ cổng khoa.
+A pickup request cannot be cancelled; it closes when the sets are received at T1.,Yêu cầu lấy đồ bẩn không hủy được; yêu cầu tự đóng khi bộ được tiếp nhận tại T1.
+A pickup request cannot be deleted.,Yêu cầu lấy đồ bẩn không xóa được.
+Dirty Return Request,Yêu cầu lấy đồ bẩn
+Dirty Return Request Item,Dòng yêu cầu lấy đồ bẩn
+Requested At,Gửi lúc,Dirty Return Request
+Requested By,Người gửi,Dirty Return Request
+Requested By Name,Tên người gửi,Dirty Return Request
+Condition On Return,Tình trạng khi trả,Dirty Return Request Item
