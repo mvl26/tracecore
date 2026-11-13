@@ -1,4 +1,4 @@
-/* global TcFlow */
+/* global TcFlow, TcFlowLead */
 // Page tc-flow (A-158): giao diện người dùng cho luồng xử lý dụng cụ — trang chọn vai trò, rail trạm, stepper T1–T8.
 // Khung này không tự ghi nghiệp vụ: thân mỗi trạm là màn của Page station (lớp TraceCoreStation nạp qua TcFlow.kit),
 // nên phiên thẻ, kiểm năng lực, offline, X-Idempotency-Key và client_ts chạy đúng mã hiện có. Khung chỉ đọc thêm
@@ -37,6 +37,7 @@ class TcFlowPage {
 		this.modules = []; // phân hệ quản lý của tài khoản (navigation.context)
 		this.manage = null; // key phân hệ đang mở ở không gian quản lý
 		this.manageLink = null;
+		this.lead = null; // mục đang mở của khu Trưởng khoa KSNK (FEAT-102)
 		this.visible = false;
 		this.entering = 0;
 		this.root.addEventListener("click", (event) => this.onClick(event));
@@ -57,6 +58,8 @@ class TcFlowPage {
 		const department = TcFlow.departmentParam(window.location.search);
 		const manage = TcFlow.manageParam(window.location.search);
 		if (this.manage || manage) return this.enterManage(this.manage || manage, this.manageLink);
+		const lead = TcFlow.leadParam(window.location.search);
+		if (this.lead || lead) return this.enterLead(this.lead || lead);
 		// Page station mở sau trang này sẽ hủy instance trạm đang giữ (on_page_load của nó): quay lại thì mở lại trạm đó
 		if (this.host && this.host.disposed) {
 			code = code || this.host.station;
@@ -102,7 +105,7 @@ class TcFlowPage {
 	}
 
 	setAddress(station) {
-		const address = TcFlow.path(station, this.dept && this.dept.name, this.manage);
+		const address = TcFlow.path(station, this.dept && this.dept.name, this.manage, this.lead);
 		if (window.location.pathname + window.location.search !== address)
 			window.history.replaceState(window.history.state, "", address);
 	}
@@ -200,6 +203,7 @@ class TcFlowPage {
 	}
 
 	showLanding() {
+		this.lead = null;
 		this.manage = null;
 		this.manageLink = null;
 		this.view("landing");
@@ -311,6 +315,7 @@ class TcFlowPage {
 	async enter(code, mode) {
 		if (mode) this.modeHint = mode;
 		this.manage = null;
+		this.lead = null;
 		if (mode === "ktv") this.dept = null;
 		const turn = ++this.entering;
 		this.pane = "work";
@@ -350,6 +355,7 @@ class TcFlowPage {
 		this.dept = this.departments.find((row) => row.name === department.name) || department;
 		this.modeHint = "dept";
 		this.manage = null;
+		this.lead = null;
 		this.entering += 1;
 		this.pane = "stock";
 		this.view("app");
@@ -415,6 +421,7 @@ class TcFlowPage {
 
 	mode() {
 		if (this.manage) return "manage";
+		if (this.lead) return "lead";
 		if (this.dept) return "dept";
 		// vào bằng thẻ kỹ thuật viên thì rail giữ đủ T1–T8 kể cả khi đang ở trạm sử dụng
 		if (this.modeHint === "ktv") return "ktv";
@@ -434,7 +441,9 @@ class TcFlowPage {
 	render() {
 		if (this.root.dataset.view !== "app") return;
 		if (this.manage) return this.renderManage();
+		if (this.lead) return this.renderLead();
 		this.el(".tcf-manage").hidden = true;
+		this.el(".tcf-lead").hidden = true;
 		const host = this.host;
 		const info = this.stationInfo();
 		const mode = this.mode();
@@ -600,9 +609,11 @@ class TcFlowPage {
 			window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		if (!items.length || reduced) return;
 		const targets = items.map((item) => Number(item.dataset.count));
+		// ô tiền (data-format="vnd") chạy số rồi mới định dạng VND
 		const paint = (progress) =>
 			items.forEach((item, index) => {
-				item.textContent = TcFlow.countAt(targets[index], progress);
+				const value = TcFlow.countAt(targets[index], progress);
+				item.textContent = item.dataset.format === "vnd" ? TcFlow.vnd(value) : value;
 			});
 		const started = performance.now();
 		const tick = (now) => {
@@ -1190,6 +1201,12 @@ class TcFlowPage {
 
 	onChange(event) {
 		if (event.target.closest(".tcf-issue-type")) this.syncIssuePar();
+		// Sổ tiệt khuẩn điện tử: đổi máy hoặc ngày thì nạp lại
+		else if (event.target.closest(".tcf-log-machine, .tcf-log-date") && this.lead === "log") {
+			this.logMachine = this.el(".tcf-log-machine").value || null;
+			this.logDate = this.el(".tcf-log-date").value || null;
+			this.loadLead();
+		}
 	}
 
 	async sendIssue() {
@@ -1395,12 +1412,250 @@ class TcFlowPage {
 		</section>`;
 	}
 
+	// ---- khu Trưởng khoa KSNK (FEAT-102, A-162): 7 mục chỉ đọc; HTML dựng ở TcFlowLead (tc_flow_lead.js) ----
+	enterLead(pane) {
+		this.lead = TcFlow.LEAD_PANES.includes(pane) ? pane : TcFlow.LEAD_PANES[0];
+		this.manage = null;
+		this.manageLink = null;
+		this.dept = null;
+		this.modeHint = null;
+		this.entering += 1;
+		this.pane = "work";
+		this.view("app");
+		this.setAddress(null);
+		this.el(".tcf-status").innerHTML = "";
+		document.title = `${__("Head of infection control")} – TraceCore`;
+		this.render();
+		this.loadLead();
+	}
+
+	leadHelpers() {
+		return {
+			esc: tcfEsc,
+			day: (value) => (value ? frappe.datetime.str_to_user(String(value).slice(0, 10)) : ""),
+			time: (value) => (value ? frappe.datetime.str_to_user(value) : ""),
+			hour: (value) => (value ? String(value).slice(11, 16) : ""),
+		};
+	}
+
+	renderLead() {
+		for (const pane of [
+			"host",
+			"stock",
+			"return",
+			"issue",
+			"recall",
+			"linen",
+			"trace",
+			"manage",
+		])
+			this.el(`.tcf-${pane}`).hidden = true;
+		this.el(".tcf-lead").hidden = false;
+		this.el(".tcf-who-name").textContent = frappe.session.user_fullname || "";
+		this.el(".tcf-who-role").textContent = __("Head of infection control");
+		this.el(".tcf-net").textContent = "";
+		const badges = this.leadBadges || {};
+		this.el(".tcf-nav").innerHTML = TcFlow.LEAD_PANES.map((pane) => {
+			const current = pane === this.lead ? ' aria-current="page"' : "";
+			const badge = badges[pane]
+				? ` <span class="tcf-nav-badge">${tcfEsc(
+						badges[pane]
+				  )}<span class="tcf-sr"> ${tcfEsc(__("items waiting"))}</span></span>`
+				: "";
+			return `<button type="button" class="tcf-nav-item" data-action="tcf-lead-pane"
+				data-pane="${pane}"${current}>${tcfEsc(TcFlowLead.label(pane))}${badge}</button>`;
+		}).join("");
+		this.el(".tcf-lead .tcf-crumb").textContent = [
+			__("Home"),
+			__("Head of infection control"),
+			TcFlowLead.label(this.lead),
+		].join(" › ");
+		this.el(".tcf-lead h2").textContent = this.leadTitle || TcFlowLead.label(this.lead);
+	}
+
+	setLeadPane(pane) {
+		if (!TcFlow.LEAD_PANES.includes(pane)) return;
+		this.lead = pane;
+		this.leadTitle = null;
+		this.setAddress(null);
+		this.render();
+		this.loadLead();
+	}
+
+	// tham số của mục: tháng của Giá thành, máy và ngày của Sổ tiệt khuẩn
+	leadArgs(pane) {
+		if (pane === "costs" && this.leadMonth) return { month: this.leadMonth };
+		if (pane === "log") {
+			const args = {};
+			if (this.logMachine) args.equipment = this.logMachine;
+			if (this.logDate) args.date = this.logDate;
+			return args;
+		}
+		return {};
+	}
+
+	leadTitleFor(pane, data, h) {
+		if (pane === "overview") return __("Today's overview — {0}", [h.day(data.date)]);
+		if (pane === "costs")
+			return __("Reprocessing cost — month {0}", [TcFlowLead.monthText(data.month)]);
+		if (pane === "log") return __("Electronic sterilization log — {0}", [h.day(data.date)]);
+		return TcFlowLead.label(pane);
+	}
+
+	// nạp một mục: đủ offline / loading / error / empty (empty do từng bảng tự hiện)
+	async loadLead() {
+		const pane = this.lead;
+		if (!pane) return;
+		const box = this.el(".tcf-lead-body");
+		const tools = this.el(".tcf-lead-tools");
+		const h = this.leadHelpers();
+		const stale = () => this.lead !== pane;
+		if (!navigator.onLine) {
+			box.innerHTML = `<p class="tcf-empty tcf-offline">${tcfEsc(
+				__("Offline: this page needs a connection.")
+			)}</p>`;
+			return;
+		}
+		box.innerHTML = this.loadingHtml();
+		if (pane !== "costs" && pane !== "log") tools.innerHTML = "";
+		try {
+			const data = await this.get(TcFlowLead.PANES[pane].method, this.leadArgs(pane));
+			if (stale()) return;
+			this.leadData = data;
+			box.innerHTML = TcFlowLead[`${pane}Html`](h, data);
+			if (pane === "costs") {
+				this.leadMonth = data.month;
+				tools.innerHTML = TcFlowLead.costsToolsHtml(h, data.month);
+			} else if (pane === "log") {
+				this.logDate = data.date;
+				tools.innerHTML = TcFlowLead.logToolsHtml(h, data);
+			}
+			if (pane === "overview") this.leadBadges = TcFlowLead.badges(data);
+			this.leadTitle = this.leadTitleFor(pane, data, h);
+			this.render();
+			this.countUp(box);
+		} catch (error) {
+			if (stale()) return;
+			box.innerHTML = this.alertHtml(
+				__("Could not load this page"),
+				this.connectionReason(error),
+				__("Check the connection and try again."),
+				"tcf-lead-refresh"
+			);
+		}
+	}
+
+	// duyệt / từ chối ghi đè cơ số: RPC hiện có của UC-31 (PIN), không viết RPC ghi mới
+	openOverride(button) {
+		const slot = this.el(".tcf-override-form");
+		if (!slot) return;
+		slot.innerHTML = TcFlowLead.overrideFormHtml(
+			this.leadHelpers(),
+			button.dataset.kind,
+			button.dataset.override,
+			TcFlow.clientTs().slice(0, 10)
+		);
+		this.paneAlert("override");
+		const first = slot.querySelector(".tcf-input");
+		if (first) first.focus();
+	}
+
+	async sendOverride() {
+		const form = this.el(".tcf-override-box");
+		if (!form || this.overrideSending) return;
+		const approve = form.dataset.kind === "approve";
+		const failed = approve
+			? __("The override was not approved")
+			: __("The override was not rejected");
+		const value = (name) => {
+			const input = form.querySelector(`.tcf-override-${name}`);
+			return input ? input.value.trim() : "";
+		};
+		if (!navigator.onLine) {
+			this.paneAlert(
+				"override",
+				failed,
+				__("Offline", null, "TraceCore Launcher") +
+					": " +
+					__("No connection to the server."),
+				__("Check the connection and try again.")
+			);
+			return;
+		}
+		const args = {
+			override: form.dataset.override,
+			reason: value("reason"),
+			pin: value("pin"),
+		};
+		if (approve) {
+			args.extra_cycles = value("cycles");
+			args.valid_until = value("until");
+		}
+		const button = form.querySelector('[data-action="tcf-override-send"]');
+		this.overrideSending = true;
+		button.disabled = true;
+		this.paneAlert("override");
+		const blocked = (body) => {
+			const error = (body && body.error) || {};
+			this.paneAlert(
+				"override",
+				error.title || failed,
+				error.reason || "",
+				error.action || __("Check the decision, then send it again.")
+			);
+		};
+		try {
+			const result = await this.post(
+				`tracecore.v1.par.override.${approve ? "approve" : "reject"}`,
+				args,
+				TcFlow.uuid()
+			);
+			if (result && result.ok) {
+				this.leadBadges = null;
+				this.loadLead();
+			} else blocked(result);
+		} catch (error) {
+			if (error.body && error.body.ok === false) blocked(error.body);
+			else
+				this.paneAlert(
+					"override",
+					failed,
+					this.connectionReason(error),
+					__("Check the connection and try again.")
+				);
+		} finally {
+			this.overrideSending = false;
+			button.disabled = false;
+			const pin = form.querySelector(".tcf-override-pin");
+			if (pin) pin.value = "";
+		}
+	}
+
+	onLeadClick(action, button) {
+		if (action === "tcf-lead") this.enterLead(TcFlow.LEAD_PANES[0]);
+		else if (action === "tcf-lead-pane") this.setLeadPane(button.dataset.pane);
+		else if (action === "tcf-lead-refresh") this.loadLead();
+		else if (action === "tcf-lead-month") {
+			this.leadMonth = button.dataset.month;
+			this.loadLead();
+		} else if (action === "tcf-override-open") this.openOverride(button);
+		else if (action === "tcf-override-cancel") {
+			this.el(".tcf-override-form").innerHTML = "";
+			this.paneAlert("override");
+		} else if (action === "tcf-override-send") this.sendOverride();
+		else if (action === "tcf-log-report")
+			window.open(TcFlowLead.logReportUrl(this.leadData || {}), "_blank", "noopener");
+		else return false;
+		return true;
+	}
+
 	// ---- quản lý: các phân hệ của trang quản lý (Dụng cụ và bộ, ...) trong khung mới ----
 	// Danh sách phân hệ và link lấy từ navigation.context (đúng quyền của tài khoản). Danh sách, form, báo cáo là màn
 	// Desk hiện có, mở ngay trong khung này (iframe cùng origin, ẩn thanh trên của Desk) nên đủ chức năng thêm/sửa/in.
 	enterManage(key, link) {
 		this.manage = key || "instruments";
 		this.manageLink = link || null;
+		this.lead = null;
 		this.dept = null;
 		this.modeHint = null;
 		this.entering += 1;
@@ -1431,6 +1686,7 @@ class TcFlowPage {
 		this.el(".tcf-recall").hidden = true;
 		this.el(".tcf-linen").hidden = true;
 		this.el(".tcf-trace").hidden = true;
+		this.el(".tcf-lead").hidden = true;
 		this.el(".tcf-manage").hidden = false;
 		this.el(".tcf-who-name").textContent = __("Management");
 		this.el(".tcf-who-role").textContent = frappe.session.user_fullname || "";
@@ -1521,11 +1777,9 @@ class TcFlowPage {
 	}
 
 	onManageClick(action, button) {
-		if (action === "tcf-manage") {
-			// thẻ Trưởng khoa KSNK mở trang chủ quản lý của Desk (người dùng yêu cầu 13/11/2026);
-			// không gian quản lý trong khung vẫn mở được bằng địa chỉ ?manage=<phân hệ>
-			window.location.assign("/app/tracecore");
-		} else if (action === "tcf-module") {
+		// thẻ Trưởng khoa KSNK mở khu Trưởng khoa trong khung (A-162), không chuyển sang trang quản lý của Desk;
+		// không gian quản lý trong khung vẫn mở được bằng địa chỉ ?manage=<phân hệ>
+		if (action === "tcf-module") {
 			this.manage = button.dataset.key;
 			this.manageLink = null;
 			this.setAddress(null);
@@ -1558,6 +1812,7 @@ class TcFlowPage {
 		if (!button || button.disabled) return;
 		const action = button.dataset.action;
 		if (this.onManageClick(action, button)) return;
+		if (this.onLeadClick(action, button)) return;
 		if (action === "tcf-catalog-retry") this.loadCatalog();
 		else if (action === "tcf-enter") {
 			const code = this.el(`#tcf-${button.dataset.mode}-station`).value;

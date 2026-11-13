@@ -701,8 +701,107 @@ output.tcf-input {
 	margin-top: var(--tc-sp-2);
 }
 
+/* ---- khu Trưởng khoa KSNK (FEAT-102, A-162) ---- */
+.tcf-badge[data-tone="fail"] {
+	background: var(--tc-fail);
+}
+
+.tcf-kpi[data-tone="fail"] {
+	border-left-color: var(--tc-fail);
+	background: var(--tc-fail-tint);
+}
+
+.tcf-lead .tcf-title h2 {
+	flex: 1;
+}
+
+.tcf-lead-tools {
+	display: flex;
+	align-items: center;
+	gap: var(--tc-touch-gap);
+}
+
+.tcf-lead-tools .tcf-select,
+.tcf-lead-tools .tcf-input {
+	width: auto;
+	margin-bottom: 0;
+}
+
+.tcf-decisions {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tcf-decision {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--tc-sp-3);
+	margin-bottom: var(--tc-sp-2);
+	padding: var(--tc-sp-2-5) var(--tc-sp-3);
+	border-left: var(--tc-bw-alert) solid var(--tc-warn);
+	border-radius: 0 var(--tc-r-sm) var(--tc-r-sm) 0;
+	background: var(--tc-zebra);
+}
+
+.tcf-decision[data-tone="fail"] {
+	border-left-color: var(--tc-fail);
+	background: var(--tc-fail-tint);
+}
+
+.tcf-decision .tcf-btn {
+	flex: none;
+}
+
+.tcf-two {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--tc-sp-3);
+	align-items: start;
+}
+
+.tcf-lead-note {
+	margin: 0 0 var(--tc-sp-3);
+	padding: var(--tc-sp-2-5) var(--tc-sp-3);
+	border-left: var(--tc-bw-alert) solid var(--tc-primary);
+	border-radius: 0 var(--tc-r-sm) var(--tc-r-sm) 0;
+	background: var(--tc-primary-soft);
+}
+
+.tcf-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tc-touch-gap);
+}
+
+.tcf-card > .tcf-actions,
+.tcf-override-box > .tcf-actions {
+	margin-top: var(--tc-sp-3);
+}
+
+.tcf-override-box {
+	margin-top: var(--tc-sp-3);
+	padding: var(--tc-sp-3);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-radius: var(--tc-r-lg);
+	background: var(--tc-zebra);
+}
+
+.tcf-override-box h4 {
+	margin: 0 0 var(--tc-sp-2-5);
+	color: var(--tc-text-heading);
+	font-weight: var(--tc-fw-bold);
+}
+
+.tcf-lead-body .tcf-kpi,
+.tcf-lead-body .tcf-card {
+	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) backwards;
+}
+
 @media (max-width: 900px) {
 	.tcf-roles,
+	.tcf-two,
 	.tcf-kpis {
 		grid-template-columns: 1fr;
 	}

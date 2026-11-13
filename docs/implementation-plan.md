@@ -14,6 +14,7 @@
 > **Amendment A-159 (2026-11-13):** ảnh của màn trạm (T2, T3, T5, test hằng ngày) tải qua phiên thẻ bằng RPC `tracecore.v1.station.upload_photo` thay cho `upload_file` của Desk; lỗi phiên báo "Phiên đăng nhập đã hết" → FR-M9-14.1, sửa lỗi theo ticket (không thêm FEAT). Người dùng duyệt ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-160 (2026-11-13):** khoa gửi yêu cầu lấy đồ bẩn từ cổng khoa của Page `tc-flow` (DocType `Dirty Return Request`, RPC `tracecore.v1.flow.return_overview` / `request_return`) → **FEAT-100** (module Reprocessing + UI, ngoài sprint), FR-M2-26, SCR-69. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-161 (2026-11-13):** ba mục còn lại của cổng khoa trên Page `tc-flow`: Xác nhận thu hồi, Đề nghị cấp bộ dụng cụ (DocType `Set Issue Request`), Đồ vải đã nhận → **FEAT-101** (module Reprocessing + Linen + UI, ngoài sprint), FR-M2-27, FR-M9-32, SCR-70..72. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-162 (2026-11-13):** khu Trưởng khoa KSNK trên Page `tc-flow` (7 mục của prototype #17, RPC chỉ đọc `tracecore.v1.lead.*`, duyệt ghi đè qua RPC hiện có) → **FEAT-102** (module Admin Reports + UI, ngoài sprint), FR-M9-33, SCR-73. Thẻ Trưởng khoa KSNK không còn chuyển sang `/app/tracecore`. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
@@ -365,6 +366,24 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 - AC-101-6: Khi đề nghị được ghi, hệ thống không được đổi trạng thái gói, bộ hay giữ chỗ gói; trạng thái đề nghị suy ra từ phiếu cấp phát T7 sau thời điểm gửi.
 - AC-101-7: Khi người dùng mở Đồ vải đã nhận, hệ thống phải hiện thu gom, trả về (chiếc / kg) và chênh lệch theo ngày và loại của tháng hiện tại, định mức và tồn khoa theo loại, và tỷ lệ chênh lệch tháng so với ngưỡng 5 %.
 - AC-101-8: R08 chỉ xem và gửi được cho khoa của mình; R01/R02 mọi khoa.
+
+### FEAT-102 Khu Trưởng khoa KSNK trong giao diện người dùng [A-162]
+
+| FEAT | Mô tả | FR | SCR |
+| --- | --- | --- | --- |
+| FEAT-102 | Bảy mục của R01 trên Page `tc-flow` (`?lead=<mục>`). RPC chỉ đọc `tracecore.v1.lead.overview`, `overrides`, `recalls`, `costs`, `equipment`, `staff`, `sterilization_log` (ghép số liệu ở `tracecore.v1.lead_board`, dùng lại `admin_reports.dashboard`, `v1.par.check`, `reprocessing.storage`, `reprocessing.issuing`, `admin_reports.sterilization_log`, `costing.entry`). Duyệt / từ chối ghi đè dùng RPC hiện có `par.override.approve` / `reject`. Không DocType mới, không sửa màn trạm, không sửa RPC cũ. | FR-M9-33 | SCR-73 |
+
+#### Acceptance criteria FEAT-102 [A-162] (EARS)
+
+- AC-102-1: Khi người dùng bấm thẻ Trưởng khoa KSNK ở trang chọn vai trò, hệ thống phải mở khu Trưởng khoa ở mục Tổng quan hôm nay trong cùng khung `/app/tracecore/home?lead=overview`, không chuyển sang `/app/tracecore`.
+- AC-102-2: Khi người dùng mở Tổng quan hôm nay, hệ thống phải hiện việc cần quyết định (đề nghị ghi đè chờ duyệt, lệnh thu hồi còn gói chưa xác nhận, máy khóa hoặc sắp hết hạn kiểm định, chứng chỉ sắp hết hạn), 8 ô số liệu đếm từ dữ liệu thật, sản lượng theo trạm hôm nay và tồn bộ tại khoa so với cơ số kèm chữ Đạt / Dưới tối thiểu / Vượt tối đa.
+- AC-102-3: Khi người dùng mở Ghi đè cơ số, hệ thống phải hiện đề nghị chờ duyệt (bộ, chu trình đã dùng / tối đa, người đề nghị, lý do) và bộ đã đạt hoặc sắp đạt cơ số kèm tháng dự báo thay thế và giá thay; khi R01 duyệt hoặc từ chối với PIN, hệ thống phải gọi `par.override.approve` / `reject` và hiện lỗi chặn inline nếu bị từ chối.
+- AC-102-4: Khi người dùng mở Thu hồi và sự cố, hệ thống phải hiện từng lệnh thu hồi đang mở với Cycle ID, khoa, trạng thái lúc thu hồi (mã bệnh nhân dạng che) và trạng thái xác nhận, và các sự cố / NC chưa đóng với loại, mức, mô tả, trạng thái.
+- AC-102-5: Khi người dùng mở Giá thành tái xử lý, hệ thống phải hiện của tháng: chi phí trung bình một mẻ hấp, chi phí trung bình một gói, số gói đã tính giá, mức thay đổi so với tháng trước, cơ cấu giá thành theo khoản mục, giá thành theo loại bộ và chi phí đầu vào theo khoản mục.
+- AC-102-6: Khi người dùng mở Thiết bị và test hằng ngày, hệ thống phải hiện mỗi máy chưa thanh lý với loại, nguồn dữ liệu chu trình, trạng thái có chữ, test hôm nay, hạn kiểm định (Sắp hết khi ≤ 30 ngày) và chương trình đang dùng.
+- AC-102-7: Khi người dùng mở Nhân sự và chứng chỉ, hệ thống phải hiện nhân viên đang làm có chứng chỉ hoặc năng lực trạm với chứng chỉ, hạn gần nhất, trạm được làm và tình trạng Đạt / Sắp hết N ngày / Hết hạn / Chưa có chứng chỉ.
+- AC-102-8: Khi người dùng mở Sổ tiệt khuẩn điện tử, hệ thống phải hiện các mẻ của máy và ngày đã chọn (giờ, chương trình, tham số, chỉ thị, số gói, người vận hành, giải phóng) và mở báo cáo Sterilization Log cùng bộ lọc để xuất PDF / Excel.
+- AC-102-9: Chỉ R01, R02, System Manager mở được các RPC `lead.*`; mỗi mục có đủ loading / empty / error / offline.
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
 
