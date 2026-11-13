@@ -520,6 +520,8 @@ class T4Packing {
 		this.scanned = id;
 		this.queuedSets = this.queuedSets || new Set();
 		const row = (this.station.offlineData.sets || []).find((item) => item.set_id === id);
+		// SCR-08: lô chỉ thị quét vào ô chính khi đang mở bộ cần chỉ thị (online: pack.scan trả kind = ci)
+		if (!row && this.openSet() && this.ciRequired()) return this.offlineIndicator(raw);
 		if (!row) {
 			return this.reject(
 				{

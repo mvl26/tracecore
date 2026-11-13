@@ -1377,7 +1377,7 @@ Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy c
 "Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
 Scan indicator lot,Quét lô chỉ thị,
 "Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
-Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
+"Scan the Set ID first, then scan the indicator lot.","Quét Set ID trước, rồi quét lô chỉ thị.",
 "Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
 raw and open_set must be strings.,raw và open_set phải là chuỗi.,
 Absolute Expires At,Thời điểm hết hạn tối đa,Station Session

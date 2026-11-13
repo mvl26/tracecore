@@ -154,8 +154,22 @@ class PackApiCase(IsolatedTestCase):
 
 
 class TestScan(PackApiCase):
-	def test_main_scan_never_resolves_indicator_lots_even_with_open_set(self):
+	def test_main_scan_resolves_indicator_lot_when_a_set_is_open(self):
+		# SCR-08 (ux-foundations A2, A-02/D10): lô chỉ thị quét qua ô quét duy nhất ở đầu màn, không cần bấm ô riêng
 		ready = make_t4_ready_set()
+		result = call(pack_api.scan, raw=f" {ready.ci_batch}\t", station=STATION, open_set=ready.set_id)
+		self.assertTrue(result["ok"], result)
+		self.assertEqual((result["kind"], result["ci"]["batch"]), ("ci", ready.ci_batch))
+
+	def test_main_scan_expired_lot_is_rejected_like_the_dedicated_field(self):
+		ready = make_t4_ready_set()
+		expired = make_ci_batch("Steam", expiry_days=-3)
+		result = call(pack_api.scan, raw=expired, station=STATION, open_set=ready.set_id)
+		assert_rejection(self, result, "CI_LOT_EXPIRED", 422)
+
+	def test_main_scan_lot_for_a_set_needing_no_indicator_is_invalid(self):
+		ready = make_t4_ready_set()
+		frappe.db.set_value("Instrument Set Type", ready.set_type, "ci_class", "Not Needed")
 		with patch.object(packing, "resolve_ci_batch", wraps=packing.resolve_ci_batch) as resolver:
 			result = call(pack_api.scan, raw=ready.ci_batch, station=STATION, open_set=ready.set_id)
 			assert_rejection(self, result, "SCAN_INVALID", 422)

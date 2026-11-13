@@ -420,6 +420,46 @@ t4.scanIndicator = (raw) => scanned.push(raw);
 """
 
 
+class TestT4OfflineMainScanIndicator(FrappeTestCase):
+	"""SCR-08: offline, mã lô chỉ thị quét vào ô chính khi đang mở bộ cần chỉ thị → kiểm như ô lô riêng."""
+
+	def _run(self, code):
+		return run_js(
+			self,
+			["public/js/tc_outbox.js", T4],
+			[["tcScanId", "tcLocalDay"], ["T4Packing"]],
+			FAKE_STATION
+			+ """
+			const t4 = new T4Packing(makeStation());
+			t4.show = () => {};
+			t4.reject = (error) => { t4.rejected = error.code; };
+			t4.station.offlineData = {sets: [{set_id: "SET-1", context: {}}], ci_batches: [
+				{batch: "LOT-A", method: "Steam", ci_class: "5", expiry: "2099-01-01"}]};
+			"""
+			+ code,
+		)
+
+	def test_lot_scanned_in_main_box_fills_indicator_when_set_open(self):
+		out = self._run(
+			"""t4.ctx = {set: {set_id: "SET-1", method: "Steam"}, ci: {required: true, classes: ["5", "6"]}};
+			t4.offlineScan("LOT-A");
+			emit({ci: t4.ci && t4.ci.batch, rejected: t4.rejected || null});"""
+		)
+		self.assertEqual(out, {"ci": "LOT-A", "rejected": None})
+
+	def test_unknown_code_without_open_set_is_still_rejected(self):
+		out = self._run("""t4.offlineScan("LOT-A"); emit({ci: t4.ci, rejected: t4.rejected});""")
+		self.assertEqual(out, {"ci": None, "rejected": "OFFLINE_SET_UNKNOWN"})
+
+	def test_set_needing_no_indicator_does_not_take_lots(self):
+		out = self._run(
+			"""t4.ctx = {set: {set_id: "SET-1", method: "Steam"}, ci: {required: false, classes: []}};
+			t4.offlineScan("LOT-A");
+			emit({ci: t4.ci, rejected: t4.rejected});"""
+		)
+		self.assertEqual(out, {"ci": None, "rejected": "OFFLINE_SET_UNKNOWN"})
+
+
 class TestT4IndicatorLotPick(FrappeTestCase):
 	"""A-120: chọn tay lô chỉ thị phù hợp với bộ ở T4."""
 
