@@ -1333,7 +1333,7 @@ class TcFlowPage {
 								__("Linen type"),
 								__("Collected (pieces / kg)"),
 								__("Returned (pieces / kg)"),
-								__("Difference"),
+								__("Difference", null, "Linen Flow"),
 						  ])}<tbody>${rows}</tbody></table>`
 						: `<p class="tcf-empty">${tcfEsc(
 								__("No linen was collected or returned this month.")

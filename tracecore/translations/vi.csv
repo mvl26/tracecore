@@ -12057,7 +12057,6 @@ Variance this month: {0}% (alert threshold {1}%).,Chênh lệch tháng: {0}% (ng
 Over the threshold,Vượt ngưỡng
 Collected (pieces / kg),Thu gom (chiếc / kg)
 Returned (pieces / kg),Trả về (chiếc / kg)
-Difference,Chênh lệch
 No linen was collected or returned this month.,Tháng này khoa chưa có lượt thu gom hay trả đồ vải nào.
 The quantity must be a whole number from 1 to {0}.,Số lượng phải là số nguyên từ 1 đến {0}.
 "Enter the quantity again, then send the request again.",Nhập lại số lượng rồi gửi lại đề nghị.
@@ -12077,3 +12076,7 @@ Department Stock At Request,Tồn khoa lúc gửi,Set Issue Request
 Requested At,Gửi lúc,Set Issue Request
 Requested By,Người gửi,Set Issue Request
 Requested By Name,Tên người gửi,Set Issue Request
+Difference,Chênh lệch,Linen Flow
+At department,Tại khoa,Dirty Return
+Sharps inside,Có vật sắc nhọn bên trong,Dirty Return Request Item
+At department,Tại khoa
