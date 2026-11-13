@@ -378,12 +378,11 @@ body.tcf-body .layout-main-section {
 
 .tcf-stock-body .tcf-kpi,
 .tcf-stock-body .tcf-card {
-	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) both;
-	will-change: opacity, transform;
+	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) backwards;
 }
 
 .tcf-stock-body .tcf-table tbody tr {
-	animation: tcf-fade var(--tc-dur-base) var(--tc-ease) both;
+	animation: tcf-fade var(--tc-dur-base) var(--tc-ease) backwards;
 }
 
 .tcf-stock-body .tcf-kpi:nth-child(2) {
@@ -516,7 +515,7 @@ body.tcf-body .layout-main-section {
 }
 
 .tcf-return-body .tcf-card {
-	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) both;
+	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) backwards;
 }
 
 .tcf-scan {

@@ -181,6 +181,9 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertIn("animation: none", reduced)
 		# số trong ô không làm ô co giãn khi đang chạy
 		self.assertIn("tabular-nums", css)
+		# không giữ lớp ghép sau hiệu ứng: will-change và fill forwards làm chữ mờ ở màn hình phóng 125 %
+		self.assertNotIn("will-change", css)
+		self.assertNotRegex(css, r"animation:[^;]*\b(both|forwards)\b")
 
 	def test_write_helpers_for_the_pickup_request(self):
 		"""FEAT-100: client_ts ISO 8601 có offset và X-Idempotency-Key dạng UUID v4."""
