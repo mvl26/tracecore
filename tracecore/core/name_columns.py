@@ -72,6 +72,8 @@ EXISTING_NAME_COLUMN = {
 EXISTING_NAME_COLUMN[("Surgical Surveillance", "procedure_group")] = "group_name"
 # FEAT-095 (A-153): điểm quan trắc nước thải hiện tên điểm; đợt quan trắc đã có `point_name` (fetch tên điểm quan trắc) ngay sau mã điểm
 EXISTING_NAME_COLUMN[("Wastewater Monitoring", "wastewater_point")] = "point_name"
+# FEAT-100 (A-160): dòng yêu cầu lấy đồ bẩn đã có `set_name` (tên bộ) ngay sau Set ID
+EXISTING_NAME_COLUMN[("Dirty Return Request Item", "set_unit")] = "set_name"
 TRACECORE_NAME_FIELD = {**TRACECORE_NAME_FIELD, "Wastewater Point": "point_name"}
 NAME_FIELD = {**NAME_FIELD, "Wastewater Point": "point_name"}
 

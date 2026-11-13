@@ -1,22 +1,10 @@
 {
  "actions": [],
+ "autoname": "YC-.YYYY.-.#####",
  "creation": "2026-11-13 16:00:00.000000",
+ "description": "A department's request for CSSD to pick up dirty instrument sets. It is a notice only: set and pack status change when the technician scans the set at receiving (T1). Created and submitted by the dirty return service only.",
  "doctype": "DocType",
  "engine": "InnoDB",
- "index_web_pages_for_search": 0,
- "links": [],
- "modified": "2026-11-13 16:00:00.000000",
- "modified_by": "Administrator",
- "module": "Reprocessing",
- "owner": "Administrator",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "autoname": "YC-.YYYY.-.#####",
- "naming_rule": "Expression",
- "is_submittable": 1,
- "name": "Dirty Return Request",
- "description": "A department's request for CSSD to pick up dirty instrument sets. It is a notice only: set and pack status change when the technician scans the set at receiving (T1). Created and submitted by the dirty return service only.",
  "field_order": [
   "department",
   "department_name",
@@ -43,8 +31,10 @@
    "search_index": 1
   },
   {
+   "fetch_from": "department.department_name",
    "fieldname": "department_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Department Name",
    "read_only": 1
   },
@@ -110,6 +100,15 @@
    "read_only": 1
   }
  ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-14 00:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Dirty Return Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
@@ -121,6 +120,9 @@
   }
  ],
  "search_fields": "department,requested_by_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
  "title_field": "department_name",
  "track_changes": 1
 }
