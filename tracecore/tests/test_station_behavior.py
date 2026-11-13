@@ -246,7 +246,8 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 		)
 		self.assertEqual(out, 120)
 
-	def test_finished_step_notice_is_revealed_once_and_plain_notices_stay_put(self):
+	def test_only_a_new_blocking_error_is_revealed_and_finished_steps_stay_put(self):
+		"""Quét xong trang nhảy lên đầu (13/11/2026): thông báo xong bước không kéo trang về đầu nữa, chỉ lỗi chặn mới."""
 		out = self.run_station(
 			"""
 			let scrolled = 0;
@@ -256,16 +257,44 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 			});
 			const reveal = (notice) => TraceCoreStation.prototype.revealNotice.call(self, notice);
 			reveal({variant: "ok", title: "Photo attached"});
-			const plain = scrolled;
-			const done = {variant: "ok", title: "Test recorded", reveal: true};
-			reveal(done);
-			reveal(done);  // vẽ lại cùng thông báo: không cuộn lại
-			emit({plain, done: scrolled, reveals: self.reveals});
+			reveal({variant: "ok", title: "Testing on machine TB-0010", reveal: true});
+			reveal({variant: "warn", title: "Machine locked", reveal: true});
+			const done = scrolled;
+			const error = {variant: "error", title: "Consumables not confirmed"};
+			reveal(error);
+			reveal(error);  // vẽ lại cùng lỗi: không cuộn lại
+			emit({done, error: scrolled - done, reveals: self.reveals});
 			"""
 		)
-		self.assertEqual(out, {"plain": 0, "done": 1, "reveals": 1})
+		self.assertEqual(out, {"done": 0, "error": 1, "reveals": 1})
 
-	def test_commands_press_in_place_and_daily_test_reveals_finished_steps(self):
+	def test_redraw_puts_command_qr_back_before_anything_reads_the_layout(self):
+		"""Vẽ lại màn xóa QR cạnh nút: trang ngắn đi; đo bố cục (focus, revealNotice) trước khi QR gắn lại thì bị kéo lên."""
+		out = self.run_station(
+			"""
+			const calls = [];
+			const make = (show) => ({
+				result: {dataset: {}, set innerHTML(value) { calls.push("html"); }},
+				form: {classList: {toggle() {}}},
+				commandShowQr: show,
+				decorateCommandButtons() { calls.push("qr"); },
+			});
+			TraceCoreStation.prototype.setState.call(make(true), "result", "<p></p>");
+			const shown = calls.splice(0);
+			TraceCoreStation.prototype.setState.call(make(false), "result", "<p></p>");
+			emit({shown, hidden: calls});
+			"""
+		)
+		self.assertEqual(out, {"shown": ["html", "qr"], "hidden": ["html"]})
+
+	def test_scan_box_focus_never_scrolls_the_page(self):
+		with open(frappe.get_app_path("tracecore", *STATION_JS.split("/")), encoding="utf-8") as handle:
+			station = handle.read()
+		# ô quét dính ở đầu màn: focus mặc định cuộn tới nó, kéo trang đang xem về đầu
+		self.assertFalse("this.input.focus()" in station)
+		self.assertFalse("this.cardInput.focus()" in station)
+
+	def test_commands_press_in_place_and_daily_test_shows_finished_steps_in_the_form(self):
 		with open(frappe.get_app_path("tracecore", *STATION_JS.split("/")), encoding="utf-8") as handle:
 			station = handle.read()
 		for method in ("\tasync pressButtonCode(code) {", "\tasync handleCommandScan(raw) {"):
@@ -281,22 +310,42 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 			+ DT_LOT_MACHINE
 			+ """
 			globalThis.TcRunConsumables = {reset() {}, missing: () => false, payload: () => "[]"};
+			globalThis.tcErrorTitle = (notice) => notice.title;
+			globalThis.tcGuideButton = () => "";
+			let html = "";
+			screen.station.form = element();
+			screen.station.setState = (state, value) => { html = value; };
+			const draw = () => {
+				DailyTestScreen.prototype.show.call(screen);
+				const top = html.slice(html.indexOf('data-region="notice"'), html.indexOf("tc-t6-table"));
+				const form = html.slice(html.indexOf('data-region="dt-form"'));
+				return {top: top.includes("tc-alert"), form: form.includes("tc-alert")};
+			};
 			screen.load = () => {};
 			screen.request = (method, args, onOk) => onOk({locked: 0});
 			const seen = {};
-			screen.form.result = "Pass";
-			screen.recordTest(); seen.record = screen.notice.reveal;
-			screen.selected = "TB-0010"; screen.form.reason = "Ca gap"; screen.form.hours = "2";
-			screen.unlock(); seen.unlock = screen.notice.reveal;
-			screen.form.test_type = "plasma_daily";
-			screen.onAction("dt-end", {dataset: {}}); seen.end = screen.notice.reveal;
+			screen.onAction("dt-end", {dataset: {}});
+			seen.end = {reveal: Boolean(screen.notice.reveal), ...draw()};
 			const before = screen.notice;
 			screen.onAction("dt-result", {dataset: {value: "Pass"}});
 			seen.chipKeepsNotice = screen.notice === before;
+			screen.recordTest();
+			seen.record = {reveal: Boolean(screen.notice.reveal), ...draw()};
+			screen.selected = "TB-0010"; screen.form.reason = "Ca gap"; screen.form.hours = "2";
+			screen.unlock();
+			seen.unlock = {reveal: Boolean(screen.notice.reveal), ...draw()};
+			screen.blocked({title: "Test is not complete", reason: "r", action: "a"});
+			seen.error = draw();
 			emit(seen);
 			""",
 		)
-		self.assertEqual(out, {"record": True, "unlock": True, "end": True, "chipKeepsNotice": True})
+		# xong bước: thông báo nằm trong form của máy, ngay chỗ KTV vừa bấm/quét; trang không bị kéo lên đầu
+		inline = {"reveal": False, "top": False, "form": True}
+		self.assertEqual(out["end"], inline)
+		self.assertEqual(out["record"], inline)
+		self.assertEqual(out["unlock"], inline)
+		self.assertTrue(out["chipKeepsNotice"])
+		self.assertEqual(out["error"], {"top": True, "form": False})  # lỗi chặn vẫn ở đầu màn
 		with open(frappe.get_app_path("tracecore", *DAILY.split("/")), encoding="utf-8") as handle:
 			daily = handle.read()
 		show = daily[daily.index("\tshow() {") :]
