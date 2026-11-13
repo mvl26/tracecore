@@ -59,6 +59,13 @@ class TestFlowApi(FrappeTestCase):
 		# không có trường mã người bệnh
 		self.assertNotIn("patient", " ".join(out.keys()))
 
+	def test_waiting_return_counts_the_sets_in_pickup_requests(self):
+		# ô "Yêu cầu trả đồ bẩn chờ KSNK lấy" khớp với bảng yêu cầu đã gửi: đếm bộ đã gửi mà T1 chưa tiếp nhận
+		with patch.object(dirty_return, "pending_sets", return_value={"SET-1", "SET-2", "SET-3"}) as pending:
+			out = flow.department_stock(self.ward)
+		pending.assert_called_once_with(self.ward)
+		self.assertEqual(out["counts"]["waiting_return"], 3)
+
 	def test_unknown_or_non_ward_department_is_rejected(self):
 		for value in (None, "", "TCF-NOPE", self.office):
 			with self.assertRaises(frappe.DoesNotExistError):

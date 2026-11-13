@@ -157,8 +157,8 @@ def request_return(department=None, items=None, client_ts=None):
 def department_stock(department=None):
 	"""Bộ tại khoa và cơ số: 4 số liệu, gói đang tại khoa (kèm Set ID, loại bộ), gói đã dùng chờ trả.
 
-	``counts.held`` đếm như tồn khoa của cấp phát (gói `Issued` của khoa); ``counts.waiting_return`` là gói đã dùng mà
-	bộ chưa về trạm tiếp nhận (chưa có chứng từ "yêu cầu trả đồ bẩn" riêng).
+	``counts.held`` đếm như tồn khoa của cấp phát (gói `Issued` của khoa); ``counts.waiting_return`` là số bộ
+	khoa đã gửi yêu cầu lấy đồ bẩn mà T1 chưa tiếp nhận (`dirty_return.pending_sets`, FEAT-100).
 	"""
 	name = _ward(department)
 	overview = usage_service.department_overview(name)
@@ -175,6 +175,6 @@ def department_stock(department=None):
 				"Set Unit", {"department": name, "status": ["in", REPROCESSING_STATUSES]}
 			),
 			"recall_pending": _recall_pending(name),
-			"waiting_return": len(overview["waiting_return"]),
+			"waiting_return": len(dirty_return.pending_sets(name)),
 		},
 	}
