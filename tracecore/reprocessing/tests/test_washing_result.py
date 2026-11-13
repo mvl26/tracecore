@@ -479,9 +479,15 @@ class TestWashResult(WashResultCase):
 			["tracecore_after_wash_failed"],
 		)
 
-	def test_result_rejects_client_clock_far_from_server(self):
+	def test_result_accepts_client_clock_far_from_server(self):
+		# A-160: kết luận theo giờ máy khách; lệch giờ server chỉ ghi Audit Log
 		batch, _sets = self.load()
 		self.save_data(batch)
-		with self.assertRaises(client_time.ClientTimestampError):
-			self.close(batch, client_ts=add_to_date(client_time.utc_now(), hours=-2))
-		self.assertEqual(frappe.db.get_value("Wash Batch", batch, "status"), "Running")
+		skewed = add_to_date(client_time.utc_now(), hours=-2)
+		self.close(batch, client_ts=skewed)
+		self.assertNotEqual(frappe.db.get_value("Wash Batch", batch, "status"), "Running")
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log", {"action": "Override", "reason": client_time.SKEW_REASON, "client_ts": skewed}
+			)
+		)

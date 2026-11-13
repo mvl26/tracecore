@@ -417,7 +417,7 @@ def scan_set(
 	Chỉ nhận mã bộ; trạng thái phải hợp T1 (`step_gate.check`, FR-M2-02). Bộ đã có trong phiếu → ``duplicate`` và không
 	thêm dòng (FR-M2-01.6). `force_reason`/`reviewer_proof` (PIN proof của phiên `session`, R02) chỉ có hiệu lực khi
 	bộ bị từ chối (A-33). BOM và ảnh là phiên bản áp dụng tại ngày quét theo giờ hệ thống; chưa ghi gì vào Set Unit.
-	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → ClientTimestampError;
+	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → chỉ ghi Audit Log (A-160);
 	`offline` (phát lại, A-40): `client_ts` cũ được, nơi gọi đã chặn giờ tương lai.
 	"""
 	if not offline:
