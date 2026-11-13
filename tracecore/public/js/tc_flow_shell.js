@@ -25,8 +25,12 @@ const TcFlow = {
 	BASE: "/app/tracecore/home",
 	OLD_ROUTE: "tc-flow",
 
-	path(station, department, manage) {
+	// khu Trưởng khoa KSNK (FEAT-102, A-162): 7 mục theo prototype #17, địa chỉ ?lead=<mục>
+	LEAD_PANES: ["overview", "overrides", "recalls", "costs", "equipment", "staff", "log"],
+
+	path(station, department, manage, lead) {
 		const query = [];
+		if (lead) return `${TcFlow.BASE}?lead=${encodeURIComponent(lead)}`;
 		if (manage) return `${TcFlow.BASE}?manage=${encodeURIComponent(manage)}`;
 		if (department) query.push(`department=${encodeURIComponent(department)}`);
 		if (station) query.push(`station=${encodeURIComponent(station)}`);
@@ -39,6 +43,69 @@ const TcFlow = {
 
 	manageParam(search) {
 		return new URLSearchParams(search || "").get("manage") || null;
+	},
+
+	// mục của khu Trưởng khoa trong địa chỉ; tên lạ thì về Tổng quan hôm nay, không có ?lead thì null
+	leadParam(search) {
+		const params = new URLSearchParams(search || "");
+		if (!params.has("lead")) return null;
+		const pane = params.get("lead");
+		return TcFlow.LEAD_PANES.includes(pane) ? pane : TcFlow.LEAD_PANES[0];
+	},
+
+	// tông badge của khu Trưởng khoa: trạng thái luôn kèm chữ, tông chỉ để phân nhóm
+	leadTone(state) {
+		if (["within", "ok", "Ready", "Pass", "Released", "Confirmed"].includes(state))
+			return "pass";
+		if (
+			[
+				"blocked",
+				"expired",
+				"Locked",
+				"Fail",
+				"Failed",
+				"High",
+				"below",
+				"above",
+				"none",
+			].includes(state)
+		)
+			return "fail";
+		if (["warn", "expiring", "Repair", "Quarantine", "Medium", "Pending"].includes(state))
+			return "warn";
+		return "info";
+	},
+
+	// VND không lẻ, dấu chấm ngăn nghìn: 184500 → "184.500 ₫"
+	vnd(value) {
+		const amount = Math.round(Number(value) || 0);
+		const digits = String(Math.abs(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+		return `${amount < 0 ? "−" : ""}${digits} ₫`;
+	},
+
+	// phần trăm một chữ số thập phân, dấu phẩy thập phân, có dấu: -4.2 → "−4,2%"; null → "—"
+	signedPct(value) {
+		if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+		const number = Number(value);
+		const sign = number > 0 ? "+" : number < 0 ? "−" : "";
+		return `${sign}${Math.abs(number).toFixed(1).replace(".", ",")}%`;
+	},
+
+	// tháng liền kề của "YYYY-MM"
+	monthShift(month, delta) {
+		const [year, index] = String(month).split("-").map(Number);
+		const at = new Date(Date.UTC(year, index - 1 + delta, 1));
+		return `${at.getUTCFullYear()}-${String(at.getUTCMonth() + 1).padStart(2, "0")}`;
+	},
+
+	// "T1, T2" của năng lực trạm; trạm chưa có số thì dùng tên
+	stationCodes(stations) {
+		return (stations || [])
+			.map((row) =>
+				row.station_no ? `T${row.station_no}` : row.station_name || row.station
+			)
+			.filter((text, index, all) => text && all.indexOf(text) === index)
+			.join(", ");
 	},
 
 	departmentParam(search) {

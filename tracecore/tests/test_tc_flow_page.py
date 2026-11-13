@@ -33,6 +33,7 @@ HOST_METHODS = [
 ]
 
 SHELL = "public/js/tc_flow_shell.js"
+LEAD = "public/js/tc_flow_lead.js"
 PAGE_DIR = Path(frappe.get_app_path("tracecore", "ui", "page", "tc_flow"))
 
 STATIONS = """
@@ -250,6 +251,133 @@ class TestTcFlowShell(FrappeTestCase):
 		out = run(self, """emit(["Waiting", "Partly issued", "Issued"].map((s) => TcFlow.returnTone(s)));""")
 		self.assertEqual(out, ["warn", "info", "pass"])
 
+	def test_lead_workspace_address_and_helpers(self):
+		"""FEAT-102 (A-162): khu Trưởng khoa KSNK ở ?lead=<mục>, 7 mục theo prototype #17."""
+		out = run(
+			self,
+			"""emit({
+				path: TcFlow.path(null, null, null, "costs"),
+				param: TcFlow.leadParam("?lead=costs"),
+				unknown: TcFlow.leadParam("?lead=zzz"),
+				none: TcFlow.leadParam("?station=TR-001"),
+				panes: TcFlow.LEAD_PANES,
+				vnd: [TcFlow.vnd(184500), TcFlow.vnd(0), TcFlow.vnd(48000000)],
+				pct: [TcFlow.signedPct(-4.2), TcFlow.signedPct(3), TcFlow.signedPct(null)],
+				months: [TcFlow.monthShift("2026-01", -1), TcFlow.monthShift("2026-12", 1)],
+				tones: ["within", "below", "blocked", "warn", "Locked", "Ready", "New"].map((s) => TcFlow.leadTone(s)),
+				codes: TcFlow.stationCodes([
+					{ station: "A", station_no: 1 }, { station: "B", station_no: 2 },
+					{ station: "C", station_no: 2 }, { station: "X", station_name: "Kho" },
+				]),
+			});""",
+		)
+		self.assertEqual(out["path"], "/app/tracecore/home?lead=costs")
+		self.assertEqual(out["param"], "costs")
+		self.assertEqual(out["unknown"], "overview")
+		self.assertIsNone(out["none"])
+		self.assertEqual(
+			out["panes"], ["overview", "overrides", "recalls", "costs", "equipment", "staff", "log"]
+		)
+		self.assertEqual(out["vnd"], ["184.500 ₫", "0 ₫", "48.000.000 ₫"])
+		self.assertEqual(out["pct"], ["\u22124,2%", "+3,0%", "\u2014"])
+		self.assertEqual(out["months"], ["2025-12", "2027-01"])
+		self.assertEqual(out["tones"], ["pass", "fail", "fail", "warn", "fail", "pass", "info"])
+		self.assertEqual(out["codes"], "T1, T2, Kho")
+
+	def test_lead_screens_show_server_numbers_with_words_for_every_status(self):
+		out = run_js(
+			self,
+			[SHELL, LEAD],
+			[["TcFlow"], ["TcFlowLead"]],
+			"""const h = { esc, day: (v) => v || "", time: (v) => v || "", hour: (v) => String(v || "").slice(11, 16) };
+			const data = {
+				date: "2026-11-13",
+				decisions: {
+					overrides: { count: 1, rows: [{ name: "GD-1", set_unit: "<b>SU</b>", reason: "r" }] },
+					recalls: { count: 1, rows: [{ name: "TH-1", pack_count: 4, confirmed_count: 2, trigger: "BI Positive" }] },
+					equipment: { count: 0, rows: [] },
+					certificates: { count: 0, rows: [] },
+				},
+				kpis: { reprocessing: 144, cost_per_pack: 184500, open_nc: 3 },
+				output: [{ station_name: "Receiving", station_no: 1, count: 156, people: ["An"] }],
+				departments: [
+					{ department_name: "OR", stock: 8, min: 6, max: 10, state: "within" },
+					{ department_name: "ER", stock: 1, min: 2, max: 4, state: "below" },
+				],
+			};
+			emit({
+				overview: TcFlowLead.overviewHtml(h, data),
+				badges: TcFlowLead.badges(data),
+				recalls: TcFlowLead.recallsHtml(h, {
+					orders: [{ name: "TH-1", pack_count: 1, lines: [{
+						pack: "CY-1", patient_code_masked: "BN09****78", status_at_recall: "Used",
+						confirmed: false, action: "Notify Physician",
+					}] }],
+					incidents: [],
+				}),
+				overrides: TcFlowLead.overridesHtml(h, {
+					can_decide: true,
+					requests: [{ name: "GD-1", set_id: "TE01-021", cycles_used: 200, max_cycles: 200 }],
+					sets: [{ set_id: "DB01-012", cycles_used: 299, max_cycles: 300, state: "warn",
+						forecast: { month: "2026-11", price: 48000000 } }],
+				}),
+				readonly: TcFlowLead.overridesHtml(h, { can_decide: false, requests: [{ name: "GD-1" }], sets: [] }),
+				approve: TcFlowLead.overrideFormHtml(h, "approve", "GD-1", "2026-11-13"),
+				reject: TcFlowLead.overrideFormHtml(h, "reject", "GD-1", "2026-11-13"),
+				url: TcFlowLead.logReportUrl({ date: "2026-11-13", equipment: "MH-01" }),
+				methods: Object.values(TcFlowLead.PANES).map((pane) => pane.method),
+				keys: Object.keys(TcFlowLead.PANES),
+				panes: TcFlow.LEAD_PANES,
+			});""",
+		)
+		overview = out["overview"]
+		self.assertIn('data-count="144"', overview)
+		self.assertIn('data-format="vnd"', overview)
+		self.assertIn("184.500 ₫", overview)
+		self.assertIn("&lt;b&gt;SU", overview)
+		self.assertNotIn("<b>SU", overview)
+		self.assertIn("2/4", overview)
+		# trạng thái có chữ, không chỉ màu
+		self.assertIn("Within par level", overview)
+		self.assertIn("Below minimum", overview)
+		self.assertIn('data-pane="overrides"', overview)
+		self.assertEqual(out["badges"], {"overrides": 1, "recalls": 4})
+		# mã bệnh nhân chỉ ở dạng che
+		self.assertIn("BN09****78", out["recalls"])
+		self.assertIn("No incident is open.", out["recalls"])
+		self.assertIn('data-action="tcf-override-open"', out["overrides"])
+		self.assertIn("200/200 cycles (100%)", out["overrides"])
+		self.assertIn("Month 11/2026 · 48.000.000 ₫", out["overrides"])
+		self.assertNotIn("tcf-override-open", out["readonly"])
+		for name in ("cycles", "until", "reason", "pin"):
+			self.assertIn(f"tcf-override-{name}", out["approve"])
+		self.assertIn('type="password"', out["approve"])
+		self.assertNotIn("tcf-override-cycles", out["reject"])
+		self.assertTrue(out["url"].startswith("/app/query-report/Sterilization Log?from_date=2026-11-13"))
+		self.assertIn("equipment=MH-01", out["url"])
+		self.assertEqual(out["keys"], out["panes"])
+		for method in out["methods"]:
+			self.assertRegex(method, r"^tracecore\.v1\.lead\.[a-z_]+$")
+
+	def test_lead_workspace_is_wired_into_the_page(self):
+		html = (PAGE_DIR / "tc_flow.html").read_text(encoding="utf-8")
+		source = (PAGE_DIR / "tc_flow.js").read_text(encoding="utf-8")
+		self.assertIn('data-action="tcf-lead"', html)
+		self.assertIn("tcf-lead-body", html)
+		self.assertIn('data-action="tcf-lead-refresh"', html)
+		self.assertIn(LEAD, frappe.get_hooks("page_js")["tc-flow"])
+		self.assertIn("TcFlow.leadParam(window.location.search)", source)
+		self.assertIn("TcFlowLead.PANES[pane].method", source)
+		# duyệt / từ chối ghi đè dùng RPC hiện có của UC-31, không viết RPC ghi mới
+		self.assertIn("tracecore.v1.par.override.", source)
+		# PIN không giữ lại sau khi gửi
+		self.assertIn('pin.value = ""', source)
+		lead = Path(frappe.get_app_path("tracecore", *LEAD.split("/"))).read_text(encoding="utf-8")
+		for text in (source, lead):
+			self.assertNotIn("localStorage", text)
+			self.assertNotIn("frappe.msgprint", text)
+		self.assertNotIn("patient_code)", lead)
+
 	def test_tracecore_home_opens_the_flow_page(self):
 		"""/app/tracecore/home hiện Page tc-flow; /app/tc-flow cũ chuyển về địa chỉ mới, giữ tham số."""
 		launcher = (PAGE_DIR.parent / "tracecore" / "tracecore.js").read_text(encoding="utf-8")
@@ -432,8 +560,9 @@ class TestTcFlowPage(FrappeTestCase):
 		# mở trong khung và chỉ nhận đường dẫn /app/ do máy chủ trả về
 		self.assertIn("context.admin_modules", source)
 		self.assertIn("context.role_modules", source)
-		# nút Mở trang quản lý ở trang chọn vai trò mở trang chủ quản lý /app/tracecore của Desk
-		self.assertIn('window.location.assign("/app/tracecore")', source)
+		# A-162: thẻ Trưởng khoa KSNK mở khu Trưởng khoa trong khung, không chuyển sang /app/tracecore nữa
+		self.assertNotIn('window.location.assign("/app/tracecore")', source)
+		self.assertNotIn('data-action="tcf-manage"', (PAGE_DIR / "tc_flow.html").read_text(encoding="utf-8"))
 		self.assertNotIn('this.enterManage("instruments")', source)
 		self.assertIn("this.enterManage(this.manage || manage", source)
 		self.assertIn("tcf-frame", source)

@@ -12080,3 +12080,129 @@ Difference,Chênh lệch,Linen Flow
 At department,Tại khoa,Dirty Return
 Sharps inside,Có vật sắc nhọn bên trong,Dirty Return Request Item
 At department,Tại khoa
+Code,Mã,TC Lead
+Cancel,Hủy bỏ,TC Lead
+Date,Ngày,TC Lead
+Time,Giờ,TC Lead
+Amount,Số tiền,TC Lead
+Stock,Tồn,TC Lead
+Share,Tỷ trọng,TC Lead
+Machine,Máy,TC Lead
+Position,Vị trí,TC Lead
+Operator,Người vận hành,TC Lead
+Programs,Chương trình,TC Lead
+Parameters,Tham số,TC Lead
+Par level,Cơ số,TC Lead
+Total cost,Tổng chi phí,TC Lead
+Cost per pack,Giá thành một gói,TC Lead
+running,đang chạy,TC Lead
+High,Cao,Incident CAPA
+Medium,Trung bình,Incident CAPA
+Low,Thấp,Incident CAPA
+Par level override request for set,Đề nghị ghi đè cơ số bộ
+Review and decide,Xem và duyệt
+is open: {0}/{1} packs not confirmed,đang mở: {0}/{1} gói chưa xác nhận
+inspection or calibration overdue by {0} days,quá hạn kiểm định hoặc hiệu chuẩn {0} ngày
+inspection or calibration due in {0} days,hạn kiểm định hoặc hiệu chuẩn còn {0} ngày
+See equipment,Xem thiết bị
+{0} certificates expired or expiring within 60 days ({1}),{0} chứng chỉ đã hết hạn hoặc sắp hết hạn trong 60 ngày ({1})
+See staff,Xem nhân sự
+Decisions for the head of infection control,Cần quyết định của Trưởng khoa
+Nothing is waiting for a decision.,Không có việc nào chờ quyết định.
+Above maximum,Vượt tối đa
+Sets being reprocessed,Bộ đang tái xử lý
+Loads today · {0} waiting for release,Mẻ hôm nay · {0} chờ giải phóng
+"Sets at par level, waiting for disposal or override","Bộ đạt cơ số, chờ thanh lý/ghi đè"
+Sets close to par level,Bộ sắp đạt cơ số
+Packs in the sterile store,Gói trong kho vô khuẩn
+Average cost per pack this month,Giá thành trung bình một gói (tháng này)
+Open incidents / NC,Sự cố / NC đang mở
+Output by station today,Sản lượng theo trạm hôm nay
+Sets / packs,Số bộ / gói
+No station has recorded a passed step today.,Hôm nay chưa trạm nào ghi bước đạt.
+Sets at departments against par level,Tồn bộ tại khoa so với cơ số
+No department has a par level set.,Chưa khoa nào được đặt cơ số.
+{0}/{1} cycles,{0}/{1} chu trình
+Approve (PIN),Duyệt (PIN)
+Waiting for the head of infection control,Chờ Trưởng khoa duyệt
+At par level,Hết vòng đời
+Close to par level,Sắp đạt
+Override in effect,Đang ghi đè
+Only the head of infection control (or an authorized head nurse) approves. An override has extra cycles and an end date; when they run out the set is blocked again. Every decision is written to the audit log.,Chỉ Trưởng khoa (hoặc Điều dưỡng trưởng được ủy quyền) được duyệt. Ghi đè có số chu trình thêm và thời hạn; hết là chặn lại. Mọi quyết định đều ghi vào nhật ký kiểm toán.
+Requests waiting for approval,Đề nghị chờ duyệt
+Instrument set,Bộ dụng cụ
+Requested by · reason,Người đề nghị · lý do
+No override request is waiting for approval.,Không có đề nghị ghi đè nào chờ duyệt.
+Sets at or close to par level,Bộ đã đạt hoặc sắp đạt cơ số
+Replacement forecast,Dự báo thay thế
+No set is at or close to its par level.,Chưa có bộ nào đạt hoặc sắp đạt cơ số.
+Extra cycles,Số chu trình thêm
+Approve override {0},Duyệt đề nghị ghi đè {0}
+Reject override {0},Từ chối đề nghị ghi đè {0}
+Reason for the decision,Lý do quyết định
+Your PIN,PIN của bạn
+Confirm approval,Xác nhận duyệt
+Confirm rejection,Xác nhận từ chối
+Waiting for the physician to be informed,Chờ báo bác sĩ
+Waiting for the department,Chờ khoa
+load {0},mẻ {0}
+opened at {0},lập lúc {0}
+Recalling: {0}/{1} confirmed,Đang thu hồi: {0}/{1} đã xác nhận
+Department / location,Khoa / vị trí
+Status at recall,Trạng thái khi thu hồi
+This recall order has no pack.,Lệnh thu hồi này không có gói nào.
+Patient codes are shown masked. The order closes only when every pack is confirmed and the corrective action of its incident is complete.,Mã bệnh nhân hiển thị dạng che. Lệnh chỉ đóng khi mọi gói đã được xác nhận và CAPA của sự cố liên quan hoàn tất.
+No recall order is open.,Không có lệnh thu hồi nào đang mở.
+Open incidents / nonconformities,Sự cố / không phù hợp đang mở
+No incident is open.,Không có sự cố nào đang mở.
+Previous month,Tháng trước
+Next month,Tháng sau
+Average cost of one steam sterilization load,Chi phí trung bình một mẻ hấp hơi nước
+Average sterilization cost per pack,Chi phí tiệt khuẩn trung bình một gói
+Packs costed in {0} loads,Gói đã tính giá trong {0} mẻ
+Cost per pack against the previous month,Giá thành một gói so với tháng trước
+Cost by set type,Giá thành theo loại bộ
+No pack was costed this month.,Tháng này chưa có gói nào được tính giá.
+Cost structure of the month,Cơ cấu giá thành của tháng
+Cost item,Khoản mục
+No cost sheet this month.,Tháng này chưa có bảng giá thành.
+Input costs of the month (entered),Chi phí đầu vào của tháng (đã nhập)
+No input cost was entered for this month.,Tháng này chưa nhập chi phí đầu vào.
+Not tested today,Chưa test hôm nay
+Due in {0} days,Còn {0} ngày
+Automatic (agent),Tự động (agent)
+Manual entry with confirmation,Nhập tay có xác nhận
+has printout,có bản in
+Tests on {0},Test ngày {0}
+Inspection due,Hạn kiểm định
+No equipment is set up yet.,Chưa khai báo thiết bị nào.
+"A locked machine cannot be chosen when a load is created (BRU-EQP-001/002). The head nurse can unlock it for up to 24 hours with a reason, except when the pressure equipment inspection is overdue.","Máy Khóa không thể được chọn khi tạo mẻ (BRU-EQP-001/002). Điều dưỡng trưởng có thể mở khóa tạm tối đa 24 giờ có lý do, trừ trường hợp quá hạn kiểm định thiết bị áp lực."
+No certificate,Chưa có chứng chỉ
+Expiring in {0} days,Sắp hết · còn {0} ngày
+Not assigned,Chưa gán
+cannot log in at a station,không đăng nhập được trạm
+Station competency,Năng lực trạm
+No employee has a certificate or a station competency yet.,Chưa nhân viên nào có chứng chỉ hoặc năng lực trạm.
+All sterilizers,Mọi máy tiệt khuẩn
+Released by,Giải phóng
+No finished load on this day.,Ngày này chưa có mẻ nào kết thúc.
+Open the report to export PDF / Excel,Mở báo cáo để xuất PDF / Excel
+items waiting,việc đang chờ
+Today's overview,Tổng quan hôm nay
+Par level overrides,Ghi đè cơ số
+Recalls & incidents,Thu hồi & sự cố
+Reprocessing cost,Giá thành tái xử lý
+Equipment & daily tests,Thiết bị & test ngày
+Staff & certificates,Nhân sự & chứng chỉ
+Electronic sterilization log,Sổ tiệt khuẩn điện tử
+Today's overview — {0},Tổng quan hôm nay — {0}
+Reprocessing cost — month {0},Giá thành tái xử lý — tháng {0}
+Electronic sterilization log — {0},Sổ tiệt khuẩn điện tử — {0}
+Could not load this page,Không tải được màn này
+The override was not approved,Chưa duyệt được đề nghị ghi đè
+The override was not rejected,Chưa từ chối được đề nghị ghi đè
+"Check the decision, then send it again.",Kiểm tra lại quyết định rồi gửi lại.
+"Approve par level overrides, follow recalls and incidents, reprocessing cost, equipment and staff status, electronic sterilization log.","Duyệt ghi đè cơ số, theo dõi thu hồi và sự cố, giá thành tái xử lý, tình trạng thiết bị và nhân sự, sổ tiệt khuẩn điện tử."
+Open the head of infection control workspace,Vào khu Trưởng khoa KSNK
+month must be in the form YYYY-MM.,month phải có dạng YYYY-MM.
+date must be in the form YYYY-MM-DD.,date phải có dạng YYYY-MM-DD.

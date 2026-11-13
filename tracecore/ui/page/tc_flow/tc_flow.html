@@ -6,8 +6,8 @@
 		<div class="tcf-roles">
 			<article class="tcf-role tcf-role-lead">
 				<h3>{%= __("Head of infection control") %}</h3>
-				<p>{%= __("Dashboards, approvals, recalls, costs, equipment and staff are on the management pages.") %}</p>
-				<button type="button" class="tcf-btn tcf-btn-wide" data-action="tcf-manage">{%= __("Open management pages") %}</button>
+				<p>{%= __("Approve par level overrides, follow recalls and incidents, reprocessing cost, equipment and staff status, electronic sterilization log.") %}</p>
+				<button type="button" class="tcf-btn tcf-btn-wide" data-action="tcf-lead">{%= __("Open the head of infection control workspace") %}</button>
 			</article>
 			<article class="tcf-role tcf-role-ktv">
 				<h3>{%= __("Instrument reprocessing technician") %}</h3>
@@ -81,6 +81,16 @@
 					<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-linen-refresh">{%= __("Refresh") %}</button>
 				</header>
 				<div class="tcf-linen-body"></div>
+			</section>
+			<section class="tcf-pane tcf-lead" aria-live="polite" hidden>
+				<div class="tcf-zonebar tcf-zonebar-web" role="presentation"></div>
+				<p class="tcf-crumb"></p>
+				<header class="tcf-title">
+					<h2></h2>
+					<div class="tcf-lead-tools"></div>
+					<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-lead-refresh">{%= __("Refresh") %}</button>
+				</header>
+				<div class="tcf-lead-body"></div>
 			</section>
 			<section class="tcf-pane tcf-manage" hidden>
 				<div class="tcf-zonebar tcf-zonebar-web" role="presentation"></div>
