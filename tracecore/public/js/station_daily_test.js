@@ -285,7 +285,7 @@ class DailyTestScreen {
 			args.consumables_confirmed = form.consumables_confirmed ? 1 : 0;
 		}
 		this.request(method, args, () => {
-			this.notice = { ...notice(machine), reveal: true };
+			this.notice = notice(machine);
 			if (method === DT_START) TcRunConsumables.reset(this.form);
 			this.load();
 		});
@@ -359,7 +359,6 @@ class DailyTestScreen {
 			},
 			(res) => {
 				this.notice = {
-					reveal: true,
 					variant: res.locked ? "warn" : "ok",
 					title: res.locked
 						? __("Test failed: machine {0} is locked", [this.selected])
@@ -412,7 +411,6 @@ class DailyTestScreen {
 			},
 			() => {
 				this.notice = {
-					reveal: true,
 					variant: "ok",
 					title: __("Machine {0} is unlocked temporarily", [this.selected]),
 					reason: __("The unlock ends after {0} hour(s).", [hours]),
@@ -505,6 +503,9 @@ class DailyTestScreen {
 		if (this.offline && !this.list)
 			return this.station.setState("offline", this.offlineHtml());
 		const state = this.notice && this.notice.variant === "error" ? "error" : "result";
+		// Thông báo xong bước (Bắt đầu/Kết thúc test, Ghi test, Mở khóa tạm) nằm trong form của máy, ngay chỗ KTV vừa bấm
+		// hoặc quét: trang không bị kéo về đầu (13/11/2026). Lỗi chặn vẫn ở đầu màn và được đưa lên.
+		const inForm = Boolean(this.notice && this.notice.variant !== "error" && this.machine());
 		this.station.setState(
 			state,
 			`<div class="tc-t2 tc-t5 tc-dt">
@@ -513,14 +514,14 @@ class DailyTestScreen {
 						__("Back to loading")
 					)}</button>
 				</div>
-				<div data-region="notice">${this.noticeHtml()}</div>
+				<div data-region="notice">${this.noticeHtml(!inForm)}</div>
 				${this.listHtml()}
-				${this.formHtml()}
+				${this.formHtml(inForm ? this.noticeAlertHtml() : "")}
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
 		if (this.scrollToForm && this.list) this.revealForm();
-		// xong bước (`reveal`) hoặc lỗi: đưa thông báo lên một lần; chọn kết quả/loại test không cuộn (06/11/2026)
+		// lỗi chặn mới: đưa thông báo lên một lần; xong bước, chọn kết quả/loại test không cuộn
 		else if (this.station.revealNotice) this.station.revealNotice(this.notice);
 	}
 
@@ -572,22 +573,25 @@ class DailyTestScreen {
 		);
 	}
 
-	noticeHtml() {
+	// `withNotice` false: thông báo đang hiện trong form của máy, đầu màn chỉ còn dòng Đang tải
+	noticeHtml(withNotice = true) {
 		let html = "";
 		if (this.busy) {
 			html += `<p class="tc-loading" role="status" aria-busy="true">${esc(
 				__("Loading...")
 			)}</p>`;
 		}
-		if (this.notice) {
-			html += this.alertHtml(
-				this.notice,
-				this.notice.technical
-					? this.standardButtons()
-					: this.station.businessButtons(this.notice)
-			);
-		}
+		if (this.notice && withNotice) html += this.noticeAlertHtml();
 		return html;
+	}
+
+	noticeAlertHtml() {
+		return this.alertHtml(
+			this.notice,
+			this.notice.technical
+				? this.standardButtons()
+				: this.station.businessButtons(this.notice)
+		);
 	}
 
 	statusBadge(row) {
@@ -788,7 +792,7 @@ class DailyTestScreen {
 			aria-pressed="${active ? "true" : "false"}">${esc(label)}</button>`;
 	}
 
-	formHtml() {
+	formHtml(notice = "") {
 		const machine = this.machine();
 		if (!machine) return "";
 		const form = this.form;
@@ -810,6 +814,7 @@ class DailyTestScreen {
 			)}" ${extra}></div>`;
 		return `<section class="tc-t4-block" data-region="dt-form">
 			<h3>${esc(__("Daily test of {0}", [machine.name]))}</h3>
+			${notice}
 			${
 				tests.length
 					? `<div class="tc-chips" role="group" aria-label="${esc(
