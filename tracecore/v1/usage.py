@@ -134,7 +134,9 @@ def confirm(
 
 	def call(ts):
 		if replay:
-			check_not_future(ts)  # thời điểm sử dụng do trạm báo: cũ được, tương lai thì không (review I5)
+			check_not_future(
+				ts
+			)  # thời điểm sử dụng theo giờ máy khách; tương lai quá ngưỡng chỉ ghi Audit Log (A-160)
 		code = _decrypt(patient_code_enc) if patient_code_enc else patient_code
 		return usage_service.confirm(
 			cycle_id,

@@ -588,17 +588,20 @@ class TestGenerate(PackApiCase):
 			)
 		self.assertEqual(frappe.db.count("Pack", {"set_unit": ready.set_id}), 0)
 
-	def test_generate_with_station_clock_skew_is_400_and_writes_nothing(self):
-		# F1: giờ trạm lệch giờ server > 5 phút → 400 (ClientTimestampError), không Pack/Audit Log/Idempotency Key
-		from tracecore.core.client_time import ClientTimestampError
+	def test_generate_with_station_clock_skew_uses_station_time(self):
+		# A-160: giờ trạm lệch giờ server > 5 phút vẫn sinh Cycle ID theo giờ trạm, ghi Audit Log CLIENT_CLOCK_SKEW
+		from tracecore.core.client_time import SKEW_REASON, parse_client_ts
 
 		ready = make_t4_ready_set()
-		before = totals()
 		skewed = (datetime.now(TIME_ZONE) + timedelta(minutes=6)).isoformat(timespec="seconds")
-		with self.assertRaises(ClientTimestampError) as raised:
-			call(pack_api.generate_cycle_id, **generate_args(ready, client_ts=skewed))
-		self.assertEqual(raised.exception.http_status_code, 400)
-		self.assertEqual(totals(), before)
+		result = call(pack_api.generate_cycle_id, **generate_args(ready, client_ts=skewed))
+		self.assertRegex(result["pack"]["cycle_id"], CYCLE_ID)
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log",
+				{"action": "Override", "reason": SKEW_REASON, "client_ts": parse_client_ts(skewed)},
+			)
+		)
 
 	def test_wrong_station_rejects_before_writing(self):
 		ready = make_t4_ready_set()
