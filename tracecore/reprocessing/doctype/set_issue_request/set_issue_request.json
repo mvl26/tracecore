@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "autoname": "DN-.YYYY.-.#####",
+ "creation": "2026-11-13 17:00:00.000000",
+ "description": "A department's request for CSSD to issue sterile instrument sets. It is a notice only: no pack is reserved and issuing still happens at the issue station (T7). Created and submitted by the issue request service only.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "department_name",
+  "set_type",
+  "set_name",
+  "qty",
+  "needed_by",
+  "column_break_head",
+  "requested_at",
+  "requested_by",
+  "requested_by_name",
+  "client_ts",
+  "par_section",
+  "par_min",
+  "par_max",
+  "stock_at_request",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "label": "Department Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "set_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Quantity",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "needed_by",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Needed By",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Requested At",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_by_name",
+   "fieldtype": "Data",
+   "label": "Requested By Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Client Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "par_section",
+   "fieldtype": "Section Break",
+   "label": "Department Par Level"
+  },
+  {
+   "fieldname": "par_min",
+   "fieldtype": "Int",
+   "label": "Par Minimum",
+   "read_only": 1
+  },
+  {
+   "fieldname": "par_max",
+   "fieldtype": "Int",
+   "label": "Par Maximum",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_at_request",
+   "fieldtype": "Int",
+   "label": "Department Stock At Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Set Issue Request",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-13 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Set Issue Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "department,set_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "set_name",
+ "track_changes": 1
+}

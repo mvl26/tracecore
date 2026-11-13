@@ -84,6 +84,8 @@ MANAGEMENT_GROUPS = (
 			"Set Unit",
 			"Loaner Set",
 			"Instrument Maintenance",
+			"Dirty Return Request",  # FEAT-100 A-160: yêu cầu lấy đồ bẩn khoa gửi
+			"Set Issue Request",  # FEAT-101 A-161: đề nghị cấp bộ dụng cụ khoa gửi
 			"report:Instrument Data Gaps",
 			"report:Instrument Life Forecast",  # FEAT-007: bộ sắp hết vòng đời kèm giá
 		),
@@ -360,7 +362,7 @@ ROLE_FLOWS = {
 			"instruments",
 			(
 				("catalog", ("Instrument", "Instrument Set Type", "Set Unit")),
-				("document", ("Loaner Set",)),
+				("document", ("Loaner Set", "Dirty Return Request", "Set Issue Request")),
 			),
 		),
 		(
@@ -462,7 +464,10 @@ ADMIN_MODULES = (
 		"description": "Instruments, instrument sets and loaner sets.",
 		"sections": (
 			("catalog", ("Instrument", "Instrument Group", "Instrument Set Type", "Set Unit")),
-			("document", ("Loaner Set", "Instrument Maintenance")),
+			(
+				"document",
+				("Loaner Set", "Instrument Maintenance", "Dirty Return Request", "Set Issue Request"),
+			),
 			("report", ("report:Instrument Data Gaps", "report:Instrument Life Forecast")),
 		),
 	},

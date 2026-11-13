@@ -10,7 +10,10 @@
 > **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5; nút Sao chép bộ dụng cụ trên form Set Unit, FR-M1-05.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-156 (2026-11-12):** quy trình xử lý của loại bộ (Tiệt khuẩn nhiệt độ cao / nhiệt độ thấp / Khử khuẩn) → **FEAT-098** ở E-02 (M1, ngoài sprint), FR-M1-03.10. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-157 (2026-11-12):** sửa Quy trình xử lý / Loại chỉ thị hóa học của loại bộ ngay trên form Set Unit → mở rộng **FEAT-098**, FR-M1-06.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-158 (2026-11-13):** giao diện người dùng cho luồng xử lý dụng cụ ở URL mới `/app/tc-flow` (Page `tc-flow`, dùng lại nguyên các màn trạm) → **FEAT-099** (module UI, ngoài sprint), FR-M9-31, SCR-68. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-159 (2026-11-13):** ảnh của màn trạm (T2, T3, T5, test hằng ngày) tải qua phiên thẻ bằng RPC `tracecore.v1.station.upload_photo` thay cho `upload_file` của Desk; lỗi phiên báo "Phiên đăng nhập đã hết" → FR-M9-14.1, sửa lỗi theo ticket (không thêm FEAT). Người dùng duyệt ngày 13/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-160 (2026-11-13):** khoa gửi yêu cầu lấy đồ bẩn từ cổng khoa của Page `tc-flow` (DocType `Dirty Return Request`, RPC `tracecore.v1.flow.return_overview` / `request_return`) → **FEAT-100** (module Reprocessing + UI, ngoài sprint), FR-M2-26, SCR-69. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-161 (2026-11-13):** ba mục còn lại của cổng khoa trên Page `tc-flow`: Xác nhận thu hồi, Đề nghị cấp bộ dụng cụ (DocType `Set Issue Request`), Đồ vải đã nhận → **FEAT-101** (module Reprocessing + Linen + UI, ngoài sprint), FR-M2-27, FR-M9-32, SCR-70..72. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
@@ -314,6 +317,54 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | AC-098-02 | Nếu Loại bộ Khử khuẩn có dụng cụ Spaulding Thiết yếu trong BOM (lưu mới, đổi quy trình, cấp Set ID), thì hệ thống phải từ chối và chỉ rõ dòng; dụng cụ Bán thiết yếu/Không thiết yếu được nhận bất kể phương pháp tương thích. | FR-M1-03.10, BRU-REP-004 |
 | AC-098-03 | Nếu Loại bộ Khử khuẩn khai loại chỉ thị hóa học 4/5/6, thì hệ thống phải từ chối lưu. | FR-M1-03.10 |
 | AC-098-04 | Nếu bộ của Loại bộ Khử khuẩn được quét tại T4, thì hệ thống phải báo `alert-error` (kết quả → lý do → hành động) và không sinh Cycle ID. | FR-M1-03.10 |
+
+### FEAT-099 Giao diện người dùng cho luồng xử lý dụng cụ ở `/app/tc-flow` [A-158]
+
+| FEAT | Phạm vi | FR | SCR | Phụ thuộc |
+| --- | --- | --- | --- | --- |
+| FEAT-099 | Page `tc-flow` (module UI): trang chọn vai trò, khung rail + stepper theo prototype #17, nạp nguyên các màn trạm T1–T8 của Page `station` (không sửa file cũ), cổng khoa chọn theo khoa (gói tại khoa, quét sử dụng, tra cứu gói). RPC đọc mới `tracecore.v1.flow.departments`, `tracecore.v1.flow.department_stock`; không RPC ghi mới. | FR-M9-31 | SCR-68 | FEAT-001, FEAT-009 và các FEAT trạm T1–T8 |
+
+#### Acceptance criteria FEAT-099 [A-158] (EARS)
+
+- AC-099-1: Khi người dùng mở `/app/tc-flow`, hệ thống phải hiện trang chọn vai trò với danh sách trạm của luồng xử lý dụng cụ mà tài khoản được mở và danh sách khoa mà tài khoản được xem (R01/R02 mọi khoa, R08 khoa của mình).
+- AC-099-2: Khi người dùng chọn trạm, hệ thống phải mở màn quét thẻ của trạm đó tại `/app/tc-flow?station=<mã>`; thanh địa chỉ không chuyển về `/app/station`.
+- AC-099-3: Khi thẻ hợp lệ, hệ thống phải hiện tên người làm, trạm và danh sách trạm ở thanh bên, thứ tự bước T1–T8 có chữ cho bước đã qua và bước hiện tại, và màn thao tác của trạm với đủ chức năng hiện có.
+- AC-099-4: Khi người dùng chọn trạm khác ở thanh bên, hệ thống phải đổi trạm theo quy tắc hiện có (cùng khu giữ phiên, khác khu quét lại thẻ) mà không rời `/app/tc-flow`.
+- AC-099-5: Khi người dùng ở cổng khoa mở Gói tại khoa hoặc Tra cứu gói, hệ thống phải hiện gói tại khoa đã chọn (`flow.department_stock`, không cần quét thẻ) và chuỗi sự kiện của gói (`trace.query`); lỗi hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
+- AC-099-7: Khi người dùng mở không gian quản lý, hệ thống phải hiện các phân hệ quản lý mà tài khoản được mở (mặc định Dụng cụ và bộ) và mở danh sách, form, báo cáo hiện có ngay trong khung, không rời `/app/tc-flow`. Nút Mở trang quản lý ở trang chọn vai trò mở trang chủ quản lý `/app/tracecore` của Desk (người dùng yêu cầu 13/11/2026); không gian quản lý trong khung mở bằng địa chỉ `/app/tc-flow?manage=<phân hệ>`.
+- AC-099-6: Hệ thống không được thay đổi hành vi của `/app/station` và các RPC hiện có.
+
+### FEAT-100 Cổng khoa gửi yêu cầu lấy đồ bẩn về KSNK [A-160]
+
+| FEAT | Mô tả | FR | SCR |
+| --- | --- | --- | --- |
+| FEAT-100 | Mục "Gửi trả đồ bẩn" của cổng khoa trên Page `tc-flow`: bảng bộ có thể trả, tình trạng khi trả, nút gửi yêu cầu, bảng yêu cầu đã gửi hôm nay. DocType `Dirty Return Request` (+ Item), dịch vụ `reprocessing.dirty_return`, RPC `tracecore.v1.flow.return_overview` (GET) và `tracecore.v1.flow.request_return` (POST, `@idempotent`). Không đổi trạng thái bộ, không sửa code tiếp nhận T1. | FR-M2-26 | SCR-69 |
+
+#### Acceptance criteria FEAT-100 [A-160] (EARS)
+
+- AC-100-1: Khi người dùng mở mục Gửi trả đồ bẩn của một khoa, hệ thống phải hiện các bộ đang ở khoa (chưa dùng, ghi rõ sẽ tính trả không sử dụng) và bộ đã dùng chờ trả, trừ bộ đã nằm trong yêu cầu đang chờ lấy.
+- AC-100-2: Khi người dùng chọn ít nhất một bộ, chọn tình trạng khi trả và bấm Gửi yêu cầu lấy đồ bẩn, hệ thống phải ghi sổ một `Dirty Return Request` với khoa, người gửi, thời điểm, các bộ và tình trạng, rồi hiện yêu cầu trong bảng Yêu cầu đã gửi hôm nay.
+- AC-100-3: Khi yêu cầu được ghi, hệ thống không được đổi trạng thái Set Unit hay Pack (BRU-FLOW-003).
+- AC-100-4: Nếu không chọn bộ nào, bộ không thuộc khoa, bộ đã có yêu cầu đang chờ hoặc tình trạng không hợp lệ, thì hệ thống phải từ chối và hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
+- AC-100-5: Khi bộ trong yêu cầu được tiếp nhận tại T1 sau thời điểm gửi, hệ thống phải hiện yêu cầu là Đã tiếp nhận (hoặc Đã tiếp nhận một phần).
+- AC-100-6: Khi gửi lại cùng `X-Idempotency-Key`, hệ thống phải trả lại kết quả cũ và không tạo yêu cầu thứ hai; R08 chỉ gửi và xem được yêu cầu của khoa mình.
+
+### FEAT-101 Cổng khoa: xác nhận thu hồi, đề nghị cấp, đồ vải đã nhận [A-161]
+
+| FEAT | Mô tả | FR | SCR |
+| --- | --- | --- | --- |
+| FEAT-101 | Ba mục của cổng khoa trên Page `tc-flow`. Xác nhận thu hồi: `flow.recall_overview` (đọc) + RPC hiện có `recall.confirm_pack`. Đề nghị cấp: DocType `Set Issue Request`, dịch vụ `reprocessing.issue_request`, `flow.issue_overview` (GET), `flow.request_issue` (POST, `@idempotent`). Đồ vải đã nhận: `flow.linen_received` (đọc, dịch vụ `linen.received`). Không sửa màn trạm, không sửa RPC cũ. | FR-M2-27, FR-M9-32 | SCR-70, SCR-71, SCR-72 |
+
+#### Acceptance criteria FEAT-101 [A-161] (EARS)
+
+- AC-101-1: Khi người dùng mở Xác nhận thu hồi của một khoa, hệ thống phải hiện từng lệnh thu hồi đang mở có gói của khoa kèm lý do, và mỗi gói với Cycle ID, trạng thái lúc thu hồi (mã bệnh nhân dạng che nếu đã dùng) và nút xác nhận hoặc người, giờ đã xác nhận.
+- AC-101-2: Khi người dùng bấm xác nhận một gói, hệ thống phải xác nhận qua `recall.confirm_pack`; nếu vai trò không được xác nhận gói đó thì hiện `alert-error` inline theo kết quả → lý do → hành động và không đổi dòng.
+- AC-101-3: Khi còn gói của khoa chờ xác nhận, hệ thống phải hiện số gói chờ ở mục Xác nhận thu hồi của thanh bên và ở ô Gói cần xác nhận thu hồi.
+- AC-101-4: Khi người dùng chọn loại bộ, hệ thống phải hiện cơ số khoa của loại bộ đó (hoặc chưa đặt cơ số); khi gửi đề nghị hợp lệ, hệ thống phải ghi sổ một `Set Issue Request` và hiện trong Đề nghị đã gửi hôm nay.
+- AC-101-5: Nếu loại bộ, số lượng hoặc thời điểm cần không hợp lệ, thì hệ thống phải từ chối, nêu lý do và không tạo đề nghị; gửi lại cùng `X-Idempotency-Key` không tạo đề nghị thứ hai.
+- AC-101-6: Khi đề nghị được ghi, hệ thống không được đổi trạng thái gói, bộ hay giữ chỗ gói; trạng thái đề nghị suy ra từ phiếu cấp phát T7 sau thời điểm gửi.
+- AC-101-7: Khi người dùng mở Đồ vải đã nhận, hệ thống phải hiện thu gom, trả về (chiếc / kg) và chênh lệch theo ngày và loại của tháng hiện tại, định mức và tồn khoa theo loại, và tỷ lệ chênh lệch tháng so với ngưỡng 5 %.
+- AC-101-8: R08 chỉ xem và gửi được cho khoa của mình; R01/R02 mọi khoa.
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
 
