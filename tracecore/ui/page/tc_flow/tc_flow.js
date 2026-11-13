@@ -26,6 +26,9 @@ class TcFlowPage {
 		this.modeHint = null; // vai trò chọn ở trang đầu; mở thẳng bằng URL thì theo chức năng của trạm
 		this.dept = null; // khoa đang mở ở cổng khoa: {name, label}
 		this.departments = [];
+		this.modules = []; // phân hệ quản lý của tài khoản (navigation.context)
+		this.manage = null; // key phân hệ đang mở ở không gian quản lý
+		this.manageLink = null;
 		this.visible = false;
 		this.entering = 0;
 		this.root.addEventListener("click", (event) => this.onClick(event));
@@ -43,6 +46,8 @@ class TcFlowPage {
 		document.body.classList.add("tcf-body");
 		let code = TcFlow.stationParam(window.location.search);
 		const department = TcFlow.departmentParam(window.location.search);
+		const manage = TcFlow.manageParam(window.location.search);
+		if (this.manage || manage) return this.enterManage(this.manage || manage, this.manageLink);
 		// Page station mở sau trang này sẽ hủy instance trạm đang giữ (on_page_load của nó): quay lại thì mở lại trạm đó
 		if (this.host && this.host.disposed) {
 			code = code || this.host.station;
@@ -88,7 +93,7 @@ class TcFlowPage {
 	}
 
 	setAddress(station) {
-		const address = TcFlow.path(station, this.dept && this.dept.name);
+		const address = TcFlow.path(station, this.dept && this.dept.name, this.manage);
 		if (window.location.pathname + window.location.search !== address)
 			window.history.replaceState(window.history.state, "", address);
 	}
@@ -149,6 +154,8 @@ class TcFlowPage {
 			]);
 			this.catalog = (context && context.stations) || [];
 			this.departments = (wards && wards.departments) || [];
+			const admin = (context && context.admin_modules) || [];
+			this.modules = admin.length ? admin : (context && context.role_modules) || [];
 			const known = this.dept && this.departments.find((row) => row.name === this.dept.name);
 			if (known && !this.dept.label) this.dept.label = known.label;
 			this.catalogState = "ready";
@@ -161,6 +168,8 @@ class TcFlowPage {
 	}
 
 	showLanding() {
+		this.manage = null;
+		this.manageLink = null;
 		this.view("landing");
 		this.setAddress(null);
 		document.title = `${__("Instrument reprocessing")} – TraceCore`;
@@ -269,6 +278,7 @@ class TcFlowPage {
 
 	async enter(code, mode) {
 		if (mode) this.modeHint = mode;
+		this.manage = null;
 		if (mode === "ktv") this.dept = null;
 		const turn = ++this.entering;
 		this.pane = "work";
@@ -307,6 +317,7 @@ class TcFlowPage {
 	enterDept(department) {
 		this.dept = this.departments.find((row) => row.name === department.name) || department;
 		this.modeHint = "dept";
+		this.manage = null;
 		this.entering += 1;
 		this.pane = "stock";
 		this.view("app");
@@ -371,6 +382,7 @@ class TcFlowPage {
 	}
 
 	mode() {
+		if (this.manage) return "manage";
 		if (this.dept) return "dept";
 		// vào bằng thẻ kỹ thuật viên thì rail giữ đủ T1–T8 kể cả khi đang ở trạm sử dụng
 		if (this.modeHint === "ktv") return "ktv";
@@ -389,6 +401,8 @@ class TcFlowPage {
 
 	render() {
 		if (this.root.dataset.view !== "app") return;
+		if (this.manage) return this.renderManage();
+		this.el(".tcf-manage").hidden = true;
 		const host = this.host;
 		const info = this.stationInfo();
 		const mode = this.mode();
@@ -647,6 +661,150 @@ class TcFlowPage {
 		</section>`;
 	}
 
+	// ---- quản lý: các phân hệ của trang quản lý (Dụng cụ và bộ, ...) trong khung mới ----
+	// Danh sách phân hệ và link lấy từ navigation.context (đúng quyền của tài khoản). Danh sách, form, báo cáo là màn
+	// Desk hiện có, mở ngay trong khung này (iframe cùng origin, ẩn thanh trên của Desk) nên đủ chức năng thêm/sửa/in.
+	enterManage(key, link) {
+		this.manage = key || "instruments";
+		this.manageLink = link || null;
+		this.dept = null;
+		this.modeHint = null;
+		this.entering += 1;
+		this.pane = "work";
+		this.view("app");
+		this.setAddress(null);
+		this.el(".tcf-status").innerHTML = "";
+		document.title = `${__("Management")} – TraceCore`;
+		this.render();
+	}
+
+	// nhãn phân hệ, nhóm và link dịch theo đúng ngữ cảnh của trang quản lý Desk
+	launcherText(text) {
+		return text ? __(text, null, "TraceCore Launcher") : "";
+	}
+
+	manageModule() {
+		return this.modules.find((row) => row.key === this.manage) || this.modules[0] || null;
+	}
+
+	renderManage() {
+		const module = this.manageModule();
+		const link = module ? this.manageLink : null;
+		this.el(".tcf-host").hidden = true;
+		this.el(".tcf-stock").hidden = true;
+		this.el(".tcf-trace").hidden = true;
+		this.el(".tcf-manage").hidden = false;
+		this.el(".tcf-who-name").textContent = __("Management");
+		this.el(".tcf-who-role").textContent = frappe.session.user_fullname || "";
+		this.el(".tcf-net").textContent = "";
+		this.el(".tcf-nav").innerHTML = this.modules
+			.map((row) => {
+				const current = module && row.key === module.key ? ' aria-current="page"' : "";
+				return `<button type="button" class="tcf-nav-item" data-action="tcf-module"
+					data-key="${tcfEsc(row.key)}"${current}>${tcfEsc(this.launcherText(row.label))}</button>`;
+			})
+			.join("");
+		const parts = [__("Home"), __("Management")];
+		if (module) parts.push(this.launcherText(module.label));
+		if (link) parts.push(this.launcherText(link.label));
+		this.el(".tcf-manage .tcf-crumb").textContent = parts.join(" › ");
+		this.el(".tcf-manage h2").textContent = link
+			? this.launcherText(link.label)
+			: module
+			? this.launcherText(module.label)
+			: __("Management");
+		this.el('[data-action="tcf-manage-back"]').hidden = !link;
+		const body = this.el(".tcf-manage-body");
+		const state = [this.catalogState, module && module.key, link && link.route].join("|");
+		if (body.dataset.state === state) return;
+		body.dataset.state = state;
+		body.classList.toggle("tcf-manage-framed", Boolean(link));
+		if (this.catalogState === "loading") body.innerHTML = this.loadingHtml();
+		else if (this.catalogState === "error")
+			body.innerHTML = this.alertHtml(
+				__("Could not load the management pages"),
+				this.catalogError,
+				__("Check the connection and try again."),
+				"tcf-catalog-retry"
+			);
+		else if (!module)
+			body.innerHTML = `<p class="tcf-empty">${tcfEsc(
+				__("No management pages for your account")
+			)}</p>`;
+		else if (link) this.embed(body, link);
+		else body.innerHTML = this.moduleHtml(module);
+	}
+
+	moduleHtml(module) {
+		const sections = module.sections
+			.map((section) => {
+				const links = section.links
+					.map(
+						(link) => `<button type="button" class="tcf-link" data-action="tcf-link"
+							data-route="${tcfEsc(link.route)}">${tcfEsc(this.launcherText(link.label))}</button>`
+					)
+					.join("");
+				return `<section class="tcf-card">
+					<h3>${tcfEsc(this.launcherText(section.label))} <span class="tcf-count">${
+					section.links.length
+				}</span></h3>
+					<div class="tcf-links">${links}</div>
+				</section>`;
+			})
+			.join("");
+		return `<p class="tcf-sub-line">${tcfEsc(
+			this.launcherText(module.description || "")
+		)}</p>${sections}`;
+	}
+
+	// màn Desk hiện có trong khung: chỉ nhận đường dẫn /app/... do máy chủ trả về; ẩn thanh trên của Desk
+	embed(body, link) {
+		if (!/^\/app\//.test(link.route || "")) {
+			body.innerHTML = `<p class="tcf-empty">${tcfEsc(
+				__("No management pages for your account")
+			)}</p>`;
+			return;
+		}
+		body.innerHTML = "";
+		const frame = document.createElement("iframe");
+		frame.className = "tcf-frame";
+		frame.title = this.launcherText(link.label);
+		frame.addEventListener("load", () => {
+			try {
+				const style = frame.contentDocument.createElement("style");
+				style.textContent = ".navbar{display:none!important}:root{--navbar-height:0rem}";
+				frame.contentDocument.head.appendChild(style);
+			} catch (error) {
+				// không chèn được kiểu thì màn vẫn dùng được, chỉ còn thanh trên của Desk
+			}
+		});
+		frame.src = link.route;
+		body.appendChild(frame);
+	}
+
+	onManageClick(action, button) {
+		if (action === "tcf-manage") {
+			// tài khoản không có phân hệ quản lý nào: về trang chủ Desk như trước
+			if (this.catalogState === "ready" && !this.modules.length)
+				window.location.assign("/app/tracecore");
+			else this.enterManage("instruments");
+		} else if (action === "tcf-module") {
+			this.manage = button.dataset.key;
+			this.manageLink = null;
+			this.setAddress(null);
+			this.render();
+		} else if (action === "tcf-link") {
+			const module = this.manageModule();
+			const links = module ? module.sections.flatMap((section) => section.links) : [];
+			this.manageLink = links.find((link) => link.route === button.dataset.route) || null;
+			this.render();
+		} else if (action === "tcf-manage-back") {
+			this.manageLink = null;
+			this.render();
+		} else return false;
+		return true;
+	}
+
 	// ---- thao tác ----
 	onSubmit(event) {
 		const form = event.target.closest(".tcf-trace .tcf-scan");
@@ -662,8 +820,8 @@ class TcFlowPage {
 		const button = event.target.closest("[data-action^='tcf-']");
 		if (!button || button.disabled) return;
 		const action = button.dataset.action;
-		if (action === "tcf-manage") window.location.assign("/app/tracecore");
-		else if (action === "tcf-catalog-retry") this.loadCatalog();
+		if (this.onManageClick(action, button)) return;
+		if (action === "tcf-catalog-retry") this.loadCatalog();
 		else if (action === "tcf-enter") {
 			const code = this.el(`#tcf-${button.dataset.mode}-station`).value;
 			if (code && button.dataset.mode === "dept") this.enterDept({ name: code });

@@ -20,8 +20,9 @@ const TC_FLOW_DEPT_FUNCTION = "USE";
 
 const TcFlow = {
 	// cổng khoa mang thêm ?department=<khoa>; trạm (nếu đang mở) ở ?station=<mã>
-	path(station, department) {
+	path(station, department, manage) {
 		const query = [];
+		if (manage) return `/app/tc-flow?manage=${encodeURIComponent(manage)}`;
 		if (department) query.push(`department=${encodeURIComponent(department)}`);
 		if (station) query.push(`station=${encodeURIComponent(station)}`);
 		return query.length ? `/app/tc-flow?${query.join("&")}` : "/app/tc-flow";
@@ -29,6 +30,10 @@ const TcFlow = {
 
 	stationParam(search) {
 		return new URLSearchParams(search || "").get("station") || null;
+	},
+
+	manageParam(search) {
+		return new URLSearchParams(search || "").get("manage") || null;
 	},
 
 	departmentParam(search) {

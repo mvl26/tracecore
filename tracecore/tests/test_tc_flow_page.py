@@ -62,6 +62,8 @@ class TestTcFlowShell(FrappeTestCase):
 				dept: TcFlow.path(null, "Khoa A - MD"),
 				deptStation: TcFlow.path("TR-008", "K1"),
 				deptParam: TcFlow.departmentParam("?department=K1&station=TR-008"),
+				manage: TcFlow.path(null, null, "instruments"),
+				manageParam: TcFlow.manageParam("?manage=instruments"),
 				param: TcFlow.stationParam("?station=TR-001&x=1"),
 				none: TcFlow.stationParam(""),
 			});""",
@@ -72,6 +74,8 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertEqual(out["dept"], "/app/tc-flow?department=Khoa%20A%20-%20MD")
 		self.assertEqual(out["deptStation"], "/app/tc-flow?department=K1&station=TR-008")
 		self.assertEqual(out["deptParam"], "K1")
+		self.assertEqual(out["manage"], "/app/tc-flow?manage=instruments")
+		self.assertEqual(out["manageParam"], "instruments")
 		self.assertIsNone(out["none"])
 
 	def test_station_lists_keep_only_the_instrument_flow(self):
@@ -295,6 +299,13 @@ class TestTcFlowPage(FrappeTestCase):
 		self.assertIn('"tracecore.v1.flow.department_stock"', source)
 		self.assertIn('this.fillSelect("dept", this.departments', source)
 		self.assertIn("enterDept(", source)
+		# quản lý (Dụng cụ và bộ, ...) nằm trong khung mới: phân hệ theo quyền từ navigation.context, màn Desk hiện có
+		# mở trong khung và chỉ nhận đường dẫn /app/ do máy chủ trả về
+		self.assertIn("context.admin_modules", source)
+		self.assertIn("context.role_modules", source)
+		self.assertIn('this.enterManage("instruments")', source)
+		self.assertIn("tcf-frame", source)
+		self.assertIn("/^\\/app\\//.test(link.route", source)
 		# Page station mở sau sẽ hủy instance trạm của khung: quay lại phải mở lại trạm, không hiện màn đã hủy
 		self.assertIn("this.host && this.host.disposed", source)
 		self.assertIn('"tracecore.v1.trace.query"', source)
@@ -313,7 +324,16 @@ class TestTcFlowPage(FrappeTestCase):
 		html = (PAGE_DIR / "tc_flow.html").read_text(encoding="utf-8")
 		css = (PAGE_DIR / "tc_flow.css").read_text(encoding="utf-8")
 		source = (PAGE_DIR / "tc_flow.js").read_text(encoding="utf-8")
-		for cls in ("tcf-landing", "tcf-roles", "tcf-rail", "tcf-nav", "tcf-host", "tcf-stock", "tcf-trace"):
+		for cls in (
+			"tcf-landing",
+			"tcf-roles",
+			"tcf-rail",
+			"tcf-nav",
+			"tcf-host",
+			"tcf-stock",
+			"tcf-trace",
+			"tcf-manage",
+		):
 			self.assertIn(cls, html)
 		# lỗi chặn: alert inline theo kết quả → lý do → hành động; không modal, không toast
 		self.assertLess(source.index("tcf-alert-title"), source.index("tcf-alert-reason"))

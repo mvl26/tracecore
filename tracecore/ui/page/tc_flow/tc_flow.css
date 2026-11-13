@@ -455,6 +455,63 @@ body.tcf-body .layout-main-section {
 	color: var(--tc-text-2);
 }
 
+/* ---- quản lý: thẻ link của phân hệ và màn Desk mở trong khung ---- */
+.tcf-zonebar-web {
+	background: var(--tc-zone-web);
+}
+
+.tcf-manage:not([hidden]) {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	padding-bottom: 0;
+}
+
+.tcf-sub-line {
+	margin: 0 0 var(--tc-sp-3);
+	color: var(--tc-text-2);
+}
+
+.tcf-count {
+	color: var(--tc-text-2);
+	font-weight: var(--tc-fw-regular);
+}
+
+.tcf-links {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--tc-role-card), 1fr));
+	gap: var(--tc-touch-gap);
+}
+
+.tcf-link {
+	min-height: var(--tc-touch-station);
+	padding: var(--tc-sp-2-5) var(--tc-sp-4);
+	border: var(--tc-bw-hair) solid var(--tc-line);
+	border-left: var(--tc-bw-accent) solid var(--tc-primary);
+	border-radius: var(--tc-r-lg);
+	background: var(--tc-card);
+	color: var(--tc-text-heading);
+	font: inherit;
+	font-weight: var(--tc-fw-bold);
+	text-align: left;
+	cursor: pointer;
+}
+
+.tcf-manage-body.tcf-manage-framed {
+	display: flex;
+	flex: 1;
+	margin: 0;
+	border-top: var(--tc-bw-hair) solid var(--tc-line);
+}
+
+.tcf-frame {
+	flex: 1;
+	width: 100%;
+	min-height: 70vh;
+	border: 0;
+	background: var(--tc-card);
+}
+
 /* lỗi chặn: khối đỏ inline, kết quả → lý do → hành động */
 .tcf-alert {
 	margin: var(--tc-sp-2) 0 var(--tc-sp-3);
