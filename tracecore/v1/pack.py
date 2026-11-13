@@ -81,7 +81,7 @@ def _scan_invalid(scanned):
 	"""Mã không dùng được ở màn đóng gói: lạ (khi chưa mở bộ) hoặc mã nội bộ của loại khác (nhân viên, thiết bị…)."""
 	if scanned["type"] == "unknown":
 		reason = _("Code {0} is not a set, pack or label roll.")
-		action = _("Scan indicator lots in the separate indicator lot field.")
+		action = _("Scan the Set ID first, then scan the indicator lot.")
 	else:
 		reason = _("Code {0} is not a set, pack or label roll.")
 		action = _("Scan the Set ID, the Cycle ID or the label roll code.")
@@ -115,9 +115,20 @@ def _open_set_rules(open_set):
 	return method, ci_class.classes_for(row.ci_class)
 
 
+def _ci_result(raw, open_set):
+	"""Kiểm lô chỉ thị cho bộ đang mở: loại chỉ thị của loại bộ (A-154; chưa khai = 5/6), phương pháp, hạn dùng."""
+	method, classes = _open_set_rules(open_set)
+	lot = packing.resolve_ci_batch(raw.strip(), method, today(), classes)
+	return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
+
+
 def _route(scanned, raw, station, open_set):
-	"""Ô chính T4: Set ID, Cycle ID hoặc cuộn nhãn; lô chỉ thị có endpoint riêng."""
+	"""Ô chính T4: Set ID, Cycle ID, cuộn nhãn; mã khác khi đang mở bộ cần chỉ thị = lô chỉ thị (SCR-08, A-02/D10)."""
 	kind = scanned["type"]
+	if kind == "unknown" and isinstance(open_set, str) and open_set:
+		_method, classes = _open_set_rules(open_set)
+		if classes:
+			return _ci_result(raw, open_set)
 	if kind == "set":
 		return {"ok": True, "kind": "context", "context": packing.get_context(raw, station)}
 	if kind == "pack":
@@ -136,7 +147,8 @@ def scan(raw, station, open_set=None, entry_mode="Scan", manual_reason=None, cli
 	- ``context`` (Set ID): ngữ cảnh đóng gói của bộ (BOM, cổng, bảo dưỡng, cơ số, loại gói, máy in);
 	- ``pack`` (Cycle ID hoặc DataMatrix nhãn gói): tra cứu gói (AC-14);
 	- ``roll`` (``CN-#####``): đổi cuộn của máy in duy nhất của trạm (AC-9);
-	Lô chỉ thị dùng endpoint ``resolve_ci`` của ô riêng, không phân loại từ ô chính.
+	- ``ci``: mã không phải các loại trên khi đang mở bộ cần chỉ thị = lô chỉ thị, cùng luật với ``resolve_ci``
+	  (SCR-08: quét lô qua ô quét duy nhất ở đầu màn; ô lô riêng và nút chọn lô A-120 vẫn dùng được).
 
 	Từ chối nghiệp vụ: xem `_common.run_at_step`; mã lạ khi chưa mở bộ và mã loại khác là ``SCAN_INVALID`` (422).
 	"""
@@ -171,17 +183,12 @@ def resolve_ci(raw, station, open_set, client_ts=None, token=None):
 		raise BadRequestError(_("raw and open_set must be strings."))
 	timestamp = parse_client_ts(client_ts)
 
-	def resolve():
-		method, classes = _open_set_rules(open_set)
-		lot = packing.resolve_ci_batch(raw.strip(), method, today(), classes)
-		return {"ok": True, "kind": "ci", "ci": {**lot, "expiry_date": str(lot["expiry_date"])}}
-
 	scanned = gs1.parse_scan(open_set)
 	return run_at_step(
 		FUNCTION,
 		station,
 		timestamp,
-		resolve,
+		lambda: _ci_result(raw, open_set),
 		"Set Unit" if scanned["type"] == "set" else None,
 		scanned["id"],
 		raw.strip(),

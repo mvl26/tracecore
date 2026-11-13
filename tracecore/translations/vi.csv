@@ -1377,7 +1377,7 @@ Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy c
 "Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
 Scan indicator lot,Quét lô chỉ thị,
 "Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
-Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
+"Scan the Set ID first, then scan the indicator lot.","Quét Set ID trước, rồi quét lô chỉ thị.",
 "Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
 raw and open_set must be strings.,raw và open_set phải là chuỗi.,
 Absolute Expires At,Thời điểm hết hạn tối đa,Station Session
@@ -11962,3 +11962,9 @@ Sets of the department being reprocessed at CSSD,Bộ của khoa đang tái xử
 Packs to confirm for recall,Gói cần xác nhận thu hồi
 Dirty returns waiting for CSSD pickup,Yêu cầu trả đồ bẩn chờ KSNK lấy
 Sets currently at the department,Danh sách bộ đang ở khoa
+Login session has ended,Phiên đăng nhập đã hết,
+The server did not accept the photo {0} for this login.,Máy chủ không nhận ảnh {0} của phiên đăng nhập này.,
+"Scan your employee card again, then choose the photo again.","Quét lại thẻ nhân viên, rồi chọn lại ảnh.",
+No connection to the server: the file {0} was not uploaded.,Không kết nối được máy chủ: tệp {0} chưa được tải lên.,
+Server error ({0}): the file {1} was not uploaded.,Lỗi máy chủ ({0}): tệp {1} chưa được tải lên.,
+"Choose the photo again. If it fails again, call R10.","Chọn lại ảnh. Nếu vẫn lỗi, gọi quản trị hệ thống.",

@@ -141,8 +141,16 @@ class TestPackTypes(IsolatedTestCase):
 		by_item = {row["item"]: row for row in rows}
 		self.assertEqual(
 			by_item[other],
-			# A-122: thêm nhóm vật liệu gói và cờ mặc định của bộ
-			{"item": other, "item_name": other, "shelf_life_days": 180, "material": "", "is_default": False},
+			# A-122: thêm nhóm vật liệu gói và cờ mặc định của bộ; A-155: kích thước túi ép, số lớp giấy bọc
+			{
+				"item": other,
+				"item_name": other,
+				"shelf_life_days": 180,
+				"material": "",
+				"pouch_size": "",
+				"wrap_layers": "",
+				"is_default": False,
+			},
 		)
 		self.assertEqual(len(listed), len(set(listed)))
 
