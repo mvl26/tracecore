@@ -201,13 +201,18 @@ class TestWashingStart(FrappeTestCase):
 		self.assertEqual((self.batch_count(), frappe.db.count("Code Registry", {"prefix": "LR"})), before)
 		self.assertFalse(frappe.db.exists("Wash Batch Set Unit", {"set_unit": unit.name}))
 
-	def test_start_rejects_client_clock_far_from_server_before_writing(self):
+	def test_start_accepts_client_clock_far_from_server(self):
+		# A-160: thời điểm nạp theo giờ máy khách; lệch giờ server chỉ ghi Audit Log
 		unit = make_wash_ready_set()
 		before = self.batch_count()
 		skewed = client_time.utc_now() - timedelta(seconds=client_time.max_skew_seconds() + 3600)
-		with self.assertRaises(client_time.ClientTimestampError):
-			self.start([unit.name], client_ts=skewed)
-		self.assertEqual(self.batch_count(), before)
+		self.start([unit.name], client_ts=skewed)
+		self.assertEqual(self.batch_count(), before + 1)
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log", {"action": "Override", "reason": client_time.SKEW_REASON, "client_ts": skewed}
+			)
+		)
 
 
 class TestWashingLabel(IsolatedTestCase):

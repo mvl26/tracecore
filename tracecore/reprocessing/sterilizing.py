@@ -557,7 +557,7 @@ def complete(
 	"""Hoàn thành nạp: sinh mã mẻ `ME-YYMMDD-NN` cho các gói quét vào máy, ghi mẻ `Running`, gói sang Trong mẻ, xếp lệnh in nhãn QR.
 
 	`client_ts` là kết quả `parse_client_ts` (UTC); giờ nạp = giờ hệ thống của nó, lệch giờ server quá
-	`client_time.max_skew_seconds()` → ClientTimestampError trước khi ghi gì. `operator` là Employee đăng nhập thẻ. Máy phải
+	`client_time.max_skew_seconds()` → chỉ ghi Audit Log (A-160), vẫn nhận. `operator` là Employee đăng nhập thẻ. Máy phải
 	Sẵn sàng, chương trình thuộc máy (cả mẻ bị từ chối nếu sai). Gói nào không còn hợp lệ (bị mẻ khác lấy, vượt dung
 	tích…) vào `rejected` mà không dừng mẻ; không còn gói nào → LOAD_EMPTY. Mọi lỗi hoàn tác về savepoint rồi ném lại:
 	không còn mẻ, dòng Code Registry hay số series nào. In không bao giờ làm mất mã mẻ.
