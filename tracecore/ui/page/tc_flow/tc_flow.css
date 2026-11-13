@@ -352,7 +352,47 @@ body.tcf-body .layout-main-section {
 	border-left-color: var(--tc-warn);
 }
 
+/* Mở màn Bộ tại khoa và cơ số: ô số liệu, thẻ và từng dòng hiện dần từ dưới lên, lần lượt */
+@keyframes tcf-rise {
+	from {
+		opacity: 0;
+		transform: translateY(var(--tc-sp-2-5));
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.tcf-stock-body .tcf-kpi,
+.tcf-stock-body .tcf-card,
+.tcf-stock-body .tcf-table tbody tr {
+	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) both;
+}
+
+.tcf-stock-body .tcf-kpi:nth-child(2) {
+	animation-delay: calc(var(--tc-dur-fast) / 2);
+}
+
+.tcf-stock-body .tcf-kpi:nth-child(3) {
+	animation-delay: var(--tc-dur-fast);
+}
+
+.tcf-stock-body .tcf-kpi:nth-child(4) {
+	animation-delay: calc(var(--tc-dur-fast) * 1.5);
+}
+
+.tcf-stock-body .tcf-card {
+	animation-delay: var(--tc-dur-base);
+}
+
+.tcf-stock-body .tcf-table tbody tr {
+	animation-delay: calc(var(--tc-dur-base) + var(--tc-dur-fast) / 3 * var(--tcf-i, 0));
+}
+
 .tcf-kpi b {
+	font-variant-numeric: tabular-nums;
 	display: block;
 	color: var(--tc-text-heading);
 	font-size: var(--tc-fs-4xl);
@@ -576,5 +616,6 @@ body.tcf-body .layout-main-section {
 @media (prefers-reduced-motion: reduce) {
 	.tcf * {
 		transition: none !important;
+		animation: none !important;
 	}
 }

@@ -143,6 +143,45 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertEqual(out["byCycle"], {"cycle_id": "CY-261101-0001"})
 		self.assertEqual(out["bySet"], {"set_id": "(01)0893(21)DB01-007"})
 
+	def test_count_up_runs_from_zero_to_the_real_number(self):
+		"""Mở màn Bộ tại khoa và cơ số: số chạy từ 0 tới giá trị thật, chậm dần, không vượt đích."""
+		out = run(
+			self,
+			"""const steps = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1].map((p) => TcFlow.countAt(16, p));
+			emit({
+				steps,
+				clamp: [TcFlow.countAt(16, -1), TcFlow.countAt(16, 5)],
+				zero: [TcFlow.countAt(0, 0.5), TcFlow.countAt(null, 0.5), TcFlow.countAt(-3, 1)],
+				one: TcFlow.countAt(1, 1),
+				ms: TcFlow.COUNT_MS,
+			});""",
+		)
+		steps = out["steps"]
+		self.assertEqual(steps[0], 0)
+		self.assertEqual(steps[-1], 16)
+		self.assertEqual(steps, sorted(steps))
+		# chậm dần: nửa đầu đi được nhiều hơn nửa sau
+		self.assertGreater(steps[3], 16 - steps[3])
+		self.assertEqual(out["clamp"], [0, 16])
+		self.assertEqual(out["zero"], [0, 0, 0])
+		self.assertEqual(out["one"], 1)
+		self.assertGreaterEqual(out["ms"], 400)
+		self.assertLessEqual(out["ms"], 1200)
+
+	def test_stock_screen_animates_and_respects_reduced_motion(self):
+		css = (PAGE_DIR / "tc_flow.css").read_text(encoding="utf-8")
+		source = (PAGE_DIR / "tc_flow.js").read_text(encoding="utf-8")
+		self.assertIn('data-count="', source)
+		self.assertIn("TcFlow.countAt(", source)
+		self.assertIn("requestAnimationFrame", source)
+		# người dùng tắt chuyển động: hiện ngay số thật, không chạy số, không trượt
+		self.assertIn("(prefers-reduced-motion: reduce)", source)
+		self.assertIn("@keyframes tcf-rise", css)
+		reduced = css[css.index("prefers-reduced-motion") :]
+		self.assertIn("animation: none", reduced)
+		# số trong ô không làm ô co giãn khi đang chạy
+		self.assertIn("tabular-nums", css)
+
 	def test_station_kit_is_loaded_in_a_private_scope(self):
 		# script của Page station kết thúc bằng gán vào frappe.pages["station"]; nạp riêng không được để lại dấu vết toàn cục
 		out = run(

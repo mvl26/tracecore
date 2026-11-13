@@ -539,6 +539,7 @@ class TcFlowPage {
 			if (this.dept && result.department_name) this.dept.label = result.department_name;
 			box.innerHTML = this.stockHtml(result);
 			this.render();
+			this.countUp(box);
 		} catch (error) {
 			if (stale()) return;
 			box.innerHTML = this.alertHtml(
@@ -550,25 +551,47 @@ class TcFlowPage {
 		}
 	}
 
+	// Mở màn: các số chạy từ 0 tới giá trị thật trong TcFlow.COUNT_MS; người dùng tắt chuyển động thì giữ nguyên số thật
+	countUp(box) {
+		cancelAnimationFrame(this.countFrame);
+		const items = Array.from(box.querySelectorAll("[data-count]"));
+		const reduced =
+			window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (!items.length || reduced) return;
+		const targets = items.map((item) => Number(item.dataset.count));
+		const paint = (progress) =>
+			items.forEach((item, index) => {
+				item.textContent = TcFlow.countAt(targets[index], progress);
+			});
+		const started = performance.now();
+		const tick = (now) => {
+			const progress = (now - started) / TcFlow.COUNT_MS;
+			paint(progress);
+			if (progress < 1) this.countFrame = requestAnimationFrame(tick);
+		};
+		paint(0);
+		this.countFrame = requestAnimationFrame(tick);
+	}
+
 	// Bộ tại khoa và cơ số: 4 ô số liệu rồi danh sách bộ đang ở khoa (Cycle ID, Set ID, loại bộ, hạn dùng, trạng thái)
 	stockHtml(overview) {
 		const counts = TcFlow.stockCounts(overview);
 		const day = (value) => (value ? frappe.datetime.str_to_user(value) : "");
 		const kpi = (value, text, tone) =>
-			`<div class="tcf-kpi" data-tone="${tone}"><b>${value}</b><small>${tcfEsc(
+			`<div class="tcf-kpi" data-tone="${tone}"><b data-count="${value}">${value}</b><small>${tcfEsc(
 				text
 			)}</small></div>`;
 		const heldLabel = counts.par
 			? __("Sets at the department · par level {0}–{1}", counts.par)
 			: __("Sets at the department · no par level set");
 		const held = (overview.at_department || [])
-			.map((row) => {
+			.map((row, index) => {
 				const expiring = row.expiring
 					? ` <span class="tcf-badge" data-tone="warn">${tcfEsc(
 							__("Expiring soon")
 					  )}</span>`
 					: "";
-				return `<tr>
+				return `<tr style="--tcf-i: ${Math.min(index, 12)}">
 					<td class="tcf-code">${tcfEsc(row.cycle_id)}</td>
 					<td class="tcf-code">${tcfEsc(row.set_id)}</td>
 					<td>${tcfEsc(row.set_name || row.set_type)}</td>
