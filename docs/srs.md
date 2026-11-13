@@ -1011,6 +1011,7 @@ Quy tắc chung của phân hệ (áp dụng cho mọi FR M2 từ FR-M2-01 đế
 | FR-M9-29.1 | Hệ thống phải ghi rõ nguồn của mỗi dòng tự đánh giá: Tự động / Thủ công. | Should | Active | TCCN |
 | FR-M9-30 | Khi R01 yêu cầu xuất hồ sơ KSNK cho đoàn kiểm tra theo kỳ, hệ thống phải xuất gói PDF + Excel gồm kế hoạch, biên bản Hội đồng, kết quả giám sát, chỉ số và đào tạo, với mã người bệnh đã che (cùng cơ chế FR-M9-12). | Could | Active | UC-57; SCR-66; BRU-RPT-002; liên kết FR-M9-12. Nguồn: BA v1.12 (A-113) |
 | FR-M9-30.1 | Hệ thống phải bảo đảm gói xuất không chứa dữ liệu cá nhân dạng rõ. | Could | Active | TCCN; NFR-PRIV-01 |
+| FR-M9-31 | Khi người dùng mở `/app/tc-flow`, hệ thống phải cho chọn không gian làm việc theo vai trò (kỹ thuật viên tại trạm, khoa sử dụng), hiện danh sách trạm của luồng xử lý dụng cụ ở thanh bên và thứ tự bước T1–T8, và cho làm đủ thao tác của trạm bằng chức năng hiện có (quét thẻ kiểm năng lực, các màn T1–T8, gói tại khoa, tra cứu gói); màn `/app/station` không thay đổi. | Should | Active | A-158 |
 
 #### 3.1.10 M10 — Quản lý chất thải y tế [NEW v1.11]
 

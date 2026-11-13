@@ -11905,3 +11905,44 @@ Set type updated.,Đã cập nhật loại bộ.,
 Nothing changed.,Không có gì thay đổi.,
 Default indicator {0} no longer fits and was cleared.,Chỉ thị mặc định {0} không còn phù hợp nên đã được bỏ trống.,
 {0} must be one of: {1}.,{0} phải là một trong: {1}.,
+No connection to the server.,Không kết nối được máy chủ.
+Your account is not allowed to open this.,Tài khoản của bạn không được mở mục này.
+Instrument reprocessing,Tái xử lý dụng cụ
+Could not load the station list,Không tải được danh sách trạm
+Check the connection and try again.,Kiểm tra kết nối rồi thử lại.
+No station for your account,Tài khoản chưa có trạm nào
+Could not open the station,Không mở được trạm
+Department portal,Cổng khoa
+Packs at the department,Gói tại khoa
+Trace a pack,Tra cứu gói
+Scan usage,Quét sử dụng
+Scan your employee card in Scan usage to see the packs at your department.,Quét thẻ nhân viên ở mục Quét sử dụng để xem gói tại khoa.
+Offline: the list of packs at the department needs a connection.,Ngoại tuyến: cần kết nối để xem danh sách gói tại khoa.
+Could not load the packs at the department,Không tải được danh sách gói tại khoa
+Within shelf life,Còn hạn
+Packs expiring soon,Gói sắp hết hạn
+Used packs waiting to return to receiving,Gói đã dùng chờ trả về trạm tiếp nhận
+Packs at {0},Gói tại {0}
+Set name,Tên bộ
+Expiry,Hạn dùng
+Pack status,Trạng thái gói
+No packs at the department.,Khoa chưa có gói nào.
+Used at,Thời điểm dùng
+No used packs are waiting.,Không có gói đã dùng nào chờ trả.
+Could not trace this code,Không tra cứu được mã này
+"Check the code and the connection, then scan again.",Kiểm tra mã và kết nối rồi quét lại.
+No pack found for this code.,Không tìm thấy gói nào theo mã này.
+Person / machine,Người / máy
+Choose your role to open the right workspace.,Chọn vai trò để vào đúng không gian làm việc.
+Head of infection control,Trưởng khoa KSNK
+"Dashboards, approvals, recalls, costs, equipment and staff are on the management pages.","Bảng điều khiển, phê duyệt, thu hồi, giá thành, thiết bị và nhân sự nằm ở các trang quản lý."
+Open management pages,Mở trang quản lý
+Instrument reprocessing technician,Kỹ thuật viên xử lý dụng cụ
+"Work at the scan stations by zone: receiving, washing, assembly, packing, sterilization, release, sterile store, issue.","Làm việc tại trạm quét theo khu: tiếp nhận, rửa, lắp ráp, đóng gói, tiệt khuẩn, giải phóng, kho vô khuẩn, cấp phát."
+Scan card at station,Quét thẻ vào trạm
+Department using instruments,Khoa gửi dụng cụ
+"See the packs at your department, scan a pack before use and trace a pack.","Xem gói đang có tại khoa, quét gói trước khi dùng và tra cứu gói."
+Department station,Trạm của khoa
+Open department portal,Vào cổng khoa
+Scan Cycle ID or Set ID,Quét Cycle ID hoặc Set ID
+Scan Cycle ID or Set ID...,Quét Cycle ID hoặc Set ID...

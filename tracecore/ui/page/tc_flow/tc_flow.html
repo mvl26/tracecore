@@ -1,0 +1,63 @@
+<div class="tcf" data-view="landing">
+	<section class="tcf-landing">
+		<h1 class="tcf-brand">TraceCore</h1>
+		<p class="tcf-sub">{%= __("Choose your role to open the right workspace.") %}</p>
+		<div class="tcf-landing-status" aria-live="polite"></div>
+		<div class="tcf-roles">
+			<article class="tcf-role tcf-role-lead">
+				<h3>{%= __("Head of infection control") %}</h3>
+				<p>{%= __("Dashboards, approvals, recalls, costs, equipment and staff are on the management pages.") %}</p>
+				<button type="button" class="tcf-btn tcf-btn-wide" data-action="tcf-manage">{%= __("Open management pages") %}</button>
+			</article>
+			<article class="tcf-role tcf-role-ktv">
+				<h3>{%= __("Instrument reprocessing technician") %}</h3>
+				<p>{%= __("Work at the scan stations by zone: receiving, washing, assembly, packing, sterilization, release, sterile store, issue.") %}</p>
+				<label class="tcf-sr" for="tcf-ktv-station">{%= __("Station") %}</label>
+				<select id="tcf-ktv-station" class="tcf-select" disabled></select>
+				<button type="button" class="tcf-btn tcf-btn-wide" data-action="tcf-enter" data-mode="ktv" disabled>{%= __("Scan card at station") %}</button>
+			</article>
+			<article class="tcf-role tcf-role-dept">
+				<h3>{%= __("Department using instruments") %}</h3>
+				<p>{%= __("See the packs at your department, scan a pack before use and trace a pack.") %}</p>
+				<label class="tcf-sr" for="tcf-dept-station">{%= __("Department station") %}</label>
+				<select id="tcf-dept-station" class="tcf-select" disabled></select>
+				<button type="button" class="tcf-btn tcf-btn-wide" data-action="tcf-enter" data-mode="dept" disabled>{%= __("Open department portal") %}</button>
+			</article>
+		</div>
+	</section>
+	<div class="tcf-app" hidden>
+		<aside class="tcf-rail">
+			<div class="tcf-who"><b class="tcf-who-name"></b><small class="tcf-who-role"></small></div>
+			<nav class="tcf-nav" aria-label="{%= __("Station") %}"></nav>
+			<div class="tcf-foot">
+				<span class="tcf-net" role="status"></span>
+				<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-logout">{%= __("Log out") %}</button>
+			</div>
+		</aside>
+		<div class="tcf-main">
+			<div class="tcf-status" aria-live="polite"></div>
+			<div class="tcf-host"></div>
+			<section class="tcf-pane tcf-stock" aria-live="polite" hidden>
+				<div class="tcf-zonebar" role="presentation"></div>
+				<p class="tcf-crumb"></p>
+				<header class="tcf-title">
+					<h2>{%= __("Packs at the department") %}</h2>
+					<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-stock-refresh">{%= __("Refresh") %}</button>
+				</header>
+				<div class="tcf-stock-body"></div>
+			</section>
+			<section class="tcf-pane tcf-trace" hidden>
+				<div class="tcf-zonebar" role="presentation"></div>
+				<p class="tcf-crumb"></p>
+				<header class="tcf-title"><h2>{%= __("Trace a pack") %}</h2></header>
+				<form class="tcf-scan" autocomplete="off" novalidate>
+					<label class="tcf-sr" for="tcf-trace-input">{%= __("Scan Cycle ID or Set ID") %}</label>
+					<input id="tcf-trace-input" class="tcf-scan-input" type="text" autocomplete="off" autocapitalize="off"
+						spellcheck="false" placeholder="{%= __("Scan Cycle ID or Set ID...") %}" />
+					<button type="submit" class="tcf-btn">{%= __("Scan") %}</button>
+				</form>
+				<div class="tcf-trace-body" aria-live="polite"></div>
+			</section>
+		</div>
+	</div>
+</div>

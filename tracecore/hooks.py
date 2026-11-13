@@ -144,6 +144,8 @@ page_js = {
 	],
 	# A-113/A-131 (FEAT-056): màn quản lý KSNK toàn viện — shell (rail, router, 4 trạng thái); màn từng SCR nạp khi mở
 	"tc-ksnk": ["public/js/ksnk/ksnk_shell.js"],
+	# A-158 (FEAT-099): khung giao diện người dùng cho luồng xử lý dụng cụ (Page tc-flow), phần thuần có test Node
+	"tc-flow": ["public/js/tc_flow_shell.js"],
 }
 
 # include js in doctype views
