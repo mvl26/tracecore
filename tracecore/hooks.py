@@ -104,6 +104,8 @@ page_js = {
 		"public/js/station_program_match.js",
 		# A-111: vật tư của chương trình, dùng chung cho T2, T5 và test đầu ngày
 		"public/js/station_consumables.js",
+		# A-159: tải ảnh qua phiên thẻ, dùng chung cho T2, T3, T5 và test đầu ngày
+		"public/js/station_photo.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		# A-68: chọn tay thiết bị và bộ/gói khi máy quét hỏng (shell gọi qua TcPicker)
@@ -144,6 +146,9 @@ page_js = {
 	],
 	# A-113/A-131 (FEAT-056): màn quản lý KSNK toàn viện — shell (rail, router, 4 trạng thái); màn từng SCR nạp khi mở
 	"tc-ksnk": ["public/js/ksnk/ksnk_shell.js"],
+	# A-158 (FEAT-099): khung giao diện người dùng cho luồng xử lý dụng cụ (Page tc-flow), phần thuần có test Node
+	# FEAT-102 (A-162): tc_flow_lead.js dựng 7 màn của khu Trưởng khoa KSNK
+	"tc-flow": ["public/js/tc_flow_shell.js", "public/js/tc_flow_lead.js"],
 }
 
 # include js in doctype views
@@ -448,6 +453,10 @@ doc_events = {
 	"Issue Note": dict(_AUDIT_EVENTS),
 	# quét sử dụng T8 (FEAT-027): mã bệnh nhân (Password) bị bỏ khỏi Audit; bổ sung mã sau ghi sổ (ca cấp cứu)
 	"Usage Record": {**_AUDIT_EVENTS, "on_update_after_submit": "tracecore.core.audit.on_document_event"},
+	# yêu cầu lấy đồ bẩn khoa gửi KSNK (FEAT-100, A-160): ghi sổ một lần, không hủy, không xóa
+	"Dirty Return Request": dict(_AUDIT_EVENTS),
+	# đề nghị cấp bộ dụng cụ khoa gửi KSNK (FEAT-101, A-161): ghi sổ một lần, không hủy, không xóa
+	"Set Issue Request": dict(_AUDIT_EVENTS),
 	"Printer": dict(_AUDIT_EVENTS),
 	"Label Template": dict(_AUDIT_EVENTS),
 	"Zone Station": dict(_AUDIT_EVENTS),

@@ -66,7 +66,6 @@ Missing or invalid X-Idempotency-Key header.,Thiếu khóa chống trùng (X-Ide
 X-Idempotency-Key {0} was already used for a different request.,X-Idempotency-Key {0} đã dùng cho một yêu cầu khác.,
 client_ts is required (ISO 8601 with offset).,Thiếu client_ts (ISO 8601 có múi giờ).,
 client_ts must be ISO 8601 with a UTC offset: {0},client_ts phải theo ISO 8601 có múi giờ: {0},
-"The station clock differs from the server clock by {0} minutes. Call R10 to check the station time (NTP), then try again.","Đồng hồ của trạm lệch đồng hồ máy chủ {0} phút. Gọi quản trị hệ thống kiểm tra giờ của trạm (NTP), rồi thử lại.",
 This method requires the role {0}.,Thao tác này cần vai trò {0}.,
 This agent is not registered for station {0}.,Phần mềm trạm này chưa được đăng ký với trạm {0}.,
 Invalid print status: {0},Trạng thái in không hợp lệ: {0},
@@ -1377,7 +1376,7 @@ Card login needs the server.,Đăng nhập bằng thẻ cần kết nối máy c
 "Scan next Set ID, Cycle ID or roll code...","Quét Set ID tiếp theo, Cycle ID hoặc mã cuộn nhãn...",
 Scan indicator lot,Quét lô chỉ thị,
 "Code {0} is not a set, pack or label roll.","Mã {0} không phải bộ dụng cụ, gói hoặc cuộn nhãn.",
-Scan indicator lots in the separate indicator lot field.,Quét lô chỉ thị vào ô lô chỉ thị riêng.,
+"Scan the Set ID first, then scan the indicator lot.","Quét Set ID trước, rồi quét lô chỉ thị.",
 "Scan the Set ID, the Cycle ID or the label roll code.","Quét Set ID, Cycle ID hoặc mã cuộn nhãn.",
 raw and open_set must be strings.,raw và open_set phải là chuỗi.,
 Absolute Expires At,Thời điểm hết hạn tối đa,Station Session
@@ -6627,6 +6626,8 @@ Department Name,Tên khoa,Linen Collection
 Department Name,Tên khoa,Linen Dept Quota
 Department Name,Tên khoa,Linen Issue
 Department Name,Tên khoa,Par Level
+Department Name,Tên khoa,Dirty Return Request
+Department Name,Tên khoa,Set Issue Request
 Changed By Name,Tên người thay đổi,Par Level History
 Set Unit Name,Tên bộ dụng cụ,Par Override
 Set Unit Name,Tên bộ dụng cụ,Assembly Record
@@ -11905,3 +11906,305 @@ Set type updated.,Đã cập nhật loại bộ.,
 Nothing changed.,Không có gì thay đổi.,
 Default indicator {0} no longer fits and was cleared.,Chỉ thị mặc định {0} không còn phù hợp nên đã được bỏ trống.,
 {0} must be one of: {1}.,{0} phải là một trong: {1}.,
+No connection to the server.,Không kết nối được máy chủ.
+Your account is not allowed to open this.,Tài khoản của bạn không được mở mục này.
+Instrument reprocessing,Tái xử lý dụng cụ
+Could not load the station list,Không tải được danh sách trạm
+Check the connection and try again.,Kiểm tra kết nối rồi thử lại.
+No station for your account,Tài khoản chưa có trạm nào
+Could not open the station,Không mở được trạm
+Department portal,Cổng khoa
+Packs at the department,Gói tại khoa
+Trace a pack,Tra cứu gói
+Scan usage,Quét sử dụng
+Scan your employee card in Scan usage to see the packs at your department.,Quét thẻ nhân viên ở mục Quét sử dụng để xem gói tại khoa.
+Offline: the list of packs at the department needs a connection.,Ngoại tuyến: cần kết nối để xem danh sách gói tại khoa.
+Could not load the packs at the department,Không tải được danh sách gói tại khoa
+Within shelf life,Còn hạn
+Packs expiring soon,Gói sắp hết hạn
+Used packs waiting to return to receiving,Gói đã dùng chờ trả về trạm tiếp nhận
+Packs at {0},Gói tại {0}
+Set name,Tên bộ
+Expiry,Hạn dùng
+Pack status,Trạng thái gói
+No packs at the department.,Khoa chưa có gói nào.
+Used at,Thời điểm dùng
+No used packs are waiting.,Không có gói đã dùng nào chờ trả.
+Could not trace this code,Không tra cứu được mã này
+"Check the code and the connection, then scan again.",Kiểm tra mã và kết nối rồi quét lại.
+No pack found for this code.,Không tìm thấy gói nào theo mã này.
+Person / machine,Người / máy
+Choose your role to open the right workspace.,Chọn vai trò để vào đúng không gian làm việc.
+Head of infection control,Trưởng khoa KSNK
+"Dashboards, approvals, recalls, costs, equipment and staff are on the management pages.","Bảng điều khiển, phê duyệt, thu hồi, giá thành, thiết bị và nhân sự nằm ở các trang quản lý."
+Open management pages,Mở trang quản lý
+Instrument reprocessing technician,Kỹ thuật viên xử lý dụng cụ
+"Work at the scan stations by zone: receiving, washing, assembly, packing, sterilization, release, sterile store, issue.","Làm việc tại trạm quét theo khu: tiếp nhận, rửa, lắp ráp, đóng gói, tiệt khuẩn, giải phóng, kho vô khuẩn, cấp phát."
+Scan card at station,Quét thẻ vào trạm
+Department using instruments,Khoa gửi dụng cụ
+"See the packs at your department, scan a pack before use and trace a pack.","Xem gói đang có tại khoa, quét gói trước khi dùng và tra cứu gói."
+Open department portal,Vào cổng khoa
+Scan Cycle ID or Set ID,Quét Cycle ID hoặc Set ID
+Scan Cycle ID or Set ID...,Quét Cycle ID hoặc Set ID...
+No department for your account,Tài khoản chưa có khoa nào
+No usage station for your account,Tài khoản chưa có trạm sử dụng nào
+Ask the administrator to give your account a usage station.,Nhờ quản trị cấp trạm sử dụng cho tài khoản.
+"Only R01, R02 or department staff can open the department portal.","Chỉ R01, R02 hoặc nhân viên khoa được mở cổng khoa."
+You can only see the packs of your own department.,Bạn chỉ xem được gói của khoa mình.
+Management,Quản lý
+Back to the section,Quay lại phân hệ
+Could not load the management pages,Không tải được các trang quản lý
+No management pages for your account,Tài khoản chưa có trang quản lý nào
+Sets at the department and par level,Bộ dụng cụ tại khoa và cơ số
+Sets at department & par level,Bộ tại khoa & cơ số
+Sets at the department · par level {0}–{1},Bộ đang ở khoa · cơ số {0}–{1}
+Sets at the department · no par level set,Bộ đang ở khoa · chưa đặt cơ số
+Sets of the department being reprocessed at CSSD,Bộ của khoa đang tái xử lý tại KSNK
+Packs to confirm for recall,Gói cần xác nhận thu hồi
+Dirty returns waiting for CSSD pickup,Yêu cầu trả đồ bẩn chờ KSNK lấy
+Sets currently at the department,Danh sách bộ đang ở khoa
+Login session has ended,Phiên đăng nhập đã hết,
+The server did not accept the photo {0} for this login.,Máy chủ không nhận ảnh {0} của phiên đăng nhập này.,
+"Scan your employee card again, then choose the photo again.","Quét lại thẻ nhân viên, rồi chọn lại ảnh.",
+No connection to the server: the file {0} was not uploaded.,Không kết nối được máy chủ: tệp {0} chưa được tải lên.,
+Server error ({0}): the file {1} was not uploaded.,Lỗi máy chủ ({0}): tệp {1} chưa được tải lên.,
+"Choose the photo again. If it fails again, call R10.","Chọn lại ảnh. Nếu vẫn lỗi, gọi quản trị hệ thống.",
+Return dirty sets to CSSD,Gửi trả đồ bẩn về KSNK
+Return dirty sets,Gửi trả đồ bẩn
+Offline: sending a pickup request needs a connection.,Ngoại tuyến: cần kết nối để gửi yêu cầu lấy đồ bẩn.
+Could not load the sets that can be returned,Không tải được danh sách bộ có thể trả
+Sets that can be returned,Bộ có thể trả
+waiting to be returned,chờ trả
+not used: it will count as returned unused,chưa dùng — sẽ tính trả không sử dụng
+At department,Tại khoa,Dirty Return
+Choose set {0},Chọn bộ {0}
+Condition on return of set {0},Tình trạng khi trả của bộ {0}
+Condition on return,Tình trạng khi trả
+Complete,Đủ,Dirty Return
+Missing instruments,Thiếu dụng cụ,Dirty Return
+Damaged,Hỏng,Dirty Return
+Sharps inside,Có vật sắc nhọn,Dirty Return
+Send pickup request,Gửi yêu cầu lấy đồ bẩn
+No set of the department is waiting to be returned.,Khoa không có bộ nào chờ trả.
+The request is only a notice; the set status changes only when the technician scans it at receiving T1.,Yêu cầu chỉ là thông báo; trạng thái bộ chỉ đổi khi KTV quét tiếp nhận tại T1.
+Requests sent today,Yêu cầu đã gửi hôm nay
+Sent at,Gửi lúc
+Sent by,Người gửi
+No request was sent today.,Hôm nay chưa gửi yêu cầu nào.
+Received at T1,Đã tiếp nhận tại T1
+Partly received ({0}/{1}),Đã tiếp nhận một phần ({0}/{1})
+Waiting for CSSD pickup,Chờ KSNK lấy
+The pickup request was not sent,Chưa gửi được yêu cầu lấy đồ bẩn
+No set was chosen.,Chưa chọn bộ nào.
+"Tick at least one set, then send the request again.",Chọn ít nhất một bộ rồi gửi lại yêu cầu.
+Refresh the list and choose again.,Làm mới danh sách rồi chọn lại.
+Request {0} was sent for {1} sets.,Đã gửi yêu cầu {0} cho {1} bộ.
+Check the connection and send the request again.,Kiểm tra kết nối rồi gửi lại yêu cầu.
+The condition on return of set {0} is not valid.,Tình trạng khi trả của bộ {0} không hợp lệ.
+"Choose the condition again, then send the request again.",Chọn lại tình trạng rồi gửi lại yêu cầu.
+Set {0} is in the request twice.,Bộ {0} bị lặp trong yêu cầu.
+"Refresh the list, then send the request again.",Làm mới danh sách rồi gửi lại yêu cầu.
+Set {0} is not at this department or is already in a request waiting for pickup.,Bộ {0} không ở khoa này hoặc đã nằm trong một yêu cầu đang chờ lấy.
+A pickup request can only be created from the department portal.,Yêu cầu lấy đồ bẩn chỉ được tạo từ cổng khoa.
+A pickup request cannot be cancelled; it closes when the sets are received at T1.,Yêu cầu lấy đồ bẩn không hủy được; yêu cầu tự đóng khi bộ được tiếp nhận tại T1.
+A pickup request cannot be deleted.,Yêu cầu lấy đồ bẩn không xóa được.
+Dirty Return Request,Yêu cầu lấy đồ bẩn
+Dirty Return Request Item,Dòng yêu cầu lấy đồ bẩn
+Requested At,Gửi lúc,Dirty Return Request
+Requested By,Người gửi,Dirty Return Request
+Requested By Name,Tên người gửi,Dirty Return Request
+Condition On Return,Tình trạng khi trả,Dirty Return Request Item
+Request sets,Đề nghị cấp
+Confirm recall,Xác nhận thu hồi
+Linen received,Đồ vải đã nhận
+Request instrument sets,Đề nghị cấp bộ dụng cụ
+Offline: this page needs a connection.,Ngoại tuyến: trang này cần kết nối.
+packs waiting for confirmation,gói chờ xác nhận
+Could not load the recall orders,Không tải được lệnh thu hồi
+Confirm the physician was informed,Xác nhận đã báo bác sĩ
+Confirm the pack was found,Xác nhận đã tìm thấy
+Confirmed,Đã xác nhận,Recall
+Recall order {0},Lệnh thu hồi {0}
+"Find and return the packs below, or report the packs already used.","Vui lòng tìm và trả các gói dưới đây, hoặc báo đã dùng."
+No pack of the department is in an open recall order.,Khoa không có gói nào trong lệnh thu hồi đang mở.
+The pack was not confirmed,Chưa xác nhận được gói
+Ask the head nurse of CSSD to confirm this pack.,Nhờ điều dưỡng trưởng KSNK xác nhận gói này.
+BI Positive,Chỉ thị sinh học dương tính,Recall
+Load Failed,Mẻ tiệt khuẩn không đạt,Recall
+Opened Manually,Lập thủ công,Recall
+Could not load the set types,Không tải được danh sách loại bộ
+Issued,Đã cấp,Issue Request
+Partly issued ({0}/{1}),Đã cấp một phần ({0}/{1})
+Waiting for issue,Chờ cấp
+Needed before,Cần trước
+Department par level,Cơ số khoa
+Send issue request,Gửi đề nghị
+No set type is set up yet.,Chưa khai báo loại bộ nào.
+The request is only a notice; CSSD still issues the packs at the issue station T7.,Đề nghị chỉ là thông báo; KSNK vẫn cấp phát gói tại trạm cấp phát T7.
+Issue requests sent today,Đề nghị đã gửi hôm nay
+No issue request was sent today.,Hôm nay chưa gửi đề nghị nào.
+at department: {0},đang ở khoa: {0}
+in sterile store: {0},kho vô khuẩn đang có: {0}
+The issue request was not sent,Chưa gửi được đề nghị cấp
+"Check the request, then send it again.",Kiểm tra lại đề nghị rồi gửi lại.
+Request {0} was sent.,Đã gửi đề nghị {0}.
+Could not load the linen of the department,Không tải được đồ vải của khoa
+Linen received — month {0},Đồ vải đã nhận — tháng {0}
+disposed {0},hủy {0}
+Department quota,Định mức khoa
+Stock outside quota: {0}.,Tồn ngoài định mức: {0}.
+Current stock is within quota.,Tồn hiện tại trong định mức.
+No linen quota is set for the department.,Khoa chưa đặt định mức đồ vải.
+Variance this month: {0}% (alert threshold {1}%).,Chênh lệch tháng: {0}% (ngưỡng cảnh báo {1}%).
+Over the threshold,Vượt ngưỡng
+Collected (pieces / kg),Thu gom (chiếc / kg)
+Returned (pieces / kg),Trả về (chiếc / kg)
+No linen was collected or returned this month.,Tháng này khoa chưa có lượt thu gom hay trả đồ vải nào.
+The quantity must be a whole number from 1 to {0}.,Số lượng phải là số nguyên từ 1 đến {0}.
+"Enter the quantity again, then send the request again.",Nhập lại số lượng rồi gửi lại đề nghị.
+The time the sets are needed is missing or not valid.,Thời điểm cần chưa nhập hoặc không hợp lệ.
+"Choose the date and time again, then send the request again.",Chọn lại ngày giờ rồi gửi lại đề nghị.
+The time the sets are needed is already past.,Thời điểm cần đã qua.
+"Choose a later date and time, then send the request again.",Chọn ngày giờ muộn hơn rồi gửi lại đề nghị.
+"Choose a set type from the list, then send the request again.",Chọn loại bộ trong danh sách rồi gửi lại đề nghị.
+An issue request can only be created from the department portal.,Đề nghị cấp chỉ được tạo từ cổng khoa.
+An issue request cannot be cancelled; it closes when the sets are issued at T7.,Đề nghị cấp không hủy được; đề nghị tự đóng khi bộ được cấp phát tại T7.
+An issue request cannot be deleted.,Đề nghị cấp không xóa được.
+Set Issue Request,Đề nghị cấp bộ dụng cụ
+Needed By,Cần trước,Set Issue Request
+Par Minimum,Cơ số tối thiểu,Set Issue Request
+Par Maximum,Cơ số tối đa,Set Issue Request
+Department Stock At Request,Tồn khoa lúc gửi,Set Issue Request
+Requested At,Gửi lúc,Set Issue Request
+Requested By,Người gửi,Set Issue Request
+Requested By Name,Tên người gửi,Set Issue Request
+Difference,Chênh lệch,Linen Flow
+At department,Tại khoa,Dirty Return
+Sharps inside,Có vật sắc nhọn bên trong,Dirty Return Request Item
+At department,Tại khoa
+Code,Mã,TC Lead
+Cancel,Hủy bỏ,TC Lead
+Date,Ngày,TC Lead
+Time,Giờ,TC Lead
+Amount,Số tiền,TC Lead
+Stock,Tồn,TC Lead
+Share,Tỷ trọng,TC Lead
+Machine,Máy,TC Lead
+Position,Vị trí,TC Lead
+Operator,Người vận hành,TC Lead
+Programs,Chương trình,TC Lead
+Parameters,Tham số,TC Lead
+Par level,Cơ số,
+Total cost,Tổng chi phí,
+Cost per pack,Giá thành một gói,
+running,đang chạy,
+High,Cao,Incident CAPA
+Medium,Trung bình,Incident CAPA
+Low,Thấp,Incident CAPA
+Par level override request for set,Đề nghị ghi đè cơ số bộ
+Review and decide,Xem và duyệt
+is open: {0}/{1} packs not confirmed,đang mở: {0}/{1} gói chưa xác nhận
+inspection or calibration overdue by {0} days,quá hạn kiểm định hoặc hiệu chuẩn {0} ngày
+inspection or calibration due in {0} days,hạn kiểm định hoặc hiệu chuẩn còn {0} ngày
+See equipment,Xem thiết bị
+{0} certificates expired or expiring within 60 days ({1}),{0} chứng chỉ đã hết hạn hoặc sắp hết hạn trong 60 ngày ({1})
+See staff,Xem nhân sự
+Decisions for the head of infection control,Cần quyết định của Trưởng khoa
+Nothing is waiting for a decision.,Không có việc nào chờ quyết định.
+Above maximum,Vượt tối đa
+Sets being reprocessed,Bộ đang tái xử lý
+Loads today · {0} waiting for release,Mẻ hôm nay · {0} chờ giải phóng
+"Sets at par level, waiting for disposal or override","Bộ đạt cơ số, chờ thanh lý/ghi đè"
+Sets close to par level,Bộ sắp đạt cơ số
+Packs in the sterile store,Gói trong kho vô khuẩn
+Average cost per pack this month,Giá thành trung bình một gói (tháng này)
+Open incidents / NC,Sự cố / NC đang mở
+Output by station today,Sản lượng theo trạm hôm nay
+Sets / packs,Số bộ / gói
+No station has recorded a passed step today.,Hôm nay chưa trạm nào ghi bước đạt.
+Sets at departments against par level,Tồn bộ tại khoa so với cơ số
+No department has a par level set.,Chưa khoa nào được đặt cơ số.
+{0}/{1} cycles,{0}/{1} chu trình
+Approve (PIN),Duyệt (PIN)
+Waiting for the head of infection control,Chờ Trưởng khoa duyệt
+At par level,Hết vòng đời
+Close to par level,Sắp đạt
+Override in effect,Đang ghi đè
+Only the head of infection control (or an authorized head nurse) approves. An override has extra cycles and an end date; when they run out the set is blocked again. Every decision is written to the audit log.,Chỉ Trưởng khoa (hoặc Điều dưỡng trưởng được ủy quyền) được duyệt. Ghi đè có số chu trình thêm và thời hạn; hết là chặn lại. Mọi quyết định đều ghi vào nhật ký kiểm toán.
+Requests waiting for approval,Đề nghị chờ duyệt
+Instrument set,Bộ dụng cụ
+Requested by · reason,Người đề nghị · lý do
+No override request is waiting for approval.,Không có đề nghị ghi đè nào chờ duyệt.
+Sets at or close to par level,Bộ đã đạt hoặc sắp đạt cơ số
+Replacement forecast,Dự báo thay thế
+No set is at or close to its par level.,Chưa có bộ nào đạt hoặc sắp đạt cơ số.
+Extra cycles,Số chu trình thêm
+Approve override {0},Duyệt đề nghị ghi đè {0}
+Reject override {0},Từ chối đề nghị ghi đè {0}
+Reason for the decision,Lý do quyết định
+Your PIN,PIN của bạn
+Confirm approval,Xác nhận duyệt
+Confirm rejection,Xác nhận từ chối
+Waiting for the physician to be informed,Chờ báo bác sĩ
+Waiting for the department,Chờ khoa
+load {0},mẻ {0}
+opened at {0},lập lúc {0}
+Recalling: {0}/{1} confirmed,Đang thu hồi: {0}/{1} đã xác nhận
+Department / location,Khoa / vị trí
+Status at recall,Trạng thái khi thu hồi
+This recall order has no pack.,Lệnh thu hồi này không có gói nào.
+Patient codes are shown masked. The order closes only when every pack is confirmed and the corrective action of its incident is complete.,Mã bệnh nhân hiển thị dạng che. Lệnh chỉ đóng khi mọi gói đã được xác nhận và CAPA của sự cố liên quan hoàn tất.
+No recall order is open.,Không có lệnh thu hồi nào đang mở.
+Open incidents / nonconformities,Sự cố / không phù hợp đang mở
+No incident is open.,Không có sự cố nào đang mở.
+Previous month,Tháng trước
+Next month,Tháng sau
+Average cost of one steam sterilization load,Chi phí trung bình một mẻ hấp hơi nước
+Average sterilization cost per pack,Chi phí tiệt khuẩn trung bình một gói
+Packs costed in {0} loads,Gói đã tính giá trong {0} mẻ
+Cost per pack against the previous month,Giá thành một gói so với tháng trước
+Cost by set type,Giá thành theo loại bộ
+No pack was costed this month.,Tháng này chưa có gói nào được tính giá.
+Cost structure of the month,Cơ cấu giá thành của tháng
+Cost item,Khoản mục
+No cost sheet this month.,Tháng này chưa có bảng giá thành.
+Input costs of the month (entered),Chi phí đầu vào của tháng (đã nhập)
+No input cost was entered for this month.,Tháng này chưa nhập chi phí đầu vào.
+Not tested today,Chưa test hôm nay
+Due in {0} days,Còn {0} ngày
+Automatic (agent),Tự động (agent)
+Manual entry with confirmation,Nhập tay có xác nhận
+has printout,có bản in
+Tests on {0},Test ngày {0}
+Inspection due,Hạn kiểm định
+No equipment is set up yet.,Chưa khai báo thiết bị nào.
+"A locked machine cannot be chosen when a load is created. The head nurse can unlock it for up to 24 hours with a reason, except when the pressure equipment inspection is overdue.","Máy Khóa không thể được chọn khi tạo mẻ. Điều dưỡng trưởng có thể mở khóa tạm tối đa 24 giờ có lý do, trừ trường hợp quá hạn kiểm định thiết bị áp lực."
+No certificate,Chưa có chứng chỉ
+Expiring in {0} days,Sắp hết · còn {0} ngày
+Not assigned,Chưa gán
+cannot log in at a station,không đăng nhập được trạm
+Station competency,Năng lực trạm
+No employee has a certificate or a station competency yet.,Chưa nhân viên nào có chứng chỉ hoặc năng lực trạm.
+All sterilizers,Mọi máy tiệt khuẩn
+Released by,Giải phóng
+No finished load on this day.,Ngày này chưa có mẻ nào kết thúc.
+Open the report to export PDF / Excel,Mở báo cáo để xuất PDF / Excel
+items waiting,việc đang chờ
+Today's overview,Tổng quan hôm nay
+Par level overrides,Ghi đè cơ số
+Recalls & incidents,Thu hồi & sự cố
+Reprocessing cost,Giá thành tái xử lý
+Equipment & daily tests,Thiết bị & test ngày
+Staff & certificates,Nhân sự & chứng chỉ
+Electronic sterilization log,Sổ tiệt khuẩn điện tử
+Today's overview — {0},Tổng quan hôm nay — {0}
+Reprocessing cost — month {0},Giá thành tái xử lý — tháng {0}
+Electronic sterilization log — {0},Sổ tiệt khuẩn điện tử — {0}
+Could not load this page,Không tải được màn này
+The override was not approved,Chưa duyệt được đề nghị ghi đè
+The override was not rejected,Chưa từ chối được đề nghị ghi đè
+"Check the decision, then send it again.",Kiểm tra lại quyết định rồi gửi lại.
+"Approve par level overrides, follow recalls and incidents, reprocessing cost, equipment and staff status, electronic sterilization log.","Duyệt ghi đè cơ số, theo dõi thu hồi và sự cố, giá thành tái xử lý, tình trạng thiết bị và nhân sự, sổ tiệt khuẩn điện tử."
+Open the head of infection control workspace,Vào khu Trưởng khoa KSNK
+month must be in the form YYYY-MM.,month phải có dạng YYYY-MM.
+date must be in the form YYYY-MM-DD.,date phải có dạng YYYY-MM-DD.

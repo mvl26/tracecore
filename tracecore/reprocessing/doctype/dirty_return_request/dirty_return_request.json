@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "autoname": "YC-.YYYY.-.#####",
+ "creation": "2026-11-13 16:00:00.000000",
+ "description": "A department's request for CSSD to pick up dirty instrument sets. It is a notice only: set and pack status change when the technician scans the set at receiving (T1). Created and submitted by the dirty return service only.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "department_name",
+  "set_count",
+  "column_break_head",
+  "requested_at",
+  "requested_by",
+  "requested_by_name",
+  "client_ts",
+  "items_section",
+  "items",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "department.department_name",
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "set_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sets",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Requested At",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_by_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Requested By Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_ts",
+   "fieldtype": "Datetime",
+   "label": "Client Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Sets"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Sets",
+   "options": "Dirty Return Request Item",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Dirty Return Request",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-11-14 00:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "name": "Dirty Return Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "department,requested_by_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "department_name",
+ "track_changes": 1
+}

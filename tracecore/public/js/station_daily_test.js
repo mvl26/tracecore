@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, TcStationPhoto */
 /* global uuid4, clientTs, esc, T5Load, T2Wash, t5MachineState, TcRunConsumables */
 // Màn SCR-23 test hằng ngày và khóa máy (FEAT-040, UC-23) trên Page station: chế độ "Test hằng ngày" của màn T5 và T2.
 // Frappe nối file này sau station_t5.js và station_t2.js (hook page_js). T5Load/T2Wash đổi `station.screen` sang
@@ -285,7 +285,7 @@ class DailyTestScreen {
 			args.consumables_confirmed = form.consumables_confirmed ? 1 : 0;
 		}
 		this.request(method, args, () => {
-			this.notice = { ...notice(machine), reveal: true };
+			this.notice = notice(machine);
 			if (method === DT_START) TcRunConsumables.reset(this.form);
 			this.load();
 		});
@@ -297,31 +297,13 @@ class DailyTestScreen {
 		const version = this.station.sessionVersion;
 		this.form.uploading = true;
 		this.show();
-		try {
-			const body = new FormData();
-			body.append("file", file, file.name);
-			body.append("is_private", "1");
-			body.append("folder", "Home");
-			const response = await fetch("/api/method/upload_file", {
-				method: "POST",
-				headers: { Accept: "application/json", "X-Frappe-CSRF-Token": frappe.csrf_token },
-				body,
-				credentials: "same-origin",
-			});
-			const data = await response.json().catch(() => ({}));
-			if (version !== this.station.sessionVersion) return;
-			if (!response.ok || !data.message || !data.message.file_url) throw new Error("upload");
-			this.form.photo = data.message.file_url;
+		// A-159: tải qua phiên thẻ thay cho API tải tệp của Desk (403 khi cookie về Guest)
+		const result = await TcStationPhoto.upload(this.station, file);
+		if (version !== this.station.sessionVersion || result.ended) return;
+		if (result.file_url) {
+			this.form.photo = result.file_url;
 			this.notice = { variant: "ok", title: __("Photo attached: {0}", [file.name]) };
-		} catch (error) {
-			if (version !== this.station.sessionVersion) return;
-			this.notice = {
-				variant: "error",
-				title: __("Photo could not be attached"),
-				reason: __("The file {0} was not uploaded.", [file.name]),
-				action: __("Check the connection and choose the photo again."),
-			};
-		}
+		} else this.notice = result.notice;
 		this.form.uploading = false;
 		this.show();
 	}
@@ -359,7 +341,6 @@ class DailyTestScreen {
 			},
 			(res) => {
 				this.notice = {
-					reveal: true,
 					variant: res.locked ? "warn" : "ok",
 					title: res.locked
 						? __("Test failed: machine {0} is locked", [this.selected])
@@ -412,7 +393,6 @@ class DailyTestScreen {
 			},
 			() => {
 				this.notice = {
-					reveal: true,
 					variant: "ok",
 					title: __("Machine {0} is unlocked temporarily", [this.selected]),
 					reason: __("The unlock ends after {0} hour(s).", [hours]),
@@ -505,6 +485,9 @@ class DailyTestScreen {
 		if (this.offline && !this.list)
 			return this.station.setState("offline", this.offlineHtml());
 		const state = this.notice && this.notice.variant === "error" ? "error" : "result";
+		// Thông báo xong bước (Bắt đầu/Kết thúc test, Ghi test, Mở khóa tạm) nằm trong form của máy, ngay chỗ KTV vừa bấm
+		// hoặc quét: trang không bị kéo về đầu (13/11/2026). Lỗi chặn vẫn ở đầu màn và được đưa lên.
+		const inForm = Boolean(this.notice && this.notice.variant !== "error" && this.machine());
 		this.station.setState(
 			state,
 			`<div class="tc-t2 tc-t5 tc-dt">
@@ -513,14 +496,14 @@ class DailyTestScreen {
 						__("Back to loading")
 					)}</button>
 				</div>
-				<div data-region="notice">${this.noticeHtml()}</div>
+				<div data-region="notice">${this.noticeHtml(!inForm)}</div>
 				${this.listHtml()}
-				${this.formHtml()}
+				${this.formHtml(inForm ? this.noticeAlertHtml() : "")}
 			</div>`
 		);
 		this.station.form.classList.toggle("is-error", state === "error");
 		if (this.scrollToForm && this.list) this.revealForm();
-		// xong bước (`reveal`) hoặc lỗi: đưa thông báo lên một lần; chọn kết quả/loại test không cuộn (06/11/2026)
+		// lỗi chặn mới: đưa thông báo lên một lần; xong bước, chọn kết quả/loại test không cuộn
 		else if (this.station.revealNotice) this.station.revealNotice(this.notice);
 	}
 
@@ -572,22 +555,25 @@ class DailyTestScreen {
 		);
 	}
 
-	noticeHtml() {
+	// `withNotice` false: thông báo đang hiện trong form của máy, đầu màn chỉ còn dòng Đang tải
+	noticeHtml(withNotice = true) {
 		let html = "";
 		if (this.busy) {
 			html += `<p class="tc-loading" role="status" aria-busy="true">${esc(
 				__("Loading...")
 			)}</p>`;
 		}
-		if (this.notice) {
-			html += this.alertHtml(
-				this.notice,
-				this.notice.technical
-					? this.standardButtons()
-					: this.station.businessButtons(this.notice)
-			);
-		}
+		if (this.notice && withNotice) html += this.noticeAlertHtml();
 		return html;
+	}
+
+	noticeAlertHtml() {
+		return this.alertHtml(
+			this.notice,
+			this.notice.technical
+				? this.standardButtons()
+				: this.station.businessButtons(this.notice)
+		);
 	}
 
 	statusBadge(row) {
@@ -788,7 +774,7 @@ class DailyTestScreen {
 			aria-pressed="${active ? "true" : "false"}">${esc(label)}</button>`;
 	}
 
-	formHtml() {
+	formHtml(notice = "") {
 		const machine = this.machine();
 		if (!machine) return "";
 		const form = this.form;
@@ -810,6 +796,7 @@ class DailyTestScreen {
 			)}" ${extra}></div>`;
 		return `<section class="tc-t4-block" data-region="dt-form">
 			<h3>${esc(__("Daily test of {0}", [machine.name]))}</h3>
+			${notice}
 			${
 				tests.length
 					? `<div class="tc-chips" role="group" aria-label="${esc(

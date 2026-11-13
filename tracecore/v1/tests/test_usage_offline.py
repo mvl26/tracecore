@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from tracecore.core import crypto, station_auth, sync
+from tracecore.core import client_time, crypto, station_auth, sync
 from tracecore.tests.utils import request_headers
 from tracecore.v1 import usage as usage_api
 from tracecore.v1.tests.test_usage_api import SESSION_TOKENS, STATION, TIME_ZONE, UsageApiCase
@@ -106,12 +106,17 @@ class TestUsageOffline(UsageApiCase):
 			result = self.replay(moment, patient_code_enc=encrypt(PATIENT))
 		self.assertIs(result["ok"], True, result)
 
-	def test_usage_replay_future_client_ts_is_conflict(self):
-		"""Phát lại không được tự chọn giờ sử dụng ở tương lai (review I5)."""
+	def test_usage_replay_future_client_ts_is_accepted_and_logged(self):
+		"""A-160 (thay review I5): giờ sử dụng theo giờ máy khách kể cả ở tương lai; chỉ ghi Audit Log lệch giờ."""
 		moment = add_to_date(now_datetime(), hours=2).replace(microsecond=0)
 		name = frappe.db.get_value("Station Session", {"user": self.nurse, "is_open": 1})
 		frappe.db.set_value("Station Session", name, "absolute_expires_at", add_to_date(moment, hours=1))
 		key = str(uuid.uuid4())
 		result = self.replay(moment, key=key, patient_code_enc=encrypt(PATIENT))
-		self.assertEqual(result["error"]["http_status"], 400, result)
-		self.assertEqual(frappe.db.get_value("Pack", self.pack.name, "status"), "Issued")
+		self.assertIs(result["ok"], True, result)
+		self.assertEqual(
+			get_datetime(frappe.db.get_value("Usage Record", result["usage"], "used_at")), moment
+		)
+		self.assertTrue(
+			frappe.db.exists("Audit Log", {"action": "Override", "reason": client_time.SKEW_REASON})
+		)
