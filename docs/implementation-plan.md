@@ -10,6 +10,7 @@
 > **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5; nút Sao chép bộ dụng cụ trên form Set Unit, FR-M1-05.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-156 (2026-11-12):** quy trình xử lý của loại bộ (Tiệt khuẩn nhiệt độ cao / nhiệt độ thấp / Khử khuẩn) → **FEAT-098** ở E-02 (M1, ngoài sprint), FR-M1-03.10. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-157 (2026-11-12):** sửa Quy trình xử lý / Loại chỉ thị hóa học của loại bộ ngay trên form Set Unit → mở rộng **FEAT-098**, FR-M1-06.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-159 (2026-11-13):** ảnh của màn trạm (T2, T3, T5, test hằng ngày) tải qua phiên thẻ bằng RPC `tracecore.v1.station.upload_photo` thay cho `upload_file` của Desk; lỗi phiên báo "Phiên đăng nhập đã hết" → FR-M9-14.1, sửa lỗi theo ticket (không thêm FEAT). Người dùng duyệt ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
