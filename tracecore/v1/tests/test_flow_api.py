@@ -48,6 +48,11 @@ class TestFlowApi(FrappeTestCase):
 		self.assertEqual(out["department_name"], "TCF Ward A")
 		self.assertEqual(out["at_department"], [])
 		self.assertEqual(out["waiting_return"], [])
+		# 4 số liệu của màn Bộ tại khoa và cơ số; khoa mới chưa đặt cơ số
+		self.assertEqual(
+			out["counts"], {"held": 0, "reprocessing": 0, "recall_pending": 0, "waiting_return": 0}
+		)
+		self.assertIsNone(out["par"])
 		# không có trường mã người bệnh
 		self.assertNotIn("patient", " ".join(out.keys()))
 
@@ -69,3 +74,19 @@ class TestFlowApi(FrappeTestCase):
 		with patch.object(frappe, "get_roles", return_value=["TC R03"]):
 			with self.assertRaises(frappe.PermissionError):
 				flow._scope()
+
+	def test_par_range_sums_the_department_stock_levels(self):
+		rows = [frappe._dict(min_qty=2, max_qty=4), frappe._dict(min_qty=4, max_qty=6)]
+		with patch.object(frappe, "get_all", return_value=rows):
+			self.assertEqual(flow._par_range(self.ward), {"min": 6, "max": 10})
+		with patch.object(frappe, "get_all", return_value=[]):
+			self.assertIsNone(flow._par_range(self.ward))
+
+	def test_held_packs_carry_set_id_and_set_type(self):
+		overview = {"at_department": [{"cycle_id": "CY-1", "set_name": "A", "expiry": "2026-12-01"}]}
+		packs = [frappe._dict(name="CY-1", set_unit="SET-1", set_type="BO-A")]
+		with patch.object(frappe, "get_all", return_value=packs):
+			rows = flow._held_packs(overview)
+		self.assertEqual(rows[0]["set_id"], "SET-1")
+		self.assertEqual(rows[0]["set_type"], "BO-A")
+		self.assertEqual(flow._held_packs({"at_department": []}), [])

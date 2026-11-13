@@ -331,7 +331,7 @@ body.tcf-body .layout-main-section {
 
 .tcf-kpis {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(4, 1fr);
 	gap: var(--tc-sp-2-5);
 	margin-bottom: var(--tc-sp-3);
 }

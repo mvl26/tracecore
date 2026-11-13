@@ -103,13 +103,19 @@ const TcFlow = {
 		return steps;
 	},
 
+	// 4 số liệu của màn Bộ tại khoa và cơ số; máy chủ đếm (counts), thiếu thì đếm từ danh sách
 	stockCounts(overview) {
 		const held = (overview && overview.at_department) || [];
 		const waiting = (overview && overview.waiting_return) || [];
+		const counts = (overview && overview.counts) || {};
+		const number = (value, fallback) => (Number.isFinite(value) ? value : fallback);
+		const par = overview && overview.par;
 		return {
-			held: held.length,
-			expiring: held.filter((row) => row.expiring).length,
-			waiting: waiting.length,
+			held: number(counts.held, held.length),
+			reprocessing: number(counts.reprocessing, 0),
+			recall: number(counts.recall_pending, 0),
+			waiting: number(counts.waiting_return, waiting.length),
+			par: par ? [par.min, par.max] : null,
 		};
 	},
 

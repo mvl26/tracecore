@@ -121,13 +121,21 @@ class TestTcFlowShell(FrappeTestCase):
 			emit({
 				counts: TcFlow.stockCounts(overview),
 				empty: TcFlow.stockCounts(null),
+				server: TcFlow.stockCounts({ ...overview, par: { min: 6, max: 10 },
+					counts: { held: 8, reprocessing: 1, recall_pending: 2, waiting_return: 0 } }),
 				rows: TcFlow.traceRows(chain),
 				byCycle: TcFlow.traceArgs(" cy-261101-0001 "),
 				bySet: TcFlow.traceArgs("(01)0893(21)DB01-007"),
 			});""",
 		)
-		self.assertEqual(out["counts"], {"held": 2, "expiring": 1, "waiting": 1})
-		self.assertEqual(out["empty"], {"held": 0, "expiring": 0, "waiting": 0})
+		self.assertEqual(
+			out["counts"], {"held": 2, "reprocessing": 0, "recall": 0, "waiting": 1, "par": None}
+		)
+		self.assertEqual(out["empty"], {"held": 0, "reprocessing": 0, "recall": 0, "waiting": 0, "par": None})
+		# số liệu do máy chủ đếm: bộ ở khoa kèm cơ số, đang tái xử lý, chờ xác nhận thu hồi, chờ KSNK lấy
+		self.assertEqual(
+			out["server"], {"held": 8, "reprocessing": 1, "recall": 2, "waiting": 0, "par": [6, 10]}
+		)
 		self.assertEqual(out["rows"][0]["step"], "T2")
 		self.assertEqual(out["rows"][0]["detail"], "Wash · LR-1 · Pass")
 		self.assertEqual(out["rows"][0]["who"], "MR-01 / An")

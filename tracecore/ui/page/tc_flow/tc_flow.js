@@ -435,7 +435,7 @@ class TcFlowPage {
 	}
 
 	paneLabel(pane) {
-		if (pane === "stock") return __("Packs at the department");
+		if (pane === "stock") return __("Sets at department & par level");
 		if (pane === "trace") return __("Trace a pack");
 		return __("Scan usage");
 	}
@@ -550,6 +550,7 @@ class TcFlowPage {
 		}
 	}
 
+	// Bộ tại khoa và cơ số: 4 ô số liệu rồi danh sách bộ đang ở khoa (Cycle ID, Set ID, loại bộ, hạn dùng, trạng thái)
 	stockHtml(overview) {
 		const counts = TcFlow.stockCounts(overview);
 		const day = (value) => (value ? frappe.datetime.str_to_user(value) : "");
@@ -557,17 +558,24 @@ class TcFlowPage {
 			`<div class="tcf-kpi" data-tone="${tone}"><b>${value}</b><small>${tcfEsc(
 				text
 			)}</small></div>`;
+		const heldLabel = counts.par
+			? __("Sets at the department · par level {0}–{1}", counts.par)
+			: __("Sets at the department · no par level set");
 		const held = (overview.at_department || [])
-			.map(
-				(row) => `<tr>
+			.map((row) => {
+				const expiring = row.expiring
+					? ` <span class="tcf-badge" data-tone="warn">${tcfEsc(
+							__("Expiring soon")
+					  )}</span>`
+					: "";
+				return `<tr>
 					<td class="tcf-code">${tcfEsc(row.cycle_id)}</td>
-					<td>${tcfEsc(row.set_name)}</td>
+					<td class="tcf-code">${tcfEsc(row.set_id)}</td>
+					<td>${tcfEsc(row.set_name || row.set_type)}</td>
 					<td>${tcfEsc(day(row.expiry))}</td>
-					<td><span class="tcf-badge" data-tone="${row.expiring ? "warn" : "info"}">${tcfEsc(
-					row.expiring ? __("Expiring soon") : __("Within shelf life")
-				)}</span></td>
-				</tr>`
-			)
+					<td><span class="tcf-badge">${tcfEsc(__("Issued", null, "Pack"))}</span>${expiring}</td>
+				</tr>`;
+			})
 			.join("");
 		const waiting = (overview.waiting_return || [])
 			.map(
@@ -589,15 +597,14 @@ class TcFlowPage {
 			}
 		</section>`;
 		return `<div class="tcf-kpis">
-				${kpi(counts.held, __("Packs at the department"), "pass")}
-				${kpi(counts.expiring, __("Packs expiring soon"), "warn")}
-				${kpi(counts.waiting, __("Used packs waiting to return to receiving"), "info")}
+				${kpi(counts.held, heldLabel, "pass")}
+				${kpi(counts.reprocessing, __("Sets of the department being reprocessed at CSSD"), "info")}
+				${kpi(counts.recall, __("Packs to confirm for recall"), "warn")}
+				${kpi(counts.waiting, __("Dirty returns waiting for CSSD pickup"), "info")}
 			</div>
 			${table(
-				overview.department_name
-					? __("Packs at {0}", [overview.department_name])
-					: __("Packs at the department"),
-				[__("Cycle ID"), __("Set name"), __("Expiry"), __("Pack status")],
+				__("Sets currently at the department"),
+				[__("Cycle ID"), __("Set ID"), __("Set type"), __("Expiry"), __("Pack status")],
 				held,
 				__("No packs at the department.")
 			)}
