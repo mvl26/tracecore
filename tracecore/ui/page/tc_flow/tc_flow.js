@@ -1522,10 +1522,9 @@ class TcFlowPage {
 
 	onManageClick(action, button) {
 		if (action === "tcf-manage") {
-			// tài khoản không có phân hệ quản lý nào: về trang chủ Desk như trước
-			if (this.catalogState === "ready" && !this.modules.length)
-				window.location.assign("/app/tracecore");
-			else this.enterManage("instruments");
+			// thẻ Trưởng khoa KSNK mở trang chủ quản lý của Desk (người dùng yêu cầu 13/11/2026);
+			// không gian quản lý trong khung vẫn mở được bằng địa chỉ ?manage=<phân hệ>
+			window.location.assign("/app/tracecore");
 		} else if (action === "tcf-module") {
 			this.manage = button.dataset.key;
 			this.manageLink = null;

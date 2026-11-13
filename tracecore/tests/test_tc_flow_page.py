@@ -417,7 +417,10 @@ class TestTcFlowPage(FrappeTestCase):
 		# mở trong khung và chỉ nhận đường dẫn /app/ do máy chủ trả về
 		self.assertIn("context.admin_modules", source)
 		self.assertIn("context.role_modules", source)
-		self.assertIn('this.enterManage("instruments")', source)
+		# nút Mở trang quản lý ở trang chọn vai trò mở trang chủ quản lý /app/tracecore của Desk
+		self.assertIn('window.location.assign("/app/tracecore")', source)
+		self.assertNotIn('this.enterManage("instruments")', source)
+		self.assertIn("this.enterManage(this.manage || manage", source)
 		self.assertIn("tcf-frame", source)
 		self.assertIn("/^\\/app\\//.test(link.route", source)
 		# Page station mở sau sẽ hủy instance trạm của khung: quay lại phải mở lại trạm, không hiện màn đã hủy

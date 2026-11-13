@@ -331,7 +331,7 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 - AC-099-3: Khi thẻ hợp lệ, hệ thống phải hiện tên người làm, trạm và danh sách trạm ở thanh bên, thứ tự bước T1–T8 có chữ cho bước đã qua và bước hiện tại, và màn thao tác của trạm với đủ chức năng hiện có.
 - AC-099-4: Khi người dùng chọn trạm khác ở thanh bên, hệ thống phải đổi trạm theo quy tắc hiện có (cùng khu giữ phiên, khác khu quét lại thẻ) mà không rời `/app/tc-flow`.
 - AC-099-5: Khi người dùng ở cổng khoa mở Gói tại khoa hoặc Tra cứu gói, hệ thống phải hiện gói tại khoa đã chọn (`flow.department_stock`, không cần quét thẻ) và chuỗi sự kiện của gói (`trace.query`); lỗi hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
-- AC-099-7: Khi người dùng mở không gian quản lý, hệ thống phải hiện các phân hệ quản lý mà tài khoản được mở (mặc định Dụng cụ và bộ) và mở danh sách, form, báo cáo hiện có ngay trong khung, không rời `/app/tc-flow`.
+- AC-099-7: Khi người dùng mở không gian quản lý, hệ thống phải hiện các phân hệ quản lý mà tài khoản được mở (mặc định Dụng cụ và bộ) và mở danh sách, form, báo cáo hiện có ngay trong khung, không rời `/app/tc-flow`. Nút Mở trang quản lý ở trang chọn vai trò mở trang chủ quản lý `/app/tracecore` của Desk (người dùng yêu cầu 13/11/2026); không gian quản lý trong khung mở bằng địa chỉ `/app/tc-flow?manage=<phân hệ>`.
 - AC-099-6: Hệ thống không được thay đổi hành vi của `/app/station` và các RPC hiện có.
 
 ### FEAT-100 Cổng khoa gửi yêu cầu lấy đồ bẩn về KSNK [A-160]
