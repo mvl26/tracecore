@@ -41,17 +41,27 @@ class TcFlowPage {
 	show() {
 		this.visible = true;
 		document.body.classList.add("tcf-body");
-		const code = TcFlow.stationParam(window.location.search);
+		let code = TcFlow.stationParam(window.location.search);
 		const department = TcFlow.departmentParam(window.location.search);
-		if (this.host && !this.host.disposed) {
+		// Page station mở sau trang này sẽ hủy instance trạm đang giữ (on_page_load của nó): quay lại thì mở lại trạm đó
+		if (this.host && this.host.disposed) {
+			code = code || this.host.station;
+			this.host = null;
+			this.cardStations = null;
+			this.el(".tcf-host").innerHTML = "";
+		}
+		if (this.host) {
 			this.adopt();
 			this.view("app");
+			this.setAddress(this.host.station);
 			this.host.show();
 			this.render();
 		} else if (this.dept) {
 			this.view("app");
+			this.setAddress(null);
 			this.render();
 			if (this.pane === "stock") this.loadStock();
+			else if (this.pane === "work") this.openUsage();
 		} else if (department) this.enterDept({ name: department });
 		else if (code) this.enter(code);
 		else this.showLanding();

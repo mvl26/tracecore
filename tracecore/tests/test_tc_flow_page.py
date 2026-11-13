@@ -292,6 +292,8 @@ class TestTcFlowPage(FrappeTestCase):
 		self.assertIn('"tracecore.v1.flow.department_stock"', source)
 		self.assertIn('this.fillSelect("dept", this.departments', source)
 		self.assertIn("enterDept(", source)
+		# Page station mở sau sẽ hủy instance trạm của khung: quay lại phải mở lại trạm, không hiện màn đã hủy
+		self.assertIn("this.host && this.host.disposed", source)
 		self.assertIn('"tracecore.v1.trace.query"', source)
 		self.assertIn('"tracecore.v1.navigation.context"', source)
 		# không tự gọi RPC ghi của trạm, không đổi trạng thái bộ: mọi thao tác ghi đi qua màn trạm hiện có

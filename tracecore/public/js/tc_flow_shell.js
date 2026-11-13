@@ -116,7 +116,11 @@ const TcFlow = {
 		return ((chain && chain.events) || []).map((event) => ({
 			at: event.at || null,
 			step: event.step || "",
-			detail: [event.label, event.ref_name, event.result && __(event.result)]
+			detail: [
+				event.label,
+				event.ref_name,
+				event.result && __(event.result, null, "Step Gate Result"),
+			]
 				.filter(Boolean)
 				.join(" · "),
 			who: [event.equipment, event.user_name || event.user].filter(Boolean).join(" / "),
