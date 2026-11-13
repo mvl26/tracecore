@@ -1591,5 +1591,12 @@ frappe.pages["tc-flow"].on_page_load = function (wrapper) {
 };
 
 frappe.pages["tc-flow"].on_page_show = function () {
+	// địa chỉ cũ /app/tc-flow: thay bằng /app/tracecore/home (giữ ?station / ?department / ?manage) rồi để router
+	// mở lại; trang chủ /app/tracecore giao đường dẫn con "home" cho Page này
+	if ((frappe.get_route() || [])[0] === TcFlow.OLD_ROUTE) {
+		window.history.replaceState(null, "", TcFlow.BASE + window.location.search);
+		frappe.router.route();
+		return;
+	}
 	if (frappe.tc_flow) frappe.tc_flow.show();
 };

@@ -10,7 +10,7 @@
 > **Amendment A-155 (2026-11-12):** loại vật liệu đóng gói thêm Giấy bọc, kích thước túi ép, số lớp giấy bọc → **FEAT-097** ở E-02 (M6/M2, ngoài sprint), FR-M6-02.5; nút Sao chép bộ dụng cụ trên form Set Unit, FR-M1-05.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-156 (2026-11-12):** quy trình xử lý của loại bộ (Tiệt khuẩn nhiệt độ cao / nhiệt độ thấp / Khử khuẩn) → **FEAT-098** ở E-02 (M1, ngoài sprint), FR-M1-03.10. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-157 (2026-11-12):** sửa Quy trình xử lý / Loại chỉ thị hóa học của loại bộ ngay trên form Set Unit → mở rộng **FEAT-098**, FR-M1-06.6. Người dùng yêu cầu ngày 12/11/2026; chủ đầu tư chưa xác nhận.
-> **Amendment A-158 (2026-11-13):** giao diện người dùng cho luồng xử lý dụng cụ ở URL mới `/app/tc-flow` (Page `tc-flow`, dùng lại nguyên các màn trạm) → **FEAT-099** (module UI, ngoài sprint), FR-M9-31, SCR-68. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-158 (2026-11-13):** giao diện người dùng cho luồng xử lý dụng cụ ở URL mới `/app/tc-flow` (Page `tc-flow`, dùng lại nguyên các màn trạm) → **FEAT-099** (module UI, ngoài sprint), FR-M9-31, SCR-68. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận. **Địa chỉ đổi thành `/app/tracecore/home` ngày 13/11/2026 theo yêu cầu người dùng** (đường dẫn con `home` của trang chủ `/app/tracecore` hiện Page `tc-flow`; `/app/tc-flow` cũ tự chuyển về địa chỉ mới, giữ tham số).
 > **Amendment A-159 (2026-11-13):** ảnh của màn trạm (T2, T3, T5, test hằng ngày) tải qua phiên thẻ bằng RPC `tracecore.v1.station.upload_photo` thay cho `upload_file` của Desk; lỗi phiên báo "Phiên đăng nhập đã hết" → FR-M9-14.1, sửa lỗi theo ticket (không thêm FEAT). Người dùng duyệt ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-160 (2026-11-13):** khoa gửi yêu cầu lấy đồ bẩn từ cổng khoa của Page `tc-flow` (DocType `Dirty Return Request`, RPC `tracecore.v1.flow.return_overview` / `request_return`) → **FEAT-100** (module Reprocessing + UI, ngoài sprint), FR-M2-26, SCR-69. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-161 (2026-11-13):** ba mục còn lại của cổng khoa trên Page `tc-flow`: Xác nhận thu hồi, Đề nghị cấp bộ dụng cụ (DocType `Set Issue Request`), Đồ vải đã nhận → **FEAT-101** (module Reprocessing + Linen + UI, ngoài sprint), FR-M2-27, FR-M9-32, SCR-70..72. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
@@ -318,7 +318,7 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 | AC-098-03 | Nếu Loại bộ Khử khuẩn khai loại chỉ thị hóa học 4/5/6, thì hệ thống phải từ chối lưu. | FR-M1-03.10 |
 | AC-098-04 | Nếu bộ của Loại bộ Khử khuẩn được quét tại T4, thì hệ thống phải báo `alert-error` (kết quả → lý do → hành động) và không sinh Cycle ID. | FR-M1-03.10 |
 
-### FEAT-099 Giao diện người dùng cho luồng xử lý dụng cụ ở `/app/tc-flow` [A-158]
+### FEAT-099 Giao diện người dùng cho luồng xử lý dụng cụ ở `/app/tracecore/home` [A-158]
 
 | FEAT | Phạm vi | FR | SCR | Phụ thuộc |
 | --- | --- | --- | --- | --- |
@@ -326,12 +326,12 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 
 #### Acceptance criteria FEAT-099 [A-158] (EARS)
 
-- AC-099-1: Khi người dùng mở `/app/tc-flow`, hệ thống phải hiện trang chọn vai trò với danh sách trạm của luồng xử lý dụng cụ mà tài khoản được mở và danh sách khoa mà tài khoản được xem (R01/R02 mọi khoa, R08 khoa của mình).
-- AC-099-2: Khi người dùng chọn trạm, hệ thống phải mở màn quét thẻ của trạm đó tại `/app/tc-flow?station=<mã>`; thanh địa chỉ không chuyển về `/app/station`.
+- AC-099-1: Khi người dùng mở `/app/tracecore/home`, hệ thống phải hiện trang chọn vai trò với danh sách trạm của luồng xử lý dụng cụ mà tài khoản được mở và danh sách khoa mà tài khoản được xem (R01/R02 mọi khoa, R08 khoa của mình).
+- AC-099-2: Khi người dùng chọn trạm, hệ thống phải mở màn quét thẻ của trạm đó tại `/app/tracecore/home?station=<mã>`; thanh địa chỉ không chuyển về `/app/station`.
 - AC-099-3: Khi thẻ hợp lệ, hệ thống phải hiện tên người làm, trạm và danh sách trạm ở thanh bên, thứ tự bước T1–T8 có chữ cho bước đã qua và bước hiện tại, và màn thao tác của trạm với đủ chức năng hiện có.
-- AC-099-4: Khi người dùng chọn trạm khác ở thanh bên, hệ thống phải đổi trạm theo quy tắc hiện có (cùng khu giữ phiên, khác khu quét lại thẻ) mà không rời `/app/tc-flow`.
+- AC-099-4: Khi người dùng chọn trạm khác ở thanh bên, hệ thống phải đổi trạm theo quy tắc hiện có (cùng khu giữ phiên, khác khu quét lại thẻ) mà không rời `/app/tracecore/home`.
 - AC-099-5: Khi người dùng ở cổng khoa mở Gói tại khoa hoặc Tra cứu gói, hệ thống phải hiện gói tại khoa đã chọn (`flow.department_stock`, không cần quét thẻ) và chuỗi sự kiện của gói (`trace.query`); lỗi hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
-- AC-099-7: Khi người dùng mở không gian quản lý, hệ thống phải hiện các phân hệ quản lý mà tài khoản được mở (mặc định Dụng cụ và bộ) và mở danh sách, form, báo cáo hiện có ngay trong khung, không rời `/app/tc-flow`. Nút Mở trang quản lý ở trang chọn vai trò mở trang chủ quản lý `/app/tracecore` của Desk (người dùng yêu cầu 13/11/2026); không gian quản lý trong khung mở bằng địa chỉ `/app/tc-flow?manage=<phân hệ>`.
+- AC-099-7: Khi người dùng mở không gian quản lý, hệ thống phải hiện các phân hệ quản lý mà tài khoản được mở (mặc định Dụng cụ và bộ) và mở danh sách, form, báo cáo hiện có ngay trong khung, không rời `/app/tracecore/home`. Nút Mở trang quản lý ở trang chọn vai trò mở trang chủ quản lý `/app/tracecore` của Desk (người dùng yêu cầu 13/11/2026); không gian quản lý trong khung mở bằng địa chỉ `/app/tracecore/home?manage=<phân hệ>`.
 - AC-099-6: Hệ thống không được thay đổi hành vi của `/app/station` và các RPC hiện có.
 
 ### FEAT-100 Cổng khoa gửi yêu cầu lấy đồ bẩn về KSNK [A-160]

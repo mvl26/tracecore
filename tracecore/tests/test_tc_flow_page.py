@@ -68,13 +68,14 @@ class TestTcFlowShell(FrappeTestCase):
 				none: TcFlow.stationParam(""),
 			});""",
 		)
-		self.assertEqual(out["home"], "/app/tc-flow")
-		self.assertEqual(out["station"], "/app/tc-flow?station=TR%20001")
+		# địa chỉ của giao diện mới là /app/tracecore/home (người dùng chọn 13/11/2026)
+		self.assertEqual(out["home"], "/app/tracecore/home")
+		self.assertEqual(out["station"], "/app/tracecore/home?station=TR%20001")
 		self.assertEqual(out["param"], "TR-001")
-		self.assertEqual(out["dept"], "/app/tc-flow?department=Khoa%20A%20-%20MD")
-		self.assertEqual(out["deptStation"], "/app/tc-flow?department=K1&station=TR-008")
+		self.assertEqual(out["dept"], "/app/tracecore/home?department=Khoa%20A%20-%20MD")
+		self.assertEqual(out["deptStation"], "/app/tracecore/home?department=K1&station=TR-008")
 		self.assertEqual(out["deptParam"], "K1")
-		self.assertEqual(out["manage"], "/app/tc-flow?manage=instruments")
+		self.assertEqual(out["manage"], "/app/tracecore/home?manage=instruments")
 		self.assertEqual(out["manageParam"], "instruments")
 		self.assertIsNone(out["none"])
 
@@ -248,6 +249,20 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertIn("packs waiting for confirmation", source)
 		out = run(self, """emit(["Waiting", "Partly issued", "Issued"].map((s) => TcFlow.returnTone(s)));""")
 		self.assertEqual(out, ["warn", "info", "pass"])
+
+	def test_tracecore_home_opens_the_flow_page(self):
+		"""/app/tracecore/home hiện Page tc-flow; /app/tc-flow cũ chuyển về địa chỉ mới, giữ tham số."""
+		launcher = (PAGE_DIR.parent / "tracecore" / "tracecore.js").read_text(encoding="utf-8")
+		source = (PAGE_DIR / "tc_flow.js").read_text(encoding="utf-8")
+		self.assertIn('const TC_FLOW_SUBROUTE = "home";', launcher)
+		self.assertIn('frappe.views.pageview.show("tc-flow")', launcher)
+		# trang chủ không tải phân hệ (và không đổi địa chỉ) khi đang ở /app/tracecore/home
+		self.assertIn("!is_tc_flow_route()", launcher)
+		self.assertLess(
+			launcher.index("if (is_tc_flow_route())"), launcher.index("wrapper.tc_launcher_load();")
+		)
+		self.assertIn("TcFlow.BASE + window.location.search", source)
+		self.assertIn("frappe.router.route()", source)
 
 	def test_station_kit_is_loaded_in_a_private_scope(self):
 		# script của Page station kết thúc bằng gán vào frappe.pages["station"]; nạp riêng không được để lại dấu vết toàn cục

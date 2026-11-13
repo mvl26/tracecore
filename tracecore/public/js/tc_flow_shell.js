@@ -20,12 +20,17 @@ const TC_FLOW_DEPT_FUNCTION = "USE";
 
 const TcFlow = {
 	// cổng khoa mang thêm ?department=<khoa>; trạm (nếu đang mở) ở ?station=<mã>
+	// địa chỉ của giao diện mới: đường dẫn con "home" của trang chủ /app/tracecore (người dùng chọn 13/11/2026);
+	// Page tc-flow vẫn là nơi chứa giao diện, /app/tc-flow cũ chuyển về đây
+	BASE: "/app/tracecore/home",
+	OLD_ROUTE: "tc-flow",
+
 	path(station, department, manage) {
 		const query = [];
-		if (manage) return `/app/tc-flow?manage=${encodeURIComponent(manage)}`;
+		if (manage) return `${TcFlow.BASE}?manage=${encodeURIComponent(manage)}`;
 		if (department) query.push(`department=${encodeURIComponent(department)}`);
 		if (station) query.push(`station=${encodeURIComponent(station)}`);
-		return query.length ? `/app/tc-flow?${query.join("&")}` : "/app/tc-flow";
+		return query.length ? `${TcFlow.BASE}?${query.join("&")}` : TcFlow.BASE;
 	},
 
 	stationParam(search) {
@@ -211,7 +216,7 @@ const TcFlow = {
 		}
 	},
 
-	// Lớp con của TraceCoreStation cho khung tc-flow: giữ địa chỉ ở /app/tc-flow và báo trạng thái cho khung.
+	// Lớp con của TraceCoreStation cho khung tc-flow: giữ địa chỉ ở /app/tracecore/home và báo trạng thái cho khung.
 	// shell: { address(name), applied(host, station), replaced(host), stations(host, list), net(host), session(host), covered() }
 	hostClass(Base, shell) {
 		return class TcFlowStation extends Base {
