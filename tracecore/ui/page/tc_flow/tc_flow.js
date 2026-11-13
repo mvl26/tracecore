@@ -736,24 +736,21 @@ class TcFlowPage {
 			})
 			.join("");
 		const time = (value) => (value ? frappe.datetime.str_to_user(value) : "");
-		const statusText = (row) => {
-			if (row.status === "Received") return __("Received at T1");
-			if (row.status === "Partly received")
-				return __("Partly received ({0}/{1})", [row.received_count, row.set_count]);
-			return __("Waiting for CSSD pickup");
-		};
-		const sent = (data.requests || [])
-			.map(
-				(row) => `<tr>
-					<td class="tcf-code">${tcfEsc(row.request)}</td>
+		// mỗi bộ đã gửi một dòng (theo Set ID), mới gửi trước; trạng thái theo từng bộ
+		const sent = (data.sent_sets || [])
+			.map((row) => {
+				const status = row.received ? "Received" : "Waiting";
+				return `<tr>
+					<td class="tcf-code">${tcfEsc(row.set_id)}</td>
+					<td>${tcfEsc(row.set_name || row.set_type)}</td>
+					<td>${tcfEsc(__(row.condition, null, "Dirty Return"))}</td>
 					<td>${tcfEsc(time(row.requested_at))}</td>
 					<td>${tcfEsc(row.requested_by_name)}</td>
-					<td>${tcfEsc(row.set_count)}</td>
-					<td><span class="tcf-badge" data-tone="${TcFlow.returnTone(row.status)}">${tcfEsc(
-					statusText(row)
+					<td><span class="tcf-badge" data-tone="${TcFlow.returnTone(status)}">${tcfEsc(
+					row.received ? __("Received at T1") : __("Waiting for CSSD pickup")
 				)}</span></td>
-				</tr>`
-			)
+				</tr>`;
+			})
 			.join("");
 		const head = (columns) =>
 			`<thead><tr>${columns
@@ -791,10 +788,11 @@ class TcFlowPage {
 				${
 					sent
 						? `<table class="tcf-table">${head([
-								__("Request"),
+								__("Set ID"),
+								__("Set type"),
+								__("Condition on return"),
 								__("Sent at"),
 								__("Sent by"),
-								__("Number of sets"),
 								__("Status"),
 						  ])}<tbody>${sent}</tbody></table>`
 						: `<p class="tcf-empty">${tcfEsc(__("No request was sent today."))}</p>`

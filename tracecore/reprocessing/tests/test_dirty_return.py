@@ -165,3 +165,21 @@ class TestRequestsToday(DirtyReturnCase):
 		dirty_return.create(self.dept, [self.line(self.used)])
 		self.assertEqual(dirty_return.requests_on(make_department("Khoa khác gửi trả"), today()), [])
 		self.assertEqual(dirty_return.requests_on(self.dept, "2020-01-01"), [])
+
+	def test_sent_sets_are_listed_one_row_per_set(self):
+		first = dirty_return.create(self.dept, [self.line(self.used, "Sharps inside")])
+		second = dirty_return.create(self.dept, [self.line(self.unused)])
+		rows = dirty_return.sets_on(self.dept, today())
+		self.assertEqual({row["set_id"] for row in rows}, {self.used.set_unit, self.unused.set_unit})
+		by_set = {row["set_id"]: row for row in rows}
+		used = by_set[self.used.set_unit]
+		self.assertEqual(
+			(used["condition"], used["request"], used["received"]), ("Sharps inside", first["request"], False)
+		)
+		self.assertEqual(by_set[self.unused.set_unit]["request"], second["request"])
+		self.assertTrue(used["set_name"] and used["requested_at"] and used["requested_by_name"])
+		receive_at_t1(self.used.set_unit)
+		by_set = {row["set_id"]: row for row in dirty_return.sets_on(self.dept, today())}
+		self.assertTrue(by_set[self.used.set_unit]["received"])
+		self.assertFalse(by_set[self.unused.set_unit]["received"])
+		self.assertEqual(dirty_return.sets_on(self.dept, "2020-01-01"), [])

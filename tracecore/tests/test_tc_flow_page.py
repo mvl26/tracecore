@@ -213,6 +213,9 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertIn("client_ts: TcFlow.clientTs()", source)
 		# gửi lại sau lỗi mạng dùng lại đúng khóa và nội dung cũ, không tạo yêu cầu thứ hai
 		self.assertIn("this.returnAttempt", source)
+		# bảng Yêu cầu đã gửi hôm nay liệt kê từng bộ theo Set ID, không theo mã yêu cầu
+		self.assertIn("data.sent_sets", source)
+		self.assertNotIn("row.request)", source)
 		# thứ tự mục cổng khoa như prototype: bộ tại khoa, quét sử dụng, gửi trả đồ bẩn, tra cứu gói
 		self.assertIn('["stock", "work", "return", "trace"]', source)
 		# ô chọn và ô tình trạng có nhãn cho trình đọc màn hình

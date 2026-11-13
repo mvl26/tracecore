@@ -89,8 +89,10 @@ class TestFlowApi(FrappeTestCase):
 		with (
 			patch.object(dirty_return, "candidates", return_value=rows) as candidates,
 			patch.object(dirty_return, "requests_on", return_value=sent),
+			patch.object(dirty_return, "sets_on", return_value=[{"set_id": "SET-9", "received": False}]),
 		):
 			out = flow.return_overview(self.ward)
+		self.assertEqual(out["sent_sets"], [{"set_id": "SET-9", "received": False}])
 		candidates.assert_called_once_with(self.ward)
 		self.assertEqual((out["candidates"], out["requests"]), (rows, sent))
 		self.assertEqual(out["conditions"][0], "Complete")
@@ -120,6 +122,7 @@ class TestFlowApi(FrappeTestCase):
 			patch.object(dirty_return, "create", return_value=created) as create,
 			patch.object(dirty_return, "candidates", return_value=[]),
 			patch.object(dirty_return, "requests_on", return_value=[]),
+			patch.object(dirty_return, "sets_on", return_value=[]),
 		):
 			first = self.post(department=self.ward, items=items, key=key)
 			again = self.post(department=self.ward, items=items, key=key)

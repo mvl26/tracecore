@@ -187,3 +187,24 @@ def requests_on(department, day):
 		else:
 			row["status"] = PARTLY if row["received_count"] else WAITING
 	return rows
+
+
+def sets_on(department, day):
+	"""Từng bộ khoa đã gửi trong ngày ``day`` (mỗi bộ một dòng, mới gửi trước) kèm tình trạng và đã về T1 chưa."""
+	start = getdate(day)
+	rows = frappe.db.sql(
+		f"""select line.set_unit as set_id, line.set_type, line.set_name, line.return_condition as `condition`,
+			request.name as request, request.requested_at, request.requested_by_name,
+			case when {_RECEIVED_SQL} then 1 else 0 end as received
+		from `tabDirty Return Request` request
+		join `tabDirty Return Request Item` line
+			on line.parent = request.name and line.parenttype = 'Dirty Return Request'
+		where request.docstatus = 1 and request.department = %s
+			and request.requested_at >= %s and request.requested_at < %s
+		order by request.requested_at desc, request.name desc, line.idx asc""",  # nosec B608
+		(department, start, add_days(start, 1)),
+		as_dict=True,
+	)
+	for row in rows:
+		row["received"] = bool(row["received"])
+	return rows

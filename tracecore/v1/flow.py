@@ -133,6 +133,7 @@ def return_overview(department=None):
 		"conditions": list(dirty_return.CONDITIONS),
 		"candidates": dirty_return.candidates(name),
 		"requests": dirty_return.requests_on(name, today()),
+		"sent_sets": dirty_return.sets_on(name, today()),
 	}
 
 
