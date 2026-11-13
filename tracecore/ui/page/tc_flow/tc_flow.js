@@ -805,7 +805,7 @@ class TcFlowPage {
 				}
 				<p class="tcf-note">${tcfEsc(
 					__(
-						"The request is only a notice; the set status changes only when the technician scans it at receiving T1 (BRU-FLOW-003)."
+						"The request is only a notice; the set status changes only when the technician scans it at receiving T1."
 					)
 				)}</p>
 			</section>

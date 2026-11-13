@@ -643,7 +643,7 @@ const TcFlowLead = {
 			)}
 			<p class="tcf-note">${h.esc(
 				__(
-					"A locked machine cannot be chosen when a load is created (BRU-EQP-001/002). The head nurse can unlock it for up to 24 hours with a reason, except when the pressure equipment inspection is overdue."
+					"A locked machine cannot be chosen when a load is created. The head nurse can unlock it for up to 24 hours with a reason, except when the pressure equipment inspection is overdue."
 				)
 			)}</p>`
 		);

@@ -6626,6 +6626,8 @@ Department Name,Tên khoa,Linen Collection
 Department Name,Tên khoa,Linen Dept Quota
 Department Name,Tên khoa,Linen Issue
 Department Name,Tên khoa,Par Level
+Department Name,Tên khoa,Dirty Return Request
+Department Name,Tên khoa,Set Issue Request
 Changed By Name,Tên người thay đổi,Par Level History
 Set Unit Name,Tên bộ dụng cụ,Par Override
 Set Unit Name,Tên bộ dụng cụ,Assembly Record
@@ -11984,7 +11986,7 @@ Damaged,Hỏng,Dirty Return
 Sharps inside,Có vật sắc nhọn,Dirty Return
 Send pickup request,Gửi yêu cầu lấy đồ bẩn
 No set of the department is waiting to be returned.,Khoa không có bộ nào chờ trả.
-The request is only a notice; the set status changes only when the technician scans it at receiving T1 (BRU-FLOW-003).,Yêu cầu chỉ là thông báo; trạng thái bộ chỉ đổi khi KTV quét tiếp nhận tại T1 (BRU-FLOW-003).
+The request is only a notice; the set status changes only when the technician scans it at receiving T1.,Yêu cầu chỉ là thông báo; trạng thái bộ chỉ đổi khi KTV quét tiếp nhận tại T1.
 Requests sent today,Yêu cầu đã gửi hôm nay
 Sent at,Gửi lúc
 Sent by,Người gửi
@@ -12092,10 +12094,10 @@ Position,Vị trí,TC Lead
 Operator,Người vận hành,TC Lead
 Programs,Chương trình,TC Lead
 Parameters,Tham số,TC Lead
-Par level,Cơ số,TC Lead
-Total cost,Tổng chi phí,TC Lead
-Cost per pack,Giá thành một gói,TC Lead
-running,đang chạy,TC Lead
+Par level,Cơ số,
+Total cost,Tổng chi phí,
+Cost per pack,Giá thành một gói,
+running,đang chạy,
 High,Cao,Incident CAPA
 Medium,Trung bình,Incident CAPA
 Low,Thấp,Incident CAPA
@@ -12176,7 +12178,7 @@ has printout,có bản in
 Tests on {0},Test ngày {0}
 Inspection due,Hạn kiểm định
 No equipment is set up yet.,Chưa khai báo thiết bị nào.
-"A locked machine cannot be chosen when a load is created (BRU-EQP-001/002). The head nurse can unlock it for up to 24 hours with a reason, except when the pressure equipment inspection is overdue.","Máy Khóa không thể được chọn khi tạo mẻ (BRU-EQP-001/002). Điều dưỡng trưởng có thể mở khóa tạm tối đa 24 giờ có lý do, trừ trường hợp quá hạn kiểm định thiết bị áp lực."
+"A locked machine cannot be chosen when a load is created. The head nurse can unlock it for up to 24 hours with a reason, except when the pressure equipment inspection is overdue.","Máy Khóa không thể được chọn khi tạo mẻ. Điều dưỡng trưởng có thể mở khóa tạm tối đa 24 giờ có lý do, trừ trường hợp quá hạn kiểm định thiết bị áp lực."
 No certificate,Chưa có chứng chỉ
 Expiring in {0} days,Sắp hết · còn {0} ngày
 Not assigned,Chưa gán

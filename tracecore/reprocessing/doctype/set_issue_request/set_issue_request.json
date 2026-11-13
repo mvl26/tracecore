@@ -36,8 +36,10 @@
    "search_index": 1
   },
   {
+   "fetch_from": "department.department_name",
    "fieldname": "department_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Department Name",
    "read_only": 1
   },
@@ -141,7 +143,7 @@
  "index_web_pages_for_search": 0,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-13 17:00:00.000000",
+ "modified": "2026-11-14 00:30:00.000000",
  "modified_by": "Administrator",
  "module": "Reprocessing",
  "name": "Set Issue Request",
