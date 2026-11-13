@@ -104,6 +104,8 @@ page_js = {
 		"public/js/station_program_match.js",
 		# A-111: vật tư của chương trình, dùng chung cho T2, T5 và test đầu ngày
 		"public/js/station_consumables.js",
+		# A-159: tải ảnh qua phiên thẻ, dùng chung cho T2, T3, T5 và test đầu ngày
+		"public/js/station_photo.js",
 		"public/js/station_t2.js",
 		"public/js/station_t1.js",
 		# A-68: chọn tay thiết bị và bộ/gói khi máy quét hỏng (shell gọi qua TcPicker)

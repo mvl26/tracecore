@@ -341,6 +341,7 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M9-11, FR-M9-12 | — | SCR-43 (mới) | — (v1.11) | — | — | — |
 | FR-M9-13 | — | SCR-32 và mọi danh sách | — (v1.11) | — | — | — |
 | FR-M9-14, FR-M9-15 | — | mọi SCR trạm/PDA | — (v1.11) | — | — | — |
+| FR-M9-14.1 | — | SCR-06, SCR-07, SCR-09, SCR-23 | — (A-159) | — (ticket 13/11/2026) | — | `tracecore/v1/tests/test_station_photo.py`, `tracecore/tests/test_station_behavior.py` |
 | FR-M9-17, FR-M9-18 | — | Desk TraceCore Settings, danh mục mã lỗi | — (A-71) | FEAT-052 | — | — |
 | FR-M9-19 | — | mọi SCR trạm/PDA, màn đăng nhập trạm | — (A-71) | FEAT-052 | — | — |
 | FR-M9-20, FR-M9-21 | — | Desk Nhật ký lỗi, báo cáo | — (A-71) | FEAT-052 | — | — |

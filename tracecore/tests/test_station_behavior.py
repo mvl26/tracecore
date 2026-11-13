@@ -3586,3 +3586,133 @@ class TestT5OutOfRangeScreen(FrappeTestCase):
 			rows["Head of KSNK approval is needed because the cycle data is outside the range: {0}"],
 			"Cần trưởng khoa duyệt vì dữ liệu chu trình ngoài dải: {0}",
 		)
+
+
+PHOTO = "public/js/station_photo.js"
+PHOTO_STATION = """
+const calls = [];
+let reply = () => ({ok: true, file_url: "/private/files/SS-1-abc.jpg"});
+const station = {
+	station: "TR-005", sessionVersion: 1,
+	async rpc(method, args, key) { calls.push({method, args, key}); return reply(); },
+};
+TcStationPhoto.shrink = async () => "QUJD";
+const file = {name: "chart.jpg"};
+const fail = (props) => () => { throw Object.assign(new Error("x"), props); };
+"""
+
+
+class TestStationPhoto(FrappeTestCase):
+	"""A-159 (ticket 13/11/2026): ảnh màn trạm tải qua phiên thẻ; 401/403 báo phiên hết, không báo kiểm tra kết nối."""
+
+	def run_photo(self, body, files=(PHOTO,), names=(["TcStationPhoto"],)):
+		return run_js(self, list(files), list(names), PHOTO_STATION + body)
+
+	def test_upload_calls_the_card_session_rpc_with_an_idempotency_key(self):
+		out = self.run_photo("emit({result: await TcStationPhoto.upload(station, file), calls});")
+		self.assertEqual(out["result"], {"file_url": "/private/files/SS-1-abc.jpg"})
+		(call,) = out["calls"]
+		self.assertEqual(call["method"], "tracecore.v1.station.upload_photo")
+		self.assertEqual(call["args"]["station"], "TR-005")
+		self.assertEqual(call["args"]["content"], "QUJD")
+		self.assertEqual(call["args"]["file_name"], "chart.jpg")
+		self.assertTrue(call["args"]["client_ts"])
+		self.assertTrue(call["key"])
+
+	def test_403_says_the_login_session_has_ended_not_the_connection(self):
+		for status in (401, 403):
+			with self.subTest(status=status):
+				out = self.run_photo(
+					f"reply = fail({{status: {status}}}); emit(await TcStationPhoto.upload(station, file));"
+				)
+				notice = out["notice"]
+				self.assertEqual(notice["variant"], "error")
+				self.assertEqual(notice["title"], "Login session has ended")
+				self.assertIn("chart.jpg", notice["reason"])
+				self.assertIn("Scan your employee card again", notice["action"])
+				self.assertNotIn("connection", notice["action"])
+
+	def test_network_failure_still_says_check_the_connection(self):
+		out = self.run_photo(
+			"reply = fail({offline: true}); emit(await TcStationPhoto.upload(station, file));"
+		)
+		self.assertEqual(out["notice"]["title"], "Photo could not be attached")
+		self.assertIn("No connection to the server", out["notice"]["reason"])
+		self.assertEqual(out["notice"]["action"], "Check the connection and choose the photo again.")
+
+	def test_server_error_names_the_status(self):
+		out = self.run_photo("reply = fail({status: 500}); emit(await TcStationPhoto.upload(station, file));")
+		self.assertIn("Server error (500)", out["notice"]["reason"])
+		self.assertNotIn("connection", out["notice"]["action"])
+
+	def test_ended_session_and_business_rejection(self):
+		out = self.run_photo(
+			"""
+			reply = fail({sessionEnded: true});
+			const ended = await TcStationPhoto.upload(station, file);
+			reply = () => ({ok: false, error: {code: "PHOTO_INVALID", title: "Photo is not valid", reason: "r", action: "a"}});
+			const rejected = await TcStationPhoto.upload(station, file);
+			TcStationPhoto.shrink = async () => { throw new Error("unreadable"); };
+			const unreadable = await TcStationPhoto.upload(station, file);
+			emit({ended, rejected, unreadable});
+			"""
+		)
+		self.assertEqual(out["ended"], {"ended": True})  # shell đã hiện màn quét thẻ kèm lý do
+		self.assertEqual(out["rejected"]["notice"]["code"], "PHOTO_INVALID")
+		self.assertEqual(out["rejected"]["notice"]["variant"], "error")
+		self.assertEqual(out["unreadable"]["notice"]["title"], "Photo is not valid")
+
+	def test_daily_test_screen_shows_the_session_message_and_keeps_the_photo_on_success(self):
+		out = self.run_photo(
+			"""
+			const screen = Object.create(DailyTestScreen.prototype);
+			Object.assign(screen, {station, form: {}, show() {}});
+			const input = {files: [file]};
+			reply = fail({status: 403});
+			await screen.uploadPhoto(input);
+			const refused = {notice: screen.notice, uploading: screen.form.uploading, photo: screen.form.photo || null};
+			reply = () => ({ok: true, file_url: "/private/files/SS-1-abc.jpg"});
+			await screen.uploadPhoto(input);
+			emit({refused, photo: screen.form.photo, notice: screen.notice});
+			""",
+			files=(PHOTO, DAILY),
+			names=(["TcStationPhoto"], ["DailyTestScreen"]),
+		)
+		self.assertEqual(out["refused"]["notice"]["title"], "Login session has ended")
+		self.assertFalse(out["refused"]["uploading"])
+		self.assertIsNone(out["refused"]["photo"])
+		self.assertEqual(out["photo"], "/private/files/SS-1-abc.jpg")
+		self.assertEqual(out["notice"]["variant"], "ok")
+
+	def test_station_screens_no_longer_use_the_desk_upload(self):
+		from tracecore import hooks
+
+		scripts = hooks.page_js["station"]
+		helper = scripts.index(PHOTO)
+		for path in (T2, T3, T5, DAILY):
+			with self.subTest(path=path):
+				self.assertLess(helper, scripts.index(path))
+				with open(frappe.get_app_path("tracecore", *path.split("/")), encoding="utf-8") as handle:
+					source = handle.read()
+				self.assertNotIn("upload_file", source)
+				self.assertIn("TcStationPhoto.upload(this.station, file)", source)
+		shell = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(shell, encoding="utf-8") as handle:
+			self.assertIn('method === "tracecore.v1.station.upload_photo"', handle.read())
+
+	def test_photo_strings_are_translated(self):
+		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
+		with open(path, encoding="utf-8") as handle:
+			rows = {row[0]: row[1] for row in csv.reader(handle) if len(row) > 1}
+		for text in (
+			"Login session has ended",
+			"The server did not accept the photo {0} for this login.",
+			"Scan your employee card again, then choose the photo again.",
+			"No connection to the server: the file {0} was not uploaded.",
+			"Server error ({0}): the file {1} was not uploaded.",
+			"Choose the photo again. If it fails again, call R10.",
+			"Photo is not valid",
+			"The photo could not be read.",
+			"Take the photo again (JPEG, PNG or WebP, up to 5 MB).",
+		):
+			self.assertTrue(rows.get(text), msg=text)

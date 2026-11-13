@@ -1547,6 +1547,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.code_range.") ||
 			method.startsWith("tracecore.v1.feedback.") ||
 			method === "tracecore.v1.printer.set_roll" ||
+			method === "tracecore.v1.station.upload_photo" || // A-159: ảnh của màn trạm
 			method === "tracecore.v1.account.change_pin";
 		const version = this.sessionVersion;
 		const sessionCall =

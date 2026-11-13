@@ -1,4 +1,4 @@
-/* global tcErrorTitle, tcGuideButton */
+/* global tcErrorTitle, tcGuideButton, TcStationPhoto */
 /* global uuid4, clientTs, esc, T5Load, T2Wash, t5MachineState, TcRunConsumables */
 // Màn SCR-23 test hằng ngày và khóa máy (FEAT-040, UC-23) trên Page station: chế độ "Test hằng ngày" của màn T5 và T2.
 // Frappe nối file này sau station_t5.js và station_t2.js (hook page_js). T5Load/T2Wash đổi `station.screen` sang
@@ -297,31 +297,13 @@ class DailyTestScreen {
 		const version = this.station.sessionVersion;
 		this.form.uploading = true;
 		this.show();
-		try {
-			const body = new FormData();
-			body.append("file", file, file.name);
-			body.append("is_private", "1");
-			body.append("folder", "Home");
-			const response = await fetch("/api/method/upload_file", {
-				method: "POST",
-				headers: { Accept: "application/json", "X-Frappe-CSRF-Token": frappe.csrf_token },
-				body,
-				credentials: "same-origin",
-			});
-			const data = await response.json().catch(() => ({}));
-			if (version !== this.station.sessionVersion) return;
-			if (!response.ok || !data.message || !data.message.file_url) throw new Error("upload");
-			this.form.photo = data.message.file_url;
+		// A-159: tải qua phiên thẻ thay cho API tải tệp của Desk (403 khi cookie về Guest)
+		const result = await TcStationPhoto.upload(this.station, file);
+		if (version !== this.station.sessionVersion || result.ended) return;
+		if (result.file_url) {
+			this.form.photo = result.file_url;
 			this.notice = { variant: "ok", title: __("Photo attached: {0}", [file.name]) };
-		} catch (error) {
-			if (version !== this.station.sessionVersion) return;
-			this.notice = {
-				variant: "error",
-				title: __("Photo could not be attached"),
-				reason: __("The file {0} was not uploaded.", [file.name]),
-				action: __("Check the connection and choose the photo again."),
-			};
-		}
+		} else this.notice = result.notice;
 		this.form.uploading = false;
 		this.show();
 	}
