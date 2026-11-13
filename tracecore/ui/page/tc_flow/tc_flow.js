@@ -1,8 +1,8 @@
-/* global TcFlow, tracecore */
+/* global TcFlow */
 // Page tc-flow (A-158): giao diện người dùng cho luồng xử lý dụng cụ — trang chọn vai trò, rail trạm, stepper T1–T8.
 // Khung này không tự ghi nghiệp vụ: thân mỗi trạm là màn của Page station (lớp TraceCoreStation nạp qua TcFlow.kit),
 // nên phiên thẻ, kiểm năng lực, offline, X-Idempotency-Key và client_ts chạy đúng mã hiện có. Khung chỉ đọc thêm
-// navigation.context (danh sách trạm), usage.overview (gói tại khoa) và trace.query (tra cứu gói).
+// navigation.context (danh sách trạm), flow.departments / flow.department_stock (khoa, gói tại khoa) và trace.query.
 
 const TCF_PANES = ["stock", "work", "trace"];
 
@@ -24,6 +24,8 @@ class TcFlowPage {
 		this.kitPromise = null;
 		this.pane = "work";
 		this.modeHint = "ktv";
+		this.dept = null; // khoa đang mở ở cổng khoa: {name, label}
+		this.departments = [];
 		this.visible = false;
 		this.entering = 0;
 		this.root.addEventListener("click", (event) => this.onClick(event));
@@ -40,12 +42,18 @@ class TcFlowPage {
 		this.visible = true;
 		document.body.classList.add("tcf-body");
 		const code = TcFlow.stationParam(window.location.search);
+		const department = TcFlow.departmentParam(window.location.search);
 		if (this.host && !this.host.disposed) {
 			this.adopt();
 			this.view("app");
 			this.host.show();
 			this.render();
-		} else if (code) this.enter(code);
+		} else if (this.dept) {
+			this.view("app");
+			this.render();
+			if (this.pane === "stock") this.loadStock();
+		} else if (department) this.enterDept({ name: department });
+		else if (code) this.enter(code);
 		else this.showLanding();
 	}
 
@@ -70,7 +78,7 @@ class TcFlowPage {
 	}
 
 	setAddress(station) {
-		const address = TcFlow.path(station);
+		const address = TcFlow.path(station, this.dept && this.dept.name);
 		if (window.location.pathname + window.location.search !== address)
 			window.history.replaceState(window.history.state, "", address);
 	}
@@ -124,15 +132,22 @@ class TcFlowPage {
 		this.catalogState = "loading";
 		this.renderLanding();
 		try {
-			const context = await this.get("tracecore.v1.navigation.context");
+			// khoa: tài khoản không có quyền cổng khoa thì thẻ khoa không có lựa chọn, trạm vẫn dùng được
+			const [context, wards] = await Promise.all([
+				this.get("tracecore.v1.navigation.context"),
+				this.get("tracecore.v1.flow.departments").catch(() => null),
+			]);
 			this.catalog = (context && context.stations) || [];
+			this.departments = (wards && wards.departments) || [];
+			const known = this.dept && this.departments.find((row) => row.name === this.dept.name);
+			if (known && !this.dept.label) this.dept.label = known.label;
 			this.catalogState = "ready";
 		} catch (error) {
 			this.catalogState = "error";
 			this.catalogError = this.connectionReason(error);
 		}
 		this.renderLanding();
-		if (this.host) this.render();
+		this.render();
 	}
 
 	showLanding() {
@@ -153,17 +168,22 @@ class TcFlowPage {
 				"tcf-catalog-retry"
 			);
 		else status.innerHTML = "";
-		this.fillSelect("ktv", TcFlow.ktvStations(this.catalog));
-		this.fillSelect("dept", TcFlow.deptStations(this.catalog));
+		this.fillSelect(
+			"ktv",
+			TcFlow.ktvStations(this.catalog),
+			__("No station for your account")
+		);
+		this.fillSelect("dept", this.departments, __("No department for your account"));
 	}
 
-	fillSelect(mode, stations) {
+	// ô chọn của thẻ vai trò: trạm (kỹ thuật viên) hoặc khoa (cổng khoa)
+	fillSelect(mode, stations, none) {
 		const select = this.el(`#tcf-${mode}-station`);
 		const button = this.el(`[data-action="tcf-enter"][data-mode="${mode}"]`);
 		const ready = this.catalogState === "ready";
 		const empty = ready && !stations.length;
 		select.innerHTML = empty
-			? `<option value="">${tcfEsc(__("No station for your account"))}</option>`
+			? `<option value="">${tcfEsc(none)}</option>`
 			: stations
 					.map(
 						(station) =>
@@ -218,6 +238,18 @@ class TcFlowPage {
 			session: (host) => {
 				if (!mine(host)) return;
 				if (!host.session) this.cardStations = null;
+				// sử dụng ghi cho khoa của người quét thẻ: cổng khoa theo khoa của thẻ
+				else if (
+					this.dept &&
+					host.session.department &&
+					host.session.department !== this.dept.name
+				) {
+					this.dept = {
+						name: host.session.department,
+						label: host.session.department_name || host.session.department,
+					};
+					this.setAddress(host.station);
+				}
 				this.render();
 				if (this.pane === "stock") this.loadStock();
 			},
@@ -227,6 +259,7 @@ class TcFlowPage {
 
 	async enter(code, mode) {
 		if (mode) this.modeHint = mode;
+		if (mode === "ktv") this.dept = null;
 		const turn = ++this.entering;
 		this.pane = "work";
 		this.setAddress(code);
@@ -260,6 +293,31 @@ class TcFlowPage {
 		this.render();
 	}
 
+	// cổng khoa: chọn khoa là vào thẳng Gói tại khoa; màn T8 chỉ mở khi sang Quét sử dụng
+	enterDept(department) {
+		this.dept = this.departments.find((row) => row.name === department.name) || department;
+		this.modeHint = "dept";
+		this.entering += 1;
+		this.pane = "stock";
+		this.view("app");
+		this.setAddress(this.host ? this.host.station : null);
+		this.el(".tcf-status").innerHTML = "";
+		document.title = `${__("Department portal")} – TraceCore`;
+		this.render();
+		this.loadStock();
+	}
+
+	openUsage() {
+		const station = TcFlow.deptStations(this.catalog)[0];
+		if (station) return this.enter(station.name, "dept");
+		this.el(".tcf-status").innerHTML = this.alertHtml(
+			__("Could not open the station"),
+			__("No usage station for your account"),
+			__("Ask the administrator to give your account a usage station."),
+			this.catalogState === "ready" ? null : "tcf-catalog-retry"
+		);
+	}
+
 	// breadcrumb và stepper nằm trong khung của trạm, đúng thứ tự: vạch khu → breadcrumb → tên trạm → stepper
 	decorate(host) {
 		const title = host.root.querySelector(".tc-title");
@@ -276,6 +334,7 @@ class TcFlowPage {
 		const host = this.host;
 		this.entering += 1;
 		this.host = null;
+		this.dept = null;
 		this.cardStations = null;
 		this.pane = "work";
 		if (host) {
@@ -302,6 +361,7 @@ class TcFlowPage {
 	}
 
 	mode() {
+		if (this.dept) return "dept";
 		const info = this.stationInfo();
 		return info && info.functions ? TcFlow.mode(info) : this.modeHint;
 	}
@@ -326,10 +386,13 @@ class TcFlowPage {
 		const name = this.el(".tcf-who-name");
 		const role = this.el(".tcf-who-role");
 		if (mode === "dept") {
-			name.textContent = (session && session.department_name) || label;
-			role.textContent = session
-				? [__("Department portal"), session.employee_name].filter(Boolean).join(" · ")
-				: __("Scan employee card");
+			name.textContent =
+				(this.dept && (this.dept.label || this.dept.name)) ||
+				(session && session.department_name) ||
+				label;
+			role.textContent = [__("Department portal"), session && session.employee_name]
+				.filter(Boolean)
+				.join(" · ");
 		} else {
 			name.textContent = session
 				? [session.employee_name, session.employee].filter(Boolean).join(" · ")
@@ -414,16 +477,18 @@ class TcFlowPage {
 	setPane(pane) {
 		if (!TCF_PANES.includes(pane) || this.mode() !== "dept") return;
 		this.pane = pane;
+		this.el(".tcf-status").innerHTML = "";
 		this.render();
 		if (pane === "stock") this.loadStock();
 		else if (pane === "trace") this.el("#tcf-trace-input").focus();
 		else if (this.host) this.host.focus(true);
+		else this.openUsage();
 	}
 
 	async loadStock() {
-		const host = this.host;
 		const box = this.el(".tcf-stock-body");
-		if (!host || !host.session) {
+		const dept = this.dept;
+		if (!dept) {
 			box.innerHTML = `<p class="tcf-empty">${tcfEsc(
 				__("Scan your employee card in Scan usage to see the packs at your department.")
 			)}</p>
@@ -432,35 +497,30 @@ class TcFlowPage {
 			)}</button>`;
 			return;
 		}
-		if (host.isOffline()) {
+		if (!navigator.onLine) {
 			box.innerHTML = `<p class="tcf-empty tcf-offline">${tcfEsc(
 				__("Offline: the list of packs at the department needs a connection.")
 			)}</p>`;
 			return;
 		}
-		const version = host.sessionVersion;
-		const stale = () =>
-			host !== this.host || version !== host.sessionVersion || this.pane !== "stock";
-		const fail = (reason) => {
+		const stale = () => dept.name !== (this.dept && this.dept.name) || this.pane !== "stock";
+		box.innerHTML = this.loadingHtml();
+		try {
+			const result = await this.get("tracecore.v1.flow.department_stock", {
+				department: dept.name,
+			});
+			if (stale()) return;
+			if (this.dept && result.department_name) this.dept.label = result.department_name;
+			box.innerHTML = this.stockHtml(result);
+			this.render();
+		} catch (error) {
+			if (stale()) return;
 			box.innerHTML = this.alertHtml(
 				__("Could not load the packs at the department"),
-				reason,
+				this.connectionReason(error),
 				__("Check the connection and try again."),
 				"tcf-stock-refresh"
 			);
-		};
-		box.innerHTML = this.loadingHtml();
-		try {
-			const result = await host.rpcRead("tracecore.v1.usage.overview", {
-				station: host.station,
-				client_ts: tracecore.codes.client_ts(),
-			});
-			if (stale()) return;
-			if (!result || result.ok === false) return fail(host.failureCause(null, result));
-			box.innerHTML = this.stockHtml(result);
-		} catch (error) {
-			if (error.sessionEnded || stale()) return;
-			fail(host.failureCause(error));
 		}
 	}
 
@@ -594,10 +654,12 @@ class TcFlowPage {
 		else if (action === "tcf-catalog-retry") this.loadCatalog();
 		else if (action === "tcf-enter") {
 			const code = this.el(`#tcf-${button.dataset.mode}-station`).value;
-			if (code) this.enter(code, button.dataset.mode);
+			if (code && button.dataset.mode === "dept") this.enterDept({ name: code });
+			else if (code) this.enter(code, "ktv");
 		} else if (action === "tcf-enter-retry") {
 			const code = TcFlow.stationParam(window.location.search);
 			if (code) this.enter(code);
+			else if (this.dept) this.openUsage();
 			else this.showLanding();
 		} else if (action === "tcf-station") {
 			if (this.host) this.host.switchStation(button.dataset.station, button.dataset.label);

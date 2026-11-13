@@ -19,12 +19,20 @@ const TC_FLOW_KTV_FUNCTIONS = [
 const TC_FLOW_DEPT_FUNCTION = "USE";
 
 const TcFlow = {
-	path(station) {
-		return station ? `/app/tc-flow?station=${encodeURIComponent(station)}` : "/app/tc-flow";
+	// cổng khoa mang thêm ?department=<khoa>; trạm (nếu đang mở) ở ?station=<mã>
+	path(station, department) {
+		const query = [];
+		if (department) query.push(`department=${encodeURIComponent(department)}`);
+		if (station) query.push(`station=${encodeURIComponent(station)}`);
+		return query.length ? `/app/tc-flow?${query.join("&")}` : "/app/tc-flow";
 	},
 
 	stationParam(search) {
 		return new URLSearchParams(search || "").get("station") || null;
+	},
+
+	departmentParam(search) {
+		return new URLSearchParams(search || "").get("department") || null;
 	},
 
 	mode(station) {

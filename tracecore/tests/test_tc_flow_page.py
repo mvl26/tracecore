@@ -59,6 +59,9 @@ class TestTcFlowShell(FrappeTestCase):
 			"""emit({
 				home: TcFlow.path(null),
 				station: TcFlow.path("TR 001"),
+				dept: TcFlow.path(null, "Khoa A - MD"),
+				deptStation: TcFlow.path("TR-008", "K1"),
+				deptParam: TcFlow.departmentParam("?department=K1&station=TR-008"),
 				param: TcFlow.stationParam("?station=TR-001&x=1"),
 				none: TcFlow.stationParam(""),
 			});""",
@@ -66,6 +69,9 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertEqual(out["home"], "/app/tc-flow")
 		self.assertEqual(out["station"], "/app/tc-flow?station=TR%20001")
 		self.assertEqual(out["param"], "TR-001")
+		self.assertEqual(out["dept"], "/app/tc-flow?department=Khoa%20A%20-%20MD")
+		self.assertEqual(out["deptStation"], "/app/tc-flow?department=K1&station=TR-008")
+		self.assertEqual(out["deptParam"], "K1")
 		self.assertIsNone(out["none"])
 
 	def test_station_lists_keep_only_the_instrument_flow(self):
@@ -281,8 +287,11 @@ class TestTcFlowPage(FrappeTestCase):
 		shell = Path(frappe.get_app_path("tracecore", *SHELL.split("/"))).read_text(encoding="utf-8")
 		self.assertIn('with_page("station"', source)
 		self.assertIn("TcFlow.hostClass(", source)
-		self.assertIn("tracecore.codes.client_ts()", source)
-		self.assertIn('"tracecore.v1.usage.overview"', source)
+		# cổng khoa chọn theo khoa (như prototype), không chọn theo trạm; gói tại khoa đọc bằng phiên Desk
+		self.assertIn('"tracecore.v1.flow.departments"', source)
+		self.assertIn('"tracecore.v1.flow.department_stock"', source)
+		self.assertIn('this.fillSelect("dept", this.departments', source)
+		self.assertIn("enterDept(", source)
 		self.assertIn('"tracecore.v1.trace.query"', source)
 		self.assertIn('"tracecore.v1.navigation.context"', source)
 		# không tự gọi RPC ghi của trạm, không đổi trạng thái bộ: mọi thao tác ghi đi qua màn trạm hiện có

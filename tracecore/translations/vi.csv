@@ -11942,7 +11942,11 @@ Instrument reprocessing technician,Kỹ thuật viên xử lý dụng cụ
 Scan card at station,Quét thẻ vào trạm
 Department using instruments,Khoa gửi dụng cụ
 "See the packs at your department, scan a pack before use and trace a pack.","Xem gói đang có tại khoa, quét gói trước khi dùng và tra cứu gói."
-Department station,Trạm của khoa
 Open department portal,Vào cổng khoa
 Scan Cycle ID or Set ID,Quét Cycle ID hoặc Set ID
 Scan Cycle ID or Set ID...,Quét Cycle ID hoặc Set ID...
+No department for your account,Tài khoản chưa có khoa nào
+No usage station for your account,Tài khoản chưa có trạm sử dụng nào
+Ask the administrator to give your account a usage station.,Nhờ quản trị cấp trạm sử dụng cho tài khoản.
+"Only R01, R02 or department staff can open the department portal.","Chỉ R01, R02 hoặc nhân viên khoa được mở cổng khoa."
+You can only see the packs of your own department.,Bạn chỉ xem được gói của khoa mình.

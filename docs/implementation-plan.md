@@ -319,15 +319,15 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 
 | FEAT | Phạm vi | FR | SCR | Phụ thuộc |
 | --- | --- | --- | --- | --- |
-| FEAT-099 | Page `tc-flow` (module UI): trang chọn vai trò, khung rail + stepper theo prototype #17, nạp nguyên các màn trạm T1–T8 của Page `station` (không sửa file cũ), cổng khoa (gói tại khoa, quét sử dụng, tra cứu gói). Không RPC mới. | FR-M9-31 | SCR-68 | FEAT-001, FEAT-009 và các FEAT trạm T1–T8 |
+| FEAT-099 | Page `tc-flow` (module UI): trang chọn vai trò, khung rail + stepper theo prototype #17, nạp nguyên các màn trạm T1–T8 của Page `station` (không sửa file cũ), cổng khoa chọn theo khoa (gói tại khoa, quét sử dụng, tra cứu gói). RPC đọc mới `tracecore.v1.flow.departments`, `tracecore.v1.flow.department_stock`; không RPC ghi mới. | FR-M9-31 | SCR-68 | FEAT-001, FEAT-009 và các FEAT trạm T1–T8 |
 
 #### Acceptance criteria FEAT-099 [A-158] (EARS)
 
-- AC-099-1: Khi người dùng mở `/app/tc-flow`, hệ thống phải hiện trang chọn vai trò với danh sách trạm của luồng xử lý dụng cụ mà tài khoản được mở và danh sách trạm sử dụng của khoa.
+- AC-099-1: Khi người dùng mở `/app/tc-flow`, hệ thống phải hiện trang chọn vai trò với danh sách trạm của luồng xử lý dụng cụ mà tài khoản được mở và danh sách khoa mà tài khoản được xem (R01/R02 mọi khoa, R08 khoa của mình).
 - AC-099-2: Khi người dùng chọn trạm, hệ thống phải mở màn quét thẻ của trạm đó tại `/app/tc-flow?station=<mã>`; thanh địa chỉ không chuyển về `/app/station`.
 - AC-099-3: Khi thẻ hợp lệ, hệ thống phải hiện tên người làm, trạm và danh sách trạm ở thanh bên, thứ tự bước T1–T8 có chữ cho bước đã qua và bước hiện tại, và màn thao tác của trạm với đủ chức năng hiện có.
 - AC-099-4: Khi người dùng chọn trạm khác ở thanh bên, hệ thống phải đổi trạm theo quy tắc hiện có (cùng khu giữ phiên, khác khu quét lại thẻ) mà không rời `/app/tc-flow`.
-- AC-099-5: Khi người dùng ở cổng khoa mở Gói tại khoa hoặc Tra cứu gói, hệ thống phải hiện dữ liệu từ `usage.overview` và `trace.query`; lỗi hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
+- AC-099-5: Khi người dùng ở cổng khoa mở Gói tại khoa hoặc Tra cứu gói, hệ thống phải hiện gói tại khoa đã chọn (`flow.department_stock`, không cần quét thẻ) và chuỗi sự kiện của gói (`trace.query`); lỗi hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
 - AC-099-6: Hệ thống không được thay đổi hành vi của `/app/station` và các RPC hiện có.
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]

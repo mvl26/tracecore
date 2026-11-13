@@ -363,7 +363,7 @@ Bảng dưới là **tham chiếu từ bộ BA v1.10** (#15 RTM, #05 SRS, #06 UC
 | FR-M1-05.6 | BRU-ID-001 | SCR-03 | — (A-155 P7) | FEAT-097 | — | `tracecore/tests/test_set_unit_desk_assets.py` |
 | FR-M1-03.10, FR-M1-03.3 | BRU-REP-004 | SCR-02, SCR-08 | — (A-156) | FEAT-098 | — | `tracecore/instrument/tests/test_set_type_route.py`, `tracecore/reprocessing/tests/test_packing_route.py` |
 | FR-M1-06.6 | — | SCR-03 | — (A-157) | FEAT-098 | — | `tracecore/v1/tests/test_set_type_route_ci_api.py`, `tracecore/instrument/tests/test_set_unit_route_ci_js.py` |
-| FR-M9-31 | UC-05..13 | SCR-68 | — (A-158) | FEAT-099 | — | `tracecore/tests/test_tc_flow_page.py` |
+| FR-M9-31 | UC-05..13 | SCR-68 | — (A-158) | FEAT-099 | — | `tracecore/tests/test_tc_flow_page.py`, `tracecore/v1/tests/test_flow_api.py` |
 | FR-M1-05.4, FR-M10-01.5, EI-HW-002, EI-HW-003, EI-HW-007, EI-HW-008 | BRU-ID-006 | SCR-02, SCR-38, Desk in thẻ bộ, nhãn QR đối tượng | — (A-114) | FEAT-075 | — | — |
 | FR-M10-01, FR-M10-02 | BRU-WST-001, BRU-WST-002, BRU-ID-006 | SCR-38 (mới) | — (v1.11) | — | — | — |
 | FR-M10-03 | BRU-WST-001, BRU-WST-002 | SCR-39 (mới) | — (v1.11) | — | — | — |
