@@ -11,7 +11,8 @@ from frappe.utils import cint, today
 
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.idempotency import idempotent
-from tracecore.reprocessing import dirty_return, issuing
+from tracecore.linen import received as linen_received_service
+from tracecore.reprocessing import department_recall, dirty_return, issue_request, issuing
 from tracecore.reprocessing import usage as usage_service
 
 SEE_ALL_ROLES = {"TC R01", "TC R02", "System Manager"}
@@ -95,19 +96,6 @@ def _par_range(department):
 	return {"min": sum(cint(row.min_qty) for row in rows), "max": sum(cint(row.max_qty) for row in rows)}
 
 
-def _recall_pending(department):
-	"""Gói của khoa trong lệnh thu hồi đang mở mà khoa chưa xác nhận."""
-	return cint(
-		frappe.db.sql(
-			"""select count(*) from `tabRecall Order Pack` line
-			join `tabRecall Order` recall on recall.name = line.parent and line.parenttype = 'Recall Order'
-			where recall.docstatus = 1 and recall.status = 'Open' and line.department = %s
-				and ifnull(line.line_status, '') != 'Confirmed'""",
-			(department,),
-		)[0][0]
-	)
-
-
 def _ward(department):
 	"""Tên khoa nhận cấp phát mà người gọi được mở; không có → DoesNotExistError, khoa khác → PermissionError."""
 	scope = _scope()
@@ -154,6 +142,57 @@ def request_return(department=None, items=None, client_ts=None):
 
 
 @frappe.whitelist(methods=["GET"])
+def recall_overview(department=None):
+	"""Xác nhận thu hồi (FEAT-101, FR-M9-32): lệnh thu hồi đang mở và các gói của khoa; mã bệnh nhân chỉ dạng che.
+
+	Xác nhận từng gói dùng RPC hiện có `tracecore.v1.recall.confirm_pack` (quy tắc vai trò của FR-M2-20 không đổi).
+	"""
+	name = _ward(department)
+	return {
+		"ok": True,
+		"department": name,
+		"orders": department_recall.open_orders(name),
+		"pending": department_recall.pending_count(name),
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def issue_overview(department=None):
+	"""Đề nghị cấp bộ dụng cụ (FEAT-101, FR-M2-27): loại bộ kèm cơ số, tồn khoa và đề nghị khoa đã gửi hôm nay."""
+	name = _ward(department)
+	return {
+		"ok": True,
+		"department": name,
+		"max_qty": issue_request.MAX_QTY,
+		"options": issue_request.options(name),
+		"requests": issue_request.requests_on(name, today()),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+@idempotent
+def request_issue(department=None, set_type=None, qty=None, needed_by=None, client_ts=None):
+	"""Khoa gửi đề nghị cấp; không giữ chỗ gói, không đổi trạng thái (FR-M2-27.1).
+
+	Từ chối nghiệp vụ trả ``{"ok": false, "error": {code, title, reason, action}}`` (mã HTTP 200) để trang hiện alert
+	inline; thành công trả tên đề nghị và danh sách mới như `issue_overview`.
+	"""
+	name = _ward(department)
+	try:
+		created = issue_request.create(name, set_type, qty, needed_by, parse_client_ts(client_ts))
+	except issue_request.RequestRejected as error:
+		return {"ok": False, "error": error.as_dict()}
+	return {**issue_overview(name), **created}
+
+
+@frappe.whitelist(methods=["GET"])
+def linen_received(department=None, month=None):
+	"""Đồ vải đã nhận (FEAT-101, FR-M9-32): thu gom, trả về, chênh lệch theo ngày và loại của tháng, định mức."""
+	name = _ward(department)
+	return {"ok": True, "department": name, **linen_received_service.overview(name, month)}
+
+
+@frappe.whitelist(methods=["GET"])
 def department_stock(department=None):
 	"""Bộ tại khoa và cơ số: 4 số liệu, gói đang tại khoa (kèm Set ID, loại bộ), gói đã dùng chờ trả.
 
@@ -174,7 +213,7 @@ def department_stock(department=None):
 			"reprocessing": frappe.db.count(
 				"Set Unit", {"department": name, "status": ["in", REPROCESSING_STATUSES]}
 			),
-			"recall_pending": _recall_pending(name),
+			"recall_pending": department_recall.pending_count(name),
 			"waiting_return": len(dirty_return.pending_sets(name)),
 		},
 	}

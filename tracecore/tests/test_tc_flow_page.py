@@ -220,9 +220,34 @@ class TestTcFlowShell(FrappeTestCase):
 		self.assertIn("data.sent_sets", source)
 		self.assertNotIn("row.request)", source)
 		# thứ tự mục cổng khoa như prototype: bộ tại khoa, quét sử dụng, gửi trả đồ bẩn, tra cứu gói
-		self.assertIn('["stock", "work", "return", "trace"]', source)
+		self.assertIn('["stock", "work", "return", "issue", "recall", "linen", "trace"]', source)
 		# ô chọn và ô tình trạng có nhãn cho trình đọc màn hình
 		self.assertIn("aria-label", source[source.index("returnHtml(") :])
+
+	def test_department_portal_has_issue_recall_and_linen_panes(self):
+		"""FEAT-101 (A-161): ba mục còn lại của cổng khoa."""
+		html = (PAGE_DIR / "tc_flow.html").read_text(encoding="utf-8")
+		source = (PAGE_DIR / "tc_flow.js").read_text(encoding="utf-8")
+		for pane in ("issue", "recall", "linen"):
+			self.assertIn(f"tcf-{pane}-body", html)
+			self.assertIn(f'data-action="tcf-{pane}-refresh"', html)
+		for method in (
+			"tracecore.v1.flow.recall_overview",
+			"tracecore.v1.flow.issue_overview",
+			"tracecore.v1.flow.request_issue",
+			"tracecore.v1.flow.linen_received",
+			# xác nhận thu hồi dùng RPC hiện có, không viết RPC ghi mới
+			"tracecore.v1.recall.confirm_pack",
+		):
+			self.assertIn(f'"{method}"', source)
+		# đề nghị cấp gửi lại dùng lại khóa cũ; từ chối của RPC thu hồi (HTTP 4xx) hiện inline
+		self.assertIn("this.issueAttempt", source)
+		self.assertIn("error.body", source)
+		# số gói chờ xác nhận ở thanh bên có chữ cho trình đọc màn hình, không chỉ là chấm màu
+		self.assertIn("tcf-nav-badge", source)
+		self.assertIn("packs waiting for confirmation", source)
+		out = run(self, """emit(["Waiting", "Partly issued", "Issued"].map((s) => TcFlow.returnTone(s)));""")
+		self.assertEqual(out, ["warn", "info", "pass"])
 
 	def test_station_kit_is_loaded_in_a_private_scope(self):
 		# script của Page station kết thúc bằng gán vào frappe.pages["station"]; nạp riêng không được để lại dấu vết toàn cục

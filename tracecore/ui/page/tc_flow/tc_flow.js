@@ -4,7 +4,15 @@
 // nên phiên thẻ, kiểm năng lực, offline, X-Idempotency-Key và client_ts chạy đúng mã hiện có. Khung chỉ đọc thêm
 // navigation.context (danh sách trạm), flow.departments / flow.department_stock (khoa, gói tại khoa) và trace.query.
 
-const TCF_PANES = ["stock", "work", "return", "trace"];
+const TCF_PANES = ["stock", "work", "return", "issue", "recall", "linen", "trace"];
+// mục chỉ đọc/gửi của cổng khoa nạp dữ liệu khi mở: tên mục → hàm nạp
+const TCF_PANE_LOADERS = {
+	stock: "loadStock",
+	return: "loadReturn",
+	issue: "loadIssue",
+	recall: "loadRecall",
+	linen: "loadLinen",
+};
 
 function tcfEsc(value) {
 	return frappe.utils.escape_html(value == null ? "" : String(value));
@@ -33,6 +41,7 @@ class TcFlowPage {
 		this.entering = 0;
 		this.root.addEventListener("click", (event) => this.onClick(event));
 		this.root.addEventListener("submit", (event) => this.onSubmit(event));
+		this.root.addEventListener("change", (event) => this.onChange(event));
 		this.loadCatalog();
 	}
 
@@ -65,8 +74,7 @@ class TcFlowPage {
 			this.view("app");
 			this.setAddress(null);
 			this.render();
-			if (this.pane === "stock") this.loadStock();
-			else if (this.pane === "return") this.loadReturn();
+			if (TCF_PANE_LOADERS[this.pane]) this[TCF_PANE_LOADERS[this.pane]]();
 			else if (this.pane === "work") this.openUsage();
 		} else if (department) this.enterDept({ name: department });
 		else if (code) this.enter(code);
@@ -131,6 +139,7 @@ class TcFlowPage {
 		if (!response.ok) {
 			const error = new Error(method);
 			error.status = response.status;
+			error.body = body.message || null; // RPC cũ trả từ chối nghiệp vụ kèm mã HTTP 4xx
 			throw error;
 		}
 		return body.message;
@@ -455,6 +464,9 @@ class TcFlowPage {
 		this.el(".tcf-host").hidden = this.pane !== "work";
 		this.el(".tcf-stock").hidden = this.pane !== "stock";
 		this.el(".tcf-return").hidden = this.pane !== "return";
+		this.el(".tcf-issue").hidden = this.pane !== "issue";
+		this.el(".tcf-recall").hidden = this.pane !== "recall";
+		this.el(".tcf-linen").hidden = this.pane !== "linen";
 		this.el(".tcf-trace").hidden = this.pane !== "trace";
 	}
 
@@ -462,6 +474,9 @@ class TcFlowPage {
 		if (pane === "stock") return __("Sets at department & par level");
 		if (pane === "trace") return __("Trace a pack");
 		if (pane === "return") return __("Return dirty sets");
+		if (pane === "issue") return __("Request sets");
+		if (pane === "recall") return __("Confirm recall");
+		if (pane === "linen") return __("Linen received");
 		return __("Scan usage");
 	}
 
@@ -471,7 +486,7 @@ class TcFlowPage {
 			nav.innerHTML = TCF_PANES.map((pane) => {
 				const current = pane === this.pane ? ' aria-current="page"' : "";
 				return `<button type="button" class="tcf-nav-item" data-action="tcf-pane"
-					data-pane="${pane}"${current}>${tcfEsc(this.paneLabel(pane))}</button>`;
+					data-pane="${pane}"${current}>${tcfEsc(this.paneLabel(pane))}${this.paneBadge(pane)}</button>`;
 			}).join("");
 			return;
 		}
@@ -530,8 +545,7 @@ class TcFlowPage {
 		this.pane = pane;
 		this.el(".tcf-status").innerHTML = "";
 		this.render();
-		if (pane === "stock") this.loadStock();
-		else if (pane === "return") this.loadReturn();
+		if (TCF_PANE_LOADERS[pane]) this[TCF_PANE_LOADERS[pane]]();
 		else if (pane === "trace") this.el("#tcf-trace-input").focus();
 		else if (this.host) this.host.focus(true);
 		else this.openUsage();
@@ -564,6 +578,7 @@ class TcFlowPage {
 			if (stale()) return;
 			if (this.dept && result.department_name) this.dept.label = result.department_name;
 			box.innerHTML = this.stockHtml(result);
+			this.recallPending = TcFlow.stockCounts(result).recall;
 			this.render();
 			this.countUp(box);
 		} catch (error) {
@@ -885,6 +900,449 @@ class TcFlowPage {
 		}
 	}
 
+	// ---- FEAT-101 (A-161): Đề nghị cấp, Xác nhận thu hồi, Đồ vải đã nhận ----
+	// nạp một mục chỉ đọc của cổng khoa: đủ empty (chưa có khoa) / offline / loading / error; trả dữ liệu hoặc null
+	async loadDeptPane(pane, method, render, failTitle) {
+		const box = this.el(`.tcf-${pane}-body`);
+		const dept = this.dept;
+		if (!dept) {
+			box.innerHTML = `<p class="tcf-empty">${tcfEsc(
+				__("Scan your employee card in Scan usage to see the packs at your department.")
+			)}</p>
+			<button type="button" class="tcf-btn" data-action="tcf-pane" data-pane="work">${tcfEsc(
+				this.paneLabel("work")
+			)}</button>`;
+			return null;
+		}
+		if (!navigator.onLine) {
+			box.innerHTML = `<p class="tcf-empty tcf-offline">${tcfEsc(
+				__("Offline: this page needs a connection.")
+			)}</p>`;
+			return null;
+		}
+		const stale = () => dept.name !== (this.dept && this.dept.name) || this.pane !== pane;
+		box.innerHTML = this.loadingHtml();
+		try {
+			const result = await this.get(method, { department: dept.name });
+			if (stale()) return null;
+			box.innerHTML = render(result);
+			return result;
+		} catch (error) {
+			if (stale()) return null;
+			box.innerHTML = this.alertHtml(
+				failTitle,
+				this.connectionReason(error),
+				__("Check the connection and try again."),
+				`tcf-${pane}-refresh`
+			);
+			return null;
+		}
+	}
+
+	paneAlert(pane, title, reason, action) {
+		const slot = this.el(`.tcf-${pane}-alert`);
+		if (slot) slot.innerHTML = title ? this.alertHtml(title, reason, action) : "";
+	}
+
+	tableHead(columns) {
+		return `<thead><tr>${columns
+			.map((column) => `<th scope="col">${tcfEsc(column)}</th>`)
+			.join("")}</tr></thead>`;
+	}
+
+	// số gói chờ xác nhận thu hồi ở thanh bên: có số và chữ cho trình đọc màn hình
+	paneBadge(pane) {
+		if (pane !== "recall" || !this.recallPending) return "";
+		return ` <span class="tcf-nav-badge">${tcfEsc(
+			this.recallPending
+		)}<span class="tcf-sr"> ${tcfEsc(__("packs waiting for confirmation"))}</span></span>`;
+	}
+
+	// ---- Xác nhận thu hồi ----
+	async loadRecall() {
+		const result = await this.loadDeptPane(
+			"recall",
+			"tracecore.v1.flow.recall_overview",
+			(data) => this.recallHtml(data),
+			__("Could not load the recall orders")
+		);
+		if (result) {
+			this.recallPending = result.pending || 0;
+			this.renderNav("dept");
+		}
+	}
+
+	recallHtml(data) {
+		const time = (value) => (value ? frappe.datetime.str_to_user(value) : "");
+		const orders = (data.orders || [])
+			.map((order) => {
+				const rows = order.lines
+					.map((line) => {
+						const state = [
+							__(line.status_at_recall || "", null, "Pack"),
+							line.patient_code_masked,
+						]
+							.filter(Boolean)
+							.join(" · ");
+						const label =
+							line.action === "Notify Physician"
+								? __("Confirm the physician was informed")
+								: __("Confirm the pack was found");
+						const cell = line.confirmed
+							? `<span class="tcf-badge" data-tone="pass">${tcfEsc(
+									__("Confirmed", null, "Recall")
+							  )}</span> ${tcfEsc(
+									[line.confirmed_by, time(line.confirmed_at)]
+										.filter(Boolean)
+										.join(" · ")
+							  )}`
+							: `<button type="button" class="tcf-btn" data-action="tcf-recall-confirm"
+								data-recall="${tcfEsc(order.recall)}" data-pack="${tcfEsc(line.cycle_id)}">${tcfEsc(
+									label
+							  )}</button>`;
+						return `<tr>
+							<td class="tcf-code">${tcfEsc(line.cycle_id)}</td>
+							<td>${tcfEsc(state)}</td>
+							<td>${cell}</td>
+						</tr>`;
+					})
+					.join("");
+				return `<div class="tcf-recall-note" role="note"><b>${tcfEsc(
+					__("Recall order {0}", [order.recall])
+				)}</b> — ${tcfEsc(
+					order.reason || __(order.trigger || "", null, "Recall")
+				)}. ${tcfEsc(
+					__("Find and return the packs below, or report the packs already used.")
+				)}</div>
+				<section class="tcf-card"><table class="tcf-table">${this.tableHead([
+					__("Cycle ID"),
+					__("Status"),
+					__("Confirmation"),
+				])}<tbody>${rows}</tbody></table></section>`;
+			})
+			.join("");
+		return `<div class="tcf-recall-alert"></div>${
+			orders ||
+			`<section class="tcf-card"><p class="tcf-empty">${tcfEsc(
+				__("No pack of the department is in an open recall order.")
+			)}</p></section>`
+		}`;
+	}
+
+	async confirmRecall(button) {
+		const failed = __("The pack was not confirmed");
+		if (!navigator.onLine) {
+			this.paneAlert(
+				"recall",
+				failed,
+				__("Offline", null, "TraceCore Launcher") +
+					": " +
+					__("No connection to the server."),
+				__("Check the connection and try again.")
+			);
+			return;
+		}
+		button.disabled = true;
+		this.paneAlert("recall");
+		const blocked = (body) => {
+			const error = (body && body.error) || {};
+			this.paneAlert(
+				"recall",
+				error.title || failed,
+				error.reason || "",
+				error.action || __("Ask the head nurse of CSSD to confirm this pack.")
+			);
+			button.disabled = false;
+		};
+		try {
+			const result = await this.post(
+				"tracecore.v1.recall.confirm_pack",
+				{ recall: button.dataset.recall, pack: button.dataset.pack },
+				TcFlow.uuid()
+			);
+			if (result && result.ok) this.loadRecall();
+			else blocked(result);
+		} catch (error) {
+			// từ chối nghiệp vụ của RPC thu hồi mang mã HTTP 4xx kèm body ok: false
+			if (error.body && error.body.ok === false) blocked(error.body);
+			else {
+				this.paneAlert(
+					"recall",
+					failed,
+					this.connectionReason(error),
+					__("Check the connection and try again.")
+				);
+				button.disabled = false;
+			}
+		}
+	}
+
+	// ---- Đề nghị cấp bộ dụng cụ ----
+	async loadIssue() {
+		const result = await this.loadDeptPane(
+			"issue",
+			"tracecore.v1.flow.issue_overview",
+			(data) => this.issueHtml(data),
+			__("Could not load the set types")
+		);
+		if (result) this.syncIssuePar();
+	}
+
+	issueHtml(data, notice) {
+		const options = (data.options || [])
+			.map(
+				(row) =>
+					`<option value="${tcfEsc(row.set_type)}" data-min="${tcfEsc(
+						row.min == null ? "" : row.min
+					)}" data-max="${tcfEsc(row.max == null ? "" : row.max)}" data-stock="${tcfEsc(
+						row.stock
+					)}" data-available="${tcfEsc(row.available)}">${tcfEsc(
+						`${row.set_name} · ${row.set_type}`
+					)}</option>`
+			)
+			.join("");
+		const time = (value) => (value ? frappe.datetime.str_to_user(value) : "");
+		const statusText = (row) => {
+			if (row.status === "Issued") return __("Issued", null, "Issue Request");
+			if (row.status === "Partly issued")
+				return __("Partly issued ({0}/{1})", [row.issued_count, row.qty]);
+			return __("Waiting for issue");
+		};
+		const sent = (data.requests || [])
+			.map(
+				(row) => `<tr>
+					<td>${tcfEsc(row.set_name || row.set_type)}</td>
+					<td>${tcfEsc(row.qty)}</td>
+					<td>${tcfEsc(time(row.needed_by))}</td>
+					<td>${tcfEsc(time(row.requested_at))}</td>
+					<td>${tcfEsc(row.requested_by_name)}</td>
+					<td><span class="tcf-badge" data-tone="${TcFlow.returnTone(row.status)}">${tcfEsc(
+					statusText(row)
+				)}</span></td>
+				</tr>`
+			)
+			.join("");
+		const done = notice ? `<p class="tcf-done" role="status">${tcfEsc(notice)}</p>` : "";
+		const soon = TcFlow.clientTs(new Date(Date.now() + 2 * 3600 * 1000)).slice(0, 16);
+		const form = options
+			? `<div class="tcf-form">
+					<label class="tcf-field"><span>${tcfEsc(__("Set type"))}</span>
+						<select class="tcf-select tcf-issue-type">${options}</select></label>
+					<label class="tcf-field"><span>${tcfEsc(__("Quantity"))}</span>
+						<input class="tcf-input tcf-issue-qty" type="number" inputmode="numeric" min="1"
+							max="${tcfEsc(data.max_qty || 99)}" step="1" value="1" /></label>
+					<label class="tcf-field"><span>${tcfEsc(__("Needed before"))}</span>
+						<input class="tcf-input tcf-issue-needed" type="datetime-local" value="${soon}" /></label>
+					<label class="tcf-field"><span>${tcfEsc(__("Department par level"))}</span>
+						<output class="tcf-input tcf-issue-par" aria-live="polite"></output></label>
+				</div>
+				<button type="button" class="tcf-btn tcf-issue-send" data-action="tcf-issue-send">${tcfEsc(
+					__("Send issue request")
+				)}</button>`
+			: `<p class="tcf-empty">${tcfEsc(__("No set type is set up yet."))}</p>`;
+		return `<section class="tcf-card">
+				${done}
+				<div class="tcf-issue-alert"></div>
+				${form}
+				<p class="tcf-note">${tcfEsc(
+					__(
+						"The request is only a notice; CSSD still issues the packs at the issue station T7."
+					)
+				)}</p>
+			</section>
+			<section class="tcf-card">
+				<h3>${tcfEsc(__("Issue requests sent today"))}</h3>
+				${
+					sent
+						? `<table class="tcf-table">${this.tableHead([
+								__("Set type"),
+								__("Quantity"),
+								__("Needed before"),
+								__("Sent at"),
+								__("Sent by"),
+								__("Status"),
+						  ])}<tbody>${sent}</tbody></table>`
+						: `<p class="tcf-empty">${tcfEsc(
+								__("No issue request was sent today.")
+						  )}</p>`
+				}
+			</section>`;
+	}
+
+	// cơ số khoa của loại bộ đang chọn, kèm số bộ khoa đang giữ và số gói kho vô khuẩn đang có
+	syncIssuePar() {
+		const select = this.el(".tcf-issue-type");
+		const out = this.el(".tcf-issue-par");
+		if (!select || !out) return;
+		const option = select.options[select.selectedIndex];
+		if (!option) return;
+		const data = option.dataset;
+		const par =
+			data.min === "" && data.max === ""
+				? __("No par level set")
+				: `${data.min === "" ? "–" : data.min}–${data.max === "" ? "–" : data.max}`;
+		out.textContent = [
+			par,
+			__("at department: {0}", [data.stock]),
+			__("in sterile store: {0}", [data.available]),
+		].join(" · ");
+	}
+
+	onChange(event) {
+		if (event.target.closest(".tcf-issue-type")) this.syncIssuePar();
+	}
+
+	async sendIssue() {
+		const box = this.el(".tcf-issue-body");
+		const dept = this.dept;
+		if (!dept || this.issueSending) return;
+		const failed = __("The issue request was not sent");
+		if (!navigator.onLine) {
+			this.paneAlert(
+				"issue",
+				failed,
+				__("Offline", null, "TraceCore Launcher") +
+					": " +
+					__("No connection to the server."),
+				__("Check the connection and try again.")
+			);
+			return;
+		}
+		const needed = box.querySelector(".tcf-issue-needed").value;
+		const fields = {
+			department: dept.name,
+			set_type: box.querySelector(".tcf-issue-type").value,
+			qty: box.querySelector(".tcf-issue-qty").value.trim(),
+			needed_by: needed ? `${needed.replace("T", " ")}:00` : "",
+		};
+		// gửi lại cùng nội dung sau lỗi mạng: dùng lại khóa và client_ts cũ để máy chủ không tạo đề nghị thứ hai
+		const fingerprint = JSON.stringify(fields);
+		if (!this.issueAttempt || this.issueAttempt.fingerprint !== fingerprint)
+			this.issueAttempt = {
+				fingerprint,
+				key: TcFlow.uuid(),
+				body: { ...fields, client_ts: TcFlow.clientTs() },
+			};
+		const attempt = this.issueAttempt;
+		const button = box.querySelector(".tcf-issue-send");
+		this.issueSending = true;
+		if (button) button.disabled = true;
+		this.paneAlert("issue");
+		try {
+			const result = await this.post(
+				"tracecore.v1.flow.request_issue",
+				attempt.body,
+				attempt.key
+			);
+			this.issueAttempt = null;
+			if (dept.name !== (this.dept && this.dept.name)) return;
+			if (!result || !result.ok) {
+				const error = (result && result.error) || {};
+				this.paneAlert(
+					"issue",
+					error.title || failed,
+					error.reason || "",
+					error.action || __("Check the request, then send it again.")
+				);
+				return;
+			}
+			box.innerHTML = this.issueHtml(result, __("Request {0} was sent.", [result.request]));
+			this.syncIssuePar();
+		} catch (error) {
+			this.paneAlert(
+				"issue",
+				failed,
+				this.connectionReason(error),
+				__("Check the connection and send the request again.")
+			);
+		} finally {
+			this.issueSending = false;
+			const again = box.querySelector(".tcf-issue-send");
+			if (again) again.disabled = false;
+		}
+	}
+
+	// ---- Đồ vải đã nhận ----
+	async loadLinen() {
+		const result = await this.loadDeptPane(
+			"linen",
+			"tracecore.v1.flow.linen_received",
+			(data) => this.linenHtml(data),
+			__("Could not load the linen of the department")
+		);
+		if (result && result.month) {
+			const [year, month] = result.month.split("-");
+			this.el(".tcf-linen h2").textContent = __("Linen received — month {0}", [
+				`${Number(month)}/${year}`,
+			]);
+		}
+	}
+
+	linenHtml(data) {
+		const kg = (value) =>
+			Number(value || 0)
+				.toFixed(1)
+				.replace(".", ",");
+		const day = (value) => (value ? frappe.datetime.str_to_user(value) : "");
+		const difference = (row) => {
+			if (!row.difference && !row.disposed) return "0";
+			const sign = row.difference > 0 ? "+" : row.difference < 0 ? "−" : "";
+			const note = row.disposed ? ` (${__("disposed {0}", [row.disposed])})` : "";
+			return `${sign}${Math.abs(row.difference)}${note}`;
+		};
+		const rows = (data.rows || [])
+			.map(
+				(row) => `<tr>
+					<td>${tcfEsc(day(row.date))}</td>
+					<td>${tcfEsc(row.type_name || row.linen_type)}</td>
+					<td>${tcfEsc(`${row.collected} / ${kg(row.collected_kg)}`)}</td>
+					<td>${tcfEsc(`${row.returned} / ${kg(row.returned_kg)}`)}</td>
+					<td>${tcfEsc(difference(row))}</td>
+				</tr>`
+			)
+			.join("");
+		const quotas = data.quotas || [];
+		const range = (row) =>
+			`${row.type_name} ${row.min == null ? "–" : row.min}–${
+				row.max == null ? "–" : row.max
+			}`;
+		const outside = quotas.filter((row) => row.state !== "within");
+		const quotaText = quotas.length
+			? `${__("Department quota")}: ${quotas.map(range).join(", ")}. ${
+					outside.length
+						? __("Stock outside quota: {0}.", [
+								outside.map((row) => `${row.type_name} (${row.stock})`).join(", "),
+						  ])
+						: __("Current stock is within quota.")
+			  }`
+			: __("No linen quota is set for the department.");
+		const variance = __("Variance this month: {0}% (alert threshold {1}%).", [
+			kg(data.variance_pct),
+			kg(data.variance_limit_pct),
+		]);
+		const over = data.over_variance
+			? ` <span class="tcf-badge" data-tone="warn">${tcfEsc(
+					__("Over the threshold")
+			  )}</span>`
+			: "";
+		return `<section class="tcf-card">
+				${
+					rows
+						? `<table class="tcf-table">${this.tableHead([
+								__("Date"),
+								__("Linen type"),
+								__("Collected (pieces / kg)"),
+								__("Returned (pieces / kg)"),
+								__("Difference"),
+						  ])}<tbody>${rows}</tbody></table>`
+						: `<p class="tcf-empty">${tcfEsc(
+								__("No linen was collected or returned this month.")
+						  )}</p>`
+				}
+				<p class="tcf-note">${tcfEsc(quotaText)} ${tcfEsc(variance)}${over}</p>
+			</section>`;
+	}
+
 	async runTrace(raw) {
 		const box = this.el(".tcf-trace-body");
 		const code = String(raw || "").trim();
@@ -969,6 +1427,9 @@ class TcFlowPage {
 		this.el(".tcf-host").hidden = true;
 		this.el(".tcf-stock").hidden = true;
 		this.el(".tcf-return").hidden = true;
+		this.el(".tcf-issue").hidden = true;
+		this.el(".tcf-recall").hidden = true;
+		this.el(".tcf-linen").hidden = true;
 		this.el(".tcf-trace").hidden = true;
 		this.el(".tcf-manage").hidden = false;
 		this.el(".tcf-who-name").textContent = __("Management");
@@ -1114,6 +1575,11 @@ class TcFlowPage {
 		else if (action === "tcf-stock-refresh") this.loadStock();
 		else if (action === "tcf-return-refresh") this.loadReturn();
 		else if (action === "tcf-return-send") this.sendReturn();
+		else if (action === "tcf-issue-refresh") this.loadIssue();
+		else if (action === "tcf-issue-send") this.sendIssue();
+		else if (action === "tcf-recall-refresh") this.loadRecall();
+		else if (action === "tcf-recall-confirm") this.confirmRecall(button);
+		else if (action === "tcf-linen-refresh") this.loadLinen();
 		else if (action === "tcf-trace-retry") this.runTrace(this.traceCode);
 		else if (action === "tcf-logout") this.leave();
 	}

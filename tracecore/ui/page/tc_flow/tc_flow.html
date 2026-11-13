@@ -55,6 +55,33 @@
 				</header>
 				<div class="tcf-return-body"></div>
 			</section>
+			<section class="tcf-pane tcf-issue" aria-live="polite" hidden>
+				<div class="tcf-zonebar" role="presentation"></div>
+				<p class="tcf-crumb"></p>
+				<header class="tcf-title">
+					<h2>{%= __("Request instrument sets") %}</h2>
+					<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-issue-refresh">{%= __("Refresh") %}</button>
+				</header>
+				<div class="tcf-issue-body"></div>
+			</section>
+			<section class="tcf-pane tcf-recall" aria-live="polite" hidden>
+				<div class="tcf-zonebar" role="presentation"></div>
+				<p class="tcf-crumb"></p>
+				<header class="tcf-title">
+					<h2>{%= __("Confirm recall") %}</h2>
+					<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-recall-refresh">{%= __("Refresh") %}</button>
+				</header>
+				<div class="tcf-recall-body"></div>
+			</section>
+			<section class="tcf-pane tcf-linen" aria-live="polite" hidden>
+				<div class="tcf-zonebar" role="presentation"></div>
+				<p class="tcf-crumb"></p>
+				<header class="tcf-title">
+					<h2>{%= __("Linen received") %}</h2>
+					<button type="button" class="tcf-btn tcf-btn-secondary" data-action="tcf-linen-refresh">{%= __("Refresh") %}</button>
+				</header>
+				<div class="tcf-linen-body"></div>
+			</section>
 			<section class="tcf-pane tcf-manage" hidden>
 				<div class="tcf-zonebar tcf-zonebar-web" role="presentation"></div>
 				<p class="tcf-crumb"></p>

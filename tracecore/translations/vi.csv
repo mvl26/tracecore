@@ -12012,3 +12012,68 @@ Requested At,Gửi lúc,Dirty Return Request
 Requested By,Người gửi,Dirty Return Request
 Requested By Name,Tên người gửi,Dirty Return Request
 Condition On Return,Tình trạng khi trả,Dirty Return Request Item
+Request sets,Đề nghị cấp
+Confirm recall,Xác nhận thu hồi
+Linen received,Đồ vải đã nhận
+Request instrument sets,Đề nghị cấp bộ dụng cụ
+Offline: this page needs a connection.,Ngoại tuyến: trang này cần kết nối.
+packs waiting for confirmation,gói chờ xác nhận
+Could not load the recall orders,Không tải được lệnh thu hồi
+Confirm the physician was informed,Xác nhận đã báo bác sĩ
+Confirm the pack was found,Xác nhận đã tìm thấy
+Confirmed,Đã xác nhận,Recall
+Recall order {0},Lệnh thu hồi {0}
+"Find and return the packs below, or report the packs already used.","Vui lòng tìm và trả các gói dưới đây, hoặc báo đã dùng."
+No pack of the department is in an open recall order.,Khoa không có gói nào trong lệnh thu hồi đang mở.
+The pack was not confirmed,Chưa xác nhận được gói
+Ask the head nurse of CSSD to confirm this pack.,Nhờ điều dưỡng trưởng KSNK xác nhận gói này.
+BI Positive,Chỉ thị sinh học dương tính,Recall
+Load Failed,Mẻ tiệt khuẩn không đạt,Recall
+Opened Manually,Lập thủ công,Recall
+Could not load the set types,Không tải được danh sách loại bộ
+Issued,Đã cấp,Issue Request
+Partly issued ({0}/{1}),Đã cấp một phần ({0}/{1})
+Waiting for issue,Chờ cấp
+Needed before,Cần trước
+Department par level,Cơ số khoa
+Send issue request,Gửi đề nghị
+No set type is set up yet.,Chưa khai báo loại bộ nào.
+The request is only a notice; CSSD still issues the packs at the issue station T7.,Đề nghị chỉ là thông báo; KSNK vẫn cấp phát gói tại trạm cấp phát T7.
+Issue requests sent today,Đề nghị đã gửi hôm nay
+No issue request was sent today.,Hôm nay chưa gửi đề nghị nào.
+at department: {0},đang ở khoa: {0}
+in sterile store: {0},kho vô khuẩn đang có: {0}
+The issue request was not sent,Chưa gửi được đề nghị cấp
+"Check the request, then send it again.",Kiểm tra lại đề nghị rồi gửi lại.
+Request {0} was sent.,Đã gửi đề nghị {0}.
+Could not load the linen of the department,Không tải được đồ vải của khoa
+Linen received — month {0},Đồ vải đã nhận — tháng {0}
+disposed {0},hủy {0}
+Department quota,Định mức khoa
+Stock outside quota: {0}.,Tồn ngoài định mức: {0}.
+Current stock is within quota.,Tồn hiện tại trong định mức.
+No linen quota is set for the department.,Khoa chưa đặt định mức đồ vải.
+Variance this month: {0}% (alert threshold {1}%).,Chênh lệch tháng: {0}% (ngưỡng cảnh báo {1}%).
+Over the threshold,Vượt ngưỡng
+Collected (pieces / kg),Thu gom (chiếc / kg)
+Returned (pieces / kg),Trả về (chiếc / kg)
+Difference,Chênh lệch
+No linen was collected or returned this month.,Tháng này khoa chưa có lượt thu gom hay trả đồ vải nào.
+The quantity must be a whole number from 1 to {0}.,Số lượng phải là số nguyên từ 1 đến {0}.
+"Enter the quantity again, then send the request again.",Nhập lại số lượng rồi gửi lại đề nghị.
+The time the sets are needed is missing or not valid.,Thời điểm cần chưa nhập hoặc không hợp lệ.
+"Choose the date and time again, then send the request again.",Chọn lại ngày giờ rồi gửi lại đề nghị.
+The time the sets are needed is already past.,Thời điểm cần đã qua.
+"Choose a later date and time, then send the request again.",Chọn ngày giờ muộn hơn rồi gửi lại đề nghị.
+"Choose a set type from the list, then send the request again.",Chọn loại bộ trong danh sách rồi gửi lại đề nghị.
+An issue request can only be created from the department portal.,Đề nghị cấp chỉ được tạo từ cổng khoa.
+An issue request cannot be cancelled; it closes when the sets are issued at T7.,Đề nghị cấp không hủy được; đề nghị tự đóng khi bộ được cấp phát tại T7.
+An issue request cannot be deleted.,Đề nghị cấp không xóa được.
+Set Issue Request,Đề nghị cấp bộ dụng cụ
+Needed By,Cần trước,Set Issue Request
+Par Minimum,Cơ số tối thiểu,Set Issue Request
+Par Maximum,Cơ số tối đa,Set Issue Request
+Department Stock At Request,Tồn khoa lúc gửi,Set Issue Request
+Requested At,Gửi lúc,Set Issue Request
+Requested By,Người gửi,Set Issue Request
+Requested By Name,Tên người gửi,Set Issue Request

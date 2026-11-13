@@ -45,6 +45,8 @@ AMENDMENT_GRANTS: dict[str, dict[str, str]] = {
 	"Set Unit": {"System Manager": "RW"},
 	# FEAT-100 A-160: yêu cầu lấy đồ bẩn chỉ đọc trên Desk; chỉ dịch vụ dirty_return tạo và ghi sổ
 	"Dirty Return Request": {"System Manager": "R"},
+	# FEAT-101 A-161: đề nghị cấp chỉ đọc trên Desk; chỉ dịch vụ issue_request tạo và ghi sổ
+	"Set Issue Request": {"System Manager": "R"},
 }
 
 

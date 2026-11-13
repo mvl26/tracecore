@@ -163,7 +163,7 @@ const TcFlow = {
 
 	// trạng thái yêu cầu lấy đồ bẩn → tông badge và có kèm số bộ đã nhận hay không
 	returnTone(status) {
-		if (status === "Received") return "pass";
+		if (status === "Received" || status === "Issued") return "pass";
 		return status === "Waiting" ? "warn" : "info";
 	},
 

@@ -6,7 +6,8 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from tracecore.reprocessing import dirty_return
+from tracecore.linen import received as linen_received_service
+from tracecore.reprocessing import department_recall, dirty_return, issue_request
 from tracecore.tests.utils import request_headers
 from tracecore.v1 import flow
 
@@ -139,6 +140,72 @@ class TestFlowApi(FrappeTestCase):
 				self.post(department=self.ward, items=items, client_ts="2026-11-13 15:20:00")
 		self.assertTrue(first["ok"])
 		self.assertEqual((first["request"], again["request"]), ("YC-TEST", "YC-TEST"))
+
+	def post_issue(self, **kwargs):
+		kwargs.setdefault("client_ts", "2026-11-13T15:20:00+07:00")
+		with request_headers({"X-Idempotency-Key": kwargs.pop("key", None) or str(uuid.uuid4())}):
+			return flow.request_issue(**kwargs)
+
+	def test_recall_overview_and_stock_count_use_the_open_orders(self):
+		orders = [{"recall": "TH-1", "lines": [{"cycle_id": "CY-1", "confirmed": False}]}]
+		with (
+			patch.object(department_recall, "open_orders", return_value=orders) as opened,
+			patch.object(department_recall, "pending_count", return_value=2),
+		):
+			out = flow.recall_overview(self.ward)
+			stock = flow.department_stock(self.ward)
+		opened.assert_called_once_with(self.ward)
+		self.assertEqual((out["orders"], out["pending"]), (orders, 2))
+		self.assertEqual(stock["counts"]["recall_pending"], 2)
+
+	def test_issue_overview_lists_options_and_todays_requests(self):
+		options = [{"set_type": "BO-A", "set_name": "A", "stock": 1, "min": 6, "max": 10, "available": 3}]
+		sent = [{"request": "DN-1", "status": "Waiting", "qty": 2, "issued_count": 0}]
+		with (
+			patch.object(issue_request, "options", return_value=options),
+			patch.object(issue_request, "requests_on", return_value=sent),
+		):
+			out = flow.issue_overview(self.ward)
+		self.assertEqual((out["options"], out["requests"], out["max_qty"]), (options, sent, 99))
+
+	def test_request_issue_is_idempotent_and_answers_rejections_inline(self):
+		key = str(uuid.uuid4())
+		args = {"department": self.ward, "set_type": "BO-A", "qty": "2", "needed_by": "2026-11-14 14:00:00"}
+		with (
+			patch.object(issue_request, "create", return_value={"request": "DN-TEST", "qty": 2}) as create,
+			patch.object(issue_request, "options", return_value=[]),
+			patch.object(issue_request, "requests_on", return_value=[]),
+		):
+			first = self.post_issue(key=key, **args)
+			again = self.post_issue(key=key, **args)
+			self.assertEqual(create.call_count, 1)
+			self.assertEqual(create.call_args.args[:4], (self.ward, "BO-A", "2", "2026-11-14 14:00:00"))
+		self.assertTrue(first["ok"])
+		self.assertEqual((first["request"], again["request"]), ("DN-TEST", "DN-TEST"))
+		rejected = issue_request.RequestRejected("QTY_INVALID", "reason", "action")
+		with patch.object(issue_request, "create", side_effect=rejected):
+			out = self.post_issue(**args)
+		self.assertFalse(out["ok"])
+		self.assertEqual(out["error"]["code"], "QTY_INVALID")
+		for part in ("title", "reason", "action"):
+			self.assertTrue(out["error"][part])
+
+	def test_linen_received_passes_the_month(self):
+		data = {"month": "2026-11", "rows": [], "quotas": [], "variance_pct": 0.0}
+		with patch.object(linen_received_service, "overview", return_value=data) as overview:
+			out = flow.linen_received(self.ward, "2026-11")
+		overview.assert_called_once_with(self.ward, "2026-11")
+		self.assertEqual((out["month"], out["department"]), ("2026-11", self.ward))
+
+	def test_new_department_rpcs_keep_the_department_scope(self):
+		with patch.object(flow, "_scope", return_value=self.ward):
+			for call in (flow.recall_overview, flow.issue_overview, flow.linen_received):
+				with self.assertRaises(frappe.PermissionError):
+					call(self.other)
+			with self.assertRaises(frappe.PermissionError):
+				self.post_issue(
+					department=self.other, set_type="BO-A", qty=1, needed_by="2026-11-14 14:00:00"
+				)
 
 	def test_par_range_sums_the_department_stock_levels(self):
 		rows = [frappe._dict(min_qty=2, max_qty=4), frappe._dict(min_qty=4, max_qty=6)]

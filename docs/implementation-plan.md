@@ -13,6 +13,7 @@
 > **Amendment A-158 (2026-11-13):** giao diện người dùng cho luồng xử lý dụng cụ ở URL mới `/app/tc-flow` (Page `tc-flow`, dùng lại nguyên các màn trạm) → **FEAT-099** (module UI, ngoài sprint), FR-M9-31, SCR-68. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-159 (2026-11-13):** ảnh của màn trạm (T2, T3, T5, test hằng ngày) tải qua phiên thẻ bằng RPC `tracecore.v1.station.upload_photo` thay cho `upload_file` của Desk; lỗi phiên báo "Phiên đăng nhập đã hết" → FR-M9-14.1, sửa lỗi theo ticket (không thêm FEAT). Người dùng duyệt ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > **Amendment A-160 (2026-11-13):** khoa gửi yêu cầu lấy đồ bẩn từ cổng khoa của Page `tc-flow` (DocType `Dirty Return Request`, RPC `tracecore.v1.flow.return_overview` / `request_return`) → **FEAT-100** (module Reprocessing + UI, ngoài sprint), FR-M2-26, SCR-69. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
+> **Amendment A-161 (2026-11-13):** ba mục còn lại của cổng khoa trên Page `tc-flow`: Xác nhận thu hồi, Đề nghị cấp bộ dụng cụ (DocType `Set Issue Request`), Đồ vải đã nhận → **FEAT-101** (module Reprocessing + Linen + UI, ngoài sprint), FR-M2-27, FR-M9-32, SCR-70..72. Người dùng yêu cầu ngày 13/11/2026; chủ đầu tư chưa xác nhận.
 > Thuật ngữ kỹ thuật giữ tiếng Anh (DocType, RPC, hook, Page, PWA…); nội dung tiếng Việt.
 
 ## 1. Overview
@@ -347,6 +348,23 @@ Quy ước: **FEAT-NNN** bất biến (không đánh số lại, bỏ = tombston
 - AC-100-4: Nếu không chọn bộ nào, bộ không thuộc khoa, bộ đã có yêu cầu đang chờ hoặc tình trạng không hợp lệ, thì hệ thống phải từ chối và hiện `alert-error` inline theo thứ tự kết quả → lý do → hành động.
 - AC-100-5: Khi bộ trong yêu cầu được tiếp nhận tại T1 sau thời điểm gửi, hệ thống phải hiện yêu cầu là Đã tiếp nhận (hoặc Đã tiếp nhận một phần).
 - AC-100-6: Khi gửi lại cùng `X-Idempotency-Key`, hệ thống phải trả lại kết quả cũ và không tạo yêu cầu thứ hai; R08 chỉ gửi và xem được yêu cầu của khoa mình.
+
+### FEAT-101 Cổng khoa: xác nhận thu hồi, đề nghị cấp, đồ vải đã nhận [A-161]
+
+| FEAT | Mô tả | FR | SCR |
+| --- | --- | --- | --- |
+| FEAT-101 | Ba mục của cổng khoa trên Page `tc-flow`. Xác nhận thu hồi: `flow.recall_overview` (đọc) + RPC hiện có `recall.confirm_pack`. Đề nghị cấp: DocType `Set Issue Request`, dịch vụ `reprocessing.issue_request`, `flow.issue_overview` (GET), `flow.request_issue` (POST, `@idempotent`). Đồ vải đã nhận: `flow.linen_received` (đọc, dịch vụ `linen.received`). Không sửa màn trạm, không sửa RPC cũ. | FR-M2-27, FR-M9-32 | SCR-70, SCR-71, SCR-72 |
+
+#### Acceptance criteria FEAT-101 [A-161] (EARS)
+
+- AC-101-1: Khi người dùng mở Xác nhận thu hồi của một khoa, hệ thống phải hiện từng lệnh thu hồi đang mở có gói của khoa kèm lý do, và mỗi gói với Cycle ID, trạng thái lúc thu hồi (mã bệnh nhân dạng che nếu đã dùng) và nút xác nhận hoặc người, giờ đã xác nhận.
+- AC-101-2: Khi người dùng bấm xác nhận một gói, hệ thống phải xác nhận qua `recall.confirm_pack`; nếu vai trò không được xác nhận gói đó thì hiện `alert-error` inline theo kết quả → lý do → hành động và không đổi dòng.
+- AC-101-3: Khi còn gói của khoa chờ xác nhận, hệ thống phải hiện số gói chờ ở mục Xác nhận thu hồi của thanh bên và ở ô Gói cần xác nhận thu hồi.
+- AC-101-4: Khi người dùng chọn loại bộ, hệ thống phải hiện cơ số khoa của loại bộ đó (hoặc chưa đặt cơ số); khi gửi đề nghị hợp lệ, hệ thống phải ghi sổ một `Set Issue Request` và hiện trong Đề nghị đã gửi hôm nay.
+- AC-101-5: Nếu loại bộ, số lượng hoặc thời điểm cần không hợp lệ, thì hệ thống phải từ chối, nêu lý do và không tạo đề nghị; gửi lại cùng `X-Idempotency-Key` không tạo đề nghị thứ hai.
+- AC-101-6: Khi đề nghị được ghi, hệ thống không được đổi trạng thái gói, bộ hay giữ chỗ gói; trạng thái đề nghị suy ra từ phiếu cấp phát T7 sau thời điểm gửi.
+- AC-101-7: Khi người dùng mở Đồ vải đã nhận, hệ thống phải hiện thu gom, trả về (chiếc / kg) và chênh lệch theo ngày và loại của tháng hiện tại, định mức và tồn khoa theo loại, và tỷ lệ chênh lệch tháng so với ngưỡng 5 %.
+- AC-101-8: R08 chỉ xem và gửi được cho khoa của mình; R01/R02 mọi khoa.
 
 ### E-17 M16 An toàn nghề nghiệp [A-113]
 
