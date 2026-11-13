@@ -120,13 +120,13 @@ const TcFlow = {
 	},
 
 	// số chạy từ 0 tới giá trị thật khi mở màn Bộ tại khoa và cơ số (theo yêu cầu người dùng, A-158)
-	COUNT_MS: 800,
+	COUNT_MS: 450,
 
 	// giá trị hiện ở thời điểm progress (0..1): chậm dần về cuối, làm tròn, không vượt đích
 	countAt(target, progress) {
 		const to = Number.isFinite(target) && target > 0 ? Math.round(target) : 0;
 		const at = Math.min(Math.max(Number(progress) || 0, 0), 1);
-		return Math.round(to * (1 - Math.pow(1 - at, 3)));
+		return Math.round(to * (1 - Math.pow(1 - at, 2)));
 	},
 
 	// mã gói CY-… tra theo Cycle ID, còn lại tra theo Set ID

@@ -356,7 +356,7 @@ body.tcf-body .layout-main-section {
 @keyframes tcf-rise {
 	from {
 		opacity: 0;
-		transform: translateY(var(--tc-sp-2-5));
+		transform: translateY(var(--tc-sp-1-5));
 	}
 
 	to {
@@ -365,10 +365,25 @@ body.tcf-body .layout-main-section {
 	}
 }
 
+/* dòng bảng chỉ mờ dần vào: dịch chuyển dòng làm rung đường kẻ bảng */
+@keyframes tcf-fade {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
 .tcf-stock-body .tcf-kpi,
-.tcf-stock-body .tcf-card,
-.tcf-stock-body .tcf-table tbody tr {
+.tcf-stock-body .tcf-card {
 	animation: tcf-rise var(--tc-dur-base) var(--tc-ease) both;
+	will-change: opacity, transform;
+}
+
+.tcf-stock-body .tcf-table tbody tr {
+	animation: tcf-fade var(--tc-dur-base) var(--tc-ease) both;
 }
 
 .tcf-stock-body .tcf-kpi:nth-child(2) {
@@ -384,11 +399,11 @@ body.tcf-body .layout-main-section {
 }
 
 .tcf-stock-body .tcf-card {
-	animation-delay: var(--tc-dur-base);
+	animation-delay: var(--tc-dur-fast);
 }
 
 .tcf-stock-body .tcf-table tbody tr {
-	animation-delay: calc(var(--tc-dur-base) + var(--tc-dur-fast) / 3 * var(--tcf-i, 0));
+	animation-delay: calc(var(--tc-dur-fast) + var(--tc-dur-fast) / 4 * var(--tcf-i, 0));
 }
 
 .tcf-kpi b {
