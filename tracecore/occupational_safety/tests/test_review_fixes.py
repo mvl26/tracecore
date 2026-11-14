@@ -3,7 +3,7 @@ duyệt, vaccine mẫu, ngưỡng giờ trống, nhóm báo cáo cho R13, nút d
 (FR-M16-03, 05, 07, 09; BRU-OCC-003, BRU-OCC-004; NFR-MAINT-04)."""
 
 import frappe
-from frappe.utils import add_days, add_to_date, now_datetime, today
+from frappe.utils import add_days, add_to_date, getdate, now_datetime, today
 
 from tracecore.core import sync
 from tracecore.core.errors import BlockedError
@@ -113,9 +113,10 @@ class TestRequirementApproval(IsolatedTestCase):
 class TestNoLimitAndR13Report(ExposureCase):
 	def test_no_report_limit_means_no_on_time_rate(self):
 		frappe.db.sql("update `tabOccupational Exposure` set status = 'Cancelled'")
-		self.report()
-		self.assertEqual(indicators.report_on_time(today()[:7], None)[:2], (0, 0))
-		_columns, rows = report.execute({"from_date": today(), "to_date": today()})
+		# ngày của phơi nhiễm (3 giờ trước), không phải today(): chạy từ 00:00 đến 03:00 thì là hôm qua
+		day = str(getdate(self.report().occurred_at))
+		self.assertEqual(indicators.report_on_time(day[:7], None)[:2], (0, 0))
+		_columns, rows = report.execute({"from_date": day, "to_date": day})
 		self.assertIsNone(rows[-1]["on_time_rate"])
 
 	@bru("BRU-OCC-003")
