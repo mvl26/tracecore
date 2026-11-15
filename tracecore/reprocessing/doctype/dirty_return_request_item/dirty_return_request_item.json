@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "creation": "2026-11-13 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-13 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Reprocessing",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "editable_grid": 0,
+ "istable": 1,
+ "name": "Dirty Return Request Item",
+ "field_order": [
+  "set_unit",
+  "set_type",
+  "set_name",
+  "pack",
+  "used",
+  "return_condition"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_unit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Set ID",
+   "options": "Set Unit",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "set_type",
+   "fieldtype": "Link",
+   "label": "Set Type",
+   "options": "Instrument Set Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "set_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Set Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cycle ID",
+   "options": "Pack",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "used",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "return_condition",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Condition On Return",
+   "options": "Complete\nMissing instruments\nDamaged\nSharps inside",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "permissions": []
+}

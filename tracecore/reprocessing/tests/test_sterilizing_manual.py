@@ -189,11 +189,15 @@ class TestSterilizingManual(FrappeTestCase):
 		block = self.code_of(lambda: self.save())
 		self.assertEqual((block.code, block.http_status), ("LOAD_NOT_OPEN", 409))
 
-	def test_skewed_client_ts_is_rejected(self):
+	def test_skewed_client_ts_is_accepted_and_logged(self):
+		# A-160: nhập dữ liệu theo giờ máy khách; lệch giờ server chỉ ghi Audit Log
 		skewed = client_time.utc_now() - timedelta(seconds=client_time.max_skew_seconds() + 3600)
-		with self.assertRaises(client_time.ClientTimestampError):
-			self.save(client_ts=skewed)
-		self.assertEqual(self.stored().status, "Running")
+		self.save(client_ts=skewed)
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log", {"action": "Override", "reason": client_time.SKEW_REASON, "client_ts": skewed}
+			)
+		)
 
 	# --- quét máy và mẻ khi nhập dữ liệu (Q10) -----------------------------------------------------------
 

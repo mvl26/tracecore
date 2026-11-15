@@ -3,7 +3,8 @@ FR-M13-08; BRU-HAI-005; A-147 k): phiên thẻ, idempotent, chỉ mã BN che, ch
 
 import os
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import frappe
 from frappe.utils import add_days, now_datetime, today
@@ -21,7 +22,11 @@ from tracecore.v1 import station as station_api
 
 CARD = "SSI-R11-CARD"
 STATION = "TR-SSI-PDA"
-TS = "2026-11-10T09:00:00+07:00"
+
+
+def now_ts():
+	"""Giờ máy khách = bây giờ: A-160 lấy ngày nghiệp vụ theo `client_ts`, ca mổ trong test tạo theo today()."""
+	return datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).isoformat(timespec="seconds")
 
 
 def make_ssi_station():
@@ -76,12 +81,12 @@ class TestSSIStation(IsolatedTestCase):
 				"is_active": 1,
 			}
 		).insert(ignore_permissions=True)
-		self.token = station_api.login(CARD, self.station, client_ts=TS)["session"]["token"]
+		self.token = station_api.login(CARD, self.station, client_ts=now_ts())["session"]["token"]
 
 	def call(self, fn, key=None, **kwargs):
 		frappe.local.response.pop("http_status_code", None)
 		kwargs.setdefault("station", self.station)
-		kwargs.setdefault("client_ts", TS)
+		kwargs.setdefault("client_ts", now_ts())
 		kwargs.setdefault("token", self.token)
 		with request_headers({"X-Idempotency-Key": key or str(uuid.uuid4()), "X-TC-Station": self.station}):
 			return fn(**kwargs)

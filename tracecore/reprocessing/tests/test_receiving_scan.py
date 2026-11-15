@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import frappe
 
-from tracecore.core import gs1, station_auth
+from tracecore.core import client_time, gs1, station_auth
 from tracecore.reprocessing import receiving
 from tracecore.reprocessing.tests.receiving_case import BOM, STATION, ReceivingCase
 from tracecore.tests.factories import make_user
@@ -105,10 +105,12 @@ class TestReceivingScan(ReceivingCase):
 		receiving.discard(self.receipt, STATION, self.receiver)
 		self.assertEqual(self.code_of(self.scan, self.receipt, self.new_set()), "RECEIPT_CLOSED")
 
-	def test_station_clock_far_from_the_server_clock_is_refused(self):
+	def test_station_clock_far_from_the_server_clock_is_accepted_and_logged(self):
+		# A-160: lệch giờ trạm không chặn quét, chỉ ghi Audit Log Override
 		stale = self.now() - timedelta(hours=3)
-		with self.assertRaises(frappe.ValidationError):
-			self.scan(self.receipt, self.new_set(), client_ts=stale)
+		before = frappe.db.count("Audit Log", {"reason": client_time.SKEW_REASON})
+		self.scan(self.receipt, self.new_set(), client_ts=stale)
+		self.assertEqual(frappe.db.count("Audit Log", {"reason": client_time.SKEW_REASON}), before + 1)
 
 	@bru("BRU-REP-012")
 	def test_bom_version_follows_the_scan_day_in_the_system_time_zone(self):

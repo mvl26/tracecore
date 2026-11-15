@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 import frappe
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from tracecore.core import code_range, sync
+from tracecore.core import client_time, code_range, sync
 from tracecore.tests.factories import deactivate_printers, make_t4_ready_set
 from tracecore.tests.utils import IsolatedTestCase, request_headers
 from tracecore.v1 import pack as pack_api
@@ -94,7 +94,8 @@ class TestOfflineGenerate(OfflinePackCase):
 		)
 		self.assertEqual(get_datetime(gate), moment)  # FR-M1-06.4: cổng theo thời điểm ở trạm
 
-	def test_offline_generate_future_client_ts_rejected(self):
+	def test_offline_generate_future_client_ts_uses_station_time(self):
+		# A-160: giờ đóng gói theo giờ máy khách kể cả ở tương lai; chỉ ghi Audit Log lệch giờ
 		moment = add_to_date(now_datetime(), hours=1).replace(microsecond=0)
 		self.backdate_session(add_to_date(now_datetime(), hours=-1))
 		frappe.db.set_value(
@@ -102,11 +103,14 @@ class TestOfflineGenerate(OfflinePackCase):
 		)
 		ready = make_t4_ready_set()
 		key = str(uuid.uuid4())
-		result = self.generate(ready, self.code_for(moment.date()), moment, key=key)
-		self.assertIs(result["ok"], False)
-		self.assertEqual(result["error"]["http_status"], 400)
-		self.assertTrue(frappe.db.exists("Sync Conflict", {"idempotency_key": key}))
-		self.assertFalse(frappe.db.exists("Pack", {"set_unit": ready.set_id}))
+		code = self.code_for(moment.date())
+		result = self.generate(ready, code, moment, key=key)
+		self.assertIs(result["ok"], True, result)
+		self.assertEqual(get_datetime(frappe.db.get_value("Pack", code, "packed_at")), moment)
+		self.assertFalse(frappe.db.exists("Sync Conflict", {"idempotency_key": key}))
+		self.assertTrue(
+			frappe.db.exists("Audit Log", {"action": "Override", "reason": client_time.SKEW_REASON})
+		)
 
 	def test_offline_generate_code_other_day_conflict(self):
 		moment = now_datetime().replace(microsecond=0)

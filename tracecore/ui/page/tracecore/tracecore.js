@@ -1,5 +1,8 @@
 /* global tracecore, TcQuickNav, TcStationUrl */
 const NAV_COLLAPSED_KEY = "tc_home_nav_collapsed";
+// A-158: /app/tracecore/home là giao diện người dùng cho luồng xử lý dụng cụ (Page tc-flow), không phải một phân hệ
+const TC_FLOW_SUBROUTE = "home";
+const is_tc_flow_route = () => (frappe.get_route() || [])[1] === TC_FLOW_SUBROUTE;
 
 frappe.pages["tracecore"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
@@ -45,7 +48,7 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 			: __("Collapse menu", null, "TraceCore Launcher");
 		toggle.attr({ "aria-expanded": String(!collapsed), "aria-label": label, title: label });
 	}
-	const visible = () => frappe.get_route()[0] === "tracecore";
+	const visible = () => frappe.get_route()[0] === "tracecore" && !is_tc_flow_route();
 	const message = (title, reason, action, error = false) => {
 		root.empty();
 		const box = $("<div role='status' class='tc-launcher-message'></div>").appendTo(root);
@@ -336,6 +339,11 @@ frappe.pages["tracecore"].on_page_load = function (wrapper) {
 };
 
 frappe.pages["tracecore"].on_page_show = function (wrapper) {
+	if (is_tc_flow_route()) {
+		// giữ địa chỉ /app/tracecore/home, hiện Page tc-flow trong cùng khung Desk
+		frappe.views.pageview.show("tc-flow");
+		return;
+	}
 	// route vừa đổi nên còn đúng: lấy phân hệ trên URL trước khi tải (thử lại / mất mạng thì giữ phân hệ đang chọn)
 	wrapper.tc_launcher_request((frappe.get_route() || [])[1]);
 	wrapper.tc_launcher_load();

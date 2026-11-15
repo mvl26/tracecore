@@ -525,8 +525,8 @@ def generate(
 	"""Sinh Cycle ID cho bộ tại T4 trong MỘT transaction; trả gói, HRI, ảnh DataMatrix và lệnh in.
 
 	`client_ts` là kết quả `parse_client_ts` (UTC, không múi giờ); `packed_at` = giờ hệ thống của nó (D13) và
-	quyết định ngày trong Cycle ID, AI (11) và hạn dùng, nên lệch giờ server quá `client_time.max_skew_seconds()`
-	→ ClientTimestampError (400) trước khi ghi gì (F1). Khóa Set Unit trước mọi kiểm tra (hai lần sinh cùng bộ
+	quyết định ngày trong Cycle ID, AI (11) và hạn dùng theo giờ máy khách; lệch giờ server quá
+	`client_time.max_skew_seconds()` chỉ ghi Audit Log CLIENT_CLOCK_SKEW, vẫn sinh (A-160 thay F1). Khóa Set Unit trước mọi kiểm tra (hai lần sinh cùng bộ
 	chạy lần lượt: lần sau gặp ACTIVE_CYCLE_EXISTS). Mọi lỗi (BlockedError hay khác) hoàn tác về savepoint rồi
 	ném lại: không còn Pack, dòng Code Registry, số series, cổng T4 hay thay đổi bảo dưỡng nào; Audit Log Reject
 	do RPC ghi sau đó. In không bao giờ làm mất Cycle ID (FR-M2-08.8): xem `pack_label.queue_label`.
@@ -536,7 +536,7 @@ def generate(
 
 	`offline_cycle_id` (FEAT-009, A-40): gói đóng khi mất mạng, phát lại sau đó — dùng mã kiosk lấy từ Code Range
 	(`code_range.claim` kiểm đúng trạm, đúng ngày `packed_at`, chưa dùng) thay cho series; `client_ts` có thể cũ
-	nhiều giờ nên chỉ chặn khi ở tương lai quá `max_skew_seconds()`. `employee`: nhân viên của phiên trạm (A-81).
+	nhiều giờ; ở tương lai quá `max_skew_seconds()` chỉ ghi Audit Log (A-160). `employee`: nhân viên của phiên trạm (A-81).
 	"""
 	if offline_cycle_id:
 		client_time.check_not_future(client_ts)

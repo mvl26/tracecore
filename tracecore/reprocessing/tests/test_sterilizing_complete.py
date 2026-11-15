@@ -206,13 +206,18 @@ class TestSterilizingComplete(FrappeTestCase):
 			},
 		)
 
-	def test_complete_rejects_skewed_client_ts(self):
+	def test_complete_accepts_skewed_client_ts(self):
+		# A-160: giờ nạp mẻ theo giờ máy khách; lệch giờ server chỉ ghi Audit Log
 		pack = make_load_ready_pack()
 		before = frappe.db.count("Sterilization Load")
 		skewed = client_time.utc_now() - timedelta(seconds=client_time.max_skew_seconds() + 3600)
-		with self.assertRaises(client_time.ClientTimestampError):
-			self.complete([pack], client_ts=skewed)
-		self.assertEqual(frappe.db.count("Sterilization Load"), before)
+		self.complete([pack], client_ts=skewed)
+		self.assertEqual(frappe.db.count("Sterilization Load"), before + 1)
+		self.assertTrue(
+			frappe.db.exists(
+				"Audit Log", {"action": "Override", "reason": client_time.SKEW_REASON, "client_ts": skewed}
+			)
+		)
 
 
 class TestSterilizingLabel(IsolatedTestCase):

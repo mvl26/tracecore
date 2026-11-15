@@ -420,13 +420,12 @@ class TraceCoreStation {
 
 	// Thông báo chặn nằm ngoài khung nhìn thì đưa vào, mỗi thông báo một lần: vẽ lại màn không được giật về thông báo cũ.
 	// Cuộn tức thì, không hiệu ứng (motion chỉ theo token); phần dính phía trên do scroll-padding, scroll-margin lo.
-	// Thông báo xong bước có `reveal: true` (vd Test hằng ngày đã ghi) cũng được đưa lên như lỗi.
+	// Chỉ lỗi chặn mới được cuộn: thông báo xong bước (đạt, cảnh báo) không kéo trang về đầu (người dùng báo 13/11/2026,
+	// "quét xong trang bị nhảy lên đầu" ở Test hằng ngày); màn đặt thông báo đó gần chỗ vừa bấm.
 	revealNotice(notice) {
 		const blocking =
 			notice &&
-			(notice.reveal ||
-				(notice.variant || "error") === "error" ||
-				notice.code === "CONFIRM_INCOMPLETE");
+			((notice.variant || "error") === "error" || notice.code === "CONFIRM_INCOMPLETE");
 		if (!blocking) {
 			this.revealed = null;
 			return;
@@ -1548,6 +1547,7 @@ class TraceCoreStation {
 			method.startsWith("tracecore.v1.code_range.") ||
 			method.startsWith("tracecore.v1.feedback.") ||
 			method === "tracecore.v1.printer.set_roll" ||
+			method === "tracecore.v1.station.upload_photo" || // A-159: ảnh của màn trạm
 			method === "tracecore.v1.account.change_pin";
 		const version = this.sessionVersion;
 		const sessionCall =
@@ -1774,7 +1774,7 @@ class TraceCoreStation {
 		this.result.innerHTML = "";
 		this.screen.setOffline(this.isOffline());
 		this.screen.show();
-		this.input.focus();
+		this.input.focus({ preventScroll: true });
 	}
 
 	renderScreenTabs() {
@@ -2218,6 +2218,9 @@ class TraceCoreStation {
 		this.result.dataset.state = state;
 		this.result.innerHTML = html;
 		this.form.classList.toggle("is-error", state === "error");
+		// Vẽ lại xóa QR cạnh nút: gắn lại NGAY, trước khi màn hay focus() đọc bố cục. Đọc bố cục lúc QR chưa gắn (chờ
+		// MutationObserver) thì trang ngắn đi, trình duyệt kéo vị trí cuộn lên rồi không trả lại (13/11/2026).
+		if (this.commandShowQr) this.decorateCommandButtons();
 	}
 
 	renderLoading() {

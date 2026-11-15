@@ -6,23 +6,39 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-from tracecore.core import command_codes, error_codes, label_pdf, next_station, qr, station_auth, zones
+from tracecore.core import (
+	audit,
+	command_codes,
+	error_codes,
+	label_pdf,
+	next_station,
+	photo,
+	qr,
+	station_auth,
+	zones,
+)
 from tracecore.core import print as core_print
 from tracecore.core.client_time import parse_client_ts
 from tracecore.core.errors import Block, BlockedError
+from tracecore.core.idempotency import idempotent
 from tracecore.v1 import navigation
 from tracecore.v1._common import (
 	AGENT_ROLE,
 	BadRequestError,
+	current_station_session,
 	reject_block,
 	require_agent_for,
 	require_any_role,
 	require_role,
 	require_station,
 	station_inactive_block,
+	station_session,
 )
 
 LAST_STEP = "USE"  # T8: bước cuối, không có trạm kế (A-117)
+# A-159: ảnh ở màn trạm (bản in/biểu đồ T2, T5, ảnh chỉ thị T2, ảnh hư hỏng T3, ảnh test hằng ngày): người vận hành các
+# màn đó; R08 (khoa), R06, R07 không có màn chụp ảnh nào nên không nhận
+PHOTO_ROLES = ("TC R02", "TC R03", "TC R04", "TC R05", "System Manager")
 PERIPHERAL_FIELDS = ["peripheral_type", "model", "connection", "host", "port", "serial_port", "baud_rate"]
 
 
@@ -265,6 +281,55 @@ def verify_pin(token=None, pin=None, client_ts=None):
 		return {"ok": True, **station_auth.create_pin_proof(token, pin, timestamp)}
 
 	return _session_response(call)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@station_session(*PHOTO_ROLES)
+@idempotent
+def upload_photo(station, content, file_name=None, client_ts=None, token=None):
+	"""Tải một ảnh của màn trạm qua phiên thẻ (A-159), thay ``/api/method/upload_file`` của Desk (403 khi cookie về Guest).
+
+	`content` là ảnh base64 (JPEG/PNG/WebP ≤ 5 MB, kiểm theo nội dung ở ``core.photo``); `file_name` chỉ để ghi Audit
+	Log. File riêng tư, tên do server đặt, luôn gắn vào Station Session của chính phiên đang gọi: client không chọn
+	được DocType/chứng từ đích. Chứng từ (lô rửa, mẻ, kiểm đếm, test hằng ngày) nhận ``file_url`` ở RPC ghi của nó.
+	Ảnh sai → ``PHOTO_INVALID`` (422).
+	"""
+	require_any_role(*PHOTO_ROLES)
+	timestamp = parse_client_ts(client_ts)
+	session = current_station_session()
+	try:
+		data, suffix = photo.check_image(content)
+	except photo.PhotoError as error:
+		return reject_block(
+			Block(
+				"PHOTO_INVALID",
+				_("Photo is not valid"),
+				str(error),
+				_("Take the photo again (JPEG, PNG or WebP, up to 5 MB)."),
+			),
+			station=station,
+			client_ts=timestamp,
+		)
+	file_doc = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": f"{session.name}-{frappe.generate_hash(length=10)}.{suffix}",
+			"attached_to_doctype": "Station Session",
+			"attached_to_name": session.name,
+			"content": data,
+			"is_private": 1,
+		}
+	)
+	file_doc.save(ignore_permissions=True)
+	audit.log(
+		"Create",
+		"File",
+		file_doc.name,
+		new={"file_url": file_doc.file_url, "file_name": str(file_name or "")[:140], "session": session.name},
+		station=station,
+		client_ts=timestamp,
+	)
+	return {"ok": True, "file_url": file_doc.file_url}
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

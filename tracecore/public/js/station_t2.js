@@ -1,4 +1,4 @@
-/* global tcLabelButton, tcPrintLabelPdf, tcPrintedNote, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode */
+/* global tcLabelButton, tcPrintLabelPdf, tcPrintedNote, tcErrorTitle, tcGuideButton, tcIsSetOrPackCode, TcStationPhoto */
 /* global uuid4, clientTs, esc, TcProgramMatch, TcRunConsumables */
 // Màn T2 lô rửa (SCR-06, FEAT-021) trên Page station.
 // Frappe nối file này sau station.js (hook page_js) nên dùng chung uuid4/clientTs/esc.
@@ -966,33 +966,14 @@ class T2Wash {
 		const version = this.station.sessionVersion;
 		holder.uploading = true;
 		this.show();
-		try {
-			const body = new FormData();
-			body.append("file", file, file.name);
-			body.append("is_private", "1");
-			body.append("folder", "Home");
-			const response = await fetch("/api/method/upload_file", {
-				method: "POST",
-				headers: { Accept: "application/json", "X-Frappe-CSRF-Token": frappe.csrf_token },
-				body,
-				credentials: "same-origin",
-			});
-			const data = await response.json().catch(() => ({}));
-			if (version !== this.station.sessionVersion || !this.form) return;
-			if (!response.ok || !data.message || !data.message.file_url) throw new Error("upload");
-			holder[key] = data.message.file_url;
+		// A-159: tải qua phiên thẻ thay cho API tải tệp của Desk (403 khi cookie về Guest)
+		const result = await TcStationPhoto.upload(this.station, file);
+		holder.uploading = false;
+		if (version !== this.station.sessionVersion || !this.form || result.ended) return;
+		if (result.file_url) {
+			holder[key] = result.file_url;
 			this.notice = { variant: "ok", title: __("Photo attached: {0}", [file.name]) };
-		} catch (error) {
-			if (version !== this.station.sessionVersion || !this.form) return;
-			this.notice = {
-				variant: "error",
-				title: __("Photo could not be attached"),
-				reason: __("The file {0} was not uploaded.", [file.name]),
-				action: __("Check the connection and choose the photo again."),
-			};
-		} finally {
-			holder.uploading = false;
-		}
+		} else this.notice = result.notice;
 		this.show();
 	}
 

@@ -188,7 +188,9 @@ class TestIndicatorRules(IndicatorCase):
 	@bru("BRU-REP-002")
 	def test_expired_indicator_is_blocked(self):
 		batch, sets = self.awaiting(1)
-		code = base._code(self.record, batch, self.good(lot_expiry=add_days(today(), -1)))
+		# hạn so với ngày mẻ chạy, không phải hôm nay: mẻ bắt đầu trước 00:00 thì "hôm qua" vẫn còn hạn
+		started = getdate(frappe.db.get_value("Wash Batch", batch, "started_at"))
+		code = base._code(self.record, batch, self.good(lot_expiry=add_days(started, -1)))
 		self.assertEqual(code, "INDICATOR_EXPIRED")
 		self.assert_still_awaiting(batch, sets)
 

@@ -11,13 +11,12 @@ M2 không import M1/M8 (lint R1): BOM và ảnh lấy qua hook ``tracecore_recei
 """
 
 import contextlib
-import io
 
 import frappe
 from frappe import _
 from frappe.utils import add_days, cint, get_datetime, today
 
-from tracecore.core import client_time, extension, gs1, station_auth, step_gate
+from tracecore.core import client_time, extension, gs1, photo, station_auth, step_gate
 from tracecore.core.errors import Block, BlockedError
 
 STEP = "T1"  # mã cổng trong step_gate
@@ -27,9 +26,7 @@ OFFLINE_SAVEPOINT = (
 	"tc_receipt_offline"  # phiếu offline phát lại (FEAT-009): hoàn tác cả phiếu khi một bộ lỗi
 )
 DRAFT = 0
-PHOTO_MAX_BYTES = 5 * 1024 * 1024
-PHOTO_MAX_PIXELS = 40_000_000
-PHOTO_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+PHOTO_MAX_BYTES = photo.MAX_BYTES  # luật ảnh dùng chung ở core.photo (A-159)
 REVIEWER_ROLE = "TC R02"  # tiếp nhận cưỡng bức (FR-M2-02.2, A-33)
 FORCE_STATUSES = ("Processing", "Reprocess", "Sterile")  # Disposed, End of Life không cưỡng bức được
 UNUSED_PACK_END_STATUSES = ("Used", "Void", "Recalled")
@@ -420,7 +417,7 @@ def scan_set(
 	Chỉ nhận mã bộ; trạng thái phải hợp T1 (`step_gate.check`, FR-M2-02). Bộ đã có trong phiếu → ``duplicate`` và không
 	thêm dòng (FR-M2-01.6). `force_reason`/`reviewer_proof` (PIN proof của phiên `session`, R02) chỉ có hiệu lực khi
 	bộ bị từ chối (A-33). BOM và ảnh là phiên bản áp dụng tại ngày quét theo giờ hệ thống; chưa ghi gì vào Set Unit.
-	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → ClientTimestampError;
+	`client_ts` là UTC không múi giờ, lệch giờ server quá `client_time.max_skew_seconds()` → chỉ ghi Audit Log (A-160);
 	`offline` (phát lại, A-40): `client_ts` cũ được, nơi gọi đã chặn giờ tương lai.
 	"""
 	if not offline:
@@ -610,30 +607,11 @@ def _photo_invalid(reason):
 
 
 def _checked_image(content_base64):
-	"""``(bytes, đuôi file)`` của ảnh bất thường; kiểm theo nội dung, không theo tên file hay Content-Type."""
-	import base64
-	import binascii
-
-	from PIL import Image, UnidentifiedImageError
-
-	if not isinstance(content_base64, str) or len(content_base64) > PHOTO_MAX_BYTES * 4 // 3 + 16:
-		raise _photo_invalid(_("The photo is missing or larger than 5 MB."))
+	"""``(bytes, đuôi file)`` của ảnh bất thường; kiểm theo nội dung (``core.photo``), không theo tên file."""
 	try:
-		data = base64.b64decode(content_base64, validate=True)
-	except (binascii.Error, ValueError):
-		raise _photo_invalid(_("The photo could not be read.")) from None
-	if not data or len(data) > PHOTO_MAX_BYTES:
-		raise _photo_invalid(_("The photo is missing or larger than 5 MB."))
-	try:
-		with Image.open(io.BytesIO(data)) as image:
-			extension_ = PHOTO_FORMATS.get(image.format)
-			width, height = image.size
-			image.verify()
-	except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
-		raise _photo_invalid(_("The file is not a JPEG, PNG or WebP image.")) from None
-	if not extension_ or width * height > PHOTO_MAX_PIXELS:
-		raise _photo_invalid(_("The file is not a JPEG, PNG or WebP image."))
-	return data, extension_
+		return photo.check_image(content_base64)
+	except photo.PhotoError as error:
+		raise _photo_invalid(str(error)) from None
 
 
 def attach_photo(receipt, set_id, station, receiver, file_name, content_base64):

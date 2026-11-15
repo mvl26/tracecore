@@ -246,7 +246,8 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 		)
 		self.assertEqual(out, 120)
 
-	def test_finished_step_notice_is_revealed_once_and_plain_notices_stay_put(self):
+	def test_only_a_new_blocking_error_is_revealed_and_finished_steps_stay_put(self):
+		"""Quét xong trang nhảy lên đầu (13/11/2026): thông báo xong bước không kéo trang về đầu nữa, chỉ lỗi chặn mới."""
 		out = self.run_station(
 			"""
 			let scrolled = 0;
@@ -256,16 +257,44 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 			});
 			const reveal = (notice) => TraceCoreStation.prototype.revealNotice.call(self, notice);
 			reveal({variant: "ok", title: "Photo attached"});
-			const plain = scrolled;
-			const done = {variant: "ok", title: "Test recorded", reveal: true};
-			reveal(done);
-			reveal(done);  // vẽ lại cùng thông báo: không cuộn lại
-			emit({plain, done: scrolled, reveals: self.reveals});
+			reveal({variant: "ok", title: "Testing on machine TB-0010", reveal: true});
+			reveal({variant: "warn", title: "Machine locked", reveal: true});
+			const done = scrolled;
+			const error = {variant: "error", title: "Consumables not confirmed"};
+			reveal(error);
+			reveal(error);  // vẽ lại cùng lỗi: không cuộn lại
+			emit({done, error: scrolled - done, reveals: self.reveals});
 			"""
 		)
-		self.assertEqual(out, {"plain": 0, "done": 1, "reveals": 1})
+		self.assertEqual(out, {"done": 0, "error": 1, "reveals": 1})
 
-	def test_commands_press_in_place_and_daily_test_reveals_finished_steps(self):
+	def test_redraw_puts_command_qr_back_before_anything_reads_the_layout(self):
+		"""Vẽ lại màn xóa QR cạnh nút: trang ngắn đi; đo bố cục (focus, revealNotice) trước khi QR gắn lại thì bị kéo lên."""
+		out = self.run_station(
+			"""
+			const calls = [];
+			const make = (show) => ({
+				result: {dataset: {}, set innerHTML(value) { calls.push("html"); }},
+				form: {classList: {toggle() {}}},
+				commandShowQr: show,
+				decorateCommandButtons() { calls.push("qr"); },
+			});
+			TraceCoreStation.prototype.setState.call(make(true), "result", "<p></p>");
+			const shown = calls.splice(0);
+			TraceCoreStation.prototype.setState.call(make(false), "result", "<p></p>");
+			emit({shown, hidden: calls});
+			"""
+		)
+		self.assertEqual(out, {"shown": ["html", "qr"], "hidden": ["html"]})
+
+	def test_scan_box_focus_never_scrolls_the_page(self):
+		with open(frappe.get_app_path("tracecore", *STATION_JS.split("/")), encoding="utf-8") as handle:
+			station = handle.read()
+		# ô quét dính ở đầu màn: focus mặc định cuộn tới nó, kéo trang đang xem về đầu
+		self.assertFalse("this.input.focus()" in station)
+		self.assertFalse("this.cardInput.focus()" in station)
+
+	def test_commands_press_in_place_and_daily_test_shows_finished_steps_in_the_form(self):
 		with open(frappe.get_app_path("tracecore", *STATION_JS.split("/")), encoding="utf-8") as handle:
 			station = handle.read()
 		for method in ("\tasync pressButtonCode(code) {", "\tasync handleCommandScan(raw) {"):
@@ -281,22 +310,42 @@ class TestCommandPressKeepsScroll(FrappeTestCase):
 			+ DT_LOT_MACHINE
 			+ """
 			globalThis.TcRunConsumables = {reset() {}, missing: () => false, payload: () => "[]"};
+			globalThis.tcErrorTitle = (notice) => notice.title;
+			globalThis.tcGuideButton = () => "";
+			let html = "";
+			screen.station.form = element();
+			screen.station.setState = (state, value) => { html = value; };
+			const draw = () => {
+				DailyTestScreen.prototype.show.call(screen);
+				const top = html.slice(html.indexOf('data-region="notice"'), html.indexOf("tc-t6-table"));
+				const form = html.slice(html.indexOf('data-region="dt-form"'));
+				return {top: top.includes("tc-alert"), form: form.includes("tc-alert")};
+			};
 			screen.load = () => {};
 			screen.request = (method, args, onOk) => onOk({locked: 0});
 			const seen = {};
-			screen.form.result = "Pass";
-			screen.recordTest(); seen.record = screen.notice.reveal;
-			screen.selected = "TB-0010"; screen.form.reason = "Ca gap"; screen.form.hours = "2";
-			screen.unlock(); seen.unlock = screen.notice.reveal;
-			screen.form.test_type = "plasma_daily";
-			screen.onAction("dt-end", {dataset: {}}); seen.end = screen.notice.reveal;
+			screen.onAction("dt-end", {dataset: {}});
+			seen.end = {reveal: Boolean(screen.notice.reveal), ...draw()};
 			const before = screen.notice;
 			screen.onAction("dt-result", {dataset: {value: "Pass"}});
 			seen.chipKeepsNotice = screen.notice === before;
+			screen.recordTest();
+			seen.record = {reveal: Boolean(screen.notice.reveal), ...draw()};
+			screen.selected = "TB-0010"; screen.form.reason = "Ca gap"; screen.form.hours = "2";
+			screen.unlock();
+			seen.unlock = {reveal: Boolean(screen.notice.reveal), ...draw()};
+			screen.blocked({title: "Test is not complete", reason: "r", action: "a"});
+			seen.error = draw();
 			emit(seen);
 			""",
 		)
-		self.assertEqual(out, {"record": True, "unlock": True, "end": True, "chipKeepsNotice": True})
+		# xong bước: thông báo nằm trong form của máy, ngay chỗ KTV vừa bấm/quét; trang không bị kéo lên đầu
+		inline = {"reveal": False, "top": False, "form": True}
+		self.assertEqual(out["end"], inline)
+		self.assertEqual(out["record"], inline)
+		self.assertEqual(out["unlock"], inline)
+		self.assertTrue(out["chipKeepsNotice"])
+		self.assertEqual(out["error"], {"top": True, "form": False})  # lỗi chặn vẫn ở đầu màn
 		with open(frappe.get_app_path("tracecore", *DAILY.split("/")), encoding="utf-8") as handle:
 			daily = handle.read()
 		show = daily[daily.index("\tshow() {") :]
@@ -418,6 +467,46 @@ t4.ctx = {ci: {method: "Steam", classes: ["5", "6"], lots: [
 const scanned = [];
 t4.scanIndicator = (raw) => scanned.push(raw);
 """
+
+
+class TestT4OfflineMainScanIndicator(FrappeTestCase):
+	"""SCR-08: offline, mã lô chỉ thị quét vào ô chính khi đang mở bộ cần chỉ thị → kiểm như ô lô riêng."""
+
+	def _run(self, code):
+		return run_js(
+			self,
+			["public/js/tc_outbox.js", T4],
+			[["tcScanId", "tcLocalDay"], ["T4Packing"]],
+			FAKE_STATION
+			+ """
+			const t4 = new T4Packing(makeStation());
+			t4.show = () => {};
+			t4.reject = (error) => { t4.rejected = error.code; };
+			t4.station.offlineData = {sets: [{set_id: "SET-1", context: {}}], ci_batches: [
+				{batch: "LOT-A", method: "Steam", ci_class: "5", expiry: "2099-01-01"}]};
+			"""
+			+ code,
+		)
+
+	def test_lot_scanned_in_main_box_fills_indicator_when_set_open(self):
+		out = self._run(
+			"""t4.ctx = {set: {set_id: "SET-1", method: "Steam"}, ci: {required: true, classes: ["5", "6"]}};
+			t4.offlineScan("LOT-A");
+			emit({ci: t4.ci && t4.ci.batch, rejected: t4.rejected || null});"""
+		)
+		self.assertEqual(out, {"ci": "LOT-A", "rejected": None})
+
+	def test_unknown_code_without_open_set_is_still_rejected(self):
+		out = self._run("""t4.offlineScan("LOT-A"); emit({ci: t4.ci, rejected: t4.rejected});""")
+		self.assertEqual(out, {"ci": None, "rejected": "OFFLINE_SET_UNKNOWN"})
+
+	def test_set_needing_no_indicator_does_not_take_lots(self):
+		out = self._run(
+			"""t4.ctx = {set: {set_id: "SET-1", method: "Steam"}, ci: {required: false, classes: []}};
+			t4.offlineScan("LOT-A");
+			emit({ci: t4.ci, rejected: t4.rejected});"""
+		)
+		self.assertEqual(out, {"ci": None, "rejected": "OFFLINE_SET_UNKNOWN"})
 
 
 class TestT4IndicatorLotPick(FrappeTestCase):
@@ -3497,3 +3586,133 @@ class TestT5OutOfRangeScreen(FrappeTestCase):
 			rows["Head of KSNK approval is needed because the cycle data is outside the range: {0}"],
 			"Cần trưởng khoa duyệt vì dữ liệu chu trình ngoài dải: {0}",
 		)
+
+
+PHOTO = "public/js/station_photo.js"
+PHOTO_STATION = """
+const calls = [];
+let reply = () => ({ok: true, file_url: "/private/files/SS-1-abc.jpg"});
+const station = {
+	station: "TR-005", sessionVersion: 1,
+	async rpc(method, args, key) { calls.push({method, args, key}); return reply(); },
+};
+TcStationPhoto.shrink = async () => "QUJD";
+const file = {name: "chart.jpg"};
+const fail = (props) => () => { throw Object.assign(new Error("x"), props); };
+"""
+
+
+class TestStationPhoto(FrappeTestCase):
+	"""A-159 (ticket 13/11/2026): ảnh màn trạm tải qua phiên thẻ; 401/403 báo phiên hết, không báo kiểm tra kết nối."""
+
+	def run_photo(self, body, files=(PHOTO,), names=(["TcStationPhoto"],)):
+		return run_js(self, list(files), list(names), PHOTO_STATION + body)
+
+	def test_upload_calls_the_card_session_rpc_with_an_idempotency_key(self):
+		out = self.run_photo("emit({result: await TcStationPhoto.upload(station, file), calls});")
+		self.assertEqual(out["result"], {"file_url": "/private/files/SS-1-abc.jpg"})
+		(call,) = out["calls"]
+		self.assertEqual(call["method"], "tracecore.v1.station.upload_photo")
+		self.assertEqual(call["args"]["station"], "TR-005")
+		self.assertEqual(call["args"]["content"], "QUJD")
+		self.assertEqual(call["args"]["file_name"], "chart.jpg")
+		self.assertTrue(call["args"]["client_ts"])
+		self.assertTrue(call["key"])
+
+	def test_403_says_the_login_session_has_ended_not_the_connection(self):
+		for status in (401, 403):
+			with self.subTest(status=status):
+				out = self.run_photo(
+					f"reply = fail({{status: {status}}}); emit(await TcStationPhoto.upload(station, file));"
+				)
+				notice = out["notice"]
+				self.assertEqual(notice["variant"], "error")
+				self.assertEqual(notice["title"], "Login session has ended")
+				self.assertIn("chart.jpg", notice["reason"])
+				self.assertIn("Scan your employee card again", notice["action"])
+				self.assertNotIn("connection", notice["action"])
+
+	def test_network_failure_still_says_check_the_connection(self):
+		out = self.run_photo(
+			"reply = fail({offline: true}); emit(await TcStationPhoto.upload(station, file));"
+		)
+		self.assertEqual(out["notice"]["title"], "Photo could not be attached")
+		self.assertIn("No connection to the server", out["notice"]["reason"])
+		self.assertEqual(out["notice"]["action"], "Check the connection and choose the photo again.")
+
+	def test_server_error_names_the_status(self):
+		out = self.run_photo("reply = fail({status: 500}); emit(await TcStationPhoto.upload(station, file));")
+		self.assertIn("Server error (500)", out["notice"]["reason"])
+		self.assertNotIn("connection", out["notice"]["action"])
+
+	def test_ended_session_and_business_rejection(self):
+		out = self.run_photo(
+			"""
+			reply = fail({sessionEnded: true});
+			const ended = await TcStationPhoto.upload(station, file);
+			reply = () => ({ok: false, error: {code: "PHOTO_INVALID", title: "Photo is not valid", reason: "r", action: "a"}});
+			const rejected = await TcStationPhoto.upload(station, file);
+			TcStationPhoto.shrink = async () => { throw new Error("unreadable"); };
+			const unreadable = await TcStationPhoto.upload(station, file);
+			emit({ended, rejected, unreadable});
+			"""
+		)
+		self.assertEqual(out["ended"], {"ended": True})  # shell đã hiện màn quét thẻ kèm lý do
+		self.assertEqual(out["rejected"]["notice"]["code"], "PHOTO_INVALID")
+		self.assertEqual(out["rejected"]["notice"]["variant"], "error")
+		self.assertEqual(out["unreadable"]["notice"]["title"], "Photo is not valid")
+
+	def test_daily_test_screen_shows_the_session_message_and_keeps_the_photo_on_success(self):
+		out = self.run_photo(
+			"""
+			const screen = Object.create(DailyTestScreen.prototype);
+			Object.assign(screen, {station, form: {}, show() {}});
+			const input = {files: [file]};
+			reply = fail({status: 403});
+			await screen.uploadPhoto(input);
+			const refused = {notice: screen.notice, uploading: screen.form.uploading, photo: screen.form.photo || null};
+			reply = () => ({ok: true, file_url: "/private/files/SS-1-abc.jpg"});
+			await screen.uploadPhoto(input);
+			emit({refused, photo: screen.form.photo, notice: screen.notice});
+			""",
+			files=(PHOTO, DAILY),
+			names=(["TcStationPhoto"], ["DailyTestScreen"]),
+		)
+		self.assertEqual(out["refused"]["notice"]["title"], "Login session has ended")
+		self.assertFalse(out["refused"]["uploading"])
+		self.assertIsNone(out["refused"]["photo"])
+		self.assertEqual(out["photo"], "/private/files/SS-1-abc.jpg")
+		self.assertEqual(out["notice"]["variant"], "ok")
+
+	def test_station_screens_no_longer_use_the_desk_upload(self):
+		from tracecore import hooks
+
+		scripts = hooks.page_js["station"]
+		helper = scripts.index(PHOTO)
+		for path in (T2, T3, T5, DAILY):
+			with self.subTest(path=path):
+				self.assertLess(helper, scripts.index(path))
+				with open(frappe.get_app_path("tracecore", *path.split("/")), encoding="utf-8") as handle:
+					source = handle.read()
+				self.assertNotIn("upload_file", source)
+				self.assertIn("TcStationPhoto.upload(this.station, file)", source)
+		shell = frappe.get_app_path("tracecore", "ui", "page", "station", "station.js")
+		with open(shell, encoding="utf-8") as handle:
+			self.assertIn('method === "tracecore.v1.station.upload_photo"', handle.read())
+
+	def test_photo_strings_are_translated(self):
+		path = frappe.get_app_path("tracecore", "translations", "vi.csv")
+		with open(path, encoding="utf-8") as handle:
+			rows = {row[0]: row[1] for row in csv.reader(handle) if len(row) > 1}
+		for text in (
+			"Login session has ended",
+			"The server did not accept the photo {0} for this login.",
+			"Scan your employee card again, then choose the photo again.",
+			"No connection to the server: the file {0} was not uploaded.",
+			"Server error ({0}): the file {1} was not uploaded.",
+			"Choose the photo again. If it fails again, call R10.",
+			"Photo is not valid",
+			"The photo could not be read.",
+			"Take the photo again (JPEG, PNG or WebP, up to 5 MB).",
+		):
+			self.assertTrue(rows.get(text), msg=text)

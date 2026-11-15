@@ -669,7 +669,7 @@ def start(
 	nhận; chương trình có vật tư bắt buộc chưa xác nhận → CONSUMABLES_NOT_CONFIRMED (`core.run_consumables.rows`).
 
 	`client_ts` là kết quả `parse_client_ts` (UTC); giờ nạp = giờ hệ thống của nó, lệch giờ server quá
-	`client_time.max_skew_seconds()` → ClientTimestampError trước khi ghi gì. `operator` là Employee đăng nhập thẻ.
+	`client_time.max_skew_seconds()` → chỉ ghi Audit Log (A-160), vẫn nhận. `operator` là Employee đăng nhập thẻ.
 	Máy phải Sẵn sàng, chương trình thuộc máy, hóa chất còn hạn (cả lô bị từ chối nếu sai). Bộ nào không còn hợp lệ
 	(bị lô khác lấy, đã qua T2…) vào `rejected` mà không dừng lô; không còn bộ nào → BATCH_EMPTY. Mọi lỗi hoàn tác về
 	savepoint rồi ném lại: không còn lô, dòng Code Registry hay số series nào. In không bao giờ làm mất mã lô.
