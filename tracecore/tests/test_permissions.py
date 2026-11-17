@@ -94,6 +94,11 @@ class TestPermissionMatrix(FrappeTestCase):
 		self.assertTrue(any(r.get("read") for r in records))
 		self.assertFalse(any(r.get("create") for r in records))
 
+	def test_r10_alone_may_delete_employee(self):
+		# A-164 (FR-M9-16 cho M4): chỉ R10 có cờ delete trên Employee; on_trash còn kiểm chưa có giao dịch
+		records = [r for r in build_custom_docperms({"Employee"}) if r["parent"] == "Employee"]
+		self.assertEqual({r["role"] for r in records if r.get("delete")}, {"TC R10"})
+
 	def test_custom_docperm_fixture_matches_generator(self):
 		fixture_path = MATRIX_PATH.with_name("custom_docperm.json")
 		fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
