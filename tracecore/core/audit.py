@@ -134,8 +134,8 @@ def on_document_event(doc, method):
 		log(action, doc.doctype, doc.name, new={"docstatus": doc.docstatus})
 
 
-# Danh mục R10 và Administrator được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16, A-64);
-# người khác chỉ ngừng dùng
+# Danh mục R10 và Administrator được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16, A-64,
+# A-164 thêm Employee của M4); người khác chỉ ngừng dùng (nhân viên: trạng thái Left)
 MASTER_DOCTYPES = frozenset(
 	{
 		"Instrument",
@@ -151,6 +151,7 @@ MASTER_DOCTYPES = frozenset(
 		"Equipment",
 		"Process Program",
 		"Equipment Type Norm",
+		"Employee",
 	}
 )
 MASTER_DELETE_ROLE = "TC R10"
@@ -165,6 +166,14 @@ def _may_delete_master(doc):
 		"Has Role", {"parent": user, "parenttype": "User", "role": MASTER_DELETE_ROLE}
 	):
 		return False
+	if doc.doctype == "Employee" and doc.get("user_id"):
+		# A-164: tài khoản đăng nhập còn gắn thì không xóa (tránh tài khoản mồ côi còn quyền)
+		frappe.throw(
+			_("Employee {0} is linked to login account {1}; unlink the account before deleting.").format(
+				doc.name, doc.user_id
+			),
+			frappe.LinkExistsError,
+		)
 	check_if_doc_is_linked(doc)
 	check_if_doc_is_dynamically_linked(doc)
 	return True

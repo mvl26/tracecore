@@ -12208,3 +12208,4 @@ The override was not rejected,Chưa từ chối được đề nghị ghi đè
 Open the head of infection control workspace,Vào khu Trưởng khoa KSNK
 month must be in the form YYYY-MM.,month phải có dạng YYYY-MM.
 date must be in the form YYYY-MM-DD.,date phải có dạng YYYY-MM-DD.
+"Employee {0} is linked to login account {1}; unlink the account before deleting.","Nhân viên {0} đang gắn tài khoản đăng nhập {1}; gỡ tài khoản trước khi xóa."
