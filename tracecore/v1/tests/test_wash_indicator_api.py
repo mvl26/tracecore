@@ -3,7 +3,7 @@
 import uuid
 
 import frappe
-from frappe.utils import add_days, today
+from frappe.utils import add_days, getdate, today
 
 from tracecore.tests.factories import make_batch, make_item, make_wash_ready_set
 from tracecore.tests.utils import bru
@@ -73,11 +73,13 @@ class TestWashIndicatorApi(WashApiCase):
 	@bru("BRU-REP-002")
 	def test_expired_indicator_is_a_rejection_with_http_status(self):
 		batch, _set_id = self.awaiting()
+		# hạn so với ngày mẻ chạy, không phải hôm nay: mẻ bắt đầu trước 00:00 thì "hôm qua" vẫn còn hạn
+		started = getdate(frappe.db.get_value("Wash Batch", batch, "started_at"))
 		response = call(
 			wash_api.result,
 			result="Pass",
 			clean_test=None,
-			indicator=self.indicator(lot_expiry=add_days(today(), -1)),
+			indicator=self.indicator(lot_expiry=str(add_days(started, -1))),
 			**self.unload_args(batch),
 		)
 		self.assertEqual(response["error"]["code"], "INDICATOR_EXPIRED")
