@@ -99,10 +99,12 @@ class TestSSIStation(IsolatedTestCase):
 		self.assertEqual(row["patient_code_masked"], "***6612")
 		self.assertNotIn("BN-0000006612", frappe.as_json(listed))
 		key = str(uuid.uuid4())
-		result = self.call(api.ssi_record, key, surveillance=self.doc.name, row=row["row"], result="Negative")
+		# phát lại phải đúng yêu cầu cũ, kể cả client_ts: lệch một giây là xung đột khóa
+		args = {"surveillance": self.doc.name, "row": row["row"], "result": "Negative", "client_ts": now_ts()}
+		result = self.call(api.ssi_record, key, **args)
 		self.assertTrue(result["ok"], result)
 		self.assertNotIn(row["row"], [item["row"] for item in result["due"]])
-		again = self.call(api.ssi_record, key, surveillance=self.doc.name, row=row["row"], result="Negative")
+		again = self.call(api.ssi_record, key, **args)
 		self.assertTrue(again["ok"])  # cùng khóa → phát lại response đã lưu, không ghi lần hai
 		self.assertEqual(len(again["due"]), len(result["due"]))
 		line = frappe.get_doc(ssi.DOCTYPE, self.doc.name).followups[0]

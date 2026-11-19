@@ -100,7 +100,15 @@ class TestKsnkNav(IsolatedTestCase):
 		)
 		frappe.db.sql("update `tabDepartment` set tc_ic_network_required = 0")
 		settings = frappe.get_single("IC Program Settings")
-		settings.update({"bed_count": 420, "facility_level": "Specialized Level", "has_inpatient": 1})
+		settings.update(
+			{
+				"bed_count": 420,
+				"facility_level": "Specialized Level",
+				"has_inpatient": 1,
+				"surveillance_ratio_beds": 150,
+				"doc_review_months": 12,
+			}
+		)
 		settings.set("ic_department", None)
 		settings.set("surveillance_staff", [])
 		settings.save(ignore_permissions=True)

@@ -3184,6 +3184,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "6e5ddb7c0f",

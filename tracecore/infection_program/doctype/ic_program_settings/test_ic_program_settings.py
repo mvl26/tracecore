@@ -11,7 +11,17 @@ DOCTYPE = "IC Program Settings"
 class TestICProgramSettings(IsolatedTestCase):
 	def _settings(self, **values):
 		doc = frappe.get_single(DOCTYPE)
-		doc.update({"bed_count": 420, "facility_level": "Specialized Level", "has_inpatient": 1, **values})
+		# trường bắt buộc > 0 đặt tường minh: Single đã có dòng (set_single_value của test khác) thì không lấy mặc định
+		doc.update(
+			{
+				"bed_count": 420,
+				"facility_level": "Specialized Level",
+				"has_inpatient": 1,
+				"surveillance_ratio_beds": 150,
+				"doc_review_months": 12,
+				**values,
+			}
+		)
 		return doc
 
 	def test_is_single_in_infection_program_module(self):
