@@ -1,4 +1,4 @@
-"""FEAT-004, A-37 (c)(d), A-164, A-165: xóa danh mục (FR-M9-16) và báo cáo Audit Trail (NFR-SEC-03)."""
+"""FEAT-004, A-37 (c)(d), A-164, A-165, A-166: xóa danh mục (FR-M9-16) và báo cáo Audit Trail (NFR-SEC-03)."""
 
 import inspect
 
@@ -231,6 +231,48 @@ class TestA165MasterDelete(IsolatedTestCase):
 		with self.assertRaises(frappe.LinkExistsError):
 			frappe.delete_doc("Waste Type", waste_type)
 		self.assertTrue(frappe.db.exists("Waste Type", waste_type))
+
+
+class TestA166StockMasterDelete(IsolatedTestCase):
+	"""A-166: Vật tư (Item), Kho (Warehouse), Nhà cung cấp (Supplier) có nút Xóa cho R10/Administrator."""
+
+	def setUp(self):
+		super().setUp()
+		self.r10 = make_user("a166-r10@example.com", ["TC R10"])
+		self.r09 = make_user("a166-r09@example.com", ["TC R09", "Stock Manager", "Item Manager"])
+		self.addCleanup(frappe.set_user, "Administrator")
+
+	def test_stock_masters_are_deletable_masters(self):
+		self.assertLessEqual({"Item", "Warehouse", "Supplier"}, MASTER_DOCTYPES)
+
+	def test_only_r10_has_delete_on_item(self):
+		deleters = {p.role for p in frappe.get_meta("Item").permissions if p.delete}
+		self.assertEqual(deleters, {"TC R10"})
+		self.assertTrue(frappe.has_permission("Item", "delete", user=self.r10))
+		self.assertFalse(frappe.has_permission("Item", "delete", user=self.r09))
+
+	def test_r10_deletes_unused_item_supplier_warehouse_with_audit(self):
+		item = factories.make_item("A166-UNUSED-" + frappe.generate_hash(length=6), "Chemical").name
+		supplier = factories.make_supplier("A166 NCC " + frappe.generate_hash(length=6))
+		warehouse = factories.make_warehouse("A166 Kho " + frappe.generate_hash(length=6))
+		frappe.set_user(self.r10)
+		for doctype, name in (("Item", item), ("Supplier", supplier), ("Warehouse", warehouse)):
+			frappe.delete_doc(doctype, name)
+			self.assertFalse(frappe.db.exists(doctype, name), doctype)
+			self.assertTrue(
+				frappe.db.exists("Audit Log", {"ref_doctype": doctype, "ref_name": name, "action": "Delete"}),
+				doctype,
+			)
+
+	def test_used_item_cannot_be_deleted(self):
+		item = factories.make_item(
+			"A166-USED-" + frappe.generate_hash(length=6), "Chemical", has_batch_no=1
+		).name
+		factories.make_batch(item, "A166-LOT-" + frappe.generate_hash(length=6))
+		frappe.set_user(self.r10)
+		with self.assertRaises(frappe.LinkExistsError):
+			frappe.delete_doc("Item", item)
+		self.assertTrue(frappe.db.exists("Item", item))
 
 
 class TestAuditTrail(IsolatedTestCase):

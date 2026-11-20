@@ -95,7 +95,7 @@ class TestVendors(IsolatedTestCase):
 		self.assertTrue(frappe.db.exists("Notification Delivery", {"event_code": vendors.UNAUDITED_EVENT}))
 
 	def test_r09_edits_supplier_and_warehouse_without_delete(self):
-		"""A-142 Q4: R09 sửa hồ sơ thuê ngoài và gán khoa cho kho; quyền chuẩn ERPNext giữ nguyên, không ai xóa."""
+		"""A-142 Q4: R09 sửa hồ sơ thuê ngoài và gán khoa cho kho; quyền chuẩn ERPNext giữ nguyên; chỉ R10 xóa (A-166)."""
 		from tracecore.compliance_audit import permissions
 
 		permissions.ensure_permissions()
@@ -108,7 +108,9 @@ class TestVendors(IsolatedTestCase):
 				as_dict=True,
 			)
 			self.assertEqual(
-				(row.read, row.write, row.create, row.delete), (1, 1, 1, 0), msg=f"{doctype} {role}"
+				(row.read, row.write, row.create, row.delete),
+				(1, 1, 1, 1 if role == "TC R10" else 0),
+				msg=f"{doctype} {role}",
 			)
 		self.assertEqual(
 			frappe.db.get_value("Custom DocPerm", {"parent": "Supplier", "role": "TC R13"}, "write"), 0

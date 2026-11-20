@@ -67,13 +67,19 @@ class TestInventoryPermissions(IsolatedTestCase):
 				self.assertFalse(frappe.has_permission(doctype, ptype, user=user), msg=f"{doctype} {ptype}")
 
 	def test_nobody_can_delete_stock_entry_item_batch(self):
+		# A-166 (FR-M9-16): ngoại lệ duy nhất là R10 xóa Item chưa có giao dịch (on_trash chặn Item đã dùng)
 		for role in ("TC R09", "TC R06", "TC R10", "TC R02", "System Manager"):
 			user = user_for(role)
 			for doctype in CONSUMABLE_DOCTYPES:
-				self.assertFalse(frappe.has_permission(doctype, "delete", user=user), msg=f"{role} {doctype}")
+				allowed = role == "TC R10" and doctype == "Item"
+				self.assertEqual(
+					bool(frappe.has_permission(doctype, "delete", user=user)),
+					allowed,
+					msg=f"{role} {doctype}",
+				)
 		for doctype in CONSUMABLE_DOCTYPES:
-			rows = frappe.get_all("Custom DocPerm", filters={"parent": doctype, "delete": 1})
-			self.assertEqual(rows, [], msg=doctype)
+			roles = frappe.get_all("Custom DocPerm", filters={"parent": doctype, "delete": 1}, pluck="role")
+			self.assertEqual(roles, ["TC R10"] if doctype == "Item" else [], msg=doctype)
 
 	def test_cancel_only_r09_r02_system_manager(self):
 		allowed = {"TC R09", "TC R02", "System Manager"}
