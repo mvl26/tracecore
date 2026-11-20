@@ -118,7 +118,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-01 21:30:00.000000",
+ "modified": "2026-11-20 13:58:07.711517",
  "modified_by": "Administrator",
  "module": "TraceCore",
  "name": "Label Template",
@@ -134,6 +134,7 @@
   },
   {
    "create": 1,
+   "delete": 1,
    "read": 1,
    "report": 1,
    "role": "TC R10",

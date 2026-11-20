@@ -125,7 +125,9 @@ class TestPrinter(IsolatedTestCase):
 			self.assertTrue(perms[role].write and perms[role].create, msg=role)
 		for role in ("TC R01", "TC R02"):
 			self.assertTrue(perms[role].read and not perms[role].write, msg=role)
-		self.assertFalse(any(p.delete for p in perms.values()))
+		self.assertEqual(
+			{role for role, p in perms.items() if p.delete}, {"TC R10"}
+		)  # A-165: chỉ R10 xóa danh mục chưa có giao dịch (FR-M9-16)
 
 
 # Địa chỉ IP dạng chữ thuộc dải cục bộ/không định tuyến. Printer.host còn được Station Agent trên máy kiosk dùng

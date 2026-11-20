@@ -78,7 +78,9 @@ class TestLinenType(IsolatedTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			make_linen_collection(lines=[{"linen_type": doc.name, "qty": 4, "weight_kg": 2}])
 
-	def test_type_cannot_be_deleted(self):
+	def test_used_type_cannot_be_deleted(self):
+		# A-165: loại đồ vải đã có phiếu thu gom không xóa được (chưa dùng thì R10/Administrator xóa được)
 		doc = make_linen_type()
+		make_linen_collection(lines=[{"linen_type": doc.name, "qty": 1, "weight_kg": 0.5}])
 		with self.assertRaises(frappe.ValidationError):
-			frappe.delete_doc(DOCTYPE, doc.name, force=True)
+			frappe.delete_doc(DOCTYPE, doc.name)

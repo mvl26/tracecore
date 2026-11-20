@@ -41,6 +41,8 @@ class TestLinenPermissions(IsolatedTestCase):
 			self.assertTrue(self.can(role, "write", "Linen Type"), role)
 		self.assertFalse(self.can("TC R09", "write", "Linen Type"))
 
-	def test_nobody_can_delete(self):
-		for doctype in ("Linen Type", "Linen Collection"):
-			self.assertFalse(self.can("TC R10", "delete", doctype), doctype)
+	def test_only_r10_deletes_linen_type(self):
+		# A-165 (FR-M9-16): R10 xóa loại đồ vải chưa dùng; phiếu thu gom vẫn không ai xóa
+		self.assertTrue(self.can("TC R10", "delete", "Linen Type"))
+		self.assertFalse(self.can("TC R02", "delete", "Linen Type"))
+		self.assertFalse(self.can("TC R10", "delete", "Linen Collection"))

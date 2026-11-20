@@ -151,7 +151,9 @@ class TestLabelTemplate(IsolatedTestCase):
 		self.assertEqual(set(perms), {"System Manager", "TC R10", "TC R01", "TC R02"})
 		for role in ("System Manager", "TC R10"):
 			self.assertTrue(perms[role].write and perms[role].create, msg=role)
-		self.assertFalse(any(p.delete for p in perms.values()))
+		self.assertEqual(
+			{role for role, p in perms.items() if p.delete}, {"TC R10"}
+		)  # A-165: chỉ R10 xóa danh mục chưa có giao dịch (FR-M9-16)
 
 
 class TestSampleTemplates(IsolatedTestCase):

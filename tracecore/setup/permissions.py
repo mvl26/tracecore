@@ -132,10 +132,11 @@ def build_custom_docperms(existing_doctypes: set[str] | None = None) -> list[dic
 			continue
 		for code in ROLE_CODES:
 			flags = flags_for(row.doctype, row.permissions[code])
+			if code == MASTER_DELETE_ROLE and row.doctype in MASTER_DOCTYPES:
+				# FR-M9-16 (A-37 d, A-165): R10 xóa được mọi danh mục; on_trash còn chặn bản ghi đã có giao dịch
+				flags = {**(flags or {"read": 1}), "delete": 1}
 			if not flags:
 				continue
-			if code == MASTER_DELETE_ROLE and row.doctype in MASTER_DOCTYPES and flags.get("write"):
-				flags["delete"] = 1
 			name = hashlib.sha256(f"{row.doctype}:{ROLE_NAMES[code]}:0".encode()).hexdigest()[:10]
 			records.append(
 				{
