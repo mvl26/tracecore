@@ -172,6 +172,10 @@ MASTER_DOCTYPES = frozenset(
 		"Waste Storage Location",
 		"Waste Treatment Vendor",
 		"Waste Type",
+		# A-166: vật tư, kho, nhà cung cấp của ERPNext dùng cho kho TraceCore
+		"Item",
+		"Warehouse",
+		"Supplier",
 	}
 )
 MASTER_DELETE_ROLE = "TC R10"

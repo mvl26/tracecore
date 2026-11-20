@@ -19,7 +19,7 @@ _EDIT = ("read", "write", "create", "print")
 PERMISSION_MATRIX: dict[str, dict[str, tuple[str, ...]]] = {
 	"Item": {
 		"TC R09": _EDIT,
-		"TC R10": _EDIT,
+		"TC R10": (*_EDIT, "delete"),  # A-166: chỉ R10 xóa vật tư chưa có giao dịch (FR-M9-16)
 		"TC R02": _EDIT,
 		"System Manager": (*_EDIT, "report"),
 		"TC R01": (*_READ, "report"),
@@ -81,6 +81,10 @@ SETTINGS_TARGETS: dict[str, tuple[str, ...]] = {
 }
 # Chỉ ba DocType này bị gỡ quyền xóa (V11); Serial and Batch Bundle giữ quyền xóa chuẩn của ERPNext.
 NO_DELETE_DOCTYPES = ("Item", "Batch", "Stock Entry", "Stock Reconciliation")
+# A-166 (FR-M9-16): ngoại lệ được giữ quyền xóa — on_trash (core.audit.block_delete) chặn bản ghi đã có giao dịch
+KEEP_DELETE: dict[str, tuple[str, ...]] = {"Item": ("TC R10",)}
+# A-166: R10 xóa kho, nhà cung cấp chưa dùng (vai trò chuẩn ERPNext giữ nguyên quyền nhưng on_trash chỉ cho R10/Admin)
+DELETE_TARGETS = ("Warehouse", "Supplier")
 
 
 def ensure_permissions() -> None:
@@ -103,6 +107,10 @@ def ensure_permissions() -> None:
 	# R01 xem báo cáo Stock Alerts (cột Link tới Kho): Frappe đòi quyền đọc DocType của cột Link (FEAT-043)
 	for role in READ_WAREHOUSE_ROLES:
 		_ensure_rule("Warehouse", role, ("read",), only_add=True)
+	for doctype in DELETE_TARGETS:
+		if frappe.db.exists("DocType", doctype):
+			_ensure_rule(doctype, "TC R10", ("read", "delete"), only_add=True)
+			frappe.clear_cache(doctype=doctype)
 	for doctype, roles in SETTINGS_TARGETS.items():
 		if not frappe.db.exists("DocType", doctype):
 			continue
@@ -149,6 +157,8 @@ def _remove_delete(doctype: str) -> None:
 		filters={"parent": doctype, "delete": 1},
 		fields=["name", "role", "permlevel", "if_owner"],
 	):
+		if row.role in KEEP_DELETE.get(doctype, ()):
+			continue
 		update_permission_property(
 			doctype, row.role, row.permlevel, "delete", 0, validate=False, if_owner=row.if_owner
 		)

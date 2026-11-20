@@ -553,7 +553,12 @@ doc_events = {
 			# nhóm Packaging đổi hạn lưu loại gói qua form Item → Audit Log Update, không chặn (FEAT-015 S7)
 			"tracecore.instrument.shelf_life.audit_item_change",
 		],
+		# A-166 (FR-M9-16): chỉ R10/Administrator xóa vật tư chưa có giao dịch; ghi Audit Delete
+		"on_trash": "tracecore.core.audit.block_delete",
 	},
+	# A-166: kho và nhà cung cấp chưa dùng do R10/Administrator xóa (FR-M9-16)
+	"Warehouse": {"on_trash": "tracecore.core.audit.block_delete"},
+	"Supplier": {"on_trash": "tracecore.core.audit.block_delete"},
 	# Batch và phiếu nhập kho vật tư: Audit Log chỉ khi liên quan Item CSSD; xóa bị chặn ở permission (không on_trash)
 	"Batch": {
 		"after_insert": "tracecore.inventory.audit.on_cssd_event",
