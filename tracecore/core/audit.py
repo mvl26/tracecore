@@ -152,7 +152,7 @@ MASTER_DOCTYPES = frozenset(
 		"Process Program",
 		"Equipment Type Norm",
 		"Employee",
-		# A-165: danh mục còn thiếu nút Xóa (M3, M10, M11–M17, cấu hình nhập/xuất); trừ kỳ báo cáo, sổ mã, mẫu
+		# A-165: danh mục còn thiếu nút Xóa (M3, M10, M11-M17, cấu hình nhập/xuất); trừ kỳ báo cáo, sổ mã, mẫu
 		# chuyên môn có phiên bản (submittable), dòng BOM (phiên bản bất biến) và dữ liệu gốc seed tự chèn lại khi migrate
 		"Audit Schedule",
 		"Environment Zone",
